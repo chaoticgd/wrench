@@ -1,11 +1,45 @@
 cmake_minimum_required (VERSION 2.8.11)
 project(wrench)
+include_directories(.)
 
 add_executable(wrench
 	src/main.cpp
-	src/command_line.cpp)
+	src/command_line.cpp
+	src/window.cpp
+	imgui/examples/imgui_impl_glfw.cpp
+	imgui/examples/imgui_impl_opengl3.cpp)
 
 # Boost
 find_package(Boost 1.40 COMPONENTS program_options REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
-target_link_libraries(wrench LINK_PUBLIC ${Boost_LIBRARIES})
+target_link_libraries(wrench ${Boost_LIBRARIES})
+
+# OpenGL
+find_package(OpenGL)
+target_link_libraries(wrench ${OPENGL_LIBRARIES})
+
+# GLEW
+find_package(GLEW REQUIRED)
+include_directories(${GLEW_INCLUDE_DIRS})
+target_link_libraries(wrench ${GLEW_LIBRARIES})
+
+# GLFW
+find_package(glfw3 3.2 REQUIRED)
+target_link_libraries(wrench glfw)
+target_link_libraries(wrench ${OPENGL_gl_LIBRARY})
+
+# Dear ImGui
+include_directories(imgui)
+add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_GLEW=1)
+add_library(imgui STATIC
+	imgui/imconfig.h
+	imgui/imgui_demo.cpp
+	imgui/imgui_draw.cpp
+	imgui/imgui_internal.h
+	imgui/imgui_widgets.cpp
+	imgui/imgui.cpp
+	imgui/imgui.h
+	imgui/imstb_rectpack.h
+	imgui/imstb_textedit.h
+	imgui/imstb_truetype.h)
+target_link_libraries(wrench imgui)
