@@ -6,6 +6,8 @@ add_executable(wrench
 	src/main.cpp
 	src/command_line.cpp
 	src/window.cpp
+	src/gui.cpp
+	src/menu.cpp
 	imgui/examples/imgui_impl_glfw.cpp
 	imgui/examples/imgui_impl_opengl3.cpp)
 
