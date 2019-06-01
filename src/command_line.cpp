@@ -1,22 +1,21 @@
 #include "command_line.h"
 
 #include <iostream>
-#include <boost/program_options.hpp>
 
 #include "build.h"
 
-namespace po = boost::program_options;
-
-bool parse_command_line_args(int argc, char** argv) {
-	po::options_description desc("");
+bool parse_command_line_args(
+	int argc, char** argv,
+	po::options_description desc,
+	po::positional_options_description pd) {
 	desc.add_options()
-		("help,h",    "display help text")
-		("version,v", "print version information");
+		("help,h",    "Display help text.")
+		("version,v", "Print version and licensing information.");
 	
 	po::variables_map vm;
 	try {
 		auto parser = po::command_line_parser(argc, argv)
-			.options(desc).run();
+			.options(desc).positional(pd).run();
 		po::store(parser, vm);
 	} catch(boost::program_options::error& e) {
 		std::cerr << e.what();
@@ -36,6 +35,8 @@ bool parse_command_line_args(int argc, char** argv) {
 		          << "There is NO WARRANTY, to the extent permitted by law." << std::endl;
 		return false;
 	}
+
+	po::notify(vm);
 	
 	return true;
 }

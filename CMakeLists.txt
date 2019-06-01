@@ -2,6 +2,10 @@ cmake_minimum_required (VERSION 2.8.11)
 project(wrench)
 include_directories(.)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 add_executable(wrench
 	src/main.cpp
 	src/command_line.cpp
@@ -11,10 +15,17 @@ add_executable(wrench
 	imgui/examples/imgui_impl_glfw.cpp
 	imgui/examples/imgui_impl_opengl3.cpp)
 
+make_directory(bin)
+add_executable(bin/fip
+	src/cli/fipcli.cpp
+	src/command_line.cpp
+	src/formats/fip.cpp)
+
 # Boost
 find_package(Boost 1.40 COMPONENTS program_options REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 target_link_libraries(wrench ${Boost_LIBRARIES})
+target_link_libraries(bin/fip ${Boost_LIBRARIES})
 
 # OpenGL
 find_package(OpenGL)
