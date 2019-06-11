@@ -52,19 +52,11 @@ class stream_format_error : public std::runtime_error {
 
 class stream {
 public:
-	virtual void seek_abs(uint32_t offset) = 0;
-	virtual uint32_t tell_abs() = 0;
+	virtual void seek(uint32_t offset) = 0;
+	virtual uint32_t tell() = 0;
 
 	virtual void read_n(char* dest, uint32_t size) = 0;
 	virtual void write_n(const char* data, uint8_t size) = 0;
-
-	void seek(uint32_t offset) {
-		seek_abs(_zero + offset);
-	}
-
-	uint32_t tell() {
-		return tell_abs() - _zero;
-	}
 
 	template <typename T>
 	T read() {
@@ -107,43 +99,6 @@ public:
 		dest.write_n(buffer.data(), size);
 	}
 
-	// The dest and src streams should be different.
-	static void copy_n(stream& dest, stream& src, uint32_t size, uint32_t src_offset) {
-		uint32_t src_tell = src.tell();
-		src.seek(src_offset);
-		copy_n(dest, src, size);
-		src.seek(src_tell);
-	}
-
-	/*
-		Handle nested data segments. For example, a level file may contain a
-		number of different asset segments. First, you could push the base
-		offset of the level, then pass the stream to another bit of code that
-		could push the relative offset an individual asset and pass the stream
-		to a third function for reading, like so:
-
-		0x0000                                                            0xffff
-		| GAME.ISO                                                             |
-		^ stream::stream()
-		|--------| LEVEL0                    |---------------------------------|
-		         ^ push_zero(LEVEL0_OFFSET)
-		|----------------| SOMETEXTURE |---------------------------------------|
-		                 ^ push_zero(SOMETEXTURE_OFFSET)
-		|--------| LEVEL0                    |---------------------------------|
-		         ^ pop_zero()
-		| GAME.ISO                                                             |
-		^ pop_zero()
-	*/
-	void push_zero(uint32_t offset) {
-		_zero += offset;
-		_zero_stack.push_back(offset);
-	}
-
-	void pop_zero() {
-		_zero -= _zero_stack.back();
-		_zero_stack.pop_back();
-	}
-
 	// Pretty print new data that has been written to the end of the buffer.
 	// Compare said data to an 'expected' data file.
 	void print_diff(std::optional<stream*> expected) {
@@ -184,12 +139,10 @@ public:
 	}
 
 protected:
-	stream() : _zero(0), _last_printed(0) {}
+	stream() : _last_printed(0) {}
 
 private:
 
-	uint32_t _zero;
-	std::vector<uint32_t> _zero_stack;
 	uint32_t _last_printed;
 };
 
@@ -205,12 +158,12 @@ public:
 		}
 	}
 
-	void seek_abs(uint32_t offset) {
+	void seek(uint32_t offset) {
 		_file.seekg(offset);
 		check_error();
 	}
 
-	uint32_t tell_abs() {
+	uint32_t tell() {
 		return _file.tellg();
 		check_error();
 	}
@@ -239,11 +192,11 @@ class array_stream : public stream {
 public:
 	array_stream() : _offset(0) {}
 	
-	void seek_abs(uint32_t offset) {
+	void seek(uint32_t offset) {
 		_offset = offset;
 	}
 
-	uint32_t tell_abs() {
+	uint32_t tell() {
 		return _offset;
 	}
 
@@ -264,9 +217,38 @@ public:
 		std::memcpy(_allocation.data() + _offset, data, size);
 		_offset += size;
 	}
+
 private:
 	std::vector<uint8_t> _allocation;
 	uint32_t _offset;
+};
+
+// Point to a data segment within a larger stream. For example, you could create
+// a stream to allow for more convenient access a texture within a disk image.
+class proxy_stream : public stream {
+public:
+	proxy_stream(stream* backing, uint32_t zero)
+		: _backing(backing), _zero(zero) {}
+
+	void seek(uint32_t offset) {
+		_backing->seek(offset + _zero);
+	}
+
+	uint32_t tell() {
+		return _backing->tell() - _zero;
+	}
+
+	void read_n(char* dest, uint32_t size) {
+		_backing->read_n(dest, size);
+	}
+
+	void write_n(const char* data, uint8_t size) {
+		_backing->write_n(data, size);
+	}
+
+private:
+	stream* _backing;
+	uint32_t _zero;
 };
 
 #endif

@@ -87,7 +87,7 @@ int run_cli_converter(
 	uint32_t offset;
 	offset_stream >> offset;
 	
-	src.push_zero(offset);
+	proxy_stream src_proxy(&src, offset);
 
 	auto op = commands.find(command);
 	if(op == commands.end()) {
@@ -95,7 +95,7 @@ int run_cli_converter(
 		return 1;
 	}
 
-	(*op).second(dest, src);
+	(*op).second(dest, src_proxy);
 
 	return 0;
 }
