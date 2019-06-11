@@ -1,12 +1,12 @@
 #include <sstream>
 
 #include "../command_line.h"
-#include "../formats/fip.h"
+#include "../formats/wad.h"
 
 int main(int argc, char** argv) {
 	return run_cli_converter(argc, argv,
-		"Converts indexed colour textures in the FIP format to BMP files",
+		"Decompress WAD segments",
 		{
-			{ "export", fip_to_bmp }
+			{ "decompress", decompress_wad }
 		});
 }

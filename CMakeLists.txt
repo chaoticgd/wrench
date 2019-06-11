@@ -21,11 +21,18 @@ add_executable(bin/fip
 	src/command_line.cpp
 	src/formats/fip.cpp)
 
+make_directory(bin)
+add_executable(bin/wad
+	src/cli/wadcli.cpp
+	src/command_line.cpp
+	src/formats/wad.cpp)
+
 # Boost
 find_package(Boost 1.40 COMPONENTS program_options REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 target_link_libraries(wrench ${Boost_LIBRARIES})
 target_link_libraries(bin/fip ${Boost_LIBRARIES})
+target_link_libraries(bin/wad ${Boost_LIBRARIES})
 
 # OpenGL
 find_package(OpenGL)
