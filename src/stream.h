@@ -106,6 +106,7 @@ public:
 		if(tell() < _last_printed) {
 			return;
 		}
+
 		bool is_bad = false;
 		std::cout << std::hex << (_last_printed | 0x1000000000000000) << " >>>> ";
 		for(int i = _last_printed; i < tell(); i++) {
@@ -129,9 +130,13 @@ public:
 			} else {
 				std::cout << " ";
 			}
-		};
+		}
 		if(is_bad) {
-			std::cout << std::endl; // Flush the buffer.
+			std::cout << "\nEXPECTED:\n";
+			(*expected)->_last_printed = _last_printed;
+			(*expected)->seek(tell());
+			(*expected)->print_diff({});
+			std::cout << std::endl;
 			throw stream_format_error("Data written to stream did not match expected stream.");
 		}
 		std::cout << "\n";
@@ -202,7 +207,7 @@ public:
 
 	void read_n(char* dest, uint32_t size) {
 		std::size_t required_size = _offset + size;
-		if(required_size >= _allocation.size()) {
+		if(required_size > _allocation.size()) {
 			throw stream_io_error("Tried to read past end of array_buffer!");
 		}
 		std::memcpy(dest, _allocation.data() + _offset, size);
@@ -211,7 +216,7 @@ public:
 
 	void write_n(const char* data, uint8_t size) {
 		std::size_t required_size = _offset + size;
-		if(_offset + size >= _allocation.size()) {
+		if(_offset + size > _allocation.size()) {
 			_allocation.resize(required_size);
 		}
 		std::memcpy(_allocation.data() + _offset, data, size);

@@ -57,14 +57,16 @@ void decompress_wad(stream& dest, stream& src) {
 			if(control_byte > 0x1f) {
 				WAD_DEBUG(std::cout << " -- branch: 0\n";)
 
-				if(control_byte & 0x1f == 0) {
-					control_byte += src.read<uint8_t>();
+				bytes_to_copy = control_byte & 0x1f;
+				if(bytes_to_copy == 0) {
+					bytes_to_copy = src.read<uint8_t>() + 0x1f;
 				}
+				bytes_to_copy += 2;
 
-				bytes_to_copy = (control_byte & 0x1f) + 2;
 				int b1 = src.read<uint8_t>();
 				int b2 = src.read<uint8_t>();
 				lookback_offset = dest.tell() - ((b1 >> 2) + b2 * 0x40) - 1;
+
 				read_from_dest = true;
 			} else {
 				WAD_DEBUG(std::cout << " -- branch: 1\n";)
@@ -89,6 +91,7 @@ void decompress_wad(stream& dest, stream& src) {
 				} else if(bytes_to_copy == 1) {
 					read_from_src = true;
 				} else {
+					WAD_DEBUG(std::cout << " -- padding detected\n";)
 					while(src.tell() % 0x1000 != 0x10) {
 						src.read<uint8_t>();
 					}
@@ -100,7 +103,6 @@ void decompress_wad(stream& dest, stream& src) {
 			uint8_t b1 = src.read<uint8_t>();
 			lookback_offset = dest.tell() - b1 * 8 - (control_byte >> 2 & 7) - 1;
 			bytes_to_copy = (control_byte >> 5) + 1;
-
 			read_from_dest = true;
 		}
 
