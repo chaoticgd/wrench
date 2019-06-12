@@ -32,8 +32,11 @@ void decompress_wad(stream& dest, stream& src) {
 		throw stream_format_error("Invalid WAD header.");
 	}
 
-	uint8_t num_starting_bytes = src.read<uint8_t>() + 3;
-	stream::copy_n(dest, src, num_starting_bytes);
+	uint32_t starting_byte = src.read<uint8_t>();
+	if(starting_byte == 0) {
+		starting_byte = src.read<uint8_t>() + 0xf;
+	}
+	stream::copy_n(dest, src, starting_byte + 3);
 
 	while(src.tell() != header.total_size) {
 
@@ -64,7 +67,7 @@ void decompress_wad(stream& dest, stream& src) {
 				lookback_offset = dest.tell() - ((b1 >> 2) + b2 * 0x40) - 1;
 				read_from_dest = true;
 			} else {
-				WAD_DEBUG(std::cout << " -- branch: 1 " << src.tell() << "\n";)
+				WAD_DEBUG(std::cout << " -- branch: 1\n";)
 
 				if(control_byte < 0x10) {
 					throw stream_format_error("WAD decompression failed!");
