@@ -66,7 +66,7 @@ void decompress_wad(stream& dest, stream& src) {
 				int b1 = src.read<uint8_t>();
 				int b2 = src.read<uint8_t>();
 				lookback_offset = dest.tell() - ((b1 >> 2) + b2 * 0x40) - 1;
-
+				
 				read_from_dest = true;
 			} else {
 				WAD_DEBUG(std::cout << " -- branch: 1\n";)
@@ -83,6 +83,11 @@ void decompress_wad(stream& dest, stream& src) {
 				uint8_t b0 = src.read<uint8_t>();
 				uint8_t b1 = src.read<uint8_t>();
 
+				if(b0 > 0 && control_byte == 0x11) {
+					stream::copy_n(dest, src, b0);
+					continue;
+				}
+
 				lookback_offset = dest.tell() + ((control_byte & 8) * -0x800 - ((b0 >> 2) + b1 * 0x40));
 				if(lookback_offset != dest.tell()) {
 					bytes_to_copy += 2;
@@ -95,6 +100,7 @@ void decompress_wad(stream& dest, stream& src) {
 					while(src.tell() % 0x1000 != 0x10) {
 						src.read<uint8_t>();
 					}
+					read_from_src = true;
 				}
 			}
 		} else {
