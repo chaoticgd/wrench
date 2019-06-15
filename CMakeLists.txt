@@ -45,7 +45,7 @@ add_executable(wad
 # Boost
 find_package(Boost 1.40 COMPONENTS program_options REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
-target_link_libraries(wrench ${Boost_LIBRARIES})
+target_link_libraries(wrench ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 target_link_libraries(fip ${Boost_LIBRARIES})
 target_link_libraries(wad ${Boost_LIBRARIES})
 

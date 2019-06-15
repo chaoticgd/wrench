@@ -40,14 +40,18 @@ packed_struct(file_ptr,
 	}
 )
 
-// I/O error e.g. tried to read past end.
-class stream_io_error : public std::runtime_error {
+struct stream_error : public std::runtime_error {
 	using std::runtime_error::runtime_error;
 };
 
+// I/O error e.g. tried to read past end.
+struct stream_io_error : public stream_error {
+	using stream_error::stream_error;
+};
+
 // The content of the stream is of the wrong format e.g. failed decompression.
-class stream_format_error : public std::runtime_error {
-	using std::runtime_error::runtime_error;
+struct stream_format_error : public stream_error {
+	using stream_error::stream_error;
 };
 
 class stream {

@@ -17,6 +17,32 @@ namespace gui {
 	void file_new(app& a);
 	void file_import_rc2_level(app& a);
 
+	class moby_list : public tool {
+	public:
+		const char* title_text() const override;
+		ImVec2 initial_size() const override;
+		void render(app& a) override;
+	};
+
+	class inspector : public tool {
+	public:
+		const char* title_text() const override;
+		ImVec2 initial_size() const override;
+		void render(app& a) override;
+	};
+
+	class message_box : public tool {
+	public:
+		message_box(const char* title, std::string message);
+
+		const char* title_text() const override;
+		ImVec2 initial_size() const override;
+		void render(app& a) override;
+	private:
+		const char* _title;
+		std::string _message;
+	};
+
 	class string_input : public tool {
 	public:
 		string_input(const char* title);
@@ -31,18 +57,6 @@ namespace gui {
 		const char* _title_text;
 		std::vector<char> _buffer;
 		std::function<void(app&, std::string)> _callback;
-	};
-
-	class moby_list : public tool {
-		const char* title_text() const override;
-		ImVec2 initial_size() const override;
-		void render(app& a) override;
-	};
-
-	class inspector : public tool {
-		const char* title_text() const override;
-		ImVec2 initial_size() const override;
-		void render(app& a) override;
 	};
 }
 

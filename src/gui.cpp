@@ -1,7 +1,9 @@
 #include "gui.h"
 
+#include <sstream>
 #include <iostream>
 #include <functional>
+#include <boost/stacktrace.hpp>
 
 #include "menu.h"
 #include "tool.h"
@@ -52,43 +54,19 @@ void gui::file_new(app& a) {
 void gui::file_import_rc2_level(app& a) {
 	auto path_input = std::make_unique<string_input>("Enter File Path");
 	path_input->on_okay([](app& a, std::string path) {
-		file_stream level_stream(path);
-		a.set_level(import_level(level_stream));
+		try {
+			file_stream level_stream(path);
+			a.set_level(import_level(level_stream));
+		} catch(stream_error& e) {
+			std::stringstream message;
+			message << "stream_error: " << e.what() << "\n";
+			message << boost::stacktrace::stacktrace();
+			auto error_box = std::make_unique<message_box>
+				("Level Import Failed", message.str());
+			a.tools.emplace_back(std::move(error_box));
+		}
 	});
 	a.tools.emplace_back(std::move(path_input));
-}
-
-/*
-	string_input
-*/
-
-gui::string_input::string_input(const char* title)
-	: _title_text(title) {
-	_buffer.resize(1024);
-}
-
-const char* gui::string_input::title_text() const {
-	return _title_text;
-}
-
-ImVec2 gui::string_input::initial_size() const {
-	return ImVec2(400, 100);
-}
-
-void gui::string_input::render(app& a) {
-	ImGui::InputText("", _buffer.data(), 1024);
-	bool pressed = ImGui::Button("Okay");
-	if(pressed) {
-		_callback(a, std::string(_buffer.begin(), _buffer.end()));
-	}
-	pressed |= ImGui::Button("Cancel");
-	if(pressed) {
-		close(a);
-	}
-}
-
-void gui::string_input::on_okay(std::function<void(app&, std::string)> callback) {
-	_callback = callback;
 }
 
 /*
@@ -198,4 +176,64 @@ void gui::inspector::render(app& a) {
 	);
 
 	ImGui::PopStyleVar();
+}
+
+/*
+	message_box
+*/
+
+gui::message_box::message_box(const char* title, std::string message)
+	: _title(title), _message(message) {}
+
+const char* gui::message_box::title_text() const {
+	return _title;
+}
+
+ImVec2 gui::message_box::initial_size() const {
+	return ImVec2(300, 200);
+}
+
+void gui::message_box::render(app& a) {
+	ImVec2 size = ImGui::GetWindowSize();
+	size.x -= 16;
+	size.y -= 64;
+	ImGui::PushItemWidth(-1);
+	ImGui::InputTextMultiline("##nolabel", &_message, size, ImGuiInputTextFlags_ReadOnly);
+	ImGui::PopItemWidth();
+	if(ImGui::Button("Close")) {
+		close(a);
+	}
+}
+
+/*
+	string_input
+*/
+
+gui::string_input::string_input(const char* title)
+	: _title_text(title) {
+	_buffer.resize(1024);
+}
+
+const char* gui::string_input::title_text() const {
+	return _title_text;
+}
+
+ImVec2 gui::string_input::initial_size() const {
+	return ImVec2(400, 100);
+}
+
+void gui::string_input::render(app& a) {
+	ImGui::InputText("", _buffer.data(), 1024);
+	bool pressed = ImGui::Button("Okay");
+	if(pressed) {
+		_callback(a, std::string(_buffer.begin(), _buffer.end()));
+	}
+	pressed |= ImGui::Button("Cancel");
+	if(pressed) {
+		close(a);
+	}
+}
+
+void gui::string_input::on_okay(std::function<void(app&, std::string)> callback) {
+	_callback = callback;
 }
