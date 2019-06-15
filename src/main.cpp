@@ -2,13 +2,18 @@
 #include "gui.h"
 #include "app.h"
 
-int main(int argc, char** argv) {
 
+#include "formats/level_data.h"
+
+int main(int argc, char** argv) {
 	if(!parse_command_line_args(argc, argv)) {
 		return 0;
 	}
 
 	app a;
+	a.tools.emplace_back(std::make_unique<gui::moby_list>());
+	a.tools.emplace_back(std::make_unique<gui::inspector>());
+
 	while(!glfwWindowShouldClose(a.main_window.get())) {
 		glfwPollEvents();
 

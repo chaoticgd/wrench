@@ -14,11 +14,11 @@ void menu::render(app& a) const {
 			_callback(a);
 		}
 	} else {
-		for(auto& child : _children) {
-			if(ImGui::BeginMenu(_name)) {
+		if(ImGui::BeginMenu(_name)) {
+			for(auto& child : _children) {
 				child.render(a);
-				ImGui::EndMenu();
 			}
+			ImGui::EndMenu();
 		}
 	}
 }

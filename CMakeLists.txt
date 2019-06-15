@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.8.11)
+cmake_minimum_required(VERSION 2.8.11)
 project(wrench)
 include_directories(.)
 
@@ -6,23 +6,38 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
 add_executable(wrench
 	src/main.cpp
+	src/app.cpp
 	src/command_line.cpp
 	src/window.cpp
 	src/gui.cpp
+	src/tool.cpp
 	src/menu.cpp
+	src/level.cpp
+	src/moby.cpp
+	src/formats/wad.cpp
+	src/formats/level_data.cpp
+	imgui/misc/cpp/imgui_stdlib.cpp
 	imgui/examples/imgui_impl_glfw.cpp
 	imgui/examples/imgui_impl_opengl3.cpp)
 
-make_directory(bin)
-add_executable(bin/fip
+if(MSVC)
+	target_compile_options(wrench PRIVATE /W4 /WX)
+else()
+	target_compile_options(wrench PRIVATE -Wall)
+endif()
+
+add_executable(fip
 	src/cli/fipcli.cpp
 	src/command_line.cpp
 	src/formats/fip.cpp)
 
-make_directory(bin)
-add_executable(bin/wad
+add_executable(wad
 	src/cli/wadcli.cpp
 	src/command_line.cpp
 	src/formats/wad.cpp)
@@ -31,8 +46,8 @@ add_executable(bin/wad
 find_package(Boost 1.40 COMPONENTS program_options REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 target_link_libraries(wrench ${Boost_LIBRARIES})
-target_link_libraries(bin/fip ${Boost_LIBRARIES})
-target_link_libraries(bin/wad ${Boost_LIBRARIES})
+target_link_libraries(fip ${Boost_LIBRARIES})
+target_link_libraries(wad ${Boost_LIBRARIES})
 
 # OpenGL
 find_package(OpenGL)

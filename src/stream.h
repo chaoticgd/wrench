@@ -15,7 +15,7 @@
 */
 
 #ifdef _MSC_VER
-	#define packed_struct(name, body) \
+	#define packed_struct(name, body \
 		__pragma(pack(push, 1)) struct name { body } __pragma(pack(pop))
 #else
 	#define packed_struct(name, body) \
@@ -52,6 +52,7 @@ class stream_format_error : public std::runtime_error {
 
 class stream {
 public:
+	virtual uint32_t size() = 0;
 	virtual void seek(uint32_t offset) = 0;
 	virtual uint32_t tell() = 0;
 
@@ -109,7 +110,7 @@ public:
 
 		bool is_bad = false;
 		std::cout << std::hex << (_last_printed | 0x1000000000000000) << " >>>> ";
-		for(int i = _last_printed; i < tell(); i++) {
+		for(uint32_t i = _last_printed; i < tell(); i++) {
 			auto val = peek<uint8_t>(i);
 			if(expected.has_value()) {
 				auto expected_val = (*expected)->peek<uint8_t>(i);
@@ -163,6 +164,14 @@ public:
 		}
 	}
 
+	uint32_t size() {
+		auto pos = tell();
+		_file.seekg(0, std::ios_base::end);
+		uint32_t size = tell();
+		seek(pos);
+		return size;
+	}
+
 	void seek(uint32_t offset) {
 		_file.seekg(offset);
 		check_error();
@@ -170,7 +179,6 @@ public:
 
 	uint32_t tell() {
 		return _file.tellg();
-		check_error();
 	}
 
 	void read_n(char* dest, uint32_t size) {
@@ -197,6 +205,10 @@ class array_stream : public stream {
 public:
 	array_stream() : _offset(0) {}
 	
+	uint32_t size() {
+		return _allocation.size();
+	}
+
 	void seek(uint32_t offset) {
 		_offset = offset;
 	}
@@ -234,6 +246,10 @@ class proxy_stream : public stream {
 public:
 	proxy_stream(stream* backing, uint32_t zero)
 		: _backing(backing), _zero(zero) {}
+
+	uint32_t size() {
+		return _backing->size() - _zero;
+	}
 
 	void seek(uint32_t offset) {
 		_backing->seek(offset + _zero);
