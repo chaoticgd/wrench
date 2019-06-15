@@ -42,6 +42,7 @@ uint32_t locate_main_level_segment(stream& level_file) {
 		wad_header header = level_file.read<wad_header>(offset);
 		if(validate_wad(header) && header.total_size > result_size) {
 			result_offset = offset;
+			result_size = header.total_size;
 		}
 	}
 
