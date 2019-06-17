@@ -1,18 +1,19 @@
 #ifndef MOBY_H
 #define MOBY_H
 
+#include <glm/glm.hpp>
+
 #include "reflection/refolder.h"
-#include "vec.h"
 
 class moby {
 public:
 	moby(uint32_t uid);
 
-	vec3f position() const;
-	void  set_position(vec3f position);
+	glm::vec3 position() const;
+	void set_position(glm::vec3 position);
 
-	vec3f rotation() const;
-	void  set_rotation(vec3f rotation);
+	glm::vec3 rotation() const;
+	void set_rotation(glm::vec3 rotation);
 
 	std::string name;
 	bool selected;
@@ -20,8 +21,8 @@ public:
 private:
 	uint32_t _uid;
 
-	vec3f _position;
-	vec3f _rotation;
+	glm::vec3 _position;
+	glm::vec3 _rotation;
 
 public:
 	template <typename... T>

@@ -4,18 +4,18 @@ moby::moby(uint32_t uid)
 	: selected(false),
 	  _uid(uid) {}
 
-vec3f moby::position() const {
+glm::vec3 moby::position() const {
 	return _position;
 }
 
-void  moby::set_position(vec3f position) {
+void moby::set_position(glm::vec3 position) {
 	_position = position;
 }
 
-vec3f moby::rotation() const {
+glm::vec3 moby::rotation() const {
 	return _rotation;
 }
 
-void  moby::set_rotation(vec3f rotation) {
+void moby::set_rotation(glm::vec3 rotation) {
 	_rotation = rotation;
 }

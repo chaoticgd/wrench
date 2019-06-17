@@ -1,7 +1,5 @@
 #include "level.h"
 
-level_impl::level_impl() {}
-
 void level::apply_command(std::unique_ptr<command> action) {
 	action->inject_level_pointer(static_cast<level_impl*>(this));
 	action->apply();
@@ -25,3 +23,5 @@ bool level::redo() {
 	_history[_history_index++]->apply();
 	return true;
 }
+
+level_impl::level_impl() {}

@@ -31,6 +31,12 @@ namespace gui {
 		void render(app& a) override;
 	};
 
+	class viewport_information : public tool {
+		const char* title_text() const override;
+		ImVec2 initial_size() const override;
+		void render(app& a) override;
+	};
+
 	class message_box : public tool {
 	public:
 		message_box(const char* title, std::string message);

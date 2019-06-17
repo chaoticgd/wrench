@@ -4,6 +4,7 @@
 #include <map>
 #include <memory>
 #include <vector>
+#include <glm/glm.hpp>
 
 #include "command.h"
 #include "moby.h"
@@ -11,15 +12,19 @@
 class level_impl;
 
 // Represents a level currently loaded into wrench. A mostly opaque type,
-// allowing only for undo stack manipulation. Only command objects should access
-// the (non const) level_impl type directly if we are to have any hope of
-// implementing a working undo/redo system!
+// allowing only for undo stack manipulation among some other odds and ends.
+// Only command objects should access the (non const) level_impl type directly
+// if we are to have any hope of implementing a working undo/redo system!
 class level {
 public:
 	void apply_command(std::unique_ptr<command> action);
 
 	bool undo();
 	bool redo();
+
+	bool      camera_control  = false;
+	glm::vec3 camera_position = glm::vec3(0, 0, 0);
+	glm::vec3 camera_rotation = glm::vec3(0, 0, 0);
 
 protected:
 	level() {}

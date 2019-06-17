@@ -1,10 +1,14 @@
 #include "app.h"
 
-bool app::has_level() {
+bool app::has_level() const {
 	return _level.get() != nullptr;
 }
 
-const level_impl& app::level() {
+level& app::get_level() {
+	return *_level.get();
+}
+
+const level_impl& app::read_level() const {
 	return *_level.get();
 }
 

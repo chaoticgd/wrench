@@ -78,7 +78,7 @@ const char* gui::moby_list::title_text() const {
 }
 
 ImVec2 gui::moby_list::initial_size() const {
-	return ImVec2(200, 500);
+	return ImVec2(250, 500);
 }
 
 void gui::moby_list::render(app& a) {
@@ -88,7 +88,7 @@ void gui::moby_list::render(app& a) {
 
 	ImGui::PushItemWidth(-1);
 	ImGui::ListBoxHeader("##nolabel");
-	for(const auto& moby : a.level().mobies()) {
+	for(const auto& moby : a.read_level().mobies()) {
 		std::string name =
 			moby.second->name + (moby.second->name.size() > 0 ? " " : "") +
 			"[" + std::to_string(moby.first) + "]";
@@ -109,7 +109,7 @@ const char* gui::inspector::title_text() const {
 }
 
 ImVec2 gui::inspector::initial_size() const {
-	return ImVec2(200, 500);
+	return ImVec2(250, 500);
 }
 
 void gui::inspector::render(app& a) {
@@ -126,7 +126,7 @@ void gui::inspector::render(app& a) {
 		return;
 	}
 
-	moby* selected = a.level().mobies().at(a.selection[0]).get();
+	moby* selected = a.read_level().mobies().at(a.selection[0]).get();
 
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2,2));
 	ImGui::Columns(2);
@@ -157,11 +157,11 @@ void gui::inspector::render(app& a) {
 			}
 			end_property();
 		},
-		[=](const char* name, rf::property<vec3f> p) {
+		[=](const char* name, rf::property<glm::vec3> p) {
 			begin_property(name);
-			vec3f value = p.get();
-			if(ImGui::InputFloat3("##nolabel", value.components)) {
-				p.set(value);
+			float components[] = { p.get().x, p.get().y, p.get().z };
+			if(ImGui::InputFloat3("##nolabel", components)) {
+				p.set(glm::vec3(components[0], components[1], components[2]));
 			}
 			end_property();
 		},
@@ -176,6 +176,33 @@ void gui::inspector::render(app& a) {
 	);
 
 	ImGui::PopStyleVar();
+}
+
+/*
+	viewport_information
+*/
+
+const char* gui::viewport_information::title_text() const {
+	return "Viewport Information";
+}
+
+ImVec2 gui::viewport_information::initial_size() const {
+	return ImVec2(250, 150);
+}
+
+void gui::viewport_information::render(app& a) {
+	glm::vec3 cam_pos = a.read_level().camera_position;
+	ImGui::Text("Camera Position:\n\t%.3f, %.3f, %.3f",
+		cam_pos.x, cam_pos.y, cam_pos.z);
+	glm::vec3 cam_rot = a.read_level().camera_rotation;
+	ImGui::Text("Camera Rotation:\n\t%.3f, %.3f, %.3f",
+		cam_rot.x, cam_rot.y, cam_rot.z);
+	ImGui::Text("Camera Control (Z to toggle):\n\t %s",
+		a.read_level().camera_control ? "On" : "Off");
+	if(ImGui::Button("Reset Camera")) {
+		a.get_level().camera_position = glm::vec3(0, 0, 0);
+		a.get_level().camera_rotation = glm::vec3(0, 0, 0);
+	}
 }
 
 /*

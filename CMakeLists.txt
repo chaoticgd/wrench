@@ -20,6 +20,8 @@ add_executable(wrench
 	src/menu.cpp
 	src/level.cpp
 	src/moby.cpp
+	src/renderer.cpp
+	src/shaders.cpp
 	src/formats/wad.cpp
 	src/formats/level_data.cpp
 	imgui/misc/cpp/imgui_stdlib.cpp
@@ -62,6 +64,9 @@ target_link_libraries(wrench ${GLEW_LIBRARIES})
 find_package(glfw3 3.2 REQUIRED)
 target_link_libraries(wrench glfw)
 target_link_libraries(wrench ${OPENGL_gl_LIBRARY})
+
+# GLM
+# find_package(GLM REQUIRED)
 
 # Dear ImGui
 include_directories(imgui)

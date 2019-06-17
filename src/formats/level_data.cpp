@@ -22,7 +22,8 @@ std::unique_ptr<level_impl> import_level(stream& level_file) {
 
 		auto current = std::make_unique<moby>(uid);
 		current->name = std::to_string(moby_ptr);
-		current->set_position(moby_data.position);
+		current->set_position(
+			glm::vec3(moby_data.position.x, moby_data.position.y, moby_data.position.z));
 		lvl->add_moby(uid, std::move(current));
 
 		moby_ptr += moby_data.size;
