@@ -5,13 +5,11 @@
 #include <memory>
 #include <set>
 
-#include "window.h"
 #include "level.h"
 
 class tool;
 
 struct app {
-	window main_window;
 	std::vector<std::unique_ptr<tool>> tools;
 	std::vector<uint32_t> selection;
 

@@ -14,7 +14,6 @@ add_executable(wrench
 	src/main.cpp
 	src/app.cpp
 	src/command_line.cpp
-	src/window.cpp
 	src/gui.cpp
 	src/tool.cpp
 	src/menu.cpp

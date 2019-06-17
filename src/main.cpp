@@ -1,3 +1,6 @@
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+
 #include "command_line.h"
 #include "gui.h"
 #include "app.h"
@@ -20,12 +23,40 @@ int main(int argc, char** argv) {
 	file_stream lvl("lvl");
 	a.set_level(import_level(lvl));
 
-	shader_programs shaders;
-	glfwSetWindowUserPointer(a.main_window.get(), &a);
-	glfwSetKeyCallback(a.main_window.get(), key_callback);
-	glfwSetCursorPosCallback(a.main_window.get(), cursor_position_callback);
+	if(!glfwInit()) {
+		throw std::runtime_error("Cannot load GLFW.");
+	}
 
-	while(!glfwWindowShouldClose(a.main_window.get())) {
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+
+	GLFWwindow* window = glfwCreateWindow(1280, 720, "Wrench", NULL, NULL);
+	if(window == nullptr) {
+		throw std::runtime_error("Cannot create GLFW window.");
+	}
+
+	glfwMakeContextCurrent(window);
+	glfwSwapInterval(1);
+
+	if(glewInit() != GLEW_OK) {
+		throw std::runtime_error("Cannot load GLEW.");
+	}
+
+	glfwSetWindowUserPointer(window, &a);
+	glfwSetKeyCallback(window, key_callback);
+	glfwSetCursorPosCallback(window, cursor_position_callback);
+
+	IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+	ImGui_ImplOpenGL3_Init("#version 130");
+
+	shader_programs shaders;
+
+	while(!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
 		update_camera_movement(&a);
 
@@ -33,8 +64,8 @@ int main(int argc, char** argv) {
 
 		ImGui::Render();
 		int display_w, display_h;
-		glfwMakeContextCurrent(a.main_window.get());
-		glfwGetFramebufferSize(a.main_window.get(), &display_w, &display_h);
+		glfwMakeContextCurrent(window);
+		glfwGetFramebufferSize(window, &display_w, &display_h);
 
 		glViewport(0, 0, display_w, display_h);
 		glClearColor(0, 0, 0, 1);
@@ -43,10 +74,16 @@ int main(int argc, char** argv) {
 		draw_current_level(a, shaders);
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-		glfwMakeContextCurrent(a.main_window.get());
-		glfwSwapBuffers(a.main_window.get());
+		glfwMakeContextCurrent(window);
+		glfwSwapBuffers(window);
 	}
 
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
+
+	glfwDestroyWindow(window);
+	glfwTerminate();
 }
 
 void update_camera_movement(app* a) {
