@@ -29,16 +29,17 @@ std::unique_ptr<level_impl> import_level(stream& level_file) {
 		decompress_wad(level_data, wad_segment);
 	}
 
-	auto level_header = level_data.read<level_data_header>(0);
+	auto level_header = level_data.read<level_data::header>(0);
 
-	auto moby_table = level_data.read<level_data_moby_table>(level_header.mobies.value);
-	auto moby_ptr = level_header.mobies.next<level_data_moby>().value;
+	auto moby_table = level_data.read<level_data::moby_table>(level_header.mobies.value);
+	auto moby_ptr = level_header.mobies.next<level_data::moby>().value;
 	for(uint32_t i = 0; i < moby_table.num_mobies; i++) {
-		auto moby_data = level_data.read<level_data_moby>(moby_ptr);
+		auto moby_data = level_data.read<level_data::moby>(moby_ptr);
 		uint32_t uid = moby_data.uid;
 
 		auto current = std::make_unique<moby>(uid);
 		current->name = std::to_string(moby_ptr);
+		current->class_num = moby_data.class_num;
 		current->set_position(
 			glm::vec3(moby_data.position.x, moby_data.position.y, moby_data.position.z));
 		lvl->add_moby(uid, std::move(current));

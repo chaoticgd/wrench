@@ -35,6 +35,7 @@ public:
 
 	std::string name;
 	bool selected;
+	uint16_t class_num;
 
 private:
 	uint32_t _uid;
@@ -47,6 +48,7 @@ public:
 	void reflect(T... callbacks) {
 		rf::reflector r(this, callbacks...);
 		r.visit_f("UID",      [=]() { return _uid; }, [](uint32_t) {});
+		r.visit_r("Class",    class_num);
 		r.visit_r("Name",     name);
 		r.visit_m("Position", &moby::position, &moby::set_position);
 		r.visit_m("Rotation", &moby::rotation, &moby::set_rotation);

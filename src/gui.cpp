@@ -167,6 +167,14 @@ void gui::inspector::render(app& a) {
 	};
 
 	selected->reflect(
+		[=](const char* name, rf::property<uint16_t> p) {
+			begin_property(name);
+			int value = p.get();
+			if(ImGui::InputInt("##nolabel", &value)) {
+				p.set(value);
+			}
+			end_property();
+		},
 		[=](const char* name, rf::property<uint32_t> p) {
 			begin_property(name);
 			int value = p.get();
