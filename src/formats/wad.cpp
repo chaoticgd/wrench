@@ -62,7 +62,7 @@ void decompress_wad_n(stream& dest, stream& src, uint32_t bytes_to_decompress) {
 
 	while(
 		src.tell() < header.total_size &&
-		(bytes_to_decompress == 0 || src.tell() < bytes_to_decompress)) {
+		(bytes_to_decompress == 0 || dest.tell() < bytes_to_decompress)) {
 
 		WAD_DEBUG(
 			dest.print_diff(expected_ptr);
