@@ -1,5 +1,5 @@
 [submodule "imgui"]
-	path = imgui
+	path = thirdparty/imgui
 	url = https://github.com/ocornut/imgui
 [submodule "thirdparty/json"]
 	path = thirdparty/json

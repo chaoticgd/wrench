@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8.11)
 project(wrench)
-include_directories(.)
+include_directories(thirdparty)
+include_directories(thirdparty/imgui)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -23,9 +24,9 @@ add_executable(wrench
 	src/shaders.cpp
 	src/formats/wad.cpp
 	src/formats/level_data.cpp
-	imgui/misc/cpp/imgui_stdlib.cpp
-	imgui/examples/imgui_impl_glfw.cpp
-	imgui/examples/imgui_impl_opengl3.cpp)
+	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
+	thirdparty/imgui/examples/imgui_impl_glfw.cpp
+	thirdparty/imgui/examples/imgui_impl_opengl3.cpp)
 
 if(MSVC)
 	target_compile_options(wrench PRIVATE /W4 /WX)
@@ -72,19 +73,19 @@ target_link_libraries(wrench glfw)
 target_link_libraries(wrench ${OPENGL_gl_LIBRARY})
 
 # Dear ImGui
-include_directories(imgui)
+include_directories(thidparty/imgui)
 add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_GLEW=1)
 add_library(imgui STATIC
-	imgui/imconfig.h
-	imgui/imgui_demo.cpp
-	imgui/imgui_draw.cpp
-	imgui/imgui_internal.h
-	imgui/imgui_widgets.cpp
-	imgui/imgui.cpp
-	imgui/imgui.h
-	imgui/imstb_rectpack.h
-	imgui/imstb_textedit.h
-	imgui/imstb_truetype.h)
+	thirdparty/imgui/imconfig.h
+	thirdparty/imgui/imgui_demo.cpp
+	thirdparty/imgui/imgui_draw.cpp
+	thirdparty/imgui/imgui_internal.h
+	thirdparty/imgui/imgui_widgets.cpp
+	thirdparty/imgui/imgui.cpp
+	thirdparty/imgui/imgui.h
+	thirdparty/imgui/imstb_rectpack.h
+	thirdparty/imgui/imstb_textedit.h
+	thirdparty/imgui/imstb_truetype.h)
 target_link_libraries(wrench imgui)
 
 # JSON
