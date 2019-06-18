@@ -23,12 +23,15 @@
 
 #include "bmp.h"
 
+bool validate_fip(char* magic) {
+	return std::memcmp(magic, "2FIP", 4) == 0;
+}
+
 void fip_to_bmp(stream& dest, stream& src) {
 
 	auto src_header = src.read<fip_header>(0);
-
-	if(std::memcmp(src_header.magic, "2FIP", 4) != 0) {
-		throw std::runtime_error("Tried to read invalid FIP segment.");
+	if(!validate_fip(src_header.magic)) {
+		throw stream_format_error("Tried to read invalid FIP segment.");
 	}
 
 	bmp_file_header header;

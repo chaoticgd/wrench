@@ -26,11 +26,15 @@
 // If this code breaks, dump the correct output and point to that here.
 //#define WAD_DEBUG_EXPECTED_PATH "<file path goes here>"
 
-bool validate_wad(wad_header header) {
-	return std::memcmp(header.magic, "WAD", 3) == 0;
+bool validate_wad(char* magic) {
+	return std::memcmp(magic, "WAD", 3) == 0;
 }
 
 void decompress_wad(stream& dest, stream& src) {
+	decompress_wad_n(dest, src, 0);
+}
+
+void decompress_wad_n(stream& dest, stream& src, uint32_t bytes_to_decompress) {
 
 	// The source file is split up into sections. The first byte of each of
 	// these sections determines the code path taken when reading said section
@@ -46,7 +50,7 @@ void decompress_wad(stream& dest, stream& src) {
 	)
 
 	auto header = src.read<wad_header>(0);
-	if(!validate_wad(header)) {
+	if(!validate_wad(header.magic)) {
 		throw stream_format_error("Invalid WAD header.");
 	}
 
@@ -56,7 +60,9 @@ void decompress_wad(stream& dest, stream& src) {
 	}
 	stream::copy_n(dest, src, starting_byte + 3);
 
-	while(src.tell() != header.total_size) {
+	while(
+		src.tell() < header.total_size &&
+		(bytes_to_decompress == 0 || src.tell() < bytes_to_decompress)) {
 
 		WAD_DEBUG(
 			dest.print_diff(expected_ptr);

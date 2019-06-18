@@ -45,6 +45,7 @@ packed_struct(fip_header,
 	uint8_t           data[0];
 )
 
+bool validate_fip(char* header);
 void fip_to_bmp(stream& dest, stream& src);
 
 #endif

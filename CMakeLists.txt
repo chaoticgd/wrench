@@ -43,12 +43,19 @@ add_executable(wad
 	src/command_line.cpp
 	src/formats/wad.cpp)
 
+add_executable(scan
+	src/cli/scancli.cpp
+	src/command_line.cpp
+	src/formats/wad.cpp
+	src/formats/fip.cpp)
+
 # Boost
 find_package(Boost 1.40 COMPONENTS program_options REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 target_link_libraries(wrench ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 target_link_libraries(fip ${Boost_LIBRARIES})
 target_link_libraries(wad ${Boost_LIBRARIES})
+target_link_libraries(scan ${Boost_LIBRARIES})
 
 # OpenGL
 find_package(OpenGL)
@@ -63,9 +70,6 @@ target_link_libraries(wrench ${GLEW_LIBRARIES})
 find_package(glfw3 3.2 REQUIRED)
 target_link_libraries(wrench glfw)
 target_link_libraries(wrench ${OPENGL_gl_LIBRARY})
-
-# GLM
-# find_package(GLM REQUIRED)
 
 # Dear ImGui
 include_directories(imgui)
@@ -82,3 +86,6 @@ add_library(imgui STATIC
 	imgui/imstb_textedit.h
 	imgui/imstb_truetype.h)
 target_link_libraries(wrench imgui)
+
+# JSON
+include_directories(thirdparty/json/single_include)

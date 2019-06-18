@@ -34,7 +34,8 @@ packed_struct(wad_header,
 )
 
 // Check the magic bytes.
-bool validate_wad(wad_header header);
+bool validate_wad(char* magic);
 
 // Throws stream_io_error, stream_format_error.
 void decompress_wad(stream& dest, stream& src);
+void decompress_wad_n(stream& dest, stream& src, uint32_t bytes_to_decompress);
