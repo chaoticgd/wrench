@@ -30,7 +30,15 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 
 int main(int argc, char** argv) {
-	if(!parse_command_line_args(argc, argv)) {
+
+	std::string level_path;
+
+	po::options_description desc("A level editor for the Ratchet & Clank games");
+	desc.add_options()
+		("import,i", po::value<std::string>(&level_path),
+			"Import the specified WAD level file.");
+
+	if(!parse_command_line_args(argc, argv, desc)) {
 		return 0;
 	}
 
@@ -39,13 +47,9 @@ int main(int argc, char** argv) {
 	a.tools.emplace_back(std::make_unique<gui::inspector>());
 	a.tools.emplace_back(std::make_unique<gui::viewport_information>());
 
-	// Automatically open "lvl" on startup if it exists.
-	// Only used for debugging.
-	try {
-		file_stream lvl("lvl");
-		a.set_level(import_level(lvl));
-		a.get_level().reset_camera();
-	} catch(stream_error& e) {}
+	if(level_path != "") {
+		a.import_level(level_path);
+	}
 
 	if(!glfwInit()) {
 		throw std::runtime_error("Cannot load GLFW.");
@@ -111,7 +115,7 @@ int main(int argc, char** argv) {
 }
 
 void update_camera_movement(app* a) {
-	if(!a->get_level().camera_control) {
+	if(!a->has_level() || !a->get_level().camera_control) {
 		return;
 	}
 

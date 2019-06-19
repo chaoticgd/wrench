@@ -21,11 +21,9 @@
 #include <sstream>
 #include <iostream>
 #include <functional>
-#include <boost/stacktrace.hpp>
 
 #include "menu.h"
 #include "tool.h"
-#include "formats/level_data.h"
 
 void gui::render(app& a) {
 
@@ -72,18 +70,7 @@ void gui::file_new(app& a) {
 void gui::file_import_rc2_level(app& a) {
 	auto path_input = std::make_unique<string_input>("Enter File Path");
 	path_input->on_okay([](app& a, std::string path) {
-		try {
-			file_stream level_stream(path);
-			a.set_level(import_level(level_stream));
-			a.get_level().reset_camera();
-		} catch(stream_error& e) {
-			std::stringstream message;
-			message << "stream_error: " << e.what() << "\n";
-			message << boost::stacktrace::stacktrace();
-			auto error_box = std::make_unique<message_box>
-				("Level Import Failed", message.str());
-			a.tools.emplace_back(std::move(error_box));
-		}
+		a.import_level(path);
 	});
 	a.tools.emplace_back(std::move(path_input));
 }
@@ -218,6 +205,10 @@ ImVec2 gui::viewport_information::initial_size() const {
 }
 
 void gui::viewport_information::render(app& a) {
+	if(!a.has_level()) {
+		return;
+	}
+
 	glm::vec3 cam_pos = a.read_level().camera_position;
 	ImGui::Text("Camera Position:\n\t%.3f, %.3f, %.3f",
 		cam_pos.x, cam_pos.y, cam_pos.z);

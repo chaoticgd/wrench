@@ -38,7 +38,7 @@ struct app {
 	bool has_level() const;
 	level& get_level();
 	const level_impl& read_level() const;
-	void set_level(std::unique_ptr<level_impl> level);
+	void import_level(std::string path);
 
 private:
 	std::unique_ptr<level_impl> _level;

@@ -18,6 +18,12 @@
 
 #include "app.h"
 
+#include <boost/stacktrace.hpp>
+
+#include "gui.h"
+#include "stream.h"
+#include "formats/level_data.h"
+
 bool app::has_level() const {
 	return _level.get() != nullptr;
 }
@@ -30,6 +36,18 @@ const level_impl& app::read_level() const {
 	return *_level.get();
 }
 
-void app::set_level(std::unique_ptr<level_impl> level) {
-	_level.swap(level);
+void app::import_level(std::string path) {
+	try {
+		file_stream stream(path);
+		auto lvl = ::import_level(stream);
+		_level.swap(lvl);
+		_level->reset_camera();
+	} catch(stream_error& e) {
+		std::stringstream message;
+		message << "stream_error: " << e.what() << "\n";
+		message << boost::stacktrace::stacktrace();
+		auto error_box = std::make_unique<gui::message_box>
+			("Level Import Failed", message.str());
+		tools.emplace_back(std::move(error_box));
+	}
 }
