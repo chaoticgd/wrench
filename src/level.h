@@ -40,12 +40,14 @@ public:
 	bool undo();
 	bool redo();
 
-	bool      camera_control  = false;
-	glm::vec3 camera_position = glm::vec3(0, 0, 0);
-	glm::vec3 camera_rotation = glm::vec3(0, 0, 0);
+	void reset_camera();
+
+	bool camera_control;
+	glm::vec3 camera_position;
+	glm::vec3 camera_rotation;
 
 protected:
-	level() {}
+	level();
 
 	std::vector<std::unique_ptr<command>> _history;
 	std::size_t _history_index;

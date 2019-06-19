@@ -34,7 +34,7 @@ void draw_current_level(const app& a, shader_programs& shaders) {
 
 	auto rot = lvl.camera_rotation;
 	glm::mat4 view = glm::yawPitchRoll(rot.y, rot.x, rot.z);
-	view = glm::translate(view, level_to_world(lvl.camera_position));
+	view = glm::translate(view, level_to_world(-lvl.camera_position));
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);

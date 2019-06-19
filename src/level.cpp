@@ -42,4 +42,17 @@ bool level::redo() {
 	return true;
 }
 
+void level::reset_camera() {
+	const auto& mobies = static_cast<level_impl*>(this)->mobies();
+	glm::vec3 sum(0, 0, 0);
+	for(const auto& [uid, moby] : mobies) {
+		sum += moby->position();
+	}
+	camera_position = sum / static_cast<float>(mobies.size());
+	camera_rotation = glm::vec3(0, 0, 0);
+}
+
+level::level()
+	: camera_control(false) {}
+
 level_impl::level_impl() {}

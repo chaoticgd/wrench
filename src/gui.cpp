@@ -75,6 +75,7 @@ void gui::file_import_rc2_level(app& a) {
 		try {
 			file_stream level_stream(path);
 			a.set_level(import_level(level_stream));
+			a.get_level().reset_camera();
 		} catch(stream_error& e) {
 			std::stringstream message;
 			message << "stream_error: " << e.what() << "\n";
@@ -226,8 +227,7 @@ void gui::viewport_information::render(app& a) {
 	ImGui::Text("Camera Control (Z to toggle):\n\t %s",
 		a.read_level().camera_control ? "On" : "Off");
 	if(ImGui::Button("Reset Camera")) {
-		a.get_level().camera_position = glm::vec3(0, 0, 0);
-		a.get_level().camera_rotation = glm::vec3(0, 0, 0);
+		a.get_level().reset_camera();
 	}
 }
 

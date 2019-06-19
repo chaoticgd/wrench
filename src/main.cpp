@@ -38,8 +38,14 @@ int main(int argc, char** argv) {
 	a.tools.emplace_back(std::make_unique<gui::moby_list>());
 	a.tools.emplace_back(std::make_unique<gui::inspector>());
 	a.tools.emplace_back(std::make_unique<gui::viewport_information>());
-	file_stream lvl("lvl");
-	a.set_level(import_level(lvl));
+
+	// Automatically open "lvl" on startup if it exists.
+	// Only used for debugging.
+	try {
+		file_stream lvl("lvl");
+		a.set_level(import_level(lvl));
+		a.get_level().reset_camera();
+	} catch(stream_error& e) {}
 
 	if(!glfwInit()) {
 		throw std::runtime_error("Cannot load GLFW.");
@@ -119,26 +125,26 @@ void update_camera_movement(app* a) {
 
 	glm::vec3 movement;
 	if(is_down(GLFW_KEY_W)) {
-		movement.x -= dx;
-		movement.y += dz;
-	}
-	if(is_down(GLFW_KEY_S)) {
 		movement.x += dx;
 		movement.y -= dz;
 	}
-	if(is_down(GLFW_KEY_A)) {
-		movement.x += dz;
-		movement.y += dx;
+	if(is_down(GLFW_KEY_S)) {
+		movement.x -= dx;
+		movement.y += dz;
 	}
-	if(is_down(GLFW_KEY_D)) {
+	if(is_down(GLFW_KEY_A)) {
 		movement.x -= dz;
 		movement.y -= dx;
 	}
+	if(is_down(GLFW_KEY_D)) {
+		movement.x += dz;
+		movement.y += dx;
+	}
 	if(is_down(GLFW_KEY_SPACE)) {
-		movement.z -= dist;
+		movement.z += dist;
 	}
 	if(is_down(GLFW_KEY_LEFT_SHIFT)) {
-		movement.z += dist;
+		movement.z -= dist;
 	}
 	a->get_level().camera_position += movement;
 }
