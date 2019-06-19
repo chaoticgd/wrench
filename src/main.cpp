@@ -109,7 +109,7 @@ void update_camera_movement(app* a) {
 		return;
 	}
 
-	float dist = glm::distance(glm::vec2(0, 0), a->mouse_diff);
+	float dist = glm::distance(glm::vec2(0, 0), a->mouse_diff) * 5;
 	float dx = std::sin(a->get_level().camera_rotation.y) * dist;
 	float dz = std::cos(a->get_level().camera_rotation.y) * dist;
 
@@ -120,25 +120,25 @@ void update_camera_movement(app* a) {
 	glm::vec3 movement;
 	if(is_down(GLFW_KEY_W)) {
 		movement.x -= dx;
-		movement.z += dz;
+		movement.y += dz;
 	}
 	if(is_down(GLFW_KEY_S)) {
 		movement.x += dx;
-		movement.z -= dz;
+		movement.y -= dz;
 	}
 	if(is_down(GLFW_KEY_A)) {
 		movement.x += dz;
-		movement.z += dx;
+		movement.y += dx;
 	}
 	if(is_down(GLFW_KEY_D)) {
 		movement.x -= dz;
-		movement.z -= dx;
+		movement.y -= dx;
 	}
 	if(is_down(GLFW_KEY_SPACE)) {
-		movement.y -= dist;
+		movement.z -= dist;
 	}
 	if(is_down(GLFW_KEY_LEFT_SHIFT)) {
-		movement.y += dist;
+		movement.z += dist;
 	}
 	a->get_level().camera_position += movement;
 }

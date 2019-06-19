@@ -20,6 +20,10 @@
 
 using vertex_list = std::vector<std::array<glm::vec3, 3>>;
 
+glm::vec3 level_to_world(glm::vec3 point) {
+	return glm::vec3(point.x, point.z, point.y) / 10.0f;
+}
+
 void draw_current_level(const app& a, shader_programs& shaders) {
 	if(!a.has_level()) {
 		return;
@@ -30,14 +34,13 @@ void draw_current_level(const app& a, shader_programs& shaders) {
 
 	auto rot = lvl.camera_rotation;
 	glm::mat4 view = glm::yawPitchRoll(rot.y, rot.x, rot.z);
-	view = glm::translate(view, lvl.camera_position);
+	view = glm::translate(view, level_to_world(lvl.camera_position));
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 
 	for(auto& moby : a.read_level().mobies()) {
-		glm::vec3 pos = moby.second->position() / 10.0f;
-		std::swap(pos.y, pos.z);
+		glm::vec3 pos = level_to_world(moby.second->position());
 		glm::mat4 model = glm::translate(glm::mat4(1.f), pos);
 		draw_test_tri(shaders, projection * view * model, glm::vec3(0, 1, 0));
 	}
