@@ -21,7 +21,7 @@
 using vertex_list = std::vector<std::array<glm::vec3, 3>>;
 
 glm::vec3 level_to_world(glm::vec3 point) {
-	return glm::vec3(point.x, point.z, point.y) / 10.0f;
+	return glm::vec3(point.x, point.z, point.y);
 }
 
 void draw_current_level(const app& a, shader_programs& shaders) {
@@ -43,16 +43,6 @@ void draw_current_level(const app& a, shader_programs& shaders) {
 		glm::vec3 pos = level_to_world(moby.second->position());
 		glm::mat4 model = glm::translate(glm::mat4(1.f), pos);
 		draw_test_tri(shaders, projection * view * model, glm::vec3(0, 1, 0));
-	}
-
-	for(int i = -10 ; i < 10; i++) {
-		for(int j = -10; j < 10; j++) {
-			for(int k = -10; k < 10; k++) {
-				glm::mat4 model = glm::translate(glm::mat4(1.f), glm::vec3(i, j, k) * 10.0f);
-				glm::vec3 colour((i + 10.0) / 20.0, (j + 10.0) / 20.0, (k + 10.0) / 20.0);
-				draw_test_tri(shaders, projection * view * model, colour);
-			}
-		}
 	}
 }
 
