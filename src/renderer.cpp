@@ -33,8 +33,12 @@ void draw_current_level(const app& a, shader_programs& shaders) {
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f);
 
 	auto rot = lvl.camera_rotation;
-	glm::mat4 view = glm::yawPitchRoll(rot.y, rot.x, rot.z);
-	view = glm::translate(view, level_to_world(-lvl.camera_position));
+	glm::mat4 pitch = glm::rotate(glm::mat4(1.0f), rot.x, glm::vec3(1.0f, 0.0f, 0.0f));
+	glm::mat4 yaw   = glm::rotate(glm::mat4(1.0f), rot.y, glm::vec3(0.0f, 1.0f, 0.0f));
+ 
+	glm::mat4 translate =
+		glm::translate(glm::mat4(1.0f), level_to_world(-lvl.camera_position));
+	glm::mat4 view = pitch * yaw * translate;
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);

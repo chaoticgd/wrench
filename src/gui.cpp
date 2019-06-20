@@ -212,9 +212,9 @@ void gui::viewport_information::render(app& a) {
 	glm::vec3 cam_pos = a.read_level().camera_position;
 	ImGui::Text("Camera Position:\n\t%.3f, %.3f, %.3f",
 		cam_pos.x, cam_pos.y, cam_pos.z);
-	glm::vec3 cam_rot = a.read_level().camera_rotation;
-	ImGui::Text("Camera Rotation:\n\t%.3f, %.3f, %.3f",
-		cam_rot.x, cam_rot.y, cam_rot.z);
+	glm::vec2 cam_rot = a.read_level().camera_rotation;
+	ImGui::Text("Camera Rotation:\n\tPitch=%.3f, Yaw=%.3f",
+		cam_rot.x, cam_rot.y);
 	ImGui::Text("Camera Control (Z to toggle):\n\t%s",
 		a.read_level().camera_control ? "On" : "Off");
 	if(ImGui::Button("Reset Camera")) {

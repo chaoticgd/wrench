@@ -44,7 +44,7 @@ public:
 
 	bool camera_control;
 	glm::vec3 camera_position;
-	glm::vec3 camera_rotation;
+	glm::vec2 camera_rotation;
 
 protected:
 	level();
