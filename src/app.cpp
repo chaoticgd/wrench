@@ -18,8 +18,6 @@
 
 #include "app.h"
 
-#include <boost/stacktrace.hpp>
-
 #include "gui.h"
 #include "stream.h"
 #include "formats/level_data.h"
@@ -45,7 +43,7 @@ void app::import_level(std::string path) {
 	} catch(stream_error& e) {
 		std::stringstream message;
 		message << "stream_error: " << e.what() << "\n";
-		message << boost::stacktrace::stacktrace();
+		message << e.stack_trace;
 		auto error_box = std::make_unique<gui::message_box>
 			("Level Import Failed", message.str());
 		tools.emplace_back(std::move(error_box));

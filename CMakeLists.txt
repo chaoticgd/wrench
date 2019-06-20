@@ -54,9 +54,9 @@ add_executable(scan
 find_package(Boost 1.40 COMPONENTS program_options REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 target_link_libraries(wrench ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
-target_link_libraries(fip ${Boost_LIBRARIES})
-target_link_libraries(wad ${Boost_LIBRARIES})
-target_link_libraries(scan ${Boost_LIBRARIES})
+target_link_libraries(fip ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
+target_link_libraries(wad ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
+target_link_libraries(scan ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 
 # OpenGL
 find_package(OpenGL)

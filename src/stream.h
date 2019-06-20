@@ -27,6 +27,7 @@
 #include <optional>
 #include <stdexcept>
 #include <type_traits>
+#include <boost/stacktrace.hpp>
 
 /*
 	A set of utility classes and macros for working with binary files.
@@ -59,7 +60,14 @@ packed_struct(file_ptr,
 )
 
 struct stream_error : public std::runtime_error {
-	using std::runtime_error::runtime_error;
+	stream_error(const char* what)
+		: std::runtime_error(what) {
+		std::stringstream trace;
+		trace << boost::stacktrace::stacktrace();
+		stack_trace = trace.str();
+	}
+
+	std::string stack_trace;
 };
 
 // I/O error e.g. tried to read past end.
@@ -242,7 +250,7 @@ public:
 	void read_n(char* dest, uint32_t size) {
 		std::size_t required_size = _offset + size;
 		if(required_size > _allocation.size()) {
-			throw stream_io_error("Tried to read past end of array_buffer!");
+			throw stream_io_error("Tried to read past end of array_stream!");
 		}
 		std::memcpy(dest, _allocation.data() + _offset, size);
 		_offset += size;
