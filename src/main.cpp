@@ -119,7 +119,7 @@ void update_camera_movement(app* a) {
 		return;
 	}
 
-	float dist = glm::distance(glm::vec2(0, 0), a->mouse_diff) * 5;
+	float dist = glm::distance(glm::vec2(0, 0), a->mouse_diff) * 2;
 	float dx = std::sin(a->get_level().camera_rotation.y) * dist;
 	float dz = std::cos(a->get_level().camera_rotation.y) * dist;
 
