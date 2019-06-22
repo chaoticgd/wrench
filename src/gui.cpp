@@ -18,6 +18,7 @@
 
 #include "gui.h"
 
+#include <iomanip>
 #include <sstream>
 #include <iostream>
 #include <functional>
@@ -94,15 +95,23 @@ void gui::moby_list::render(app& a) {
 
 	auto& lvl = a.get_level();
 
+	ImVec2 size = ImGui::GetWindowSize();
+	size.x -= 16;
+	size.y -= 64;
+
+	ImGui::Text("UID  Class Name");
+
 	ImGui::PushItemWidth(-1);
-	ImGui::ListBoxHeader("##nolabel");
-	for(const auto& moby : a.read_level().mobies()) {
-		std::string name =
-			moby.second->name + (moby.second->name.size() > 0 ? " " : "") +
-			"[" + std::to_string(moby.first) + "]";
-		bool is_selected = lvl.selection.find(moby.first) != lvl.selection.end();
-		if(ImGui::Selectable(name.c_str(), is_selected)) {
-			lvl.selection = { moby.first };
+	ImGui::ListBoxHeader("##nolabel", size);
+	for(const auto& [uid, moby] : a.read_level().mobies()) {
+		std::stringstream row;
+		row << std::setfill(' ') << std::setw(4) << std::dec << uid << " ";
+		row << std::setfill(' ') << std::setw(4) << std::hex << moby->class_num << " ";
+		row << moby->name;
+
+		bool is_selected = lvl.selection.find(uid) != lvl.selection.end();
+		if(ImGui::Selectable(row.str().c_str(), is_selected)) {
+			lvl.selection = { uid };
 		}
 	}
 	ImGui::ListBoxFooter();
