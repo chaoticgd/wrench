@@ -47,10 +47,6 @@ int main(int argc, char** argv) {
 	a.tools.emplace_back(std::make_unique<gui::inspector>());
 	a.tools.emplace_back(std::make_unique<gui::viewport_information>());
 
-	if(level_path != "") {
-		a.import_level(level_path);
-	}
-
 	if(!glfwInit()) {
 		throw std::runtime_error("Cannot load GLFW.");
 	}
@@ -83,6 +79,10 @@ int main(int argc, char** argv) {
 	ImGui_ImplOpenGL3_Init("#version 130");
 
 	shader_programs shaders;
+
+	if(level_path != "") {
+		a.import_level(level_path);
+	}
 
 	while(!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
