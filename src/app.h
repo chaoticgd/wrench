@@ -19,9 +19,10 @@
 #ifndef APP_H
 #define APP_H
 
+#include <set>
 #include <vector>
 #include <memory>
-#include <set>
+#include <functional>
 
 #include "level.h"
 
@@ -37,8 +38,11 @@ struct app {
 	int window_width, window_height;
 
 	bool has_level() const;
-	level& get_level();
-	const level_impl& read_level() const;
+
+	// This ensures that the level object is only accessed if it exists.
+	void if_level(std::function<void(level&)> callback);
+	void if_level(std::function<void(const level_impl&)> callback) const;
+	void if_level(std::function<void(level&, const level_impl&)> callback) const;
 	void import_level(std::string path);
 
 private:

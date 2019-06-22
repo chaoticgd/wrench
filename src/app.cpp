@@ -26,12 +26,22 @@ bool app::has_level() const {
 	return _level.get() != nullptr;
 }
 
-level& app::get_level() {
-	return *_level.get();
+void app::if_level(std::function<void(level&)> callback) {
+	if(has_level()) {
+		callback(*_level.get());
+	}
 }
 
-const level_impl& app::read_level() const {
-	return *_level.get();
+void app::if_level(std::function<void(const level_impl&)> callback) const {
+	if(has_level()) {
+		callback(*_level.get());
+	}
+}
+
+void app::if_level(std::function<void(level&, const level_impl&)> callback) const {
+	if(has_level()) {
+		callback(*_level.get(), *_level.get());
+	}
 }
 
 void app::import_level(std::string path) {

@@ -45,20 +45,21 @@ void gui::render(app& a) {
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
-	// Draw floating text over each moby showing its class name.
-	ImDrawList* draw_list = ImGui::GetBackgroundDrawList();
-	const level_impl& lvl = a.read_level();
-	for(const auto& [uid, moby] : lvl.mobies()) {
-		if(moby->last_drawn_pos.z > 0 && moby->last_drawn_pos.z < 1) {
-			ImVec2 position(
-				(1 + moby->last_drawn_pos.x) * a.window_width / 2.0,
-				(1 - moby->last_drawn_pos.y) * a.window_height / 2.0
-			);
-			static const int colour = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
-			std::string class_name = moby->get_class_name();
-			draw_list->AddText(position, colour, class_name.c_str());
+	a.if_level([&a](const level_impl& lvl) {
+		// Draw floating text over each moby showing its class name.
+		ImDrawList* draw_list = ImGui::GetBackgroundDrawList();
+		for(const auto& [uid, moby] : lvl.mobies()) {
+			if(moby->last_drawn_pos.z > 0 && moby->last_drawn_pos.z < 1) {
+				ImVec2 position(
+					(1 + moby->last_drawn_pos.x) * a.window_width / 2.0,
+					(1 - moby->last_drawn_pos.y) * a.window_height / 2.0
+				);
+				static const int colour = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
+				std::string class_name = moby->get_class_name();
+				draw_list->AddText(position, colour, class_name.c_str());
+			}
 		}
-	}
+	});
 
 	ImGui::BeginMainMenuBar();
 	for(auto& menu : menu_items) {
@@ -104,33 +105,29 @@ ImVec2 gui::moby_list::initial_size() const {
 }
 
 void gui::moby_list::render(app& a) {
-	if(!a.has_level()) {
-		return;
-	}
+	a.if_level([](level& lvl, const level_impl& lvl_impl) {
+		ImVec2 size = ImGui::GetWindowSize();
+		size.x -= 16;
+		size.y -= 64;
 
-	auto& lvl = a.get_level();
+		ImGui::Text("UID  Class             Name");
 
-	ImVec2 size = ImGui::GetWindowSize();
-	size.x -= 16;
-	size.y -= 64;
+		ImGui::PushItemWidth(-1);
+		ImGui::ListBoxHeader("##nolabel", size);
+		for(const auto& [uid, moby] : lvl_impl.mobies()) {
+			std::stringstream row;
+			row << std::setfill(' ') << std::setw(4) << std::dec << uid << " ";
+			row << std::setfill(' ') << std::setw(16) << std::hex << moby->get_class_name() << " ";
+			row << moby->name;
 
-	ImGui::Text("UID  Class             Name");
-
-	ImGui::PushItemWidth(-1);
-	ImGui::ListBoxHeader("##nolabel", size);
-	for(const auto& [uid, moby] : a.read_level().mobies()) {
-		std::stringstream row;
-		row << std::setfill(' ') << std::setw(4) << std::dec << uid << " ";
-		row << std::setfill(' ') << std::setw(16) << std::hex << moby->get_class_name() << " ";
-		row << moby->name;
-
-		bool is_selected = lvl.selection.find(uid) != lvl.selection.end();
-		if(ImGui::Selectable(row.str().c_str(), is_selected)) {
-			lvl.selection = { uid };
+			bool is_selected = lvl.selection.find(uid) != lvl.selection.end();
+			if(ImGui::Selectable(row.str().c_str(), is_selected)) {
+				lvl.selection = { uid };
+			}
 		}
-	}
-	ImGui::ListBoxFooter();
-	ImGui::PopItemWidth();
+		ImGui::ListBoxFooter();
+		ImGui::PopItemWidth();
+	});
 }
 
 /*
@@ -151,74 +148,74 @@ void gui::inspector::render(app& a) {
 		return;
 	}
 
-	auto& lvl = a.get_level();
-
-	if(lvl.selection.size() < 1) {
-		ImGui::Text("<no selection>");
-		return;
-	} else if(lvl.selection.size() > 1) {
-		ImGui::Text("<multiple mobies selected>");
-		return;
-	}
-
-	moby* selected = a.read_level().mobies().at(*lvl.selection.begin()).get();
-
-	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2,2));
-	ImGui::Columns(2);
-	ImGui::SetColumnWidth(0, 80);
-
-	int i = 0;
-	auto begin_property = [&i](const char* name) {
-		ImGui::PushID(i++);
-		ImGui::AlignTextToFramePadding();
-		ImGui::Text("%s", name);
-		ImGui::NextColumn();
-		ImGui::AlignTextToFramePadding();
-		ImGui::PushItemWidth(-1);
-	};
-
-	auto end_property = []() {	
-		ImGui::NextColumn();
-		ImGui::PopID();
-		ImGui::PopItemWidth();
-	};
-
-	selected->reflect(
-		[=](const char* name, rf::property<uint16_t> p) {
-			begin_property(name);
-			int value = p.get();
-			if(ImGui::InputInt("##nolabel", &value)) {
-				p.set(value);
-			}
-			end_property();
-		},
-		[=](const char* name, rf::property<uint32_t> p) {
-			begin_property(name);
-			int value = p.get();
-			if(ImGui::InputInt("##nolabel", &value)) {
-				p.set(value);
-			}
-			end_property();
-		},
-		[=](const char* name, rf::property<glm::vec3> p) {
-			begin_property(name);
-			float components[] = { p.get().x, p.get().y, p.get().z };
-			if(ImGui::InputFloat3("##nolabel", components)) {
-				p.set(glm::vec3(components[0], components[1], components[2]));
-			}
-			end_property();
-		},
-		[=](const char* name, rf::property<std::string> p) {
-			begin_property(name);
-			std::string value = p.get();
-			if(ImGui::InputText("##nolabel", &value)) {
-				p.set(value);
-			}
-			end_property();
+	a.if_level([](const level_impl& lvl) {
+		if(lvl.selection.size() < 1) {
+			ImGui::Text("<no selection>");
+			return;
+		} else if(lvl.selection.size() > 1) {
+			ImGui::Text("<multiple mobies selected>");
+			return;
 		}
-	);
 
-	ImGui::PopStyleVar();
+		moby* selected = lvl.mobies().at(*lvl.selection.begin()).get();
+
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2,2));
+		ImGui::Columns(2);
+		ImGui::SetColumnWidth(0, 80);
+
+		int i = 0;
+		auto begin_property = [&i](const char* name) {
+			ImGui::PushID(i++);
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("%s", name);
+			ImGui::NextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::PushItemWidth(-1);
+		};
+
+		auto end_property = []() {	
+			ImGui::NextColumn();
+			ImGui::PopID();
+			ImGui::PopItemWidth();
+		};
+
+		selected->reflect(
+			[=](const char* name, rf::property<uint16_t> p) {
+				begin_property(name);
+				int value = p.get();
+				if(ImGui::InputInt("##nolabel", &value)) {
+					p.set(value);
+				}
+				end_property();
+			},
+			[=](const char* name, rf::property<uint32_t> p) {
+				begin_property(name);
+				int value = p.get();
+				if(ImGui::InputInt("##nolabel", &value)) {
+					p.set(value);
+				}
+				end_property();
+			},
+			[=](const char* name, rf::property<glm::vec3> p) {
+				begin_property(name);
+				float components[] = { p.get().x, p.get().y, p.get().z };
+				if(ImGui::InputFloat3("##nolabel", components)) {
+					p.set(glm::vec3(components[0], components[1], components[2]));
+				}
+				end_property();
+			},
+			[=](const char* name, rf::property<std::string> p) {
+				begin_property(name);
+				std::string value = p.get();
+				if(ImGui::InputText("##nolabel", &value)) {
+					p.set(value);
+				}
+				end_property();
+			}
+		);
+
+		ImGui::PopStyleVar();
+	});
 }
 
 /*
@@ -234,21 +231,19 @@ ImVec2 gui::viewport_information::initial_size() const {
 }
 
 void gui::viewport_information::render(app& a) {
-	if(!a.has_level()) {
-		return;
-	}
-
-	glm::vec3 cam_pos = a.read_level().camera_position;
-	ImGui::Text("Camera Position:\n\t%.3f, %.3f, %.3f",
-		cam_pos.x, cam_pos.y, cam_pos.z);
-	glm::vec2 cam_rot = a.read_level().camera_rotation;
-	ImGui::Text("Camera Rotation:\n\tPitch=%.3f, Yaw=%.3f",
-		cam_rot.x, cam_rot.y);
-	ImGui::Text("Camera Control (Z to toggle):\n\t%s",
-		a.read_level().camera_control ? "On" : "Off");
-	if(ImGui::Button("Reset Camera")) {
-		a.get_level().reset_camera();
-	}
+	a.if_level([](level& lvl) {
+		glm::vec3 cam_pos = lvl.camera_position;
+		ImGui::Text("Camera Position:\n\t%.3f, %.3f, %.3f",
+			cam_pos.x, cam_pos.y, cam_pos.z);
+		glm::vec2 cam_rot = lvl.camera_rotation;
+		ImGui::Text("Camera Rotation:\n\tPitch=%.3f, Yaw=%.3f",
+			cam_rot.x, cam_rot.y);
+		ImGui::Text("Camera Control (Z to toggle):\n\t%s",
+			lvl.camera_control ? "On" : "Off");
+		if(ImGui::Button("Reset Camera")) {
+			lvl.reset_camera();
+		}
+	});
 }
 
 /*

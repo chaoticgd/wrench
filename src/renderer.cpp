@@ -23,11 +23,12 @@ glm::vec3 level_to_world(glm::vec3 point) {
 }
 
 void draw_current_level(const app& a, shader_programs& shaders) {
-	if(!a.has_level()) {
-		return;
-	}
-	const level& lvl = a.read_level();
+	a.if_level([=, &shaders](const level_impl& lvl) {
+		draw_level(lvl, shaders);
+	});
+}
 
+void draw_level(const level_impl& lvl, shader_programs& shaders) {
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f);
 
 	auto rot = lvl.camera_rotation;
@@ -41,7 +42,7 @@ void draw_current_level(const app& a, shader_programs& shaders) {
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 
-	for(auto& [uid, moby] : a.read_level().mobies()) {
+	for(auto& [uid, moby] : lvl.mobies()) {
 		glm::vec3 pos = level_to_world(moby->position());
 		glm::mat4 model = glm::translate(glm::mat4(1.f), pos);
 		glm::mat4 mvp = projection * view * model;

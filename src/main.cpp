@@ -114,77 +114,72 @@ int main(int argc, char** argv) {
 }
 
 void update_camera_movement(app* a) {
-	if(!a->has_level() || !a->get_level().camera_control) {
-		return;
-	}
+	a->if_level([=](level& lvl) {
+		if(!lvl.camera_control) {
+			return;
+		}
 
-	float dist = glm::distance(glm::vec2(0, 0), a->mouse_diff) * 2;
-	float dx = std::sin(a->get_level().camera_rotation.y) * dist;
-	float dz = std::cos(a->get_level().camera_rotation.y) * dist;
+		float dist = glm::distance(glm::vec2(0, 0), a->mouse_diff) * 2;
+		float dx = std::sin(lvl.camera_rotation.y) * dist;
+		float dz = std::cos(lvl.camera_rotation.y) * dist;
 
-	auto is_down = [=](int key) {
-		return a->keys_down.find(key) != a->keys_down.end();
-	};
+		auto is_down = [=](int key) {
+			return a->keys_down.find(key) != a->keys_down.end();
+		};
 
-	glm::vec3 movement;
-	if(is_down(GLFW_KEY_W)) {
-		movement.x += dx;
-		movement.y -= dz;
-	}
-	if(is_down(GLFW_KEY_S)) {
-		movement.x -= dx;
-		movement.y += dz;
-	}
-	if(is_down(GLFW_KEY_A)) {
-		movement.x -= dz;
-		movement.y -= dx;
-	}
-	if(is_down(GLFW_KEY_D)) {
-		movement.x += dz;
-		movement.y += dx;
-	}
-	if(is_down(GLFW_KEY_SPACE)) {
-		movement.z += dist;
-	}
-	if(is_down(GLFW_KEY_LEFT_SHIFT)) {
-		movement.z -= dist;
-	}
-	a->get_level().camera_position += movement;
+		glm::vec3 movement;
+		if(is_down(GLFW_KEY_W)) {
+			movement.x += dx;
+			movement.y -= dz;
+		}
+		if(is_down(GLFW_KEY_S)) {
+			movement.x -= dx;
+			movement.y += dz;
+		}
+		if(is_down(GLFW_KEY_A)) {
+			movement.x -= dz;
+			movement.y -= dx;
+		}
+		if(is_down(GLFW_KEY_D)) {
+			movement.x += dz;
+			movement.y += dx;
+		}
+		if(is_down(GLFW_KEY_SPACE)) {
+			movement.z += dist;
+		}
+		if(is_down(GLFW_KEY_LEFT_SHIFT)) {
+			movement.z -= dist;
+		}
+		lvl.camera_position += movement;
+	});
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+	app* a = static_cast<app*>(glfwGetWindowUserPointer(window));
+	a->if_level([=](level& lvl) {
+		if(action == GLFW_PRESS) {
+			a->keys_down.insert(key);
+		} else if(action == GLFW_RELEASE) {
+			a->keys_down.erase(key);
+		}
 
-	app& a = *static_cast<app*>(glfwGetWindowUserPointer(window));
-	if(!a.has_level()) {
-		return;
-	}
-	level& lvl = a.get_level();
-
-	if(action == GLFW_PRESS) {
-		a.keys_down.insert(key);
-	} else if(action == GLFW_RELEASE) {
-		a.keys_down.erase(key);
-	}
-
-	if(action == GLFW_PRESS && key == GLFW_KEY_Z) {
-		lvl.camera_control = !lvl.camera_control;
-		glfwSetInputMode(window, GLFW_CURSOR,
-			lvl.camera_control ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
-	}
+		if(action == GLFW_PRESS && key == GLFW_KEY_Z) {
+			lvl.camera_control = !lvl.camera_control;
+			glfwSetInputMode(window, GLFW_CURSOR,
+				lvl.camera_control ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+		}
+	});
 }
 
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
-	app& a = *static_cast<app*>(glfwGetWindowUserPointer(window));
-	if(!a.has_level()) {
-		return;
-	}
-	level& lvl = a.get_level();
+	app* a = static_cast<app*>(glfwGetWindowUserPointer(window));
+	a->if_level([=](level& lvl) {
+		a->mouse_diff = glm::vec2(xpos, ypos) - a->mouse_last;
+		a->mouse_last = glm::vec2(xpos, ypos);
 
-	a.mouse_diff = glm::vec2(xpos, ypos) - a.mouse_last;
-	a.mouse_last = glm::vec2(xpos, ypos);
-
-	if(lvl.camera_control) {
-		lvl.camera_rotation.y += a.mouse_diff.x * 0.0005;
-		lvl.camera_rotation.x += a.mouse_diff.y * 0.0005;
-	}
+		if(lvl.camera_control) {
+			lvl.camera_rotation.y += a->mouse_diff.x * 0.0005;
+			lvl.camera_rotation.x += a->mouse_diff.y * 0.0005;
+		}
+	});
 }
