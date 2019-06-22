@@ -46,5 +46,7 @@ std::string moby::get_class_name() {
 }
 
 const std::map<uint16_t, const char*> moby::class_names {
-	{ 0x2f6, "swingshot_target" }
+	{ 0x1f4, "crate" },
+	{ 0x2f6, "swingshot_grapple" },
+	{ 0x323, "swingshot_swinging" }
 };
