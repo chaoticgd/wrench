@@ -20,6 +20,7 @@
 #define LEVEL_H
 
 #include <map>
+#include <set>
 #include <memory>
 #include <vector>
 #include <glm/glm.hpp>
@@ -41,10 +42,12 @@ public:
 	bool redo();
 
 	void reset_camera();
-
 	bool camera_control;
 	glm::vec3 camera_position;
 	glm::vec2 camera_rotation;
+
+	bool is_selected(uint32_t uid) const;
+	std::set<uint32_t> selection;
 
 protected:
 	level();

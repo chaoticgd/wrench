@@ -92,14 +92,17 @@ void gui::moby_list::render(app& a) {
 		return;
 	}
 
+	auto& lvl = a.get_level();
+
 	ImGui::PushItemWidth(-1);
 	ImGui::ListBoxHeader("##nolabel");
 	for(const auto& moby : a.read_level().mobies()) {
 		std::string name =
 			moby.second->name + (moby.second->name.size() > 0 ? " " : "") +
 			"[" + std::to_string(moby.first) + "]";
-		if(ImGui::Selectable(name.c_str(), moby.second->selected)) {
-			a.selection = { moby.first };
+		bool is_selected = lvl.selection.find(moby.first) != lvl.selection.end();
+		if(ImGui::Selectable(name.c_str(), is_selected)) {
+			lvl.selection = { moby.first };
 		}
 	}
 	ImGui::ListBoxFooter();
@@ -124,15 +127,17 @@ void gui::inspector::render(app& a) {
 		return;
 	}
 
-	if(a.selection.size() < 1) {
+	auto& lvl = a.get_level();
+
+	if(lvl.selection.size() < 1) {
 		ImGui::Text("<no selection>");
 		return;
-	} else if(a.selection.size() > 1) {
+	} else if(lvl.selection.size() > 1) {
 		ImGui::Text("<multiple mobies selected>");
 		return;
 	}
 
-	moby* selected = a.read_level().mobies().at(a.selection[0]).get();
+	moby* selected = a.read_level().mobies().at(*lvl.selection.begin()).get();
 
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2,2));
 	ImGui::Columns(2);

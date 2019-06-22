@@ -29,7 +29,6 @@ class tool;
 
 struct app {
 	std::vector<std::unique_ptr<tool>> tools;
-	std::vector<uint32_t> selection;
 
 	glm::vec2 mouse_last;
 	glm::vec2 mouse_diff;

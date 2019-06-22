@@ -52,6 +52,10 @@ void level::reset_camera() {
 	camera_rotation = glm::vec3(0, 0, 0);
 }
 
+bool level::is_selected(uint32_t uid) const {
+	return selection.find(uid) != selection.end();
+}
+
 level::level()
 	: camera_control(false) {}
 
