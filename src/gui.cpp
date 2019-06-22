@@ -99,14 +99,14 @@ void gui::moby_list::render(app& a) {
 	size.x -= 16;
 	size.y -= 64;
 
-	ImGui::Text("UID  Class Name");
+	ImGui::Text("UID  Class             Name");
 
 	ImGui::PushItemWidth(-1);
 	ImGui::ListBoxHeader("##nolabel", size);
 	for(const auto& [uid, moby] : a.read_level().mobies()) {
 		std::stringstream row;
 		row << std::setfill(' ') << std::setw(4) << std::dec << uid << " ";
-		row << std::setfill(' ') << std::setw(4) << std::hex << moby->class_num << " ";
+		row << std::setfill(' ') << std::setw(16) << std::hex << moby->get_class_name() << " ";
 		row << moby->name;
 
 		bool is_selected = lvl.selection.find(uid) != lvl.selection.end();

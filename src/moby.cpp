@@ -37,3 +37,14 @@ glm::vec3 moby::rotation() const {
 void moby::set_rotation(glm::vec3 rotation) {
 	_rotation = rotation;
 }
+
+std::string moby::get_class_name() {
+	if(class_names.find(class_num) != class_names.end()) {
+		return class_names.at(class_num);
+	}
+	return std::to_string(class_num);
+}
+
+const std::map<uint16_t, const char*> moby::class_names {
+	{ 0x2f6, "swingshot_target" }
+};

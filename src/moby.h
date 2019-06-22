@@ -19,6 +19,7 @@
 #ifndef MOBY_H
 #define MOBY_H
 
+#include <map>
 #include <glm/glm.hpp>
 
 #include "reflection/refolder.h"
@@ -35,7 +36,11 @@ public:
 
 	std::string name;
 	bool selected;
+
+	std::string get_class_name();
 	uint16_t class_num;
+
+	static const std::map<uint16_t, const char*> class_names;
 
 private:
 	uint32_t _uid;
