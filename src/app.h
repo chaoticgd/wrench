@@ -34,6 +34,8 @@ struct app {
 	glm::vec2 mouse_diff;
 	std::set<int> keys_down;
 
+	int window_width, window_height;
+
 	bool has_level() const;
 	level& get_level();
 	const level_impl& read_level() const;

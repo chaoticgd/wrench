@@ -91,11 +91,10 @@ int main(int argc, char** argv) {
 		gui::render(a);
 
 		ImGui::Render();
-		int display_w, display_h;
 		glfwMakeContextCurrent(window);
-		glfwGetFramebufferSize(window, &display_w, &display_h);
+		glfwGetFramebufferSize(window, &a.window_width, &a.window_height);
 
-		glViewport(0, 0, display_w, display_h);
+		glViewport(0, 0, a.window_width, a.window_height);
 		glClearColor(0, 0, 0, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

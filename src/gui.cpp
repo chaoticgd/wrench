@@ -45,6 +45,21 @@ void gui::render(app& a) {
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
+	// Draw floating text over each moby showing its class name.
+	ImDrawList* draw_list = ImGui::GetBackgroundDrawList();
+	const level_impl& lvl = a.read_level();
+	for(const auto& [uid, moby] : lvl.mobies()) {
+		if(moby->last_drawn_pos.z > 0 && moby->last_drawn_pos.z < 1) {
+			ImVec2 position(
+				(1 + moby->last_drawn_pos.x) * a.window_width / 2.0,
+				(1 - moby->last_drawn_pos.y) * a.window_height / 2.0
+			);
+			static const int colour = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
+			std::string class_name = moby->get_class_name();
+			draw_list->AddText(position, colour, class_name.c_str());
+		}
+	}
+
 	ImGui::BeginMainMenuBar();
 	for(auto& menu : menu_items) {
 		menu.render(a);

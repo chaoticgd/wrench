@@ -44,9 +44,17 @@ void draw_current_level(const app& a, shader_programs& shaders) {
 	for(auto& [uid, moby] : a.read_level().mobies()) {
 		glm::vec3 pos = level_to_world(moby->position());
 		glm::mat4 model = glm::translate(glm::mat4(1.f), pos);
+		glm::mat4 mvp = projection * view * model;
 		glm::vec3 colour =
 			lvl.is_selected(uid) ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
-		draw_test_tri(shaders, projection * view * model, colour);
+		draw_test_tri(shaders, mvp, colour);
+
+		glm::vec4 screen_pos4 = mvp * glm::vec4(0, 0, 0, 1);
+		moby->last_drawn_pos = {
+			screen_pos4.x / screen_pos4.w,
+			screen_pos4.y / screen_pos4.w,
+			screen_pos4.z / screen_pos4.w
+		};
 	}
 }
 

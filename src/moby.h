@@ -42,6 +42,10 @@ public:
 
 	static const std::map<uint16_t, const char*> class_names;
 
+	// Stores the last position where the moby was drawn in camera space.
+	// Used for drawing text over the top of mobies in the 3D view.
+	glm::vec3 last_drawn_pos;
+
 private:
 	uint32_t _uid;
 
