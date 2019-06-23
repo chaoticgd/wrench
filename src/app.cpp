@@ -56,6 +56,6 @@ void app::import_level(std::string path) {
 		message << e.stack_trace;
 		auto error_box = std::make_unique<gui::message_box>
 			("Level Import Failed", message.str());
-		tools.emplace_back(std::move(error_box));
+		windows.emplace_back(std::move(error_box));
 	}
 }

@@ -24,7 +24,7 @@
 #include <functional>
 
 #include "menu.h"
-#include "tool.h"
+#include "window.h"
 
 void gui::render(app& a) {
 
@@ -67,14 +67,14 @@ void gui::render(app& a) {
 	}
 	ImGui::EndMainMenuBar();
 
-	for(auto& current_tool : a.tools) {
-		ImGui::SetNextWindowSize(current_tool->initial_size(), ImGuiCond_Appearing);
+	for(auto& current_window : a.windows) {
+		ImGui::SetNextWindowSize(current_window->initial_size(), ImGuiCond_Appearing);
 		std::string title =
-			std::string(current_tool->title_text()) +
-			"##" + std::to_string(current_tool->id());
-	 	ImGui::SetNextWindowSize(current_tool->initial_size(), ImGuiCond_FirstUseEver);
+			std::string(current_window->title_text()) +
+			"##" + std::to_string(current_window->id());
+	 	ImGui::SetNextWindowSize(current_window->initial_size(), ImGuiCond_FirstUseEver);
 		if(ImGui::Begin(title.c_str())) {
-			current_tool->render(a);
+			current_window->render(a);
 		}
 		ImGui::End();
 	}
@@ -89,7 +89,7 @@ void gui::file_import_rc2_level(app& a) {
 	path_input->on_okay([](app& a, std::string path) {
 		a.import_level(path);
 	});
-	a.tools.emplace_back(std::move(path_input));
+	a.windows.emplace_back(std::move(path_input));
 }
 
 /*

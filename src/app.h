@@ -26,10 +26,10 @@
 
 #include "level.h"
 
-class tool;
+class window;
 
 struct app {
-	std::vector<std::unique_ptr<tool>> tools;
+	std::vector<std::unique_ptr<window>> windows;
 
 	glm::vec2 mouse_last;
 	glm::vec2 mouse_diff;

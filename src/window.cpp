@@ -16,26 +16,19 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef TOOL_H
-#define TOOL_H
+#include "window.h"
 
-#include "imgui/imgui.h"
+window::window() {
+	static int s_id = 0;
+	_id = ++s_id;
+}
 
-#include "app.h"
+int window::id() {
+	return _id;
+}
 
-class tool {
-public:
-	tool();
-
-	virtual const char* title_text() const = 0;
-	virtual ImVec2 initial_size() const = 0;
-	virtual void render(app& a) = 0;
-
-	int id();
-	void close(app& a);
-
-private:
-	int _id;
-};
-
-#endif
+void window::close(app& a) {
+	auto iter = std::find_if(a.windows.begin(), a.windows.end(),
+		[=](auto& ptr) { return ptr.get() == this; });
+	a.windows.erase(iter);
+}

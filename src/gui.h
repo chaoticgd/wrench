@@ -26,7 +26,7 @@
 #include <imgui/examples/imgui_impl_opengl3.h>
 
 #include "app.h"
-#include "tool.h"
+#include "window.h"
 
 namespace gui {
 	void render(app& a);
@@ -34,27 +34,28 @@ namespace gui {
 	void file_new(app& a);
 	void file_import_rc2_level(app& a);
 
-	class moby_list : public tool {
+	class moby_list : public window {
 	public:
 		const char* title_text() const override;
 		ImVec2 initial_size() const override;
 		void render(app& a) override;
 	};
 
-	class inspector : public tool {
+	class inspector : public window {
 	public:
 		const char* title_text() const override;
 		ImVec2 initial_size() const override;
 		void render(app& a) override;
 	};
 
-	class viewport_information : public tool {
+	class viewport_information : public window {
+	public:
 		const char* title_text() const override;
 		ImVec2 initial_size() const override;
 		void render(app& a) override;
 	};
 
-	class message_box : public tool {
+	class message_box : public window {
 	public:
 		message_box(const char* title, std::string message);
 
@@ -66,7 +67,7 @@ namespace gui {
 		std::string _message;
 	};
 
-	class string_input : public tool {
+	class string_input : public window {
 	public:
 		string_input(const char* title);
 
