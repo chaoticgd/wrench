@@ -47,7 +47,7 @@ void app::if_level(std::function<void(level&, const level_impl&)> callback) cons
 void app::import_level(std::string path) {
 	try {
 		file_stream stream(path);
-		auto lvl = ::import_level(stream);
+		auto lvl = level_data::import_level(stream);
 		_level.swap(lvl);
 		_level->reset_camera();
 	} catch(stream_error& e) {
