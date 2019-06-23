@@ -85,6 +85,7 @@ int main(int argc, char** argv) {
 			output["width"] = width;
 			int height = fip.height;
 			output["height"] = height;
+			output["size"] = sizeof(fip_header) + width * height;
 		}
 		
 		if(!outer_output.empty()) {
