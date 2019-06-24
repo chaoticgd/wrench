@@ -1,3 +1,5 @@
+.directory
+__pycache__
 /CMakeCache.txt
 /CMakeFiles
 /Makefile
@@ -6,3 +8,5 @@
 /.vscode
 /libimgui.a
 /imgui.ini
+/bin
+/lib
