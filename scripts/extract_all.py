@@ -58,15 +58,17 @@ def extract_all(src_path, dest_dir):
 
 def extract_wad(src_path, src_offset, dest_path):
 	args = [sys.path[0] + '/../bin/wad', 'decompress', src_path, dest_path, '-o', hex(src_offset)]
-	err = subprocess.check_output(args)
-	if err != b'':
-		print(err)
+	try:
+		subprocess.check_output(args)
+	except subprocess.CalledProcessError as e:
+		print(e.output)
 
 def convert_fip(src_path, dest_path):
 	args = [sys.path[0] + '/../bin/fip', 'export', src_path, dest_path]
-	err = subprocess.check_output(args)
-	if err != b'':
-		print(err)
+	try:
+		err = subprocess.check_output(args)
+	except subprocess.CalledProcessError as e:
+		print(e.output)
 
 if __name__ == '__main__':
 	if len(sys.argv) != 3:
