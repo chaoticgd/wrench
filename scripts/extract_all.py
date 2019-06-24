@@ -33,11 +33,14 @@ def extract_all(src_path, dest_dir):
 			if 'error' in segment:
 				continue
 
+			inner_data = None
+
 			dest_path = dest_dir + os.sep + hex(segment['offset'])
 			if segment['type'] == 'wad':
 				dest_path += '.decompressed'
 				if segment['compressed_data'] != None:
 					dest_path += '.' + segment['compressed_data']['type']
+					inner_data = segment['compressed_data']
 				extract_wad(src_path, segment['offset'], dest_path)
 				print('Written decompressed WAD to ' + dest_path)
 			else:
@@ -46,11 +49,21 @@ def extract_all(src_path, dest_dir):
 				data = src.read(segment['size'])
 				with open(dest_path, 'wb') as dest:
 					dest.write(data)
+				inner_data = segment
 				print('Written uncompressed file to ' + dest_path)
+			
+			if inner_data != None and inner_data['type'] == 'fip':
+				convert_fip(dest_path, dest_path + '.bmp')
 
 
 def extract_wad(src_path, src_offset, dest_path):
 	args = [sys.path[0] + '/../bin/wad', 'decompress', src_path, dest_path, '-o', hex(src_offset)]
+	err = subprocess.check_output(args)
+	if err != b'':
+		print(err)
+
+def convert_fip(src_path, dest_path):
+	args = [sys.path[0] + '/../bin/fip', 'export', src_path, dest_path]
 	err = subprocess.check_output(args)
 	if err != b'':
 		print(err)
