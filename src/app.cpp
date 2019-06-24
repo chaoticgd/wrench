@@ -47,7 +47,7 @@ void app::if_level(std::function<void(const level_impl&)> callback) const {
 	}
 }
 
-void app::if_level(std::function<void(level&, const level_impl&)> callback) const {
+void app::if_level(std::function<void(level&, const level_impl&)> callback) {
 	if(has_level()) {
 		callback(*_level.get(), *_level.get());
 	}

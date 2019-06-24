@@ -43,7 +43,7 @@ struct app {
 	// This ensures that the level object is only accessed if it exists.
 	void if_level(std::function<void(level&)> callback);
 	void if_level(std::function<void(const level_impl&)> callback) const;
-	void if_level(std::function<void(level&, const level_impl&)> callback) const;
+	void if_level(std::function<void(level&, const level_impl&)> callback);
 	void import_level(std::string path);
 
 private:
