@@ -27,6 +27,14 @@ bool app::has_level() const {
 	return _level.get() != nullptr;
 }
 
+bool app::has_camera_control() const {
+	bool result = false;
+	if_level([&result](const level_impl& lvl) {
+		result = lvl.camera_control;
+	});
+	return result;
+}
+
 void app::if_level(std::function<void(level&)> callback) {
 	if(has_level()) {
 		callback(*_level.get());

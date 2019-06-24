@@ -26,7 +26,7 @@ add_executable(wrench
 	src/formats/wad.cpp
 	src/formats/level_data.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
-	thirdparty/imgui/examples/imgui_impl_glfw.cpp
+	src/imgui_impl_glfw.cpp
 	thirdparty/imgui/examples/imgui_impl_opengl3.cpp)
 
 if(MSVC)

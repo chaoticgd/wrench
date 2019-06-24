@@ -38,6 +38,7 @@ struct app {
 	int window_width, window_height;
 
 	bool has_level() const;
+	bool has_camera_control() const;
 
 	// This ensures that the level object is only accessed if it exists.
 	void if_level(std::function<void(level&)> callback);
