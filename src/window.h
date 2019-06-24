@@ -19,8 +19,7 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 
-#include "imgui/imgui.h"
-
+#include "imgui_includes.h"
 #include "app.h"
 
 class window {

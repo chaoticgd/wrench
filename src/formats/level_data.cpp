@@ -19,18 +19,22 @@
 
 const uint32_t BARLOW_OUTER_HEADER_OFFSET = 0x12e800;
 
-std::unique_ptr<level_impl> level_data::import_level(stream& level_file) {
+std::unique_ptr<level_impl> level_data::import_level(stream& level_file, worker_logger& log) {
 
 	auto lvl = std::make_unique<level_impl>();
 
 	auto master_hdr = level_file.read<master_header>(0);
 
 	uint32_t moby_wad_offset = locate_moby_wad(level_file);
+	log << "Found moby WAD at 0x" << std::hex << moby_wad_offset << "\n";
 	{
 		array_stream moby_wad_data;
 		proxy_stream wad_segment(&level_file, moby_wad_offset);
+		log << "Decompressing moby WAD... ";
 		decompress_wad(moby_wad_data, wad_segment);
+		log << "DONE!\nImporting moby WAD... ";
 		import_moby_wad(*lvl.get(), moby_wad_data);
+		log << "DONE!\n";
 	}
 
 	uint32_t secondary_header_delta =
@@ -45,9 +49,15 @@ std::unique_ptr<level_impl> level_data::import_level(stream& level_file) {
 		array_stream ram_image_data;
 		proxy_stream ram_image_wad_segment(&level_file,
 			secondary_header_offset + ram_image_wad_offset);
+		log << "RAM image WAD offset: 0x" << ram_image_wad_offset << "\n";
+		log << "Decompressing RAM image WAD... ";
 		decompress_wad(ram_image_data, ram_image_wad_segment);
+		log << "DONE!\nImporting RAM image WAD... ";
 		import_ram_image_wad(*lvl.get(), ram_image_data);
+		log << "DONE!\n";
 	}
+	
+	log << "\nLevel imported successfully.\n";
 
 	return lvl;
 }

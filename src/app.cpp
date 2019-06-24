@@ -20,6 +20,7 @@
 
 #include "gui.h"
 #include "stream.h"
+#include "worker_thread.h"
 #include "formats/level_data.h"
 
 bool app::has_level() const {
@@ -45,17 +46,23 @@ void app::if_level(std::function<void(level&, const level_impl&)> callback) cons
 }
 
 void app::import_level(std::string path) {
-	try {
-		file_stream stream(path);
-		auto lvl = level_data::import_level(stream);
-		_level.swap(lvl);
-		_level->reset_camera();
-	} catch(stream_error& e) {
-		std::stringstream message;
-		message << "stream_error: " << e.what() << "\n";
-		message << e.stack_trace;
-		auto error_box = std::make_unique<gui::message_box>
-			("Level Import Failed", message.str());
-		windows.emplace_back(std::move(error_box));
-	}
+	// Decompression takes a long time so we spin off another thread.
+	using worker_type = worker_thread<std::unique_ptr<level_impl>, std::string>;
+	windows.emplace_back(std::make_unique<worker_type>(
+		"Level Importer", path,
+		[](std::string path, worker_logger& log) {
+			try {
+				file_stream stream(path);
+				return std::optional(level_data::import_level(stream, log));
+			} catch(stream_error& e) {
+				log << "stream_error: " << e.what() << "\n";
+				log << e.stack_trace;
+			}
+			return std::optional<std::unique_ptr<level_impl>>();
+		},
+		[=](std::unique_ptr<level_impl> lvl) {
+			_level.swap(lvl);
+			_level->reset_camera();
+		}
+	));
 }

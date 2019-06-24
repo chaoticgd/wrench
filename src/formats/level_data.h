@@ -25,6 +25,7 @@
 #include "../level.h"
 #include "../stream.h"
 #include "../renderer.h"
+#include "../worker_thread.h"
 #include "wad.h"
 
 /*
@@ -50,7 +51,7 @@
 
 namespace level_data {
 
-	std::unique_ptr<level_impl> import_level(stream& level_file);
+	std::unique_ptr<level_impl> import_level(stream& level_file, worker_logger& log);
 
 	uint32_t locate_moby_wad(stream& level_file);
 	void import_moby_wad(level_impl& lvl, stream& moby_wad);
@@ -78,7 +79,7 @@ namespace level_data {
 
 	// Pointers are relative to this header.
 	packed_struct(secondary_header,
-		uint8_t unknown[0x48];
+		uint8_t unknown[0x48];   // 0x14
 		file_ptr<wad_header> ram_image_wad; // 0x48
 	)
 

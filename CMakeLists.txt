@@ -22,6 +22,7 @@ add_executable(wrench
 	src/moby.cpp
 	src/renderer.cpp
 	src/shaders.cpp
+	src/worker_thread.cpp
 	src/formats/wad.cpp
 	src/formats/level_data.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
@@ -57,6 +58,11 @@ target_link_libraries(wrench ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 target_link_libraries(fip ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 target_link_libraries(wad ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 target_link_libraries(scan ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
+
+# pthreads
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+target_link_libraries(wrench Threads::Threads)
 
 # OpenGL
 find_package(OpenGL)
