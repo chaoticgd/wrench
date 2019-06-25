@@ -3,10 +3,11 @@ wrench
 
 A very early set of modding tools for the Ratchet & Clank PS2 games.
 
-Screenshot
+Screenshots
 ===========
 
 ![A screenshot of the level editor](screenshots/editor.png)
+![Green Ratchet](screenshots/skin.png)
 
 Status
 ======
