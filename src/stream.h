@@ -87,7 +87,7 @@ public:
 	virtual uint32_t tell() = 0;
 
 	virtual void read_n(char* dest, uint32_t size) = 0;
-	virtual void write_n(const char* data, uint8_t size) = 0;
+	virtual void write_n(const char* data, uint32_t size) = 0;
 
 	template <typename T>
 	T read() {
@@ -216,7 +216,7 @@ public:
 		check_error();
 	}
 
-	void write_n(const char* data, uint8_t size) {
+	void write_n(const char* data, uint32_t size) {
 		_file.write(data, size);
 		check_error();
 	}
@@ -256,7 +256,7 @@ public:
 		_offset += size;
 	}
 
-	void write_n(const char* data, uint8_t size) {
+	void write_n(const char* data, uint32_t size) {
 		std::size_t required_size = _offset + size;
 		if(_offset + size > _allocation.size()) {
 			_allocation.resize(required_size);
@@ -293,7 +293,7 @@ public:
 		_backing->read_n(dest, size);
 	}
 
-	void write_n(const char* data, uint8_t size) {
+	void write_n(const char* data, uint32_t size) {
 		_backing->write_n(data, size);
 	}
 
