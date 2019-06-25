@@ -30,45 +30,44 @@ def extract_all(src_path, dest_dir):
 
 	with open(src_path, 'rb') as src:
 		for segment in segments:
-			if 'error' in segment:
-				continue
+			try:
+				if 'error' in segment:
+					continue
 
-			inner_data = None
+				inner_data = None
 
-			dest_path = dest_dir + os.sep + hex(segment['offset'])
-			if segment['type'] == 'wad':
-				dest_path += '.decompressed'
-				if segment['compressed_data'] != None:
-					dest_path += '.' + segment['compressed_data']['type']
-					inner_data = segment['compressed_data']
-				extract_wad(src_path, segment['offset'], dest_path)
-				print('Written decompressed WAD to ' + dest_path)
-			else:
-				dest_path += '.' + segment['type']
-				src.seek(segment['offset'])
-				data = src.read(segment['size'])
-				with open(dest_path, 'wb') as dest:
-					dest.write(data)
-				inner_data = segment
-				print('Written uncompressed file to ' + dest_path)
-			
-			if inner_data != None and inner_data['type'] == 'fip':
-				convert_fip(dest_path, dest_path + '.bmp')
+				dest_path = dest_dir + os.sep + hex(segment['offset'])
+				if segment['type'] == 'wad':
+					dest_path += '.decompressed'
+					if segment['compressed_data'] != None:
+						dest_path += '.' + segment['compressed_data']['type']
+						inner_data = segment['compressed_data']
+					extract_wad(src_path, segment['offset'], dest_path)
+					print('Written decompressed WAD to ' + dest_path)
+				else:
+					dest_path += '.' + segment['type']
+					src.seek(segment['offset'])
+					data = src.read(segment['size'])
+					with open(dest_path, 'wb') as dest:
+						dest.write(data)
+					inner_data = segment
+					print('Written uncompressed file to ' + dest_path)
+				
+				if inner_data != None and inner_data['type'] == 'fip':
+					bmp_path = dest_path + '.bmp'
+					convert_fip(dest_path, bmp_path)
+					print('Written BMP file to ' + bmp_path)
+			except Exception as e:
+				print(e)
 
 
 def extract_wad(src_path, src_offset, dest_path):
 	args = [sys.path[0] + '/../bin/wad', 'decompress', src_path, dest_path, '-o', hex(src_offset)]
-	try:
-		subprocess.check_output(args)
-	except subprocess.CalledProcessError as e:
-		print(e.output)
+	subprocess.check_output(args)
 
 def convert_fip(src_path, dest_path):
 	args = [sys.path[0] + '/../bin/fip', 'export', src_path, dest_path]
-	try:
-		err = subprocess.check_output(args)
-	except subprocess.CalledProcessError as e:
-		print(e.output)
+	subprocess.check_output(args)
 
 if __name__ == '__main__':
 	if len(sys.argv) != 3:
