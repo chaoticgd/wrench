@@ -47,5 +47,7 @@ packed_struct(fip_header,
 
 bool validate_fip(char* header);
 void fip_to_bmp(stream& dest, stream& src);
+void bmp_to_fip(stream& dest, stream& src);
+uint8_t decode_palette_index(uint8_t index);
 
 #endif

@@ -27,7 +27,7 @@ The project isn't really usable for any serious modding yet.
 	- [ ] Mobies
 - Texture Format
 	- [x] 2FIP to BMP
-	- [ ] BMP to 2FIP
+	- [x] BMP to 2FIP
 
 Building
 ========

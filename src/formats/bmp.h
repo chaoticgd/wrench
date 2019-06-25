@@ -57,4 +57,6 @@ packed_struct(bmp_colour_table_entry,
 	uint8_t pad;
 )
 
+bool validate_bmp(bmp_file_header header);
+
 #endif

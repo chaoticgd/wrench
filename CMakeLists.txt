@@ -38,7 +38,8 @@ endif()
 add_executable(fip
 	src/cli/fipcli.cpp
 	src/command_line.cpp
-	src/formats/fip.cpp)
+	src/formats/fip.cpp
+	src/formats/bmp.cpp)
 
 add_executable(wad
 	src/cli/wadcli.cpp
@@ -49,7 +50,8 @@ add_executable(scan
 	src/cli/scancli.cpp
 	src/command_line.cpp
 	src/formats/wad.cpp
-	src/formats/fip.cpp)
+	src/formats/fip.cpp
+	src/formats/bmp.cpp)
 
 # Boost
 find_package(Boost 1.40 COMPONENTS program_options REQUIRED)

@@ -71,23 +71,66 @@ void fip_to_bmp(stream& dest, stream& src) {
 	}
 
 	uint32_t row_size = ((info.bits_per_pixel * info.width + 31) / 32) * 4;
-
-	uint32_t colour_table = dest.tell();
+	uint32_t pixel_data = dest.tell();
 
 	for(int y = info.height - 1; y >= 0; y--) {
-		dest.seek(colour_table + y * row_size);
+		dest.seek(pixel_data + y * row_size);
 		for(int x = 0; x < info.width; x++) {
 			uint8_t palette_index = src.read<uint8_t>();
-			// Swap middle two bits
-			//  e.g. 00010000 becomes 00001000.
-			int a = palette_index & 8;
-			int b = palette_index & 16;
-			if(a && !b) {
-				palette_index += 8;
-			} else if(!a && b) {
-				palette_index -= 8;
-			}
-			dest.write<uint8_t>(palette_index);
+			dest.write<uint8_t>(decode_palette_index(palette_index));
 		}
 	}
+}
+
+void bmp_to_fip(stream& dest, stream& src) {
+	auto file_header = src.read<bmp_file_header>(0);
+
+	if(!validate_bmp(file_header)) {
+		throw stream_format_error("Invalid BMP header.");
+	}
+
+	uint32_t secondary_header_offset = src.tell();
+	auto info_header = src.read<bmp_info_header>();
+
+	fip_header header;
+	std::memcpy(header.magic, "2FIP", 4);
+	std::memset(header.unknown1, 0, sizeof(header.unknown1));
+	header.width = info_header.width;
+	header.height = info_header.height;
+	std::memset(header.unknown2, 0, sizeof(header.unknown2));
+	// Some BMP files have a larger header.
+	src.seek(secondary_header_offset + info_header.info_header_size);
+	for(int i = 0; i < 256; i++) {
+		auto src_pixel = src.read<bmp_colour_table_entry>();
+		auto& dest_pixel = header.palette[i];
+		dest_pixel.r = src_pixel.r;
+		dest_pixel.g = src_pixel.g;
+		dest_pixel.b = src_pixel.b;
+		dest_pixel.pad = 0x80;
+	}
+	dest.write<fip_header>(0, header);
+
+	uint32_t row_size = ((info_header.bits_per_pixel * info_header.width + 31) / 32) * 4;
+	uint32_t pixel_data = file_header.pixel_data.value;
+
+	for(int y = info_header.height - 1; y >= 0; y--) {
+		src.seek(pixel_data + y * row_size);
+		for(int x = 0; x < info_header.width; x++) {
+			uint8_t palette_index = src.read<uint8_t>();
+			dest.write<uint8_t>(decode_palette_index(palette_index));
+		}
+	}
+}
+
+uint8_t decode_palette_index(uint8_t index) {
+	// Swap middle two bits
+	//  e.g. 00010000 becomes 00001000.
+	int a = index & 8;
+	int b = index & 16;
+	if(a && !b) {
+		index += 8;
+	} else if(!a && b) {
+		index -= 8;
+	}
+	return index;
 }
