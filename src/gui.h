@@ -27,8 +27,8 @@
 
 namespace gui {
 	void render(app& a);
+	void render_menu_bar(app& a);
 
-	void file_new(app& a);
 	void file_import_rc2_level(app& a);
 
 	class moby_list : public window {

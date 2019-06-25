@@ -27,20 +27,6 @@
 #include "window.h"
 
 void gui::render(app& a) {
-
-	static const std::initializer_list<menu> menu_items = {
-		{
-			"File", {
-				{ "New", file_new },
-				{
-					"Import", {
-						{ "R&C2 Level (.wad)", file_import_rc2_level }
-					}
-				}
-			}
-		}
-	};
-
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
@@ -61,11 +47,7 @@ void gui::render(app& a) {
 		}
 	});
 
-	ImGui::BeginMainMenuBar();
-	for(auto& menu : menu_items) {
-		menu.render(a);
-	}
-	ImGui::EndMainMenuBar();
+	render_menu_bar(a);
 
 	for(auto& current_window : a.windows) {
 		ImGui::SetNextWindowSize(current_window->initial_size(), ImGuiCond_Appearing);
@@ -80,8 +62,18 @@ void gui::render(app& a) {
 	}
 }
 
-void gui::file_new(app& a) {
-	std::cout << "test\n";
+void gui::render_menu_bar(app& a) {
+	ImGui::BeginMainMenuBar();
+	if(ImGui::BeginMenu("File")) {
+		if(ImGui::BeginMenu("Import")) {
+			if(ImGui::MenuItem("R&C2 Level (.wad)")) {
+				file_import_rc2_level(a);
+			}
+			ImGui::EndMenu();
+		}
+		ImGui::EndMenu();
+	}
+	ImGui::EndMainMenuBar();
 }
 
 void gui::file_import_rc2_level(app& a) {

@@ -17,7 +17,6 @@ add_executable(wrench
 	src/command_line.cpp
 	src/gui.cpp
 	src/window.cpp
-	src/menu.cpp
 	src/level.cpp
 	src/moby.cpp
 	src/renderer.cpp
