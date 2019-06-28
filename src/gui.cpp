@@ -156,54 +156,24 @@ void gui::inspector::render(app& a) {
 		ImGui::SetColumnWidth(0, 80);
 
 		int i = 0;
-		auto begin_property = [&i](const char* name) {
-			ImGui::PushID(i++);
-			ImGui::AlignTextToFramePadding();
-			ImGui::Text("%s", name);
-			ImGui::NextColumn();
-			ImGui::AlignTextToFramePadding();
-			ImGui::PushItemWidth(-1);
-		};
-
-		auto end_property = []() {	
-			ImGui::NextColumn();
-			ImGui::PopID();
-			ImGui::PopItemWidth();
-		};
-
 		selected->reflect(
-			[=](const char* name, rf::property<uint16_t> p) {
-				begin_property(name);
-				int value = p.get();
-				if(ImGui::InputInt("##nolabel", &value)) {
-					p.set(value);
-				}
-				end_property();
-			},
-			[=](const char* name, rf::property<uint32_t> p) {
-				begin_property(name);
-				int value = p.get();
-				if(ImGui::InputInt("##nolabel", &value)) {
-					p.set(value);
-				}
-				end_property();
-			},
-			[=](const char* name, rf::property<glm::vec3> p) {
-				begin_property(name);
-				float components[] = { p.get().x, p.get().y, p.get().z };
-				if(ImGui::InputFloat3("##nolabel", components)) {
-					p.set(glm::vec3(components[0], components[1], components[2]));
-				}
-				end_property();
-			},
-			[=](const char* name, rf::property<std::string> p) {
-				begin_property(name);
-				std::string value = p.get();
-				if(ImGui::InputText("##nolabel", &value)) {
-					p.set(value);
-				}
-				end_property();
-			}
+			render_property<uint16_t>(
+				[](const char* label, uint16_t* data) {
+					int temp = *data;
+					return ImGui::InputInt(label, &temp);
+				}, i),
+			render_property<uint32_t>(
+				[](const char* label, uint32_t* data) {
+					int temp = *data;
+					return ImGui::InputInt(label, &temp);
+				}, i),
+			render_property<std::string>(
+				// Fix overload ambiguity for template parameter.
+				[](const char* label, std::string* data)
+					{ return ImGui::InputText(label, data); }, i),
+			render_property<glm::vec3>(
+				[](const char* label, glm::vec3* data)
+					{ return ImGui::InputFloat3(label, &data->x); }, i)
 		);
 
 		ImGui::PopStyleVar();

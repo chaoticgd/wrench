@@ -43,6 +43,10 @@ namespace gui {
 		const char* title_text() const override;
 		ImVec2 initial_size() const override;
 		void render(app& a) override;
+
+	private:
+		template <typename T_data_type, typename T_input_func>
+		static std::function<void(const char* name, rf::property<T_data_type> p)> render_property(T_input_func input, int& i);
 	};
 
 	class viewport_information : public window {
@@ -78,6 +82,25 @@ namespace gui {
 		const char* _title_text;
 		std::vector<char> _buffer;
 		std::function<void(app&, std::string)> _callback;
+	};
+}
+
+template <typename T_data_type, typename T_input_func>
+std::function<void(const char* name, rf::property<T_data_type> p)> gui::inspector::render_property(T_input_func input, int& i) {
+	return [=, &i](const char* name, rf::property<T_data_type> p) {
+		ImGui::PushID(i++);
+		ImGui::AlignTextToFramePadding();
+		ImGui::Text("%s", name);
+		ImGui::NextColumn();
+		ImGui::AlignTextToFramePadding();
+		ImGui::PushItemWidth(-1);
+		T_data_type value = p.get();
+		if(input("##nolabel", &value)) {
+			p.set(value);
+		}
+		ImGui::NextColumn();
+		ImGui::PopID();
+		ImGui::PopItemWidth();
 	};
 }
 
