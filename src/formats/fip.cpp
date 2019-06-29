@@ -92,6 +92,14 @@ void bmp_to_fip(stream& dest, stream& src) {
 	uint32_t secondary_header_offset = src.tell();
 	auto info_header = src.read<bmp_info_header>();
 
+	if(info_header.bits_per_pixel != 8) {
+		throw stream_format_error("The BMP file must use indexed colour (with 256 colours).");
+	}
+
+	if(info_header.num_colours != 256) {
+		throw stream_format_error("The BMP colour palette must contain 256 colours.");
+	}
+
 	fip_header header;
 	std::memcpy(header.magic, "2FIP", 4);
 	std::memset(header.unknown1, 0, sizeof(header.unknown1));
