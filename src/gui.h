@@ -24,6 +24,7 @@
 #include "imgui_includes.h"
 #include "app.h"
 #include "window.h"
+#include "commands/property_changed_command.h"
 
 namespace gui {
 	void render(app& a);
@@ -46,7 +47,8 @@ namespace gui {
 
 	private:
 		template <typename T_data_type, typename T_input_func>
-		static std::function<void(const char* name, rf::property<T_data_type> p)> render_property(T_input_func input, int& i);
+		static std::function<void(const char* name, rf::property<T_data_type> p)>
+			render_property(level& lvl, int& i, T_input_func input);
 	};
 
 	class viewport_information : public window {
@@ -86,8 +88,10 @@ namespace gui {
 }
 
 template <typename T_data_type, typename T_input_func>
-std::function<void(const char* name, rf::property<T_data_type> p)> gui::inspector::render_property(T_input_func input, int& i) {
-	return [=, &i](const char* name, rf::property<T_data_type> p) {
+std::function<void(const char* name, rf::property<T_data_type> p)>
+	gui::inspector::render_property(level& lvl, int& i, T_input_func input) {
+	
+	return [=, &lvl, &i](const char* name, rf::property<T_data_type> p) {
 		ImGui::PushID(i++);
 		ImGui::AlignTextToFramePadding();
 		ImGui::Text("%s", name);
@@ -96,7 +100,7 @@ std::function<void(const char* name, rf::property<T_data_type> p)> gui::inspecto
 		ImGui::PushItemWidth(-1);
 		T_data_type value = p.get();
 		if(input("##nolabel", &value)) {
-			p.set(value);
+			lvl.emplace_command<property_changed_command<T_data_type>>(p, value);
 		}
 		ImGui::NextColumn();
 		ImGui::PopID();

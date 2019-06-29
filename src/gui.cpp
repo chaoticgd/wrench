@@ -63,6 +63,9 @@ void gui::render(app& a) {
 }
 
 void gui::render_menu_bar(app& a) {
+	bool no_more_undo_levels = false;
+	bool no_more_redo_levels = false;
+
 	ImGui::BeginMainMenuBar();
 	if(ImGui::BeginMenu("File")) {
 		if(ImGui::BeginMenu("Import")) {
@@ -73,7 +76,26 @@ void gui::render_menu_bar(app& a) {
 		}
 		ImGui::EndMenu();
 	}
+	if(ImGui::BeginMenu("Edit")) {
+		a.if_level([&no_more_undo_levels, &no_more_redo_levels](level& lvl) {
+			if(ImGui::MenuItem("Undo")) {
+				no_more_undo_levels = !lvl.undo();
+			}
+			if(ImGui::MenuItem("Redo")) {
+				no_more_redo_levels = !lvl.redo();
+			}
+		});
+		ImGui::EndMenu();
+	}
 	ImGui::EndMainMenuBar();
+
+	if(no_more_undo_levels || no_more_redo_levels) {
+		std::string message =
+			std::string("Nothing to ") +
+			(no_more_undo_levels ? "undo" : "redo") + ".";
+		auto window = std::make_unique<message_box>("Error", message);
+		a.windows.emplace_back(std::move(window));
+	}
 }
 
 void gui::file_import_rc2_level(app& a) {
@@ -140,7 +162,7 @@ void gui::inspector::render(app& a) {
 		return;
 	}
 
-	a.if_level([](const level_impl& lvl) {
+	a.if_level([](level& lvl, const level_impl& const_lvl) {
 		if(lvl.selection.size() < 1) {
 			ImGui::Text("<no selection>");
 			return;
@@ -149,7 +171,7 @@ void gui::inspector::render(app& a) {
 			return;
 		}
 
-		moby* selected = lvl.mobies().at(*lvl.selection.begin()).get();
+		moby* selected = const_lvl.mobies().at(*lvl.selection.begin()).get();
 
 		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2,2));
 		ImGui::Columns(2);
@@ -157,23 +179,30 @@ void gui::inspector::render(app& a) {
 
 		int i = 0;
 		selected->reflect(
-			render_property<uint16_t>(
+			render_property<uint16_t>(lvl, i,
 				[](const char* label, uint16_t* data) {
 					int temp = *data;
-					return ImGui::InputInt(label, &temp);
-				}, i),
-			render_property<uint32_t>(
+					if(ImGui::InputInt(label, &temp, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue)) {
+						*data = temp;
+						return true;
+					}
+					return false;
+				}),
+			render_property<uint32_t>(lvl, i,
 				[](const char* label, uint32_t* data) {
 					int temp = *data;
-					return ImGui::InputInt(label, &temp);
-				}, i),
-			render_property<std::string>(
-				// Fix overload ambiguity for template parameter.
+					if(ImGui::InputInt(label, &temp, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue)) {
+						*data = temp;
+						return true;
+					}
+					return false;
+				}),
+			render_property<std::string>(lvl, i,
 				[](const char* label, std::string* data)
-					{ return ImGui::InputText(label, data); }, i),
-			render_property<glm::vec3>(
+					{ return ImGui::InputText(label, data, ImGuiInputTextFlags_EnterReturnsTrue); }),
+			render_property<glm::vec3>(lvl, i,
 				[](const char* label, glm::vec3* data)
-					{ return ImGui::InputFloat3(label, &data->x); }, i)
+					{ return ImGui::InputFloat3(label, &data->x, 3, ImGuiInputTextFlags_EnterReturnsTrue); })
 		);
 
 		ImGui::PopStyleVar();

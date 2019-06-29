@@ -36,7 +36,8 @@ class level_impl;
 // if we are to have any hope of implementing a working undo/redo system!
 class level {
 public:
-	void apply_command(std::unique_ptr<command> action);
+	template <typename T_sub_type, typename... T_constructor_args>
+	void emplace_command(T_constructor_args... args);
 
 	bool undo();
 	bool redo();
@@ -66,5 +67,14 @@ public:
 private:
 	std::map<uint32_t, std::unique_ptr<moby>> _mobies;
 };
+
+template <typename T_sub_type, typename... T_constructor_args>
+void level::emplace_command(T_constructor_args... args) {
+	auto cmd = std::unique_ptr<command>(new T_sub_type(args...));
+	cmd->inject_level_pointer(static_cast<level_impl*>(this));
+	cmd->apply();
+	_history.resize(_history_index + 1);
+	_history[_history_index++].swap(cmd);
+}
 
 #endif
