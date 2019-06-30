@@ -87,6 +87,11 @@ uint32_t level_data::locate_moby_wad(stream& level_file) {
 void level_data::import_moby_wad(level_impl& lvl, stream& moby_wad) {
 	auto header = moby_wad.read<moby_wad::header>(0);
 
+	auto ship_data = moby_wad.read<moby_wad::ship_data>(header.ship.value);
+	lvl.ship_position = {
+		ship_data.position.x, ship_data.position.y, ship_data.position.z
+	};
+
 	//
 	// Import ingame strings.
 	//

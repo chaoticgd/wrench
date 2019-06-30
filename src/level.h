@@ -73,6 +73,7 @@ public:
 	void add_moby(uint32_t uid, std::unique_ptr<moby> m) { _mobies[uid].swap(m); }
 	const std::map<uint32_t, std::unique_ptr<moby>>& mobies() const { return _mobies; }
 
+	glm::vec3 ship_position;
 	std::vector<std::pair<std::string, string_table>> strings;
 
 private:

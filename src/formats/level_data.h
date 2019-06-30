@@ -62,6 +62,7 @@ namespace level_data {
 
 	namespace moby_wad {
 		struct header;
+		struct ship_data;
 		struct string_table;
 		struct string_table_entry;
 		struct moby_table;
@@ -100,7 +101,8 @@ namespace level_data {
 
 	namespace moby_wad {
 		packed_struct(header,
-			uint8_t unknown1[0x10];
+			file_ptr<ship_data> ship;               // 0x0
+			uint8_t unknown1[0xc];
 			file_ptr<string_table> english_strings; // 0x10
 			uint32_t unknown2; // Points to 16 bytes between the English and French tables (on Barlow).
 			file_ptr<string_table> french_strings;  // 0x18
@@ -117,6 +119,12 @@ namespace level_data {
 			uint32_t unknown9;                      // 0x44
 			uint32_t unknown10;                     // 0x48
 			file_ptr<moby_table> mobies;            // 0x4c
+		)
+
+		packed_struct(ship_data,
+			uint32_t unknown1[0xf];
+			vec3f position;
+			float rotationZ;
 		)
 
 		packed_struct(string_table,

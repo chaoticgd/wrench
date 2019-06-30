@@ -57,6 +57,14 @@ void draw_level(const level_impl& lvl, shader_programs& shaders) {
 			screen_pos4.z / screen_pos4.w
 		};
 	}
+
+	// Draw ship.
+	{
+		glm::vec3 pos = level_to_world(lvl.ship_position);
+		glm::mat4 model = glm::translate(glm::mat4(1.f), pos);
+		glm::mat4 mvp = projection * view * model;
+		draw_test_tri(shaders, mvp, glm::vec3(0, 0, 1));
+	}
 }
 
 void draw_test_tri(shader_programs& shaders, glm::mat4 mvp, glm::vec3 colour) {
