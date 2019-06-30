@@ -252,9 +252,11 @@ void gui::viewport_information::render(app& a) {
 const char* gui::string_viewer::title_text() const {
 	return "String Viewer";
 }
-ImVec2 gui::string_viewer::initial_size() const {
 
+ImVec2 gui::string_viewer::initial_size() const {
+	return ImVec2(500, 400);
 }
+
 void gui::string_viewer::render(app& a) {
 	a.if_level([=, &a](const level_impl& lvl) {
 
