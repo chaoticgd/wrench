@@ -26,6 +26,7 @@
 #include <glm/glm.hpp>
 
 #include "command.h"
+#include "object_types.h"
 #include "moby.h"
 
 class level_impl;
@@ -70,10 +71,12 @@ class level_impl : public level {
 public:
 	level_impl();
 
+	std::vector<const point_object*> point_objects() const;
+
 	void add_moby(uint32_t uid, std::unique_ptr<moby> m) { _mobies[uid].swap(m); }
 	const std::map<uint32_t, std::unique_ptr<moby>>& mobies() const { return _mobies; }
 
-	glm::vec3 ship_position;
+	ship_moby ship;
 	std::vector<std::pair<std::string, string_table>> strings;
 
 private:

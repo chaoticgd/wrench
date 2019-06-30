@@ -22,11 +22,14 @@
 #include <map>
 #include <glm/glm.hpp>
 
+#include "object_types.h"
 #include "reflection/refolder.h"
 
-class moby {
+class moby : public point_object {
 public:
 	moby(uint32_t uid);
+
+	std::string label() const;
 
 	glm::vec3 position() const;
 	void set_position(glm::vec3 position);
@@ -37,14 +40,10 @@ public:
 	std::string name;
 	bool selected;
 
-	std::string get_class_name();
+	std::string get_class_name() const;
 	uint16_t class_num;
 
 	static const std::map<uint16_t, const char*> class_names;
-
-	// Stores the last position where the moby was drawn in camera space.
-	// Used for drawing text over the top of mobies in the 3D view.
-	glm::vec3 last_drawn_pos;
 
 private:
 	uint32_t _uid;
@@ -62,6 +61,13 @@ public:
 		r.visit_m("Position", &moby::position, &moby::set_position);
 		r.visit_m("Rotation", &moby::rotation, &moby::set_rotation);
 	}
+};
+
+class ship_moby : public point_object {
+public:
+	std::string label() const;
+
+	glm::vec3 position;
 };
 
 #endif

@@ -52,3 +52,12 @@ level::level()
 	: camera_control(false) {}
 
 level_impl::level_impl() {}
+
+std::vector<const point_object*> level_impl::point_objects() const {
+	std::vector<const point_object*> result;
+	result.push_back(&ship);
+	for(auto& moby : mobies()) {
+		result.push_back(moby.second.get());
+	}
+	return result;
+}
