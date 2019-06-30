@@ -87,8 +87,46 @@ uint32_t level_data::locate_moby_wad(stream& level_file) {
 void level_data::import_moby_wad(level_impl& lvl, stream& moby_wad) {
 	auto header = moby_wad.read<moby_wad::header>(0);
 
-	auto moby_table = moby_wad.read<moby_wad::moby_table>(header.mobies.value);
+	//
+	// Import ingame strings.
+	//
 
+	uint32_t
+		english_ptr = header.english_strings.value,
+		french_ptr  = header.french_strings.value,
+		german_ptr  = header.german_strings.value,
+		spanish_ptr = header.spanish_strings.value,
+		italian_ptr = header.italian_strings.value,
+		nolang_ptr  = header.null_strings.value;
+	const std::vector<std::pair<std::string, uint32_t>> languages {
+		{ "English", english_ptr },
+		{ "French",  french_ptr },
+		{ "German",  german_ptr },
+		{ "Spanish", spanish_ptr },
+		{ "Italian", italian_ptr },
+		{ "NoLang",  nolang_ptr }
+	};
+	for(auto language : languages) {
+		auto table_header = moby_wad.read<moby_wad::string_table>(language.second);
+		std::vector<std::pair<uint32_t, std::string>> strings;
+		for(uint32_t i = 0; i < table_header.num_strings; i++) {
+			auto table_entry = moby_wad.read<moby_wad::string_table_entry>();
+
+			uint32_t id = table_entry.id;
+			uint32_t pos = moby_wad.tell();
+			moby_wad.seek(language.second + table_entry.string.value);
+			std::string str = moby_wad.read_string();
+			moby_wad.seek(pos);
+			strings.emplace_back(id, str);
+		}
+		lvl.strings.emplace_back(language.first, strings);
+	}
+
+	//
+	// Import mobies (entities).
+	//
+	
+	auto moby_table = moby_wad.read<moby_wad::moby_table>(header.mobies.value);
 	auto moby_ptr = header.mobies.next<moby_wad::moby>().value;
 	for(uint32_t i = 0; i < moby_table.num_mobies; i++) {
 		auto moby_data = moby_wad.read<moby_wad::moby>(moby_ptr);

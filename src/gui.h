@@ -58,6 +58,16 @@ namespace gui {
 		void render(app& a) override;
 	};
 
+	class string_viewer : public window {
+	public:
+		const char* title_text() const override;
+		ImVec2 initial_size() const override;
+		void render(app& a) override;
+	
+	private:
+		std::string _selected_language;
+	};
+
 	class message_box : public window {
 	public:
 		message_box(const char* title, std::string message);

@@ -30,6 +30,8 @@
 
 class level_impl;
 
+using string_table = std::vector<std::pair<uint32_t, std::string>>;
+
 // Represents a level currently loaded into wrench. A mostly opaque type,
 // allowing only for undo stack manipulation among some other odds and ends.
 // Only command objects should access the (non const) level_impl type directly
@@ -63,6 +65,8 @@ public:
 
 	void add_moby(uint32_t uid, std::unique_ptr<moby> m) { _mobies[uid].swap(m); }
 	const std::map<uint32_t, std::unique_ptr<moby>>& mobies() const { return _mobies; }
+
+	std::vector<std::pair<std::string, string_table>> strings;
 
 private:
 	std::map<uint32_t, std::unique_ptr<moby>> _mobies;

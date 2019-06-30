@@ -103,6 +103,15 @@ public:
 		return read<T>();
 	}
 
+	std::string read_string() {
+		std::string result;
+		char c;
+		while((c = read<char>()) != '\0') {
+			result += c;
+		}
+		return result;
+	}
+
 	template <typename T>
 	void write(const T& value) {
 		static_assert(std::is_default_constructible<T>::value);

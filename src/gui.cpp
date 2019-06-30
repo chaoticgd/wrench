@@ -18,6 +18,7 @@
 
 #include "gui.h"
 
+#include <fstream>
 #include <iomanip>
 #include <sstream>
 #include <iostream>
@@ -234,6 +235,66 @@ void gui::viewport_information::render(app& a) {
 		if(ImGui::Button("Reset Camera")) {
 			lvl.reset_camera();
 		}
+	});
+}
+
+/*
+	string_viewer
+*/
+
+const char* gui::string_viewer::title_text() const {
+	return "String Viewer";
+}
+ImVec2 gui::string_viewer::initial_size() const {
+
+}
+void gui::string_viewer::render(app& a) {
+	a.if_level([=, &a](const level_impl& lvl) {
+
+		ImGui::Columns(2);
+
+		ImGui::SetColumnWidth(0, 64);
+		if(ImGui::Button("Export")) {
+			auto string_exporter = std::make_unique<string_input>("Enter Export Path");
+			string_exporter->on_okay([=](app& a, std::string path) {
+				a.if_level([=](const level_impl& lvl) {
+					auto lang = std::find_if(lvl.strings.begin(), lvl.strings.end(),
+						[=](auto& ptr) { return ptr.first == _selected_language; });
+					if(lang == lvl.strings.end()) {
+						return;
+					}
+					std::ofstream out_file(path);
+					for(auto& [id, string] : lang->second) {
+						out_file << std::hex << id << ": " << string << "\n";
+					}
+				});
+			});
+			a.windows.emplace_back(std::move(string_exporter));
+		}
+
+		ImGui::NextColumn();
+
+		for(auto& language : lvl.strings) {
+			if(ImGui::Button(language.first.c_str())) {
+				_selected_language = language.first;
+			}
+			ImGui::SameLine();
+		}
+		ImGui::NewLine();
+
+		ImGui::Columns(1);
+
+		auto lang = std::find_if(lvl.strings.begin(), lvl.strings.end(),
+			[=](auto& ptr) { return ptr.first == _selected_language; });
+		if(lang == lvl.strings.end()) {
+			return;
+		}
+
+		ImGui::BeginChild(1);
+		for(auto& string : lang->second) {
+			ImGui::Text("%x: %s", string.first, string.second.c_str());
+		}
+		ImGui::EndChild();
 	});
 }
 
