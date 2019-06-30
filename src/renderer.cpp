@@ -18,10 +18,6 @@
 
 #include "renderer.h"
 
-glm::vec3 level_to_world(glm::vec3 point) {
-	return glm::vec3(point.x, point.z, point.y);
-}
-
 void draw_current_level(const app& a, shader_programs& shaders) {
 	a.if_level([=, &shaders](const level_impl& lvl) {
 		draw_level(lvl, shaders);
@@ -36,15 +32,20 @@ void draw_level(const level_impl& lvl, shader_programs& shaders) {
 	glm::mat4 yaw   = glm::rotate(glm::mat4(1.0f), rot.y, glm::vec3(0.0f, 1.0f, 0.0f));
  
 	glm::mat4 translate =
-		glm::translate(glm::mat4(1.0f), level_to_world(-lvl.camera_position));
-	glm::mat4 view = pitch * yaw * translate;
+		glm::translate(glm::mat4(1.0f), -lvl.camera_position);
+	static const glm::mat4 yzx {
+		0, 0, 1, 0,
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 0, 1
+	};
+	glm::mat4 view = pitch * yaw * yzx * translate;
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 
 	for(auto& [uid, moby] : lvl.mobies()) {
-		glm::vec3 pos = level_to_world(moby->position());
-		glm::mat4 model = glm::translate(glm::mat4(1.f), pos);
+		glm::mat4 model = glm::translate(glm::mat4(1.f), moby->position());
 		glm::mat4 mvp = projection * view * model;
 		glm::vec3 colour =
 			lvl.is_selected(uid) ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
@@ -60,8 +61,7 @@ void draw_level(const level_impl& lvl, shader_programs& shaders) {
 
 	// Draw ship.
 	{
-		glm::vec3 pos = level_to_world(lvl.ship_position);
-		glm::mat4 model = glm::translate(glm::mat4(1.f), pos);
+		glm::mat4 model = glm::translate(glm::mat4(1.f), lvl.ship_position);
 		glm::mat4 mvp = projection * view * model;
 		draw_test_tri(shaders, mvp, glm::vec3(0, 0, 1));
 	}

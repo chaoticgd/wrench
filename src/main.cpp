@@ -128,20 +128,20 @@ void update_camera_movement(app* a) {
 
 		glm::vec3 movement;
 		if(is_down(GLFW_KEY_W)) {
-			movement.x += dx;
-			movement.y -= dz;
+			movement.x -= dz;
+			movement.y += dx;
 		}
 		if(is_down(GLFW_KEY_S)) {
-			movement.x -= dx;
-			movement.y += dz;
-		}
-		if(is_down(GLFW_KEY_A)) {
-			movement.x -= dz;
+			movement.x += dz;
 			movement.y -= dx;
 		}
+		if(is_down(GLFW_KEY_A)) {
+			movement.x -= dx;
+			movement.y -= dz;
+		}
 		if(is_down(GLFW_KEY_D)) {
-			movement.x += dz;
-			movement.y += dx;
+			movement.x += dx;
+			movement.y += dz;
 		}
 		if(is_down(GLFW_KEY_SPACE)) {
 			movement.z += dist;

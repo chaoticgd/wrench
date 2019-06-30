@@ -30,7 +30,6 @@
 
 using vertex_list = std::vector<std::array<glm::vec3, 3>>;
 
-glm::vec3 level_to_world(glm::vec3 point);
 void draw_current_level(const app& a, shader_programs& shaders);
 void draw_level(const level_impl& lvl, shader_programs& shaders);
 void draw_test_tri(shader_programs& shaders, glm::mat4 mvp, glm::vec3 colour);
