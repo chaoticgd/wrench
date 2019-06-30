@@ -43,19 +43,6 @@ std::unique_ptr<level_impl> level_data::import_level(stream& level_file, worker_
 	
 	auto secondary_hdr =
 		level_file.read<secondary_header>(secondary_header_offset);
-
-	{
-		uint32_t ram_image_wad_offset = secondary_hdr.ram_image_wad.value;
-		array_stream ram_image_data;
-		proxy_stream ram_image_wad_segment(&level_file,
-			secondary_header_offset + ram_image_wad_offset);
-		log << "RAM image WAD offset: 0x" << ram_image_wad_offset << "\n";
-		log << "Decompressing RAM image WAD... ";
-		decompress_wad(ram_image_data, ram_image_wad_segment);
-		log << "DONE!\nImporting RAM image WAD... ";
-		import_ram_image_wad(*lvl.get(), ram_image_data);
-		log << "DONE!\n";
-	}
 	
 	log << "\nLevel imported successfully.\n";
 
