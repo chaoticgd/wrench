@@ -88,6 +88,13 @@ void gui::render_menu_bar(app& a) {
 		});
 		ImGui::EndMenu();
 	}
+	if(ImGui::BeginMenu("Windows")) {
+		render_menu_bar_window_toggle<moby_list>(a);
+		render_menu_bar_window_toggle<inspector>(a);
+		render_menu_bar_window_toggle<viewport_information>(a);
+		render_menu_bar_window_toggle<string_viewer>(a);
+		ImGui::EndMenu();
+	}
 	ImGui::EndMainMenuBar();
 
 	if(no_more_undo_levels || no_more_redo_levels) {

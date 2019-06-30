@@ -30,6 +30,9 @@ namespace gui {
 	void render(app& a);
 	void render_menu_bar(app& a);
 
+	template <typename T>
+	void render_menu_bar_window_toggle(app& a);
+
 	void file_import_rc2_level(app& a);
 
 	class moby_list : public window {
@@ -95,6 +98,21 @@ namespace gui {
 		std::vector<char> _buffer;
 		std::function<void(app&, std::string)> _callback;
 	};
+}
+
+template <typename T>
+void gui::render_menu_bar_window_toggle(app& a) {
+	auto window = std::find_if(a.windows.begin(), a.windows.end(),
+		[](auto& current) { return dynamic_cast<T*>(current.get()) != nullptr; });
+	std::string prefix = window == a.windows.end() ? "[ ] " : "[X] ";
+	std::string item_text = prefix + T().title_text();
+	if(ImGui::MenuItem(item_text.c_str())) {
+		if(window == a.windows.end()) {
+			a.windows.emplace_back(std::make_unique<T>());
+		} else {
+			a.windows.erase(window);
+		}
+	}
 }
 
 template <typename T_data_type, typename T_input_func>
