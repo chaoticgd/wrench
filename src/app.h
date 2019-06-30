@@ -46,6 +46,14 @@ struct app {
 	void if_level(std::function<void(level&, const level_impl&)> callback);
 	void import_level(std::string path);
 
+	// Used by the inspector.
+	template <typename... T>
+	void reflect(T... callbacks) {
+		if_level([=](level& lvl) {
+			lvl.reflect(callbacks...);
+		});
+	}
+
 private:
 	std::unique_ptr<level_impl> _level;
 };

@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
 
 	app a;
 	a.windows.emplace_back(std::make_unique<gui::moby_list>());
-	a.windows.emplace_back(std::make_unique<gui::inspector>());
+	a.windows.emplace_back(std::make_unique<gui::inspector<app>>(&a));
 
 	if(!glfwInit()) {
 		throw std::runtime_error("Cannot load GLFW.");

@@ -30,8 +30,8 @@ namespace gui {
 	void render(app& a);
 	void render_menu_bar(app& a);
 
-	template <typename T>
-	void render_menu_bar_window_toggle(app& a);
+	template <typename T, typename... T_constructor_args>
+	void render_menu_bar_window_toggle(app& a, T_constructor_args... args);
 
 	void file_import_rc2_level(app& a);
 
@@ -42,8 +42,11 @@ namespace gui {
 		void render(app& a) override;
 	};
 
+	template <typename T>
 	class inspector : public window {
 	public:
+		inspector(T* subject);
+
 		const char* title_text() const override;
 		ImVec2 initial_size() const override;
 		void render(app& a) override;
@@ -52,6 +55,8 @@ namespace gui {
 		template <typename T_data_type, typename T_input_func>
 		static std::function<void(const char* name, rf::property<T_data_type> p)>
 			render_property(level& lvl, int& i, T_input_func input);
+		
+		T* _subject;
 	};
 
 	class viewport_information : public window {
@@ -100,24 +105,94 @@ namespace gui {
 	};
 }
 
-template <typename T>
-void gui::render_menu_bar_window_toggle(app& a) {
+template <typename T, typename... T_constructor_args>
+void gui::render_menu_bar_window_toggle(app& a, T_constructor_args... args) {
 	auto window = std::find_if(a.windows.begin(), a.windows.end(),
 		[](auto& current) { return dynamic_cast<T*>(current.get()) != nullptr; });
 	std::string prefix = window == a.windows.end() ? "[ ] " : "[X] ";
-	std::string item_text = prefix + T().title_text();
+	std::string item_text = prefix + T(args...).title_text();
 	if(ImGui::MenuItem(item_text.c_str())) {
 		if(window == a.windows.end()) {
-			a.windows.emplace_back(std::make_unique<T>());
+			a.windows.emplace_back(std::make_unique<T>(args...));
 		} else {
 			a.windows.erase(window);
 		}
 	}
 }
 
+/*
+	inspector
+*/
+
+template <typename T>
+gui::inspector<T>::inspector(T* subject) : _subject(subject) {}
+
+template <typename T>
+const char* gui::inspector<T>::title_text() const {
+	return "Inspector";
+}
+
+template <typename T>
+ImVec2 gui::inspector<T>::initial_size() const {
+	return ImVec2(250, 500);
+}
+
+template <typename T>
+void gui::inspector<T>::render(app& a) {
+	if(!a.has_level()) {
+		ImGui::Text("<no level open>");
+		return;
+	}
+
+	a.if_level([this](level& lvl) {
+		if(lvl.selection.size() < 1) {
+			ImGui::Text("<no selection>");
+			return;
+		} else if(lvl.selection.size() > 1) {
+			ImGui::Text("<multiple mobies selected>");
+			return;
+		}
+
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2,2));
+		ImGui::Columns(2);
+		ImGui::SetColumnWidth(0, 80);
+
+		int i = 0;
+		_subject->reflect(
+			render_property<uint16_t>(lvl, i,
+				[](const char* label, uint16_t* data) {
+					int temp = *data;
+					if(ImGui::InputInt(label, &temp, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue)) {
+						*data = temp;
+						return true;
+					}
+					return false;
+				}),
+			render_property<uint32_t>(lvl, i,
+				[](const char* label, uint32_t* data) {
+					int temp = *data;
+					if(ImGui::InputInt(label, &temp, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue)) {
+						*data = temp;
+						return true;
+					}
+					return false;
+				}),
+			render_property<std::string>(lvl, i,
+				[](const char* label, std::string* data)
+					{ return ImGui::InputText(label, data, ImGuiInputTextFlags_EnterReturnsTrue); }),
+			render_property<glm::vec3>(lvl, i,
+				[](const char* label, glm::vec3* data)
+					{ return ImGui::InputFloat3(label, &data->x, 3, ImGuiInputTextFlags_EnterReturnsTrue); })
+		);
+
+		ImGui::PopStyleVar();
+	});
+}
+
+template <typename T>
 template <typename T_data_type, typename T_input_func>
 std::function<void(const char* name, rf::property<T_data_type> p)>
-	gui::inspector::render_property(level& lvl, int& i, T_input_func input) {
+	gui::inspector<T>::render_property(level& lvl, int& i, T_input_func input) {
 	
 	return [=, &lvl, &i](const char* name, rf::property<T_data_type> p) {
 		ImGui::PushID(i++);

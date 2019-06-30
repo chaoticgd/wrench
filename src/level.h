@@ -29,6 +29,7 @@
 #include "moby.h"
 
 class level_impl;
+class selection_adapter;
 
 using string_table = std::vector<std::pair<uint32_t, std::string>>;
 
@@ -57,6 +58,12 @@ protected:
 
 	std::vector<std::unique_ptr<command>> _history;
 	std::size_t _history_index;
+
+public:
+
+	// Used by the inspector.
+	template <typename... T>
+	void reflect(T... callbacks);
 };
 
 class level_impl : public level {
@@ -79,6 +86,14 @@ void level::emplace_command(T_constructor_args... args) {
 	cmd->apply();
 	_history.resize(_history_index + 1);
 	_history[_history_index++].swap(cmd);
+}
+
+template <typename... T>
+void level::reflect(T... callbacks) {
+	if(selection.size() > 0) {
+		auto& mobies = static_cast<level_impl*>(this)->mobies();
+		mobies.at(*selection.begin())->reflect(callbacks...);
+	}
 }
 
 #endif

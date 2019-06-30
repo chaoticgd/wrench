@@ -90,7 +90,7 @@ void gui::render_menu_bar(app& a) {
 	}
 	if(ImGui::BeginMenu("Windows")) {
 		render_menu_bar_window_toggle<moby_list>(a);
-		render_menu_bar_window_toggle<inspector>(a);
+		render_menu_bar_window_toggle<inspector<app>>(a, &a);
 		render_menu_bar_window_toggle<viewport_information>(a);
 		render_menu_bar_window_toggle<string_viewer>(a);
 		ImGui::EndMenu();
@@ -149,71 +149,6 @@ void gui::moby_list::render(app& a) {
 		}
 		ImGui::ListBoxFooter();
 		ImGui::PopItemWidth();
-	});
-}
-
-/*
-	inspector
-*/
-
-const char* gui::inspector::title_text() const {
-	return "Inspector";
-}
-
-ImVec2 gui::inspector::initial_size() const {
-	return ImVec2(250, 500);
-}
-
-void gui::inspector::render(app& a) {
-	if(!a.has_level()) {
-		ImGui::Text("<no level open>");
-		return;
-	}
-
-	a.if_level([](level& lvl, const level_impl& const_lvl) {
-		if(lvl.selection.size() < 1) {
-			ImGui::Text("<no selection>");
-			return;
-		} else if(lvl.selection.size() > 1) {
-			ImGui::Text("<multiple mobies selected>");
-			return;
-		}
-
-		moby* selected = const_lvl.mobies().at(*lvl.selection.begin()).get();
-
-		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2,2));
-		ImGui::Columns(2);
-		ImGui::SetColumnWidth(0, 80);
-
-		int i = 0;
-		selected->reflect(
-			render_property<uint16_t>(lvl, i,
-				[](const char* label, uint16_t* data) {
-					int temp = *data;
-					if(ImGui::InputInt(label, &temp, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue)) {
-						*data = temp;
-						return true;
-					}
-					return false;
-				}),
-			render_property<uint32_t>(lvl, i,
-				[](const char* label, uint32_t* data) {
-					int temp = *data;
-					if(ImGui::InputInt(label, &temp, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue)) {
-						*data = temp;
-						return true;
-					}
-					return false;
-				}),
-			render_property<std::string>(lvl, i,
-				[](const char* label, std::string* data)
-					{ return ImGui::InputText(label, data, ImGuiInputTextFlags_EnterReturnsTrue); }),
-			render_property<glm::vec3>(lvl, i,
-				[](const char* label, glm::vec3* data)
-					{ return ImGui::InputFloat3(label, &data->x, 3, ImGuiInputTextFlags_EnterReturnsTrue); })
-		);
-
-		ImGui::PopStyleVar();
 	});
 }
 
