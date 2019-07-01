@@ -18,13 +18,7 @@
 
 #include "renderer.h"
 
-void draw_current_level(const app& a, shader_programs& shaders) {
-	a.if_level([=, &shaders](const level_impl& lvl) {
-		draw_level(lvl, shaders);
-	});
-}
-
-void draw_level(const level_impl& lvl, shader_programs& shaders) {
+glm::mat4 get_view_projection_matrix(const level& lvl) {
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f);
 
 	auto rot = lvl.camera_rotation;
@@ -41,31 +35,34 @@ void draw_level(const level_impl& lvl, shader_programs& shaders) {
 	};
 	glm::mat4 view = pitch * yaw * yzx * translate;
 
+	return projection * view;
+}
+
+void draw_current_level(const app& a, shader_programs& shaders) {
+	a.if_level([=, &shaders](const level_impl& lvl) {
+		draw_level(lvl, shaders);
+	});
+}
+
+void draw_level(const level_impl& lvl, shader_programs& shaders) {
+	glm::mat4 projection_view = get_view_projection_matrix(lvl);
+
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 
 	for(auto& [uid, moby] : lvl.mobies()) {
 		glm::mat4 model = glm::translate(glm::mat4(1.f), moby->position());
-		glm::mat4 mvp = projection * view * model;
+		glm::mat4 mvp = projection_view * model;
 		glm::vec3 colour =
 			lvl.is_selected(uid) ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
 		draw_test_tri(shaders, mvp, colour);
-
-		glm::vec4 screen_pos4 = mvp * glm::vec4(0, 0, 0, 1);
-		moby->last_drawn_pos = {
-			screen_pos4.x / screen_pos4.w,
-			screen_pos4.y / screen_pos4.w,
-			screen_pos4.z / screen_pos4.w
-		};
 	}
 
 	// Draw ship.
 	{
-		glm::mat4 model = glm::translate(glm::mat4(1.f), lvl.ship.position);
-		glm::mat4 mvp = projection * view * model;
+		glm::mat4 model = glm::translate(glm::mat4(1.f), lvl.ship.position());
+		glm::mat4 mvp = projection_view * model;
 		draw_test_tri(shaders, mvp, glm::vec3(0, 0, 1));
-
-		glm::vec4 screen_pos4 = mvp * glm::vec4(0, 0, 0, 1);
 	}
 }
 

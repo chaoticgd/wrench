@@ -30,6 +30,8 @@
 
 using vertex_list = std::vector<std::array<glm::vec3, 3>>;
 
+glm::mat4 get_view_projection_matrix(const level& lvl);
+
 void draw_current_level(const app& a, shader_programs& shaders);
 void draw_level(const level_impl& lvl, shader_programs& shaders);
 void draw_test_tri(shader_programs& shaders, glm::mat4 mvp, glm::vec3 colour);

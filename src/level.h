@@ -74,7 +74,7 @@ public:
 	std::vector<const point_object*> point_objects() const;
 
 	void add_moby(uint32_t uid, std::unique_ptr<moby> m) { _mobies[uid].swap(m); }
-	const std::map<uint32_t, std::unique_ptr<moby>>& mobies() const { return _mobies; }
+	std::map<uint32_t, const moby*> mobies() const;
 
 	ship_moby ship;
 	std::vector<std::pair<std::string, string_table>> strings;
@@ -95,8 +95,8 @@ void level::emplace_command(T_constructor_args... args) {
 template <typename... T>
 void level::reflect(T... callbacks) {
 	if(selection.size() > 0) {
-		auto& mobies = static_cast<level_impl*>(this)->mobies();
-		mobies.at(*selection.begin())->reflect(callbacks...);
+		const auto& mobies = static_cast<level_impl*>(this)->mobies();
+		const_cast<moby*>(mobies.at(*selection.begin()))->reflect(callbacks...);
 	}
 }
 

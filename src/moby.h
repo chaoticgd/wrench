@@ -66,8 +66,10 @@ public:
 class ship_moby : public point_object {
 public:
 	std::string label() const;
-
-	glm::vec3 position;
+	glm::vec3 position() const;
+	void set_position(glm::vec3 pos);
+private:
+	glm::vec3 _position;
 };
 
 #endif

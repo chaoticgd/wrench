@@ -58,3 +58,11 @@ const std::map<uint16_t, const char*> moby::class_names {
 std::string ship_moby::label() const {
 	return "ship";
 }
+
+glm::vec3 ship_moby::position() const {
+	return _position;
+}
+
+void ship_moby::set_position(glm::vec3 pos) {
+	_position = pos;
+}

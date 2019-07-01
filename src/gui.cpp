@@ -26,6 +26,7 @@
 
 #include "menu.h"
 #include "window.h"
+#include "renderer.h"
 
 void gui::render(app& a) {
 	ImGui_ImplOpenGL3_NewFrame();
@@ -36,10 +37,17 @@ void gui::render(app& a) {
 		// Draw floating text over each moby showing its class name.
 		ImDrawList* draw_list = ImGui::GetBackgroundDrawList();
 		for(const auto& object : lvl.point_objects()) {
-			if(object->last_drawn_pos.z > 0 && object->last_drawn_pos.z < 1) {
+			glm::mat4 model = glm::translate(glm::mat4(1.f), object->position());
+			glm::vec4 homogeneous_pos = get_view_projection_matrix(lvl) * model * glm::vec4(0, 0, 0, 1);
+			glm::vec3 gl_pos = {
+				homogeneous_pos.x / homogeneous_pos.w,
+				homogeneous_pos.y / homogeneous_pos.w,
+				homogeneous_pos.z / homogeneous_pos.w
+			};
+			if(gl_pos.z > 0 && gl_pos.z < 1) {
 				ImVec2 position(
-					(1 + object->last_drawn_pos.x) * a.window_width / 2.0,
-					(1 - object->last_drawn_pos.y) * a.window_height / 2.0
+					(1 + gl_pos.x) * a.window_width / 2.0,
+					(1 - gl_pos.y) * a.window_height / 2.0
 				);
 				static const int colour = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
 				draw_list->AddText(position, colour, object->label().c_str());

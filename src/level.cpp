@@ -56,8 +56,16 @@ level_impl::level_impl() {}
 std::vector<const point_object*> level_impl::point_objects() const {
 	std::vector<const point_object*> result;
 	result.push_back(&ship);
-	for(auto& moby : mobies()) {
+	for(auto& moby : _mobies) {
 		result.push_back(moby.second.get());
+	}
+	return result;
+}
+
+std::map<uint32_t, const moby*> level_impl::mobies() const {
+	std::map<uint32_t, const moby*> result;
+	for(auto& moby : _mobies) {
+		result.emplace(moby.first, moby.second.get());
 	}
 	return result;
 }
