@@ -63,6 +63,7 @@ namespace level_data {
 	namespace moby_wad {
 		struct header;
 		struct ship_data;
+		struct directional_light_table;
 		struct string_table;
 		struct string_table_entry;
 		struct moby_table;
@@ -101,30 +102,41 @@ namespace level_data {
 
 	namespace moby_wad {
 		packed_struct(header,
-			file_ptr<ship_data> ship;               // 0x0
-			uint8_t unknown1[0xc];
-			file_ptr<string_table> english_strings; // 0x10
-			uint32_t unknown2; // Points to 16 bytes between the English and French tables (on Barlow).
-			file_ptr<string_table> french_strings;  // 0x18
-			file_ptr<string_table> german_strings;  // 0x1c
-			file_ptr<string_table> spanish_strings; // 0x20
-			file_ptr<string_table> italian_strings; // 0x24
-			file_ptr<string_table> null_strings;    // 0x28 Also what is this thing?
-			uint32_t unknown3;                      // 0x2c
-			uint32_t unknown4;                      // 0x30
-			uint32_t unknown5;                      // 0x34
-			uint32_t unknown6;                      // 0x38
-			uint32_t unknown7;                      // 0x3c
-			uint32_t unknown8;                      // 0x40
-			uint32_t unknown9;                      // 0x44
-			uint32_t unknown10;                     // 0x48
-			file_ptr<moby_table> mobies;            // 0x4c
+			file_ptr<ship_data> ship;                             // 0x0
+			file_ptr<directional_light_table> directional_lights; // 0x4
+			uint32_t unknown1;                                    // 0x8
+			uint32_t unknown2;                                    // 0xc
+			file_ptr<string_table> english_strings;               // 0x10
+			uint32_t unknown3; // Points to 16 bytes between the English and French tables (on Barlow).
+			file_ptr<string_table> french_strings;                // 0x18
+			file_ptr<string_table> german_strings;                // 0x1c
+			file_ptr<string_table> spanish_strings;               // 0x20
+			file_ptr<string_table> italian_strings;               // 0x24
+			file_ptr<string_table> null_strings;                  // 0x28 Also what is this thing?
+			uint32_t unknown4;                                    // 0x2c
+			uint32_t unknown5;                                    // 0x30
+			uint32_t unknown6;                                    // 0x34
+			uint32_t unknown7;                                    // 0x38
+			uint32_t unknown8;                                    // 0x3c
+			uint32_t unknown9;                                    // 0x40
+			uint32_t unknown10;                                   // 0x44
+			uint32_t unknown11;                                   // 0x48
+			file_ptr<moby_table> mobies;                          // 0x4c
 		)
 
 		packed_struct(ship_data,
 			uint32_t unknown1[0xf];
 			vec3f position;
 			float rotationZ;
+		)
+
+		packed_struct(directional_light_table,
+			uint32_t num_directional_lights; // Max 0xb.
+			// Directional lights follow.
+		)
+
+		packed_struct(directional_light,
+			uint8_t unknown[64];
 		)
 
 		packed_struct(string_table,
