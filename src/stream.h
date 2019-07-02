@@ -89,6 +89,15 @@ public:
 	virtual void read_n(char* dest, uint32_t size) = 0;
 	virtual void write_n(const char* data, uint32_t size) = 0;
 
+	// A resource path is a string that specifies how the resource loaded is
+	// stored on disc. For example, "wad(file(LEVEL4.WAD)+0x1000)+0x10"  would
+	// indicate the resource is stored in a WAD compressed segment starting at
+	// 0x1000 in LEVEL4.WAD at offset 0x10 within the uncompressed data.
+	//
+	// This is very useful for debugging as it enables me to easily locate
+	// various structures in a hex editor.
+	virtual std::string resource_path() = 0;
+
 	template <typename T>
 	T read() {
 		static_assert(std::is_default_constructible<T>::value);
@@ -197,7 +206,8 @@ public:
 		: file_stream(path, std::ios::in) {}
 
 	file_stream(std::string path, std::ios_base::openmode mode)
-		: _file(path, mode | std::ios::binary) {
+		: _file(path, mode | std::ios::binary),
+		  _path(path) {
 		if(_file.fail()) {
 			throw stream_io_error("Failed to open file.");
 		}
@@ -230,6 +240,10 @@ public:
 		check_error();
 	}
 
+	std::string resource_path() {
+		return std::string("file(") + _path + ")";
+	}
+
 	void check_error() {
 		if(_file.fail()) {
 			throw stream_io_error("Bad stream."); 
@@ -238,6 +252,7 @@ public:
 
 private:
 	std::fstream _file;
+	std::string _path;
 };
 
 class array_stream : public stream {
@@ -274,6 +289,10 @@ public:
 		_offset += size;
 	}
 
+	std::string resource_path() {
+		return "arraystream";
+	}
+
 private:
 	std::vector<uint8_t> _allocation;
 	uint32_t _offset;
@@ -304,6 +323,12 @@ public:
 
 	void write_n(const char* data, uint32_t size) {
 		_backing->write_n(data, size);
+	}
+
+	std::string resource_path() {
+		std::stringstream to_hex;
+		to_hex << std::hex << _zero;
+		return _backing->resource_path() + "+0x" + to_hex.str();
 	}
 
 private:
