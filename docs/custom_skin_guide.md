@@ -14,4 +14,16 @@ This guide will step you through how to make custom skins for Ratchet & Clank 2.
 9. Open the original `.fip` file that corresponds to the texture you edited (the hexadecimal number at the start of the filename will be the same) and copy its contents to the clipboard. Open the game's ISO file in a hex editor and search for the arrangement of bytes you copied to your clipboard.
 10. Paste the contents of `newtexture.fip` in this position, overwriting the old data segment.
 
+UV Guide
+--------
+
+To help you identify different parts of the texture, here's a colour-coded map:
+
+![UV Guide Texture](ratchet_torso_uv_guide.bmp)
+
+And here are screenshots of how it looks ingame:
+
+![Front](ratchet_torso_uv_guide_screenshot_front.png)
+![Back](ratchet_torso_uv_guide_screenshot_back.png)
+
 [1] https://www.gimp.org/
