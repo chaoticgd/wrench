@@ -51,14 +51,7 @@
 
 namespace level_data {
 
-	std::unique_ptr<level_impl> import_level(stream& level_file, worker_logger& log);
-
-	uint32_t locate_moby_wad(stream& level_file);
-	void import_moby_wad(level_impl& lvl, stream& moby_wad);
-
-	void import_ram_image_wad(level_impl& lvl, stream& wad);
-
-	struct outer_header;
+	struct master_header;
 
 	namespace moby_wad {
 		struct header;
@@ -69,6 +62,16 @@ namespace level_data {
 		struct moby_table;
 		struct moby;
 	}
+
+	std::unique_ptr<level_impl> import_level(stream& level_file, worker_logger& log);
+
+	uint32_t locate_moby_wad(stream& level_file);
+	uint32_t locate_secondary_header(master_header header, uint32_t moby_wad_offset);
+	void import_moby_wad(level_impl& lvl, stream& moby_wad);
+
+	void import_ram_image_wad(level_impl& lvl, stream& wad);
+
+	void import_texture_segment(level_impl& lvl, stream& segment, worker_logger& log);
 
 	packed_struct(master_header,
 		uint8_t unknown1[0x14];              // 0x0
@@ -83,8 +86,25 @@ namespace level_data {
 
 	// Pointers are relative to this header.
 	packed_struct(secondary_header,
-		uint8_t unknown[0x48];   // 0x14
-		file_ptr<wad_header> ram_image_wad; // 0x48
+		uint32_t unknown1;                          // 0x0
+		uint32_t unknown2;                          // 0x4
+		uint32_t textures_ptr;                      // 0x8
+		uint32_t texture_segment_size;              // 0xc
+		uint32_t unknown4;                          // 0x10
+		uint32_t unknown5;                          // 0x14
+		uint32_t unknown6;                          // 0x18
+		uint32_t unknown7;                          // 0x1c
+		uint32_t unknown8;                          // 0x20
+		uint32_t unknown9;                          // 0x24
+		uint32_t unknown10;                         // 0x28
+		uint32_t unknown11;                         // 0x2c
+		uint32_t unknown12;                         // 0x30
+		uint32_t unknown13;                         // 0x34
+		uint32_t unknown14;                         // 0x38
+		uint32_t unknown15;                         // 0x3c
+		uint32_t unknown16;                         // 0x40
+		uint32_t unknown17;                         // 0x44
+		file_ptr<wad_header> ram_image_wad;         // 0x48
 	)
 
 	packed_struct(vec3f,

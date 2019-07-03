@@ -24,6 +24,7 @@ add_executable(wrench
 	src/worker_thread.cpp
 	src/formats/wad.cpp
 	src/formats/level_data.cpp
+	src/formats/texture.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
 	src/imgui_impl_glfw.cpp
 	thirdparty/imgui/examples/imgui_impl_opengl3.cpp)

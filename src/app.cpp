@@ -22,6 +22,7 @@
 #include "stream.h"
 #include "worker_thread.h"
 #include "formats/level_data.h"
+#include "formats/texture.h"
 
 bool app::has_level() const {
 	return _level.get() != nullptr;
@@ -61,6 +62,8 @@ void app::import_level(std::string path) {
 		[](std::string path, worker_logger& log) {
 			try {
 				file_stream stream(path);
+				texture_provider tex(&stream);
+				tex.textures();
 				return std::optional(level_data::import_level(stream, log));
 			} catch(stream_error& e) {
 				log << "stream_error: " << e.what() << "\n";

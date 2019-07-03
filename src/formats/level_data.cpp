@@ -15,6 +15,7 @@
 	You should have received a copy of the GNU General Public License
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+
 #include "level_data.h"
 
 const uint32_t BARLOW_OUTER_HEADER_OFFSET = 0x12e800;
@@ -36,13 +37,6 @@ std::unique_ptr<level_impl> level_data::import_level(stream& level_file, worker_
 		import_moby_wad(*lvl.get(), moby_wad_data);
 		log << "DONE!\n";
 	}
-
-	uint32_t secondary_header_delta =
-		(master_hdr.secondary_moby_offset_part * 0x800 + 0xfff) & 0xfffffffffffff000;
-	uint32_t secondary_header_offset = moby_wad_offset - secondary_header_delta;
-	
-	auto secondary_hdr =
-		level_file.read<secondary_header>(secondary_header_offset);
 	
 	log << "\nLevel imported successfully.\n";
 
@@ -69,6 +63,12 @@ uint32_t level_data::locate_moby_wad(stream& level_file) {
 	}
 	
 	return result_offset;
+}
+
+uint32_t level_data::locate_secondary_header(master_header header, uint32_t moby_wad_offset) {
+	uint32_t secondary_header_delta =
+		(header.secondary_moby_offset_part * 0x800 + 0xfff) & 0xfffffffffffff000;
+	return moby_wad_offset - secondary_header_delta;
 }
 
 void level_data::import_moby_wad(level_impl& lvl, stream& moby_wad) {
