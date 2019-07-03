@@ -92,7 +92,7 @@ public:
 	// A resource path is a string that specifies how the resource loaded is
 	// stored on disc. For example, "wad(file(LEVEL4.WAD)+0x1000)+0x10"  would
 	// indicate the resource is stored in a WAD compressed segment starting at
-	// 0x1000 in LEVEL4.WAD at offset 0x10 within the uncompressed data.
+	// 0x1000 in LEVEL4.WAD at offset 0x10 within the decompressed data.
 	//
 	// This is very useful for debugging as it enables me to easily locate
 	// various structures in a hex editor.
