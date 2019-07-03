@@ -33,28 +33,6 @@ void gui::render(app& a) {
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
-	a.if_level([&a](const level_impl& lvl) {
-		// Draw floating text over each moby showing its class name.
-		ImDrawList* draw_list = ImGui::GetBackgroundDrawList();
-		for(const auto& object : lvl.point_objects()) {
-			glm::mat4 model = glm::translate(glm::mat4(1.f), object->position());
-			glm::vec4 homogeneous_pos = get_view_projection_matrix(lvl) * model * glm::vec4(0, 0, 0, 1);
-			glm::vec3 gl_pos = {
-				homogeneous_pos.x / homogeneous_pos.w,
-				homogeneous_pos.y / homogeneous_pos.w,
-				homogeneous_pos.z / homogeneous_pos.w
-			};
-			if(gl_pos.z > 0 && gl_pos.z < 1) {
-				ImVec2 position(
-					(1 + gl_pos.x) * a.window_width / 2.0,
-					(1 - gl_pos.y) * a.window_height / 2.0
-				);
-				static const int colour = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
-				draw_list->AddText(position, colour, object->label().c_str());
-			}
-		}
-	});
-
 	render_menu_bar(a);
 
 	for(auto& current_window : a.windows) {
@@ -96,6 +74,7 @@ void gui::render_menu_bar(app& a) {
 		ImGui::EndMenu();
 	}
 	if(ImGui::BeginMenu("Windows")) {
+		render_menu_bar_window_toggle<three_d_view>(a, &a);
 		render_menu_bar_window_toggle<moby_list>(a);
 		render_menu_bar_window_toggle<inspector<app>>(a, &a);
 		render_menu_bar_window_toggle<viewport_information>(a);
@@ -172,19 +151,21 @@ ImVec2 gui::viewport_information::initial_size() const {
 }
 
 void gui::viewport_information::render(app& a) {
-	a.if_level([](level& lvl) {
-		glm::vec3 cam_pos = lvl.camera_position;
+	if(auto view = a.get_3d_view()) {
+
+		glm::vec3 cam_pos = (*view)->camera_position;
 		ImGui::Text("Camera Position:\n\t%.3f, %.3f, %.3f",
 			cam_pos.x, cam_pos.y, cam_pos.z);
-		glm::vec2 cam_rot = lvl.camera_rotation;
+		glm::vec2 cam_rot = (*view)->camera_rotation;
 		ImGui::Text("Camera Rotation:\n\tPitch=%.3f, Yaw=%.3f",
 			cam_rot.x, cam_rot.y);
 		ImGui::Text("Camera Control (Z to toggle):\n\t%s",
-			lvl.camera_control ? "On" : "Off");
+			(*view)->camera_control ? "On" : "Off");
+
 		if(ImGui::Button("Reset Camera")) {
-			lvl.reset_camera();
+			(*view)->reset_camera(a);
 		}
-	});
+	}
 }
 
 /*

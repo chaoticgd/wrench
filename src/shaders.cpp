@@ -102,8 +102,8 @@ shader_programs::shader_programs()
 		R"(
 			#version 330 core
 
-			uniform vec3 rgb;
-			out vec3 colour;
+			uniform vec4 rgb;
+			out vec4 colour;
 
 			void main() {
 				colour = rgb;

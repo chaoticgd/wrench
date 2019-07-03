@@ -27,6 +27,7 @@
 #include "level.h"
 
 class window;
+class three_d_view;
 
 struct app {
 	std::vector<std::unique_ptr<window>> windows;
@@ -38,13 +39,15 @@ struct app {
 	int window_width, window_height;
 
 	bool has_level() const;
-	bool has_camera_control() const;
 
 	// This ensures that the level object is only accessed if it exists.
 	void if_level(std::function<void(level&)> callback);
 	void if_level(std::function<void(const level_impl&)> callback) const;
 	void if_level(std::function<void(level&, const level_impl&)> callback);
 	void import_level(std::string path);
+
+	bool has_camera_control();
+	std::optional<three_d_view*> get_3d_view();
 
 	// Used by the inspector.
 	template <typename... T>

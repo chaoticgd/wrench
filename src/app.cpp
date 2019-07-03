@@ -20,20 +20,13 @@
 
 #include "gui.h"
 #include "stream.h"
+#include "renderer.h"
 #include "worker_thread.h"
 #include "formats/level_data.h"
 #include "formats/texture.h"
 
 bool app::has_level() const {
 	return _level.get() != nullptr;
-}
-
-bool app::has_camera_control() const {
-	bool result = false;
-	if_level([&result](const level_impl& lvl) {
-		result = lvl.camera_control;
-	});
-	return result;
 }
 
 void app::if_level(std::function<void(level&)> callback) {
@@ -73,7 +66,26 @@ void app::import_level(std::string path) {
 		},
 		[=](std::unique_ptr<level_impl> lvl) {
 			_level.swap(lvl);
-			_level->reset_camera();
+			if(auto view = get_3d_view()) {
+				static_cast<three_d_view*>(*view)->reset_camera(*this);
+			}
 		}
 	));
+}
+
+bool app::has_camera_control() {
+	auto view = get_3d_view();
+	if(!view) {
+		return false;
+	}
+	return static_cast<three_d_view*>(*view)->camera_control;
+}
+
+std::optional<three_d_view*> app::get_3d_view() {
+	for(auto& window : windows) {
+		if(dynamic_cast<three_d_view*>(window.get()) != nullptr) {
+			return dynamic_cast<three_d_view*>(window.get());
+		}
+	}
+	return {};
 }

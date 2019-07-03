@@ -22,18 +22,39 @@
 #define GLM_ENABLE_EXPERIMENTAL
 
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <glm/common.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
-#include "shaders.h"
 #include "app.h"
+#include "shaders.h"
+#include "window.h"
 
 using vertex_list = std::vector<std::array<glm::vec3, 3>>;
 
-glm::mat4 get_view_projection_matrix(const level& lvl);
+class three_d_view : public window {
+public:
+	three_d_view(const app* a);
+	~three_d_view();
+	const char* title_text() const;
+	ImVec2 initial_size() const;
+	void render(app& a);
 
-void draw_current_level(const app& a, shader_programs& shaders);
-void draw_level(const level_impl& lvl, shader_programs& shaders);
-void draw_test_tri(shader_programs& shaders, glm::mat4 mvp, glm::vec3 colour);
+	void draw_current_level(const app& a) const;
+	void draw_level(const level_impl& lvl) const;
+	void draw_test_tri(glm::mat4 mvp, glm::vec3 colour) const;
+
+	void draw_overlay_text(const app& a) const;
+
+	glm::mat4 get_view_projection_matrix() const;
+
+	void reset_camera(const app& a);
+	bool camera_control;
+	glm::vec3 camera_position;
+	glm::vec2 camera_rotation;
+private:
+	GLuint _frame_buffer_texture;
+	std::unique_ptr<shader_programs> _shaders;
+	ImVec2 _viewport_size;
+};
 
 #endif
