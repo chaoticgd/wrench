@@ -70,6 +70,19 @@ namespace gui {
 		T* _subject;
 	};
 
+	// Passed as the template parameter to the inspector.
+	class inspector_reflector {
+	public:
+		inspector_reflector(stream** selection)
+			: _selection(selection) {}
+
+		template <typename... T_callbacks>
+		void reflect(T_callbacks... callbacks);
+
+	private:
+		stream** _selection;
+	};
+
 	class viewport_information : public window {
 	public:
 		const char* title_text() const override;
@@ -155,16 +168,8 @@ void gui::inspector<T>::render(app& a) {
 		return;
 	}
 
-	/*a.bind_level([this](level& lvl) {
-		if(lvl.selection.size() < 1) {
-			ImGui::Text("<no selection>");
-			return;
-		} else if(lvl.selection.size() > 1) {
-			ImGui::Text("<multiple mobies selected>");
-			return;
-		}
-
-		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2,2));
+	a.bind_level([this](level& lvl) {
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
 		ImGui::Columns(2);
 		ImGui::SetColumnWidth(0, 80);
 
@@ -197,7 +202,11 @@ void gui::inspector<T>::render(app& a) {
 		);
 
 		ImGui::PopStyleVar();
-	});*/
+
+		if(i == 0) {
+			ImGui::Text("<no properties>");
+		}
+	});
 }
 
 template <typename T>
@@ -220,6 +229,19 @@ std::function<void(const char* name, rf::property<T_data_type> p)>
 		ImGui::PopID();
 		ImGui::PopItemWidth();
 	};
+}
+
+template <typename... T_callbacks>
+void gui::inspector_reflector::reflect(T_callbacks... callbacks) {
+	stream* selection = *_selection;
+
+	if(selection == nullptr) {
+		return;
+	}
+
+	if(auto mob = dynamic_cast<moby*>(selection)) {
+		mob->reflect(callbacks...);
+	}
 }
 
 #endif

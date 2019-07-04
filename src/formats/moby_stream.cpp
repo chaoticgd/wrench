@@ -36,8 +36,8 @@ void moby_stream::set_uid(uint32_t uid_) {
 	write<fmt::moby>(0, data);
 }
 
-uint16_t moby_stream::class_num() {
-	auto data = read<fmt::moby>(0);
+uint16_t moby_stream::class_num() const {
+	auto data = read_c<fmt::moby>(0);
 	return data.class_num;
 }
 

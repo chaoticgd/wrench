@@ -31,8 +31,14 @@ class level;
 class window;
 class three_d_view;
 
+namespace gui {
+	class inspector_reflector;
+}
+
 class app {
 public:
+	app();
+
 	std::vector<std::unique_ptr<window>> windows;
 
 	glm::vec2 mouse_last;
@@ -53,13 +59,8 @@ public:
 	bool has_camera_control();
 	std::optional<three_d_view*> get_3d_view();
 
-	// Used by the inspector.
-	template <typename... T>
-	void reflect(T... callbacks) {
-		//if_level([=](level& lvl) {
-		//	lvl.reflect(callbacks...);
-		//});
-	}
+	stream* selection;
+	std::unique_ptr<gui::inspector_reflector> reflector;
 
 private:
 	std::unique_ptr<iso_stream> _iso;

@@ -77,7 +77,7 @@ void gui::render_menu_bar(app& a) {
 		render_menu_bar_window_toggle<iso_tree>(a);
 		render_menu_bar_window_toggle<three_d_view>(a, &a);
 		render_menu_bar_window_toggle<moby_list>(a);
-		render_menu_bar_window_toggle<inspector<app>>(a, &a);
+		render_menu_bar_window_toggle<inspector<inspector_reflector>>(a, a.reflector.get());
 		render_menu_bar_window_toggle<viewport_information>(a);
 		render_menu_bar_window_toggle<string_viewer>(a);
 		ImGui::EndMenu();
@@ -133,8 +133,17 @@ void gui::iso_tree::render(app& a) {
 void gui::iso_tree::render_tree_node(app& a, stream* node, int depth) {
 	ImGui::PushID(*reinterpret_cast<int*>(&node));
 
+	// This is rather hacky. I should clean it up later.
 	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
-	bool node_open = ImGui::TreeNodeEx(node->display_name.c_str(), flags);
+	bool node_open = ImGui::TreeNodeEx("", flags);
+	ImGui::SameLine();
+	std::string button_text = node->display_name;
+	if(node == a.selection) {
+		button_text = std::string("*** ") + button_text;
+	} 
+	if(ImGui::Button(button_text.c_str())) {
+		a.selection = node;
+	}
 	ImGui::NextColumn();
 
 	ImGui::Text("%s", node->resource_path().c_str());

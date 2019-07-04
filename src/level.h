@@ -25,6 +25,8 @@
 #include <vector>
 #include <glm/glm.hpp>
 
+#include "reflection/refolder.h"
+
 class moby;
 
 class point_object {
@@ -50,7 +52,7 @@ public:
 	virtual uint32_t uid() const = 0;
 	virtual void set_uid(uint32_t uid_) = 0;
 
-	virtual uint16_t class_num() = 0;
+	virtual uint16_t class_num() const = 0;
 	virtual void set_class_num(uint16_t class_num_) = 0;
 
 	virtual glm::vec3 position() const = 0;
@@ -60,6 +62,15 @@ public:
 	virtual void set_rotation(glm::vec3 rotation_) = 0;
 
 	virtual std::string class_name() const = 0;
+
+	template <typename... T>
+	void reflect(T... callbacks) {
+		rf::reflector r(this, callbacks...);
+		r.visit_m("UID",      &moby::uid,       &moby::set_uid);
+		r.visit_m("Class",    &moby::class_num, &moby::set_class_num);
+		r.visit_m("Position", &moby::position,  &moby::set_position);
+		r.visit_m("Rotation", &moby::rotation,  &moby::set_rotation);
+	}
 };
 
 #endif

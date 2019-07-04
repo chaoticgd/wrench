@@ -24,6 +24,10 @@
 #include "worker_thread.h"
 #include "level.h"
 
+app::app()
+	: selection(nullptr),
+	  reflector(std::make_unique<gui::inspector_reflector>(&selection)) {}
+
 bool app::has_iso() const {
 	return _iso.get() != nullptr;
 }

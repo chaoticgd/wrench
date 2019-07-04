@@ -35,7 +35,7 @@ public:
 	uint32_t uid() const;
 	void set_uid(uint32_t uid_);
 
-	uint16_t class_num();
+	uint16_t class_num() const;
 	void set_class_num(uint16_t class_num_);
 
 	glm::vec3 position() const;
@@ -47,15 +47,6 @@ public:
 	std::string class_name() const;
 
 	static const std::map<uint16_t, const char*> class_names;
-
-	template <typename... T>
-	void reflect(T... callbacks) {
-		rf::reflector r(this, callbacks...);
-		r.visit_f("UID",      &moby_stream::uid,       &moby_stream::set_uid);
-		r.visit_r("Class",    &moby_stream::class_num, &moby_stream::set_class_num);
-		r.visit_m("Position", &moby_stream::position,  &moby_stream::set_position);
-		r.visit_m("Rotation", &moby_stream::rotation,  &moby_stream::set_rotation);
-	}
 
 	struct fmt {
 		packed_struct(vec3f,
