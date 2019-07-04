@@ -18,25 +18,18 @@
 
 #include "texture.h"
 
-uint32_t locate_secondary_header(stream& level_file) {
-	uint32_t moby_wad = level_data::locate_moby_wad(level_file);
-	uint32_t secondary_hdr_offset = level_data::locate_secondary_header
-		(level_file.read<level_data::master_header>(0), moby_wad);
-	return secondary_hdr_offset;
-}
-
 texture::texture(stream* texture_segment, uint32_t entry_offset)
-	: proxy_stream(texture_segment, 0),
+	: proxy_stream(texture_segment, 0, -1, "Texture"),
 	  _entry_offset(entry_offset) {}
 
-texture_provider::texture_provider(stream* level_file)
-	: proxy_stream(level_file, locate_secondary_header(*level_file)) {}
+texture_provider::texture_provider(stream* level_file, uint32_t secondary_header_offset)
+	: proxy_stream(level_file, secondary_header_offset, -1, "Textures") {}
 
 std::vector<std::unique_ptr<texture>> texture_provider::textures() {
 	std::vector<std::unique_ptr<texture>> result;
 
-	auto header = read<level_data::secondary_header>(0);
-	auto tex_header = read<fmt::header>(header.textures_ptr);
+	auto header = read<level_stream::fmt::secondary_header>(0);
+	auto tex_header = read<fmt::header>(header.textures.value);
 	uint32_t texture_entry_offset = tex_header.textures.value;
 	for(uint32_t i = 0; i < tex_header.num_textures; i++) {
 		// TODO: Create texture streams.

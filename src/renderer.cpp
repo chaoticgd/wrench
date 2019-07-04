@@ -18,6 +18,8 @@
 
 #include "renderer.h"
 
+#include "level.h"
+
 three_d_view::three_d_view(const app* a)
 	: camera_control(false), _frame_buffer_texture(0) {
 	reset_camera(*a);
@@ -78,7 +80,7 @@ void three_d_view::render(app& a) {
 
 void three_d_view::reset_camera(const app& a) {
 	bool has_level = false;
-	a.if_level([=, &has_level](const level_impl& lvl) {
+	a.bind_level([=, &has_level](const level& lvl) {
 		const auto& mobies = lvl.mobies();
 		glm::vec3 sum(0, 0, 0);
 		for(const auto& [uid, moby] : mobies) {
@@ -87,7 +89,6 @@ void three_d_view::reset_camera(const app& a) {
 		camera_position = sum / static_cast<float>(mobies.size());
 		has_level = true;
 	});
-
 	if(!has_level) {
 		camera_position = glm::vec3(0, 0, 0);
 	}
@@ -96,12 +97,12 @@ void three_d_view::reset_camera(const app& a) {
 }
 
 void three_d_view::draw_current_level(const app& a) const {
-	a.if_level([=](const level_impl& lvl) {
+	a.bind_level([=](const level& lvl) {
 		draw_level(lvl);
 	});
 }
 
-void three_d_view::draw_level(const level_impl& lvl) const {
+void three_d_view::draw_level(const level& lvl) const {
 	glm::mat4 projection_view = get_view_projection_matrix();
 
 	glEnable(GL_DEPTH_TEST);
@@ -110,16 +111,16 @@ void three_d_view::draw_level(const level_impl& lvl) const {
 	for(auto& [uid, moby] : lvl.mobies()) {
 		glm::mat4 model = glm::translate(glm::mat4(1.f), moby->position());
 		glm::mat4 mvp = projection_view * model;
-		glm::vec3 colour =
-			lvl.is_selected(uid) ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
+		glm::vec3 colour = glm::vec3(1, 0, 0);
+		//	lvl.is_selected(uid) ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
 		draw_test_tri(mvp, colour);
 	}
 
 	// Draw ship.
 	{
-		glm::mat4 model = glm::translate(glm::mat4(1.f), lvl.ship.position());
-		glm::mat4 mvp = projection_view * model;
-		draw_test_tri(mvp, glm::vec3(0, 0, 1));
+		//glm::mat4 model = glm::translate(glm::mat4(1.f), lvl.ship.position());
+		//glm::mat4 mvp = projection_view * model;
+		//draw_test_tri(mvp, glm::vec3(0, 0, 1));
 	}
 }
 
@@ -153,7 +154,7 @@ void three_d_view::draw_test_tri(glm::mat4 mvp, glm::vec3 colour) const {
 
 void three_d_view::draw_overlay_text(const app& a) const {
 	// Draw floating text over each moby showing its class name.
-	a.if_level([=](const level_impl& lvl) {
+	a.bind_level([=](const level& lvl) {
 		ImDrawList* draw_list = ImGui::GetWindowDrawList();
 		ImVec2 window_pos = ImGui::GetWindowPos();
 		for(const auto& object : lvl.point_objects()) {

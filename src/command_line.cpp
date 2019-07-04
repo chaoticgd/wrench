@@ -105,7 +105,7 @@ int run_cli_converter(
 	uint32_t offset;
 	offset_stream >> offset;
 	
-	proxy_stream src_proxy(&src, offset);
+	proxy_stream src_proxy(&src, offset, src.size() - offset);
 
 	auto op = commands.find(command);
 	if(op == commands.end()) {

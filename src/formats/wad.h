@@ -39,3 +39,12 @@ bool validate_wad(char* magic);
 // Throws stream_io_error, stream_format_error.
 void decompress_wad(stream& dest, stream& src);
 void decompress_wad_n(stream& dest, stream& src, uint32_t bytes_to_decompress);
+
+class wad_stream : public array_stream {
+public:
+	wad_stream(stream* backing, uint32_t wad_offset);
+
+private:
+	stream* _backing;
+	uint32_t _wad_offset;
+};

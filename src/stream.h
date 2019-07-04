@@ -29,9 +29,13 @@
 #include <type_traits>
 #include <boost/stacktrace.hpp>
 
+#include "tree.h"
+
 /*
 	A set of utility classes and macros for working with binary files.
 */
+
+class app;
 
 #ifdef _MSC_VER
 	#define packed_struct(name, body \
@@ -80,7 +84,7 @@ struct stream_format_error : public stream_error {
 	using stream_error::stream_error;
 };
 
-class stream {
+class stream : public tree_node<stream> {
 public:
 	virtual uint32_t size() = 0;
 	virtual void seek(uint32_t offset) = 0;
@@ -88,6 +92,12 @@ public:
 
 	virtual void read_n(char* dest, uint32_t size) = 0;
 	virtual void write_n(const char* data, uint32_t size) = 0;
+
+	// Populate this stream's children. For example, calling populate on a
+	// iso_stream should create one child for each file on the disc.
+	virtual void populate(app* a) {
+		is_populated = true;
+	}
 
 	// A resource path is a string that specifies how the resource loaded is
 	// stored on disc. For example, "wad(file(LEVEL4.WAD)+0x1000)+0x10"  would
@@ -110,6 +120,15 @@ public:
 	T read(uint32_t offset) {
 		seek(offset);
 		return read<T>();
+	}
+
+	template <typename T>
+	T read_c(uint32_t offset) const {
+		stream* this_ = const_cast<stream*>(this);
+		uint32_t whence_you_came = this_->tell();
+		T value = this_->read<T>(offset);
+		this_->seek(whence_you_came);
+		return value;
 	}
 
 	std::string read_string() {
@@ -192,8 +211,14 @@ public:
 		_last_printed = tell();
 	}
 
+	bool is_populated;
+	std::string display_name;
+
 protected:
-	stream() : _last_printed(0) {}
+	stream(std::string display_name_ = "")
+		: is_populated(false),
+		  display_name(display_name_),
+		  _last_printed(0) {}
 
 private:
 
@@ -202,11 +227,12 @@ private:
 
 class file_stream : public stream {
 public:
-	file_stream(std::string path)
-		: file_stream(path, std::ios::in) {}
+	file_stream(std::string path, std::string display_name_ = "")
+		: file_stream(path, std::ios::in, display_name_) {}
 
-	file_stream(std::string path, std::ios_base::openmode mode)
-		: _file(path, mode | std::ios::binary),
+	file_stream(std::string path, std::ios_base::openmode mode, std::string display_name_ = "")
+		: stream(display_name_),
+		  _file(path, mode | std::ios::binary),
 		  _path(path) {
 		if(_file.fail()) {
 			throw stream_io_error("Failed to open file.");
@@ -257,7 +283,9 @@ private:
 
 class array_stream : public stream {
 public:
-	array_stream() : _offset(0) {}
+	array_stream(std::string display_name = "")
+		: stream(display_name),
+		  _offset(0) {}
 	
 	uint32_t size() {
 		return _allocation.size();
@@ -302,11 +330,14 @@ private:
 // a stream to allow for more convenient access a texture within a disk image.
 class proxy_stream : public stream {
 public:
-	proxy_stream(stream* backing, uint32_t zero)
-		: _backing(backing), _zero(zero) {}
+	proxy_stream(stream* backing, uint32_t zero, uint32_t size, std::string display_name_ = "")
+		: stream(display_name_),
+		  _backing(backing),
+		  _zero(zero),
+		  _size(size) {}
 
 	uint32_t size() {
-		return _backing->size() - _zero;
+		return std::min(_size, _backing->size() - _zero);
 	}
 
 	void seek(uint32_t offset) {
@@ -334,6 +365,7 @@ public:
 private:
 	stream* _backing;
 	uint32_t _zero;
+	uint32_t _size;
 };
 
 #endif

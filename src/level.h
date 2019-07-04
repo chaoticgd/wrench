@@ -25,74 +25,41 @@
 #include <vector>
 #include <glm/glm.hpp>
 
-#include "command.h"
-#include "object_types.h"
-#include "moby.h"
+class moby;
 
-class level_impl;
-class selection_adapter;
+class point_object {
+public:
+	virtual std::string label() const = 0;
+	virtual glm::vec3 position() const = 0;
+};
 
-using string_table = std::vector<std::pair<uint32_t, std::string>>;
-
-// Represents a level currently loaded into wrench. A mostly opaque type,
-// allowing only for undo stack manipulation among some other odds and ends.
-// Only command objects should access the (non const) level_impl type directly
-// if we are to have any hope of implementing a working undo/redo system!
 class level {
 public:
-	template <typename T_sub_type, typename... T_constructor_args>
-	void emplace_command(T_constructor_args... args);
+	virtual ~level() = default;
 
-	bool undo();
-	bool redo();
+	virtual std::vector<const point_object*> point_objects() const = 0;
 
-	bool is_selected(uint32_t uid) const;
-	std::set<uint32_t> selection;
-
-protected:
-	level();
-
-	std::vector<std::unique_ptr<command>> _history;
-	std::size_t _history_index;
-
-public:
-
-	// Used by the inspector.
-	template <typename... T>
-	void reflect(T... callbacks);
+	virtual std::map<uint32_t, moby*> mobies() = 0;
+	virtual std::map<uint32_t, const moby*> mobies() const = 0;
 };
 
-class level_impl : public level {
+class moby : public point_object {
 public:
-	level_impl();
+	virtual ~moby() = default;
 
-	std::vector<const point_object*> point_objects() const;
+	virtual uint32_t uid() const = 0;
+	virtual void set_uid(uint32_t uid_) = 0;
 
-	void add_moby(uint32_t uid, std::unique_ptr<moby> m) { _mobies[uid].swap(m); }
-	std::map<uint32_t, const moby*> mobies() const;
+	virtual uint16_t class_num() = 0;
+	virtual void set_class_num(uint16_t class_num_) = 0;
 
-	ship_moby ship;
-	std::vector<std::pair<std::string, string_table>> strings;
+	virtual glm::vec3 position() const = 0;
+	virtual void set_position(glm::vec3 rotation_) = 0;
 
-private:
-	std::map<uint32_t, std::unique_ptr<moby>> _mobies;
+	virtual glm::vec3 rotation() const = 0;
+	virtual void set_rotation(glm::vec3 rotation_) = 0;
+
+	virtual std::string class_name() const = 0;
 };
-
-template <typename T_sub_type, typename... T_constructor_args>
-void level::emplace_command(T_constructor_args... args) {
-	auto cmd = std::unique_ptr<command>(new T_sub_type(args...));
-	cmd->inject_level_pointer(static_cast<level_impl*>(this));
-	cmd->apply();
-	_history.resize(_history_index + 1);
-	_history[_history_index++].swap(cmd);
-}
-
-template <typename... T>
-void level::reflect(T... callbacks) {
-	if(selection.size() > 0) {
-		const auto& mobies = static_cast<level_impl*>(this)->mobies();
-		const_cast<moby*>(mobies.at(*selection.begin()))->reflect(callbacks...);
-	}
-}
 
 #endif

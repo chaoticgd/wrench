@@ -23,13 +23,16 @@
 #include <vector>
 #include <memory>
 #include <functional>
+#include <glm/glm.hpp>
 
-#include "level.h"
+#include "formats/iso.h"
 
+class level;
 class window;
 class three_d_view;
 
-struct app {
+class app {
+public:
 	std::vector<std::unique_ptr<window>> windows;
 
 	glm::vec2 mouse_last;
@@ -38,13 +41,14 @@ struct app {
 
 	int window_width, window_height;
 
-	bool has_level() const;
+	bool has_iso() const;
+	// This ensures that the ISO object is only accessed if it exists.
+	void bind_iso(std::function<void(stream&)> callback);
+	void open_iso(std::string path);
 
-	// This ensures that the level object is only accessed if it exists.
-	void if_level(std::function<void(level&)> callback);
-	void if_level(std::function<void(const level_impl&)> callback) const;
-	void if_level(std::function<void(level&, const level_impl&)> callback);
-	void import_level(std::string path);
+	bool has_level() const;
+	void bind_level(std::function<void(level&)> callback);
+	void bind_level(std::function<void(const level&)> callback) const;
 
 	bool has_camera_control();
 	std::optional<three_d_view*> get_3d_view();
@@ -52,13 +56,13 @@ struct app {
 	// Used by the inspector.
 	template <typename... T>
 	void reflect(T... callbacks) {
-		if_level([=](level& lvl) {
-			lvl.reflect(callbacks...);
-		});
+		//if_level([=](level& lvl) {
+		//	lvl.reflect(callbacks...);
+		//});
 	}
 
 private:
-	std::unique_ptr<level_impl> _level;
+	std::unique_ptr<iso_stream> _iso;
 };
 
 #endif

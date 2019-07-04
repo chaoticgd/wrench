@@ -40,7 +40,7 @@ public:
 	void render(app& a);
 
 	void draw_current_level(const app& a) const;
-	void draw_level(const level_impl& lvl) const;
+	void draw_level(const level& lvl) const;
 	void draw_test_tri(glm::mat4 mvp, glm::vec3 colour) const;
 
 	void draw_overlay_text(const app& a) const;

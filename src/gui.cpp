@@ -54,15 +54,15 @@ void gui::render_menu_bar(app& a) {
 
 	ImGui::BeginMainMenuBar();
 	if(ImGui::BeginMenu("File")) {
-		if(ImGui::BeginMenu("Import")) {
-			if(ImGui::MenuItem("R&C2 Level (.wad)")) {
-				file_import_rc2_level(a);
+		if(ImGui::BeginMenu("New")) {
+			if(ImGui::MenuItem("R&C2 PAL Project")) {
+				file_new_project(a);
 			}
 			ImGui::EndMenu();
 		}
 		ImGui::EndMenu();
 	}
-	if(ImGui::BeginMenu("Edit")) {
+	/*if(ImGui::BeginMenu("Edit")) {
 		a.if_level([&no_more_undo_levels, &no_more_redo_levels](level& lvl) {
 			if(ImGui::MenuItem("Undo")) {
 				no_more_undo_levels = !lvl.undo();
@@ -72,8 +72,9 @@ void gui::render_menu_bar(app& a) {
 			}
 		});
 		ImGui::EndMenu();
-	}
+	}*/
 	if(ImGui::BeginMenu("Windows")) {
+		render_menu_bar_window_toggle<iso_tree>(a);
 		render_menu_bar_window_toggle<three_d_view>(a, &a);
 		render_menu_bar_window_toggle<moby_list>(a);
 		render_menu_bar_window_toggle<inspector<app>>(a, &a);
@@ -92,12 +93,63 @@ void gui::render_menu_bar(app& a) {
 	}
 }
 
-void gui::file_import_rc2_level(app& a) {
-	auto path_input = std::make_unique<string_input>("Enter File Path");
+void gui::file_new_project(app& a) {
+	auto path_input = std::make_unique<string_input>("Enter Game ISO Path");
 	path_input->on_okay([](app& a, std::string path) {
-		a.import_level(path);
+		a.open_iso(path);
 	});
 	a.windows.emplace_back(std::move(path_input));
+}
+
+/*
+	iso_tree
+*/
+
+const char* gui::iso_tree::title_text() const {
+	return "ISO Tree";
+}
+
+ImVec2 gui::iso_tree::initial_size() const {
+	return ImVec2(400, 800);
+}
+
+void gui::iso_tree::render(app& a) {
+	a.bind_iso([&a](stream& root) {
+		ImGui::Columns(2);
+
+		ImGui::Text("Name");
+		ImGui::NextColumn();
+		ImGui::Text("Resource Path");
+		ImGui::NextColumn();
+		ImGui::Text("----");
+		ImGui::NextColumn();
+		ImGui::Text("-------------");
+		ImGui::NextColumn();
+
+		render_tree_node(a, &root, 0);
+	});
+}
+
+void gui::iso_tree::render_tree_node(app& a, stream* node, int depth) {
+	ImGui::PushID(*reinterpret_cast<int*>(&node));
+
+	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
+	bool node_open = ImGui::TreeNodeEx(node->display_name.c_str(), flags);
+	ImGui::NextColumn();
+
+	ImGui::Text("%s", node->resource_path().c_str());
+	ImGui::NextColumn();
+
+	if(node_open) {
+		if(!node->is_populated) {
+			node->populate(&a);
+		}
+		for(auto& child : node->children()) {
+			render_tree_node(a, child, depth + 1);
+		}
+		ImGui::TreePop();
+	}
+	ImGui::PopID();
 }
 
 /*
@@ -113,25 +165,24 @@ ImVec2 gui::moby_list::initial_size() const {
 }
 
 void gui::moby_list::render(app& a) {
-	a.if_level([](level& lvl, const level_impl& lvl_impl) {
+	a.bind_level([](const level& lvl) {
 		ImVec2 size = ImGui::GetWindowSize();
 		size.x -= 16;
 		size.y -= 64;
 
-		ImGui::Text("UID  Class             Name");
+		ImGui::Text("UID  Class");
 
 		ImGui::PushItemWidth(-1);
 		ImGui::ListBoxHeader("##nolabel", size);
-		for(const auto& [uid, moby] : lvl_impl.mobies()) {
+		for(const auto& [uid, moby] : lvl.mobies()) {
 			std::stringstream row;
 			row << std::setfill(' ') << std::setw(4) << std::dec << uid << " ";
-			row << std::setfill(' ') << std::setw(16) << std::hex << moby->get_class_name() << " ";
-			row << moby->name;
+			row << std::setfill(' ') << std::setw(16) << std::hex << moby->class_name() << " ";
 
-			bool is_selected = lvl.selection.find(uid) != lvl.selection.end();
-			if(ImGui::Selectable(row.str().c_str(), is_selected)) {
-				lvl.selection = { uid };
-			}
+			//bool is_selected = lvl.selection.find(uid) != lvl.selection.end();
+			//if(ImGui::Selectable(row.str().c_str(), is_selected)) {
+			//	// lvl.selection = { uid };
+			//}
 		}
 		ImGui::ListBoxFooter();
 		ImGui::PopItemWidth();
@@ -181,7 +232,7 @@ ImVec2 gui::string_viewer::initial_size() const {
 }
 
 void gui::string_viewer::render(app& a) {
-	a.if_level([=, &a](const level_impl& lvl) {
+	/*a.bind_level([=, &a](const level& lvl) {
 
 		ImGui::Columns(2);
 
@@ -227,7 +278,7 @@ void gui::string_viewer::render(app& a) {
 			ImGui::Text("%x: %s", string.first, string.second.c_str());
 		}
 		ImGui::EndChild();
-	});
+	});*/
 }
 
 /*

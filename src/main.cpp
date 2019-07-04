@@ -20,10 +20,10 @@
 #include <GLFW/glfw3.h>
 
 #include "command_line.h"
-#include "gui.h"
 #include "app.h"
+#include "gui.h"
 #include "renderer.h"
-#include "formats/level_data.h"
+#include "formats/level_stream.h"
 
 void update_camera_movement(app* a);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -31,18 +31,19 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 
 int main(int argc, char** argv) {
 
-	std::string level_path;
+	std::string iso_path;
 
 	po::options_description desc("A level editor for the Ratchet & Clank games");
 	desc.add_options()
-		("import,i", po::value<std::string>(&level_path),
-			"Import the specified WAD level file.");
+		("open,o", po::value<std::string>(&iso_path),
+			"Open the specified ISO file.");
 
 	if(!parse_command_line_args(argc, argv, desc)) {
 		return 0;
 	}
 
 	app a;
+	a.windows.emplace_back(std::make_unique<gui::iso_tree>());
 	a.windows.emplace_back(std::make_unique<gui::moby_list>());
 	a.windows.emplace_back(std::make_unique<gui::inspector<app>>(&a));
 	a.windows.emplace_back(std::make_unique<three_d_view>(&a));
@@ -78,8 +79,8 @@ int main(int argc, char** argv) {
     ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init("#version 130");
 
-	if(level_path != "") {
-		a.import_level(level_path);
+	if(iso_path != "") {
+		a.open_iso(iso_path);
 	}
 
 	while(!glfwWindowShouldClose(window)) {

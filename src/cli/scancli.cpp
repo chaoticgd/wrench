@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
 	uint32_t max_offset = src.size() - buffer_size - initial_offset;
 	for(uint32_t offset = initial_offset; offset < max_offset; offset += alignment) {
 
-		proxy_stream segment(&src, offset);
+		proxy_stream segment(&src, offset, src.size() - offset);
 		stream* segment_ptr = &segment;
 
 		nlohmann::json outer_output;

@@ -24,9 +24,7 @@
 #include <glm/glm.hpp>
 
 #include "../stream.h"
-#include "level_data.h"
-
-uint32_t locate_secondary_header(stream& level_file);
+#include "level_stream.h"
 
 class texture_provider;
 
@@ -103,7 +101,7 @@ public:
 		};
 	};
 
-	texture_provider(stream* level_file);
+	texture_provider(stream* level_file, uint32_t secondary_header_offset);
 
 	std::vector<std::unique_ptr<texture>> textures();
 };

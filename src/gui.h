@@ -23,6 +23,7 @@
 
 #include "imgui_includes.h"
 #include "app.h"
+#include "level.h"
 #include "window.h"
 #include "commands/property_changed_command.h"
 
@@ -33,7 +34,17 @@ namespace gui {
 	template <typename T, typename... T_constructor_args>
 	void render_menu_bar_window_toggle(app& a, T_constructor_args... args);
 
-	void file_import_rc2_level(app& a);
+	void file_new_project(app& a);
+
+	class iso_tree : public window {
+	public:
+		const char* title_text() const override;
+		ImVec2 initial_size() const override;
+		void render(app& a) override;
+
+	private:
+		static void render_tree_node(app& a, stream* node, int depth);
+	};
 
 	class moby_list : public window {
 	public:
@@ -144,7 +155,7 @@ void gui::inspector<T>::render(app& a) {
 		return;
 	}
 
-	a.if_level([this](level& lvl) {
+	/*a.bind_level([this](level& lvl) {
 		if(lvl.selection.size() < 1) {
 			ImGui::Text("<no selection>");
 			return;
@@ -186,7 +197,7 @@ void gui::inspector<T>::render(app& a) {
 		);
 
 		ImGui::PopStyleVar();
-	});
+	});*/
 }
 
 template <typename T>
@@ -203,7 +214,7 @@ std::function<void(const char* name, rf::property<T_data_type> p)>
 		ImGui::PushItemWidth(-1);
 		T_data_type value = p.get();
 		if(input("##nolabel", &value)) {
-			lvl.emplace_command<property_changed_command<T_data_type>>(p, value);
+			//lvl.emplace_command<property_changed_command<T_data_type>>(p, value);
 		}
 		ImGui::NextColumn();
 		ImGui::PopID();

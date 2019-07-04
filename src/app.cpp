@@ -22,55 +22,36 @@
 #include "stream.h"
 #include "renderer.h"
 #include "worker_thread.h"
-#include "formats/level_data.h"
-#include "formats/texture.h"
+#include "level.h"
+
+bool app::has_iso() const {
+	return _iso.get() != nullptr;
+}
+
+void app::bind_iso(std::function<void(stream&)> callback) {
+	if(has_iso()) {
+		callback(*_iso.get());
+	}
+}
+
+void app::open_iso(std::string path) {
+	_iso = std::make_unique<iso_stream>(path);
+}
 
 bool app::has_level() const {
-	return _level.get() != nullptr;
+	return has_iso() && _iso->children_of_type<level>().size() > 0;
 }
 
-void app::if_level(std::function<void(level&)> callback) {
+void app::bind_level(std::function<void(level&)> callback) {
 	if(has_level()) {
-		callback(*_level.get());
+		callback(*_iso->children_of_type<level>()[0]);
 	}
 }
 
-void app::if_level(std::function<void(const level_impl&)> callback) const {
+void app::bind_level(std::function<void(const level&)> callback) const {
 	if(has_level()) {
-		callback(*_level.get());
+		callback(*_iso->children_of_type<level>()[0]);
 	}
-}
-
-void app::if_level(std::function<void(level&, const level_impl&)> callback) {
-	if(has_level()) {
-		callback(*_level.get(), *_level.get());
-	}
-}
-
-void app::import_level(std::string path) {
-	// Decompression takes a long time so we spin off another thread.
-	using worker_type = worker_thread<std::unique_ptr<level_impl>, std::string>;
-	windows.emplace_back(std::make_unique<worker_type>(
-		"Level Importer", path,
-		[](std::string path, worker_logger& log) {
-			try {
-				file_stream stream(path);
-				texture_provider tex(&stream);
-				tex.textures();
-				return std::optional(level_data::import_level(stream, log));
-			} catch(stream_error& e) {
-				log << "stream_error: " << e.what() << "\n";
-				log << e.stack_trace;
-			}
-			return std::optional<std::unique_ptr<level_impl>>();
-		},
-		[=](std::unique_ptr<level_impl> lvl) {
-			_level.swap(lvl);
-			if(auto view = get_3d_view()) {
-				static_cast<three_d_view*>(*view)->reset_camera(*this);
-			}
-		}
-	));
 }
 
 bool app::has_camera_control() {

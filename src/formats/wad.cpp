@@ -179,3 +179,9 @@ void decompress_wad_n(stream& dest, stream& src, uint32_t bytes_to_decompress) {
 
 	WAD_DEBUG(std::cout << "Stopped reading at " << src.tell() << "\n";)
 }
+
+wad_stream::wad_stream(stream* backing, uint32_t wad_offset)
+	: _backing(backing), _wad_offset(wad_offset) {
+	proxy_stream compressed_data(backing, wad_offset, backing->size() - wad_offset);
+	decompress_wad(*this, compressed_data);
+}
