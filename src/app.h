@@ -22,12 +22,14 @@
 #include <set>
 #include <vector>
 #include <memory>
+#include <optional>
 #include <functional>
 #include <glm/glm.hpp>
 
-#include "formats/iso.h"
+#include "level.h"
+#include "stream.h"
+#include "formats/level_impl.h"
 
-class level;
 class window;
 class three_d_view;
 
@@ -45,14 +47,10 @@ public:
 
 	int window_width, window_height;
 
-	bool has_iso() const;
-	// This ensures that the ISO object is only accessed if it exists.
-	void bind_iso(std::function<void(stream&)> callback);
 	void open_iso(std::string path);
 
-	bool has_level() const;
-	void bind_level(std::function<void(level&)> callback);
-	void bind_level(std::function<void(const level&)> callback) const;
+	level* get_level();
+	const level* get_level() const;
 
 	bool has_camera_control();
 	std::optional<three_d_view*> get_3d_view();
@@ -61,7 +59,8 @@ public:
 	std::unique_ptr<inspector_reflector> reflector;
 
 private:
-	std::unique_ptr<iso_stream> _iso;
+	std::optional<file_stream> _iso;
+	std::optional<level_impl> _level;
 };
 
 #endif

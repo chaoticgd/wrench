@@ -29,13 +29,9 @@
 #include <type_traits>
 #include <boost/stacktrace.hpp>
 
-#include "tree.h"
-
 /*
 	A set of utility classes and macros for working with binary files.
 */
-
-class app;
 
 #ifdef _MSC_VER
 	#define packed_struct(name, body \
@@ -84,7 +80,7 @@ struct stream_format_error : public stream_error {
 	using stream_error::stream_error;
 };
 
-class stream : public tree_node<stream> {
+class stream {
 public:
 	virtual uint32_t size() = 0;
 	virtual void seek(uint32_t offset) = 0;
@@ -92,12 +88,6 @@ public:
 
 	virtual void read_n(char* dest, uint32_t size) = 0;
 	virtual void write_n(const char* data, uint32_t size) = 0;
-
-	// Populate this stream's children. For example, calling populate on a
-	// iso_stream should create one child for each file on the disc.
-	virtual void populate(app* a) {
-		is_populated = true;
-	}
 
 	// A resource path is a string that specifies how the resource loaded is
 	// stored on disc. For example, "wad(file(LEVEL4.WAD)+0x1000)+0x10"  would
@@ -131,9 +121,10 @@ public:
 		return value;
 	}
 
-	void read_nc(char* dest, uint32_t size) const {
+	void read_nc(char* dest, uint32_t pos, uint32_t size) const {
 		stream* this_ = const_cast<stream*>(this);
 		uint32_t whence_you_came = this_->tell();
+		this_->seek(pos);
 		this_->read_n(dest, size);
 		this_->seek(whence_you_came);
 	}
@@ -218,13 +209,11 @@ public:
 		_last_printed = tell();
 	}
 
-	bool is_populated;
 	std::string display_name;
 
 protected:
 	stream(std::string display_name_ = "")
-		: is_populated(false),
-		  display_name(display_name_),
+		: display_name(display_name_),
 		  _last_printed(0) {}
 
 private:

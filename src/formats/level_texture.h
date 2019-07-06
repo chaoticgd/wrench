@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef FORMATS_TEXTURE_STREAM_H
-#define FORMATS_TEXTURE_STREAM_H
+#ifndef FORMATS_LEVEL_TEXTURE_H
+#define FORMATS_LEVEL_TEXTURE_H
 
 #include <array>
 #include <vector>
@@ -25,13 +25,12 @@
 
 #include "../stream.h"
 #include "../texture.h"
-#include "level_stream.h"
 
 class texture_provider;
 
-class texture_stream : public texture, public proxy_stream {
+class level_texture : public texture {
 public:
-	texture_stream(stream* pixel_data_base, uint32_t pixel_data_offset);
+	level_texture(stream* backing, uint32_t pixel_data_offset);
 
 	glm::vec2 size() const override;
 	void set_size(glm::vec2 size_) override;
@@ -43,7 +42,7 @@ public:
 	void set_pixel_data(std::vector<uint8_t> pixel_data_) override;
 
 private:
-	uint32_t _pixel_data_offset;
+	proxy_stream _pixel_data;
 
 public:
 	struct fmt {
@@ -53,22 +52,12 @@ public:
 	};
 };
 
-class texture_provider_stream : public proxy_stream, public texture_provider {
-public:
-	texture_provider_stream(stream* level_file, uint32_t secondary_header_offset);
-
-	void populate(app* a) override;
-
-	std::vector<texture*> textures() override;
-
-private:
-	std::unique_ptr<proxy_stream> _pixel_data_base;
-
+class level_texture_provider : public texture_provider {
 public:
 	struct fmt {
 		struct header {
 			uint32_t num_textures; // 0x0
-			file_ptr<texture_stream::fmt::texture> textures; // 0x4
+			file_ptr<level_texture::fmt::texture> textures; // 0x4
 			uint32_t unknown2;          // 0x8
 			uint32_t unknown3;          // 0xc
 			uint32_t unknown4;          // 0x10
@@ -107,6 +96,15 @@ public:
 			uint32_t entry_size;
 		};
 	};
+
+	level_texture_provider(stream* level_file, uint32_t secondary_header_offset);
+
+	std::vector<texture*> textures() override;
+
+private:
+	proxy_stream _backing;
+	std::unique_ptr<proxy_stream> _pixel_data_base;
+	std::vector<std::unique_ptr<level_texture>> _textures;
 };
 
 #endif

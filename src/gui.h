@@ -20,6 +20,7 @@
 #define GUI_H
 
 #include <functional>
+#include <GL/glew.h>
 
 #include "imgui_includes.h"
 #include "app.h"
@@ -35,16 +36,6 @@ namespace gui {
 	void render_menu_bar_window_toggle(app& a, T_constructor_args... args);
 
 	void file_new_project(app& a);
-
-	class iso_tree : public window {
-	public:
-		const char* title_text() const override;
-		ImVec2 initial_size() const override;
-		void render(app& a) override;
-
-	private:
-		static void render_tree_node(app& a, stream* node, int depth);
-	};
 
 	class moby_list : public window {
 	public:
@@ -68,6 +59,20 @@ namespace gui {
 	
 	private:
 		std::string _selected_language;
+	};
+	
+	class texture_browser : public window {
+	public:
+		texture_browser(texture_provider* provider);
+		~texture_browser();
+
+		const char* title_text() const override;
+		ImVec2 initial_size() const override;
+		void render(app& a) override;
+		
+	private:
+		texture_provider* _provider;
+		std::map<texture*, GLuint> _gl_textures;
 	};
 
 	class message_box : public window {

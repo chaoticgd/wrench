@@ -78,7 +78,6 @@ void gui::render_menu_bar(app& a) {
 		ImGui::EndMenu();
 	}*/
 	if(ImGui::BeginMenu("Windows")) {
-		render_menu_bar_window_toggle<iso_tree>(a);
 		render_menu_bar_window_toggle<three_d_view>(a, &a);
 		render_menu_bar_window_toggle<moby_list>(a);
 		render_menu_bar_window_toggle<inspector<inspector_reflector>>(a, a.reflector.get());
@@ -106,66 +105,6 @@ void gui::file_new_project(app& a) {
 }
 
 /*
-	iso_tree
-*/
-
-const char* gui::iso_tree::title_text() const {
-	return "ISO Tree";
-}
-
-ImVec2 gui::iso_tree::initial_size() const {
-	return ImVec2(400, 800);
-}
-
-void gui::iso_tree::render(app& a) {
-	a.bind_iso([&a](stream& root) {
-		ImGui::Columns(2);
-
-		ImGui::Text("Name");
-		ImGui::NextColumn();
-		ImGui::Text("Resource Path");
-		ImGui::NextColumn();
-		ImGui::Text("----");
-		ImGui::NextColumn();
-		ImGui::Text("-------------");
-		ImGui::NextColumn();
-
-		render_tree_node(a, &root, 0);
-	});
-}
-
-void gui::iso_tree::render_tree_node(app& a, stream* node, int depth) {
-	ImGui::PushID(*reinterpret_cast<int*>(&node));
-
-	// This is rather hacky. I should clean it up later.
-	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
-	bool node_open = ImGui::TreeNodeEx("", flags);
-	ImGui::SameLine();
-	std::string button_text = node->display_name;
-	if(node == a.selection) {
-		button_text = std::string("*** ") + button_text;
-	} 
-	if(ImGui::Button(button_text.c_str())) {
-		a.selection = node;
-	}
-	ImGui::NextColumn();
-
-	ImGui::Text("%s", node->resource_path().c_str());
-	ImGui::NextColumn();
-
-	if(node_open) {
-		if(!node->is_populated) {
-			node->populate(&a);
-		}
-		for(auto& child : node->children()) {
-			render_tree_node(a, child, depth + 1);
-		}
-		ImGui::TreePop();
-	}
-	ImGui::PopID();
-}
-
-/*
 	moby_list
 */
 
@@ -178,7 +117,7 @@ ImVec2 gui::moby_list::initial_size() const {
 }
 
 void gui::moby_list::render(app& a) {
-	a.bind_level([](const level& lvl) {
+	if(auto lvl = a.get_level()) {
 		ImVec2 size = ImGui::GetWindowSize();
 		size.x -= 16;
 		size.y -= 64;
@@ -187,7 +126,7 @@ void gui::moby_list::render(app& a) {
 
 		ImGui::PushItemWidth(-1);
 		ImGui::ListBoxHeader("##nolabel", size);
-		for(const auto& [uid, moby] : lvl.mobies()) {
+		for(const auto& [uid, moby] : lvl->mobies()) {
 			std::stringstream row;
 			row << std::setfill(' ') << std::setw(4) << std::dec << uid << " ";
 			row << std::setfill(' ') << std::setw(16) << std::hex << moby->class_name() << " ";
@@ -199,7 +138,7 @@ void gui::moby_list::render(app& a) {
 		}
 		ImGui::ListBoxFooter();
 		ImGui::PopItemWidth();
-	});
+	}
 }
 
 /*
@@ -292,6 +231,74 @@ void gui::string_viewer::render(app& a) {
 		}
 		ImGui::EndChild();
 	});*/
+}
+
+/*
+	texture_browser
+*/
+
+gui::texture_browser::texture_browser(texture_provider* provider)
+	: _provider(provider) {}
+
+gui::texture_browser::~texture_browser() {
+	for(auto& [texture, id] : _gl_textures) {
+		glDeleteTextures(1, &id);
+	}
+}
+
+const char* gui::texture_browser::title_text() const {
+	return "Texture Browser";
+}
+
+ImVec2 gui::texture_browser::initial_size() const {
+	return ImVec2(800, 600);
+}
+
+void gui::texture_browser::render(app& a) {
+	ImGui::Columns(std::max(1.f, ImGui::GetWindowSize().x / 128));
+
+	int num_loaded_this_frame = 0;
+
+	for(texture* texture : _provider->textures()) {
+		auto size = texture->size();
+		
+		if(_gl_textures.find(texture) == _gl_textures.end()) {
+
+			if(num_loaded_this_frame > 2) {
+				//ImGui::NextColumn();
+				//continue;
+			}
+
+			// Prepare pixel data.
+			std::vector<uint8_t> indexed_pixel_data = texture->pixel_data();
+			std::vector<uint8_t> colour_data(indexed_pixel_data.size() * 4);
+			
+			for(std::size_t i = 0; i < indexed_pixel_data.size(); i++) {
+				colour c = texture->palette()[indexed_pixel_data[i]];
+				colour_data[i * 4] = c.r;
+				colour_data[i * 4 + 1] = c.g;
+				colour_data[i * 4 + 2] = c.b;
+				colour_data[i * 4 + 3] = 255;
+			}
+
+			// Send image to OpenGL.
+			GLuint texture_id;
+			glGenTextures(1, &texture_id);
+			glBindTexture(GL_TEXTURE_2D, texture_id);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, colour_data.data());
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+			_gl_textures.emplace(texture, texture_id);
+
+			num_loaded_this_frame++;
+		}
+
+		ImGui::Image((void*) (intptr_t) _gl_textures.at(texture), ImVec2(128, 128));
+		ImGui::NextColumn();
+	}
+
+	ImGui::Columns(1);
 }
 
 /*

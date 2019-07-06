@@ -16,15 +16,23 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "iso.h"
+#include <glm/glm.hpp>
 
-#include "level_stream.h"
+#include "../stream.h"
 
-iso_stream::iso_stream(std::string path)
-	: file_stream(path, "Root") {}
+packed_struct(vec3f,
+	vec3f() { x = 0; y = 0; z = 0; }
+	vec3f(glm::vec3 g) { x = g.x; y = g.y; z = g.z; }
 
-void iso_stream::populate(app* a) {
-	// For now just load G/LEVEL4.WAD from a hardcoded (PAL) offset.
-	emplace_child<level_stream>(this, 0x8d794800, 0x17999dc);
-	stream::populate(a);
-}
+	float x;
+	float y;
+	float z;
+
+	glm::vec3 glm() {
+		glm::vec3 result;
+		result.x = x;
+		result.y = y;
+		result.z = z;
+		return result;
+	}
+)

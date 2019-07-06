@@ -80,15 +80,15 @@ void three_d_view::render(app& a) {
 
 void three_d_view::reset_camera(const app& a) {
 	bool has_level = false;
-	a.bind_level([=, &has_level](const level& lvl) {
-		const auto& mobies = lvl.mobies();
+	if(auto lvl = a.get_level()) {
+		const auto& mobies = lvl->mobies();
 		glm::vec3 sum(0, 0, 0);
 		for(const auto& [uid, moby] : mobies) {
 			sum += moby->position();
 		}
 		camera_position = sum / static_cast<float>(mobies.size());
 		has_level = true;
-	});
+	}
 	if(!has_level) {
 		camera_position = glm::vec3(0, 0, 0);
 	}
@@ -97,9 +97,9 @@ void three_d_view::reset_camera(const app& a) {
 }
 
 void three_d_view::draw_current_level(const app& a) const {
-	a.bind_level([=](const level& lvl) {
-		draw_level(lvl);
-	});
+	if(auto lvl = a.get_level()) {
+		draw_level(*lvl);
+	}
 }
 
 void three_d_view::draw_level(const level& lvl) const {
@@ -154,10 +154,10 @@ void three_d_view::draw_test_tri(glm::mat4 mvp, glm::vec3 colour) const {
 
 void three_d_view::draw_overlay_text(const app& a) const {
 	// Draw floating text over each moby showing its class name.
-	a.bind_level([=](const level& lvl) {
+	if(auto lvl = a.get_level()) {
 		ImDrawList* draw_list = ImGui::GetWindowDrawList();
 		ImVec2 window_pos = ImGui::GetWindowPos();
-		for(const auto& object : lvl.point_objects()) {
+		for(const auto& object : lvl->point_objects()) {
 			glm::mat4 model = glm::translate(glm::mat4(1.f), object->position());
 			glm::vec4 homogeneous_pos = get_view_projection_matrix() * model * glm::vec4(0, 0, 0, 1);
 			glm::vec3 gl_pos = {
@@ -174,7 +174,7 @@ void three_d_view::draw_overlay_text(const app& a) const {
 				draw_list->AddText(position, colour, object->label().c_str());
 			}
 		}
-	});
+	}
 }
 
 glm::mat4 three_d_view::get_view_projection_matrix() const {

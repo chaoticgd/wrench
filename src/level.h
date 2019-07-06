@@ -39,10 +39,10 @@ class level {
 public:
 	virtual ~level() = default;
 
-	virtual std::vector<const point_object*> point_objects() const = 0;
+	std::vector<const point_object*> point_objects() const;
 
 	virtual std::map<uint32_t, moby*> mobies() = 0;
-	virtual std::map<uint32_t, const moby*> mobies() const = 0;
+	std::map<uint32_t, const moby*> mobies() const;
 };
 
 class moby : public point_object {

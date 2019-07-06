@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef FORMATS_MOBY_STREAM_H
-#define FORMATS_MOBY_STREAM_H
+#ifndef FORMATS_MOBY_IMPL_H
+#define FORMATS_MOBY_IMPL_H
 
 #include <map>
 #include <glm/glm.hpp>
@@ -25,47 +25,11 @@
 #include "../stream.h"
 #include "../level.h"
 #include "../reflection/refolder.h"
+#include "vec3f.h"
 
-class moby_stream : public moby, public proxy_stream {
+class moby_impl : public moby {
 public:
-	moby_stream(stream* moby_table, uint32_t moby_offset);
-
-	std::string label() const;
-
-	uint32_t uid() const;
-	void set_uid(uint32_t uid_);
-
-	uint16_t class_num() const;
-	void set_class_num(uint16_t class_num_);
-
-	glm::vec3 position() const;
-	void set_position(glm::vec3 rotation_);
-
-	glm::vec3 rotation() const;
-	void set_rotation(glm::vec3 rotation_);
-
-	std::string class_name() const;
-
-	static const std::map<uint16_t, const char*> class_names;
-
 	struct fmt {
-		packed_struct(vec3f,
-			vec3f() { x = 0; y = 0; z = 0; }
-			vec3f(glm::vec3 g) { x = g.x; y = g.y; z = g.z; }
-
-			float x;
-			float y;
-			float z;
-
-			glm::vec3 glm() {
-				glm::vec3 result;
-				result.x = x;
-				result.y = y;
-				result.z = z;
-				return result;
-			}
-		)
-
 		packed_struct(moby,
 			uint32_t size;      // 0x0 Always 0x88?
 			uint32_t unknown1;  // 0x4
@@ -99,22 +63,29 @@ public:
 			uint32_t unknown25; // 0x84
 		)
 	};
-};
 
-class moby_provider : public proxy_stream {
-public:
-	moby_provider(stream* moby_segment, uint32_t moby_table_offset);
+	moby_impl(stream* backing, uint32_t offset);
 
-	void populate(app* a) override;
+	std::string label() const;
+
+	uint32_t uid() const;
+	void set_uid(uint32_t uid_);
+
+	uint16_t class_num() const;
+	void set_class_num(uint16_t class_num_);
+
+	glm::vec3 position() const;
+	void set_position(glm::vec3 rotation_);
+
+	glm::vec3 rotation() const;
+	void set_rotation(glm::vec3 rotation_);
+
+	std::string class_name() const;
+
+	static const std::map<uint16_t, const char*> class_names;
 
 private:
-	struct fmt {
-		packed_struct(table_header,
-			uint32_t num_mobies;
-			uint32_t unknown[3];
-			// Mobies follow.
-		)
-	};
+	proxy_stream _backing;
 };
 
 #endif

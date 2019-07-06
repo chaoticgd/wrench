@@ -1,3 +1,21 @@
+/*
+	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
+	Copyright (C) 2019 chaoticgd
+
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
@@ -5,10 +23,6 @@
 #include <vector>
 #include <stdint.h>
 #include <glm/glm.hpp>
-#include <GL/glew.h>
-
-#include "window.h"
-#include "gui.h"
 
 struct colour {
 	uint8_t r, g, b;
@@ -35,33 +49,6 @@ public:
 	virtual std::vector<texture*> textures() = 0;
 	
 	std::vector<const texture*> textures() const;
-
-	template <typename... T>
-	void reflect(T... callbacks);
 };
-
-class texture_browser : public window {
-public:
-	texture_browser(texture_provider* provider);
-	~texture_browser();
-
-	const char* title_text() const override;
-	ImVec2 initial_size() const override;
-	void render(app& a) override;
-	
-private:
-	texture_provider* _provider;
-	std::map<texture*, GLuint> _gl_textures;
-};
-
-template <typename... T>
-void texture_provider::reflect(T... callbacks) {
-	rf::reflector r(this, callbacks...);
-	r.visit_f("Open in Texture Browser",
-		[]() { return static_cast<app*>(nullptr); },
-		[this](app* a) {
-			a->windows.emplace_back(std::make_unique<texture_browser>(this));
-		});
-}
 
 #endif

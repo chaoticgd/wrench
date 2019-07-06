@@ -20,12 +20,12 @@ add_executable(wrench
 	src/renderer.cpp
 	src/shaders.cpp
 	src/texture.cpp
+	src/level.cpp
 	src/worker_thread.cpp
 	src/formats/wad.cpp
-	src/formats/level_stream.cpp
-	src/formats/moby_stream.cpp
-	src/formats/texture_stream.cpp
-	src/formats/iso.cpp
+	src/formats/level_impl.cpp
+	src/formats/moby_impl.cpp
+	src/formats/level_texture.cpp
 	src/formats/fip.cpp
 	src/formats/bmp.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp

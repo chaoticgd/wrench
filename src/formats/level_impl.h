@@ -16,16 +16,16 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef FORMATS_LEVEL_STREAM_H
-#define FORMATS_LEVEL_STREAM_H
+#ifndef FORMATS_LEVEL_IMPL_H
+#define FORMATS_LEVEL_IMPL_H
 
 #include <memory>
 #include <stdint.h>
 
 #include "../level.h"
 #include "../stream.h"
-#include "../renderer.h"
-#include "../worker_thread.h"
+#include "moby_impl.h"
+#include "level_texture.h"
 #include "wad.h"
 
 /*
@@ -55,23 +55,8 @@
 	wad(...) are within a compressed segment.
 */
 
-class texture_provider_fmt_header {};
-
-class level_stream : public level, public proxy_stream {
+class level_impl : public level {
 public:
-	level_stream(stream* iso_file, uint32_t level_offset, uint32_t level_size);
-
-	void populate(app* a) override;
-
-	std::vector<const point_object*> point_objects() const override;
-
-	std::map<uint32_t, moby*> mobies() override;
-	std::map<uint32_t, const moby*> mobies() const override;
-
-	// Used by the inspector.
-	template <typename... T>
-	void reflect(T... callbacks);
-
 	struct fmt {
 		struct master_header;
 		struct secondary_header;
@@ -97,9 +82,9 @@ public:
 		packed_struct(secondary_header,
 			uint32_t unknown1;                  // 0x0
 			uint32_t unknown2;                  // 0x4
-			file_ptr<texture_provider_fmt_header> textures; // 0x8
+			file_ptr<level_texture_provider::fmt::header> textures; // 0x8
 			uint32_t texture_segment_size;      // 0xc
-			uint32_t texture_data_ptr;          // 0x10
+			uint32_t tex_pixel_data_base;       // 0x10
 			uint32_t unknown5;                  // 0x14
 			uint32_t unknown6;                  // 0x18
 			uint32_t unknown7;                  // 0x1c
@@ -138,17 +123,85 @@ public:
 			uint32_t unknown11;                                   // 0x48
 			file_ptr<moby_table> mobies;                          // 0x4c
 		)
+
+		struct moby_segment {
+			packed_struct(header,
+				file_ptr<ship_data> ship;                             // 0x0
+				file_ptr<directional_light_table> directional_lights; // 0x4
+				uint32_t unknown1;                                    // 0x8
+				uint32_t unknown2;                                    // 0xc
+				file_ptr<string_table> english_strings;               // 0x10
+				uint32_t unknown3; // Points to 16 bytes between the English and French tables (on Barlow).
+				file_ptr<string_table> french_strings;                // 0x18
+				file_ptr<string_table> german_strings;                // 0x1c
+				file_ptr<string_table> spanish_strings;               // 0x20
+				file_ptr<string_table> italian_strings;               // 0x24
+				file_ptr<string_table> null_strings;                  // 0x28 Also what is this thing?
+				uint32_t unknown4;                                    // 0x2c
+				uint32_t unknown5;                                    // 0x30
+				uint32_t unknown6;                                    // 0x34
+				uint32_t unknown7;                                    // 0x38
+				uint32_t unknown8;                                    // 0x3c
+				uint32_t unknown9;                                    // 0x40
+				uint32_t unknown10;                                   // 0x44
+				uint32_t unknown11;                                   // 0x48
+				file_ptr<moby_table> mobies;                          // 0x4c
+			)
+
+			packed_struct(ship_data,
+				uint32_t unknown1[0xf];
+				vec3f position;
+				float rotationZ;
+			)
+
+			packed_struct(directional_light_table,
+				uint32_t num_directional_lights; // Max 0xb.
+				// Directional lights follow.
+			)
+
+			packed_struct(directional_light,
+				uint8_t unknown[64];
+			)
+
+			packed_struct(string_table,
+				uint32_t num_strings;
+				uint32_t unknown;
+				// String table entries follow.
+			)
+
+			packed_struct(string_table_entry,
+				file_ptr<char*> string; // Relative to this struct.
+				uint32_t id;
+				uint32_t padding[2];
+			)
+
+			packed_struct(moby_table,
+				uint32_t num_mobies;
+				uint32_t unknown[3];
+				// Mobies follow.
+			)
+		};
 	};
+
+	level_impl(stream* iso_file, uint32_t offset, uint32_t size);
+
+	std::map<uint32_t, moby*> mobies() override;
+
+	// Used by the inspector.
+	template <typename... T>
+	void reflect(T... callbacks);
 
 private:
 	uint32_t locate_moby_wad();
-	uint32_t locate_secondary_header(fmt::master_header header, uint32_t moby_wad_offset);
+	uint32_t locate_secondary_header(const fmt::master_header& header, uint32_t moby_wad_offset);
 
-	std::unique_ptr<wad_stream> _moby_segment_stream;
+	proxy_stream _level_file;
+	std::optional<wad_stream> _moby_segment_stream;
+	std::vector<std::unique_ptr<moby_impl>> _mobies;
 };
 
 template <typename... T>
-void level_stream::reflect(T... callbacks) {
+void level_impl::reflect(T... callbacks) {
 	
 }
 

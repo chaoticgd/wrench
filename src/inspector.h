@@ -36,7 +36,7 @@ public:
 private:
 	template <typename T_data_type, typename T_input_func>
 	static std::function<void(const char* name, rf::property<T_data_type> p)>
-		render_property(level& lvl, int& i, T_input_func input);
+		render_property(level* lvl, int& i, T_input_func input);
 	
 	T* _subject;
 };
@@ -69,12 +69,7 @@ ImVec2 inspector<T>::initial_size() const {
 
 template <typename T>
 void inspector<T>::render(app& a) {
-	if(!a.has_level()) {
-		ImGui::Text("<no level open>");
-		return;
-	}
-
-	a.bind_level([this, &a](level& lvl) {
+	if(auto lvl = a.get_level()) {
 		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
 		ImGui::Columns(2);
 		ImGui::SetColumnWidth(0, 80);
@@ -104,16 +99,7 @@ void inspector<T>::render(app& a) {
 					{ return ImGui::InputText(label, data, ImGuiInputTextFlags_EnterReturnsTrue); }),
 			render_property<glm::vec3>(lvl, i,
 				[](const char* label, glm::vec3* data)
-					{ return ImGui::InputFloat3(label, &data->x, 3, ImGuiInputTextFlags_EnterReturnsTrue); }),
-			[&a, &i](const char* name, rf::property<app*> p) {
-				ImGui::Columns(1);
-				if(ImGui::Button(name)) {
-					p.set(&a);
-				}
-				ImGui::NextColumn();
-				ImGui::Columns(2);
-				i++;
-			}
+					{ return ImGui::InputFloat3(label, &data->x, 3, ImGuiInputTextFlags_EnterReturnsTrue); })
 		);
 
 		ImGui::Columns(1);
@@ -122,13 +108,15 @@ void inspector<T>::render(app& a) {
 		if(i == 0) {
 			ImGui::Text("<no properties>");
 		}
-	});
+	} else {
+		ImGui::Text("<no level open>");
+	}
 }
 
 template <typename T>
 template <typename T_data_type, typename T_input_func>
 std::function<void(const char* name, rf::property<T_data_type> p)>
-	inspector<T>::render_property(level& lvl, int& i, T_input_func input) {
+	inspector<T>::render_property(level* lvl, int& i, T_input_func input) {
 	
 	return [=, &lvl, &i](const char* name, rf::property<T_data_type> p) {
 		ImGui::PushID(i++);
@@ -156,10 +144,6 @@ void inspector_reflector::reflect(T_callbacks... callbacks) {
 	}
 
 	if(auto subject = dynamic_cast<moby*>(selection)) {
-		subject->reflect(callbacks...);
-	}
-
-	if(auto subject = dynamic_cast<texture_provider*>(selection)) {
 		subject->reflect(callbacks...);
 	}
 }
