@@ -131,6 +131,13 @@ public:
 		return value;
 	}
 
+	void read_nc(char* dest, uint32_t size) const {
+		stream* this_ = const_cast<stream*>(this);
+		uint32_t whence_you_came = this_->tell();
+		this_->read_n(dest, size);
+		this_->seek(whence_you_came);
+	}
+
 	std::string read_string() {
 		std::string result;
 		char c;
@@ -178,9 +185,9 @@ public:
 		bool is_bad = false;
 		std::cout << std::hex << (_last_printed | 0x1000000000000000) << " >>>> ";
 		for(uint32_t i = _last_printed; i < tell(); i++) {
-			auto val = peek<uint8_t>(i);
+			auto val = peek<char>(i);
 			if(expected.has_value()) {
-				auto expected_val = (*expected)->peek<uint8_t>(i);
+				auto expected_val = (*expected)->peek<char>(i);
 				if(val == expected_val) {
 					std::cout << "\033[1;32m"; // Green.
 				} else {
@@ -257,12 +264,12 @@ public:
 	}
 
 	void read_n(char* dest, uint32_t size) {
-		_file.read(dest, size);
+		_file.read((char*) dest, size);
 		check_error();
 	}
 
 	void write_n(const char* data, uint32_t size) {
-		_file.write(data, size);
+		_file.write((char*) data, size);
 		check_error();
 	}
 
@@ -322,7 +329,7 @@ public:
 	}
 
 private:
-	std::vector<uint8_t> _allocation;
+	std::vector<char> _allocation;
 	uint32_t _offset;
 };
 

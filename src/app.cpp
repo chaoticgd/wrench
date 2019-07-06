@@ -19,6 +19,7 @@
 #include "app.h"
 
 #include "gui.h"
+#include "inspector.h"
 #include "stream.h"
 #include "renderer.h"
 #include "worker_thread.h"
@@ -26,7 +27,7 @@
 
 app::app()
 	: selection(nullptr),
-	  reflector(std::make_unique<gui::inspector_reflector>(&selection)) {}
+	  reflector(std::make_unique<inspector_reflector>(&selection)) {}
 
 bool app::has_iso() const {
 	return _iso.get() != nullptr;

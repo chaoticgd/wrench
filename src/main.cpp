@@ -23,6 +23,7 @@
 #include "app.h"
 #include "gui.h"
 #include "renderer.h"
+#include "inspector.h"
 #include "formats/level_stream.h"
 
 void update_camera_movement(app* a);
@@ -45,7 +46,7 @@ int main(int argc, char** argv) {
 	app a;
 	a.windows.emplace_back(std::make_unique<gui::iso_tree>());
 	a.windows.emplace_back(std::make_unique<gui::moby_list>());
-	a.windows.emplace_back(std::make_unique<gui::inspector<gui::inspector_reflector>>(a.reflector.get()));
+	a.windows.emplace_back(std::make_unique<inspector<inspector_reflector>>(a.reflector.get()));
 	a.windows.emplace_back(std::make_unique<three_d_view>(&a));
 
 	if(!glfwInit()) {

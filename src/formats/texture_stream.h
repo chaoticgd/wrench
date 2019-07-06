@@ -16,52 +16,59 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef FORMATS_TEXTURE_H
-#define FORMATS_TEXTURE_H
+#ifndef FORMATS_TEXTURE_STREAM_H
+#define FORMATS_TEXTURE_STREAM_H
 
 #include <array>
 #include <vector>
 #include <glm/glm.hpp>
 
 #include "../stream.h"
+#include "../texture.h"
 #include "level_stream.h"
 
 class texture_provider;
 
-packed_struct(colour,
-	uint8_t r;
-	uint8_t g;
-	uint8_t b;
-	uint8_t pad;
-)
-
-class texture : public proxy_stream {
-	friend texture_provider;
+class texture_stream : public texture, public proxy_stream {
 public:
+	texture_stream(stream* pixel_data_base, uint32_t pixel_data_offset);
 
+	glm::vec2 size() const override;
+	void set_size(glm::vec2 size_) override;
+
+	std::array<colour, 256> palette() const override;
+	void set_palette(std::array<colour, 256> palette_) override;
+
+	std::vector<uint8_t> pixel_data() const override;
+	void set_pixel_data(std::vector<uint8_t> pixel_data_) override;
+
+private:
+	uint32_t _pixel_data_offset;
+
+public:
 	struct fmt {
 		struct texture {
 			uint32_t entry_size;
 		};
 	};
-
-	// TODO: Implement these.
-	//glm::vec2 dimensions();
-	//std::array<colour, 256> palette();
-	//std::vector<uint8_t> pixel_data();
-
-private:
-	texture(stream* texture_segment, uint32_t entry_offset);
-
-	uint32_t _entry_offset;
 };
 
-class texture_provider : public proxy_stream {
+class texture_provider_stream : public proxy_stream, public texture_provider {
+public:
+	texture_provider_stream(stream* level_file, uint32_t secondary_header_offset);
+
+	void populate(app* a) override;
+
+	std::vector<texture*> textures() override;
+
+private:
+	std::unique_ptr<proxy_stream> _pixel_data_base;
+
 public:
 	struct fmt {
 		struct header {
 			uint32_t num_textures; // 0x0
-			file_ptr<texture::fmt::texture> textures; // 0x4
+			file_ptr<texture_stream::fmt::texture> textures; // 0x4
 			uint32_t unknown2;          // 0x8
 			uint32_t unknown3;          // 0xc
 			uint32_t unknown4;          // 0x10
@@ -100,10 +107,6 @@ public:
 			uint32_t entry_size;
 		};
 	};
-
-	texture_provider(stream* level_file, uint32_t secondary_header_offset);
-
-	std::vector<std::unique_ptr<texture>> textures();
 };
 
 #endif

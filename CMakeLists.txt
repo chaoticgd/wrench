@@ -19,12 +19,15 @@ add_executable(wrench
 	src/window.cpp
 	src/renderer.cpp
 	src/shaders.cpp
+	src/texture.cpp
 	src/worker_thread.cpp
 	src/formats/wad.cpp
 	src/formats/level_stream.cpp
 	src/formats/moby_stream.cpp
-	src/formats/texture.cpp
+	src/formats/texture_stream.cpp
 	src/formats/iso.cpp
+	src/formats/fip.cpp
+	src/formats/bmp.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
 	src/imgui_impl_glfw.cpp
 	thirdparty/imgui/examples/imgui_impl_opengl3.cpp)

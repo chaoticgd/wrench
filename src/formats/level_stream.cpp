@@ -18,7 +18,7 @@
 
 #include "level_stream.h"
 #include "moby_stream.h"
-#include "texture.h"
+#include "texture_stream.h"
 #include "../worker_thread.h"
 
 level_stream::level_stream(stream* iso_file, uint32_t level_offset, uint32_t level_size)
@@ -27,17 +27,17 @@ level_stream::level_stream(stream* iso_file, uint32_t level_offset, uint32_t lev
 void level_stream::populate(app* a) {
 	stream::populate(a);
 
-	auto master_header = read<fmt::master_header>();
+	auto master_header = read<fmt::master_header>(0);
 	uint32_t moby_wad_offset = locate_moby_wad();
 	uint32_t secondary_header_offset =
 		locate_secondary_header(master_header, moby_wad_offset);
-
+	
 	_moby_segment_stream = std::make_unique<wad_stream>(this, moby_wad_offset);
 	auto moby_segment_header = _moby_segment_stream->read<fmt::moby_segment_header>(0);
 
 	stream* mp = emplace_child<moby_provider>
 		(_moby_segment_stream.get(), moby_segment_header.mobies.value);
-	stream* tp = emplace_child<texture_provider>
+	stream* tp = emplace_child<texture_provider_stream>
 		(this, secondary_header_offset);
 
 	mp->populate(a);

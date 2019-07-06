@@ -31,9 +31,7 @@ class level;
 class window;
 class three_d_view;
 
-namespace gui {
-	class inspector_reflector;
-}
+class inspector_reflector;
 
 class app {
 public:
@@ -60,7 +58,7 @@ public:
 	std::optional<three_d_view*> get_3d_view();
 
 	stream* selection;
-	std::unique_ptr<gui::inspector_reflector> reflector;
+	std::unique_ptr<inspector_reflector> reflector;
 
 private:
 	std::unique_ptr<iso_stream> _iso;

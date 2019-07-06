@@ -99,7 +99,7 @@ public:
 			uint32_t unknown2;                  // 0x4
 			file_ptr<texture_provider_fmt_header> textures; // 0x8
 			uint32_t texture_segment_size;      // 0xc
-			uint32_t unknown4;                  // 0x10
+			uint32_t texture_data_ptr;          // 0x10
 			uint32_t unknown5;                  // 0x14
 			uint32_t unknown6;                  // 0x18
 			uint32_t unknown7;                  // 0x1c

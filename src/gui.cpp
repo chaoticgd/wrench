@@ -27,6 +27,7 @@
 #include "menu.h"
 #include "window.h"
 #include "renderer.h"
+#include "inspector.h"
 
 void gui::render(app& a) {
 	ImGui_ImplOpenGL3_NewFrame();
@@ -36,6 +37,9 @@ void gui::render(app& a) {
 	render_menu_bar(a);
 
 	for(auto& current_window : a.windows) {
+		if(current_window.get() == nullptr) {
+			continue;
+		}
 		ImGui::SetNextWindowSize(current_window->initial_size(), ImGuiCond_Appearing);
 		std::string title =
 			std::string(current_window->title_text()) +
