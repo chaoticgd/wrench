@@ -32,7 +32,7 @@ packed_struct(fip_palette_entry,
 	uint8_t r;
 	uint8_t g;
 	uint8_t b;
-	uint8_t pad;
+	uint8_t a;
 )
 
 packed_struct(fip_header,

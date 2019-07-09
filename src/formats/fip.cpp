@@ -115,7 +115,7 @@ void bmp_to_fip(stream& dest, stream& src) {
 		dest_pixel.r = src_pixel.r;
 		dest_pixel.g = src_pixel.g;
 		dest_pixel.b = src_pixel.b;
-		dest_pixel.pad = 0x80;
+		dest_pixel.a = 0x80;
 	}
 	for(; i < 256; i++) {
 		// Set unused palette entries to black.
@@ -123,7 +123,7 @@ void bmp_to_fip(stream& dest, stream& src) {
 		dest_pixel.r = 0;
 		dest_pixel.g = 0;
 		dest_pixel.b = 0;
-		dest_pixel.pad = 0x80;
+		dest_pixel.a = 0x80;
 	}
 	dest.write<fip_header>(0, header);
 
