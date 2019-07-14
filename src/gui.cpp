@@ -336,24 +336,24 @@ void gui::texture_browser::render_grid(app& a, texture_provider* provider) {
 
 void gui::texture_browser::cache_texture(texture* tex) {
 	auto size = tex->size();
+
 	// Prepare pixel data.
 	std::vector<uint8_t> indexed_pixel_data = tex->pixel_data();
 	std::vector<uint8_t> colour_data(indexed_pixel_data.size() * 4);
-	
 	auto palette = tex->palette();
 	for(std::size_t i = 0; i < indexed_pixel_data.size(); i++) {
 		colour c = palette[indexed_pixel_data[i]];
 		colour_data[i * 4] = c.r;
 		colour_data[i * 4 + 1] = c.g;
 		colour_data[i * 4 + 2] = c.b;
-		colour_data[i * 4 + 3] = 255;
+		colour_data[i * 4 + 3] = static_cast<int>(c.a) * 2 - 1;
 	}
 
 	// Send image to OpenGL.
 	GLuint texture_id;
 	glGenTextures(1, &texture_id);
 	glBindTexture(GL_TEXTURE_2D, texture_id);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, colour_data.data());
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, colour_data.data());
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 

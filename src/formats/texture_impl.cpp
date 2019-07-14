@@ -44,8 +44,8 @@ std::array<colour, 256> texture_impl::palette() const {
 	for(int i = 0; i < 256; i++) {
 		result[decode_palette_index(i)] = {
 			static_cast<uint8_t>(data[i * 4 + 0]),
-			static_cast<uint8_t>(data[i * 4 + 2]),
 			static_cast<uint8_t>(data[i * 4 + 1]),
+			static_cast<uint8_t>(data[i * 4 + 2]),
 			static_cast<uint8_t>(data[i * 4 + 3])
 		};
 	} return result;
