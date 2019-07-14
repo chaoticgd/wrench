@@ -125,7 +125,7 @@ void update_camera_movement(app* a) {
 			return a->keys_down.find(key) != a->keys_down.end();
 		};
 
-		glm::vec3 movement;
+		glm::vec3 movement(0, 0, 0);
 		if(is_down(GLFW_KEY_W)) {
 			movement.x -= dz;
 			movement.y += dx;

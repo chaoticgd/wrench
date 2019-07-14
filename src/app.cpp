@@ -55,12 +55,12 @@ void app::open_iso(std::string path) {
 		},
 		[=](std::unique_ptr<iso_adapters> adapters) {
 			_iso_adapters.swap(adapters);
+			
+			if(auto view = get_3d_view()) {
+				(*view)->reset_camera(*this);
+			}
 		}
 	));
-
-	if(auto view = get_3d_view()) {
-		(*view)->reset_camera(*this);
-	}
 }
 
 const level* app::get_level() const {
