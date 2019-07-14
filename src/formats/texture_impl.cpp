@@ -142,9 +142,12 @@ fip_scanner::fip_scanner(
 	stream* backing, 
 	uint32_t offset,
 	uint32_t size,
-	std::string display_name)
+	std::string display_name,
+	worker_logger& log)
 	: _search_space(backing, offset, size),
 	  _display_name(display_name) {
+		
+		log << "Importing " << display_name << "... ";
 
 		char magic[4];
 		for(uint32_t i = 0; i < _search_space.size(); i += 0x10) {
@@ -159,6 +162,8 @@ fip_scanner::fip_scanner(
 					i + sizeof(fip_header)));
 			}
 		}
+
+		log << "DONE!\n";
 }
 
 std::string fip_scanner::display_name() const {

@@ -29,6 +29,7 @@
 
 #include "level.h"
 #include "stream.h"
+#include "worker_logger.h"
 #include "formats/level_impl.h"
 #include "formats/texture_impl.h"
 
@@ -36,6 +37,15 @@ class window;
 class three_d_view;
 
 class inspector_reflector;
+
+class iso_adapters {
+public:
+	iso_adapters(stream* iso_file, worker_logger& log);
+
+	level_impl  level;
+	fip_scanner space_wad;
+	fip_scanner armor_wad;
+};
 
 class app {
 public:
@@ -63,9 +73,7 @@ public:
 
 private:
 	std::optional<file_stream> _iso;
-	std::optional<level_impl> _level;
-	std::optional<fip_scanner> _space_wad;
-	std::optional<fip_scanner> _armor_wad;
+	std::unique_ptr<iso_adapters> _iso_adapters;
 };
 
 #endif

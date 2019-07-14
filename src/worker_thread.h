@@ -1,29 +1,31 @@
+/*
+	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
+	Copyright (C) 2019 chaoticgd
+
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #ifndef WORKER_THREAD_H
 #define WORKER_THREAD_H
 
-#include <mutex>
 #include <atomic>
-#include <string>
 #include <thread>
-#include <sstream>
 #include <optional>
 #include <functional>
 
 #include "window.h"
-
-class worker_logger {
-public:
-	worker_logger();
-
-	template <typename T>
-	worker_logger& operator<<(T data);
-
-	std::string str();
-
-private:
-	std::mutex _mutex;
-	std::stringstream _stream;
-};
+#include "worker_thread.h"
 
 // Must not throw.
 template <typename T_out, typename T_in>
@@ -53,21 +55,6 @@ private:
 	std::function<void(T_out)> _on_done;
 	std::thread _thread;
 };
-
-/*
-	worker_logger
-*/
-
-template <typename T>
-worker_logger& worker_logger::operator<<(T data) {
-	std::lock_guard<std::mutex> guard(_mutex);
-	_stream << data;
-	return *this;
-}
-
-/*
-	worker_thread
-*/
 
 template <typename T_out, typename T_in>
 worker_thread<T_out, T_in>::worker_thread(

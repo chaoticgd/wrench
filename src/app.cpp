@@ -24,14 +24,19 @@
 #include "renderer.h"
 #include "worker_thread.h"
 
+iso_adapters::iso_adapters(stream* iso_file, worker_logger& log)
+	: level(    iso_file, 0x8d794800, 0x17999dc, "LEVEL4.WAD", log),
+	  space_wad(iso_file, 0x7e041800, 0x10fa980, "SPACE.WAD",  log),
+	  armor_wad(iso_file, 0x7fa3d800, 0x25d930,  "ARMOR.WAD",  log) {}
+
 app::app()
 	: mouse_last(0, 0),
 	  mouse_diff(0, 0),
 	  selection(nullptr) {}
 
 level* app::get_level() {
-	if(_level) {
-		return &_level.value();
+	if(_iso_adapters.get() != nullptr) {
+		return &_iso_adapters->level;
 	} else {
 		return nullptr;
 	}
@@ -39,10 +44,19 @@ level* app::get_level() {
 
 void app::open_iso(std::string path) {
 	_iso.emplace(path);
-	_level.emplace(&_iso.value(), 0x8d794800, 0x17999dc, "LEVEL4.WAD");
 
-	_space_wad.emplace(&_iso.value(), 0x7e041800, 0x10fa980, "SPACE.WAD");
-	_armor_wad.emplace(&_iso.value(), 0x7fa3d800, 0x25d930, "ARMOR.WAD");
+	using worker_type = worker_thread<std::unique_ptr<iso_adapters>, file_stream*>;
+	windows.emplace_back(std::make_unique<worker_type>(
+		"ISO Importer", &_iso.value(),
+		[](file_stream* iso, worker_logger& log) {
+			auto result = std::make_unique<iso_adapters>(iso, log);
+			log << "\nISO imported successfully.";
+			return result;
+		},
+		[=](std::unique_ptr<iso_adapters> adapters) {
+			_iso_adapters.swap(adapters);
+		}
+	));
 
 	if(auto view = get_3d_view()) {
 		(*view)->reset_camera(*this);
@@ -72,14 +86,10 @@ std::optional<three_d_view*> app::get_3d_view() {
 
 std::vector<texture_provider*> app::texture_providers() {
 	std::vector<texture_provider*> result;
-	if(auto lvl = get_level()) {
-		result.push_back(lvl->get_texture_provider());
-	}
-	if(_space_wad) {
-		result.push_back(&_space_wad.value());
-	}
-	if(_armor_wad) {
-		result.push_back(&_armor_wad.value());
+	if(_iso_adapters.get() != nullptr) {
+		result.push_back(_iso_adapters->level.get_texture_provider());
+		result.push_back(&_iso_adapters->space_wad);
+		result.push_back(&_iso_adapters->armor_wad);
 	}
 	return result;
 }

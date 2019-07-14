@@ -24,6 +24,7 @@
 
 #include "../level.h"
 #include "../stream.h"
+#include "../worker_logger.h"
 #include "moby_impl.h"
 #include "texture_impl.h"
 #include "wad.h"
@@ -183,7 +184,7 @@ public:
 		};
 	};
 
-	level_impl(stream* iso_file, uint32_t offset, uint32_t size, std::string display_name);
+	level_impl(stream* iso_file, uint32_t offset, uint32_t size, std::string display_name, worker_logger& log);
 
 	texture_provider* get_texture_provider();
 

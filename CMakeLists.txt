@@ -22,7 +22,7 @@ add_executable(wrench
 	src/texture.cpp
 	src/level.cpp
 	src/inspector.cpp
-	src/worker_thread.cpp
+	src/worker_logger.cpp
 	src/formats/wad.cpp
 	src/formats/level_impl.cpp
 	src/formats/moby_impl.cpp

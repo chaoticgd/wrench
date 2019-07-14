@@ -18,9 +18,11 @@
 
 #include "level_impl.h"
 
-level_impl::level_impl(stream* iso_file, uint32_t offset, uint32_t size, std::string display_name)
+level_impl::level_impl(stream* iso_file, uint32_t offset, uint32_t size, std::string display_name, worker_logger& log)
 	: _level_file(iso_file, offset, size) {
 	
+	log << "Importing level " << display_name << "... ";
+
 	auto master_header = _level_file.read<fmt::master_header>(0);
 	uint32_t moby_wad_offset = locate_moby_wad();
 	
@@ -39,6 +41,8 @@ level_impl::level_impl(stream* iso_file, uint32_t offset, uint32_t size, std::st
 		_mobies.emplace_back(std::make_unique<moby_impl>(&_moby_segment_stream.value(),
 			segment_header.mobies.value + sizeof(fmt::moby_segment::moby_table) + i * 0x88));
 	}
+
+	log << "DONE!\n";
 }
 
 texture_provider* level_impl::get_texture_provider() {

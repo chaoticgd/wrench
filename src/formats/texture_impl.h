@@ -25,6 +25,7 @@
 
 #include "../stream.h"
 #include "../texture.h"
+#include "../worker_logger.h"
 #include "wad.h"
 
 class texture_provider;
@@ -135,7 +136,8 @@ public:
 		stream* backing,
 		uint32_t offset,
 		uint32_t size,
-		std::string display_name);
+		std::string display_name,
+		worker_logger& log);
 
 	std::string display_name() const override;
 	std::vector<texture*> textures() override;
