@@ -18,27 +18,31 @@
 
 #include "texture_impl.h"
 
+#include <stddef.h>
+
 #include "fip.h"
 #include "level_impl.h"
 #include "fip.h"
 
-texture_impl::texture_impl(stream* backing, vec2i size, uint32_t palette_offset, uint32_t pixel_offset)
+texture_impl::texture_impl(stream* backing, offsets offsets_)
 	: _backing(backing, 0, -1),
-	  _size(size),
-	  _palette_offset(palette_offset),
-	  _pixel_offset(pixel_offset) {}
+	  _offsets(offsets_) {}
 	
 vec2i texture_impl::size() const {
-	return _size;
+	return {
+		_backing.read_c<uint16_t>(_offsets.width),
+		_backing.read_c<uint16_t>(_offsets.height)
+	};
 }
 
 void texture_impl::set_size(vec2i size_) {
-
+	_backing.write<uint16_t>(_offsets.width,  size_.x);
+	_backing.write<uint16_t>(_offsets.height, size_.y);
 }
 
 std::array<colour, 256> texture_impl::palette() const {
 	char data[1024];
-	_backing.read_nc(data, _palette_offset, 1024);
+	_backing.read_nc(data, _offsets.palette, 1024);
 
 	std::array<colour, 256> result;
 	for(int i = 0; i < 256; i++) {
@@ -52,29 +56,39 @@ std::array<colour, 256> texture_impl::palette() const {
 }
 
 void texture_impl::set_palette(std::array<colour, 256> palette_) {
-
+	std::array<char, 1024> colours;
+	for(int i =0 ; i < 256; i++) {
+		colour c = palette_[decode_palette_index(i)];
+		colours[i * 4 + 0] = c.r;
+		colours[i * 4 + 1] = c.g;
+		colours[i * 4 + 2] = c.b;
+		colours[i * 4 + 3] = c.a;
+	}
+	_backing.seek(_offsets.palette);
+	_backing.write_n(colours.data(), colours.size());
 }
 
 std::vector<uint8_t> texture_impl::pixel_data() const {
 	vec2i size_ = size();
 	std::vector<uint8_t> result(size_.x * size_.y);
-	_backing.read_nc(reinterpret_cast<char*>(result.data()), _pixel_offset, result.size());
+	_backing.read_nc(reinterpret_cast<char*>(result.data()), _offsets.pixels, result.size());
 	return result;
 }
 
 void texture_impl::set_pixel_data(std::vector<uint8_t> pixel_data_) {
-
+	_backing.seek(_offsets.pixels);
+	_backing.write_n(reinterpret_cast<char*>(pixel_data_.data()), pixel_data_.size());
 }
 
 std::string texture_impl::palette_path() const {
 	std::stringstream hex;
-	hex << _palette_offset;
+	hex << _offsets.palette;
 	return _backing.resource_path() + "+0x" + hex.str();
 }
 
 std::string texture_impl::pixel_data_path() const {
 	std::stringstream hex;
-	hex << _pixel_offset;
+	hex << _offsets.pixels;
 	return _backing.resource_path() + "+0x" + hex.str();
 }
 
@@ -91,9 +105,15 @@ texture_provider_impl::texture_provider_impl(
 	uint32_t last_palette = data_offset;
 
 	for(uint32_t i = 0; i < num_textures; i++) {
+		uint32_t entry_offset = backing->tell();
 		auto entry = backing->read<fmt::texture_entry>();
-		_textures.emplace_back(std::make_unique<texture_impl>
-			(backing, vec2i { entry.width, entry.height}, last_palette, data_offset + entry.pixel_data));
+		texture_impl::offsets offsets { 
+			last_palette,
+			data_offset + entry.pixel_data,
+			entry_offset + offsetof(fmt::texture_entry, width),
+			entry_offset + offsetof(fmt::texture_entry, height)
+		};
+		_textures.emplace_back(std::make_unique<texture_impl>(backing, offsets));
 		if(entry.height == 0) {
 			last_palette = data_offset + entry.pixel_data;
 		}
@@ -154,12 +174,14 @@ fip_scanner::fip_scanner(
 			_search_space.seek(i);
 			_search_space.read_n(magic, 4);
 			if(validate_fip(magic)) {
-				auto header = _search_space.read<fip_header>(i);
-				_textures.emplace_back(std::make_unique<texture_impl>(
-					&_search_space,
-					vec2i { static_cast<int>(header.width), static_cast<int>(header.height) },
-					i + 32,
-					i + sizeof(fip_header)));
+				texture_impl::offsets offsets {
+					i + offsetof(fip_header, palette),
+					i + sizeof(fip_header),
+					i + offsetof(fip_header, width),
+					i + offsetof(fip_header, height)
+				};
+				_textures.emplace_back(
+					std::make_unique<texture_impl>(&_search_space, offsets));
 			}
 		}
 

@@ -32,7 +32,11 @@ class texture_provider;
 
 class texture_impl : public texture {
 public:
-	texture_impl(stream* backing, vec2i size, uint32_t palette_offset, uint32_t pixel_offset);
+	struct offsets {
+		uint32_t palette, pixels, width, height;
+	};
+
+	texture_impl(stream* backing, offsets offsets_);
 
 	vec2i size() const override;
 	void set_size(vec2i size_) override;
@@ -48,9 +52,7 @@ public:
 
 private:
 	proxy_stream _backing;
-	vec2i _size;
-	uint32_t _palette_offset;
-	uint32_t _pixel_offset;
+	offsets _offsets;
 };
 
 class texture_provider_impl : public texture_provider {

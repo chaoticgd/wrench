@@ -43,7 +43,7 @@ level* app::get_level() {
 }
 
 void app::open_iso(std::string path) {
-	_iso.emplace(path);
+	_iso.emplace(path, std::ios::in | std::ios::out);
 
 	using worker_type = worker_thread<std::unique_ptr<iso_adapters>, file_stream*>;
 	windows.emplace_back(std::make_unique<worker_type>(
@@ -55,7 +55,7 @@ void app::open_iso(std::string path) {
 		},
 		[=](std::unique_ptr<iso_adapters> adapters) {
 			_iso_adapters.swap(adapters);
-			
+
 			if(auto view = get_3d_view()) {
 				(*view)->reset_camera(*this);
 			}

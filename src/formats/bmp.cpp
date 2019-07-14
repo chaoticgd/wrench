@@ -2,6 +2,98 @@
 
 #include <cstring>
 
+#include "../texture.h"
+
 bool validate_bmp(bmp_file_header header) {
 	return std::memcmp(header.magic, "BM", 2) == 0;
+}
+
+void texture_to_bmp(stream& dest, texture* src) {
+	auto size = src->size();
+
+	bmp_file_header header;
+	std::memcpy(header.magic, "BM", 2);
+	header.pixel_data =
+		sizeof(bmp_file_header) +
+		sizeof(bmp_info_header) +
+		sizeof(bmp_colour_table_entry) * 256;
+	header.file_size =
+		header.pixel_data.value +
+		size.x * size.y;
+	header.reserved = 0x3713;
+	dest.write<bmp_file_header>(0, header);
+
+	bmp_info_header info;
+	info.info_header_size      = 40;
+	info.width                 = size.x;
+	info.height                = size.y;
+	info.num_colour_planes     = 1;
+	info.bits_per_pixel        = 8;
+	info.compression_method    = 0;
+	info.pixel_data_size       = info.width * info.height;
+	info.horizontal_resolution = 0;
+	info.vertical_resolution   = 0;
+	info.num_colours           = 256;
+	info.num_important_colours = 0;
+	dest.write<bmp_info_header>(info);
+
+	auto palette = src->palette();
+	for(int i = 0; i < 256; i++) {
+		bmp_colour_table_entry pixel;
+		pixel.b = palette[i].b;
+		pixel.g = palette[i].g;
+		pixel.r = palette[i].r;
+		pixel.pad = 0;
+		dest.write<bmp_colour_table_entry>(pixel);
+	}
+
+	uint32_t row_size = ((info.bits_per_pixel * info.width + 31) / 32) * 4;
+	auto pixels = src->pixel_data();
+	for(int y = info.height - 1; y >= 0; y--) {
+		dest.write_n(reinterpret_cast<char*>(pixels.data()) + y * row_size, row_size);
+	}
+}
+
+
+void bmp_to_texture(texture* dest, stream& src) {
+	auto file_header = src.read<bmp_file_header>(0);
+
+	if(!validate_bmp(file_header)) {
+		throw stream_format_error("Invalid BMP header.");
+	}
+
+	uint32_t secondary_header_offset = src.tell();
+	auto info_header = src.read<bmp_info_header>();
+
+	if(info_header.bits_per_pixel != 8) {
+		throw stream_format_error("The BMP file must use indexed colour (with at most 256 colours).");
+	}
+
+	if(info_header.num_colours > 256) {
+		throw stream_format_error("The BMP colour palette must contain at most 256 colours.");
+	}
+
+	dest->set_size(vec2i { info_header.width, info_header.height });
+
+	// Some BMP files have a larger header.
+	src.seek(secondary_header_offset + info_header.info_header_size);
+	
+	std::array<colour, 256> palette;
+	uint32_t i;
+	for(i = 0; i < info_header.num_colours; i++) {
+		auto src_pixel = src.read<bmp_colour_table_entry>();
+		palette[i] = { src_pixel.r, src_pixel.g, src_pixel.b, 0x80 };
+	}
+	for(; i < 256; i++) {
+		// Set unused palette entries to black.
+		palette[i] = { 0, 0, 0, 0x80 };
+	}
+	dest->set_palette(palette);
+
+	uint32_t row_size = ((info_header.bits_per_pixel * info_header.width + 31) / 32) * 4;
+	std::vector<uint8_t> pixels(info_header.width * info_header.height);
+	for(int y = info_header.height - 1; y >= 0; y--) {
+		src.read_n(reinterpret_cast<char*>(pixels.data()) + y * row_size, row_size);
+	}
+	dest->set_pixel_data(pixels);
 }

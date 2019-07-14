@@ -28,6 +28,7 @@
 #include "window.h"
 #include "renderer.h"
 #include "inspector.h"
+#include "formats/bmp.h"
 
 void gui::render(app& a) {
 	ImGui_ImplOpenGL3_NewFrame();
@@ -268,7 +269,7 @@ void gui::texture_browser::render(app& a) {
 	}
 
 	ImGui::Columns(2);
-	ImGui::SetColumnWidth(0, 128);
+	ImGui::SetColumnWidth(0, 192);
 
 	ImGui::BeginChild(1);
 		if(ImGui::TreeNodeEx("Sources", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -288,6 +289,21 @@ void gui::texture_browser::render(app& a) {
 			ImGui::PopItemWidth();
 			ImGui::TreePop();
 		}
+		ImGui::NewLine();
+
+		if(ImGui::TreeNodeEx("Actions", ImGuiTreeNodeFlags_DefaultOpen)) {
+			if(a.selection.type() == typeid(texture*)) {
+				texture* tex = std::any_cast<texture*>(a.selection);
+				if(ImGui::Button("Import Selected")) {
+					import_bmp(a, tex);
+				}
+				if(ImGui::Button("Export Selected")) {
+					export_bmp(a, tex);
+				}
+			}
+			ImGui::TreePop();
+		}
+		ImGui::NewLine();
 	ImGui::EndChild();
 	ImGui::NextColumn();
 
@@ -367,7 +383,44 @@ void gui::texture_browser::cache_texture(texture* tex) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-	_gl_textures.emplace(tex, texture_id);
+	_gl_textures[tex] = texture_id;
+}
+
+void gui::texture_browser::import_bmp(app& a, texture* tex) {
+	auto importer = std::make_unique<string_input>("Enter Import Path");
+	importer->on_okay([=](app& a, std::string path) {
+		try {
+			file_stream bmp_file(path);
+			bmp_to_texture(tex, bmp_file);
+			cache_texture(tex);
+		} catch(stream_error& e) {
+			a.emplace_window<message_box>("Error", e.what());
+		}
+	});
+	a.windows.emplace_back(std::move(importer));
+}
+
+void gui::texture_browser::export_bmp(app& a, texture* tex) {
+	// Filter out characters not allowed in file paths (on certain platforms).
+	std::string default_file_path = tex->pixel_data_path() + ".bmp";
+	const static std::string foridden = "<>:\"/\\|?*";
+	for(char& c : default_file_path) {
+		if(std::find(foridden.begin(), foridden.end(), c) != foridden.end()) {
+			c = '_';
+		}
+	}
+
+	auto exporter = std::make_unique<string_input>
+		("Enter Export Path", default_file_path);
+	exporter->on_okay([=](app& a, std::string path) {
+		try {
+			file_stream bmp_file(path, std::ios::in | std::ios::out | std::ios::trunc);
+			texture_to_bmp(bmp_file, tex);
+		} catch(stream_error& e) {
+			a.emplace_window<message_box>("Error", e.what());
+		}
+	});
+	a.windows.emplace_back(std::move(exporter));
 }
 
 /*
@@ -401,10 +454,9 @@ void gui::message_box::render(app& a) {
 	string_input
 */
 
-gui::string_input::string_input(const char* title)
-	: _title_text(title) {
-	_buffer.resize(1024);
-}
+gui::string_input::string_input(const char* title, std::string default_text)
+	: _title_text(title),
+	  _input(default_text) {}
 
 const char* gui::string_input::title_text() const {
 	return _title_text;
@@ -415,10 +467,10 @@ ImVec2 gui::string_input::initial_size() const {
 }
 
 void gui::string_input::render(app& a) {
-	ImGui::InputText("", _buffer.data(), 1024);
+	ImGui::InputText("", &_input);
 	bool pressed = ImGui::Button("Okay");
 	if(pressed) {
-		_callback(a, std::string(_buffer.begin(), _buffer.end()));
+		_callback(a, _input);
 	}
 	pressed |= ImGui::Button("Cancel");
 	if(pressed) {

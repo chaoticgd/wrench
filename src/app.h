@@ -53,6 +53,9 @@ public:
 
 	std::vector<std::unique_ptr<window>> windows;
 
+	template <typename T, typename... T_constructor_args>
+	void emplace_window(T_constructor_args... args);
+
 	glm::vec2 mouse_last;
 	glm::vec2 mouse_diff;
 	std::set<int> keys_down;
@@ -75,5 +78,10 @@ private:
 	std::optional<file_stream> _iso;
 	std::unique_ptr<iso_adapters> _iso_adapters;
 };
+
+template <typename T, typename... T_constructor_args>
+void app::emplace_window(T_constructor_args... args) {
+	windows.emplace_back(std::make_unique<T>(args...));
+}
 
 #endif

@@ -78,6 +78,9 @@ namespace gui {
 		void render_grid(app& a, texture_provider* provider);
 		void cache_texture(texture* tex);
 
+		void import_bmp(app& a, texture* tex);
+		void export_bmp(app& a, texture* tex);
+
 		std::map<texture*, GLuint> _gl_textures;
 		texture* _selection;
 		texture_provider* _provider;
@@ -98,7 +101,7 @@ namespace gui {
 
 	class string_input : public window {
 	public:
-		string_input(const char* title);
+		string_input(const char* title, std::string default_text = "");
 
 		const char* title_text() const override;
 		ImVec2 initial_size() const override;
@@ -108,7 +111,7 @@ namespace gui {
 
 	private:
 		const char* _title_text;
-		std::vector<char> _buffer;
+		std::string _input;
 		std::function<void(app&, std::string)> _callback;
 	};
 }

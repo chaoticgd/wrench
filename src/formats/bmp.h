@@ -21,13 +21,14 @@
 
 #include "../stream.h"
 
+class texture;
+
 struct bmp_file_header;
 struct bmp_info_header;
 struct bmp_colour_table_entry;
 
 /*
 	The BMP file format.
-	Not actually used by the game, just useful to have around.
 */
 packed_struct(bmp_file_header,
 	char              magic[2]; // "BM"
@@ -58,5 +59,7 @@ packed_struct(bmp_colour_table_entry,
 )
 
 bool validate_bmp(bmp_file_header header);
+void texture_to_bmp(stream& dest, texture* src);
+void bmp_to_texture(texture* dest, stream& src);
 
 #endif
