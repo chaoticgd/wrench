@@ -157,7 +157,7 @@ fip_scanner::fip_scanner(
 				auto header = _search_space.read<fip_header>(i);
 				_textures.emplace_back(std::make_unique<texture_impl>(
 					&_search_space,
-					vec2i { header.width, header.height },
+					vec2i { static_cast<int>(header.width), static_cast<int>(header.height) },
 					i + 32,
 					i + sizeof(fip_header)));
 			}

@@ -74,7 +74,7 @@ void decompress_wad_n(stream& dest, stream& src, uint32_t bytes_to_decompress) {
 
 		bool read_from_dest = false;
 		bool read_from_src = false;
-		int lookback_offset = -1;
+		uint32_t lookback_offset = -1;
 		int bytes_to_copy = 0;
 
 		if(control_byte < 0x40) {

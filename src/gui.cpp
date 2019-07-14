@@ -243,8 +243,8 @@ gui::texture_browser::texture_browser()
 	  _provider(nullptr) {}
 
 gui::texture_browser::~texture_browser() {
-	for(auto& [texture, id] : _gl_textures) {
-		glDeleteTextures(1, &id);
+	for(auto& tex : _gl_textures) {
+		glDeleteTextures(1, &tex.second);
 	}
 }
 
@@ -339,7 +339,7 @@ void gui::texture_browser::render_grid(app& a, texture_provider* provider) {
 		}
 
 		std::string num = std::to_string(i);
-		ImGui::Text(num.c_str());
+		ImGui::Text("%s", num.c_str());
 		ImGui::NextColumn();
 	}
 }

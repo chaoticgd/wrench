@@ -108,7 +108,7 @@ void bmp_to_fip(stream& dest, stream& src) {
 	std::memset(header.unknown2, 0, sizeof(header.unknown2));
 	// Some BMP files have a larger header.
 	src.seek(secondary_header_offset + info_header.info_header_size);
-	int i;
+	uint32_t i;
 	for(i = 0; i < info_header.num_colours; i++) {
 		auto src_pixel = src.read<bmp_colour_table_entry>();
 		auto& dest_pixel = header.palette[i];

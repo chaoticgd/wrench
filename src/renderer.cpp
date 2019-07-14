@@ -21,9 +21,9 @@
 #include "level.h"
 
 three_d_view::three_d_view(const app* a)
-	: camera_position(0, 0, 0),
+	: camera_control(false),
+	  camera_position(0, 0, 0),
 	  camera_rotation(0, 0),
-	  camera_control(false),
 	  _frame_buffer_texture(0) {
 	reset_camera(*a);
 }
@@ -86,8 +86,8 @@ void three_d_view::reset_camera(const app& a) {
 	if(auto lvl = a.get_level()) {
 		const auto& mobies = lvl->mobies();
 		glm::vec3 sum(0, 0, 0);
-		for(const auto& [uid, moby] : mobies) {
-			sum += moby->position();
+		for(const auto& moby : mobies) {
+			sum += moby.second->position();
 		}
 		camera_position = sum / static_cast<float>(mobies.size());
 		has_level = true;
@@ -111,8 +111,8 @@ void three_d_view::draw_level(const level& lvl) const {
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 
-	for(auto& [uid, moby] : lvl.mobies()) {
-		glm::mat4 model = glm::translate(glm::mat4(1.f), moby->position());
+	for(auto& moby : lvl.mobies()) {
+		glm::mat4 model = glm::translate(glm::mat4(1.f), moby.second->position());
 		glm::mat4 mvp = projection_view * model;
 		glm::vec3 colour = glm::vec3(1, 0, 0);
 		//	lvl.is_selected(uid) ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
