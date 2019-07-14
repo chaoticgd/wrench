@@ -21,7 +21,10 @@
 #include "level.h"
 
 three_d_view::three_d_view(const app* a)
-	: camera_control(false), _frame_buffer_texture(0) {
+	: camera_position(0, 0, 0),
+	  camera_rotation(0, 0),
+	  camera_control(false),
+	  _frame_buffer_texture(0) {
 	reset_camera(*a);
 }
 

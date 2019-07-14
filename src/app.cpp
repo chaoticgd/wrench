@@ -25,7 +25,9 @@
 #include "worker_thread.h"
 
 app::app()
-	: selection(nullptr) {}
+	: mouse_last(0, 0),
+	  mouse_diff(0, 0),
+	  selection(nullptr) {}
 
 level* app::get_level() {
 	if(_level) {
@@ -41,6 +43,10 @@ void app::open_iso(std::string path) {
 
 	_space_wad.emplace(&_iso.value(), 0x7e041800, 0x10fa980, "SPACE.WAD");
 	_armor_wad.emplace(&_iso.value(), 0x7fa3d800, 0x25d930, "ARMOR.WAD");
+
+	if(auto view = get_3d_view()) {
+		(*view)->reset_camera(*this);
+	}
 }
 
 const level* app::get_level() const {
