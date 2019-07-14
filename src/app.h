@@ -19,6 +19,7 @@
 #ifndef APP_H
 #define APP_H
 
+#include <any>
 #include <set>
 #include <vector>
 #include <memory>
@@ -29,6 +30,7 @@
 #include "level.h"
 #include "stream.h"
 #include "formats/level_impl.h"
+#include "formats/level_texture.h"
 
 class window;
 class three_d_view;
@@ -55,12 +57,15 @@ public:
 	bool has_camera_control();
 	std::optional<three_d_view*> get_3d_view();
 
-	stream* selection;
-	std::unique_ptr<inspector_reflector> reflector;
+	std::vector<texture_provider*> texture_providers();
+
+	std::any selection;
 
 private:
 	std::optional<file_stream> _iso;
 	std::optional<level_impl> _level;
+	std::optional<fip_scanner> _space_wad;
+	std::optional<fip_scanner> _armor_wad;
 };
 
 #endif

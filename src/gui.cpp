@@ -80,9 +80,10 @@ void gui::render_menu_bar(app& a) {
 	if(ImGui::BeginMenu("Windows")) {
 		render_menu_bar_window_toggle<three_d_view>(a, &a);
 		render_menu_bar_window_toggle<moby_list>(a);
-		render_menu_bar_window_toggle<inspector<inspector_reflector>>(a, a.reflector.get());
+		render_menu_bar_window_toggle<inspector>(a, &a.selection);
 		render_menu_bar_window_toggle<viewport_information>(a);
 		render_menu_bar_window_toggle<string_viewer>(a);
+		render_menu_bar_window_toggle<texture_browser>(a);
 		ImGui::EndMenu();
 	}
 	ImGui::EndMainMenuBar();
@@ -237,8 +238,9 @@ void gui::string_viewer::render(app& a) {
 	texture_browser
 */
 
-gui::texture_browser::texture_browser(texture_provider* provider)
-	: _provider(provider) {}
+gui::texture_browser::texture_browser()
+	: _selection(nullptr),
+	  _provider(nullptr) {}
 
 gui::texture_browser::~texture_browser() {
 	for(auto& [texture, id] : _gl_textures) {
@@ -255,50 +257,107 @@ ImVec2 gui::texture_browser::initial_size() const {
 }
 
 void gui::texture_browser::render(app& a) {
-	ImGui::Columns(std::max(1.f, ImGui::GetWindowSize().x / 128));
-
-	int num_loaded_this_frame = 0;
-
-	for(texture* texture : _provider->textures()) {
-		auto size = texture->size();
-		
-		if(_gl_textures.find(texture) == _gl_textures.end()) {
-
-			if(num_loaded_this_frame > 2) {
-				//ImGui::NextColumn();
-				//continue;
-			}
-
-			// Prepare pixel data.
-			std::vector<uint8_t> indexed_pixel_data = texture->pixel_data();
-			std::vector<uint8_t> colour_data(indexed_pixel_data.size() * 4);
-			
-			for(std::size_t i = 0; i < indexed_pixel_data.size(); i++) {
-				colour c = texture->palette()[indexed_pixel_data[i]];
-				colour_data[i * 4] = c.r;
-				colour_data[i * 4 + 1] = c.g;
-				colour_data[i * 4 + 2] = c.b;
-				colour_data[i * 4 + 3] = 255;
-			}
-
-			// Send image to OpenGL.
-			GLuint texture_id;
-			glGenTextures(1, &texture_id);
-			glBindTexture(GL_TEXTURE_2D, texture_id);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, colour_data.data());
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-			_gl_textures.emplace(texture, texture_id);
-
-			num_loaded_this_frame++;
-		}
-
-		ImGui::Image((void*) (intptr_t) _gl_textures.at(texture), ImVec2(128, 128));
-		ImGui::NextColumn();
+	if(!a.get_level()) {
+		ImGui::Text("<no level open>");
+		return;
 	}
 
-	ImGui::Columns(1);
+	std::vector<texture_provider*> sources = a.texture_providers();
+	if(_provider == nullptr) {
+		_provider = sources[0];
+	}
+
+	ImGui::Columns(2);
+	ImGui::SetColumnWidth(0, 128);
+
+	ImGui::BeginChild(1);
+		if(ImGui::TreeNode("Sources")) {
+			for(texture_provider* provider : sources) {
+				if(ImGui::Button(provider->display_name().c_str())) {
+					_provider = provider;
+				}
+			}
+			ImGui::TreePop();
+		}
+
+		ImGui::NewLine();
+		ImGui::Text("Minimum Width:");
+		ImGui::InputInt("##nolabel", &_filters.min_width);
+	ImGui::EndChild();
+	ImGui::NextColumn();
+
+	ImGui::Text("Listing");
+	ImGui::BeginChild(2);
+		ImGui::Columns(std::max(1.f, ImGui::GetWindowSize().x / 128));
+		render_grid(a, _provider);
+	ImGui::EndChild();
+	ImGui::NextColumn();
+}
+
+void gui::texture_browser::render_grid(app& a, texture_provider* provider) {
+	int num_this_frame = 0;
+	for(texture* tex : provider->textures()) {
+
+		if(tex->size().x < _filters.min_width) {
+			continue;
+		}
+
+		if(_gl_textures.find(tex) == _gl_textures.end()) {
+
+			// Only load 10 textures per frame.
+			if(num_this_frame > 10) {
+				ImGui::NextColumn();
+				continue;
+			}
+
+			cache_texture(tex);
+			num_this_frame++;
+		}
+
+		bool selected =
+			a.selection.type() == typeid(texture*) &&
+			std::any_cast<texture*>(a.selection) == tex;
+
+		bool clicked = ImGui::ImageButton(
+			(void*) (intptr_t) _gl_textures.at(tex),
+			ImVec2(128, 128),
+			ImVec2(0, 0),
+			ImVec2(1, 1),
+			selected ? 2 : 0,
+			ImVec4(0, 0, 0, 1),
+			ImVec4(1, 1, 1, 1)
+		);
+		if(clicked) {
+			a.selection = tex;
+		}
+		ImGui::NextColumn();
+	}
+}
+
+void gui::texture_browser::cache_texture(texture* tex) {
+	auto size = tex->size();
+	// Prepare pixel data.
+	std::vector<uint8_t> indexed_pixel_data = tex->pixel_data();
+	std::vector<uint8_t> colour_data(indexed_pixel_data.size() * 4);
+	
+	auto palette = tex->palette();
+	for(std::size_t i = 0; i < indexed_pixel_data.size(); i++) {
+		colour c = palette[indexed_pixel_data[i]];
+		colour_data[i * 4] = c.r;
+		colour_data[i * 4 + 1] = c.g;
+		colour_data[i * 4 + 2] = c.b;
+		colour_data[i * 4 + 3] = 255;
+	}
+
+	// Send image to OpenGL.
+	GLuint texture_id;
+	glGenTextures(1, &texture_id);
+	glBindTexture(GL_TEXTURE_2D, texture_id);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, colour_data.data());
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	_gl_textures.emplace(tex, texture_id);
 }
 
 /*

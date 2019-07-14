@@ -16,6 +16,9 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#ifndef FORMATS_WAD_H
+#define FORMATS_WAD_H
+
 #include "../stream.h"
 
 #include <cstring>
@@ -48,3 +51,5 @@ private:
 	stream* _backing;
 	uint32_t _wad_offset;
 };
+
+#endif

@@ -183,7 +183,9 @@ public:
 		};
 	};
 
-	level_impl(stream* iso_file, uint32_t offset, uint32_t size);
+	level_impl(stream* iso_file, uint32_t offset, uint32_t size, std::string display_name);
+
+	texture_provider* get_texture_provider();
 
 	std::map<uint32_t, moby*> mobies() override;
 
@@ -196,6 +198,7 @@ private:
 	uint32_t locate_secondary_header(const fmt::master_header& header, uint32_t moby_wad_offset);
 
 	proxy_stream _level_file;
+	std::optional<level_texture_provider> _textures;
 	std::optional<wad_stream> _moby_segment_stream;
 	std::vector<std::unique_ptr<moby_impl>> _mobies;
 };

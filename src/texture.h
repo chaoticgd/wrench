@@ -24,28 +24,47 @@
 #include <stdint.h>
 #include <glm/glm.hpp>
 
+#include "reflection/refolder.h"
+
 struct colour {
-	uint8_t r, g, b;
+	uint8_t r, g, b, a;
+};
+
+struct vec2i {
+	int x, y;
 };
 
 class texture {
 public:
 	virtual ~texture() = default;
 
-	virtual glm::vec2 size() const = 0;
-	virtual void set_size(glm::vec2 size_) = 0;
+	virtual vec2i size() const = 0;
+	virtual void set_size(vec2i size_) = 0;
 
 	virtual std::array<colour, 256> palette() const = 0;
 	virtual void set_palette(std::array<colour, 256> palette_) = 0;
 
 	virtual std::vector<uint8_t> pixel_data() const = 0;
 	virtual void set_pixel_data(std::vector<uint8_t> pixel_data_) = 0;
+
+	virtual std::string palette_path() const;
+	virtual std::string pixel_data_path() const;
+
+	template <typename... T>
+	void reflect(T... callbacks) {
+		rf::reflector r(this, callbacks...);
+		r.visit_f("Width",           [=]() { return size().x; },          [](int) {});
+		r.visit_f("Height",          [=]() { return size().y; },          [](int) {});
+		r.visit_f("Palette Path",    [=]() { return palette_path(); },    [](std::string) {});
+		r.visit_f("Pixel Data Path", [=]() { return pixel_data_path(); }, [](std::string) {});
+	}
 };
 
 class texture_provider {
 public:
 	virtual ~texture_provider() = default;
 
+	virtual std::string display_name() const = 0;
 	virtual std::vector<texture*> textures() = 0;
 	
 	std::vector<const texture*> textures() const;

@@ -63,7 +63,7 @@ namespace gui {
 	
 	class texture_browser : public window {
 	public:
-		texture_browser(texture_provider* provider);
+		texture_browser();
 		~texture_browser();
 
 		const char* title_text() const override;
@@ -71,8 +71,17 @@ namespace gui {
 		void render(app& a) override;
 		
 	private:
-		texture_provider* _provider;
+		struct filter_parameters {
+			int min_width;
+		};
+
+		void render_grid(app& a, texture_provider* provider);
+		void cache_texture(texture* tex);
+
 		std::map<texture*, GLuint> _gl_textures;
+		texture* _selection;
+		texture_provider* _provider;
+		filter_parameters _filters;
 	};
 
 	class message_box : public window {

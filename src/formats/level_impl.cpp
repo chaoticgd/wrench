@@ -18,7 +18,7 @@
 
 #include "level_impl.h"
 
-level_impl::level_impl(stream* iso_file, uint32_t offset, uint32_t size)
+level_impl::level_impl(stream* iso_file, uint32_t offset, uint32_t size, std::string display_name)
 	: _level_file(iso_file, offset, size) {
 	
 	auto master_header = _level_file.read<fmt::master_header>(0);
@@ -29,6 +29,8 @@ level_impl::level_impl(stream* iso_file, uint32_t offset, uint32_t size)
 	uint32_t secondary_header_offset =
 		locate_secondary_header(master_header, moby_wad_offset);
 
+	_textures.emplace(&_level_file, secondary_header_offset, display_name);
+
 	auto segment_header = _moby_segment_stream->read<fmt::moby_segment::header>(0);
 	auto moby_header = _moby_segment_stream->read<fmt::moby_segment::moby_table>(segment_header.mobies.value);
 
@@ -37,6 +39,10 @@ level_impl::level_impl(stream* iso_file, uint32_t offset, uint32_t size)
 		_mobies.emplace_back(std::make_unique<moby_impl>(&_moby_segment_stream.value(),
 			segment_header.mobies.value + sizeof(fmt::moby_segment::moby_table) + i * 0x88));
 	}
+}
+
+texture_provider* level_impl::get_texture_provider() {
+	return &_textures.value();
 }
 
 std::map<uint32_t, moby*> level_impl::mobies() {

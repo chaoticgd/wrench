@@ -22,3 +22,11 @@ std::vector<const texture*> texture_provider::textures() const {
 	auto textures_ = const_cast<texture_provider*>(this)->textures();
 	return std::vector<const texture*>(textures_.begin(), textures_.end());
 }
+
+std::string texture::palette_path() const {
+	return "<none>";
+}
+
+std::string texture::pixel_data_path() const {
+	return "<none>";
+}

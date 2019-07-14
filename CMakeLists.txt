@@ -21,6 +21,7 @@ add_executable(wrench
 	src/shaders.cpp
 	src/texture.cpp
 	src/level.cpp
+	src/inspector.cpp
 	src/worker_thread.cpp
 	src/formats/wad.cpp
 	src/formats/level_impl.cpp

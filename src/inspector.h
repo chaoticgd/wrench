@@ -19,15 +19,17 @@
 #ifndef INSPECTOR_H
 #define INSPECTOR_H
 
+#include <any>
+#include <typeinfo>
+
 #include "stream.h"
 #include "window.h"
 #include "texture.h"
 #include "reflection/refolder.h"
 
-template <typename T>
 class inspector : public window {
 public:
-	inspector(T* subject);
+	inspector(std::any* subject);
 
 	const char* title_text() const override;
 	ImVec2 initial_size() const override;
@@ -38,85 +40,15 @@ private:
 	static std::function<void(const char* name, rf::property<T_data_type> p)>
 		render_property(level* lvl, int& i, T_input_func input);
 	
-	T* _subject;
-};
-
-// Passed as the template parameter to the inspector.
-class inspector_reflector {
-public:
-	inspector_reflector(stream** selection)
-		: _selection(selection) {}
-
 	template <typename... T_callbacks>
 	void reflect(T_callbacks... callbacks);
 
-private:
-	stream** _selection;
+	std::any* _subject;
 };
 
-template <typename T>
-inspector<T>::inspector(T* subject) : _subject(subject) {}
-
-template <typename T>
-const char* inspector<T>::title_text() const {
-	return "Inspector";
-}
-
-template <typename T>
-ImVec2 inspector<T>::initial_size() const {
-	return ImVec2(250, 500);
-}
-
-template <typename T>
-void inspector<T>::render(app& a) {
-	if(auto lvl = a.get_level()) {
-		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
-		ImGui::Columns(2);
-		ImGui::SetColumnWidth(0, 80);
-
-		int i = 0;
-		_subject->reflect(
-			render_property<uint16_t>(lvl, i,
-				[](const char* label, uint16_t* data) {
-					int temp = *data;
-					if(ImGui::InputInt(label, &temp, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue)) {
-						*data = temp;
-						return true;
-					}
-					return false;
-				}),
-			render_property<uint32_t>(lvl, i,
-				[](const char* label, uint32_t* data) {
-					int temp = *data;
-					if(ImGui::InputInt(label, &temp, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue)) {
-						*data = temp;
-						return true;
-					}
-					return false;
-				}),
-			render_property<std::string>(lvl, i,
-				[](const char* label, std::string* data)
-					{ return ImGui::InputText(label, data, ImGuiInputTextFlags_EnterReturnsTrue); }),
-			render_property<glm::vec3>(lvl, i,
-				[](const char* label, glm::vec3* data)
-					{ return ImGui::InputFloat3(label, &data->x, 3, ImGuiInputTextFlags_EnterReturnsTrue); })
-		);
-
-		ImGui::Columns(1);
-		ImGui::PopStyleVar();
-
-		if(i == 0) {
-			ImGui::Text("<no properties>");
-		}
-	} else {
-		ImGui::Text("<no level open>");
-	}
-}
-
-template <typename T>
 template <typename T_data_type, typename T_input_func>
 std::function<void(const char* name, rf::property<T_data_type> p)>
-	inspector<T>::render_property(level* lvl, int& i, T_input_func input) {
+	inspector::render_property(level* lvl, int& i, T_input_func input) {
 	
 	return [=, &lvl, &i](const char* name, rf::property<T_data_type> p) {
 		ImGui::PushID(i++);
@@ -135,17 +67,33 @@ std::function<void(const char* name, rf::property<T_data_type> p)>
 	};
 }
 
-template <typename... T_callbacks>
-void inspector_reflector::reflect(T_callbacks... callbacks) {
-	stream* selection = *_selection;
-
-	if(selection == nullptr) {
-		return;
+template <typename T>
+T* any_ptr_cast(std::any ptr) {
+	if(ptr.type() != typeid(T*)) {
+		return nullptr;
 	}
+	return std::any_cast<T*>(ptr);
+}
 
-	if(auto subject = dynamic_cast<moby*>(selection)) {
+template <typename... T_callbacks>
+void inspector::reflect(T_callbacks... callbacks) {
+	if(auto subject = any_ptr_cast<moby>(*_subject)) {
 		subject->reflect(callbacks...);
 	}
+
+	if(auto subject = any_ptr_cast<texture>(*_subject)) {
+		subject->reflect(callbacks...);
+	}
+}
+
+template <typename T>
+bool inspector_input_int(const char* label, T* data) {
+	int temp = *data;
+	if(ImGui::InputInt(label, &temp, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue)) {
+		*data = temp;
+		return true;
+	}
+	return false;
 }
 
 #endif

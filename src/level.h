@@ -26,6 +26,7 @@
 #include <glm/glm.hpp>
 
 #include "reflection/refolder.h"
+#include "texture.h"
 
 class moby;
 
@@ -38,6 +39,9 @@ public:
 class level {
 public:
 	virtual ~level() = default;
+
+	virtual texture_provider* get_texture_provider() = 0;
+	const texture_provider* get_texture_provider() const;
 
 	std::vector<const point_object*> point_objects() const;
 

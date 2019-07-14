@@ -19,7 +19,7 @@
 #include "moby_impl.h"
 
 moby_impl::moby_impl(stream* backing, uint32_t offset)
-	: _backing(backing, offset, 0x88, "Moby") {}
+	: _backing(backing, offset, 0x88) {}
 
 std::string moby_impl::label() const {
 	return class_name();

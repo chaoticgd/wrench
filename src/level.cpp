@@ -1,5 +1,9 @@
 #include "level.h"
 
+const texture_provider* level::get_texture_provider() const {
+	return const_cast<level*>(this)->get_texture_provider();
+}
+
 std::vector<const point_object*> level::point_objects() const {
 	std::vector<const point_object*> result;
 	for(auto [uid, moby] : mobies()) {

@@ -96,7 +96,7 @@ public:
 	//
 	// This is very useful for debugging as it enables me to easily locate
 	// various structures in a hex editor.
-	virtual std::string resource_path() = 0;
+	virtual std::string resource_path() const = 0;
 
 	template <typename T>
 	T read() {
@@ -209,12 +209,9 @@ public:
 		_last_printed = tell();
 	}
 
-	std::string display_name;
-
 protected:
-	stream(std::string display_name_ = "")
-		: display_name(display_name_),
-		  _last_printed(0) {}
+	stream()
+		: _last_printed(0) {}
 
 private:
 
@@ -223,12 +220,11 @@ private:
 
 class file_stream : public stream {
 public:
-	file_stream(std::string path, std::string display_name_ = "")
-		: file_stream(path, std::ios::in, display_name_) {}
+	file_stream(std::string path)
+		: file_stream(path, std::ios::in) {}
 
-	file_stream(std::string path, std::ios_base::openmode mode, std::string display_name_ = "")
-		: stream(display_name_),
-		  _file(path, mode | std::ios::binary),
+	file_stream(std::string path, std::ios_base::openmode mode)
+		: _file(path, mode | std::ios::binary),
 		  _path(path) {
 		if(_file.fail()) {
 			throw stream_io_error("Failed to open file.");
@@ -262,7 +258,7 @@ public:
 		check_error();
 	}
 
-	std::string resource_path() {
+	std::string resource_path() const {
 		return std::string("file(") + _path + ")";
 	}
 
@@ -279,9 +275,8 @@ private:
 
 class array_stream : public stream {
 public:
-	array_stream(std::string display_name = "")
-		: stream(display_name),
-		  _offset(0) {}
+	array_stream()
+		: _offset(0) {}
 	
 	uint32_t size() {
 		return _allocation.size();
@@ -313,7 +308,7 @@ public:
 		_offset += size;
 	}
 
-	std::string resource_path() {
+	std::string resource_path() const {
 		return "arraystream";
 	}
 
@@ -326,9 +321,8 @@ private:
 // a stream to allow for more convenient access a texture within a disk image.
 class proxy_stream : public stream {
 public:
-	proxy_stream(stream* backing, uint32_t zero, uint32_t size, std::string display_name_ = "")
-		: stream(display_name_),
-		  _backing(backing),
+	proxy_stream(stream* backing, uint32_t zero, uint32_t size)
+		: _backing(backing),
 		  _zero(zero),
 		  _size(size) {}
 
@@ -352,7 +346,7 @@ public:
 		_backing->write_n(data, size);
 	}
 
-	std::string resource_path() {
+	std::string resource_path() const {
 		std::stringstream to_hex;
 		to_hex << std::hex << _zero;
 		return _backing->resource_path() + "+0x" + to_hex.str();
