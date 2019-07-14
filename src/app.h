@@ -30,7 +30,7 @@
 #include "level.h"
 #include "stream.h"
 #include "formats/level_impl.h"
-#include "formats/level_texture.h"
+#include "formats/texture_impl.h"
 
 class window;
 class three_d_view;

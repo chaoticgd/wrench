@@ -26,7 +26,7 @@ add_executable(wrench
 	src/formats/wad.cpp
 	src/formats/level_impl.cpp
 	src/formats/moby_impl.cpp
-	src/formats/level_texture.cpp
+	src/formats/texture_impl.cpp
 	src/formats/fip.cpp
 	src/formats/bmp.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp

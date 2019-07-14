@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "level_texture.h"
+#include "texture_impl.h"
 
 #include "fip.h"
 #include "level_impl.h"

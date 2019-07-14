@@ -25,7 +25,7 @@
 #include "../level.h"
 #include "../stream.h"
 #include "moby_impl.h"
-#include "level_texture.h"
+#include "texture_impl.h"
 #include "wad.h"
 
 /*
