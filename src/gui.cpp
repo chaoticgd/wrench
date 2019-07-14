@@ -271,7 +271,7 @@ void gui::texture_browser::render(app& a) {
 	ImGui::SetColumnWidth(0, 128);
 
 	ImGui::BeginChild(1);
-		if(ImGui::TreeNode("Sources")) {
+		if(ImGui::TreeNodeEx("Sources", ImGuiTreeNodeFlags_DefaultOpen)) {
 			for(texture_provider* provider : sources) {
 				if(ImGui::Button(provider->display_name().c_str())) {
 					_provider = provider;
@@ -279,14 +279,18 @@ void gui::texture_browser::render(app& a) {
 			}
 			ImGui::TreePop();
 		}
-
 		ImGui::NewLine();
-		ImGui::Text("Minimum Width:");
-		ImGui::InputInt("##nolabel", &_filters.min_width);
+
+		if(ImGui::TreeNodeEx("Filters", ImGuiTreeNodeFlags_DefaultOpen)) {
+			ImGui::Text("Minimum Width:");
+			ImGui::PushItemWidth(-1);
+			ImGui::InputInt("##nolabel", &_filters.min_width);
+			ImGui::PopItemWidth();
+			ImGui::TreePop();
+		}
 	ImGui::EndChild();
 	ImGui::NextColumn();
 
-	ImGui::Text("Listing");
 	ImGui::BeginChild(2);
 		ImGui::Columns(std::max(1.f, ImGui::GetWindowSize().x / 128));
 		render_grid(a, _provider);
@@ -296,7 +300,10 @@ void gui::texture_browser::render(app& a) {
 
 void gui::texture_browser::render_grid(app& a, texture_provider* provider) {
 	int num_this_frame = 0;
-	for(texture* tex : provider->textures()) {
+
+	auto textures = provider->textures();
+	for(std::size_t i = 0; i < textures.size(); i++) {
+		texture* tex = textures[i];
 
 		if(tex->size().x < _filters.min_width) {
 			continue;
@@ -330,6 +337,9 @@ void gui::texture_browser::render_grid(app& a, texture_provider* provider) {
 		if(clicked) {
 			a.selection = tex;
 		}
+
+		std::string num = std::to_string(i);
+		ImGui::Text(num.c_str());
 		ImGui::NextColumn();
 	}
 }
