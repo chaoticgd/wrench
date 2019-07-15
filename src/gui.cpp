@@ -239,7 +239,8 @@ void gui::string_viewer::render(app& a) {
 
 gui::texture_browser::texture_browser()
 	: _selection(nullptr),
-	  _provider(nullptr) {}
+	  _provider(nullptr),
+	  _filters({ 0 }) {}
 
 gui::texture_browser::~texture_browser() {
 	for(auto& tex : _gl_textures) {
