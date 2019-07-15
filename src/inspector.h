@@ -81,8 +81,11 @@ void inspector::reflect(T_callbacks... callbacks) {
 		subject->reflect(callbacks...);
 	}
 
-	if(auto subject = any_ptr_cast<texture>(*_subject)) {
-		subject->reflect(callbacks...);
+	if(auto subject = any_ptr_cast<texture*>(*_subject)) {
+		if(*subject == nullptr) {
+			return;
+		}
+		(*subject)->reflect(callbacks...);
 	}
 }
 

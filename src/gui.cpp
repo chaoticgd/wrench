@@ -239,8 +239,10 @@ void gui::string_viewer::render(app& a) {
 
 gui::texture_browser::texture_browser()
 	: _selection(nullptr),
+	  _selection_any(&_selection),
 	  _provider(nullptr),
-	  _filters({ 0 }) {}
+	  _filters({ 0 }),
+	  _texture_inspector(&_selection_any) {}
 
 gui::texture_browser::~texture_browser() {
 	for(auto& tex : _gl_textures) {
@@ -290,19 +292,23 @@ void gui::texture_browser::render(app& a) {
 		}
 		ImGui::NewLine();
 
+		if(ImGui::TreeNodeEx("Details", ImGuiTreeNodeFlags_DefaultOpen)) {
+			_texture_inspector.render(a);
+			ImGui::TreePop();
+		}
+		ImGui::NewLine();
+
 		if(ImGui::TreeNodeEx("Actions", ImGuiTreeNodeFlags_DefaultOpen)) {
-			if(a.selection.type() == typeid(texture*)) {
-				texture* tex = std::any_cast<texture*>(a.selection);
+			if(_selection != nullptr) {
 				if(ImGui::Button("Import Selected")) {
-					import_bmp(a, tex);
+					import_bmp(a, _selection);
 				}
 				if(ImGui::Button("Export Selected")) {
-					export_bmp(a, tex);
+					export_bmp(a, _selection);
 				}
 			}
 			ImGui::TreePop();
 		}
-		ImGui::NewLine();
 	ImGui::EndChild();
 	ImGui::NextColumn();
 
@@ -336,21 +342,17 @@ void gui::texture_browser::render_grid(app& a, texture_provider* provider) {
 			num_this_frame++;
 		}
 
-		bool selected =
-			a.selection.type() == typeid(texture*) &&
-			std::any_cast<texture*>(a.selection) == tex;
-
 		bool clicked = ImGui::ImageButton(
 			(void*) (intptr_t) _gl_textures.at(tex),
 			ImVec2(128, 128),
 			ImVec2(0, 0),
 			ImVec2(1, 1),
-			selected ? 2 : 0,
+			(_selection == tex) ? 2 : 0,
 			ImVec4(0, 0, 0, 1),
 			ImVec4(1, 1, 1, 1)
 		);
 		if(clicked) {
-			a.selection = tex;
+			_selection = tex;
 		}
 
 		std::string num = std::to_string(i);

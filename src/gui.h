@@ -26,6 +26,7 @@
 #include "app.h"
 #include "level.h"
 #include "window.h"
+#include "inspector.h"
 #include "commands/property_changed_command.h"
 
 namespace gui {
@@ -83,8 +84,10 @@ namespace gui {
 
 		std::map<texture*, GLuint> _gl_textures;
 		texture* _selection;
+		std::any _selection_any;
 		texture_provider* _provider;
 		filter_parameters _filters;
+		inspector _texture_inspector;
 	};
 
 	class message_box : public window {
