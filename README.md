@@ -7,7 +7,7 @@ Screenshots
 ===========
 
 ![A screenshot of the level editor](screenshots/editor.png)
-![Green Ratchet](screenshots/skin.png)
+![Texture browser](screenshots/texture-browser.png)
 
 Status
 ======
