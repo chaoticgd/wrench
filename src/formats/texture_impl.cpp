@@ -18,11 +18,8 @@
 
 #include "texture_impl.h"
 
-#include <stddef.h>
-
 #include "fip.h"
 #include "level_impl.h"
-#include "fip.h"
 
 texture_impl::texture_impl(stream* backing, offsets offsets_)
 	: _backing(backing, 0, -1),
@@ -110,8 +107,8 @@ texture_provider_impl::texture_provider_impl(
 		texture_impl::offsets offsets { 
 			last_palette,
 			data_offset + entry.pixel_data,
-			entry_offset + offsetof(fmt::texture_entry, width),
-			entry_offset + offsetof(fmt::texture_entry, height)
+			entry_offset + offsetof32(fmt::texture_entry, width),
+			entry_offset + offsetof32(fmt::texture_entry, height)
 		};
 		_textures.emplace_back(std::make_unique<texture_impl>(backing, offsets));
 		if(entry.height == 0) {
@@ -175,10 +172,10 @@ fip_scanner::fip_scanner(
 			_search_space.read_n(magic, 4);
 			if(validate_fip(magic)) {
 				texture_impl::offsets offsets {
-					i + offsetof(fip_header, palette),
-					i + sizeof(fip_header),
-					i + offsetof(fip_header, width),
-					i + offsetof(fip_header, height)
+					i + offsetof32(fip_header, palette),
+					i + static_cast<uint32_t>(sizeof(fip_header)),
+					i + offsetof32(fip_header, width),
+					i + offsetof32(fip_header, height)
 				};
 				_textures.emplace_back(
 					std::make_unique<texture_impl>(&_search_space, offsets));

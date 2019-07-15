@@ -24,6 +24,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <stddef.h>
 #include <optional>
 #include <stdexcept>
 #include <type_traits>
@@ -40,6 +41,8 @@
 	#define packed_struct(name, body) \
 		struct __attribute__((__packed__)) name { body };
 #endif
+
+#define offsetof32(struct, field) static_cast<uint32_t>(offsetof(struct, field))
 
 template <typename T>
 packed_struct(file_ptr,
