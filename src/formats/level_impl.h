@@ -164,7 +164,7 @@ public:
 				uint8_t unknown[64];
 			)
 
-			packed_struct(string_table,
+			packed_struct(string_table_header,
 				uint32_t num_strings;
 				uint32_t unknown;
 				// String table entries follow.
@@ -190,11 +190,11 @@ public:
 
 	std::map<uint32_t, moby*> mobies() override;
 
-	// Used by the inspector.
-	template <typename... T>
-	void reflect(T... callbacks);
+	std::map<std::string, std::map<uint32_t, std::string>> game_strings() override;
 
 private:
+	void read_game_strings(fmt::moby_segment::header header);
+
 	uint32_t locate_moby_wad();
 	uint32_t locate_secondary_header(const fmt::master_header& header, uint32_t moby_wad_offset);
 
@@ -202,11 +202,7 @@ private:
 	std::optional<level_texture_provider> _textures;
 	std::optional<wad_stream> _moby_segment_stream;
 	std::vector<std::unique_ptr<moby_impl>> _mobies;
+	std::map<std::string, std::map<uint32_t, std::string>> _game_strings;
 };
-
-template <typename... T>
-void level_impl::reflect(T... callbacks) {
-	
-}
 
 #endif

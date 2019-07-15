@@ -186,32 +186,31 @@ ImVec2 gui::string_viewer::initial_size() const {
 }
 
 void gui::string_viewer::render(app& a) {
-	/*a.bind_level([=, &a](const level& lvl) {
+	if(auto lvl = a.get_level()) {		
+		auto strings = lvl->game_strings();
 
 		ImGui::Columns(2);
-
 		ImGui::SetColumnWidth(0, 64);
+
 		if(ImGui::Button("Export")) {
 			auto string_exporter = std::make_unique<string_input>("Enter Export Path");
 			string_exporter->on_okay([=](app& a, std::string path) {
-				a.if_level([=](const level_impl& lvl) {
-					auto lang = std::find_if(lvl.strings.begin(), lvl.strings.end(),
-						[=](auto& ptr) { return ptr.first == _selected_language; });
-					if(lang == lvl.strings.end()) {
-						return;
-					}
-					std::ofstream out_file(path);
-					for(auto& [id, string] : lang->second) {
-						out_file << std::hex << id << ": " << string << "\n";
-					}
-				});
+				auto lang = std::find_if(strings.begin(), strings.end(),
+					[=](auto& ptr) { return ptr.first == _selected_language; });
+				if(lang == strings.end()) {
+					return;
+				}
+				std::ofstream out_file(path);
+				for(auto& [id, string] : lang->second) {
+					out_file << std::hex << id << ": " << string << "\n";
+				}
 			});
 			a.windows.emplace_back(std::move(string_exporter));
 		}
 
 		ImGui::NextColumn();
 
-		for(auto& language : lvl.strings) {
+		for(auto& language : strings) {
 			if(ImGui::Button(language.first.c_str())) {
 				_selected_language = language.first;
 			}
@@ -221,9 +220,9 @@ void gui::string_viewer::render(app& a) {
 
 		ImGui::Columns(1);
 
-		auto lang = std::find_if(lvl.strings.begin(), lvl.strings.end(),
+		auto lang = std::find_if(strings.begin(), strings.end(),
 			[=](auto& ptr) { return ptr.first == _selected_language; });
-		if(lang == lvl.strings.end()) {
+		if(lang == strings.end()) {
 			return;
 		}
 
@@ -232,7 +231,7 @@ void gui::string_viewer::render(app& a) {
 			ImGui::Text("%x: %s", string.first, string.second.c_str());
 		}
 		ImGui::EndChild();
-	});*/
+	}
 }
 
 /*

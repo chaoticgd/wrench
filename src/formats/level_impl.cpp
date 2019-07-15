@@ -42,6 +42,8 @@ level_impl::level_impl(stream* iso_file, uint32_t offset, uint32_t size, std::st
 			segment_header.mobies.value + sizeof(fmt::moby_segment::moby_table) + i * 0x88));
 	}
 
+	read_game_strings(segment_header);
+
 	log << "DONE!\n";
 }
 
@@ -55,6 +57,41 @@ std::map<uint32_t, moby*> level_impl::mobies() {
 		mobies_.emplace(moby->uid(), moby.get());
 	}
 	return mobies_;
+}
+
+std::map<std::string, std::map<uint32_t, std::string>> level_impl::game_strings() {
+	return _game_strings;
+}
+
+void level_impl::read_game_strings(fmt::moby_segment::header header) {
+	// Work around structure packing.
+	auto english   = header.english_strings.value,
+	     french    = header.french_strings.value,
+		 german    = header.german_strings.value,
+		 italian   = header.italian_strings.value,
+		 null_lang = header.null_strings.value;
+	const std::map<std::string, uint32_t> languages {
+		{ "English", english   },
+		{ "French",  french    },
+		{ "German",  german    },
+		{ "Italian", italian   },
+		{ "Null",    null_lang }
+	};
+
+	for(auto& [lang_name, lang_offset] : languages) {
+		auto table = _moby_segment_stream->read<fmt::moby_segment::string_table_header>(lang_offset);
+		std::map<uint32_t, std::string> strings;
+		for(uint32_t i = 0; i < table.num_strings; i++) {
+			_moby_segment_stream->seek(
+				lang_offset +
+				sizeof(fmt::moby_segment::string_table_header) +
+				sizeof(fmt::moby_segment::string_table_entry) * i);
+			auto entry = _moby_segment_stream->read<fmt::moby_segment::string_table_entry>();
+			_moby_segment_stream->seek(lang_offset + entry.string.value);
+			strings[entry.id] =_moby_segment_stream->read_string();
+		}
+		_game_strings[lang_name] = strings;
+	}
 }
 
 uint32_t level_impl::locate_moby_wad() {

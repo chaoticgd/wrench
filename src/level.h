@@ -47,6 +47,8 @@ public:
 
 	virtual std::map<uint32_t, moby*> mobies() = 0;
 	std::map<uint32_t, const moby*> mobies() const;
+
+	virtual std::map<std::string, std::map<uint32_t, std::string>> game_strings() = 0;
 };
 
 class moby : public point_object {
