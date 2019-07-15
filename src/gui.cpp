@@ -300,7 +300,7 @@ void gui::texture_browser::render(app& a) {
 
 		if(ImGui::TreeNodeEx("Actions", ImGuiTreeNodeFlags_DefaultOpen)) {
 			if(_selection != nullptr) {
-				if(ImGui::Button("Import Selected")) {
+				if(ImGui::Button("Replace Selected")) {
 					import_bmp(a, _selection);
 				}
 				if(ImGui::Button("Export Selected")) {
