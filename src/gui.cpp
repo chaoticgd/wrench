@@ -24,7 +24,6 @@
 #include <iostream>
 #include <functional>
 
-#include "menu.h"
 #include "window.h"
 #include "renderer.h"
 #include "inspector.h"
