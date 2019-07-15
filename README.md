@@ -1,7 +1,7 @@
 wrench
 ======
 
-A very early set of modding tools for the Ratchet & Clank PS2 games.
+An early set of modding tools for the Ratchet & Clank PS2 games.
 
 Screenshots
 ===========
@@ -12,40 +12,49 @@ Screenshots
 Status
 ======
 
-The project isn't really usable for any serious modding yet.
+What works:
 
-- WAD Compression
-	- [x] Decompression
-	- [ ] Recompression
-- Level Importing
-	- Mobies (entities)
-		- [x] Unique ID
-		- [x] Object class/type
-		- [x] Positions
-		- [ ] Other attributes
-	- [ ] Terrain, etc.
-- Level Exporting
-	- [ ] Mobies
-- Texture Format
-	- [x] 2FIP to BMP
-	- [x] BMP to 2FIP
+- Features
+	- Viewing levels (only mobies currently).
+	- Editing some textures.
+	- Exporting a list of ingame strings.
+
+- Technical
+	- Decompressing WAD segments.
+	- Converting 2FIP textures to and from BMP files.
+
+What doesn't work:
+
+- Features
+	- Editing levels.
+	- Editing ingame strings.
+	- Editing some other textures including all transparent textures.
+
+- Technical
+	- Compressing WAD segments.
+
 
 Building
 ========
 
-On Linux
---------
+Ubuntu 18.04
+------------
 
-Clone the repository, init all submodules, install dependencies listed in CMakeLists.txt, then run
+1.	Install dependencies and tools:
+	> sudo apt install git cmake g++ libglew-dev libboost-all-dev libglfw3-dev libglm-dev
+2.	Download the source code using Git:
+	> git clone -b master https://github.com/chaoticgd/wrench
+	
+	_Note: The default branch is develop, so if you don't specify `-b master` you will download a development build which will probably be unstable._
 
->	cmake .
+3.	Download the remaining dependencies using Git:
+	> git submodule update --init --recursive
+	
+2.	Build it with cmake:
+	> cmake . && cmake --build .
 
->	cmake --build .
-
-I will improve this section sometime in the future.
-
-On Windows
-----------
+Windows
+-------
 
 Not yet.
 
