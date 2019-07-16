@@ -27,6 +27,7 @@
 
 #include "reflection/refolder.h"
 #include "texture.h"
+#include "command.h"
 
 class game_object;
 class point_object;
@@ -34,8 +35,10 @@ class moby;
 
 class level {
 public:
+	level();
 	virtual ~level() = default;
 
+	// Game data
 	virtual texture_provider* get_texture_provider() = 0;
 	const texture_provider* get_texture_provider() const;
 
@@ -46,12 +49,23 @@ public:
 
 	virtual std::map<std::string, std::map<uint32_t, std::string>> game_strings() = 0;
 
+	// Selection
 	std::vector<game_object*> selection;
-
 	bool is_selected(const game_object* obj) const;
 
+	// Undo/redo
+	template <typename T, typename... T_constructor_args>
+	void emplace_command(T_constructor_args... args);
+	void undo();
+	void redo();
+
+	// Inspector
 	template <typename... T>
 	void reflect(T... callbacks);
+
+private:
+	std::size_t _history_index;
+	std::vector<std::unique_ptr<command>> _history_stack;
 };
 
 class game_object {
@@ -88,6 +102,15 @@ public:
 	template <typename... T>
 	void reflect(T... callbacks);
 };
+
+template <typename T, typename... T_constructor_args>
+void level::emplace_command(T_constructor_args... args) {
+	_history_stack.resize(_history_index++);
+	_history_stack.emplace_back(std::make_unique<T>(args...));
+	auto& cmd = _history_stack[_history_index - 1];
+	cmd->inject_level_pointer(this);
+	cmd->apply();
+}
 
 template <typename... T>
 void level::reflect(T... callbacks) {

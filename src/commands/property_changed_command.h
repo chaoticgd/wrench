@@ -19,7 +19,9 @@ private:
 
 template <typename T>
 property_changed_command<T>::property_changed_command(rf::property<T> property, T new_value)
-	: _property(property), _old_value(property.get()), _new_value(new_value) {}
+	: _property(property),
+	  _old_value(property.get()),
+	  _new_value(new_value) {}
 
 template <typename T>
 void property_changed_command<T>::apply() {

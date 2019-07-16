@@ -22,7 +22,6 @@
 #include <stdexcept>
 
 class level;
-class level_impl;
 
 class command {
 	friend level;
@@ -38,12 +37,12 @@ protected:
 	// Should only throw command_error.
 	virtual void undo() = 0;
 
-	level_impl& lvl() { return *_lvl; }
+	level& lvl() { return *_lvl; }
 
 private:
-	void inject_level_pointer(level_impl* lvl) { _lvl = lvl; }
+	void inject_level_pointer(level* lvl) { _lvl = lvl; }
 
-	level_impl* _lvl;
+	level* _lvl;
 };
 
 class command_error : public std::runtime_error {

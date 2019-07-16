@@ -26,6 +26,7 @@
 #include "window.h"
 #include "texture.h"
 #include "reflection/refolder.h"
+#include "commands/property_changed_command.h"
 
 class inspector : public window {
 public:
@@ -50,7 +51,7 @@ template <typename T_data_type, typename T_input_func>
 std::function<void(const char* name, rf::property<T_data_type> p)>
 	inspector::render_property(level* lvl, int& i, T_input_func input) {
 	
-	return [=, &lvl, &i](const char* name, rf::property<T_data_type> p) {
+	return [=, &i](const char* name, rf::property<T_data_type> p) {
 		ImGui::PushID(i++);
 		ImGui::AlignTextToFramePadding();
 		ImGui::Text("%s", name);
@@ -59,7 +60,7 @@ std::function<void(const char* name, rf::property<T_data_type> p)>
 		ImGui::PushItemWidth(-1);
 		T_data_type value = p.get();
 		if(input("##nolabel", &value)) {
-			//lvl.emplace_command<property_changed_command<T_data_type>>(p, value);
+			lvl->emplace_command<property_changed_command<T_data_type>>(p, value);
 		}
 		ImGui::NextColumn();
 		ImGui::PopID();

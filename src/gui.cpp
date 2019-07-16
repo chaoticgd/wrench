@@ -53,9 +53,6 @@ void gui::render(app& a) {
 }
 
 void gui::render_menu_bar(app& a) {
-	bool no_more_undo_levels = false;
-	bool no_more_redo_levels = false;
-
 	ImGui::BeginMainMenuBar();
 	if(ImGui::BeginMenu("File")) {
 		if(ImGui::BeginMenu("New")) {
@@ -66,17 +63,25 @@ void gui::render_menu_bar(app& a) {
 		}
 		ImGui::EndMenu();
 	}
-	/*if(ImGui::BeginMenu("Edit")) {
-		a.if_level([&no_more_undo_levels, &no_more_redo_levels](level& lvl) {
+	if(ImGui::BeginMenu("Edit")) {
+		if(auto lvl = a.get_level()) {
 			if(ImGui::MenuItem("Undo")) {
-				no_more_undo_levels = !lvl.undo();
+				try {
+					lvl->undo();
+				} catch(command_error& error) {
+					a.emplace_window<message_box>("Undo Error", error.what());
+				}
 			}
 			if(ImGui::MenuItem("Redo")) {
-				no_more_redo_levels = !lvl.redo();
+				try {
+					lvl->redo();
+				} catch(command_error& error) {
+					a.emplace_window<message_box>("Redo Error", error.what());
+				}
 			}
-		});
+		}
 		ImGui::EndMenu();
-	}*/
+	}
 	if(ImGui::BeginMenu("Windows")) {
 		render_menu_bar_window_toggle<three_d_view>(a, &a);
 		render_menu_bar_window_toggle<moby_list>(a);
@@ -87,14 +92,6 @@ void gui::render_menu_bar(app& a) {
 		ImGui::EndMenu();
 	}
 	ImGui::EndMainMenuBar();
-
-	if(no_more_undo_levels || no_more_redo_levels) {
-		std::string message =
-			std::string("Nothing to ") +
-			(no_more_undo_levels ? "undo" : "redo") + ".";
-		auto window = std::make_unique<message_box>("Error", message);
-		a.windows.emplace_back(std::move(window));
-	}
 }
 
 void gui::file_new_project(app& a) {
