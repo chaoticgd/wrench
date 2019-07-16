@@ -28,13 +28,9 @@
 #include "reflection/refolder.h"
 #include "texture.h"
 
+class game_object;
+class point_object;
 class moby;
-
-class point_object {
-public:
-	virtual std::string label() const = 0;
-	virtual glm::vec3 position() const = 0;
-};
 
 class level {
 public:
@@ -49,6 +45,26 @@ public:
 	std::map<uint32_t, const moby*> mobies() const;
 
 	virtual std::map<std::string, std::map<uint32_t, std::string>> game_strings() = 0;
+
+	std::vector<game_object*> selection;
+
+	bool is_selected(const game_object* obj) const;
+
+	template <typename... T>
+	void reflect(T... callbacks);
+};
+
+class game_object {
+public:
+	virtual std::string label() const = 0;
+
+	template <typename... T>
+	void reflect(T... callbacks);
+};
+
+class point_object : public game_object {
+public:
+	virtual glm::vec3 position() const = 0;
 };
 
 class moby : public point_object {
@@ -70,13 +86,30 @@ public:
 	virtual std::string class_name() const = 0;
 
 	template <typename... T>
-	void reflect(T... callbacks) {
-		rf::reflector r(this, callbacks...);
-		r.visit_m("UID",      &moby::uid,       &moby::set_uid);
-		r.visit_m("Class",    &moby::class_num, &moby::set_class_num);
-		r.visit_m("Position", &moby::position,  &moby::set_position);
-		r.visit_m("Rotation", &moby::rotation,  &moby::set_rotation);
-	}
+	void reflect(T... callbacks);
 };
+
+template <typename... T>
+void level::reflect(T... callbacks) {
+	if(selection.size() == 1) {
+		selection[0]->reflect(callbacks...);
+	}
+}
+
+template <typename... T>
+void game_object::reflect(T... callbacks) {
+	if(auto obj = dynamic_cast<moby*>(this)) {
+		obj->reflect(callbacks...);
+	}
+}
+
+template <typename... T>
+void moby::reflect(T... callbacks) {
+	rf::reflector r(this, callbacks...);
+	r.visit_m("UID",      &moby::uid,       &moby::set_uid);
+	r.visit_m("Class",    &moby::class_num, &moby::set_class_num);
+	r.visit_m("Position", &moby::position,  &moby::set_position);
+	r.visit_m("Rotation", &moby::rotation,  &moby::set_rotation);
+}
 
 #endif

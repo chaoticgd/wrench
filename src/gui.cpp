@@ -80,7 +80,7 @@ void gui::render_menu_bar(app& a) {
 	if(ImGui::BeginMenu("Windows")) {
 		render_menu_bar_window_toggle<three_d_view>(a, &a);
 		render_menu_bar_window_toggle<moby_list>(a);
-		render_menu_bar_window_toggle<inspector>(a, &a.selection);
+		render_menu_bar_window_toggle<inspector>(a, &a.this_any);
 		render_menu_bar_window_toggle<viewport_information>(a);
 		render_menu_bar_window_toggle<string_viewer>(a);
 		render_menu_bar_window_toggle<texture_browser>(a);
@@ -132,10 +132,9 @@ void gui::moby_list::render(app& a) {
 			row << std::setfill(' ') << std::setw(4) << std::dec << uid << " ";
 			row << std::setfill(' ') << std::setw(16) << std::hex << moby->class_name() << " ";
 
-			//bool is_selected = lvl.selection.find(uid) != lvl.selection.end();
-			//if(ImGui::Selectable(row.str().c_str(), is_selected)) {
-			//	// lvl.selection = { uid };
-			//}
+			if(ImGui::Selectable(row.str().c_str(), lvl->is_selected(moby))) {
+				lvl->selection = { moby };
+			}
 		}
 		ImGui::ListBoxFooter();
 		ImGui::PopItemWidth();

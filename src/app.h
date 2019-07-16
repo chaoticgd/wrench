@@ -72,7 +72,10 @@ public:
 
 	std::vector<texture_provider*> texture_providers();
 
-	std::any selection;
+	std::any this_any;
+
+	template <typename... T>
+	void reflect(T... callbacks);
 
 private:
 	std::optional<file_stream> _iso;
@@ -82,6 +85,13 @@ private:
 template <typename T, typename... T_constructor_args>
 void app::emplace_window(T_constructor_args... args) {
 	windows.emplace_back(std::make_unique<T>(args...));
+}
+
+template <typename... T>
+void app::reflect(T... callbacks) {
+	if(auto lvl = get_level()) {
+		lvl->reflect(callbacks...);
+	}
 }
 
 #endif

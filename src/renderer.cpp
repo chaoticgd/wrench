@@ -114,8 +114,8 @@ void three_d_view::draw_level(const level& lvl) const {
 	for(auto& moby : lvl.mobies()) {
 		glm::mat4 model = glm::translate(glm::mat4(1.f), moby.second->position());
 		glm::mat4 mvp = projection_view * model;
-		glm::vec3 colour = glm::vec3(1, 0, 0);
-		//	lvl.is_selected(uid) ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
+		glm::vec3 colour =
+			lvl.is_selected(moby.second) ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
 		draw_test_tri(mvp, colour);
 	}
 

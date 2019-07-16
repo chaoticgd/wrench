@@ -20,3 +20,7 @@ std::map<uint32_t, const moby*> level::mobies() const {
 	}
 	return result;
 }
+
+bool level::is_selected(const game_object* obj) const {
+	return std::find(selection.begin(), selection.end(), obj) != selection.end();
+}

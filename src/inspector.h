@@ -77,7 +77,7 @@ T* any_ptr_cast(std::any ptr) {
 
 template <typename... T_callbacks>
 void inspector::reflect(T_callbacks... callbacks) {
-	if(auto subject = any_ptr_cast<moby>(*_subject)) {
+	if(auto subject = any_ptr_cast<app>(*_subject)) {
 		subject->reflect(callbacks...);
 	}
 

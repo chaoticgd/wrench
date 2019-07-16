@@ -32,7 +32,7 @@ iso_adapters::iso_adapters(stream* iso_file, worker_logger& log)
 app::app()
 	: mouse_last(0, 0),
 	  mouse_diff(0, 0),
-	  selection(nullptr) {}
+	  this_any(this) {}
 
 level* app::get_level() {
 	if(_iso_adapters.get() != nullptr) {
