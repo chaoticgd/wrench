@@ -16,6 +16,9 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#ifndef FORMATS_VEC3F_H
+#define FORMATS_VEC3F_H
+
 #include <glm/glm.hpp>
 
 #include "../stream.h"
@@ -36,3 +39,5 @@ packed_struct(vec3f,
 		return result;
 	}
 )
+
+#endif

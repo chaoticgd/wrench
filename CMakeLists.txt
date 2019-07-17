@@ -25,6 +25,7 @@ add_executable(wrench
 	src/worker_logger.cpp
 	src/formats/wad.cpp
 	src/formats/level_impl.cpp
+	src/formats/shrub_impl.cpp
 	src/formats/moby_impl.cpp
 	src/formats/texture_impl.cpp
 	src/formats/fip.cpp

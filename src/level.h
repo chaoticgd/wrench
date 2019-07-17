@@ -25,12 +25,14 @@
 #include <vector>
 #include <glm/glm.hpp>
 
-#include "reflection/refolder.h"
-#include "texture.h"
 #include "command.h"
+#include "texture.h"
+#include "imgui_includes.h"
+#include "reflection/refolder.h"
 
 class game_object;
 class point_object;
+class shrub;
 class moby;
 
 class level {
@@ -43,6 +45,9 @@ public:
 	const texture_provider* get_texture_provider() const;
 
 	std::vector<const point_object*> point_objects() const;
+
+	virtual std::vector<shrub*> shrubs() = 0;
+	std::vector<const shrub*> shrubs() const;
 
 	virtual std::map<uint32_t, moby*> mobies() = 0;
 	std::map<uint32_t, const moby*> mobies() const;
@@ -79,6 +84,19 @@ public:
 class point_object : public game_object {
 public:
 	virtual glm::vec3 position() const = 0;
+	virtual void set_position(glm::vec3 rotation_) = 0;
+
+	virtual glm::vec3 rotation() const = 0;
+	virtual void set_rotation(glm::vec3 rotation_) = 0;
+
+	template <typename... T>
+	void reflect(T... callbacks);
+};
+
+class shrub : public point_object {
+public:
+	template <typename... T>
+	void reflect(T... callbacks);
 };
 
 class moby : public point_object {
@@ -90,12 +108,6 @@ public:
 
 	virtual uint16_t class_num() const = 0;
 	virtual void set_class_num(uint16_t class_num_) = 0;
-
-	virtual glm::vec3 position() const = 0;
-	virtual void set_position(glm::vec3 rotation_) = 0;
-
-	virtual glm::vec3 rotation() const = 0;
-	virtual void set_rotation(glm::vec3 rotation_) = 0;
 
 	virtual std::string class_name() const = 0;
 
@@ -121,18 +133,34 @@ void level::reflect(T... callbacks) {
 
 template <typename... T>
 void game_object::reflect(T... callbacks) {
+	if(auto obj = dynamic_cast<point_object*>(this)) {
+		obj->reflect(callbacks...);
+	}
+}
+
+template <typename... T>
+void point_object::reflect(T... callbacks) {
+	ImGui::Text("Point Object");
+
+	rf::reflector r(this, callbacks...);
+	r.visit_m("Position", &moby::position,  &moby::set_position);
+	r.visit_m("Rotation", &moby::rotation,  &moby::set_rotation);
+
 	if(auto obj = dynamic_cast<moby*>(this)) {
 		obj->reflect(callbacks...);
 	}
 }
 
 template <typename... T>
+void shrub::reflect(T... callbacks) {}
+
+template <typename... T>
 void moby::reflect(T... callbacks) {
+	ImGui::Text("Moby");
+
 	rf::reflector r(this, callbacks...);
 	r.visit_m("UID",      &moby::uid,       &moby::set_uid);
 	r.visit_m("Class",    &moby::class_num, &moby::set_class_num);
-	r.visit_m("Position", &moby::position,  &moby::set_position);
-	r.visit_m("Rotation", &moby::rotation,  &moby::set_rotation);
 }
 
 #endif

@@ -21,7 +21,7 @@
 level_impl::level_impl(stream* iso_file, uint32_t offset, uint32_t size, std::string display_name, worker_logger& log)
 	: _level_file(iso_file, offset, size) {
 	
-	log << "Importing level " << display_name << "... ";
+	log << "Importing level " << display_name << "...\n";
 
 	auto master_header = _level_file.read<fmt::master_header>(0);
 	uint32_t moby_wad_offset = locate_moby_wad();
@@ -32,23 +32,24 @@ level_impl::level_impl(stream* iso_file, uint32_t offset, uint32_t size, std::st
 		locate_secondary_header(master_header, moby_wad_offset);
 
 	_textures.emplace(&_level_file, secondary_header_offset, display_name);
+	log << "\tDetected " << _textures->textures().size() << " textures.\n";
 
 	auto segment_header = _moby_segment_stream->read<fmt::moby_segment::header>(0);
-	auto moby_header = _moby_segment_stream->read<fmt::moby_segment::moby_table>(segment_header.mobies.value);
-
-	std::map<uint32_t, moby*> mobies_;
-	for(uint32_t i = 0; i < moby_header.num_mobies; i++) {
-		_mobies.emplace_back(std::make_unique<moby_impl>(&_moby_segment_stream.value(),
-			segment_header.mobies.value + sizeof(fmt::moby_segment::moby_table) + i * 0x88));
-	}
-
-	read_game_strings(segment_header);
-
-	log << "DONE!\n";
+	read_game_strings(segment_header, log);
+	read_models(segment_header, log);
+	read_shrubs(segment_header, log);
+	read_mobies(segment_header, log);
 }
 
 texture_provider* level_impl::get_texture_provider() {
 	return &_textures.value();
+}
+
+std::vector<shrub*> level_impl::shrubs() {
+	std::vector<shrub*> result(_shrubs.size());
+	std::transform(_shrubs.begin(), _shrubs.end(), result.begin(),
+		[](auto& ptr) { return ptr.get(); });
+	return result;
 }
 
 std::map<uint32_t, moby*> level_impl::mobies() {
@@ -63,7 +64,7 @@ std::map<std::string, std::map<uint32_t, std::string>> level_impl::game_strings(
 	return _game_strings;
 }
 
-void level_impl::read_game_strings(fmt::moby_segment::header header) {
+void level_impl::read_game_strings(fmt::moby_segment::header header, worker_logger& log) {
 	// Work around structure packing.
 	auto english   = header.english_strings.value,
 	     french    = header.french_strings.value,
@@ -92,6 +93,33 @@ void level_impl::read_game_strings(fmt::moby_segment::header header) {
 		}
 		_game_strings[lang_name] = strings;
 	}
+}
+
+void level_impl::read_models(fmt::moby_segment::header header, worker_logger& log) {
+	auto table_header = _moby_segment_stream->read<fmt::moby_segment::model_table_header>(header.static_models.value);
+	log << "\tDetected " << table_header.num_static_models << " models (stub).\n";
+}
+
+void level_impl::read_shrubs(fmt::moby_segment::header header, worker_logger& log) {
+	auto table = _moby_segment_stream->read<fmt::moby_segment::shrub_table_header>(header.shrubs.value);
+	for(uint32_t i = 0; i < table.num_shrubs; i++) {
+		_shrubs.emplace_back(std::make_unique<shrub_impl>(
+			&_moby_segment_stream.value(),
+			header.shrubs.value + sizeof(fmt::moby_segment::shrub_table_header) + i * 0x70
+		));
+	}
+	log << "\tDetected " << table.num_shrubs << " shrubs.\n";
+}
+
+void level_impl::read_mobies(fmt::moby_segment::header header, worker_logger& log) {
+	auto moby_header = _moby_segment_stream->read<fmt::moby_segment::moby_table_header>(header.mobies.value);
+	std::map<uint32_t, moby*> mobies_;
+	for(uint32_t i = 0; i < moby_header.num_mobies; i++) {
+		_mobies.emplace_back(std::make_unique<moby_impl>(
+			&_moby_segment_stream.value(),
+			header.mobies.value + sizeof(fmt::moby_segment::moby_table_header) + i * 0x88));
+	}
+	log << "\tDetected " << moby_header.num_mobies << " mobies.\n";
 }
 
 uint32_t level_impl::locate_moby_wad() {

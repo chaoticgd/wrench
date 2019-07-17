@@ -25,9 +25,10 @@
 #include "../level.h"
 #include "../stream.h"
 #include "../worker_logger.h"
-#include "moby_impl.h"
-#include "texture_impl.h"
 #include "wad.h"
+#include "moby_impl.h"
+#include "shrub_impl.h"
+#include "texture_impl.h"
 
 /*
 	LEVEL*.WAD LAYOUT
@@ -61,12 +62,6 @@ public:
 	struct fmt {
 		struct master_header;
 		struct secondary_header;
-		struct moby_segment_header;
-		
-		struct ship_data;
-		struct directional_light_table;
-		struct string_table;
-		struct moby_table;
 
 		packed_struct(master_header,
 			uint8_t unknown1[0x14];              // 0x0
@@ -102,51 +97,38 @@ public:
 			file_ptr<wad_header> ram_image_wad; // 0x48
 		)
 
-		packed_struct(moby_segment_header,
-			file_ptr<ship_data> ship;                             // 0x0
-			file_ptr<directional_light_table> directional_lights; // 0x4
-			uint32_t unknown1;                                    // 0x8
-			uint32_t unknown2;                                    // 0xc
-			file_ptr<string_table> english_strings;               // 0x10
-			uint32_t unknown3; // Points to 16 bytes between the English and French tables (on Barlow).
-			file_ptr<string_table> french_strings;                // 0x18
-			file_ptr<string_table> german_strings;                // 0x1c
-			file_ptr<string_table> spanish_strings;               // 0x20
-			file_ptr<string_table> italian_strings;               // 0x24
-			file_ptr<string_table> null_strings;                  // 0x28 Also what is this thing?
-			uint32_t unknown4;                                    // 0x2c
-			uint32_t unknown5;                                    // 0x30
-			uint32_t unknown6;                                    // 0x34
-			uint32_t unknown7;                                    // 0x38
-			uint32_t unknown8;                                    // 0x3c
-			uint32_t unknown9;                                    // 0x40
-			uint32_t unknown10;                                   // 0x44
-			uint32_t unknown11;                                   // 0x48
-			file_ptr<moby_table> mobies;                          // 0x4c
-		)
-
 		struct moby_segment {
+			struct header;
+			struct ship_data;
+			struct directional_light_table;
+			struct string_table_header;
+			struct string_table_entry;
+			struct model_table_header;
+			struct model_table_entry;
+			struct shrub_table_header;
+			struct moby_table_header;
+
 			packed_struct(header,
 				file_ptr<ship_data> ship;                             // 0x0
 				file_ptr<directional_light_table> directional_lights; // 0x4
 				uint32_t unknown1;                                    // 0x8
 				uint32_t unknown2;                                    // 0xc
-				file_ptr<string_table> english_strings;               // 0x10
+				file_ptr<string_table_header> english_strings;        // 0x10
 				uint32_t unknown3; // Points to 16 bytes between the English and French tables (on Barlow).
-				file_ptr<string_table> french_strings;                // 0x18
-				file_ptr<string_table> german_strings;                // 0x1c
-				file_ptr<string_table> spanish_strings;               // 0x20
-				file_ptr<string_table> italian_strings;               // 0x24
-				file_ptr<string_table> null_strings;                  // 0x28 Also what is this thing?
+				file_ptr<string_table_header> french_strings;         // 0x18
+				file_ptr<string_table_header> german_strings;         // 0x1c
+				file_ptr<string_table_header> spanish_strings;        // 0x20
+				file_ptr<string_table_header> italian_strings;        // 0x24
+				file_ptr<string_table_header> null_strings;           // 0x28 Also what is this thing?
 				uint32_t unknown4;                                    // 0x2c
 				uint32_t unknown5;                                    // 0x30
-				uint32_t unknown6;                                    // 0x34
+				file_ptr<model_table_header> static_models;           // 0x34
 				uint32_t unknown7;                                    // 0x38
 				uint32_t unknown8;                                    // 0x3c
-				uint32_t unknown9;                                    // 0x40
+				file_ptr<shrub_table_header> shrubs;                  // 0x40
 				uint32_t unknown10;                                   // 0x44
 				uint32_t unknown11;                                   // 0x48
-				file_ptr<moby_table> mobies;                          // 0x4c
+				file_ptr<moby_table_header> mobies;                          // 0x4c
 			)
 
 			packed_struct(ship_data,
@@ -176,7 +158,22 @@ public:
 				uint32_t padding[2];
 			)
 
-			packed_struct(moby_table,
+			packed_struct(model_table_header,
+				uint32_t num_static_models;
+				uint32_t pad[3];
+				// Models follow.
+			)
+
+			packed_struct(model_table_entry,
+				uint8_t unknown[0x18];
+			)
+
+			packed_struct(shrub_table_header,
+				uint32_t num_shrubs;
+				uint32_t pad[3];
+			)
+
+			packed_struct(moby_table_header,
 				uint32_t num_mobies;
 				uint32_t unknown[3];
 				// Mobies follow.
@@ -188,12 +185,16 @@ public:
 
 	texture_provider* get_texture_provider();
 
+	std::vector<shrub*> shrubs() override;
 	std::map<uint32_t, moby*> mobies() override;
 
 	std::map<std::string, std::map<uint32_t, std::string>> game_strings() override;
 
 private:
-	void read_game_strings(fmt::moby_segment::header header);
+	void read_game_strings(fmt::moby_segment::header header, worker_logger& log);
+	void read_models(fmt::moby_segment::header header, worker_logger& log);
+	void read_shrubs(fmt::moby_segment::header header, worker_logger& log);
+	void read_mobies(fmt::moby_segment::header header, worker_logger& log);
 
 	uint32_t locate_moby_wad();
 	uint32_t locate_secondary_header(const fmt::master_header& header, uint32_t moby_wad_offset);
@@ -201,6 +202,7 @@ private:
 	proxy_stream _level_file;
 	std::optional<level_texture_provider> _textures;
 	std::optional<wad_stream> _moby_segment_stream;
+	std::vector<std::unique_ptr<shrub_impl>> _shrubs;
 	std::vector<std::unique_ptr<moby_impl>> _mobies;
 	std::map<std::string, std::map<uint32_t, std::string>> _game_strings;
 };

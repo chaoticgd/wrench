@@ -9,10 +9,18 @@ const texture_provider* level::get_texture_provider() const {
 
 std::vector<const point_object*> level::point_objects() const {
 	std::vector<const point_object*> result;
+	for(auto shrub : shrubs()) {
+		result.push_back(shrub);
+	}
 	for(auto moby : mobies()) {
 		result.push_back(moby.second);
 	}
 	return result;
+}
+
+std::vector<const shrub*> level::shrubs() const {
+	auto result = const_cast<level*>(this)->shrubs();
+	return std::vector<const shrub*>(result.begin(), result.end());
 }
 
 std::map<uint32_t, const moby*> level::mobies() const {
