@@ -103,3 +103,7 @@ target_link_libraries(wrench imgui)
 
 # JSON
 include_directories(thirdparty/json/single_include)
+
+# ZipLib
+include("cmake/ziplib.cmake")
+target_link_libraries(wrench ziplib)
