@@ -18,6 +18,9 @@
 
 #include "app.h"
 
+#include <toml11/toml.hpp>
+#include <boost/filesystem.hpp>
+
 #include "gui.h"
 #include "inspector.h"
 #include "stream.h"
@@ -32,7 +35,10 @@ iso_adapters::iso_adapters(stream* iso_file, worker_logger& log)
 app::app()
 	: mouse_last(0, 0),
 	  mouse_diff(0, 0),
-	  this_any(this) {}
+	  this_any(this) {
+	
+	read_settings();
+}
 
 level* app::get_level() {
 	if(_iso_adapters.get() != nullptr) {
@@ -92,4 +98,40 @@ std::vector<texture_provider*> app::texture_providers() {
 		result.push_back(&_iso_adapters->armor_wad);
 	}
 	return result;
+}
+
+const char* settings_file_path = "wrench_settings.ini";
+
+void app::read_settings() {
+	// Define valid game path ID's.
+	settings.game_paths["rc2pal"] = "";
+
+	if(boost::filesystem::exists(settings_file_path)) {
+		try {
+			const auto settings_file = toml::parse(settings_file_path);
+			const auto game_paths_tbl = toml::find(settings_file, "game_paths");
+
+			// Read game paths.
+			for(auto& [game, path] : settings.game_paths) {
+				path = toml::find_or(game_paths_tbl, game.c_str(), "");
+			}
+		} catch(toml::syntax_error& err) {
+			emplace_window<gui::message_box>("Failed to parse settings", err.what());
+		} catch(std::out_of_range& err) {
+			emplace_window<gui::message_box>("Failed to load settings", err.what());
+		}
+	} else {
+		emplace_window<gui::settings>();
+	}
+}
+
+void app::save_settings() {
+	toml::table game_paths {};
+	for(auto& [game, path] : settings.game_paths) {
+		game_paths[game] = path;
+	}
+
+
+	std::ofstream settings(settings_file_path);
+	settings << "[game_paths]\n" << toml::format(toml::value(game_paths));
 }

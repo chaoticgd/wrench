@@ -47,11 +47,16 @@ public:
 	fip_scanner armor_wad;
 };
 
+struct settings_data {
+	std::map<std::string, std::string> game_paths;
+};
+
 class app {
 public:
 	app();
 
 	std::vector<std::unique_ptr<window>> windows;
+	settings_data settings;
 
 	template <typename T, typename... T_constructor_args>
 	void emplace_window(T_constructor_args... args);
@@ -73,6 +78,9 @@ public:
 	std::vector<texture_provider*> texture_providers();
 
 	std::any this_any;
+
+	void read_settings();
+	void save_settings();
 
 	template <typename... T>
 	void reflect(T... callbacks);

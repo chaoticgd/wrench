@@ -59,7 +59,7 @@ add_executable(scan
 	src/formats/bmp.cpp)
 
 # Boost
-find_package(Boost 1.40 COMPONENTS program_options REQUIRED)
+find_package(Boost 1.40 COMPONENTS program_options filesystem REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 target_link_libraries(wrench ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 target_link_libraries(fip ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})

@@ -8,3 +8,6 @@
 [submodule "thirdparty/ziplib"]
 	path = thirdparty/ziplib
 	url = https://bitbucket.org/wbenny/ziplib
+[submodule "thirdparty/toml11"]
+	path = thirdparty/toml11
+	url = https://github.com/ToruNiina/toml11

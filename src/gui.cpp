@@ -89,6 +89,7 @@ void gui::render_menu_bar(app& a) {
 		render_menu_bar_window_toggle<viewport_information>(a);
 		render_menu_bar_window_toggle<string_viewer>(a);
 		render_menu_bar_window_toggle<texture_browser>(a);
+		render_menu_bar_window_toggle<settings>(a);
 		ImGui::EndMenu();
 	}
 	ImGui::EndMainMenuBar();
@@ -418,6 +419,46 @@ void gui::texture_browser::export_bmp(app& a, texture* tex) {
 		}
 	});
 	a.windows.emplace_back(std::move(exporter));
+}
+
+/*
+	settings
+*/
+
+const char* gui::settings::title_text() const {
+	return "Settings";
+}
+
+ImVec2 gui::settings::initial_size() const {
+	return ImVec2(300, 200);
+}
+
+void gui::settings::render(app& a) {
+
+	ImGui::Text("Game Paths");
+	ImGui::NewLine();
+
+	ImGui::Columns(2);
+	ImGui::SetColumnWidth(0, 64);
+
+	for(auto& [game, path] : a.settings.game_paths) {
+		ImGui::AlignTextToFramePadding();
+		ImGui::Text("%s", game.c_str());
+		ImGui::NextColumn();
+		ImGui::PushItemWidth(-1);
+		if(ImGui::InputText("##nolabel", &path)) {
+			a.save_settings();
+		}
+		ImGui::PopItemWidth();
+		ImGui::NextColumn();
+	}
+
+	ImGui::Columns(1);
+	ImGui::NewLine();
+	
+	if(ImGui::Button("Okay")) {
+		close(a);
+	}
 }
 
 /*

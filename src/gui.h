@@ -90,6 +90,13 @@ namespace gui {
 		inspector _texture_inspector;
 	};
 
+	class settings : public window {
+	public:
+		const char* title_text() const override;
+		ImVec2 initial_size() const override;
+		void render(app& a) override;
+	};
+
 	class message_box : public window {
 	public:
 		message_box(const char* title, std::string message);
