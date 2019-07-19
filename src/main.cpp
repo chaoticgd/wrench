@@ -31,12 +31,12 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 
 int main(int argc, char** argv) {
 
-	std::string iso_path;
+	std::string wratch_path;
 
 	po::options_description desc("A level editor for the Ratchet & Clank games");
 	desc.add_options()
-		("open,o", po::value<std::string>(&iso_path),
-			"Open the specified ISO file.");
+		("project,p", po::value<std::string>(&wratch_path),
+			"Open the specified project (.wratch) file.");
 
 	if(!parse_command_line_args(argc, argv, desc)) {
 		return 0;
@@ -79,8 +79,8 @@ int main(int argc, char** argv) {
     ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init("#version 130");
 
-	if(iso_path != "") {
-		a.open_iso(iso_path);
+	if(wratch_path != "") {
+		a.open_project(wratch_path);
 	}
 
 	while(!glfwWindowShouldClose(window)) {

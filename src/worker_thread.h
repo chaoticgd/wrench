@@ -106,7 +106,7 @@ void worker_thread<T_out, T_in>::render(app& a) {
 
 template <typename T_out, typename T_in>
 void worker_thread<T_out, T_in>::run_thread(T_in in, job_function<T_out, T_in> job) {
-	_result = job(in, _log);
+	_result = job(std::move(in), _log);
 	_ready = true;
 }
 

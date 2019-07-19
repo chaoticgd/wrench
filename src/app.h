@@ -21,6 +21,7 @@
 
 #include <any>
 #include <set>
+#include <atomic>
 #include <vector>
 #include <memory>
 #include <optional>
@@ -29,6 +30,7 @@
 
 #include "level.h"
 #include "stream.h"
+#include "project.h"
 #include "worker_logger.h"
 #include "formats/level_impl.h"
 #include "formats/texture_impl.h"
@@ -37,15 +39,6 @@ class window;
 class three_d_view;
 
 class inspector_reflector;
-
-class iso_adapters {
-public:
-	iso_adapters(stream* iso_file, worker_logger& log);
-
-	level_impl  level;
-	fip_scanner space_wad;
-	fip_scanner armor_wad;
-};
 
 struct settings_data {
 	std::map<std::string, std::string> game_paths;
@@ -59,7 +52,7 @@ public:
 	settings_data settings;
 
 	template <typename T, typename... T_constructor_args>
-	void emplace_window(T_constructor_args... args);
+	T* emplace_window(T_constructor_args... args);
 
 	glm::vec2 mouse_last;
 	glm::vec2 mouse_diff;
@@ -67,7 +60,11 @@ public:
 
 	int window_width, window_height;
 
-	void open_iso(std::string path);
+	void new_project();
+	void open_project(std::string wratch_path);
+	void save_project(bool save_as);
+
+	std::string project_path();
 
 	level* get_level();
 	const level* get_level() const;
@@ -86,13 +83,16 @@ public:
 	void reflect(T... callbacks);
 
 private:
-	std::optional<file_stream> _iso;
-	std::unique_ptr<iso_adapters> _iso_adapters;
+	std::atomic_bool _lock_project; // Prevent race conditions while creating/loading a project.
+	std::unique_ptr<wrench_project> _project;
 };
 
 template <typename T, typename... T_constructor_args>
-void app::emplace_window(T_constructor_args... args) {
-	windows.emplace_back(std::make_unique<T>(args...));
+T* app::emplace_window(T_constructor_args... args) {
+	auto window = std::make_unique<T>(args...);
+	T* result = window.get();
+	windows.emplace_back(std::move(window));
+	return result;
 }
 
 template <typename... T>

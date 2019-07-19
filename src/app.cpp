@@ -27,46 +27,109 @@
 #include "renderer.h"
 #include "worker_thread.h"
 
-iso_adapters::iso_adapters(stream* iso_file, worker_logger& log)
-	: level(    iso_file, 0x8d794800, 0x17999dc, "LEVEL4.WAD", log),
-	  space_wad(iso_file, 0x7e041800, 0x10fa980, "SPACE.WAD",  log),
-	  armor_wad(iso_file, 0x7fa3d800, 0x25d930,  "ARMOR.WAD",  log) {}
-
 app::app()
 	: mouse_last(0, 0),
 	  mouse_diff(0, 0),
-	  this_any(this) {
+	  this_any(this),
+	  _lock_project(false) {
 	
 	read_settings();
 }
 
 level* app::get_level() {
-	if(_iso_adapters.get() != nullptr) {
-		return &_iso_adapters->level;
-	} else {
-		return nullptr;
+	if(_project) {
+		auto& levels = _project->views.levels;
+		if(levels.find(4) != levels.end()) {
+			return levels.at(4).get();
+		}
 	}
+	return nullptr;
 }
 
-void app::open_iso(std::string path) {
-	_iso.emplace(path, std::ios::in | std::ios::out);
+using project_ptr = std::unique_ptr<wrench_project>;
 
-	using worker_type = worker_thread<std::unique_ptr<iso_adapters>, file_stream*>;
+void app::new_project() {
+	if(_lock_project) {
+		return;
+	}
+
+	_lock_project = true;
+
+	using worker_type = worker_thread<project_ptr, std::string>;
 	windows.emplace_back(std::make_unique<worker_type>(
-		"ISO Importer", &_iso.value(),
-		[](file_stream* iso, worker_logger& log) {
-			auto result = std::make_unique<iso_adapters>(iso, log);
-			log << "\nISO imported successfully.";
-			return result;
+		"New Project", settings.game_paths["rc2pal"],
+		[](std::string path, worker_logger& log) {
+			try {
+				auto result = std::make_unique<wrench_project>(path, log, "rc2pal");
+				log << "\nProject created successfully.";
+				return std::make_optional(std::move(result));
+			} catch(stream_error& err) {
+				log << err.what() << "\n";
+				log << err.stack_trace;
+			}
+			return std::optional<project_ptr>();
 		},
-		[=](std::unique_ptr<iso_adapters> adapters) {
-			_iso_adapters.swap(adapters);
+		[=](project_ptr project) {
+			_project.swap(project);
+			_lock_project = false;
 
 			if(auto view = get_3d_view()) {
 				(*view)->reset_camera(*this);
 			}
 		}
 	));
+}
+
+void app::open_project(std::string wratch_path) {
+	if(_lock_project) {
+		return;
+	}
+
+	_lock_project = true;
+
+	using worker_type = worker_thread<project_ptr, std::pair<std::string, std::string>>;
+	std::pair<std::string, std::string> in(settings.game_paths["rc2pal"], wratch_path);
+	windows.emplace_back(std::make_unique<worker_type>(
+		"Open Project", in,
+		[](std::pair<std::string, std::string> paths, worker_logger& log) {
+			try {
+				auto result = std::make_unique<wrench_project>(paths.first, paths.second, log);
+				log << "\nProject opened successfully.";
+				return std::make_optional(std::move(result));
+			} catch(stream_error& err) {
+				log << err.what() << "\n";
+				log << err.stack_trace;
+			}
+			return std::optional<project_ptr>();
+		},
+		[=](project_ptr project) {
+			_project.swap(project);
+			_lock_project = false;
+
+			if(auto view = get_3d_view()) {
+				(*view)->reset_camera(*this);
+			}
+		}
+	));
+}
+
+void app::save_project(bool save_as) {
+	if(_project.get() == nullptr) {
+		return;
+	}
+
+	try {
+		if(save_as) {
+			_project->save_as(this);
+		} else {
+			_project->save(this);
+		}
+	} catch(stream_error& err) {
+		std::stringstream error_message;
+		error_message << err.what() << "\n";
+		error_message << err.stack_trace;
+		emplace_window<gui::message_box>("Error Saving Project", error_message.str());
+	}
 }
 
 const level* app::get_level() const {
@@ -92,10 +155,12 @@ std::optional<three_d_view*> app::get_3d_view() {
 
 std::vector<texture_provider*> app::texture_providers() {
 	std::vector<texture_provider*> result;
-	if(_iso_adapters.get() != nullptr) {
-		result.push_back(_iso_adapters->level.get_texture_provider());
-		result.push_back(&_iso_adapters->space_wad);
-		result.push_back(&_iso_adapters->armor_wad);
+	if(_project) {
+		for(auto& level : _project->views.levels) {
+			result.push_back(level.second->get_texture_provider());
+		}
+		result.push_back(&_project->views.space_wad);
+		result.push_back(&_project->views.armor_wad);
 	}
 	return result;
 }

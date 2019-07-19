@@ -36,8 +36,6 @@ namespace gui {
 	template <typename T, typename... T_constructor_args>
 	void render_menu_bar_window_toggle(app& a, T_constructor_args... args);
 
-	void file_new_project(app& a);
-
 	class moby_list : public window {
 	public:
 		const char* title_text() const override;

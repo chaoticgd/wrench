@@ -54,15 +54,26 @@ void gui::render(app& a) {
 
 void gui::render_menu_bar(app& a) {
 	ImGui::BeginMainMenuBar();
+	
 	if(ImGui::BeginMenu("File")) {
-		if(ImGui::BeginMenu("New")) {
-			if(ImGui::MenuItem("R&C2 PAL Project")) {
-				file_new_project(a);
-			}
-			ImGui::EndMenu();
+		if(ImGui::MenuItem("New")) {
+			a.new_project();
+		}
+		if(ImGui::MenuItem("Open")) {
+			auto dialog = a.emplace_window<string_input>("Open Project");
+			dialog->on_okay([](app& a, std::string path) {
+				a.open_project(path);
+			});
+		}
+		if(ImGui::MenuItem("Save")) {
+			a.save_project(false);
+		}
+		if(ImGui::MenuItem("Save As")) {
+			a.save_project(true);
 		}
 		ImGui::EndMenu();
 	}
+
 	if(ImGui::BeginMenu("Edit")) {
 		if(auto lvl = a.get_level()) {
 			if(ImGui::MenuItem("Undo")) {
@@ -82,6 +93,7 @@ void gui::render_menu_bar(app& a) {
 		}
 		ImGui::EndMenu();
 	}
+
 	if(ImGui::BeginMenu("Windows")) {
 		render_menu_bar_window_toggle<three_d_view>(a, &a);
 		render_menu_bar_window_toggle<moby_list>(a);
@@ -93,14 +105,6 @@ void gui::render_menu_bar(app& a) {
 		ImGui::EndMenu();
 	}
 	ImGui::EndMainMenuBar();
-}
-
-void gui::file_new_project(app& a) {
-	auto path_input = std::make_unique<string_input>("Enter Game ISO Path");
-	path_input->on_okay([](app& a, std::string path) {
-		a.open_iso(path);
-	});
-	a.windows.emplace_back(std::move(path_input));
 }
 
 /*
@@ -455,7 +459,7 @@ void gui::settings::render(app& a) {
 
 	ImGui::Columns(1);
 	ImGui::NewLine();
-	
+
 	if(ImGui::Button("Okay")) {
 		close(a);
 	}

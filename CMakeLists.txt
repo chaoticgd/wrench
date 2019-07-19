@@ -23,6 +23,8 @@ add_executable(wrench
 	src/level.cpp
 	src/inspector.cpp
 	src/worker_logger.cpp
+	src/project.cpp
+	src/iso_stream.cpp
 	src/formats/wad.cpp
 	src/formats/level_impl.cpp
 	src/formats/shrub_impl.cpp
@@ -32,7 +34,9 @@ add_executable(wrench
 	src/formats/bmp.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
 	src/imgui_impl_glfw.cpp
-	thirdparty/imgui/examples/imgui_impl_opengl3.cpp)
+	thirdparty/imgui/examples/imgui_impl_opengl3.cpp
+	src/md5.cpp
+)
 
 if(MSVC)
 	target_compile_options(wrench PRIVATE /W4 /WX)
@@ -44,19 +48,22 @@ add_executable(fip
 	src/cli/fipcli.cpp
 	src/command_line.cpp
 	src/formats/fip.cpp
-	src/formats/bmp.cpp)
+	src/formats/bmp.cpp
+)
 
 add_executable(wad
 	src/cli/wadcli.cpp
 	src/command_line.cpp
-	src/formats/wad.cpp)
+	src/formats/wad.cpp
+)
 
 add_executable(scan
 	src/cli/scancli.cpp
 	src/command_line.cpp
 	src/formats/wad.cpp
 	src/formats/fip.cpp
-	src/formats/bmp.cpp)
+	src/formats/bmp.cpp
+)
 
 # Boost
 find_package(Boost 1.40 COMPONENTS program_options filesystem REQUIRED)
@@ -98,7 +105,8 @@ add_library(imgui STATIC
 	thirdparty/imgui/imgui.h
 	thirdparty/imgui/imstb_rectpack.h
 	thirdparty/imgui/imstb_textedit.h
-	thirdparty/imgui/imstb_truetype.h)
+	thirdparty/imgui/imstb_truetype.h
+)
 target_link_libraries(wrench imgui)
 
 # JSON
@@ -107,3 +115,4 @@ include_directories(thirdparty/json/single_include)
 # ZipLib
 include("cmake/ziplib.cmake")
 target_link_libraries(wrench ziplib)
+include_directories(thirdparty/ziplib/Source)
