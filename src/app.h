@@ -43,6 +43,7 @@ class inspector_reflector;
 struct settings_data {
 	std::string emulator_path;
 	std::map<std::string, std::string> game_paths;
+	float gui_scale;
 };
 
 class app {
@@ -82,12 +83,16 @@ public:
 
 	void run_emulator();
 
+	void init_gui_scale();
+	void update_gui_scale();
+
 	template <typename... T>
 	void reflect(T... callbacks);
 
 private:
 	std::atomic_bool _lock_project; // Prevent race conditions while creating/loading a project.
 	std::unique_ptr<wrench_project> _project;
+	std::vector<float> _gui_scale_parameters;
 };
 
 template <typename T, typename... T_constructor_args>

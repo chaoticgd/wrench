@@ -474,6 +474,16 @@ void gui::settings::render(app& a) {
 
 	ImGui::Columns(1);
 	ImGui::NewLine();
+	
+	ImGui::Text("GUI Scale");
+
+	ImGui::PushItemWidth(-1);
+	if(ImGui::SliderFloat("gui_scale##nolabel", &a.settings.gui_scale, 0.5, 2, "%.1f")) {
+		a.update_gui_scale();
+		a.save_settings();
+	}
+	ImGui::PopItemWidth();
+	ImGui::NewLine();
 
 	if(ImGui::Button("Okay")) {
 		close(a);

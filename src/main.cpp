@@ -79,6 +79,9 @@ int main(int argc, char** argv) {
     ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init("#version 130");
 
+	a.init_gui_scale();
+	a.update_gui_scale();
+
 	if(wratch_path != "") {
 		a.open_project(wratch_path);
 	}

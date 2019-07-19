@@ -173,6 +173,7 @@ const char* settings_file_path = "wrench_settings.ini";
 void app::read_settings() {
 	// Default settings.
 	settings.game_paths["rc2pal"] = "";
+	settings.gui_scale = 1.f;
 
 	if(boost::filesystem::exists(settings_file_path)) {
 		try {
@@ -186,6 +187,9 @@ void app::read_settings() {
 			for(auto& [game, path] : settings.game_paths) {
 				path = toml::find_or(game_paths_tbl, game.c_str(), "");
 			}
+
+			const auto gui_tbl = toml::find(settings_file, "gui");
+			settings.gui_scale = toml::find_or(gui_tbl, "scale", 1.f);
 		} catch(toml::syntax_error& err) {
 			emplace_window<gui::message_box>("Failed to parse settings", err.what());
 		} catch(std::out_of_range& err) {
@@ -197,17 +201,21 @@ void app::read_settings() {
 }
 
 void app::save_settings() {
-	toml::table general;
-	general["emulator_path"] = settings.emulator_path;
+	toml::table genera_tbl;
+	genera_tbl["emulator_path"] = settings.emulator_path;
 
-	toml::table game_paths;
+	toml::table game_paths_tbl;
 	for(auto& [game, path] : settings.game_paths) {
-		game_paths[game] = path;
+		game_paths_tbl[game] = path;
 	}
 
+	toml::table gui_tbl;
+	gui_tbl["scale"] = settings.gui_scale;
+
 	std::ofstream settings(settings_file_path);
-	settings << "[general]\n" << toml::format(toml::value(general)) << "\n";
-	settings << "[game_paths]\n" << toml::format(toml::value(game_paths)) << "\n";
+	settings << "[general]\n" << toml::format(toml::value(genera_tbl)) << "\n";
+	settings << "[game_paths]\n" << toml::format(toml::value(game_paths_tbl)) << "\n";
+	settings << "[gui]\n" << toml::format(toml::value(gui_tbl));
 }
 
 void app::run_emulator() {
@@ -216,5 +224,60 @@ void app::run_emulator() {
 		bp::spawn(emulator_path, _project->cached_iso_path());
 	} else {
 		emplace_window<gui::message_box>("Error", "Invalid emulator path.");
+	}
+}
+
+std::vector<float*> get_imgui_scale_parameters() {
+	ImGuiStyle& s = ImGui::GetStyle();
+	ImGuiIO& i = ImGui::GetIO();
+	return {
+		&s.WindowPadding.x,
+		&s.WindowPadding.y,
+		&s.WindowRounding,
+		&s.WindowBorderSize,
+		&s.WindowMinSize.x,
+		&s.WindowMinSize.y,
+		&s.ChildRounding,
+		&s.ChildBorderSize,
+		&s.PopupRounding,
+		&s.PopupBorderSize,
+		&s.FramePadding.x,
+		&s.FramePadding.y,
+		&s.FrameRounding,
+		&s.FrameBorderSize,
+		&s.ItemSpacing.x,
+		&s.ItemSpacing.y,
+		&s.ItemInnerSpacing.x,
+		&s.ItemInnerSpacing.y,
+		&s.TouchExtraPadding.x,
+		&s.TouchExtraPadding.y,
+		&s.IndentSpacing,
+		&s.ColumnsMinSpacing,
+		&s.ScrollbarSize,
+		&s.ScrollbarRounding,
+		&s.GrabMinSize,
+		&s.GrabRounding,
+		&s.TabRounding,
+		&s.TabBorderSize,
+		&s.DisplayWindowPadding.x,
+		&s.DisplayWindowPadding.y,
+		&s.DisplaySafeAreaPadding.x,
+		&s.DisplaySafeAreaPadding.y,
+		&s.MouseCursorScale,
+		&i.FontGlobalScale
+	};
+}
+
+void app::init_gui_scale() {
+	auto parameters = get_imgui_scale_parameters();
+	_gui_scale_parameters.resize(parameters.size());
+	std::transform(parameters.begin(), parameters.end(), _gui_scale_parameters.begin(),
+		[](float* param) { return *param; });
+}
+
+void app::update_gui_scale() {
+	auto parameters = get_imgui_scale_parameters();
+	for(std::size_t i = 0; i < parameters.size(); i++) {
+		*parameters[i] = _gui_scale_parameters[i] * settings.gui_scale;
 	}
 }
