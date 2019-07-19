@@ -54,6 +54,8 @@ public:
 
 	std::string resource_path() const override;
 
+	std::string cached_iso_path() const;
+
 	// Compress all open WAD segments and commit the changes to the underlying
 	// iso_stream object.
 	void commit();

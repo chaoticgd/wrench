@@ -41,6 +41,7 @@ class three_d_view;
 class inspector_reflector;
 
 struct settings_data {
+	std::string emulator_path;
 	std::map<std::string, std::string> game_paths;
 };
 
@@ -78,6 +79,8 @@ public:
 
 	void read_settings();
 	void save_settings();
+
+	void run_emulator();
 
 	template <typename... T>
 	void reflect(T... callbacks);

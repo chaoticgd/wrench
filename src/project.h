@@ -42,6 +42,8 @@ public:
 	wrench_project(std::string iso_path, worker_logger& log, std::string game_id); // New
 	wrench_project(std::string iso_path, std::string wratch_path, worker_logger& log); // Open
 
+	std::string cached_iso_path() const;
+
 	void save(app* a);
 	void save_as(app* a);
 

@@ -49,6 +49,10 @@ wrench_project::wrench_project(std::string iso_path, std::string wratch_path, wo
 	_wratch_archive = nullptr;
 }
 
+std::string wrench_project::cached_iso_path() const {
+	return _iso.cached_iso_path();
+}
+
 void wrench_project::save(app* a) {
 	if(_wratch_path == "") {
 		save_as(a);

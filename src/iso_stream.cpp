@@ -61,6 +61,10 @@ std::string iso_stream::resource_path() const {
 	return "iso";
 }
 
+std::string iso_stream::cached_iso_path() const {
+	return _cache_iso_path;
+}
+
 void iso_stream::commit() {
 	// Stub
 }

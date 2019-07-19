@@ -20,12 +20,15 @@
 
 #include <toml11/toml.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/process.hpp>
 
 #include "gui.h"
 #include "inspector.h"
 #include "stream.h"
 #include "renderer.h"
 #include "worker_thread.h"
+
+namespace bp = boost::process;
 
 app::app()
 	: mouse_last(0, 0),
@@ -168,15 +171,18 @@ std::vector<texture_provider*> app::texture_providers() {
 const char* settings_file_path = "wrench_settings.ini";
 
 void app::read_settings() {
-	// Define valid game path ID's.
+	// Default settings.
 	settings.game_paths["rc2pal"] = "";
 
 	if(boost::filesystem::exists(settings_file_path)) {
 		try {
 			const auto settings_file = toml::parse(settings_file_path);
-			const auto game_paths_tbl = toml::find(settings_file, "game_paths");
 
-			// Read game paths.
+			const auto general_tbl = toml::find(settings_file, "general");
+			settings.emulator_path =
+				toml::find_or(general_tbl, "emulator_path", settings.emulator_path);
+
+			const auto game_paths_tbl = toml::find(settings_file, "game_paths");
 			for(auto& [game, path] : settings.game_paths) {
 				path = toml::find_or(game_paths_tbl, game.c_str(), "");
 			}
@@ -191,12 +197,24 @@ void app::read_settings() {
 }
 
 void app::save_settings() {
-	toml::table game_paths {};
+	toml::table general;
+	general["emulator_path"] = settings.emulator_path;
+
+	toml::table game_paths;
 	for(auto& [game, path] : settings.game_paths) {
 		game_paths[game] = path;
 	}
 
-
 	std::ofstream settings(settings_file_path);
-	settings << "[game_paths]\n" << toml::format(toml::value(game_paths));
+	settings << "[general]\n" << toml::format(toml::value(general)) << "\n";
+	settings << "[game_paths]\n" << toml::format(toml::value(game_paths)) << "\n";
+}
+
+void app::run_emulator() {
+	if(boost::filesystem::is_regular_file(settings.emulator_path) && _project.get() != nullptr) {
+		std::string emulator_path = boost::filesystem::canonical(settings.emulator_path).string();
+		bp::spawn(emulator_path, _project->cached_iso_path());
+	} else {
+		emplace_window<gui::message_box>("Error", "Invalid emulator path.");
+	}
 }

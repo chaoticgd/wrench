@@ -93,6 +93,12 @@ void gui::render_menu_bar(app& a) {
 		}
 		ImGui::EndMenu();
 	}
+	if(ImGui::BeginMenu("Emulator")) {
+		if(ImGui::MenuItem("Run")) {
+			a.run_emulator();
+		}
+		ImGui::EndMenu();
+	}
 
 	if(ImGui::BeginMenu("Windows")) {
 		render_menu_bar_window_toggle<three_d_view>(a, &a);
@@ -439,6 +445,14 @@ ImVec2 gui::settings::initial_size() const {
 
 void gui::settings::render(app& a) {
 
+	ImGui::Text("Emulator Path");
+
+	ImGui::PushItemWidth(-1);
+	if(ImGui::InputText("emulator_path##nolabel", &a.settings.emulator_path)) {
+		a.save_settings();
+	}
+	ImGui::PopItemWidth();
+
 	ImGui::Text("Game Paths");
 	ImGui::NewLine();
 
@@ -450,7 +464,8 @@ void gui::settings::render(app& a) {
 		ImGui::Text("%s", game.c_str());
 		ImGui::NextColumn();
 		ImGui::PushItemWidth(-1);
-		if(ImGui::InputText("##nolabel", &path)) {
+		std::string label = std::string(game) + "##nolabel";
+		if(ImGui::InputText(label.c_str(), &path)) {
 			a.save_settings();
 		}
 		ImGui::PopItemWidth();
