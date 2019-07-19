@@ -115,4 +115,4 @@ include_directories(thirdparty/json/single_include)
 # ZipLib
 include("cmake/ziplib.cmake")
 target_link_libraries(wrench ziplib)
-include_directories(thirdparty/ziplib/Source)
+include_directories(SYSTEM thirdparty/ziplib/Source) # Suppress warnings for ZipLib headers.
