@@ -57,6 +57,7 @@ void app::new_project() {
 	}
 
 	_lock_project = true;
+	_project.reset(nullptr);
 
 	using worker_type = worker_thread<project_ptr, std::string>;
 	windows.emplace_back(std::make_unique<worker_type>(
@@ -89,6 +90,7 @@ void app::open_project(std::string wratch_path) {
 	}
 
 	_lock_project = true;
+	_project.reset(nullptr);
 
 	using worker_type = worker_thread<project_ptr, std::pair<std::string, std::string>>;
 	std::pair<std::string, std::string> in(settings.game_paths["rc2pal"], wratch_path);

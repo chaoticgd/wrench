@@ -245,9 +245,9 @@ void gui::string_viewer::render(app& a) {
 */
 
 gui::texture_browser::texture_browser()
-	: _selection(nullptr),
-	  _selection_any(&_selection),
-	  _provider(nullptr),
+	: _selection_any(&_selection),
+	  _provider(0),
+	  _selection(0),
 	  _filters({ 0 }),
 	  _texture_inspector(&_selection_any) {}
 
@@ -272,8 +272,16 @@ void gui::texture_browser::render(app& a) {
 	}
 
 	std::vector<texture_provider*> sources = a.texture_providers();
-	if(_provider == nullptr) {
-		_provider = sources[0];
+	if(_provider >= sources.size()) {
+		_provider = 0;
+
+		ImGui::Text("<no texture providers>");
+		return;
+	}
+
+	std::vector<texture*> textures = sources[_provider]->textures();
+	if(_selection >= textures.size()) {
+		_selection = 0;
 	}
 
 	ImGui::Columns(2);
@@ -281,9 +289,9 @@ void gui::texture_browser::render(app& a) {
 
 	ImGui::BeginChild(1);
 		if(ImGui::TreeNodeEx("Sources", ImGuiTreeNodeFlags_DefaultOpen)) {
-			for(texture_provider* provider : sources) {
-				if(ImGui::Button(provider->display_name().c_str())) {
-					_provider = provider;
+			for(std::size_t i = 0; i < sources.size(); i++) {
+				if(ImGui::Button(sources[i]->display_name().c_str())) {
+					_provider = i;
 				}
 			}
 			ImGui::TreePop();
@@ -306,12 +314,12 @@ void gui::texture_browser::render(app& a) {
 		ImGui::NewLine();
 
 		if(ImGui::TreeNodeEx("Actions", ImGuiTreeNodeFlags_DefaultOpen)) {
-			if(_selection != nullptr) {
+			if(textures.size() > 0) {
 				if(ImGui::Button("Replace Selected")) {
-					import_bmp(a, _selection);
+					import_bmp(a, textures[_selection]);
 				}
 				if(ImGui::Button("Export Selected")) {
-					export_bmp(a, _selection);
+					export_bmp(a, textures[_selection]);
 				}
 			}
 			ImGui::TreePop();
@@ -321,7 +329,7 @@ void gui::texture_browser::render(app& a) {
 
 	ImGui::BeginChild(2);
 		ImGui::Columns(std::max(1.f, ImGui::GetWindowSize().x / 128));
-		render_grid(a, _provider);
+		render_grid(a, sources[_provider]);
 	ImGui::EndChild();
 	ImGui::NextColumn();
 }
@@ -354,12 +362,12 @@ void gui::texture_browser::render_grid(app& a, texture_provider* provider) {
 			ImVec2(128, 128),
 			ImVec2(0, 0),
 			ImVec2(1, 1),
-			(_selection == tex) ? 2 : 0,
+			(_selection == i) ? 2 : 0,
 			ImVec4(0, 0, 0, 1),
 			ImVec4(1, 1, 1, 1)
 		);
 		if(clicked) {
-			_selection = tex;
+			_selection = i;
 		}
 
 		std::string num = std::to_string(i);

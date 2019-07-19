@@ -47,8 +47,8 @@ public:
 	std::vector<uint8_t> pixel_data() const override;
 	void set_pixel_data(std::vector<uint8_t> pixel_data_) override;
 	
-	virtual std::string palette_path() const override;
-	virtual std::string pixel_data_path() const override;
+	std::string palette_path() const override;
+	std::string pixel_data_path() const override;
 
 private:
 	proxy_stream _backing;
