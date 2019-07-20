@@ -81,11 +81,9 @@ namespace gui {
 		void export_bmp(app& a, texture* tex);
 
 		std::map<texture*, GLuint> _gl_textures;
-		std::any _selection_any;
 		std::size_t _provider;
 		std::size_t _selection;
 		filter_parameters _filters;
-		inspector _texture_inspector;
 	};
 
 	class settings : public window {

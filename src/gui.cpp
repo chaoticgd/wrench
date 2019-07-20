@@ -245,11 +245,9 @@ void gui::string_viewer::render(app& a) {
 */
 
 gui::texture_browser::texture_browser()
-	: _selection_any(&_selection),
-	  _provider(0),
+	: _provider(0),
 	  _selection(0),
-	  _filters({ 0 }),
-	  _texture_inspector(&_selection_any) {}
+	  _filters({ 0 }) {}
 
 gui::texture_browser::~texture_browser() {
 	for(auto& tex : _gl_textures) {
@@ -308,7 +306,13 @@ void gui::texture_browser::render(app& a) {
 		ImGui::NewLine();
 
 		if(ImGui::TreeNodeEx("Details", ImGuiTreeNodeFlags_DefaultOpen)) {
-			_texture_inspector.render(a);
+			if(textures.size() > 0) {
+				std::any tex_ptr(&textures[_selection]);
+				inspector texture_inspector(&tex_ptr);
+				texture_inspector.render(a);
+			} else {
+				ImGui::Text("<no texture selected>");
+			}
 			ImGui::TreePop();
 		}
 		ImGui::NewLine();
