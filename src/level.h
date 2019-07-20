@@ -140,7 +140,9 @@ void game_object::reflect(T... callbacks) {
 
 template <typename... T>
 void point_object::reflect(T... callbacks) {
+	ImGui::Columns(1);
 	ImGui::Text("Point Object");
+	ImGui::Columns(2);
 
 	rf::reflector r(this, callbacks...);
 	r.visit_m("Position", &moby::position,  &moby::set_position);
@@ -156,7 +158,9 @@ void shrub::reflect(T... callbacks) {}
 
 template <typename... T>
 void moby::reflect(T... callbacks) {
+	ImGui::Columns(1);
 	ImGui::Text("Moby");
+	ImGui::Columns(2);
 
 	rf::reflector r(this, callbacks...);
 	r.visit_m("UID",      &moby::uid,       &moby::set_uid);

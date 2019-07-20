@@ -54,7 +54,7 @@ std::function<void(const char* name, rf::property<T_data_type> p)>
 	return [=, &i](const char* name, rf::property<T_data_type> p) {
 		ImGui::PushID(i++);
 		ImGui::AlignTextToFramePadding();
-		ImGui::Text("%s", name);
+		ImGui::Text(" %s", name);
 		ImGui::NextColumn();
 		ImGui::AlignTextToFramePadding();
 		ImGui::PushItemWidth(-1);
