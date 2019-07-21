@@ -2,7 +2,7 @@
 
 The compressed data is divided up into packets that each start with a flag byte. This flag byte determines how the rest of the packet is decoded. This may involve reading data from an earlier position in the output buffer, which means the data must be decompressed sequentially. Different packets of the same type may have different lengths as certain fields may go unused.
 
-See [src/formats/wad.cpp](../src/formats/wad.cpp) for a C++ implementation. It currently fails to decompress some files, so some of this is probably wrong, especially packet type C. Additionally, the WAD files on the game disc may contain compressed WAD segments, but they won't be at 0x0 within the file.
+See [src/formats/wad.cpp](../../src/formats/wad.cpp) for a C++ implementation. It currently fails to decompress some files, so some of this is probably wrong, especially packet type C. Additionally, the WAD files on the game disc may contain compressed WAD segments, but they won't be at 0x0 within the file.
 
 ## File
 
