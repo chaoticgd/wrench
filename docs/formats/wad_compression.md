@@ -12,7 +12,7 @@ See [src/formats/wad.cpp](../../src/formats/wad.cpp) for a C++ implementation. I
 | &nbsp; 0x0                                | 0x3    | char[3] | magic           | Yes            | Equals "WAD" in ASCII.                    |
 | &nbsp; 0x3                                | 0x4    | u32     | compressed_size | Yes            | Total size in bytes including the header. |
 | &nbsp; 0x7                                | 0x9    | N/A     | pad             | Yes            | Padding.                                  |
-| 0x10                                      | Varies | init    | init            | Yes            | ???                                       |
+| 0x10                                      | Varies | init    | init            | Yes            | Initialise the output buffer.             |
 | &nbsp; 0x10                               | 0x1    | u8      | init_size       | Yes            | Size to read in.                          |
 | &nbsp; 0x11                               | 0x1    | u8      | init_big_size   | No             | If init_size == 0, size to read in - 0xf. |
 | offsetof(init) + sizeof(init)             | Varies | packet  | packet_1        | No             | The first data packet.                    |
@@ -72,6 +72,7 @@ Decompression:
 | &nbsp; (0x1 or 0x2):0-5 | 6/8  | u6       | pos_minor     | Yes            | Used to determine the lookback offset.                                                         |
 | &nbsp; (0x1 or 0x2):6-7 | 2/8  | u2       | snd_pos       | Yes            | Used to determine whenther an additional 3 bytes should be copied from the destination stream. |
 | 0x2 or 0x3              | 0x1  | u8       | pos_major     | Yes            | Used to determine the lookback offset.                                                         |
+| 0x3 or 0x4              | 0x3  | u8[3]    | immediate     | No             | Data to copy.                                                                                  |
 
 Decompression:
 
@@ -94,12 +95,16 @@ Decompression:
 | &nbsp; 0x0:4            | 1/8  | u1       | pos_major     | Yes            | Used to determine lookback offset.                                                             |
 | &nbsp; 0x0:5-7          | 3/8  | u3       | bytes         | Yes            | Used to determine number of bytes to copy.                                                     |
 | 0x1                     | 0x1  | u8       | big_bytes     | No             | If bytes == 0.                                                                                 |
-| 0x1 or 0x2              | 0x1  | u8       | num           | Yes            | Determine number of bytes to copy from source or lookback_offset depending  on value.          |
+| 0x1 or 0x2              | 0x1  | Bitfield | pos_mid_snd   | Yes            | Determine number of bytes to copy from source or lookback_offset depending  on value.          |
+| &nbsp; (0x1 or 0x2):0-5 | 6/8  | u6       | pos_mid       | Yes            | Used to determine the lookback offset.                                                         |
+| &nbsp; (0x1 or 0x2):6-7 | 2/8  | u2       | snd_pos       | Yes            | Used to determine whenther an additional 3 bytes should be copied from the destination stream. |
 | 0x2 or 0x3              | 0x1  | u8       | pos_minor     | Yes            | Used to determine lookback_offset.                                                             |
+| 0x3 or 0x4              | 0x3  | u8[3]    | immediate     | No             | Data to copy.                                                                                  |
+
 
 Decompression
 
-1. If bytes > 0 and flag_byte == 0x11,
+1. If pos_mid_snd > 0 and flag_byte == 0x11,
 
 	1.1. Read big_bytes.
 
@@ -109,7 +114,7 @@ Decompression
 
 	2.1. bytes_to_copy = bytes
 	
-	2.2. lookback_offset = {current pos in output file} = -pos_major * 0x800 - ((num >> 2) + pos_minor * 0x40)
+	2.2. lookback_offset = {current pos in output file} = -pos_major * 0x800 - pos_mid - pos_minor * 0x40
 
 	2.2. If lookback_offset != {current pos in output file}
 
