@@ -36,9 +36,11 @@ Decompression:
 
 	6.1. Read in flag.
 
-	6.2. If flag < 0x40, read packet type A.
+	6.2. If flag >= 0x40, read packet type A.
 
-	6.3. (tbd)
+	6.3. If 0x1f < flag < 0x40, read packet type B.
+
+	6.4. If flag <= 0x1f, read packet type C.
 
 ## Packet Type A (flag >= 0x40)
 
@@ -66,11 +68,10 @@ Decompression:
 | &nbsp; 0x0:0-2          | 3/8  | u3       | packet_type   | Yes            | Used to make the value of the flag fall within the ranges needed for the desired packet type.  |
 | &nbsp; 0x0:3-7          | 5/8  | u5       | bytes         | Yes            | Number of bytes to read from destination stream minus 2.                                       |
 | 0x1                     | 0x1  | u8       | big_bytes     | No             | Number of bytes to read from destination stream minus 33 if bytes is 0.                        |
-| 0x1 or 0x2              | 0x1  | Bitfield | pos_major_snd | Yes            | Used to determine the lookback offset and snd_pos.                                             |
+| 0x1 or 0x2              | 0x1  | Bitfield | pos_minor_snd | Yes            | Used to determine the lookback offset and snd_pos.                                             |
 | &nbsp; (0x1 or 0x2):0-5 | 6/8  | u6       | pos_minor     | Yes            | Used to determine the lookback offset.                                                         |
 | &nbsp; (0x1 or 0x2):6-7 | 2/8  | u2       | snd_pos       | Yes            | Used to determine whenther an additional 3 bytes should be copied from the destination stream. |
 | 0x2 or 0x3              | 0x1  | u8       | pos_major     | Yes            | Used to determine the lookback offset.                                                         |
-
 
 Decompression:
 
@@ -85,6 +86,48 @@ Decompression:
 4. Go to read_from_dest.
 
 ## Packet Type C (flag <= 0x1f)
+
+| Offset                  | Size | Type     | Name          | Always Present | Comment                                                                                        |
+|-------------------------|------|----------|---------------|----------------|------------------------------------------------------------------------------------------------|
+| 0x0                     | 0x1  | Bitfield | flag          | Yes            | flag == packet_type (4 bits) + pos_major (1 bit) + bytes (3 bits)                              |
+| &nbsp; 0x0:0-3          | 4/8  | u4       | packet_type   | Yes            | Used to make the value of the flag fall within the ranges needed for the desired packet type.  |
+| &nbsp; 0x0:4            | 1/8  | u1       | pos_major     | Yes            | Used to determine lookback offset.                                                             |
+| &nbsp; 0x0:5-7          | 3/8  | u3       | bytes         | Yes            | Used to determine number of bytes to copy.                                                     |
+| 0x1                     | 0x1  | u8       | big_bytes     | No             | If bytes == 0.                                                                                 |
+| 0x1 or 0x2              | 0x1  | u8       | num           | Yes            | Determine number of bytes to copy from source or lookback_offset depending  on value.          |
+| 0x2 or 0x3              | 0x1  | u8       | pos_minor     | Yes            | Used to determine lookback_offset.                                                             |
+
+Decompression
+
+1. If bytes > 0 and flag_byte == 0x11,
+
+	1.1. Read big_bytes.
+
+	1.2. bytes_to_copy = big_bytes + 7.
+
+2. Otherwise,
+
+	2.1. bytes_to_copy = bytes
+	
+	2.2. lookback_offset = {current pos in output file} = -pos_major * 0x800 - ((num >> 2) + pos_minor * 0x40)
+
+	2.2. If lookback_offset != {current pos in output file}
+
+		2.2.1. bytes_to_copy += 2
+		
+		2.2.2. lookback_offset -= 0x4000
+
+		2.2.3. Go to read_from_dest
+	
+	2.3. Otherwise if bytes_to_copy == 1,
+
+		2.3.1. Go to read_from_src.
+	
+	2.4. Otherwise,
+
+		2.4.1. While {source position indicator} % 0x1000 != 0x10, advance source position indicator (padding).
+
+		2.4.1. Go to read_from_src.
 
 ## read_from_dest (continutation)
 
