@@ -4,6 +4,8 @@ The compressed data is divided up into packets that each start with a flag byte.
 
 See [src/formats/wad.cpp](../../src/formats/wad.cpp) for a C++ implementation. It currently fails to decompress some files, so some of this is probably wrong, especially packet type C. Additionally, the WAD files on the game disc may contain compressed WAD segments, but they won't be at 0x0 within the file.
 
+The below psuedocode only gives a high-level overview of the algorithm. You should read the source code referenced above if anything is unclear.
+
 ## File
 
 | Offset                                    | Size   | Type    | Name            | Always Present | Comment                                   |
@@ -73,6 +75,8 @@ Decompression:
 | &nbsp; (0x1 or 0x2):6-7 | 2/8  | u2       | snd_pos       | Yes            | Used to determine whenther an additional 3 bytes should be copied from the destination stream. |
 | 0x2 or 0x3              | 0x1  | u8       | pos_major     | Yes            | Used to determine the lookback offset.                                                         |
 | 0x3 or 0x4              | 0x3  | u8[3]    | immediate     | No             | Data to copy.                                                                                  |
+| Varies                  | 0x1  | u8       | decision      | No             | Used when reading from the source buffer.                                                      |
+| offsetof(decision) + 1  | 0x1  | u8       | big_decision  | No             | Used if decision needs to be large.                                                            |
 
 Decompression:
 
@@ -100,6 +104,8 @@ Decompression:
 | &nbsp; (0x1 or 0x2):6-7 | 2/8  | u2       | snd_pos       | Yes            | Used to determine whenther an additional 3 bytes should be copied from the destination stream. |
 | 0x2 or 0x3              | 0x1  | u8       | pos_minor     | Yes            | Used to determine lookback_offset.                                                             |
 | 0x3 or 0x4              | 0x3  | u8[3]    | immediate     | No             | Data to copy.                                                                                  |
+| Varies                  | 0x1  | u8       | decision      | No             | Used when reading from the source buffer.                                                      |
+| offsetof(decision) + 1  | 0x1  | u8       | big_decision  | No             | Used if decision needs to be large.                                                            |
 
 
 Decompression
