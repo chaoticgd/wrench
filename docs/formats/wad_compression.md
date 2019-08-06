@@ -46,16 +46,16 @@ Decompression:
 
 ## Packet Type A (flag >= 0x40)
 
-| Offset                 | Size | Type     | Name          | Always Present | Comment                                                                                        |
-|------------------------|------|----------|---------------|----------------|------------------------------------------------------------------------------------------------|
-| 0x0                    | 0x1  | Bitfield | flag          | Yes            | flag == bytes_to_copy (3 bits) + pos_minor (3 bits) + snd_pos (2 bits)                         |
-| &nbsp; 0x0:0-2         | 3/8  | u3       | bytes_to_copy | Yes            | The number of bytes to copy from the destination stream minus 1                                |
-| &nbsp; 0x0:3-5         | 3/8  | u3       | pos_minor     | Yes            | Used to determine the lookback offset.                                                         |
-| &nbsp; 0x0:6-7         | 2/8  | u2       | snd_pos       | Yes            | Used to determine whenther an additional 3 bytes should be copied from the destination stream. |
-| 0x1                    | 0x1  | u8       | pos_major     | Yes            | Used to determine the lookback offset.                                                         |
-| 0x2                    | 0x3  | u8[3]    | immediate     | No             | Data to copy.                                                                                  |
-| Varies                 | 0x1  | u8       | decision      | No             | Used when reading from the source buffer.                                                      |
-| offsetof(decision) + 1 | 0x1  | u8       | big_decision  | No             | Used if decision needs to be large.                                                            |
+| Offset                 | Size    | Type     | Name          | Always Present | Comment                                                                                        |
+|------------------------|---------|----------|---------------|----------------|------------------------------------------------------------------------------------------------|
+| 0x0                    | 0x1     | Bitfield | flag          | Yes            | flag == bytes_to_copy (3 bits) + pos_minor (3 bits) + snd_pos (2 bits)                         |
+| &nbsp; 0x0:0-2         | 3/8     | u3       | bytes_to_copy | Yes            | The number of bytes to copy from the destination stream minus 1                                |
+| &nbsp; 0x0:3-5         | 3/8     | u3       | pos_minor     | Yes            | Used to determine the lookback offset.                                                         |
+| &nbsp; 0x0:6-7         | 2/8     | u2       | snd_pos       | Yes            | Used to determine whenther an additional 3 bytes should be copied from the destination stream. |
+| 0x1                    | 0x1     | u8       | pos_major     | Yes            | Used to determine the lookback offset.                                                         |
+| 0x2                    | snd_pos | u8[]     | immediate     | No             | Data to copy.                                                                                  |
+| Varies                 | 0x1     | u8       | decision      | No             | Used when reading from the source buffer.                                                      |
+| offsetof(decision) + 1 | 0x1     | u8       | big_decision  | No             | Used if decision needs to be large.                                                            |
 
 Decompression:
 
@@ -64,19 +64,19 @@ Decompression:
 
 ## Packet Type B (0x1f < flag < 0x40)
 
-| Offset                  | Size | Type     | Name          | Always Present | Comment                                                                                        |
-|-------------------------|------|----------|---------------|----------------|------------------------------------------------------------------------------------------------|
-| 0x0                     | 0x1  | Bitfield | flag          | Yes            | flag == packet_type (3 bits) + bytes (5 bits)                                                  |
-| &nbsp; 0x0:0-2          | 3/8  | u3       | packet_type   | Yes            | Used to make the value of the flag fall within the ranges needed for the desired packet type.  |
-| &nbsp; 0x0:3-7          | 5/8  | u5       | bytes         | Yes            | Number of bytes to read from destination stream minus 2.                                       |
-| 0x1                     | 0x1  | u8       | big_bytes     | No             | Number of bytes to read from destination stream minus 33 if bytes is 0.                        |
-| 0x1 or 0x2              | 0x1  | Bitfield | pos_minor_snd | Yes            | Used to determine the lookback offset and snd_pos.                                             |
-| &nbsp; (0x1 or 0x2):0-5 | 6/8  | u6       | pos_minor     | Yes            | Used to determine the lookback offset.                                                         |
-| &nbsp; (0x1 or 0x2):6-7 | 2/8  | u2       | snd_pos       | Yes            | Used to determine whenther an additional 3 bytes should be copied from the destination stream. |
-| 0x2 or 0x3              | 0x1  | u8       | pos_major     | Yes            | Used to determine the lookback offset.                                                         |
-| 0x3 or 0x4              | 0x3  | u8[3]    | immediate     | No             | Data to copy.                                                                                  |
-| Varies                  | 0x1  | u8       | decision      | No             | Used when reading from the source buffer.                                                      |
-| offsetof(decision) + 1  | 0x1  | u8       | big_decision  | No             | Used if decision needs to be large.                                                            |
+| Offset                  | Size     | Type     | Name          | Always Present | Comment                                                                                        |
+|-------------------------|----------|----------|---------------|----------------|------------------------------------------------------------------------------------------------|
+| 0x0                     | 0x1      | Bitfield | flag          | Yes            | flag == packet_type (3 bits) + bytes (5 bits)                                                  |
+| &nbsp; 0x0:0-2          | 3/8      | u3       | packet_type   | Yes            | Used to make the value of the flag fall within the ranges needed for the desired packet type.  |
+| &nbsp; 0x0:3-7          | 5/8      | u5       | bytes         | Yes            | Number of bytes to read from destination stream minus 2.                                       |
+| 0x1                     | 0x1      | u8       | big_bytes     | No             | Number of bytes to read from destination stream minus 33 if bytes is 0.                        |
+| 0x1 or 0x2              | 0x1      | Bitfield | pos_minor_snd | Yes            | Used to determine the lookback offset and snd_pos.                                             |
+| &nbsp; (0x1 or 0x2):0-5 | 6/8      | u6       | pos_minor     | Yes            | Used to determine the lookback offset.                                                         |
+| &nbsp; (0x1 or 0x2):6-7 | 2/8      | u2       | snd_pos       | Yes            | Used to determine whenther an additional 3 bytes should be copied from the destination stream. |
+| 0x2 or 0x3              | 0x1      | u8       | pos_major     | Yes            | Used to determine the lookback offset.                                                         |
+| 0x3 or 0x4              | snd_pos  | u8[]     | immediate     | No             | Data to copy.                                                                                  |
+| Varies                  | 0x1      | u8       | decision      | No             | Used when reading from the source buffer.                                                      |
+| offsetof(decision) + 1  | 0x1      | u8       | big_decision  | No             | Used if decision needs to be large.                                                            |
 
 Decompression:
 
@@ -92,20 +92,20 @@ Decompression:
 
 ## Packet Type C (flag <= 0x1f)
 
-| Offset                  | Size | Type     | Name          | Always Present | Comment                                                                                        |
-|-------------------------|------|----------|---------------|----------------|------------------------------------------------------------------------------------------------|
-| 0x0                     | 0x1  | Bitfield | flag          | Yes            | flag == packet_type (4 bits) + pos_major (1 bit) + bytes (3 bits)                              |
-| &nbsp; 0x0:0-3          | 4/8  | u4       | packet_type   | Yes            | Used to make the value of the flag fall within the ranges needed for the desired packet type.  |
-| &nbsp; 0x0:4            | 1/8  | u1       | pos_major     | Yes            | Used to determine lookback offset.                                                             |
-| &nbsp; 0x0:5-7          | 3/8  | u3       | bytes         | Yes            | Used to determine number of bytes to copy.                                                     |
-| 0x1                     | 0x1  | u8       | big_bytes     | No             | If bytes == 0.                                                                                 |
-| 0x1 or 0x2              | 0x1  | Bitfield | pos_mid_snd   | Yes            | Determine number of bytes to copy from source or lookback_offset depending  on value.          |
-| &nbsp; (0x1 or 0x2):0-5 | 6/8  | u6       | pos_mid       | Yes            | Used to determine the lookback offset.                                                         |
-| &nbsp; (0x1 or 0x2):6-7 | 2/8  | u2       | snd_pos       | Yes            | Used to determine whenther an additional 3 bytes should be copied from the destination stream. |
-| 0x2 or 0x3              | 0x1  | u8       | pos_minor     | Yes            | Used to determine lookback_offset.                                                             |
-| 0x3 or 0x4              | 0x3  | u8[3]    | immediate     | No             | Data to copy.                                                                                  |
-| Varies                  | 0x1  | u8       | decision      | No             | Used when reading from the source buffer.                                                      |
-| offsetof(decision) + 1  | 0x1  | u8       | big_decision  | No             | Used if decision needs to be large.                                                            |
+| Offset                  | Size    | Type     | Name          | Always Present | Comment                                                                                        |
+|-------------------------|---------|----------|---------------|----------------|------------------------------------------------------------------------------------------------|
+| 0x0                     | 0x1     | Bitfield | flag          | Yes            | flag == packet_type (4 bits) + pos_major (1 bit) + bytes (3 bits)                              |
+| &nbsp; 0x0:0-3          | 4/8     | u4       | packet_type   | Yes            | Used to make the value of the flag fall within the ranges needed for the desired packet type.  |
+| &nbsp; 0x0:4            | 1/8     | u1       | pos_major     | Yes            | Used to determine lookback offset.                                                             |
+| &nbsp; 0x0:5-7          | 3/8     | u3       | bytes         | Yes            | Used to determine number of bytes to copy.                                                     |
+| 0x1                     | 0x1     | u8       | big_bytes     | No             | If bytes == 0.                                                                                 |
+| 0x1 or 0x2              | 0x1     | Bitfield | pos_mid_snd   | Yes            | Determine number of bytes to copy from source or lookback_offset depending  on value.          |
+| &nbsp; (0x1 or 0x2):0-5 | 6/8     | u6       | pos_mid       | Yes            | Used to determine the lookback offset.                                                         |
+| &nbsp; (0x1 or 0x2):6-7 | 2/8     | u2       | snd_pos       | Yes            | Used to determine whenther an additional 3 bytes should be copied from the destination stream. |
+| 0x2 or 0x3              | 0x1     | u8       | pos_minor     | Yes            | Used to determine lookback_offset.                                                             |
+| 0x3 or 0x4              | snd_pos | u8[]     | immediate     | No             | Data to copy.                                                                                  |
+| Varies                  | 0x1     | u8       | decision      | No             | Used when reading from the source buffer.                                                      |
+| offsetof(decision) + 1  | 0x1     | u8       | big_decision  | No             | Used if decision needs to be large.                                                            |
 
 
 Decompression
@@ -143,7 +143,7 @@ Decompression
 ## read_from_dest (continutation)
 
 1. Copy bytes_to_copy bytes from destination stream at the lookback offset to the end of the destination stream.
-2. If snd_pos != 0, copy 3 bytes from immediate to the destination, then adjust both position indicators by (snd_pos - 3).
+2. If snd_pos != 0, copy snd_pos bytes from immediate to the destination.
 3. If snd_pos == 0, go to read_from_src.
 
 ## read_from_src (continuation)
