@@ -80,19 +80,19 @@ void decompress_wad_n(stream& dest, stream& src, uint32_t bytes_to_decompress) {
 				std::cout << "*** PACKET " << count++ << " ***\n";
 				)
 
-		uint8_t control_byte = src.read<uint8_t>();
-		WAD_DEBUG(std::cout << "control_byte = " << std::hex << (control_byte & 0xff) << "\n";)
+		uint8_t flag_byte = src.read<uint8_t>();
+		WAD_DEBUG(std::cout << "flag_byte = " << std::hex << (flag_byte & 0xff) << "\n";)
 
 		bool read_from_dest = false;
 		bool read_from_src = false;
 		uint32_t lookback_offset = -1;
 		int bytes_to_copy = 0;
 
-		if(control_byte < 0x40) {
-			if(control_byte > 0x1f) {
+		if(flag_byte < 0x40) {
+			if(flag_byte > 0x1f) {
 				WAD_DEBUG(std::cout << " -- packet type B\n";)
 
-				bytes_to_copy = control_byte & 0x1f;
+				bytes_to_copy = flag_byte & 0x1f;
 				if(bytes_to_copy == 0) {
 					bytes_to_copy = src.read<uint8_t>() + 0x1f;
 				}
@@ -101,16 +101,16 @@ void decompress_wad_n(stream& dest, stream& src, uint32_t bytes_to_decompress) {
 				int b1 = src.read<uint8_t>();
 				int b2 = src.read<uint8_t>();
 				lookback_offset = dest.tell() - ((b1 >> 2) + b2 * 0x40) - 1;
-				
+
 				read_from_dest = true;
 			} else {
 				WAD_DEBUG(std::cout << " -- packet type C\n";)
 
-				if(control_byte < 0x10) {
+				if(flag_byte < 0x10) {
 					throw stream_format_error("WAD decompression failed!");
 				}
 
-				bytes_to_copy = control_byte & 7;
+				bytes_to_copy = flag_byte & 7;
 				if(bytes_to_copy == 0) {
 					bytes_to_copy = src.read<uint8_t>() + 7;
 				}
@@ -118,12 +118,12 @@ void decompress_wad_n(stream& dest, stream& src, uint32_t bytes_to_decompress) {
 				uint8_t b0 = src.read<uint8_t>();
 				uint8_t b1 = src.read<uint8_t>();
 
-				if(b0 > 0 && control_byte == 0x11) {
+				if(b0 > 0 && flag_byte == 0x11) {
 					stream::copy_n(dest, src, b0);
 					continue;
 				}
 
-				lookback_offset = dest.tell() + ((control_byte & 8) * -0x800 - ((b0 >> 2) + b1 * 0x40));
+				lookback_offset = dest.tell() + ((flag_byte & 8) * -0x800 - ((b0 >> 2) + b1 * 0x40));
 				if(lookback_offset != dest.tell()) {
 					bytes_to_copy += 2;
 					lookback_offset -= 0x4000;
@@ -142,9 +142,9 @@ void decompress_wad_n(stream& dest, stream& src, uint32_t bytes_to_decompress) {
 			WAD_DEBUG(std::cout << " -- packet type A\n";)
 
 			uint8_t b1 = src.read<uint8_t>();
-			WAD_DEBUG(std::cout << " -- pos_major = " << (int) b1 << ", pos_minor = " << (int) (control_byte >> 2 & 7) << "\n";)
-			lookback_offset = dest.tell() - b1 * 8 - (control_byte >> 2 & 7) - 1;
-			bytes_to_copy = (control_byte >> 5) + 1;
+			WAD_DEBUG(std::cout << " -- pos_major = " << (int) b1 << ", pos_minor = " << (int) (flag_byte >> 2 & 7) << "\n";)
+			lookback_offset = dest.tell() - b1 * 8 - (flag_byte >> 2 & 7) - 1;
+			bytes_to_copy = (flag_byte >> 5) + 1;
 			read_from_dest = true;
 		}
 
@@ -236,8 +236,6 @@ void compress_wad(stream& dest_disk, stream& src_disk) {
 
 	std::map<std::vector<char>, uint32_t> dictionary;
 
-	WAD_COMPRESS_DEBUG(try {)
-
 	dest.seek(0);
 	src.seek(0);
 
@@ -296,36 +294,6 @@ void compress_wad(stream& dest_disk, stream& src_disk) {
 		stream::copy_n(dest, src, size);
 	}
 
-	WAD_COMPRESS_DEBUG(} catch (stream_error& e) {
-		std::cout << "Exception thrown: " << e.what() << "\n";
-		std::cout << "dict size: " << dictionary.size() << "\n";
-		//std::cout << logger.str() << "\n";
-		std::cout << "**** FLAG TABLE ****\n";
-		for(int i = 0+0x127000; i < 768+0x127000; i += 16) {
-			std::stringstream of;
-			of << std::hex << i;
-			std::string ofs = of.str();
-			while(ofs.size() < 8) {
-				ofs = "0" + ofs;
-			}
-			std::cout << ofs << ": ";
-
-			for(int j = 0; j < 16; j++) {
-				uint8_t byte = src.peek<uint8_t>(i + j);
-				if(byte < 0x10) std::cout << " ";
-				for(auto [key, val] : dictionary) {
-					if(val == i + j) std::cout << "\033[1;34m";
-				}
-				std::cout << (int) byte;
-				for(auto [key, val] : dictionary) {
-					if(val == i + j) std::cout << "\033[0m";
-				}
-				std::cout << " " << flags[i + j] << "\t ";
-			}
-			std::cout << "\n";
-		}
-	})
-
 	uint32_t total_size = dest.tell();
 	dest.seek(3);
 	dest.write<uint32_t>(total_size);
@@ -377,17 +345,6 @@ std::vector<char> encode_wad_packet(
 
 		auto [match_offset, match_size] = *match;
 
-		/*if(packet_no == 0x20) match_offset = 0x1d5;
-		if(packet_no == 0x25) match_offset = 0x1d1;
-		if(packet_no == 0x26) match_offset = 0x171;
-		if(packet_no == 0x2b) match_offset = 0x1d9;
-		if(packet_no == 0x36) match_offset = 0x269;
-		if(packet_no == 0x38) match_offset = 0x279;
-		if(packet_no == 0x3a) match_offset = 0x289;
-		if(packet_no == 0x3c) match_offset = 0x299;
-		if(packet_no == 0x3e) match_offset = 0x2a9;
-		if(packet_no == 0x40) match_offset = 0x2b9;*/
-
 		uint32_t delta = src.tell() - match_offset - 1;
 
 		WAD_COMPRESS_DEBUG(
@@ -433,8 +390,6 @@ std::vector<char> encode_wad_packet(
 			throw std::runtime_error("WAD compression failed: Unhandled branch!");
 		}
 
-		//logger << "packet " << std::hex << packet_no << " type " << result_packet_type << " off=" << match_offset << " size=" << match_size << "\n";
-
 		WAD_COMPRESS_DEBUG(
 			std::cout << " => copy 0x" << std::hex << (int) match_size
 				<< " bytes from uncompressed stream at 0x" << match_offset << " (source = " << src.tell() << ")\n";
@@ -468,30 +423,11 @@ std::vector<char> encode_wad_packet(
 			uint32_t low = sub_clamped(high, TYPE_A_MAX_LOOKBACK);
 			auto match = find_match_fast(src, src.tell() + i, low, high, dict);
 			if(!match) continue;
-			auto[offset, size] = *match;
-
-			if(size >= 3) {
+			if(match->second >= 3) {
 				snd_pos = i;
 				break;
 			}
 		}
-
-		/*if(packet_no == 2) snd_pos = 0x11;
-		if(packet_no == 3) snd_pos = 0x2d;
-		if(packet_no == 0xc) snd_pos = 0x5;
-		if(packet_no == 0x19) snd_pos = 0x9;
-		if(packet_no == 0x1e) snd_pos = 0x9;
-		if(packet_no == 0x1f) snd_pos = 0x9;
-		if(packet_no == 0x20) snd_pos = 0x9;
-		if(packet_no == 0x21) snd_pos = 0x11;
-		if(packet_no == 0x2b) snd_pos = 0x12;
-		if(packet_no == 0x2c) snd_pos = 0x5;
-		if(packet_no == 0x2d) snd_pos = 0x5;
-		if(packet_no == 0x2e) snd_pos = 0x5;
-		if(packet_no == 0x2f) snd_pos = 0x5;
-		if(packet_no == 0x30) snd_pos = 0x5;
-		if(packet_no == 0x31) snd_pos = 0x5;
-		if(packet_no == 0x32) snd_pos = 0x5;*/
 
 		if(snd_pos < 0x4) {
 			WAD_COMPRESS_DEBUG(
