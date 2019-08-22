@@ -25,6 +25,7 @@ int main(int argc, char** argv) {
 	return run_cli_converter(argc, argv,
 		"Decompress WAD segments",
 		{
-			{ "decompress", decompress_wad }
+			{ "decompress", decompress_wad },
+			{ "compress", compress_wad }
 		});
 }

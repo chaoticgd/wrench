@@ -19,6 +19,7 @@
 #ifndef STREAM_H
 #define STREAM_H
 
+#include <bitset>
 #include <vector>
 #include <cstring>
 #include <fstream>
@@ -170,7 +171,7 @@ public:
 
 	// Pretty print new data that has been written to the end of the buffer.
 	// Compare said data to an 'expected' data file.
-	void print_diff(std::optional<stream*> expected) {
+	void print_diff(std::optional<stream*> expected, bool use_binary = false) {
 
 		if(tell() < _last_printed) {
 			return;
@@ -179,9 +180,9 @@ public:
 		bool is_bad = false;
 		std::cout << std::hex << (_last_printed | 0x1000000000000000) << " >>>> ";
 		for(uint32_t i = _last_printed; i < tell(); i++) {
-			auto val = peek<char>(i);
+			auto val = peek<uint8_t>(i);
 			if(expected.has_value()) {
-				auto expected_val = (*expected)->peek<char>(i);
+				auto expected_val = (*expected)->peek<uint8_t>(i);
 				if(val == expected_val) {
 					std::cout << "\033[1;32m"; // Green.
 				} else {
@@ -191,10 +192,14 @@ public:
 			} else {
 				std::cout << "\033[1;33m"; // Yellow.
 			}
-			if(val < 0x10) std::cout << "0";
-			std::cout << std::hex << (val & 0xff);
+			if(use_binary) {
+				std::cout << std::bitset<8>(val);
+			} else {
+				if(val < 0x10) std::cout << "0";
+				std::cout << std::hex << static_cast<int>(val);
+			}
 			std::cout << "\033[0m"; // Reset colours.
-			if((i - _last_printed) % 32 == 31) {
+			if((i - _last_printed) % 32 == 31 || (use_binary && (i - _last_printed) % 16 == 15)) {
 				std::cout << "\n" << std::hex << ((i + 1) | 0x1000000000000000) << " >>>> ";
 			} else {
 				std::cout << " ";
@@ -204,7 +209,7 @@ public:
 			std::cout << "\nEXPECTED:\n";
 			(*expected)->_last_printed = _last_printed;
 			(*expected)->seek(tell());
-			(*expected)->print_diff({});
+			(*expected)->print_diff({}, use_binary);
 			std::cout << std::endl;
 			throw stream_format_error("Data written to stream did not match expected stream.");
 		}

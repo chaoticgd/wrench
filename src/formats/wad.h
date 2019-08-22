@@ -21,7 +21,9 @@
 
 #include "../stream.h"
 
+#include <map>
 #include <cstring>
+#include <utility>
 
 /*
 	A container for data stored on disc using sliding window compression.
@@ -42,6 +44,8 @@ bool validate_wad(char* magic);
 // Throws stream_io_error, stream_format_error.
 void decompress_wad(stream& dest, stream& src);
 void decompress_wad_n(stream& dest, stream& src, uint32_t bytes_to_decompress);
+
+void compress_wad(stream& dest, stream& src);
 
 class wad_stream : public array_stream {
 public:
