@@ -156,33 +156,33 @@ std::vector<texture*> level_texture_provider::textures() {
 }
 
 fip_scanner::fip_scanner(
-	stream* backing, 
-	uint32_t offset,
-	uint32_t size,
-	std::string display_name,
-	worker_logger& log)
+		stream* backing,
+		uint32_t offset,
+		uint32_t size,
+		std::string display_name,
+		worker_logger& log)
 	: _search_space(backing, offset, size),
 	  _display_name(display_name) {
-		
-		log << "Importing " << display_name << "... ";
 
-		char magic[4];
-		for(uint32_t i = 0; i < _search_space.size(); i += 0x10) {
-			_search_space.seek(i);
-			_search_space.read_n(magic, 4);
-			if(validate_fip(magic)) {
-				texture_impl::offsets offsets {
-					i + offsetof32(fip_header, palette),
-					i + static_cast<uint32_t>(sizeof(fip_header)),
-					i + offsetof32(fip_header, width),
-					i + offsetof32(fip_header, height)
-				};
-				_textures.emplace_back(
-					std::make_unique<texture_impl>(&_search_space, offsets));
-			}
+	log << "Importing " << display_name << "... ";
+
+	char magic[4];
+	for(uint32_t i = 0; i < _search_space.size(); i += 0x10) {
+		_search_space.seek(i);
+		_search_space.read_n(magic, 4);
+		if(validate_fip(magic)) {
+			texture_impl::offsets offsets {
+				i + offsetof32(fip_header, palette),
+				i + static_cast<uint32_t>(sizeof(fip_header)),
+				i + offsetof32(fip_header, width),
+				i + offsetof32(fip_header, height)
+			};
+			_textures.emplace_back(
+				std::make_unique<texture_impl>(&_search_space, offsets));
 		}
+	}
 
-		log << "DONE!\n";
+	log << "DONE!\n";
 }
 
 std::string fip_scanner::display_name() const {
