@@ -60,8 +60,9 @@ void gui::render_menu_bar(app& a) {
 			a.new_project();
 		}
 		if(ImGui::MenuItem("Open")) {
-			auto dialog = a.emplace_window<string_input>("Open Project");
-			dialog->on_okay([](app& a, std::string path) {
+			auto dialog = a.emplace_window<file_dialog>
+				("Open Project", file_dialog::open, std::vector<std::string> { "wrench" });
+			dialog->on_okay([&a](std::string path) {
 				a.open_project(path);
 			});
 		}
@@ -558,5 +559,77 @@ void gui::string_input::render(app& a) {
 }
 
 void gui::string_input::on_okay(std::function<void(app&, std::string)> callback) {
+	_callback = callback;
+}
+
+/*
+	file_dialog
+*/
+
+gui::file_dialog::file_dialog(const char* title, mode m, std::vector<std::string> extensions)
+	: _title(title), _mode(m), _extensions(extensions), _directory_input("."), _directory(".") {}
+
+const char* gui::file_dialog::title_text() const {
+	return _title;
+}
+
+ImVec2 gui::file_dialog::initial_size() const {
+	return ImVec2(300, 200);
+}
+
+void gui::file_dialog::render(app& a) {
+	ImGui::PushItemWidth(-1);
+	if(ImGui::InputText("##nolabel", &_directory_input, ImGuiInputTextFlags_EnterReturnsTrue)) {
+		_directory = _directory_input;
+		_directory_input = _directory.string();
+	}
+	ImGui::PopItemWidth();
+
+	ImGui::Columns(2);
+	ImGui::SetColumnWidth(0, ImGui::GetWindowSize().x - 64);
+
+	ImGui::PushItemWidth(-1);
+	if(ImGui::InputText("##file", &_file, ImGuiInputTextFlags_EnterReturnsTrue)) {
+		_callback(_file);
+		close(a);
+	}
+	ImGui::PopItemWidth();
+
+	ImGui::NextColumn();
+	if(ImGui::Button("Okay")) {
+		_callback(_file);
+		close(a);
+	}
+
+	ImGui::Columns(1);
+
+	if(fs::is_directory(_directory)) {
+		std::vector<fs::path> items { _directory / ".." };
+		for(auto item : boost::make_iterator_range(fs::directory_iterator(_directory), {})) {
+			items.push_back(item.path());
+		}
+
+		ImGui::PushItemWidth(-1);
+		ImGui::BeginChild(1);
+		for(auto item : items) {
+			if(ImGui::Selectable(item.filename().c_str(), false)) {
+				if(fs::is_directory(item)) {
+					_directory = fs::canonical(item);
+					_directory_input = _directory.string();
+				} else {
+					_file = item.string();
+				}
+			}
+		}
+		ImGui::EndChild();
+		ImGui::PopItemWidth();
+	} else {
+		ImGui::PushItemWidth(-1);
+		ImGui::Text("Not a directory.");
+		ImGui::PopItemWidth();
+	}
+}
+
+void gui::file_dialog::on_okay(std::function<void(std::string)> callback) {
 	_callback = callback;
 }

@@ -21,6 +21,7 @@
 
 #include <functional>
 #include <GL/glew.h>
+#include <boost/filesystem.hpp>
 
 #include "imgui_includes.h"
 #include "app.h"
@@ -28,6 +29,8 @@
 #include "window.h"
 #include "inspector.h"
 #include "commands/property_changed_command.h"
+
+namespace fs = boost::filesystem;
 
 namespace gui {
 	void render(app& a);
@@ -119,6 +122,28 @@ namespace gui {
 		const char* _title_text;
 		std::string _input;
 		std::function<void(app&, std::string)> _callback;
+	};
+
+	class file_dialog : public window {
+	public:
+		enum mode { open, save };
+
+		file_dialog(const char* title, mode m, std::vector<std::string> extensions);
+
+		const char* title_text() const override;
+		ImVec2 initial_size() const override;
+		void render(app& a) override;
+
+		void on_okay(std::function<void(std::string)> callback);
+
+	private:
+		const char* _title;
+		mode _mode;
+		std::vector<std::string> _extensions;
+		std::string _directory_input;
+		fs::path _directory;
+		std::string _file;
+		std::function<void(std::string)> _callback;
 	};
 }
 
