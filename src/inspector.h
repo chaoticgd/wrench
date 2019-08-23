@@ -59,7 +59,7 @@ std::function<void(const char* name, rf::property<T_data_type> p)>
 		ImGui::AlignTextToFramePadding();
 		ImGui::PushItemWidth(-1);
 		T_data_type value = p.get();
-		if(input("##nolabel", &value)) {
+		if(input("##input", &value)) {
 			lvl->emplace_command<property_changed_command<T_data_type>>(p, value);
 		}
 		ImGui::NextColumn();

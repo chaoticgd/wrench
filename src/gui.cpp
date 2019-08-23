@@ -135,7 +135,7 @@ void gui::moby_list::render(app& a) {
 		ImGui::Text("UID  Class");
 
 		ImGui::PushItemWidth(-1);
-		ImGui::ListBoxHeader("##nolabel", size);
+		ImGui::ListBoxHeader("##mobylist", size);
 		for(const auto& [uid, moby] : lvl->mobies()) {
 			std::stringstream row;
 			row << std::setfill(' ') << std::setw(4) << std::dec << uid << " ";
@@ -300,7 +300,7 @@ void gui::texture_browser::render(app& a) {
 		if(ImGui::TreeNodeEx("Filters", ImGuiTreeNodeFlags_DefaultOpen)) {
 			ImGui::Text("Minimum Width:");
 			ImGui::PushItemWidth(-1);
-			ImGui::InputInt("##nolabel", &_filters.min_width);
+			ImGui::InputInt("##minwidth", &_filters.min_width);
 			ImGui::PopItemWidth();
 			ImGui::TreePop();
 		}
@@ -461,13 +461,13 @@ void gui::settings::render(app& a) {
 	ImGui::Text("Emulator Path");
 
 	ImGui::PushItemWidth(-1);
-	if(ImGui::InputText("emulator_path##nolabel", &a.settings.emulator_path)) {
+	if(ImGui::InputText("##emulator_path", &a.settings.emulator_path)) {
 		a.save_settings();
 	}
 	ImGui::PopItemWidth();
+	ImGui::NewLine();
 
 	ImGui::Text("Game Paths");
-	ImGui::NewLine();
 
 	ImGui::Columns(2);
 	ImGui::SetColumnWidth(0, 64);
@@ -477,7 +477,7 @@ void gui::settings::render(app& a) {
 		ImGui::Text("%s", game.c_str());
 		ImGui::NextColumn();
 		ImGui::PushItemWidth(-1);
-		std::string label = std::string(game) + "##nolabel";
+		std::string label = std::string("##") + game;
 		if(ImGui::InputText(label.c_str(), &path)) {
 			a.save_settings();
 		}
@@ -491,7 +491,7 @@ void gui::settings::render(app& a) {
 	ImGui::Text("GUI Scale");
 
 	ImGui::PushItemWidth(-1);
-	if(ImGui::SliderFloat("gui_scale##nolabel", &a.settings.gui_scale, 0.5, 2, "%.1f")) {
+	if(ImGui::SliderFloat("##gui_scale", &a.settings.gui_scale, 0.5, 2, "%.1f")) {
 		a.update_gui_scale();
 		a.save_settings();
 	}
@@ -523,7 +523,7 @@ void gui::message_box::render(app& a) {
 	size.x -= 16;
 	size.y -= 64;
 	ImGui::PushItemWidth(-1);
-	ImGui::InputTextMultiline("##nolabel", &_message, size, ImGuiInputTextFlags_ReadOnly);
+	ImGui::InputTextMultiline("##message", &_message, size, ImGuiInputTextFlags_ReadOnly);
 	ImGui::PopItemWidth();
 	if(ImGui::Button("Close")) {
 		close(a);
@@ -579,7 +579,7 @@ ImVec2 gui::file_dialog::initial_size() const {
 
 void gui::file_dialog::render(app& a) {
 	ImGui::PushItemWidth(-1);
-	if(ImGui::InputText("##nolabel", &_directory_input, ImGuiInputTextFlags_EnterReturnsTrue)) {
+	if(ImGui::InputText("##directory_input", &_directory_input, ImGuiInputTextFlags_EnterReturnsTrue)) {
 		_directory = _directory_input;
 		_directory_input = _directory.string();
 	}

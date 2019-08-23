@@ -88,7 +88,7 @@ void worker_thread<T_out, T_in>::render(app& a) {
 	size.x -= 32;
 	size.y -= 64;
 	std::string log_text = _log.str();
-	ImGui::InputTextMultiline("##nolabel", &log_text, size, ImGuiInputTextFlags_ReadOnly);
+	ImGui::InputTextMultiline("##log", &log_text, size, ImGuiInputTextFlags_ReadOnly);
 	
 	if(!_ready) {
 		return;
