@@ -23,8 +23,8 @@
 #include <algorithm>
 
 // Enable/disable debug output for the decompression function.
-//#define WAD_DEBUG(cmd)
-#define WAD_DEBUG(cmd) cmd
+#define WAD_DEBUG(cmd)
+//#define WAD_DEBUG(cmd) cmd
 // If this code breaks, dump the correct output and point to that here.
 #define WAD_DEBUG_EXPECTED_PATH "dumps/mobyseg" /*"<file path goes here>"*/
 
