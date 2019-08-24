@@ -82,6 +82,8 @@ public:
 
 	std::string class_name() const;
 
+	const model& object_model() const override;
+
 	static const std::map<uint16_t, const char*> class_names;
 
 private:

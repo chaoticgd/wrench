@@ -25,6 +25,7 @@ add_executable(wrench
 	src/worker_logger.cpp
 	src/project.cpp
 	src/iso_stream.cpp
+	src/shapes.cpp
 	src/formats/wad.cpp
 	src/formats/level_impl.cpp
 	src/formats/shrub_impl.cpp

@@ -18,6 +18,8 @@
 
 #include "moby_impl.h"
 
+#include "../shapes.h"
+
 moby_impl::moby_impl(stream* backing, uint32_t offset)
 	: _backing(backing, offset, 0x88) {}
 
@@ -76,6 +78,11 @@ std::string moby_impl::class_name() const {
 		return class_names.at(data.class_num);
 	}
 	return std::to_string(data.class_num);
+}
+
+const model& moby_impl::object_model() const {
+	static cube_model c;
+	return c;
 }
 
 const std::map<uint16_t, const char*> moby_impl::class_names {

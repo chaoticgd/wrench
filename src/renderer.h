@@ -26,10 +26,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "app.h"
-#include "shaders.h"
+#include "model.h"
 #include "window.h"
-
-using vertex_list = std::vector<std::array<glm::vec3, 3>>;
+#include "shaders.h"
 
 class three_d_view : public window {
 public:
@@ -41,7 +40,7 @@ public:
 
 	void draw_current_level(const app& a) const;
 	void draw_level(const level& lvl) const;
-	void draw_test_tri(glm::mat4 mvp, glm::vec3 colour) const;
+	void draw_model(const model& mdl, glm::mat4 mvp, glm::vec3 colour) const;
 
 	void draw_overlay_text(const app& a) const;
 

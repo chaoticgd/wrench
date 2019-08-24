@@ -25,6 +25,7 @@
 #include <vector>
 #include <glm/glm.hpp>
 
+#include "model.h"
 #include "command.h"
 #include "texture.h"
 #include "imgui_includes.h"
@@ -110,6 +111,8 @@ public:
 	virtual void set_class_num(uint16_t class_num_) = 0;
 
 	virtual std::string class_name() const = 0;
+
+	virtual const model& object_model() const = 0;
 
 	template <typename... T>
 	void reflect(T... callbacks);

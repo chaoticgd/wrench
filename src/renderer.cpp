@@ -106,6 +106,8 @@ void three_d_view::draw_current_level(const app& a) const {
 }
 
 void three_d_view::draw_level(const level& lvl) const {
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
 	glm::mat4 projection_view = get_view_projection_matrix();
 
 	glEnable(GL_DEPTH_TEST);
@@ -116,7 +118,7 @@ void three_d_view::draw_level(const level& lvl) const {
 		glm::mat4 mvp = projection_view * model;
 		glm::vec3 colour =
 			lvl.is_selected(moby.second) ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
-		draw_test_tri(mvp, colour);
+		draw_model(moby.second->object_model(), mvp, colour);
 	}
 
 	// Draw ship.
@@ -125,13 +127,12 @@ void three_d_view::draw_level(const level& lvl) const {
 		//glm::mat4 mvp = projection_view * model;
 		//draw_test_tri(mvp, glm::vec3(0, 0, 1));
 	}
+
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-void three_d_view::draw_test_tri(glm::mat4 mvp, glm::vec3 colour) const {
-	using v = glm::vec3;
-	static const vertex_list vertex_data {
-		{ v(1, 1, 0), v(1, 0, 1), v(0, 1, 0) }
-	};
+void three_d_view::draw_model(const model& mdl, glm::mat4 mvp, glm::vec3 colour) const {
+	const vertex_array triangles = mdl.triangles();
 	
 	glUseProgram(_shaders->solid_colour.id());
 
@@ -142,14 +143,14 @@ void three_d_view::draw_test_tri(glm::mat4 mvp, glm::vec3 colour) const {
 	glGenBuffers(1, &vertex_buffer);
 	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
 	glBufferData(GL_ARRAY_BUFFER,
-		vertex_data.size() * sizeof(vertex_list::value_type),
-		&vertex_data[0][0].x, GL_STATIC_DRAW);
+		triangles.size() * sizeof(vertex_array::value_type),
+		&triangles[0][0].x, GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+	glDrawArrays(GL_TRIANGLES, 0, triangles.size() * 3);
 
 	glDisableVertexAttribArray(0);
 	glDeleteBuffers(1, &vertex_buffer);
