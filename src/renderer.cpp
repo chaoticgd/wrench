@@ -48,8 +48,8 @@ void three_d_view::render(app& a) {
 	}
 
 	_viewport_size = ImGui::GetWindowSize();
-	_viewport_size.x -= 32;
-	_viewport_size.y -= 48;
+	_viewport_size.x -= 16;
+	_viewport_size.y -= 36;
 
 	if(_frame_buffer_texture != 0) {
 		glDeleteTextures(1, &_frame_buffer_texture);
@@ -181,7 +181,8 @@ void three_d_view::draw_overlay_text(const app& a) const {
 }
 
 glm::mat4 three_d_view::get_view_projection_matrix() const {
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f);
+	ImVec2 size = _viewport_size;
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), size.x / size.y, 0.1f, 100.0f);
 
 	auto rot = camera_rotation;
 	glm::mat4 pitch = glm::rotate(glm::mat4(1.0f), rot.x, glm::vec3(1.0f, 0.0f, 0.0f));
