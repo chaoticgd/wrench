@@ -23,6 +23,10 @@
 
 #include "../stream.h"
 
+# /*
+#	Packed 3D vector of floats.
+# */
+
 packed_struct(vec3f,
 	vec3f() { x = 0; y = 0; z = 0; }
 	vec3f(glm::vec3 g) { x = g.x; y = g.y; z = g.z; }

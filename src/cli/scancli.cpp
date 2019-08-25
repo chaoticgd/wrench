@@ -23,6 +23,10 @@
 #include "../formats/wad.h"
 #include "../formats/fip.h"
 
+# /*
+#	CLI tool to scan game files for known data segments.
+# */
+
 int main(int argc, char** argv) {
 	std::string src_path;
 	uint32_t alignment;

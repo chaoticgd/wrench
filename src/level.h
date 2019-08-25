@@ -31,6 +31,14 @@
 #include "imgui_includes.h"
 #include "reflection/refolder.h"
 
+# /*
+#	Virtual base classes for levels and game objects (shrubs, mobies, ...).
+#	
+#	Mobies represent moving objects in the game world.
+#	Shrubs are decorative objects e.g. plants or small rocks.
+#	
+# */
+
 class game_object;
 class point_object;
 class shrub;

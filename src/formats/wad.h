@@ -25,12 +25,11 @@
 #include <cstring>
 #include <utility>
 
-/*
-	A container for data stored on disc using sliding window compression.
-	Used to store textures, level data, etc. Not to be confused with the *.WAD
-	files in the game's filesystem. Those contain multiple different segments,
-	some of which may be WAD compressed.
-*/
+# /*
+#	Decompress and recompress WAD segments used by the games to store various
+#	assets. Not to be confused with WAD archives.
+# */
+
 packed_struct(wad_header,
 	char magic[3]; // "WAD"
 	uint32_t total_size;

@@ -25,6 +25,10 @@
 #include "renderer.h"
 #include "inspector.h"
 
+# /*
+#	Setup code, the main loop, and GLFW stuff.
+# */
+
 void update_camera_movement(app* a);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);

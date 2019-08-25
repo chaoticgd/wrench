@@ -21,6 +21,10 @@
 
 #include "model.h"
 
+# /*
+#	Implements various primitives as subclasses of the model class.
+# */
+
 class cube_model : public model {
 public:
 	cube_model();

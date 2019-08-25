@@ -30,6 +30,10 @@
 #include "inspector.h"
 #include "commands/property_changed_command.h"
 
+# /*
+#	Implements most of the GUI.
+# */
+
 namespace fs = boost::filesystem;
 
 namespace gui {

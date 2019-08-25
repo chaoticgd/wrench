@@ -26,6 +26,10 @@
 
 #include "reflection/refolder.h"
 
+# /*
+#	Virtual base class that represents an indexed texture.
+# */
+
 struct colour {
 	uint8_t r, g, b, a;
 };

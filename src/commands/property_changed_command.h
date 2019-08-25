@@ -22,6 +22,10 @@
 #include "../command.h"
 #include "../reflection/refolder.h"
 
+# /*
+#	Undo/redo command for modifying object properties via reflection.
+# */
+
 template <typename T>
 class property_changed_command : public command {
 public:

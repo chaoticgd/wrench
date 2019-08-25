@@ -22,6 +22,10 @@
 #include "imgui_includes.h"
 #include "app.h"
 
+# /*
+#	Virtual base class representing a Dear ImGui sub-window.
+# */
+
 class window {
 public:
 	window();

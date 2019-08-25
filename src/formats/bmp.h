@@ -21,6 +21,10 @@
 
 #include "../stream.h"
 
+# /*
+#	Convert BMP files to and from textures.
+# */
+
 class texture;
 
 struct bmp_file_header;

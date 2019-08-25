@@ -21,6 +21,10 @@
 
 #include <stdexcept>
 
+# /*
+#	Virtual base class representing an undo/redo command.
+# */
+
 class level;
 
 class command {

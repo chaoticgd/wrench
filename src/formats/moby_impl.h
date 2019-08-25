@@ -27,6 +27,10 @@
 #include "../reflection/refolder.h"
 #include "vec3f.h"
 
+# /*
+#	A moby stored using a stream. The member function wrap read/write calls.
+# */
+
 class moby_impl : public moby {
 public:
 	struct fmt {

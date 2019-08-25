@@ -31,9 +31,9 @@
 #include <type_traits>
 #include <boost/stacktrace.hpp>
 
-/*
-	A set of utility classes and macros for working with binary files.
-*/
+# /*
+#	A set of utility classes and macros for working with binary files.
+# */
 
 #ifdef _MSC_VER
 	#define packed_struct(name, body \

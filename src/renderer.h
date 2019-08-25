@@ -30,6 +30,10 @@
 #include "window.h"
 #include "shaders.h"
 
+# /*
+#	Draw 3D view and overlay text.
+# */
+
 class three_d_view : public window {
 public:
 	three_d_view(const app* a);

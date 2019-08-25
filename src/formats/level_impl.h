@@ -30,6 +30,10 @@
 #include "shrub_impl.h"
 #include "texture_impl.h"
 
+# /*
+#	A level stored using a stream. The member function wrap read/write calls.
+# */
+
 /*
 	LEVEL*.WAD LAYOUT
 	=================

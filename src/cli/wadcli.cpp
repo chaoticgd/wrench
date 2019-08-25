@@ -21,6 +21,10 @@
 #include "../command_line.h"
 #include "../formats/wad.h"
 
+# /*
+#	CLI tool to decompress and recompress WAD segments. Not to be confused with WAD archives.
+# */
+
 int main(int argc, char** argv) {
 	return run_cli_converter(argc, argv,
 		"Decompress WAD segments",

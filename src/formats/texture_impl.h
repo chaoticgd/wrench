@@ -28,6 +28,11 @@
 #include "../worker_logger.h"
 #include "wad.h"
 
+# /*
+#	A texture stored using a stream. The member function wrap read/write calls.
+#	Additionally, fip_scanner can scan game data files for 2FIP textures.
+# */
+
 class texture_provider;
 
 class texture_impl : public texture {

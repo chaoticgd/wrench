@@ -21,10 +21,10 @@
 
 #include "../stream.h"
 
-/*
-	An uncompressed, indexed image format.
-	Often stored compressed within WAD segments.
-*/
+# /*
+#	Convert between BMP files and indexed 2FIP textures (used to store GUI images).
+# */
+
 struct fip_header;
 struct fip_palette_entry;
 

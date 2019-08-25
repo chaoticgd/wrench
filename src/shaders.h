@@ -23,6 +23,11 @@
 #include <functional>
 #include <GL/glew.h>
 
+# /*
+#	A class that can compile OpenGL shaders along with a number of shaders used
+#	by the 3D view.
+# */
+
 class shader_program {
 public:
 	using shader_callback = std::function<void(GLuint id)>;

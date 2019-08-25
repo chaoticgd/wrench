@@ -117,3 +117,10 @@ include_directories(thirdparty/json/single_include)
 include("cmake/ziplib.cmake")
 target_link_libraries(wrench ziplib)
 include_directories(SYSTEM thirdparty/ziplib/Source) # Suppress warnings for ZipLib headers.
+
+# Source Map
+add_custom_target(sourcemap
+	COMMAND rm -f docs/dev/source_map.svg
+	COMMAND python3 ./scripts/graphifier/graphify.py src docs/dev/source_map.svg
+)
+add_dependencies(wrench sourcemap)

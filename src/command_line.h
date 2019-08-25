@@ -24,6 +24,10 @@
 
 #include "stream.h"
 
+# /*
+#	Utility functions to parse command line arguments.
+# */
+
 namespace po = boost::program_options;
 
 bool parse_command_line_args(

@@ -26,6 +26,11 @@
 #include "formats/level_impl.h"
 #include "formats/texture_impl.h"
 
+# /*
+#	A project is a mod that patches the game's ISO file. Additional metadata
+#	such as the game ID is also stored. It is serialised to disk as a zip file.
+# */
+
 class app;
 
 class iso_views {

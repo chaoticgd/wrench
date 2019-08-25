@@ -21,6 +21,10 @@
 #include "../command_line.h"
 #include "../formats/fip.h"
 
+# /*
+#	CLI tool to convert 2FIP textures to BMP files and vice versa.
+# */
+
 int main(int argc, char** argv) {
 	return run_cli_converter(argc, argv,
 		"Converts indexed colour textures in the FIP format to BMP files",

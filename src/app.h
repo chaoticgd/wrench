@@ -35,6 +35,11 @@
 #include "formats/level_impl.h"
 #include "formats/texture_impl.h"
 
+# /*
+#	Represents the current state of the program including the currently open
+#	project, configuration and more.
+# */
+
 class window;
 class three_d_view;
 

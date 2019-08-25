@@ -28,6 +28,10 @@
 #include "reflection/refolder.h"
 #include "commands/property_changed_command.h"
 
+# /*
+#	Property editor GUI.
+# */
+
 class inspector : public window {
 public:
 	inspector(std::any* subject);

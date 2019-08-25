@@ -19,6 +19,10 @@
 #ifndef FORMATS_SHRUB_IMPL_H
 #define FORMATS_SHRUB_IMPL_H
 
+# /*
+#	A shrub stored using a stream. The member function wrap read/write calls.
+# */
+
 #include "vec3f.h"
 #include "../level.h"
 #include "../stream.h"
