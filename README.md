@@ -41,7 +41,7 @@ Ubuntu 18.04
 ------------
 
 1.	Install dependencies and tools:
-	> sudo apt install git cmake g++ libglew-dev libboost-all-dev libglfw3-dev libglm-dev
+	> sudo apt install git cmake g++ libglew-dev libboost-all-dev libglfw3-dev libglm-dev python3 python3-pydot graphviz
 2.	Download the source code using Git:
 	> git clone -b master https://github.com/chaoticgd/wrench
 	
