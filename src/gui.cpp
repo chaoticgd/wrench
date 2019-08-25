@@ -61,7 +61,7 @@ void gui::render_menu_bar(app& a) {
 		}
 		if(ImGui::MenuItem("Open")) {
 			auto dialog = a.emplace_window<file_dialog>
-				("Open Project", file_dialog::open, std::vector<std::string> { "wrench" });
+				("Open Project (.wrench)", file_dialog::open, std::vector<std::string> { ".wrench" });
 			dialog->on_okay([&a](std::string path) {
 				a.open_project(path);
 			});
@@ -578,31 +578,43 @@ ImVec2 gui::file_dialog::initial_size() const {
 }
 
 void gui::file_dialog::render(app& a) {
-	ImGui::PushItemWidth(-1);
-	if(ImGui::InputText("##directory_input", &_directory_input, ImGuiInputTextFlags_EnterReturnsTrue)) {
-		_directory = _directory_input;
-		_directory_input = _directory.string();
-	}
-	ImGui::PopItemWidth();
 
+	// Draw file path input.
 	ImGui::Columns(2);
 	ImGui::SetColumnWidth(0, ImGui::GetWindowSize().x - 64);
-
+	ImGui::Text("File: ");
+	ImGui::NextColumn();
+	ImGui::NextColumn();
 	ImGui::PushItemWidth(-1);
 	if(ImGui::InputText("##file", &_file, ImGuiInputTextFlags_EnterReturnsTrue)) {
 		_callback(_file);
 		close(a);
 	}
 	ImGui::PopItemWidth();
-
 	ImGui::NextColumn();
-	if(ImGui::Button("Okay")) {
+	if(ImGui::Button("Select")) {
 		_callback(_file);
 		close(a);
 	}
-
+	ImGui::NextColumn();
+	
+	// Draw current directory input.
+	ImGui::Text("Dir: ");
+	ImGui::NextColumn();
+	ImGui::NextColumn();
+	ImGui::PushItemWidth(-1);
+	if(ImGui::InputText("##directory_input", &_directory_input, ImGuiInputTextFlags_EnterReturnsTrue)) {
+		_directory = _directory_input;
+		_directory_input = _directory.string();
+	}
+	ImGui::PopItemWidth();
+	ImGui::NextColumn();
+	if(ImGui::Button("Cancel")) {
+		close(a);
+	}
 	ImGui::Columns(1);
 
+	// Draw directory listing.
 	if(fs::is_directory(_directory)) {
 		std::vector<fs::path> items { _directory / ".." };
 		for(auto item : boost::make_iterator_range(fs::directory_iterator(_directory), {})) {
@@ -612,14 +624,32 @@ void gui::file_dialog::render(app& a) {
 		ImGui::PushItemWidth(-1);
 		ImGui::BeginChild(1);
 		for(auto item : items) {
-			if(ImGui::Selectable(item.filename().c_str(), false)) {
-				if(fs::is_directory(item)) {
-					_directory = fs::canonical(item);
-					_directory_input = _directory.string();
-				} else {
-					_file = item.string();
-				}
+			if(!fs::is_directory(item)) {
+				continue;
 			}
+			
+			std::string name = std::string("Dir ") + item.filename().string();
+			if(ImGui::Selectable(name.c_str(), false)) {
+				_directory = fs::canonical(item);
+				_directory_input = _directory.string();
+			}
+
+			ImGui::NextColumn();
+		}
+		for(auto item : items) {
+			if(fs::is_directory(item)) {
+				continue;
+			}
+			if(std::find(_extensions.begin(), _extensions.end(), fs::extension(item)) == _extensions.end()) {
+				continue;
+			}
+
+			std::string name = std::string("    ") + item.filename().string();
+			if(ImGui::Selectable(name.c_str(), false)) {
+				_file = item.string();
+			}
+
+			ImGui::NextColumn();
 		}
 		ImGui::EndChild();
 		ImGui::PopItemWidth();
