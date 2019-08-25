@@ -25,7 +25,7 @@
 #include <functional>
 
 #include "window.h"
-#include "worker_thread.h"
+#include "worker_logger.h"
 
 // Must not throw.
 template <typename T_out, typename T_in>
