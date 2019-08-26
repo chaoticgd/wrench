@@ -70,6 +70,14 @@ add_executable(scan
 	src/formats/bmp.cpp
 )
 
+add_executable(pakrac
+	src/cli/pakraccli.cpp
+	src/command_line.cpp
+	src/stream.cpp
+	src/formats/racpak.cpp
+	src/formats/wad.cpp
+)
+
 # Boost
 find_package(Boost 1.40 COMPONENTS program_options filesystem REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
@@ -77,6 +85,7 @@ target_link_libraries(wrench ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 target_link_libraries(fip ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 target_link_libraries(wad ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 target_link_libraries(scan ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
+target_link_libraries(pakrac ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 
 # pthreads
 set(THREADS_PREFER_PTHREAD_FLAG ON)

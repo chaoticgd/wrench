@@ -154,6 +154,16 @@ public:
 		return value;
 	}
 
+	template <typename T>
+	void read_v(std::vector<T> buffer) {
+		read_n(reinterpret_cast<char*>(buffer.data()), buffer.size() * sizeof(T));
+	}
+	
+	template <typename T>
+	void write_v(std::vector<T> buffer) {
+		write_n(reinterpret_cast<char*>(buffer.data()), buffer.size() * sizeof(T));
+	}
+
 	// The dest and src streams should be different.
 	static void copy_n(stream& dest, stream& src, uint32_t size) {
 		std::vector<char> buffer(size);
