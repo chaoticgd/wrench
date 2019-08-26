@@ -264,7 +264,7 @@ void compress_wad(stream& dest_disk, stream& src_disk) {
 			dest.write<uint8_t>(init_size - 3);
 		}
 		std::vector<char> init_buf(init_size + 3);
-		src.read_nc(init_buf.data(), src.tell(), init_size + 3);
+		src.peek_n(init_buf.data(), src.tell(), init_size + 3);
 		dest.write_n(init_buf.data(), init_size);
 		src.seek(src.tell() + init_size);
 	}
@@ -312,7 +312,7 @@ std::vector<char> encode_wad_packet(
 
 	uint32_t base_src = src.tell();
 	std::vector<char> packet_start_buf(4);
-	src.read_nc(packet_start_buf.data(), src.tell(), 4);
+	src.peek_n(packet_start_buf.data(), src.tell(), 4);
 
 	std::map<std::vector<char>, uint32_t> new_dict_entries;
 
@@ -481,7 +481,7 @@ std::optional<std::pair<uint32_t, uint32_t>> find_match_fast(
 	uint32_t dict_match_len = 0;
 
 	std::vector<char> pattern_buf(4);
-	st.read_nc(pattern_buf.data(), target, 4);
+	st.peek_n(pattern_buf.data(), target, 4);
 
 	if(dict.find(pattern_buf) != dict.end()) {
 		offset = dict[pattern_buf];

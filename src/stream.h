@@ -86,9 +86,9 @@ struct stream_format_error : public stream_error {
 
 class stream {
 public:
-	virtual uint32_t size() = 0;
+	virtual uint32_t size() const = 0;
 	virtual void seek(uint32_t offset) = 0;
-	virtual uint32_t tell() = 0;
+	virtual uint32_t tell() const = 0;
 
 	virtual void read_n(char* dest, uint32_t size) = 0;
 	virtual void write_n(const char* data, uint32_t size) = 0;
@@ -116,23 +116,6 @@ public:
 		return read<T>();
 	}
 
-	template <typename T>
-	T read_c(uint32_t offset) const {
-		stream* this_ = const_cast<stream*>(this);
-		uint32_t whence_you_came = this_->tell();
-		T value = this_->read<T>(offset);
-		this_->seek(whence_you_came);
-		return value;
-	}
-
-	void read_nc(char* dest, uint32_t pos, uint32_t size) const {
-		stream* this_ = const_cast<stream*>(this);
-		uint32_t whence_you_came = this_->tell();
-		this_->seek(pos);
-		this_->read_n(dest, size);
-		this_->seek(whence_you_came);
-	}
-
 	std::string read_string() {
 		std::string result;
 		char c;
@@ -154,12 +137,21 @@ public:
 		write(value);
 	}
 
+	void peek_n(char* dest, uint32_t pos, uint32_t size) const {
+		stream* this_ = const_cast<stream*>(this);
+		uint32_t whence_you_came = this_->tell();
+		this_->seek(pos);
+		this_->read_n(dest, size);
+		this_->seek(whence_you_came);
+	}
+
 	template <typename T, typename... T_args>
-	T peek(T_args... args) {
-		uint32_t whence_you_came = tell();
-		T result = read<T>(args...);
-		seek(whence_you_came);
-		return result;
+	T peek(T_args... args) const {
+		stream* this_ = const_cast<stream*>(this);
+		uint32_t whence_you_came = this_->tell();
+		T value = this_->read<T>(args...);
+		this_->seek(whence_you_came);
+		return value;
 	}
 
 	// The dest and src streams should be different.
@@ -228,54 +220,17 @@ private:
 
 class file_stream : public stream {
 public:
-	file_stream(std::string path)
-		: file_stream(path, std::ios::in) {}
-
-	file_stream(std::string path, std::ios_base::openmode mode)
-		: _file(path, mode | std::ios::binary),
-		  _path(path) {
-		if(_file.fail()) {
-			throw stream_io_error("Failed to open file.");
-		}
-	}
-
-	uint32_t size() {
-		auto pos = tell();
-		_file.seekg(0, std::ios_base::end);
-		uint32_t size = tell();
-		seek(pos);
-		return size;
-	}
-
-	void seek(uint32_t offset) {
-		_file.seekg(offset);
-		check_error();
-	}
-
-	uint32_t tell() {
-		return _file.tellg();
-	}
-
-	void read_n(char* dest, uint32_t size) {
-		_file.read((char*) dest, size);
-		check_error();
-	}
-
-	void write_n(const char* data, uint32_t size) {
-		_file.write((char*) data, size);
-		check_error();
-	}
-
-	std::string resource_path() const {
-		return std::string("file(") + _path + ")";
-	}
-
-	void check_error() {
-		if(_file.fail()) {
-			throw stream_io_error("Bad stream."); 
-		}
-	}
-
+	file_stream(std::string path);
+	file_stream(std::string path, std::ios_base::openmode mode);
+	
+	uint32_t size() const;
+	void seek(uint32_t offset);
+	uint32_t tell() const;
+	void read_n(char* dest, uint32_t size);
+	void write_n(const char* data, uint32_t size);
+	std::string resource_path() const;
+	void check_error();
+	
 private:
 	std::fstream _file;
 	std::string _path;
@@ -283,42 +238,14 @@ private:
 
 class array_stream : public stream {
 public:
-	array_stream()
-		: _offset(0) {}
+	array_stream();
 	
-	uint32_t size() {
-		return _allocation.size();
-	}
-
-	void seek(uint32_t offset) {
-		_offset = offset;
-	}
-
-	uint32_t tell() {
-		return _offset;
-	}
-
-	void read_n(char* dest, uint32_t size) {
-		std::size_t required_size = _offset + size;
-		if(required_size > _allocation.size()) {
-			throw stream_io_error("Tried to read past end of array_stream!");
-		}
-		std::memcpy(dest, _allocation.data() + _offset, size);
-		_offset += size;
-	}
-
-	void write_n(const char* data, uint32_t size) {
-		std::size_t required_size = _offset + size;
-		if(_offset + size > _allocation.size()) {
-			_allocation.resize(required_size);
-		}
-		std::memcpy(_allocation.data() + _offset, data, size);
-		_offset += size;
-	}
-
-	std::string resource_path() const {
-		return "arraystream";
-	}
+	uint32_t size() const;
+	void seek(uint32_t offset);
+	uint32_t tell() const;
+	void read_n(char* dest, uint32_t size);
+	void write_n(const char* data, uint32_t size);
+	std::string resource_path() const;
 
 private:
 	std::vector<char> _allocation;
@@ -329,36 +256,14 @@ private:
 // a stream to allow for more convenient access a texture within a disk image.
 class proxy_stream : public stream {
 public:
-	proxy_stream(stream* backing, uint32_t zero, uint32_t size)
-		: _backing(backing),
-		  _zero(zero),
-		  _size(size) {}
+	proxy_stream(stream* backing, uint32_t zero, uint32_t size);
 
-	uint32_t size() {
-		return std::min(_size, _backing->size() - _zero);
-	}
-
-	void seek(uint32_t offset) {
-		_backing->seek(offset + _zero);
-	}
-
-	uint32_t tell() {
-		return _backing->tell() - _zero;
-	}
-
-	void read_n(char* dest, uint32_t size) {
-		_backing->read_n(dest, size);
-	}
-
-	void write_n(const char* data, uint32_t size) {
-		_backing->write_n(data, size);
-	}
-
-	std::string resource_path() const {
-		std::stringstream to_hex;
-		to_hex << std::hex << _zero;
-		return _backing->resource_path() + "+0x" + to_hex.str();
-	}
+	uint32_t size() const;
+	void seek(uint32_t offset);
+	uint32_t tell() const;
+	void read_n(char* dest, uint32_t size);
+	void write_n(const char* data, uint32_t size);
+	std::string resource_path() const;
 
 private:
 	stream* _backing;

@@ -34,7 +34,7 @@ iso_stream::iso_stream(std::string game_id, std::string iso_path, worker_logger&
 	  _cache_meta_path(std::string("cache/editor_") + game_id + "_metadata.json"),
 	  _cache(init_cache(iso_path, log), std::ios::in | std::ios::out) {}
 
-uint32_t iso_stream::size() {
+uint32_t iso_stream::size() const {
 	return _cache.size();
 }
 
@@ -42,7 +42,7 @@ void iso_stream::seek(uint32_t offset) {
 	_cache.seek(offset);
 }
 
-uint32_t iso_stream::tell() {
+uint32_t iso_stream::tell() const {
 	return _cache.tell();
 }
 

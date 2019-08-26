@@ -27,8 +27,8 @@ texture_impl::texture_impl(stream* backing, offsets offsets_)
 	
 vec2i texture_impl::size() const {
 	return {
-		_backing.read_c<uint16_t>(_offsets.width),
-		_backing.read_c<uint16_t>(_offsets.height)
+		_backing.peek<uint16_t>(_offsets.width),
+		_backing.peek<uint16_t>(_offsets.height)
 	};
 }
 
@@ -39,7 +39,7 @@ void texture_impl::set_size(vec2i size_) {
 
 std::array<colour, 256> texture_impl::palette() const {
 	char data[1024];
-	_backing.read_nc(data, _offsets.palette, 1024);
+	_backing.peek_n(data, _offsets.palette, 1024);
 
 	std::array<colour, 256> result;
 	for(int i = 0; i < 256; i++) {
@@ -68,7 +68,7 @@ void texture_impl::set_palette(std::array<colour, 256> palette_) {
 std::vector<uint8_t> texture_impl::pixel_data() const {
 	vec2i size_ = size();
 	std::vector<uint8_t> result(size_.x * size_.y);
-	_backing.read_nc(reinterpret_cast<char*>(result.data()), _offsets.pixels, result.size());
+	_backing.peek_n(reinterpret_cast<char*>(result.data()), _offsets.pixels, result.size());
 	return result;
 }
 

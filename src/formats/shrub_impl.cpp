@@ -26,7 +26,7 @@ std::string shrub_impl::label() const {
 }
 
 glm::vec3 shrub_impl::position() const {
-	auto data = _backing.read_c<fmt::shrub>(0);
+	auto data = _backing.peek<fmt::shrub>(0);
 	return data.position.glm();
 }
 

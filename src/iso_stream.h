@@ -43,9 +43,9 @@ public:
 	iso_stream(std::string game_id, std::string iso_path, worker_logger& log); // New Project
 	iso_stream(std::string game_id, std::string iso_path, worker_logger& log, ZipArchive::Ptr root); // Open Project
 
-	uint32_t size() override;
+	uint32_t size() const override;
 	void seek(uint32_t offset) override;
-	uint32_t tell() override;
+	uint32_t tell() const override;
  	void read_n(char* dest, uint32_t size) override;
 	void write_n(const char* data, uint32_t size) override;
 

@@ -16,6 +16,7 @@ add_executable(wrench
 	src/app.cpp
 	src/command_line.cpp
 	src/gui.cpp
+	src/stream.cpp
 	src/window.cpp
 	src/renderer.cpp
 	src/shaders.cpp
@@ -48,6 +49,7 @@ endif()
 add_executable(fip
 	src/cli/fipcli.cpp
 	src/command_line.cpp
+	src/stream.cpp
 	src/formats/fip.cpp
 	src/formats/bmp.cpp
 )
@@ -55,12 +57,14 @@ add_executable(fip
 add_executable(wad
 	src/cli/wadcli.cpp
 	src/command_line.cpp
+	src/stream.cpp
 	src/formats/wad.cpp
 )
 
 add_executable(scan
 	src/cli/scancli.cpp
 	src/command_line.cpp
+	src/stream.cpp
 	src/formats/wad.cpp
 	src/formats/fip.cpp
 	src/formats/bmp.cpp
@@ -73,6 +77,7 @@ target_link_libraries(wrench ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 target_link_libraries(fip ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 target_link_libraries(wad ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 target_link_libraries(scan ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
+target_link_libraries(pakrac ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 
 # pthreads
 set(THREADS_PREFER_PTHREAD_FLAG ON)

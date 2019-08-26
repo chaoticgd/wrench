@@ -28,7 +28,7 @@ std::string moby_impl::label() const {
 }
 
 uint32_t moby_impl::uid() const {
-	auto data = _backing.read_c<fmt::moby>(0);
+	auto data = _backing.peek<fmt::moby>(0);
 	return data.uid;
 }
 
@@ -39,7 +39,7 @@ void moby_impl::set_uid(uint32_t uid_) {
 }
 
 uint16_t moby_impl::class_num() const {
-	auto data = _backing.read_c<fmt::moby>(0);
+	auto data = _backing.peek<fmt::moby>(0);
 	return data.class_num;
 }
 
@@ -51,7 +51,7 @@ void moby_impl::set_class_num(uint16_t class_num_) {
 
 
 glm::vec3 moby_impl::position() const {
-	auto data = _backing.read_c<fmt::moby>(0);
+	auto data = _backing.peek<fmt::moby>(0);
 	return data.position.glm();
 }
 
@@ -62,7 +62,7 @@ void moby_impl::set_position(glm::vec3 position_) {
 }
 
 glm::vec3 moby_impl::rotation() const {
-	auto data = _backing.read_c<fmt::moby>(0);
+	auto data = _backing.peek<fmt::moby>(0);
 	return data.rotation.glm();
 }
 
@@ -73,7 +73,7 @@ void moby_impl::set_rotation(glm::vec3 rotation_) {
 }
 
 std::string moby_impl::class_name() const {
-	auto data = _backing.read_c<fmt::moby>(0);
+	auto data = _backing.peek<fmt::moby>(0);
 	if(class_names.find(data.class_num) != class_names.end()) {
 		return class_names.at(data.class_num);
 	}
