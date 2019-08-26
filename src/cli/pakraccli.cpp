@@ -18,6 +18,7 @@
 
 #include <sstream>
 #include <iostream>
+#include <boost/filesystem.hpp>
 
 #include "../command_line.h"
 #include "../formats/racpak.h"
@@ -26,15 +27,17 @@
 #	CLI tool to inspect, unpack and repack .WAD archives (racpaks).
 # */
 
+std::string hex_string(uint32_t x);
+
 int main(int argc, char** argv) {
 	std::string command;
 	std::string src_path;
 	std::string dest_path;
 
-	po::options_description desc("Read a game archive file.");
+	po::options_description desc("Read a game archive file");
 	desc.add_options()
 		("command,c", po::value<std::string>(&command)->required(),
-			"The operation to perform.")
+			"The operation to perform. Available commands are: ls, extract.")
 		("src,s", po::value<std::string>(&src_path)->required(),
 			"The input file of directory.")
 		("dest,d", po::value<std::string>(&dest_path),
@@ -48,13 +51,13 @@ int main(int argc, char** argv) {
 	if(!parse_command_line_args(argc, argv, desc, pd)) {
 		return 0;
 	}
+	
+	file_stream src_file(src_path);
+	racpak archive(&src_file);
+	uint32_t num_entries = archive.num_entries();
 
 	if(command == "ls") {
-		file_stream src_file(src_path);
-		racpak archive(&src_file);
-
 		std::cout << "Index\tOffset\tSize\n";
-		uint32_t num_entries = archive.num_entries();
 		for(uint32_t i = 0; i < num_entries; i++) {
 			auto entry = archive.entry(i);
 			std::cout << std::dec;
@@ -63,7 +66,28 @@ int main(int argc, char** argv) {
 			std::cout << entry.offset << "\t";
 			std::cout << entry.size << "\n";
 		}
+	} else if(command == "extract") {
+		if(dest_path == "") {
+			std::cerr << "Must specify destination.\n";
+			return 0;
+		}
+		for(uint32_t i = 0; i < num_entries; i++) {
+			boost::filesystem::create_directory(dest_path);
+			
+			auto entry = archive.entry(i);
+			std::string dest_name = std::to_string(i) + "_" + hex_string(entry.offset);
+			file_stream dest(dest_path + "/" + dest_name, std::ios::in | std::ios::out | std::ios::trunc);
+			
+			stream* src = archive.open(entry);
+			stream::copy_n(dest, *src, src->size());
+		}
 	} else {
 		std::cerr << "Invalid command.\n";
 	}
+}
+
+std::string hex_string(uint32_t x) {
+	std::stringstream ss;
+	ss << std::hex << x;
+	return ss.str();
 }
