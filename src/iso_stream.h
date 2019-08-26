@@ -58,7 +58,7 @@ public:
 	void commit();
 
 	// Save patches to .wratch file.
-	void save_patches(ZipArchive::Ptr& root, std::string wratch_path);
+	void save_patches(ZipArchive::Ptr& root, std::string project_path);
 
 private:
 

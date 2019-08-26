@@ -108,7 +108,7 @@
 <!-- stream -->
 <g id="node10" class="node">
 <title>stream</title>
-<ellipse fill="none" stroke="#0000ff" cx="1228" cy="-181.4767" rx="136.4432" ry="37.4533"/>
+<ellipse fill="none" stroke="#000000" cx="1228" cy="-181.4767" rx="136.4432" ry="37.4533"/>
 <text text-anchor="middle" x="1228" y="-192.7767" font-family="Times,serif" font-size="14.00" fill="#000000">stream: A set of utility </text>
 <text text-anchor="middle" x="1228" y="-177.7767" font-family="Times,serif" font-size="14.00" fill="#000000">classes and macros for working </text>
 <text text-anchor="middle" x="1228" y="-162.7767" font-family="Times,serif" font-size="14.00" fill="#000000">with binary files. </text>

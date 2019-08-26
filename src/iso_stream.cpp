@@ -69,7 +69,7 @@ void iso_stream::commit() {
 	// Stub
 }
 
-void iso_stream::save_patches(ZipArchive::Ptr& root, std::string wratch_path) {
+void iso_stream::save_patches(ZipArchive::Ptr& root, std::string project_path) {
 	std::vector<nlohmann::json> patch_list;
 	std::vector<std::unique_ptr<std::stringstream>> patch_streams;
 	for(std::size_t i = 0; i < _patches.size(); i++) {
@@ -93,7 +93,7 @@ void iso_stream::save_patches(ZipArchive::Ptr& root, std::string wratch_path) {
 	patch_list_stream << patch_list_file.dump(4);
 
 	root->CreateEntry("patch_list.json")->SetCompressionStream(patch_list_stream);
-	ZipFile::SaveAndClose(root, wratch_path);
+	ZipFile::SaveAndClose(root, project_path);
 }
 
 std::vector<patch> iso_stream::read_patches(ZipArchive::Ptr root) {

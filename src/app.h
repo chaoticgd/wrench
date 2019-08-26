@@ -68,7 +68,7 @@ public:
 	int window_width, window_height;
 
 	void new_project();
-	void open_project(std::string wratch_path);
+	void open_project(std::string path);
 	void save_project(bool save_as);
 
 	std::string project_path();

@@ -45,7 +45,7 @@ public:
 class wrench_project {
 public:
 	wrench_project(std::string iso_path, worker_logger& log, std::string game_id); // New
-	wrench_project(std::string iso_path, std::string wratch_path, worker_logger& log); // Open
+	wrench_project(std::string iso_path, std::string project_path, worker_logger& log); // Open
 
 	std::string cached_iso_path() const;
 
@@ -57,7 +57,7 @@ private:
 
 	std::string read_game_id();
 
-	std::string _wratch_path;
+	std::string _project_path;
 	ZipArchive::Ptr _wratch_archive;
 	const std::string _game_id;
 	iso_stream _iso;

@@ -84,7 +84,7 @@ void app::new_project() {
 	));
 }
 
-void app::open_project(std::string wratch_path) {
+void app::open_project(std::string path) {
 	if(_lock_project) {
 		return;
 	}
@@ -93,7 +93,7 @@ void app::open_project(std::string wratch_path) {
 	_project.reset(nullptr);
 
 	using worker_type = worker_thread<project_ptr, std::pair<std::string, std::string>>;
-	std::pair<std::string, std::string> in(settings.game_paths["rc2pal"], wratch_path);
+	std::pair<std::string, std::string> in(settings.game_paths["rc2pal"], path);
 	windows.emplace_back(std::make_unique<worker_type>(
 		"Open Project", in,
 		[](std::pair<std::string, std::string> paths, worker_logger& log) {

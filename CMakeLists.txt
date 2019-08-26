@@ -77,7 +77,6 @@ target_link_libraries(wrench ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 target_link_libraries(fip ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 target_link_libraries(wad ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 target_link_libraries(scan ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
-target_link_libraries(pakrac ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 
 # pthreads
 set(THREADS_PREFER_PTHREAD_FLAG ON)

@@ -33,19 +33,19 @@ iso_views::iso_views(stream* iso_file, worker_logger& log)
 }
 
 wrench_project::wrench_project(std::string iso_path, worker_logger& log, std::string game_id)
-	: _wratch_path(""),
+	: _project_path(""),
 	  _wratch_archive(nullptr),
 	  _game_id(game_id),
 	  _iso(game_id, iso_path, log),
 	  views(&_iso, log) {}
 
-wrench_project::wrench_project(std::string iso_path, std::string wratch_path, worker_logger& log)
-	: _wratch_path(wratch_path),
-	  _wratch_archive(ZipFile::Open(wratch_path)),
+wrench_project::wrench_project(std::string iso_path, std::string project_path, worker_logger& log)
+	: _project_path(project_path),
+	  _wratch_archive(ZipFile::Open(project_path)),
 	  _game_id(read_game_id()),
 	  _iso(_game_id, iso_path, log, _wratch_archive),
 	  views(&_iso, log) {
-	ZipFile::SaveAndClose(_wratch_archive, wratch_path);
+	ZipFile::SaveAndClose(_wratch_archive, project_path);
 	_wratch_archive = nullptr;
 }
 
@@ -54,17 +54,17 @@ std::string wrench_project::cached_iso_path() const {
 }
 
 void wrench_project::save(app* a) {
-	if(_wratch_path == "") {
+	if(_project_path == "") {
 		save_as(a);
 	} else {
-		save_to(_wratch_path);
+		save_to(_project_path);
 	}
 }
 
 void wrench_project::save_as(app* a) {
 	auto dialog = a->emplace_window<gui::string_input>("Save Project");
 	dialog->on_okay([=](app& a, std::string path) {
-		_wratch_path = path;
+		_project_path = path;
 		save_to(path);
 	});
 }
@@ -86,7 +86,7 @@ void wrench_project::save_to(std::string path) {
 	root->CreateEntry("game_id")->SetCompressionStream(game_id_stream);
 
 	_iso.commit();
-	_iso.save_patches(root, _wratch_path); // Also closes the archive.
+	_iso.save_patches(root, _project_path); // Also closes the archive.
 }
 
 std::string wrench_project::read_game_id() {
