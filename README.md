@@ -9,29 +9,14 @@ Screenshots
 ![A screenshot of the level editor](screenshots/editor.png)
 ![Texture browser](screenshots/texture-browser.png)
 
-Status
-======
+Features
+========
 
-What works:
-
-- Features
-	- Viewing levels (only mobies currently).
-	- Editing some textures.
-	- Exporting a list of ingame strings.
-
-- Technical
-	- Decompressing WAD segments.
-	- Converting 2FIP textures to and from BMP files.
-
-What doesn't work:
-
-- Features
-	- Editing levels.
-	- Editing ingame strings.
-	- Editing some other textures including all transparent textures.
-
-- Technical
-	- Compressing WAD segments.
+- View levels.
+- Patching system.
+- Extract and replace certain textures.
+- Extract racpak (*.WAD) archives.
+- Decompress WAD segments (not to be confused with the *.WAD files on the game's filesystem).
 
 
 Building
@@ -43,9 +28,7 @@ Ubuntu 18.04
 1.	Install dependencies and tools:
 	> sudo apt install git cmake g++ libglew-dev libboost-all-dev libglfw3-dev libglm-dev python3 python3-pydot graphviz
 2.	Download the source code using Git:
-	> git clone -b master https://github.com/chaoticgd/wrench
-	
-	_Note: The default branch is develop, so if you don't specify `-b master` you will download a development build which will probably be unstable._
+	> git clone https://github.com/chaoticgd/wrench
 
 3.	Download the remaining dependencies using Git:
 	> git submodule update --init --recursive
