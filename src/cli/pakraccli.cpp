@@ -79,6 +79,7 @@ int main(int argc, char** argv) {
 			file_stream dest(dest_path + "/" + dest_name, std::ios::in | std::ios::out | std::ios::trunc);
 			
 			stream* src = archive.open(entry);
+			src->seek(0);
 			stream::copy_n(dest, *src, src->size());
 		}
 	} else {
