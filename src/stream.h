@@ -166,9 +166,19 @@ public:
 
 	// The dest and src streams should be different.
 	static void copy_n(stream& dest, stream& src, uint32_t size) {
-		std::vector<char> buffer(size);
-		src.read_n(buffer.data(), size);
-		dest.write_n(buffer.data(), size);
+		// Copy a megabyte at a time.
+		static const uint32_t chunk_size = 1024 * 1024;
+		std::vector<char> buffer(chunk_size);
+		for(uint32_t i = 0; i < size; i += 1024 * 1024) {
+			uint32_t copy_size;
+			if(i == size - 1) {
+				copy_size = size - i;
+			} else {
+				copy_size = chunk_size; 
+			}
+			src.read_n(buffer.data(), copy_size);
+			dest.write_n(buffer.data(), copy_size);
+		}
 	}
 
 	// Pretty print new data that has been written to the end of the buffer.

@@ -38,16 +38,16 @@
 	LEVEL*.WAD LAYOUT
 	=================
 
-	master_header
-	secondary_header {
+	racpak index: contents
+
+	0: ???
+	1: secondary_header {
 		texture_header {
 			... uncompressed textures ...
 		}
 	}
-	???
-	ram_image_wad
-	???
-	moby_wad: wad(
+	2: ???
+	3: moby_wad: wad(
 		level_header
 		???
 		some strings
@@ -55,7 +55,13 @@
 		moby_table
 		???
 	)
-	???
+	4: ???
+	5: ???
+	6: ram_image_wad
+	7: ???
+	8: ???
+	9: ???
+	10: ???
 
 	where entries in curly brackets are pointed to by a header, entries in
 	wad(...) are within a compressed segment.

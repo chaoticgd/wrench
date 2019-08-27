@@ -23,10 +23,13 @@
 #include "../command_line.h"
 #include "../formats/racpak.h"
 
+namespace fs = boost::filesystem;
+
 # /*
 #	CLI tool to inspect, unpack and repack .WAD archives (racpaks).
 # */
 
+void extract_archive(std::string dest_dir, racpak& archive);
 std::string hex_string(uint32_t x);
 
 int main(int argc, char** argv) {
@@ -37,7 +40,7 @@ int main(int argc, char** argv) {
 	po::options_description desc("Read a game archive file");
 	desc.add_options()
 		("command,c", po::value<std::string>(&command)->required(),
-			"The operation to perform. Available commands are: ls, extract.")
+			"The operation to perform. Available commands are: ls, extract, extractdir.")
 		("src,s", po::value<std::string>(&src_path)->required(),
 			"The input file of directory.")
 		("dest,d", po::value<std::string>(&dest_path),
@@ -51,12 +54,12 @@ int main(int argc, char** argv) {
 	if(!parse_command_line_args(argc, argv, desc, pd)) {
 		return 0;
 	}
-	
-	file_stream src_file(src_path);
-	racpak archive(&src_file);
-	uint32_t num_entries = archive.num_entries();
 
 	if(command == "ls") {
+		file_stream src_file(src_path);
+		racpak archive(&src_file);
+		
+		uint32_t num_entries = archive.num_entries();
 		std::cout << "Index\tOffset\tSize\n";
 		for(uint32_t i = 0; i < num_entries; i++) {
 			auto entry = archive.entry(i);
@@ -67,23 +70,55 @@ int main(int argc, char** argv) {
 			std::cout << entry.size << "\n";
 		}
 	} else if(command == "extract") {
+		file_stream src_file(src_path);
+		racpak archive(&src_file);
+		
 		if(dest_path == "") {
 			std::cerr << "Must specify destination.\n";
 			return 0;
 		}
-		for(uint32_t i = 0; i < num_entries; i++) {
-			boost::filesystem::create_directory(dest_path);
+		extract_archive(dest_path, archive);
+	} else if(command == "extractdir") {
+		if(dest_path == "") {
+			std::cerr << "Must specify destination.\n";
+			return 0;
+		}
+		auto begin = fs::directory_iterator(src_path);
+		auto end = fs::directory_iterator();
+		for(auto iter = begin; iter != end; iter++) {
+			auto path = iter->path();
 			
+			file_stream src_file(path.string());
+			racpak archive(&src_file);
+			
+			std::string dest_dir = dest_path + "/" + path.filename().string();
+			extract_archive(dest_dir, archive);
+		}
+	} else {
+		std::cerr << "Invalid command.\n";
+	}
+}
+
+void extract_archive(std::string dest_dir, racpak& archive) {
+	uint32_t num_entries = archive.num_entries();
+	if(num_entries > 4096) {
+		std::cerr << "Error: More than 4096 entries in " << dest_dir << "!? It's probably not a valid racpack.\n";
+		return;
+	}
+	for(uint32_t i = 0; i < num_entries; i++) {
+		try {
 			auto entry = archive.entry(i);
+			fs::create_directories(dest_dir);
+			
 			std::string dest_name = std::to_string(i) + "_" + hex_string(entry.offset);
-			file_stream dest(dest_path + "/" + dest_name, std::ios::in | std::ios::out | std::ios::trunc);
+			file_stream dest(dest_dir + "/" + dest_name, std::ios::in | std::ios::out | std::ios::trunc);
 			
 			stream* src = archive.open(entry);
 			src->seek(0);
 			stream::copy_n(dest, *src, src->size());
+		} catch(stream_error& e) {
+			std::cerr << "Error: Failed to extract item " << i << " for " << dest_dir << "\n";
 		}
-	} else {
-		std::cerr << "Invalid command.\n";
 	}
 }
 

@@ -30,6 +30,7 @@ level_impl::level_impl(stream* iso_file, uint32_t offset, uint32_t size, std::st
 
 	uint32_t secondary_header_offset =
 		locate_secondary_header(master_header, moby_wad_offset);
+	log << "snd" << std::hex << secondary_header_offset << "\n";
 
 	_textures.emplace(&_level_file, secondary_header_offset, display_name);
 	log << "\tDetected " << _textures->textures().size() << " textures.\n";
