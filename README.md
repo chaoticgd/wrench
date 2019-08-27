@@ -51,5 +51,4 @@ CLI Tools
 Scripts
 =======
 
-- extract_all.py: Extract all the known game segments in a given data file/ISO.
 - shuffle_gui_textures.py: Shuffles all the GUI textures in a given data file/ISO.
