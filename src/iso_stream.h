@@ -53,10 +53,6 @@ public:
 
 	std::string cached_iso_path() const;
 
-	// Compress all open WAD segments and commit the changes to the underlying
-	// iso_stream object.
-	void commit();
-
 	// Save patches to .wratch file.
 	void save_patches(ZipArchive::Ptr& root, std::string project_path);
 

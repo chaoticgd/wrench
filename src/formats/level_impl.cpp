@@ -18,24 +18,20 @@
 
 #include "level_impl.h"
 
-level_impl::level_impl(stream* iso_file, uint32_t offset, uint32_t size, std::string display_name, worker_logger& log)
-	: _level_file(iso_file, offset, size) {
+level_impl::level_impl(racpak* archive, std::string display_name, worker_logger& log)
+	: _archive(archive) {
 	
 	log << "Importing level " << display_name << "...\n";
 
-	auto master_header = _level_file.read<fmt::master_header>(0);
-	uint32_t moby_wad_offset = locate_moby_wad();
-	
-	_moby_segment_stream.emplace(&_level_file, moby_wad_offset);
+	if(archive->num_entries() < 4 || archive->num_entries() > 1024) {
+		throw stream_format_error("Invalid number of entries in archive!");
+	}
 
-	uint32_t secondary_header_offset =
-		locate_secondary_header(master_header, moby_wad_offset);
-	log << "snd" << std::hex << secondary_header_offset << "\n";
-
-	_textures.emplace(&_level_file, secondary_header_offset, display_name);
+	_textures.emplace(archive->open(archive->entry(1)), display_name);
 	log << "\tDetected " << _textures->textures().size() << " textures.\n";
 
-	auto segment_header = _moby_segment_stream->read<fmt::moby_segment::header>(0);
+	_moby_stream = archive->open_decompressed(archive->entry(3));
+	auto segment_header = _moby_stream->read<fmt::moby_segment::header>(0);
 	read_game_strings(segment_header, log);
 	read_models(segment_header, log);
 	read_shrubs(segment_header, log);
@@ -81,31 +77,31 @@ void level_impl::read_game_strings(fmt::moby_segment::header header, worker_logg
 	};
 
 	for(auto& [lang_name, lang_offset] : languages) {
-		auto table = _moby_segment_stream->read<fmt::moby_segment::string_table_header>(lang_offset);
+		auto table = _moby_stream->read<fmt::moby_segment::string_table_header>(lang_offset);
 		std::map<uint32_t, std::string> strings;
 		for(uint32_t i = 0; i < table.num_strings; i++) {
-			_moby_segment_stream->seek(
+			_moby_stream->seek(
 				lang_offset +
 				sizeof(fmt::moby_segment::string_table_header) +
 				sizeof(fmt::moby_segment::string_table_entry) * i);
-			auto entry = _moby_segment_stream->read<fmt::moby_segment::string_table_entry>();
-			_moby_segment_stream->seek(lang_offset + entry.string.value);
-			strings[entry.id] =_moby_segment_stream->read_string();
+			auto entry = _moby_stream->read<fmt::moby_segment::string_table_entry>();
+			_moby_stream->seek(lang_offset + entry.string.value);
+			strings[entry.id] =_moby_stream->read_string();
 		}
 		_game_strings[lang_name] = strings;
 	}
 }
 
 void level_impl::read_models(fmt::moby_segment::header header, worker_logger& log) {
-	auto table_header = _moby_segment_stream->read<fmt::moby_segment::model_table_header>(header.static_models.value);
+	auto table_header = _moby_stream->read<fmt::moby_segment::model_table_header>(header.static_models.value);
 	log << "\tDetected " << table_header.num_static_models << " models (stub).\n";
 }
 
 void level_impl::read_shrubs(fmt::moby_segment::header header, worker_logger& log) {
-	auto table = _moby_segment_stream->read<fmt::moby_segment::shrub_table_header>(header.shrubs.value);
+	auto table = _moby_stream->read<fmt::moby_segment::shrub_table_header>(header.shrubs.value);
 	for(uint32_t i = 0; i < table.num_shrubs; i++) {
 		_shrubs.emplace_back(std::make_unique<shrub_impl>(
-			&_moby_segment_stream.value(),
+			_moby_stream,
 			header.shrubs.value + sizeof(fmt::moby_segment::shrub_table_header) + i * 0x70
 		));
 	}
@@ -113,40 +109,12 @@ void level_impl::read_shrubs(fmt::moby_segment::header header, worker_logger& lo
 }
 
 void level_impl::read_mobies(fmt::moby_segment::header header, worker_logger& log) {
-	auto moby_header = _moby_segment_stream->read<fmt::moby_segment::moby_table_header>(header.mobies.value);
+	auto moby_header = _moby_stream->read<fmt::moby_segment::moby_table_header>(header.mobies.value);
 	std::map<uint32_t, moby*> mobies_;
 	for(uint32_t i = 0; i < moby_header.num_mobies; i++) {
 		_mobies.emplace_back(std::make_unique<moby_impl>(
-			&_moby_segment_stream.value(),
+			_moby_stream,
 			header.mobies.value + sizeof(fmt::moby_segment::moby_table_header) + i * 0x88));
 	}
 	log << "\tDetected " << moby_header.num_mobies << " mobies.\n";
-}
-
-uint32_t level_impl::locate_moby_wad() {
-	
-	// For now just find the largest 0x100 byte-aligned WAD segment.
-	// This should work for most levels.
-
-	uint32_t result_offset = 1;
-	long result_size = -1;
-	for(uint32_t offset = 0; offset < _level_file.size() - sizeof(wad_header); offset += 0x100) {
-		wad_header header = _level_file.read<wad_header>(offset);
-		if(validate_wad(header.magic) && header.total_size > result_size) {
-			result_offset = offset;
-			result_size = header.total_size;
-		}
-	}
-
-	if(result_offset == 1) {
-		throw stream_format_error("File does not contain a valid WAD segment.");
-	}
-	
-	return result_offset;
-}
-
-uint32_t level_impl::locate_secondary_header(const fmt::master_header& header, uint32_t moby_wad_offset) {
-	uint32_t secondary_header_delta =
-		(header.secondary_moby_offset_part * 0x800 + 0xfff) & 0xfffffffffffff000;
-	return moby_wad_offset - secondary_header_delta;
 }

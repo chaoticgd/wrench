@@ -50,8 +50,11 @@ class wad_stream : public array_stream {
 public:
 	wad_stream(stream* backing, uint32_t wad_offset);
 
+	// Compress this WAD segment and write the result to backing.
+	void commit();
+
 private:
-	stream* _backing;
+	proxy_stream _backing;
 	uint32_t _wad_offset;
 };
 

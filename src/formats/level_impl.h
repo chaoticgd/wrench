@@ -26,6 +26,7 @@
 #include "../stream.h"
 #include "../worker_logger.h"
 #include "wad.h"
+#include "racpak.h"
 #include "moby_impl.h"
 #include "shrub_impl.h"
 #include "texture_impl.h"
@@ -70,19 +71,7 @@
 class level_impl : public level {
 public:
 	struct fmt {
-		struct master_header;
 		struct secondary_header;
-
-		packed_struct(master_header,
-			uint8_t unknown1[0x14];              // 0x0
-			// The offset between the secondary header and the moby WAD is
-			// (secondary_moby_offset_part * 0x800 + 0xfff) & 0xfffffffffffff000.
-			uint32_t secondary_moby_offset_part; // 0x14
-			uint8_t unknown2[0xc];               // 0x18
-			// The offset between something and the moby WAD is
-			// moby_wad_offset_part * 0x800 + 0xfffU & 0xfffff000
-			uint32_t moby_wad_offset_part;       // 0x28
-		)
 
 		// Pointers are relative to this header.
 		packed_struct(secondary_header,
@@ -191,7 +180,7 @@ public:
 		};
 	};
 
-	level_impl(stream* iso_file, uint32_t offset, uint32_t size, std::string display_name, worker_logger& log);
+	level_impl(racpak* archive, std::string display_name, worker_logger& log);
 
 	texture_provider* get_texture_provider();
 
@@ -206,12 +195,9 @@ private:
 	void read_shrubs(fmt::moby_segment::header header, worker_logger& log);
 	void read_mobies(fmt::moby_segment::header header, worker_logger& log);
 
-	uint32_t locate_moby_wad();
-	uint32_t locate_secondary_header(const fmt::master_header& header, uint32_t moby_wad_offset);
-
-	proxy_stream _level_file;
+	racpak* _archive;
 	std::optional<level_texture_provider> _textures;
-	std::optional<wad_stream> _moby_segment_stream;
+	stream* _moby_stream;
 	std::vector<std::unique_ptr<shrub_impl>> _shrubs;
 	std::vector<std::unique_ptr<moby_impl>> _mobies;
 	std::map<std::string, std::map<uint32_t, std::string>> _game_strings;

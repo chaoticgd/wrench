@@ -35,7 +35,7 @@ struct racpak_entry {
 
 class racpak {
 public:
-	racpak(stream* backing);
+	racpak(stream* backing, uint32_t offset, uint32_t size);
 
 	uint32_t num_entries();
 	racpak_entry entry(uint32_t index);
@@ -43,9 +43,13 @@ public:
 	
 	bool is_compressed(racpak_entry entry);
 	stream* open_decompressed(racpak_entry entry);
+	
+	// Compress WAD segments and write them to the iso_stream.
+	void commit();
+	
 private:
 
-	stream* _backing;
+	proxy_stream _backing;
 	std::vector<std::unique_ptr<proxy_stream>> _open_segments;
 	std::vector<std::unique_ptr<wad_stream>> _wad_segments;
 };

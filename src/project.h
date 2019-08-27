@@ -23,6 +23,7 @@
 
 #include "iso_stream.h"
 #include "worker_logger.h"
+#include "formats/racpak.h"
 #include "formats/level_impl.h"
 #include "formats/texture_impl.h"
 
@@ -33,10 +34,10 @@
 
 class app;
 
-class iso_views {
-public:
+struct iso_views {
 	iso_views(stream* iso_file, worker_logger& log);
 
+	std::vector<std::unique_ptr<racpak>> racpaks;
 	std::map<int, std::unique_ptr<level_impl>> levels;
 	fip_scanner space_wad;
 	fip_scanner armor_wad;

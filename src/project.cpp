@@ -29,7 +29,8 @@
 iso_views::iso_views(stream* iso_file, worker_logger& log)
 	: space_wad(iso_file, 0x7e041800, 0x10fa980, "SPACE.WAD",  log),
 	  armor_wad(iso_file, 0x7fa3d800, 0x25d930,  "ARMOR.WAD",  log) {
-	levels[4] = std::make_unique<level_impl>(iso_file, 0x8d794800, 0x17999dc, "LEVEL4.WAD", log);
+	racpaks.emplace_back(std::make_unique<racpak>(iso_file, 0x8d794800, 0x17999dc));
+	levels[4] = std::make_unique<level_impl>(racpaks.back().get(), "LEVEL4.WAD", log);
 }
 
 wrench_project::wrench_project(std::string iso_path, worker_logger& log, std::string game_id)
@@ -85,7 +86,10 @@ void wrench_project::save_to(std::string path) {
 	game_id_stream << _game_id;
 	root->CreateEntry("game_id")->SetCompressionStream(game_id_stream);
 
-	_iso.commit();
+	// Compress WAD segments and write them to the iso_stream.
+	for(auto& racpak : views.racpaks) {
+		racpak->commit();
+	}
 	_iso.save_patches(root, _project_path); // Also closes the archive.
 }
 

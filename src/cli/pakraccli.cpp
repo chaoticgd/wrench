@@ -57,7 +57,7 @@ int main(int argc, char** argv) {
 
 	if(command == "ls") {
 		file_stream src_file(src_path);
-		racpak archive(&src_file);
+		racpak archive(&src_file, 0, src_file.size());
 		
 		uint32_t num_entries = archive.num_entries();
 		std::cout << "Index\tOffset\tSize\n";
@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
 		}
 	} else if(command == "extract") {
 		file_stream src_file(src_path);
-		racpak archive(&src_file);
+		racpak archive(&src_file, 0, src_file.size());
 		
 		if(dest_path == "") {
 			std::cerr << "Must specify destination.\n";
@@ -89,7 +89,7 @@ int main(int argc, char** argv) {
 			auto path = iter->path();
 			
 			file_stream src_file(path.string());
-			racpak archive(&src_file);
+			racpak archive(&src_file, 0, src_file.size());
 			
 			std::string dest_dir = dest_path + "/" + path.filename().string();
 			extract_archive(dest_dir, archive);

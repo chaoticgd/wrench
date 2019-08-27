@@ -65,10 +65,6 @@ std::string iso_stream::cached_iso_path() const {
 	return _cache_iso_path;
 }
 
-void iso_stream::commit() {
-	// Stub
-}
-
 void iso_stream::save_patches(ZipArchive::Ptr& root, std::string project_path) {
 	std::vector<nlohmann::json> patch_list;
 	std::vector<std::unique_ptr<std::stringstream>> patch_streams;

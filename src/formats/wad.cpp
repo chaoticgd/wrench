@@ -548,7 +548,12 @@ uint32_t num_equal_bytes(stream& st, uint32_t l, uint32_t r) {
 }
 
 wad_stream::wad_stream(stream* backing, uint32_t wad_offset)
-	: _backing(backing), _wad_offset(wad_offset) {
-	proxy_stream compressed_data(backing, wad_offset, backing->size() - wad_offset);
-	decompress_wad(*this, compressed_data);
+	: _backing(backing, wad_offset, backing->size() - wad_offset),
+	  _wad_offset(wad_offset) {
+	decompress_wad(*this, *backing);
+}
+
+void wad_stream::commit() {
+	// Currently doesn't work.
+	// compress_wad(*backing, *this);
 }

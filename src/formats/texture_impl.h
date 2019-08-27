@@ -128,7 +128,7 @@ public:
 		};
 	};
 
-	level_texture_provider(stream* level_file, uint32_t secondary_header_offset, std::string display_name_);
+	level_texture_provider(stream* secondary_header, std::string display_name_);
 
 	std::string display_name() const override;
 	std::vector<texture*> textures() override;

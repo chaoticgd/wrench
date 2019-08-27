@@ -129,19 +129,18 @@ std::vector<texture*> texture_provider_impl::textures() {
 }
 
 level_texture_provider::level_texture_provider(
-	stream* level_file,
-	uint32_t secondary_header_offset,
+	stream* secondary_header,
 	std::string display_name_) {
 
-	auto snd_header = level_file->read<level_impl::fmt::secondary_header>(secondary_header_offset);
+	auto snd_header = secondary_header->read<level_impl::fmt::secondary_header>(0);
 	uint32_t pixel_data_offet = snd_header.tex_pixel_data_base;
 	uint32_t textures_ptr = snd_header.textures.value;
-	auto tex_header = level_file->read<fmt::header>(secondary_header_offset + textures_ptr);
+	auto tex_header = secondary_header->read<fmt::header>(textures_ptr);
 
 	_impl.emplace(
-		level_file,
-		secondary_header_offset + textures_ptr + tex_header.textures.value,
-		secondary_header_offset + pixel_data_offet,
+		secondary_header,
+		textures_ptr + tex_header.textures.value,
+		pixel_data_offet,
 		tex_header.num_textures,
 		display_name_
 	);

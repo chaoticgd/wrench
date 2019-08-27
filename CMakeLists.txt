@@ -28,6 +28,7 @@ add_executable(wrench
 	src/iso_stream.cpp
 	src/shapes.cpp
 	src/formats/wad.cpp
+	src/formats/racpak.cpp
 	src/formats/level_impl.cpp
 	src/formats/shrub_impl.cpp
 	src/formats/moby_impl.cpp
