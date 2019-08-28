@@ -26,18 +26,47 @@
 #include "gui.h"
 #include "build.h"
 
-iso_views::iso_views(stream* iso_file, worker_logger& log)
-	: racpaks([=]() {
-		std::vector<std::unique_ptr<racpak>> result;
-		result.emplace_back(std::make_unique<racpak>(iso_file, 0x8d794800, 0x17999dc));
-		result.emplace_back(std::make_unique<racpak>(iso_file, 0x7360f800, 0x242b30f));
-		return result;
-	  }()),
-	  space_wad(iso_file, 0x7e041800, 0x10fa980, "SPACE.WAD", log),
-	  armor_wad(iso_file, 0x7fa3d800, 0x25d930,  "ARMOR.WAD", log),
-	  hud_wad(racpaks[1].get(), "HUD.WAD", log) {
+enum wad_type {
+	wad_type_texture = 1,
+	wad_type_texture_scanner = 2,
+	wad_type_level = 4
+};
+
+struct wad_metadata {
+	const char* name;
+	uint32_t offset;
+	uint32_t size;
+	wad_type type;	
+};
+
+const static std::vector<wad_metadata> racpak_files {
+	{ "SPACE.WAD",  0x7e041800, 0x10fa980, wad_type_texture         },
+	{ "ARMOR.WAD",  0x7fa3d800, 0x25d930,  wad_type_texture_scanner },
+	{ "HUD.WAD",    0x7360f800, 0x242b30f, wad_type_texture         },
+	{ "LEVEL4.WAD", 0x8d794800, 0x17999dc, wad_type_level           }
+};
+
+iso_views::iso_views(stream* iso_file, worker_logger& log) {
 	
-	levels[4] = std::make_unique<level_impl>(racpaks[0].get(), "LEVEL4.WAD", log);
+	for(auto& file : racpak_files) {
+		racpaks.emplace_back(std::make_unique<racpak>
+			(iso_file, file.offset, file.size));
+		
+		if(file.type & wad_type_texture) {
+			texture_wads.emplace_back(std::make_unique<racpak_fip_scanner>
+				(racpaks.back().get(), file.name, log));
+		}
+		
+		if(file.type & wad_type_texture_scanner) {
+			texture_wads.emplace_back(std::make_unique<fip_scanner>
+				(iso_file, file.offset, file.size, file.name, log));
+		}
+		
+		if(file.type & wad_type_level) {
+			levels.emplace(file.name, std::make_unique<level_impl>
+				(racpaks.back().get(), file.name, log));
+		}
+	}
 }
 
 wrench_project::wrench_project(std::string iso_path, worker_logger& log, std::string game_id)

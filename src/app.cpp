@@ -42,8 +42,8 @@ app::app()
 level* app::get_level() {
 	if(_project) {
 		auto& levels = _project->views.levels;
-		if(levels.find(4) != levels.end()) {
-			return levels.at(4).get();
+		if(levels.find("LEVEL4.WAD") != levels.end()) {
+			return levels.at("LEVEL4.WAD").get();
 		}
 	}
 	return nullptr;
@@ -164,9 +164,9 @@ std::vector<texture_provider*> app::texture_providers() {
 		for(auto& level : _project->views.levels) {
 			result.push_back(level.second->get_texture_provider());
 		}
-		result.push_back(&_project->views.space_wad);
-		result.push_back(&_project->views.armor_wad);
-		result.push_back(&_project->views.hud_wad);
+		for(auto& scanner : _project->views.texture_wads) {
+			result.push_back(scanner.get());
+		}
 	}
 	return result;
 }

@@ -38,10 +38,8 @@ struct iso_views {
 	iso_views(stream* iso_file, worker_logger& log);
 
 	std::vector<std::unique_ptr<racpak>> racpaks;
-	std::map<int, std::unique_ptr<level_impl>> levels;
-	fip_scanner space_wad;
-	fip_scanner armor_wad;
-	racpak_fip_scanner hud_wad;
+	std::vector<std::unique_ptr<texture_provider>> texture_wads;
+	std::map<std::string, std::unique_ptr<level_impl>> levels;
 };
 
 class wrench_project {
