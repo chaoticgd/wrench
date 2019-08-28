@@ -34,13 +34,13 @@ void gui::render(app& a) {
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
+	begin_docking();
 	render_menu_bar(a);
 
 	for(auto& current_window : a.windows) {
 		if(current_window.get() == nullptr) {
 			continue;
 		}
-		ImGui::SetNextWindowSize(current_window->initial_size(), ImGuiCond_Appearing);
 		std::string title =
 			std::string(current_window->title_text()) +
 			"##" + std::to_string(current_window->id());
@@ -50,6 +50,30 @@ void gui::render(app& a) {
 		}
 		ImGui::End();
 	}
+	
+	ImGui::End(); // docking
+}
+
+void gui::begin_docking() {
+	ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+	ImGuiViewport* viewport = ImGui::GetMainViewport();
+	ImGui::SetNextWindowPos(viewport->Pos);
+	ImGui::SetNextWindowSize(viewport->Size);
+	ImGui::SetNextWindowViewport(viewport->ID);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+	window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+	window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+
+	static bool p_open;
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+	ImGui::Begin("##dock_space", &p_open, window_flags);
+	ImGui::PopStyleVar();
+	
+	ImGui::PopStyleVar(2);
+
+	ImGuiID dockspace_id = ImGui::GetID("dock_space");
+	ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
 }
 
 void gui::render_menu_bar(app& a) {
@@ -644,7 +668,7 @@ void gui::file_dialog::render(app& a) {
 				continue;
 			}
 
-			std::string name = std::string("    ") + item.filename().string();
+			std::string name = std::string("	") + item.filename().string();
 			if(ImGui::Selectable(name.c_str(), false)) {
 				_file = item.string();
 			}

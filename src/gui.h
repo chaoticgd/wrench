@@ -40,6 +40,8 @@ namespace gui {
 	void render(app& a);
 	void render_menu_bar(app& a);
 
+	void begin_docking();
+
 	template <typename T, typename... T_constructor_args>
 	void render_menu_bar_window_toggle(app& a, T_constructor_args... args);
 
