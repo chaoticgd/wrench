@@ -167,6 +167,7 @@ public:
 	std::vector<texture*> textures() override;
 private:
 	std::vector<std::unique_ptr<texture_impl>> _textures;
+	std::map<uint32_t, std::unique_ptr<array_stream>> _decompressed_streams;
 	std::string _display_name;
 };
 
