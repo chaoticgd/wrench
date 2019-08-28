@@ -166,6 +166,7 @@ std::vector<texture_provider*> app::texture_providers() {
 		}
 		result.push_back(&_project->views.space_wad);
 		result.push_back(&_project->views.armor_wad);
+		result.push_back(&_project->views.hud_wad);
 	}
 	return result;
 }

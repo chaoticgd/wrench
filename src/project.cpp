@@ -27,10 +27,17 @@
 #include "build.h"
 
 iso_views::iso_views(stream* iso_file, worker_logger& log)
-	: space_wad(iso_file, 0x7e041800, 0x10fa980, "SPACE.WAD",  log),
-	  armor_wad(iso_file, 0x7fa3d800, 0x25d930,  "ARMOR.WAD",  log) {
-	racpaks.emplace_back(std::make_unique<racpak>(iso_file, 0x8d794800, 0x17999dc));
-	levels[4] = std::make_unique<level_impl>(racpaks.back().get(), "LEVEL4.WAD", log);
+	: racpaks([=]() {
+		std::vector<std::unique_ptr<racpak>> result;
+		result.emplace_back(std::make_unique<racpak>(iso_file, 0x8d794800, 0x17999dc));
+		result.emplace_back(std::make_unique<racpak>(iso_file, 0x7360f800, 0x242b30f));
+		return result;
+	  }()),
+	  space_wad(iso_file, 0x7e041800, 0x10fa980, "SPACE.WAD", log),
+	  armor_wad(iso_file, 0x7fa3d800, 0x25d930,  "ARMOR.WAD", log),
+	  hud_wad(racpaks[1].get(), "HUD.WAD", log) {
+	
+	levels[4] = std::make_unique<level_impl>(racpaks[0].get(), "LEVEL4.WAD", log);
 }
 
 wrench_project::wrench_project(std::string iso_path, worker_logger& log, std::string game_id)

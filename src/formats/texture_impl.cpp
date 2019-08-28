@@ -194,3 +194,50 @@ std::vector<texture*> fip_scanner::textures() {
 		[](auto& ptr) { return ptr.get(); });
 	return result;
 }
+
+racpak_fip_scanner::racpak_fip_scanner(
+		racpak* archive,
+		std::string display_name_,
+		worker_logger& log)
+	: _display_name(display_name_) {
+	
+	log << "Importing textures from " << display_name_ << " racpak... ";
+	
+	for(uint32_t i = 0; i < archive->num_entries(); i++) {
+		auto entry = archive->entry(i);
+		
+		stream* file;
+		if(archive->is_compressed(entry)) {
+			file = archive->open_decompressed(entry);
+		} else {
+			file = archive->open(entry);
+		}
+		
+		char magic[4];
+		file->seek(0);
+		file->read_n(magic, 4);
+		if(validate_fip(magic)) {
+			texture_impl::offsets offsets {
+				offsetof32(fip_header, palette),
+				static_cast<uint32_t>(sizeof(fip_header)),
+				offsetof32(fip_header, width),
+				offsetof32(fip_header, height)
+			};
+			_textures.emplace_back(
+				std::make_unique<texture_impl>(file, offsets));
+		}
+	}
+	
+	log << "DONE!\n";
+}
+
+std::string racpak_fip_scanner::display_name() const {
+	return _display_name;
+}
+
+std::vector<texture*> racpak_fip_scanner::textures() {
+	std::vector<texture*> result(_textures.size());
+	std::transform(_textures.begin(), _textures.end(), result.begin(),
+		[](auto& ptr) { return ptr.get(); });
+	return result;
+}

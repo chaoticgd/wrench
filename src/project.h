@@ -41,6 +41,7 @@ struct iso_views {
 	std::map<int, std::unique_ptr<level_impl>> levels;
 	fip_scanner space_wad;
 	fip_scanner armor_wad;
+	racpak_fip_scanner hud_wad;
 };
 
 class wrench_project {

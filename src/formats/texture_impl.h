@@ -27,6 +27,7 @@
 #include "../texture.h"
 #include "../worker_logger.h"
 #include "wad.h"
+#include "racpak.h"
 
 # /*
 #	A texture stored using a stream. The member function wrap read/write calls.
@@ -151,6 +152,20 @@ public:
 
 private:
 	proxy_stream _search_space;
+	std::vector<std::unique_ptr<texture_impl>> _textures;
+	std::string _display_name;
+};
+
+class racpak_fip_scanner : public texture_provider {
+public:
+	racpak_fip_scanner(
+		racpak* archive,
+		std::string display_name_,
+		worker_logger& log);
+	
+	std::string display_name() const override;
+	std::vector<texture*> textures() override;
+private:
 	std::vector<std::unique_ptr<texture_impl>> _textures;
 	std::string _display_name;
 };
