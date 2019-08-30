@@ -43,6 +43,7 @@ const static std::vector<wad_metadata> racpak_files {
 	{ "SPACE.WAD",  0x7e041800, 0x10fa980, wad_type_texture         },
 	{ "ARMOR.WAD",  0x7fa3d800, 0x25d930,  wad_type_texture_scanner },
 	{ "HUD.WAD",    0x7360f800, 0x242b30f, wad_type_texture         },
+	{ "BONUS.WAD",  0x75a3b000, 0x1e49ea5, wad_type_texture         },
 	{ "LEVEL4.WAD", 0x8d794800, 0x17999dc, wad_type_level           }
 };
 
