@@ -20,6 +20,7 @@
 #include <iostream>
 #include <boost/filesystem.hpp>
 
+#include "../util.h"
 #include "../command_line.h"
 #include "../formats/fip.h"
 #include "../formats/wad.h"
@@ -33,12 +34,12 @@ namespace fs = boost::filesystem;
 
 void extract_archive(std::string dest_dir, racpak& archive);
 void scan_for_archives(std::string src_path);
-std::string hex_string(std::size_t x);
 
 int main(int argc, char** argv) {
 	std::string command;
 	std::string src_path;
 	std::string dest_path;
+	std::string src_offset_str;
 
 	po::options_description desc("Read a game archive file");
 	desc.add_options()
@@ -47,7 +48,9 @@ int main(int argc, char** argv) {
 		("src,s", po::value<std::string>(&src_path)->required(),
 			"The input file of directory.")
 		("dest,d", po::value<std::string>(&dest_path),
-			"The output file or directory (if applicable).");
+			"The output file or directory (if applicable).")
+		("offset,o", po::value<std::string>(&src_offset_str)->default_value("0"),
+			"The offset of the racpak within the source file. Only applicable when in extract mode (not extractdir).");
 
 	po::positional_options_description pd;
 	pd.add("command", 1);
@@ -74,7 +77,7 @@ int main(int argc, char** argv) {
 		}
 	} else if(command == "extract") {
 		file_stream src_file(src_path);
-		racpak archive(&src_file, 0, src_file.size());
+		racpak archive(&src_file, parse_number(src_offset_str), src_file.size());
 		
 		if(dest_path == "") {
 			std::cerr << "Must specify destination.\n";
@@ -115,7 +118,7 @@ void extract_archive(std::string dest_dir, racpak& archive) {
 			auto entry = archive.entry(i);
 			fs::create_directories(dest_dir);
 			
-			std::string dest_name = std::to_string(i) + "_" + hex_string(entry.offset);
+			std::string dest_name = std::to_string(i) + "_" + int_to_hex(entry.offset);
 			file_stream dest(dest_dir + "/" + dest_name, std::ios::in | std::ios::out | std::ios::trunc);
 			
 			stream* src = archive.open(entry);
@@ -172,10 +175,4 @@ void scan_for_archives(std::string src_path) {
 			}
 		}
 	}
-}
-
-std::string hex_string(std::size_t x) {
-	std::stringstream ss;
-	ss << std::hex << x;
-	return ss.str();
 }

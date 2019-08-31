@@ -73,6 +73,7 @@ add_executable(scan
 
 add_executable(pakrac
 	src/cli/pakraccli.cpp
+	src/util.cpp
 	src/command_line.cpp
 	src/stream.cpp
 	src/formats/racpak.cpp
