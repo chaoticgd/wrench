@@ -47,6 +47,7 @@ int main(int argc, char** argv) {
 	}
 
 	app a;
+	a.windows.emplace_back(std::make_unique<gui::project_tree>());
 	a.windows.emplace_back(std::make_unique<gui::moby_list>());
 	a.windows.emplace_back(std::make_unique<inspector>(&a.this_any));
 	a.windows.emplace_back(std::make_unique<view_3d>(&a));
@@ -122,13 +123,13 @@ int main(int argc, char** argv) {
 
 void update_camera_movement(app* a) {
 	if(auto view = a->get_3d_view()) {
-		if(!(*view)->camera_control) {
+		if(!view->camera_control) {
 			return;
 		}
 
 		float dist = glm::distance(glm::vec2(0, 0), a->mouse_diff) * 2;
-		float dx = std::sin((*view)->camera_rotation.y) * dist;
-		float dz = std::cos((*view)->camera_rotation.y) * dist;
+		float dx = std::sin(view->camera_rotation.y) * dist;
+		float dz = std::cos(view->camera_rotation.y) * dist;
 
 		auto is_down = [=](int key) {
 			return a->keys_down.find(key) != a->keys_down.end();
@@ -157,7 +158,7 @@ void update_camera_movement(app* a) {
 		if(is_down(GLFW_KEY_LEFT_SHIFT)) {
 			movement.z -= dist;
 		}
-		(*view)->camera_position += movement;
+		view->camera_position += movement;
 	}
 }
 
@@ -171,9 +172,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		}
 
 		if(action == GLFW_PRESS && key == GLFW_KEY_Z) {
-			(*view)->camera_control = !(*view)->camera_control;
+			view->camera_control = !view->camera_control;
 			glfwSetInputMode(window, GLFW_CURSOR,
-				(*view)->camera_control ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+				view->camera_control ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 		}
 	} else {
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
@@ -186,9 +187,9 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
 		a->mouse_diff = glm::vec2(xpos, ypos) - a->mouse_last;
 		a->mouse_last = glm::vec2(xpos, ypos);
 
-		if((*view)->camera_control) {
-			(*view)->camera_rotation.y += a->mouse_diff.x * 0.0005;
-			(*view)->camera_rotation.x -= a->mouse_diff.y * 0.0005;
+		if(view->camera_control) {
+			view->camera_rotation.y += a->mouse_diff.x * 0.0005;
+			view->camera_rotation.x -= a->mouse_diff.y * 0.0005;
 		}
 	}
 }

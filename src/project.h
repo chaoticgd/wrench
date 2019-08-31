@@ -34,14 +34,6 @@
 
 class app;
 
-struct iso_views {
-	iso_views(stream* iso_file, worker_logger& log);
-
-	std::vector<std::unique_ptr<racpak>> racpaks;
-	std::vector<std::unique_ptr<texture_provider>> texture_wads;
-	std::map<std::string, std::unique_ptr<level_impl>> levels;
-};
-
 class wrench_project {
 public:
 	wrench_project(std::string iso_path, worker_logger& log, std::string game_id); // New
@@ -51,6 +43,22 @@ public:
 
 	void save(app* a);
 	void save_as(app* a);
+	
+	level* selected_level();
+	std::vector<level*> levels();
+	std::vector<texture_provider*> texture_providers();
+	
+	// Views are objects that access the game's data structures and expose an
+	// abstracted interface to view and modify them. Available views are a list
+	// of all supported views, not only those that are currently loaded.
+	std::vector<std::string> available_view_types();
+	std::vector<std::string> available_views(std::string group);
+	void select_view(std::string group, std::string view);
+	
+	racpak* open_archive(uint32_t offset, uint32_t size);
+	void open_texture_archive(uint32_t offset, uint32_t size);
+	void open_texture_scanner(uint32_t offset, uint32_t size);
+	void open_level(uint32_t offset, uint32_t size);
 
 private:
 	void save_to(std::string path);
@@ -61,9 +69,15 @@ private:
 	ZipArchive::Ptr _wratch_archive;
 	const std::string _game_id;
 	iso_stream _iso;
-
-public:
-	iso_views views;
+	
+	using view_group = std::map<std::string, std::function<void(wrench_project*)>>;
+	static const std::map<std::string, view_group> _views;
+	std::string _next_view_name;
+	
+	std::map<uint32_t, std::unique_ptr<racpak>> _archives;
+	std::map<uint32_t, std::unique_ptr<texture_provider>> _texture_wads;
+	std::map<uint32_t, std::unique_ptr<level_impl>> _levels;
+	level* _selected_level;
 };
 
 #endif

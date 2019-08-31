@@ -126,6 +126,7 @@ void gui::render_menu_bar(app& a) {
 	}
 
 	if(ImGui::BeginMenu("Windows")) {
+		render_menu_bar_window_toggle<project_tree>(a);
 		render_menu_bar_window_toggle<view_3d>(a, &a);
 		render_menu_bar_window_toggle<moby_list>(a);
 		render_menu_bar_window_toggle<inspector>(a, &a.this_any);
@@ -136,6 +137,44 @@ void gui::render_menu_bar(app& a) {
 		ImGui::EndMenu();
 	}
 	ImGui::EndMainMenuBar();
+}
+
+/*
+	project_tree
+*/
+
+const char* gui::project_tree::title_text() const {
+	return "Project";
+}
+
+ImVec2 gui::project_tree::initial_size() const {
+	return ImVec2(200, 500);
+}
+
+void gui::project_tree::render(app& a) {
+	auto project = a.get_project();
+	if(!project) {
+		ImGui::Text("<no project open>");
+		return;
+	}
+	
+	ImGui::BeginChild(1);
+	for(std::string group : project->available_view_types()) {
+		if(ImGui::TreeNode(group.c_str())) {
+			for(std::string view : project->available_views(group)) {
+				if(ImGui::Button(view.c_str())) {
+					project->select_view(group, view);
+					if(group == "Levels") {
+						if(auto window = a.get_3d_view()) {
+							window->reset_camera(a);
+						}
+					}
+				}
+			}
+			ImGui::TreePop();
+		}
+	}
+	ImGui::EndChild();
 }
 
 /*
@@ -189,17 +228,17 @@ ImVec2 gui::viewport_information::initial_size() const {
 void gui::viewport_information::render(app& a) {
 	if(auto view = a.get_3d_view()) {
 
-		glm::vec3 cam_pos = (*view)->camera_position;
+		glm::vec3 cam_pos = view->camera_position;
 		ImGui::Text("Camera Position:\n\t%.3f, %.3f, %.3f",
 			cam_pos.x, cam_pos.y, cam_pos.z);
-		glm::vec2 cam_rot = (*view)->camera_rotation;
+		glm::vec2 cam_rot = view->camera_rotation;
 		ImGui::Text("Camera Rotation:\n\tPitch=%.3f, Yaw=%.3f",
 			cam_rot.x, cam_rot.y);
 		ImGui::Text("Camera Control (Z to toggle):\n\t%s",
-			(*view)->camera_control ? "On" : "Off");
+			view->camera_control ? "On" : "Off");
 
 		if(ImGui::Button("Reset Camera")) {
-			(*view)->reset_camera(a);
+			view->reset_camera(a);
 		}
 	}
 }
@@ -289,12 +328,12 @@ ImVec2 gui::texture_browser::initial_size() const {
 }
 
 void gui::texture_browser::render(app& a) {
-	if(!a.get_level()) {
-		ImGui::Text("<no level open>");
+	if(!a.get_project()) {
+		ImGui::Text("<no project open>");
 		return;
 	}
 
-	std::vector<texture_provider*> sources = a.texture_providers();
+	std::vector<texture_provider*> sources = a.get_project()->texture_providers();
 	if(_provider >= sources.size()) {
 		_provider = 0;
 

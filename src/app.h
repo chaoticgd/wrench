@@ -24,7 +24,6 @@
 #include <atomic>
 #include <vector>
 #include <memory>
-#include <optional>
 #include <functional>
 #include <glm/glm.hpp>
 
@@ -73,13 +72,14 @@ public:
 
 	std::string project_path();
 
+	wrench_project* get_project();
+	const wrench_project* get_project() const;
+	
 	level* get_level();
 	const level* get_level() const;
 
 	bool has_camera_control();
-	std::optional<view_3d*> get_3d_view();
-
-	std::vector<texture_provider*> texture_providers();
+	view_3d* get_3d_view();
 
 	std::any this_any;
 

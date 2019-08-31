@@ -45,7 +45,7 @@ public:
 	void draw_current_level(const app& a) const;
 	void draw_level(const level& lvl) const;
 	void draw_model(const model& mdl, glm::mat4 mvp, glm::vec3 colour) const;
-
+	
 	void draw_overlay_text(const app& a) const;
 
 	glm::mat4 get_view_projection_matrix() const;

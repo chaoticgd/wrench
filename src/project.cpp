@@ -26,63 +26,18 @@
 #include "gui.h"
 #include "build.h"
 
-enum wad_type {
-	wad_type_texture = 1,
-	wad_type_texture_scanner = 2,
-	wad_type_level = 4
-};
-
-struct wad_metadata {
-	const char* name;
-	uint32_t offset;
-	uint32_t size;
-	wad_type type;	
-};
-
-const static std::vector<wad_metadata> racpak_files {
-	{ "SPACE.WAD",  0x7e041800, 0x10fa980, wad_type_texture         },
-	{ "ARMOR.WAD",  0x7fa3d800, 0x25d930,  wad_type_texture_scanner },
-	{ "HUD.WAD",    0x7360f800, 0x242b30f, wad_type_texture         },
-	{ "BONUS.WAD",  0x75a3b000, 0x1e49ea5, wad_type_texture         },
-	{ "LEVEL4.WAD", 0x8d794800, 0x17999dc, wad_type_level           }
-};
-
-iso_views::iso_views(stream* iso_file, worker_logger& log) {
-	
-	for(auto& file : racpak_files) {
-		racpaks.emplace_back(std::make_unique<racpak>
-			(iso_file, file.offset, file.size));
-		
-		if(file.type & wad_type_texture) {
-			texture_wads.emplace_back(std::make_unique<racpak_fip_scanner>
-				(racpaks.back().get(), file.name, log));
-		}
-		
-		if(file.type & wad_type_texture_scanner) {
-			texture_wads.emplace_back(std::make_unique<fip_scanner>
-				(iso_file, file.offset, file.size, file.name, log));
-		}
-		
-		if(file.type & wad_type_level) {
-			levels.emplace(file.name, std::make_unique<level_impl>
-				(racpaks.back().get(), file.name, log));
-		}
-	}
-}
-
 wrench_project::wrench_project(std::string iso_path, worker_logger& log, std::string game_id)
 	: _project_path(""),
 	  _wratch_archive(nullptr),
 	  _game_id(game_id),
 	  _iso(game_id, iso_path, log),
-	  views(&_iso, log) {}
+	  _selected_level(nullptr) {}
 
 wrench_project::wrench_project(std::string iso_path, std::string project_path, worker_logger& log)
 	: _project_path(project_path),
 	  _wratch_archive(ZipFile::Open(project_path)),
 	  _game_id(read_game_id()),
-	  _iso(_game_id, iso_path, log, _wratch_archive),
-	  views(&_iso, log) {
+	  _iso(_game_id, iso_path, log, _wratch_archive) {
 	ZipFile::SaveAndClose(_wratch_archive, project_path);
 	_wratch_archive = nullptr;
 }
@@ -107,6 +62,104 @@ void wrench_project::save_as(app* a) {
 	});
 }
 
+level* wrench_project::selected_level() {
+	for(auto& level : _levels) {
+		if(level.second.get() == _selected_level) {
+			return _selected_level;
+		}
+	}
+	return nullptr;
+}
+
+std::vector<level*> wrench_project::levels() {
+	std::vector<level*> result(_levels.size());
+	std::transform(_levels.begin(), _levels.end(), result.begin(),
+		[](auto& level) { return level.second.get(); });
+	return result;
+}
+
+std::vector<texture_provider*> wrench_project::texture_providers() {
+	std::vector<texture_provider*> result;
+	for(auto& level : _levels) {
+		result.push_back(level.second->get_texture_provider());
+	}
+	for(auto& wad : _texture_wads) {
+		result.push_back(wad.second.get());
+	}
+	return result;
+}
+
+/*
+	views
+*/
+
+std::vector<std::string> wrench_project::available_view_types() {
+	std::vector<std::string> result;
+	for(auto& group : _views) {
+		result.push_back(group.first);
+	}
+	return result;
+}
+
+std::vector<std::string> wrench_project::available_views(std::string group) {
+	std::vector<std::string> result;
+	for(auto& view : _views.at(group)) {
+		result.push_back(view.first);
+	}
+	return result;
+}
+
+void wrench_project::select_view(std::string group, std::string view) {
+	_next_view_name = view;
+	_views.at(group).at(view)(this);
+}
+
+racpak* wrench_project::open_archive(uint32_t offset, uint32_t size) {
+	if(_archives.find(offset) == _archives.end()) {
+		_archives.emplace(offset, std::make_unique<racpak>(&_iso, offset, size));
+	}
+	
+	return _archives.at(offset).get();
+}
+
+void wrench_project::open_texture_archive(uint32_t offset, uint32_t size) {
+	if(_texture_wads.find(offset) != _texture_wads.end()) {
+		// The archive is already open.
+		return;
+	}
+	
+	racpak* archive = open_archive(offset, size);
+	worker_logger log;
+	_texture_wads.emplace(offset, std::make_unique<racpak_fip_scanner>
+		(archive, _next_view_name, log));
+}
+
+void wrench_project::open_texture_scanner(uint32_t offset, uint32_t size) {
+	if(_texture_wads.find(offset) != _texture_wads.end()) {
+		// The archive is already open.
+		return;
+	}
+	
+	worker_logger log;
+	_texture_wads.emplace(offset, std::make_unique<fip_scanner>
+		(&_iso, offset, size, _next_view_name, log));
+}
+
+void wrench_project::open_level(uint32_t offset, uint32_t size) {
+	if(_levels.find(offset) == _levels.end()) {
+		// The level is not already open.
+		racpak* archive = open_archive(offset, size);
+		worker_logger log;
+		_levels.emplace(offset, std::make_unique<level_impl>
+			(archive, _next_view_name, log));
+	}
+	_selected_level = _levels.at(offset).get();
+}
+
+/*
+	private
+*/
+
 void wrench_project::save_to(std::string path) {
 	if(boost::filesystem::exists(path)) {
 		boost::filesystem::remove(path + ".old");
@@ -124,8 +177,8 @@ void wrench_project::save_to(std::string path) {
 	root->CreateEntry("game_id")->SetCompressionStream(game_id_stream);
 
 	// Compress WAD segments and write them to the iso_stream.
-	for(auto& racpak : views.racpaks) {
-		racpak->commit();
+	for(auto& racpak : _archives) {
+		racpak.second->commit();
 	}
 	_iso.save_patches(root, _project_path); // Also closes the archive.
 }
@@ -137,3 +190,25 @@ std::string wrench_project::read_game_id() {
 	std::getline(*stream, result);
 	return result;
 }
+
+const std::map<std::string, wrench_project::view_group> wrench_project::_views {
+	{"Textures", {
+		{"SPACE.WAD", [](wrench_project* p) {
+			p->open_texture_archive(0x7e041800, 0x10fa980);
+		}},
+		{"ARMOR.WAD", [](wrench_project* p) {
+			p->open_texture_scanner(0x7fa3d800, 0x25d930);
+		}},
+		{"HUD.WAD", [](wrench_project* p) {
+			p->open_texture_archive(0x7360f800, 0x242b30f);
+		}},
+		{"BONUS.WAD", [](wrench_project* p) {
+			p->open_texture_archive(0x75a3b000, 0x1e49ea5);
+		}}
+	}},
+	{"Levels", {
+		{"LEVEL4.WAD", [](wrench_project* p) {
+			p->open_level(0x8d794800, 0x17999dc);
+		}}
+	}}
+};

@@ -39,16 +39,6 @@ app::app()
 	read_settings();
 }
 
-level* app::get_level() {
-	if(_project) {
-		auto& levels = _project->views.levels;
-		if(levels.find("LEVEL4.WAD") != levels.end()) {
-			return levels.at("LEVEL4.WAD").get();
-		}
-	}
-	return nullptr;
-}
-
 using project_ptr = std::unique_ptr<wrench_project>;
 
 void app::new_project() {
@@ -78,7 +68,7 @@ void app::new_project() {
 			_lock_project = false;
 
 			if(auto view = get_3d_view()) {
-				(*view)->reset_camera(*this);
+				view->reset_camera(*this);
 			}
 		}
 	));
@@ -112,7 +102,7 @@ void app::open_project(std::string path) {
 			_lock_project = false;
 
 			if(auto view = get_3d_view()) {
-				(*view)->reset_camera(*this);
+				view->reset_camera(*this);
 			}
 		}
 	));
@@ -137,6 +127,21 @@ void app::save_project(bool save_as) {
 	}
 }
 
+wrench_project* app::get_project() {
+	return _project.get();
+}
+
+const wrench_project* app::get_project() const {
+	return const_cast<app*>(this)->get_project();
+}
+
+level* app::get_level() {
+	if(auto project = get_project()) {
+		return project->selected_level();
+	}
+	return nullptr;
+}
+
 const level* app::get_level() const {
 	return const_cast<app*>(this)->get_level();
 }
@@ -146,29 +151,16 @@ bool app::has_camera_control() {
 	if(!view) {
 		return false;
 	}
-	return static_cast<view_3d*>(*view)->camera_control;
+	return static_cast<view_3d*>(view)->camera_control;
 }
 
-std::optional<view_3d*> app::get_3d_view() {
+view_3d* app::get_3d_view() {
 	for(auto& window : windows) {
 		if(dynamic_cast<view_3d*>(window.get()) != nullptr) {
 			return dynamic_cast<view_3d*>(window.get());
 		}
 	}
-	return {};
-}
-
-std::vector<texture_provider*> app::texture_providers() {
-	std::vector<texture_provider*> result;
-	if(_project) {
-		for(auto& level : _project->views.levels) {
-			result.push_back(level.second->get_texture_provider());
-		}
-		for(auto& scanner : _project->views.texture_wads) {
-			result.push_back(scanner.get());
-		}
-	}
-	return result;
+	return nullptr;
 }
 
 const char* settings_file_path = "wrench_settings.ini";
