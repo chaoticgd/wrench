@@ -41,6 +41,12 @@ void gui::render(app& a) {
 		if(current_window.get() == nullptr) {
 			continue;
 		}
+		
+		bool has_padding = current_window->has_padding();
+		if(!has_padding) {
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+		}
+		
 		std::string title =
 			std::string(current_window->title_text()) +
 			"##" + std::to_string(current_window->id());
@@ -49,6 +55,10 @@ void gui::render(app& a) {
 			current_window->render(a);
 		}
 		ImGui::End();
+		
+		if(!has_padding) {
+			ImGui::PopStyleVar();
+		}
 	}
 	
 	ImGui::End(); // docking

@@ -48,8 +48,7 @@ void view_3d::render(app& a) {
 	}
 
 	_viewport_size = ImGui::GetWindowSize();
-	_viewport_size.x -= 16;
-	_viewport_size.y -= 36;
+	_viewport_size.y -= 19;
 
 	if(_frame_buffer_texture != 0) {
 		glDeleteTextures(1, &_frame_buffer_texture);
@@ -79,6 +78,10 @@ void view_3d::render(app& a) {
 	ImGui::Image((void*) (intptr_t) _frame_buffer_texture, _viewport_size);
 
 	draw_overlay_text(a);
+}
+
+bool view_3d::has_padding() const {
+	return false;
 }
 
 void view_3d::reset_camera(const app& a) {

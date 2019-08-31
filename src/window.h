@@ -34,6 +34,8 @@ public:
 	virtual const char* title_text() const = 0;
 	virtual ImVec2 initial_size() const = 0;
 	virtual void render(app& a) = 0;
+	
+	virtual bool has_padding() const;
 
 	int id();
 	void close(app& a);

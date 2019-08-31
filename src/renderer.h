@@ -41,6 +41,8 @@ public:
 	const char* title_text() const;
 	ImVec2 initial_size() const;
 	void render(app& a);
+	
+	bool has_padding() const override;
 
 	void draw_current_level(const app& a) const;
 	void draw_level(const level& lvl) const;

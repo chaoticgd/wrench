@@ -27,6 +27,10 @@ int window::id() {
 	return _id;
 }
 
+bool window::has_padding() const {
+	return true;
+}
+
 void window::close(app& a) {
 	auto iter = std::find_if(a.windows.begin(), a.windows.end(),
 		[=](auto& ptr) { return ptr.get() == this; });
