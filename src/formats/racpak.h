@@ -29,16 +29,16 @@
 # */
 
 struct racpak_entry {
-	uint32_t offset;
-	uint32_t size;
+	std::size_t offset;
+	std::size_t size;
 };
 
 class racpak {
 public:
-	racpak(stream* backing, uint32_t offset, uint32_t size);
+	racpak(stream* backing, std::size_t offset, std::size_t size);
 
-	uint32_t num_entries();
-	racpak_entry entry(uint32_t index);
+	std::size_t num_entries();
+	racpak_entry entry(std::size_t index);
 	stream* open(racpak_entry file);
 	
 	bool is_compressed(racpak_entry entry);

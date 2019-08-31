@@ -18,7 +18,7 @@
 
 #include "shrub_impl.h"
 
-shrub_impl::shrub_impl(stream* backing, uint32_t offset)
+shrub_impl::shrub_impl(stream* backing, std::size_t offset)
 	: _backing(backing, offset, -1) {}
 
 std::string shrub_impl::label() const {

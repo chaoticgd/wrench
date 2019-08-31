@@ -30,7 +30,7 @@ namespace fs = boost::filesystem;
 # */
 
 void extract_archive(std::string dest_dir, racpak& archive);
-std::string hex_string(uint32_t x);
+std::string hex_string(std::size_t x);
 
 int main(int argc, char** argv) {
 	std::string command;
@@ -59,9 +59,9 @@ int main(int argc, char** argv) {
 		file_stream src_file(src_path);
 		racpak archive(&src_file, 0, src_file.size());
 		
-		uint32_t num_entries = archive.num_entries();
+		std::size_t num_entries = archive.num_entries();
 		std::cout << "Index\tOffset\tSize\n";
-		for(uint32_t i = 0; i < num_entries; i++) {
+		for(std::size_t i = 0; i < num_entries; i++) {
 			auto entry = archive.entry(i);
 			std::cout << std::dec;
 			std::cout << i << "\t";
@@ -100,12 +100,12 @@ int main(int argc, char** argv) {
 }
 
 void extract_archive(std::string dest_dir, racpak& archive) {
-	uint32_t num_entries = archive.num_entries();
+	std::size_t num_entries = archive.num_entries();
 	if(num_entries > 4096) {
 		std::cerr << "Error: More than 4096 entries in " << dest_dir << "!? It's probably not a valid racpack.\n";
 		return;
 	}
-	for(uint32_t i = 0; i < num_entries; i++) {
+	for(std::size_t i = 0; i < num_entries; i++) {
 		try {
 			auto entry = archive.entry(i);
 			fs::create_directories(dest_dir);
@@ -122,7 +122,7 @@ void extract_archive(std::string dest_dir, racpak& archive) {
 	}
 }
 
-std::string hex_string(uint32_t x) {
+std::string hex_string(std::size_t x) {
 	std::stringstream ss;
 	ss << std::hex << x;
 	return ss.str();

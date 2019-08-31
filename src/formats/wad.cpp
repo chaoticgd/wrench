@@ -37,14 +37,14 @@ void decompress_wad(stream& dest, stream& src) {
 }
 
 // Used for calculating the bounds of the sliding window.
-uint32_t sub_clamped(uint32_t lhs, uint32_t rhs) {
+std::size_t sub_clamped(std::size_t lhs, std::size_t rhs) {
 	if(rhs > lhs) {
 		return 0;
 	}
 	return lhs - rhs;
 }
 
-void decompress_wad_n(stream& dest, stream& src, uint32_t bytes_to_decompress) {
+void decompress_wad_n(stream& dest, stream& src, std::size_t bytes_to_decompress) {
 
 	WAD_DEBUG(
 		#ifdef WAD_DEBUG_EXPECTED_PATH
@@ -85,7 +85,7 @@ void decompress_wad_n(stream& dest, stream& src, uint32_t bytes_to_decompress) {
 
 		bool read_from_dest = false;
 		bool read_from_src = false;
-		uint32_t lookback_offset = -1;
+		std::size_t lookback_offset = -1;
 		int bytes_to_copy = 0;
 
 		if(flag_byte < 0x40) {
@@ -198,28 +198,28 @@ void decompress_wad_n(stream& dest, stream& src, uint32_t bytes_to_decompress) {
 
 std::vector<char> encode_wad_packet(
 		stream& src,
-		uint32_t dest_pos,
-		uint32_t packet_no,
-		std::map<std::vector<char>, uint32_t>& dict);
+		std::size_t dest_pos,
+		std::size_t packet_no,
+		std::map<std::vector<char>, std::size_t>& dict);
 
-std::optional<std::pair<uint32_t, uint32_t>>
+std::optional<std::pair<std::size_t, std::size_t>>
 find_match_fast(
 		stream& st,
-		uint32_t target,
-		uint32_t low,
-		uint32_t high,
-		std::map<std::vector<char>, uint32_t>& dict);
+		std::size_t target,
+		std::size_t low,
+		std::size_t high,
+		std::map<std::vector<char>, std::size_t>& dict);
 
 // Find the longest byte array matching target between low and high.
 // Returns { offset, size } on success.
-std::optional<std::pair<uint32_t, uint32_t>>
+std::optional<std::pair<std::size_t, std::size_t>>
 find_longest_match_in_window(
 		stream& st,
-		uint32_t target,
-		uint32_t low,
-		uint32_t high);
+		std::size_t target,
+		std::size_t low,
+		std::size_t high);
 
-uint32_t num_equal_bytes(stream& st, uint32_t l, uint32_t r);
+std::size_t num_equal_bytes(stream& st, std::size_t l, std::size_t r);
 
 void compress_wad(stream& dest_disk, stream& src_disk) {
 	WAD_COMPRESS_DEBUG(
@@ -234,7 +234,7 @@ void compress_wad(stream& dest_disk, stream& src_disk) {
 	array_stream dest, src;
 	stream::copy_n(src, src_disk, src_disk.size());
 
-	std::map<std::vector<char>, uint32_t> dictionary;
+	std::map<std::vector<char>, std::size_t> dictionary;
 
 	dest.seek(0);
 	src.seek(0);
@@ -247,8 +247,8 @@ void compress_wad(stream& dest_disk, stream& src_disk) {
 
 	// Write initial section. This comes before the first packet and initialises the sliding window.
 	{
-		uint32_t init_size = 0;
-		for(uint32_t i = 3; i < 32; i++) {
+		std::size_t init_size = 0;
+		for(std::size_t i = 3; i < 32; i++) {
 			auto match =
 				find_longest_match_in_window(src, i, 0, (i > 3) ? (i - 1) : 0);
 			if(!match) continue;
@@ -287,14 +287,14 @@ void compress_wad(stream& dest_disk, stream& src_disk) {
 
 	// End of file packet.
 	{
-		uint32_t size = src.size() - src.tell();
+		std::size_t size = src.size() - src.tell();
 		dest.write<uint8_t>(0x11);
 		dest.write<uint8_t>(size);
 		dest.write<uint8_t>(1);
 		stream::copy_n(dest, src, size);
 	}
 
-	uint32_t total_size = dest.tell();
+	std::size_t total_size = dest.tell();
 	dest.seek(3);
 	dest.write<uint32_t>(total_size);
 	dest.seek(0);
@@ -303,30 +303,30 @@ void compress_wad(stream& dest_disk, stream& src_disk) {
 
 std::vector<char> encode_wad_packet(
 		stream& src,
-		uint32_t dest_pos,
-		uint32_t packet_no,
-		std::map<std::vector<char>, uint32_t>& dict) {
+		std::size_t dest_pos,
+		std::size_t packet_no,
+		std::map<std::vector<char>, std::size_t>& dict) {
 
 	std::vector<char> packet { 0 };
 	uint8_t flag_byte = 0;
 
-	uint32_t base_src = src.tell();
+	std::size_t base_src = src.tell();
 	std::vector<char> packet_start_buf(4);
 	src.peek_n(packet_start_buf.data(), src.tell(), 4);
 
-	std::map<std::vector<char>, uint32_t> new_dict_entries;
+	std::map<std::vector<char>, std::size_t> new_dict_entries;
 
 	std::vector<char> dict_entry_key = { packet_start_buf[0], packet_start_buf[1], packet_start_buf[2] };
 	new_dict_entries[dict_entry_key] = src.tell();
 	dict_entry_key.push_back(packet_start_buf[3]);
 	new_dict_entries[dict_entry_key] = src.tell();
 
-	static const uint32_t TYPE_A_MAX_LOOKBACK = 2045;
+	static const std::size_t TYPE_A_MAX_LOOKBACK = 2045;
 
 	// Encode the first part of each packet.
 	{
-		uint32_t high = src.tell() - 3;
-		uint32_t low = sub_clamped(high, TYPE_A_MAX_LOOKBACK);
+		std::size_t high = src.tell() - 3;
+		std::size_t low = sub_clamped(high, TYPE_A_MAX_LOOKBACK);
 		WAD_COMPRESS_DEBUG(std::cout << "sliding window: low=" << low << ", high=" << high << "\n";)
 
 		auto match = find_match_fast(src, src.tell(), low, high, dict);
@@ -345,7 +345,7 @@ std::vector<char> encode_wad_packet(
 
 		auto [match_offset, match_size] = *match;
 
-		uint32_t delta = src.tell() - match_offset - 1;
+		std::size_t delta = src.tell() - match_offset - 1;
 
 		WAD_COMPRESS_DEBUG(
 		flags[match_offset] += "\033[1;32mg\033[0m";
@@ -405,8 +405,8 @@ std::vector<char> encode_wad_packet(
 	// dictionary, we can skip the second part of the packet.
 	bool skip_rest;
 	{
-		uint32_t high = src.tell() - 3;
-		uint32_t low = sub_clamped(high, TYPE_A_MAX_LOOKBACK);
+		std::size_t high = src.tell() - 3;
+		std::size_t low = sub_clamped(high, TYPE_A_MAX_LOOKBACK);
 		auto match = find_match_fast(src, src.tell(), low, high, dict);
 		WAD_COMPRESS_DEBUG(if(match) printf("match_offset: %x\n", match->first);)
 		skip_rest = match && match->second >= 4;
@@ -416,11 +416,11 @@ std::vector<char> encode_wad_packet(
 
 	// Encode the second part of each packet.
 	if(!skip_rest) {
-		uint32_t snd_pos = 0;
-		for(uint32_t i = 1; i < 274; i++) {
+		std::size_t snd_pos = 0;
+		for(std::size_t i = 1; i < 274; i++) {
 			// Try to make the next packet start on a repeating pattern.
-			uint32_t high = src.tell() + i - 3;
-			uint32_t low = sub_clamped(high, TYPE_A_MAX_LOOKBACK);
+			std::size_t high = src.tell() + i - 3;
+			std::size_t low = sub_clamped(high, TYPE_A_MAX_LOOKBACK);
 			auto match = find_match_fast(src, src.tell() + i, low, high, dict);
 			if(!match) continue;
 			if(match->second >= 3) {
@@ -452,7 +452,7 @@ std::vector<char> encode_wad_packet(
 			}
 
 			WAD_COMPRESS_DEBUG(
-					uint32_t copy_pos = dest_pos + packet.size();
+					std::size_t copy_pos = dest_pos + packet.size();
 					std::cout << " => copy 0x" << std::hex << snd_pos << " bytes (dec) from uncompressed stream at 0x"
 							  << src.tell() << " to 0x" << copy_pos
 							  << "\n";
@@ -470,15 +470,15 @@ std::vector<char> encode_wad_packet(
 	return packet;
 }
 
-std::optional<std::pair<uint32_t, uint32_t>> find_match_fast(
+std::optional<std::pair<std::size_t, std::size_t>> find_match_fast(
 		stream& st,
-		uint32_t target,
-		uint32_t low,
-		uint32_t high,
-		std::map<std::vector<char>, uint32_t>& dict) {
+		std::size_t target,
+		std::size_t low,
+		std::size_t high,
+		std::map<std::vector<char>, std::size_t>& dict) {
 
-	uint32_t offset = 0;
-	uint32_t dict_match_len = 0;
+	std::size_t offset = 0;
+	std::size_t dict_match_len = 0;
 
 	std::vector<char> pattern_buf(4);
 	st.peek_n(pattern_buf.data(), target, 4);
@@ -496,11 +496,11 @@ std::optional<std::pair<uint32_t, uint32_t>> find_match_fast(
 
 	if(dict_match_len > 0 && dict[pattern_buf] >= low && dict[pattern_buf] < high) {
 		// The pattern has been found in the dictionary. Use the pre-computed offset.
-		uint32_t match_size = dict_match_len;
+		std::size_t match_size = dict_match_len;
 		while(st.peek<uint8_t>(target + match_size) == st.peek<uint8_t>(offset + match_size)) {
 			match_size++;
 		}
-		return std::make_optional<std::pair<uint32_t, uint32_t>>(offset, match_size);
+		return std::make_optional<std::pair<std::size_t, std::size_t>>(offset, match_size);
 	}
 
 	// Fall back to a brute-force scan of the sliding window.
@@ -509,15 +509,15 @@ std::optional<std::pair<uint32_t, uint32_t>> find_match_fast(
 	return match;
 }
 
-std::optional<std::pair<uint32_t, uint32_t>> find_longest_match_in_window(
+std::optional<std::pair<std::size_t, std::size_t>> find_longest_match_in_window(
 		stream& st,
-		uint32_t target,
-		uint32_t low,
-		uint32_t high) {
-	std::optional<uint32_t> match_offset;
-	uint32_t match_size = 0;
-	for(uint32_t i = low; i <= high; i++) {
-		uint32_t cur_bytes = num_equal_bytes(st, target, i);
+		std::size_t target,
+		std::size_t low,
+		std::size_t high) {
+	std::optional<std::size_t> match_offset;
+	std::size_t match_size = 0;
+	for(std::size_t i = low; i <= high; i++) {
+		std::size_t cur_bytes = num_equal_bytes(st, target, i);
 		if(cur_bytes >= 3 && cur_bytes > match_size) {
 			match_offset = i;
 			match_size = cur_bytes;
@@ -525,15 +525,15 @@ std::optional<std::pair<uint32_t, uint32_t>> find_longest_match_in_window(
 	}
 
 	if(match_offset) {
-		return std::pair<uint32_t, uint32_t>(*match_offset, match_size);
+		return std::pair<std::size_t, std::size_t>(*match_offset, match_size);
 	}
 	return {};
 }
 
-uint32_t num_equal_bytes(stream& st, uint32_t l, uint32_t r) {
-	uint32_t result = 0;
-	uint32_t st_size = st.size();
-	for(uint32_t i = 0;; i++) {
+std::size_t num_equal_bytes(stream& st, std::size_t l, std::size_t r) {
+	std::size_t result = 0;
+	std::size_t st_size = st.size();
+	for(std::size_t i = 0;; i++) {
 		if(l + i >= st_size || r + i >= st_size) {
 			break;
 		}
@@ -547,7 +547,7 @@ uint32_t num_equal_bytes(stream& st, uint32_t l, uint32_t r) {
 	return result;
 }
 
-wad_stream::wad_stream(stream* backing, uint32_t wad_offset)
+wad_stream::wad_stream(stream* backing, std::size_t wad_offset)
 	: _backing(backing, wad_offset, backing->size() - wad_offset),
 	  _wad_offset(wad_offset) {
 	decompress_wad(*this, *backing);

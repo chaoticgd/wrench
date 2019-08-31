@@ -31,10 +31,10 @@
 struct patch {
 	patch() {}
 
-	patch(uint32_t offset_, std::vector<char> buffer_)
+	patch(std::size_t offset_, std::vector<char> buffer_)
 		: offset(offset_), buffer(buffer_) {} 
 
-	uint32_t offset;
+	std::size_t offset;
 	std::vector<char> buffer;
 };
 
@@ -43,11 +43,11 @@ public:
 	iso_stream(std::string game_id, std::string iso_path, worker_logger& log); // New Project
 	iso_stream(std::string game_id, std::string iso_path, worker_logger& log, ZipArchive::Ptr root); // Open Project
 
-	uint32_t size() const override;
-	void seek(uint32_t offset) override;
-	uint32_t tell() const override;
- 	void read_n(char* dest, uint32_t size) override;
-	void write_n(const char* data, uint32_t size) override;
+	std::size_t size() const override;
+	void seek(std::size_t offset) override;
+	std::size_t tell() const override;
+ 	void read_n(char* dest, std::size_t size) override;
+	void write_n(const char* data, std::size_t size) override;
 
 	std::string resource_path() const override;
 

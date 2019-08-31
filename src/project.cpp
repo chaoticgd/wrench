@@ -114,7 +114,7 @@ void wrench_project::select_view(std::string group, std::string view) {
 	_views.at(group).at(view)(this);
 }
 
-racpak* wrench_project::open_archive(uint32_t offset, uint32_t size) {
+racpak* wrench_project::open_archive(std::size_t offset, std::size_t size) {
 	if(_archives.find(offset) == _archives.end()) {
 		_archives.emplace(offset, std::make_unique<racpak>(&_iso, offset, size));
 	}
@@ -122,7 +122,7 @@ racpak* wrench_project::open_archive(uint32_t offset, uint32_t size) {
 	return _archives.at(offset).get();
 }
 
-void wrench_project::open_texture_archive(uint32_t offset, uint32_t size) {
+void wrench_project::open_texture_archive(std::size_t offset, std::size_t size) {
 	if(_texture_wads.find(offset) != _texture_wads.end()) {
 		// The archive is already open.
 		return;
@@ -134,7 +134,7 @@ void wrench_project::open_texture_archive(uint32_t offset, uint32_t size) {
 		(archive, _next_view_name, log));
 }
 
-void wrench_project::open_texture_scanner(uint32_t offset, uint32_t size) {
+void wrench_project::open_texture_scanner(std::size_t offset, std::size_t size) {
 	if(_texture_wads.find(offset) != _texture_wads.end()) {
 		// The archive is already open.
 		return;
@@ -145,7 +145,7 @@ void wrench_project::open_texture_scanner(uint32_t offset, uint32_t size) {
 		(&_iso, offset, size, _next_view_name, log));
 }
 
-void wrench_project::open_level(uint32_t offset, uint32_t size) {
+void wrench_project::open_level(std::size_t offset, std::size_t size) {
 	if(_levels.find(offset) == _levels.end()) {
 		// The level is not already open.
 		racpak* archive = open_archive(offset, size);

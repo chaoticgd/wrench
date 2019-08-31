@@ -55,10 +55,10 @@ public:
 	std::vector<std::string> available_views(std::string group);
 	void select_view(std::string group, std::string view);
 	
-	racpak* open_archive(uint32_t offset, uint32_t size);
-	void open_texture_archive(uint32_t offset, uint32_t size);
-	void open_texture_scanner(uint32_t offset, uint32_t size);
-	void open_level(uint32_t offset, uint32_t size);
+	racpak* open_archive(std::size_t offset, std::size_t size);
+	void open_texture_archive(std::size_t offset, std::size_t size);
+	void open_texture_scanner(std::size_t offset, std::size_t size);
+	void open_level(std::size_t offset, std::size_t size);
 
 private:
 	void save_to(std::string path);
@@ -74,9 +74,9 @@ private:
 	static const std::map<std::string, view_group> _views;
 	std::string _next_view_name;
 	
-	std::map<uint32_t, std::unique_ptr<racpak>> _archives;
-	std::map<uint32_t, std::unique_ptr<texture_provider>> _texture_wads;
-	std::map<uint32_t, std::unique_ptr<level_impl>> _levels;
+	std::map<std::size_t, std::unique_ptr<racpak>> _archives;
+	std::map<std::size_t, std::unique_ptr<texture_provider>> _texture_wads;
+	std::map<std::size_t, std::unique_ptr<level_impl>> _levels;
 	level* _selected_level;
 };
 

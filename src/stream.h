@@ -43,8 +43,6 @@
 		struct __attribute__((__packed__)) name { body };
 #endif
 
-#define offsetof32(struct, field) static_cast<uint32_t>(offsetof(struct, field))
-
 template <typename T>
 packed_struct(file_ptr,
 	file_ptr()           : value(0) {}
@@ -86,12 +84,12 @@ struct stream_format_error : public stream_error {
 
 class stream {
 public:
-	virtual uint32_t size() const = 0;
-	virtual void seek(uint32_t offset) = 0;
-	virtual uint32_t tell() const = 0;
+	virtual std::size_t size() const = 0;
+	virtual void seek(std::size_t offset) = 0;
+	virtual std::size_t tell() const = 0;
 
-	virtual void read_n(char* dest, uint32_t size) = 0;
-	virtual void write_n(const char* data, uint32_t size) = 0;
+	virtual void read_n(char* dest, std::size_t size) = 0;
+	virtual void write_n(const char* data, std::size_t size) = 0;
 
 	// A resource path is a string that specifies how the resource loaded is
 	// stored on disc. For example, "wad(file(LEVEL4.WAD)+0x1000)+0x10"  would
@@ -111,7 +109,7 @@ public:
 	}
 
 	template <typename T>
-	T read(uint32_t offset) {
+	T read(std::size_t offset) {
 		seek(offset);
 		return read<T>();
 	}
@@ -132,14 +130,14 @@ public:
 	}
 
 	template <typename T>
-	void write(uint32_t offset, const T& value) {
+	void write(std::size_t offset, const T& value) {
 		seek(offset);
 		write(value);
 	}
 
-	void peek_n(char* dest, uint32_t pos, uint32_t size) const {
+	void peek_n(char* dest, std::size_t pos, std::size_t size) const {
 		stream* this_ = const_cast<stream*>(this);
-		uint32_t whence_you_came = this_->tell();
+		std::size_t whence_you_came = this_->tell();
 		this_->seek(pos);
 		this_->read_n(dest, size);
 		this_->seek(whence_you_came);
@@ -148,7 +146,7 @@ public:
 	template <typename T, typename... T_args>
 	T peek(T_args... args) const {
 		stream* this_ = const_cast<stream*>(this);
-		uint32_t whence_you_came = this_->tell();
+		std::size_t whence_you_came = this_->tell();
 		T value = this_->read<T>(args...);
 		this_->seek(whence_you_came);
 		return value;
@@ -165,15 +163,15 @@ public:
 	}
 
 	// The dest and src streams should be different.
-	static void copy_n(stream& dest, stream& src, uint32_t size) {
+	static void copy_n(stream& dest, stream& src, std::size_t size) {
 		// Copy a megabyte at a time.
-		static const uint32_t chunk_size = 1024 * 1024;
+		static const std::size_t chunk_size = 1024 * 1024;
 		std::vector<char> buffer(chunk_size);
-		for(uint32_t i = 0; i < size / chunk_size; i++) {
+		for(std::size_t i = 0; i < size / chunk_size; i++) {
 			src.read_n(buffer.data(), chunk_size);
 			dest.write_n(buffer.data(), chunk_size);
 		}
-		uint32_t last_chunk_size = size % chunk_size;
+		std::size_t last_chunk_size = size % chunk_size;
 		src.read_n(buffer.data(), last_chunk_size);
 		dest.write_n(buffer.data(), last_chunk_size);
 	}
@@ -188,7 +186,7 @@ public:
 
 		bool is_bad = false;
 		std::cout << std::hex << (_last_printed | 0x1000000000000000) << " >>>> ";
-		for(uint32_t i = _last_printed; i < tell(); i++) {
+		for(std::size_t i = _last_printed; i < tell(); i++) {
 			auto val = peek<uint8_t>(i);
 			if(expected.has_value()) {
 				auto expected_val = (*expected)->peek<uint8_t>(i);
@@ -232,7 +230,7 @@ protected:
 
 private:
 
-	uint32_t _last_printed;
+	std::size_t _last_printed;
 };
 
 class file_stream : public stream {
@@ -240,11 +238,11 @@ public:
 	file_stream(std::string path);
 	file_stream(std::string path, std::ios_base::openmode mode);
 	
-	uint32_t size() const;
-	void seek(uint32_t offset);
-	uint32_t tell() const;
-	void read_n(char* dest, uint32_t size);
-	void write_n(const char* data, uint32_t size);
+	std::size_t size() const;
+	void seek(std::size_t offset);
+	std::size_t tell() const;
+	void read_n(char* dest, std::size_t size);
+	void write_n(const char* data, std::size_t size);
 	std::string resource_path() const;
 	void check_error();
 	
@@ -257,35 +255,35 @@ class array_stream : public stream {
 public:
 	array_stream();
 	
-	uint32_t size() const;
-	void seek(uint32_t offset);
-	uint32_t tell() const;
-	void read_n(char* dest, uint32_t size);
-	void write_n(const char* data, uint32_t size);
+	std::size_t size() const;
+	void seek(std::size_t offset);
+	std::size_t tell() const;
+	void read_n(char* dest, std::size_t size);
+	void write_n(const char* data, std::size_t size);
 	std::string resource_path() const;
 
 private:
 	std::vector<char> _allocation;
-	uint32_t _offset;
+	std::size_t _offset;
 };
 
 // Point to a data segment within a larger stream. For example, you could create
 // a stream to allow for more convenient access a texture within a disk image.
 class proxy_stream : public stream {
 public:
-	proxy_stream(stream* backing, uint32_t zero, uint32_t size);
+	proxy_stream(stream* backing, std::size_t zero, std::size_t size);
 
-	uint32_t size() const;
-	void seek(uint32_t offset);
-	uint32_t tell() const;
-	void read_n(char* dest, uint32_t size);
-	void write_n(const char* data, uint32_t size);
+	std::size_t size() const;
+	void seek(std::size_t offset);
+	std::size_t tell() const;
+	void read_n(char* dest, std::size_t size);
+	void write_n(const char* data, std::size_t size);
 	std::string resource_path() const;
 
 private:
 	stream* _backing;
-	uint32_t _zero;
-	uint32_t _size;
+	std::size_t _zero;
+	std::size_t _size;
 };
 
 #endif

@@ -18,14 +18,14 @@
 
 #include "racpak.h"
 
-racpak::racpak(stream* backing, uint32_t offset, uint32_t size)
+racpak::racpak(stream* backing, std::size_t offset, std::size_t size)
 	: _backing(backing, offset, size) {}
 
-uint32_t racpak::num_entries() {
+std::size_t racpak::num_entries() {
 	return _backing.peek<uint32_t>(0) / 8 - 1;
 }
 
-racpak_entry racpak::entry(uint32_t index) {
+racpak_entry racpak::entry(std::size_t index) {
 	_backing.seek((index + 1) * 8);
 	return {
 		_backing.read<uint32_t>() * 0x800,

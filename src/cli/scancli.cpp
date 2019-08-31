@@ -29,16 +29,16 @@
 
 int main(int argc, char** argv) {
 	std::string src_path;
-	uint32_t alignment;
-	uint32_t initial_offset = 0;
+	std::size_t alignment;
+	std::size_t initial_offset = 0;
 
 	po::options_description desc("Scan a given file for game data segments");
 	desc.add_options()
 		("src,s", po::value<std::string>(&src_path)->required(),
 			"The input file.")
-		("alignment,a", po::value<uint32_t>(&alignment)->default_value(0x100),
+		("alignment,a", po::value<std::size_t>(&alignment)->default_value(0x100),
 			"A size in bytes that each segment in the target file should be aligned to.")
-		("initial-offset,i", po::value<uint32_t>(&initial_offset)->default_value(0),
+		("initial-offset,i", po::value<std::size_t>(&initial_offset)->default_value(0),
 			"Where to start scanning. For example, if -a=0x100 and -i=0x10, offsets {0x110, 0x210, ...} will be checked.");
 
 	po::positional_options_description pd;
@@ -50,9 +50,9 @@ int main(int argc, char** argv) {
 
 	file_stream src(src_path);
 
-	uint32_t buffer_size = std::max(sizeof(wad_header), sizeof(fip_header));
-	uint32_t max_offset = src.size() - buffer_size - initial_offset;
-	for(uint32_t offset = initial_offset; offset < max_offset; offset += alignment) {
+	std::size_t buffer_size = std::max(sizeof(wad_header), sizeof(fip_header));
+	std::size_t max_offset = src.size() - buffer_size - initial_offset;
+	for(std::size_t offset = initial_offset; offset < max_offset; offset += alignment) {
 
 		proxy_stream segment(&src, offset, src.size() - offset);
 		stream* segment_ptr = &segment;
@@ -73,7 +73,7 @@ int main(int argc, char** argv) {
 				segment_ptr = &decompressed_segment;
 				
 				outer_output["type"] = "wad";
-				uint32_t total_size =  wad.total_size;
+				std::size_t total_size = wad.total_size;
 				outer_output["compressed_size"] = total_size;
 			} catch(stream_error& e) {
 				output["error"] = e.what();

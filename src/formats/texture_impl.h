@@ -39,7 +39,7 @@ class texture_provider;
 class texture_impl : public texture {
 public:
 	struct offsets {
-		uint32_t palette, pixels, width, height;
+		std::size_t palette, pixels, width, height;
 	};
 
 	texture_impl(stream* backing, offsets offsets_);
@@ -75,9 +75,9 @@ public:
 
 	texture_provider_impl(
 		stream* backing,
-		uint32_t table_offset,
-		uint32_t data_offset,
-		uint32_t num_textures,
+		std::size_t table_offset,
+		std::size_t data_offset,
+		std::size_t num_textures,
 		std::string display_name_);
 
 	std::string display_name() const override;
@@ -142,8 +142,8 @@ class fip_scanner : public texture_provider {
 public:
 	fip_scanner(
 		stream* backing,
-		uint32_t offset,
-		uint32_t size,
+		std::size_t offset,
+		std::size_t size,
 		std::string display_name,
 		worker_logger& log);
 
@@ -167,7 +167,7 @@ public:
 	std::vector<texture*> textures() override;
 private:
 	std::vector<std::unique_ptr<texture_impl>> _textures;
-	std::map<uint32_t, std::unique_ptr<array_stream>> _decompressed_streams;
+	std::map<std::size_t, std::unique_ptr<array_stream>> _decompressed_streams;
 	std::string _display_name;
 };
 

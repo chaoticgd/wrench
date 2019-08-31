@@ -20,7 +20,7 @@
 
 #include "../shapes.h"
 
-moby_impl::moby_impl(stream* backing, uint32_t offset)
+moby_impl::moby_impl(stream* backing, std::size_t offset)
 	: _backing(backing, offset, 0x88) {}
 
 std::string moby_impl::label() const {

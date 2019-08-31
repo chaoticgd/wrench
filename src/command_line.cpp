@@ -102,7 +102,7 @@ int run_cli_converter(
 
 	std::stringstream offset_stream;
 	offset_stream << std::hex << offset_hex;
-	uint32_t offset;
+	std::size_t offset;
 	offset_stream >> offset;
 	
 	proxy_stream src_proxy(&src, offset, src.size() - offset);

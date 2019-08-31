@@ -93,24 +93,24 @@ std::string texture_impl::pixel_data_path() const {
 
 texture_provider_impl::texture_provider_impl(
 		stream* backing,
-		uint32_t table_offset,
-		uint32_t data_offset,
-		uint32_t num_textures,
+		std::size_t table_offset,
+		std::size_t data_offset,
+		std::size_t num_textures,
 		std::string display_name_)
 	: _display_name(display_name_) {
 
 	backing->seek(table_offset);
 
-	uint32_t last_palette = data_offset;
+	std::size_t last_palette = data_offset;
 
-	for(uint32_t i = 0; i < num_textures; i++) {
-		uint32_t entry_offset = backing->tell();
+	for(std::size_t i = 0; i < num_textures; i++) {
+		std::size_t entry_offset = backing->tell();
 		auto entry = backing->read<fmt::texture_entry>();
 		texture_impl::offsets offsets { 
 			last_palette,
 			data_offset + entry.pixel_data,
-			entry_offset + offsetof32(fmt::texture_entry, width),
-			entry_offset + offsetof32(fmt::texture_entry, height)
+			entry_offset + offsetof(fmt::texture_entry, width),
+			entry_offset + offsetof(fmt::texture_entry, height)
 		};
 		_textures.emplace_back(std::make_unique<texture_impl>(backing, offsets));
 		if(entry.height == 0) {
@@ -135,8 +135,8 @@ level_texture_provider::level_texture_provider(
 	std::string display_name_) {
 
 	auto snd_header = secondary_header->read<level_impl::fmt::secondary_header>(0);
-	uint32_t pixel_data_offet = snd_header.tex_pixel_data_base;
-	uint32_t textures_ptr = snd_header.textures.value;
+	std::size_t pixel_data_offet = snd_header.tex_pixel_data_base;
+	std::size_t textures_ptr = snd_header.textures.value;
 	auto tex_header = secondary_header->read<fmt::header>(textures_ptr);
 
 	_impl.emplace(
@@ -158,8 +158,8 @@ std::vector<texture*> level_texture_provider::textures() {
 
 fip_scanner::fip_scanner(
 		stream* backing,
-		uint32_t offset,
-		uint32_t size,
+		std::size_t offset,
+		std::size_t size,
 		std::string display_name,
 		worker_logger& log)
 	: _search_space(backing, offset, size),
@@ -168,15 +168,15 @@ fip_scanner::fip_scanner(
 	log << "Importing " << display_name << "... ";
 
 	char magic[4];
-	for(uint32_t i = 0; i < _search_space.size(); i += 0x10) {
+	for(std::size_t i = 0; i < _search_space.size(); i += 0x10) {
 		_search_space.seek(i);
 		_search_space.read_n(magic, 4);
 		if(validate_fip(magic)) {
 			texture_impl::offsets offsets {
-				i + offsetof32(fip_header, palette),
-				i + static_cast<uint32_t>(sizeof(fip_header)),
-				i + offsetof32(fip_header, width),
-				i + offsetof32(fip_header, height)
+				i + offsetof(fip_header, palette),
+				i + sizeof(fip_header),
+				i + offsetof(fip_header, width),
+				i + offsetof(fip_header, height)
 			};
 			_textures.emplace_back(
 				std::make_unique<texture_impl>(&_search_space, offsets));
@@ -206,11 +206,11 @@ racpak_fip_scanner::racpak_fip_scanner(
 	log << "Importing textures from " << display_name_ << " racpak... ";
 	
 	const static std::size_t NUM_THREADS = 8;
-	std::map<uint32_t, std::unique_ptr<array_stream>> compressed_streams;
+	std::map<std::size_t, std::unique_ptr<array_stream>> compressed_streams;
 	std::array<std::vector<std::function<void()>>, NUM_THREADS> callbacks;
 	int num_errors = 0;
 	
-	for(uint32_t i = 0; i < archive->num_entries(); i++) {
+	for(std::size_t i = 0; i < archive->num_entries(); i++) {
 		auto entry = archive->entry(i);
 		
 		if(archive->is_compressed(entry)) {
@@ -257,7 +257,7 @@ racpak_fip_scanner::racpak_fip_scanner(
 		thread.join();
 	}
 	
-	for(uint32_t i = 0; i < archive->num_entries(); i++) {
+	for(std::size_t i = 0; i < archive->num_entries(); i++) {
 		auto entry = archive->entry(i);
 		
 		bool has_decompressed =
@@ -280,10 +280,10 @@ racpak_fip_scanner::racpak_fip_scanner(
 		file->read_n(magic, 4);
 		if(validate_fip(magic)) {
 			texture_impl::offsets offsets {
-				offsetof32(fip_header, palette),
-				static_cast<uint32_t>(sizeof(fip_header)),
-				offsetof32(fip_header, width),
-				offsetof32(fip_header, height)
+				offsetof(fip_header, palette),
+				sizeof(fip_header),
+				offsetof(fip_header, width),
+				offsetof(fip_header, height)
 			};
 			_textures.emplace_back(
 				std::make_unique<texture_impl>(file, offsets));

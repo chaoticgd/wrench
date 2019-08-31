@@ -42,20 +42,20 @@ bool validate_wad(char* magic);
 
 // Throws stream_io_error, stream_format_error.
 void decompress_wad(stream& dest, stream& src);
-void decompress_wad_n(stream& dest, stream& src, uint32_t bytes_to_decompress);
+void decompress_wad_n(stream& dest, stream& src, std::size_t bytes_to_decompress);
 
 void compress_wad(stream& dest, stream& src);
 
 class wad_stream : public array_stream {
 public:
-	wad_stream(stream* backing, uint32_t wad_offset);
+	wad_stream(stream* backing, std::size_t wad_offset);
 
 	// Compress this WAD segment and write the result to backing.
 	void commit();
 
 private:
 	proxy_stream _backing;
-	uint32_t _wad_offset;
+	std::size_t _wad_offset;
 };
 
 #endif

@@ -34,23 +34,23 @@ iso_stream::iso_stream(std::string game_id, std::string iso_path, worker_logger&
 	  _cache_meta_path(std::string("cache/editor_") + game_id + "_metadata.json"),
 	  _cache(init_cache(iso_path, log), std::ios::in | std::ios::out) {}
 
-uint32_t iso_stream::size() const {
+std::size_t iso_stream::size() const {
 	return _cache.size();
 }
 
-void iso_stream::seek(uint32_t offset) {
+void iso_stream::seek(std::size_t offset) {
 	_cache.seek(offset);
 }
 
-uint32_t iso_stream::tell() const {
+std::size_t iso_stream::tell() const {
 	return _cache.tell();
 }
 
-void iso_stream::read_n(char* dest, uint32_t size) {
+void iso_stream::read_n(char* dest, std::size_t size) {
 	return _cache.read_n(dest, size);
 }
 
-void iso_stream::write_n(const char* data, uint32_t size) {
+void iso_stream::write_n(const char* data, std::size_t size) {
 	_patches.emplace_back(tell(), std::vector<char>(size));
 	std::memcpy(_patches.back().buffer.data(), data, size);
 	_cache.write_n(data, size);
@@ -103,7 +103,7 @@ std::vector<patch> iso_stream::read_patches(ZipArchive::Ptr root) {
 	std::vector<patch> result;
 	for(auto& p : patch_list.find("patches").value()) {
 		result.emplace_back(
-			p.find("offset").value().operator uint32_t(),
+			p.find("offset").value().operator std::size_t(),
 			std::vector<char>(p.find("size").value().operator std::size_t())
 		);
 		std::string patch_src_path = p.find("data").value();
@@ -168,8 +168,8 @@ void iso_stream::clear_cache_iso(file_stream* cache_iso) {
 	std::ifstream cache_meta_file(_cache_meta_path);
 	nlohmann::json cache_meta = nlohmann::json::parse(cache_meta_file);
 	for(auto& patch : cache_meta["patches"]) {
-		uint32_t offset = static_cast<uint32_t>(patch["offset"].get<uint64_t>());
-		uint32_t size = static_cast<uint32_t>(patch["size"].get<uint64_t>());
+		std::size_t offset = static_cast<std::size_t>(patch["offset"].get<uint64_t>());
+		std::size_t size = static_cast<std::size_t>(patch["size"].get<uint64_t>());
 
 		_iso.seek(offset);
 		cache_iso->seek(offset);
@@ -209,7 +209,7 @@ std::string iso_stream::hash_patches() {
 
 	for(patch& p : _patches) {
 		MD5Update(&ctx, reinterpret_cast<uint8_t*>(&p.offset), 4);
-		uint32_t size = p.buffer.size();
+		std::size_t size = p.buffer.size();
 		MD5Update(&ctx, reinterpret_cast<uint8_t*>(&size), 4);
 		MD5Update(&ctx, reinterpret_cast<uint8_t*>(p.buffer.data()), p.buffer.size());
 	}

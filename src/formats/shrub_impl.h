@@ -60,7 +60,7 @@ public:
 		)
 	};
 
-	shrub_impl(stream* backing, uint32_t offset);
+	shrub_impl(stream* backing, std::size_t offset);
 
 	std::string label() const;
 
