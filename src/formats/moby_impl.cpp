@@ -27,12 +27,12 @@ std::string moby_impl::label() const {
 	return class_name();
 }
 
-uint32_t moby_impl::uid() const {
+int32_t moby_impl::uid() const {
 	auto data = _backing.peek<fmt::moby>(0);
 	return data.uid;
 }
 
-void moby_impl::set_uid(uint32_t uid_) {
+void moby_impl::set_uid(int32_t uid_) {
 	auto data = _backing.read<fmt::moby>(0);
 	data.uid = uid_;
 	_backing.write<fmt::moby>(0, data);

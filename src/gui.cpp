@@ -205,14 +205,14 @@ void gui::moby_list::render(app& a) {
 		size.x -= 16;
 		size.y -= 64;
 
-		ImGui::Text("UID  Class");
+		ImGui::Text("     UID                Class");
 
 		ImGui::PushItemWidth(-1);
 		ImGui::ListBoxHeader("##mobylist", size);
 		for(const auto& [uid, moby] : lvl->mobies()) {
 			std::stringstream row;
-			row << std::setfill(' ') << std::setw(4) << std::dec << uid << " ";
-			row << std::setfill(' ') << std::setw(16) << std::hex << moby->class_name() << " ";
+			row << std::setfill(' ') << std::setw(8) << std::dec << uid << " ";
+			row << std::setfill(' ') << std::setw(20) << std::hex << moby->class_name() << " ";
 
 			if(ImGui::Selectable(row.str().c_str(), lvl->is_selected(moby))) {
 				lvl->selection = { moby };

@@ -39,7 +39,7 @@ public:
 			uint32_t unknown1;  // 0x4
 			uint32_t unknown2;  // 0x8
 			uint32_t unknown3;  // 0xc
-			uint32_t uid;       // 0x10
+			int32_t uid;        // 0x10
 			uint32_t unknown4;  // 0x14
 			uint32_t unknown5;  // 0x18
 			uint32_t unknown6;  // 0x1c
@@ -72,8 +72,8 @@ public:
 
 	std::string label() const;
 
-	uint32_t uid() const;
-	void set_uid(uint32_t uid_);
+	int32_t uid() const;
+	void set_uid(int32_t uid_);
 
 	uint16_t class_num() const;
 	void set_class_num(uint16_t class_num_);

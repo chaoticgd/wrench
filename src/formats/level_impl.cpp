@@ -49,8 +49,8 @@ std::vector<shrub*> level_impl::shrubs() {
 	return result;
 }
 
-std::map<uint32_t, moby*> level_impl::mobies() {
-	std::map<uint32_t, moby*> mobies_;
+std::map<int32_t, moby*> level_impl::mobies() {
+	std::map<int32_t, moby*> mobies_;
 	for(auto& moby : _mobies) {
 		mobies_.emplace(moby->uid(), moby.get());
 	}

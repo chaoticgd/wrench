@@ -41,9 +41,9 @@ std::vector<const shrub*> level::shrubs() const {
 	return std::vector<const shrub*>(result.begin(), result.end());
 }
 
-std::map<uint32_t, const moby*> level::mobies() const {
+std::map<int32_t, const moby*> level::mobies() const {
 	auto moby_map = const_cast<level*>(this)->mobies();
-	std::map<uint32_t, const moby*> result;
+	std::map<int32_t, const moby*> result;
 	for(auto& [uid, moby] : moby_map) {
 		result.emplace(uid, moby);
 	}

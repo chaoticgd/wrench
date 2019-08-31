@@ -185,7 +185,7 @@ public:
 	texture_provider* get_texture_provider();
 
 	std::vector<shrub*> shrubs() override;
-	std::map<uint32_t, moby*> mobies() override;
+	std::map<int32_t, moby*> mobies() override;
 
 	std::map<std::string, std::map<uint32_t, std::string>> game_strings() override;
 

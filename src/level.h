@@ -58,8 +58,8 @@ public:
 	virtual std::vector<shrub*> shrubs() = 0;
 	std::vector<const shrub*> shrubs() const;
 
-	virtual std::map<uint32_t, moby*> mobies() = 0;
-	std::map<uint32_t, const moby*> mobies() const;
+	virtual std::map<int32_t, moby*> mobies() = 0;
+	std::map<int32_t, const moby*> mobies() const;
 
 	virtual std::map<std::string, std::map<uint32_t, std::string>> game_strings() = 0;
 
@@ -112,8 +112,8 @@ class moby : public point_object {
 public:
 	virtual ~moby() = default;
 
-	virtual uint32_t uid() const = 0;
-	virtual void set_uid(uint32_t uid_) = 0;
+	virtual int32_t uid() const = 0;
+	virtual void set_uid(int32_t uid_) = 0;
 
 	virtual uint16_t class_num() const = 0;
 	virtual void set_class_num(uint16_t class_num_) = 0;
