@@ -21,6 +21,8 @@
 #include <boost/filesystem.hpp>
 
 #include "../command_line.h"
+#include "../formats/fip.h"
+#include "../formats/wad.h"
 #include "../formats/racpak.h"
 
 namespace fs = boost::filesystem;
@@ -30,6 +32,7 @@ namespace fs = boost::filesystem;
 # */
 
 void extract_archive(std::string dest_dir, racpak& archive);
+void scan_for_archives(std::string src_path);
 std::string hex_string(std::size_t x);
 
 int main(int argc, char** argv) {
@@ -94,6 +97,8 @@ int main(int argc, char** argv) {
 			std::string dest_dir = dest_path + "/" + path.filename().string();
 			extract_archive(dest_dir, archive);
 		}
+	} else if(command == "scan") {
+		scan_for_archives(src_path);
 	} else {
 		std::cerr << "Invalid command.\n";
 	}
@@ -118,6 +123,53 @@ void extract_archive(std::string dest_dir, racpak& archive) {
 			stream::copy_n(dest, *src, src->size());
 		} catch(stream_error& e) {
 			std::cerr << "Error: Failed to extract item " << i << " for " << dest_dir << "\n";
+		}
+	}
+}
+
+static const int SECTOR_SIZE = 0x800;
+
+// Scan an ISO file for racpak archives, where the table of contents is not
+// available. This is required to find assets on R&C1, UYA and DL game discs.
+void scan_for_archives(std::string src_path) {
+	file_stream src(src_path);
+	
+	std::vector<std::size_t> segments;
+	
+	// First pass: Find all sector-aligned WAD segments and 2FIP textures.
+	for(std::size_t i = 0; i < src.size(); i += SECTOR_SIZE) {
+		char magic[4];
+		src.seek(i);
+		src.read_n(magic, 4);
+		
+		if(validate_wad(magic) || validate_fip(magic)) {
+			segments.push_back(i);
+		}
+	}
+	
+	std::cout << "Found " << segments.size() << " segments.\n";
+	
+	std::vector<std::size_t> valid_entries;
+	
+	// Second pass: Find racpaks.
+	for(std::size_t i = 0; i < src.size(); i += SECTOR_SIZE) {
+		
+		uint32_t num_entries = src.read<uint32_t>(i) / 2 - 1;
+		if(num_entries == 0 || num_entries > 4096) {
+			continue; // Invalid archive.
+		}
+		
+		// Only check the first 32 elements of an archive.
+		for(std::size_t j = 1; j <= 32; j++) {
+			std::size_t sector = src.read<uint32_t>(i + j * 2);
+			if(sector == 0) {
+				continue;
+			}
+			std::size_t segment = i + sector * SECTOR_SIZE;
+			if(std::find(segments.begin(), segments.end(), segment) != segments.end()) {
+				std::cout << "Possible racpak archive at 0x" << std::hex << i << "\n";
+				break;
+			}
 		}
 	}
 }

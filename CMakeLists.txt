@@ -77,6 +77,8 @@ add_executable(pakrac
 	src/stream.cpp
 	src/formats/racpak.cpp
 	src/formats/wad.cpp
+	src/formats/fip.cpp
+	src/formats/bmp.cpp
 )
 
 # Boost
