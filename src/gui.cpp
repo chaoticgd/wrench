@@ -126,7 +126,7 @@ void gui::render_menu_bar(app& a) {
 	}
 
 	if(ImGui::BeginMenu("Windows")) {
-		render_menu_bar_window_toggle<three_d_view>(a, &a);
+		render_menu_bar_window_toggle<view_3d>(a, &a);
 		render_menu_bar_window_toggle<moby_list>(a);
 		render_menu_bar_window_toggle<inspector>(a, &a.this_any);
 		render_menu_bar_window_toggle<viewport_information>(a);

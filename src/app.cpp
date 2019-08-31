@@ -146,13 +146,13 @@ bool app::has_camera_control() {
 	if(!view) {
 		return false;
 	}
-	return static_cast<three_d_view*>(*view)->camera_control;
+	return static_cast<view_3d*>(*view)->camera_control;
 }
 
-std::optional<three_d_view*> app::get_3d_view() {
+std::optional<view_3d*> app::get_3d_view() {
 	for(auto& window : windows) {
-		if(dynamic_cast<three_d_view*>(window.get()) != nullptr) {
-			return dynamic_cast<three_d_view*>(window.get());
+		if(dynamic_cast<view_3d*>(window.get()) != nullptr) {
+			return dynamic_cast<view_3d*>(window.get());
 		}
 	}
 	return {};

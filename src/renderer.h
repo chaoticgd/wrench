@@ -34,10 +34,10 @@
 #	Draw 3D view and overlay text.
 # */
 
-class three_d_view : public window {
+class view_3d : public window {
 public:
-	three_d_view(const app* a);
-	~three_d_view();
+	view_3d(const app* a);
+	~view_3d();
 	const char* title_text() const;
 	ImVec2 initial_size() const;
 	void render(app& a);

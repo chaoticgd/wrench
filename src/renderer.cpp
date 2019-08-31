@@ -20,7 +20,7 @@
 
 #include "level.h"
 
-three_d_view::three_d_view(const app* a)
+view_3d::view_3d(const app* a)
 	: camera_control(false),
 	  camera_position(0, 0, 0),
 	  camera_rotation(0, 0),
@@ -28,21 +28,21 @@ three_d_view::three_d_view(const app* a)
 	reset_camera(*a);
 }
 
-three_d_view::~three_d_view() {
+view_3d::~view_3d() {
 	if(_frame_buffer_texture != 0) {
 		glDeleteTextures(1, &_frame_buffer_texture);
 	}
 }
 
-const char* three_d_view::title_text() const {
+const char* view_3d::title_text() const {
 	return "3D View";
 }
 
-ImVec2 three_d_view::initial_size() const {
+ImVec2 view_3d::initial_size() const {
 	return ImVec2(800, 600);
 }
 
-void three_d_view::render(app& a) {
+void view_3d::render(app& a) {
 	if(_shaders.get() == nullptr) {
 		_shaders = std::make_unique<shader_programs>();
 	}
@@ -81,7 +81,7 @@ void three_d_view::render(app& a) {
 	draw_overlay_text(a);
 }
 
-void three_d_view::reset_camera(const app& a) {
+void view_3d::reset_camera(const app& a) {
 	bool has_level = false;
 	if(auto lvl = a.get_level()) {
 		const auto& mobies = lvl->mobies();
@@ -99,13 +99,13 @@ void three_d_view::reset_camera(const app& a) {
 	camera_rotation = glm::vec3(0, 0, 0);
 }
 
-void three_d_view::draw_current_level(const app& a) const {
+void view_3d::draw_current_level(const app& a) const {
 	if(auto lvl = a.get_level()) {
 		draw_level(*lvl);
 	}
 }
 
-void three_d_view::draw_level(const level& lvl) const {
+void view_3d::draw_level(const level& lvl) const {
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	glm::mat4 projection_view = get_view_projection_matrix();
@@ -131,7 +131,7 @@ void three_d_view::draw_level(const level& lvl) const {
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-void three_d_view::draw_model(const model& mdl, glm::mat4 mvp, glm::vec3 colour) const {
+void view_3d::draw_model(const model& mdl, glm::mat4 mvp, glm::vec3 colour) const {
 	const vertex_array triangles = mdl.triangles();
 	
 	glUseProgram(_shaders->solid_colour.id());
@@ -156,7 +156,7 @@ void three_d_view::draw_model(const model& mdl, glm::mat4 mvp, glm::vec3 colour)
 	glDeleteBuffers(1, &vertex_buffer);
 }
 
-void three_d_view::draw_overlay_text(const app& a) const {
+void view_3d::draw_overlay_text(const app& a) const {
 	// Draw floating text over each moby showing its class name.
 	if(auto lvl = a.get_level()) {
 		ImDrawList* draw_list = ImGui::GetWindowDrawList();
@@ -181,7 +181,7 @@ void three_d_view::draw_overlay_text(const app& a) const {
 	}
 }
 
-glm::mat4 three_d_view::get_view_projection_matrix() const {
+glm::mat4 view_3d::get_view_projection_matrix() const {
 	ImVec2 size = _viewport_size;
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), size.x / size.y, 0.1f, 100.0f);
 

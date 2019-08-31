@@ -41,7 +41,7 @@
 # */
 
 class window;
-class three_d_view;
+class view_3d;
 
 class inspector_reflector;
 
@@ -77,7 +77,7 @@ public:
 	const level* get_level() const;
 
 	bool has_camera_control();
-	std::optional<three_d_view*> get_3d_view();
+	std::optional<view_3d*> get_3d_view();
 
 	std::vector<texture_provider*> texture_providers();
 
