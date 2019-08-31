@@ -207,8 +207,10 @@ const std::map<std::string, wrench_project::view_group> wrench_project::_views {
 		}}
 	}},
 	{"Levels", {
-		{"LEVEL4.WAD", [](wrench_project* p) {
-			p->open_level(0x8d794800, 0x17999dc);
-		}}
+		{"LEVEL0.WAD", [](wrench_project* p) { p->open_level(0x7fc9b800, 0xec5a80);  }},
+		{"LEVEL1.WAD", [](wrench_project* p) { p->open_level(0x81be9000, 0x14dea44); }},
+		{"LEVEL2.WAD", [](wrench_project* p) { p->open_level(0x85104800, 0x13c73f8); }},
+		{"LEVEL3.WAD", [](wrench_project* p) { p->open_level(0x89d86000, 0x10d9060); }},
+		{"LEVEL4.WAD", [](wrench_project* p) { p->open_level(0x8d794800, 0x17999dc); }}
 	}}
 };
