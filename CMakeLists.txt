@@ -27,6 +27,7 @@ add_executable(wrench
 	src/project.cpp
 	src/iso_stream.cpp
 	src/shapes.cpp
+	src/util.cpp
 	src/formats/wad.cpp
 	src/formats/racpak.cpp
 	src/formats/level_impl.cpp

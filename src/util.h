@@ -26,6 +26,7 @@
 # */
 
 std::string int_to_hex(std::size_t x);
+std::size_t hex_to_int(std::string x);
 std::size_t parse_number(std::string x);
 
 #endif

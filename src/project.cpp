@@ -30,20 +30,20 @@ wrench_project::wrench_project(std::string iso_path, worker_logger& log, std::st
 	: _project_path(""),
 	  _wratch_archive(nullptr),
 	  _game_id(game_id),
-	  _iso(game_id, iso_path, log),
-	  _selected_level(nullptr) {}
+	  _selected_level(nullptr),
+	  iso(game_id, iso_path, log) {}
 
 wrench_project::wrench_project(std::string iso_path, std::string project_path, worker_logger& log)
 	: _project_path(project_path),
 	  _wratch_archive(ZipFile::Open(project_path)),
 	  _game_id(read_game_id()),
-	  _iso(_game_id, iso_path, log, _wratch_archive) {
+	  iso(_game_id, iso_path, log, _wratch_archive) {
 	ZipFile::SaveAndClose(_wratch_archive, project_path);
 	_wratch_archive = nullptr;
 }
 
 std::string wrench_project::cached_iso_path() const {
-	return _iso.cached_iso_path();
+	return iso.cached_iso_path();
 }
 
 void wrench_project::save(app* a) {
@@ -116,7 +116,7 @@ void wrench_project::select_view(std::string group, std::string view) {
 
 racpak* wrench_project::open_archive(std::size_t offset, std::size_t size) {
 	if(_archives.find(offset) == _archives.end()) {
-		_archives.emplace(offset, std::make_unique<racpak>(&_iso, offset, size));
+		_archives.emplace(offset, std::make_unique<racpak>(&iso, offset, size));
 	}
 	
 	return _archives.at(offset).get();
@@ -142,7 +142,7 @@ void wrench_project::open_texture_scanner(std::size_t offset, std::size_t size) 
 	
 	worker_logger log;
 	_texture_wads.emplace(offset, std::make_unique<fip_scanner>
-		(&_iso, offset, size, _next_view_name, log));
+		(&iso, offset, size, _next_view_name, log));
 }
 
 void wrench_project::open_level(std::size_t offset, std::size_t size) {
@@ -180,7 +180,7 @@ void wrench_project::save_to(std::string path) {
 	for(auto& racpak : _archives) {
 		racpak.second->commit();
 	}
-	_iso.save_patches(root, _project_path); // Also closes the archive.
+	iso.save_patches(root, _project_path); // Also closes the archive.
 }
 
 std::string wrench_project::read_game_id() {

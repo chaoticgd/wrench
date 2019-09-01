@@ -108,6 +108,18 @@ namespace gui {
 		ImVec2 initial_size() const override;
 		void render(app& a) override;
 	};
+	
+	class manual_patcher : public window {
+	public:
+		manual_patcher();
+	
+		const char* title_text() const override;
+		ImVec2 initial_size() const override;
+		void render(app& a) override;
+	private:
+		std::string _scroll_offset_str;
+		std::size_t _scroll_offset;
+	};
 
 	class message_box : public window {
 	public:

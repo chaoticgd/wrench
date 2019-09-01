@@ -68,7 +68,6 @@ private:
 	std::string _project_path;
 	ZipArchive::Ptr _wratch_archive;
 	const std::string _game_id;
-	iso_stream _iso;
 	
 	using view_group = std::map<std::string, std::function<void(wrench_project*)>>;
 	using game_view = std::map<std::string, view_group>; // Views for a given game.
@@ -79,6 +78,9 @@ private:
 	std::map<std::size_t, std::unique_ptr<texture_provider>> _texture_wads;
 	std::map<std::size_t, std::unique_ptr<level_impl>> _levels;
 	level* _selected_level;
+	
+public:
+	iso_stream iso;
 };
 
 #endif

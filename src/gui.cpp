@@ -24,6 +24,7 @@
 #include <iostream>
 #include <functional>
 
+#include "util.h"
 #include "window.h"
 #include "renderer.h"
 #include "inspector.h"
@@ -149,6 +150,7 @@ void gui::render_menu_bar(app& a) {
 		render_menu_bar_window_toggle<viewport_information>(a);
 		render_menu_bar_window_toggle<string_viewer>(a);
 		render_menu_bar_window_toggle<texture_browser>(a);
+		render_menu_bar_window_toggle<manual_patcher>(a);
 		render_menu_bar_window_toggle<settings>(a);
 		ImGui::EndMenu();
 	}
@@ -580,6 +582,94 @@ void gui::settings::render(app& a) {
 	if(ImGui::Button("Okay")) {
 		close(a);
 	}
+}
+
+/*
+	manual_patcher
+*/
+
+gui::manual_patcher::manual_patcher()
+	: _scroll_offset(0) {}
+
+const char* gui::manual_patcher::title_text() const {
+	return "Manual Patcher (debug)";
+}
+
+ImVec2 gui::manual_patcher::initial_size() const {
+	return ImVec2(800, 600);
+}
+
+void gui::manual_patcher::render(app& a) {
+	auto* project = a.get_project();
+	if(project == nullptr) {
+		return;
+	}
+	
+	ImGui::Text("Goto:");
+	ImGui::SameLine();
+	if(ImGui::InputText("##hex_goto", &_scroll_offset_str)) {
+		_scroll_offset = parse_number(_scroll_offset_str);
+	}
+	
+	if(_scroll_offset + 1 >= project->iso.size()) {
+		ImGui::Text("<end of file>");
+		return;
+	}
+	
+	static const int row_size = 16;
+	static const int num_rows = 16;
+	
+	std::vector<char> buffer(row_size * num_rows);
+
+	std::size_t size_to_read = buffer.size();
+	
+	if(_scroll_offset >= project->iso.size() - row_size * num_rows) {
+		size_to_read = project->iso.size() - _scroll_offset - 1;
+	}
+	
+	if(_scroll_offset < project->iso.size()) {
+		project->iso.seek(_scroll_offset);
+	}
+	project->iso.read_n(buffer.data(), size_to_read);
+	
+	// If we're viewing past the end of the file, display zeroes.
+	for(std::size_t i = size_to_read; i < buffer.size(); i++) {
+		buffer[i] = 0;
+	}
+	
+	ImGui::BeginChild(1);
+	for(std::size_t row = 0; row < num_rows; row++) {
+		ImGui::Text("%010lx: ", _scroll_offset + row * row_size);
+		ImGui::SameLine();
+		for(std::size_t column = 0; column < row_size; column++) {
+			if(column % 4 == 0) {
+				ImGui::Text(" ");
+				ImGui::SameLine();
+			}
+			std::size_t offset = row * row_size + column;
+			char byte = buffer[offset];
+			auto display_hex = int_to_hex(byte & 0xff);
+			while(display_hex.size() < 2) display_hex = "0" + display_hex;
+			std::string label = std::string("##") + std::to_string(offset);
+			ImGui::SetNextItemWidth(20);
+			if(ImGui::InputText(label.c_str(), &display_hex, ImGuiInputTextFlags_EnterReturnsTrue)) {
+				char new_byte = hex_to_int(display_hex);
+				if(byte != new_byte) {
+					project->iso.write<char>(_scroll_offset + offset, new_byte);
+				}
+			}
+			ImGui::SameLine();
+		}
+		for(std::size_t column = 0; column < row_size; column++) {
+			std::size_t offset = row * row_size + column;
+			char byte = buffer[offset];
+			ImGui::Text("%c", byte);
+			ImGui::SameLine();
+		}
+		ImGui::NewLine();
+	}
+	ImGui::EndChild();
+	
 }
 
 /*
