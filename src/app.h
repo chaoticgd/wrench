@@ -66,7 +66,7 @@ public:
 
 	int window_width, window_height;
 
-	void new_project();
+	void new_project(std::string game_id);
 	void open_project(std::string path);
 	void save_project(bool save_as);
 

@@ -71,7 +71,8 @@ private:
 	iso_stream _iso;
 	
 	using view_group = std::map<std::string, std::function<void(wrench_project*)>>;
-	static const std::map<std::string, view_group> _views;
+	using game_view = std::map<std::string, view_group>; // Views for a given game.
+	static const std::map<std::string, game_view> _views;
 	std::string _next_view_name;
 	
 	std::map<std::size_t, std::unique_ptr<racpak>> _archives;

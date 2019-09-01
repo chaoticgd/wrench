@@ -90,8 +90,14 @@ void gui::render_menu_bar(app& a) {
 	ImGui::BeginMainMenuBar();
 	
 	if(ImGui::BeginMenu("File")) {
-		if(ImGui::MenuItem("New")) {
-			a.new_project();
+		if(ImGui::BeginMenu("New")) {
+			if(ImGui::MenuItem("R&C2 PAL")) {
+				a.new_project("rc2pal");
+			}
+			if(ImGui::MenuItem("R&C3 PAL")) {
+				a.new_project("rc3pal");
+			}
+		ImGui::EndMenu();
 		}
 		if(ImGui::MenuItem("Open")) {
 			auto dialog = a.emplace_window<file_dialog>

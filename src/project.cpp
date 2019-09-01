@@ -95,7 +95,7 @@ std::vector<texture_provider*> wrench_project::texture_providers() {
 
 std::vector<std::string> wrench_project::available_view_types() {
 	std::vector<std::string> result;
-	for(auto& group : _views) {
+	for(auto& group : _views.at(_game_id)) {
 		result.push_back(group.first);
 	}
 	return result;
@@ -103,7 +103,7 @@ std::vector<std::string> wrench_project::available_view_types() {
 
 std::vector<std::string> wrench_project::available_views(std::string group) {
 	std::vector<std::string> result;
-	for(auto& view : _views.at(group)) {
+	for(auto& view : _views.at(_game_id).at(group)) {
 		result.push_back(view.first);
 	}
 	return result;
@@ -111,7 +111,7 @@ std::vector<std::string> wrench_project::available_views(std::string group) {
 
 void wrench_project::select_view(std::string group, std::string view) {
 	_next_view_name = view;
-	_views.at(group).at(view)(this);
+	_views.at(_game_id).at(group).at(view)(this);
 }
 
 racpak* wrench_project::open_archive(std::size_t offset, std::size_t size) {
@@ -191,26 +191,25 @@ std::string wrench_project::read_game_id() {
 	return result;
 }
 
-const std::map<std::string, wrench_project::view_group> wrench_project::_views {
-	{"Textures", {
-		{"SPACE.WAD", [](wrench_project* p) {
-			p->open_texture_archive(0x7e041800, 0x10fa980);
+const std::map<std::string, wrench_project::game_view> wrench_project::_views {
+	{"rc2pal", {
+		{"Textures", {
+			{"HUD.WAD",   [](wrench_project* p) { p->open_texture_archive(0x7360f800, 0x242b30f); }},
+			{"BONUS.WAD", [](wrench_project* p) { p->open_texture_archive(0x75a3b000, 0x1e49ea5); }},
+			{"SPACE.WAD", [](wrench_project* p) { p->open_texture_archive(0x7e041800, 0x10fa980); }},
+			{"ARMOR.WAD", [](wrench_project* p) { p->open_texture_scanner(0x7fa3d800, 0x25d930);  }}
 		}},
-		{"ARMOR.WAD", [](wrench_project* p) {
-			p->open_texture_scanner(0x7fa3d800, 0x25d930);
-		}},
-		{"HUD.WAD", [](wrench_project* p) {
-			p->open_texture_archive(0x7360f800, 0x242b30f);
-		}},
-		{"BONUS.WAD", [](wrench_project* p) {
-			p->open_texture_archive(0x75a3b000, 0x1e49ea5);
+		{"Levels", {
+			{"LEVEL0.WAD", [](wrench_project* p) { p->open_level(0x7fc9b800, 0xec5a80);  }},
+			{"LEVEL1.WAD", [](wrench_project* p) { p->open_level(0x81be9000, 0x14dea44); }},
+			{"LEVEL2.WAD", [](wrench_project* p) { p->open_level(0x85104800, 0x13c73f8); }},
+			{"LEVEL3.WAD", [](wrench_project* p) { p->open_level(0x89d86000, 0x10d9060); }},
+			{"LEVEL4.WAD", [](wrench_project* p) { p->open_level(0x8d794800, 0x17999dc); }}
 		}}
 	}},
-	{"Levels", {
-		{"LEVEL0.WAD", [](wrench_project* p) { p->open_level(0x7fc9b800, 0xec5a80);  }},
-		{"LEVEL1.WAD", [](wrench_project* p) { p->open_level(0x81be9000, 0x14dea44); }},
-		{"LEVEL2.WAD", [](wrench_project* p) { p->open_level(0x85104800, 0x13c73f8); }},
-		{"LEVEL3.WAD", [](wrench_project* p) { p->open_level(0x89d86000, 0x10d9060); }},
-		{"LEVEL4.WAD", [](wrench_project* p) { p->open_level(0x8d794800, 0x17999dc); }}
+	{"rc3pal", {
+		{"Textures", {
+			{"ARMOR.WAD", [](wrench_project* p) { p->open_texture_archive(0x56da6000, 0x0); }}
+		}}
 	}}
 };

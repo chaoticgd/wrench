@@ -275,15 +275,24 @@ racpak_fip_scanner::racpak_fip_scanner(
 			continue;
 		}
 		
-		char magic[4];
+		char magic[0x14];
 		file->seek(0);
-		file->read_n(magic, 4);
+		file->read_n(magic, 0x14);
+		
+		std::optional<std::size_t> texture_offset;
 		if(validate_fip(magic)) {
+			texture_offset = 0;
+		}
+		if(validate_fip(magic + 0x10)) {
+			texture_offset = 0x10;
+		}
+		
+		if(texture_offset) {
 			texture_impl::offsets offsets {
-				offsetof(fip_header, palette),
-				sizeof(fip_header),
-				offsetof(fip_header, width),
-				offsetof(fip_header, height)
+				*texture_offset + offsetof(fip_header, palette),
+				*texture_offset + sizeof(fip_header),
+				*texture_offset + offsetof(fip_header, width),
+				*texture_offset + offsetof(fip_header, height)
 			};
 			_textures.emplace_back(
 				std::make_unique<texture_impl>(file, offsets));

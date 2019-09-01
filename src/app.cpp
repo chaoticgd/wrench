@@ -41,7 +41,7 @@ app::app()
 
 using project_ptr = std::unique_ptr<wrench_project>;
 
-void app::new_project() {
+void app::new_project(std::string game_id) {
 	if(_lock_project) {
 		return;
 	}
@@ -49,12 +49,12 @@ void app::new_project() {
 	_lock_project = true;
 	_project.reset(nullptr);
 
-	using worker_type = worker_thread<project_ptr, std::string>;
+	using worker_type = worker_thread<project_ptr, std::pair<std::string, std::string>>;
 	windows.emplace_back(std::make_unique<worker_type>(
-		"New Project", settings.game_paths["rc2pal"],
-		[](std::string path, worker_logger& log) {
+		"New Project", std::pair<std::string, std::string>(settings.game_paths[game_id], game_id),
+		[](std::pair<std::string, std::string> data, worker_logger& log) {
 			try {
-				auto result = std::make_unique<wrench_project>(path, log, "rc2pal");
+				auto result = std::make_unique<wrench_project>(data.first, log, data.second);
 				log << "\nProject created successfully.";
 				return std::make_optional(std::move(result));
 			} catch(stream_error& err) {
@@ -168,6 +168,7 @@ const char* settings_file_path = "wrench_settings.ini";
 void app::read_settings() {
 	// Default settings.
 	settings.game_paths["rc2pal"] = "";
+	settings.game_paths["rc3pal"] = "";
 	settings.gui_scale = 1.f;
 
 	if(boost::filesystem::exists(settings_file_path)) {
