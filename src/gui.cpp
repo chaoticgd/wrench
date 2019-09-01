@@ -192,7 +192,7 @@ void gui::project_tree::render(app& a) {
 */
 
 const char* gui::moby_list::title_text() const {
-	return "Moby List";
+	return "Mobies";
 }
 
 ImVec2 gui::moby_list::initial_size() const {
