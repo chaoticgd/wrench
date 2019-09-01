@@ -43,6 +43,12 @@ ImVec2 view_3d::initial_size() const {
 }
 
 void view_3d::render(app& a) {
+	auto lvl = a.get_level();
+	
+	if(lvl == nullptr) {
+		return;
+	}
+	
 	if(_shaders.get() == nullptr) {
 		_shaders = std::make_unique<shader_programs>();
 	}
@@ -70,7 +76,7 @@ void view_3d::render(app& a) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glViewport(0, 0, _viewport_size.x, _viewport_size.y);
 
-	draw_current_level(a);
+	draw_level(*lvl);
 
 	glDeleteFramebuffers(1, &fb_id);
 
@@ -78,6 +84,16 @@ void view_3d::render(app& a) {
 	ImGui::Image((void*) (intptr_t) _frame_buffer_texture, _viewport_size);
 
 	draw_overlay_text(a);
+	
+	// Allow users to select objects in the 3D view.
+	ImGuiIO& io = ImGui::GetIO();
+	if(io.MouseClicked[0] && ImGui::IsWindowHovered()) {
+		ImVec2 clicked_pos = io.MouseClickedPos[0];
+		clicked_pos.x -= ImGui::GetWindowPos().x;
+		clicked_pos.y -= ImGui::GetWindowPos().y + 20;
+		pick_object(*lvl, clicked_pos);
+		io.MouseClicked[0] = false;
+	}
 }
 
 bool view_3d::has_padding() const {
@@ -102,12 +118,6 @@ void view_3d::reset_camera(const app& a) {
 	camera_rotation = glm::vec3(0, 0, 0);
 }
 
-void view_3d::draw_current_level(const app& a) const {
-	if(auto lvl = a.get_level()) {
-		draw_level(*lvl);
-	}
-}
-
 void view_3d::draw_level(const level& lvl) const {
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -121,6 +131,8 @@ void view_3d::draw_level(const level& lvl) const {
 		glm::mat4 mvp = projection_view * model;
 		glm::vec3 colour =
 			lvl.is_selected(moby.second) ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
+		
+		glUseProgram(_shaders->solid_colour.id());
 		draw_model(moby.second->object_model(), mvp, colour);
 	}
 
@@ -136,8 +148,6 @@ void view_3d::draw_level(const level& lvl) const {
 
 void view_3d::draw_model(const model& mdl, glm::mat4 mvp, glm::vec3 colour) const {
 	const vertex_array triangles = mdl.triangles();
-	
-	glUseProgram(_shaders->solid_colour.id());
 
 	glUniformMatrix4fv(_shaders->solid_colour_transform, 1, GL_FALSE, &mvp[0][0]);
 	glUniform4f(_shaders->solid_colour_rgb, colour.x, colour.y, colour.z, 1);
@@ -161,25 +171,24 @@ void view_3d::draw_model(const model& mdl, glm::mat4 mvp, glm::vec3 colour) cons
 
 void view_3d::draw_overlay_text(const app& a) const {
 	// Draw floating text over each moby showing its class name.
-	if(auto lvl = a.get_level()) {
-		ImDrawList* draw_list = ImGui::GetWindowDrawList();
-		ImVec2 window_pos = ImGui::GetWindowPos();
-		for(const auto& object : lvl->point_objects()) {
-			glm::mat4 model = glm::translate(glm::mat4(1.f), object->position());
-			glm::vec4 homogeneous_pos = get_view_projection_matrix() * model * glm::vec4(0, 0, 0, 1);
-			glm::vec3 gl_pos = {
-				homogeneous_pos.x / homogeneous_pos.w,
-				homogeneous_pos.y / homogeneous_pos.w,
-				homogeneous_pos.z / homogeneous_pos.w
-			};
-			if(gl_pos.z > 0 && gl_pos.z < 1) {
-				ImVec2 position(
-					window_pos.x + (1 + gl_pos.x) * _viewport_size.x / 2.0,
-					window_pos.y + (1 + gl_pos.y) * _viewport_size.y / 2.0
-				);
-				static const int colour = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
-				draw_list->AddText(position, colour, object->label().c_str());
-			}
+	auto lvl = a.get_level();
+	ImDrawList* draw_list = ImGui::GetWindowDrawList();
+	ImVec2 window_pos = ImGui::GetWindowPos();
+	for(const auto& object : lvl->point_objects()) {
+		glm::mat4 model = glm::translate(glm::mat4(1.f), object->position());
+		glm::vec4 homogeneous_pos = get_view_projection_matrix() * model * glm::vec4(0, 0, 0, 1);
+		glm::vec3 gl_pos = {
+			homogeneous_pos.x / homogeneous_pos.w,
+			homogeneous_pos.y / homogeneous_pos.w,
+			homogeneous_pos.z / homogeneous_pos.w
+		};
+		if(gl_pos.z > 0 && gl_pos.z < 1) {
+			ImVec2 position(
+				window_pos.x + (1 + gl_pos.x) * _viewport_size.x / 2.0,
+				window_pos.y + (1 + gl_pos.y) * _viewport_size.y / 2.0
+			);
+			static const int colour = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
+			draw_list->AddText(position, colour, object->label().c_str());
 		}
 	}
 }
@@ -203,4 +212,53 @@ glm::mat4 view_3d::get_view_projection_matrix() const {
 	glm::mat4 view = pitch * yaw * yzx * translate;
 
 	return projection * view;
+}
+
+void view_3d::pick_object(level& lvl, ImVec2 position) {
+	draw_pickframe(lvl);
+	
+	glFlush();
+	glFinish();
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	
+	unsigned char coded_object[4];
+	glReadPixels(position.x, position.y, 1 , 1, GL_RGBA, GL_UNSIGNED_BYTE, coded_object);
+	
+	if(coded_object[0] == 1) {
+		std::size_t moby_id = coded_object[1] + (coded_object[2] << 8);
+		auto mobies = lvl.mobies();
+		auto moby = mobies.begin();
+		for(std::size_t i = 0; i < moby_id; i++) {
+			moby++;
+			if(moby == mobies.end()) {
+				return; // Error!
+			}
+		}
+		
+		lvl.selection = { moby->second };
+	}
+}
+
+
+void view_3d::draw_pickframe(const level& lvl) const {
+	glm::mat4 projection_view = get_view_projection_matrix();
+
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+
+	auto mobies = lvl.mobies();
+	for(auto iter = mobies.begin(); iter != mobies.end(); iter++) {
+		auto& moby = iter->second;
+		std::size_t i = std::distance(mobies.begin(), iter);
+		
+		glm::mat4 model = glm::translate(glm::mat4(1.f), moby->position());
+		glm::mat4 mvp = projection_view * model;
+		glm::vec3 colour;
+		colour.r = 1 / 255.f; // Moby
+		colour.g = (i & 0xff) / 255.f;
+		colour.b = ((i & 0xff00) >> 8) / 255.0f;
+		
+		glUseProgram(_shaders->solid_colour.id());
+		draw_model(moby->object_model(), mvp, colour);
+	}
 }

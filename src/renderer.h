@@ -44,7 +44,6 @@ public:
 	
 	bool has_padding() const override;
 
-	void draw_current_level(const app& a) const;
 	void draw_level(const level& lvl) const;
 	void draw_model(const model& mdl, glm::mat4 mvp, glm::vec3 colour) const;
 	
@@ -53,6 +52,12 @@ public:
 	glm::mat4 get_view_projection_matrix() const;
 
 	void reset_camera(const app& a);
+	
+	// Allows the user to select an object by clicking on it. See:
+	// http://www.opengl-tutorial.org/miscellaneous/clicking-on-objects/picking-with-an-opengl-hack/
+	void pick_object(level& lvl, ImVec2 position);
+	void draw_pickframe(const level& lvl) const;
+	
 	bool camera_control;
 	glm::vec3 camera_position;
 	glm::vec2 camera_rotation;
