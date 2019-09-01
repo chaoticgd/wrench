@@ -51,7 +51,6 @@ int main(int argc, char** argv) {
 	a.windows.emplace_back(std::make_unique<gui::moby_list>());
 	a.windows.emplace_back(std::make_unique<inspector>(&a.this_any));
 	a.windows.emplace_back(std::make_unique<view_3d>(&a));
-	a.windows.emplace_back(std::make_unique<gui::texture_browser>());
 
 	if(!glfwInit()) {
 		throw std::runtime_error("Cannot load GLFW.");
