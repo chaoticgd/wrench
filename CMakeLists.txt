@@ -82,6 +82,14 @@ add_executable(pakrac
 	src/formats/bmp.cpp
 )
 
+add_executable(texturefinder
+	src/cli/texturefindercli.cpp
+	src/stream.cpp
+	src/command_line.cpp
+	src/formats/fip.cpp
+	src/formats/bmp.cpp
+)
+
 # Boost
 find_package(Boost 1.40 COMPONENTS program_options filesystem REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
@@ -90,6 +98,7 @@ target_link_libraries(fip ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 target_link_libraries(wad ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 target_link_libraries(scan ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 target_link_libraries(pakrac ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
+target_link_libraries(texturefinder ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 
 # pthreads
 set(THREADS_PREFER_PTHREAD_FLAG ON)
