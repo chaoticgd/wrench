@@ -20,6 +20,7 @@
 
 #include <thread>
 
+#include "../util.h"
 #include "fip.h"
 #include "level_impl.h"
 
@@ -80,15 +81,11 @@ void texture_impl::set_pixel_data(std::vector<uint8_t> pixel_data_) {
 }
 
 std::string texture_impl::palette_path() const {
-	std::stringstream hex;
-	hex << _offsets.palette;
-	return _backing.resource_path() + "+0x" + hex.str();
+	return _backing.resource_path() + "+0x" + int_to_hex(_offsets.palette);
 }
 
 std::string texture_impl::pixel_data_path() const {
-	std::stringstream hex;
-	hex << _offsets.pixels;
-	return _backing.resource_path() + "+0x" + hex.str();
+	return _backing.resource_path() + "+0x" + int_to_hex(_offsets.pixels);
 }
 
 texture_provider_impl::texture_provider_impl(
