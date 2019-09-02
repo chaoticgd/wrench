@@ -27,6 +27,9 @@ const texture_provider* level::get_texture_provider() const {
 
 std::vector<const point_object*> level::point_objects() const {
 	std::vector<const point_object*> result;
+	for(auto tie : ties()) {
+		result.push_back(tie);
+	}
 	for(auto shrub : shrubs()) {
 		result.push_back(shrub);
 	}
@@ -34,6 +37,11 @@ std::vector<const point_object*> level::point_objects() const {
 		result.push_back(moby.second);
 	}
 	return result;
+}
+
+std::vector<const tie*> level::ties() const {
+	auto result = const_cast<level*>(this)->ties();
+	return std::vector<const tie*>(result.begin(), result.end());
 }
 
 std::vector<const shrub*> level::shrubs() const {

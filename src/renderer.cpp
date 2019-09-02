@@ -126,14 +126,22 @@ void view_3d::draw_level(const level& lvl) const {
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 
-	for(auto& moby : lvl.mobies()) {
-		glm::mat4 model = glm::translate(glm::mat4(1.f), moby.second->position());
+	for(auto& object : lvl.ties()) {
+		glm::mat4 model = glm::translate(glm::mat4(1.f), object->position());
 		glm::mat4 mvp = projection_view * model;
-		glm::vec3 colour =
-			lvl.is_selected(moby.second) ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
 		
 		glUseProgram(_shaders->solid_colour.id());
-		draw_model(moby.second->object_model(), mvp, colour);
+		draw_model(object->object_model(), mvp, glm::vec3(0.5, 0, 1));
+	}
+	
+	for(auto& object : lvl.mobies()) {
+		glm::mat4 model = glm::translate(glm::mat4(1.f), object.second->position());
+		glm::mat4 mvp = projection_view * model;
+		glm::vec3 colour =
+			lvl.is_selected(object.second) ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
+		
+		glUseProgram(_shaders->solid_colour.id());
+		draw_model(object.second->object_model(), mvp, colour);
 	}
 
 	// Draw ship.

@@ -41,6 +41,7 @@
 
 class game_object;
 class point_object;
+class tie;
 class shrub;
 class moby;
 
@@ -59,6 +60,9 @@ public:
 	const texture_provider* get_texture_provider() const;
 
 	std::vector<const point_object*> point_objects() const;
+
+	virtual std::vector<tie*> ties() = 0;
+	std::vector<const tie*> ties() const;
 
 	virtual std::vector<shrub*> shrubs() = 0;
 	std::vector<const shrub*> shrubs() const;
@@ -105,6 +109,14 @@ public:
 
 	template <typename... T>
 	void reflect(T... callbacks);
+};
+
+class tie : public point_object {
+public:
+	template <typename... T>
+	void reflect(T... callbacks);
+	
+	virtual const model& object_model() const = 0;
 };
 
 class shrub : public point_object {
@@ -164,10 +176,21 @@ void point_object::reflect(T... callbacks) {
 	r.visit_m("Position", &moby::position,  &moby::set_position);
 	r.visit_m("Rotation", &moby::rotation,  &moby::set_rotation);
 
+	if(auto obj = dynamic_cast<tie*>(this)) {
+		obj->reflect(callbacks...);
+	}
+	
+	if(auto obj = dynamic_cast<shrub*>(this)) {
+		obj->reflect(callbacks...);
+	}
+
 	if(auto obj = dynamic_cast<moby*>(this)) {
 		obj->reflect(callbacks...);
 	}
 }
+
+template <typename... T>
+void tie::reflect(T... callbacks) {}
 
 template <typename... T>
 void shrub::reflect(T... callbacks) {}

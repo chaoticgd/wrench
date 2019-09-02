@@ -19,7 +19,10 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#include <memory>
 #include <string>
+#include <vector>
+#include <algorithm>
 
 # /*
 #	For things that should be in the standard library, but aren't.
@@ -28,5 +31,14 @@
 std::string int_to_hex(std::size_t x);
 std::size_t hex_to_int(std::string x);
 std::size_t parse_number(std::string x);
+
+// Convert a container of owned pointers to a container of raw pointers.
+template <typename T_result, typename T_param>
+std::vector<T_result*> unique_to_raw(const std::vector<std::unique_ptr<T_param>>& x) {
+	std::vector<T_result*> result(x.size());
+	std::transform(x.begin(), x.end(), result.begin(),
+		[](auto& ptr) { return ptr.get(); });
+	return result;
+}
 
 #endif

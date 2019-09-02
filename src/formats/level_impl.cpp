@@ -33,7 +33,7 @@ level_impl::level_impl(racpak* archive, std::string display_name, worker_logger&
 	_moby_stream = archive->open_decompressed(archive->entry(3));
 	auto segment_header = _moby_stream->read<fmt::moby_segment::header>(0);
 	read_game_strings(segment_header, log);
-	read_models(segment_header, log);
+	read_ties  (segment_header, log);
 	read_shrubs(segment_header, log);
 	read_mobies(segment_header, log);
 }
@@ -42,11 +42,12 @@ texture_provider* level_impl::get_texture_provider() {
 	return &_textures.value();
 }
 
+std::vector<tie*> level_impl::ties() {
+	return unique_to_raw<tie>(_ties);
+}
+
 std::vector<shrub*> level_impl::shrubs() {
-	std::vector<shrub*> result(_shrubs.size());
-	std::transform(_shrubs.begin(), _shrubs.end(), result.begin(),
-		[](auto& ptr) { return ptr.get(); });
-	return result;
+	return unique_to_raw<shrub>(_shrubs);
 }
 
 std::map<int32_t, moby*> level_impl::mobies() {
@@ -92,29 +93,35 @@ void level_impl::read_game_strings(fmt::moby_segment::header header, worker_logg
 	}
 }
 
-void level_impl::read_models(fmt::moby_segment::header header, worker_logger& log) {
-	auto table_header = _moby_stream->read<fmt::moby_segment::model_table_header>(header.static_models.value);
-	log << "\tDetected " << table_header.num_static_models << " models (stub).\n";
+void level_impl::read_ties(fmt::moby_segment::header header, worker_logger& log) {
+	auto table = _moby_stream->read<fmt::moby_segment::obj_table_header>(header.ties.value);
+	for(uint32_t i = 0; i < table.num_elements; i++) {
+		_ties.emplace_back(std::make_unique<tie_impl>(
+			_moby_stream,
+			header.ties.value + sizeof(fmt::moby_segment::obj_table_header) + i * 0x60
+		));
+	}
+	log << "\tDetected " << table.num_elements << " ties.\n";
 }
 
 void level_impl::read_shrubs(fmt::moby_segment::header header, worker_logger& log) {
-	auto table = _moby_stream->read<fmt::moby_segment::shrub_table_header>(header.shrubs.value);
-	for(uint32_t i = 0; i < table.num_shrubs; i++) {
+	auto table = _moby_stream->read<fmt::moby_segment::obj_table_header>(header.shrubs.value);
+	for(uint32_t i = 0; i < table.num_elements; i++) {
 		_shrubs.emplace_back(std::make_unique<shrub_impl>(
 			_moby_stream,
-			header.shrubs.value + sizeof(fmt::moby_segment::shrub_table_header) + i * 0x70
+			header.shrubs.value + sizeof(fmt::moby_segment::obj_table_header) + i * 0x70
 		));
 	}
-	log << "\tDetected " << table.num_shrubs << " shrubs.\n";
+	log << "\tDetected " << table.num_elements << " shrubs.\n";
 }
 
 void level_impl::read_mobies(fmt::moby_segment::header header, worker_logger& log) {
-	auto moby_header = _moby_stream->read<fmt::moby_segment::moby_table_header>(header.mobies.value);
+	auto moby_header = _moby_stream->read<fmt::moby_segment::obj_table_header>(header.mobies.value);
 	std::map<uint32_t, moby*> mobies_;
-	for(uint32_t i = 0; i < moby_header.num_mobies; i++) {
+	for(uint32_t i = 0; i < moby_header.num_elements; i++) {
 		_mobies.emplace_back(std::make_unique<moby_impl>(
 			_moby_stream,
-			header.mobies.value + sizeof(fmt::moby_segment::moby_table_header) + i * 0x88));
+			header.mobies.value + sizeof(fmt::moby_segment::obj_table_header) + i * 0x88));
 	}
-	log << "\tDetected " << moby_header.num_mobies << " mobies.\n";
+	log << "\tDetected " << moby_header.num_elements << " mobies.\n";
 }

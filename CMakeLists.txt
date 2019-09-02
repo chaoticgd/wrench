@@ -31,6 +31,7 @@ add_executable(wrench
 	src/formats/wad.cpp
 	src/formats/racpak.cpp
 	src/formats/level_impl.cpp
+	src/formats/tie_impl.cpp
 	src/formats/shrub_impl.cpp
 	src/formats/moby_impl.cpp
 	src/formats/texture_impl.cpp

@@ -22,13 +22,15 @@
 #include <memory>
 #include <stdint.h>
 
+#include "../util.h"
 #include "../level.h"
 #include "../stream.h"
 #include "../worker_logger.h"
 #include "wad.h"
 #include "racpak.h"
-#include "moby_impl.h"
+#include "tie_impl.h"
 #include "shrub_impl.h"
+#include "moby_impl.h"
 #include "texture_impl.h"
 
 # /*
@@ -102,10 +104,7 @@ public:
 			struct directional_light_table;
 			struct string_table_header;
 			struct string_table_entry;
-			struct model_table_header;
-			struct model_table_entry;
-			struct shrub_table_header;
-			struct moby_table_header;
+			struct obj_table_header;
 
 			packed_struct(header,
 				file_ptr<ship_data> ship;                             // 0x0
@@ -121,13 +120,13 @@ public:
 				file_ptr<string_table_header> null_strings;           // 0x28 Also what is this thing?
 				uint32_t unknown4;                                    // 0x2c
 				uint32_t unknown5;                                    // 0x30
-				file_ptr<model_table_header> static_models;           // 0x34
+				file_ptr<obj_table_header> ties;                      // 0x34
 				uint32_t unknown7;                                    // 0x38
 				uint32_t unknown8;                                    // 0x3c
-				file_ptr<shrub_table_header> shrubs;                  // 0x40
+				file_ptr<obj_table_header> shrubs;                    // 0x40
 				uint32_t unknown10;                                   // 0x44
 				uint32_t unknown11;                                   // 0x48
-				file_ptr<moby_table_header> mobies;                          // 0x4c
+				file_ptr<obj_table_header> mobies;                    // 0x4c
 			)
 
 			packed_struct(ship_data,
@@ -157,25 +156,14 @@ public:
 				uint32_t padding[2];
 			)
 
-			packed_struct(model_table_header,
-				uint32_t num_static_models;
+			packed_struct(obj_table_header,
+				uint32_t num_elements;
 				uint32_t pad[3];
-				// Models follow.
+				// Elements follow.
 			)
 
-			packed_struct(model_table_entry,
-				uint8_t unknown[0x18];
-			)
-
-			packed_struct(shrub_table_header,
-				uint32_t num_shrubs;
-				uint32_t pad[3];
-			)
-
-			packed_struct(moby_table_header,
-				uint32_t num_mobies;
-				uint32_t unknown[3];
-				// Mobies follow.
+			packed_struct(tie_entry,
+				uint8_t unknown[0x60];
 			)
 		};
 	};
@@ -184,6 +172,7 @@ public:
 
 	texture_provider* get_texture_provider();
 
+	std::vector<tie*> ties() override;
 	std::vector<shrub*> shrubs() override;
 	std::map<int32_t, moby*> mobies() override;
 
@@ -191,13 +180,14 @@ public:
 
 private:
 	void read_game_strings(fmt::moby_segment::header header, worker_logger& log);
-	void read_models(fmt::moby_segment::header header, worker_logger& log);
+	void read_ties(fmt::moby_segment::header header, worker_logger& log);
 	void read_shrubs(fmt::moby_segment::header header, worker_logger& log);
 	void read_mobies(fmt::moby_segment::header header, worker_logger& log);
 
 	racpak* _archive;
 	std::optional<level_texture_provider> _textures;
 	stream* _moby_stream;
+	std::vector<std::unique_ptr<tie_impl>> _ties;
 	std::vector<std::unique_ptr<shrub_impl>> _shrubs;
 	std::vector<std::unique_ptr<moby_impl>> _mobies;
 	std::map<std::string, std::map<uint32_t, std::string>> _game_strings;
