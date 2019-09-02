@@ -38,7 +38,12 @@ struct vec2i {
 	int x, y;
 };
 
-class texture {
+#ifndef INSPECTABLE_DEF
+#define INSPECTABLE_DEF
+struct inspectable { virtual ~inspectable() = default; };
+#endif
+
+class texture : public inspectable {
 public:
 	virtual ~texture() = default;
 

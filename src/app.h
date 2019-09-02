@@ -50,7 +50,12 @@ struct settings_data {
 	float gui_scale;
 };
 
-class app {
+#ifndef INSPECTABLE_DEF
+#define INSPECTABLE_DEF
+struct inspectable { virtual ~inspectable() = default; };
+#endif
+
+class app : public inspectable {
 public:
 	app();
 
@@ -80,8 +85,6 @@ public:
 
 	bool has_camera_control();
 	view_3d* get_3d_view();
-
-	std::any this_any;
 
 	void read_settings();
 	void save_settings();

@@ -18,7 +18,7 @@
 
 #include "inspector.h"
 
-inspector::inspector(std::any* subject) : _subject(subject) {}
+inspector::inspector(inspectable* subject) : _subject(subject) {}
 
 const char* inspector::title_text() const {
 	return "Inspector";
@@ -29,23 +29,23 @@ ImVec2 inspector::initial_size() const {
 }
 
 void inspector::render(app& a) {
-	if(auto lvl = a.get_level()) {
+	if(auto project = a.get_project()) {
 		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
 		ImGui::Columns(2);
 		ImGui::SetColumnWidth(0, 80);
 
 		int i = 0;
 		reflect(
-			render_property<uint16_t>(lvl, i,
+			render_property<uint16_t>(project, i,
 				inspector_input_int<uint16_t>),
-			render_property<uint32_t>(lvl, i,
+			render_property<uint32_t>(project, i,
 				inspector_input_int<uint32_t>),
-			render_property<int>(lvl, i,
+			render_property<int>(project, i,
 				inspector_input_int<int>),
-			render_property<std::string>(lvl, i,
+			render_property<std::string>(project, i,
 				[](const char* label, std::string* data)
 					{ return ImGui::InputText(label, data, ImGuiInputTextFlags_EnterReturnsTrue); }),
-			render_property<glm::vec3>(lvl, i,
+			render_property<glm::vec3>(project, i,
 				[](const char* label, glm::vec3* data)
 					{ return ImGui::InputFloat3(label, &data->x, 3, ImGuiInputTextFlags_EnterReturnsTrue); })
 		);

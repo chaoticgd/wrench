@@ -33,7 +33,6 @@ namespace bp = boost::process;
 app::app()
 	: mouse_last(0, 0),
 	  mouse_diff(0, 0),
-	  this_any(this),
 	  _lock_project(false) {
 	
 	read_settings();

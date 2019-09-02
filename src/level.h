@@ -44,6 +44,11 @@ class point_object;
 class shrub;
 class moby;
 
+#ifndef INSPECTABLE_DEF
+#define INSPECTABLE_DEF
+struct inspectable { virtual ~inspectable() = default; };
+#endif
+
 class level {
 public:
 	level();
@@ -82,7 +87,7 @@ private:
 	std::vector<std::unique_ptr<command>> _history_stack;
 };
 
-class game_object {
+class game_object : public inspectable {
 public:
 	virtual std::string label() const = 0;
 

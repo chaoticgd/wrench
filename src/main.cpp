@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
 	app a;
 	a.windows.emplace_back(std::make_unique<gui::project_tree>());
 	a.windows.emplace_back(std::make_unique<gui::moby_list>());
-	a.windows.emplace_back(std::make_unique<inspector>(&a.this_any));
+	a.windows.emplace_back(std::make_unique<inspector>(&a));
 	a.windows.emplace_back(std::make_unique<view_3d>(&a));
 
 	if(!glfwInit()) {

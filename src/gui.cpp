@@ -146,7 +146,7 @@ void gui::render_menu_bar(app& a) {
 		render_menu_bar_window_toggle<project_tree>(a);
 		render_menu_bar_window_toggle<view_3d>(a, &a);
 		render_menu_bar_window_toggle<moby_list>(a);
-		render_menu_bar_window_toggle<inspector>(a, &a.this_any);
+		render_menu_bar_window_toggle<inspector>(a, &a);
 		render_menu_bar_window_toggle<viewport_information>(a);
 		render_menu_bar_window_toggle<string_viewer>(a);
 		render_menu_bar_window_toggle<texture_browser>(a);
@@ -389,8 +389,7 @@ void gui::texture_browser::render(app& a) {
 
 		if(ImGui::TreeNodeEx("Details", ImGuiTreeNodeFlags_DefaultOpen)) {
 			if(textures.size() > 0) {
-				std::any tex_ptr(&textures[_selection]);
-				inspector texture_inspector(&tex_ptr);
+				inspector texture_inspector(textures[_selection]);
 				texture_inspector.render(a);
 			} else {
 				ImGui::Text("<no texture selected>");

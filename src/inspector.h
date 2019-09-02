@@ -19,11 +19,9 @@
 #ifndef INSPECTOR_H
 #define INSPECTOR_H
 
-#include <any>
-#include <typeinfo>
-
 #include "stream.h"
 #include "window.h"
+#include "project.h"
 #include "texture.h"
 #include "reflection/refolder.h"
 #include "commands/property_changed_command.h"
@@ -32,9 +30,14 @@
 #	Property editor GUI.
 # */
 
+#ifndef INSPECTABLE_DEF
+#define INSPECTABLE_DEF
+struct inspectable { virtual ~inspectable() = default; };
+#endif
+
 class inspector : public window {
 public:
-	inspector(std::any* subject);
+	inspector(inspectable* subject);
 
 	const char* title_text() const override;
 	ImVec2 initial_size() const override;
@@ -43,17 +46,17 @@ public:
 private:
 	template <typename T_data_type, typename T_input_func>
 	static std::function<void(const char* name, rf::property<T_data_type> p)>
-		render_property(level* lvl, int& i, T_input_func input);
+		render_property(wrench_project* project, int& i, T_input_func input);
 	
 	template <typename... T_callbacks>
 	void reflect(T_callbacks... callbacks);
 
-	std::any* _subject;
+	inspectable* _subject;
 };
 
 template <typename T_data_type, typename T_input_func>
 std::function<void(const char* name, rf::property<T_data_type> p)>
-	inspector::render_property(level* lvl, int& i, T_input_func input) {
+	inspector::render_property(wrench_project* project, int& i, T_input_func input) {
 	
 	return [=, &i](const char* name, rf::property<T_data_type> p) {
 		ImGui::PushID(i++);
@@ -64,7 +67,9 @@ std::function<void(const char* name, rf::property<T_data_type> p)>
 		ImGui::PushItemWidth(-1);
 		T_data_type value = p.get();
 		if(input("##input", &value)) {
-			lvl->emplace_command<property_changed_command<T_data_type>>(p, value);
+			if(auto lvl = project->selected_level()) {
+				lvl->emplace_command<property_changed_command<T_data_type>>(p, value);
+			}
 		}
 		ImGui::NextColumn();
 		ImGui::PopID();
@@ -72,25 +77,14 @@ std::function<void(const char* name, rf::property<T_data_type> p)>
 	};
 }
 
-template <typename T>
-T* any_ptr_cast(std::any ptr) {
-	if(ptr.type() != typeid(T*)) {
-		return nullptr;
-	}
-	return std::any_cast<T*>(ptr);
-}
-
 template <typename... T_callbacks>
 void inspector::reflect(T_callbacks... callbacks) {
-	if(auto subject = any_ptr_cast<app>(*_subject)) {
+	if(auto subject = dynamic_cast<app*>(_subject)) {
 		subject->reflect(callbacks...);
 	}
 
-	if(auto subject = any_ptr_cast<texture*>(*_subject)) {
-		if(*subject == nullptr) {
-			return;
-		}
-		(*subject)->reflect(callbacks...);
+	if(auto subject = dynamic_cast<texture*>(_subject)) {
+		subject->reflect(callbacks...);
 	}
 }
 
