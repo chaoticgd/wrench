@@ -204,7 +204,8 @@ const std::map<std::string, wrench_project::game_view> wrench_project::_views {
 			{"LEVEL1.WAD", [](wrench_project* p) { p->open_level(0x81be9000, 0x14dea44); }},
 			{"LEVEL2.WAD", [](wrench_project* p) { p->open_level(0x85104800, 0x13c73f8); }},
 			{"LEVEL3.WAD", [](wrench_project* p) { p->open_level(0x89d86000, 0x10d9060); }},
-			{"LEVEL4.WAD", [](wrench_project* p) { p->open_level(0x8d794800, 0x17999dc); }}
+			{"LEVEL4.WAD", [](wrench_project* p) { p->open_level(0x8d794800, 0x17999dc); }},
+			{"LEVEL17.WAD", [](wrench_project* p) { p->open_level(0xbafab800, 0xfff020); }}
 		}}
 	}},
 	{"rc3pal", {
