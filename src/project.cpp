@@ -200,12 +200,12 @@ const std::map<std::string, wrench_project::game_view> wrench_project::_views {
 			{"ARMOR.WAD", [](wrench_project* p) { p->open_texture_scanner(0x7fa3d800, 0x25d930);  }}
 		}},
 		{"Levels", {
-			{"LEVEL0.WAD", [](wrench_project* p) { p->open_level(0x7fc9b800, 0xec5a80);  }},
-			{"LEVEL1.WAD", [](wrench_project* p) { p->open_level(0x81be9000, 0x14dea44); }},
-			{"LEVEL2.WAD", [](wrench_project* p) { p->open_level(0x85104800, 0x13c73f8); }},
-			{"LEVEL3.WAD", [](wrench_project* p) { p->open_level(0x89d86000, 0x10d9060); }},
-			{"LEVEL4.WAD", [](wrench_project* p) { p->open_level(0x8d794800, 0x17999dc); }},
-			{"LEVEL17.WAD", [](wrench_project* p) { p->open_level(0xbafab800, 0xfff020); }}
+			{"#00 LEVEL0.WAD", [](wrench_project* p) { p->open_level(0x7fc9b800, 0xec5a80);  }},
+			{"#01 LEVEL1.WAD", [](wrench_project* p) { p->open_level(0x81be9000, 0x14dea44); }},
+			{"#02 LEVEL2.WAD", [](wrench_project* p) { p->open_level(0x85104800, 0x13c73f8); }},
+			{"#03 LEVEL3.WAD", [](wrench_project* p) { p->open_level(0x89d86000, 0x10d9060); }},
+			{"#04 LEVEL4.WAD", [](wrench_project* p) { p->open_level(0x8d794800, 0x17999dc); }},
+			{"#17 LEVEL17.WAD", [](wrench_project* p) { p->open_level(0xbafab800, 0xfff020); }}
 		}}
 	}},
 	{"rc3pal", {

@@ -180,7 +180,14 @@ void gui::project_tree::render(app& a) {
 	for(std::string group : project->available_view_types()) {
 		if(ImGui::TreeNode(group.c_str())) {
 			for(std::string view : project->available_views(group)) {
-				if(ImGui::Button(view.c_str())) {
+				std::string display_str;
+				if(view.size() > 4 && view[0] == '#') {
+					// Fix ordering of level views.
+					display_str = view.substr(4);
+				} else {
+					display_str = view;
+				}
+				if(ImGui::Button(display_str.c_str())) {
 					project->select_view(group, view);
 					if(group == "Levels") {
 						if(auto window = a.get_3d_view()) {
