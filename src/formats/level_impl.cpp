@@ -124,18 +124,31 @@ void level_impl::read_shrubs(fmt::moby_segment::header header, worker_logger& lo
 }
 
 void level_impl::read_splines(fmt::moby_segment::header header, worker_logger& log) {
-	std::size_t table_pos = header.splines + 0x2e0;
-	_moby_stream->seek(table_pos);
-	std::size_t table_size = _moby_stream->read<uint32_t>();
-	_moby_stream->seek(_moby_stream->tell() + 0xc);
 	
-	while(_moby_stream->tell() < table_pos + table_size) {
-		std::size_t num_vertices = _moby_stream->peek<uint32_t>();
-		std::size_t start = _moby_stream->tell() + 0x10;
+	packed_struct(spline_table_header,
+		uint32_t num_splines;
+		uint32_t data_offset;
+		uint32_t unknown_08;
+		uint32_t unknown_0c;
+	)
+	
+	packed_struct(spline_entry,
+		uint32_t num_vertices;
+		uint32_t pad[3];
+	)
+	
+	auto table = _moby_stream->read<spline_table_header>(header.splines);
+	std::vector<uint32_t> spline_offsets;
+	for(uint32_t i = 0; i < table.num_splines; i++) {
+		spline_offsets.push_back(_moby_stream->read<uint32_t>());
+	}
+	
+	for(uint32_t rel_offset : spline_offsets) {
+		std::size_t offset = header.splines + table.data_offset + rel_offset;
+		auto entry = _moby_stream->read<spline_entry>(offset);
 		_splines.emplace_back(std::make_unique<spline_impl>(
-			_moby_stream, start, num_vertices * 0x10
+			_moby_stream, offset + 0x10, entry.num_vertices * 0x10
 		));
-		_moby_stream->seek(start + num_vertices * 0x10);
 	}
 }
 

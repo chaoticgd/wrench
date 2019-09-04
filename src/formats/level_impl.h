@@ -111,24 +111,35 @@ public:
 			packed_struct(header,
 				file_ptr<ship_data> ship;                             // 0x0
 				file_ptr<directional_light_table> directional_lights; // 0x4
-				uint32_t unknown1;                                    // 0x8
-				uint32_t unknown2;                                    // 0xc
+				uint32_t unknown_08;                                  // 0x8
+				uint32_t unknown_0c;                                  // 0xc
 				file_ptr<string_table_header> english_strings;        // 0x10
-				uint32_t unknown3; // Points to 16 bytes between the English and French tables (on Barlow).
+				uint32_t unknown_14; // Points to 16 bytes between the English and French tables (on Barlow).
 				file_ptr<string_table_header> french_strings;         // 0x18
 				file_ptr<string_table_header> german_strings;         // 0x1c
 				file_ptr<string_table_header> spanish_strings;        // 0x20
 				file_ptr<string_table_header> italian_strings;        // 0x24
 				file_ptr<string_table_header> null_strings;           // 0x28 Also what is this thing?
-				uint32_t unknown4;                                    // 0x2c
-				uint32_t unknown5;                                    // 0x30
+				uint32_t unknown_2c;                                  // 0x2c
+				uint32_t unknown_30;                                  // 0x30
 				file_ptr<obj_table_header> ties;                      // 0x34
-				uint32_t unknown7;                                    // 0x38
-				uint32_t unknown8;                                    // 0x3c
+				uint32_t unknown_38;                                  // 0x38
+				uint32_t unknown_3c;                                  // 0x3c
 				file_ptr<obj_table_header> shrubs;                    // 0x40
-				uint32_t splines;                                     // 0x44
-				uint32_t unknown11;                                   // 0x48
+				uint32_t unknown_44;                                  // 0x44
+				uint32_t unknown_48;                                  // 0x48
 				file_ptr<obj_table_header> mobies;                    // 0x4c
+				uint32_t unknown_50;                                  // 0x50
+				uint32_t unknown_54;                                  // 0x54
+				uint32_t unknown_58;                                  // 0x58
+				uint32_t unknown_5c;                                  // 0x5c
+				uint32_t unknown_60;                                  // 0x60
+				uint32_t unknown_64;                                  // 0x64
+				uint32_t unknown_68;                                  // 0x68
+				uint32_t unknown_6c;                                  // 0x6c
+				uint32_t unknown_70;                                  // 0x70
+				uint32_t unknown_74;                                  // 0x74
+				uint32_t splines;                                     // 0x78
 			)
 
 			packed_struct(ship_data,
