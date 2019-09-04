@@ -195,6 +195,10 @@ void point_object::reflect(T... callbacks) {
 	if(auto obj = dynamic_cast<shrub*>(this)) {
 		obj->reflect(callbacks...);
 	}
+	
+	if(auto obj = dynamic_cast<spline*>(this)) {
+		obj->reflect(callbacks...);
+	}
 
 	if(auto obj = dynamic_cast<moby*>(this)) {
 		obj->reflect(callbacks...);
@@ -202,13 +206,25 @@ void point_object::reflect(T... callbacks) {
 }
 
 template <typename... T>
-void tie::reflect(T... callbacks) {}
+void tie::reflect(T... callbacks) {
+	ImGui::Columns(1);
+	ImGui::Text("Tie");
+	ImGui::Columns(2);
+}
 
 template <typename... T>
-void shrub::reflect(T... callbacks) {}
+void shrub::reflect(T... callbacks) {
+	ImGui::Columns(1);
+	ImGui::Text("Shrub");
+	ImGui::Columns(2);
+}
 
 template <typename... T>
-void spline::reflect(T... callbacks) {}
+void spline::reflect(T... callbacks) {
+	ImGui::Columns(1);
+	ImGui::Text("Spline");
+	ImGui::Columns(2);
+}
 
 template <typename... T>
 void moby::reflect(T... callbacks) {

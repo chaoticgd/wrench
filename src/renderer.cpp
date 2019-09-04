@@ -126,26 +126,28 @@ void view_3d::draw_level(const level& lvl) const {
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 
+	glUseProgram(_shaders->solid_colour.id());
+
 	for(auto& object : lvl.ties()) {
 		glm::mat4 model = glm::translate(glm::mat4(1.f), object->position());
 		glm::mat4 mvp = projection_view * model;
-		
-		glUseProgram(_shaders->solid_colour.id());
-		draw_tris(object->object_model().triangles(), mvp, glm::vec3(0.5, 0, 1));
+		glm::vec3 colour = lvl.is_selected(object) ?
+			glm::vec3(1, 0, 0) : glm::vec3(0.5, 0, 1);
+		draw_tris(object->object_model().triangles(), mvp, colour);
 	}
 	
 	for(auto& object : lvl.mobies()) {
 		glm::mat4 model = glm::translate(glm::mat4(1.f), object.second->position());
 		glm::mat4 mvp = projection_view * model;
-		glm::vec3 colour =
-			lvl.is_selected(object.second) ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
-		
-		glUseProgram(_shaders->solid_colour.id());
+		glm::vec3 colour = lvl.is_selected(object.second) ?
+			glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
 		draw_tris(object.second->object_model().triangles(), mvp, colour);
 	}
 
-	for(auto spline : lvl.splines()) {
-		draw_spline(spline->points(), projection_view, glm::vec3(1, 0.5, 0));
+	for(auto object : lvl.splines()) {
+		glm::vec3 colour = lvl.is_selected(object) ?
+			glm::vec3(1, 0, 0) : glm::vec3(1, 0.5, 0);
+		draw_spline(object->points(), projection_view, colour);
 	}
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -158,7 +160,7 @@ void view_3d::draw_spline(const std::vector<glm::vec3> points, glm::mat4 mvp, gl
 		vertex_data.push_back(points[i].y);
 		vertex_data.push_back(points[i].z);
 		
-		vertex_data.push_back(points[i].x);
+		vertex_data.push_back(points[i].x + 0.5);
 		vertex_data.push_back(points[i].y);
 		vertex_data.push_back(points[i].z);
 		
@@ -245,19 +247,35 @@ void view_3d::pick_object(level& lvl, ImVec2 position) {
 	unsigned char coded_object[4];
 	glReadPixels(position.x, position.y, 1 , 1, GL_RGBA, GL_UNSIGNED_BYTE, coded_object);
 	
-	if(coded_object[0] == 1) {
-		std::size_t moby_id = coded_object[1] + (coded_object[2] << 8);
+	uint8_t type = coded_object[0];
+	uint16_t id = coded_object[1] + (coded_object[2] << 8);
+	
+	if(type == 1) { // Ties
+		auto ties = lvl.ties();
+		if(ties.size() > id) {
+			lvl.selection = { ties[id] };
+			return;
+		}
+	} else if(type == 2) { // Mobies
 		auto mobies = lvl.mobies();
 		auto moby = mobies.begin();
-		for(std::size_t i = 0; i < moby_id; i++) {
+		for(std::size_t i = 0; i < id; i++) {
 			moby++;
 			if(moby == mobies.end()) {
 				return; // Error!
 			}
 		}
-		
 		lvl.selection = { moby->second };
+		return;
+	} else if(type == 3) { // Splines
+		auto splines = lvl.splines();
+		if(splines.size() > id) {
+			lvl.selection = { splines[id] };
+			return;
+		}
 	}
+	
+	lvl.selection = {};
 }
 
 
@@ -266,20 +284,48 @@ void view_3d::draw_pickframe(const level& lvl) const {
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
+	
+	glUseProgram(_shaders->solid_colour.id());
+
+	auto encode_pick_colour = [](uint8_t type, uint16_t i) {
+		glm::vec3 colour;
+		colour.r = type / 255.f;
+		colour.g = (i & 0xff) / 255.f;
+		colour.b = ((i & 0xff00) >> 8) / 255.0f;
+		return colour;
+	};
+
+	auto ties = lvl.ties();
+	for(auto iter = ties.begin(); iter != ties.end(); iter++) {
+		auto object = *iter;
+		std::size_t i = std::distance(ties.begin(), iter);
+		
+		glm::mat4 model = glm::translate(glm::mat4(1.f), object->position());
+		glm::mat4 mvp = projection_view * model;
+		glm::vec3 colour = encode_pick_colour(1, i);
+		
+		draw_tris(object->object_model().triangles(), mvp, colour);
+	}
 
 	auto mobies = lvl.mobies();
 	for(auto iter = mobies.begin(); iter != mobies.end(); iter++) {
-		auto& moby = iter->second;
+		auto object = iter->second;
 		std::size_t i = std::distance(mobies.begin(), iter);
 		
-		glm::mat4 model = glm::translate(glm::mat4(1.f), moby->position());
+		glm::mat4 model = glm::translate(glm::mat4(1.f), object->position());
 		glm::mat4 mvp = projection_view * model;
-		glm::vec3 colour;
-		colour.r = 1 / 255.f; // Moby
-		colour.g = (i & 0xff) / 255.f;
-		colour.b = ((i & 0xff00) >> 8) / 255.0f;
+		glm::vec3 colour = encode_pick_colour(2, i);
 		
-		glUseProgram(_shaders->solid_colour.id());
-		draw_tris(moby->object_model().triangles(), mvp, colour);
+		draw_tris(object->object_model().triangles(), mvp, colour);
+	}
+
+	auto splines = lvl.splines();
+	for(auto iter = splines.begin(); iter != splines.end(); iter++) {
+		auto object = *iter;
+		
+		std::size_t i = std::distance(splines.begin(), iter);
+		glm::vec3 colour = encode_pick_colour(3, i);
+		
+		draw_spline(object->points(), projection_view, colour);
 	}
 }
