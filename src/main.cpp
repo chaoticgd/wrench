@@ -110,6 +110,14 @@ int main(int argc, char** argv) {
 
 		glfwMakeContextCurrent(window);
 		glfwSwapBuffers(window);
+		
+		a.fps_count++;
+		time_t last_time = a.current_time;
+		a.current_time = time(nullptr);
+		if(a.current_time > last_time) {
+			a.last_fps = a.fps_count;
+			a.fps_count = 0;
+		}
 	}
 
 	ImGui_ImplOpenGL3_Shutdown();

@@ -254,6 +254,7 @@ ImVec2 gui::viewport_information::initial_size() const {
 void gui::viewport_information::render(app& a) {
 	if(auto view = a.get_3d_view()) {
 
+		ImGui::Text("FPS:\n\t%d\n", a.last_fps);
 		glm::vec3 cam_pos = view->camera_position;
 		ImGui::Text("Camera Position:\n\t%.3f, %.3f, %.3f",
 			cam_pos.x, cam_pos.y, cam_pos.z);

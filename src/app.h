@@ -22,6 +22,7 @@
 #include <any>
 #include <set>
 #include <atomic>
+#include <time.h>
 #include <vector>
 #include <memory>
 #include <functional>
@@ -70,6 +71,10 @@ public:
 	std::set<int> keys_down;
 
 	int window_width, window_height;
+	
+	time_t current_time;
+	int last_fps;
+	int fps_count;
 
 	void new_project(std::string game_id);
 	void open_project(std::string path);
