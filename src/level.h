@@ -43,6 +43,7 @@ class game_object;
 class point_object;
 class tie;
 class shrub;
+class spline;
 class moby;
 
 #ifndef INSPECTABLE_DEF
@@ -66,6 +67,9 @@ public:
 
 	virtual std::vector<shrub*> shrubs() = 0;
 	std::vector<const shrub*> shrubs() const;
+
+	virtual std::vector<spline*> splines() = 0;
+	std::vector<const spline*> splines() const;
 
 	virtual std::map<int32_t, moby*> mobies() = 0;
 	std::map<int32_t, const moby*> mobies() const;
@@ -93,8 +97,6 @@ private:
 
 class game_object : public inspectable {
 public:
-	virtual std::string label() const = 0;
-
 	template <typename... T>
 	void reflect(T... callbacks);
 };
@@ -106,6 +108,8 @@ public:
 
 	virtual glm::vec3 rotation() const = 0;
 	virtual void set_rotation(glm::vec3 rotation_) = 0;
+
+	virtual std::string label() const = 0;
 
 	template <typename... T>
 	void reflect(T... callbacks);
@@ -123,6 +127,14 @@ class shrub : public point_object {
 public:
 	template <typename... T>
 	void reflect(T... callbacks);
+};
+
+class spline : public game_object {
+public:
+	template <typename... T>
+	void reflect(T... callbacks);
+	
+	virtual std::vector<glm::vec3> points() const = 0;
 };
 
 class moby : public point_object {
@@ -194,6 +206,9 @@ void tie::reflect(T... callbacks) {}
 
 template <typename... T>
 void shrub::reflect(T... callbacks) {}
+
+template <typename... T>
+void spline::reflect(T... callbacks) {}
 
 template <typename... T>
 void moby::reflect(T... callbacks) {

@@ -49,6 +49,11 @@ std::vector<const shrub*> level::shrubs() const {
 	return std::vector<const shrub*>(result.begin(), result.end());
 }
 
+std::vector<const spline*> level::splines() const {
+	auto result = const_cast<level*>(this)->splines();
+	return std::vector<const spline*>(result.begin(), result.end());
+}
+
 std::map<int32_t, const moby*> level::mobies() const {
 	auto moby_map = const_cast<level*>(this)->mobies();
 	std::map<int32_t, const moby*> result;

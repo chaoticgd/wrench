@@ -35,6 +35,7 @@ level_impl::level_impl(racpak* archive, std::string display_name, worker_logger&
 	read_game_strings(segment_header, log);
 	read_ties  (segment_header, log);
 	read_shrubs(segment_header, log);
+	read_splines(segment_header, log);
 	read_mobies(segment_header, log);
 }
 
@@ -48,6 +49,13 @@ std::vector<tie*> level_impl::ties() {
 
 std::vector<shrub*> level_impl::shrubs() {
 	return unique_to_raw<shrub>(_shrubs);
+}
+
+std::vector<spline*> level_impl::splines() {
+	auto segment_header = _moby_stream->read<fmt::moby_segment::header>(0);
+	uint32_t spline_table_offset = segment_header.splines;
+	
+	return unique_to_raw<spline>(_splines);
 }
 
 std::map<int32_t, moby*> level_impl::mobies() {
@@ -115,13 +123,51 @@ void level_impl::read_shrubs(fmt::moby_segment::header header, worker_logger& lo
 	log << "\tDetected " << table.num_elements << " shrubs.\n";
 }
 
+void level_impl::read_splines(fmt::moby_segment::header header, worker_logger& log) {
+	std::size_t table_pos = header.splines + 0x2e0;
+	_moby_stream->seek(table_pos);
+	std::size_t table_size = _moby_stream->read<uint32_t>();
+	_moby_stream->seek(_moby_stream->tell() + 0xc);
+	
+	while(_moby_stream->tell() < table_pos + table_size) {
+		std::size_t num_vertices = _moby_stream->peek<uint32_t>();
+		std::size_t start = _moby_stream->tell() + 0x10;
+		_splines.emplace_back(std::make_unique<spline_impl>(
+			_moby_stream, start, num_vertices * 0x10
+		));
+		_moby_stream->seek(start + num_vertices * 0x10);
+	}
+}
+
 void level_impl::read_mobies(fmt::moby_segment::header header, worker_logger& log) {
 	auto moby_header = _moby_stream->read<fmt::moby_segment::obj_table_header>(header.mobies.value);
 	std::map<uint32_t, moby*> mobies_;
 	for(uint32_t i = 0; i < moby_header.num_elements; i++) {
 		_mobies.emplace_back(std::make_unique<moby_impl>(
 			_moby_stream,
-			header.mobies.value + sizeof(fmt::moby_segment::obj_table_header) + i * 0x88));
+			header.mobies.value + sizeof(fmt::moby_segment::obj_table_header) + i * 0x88
+		));
 	}
 	log << "\tDetected " << moby_header.num_elements << " mobies.\n";
+}
+
+spline_impl::spline_impl(stream* backing, std::size_t offset, std::size_t size)
+	: _backing(backing, offset, size) {}
+
+std::vector<glm::vec3> spline_impl::points() const {
+	std::vector<glm::vec3> result;
+	
+	// We do not consider the position indicator part of the object's logical state.
+	proxy_stream& backing = const_cast<proxy_stream&>(_backing);
+	
+	backing.seek(0);
+	for(std::size_t i = 0; i < backing.size(); i += 0x10) {
+		float x = backing.read<float>();
+		float y = backing.read<float>();
+		float z = backing.read<float>();
+		result.emplace_back(x, y, z);
+		backing.seek(backing.tell() + 4);
+	}
+	
+	return result;
 }

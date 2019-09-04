@@ -29,7 +29,7 @@ class cube_model : public model {
 public:
 	cube_model();
 
-	vertex_array triangles() const override;
+	std::vector<float> triangles() const override;
 };
 
 #endif

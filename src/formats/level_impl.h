@@ -70,6 +70,8 @@
 	wad(...) are within a compressed segment.
 */
 
+class spline_impl;
+
 class level_impl : public level {
 public:
 	struct fmt {
@@ -124,7 +126,7 @@ public:
 				uint32_t unknown7;                                    // 0x38
 				uint32_t unknown8;                                    // 0x3c
 				file_ptr<obj_table_header> shrubs;                    // 0x40
-				uint32_t unknown10;                                   // 0x44
+				uint32_t splines;                                     // 0x44
 				uint32_t unknown11;                                   // 0x48
 				file_ptr<obj_table_header> mobies;                    // 0x4c
 			)
@@ -174,6 +176,7 @@ public:
 
 	std::vector<tie*> ties() override;
 	std::vector<shrub*> shrubs() override;
+	std::vector<spline*> splines() override;
 	std::map<int32_t, moby*> mobies() override;
 
 	std::map<std::string, std::map<uint32_t, std::string>> game_strings() override;
@@ -182,6 +185,7 @@ private:
 	void read_game_strings(fmt::moby_segment::header header, worker_logger& log);
 	void read_ties(fmt::moby_segment::header header, worker_logger& log);
 	void read_shrubs(fmt::moby_segment::header header, worker_logger& log);
+	void read_splines(fmt::moby_segment::header header, worker_logger& log);
 	void read_mobies(fmt::moby_segment::header header, worker_logger& log);
 
 	racpak* _archive;
@@ -189,8 +193,19 @@ private:
 	stream* _moby_stream;
 	std::vector<std::unique_ptr<tie_impl>> _ties;
 	std::vector<std::unique_ptr<shrub_impl>> _shrubs;
+	std::vector<std::unique_ptr<spline_impl>> _splines;
 	std::vector<std::unique_ptr<moby_impl>> _mobies;
 	std::map<std::string, std::map<uint32_t, std::string>> _game_strings;
+};
+
+class spline_impl : public spline {
+public:
+	spline_impl(stream* backing, std::size_t offset, std::size_t size);
+
+	std::vector<glm::vec3> points() const;
+
+private:
+	proxy_stream _backing;	
 };
 
 #endif

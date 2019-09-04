@@ -27,13 +27,11 @@
 #	Virtual base class representing a 3D model.
 # */
 
-using vertex_array = std::vector<std::array<glm::vec3, 3>>;
-
 class model {
 public:
 	virtual ~model() {}
 
-	virtual vertex_array triangles() const = 0;
+	virtual std::vector<float> triangles() const = 0;
 };
 
 #endif

@@ -131,7 +131,7 @@ void view_3d::draw_level(const level& lvl) const {
 		glm::mat4 mvp = projection_view * model;
 		
 		glUseProgram(_shaders->solid_colour.id());
-		draw_model(object->object_model(), mvp, glm::vec3(0.5, 0, 1));
+		draw_tris(object->object_model().triangles(), mvp, glm::vec3(0.5, 0, 1));
 	}
 	
 	for(auto& object : lvl.mobies()) {
@@ -141,22 +141,35 @@ void view_3d::draw_level(const level& lvl) const {
 			lvl.is_selected(object.second) ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
 		
 		glUseProgram(_shaders->solid_colour.id());
-		draw_model(object.second->object_model(), mvp, colour);
+		draw_tris(object.second->object_model().triangles(), mvp, colour);
 	}
 
-	// Draw ship.
-	{
-		//glm::mat4 model = glm::translate(glm::mat4(1.f), lvl.ship.position());
-		//glm::mat4 mvp = projection_view * model;
-		//draw_test_tri(mvp, glm::vec3(0, 0, 1));
+	for(auto spline : lvl.splines()) {
+		draw_spline(spline->points(), projection_view, glm::vec3(1, 0.5, 0));
 	}
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-void view_3d::draw_model(const model& mdl, glm::mat4 mvp, glm::vec3 colour) const {
-	const vertex_array triangles = mdl.triangles();
+void view_3d::draw_spline(const std::vector<glm::vec3> points, glm::mat4 mvp, glm::vec3 colour) const {
+	std::vector<float> vertex_data;
+	for(std::size_t i = 0; i < points.size() - 1; i++) {
+		vertex_data.push_back(points[i].x);
+		vertex_data.push_back(points[i].y);
+		vertex_data.push_back(points[i].z);
+		
+		vertex_data.push_back(points[i].x);
+		vertex_data.push_back(points[i].y);
+		vertex_data.push_back(points[i].z);
+		
+		vertex_data.push_back(points[i + 1].x);
+		vertex_data.push_back(points[i + 1].y);
+		vertex_data.push_back(points[i + 1].z);
+	}
+	draw_tris(vertex_data, mvp, colour);
+}
 
+void view_3d::draw_tris(const std::vector<float>& vertex_data, glm::mat4 mvp, glm::vec3 colour) const {
 	glUniformMatrix4fv(_shaders->solid_colour_transform, 1, GL_FALSE, &mvp[0][0]);
 	glUniform4f(_shaders->solid_colour_rgb, colour.x, colour.y, colour.z, 1);
 
@@ -164,14 +177,14 @@ void view_3d::draw_model(const model& mdl, glm::mat4 mvp, glm::vec3 colour) cons
 	glGenBuffers(1, &vertex_buffer);
 	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
 	glBufferData(GL_ARRAY_BUFFER,
-		triangles.size() * sizeof(vertex_array::value_type),
-		&triangles[0][0].x, GL_STATIC_DRAW);
+		vertex_data.size() * sizeof(float),
+		vertex_data.data(), GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
-	glDrawArrays(GL_TRIANGLES, 0, triangles.size() * 3);
+	glDrawArrays(GL_TRIANGLES, 0, vertex_data.size() * 3);
 
 	glDisableVertexAttribArray(0);
 	glDeleteBuffers(1, &vertex_buffer);
@@ -267,6 +280,6 @@ void view_3d::draw_pickframe(const level& lvl) const {
 		colour.b = ((i & 0xff00) >> 8) / 255.0f;
 		
 		glUseProgram(_shaders->solid_colour.id());
-		draw_model(moby->object_model(), mvp, colour);
+		draw_tris(moby->object_model().triangles(), mvp, colour);
 	}
 }
