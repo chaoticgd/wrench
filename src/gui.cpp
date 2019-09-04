@@ -180,12 +180,13 @@ void gui::project_tree::render(app& a) {
 	for(std::string group : project->available_view_types()) {
 		if(ImGui::TreeNode(group.c_str())) {
 			for(std::string view : project->available_views(group)) {
-				std::string display_str;
-				if(view.size() > 4 && view[0] == '#') {
-					// Fix ordering of level views.
-					display_str = view.substr(4);
-				} else {
-					display_str = view;
+				std::string display_str = view;
+				if(display_str.size() > 4 && display_str[0] == '#') {
+					// Level view names are prefixed with a hash and then some
+					// number. This fixes the ordering of levels views in the
+					// GUI and should be hidden when the name is displayed to
+					// the user.
+					display_str = display_str.substr(4);
 				}
 				if(ImGui::Button(display_str.c_str())) {
 					project->select_view(group, view);
@@ -377,7 +378,15 @@ void gui::texture_browser::render(app& a) {
 	ImGui::BeginChild(1);
 		if(ImGui::TreeNodeEx("Sources", ImGuiTreeNodeFlags_DefaultOpen)) {
 			for(std::size_t i = 0; i < sources.size(); i++) {
-				if(ImGui::Button(sources[i]->display_name().c_str())) {
+				std::string display_str = sources[i]->display_name();
+				if(display_str.size() > 4 && display_str[0] == '#') {
+					// Level view names are prefixed with a hash and then some
+					// number. This fixes the ordering of levels views in the
+					// GUI and should be hidden when the name is displayed to
+					// the user.
+					display_str = display_str.substr(4);
+				}
+				if(ImGui::Button(display_str.c_str())) {
 					_provider = i;
 				}
 			}
