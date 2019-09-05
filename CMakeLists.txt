@@ -46,7 +46,7 @@ add_executable(wrench
 if(MSVC)
 	target_compile_options(wrench PRIVATE /W4 /WX)
 else()
-	target_compile_options(wrench PRIVATE -Wall)
+	target_compile_options(wrench PRIVATE -Wall -O2)
 endif()
 
 add_executable(fip
