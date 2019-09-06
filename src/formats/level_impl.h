@@ -192,6 +192,8 @@ public:
 
 	std::map<std::string, std::map<uint32_t, std::string>> game_strings() override;
 
+	stream* moby_stream();
+
 private:
 	void read_game_strings(fmt::moby_segment::header header, worker_logger& log);
 	void read_ties(fmt::moby_segment::header header, worker_logger& log);

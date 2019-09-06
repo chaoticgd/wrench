@@ -70,6 +70,10 @@ std::map<std::string, std::map<uint32_t, std::string>> level_impl::game_strings(
 	return _game_strings;
 }
 
+stream* level_impl::moby_stream() {
+	return _moby_stream;
+}
+
 void level_impl::read_game_strings(fmt::moby_segment::header header, worker_logger& log) {
 	// Work around structure packing.
 	auto english   = header.english_strings.value,

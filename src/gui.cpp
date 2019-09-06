@@ -113,6 +113,15 @@ void gui::render_menu_bar(app& a) {
 		if(ImGui::MenuItem("Save As")) {
 			a.save_project(true);
 		}
+		if(ImGui::BeginMenu("Export")) {
+			if(ImGui::MenuItem("Mobyseg (debug)")) {
+				file_stream dump_file("mobyseg.bin", std::ios::out | std::ios::trunc);
+				stream* src = static_cast<level_impl*>(a.get_level())->moby_stream();
+				src->seek(0);
+				stream::copy_n(dump_file, *src, src->size());
+			}
+			ImGui::EndMenu();
+		}
 		ImGui::EndMenu();
 	}
 
