@@ -26,7 +26,7 @@
 #define WAD_DEBUG(cmd)
 //#define WAD_DEBUG(cmd) cmd
 // If this code breaks, dump the correct output and point to that here.
-#define WAD_DEBUG_EXPECTED_PATH "dumps/mobyseg" /*"<file path goes here>"*/
+//#define WAD_DEBUG_EXPECTED_PATH "<file path goes here>"
 
 bool validate_wad(char* magic) {
 	return std::memcmp(magic, "WAD", 3) == 0;
@@ -98,8 +98,8 @@ void decompress_wad_n(stream& dest, stream& src, std::size_t bytes_to_decompress
 				}
 				bytes_to_copy += 2;
 
-				int b1 = src.read<uint8_t>();
-				int b2 = src.read<uint8_t>();
+				uint8_t b1 = src.read<uint8_t>();
+				uint8_t b2 = src.read<uint8_t>();
 				lookback_offset = dest.tell() - ((b1 >> 2) + b2 * 0x40) - 1;
 
 				read_from_dest = true;
@@ -194,6 +194,9 @@ void decompress_wad_n(stream& dest, stream& src, std::size_t bytes_to_decompress
 #define WAD_COMPRESS_DEBUG(cmd)
 //#define WAD_COMPRESS_DEBUG(cmd) cmd
 // NOTE: You must zero the size field of the expected file while debugging (0x3 through 0x6).
+// WAD_COMPRESS_DEBUG_EXPECTED_PATH isn't actually very useful, as this encoder
+// is NOT identical to the one used by Insomniac. It was useful when starting
+// to write the algorithm, but probably won't be for debugging it.
 //#define WAD_COMPRESS_DEBUG_EXPECTED_PATH "dumps/mobyseg_compressed_null"
 
 std::vector<char> encode_wad_packet(
@@ -269,7 +272,7 @@ void compress_wad(stream& dest_disk, stream& src_disk) {
 		src.seek(src.tell() + init_size);
 	}
 
-	for(int i = 0; src.tell() + 255 < src.size(); i++) {
+	for(int i = 0; src.tell() + 64 < src.size(); i++) {
 		WAD_COMPRESS_DEBUG(
 				std::cout << "{dest.tell() -> " << dest.tell() << ", src.tell() -> " << src.tell() << "}\n\n";
 		)
@@ -283,15 +286,43 @@ void compress_wad(stream& dest_disk, stream& src_disk) {
 
 		std::vector<char> packet = encode_wad_packet(src, dest.tell(), i, dictionary);
 		dest.write_n(packet.data(), packet.size());
+		
+		// This check may fail for large packets.
+		if(dest.tell() % 0x2000 > 0x1fd0) {
+			// Every 0x2000 bytes or so there must be a pad packet or the
+			// game crashes with a teq (Trap if Equal) exception.
+			dest.write<uint8_t>(0x12);
+			dest.write<uint8_t>(0x0);
+			dest.write<uint8_t>(0x0);
+			while(dest.tell() % 0x2000 != 0x10) {
+				dest.write<uint8_t>(0xee);
+			}
+			
+			WAD_COMPRESS_DEBUG(std::cout << "\n*** SPECIAL PAD PACKETS ***\n");
+			
+			// Padding must be followed by a packet with a flag of 0x11.
+			std::size_t copy_size = std::min((std::size_t) 0xff, src.size() - src.tell());
+			dest.write<uint8_t>(0x11);
+			dest.write<uint8_t>(2);
+			dest.write<uint8_t>(0);
+			dest.write<uint8_t>(src.read<uint8_t>());
+			dest.write<uint8_t>(src.read<uint8_t>());
+			
+			i += 2;
+		}
 	}
 
-	// End of file packet.
-	{
-		std::size_t size = src.size() - src.tell();
+	// End of file packets.
+	while(src.tell() < src.size()) {
 		dest.write<uint8_t>(0x11);
-		dest.write<uint8_t>(size);
-		dest.write<uint8_t>(1);
-		stream::copy_n(dest, src, size);
+		dest.write<uint8_t>(2); // size
+		dest.write<uint8_t>(0); // unused
+		dest.write<uint8_t>(src.read<uint8_t>());
+		if(src.tell() < src.size()) {
+			dest.write<uint8_t>(src.read<uint8_t>());
+		} else {
+			dest.write<uint8_t>(0);
+		}
 	}
 
 	std::size_t total_size = dest.tell();
@@ -333,8 +364,9 @@ std::vector<char> encode_wad_packet(
 		if(!match) {
 			// Create packets of type C and of length 1 until there is a match.
 			packet[0] = 0x11;
-			packet.push_back(1);
-			packet.push_back(1);
+			packet.push_back(2);
+			packet.push_back(0);
+			packet.push_back(src.read<uint8_t>());
 			packet.push_back(src.read<uint8_t>());
 
 			for(auto [key, val] : new_dict_entries) {
@@ -348,7 +380,7 @@ std::vector<char> encode_wad_packet(
 		std::size_t delta = src.tell() - match_offset - 1;
 
 		WAD_COMPRESS_DEBUG(
-		flags[match_offset] += "\033[1;32mg\033[0m";
+			//flags[match_offset] += "\033[1;32mg\033[0m";
 		)
 
 		// Max bytes_to_copy for a packet of type A is 0x8.
@@ -465,7 +497,7 @@ std::vector<char> encode_wad_packet(
 
 	packet[0] |= flag_byte;
 
-	WAD_COMPRESS_DEBUG(std::cout << "flag_byte = " << std::hex << (int) packet[0] << "\n");
+	WAD_COMPRESS_DEBUG(std::cout << "flag_byte = " << std::hex << (packet[0] & 0xff) << "\n");
 
 	return packet;
 }
