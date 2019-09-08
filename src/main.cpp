@@ -65,7 +65,7 @@ int main(int argc, char** argv) {
 	}
 
 	glfwMakeContextCurrent(window);
-	glfwSwapInterval(1);
+	glfwSwapInterval(0);
 
 	if(glewInit() != GLEW_OK) {
 		throw std::runtime_error("Cannot load GLEW.");
