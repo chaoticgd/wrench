@@ -111,6 +111,10 @@ std::string array_stream::resource_path() const {
 	return "arraystream";
 }
 
+char* array_stream::data() {
+	return _allocation.data();
+}
+
 /*
 	proxy_stream
 */

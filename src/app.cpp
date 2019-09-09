@@ -217,7 +217,14 @@ void app::save_settings() {
 }
 
 void app::run_emulator() {
-	if(boost::filesystem::is_regular_file(settings.emulator_path) && _project.get() != nullptr) {
+	if(_project.get() == nullptr) {
+		emplace_window<gui::message_box>("Error", "No project open.");
+		return;
+	}
+	
+	_project->iso.commit(); // Recompress WAD segments.
+	
+	if(boost::filesystem::is_regular_file(settings.emulator_path)) {
 		std::string emulator_path = boost::filesystem::canonical(settings.emulator_path).string();
 		bp::spawn(emulator_path, _project->cached_iso_path());
 	} else {

@@ -261,6 +261,8 @@ public:
 	void read_n(char* dest, std::size_t size);
 	void write_n(const char* data, std::size_t size);
 	std::string resource_path() const;
+	
+	char* data();
 
 private:
 	std::vector<char> _allocation;

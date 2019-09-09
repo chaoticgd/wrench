@@ -181,7 +181,7 @@ public:
 		};
 	};
 
-	level_impl(racpak* archive, std::string display_name, worker_logger& log);
+	level_impl(iso_stream* iso, racpak* archive, std::string display_name, worker_logger& log);
 
 	texture_provider* get_texture_provider();
 

@@ -18,11 +18,18 @@
 
 #include "racpak.h"
 
+#include "wad.h"
+
 racpak::racpak(stream* backing, std::size_t offset, std::size_t size)
-	: _backing(backing, offset, size) {}
+	: _backing(backing, offset, size),
+	  _base(offset) {}
 
 std::size_t racpak::num_entries() {
 	return _backing.peek<uint32_t>(0) / 8 - 1;
+}
+
+std::size_t racpak::base() {
+	return _base;
 }
 
 racpak_entry racpak::entry(std::size_t index) {
@@ -38,21 +45,10 @@ stream* racpak::open(racpak_entry entry) {
 		std::make_unique<proxy_stream>(&_backing, entry.offset, entry.size));
 	return _open_segments.back().get();
 }
-	
+
 bool racpak::is_compressed(racpak_entry entry) {
 	char magic[3];
-	_backing.peek_n(magic, entry.offset, 3);
+	_backing.seek(entry.offset);
+	_backing.read_n(magic, 3);
 	return validate_wad(magic);
-}
-
-stream* racpak::open_decompressed(racpak_entry entry) {
-	stream* proxy = open(entry);
-	_wad_segments.emplace_back(std::make_unique<wad_stream>(proxy, 0));
-	return _wad_segments.back().get();
-}
-
-void racpak::commit() {
-	for(auto& segment : _wad_segments) {
-		segment->commit();
-	}
 }

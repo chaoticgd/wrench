@@ -18,7 +18,7 @@
 
 #include "level_impl.h"
 
-level_impl::level_impl(racpak* archive, std::string display_name, worker_logger& log)
+level_impl::level_impl(iso_stream* iso, racpak* archive, std::string display_name, worker_logger& log)
 	: _archive(archive) {
 	
 	log << "Importing level " << display_name << "...\n";
@@ -30,7 +30,7 @@ level_impl::level_impl(racpak* archive, std::string display_name, worker_logger&
 	_textures.emplace(archive->open(archive->entry(1)), display_name);
 	log << "\tDetected " << _textures->textures().size() << " textures.\n";
 
-	_moby_stream = archive->open_decompressed(archive->entry(3));
+	_moby_stream = iso->get_decompressed(archive->base() + archive->entry(3).offset);
 	auto segment_header = _moby_stream->read<fmt::moby_segment::header>(0);
 	read_game_strings(segment_header, log);
 	read_ties  (segment_header, log);

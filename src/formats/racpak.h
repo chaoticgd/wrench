@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "../stream.h"
+#include "../iso_stream.h"
 #include "wad.h"
 
 # /*
@@ -38,20 +39,15 @@ public:
 	racpak(stream* backing, std::size_t offset, std::size_t size);
 
 	std::size_t num_entries();
+	std::size_t base();
 	racpak_entry entry(std::size_t index);
 	stream* open(racpak_entry file);
-	
 	bool is_compressed(racpak_entry entry);
-	stream* open_decompressed(racpak_entry entry);
-	
-	// Compress WAD segments and write them to the iso_stream.
-	void commit();
-	
-private:
 
+private:
 	proxy_stream _backing;
+	std::size_t _base;
 	std::vector<std::unique_ptr<proxy_stream>> _open_segments;
-	std::vector<std::unique_ptr<wad_stream>> _wad_segments;
 };
 
 #endif

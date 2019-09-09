@@ -16,6 +16,9 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#ifndef ISO_STREAM_H
+#define ISO_STREAM_H
+
 #include <nlohmann/json.hpp>
 #include <ZipLib/ZipArchive.h>
 #include <ZipLib/ZipFile.h>
@@ -30,15 +33,45 @@
 
 struct patch {
 	patch() {}
+	
+	std::size_t offset;
+	std::vector<char> buffer;
+	bool save_to_project;
+};
 
-	patch(std::size_t offset_, std::vector<char> buffer_)
-		: offset(offset_), buffer(buffer_) {} 
-
+struct wad_patch {
+	wad_patch() {}
+	
 	std::size_t offset;
 	std::vector<char> buffer;
 };
 
+class iso_stream;
+
+class wad_stream : public stream {
+	friend iso_stream;
+public:
+	wad_stream(iso_stream* backing, std::size_t offset, std::vector<wad_patch> patches);
+
+	std::size_t size() const override;
+	void seek(std::size_t offset) override;
+	std::size_t tell() const override;
+ 	void read_n(char* dest, std::size_t size) override;
+	void write_n(const char* data, std::size_t size) override;
+	std::string resource_path() const override;
+	
+	void commit();
+
+private:
+	iso_stream* _backing;
+	std::size_t _offset;
+	array_stream _uncompressed_buffer;
+	std::vector<wad_patch> _wad_patches;
+	bool _dirty; // Does the segment need to be recompressed?
+};
+
 class iso_stream : public stream {
+	friend wad_stream;
 public:
 	iso_stream(std::string game_id, std::string iso_path, worker_logger& log); // New Project
 	iso_stream(std::string game_id, std::string iso_path, worker_logger& log, ZipArchive::Ptr root); // Open Project
@@ -48,17 +81,26 @@ public:
 	std::size_t tell() const override;
  	void read_n(char* dest, std::size_t size) override;
 	void write_n(const char* data, std::size_t size) override;
-
+	void write_n(const char* data, std::size_t size, bool save_to_project);
 	std::string resource_path() const override;
+
 
 	std::string cached_iso_path() const;
 
-	// Save patches to .wratch file.
-	void save_patches(ZipArchive::Ptr& root, std::string project_path);
+	// Save patches to .wrench file.
+	void save_patches_to_and_close(ZipArchive::Ptr& root, std::string project_path);
+
+	// Decompress a WAD segment. Register the stream so that the segment can be
+	// automatically recompressed when changes need to be commited to the cache.
+	wad_stream* get_decompressed(std::size_t offset);
+	
+	// Recompress all open WAD segments.
+	void commit();
 
 private:
 
 	std::vector<patch> read_patches(ZipArchive::Ptr root);
+	std::map<std::size_t, std::unique_ptr<wad_stream>> read_wad_streams(ZipArchive::Ptr root);
 
 	std::string init_cache(std::string iso_path, worker_logger& log);
 	std::optional<nlohmann::json> get_cache_metadata();
@@ -66,19 +108,23 @@ private:
 	// Remove all patches from the cache ISO (does not affect metadata).
 	void clear_cache_iso(file_stream* cache_iso); // May be called before _cache is initialised.
 
-	// Apply a new patch to the cache ISO.
+	// Write a hash of the current patches and the ranges that were patched
+	// out to a file.
 	void update_cache_metadata();
 
-	// Write all patches in _patches to the cache ISO.
-	void write_all_patches(file_stream* cache_iso);
+	// Write patches in _patches to the cache ISO.
+	void write_normal_patches(file_stream* cache_iso);
 
 	// Generate a hash based on _patches.
 	std::string hash_patches();
 
 	file_stream _iso;
 	std::vector<patch> _patches;
+	std::map<std::size_t, std::unique_ptr<wad_stream>> _wad_streams;
 
 	std::string _cache_iso_path;
 	std::string _cache_meta_path;
 	file_stream _cache; // Must be initialised last.
 };
+
+#endif

@@ -151,7 +151,7 @@ void wrench_project::open_level(std::size_t offset, std::size_t size) {
 		racpak* archive = open_archive(offset, size);
 		worker_logger log;
 		_levels.emplace(offset, std::make_unique<level_impl>
-			(archive, _next_view_name, log));
+			(&iso, archive, _next_view_name, log));
 	}
 	_selected_level = _levels.at(offset).get();
 }
@@ -176,11 +176,7 @@ void wrench_project::save_to(std::string path) {
 	game_id_stream << _game_id;
 	root->CreateEntry("game_id")->SetCompressionStream(game_id_stream);
 
-	// Compress WAD segments and write them to the iso_stream.
-	for(auto& racpak : _archives) {
-		racpak.second->commit();
-	}
-	iso.save_patches(root, _project_path); // Also closes the archive.
+	iso.save_patches_to_and_close(root, _project_path);
 }
 
 std::string wrench_project::read_game_id() {

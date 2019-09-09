@@ -362,7 +362,7 @@ std::vector<char> encode_wad_packet(
 
 		auto match = find_match_fast(src, src.tell(), low, high, dict);
 		if(!match) {
-			// Create packets of type C and of length 1 until there is a match.
+			// Create packets of type C and of length 2 until there is a match.
 			packet[0] = 0x11;
 			packet.push_back(2);
 			packet.push_back(0);
@@ -577,15 +577,4 @@ std::size_t num_equal_bytes(stream& st, std::size_t l, std::size_t r) {
 		result++;
 	}
 	return result;
-}
-
-wad_stream::wad_stream(stream* backing, std::size_t wad_offset)
-	: _backing(backing, wad_offset, backing->size() - wad_offset),
-	  _wad_offset(wad_offset) {
-	decompress_wad(*this, *backing);
-}
-
-void wad_stream::commit() {
-	// Currently doesn't work.
-	// compress_wad(*backing, *this);
 }
