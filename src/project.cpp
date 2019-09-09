@@ -42,6 +42,10 @@ wrench_project::wrench_project(std::string iso_path, std::string project_path, w
 	_wratch_archive = nullptr;
 }
 
+std::string wrench_project::project_path() const {
+	return _project_path;
+}
+	
 std::string wrench_project::cached_iso_path() const {
 	return iso.cached_iso_path();
 }

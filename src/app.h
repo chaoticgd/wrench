@@ -40,6 +40,8 @@
 #	project, configuration and more.
 # */
 
+class GLFWwindow;
+
 class window;
 class view_3d;
 
@@ -70,6 +72,7 @@ public:
 	glm::vec2 mouse_diff;
 	std::set<int> keys_down;
 
+	GLFWwindow* glfw_window;
 	int window_width, window_height;
 	
 	time_t current_time;

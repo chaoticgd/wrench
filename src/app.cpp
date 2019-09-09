@@ -72,6 +72,8 @@ void app::new_project(std::string game_id) {
 			if(auto view = get_3d_view()) {
 				view->reset_camera(*this);
 			}
+			
+			glfwSetWindowTitle(glfw_window, "Wrench Editor - [Unsaved Project]");
 		}
 	));
 }
@@ -106,6 +108,9 @@ void app::open_project(std::string path) {
 			if(auto view = get_3d_view()) {
 				view->reset_camera(*this);
 			}
+			
+			auto title = std::string("Wrench Editor - [") + path + "]";
+			glfwSetWindowTitle(glfw_window, title.c_str());
 		}
 	));
 }
@@ -127,6 +132,9 @@ void app::save_project(bool save_as) {
 		error_message << err.stack_trace;
 		emplace_window<gui::message_box>("Error Saving Project", error_message.str());
 	}
+	
+	auto title = std::string("Wrench Editor - [") + _project->project_path() + "]";
+	glfwSetWindowTitle(glfw_window, title.c_str());
 }
 
 wrench_project* app::get_project() {

@@ -59,21 +59,21 @@ int main(int argc, char** argv) {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 
-	GLFWwindow* window = glfwCreateWindow(1280, 720, "Wrench", NULL, NULL);
-	if(window == nullptr) {
+	a.glfw_window = glfwCreateWindow(1280, 720, "Wrench Editor", NULL, NULL);
+	if(a.glfw_window == nullptr) {
 		throw std::runtime_error("Cannot create GLFW window.");
 	}
 
-	glfwMakeContextCurrent(window);
+	glfwMakeContextCurrent(a.glfw_window);
 	glfwSwapInterval(0);
 
 	if(glewInit() != GLEW_OK) {
 		throw std::runtime_error("Cannot load GLEW.");
 	}
 
-	glfwSetWindowUserPointer(window, &a);
-	glfwSetKeyCallback(window, key_callback);
-	glfwSetCursorPosCallback(window, cursor_position_callback);
+	glfwSetWindowUserPointer(a.glfw_window, &a);
+	glfwSetKeyCallback(a.glfw_window, key_callback);
+	glfwSetCursorPosCallback(a.glfw_window, cursor_position_callback);
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	io.ConfigDockingWithShift = true;
 	ImGui::StyleColorsDark();
-	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	ImGui_ImplGlfw_InitForOpenGL(a.glfw_window, true);
 	ImGui_ImplOpenGL3_Init("#version 130");
 
 	a.init_gui_scale();
@@ -92,15 +92,15 @@ int main(int argc, char** argv) {
 		a.open_project(project_path);
 	}
 
-	while(!glfwWindowShouldClose(window)) {
+	while(!glfwWindowShouldClose(a.glfw_window)) {
 		glfwPollEvents();
 		update_camera_movement(&a);
 
 		gui::render(a);
 
 		ImGui::Render();
-		glfwMakeContextCurrent(window);
-		glfwGetFramebufferSize(window, &a.window_width, &a.window_height);
+		glfwMakeContextCurrent(a.glfw_window);
+		glfwGetFramebufferSize(a.glfw_window, &a.window_width, &a.window_height);
 
 		glViewport(0, 0, a.window_width, a.window_height);
 		glClearColor(0, 0, 0, 1);
@@ -108,8 +108,8 @@ int main(int argc, char** argv) {
 
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-		glfwMakeContextCurrent(window);
-		glfwSwapBuffers(window);
+		glfwMakeContextCurrent(a.glfw_window);
+		glfwSwapBuffers(a.glfw_window);
 		
 		a.fps_count++;
 		time_t last_time = a.current_time;
@@ -124,7 +124,7 @@ int main(int argc, char** argv) {
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
 
-	glfwDestroyWindow(window);
+	glfwDestroyWindow(a.glfw_window);
 	glfwTerminate();
 }
 
