@@ -33,7 +33,7 @@ wad_stream::wad_stream(iso_stream* backing, std::size_t offset, std::vector<wad_
 	  _dirty(true) {
 	// Read in the stock WAD.
 	proxy_stream segment(&_backing->_iso, _offset, 0);
-	decompress_wad(_uncompressed_buffer, segment);
+	decompress_wad_cached(_uncompressed_buffer, segment);
 	
 	// Apply patches from project file.
 	for(auto& p : patches) {
@@ -357,6 +357,14 @@ void iso_stream::write_normal_patches(file_stream* cache_iso) {
 	}
 }
 
+std::string md5_to_printable_string(std::array<uint8_t, MD5_DIGEST_LENGTH> in) {
+	std::stringstream result;
+	for(std::size_t i = 0; i < MD5_DIGEST_LENGTH; i++) {
+		result << std::hex << (in[i] & 0xff);
+	}
+	return result.str();
+}
+
 std::string iso_stream::hash_patches() {
 	MD5_CTX ctx;
 	MD5Init(&ctx);
@@ -368,14 +376,33 @@ std::string iso_stream::hash_patches() {
 		MD5Update(&ctx, reinterpret_cast<uint8_t*>(p.buffer.data()), p.buffer.size());
 	}
 
-	std::string digest;
-	digest.resize(MD5_DIGEST_LENGTH);
-	MD5Final(reinterpret_cast<uint8_t*>(digest.data()), &ctx);
+	std::array<uint8_t, MD5_DIGEST_LENGTH> digest;
+	MD5Final(digest.data(), &ctx);
+	return md5_to_printable_string(digest);
+}
 
-	std::stringstream result;
-	for(std::size_t i = 0; i < MD5_DIGEST_LENGTH; i++) {
-		result << std::hex << (digest[i] & 0xff);
+void decompress_wad_cached(stream& dest, stream& src) {
+	MD5_CTX ctx;
+	MD5Init(&ctx);
+	
+	std::vector<char> buffer(src.read<uint32_t>(3)); // src.size() is unreliable.
+	src.seek(0);
+	src.read_v(buffer);
+	MD5Update(&ctx, reinterpret_cast<uint8_t*>(buffer.data()), buffer.size());
+	
+	std::array<uint8_t, MD5_DIGEST_LENGTH> digest;
+	MD5Final(digest.data(), &ctx);
+	std::string md5 = md5_to_printable_string(digest);
+	
+	auto cache_path = std::string("cache/wad_") + md5 + ".bin";
+	if(fs::exists(cache_path)) {
+		file_stream cache_file(cache_path);
+		dest.seek(0);
+		stream::copy_n(dest, cache_file, cache_file.size());
+	} else {
+		decompress_wad(dest, src);
+		file_stream cache_file(cache_path, std::ios::out);
+		dest.seek(0);
+		stream::copy_n(cache_file, dest, dest.size());
 	}
-
-	return result.str();
 }

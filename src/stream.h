@@ -153,12 +153,12 @@ public:
 	}
 
 	template <typename T>
-	void read_v(std::vector<T> buffer) {
+	void read_v(std::vector<T>& buffer) {
 		read_n(reinterpret_cast<char*>(buffer.data()), buffer.size() * sizeof(T));
 	}
 	
 	template <typename T>
-	void write_v(std::vector<T> buffer) {
+	void write_v(const std::vector<T>& buffer) {
 		write_n(reinterpret_cast<char*>(buffer.data()), buffer.size() * sizeof(T));
 	}
 

@@ -127,4 +127,6 @@ private:
 	file_stream _cache; // Must be initialised last.
 };
 
+void decompress_wad_cached(stream& dest, stream& src);
+
 #endif
