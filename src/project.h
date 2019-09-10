@@ -42,8 +42,8 @@ public:
 	std::string project_path() const;
 	std::string cached_iso_path() const;
 
-	void save(app* a);
-	void save_as(app* a);
+	void save(app* a, std::function<void()> on_done);
+	void save_as(app* a, std::function<void()> on_done);
 	
 	level* selected_level();
 	std::vector<level*> levels();

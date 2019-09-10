@@ -120,11 +120,16 @@ void app::save_project(bool save_as) {
 		return;
 	}
 
+	auto on_done = [=]() {
+		auto title = std::string("Wrench Editor - [") + _project->project_path() + "]";
+		glfwSetWindowTitle(glfw_window, title.c_str());
+	};
+
 	try {
 		if(save_as) {
-			_project->save_as(this);
+			_project->save_as(this, on_done);
 		} else {
-			_project->save(this);
+			_project->save(this, on_done);
 		}
 	} catch(stream_error& err) {
 		std::stringstream error_message;
@@ -132,9 +137,6 @@ void app::save_project(bool save_as) {
 		error_message << err.stack_trace;
 		emplace_window<gui::message_box>("Error Saving Project", error_message.str());
 	}
-	
-	auto title = std::string("Wrench Editor - [") + _project->project_path() + "]";
-	glfwSetWindowTitle(glfw_window, title.c_str());
 }
 
 wrench_project* app::get_project() {
