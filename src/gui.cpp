@@ -48,9 +48,11 @@ void gui::render(app& a) {
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 		}
 		
-		std::string title =
-			std::string(current_window->title_text()) +
-			"##" + std::to_string(current_window->id());
+		std::string title = current_window->title_text();
+		if(!current_window->is_unique()) {
+			title += "##" + std::to_string(current_window->id());
+		}
+		
 	 	ImGui::SetNextWindowSize(current_window->initial_size(), ImGuiCond_FirstUseEver);
 		if(ImGui::Begin(title.c_str())) {
 			current_window->render(a);
@@ -724,6 +726,10 @@ void gui::message_box::render(app& a) {
 	}
 }
 
+bool gui::message_box::is_unique() const {
+	return false;
+}
+
 /*
 	string_input
 */
@@ -750,6 +756,10 @@ void gui::string_input::render(app& a) {
 	if(pressed) {
 		close(a);
 	}
+}
+
+bool gui::string_input::is_unique() const {
+	return false;
 }
 
 void gui::string_input::on_okay(std::function<void(app&, std::string)> callback) {
@@ -852,6 +862,10 @@ void gui::file_dialog::render(app& a) {
 		ImGui::Text("Not a directory.");
 		ImGui::PopItemWidth();
 	}
+}
+
+bool gui::file_dialog::is_unique() const {
+	return false;
 }
 
 void gui::file_dialog::on_okay(std::function<void(std::string)> callback) {

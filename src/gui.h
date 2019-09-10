@@ -129,6 +129,7 @@ namespace gui {
 		const char* title_text() const override;
 		ImVec2 initial_size() const override;
 		void render(app& a) override;
+		bool is_unique() const override;
 	private:
 		const char* _title;
 		std::string _message;
@@ -141,6 +142,7 @@ namespace gui {
 		const char* title_text() const override;
 		ImVec2 initial_size() const override;
 		void render(app& a) override;
+		bool is_unique() const override;
 
 		void on_okay(std::function<void(app&, std::string)> callback);
 
@@ -159,6 +161,7 @@ namespace gui {
 		const char* title_text() const override;
 		ImVec2 initial_size() const override;
 		void render(app& a) override;
+		bool is_unique() const override;
 
 		void on_okay(std::function<void(std::string)> callback);
 

@@ -27,6 +27,10 @@ int window::id() {
 	return _id;
 }
 
+bool window::is_unique() const {
+	return true;
+}
+
 bool window::has_padding() const {
 	return true;
 }
