@@ -41,6 +41,7 @@ namespace gui {
 	void render(app& a);
 	void render_menu_bar(app& a);
 
+	void create_dock_layout(const app& a);
 	void begin_docking();
 
 	template <typename T, typename... T_constructor_args>

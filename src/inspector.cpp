@@ -25,7 +25,7 @@ const char* inspector::title_text() const {
 }
 
 ImVec2 inspector::initial_size() const {
-	return ImVec2(250, 500);
+	return ImVec2(250, 250);
 }
 
 void inspector::render(app& a) {

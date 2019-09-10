@@ -64,7 +64,53 @@ void gui::render(app& a) {
 		}
 	}
 	
+	static bool is_first_frame = true;
+	if(is_first_frame) {
+		gui::create_dock_layout(a);
+		is_first_frame = false;
+	}
+	
 	ImGui::End(); // docking
+}
+
+void gui::create_dock_layout(const app& a) {
+	ImGuiID dockspace_id = ImGui::GetID("dock_space");
+	
+	ImGui::DockBuilderRemoveNode(dockspace_id);
+	ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+	ImGui::DockBuilderSetNodeSize(dockspace_id, ImVec2(a.window_width, a.window_height));
+
+	// The dock nodes are arranged like so:
+	// +---------------------+-----------+
+	// |+---------+---------+|+---------+|
+	// ||+-------+|View 3D, |||Inspector||
+	// |||Project||Texture  |||         ||
+	// ||+-------+|Browser  ||+---------+|
+	// |||Mobies ||         |||Viewport ||
+	// ||+-------+|         |||Info     ||
+	// |+---------+---------+|+---------+|
+	// +---------------------+-----------+
+	ImGuiID main_left, far_right;
+	ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 8.f / 10.f, &main_left, &far_right);
+	
+	ImGuiID far_left, centre;
+	ImGui::DockBuilderSplitNode(main_left, ImGuiDir_Left, 2.f / 8.f, &far_left, &centre);
+	
+	ImGuiID project, mobies;
+	ImGui::DockBuilderSplitNode(far_left, ImGuiDir_Up, 0.75f, &project, &mobies);
+	
+	ImGuiID inspector, viewport_info;
+	ImGui::DockBuilderSplitNode(far_right, ImGuiDir_Up, 0.75f, &inspector, &viewport_info);
+	
+	
+	ImGui::DockBuilderDockWindow("3D View", centre);
+	ImGui::DockBuilderDockWindow("Texture Browser", centre);
+	ImGui::DockBuilderDockWindow("Project", project);
+	ImGui::DockBuilderDockWindow("Mobies", mobies);
+	ImGui::DockBuilderDockWindow("Inspector", inspector);
+	ImGui::DockBuilderDockWindow("Viewport Information", viewport_info);
+
+	ImGui::DockBuilderFinish(dockspace_id);
 }
 
 void gui::begin_docking() {
@@ -80,7 +126,7 @@ void gui::begin_docking() {
 
 	static bool p_open;
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-	ImGui::Begin("##dock_space", &p_open, window_flags);
+	ImGui::Begin("dock_space", &p_open, window_flags);
 	ImGui::PopStyleVar();
 	
 	ImGui::PopStyleVar(2);

@@ -48,7 +48,6 @@ public:
 	void draw_spline(const std::vector<glm::vec3> points,   glm::mat4 mvp, glm::vec3 colour) const;
 	void draw_tris  (const std::vector<float>& vertex_data, glm::mat4 mvp, glm::vec3 colour) const;
 	
-	void for_each_3d(std::function<void(game_object*, glm::vec2)>);
 	void draw_overlay_text(const app& a) const;
 
 	glm::mat4 get_view_projection_matrix() const;
