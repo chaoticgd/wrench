@@ -234,6 +234,9 @@ const std::map<std::string, wrench_project::game_view> wrench_project::_views {
 	{"rc3pal", {
 		{"Textures", {
 			{"ARMOR.WAD", [](wrench_project* p) { p->open_texture_archive(0x56da6000, 0x0); }}
+		}},
+		{"Levels", {
+			{"#00 Marcadia", [](wrench_project* p) { p->open_level(0x9576d000, 0x0); }},
 		}}
 	}}
 };
