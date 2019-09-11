@@ -435,7 +435,7 @@ void gui::texture_browser::render(app& a) {
 		if(ImGui::TreeNodeEx("Sources", ImGuiTreeNodeFlags_DefaultOpen)) {
 			for(std::size_t i = 0; i < sources.size(); i++) {
 				std::string display_str = sources[i]->display_name();
-				if(ImGui::Button(display_str.c_str())) {
+				if(ImGui::Selectable(display_str.c_str(), _provider == i)) {
 					_provider = i;
 				}
 			}
