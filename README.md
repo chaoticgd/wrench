@@ -1,29 +1,24 @@
-wrench
-======
+# wrench
 
-An early set of modding tools for the Ratchet & Clank PS2 games.
+A set of modding tools for the Ratchet & Clank PS2 games.
 
-Screenshots
-===========
+## Screenshots
 
-![A screenshot of the level editor](screenshots/editor.png)
+![Level editor](screenshots/editor.png)
 ![Texture browser](screenshots/texture-browser.png)
 
-Features
-========
+## Features
 
-- View levels.
-- Patching system.
+- View and edit levels from Ratchet & Clank 2 and 3.
+- Store mods as .wrench files that double as project files and compression-aware patch files.
 - Extract and replace certain textures.
 - Extract racpak (*.WAD) archives.
-- Decompress WAD segments (not to be confused with the *.WAD files on the game's filesystem).
+- Decompress and recompress WAD segments (not to be confused with the *.WAD files on the game's filesystem).
+- A number of command-line tools for testing.
 
+## Building
 
-Building
-========
-
-Ubuntu 18.04
-------------
+### Ubuntu 18.04
 
 1.	Install dependencies and tools:
 	> sudo apt install git cmake g++ libglew-dev libboost-all-dev libglfw3-dev libglm-dev python3 python3-pydot graphviz
@@ -36,19 +31,6 @@ Ubuntu 18.04
 2.	Build it with cmake:
 	> cmake . && cmake --build .
 
-Windows
--------
+### Windows
 
 Not yet.
-
-CLI Tools
-=========
-
-- wad: Decompress WAD segments.
-- fip: Extract 2FIP textures to indexed BMP files.
-- scan: Scan for game data segments on the disc.
-
-Scripts
-=======
-
-- shuffle_gui_textures.py: Shuffles all the GUI textures in a given data file/ISO.
