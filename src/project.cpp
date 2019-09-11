@@ -24,7 +24,7 @@
 
 #include "app.h"
 #include "gui.h"
-#include "build.h"
+#include "config.h"
 
 wrench_project::wrench_project(std::string iso_path, worker_logger& log, std::string game_id)
 	: _project_path(""),

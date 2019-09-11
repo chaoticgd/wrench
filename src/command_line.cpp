@@ -21,7 +21,7 @@
 #include <sstream>
 #include <iostream>
 
-#include "build.h"
+#include "config.h"
 
 bool parse_command_line_args(
 	int argc, char** argv,

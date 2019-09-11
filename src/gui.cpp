@@ -25,7 +25,9 @@
 #include <functional>
 
 #include "util.h"
+#include "config.h"
 #include "window.h"
+#include "platform.h"
 #include "renderer.h"
 #include "inspector.h"
 #include "formats/bmp.h"
@@ -192,6 +194,7 @@ void gui::render_menu_bar(app& a) {
 		}
 		ImGui::EndMenu();
 	}
+	
 	if(ImGui::BeginMenu("Emulator")) {
 		if(ImGui::MenuItem("Run")) {
 			a.run_emulator();
@@ -211,6 +214,37 @@ void gui::render_menu_bar(app& a) {
 		render_menu_bar_window_toggle<settings>(a);
 		ImGui::EndMenu();
 	}
+	
+	if(ImGui::BeginMenu("Help")) {
+		if(ImGui::MenuItem("About")) {
+			a.emplace_window<message_box>(
+				"About Wrench Editor",
+				"A set of modding tools for the\n"
+				"Ratchet & Clank PS2 games.\n"
+				"\n"
+				"Application version: " WRENCH_VERSION_STR "\n"
+				"License: GPLv3+ (see LICENSE file)\n"
+				"\n"
+				"Libraries used:\n"
+				" - Dear ImGui: https://github.com/ocornut/imgui\n"
+				" - nlohmann json: https://github.com/nlohmann/json\n"
+				" - toml11: https://github.com/ToruNiina/toml11\n"
+				" - ZipLib: https://bitbucket.org/wbenny/ziplib/wiki/Home\n"
+				" - MD5 implementation by Colin Plumb\n"
+			);
+		}
+		if(ImGui::MenuItem("GitHub")) {
+			open_in_browser("https://github.com/chaoticgd/wrench");
+		}
+		if(ImGui::MenuItem("Check for Updates")) {
+			open_in_browser("https://github.com/chaoticgd/wrench/releases");
+		}
+		if(ImGui::MenuItem("Report Bug")) {
+			open_in_browser("https://github.com/chaoticgd/wrench/issues");
+		}
+		ImGui::EndMenu();
+	}
+	
 	ImGui::EndMainMenuBar();
 }
 

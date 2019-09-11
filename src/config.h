@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef BUILD_H
-#define BUILD_H
+#ifndef CONFIG_H
+#define CONFIG_H
 
 #define WRENCH_VERSION_STR "0.0"
 
