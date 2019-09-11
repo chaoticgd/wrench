@@ -137,7 +137,7 @@ void wrench_project::open_texture_archive(std::size_t offset, std::size_t size) 
 	racpak* archive = open_archive(offset, size);
 	worker_logger log;
 	_texture_wads.emplace(offset, std::make_unique<racpak_fip_scanner>
-		(archive, _next_view_name, log));
+		(&iso, archive, _next_view_name, log));
 }
 
 void wrench_project::open_texture_scanner(std::size_t offset, std::size_t size) {

@@ -159,6 +159,7 @@ private:
 class racpak_fip_scanner : public texture_provider {
 public:
 	racpak_fip_scanner(
+		iso_stream* iso,
 		racpak* archive,
 		std::string display_name_,
 		worker_logger& log);

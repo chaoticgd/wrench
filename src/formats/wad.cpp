@@ -107,6 +107,7 @@ void decompress_wad_n(stream& dest, stream& src, std::size_t bytes_to_decompress
 				WAD_DEBUG(std::cout << " -- packet type C\n";)
 
 				if(flag_byte < 0x10) {
+					WAD_DEBUG(std::cout.flush();)
 					throw stream_format_error("WAD decompression failed!");
 				}
 

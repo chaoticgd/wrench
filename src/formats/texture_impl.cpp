@@ -18,8 +18,6 @@
 
 #include "texture_impl.h"
 
-#include <thread>
-
 #include "../util.h"
 #include "fip.h"
 #include "level_impl.h"
@@ -195,6 +193,7 @@ std::vector<texture*> fip_scanner::textures() {
 }
 
 racpak_fip_scanner::racpak_fip_scanner(
+		iso_stream* iso,
 		racpak* archive,
 		std::string display_name_,
 		worker_logger& log)
@@ -202,73 +201,16 @@ racpak_fip_scanner::racpak_fip_scanner(
 	
 	log << "Importing textures from " << display_name_ << " racpak... ";
 	
-	const static std::size_t NUM_THREADS = 8;
-	std::map<std::size_t, std::unique_ptr<array_stream>> compressed_streams;
-	std::array<std::vector<std::function<void()>>, NUM_THREADS> callbacks;
-	int num_errors = 0;
-	
 	for(std::size_t i = 0; i < archive->num_entries(); i++) {
 		auto entry = archive->entry(i);
-		
-		if(archive->is_compressed(entry)) {
-			stream* file = archive->open(entry);
-			file->seek(0);
-			
-			auto compressed_stream = std::make_unique<array_stream>();
-			stream::copy_n(*compressed_stream.get(), *file, file->size());
-			auto decompressed_stream = std::make_unique<array_stream>();
-			
-			auto dest = decompressed_stream.get();
-			auto src = compressed_stream.get();
-			callbacks[i % NUM_THREADS].emplace_back(
-				[dest, src, &num_errors]() {
-					try {
-						decompress_wad(*dest, *src);
-					} catch(stream_error) {
-						*dest = array_stream();
-						if(num_errors++ > 8) {
-							// Linux systems tend to run out of memory
-							// and freeze up if there are too many errors.
-							throw stream_format_error("Too many errors!");
-						}
-					}
-				});
-			
-			compressed_streams.emplace(i, std::move(compressed_stream));
-			_decompressed_streams.emplace(i, std::move(decompressed_stream));
-		}
-	}
-	
-	std::array<std::thread, NUM_THREADS> thread_pool;
-	
-	for(std::size_t i = 0; i < thread_pool.size(); i++) {
-		thread_pool[i] = std::thread(
-			[](std::vector<std::function<void()>>& callbacks) {
-				for(auto& callback : callbacks) {
-					callback();
-				}
-			}, std::ref(callbacks[i]));
-	}
-	
-	for(auto& thread : thread_pool) {
-		thread.join();
-	}
-	
-	for(std::size_t i = 0; i < archive->num_entries(); i++) {
-		auto entry = archive->entry(i);
-		
-		bool has_decompressed =
-			_decompressed_streams.find(i) != _decompressed_streams.end() &&
-			_decompressed_streams.at(i).get() != nullptr &&
-			_decompressed_streams.at(i)->size() > 0;
-		
 		stream* file;
-		if(has_decompressed) {
-			file = _decompressed_streams.at(i).get();
-		} else if(!archive->is_compressed(entry)) {
-			file = archive->open(entry);
+		if(archive->is_compressed(entry)) {
+			file = iso->get_decompressed(archive->base() + entry.offset);
 		} else {
-			log << "\tFailed to load entry " << i << "!\n";
+			file = archive->open(entry);
+		}
+		
+		if(file == nullptr || file->size() < 0x14) {
 			continue;
 		}
 		
