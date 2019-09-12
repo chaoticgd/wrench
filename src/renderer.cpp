@@ -153,7 +153,12 @@ void view_3d::draw_level(const level& lvl) const {
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-void view_3d::draw_spline(const std::vector<glm::vec3> points, glm::mat4 mvp, glm::vec3 colour) const {
+void view_3d::draw_spline(const std::vector<glm::vec3>& points, glm::mat4 mvp, glm::vec3 colour) const {
+	
+	if(points.size() < 1) {
+		return;
+	}
+	
 	std::vector<float> vertex_data;
 	for(std::size_t i = 0; i < points.size() - 1; i++) {
 		vertex_data.push_back(points[i].x);

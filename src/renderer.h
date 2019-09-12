@@ -45,7 +45,7 @@ public:
 	bool has_padding() const override;
 
 	void draw_level (const level& lvl) const;
-	void draw_spline(const std::vector<glm::vec3> points,   glm::mat4 mvp, glm::vec3 colour) const;
+	void draw_spline(const std::vector<glm::vec3>& points,   glm::mat4 mvp, glm::vec3 colour) const;
 	void draw_tris  (const std::vector<float>& vertex_data, glm::mat4 mvp, glm::vec3 colour) const;
 	
 	void draw_overlay_text(const app& a) const;
