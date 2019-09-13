@@ -49,6 +49,7 @@ public:
 	void draw_tris  (const std::vector<float>& vertex_data, glm::mat4 mvp, glm::vec3 colour) const;
 	
 	void draw_overlay_text(const app& a) const;
+	void draw_3d_text(const app& a, std::string text, glm::vec3 pos) const;
 
 	glm::mat4 get_view_projection_matrix() const;
 

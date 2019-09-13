@@ -27,7 +27,7 @@
 #include "../level.h"
 #include "../stream.h"
 
-class shrub_impl : public shrub {
+class shrub : public base_shrub {
 public:
 	struct fmt {
 		packed_struct(shrub,
@@ -60,7 +60,7 @@ public:
 		)
 	};
 
-	shrub_impl(stream* backing, std::size_t offset);
+	shrub(stream* backing, std::size_t offset);
 
 	std::size_t base() const override;
 

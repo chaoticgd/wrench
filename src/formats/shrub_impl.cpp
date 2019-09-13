@@ -18,32 +18,32 @@
 
 #include "shrub_impl.h"
 
-shrub_impl::shrub_impl(stream* backing, std::size_t offset)
+shrub::shrub(stream* backing, std::size_t offset)
 	: _backing(backing, offset, -1), _base(offset) {}
 
-std::size_t shrub_impl::base() const {
+std::size_t shrub::base() const {
 	return _base;
 }
 
-std::string shrub_impl::label() const {
+std::string shrub::label() const {
 	return "s";
 }
 
-glm::vec3 shrub_impl::position() const {
+glm::vec3 shrub::position() const {
 	auto data = _backing.peek<fmt::shrub>(0);
 	return data.position.glm();
 }
 
-void shrub_impl::set_position(glm::vec3 rotation_) {
+void shrub::set_position(glm::vec3 rotation_) {
 	auto data = _backing.read<fmt::shrub>(0);
 	data.position = vec3f(rotation_);
 	_backing.write<fmt::shrub>(0, data);
 }
 
-glm::vec3 shrub_impl::rotation() const {
+glm::vec3 shrub::rotation() const {
 	return glm::vec3(0, 0, 0); // Stub
 }
 
-void shrub_impl::set_rotation(glm::vec3 rotation_) {
+void shrub::set_rotation(glm::vec3 rotation_) {
 	// Stub
 }

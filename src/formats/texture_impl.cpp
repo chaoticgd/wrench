@@ -129,7 +129,7 @@ level_texture_provider::level_texture_provider(
 	stream* secondary_header,
 	std::string display_name_) {
 
-	auto snd_header = secondary_header->read<level_impl::fmt::secondary_header>(0);
+	auto snd_header = secondary_header->read<level::fmt::secondary_header>(0);
 	std::size_t pixel_data_offet = snd_header.tex_pixel_data_base;
 	std::size_t textures_ptr = snd_header.textures.value;
 	auto tex_header = secondary_header->read<fmt::header>(textures_ptr);

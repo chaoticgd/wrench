@@ -103,12 +103,12 @@ bool view_3d::has_padding() const {
 void view_3d::reset_camera(const app& a) {
 	bool has_level = false;
 	if(auto lvl = a.get_level()) {
-		const auto& mobies = lvl->mobies();
 		glm::vec3 sum(0, 0, 0);
-		for(const auto& moby : mobies) {
-			sum += moby.second->position();
+		std::size_t num_mobies = lvl->num_mobies();
+		for(std::size_t i = 0; i < num_mobies; i++) {
+			sum += lvl->moby_at(i).position();
 		}
-		camera_position = sum / static_cast<float>(mobies.size());
+		camera_position = sum / static_cast<float>(num_mobies);
 		has_level = true;
 	}
 	if(!has_level) {
@@ -128,26 +128,29 @@ void view_3d::draw_level(const level& lvl) const {
 
 	glUseProgram(_shaders->solid_colour.id());
 
-	for(auto& object : lvl.ties()) {
-		glm::mat4 model = glm::translate(glm::mat4(1.f), object->position());
+	for(std::size_t i = 0; i < lvl.num_ties(); i++) {
+		tie object = lvl.tie_at(i);
+		glm::mat4 model = glm::translate(glm::mat4(1.f), object.position());
 		glm::mat4 mvp = projection_view * model;
-		glm::vec3 colour = lvl.is_selected(object) ?
+		glm::vec3 colour = lvl.is_selected(&object) ?
 			glm::vec3(1, 0, 0) : glm::vec3(0.5, 0, 1);
-		draw_tris(object->object_model().triangles(), mvp, colour);
+		draw_tris(object.object_model().triangles(), mvp, colour);
 	}
 	
-	for(auto& object : lvl.mobies()) {
-		glm::mat4 model = glm::translate(glm::mat4(1.f), object.second->position());
+	for(std::size_t i = 0; i < lvl.num_mobies(); i++) {
+		moby object = lvl.moby_at(i);
+		glm::mat4 model = glm::translate(glm::mat4(1.f), object.position());
 		glm::mat4 mvp = projection_view * model;
-		glm::vec3 colour = lvl.is_selected(object.second) ?
+		glm::vec3 colour = lvl.is_selected(&object) ?
 			glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
-		draw_tris(object.second->object_model().triangles(), mvp, colour);
+		draw_tris(object.object_model().triangles(), mvp, colour);
 	}
 
-	for(auto object : lvl.splines()) {
-		glm::vec3 colour = lvl.is_selected(object) ?
+	for(std::size_t i = 0; i < lvl.num_splines(); i++) {
+		spline object = lvl.spline_at(i);
+		glm::vec3 colour = lvl.is_selected(&object) ?
 			glm::vec3(1, 0, 0) : glm::vec3(1, 0.5, 0);
-		draw_spline(object->points(), projection_view, colour);
+		draw_spline(object.points(), projection_view, colour);
 	}
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -200,24 +203,37 @@ void view_3d::draw_tris(const std::vector<float>& vertex_data, glm::mat4 mvp, gl
 void view_3d::draw_overlay_text(const app& a) const {
 	// Draw floating text over each moby showing its class name.
 	auto lvl = a.get_level();
+	for(std::size_t i = 0; i < lvl->num_ties(); i++) {
+		tie object = lvl->tie_at(i);
+		draw_3d_text(a, object.label(), object.position());
+	}
+	for(std::size_t i = 0; i < lvl->num_mobies(); i++) {
+		moby object = lvl->moby_at(i);
+		draw_3d_text(a, lvl->moby_at(i).label(), object.position());
+	}
+	for(std::size_t i = 0; i < lvl->num_shrubs(); i++) {
+		shrub object = lvl->shrub_at(i);
+		draw_3d_text(a, object.label(), object.position());
+	}
+}
+
+void view_3d::draw_3d_text(const app& a, std::string text, glm::vec3 pos) const {
 	ImDrawList* draw_list = ImGui::GetWindowDrawList();
 	ImVec2 window_pos = ImGui::GetWindowPos();
-	for(const auto& object : lvl->point_objects()) {
-		glm::mat4 model = glm::translate(glm::mat4(1.f), object->position());
-		glm::vec4 homogeneous_pos = get_view_projection_matrix() * model * glm::vec4(0, 0, 0, 1);
-		glm::vec3 gl_pos = {
-			homogeneous_pos.x / homogeneous_pos.w,
-			homogeneous_pos.y / homogeneous_pos.w,
-			homogeneous_pos.z / homogeneous_pos.w
-		};
-		if(gl_pos.z > 0 && gl_pos.z < 1) {
-			ImVec2 position(
-				window_pos.x + (1 + gl_pos.x) * _viewport_size.x / 2.0,
-				window_pos.y + (1 + gl_pos.y) * _viewport_size.y / 2.0
-			);
-			static const int colour = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
-			draw_list->AddText(position, colour, object->label().c_str());
-		}
+	glm::mat4 model = glm::translate(glm::mat4(1.f), pos);
+	glm::vec4 homogeneous_pos = get_view_projection_matrix() * model * glm::vec4(0, 0, 0, 1);
+	glm::vec3 gl_pos = {
+		homogeneous_pos.x / homogeneous_pos.w,
+		homogeneous_pos.y / homogeneous_pos.w,
+		homogeneous_pos.z / homogeneous_pos.w
+	};
+	if(gl_pos.z > 0 && gl_pos.z < 1) {
+		ImVec2 position(
+			window_pos.x + (1 + gl_pos.x) * _viewport_size.x / 2.0,
+			window_pos.y + (1 + gl_pos.y) * _viewport_size.y / 2.0
+		);
+		static const int colour = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
+		draw_list->AddText(position, colour, text.c_str());
 	}
 }
 
@@ -256,26 +272,19 @@ void view_3d::pick_object(level& lvl, ImVec2 position) {
 	uint16_t id = coded_object[1] + (coded_object[2] << 8);
 	
 	if(type == 1) { // Ties
-		auto ties = lvl.ties();
-		if(ties.size() > id) {
-			lvl.selection = { ties[id]->base() };
+		if(lvl.num_ties() > id) {
+			lvl.selection = { lvl.tie_at(id).base() };
 			return;
 		}
 	} else if(type == 2) { // Mobies
-		auto mobies = lvl.mobies();
-		auto moby = mobies.begin();
-		for(std::size_t i = 0; i < id; i++) {
-			moby++;
-			if(moby == mobies.end()) {
-				return; // Error!
-			}
+		std::size_t i;
+		if(id < lvl.num_mobies()) {
+			lvl.selection = { lvl.moby_at(id).base() };
 		}
-		lvl.selection = { moby->second->base() };
 		return;
 	} else if(type == 3) { // Splines
-		auto splines = lvl.splines();
-		if(splines.size() > id) {
-			lvl.selection = { splines[id]->base() };
+		if(lvl.num_splines() > id) {
+			lvl.selection = { lvl.spline_at(id).base() };
 			return;
 		}
 	}
@@ -300,37 +309,25 @@ void view_3d::draw_pickframe(const level& lvl) const {
 		return colour;
 	};
 
-	auto ties = lvl.ties();
-	for(auto iter = ties.begin(); iter != ties.end(); iter++) {
-		auto object = *iter;
-		std::size_t i = std::distance(ties.begin(), iter);
-		
-		glm::mat4 model = glm::translate(glm::mat4(1.f), object->position());
-		glm::mat4 mvp = projection_view * model;
+	for(std::size_t i = 0; i < lvl.num_ties(); i++) {
+		tie       object = lvl.tie_at(i);
+		glm::mat4 model  = glm::translate(glm::mat4(1.f), object.position());
+		glm::mat4 mvp    = projection_view * model;
 		glm::vec3 colour = encode_pick_colour(1, i);
-		
-		draw_tris(object->object_model().triangles(), mvp, colour);
+		draw_tris(object.object_model().triangles(), mvp, colour);
 	}
 
-	auto mobies = lvl.mobies();
-	for(auto iter = mobies.begin(); iter != mobies.end(); iter++) {
-		auto object = iter->second;
-		std::size_t i = std::distance(mobies.begin(), iter);
-		
-		glm::mat4 model = glm::translate(glm::mat4(1.f), object->position());
-		glm::mat4 mvp = projection_view * model;
+	for(std::size_t i = 0; i < lvl.num_mobies(); i++) {
+		moby      object = lvl.moby_at(i);
+		glm::mat4 model  = glm::translate(glm::mat4(1.f), object.position());
+		glm::mat4 mvp    = projection_view * model;
 		glm::vec3 colour = encode_pick_colour(2, i);
-		
-		draw_tris(object->object_model().triangles(), mvp, colour);
+		draw_tris(object.object_model().triangles(), mvp, colour);
 	}
 
-	auto splines = lvl.splines();
-	for(auto iter = splines.begin(); iter != splines.end(); iter++) {
-		auto object = *iter;
-		
-		std::size_t i = std::distance(splines.begin(), iter);
+	for(std::size_t i = 0; i < lvl.num_splines(); i++) {
+		spline    object = lvl.spline_at(i);
 		glm::vec3 colour = encode_pick_colour(3, i);
-		
-		draw_spline(object->points(), projection_view, colour);
+		draw_spline(object.points(), projection_view, colour);
 	}
 }

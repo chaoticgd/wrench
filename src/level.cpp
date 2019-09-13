@@ -18,90 +18,99 @@
 
 #include "level.h"
 
-level::level()
+#include "formats/level_impl.h"
+
+base_level::base_level()
 	: _history_index(0) { }
 
-const texture_provider* level::get_texture_provider() const {
-	return const_cast<level*>(this)->get_texture_provider();
+const texture_provider* base_level::get_texture_provider() const {
+	return const_cast<base_level*>(this)->get_texture_provider();
 }
 
-std::vector<game_object*> level::game_objects() {
+std::vector<game_object*> base_level::game_objects() {
+	static std::vector<tie>    ties;
+	static std::vector<shrub>  shrubs;
+	static std::vector<spline> splines;
+	static std::vector<moby>   mobies;
+	
+	ties.clear();
+	shrubs.clear();
+	splines.clear();
+	mobies.clear();
+	
+	auto this_ = static_cast<level*>(this);
+	for(std::size_t i = 0; i < this_->num_ties(); i++) {
+		ties.push_back(this_->tie_at(i));
+	}
+	for(std::size_t i = 0; i < this_->num_shrubs(); i++) {
+		shrubs.push_back(this_->shrub_at(i));
+	}
+	for(std::size_t i = 0; i < this_->num_splines(); i++) {
+		splines.push_back(this_->spline_at(i));
+	}
+	for(std::size_t i = 0; i < this_->num_mobies(); i++) {
+		mobies.push_back(this_->moby_at(i));
+	}
+	
 	std::vector<game_object*> result;
-	for(auto object : ties()) {
-		result.push_back(object);
-	}
-	for(auto object : shrubs()) {
-		result.push_back(object);
-	}
-	for(auto object : splines()) {
-		result.push_back(object);
-	}
-	for(auto object : mobies()) {
-		result.push_back(object.second);
-	}
+	result.reserve(ties.size() + shrubs.size() + splines.size() + mobies.size());
+	std::transform(ties.begin(), ties.end(), result.end(), [](auto& ref) { return &ref; });
+	std::transform(shrubs.begin(), shrubs.end(), result.end(), [](auto& ref) { return &ref; });
+	std::transform(splines.begin(), splines.end(), result.end(), [](auto& ref) { return &ref; });
+	std::transform(mobies.begin(), mobies.end(), result.end(), [](auto& ref) { return &ref; });
 	return result;
 }
 
-std::vector<const game_object*> level::game_objects() const {
-	auto result = const_cast<level*>(this)->game_objects();
+std::vector<const game_object*> base_level::game_objects() const {
+	auto result = const_cast<base_level*>(this)->game_objects();
 	return std::vector<const game_object*>(result.begin(), result.end());
 }
 
-std::vector<point_object*> level::point_objects() {
-	std::vector<point_object*> result;
-	for(auto object : ties()) {
-		result.push_back(object);
+std::vector<point_object*> base_level::point_objects() {
+	static std::vector<tie>    ties;
+	static std::vector<shrub>  shrubs;
+	static std::vector<moby>   mobies;
+	
+	ties.clear();
+	shrubs.clear();
+	mobies.clear();
+	
+	auto this_ = static_cast<level*>(this);
+	for(std::size_t i = 0; i < this_->num_ties(); i++) {
+		ties.push_back(this_->tie_at(i));
 	}
-	for(auto object : shrubs()) {
-		result.push_back(object);
+	for(std::size_t i = 0; i < this_->num_shrubs(); i++) {
+		shrubs.push_back(this_->shrub_at(i));
 	}
-	for(auto object : mobies()) {
-		result.push_back(object.second);
+	for(std::size_t i = 0; i < this_->num_mobies(); i++) {
+		mobies.push_back(this_->moby_at(i));
 	}
+	
+	std::vector<point_object*> result
+		(ties.size() + shrubs.size() + mobies.size());
+	std::transform(ties.begin(), ties.end(), result.end(), [](auto& ref) { return &ref; });
+	std::transform(shrubs.begin(), shrubs.end(), result.end(), [](auto& ref) { return &ref; });
+	std::transform(mobies.begin(), mobies.end(), result.end(), [](auto& ref) { return &ref; });
 	return result;
 }
 
-std::vector<const point_object*> level::point_objects() const {
-	auto result = const_cast<level*>(this)->point_objects();
+std::vector<const point_object*> base_level::point_objects() const {
+	auto result = const_cast<base_level*>(this)->point_objects();
 	return std::vector<const point_object*>(result.begin(), result.end());
 }
 
-std::vector<const tie*> level::ties() const {
-	auto result = const_cast<level*>(this)->ties();
-	return std::vector<const tie*>(result.begin(), result.end());
-}
-
-std::vector<const shrub*> level::shrubs() const {
-	auto result = const_cast<level*>(this)->shrubs();
-	return std::vector<const shrub*>(result.begin(), result.end());
-}
-
-std::vector<const spline*> level::splines() const {
-	auto result = const_cast<level*>(this)->splines();
-	return std::vector<const spline*>(result.begin(), result.end());
-}
-
-std::map<int32_t, const moby*> level::mobies() const {
-	auto moby_map = const_cast<level*>(this)->mobies();
-	std::map<int32_t, const moby*> result;
-	for(auto& [uid, moby] : moby_map) {
-		result.emplace(uid, moby);
-	}
-	return result;
-}
-
-bool level::is_selected(const game_object* obj) const {
+bool base_level::is_selected(const game_object* obj) const {
 	return std::find(selection.begin(), selection.end(), obj->base()) != selection.end();
 }
 
-void level::undo() {
+void base_level::undo() {
 	if(_history_index <= 0) {
 		throw command_error("Nothing to undo.");
 	}
 	_history_stack[--_history_index]->undo();
 }
 
-void level::redo() {
+void base_level::redo() {
 	if(_history_index >= _history_stack.size()) {
 		throw command_error("Nothing to redo.");
 	}

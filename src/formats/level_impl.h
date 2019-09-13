@@ -72,7 +72,7 @@
 
 class spline_impl;
 
-class level_impl : public level {
+class level : public base_level {
 public:
 	struct fmt {
 		struct secondary_header;
@@ -181,14 +181,24 @@ public:
 		};
 	};
 
-	level_impl(iso_stream* iso, racpak* archive, std::string display_name, worker_logger& log);
+	level(iso_stream* iso, racpak* archive, std::string display_name, worker_logger& log);
 
 	texture_provider* get_texture_provider();
 
-	std::vector<tie*> ties() override;
-	std::vector<shrub*> shrubs() override;
-	std::vector<spline*> splines() override;
-	std::map<int32_t, moby*> mobies() override;
+	std::size_t num_ties() const;
+	std::size_t num_shrubs() const;
+	std::size_t num_splines() const;
+	std::size_t num_mobies() const;
+	
+	tie    tie_at(std::size_t i);
+	shrub  shrub_at(std::size_t i);
+	spline spline_at(std::size_t i);
+	moby   moby_at(std::size_t i);
+	
+	const tie    tie_at(std::size_t i) const;
+	const shrub  shrub_at(std::size_t i) const;
+	const spline spline_at(std::size_t i) const;
+	const moby   moby_at(std::size_t i) const;
 
 	std::map<std::string, std::map<uint32_t, std::string>> game_strings() override;
 
@@ -204,16 +214,16 @@ private:
 	racpak* _archive;
 	std::optional<level_texture_provider> _textures;
 	stream* _moby_stream;
-	std::vector<std::unique_ptr<tie_impl>> _ties;
-	std::vector<std::unique_ptr<shrub_impl>> _shrubs;
-	std::vector<std::unique_ptr<spline_impl>> _splines;
-	std::vector<std::unique_ptr<moby_impl>> _mobies;
+	std::vector<tie> _ties;
+	std::vector<shrub> _shrubs;
+	std::vector<spline> _splines;
+	std::vector<moby> _mobies;
 	std::map<std::string, std::map<uint32_t, std::string>> _game_strings;
 };
 
-class spline_impl : public spline {
+class spline : public base_spline {
 public:
-	spline_impl(stream* backing, std::size_t offset, std::size_t size);
+	spline(stream* backing, std::size_t offset, std::size_t size);
 
 	std::size_t base() const override;
 

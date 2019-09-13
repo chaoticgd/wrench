@@ -25,10 +25,10 @@
 #	Virtual base class representing an undo/redo command.
 # */
 
-class level;
+class base_level;
 
 class command {
-	friend level;
+	friend base_level;
 public:
 	virtual ~command() {}
 
@@ -41,12 +41,12 @@ protected:
 	// Should only throw command_error.
 	virtual void undo() = 0;
 
-	level& lvl() { return *_lvl; }
+	base_level& lvl() { return *_lvl; }
 
 private:
-	void inject_level_pointer(level* lvl) { _lvl = lvl; }
+	void inject_level_pointer(base_level* lvl) { _lvl = lvl; }
 
-	level* _lvl;
+	base_level* _lvl;
 };
 
 class command_error : public std::runtime_error {

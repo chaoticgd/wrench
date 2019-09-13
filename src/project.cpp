@@ -156,7 +156,7 @@ void wrench_project::open_level(std::size_t offset, std::size_t size) {
 		// The level is not already open.
 		racpak* archive = open_archive(offset, size);
 		worker_logger log;
-		_levels.emplace(offset, std::make_unique<level_impl>
+		_levels.emplace(offset, std::make_unique<level>
 			(&iso, archive, _next_view_name, log));
 	}
 	_selected_level = _levels.at(offset).get();

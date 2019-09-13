@@ -166,7 +166,7 @@ void gui::render_menu_bar(app& a) {
 		if(ImGui::BeginMenu("Export")) {
 			if(ImGui::MenuItem("Mobyseg (debug)")) {
 				file_stream dump_file("mobyseg.bin", std::ios::out | std::ios::trunc);
-				stream* src = static_cast<level_impl*>(a.get_level())->moby_stream();
+				stream* src = a.get_level()->moby_stream();
 				src->seek(0);
 				stream::copy_n(dump_file, *src, src->size());
 			}
@@ -314,13 +314,15 @@ void gui::moby_list::render(app& a) {
 
 		ImGui::PushItemWidth(-1);
 		ImGui::ListBoxHeader("##mobylist", size);
-		for(const auto& [uid, moby] : lvl->mobies()) {
+		for(std::size_t i = 0; i < lvl->num_mobies(); i++) {
+			moby object = lvl->moby_at(i);
+			
 			std::stringstream row;
-			row << std::setfill(' ') << std::setw(8) << std::dec << uid << " ";
-			row << std::setfill(' ') << std::setw(20) << std::hex << moby->class_name() << " ";
+			row << std::setfill(' ') << std::setw(8) << std::dec << object.uid() << " ";
+			row << std::setfill(' ') << std::setw(20) << std::hex << object.class_name() << " ";
 
-			if(ImGui::Selectable(row.str().c_str(), lvl->is_selected(moby))) {
-				lvl->selection = { moby->base() };
+			if(ImGui::Selectable(row.str().c_str(), lvl->is_selected(&object))) {
+				lvl->selection = { object.base() };
 			}
 		}
 		ImGui::ListBoxFooter();

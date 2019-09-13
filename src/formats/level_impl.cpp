@@ -18,7 +18,7 @@
 
 #include "level_impl.h"
 
-level_impl::level_impl(iso_stream* iso, racpak* archive, std::string display_name, worker_logger& log)
+level::level(iso_stream* iso, racpak* archive, std::string display_name, worker_logger& log)
 	: _archive(archive) {
 	
 	log << "Importing level " << display_name << "...\n";
@@ -39,42 +39,67 @@ level_impl::level_impl(iso_stream* iso, racpak* archive, std::string display_nam
 	read_mobies(segment_header, log);
 }
 
-texture_provider* level_impl::get_texture_provider() {
+texture_provider* level::get_texture_provider() {
 	return &_textures.value();
 }
 
-std::vector<tie*> level_impl::ties() {
-	return unique_to_raw<tie>(_ties);
+std::size_t level::num_ties() const {
+	return _ties.size();
 }
 
-std::vector<shrub*> level_impl::shrubs() {
-	return unique_to_raw<shrub>(_shrubs);
+std::size_t level::num_shrubs() const {
+	return _shrubs.size();
 }
 
-std::vector<spline*> level_impl::splines() {
-	auto segment_header = _moby_stream->read<fmt::moby_segment::header>(0);
-	uint32_t spline_table_offset = segment_header.splines;
+std::size_t level::num_splines() const {
+	return _splines.size();
+}
+
+std::size_t level::num_mobies() const {
+	return _mobies.size();
+}
 	
-	return unique_to_raw<spline>(_splines);
+tie level::tie_at(std::size_t i) {
+	return _ties[i];
 }
 
-std::map<int32_t, moby*> level_impl::mobies() {
-	std::map<int32_t, moby*> mobies_;
-	for(auto& moby : _mobies) {
-		mobies_.emplace(moby->uid(), moby.get());
-	}
-	return mobies_;
+shrub level::shrub_at(std::size_t i) {
+	return _shrubs[i];
 }
 
-std::map<std::string, std::map<uint32_t, std::string>> level_impl::game_strings() {
+spline level::spline_at(std::size_t i) {
+	return _splines[i];
+}
+
+moby level::moby_at(std::size_t i) {
+	return _mobies[i];
+}
+
+const tie level::tie_at(std::size_t i) const {
+	return const_cast<level*>(this)->tie_at(i);
+}
+
+const shrub level::shrub_at(std::size_t i) const {
+	return const_cast<level*>(this)->shrub_at(i);
+}
+
+const spline level::spline_at(std::size_t i) const {
+	return const_cast<level*>(this)->spline_at(i);
+}
+
+const moby level::moby_at(std::size_t i) const {
+	return const_cast<level*>(this)->moby_at(i);
+}
+
+std::map<std::string, std::map<uint32_t, std::string>> level::game_strings() {
 	return _game_strings;
 }
 
-stream* level_impl::moby_stream() {
+stream* level::moby_stream() {
 	return _moby_stream;
 }
 
-void level_impl::read_game_strings(fmt::moby_segment::header header, worker_logger& log) {
+void level::read_game_strings(fmt::moby_segment::header header, worker_logger& log) {
 	// Work around structure packing.
 	auto english   = header.english_strings.value,
 	     french    = header.french_strings.value,
@@ -105,29 +130,29 @@ void level_impl::read_game_strings(fmt::moby_segment::header header, worker_logg
 	}
 }
 
-void level_impl::read_ties(fmt::moby_segment::header header, worker_logger& log) {
+void level::read_ties(fmt::moby_segment::header header, worker_logger& log) {
 	auto table = _moby_stream->read<fmt::moby_segment::obj_table_header>(header.ties.value);
 	for(uint32_t i = 0; i < table.num_elements; i++) {
-		_ties.emplace_back(std::make_unique<tie_impl>(
+		_ties.emplace_back(
 			_moby_stream,
 			header.ties.value + sizeof(fmt::moby_segment::obj_table_header) + i * 0x60
-		));
+		);
 	}
 	log << "\tDetected " << table.num_elements << " ties.\n";
 }
 
-void level_impl::read_shrubs(fmt::moby_segment::header header, worker_logger& log) {
+void level::read_shrubs(fmt::moby_segment::header header, worker_logger& log) {
 	auto table = _moby_stream->read<fmt::moby_segment::obj_table_header>(header.shrubs.value);
 	for(uint32_t i = 0; i < table.num_elements; i++) {
-		_shrubs.emplace_back(std::make_unique<shrub_impl>(
+		_shrubs.emplace_back(
 			_moby_stream,
 			header.shrubs.value + sizeof(fmt::moby_segment::obj_table_header) + i * 0x70
-		));
+		);
 	}
 	log << "\tDetected " << table.num_elements << " shrubs.\n";
 }
 
-void level_impl::read_splines(fmt::moby_segment::header header, worker_logger& log) {
+void level::read_splines(fmt::moby_segment::header header, worker_logger& log) {
 	
 	packed_struct(spline_table_header,
 		uint32_t num_splines;
@@ -150,32 +175,32 @@ void level_impl::read_splines(fmt::moby_segment::header header, worker_logger& l
 	for(uint32_t rel_offset : spline_offsets) {
 		std::size_t offset = header.splines + table.data_offset + rel_offset;
 		auto entry = _moby_stream->read<spline_entry>(offset);
-		_splines.emplace_back(std::make_unique<spline_impl>(
+		_splines.emplace_back(
 			_moby_stream, offset + 0x10, entry.num_vertices * 0x10
-		));
+		);
 	}
 }
 
-void level_impl::read_mobies(fmt::moby_segment::header header, worker_logger& log) {
+void level::read_mobies(fmt::moby_segment::header header, worker_logger& log) {
 	auto moby_header = _moby_stream->read<fmt::moby_segment::obj_table_header>(header.mobies.value);
 	std::map<uint32_t, moby*> mobies_;
 	for(uint32_t i = 0; i < moby_header.num_elements; i++) {
-		_mobies.emplace_back(std::make_unique<moby_impl>(
+		_mobies.emplace_back(
 			_moby_stream,
 			header.mobies.value + sizeof(fmt::moby_segment::obj_table_header) + i * 0x88
-		));
+		);
 	}
 	log << "\tDetected " << moby_header.num_elements << " mobies.\n";
 }
 
-spline_impl::spline_impl(stream* backing, std::size_t offset, std::size_t size)
+spline::spline(stream* backing, std::size_t offset, std::size_t size)
 	: _backing(backing, offset, size), _base(offset) {}
 
-std::size_t spline_impl::base() const {
+std::size_t spline::base() const {
 	return _base;
 }
 
-std::vector<glm::vec3> spline_impl::points() const {
+std::vector<glm::vec3> spline::points() const {
 	std::vector<glm::vec3> result;
 	
 	// We do not consider the position indicator part of the object's logical state.

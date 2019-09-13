@@ -51,10 +51,10 @@ class moby;
 struct inspectable { virtual ~inspectable() = default; };
 #endif
 
-class level {
+class base_level {
 public:
-	level();
-	virtual ~level() = default;
+	base_level();
+	virtual ~base_level() = default;
 
 	// Game data
 	virtual texture_provider* get_texture_provider() = 0;
@@ -64,18 +64,6 @@ public:
 	std::vector<const game_object*> game_objects() const;
 	std::vector<point_object*> point_objects();
 	std::vector<const point_object*> point_objects() const;
-
-	virtual std::vector<tie*> ties() = 0;
-	std::vector<const tie*> ties() const;
-
-	virtual std::vector<shrub*> shrubs() = 0;
-	std::vector<const shrub*> shrubs() const;
-
-	virtual std::vector<spline*> splines() = 0;
-	std::vector<const spline*> splines() const;
-
-	virtual std::map<int32_t, moby*> mobies() = 0;
-	std::map<int32_t, const moby*> mobies() const;
 
 	virtual std::map<std::string, std::map<uint32_t, std::string>> game_strings() = 0;
 
@@ -120,7 +108,7 @@ public:
 	void reflect(T... callbacks);
 };
 
-class tie : public point_object {
+class base_tie : public point_object {
 public:
 	template <typename... T>
 	void reflect(T... callbacks);
@@ -128,13 +116,13 @@ public:
 	virtual const model& object_model() const = 0;
 };
 
-class shrub : public point_object {
+class base_shrub : public point_object {
 public:
 	template <typename... T>
 	void reflect(T... callbacks);
 };
 
-class spline : public game_object {
+class base_spline : public game_object {
 public:
 	template <typename... T>
 	void reflect(T... callbacks);
@@ -142,9 +130,9 @@ public:
 	virtual std::vector<glm::vec3> points() const = 0;
 };
 
-class moby : public point_object {
+class base_moby : public point_object {
 public:
-	virtual ~moby() = default;
+	virtual ~base_moby() = default;
 
 	virtual int32_t uid() const = 0;
 	virtual void set_uid(int32_t uid_) = 0;
@@ -161,7 +149,7 @@ public:
 };
 
 template <typename T, typename... T_constructor_args>
-void level::emplace_command(T_constructor_args... args) {
+void base_level::emplace_command(T_constructor_args... args) {
 	_history_stack.resize(_history_index++);
 	_history_stack.emplace_back(std::make_unique<T>(args...));
 	auto& cmd = _history_stack[_history_index - 1];
@@ -170,7 +158,7 @@ void level::emplace_command(T_constructor_args... args) {
 }
 
 template <typename... T>
-void level::reflect(T... callbacks) {
+void base_level::reflect(T... callbacks) {
 	if(selection.size() == 1) {
 		for(game_object* object : game_objects()) {
 			if(object->base() == selection[0]) {
@@ -195,56 +183,56 @@ void point_object::reflect(T... callbacks) {
 	ImGui::Columns(2);
 
 	rf::reflector r(this, callbacks...);
-	r.visit_m("Position", &moby::position,  &moby::set_position);
-	r.visit_m("Rotation", &moby::rotation,  &moby::set_rotation);
+	r.visit_m("Position", &point_object::position,  &point_object::set_position);
+	r.visit_m("Rotation", &point_object::rotation,  &point_object::set_rotation);
 
-	if(auto obj = dynamic_cast<tie*>(this)) {
+	if(auto obj = dynamic_cast<base_tie*>(this)) {
 		obj->reflect(callbacks...);
 	}
 	
-	if(auto obj = dynamic_cast<shrub*>(this)) {
+	if(auto obj = dynamic_cast<base_shrub*>(this)) {
 		obj->reflect(callbacks...);
 	}
 	
-	if(auto obj = dynamic_cast<spline*>(this)) {
+	if(auto obj = dynamic_cast<base_spline*>(this)) {
 		obj->reflect(callbacks...);
 	}
 
-	if(auto obj = dynamic_cast<moby*>(this)) {
+	if(auto obj = dynamic_cast<base_moby*>(this)) {
 		obj->reflect(callbacks...);
 	}
 }
 
 template <typename... T>
-void tie::reflect(T... callbacks) {
+void base_tie::reflect(T... callbacks) {
 	ImGui::Columns(1);
 	ImGui::Text("Tie");
 	ImGui::Columns(2);
 }
 
 template <typename... T>
-void shrub::reflect(T... callbacks) {
+void base_shrub::reflect(T... callbacks) {
 	ImGui::Columns(1);
 	ImGui::Text("Shrub");
 	ImGui::Columns(2);
 }
 
 template <typename... T>
-void spline::reflect(T... callbacks) {
+void base_spline::reflect(T... callbacks) {
 	ImGui::Columns(1);
 	ImGui::Text("Spline");
 	ImGui::Columns(2);
 }
 
 template <typename... T>
-void moby::reflect(T... callbacks) {
+void base_moby::reflect(T... callbacks) {
 	ImGui::Columns(1);
 	ImGui::Text("Moby");
 	ImGui::Columns(2);
 
 	rf::reflector r(this, callbacks...);
-	r.visit_m("UID",      &moby::uid,       &moby::set_uid);
-	r.visit_m("Class",    &moby::class_num, &moby::set_class_num);
+	r.visit_m("UID",      &base_moby::uid,       &base_moby::set_uid);
+	r.visit_m("Class",    &base_moby::class_num, &base_moby::set_class_num);
 }
 
 #endif

@@ -31,7 +31,7 @@
 #	A moby stored using a stream. The member function wrap read/write calls.
 # */
 
-class moby_impl : public moby {
+class moby : public base_moby {
 public:
 	struct fmt {
 		packed_struct(moby,
@@ -68,7 +68,7 @@ public:
 		)
 	};
 
-	moby_impl(stream* backing, std::size_t offset);
+	moby(stream* backing, std::size_t offset);
 
 	std::size_t base() const override;
 

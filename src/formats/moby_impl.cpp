@@ -20,63 +20,63 @@
 
 #include "../shapes.h"
 
-moby_impl::moby_impl(stream* backing, std::size_t offset)
+moby::moby(stream* backing, std::size_t offset)
 	: _backing(backing, offset, 0x88), _base(offset) {}
 
-std::size_t moby_impl::base() const {
+std::size_t moby::base() const {
 	return _base;
 }
 
-std::string moby_impl::label() const {
+std::string moby::label() const {
 	return class_name();
 }
 
-int32_t moby_impl::uid() const {
+int32_t moby::uid() const {
 	auto data = _backing.peek<fmt::moby>(0);
 	return data.uid;
 }
 
-void moby_impl::set_uid(int32_t uid_) {
+void moby::set_uid(int32_t uid_) {
 	auto data = _backing.read<fmt::moby>(0);
 	data.uid = uid_;
 	_backing.write<fmt::moby>(0, data);
 }
 
-uint16_t moby_impl::class_num() const {
+uint16_t moby::class_num() const {
 	auto data = _backing.peek<fmt::moby>(0);
 	return data.class_num;
 }
 
-void moby_impl::set_class_num(uint16_t class_num_) {
+void moby::set_class_num(uint16_t class_num_) {
 	auto data = _backing.read<fmt::moby>(0);
 	data.class_num = class_num_;
 	_backing.write<fmt::moby>(0, data);
 }
 
 
-glm::vec3 moby_impl::position() const {
+glm::vec3 moby::position() const {
 	auto data = _backing.peek<fmt::moby>(0);
 	return data.position.glm();
 }
 
-void moby_impl::set_position(glm::vec3 position_) {
+void moby::set_position(glm::vec3 position_) {
 	auto data = _backing.read<fmt::moby>(0);
 	data.position = vec3f(position_);
 	_backing.write<fmt::moby>(0, data);
 }
 
-glm::vec3 moby_impl::rotation() const {
+glm::vec3 moby::rotation() const {
 	auto data = _backing.peek<fmt::moby>(0);
 	return data.rotation.glm();
 }
 
-void moby_impl::set_rotation(glm::vec3 rotation_) {
+void moby::set_rotation(glm::vec3 rotation_) {
 	auto data = _backing.read<fmt::moby>(0);
 	data.rotation = vec3f(rotation_);
 	_backing.write<fmt::moby>(0, data);
 }
 
-std::string moby_impl::class_name() const {
+std::string moby::class_name() const {
 	auto data = _backing.peek<fmt::moby>(0);
 	if(class_names.find(data.class_num) != class_names.end()) {
 		return class_names.at(data.class_num);
@@ -84,12 +84,12 @@ std::string moby_impl::class_name() const {
 	return std::to_string(data.class_num);
 }
 
-const model& moby_impl::object_model() const {
+const model& moby::object_model() const {
 	static cube_model c;
 	return c;
 }
 
-const std::map<uint16_t, const char*> moby_impl::class_names {
+const std::map<uint16_t, const char*> moby::class_names {
 	{ 0x1f4, "crate" },
 	{ 0x2f6, "swingshot_grapple" },
 	{ 0x323, "swingshot_swinging" }

@@ -77,7 +77,7 @@ private:
 	
 	std::map<std::size_t, std::unique_ptr<racpak>> _archives;
 	std::map<std::size_t, std::unique_ptr<texture_provider>> _texture_wads;
-	std::map<std::size_t, std::unique_ptr<level_impl>> _levels;
+	std::map<std::size_t, std::unique_ptr<level>> _levels;
 	level* _selected_level;
 	
 public:

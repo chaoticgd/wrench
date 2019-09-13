@@ -27,7 +27,7 @@
 #include "../level.h"
 #include "../stream.h"
 
-class tie_impl : public tie {
+class tie : public base_tie {
 public:
 	struct fmt {
 		packed_struct(tie,
@@ -56,7 +56,7 @@ public:
 		)
 	};
 
-	tie_impl(stream* backing, std::size_t offset);
+	tie(stream* backing, std::size_t offset);
 
 	std::size_t base() const override;
 
