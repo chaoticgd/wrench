@@ -169,7 +169,11 @@ void level_impl::read_mobies(fmt::moby_segment::header header, worker_logger& lo
 }
 
 spline_impl::spline_impl(stream* backing, std::size_t offset, std::size_t size)
-	: _backing(backing, offset, size) {}
+	: _backing(backing, offset, size), _base(offset) {}
+
+std::size_t spline_impl::base() const {
+	return _base;
+}
 
 std::vector<glm::vec3> spline_impl::points() const {
 	std::vector<glm::vec3> result;

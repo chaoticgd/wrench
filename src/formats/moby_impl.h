@@ -70,6 +70,8 @@ public:
 
 	moby_impl(stream* backing, std::size_t offset);
 
+	std::size_t base() const override;
+
 	std::string label() const;
 
 	int32_t uid() const;
@@ -92,6 +94,7 @@ public:
 
 private:
 	proxy_stream _backing;
+	std::size_t _base;
 };
 
 #endif

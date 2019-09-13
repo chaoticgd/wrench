@@ -258,7 +258,7 @@ void view_3d::pick_object(level& lvl, ImVec2 position) {
 	if(type == 1) { // Ties
 		auto ties = lvl.ties();
 		if(ties.size() > id) {
-			lvl.selection = { ties[id] };
+			lvl.selection = { ties[id]->base() };
 			return;
 		}
 	} else if(type == 2) { // Mobies
@@ -270,12 +270,12 @@ void view_3d::pick_object(level& lvl, ImVec2 position) {
 				return; // Error!
 			}
 		}
-		lvl.selection = { moby->second };
+		lvl.selection = { moby->second->base() };
 		return;
 	} else if(type == 3) { // Splines
 		auto splines = lvl.splines();
 		if(splines.size() > id) {
-			lvl.selection = { splines[id] };
+			lvl.selection = { splines[id]->base() };
 			return;
 		}
 	}

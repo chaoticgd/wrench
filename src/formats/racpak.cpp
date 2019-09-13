@@ -25,7 +25,11 @@ racpak::racpak(stream* backing, std::size_t offset, std::size_t size)
 	  _base(offset) {}
 
 std::size_t racpak::num_entries() {
-	return _backing.peek<uint32_t>(0) / 8 - 1;
+	uint32_t value = _backing.peek<uint32_t>(0);
+	if(value < 8) {
+		value = _backing.peek<uint32_t>(4);
+	}
+	return value / 8 - 1;
 }
 
 std::size_t racpak::base() {

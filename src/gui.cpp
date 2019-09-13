@@ -320,7 +320,7 @@ void gui::moby_list::render(app& a) {
 			row << std::setfill(' ') << std::setw(20) << std::hex << moby->class_name() << " ";
 
 			if(ImGui::Selectable(row.str().c_str(), lvl->is_selected(moby))) {
-				lvl->selection = { moby };
+				lvl->selection = { moby->base() };
 			}
 		}
 		ImGui::ListBoxFooter();

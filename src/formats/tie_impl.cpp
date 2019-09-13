@@ -21,7 +21,11 @@
 #include "../shapes.h"
 
 tie_impl::tie_impl(stream* backing, std::size_t offset)
-	: _backing(backing, offset, -1) {}
+	: _backing(backing, offset, -1), _base(offset) {}
+
+std::size_t tie_impl::base() const {
+	return _base;
+}
 
 std::string tie_impl::label() const {
 	return "t";

@@ -58,6 +58,8 @@ public:
 
 	tie_impl(stream* backing, std::size_t offset);
 
+	std::size_t base() const override;
+
 	std::string label() const;
 
 	glm::vec3 position() const;
@@ -70,6 +72,7 @@ public:
 
 private:
 	proxy_stream _backing;
+	std::size_t _base;
 };
 
 #endif

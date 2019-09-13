@@ -25,18 +25,45 @@ const texture_provider* level::get_texture_provider() const {
 	return const_cast<level*>(this)->get_texture_provider();
 }
 
-std::vector<const point_object*> level::point_objects() const {
-	std::vector<const point_object*> result;
-	for(auto tie : ties()) {
-		result.push_back(tie);
+std::vector<game_object*> level::game_objects() {
+	std::vector<game_object*> result;
+	for(auto object : ties()) {
+		result.push_back(object);
 	}
-	for(auto shrub : shrubs()) {
-		result.push_back(shrub);
+	for(auto object : shrubs()) {
+		result.push_back(object);
 	}
-	for(auto moby : mobies()) {
-		result.push_back(moby.second);
+	for(auto object : splines()) {
+		result.push_back(object);
+	}
+	for(auto object : mobies()) {
+		result.push_back(object.second);
 	}
 	return result;
+}
+
+std::vector<const game_object*> level::game_objects() const {
+	auto result = const_cast<level*>(this)->game_objects();
+	return std::vector<const game_object*>(result.begin(), result.end());
+}
+
+std::vector<point_object*> level::point_objects() {
+	std::vector<point_object*> result;
+	for(auto object : ties()) {
+		result.push_back(object);
+	}
+	for(auto object : shrubs()) {
+		result.push_back(object);
+	}
+	for(auto object : mobies()) {
+		result.push_back(object.second);
+	}
+	return result;
+}
+
+std::vector<const point_object*> level::point_objects() const {
+	auto result = const_cast<level*>(this)->point_objects();
+	return std::vector<const point_object*>(result.begin(), result.end());
 }
 
 std::vector<const tie*> level::ties() const {
@@ -64,7 +91,7 @@ std::map<int32_t, const moby*> level::mobies() const {
 }
 
 bool level::is_selected(const game_object* obj) const {
-	return std::find(selection.begin(), selection.end(), obj) != selection.end();
+	return std::find(selection.begin(), selection.end(), obj->base()) != selection.end();
 }
 
 void level::undo() {

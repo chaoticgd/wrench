@@ -60,6 +60,9 @@ public:
 	virtual texture_provider* get_texture_provider() = 0;
 	const texture_provider* get_texture_provider() const;
 
+	std::vector<game_object*> game_objects();
+	std::vector<const game_object*> game_objects() const;
+	std::vector<point_object*> point_objects();
 	std::vector<const point_object*> point_objects() const;
 
 	virtual std::vector<tie*> ties() = 0;
@@ -77,7 +80,7 @@ public:
 	virtual std::map<std::string, std::map<uint32_t, std::string>> game_strings() = 0;
 
 	// Selection
-	std::vector<game_object*> selection;
+	std::vector<std::size_t> selection;
 	bool is_selected(const game_object* obj) const;
 
 	// Undo/redo
@@ -97,6 +100,8 @@ private:
 
 class game_object : public inspectable {
 public:
+	virtual std::size_t base() const = 0;
+
 	template <typename... T>
 	void reflect(T... callbacks);
 };
@@ -167,7 +172,12 @@ void level::emplace_command(T_constructor_args... args) {
 template <typename... T>
 void level::reflect(T... callbacks) {
 	if(selection.size() == 1) {
-		selection[0]->reflect(callbacks...);
+		for(game_object* object : game_objects()) {
+			if(object->base() == selection[0]) {
+				object->reflect(callbacks...);
+				break;
+			}
+		}
 	}
 }
 

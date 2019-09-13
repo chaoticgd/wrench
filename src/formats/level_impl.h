@@ -215,10 +215,13 @@ class spline_impl : public spline {
 public:
 	spline_impl(stream* backing, std::size_t offset, std::size_t size);
 
+	std::size_t base() const override;
+
 	std::vector<glm::vec3> points() const;
 
 private:
-	proxy_stream _backing;	
+	proxy_stream _backing;
+	std::size_t _base;
 };
 
 #endif

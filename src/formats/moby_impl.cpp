@@ -21,7 +21,11 @@
 #include "../shapes.h"
 
 moby_impl::moby_impl(stream* backing, std::size_t offset)
-	: _backing(backing, offset, 0x88) {}
+	: _backing(backing, offset, 0x88), _base(offset) {}
+
+std::size_t moby_impl::base() const {
+	return _base;
+}
 
 std::string moby_impl::label() const {
 	return class_name();

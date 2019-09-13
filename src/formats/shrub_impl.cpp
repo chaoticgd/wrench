@@ -19,7 +19,11 @@
 #include "shrub_impl.h"
 
 shrub_impl::shrub_impl(stream* backing, std::size_t offset)
-	: _backing(backing, offset, -1) {}
+	: _backing(backing, offset, -1), _base(offset) {}
+
+std::size_t shrub_impl::base() const {
+	return _base;
+}
 
 std::string shrub_impl::label() const {
 	return "s";
