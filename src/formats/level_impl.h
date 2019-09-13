@@ -206,24 +206,16 @@ public:
 
 private:
 	void read_game_strings(fmt::moby_segment::header header, worker_logger& log);
-	void read_ties(fmt::moby_segment::header header, worker_logger& log);
-	void read_shrubs(fmt::moby_segment::header header, worker_logger& log);
-	void read_splines(fmt::moby_segment::header header, worker_logger& log);
-	void read_mobies(fmt::moby_segment::header header, worker_logger& log);
 
 	racpak* _archive;
 	std::optional<level_texture_provider> _textures;
 	stream* _moby_stream;
-	std::vector<tie> _ties;
-	std::vector<shrub> _shrubs;
-	std::vector<spline> _splines;
-	std::vector<moby> _mobies;
 	std::map<std::string, std::map<uint32_t, std::string>> _game_strings;
 };
 
 class spline : public base_spline {
 public:
-	spline(stream* backing, std::size_t offset, std::size_t size);
+	spline(stream* backing, std::size_t offset);
 
 	std::size_t base() const override;
 
