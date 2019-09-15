@@ -24,8 +24,6 @@
 #include <stdint.h>
 #include <glm/glm.hpp>
 
-#include "inspectable.h"
-
 # /*
 #	Virtual base class that represents an indexed texture.
 # */
@@ -38,7 +36,7 @@ struct vec2i {
 	int x, y;
 };
 
-class texture : public inspectable {
+class texture {
 public:
 	virtual ~texture() = default;
 
@@ -53,16 +51,6 @@ public:
 
 	virtual std::string palette_path() const;
 	virtual std::string pixel_data_path() const;
-	
-	int width() const { return size().x; }
-	int height() const { return size().y; }
-
-	void inspect(inspector_callbacks* cb) {
-		cb->input_integer<texture>("Width",           &texture::width);
-		cb->input_integer<texture>("Height",          &texture::height);
-		cb->input_string <texture>("Palette Path",    &texture::palette_path);
-		cb->input_string <texture>("Pixel Data Path", &texture::pixel_data_path);
-	}
 };
 
 class texture_provider {

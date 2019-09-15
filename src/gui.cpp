@@ -529,7 +529,9 @@ void gui::texture_browser::render(app& a) {
 
 		if(ImGui::TreeNodeEx("Details", ImGuiTreeNodeFlags_DefaultOpen)) {
 			if(textures.size() > 0) {
-				// FIXME: Reimplement inspector for textures.
+				vec2i size = textures[_selection]->size();
+				ImGui::Text("Width:  %d", size.x);
+				ImGui::Text("Height: %d", size.y);
 			} else {
 				ImGui::Text("<no texture selected>");
 			}
