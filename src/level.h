@@ -62,22 +62,16 @@ public:
 	// Selection
 	std::vector<std::size_t> selection;
 	bool is_selected(const game_object* obj) const;
-	
-	void inspect(inspector_callbacks* cb);
 };
 
 class game_object : public inspectable {
 public:
-	void inspect(inspector_callbacks* cb);
-
 	virtual std::size_t base() const = 0;
 	std::string base_string() const;
 };
 
 class point_object : public game_object {
 public:
-	void inspect(inspector_callbacks* cb);
-
 	virtual glm::vec3 position() const = 0;
 	virtual void set_position(glm::vec3 rotation_) = 0;
 
@@ -85,42 +79,6 @@ public:
 	virtual void set_rotation(glm::vec3 rotation_) = 0;
 
 	virtual std::string label() const = 0;
-};
-
-class base_tie : public point_object {
-public:
-	void inspect(inspector_callbacks* cb);
-	
-	virtual const model& object_model() const = 0;
-};
-
-class base_shrub : public point_object {
-public:
-	void inspect(inspector_callbacks* cb);
-};
-
-class base_spline : public game_object {
-public:
-	void inspect(inspector_callbacks* cb);
-	
-	virtual std::vector<glm::vec3> points() const = 0;
-};
-
-class base_moby : public point_object {
-public:
-	virtual ~base_moby() = default;
-
-	void inspect(inspector_callbacks* cb);
-
-	virtual int32_t uid() const = 0;
-	virtual void set_uid(int32_t uid_) = 0;
-
-	virtual uint16_t class_num() const = 0;
-	virtual void set_class_num(uint16_t class_num_) = 0;
-
-	virtual std::string class_name() const = 0;
-
-	virtual const model& object_model() const = 0;
 };
 
 #endif

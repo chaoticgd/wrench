@@ -215,7 +215,7 @@ private:
 	std::map<std::string, std::map<uint32_t, std::string>> _game_strings;
 };
 
-class spline : public base_spline {
+class spline : public game_object {
 public:
 	spline(stream* backing, std::size_t offset);
 

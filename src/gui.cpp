@@ -316,12 +316,41 @@ void gui::inspector::render(app& a) {
 		}
 			
 		lvl->for_each_game_object([=](game_object* object) {
-			if(lvl->selection[0] == object->base()) {
-				inspector_callbacks cb(object);
-				object->inspect(&cb);
-				if(cb.i == 0) {
-					ImGui::Text("<no properties>");
-				}
+			if(lvl->selection[0] != object->base()) {
+				return;
+			}
+			
+			inspector_callbacks cb(object);
+				
+			cb.category("Game Object");
+			cb.input_string<game_object>("Offset", &game_object::base_string);
+				
+			if(dynamic_cast<point_object*>(object)) {
+				cb.category("Point Object");
+				cb.input_vector3<point_object>("Position", &point_object::position, &point_object::set_position);
+				cb.input_vector3<point_object>("Rotation", &point_object::rotation, &point_object::set_rotation);
+			}
+			
+			if(dynamic_cast<tie*>(object)) {
+				cb.category("Tie");
+			}
+			
+			if(dynamic_cast<shrub*>(object)) {
+				cb.category("Shrub");
+			}
+			
+			if(dynamic_cast<spline*>(object)) {
+				cb.category("Spline");
+			}
+			
+			if(dynamic_cast<moby*>(object)) {
+				cb.category("Moby");
+				cb.input_integer<moby>("UID",   &moby::uid,       &moby::set_uid);
+				cb.input_uint16 <moby>("Class", &moby::class_num, &moby::set_class_num);
+			}
+				
+			if(cb.i == 0) {
+				ImGui::Text("<no properties>");
 			}
 		});
 

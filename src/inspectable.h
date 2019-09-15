@@ -34,7 +34,6 @@ using inspectable_getter = std::function<inspectable*(wrench_project&)>;
 
 struct inspectable {
 	virtual ~inspectable() = default;
-	virtual void inspect(inspector_callbacks* cb) = 0;
 	
 	void _read_only(int) {}
 	void _read_only(uint16_t) {}

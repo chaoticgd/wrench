@@ -31,50 +31,6 @@ bool base_level::is_selected(const game_object* obj) const {
 	return std::find(selection.begin(), selection.end(), obj->base()) != selection.end();
 }
 
-void base_level::inspect(inspector_callbacks* cb) {
-	if(selection.size() == 1) {
-		for_each_game_object([=](game_object* object) {
-			if(object->base() == selection[0]) {
-				object->inspect(cb);
-			}
-		});
-	}
-}
-
 std::string game_object::base_string() const {
 	return int_to_hex(base());
-}
-
-void game_object::inspect(inspector_callbacks* cb) {
-	cb->category("Game Object");
-	cb->input_string<game_object>("Offset", &game_object::base_string);
-}
-
-void point_object::inspect(inspector_callbacks* cb) {
-	game_object::inspect(cb);
-	cb->category("Point Object");
-	cb->input_vector3<point_object>("Position", &point_object::position, &point_object::set_position);
-	cb->input_vector3<point_object>("Rotation", &point_object::rotation, &point_object::set_rotation);
-}
-
-void base_tie::inspect(inspector_callbacks* cb) {
-	point_object::inspect(cb);
-	cb->category("Tie");
-}
-
-void base_shrub::inspect(inspector_callbacks* cb) {
-	point_object::inspect(cb);
-	cb->category("Shrub");
-}
-
-void base_spline::inspect(inspector_callbacks* cb) {
-	game_object::inspect(cb);
-	cb->category("Spline");
-}
-
-void base_moby::inspect(inspector_callbacks* cb) {
-	point_object::inspect(cb);
-	cb->category("Moby");
-	cb->input_integer<base_moby>("UID",      &base_moby::uid,       &base_moby::set_uid);
-	cb->input_uint16 <base_moby>("Class",    &base_moby::class_num, &base_moby::set_class_num);
 }

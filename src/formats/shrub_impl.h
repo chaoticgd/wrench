@@ -27,7 +27,7 @@
 #include "../level.h"
 #include "../stream.h"
 
-class shrub : public base_shrub {
+class shrub : public point_object {
 public:
 	struct fmt {
 		packed_struct(shrub,

@@ -27,7 +27,7 @@
 #include "../level.h"
 #include "../stream.h"
 
-class tie : public base_tie {
+class tie : public point_object {
 public:
 	struct fmt {
 		packed_struct(tie,
@@ -68,7 +68,7 @@ public:
 	glm::vec3 rotation() const;
 	void set_rotation(glm::vec3 rotation_);
 
-	const model& object_model() const override;
+	const model& object_model() const;
 
 private:
 	proxy_stream _backing;

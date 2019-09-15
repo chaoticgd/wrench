@@ -30,7 +30,7 @@
 #	A moby stored using a stream. The member function wrap read/write calls.
 # */
 
-class moby : public base_moby {
+class moby : public point_object {
 public:
 	struct fmt {
 		packed_struct(moby,
@@ -87,7 +87,7 @@ public:
 
 	std::string class_name() const;
 
-	const model& object_model() const override;
+	const model& object_model() const;
 
 	static const std::map<uint16_t, const char*> class_names;
 
