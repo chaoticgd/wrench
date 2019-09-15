@@ -30,6 +30,7 @@ wrench_project::wrench_project(std::string iso_path, worker_logger& log, std::st
 	: _project_path(""),
 	  _wratch_archive(nullptr),
 	  _game_id(game_id),
+	  _history_index(0),
 	  _selected_level(nullptr),
 	  iso(game_id, iso_path, log) {}
 
@@ -37,6 +38,7 @@ wrench_project::wrench_project(std::string iso_path, std::string project_path, w
 	: _project_path(project_path),
 	  _wratch_archive(ZipFile::Open(project_path)),
 	  _game_id(read_game_id()),
+	  _history_index(0),
 	  iso(_game_id, iso_path, log, _wratch_archive) {
 	ZipFile::SaveAndClose(_wratch_archive, project_path);
 	_wratch_archive = nullptr;
@@ -93,6 +95,20 @@ std::vector<texture_provider*> wrench_project::texture_providers() {
 		result.push_back(wad.second.get());
 	}
 	return result;
+}
+
+void wrench_project::undo() {
+	if(_history_index <= 0) {
+		throw command_error("Nothing to undo.");
+	}
+	_history_stack[--_history_index]->undo(this);
+}
+
+void wrench_project::redo() {
+	if(_history_index >= _history_stack.size()) {
+		throw command_error("Nothing to redo.");
+	}
+	_history_stack[_history_index++]->apply(this);
 }
 
 /*

@@ -25,10 +25,11 @@
 #	Virtual base class representing an undo/redo command.
 # */
 
-class base_level;
+class app;
+class wrench_project;
 
 class command {
-	friend base_level;
+	friend wrench_project;
 public:
 	virtual ~command() {}
 
@@ -36,17 +37,10 @@ protected:
 	command() {}
 
 	// Should only throw command_error.
-	virtual void apply() = 0;
+	virtual void apply(wrench_project* project) = 0;
 
 	// Should only throw command_error.
-	virtual void undo() = 0;
-
-	base_level& lvl() { return *_lvl; }
-
-private:
-	void inject_level_pointer(base_level* lvl) { _lvl = lvl; }
-
-	base_level* _lvl;
+	virtual void undo(wrench_project* project) = 0;
 };
 
 class command_error : public std::runtime_error {

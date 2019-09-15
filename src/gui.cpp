@@ -29,7 +29,7 @@
 #include "window.h"
 #include "platform.h"
 #include "renderer.h"
-#include "inspector.h"
+#include "inspectable.h"
 #include "formats/bmp.h"
 
 void gui::render(app& a) {
@@ -176,17 +176,17 @@ void gui::render_menu_bar(app& a) {
 	}
 
 	if(ImGui::BeginMenu("Edit")) {
-		if(auto lvl = a.get_level()) {
+		if(auto project = a.get_project()) {
 			if(ImGui::MenuItem("Undo")) {
 				try {
-					lvl->undo();
+					project->undo();
 				} catch(command_error& error) {
 					a.emplace_window<message_box>("Undo Error", error.what());
 				}
 			}
 			if(ImGui::MenuItem("Redo")) {
 				try {
-					lvl->redo();
+					project->redo();
 				} catch(command_error& error) {
 					a.emplace_window<message_box>("Redo Error", error.what());
 				}
@@ -206,7 +206,7 @@ void gui::render_menu_bar(app& a) {
 		render_menu_bar_window_toggle<project_tree>(a);
 		render_menu_bar_window_toggle<view_3d>(a, &a);
 		render_menu_bar_window_toggle<moby_list>(a);
-		render_menu_bar_window_toggle<inspector>(a, &a);
+		render_menu_bar_window_toggle<inspector>(a);
 		render_menu_bar_window_toggle<viewport_information>(a);
 		render_menu_bar_window_toggle<string_viewer>(a);
 		render_menu_bar_window_toggle<texture_browser>(a);
@@ -290,6 +290,45 @@ void gui::project_tree::render(app& a) {
 		}
 	}
 	ImGui::EndChild();
+}
+
+/*
+	inspector
+*/
+
+const char* gui::inspector::title_text() const {
+	return "Inspector";
+}
+
+ImVec2 gui::inspector::initial_size() const {
+	return ImVec2(250, 250);
+}
+
+void gui::inspector::render(app& a) {
+	if(auto lvl = a.get_level()) {
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
+		ImGui::Columns(2);
+		ImGui::SetColumnWidth(0, 80);
+
+		if(lvl->selection.size() != 1) {
+			ImGui::PopStyleVar();
+			return;
+		}
+			
+		lvl->for_each_game_object([=](game_object* object) {
+			if(lvl->selection[0] == object->base()) {
+				inspector_callbacks cb(object);
+				object->inspect(&cb);
+				if(cb.i == 0) {
+					ImGui::Text("<no properties>");
+				}
+			}
+		});
+
+		ImGui::PopStyleVar();
+	} else {
+		ImGui::Text("<no project open>");
+	}
 }
 
 /*
@@ -490,8 +529,7 @@ void gui::texture_browser::render(app& a) {
 
 		if(ImGui::TreeNodeEx("Details", ImGuiTreeNodeFlags_DefaultOpen)) {
 			if(textures.size() > 0) {
-				inspector texture_inspector(textures[_selection]);
-				texture_inspector.render(a);
+				// FIXME: Reimplement inspector for textures.
 			} else {
 				ImGui::Text("<no texture selected>");
 			}

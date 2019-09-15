@@ -199,6 +199,8 @@ public:
 	const shrub  shrub_at(std::size_t i) const;
 	const spline spline_at(std::size_t i) const;
 	const moby   moby_at(std::size_t i) const;
+	
+	void for_each_game_object(std::function<void(game_object*)> callback);
 
 	std::map<std::string, std::map<uint32_t, std::string>> game_strings() override;
 

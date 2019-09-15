@@ -28,7 +28,6 @@
 #include "app.h"
 #include "level.h"
 #include "window.h"
-#include "inspector.h"
 #include "commands/property_changed_command.h"
 
 # /*
@@ -48,6 +47,13 @@ namespace gui {
 	void render_menu_bar_window_toggle(app& a, T_constructor_args... args);
 
 	class project_tree : public window {
+	public:
+		const char* title_text() const override;
+		ImVec2 initial_size() const override;
+		void render(app& a) override;
+	};
+	
+	class inspector : public window {
 	public:
 		const char* title_text() const override;
 		ImVec2 initial_size() const override;

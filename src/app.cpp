@@ -23,7 +23,6 @@
 #include <boost/process.hpp>
 
 #include "gui.h"
-#include "inspector.h"
 #include "stream.h"
 #include "renderer.h"
 #include "worker_thread.h"

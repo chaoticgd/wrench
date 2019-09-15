@@ -23,7 +23,6 @@
 #include "app.h"
 #include "gui.h"
 #include "renderer.h"
-#include "inspector.h"
 
 # /*
 #	Setup code, the main loop, and GLFW stuff.
@@ -51,7 +50,7 @@ int main(int argc, char** argv) {
 	a.windows.emplace_back(std::make_unique<gui::texture_browser>());
 	a.windows.emplace_back(std::make_unique<gui::project_tree>());
 	a.windows.emplace_back(std::make_unique<gui::moby_list>());
-	a.windows.emplace_back(std::make_unique<inspector>(&a));
+	a.windows.emplace_back(std::make_unique<gui::inspector>());
 	a.windows.emplace_back(std::make_unique<gui::viewport_information>());
 
 	if(!glfwInit()) {

@@ -20,39 +20,50 @@
 #define PROPERTY_CHANGED_COMMAND_H
 
 #include "../command.h"
-#include "../reflection/refolder.h"
+#include "../inspectable.h"
 
 # /*
 #	Undo/redo command for modifying object properties via reflection.
 # */
 
-template <typename T>
+template <typename T_owner, typename T>
 class property_changed_command : public command {
 public:
-	property_changed_command(rf::property<T> property, T new_value);
+	property_changed_command(
+			wrench_project* project,
+			property<T_owner, T> property_,
+			T new_value,
+			inspectable_getter getter);
 
-	void apply() override;
-	void undo() override;
+	void apply(wrench_project* project) override;
+	void undo(wrench_project* project) override;
+	
 private:
-	rf::property<T> _property;
+	property<T_owner, T> _property;
 	T _old_value;
 	T _new_value;
+	inspectable_getter _getter;
 };
 
-template <typename T>
-property_changed_command<T>::property_changed_command(rf::property<T> property, T new_value)
-	: _property(property),
-	  _old_value(property.get()),
-	  _new_value(new_value) {}
+template <typename T_owner, typename T>
+property_changed_command<T_owner, T>::property_changed_command(
+		wrench_project* project,
+		property<T_owner, T> property_,
+		T new_value,
+		inspectable_getter getter)
+	: _property(property_),
+	  _old_value((getter(*project).*property_.get)()),
+	  _new_value(new_value),
+	  _getter(getter) {}
 
-template <typename T>
-void property_changed_command<T>::apply() {
-	_property.set(_new_value);
+template <typename T_owner, typename T>
+void property_changed_command<T_owner, T>::apply(wrench_project* project) {
+	(_getter(*project).*_property.set)(_new_value);
 }
 
-template <typename T>
-void property_changed_command<T>::undo() {
-	_property.set(_old_value);
+template <typename T_owner, typename T>
+void property_changed_command<T_owner, T>::undo(wrench_project* project) {
+	(_getter(*project).*_property.set)(_old_value);
 }
 
 #endif

@@ -24,7 +24,7 @@
 #include <stdint.h>
 #include <glm/glm.hpp>
 
-#include "reflection/refolder.h"
+#include "inspectable.h"
 
 # /*
 #	Virtual base class that represents an indexed texture.
@@ -37,11 +37,6 @@ struct colour {
 struct vec2i {
 	int x, y;
 };
-
-#ifndef INSPECTABLE_DEF
-#define INSPECTABLE_DEF
-struct inspectable { virtual ~inspectable() = default; };
-#endif
 
 class texture : public inspectable {
 public:
@@ -58,14 +53,15 @@ public:
 
 	virtual std::string palette_path() const;
 	virtual std::string pixel_data_path() const;
+	
+	int width() const { return size().x; }
+	int height() const { return size().y; }
 
-	template <typename... T>
-	void reflect(T... callbacks) {
-		rf::reflector r(this, callbacks...);
-		r.visit_f("Width",           [=]() { return size().x; },          [](int) {});
-		r.visit_f("Height",          [=]() { return size().y; },          [](int) {});
-		r.visit_f("Palette Path",    [=]() { return palette_path(); },    [](std::string) {});
-		r.visit_f("Pixel Data Path", [=]() { return pixel_data_path(); }, [](std::string) {});
+	void inspect(inspector_callbacks* cb) {
+		cb->input_integer<texture>("Width",           &texture::width);
+		cb->input_integer<texture>("Height",          &texture::height);
+		cb->input_string <texture>("Palette Path",    &texture::palette_path);
+		cb->input_string <texture>("Pixel Data Path", &texture::pixel_data_path);
 	}
 };
 

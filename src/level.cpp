@@ -18,101 +18,63 @@
 
 #include "level.h"
 
+#include "util.h"
 #include "formats/level_impl.h"
 
-base_level::base_level()
-	: _history_index(0) { }
+base_level::base_level() {}
 
 const texture_provider* base_level::get_texture_provider() const {
 	return const_cast<base_level*>(this)->get_texture_provider();
-}
-
-std::vector<game_object*> base_level::game_objects() {
-	static std::vector<tie>    ties;
-	static std::vector<shrub>  shrubs;
-	static std::vector<spline> splines;
-	static std::vector<moby>   mobies;
-	
-	ties.clear();
-	shrubs.clear();
-	splines.clear();
-	mobies.clear();
-	
-	auto this_ = static_cast<level*>(this);
-	for(std::size_t i = 0; i < this_->num_ties(); i++) {
-		ties.push_back(this_->tie_at(i));
-	}
-	for(std::size_t i = 0; i < this_->num_shrubs(); i++) {
-		shrubs.push_back(this_->shrub_at(i));
-	}
-	for(std::size_t i = 0; i < this_->num_splines(); i++) {
-		splines.push_back(this_->spline_at(i));
-	}
-	for(std::size_t i = 0; i < this_->num_mobies(); i++) {
-		mobies.push_back(this_->moby_at(i));
-	}
-	
-	std::vector<game_object*> result;
-	result.reserve(ties.size() + shrubs.size() + splines.size() + mobies.size());
-	std::transform(ties.begin(), ties.end(), result.end(), [](auto& ref) { return &ref; });
-	std::transform(shrubs.begin(), shrubs.end(), result.end(), [](auto& ref) { return &ref; });
-	std::transform(splines.begin(), splines.end(), result.end(), [](auto& ref) { return &ref; });
-	std::transform(mobies.begin(), mobies.end(), result.end(), [](auto& ref) { return &ref; });
-	return result;
-}
-
-std::vector<const game_object*> base_level::game_objects() const {
-	auto result = const_cast<base_level*>(this)->game_objects();
-	return std::vector<const game_object*>(result.begin(), result.end());
-}
-
-std::vector<point_object*> base_level::point_objects() {
-	static std::vector<tie>    ties;
-	static std::vector<shrub>  shrubs;
-	static std::vector<moby>   mobies;
-	
-	ties.clear();
-	shrubs.clear();
-	mobies.clear();
-	
-	auto this_ = static_cast<level*>(this);
-	for(std::size_t i = 0; i < this_->num_ties(); i++) {
-		ties.push_back(this_->tie_at(i));
-	}
-	for(std::size_t i = 0; i < this_->num_shrubs(); i++) {
-		shrubs.push_back(this_->shrub_at(i));
-	}
-	for(std::size_t i = 0; i < this_->num_mobies(); i++) {
-		mobies.push_back(this_->moby_at(i));
-	}
-	
-	std::vector<point_object*> result
-		(ties.size() + shrubs.size() + mobies.size());
-	std::transform(ties.begin(), ties.end(), result.end(), [](auto& ref) { return &ref; });
-	std::transform(shrubs.begin(), shrubs.end(), result.end(), [](auto& ref) { return &ref; });
-	std::transform(mobies.begin(), mobies.end(), result.end(), [](auto& ref) { return &ref; });
-	return result;
-}
-
-std::vector<const point_object*> base_level::point_objects() const {
-	auto result = const_cast<base_level*>(this)->point_objects();
-	return std::vector<const point_object*>(result.begin(), result.end());
 }
 
 bool base_level::is_selected(const game_object* obj) const {
 	return std::find(selection.begin(), selection.end(), obj->base()) != selection.end();
 }
 
-void base_level::undo() {
-	if(_history_index <= 0) {
-		throw command_error("Nothing to undo.");
+void base_level::inspect(inspector_callbacks* cb) {
+	if(selection.size() == 1) {
+		for_each_game_object([=](game_object* object) {
+			if(object->base() == selection[0]) {
+				object->inspect(cb);
+			}
+		});
 	}
-	_history_stack[--_history_index]->undo();
 }
 
-void base_level::redo() {
-	if(_history_index >= _history_stack.size()) {
-		throw command_error("Nothing to redo.");
-	}
-	_history_stack[_history_index++]->apply();
+std::string game_object::base_string() const {
+	return int_to_hex(base());
+}
+
+void game_object::inspect(inspector_callbacks* cb) {
+	cb->category("Game Object");
+	cb->input_string<game_object>("Offset", &game_object::base_string);
+}
+
+void point_object::inspect(inspector_callbacks* cb) {
+	game_object::inspect(cb);
+	cb->category("Point Object");
+	cb->input_vector3<point_object>("Position", &point_object::position, &point_object::set_position);
+	cb->input_vector3<point_object>("Rotation", &point_object::rotation, &point_object::set_rotation);
+}
+
+void base_tie::inspect(inspector_callbacks* cb) {
+	point_object::inspect(cb);
+	cb->category("Tie");
+}
+
+void base_shrub::inspect(inspector_callbacks* cb) {
+	point_object::inspect(cb);
+	cb->category("Shrub");
+}
+
+void base_spline::inspect(inspector_callbacks* cb) {
+	game_object::inspect(cb);
+	cb->category("Spline");
+}
+
+void base_moby::inspect(inspector_callbacks* cb) {
+	point_object::inspect(cb);
+	cb->category("Moby");
+	cb->input_integer<base_moby>("UID",      &base_moby::uid,       &base_moby::set_uid);
+	cb->input_uint16 <base_moby>("Class",    &base_moby::class_num, &base_moby::set_class_num);
 }

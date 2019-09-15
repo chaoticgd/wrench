@@ -45,20 +45,13 @@ class GLFWwindow;
 class window;
 class view_3d;
 
-class inspector_reflector;
-
 struct settings_data {
 	std::string emulator_path;
 	std::map<std::string, std::string> game_paths;
 	float gui_scale;
 };
 
-#ifndef INSPECTABLE_DEF
-#define INSPECTABLE_DEF
-struct inspectable { virtual ~inspectable() = default; };
-#endif
-
-class app : public inspectable {
+class app {
 public:
 	app();
 
@@ -102,9 +95,6 @@ public:
 	void init_gui_scale();
 	void update_gui_scale();
 
-	template <typename... T>
-	void reflect(T... callbacks);
-
 private:
 	std::atomic_bool _lock_project; // Prevent race conditions while creating/loading a project.
 	std::unique_ptr<wrench_project> _project;
@@ -117,13 +107,6 @@ T* app::emplace_window(T_constructor_args... args) {
 	T* result = window.get();
 	windows.emplace_back(std::move(window));
 	return result;
-}
-
-template <typename... T>
-void app::reflect(T... callbacks) {
-	if(auto lvl = get_level()) {
-		lvl->reflect(callbacks...);
-	}
 }
 
 #endif

@@ -49,6 +49,11 @@ public:
 	std::vector<level*> levels();
 	std::vector<texture_provider*> texture_providers();
 	
+	template <typename T, typename... T_constructor_args>
+	void emplace_command(T_constructor_args... args);
+	void undo();
+	void redo();
+	
 	// Views are objects that access the game's data structures and expose an
 	// abstracted interface to view and modify them. Available views are a list
 	// of all supported views, not only those that are currently loaded.
@@ -70,6 +75,9 @@ private:
 	ZipArchive::Ptr _wratch_archive;
 	const std::string _game_id;
 	
+	std::size_t _history_index;
+	std::vector<std::unique_ptr<command>> _history_stack;
+	
 	using view_group = std::map<std::string, std::function<void(wrench_project*)>>;
 	using game_view = std::map<std::string, view_group>; // Views for a given game.
 	static const std::map<std::string, game_view> _views;
@@ -82,6 +90,15 @@ private:
 	
 public:
 	iso_stream iso;
+	
 };
+
+template <typename T, typename... T_constructor_args>
+void wrench_project::emplace_command(T_constructor_args... args) {
+	_history_stack.resize(_history_index++);
+	_history_stack.emplace_back(std::make_unique<T>(args...));
+	auto& cmd = _history_stack[_history_index - 1];
+	cmd->apply(this);
+}
 
 #endif

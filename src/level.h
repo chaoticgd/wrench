@@ -28,8 +28,8 @@
 #include "model.h"
 #include "command.h"
 #include "texture.h"
+#include "inspectable.h"
 #include "imgui_includes.h"
-#include "reflection/refolder.h"
 
 # /*
 #	Virtual base classes for levels and game objects (shrubs, mobies, ...).
@@ -46,11 +46,6 @@ class shrub;
 class spline;
 class moby;
 
-#ifndef INSPECTABLE_DEF
-#define INSPECTABLE_DEF
-struct inspectable { virtual ~inspectable() = default; };
-#endif
-
 class base_level {
 public:
 	base_level();
@@ -60,42 +55,29 @@ public:
 	virtual texture_provider* get_texture_provider() = 0;
 	const texture_provider* get_texture_provider() const;
 
-	std::vector<game_object*> game_objects();
-	std::vector<const game_object*> game_objects() const;
-	std::vector<point_object*> point_objects();
-	std::vector<const point_object*> point_objects() const;
+	virtual void for_each_game_object(std::function<void(game_object*)> callback) = 0;
 
 	virtual std::map<std::string, std::map<uint32_t, std::string>> game_strings() = 0;
 
 	// Selection
 	std::vector<std::size_t> selection;
 	bool is_selected(const game_object* obj) const;
-
-	// Undo/redo
-	template <typename T, typename... T_constructor_args>
-	void emplace_command(T_constructor_args... args);
-	void undo();
-	void redo();
-
-	// Inspector
-	template <typename... T>
-	void reflect(T... callbacks);
-
-private:
-	std::size_t _history_index;
-	std::vector<std::unique_ptr<command>> _history_stack;
+	
+	void inspect(inspector_callbacks* cb);
 };
 
 class game_object : public inspectable {
 public:
-	virtual std::size_t base() const = 0;
+	void inspect(inspector_callbacks* cb);
 
-	template <typename... T>
-	void reflect(T... callbacks);
+	virtual std::size_t base() const = 0;
+	std::string base_string() const;
 };
 
 class point_object : public game_object {
 public:
+	void inspect(inspector_callbacks* cb);
+
 	virtual glm::vec3 position() const = 0;
 	virtual void set_position(glm::vec3 rotation_) = 0;
 
@@ -103,29 +85,23 @@ public:
 	virtual void set_rotation(glm::vec3 rotation_) = 0;
 
 	virtual std::string label() const = 0;
-
-	template <typename... T>
-	void reflect(T... callbacks);
 };
 
 class base_tie : public point_object {
 public:
-	template <typename... T>
-	void reflect(T... callbacks);
+	void inspect(inspector_callbacks* cb);
 	
 	virtual const model& object_model() const = 0;
 };
 
 class base_shrub : public point_object {
 public:
-	template <typename... T>
-	void reflect(T... callbacks);
+	void inspect(inspector_callbacks* cb);
 };
 
 class base_spline : public game_object {
 public:
-	template <typename... T>
-	void reflect(T... callbacks);
+	void inspect(inspector_callbacks* cb);
 	
 	virtual std::vector<glm::vec3> points() const = 0;
 };
@@ -133,6 +109,8 @@ public:
 class base_moby : public point_object {
 public:
 	virtual ~base_moby() = default;
+
+	void inspect(inspector_callbacks* cb);
 
 	virtual int32_t uid() const = 0;
 	virtual void set_uid(int32_t uid_) = 0;
@@ -143,96 +121,6 @@ public:
 	virtual std::string class_name() const = 0;
 
 	virtual const model& object_model() const = 0;
-
-	template <typename... T>
-	void reflect(T... callbacks);
 };
-
-template <typename T, typename... T_constructor_args>
-void base_level::emplace_command(T_constructor_args... args) {
-	_history_stack.resize(_history_index++);
-	_history_stack.emplace_back(std::make_unique<T>(args...));
-	auto& cmd = _history_stack[_history_index - 1];
-	cmd->inject_level_pointer(this);
-	cmd->apply();
-}
-
-template <typename... T>
-void base_level::reflect(T... callbacks) {
-	if(selection.size() == 1) {
-		for(game_object* object : game_objects()) {
-			if(object->base() == selection[0]) {
-				object->reflect(callbacks...);
-				break;
-			}
-		}
-	}
-}
-
-template <typename... T>
-void game_object::reflect(T... callbacks) {
-	if(auto obj = dynamic_cast<point_object*>(this)) {
-		obj->reflect(callbacks...);
-	}
-}
-
-template <typename... T>
-void point_object::reflect(T... callbacks) {
-	ImGui::Columns(1);
-	ImGui::Text("Point Object");
-	ImGui::Columns(2);
-
-	rf::reflector r(this, callbacks...);
-	r.visit_m("Position", &point_object::position,  &point_object::set_position);
-	r.visit_m("Rotation", &point_object::rotation,  &point_object::set_rotation);
-
-	if(auto obj = dynamic_cast<base_tie*>(this)) {
-		obj->reflect(callbacks...);
-	}
-	
-	if(auto obj = dynamic_cast<base_shrub*>(this)) {
-		obj->reflect(callbacks...);
-	}
-	
-	if(auto obj = dynamic_cast<base_spline*>(this)) {
-		obj->reflect(callbacks...);
-	}
-
-	if(auto obj = dynamic_cast<base_moby*>(this)) {
-		obj->reflect(callbacks...);
-	}
-}
-
-template <typename... T>
-void base_tie::reflect(T... callbacks) {
-	ImGui::Columns(1);
-	ImGui::Text("Tie");
-	ImGui::Columns(2);
-}
-
-template <typename... T>
-void base_shrub::reflect(T... callbacks) {
-	ImGui::Columns(1);
-	ImGui::Text("Shrub");
-	ImGui::Columns(2);
-}
-
-template <typename... T>
-void base_spline::reflect(T... callbacks) {
-	ImGui::Columns(1);
-	ImGui::Text("Spline");
-	ImGui::Columns(2);
-}
-
-template <typename... T>
-void base_moby::reflect(T... callbacks) {
-	ImGui::Columns(1);
-	ImGui::Text("Moby");
-	ImGui::Columns(2);
-
-	rf::reflector r(this, callbacks...);
-	r.visit_m("UID",      &base_moby::uid,       &base_moby::set_uid);
-	r.visit_m("Class",    &base_moby::class_num, &base_moby::set_class_num);
-}
 
 #endif

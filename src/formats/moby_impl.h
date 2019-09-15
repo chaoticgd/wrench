@@ -24,7 +24,6 @@
 
 #include "../stream.h"
 #include "../level.h"
-#include "../reflection/refolder.h"
 #include "vec3f.h"
 
 # /*
