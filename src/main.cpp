@@ -46,12 +46,6 @@ int main(int argc, char** argv) {
 	}
 
 	app a;
-	a.windows.emplace_back(std::make_unique<view_3d>(&a));
-	a.windows.emplace_back(std::make_unique<gui::texture_browser>());
-	a.windows.emplace_back(std::make_unique<gui::project_tree>());
-	a.windows.emplace_back(std::make_unique<gui::moby_list>());
-	a.windows.emplace_back(std::make_unique<gui::inspector>());
-	a.windows.emplace_back(std::make_unique<gui::viewport_information>());
 
 	if(!glfwInit()) {
 		throw std::runtime_error("Cannot load GLFW.");
@@ -92,6 +86,14 @@ int main(int argc, char** argv) {
 	if(project_path != "") {
 		a.open_project(project_path);
 	}
+	
+	a.windows.emplace_back(std::make_unique<view_3d>(&a));
+	a.windows.emplace_back(std::make_unique<gui::texture_browser>());
+	a.windows.emplace_back(std::make_unique<gui::project_tree>());
+	a.windows.emplace_back(std::make_unique<gui::moby_list>());
+	a.windows.emplace_back(std::make_unique<gui::inspector>());
+	a.windows.emplace_back(std::make_unique<gui::viewport_information>());
+	a.windows.emplace_back(std::make_unique<gui::tools>());
 
 	while(!glfwWindowShouldClose(a.glfw_window)) {
 		glfwPollEvents();

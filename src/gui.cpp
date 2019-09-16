@@ -81,32 +81,25 @@ void gui::create_dock_layout(const app& a) {
 	ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
 	ImGui::DockBuilderSetNodeSize(dockspace_id, ImVec2(a.window_width, a.window_height));
 
-	// The dock nodes are arranged like so:
-	// +---------------------+-----------+
-	// |+---------+---------+|+---------+|
-	// ||+-------+|View 3D, |||Inspector||
-	// |||Project||Texture  |||         ||
-	// ||+-------+|Browser  ||+---------+|
-	// |||Mobies ||         |||Viewport ||
-	// ||+-------+|         |||Info     ||
-	// |+---------+---------+|+---------+|
-	// +---------------------+-----------+
 	ImGuiID main_left, far_right;
 	ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 8.f / 10.f, &main_left, &far_right);
 	
 	ImGuiID far_left, centre;
 	ImGui::DockBuilderSplitNode(main_left, ImGuiDir_Left, 2.f / 8.f, &far_left, &centre);
 	
-	ImGuiID project, mobies;
-	ImGui::DockBuilderSplitNode(far_left, ImGuiDir_Up, 0.75f, &project, &mobies);
+	ImGuiID top_left, mobies;
+	ImGui::DockBuilderSplitNode(far_left, ImGuiDir_Up, 0.75f, &top_left, &mobies);
 	
 	ImGuiID inspector, viewport_info;
 	ImGui::DockBuilderSplitNode(far_right, ImGuiDir_Up, 0.75f, &inspector, &viewport_info);
 	
+	ImGuiID project, tools;
+	ImGui::DockBuilderSplitNode(top_left, ImGuiDir_Up, 0.8f, &project, &tools);
 	
 	ImGui::DockBuilderDockWindow("3D View", centre);
 	ImGui::DockBuilderDockWindow("Texture Browser", centre);
 	ImGui::DockBuilderDockWindow("Project", project);
+	ImGui::DockBuilderDockWindow("Tools", tools);
 	ImGui::DockBuilderDockWindow("Mobies", mobies);
 	ImGui::DockBuilderDockWindow("Inspector", inspector);
 	ImGui::DockBuilderDockWindow("Viewport Information", viewport_info);
@@ -207,6 +200,7 @@ void gui::render_menu_bar(app& a) {
 		render_menu_bar_window_toggle<moby_list>(a);
 		render_menu_bar_window_toggle<inspector>(a);
 		render_menu_bar_window_toggle<viewport_information>(a);
+		render_menu_bar_window_toggle<tools>(a);
 		render_menu_bar_window_toggle<string_viewer>(a);
 		render_menu_bar_window_toggle<texture_browser>(a);
 		render_menu_bar_window_toggle<manual_patcher>(a);
@@ -444,6 +438,40 @@ void gui::viewport_information::render(app& a) {
 		if(ImGui::Button("Reset Camera")) {
 			view->reset_camera(a);
 		}
+	}
+}
+
+/*
+	tools
+*/
+
+gui::tools::tools()
+	: _picker_icon(load_icon("data/icons/picker_tool.txt")),
+	  _selection_icon(load_icon("data/icons/selection_tool.txt")) {}
+
+gui::tools::~tools() {
+	glDeleteTextures(1, &_picker_icon);
+	glDeleteTextures(1, &_selection_icon);
+}
+
+const char* gui::tools::title_text() const {
+	return "Tools";
+}
+
+ImVec2 gui::tools::initial_size() const {
+	return ImVec2(200, 50);
+}
+
+void gui::tools::render(app& a) {
+	ImGui::Text("Current Tool: %s",
+		a.current_tool == tool::picker    ? "Picker" :
+		a.current_tool == tool::selection ? "Selection" : "Invalid");
+	if(ImGui::ImageButton((void*) (intptr_t) _picker_icon, ImVec2(32, 32))) {
+		a.current_tool = tool::picker;
+	}
+	ImGui::SameLine();
+	if(ImGui::ImageButton((void*) (intptr_t) _selection_icon, ImVec2(32, 32))) {
+		a.current_tool = tool::selection;
 	}
 }
 
@@ -1030,4 +1058,29 @@ bool gui::file_dialog::is_unique() const {
 
 void gui::file_dialog::on_okay(std::function<void(std::string)> callback) {
 	_callback = callback;
+}
+
+GLuint gui::load_icon(std::string path) {
+	std::ifstream image_file(path);
+	
+	uint32_t image_buffer[32][32];
+	for(std::size_t y = 0; y < 32; y++) {
+		std::string line;
+		std::getline(image_file, line);
+		for(std::size_t x = 0; x < line.size(); x++) {
+			image_buffer[y][x] = line[x] == '#' ? 0xffffffff : 0x00000000;
+		}
+		for(std::size_t x = line.size(); x < 32; x++) {
+			image_buffer[y][x] = 0;
+		}
+	}
+	
+	GLuint texture;
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 32, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_buffer);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	
+	return texture;
 }

@@ -48,8 +48,8 @@ public:
 	void draw_spline(const std::vector<glm::vec3>& points,   glm::mat4 mvp, glm::vec3 colour) const;
 	void draw_tris  (const std::vector<float>& vertex_data, glm::mat4 mvp, glm::vec3 colour) const;
 	
+	void for_each_point_object(const level& lvl, std::function<void(const point_object*, glm::vec3)> callback) const;
 	void draw_overlay_text(const app& a) const;
-	void draw_3d_text(const app& a, std::string text, glm::vec3 pos) const;
 
 	glm::mat4 get_view_projection_matrix() const;
 
@@ -60,6 +60,8 @@ public:
 	void pick_object(level& lvl, ImVec2 position);
 	void draw_pickframe(const level& lvl) const;
 	
+	void select_rect(level& lvl, ImVec2 position);
+	
 	bool camera_control;
 	glm::vec3 camera_position;
 	glm::vec2 camera_rotation;
@@ -67,6 +69,9 @@ private:
 	GLuint _frame_buffer_texture;
 	std::unique_ptr<shader_programs> _shaders;
 	ImVec2 _viewport_size;
+	bool _selecting;
+	ImVec2 _selection_begin;
+	ImVec2 _selection_end;
 };
 
 #endif

@@ -27,6 +27,11 @@ const texture_provider* base_level::get_texture_provider() const {
 	return const_cast<base_level*>(this)->get_texture_provider();
 }
 
+void base_level::for_each_game_object_const(std::function<void(const game_object*)> callback) const {
+	return const_cast<base_level*>(this)->for_each_game_object
+		(static_cast<std::function<void(game_object*)>>(callback));
+}
+
 bool base_level::is_selected(const game_object* obj) const {
 	return std::find(selection.begin(), selection.end(), obj->base()) != selection.end();
 }

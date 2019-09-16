@@ -35,6 +35,7 @@ app::app()
 	  current_time(0),
 	  last_fps(0),
 	  fps_count(0),
+	  current_tool(tool::picker),
 	  _lock_project(false) {
 	
 	read_settings();

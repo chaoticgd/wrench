@@ -24,7 +24,8 @@ view_3d::view_3d(const app* a)
 	: camera_control(false),
 	  camera_position(0, 0, 0),
 	  camera_rotation(0, 0),
-	  _frame_buffer_texture(0) {
+	  _frame_buffer_texture(0),
+	  _selecting(false) {
 	reset_camera(*a);
 }
 
@@ -85,14 +86,24 @@ void view_3d::render(app& a) {
 
 	draw_overlay_text(a);
 	
-	// Allow users to select objects in the 3D view.
+	ImVec2 cursor_pos = ImGui::GetMousePos();
+	ImVec2 rel_pos {
+		cursor_pos.x - ImGui::GetWindowPos().x,
+		cursor_pos.y - ImGui::GetWindowPos().y - 20
+	};
+	
 	ImGuiIO& io = ImGui::GetIO();
 	if(io.MouseClicked[0] && ImGui::IsWindowHovered()) {
-		ImVec2 clicked_pos = io.MouseClickedPos[0];
-		clicked_pos.x -= ImGui::GetWindowPos().x;
-		clicked_pos.y -= ImGui::GetWindowPos().y + 20;
-		pick_object(*lvl, clicked_pos);
+		switch(a.current_tool) {
+			case tool::picker:    pick_object(*lvl, rel_pos); break;
+			case tool::selection: select_rect(*lvl, cursor_pos); break;
+		}
 		io.MouseClicked[0] = false;
+	}
+	
+	auto draw_list = ImGui::GetWindowDrawList();
+	if(a.current_tool == tool::selection && _selecting) {
+		draw_list->AddRect(_selection_begin, cursor_pos, 0xffffffff);
 	}
 }
 
@@ -200,41 +211,39 @@ void view_3d::draw_tris(const std::vector<float>& vertex_data, glm::mat4 mvp, gl
 	glDeleteBuffers(1, &vertex_buffer);
 }
 
-void view_3d::draw_overlay_text(const app& a) const {
-	// Draw floating text over each moby showing its class name.
-	auto lvl = a.get_level();
-	for(std::size_t i = 0; i < lvl->num_ties(); i++) {
-		tie object = lvl->tie_at(i);
-		draw_3d_text(a, object.label(), object.position());
-	}
-	for(std::size_t i = 0; i < lvl->num_mobies(); i++) {
-		moby object = lvl->moby_at(i);
-		draw_3d_text(a, lvl->moby_at(i).label(), object.position());
-	}
-	for(std::size_t i = 0; i < lvl->num_shrubs(); i++) {
-		shrub object = lvl->shrub_at(i);
-		draw_3d_text(a, object.label(), object.position());
-	}
+void view_3d::for_each_point_object(const level& lvl, std::function<void(const point_object*, glm::vec3)> callback) const {
+	glm::mat4 vp = get_view_projection_matrix();
+	lvl.for_each_game_object_const([=](const game_object* o) {
+		if(auto object = dynamic_cast<const point_object*>(o)) {
+			ImVec2 window_pos = ImGui::GetWindowPos();
+			glm::mat4 model = glm::translate(glm::mat4(1.f), object->position());
+			glm::vec4 homogeneous_pos = vp * model * glm::vec4(0, 0, 0, 1);
+			glm::vec3 gl_pos {
+				homogeneous_pos.x / homogeneous_pos.w,
+				homogeneous_pos.y / homogeneous_pos.w,
+				homogeneous_pos.z / homogeneous_pos.w
+			};
+			if(gl_pos.z > 0) { // Is this object in front of the camera?
+				glm::vec3 screen_pos(
+					window_pos.x + (1 + gl_pos.x) * _viewport_size.x / 2.0,
+					window_pos.y + (1 + gl_pos.y) * _viewport_size.y / 2.0,
+					gl_pos.z
+				);
+				callback(object, screen_pos);
+			}
+		}
+	});
 }
 
-void view_3d::draw_3d_text(const app& a, std::string text, glm::vec3 pos) const {
-	ImDrawList* draw_list = ImGui::GetWindowDrawList();
-	ImVec2 window_pos = ImGui::GetWindowPos();
-	glm::mat4 model = glm::translate(glm::mat4(1.f), pos);
-	glm::vec4 homogeneous_pos = get_view_projection_matrix() * model * glm::vec4(0, 0, 0, 1);
-	glm::vec3 gl_pos = {
-		homogeneous_pos.x / homogeneous_pos.w,
-		homogeneous_pos.y / homogeneous_pos.w,
-		homogeneous_pos.z / homogeneous_pos.w
-	};
-	if(gl_pos.z > 0 && gl_pos.z < 1) {
-		ImVec2 position(
-			window_pos.x + (1 + gl_pos.x) * _viewport_size.x / 2.0,
-			window_pos.y + (1 + gl_pos.y) * _viewport_size.y / 2.0
-		);
-		static const int colour = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
-		draw_list->AddText(position, colour, text.c_str());
-	}
+void view_3d::draw_overlay_text(const app& a) const {
+	auto lvl = a.get_level();
+	auto draw_list = ImGui::GetWindowDrawList();
+	for_each_point_object(*lvl, [=](const point_object* object, glm::vec3 screen_pos) {
+		if(screen_pos.z < 1) {
+			static const int colour = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
+			draw_list->AddText(ImVec2(screen_pos.x, screen_pos.y), colour, object->label().c_str());
+		}
+	});
 }
 
 glm::mat4 view_3d::get_view_projection_matrix() const {
@@ -330,4 +339,27 @@ void view_3d::draw_pickframe(const level& lvl) const {
 		glm::vec3 colour = encode_pick_colour(3, i);
 		draw_spline(object.points(), projection_view, colour);
 	}
+}
+
+void view_3d::select_rect(level& lvl, ImVec2 position) {
+	if(!_selecting) {
+		_selection_begin = position;
+	} else {
+		_selection_end = position;
+		if(_selection_begin.x > _selection_end.x) {
+			std::swap(_selection_begin.x, _selection_end.x);
+		}
+		if(_selection_begin.y > _selection_end.y) {
+			std::swap(_selection_begin.y, _selection_end.y);
+		}
+		
+		lvl.selection = {};
+		for_each_point_object(lvl, [=, &lvl](const point_object* object, glm::vec3 screen_pos) {
+			if(screen_pos.x > _selection_begin.x && screen_pos.x < _selection_end.x &&
+			   screen_pos.y > _selection_begin.y && screen_pos.y < _selection_end.y) {
+				lvl.selection.push_back(object->base());
+			}
+		});
+	}
+	_selecting = !_selecting;
 }

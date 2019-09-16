@@ -96,6 +96,20 @@ namespace gui {
 		ImVec2 initial_size() const override;
 		void render(app& a) override;
 	};
+	
+	class tools : public window {
+	public:
+		tools();
+		~tools();
+	
+		const char* title_text() const override;
+		ImVec2 initial_size() const override;
+		void render(app& a) override;
+	
+	private:
+		GLuint _picker_icon;
+		GLuint _selection_icon;
+	};
 
 	class string_viewer : public window {
 	public:
@@ -204,6 +218,8 @@ namespace gui {
 		std::string _file;
 		std::function<void(std::string)> _callback;
 	};
+	
+	GLuint load_icon(std::string path);
 }
 
 template <typename T, typename... T_constructor_args>

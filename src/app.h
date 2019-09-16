@@ -51,6 +51,10 @@ struct settings_data {
 	float gui_scale;
 };
 
+enum class tool {
+	picker, selection
+};
+
 class app {
 public:
 	app();
@@ -71,6 +75,8 @@ public:
 	time_t current_time;
 	int last_fps;
 	int fps_count;
+	
+	tool current_tool;
 
 	void new_project(std::string game_id);
 	void open_project(std::string path);
