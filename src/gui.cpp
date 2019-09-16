@@ -343,7 +343,9 @@ void gui::inspector::render(app& a) {
 				input_integer<moby>("UID",      &moby::uid,       &moby::set_uid);
 				input_uint16 <moby>("Class",    &moby::class_num, &moby::set_class_num);
 			}
-				
+			
+			ImGui::Columns(1);
+			
 			if(_num_properties == 0) {
 				ImGui::Text("<no properties>");
 			}
