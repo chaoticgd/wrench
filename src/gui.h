@@ -36,6 +36,10 @@
 
 namespace fs = boost::filesystem;
 
+#define INSPECTOR_PROPERTY(type) \
+	typename property<T, type>::getter const get, \
+	typename property<T, type>::setter set
+
 namespace gui {
 	void render(app& a);
 	void render_menu_bar(app& a);
@@ -58,6 +62,25 @@ namespace gui {
 		const char* title_text() const override;
 		ImVec2 initial_size() const override;
 		void render(app& a) override;
+		
+	private:
+		void category(const char* name);
+	
+		template <typename T> void input_integer(const char* name, INSPECTOR_PROPERTY(int        ) = nullptr);
+		template <typename T> void input_uint16 (const char* name, INSPECTOR_PROPERTY(uint16_t   ) = nullptr);
+		template <typename T> void input_size_t (const char* name, INSPECTOR_PROPERTY(std::size_t) = nullptr);
+		template <typename T> void input_string (const char* name, INSPECTOR_PROPERTY(std::string) = nullptr);
+		template <typename T> void input_vector3(const char* name, INSPECTOR_PROPERTY(glm::vec3  ) = nullptr);	
+		
+		void begin_property(const char* name);
+		void end_property();
+		
+		template <typename T, typename T_value>
+		void set_property(T_value value, INSPECTOR_PROPERTY(T_value));
+
+		wrench_project* _project;
+		game_object* _subject;
+		int _num_properties;
 	};
 
 	class moby_list : public window {
@@ -196,6 +219,71 @@ void gui::render_menu_bar_window_toggle(app& a, T_constructor_args... args) {
 			a.windows.erase(window);
 		}
 	}
+}
+
+template <typename T>
+void gui::inspector::input_integer(const char* name, INSPECTOR_PROPERTY(int)) {
+	begin_property(name);
+	auto value = (static_cast<T*>(_subject)->*get)();
+	if(ImGui::InputInt("##input", &value, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue)) {
+		set_property<T>(value, get, set);
+	}
+	end_property();
+}
+
+template <typename T>
+void gui::inspector::input_uint16(const char* name, INSPECTOR_PROPERTY(uint16_t)) {
+	begin_property(name);
+	auto value = (static_cast<T*>(_subject)->*get)();
+	int value_int = static_cast<int>(value);
+	if(ImGui::InputInt("##input", &value_int, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue)) {
+		set_property<T>(static_cast<decltype(value)>(value_int), get, set);
+	}
+	end_property();
+}
+
+template <typename T>
+void gui::inspector::input_size_t(const char* name, INSPECTOR_PROPERTY(std::size_t)) {
+	begin_property(name);
+	auto value = (static_cast<T*>(_subject)->*get)();
+	int value_int = static_cast<int>(value);
+	if(ImGui::InputInt("##input", &value_int, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue)) {
+		set_property<T>(static_cast<decltype(value)>(value_int), get, set);
+	}
+	end_property();
+}
+
+template <typename T>
+void gui::inspector::input_string(const char* name, INSPECTOR_PROPERTY(std::string)) {
+	begin_property(name);
+	auto value = (static_cast<T*>(_subject)->*get)();
+	if(ImGui::InputText("##input", &value, ImGuiInputTextFlags_EnterReturnsTrue)) {
+		set_property<T>(value, get, set);
+	}
+	end_property();
+}
+
+template <typename T>
+void gui::inspector::input_vector3(const char* name, INSPECTOR_PROPERTY(glm::vec3)) {
+	begin_property(name);
+	auto value = (static_cast<T*>(_subject)->*get)();
+	if(ImGui::InputFloat3("##input", &value.x, 3, ImGuiInputTextFlags_EnterReturnsTrue)) {
+		set_property<T>(value, get, set);
+	}
+	end_property();
+}
+
+template <typename T, typename T_value>
+void gui::inspector::set_property(T_value value, INSPECTOR_PROPERTY(T_value)) {
+	if(set == nullptr) {
+		return;
+	}
+	
+	T* subject = static_cast<T*>(_subject);
+	property<T, T_value> p { get, set };
+	
+	using cmd = property_changed_command<T, T_value>;
+	_project->template emplace_command<cmd>(*subject, p, value);
 }
 
 #endif

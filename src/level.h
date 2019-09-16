@@ -23,12 +23,12 @@
 #include <set>
 #include <memory>
 #include <vector>
+#include <functional>
 #include <glm/glm.hpp>
 
 #include "model.h"
 #include "command.h"
 #include "texture.h"
-#include "inspectable.h"
 #include "imgui_includes.h"
 
 # /*
@@ -64,7 +64,7 @@ public:
 	bool is_selected(const game_object* obj) const;
 };
 
-class game_object : public inspectable {
+class game_object {
 public:
 	virtual std::size_t base() const = 0;
 	std::string base_string() const;

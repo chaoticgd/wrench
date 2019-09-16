@@ -29,7 +29,6 @@
 #include "window.h"
 #include "platform.h"
 #include "renderer.h"
-#include "inspectable.h"
 #include "formats/bmp.h"
 
 void gui::render(app& a) {
@@ -315,41 +314,37 @@ void gui::inspector::render(app& a) {
 			return;
 		}
 			
-		lvl->for_each_game_object([=](game_object* object) {
+		lvl->for_each_game_object([=, &a](game_object* object) {
 			if(lvl->selection[0] != object->base()) {
 				return;
 			}
 			
-			inspector_callbacks cb(object);
-				
-			cb.category("Game Object");
-			cb.input_string<game_object>("Offset", &game_object::base_string);
-				
-			if(dynamic_cast<point_object*>(object)) {
-				cb.category("Point Object");
-				cb.input_vector3<point_object>("Position", &point_object::position, &point_object::set_position);
-				cb.input_vector3<point_object>("Rotation", &point_object::rotation, &point_object::set_rotation);
-			}
-			
+			_project = a.get_project();
+			_subject = object;
+			_num_properties = 0;
+
 			if(dynamic_cast<tie*>(object)) {
-				cb.category("Tie");
+				category("Tie");
 			}
 			
 			if(dynamic_cast<shrub*>(object)) {
-				cb.category("Shrub");
+				category("Shrub");
 			}
 			
 			if(dynamic_cast<spline*>(object)) {
-				cb.category("Spline");
+				category("Spline");
 			}
 			
 			if(dynamic_cast<moby*>(object)) {
-				cb.category("Moby");
-				cb.input_integer<moby>("UID",   &moby::uid,       &moby::set_uid);
-				cb.input_uint16 <moby>("Class", &moby::class_num, &moby::set_class_num);
+				category("Moby");
+				input_string <moby>("Offset",   &moby::base_string);
+				input_vector3<moby>("Position", &moby::position,  &moby::set_position);
+				input_vector3<moby>("Rotation", &moby::rotation,  &moby::set_rotation);
+				input_integer<moby>("UID",      &moby::uid,       &moby::set_uid);
+				input_uint16 <moby>("Class",    &moby::class_num, &moby::set_class_num);
 			}
 				
-			if(cb.i == 0) {
+			if(_num_properties == 0) {
 				ImGui::Text("<no properties>");
 			}
 		});
@@ -358,6 +353,27 @@ void gui::inspector::render(app& a) {
 	} else {
 		ImGui::Text("<no project open>");
 	}
+}
+
+void gui::inspector::category(const char* name) {
+	ImGui::Columns(1);
+	ImGui::Text("%s", name);
+	ImGui::Columns(2);
+}
+
+void gui::inspector::begin_property(const char* name) {
+	ImGui::PushID(_num_properties++);
+	ImGui::AlignTextToFramePadding();
+	ImGui::Text(" %s", name);
+	ImGui::NextColumn();
+	ImGui::AlignTextToFramePadding();
+	ImGui::PushItemWidth(-1);
+}
+
+void gui::inspector::end_property() {
+	ImGui::NextColumn();
+	ImGui::PopID();
+	ImGui::PopItemWidth();
 }
 
 /*

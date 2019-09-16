@@ -22,7 +22,6 @@ add_executable(wrench
 	src/shaders.cpp
 	src/texture.cpp
 	src/level.cpp
-	src/inspectable.cpp
 	src/worker_logger.cpp
 	src/project.cpp
 	src/iso_stream.cpp

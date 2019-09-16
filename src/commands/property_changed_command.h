@@ -20,50 +20,55 @@
 #define PROPERTY_CHANGED_COMMAND_H
 
 #include "../command.h"
-#include "../inspectable.h"
 
 # /*
 #	Undo/redo command for modifying object properties via reflection.
 # */
 
 template <typename T_owner, typename T>
+struct property {
+	typedef T    (T_owner::*getter)() const;
+	typedef void (T_owner::*setter)(T);
+	getter get;
+	setter set;
+};
+
+template <typename T_owner, typename T>
 class property_changed_command : public command {
 public:
 	property_changed_command(
-			wrench_project* project,
+			T_owner owner,
 			property<T_owner, T> property_,
-			T new_value,
-			inspectable_getter getter);
+			T new_value);
 
 	void apply(wrench_project* project) override;
 	void undo(wrench_project* project) override;
 	
 private:
+	T_owner _owner;
 	property<T_owner, T> _property;
 	T _old_value;
 	T _new_value;
-	inspectable_getter _getter;
 };
 
 template <typename T_owner, typename T>
 property_changed_command<T_owner, T>::property_changed_command(
-		wrench_project* project,
+		T_owner owner,
 		property<T_owner, T> property_,
-		T new_value,
-		inspectable_getter getter)
-	: _property(property_),
-	  _old_value((getter(*project).*property_.get)()),
-	  _new_value(new_value),
-	  _getter(getter) {}
+		T new_value)
+	: _owner(owner),
+	  _property(property_),
+	  _old_value((_owner.*property_.get)()),
+	  _new_value(new_value) {}
 
 template <typename T_owner, typename T>
 void property_changed_command<T_owner, T>::apply(wrench_project* project) {
-	(_getter(*project).*_property.set)(_new_value);
+	(_owner.*_property.set)(_new_value);
 }
 
 template <typename T_owner, typename T>
 void property_changed_command<T_owner, T>::undo(wrench_project* project) {
-	(_getter(*project).*_property.set)(_old_value);
+	(_owner.*_property.set)(_old_value);
 }
 
 #endif

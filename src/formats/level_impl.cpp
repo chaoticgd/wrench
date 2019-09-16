@@ -205,3 +205,4 @@ std::vector<glm::vec3> spline::points() const {
 	
 	return result;
 }
+

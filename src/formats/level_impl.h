@@ -220,7 +220,6 @@ public:
 	spline(stream* backing, std::size_t offset);
 
 	std::size_t base() const override;
-
 	std::vector<glm::vec3> points() const;
 
 private:
