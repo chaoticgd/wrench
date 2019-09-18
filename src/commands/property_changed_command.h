@@ -22,7 +22,7 @@
 #include "../command.h"
 
 # /*
-#	Undo/redo command for modifying object properties via reflection.
+#	Undo/redo command for modifying object properties.
 # */
 
 template <typename T_owner, typename T>
