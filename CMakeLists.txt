@@ -36,6 +36,7 @@ add_executable(wrench
 	src/formats/texture_impl.cpp
 	src/formats/fip.cpp
 	src/formats/bmp.cpp
+	src/commands/translate_command.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
 	src/imgui_impl_glfw.cpp
 	thirdparty/imgui/examples/imgui_impl_opengl3.cpp

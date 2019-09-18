@@ -36,6 +36,7 @@ app::app()
 	  last_fps(0),
 	  fps_count(0),
 	  current_tool(tool::picker),
+	  translate_tool_displacement(0, 0, 0),
 	  _lock_project(false) {
 	
 	read_settings();

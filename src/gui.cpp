@@ -30,6 +30,7 @@
 #include "platform.h"
 #include "renderer.h"
 #include "formats/bmp.h"
+#include "commands/translate_command.h"
 
 void gui::render(app& a) {
 	ImGui_ImplOpenGL3_NewFrame();
@@ -447,7 +448,8 @@ void gui::viewport_information::render(app& a) {
 
 gui::tools::tools()
 	: _picker_icon(load_icon("data/icons/picker_tool.txt")),
-	  _selection_icon(load_icon("data/icons/selection_tool.txt")) {}
+	  _selection_icon(load_icon("data/icons/selection_tool.txt")),
+	  _translate_icon(load_icon("data/icons/translate_tool.txt")) {}
 
 gui::tools::~tools() {
 	glDeleteTextures(1, &_picker_icon);
@@ -463,15 +465,36 @@ ImVec2 gui::tools::initial_size() const {
 }
 
 void gui::tools::render(app& a) {
-	ImGui::Text("Current Tool: %s",
-		a.current_tool == tool::picker    ? "Picker" :
-		a.current_tool == tool::selection ? "Selection" : "Invalid");
+	const char* tool_name = "\n";
+	switch(a.current_tool) {
+		case tool::picker:    tool_name = "Picker";    break;
+		case tool::selection: tool_name = "Selection"; break;
+		case tool::translate: tool_name = "Translate"; break;
+	}
+	ImGui::Text("Current Tool: %s", tool_name);
+	
 	if(ImGui::ImageButton((void*) (intptr_t) _picker_icon, ImVec2(32, 32))) {
 		a.current_tool = tool::picker;
 	}
 	ImGui::SameLine();
 	if(ImGui::ImageButton((void*) (intptr_t) _selection_icon, ImVec2(32, 32))) {
 		a.current_tool = tool::selection;
+	}
+	ImGui::SameLine();
+	if(ImGui::ImageButton((void*) (intptr_t) _translate_icon, ImVec2(32, 32))) {
+		a.current_tool = tool::translate;
+	}
+	
+	if(a.current_tool == tool::translate) {
+		ImGui::Text("Displacement:");
+		ImGui::InputFloat3("##displacement_input", &a.translate_tool_displacement.x);
+		if(ImGui::Button("Apply")) {
+			if(auto lvl = a.get_level()) {
+				a.get_project()->emplace_command<translate_command>
+					(lvl, lvl->selection, a.translate_tool_displacement);
+			}
+			a.translate_tool_displacement = glm::vec3(0, 0, 0);
+		}
 	}
 }
 

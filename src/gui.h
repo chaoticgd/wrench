@@ -109,6 +109,7 @@ namespace gui {
 	private:
 		GLuint _picker_icon;
 		GLuint _selection_icon;
+		GLuint _translate_icon;
 	};
 
 	class string_viewer : public window {

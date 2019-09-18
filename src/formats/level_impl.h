@@ -201,6 +201,7 @@ public:
 	const moby   moby_at(std::size_t i) const;
 	
 	void for_each_game_object(std::function<void(game_object*)> callback);
+	void for_each_point_object(std::function<void(point_object*)> callback);
 
 	std::map<std::string, std::map<uint32_t, std::string>> game_strings() override;
 

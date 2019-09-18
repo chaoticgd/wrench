@@ -52,7 +52,7 @@ struct settings_data {
 };
 
 enum class tool {
-	picker, selection
+	picker, selection, translate
 };
 
 class app {
@@ -77,6 +77,7 @@ public:
 	int fps_count;
 	
 	tool current_tool;
+	glm::vec3 translate_tool_displacement;
 
 	void new_project(std::string game_id);
 	void open_project(std::string path);

@@ -141,6 +141,21 @@ void level::for_each_game_object(std::function<void(game_object*)> callback) {
 	}
 }
 
+void level::for_each_point_object(std::function<void(point_object*)> callback) {
+	for(std::size_t i = 0; i < num_ties(); i++) {
+		tie object = tie_at(i);
+		callback(&object);
+	}
+	for(std::size_t i = 0; i < num_shrubs(); i++) {
+		shrub object = shrub_at(i);
+		callback(&object);
+	}
+	for(std::size_t i = 0; i < num_mobies(); i++) {
+		moby object = moby_at(i);
+		callback(&object);
+	}
+}
+
 std::map<std::string, std::map<uint32_t, std::string>> level::game_strings() {
 	return _game_strings;
 }

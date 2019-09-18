@@ -57,6 +57,8 @@ public:
 
 	virtual void for_each_game_object(std::function<void(game_object*)> callback) = 0;
 	void for_each_game_object_const(std::function<void(const game_object*)> callback) const;
+	
+	virtual void for_each_point_object(std::function<void(point_object*)> callback) = 0;
 
 	virtual std::map<std::string, std::map<uint32_t, std::string>> game_strings() = 0;
 
