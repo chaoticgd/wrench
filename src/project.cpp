@@ -253,7 +253,7 @@ const std::map<std::string, wrench_project::game_view> wrench_project::_views {
 		}},
 		{"Levels", {
 			{"00 Veldin",                  [](wrench_project* p) { p->open_level(0x92229000, 0x0); }},
-			{"01 Florana",                 [](wrench_project* p) { p->open_level(0x9349d800, 0x0); }}, // Segfaults!
+			{"01 Florana",                 [](wrench_project* p) { p->open_level(0x9349d800, 0x0); }},
 			{"02 Phoenix",                 [](wrench_project* p) { p->open_level(0x946c4800, 0x0); }},
 			{"03 Marcadia",                [](wrench_project* p) { p->open_level(0x9576d000, 0x0); }},
 			{"04 Daxx",                    [](wrench_project* p) { p->open_level(0x96bea800, 0x0); }},
@@ -262,7 +262,7 @@ const std::map<std::string, wrench_project::game_view> wrench_project::_views {
 			{"07 Aquatos",                 [](wrench_project* p) { p->open_level(0x9a048000, 0x0); }},
 			{"08 Aquatos 2",               [](wrench_project* p) { p->open_level(0x9b2d3000, 0x0); }},
 			{"09 Zeldrin",                 [](wrench_project* p) { p->open_level(0x9c7b2000, 0x0); }},
-			{"10 Obani Moons",             [](wrench_project* p) { p->open_level(0x9dbc0800, 0x0); }}, // Segfaults!
+			{"10 Obani Moons",             [](wrench_project* p) { p->open_level(0x9dbc0800, 0x0); }},
 			{"11 Blackwater",              [](wrench_project* p) { p->open_level(0x9ed0e800, 0x0); }},
 			{"12 LEVEL12",                 [](wrench_project* p) { p->open_level(0x9fe31800, 0x0); }},
 			{"13 LEVEL13",                 [](wrench_project* p) { p->open_level(0xa0ea3800, 0x0); }},
