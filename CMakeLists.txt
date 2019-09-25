@@ -44,12 +44,6 @@ add_executable(wrench
 	src/platform_linux.cpp
 )
 
-if(MSVC)
-	target_compile_options(wrench PRIVATE /W4 /WX)
-else()
-	target_compile_options(wrench PRIVATE -Wall -O2)
-endif()
-
 add_executable(fip
 	src/cli/fipcli.cpp
 	src/command_line.cpp
@@ -92,6 +86,21 @@ add_executable(texturefinder
 	src/formats/fip.cpp
 	src/formats/bmp.cpp
 )
+
+if(MSVC)
+	target_compile_options(wrench PRIVATE /W4 /WX)
+	target_compile_options(fip PRIVATE /W4 /WX)
+	target_compile_options(wad PRIVATE /W4 /WX)
+	target_compile_options(scan PRIVATE /W4 /WX)
+	target_compile_options(pakrac PRIVATE /W4 /WX)
+	target_compile_options(texturefinder PRIVATE /W4 /WX)
+else()
+	target_compile_options(wrench PRIVATE -Wall -O3)
+	target_compile_options(fip PRIVATE -Wall -O3)
+	target_compile_options(wad PRIVATE -Wall -O3)
+	target_compile_options(pakrac PRIVATE -Wall -O3)
+	target_compile_options(texturefinder PRIVATE -Wall -O3)
+endif()
 
 # Boost
 find_package(Boost 1.40 COMPONENTS program_options filesystem REQUIRED)
