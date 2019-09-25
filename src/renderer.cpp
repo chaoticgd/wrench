@@ -353,6 +353,9 @@ void view_3d::select_rect(level& lvl, ImVec2 position) {
 			std::swap(_selection_begin.y, _selection_end.y);
 		}
 		
+		_selection_begin.y -= 20;
+		_selection_end.y -= 20;
+		
 		lvl.selection = {};
 		for_each_point_object(lvl, [=, &lvl](const point_object* object, glm::vec3 screen_pos) {
 			if(screen_pos.x > _selection_begin.x && screen_pos.x < _selection_end.x &&
