@@ -1090,6 +1090,9 @@ GLuint gui::load_icon(std::string path) {
 	for(std::size_t y = 0; y < 32; y++) {
 		std::string line;
 		std::getline(image_file, line);
+		if(line.size() > 32) {
+			line = line.substr(0, 32);
+		}
 		for(std::size_t x = 0; x < line.size(); x++) {
 			image_buffer[y][x] = line[x] == '#' ? 0xffffffff : 0x00000000;
 		}
