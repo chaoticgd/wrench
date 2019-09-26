@@ -454,6 +454,7 @@ gui::tools::tools()
 gui::tools::~tools() {
 	glDeleteTextures(1, &_picker_icon);
 	glDeleteTextures(1, &_selection_icon);
+	glDeleteTextures(1, &_translate_icon);
 }
 
 const char* gui::tools::title_text() const {
