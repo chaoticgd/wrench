@@ -86,69 +86,43 @@ std::string texture_impl::pixel_data_path() const {
 	return _backing.resource_path() + "+0x" + int_to_hex(_offsets.pixels);
 }
 
-texture_provider_impl::texture_provider_impl(
-		stream* backing,
-		std::size_t table_offset,
-		std::size_t data_offset,
-		std::size_t num_textures,
-		std::string display_name_)
-	: _display_name(display_name_) {
+level_texture_provider::level_texture_provider(
+	stream* backing,
+	std::string display_name_) {
 
-	backing->seek(table_offset);
-
-	std::size_t last_palette = data_offset;
-
-	for(std::size_t i = 0; i < num_textures; i++) {
+	auto header = backing->read<level::fmt::primary_header>(0);
+	std::size_t pixel_data_offet = header.tex_pixel_data_base;
+	std::size_t snd_header_ptr = header.snd_header.value;
+	auto snd_header = backing->read<level::fmt::secondary_header>(snd_header_ptr);
+	
+	std::size_t last_palette = pixel_data_offet;
+	backing->seek(snd_header_ptr + snd_header.textures.value);
+	
+	for(std::size_t i = 0; i < snd_header.num_textures; i++) {
 		std::size_t entry_offset = backing->tell();
 		auto entry = backing->read<fmt::texture_entry>();
 		texture_impl::offsets offsets { 
 			last_palette,
-			data_offset + entry.pixel_data,
+			pixel_data_offet + entry.pixel_data,
 			entry_offset + offsetof(fmt::texture_entry, width),
 			entry_offset + offsetof(fmt::texture_entry, height)
 		};
 		_textures.emplace_back(std::make_unique<texture_impl>(backing, offsets));
 		if(entry.height == 0) {
-			last_palette = data_offset + entry.pixel_data;
+			last_palette = pixel_data_offet + entry.pixel_data;
 		}
 	}
 }
 
-std::string texture_provider_impl::display_name() const {
+std::string level_texture_provider::display_name() const {
 	return _display_name;
 }
 
-std::vector<texture*> texture_provider_impl::textures() {
+std::vector<texture*> level_texture_provider::textures() {
 	std::vector<texture*> result(_textures.size());
 	std::transform(_textures.begin(), _textures.end(), result.begin(),
 		[](auto& ptr) { return ptr.get(); });
 	return result;
-}
-
-level_texture_provider::level_texture_provider(
-	stream* secondary_header,
-	std::string display_name_) {
-
-	auto snd_header = secondary_header->read<level::fmt::secondary_header>(0);
-	std::size_t pixel_data_offet = snd_header.tex_pixel_data_base;
-	std::size_t textures_ptr = snd_header.textures.value;
-	auto tex_header = secondary_header->read<fmt::header>(textures_ptr);
-
-	_impl.emplace(
-		secondary_header,
-		textures_ptr + tex_header.textures.value,
-		pixel_data_offet,
-		tex_header.num_textures,
-		display_name_
-	);
-}
-
-std::string level_texture_provider::display_name() const {
-	return _impl->display_name();
-}
-
-std::vector<texture*> level_texture_provider::textures() {
-	return _impl->textures();
 }
 
 fip_scanner::fip_scanner(

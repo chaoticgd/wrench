@@ -61,24 +61,19 @@ private:
 	offsets _offsets;
 };
 
-class texture_provider_impl : public texture_provider {
+class level_texture_provider : public texture_provider {
 public:
 	struct fmt {
-		struct texture_entry {
+		packed_struct(texture_entry,
 			uint32_t unknown1;
 			uint16_t width;
 			uint16_t height;
 			uint32_t unknown2;
 			uint32_t pixel_data;
-		};
+		)
 	};
 
-	texture_provider_impl(
-		stream* backing,
-		std::size_t table_offset,
-		std::size_t data_offset,
-		std::size_t num_textures,
-		std::string display_name_);
+	level_texture_provider(stream* backing, std::string display_name_);
 
 	std::string display_name() const override;
 	std::vector<texture*> textures() override;
@@ -86,56 +81,6 @@ public:
 private:
 	std::vector<std::unique_ptr<texture_impl>> _textures;
 	std::string _display_name;
-};
-
-class level_texture_provider : public texture_provider {
-public:
-	struct fmt {
-		struct header {
-			uint32_t num_textures; // 0x0
-			file_ptr<texture_provider_impl::fmt::texture_entry> textures; // 0x4
-			uint32_t unknown1;     // 0x8
-			uint32_t unknown2;     // 0xc
-			uint32_t unknown3;     // 0x10
-			uint32_t unknown4;     // 0x14
-			uint32_t unknown5;     // 0x18
-			uint32_t unknown6;     // 0x1c
-			uint32_t unknown7;     // 0x20
-			uint32_t unknown8;     // 0x24
-			uint32_t unknown9;     // 0x28
-			uint32_t unknown10;    // 0x2c
-			uint32_t unknown11;    // 0x30
-			uint32_t unknown12;    // 0x34
-			uint32_t unknown13;    // 0x38
-			uint32_t unknown14;    // 0x3c
-			uint32_t unknown15;    // 0x40
-			uint32_t unknown16;    // 0x44
-			uint32_t unknown17;    // 0x48
-			uint32_t unknown18;    // 0x4c
-			uint32_t unknown19;    // 0x50
-			uint32_t unknown20;    // 0x54
-			uint32_t unknown21;    // 0x58
-			uint32_t unknown22;    // 0x5c
-			uint32_t unknown23;    // 0x60
-			uint32_t unknown24;    // 0x64
-			uint32_t unknown25;    // 0x68
-			uint32_t unknown26;    // 0x6c
-			uint32_t unknown27;    // 0x70
-			uint32_t unknown28;    // 0x74
-			uint32_t unknown29;    // 0x78
-			uint32_t unknown30;    // 0x7c
-			uint32_t unknown31;    // 0x80
-			uint32_t unknown32;    // 0x84
-		};
-	};
-
-	level_texture_provider(stream* secondary_header, std::string display_name_);
-
-	std::string display_name() const override;
-	std::vector<texture*> textures() override;
-
-private:
-	std::optional<texture_provider_impl> _impl; 
 };
 
 class fip_scanner : public texture_provider {

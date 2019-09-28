@@ -27,7 +27,8 @@ level::level(iso_stream* iso, racpak* archive, std::string display_name, worker_
 		throw stream_format_error("Invalid number of entries in archive!");
 	}
 
-	_textures.emplace(archive->open(archive->entry(1)), display_name);
+	stream* header_stream = archive->open(archive->entry(1));
+	_textures.emplace(header_stream, display_name);
 	log << "\tDetected " << _textures->textures().size() << " textures.\n";
 
 	_moby_stream = iso->get_decompressed(archive->base() + archive->entry(3).offset);

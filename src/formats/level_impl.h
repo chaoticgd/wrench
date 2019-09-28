@@ -75,29 +75,67 @@ class spline_impl;
 class level : public base_level {
 public:
 	struct fmt {
+		struct primary_header;
 		struct secondary_header;
 
 		// Pointers are relative to this header.
+		packed_struct(primary_header,
+			uint32_t unknown1;                     // 0x0
+			uint32_t unknown2;                     // 0x4
+			file_ptr<secondary_header> snd_header; // 0x8
+			uint32_t texture_segment_size;         // 0xc
+			uint32_t tex_pixel_data_base;          // 0x10
+			uint32_t unknown5;                     // 0x14
+			uint32_t unknown6;                     // 0x18
+			uint32_t unknown7;                     // 0x1c
+			uint32_t unknown8;                     // 0x20
+			uint32_t unknown9;                     // 0x24
+			uint32_t unknown10;                    // 0x28
+			uint32_t unknown11;                    // 0x2c
+			uint32_t unknown12;                    // 0x30
+			uint32_t unknown13;                    // 0x34
+			uint32_t unknown14;                    // 0x38
+			uint32_t unknown15;                    // 0x3c
+			uint32_t unknown16;                    // 0x40
+			uint32_t unknown17;                    // 0x44
+			file_ptr<wad_header> ram_image_wad;    // 0x48
+		)
+		
 		packed_struct(secondary_header,
-			uint32_t unknown1;                  // 0x0
-			uint32_t unknown2;                  // 0x4
-			file_ptr<level_texture_provider::fmt::header> textures; // 0x8
-			uint32_t texture_segment_size;      // 0xc
-			uint32_t tex_pixel_data_base;       // 0x10
-			uint32_t unknown5;                  // 0x14
-			uint32_t unknown6;                  // 0x18
-			uint32_t unknown7;                  // 0x1c
-			uint32_t unknown8;                  // 0x20
-			uint32_t unknown9;                  // 0x24
-			uint32_t unknown10;                 // 0x28
-			uint32_t unknown11;                 // 0x2c
-			uint32_t unknown12;                 // 0x30
-			uint32_t unknown13;                 // 0x34
-			uint32_t unknown14;                 // 0x38
-			uint32_t unknown15;                 // 0x3c
-			uint32_t unknown16;                 // 0x40
-			uint32_t unknown17;                 // 0x44
-			file_ptr<wad_header> ram_image_wad; // 0x48
+			uint32_t num_textures; // 0x0
+			file_ptr<level_texture_provider::fmt::texture_entry> textures; // 0x4
+			uint32_t unknown1;     // 0x8
+			uint32_t unknown2;     // 0xc
+			uint32_t unknown3;     // 0x10
+			uint32_t unknown4;     // 0x14
+			uint32_t unknown5;     // 0x18
+			uint32_t unknown6;     // 0x1c
+			uint32_t unknown7;     // 0x20
+			uint32_t unknown8;     // 0x24
+			uint32_t unknown9;     // 0x28
+			uint32_t unknown10;    // 0x2c
+			uint32_t unknown11;    // 0x30
+			uint32_t unknown12;    // 0x34
+			uint32_t unknown13;    // 0x38
+			uint32_t unknown14;    // 0x3c
+			uint32_t unknown15;    // 0x40
+			uint32_t unknown16;    // 0x44
+			uint32_t unknown17;    // 0x48
+			uint32_t unknown18;    // 0x4c
+			uint32_t unknown19;    // 0x50
+			uint32_t unknown20;    // 0x54
+			uint32_t unknown21;    // 0x58
+			uint32_t unknown22;    // 0x5c
+			uint32_t unknown23;    // 0x60
+			uint32_t unknown24;    // 0x64
+			uint32_t unknown25;    // 0x68
+			uint32_t unknown26;    // 0x6c
+			uint32_t unknown27;    // 0x70
+			uint32_t unknown28;    // 0x74
+			uint32_t unknown29;    // 0x78
+			uint32_t unknown30;    // 0x7c
+			uint32_t unknown31;    // 0x80
+			uint32_t unknown32;    // 0x84
 		)
 
 		struct moby_segment {
