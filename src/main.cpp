@@ -16,9 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-
+#include "gl_includes.h"
 #include "command_line.h"
 #include "app.h"
 #include "gui.h"

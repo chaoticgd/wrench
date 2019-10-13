@@ -16,31 +16,10 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef MODEL_H
-#define MODEL_H
+#ifndef GL_INCLUDES_H
+#define GL_INCLUDES_H
 
-#include <array>
-#include <vector>
-
-#include "gl_includes.h"
-
-# /*
-#	Virtual base class representing a 3D model.
-# */
-
-class model {
-public:
-	model();
-	virtual ~model();
-
-	virtual std::vector<float> triangles() const = 0;
-	
-	GLuint vertex_buffer() const;
-	std::size_t vertex_buffer_size() const;
-	
-private:
-	GLuint _vertex_buffer;
-	std::size_t _vertex_buffer_size;
-};
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 
 #endif

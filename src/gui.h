@@ -20,10 +20,9 @@
 #define GUI_H
 
 #include <functional>
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
 #include <boost/filesystem.hpp>
 
+#include "gl_includes.h"
 #include "imgui_includes.h"
 #include "app.h"
 #include "level.h"

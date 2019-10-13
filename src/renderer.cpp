@@ -145,7 +145,7 @@ void view_3d::draw_level(const level& lvl) const {
 		glm::mat4 mvp = projection_view * model;
 		glm::vec3 colour = lvl.is_selected(&object) ?
 			glm::vec3(1, 0, 0) : glm::vec3(0.5, 0, 1);
-		draw_tris(object.object_model().triangles(), mvp, colour);
+		draw_model(object.object_model(), mvp, colour);
 	}
 	
 	for(std::size_t i = 0; i < lvl.num_mobies(); i++) {
@@ -154,7 +154,7 @@ void view_3d::draw_level(const level& lvl) const {
 		glm::mat4 mvp = projection_view * model;
 		glm::vec3 colour = lvl.is_selected(&object) ?
 			glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
-		draw_tris(object.object_model().triangles(), mvp, colour);
+		draw_model(object.object_model(), mvp, colour);
 	}
 
 	for(std::size_t i = 0; i < lvl.num_splines(); i++) {
@@ -209,6 +209,19 @@ void view_3d::draw_tris(const std::vector<float>& vertex_data, glm::mat4 mvp, gl
 
 	glDisableVertexAttribArray(0);
 	glDeleteBuffers(1, &vertex_buffer);
+}
+
+void view_3d::draw_model(const model& mdl, glm::mat4 mvp, glm::vec3 colour) const {
+	glUniformMatrix4fv(_shaders->solid_colour_transform, 1, GL_FALSE, &mvp[0][0]);
+	glUniform4f(_shaders->solid_colour_rgb, colour.x, colour.y, colour.z, 1);
+	
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, mdl.vertex_buffer());
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+	glDrawArrays(GL_TRIANGLES, 0, mdl.vertex_buffer_size() * 3);
+
+	glDisableVertexAttribArray(0);
 }
 
 void view_3d::for_each_point_object(const level& lvl, std::function<void(const point_object*, glm::vec3)> callback) const {

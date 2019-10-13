@@ -47,6 +47,7 @@ public:
 	void draw_level (const level& lvl) const;
 	void draw_spline(const std::vector<glm::vec3>& points,   glm::mat4 mvp, glm::vec3 colour) const;
 	void draw_tris  (const std::vector<float>& vertex_data, glm::mat4 mvp, glm::vec3 colour) const;
+	void draw_model (const model& mdl, glm::mat4 mvp, glm::vec3 colour) const;
 	
 	void for_each_point_object(const level& lvl, std::function<void(const point_object*, glm::vec3)> callback) const;
 	void draw_overlay_text(const app& a) const;
