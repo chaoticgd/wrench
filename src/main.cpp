@@ -16,6 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <chrono>
+
 #include "gl_includes.h"
 #include "command_line.h"
 #include "app.h"
@@ -93,6 +95,8 @@ int main(int argc, char** argv) {
 	a.windows.emplace_back(std::make_unique<gui::viewport_information>());
 	a.windows.emplace_back(std::make_unique<gui::tools>());
 
+	auto last_frame_time = std::chrono::steady_clock::now();;
+
 	while(!glfwWindowShouldClose(a.glfw_window)) {
 		glfwPollEvents();
 		update_camera_movement(&a);
@@ -112,13 +116,10 @@ int main(int argc, char** argv) {
 		glfwMakeContextCurrent(a.glfw_window);
 		glfwSwapBuffers(a.glfw_window);
 		
-		a.fps_count++;
-		time_t last_time = a.current_time;
-		a.current_time = time(nullptr);
-		if(a.current_time > last_time) {
-			a.last_fps = a.fps_count;
-			a.fps_count = 0;
-		}
+		auto frame_time = std::chrono::steady_clock::now();;
+		a.delta_time = std::chrono::duration_cast<std::chrono::microseconds>
+			(frame_time - last_frame_time).count();
+		last_frame_time = frame_time;
 	}
 
 	ImGui_ImplOpenGL3_Shutdown();

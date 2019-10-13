@@ -72,9 +72,7 @@ public:
 	GLFWwindow* glfw_window;
 	int window_width, window_height;
 	
-	time_t current_time;
-	int last_fps;
-	int fps_count;
+	int64_t delta_time;
 	
 	tool current_tool;
 	glm::vec3 translate_tool_displacement;
