@@ -336,7 +336,7 @@ void view_3d::draw_pickframe(const level& lvl) const {
 		glm::mat4 model  = glm::translate(glm::mat4(1.f), object.position());
 		glm::mat4 mvp    = projection_view * model;
 		glm::vec3 colour = encode_pick_colour(1, i);
-		draw_tris(object.object_model().triangles(), mvp, colour);
+		draw_model(object.object_model(), mvp, colour);
 	}
 
 	for(std::size_t i = 0; i < lvl.num_mobies(); i++) {
@@ -344,7 +344,7 @@ void view_3d::draw_pickframe(const level& lvl) const {
 		glm::mat4 model  = glm::translate(glm::mat4(1.f), object.position());
 		glm::mat4 mvp    = projection_view * model;
 		glm::vec3 colour = encode_pick_colour(2, i);
-		draw_tris(object.object_model().triangles(), mvp, colour);
+		draw_model(object.object_model(), mvp, colour);
 	}
 
 	for(std::size_t i = 0; i < lvl.num_splines(); i++) {
