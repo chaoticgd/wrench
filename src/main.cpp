@@ -116,7 +116,7 @@ int main(int argc, char** argv) {
 		glfwMakeContextCurrent(a.glfw_window);
 		glfwSwapBuffers(a.glfw_window);
 		
-		auto frame_time = std::chrono::steady_clock::now();;
+		auto frame_time = std::chrono::steady_clock::now();
 		a.delta_time = std::chrono::duration_cast<std::chrono::microseconds>
 			(frame_time - last_frame_time).count();
 		last_frame_time = frame_time;
@@ -146,26 +146,26 @@ void update_camera_movement(app* a) {
 
 		glm::vec3 movement(0, 0, 0);
 		if(is_down(GLFW_KEY_W)) {
-			movement.x -= dz;
-			movement.y += dx;
+			movement.x -= dz * a->delta_time * 0.0001;
+			movement.y += dx * a->delta_time * 0.0001;
 		}
 		if(is_down(GLFW_KEY_S)) {
-			movement.x += dz;
-			movement.y -= dx;
+			movement.x += dz * a->delta_time * 0.0001;
+			movement.y -= dx * a->delta_time * 0.0001;
 		}
 		if(is_down(GLFW_KEY_A)) {
-			movement.x -= dx;
-			movement.y -= dz;
+			movement.x -= dx * a->delta_time * 0.0001;
+			movement.y -= dz * a->delta_time * 0.0001;
 		}
 		if(is_down(GLFW_KEY_D)) {
-			movement.x += dx;
-			movement.y += dz;
+			movement.x += dx * a->delta_time * 0.0001;
+			movement.y += dz * a->delta_time * 0.0001;
 		}
 		if(is_down(GLFW_KEY_SPACE)) {
-			movement.z += dist;
+			movement.z += dist * a->delta_time * 0.0001;
 		}
 		if(is_down(GLFW_KEY_LEFT_SHIFT)) {
-			movement.z -= dist;
+			movement.z -= dist * a->delta_time * 0.0001;
 		}
 		view->camera_position += movement;
 	}
