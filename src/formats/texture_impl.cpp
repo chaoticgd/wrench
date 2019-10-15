@@ -87,8 +87,9 @@ std::string texture_impl::pixel_data_path() const {
 }
 
 level_texture_provider::level_texture_provider(
-	stream* backing,
-	std::string display_name_) {
+		stream* backing,
+		std::string display_name_)
+	: _display_name(display_name_) {
 
 	auto header = backing->read<level::fmt::primary_header>(0);
 	std::size_t pixel_data_offet = header.tex_pixel_data_base;
