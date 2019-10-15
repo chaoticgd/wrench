@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
 	a.windows.emplace_back(std::make_unique<gui::viewport_information>());
 	a.windows.emplace_back(std::make_unique<gui::tools>());
 
-	auto last_frame_time = std::chrono::steady_clock::now();;
+	auto last_frame_time = std::chrono::steady_clock::now();
 
 	while(!glfwWindowShouldClose(a.glfw_window)) {
 		glfwPollEvents();
