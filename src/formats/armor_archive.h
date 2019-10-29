@@ -49,11 +49,13 @@ public:
 	
 	armor_archive(stream* backing, std::size_t offset, std::size_t size);
 	std::string display_name() const override;
+	std::string display_name_of(texture* tex) const override;
 	std::vector<texture*> textures() override;
 
 private:
 	proxy_stream _backing;
 	std::vector<std::unique_ptr<fip_texture>> _textures;
+	std::map<texture*, std::string> _texture_names;
 };
 
 #endif

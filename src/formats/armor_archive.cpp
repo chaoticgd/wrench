@@ -11,7 +11,9 @@ armor_archive::armor_archive(stream* backing, std::size_t offset, std::size_t si
 	}
 	std::vector<fmt::armor> armor_list((header_size - 8) / 16);
 	_backing.read_v(armor_list);
-	for(auto armor : armor_list) {
+	for(std::size_t i = 0; i < armor_list.size(); i++) {
+		auto armor = armor_list[i];
+		
 		char magic[4];
 		_backing.seek(armor.texture * SECTOR_SIZE);
 		_backing.read_n(magic, 4);
@@ -19,6 +21,8 @@ armor_archive::armor_archive(stream* backing, std::size_t offset, std::size_t si
 			// Single texture.
 			_textures.emplace_back(std::make_unique<fip_texture>
 				(backing, offset + armor.texture * SECTOR_SIZE, -1));
+			_texture_names[_textures.back().get()] =
+				std::string("armor") + std::to_string(i);
 			continue;
 		}
 	
@@ -28,16 +32,22 @@ armor_archive::armor_archive(stream* backing, std::size_t offset, std::size_t si
 			throw std::runtime_error("Invalid armor_archive: num_textures too big.");
 		}
 		
-		for(std::size_t i = 0; i < num_textures; i++) {
+		for(std::size_t j = 0; j < num_textures; j++) {
 			auto rel_offset = _backing.read<uint32_t>();
 			_textures.emplace_back(std::make_unique<fip_texture>
 				(backing, offset + armor.texture * SECTOR_SIZE + rel_offset, -1));
+			_texture_names[_textures.back().get()] =
+				std::string("armor") + std::to_string(i) + "_part" + std::to_string(j);
 		}
 	}
 }
 
 std::string armor_archive::display_name() const {
 	return "Armor";
+}
+
+std::string armor_archive::display_name_of(texture* tex) const {
+	return _texture_names.at(tex);
 }
 
 std::vector<texture*> armor_archive::textures() {

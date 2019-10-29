@@ -58,6 +58,7 @@ public:
 	virtual ~texture_provider() = default;
 
 	virtual std::string display_name() const = 0;
+	virtual std::string display_name_of(texture* tex) const { return ""; }
 	virtual std::vector<texture*> textures() = 0;
 	
 	std::vector<const texture*> textures() const;

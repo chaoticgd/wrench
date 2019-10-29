@@ -696,8 +696,11 @@ void gui::texture_browser::render_grid(app& a, texture_provider* provider) {
 			_selection = i;
 		}
 
-		std::string num = std::to_string(i);
-		ImGui::Text("%s", num.c_str());
+		std::string display_name = provider->display_name_of(tex);
+		if(display_name == "") {
+			display_name = std::to_string(i);
+		}
+		ImGui::Text("%s", display_name.c_str());
 		ImGui::NextColumn();
 	}
 }
