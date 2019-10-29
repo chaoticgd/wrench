@@ -65,7 +65,9 @@ public:
 	racpak* open_archive(std::size_t offset, std::size_t size);
 	void open_texture_archive(std::size_t offset, std::size_t size);
 	void open_level(std::size_t offset, std::size_t size);
-
+	
+	int id();
+	
 private:
 	void save_to(std::string path);
 
@@ -89,9 +91,11 @@ private:
 	std::optional<armor_archive> _armor;
 	level* _selected_level;
 	
+	int _id;
+	static int _next_id;
+	
 public:
 	iso_stream iso;
-	
 };
 
 template <typename T, typename... T_constructor_args>

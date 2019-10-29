@@ -566,7 +566,8 @@ void gui::string_viewer::render(app& a) {
 */
 
 gui::texture_browser::texture_browser()
-	: _provider(0),
+	: _project_id(0),
+	  _provider(0),
 	  _selection(0),
 	  _filters({ 0 }) {}
 
@@ -588,6 +589,15 @@ void gui::texture_browser::render(app& a) {
 	if(!a.get_project()) {
 		ImGui::Text("<no project open>");
 		return;
+	}
+	
+	// Clear the texture cache when a new project is opened.
+	if(a.get_project()->id() != _project_id) {
+		for(auto& tex : _gl_textures) {
+			glDeleteTextures(1, &tex.second);
+		}
+		_gl_textures.clear();
+		_project_id = a.get_project()->id();
 	}
 
 	std::vector<texture_provider*> sources = a.get_project()->texture_providers();

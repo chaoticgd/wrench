@@ -141,6 +141,7 @@ namespace gui {
 		void import_bmp(app& a, texture* tex);
 		void export_bmp(app& a, texture* tex);
 
+		int _project_id;
 		std::map<texture*, GLuint> _gl_textures;
 		std::size_t _provider;
 		std::size_t _selection;

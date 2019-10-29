@@ -32,6 +32,7 @@ wrench_project::wrench_project(std::string iso_path, worker_logger& log, std::st
 	  _game_id(game_id),
 	  _history_index(0),
 	  _selected_level(nullptr),
+	  _id(_next_id++),
 	  iso(game_id, iso_path, log) {}
 
 wrench_project::wrench_project(std::string iso_path, std::string project_path, worker_logger& log)
@@ -39,6 +40,7 @@ wrench_project::wrench_project(std::string iso_path, std::string project_path, w
 	  _wratch_archive(ZipFile::Open(project_path)),
 	  _game_id(read_game_id()),
 	  _history_index(0),
+	  _id(_next_id++),
 	  iso(_game_id, iso_path, log, _wratch_archive) {
 	ZipFile::SaveAndClose(_wratch_archive, project_path);
 	_wratch_archive = nullptr;
@@ -168,6 +170,10 @@ void wrench_project::open_level(std::size_t offset, std::size_t size) {
 			(&iso, archive, _next_view_name, log));
 	}
 	_selected_level = _levels.at(offset).get();
+}
+
+int wrench_project::id() {
+	return _id;
 }
 
 /*
@@ -300,3 +306,5 @@ const std::map<std::string, wrench_project::game_view> wrench_project::_views {
 		}}
 	}}
 };
+
+int wrench_project::_next_id = 0;
