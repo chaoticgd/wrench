@@ -22,6 +22,10 @@
 #include "fip.h"
 #include "level_impl.h"
 
+/*
+	texture_impl
+*/
+
 texture_impl::texture_impl(stream* backing, offsets offsets_)
 	: _backing(backing, 0, -1),
 	  _offsets(offsets_) {}
@@ -86,6 +90,10 @@ std::string texture_impl::pixel_data_path() const {
 	return _backing.resource_path() + "+0x" + int_to_hex(_offsets.pixels);
 }
 
+/*
+	level_texture_provider
+*/
+
 level_texture_provider::level_texture_provider(
 		stream* backing,
 		std::string display_name_)
@@ -126,46 +134,92 @@ std::vector<texture*> level_texture_provider::textures() {
 	return result;
 }
 
-fip_scanner::fip_scanner(
+/*
+	fip_texture
+*/
+
+fip_texture::fip_texture(
 		stream* backing,
 		std::size_t offset,
-		std::size_t size,
-		std::string display_name,
-		worker_logger& log)
-	: _search_space(backing, offset, size),
-	  _display_name(display_name) {
-
-	log << "Importing " << display_name << "... ";
-
+		std::size_t size)
+	: _backing(backing, offset, size) {
+	
 	char magic[4];
-	for(std::size_t i = 0; i < _search_space.size(); i += 0x10) {
-		_search_space.seek(i);
-		_search_space.read_n(magic, 4);
-		if(validate_fip(magic)) {
-			texture_impl::offsets offsets {
-				i + offsetof(fip_header, palette),
-				i + sizeof(fip_header),
-				i + offsetof(fip_header, width),
-				i + offsetof(fip_header, height)
-			};
-			_textures.emplace_back(
-				std::make_unique<texture_impl>(&_search_space, offsets));
-		}
+	_backing.peek_n(magic, 0, 4);
+	if(std::memcmp(magic, "2FIP", 4) != 0) {
+		throw std::runtime_error("Invalid 2FIP texture!");
 	}
-
-	log << "DONE!\n";
 }
 
-std::string fip_scanner::display_name() const {
-	return _display_name;
+vec2i fip_texture::size() const {
+	return {
+		_backing.peek<int32_t>(offsetof32(fip_header, width)),
+		_backing.peek<int32_t>(offsetof32(fip_header, height))
+	};
 }
 
-std::vector<texture*> fip_scanner::textures() {
-	std::vector<texture*> result(_textures.size());
-	std::transform(_textures.begin(), _textures.end(), result.begin(),
-		[](auto& ptr) { return ptr.get(); });
+void fip_texture::set_size(vec2i size_) {
+	_backing.write<uint32_t>(offsetof32(fip_header, width ), size_.x);
+	_backing.write<uint32_t>(offsetof32(fip_header, height), size_.y);
+}
+
+std::array<colour, 256> fip_texture::palette() const {
+	char data[1024];
+	_backing.peek_n(data, offsetof(fip_header, palette), 1024);
+
+	std::array<colour, 256> result;
+	for(int i = 0; i < 256; i++) {
+		result[decode_palette_index(i)] = {
+			static_cast<uint8_t>(data[i * 4 + 0]),
+			static_cast<uint8_t>(data[i * 4 + 1]),
+			static_cast<uint8_t>(data[i * 4 + 2]),
+			static_cast<uint8_t>(data[i * 4 + 3])
+		};
+	}
 	return result;
 }
+
+void fip_texture::set_palette(std::array<colour, 256> palette_) {
+	std::array<char, 1024> colours;
+	for(int i =0 ; i < 256; i++) {
+		colour c = palette_[decode_palette_index(i)];
+		colours[i * 4 + 0] = c.r;
+		colours[i * 4 + 1] = c.g;
+		colours[i * 4 + 2] = c.b;
+		colours[i * 4 + 3] = c.a;
+	}
+	_backing.seek(offsetof(fip_header, palette));
+	_backing.write_n(colours.data(), colours.size());
+}
+
+std::vector<uint8_t> fip_texture::pixel_data() const {
+	auto size_ = size();
+	std::vector<uint8_t> pixels(size_.x * size_.y);
+	const_cast<proxy_stream*>(&_backing)->seek(sizeof(fip_header));
+	const_cast<proxy_stream*>(&_backing)->read_v(pixels);
+	return pixels;
+}
+
+void fip_texture::set_pixel_data(std::vector<uint8_t> pixel_data_) {
+	auto size_ = size();
+	if(pixel_data_.size() > size_.x * size_.y) {
+		throw std::runtime_error("Tried to write to much pixel data to texture!");
+	}
+	_backing.seek(sizeof(fip_header));
+	_backing.write_v(pixel_data_);
+}
+
+std::string fip_texture::palette_path() const {
+	return _backing.resource_path() + "+0x" + int_to_hex(offsetof(fip_header, palette));
+}
+
+std::string fip_texture::pixel_data_path() const {
+	return _backing.resource_path() + "+0x" + int_to_hex(sizeof(fip_header));
+}
+
+/*
+	racpak_fip_scanner
+*/
 
 racpak_fip_scanner::racpak_fip_scanner(
 		iso_stream* iso,
@@ -202,14 +256,8 @@ racpak_fip_scanner::racpak_fip_scanner(
 		}
 		
 		if(texture_offset) {
-			texture_impl::offsets offsets {
-				*texture_offset + offsetof(fip_header, palette),
-				*texture_offset + sizeof(fip_header),
-				*texture_offset + offsetof(fip_header, width),
-				*texture_offset + offsetof(fip_header, height)
-			};
 			_textures.emplace_back(
-				std::make_unique<texture_impl>(file, offsets));
+				std::make_unique<fip_texture>(file, *texture_offset, -1));
 		}
 	}
 	

@@ -83,22 +83,27 @@ private:
 	std::string _display_name;
 };
 
-class fip_scanner : public texture_provider {
+class fip_texture : public texture {
 public:
-	fip_scanner(
+	fip_texture(
 		stream* backing,
 		std::size_t offset,
-		std::size_t size,
-		std::string display_name,
-		worker_logger& log);
+		std::size_t size);
 
-	std::string display_name() const override;
-	std::vector<texture*> textures() override;
+	vec2i size() const;
+	void set_size(vec2i size_);
+
+	std::array<colour, 256> palette() const override;
+	void set_palette(std::array<colour, 256> palette_) override;
+
+	std::vector<uint8_t> pixel_data() const override;
+	void set_pixel_data(std::vector<uint8_t> pixel_data_) override;
+
+	std::string palette_path() const override;
+	std::string pixel_data_path() const override;
 
 private:
-	proxy_stream _search_space;
-	std::vector<std::unique_ptr<texture_impl>> _textures;
-	std::string _display_name;
+	proxy_stream _backing;
 };
 
 class racpak_fip_scanner : public texture_provider {
@@ -112,7 +117,7 @@ public:
 	std::string display_name() const override;
 	std::vector<texture*> textures() override;
 private:
-	std::vector<std::unique_ptr<texture_impl>> _textures;
+	std::vector<std::unique_ptr<fip_texture>> _textures;
 	std::map<std::size_t, std::unique_ptr<array_stream>> _decompressed_streams;
 	std::string _display_name;
 };

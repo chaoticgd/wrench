@@ -94,6 +94,9 @@ std::vector<texture_provider*> wrench_project::texture_providers() {
 	for(auto& wad : _texture_wads) {
 		result.push_back(wad.second.get());
 	}
+	if(_armor) {
+		result.push_back(&(*_armor));
+	}
 	return result;
 }
 
@@ -156,17 +159,6 @@ void wrench_project::open_texture_archive(std::size_t offset, std::size_t size) 
 		(&iso, archive, _next_view_name, log));
 }
 
-void wrench_project::open_texture_scanner(std::size_t offset, std::size_t size) {
-	if(_texture_wads.find(offset) != _texture_wads.end()) {
-		// The archive is already open.
-		return;
-	}
-	
-	worker_logger log;
-	_texture_wads.emplace(offset, std::make_unique<fip_scanner>
-		(&iso, offset, size, _next_view_name, log));
-}
-
 void wrench_project::open_level(std::size_t offset, std::size_t size) {
 	if(_levels.find(offset) == _levels.end()) {
 		// The level is not already open.
@@ -215,7 +207,8 @@ const std::map<std::string, wrench_project::game_view> wrench_project::_views {
 			{"HUD.WAD",   [](wrench_project* p) { p->open_texture_archive(0x7360f800, 0x242b30f); }},
 			{"BONUS.WAD", [](wrench_project* p) { p->open_texture_archive(0x75a3b000, 0x1e49ea5); }},
 			{"SPACE.WAD", [](wrench_project* p) { p->open_texture_archive(0x7e041800, 0x10fa980); }},
-			{"ARMOR.WAD", [](wrench_project* p) { p->open_texture_scanner(0x7fa3d800, 0x25d930);  }}
+			{"ARMOR.WAD", [](wrench_project* p)
+				{ p->_armor = std::make_optional<armor_archive>(&p->iso, 0x7fa3d800, 0x25d930); }}
 		}},
 		{"Levels", {
 			{"00 Aranos",             [](wrench_project* p) { p->open_level(0x7fc9b800, 0xec5a80 ); }},
@@ -249,7 +242,8 @@ const std::map<std::string, wrench_project::game_view> wrench_project::_views {
 	}},
 	{"rc3pal", {
 		{"Textures", {
-			{"ARMOR.WAD", [](wrench_project* p) { p->open_texture_archive(0x56da6000, 0x0); }}
+			{"ARMOR.WAD", [](wrench_project* p)
+				{ p->_armor = std::make_optional<armor_archive>(&p->iso, 0x56da6000, 0x0); }}
 		}},
 		{"Levels", {
 			{"00 Veldin",                  [](wrench_project* p) { p->open_level(0x92229000, 0x0); }},

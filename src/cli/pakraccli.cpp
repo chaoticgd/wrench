@@ -130,8 +130,6 @@ void extract_archive(std::string dest_dir, racpak& archive) {
 	}
 }
 
-static const int SECTOR_SIZE = 0x800;
-
 // Scan an ISO file for racpak archives, where the table of contents is not
 // available. This is required to find assets on R&C1, UYA and DL game discs.
 void scan_for_archives(std::string src_path) {

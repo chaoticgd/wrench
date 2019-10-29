@@ -26,6 +26,7 @@
 #include "formats/racpak.h"
 #include "formats/level_impl.h"
 #include "formats/texture_impl.h"
+#include "formats/armor_archive.h"
 
 # /*
 #	A project is a mod that patches the game's ISO file. Additional metadata
@@ -63,7 +64,6 @@ public:
 	
 	racpak* open_archive(std::size_t offset, std::size_t size);
 	void open_texture_archive(std::size_t offset, std::size_t size);
-	void open_texture_scanner(std::size_t offset, std::size_t size);
 	void open_level(std::size_t offset, std::size_t size);
 
 private:
@@ -86,6 +86,7 @@ private:
 	std::map<std::size_t, std::unique_ptr<racpak>> _archives;
 	std::map<std::size_t, std::unique_ptr<texture_provider>> _texture_wads;
 	std::map<std::size_t, std::unique_ptr<level>> _levels;
+	std::optional<armor_archive> _armor;
 	level* _selected_level;
 	
 public:

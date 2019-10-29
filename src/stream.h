@@ -35,6 +35,8 @@
 #	A set of utility classes and macros for working with binary files.
 # */
 
+static const int SECTOR_SIZE = 0x800;
+
 #ifdef _MSC_VER
 	#define packed_struct(name, body \
 		__pragma(pack(push, 1)) struct name { body } __pragma(pack(pop))
@@ -42,6 +44,8 @@
 	#define packed_struct(name, body) \
 		struct __attribute__((__packed__)) name { body };
 #endif
+
+#define offsetof32(x, y) static_cast<uint32_t>(offsetof(x, y))
 
 template <typename T>
 packed_struct(file_ptr,
@@ -159,7 +163,7 @@ public:
 	
 	template <typename T>
 	void write_v(const std::vector<T>& buffer) {
-		write_n(reinterpret_cast<char*>(buffer.data()), buffer.size() * sizeof(T));
+		write_n(reinterpret_cast<const char*>(buffer.data()), buffer.size() * sizeof(T));
 	}
 
 	// The dest and src streams should be different.
