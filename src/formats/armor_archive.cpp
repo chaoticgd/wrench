@@ -32,6 +32,10 @@ armor_archive::armor_archive(stream* backing, std::size_t offset, std::size_t si
 	for(std::size_t i = 0; i < armor_list.size(); i++) {
 		auto armor = armor_list[i];
 		
+		if(armor.texture == 0) {
+			break; // We're probably reading off the end of the array.
+		}
+		
 		char magic[4];
 		_backing.seek(armor.texture * SECTOR_SIZE);
 		_backing.read_n(magic, 4);
@@ -40,7 +44,7 @@ armor_archive::armor_archive(stream* backing, std::size_t offset, std::size_t si
 			_textures.emplace_back(std::make_unique<fip_texture>
 				(backing, offset + armor.texture * SECTOR_SIZE, -1));
 			_texture_names[_textures.back().get()] =
-				std::string("armor") + std::to_string(i);
+				std::string("set") + std::to_string(i);
 			continue;
 		}
 	
@@ -55,7 +59,7 @@ armor_archive::armor_archive(stream* backing, std::size_t offset, std::size_t si
 			_textures.emplace_back(std::make_unique<fip_texture>
 				(backing, offset + armor.texture * SECTOR_SIZE + rel_offset, -1));
 			_texture_names[_textures.back().get()] =
-				std::string("armor") + std::to_string(i) + "_part" + std::to_string(j);
+				std::string("set") + std::to_string(i) + "_part" + std::to_string(j);
 		}
 	}
 }

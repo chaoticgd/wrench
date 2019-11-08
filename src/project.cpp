@@ -304,6 +304,12 @@ const std::map<std::string, wrench_project::game_view> wrench_project::_views {
 			{"49 MP Metropolis",           [](wrench_project* p) { p->open_level(0xc38d2800, 0x0); }},
 			{"50 LEVEL50",                 [](wrench_project* p) { p->open_level(0xc49a2000, 0x0); }}
 		}}
+	}},
+	{"rc4pal", {
+		{"Textures", {
+			{"ARMOR.WAD", [](wrench_project* p)
+				{ p->_armor = std::make_optional<armor_archive>(&p->iso, 0x4ecf4800, 0x0); }}
+		}}
 	}}
 };
 

@@ -180,6 +180,7 @@ void app::read_settings() {
 	// Default settings.
 	settings.game_paths["rc2pal"] = "";
 	settings.game_paths["rc3pal"] = "";
+	settings.game_paths["rc4pal"] = "";
 	settings.gui_scale = 1.f;
 
 	if(boost::filesystem::exists(settings_file_path)) {

@@ -141,7 +141,10 @@ void gui::render_menu_bar(app& a) {
 			if(ImGui::MenuItem("R&C3 PAL")) {
 				a.new_project("rc3pal");
 			}
-		ImGui::EndMenu();
+			if(ImGui::MenuItem("R&C4 PAL")) {
+				a.new_project("rc4pal");
+			}
+			ImGui::EndMenu();
 		}
 		if(ImGui::MenuItem("Open")) {
 			auto dialog = a.emplace_window<file_dialog>
