@@ -221,13 +221,18 @@ std::vector<patch> iso_stream::read_patches(ZipArchive::Ptr root) {
 	auto patch_list = nlohmann::json::parse(*patch_list_file);
 
 	std::vector<patch> result;
-	for(auto& p : patch_list.find("patches").value()) {
-		result.emplace_back();
-		result.back().offset = p.find("offset").value().operator std::size_t();
-		result.back().buffer = std::vector<char>(p.find("size").value().operator std::size_t());
-		std::string patch_src_path = p.find("data").value();
-		std::istream* patch_file = root->GetEntry(patch_src_path)->GetDecompressionStream();
-		patch_file->read(result.back().buffer.data(), result.back().buffer.size());
+	for(auto& patch_json : patch_list.find("patches").value()) {
+		patch entry;
+		entry.offset = patch_json.find("offset").value().operator std::size_t();
+		
+		std::string patch_src_path = patch_json.find("data").value();
+		ZipArchiveEntry::Ptr zip_entry = root->GetEntry(patch_src_path);
+		entry.buffer = std::vector<char>(zip_entry->GetSize());
+		
+		std::istream* patch_file = zip_entry->GetDecompressionStream();
+		patch_file->read(entry.buffer.data(), entry.buffer.size());
+		
+		result.push_back(entry);
 	}
 	
 	patch_list_entry->CloseDecompressionStream();

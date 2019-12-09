@@ -50,10 +50,11 @@ void app::new_project(std::string game_id) {
 	_lock_project = true;
 	_project.reset(nullptr);
 
-	using worker_type = worker_thread<project_ptr, std::pair<std::string, std::string>>;
+	// TODO: Make less ugly.
+	using worker_type = worker_thread<project_ptr, std::pair<std::map<std::string, std::string>, std::string>>;
 	windows.emplace_back(std::make_unique<worker_type>(
-		"New Project", std::pair<std::string, std::string>(settings.game_paths[game_id], game_id),
-		[](std::pair<std::string, std::string> data, worker_logger& log) {
+		"New Project", std::make_pair(settings.game_paths, game_id),
+		[](auto data, worker_logger& log) {
 			try {
 				auto result = std::make_unique<wrench_project>(data.first, log, data.second);
 				log << "\nProject created successfully.";
@@ -85,11 +86,12 @@ void app::open_project(std::string path) {
 	_lock_project = true;
 	_project.reset(nullptr);
 
-	using worker_type = worker_thread<project_ptr, std::pair<std::string, std::string>>;
-	std::pair<std::string, std::string> in(settings.game_paths["rc2pal"], path);
+	// TODO: Make less ugly.
+	using worker_type = worker_thread<project_ptr, std::pair<std::map<std::string, std::string>, std::string>>;
+	auto in = std::make_pair(settings.game_paths, path);
 	windows.emplace_back(std::make_unique<worker_type>(
 		"Open Project", in,
-		[](std::pair<std::string, std::string> paths, worker_logger& log) {
+		[](auto paths, worker_logger& log) {
 			try {
 				auto result = std::make_unique<wrench_project>(paths.first, paths.second, log);
 				log << "\nProject opened successfully.";

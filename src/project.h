@@ -37,8 +37,14 @@ class app;
 
 class wrench_project {
 public:
-	wrench_project(std::string iso_path, worker_logger& log, std::string game_id); // New
-	wrench_project(std::string iso_path, std::string project_path, worker_logger& log); // Open
+	wrench_project(
+		std::map<std::string, std::string>& game_paths,
+		worker_logger& log,
+		std::string game_id); // New
+	wrench_project(
+		std::map<std::string, std::string>& game_paths,
+		std::string project_path,
+		worker_logger& log); // Open
 
 	std::string project_path() const;
 	std::string cached_iso_path() const;
@@ -74,7 +80,7 @@ private:
 	std::string read_game_id();
 
 	std::string _project_path;
-	ZipArchive::Ptr _wratch_archive;
+	ZipArchive::Ptr _wrench_archive;
 	const std::string _game_id;
 	
 	std::size_t _history_index;

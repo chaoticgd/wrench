@@ -26,24 +26,30 @@
 #include "gui.h"
 #include "config.h"
 
-wrench_project::wrench_project(std::string iso_path, worker_logger& log, std::string game_id)
+wrench_project::wrench_project(
+		std::map<std::string, std::string>& game_paths,
+		worker_logger& log,
+		std::string game_id)
 	: _project_path(""),
-	  _wratch_archive(nullptr),
+	  _wrench_archive(nullptr),
 	  _game_id(game_id),
 	  _history_index(0),
 	  _selected_level(nullptr),
 	  _id(_next_id++),
-	  iso(game_id, iso_path, log) {}
+	  iso(game_id, game_paths.at(_game_id), log) {}
 
-wrench_project::wrench_project(std::string iso_path, std::string project_path, worker_logger& log)
+wrench_project::wrench_project(
+		std::map<std::string, std::string>& game_paths,
+		std::string project_path,
+		worker_logger& log)
 	: _project_path(project_path),
-	  _wratch_archive(ZipFile::Open(project_path)),
+	  _wrench_archive(ZipFile::Open(project_path)),
 	  _game_id(read_game_id()),
 	  _history_index(0),
 	  _id(_next_id++),
-	  iso(_game_id, iso_path, log, _wratch_archive) {
-	ZipFile::SaveAndClose(_wratch_archive, project_path);
-	_wratch_archive = nullptr;
+	  iso(_game_id, game_paths.at(_game_id), log, _wrench_archive) {
+	ZipFile::SaveAndClose(_wrench_archive, project_path);
+	_wrench_archive = nullptr;
 }
 
 std::string wrench_project::project_path() const {
@@ -200,7 +206,7 @@ void wrench_project::save_to(std::string path) {
 }
 
 std::string wrench_project::read_game_id() {
-	auto entry = _wratch_archive->GetEntry("game_id");
+	auto entry = _wrench_archive->GetEntry("game_id");
 	auto stream = entry->GetDecompressionStream();
 	std::string result;
 	std::getline(*stream, result);
