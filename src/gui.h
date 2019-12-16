@@ -27,6 +27,7 @@
 #include "app.h"
 #include "level.h"
 #include "window.h"
+#include "view_3d.h"
 #include "commands/property_changed_command.h"
 
 # /*
@@ -146,6 +147,23 @@ namespace gui {
 		std::size_t _provider;
 		std::size_t _selection;
 		filter_parameters _filters;
+	};
+	
+	class model_browser : public window {
+	public:
+		model_browser();
+	
+		const char* title_text() const override;
+		ImVec2 initial_size() const override;
+		void render(app& a) override;
+		
+		GLuint render_preview(const gl_renderer& renderer, ImVec2 preview_size);
+		glm::vec2 get_drag_delta() const;
+	
+	private:
+		std::unique_ptr<model> _model;
+		float _zoom = 1.f;
+		glm::vec2 _pitch_yaw = { 0.f, 0.f };
 	};
 
 	class settings : public window {

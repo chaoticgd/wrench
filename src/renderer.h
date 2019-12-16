@@ -25,54 +25,28 @@
 #include <glm/common.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "app.h"
 #include "model.h"
-#include "window.h"
 #include "shaders.h"
 
 # /*
-#	Draw 3D view and overlay text.
+#	Rendering functions.
 # */
 
-class view_3d : public window {
-public:
-	view_3d(const app* a);
-	~view_3d();
-	const char* title_text() const;
-	ImVec2 initial_size() const;
-	void render(app& a);
-	
-	bool has_padding() const override;
+class app;
 
-	void draw_level (const level& lvl) const;
-	void draw_spline(const std::vector<glm::vec3>& points,   glm::mat4 mvp, glm::vec3 colour) const;
+struct gl_renderer {
+	void draw_spline(const std::vector<glm::vec3>& points, glm::mat4 mvp, glm::vec3 colour) const;
 	void draw_tris  (const std::vector<float>& vertex_data, glm::mat4 mvp, glm::vec3 colour) const;
 	void draw_model (const model& mdl, glm::mat4 mvp, glm::vec3 colour) const;
-	
-	void for_each_point_object(const level& lvl, std::function<void(const point_object*, glm::vec3)> callback) const;
-	void draw_overlay_text(const app& a) const;
 
-	glm::mat4 get_view_projection_matrix() const;
-
-	void reset_camera(const app& a);
+	shader_programs shaders;
 	
-	// Allows the user to select an object by clicking on it. See:
-	// http://www.opengl-tutorial.org/miscellaneous/clicking-on-objects/picking-with-an-opengl-hack/
-	void pick_object(level& lvl, ImVec2 position);
-	void draw_pickframe(const level& lvl) const;
+	void reset_camera(app* a);
 	
-	void select_rect(level& lvl, ImVec2 position);
-	
-	bool camera_control;
-	glm::vec3 camera_position;
-	glm::vec2 camera_rotation;
-private:
-	GLuint _frame_buffer_texture;
-	std::unique_ptr<shader_programs> _shaders;
-	ImVec2 _viewport_size;
-	bool _selecting;
-	ImVec2 _selection_begin;
-	ImVec2 _selection_end;
+	// TODO: Put these somewhere else.
+	bool camera_control { false };
+	glm::vec3 camera_position { 0, 0, 0 };
+	glm::vec2 camera_rotation { 0, 0 };
 };
 
 #endif

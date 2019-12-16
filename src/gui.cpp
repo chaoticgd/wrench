@@ -99,6 +99,7 @@ void gui::create_dock_layout(const app& a) {
 	
 	ImGui::DockBuilderDockWindow("3D View", centre);
 	ImGui::DockBuilderDockWindow("Texture Browser", centre);
+	ImGui::DockBuilderDockWindow("Model Browser", centre);
 	ImGui::DockBuilderDockWindow("Project", project);
 	ImGui::DockBuilderDockWindow("Tools", tools);
 	ImGui::DockBuilderDockWindow("Mobies", mobies);
@@ -207,6 +208,7 @@ void gui::render_menu_bar(app& a) {
 		render_menu_bar_window_toggle<tools>(a);
 		render_menu_bar_window_toggle<string_viewer>(a);
 		render_menu_bar_window_toggle<texture_browser>(a);
+		render_menu_bar_window_toggle<model_browser>(a);
 		render_menu_bar_window_toggle<manual_patcher>(a);
 		render_menu_bar_window_toggle<settings>(a);
 		ImGui::EndMenu();
@@ -277,9 +279,7 @@ void gui::project_tree::render(app& a) {
 					project->select_view(group, view);
 					if(group == "Levels") {
 						selected_level = view;
-						if(auto window = a.get_3d_view()) {
-							window->reset_camera(a);
-						}
+						a.renderer.reset_camera(&a);
 					}
 				}
 			}
@@ -427,22 +427,19 @@ ImVec2 gui::viewport_information::initial_size() const {
 }
 
 void gui::viewport_information::render(app& a) {
-	if(auto view = a.get_3d_view()) {
-
-		int fps = a.delta_time == 0 ? 0 : 1000000.0 / a.delta_time;
-		ImGui::Text("FPS:\n\t%d\n", fps);
-		glm::vec3 cam_pos = view->camera_position;
-		ImGui::Text("Camera Position:\n\t%.3f, %.3f, %.3f",
-			cam_pos.x, cam_pos.y, cam_pos.z);
-		glm::vec2 cam_rot = view->camera_rotation;
-		ImGui::Text("Camera Rotation:\n\tPitch=%.3f, Yaw=%.3f",
-			cam_rot.x, cam_rot.y);
-		ImGui::Text("Camera Control (Z to toggle):\n\t%s",
-			view->camera_control ? "On" : "Off");
-
-		if(ImGui::Button("Reset Camera")) {
-			view->reset_camera(a);
-		}
+	int fps = a.delta_time == 0 ? 0 : 1000000.0 / a.delta_time;
+	ImGui::Text("FPS:\n\t%d\n", fps);
+	glm::vec3 cam_pos = a.renderer.camera_position;
+	ImGui::Text("Camera Position:\n\t%.3f, %.3f, %.3f",
+		cam_pos.x, cam_pos.y, cam_pos.z);
+	glm::vec2 cam_rot = a.renderer.camera_rotation;
+	ImGui::Text("Camera Rotation:\n\tPitch=%.3f, Yaw=%.3f",
+		cam_rot.x, cam_rot.y);
+	ImGui::Text("Camera Control (Z to toggle):\n\t%s",
+		a.renderer.camera_control ? "On" : "Off");
+		
+	if(ImGui::Button("Reset Camera")) {
+		a.renderer.reset_camera(&a);
 	}
 }
 
@@ -779,6 +776,93 @@ void gui::texture_browser::export_bmp(app& a, texture* tex) {
 		}
 	});
 	a.windows.emplace_back(std::move(exporter));
+}
+
+/*
+	model_browser
+*/
+
+#include "shapes.h"
+
+gui::model_browser::model_browser()
+	: _model(std::make_unique<cube_model>()) {}
+	
+const char* gui::model_browser::title_text() const {
+	return "Model Browser";
+}
+
+ImVec2 gui::model_browser::initial_size() const {
+	return ImVec2(400, 300);
+}
+
+void gui::model_browser::render(app& a) {
+	if(ImGui::IsWindowHovered()) {
+		ImGuiIO& io = ImGui::GetIO();
+		_zoom *= -io.MouseWheel * a.delta_time * 0.0001 + 1;
+		if(_zoom < 0.2) _zoom = 0.2;
+		if(_zoom > 2) _zoom = 2;	
+		
+		if(ImGui::IsMouseReleased(0)) {
+			_pitch_yaw += get_drag_delta();
+		}
+	}
+	
+	ImVec2 preview_size { 800, 600 };
+	GLuint preview_texture = render_preview(a.renderer, preview_size);
+	ImGui::Image((void*) (intptr_t) preview_texture, preview_size);
+}
+
+GLuint gui::model_browser::render_preview(const gl_renderer& renderer, ImVec2 preview_size) {
+	glm::vec2 pitch_yaw = _pitch_yaw;
+	if(ImGui::IsMouseDragging()) {
+		pitch_yaw += get_drag_delta();
+	}
+	
+	glm::vec3 eye = glm::vec3(20, 0, 0) * _zoom;
+	
+	glm::mat4 view_fixed = glm::lookAt(eye, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+	glm::mat4 view_pitched = glm::rotate(view_fixed, pitch_yaw.x, glm::vec3(0, 0, 1));
+	glm::mat4 view = glm::rotate(view_pitched, pitch_yaw.y, glm::vec3(0, 1, 0));
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), preview_size.x / preview_size.y, 0.1f, 100.0f);
+	
+	static const glm::mat4 yzx {
+		0,  0, 1, 0,
+		1,  0, 0, 0,
+		0, -1, 0, 0,
+		0,  0, 0, 1
+	};
+	glm::mat4 vp = projection * view * yzx;
+	
+	static GLuint preview_texture = 0;
+	glDeleteTextures(1, &preview_texture);
+	
+	glGenTextures(1, &preview_texture);
+	glBindTexture(GL_TEXTURE_2D, preview_texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, preview_size.x, preview_size.y, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	GLuint fb_id;
+	glGenFramebuffers(1, &fb_id);
+	glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, preview_texture, 0);
+
+	glClearColor(0, 0, 0, 1);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glViewport(0, 0, preview_size.x, preview_size.y);
+
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glUseProgram(renderer.shaders.solid_colour.id());
+	renderer.draw_model(*_model, vp, glm::vec4(0, 1, 0, 1));
+
+	glDeleteFramebuffers(1, &fb_id);
+	
+	return preview_texture;
+}
+
+glm::vec2 gui::model_browser::get_drag_delta() const {
+	auto delta = ImGui::GetMouseDragDelta();
+	return glm::vec2(delta.y, delta.x) * 0.01f;
 }
 
 /*

@@ -35,13 +35,14 @@ public:
 	shader_program(const GLchar* vertex_src, const GLchar* fragment_src, shader_callback after);
 	~shader_program();
 
-	GLuint id();
+	void init(); // Called after a valid OpenGL context is setup.
+
+	GLuint id() const;
 
 private:
 	static GLuint link(GLuint vertex, GLuint fragment);
 	static GLuint compile(const GLchar* src, GLuint type);
 
-	bool _ready;
 	GLuint _id;
 	const GLchar* _vertex_src;
 	const GLchar* _fragment_src;
@@ -50,6 +51,8 @@ private:
 
 struct shader_programs {
 	shader_programs();
+
+	void init(); // Called after a valid OpenGL context is setup.
 
 	shader_program solid_colour;
 	GLint solid_colour_transform;

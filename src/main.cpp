@@ -82,6 +82,7 @@ int main(int argc, char** argv) {
 
 	a.init_gui_scale();
 	a.update_gui_scale();
+	a.renderer.shaders.init();
 
 	if(project_path != "") {
 		a.open_project(project_path);
@@ -89,6 +90,7 @@ int main(int argc, char** argv) {
 	
 	a.windows.emplace_back(std::make_unique<view_3d>(&a));
 	a.windows.emplace_back(std::make_unique<gui::texture_browser>());
+	a.windows.emplace_back(std::make_unique<gui::model_browser>());
 	a.windows.emplace_back(std::make_unique<gui::project_tree>());
 	a.windows.emplace_back(std::make_unique<gui::moby_list>());
 	a.windows.emplace_back(std::make_unique<gui::inspector>());
@@ -131,74 +133,67 @@ int main(int argc, char** argv) {
 }
 
 void update_camera_movement(app* a) {
-	if(auto view = a->get_3d_view()) {
-		if(!view->camera_control) {
-			return;
-		}
-
-		float dist = glm::distance(glm::vec2(0, 0), a->mouse_diff) * 2;
-		float dx = std::sin(view->camera_rotation.y) * dist;
-		float dz = std::cos(view->camera_rotation.y) * dist;
-
-		auto is_down = [=](int key) {
-			return a->keys_down.find(key) != a->keys_down.end();
-		};
-
-		glm::vec3 movement(0, 0, 0);
-		if(is_down(GLFW_KEY_W)) {
-			movement.x -= dz * a->delta_time * 0.0001;
-			movement.y += dx * a->delta_time * 0.0001;
-		}
-		if(is_down(GLFW_KEY_S)) {
-			movement.x += dz * a->delta_time * 0.0001;
-			movement.y -= dx * a->delta_time * 0.0001;
-		}
-		if(is_down(GLFW_KEY_A)) {
-			movement.x -= dx * a->delta_time * 0.0001;
-			movement.y -= dz * a->delta_time * 0.0001;
-		}
-		if(is_down(GLFW_KEY_D)) {
-			movement.x += dx * a->delta_time * 0.0001;
-			movement.y += dz * a->delta_time * 0.0001;
-		}
-		if(is_down(GLFW_KEY_SPACE)) {
-			movement.z += dist * a->delta_time * 0.0001;
-		}
-		if(is_down(GLFW_KEY_LEFT_SHIFT)) {
-			movement.z -= dist * a->delta_time * 0.0001;
-		}
-		view->camera_position += movement;
+	if(!a->renderer.camera_control) {
+		return;
 	}
+
+	float dist = glm::distance(glm::vec2(0, 0), a->mouse_diff) * 2;
+	float dx = std::sin(a->renderer.camera_rotation.y) * dist;
+	float dz = std::cos(a->renderer.camera_rotation.y) * dist;
+
+	auto is_down = [=](int key) {
+		return a->keys_down.find(key) != a->keys_down.end();
+	};
+
+	glm::vec3 movement(0, 0, 0);
+	if(is_down(GLFW_KEY_W)) {
+		movement.x -= dz * a->delta_time * 0.0001;
+		movement.y += dx * a->delta_time * 0.0001;
+	}
+	if(is_down(GLFW_KEY_S)) {
+		movement.x += dz * a->delta_time * 0.0001;
+		movement.y -= dx * a->delta_time * 0.0001;
+	}
+	if(is_down(GLFW_KEY_A)) {
+		movement.x -= dx * a->delta_time * 0.0001;
+		movement.y -= dz * a->delta_time * 0.0001;
+	}
+	if(is_down(GLFW_KEY_D)) {
+		movement.x += dx * a->delta_time * 0.0001;
+		movement.y += dz * a->delta_time * 0.0001;
+	}
+	if(is_down(GLFW_KEY_SPACE)) {
+		movement.z += dist * a->delta_time * 0.0001;
+	}
+	if(is_down(GLFW_KEY_LEFT_SHIFT)) {
+		movement.z -= dist * a->delta_time * 0.0001;
+	}
+	a->renderer.camera_position += movement;
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
 	app* a = static_cast<app*>(glfwGetWindowUserPointer(window));
-	if(auto view = a->get_3d_view()) {
-		if(action == GLFW_PRESS) {
-			a->keys_down.insert(key);
-		} else if(action == GLFW_RELEASE) {
-			a->keys_down.erase(key);
-		}
+	
+	if(action == GLFW_PRESS) {
+		a->keys_down.insert(key);
+	} else if(action == GLFW_RELEASE) {
+		a->keys_down.erase(key);
+	}
 
-		if(action == GLFW_PRESS && key == GLFW_KEY_Z) {
-			view->camera_control = !view->camera_control;
-			glfwSetInputMode(window, GLFW_CURSOR,
-				view->camera_control ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
-		}
-	} else {
-		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+	if(action == GLFW_PRESS && key == GLFW_KEY_Z) {
+		a->renderer.camera_control = !a->renderer.camera_control;
+		glfwSetInputMode(window, GLFW_CURSOR,
+			a->renderer.camera_control ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 	}
 }
 
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
 	app* a = static_cast<app*>(glfwGetWindowUserPointer(window));
-	if(auto view = a->get_3d_view()) {
-		a->mouse_diff = glm::vec2(xpos, ypos) - a->mouse_last;
-		a->mouse_last = glm::vec2(xpos, ypos);
+	a->mouse_diff = glm::vec2(xpos, ypos) - a->mouse_last;
+	a->mouse_last = glm::vec2(xpos, ypos);
 
-		if(view->camera_control) {
-			view->camera_rotation.y += a->mouse_diff.x * 0.0005;
-			view->camera_rotation.x -= a->mouse_diff.y * 0.0005;
-		}
+	if(a->renderer.camera_control) {
+		a->renderer.camera_rotation.y += a->mouse_diff.x * 0.0005;
+		a->renderer.camera_rotation.x -= a->mouse_diff.y * 0.0005;
 	}
 }

@@ -31,6 +31,7 @@
 #include "level.h"
 #include "stream.h"
 #include "project.h"
+#include "renderer.h"
 #include "worker_logger.h"
 #include "formats/level_impl.h"
 #include "formats/texture_impl.h"
@@ -72,6 +73,8 @@ public:
 	GLFWwindow* glfw_window;
 	int window_width, window_height;
 	
+	gl_renderer renderer;
+	
 	int64_t delta_time;
 	
 	tool current_tool;
@@ -90,7 +93,6 @@ public:
 	const level* get_level() const;
 
 	bool has_camera_control();
-	view_3d* get_3d_view();
 
 	void read_settings();
 	void save_settings();

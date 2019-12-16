@@ -21,22 +21,20 @@
 #include <vector>
 
 shader_program::shader_program(const GLchar* vertex_src, const GLchar* fragment_src, shader_callback after)
-	: _ready(false), _id(0), _vertex_src(vertex_src), _fragment_src(fragment_src), _after(after) {}
+	: _id(0), _vertex_src(vertex_src), _fragment_src(fragment_src), _after(after) {}
 	
 shader_program::~shader_program() {
-	if(_ready) {
-		glDeleteProgram(_id);
-	}
+	glDeleteProgram(_id);
 }
 
-GLuint shader_program::id() {
-	if(!_ready) {
-		_id = link(
-			compile(_vertex_src,   GL_VERTEX_SHADER),
-			compile(_fragment_src, GL_FRAGMENT_SHADER));
-		_after(_id);
-		_ready = true;
-	}
+void shader_program::init() {
+	_id = link(
+		compile(_vertex_src,   GL_VERTEX_SHADER),
+		compile(_fragment_src, GL_FRAGMENT_SHADER));
+	_after(_id);
+}
+
+GLuint shader_program::id() const {
 	return _id;
 }
 
@@ -114,3 +112,7 @@ shader_programs::shader_programs()
 			solid_colour_rgb       = glGetUniformLocation(id, "rgb");
 		}
 	) {}
+
+void shader_programs::init() {
+	solid_colour.init();
+}

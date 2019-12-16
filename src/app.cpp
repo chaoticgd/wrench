@@ -69,9 +69,7 @@ void app::new_project(std::string game_id) {
 			_project.swap(project);
 			_lock_project = false;
 
-			if(auto view = get_3d_view()) {
-				view->reset_camera(*this);
-			}
+			renderer.reset_camera(this);
 			
 			glfwSetWindowTitle(glfw_window, "Wrench Editor - [Unsaved Project]");
 		}
@@ -106,9 +104,7 @@ void app::open_project(std::string path) {
 			_project.swap(project);
 			_lock_project = false;
 
-			if(auto view = get_3d_view()) {
-				view->reset_camera(*this);
-			}
+			renderer.reset_camera(this);
 			
 			auto title = std::string("Wrench Editor - [") + path + "]";
 			glfwSetWindowTitle(glfw_window, title.c_str());
@@ -160,20 +156,7 @@ const level* app::get_level() const {
 }
 
 bool app::has_camera_control() {
-	auto view = get_3d_view();
-	if(!view) {
-		return false;
-	}
-	return static_cast<view_3d*>(view)->camera_control;
-}
-
-view_3d* app::get_3d_view() {
-	for(auto& window : windows) {
-		if(dynamic_cast<view_3d*>(window.get()) != nullptr) {
-			return dynamic_cast<view_3d*>(window.get());
-		}
-	}
-	return nullptr;
+	return renderer.camera_control;
 }
 
 const char* settings_file_path = "wrench_settings.ini";

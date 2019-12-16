@@ -16,6 +16,7 @@ add_executable(wrench
 	src/app.cpp
 	src/command_line.cpp
 	src/gui.cpp
+	src/view_3d.cpp
 	src/stream.cpp
 	src/window.cpp
 	src/renderer.cpp
