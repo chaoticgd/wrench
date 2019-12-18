@@ -11,3 +11,6 @@
 [submodule "thirdparty/toml11"]
 	path = thirdparty/toml11
 	url = https://github.com/ToruNiina/toml11
+[submodule "thirdparty/better-enums"]
+	path = thirdparty/better-enums
+	url = https://github.com/aantron/better-enums

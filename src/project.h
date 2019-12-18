@@ -55,6 +55,7 @@ public:
 	level* selected_level();
 	std::vector<level*> levels();
 	std::vector<texture_provider*> texture_providers();
+	std::vector<model_provider*> model_providers();
 	
 	template <typename T, typename... T_constructor_args>
 	void emplace_command(T_constructor_args... args);

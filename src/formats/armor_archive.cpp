@@ -31,10 +31,11 @@ armor_archive::armor_archive(stream* backing, std::size_t offset, std::size_t si
 	_backing.read_v(armor_list);
 	for(std::size_t i = 0; i < armor_list.size(); i++) {
 		auto armor = armor_list[i];
-		
 		if(armor.texture == 0) {
 			break; // We're probably reading off the end of the array.
 		}
+		
+		_models.push_back(std::make_unique<game_model>(backing, offset + armor.model * SECTOR_SIZE));
 		
 		char magic[4];
 		_backing.seek(armor.texture * SECTOR_SIZE);
@@ -74,4 +75,8 @@ std::string armor_archive::display_name_of(texture* tex) const {
 
 std::vector<texture*> armor_archive::textures() {
 	return unique_to_raw<texture>(_textures);
+}
+
+std::vector<game_model*> armor_archive::models() {
+	return unique_to_raw<game_model>(_models);
 }

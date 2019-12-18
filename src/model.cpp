@@ -32,11 +32,12 @@ GLuint model::vertex_buffer() const {
 	// state. Only functions that modify the vertices should be non-const.
 	model* this_ = const_cast<model*>(this);
 	
-	if(_vertex_buffer == 0) {
-		std::vector<float> vertex_data = triangles();
+	if(true || _vertex_buffer == 0) {
+		std::vector<float> vertex_data = this_->triangles();
 
 		this_->_vertex_buffer_size = vertex_data.size();
 		
+		glDeleteBuffers(1, &this_->_vertex_buffer);
 		glGenBuffers(1, &this_->_vertex_buffer);
 		glBindBuffer(GL_ARRAY_BUFFER, this_->_vertex_buffer);
 		glBufferData(GL_ARRAY_BUFFER,

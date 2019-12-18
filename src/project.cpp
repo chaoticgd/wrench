@@ -108,6 +108,14 @@ std::vector<texture_provider*> wrench_project::texture_providers() {
 	return result;
 }
 
+std::vector<model_provider*> wrench_project::model_providers() {
+	std::vector<model_provider*> result;
+	if(_armor) {
+		result.push_back(&(*_armor));
+	}
+	return result;
+}
+
 void wrench_project::undo() {
 	if(_history_index <= 0) {
 		throw command_error("Nothing to undo.");

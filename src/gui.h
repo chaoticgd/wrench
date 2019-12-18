@@ -29,6 +29,7 @@
 #include "window.h"
 #include "view_3d.h"
 #include "commands/property_changed_command.h"
+#include "formats/game_model.h"
 
 # /*
 #	Implements most of the GUI.
@@ -157,11 +158,13 @@ namespace gui {
 		ImVec2 initial_size() const override;
 		void render(app& a) override;
 		
-		GLuint render_preview(const gl_renderer& renderer, ImVec2 preview_size);
+		GLuint render_preview(
+			const game_model& model,
+			const gl_renderer& renderer,
+			ImVec2 preview_size);
 		glm::vec2 get_drag_delta() const;
 	
 	private:
-		std::unique_ptr<model> _model;
 		float _zoom = 1.f;
 		glm::vec2 _pitch_yaw = { 0.f, 0.f };
 	};

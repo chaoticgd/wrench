@@ -16,50 +16,59 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef FORMATS_ARMOR_ARCHIVE_H
-#define FORMATS_ARMOR_ARCHIVE_H
+#ifndef FORMATS_GAME_MODEL_H
+#define FORMATS_GAME_MODEL_H
 
-#include <memory>
-#include <string>
-#include <vector>
-
+#include "../model.h"
 #include "../stream.h"
-#include "../texture.h"
-#include "texture_impl.h"
-#include "game_model.h"
 
 # /*
-# 	Read ARMOR.WAD.
+#	Parse a game model.
 # */
 
-class armor_archive : public texture_provider, public model_provider {
+class game_model : public model {
 public:
 	struct fmt {
 		packed_struct(header,
-			uint32_t header_size;
-			uint32_t pad;
+			uint32_t unknown_0;
+			uint32_t unknown_4;
+			uint32_t unknown_8;
+			uint32_t unknown_c;
+			uint32_t dma_tags_end;
 		)
 		
-		packed_struct(armor,
-			uint32_t model;
-			uint32_t unknown_4;
-			uint32_t texture;
+		packed_struct(dma_chain_entry,
+			uint64_t tag;
+			uint32_t unknown_8;
 			uint32_t unknown_c;
 		)
 	};
+
+	game_model(stream* backing, std::size_t offset);
+
+	std::vector<float> triangles() const override;
 	
-	armor_archive(stream* backing, std::size_t offset, std::size_t size);
-	std::string display_name() const override;
-	std::string display_name_of(texture* tex) const override;
-	std::vector<texture*> textures() override;
-	
-	std::vector<game_model*> models() override;
+	// Returns a list in the form:
+	// - dma_src_tag ...
+	//   - vif_code ...
+	//   - vif_code ...
+	//     ...
+	// - dma_src_tag ...
+	//   - vif_code ...
+	//   - vif_code ...
+	//     ...
+	// where the DMA tag is the first element of each sublist.
+	std::vector<std::vector<std::string>> get_dma_debug_info() const;
 
 private:
 	proxy_stream _backing;
-	std::vector<std::unique_ptr<fip_texture>> _textures;
-	std::vector<std::unique_ptr<game_model>> _models;
-	std::map<texture*, std::string> _texture_names;
+};
+
+class model_provider {
+public:
+	virtual ~model_provider() = default;
+	
+	virtual std::vector<game_model*> models() = 0;
 };
 
 #endif

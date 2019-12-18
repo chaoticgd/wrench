@@ -23,6 +23,7 @@
 #include <sstream>
 #include <iostream>
 #include <functional>
+#include <boost/algorithm/string.hpp>
 
 #include "util.h"
 #include "config.h"
@@ -782,10 +783,7 @@ void gui::texture_browser::export_bmp(app& a, texture* tex) {
 	model_browser
 */
 
-#include "shapes.h"
-
-gui::model_browser::model_browser()
-	: _model(std::make_unique<cube_model>()) {}
+gui::model_browser::model_browser() {}
 	
 const char* gui::model_browser::title_text() const {
 	return "Model Browser";
@@ -796,6 +794,24 @@ ImVec2 gui::model_browser::initial_size() const {
 }
 
 void gui::model_browser::render(app& a) {
+	if(!a.get_project()) {
+		ImGui::Text("<no project open>");
+		return;
+	}
+	
+	// TODO: Model selection GUI.
+	auto providers = a.get_project()->model_providers();
+	if(providers.size() < 1) {
+		ImGui::Text("<no model providers>");
+		return;
+	}
+	auto models = providers[0]->models();
+	if(models.size() < 1) {
+		ImGui::Text("<no models>");
+		return;
+	}
+	auto model = models[0];
+	
 	if(ImGui::IsWindowHovered()) {
 		ImGuiIO& io = ImGui::GetIO();
 		_zoom *= -io.MouseWheel * a.delta_time * 0.0001 + 1;
@@ -807,12 +823,35 @@ void gui::model_browser::render(app& a) {
 		}
 	}
 	
-	ImVec2 preview_size { 800, 600 };
-	GLuint preview_texture = render_preview(a.renderer, preview_size);
+	ImVec2 preview_size { 400, 300 };
+	GLuint preview_texture = render_preview(*model, a.renderer, preview_size);
 	ImGui::Image((void*) (intptr_t) preview_texture, preview_size);
+	
+	if(ImGui::BeginTabBar("tabs")) {
+		if(ImGui::BeginTabItem("DMA Chain")) {
+			ImGui::BeginChild(1);
+			auto chain_info = model->get_dma_debug_info();
+			for(std::size_t i = 0; i < chain_info.size(); i++) {
+				ImGui::PushID(i);
+				if(ImGui::TreeNode(chain_info[i][0].c_str())) {
+					for(std::size_t j = 1; j < chain_info[i].size(); j++) {
+						ImGui::Text("  %s", chain_info[i][j].c_str());
+					}
+					ImGui::TreePop();
+				}
+				ImGui::PopID();
+			}
+			ImGui::EndChild();
+			ImGui::EndTabItem();
+		}
+		ImGui::EndTabBar();
+	}
 }
 
-GLuint gui::model_browser::render_preview(const gl_renderer& renderer, ImVec2 preview_size) {
+GLuint gui::model_browser::render_preview(
+		const game_model& model,
+		const gl_renderer& renderer,
+		ImVec2 preview_size) {
 	glm::vec2 pitch_yaw = _pitch_yaw;
 	if(ImGui::IsMouseDragging()) {
 		pitch_yaw += get_drag_delta();
@@ -853,7 +892,7 @@ GLuint gui::model_browser::render_preview(const gl_renderer& renderer, ImVec2 pr
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glUseProgram(renderer.shaders.solid_colour.id());
-	renderer.draw_model(*_model, vp, glm::vec4(0, 1, 0, 1));
+	renderer.draw_model(model, vp, glm::vec4(0, 1, 0, 1));
 
 	glDeleteFramebuffers(1, &fb_id);
 	
