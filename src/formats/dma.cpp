@@ -95,10 +95,13 @@ std::optional<vif_code> vif_code::parse(uint32_t val) {
 			break;
 		case vif_cmd::MPG:
 			code.mpg.loadaddr = bit_range(val, 0, 15);
+			break;
 		case vif_cmd::DIRECT:
 			code.direct.size = bit_range(val, 0, 15);
+			break;
 		case vif_cmd::DIRECTHL:
 			code.directhl.size = bit_range(val, 0, 15);
+			break;
 		default:
 			if(!code.is_unpack()) {
 				return {};

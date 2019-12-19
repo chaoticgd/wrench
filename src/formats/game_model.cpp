@@ -18,6 +18,7 @@
 
 #include "game_model.h"
 
+#include "../util.h"
 #include "dma.h"
 
 game_model::game_model(stream* backing, std::size_t offset)
@@ -31,7 +32,6 @@ std::vector<float> game_model::triangles() const {
 	std::vector<float> result = cube_model().triangles();
 	
 	proxy_stream& backing = const_cast<proxy_stream&>(_backing);
-	printf("%s\n", backing.resource_path().c_str());
 	fmt::header hdr = backing.read<fmt::header>(0);
 	
 	std::vector<fmt::dma_chain_entry> entries;
@@ -58,36 +58,46 @@ std::vector<float> game_model::triangles() const {
 	return result;
 }
 
-std::vector<std::vector<std::string>> game_model::get_dma_debug_info() const {
-	std::vector<std::vector<std::string>> result;
+std::vector<dma_packet_info> game_model::get_dma_debug_info() const {
+	std::vector<dma_packet_info> result;
 	
 	proxy_stream& backing = const_cast<proxy_stream&>(_backing);
 	fmt::header hdr = backing.read<fmt::header>(0);
 	
 	std::vector<fmt::dma_chain_entry> entries;
+	std::vector<std::size_t> dma_tag_addresses;
 	while(backing.tell() < hdr.dma_tags_end) {
+		dma_tag_addresses.push_back(backing.tell());
 		entries.push_back(backing.read<fmt::dma_chain_entry>());
 	}
 	
-	for(fmt::dma_chain_entry entry : entries) {
-		std::vector<std::string> packet_info;
+	for(std::size_t i = 0; i < entries.size(); i++) {
+		dma_packet_info dma_info;
+		dma_info.address = dma_tag_addresses[i];
 		
-		dma_src_tag tag = dma_src_tag::parse(entry.tag);
-		packet_info.push_back(tag.to_string());
+		dma_src_tag tag = dma_src_tag::parse(entries[i].tag);
+		dma_info.tag = tag.to_string();
 		
 		std::size_t offset = 0;
 		while(offset < tag.qwc * 16) {
+			vif_packet_info vif_info;
+			
 			int val = backing.peek<uint32_t>(tag.addr + offset);
 			std::optional<vif_code> code = vif_code::parse(val);
 			if(!code) {
-				packet_info.push_back("(invalid VIF code)");
+				vif_info.code = "(invalid VIF code)";
 				break;
 			}
-			packet_info.push_back(code->to_string());
+			vif_info.address = tag.addr + offset;
+			vif_info.code = code->to_string();
+			for(std::size_t i = 0; i < code->packet_size() * 4; i++) {
+				vif_info.data.push_back(backing.peek<uint32_t>(tag.addr + offset + i));
+			}
+			dma_info.vif_packets.push_back(vif_info);
 			offset += code->packet_size() * 4;
 		}
 		
-		result.push_back(packet_info);
+		result.push_back(dma_info);
 	}
 	
 	return result;

@@ -26,6 +26,18 @@
 #	Parse a game model.
 # */
 
+struct vif_packet_info {
+	std::size_t address;
+	std::string code;
+	std::vector<uint8_t> data;
+};
+
+struct dma_packet_info {
+	std::size_t address;
+	std::string tag;
+	std::vector<vif_packet_info> vif_packets;
+};
+
 class game_model : public model {
 public:
 	struct fmt {
@@ -58,7 +70,7 @@ public:
 	//   - vif_code ...
 	//     ...
 	// where the DMA tag is the first element of each sublist.
-	std::vector<std::vector<std::string>> get_dma_debug_info() const;
+	std::vector<dma_packet_info> get_dma_debug_info() const;
 
 private:
 	proxy_stream _backing;

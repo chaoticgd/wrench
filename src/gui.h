@@ -163,6 +163,9 @@ namespace gui {
 			const gl_renderer& renderer,
 			ImVec2 preview_size);
 		glm::vec2 get_drag_delta() const;
+		
+		static void render_dma_debug_info(std::vector<dma_packet_info> chain_info);
+		static void render_hex_dump(std::vector<uint8_t> data, std::size_t starting_offset);
 	
 	private:
 		float _zoom = 1.f;

@@ -806,11 +806,11 @@ void gui::model_browser::render(app& a) {
 		return;
 	}
 	auto models = providers[0]->models();
-	if(models.size() < 1) {
+	if(models.size() < 5) {
 		ImGui::Text("<no models>");
 		return;
 	}
-	auto model = models[0];
+	auto model = models[4]; // final armor
 	
 	if(ImGui::IsWindowHovered()) {
 		ImGuiIO& io = ImGui::GetIO();
@@ -828,19 +828,10 @@ void gui::model_browser::render(app& a) {
 	ImGui::Image((void*) (intptr_t) preview_texture, preview_size);
 	
 	if(ImGui::BeginTabBar("tabs")) {
-		if(ImGui::BeginTabItem("DMA Chain")) {
+		if(ImGui::BeginTabItem("DMA Chain (Debug)")) {
 			ImGui::BeginChild(1);
 			auto chain_info = model->get_dma_debug_info();
-			for(std::size_t i = 0; i < chain_info.size(); i++) {
-				ImGui::PushID(i);
-				if(ImGui::TreeNode(chain_info[i][0].c_str())) {
-					for(std::size_t j = 1; j < chain_info[i].size(); j++) {
-						ImGui::Text("  %s", chain_info[i][j].c_str());
-					}
-					ImGui::TreePop();
-				}
-				ImGui::PopID();
-			}
+			render_dma_debug_info(chain_info);
 			ImGui::EndChild();
 			ImGui::EndTabItem();
 		}
@@ -902,6 +893,47 @@ GLuint gui::model_browser::render_preview(
 glm::vec2 gui::model_browser::get_drag_delta() const {
 	auto delta = ImGui::GetMouseDragDelta();
 	return glm::vec2(delta.y, delta.x) * 0.01f;
+}
+
+void gui::model_browser::render_dma_debug_info(std::vector<dma_packet_info> chain_info) {
+	for(dma_packet_info dma_packet : chain_info) {
+		ImGui::PushID(dma_packet.address);
+		
+		std::string dma_label = int_to_hex(dma_packet.address) + " " + dma_packet.tag;
+		if(ImGui::TreeNode(dma_label.c_str())) {
+			for(vif_packet_info vif_packet : dma_packet.vif_packets) {
+				ImGui::PushID(vif_packet.address);
+				
+				std::string vif_label = int_to_hex(vif_packet.address) + " " + vif_packet.code;
+				if(ImGui::TreeNode(vif_label.c_str())) {
+					render_hex_dump(vif_packet.data, vif_packet.address);
+					ImGui::TreePop();
+				}
+				ImGui::PopID();
+			}
+			ImGui::TreePop();
+		}
+		ImGui::PopID();
+	}
+}
+
+void gui::model_browser::render_hex_dump(std::vector<uint8_t> data, std::size_t starting_offset) {
+	std::string data_str;
+	for(std::size_t i = 0; i < starting_offset % 16; i++) {
+		data_str += "   ";
+	}
+	for(uint8_t byte : data) {
+		std::string num = int_to_hex(byte);
+		while(num.size() < 2) num = "0" + num;
+		data_str += num + " ";
+		if(data_str.size() > 47) {
+			ImGui::Text("    %s", data_str.c_str());
+			data_str = "";
+		}
+	}
+	if(data_str.size() > 0) {
+		ImGui::Text("    %s", data_str.c_str());
+	}
 }
 
 /*
