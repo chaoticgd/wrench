@@ -32,7 +32,7 @@ GLuint model::vertex_buffer() const {
 	// state. Only functions that modify the vertices should be non-const.
 	model* this_ = const_cast<model*>(this);
 	
-	if(true || _vertex_buffer == 0) {
+	if(_vertex_buffer == 0) {
 		std::vector<float> vertex_data = this_->triangles();
 
 		this_->_vertex_buffer_size = vertex_data.size();

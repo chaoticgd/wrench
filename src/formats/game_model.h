@@ -19,38 +19,32 @@
 #ifndef FORMATS_GAME_MODEL_H
 #define FORMATS_GAME_MODEL_H
 
+#include <map>
+
 #include "../model.h"
 #include "../stream.h"
+#include "dma.h"
 
 # /*
 #	Parse a game model.
 # */
 
-struct vif_packet_info {
-	std::size_t address;
-	std::string code;
-	std::vector<uint8_t> data;
-};
-
-struct dma_packet_info {
-	std::size_t address;
-	std::string tag;
-	std::vector<vif_packet_info> vif_packets;
-};
+using vif_chains = std::map<std::size_t, std::vector<vif_packet>>;
 
 class game_model : public model {
 public:
 	struct fmt {
 		packed_struct(header,
 			uint32_t unknown_0;
-			uint32_t unknown_4;
+			uint32_t dma_tags_begin;
 			uint32_t unknown_8;
 			uint32_t unknown_c;
-			uint32_t dma_tags_end;
 		)
 		
-		packed_struct(dma_chain_entry,
-			uint64_t tag;
+		packed_struct(submodel_entry, // unused
+			uint32_t address;
+			uint16_t qwc;
+			uint16_t unknown_6;
 			uint32_t unknown_8;
 			uint32_t unknown_c;
 		)
@@ -60,20 +54,11 @@ public:
 
 	std::vector<float> triangles() const override;
 	
-	// Returns a list in the form:
-	// - dma_src_tag ...
-	//   - vif_code ...
-	//   - vif_code ...
-	//     ...
-	// - dma_src_tag ...
-	//   - vif_code ...
-	//   - vif_code ...
-	//     ...
-	// where the DMA tag is the first element of each sublist.
-	std::vector<dma_packet_info> get_dma_debug_info() const;
-
+	std::size_t num_submodels() const;
+	std::vector<vif_packet> get_vif_chain(std::size_t submodel) const;
 private:
 	proxy_stream _backing;
+	vif_chains _vif_chains;
 };
 
 class model_provider {

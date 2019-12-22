@@ -22,35 +22,12 @@
 
 #include "../util.h"
 
-dma_src_tag dma_src_tag::parse(uint64_t val) {
-	dma_src_tag tag;
-	tag.spr  = bit_range(val, 63, 63);
-	tag.addr = bit_range(val, 32, 62);
-	tag.irq  = bit_range(val, 31, 31);
-	tag.id   = dma_src_id::_from_integral(bit_range(val, 28, 30));
-	tag.pce  = dma_pce::_from_integral(bit_range(val, 26, 27));
-	tag.qwc  = bit_range(val, 0, 15);
-	return tag;
-}
-
-std::string dma_src_tag::to_string() const {
-	std::stringstream ss;
-	ss << std::hex;
-	ss << "dma_src_tag"
-	   << " qwc=" << qwc
-	   << " pce=" << pce
-	   << " id=" << id
-	   << " irq=" << irq
-	   << " addr=" << int_to_hex(addr)
-	   << " spr=" << spr;
-	return ss.str();
-}
-
 std::optional<vif_code> vif_code::parse(uint32_t val) {
 	vif_code code;
-	code.i   = bit_range(val, 31, 31);
-	code.cmd = static_cast<vif_cmd>(bit_range(val, 24, 30));
-	code.num = bit_range(val, 16, 23);
+	code.interrupt = bit_range(val, 31, 31);
+	code.cmd       = static_cast<vif_cmd>(bit_range(val, 24, 30));
+	code.num       = bit_range(val, 16, 23);
+	code.num = code.num ? code.num : 256;
 	
 	switch(code.cmd) {
 		case vif_cmd::NOP:
@@ -98,16 +75,19 @@ std::optional<vif_code> vif_code::parse(uint32_t val) {
 			break;
 		case vif_cmd::DIRECT:
 			code.direct.size = bit_range(val, 0, 15);
+			code.direct.size = code.direct.size ? code.direct.size : 65536;
 			break;
 		case vif_cmd::DIRECTHL:
 			code.directhl.size = bit_range(val, 0, 15);
+			code.directhl.size = code.directhl.size ? code.directhl.size : 65536;
 			break;
 		default:
 			if(!code.is_unpack()) {
 				return {};
 			}
-			code.unpack.vn   = vif_vn ::_from_integral(bit_range(val, 26, 27));
-			code.unpack.vl   = vif_vl ::_from_integral(bit_range(val, 24, 25));
+			code.unpack.vn = bit_range(val, 26, 27);
+			code.unpack.vl = bit_range(val, 24, 25);
+			code.unpack.vnvl = vif_vnvl ::_from_integral(bit_range(val, 24, 27));
 			code.unpack.flg  = vif_flg::_from_integral(bit_range(val, 15, 15));
 			code.unpack.usn  = vif_usn::_from_integral(bit_range(val, 14, 14));
 			code.unpack.addr = bit_range(val, 0, 9);
@@ -117,10 +97,11 @@ std::optional<vif_code> vif_code::parse(uint32_t val) {
 }
 
 bool vif_code::is_unpack() const {
-	return static_cast<int>(cmd) & 0b1100000;
+	return (static_cast<int>(cmd) & 0b1100000) == 0b1100000;
 }
 
 std::size_t vif_code::packet_size() const {
+	std::size_t result = 0;
 	switch(cmd) {
 		case vif_cmd::NOP:
 		case vif_cmd::STCYCL:
@@ -136,24 +117,38 @@ std::size_t vif_code::packet_size() const {
 		case vif_cmd::MSCAL:
 		case vif_cmd::MSCNT:
 		case vif_cmd::MSCALF:
-			return 1;
+			result = 1;
+			break;
 		case vif_cmd::STMASK:
-			return 2;
+			result = 2;
+			break;
 		case vif_cmd::STROW:
 		case vif_cmd::STCOL:
-			return 5;
+			result = 5;
+			break;
 		case vif_cmd::MPG:
-			return 1 + num * 2;
+			result = 1 + (num ? num : 256) * 2;
+			break;
 		case vif_cmd::DIRECT:
-			return 1 + direct.size * 4;
+			result = 1 + direct.size * 4;
+			break;
 		case vif_cmd::DIRECTHL:
-			return 1 + directhl.size * 4;
+			result = 1 + directhl.size * 4;
+			break;
 		default:
 			if(is_unpack()) {
-				return 1 + (((32 >> unpack.vl) * (unpack.vn + 1)) * static_cast<int>(std::ceil(num / 32.f)));
+				// This is what PCSX2 does when wl <= cl.
+				// Assume wl = cl = 4.
+				int gsize = ((32 >> unpack.vl) * (unpack.vn + 1)) / 8;
+				result = 1 + (num * gsize) / 4;
 			}
 	}
-	throw std::runtime_error("Called vif_code::packet_size() on an invalid vif_code!");
+	
+	if(result == 0) {
+		throw std::runtime_error("Called vif_code::packet_size() on an invalid vif_code!");
+	}
+	
+	return result * 4;
 }
 
 std::string vif_code::to_string() const {
@@ -178,24 +173,66 @@ std::string vif_code::to_string() const {
 		case vif_cmd::STMASK:   ss << "STMASK"; break;
 		case vif_cmd::STROW:    ss << "STROW"; break;
 		case vif_cmd::STCOL:    ss << "STCOL"; break;
-		case vif_cmd::MPG:      ss << "MPG loadaddr=" << mpg.loadaddr; break;
+		case vif_cmd::MPG:      ss << "MPG num=" << num << " loadaddr=" << mpg.loadaddr; break;
 		case vif_cmd::DIRECT:   ss << "DIRECT size=" << direct.size; break;
 		case vif_cmd::DIRECTHL: ss << "DIRECTHL size=" << directhl.size; break;
 		default:
 			if(!is_unpack()) {
 				return "INVALID VIF CODE";
 			}
-			ss << "UNPACK vn=" << unpack.vn
-			   << " vl=" << unpack.vl
+			ss << "UNPACK vnvl=" << unpack.vnvl
 			   << " num=" << num
 			   << " flg=" << unpack.flg
 			   << " usn=" << unpack.usn 
-			   << " addr=" << unpack.addr
-			   << " SIZE=" << packet_size();
+			   << " addr=" << unpack.addr;
 	}
+	ss << " interrupt=" << interrupt
+	   << " SIZE=" << packet_size();
 	return ss.str();
 }
 
-int bit_range(uint64_t val, int lo, int hi) {
+std::vector<vif_packet> parse_vif_chain(const stream* src, std::size_t base_address, std::size_t qwc) {
+	std::vector<vif_packet> chain;
+	
+	std::size_t offset = 0;
+	while(offset < qwc * 16) {
+		vif_packet vpkt;
+		vpkt.address = base_address + offset;
+		
+		uint32_t val = src->peek<uint32_t>(vpkt.address);
+		std::optional<vif_code> code = vif_code::parse(val);
+		if(!code) {
+			vpkt.error = "failed to parse VIF code";
+			offset += 4;
+			chain.push_back(vpkt);
+			continue;
+		}
+		
+		vpkt.code = *code;
+		
+		std::size_t packet_size = vpkt.code.packet_size();
+		if(packet_size > 0x4096) {
+			vpkt.error = "packet_size > 0x4096";
+			offset += 4;
+			chain.push_back(vpkt);
+			continue;
+		}
+		
+		for(std::size_t j = 0; j < packet_size / 4; j++) {
+			vpkt.data.push_back(src->peek<uint32_t>(base_address + offset + j));
+		}
+		
+		offset += packet_size;
+		if(offset > qwc * 16) {
+			vpkt.error = "offset > qwc * 16";
+		}
+		
+		chain.push_back(vpkt);
+	}
+	
+	return chain;
+}
+
+uint64_t bit_range(uint64_t val, int lo, int hi) {
 	return (val >> lo) & ((1 << (hi - lo + 1)) - 1);
 }

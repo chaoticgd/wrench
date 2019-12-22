@@ -30,37 +30,6 @@
 #	This is how models are stored on disc.
 # */
 
-BETTER_ENUM(dma_src_id, char,
-	REFE = 0b000,
-	CNT  = 0b001,
-	NEXT = 0b010,
-	REF  = 0b011,
-	REFS = 0b100,
-	CALL = 0b101,
-	RET  = 0b110,
-	END  = 0b111
-)
-
-BETTER_ENUM(dma_pce, char,
-	NOTHING  = 0b00,
-	RESERVED = 0b01,
-	DISABLED = 0b10,
-	ENABLED = 0b11
-)
-
-struct dma_src_tag {
-	int spr;
-	int addr;
-	int irq;
-	dma_src_id id;
-	dma_pce pce;
-	int qwc;
-	
-	dma_src_tag() : id(dma_src_id::END), pce(dma_pce::NOTHING) {}
-	static dma_src_tag parse(uint64_t val);
-	std::string to_string() const;
-};
-
 enum class vif_cmd {
 	NOP      = 0b0000000,
 	STCYCL   = 0b0000001,
@@ -98,6 +67,25 @@ BETTER_ENUM(vif_vl, char,
 	B5551 = 0b11
 )
 
+BETTER_ENUM(vif_vnvl, char,
+	S_32     = 0b0000,
+	S_16     = 0b0001,
+	ERR_0010 = 0b0010,
+	ERR_0011 = 0b0011,
+	V2_32    = 0b0100,
+	V2_16    = 0b0101,
+	V2_8     = 0b0110,
+	ERR_0111 = 0b0111,
+	V3_32    = 0b1000,
+	V3_16    = 0b1001,
+	V3_8     = 0b1010,
+	ERR_1011 = 0b1011,
+	V4_32    = 0b1100,
+	V4_16    = 0b1101,
+	V4_8     = 0b1110,
+	V4_5     = 0b1111
+)
+
 BETTER_ENUM(vif_flg, char,
 	DO_NOT_USE_VIF1_TOPS = 0x0,
 	USE_VIF1_TOPS        = 0x1
@@ -109,50 +97,26 @@ BETTER_ENUM(vif_usn, char,
 )
 
 struct vif_code {
-	int i;
+	int interrupt;
 	vif_cmd cmd;
 	int num;
 	union {
+		struct { int wl; int cl; } stcycl;
+		struct { int offset; } offset;
+		struct { int base; } base;
+		struct { int addr; } itop;
+		struct { int mode; } stmod;
+		struct { int mask; } mskpath3;
+		struct { int mark; } mark;
+		struct { int execaddr; } mscal;
+		struct { int execaddr; } mscalf;
+		struct { int loadaddr; } mpg;
+		struct { int size; } direct;
+		struct { int size; } directhl;
 		struct {
-			int wl;
-			int cl;
-		} stcycl;
-		struct {
-			int offset;
-		} offset;
-		struct {
-			int base;
-		} base;
-		struct {
-			int addr;
-		} itop;
-		struct {
-			int mode;
-		} stmod;
-		struct {
-			int mask;
-		} mskpath3;
-		struct {
-			int mark;
-		} mark;
-		struct {
-			int execaddr;
-		} mscal;
-		struct {
-			int execaddr;
-		} mscalf;
-		struct {
-			int loadaddr;
-		} mpg;
-		struct {
-			int size;
-		} direct;
-		struct {
-			int size;
-		} directhl;
-		struct {
-			vif_vn vn;
-			vif_vl vl;
+			int vn;
+			int vl;
+			vif_vnvl vnvl;
 			vif_flg flg;
 			vif_usn usn;
 			int addr;
@@ -166,6 +130,15 @@ struct vif_code {
 	std::string to_string() const;
 };
 
-int bit_range(uint64_t val, int lo, int hi);
+struct vif_packet {
+	std::size_t address;
+	vif_code code;
+	std::vector<uint32_t> data; // Including the code.
+	std::string error;
+};
+
+std::vector<vif_packet> parse_vif_chain(const stream* src, std::size_t base_address, std::size_t qwc);
+
+uint64_t bit_range(uint64_t val, int lo, int hi);
 
 #endif

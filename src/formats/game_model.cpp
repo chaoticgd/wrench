@@ -19,7 +19,6 @@
 #include "game_model.h"
 
 #include "../util.h"
-#include "dma.h"
 
 game_model::game_model(stream* backing, std::size_t offset)
 	: _backing(backing, offset, backing->size() - offset) {
@@ -31,74 +30,42 @@ game_model::game_model(stream* backing, std::size_t offset)
 std::vector<float> game_model::triangles() const {
 	std::vector<float> result = cube_model().triangles();
 	
-	proxy_stream& backing = const_cast<proxy_stream&>(_backing);
-	fmt::header hdr = backing.read<fmt::header>(0);
-	
-	std::vector<fmt::dma_chain_entry> entries;
-	while(backing.tell() < hdr.dma_tags_end) {
-		entries.push_back(backing.read<fmt::dma_chain_entry>());
-	}
-	
-	for(fmt::dma_chain_entry entry : entries) {
-		dma_src_tag tag = dma_src_tag::parse(entry.tag);
-		
-		if(tag.id != +dma_src_id::REFE) {
-			throw std::runtime_error("Encountered DMA tag where id != REFE!");
-		}
-		
-		std::size_t offset = 0;
-		for(int i = 0; i < 8; i++) {
-			int val = backing.peek<uint32_t>(tag.addr + offset * 4);
-			std::optional<vif_code> code = vif_code::parse(val);
-			if(!code) { break; }
-			offset += code->packet_size();
+	for(std::size_t submodel = 0; submodel < num_submodels(); submodel++) {
+		auto chain = get_vif_chain(submodel);
+		for(vif_packet& vpkt : chain) {
+			if(vpkt.error != "") {
+				continue;
+			}
+			
+			if(vpkt.code.is_unpack() && vpkt.code.unpack.vnvl == +vif_vnvl::V2_16) {
+				for(std::size_t i = 1; i < 4; i++) {
+					int x = vpkt.data[i] & 0x00ff;
+					int y = vpkt.data[i] & 0xff00;
+					printf("xy %d %d\n", x, y);
+				}
+			}
 		}
 	}
 	
 	return result;
 }
 
-std::vector<dma_packet_info> game_model::get_dma_debug_info() const {
-	std::vector<dma_packet_info> result;
-	
-	proxy_stream& backing = const_cast<proxy_stream&>(_backing);
-	fmt::header hdr = backing.read<fmt::header>(0);
-	
-	std::vector<fmt::dma_chain_entry> entries;
-	std::vector<std::size_t> dma_tag_addresses;
-	while(backing.tell() < hdr.dma_tags_end) {
-		dma_tag_addresses.push_back(backing.tell());
-		entries.push_back(backing.read<fmt::dma_chain_entry>());
+std::size_t game_model::num_submodels() const {
+	return (_backing.peek<uint32_t>(0x10) - _backing.peek<uint32_t>(0x4)) / 0x10;
+}
+
+std::vector<vif_packet> game_model::get_vif_chain(std::size_t submodel) const {
+	uint32_t table = _backing.peek<uint32_t>(0x4);
+	if(_vif_chains.find(submodel) == _vif_chains.end()) {
+		auto entry = _backing.peek<fmt::submodel_entry>
+			(table + submodel * sizeof(fmt::submodel_entry));
+		const_cast<vif_chains*>(&_vif_chains)->insert
+			({submodel, parse_vif_chain(&_backing, entry.address, entry.qwc)});
 	}
 	
-	for(std::size_t i = 0; i < entries.size(); i++) {
-		dma_packet_info dma_info;
-		dma_info.address = dma_tag_addresses[i];
-		
-		dma_src_tag tag = dma_src_tag::parse(entries[i].tag);
-		dma_info.tag = tag.to_string();
-		
-		std::size_t offset = 0;
-		while(offset < tag.qwc * 16) {
-			vif_packet_info vif_info;
-			
-			int val = backing.peek<uint32_t>(tag.addr + offset);
-			std::optional<vif_code> code = vif_code::parse(val);
-			if(!code) {
-				vif_info.code = "(invalid VIF code)";
-				break;
-			}
-			vif_info.address = tag.addr + offset;
-			vif_info.code = code->to_string();
-			for(std::size_t i = 0; i < code->packet_size() * 4; i++) {
-				vif_info.data.push_back(backing.peek<uint32_t>(tag.addr + offset + i));
-			}
-			dma_info.vif_packets.push_back(vif_info);
-			offset += code->packet_size() * 4;
-		}
-		
-		result.push_back(dma_info);
-	}
+	//uint8_t vals[8] = { 0x21,  0x0,  0x0, 0x30, 0x30, 0x96, 0xf2, 0x1 };
+	//uint64_t val = *(uint64_t*) vals;
+	//printf("%s\n", dma_src_tag::parse(val).to_string().c_str());
 	
-	return result;
+	return _vif_chains.at(submodel);
 }

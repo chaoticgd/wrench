@@ -830,8 +830,7 @@ void gui::model_browser::render(app& a) {
 	if(ImGui::BeginTabBar("tabs")) {
 		if(ImGui::BeginTabItem("DMA Chain (Debug)")) {
 			ImGui::BeginChild(1);
-			auto chain_info = model->get_dma_debug_info();
-			render_dma_debug_info(chain_info);
+			render_dma_debug_info(*model);
 			ImGui::EndChild();
 			ImGui::EndTabItem();
 		}
@@ -895,18 +894,24 @@ glm::vec2 gui::model_browser::get_drag_delta() const {
 	return glm::vec2(delta.y, delta.x) * 0.01f;
 }
 
-void gui::model_browser::render_dma_debug_info(std::vector<dma_packet_info> chain_info) {
-	for(dma_packet_info dma_packet : chain_info) {
-		ImGui::PushID(dma_packet.address);
+void gui::model_browser::render_dma_debug_info(game_model& mdl) {
+	for(std::size_t submodel = 0; submodel < mdl.num_submodels(); submodel++) {
+		ImGui::PushID(submodel);
 		
-		std::string dma_label = int_to_hex(dma_packet.address) + " " + dma_packet.tag;
-		if(ImGui::TreeNode(dma_label.c_str())) {
-			for(vif_packet_info vif_packet : dma_packet.vif_packets) {
-				ImGui::PushID(vif_packet.address);
+		if(ImGui::TreeNode("submodel", "Submodel %ld", submodel)) {
+			auto chain = mdl.get_vif_chain(submodel);
+			for(vif_packet& vpkt : chain) {
+				ImGui::PushID(vpkt.address);
+					
+				if(vpkt.error != "") {
+					ImGui::Text("   (error: %s)", vpkt.error.c_str());
+					ImGui::PopID();
+					continue;
+				}
 				
-				std::string vif_label = int_to_hex(vif_packet.address) + " " + vif_packet.code;
-				if(ImGui::TreeNode(vif_label.c_str())) {
-					render_hex_dump(vif_packet.data, vif_packet.address);
+				std::string label = vpkt.code.to_string();
+				if(ImGui::TreeNode("packet", "%lx %s", vpkt.address, label.c_str())) {
+					render_hex_dump(vpkt.data, vpkt.address);
 					ImGui::TreePop();
 				}
 				ImGui::PopID();
@@ -917,18 +922,18 @@ void gui::model_browser::render_dma_debug_info(std::vector<dma_packet_info> chai
 	}
 }
 
-void gui::model_browser::render_hex_dump(std::vector<uint8_t> data, std::size_t starting_offset) {
-	std::string data_str;
-	for(std::size_t i = 0; i < starting_offset % 16; i++) {
-		data_str += "   ";
-	}
-	for(uint8_t byte : data) {
-		std::string num = int_to_hex(byte);
-		while(num.size() < 2) num = "0" + num;
-		data_str += num + " ";
-		if(data_str.size() > 47) {
-			ImGui::Text("    %s", data_str.c_str());
-			data_str = "";
+void gui::model_browser::render_hex_dump(std::vector<uint32_t> data, std::size_t starting_offset) {
+	std::size_t column = starting_offset % 16;
+	std::string data_str(column * 3, ' ');
+	for(uint32_t word : data) {
+		for(int byte = 0; byte < 4; byte++) {
+			std::string num = int_to_hex(((uint8_t*) &word)[byte]);
+			while(num.size() < 2) num = "0" + num;
+			data_str += num + " ";
+			if(data_str.size() > 47) {
+				ImGui::Text("    %s", data_str.c_str());
+				data_str = "";
+			}
 		}
 	}
 	if(data_str.size() > 0) {
