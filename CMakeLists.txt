@@ -92,6 +92,14 @@ add_executable(texturefinder
 	src/formats/bmp.cpp
 )
 
+add_executable(vif
+	src/cli/vifcli.cpp
+	src/stream.cpp
+	src/util.cpp
+	src/command_line.cpp
+	src/formats/dma.cpp
+)
+
 if(MSVC)
 	target_compile_options(wrench PRIVATE /W4 /WX)
 	target_compile_options(fip PRIVATE /W4 /WX)
@@ -99,12 +107,14 @@ if(MSVC)
 	target_compile_options(scan PRIVATE /W4 /WX)
 	target_compile_options(pakrac PRIVATE /W4 /WX)
 	target_compile_options(texturefinder PRIVATE /W4 /WX)
+	target_compile_options(vif PRIVATE /W4 /WX)
 else()
 	target_compile_options(wrench PRIVATE -Wall -O3)
 	target_compile_options(fip PRIVATE -Wall -O3)
 	target_compile_options(wad PRIVATE -Wall -O3)
 	target_compile_options(pakrac PRIVATE -Wall -O3)
 	target_compile_options(texturefinder PRIVATE -Wall -O3)
+	target_compile_options(vif PRIVATE -Wall -O3)
 endif()
 
 # Boost
@@ -116,6 +126,7 @@ target_link_libraries(wad ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 target_link_libraries(scan ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 target_link_libraries(pakrac ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 target_link_libraries(texturefinder ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
+target_link_libraries(vif ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 
 # pthreads
 set(THREADS_PREFER_PTHREAD_FLAG ON)
