@@ -23,7 +23,7 @@
 
 #include "../model.h"
 #include "../stream.h"
-#include "dma.h"
+#include "vif.h"
 
 # /*
 #	Parse a game model.

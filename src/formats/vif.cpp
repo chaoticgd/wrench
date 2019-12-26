@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "dma.h"
+#include "vif.h"
 
 #include <sstream>
 

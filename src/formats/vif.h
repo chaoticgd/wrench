@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef FORMATS_DMA_H
-#define FORMATS_DMA_H
+#ifndef FORMATS_VIF_H
+#define FORMATS_VIF_H
 
 #include <string>
 #include <optional>

@@ -40,7 +40,7 @@ add_executable(wrench
 	src/formats/bmp.cpp
 	src/formats/armor_archive.cpp
 	src/formats/game_model.cpp
-	src/formats/dma.cpp
+	src/formats/vif.cpp
 	src/commands/translate_command.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
 	src/imgui_impl_glfw.cpp
@@ -97,7 +97,7 @@ add_executable(vif
 	src/stream.cpp
 	src/util.cpp
 	src/command_line.cpp
-	src/formats/dma.cpp
+	src/formats/vif.cpp
 )
 
 if(MSVC)

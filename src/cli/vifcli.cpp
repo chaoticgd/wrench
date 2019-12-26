@@ -24,7 +24,7 @@
 
 #include "../util.h"
 #include "../command_line.h"
-#include "../formats/dma.h"
+#include "../formats/vif.h"
 
 int main(int argc, char** argv) {
 	std::string src_path;
