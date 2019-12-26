@@ -816,7 +816,7 @@ void gui::model_browser::render(app& a) {
 		ImGuiIO& io = ImGui::GetIO();
 		_zoom *= -io.MouseWheel * a.delta_time * 0.0001 + 1;
 		if(_zoom < 0.2) _zoom = 0.2;
-		if(_zoom > 2) _zoom = 2;	
+		if(_zoom > 4) _zoom = 4;	
 		
 		if(ImGui::IsMouseReleased(0)) {
 			_pitch_yaw += get_drag_delta();
@@ -847,7 +847,7 @@ GLuint gui::model_browser::render_preview(
 		pitch_yaw += get_drag_delta();
 	}
 	
-	glm::vec3 eye = glm::vec3(20, 0, 0) * _zoom;
+	glm::vec3 eye = glm::vec3(_zoom, 0, 0);
 	
 	glm::mat4 view_fixed = glm::lookAt(eye, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
 	glm::mat4 view_pitched = glm::rotate(view_fixed, pitch_yaw.x, glm::vec3(0, 0, 1));
@@ -899,22 +899,28 @@ void gui::model_browser::render_dma_debug_info(game_model& mdl) {
 		ImGui::PushID(submodel);
 		
 		if(ImGui::TreeNode("submodel", "Submodel %ld", submodel)) {
-			auto chain = mdl.get_vif_chain(submodel);
-			for(vif_packet& vpkt : chain) {
-				ImGui::PushID(vpkt.address);
+			std::vector<std::vector<vif_packet>> chains = {
+				mdl.get_vif_chain(submodel)
+			};
+			for(int i = 0; i < 1; i++) {
+				auto& chain = chains[i];
+				ImGui::Text("  Chain %d:", i);
+				for(vif_packet& vpkt : chain) {
+					ImGui::PushID(vpkt.address);
+						
+					if(vpkt.error != "") {
+						ImGui::Text("   (error: %s)", vpkt.error.c_str());
+						ImGui::PopID();
+						continue;
+					}
 					
-				if(vpkt.error != "") {
-					ImGui::Text("   (error: %s)", vpkt.error.c_str());
+					std::string label = vpkt.code.to_string();
+					if(ImGui::TreeNode("packet", "%lx %s", vpkt.address, label.c_str())) {
+						render_hex_dump(vpkt.data, vpkt.address);
+						ImGui::TreePop();
+					}
 					ImGui::PopID();
-					continue;
 				}
-				
-				std::string label = vpkt.code.to_string();
-				if(ImGui::TreeNode("packet", "%lx %s", vpkt.address, label.c_str())) {
-					render_hex_dump(vpkt.data, vpkt.address);
-					ImGui::TreePop();
-				}
-				ImGui::PopID();
 			}
 			ImGui::TreePop();
 		}

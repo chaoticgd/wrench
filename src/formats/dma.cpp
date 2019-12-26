@@ -127,7 +127,7 @@ std::size_t vif_code::packet_size() const {
 			result = 5;
 			break;
 		case vif_cmd::MPG:
-			result = 1 + (num ? num : 256) * 2;
+			result = 1 + num * 2;
 			break;
 		case vif_cmd::DIRECT:
 			result = 1 + direct.size * 4;
@@ -203,23 +203,21 @@ std::vector<vif_packet> parse_vif_chain(const stream* src, std::size_t base_addr
 		std::optional<vif_code> code = vif_code::parse(val);
 		if(!code) {
 			vpkt.error = "failed to parse VIF code";
-			offset += 4;
 			chain.push_back(vpkt);
-			continue;
+			break;
 		}
 		
 		vpkt.code = *code;
 		
 		std::size_t packet_size = vpkt.code.packet_size();
-		if(packet_size > 0x4096) {
-			vpkt.error = "packet_size > 0x4096";
-			offset += 4;
+		if(packet_size > 0x10000) {
+			vpkt.error = "packet_size > 0x10000";
 			chain.push_back(vpkt);
-			continue;
+			break;
 		}
 		
 		for(std::size_t j = 0; j < packet_size / 4; j++) {
-			vpkt.data.push_back(src->peek<uint32_t>(base_address + offset + j));
+			vpkt.data.push_back(src->peek<uint32_t>(base_address + offset + j * 4));
 		}
 		
 		offset += packet_size;

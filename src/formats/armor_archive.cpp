@@ -35,7 +35,10 @@ armor_archive::armor_archive(stream* backing, std::size_t offset, std::size_t si
 			break; // We're probably reading off the end of the array.
 		}
 		
-		_models.push_back(std::make_unique<game_model>(backing, offset + armor.model * SECTOR_SIZE));
+		std::size_t model_offset_bytes = offset + armor.model * SECTOR_SIZE;
+		std::size_t model_size_bytes = armor.model_size * SECTOR_SIZE;
+		_models.push_back(std::make_unique<game_model>
+			(backing, model_offset_bytes, model_size_bytes));
 		
 		char magic[4];
 		_backing.seek(armor.texture * SECTOR_SIZE);

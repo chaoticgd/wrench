@@ -109,7 +109,7 @@ public:
 			uint32_t unknown3;     // 0x10
 			uint32_t unknown4;     // 0x14
 			uint32_t unknown5;     // 0x18
-			uint32_t unknown6;     // 0x1c
+			uint32_t models;       // 0x1c
 			uint32_t unknown7;     // 0x20
 			uint32_t unknown8;     // 0x24
 			uint32_t unknown9;     // 0x28

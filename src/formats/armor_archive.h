@@ -42,9 +42,9 @@ public:
 		
 		packed_struct(armor,
 			uint32_t model;
-			uint32_t unknown_4;
+			uint32_t model_size;
 			uint32_t texture;
-			uint32_t unknown_c;
+			uint32_t texture_size;
 		)
 	};
 	

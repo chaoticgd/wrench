@@ -36,27 +36,42 @@ public:
 	struct fmt {
 		packed_struct(header,
 			uint32_t unknown_0;
-			uint32_t dma_tags_begin;
+			uint32_t submodel_table;
 			uint32_t unknown_8;
 			uint32_t unknown_c;
 		)
 		
-		packed_struct(submodel_entry, // unused
+		packed_struct(submodel_entry,
 			uint32_t address;
 			uint16_t qwc;
 			uint16_t unknown_6;
-			uint32_t unknown_8;
+			uint32_t address_8;
 			uint32_t unknown_c;
+		)
+		
+		packed_struct(vertex,
+			uint16_t unknown_0;
+			uint8_t unknown_2;
+			uint8_t unknown_3; // Always equal to 0xf4?
+			uint32_t pad;
+			uint16_t unknown_8;
+			int16_t x;
+			int16_t y;
+			int16_t z;
 		)
 	};
 
-	game_model(stream* backing, std::size_t offset);
+	game_model(stream* backing, std::size_t offset, std::size_t size);
 
 	std::vector<float> triangles() const override;
 	
 	std::size_t num_submodels() const;
 	std::vector<vif_packet> get_vif_chain(std::size_t submodel) const;
+	
 private:
+	std::vector<vif_packet> get_vif_chain_at(std::size_t offset, std::size_t qwc) const;
+	fmt::submodel_entry get_submodel_entry(std::size_t submodel) const;
+	
 	proxy_stream _backing;
 	vif_chains _vif_chains;
 };
