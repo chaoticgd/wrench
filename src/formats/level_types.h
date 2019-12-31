@@ -28,9 +28,7 @@
 
 # /*
 # 	Defines the types of game objects the game uses (ties, shrubs, mobies and
-# 	splines) as PODs. Additionally, game_object and point_object classes are
-# 	defined that wrap these to provide a unified interface e.g. so we can
-# 	iterate over all the point objects.
+# 	splines) as PODs.
 # */
 
 packed_struct(vec3f,
