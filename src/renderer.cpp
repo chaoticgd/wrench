@@ -117,16 +117,10 @@ void gl_renderer::draw_cube(glm::mat4 mvp, glm::vec3 colour) const {
 
 void gl_renderer::reset_camera(app* a) {
 	camera_rotation = glm::vec3(0, 0, 0);
-	
-	if(a->get_level() == nullptr) {
+	auto lvl = a->get_level();
+	if(lvl != nullptr && lvl->world.count<moby>() >= 1) {
+		camera_position = lvl->world.object_at<moby>(0).position();
+	} else {
 		camera_position = glm::vec3(0, 0, 0);
-		return;
 	}
-	
-	level& lvl = *a->get_level();
-	glm::vec3 sum(0, 0, 0);
-	lvl.world.for_each<moby>([=, &sum](std::size_t i, moby& object) {
-		sum += object.position();
-	});
-	camera_position = sum / static_cast<float>(lvl.world.count<moby>());
 }
