@@ -27,7 +27,6 @@
 #include "app.h"
 #include "window.h"
 #include "view_3d.h"
-#include "commands/property_changed_command.h"
 #include "formats/game_model.h"
 #include "formats/level_impl.h"
 
