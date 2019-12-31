@@ -20,7 +20,7 @@
 
 #include "app.h"
 
-void gl_renderer::draw_spline(const std::vector<glm::vec3>& points, glm::mat4 mvp, glm::vec3 colour) const {
+void gl_renderer::draw_spline(const std::vector<glm::vec3>& points, glm::mat4 vp, glm::vec3 colour) const {
 	
 	if(points.size() < 1) {
 		return;
@@ -40,7 +40,7 @@ void gl_renderer::draw_spline(const std::vector<glm::vec3>& points, glm::mat4 mv
 		vertex_data.push_back(points[i + 1].y);
 		vertex_data.push_back(points[i + 1].z);
 	}
-	draw_tris(vertex_data, mvp, colour);
+	draw_tris(vertex_data, vp, colour);
 }
 
 void gl_renderer::draw_tris(const std::vector<float>& vertex_data, glm::mat4 mvp, glm::vec3 colour) const {
@@ -64,7 +64,7 @@ void gl_renderer::draw_tris(const std::vector<float>& vertex_data, glm::mat4 mvp
 	glDeleteBuffers(1, &vertex_buffer);
 }
 
-void gl_renderer::draw_model(const model& mdl, glm::mat4 mvp, glm::vec3 colour) const {
+void gl_renderer::draw_model(const game_model& mdl, glm::mat4 mvp, glm::vec3 colour) const {
 	glUniformMatrix4fv(shaders.solid_colour_transform, 1, GL_FALSE, &mvp[0][0]);
 	glUniform4f(shaders.solid_colour_rgb, colour.x, colour.y, colour.z, 1);
 	
@@ -77,20 +77,56 @@ void gl_renderer::draw_model(const model& mdl, glm::mat4 mvp, glm::vec3 colour) 
 	glDisableVertexAttribArray(0);
 }
 
-void gl_renderer::reset_camera(app* a) {
-	bool has_level = false;
-	if(auto lvl = a->get_level()) {
-		glm::vec3 sum(0, 0, 0);
-		std::size_t num_mobies = lvl->num_mobies();
-		for(std::size_t i = 0; i < num_mobies; i++) {
-			sum += lvl->moby_at(i).position();
-		}
-		camera_position = sum / static_cast<float>(num_mobies);
-		has_level = true;
+void gl_renderer::draw_cube(glm::mat4 mvp, glm::vec3 colour) const {
+	static GLuint vertex_buffer = 0;
+	
+	if(vertex_buffer == 0) {
+		const static std::vector<float> vertex_data {
+			-1, -1, -1, -1, -1,  1, -1,  1,  1,
+			 1,  1, -1, -1, -1, -1, -1,  1, -1,
+			 1, -1,  1, -1, -1, -1,  1, -1, -1,
+			 1,  1, -1,  1, -1, -1, -1, -1, -1,
+			-1, -1, -1, -1,  1,  1, -1,  1, -1,
+			 1, -1,  1, -1, -1,  1, -1, -1, -1,
+			-1,  1,  1, -1, -1,  1,  1, -1,  1,
+			 1,  1,  1,  1, -1, -1,  1,  1, -1,
+			 1, -1, -1,  1,  1,  1,  1, -1,  1,
+			 1,  1,  1,  1,  1, -1, -1,  1, -1,
+			 1,  1,  1, -1,  1, -1, -1,  1,  1,
+			 1,  1,  1, -1,  1,  1,  1, -1,  1
+		};
+		
+		glGenBuffers(1, &vertex_buffer);
+		glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+		glBufferData(GL_ARRAY_BUFFER,
+			108 * sizeof(float),
+			vertex_data.data(), GL_STATIC_DRAW);
 	}
-	if(!has_level) {
-		camera_position = glm::vec3(0, 0, 0);
-	}
+	
+	glUniformMatrix4fv(shaders.solid_colour_transform, 1, GL_FALSE, &mvp[0][0]);
+	glUniform4f(shaders.solid_colour_rgb, colour.x, colour.y, colour.z, 1);
+	
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
+	glDrawArrays(GL_TRIANGLES, 0, 108);
+
+	glDisableVertexAttribArray(0);
+}
+
+void gl_renderer::reset_camera(app* a) {
 	camera_rotation = glm::vec3(0, 0, 0);
+	
+	if(a->get_level() == nullptr) {
+		camera_position = glm::vec3(0, 0, 0);
+		return;
+	}
+	
+	level& lvl = *a->get_level();
+	glm::vec3 sum(0, 0, 0);
+	lvl.world.for_each<moby>([=, &sum](std::size_t i, moby& object) {
+		sum += object.position();
+	});
+	camera_position = sum / static_cast<float>(lvl.world.count<moby>());
 }

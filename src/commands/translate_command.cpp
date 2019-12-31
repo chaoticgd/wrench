@@ -20,30 +20,30 @@
 
 translate_command::translate_command(
 		level* lvl,
-		std::vector<std::size_t> objects,
+		std::vector<object_id> objects,
 		glm::vec3 displacement)
 	: _lvl(lvl),
 	  _displacement(displacement) {
 	
-	lvl->for_each_point_object([=](point_object* object) {
-		if(std::find(objects.begin(), objects.end(), object->base()) != objects.end()) {
-			_prev_positions[object->base()] = object->position();
+	FOR_EACH_POINT_OBJECT(_lvl->world, ([=](object_id id, auto& object) {
+		if(std::find(objects.begin(), objects.end(), id) != objects.end()) {
+			_prev_positions[id] = object.position();
 		}
-	});
+	}));
 }
 
 void translate_command::apply(wrench_project* project) {
-	_lvl->for_each_point_object([=](point_object* object) {
-		if(_prev_positions.find(object->base()) != _prev_positions.end()) {
-			object->set_position(object->position() + _displacement);
+	FOR_EACH_POINT_OBJECT(_lvl->world, ([=](object_id id, auto& object) {
+		if(_prev_positions.find(id) != _prev_positions.end()) {
+			object.position = vec3f(object.position() + _displacement);
 		}
-	});
+	}));
 }
 
 void translate_command::undo(wrench_project* project) {
-	_lvl->for_each_point_object([=](point_object* object) {
-		if(_prev_positions.find(object->base()) != _prev_positions.end()) {
-			object->set_position(_prev_positions.at(object->base()));
+	FOR_EACH_POINT_OBJECT(_lvl->world, ([=](object_id id, auto& object) {
+		if(_prev_positions.find(id) != _prev_positions.end()) {
+			object.position = vec3f(_prev_positions.at(id));
 		}
-	});
+	}));
 }

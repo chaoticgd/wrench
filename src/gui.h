@@ -25,21 +25,17 @@
 #include "gl_includes.h"
 #include "imgui_includes.h"
 #include "app.h"
-#include "level.h"
 #include "window.h"
 #include "view_3d.h"
 #include "commands/property_changed_command.h"
 #include "formats/game_model.h"
+#include "formats/level_impl.h"
 
 # /*
 #	Implements most of the GUI.
 # */
 
 namespace fs = boost::filesystem;
-
-#define INSPECTOR_PROPERTY(type) \
-	typename property<T, type>::getter const get, \
-	typename property<T, type>::setter set
 
 namespace gui {
 	void render(app& a);
@@ -65,23 +61,106 @@ namespace gui {
 		void render(app& a) override;
 		
 	private:
-		void category(const char* name);
-	
-		template <typename T> void input_integer(const char* name, INSPECTOR_PROPERTY(int        ) = nullptr);
-		template <typename T> void input_uint16 (const char* name, INSPECTOR_PROPERTY(uint16_t   ) = nullptr);
-		template <typename T> void input_size_t (const char* name, INSPECTOR_PROPERTY(std::size_t) = nullptr);
-		template <typename T> void input_string (const char* name, INSPECTOR_PROPERTY(std::string) = nullptr);
-		template <typename T> void input_vector3(const char* name, INSPECTOR_PROPERTY(glm::vec3  ) = nullptr);	
+		static void category(const char* name) {
+			ImGui::Columns(1);
+			ImGui::Text("%s", name);
+			ImGui::Columns(2);
+		}
 		
-		void begin_property(const char* name);
-		void end_property();
+		void begin_property(const char* name) {
+			ImGui::PushID(_num_properties++);
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text(" %s", name);
+			ImGui::NextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::PushItemWidth(-1);
+		}
 		
+		void end_property() {
+			ImGui::NextColumn();
+			ImGui::PopID();
+			ImGui::PopItemWidth();
+		}
+		
+		// Handle pushing a new undo/redo command onto the history stack
+		// whenever the value of a property is changed.
 		template <typename T, typename T_value>
-		void set_property(T_value value, INSPECTOR_PROPERTY(T_value));
-
-		wrench_project* _project;
-		game_object* _subject;
+		void set_property(std::size_t index, T_value T::*member, T_value new_value) {
+			
+			class property_changed_command : public command {
+			public:
+				property_changed_command(
+						std::size_t level_offset, std::size_t object_index, T_value T::*member, T_value new_value)
+					: _level_offset(level_offset), _object_index(object_index), _member(member), _new_value(new_value) {}
+				
+			protected:
+				void apply(wrench_project* project) override {
+					auto& ref = member(project);
+					_old_value = ref;
+					ref = _new_value;
+				}
+				
+				void undo(wrench_project* project) override {
+					member(project) = _old_value;
+				}
+				
+			private:
+				auto& member(wrench_project* project) {
+					level* lvl = project->level_at(_level_offset);
+					if(lvl == nullptr) {
+						throw command_error(
+							"The level for which this operation should "
+							"be applied to is not currently loaded.");
+					}
+					return lvl->world.object_at<T>(_object_index).*_member;
+				}
+			
+				std::size_t _level_offset;
+				std::size_t _object_index;
+				T_value T::*_member;
+				T_value _new_value;
+				T_value _old_value;
+			};
+			
+			_project->template emplace_command<property_changed_command>
+				(_project->selected_level()->offset, index, member, new_value);
+		}
+		
+		// Functions to draw different types of input fields.
+		
+		template <typename T>
+		void input_u32(std::size_t index, const char* name, uint32_t T::*member) {
+			begin_property(name);
+			int copy = _lvl->world.object_at<T>(index).*member;
+			if(ImGui::InputInt("##input", &copy, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue)) {
+				set_property(index, member, static_cast<uint32_t>(copy));
+			}
+			end_property();
+		}
+		
+		template <typename T>
+		void input_i32(std::size_t index, const char* name, int32_t T::*member) {
+			begin_property(name);
+			int copy = _lvl->world.object_at<T>(index).*member;
+			if(ImGui::InputInt("##input", &copy, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue)) {
+				set_property(index, member, static_cast<int32_t>(copy));
+			}
+			end_property();
+		}
+		
+		template <typename T>
+		void input_vec3(std::size_t index, const char* name, vec3f T::*member) {
+			begin_property(name);
+			vec3f copy = _lvl->world.object_at<T>(index).*member;
+			if(ImGui::InputFloat3("##input", &copy.x, 3, ImGuiInputTextFlags_EnterReturnsTrue)) {
+				set_property(index, member, copy);
+			}
+			end_property();
+		}
+			
 		int _num_properties;
+		wrench_project* _project;
+		level* _lvl;
 	};
 
 	class moby_list : public window {
@@ -260,71 +339,6 @@ void gui::render_menu_bar_window_toggle(app& a, T_constructor_args... args) {
 			a.windows.erase(window);
 		}
 	}
-}
-
-template <typename T>
-void gui::inspector::input_integer(const char* name, INSPECTOR_PROPERTY(int)) {
-	begin_property(name);
-	auto value = (static_cast<T*>(_subject)->*get)();
-	if(ImGui::InputInt("##input", &value, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue)) {
-		set_property<T>(value, get, set);
-	}
-	end_property();
-}
-
-template <typename T>
-void gui::inspector::input_uint16(const char* name, INSPECTOR_PROPERTY(uint16_t)) {
-	begin_property(name);
-	auto value = (static_cast<T*>(_subject)->*get)();
-	int value_int = static_cast<int>(value);
-	if(ImGui::InputInt("##input", &value_int, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue)) {
-		set_property<T>(static_cast<decltype(value)>(value_int), get, set);
-	}
-	end_property();
-}
-
-template <typename T>
-void gui::inspector::input_size_t(const char* name, INSPECTOR_PROPERTY(std::size_t)) {
-	begin_property(name);
-	auto value = (static_cast<T*>(_subject)->*get)();
-	int value_int = static_cast<int>(value);
-	if(ImGui::InputInt("##input", &value_int, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue)) {
-		set_property<T>(static_cast<decltype(value)>(value_int), get, set);
-	}
-	end_property();
-}
-
-template <typename T>
-void gui::inspector::input_string(const char* name, INSPECTOR_PROPERTY(std::string)) {
-	begin_property(name);
-	auto value = (static_cast<T*>(_subject)->*get)();
-	if(ImGui::InputText("##input", &value, ImGuiInputTextFlags_EnterReturnsTrue)) {
-		set_property<T>(value, get, set);
-	}
-	end_property();
-}
-
-template <typename T>
-void gui::inspector::input_vector3(const char* name, INSPECTOR_PROPERTY(glm::vec3)) {
-	begin_property(name);
-	auto value = (static_cast<T*>(_subject)->*get)();
-	if(ImGui::InputFloat3("##input", &value.x, 3, ImGuiInputTextFlags_EnterReturnsTrue)) {
-		set_property<T>(value, get, set);
-	}
-	end_property();
-}
-
-template <typename T, typename T_value>
-void gui::inspector::set_property(T_value value, INSPECTOR_PROPERTY(T_value)) {
-	if(set == nullptr) {
-		return;
-	}
-	
-	T* subject = static_cast<T*>(_subject);
-	property<T, T_value> p { get, set };
-	
-	using cmd = property_changed_command<T, T_value>;
-	_project->template emplace_command<cmd>(*subject, p, value);
 }
 
 #endif

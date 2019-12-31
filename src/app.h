@@ -28,7 +28,6 @@
 #include <functional>
 #include <glm/glm.hpp>
 
-#include "level.h"
 #include "stream.h"
 #include "project.h"
 #include "renderer.h"

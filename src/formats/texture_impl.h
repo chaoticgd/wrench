@@ -41,7 +41,7 @@ public:
 	struct offsets {
 		std::size_t palette, pixels, width, height;
 	};
-
+	
 	texture_impl(stream* backing, offsets offsets_);
 
 	vec2i size() const override;
@@ -74,6 +74,7 @@ public:
 	};
 
 	level_texture_provider(stream* backing, std::string display_name_);
+	level_texture_provider(const level_texture_provider&) = delete;
 
 	std::string display_name() const override;
 	std::vector<texture*> textures() override;

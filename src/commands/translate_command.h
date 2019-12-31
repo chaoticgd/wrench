@@ -34,7 +34,7 @@ class translate_command : public command {
 public:
 	translate_command(
 			level* lvl,
-			std::vector<std::size_t> objects,
+			std::vector<object_id> objects,
 			glm::vec3 displacement);
 
 	void apply(wrench_project* project) override;
@@ -43,7 +43,7 @@ public:
 private:
 	level* _lvl;
 	glm::vec3 _displacement;
-	std::map<std::size_t, glm::vec3> _prev_positions;
+	std::map<object_id, glm::vec3> _prev_positions;
 };
 
 #endif

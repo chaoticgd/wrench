@@ -25,8 +25,6 @@
 game_model::game_model(stream* backing, std::size_t offset, std::size_t size)
 	: _backing(backing, offset, size) {}
 
-#include "../shapes.h"
-
 std::vector<float> game_model::triangles() const {
 	std::vector<float> result;
 	

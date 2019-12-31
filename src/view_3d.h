@@ -40,19 +40,17 @@ public:
 	
 	bool has_padding() const override;
 
-	void draw_level(const level& lvl) const;
+	void draw_level(level& lvl) const;
 	
-	void for_each_screenspace_point_object(
-		const level& lvl,
-		std::function<void(const point_object*, glm::vec3)> callback) const;
-	void draw_overlay_text(const app& a) const;
+	glm::vec3 world_to_screen(glm::mat4 vp, glm::vec3 position) const;
+	void draw_overlay_text(level& lvl) const;
 
 	glm::mat4 get_view_projection_matrix() const;
 	
 	// Allows the user to select an object by clicking on it. See:
 	// https://www.opengl-tutorial.org/miscellaneous/clicking-on-objects/picking-with-an-opengl-hack/
 	void pick_object(level& lvl, ImVec2 position);
-	void draw_pickframe(const level& lvl) const;
+	void draw_pickframe(level& lvl) const;
 	
 	void select_rect(level& lvl, ImVec2 position);
 private:

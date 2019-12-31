@@ -65,6 +65,14 @@ packed_struct(file_ptr,
 	}
 )
 
+packed_struct(sector32,
+	uint32_t sectors = 0;
+	
+	uint32_t bytes() {
+		return sectors * SECTOR_SIZE;
+	}
+)
+
 struct stream_error : public std::runtime_error {
 	stream_error(const char* what)
 		: std::runtime_error(what) {

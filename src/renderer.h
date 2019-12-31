@@ -25,7 +25,7 @@
 #include <glm/common.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "model.h"
+#include "formats/game_model.h"
 #include "shaders.h"
 
 # /*
@@ -35,9 +35,10 @@
 class app;
 
 struct gl_renderer {
-	void draw_spline(const std::vector<glm::vec3>& points, glm::mat4 mvp, glm::vec3 colour) const;
+	void draw_spline(const std::vector<glm::vec3>& points, glm::mat4 vp, glm::vec3 colour) const;
 	void draw_tris  (const std::vector<float>& vertex_data, glm::mat4 mvp, glm::vec3 colour) const;
-	void draw_model (const model& mdl, glm::mat4 mvp, glm::vec3 colour) const;
+	void draw_model (const game_model& mdl, glm::mat4 mvp, glm::vec3 colour) const;
+	void draw_cube  (glm::mat4 mvp, glm::vec3 colour) const;
 
 	shader_programs shaders;
 	

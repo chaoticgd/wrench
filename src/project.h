@@ -21,6 +21,7 @@
 
 #include <ZipLib/ZipArchive.h>
 
+#include "command.h"
 #include "iso_stream.h"
 #include "worker_logger.h"
 #include "formats/racpak.h"
@@ -54,6 +55,7 @@ public:
 	
 	level* selected_level();
 	std::vector<level*> levels();
+	level* level_at(std::size_t offset);
 	std::vector<texture_provider*> texture_providers();
 	std::vector<model_provider*> model_providers();
 	

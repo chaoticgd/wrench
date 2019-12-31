@@ -26,8 +26,8 @@
 	texture_impl
 */
 
-texture_impl::texture_impl(stream* backing, offsets offsets_)
-	: _backing(backing, 0, -1),
+texture_impl::texture_impl(stream* backing, texture_impl::offsets offsets_)
+	: _backing(backing, 0, 0),
 	  _offsets(offsets_) {}
 	
 vec2i texture_impl::size() const {
@@ -99,13 +99,16 @@ level_texture_provider::level_texture_provider(
 		std::string display_name_)
 	: _display_name(display_name_) {
 
-	auto header = backing->read<level::fmt::primary_header>(0);
-	std::size_t pixel_data_offet = header.tex_pixel_data_base;
-	std::size_t snd_header_ptr = header.snd_header.value;
-	auto snd_header = backing->read<level::fmt::secondary_header>(snd_header_ptr);
+	auto file_header = backing->read<level::fmt::file_header>(0);
+	std::size_t primary_header_offset = file_header.primary_header.bytes();
+	
+	auto primary_header = backing->read<level::fmt::primary_header>(primary_header_offset);
+	std::size_t pixel_data_offet = primary_header.tex_pixel_data_base;
+	std::size_t snd_header_ptr = primary_header.snd_header.value;
+	auto snd_header = backing->read<level::fmt::secondary_header>(primary_header_offset + snd_header_ptr);
 	
 	std::size_t last_palette = pixel_data_offet;
-	backing->seek(snd_header_ptr + snd_header.textures.value);
+	backing->seek(primary_header_offset + snd_header_ptr + snd_header.textures.value);
 	
 	for(std::size_t i = 0; i < snd_header.num_textures; i++) {
 		std::size_t entry_offset = backing->tell();

@@ -303,78 +303,51 @@ ImVec2 gui::inspector::initial_size() const {
 }
 
 void gui::inspector::render(app& a) {
-	if(auto lvl = a.get_level()) {
-		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
-		ImGui::Columns(2);
-		ImGui::SetColumnWidth(0, 80);
-
-		if(lvl->selection.size() != 1) {
-			ImGui::PopStyleVar();
-			return;
-		}
-			
-		lvl->for_each_game_object([=, &a](game_object* object) {
-			if(lvl->selection[0] != object->base()) {
-				return;
-			}
-			
-			_project = a.get_project();
-			_subject = object;
-			_num_properties = 0;
-
-			if(dynamic_cast<tie*>(object)) {
-				category("Tie");
-			}
-			
-			if(dynamic_cast<shrub*>(object)) {
-				category("Shrub");
-			}
-			
-			if(dynamic_cast<spline*>(object)) {
-				category("Spline");
-			}
-			
-			if(dynamic_cast<moby*>(object)) {
-				category("Moby");
-				input_string <moby>("Offset",   &moby::base_string);
-				input_vector3<moby>("Position", &moby::position,  &moby::set_position);
-				input_vector3<moby>("Rotation", &moby::rotation,  &moby::set_rotation);
-				input_integer<moby>("UID",      &moby::uid,       &moby::set_uid);
-				input_uint16 <moby>("Class",    &moby::class_num, &moby::set_class_num);
-			}
-			
-			ImGui::Columns(1);
-			
-			if(_num_properties == 0) {
-				ImGui::Text("<no properties>");
-			}
-		});
-
-		ImGui::PopStyleVar();
-	} else {
-		ImGui::Text("<no project open>");
+	if(!a.get_level()) {
+		ImGui::Text("<no level>");
+		return;
 	}
-}
-
-void gui::inspector::category(const char* name) {
-	ImGui::Columns(1);
-	ImGui::Text("%s", name);
+	
+	_project = a.get_project();
+	_lvl = a.get_level();
+	_num_properties = 0;
+	
+	if(_lvl->world.selection.size() > 1) {
+		ImGui::Text("<multiple objects selected>");
+		return;
+	} else if(_lvl->world.selection.size() < 1) {
+		ImGui::Text("<no object selected>");
+		return;
+	}
+	
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
 	ImGui::Columns(2);
-}
+	ImGui::SetColumnWidth(0, 80);
 
-void gui::inspector::begin_property(const char* name) {
-	ImGui::PushID(_num_properties++);
-	ImGui::AlignTextToFramePadding();
-	ImGui::Text(" %s", name);
-	ImGui::NextColumn();
-	ImGui::AlignTextToFramePadding();
-	ImGui::PushItemWidth(-1);
-}
-
-void gui::inspector::end_property() {
-	ImGui::NextColumn();
-	ImGui::PopID();
-	ImGui::PopItemWidth();
+	object_id id = _lvl->world.selection[0];
+	
+	switch(id.type) {
+		case object_type::TIE:
+			category("Tie");
+			break;
+		case object_type::SHRUB:
+			category("Shrub");
+			break;
+		case object_type::MOBY: {
+			category("Moby");
+			
+			input_vec3<moby>(id.index, "Position", &moby::position);
+			input_vec3<moby>(id.index, "Rotation", &moby::rotation);
+			input_i32 <moby>(id.index, "UID",      &moby::uid);
+			input_u32 <moby>(id.index, "Class",    &moby::class_num);
+			break;
+		}
+		case object_type::SPLINE:
+			category("Spline");
+			break;
+	}
+	
+	ImGui::PopStyleVar();
 }
 
 /*
@@ -390,29 +363,32 @@ ImVec2 gui::moby_list::initial_size() const {
 }
 
 void gui::moby_list::render(app& a) {
-	if(auto lvl = a.get_level()) {
-		ImVec2 size = ImGui::GetWindowSize();
-		size.x -= 16;
-		size.y -= 64;
-
-		ImGui::Text("     UID                Class");
-
-		ImGui::PushItemWidth(-1);
-		ImGui::ListBoxHeader("##mobylist", size);
-		for(std::size_t i = 0; i < lvl->num_mobies(); i++) {
-			moby object = lvl->moby_at(i);
-			
-			std::stringstream row;
-			row << std::setfill(' ') << std::setw(8) << std::dec << object.uid() << " ";
-			row << std::setfill(' ') << std::setw(20) << std::hex << object.class_name() << " ";
-
-			if(ImGui::Selectable(row.str().c_str(), lvl->is_selected(&object))) {
-				lvl->selection = { object.base() };
-			}
-		}
-		ImGui::ListBoxFooter();
-		ImGui::PopItemWidth();
+	if(a.get_level() == nullptr) {
+		ImGui::Text("<no level>");
+		return;
 	}
+	
+	level& lvl = *a.get_level();
+	
+	ImVec2 size = ImGui::GetWindowSize();
+	size.x -= 16;
+	size.y -= 64;
+	ImGui::Text("     UID                Class");
+	ImGui::PushItemWidth(-1);
+	ImGui::ListBoxHeader("##mobylist", size);
+	lvl.world.for_each<moby>([=, &lvl](std::size_t index, moby& object) {
+		std::stringstream row;
+		row << std::setfill(' ') << std::setw(8) << std::dec << object.uid << " ";
+		row << std::setfill(' ') << std::setw(20) << std::hex << object.class_num << " ";
+		
+		object_id id { object_type::MOBY, index };
+		bool is_selected = lvl.world.is_selected(id);
+		if(ImGui::Selectable(row.str().c_str(), is_selected)) {
+			lvl.world.selection = { id };
+		}
+	});
+	ImGui::ListBoxFooter();
+	ImGui::PopItemWidth();
 }
 
 /*
@@ -494,7 +470,7 @@ void gui::tools::render(app& a) {
 		if(ImGui::Button("Apply")) {
 			if(auto lvl = a.get_level()) {
 				a.get_project()->emplace_command<translate_command>
-					(lvl, lvl->selection, a.translate_tool_displacement);
+					(lvl, lvl->world.selection, a.translate_tool_displacement);
 			}
 			a.translate_tool_displacement = glm::vec3(0, 0, 0);
 		}

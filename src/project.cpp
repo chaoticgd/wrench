@@ -94,6 +94,13 @@ std::vector<level*> wrench_project::levels() {
 	return result;
 }
 
+level* wrench_project::level_at(std::size_t offset) {
+	if(_levels.find(offset) == _levels.end()) {
+		return nullptr;
+	}
+	return _levels.at(offset).get();
+}
+
 std::vector<texture_provider*> wrench_project::texture_providers() {
 	std::vector<texture_provider*> result;
 	for(auto& level : _levels) {
@@ -120,14 +127,16 @@ void wrench_project::undo() {
 	if(_history_index <= 0) {
 		throw command_error("Nothing to undo.");
 	}
-	_history_stack[--_history_index]->undo(this);
+	_history_stack[_history_index - 1]->undo(this);
+	_history_index--;
 }
 
 void wrench_project::redo() {
 	if(_history_index >= _history_stack.size()) {
 		throw command_error("Nothing to redo.");
 	}
-	_history_stack[_history_index++]->apply(this);
+	_history_stack[_history_index]->apply(this);
+	_history_index++;
 }
 
 /*
@@ -178,10 +187,8 @@ void wrench_project::open_texture_archive(std::size_t offset, std::size_t size) 
 void wrench_project::open_level(std::size_t offset, std::size_t size) {
 	if(_levels.find(offset) == _levels.end()) {
 		// The level is not already open.
-		racpak* archive = open_archive(offset, size);
-		worker_logger log;
 		_levels.emplace(offset, std::make_unique<level>
-			(&iso, archive, _next_view_name, log));
+			(&iso, offset, size, _next_view_name));
 	}
 	_selected_level = _levels.at(offset).get();
 }

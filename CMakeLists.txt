@@ -22,19 +22,14 @@ add_executable(wrench
 	src/renderer.cpp
 	src/shaders.cpp
 	src/texture.cpp
-	src/level.cpp
 	src/worker_logger.cpp
 	src/project.cpp
 	src/iso_stream.cpp
 	src/model.cpp
-	src/shapes.cpp
 	src/util.cpp
 	src/formats/wad.cpp
 	src/formats/racpak.cpp
 	src/formats/level_impl.cpp
-	src/formats/tie_impl.cpp
-	src/formats/shrub_impl.cpp
-	src/formats/moby_impl.cpp
 	src/formats/texture_impl.cpp
 	src/formats/fip.cpp
 	src/formats/bmp.cpp
