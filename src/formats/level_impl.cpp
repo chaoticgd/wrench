@@ -137,7 +137,7 @@ level::level(iso_stream* iso, std::size_t offset, std::size_t size, std::string 
 		auto model_header = asset_seg->read<asset_mdl_hdr>(entry.offset_in_asset_wad);
 		uint32_t rel_offset = model_header.rel_offset;
 		uint32_t abs_offset = entry.offset_in_asset_wad + rel_offset;
-		models.emplace_back(asset_seg, abs_offset, model_header.num_submodels);
+		models.emplace_back(asset_seg, abs_offset, 0, model_header.num_submodels);
 	}
 }
 

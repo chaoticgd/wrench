@@ -43,7 +43,7 @@ armor_archive::armor_archive(stream* backing, std::size_t offset, std::size_t si
 			_backing.peek<uint32_t>(armor.model.bytes() + 0x10);
 		std::size_t num_submodels =
 			(submodel_table_end - submodel_table_offset) / 0x10;
-		models.emplace_back(backing, offset + armor.model.bytes() + submodel_table_offset, num_submodels);
+		models.emplace_back(backing, offset + armor.model.bytes(), submodel_table_offset, num_submodels);
 		
 		// Read the texture.
 		

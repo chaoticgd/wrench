@@ -22,9 +22,10 @@
 
 #include "../util.h"
 
-game_model::game_model(stream* backing, std::size_t submodel_table_offset, std::size_t num_submodels_)
+game_model::game_model(stream* backing, std::size_t base_offset, std::size_t submodel_table_offset, std::size_t num_submodels_)
 	:  num_submodels(num_submodels_),
-	  _backing(backing, submodel_table_offset, 0) {}
+	  _backing(backing, base_offset, 0),
+	  _submodel_table_offset(submodel_table_offset) {}
 
 std::vector<float> game_model::triangles() const {
 	std::vector<float> result;
@@ -71,6 +72,6 @@ std::vector<vif_packet> game_model::get_vif_chain_at(std::size_t offset, std::si
 }
 
 game_model::fmt::submodel_entry game_model::get_submodel_entry(std::size_t submodel) const {
-	uint32_t offset = submodel * sizeof(fmt::submodel_entry);
+	uint32_t offset = _submodel_table_offset + submodel * sizeof(fmt::submodel_entry);
 	return _backing.peek<fmt::submodel_entry>(offset);
 }

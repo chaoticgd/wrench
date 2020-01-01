@@ -61,7 +61,7 @@ public:
 		)
 	};
 
-	game_model(stream* backing, std::size_t submodel_table_offset, std::size_t num_submodels_);
+	game_model(stream* backing, std::size_t base_offset, std::size_t submodel_table_offset, std::size_t num_submodels_);
 
 	std::vector<float> triangles() const override;
 	
@@ -73,6 +73,7 @@ private:
 	fmt::submodel_entry get_submodel_entry(std::size_t submodel) const;
 	
 	proxy_stream _backing;
+	std::size_t _submodel_table_offset; // Relative to base_offset.
 	vif_chains _vif_chains;
 };
 
