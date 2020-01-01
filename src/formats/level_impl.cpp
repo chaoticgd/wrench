@@ -91,10 +91,54 @@ level::level(iso_stream* iso, std::size_t offset, std::size_t size, std::string 
 	  _textures(&_backing, display_name) {
 	
 	auto file_header = _backing.read<fmt::file_header>(0);
-	auto primary_header = _backing.read<fmt::primary_header>(file_header.primary_header.bytes());
+	
+	uint32_t primhdr_offset = file_header.primary_header.bytes();
+	auto primary_header = _backing.read<fmt::primary_header>(primhdr_offset);
 
 	_moby_stream = iso->get_decompressed(offset + file_header.moby_segment.bytes());
 	world.read(_moby_stream);
+	
+	stream* asset_seg = iso->get_decompressed
+		(offset + primhdr_offset + primary_header.asset_wad.value);
+	
+	uint32_t snd_base = file_header.primary_header.bytes() + primary_header.snd_header.value;
+	auto snd_header = _backing.read<fmt::secondary_header>(snd_base);
+	
+	uint32_t mdl_base = snd_base + snd_header.models;
+	_backing.seek(mdl_base);
+	
+	packed_struct(model_entry,
+		uint32_t offset_in_asset_wad;
+		uint32_t unknown_4;
+		uint32_t unknown_8;
+		uint32_t unknown_c;
+		uint32_t unknown_10;
+		uint32_t unknown_14;
+		uint32_t unknown_18;
+		uint32_t unknown_1c;
+	)
+	
+	for(std::size_t i = 0; i < snd_header.num_models; i++) {
+		auto entry = _backing.read<model_entry>(mdl_base + sizeof(model_entry) * i);
+		if(entry.offset_in_asset_wad == 0) {
+			continue;
+		}
+		
+		packed_struct(asset_mdl_hdr,
+			uint32_t rel_offset;
+			uint8_t unknown_4;
+			uint8_t unknown_5;
+			uint8_t unknown_6;
+			uint8_t num_submodels;
+			uint32_t unknown_8;
+			uint32_t unknown_c;
+		)
+		
+		auto model_header = asset_seg->read<asset_mdl_hdr>(entry.offset_in_asset_wad);
+		uint32_t rel_offset = model_header.rel_offset;
+		uint32_t abs_offset = entry.offset_in_asset_wad + rel_offset;
+		models.emplace_back(asset_seg, abs_offset, model_header.num_submodels);
+	}
 }
 
 texture_provider* level::get_texture_provider() {

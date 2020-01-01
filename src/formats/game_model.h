@@ -61,26 +61,19 @@ public:
 		)
 	};
 
-	game_model(stream* backing, std::size_t offset, std::size_t size);
+	game_model(stream* backing, std::size_t submodel_table_offset, std::size_t num_submodels_);
 
 	std::vector<float> triangles() const override;
 	
-	std::size_t num_submodels() const;
 	std::vector<vif_packet> get_vif_chain(std::size_t submodel) const;
 	
+	const std::size_t num_submodels;
 private:
 	std::vector<vif_packet> get_vif_chain_at(std::size_t offset, std::size_t qwc) const;
 	fmt::submodel_entry get_submodel_entry(std::size_t submodel) const;
 	
 	proxy_stream _backing;
 	vif_chains _vif_chains;
-};
-
-class model_provider {
-public:
-	virtual ~model_provider() = default;
-	
-	virtual std::vector<game_model*> models() = 0;
 };
 
 #endif

@@ -22,19 +22,20 @@
 
 #include "../util.h"
 
-game_model::game_model(stream* backing, std::size_t offset, std::size_t size)
-	: _backing(backing, offset, size) {}
+game_model::game_model(stream* backing, std::size_t submodel_table_offset, std::size_t num_submodels_)
+	:  num_submodels(num_submodels_),
+	  _backing(backing, submodel_table_offset, 0) {}
 
 std::vector<float> game_model::triangles() const {
 	std::vector<float> result;
 	
 	// I'm not entirely sure how the vertex data is stored, and this code
 	// doesn't work very well. More research is needed.
-	for(std::size_t i = 0; i < num_submodels(); i++) {
+	for(std::size_t i = 0; i < num_submodels; i++) {
 		auto entry = get_submodel_entry(i);
 		uint32_t base = entry.address_8;
 		bool last_is_vertex = false;
-		for(std::size_t j = 0; base + (j + 1) * 0x10 < _backing.size(); j++) {
+		for(std::size_t j = 0; j < 0x10000; j++) {
 			auto vertex = _backing.peek<fmt::vertex>(base + j * 0x10);
 			
 			bool is_vertex = vertex.unknown_3 == 0xf4;
@@ -55,10 +56,6 @@ std::vector<float> game_model::triangles() const {
 	return result;
 }
 
-std::size_t game_model::num_submodels() const {
-	return (_backing.peek<uint32_t>(0x10) - _backing.peek<uint32_t>(0x4)) / 0x10;
-}
-
 std::vector<vif_packet> game_model::get_vif_chain(std::size_t submodel) const {
 	auto entry = get_submodel_entry(submodel);
 	return get_vif_chain_at(entry.address, entry.qwc);
@@ -74,7 +71,6 @@ std::vector<vif_packet> game_model::get_vif_chain_at(std::size_t offset, std::si
 }
 
 game_model::fmt::submodel_entry game_model::get_submodel_entry(std::size_t submodel) const {
-	uint32_t table = _backing.peek<uint32_t>(0x4);
-	uint32_t offset = table + submodel * sizeof(fmt::submodel_entry);
+	uint32_t offset = submodel * sizeof(fmt::submodel_entry);
 	return _backing.peek<fmt::submodel_entry>(offset);
 }

@@ -242,10 +242,15 @@ namespace gui {
 			ImVec2 preview_size);
 		glm::vec2 get_drag_delta() const;
 		
+		game_model* render_selection_pane(app& a);
+		
 		static void render_dma_debug_info(game_model& mdl);
 		static void render_hex_dump(std::vector<uint32_t> data, std::size_t starting_offset);
 	
 	private:
+		std::string _list;
+		std::size_t _model;
+	
 		float _zoom = 1.f;
 		glm::vec2 _pitch_yaw = { 0.f, 0.f };
 	};

@@ -204,7 +204,7 @@ public:
 			uint32_t unknown_0;                    // 0x0
 			uint32_t unknown_4;                    // 0x4
 			file_ptr<secondary_header> snd_header; // 0x8
-			uint32_t texture_segment_size;         // 0xc
+			uint32_t snd_header_size;              // 0xc
 			uint32_t tex_pixel_data_base;          // 0x10
 			uint32_t unknown_14; // 0x14
 			uint32_t unknown_18; // 0x18
@@ -219,7 +219,7 @@ public:
 			uint32_t unknown_3c; // 0x3c
 			uint32_t unknown_40; // 0x40
 			uint32_t unknown_44; // 0x44
-			file_ptr<wad_header> ram_image_wad; // 0x48
+			file_ptr<wad_header> asset_wad; // 0x48
 		)
 		
 		packed_struct(secondary_header,
@@ -229,7 +229,7 @@ public:
 			uint32_t unknown_c;  // 0xc
 			uint32_t unknown_10; // 0x10
 			uint32_t unknown_14; // 0x14
-			uint32_t unknown_18; // 0x18
+			uint32_t num_models; // 0x18
 			uint32_t models;     // 0x1c
 			uint32_t unknown_20; // 0x20
 			uint32_t unknown_24; // 0x24
@@ -271,6 +271,7 @@ public:
 	const std::size_t offset; // The base offset of the file_header in the ISO file.
 	game_world world;
 	
+	std::vector<game_model> models;
 private:
 	proxy_stream _backing;
 	level_texture_provider _textures;

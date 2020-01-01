@@ -31,29 +31,36 @@ armor_archive::armor_archive(stream* backing, std::size_t offset, std::size_t si
 	_backing.read_v(armor_list);
 	for(std::size_t i = 0; i < armor_list.size(); i++) {
 		auto armor = armor_list[i];
-		if(armor.texture == 0) {
-			break; // We're probably reading off the end of the array.
+		if(armor.texture.sectors == 0) {
+			continue; // We're probably reading off the end of the array.
 		}
 		
-		std::size_t model_offset_bytes = offset + armor.model * SECTOR_SIZE;
-		std::size_t model_size_bytes = armor.model_size * SECTOR_SIZE;
-		_models.push_back(std::make_unique<game_model>
-			(backing, model_offset_bytes, model_size_bytes));
+		// Read the model.
+		
+		std::size_t submodel_table_offset =
+			_backing.peek<uint32_t>(armor.model.bytes() + 0x4);
+		std::size_t submodel_table_end =
+			_backing.peek<uint32_t>(armor.model.bytes() + 0x10);
+		std::size_t num_submodels =
+			(submodel_table_end - submodel_table_offset) / 0x10;
+		models.emplace_back(backing, offset + armor.model.bytes() + submodel_table_offset, num_submodels);
+		
+		// Read the texture.
 		
 		char magic[4];
-		_backing.seek(armor.texture * SECTOR_SIZE);
+		_backing.seek(armor.texture.bytes());
 		_backing.read_n(magic, 4);
 		if(std::memcmp(magic, "2FIP", 4) == 0) {
 			// Single texture.
 			_textures.emplace_back(std::make_unique<fip_texture>
-				(backing, offset + armor.texture * SECTOR_SIZE, -1));
+				(backing, offset + armor.texture.bytes(), -1));
 			_texture_names[_textures.back().get()] =
 				std::string("set") + std::to_string(i);
 			continue;
 		}
 	
 		// One or more textures.
-		auto num_textures = _backing.read<uint32_t>(armor.texture * SECTOR_SIZE);
+		auto num_textures = _backing.read<uint32_t>(armor.texture.bytes());
 		if(num_textures > 0x1000) {
 			throw std::runtime_error("Invalid armor_archive: num_textures too big.");
 		}
@@ -61,7 +68,7 @@ armor_archive::armor_archive(stream* backing, std::size_t offset, std::size_t si
 		for(std::size_t j = 0; j < num_textures; j++) {
 			auto rel_offset = _backing.read<uint32_t>();
 			_textures.emplace_back(std::make_unique<fip_texture>
-				(backing, offset + armor.texture * SECTOR_SIZE + rel_offset, -1));
+				(backing, offset + armor.texture.bytes() + rel_offset, -1));
 			_texture_names[_textures.back().get()] =
 				std::string("set") + std::to_string(i) + "_part" + std::to_string(j);
 		}
@@ -78,8 +85,4 @@ std::string armor_archive::display_name_of(texture* tex) const {
 
 std::vector<texture*> armor_archive::textures() {
 	return unique_to_raw<texture>(_textures);
-}
-
-std::vector<game_model*> armor_archive::models() {
-	return unique_to_raw<game_model>(_models);
 }

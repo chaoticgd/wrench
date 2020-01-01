@@ -32,7 +32,7 @@
 # 	Read ARMOR.WAD.
 # */
 
-class armor_archive : public texture_provider, public model_provider {
+class armor_archive : public texture_provider {
 public:
 	struct fmt {
 		packed_struct(header,
@@ -41,9 +41,9 @@ public:
 		)
 		
 		packed_struct(armor,
-			uint32_t model;
+			sector32 model;
 			uint32_t model_size;
-			uint32_t texture;
+			sector32 texture;
 			uint32_t texture_size;
 		)
 	};
@@ -53,12 +53,11 @@ public:
 	std::string display_name_of(texture* tex) const override;
 	std::vector<texture*> textures() override;
 	
-	std::vector<game_model*> models() override;
+	std::vector<game_model> models;
 
 private:
 	proxy_stream _backing;
 	std::vector<std::unique_ptr<fip_texture>> _textures;
-	std::vector<std::unique_ptr<game_model>> _models;
 	std::map<texture*, std::string> _texture_names;
 };
 

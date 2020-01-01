@@ -775,18 +775,15 @@ void gui::model_browser::render(app& a) {
 		return;
 	}
 	
-	// TODO: Model selection GUI.
-	auto providers = a.get_project()->model_providers();
-	if(providers.size() < 1) {
-		ImGui::Text("<no model providers>");
+	ImGui::Columns(2);
+	ImGui::SetColumnWidth(0, 256);
+	
+	game_model* model = render_selection_pane(a);
+	if(model == nullptr) {
 		return;
 	}
-	auto models = providers[0]->models();
-	if(models.size() < 5) {
-		ImGui::Text("<no models>");
-		return;
-	}
-	auto model = models[4]; // final armor
+	
+	ImGui::NextColumn();
 	
 	if(ImGui::IsWindowHovered()) {
 		ImGuiIO& io = ImGui::GetIO();
@@ -805,13 +802,45 @@ void gui::model_browser::render(app& a) {
 	
 	if(ImGui::BeginTabBar("tabs")) {
 		if(ImGui::BeginTabItem("DMA Chain (Debug)")) {
-			ImGui::BeginChild(1);
-			render_dma_debug_info(*model);
+			ImGui::BeginChild(2);
+			try {
+				render_dma_debug_info(*model);
+			} catch(stream_error& e) {
+				ImGui::Text("Error: Out of bounds read.");
+			}
 			ImGui::EndChild();
 			ImGui::EndTabItem();
 		}
 		ImGui::EndTabBar();
 	}
+}
+
+game_model* gui::model_browser::render_selection_pane(app& a) {
+	game_model* result = nullptr;
+	
+	auto lists = a.get_project()->model_lists();
+	if(ImGui::BeginTabBar("lists")) {
+		for(auto& list : lists) {
+			if(ImGui::BeginTabItem(list.first.c_str())) {
+				ImGui::BeginChild(1);
+				for(std::size_t i = 0; i < list.second->size(); i++) {
+					bool selected = _list == list.first && _model == i;
+					if(ImGui::Selectable(std::to_string(i).c_str(), selected)) {
+						_list = list.first;
+						_model = i;
+					}
+					if(selected) {
+						result = &list.second->at(i);
+					}
+				}
+				ImGui::EndChild();
+				ImGui::EndTabItem();
+			}
+		}
+		ImGui::EndTabBar();
+	}
+	
+	return result;
 }
 
 GLuint gui::model_browser::render_preview(
@@ -858,7 +887,14 @@ GLuint gui::model_browser::render_preview(
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glUseProgram(renderer.shaders.solid_colour.id());
-	renderer.draw_model(model, vp, glm::vec4(0, 1, 0, 1));
+	
+	try {
+		renderer.draw_model(model, vp, glm::vec4(0, 1, 0, 1));
+	} catch(stream_error& e) {
+		glClearColor(1, 0, 0, 1);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		ImGui::Text("Error: Out of bounds read.");
+	}
 
 	glDeleteFramebuffers(1, &fb_id);
 	
@@ -871,7 +907,7 @@ glm::vec2 gui::model_browser::get_drag_delta() const {
 }
 
 void gui::model_browser::render_dma_debug_info(game_model& mdl) {
-	for(std::size_t submodel = 0; submodel < mdl.num_submodels(); submodel++) {
+	for(std::size_t submodel = 0; submodel < mdl.num_submodels; submodel++) {
 		ImGui::PushID(submodel);
 		
 		if(ImGui::TreeNode("submodel", "Submodel %ld", submodel)) {

@@ -115,10 +115,13 @@ std::vector<texture_provider*> wrench_project::texture_providers() {
 	return result;
 }
 
-std::vector<model_provider*> wrench_project::model_providers() {
-	std::vector<model_provider*> result;
+std::map<std::string, std::vector<game_model>*> wrench_project::model_lists() {
+	std::map<std::string, std::vector<game_model>*> result;
 	if(_armor) {
-		result.push_back(&(*_armor));
+		result["Armor"] = &_armor->models;
+	}
+	for(auto& lvl : _levels) {
+		result[std::to_string(lvl.first)] = &lvl.second->models;
 	}
 	return result;
 }

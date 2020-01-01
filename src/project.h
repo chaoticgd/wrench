@@ -25,6 +25,7 @@
 #include "iso_stream.h"
 #include "worker_logger.h"
 #include "formats/racpak.h"
+#include "formats/game_model.h"
 #include "formats/level_impl.h"
 #include "formats/texture_impl.h"
 #include "formats/armor_archive.h"
@@ -57,7 +58,7 @@ public:
 	std::vector<level*> levels();
 	level* level_at(std::size_t offset);
 	std::vector<texture_provider*> texture_providers();
-	std::vector<model_provider*> model_providers();
+	std::map<std::string, std::vector<game_model>*> model_lists();
 	
 	template <typename T, typename... T_constructor_args>
 	void emplace_command(T_constructor_args... args);
