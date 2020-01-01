@@ -661,7 +661,7 @@ void gui::texture_browser::render_grid(app& a, texture_provider* provider) {
 		if(_gl_textures.find(tex) == _gl_textures.end()) {
 
 			// Only load 10 textures per frame.
-			if(num_this_frame > 10) {
+			if(num_this_frame >= 10) {
 				ImGui::NextColumn();
 				continue;
 			}
@@ -760,6 +760,12 @@ void gui::texture_browser::export_bmp(app& a, texture* tex) {
 */
 
 gui::model_browser::model_browser() {}
+
+gui::model_browser::~model_browser() {
+	for(auto& tex : _model_thumbnails) {
+		glDeleteTextures(1, &tex.second);
+	}
+}
 	
 const char* gui::model_browser::title_text() const {
 	return "Model Browser";
@@ -776,7 +782,7 @@ void gui::model_browser::render(app& a) {
 	}
 	
 	ImGui::Columns(2);
-	ImGui::SetColumnWidth(0, 256);
+	ImGui::SetColumnWidth(1, 384);
 	
 	game_model* model = render_selection_pane(a);
 	if(model == nullptr) {
@@ -785,6 +791,7 @@ void gui::model_browser::render(app& a) {
 	
 	ImGui::NextColumn();
 	
+	// Update zoom and rotation.
 	if(ImGui::IsWindowHovered()) {
 		ImGuiIO& io = ImGui::GetIO();
 		_zoom *= -io.MouseWheel * a.delta_time * 0.0001 + 1;
@@ -796,8 +803,18 @@ void gui::model_browser::render(app& a) {
 		}
 	}
 	
+	// Clear the texture cache when a new project is opened.
+	if(a.get_project()->id() != _project_id) {
+		for(auto& tex : _model_thumbnails) {
+			glDeleteTextures(1, &tex.second);
+		}
+		_model_thumbnails.clear();
+		_project_id = a.get_project()->id();
+	}
+	
 	ImVec2 preview_size { 400, 300 };
-	GLuint preview_texture = render_preview(*model, a.renderer, preview_size);
+	static GLuint preview_texture = 0;
+	render_preview(&preview_texture, *model, a.renderer, preview_size, _zoom, _pitch_yaw);
 	ImGui::Image((void*) (intptr_t) preview_texture, preview_size);
 	
 	if(ImGui::BeginTabBar("tabs")) {
@@ -822,18 +839,7 @@ game_model* gui::model_browser::render_selection_pane(app& a) {
 	if(ImGui::BeginTabBar("lists")) {
 		for(auto& list : lists) {
 			if(ImGui::BeginTabItem(list.first.c_str())) {
-				ImGui::BeginChild(1);
-				for(std::size_t i = 0; i < list.second->size(); i++) {
-					bool selected = _list == list.first && _model == i;
-					if(ImGui::Selectable(std::to_string(i).c_str(), selected)) {
-						_list = list.first;
-						_model = i;
-					}
-					if(selected) {
-						result = &list.second->at(i);
-					}
-				}
-				ImGui::EndChild();
+				result = render_selection_grid(a, list.first, *list.second);
 				ImGui::EndTabItem();
 			}
 		}
@@ -843,11 +849,66 @@ game_model* gui::model_browser::render_selection_pane(app& a) {
 	return result;
 }
 
-GLuint gui::model_browser::render_preview(
+game_model* gui::model_browser::render_selection_grid(
+		app& a,
+		std::string list,
+		std::vector<game_model>& models) {
+	game_model* result = nullptr;
+	std::size_t num_this_frame = 0;
+	
+	ImGui::BeginChild(1);
+	ImGui::Columns(std::max(1.f, ImGui::GetWindowSize().x / 128));
+	
+	for(std::size_t i = 0; i < models.size(); i++) {
+		game_model* model = &models[i];
+		
+		if(_model_thumbnails.find(model) == _model_thumbnails.end()) {
+			// Only load 10 textures per frame.
+			if(num_this_frame >= 10) {
+				ImGui::NextColumn();
+				continue;
+			}
+			
+			_model_thumbnails[model] = 0;
+			render_preview(
+				&_model_thumbnails.at(model),
+				*model, a.renderer,
+				ImVec2(128, 128), 1, glm::vec2(0, 0));
+			num_this_frame++;
+		}
+		
+		bool selected = _list == list && _model == i;
+		bool clicked = ImGui::ImageButton(
+			(void*) (intptr_t) _model_thumbnails.at(model),
+			ImVec2(128, 128),
+			ImVec2(0, 0),
+			ImVec2(1, 1),
+			selected,
+			ImVec4(0, 0, 0, 1),
+			ImVec4(1, 1, 1, 1)
+		);
+		if(clicked) {
+			_list = list;
+			_model = i;
+		}
+		if(selected) {
+			result = model;
+		}
+		
+		ImGui::NextColumn();
+	}
+	ImGui::EndChild();
+	
+	return result;
+}
+
+void gui::model_browser::render_preview(
+		GLuint* target,
 		const game_model& model,
 		const gl_renderer& renderer,
-		ImVec2 preview_size) {
-	glm::vec2 pitch_yaw = _pitch_yaw;
+		ImVec2 preview_size,
+		float zoom,
+		glm::vec2 pitch_yaw) {
 	if(ImGui::IsMouseDragging()) {
 		pitch_yaw += get_drag_delta();
 	}
@@ -867,11 +928,10 @@ GLuint gui::model_browser::render_preview(
 	};
 	glm::mat4 vp = projection * view * yzx;
 	
-	static GLuint preview_texture = 0;
-	glDeleteTextures(1, &preview_texture);
+	glDeleteTextures(1, target);
 	
-	glGenTextures(1, &preview_texture);
-	glBindTexture(GL_TEXTURE_2D, preview_texture);
+	glGenTextures(1, target);
+	glBindTexture(GL_TEXTURE_2D, *target);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, preview_size.x, preview_size.y, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -879,7 +939,7 @@ GLuint gui::model_browser::render_preview(
 	GLuint fb_id;
 	glGenFramebuffers(1, &fb_id);
 	glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, preview_texture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *target, 0);
 
 	glClearColor(0, 0, 0, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -897,8 +957,6 @@ GLuint gui::model_browser::render_preview(
 	}
 
 	glDeleteFramebuffers(1, &fb_id);
-	
-	return preview_texture;
 }
 
 glm::vec2 gui::model_browser::get_drag_delta() const {

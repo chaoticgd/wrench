@@ -231,18 +231,26 @@ namespace gui {
 	class model_browser : public window {
 	public:
 		model_browser();
+		~model_browser();
 	
 		const char* title_text() const override;
 		ImVec2 initial_size() const override;
 		void render(app& a) override;
 		
-		GLuint render_preview(
+		game_model* render_selection_pane(app& a);
+		game_model* render_selection_grid(
+			app& a,
+			std::string list,
+			std::vector<game_model>& models);
+		
+		void render_preview(
+			GLuint* target,
 			const game_model& model,
 			const gl_renderer& renderer,
-			ImVec2 preview_size);
+			ImVec2 preview_size,
+			float zoom,
+			glm::vec2 pitch_yaw);
 		glm::vec2 get_drag_delta() const;
-		
-		game_model* render_selection_pane(app& a);
 		
 		static void render_dma_debug_info(game_model& mdl);
 		static void render_hex_dump(std::vector<uint32_t> data, std::size_t starting_offset);
@@ -253,6 +261,9 @@ namespace gui {
 	
 		float _zoom = 1.f;
 		glm::vec2 _pitch_yaw = { 0.f, 0.f };
+		
+		int _project_id = 0;
+		std::map<game_model*, GLuint> _model_thumbnails;
 	};
 
 	class settings : public window {
