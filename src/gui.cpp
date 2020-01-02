@@ -137,14 +137,12 @@ void gui::render_menu_bar(app& a) {
 	
 	if(ImGui::BeginMenu("File")) {
 		if(ImGui::BeginMenu("New")) {
-			if(ImGui::MenuItem("R&C2 PAL")) {
-				a.new_project("rc2pal");
-			}
-			if(ImGui::MenuItem("R&C3 PAL")) {
-				a.new_project("rc3pal");
-			}
-			if(ImGui::MenuItem("R&C4 PAL")) {
-				a.new_project("rc4pal");
+			for(const auto& game : a.game_db) {
+				std::string text = 
+					game.first + " " + game.second.title;
+				if(ImGui::MenuItem(text.c_str())) {
+					a.new_project(game.first);
+				}
 			}
 			ImGui::EndMenu();
 		}
@@ -261,32 +259,45 @@ ImVec2 gui::project_tree::initial_size() const {
 }
 
 void gui::project_tree::render(app& a) {
-	auto project = a.get_project();
-	if(!project) {
+	if(!a.get_project()) {
 		ImGui::Text("<no project open>");
 		return;
 	}
 	
-	static std::string selected_level;
+	auto& project = *a.get_project();
+	auto game = a.game_db.at(project.game_id);
+	
+	static gamedb_file_type selected_type = gamedb_file_type::ARMOR;
+	static std::size_t selected_offset = 0x0;
+	
+	auto render_selectable = [=, &project](gamedb_file file, std::string prefix) {
+		bool is_selected =
+			file.type == selected_type && selected_offset == file.offset;
+		std::string text = prefix + file.name;
+		if(ImGui::Selectable(text.c_str(), is_selected)) {
+			selected_type = file.type;
+			selected_offset = file.offset;
+			project.open_file(file);
+		}
+	};
 	
 	ImGui::BeginChild(1);
-	for(std::string group : project->available_view_types()) {
-		if(ImGui::TreeNode(group.c_str())) {
-			for(std::string view : project->available_views(group)) {
-				bool selected =
-					group == "Levels" &&
-					selected_level == view;
-				if(ImGui::Selectable(view.c_str(), selected)) {
-					project->select_view(group, view);
-					if(group == "Levels") {
-						selected_level = view;
-						a.renderer.reset_camera(&a);
-					}
-				}
-			}
-			ImGui::TreePop();
+	
+	for(gamedb_file file : game.files) {
+		if(file.type != +gamedb_file_type::LEVEL) {
+			render_selectable(file, " ");
 		}
 	}
+	
+	if(ImGui::TreeNode("Levels")) {
+		for(gamedb_file file : game.files) {
+			if(file.type == +gamedb_file_type::LEVEL) {
+				render_selectable(file, "");
+			}
+		}
+		ImGui::TreePop();
+	}
+	
 	ImGui::EndChild();
 }
 

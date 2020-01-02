@@ -29,14 +29,14 @@
 wrench_project::wrench_project(
 		std::map<std::string, std::string>& game_paths,
 		worker_logger& log,
-		std::string game_id)
+		std::string game_id_)
 	: _project_path(""),
 	  _wrench_archive(nullptr),
-	  _game_id(game_id),
+	  game_id(game_id_),
 	  _history_index(0),
 	  _selected_level(nullptr),
 	  _id(_next_id++),
-	  iso(game_id, game_paths.at(_game_id), log) {}
+	  iso(game_id, game_paths.at(game_id), log) {}
 
 wrench_project::wrench_project(
 		std::map<std::string, std::string>& game_paths,
@@ -44,10 +44,10 @@ wrench_project::wrench_project(
 		worker_logger& log)
 	: _project_path(project_path),
 	  _wrench_archive(ZipFile::Open(project_path)),
-	  _game_id(read_game_id()),
+	  game_id(read_game_id()),
 	  _history_index(0),
 	  _id(_next_id++),
-	  iso(_game_id, game_paths.at(_game_id), log, _wrench_archive) {
+	  iso(game_id, game_paths.at(game_id), log, _wrench_archive) {
 	ZipFile::SaveAndClose(_wrench_archive, project_path);
 	_wrench_archive = nullptr;
 }
@@ -142,58 +142,47 @@ void wrench_project::redo() {
 	_history_index++;
 }
 
-/*
-	views
-*/
-
-std::vector<std::string> wrench_project::available_view_types() {
-	std::vector<std::string> result;
-	for(auto& group : _views.at(_game_id)) {
-		result.push_back(group.first);
+void wrench_project::open_file(gamedb_file file) {
+	switch(file.type) {
+		case gamedb_file_type::TEXTURES:
+			open_texture_archive(file);
+			break;
+		case gamedb_file_type::ARMOR:
+			_armor = std::make_optional<armor_archive>(&iso, file.offset, file.size);
+			break;
+		case gamedb_file_type::LEVEL:
+			open_level(file);
+			break;
 	}
-	return result;
 }
 
-std::vector<std::string> wrench_project::available_views(std::string group) {
-	std::vector<std::string> result;
-	for(auto& view : _views.at(_game_id).at(group)) {
-		result.push_back(view.first);
-	}
-	return result;
-}
-
-void wrench_project::select_view(std::string group, std::string view) {
-	_next_view_name = view;
-	_views.at(_game_id).at(group).at(view)(this);
-}
-
-racpak* wrench_project::open_archive(std::size_t offset, std::size_t size) {
-	if(_archives.find(offset) == _archives.end()) {
-		_archives.emplace(offset, std::make_unique<racpak>(&iso, offset, size));
+racpak* wrench_project::open_archive(gamedb_file file) {
+	if(_archives.find(file.offset) == _archives.end()) {
+		_archives.emplace(file.offset, std::make_unique<racpak>(&iso, file.offset, file.size));
 	}
 	
-	return _archives.at(offset).get();
+	return _archives.at(file.offset).get();
 }
 
-void wrench_project::open_texture_archive(std::size_t offset, std::size_t size) {
-	if(_texture_wads.find(offset) != _texture_wads.end()) {
+void wrench_project::open_texture_archive(gamedb_file file) {
+	if(_texture_wads.find(file.offset) != _texture_wads.end()) {
 		// The archive is already open.
 		return;
 	}
 	
-	racpak* archive = open_archive(offset, size);
+	racpak* archive = open_archive(file);
 	worker_logger log;
-	_texture_wads.emplace(offset, std::make_unique<racpak_fip_scanner>
-		(&iso, archive, _next_view_name, log));
+	_texture_wads.emplace(file.offset, std::make_unique<racpak_fip_scanner>
+		(&iso, archive, file.name, log));
 }
 
-void wrench_project::open_level(std::size_t offset, std::size_t size) {
-	if(_levels.find(offset) == _levels.end()) {
+void wrench_project::open_level(gamedb_file file) {
+	if(_levels.find(file.offset) == _levels.end()) {
 		// The level is not already open.
-		_levels.emplace(offset, std::make_unique<level>
-			(&iso, offset, size, _next_view_name));
+		_levels.emplace(file.offset, std::make_unique<level>
+			(&iso, file.offset, file.size, file.name));
 	}
-	_selected_level = _levels.at(offset).get();
+	_selected_level = _levels.at(file.offset).get();
 }
 
 int wrench_project::id() {
@@ -217,7 +206,7 @@ void wrench_project::save_to(std::string path) {
 	root->CreateEntry("application_version")->SetCompressionStream(version_stream);
 
 	std::stringstream game_id_stream;
-	game_id_stream << _game_id;
+	game_id_stream << game_id;
 	root->CreateEntry("game_id")->SetCompressionStream(game_id_stream);
 
 	iso.save_patches_to_and_close(root, _project_path);
@@ -230,111 +219,5 @@ std::string wrench_project::read_game_id() {
 	std::getline(*stream, result);
 	return result;
 }
-
-const std::map<std::string, wrench_project::game_view> wrench_project::_views {
-	{"rc2pal", {
-		{"Textures", {
-			{"HUD.WAD",   [](wrench_project* p) { p->open_texture_archive(0x7360f800, 0x242b30f); }},
-			{"BONUS.WAD", [](wrench_project* p) { p->open_texture_archive(0x75a3b000, 0x1e49ea5); }},
-			{"SPACE.WAD", [](wrench_project* p) { p->open_texture_archive(0x7e041800, 0x10fa980); }},
-			{"ARMOR.WAD", [](wrench_project* p)
-				{ p->_armor = std::make_optional<armor_archive>(&p->iso, 0x7fa3d800, 0x25d930); }}
-		}},
-		{"Levels", {
-			{"00 Aranos",             [](wrench_project* p) { p->open_level(0x7fc9b800, 0xec5a80 ); }},
-			{"01 Oozla",              [](wrench_project* p) { p->open_level(0x81be9000, 0x14dea44); }},
-			{"02 Maktar",             [](wrench_project* p) { p->open_level(0x85104800, 0x13c73f8); }},
-			{"03 Endako",             [](wrench_project* p) { p->open_level(0x89d86000, 0x10d9060); }},
-			{"04 Barlow",             [](wrench_project* p) { p->open_level(0x8d794800, 0x17999dc); }},
-			{"05 Feltzin",            [](wrench_project* p) { p->open_level(0x92064800, 0xff02d0 ); }},
-			{"06 Notak",              [](wrench_project* p) { p->open_level(0x93bd9000, 0x12893e0); }},
-			{"07 Siberius",           [](wrench_project* p) { p->open_level(0x96690800, 0x1545530); }},
-			{"08 Tabora",             [](wrench_project* p) { p->open_level(0x99685000, 0x13ac830); }},
-			{"09 Dobbo",              [](wrench_project* p) { p->open_level(0x9e8a6000, 0x11f8ae0); }},
-			{"10 Hrugis",            [](wrench_project* p) { p->open_level(0xa2317800, 0xdc0fe3 ); }},
-			{"11 Joba",              [](wrench_project* p) { p->open_level(0xa3fdb000, 0x155e2a0); }},
-			{"12 Todano",            [](wrench_project* p) { p->open_level(0xaa301000, 0x10c5a90); }},
-			{"13 Boldan",            [](wrench_project* p) { p->open_level(0xae9f0000, 0x112bab0); }},
-			{"14 Aranos 2",          [](wrench_project* p) { p->open_level(0xb228b800, 0x10947a0); }},
-			{"15 Gorn",              [](wrench_project* p) { p->open_level(0xb59e0800, 0xd77dc0 ); }},
-			{"16 Snivelak",          [](wrench_project* p) { p->open_level(0xb7243000, 0x1188be0); }},
-			{"17 Smolg",             [](wrench_project* p) { p->open_level(0xbafab800, 0xfff020 ); }},
-			{"18 Damosel",           [](wrench_project* p) { p->open_level(0xbde52800, 0x10e52c0); }},
-			{"19 Grelbin",           [](wrench_project* p) { p->open_level(0xc05cf000, 0x18052d8); }},
-			{"20 Yeedil",            [](wrench_project* p) { p->open_level(0xc59e2800, 0x1469a5c); }},
-			{"21 Insomniac Museum",  [](wrench_project* p) { p->open_level(0xcaeba800, 0xcc30e0 ); }},
-			{"22 Disposal Facility", [](wrench_project* p) { p->open_level(0xccc5a000, 0xd02530 ); }},
-			{"23 Damosel Orbit",     [](wrench_project* p) { p->open_level(0xce839000, 0xc0b9d0 ); }},
-			{"24 Ship Shack",        [](wrench_project* p) { p->open_level(0xcfb68000, 0x7fc176 ); }},
-			{"25 Wupash",            [](wrench_project* p) { p->open_level(0xd0751000, 0x843c5f ); }},
-			{"26 Jamming Array",     [](wrench_project* p) { p->open_level(0xd164e800, 0xa81290 ); }}
-		}}
-	}},
-	{"rc3pal", {
-		{"Textures", {
-			{"ARMOR.WAD", [](wrench_project* p)
-				{ p->_armor = std::make_optional<armor_archive>(&p->iso, 0x56da6000, 0x0); }}
-		}},
-		{"Levels", {
-			{"00 Veldin",                  [](wrench_project* p) { p->open_level(0x92229000, 0x0); }},
-			{"01 Florana",                 [](wrench_project* p) { p->open_level(0x9349d800, 0x0); }},
-			{"02 Phoenix",                 [](wrench_project* p) { p->open_level(0x946c4800, 0x0); }},
-			{"03 Marcadia",                [](wrench_project* p) { p->open_level(0x9576d000, 0x0); }},
-			{"04 Daxx",                    [](wrench_project* p) { p->open_level(0x96bea800, 0x0); }},
-			{"05 Phoenix (Under Attack)",  [](wrench_project* p) { p->open_level(0x97de8000, 0x0); }},
-			{"06 Annihilation Nation",     [](wrench_project* p) { p->open_level(0x98d51000, 0x0); }},
-			{"07 Aquatos",                 [](wrench_project* p) { p->open_level(0x9a048000, 0x0); }},
-			{"08 Aquatos 2",               [](wrench_project* p) { p->open_level(0x9b2d3000, 0x0); }},
-			{"09 Zeldrin",                 [](wrench_project* p) { p->open_level(0x9c7b2000, 0x0); }},
-			{"10 Obani Moons",             [](wrench_project* p) { p->open_level(0x9dbc0800, 0x0); }},
-			{"11 Blackwater",              [](wrench_project* p) { p->open_level(0x9ed0e800, 0x0); }},
-			{"12 LEVEL12",                 [](wrench_project* p) { p->open_level(0x9fe31800, 0x0); }},
-			{"13 LEVEL13",                 [](wrench_project* p) { p->open_level(0xa0ea3800, 0x0); }},
-			{"14 Metropolis",              [](wrench_project* p) { p->open_level(0xa1fd4800, 0x0); }},
-			{"15 Crash Site",              [](wrench_project* p) { p->open_level(0xa30d5000, 0x0); }},
-			{"16 LEVEL16",                 [](wrench_project* p) { p->open_level(0xa41e5000, 0x0); }},
-			{"17 LEVEL17",                 [](wrench_project* p) { p->open_level(0xa5362800, 0x0); }},
-			{"18 Final Boss",              [](wrench_project* p) { p->open_level(0xa69fc000, 0x0); }},
-			// There's something between these two.
-			{"20 LEVEL20",                 [](wrench_project* p) { p->open_level(0xa881f000, 0x0); }},
-			{"21 LEVEL21",                 [](wrench_project* p) { p->open_level(0xa98d9800, 0x0); }},
-			{"22 LEVEL22",                 [](wrench_project* p) { p->open_level(0xaa921800, 0x0); }},
-			{"23 LEVEL23",                 [](wrench_project* p) { p->open_level(0xabda5000, 0x0); }},
-			{"24 LEVEL24",                 [](wrench_project* p) { p->open_level(0xaced4000, 0x0); }},
-			{"25 Aquatos Sewers",          [](wrench_project* p) { p->open_level(0xadcb9800, 0x0); }},
-			{"26 LEVEL26",                 [](wrench_project* p) { p->open_level(0xaebb6000, 0x0); }},
-			{"27 Vid-Comic 1",             [](wrench_project* p) { p->open_level(0xafcca000, 0x0); }},
-			{"28 Vid-Comic 2",             [](wrench_project* p) { p->open_level(0xb09a8000, 0x0); }},
-			{"29 Vid-Comic 3",             [](wrench_project* p) { p->open_level(0xb15d0000, 0x0); }},
-			{"30 Vid-Comic 4",             [](wrench_project* p) { p->open_level(0xb2349800, 0x0); }},
-			{"31 Vid-Comic 5",             [](wrench_project* p) { p->open_level(0xb300d000, 0x0); }},
-			{"32 Vid-Comic 6",             [](wrench_project* p) { p->open_level(0xb3ba7000, 0x0); }},
-			{"33 Vid-Comic 7",             [](wrench_project* p) { p->open_level(0xb47e6800, 0x0); }},
-			{"34 LEVEL34",                 [](wrench_project* p) { p->open_level(0xb5535000, 0x0); }},
-			{"35 LEVEL35",                 [](wrench_project* p) { p->open_level(0xb5fe6000, 0x0); }},
-			{"36 LEVEL36",                 [](wrench_project* p) { p->open_level(0xb70c8800, 0x0); }},
-			{"37 LEVEL37",                 [](wrench_project* p) { p->open_level(0xb818b000, 0x0); }},
-			{"38 LEVEL38",                 [](wrench_project* p) { p->open_level(0xb930d800, 0x0); }},
-			{"39 LEVEL39",                 [](wrench_project* p) { p->open_level(0xba524000, 0x0); }},
-			{"40 LEVEL40",                 [](wrench_project* p) { p->open_level(0xbb627800, 0x0); }},
-			{"41 LEVEL41",                 [](wrench_project* p) { p->open_level(0xbc7ac800, 0x0); }},
-			{"42 LEVEL42",                 [](wrench_project* p) { p->open_level(0xbd25f000, 0x0); }},
-			{"43 MP Aquatos Sewers",       [](wrench_project* p) { p->open_level(0xbde82800, 0x0); }},
-			{"44 LEVEL44",                 [](wrench_project* p) { p->open_level(0xbe98f000, 0x0); }},
-			{"45 MP Bakisi Isles",         [](wrench_project* p) { p->open_level(0xbf612800, 0x0); }},
-			{"46 LEVEL46",                 [](wrench_project* p) { p->open_level(0xc0626000, 0x0); }},
-			{"47 LEVEL47",                 [](wrench_project* p) { p->open_level(0xc169e800, 0x0); }},
-			{"48 LEVEL48",                 [](wrench_project* p) { p->open_level(0xc27f4800, 0x0); }},
-			{"49 MP Metropolis",           [](wrench_project* p) { p->open_level(0xc38d2800, 0x0); }},
-			{"50 LEVEL50",                 [](wrench_project* p) { p->open_level(0xc49a2000, 0x0); }}
-		}}
-	}},
-	{"rc4pal", {
-		{"Textures", {
-			{"ARMOR.WAD", [](wrench_project* p)
-				{ p->_armor = std::make_optional<armor_archive>(&p->iso, 0x4ecf4800, 0x0); }}
-		}}
-	}}
-};
 
 int wrench_project::_next_id = 0;

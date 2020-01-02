@@ -29,6 +29,7 @@
 #include <glm/glm.hpp>
 
 #include "stream.h"
+#include "game_db.h"
 #include "project.h"
 #include "renderer.h"
 #include "worker_logger.h"
@@ -100,6 +101,8 @@ public:
 
 	void init_gui_scale();
 	void update_gui_scale();
+
+	const std::map<std::string, gamedb_release> game_db;
 
 private:
 	std::atomic_bool _lock_project; // Prevent race conditions while creating/loading a project.

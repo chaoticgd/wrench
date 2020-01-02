@@ -35,6 +35,7 @@ app::app()
 	  delta_time(0),
 	  current_tool(tool::picker),
 	  translate_tool_displacement(0, 0, 0),
+	  game_db(gamedb_parse_file()),
 	  _lock_project(false) {
 	
 	read_settings();
@@ -163,9 +164,9 @@ const char* settings_file_path = "wrench_settings.ini";
 
 void app::read_settings() {
 	// Default settings.
-	settings.game_paths["rc2pal"] = "";
-	settings.game_paths["rc3pal"] = "";
-	settings.game_paths["rc4pal"] = "";
+	for(auto& game : game_db) {
+		settings.game_paths[game.first] = "/path/to/game.iso";
+	}
 	settings.gui_scale = 1.f;
 
 	if(boost::filesystem::exists(settings_file_path)) {

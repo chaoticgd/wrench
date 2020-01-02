@@ -27,6 +27,7 @@ add_executable(wrench
 	src/iso_stream.cpp
 	src/model.cpp
 	src/util.cpp
+	src/game_db.cpp
 	src/formats/wad.cpp
 	src/formats/racpak.cpp
 	src/formats/level_impl.cpp

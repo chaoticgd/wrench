@@ -22,6 +22,7 @@
 #include <ZipLib/ZipArchive.h>
 
 #include "command.h"
+#include "game_db.h"
 #include "iso_stream.h"
 #include "worker_logger.h"
 #include "formats/racpak.h"
@@ -42,7 +43,7 @@ public:
 	wrench_project(
 		std::map<std::string, std::string>& game_paths,
 		worker_logger& log,
-		std::string game_id); // New
+		std::string game_id_); // New
 	wrench_project(
 		std::map<std::string, std::string>& game_paths,
 		std::string project_path,
@@ -65,16 +66,11 @@ public:
 	void undo();
 	void redo();
 	
-	// Views are objects that access the game's data structures and expose an
-	// abstracted interface to view and modify them. Available views are a list
-	// of all supported views, not only those that are currently loaded.
-	std::vector<std::string> available_view_types();
-	std::vector<std::string> available_views(std::string group);
-	void select_view(std::string group, std::string view);
+	void open_file(gamedb_file file);
 	
-	racpak* open_archive(std::size_t offset, std::size_t size);
-	void open_texture_archive(std::size_t offset, std::size_t size);
-	void open_level(std::size_t offset, std::size_t size);
+	racpak* open_archive(gamedb_file file);
+	void open_texture_archive(gamedb_file file);
+	void open_level(gamedb_file file);
 	
 	int id();
 	
@@ -85,15 +81,13 @@ private:
 
 	std::string _project_path;
 	ZipArchive::Ptr _wrench_archive;
-	const std::string _game_id;
-	
+
+public: // Initialisation order matters.
+	const std::string game_id; // e.g. "SCES_516.07"
+
+private:
 	std::size_t _history_index;
 	std::vector<std::unique_ptr<command>> _history_stack;
-	
-	using view_group = std::map<std::string, std::function<void(wrench_project*)>>;
-	using game_view = std::map<std::string, view_group>; // Views for a given game.
-	static const std::map<std::string, game_view> _views;
-	std::string _next_view_name;
 	
 	std::map<std::size_t, std::unique_ptr<racpak>> _archives;
 	std::map<std::size_t, std::unique_ptr<texture_provider>> _texture_wads;
