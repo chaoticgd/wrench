@@ -23,9 +23,7 @@
 view_3d::view_3d(app* a)
 	: _frame_buffer_texture(0),
 	  _selecting(false),
-	  _renderer(&a->renderer) {
-	_renderer->reset_camera(a);
-}
+	  _renderer(&a->renderer) {}
 
 view_3d::~view_3d() {
 	if(_frame_buffer_texture != 0) {
