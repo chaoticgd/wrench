@@ -278,7 +278,9 @@ void gui::project_tree::render(app& a) {
 			selected_type = file.type;
 			selected_offset = file.offset;
 			project.open_file(file);
+			return true;
 		}
+		return false;
 	};
 	
 	ImGui::BeginChild(1);
@@ -292,7 +294,9 @@ void gui::project_tree::render(app& a) {
 	if(ImGui::TreeNode("Levels")) {
 		for(gamedb_file file : game.files) {
 			if(file.type == +gamedb_file_type::LEVEL) {
-				render_selectable(file, "");
+				if(render_selectable(file, "")) {
+					a.renderer.reset_camera(&a);
+				}
 			}
 		}
 		ImGui::TreePop();
