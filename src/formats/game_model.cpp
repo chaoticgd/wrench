@@ -62,6 +62,10 @@ std::vector<vif_packet> game_model::get_vif_chain(std::size_t submodel) const {
 	return get_vif_chain_at(entry.address, entry.qwc);
 }
 
+std::string game_model::resource_path() {
+	return _backing.resource_path();
+}
+
 std::vector<vif_packet> game_model::get_vif_chain_at(std::size_t offset, std::size_t qwc) const {
 	if(_vif_chains.find(offset) == _vif_chains.end()) {
 		const_cast<vif_chains*>(&_vif_chains)->insert

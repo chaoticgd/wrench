@@ -833,7 +833,15 @@ void gui::model_browser::render(app& a) {
 	ImGui::Image((void*) (intptr_t) preview_texture, preview_size);
 	
 	if(ImGui::BeginTabBar("tabs")) {
-		if(ImGui::BeginTabItem("DMA Chain (Debug)")) {
+		if(ImGui::BeginTabItem("Details")) {
+			std::string index = std::to_string(_model);
+			ImGui::InputText("Index", &index, ImGuiInputTextFlags_ReadOnly);
+			std::string res_path = model->resource_path();
+			ImGui::InputText("Resource Path", &res_path, ImGuiInputTextFlags_ReadOnly);
+			ImGui::EndTabItem();
+		}
+		
+		if(ImGui::BeginTabItem("VIF Chains (Debug)")) {
 			ImGui::BeginChild(2);
 			try {
 				render_dma_debug_info(*model);
@@ -902,6 +910,8 @@ game_model* gui::model_browser::render_selection_grid(
 			ImVec4(0, 0, 0, 1),
 			ImVec4(1, 1, 1, 1)
 		);
+		ImGui::Text("%d\n", i);
+		
 		if(clicked) {
 			_list = list;
 			_model = i;

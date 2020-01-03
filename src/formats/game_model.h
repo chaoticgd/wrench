@@ -67,6 +67,8 @@ public:
 	
 	std::vector<vif_packet> get_vif_chain(std::size_t submodel) const;
 	
+	std::string resource_path();
+	
 	const std::size_t num_submodels;
 private:
 	std::vector<vif_packet> get_vif_chain_at(std::size_t offset, std::size_t qwc) const;
