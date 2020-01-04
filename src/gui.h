@@ -284,6 +284,20 @@ namespace gui {
 		std::string _scroll_offset_str;
 		std::size_t _scroll_offset;
 	};
+	
+	class document_viewer : public window {
+	public:
+		document_viewer(const char* path);
+	
+		const char* title_text() const override;
+		ImVec2 initial_size() const override;
+		void render(app& a) override;
+		
+		void load_page(std::string path);
+		
+	private:
+		std::string _body;
+	};
 
 	class message_box : public window {
 	public:

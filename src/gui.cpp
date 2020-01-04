@@ -24,6 +24,7 @@
 #include <iostream>
 #include <functional>
 #include <boost/algorithm/string.hpp>
+#include <imgui_markdown/imgui_markdown.h>
 
 #include "util.h"
 #include "config.h"
@@ -101,6 +102,7 @@ void gui::create_dock_layout(const app& a) {
 	ImGui::DockBuilderDockWindow("3D View", centre);
 	ImGui::DockBuilderDockWindow("Texture Browser", centre);
 	ImGui::DockBuilderDockWindow("Model Browser", centre);
+	ImGui::DockBuilderDockWindow("Documentation", centre);
 	ImGui::DockBuilderDockWindow("Project", project);
 	ImGui::DockBuilderDockWindow("Tools", tools);
 	ImGui::DockBuilderDockWindow("Mobies", mobies);
@@ -210,8 +212,19 @@ void gui::render_menu_bar(app& a) {
 		render_menu_bar_window_toggle<model_browser>(a);
 		render_menu_bar_window_toggle<manual_patcher>(a);
 		render_menu_bar_window_toggle<settings>(a);
+		render_menu_bar_window_toggle<document_viewer>(a, "index.md");
 		ImGui::EndMenu();
 	}
+	
+	auto open_document_viewer = [=, &a](const char* path) {
+		// Close any existing documentation windows.
+		for(auto& window : a.windows) {
+			if(dynamic_cast<document_viewer*>(window.get()) != nullptr) {
+				window->close(a);
+			}
+		}
+		a.emplace_window<document_viewer>(path);
+	};
 	
 	if(ImGui::BeginMenu("Help")) {
 		if(ImGui::MenuItem("About")) {
@@ -232,6 +245,10 @@ void gui::render_menu_bar(app& a) {
 				" - MD5 implementation by Colin Plumb\n"
 			);
 		}
+		if(ImGui::MenuItem("User Guide")) {
+			open_document_viewer("user_guide.md");
+		}
+		ImGui::Separator();
 		if(ImGui::MenuItem("GitHub")) {
 			open_in_browser("https://github.com/chaoticgd/wrench");
 		}
@@ -1188,6 +1205,47 @@ void gui::manual_patcher::render(app& a) {
 	}
 	ImGui::EndChild();
 	
+}
+
+/*
+	document_viewer
+*/
+
+gui::document_viewer::document_viewer(const char* path) {
+	load_page(path);
+}
+	
+const char* gui::document_viewer::title_text() const {
+	return "Documentation";
+}
+
+ImVec2 gui::document_viewer::initial_size() const {
+	return ImVec2(400, 300);
+}
+
+void gui::document_viewer::render(app& a) {
+	static ImGui::MarkdownConfig config;
+	if(config.linkCallback == nullptr) {
+		config.linkCallback = [](ImGui::MarkdownLinkCallbackData link) {
+			document_viewer* window = static_cast<document_viewer*>(link.userData);
+			std::string path(link.link, link.linkLength);
+			window->load_page(path);
+		};
+		config.userData = this;
+	}
+	ImGui::Markdown(_body.c_str(), _body.size(), config);
+}
+
+void gui::document_viewer::load_page(std::string path) {
+	std::ifstream file(std::string("docs/") + path);
+	if(!file.is_open()) {
+		_body = "File not found.";
+		return;
+	}
+	
+	_body = std::string(
+		std::istreambuf_iterator<char>(file),
+		std::istreambuf_iterator<char>());
 }
 
 /*
