@@ -99,7 +99,7 @@ level::level(iso_stream* iso, std::size_t offset, std::size_t size, std::string 
 	world.read(_moby_stream);
 	
 	stream* asset_seg = iso->get_decompressed
-		(offset + primhdr_offset + primary_header.asset_wad.value);
+		(offset + primhdr_offset + primary_header.asset_wad.value, true);
 	
 	uint32_t snd_base = file_header.primary_header.bytes() + primary_header.snd_header.value;
 	auto snd_header = _backing.read<fmt::secondary_header>(snd_base);

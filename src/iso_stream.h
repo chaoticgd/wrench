@@ -62,6 +62,13 @@ public:
 	
 	void commit();
 
+	// HACK: Discard certain streams as the recompression code isn't currently
+	// reliable enough to compress them correctly. For example, the asset WAD
+	// for each level should not be recompressed for now. This means that we
+	// can't modify those assets, which isn't great, but it's the best we can
+	// do for now.
+	bool discard = false;
+
 private:
 	iso_stream* _backing;
 	std::size_t _offset;
@@ -92,7 +99,7 @@ public:
 
 	// Decompress a WAD segment. Register the stream so that the segment can be
 	// automatically recompressed when changes need to be commited to the cache.
-	wad_stream* get_decompressed(std::size_t offset);
+	wad_stream* get_decompressed(std::size_t offset, bool discard = false);
 	
 	// Recompress all open WAD segments.
 	void commit();

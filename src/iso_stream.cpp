@@ -72,7 +72,7 @@ std::string wad_stream::resource_path() const {
 }
 
 void wad_stream::commit() {
-	if(!_dirty) {
+	if(!_dirty || discard) {
 		return; // The segment hasn't been modified since the last time it was committed.
 	}
 	_dirty = false;
@@ -190,12 +190,16 @@ void iso_stream::save_patches_to_and_close(ZipArchive::Ptr& root, std::string pr
 	ZipFile::SaveAndClose(root, project_path);
 }
 
-wad_stream* iso_stream::get_decompressed(std::size_t offset) {
+wad_stream* iso_stream::get_decompressed(std::size_t offset, bool discard) {
 	if(_wad_streams.find(offset) == _wad_streams.end()) {
 		// The segment hasn't been patched yet.
 		try {
 			_wad_streams.emplace(offset, std::make_unique<wad_stream>
 				(this, offset, std::vector<wad_patch>()));
+			if(discard) {
+				// HACK: See the comment for wad_stream::discard in iso_stream.h.
+				_wad_streams.at(offset)->discard = true;
+			}
 		} catch(stream_error& e) {
 			std::cerr << e.what() << "\n";
 			std::cerr << "offset: " << std::hex << offset << "\n";
