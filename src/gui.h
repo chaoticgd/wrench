@@ -21,9 +21,10 @@
 
 #include <functional>
 #include <boost/filesystem.hpp>
+#include "imgui_includes.h"
+#include <imgui_markdown/imgui_markdown.h>
 
 #include "gl_includes.h"
-#include "imgui_includes.h"
 #include "app.h"
 #include "window.h"
 #include "view_3d.h"
@@ -297,6 +298,7 @@ namespace gui {
 		
 	private:
 		std::string _body;
+		ImGui::MarkdownConfig _config;
 	};
 
 	class message_box : public window {

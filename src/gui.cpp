@@ -24,7 +24,6 @@
 #include <iostream>
 #include <functional>
 #include <boost/algorithm/string.hpp>
-#include <imgui_markdown/imgui_markdown.h>
 
 #include "util.h"
 #include "config.h"
@@ -1212,6 +1211,12 @@ void gui::manual_patcher::render(app& a) {
 */
 
 gui::document_viewer::document_viewer(const char* path) {
+	_config.linkCallback = [](ImGui::MarkdownLinkCallbackData link) {
+		document_viewer* window = static_cast<document_viewer*>(link.userData);
+		std::string path(link.link, link.linkLength);
+		window->load_page(path);
+	};
+	_config.userData = this;
 	load_page(path);
 }
 	
@@ -1224,28 +1229,18 @@ ImVec2 gui::document_viewer::initial_size() const {
 }
 
 void gui::document_viewer::render(app& a) {
-	static ImGui::MarkdownConfig config;
-	if(config.linkCallback == nullptr) {
-		config.linkCallback = [](ImGui::MarkdownLinkCallbackData link) {
-			document_viewer* window = static_cast<document_viewer*>(link.userData);
-			std::string path(link.link, link.linkLength);
-			window->load_page(path);
-		};
-		config.userData = this;
-	}
-	ImGui::Markdown(_body.c_str(), _body.size(), config);
+	ImGui::Markdown(_body.c_str(), _body.size(), _config);
 }
 
 void gui::document_viewer::load_page(std::string path) {
-	std::ifstream file(std::string("docs/") + path);
-	if(!file.is_open()) {
-		_body = "File not found.";
+	try {
+		file_stream file(std::string("docs/") + path);
+		_body.resize(file.size());
+		file.read_n(_body.data(), file.size());
+	} catch(stream_error&) {
+		_body = "Cannot open file.";
 		return;
 	}
-	
-	_body = std::string(
-		std::istreambuf_iterator<char>(file),
-		std::istreambuf_iterator<char>());
 }
 
 /*
