@@ -126,7 +126,7 @@ struct vif_code {
 	vif_code() {}
 	static std::optional<vif_code> parse(uint32_t val);
 	bool is_unpack() const;
-	std::size_t packet_size() const; // In words.
+	std::size_t packet_size() const; // In bytes.
 	std::string to_string() const;
 };
 
