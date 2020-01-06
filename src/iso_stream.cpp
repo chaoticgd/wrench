@@ -35,7 +35,6 @@ wad_stream::wad_stream(iso_stream* backing, std::size_t offset, std::vector<wad_
 	array_stream segment;
 	uint32_t compressed_size = _backing->_iso.peek<uint32_t>(offset + 0x3);
 	_backing->_iso.seek(offset);
-	printf("%x %x\n", offset, compressed_size);
 	stream::copy_n(segment, _backing->_iso, compressed_size);
 	decompress_wad(_uncompressed_buffer, segment);
 	
