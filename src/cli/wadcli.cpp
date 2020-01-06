@@ -25,11 +25,28 @@
 #	CLI tool to decompress and recompress WAD segments. Not to be confused with WAD archives.
 # */
 
+void copy_and_decompress(stream& dest, stream& src);
+
 int main(int argc, char** argv) {
 	return run_cli_converter(argc, argv,
 		"Decompress WAD segments",
 		{
-			{ "decompress", decompress_wad },
+			{ "decompress", copy_and_decompress },
 			{ "compress", compress_wad }
 		});
+}
+
+void copy_and_decompress(stream& dest, stream& src) {
+	array_stream dest_array;
+	array_stream src_array;
+	
+	uint32_t compressed_size = src.read<uint32_t>(0x3);
+	src.seek(0);
+	stream::copy_n(src_array, src, compressed_size);
+	
+	decompress_wad(dest_array, src_array);
+	
+	dest.seek(0);
+	dest_array.seek(0);
+	stream::copy_n(dest, dest_array, dest_array.size());
 }

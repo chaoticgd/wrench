@@ -76,35 +76,35 @@ void file_stream::check_error() {
 */
 
 array_stream::array_stream()
-	: _offset(0) {}
+	: pos(0) {}
 
 std::size_t array_stream::size() const {
-	return _allocation.size();
+	return buffer.size();
 }
 
 void array_stream::seek(std::size_t offset) {
-	_offset = offset;
+	pos = offset;
 }
 std::size_t array_stream::tell() const {
-	return _offset;
+	return pos;
 }
 
 void array_stream::read_n(char* dest, std::size_t size) {
-	std::size_t required_size = _offset + size;
-	if(required_size > _allocation.size()) {
+	std::size_t required_size = pos + size;
+	if(required_size > buffer.size()) {
 		throw stream_io_error("Tried to read past end of array_stream!");
 	}
-	std::memcpy(dest, _allocation.data() + _offset, size);
-	_offset += size;
+	std::memcpy(dest, buffer.data() + pos, size);
+	pos += size;
 }
 
 void array_stream::write_n(const char* data, std::size_t size) {
-	std::size_t required_size = _offset + size;
-	if(_offset + size > _allocation.size()) {
-		_allocation.resize(required_size);
+	std::size_t required_size = pos + size;
+	if(pos + size > buffer.size()) {
+		buffer.resize(required_size);
 	}
-	std::memcpy(_allocation.data() + _offset, data, size);
-	_offset += size;
+	std::memcpy(buffer.data() + pos, data, size);
+	pos += size;
 }
 
 std::string array_stream::resource_path() const {
@@ -112,7 +112,7 @@ std::string array_stream::resource_path() const {
 }
 
 char* array_stream::data() {
-	return _allocation.data();
+	return buffer.data();
 }
 
 /*

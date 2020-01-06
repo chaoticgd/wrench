@@ -40,9 +40,13 @@ static const int SECTOR_SIZE = 0x800;
 #ifdef _MSC_VER
 	#define packed_struct(name, body \
 		__pragma(pack(push, 1)) struct name { body } __pragma(pack(pop))
+	
+	#define FORCE_INLINE __forceinline
 #else
 	#define packed_struct(name, body) \
 		struct __attribute__((__packed__)) name { body };
+	
+	#define FORCE_INLINE __attribute__((always_inline))
 #endif
 
 #define offsetof32(x, y) static_cast<uint32_t>(offsetof(x, y))
@@ -245,7 +249,7 @@ private:
 	std::size_t _last_printed;
 };
 
-class file_stream : public stream {
+class file_stream final: public stream {
 public:
 	file_stream(std::string path);
 	file_stream(std::string path, std::ios_base::openmode mode);
@@ -276,9 +280,38 @@ public:
 	
 	char* data();
 
-private:
-	std::vector<char> _allocation;
-	std::size_t _offset;
+	// Non-virtual inlined functions for use in the WAD decompression loop.
+	// It's way too slow with virtual calls, and inlining these functions
+	// seems to provide a nice speedup too, at least on my machine. (;
+	
+	FORCE_INLINE uint8_t read8() {
+		return read8(pos);
+	}
+
+	FORCE_INLINE uint8_t read8(std::size_t offset) {
+		std::size_t required_size = pos + 1;
+		// std::vector<>::at does bounds checking.
+		return buffer.at(pos++);
+	}
+
+	FORCE_INLINE uint8_t peek8() {
+		return peek8(pos);
+	}
+
+	FORCE_INLINE uint8_t peek8(std::size_t offset) {
+		return buffer.at(offset);
+	}
+
+	FORCE_INLINE void write8(uint8_t value) {
+		std::size_t required_size = pos + 1;
+		if(required_size > buffer.size()) {
+			buffer.resize(required_size);
+		}
+		buffer.at(pos++) = value;
+	}
+
+	std::vector<char> buffer;
+	std::size_t pos;
 };
 
 // Point to a data segment within a larger stream. For example, you could create

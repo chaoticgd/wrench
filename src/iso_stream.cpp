@@ -32,7 +32,11 @@ wad_stream::wad_stream(iso_stream* backing, std::size_t offset, std::vector<wad_
 	  _wad_patches(patches),
 	  _dirty(true) {
 	// Read in the stock WAD.
-	proxy_stream segment(&_backing->_iso, _offset, 0);
+	array_stream segment;
+	uint32_t compressed_size = _backing->_iso.peek<uint32_t>(offset + 0x3);
+	_backing->_iso.seek(offset);
+	printf("%x %x\n", offset, compressed_size);
+	stream::copy_n(segment, _backing->_iso, compressed_size);
 	decompress_wad_cached(_uncompressed_buffer, segment);
 	
 	// Apply patches from project file.
@@ -396,7 +400,7 @@ std::string iso_stream::hash_patches() {
 	return md5_to_printable_string(digest);
 }
 
-void decompress_wad_cached(stream& dest, stream& src) {
+void decompress_wad_cached(array_stream& dest, array_stream& src) {
 	MD5_CTX ctx;
 	MD5Init(&ctx);
 	

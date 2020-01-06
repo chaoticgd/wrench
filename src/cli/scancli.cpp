@@ -69,7 +69,16 @@ int main(int argc, char** argv) {
 		if(validate_wad(magic)) {
 			auto wad = segment.read<wad_header>(0);
 			try {
-				decompress_wad_n(decompressed_segment, segment, buffer_size);
+				// Decompress WAD.
+				array_stream dest_array;
+				array_stream src_array;
+				
+				uint32_t compressed_size = src.read<uint32_t>(0x3);
+				stream::copy_n(src_array, segment, compressed_size);
+				
+				decompress_wad_n(dest_array, src_array, buffer_size);
+				
+				stream::copy_n(decompressed_segment, dest_array, dest_array.size());
 				segment_ptr = &decompressed_segment;
 				
 				outer_output["type"] = "wad";

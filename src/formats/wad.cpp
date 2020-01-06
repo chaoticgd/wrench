@@ -32,19 +32,11 @@ bool validate_wad(char* magic) {
 	return std::memcmp(magic, "WAD", 3) == 0;
 }
 
-void decompress_wad(stream& dest, stream& src) {
+void decompress_wad(array_stream& dest, array_stream& src) {
 	decompress_wad_n(dest, src, 0);
 }
 
-// Used for calculating the bounds of the sliding window.
-std::size_t sub_clamped(std::size_t lhs, std::size_t rhs) {
-	if(rhs > lhs) {
-		return 0;
-	}
-	return lhs - rhs;
-}
-
-void decompress_wad_n(stream& dest, stream& src, std::size_t bytes_to_decompress) {
+void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_to_decompress) {
 
 	WAD_DEBUG(
 		#ifdef WAD_DEBUG_EXPECTED_PATH
@@ -55,24 +47,31 @@ void decompress_wad_n(stream& dest, stream& src, std::size_t bytes_to_decompress
 		#endif
 	)
 
+	// We don't want to use stream::copy_n since it uses virtual functions.
+	auto copy_bytes = [](array_stream& dest, array_stream& src, std::size_t bytes) {
+		for(std::size_t i = 0; i < bytes; i++) {
+			dest.write8(src.read8());
+		}
+	};
+
 	auto header = src.read<wad_header>(0);
 	if(!validate_wad(header.magic)) {
 		throw stream_format_error("Invalid WAD header.");
 	}
 
-	uint32_t starting_byte = src.read<uint8_t>();
+	uint32_t starting_byte = src.read8();
 	if(starting_byte == 0) {
-		starting_byte = src.read<uint8_t>() + 0xf;
+		starting_byte = src.read8() + 0xf;
 	}
-	stream::copy_n(dest, src, starting_byte + 3);
+	copy_bytes(dest, src, starting_byte + 3);
 
 	while(
-		src.tell() < header.total_size &&
-		(bytes_to_decompress == 0 || dest.tell() < bytes_to_decompress)) {
+		src.pos < header.total_size &&
+		(bytes_to_decompress == 0 || dest.pos < bytes_to_decompress)) {
 
 		WAD_DEBUG(
 			dest.print_diff(expected_ptr);
-			std::cout << "{dest.tell() -> " << dest.tell() << ", src.tell() -> " << src.tell() << "}\n\n";
+			std::cout << "{dest.pos -> " << dest.pos << ", src.pos -> " << src.pos << "}\n\n";
 		)
 
 		WAD_DEBUG(
@@ -80,7 +79,7 @@ void decompress_wad_n(stream& dest, stream& src, std::size_t bytes_to_decompress
 				std::cout << "*** PACKET " << count++ << " ***\n";
 				)
 
-		uint8_t flag_byte = src.read<uint8_t>();
+		uint8_t flag_byte = src.read8();
 		WAD_DEBUG(std::cout << "flag_byte = " << std::hex << (flag_byte & 0xff) << "\n";)
 
 		bool read_from_dest = false;
@@ -94,13 +93,13 @@ void decompress_wad_n(stream& dest, stream& src, std::size_t bytes_to_decompress
 
 				bytes_to_copy = flag_byte & 0x1f;
 				if(bytes_to_copy == 0) {
-					bytes_to_copy = src.read<uint8_t>() + 0x1f;
+					bytes_to_copy = src.read8() + 0x1f;
 				}
 				bytes_to_copy += 2;
 
-				uint8_t b1 = src.read<uint8_t>();
-				uint8_t b2 = src.read<uint8_t>();
-				lookback_offset = dest.tell() - ((b1 >> 2) + b2 * 0x40) - 1;
+				uint8_t b1 = src.read8();
+				uint8_t b2 = src.read8();
+				lookback_offset = dest.pos - ((b1 >> 2) + b2 * 0x40) - 1;
 
 				read_from_dest = true;
 			} else {
@@ -113,19 +112,19 @@ void decompress_wad_n(stream& dest, stream& src, std::size_t bytes_to_decompress
 
 				bytes_to_copy = flag_byte & 7;
 				if(bytes_to_copy == 0) {
-					bytes_to_copy = src.read<uint8_t>() + 7;
+					bytes_to_copy = src.read8() + 7;
 				}
 
-				uint8_t b0 = src.read<uint8_t>();
-				uint8_t b1 = src.read<uint8_t>();
+				uint8_t b0 = src.read8();
+				uint8_t b1 = src.read8();
 
 				if(b0 > 0 && flag_byte == 0x11) {
-					stream::copy_n(dest, src, b0);
+					copy_bytes(dest, src, b0);
 					continue;
 				}
 
-				lookback_offset = dest.tell() + ((flag_byte & 8) * -0x800 - ((b0 >> 2) + b1 * 0x40));
-				if(lookback_offset != dest.tell()) {
+				lookback_offset = dest.pos + ((flag_byte & 8) * -0x800 - ((b0 >> 2) + b1 * 0x40));
+				if(lookback_offset != dest.pos) {
 					bytes_to_copy += 2;
 					lookback_offset -= 0x4000;
 					read_from_dest = true;
@@ -133,8 +132,8 @@ void decompress_wad_n(stream& dest, stream& src, std::size_t bytes_to_decompress
 					read_from_src = true;
 				} else {
 					WAD_DEBUG(std::cout << " -- padding detected\n";)
-					while(src.tell() % 0x1000 != 0x10) {
-						src.read<uint8_t>();
+					while(src.pos % 0x1000 != 0x10) {
+						src.pos++;
 					}
 					read_from_src = true;
 				}
@@ -142,9 +141,9 @@ void decompress_wad_n(stream& dest, stream& src, std::size_t bytes_to_decompress
 		} else {
 			WAD_DEBUG(std::cout << " -- packet type A\n";)
 
-			uint8_t b1 = src.read<uint8_t>();
+			uint8_t b1 = src.read8();
 			WAD_DEBUG(std::cout << " -- pos_major = " << (int) b1 << ", pos_minor = " << (int) (flag_byte >> 2 & 7) << "\n";)
-			lookback_offset = dest.tell() - b1 * 8 - (flag_byte >> 2 & 7) - 1;
+			lookback_offset = dest.pos - b1 * 8 - (flag_byte >> 2 & 7) - 1;
 			bytes_to_copy = (flag_byte >> 5) + 1;
 			read_from_dest = true;
 		}
@@ -154,42 +153,50 @@ void decompress_wad_n(stream& dest, stream& src, std::size_t bytes_to_decompress
 		if(read_from_dest) {
 			WAD_DEBUG(std::cout << " => copy 0x" << (int) bytes_to_copy << " bytes from uncompressed stream at 0x" << lookback_offset << "\n";)
 			for(int i = 0; i < bytes_to_copy; i++) {
-				dest.write<uint8_t>(dest.peek<uint8_t>(lookback_offset + i));
+				dest.write8(dest.peek8(lookback_offset + i));
 			}
 
-			uint32_t snd_pos = src.peek<uint8_t>(src.tell() - 2) & 3;
+			uint32_t snd_pos = src.peek8(src.pos - 2) & 3;
 			if(snd_pos != 0) {
-				WAD_DEBUG(std::cout << " => copy 0x" << snd_pos << " (snd_pos) bytes from compressed stream at 0x" << src.tell() << " to 0x" << dest.tell() << "\n";)
-				stream::copy_n(dest, src, snd_pos);
+				WAD_DEBUG(std::cout << " => copy 0x" << snd_pos << " (snd_pos) bytes from compressed stream at 0x" << src.pos << " to 0x" << dest.pos << "\n";)
+				copy_bytes(dest, src, snd_pos);
 				continue;
 			}
 
 			read_from_src = true;
 		}
 
-		if(read_from_src) {
-			uint8_t decision_byte = src.peek<uint8_t>();
+		if(read_from_src&& src.pos < src.buffer.size()) {
+			uint8_t decision_byte = src.peek8();
 			WAD_DEBUG(std::cout << " -- decision = " << (decision_byte & 0xff) << "\n";)
 			if(decision_byte > 0xf) {
 				// decision_byte is the control byte.
 				continue;
 			}
-			src.read<uint8_t>(); // Advance the position indicator.
+			src.pos++;
 
 			if(decision_byte <= 0xf) {
 				uint8_t num_bytes;
 				if(decision_byte != 0) {
 					num_bytes = decision_byte + 3;
 				} else {
-					num_bytes = src.read<uint8_t>() + 18;
+					num_bytes = src.read8() + 18;
 				}
-				WAD_DEBUG(std::cout << " => copy 0x" << (int) num_bytes << " (decision) bytes from compressed stream at 0x" << src.tell() << " to 0x" << dest.tell() << ".\n";)
-				stream::copy_n(dest, src, num_bytes);
+				WAD_DEBUG(std::cout << " => copy 0x" << (int) num_bytes << " (decision) bytes from compressed stream at 0x" << src.pos << " to 0x" << dest.pos << ".\n";)
+				copy_bytes(dest, src, num_bytes);
 			}
 		}
 	}
 
-	WAD_DEBUG(std::cout << "Stopped reading at " << src.tell() << "\n";)
+	WAD_DEBUG(std::cout << "Stopped reading at " << src.pos << "\n";)
+}
+
+// Used for calculating the bounds of the sliding window.
+std::size_t sub_clamped(std::size_t lhs, std::size_t rhs) {
+	if(rhs > lhs) {
+		return 0;
+	}
+	return lhs - rhs;
 }
 
 #define WAD_COMPRESS_DEBUG(cmd)
