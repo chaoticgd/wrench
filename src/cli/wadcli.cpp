@@ -26,13 +26,14 @@
 # */
 
 void copy_and_decompress(stream& dest, stream& src);
+void copy_and_compress(stream& dest, stream& src);
 
 int main(int argc, char** argv) {
 	return run_cli_converter(argc, argv,
 		"Decompress WAD segments",
 		{
 			{ "decompress", copy_and_decompress },
-			{ "compress", compress_wad }
+			{ "compress", copy_and_compress }
 		});
 }
 
@@ -45,6 +46,19 @@ void copy_and_decompress(stream& dest, stream& src) {
 	stream::copy_n(src_array, src, compressed_size);
 	
 	decompress_wad(dest_array, src_array);
+	
+	dest.seek(0);
+	dest_array.seek(0);
+	stream::copy_n(dest, dest_array, dest_array.size());
+}
+
+void copy_and_compress(stream& dest, stream& src) {
+	array_stream dest_array;
+	array_stream src_array;
+	
+	stream::copy_n(src_array, src, src.size());
+	
+	compress_wad(dest_array, src_array);
 	
 	dest.seek(0);
 	dest_array.seek(0);

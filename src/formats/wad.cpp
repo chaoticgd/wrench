@@ -36,6 +36,13 @@ void decompress_wad(array_stream& dest, array_stream& src) {
 	decompress_wad_n(dest, src, 0);
 }
 
+// We don't want to use stream::copy_n since it uses virtual functions.
+void copy_bytes(array_stream& dest, array_stream& src, std::size_t bytes) {
+	for(std::size_t i = 0; i < bytes; i++) {
+		dest.write8(src.read8());
+	}
+}
+
 void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_to_decompress) {
 
 	WAD_DEBUG(
@@ -46,13 +53,6 @@ void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_t
 			std::optional<file_stream*> expected_ptr;
 		#endif
 	)
-
-	// We don't want to use stream::copy_n since it uses virtual functions.
-	auto copy_bytes = [](array_stream& dest, array_stream& src, std::size_t bytes) {
-		for(std::size_t i = 0; i < bytes; i++) {
-			dest.write8(src.read8());
-		}
-	};
 
 	auto header = src.read<wad_header>(0);
 	if(!validate_wad(header.magic)) {
@@ -208,14 +208,14 @@ std::size_t sub_clamped(std::size_t lhs, std::size_t rhs) {
 //#define WAD_COMPRESS_DEBUG_EXPECTED_PATH "dumps/mobyseg_compressed_null"
 
 std::vector<char> encode_wad_packet(
-		stream& src,
+		array_stream& src,
 		std::size_t dest_pos,
 		std::size_t packet_no,
 		std::map<std::vector<char>, std::size_t>& dict);
 
 std::optional<std::pair<std::size_t, std::size_t>>
 find_match_fast(
-		stream& st,
+		array_stream& st,
 		std::size_t target,
 		std::size_t low,
 		std::size_t high,
@@ -225,14 +225,14 @@ find_match_fast(
 // Returns { offset, size } on success.
 std::optional<std::pair<std::size_t, std::size_t>>
 find_longest_match_in_window(
-		stream& st,
+		array_stream& st,
 		std::size_t target,
 		std::size_t low,
 		std::size_t high);
 
-std::size_t num_equal_bytes(stream& st, std::size_t l, std::size_t r);
+std::size_t num_equal_bytes(array_stream& st, std::size_t l, std::size_t r);
 
-void compress_wad(stream& dest_disk, stream& src_disk) {
+void compress_wad(array_stream& dest, array_stream& src) {
 	WAD_COMPRESS_DEBUG(
 		#ifdef WAD_COMPRESS_DEBUG_EXPECTED_PATH
 			file_stream expected(WAD_COMPRESS_DEBUG_EXPECTED_PATH);
@@ -241,9 +241,6 @@ void compress_wad(stream& dest_disk, stream& src_disk) {
 			std::optional<stream*> expected_ptr;
 		#endif
 	)
-
-	array_stream dest, src;
-	stream::copy_n(src, src_disk, src_disk.size());
 
 	std::map<std::vector<char>, std::size_t> dictionary;
 
@@ -269,20 +266,20 @@ void compress_wad(stream& dest_disk, stream& src_disk) {
 		}
 
 		if(init_size >= 18) {
-			dest.write<uint8_t>(0);
-			dest.write<uint8_t>(init_size - 18);
+			dest.write8(0);
+			dest.write8(init_size - 18);
 		} else {
-			dest.write<uint8_t>(init_size - 3);
+			dest.write8(init_size - 3);
 		}
 		std::vector<char> init_buf(init_size + 3);
-		src.peek_n(init_buf.data(), src.tell(), init_size + 3);
+		src.peek_n(init_buf.data(), src.pos, init_size + 3);
 		dest.write_n(init_buf.data(), init_size);
-		src.seek(src.tell() + init_size);
+		src.seek(src.pos + init_size);
 	}
 
-	for(int i = 0; src.tell() + 64 < src.size(); i++) {
+	for(int i = 0; src.pos + 64 < src.buffer.size(); i++) {
 		WAD_COMPRESS_DEBUG(
-				std::cout << "{dest.tell() -> " << dest.tell() << ", src.tell() -> " << src.tell() << "}\n\n";
+				std::cout << "{dest.pos -> " << dest.pos << ", src.pos -> " << src.pos << "}\n\n";
 		)
 
 		WAD_COMPRESS_DEBUG(
@@ -290,58 +287,56 @@ void compress_wad(stream& dest_disk, stream& src_disk) {
 				std::cout << "*** PACKET " << count++ << " ***\n";
 		)
 
-		if(i % 100 == 0) std::cout << "Encoded " << std::fixed << std::setprecision(4) <<  100 * (float) src.tell() / src.size() << "%\n";
+		if(i % 100 == 0) std::cout << "Encoded " << std::fixed << std::setprecision(4) <<  100 * (float) src.pos / src.buffer.size() << "%\n";
 
-		std::vector<char> packet = encode_wad_packet(src, dest.tell(), i, dictionary);
+		std::vector<char> packet = encode_wad_packet(src, dest.pos, i, dictionary);
 		dest.write_n(packet.data(), packet.size());
 		
 		// This check may fail for large packets.
-		if(dest.tell() % 0x2000 > 0x1fd0) {
+		if(dest.pos % 0x2000 > 0x1fd0) {
 			// Every 0x2000 bytes or so there must be a pad packet or the
 			// game crashes with a teq (Trap if Equal) exception.
-			dest.write<uint8_t>(0x12);
-			dest.write<uint8_t>(0x0);
-			dest.write<uint8_t>(0x0);
-			while(dest.tell() % 0x2000 != 0x10) {
-				dest.write<uint8_t>(0xee);
+			dest.write8(0x12);
+			dest.write8(0x0);
+			dest.write8(0x0);
+			while(dest.pos % 0x2000 != 0x10) {
+				dest.write8(0xee);
 			}
 			
 			WAD_COMPRESS_DEBUG(std::cout << "\n*** SPECIAL PAD PACKETS ***\n");
 			
 			// Padding must be followed by a packet with a flag of 0x11.
-			std::size_t copy_size = std::min((std::size_t) 0xff, src.size() - src.tell());
-			dest.write<uint8_t>(0x11);
-			dest.write<uint8_t>(2);
-			dest.write<uint8_t>(0);
-			dest.write<uint8_t>(src.read<uint8_t>());
-			dest.write<uint8_t>(src.read<uint8_t>());
+			std::size_t copy_size = std::min((std::size_t) 0xff, src.buffer.size() - src.pos);
+			dest.write8(0x11);
+			dest.write8(2);
+			dest.write8(0);
+			dest.write8(src.read8());
+			dest.write8(src.read8());
 			
 			i += 2;
 		}
 	}
 
 	// End of file packets.
-	while(src.tell() < src.size()) {
-		dest.write<uint8_t>(0x11);
-		dest.write<uint8_t>(2); // size
-		dest.write<uint8_t>(0); // unused
-		dest.write<uint8_t>(src.read<uint8_t>());
-		if(src.tell() < src.size()) {
-			dest.write<uint8_t>(src.read<uint8_t>());
+	while(src.pos < src.buffer.size()) {
+		dest.write8(0x11);
+		dest.write8(2); // size
+		dest.write8(0); // unused
+		dest.write8(src.read8());
+		if(src.pos < src.buffer.size()) {
+			dest.write8(src.read8());
 		} else {
-			dest.write<uint8_t>(0);
+			dest.write8(0);
 		}
 	}
 
-	std::size_t total_size = dest.tell();
+	std::size_t total_size = dest.pos;
 	dest.seek(3);
 	dest.write<uint32_t>(total_size);
-	dest.seek(0);
-	stream::copy_n(dest_disk, dest, dest.size());
 }
 
 std::vector<char> encode_wad_packet(
-		stream& src,
+		array_stream& src,
 		std::size_t dest_pos,
 		std::size_t packet_no,
 		std::map<std::vector<char>, std::size_t>& dict) {
@@ -349,33 +344,33 @@ std::vector<char> encode_wad_packet(
 	std::vector<char> packet { 0 };
 	uint8_t flag_byte = 0;
 
-	std::size_t base_src = src.tell();
+	std::size_t base_src = src.pos;
 	std::vector<char> packet_start_buf(4);
-	src.peek_n(packet_start_buf.data(), src.tell(), 4);
+	src.peek_n(packet_start_buf.data(), src.pos, 4);
 
 	std::map<std::vector<char>, std::size_t> new_dict_entries;
 
 	std::vector<char> dict_entry_key = { packet_start_buf[0], packet_start_buf[1], packet_start_buf[2] };
-	new_dict_entries[dict_entry_key] = src.tell();
+	new_dict_entries[dict_entry_key] = src.pos;
 	dict_entry_key.push_back(packet_start_buf[3]);
-	new_dict_entries[dict_entry_key] = src.tell();
+	new_dict_entries[dict_entry_key] = src.pos;
 
 	static const std::size_t TYPE_A_MAX_LOOKBACK = 2045;
 
 	// Encode the first part of each packet.
 	{
-		std::size_t high = src.tell() - 3;
+		std::size_t high = src.pos - 3;
 		std::size_t low = sub_clamped(high, TYPE_A_MAX_LOOKBACK);
 		WAD_COMPRESS_DEBUG(std::cout << "sliding window: low=" << low << ", high=" << high << "\n";)
 
-		auto match = find_match_fast(src, src.tell(), low, high, dict);
+		auto match = find_match_fast(src, src.pos, low, high, dict);
 		if(!match) {
 			// Create packets of type C and of length 2 until there is a match.
 			packet[0] = 0x11;
 			packet.push_back(2);
 			packet.push_back(0);
-			packet.push_back(src.read<uint8_t>());
-			packet.push_back(src.read<uint8_t>());
+			packet.push_back(src.read8());
+			packet.push_back(src.read8());
 
 			for(auto [key, val] : new_dict_entries) {
 				dict[key] = val;
@@ -385,7 +380,7 @@ std::vector<char> encode_wad_packet(
 
 		auto [match_offset, match_size] = *match;
 
-		std::size_t delta = src.tell() - match_offset - 1;
+		std::size_t delta = src.pos - match_offset - 1;
 
 		WAD_COMPRESS_DEBUG(
 			//flags[match_offset] += "\033[1;32mg\033[0m";
@@ -432,9 +427,9 @@ std::vector<char> encode_wad_packet(
 
 		WAD_COMPRESS_DEBUG(
 			std::cout << " => copy 0x" << std::hex << (int) match_size
-				<< " bytes from uncompressed stream at 0x" << match_offset << " (source = " << src.tell() << ")\n";
+				<< " bytes from uncompressed stream at 0x" << match_offset << " (source = " << src.pos << ")\n";
 		)
-		src.seek(src.tell() + match_size);
+		src.seek(src.pos + match_size);
 	}
 
 	for(auto [key, val] : new_dict_entries) {
@@ -445,9 +440,9 @@ std::vector<char> encode_wad_packet(
 	// dictionary, we can skip the second part of the packet.
 	bool skip_rest;
 	{
-		std::size_t high = src.tell() - 3;
+		std::size_t high = src.pos - 3;
 		std::size_t low = sub_clamped(high, TYPE_A_MAX_LOOKBACK);
-		auto match = find_match_fast(src, src.tell(), low, high, dict);
+		auto match = find_match_fast(src, src.pos, low, high, dict);
 		WAD_COMPRESS_DEBUG(if(match) printf("match_offset: %x\n", match->first);)
 		skip_rest = match && match->second >= 4;
 	}
@@ -459,9 +454,9 @@ std::vector<char> encode_wad_packet(
 		std::size_t snd_pos = 0;
 		for(std::size_t i = 1; i < 274; i++) {
 			// Try to make the next packet start on a repeating pattern.
-			std::size_t high = src.tell() + i - 3;
+			std::size_t high = src.pos + i - 3;
 			std::size_t low = sub_clamped(high, TYPE_A_MAX_LOOKBACK);
-			auto match = find_match_fast(src, src.tell() + i, low, high, dict);
+			auto match = find_match_fast(src, src.pos + i, low, high, dict);
 			if(!match) continue;
 			if(match->second >= 3) {
 				snd_pos = i;
@@ -472,7 +467,7 @@ std::vector<char> encode_wad_packet(
 		if(snd_pos < 0x4) {
 			WAD_COMPRESS_DEBUG(
 				std::cout << " => copy 0x" << std::hex << (int) snd_pos
-					  << " bytes (snd) from uncompressed stream at 0x" << src.tell() << " to 0x" << dest_pos
+					  << " bytes (snd) from uncompressed stream at 0x" << src.pos << " to 0x" << dest_pos
 					  << "\n";
 			)
 
@@ -494,7 +489,7 @@ std::vector<char> encode_wad_packet(
 			WAD_COMPRESS_DEBUG(
 					std::size_t copy_pos = dest_pos + packet.size();
 					std::cout << " => copy 0x" << std::hex << snd_pos << " bytes (dec) from uncompressed stream at 0x"
-							  << src.tell() << " to 0x" << copy_pos
+							  << src.pos << " to 0x" << copy_pos
 							  << "\n";
 			)
 			std::vector<char> dec_buf(snd_pos);
@@ -511,7 +506,7 @@ std::vector<char> encode_wad_packet(
 }
 
 std::optional<std::pair<std::size_t, std::size_t>> find_match_fast(
-		stream& st,
+		array_stream& st,
 		std::size_t target,
 		std::size_t low,
 		std::size_t high,
@@ -537,7 +532,7 @@ std::optional<std::pair<std::size_t, std::size_t>> find_match_fast(
 	if(dict_match_len > 0 && dict[pattern_buf] >= low && dict[pattern_buf] < high) {
 		// The pattern has been found in the dictionary. Use the pre-computed offset.
 		std::size_t match_size = dict_match_len;
-		while(st.peek<uint8_t>(target + match_size) == st.peek<uint8_t>(offset + match_size)) {
+		while(st.peek8(target + match_size) == st.peek8(offset + match_size)) {
 			match_size++;
 		}
 		return std::make_optional<std::pair<std::size_t, std::size_t>>(offset, match_size);
@@ -550,7 +545,7 @@ std::optional<std::pair<std::size_t, std::size_t>> find_match_fast(
 }
 
 std::optional<std::pair<std::size_t, std::size_t>> find_longest_match_in_window(
-		stream& st,
+		array_stream& st,
 		std::size_t target,
 		std::size_t low,
 		std::size_t high) {
@@ -570,15 +565,15 @@ std::optional<std::pair<std::size_t, std::size_t>> find_longest_match_in_window(
 	return {};
 }
 
-std::size_t num_equal_bytes(stream& st, std::size_t l, std::size_t r) {
+std::size_t num_equal_bytes(array_stream& st, std::size_t l, std::size_t r) {
 	std::size_t result = 0;
-	std::size_t st_size = st.size();
+	std::size_t st_size = st.buffer.size();
 	for(std::size_t i = 0;; i++) {
 		if(l + i >= st_size || r + i >= st_size) {
 			break;
 		}
-		auto l_val = st.peek<uint8_t>(l + i);
-		auto r_val = st.peek<uint8_t>(r + i);
+		auto l_val = st.peek8(l + i);
+		auto r_val = st.peek8(r + i);
 		if(l_val != r_val) {
 			break;
 		}
