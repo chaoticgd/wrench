@@ -210,16 +210,7 @@ std::size_t sub_clamped(std::size_t lhs, std::size_t rhs) {
 std::vector<char> encode_wad_packet(
 		array_stream& src,
 		std::size_t dest_pos,
-		std::size_t packet_no,
-		std::map<std::vector<char>, std::size_t>& dict);
-
-std::optional<std::pair<std::size_t, std::size_t>>
-find_match_fast(
-		array_stream& st,
-		std::size_t target,
-		std::size_t low,
-		std::size_t high,
-		std::map<std::vector<char>, std::size_t>& dict);
+		std::size_t packet_no);
 
 // Find the longest byte array matching target between low and high.
 // Returns { offset, size } on success.
@@ -241,8 +232,6 @@ void compress_wad(array_stream& dest, array_stream& src) {
 			std::optional<stream*> expected_ptr;
 		#endif
 	)
-
-	std::map<std::vector<char>, std::size_t> dictionary;
 
 	dest.seek(0);
 	src.seek(0);
@@ -289,7 +278,7 @@ void compress_wad(array_stream& dest, array_stream& src) {
 
 		if(i % 100 == 0) std::cout << "Encoded " << std::fixed << std::setprecision(4) <<  100 * (float) src.pos / src.buffer.size() << "%\n";
 
-		std::vector<char> packet = encode_wad_packet(src, dest.pos, i, dictionary);
+		std::vector<char> packet = encode_wad_packet(src, dest.pos, i);
 		dest.write_n(packet.data(), packet.size());
 		
 		// This check may fail for large packets.
@@ -338,8 +327,7 @@ void compress_wad(array_stream& dest, array_stream& src) {
 std::vector<char> encode_wad_packet(
 		array_stream& src,
 		std::size_t dest_pos,
-		std::size_t packet_no,
-		std::map<std::vector<char>, std::size_t>& dict) {
+		std::size_t packet_no) {
 
 	std::vector<char> packet { 0 };
 	uint8_t flag_byte = 0;
@@ -347,13 +335,6 @@ std::vector<char> encode_wad_packet(
 	std::size_t base_src = src.pos;
 	std::vector<char> packet_start_buf(4);
 	src.peek_n(packet_start_buf.data(), src.pos, 4);
-
-	std::map<std::vector<char>, std::size_t> new_dict_entries;
-
-	std::vector<char> dict_entry_key = { packet_start_buf[0], packet_start_buf[1], packet_start_buf[2] };
-	new_dict_entries[dict_entry_key] = src.pos;
-	dict_entry_key.push_back(packet_start_buf[3]);
-	new_dict_entries[dict_entry_key] = src.pos;
 
 	static const std::size_t TYPE_A_MAX_LOOKBACK = 2045;
 
@@ -363,7 +344,7 @@ std::vector<char> encode_wad_packet(
 		std::size_t low = sub_clamped(high, TYPE_A_MAX_LOOKBACK);
 		WAD_COMPRESS_DEBUG(std::cout << "sliding window: low=" << low << ", high=" << high << "\n";)
 
-		auto match = find_match_fast(src, src.pos, low, high, dict);
+		auto match = find_longest_match_in_window(src, src.pos, low, high);
 		if(!match) {
 			// Create packets of type C and of length 2 until there is a match.
 			packet[0] = 0x11;
@@ -372,9 +353,6 @@ std::vector<char> encode_wad_packet(
 			packet.push_back(src.read8());
 			packet.push_back(src.read8());
 
-			for(auto [key, val] : new_dict_entries) {
-				dict[key] = val;
-			}
 			return packet;
 		}
 
@@ -432,17 +410,13 @@ std::vector<char> encode_wad_packet(
 		src.seek(src.pos + match_size);
 	}
 
-	for(auto [key, val] : new_dict_entries) {
-		dict[key] = val;
-	}
-
 	// If the next byte string to be encoded can be found in the
-	// dictionary, we can skip the second part of the packet.
+	// window, we can skip the second part of the packet.
 	bool skip_rest;
 	{
 		std::size_t high = src.pos - 3;
 		std::size_t low = sub_clamped(high, TYPE_A_MAX_LOOKBACK);
-		auto match = find_match_fast(src, src.pos, low, high, dict);
+		auto match = find_longest_match_in_window(src, src.pos, low, high);
 		WAD_COMPRESS_DEBUG(if(match) printf("match_offset: %x\n", match->first);)
 		skip_rest = match && match->second >= 4;
 	}
@@ -456,7 +430,7 @@ std::vector<char> encode_wad_packet(
 			// Try to make the next packet start on a repeating pattern.
 			std::size_t high = src.pos + i - 3;
 			std::size_t low = sub_clamped(high, TYPE_A_MAX_LOOKBACK);
-			auto match = find_match_fast(src, src.pos + i, low, high, dict);
+			auto match = find_longest_match_in_window(src, src.pos + i, low, high);
 			if(!match) continue;
 			if(match->second >= 3) {
 				snd_pos = i;
@@ -503,45 +477,6 @@ std::vector<char> encode_wad_packet(
 	WAD_COMPRESS_DEBUG(std::cout << "flag_byte = " << std::hex << (packet[0] & 0xff) << "\n");
 
 	return packet;
-}
-
-std::optional<std::pair<std::size_t, std::size_t>> find_match_fast(
-		array_stream& st,
-		std::size_t target,
-		std::size_t low,
-		std::size_t high,
-		std::map<std::vector<char>, std::size_t>& dict) {
-
-	std::size_t offset = 0;
-	std::size_t dict_match_len = 0;
-
-	std::vector<char> pattern_buf(4);
-	st.peek_n(pattern_buf.data(), target, 4);
-
-	if(dict.find(pattern_buf) != dict.end()) {
-		offset = dict[pattern_buf];
-		dict_match_len = 4;
-	} else {
-		pattern_buf.pop_back();
-		if(dict.find(pattern_buf) != dict.end()) {
-			offset = dict[pattern_buf];
-			dict_match_len = 3;
-		}
-	}
-
-	if(dict_match_len > 0 && dict[pattern_buf] >= low && dict[pattern_buf] < high) {
-		// The pattern has been found in the dictionary. Use the pre-computed offset.
-		std::size_t match_size = dict_match_len;
-		while(st.peek8(target + match_size) == st.peek8(offset + match_size)) {
-			match_size++;
-		}
-		return std::make_optional<std::pair<std::size_t, std::size_t>>(offset, match_size);
-	}
-
-	// Fall back to a brute-force scan of the sliding window.
-	auto match =
-			find_longest_match_in_window(st, target, low, high);
-	return match;
 }
 
 std::optional<std::pair<std::size_t, std::size_t>> find_longest_match_in_window(
