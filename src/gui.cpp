@@ -238,6 +238,7 @@ void gui::render_menu_bar(app& a) {
 				"Libraries used:\n"
 				" - better-enums: https://github.com/aantron/better-enums\n"
 				" - Dear ImGui: https://github.com/ocornut/imgui\n"
+				" - imgui_markdown: https://github.com/juliettef/imgui_markdown\n"
 				" - nlohmann json: https://github.com/nlohmann/json\n"
 				" - toml11: https://github.com/ToruNiina/toml11\n"
 				" - ZipLib: https://bitbucket.org/wbenny/ziplib/wiki/Home\n"
