@@ -87,6 +87,15 @@ level* wrench_project::selected_level() {
 	return nullptr;
 }
 
+std::string wrench_project::selected_level_name() {
+	for(auto& level : _levels) {
+		if(level.second.get() == _selected_level) {
+			return level.first;
+		}
+	}
+	return ""; 
+}
+
 std::vector<level*> wrench_project::levels() {
 	std::vector<level*> result(_levels.size());
 	std::transform(_levels.begin(), _levels.end(), result.begin(),
@@ -94,23 +103,23 @@ std::vector<level*> wrench_project::levels() {
 	return result;
 }
 
-level* wrench_project::level_at(std::size_t offset) {
-	if(_levels.find(offset) == _levels.end()) {
+level* wrench_project::level_from_name(std::string name) {
+	if(_levels.find(name) == _levels.end()) {
 		return nullptr;
 	}
-	return _levels.at(offset).get();
+	return _levels.at(name).get();
 }
 
-std::vector<texture_provider*> wrench_project::texture_providers() {
-	std::vector<texture_provider*> result;
-	for(auto& level : _levels) {
-		result.push_back(level.second->get_texture_provider());
+std::map<std::string, std::vector<texture>*> wrench_project::texture_lists() {
+	std::map<std::string, std::vector<texture>*> result;
+	for(auto& lvl : _levels) {
+		result[lvl.first] = &lvl.second->textures;
 	}
 	for(auto& wad : _texture_wads) {
-		result.push_back(wad.second.get());
+		result[wad.first] = &wad.second;
 	}
 	if(_armor) {
-		result.push_back(&(*_armor));
+		result["ARMOR.WAD"] = (&_armor->textures);
 	}
 	return result;
 }
@@ -118,10 +127,10 @@ std::vector<texture_provider*> wrench_project::texture_providers() {
 std::map<std::string, std::vector<game_model>*> wrench_project::model_lists() {
 	std::map<std::string, std::vector<game_model>*> result;
 	if(_armor) {
-		result["Armor"] = &_armor->models;
+		result["ARMOR.WAD"] = &_armor->models;
 	}
 	for(auto& lvl : _levels) {
-		result[std::to_string(lvl.first)] = &lvl.second->models;
+		result[lvl.first] = &lvl.second->models;
 	}
 	return result;
 }
@@ -165,24 +174,23 @@ racpak* wrench_project::open_archive(gamedb_file file) {
 }
 
 void wrench_project::open_texture_archive(gamedb_file file) {
-	if(_texture_wads.find(file.offset) != _texture_wads.end()) {
+	if(_texture_wads.find(file.name) != _texture_wads.end()) {
 		// The archive is already open.
 		return;
 	}
 	
 	racpak* archive = open_archive(file);
-	worker_logger log;
-	_texture_wads.emplace(file.offset, std::make_unique<racpak_fip_scanner>
-		(&iso, archive, file.name, log));
+	_texture_wads.emplace(file.name,
+		enumerate_fip_textures(&iso, archive));
 }
 
 void wrench_project::open_level(gamedb_file file) {
-	if(_levels.find(file.offset) == _levels.end()) {
+	if(_levels.find(file.name) == _levels.end()) {
 		// The level is not already open.
-		_levels.emplace(file.offset, std::make_unique<level>
+		_levels.emplace(file.name, std::make_unique<level>
 			(&iso, file.offset, file.size, file.name));
 	}
-	_selected_level = _levels.at(file.offset).get();
+	_selected_level = _levels.at(file.name).get();
 }
 
 int wrench_project::id() {

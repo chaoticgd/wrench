@@ -21,7 +21,6 @@ add_executable(wrench
 	src/window.cpp
 	src/renderer.cpp
 	src/shaders.cpp
-	src/texture.cpp
 	src/worker_logger.cpp
 	src/project.cpp
 	src/iso_stream.cpp
@@ -31,6 +30,7 @@ add_executable(wrench
 	src/formats/wad.cpp
 	src/formats/racpak.cpp
 	src/formats/level_impl.cpp
+	src/formats/texture.cpp
 	src/formats/texture_impl.cpp
 	src/formats/fip.cpp
 	src/formats/bmp.cpp
@@ -48,7 +48,9 @@ add_executable(wrench
 add_executable(fip
 	src/cli/fipcli.cpp
 	src/command_line.cpp
+	src/util.cpp
 	src/stream.cpp
+	src/formats/texture.cpp
 	src/formats/fip.cpp
 	src/formats/bmp.cpp
 )
@@ -63,8 +65,10 @@ add_executable(wad
 add_executable(scan
 	src/cli/scancli.cpp
 	src/command_line.cpp
+	src/util.cpp
 	src/stream.cpp
 	src/formats/wad.cpp
+	src/formats/texture.cpp
 	src/formats/fip.cpp
 	src/formats/bmp.cpp
 )
@@ -76,14 +80,17 @@ add_executable(pakrac
 	src/stream.cpp
 	src/formats/racpak.cpp
 	src/formats/wad.cpp
+	src/formats/texture.cpp
 	src/formats/fip.cpp
 	src/formats/bmp.cpp
 )
 
 add_executable(texturefinder
 	src/cli/texturefindercli.cpp
+	src/util.cpp
 	src/stream.cpp
 	src/command_line.cpp
+	src/formats/texture.cpp
 	src/formats/fip.cpp
 	src/formats/bmp.cpp
 )

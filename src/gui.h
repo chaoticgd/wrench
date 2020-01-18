@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019 chaoticgd
+	Copyright (C) 2019-2020 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -90,8 +90,8 @@ namespace gui {
 			class property_changed_command : public command {
 			public:
 				property_changed_command(
-						std::size_t level_offset, std::size_t object_index, T_value T::*member, T_value new_value)
-					: _level_offset(level_offset), _object_index(object_index), _member(member), _new_value(new_value) {}
+						std::string level_name, std::size_t object_index, T_value T::*member, T_value new_value)
+					: _level_name(level_name), _object_index(object_index), _member(member), _new_value(new_value) {}
 				
 			protected:
 				void apply(wrench_project* project) override {
@@ -106,7 +106,7 @@ namespace gui {
 				
 			private:
 				auto& member(wrench_project* project) {
-					level* lvl = project->level_at(_level_offset);
+					level* lvl = project->level_from_name(_level_name);
 					if(lvl == nullptr) {
 						throw command_error(
 							"The level for which this operation should "
@@ -115,7 +115,7 @@ namespace gui {
 					return lvl->world.object_at<T>(_object_index).*_member;
 				}
 			
-				std::size_t _level_offset;
+				std::string _level_name;
 				std::size_t _object_index;
 				T_value T::*_member;
 				T_value _new_value;
@@ -123,7 +123,7 @@ namespace gui {
 			};
 			
 			_project->template emplace_command<property_changed_command>
-				(_project->selected_level()->offset, index, member, new_value);
+				(_project->selected_level_name(), index, member, new_value);
 		}
 		
 		// Functions to draw different types of input fields.
@@ -216,17 +216,17 @@ namespace gui {
 			int min_width;
 		};
 
-		void render_grid(app& a, texture_provider* provider);
+		void render_grid(app& a, std::vector<texture>& tex_list);
 		void cache_texture(texture* tex);
 
 		void import_bmp(app& a, texture* tex);
 		void export_bmp(app& a, texture* tex);
 
-		int _project_id;
+		int _project_id = 0;
 		std::map<texture*, GLuint> _gl_textures;
-		std::size_t _provider;
-		std::size_t _selection;
-		filter_parameters _filters;
+		std::string _list;
+		std::size_t _selection = 0;
+		filter_parameters _filters = { 0 };
 	};
 	
 	class model_browser : public window {

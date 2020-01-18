@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019 chaoticgd
+	Copyright (C) 2019-2020 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,16 +16,18 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef TEXTURE_H
-#define TEXTURE_H
+#ifndef FORMATS_TEXTURE_H
+#define FORMATS_TEXTURE_H
 
 #include <array>
 #include <vector>
 #include <stdint.h>
 #include <glm/glm.hpp>
 
+#include "../stream.h"
+
 # /*
-#	Virtual base class that represents an indexed texture.
+#	Stream-backed indexed texture.
 # */
 
 struct colour {
@@ -34,32 +36,46 @@ struct colour {
 
 struct vec2i {
 	int x, y;
+	
+	bool operator==(vec2i& rhs) {
+		return x == rhs.x && y == rhs.y;
+	}
 };
 
 class texture {
 public:
-	virtual ~texture() = default;
+	texture(stream* backing, std::size_t pixel_data_offset, std::size_t palette_offset, vec2i size);
 
-	virtual vec2i size() const = 0;
-	virtual void set_size(vec2i size_) = 0;
+	vec2i size() const;
 
-	virtual std::array<colour, 256> palette() const = 0;
-	virtual void set_palette(std::array<colour, 256> palette_) = 0;
+	std::array<colour, 256> palette() const;
+	void set_palette(std::array<colour, 256> palette_);
 
-	virtual std::vector<uint8_t> pixel_data() const = 0;
-	virtual void set_pixel_data(std::vector<uint8_t> pixel_data_) = 0;
+	std::vector<uint8_t> pixel_data() const;
+	void set_pixel_data(std::vector<uint8_t> pixel_data_);
 
-	virtual std::string palette_path() const;
-	virtual std::string pixel_data_path() const;
+	std::string palette_path() const;
+	std::string pixel_data_path() const;
+	
+	std::string name;
+	
+private:
+	stream* _backing;
+	std::size_t _pixel_data_offset;
+	std::size_t _palette_offset;
+	vec2i _size;
 };
+
+// Won't affect the position indicator of backing.
+std::optional<texture> create_fip_texture(stream* backing, std::size_t offset);
 
 class texture_provider {
 public:
 	virtual ~texture_provider() = default;
 
-	virtual std::string display_name() const = 0;
+	virtual std::string display_name() const;
 	virtual std::string display_name_of(texture* tex) const { return ""; }
-	virtual std::vector<texture*> textures() = 0;
+	virtual std::vector<texture*> textures();
 	
 	std::vector<const texture*> textures() const;
 };

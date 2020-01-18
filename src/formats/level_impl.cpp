@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019 chaoticgd
+	Copyright (C) 2019-2020 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -87,8 +87,7 @@ void game_world::write() {
 
 level::level(iso_stream* iso, std::size_t offset, std::size_t size, std::string display_name)
 	: offset(offset),
-	  _backing(iso, offset, size),
-	  _textures(&_backing, display_name) {
+	  _backing(iso, offset, size) {
 	
 	auto file_header = _backing.read<fmt::file_header>(0);
 	
@@ -139,10 +138,6 @@ level::level(iso_stream* iso, std::size_t offset, std::size_t size, std::string 
 		uint32_t abs_offset = entry.offset_in_asset_wad + rel_offset;
 		models.emplace_back(asset_seg, abs_offset, 0, model_header.num_submodels);
 	}
-}
-
-texture_provider* level::get_texture_provider() {
-	return &_textures;
 }
 
 stream* level::moby_stream() {

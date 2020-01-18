@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019 chaoticgd
+	Copyright (C) 2019-2020 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -56,9 +56,10 @@ public:
 	void save_as(app* a, std::function<void()> on_done);
 	
 	level* selected_level();
+	std::string selected_level_name();
 	std::vector<level*> levels();
-	level* level_at(std::size_t offset);
-	std::vector<texture_provider*> texture_providers();
+	level* level_from_name(std::string name);
+	std::map<std::string, std::vector<texture>*> texture_lists();
 	std::map<std::string, std::vector<game_model>*> model_lists();
 	
 	template <typename T, typename... T_constructor_args>
@@ -90,8 +91,8 @@ private:
 	std::vector<std::unique_ptr<command>> _history_stack;
 	
 	std::map<std::size_t, std::unique_ptr<racpak>> _archives;
-	std::map<std::size_t, std::unique_ptr<texture_provider>> _texture_wads;
-	std::map<std::size_t, std::unique_ptr<level>> _levels;
+	std::map<std::string, std::vector<texture>> _texture_wads;
+	std::map<std::string, std::unique_ptr<level>> _levels;
 	std::optional<armor_archive> _armor;
 	level* _selected_level;
 	

@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019 chaoticgd
+	Copyright (C) 2019-2020 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -575,11 +575,7 @@ void gui::string_viewer::render(app& a) {
 	texture_browser
 */
 
-gui::texture_browser::texture_browser()
-	: _project_id(0),
-	  _provider(0),
-	  _selection(0),
-	  _filters({ 0 }) {}
+gui::texture_browser::texture_browser() {}
 
 gui::texture_browser::~texture_browser() {
 	for(auto& tex : _gl_textures) {
@@ -610,15 +606,17 @@ void gui::texture_browser::render(app& a) {
 		_project_id = a.get_project()->id();
 	}
 
-	std::vector<texture_provider*> sources = a.get_project()->texture_providers();
-	if(_provider >= sources.size()) {
-		_provider = 0;
-
-		ImGui::Text("<no texture providers>");
-		return;
+	auto tex_lists = a.get_project()->texture_lists();
+	if(tex_lists.find(_list) == tex_lists.end()) {
+		if(tex_lists.size() > 0) {
+			_list = tex_lists.begin()->first;
+		} else {
+			ImGui::Text("<no texture lists>");
+			return;
+		}
 	}
 
-	std::vector<texture*> textures = sources[_provider]->textures();
+	std::vector<texture>& textures = *tex_lists.at(_list);
 	if(_selection >= textures.size()) {
 		_selection = 0;
 	}
@@ -628,10 +626,11 @@ void gui::texture_browser::render(app& a) {
 
 	ImGui::BeginChild(1);
 		if(ImGui::TreeNodeEx("Sources", ImGuiTreeNodeFlags_DefaultOpen)) {
-			for(std::size_t i = 0; i < sources.size(); i++) {
-				std::string display_str = sources[i]->display_name();
-				if(ImGui::Selectable(display_str.c_str(), _provider == i)) {
-					_provider = i;
+			for(auto& tex_list : tex_lists) {
+				auto str = tex_list.first.c_str();
+				bool selected = _list == tex_list.first;
+				if(ImGui::Selectable(str, selected)) {
+					_list = tex_list.first;
 				}
 			}
 			ImGui::TreePop();
@@ -649,7 +648,7 @@ void gui::texture_browser::render(app& a) {
 
 		if(ImGui::TreeNodeEx("Details", ImGuiTreeNodeFlags_DefaultOpen)) {
 			if(textures.size() > 0) {
-				vec2i size = textures[_selection]->size();
+				vec2i size = textures[_selection].size();
 				ImGui::Text("Width:  %d", size.x);
 				ImGui::Text("Height: %d", size.y);
 			} else {
@@ -662,10 +661,10 @@ void gui::texture_browser::render(app& a) {
 		if(ImGui::TreeNodeEx("Actions", ImGuiTreeNodeFlags_DefaultOpen)) {
 			if(textures.size() > 0) {
 				if(ImGui::Button("Replace Selected")) {
-					import_bmp(a, textures[_selection]);
+					import_bmp(a, &textures[_selection]);
 				}
 				if(ImGui::Button("Export Selected")) {
-					export_bmp(a, textures[_selection]);
+					export_bmp(a, &textures[_selection]);
 				}
 			}
 			ImGui::TreePop();
@@ -675,17 +674,16 @@ void gui::texture_browser::render(app& a) {
 
 	ImGui::BeginChild(2);
 		ImGui::Columns(std::max(1.f, ImGui::GetWindowSize().x / 128));
-		render_grid(a, sources[_provider]);
+		render_grid(a, textures);
 	ImGui::EndChild();
 	ImGui::NextColumn();
 }
 
-void gui::texture_browser::render_grid(app& a, texture_provider* provider) {
+void gui::texture_browser::render_grid(app& a, std::vector<texture>& tex_list) {
 	int num_this_frame = 0;
 
-	auto textures = provider->textures();
-	for(std::size_t i = 0; i < textures.size(); i++) {
-		texture* tex = textures[i];
+	for(std::size_t i = 0; i < tex_list.size(); i++) {
+		texture* tex = &tex_list[i];
 
 		if(tex->size().x < _filters.min_width) {
 			continue;
@@ -716,10 +714,8 @@ void gui::texture_browser::render_grid(app& a, texture_provider* provider) {
 			_selection = i;
 		}
 
-		std::string display_name = provider->display_name_of(tex);
-		if(display_name == "") {
-			display_name = std::to_string(i);
-		}
+		std::string display_name =
+			std::to_string(i) + " " + tex->name;
 		ImGui::Text("%s", display_name.c_str());
 		ImGui::NextColumn();
 	}

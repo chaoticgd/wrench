@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019 chaoticgd
+	Copyright (C) 2019-2020 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -24,15 +24,14 @@
 #include <vector>
 
 #include "../stream.h"
-#include "../texture.h"
-#include "texture_impl.h"
+#include "texture.h"
 #include "game_model.h"
 
 # /*
 # 	Read ARMOR.WAD.
 # */
 
-class armor_archive : public texture_provider {
+class armor_archive {
 public:
 	struct fmt {
 		packed_struct(header,
@@ -49,16 +48,12 @@ public:
 	};
 	
 	armor_archive(stream* backing, std::size_t offset, std::size_t size);
-	std::string display_name() const override;
-	std::string display_name_of(texture* tex) const override;
-	std::vector<texture*> textures() override;
 	
 	std::vector<game_model> models;
+	std::vector<texture> textures;
 
 private:
 	proxy_stream _backing;
-	std::vector<std::unique_ptr<fip_texture>> _textures;
-	std::map<texture*, std::string> _texture_names;
 };
 
 #endif

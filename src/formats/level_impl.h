@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019 chaoticgd
+	Copyright (C) 2019-2020 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -222,21 +222,22 @@ public:
 			file_ptr<wad_header> asset_wad; // 0x48
 		)
 		
+		// Barlow 0x418200
 		packed_struct(secondary_header,
 			uint32_t num_textures; // 0x0
 			file_ptr<level_texture_provider::fmt::texture_entry> textures; // 0x4
-			uint32_t unknown_8;  // 0x8
-			uint32_t unknown_c;  // 0xc
-			uint32_t unknown_10; // 0x10
-			uint32_t unknown_14; // 0x14
+			uint32_t ptr_into_asset_wad_8;  // 0x8
+			uint32_t ptr_into_asset_wad_c;  // 0xc
+			uint32_t ptr_into_asset_wad_10; // 0x10
+			uint32_t models_something;      // 0x14
 			uint32_t num_models; // 0x18
 			uint32_t models;     // 0x1c
 			uint32_t unknown_20; // 0x20
 			uint32_t unknown_24; // 0x24
 			uint32_t unknown_28; // 0x28
 			uint32_t unknown_2c; // 0x2c
-			uint32_t unknown_30; // 0x30
-			uint32_t unknown_34; // 0x34
+			uint32_t texture_list_1_count; // 0x30
+			uint32_t texture_list_1_offset; // 0x34 Relative to secondary header.
 			uint32_t unknown_38; // 0x38
 			uint32_t unknown_3c; // 0x3c
 			uint32_t unknown_40; // 0x40
@@ -247,8 +248,8 @@ public:
 			uint32_t unknown_54; // 0x54
 			uint32_t unknown_58; // 0x58
 			uint32_t unknown_5c; // 0x5c
-			uint32_t unknown_60; // 0x60
-			uint32_t unknown_64; // 0x64
+			uint32_t tex_data_in_asset_wad; // 0x60
+			uint32_t ptr_into_asset_wad_64; // 0x64
 			uint32_t unknown_68; // 0x68
 			uint32_t unknown_6c; // 0x6c
 			uint32_t unknown_70; // 0x70
@@ -257,12 +258,21 @@ public:
 			uint32_t unknown_7c; // 0x7c
 			uint32_t unknown_80; // 0x80
 			uint32_t unknown_84; // 0x84
+			uint32_t unknown_88; // 0x88
+			uint32_t unknown_8c; // 0x8c
+			uint32_t unknown_90; // 0x90
+			uint32_t unknown_94; // 0x94
+			uint32_t unknown_98; // 0x98
+			uint32_t unknown_9c; // 0x9c
+			uint32_t unknown_a0; // 0xa0
+			uint32_t ptr_into_asset_wad_a4; // 0xa4
+			uint32_t unknown_a8; // 0xa8
+			uint32_t unknown_ac; // 0xac
+			uint32_t ptr_into_asset_wad_b0; // 0xb0
 		)
 	};
 
 	level(iso_stream* iso, std::size_t offset, std::size_t size, std::string display_name);
-
-	texture_provider* get_texture_provider();
 
 	std::map<std::string, std::map<uint32_t, std::string>> game_strings() { return {}; }
 
@@ -272,9 +282,9 @@ public:
 	game_world world;
 	
 	std::vector<game_model> models;
+	std::vector<texture> textures;
 private:
 	proxy_stream _backing;
-	level_texture_provider _textures;
 	stream* _moby_stream;
 };
 

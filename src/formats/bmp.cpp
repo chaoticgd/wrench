@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019 chaoticgd
+	Copyright (C) 2019-2020 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 
 #include <cstring>
 
-#include "../texture.h"
+#include "texture.h"
 
 bool validate_bmp(bmp_file_header header) {
 	return std::memcmp(header.magic, "BM", 2) == 0;
@@ -91,7 +91,10 @@ void bmp_to_texture(texture* dest, stream& src) {
 		throw stream_format_error("The BMP colour palette must contain at most 256 colours.");
 	}
 
-	dest->set_size(vec2i { info_header.width, info_header.height });
+	vec2i size { info_header.width, info_header.height };
+	if(dest->size() == size) {
+		throw stream_format_error("Texture size mismatch.");
+	}
 
 	// Some BMP files have a larger header.
 	src.seek(secondary_header_offset + info_header.info_header_size);

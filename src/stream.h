@@ -289,9 +289,10 @@ public:
 	}
 
 	FORCE_INLINE uint8_t read8(std::size_t offset) {
-		std::size_t required_size = pos + 1;
-		// std::vector<>::at does bounds checking.
-		return buffer.at(pos++);
+		if(offset >= buffer.size()) {
+			throw stream_io_error("Tried to read past end of array_stream!");
+		}
+		return buffer[pos++];
 	}
 
 	FORCE_INLINE uint8_t peek8() {
@@ -307,7 +308,7 @@ public:
 		if(required_size > buffer.size()) {
 			buffer.resize(required_size);
 		}
-		buffer.at(pos++) = value;
+		buffer[pos++] = value;
 	}
 
 	std::vector<char> buffer;
