@@ -254,7 +254,6 @@ namespace gui {
 		glm::vec2 get_drag_delta() const;
 		
 		static void render_dma_debug_info(game_model& mdl);
-		static void render_hex_dump(std::vector<uint32_t> data, std::size_t starting_offset);
 	
 	private:
 		std::string _list;
@@ -352,6 +351,17 @@ namespace gui {
 		fs::path _directory;
 		std::string _file;
 		std::function<void(std::string)> _callback;
+	};
+	
+	class hex_dump : public window {
+	public:
+		hex_dump(uint8_t* data, std::size_t size_in_bytes);
+	
+		const char* title_text() const override;
+		ImVec2 initial_size() const override;
+		void render(app& a) override;
+	private:
+		std::vector<std::string> _lines;
 	};
 	
 	GLuint load_icon(std::string path);

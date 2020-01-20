@@ -381,6 +381,13 @@ void gui::inspector::render(app& a) {
 	}
 	
 	ImGui::PopStyleVar();
+	
+	ImGui::Columns(1);
+	
+	if(id.type == object_type::MOBY && ImGui::Button("Hex Dump (Debug)")) {
+		moby& object = _lvl->world.object_at<moby>(id.index);
+		a.emplace_window<hex_dump>((uint8_t*) &object, sizeof(moby));
+	}
 }
 
 /*
@@ -1025,7 +1032,10 @@ void gui::model_browser::render_dma_debug_info(game_model& mdl) {
 					
 					std::string label = vpkt.code.to_string();
 					if(ImGui::TreeNode("packet", "%lx %s", vpkt.address, label.c_str())) {
-						render_hex_dump(vpkt.data, vpkt.address);
+						auto lines = to_hex_dump(vpkt.data.data(), vpkt.address, vpkt.data.size());
+						for(std::string& line : lines) {
+							ImGui::Text("    %s", line.c_str());
+						}
 						ImGui::TreePop();
 					}
 					ImGui::PopID();
@@ -1034,25 +1044,6 @@ void gui::model_browser::render_dma_debug_info(game_model& mdl) {
 			ImGui::TreePop();
 		}
 		ImGui::PopID();
-	}
-}
-
-void gui::model_browser::render_hex_dump(std::vector<uint32_t> data, std::size_t starting_offset) {
-	std::size_t column = starting_offset % 16;
-	std::string data_str(column * 3, ' ');
-	for(uint32_t word : data) {
-		for(int byte = 0; byte < 4; byte++) {
-			std::string num = int_to_hex(((uint8_t*) &word)[byte]);
-			while(num.size() < 2) num = "0" + num;
-			data_str += num + " ";
-			if(data_str.size() > 47) {
-				ImGui::Text("    %s", data_str.c_str());
-				data_str = "";
-			}
-		}
-	}
-	if(data_str.size() > 0) {
-		ImGui::Text("    %s", data_str.c_str());
 	}
 }
 
@@ -1411,6 +1402,29 @@ bool gui::file_dialog::is_unique() const {
 
 void gui::file_dialog::on_okay(std::function<void(std::string)> callback) {
 	_callback = callback;
+}
+
+gui::hex_dump::hex_dump(uint8_t* data, std::size_t size_in_bytes) {
+	// TODO: Make to_hex_dump work on individual bytes.
+	_lines = to_hex_dump((uint32_t*) data, 0, size_in_bytes / 4);
+}
+	
+const char* gui::hex_dump::title_text() const {
+	return "Hex Dump";
+}
+
+ImVec2 gui::hex_dump::initial_size() const {
+	return ImVec2(300, 200);
+}
+
+void gui::hex_dump::render(app& a) {
+	for(std::string& line : _lines) {
+		ImGui::Text("%s", line.c_str());
+	}
+	
+	if(ImGui::Button("Close")) {
+		close(a);
+	}
 }
 
 GLuint gui::load_icon(std::string path) {
