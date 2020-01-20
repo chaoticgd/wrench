@@ -130,7 +130,7 @@ std::map<std::string, std::vector<game_model>*> wrench_project::model_lists() {
 		result["ARMOR.WAD"] = &_armor->models;
 	}
 	for(auto& lvl : _levels) {
-		result[lvl.first] = &lvl.second->models;
+		result[lvl.first + "/Mobies"] = &lvl.second->moby_models;
 	}
 	return result;
 }

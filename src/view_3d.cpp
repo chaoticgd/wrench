@@ -131,7 +131,19 @@ void view_3d::draw_level(level& lvl) const {
 		glm::mat4 mvp = compute_mvp(object.position());
 		object_id id { object_type::MOBY, index };
 		glm::vec3 colour = get_colour(id, glm::vec3(0, 1, 0));
-		_renderer->draw_cube(mvp, colour);
+		
+		if(lvl.moby_class_to_model.find(object.class_num) == lvl.moby_class_to_model.end()) {
+			_renderer->draw_cube(mvp, colour);
+			return;
+		}
+		
+		const game_model& model =
+			lvl.moby_models[lvl.moby_class_to_model.at(object.class_num)];
+		try {
+			_renderer->draw_model(model, mvp, colour);
+		} catch(stream_error& err) {
+			// We've failed to parse the model data.
+		}
 	});
 	
 	lvl.world.for_each<spline>([=](std::size_t index, spline& object) {
@@ -275,7 +287,19 @@ void view_3d::draw_pickframe(level& lvl) const {
 		glm::mat4 mvp = compute_mvp(object.position());
 		object_id id { object_type::MOBY, index };
 		glm::vec3 colour = encode_pick_colour(id);
-		_renderer->draw_cube(mvp, colour);
+		
+		if(lvl.moby_class_to_model.find(object.class_num) == lvl.moby_class_to_model.end()) {
+			_renderer->draw_cube(mvp, colour);
+			return;
+		}
+		
+		const game_model& model =
+			lvl.moby_models[lvl.moby_class_to_model.at(object.class_num)];
+		try {
+			_renderer->draw_model(model, mvp, colour);
+		} catch(stream_error& err) {
+			// We've failed to parse the model data.
+		}
 	});
 	
 	lvl.world.for_each<spline>([=](std::size_t index, spline& object) {

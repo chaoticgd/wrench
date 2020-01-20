@@ -281,8 +281,10 @@ public:
 	const std::size_t offset; // The base offset of the file_header in the ISO file.
 	game_world world;
 	
-	std::vector<game_model> models;
+	std::map<uint32_t, std::size_t> moby_class_to_model;
+	std::vector<game_model> moby_models;
 	std::vector<texture> textures;
+	
 private:
 	proxy_stream _backing;
 	stream* _moby_stream;
