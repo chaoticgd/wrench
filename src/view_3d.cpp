@@ -105,42 +105,42 @@ bool view_3d::has_padding() const {
 void view_3d::draw_level(level& lvl) const {
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-	glm::mat4 vp = get_view_projection_matrix();
+	glm::mat4 world_to_clip = get_world_to_clip();
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 
 	glUseProgram(_renderer->shaders.solid_colour.id());
-
-	auto compute_mvp = [=](glm::vec3 position) {
-		return vp * glm::translate(glm::mat4(1.f), position);
-	};
 	
 	auto get_colour = [=, &lvl](object_id id, glm::vec3 normal_colour) {
 		return lvl.world.is_selected(id) ? glm::vec3(1, 0, 0) : normal_colour;
 	};
 	
 	lvl.world.for_each<tie>([=](std::size_t index, tie& object) {
-		glm::mat4 mvp = compute_mvp(object.position());
+		auto pos = object.position();
+		auto rot = glm::vec3(0, 0, 0);
+		glm::mat4 local_to_clip = get_local_to_clip(world_to_clip, pos, rot);
 		object_id id { object_type::TIE, index };
 		glm::vec3 colour = get_colour(id, glm::vec3(0.5, 0, 1));
-		_renderer->draw_cube(mvp, colour);
+		_renderer->draw_cube(local_to_clip, colour);
 	});
 	
 	lvl.world.for_each<moby>([=](std::size_t index, moby& object) {
-		glm::mat4 mvp = compute_mvp(object.position());
+		auto pos = object.position();
+		auto rot = object.rotation();
+		glm::mat4 local_to_clip = get_local_to_clip(world_to_clip, pos, rot);
 		object_id id { object_type::MOBY, index };
 		glm::vec3 colour = get_colour(id, glm::vec3(0, 1, 0));
 		
 		if(lvl.moby_class_to_model.find(object.class_num) == lvl.moby_class_to_model.end()) {
-			_renderer->draw_cube(mvp, colour);
+			_renderer->draw_cube(local_to_clip, colour);
 			return;
 		}
 		
 		const game_model& model =
 			lvl.moby_models[lvl.moby_class_to_model.at(object.class_num)];
 		try {
-			_renderer->draw_model(model, mvp, colour);
+			_renderer->draw_model(model, local_to_clip, colour);
 		} catch(stream_error& err) {
 			// We've failed to parse the model data.
 		}
@@ -149,35 +149,18 @@ void view_3d::draw_level(level& lvl) const {
 	lvl.world.for_each<spline>([=](std::size_t index, spline& object) {
 		object_id id { object_type::SPLINE, index };
 		glm::vec3 colour = get_colour(id, glm::vec3(1, 0.5, 0));
-		_renderer->draw_spline(object, vp, colour);
+		_renderer->draw_spline(object, world_to_clip, colour);
 	});
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-glm::vec3 view_3d::world_to_screen(glm::mat4 vp, glm::vec3 position) const {
-	ImVec2 window_pos = ImGui::GetWindowPos();
-	glm::mat4 model = glm::translate(glm::mat4(1.f), position);
-	glm::vec4 homogeneous_pos = vp * model * glm::vec4(0, 0, 0, 1);
-	glm::vec3 gl_pos {
-		homogeneous_pos.x / homogeneous_pos.w,
-		homogeneous_pos.y / homogeneous_pos.w,
-		homogeneous_pos.z / homogeneous_pos.w
-	};
-	glm::vec3 screen_pos(
-		window_pos.x + (1 + gl_pos.x) * _viewport_size.x / 2.0,
-		window_pos.y + (1 + gl_pos.y) * _viewport_size.y / 2.0,
-		gl_pos.z
-	);
-	return screen_pos;
-}
-
 void view_3d::draw_overlay_text(level& lvl) const {
 	auto draw_list = ImGui::GetWindowDrawList();
 	
-	glm::mat4 vp = get_view_projection_matrix();
+	glm::mat4 world_to_clip = get_world_to_clip();
 	auto draw_text = [=](glm::vec3 position, std::string text) {
-		glm::vec3 screen_pos = world_to_screen(vp, position);
+		glm::vec3 screen_pos = apply_local_to_screen(world_to_clip, position, glm::vec3(0, 0, 0));
 		if(screen_pos.z > 0 && screen_pos.z < 1) {
 			static const int colour = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
 			draw_list->AddText(ImVec2(screen_pos.x, screen_pos.y), colour, text.c_str());
@@ -206,7 +189,7 @@ void view_3d::draw_overlay_text(level& lvl) const {
 	});
 }
 
-glm::mat4 view_3d::get_view_projection_matrix() const {
+glm::mat4 view_3d::get_world_to_clip() const {
 	ImVec2 size = _viewport_size;
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), size.x / size.y, 0.1f, 100.0f);
 
@@ -225,6 +208,31 @@ glm::mat4 view_3d::get_view_projection_matrix() const {
 	glm::mat4 view = pitch * yaw * yzx * translate;
 
 	return projection * view;
+}
+
+glm::mat4 view_3d::get_local_to_clip(glm::mat4 world_to_clip, glm::vec3 position, glm::vec3 rotation) const {
+	glm::mat4 model = glm::translate(glm::mat4(1.f), position);
+	model = glm::rotate(model, rotation.x, glm::vec3(1, 0, 0));
+	model = glm::rotate(model, rotation.y, glm::vec3(0, 1, 0));
+	model = glm::rotate(model, rotation.z, glm::vec3(0, 0, 1));
+	return world_to_clip * model;
+}
+
+glm::vec3 view_3d::apply_local_to_screen(glm::mat4 world_to_clip, glm::vec3 position, glm::vec3 rotation) const {
+	glm::mat4 local_to_clip = get_local_to_clip(world_to_clip, glm::vec3(1.f), rotation);
+	glm::vec4 homogeneous_pos = local_to_clip * glm::vec4(position, 1);
+	glm::vec3 gl_pos {
+		homogeneous_pos.x / homogeneous_pos.w,
+		homogeneous_pos.y / homogeneous_pos.w,
+		homogeneous_pos.z / homogeneous_pos.w
+	};
+	ImVec2 window_pos = ImGui::GetWindowPos();
+	glm::vec3 screen_pos(
+		window_pos.x + (1 + gl_pos.x) * _viewport_size.x / 2.0,
+		window_pos.y + (1 + gl_pos.y) * _viewport_size.y / 2.0,
+		gl_pos.z
+	);
+	return screen_pos;
 }
 
 void view_3d::pick_object(level& lvl, ImVec2 position) {
@@ -257,7 +265,7 @@ void view_3d::pick_object(level& lvl, ImVec2 position) {
 
 
 void view_3d::draw_pickframe(level& lvl) const {
-	glm::mat4 vp = get_view_projection_matrix();
+	glm::mat4 world_to_clip = get_world_to_clip();
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
@@ -272,31 +280,31 @@ void view_3d::draw_pickframe(level& lvl) const {
 		return colour;
 	};
 	
-	auto compute_mvp = [=](glm::vec3 position) { // Same as above.
-		return vp * glm::translate(glm::mat4(1.f), position);
-	};
-	
 	lvl.world.for_each<tie>([=](std::size_t index, tie& object) {
-		glm::mat4 mvp = compute_mvp(object.position());
+		auto pos = object.position();
+		auto rot = glm::vec3(0, 0, 0);
+		glm::mat4 local_to_clip = get_local_to_clip(world_to_clip, pos, rot);
 		object_id id { object_type::TIE, index };
 		glm::vec3 colour = encode_pick_colour(id);
-		_renderer->draw_cube(mvp, colour);
+		_renderer->draw_cube(local_to_clip, colour);
 	});
 	
 	lvl.world.for_each<moby>([=](std::size_t index, moby& object) {
-		glm::mat4 mvp = compute_mvp(object.position());
+		auto pos = object.position();
+		auto rot = object.rotation();
+		glm::mat4 local_to_clip = get_local_to_clip(world_to_clip, pos, rot);
 		object_id id { object_type::MOBY, index };
 		glm::vec3 colour = encode_pick_colour(id);
 		
 		if(lvl.moby_class_to_model.find(object.class_num) == lvl.moby_class_to_model.end()) {
-			_renderer->draw_cube(mvp, colour);
+			_renderer->draw_cube(local_to_clip, colour);
 			return;
 		}
 		
 		const game_model& model =
 			lvl.moby_models[lvl.moby_class_to_model.at(object.class_num)];
 		try {
-			_renderer->draw_model(model, mvp, colour);
+			_renderer->draw_model(model, local_to_clip, colour);
 		} catch(stream_error& err) {
 			// We've failed to parse the model data.
 		}
@@ -305,7 +313,7 @@ void view_3d::draw_pickframe(level& lvl) const {
 	lvl.world.for_each<spline>([=](std::size_t index, spline& object) {
 		object_id id { object_type::SPLINE, index };
 		glm::vec3 colour = encode_pick_colour(id);
-		_renderer->draw_spline(object, vp, colour);
+		_renderer->draw_spline(object, world_to_clip, colour);
 	});
 }
 
@@ -326,9 +334,9 @@ void view_3d::select_rect(level& lvl, ImVec2 position) {
 		
 		lvl.world.selection = {};
 		
-		glm::mat4 vp = get_view_projection_matrix();
-		FOR_EACH_POINT_OBJECT(lvl.world, ([this, &lvl, vp](object_id id, auto& object) {
-			glm::vec3 screen_pos = world_to_screen(vp, object.position());
+		glm::mat4 world_to_clip = get_world_to_clip();
+		FOR_EACH_POINT_OBJECT(lvl.world, ([this, &lvl, world_to_clip](object_id id, auto& object) {
+			glm::vec3 screen_pos = apply_local_to_screen(world_to_clip, object.position(), glm::vec3(0, 0, 0));
 			if(screen_pos.z < 0) {
 				return;
 			}

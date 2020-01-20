@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019 chaoticgd
+	Copyright (C) 2019-2020 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -42,10 +42,11 @@ public:
 
 	void draw_level(level& lvl) const;
 	
-	glm::vec3 world_to_screen(glm::mat4 vp, glm::vec3 position) const;
 	void draw_overlay_text(level& lvl) const;
 
-	glm::mat4 get_view_projection_matrix() const;
+	glm::mat4 get_world_to_clip() const;
+	glm::mat4 get_local_to_clip(glm::mat4 world_to_clip, glm::vec3 position, glm::vec3 rotation) const;
+	glm::vec3 apply_local_to_screen(glm::mat4 world_to_clip, glm::vec3 position, glm::vec3 rotation) const;
 	
 	// Allows the user to select an object by clicking on it. See:
 	// https://www.opengl-tutorial.org/miscellaneous/clicking-on-objects/picking-with-an-opengl-hack/
