@@ -384,10 +384,11 @@ void gui::inspector::render(app& a) {
 	
 	ImGui::Columns(1);
 	
-	if(id.type == object_type::MOBY && ImGui::Button("Hex Dump (Debug)")) {
-		moby& object = _lvl->world.object_at<moby>(id.index);
-		a.emplace_window<hex_dump>((uint8_t*) &object, sizeof(moby));
-	}
+	OBJECT_FROM_ID(_lvl->world, id, ([&a](auto& object) {
+		if(ImGui::Button("Hex Dump (Debug)")) {
+			a.emplace_window<hex_dump>((uint8_t*) &object, sizeof(object));
+		}
+	}))
 }
 
 /*

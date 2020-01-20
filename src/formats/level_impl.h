@@ -147,7 +147,12 @@ public:
 	for(std::size_t i = 0; i < world.count<moby>(); i++) { \
 		callback(object_id { object_type::MOBY, i }, world.object_at<moby>(i)); \
 	}
-	
+
+#define OBJECT_FROM_ID(world, id, callback) \
+	if(id.type == object_type::TIE)   callback(world.object_at<tie>(id.index)); \
+	if(id.type == object_type::SHRUB) callback(world.object_at<shrub>(id.index)); \
+	if(id.type == object_type::MOBY)  callback(world.object_at<moby>(id.index));
+
 	template <typename T>
 	std::size_t count() {
 		return objects_of_type<T>().size();
