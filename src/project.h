@@ -75,9 +75,9 @@ public:
 	
 	int id();
 	
-private:
 	void save_to(std::string path);
 
+private:
 	std::string read_game_id();
 
 	std::string _project_path;

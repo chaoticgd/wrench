@@ -197,10 +197,6 @@ int wrench_project::id() {
 	return _id;
 }
 
-/*
-	private
-*/
-
 void wrench_project::save_to(std::string path) {
 	if(boost::filesystem::exists(path)) {
 		boost::filesystem::remove(path + ".old");
@@ -217,8 +213,12 @@ void wrench_project::save_to(std::string path) {
 	game_id_stream << game_id;
 	root->CreateEntry("game_id")->SetCompressionStream(game_id_stream);
 
-	iso.save_patches_to_and_close(root, _project_path);
+	iso.save_patches_to_and_close(root, path);
 }
+
+/*
+	private
+*/
 
 std::string wrench_project::read_game_id() {
 	auto entry = _wrench_archive->GetEntry("game_id");
