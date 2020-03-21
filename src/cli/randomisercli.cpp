@@ -16,9 +16,13 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <ctime>
+#include <cstdio>
 #include <string>
+#include <cstdlib>
 #include <algorithm>
 
+#include "../md5.h"
 #include "../game_db.h"
 #include "../project.h"
 #include "../command_line.h"
@@ -32,6 +36,7 @@ int main(int argc, char** argv) {
 	std::string iso_path;
 	std::string game_id;
 	std::string project_path;
+	std::string password;
 	
 	po::options_description desc("Randomize textures");
 	desc.add_options()
@@ -40,16 +45,33 @@ int main(int argc, char** argv) {
 		("gameid,g", po::value<std::string>(&game_id)->required(),
 			"The game ID (e.g. 'SCES_516.07')")
 		("project,p", po::value<std::string>(&project_path)->required(),
-			"The path of the new project to create.");
+			"The path of the new project to create.")
+		("seed,s", po::value<std::string>(&password),
+			"Password to seed the random number generator.");
 
 	po::positional_options_description pd;
 	pd.add("iso", 1);
 	pd.add("gameid", 1);
 	pd.add("project", 1);
+	pd.add("seed", 1);
 
 	if(!parse_command_line_args(argc, argv, desc, pd)) {
 		return 0;
 	}
+	
+	if(password == "") {
+		srand(time(0));
+		password = int_to_hex(rand());
+	}
+	
+	printf("Seed: %s\n", password.c_str());
+	
+	MD5_CTX ctx;
+	MD5Init(&ctx);
+	MD5Update(&ctx, (const uint8_t*) password.data(), password.size());
+	uint8_t hash[MD5_DIGEST_LENGTH];
+	MD5Final(hash, &ctx);
+	srand(*(unsigned int*) hash);
 	
 	auto game = gamedb_parse_file().at(game_id);
 	
