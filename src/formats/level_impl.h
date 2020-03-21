@@ -241,20 +241,20 @@ public:
 			uint32_t unknown_24; // 0x24
 			uint32_t unknown_28; // 0x28
 			uint32_t unknown_2c; // 0x2c
-			uint32_t texture_list_1_count; // 0x30
-			uint32_t texture_list_1_offset; // 0x34 Relative to secondary header.
-			uint32_t unknown_38; // 0x38
-			uint32_t unknown_3c; // 0x3c
-			uint32_t unknown_40; // 0x40
-			uint32_t unknown_44; // 0x44
-			uint32_t unknown_48; // 0x48
-			uint32_t unknown_4c; // 0x4c
-			uint32_t unknown_50; // 0x50
-			uint32_t unknown_54; // 0x54
-			uint32_t unknown_58; // 0x58
-			uint32_t unknown_5c; // 0x5c
-			uint32_t tex_data_in_asset_wad; // 0x60
-			uint32_t ptr_into_asset_wad_64; // 0x64
+			uint32_t terrain_texture_count;  // 0x30
+			uint32_t terrain_texture_offset; // 0x34 Relative to secondary header.
+			uint32_t some1_texture_count;    // 0x38
+			uint32_t some1_texture_offset;   // 0x3c
+			uint32_t tie_texture_count;      // 0x40
+			uint32_t tie_texture_offset;     // 0x44
+			uint32_t shrub_texture_count;    // 0x48
+			uint32_t shrub_texture_offset;   // 0x4c
+			uint32_t some2_texture_count;    // 0x50
+			uint32_t some2_texture_offset;   // 0x54
+			uint32_t sprite_texture_count;   // 0x58
+			uint32_t sprite_texture_offset;  // 0x5c
+			uint32_t tex_data_in_asset_wad;  // 0x60
+			uint32_t ptr_into_asset_wad_64;  // 0x64
 			uint32_t unknown_68; // 0x68
 			uint32_t unknown_6c; // 0x6c
 			uint32_t unknown_70; // 0x70

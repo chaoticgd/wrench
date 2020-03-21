@@ -101,8 +101,33 @@ int main(int argc, char** argv) {
 			
 			read_shuffle_write<texture_entry>(
 				file,
-				asset_header_offset + asset_header.texture_list_1_offset,
-				asset_header.texture_list_1_count);
+				asset_header_offset + asset_header.terrain_texture_offset,
+				asset_header.terrain_texture_count);
+				
+			read_shuffle_write<texture_entry>(
+				file,
+				asset_header_offset + asset_header.some1_texture_offset,
+				asset_header.some1_texture_count);
+			
+			read_shuffle_write<texture_entry>(
+				file,
+				asset_header_offset + asset_header.shrub_texture_offset,
+				asset_header.shrub_texture_count);
+			
+			read_shuffle_write<texture_entry>(
+				file,
+				asset_header_offset + asset_header.tie_texture_offset,
+				asset_header.tie_texture_count);
+			
+			read_shuffle_write<texture_entry>(
+				file,
+				asset_header_offset + asset_header.some2_texture_offset,
+				asset_header.some2_texture_count);
+			
+			read_shuffle_write<texture_entry>(
+				file,
+				asset_header_offset + asset_header.sprite_texture_offset,
+				asset_header.sprite_texture_count);
 		}
 	}
 	
