@@ -113,7 +113,10 @@ level* wrench_project::level_from_name(std::string name) {
 std::map<std::string, std::vector<texture>*> wrench_project::texture_lists() {
 	std::map<std::string, std::vector<texture>*> result;
 	for(auto& lvl : _levels) {
-		result[lvl.first] = &lvl.second->textures;
+		result[lvl.first + "/Terrain"] = &lvl.second->terrain_textures;
+		result[lvl.first + "/Ties"] = &lvl.second->tie_textures;
+		//result[lvl.first + "/Mobies"] = &lvl.second->moby_textures;
+		result[lvl.first + "/Sprites"] = &lvl.second->sprite_textures;
 	}
 	for(auto& wad : _texture_wads) {
 		result[wad.first] = &wad.second;

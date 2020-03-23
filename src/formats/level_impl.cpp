@@ -141,6 +141,29 @@ level::level(iso_stream* iso, std::size_t offset, std::size_t size, std::string 
 		uint32_t class_num = entry.class_num;
 		moby_class_to_model.emplace(class_num, moby_models.size() - 1);
 	}
+	
+	packed_struct(texture_entry,
+		uint32_t ptr;
+		uint16_t width;
+		uint16_t height;
+		uint32_t palette;
+		uint32_t field_c;
+	);
+	
+	auto load_texture_table = [=](stream& backing, std::size_t offset, std::size_t count) {
+		std::vector<texture> textures;
+		backing.seek(snd_base + offset);
+		for(std::size_t i = 0; i < count; i++) {
+			auto entry = backing.read<texture_entry>();
+			auto ptr = snd_header.tex_data_in_asset_wad + entry.ptr;
+			textures.emplace_back(asset_seg, ptr, ptr, vec2i { entry.width, entry.height });
+		}
+		return textures;
+	};
+	
+	terrain_textures = load_texture_table(_backing, snd_header.terrain_texture_offset, snd_header.terrain_texture_count);
+	tie_textures = load_texture_table(_backing, snd_header.tie_texture_offset, snd_header.tie_texture_count);
+	sprite_textures = load_texture_table(_backing, snd_header.sprite_texture_offset, snd_header.sprite_texture_count);
 }
 
 stream* level::moby_stream() {

@@ -288,7 +288,10 @@ public:
 	
 	std::map<uint32_t, std::size_t> moby_class_to_model;
 	std::vector<game_model> moby_models;
-	std::vector<texture> textures;
+	std::vector<texture> terrain_textures;
+	std::vector<texture> tie_textures;
+	std::vector<texture> moby_textures;
+	std::vector<texture> sprite_textures;
 	
 private:
 	proxy_stream _backing;
