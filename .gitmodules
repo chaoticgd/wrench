@@ -17,3 +17,6 @@
 [submodule "thirdparty/imgui_markdown"]
 	path = thirdparty/imgui_markdown
 	url = https://github.com/juliettef/imgui_markdown
+[submodule "scripts/graphifier"]
+	path = scripts/graphifier
+	url = https://github.com/chaoticgd/graphifier
