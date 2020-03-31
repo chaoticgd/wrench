@@ -194,8 +194,8 @@ glm::mat4 view_3d::get_world_to_clip() const {
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), size.x / size.y, 0.1f, 100.0f);
 
 	auto rot = _renderer->camera_rotation;
-	glm::mat4 pitch = glm::rotate(glm::mat4(1.0f), rot.x*3.141592f/180.f, glm::vec3(1.0f, 0.0f, 0.0f));
-	glm::mat4 yaw   = glm::rotate(glm::mat4(1.0f), rot.y*3.141592f/180.f, glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 pitch = glm::rotate(glm::mat4(1.0f), glm::radians(rot.x), glm::vec3(1.0f, 0.0f, 0.0f));
+	glm::mat4 yaw   = glm::rotate(glm::mat4(1.0f), glm::radians(rot.y), glm::vec3(0.0f, 1.0f, 0.0f));
  
 	glm::mat4 translate =
 		glm::translate(glm::mat4(1.0f), -_renderer->camera_position);
