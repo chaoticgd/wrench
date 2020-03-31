@@ -16,6 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#define GLM_FORCE_RADIANS
+
 #include <chrono>
 
 #include "gl_includes.h"
@@ -139,35 +141,37 @@ void update_camera_movement(app* a) {
 	}
 
 	float dist = glm::distance(glm::vec2(0, 0), a->mouse_diff) * 2;
-	float dx = std::sin(a->renderer.camera_rotation.y) * dist;
-	float dz = std::cos(a->renderer.camera_rotation.y) * dist;
+	float dx = std::sin(glm::radians(a->renderer.camera_rotation.y)) * dist;
+	float dz = std::cos(glm::radians(a->renderer.camera_rotation.y)) * dist;
 
 	auto is_down = [=](int key) {
 		return a->keys_down.find(key) != a->keys_down.end();
 	};
 
+	static const float movementConst = 0.000001f;
+
 	glm::vec3 movement(0, 0, 0);
 	if(is_down(GLFW_KEY_W)) {
-		movement.x -= dz * a->delta_time * 0.0001;
-		movement.y += dx * a->delta_time * 0.0001;
+		movement.x -= dz * a->delta_time * movementConst;
+		movement.y += dx * a->delta_time * movementConst;
 	}
 	if(is_down(GLFW_KEY_S)) {
-		movement.x += dz * a->delta_time * 0.0001;
-		movement.y -= dx * a->delta_time * 0.0001;
+		movement.x += dz * a->delta_time * movementConst;
+		movement.y -= dx * a->delta_time * movementConst;
 	}
 	if(is_down(GLFW_KEY_A)) {
-		movement.x -= dx * a->delta_time * 0.0001;
-		movement.y -= dz * a->delta_time * 0.0001;
+		movement.x -= dx * a->delta_time * movementConst;
+		movement.y -= dz * a->delta_time * movementConst;
 	}
 	if(is_down(GLFW_KEY_D)) {
-		movement.x += dx * a->delta_time * 0.0001;
-		movement.y += dz * a->delta_time * 0.0001;
+		movement.x += dx * a->delta_time * movementConst;
+		movement.y += dz * a->delta_time * movementConst;
 	}
 	if(is_down(GLFW_KEY_SPACE)) {
-		movement.z += dist * a->delta_time * 0.0001;
+		movement.z += dist * a->delta_time * movementConst;
 	}
 	if(is_down(GLFW_KEY_LEFT_SHIFT)) {
-		movement.z -= dist * a->delta_time * 0.0001;
+		movement.z -= dist * a->delta_time * movementConst;
 	}
 	a->renderer.camera_position += movement;
 }
@@ -201,8 +205,9 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
 	};
 
 	if(a->renderer.camera_control) {
-		a->renderer.camera_rotation.y += a->mouse_diff.x * 0.005;
-		a->renderer.camera_rotation.x -= a->mouse_diff.y * 0.005;
+		static const float cameraMovementSpeed = 0.001;
+		a->renderer.camera_rotation.y += a->mouse_diff.x * cameraMovementSpeed;
+		a->renderer.camera_rotation.x -= a->mouse_diff.y * cameraMovementSpeed;
 		constrain(&a->renderer.camera_rotation.y, -180, 180, true);
 		constrain(&a->renderer.camera_rotation.x,  -89, 89);
 	}
