@@ -78,7 +78,7 @@ int main(int argc, char** argv) {
 	io.ConfigDockingWithShift = true;
 	ImGui::StyleColorsDark();
 	ImGui_ImplGlfw_InitForOpenGL(a.glfw_window, true);
-	ImGui_ImplOpenGL3_Init("#version 130");
+	ImGui_ImplOpenGL3_Init("#version 120");
 
 	a.init_gui_scale();
 	a.update_gui_scale();
@@ -119,6 +119,7 @@ int main(int argc, char** argv) {
 		glfwSwapBuffers(a.glfw_window);
 		
 		auto frame_time = std::chrono::steady_clock::now();
+
 		a.delta_time = std::chrono::duration_cast<std::chrono::microseconds>
 			(frame_time - last_frame_time).count();
 		last_frame_time = frame_time;
@@ -192,8 +193,17 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
 	a->mouse_diff = glm::vec2(xpos, ypos) - a->mouse_last;
 	a->mouse_last = glm::vec2(xpos, ypos);
 
+	const auto constrain = [](float* deg, float min, float max, bool shouldFlip=false) {
+		if (*deg > max)
+			*deg = shouldFlip ? min+0.01 : max;
+		else if (*deg < min)
+			*deg = shouldFlip ? max-0.01 : min;
+	};
+
 	if(a->renderer.camera_control) {
-		a->renderer.camera_rotation.y += a->mouse_diff.x * 0.0005;
-		a->renderer.camera_rotation.x -= a->mouse_diff.y * 0.0005;
+		a->renderer.camera_rotation.y += a->mouse_diff.x * 0.005;
+		a->renderer.camera_rotation.x -= a->mouse_diff.y * 0.005;
+		constrain(&a->renderer.camera_rotation.y, -180, 180, true);
+		constrain(&a->renderer.camera_rotation.x,  -89, 89);
 	}
 }
