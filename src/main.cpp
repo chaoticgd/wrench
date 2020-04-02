@@ -28,9 +28,8 @@
 #	Setup code, the main loop, and GLFW stuff.
 # */
 
-void update_camera_movement(app* a);
+void update_camera(app* a);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
-void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 
 int main(int argc, char** argv) {
 
@@ -68,7 +67,6 @@ int main(int argc, char** argv) {
 
 	glfwSetWindowUserPointer(a.glfw_window, &a);
 	glfwSetKeyCallback(a.glfw_window, key_callback);
-	glfwSetCursorPosCallback(a.glfw_window, cursor_position_callback);
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -101,7 +99,7 @@ int main(int argc, char** argv) {
 
 	while(!glfwWindowShouldClose(a.glfw_window)) {
 		glfwPollEvents();
-		update_camera_movement(&a);
+		update_camera(&a);
 
 		gui::render(a);
 
@@ -132,17 +130,29 @@ int main(int argc, char** argv) {
 	glfwTerminate();
 }
 
-void update_camera_movement(app* a) {
+void update_camera(app* a) {
+	// Rotation
+	double xpos, ypos;
+	glfwGetCursorPos(a->glfw_window, &xpos, &ypos);
+	
+	glm::vec2 mouse_cur = glm::vec2(xpos, ypos);
+	glm::vec2 mouse_diff = mouse_cur - a->mouse_last;
+	a->mouse_last = mouse_cur;
+
 	if(!a->renderer.camera_control) {
 		return;
 	}
 
+	a->renderer.camera_rotation.y += mouse_diff.x * 0.0005;
+	a->renderer.camera_rotation.x -= mouse_diff.y * 0.0005;
+
+	// Position
 	float dist = 2;
 	float dx = std::sin(a->renderer.camera_rotation.y) * dist;
 	float dz = std::cos(a->renderer.camera_rotation.y) * dist;
 
 	auto is_down = [=](int key) {
-		return a->keys_down.find(key) != a->keys_down.end();
+		return glfwGetKey(a->glfw_window, key);
 	};
 
 	glm::vec3 movement(0, 0, 0);
@@ -173,27 +183,10 @@ void update_camera_movement(app* a) {
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
 	app* a = static_cast<app*>(glfwGetWindowUserPointer(window));
-	
-	if(action == GLFW_PRESS) {
-		a->keys_down.insert(key);
-	} else if(action == GLFW_RELEASE) {
-		a->keys_down.erase(key);
-	}
 
 	if(action == GLFW_PRESS && key == GLFW_KEY_Z) {
 		a->renderer.camera_control = !a->renderer.camera_control;
 		glfwSetInputMode(window, GLFW_CURSOR,
 			a->renderer.camera_control ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
-	}
-}
-
-void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
-	app* a = static_cast<app*>(glfwGetWindowUserPointer(window));
-	a->mouse_diff = glm::vec2(xpos, ypos) - a->mouse_last;
-	a->mouse_last = glm::vec2(xpos, ypos);
-
-	if(a->renderer.camera_control) {
-		a->renderer.camera_rotation.y += a->mouse_diff.x * 0.0005;
-		a->renderer.camera_rotation.x -= a->mouse_diff.y * 0.0005;
 	}
 }

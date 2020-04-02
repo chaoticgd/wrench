@@ -67,8 +67,6 @@ public:
 	T* emplace_window(T_constructor_args... args);
 
 	glm::vec2 mouse_last;
-	glm::vec2 mouse_diff;
-	std::set<int> keys_down;
 
 	GLFWwindow* glfw_window;
 	int window_width, window_height;
