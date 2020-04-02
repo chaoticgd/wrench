@@ -187,9 +187,8 @@ target_link_libraries(wrench ${GLEW_LIBRARIES})
 target_link_libraries(randomiser ${GLEW_LIBRARIES})
 
 # GLFW
-find_package(glfw3 3.2 REQUIRED)
+add_subdirectory(thirdparty/glfw)
 target_link_libraries(wrench glfw)
-target_link_libraries(wrench ${OPENGL_gl_LIBRARY})
 target_link_libraries(randomiser glfw)
 
 # Dear ImGui
