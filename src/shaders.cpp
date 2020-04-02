@@ -87,10 +87,10 @@ GLuint shader_program::compile(const GLchar* src, GLuint type) {
 shader_programs::shader_programs()
 	: solid_colour(
 		R"(
-			#version 330 core
+			#version 120
 
 			uniform mat4 transform;
-			layout(location = 0) in vec3 position_model_space;
+			attribute vec3 position_model_space;
 
 			void main() {
 				gl_Position = transform * vec4(position_model_space, 1);
@@ -98,13 +98,12 @@ shader_programs::shader_programs()
 			}
 		)",
 		R"(
-			#version 330 core
+			#version 120
 
 			uniform vec4 rgb;
-			out vec4 colour;
 
 			void main() {
-				colour = rgb;
+				gl_FragColor = rgb;
 			}
 		)",
 		[=](GLuint id) {

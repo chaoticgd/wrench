@@ -51,8 +51,8 @@ int main(int argc, char** argv) {
 		throw std::runtime_error("Cannot load GLFW.");
 	}
 
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 
 	a.glfw_window = glfwCreateWindow(1280, 720, "Wrench Editor", NULL, NULL);
 	if(a.glfw_window == nullptr) {
@@ -78,7 +78,7 @@ int main(int argc, char** argv) {
 	io.ConfigDockingWithShift = true;
 	ImGui::StyleColorsDark();
 	ImGui_ImplGlfw_InitForOpenGL(a.glfw_window, true);
-	ImGui_ImplOpenGL3_Init("#version 130");
+	ImGui_ImplOpenGL3_Init("#version 120");
 
 	a.init_gui_scale();
 	a.update_gui_scale();
