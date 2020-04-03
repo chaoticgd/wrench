@@ -35,8 +35,8 @@ public:
 	virtual ImVec2 initial_size() const = 0;
 	virtual void render(app& a) = 0;
 	
-	virtual bool is_unique() const; // Can multiple instances of this window appear at once?
-	virtual bool has_padding() const;
+	[[nodiscard]] virtual bool is_unique() const; // Can multiple instances of this window appear at once?
+	[[nodiscard]] virtual bool has_padding() const;
 
 	int id();
 	void close(app& a);
