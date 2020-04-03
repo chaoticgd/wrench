@@ -161,7 +161,7 @@ void view_3d::draw_overlay_text(level& lvl) const {
 	glm::mat4 world_to_clip = get_world_to_clip();
 	auto draw_text = [=](glm::vec3 position, std::string text) {
 		
-		static constexpr float maxDistance = 200*200; //squared units	
+		static constexpr float maxDistance = glm::pow(100.f,2); //squared units	
 		float distance = glm::abs(glm::pow(position.x-_renderer->camera_position.x, 2)) +
 				 glm::abs(glm::pow(position.y-_renderer->camera_position.y, 2)) +
 				 glm::abs(glm::pow(position.z-_renderer->camera_position.z, 2));
@@ -184,7 +184,7 @@ void view_3d::draw_overlay_text(level& lvl) const {
 	});
 	
 	lvl.world.for_each<moby>([=](std::size_t i, moby& object) {
-		const std::map<uint16_t, const char*> moby_class_names {
+		static const std::map<uint16_t, const char*> moby_class_names {
 			{ 0x1f4, "crate" },
 			{ 0x2f6, "swingshot_grapple" },
 			{ 0x323, "swingshot_swinging" }
@@ -199,7 +199,7 @@ void view_3d::draw_overlay_text(level& lvl) const {
 
 glm::mat4 view_3d::get_world_to_clip() const {
 	ImVec2 size = _viewport_size;
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), size.x / size.y, 0.1f, 100.0f);
+	glm::mat4 projection = glm::perspective(glm::radians(90.0f), size.x / size.y, 0.1f, 100.0f);
 
 	auto rot = _renderer->camera_rotation;
 	glm::mat4 pitch = glm::rotate(glm::mat4(1.0f), rot.x, glm::vec3(1.0f, 0.0f, 0.0f));

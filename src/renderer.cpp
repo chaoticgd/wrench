@@ -20,30 +20,30 @@
 
 #include "app.h"
 
-void gl_renderer::draw_spline(const std::vector<glm::vec3>& points, glm::mat4 vp, glm::vec3 colour) const {
+void gl_renderer::draw_spline(const std::vector<glm::vec3>& points, glm::mat4 vp, glm::vec3& colour) const {
 	
 	if(points.size() < 1) {
 		return;
 	}
 	
 	std::vector<float> vertex_data;
-	for(std::size_t i = 0; i < points.size() - 1; i++) {
-		vertex_data.push_back(points[i].x);
-		vertex_data.push_back(points[i].y);
-		vertex_data.push_back(points[i].z);
+	for(auto iter = points.begin(); iter != points.end()-1; iter++) {
+		vertex_data.push_back((*iter).x);
+		vertex_data.push_back((*iter).y);
+		vertex_data.push_back((*iter).z);
 		
-		vertex_data.push_back(points[i].x + 0.5);
-		vertex_data.push_back(points[i].y);
-		vertex_data.push_back(points[i].z);
+		vertex_data.push_back((*iter).x + 0.5);
+		vertex_data.push_back((*iter).y);
+		vertex_data.push_back((*iter).z);
 		
-		vertex_data.push_back(points[i + 1].x);
-		vertex_data.push_back(points[i + 1].y);
-		vertex_data.push_back(points[i + 1].z);
+		vertex_data.push_back((*(iter+1)).x);
+		vertex_data.push_back((*(iter+1)).y);
+		vertex_data.push_back((*(iter+1)).z);
 	}
 	draw_tris(vertex_data, vp, colour);
 }
 
-void gl_renderer::draw_tris(const std::vector<float>& vertex_data, glm::mat4 mvp, glm::vec3 colour) const {
+void gl_renderer::draw_tris(const std::vector<float>& vertex_data, glm::mat4 mvp, glm::vec3& colour) const {
 	glUniformMatrix4fv(shaders.solid_colour_transform, 1, GL_FALSE, &mvp[0][0]);
 	glUniform4f(shaders.solid_colour_rgb, colour.x, colour.y, colour.z, 1);
 
