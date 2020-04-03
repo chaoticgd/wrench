@@ -162,9 +162,9 @@ void view_3d::draw_overlay_text(level& lvl) const {
 	auto draw_text = [=](glm::vec3 position, std::string text) {
 		
 		static constexpr float maxDistance = 200*200; //squared units	
-		float distance = glm::abs((position.x-_renderer->camera_position.x)*(position.x-_renderer->camera_position.x)) +
-				glm::abs((position.y-_renderer->camera_position.y)*(position.y-_renderer->camera_position.y)) +
-				glm::abs((position.z-_renderer->camera_position.z)*(position.z-_renderer->camera_position.z));
+		float distance = glm::abs(glm::pow(position.x-_renderer->camera_position.x, 2)) +
+				 glm::abs(glm::pow(position.y-_renderer->camera_position.y, 2)) +
+				 glm::abs(glm::pow(position.z-_renderer->camera_position.z, 2));
 
 		if(distance < maxDistance) {
 			glm::vec3 screen_pos = apply_local_to_screen(world_to_clip, position, glm::vec3(0, 0, 0));
@@ -172,7 +172,6 @@ void view_3d::draw_overlay_text(level& lvl) const {
 				static const int colour = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
 				draw_list->AddText(ImVec2(screen_pos.x, screen_pos.y), colour, text.c_str());
 			}
-		}
 		}
 	};
 	
