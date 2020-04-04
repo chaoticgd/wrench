@@ -250,7 +250,7 @@ void view_3d::pick_object(level& lvl, ImVec2 position) {
 	glFinish();
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	
-	constexpr int selectX = 10, selectY = 10;
+	constexpr int selectX = 1, selectY = 1;
 	constexpr int size = selectX * selectY;
 	
 	unsigned char buffer[size*4];
@@ -322,6 +322,7 @@ void view_3d::draw_pickframe(level& lvl) const {
 		glm::vec3 colour = encode_pick_colour(id);
 		_renderer->draw_cube(local_to_clip, colour);
 	});
+
 	
 	lvl.world.for_each<moby>([=](std::size_t index, moby& object) {
 		auto pos = object.position();
@@ -344,11 +345,15 @@ void view_3d::draw_pickframe(level& lvl) const {
 		}
 	});
 	
+	glLineWidth(3);
+
 	lvl.world.for_each<spline>([=](std::size_t index, spline& object) {
 		object_id id { object_type::SPLINE, index };
 		glm::vec3 colour = encode_pick_colour(id);
 		_renderer->draw_spline(object, world_to_clip, colour);
 	});
+
+	glLineWidth(1);
 }
 
 void view_3d::select_rect(level& lvl, ImVec2 position) {
