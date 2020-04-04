@@ -250,10 +250,10 @@ void view_3d::pick_object(level& lvl, ImVec2 position) {
 	glFinish();
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	
-	const int selectX = 10, selectY = 10;
-	const auto size = selectX * selectY;
+	constexpr int selectX = 10, selectY = 10;
+	constexpr int size = selectX * selectY;
 	
-	unsigned char buffer[(selectX*selectY)*4];
+	unsigned char buffer[size*4];
 	glReadPixels(position.x, position.y, selectX , selectY, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 	
 	// TODO: make this go from the center and not from the left
@@ -269,7 +269,7 @@ void view_3d::pick_object(level& lvl, ImVec2 position) {
 	bool found = false;
 	for(int i = 0; i < size; i+=4) {
 		if (buffer[i+selectY*i] > 0) {
-			selected_object = { static_cast<object_type>(buffer[i+selectY*i]), buffer[i+selectY*i] };
+			selected_object = { static_cast<object_type>(buffer[i+selectY*i]), buffer[1+i+selectY*i] };
 			found = true;
 			break;
 		}
