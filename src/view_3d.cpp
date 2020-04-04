@@ -161,7 +161,7 @@ void view_3d::draw_overlay_text(level& lvl) const {
 	glm::mat4 world_to_clip = get_world_to_clip();
 	auto draw_text = [=](glm::vec3 position, std::string text) {
 		
-		static constexpr float maxDistance = glm::pow(100.f,2); //squared units	
+		static const float maxDistance = glm::pow(100.f,2); //squared units	
 		float distance = glm::abs(glm::pow(position.x-_renderer->camera_position.x, 2)) +
 				 glm::abs(glm::pow(position.y-_renderer->camera_position.y, 2)) +
 				 glm::abs(glm::pow(position.z-_renderer->camera_position.z, 2));
@@ -250,23 +250,47 @@ void view_3d::pick_object(level& lvl, ImVec2 position) {
 	glFinish();
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	
-	unsigned char coded_object[4];
-	glReadPixels(position.x, position.y, 1 , 1, GL_RGBA, GL_UNSIGNED_BYTE, coded_object);
+	const int selectX = 10, selectY = 10;
+	const auto size = selectX * selectY;
 	
-	object_type type = static_cast<object_type>(coded_object[0]);
-	uint16_t index = coded_object[1] + (coded_object[2] << 8);
+	unsigned char buffer[(selectX*selectY)*4];
+	glReadPixels(position.x, position.y, selectX , selectY, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 	
-	switch(type) {
+	// TODO: make this go from the center and not from the left
+	// explanation: glReadPixels reads a square from the lower left corner. We want to
+	// check from the middle of the rectangle, to make it better for the user. This
+	// works for now though, and lets you select the extremely small splines with less precision.
+
+	struct {
+		object_type type;
+		unsigned char coded_object[3];
+	} selected_object;
+
+	bool found = false;
+	for(int i = 0; i < size; i+=4) {
+		if (buffer[i+selectY*i] > 0) {
+			selected_object = { static_cast<object_type>(buffer[i+selectY*i]), buffer[i+selectY*i] };
+			found = true;
+			break;
+		}
+	}
+
+	if (!found)
+		return;
+
+	uint16_t index = selected_object.coded_object[0] + (selected_object.coded_object[1] << 8);
+	
+	switch(selected_object.type) {
 		case object_type::TIE:
 		case object_type::SHRUB:
 		case object_type::MOBY:
 		case object_type::SPLINE: {
-			object_id id { type, index };
+			object_id id { selected_object.type, index };
 			lvl.world.selection = { id };
 			break;
 		}
 		default:
-			// The user has clicked on the background.
+			// The user has clicked on the background OR something that wasn't 0.
 			lvl.world.selection = {};
 	}
 }
