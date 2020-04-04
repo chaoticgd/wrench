@@ -20,7 +20,7 @@
 
 #include "app.h"
 
-void gl_renderer::draw_spline(const std::vector<glm::vec3>& points, glm::mat4 vp, glm::vec3& colour) const {
+void gl_renderer::draw_spline(const std::vector<glm::vec3>& points, glm::mat4 vp, const glm::vec3& colour) const {
 	
 	if(points.size() < 1) {
 		return;
@@ -41,9 +41,14 @@ void gl_renderer::draw_spline(const std::vector<glm::vec3>& points, glm::mat4 vp
 		vertex_data.push_back((*(iter+1)).z);
 	}
 	draw_tris(vertex_data, vp, colour);
+	//let's fix this asap
 }
 
-void gl_renderer::draw_tris(const std::vector<float>& vertex_data, glm::mat4 mvp, glm::vec3& colour) const {
+void gl_renderer::draw_line(const std::pair<glm::vec3, glm::vec3>& points, glm::mat4 vp, const glm::vec3& colour) const{
+	
+}
+
+void gl_renderer::draw_tris(const std::vector<float>& vertex_data, glm::mat4 mvp, const glm::vec3& colour) const {
 	glUniformMatrix4fv(shaders.solid_colour_transform, 1, GL_FALSE, &mvp[0][0]);
 	glUniform4f(shaders.solid_colour_rgb, colour.x, colour.y, colour.z, 1);
 
@@ -64,7 +69,7 @@ void gl_renderer::draw_tris(const std::vector<float>& vertex_data, glm::mat4 mvp
 	glDeleteBuffers(1, &vertex_buffer);
 }
 
-void gl_renderer::draw_model(const game_model& mdl, glm::mat4 mvp, glm::vec3 colour) const {
+void gl_renderer::draw_model(const game_model& mdl, glm::mat4 mvp, const glm::vec3& colour) const {
 	glUniformMatrix4fv(shaders.solid_colour_transform, 1, GL_FALSE, &mvp[0][0]);
 	glUniform4f(shaders.solid_colour_rgb, colour.x, colour.y, colour.z, 1);
 	
@@ -77,7 +82,7 @@ void gl_renderer::draw_model(const game_model& mdl, glm::mat4 mvp, glm::vec3 col
 	glDisableVertexAttribArray(0);
 }
 
-void gl_renderer::draw_cube(glm::mat4 mvp, glm::vec3 colour) const {
+void gl_renderer::draw_cube(glm::mat4 mvp, const glm::vec3& colour) const {
 	static GLuint vertex_buffer = 0;
 	
 	if(vertex_buffer == 0) {

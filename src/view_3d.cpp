@@ -199,7 +199,7 @@ void view_3d::draw_overlay_text(level& lvl) const {
 
 glm::mat4 view_3d::get_world_to_clip() const {
 	ImVec2 size = _viewport_size;
-	glm::mat4 projection = glm::perspective(glm::radians(90.0f), size.x / size.y, 0.1f, 100.0f);
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), size.x / size.y, 0.1f, 100.0f);
 
 	auto rot = _renderer->camera_rotation;
 	glm::mat4 pitch = glm::rotate(glm::mat4(1.0f), rot.x, glm::vec3(1.0f, 0.0f, 0.0f));
