@@ -143,21 +143,21 @@ void update_camera(app* a) {
 		return;
 	}
 
-	static const auto constrain = [](float* ptr, float min, float max, bool shouldFlip) {
+	static const auto constrain = [](float* ptr, float min, float max, bool should_flip) {
 		if (*ptr < min)
-			*ptr = (shouldFlip) ? max : min;
+			*ptr = (should_flip) ? max : min;
 		if (*ptr > max)
-			*ptr = (shouldFlip) ? min : max;
+			*ptr = (should_flip) ? min : max;
 	};
 
-	static const float minPitch = glm::radians(-89.f), maxPitch = glm::radians(89.f);
-	static const float minYaw = glm::radians(-180.f), maxYaw = glm::radians(180.f);
+	static const float min_pitch = glm::radians(-89.f), max_pitch = glm::radians(89.f);
+	static const float min_yaw = glm::radians(-180.f),  max_yaw = glm::radians(180.f);
 	
 	a->renderer.camera_rotation.y += mouse_diff.x * 0.0005;
 	a->renderer.camera_rotation.x -= mouse_diff.y * 0.0005;
 
-	constrain(&a->renderer.camera_rotation.y, minYaw, maxYaw, true);
-	constrain(&a->renderer.camera_rotation.x, minPitch, maxPitch, false);	// Position
+	constrain(&a->renderer.camera_rotation.y, min_yaw, max_yaw, true);
+	constrain(&a->renderer.camera_rotation.x, min_pitch, max_pitch, false);	// Position
 	
 	float dist = 2;
 	float dx = std::sin(a->renderer.camera_rotation.y) * dist;
