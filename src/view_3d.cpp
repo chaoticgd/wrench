@@ -250,35 +250,38 @@ void view_3d::pick_object(level& lvl, ImVec2 position) {
 	glFinish();
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	
-	constexpr int selectX = 10, selectY = 10;
-	constexpr int size = selectX * selectY;
+	constexpr int select_size = 9;
+	constexpr int size = select_size * select_size;
+	constexpr int middle = select_size/2;
 	
 	unsigned char buffer[size*4];
-	glReadPixels(position.x, position.y, selectX , selectY, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
-	
-	// TODO: make this go from the center and not from the left
-	// explanation: glReadPixels reads a square from the lower left corner. We want to
-	// check from the middle of the rectangle, to make it better for the user. This
-	// works for now though, and lets you select the extremely small splines with less precision.
+	glReadPixels(position.x-middle, position.y-middle, select_size, select_size, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 
 	struct {
 		object_type type;
 		unsigned char* coded_object;
 	} selected_object;
 
-	bool found = false;
-	for(int i = 0; i < 4*size; i+=4) {
-		if (buffer[i+selectY*i] > 0) {
-			selected_object = { static_cast<object_type>(buffer[i+selectY*i]), buffer+(1+i+selectY*i) };
-			found = true;
-			break;
+
+	int smallest_index = -1;
+	int smallest_value = size;
+	for(int i = 0; i < size; i+=1) {
+		if (buffer[i*4] > 0) {
+			auto current_value = glm::abs(middle-i%select_size) + glm::abs(middle-i/select_size);;
+			if (current_value < smallest_value) {
+				smallest_index = i;
+				smallest_value = current_value;
+			}
 		}
 	}
 
-	if (!found) {
+	if (smallest_value == -1)
+	{
 		lvl.world.selection = {};
 		return;
 	}
+
+	selected_object = { static_cast<object_type>(buffer[smallest_index*4]), buffer+(1+smallest_index*4) };
 
 	uint16_t index = selected_object.coded_object[0] + (selected_object.coded_object[1] << 8);
 	
@@ -344,16 +347,12 @@ void view_3d::draw_pickframe(level& lvl) const {
 			// We've failed to parse the model data.
 		}
 	});
-	
-	//glLineWidth(3);
 
 	lvl.world.for_each<spline>([=](std::size_t index, spline& object) {
 		object_id id { object_type::SPLINE, index };
 		glm::vec3 colour = encode_pick_colour(id);
 		_renderer->draw_spline(object, world_to_clip, colour);
 	});
-
-	//glLineWidth(1);
 }
 
 void view_3d::select_rect(level& lvl, ImVec2 position) {

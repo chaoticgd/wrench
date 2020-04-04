@@ -42,7 +42,7 @@ void gl_renderer::draw_lines(const std::vector<glm::vec3>& points, const glm::ma
 	glGenBuffers(1, &vertex_buffer);
 	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
 	glBufferData(GL_ARRAY_BUFFER,
-		points.size() * sizeof(float),
+		points.size() * sizeof(float) * 3,
 		points.data(), GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(0);
