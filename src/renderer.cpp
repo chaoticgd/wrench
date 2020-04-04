@@ -26,25 +26,14 @@ void gl_renderer::draw_spline(const std::vector<glm::vec3>& points, const glm::m
 		return;
 	}
 	
-	std::vector<float> vertex_data;
-
-	for(auto iter = points.begin(); iter != points.end()-1; iter++) {
-		vertex_data.push_back((*iter).x);
-		vertex_data.push_back((*iter).y);
-		vertex_data.push_back((*iter).z);
-		vertex_data.push_back((*(iter+1)).x);
-		vertex_data.push_back((*(iter+1)).y);
-		vertex_data.push_back((*(iter+1)).z);
-	}
-	
 	//draw_tris(vertex_data, vp, colour);
 	//draw_lines(vertex_data, vp, glm::vec3(1.f, 0.f, 0.f);
 	// the triangles make a pretty big difference when it's far away
 	// which you can see by uncommenting the above code and look at the difference
-	draw_lines(vertex_data, vp, colour);
+	draw_lines(points, vp, colour);
 }
 
-void gl_renderer::draw_lines(const std::vector<float>& points, const glm::mat4& mvp, const glm::vec3& colour) const{
+void gl_renderer::draw_lines(const std::vector<glm::vec3>& points, const glm::mat4& mvp, const glm::vec3& colour) const{
 	
 	glUniformMatrix4fv(shaders.solid_colour_transform, 1, GL_FALSE, &mvp[0][0]);
 	glUniform4f(shaders.solid_colour_rgb, colour.x, colour.y, colour.z, 1);
