@@ -250,7 +250,7 @@ void view_3d::pick_object(level& lvl, ImVec2 position) {
 	glFinish();
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	
-	constexpr int selectX = 1, selectY = 1;
+	constexpr int selectX = 10, selectY = 10;
 	constexpr int size = selectX * selectY;
 	
 	unsigned char buffer[size*4];
@@ -263,13 +263,13 @@ void view_3d::pick_object(level& lvl, ImVec2 position) {
 
 	struct {
 		object_type type;
-		unsigned char coded_object[3];
+		unsigned char* coded_object;
 	} selected_object;
 
 	bool found = false;
-	for(int i = 0; i < size; i+=4) {
+	for(int i = 0; i < 4*size; i+=4) {
 		if (buffer[i+selectY*i] > 0) {
-			selected_object = { static_cast<object_type>(buffer[i+selectY*i]), buffer[1+i+selectY*i] };
+			selected_object = { static_cast<object_type>(buffer[i+selectY*i]), buffer+(1+i+selectY*i) };
 			found = true;
 			break;
 		}
@@ -345,7 +345,7 @@ void view_3d::draw_pickframe(level& lvl) const {
 		}
 	});
 	
-	glLineWidth(3);
+	//glLineWidth(3);
 
 	lvl.world.for_each<spline>([=](std::size_t index, spline& object) {
 		object_id id { object_type::SPLINE, index };
@@ -353,7 +353,7 @@ void view_3d::draw_pickframe(level& lvl) const {
 		_renderer->draw_spline(object, world_to_clip, colour);
 	});
 
-	glLineWidth(1);
+	//glLineWidth(1);
 }
 
 void view_3d::select_rect(level& lvl, ImVec2 position) {
