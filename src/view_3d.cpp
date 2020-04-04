@@ -275,8 +275,10 @@ void view_3d::pick_object(level& lvl, ImVec2 position) {
 		}
 	}
 
-	if (!found)
+	if (!found) {
+		lvl.world.selection = {};
 		return;
+	}
 
 	uint16_t index = selected_object.coded_object[0] + (selected_object.coded_object[1] << 8);
 	
