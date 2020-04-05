@@ -32,14 +32,18 @@ releases are currently somewhat supported:
 ### Ubuntu 18.04
 
 1.	Install dependencies and tools:
-	> sudo apt install git cmake g++ libglew-dev libboost-all-dev libglfw3-dev libglm-dev python3 python3-pydot graphviz
+	> sudo apt install git cmake g++ libglew-dev libboost-all-dev libxinerama-dev libxcursor-dev libglm-dev python3 python3-pydot graphviz
+
 2.	Download the source code using Git:
 	> git clone https://github.com/chaoticgd/wrench
 
-3.	Download the remaining dependencies using Git:
+3.	cd into the newly created directory:
+	> cd wrench
+
+4.	Download the remaining dependencies using Git:
 	> git submodule update --init --recursive
 	
-2.	Build it with cmake:
+5.	Build it with cmake:
 	> cmake . && cmake --build .
 
 ### Windows

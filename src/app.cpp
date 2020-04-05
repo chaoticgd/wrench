@@ -31,7 +31,6 @@ namespace bp = boost::process;
 
 app::app()
 	: mouse_last(0, 0),
-	  mouse_diff(0, 0),
 	  delta_time(0),
 	  current_tool(tool::picker),
 	  translate_tool_displacement(0, 0, 0),

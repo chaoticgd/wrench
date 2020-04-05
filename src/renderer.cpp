@@ -20,30 +20,43 @@
 
 #include "app.h"
 
-void gl_renderer::draw_spline(const std::vector<glm::vec3>& points, glm::mat4 vp, glm::vec3 colour) const {
+void gl_renderer::draw_spline(const std::vector<glm::vec3>& points, const glm::mat4& vp, const glm::vec3& colour) const {
 	
 	if(points.size() < 1) {
 		return;
 	}
 	
-	std::vector<float> vertex_data;
-	for(std::size_t i = 0; i < points.size() - 1; i++) {
-		vertex_data.push_back(points[i].x);
-		vertex_data.push_back(points[i].y);
-		vertex_data.push_back(points[i].z);
-		
-		vertex_data.push_back(points[i].x + 0.5);
-		vertex_data.push_back(points[i].y);
-		vertex_data.push_back(points[i].z);
-		
-		vertex_data.push_back(points[i + 1].x);
-		vertex_data.push_back(points[i + 1].y);
-		vertex_data.push_back(points[i + 1].z);
-	}
-	draw_tris(vertex_data, vp, colour);
+	//draw_tris(vertex_data, vp, colour);
+	//draw_lines(vertex_data, vp, glm::vec3(1.f, 0.f, 0.f);
+	// the triangles make a pretty big difference when it's far away
+	// which you can see by uncommenting the above code and look at the difference
+	draw_lines(points, vp, colour);
 }
 
-void gl_renderer::draw_tris(const std::vector<float>& vertex_data, glm::mat4 mvp, glm::vec3 colour) const {
+void gl_renderer::draw_lines(const std::vector<glm::vec3>& points, const glm::mat4& mvp, const glm::vec3& colour) const{
+	
+	glUniformMatrix4fv(shaders.solid_colour_transform, 1, GL_FALSE, &mvp[0][0]);
+	glUniform4f(shaders.solid_colour_rgb, colour.x, colour.y, colour.z, 1);
+
+	GLuint vertex_buffer;
+	glGenBuffers(1, &vertex_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+	glBufferData(GL_ARRAY_BUFFER,
+		points.size() * sizeof(float) * 3,
+		points.data(), GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+	glDrawArrays(GL_LINE_STRIP, 0, points.size());
+
+	glDisableVertexAttribArray(0);
+	glDeleteBuffers(1, &vertex_buffer);
+
+}
+
+void gl_renderer::draw_tris(const std::vector<float>& vertex_data, const glm::mat4& mvp, const glm::vec3& colour) const {
 	glUniformMatrix4fv(shaders.solid_colour_transform, 1, GL_FALSE, &mvp[0][0]);
 	glUniform4f(shaders.solid_colour_rgb, colour.x, colour.y, colour.z, 1);
 
@@ -64,7 +77,7 @@ void gl_renderer::draw_tris(const std::vector<float>& vertex_data, glm::mat4 mvp
 	glDeleteBuffers(1, &vertex_buffer);
 }
 
-void gl_renderer::draw_model(const game_model& mdl, glm::mat4 mvp, glm::vec3 colour) const {
+void gl_renderer::draw_model(const game_model& mdl, const glm::mat4& mvp, const glm::vec3& colour) const {
 	glUniformMatrix4fv(shaders.solid_colour_transform, 1, GL_FALSE, &mvp[0][0]);
 	glUniform4f(shaders.solid_colour_rgb, colour.x, colour.y, colour.z, 1);
 	
@@ -77,7 +90,7 @@ void gl_renderer::draw_model(const game_model& mdl, glm::mat4 mvp, glm::vec3 col
 	glDisableVertexAttribArray(0);
 }
 
-void gl_renderer::draw_cube(glm::mat4 mvp, glm::vec3 colour) const {
+void gl_renderer::draw_cube(const glm::mat4& mvp, const glm::vec3& colour) const {
 	static GLuint vertex_buffer = 0;
 	
 	if(vertex_buffer == 0) {

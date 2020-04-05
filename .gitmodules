@@ -20,3 +20,6 @@
 [submodule "scripts/graphifier"]
 	path = scripts/graphifier
 	url = https://github.com/chaoticgd/graphifier
+[submodule "thirdparty/glfw"]
+	path = thirdparty/glfw
+	url = https://github.com/glfw/glfw
