@@ -38,15 +38,15 @@ public:
 	ImVec2 initial_size() const;
 	void render(app& a);
 	
-	bool has_padding() const override;
+	[[nodiscard]] bool has_padding() const override;
 
 	void draw_level(level& lvl) const;
 	
 	void draw_overlay_text(level& lvl) const;
-
-	glm::mat4 get_world_to_clip() const;
-	glm::mat4 get_local_to_clip(glm::mat4 world_to_clip, glm::vec3 position, glm::vec3 rotation) const;
-	glm::vec3 apply_local_to_screen(glm::mat4 world_to_clip, glm::vec3 position, glm::vec3 rotation) const;
+	
+	[[nodiscard]] glm::mat4 get_world_to_clip() const;
+	[[nodiscard]] glm::mat4 get_local_to_clip(glm::mat4 world_to_clip, glm::vec3 position, glm::vec3 rotation) const;
+	[[nodiscard]] glm::vec3 apply_local_to_screen(glm::mat4 world_to_clip, glm::vec3 position, glm::vec3 rotation) const;
 	
 	// Allows the user to select an object by clicking on it. See:
 	// https://www.opengl-tutorial.org/miscellaneous/clicking-on-objects/picking-with-an-opengl-hack/

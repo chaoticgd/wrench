@@ -143,10 +143,22 @@ void update_camera(app* a) {
 		return;
 	}
 
+	static const auto constrain = [](float* ptr, float min, float max, bool should_flip) {
+		if (*ptr < min)
+			*ptr = (should_flip) ? max : min;
+		if (*ptr > max)
+			*ptr = (should_flip) ? min : max;
+	};
+
+	static const float min_pitch = glm::radians(-89.f), max_pitch = glm::radians(89.f);
+	static const float min_yaw = glm::radians(-180.f),  max_yaw = glm::radians(180.f);
+	
 	a->renderer.camera_rotation.y += mouse_diff.x * 0.0005;
 	a->renderer.camera_rotation.x -= mouse_diff.y * 0.0005;
 
-	// Position
+	constrain(&a->renderer.camera_rotation.y, min_yaw, max_yaw, true);
+	constrain(&a->renderer.camera_rotation.x, min_pitch, max_pitch, false);	// Position
+	
 	float dist = 2;
 	float dx = std::sin(a->renderer.camera_rotation.y) * dist;
 	float dz = std::cos(a->renderer.camera_rotation.y) * dist;
@@ -156,27 +168,30 @@ void update_camera(app* a) {
 	};
 
 	glm::vec3 movement(0, 0, 0);
+
+	static constexpr float magic_movement = 0.0001f;
+
 	if(is_down(GLFW_KEY_W)) {
-		movement.x -= dz * a->delta_time * 0.0001;
-		movement.y += dx * a->delta_time * 0.0001;
+		movement.x -= dz * a->delta_time * magic_movement;
+		movement.y += dx * a->delta_time * magic_movement;
 	}
 	if(is_down(GLFW_KEY_S)) {
-		movement.x += dz * a->delta_time * 0.0001;
-		movement.y -= dx * a->delta_time * 0.0001;
+		movement.x += dz * a->delta_time * magic_movement;
+		movement.y -= dx * a->delta_time * magic_movement;
 	}
 	if(is_down(GLFW_KEY_A)) {
-		movement.x -= dx * a->delta_time * 0.0001;
-		movement.y -= dz * a->delta_time * 0.0001;
+		movement.x -= dx * a->delta_time * magic_movement;
+		movement.y -= dz * a->delta_time * magic_movement;
 	}
 	if(is_down(GLFW_KEY_D)) {
-		movement.x += dx * a->delta_time * 0.0001;
-		movement.y += dz * a->delta_time * 0.0001;
+		movement.x += dx * a->delta_time * magic_movement;
+		movement.y += dz * a->delta_time * magic_movement;
 	}
 	if(is_down(GLFW_KEY_SPACE)) {
-		movement.z += dist * a->delta_time * 0.0001;
+		movement.z += dist * a->delta_time * magic_movement;
 	}
 	if(is_down(GLFW_KEY_LEFT_SHIFT)) {
-		movement.z -= dist * a->delta_time * 0.0001;
+		movement.z -= dist * a->delta_time * magic_movement;
 	}
 	a->renderer.camera_position += movement;
 }

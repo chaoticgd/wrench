@@ -160,10 +160,18 @@ void view_3d::draw_overlay_text(level& lvl) const {
 	
 	glm::mat4 world_to_clip = get_world_to_clip();
 	auto draw_text = [=](glm::vec3 position, std::string text) {
-		glm::vec3 screen_pos = apply_local_to_screen(world_to_clip, position, glm::vec3(0, 0, 0));
-		if(screen_pos.z > 0 && screen_pos.z < 1) {
-			static const int colour = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
-			draw_list->AddText(ImVec2(screen_pos.x, screen_pos.y), colour, text.c_str());
+		
+		static const float maxDistance = glm::pow(100.f,2); //squared units	
+		float distance = glm::abs(glm::pow(position.x-_renderer->camera_position.x, 2)) +
+				 glm::abs(glm::pow(position.y-_renderer->camera_position.y, 2)) +
+				 glm::abs(glm::pow(position.z-_renderer->camera_position.z, 2));
+
+		if(distance < maxDistance) {
+			glm::vec3 screen_pos = apply_local_to_screen(world_to_clip, position, glm::vec3(0, 0, 0));
+			if (screen_pos.z > 0 && screen_pos.z < 1) {
+				static const int colour = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
+				draw_list->AddText(ImVec2(screen_pos.x, screen_pos.y), colour, text.c_str());
+			}
 		}
 	};
 	
@@ -176,7 +184,7 @@ void view_3d::draw_overlay_text(level& lvl) const {
 	});
 	
 	lvl.world.for_each<moby>([=](std::size_t i, moby& object) {
-		const std::map<uint16_t, const char*> moby_class_names {
+		static const std::map<uint16_t, const char*> moby_class_names {
 			{ 0x1f4, "crate" },
 			{ 0x2f6, "swingshot_grapple" },
 			{ 0x323, "swingshot_swinging" }
@@ -242,23 +250,52 @@ void view_3d::pick_object(level& lvl, ImVec2 position) {
 	glFinish();
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	
-	unsigned char coded_object[4];
-	glReadPixels(position.x, position.y, 1 , 1, GL_RGBA, GL_UNSIGNED_BYTE, coded_object);
+	constexpr int select_size = 9;
+	constexpr int size = select_size * select_size;
+	constexpr int middle = select_size/2;
 	
-	object_type type = static_cast<object_type>(coded_object[0]);
-	uint16_t index = coded_object[1] + (coded_object[2] << 8);
+	unsigned char buffer[size*4];
+	glReadPixels(position.x-middle, position.y-middle, select_size, select_size, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+
+	struct {
+		object_type type;
+		unsigned char* coded_object;
+	} selected_object;
+
+
+	int smallest_index = -1;
+	int smallest_value = size;
+	for(int i = 0; i < size; i+=1) {
+		if (buffer[i*4] > 0) {
+			auto current_value = glm::abs(middle-i%select_size) + glm::abs(middle-i/select_size);;
+			if (current_value < smallest_value) {
+				smallest_index = i;
+				smallest_value = current_value;
+			}
+		}
+	}
+
+	if (smallest_value == -1)
+	{
+		lvl.world.selection = {};
+		return;
+	}
+
+	selected_object = { static_cast<object_type>(buffer[smallest_index*4]), buffer+(1+smallest_index*4) };
+
+	uint16_t index = selected_object.coded_object[0] + (selected_object.coded_object[1] << 8);
 	
-	switch(type) {
+	switch(selected_object.type) {
 		case object_type::TIE:
 		case object_type::SHRUB:
 		case object_type::MOBY:
 		case object_type::SPLINE: {
-			object_id id { type, index };
+			object_id id { selected_object.type, index };
 			lvl.world.selection = { id };
 			break;
 		}
 		default:
-			// The user has clicked on the background.
+			// The user has clicked on the background OR something that wasn't 0.
 			lvl.world.selection = {};
 	}
 }
@@ -288,6 +325,7 @@ void view_3d::draw_pickframe(level& lvl) const {
 		glm::vec3 colour = encode_pick_colour(id);
 		_renderer->draw_cube(local_to_clip, colour);
 	});
+
 	
 	lvl.world.for_each<moby>([=](std::size_t index, moby& object) {
 		auto pos = object.position();
@@ -309,7 +347,7 @@ void view_3d::draw_pickframe(level& lvl) const {
 			// We've failed to parse the model data.
 		}
 	});
-	
+
 	lvl.world.for_each<spline>([=](std::size_t index, spline& object) {
 		object_id id { object_type::SPLINE, index };
 		glm::vec3 colour = encode_pick_colour(id);
