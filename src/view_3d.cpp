@@ -162,11 +162,10 @@ void view_3d::draw_overlay_text(level& lvl) const {
 	auto draw_text = [=](glm::vec3 position, std::string text) {
 		
 		static const float max_distance = glm::pow(100.f, 2); // squared units	
-		glm::vec3 cam_pos = position.x - _renderer->camera_position;
 		float distance =
-			glm::abs(glm::pow(position.x - cam_pos.x, 2)) +
-			glm::abs(glm::pow(position.y - cam_pos.y, 2)) +
-			glm::abs(glm::pow(position.z - cam_pos.z, 2));
+			glm::abs(glm::pow(position.x - _renderer->camera_position.x, 2)) +
+			glm::abs(glm::pow(position.y - _renderer->camera_position.y, 2)) +
+			glm::abs(glm::pow(position.z - _renderer->camera_position.z, 2));
 
 		if(distance < max_distance) {
 			glm::vec3 screen_pos = apply_local_to_screen(world_to_clip, position, glm::vec3(0, 0, 0));
