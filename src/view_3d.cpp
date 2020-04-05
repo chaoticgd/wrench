@@ -161,12 +161,14 @@ void view_3d::draw_overlay_text(level& lvl) const {
 	glm::mat4 world_to_clip = get_world_to_clip();
 	auto draw_text = [=](glm::vec3 position, std::string text) {
 		
-		static const float maxDistance = glm::pow(100.f,2); //squared units	
-		float distance = glm::abs(glm::pow(position.x-_renderer->camera_position.x, 2)) +
-				 glm::abs(glm::pow(position.y-_renderer->camera_position.y, 2)) +
-				 glm::abs(glm::pow(position.z-_renderer->camera_position.z, 2));
+		static const float max_distance = glm::pow(100.f, 2); // squared units	
+		glm::vec3 cam_pos = position.x - _renderer->camera_position;
+		float distance =
+			glm::abs(glm::pow(position.x - cam_pos.x, 2)) +
+			glm::abs(glm::pow(position.y - cam_pos.y, 2)) +
+			glm::abs(glm::pow(position.z - cam_pos.z, 2));
 
-		if(distance < maxDistance) {
+		if(distance < max_distance) {
 			glm::vec3 screen_pos = apply_local_to_screen(world_to_clip, position, glm::vec3(0, 0, 0));
 			if (screen_pos.z > 0 && screen_pos.z < 1) {
 				static const int colour = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -252,10 +254,10 @@ void view_3d::pick_object(level& lvl, ImVec2 position) {
 	
 	constexpr int select_size = 9;
 	constexpr int size = select_size * select_size;
-	constexpr int middle = select_size/2;
+	constexpr int middle = select_size / 2;
 	
-	unsigned char buffer[size*4];
-	glReadPixels(position.x-middle, position.y-middle, select_size, select_size, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+	unsigned char buffer[size * 4];
+	glReadPixels(position.x - middle, position.y - middle, select_size, select_size, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
 
 	struct {
 		object_type type;
@@ -265,18 +267,17 @@ void view_3d::pick_object(level& lvl, ImVec2 position) {
 
 	int smallest_index = -1;
 	int smallest_value = size;
-	for(int i = 0; i < size; i+=1) {
-		if (buffer[i*4] > 0) {
-			auto current_value = glm::abs(middle-i%select_size) + glm::abs(middle-i/select_size);;
-			if (current_value < smallest_value) {
+	for(int i = 0; i < size; i += 1) {
+		if(buffer[i * 4] > 0) {
+			auto current_value = glm::abs(middle - i % select_size) + glm::abs(middle - i / select_size);
+			if(current_value < smallest_value) {
 				smallest_index = i;
 				smallest_value = current_value;
 			}
 		}
 	}
 
-	if (smallest_value == -1)
-	{
+	if(smallest_value == -1) {
 		lvl.world.selection = {};
 		return;
 	}
