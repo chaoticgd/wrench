@@ -31,6 +31,86 @@
 # 	splines) as PODs.
 # */
 
+
+packed_struct(mat4f,
+              float m11 = 0;
+                      float m12 = 0;
+                      float m13 = 0;
+                      float m14 = 0;
+                      float m21 = 0;
+                      float m22 = 0;
+                      float m23 = 0;
+                      float m24 = 0;
+                      float m31 = 0;
+                      float m32 = 0;
+                      float m33 = 0;
+                      float m34 = 0;
+                      float m41 = 0;
+                      float m42 = 0;
+                      float m43 = 0;
+                      float m44 = 0;
+
+
+                      mat4f() {
+                  m11 = 0;
+                  m12 = 0;
+                  m13 = 0;
+                  m14 = 0;
+                  m21 = 0;
+                  m22 = 0;
+                  m23 = 0;
+                  m24 = 0;
+                  m31 = 0;
+                  m32 = 0;
+                  m33 = 0;
+                  m34 = 0;
+                  m41 = 0;
+                  m42 = 0;
+                  m43 = 0;
+                  m44 = 0;
+              }
+
+                      mat4f(glm::mat4 mat) {
+                      m11 = mat[0][0];
+                      m12 = mat[0][1];
+                      m13 = mat[0][2];
+                      m14 = mat[0][3];
+                      m21 = mat[1][0];
+                      m22 = mat[1][1];
+                      m23 = mat[1][2];
+                      m24 = mat[1][3];
+                      m31 = mat[2][0];
+                      m32 = mat[2][1];
+                      m33 = mat[2][2];
+                      m34 = mat[2][3];
+                      m41 = mat[3][0];
+                      m42 = mat[3][1];
+                      m43 = mat[3][2];
+                      m44 = mat[3][3];
+              }
+
+                      glm::mat4 operator()() const {
+                      glm::mat4 result;
+                      result[0][0] = m11;
+                      result[0][1] = m12;
+                      result[0][2] = m13;
+                      result[0][3] = m14;
+                      result[1][0] = m21;
+                      result[1][1] = m22;
+                      result[1][2] = m23;
+                      result[1][3] = m24;
+                      result[2][0] = m31;
+                      result[2][1] = m32;
+                      result[2][2] = m33;
+                      result[2][3] = m34;
+                      result[3][0] = m41;
+                      result[3][1] = m42;
+                      result[3][2] = m43;
+                      result[3][3] = m44;
+                      return result;
+              }
+)
+
 packed_struct(vec3f,
 	float x = 0;
 	float y = 0;
@@ -62,20 +142,7 @@ packed_struct(tie,
 	uint32_t unknown_4;  // 0x4
 	uint32_t unknown_8;  // 0x8
 	uint32_t unknown_c;  // 0xc
-	uint32_t unknown_10; // 0x10
-	uint32_t unknown_14; // 0x14
-	uint32_t unknown_18; // 0x18
-	uint32_t unknown_1c; // 0x1c
-	uint32_t unknown_20; // 0x20
-	uint32_t unknown_24; // 0x24
-	uint32_t unknown_28; // 0x28
-	uint32_t unknown_2c; // 0x2c
-	uint32_t unknown_30; // 0x30
-	uint32_t unknown_34; // 0x34
-	uint32_t unknown_38; // 0x38
-	uint32_t unknown_3c; // 0x3c
-	vec3f    position;   // 0x40
-	uint32_t unknown_4c; // 0x4c
+	mat4f mat; //0x10
 	uint32_t unknown_50; // 0x50
 	int32_t  uid;        // 0x54
 	uint32_t unknown_58; // 0x58
@@ -87,20 +154,7 @@ packed_struct(shrub,
 	uint32_t unknown_4;  // 0x4
 	uint32_t unknown_8;  // 0x8
 	uint32_t unknown_c;  // 0xc
-	uint32_t unknown_10; // 0x10
-	uint32_t unknown_14; // 0x14
-	uint32_t unknown_18; // 0x18
-	uint32_t unknown_1c; // 0x1c 
-	uint32_t unknown_20; // 0x20 
-	uint32_t unknown_24; // 0x24
-	uint32_t unknown_28; // 0x28
-	uint32_t unknown_2c; // 0x2c
-	uint32_t unknown_30; // 0x30
-	uint32_t unknown_34; // 0x34
-	uint32_t unknown_38; // 0x38
-	uint32_t unknown_3c; // 0x3c
-	vec3f    position;   // 0x38
-	uint32_t unknown_4c; // 0x4c
+	mat4f mat; //0x10
 	uint32_t unknown_50; // 0x50
 	uint32_t unknown_54; // 0x54
 	uint32_t unknown_58; // 0x58
