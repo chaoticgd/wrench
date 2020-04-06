@@ -117,22 +117,14 @@ void view_3d::draw_level(level& lvl) const {
 	};
 	
 	lvl.world.for_each<tie>([=](std::size_t index, tie& object) {
-		glm::mat4 mat = object.mat();
-		mat[0][3] = 0;
-        mat[1][3] = 0;
-        mat[2][3] = 0;
-        mat[3][3] = 1;
-
-        glm::mat4 local_to_clip = world_to_clip * mat;
+        glm::mat4 local_to_clip = world_to_clip * object.mat();
 		object_id id { object_type::TIE, index };
 		glm::vec3 colour = get_colour(id, glm::vec3(0.5, 0, 1));
 		_renderer->draw_cube(local_to_clip, colour);
 	});
 	
 	lvl.world.for_each<moby>([=](std::size_t index, moby& object) {
-		auto pos = object.position();
-		auto rot = object.rotation();
-		glm::mat4 local_to_clip = get_local_to_clip(world_to_clip, pos, rot);
+		glm::mat4 local_to_clip = world_to_clip * object.mat();
 		object_id id { object_type::MOBY, index };
 		glm::vec3 colour = get_colour(id, glm::vec3(0, 1, 0));
 		
@@ -163,16 +155,16 @@ void view_3d::draw_overlay_text(level& lvl) const {
 	auto draw_list = ImGui::GetWindowDrawList();
 	
 	glm::mat4 world_to_clip = get_world_to_clip();
-	auto draw_text = [=](glm::vec3 position, std::string text) {
+	auto draw_text = [=](glm::mat4 mat, std::string text) {
 		
 		static const float max_distance = glm::pow(100.f, 2); // squared units	
 		float distance =
-			glm::abs(glm::pow(position.x - _renderer->camera_position.x, 2)) +
-			glm::abs(glm::pow(position.y - _renderer->camera_position.y, 2)) +
-			glm::abs(glm::pow(position.z - _renderer->camera_position.z, 2));
+			glm::abs(glm::pow(mat[3].x - _renderer->camera_position.x, 2)) +
+			glm::abs(glm::pow(mat[3].y - _renderer->camera_position.y, 2)) +
+			glm::abs(glm::pow(mat[3].z - _renderer->camera_position.z, 2));
 
 		if(distance < max_distance) {
-			glm::vec3 screen_pos = apply_local_to_screen(world_to_clip, position, glm::vec3(0, 0, 0));
+			glm::vec3 screen_pos = apply_local_to_screen(world_to_clip, mat);
 			if (screen_pos.z > 0 && screen_pos.z < 1) {
 				static const int colour = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
 				draw_list->AddText(ImVec2(screen_pos.x, screen_pos.y), colour, text.c_str());
@@ -181,11 +173,11 @@ void view_3d::draw_overlay_text(level& lvl) const {
 	};
 	
 	lvl.world.for_each<tie>([=](std::size_t i, tie& object) {
-		draw_text(glm::vec3(object.mat()[3]), "t");
+		draw_text(object.mat(), "t");
 	});
 	
 	lvl.world.for_each<shrub>([=](std::size_t i, shrub& object) {
-		draw_text(glm::vec3(object.mat()[3]), "s");
+		draw_text(object.mat(), "s");
 	});
 	
 	lvl.world.for_each<moby>([=](std::size_t i, moby& object) {
@@ -195,9 +187,9 @@ void view_3d::draw_overlay_text(level& lvl) const {
 			{ 0x323, "swingshot_swinging" }
 		};
 		if(moby_class_names.find(object.class_num) != moby_class_names.end()) {
-			draw_text(object.position(), moby_class_names.at(object.class_num));
+			draw_text(object.mat(), moby_class_names.at(object.class_num));
 		} else {
-			draw_text(object.position(), std::to_string(object.class_num));
+			draw_text(object.mat(), std::to_string(object.class_num));
 		}
 	});
 }
@@ -229,23 +221,6 @@ glm::mat4 view_3d::get_local_to_clip(glm::mat4 world_to_clip, glm::vec3 position
 	model = glm::rotate(model, rotation.y, glm::vec3(0, 1, 0));
 	model = glm::rotate(model, rotation.z, glm::vec3(0, 0, 1));
 	return world_to_clip * model;
-}
-
-glm::vec3 view_3d::apply_local_to_screen(glm::mat4 world_to_clip, glm::vec3 position, glm::vec3 rotation) const {
-	glm::mat4 local_to_clip = get_local_to_clip(world_to_clip, glm::vec3(1.f), rotation);
-	glm::vec4 homogeneous_pos = local_to_clip * glm::vec4(position, 1);
-	glm::vec3 gl_pos {
-		homogeneous_pos.x / homogeneous_pos.w,
-		homogeneous_pos.y / homogeneous_pos.w,
-		homogeneous_pos.z / homogeneous_pos.w
-	};
-	ImVec2 window_pos = ImGui::GetWindowPos();
-	glm::vec3 screen_pos(
-		window_pos.x + (1 + gl_pos.x) * _viewport_size.x / 2.0,
-		window_pos.y + (1 + gl_pos.y) * _viewport_size.y / 2.0,
-		gl_pos.z
-	);
-	return screen_pos;
 }
 
 glm::vec3 view_3d::apply_local_to_screen(glm::mat4 world_to_clip, glm::mat4 object_matrix) const {
@@ -339,13 +314,7 @@ void view_3d::draw_pickframe(level& lvl) const {
 	};
 	
 	lvl.world.for_each<tie>([=](std::size_t index, tie& object) {
-        glm::mat4 mat = object.mat();
-        mat[0][3] = 0;
-        mat[1][3] = 0;
-        mat[2][3] = 0;
-        mat[3][3] = 1;
-
-        glm::mat4 local_to_clip = world_to_clip * mat;
+        glm::mat4 local_to_clip = world_to_clip * object.mat();
 		object_id id { object_type::TIE, index };
 		glm::vec3 colour = encode_pick_colour(id);
 		_renderer->draw_cube(local_to_clip, colour);
@@ -353,9 +322,7 @@ void view_3d::draw_pickframe(level& lvl) const {
 
 	
 	lvl.world.for_each<moby>([=](std::size_t index, moby& object) {
-		auto pos = object.position();
-		auto rot = object.rotation();
-		glm::mat4 local_to_clip = get_local_to_clip(world_to_clip, pos, rot);
+		glm::mat4 local_to_clip = world_to_clip * object.mat();
 		object_id id { object_type::MOBY, index };
 		glm::vec3 colour = encode_pick_colour(id);
 		
@@ -398,17 +365,6 @@ void view_3d::select_rect(level& lvl, ImVec2 position) {
 		lvl.world.selection = {};
 		
 		glm::mat4 world_to_clip = get_world_to_clip();
-		FOR_EACH_POINT_OBJECT(lvl.world, ([this, &lvl, world_to_clip](object_id id, auto& object) {
-			glm::vec3 screen_pos = apply_local_to_screen(world_to_clip, object.position(), glm::vec3(0, 0, 0));
-			if(screen_pos.z < 0) {
-				return;
-			}
-			if(screen_pos.x > _selection_begin.x && screen_pos.x < _selection_end.x &&
-			   screen_pos.y > _selection_begin.y && screen_pos.y < _selection_end.y) {
-				lvl.world.selection.push_back(id);
-			}
-		}));
-
         FOR_EACH_MATRIX_OBJECT(lvl.world, ([this, &lvl, world_to_clip](object_id id, auto& object) {
             glm::vec3 screen_pos = apply_local_to_screen(world_to_clip, object.mat());
             if(screen_pos.z < 0) {

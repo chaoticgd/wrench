@@ -46,8 +46,7 @@ public:
 	
 	[[nodiscard]] glm::mat4 get_world_to_clip() const;
 	[[nodiscard]] glm::mat4 get_local_to_clip(glm::mat4 world_to_clip, glm::vec3 position, glm::vec3 rotation) const;
-	[[nodiscard]] glm::vec3 apply_local_to_screen(glm::mat4 world_to_clip, glm::vec3 position, glm::vec3 rotation) const;
-    [[nodiscard]] glm::vec3 apply_local_to_screen(glm::mat4 world_to_clip, glm::mat4 object_matrix) const;
+	[[nodiscard]] glm::vec3 apply_local_to_screen(glm::mat4 world_to_clip, glm::mat4 object_matrix) const;
 	
 	// Allows the user to select an object by clicking on it. See:
 	// https://www.opengl-tutorial.org/miscellaneous/clicking-on-objects/picking-with-an-opengl-hack/

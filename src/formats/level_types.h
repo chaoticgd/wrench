@@ -22,6 +22,7 @@
 #include <variant>
 #include <stdint.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "../stream.h"
 #include "game_model.h"
@@ -31,84 +32,81 @@
 # 	splines) as PODs.
 # */
 
+// A racmat is a 4x4 matrix where the
+// last index is used for something else
+packed_struct(racmat,
+    float m11 = 0;
+    float m12 = 0;
+    float m13 = 0;
+    float m14 = 0;
+    float m21 = 0;
+    float m22 = 0;
+    float m23 = 0;
+    float m24 = 0;
+    float m31 = 0;
+    float m32 = 0;
+    float m33 = 0;
+    float m34 = 0;
+    float m41 = 0;
+    float m42 = 0;
+    float m43 = 0;
 
-packed_struct(mat4f,
-              float m11 = 0;
-                      float m12 = 0;
-                      float m13 = 0;
-                      float m14 = 0;
-                      float m21 = 0;
-                      float m22 = 0;
-                      float m23 = 0;
-                      float m24 = 0;
-                      float m31 = 0;
-                      float m32 = 0;
-                      float m33 = 0;
-                      float m34 = 0;
-                      float m41 = 0;
-                      float m42 = 0;
-                      float m43 = 0;
-                      float m44 = 0;
+    racmat() {
+        m11 = 0;
+        m12 = 0;
+        m13 = 0;
+        m14 = 0;
+        m21 = 0;
+        m22 = 0;
+        m23 = 0;
+        m24 = 0;
+        m31 = 0;
+        m32 = 0;
+        m33 = 0;
+        m34 = 0;
+        m41 = 0;
+        m42 = 0;
+        m43 = 0;
+    }
 
+    racmat(glm::mat4 mat) {
+        m11 = mat[0][0];
+        m12 = mat[0][1];
+        m13 = mat[0][2];
+        m14 = mat[0][3];
+        m21 = mat[1][0];
+        m22 = mat[1][1];
+        m23 = mat[1][2];
+        m24 = mat[1][3];
+        m31 = mat[2][0];
+        m32 = mat[2][1];
+        m33 = mat[2][2];
+        m34 = mat[2][3];
+        m41 = mat[3][0];
+        m42 = mat[3][1];
+        m43 = mat[3][2];
+    }
 
-                      mat4f() {
-                  m11 = 0;
-                  m12 = 0;
-                  m13 = 0;
-                  m14 = 0;
-                  m21 = 0;
-                  m22 = 0;
-                  m23 = 0;
-                  m24 = 0;
-                  m31 = 0;
-                  m32 = 0;
-                  m33 = 0;
-                  m34 = 0;
-                  m41 = 0;
-                  m42 = 0;
-                  m43 = 0;
-                  m44 = 0;
-              }
-
-                      mat4f(glm::mat4 mat) {
-                      m11 = mat[0][0];
-                      m12 = mat[0][1];
-                      m13 = mat[0][2];
-                      m14 = mat[0][3];
-                      m21 = mat[1][0];
-                      m22 = mat[1][1];
-                      m23 = mat[1][2];
-                      m24 = mat[1][3];
-                      m31 = mat[2][0];
-                      m32 = mat[2][1];
-                      m33 = mat[2][2];
-                      m34 = mat[2][3];
-                      m41 = mat[3][0];
-                      m42 = mat[3][1];
-                      m43 = mat[3][2];
-                      m44 = mat[3][3];
-              }
-
-                      glm::mat4 operator()() const {
-                      glm::mat4 result;
-                      result[0][0] = m11;
-                      result[0][1] = m12;
-                      result[0][2] = m13;
-                      result[0][3] = m14;
-                      result[1][0] = m21;
-                      result[1][1] = m22;
-                      result[1][2] = m23;
-                      result[1][3] = m24;
-                      result[2][0] = m31;
-                      result[2][1] = m32;
-                      result[2][2] = m33;
-                      result[2][3] = m34;
-                      result[3][0] = m41;
-                      result[3][1] = m42;
-                      result[3][2] = m43;
-                      result[3][3] = m44;
-                      return result;
-              }
+    glm::mat4 operator()() const {
+        glm::mat4 result;
+        result[0][0] = m11;
+        result[0][1] = m12;
+        result[0][2] = m13;
+        result[0][3] = m14;
+        result[1][0] = m21;
+        result[1][1] = m22;
+        result[1][2] = m23;
+        result[1][3] = m24;
+        result[2][0] = m31;
+        result[2][1] = m32;
+        result[2][2] = m33;
+        result[2][3] = m34;
+        result[3][0] = m41;
+        result[3][1] = m42;
+        result[3][2] = m43;
+        result[3][3] = 1;
+        return result;
+    }
 )
 
 packed_struct(vec3f,
@@ -142,11 +140,28 @@ packed_struct(tie,
 	uint32_t unknown_4;  // 0x4
 	uint32_t unknown_8;  // 0x8
 	uint32_t unknown_c;  // 0xc
-	mat4f mat; //0x10
+	racmat mat; //0x10
+	uint32_t unknown_4c; // 0x4c
 	uint32_t unknown_50; // 0x50
 	int32_t  uid;        // 0x54
 	uint32_t unknown_58; // 0x58
 	uint32_t unknown_5c; // 0x5c
+
+	void set_translation(glm::vec3 trans) {
+	    mat.m41 = trans.x;
+	    mat.m42 = trans.y;
+	    mat.m43 = trans.z;
+	}
+
+	void translate(glm::vec3 trans) {
+	    mat = glm::translate(mat(), trans);
+	}
+
+	void rotate(glm::vec3 rot) {
+	    mat = glm::rotate(mat(), rot.x, glm::vec3(1, 0, 1));
+	    mat = glm::rotate(mat(), rot.y, glm::vec3(0, 1, 1));
+	    mat = glm::rotate(mat(), rot.z, glm::vec3(0, 0, 1));
+	}
 )
 
 packed_struct(shrub,
@@ -154,7 +169,8 @@ packed_struct(shrub,
 	uint32_t unknown_4;  // 0x4
 	uint32_t unknown_8;  // 0x8
 	uint32_t unknown_c;  // 0xc
-	mat4f mat; //0x10
+	racmat mat; //0x10
+	uint32_t unknown_4c; // 0x4c
 	uint32_t unknown_50; // 0x50
 	uint32_t unknown_54; // 0x54
 	uint32_t unknown_58; // 0x58
@@ -163,6 +179,22 @@ packed_struct(shrub,
 	uint32_t unknown_64; // 0x64
 	uint32_t unknown_68; // 0x68
 	uint32_t unknown_6c; // 0x6c
+
+    void set_translation(glm::vec3 trans) {
+        mat.m41 = trans.x;
+        mat.m42 = trans.y;
+        mat.m43 = trans.z;
+    }
+
+	void translate(glm::vec3 trans) {
+	    mat = glm::translate(mat(), trans);
+	}
+
+	void rotate(glm::vec3 rot) {
+	    mat = glm::rotate(mat(), rot.x, glm::vec3(1, 0, 1));
+	    mat = glm::rotate(mat(), rot.y, glm::vec3(0, 1, 1));
+	    mat = glm::rotate(mat(), rot.z, glm::vec3(0, 0, 1));
+	}
 )
 
 packed_struct(moby,
@@ -196,6 +228,26 @@ packed_struct(moby,
 	uint32_t unknown_7c; // 0x7c
 	uint32_t unknown_80; // 0x80
 	uint32_t unknown_84; // 0x84
+
+	glm::mat4 mat() {
+        glm::mat4 model_matrix = glm::translate(glm::mat4(1.f), position());
+        model_matrix = glm::rotate(model_matrix, rotation.x, glm::vec3(1, 0, 0));
+        model_matrix = glm::rotate(model_matrix, rotation.y, glm::vec3(0, 1, 0));
+        model_matrix = glm::rotate(model_matrix, rotation.z, glm::vec3(0, 0, 1));
+        return model_matrix;
+    }
+
+    void set_translation(glm::vec3 trans) {
+	    position = trans;
+	}
+
+    void translate(glm::vec3 trans) {
+	    position = position() + trans;
+	}
+
+	void rotate(glm::vec3 rot) {
+	    rotation = rotation() + rot;
+	}
 )
 
 using spline = std::vector<glm::vec3>;

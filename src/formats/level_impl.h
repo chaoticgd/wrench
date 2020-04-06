@@ -137,12 +137,10 @@ public:
 // Iterate over each point object. Needs to be a macro since the callback needs
 // to take different types as arguments depending on the type of object being
 // handled. Kinda hacky, but it works. (;
-#define FOR_EACH_POINT_OBJECT(world, callback) \
+#define FOR_EACH_MATRIX_OBJECT(world, callback) \
 	for(std::size_t i = 0; i < world.count<moby>(); i++) { \
 		callback(object_id { object_type::MOBY, i }, world.object_at<moby>(i)); \
-	}
-
-#define FOR_EACH_MATRIX_OBJECT(world, callback) \
+	} \
 	for(std::size_t i = 0; i < world.count<tie>(); i++) { \
 		callback(object_id { object_type::TIE, i }, world.object_at<tie>(i)); \
 	} \
