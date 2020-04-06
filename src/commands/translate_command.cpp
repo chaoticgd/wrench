@@ -30,6 +30,12 @@ translate_command::translate_command(
 			_prev_positions[id] = object.position();
 		}
 	}));
+
+    FOR_EACH_MATRIX_OBJECT(_lvl->world, ([=](object_id id, auto& object) {
+        if(std::find(objects.begin(), objects.end(), id) != objects.end()) {
+            _prev_positions[id] = glm::vec3(object.mat()[3]);
+        }
+    }));
 }
 
 void translate_command::apply(wrench_project* project) {
@@ -38,6 +44,12 @@ void translate_command::apply(wrench_project* project) {
 			object.position = vec3f(object.position() + _displacement);
 		}
 	}));
+
+    FOR_EACH_MATRIX_OBJECT(_lvl->world, ([=](object_id id, auto& object) {
+        if(_prev_positions.find(id) != _prev_positions.end()) {
+            object.mat = glm::translate(object.mat(), _displacement);
+        }
+    }));
 }
 
 void translate_command::undo(wrench_project* project) {
@@ -46,4 +58,12 @@ void translate_command::undo(wrench_project* project) {
 			object.position = vec3f(_prev_positions.at(id));
 		}
 	}));
+
+    FOR_EACH_MATRIX_OBJECT(_lvl->world, ([=](object_id id, auto& object) {
+        if(_prev_positions.find(id) != _prev_positions.end()) {
+            glm::mat4 mat = object.mat();
+            mat[3] = glm::vec4(_prev_positions.at(id), 1);
+            object.mat = mat;
+        }
+    }));
 }
