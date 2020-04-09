@@ -141,9 +141,19 @@ void view_3d::draw_level(level& lvl) const {
 			// We've failed to parse the model data.
 		}
 	});
-	
-	lvl.world.for_each<spline>([=](std::size_t index, spline& object) {
-		object_id id { object_type::SPLINE, index };
+
+	for (auto frag : lvl.tfrags) {
+		glm::vec3 colour = glm::vec3(0.5, 0.5, 0.5);
+
+		try {
+			_renderer->draw_model(frag, world_to_clip, colour);
+		} catch (stream_error &err) {
+			// We've failed to parse the model data.
+		}
+	}
+
+	lvl.world.for_each<spline>([=](std::size_t index, spline &object) {
+		object_id id{object_type::SPLINE, index};
 		glm::vec3 colour = get_colour(id, glm::vec3(1, 0.5, 0));
 		_renderer->draw_spline(object, world_to_clip, colour);
 	});

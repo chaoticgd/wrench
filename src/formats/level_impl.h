@@ -30,6 +30,7 @@
 #include "racpak.h"
 #include "level_types.h"
 #include "texture_impl.h"
+#include "tfrag.h"
 
 # /*
 #	Read LEVEL*.WAD files.
@@ -292,7 +293,8 @@ public:
 	std::vector<texture> tie_textures;
 	std::vector<texture> moby_textures;
 	std::vector<texture> sprite_textures;
-	
+    std::vector<tfrag> tfrags;
+
 private:
 	proxy_stream _backing;
 	stream* _moby_stream;
