@@ -92,7 +92,7 @@ void bmp_to_texture(texture* dest, stream& src) {
 	}
 
 	vec2i size { info_header.width, info_header.height };
-	if(dest->size() == size) {
+	if(dest->size() != size) {
 		throw stream_format_error("Texture size mismatch.");
 	}
 
