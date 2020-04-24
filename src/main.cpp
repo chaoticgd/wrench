@@ -17,7 +17,6 @@
 */
 
 #include <chrono>
-#include <unistd.h>
 
 #include "fs_includes.h"
 #include "gl_includes.h"
@@ -45,7 +44,7 @@ int main(int argc, char** argv) {
 	// Set the working dir.
 	fs::path wrench_executable_path(argv[0]);
 	std::string wrench_root = wrench_executable_path.remove_filename().string() + "..";
-	chdir(wrench_root.c_str());
+	fs::current_path(wrench_root);
 
 	app a;
 
