@@ -61,8 +61,8 @@ int main(int argc, char** argv) {
 	glfwMakeContextCurrent(a.glfw_window);
 	glfwSwapInterval(1);
 
-	if(glewInit() != GLEW_OK) {
-		throw std::runtime_error("Cannot load GLEW.");
+	if(!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
+		throw std::runtime_error("Cannot load GLAD.");
 	}
 
 	glfwSetWindowUserPointer(a.glfw_window, &a);

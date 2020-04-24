@@ -180,11 +180,10 @@ find_package(OpenGL)
 target_link_libraries(wrench ${OPENGL_LIBRARIES})
 target_link_libraries(randomiser ${OPENGL_LIBRARIES})
 
-# GLEW
-find_package(GLEW REQUIRED)
-include_directories(${GLEW_INCLUDE_DIRS})
-target_link_libraries(wrench ${GLEW_LIBRARIES})
-target_link_libraries(randomiser ${GLEW_LIBRARIES})
+# GLAD
+add_subdirectory(thirdparty/glad)
+target_link_libraries(wrench glad)
+target_link_libraries(randomiser glad)
 
 # GLFW
 add_subdirectory(thirdparty/glfw)
@@ -193,7 +192,7 @@ target_link_libraries(randomiser glfw)
 
 # Dear ImGui
 include_directories(thidparty/imgui)
-add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_GLEW=1)
+add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_GLAD=1)
 add_library(imgui STATIC
 	thirdparty/imgui/imconfig.h
 	thirdparty/imgui/imgui_demo.cpp
