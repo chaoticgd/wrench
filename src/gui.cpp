@@ -22,13 +22,13 @@
 #include <iomanip>
 #include <sstream>
 #include <iostream>
+#include <stdlib.h>
 #include <functional>
 #include <boost/algorithm/string.hpp>
 
 #include "util.h"
 #include "config.h"
 #include "window.h"
-#include "platform.h"
 #include "renderer.h"
 #include "formats/bmp.h"
 #include "commands/translate_command.h"
@@ -1454,4 +1454,10 @@ GLuint gui::load_icon(std::string path) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	
 	return texture;
+}
+
+// Don't pass untrusted input to this!
+void gui::open_in_browser(const char* url) {
+	std::string cmd = "xdg-open " + std::string(url);
+	system(cmd.c_str());
 }

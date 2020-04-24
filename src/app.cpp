@@ -18,16 +18,14 @@
 
 #include "app.h"
 
+#include <stdlib.h>
 #include <toml11/toml.hpp>
-#include <boost/process.hpp>
 
 #include "gui.h"
 #include "stream.h"
 #include "renderer.h"
 #include "fs_includes.h"
 #include "worker_thread.h"
-
-namespace bp = boost::process;
 
 app::app()
 	: mouse_last(0, 0),
@@ -221,7 +219,8 @@ void app::run_emulator() {
 	
 	if(fs::is_regular_file(settings.emulator_path)) {
 		std::string emulator_path = fs::canonical(settings.emulator_path).string();
-		bp::spawn(emulator_path, _project->cached_iso_path());
+		std::string cmd = emulator_path + " " + _project->cached_iso_path();
+		system(cmd.c_str());
 	} else {
 		emplace_window<gui::message_box>("Error", "Invalid emulator path.");
 	}

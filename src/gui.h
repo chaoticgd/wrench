@@ -363,6 +363,9 @@ namespace gui {
 	};
 	
 	GLuint load_icon(std::string path);
+	
+	// Don't pass untrusted input to this!
+	void open_in_browser(const char* url);
 }
 
 template <typename T, typename... T_constructor_args>
