@@ -57,6 +57,7 @@ add_executable(fip
 
 add_executable(wad
 	src/cli/wadcli.cpp
+	src/util.cpp
 	src/command_line.cpp
 	src/stream.cpp
 	src/formats/wad.cpp
@@ -169,8 +170,19 @@ if(UNIX)
 	target_link_libraries(randomiser stdc++fs)
 endif()
 
+# cxxopts
+add_subdirectory(thirdparty/cxxopts)
+target_link_libraries(wrench cxxopts)
+target_link_libraries(fip cxxopts)
+target_link_libraries(wad cxxopts)
+target_link_libraries(scan cxxopts)
+target_link_libraries(pakrac cxxopts)
+target_link_libraries(texturefinder cxxopts)
+target_link_libraries(vif cxxopts)
+target_link_libraries(randomiser cxxopts)
+
 # Boost
-find_package(Boost 1.40 COMPONENTS program_options system REQUIRED)
+find_package(Boost 1.40 COMPONENTS system REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 target_link_libraries(wrench ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 target_link_libraries(fip ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})

@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019 chaoticgd
+	Copyright (C) 2019-2020 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -27,24 +27,20 @@
 #include "../formats/vif.h"
 
 int main(int argc, char** argv) {
-	std::string src_path;
-	std::string offset_str;
+	cxxopts::Options options("vif", "Parse PS2 VIF chains until an invalid VIF code is encountered");
+	options.add_options()
+		("s,src", "The input file.",
+			cxxopts::value<std::string>())
+		("o,offset", "The offset in the input file where the VIF chain begins.",
+			cxxopts::value<std::string>()->default_value("0"));
 
-	po::options_description desc("Parse PS2 VIF chains until an invalid VIF code is encountered");
-	desc.add_options()
-		("src,s",    po::value<std::string>(&src_path)->required(),
-			"The input file.")
-		("offset,o", po::value<std::string>(&offset_str)->default_value("0"),
-			"The offset in the input file where the VIF chain begins.");
+	options.parse_positional({
+		"src"
+	});
 
-	po::positional_options_description pd;
-	pd.add("src", 1);
-
-	if(!parse_command_line_args(argc, argv, desc, pd)) {
-		return 0;
-	}
-	
-	std::size_t offset = parse_number(offset_str);
+	auto args = parse_command_line_args(argc, argv, options);
+	std::string src_path = args["src"].as<std::string>();
+	std::size_t offset = parse_number(args["offset"].as<std::string>());
 
 	file_stream src(src_path);
 	std::vector<vif_packet> chain = parse_vif_chain(&src, offset, SIZE_MAX);

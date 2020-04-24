@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019 chaoticgd
+	Copyright (C) 2019-2020 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -35,30 +35,26 @@ void extract_archive(std::string dest_dir, racpak& archive);
 void scan_for_archives(std::string src_path);
 
 int main(int argc, char** argv) {
-	std::string command;
-	std::string src_path;
-	std::string dest_path;
-	std::string src_offset_str;
+	cxxopts::Options options("pakrac", "Read a game archive file");
+	options.add_options()
+		("c,command", "The operation to perform. Available commands are: ls, extract, extractdir.",
+			cxxopts::value<std::string>())
+		("s,src", "The input file of directory.",
+			cxxopts::value<std::string>())
+		("d,dest", "The output file or directory (if applicable).",
+			cxxopts::value<std::string>())
+		("o,offset", "The offset of the racpak within the source file. Only applicable when in extract mode (not extractdir).",
+			cxxopts::value<std::string>()->default_value("0"));
 
-	po::options_description desc("Read a game archive file");
-	desc.add_options()
-		("command,c", po::value<std::string>(&command)->required(),
-			"The operation to perform. Available commands are: ls, extract, extractdir.")
-		("src,s", po::value<std::string>(&src_path)->required(),
-			"The input file of directory.")
-		("dest,d", po::value<std::string>(&dest_path),
-			"The output file or directory (if applicable).")
-		("offset,o", po::value<std::string>(&src_offset_str)->default_value("0"),
-			"The offset of the racpak within the source file. Only applicable when in extract mode (not extractdir).");
+	options.parse_positional({
+		"command", "src", "dest"
+	});
 
-	po::positional_options_description pd;
-	pd.add("command", 1);
-	pd.add("src", 1);
-	pd.add("dest", 1);
-
-	if(!parse_command_line_args(argc, argv, desc, pd)) {
-		return 0;
-	}
+	auto args = parse_command_line_args(argc, argv, options);
+	std::string command = args["command"].as<std::string>();
+	std::string src_path = args["src"].as<std::string>();
+	std::string dest_path = args["dest"].as<std::string>();
+	std::size_t src_offset = parse_number(args["offset"].as<std::string>());
 
 	if(command == "ls") {
 		file_stream src_file(src_path);
@@ -76,7 +72,7 @@ int main(int argc, char** argv) {
 		}
 	} else if(command == "extract") {
 		file_stream src_file(src_path);
-		racpak archive(&src_file, parse_number(src_offset_str), src_file.size());
+		racpak archive(&src_file, src_offset, src_file.size());
 		
 		if(dest_path == "") {
 			std::cerr << "Must specify destination.\n";

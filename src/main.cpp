@@ -32,17 +32,13 @@ void update_camera(app* a);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 int main(int argc, char** argv) {
+	cxxopts::Options options("wrench", "A level editor for the Ratchet & Clank games");
+	options.add_options()
+		("p,project", "Open the specified project (.wrench) file.",
+			cxxopts::value<std::string>()->default_value(""));
 
-	std::string project_path;
-
-	po::options_description desc("A level editor for the Ratchet & Clank games");
-	desc.add_options()
-		("project,p", po::value<std::string>(&project_path),
-			"Open the specified project (.wrench) file.");
-
-	if(!parse_command_line_args(argc, argv, desc)) {
-		return 0;
-	}
+	auto args = parse_command_line_args(argc, argv, options);
+	std::string project_path = args["project"].as<std::string>();
 
 	app a;
 

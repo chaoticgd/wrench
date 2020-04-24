@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019 chaoticgd
+	Copyright (C) 2019-2020 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 #define COMMAND_LINE_H
 
 #include <functional>
-#include <boost/program_options.hpp>
+#include <cxxopts.hpp>
 
 #include "stream.h"
 
@@ -28,12 +28,8 @@
 #	Utility functions to parse command line arguments.
 # */
 
-namespace po = boost::program_options;
-
-bool parse_command_line_args(
-	int argc, char** argv,
-	po::options_description desc = po::options_description(""),
-	po::positional_options_description pd = po::positional_options_description());
+// Will not return if "--help", "--version", "-h" or "-v" is passed.
+cxxopts::ParseResult parse_command_line_args(int argc, char** argv, cxxopts::Options options);
 
 using stream_op = std::function<void(stream& dest, stream& src)>;
 
