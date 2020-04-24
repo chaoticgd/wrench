@@ -92,6 +92,16 @@ namespace gui {
 					: _level_name(level_name), _object_index(object_index), _member(member), _new_value(new_value) {}
 				
 			protected:
+				auto& member(wrench_project* project) {
+					level* lvl = project->level_from_name(_level_name);
+					if (lvl == nullptr) {
+						throw command_error(
+							"The level for which this operation should "
+							"be applied to is not currently loaded.");
+					}
+					return lvl->world.object_at<T>(_object_index).*_member;
+				}
+
 				void apply(wrench_project* project) override {
 					auto& ref = member(project);
 					_old_value = ref;
@@ -101,18 +111,8 @@ namespace gui {
 				void undo(wrench_project* project) override {
 					member(project) = _old_value;
 				}
-				
+
 			private:
-				auto& member(wrench_project* project) {
-					level* lvl = project->level_from_name(_level_name);
-					if(lvl == nullptr) {
-						throw command_error(
-							"The level for which this operation should "
-							"be applied to is not currently loaded.");
-					}
-					return lvl->world.object_at<T>(_object_index).*_member;
-				}
-			
 				std::string _level_name;
 				std::size_t _object_index;
 				T_value T::*_member;

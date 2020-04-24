@@ -71,7 +71,7 @@ void fip_to_bmp(stream& dest, stream& src) {
 	}
 
 	uint32_t row_size = ((info.bits_per_pixel * info.width + 31) / 32) * 4;
-	uint32_t pixel_data = dest.tell();
+	std::size_t pixel_data = dest.tell();
 
 	for(int y = info.height - 1; y >= 0; y--) {
 		dest.seek(pixel_data + y * row_size);
@@ -89,7 +89,7 @@ void bmp_to_fip(stream& dest, stream& src) {
 		throw stream_format_error("Invalid BMP header.");
 	}
 
-	uint32_t secondary_header_offset = src.tell();
+	std::size_t secondary_header_offset = src.tell();
 	auto info_header = src.read<bmp_info_header>();
 
 	if(info_header.bits_per_pixel != 8) {

@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2020 chaoticgd
+	Copyright (C) 2019-2020 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,32 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "stacktrace.h"
-
-#include <sstream>
-
-#ifdef __GNUC__
-	#include <stdlib.h>
-	#include <execinfo.h>
-#endif
-
-std::string generate_stacktrace() {
-	std::stringstream result;
-	
-	#ifdef __GNUC__
-		void* array[256];
-		std::size_t size = backtrace(array, 256);
-		char** strings = backtrace_symbols(array, size);
-
-		for(std::size_t i = 0; i < size; i++) {
-			result << std::string(strings[i]) + "\n";
-		}
-
-		free(strings);
-	#else
-		// TODO: Produce stack traces on Windows.
-		result << "Stack traces for your OS are not yet supported.";
-	#endif
-	
-	return result.str();
-}
+// At some point minwindef.h gets included on Windows that for
+// some reason defines min and max as macros which break everything.
+#undef min
+#undef max

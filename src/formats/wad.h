@@ -32,9 +32,8 @@
 
 packed_struct(wad_header,
 	char magic[3]; // "WAD"
-	uint32_t total_size;
+	uint32_t total_size; // Including header.
 	uint8_t pad[9];
-	uint8_t data[0 /* total_size - sizeof(wad_header) */];
 )
 
 // Check the magic bytes.

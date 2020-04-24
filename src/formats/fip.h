@@ -42,7 +42,6 @@ packed_struct(fip_header,
 	uint32_t          height;
 	uint8_t           unknown2[0x10];
 	fip_palette_entry palette[0x100];
-	uint8_t           data[0];
 )
 
 bool validate_fip(char* header);

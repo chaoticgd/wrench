@@ -119,7 +119,7 @@ void extract_archive(std::string dest_dir, racpak& archive) {
 			stream* src = archive.open(entry);
 			src->seek(0);
 			stream::copy_n(dest, *src, src->size());
-		} catch(stream_error& e) {
+		} catch(stream_error&) {
 			std::cerr << "Error: Failed to extract item " << i << " for " << dest_dir << "\n";
 		}
 	}

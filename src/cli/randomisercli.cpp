@@ -18,6 +18,7 @@
 
 #include <ctime>
 #include <cstdio>
+#include <random>
 #include <string>
 #include <cstdlib>
 #include <algorithm>
@@ -134,7 +135,9 @@ void read_shuffle_write(stream& backing, std::size_t offset, std::size_t num_ele
 	std::vector<T> elements(num_elements);
 	backing.seek(offset);
 	backing.read_v(elements);
-	std::random_shuffle(elements.begin(), elements.end());
+	std::random_device rng;
+	std::mt19937 urng(rng());
+	std::shuffle(elements.begin(), elements.end(), urng);
 	backing.seek(offset);
 	backing.write_v(elements);
 }

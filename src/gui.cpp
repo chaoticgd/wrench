@@ -32,6 +32,8 @@
 #include "formats/bmp.h"
 #include "commands/translate_command.h"
 
+#include "unwindows.h"
+
 void gui::render(app& a) {
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();

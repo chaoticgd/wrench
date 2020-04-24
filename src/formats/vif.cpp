@@ -231,6 +231,6 @@ std::vector<vif_packet> parse_vif_chain(const stream* src, std::size_t base_addr
 	return chain;
 }
 
-uint64_t bit_range(uint64_t val, int lo, int hi) {
+int bit_range(uint64_t val, int lo, int hi) {
 	return (val >> lo) & ((1 << (hi - lo + 1)) - 1);
 }

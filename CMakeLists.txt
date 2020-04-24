@@ -145,16 +145,7 @@ add_executable(randomiser
 	src/md5.cpp
 )
 
-if(MSVC)
-	target_compile_options(wrench PRIVATE /W4 /WX)
-	target_compile_options(fip PRIVATE /W4 /WX)
-	target_compile_options(wad PRIVATE /W4 /WX)
-	target_compile_options(scan PRIVATE /W4 /WX)
-	target_compile_options(pakrac PRIVATE /W4 /WX)
-	target_compile_options(texturefinder PRIVATE /W4 /WX)
-	target_compile_options(vif PRIVATE /W4 /WX)
-	target_compile_options(randomiser PRIVATE /W4 /WX)
-else()
+if(UNIX)
 	target_compile_options(wrench PRIVATE -Wall -O3)
 	target_compile_options(fip PRIVATE -Wall -O3)
 	target_compile_options(wad PRIVATE -Wall -O3)
@@ -207,6 +198,7 @@ target_link_libraries(randomiser glfw)
 add_subdirectory(thirdparty/glm)
 target_link_libraries(wrench glm)
 target_link_libraries(randomiser glm)
+include_directories(thirdparty/glm)
 
 # Dear ImGui
 include_directories(thidparty/imgui)
@@ -236,8 +228,10 @@ target_link_libraries(randomiser ziplib)
 include_directories(SYSTEM thirdparty/ziplib/Source) # Suppress warnings for ZipLib headers.
 
 # Source Map
-add_custom_target(sourcemap
-	COMMAND rm -f docs/dev/source_map.svg
-	COMMAND python3 ./scripts/graphifier/graphify.py src docs/dev/source_map.svg
-)
-add_dependencies(wrench sourcemap)
+if(UNIX)
+	add_custom_target(sourcemap
+		COMMAND rm -f docs/dev/source_map.svg
+		COMMAND python3 ./scripts/graphifier/graphify.py src docs/dev/source_map.svg
+	)
+	add_dependencies(wrench sourcemap)
+endif()
