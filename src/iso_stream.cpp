@@ -18,13 +18,10 @@
 
 #include "iso_stream.h"
 
-#include <boost/filesystem.hpp>
-
 #include "md5.h"
 #include "util.h"
+#include "fs_includes.h"
 #include "formats/wad.h"
-
-namespace fs = boost::filesystem;
 
 wad_stream::wad_stream(iso_stream* backing, std::size_t offset, std::vector<wad_patch> patches)
 	: _backing(backing),

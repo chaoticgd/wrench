@@ -19,12 +19,12 @@
 #include "app.h"
 
 #include <toml11/toml.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/process.hpp>
 
 #include "gui.h"
 #include "stream.h"
 #include "renderer.h"
+#include "fs_includes.h"
 #include "worker_thread.h"
 
 namespace bp = boost::process;
@@ -168,7 +168,7 @@ void app::read_settings() {
 	}
 	settings.gui_scale = 1.f;
 
-	if(boost::filesystem::exists(settings_file_path)) {
+	if(fs::exists(settings_file_path)) {
 		try {
 			const auto settings_file = toml::parse(settings_file_path);
 
@@ -219,8 +219,8 @@ void app::run_emulator() {
 	
 	_project->iso.commit(); // Recompress WAD segments.
 	
-	if(boost::filesystem::is_regular_file(settings.emulator_path)) {
-		std::string emulator_path = boost::filesystem::canonical(settings.emulator_path).string();
+	if(fs::is_regular_file(settings.emulator_path)) {
+		std::string emulator_path = fs::canonical(settings.emulator_path).string();
 		bp::spawn(emulator_path, _project->cached_iso_path());
 	} else {
 		emplace_window<gui::message_box>("Error", "Invalid emulator path.");

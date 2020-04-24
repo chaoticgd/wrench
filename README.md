@@ -32,7 +32,7 @@ releases are currently somewhat supported:
 ### Ubuntu 18.04
 
 1.	Install dependencies and tools:
-	> sudo apt install git cmake g++ libglew-dev libboost-all-dev libxinerama-dev libxcursor-dev libglm-dev python3 python3-pydot graphviz
+	> sudo apt install git cmake g++-8 libglew-dev libboost-all-dev libxinerama-dev libxcursor-dev libglm-dev python3 python3-pydot graphviz
 
 2.	Download the source code using Git:
 	> git clone https://github.com/chaoticgd/wrench
@@ -45,6 +45,10 @@ releases are currently somewhat supported:
 	
 5.	Build it with cmake:
 	> cmake . && cmake --build .
+	
+	Note: Wrench requires g++ 8 or newer. If the default installation of g++ on your system is of version 7 or older, you will have to either update the default version, or explicitly tell cmake to use the newer compiler like so:
+	
+	> cmake -DCMAKE_CXX_COMPILER=/usr/bin/g++-8 && cmake --build .
 
 ### Windows
 

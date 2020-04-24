@@ -157,8 +157,20 @@ else()
 	target_compile_options(randomiser PRIVATE -Wall -O3)
 endif()
 
+# std::filesystem
+if(UNIX)
+	target_link_libraries(wrench stdc++fs)
+	target_link_libraries(fip stdc++fs)
+	target_link_libraries(wad stdc++fs)
+	target_link_libraries(scan stdc++fs)
+	target_link_libraries(pakrac stdc++fs)
+	target_link_libraries(texturefinder stdc++fs)
+	target_link_libraries(vif stdc++fs)
+	target_link_libraries(randomiser stdc++fs)
+endif()
+
 # Boost
-find_package(Boost 1.40 COMPONENTS program_options filesystem REQUIRED)
+find_package(Boost 1.40 COMPONENTS program_options system REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 target_link_libraries(wrench ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 target_link_libraries(fip ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})

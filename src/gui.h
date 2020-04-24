@@ -20,22 +20,20 @@
 #define GUI_H
 
 #include <functional>
-#include <boost/filesystem.hpp>
 #include "imgui_includes.h"
 #include <imgui_markdown/imgui_markdown.h>
 
-#include "gl_includes.h"
 #include "app.h"
 #include "window.h"
 #include "view_3d.h"
+#include "fs_includes.h"
+#include "gl_includes.h"
 #include "formats/game_model.h"
 #include "formats/level_impl.h"
 
 # /*
 #	Implements most of the GUI.
 # */
-
-namespace fs = boost::filesystem;
 
 namespace gui {
 	void render(app& a);

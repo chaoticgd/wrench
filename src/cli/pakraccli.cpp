@@ -18,15 +18,14 @@
 
 #include <sstream>
 #include <iostream>
-#include <boost/filesystem.hpp>
 
 #include "../util.h"
 #include "../command_line.h"
+#include "../fs_includes.h"
 #include "../formats/fip.h"
 #include "../formats/wad.h"
 #include "../formats/racpak.h"
 
-namespace fs = boost::filesystem;
 
 # /*
 #	CLI tool to inspect, unpack and repack .WAD archives (racpaks).

@@ -1377,7 +1377,7 @@ void gui::file_dialog::render(app& a) {
 			if(fs::is_directory(item)) {
 				continue;
 			}
-			if(std::find(_extensions.begin(), _extensions.end(), fs::extension(item)) == _extensions.end()) {
+			if(std::find(_extensions.begin(), _extensions.end(), item.extension()) == _extensions.end()) {
 				continue;
 			}
 
