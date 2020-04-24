@@ -203,6 +203,11 @@ add_subdirectory(thirdparty/glfw)
 target_link_libraries(wrench glfw)
 target_link_libraries(randomiser glfw)
 
+# GLM
+add_subdirectory(thirdparty/glm)
+target_link_libraries(wrench glm)
+target_link_libraries(randomiser glm)
+
 # Dear ImGui
 include_directories(thidparty/imgui)
 add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_GLAD=1)

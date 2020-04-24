@@ -26,3 +26,6 @@
 [submodule "thirdparty/cxxopts"]
 	path = thirdparty/cxxopts
 	url = https://github.com/jarro2783/cxxopts
+[submodule "thirdparty/glm"]
+	path = thirdparty/glm
+	url = https://github.com/g-truc/glm
