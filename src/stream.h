@@ -39,8 +39,8 @@
 static const int SECTOR_SIZE = 0x800;
 
 #ifdef _MSC_VER
-	#define packed_struct(name, body \
-		__pragma(pack(push, 1)) struct name { body } __pragma(pack(pop))
+	#define packed_struct(name, body) \
+		__pragma(pack(push, 1)) struct name { body } __pragma(pack(pop));
 	
 	#define FORCE_INLINE __forceinline
 #else
