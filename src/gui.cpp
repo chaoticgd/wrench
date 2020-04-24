@@ -24,7 +24,6 @@
 #include <iostream>
 #include <stdlib.h>
 #include <functional>
-#include <boost/algorithm/string.hpp>
 
 #include "util.h"
 #include "config.h"
@@ -1354,7 +1353,7 @@ void gui::file_dialog::render(app& a) {
 	// Draw directory listing.
 	if(fs::is_directory(_directory)) {
 		std::vector<fs::path> items { _directory / ".." };
-		for(auto item : boost::make_iterator_range(fs::directory_iterator(_directory), {})) {
+		for(auto item : fs::directory_iterator(_directory)) {
 			items.push_back(item.path());
 		}
 
