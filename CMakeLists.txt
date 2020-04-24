@@ -193,11 +193,6 @@ find_package(Threads REQUIRED)
 target_link_libraries(wrench Threads::Threads)
 target_link_libraries(randomiser Threads::Threads)
 
-# OpenGL
-find_package(OpenGL)
-target_link_libraries(wrench ${OPENGL_LIBRARIES})
-target_link_libraries(randomiser ${OPENGL_LIBRARIES})
-
 # GLAD
 add_subdirectory(thirdparty/glad)
 target_link_libraries(wrench glad)
