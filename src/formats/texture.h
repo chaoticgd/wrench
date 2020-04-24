@@ -40,6 +40,10 @@ struct vec2i {
 	bool operator==(vec2i& rhs) {
 		return x == rhs.x && y == rhs.y;
 	}
+	
+	bool operator!=(vec2i& rhs) {
+		return x != rhs.x || y != rhs.y;
+	}
 };
 
 class texture {
