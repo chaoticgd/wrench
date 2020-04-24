@@ -17,7 +17,9 @@
 */
 
 #include <chrono>
+#include <unistd.h>
 
+#include "fs_includes.h"
 #include "gl_includes.h"
 #include "command_line.h"
 #include "app.h"
@@ -39,6 +41,11 @@ int main(int argc, char** argv) {
 
 	auto args = parse_command_line_args(argc, argv, options);
 	std::string project_path = args["project"].as<std::string>();
+
+	// Set the working dir.
+	fs::path wrench_executable_path(argv[0]);
+	std::string wrench_root = wrench_executable_path.remove_filename().string() + "..";
+	chdir(wrench_root.c_str());
 
 	app a;
 
