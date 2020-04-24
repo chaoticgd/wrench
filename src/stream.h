@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019 chaoticgd
+	Copyright (C) 2019-2020 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -29,7 +29,8 @@
 #include <optional>
 #include <stdexcept>
 #include <type_traits>
-#include <boost/stacktrace.hpp>
+
+#include "stacktrace.h"
 
 # /*
 #	A set of utility classes and macros for working with binary files.
@@ -80,9 +81,7 @@ packed_struct(sector32,
 struct stream_error : public std::runtime_error {
 	stream_error(const char* what)
 		: std::runtime_error(what) {
-		std::stringstream trace;
-		trace << boost::stacktrace::stacktrace();
-		stack_trace = trace.str();
+		stack_trace = generate_stacktrace();
 	}
 
 	std::string stack_trace;

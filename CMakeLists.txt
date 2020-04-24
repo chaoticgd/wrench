@@ -18,6 +18,7 @@ add_executable(wrench
 	src/gui.cpp
 	src/view_3d.cpp
 	src/stream.cpp
+	src/stacktrace.cpp
 	src/window.cpp
 	src/renderer.cpp
 	src/shaders.cpp
@@ -49,6 +50,7 @@ add_executable(fip
 	src/command_line.cpp
 	src/util.cpp
 	src/stream.cpp
+	src/stacktrace.cpp
 	src/formats/texture.cpp
 	src/formats/fip.cpp
 	src/formats/bmp.cpp
@@ -59,6 +61,7 @@ add_executable(wad
 	src/util.cpp
 	src/command_line.cpp
 	src/stream.cpp
+	src/stacktrace.cpp
 	src/formats/wad.cpp
 )
 
@@ -67,6 +70,7 @@ add_executable(scan
 	src/command_line.cpp
 	src/util.cpp
 	src/stream.cpp
+	src/stacktrace.cpp
 	src/formats/wad.cpp
 	src/formats/texture.cpp
 	src/formats/fip.cpp
@@ -78,6 +82,7 @@ add_executable(pakrac
 	src/util.cpp
 	src/command_line.cpp
 	src/stream.cpp
+	src/stacktrace.cpp
 	src/formats/racpak.cpp
 	src/formats/wad.cpp
 	src/formats/texture.cpp
@@ -89,6 +94,7 @@ add_executable(texturefinder
 	src/cli/texturefindercli.cpp
 	src/util.cpp
 	src/stream.cpp
+	src/stacktrace.cpp
 	src/command_line.cpp
 	src/formats/texture.cpp
 	src/formats/fip.cpp
@@ -98,6 +104,7 @@ add_executable(texturefinder
 add_executable(vif
 	src/cli/vifcli.cpp
 	src/stream.cpp
+	src/stacktrace.cpp
 	src/util.cpp
 	src/command_line.cpp
 	src/formats/vif.cpp
@@ -111,6 +118,7 @@ add_executable(randomiser
 	src/gui.cpp
 	src/view_3d.cpp
 	src/stream.cpp
+	src/stacktrace.cpp
 	src/window.cpp
 	src/renderer.cpp
 	src/shaders.cpp
@@ -178,18 +186,6 @@ target_link_libraries(pakrac cxxopts)
 target_link_libraries(texturefinder cxxopts)
 target_link_libraries(vif cxxopts)
 target_link_libraries(randomiser cxxopts)
-
-# Boost
-find_package(Boost 1.40 COMPONENTS system REQUIRED)
-include_directories(${Boost_INCLUDE_DIR})
-target_link_libraries(wrench ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
-target_link_libraries(fip ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
-target_link_libraries(wad ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
-target_link_libraries(scan ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
-target_link_libraries(pakrac ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
-target_link_libraries(texturefinder ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
-target_link_libraries(vif ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
-target_link_libraries(randomiser ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
 
 # pthreads
 set(THREADS_PREFER_PTHREAD_FLAG ON)
