@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
 		init_gl(a);
 
 		if(project_path != "") {
-			a.open_project(old_working_dir / project_path);
+			a.open_project((old_working_dir / project_path).string());
 		}
 		
 		a.windows.emplace_back(std::make_unique<view_3d>(&a));
