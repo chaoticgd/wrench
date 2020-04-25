@@ -55,4 +55,19 @@ releases are currently somewhat supported:
 
 ### Windows
 
-Not yet.
+1.	Install the following tools:
+	- git
+	- Visual Studio (with cmake integration)
+
+2.	Open a Visual Studio developer command prompt.
+
+3.	cd into the directory above where you want Wrench to live e.g. `cd c:\code`.
+
+4.	Download the source code and dependencies using Git:
+	> git clone --recursive https://github.com/chaoticgd/wrench
+
+5.	cd into the newly created directory:
+	> cd wrench
+
+6.	Build it with cmake:
+	> cmake . && cmake --build .
