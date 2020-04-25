@@ -29,25 +29,28 @@ releases are currently somewhat supported:
 
 ## Building
 
-### Ubuntu 18.04
+### Linux
 
-1.	Install dependencies and tools:
-	> sudo apt install git cmake g++-8 libglew-dev libboost-all-dev libxinerama-dev libxcursor-dev libglm-dev python3 python3-pydot graphviz
+1.	Install the following dependencies and tools:
+	- git
+	- cmake
+	- g++ 8 or newer
+	- libxinerama-dev and libxcursor-dev (needed to build GLFW)
+	
+	Ubuntu 18.04: You may need a newer version cmake than is available in the official repositories.
 
-2.	Download the source code using Git:
-	> git clone https://github.com/chaoticgd/wrench
+2.	cd into the directory above where you want Wrench to live e.g. `cd ~/code`.
+
+2.	Download the source code and additional dependencies using Git:
+	> git clone --recursive https://github.com/chaoticgd/wrench
 
 3.	cd into the newly created directory:
 	> cd wrench
 
-4.	Download the remaining dependencies using Git:
-	> git submodule update --init --recursive
-	
-5.	Build it with cmake:
+4.	Build it with cmake:
 	> cmake . && cmake --build .
 	
-	Note: Wrench requires g++ 8 or newer. If the default installation of g++ on your system is of version 7 or older, you will have to either update the default version, or explicitly tell cmake to use the newer compiler like so:
-	
+	On Ubuntu 18.04, to use g++ 8 (from package `g++-8`) instead of the default compiler, you can instead run:
 	> cmake -DCMAKE_CXX_COMPILER=/usr/bin/g++-8 && cmake --build .
 
 ### Windows
