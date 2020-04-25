@@ -43,6 +43,7 @@ int main(int argc, char** argv) {
 	std::string project_path = args["project"].as<std::string>();
 
 	// Set the working dir.
+	fs::path old_working_dir = fs::current_path();
 	fs::path wrench_executable_path(argv[0]);
 	std::string wrench_root = wrench_executable_path.remove_filename().string() + "..";
 	fs::current_path(wrench_root);
@@ -52,7 +53,7 @@ int main(int argc, char** argv) {
 		init_gl(a);
 
 		if(project_path != "") {
-			a.open_project(project_path);
+			a.open_project(old_working_dir / project_path);
 		}
 		
 		a.windows.emplace_back(std::make_unique<view_3d>(&a));
