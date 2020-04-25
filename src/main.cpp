@@ -29,6 +29,7 @@
 #	Setup code, the main loop, and GLFW stuff.
 # */
 
+void init_gl(app& a);
 void update_camera(app* a);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
@@ -46,8 +47,60 @@ int main(int argc, char** argv) {
 	std::string wrench_root = wrench_executable_path.remove_filename().string() + "..";
 	fs::current_path(wrench_root);
 
-	app a;
+	{
+		app a;
+		init_gl(a);
 
+		if(project_path != "") {
+			a.open_project(project_path);
+		}
+		
+		a.windows.emplace_back(std::make_unique<view_3d>(&a));
+		a.windows.emplace_back(std::make_unique<gui::texture_browser>());
+		a.windows.emplace_back(std::make_unique<gui::model_browser>());
+		a.windows.emplace_back(std::make_unique<gui::project_tree>());
+		a.windows.emplace_back(std::make_unique<gui::moby_list>());
+		a.windows.emplace_back(std::make_unique<gui::inspector>());
+		a.windows.emplace_back(std::make_unique<gui::viewport_information>());
+		a.windows.emplace_back(std::make_unique<gui::tools>());
+
+		auto last_frame_time = std::chrono::steady_clock::now();
+
+		while(!glfwWindowShouldClose(a.glfw_window)) {
+			glfwPollEvents();
+			update_camera(&a);
+
+			gui::render(a);
+
+			ImGui::Render();
+			glfwMakeContextCurrent(a.glfw_window);
+			glfwGetFramebufferSize(a.glfw_window, &a.window_width, &a.window_height);
+
+			glViewport(0, 0, a.window_width, a.window_height);
+			glClearColor(0, 0, 0, 1);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+			glfwMakeContextCurrent(a.glfw_window);
+			glfwSwapBuffers(a.glfw_window);
+			
+			auto frame_time = std::chrono::steady_clock::now();
+			a.delta_time = std::chrono::duration_cast<std::chrono::microseconds>
+				(frame_time - last_frame_time).count();
+			last_frame_time = frame_time;
+		}
+		
+		glfwDestroyWindow(a.glfw_window);
+	} // app::~app();
+
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
+	glfwTerminate();
+}
+
+void init_gl(app& a) {
 	if(!glfwInit()) {
 		throw std::runtime_error("Cannot load GLFW.");
 	}
@@ -83,53 +136,6 @@ int main(int argc, char** argv) {
 	a.init_gui_scale();
 	a.update_gui_scale();
 	a.renderer.shaders.init();
-
-	if(project_path != "") {
-		a.open_project(project_path);
-	}
-	
-	a.windows.emplace_back(std::make_unique<view_3d>(&a));
-	a.windows.emplace_back(std::make_unique<gui::texture_browser>());
-	a.windows.emplace_back(std::make_unique<gui::model_browser>());
-	a.windows.emplace_back(std::make_unique<gui::project_tree>());
-	a.windows.emplace_back(std::make_unique<gui::moby_list>());
-	a.windows.emplace_back(std::make_unique<gui::inspector>());
-	a.windows.emplace_back(std::make_unique<gui::viewport_information>());
-	a.windows.emplace_back(std::make_unique<gui::tools>());
-
-	auto last_frame_time = std::chrono::steady_clock::now();
-
-	while(!glfwWindowShouldClose(a.glfw_window)) {
-		glfwPollEvents();
-		update_camera(&a);
-
-		gui::render(a);
-
-		ImGui::Render();
-		glfwMakeContextCurrent(a.glfw_window);
-		glfwGetFramebufferSize(a.glfw_window, &a.window_width, &a.window_height);
-
-		glViewport(0, 0, a.window_width, a.window_height);
-		glClearColor(0, 0, 0, 1);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-		glfwMakeContextCurrent(a.glfw_window);
-		glfwSwapBuffers(a.glfw_window);
-		
-		auto frame_time = std::chrono::steady_clock::now();
-		a.delta_time = std::chrono::duration_cast<std::chrono::microseconds>
-			(frame_time - last_frame_time).count();
-		last_frame_time = frame_time;
-	}
-
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplGlfw_Shutdown();
-	ImGui::DestroyContext();
-
-	glfwDestroyWindow(a.glfw_window);
-	glfwTerminate();
 }
 
 void update_camera(app* a) {
