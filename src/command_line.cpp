@@ -75,10 +75,10 @@ int run_cli_converter(
 	});
 
 	auto args = parse_command_line_args(argc, argv, options);
-	std::string command = args["command"].as<std::string>();
-	std::string src_path = args["src"].as<std::string>();
-	std::string dest_path = args["dest"].as<std::string>();
-	std::size_t offset = parse_number(args["offset"].as<std::string>());
+	std::string command = cli_get(args, "command");
+	std::string src_path = cli_get(args, "src");
+	std::string dest_path = cli_get(args, "dest");
+	std::size_t offset = parse_number(cli_get_or(args, "offset", "0"));
 
 	file_stream src(src_path);
 	file_stream dest(dest_path, std::ios::in | std::ios::out | std::ios::trunc);
@@ -94,4 +94,19 @@ int run_cli_converter(
 	(*op).second(dest, src_proxy);
 
 	return 0;
+}
+
+std::string cli_get(const cxxopts::ParseResult& result, const char* arg) {
+	if(!result.count(arg)) {
+		std::cout << "Argument --" << arg << " required but not provided." << std::endl;
+		std::exit(1);
+	}
+	return result[arg].as<std::string>();
+}
+
+std::string cli_get_or(const cxxopts::ParseResult& result, const char* arg, const char* default_value) {
+	if(!result.count(arg)) {
+		return default_value;
+	}
+	return result[arg].as<std::string>();
 }

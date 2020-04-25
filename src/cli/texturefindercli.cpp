@@ -42,8 +42,8 @@ int main(int argc, char** argv) {
 	});
 
 	auto args = parse_command_line_args(argc, argv, options);
-	std::string iso_path = args["iso"].as<std::string>();
-	std::string target_path = args["target"].as<std::string>();
+	std::string iso_path = cli_get(args, "iso");
+	std::string target_path = cli_get(args, "target");
 	
 	file_stream iso(iso_path);
 	file_stream target(target_path);

@@ -44,17 +44,17 @@ int main(int argc, char** argv) {
 		("d,dest", "The output file or directory (if applicable).",
 			cxxopts::value<std::string>())
 		("o,offset", "The offset of the racpak within the source file. Only applicable when in extract mode (not extractdir).",
-			cxxopts::value<std::string>()->default_value("0"));
+			cxxopts::value<std::string>());
 
 	options.parse_positional({
 		"command", "src", "dest"
 	});
 
 	auto args = parse_command_line_args(argc, argv, options);
-	std::string command = args["command"].as<std::string>();
-	std::string src_path = args["src"].as<std::string>();
-	std::string dest_path = args["dest"].as<std::string>();
-	std::size_t src_offset = parse_number(args["offset"].as<std::string>());
+	std::string command = cli_get(args, "command");
+	std::string src_path = cli_get(args, "src");
+	std::string dest_path = cli_get(args, "dest");
+	std::size_t src_offset = parse_number(cli_get_or(args, "offset", "0"));
 
 	if(command == "ls") {
 		file_stream src_file(src_path);

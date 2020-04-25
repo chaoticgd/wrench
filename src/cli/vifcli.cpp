@@ -39,8 +39,8 @@ int main(int argc, char** argv) {
 	});
 
 	auto args = parse_command_line_args(argc, argv, options);
-	std::string src_path = args["src"].as<std::string>();
-	std::size_t offset = parse_number(args["offset"].as<std::string>());
+	std::string src_path = cli_get(args, "src");
+	std::size_t offset = parse_number(cli_get_or(args, "offset", "0"));
 
 	file_stream src(src_path);
 	std::vector<vif_packet> chain = parse_vif_chain(&src, offset, SIZE_MAX);

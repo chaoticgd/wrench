@@ -43,17 +43,17 @@ int main(int argc, char** argv) {
 		("p,project", "The path of the new project to create.",
 			cxxopts::value<std::string>())
 		("s,seed", "Password to seed the random number generator.",
-			cxxopts::value<std::string>()->default_value(""));
+			cxxopts::value<std::string>());
 
 	options.parse_positional({
 		"iso", "gameid", "project", "seed"
 	});
 
 	auto args = parse_command_line_args(argc, argv, options);
-	std::string iso_path = args["iso"].as<std::string>();
-	std::string game_id = args["gameid"].as<std::string>();
-	std::string project_path = args["project"].as<std::string>();
-	std::string password = args["seed"].as<std::string>();
+	std::string iso_path = cli_get(args, "iso");
+	std::string game_id = cli_get(args, "gameid");
+	std::string project_path = cli_get(args, "project");
+	std::string password = cli_get_or(args, "seed", "");
 	
 	if(password == "") {
 		srand(time(0));

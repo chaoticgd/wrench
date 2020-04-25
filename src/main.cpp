@@ -37,10 +37,10 @@ int main(int argc, char** argv) {
 	cxxopts::Options options("wrench", "A level editor for the Ratchet & Clank games");
 	options.add_options()
 		("p,project", "Open the specified project (.wrench) file.",
-			cxxopts::value<std::string>()->default_value(""));
+			cxxopts::value<std::string>());
 
 	auto args = parse_command_line_args(argc, argv, options);
-	std::string project_path = args["project"].as<std::string>();
+	std::string project_path = cli_get_or(args, "project", "");
 
 	// Set the working dir.
 	fs::path old_working_dir = fs::current_path();

@@ -43,9 +43,9 @@ int main(int argc, char** argv) {
 	});
 
 	auto args = parse_command_line_args(argc, argv, options);
-	std::string src_path = args["src"].as<std::string>();
-	std::size_t alignment = parse_number(args["alignment"].as<std::string>());
-	std::size_t initial_offset = parse_number(args["initial-offset"].as<std::string>());
+	std::string src_path = cli_get(args, "src");
+	std::size_t alignment = parse_number(cli_get_or(args, "alignment", "0x100"));
+	std::size_t initial_offset = parse_number(cli_get_or(args, "initial-offset", "0"));
 
 	file_stream src(src_path);
 

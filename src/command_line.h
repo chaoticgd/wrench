@@ -38,4 +38,12 @@ int run_cli_converter(
 	const char* help_text,
 	std::map<std::string, stream_op> commands);
 
+// Get the value of an argument from a ParseResult
+// object, or call std::exit(1).
+std::string cli_get(const cxxopts::ParseResult& result, const char* arg);
+
+// Get the value of an argument from a ParseResult
+// object, or return a default value.
+std::string cli_get_or(const cxxopts::ParseResult& result, const char* arg, const char* default_value);
+
 #endif
