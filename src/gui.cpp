@@ -1351,6 +1351,7 @@ void gui::file_dialog::render(app& a) {
 	ImGui::NextColumn();
 	if(ImGui::Button("Cancel")) {
 		close(a);
+		return;
 	}
 	ImGui::Columns(1);
 
