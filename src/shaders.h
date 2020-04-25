@@ -21,7 +21,8 @@
 
 #include <stdexcept>
 #include <functional>
-#include <GL/glew.h>
+
+#include "gl_includes.h"
 
 # /*
 #	A class that can compile OpenGL shaders along with a number of shaders used

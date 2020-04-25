@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019 chaoticgd
+	Copyright (C) 2019-2020 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -30,23 +30,20 @@
 std::vector<std::size_t> hash_pixel_data(char* texture, std::size_t num_bytes);
 
 int main(int argc, char** argv) {
-	std::string iso_path;
-	std::string target_path;
-	
-	po::options_description desc("Scan a game data segment for a given indexed BMP file, even if said file has a different palette. For example, you could dump a texture using PCSX2, convert it to an indexed BMP (with 256 colours) using the GNU Image Manipulation Program, and then feed it into this program to find where it is stored on disc, using the command \"./bin/texturefinder game.iso texture.bmp\"");
-	desc.add_options()
-		("iso,i", po::value<std::string>(&iso_path)->required(),
-			"The data segment to scan.")
-		("target,t", po::value<std::string>(&target_path)->required(),
-			"The texture to scan for.");
+	cxxopts::Options options("texturefinder", "Scan a game data segment for a given indexed BMP file, even if said file has a different palette. For example, you could dump a texture using PCSX2, convert it to an indexed BMP (with 256 colours) using the GNU Image Manipulation Program, and then feed it into this program to find where it is stored on disc, using the command \"./bin/texturefinder game.iso texture.bmp\"");
+	options.add_options()
+		("i,iso", "The data segment to scan.",
+			cxxopts::value<std::string>())
+		("t,target", "The texture to scan for.",
+			cxxopts::value<std::string>());
 
-	po::positional_options_description pd;
-	pd.add("iso", 1);
-	pd.add("target", 1);
+	options.parse_positional({
+		"iso", "target"
+	});
 
-	if(!parse_command_line_args(argc, argv, desc, pd)) {
-		return 0;
-	}
+	auto args = parse_command_line_args(argc, argv, options);
+	std::string iso_path = cli_get(args, "iso");
+	std::string target_path = cli_get(args, "target");
 	
 	file_stream iso(iso_path);
 	file_stream target(target_path);

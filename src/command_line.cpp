@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019 chaoticgd
+	Copyright (C) 2019-2020 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -21,54 +21,37 @@
 #include <sstream>
 #include <iostream>
 
+#include "util.h"
 #include "config.h"
 
-bool parse_command_line_args(
-	int argc, char** argv,
-	po::options_description desc,
-	po::positional_options_description pd) {
-	desc.add_options()
-		("help,h",    "Display help text.")
-		("version,v", "Print version and licensing information.");
+cxxopts::ParseResult parse_command_line_args(int argc, char** argv, cxxopts::Options options) {
+	options.add_options()
+		("h,help",    "Display help text.")
+		("v,version", "Print version and licensing information.");
 	
-	po::variables_map vm;
-	try {
-		auto parser = po::command_line_parser(argc, argv)
-			.options(desc).positional(pd).run();
-		po::store(parser, vm);
-	} catch(boost::program_options::error& e) {
-		std::cerr << e.what();
-		return false;
+	auto args = options.parse(argc, argv);
+
+	if(args.count("help")) {
+		std::cout << options.help();
+		std::exit(0);
 	}
 
-	if(vm.count("help")) {
-		std::cout << desc;
-		return false;
-	}
-
-	if(vm.count("version")) {
+	if(args.count("version")) {
 		std::cout << "wrench " WRENCH_VERSION_STR << std::endl;
-		std::cout << "Copyright (c) 2019 chaoticgd.\n"
-		          << "License GPLv3: GNU GPL version 3 <http://gnu.org/licenses/gpl.html>.\n"
+		std::cout << "Copyright (c) 2020 chaoticgd.\n"
+		          << "License GPLv3+: GNU GPL version 3 <http://gnu.org/licenses/gpl.html>.\n"
 		          << "This is free software: you are free to change and redistribute it.\n"
 		          << "There is NO WARRANTY, to the extent permitted by law." << std::endl;
-		return false;
+		std::exit(0);
 	}
-
-	po::notify(vm);
 	
-	return true;
+	return args;
 }
 
 int run_cli_converter(
 	int argc, char** argv,
 	const char* help_text,
 	std::map<std::string, stream_op> commands) {
-
-	std::string command;
-	std::string src_path;
-	std::string dest_path;
-	std::string offset_hex;
 
 	std::string command_description =
 		"The operation to perform. Possible values are:";
@@ -77,33 +60,28 @@ int run_cli_converter(
 	}
 	command_description.back() = '.';
 
-	po::options_description desc(help_text);
-	desc.add_options()
-		("command,c", po::value<std::string>(&command)->required(),
-			command_description.c_str())
-		("src,s",    po::value<std::string>(&src_path)->required(),
-			"The input file.")
-		("dest,d",   po::value<std::string>(&dest_path)->required(),
-			"The output file.")
-		("offset,o", po::value<std::string>(&offset_hex)->default_value("0"),
-			"The offset in the input file where the header begins.");
+	cxxopts::Options options("wrench", help_text);
+	options.add_options()
+		("c,command", command_description.c_str(),
+			cxxopts::value<std::string>())
+		("s,src", "The input file.",
+			cxxopts::value<std::string>())
+		("d,dest", "The output file.", cxxopts::value<std::string>())
+		("o,offset", "The offset in the input file where the header begins.",
+			cxxopts::value<std::string>()->default_value("0"));
 
-	po::positional_options_description pd;
-	pd.add("command", 1);
-	pd.add("src", 1);
-	pd.add("dest", 1);
+	options.parse_positional({
+		"command", "src", "dest"
+	});
 
-	if(!parse_command_line_args(argc, argv, desc, pd)) {
-		return 0;
-	}
+	auto args = parse_command_line_args(argc, argv, options);
+	std::string command = cli_get(args, "command");
+	std::string src_path = cli_get(args, "src");
+	std::string dest_path = cli_get(args, "dest");
+	std::size_t offset = parse_number(cli_get_or(args, "offset", "0"));
 
 	file_stream src(src_path);
 	file_stream dest(dest_path, std::ios::in | std::ios::out | std::ios::trunc);
-
-	std::stringstream offset_stream;
-	offset_stream << std::hex << offset_hex;
-	std::size_t offset;
-	offset_stream >> offset;
 	
 	proxy_stream src_proxy(&src, offset, src.size() - offset);
 
@@ -116,4 +94,19 @@ int run_cli_converter(
 	(*op).second(dest, src_proxy);
 
 	return 0;
+}
+
+std::string cli_get(const cxxopts::ParseResult& result, const char* arg) {
+	if(!result.count(arg)) {
+		std::cout << "Argument --" << arg << " required but not provided." << std::endl;
+		std::exit(1);
+	}
+	return result[arg].as<std::string>();
+}
+
+std::string cli_get_or(const cxxopts::ParseResult& result, const char* arg, const char* default_value) {
+	if(!result.count(arg)) {
+		return default_value;
+	}
+	return result[arg].as<std::string>();
 }

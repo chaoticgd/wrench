@@ -139,6 +139,6 @@ struct vif_packet {
 
 std::vector<vif_packet> parse_vif_chain(const stream* src, std::size_t base_address, std::size_t qwc);
 
-uint64_t bit_range(uint64_t val, int lo, int hi);
+int bit_range(uint64_t val, int lo, int hi);
 
 #endif

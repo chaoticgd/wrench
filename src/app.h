@@ -41,7 +41,7 @@
 #	project, configuration and more.
 # */
 
-class GLFWwindow;
+struct GLFWwindow;
 
 class window;
 class view_3d;

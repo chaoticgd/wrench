@@ -18,6 +18,7 @@
 
 #include <ctime>
 #include <cstdio>
+#include <random>
 #include <string>
 #include <cstdlib>
 #include <algorithm>
@@ -33,31 +34,26 @@ template <typename T>
 void read_shuffle_write(stream& backing, std::size_t offset, std::size_t num_elements);
 
 int main(int argc, char** argv) {
-	std::string iso_path;
-	std::string game_id;
-	std::string project_path;
-	std::string password;
-	
-	po::options_description desc("Randomize textures");
-	desc.add_options()
-		("iso,i", po::value<std::string>(&iso_path)->required(),
-			"The game ISO to use.")
-		("gameid,g", po::value<std::string>(&game_id)->required(),
-			"The game ID (e.g. 'SCES_516.07')")
-		("project,p", po::value<std::string>(&project_path)->required(),
-			"The path of the new project to create.")
-		("seed,s", po::value<std::string>(&password),
-			"Password to seed the random number generator.");
+	cxxopts::Options options("randomiser", "Randomise textures");
+	options.add_options()
+		("i,iso", "The game ISO to use.",
+			cxxopts::value<std::string>())
+		("g,gameid", "The game ID (e.g. 'SCES_516.07')",
+			cxxopts::value<std::string>())
+		("p,project", "The path of the new project to create.",
+			cxxopts::value<std::string>())
+		("s,seed", "Password to seed the random number generator.",
+			cxxopts::value<std::string>());
 
-	po::positional_options_description pd;
-	pd.add("iso", 1);
-	pd.add("gameid", 1);
-	pd.add("project", 1);
-	pd.add("seed", 1);
+	options.parse_positional({
+		"iso", "gameid", "project", "seed"
+	});
 
-	if(!parse_command_line_args(argc, argv, desc, pd)) {
-		return 0;
-	}
+	auto args = parse_command_line_args(argc, argv, options);
+	std::string iso_path = cli_get(args, "iso");
+	std::string game_id = cli_get(args, "gameid");
+	std::string project_path = cli_get(args, "project");
+	std::string password = cli_get_or(args, "seed", "");
 	
 	if(password == "") {
 		srand(time(0));
@@ -139,7 +135,9 @@ void read_shuffle_write(stream& backing, std::size_t offset, std::size_t num_ele
 	std::vector<T> elements(num_elements);
 	backing.seek(offset);
 	backing.read_v(elements);
-	std::random_shuffle(elements.begin(), elements.end());
+	std::random_device rng;
+	std::mt19937 urng(rng());
+	std::shuffle(elements.begin(), elements.end(), urng);
 	backing.seek(offset);
 	backing.write_v(elements);
 }

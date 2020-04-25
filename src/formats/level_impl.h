@@ -119,7 +119,7 @@ public:
 	};
 	
 	struct game_string {
-		int id;
+		uint32_t id;
 		std::string content;	
 	};
 	

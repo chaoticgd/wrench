@@ -22,16 +22,17 @@
 #include <iomanip>
 #include <sstream>
 #include <iostream>
+#include <stdlib.h>
 #include <functional>
-#include <boost/algorithm/string.hpp>
 
 #include "util.h"
 #include "config.h"
 #include "window.h"
-#include "platform.h"
 #include "renderer.h"
 #include "formats/bmp.h"
 #include "commands/translate_command.h"
+
+#include "unwindows.h"
 
 void gui::render(app& a) {
 	ImGui_ImplOpenGL3_NewFrame();
@@ -1326,12 +1327,14 @@ void gui::file_dialog::render(app& a) {
 	if(ImGui::InputText("##file", &_file, ImGuiInputTextFlags_EnterReturnsTrue)) {
 		_callback(_file);
 		close(a);
+		return;
 	}
 	ImGui::PopItemWidth();
 	ImGui::NextColumn();
 	if(ImGui::Button("Select")) {
 		_callback(_file);
 		close(a);
+		return;
 	}
 	ImGui::NextColumn();
 	
@@ -1348,13 +1351,14 @@ void gui::file_dialog::render(app& a) {
 	ImGui::NextColumn();
 	if(ImGui::Button("Cancel")) {
 		close(a);
+		return;
 	}
 	ImGui::Columns(1);
 
 	// Draw directory listing.
 	if(fs::is_directory(_directory)) {
 		std::vector<fs::path> items { _directory / ".." };
-		for(auto item : boost::make_iterator_range(fs::directory_iterator(_directory), {})) {
+		for(auto item : fs::directory_iterator(_directory)) {
 			items.push_back(item.path());
 		}
 
@@ -1377,7 +1381,7 @@ void gui::file_dialog::render(app& a) {
 			if(fs::is_directory(item)) {
 				continue;
 			}
-			if(std::find(_extensions.begin(), _extensions.end(), fs::extension(item)) == _extensions.end()) {
+			if(std::find(_extensions.begin(), _extensions.end(), item.extension()) == _extensions.end()) {
 				continue;
 			}
 
@@ -1454,4 +1458,10 @@ GLuint gui::load_icon(std::string path) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	
 	return texture;
+}
+
+// Don't pass untrusted input to this!
+void gui::open_in_browser(const char* url) {
+	std::string cmd = "xdg-open " + std::string(url);
+	system(cmd.c_str());
 }

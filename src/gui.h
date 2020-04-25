@@ -20,22 +20,20 @@
 #define GUI_H
 
 #include <functional>
-#include <boost/filesystem.hpp>
 #include "imgui_includes.h"
 #include <imgui_markdown/imgui_markdown.h>
 
-#include "gl_includes.h"
 #include "app.h"
 #include "window.h"
 #include "view_3d.h"
+#include "fs_includes.h"
+#include "gl_includes.h"
 #include "formats/game_model.h"
 #include "formats/level_impl.h"
 
 # /*
 #	Implements most of the GUI.
 # */
-
-namespace fs = boost::filesystem;
 
 namespace gui {
 	void render(app& a);
@@ -94,6 +92,16 @@ namespace gui {
 					: _level_name(level_name), _object_index(object_index), _member(member), _new_value(new_value) {}
 				
 			protected:
+				auto& member(wrench_project* project) {
+					level* lvl = project->level_from_name(_level_name);
+					if (lvl == nullptr) {
+						throw command_error(
+							"The level for which this operation should "
+							"be applied to is not currently loaded.");
+					}
+					return lvl->world.object_at<T>(_object_index).*_member;
+				}
+
 				void apply(wrench_project* project) override {
 					auto& ref = member(project);
 					_old_value = ref;
@@ -103,18 +111,8 @@ namespace gui {
 				void undo(wrench_project* project) override {
 					member(project) = _old_value;
 				}
-				
+
 			private:
-				auto& member(wrench_project* project) {
-					level* lvl = project->level_from_name(_level_name);
-					if(lvl == nullptr) {
-						throw command_error(
-							"The level for which this operation should "
-							"be applied to is not currently loaded.");
-					}
-					return lvl->world.object_at<T>(_object_index).*_member;
-				}
-			
 				std::string _level_name;
 				std::size_t _object_index;
 				T_value T::*_member;
@@ -365,6 +363,9 @@ namespace gui {
 	};
 	
 	GLuint load_icon(std::string path);
+	
+	// Don't pass untrusted input to this!
+	void open_in_browser(const char* url);
 }
 
 template <typename T, typename... T_constructor_args>

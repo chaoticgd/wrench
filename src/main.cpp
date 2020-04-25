@@ -18,6 +18,7 @@
 
 #include <chrono>
 
+#include "fs_includes.h"
 #include "gl_includes.h"
 #include "command_line.h"
 #include "app.h"
@@ -28,24 +29,79 @@
 #	Setup code, the main loop, and GLFW stuff.
 # */
 
+void init_gl(app& a);
 void update_camera(app* a);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 int main(int argc, char** argv) {
+	cxxopts::Options options("wrench", "A level editor for the Ratchet & Clank games");
+	options.add_options()
+		("p,project", "Open the specified project (.wrench) file.",
+			cxxopts::value<std::string>());
 
-	std::string project_path;
+	auto args = parse_command_line_args(argc, argv, options);
+	std::string project_path = cli_get_or(args, "project", "");
 
-	po::options_description desc("A level editor for the Ratchet & Clank games");
-	desc.add_options()
-		("project,p", po::value<std::string>(&project_path),
-			"Open the specified project (.wrench) file.");
+	// Set the working dir.
+	fs::path old_working_dir = fs::current_path();
+	fs::path wrench_executable_path(argv[0]);
+	std::string wrench_root = wrench_executable_path.remove_filename().string() + "..";
+	fs::current_path(wrench_root);
 
-	if(!parse_command_line_args(argc, argv, desc)) {
-		return 0;
-	}
+	{
+		app a;
+		init_gl(a);
 
-	app a;
+		if(project_path != "") {
+			a.open_project((old_working_dir / project_path).string());
+		}
+		
+		a.windows.emplace_back(std::make_unique<view_3d>(&a));
+		a.windows.emplace_back(std::make_unique<gui::texture_browser>());
+		a.windows.emplace_back(std::make_unique<gui::model_browser>());
+		a.windows.emplace_back(std::make_unique<gui::project_tree>());
+		a.windows.emplace_back(std::make_unique<gui::moby_list>());
+		a.windows.emplace_back(std::make_unique<gui::inspector>());
+		a.windows.emplace_back(std::make_unique<gui::viewport_information>());
+		a.windows.emplace_back(std::make_unique<gui::tools>());
 
+		auto last_frame_time = std::chrono::steady_clock::now();
+
+		while(!glfwWindowShouldClose(a.glfw_window)) {
+			glfwPollEvents();
+			update_camera(&a);
+
+			gui::render(a);
+
+			ImGui::Render();
+			glfwMakeContextCurrent(a.glfw_window);
+			glfwGetFramebufferSize(a.glfw_window, &a.window_width, &a.window_height);
+
+			glViewport(0, 0, a.window_width, a.window_height);
+			glClearColor(0, 0, 0, 1);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+			glfwMakeContextCurrent(a.glfw_window);
+			glfwSwapBuffers(a.glfw_window);
+			
+			auto frame_time = std::chrono::steady_clock::now();
+			a.delta_time = std::chrono::duration_cast<std::chrono::microseconds>
+				(frame_time - last_frame_time).count();
+			last_frame_time = frame_time;
+		}
+		
+		glfwDestroyWindow(a.glfw_window);
+	} // app::~app();
+
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
+	glfwTerminate();
+}
+
+void init_gl(app& a) {
 	if(!glfwInit()) {
 		throw std::runtime_error("Cannot load GLFW.");
 	}
@@ -61,8 +117,8 @@ int main(int argc, char** argv) {
 	glfwMakeContextCurrent(a.glfw_window);
 	glfwSwapInterval(1);
 
-	if(glewInit() != GLEW_OK) {
-		throw std::runtime_error("Cannot load GLEW.");
+	if(!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
+		throw std::runtime_error("Cannot load GLAD.");
 	}
 
 	glfwSetWindowUserPointer(a.glfw_window, &a);
@@ -81,53 +137,6 @@ int main(int argc, char** argv) {
 	a.init_gui_scale();
 	a.update_gui_scale();
 	a.renderer.shaders.init();
-
-	if(project_path != "") {
-		a.open_project(project_path);
-	}
-	
-	a.windows.emplace_back(std::make_unique<view_3d>(&a));
-	a.windows.emplace_back(std::make_unique<gui::texture_browser>());
-	a.windows.emplace_back(std::make_unique<gui::model_browser>());
-	a.windows.emplace_back(std::make_unique<gui::project_tree>());
-	a.windows.emplace_back(std::make_unique<gui::moby_list>());
-	a.windows.emplace_back(std::make_unique<gui::inspector>());
-	a.windows.emplace_back(std::make_unique<gui::viewport_information>());
-	a.windows.emplace_back(std::make_unique<gui::tools>());
-
-	auto last_frame_time = std::chrono::steady_clock::now();
-
-	while(!glfwWindowShouldClose(a.glfw_window)) {
-		glfwPollEvents();
-		update_camera(&a);
-
-		gui::render(a);
-
-		ImGui::Render();
-		glfwMakeContextCurrent(a.glfw_window);
-		glfwGetFramebufferSize(a.glfw_window, &a.window_width, &a.window_height);
-
-		glViewport(0, 0, a.window_width, a.window_height);
-		glClearColor(0, 0, 0, 1);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-		glfwMakeContextCurrent(a.glfw_window);
-		glfwSwapBuffers(a.glfw_window);
-		
-		auto frame_time = std::chrono::steady_clock::now();
-		a.delta_time = std::chrono::duration_cast<std::chrono::microseconds>
-			(frame_time - last_frame_time).count();
-		last_frame_time = frame_time;
-	}
-
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplGlfw_Shutdown();
-	ImGui::DestroyContext();
-
-	glfwDestroyWindow(a.glfw_window);
-	glfwTerminate();
 }
 
 void update_camera(app* a) {

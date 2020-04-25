@@ -20,11 +20,11 @@
 
 #include <ZipLib/ZipArchive.h>
 #include <ZipLib/ZipFile.h>
-#include <boost/filesystem.hpp>
 
 #include "app.h"
 #include "gui.h"
 #include "config.h"
+#include "fs_includes.h"
 
 wrench_project::wrench_project(
 		std::map<std::string, std::string>& game_paths,
@@ -201,9 +201,9 @@ int wrench_project::id() {
 }
 
 void wrench_project::save_to(std::string path) {
-	if(boost::filesystem::exists(path)) {
-		boost::filesystem::remove(path + ".old");
-		boost::filesystem::rename(path, path + ".old");
+	if(fs::exists(path)) {
+		fs::remove(path + ".old");
+		fs::rename(path, path + ".old");
 	}
 
 	auto root = ZipArchive::Create();

@@ -16,33 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef FORMATS_WAD_H
-#define FORMATS_WAD_H
-
-#include "../stream.h"
-
-#include <map>
-#include <cstring>
-#include <utility>
-
-# /*
-#	Decompress and recompress WAD segments used by the games to store various
-#	assets. Not to be confused with WAD archives.
-# */
-
-packed_struct(wad_header,
-	char magic[3]; // "WAD"
-	uint32_t total_size; // Including header.
-	uint8_t pad[9];
-)
-
-// Check the magic bytes.
-bool validate_wad(char* magic);
-
-// Throws stream_io_error, stream_format_error.
-void decompress_wad(array_stream& dest, array_stream& src);
-void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_to_decompress);
-
-void compress_wad(array_stream& dest, array_stream& src);
-
-#endif
+// At some point minwindef.h gets included on Windows that for
+// some reason defines min and max as macros which break everything.
+#undef min
+#undef max

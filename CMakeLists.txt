@@ -7,9 +7,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $<1:${CMAKE_SOURCE_DIR}/bin>)
 
 add_executable(wrench
 	src/main.cpp
@@ -18,6 +17,7 @@ add_executable(wrench
 	src/gui.cpp
 	src/view_3d.cpp
 	src/stream.cpp
+	src/stacktrace.cpp
 	src/window.cpp
 	src/renderer.cpp
 	src/shaders.cpp
@@ -42,7 +42,6 @@ add_executable(wrench
 	src/imgui_impl_glfw.cpp
 	thirdparty/imgui/examples/imgui_impl_opengl3.cpp
 	src/md5.cpp
-	src/platform_linux.cpp
 )
 
 add_executable(fip
@@ -50,6 +49,7 @@ add_executable(fip
 	src/command_line.cpp
 	src/util.cpp
 	src/stream.cpp
+	src/stacktrace.cpp
 	src/formats/texture.cpp
 	src/formats/fip.cpp
 	src/formats/bmp.cpp
@@ -57,8 +57,10 @@ add_executable(fip
 
 add_executable(wad
 	src/cli/wadcli.cpp
+	src/util.cpp
 	src/command_line.cpp
 	src/stream.cpp
+	src/stacktrace.cpp
 	src/formats/wad.cpp
 )
 
@@ -67,6 +69,7 @@ add_executable(scan
 	src/command_line.cpp
 	src/util.cpp
 	src/stream.cpp
+	src/stacktrace.cpp
 	src/formats/wad.cpp
 	src/formats/texture.cpp
 	src/formats/fip.cpp
@@ -78,6 +81,7 @@ add_executable(pakrac
 	src/util.cpp
 	src/command_line.cpp
 	src/stream.cpp
+	src/stacktrace.cpp
 	src/formats/racpak.cpp
 	src/formats/wad.cpp
 	src/formats/texture.cpp
@@ -89,6 +93,7 @@ add_executable(texturefinder
 	src/cli/texturefindercli.cpp
 	src/util.cpp
 	src/stream.cpp
+	src/stacktrace.cpp
 	src/command_line.cpp
 	src/formats/texture.cpp
 	src/formats/fip.cpp
@@ -98,6 +103,7 @@ add_executable(texturefinder
 add_executable(vif
 	src/cli/vifcli.cpp
 	src/stream.cpp
+	src/stacktrace.cpp
 	src/util.cpp
 	src/command_line.cpp
 	src/formats/vif.cpp
@@ -111,6 +117,7 @@ add_executable(randomiser
 	src/gui.cpp
 	src/view_3d.cpp
 	src/stream.cpp
+	src/stacktrace.cpp
 	src/window.cpp
 	src/renderer.cpp
 	src/shaders.cpp
@@ -135,19 +142,9 @@ add_executable(randomiser
 	src/imgui_impl_glfw.cpp
 	thirdparty/imgui/examples/imgui_impl_opengl3.cpp
 	src/md5.cpp
-	src/platform_linux.cpp
 )
 
-if(MSVC)
-	target_compile_options(wrench PRIVATE /W4 /WX)
-	target_compile_options(fip PRIVATE /W4 /WX)
-	target_compile_options(wad PRIVATE /W4 /WX)
-	target_compile_options(scan PRIVATE /W4 /WX)
-	target_compile_options(pakrac PRIVATE /W4 /WX)
-	target_compile_options(texturefinder PRIVATE /W4 /WX)
-	target_compile_options(vif PRIVATE /W4 /WX)
-	target_compile_options(randomiser PRIVATE /W4 /WX)
-else()
+if(UNIX)
 	target_compile_options(wrench PRIVATE -Wall -O3)
 	target_compile_options(fip PRIVATE -Wall -O3)
 	target_compile_options(wad PRIVATE -Wall -O3)
@@ -157,17 +154,28 @@ else()
 	target_compile_options(randomiser PRIVATE -Wall -O3)
 endif()
 
-# Boost
-find_package(Boost 1.40 COMPONENTS program_options filesystem REQUIRED)
-include_directories(${Boost_INCLUDE_DIR})
-target_link_libraries(wrench ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
-target_link_libraries(fip ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
-target_link_libraries(wad ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
-target_link_libraries(scan ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
-target_link_libraries(pakrac ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
-target_link_libraries(texturefinder ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
-target_link_libraries(vif ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
-target_link_libraries(randomiser ${CMAKE_DL_LIBS} ${Boost_LIBRARIES})
+# std::filesystem
+if(UNIX)
+	target_link_libraries(wrench stdc++fs)
+	target_link_libraries(fip stdc++fs)
+	target_link_libraries(wad stdc++fs)
+	target_link_libraries(scan stdc++fs)
+	target_link_libraries(pakrac stdc++fs)
+	target_link_libraries(texturefinder stdc++fs)
+	target_link_libraries(vif stdc++fs)
+	target_link_libraries(randomiser stdc++fs)
+endif()
+
+# cxxopts
+add_subdirectory(thirdparty/cxxopts)
+target_link_libraries(wrench cxxopts)
+target_link_libraries(fip cxxopts)
+target_link_libraries(wad cxxopts)
+target_link_libraries(scan cxxopts)
+target_link_libraries(pakrac cxxopts)
+target_link_libraries(texturefinder cxxopts)
+target_link_libraries(vif cxxopts)
+target_link_libraries(randomiser cxxopts)
 
 # pthreads
 set(THREADS_PREFER_PTHREAD_FLAG ON)
@@ -175,25 +183,25 @@ find_package(Threads REQUIRED)
 target_link_libraries(wrench Threads::Threads)
 target_link_libraries(randomiser Threads::Threads)
 
-# OpenGL
-find_package(OpenGL)
-target_link_libraries(wrench ${OPENGL_LIBRARIES})
-target_link_libraries(randomiser ${OPENGL_LIBRARIES})
-
-# GLEW
-find_package(GLEW REQUIRED)
-include_directories(${GLEW_INCLUDE_DIRS})
-target_link_libraries(wrench ${GLEW_LIBRARIES})
-target_link_libraries(randomiser ${GLEW_LIBRARIES})
+# GLAD
+add_subdirectory(thirdparty/glad)
+target_link_libraries(wrench glad)
+target_link_libraries(randomiser glad)
 
 # GLFW
 add_subdirectory(thirdparty/glfw)
 target_link_libraries(wrench glfw)
 target_link_libraries(randomiser glfw)
 
+# GLM
+add_subdirectory(thirdparty/glm)
+target_link_libraries(wrench glm)
+target_link_libraries(randomiser glm)
+include_directories(thirdparty/glm)
+
 # Dear ImGui
 include_directories(thidparty/imgui)
-add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_GLEW=1)
+add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_GLAD=1)
 add_library(imgui STATIC
 	thirdparty/imgui/imconfig.h
 	thirdparty/imgui/imgui_demo.cpp
@@ -219,8 +227,10 @@ target_link_libraries(randomiser ziplib)
 include_directories(SYSTEM thirdparty/ziplib/Source) # Suppress warnings for ZipLib headers.
 
 # Source Map
-add_custom_target(sourcemap
-	COMMAND rm -f docs/dev/source_map.svg
-	COMMAND python3 ./scripts/graphifier/graphify.py src docs/dev/source_map.svg
-)
-add_dependencies(wrench sourcemap)
+# if(UNIX)
+# 	add_custom_target(sourcemap
+# 		COMMAND rm -f docs/dev/source_map.svg
+# 		COMMAND python3 ./scripts/graphifier/graphify.py src docs/dev/# source_map.svg
+# 	)
+# 	add_dependencies(wrench sourcemap)
+# endif()

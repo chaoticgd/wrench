@@ -18,6 +18,8 @@
 
 #include "stream.h"
 
+#include <algorithm>
+
 /*
 	file_stream
 */

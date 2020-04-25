@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019 chaoticgd
+	Copyright (C) 2019-2020 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 #include <sstream>
 #include <nlohmann/json.hpp>
 
+#include "../util.h"
 #include "../command_line.h"
 #include "../formats/wad.h"
 #include "../formats/fip.h"
@@ -28,25 +29,23 @@
 # */
 
 int main(int argc, char** argv) {
-	std::string src_path;
-	std::size_t alignment;
-	std::size_t initial_offset = 0;
+	cxxopts::Options options("scan", "Scan a given file for game data segments");
+	options.add_options()
+		("s,src", "The input file.",
+			cxxopts::value<std::string>())
+		("a,alignment", "A size in bytes that each segment in the target file should be aligned to.",
+			cxxopts::value<std::string>()->default_value("0x100"))
+		("i,initial-offset", "Where to start scanning. For example, if -a=0x100 and -i=0x10, offsets {0x110, 0x210, ...} will be checked.",
+			cxxopts::value<std::string>()->default_value("0"));
 
-	po::options_description desc("Scan a given file for game data segments");
-	desc.add_options()
-		("src,s", po::value<std::string>(&src_path)->required(),
-			"The input file.")
-		("alignment,a", po::value<std::size_t>(&alignment)->default_value(0x100),
-			"A size in bytes that each segment in the target file should be aligned to.")
-		("initial-offset,i", po::value<std::size_t>(&initial_offset)->default_value(0),
-			"Where to start scanning. For example, if -a=0x100 and -i=0x10, offsets {0x110, 0x210, ...} will be checked.");
+	options.parse_positional({
+		"src"
+	});
 
-	po::positional_options_description pd;
-	pd.add("src", 1);
-
-	if(!parse_command_line_args(argc, argv, desc, pd)) {
-		return 0;
-	}
+	auto args = parse_command_line_args(argc, argv, options);
+	std::string src_path = cli_get(args, "src");
+	std::size_t alignment = parse_number(cli_get_or(args, "alignment", "0x100"));
+	std::size_t initial_offset = parse_number(cli_get_or(args, "initial-offset", "0"));
 
 	file_stream src(src_path);
 
