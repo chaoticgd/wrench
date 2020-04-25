@@ -1327,12 +1327,14 @@ void gui::file_dialog::render(app& a) {
 	if(ImGui::InputText("##file", &_file, ImGuiInputTextFlags_EnterReturnsTrue)) {
 		_callback(_file);
 		close(a);
+		return;
 	}
 	ImGui::PopItemWidth();
 	ImGui::NextColumn();
 	if(ImGui::Button("Select")) {
 		_callback(_file);
 		close(a);
+		return;
 	}
 	ImGui::NextColumn();
 	
