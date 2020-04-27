@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
 	fs::path wrench_executable_path(argv[0]);
 	std::string wrench_root = wrench_executable_path.remove_filename().string() + "..";
 	fs::current_path(wrench_root);
-	printf("strace %s\n", generate_stacktrace().c_str());
+
 	{
 		app a;
 		init_gl(a);
