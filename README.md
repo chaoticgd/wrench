@@ -35,7 +35,7 @@ releases are currently somewhat supported:
 	- git
 	- cmake
 	- g++ 8 or newer
-	- libxinerama-dev and libxcursor-dev (needed to build GLFW)
+	- xorg-dev (needed to build GLFW)
 	
 	Ubuntu 18.04: You may need a newer version cmake than is available in the official repositories.
 
@@ -48,7 +48,9 @@ releases are currently somewhat supported:
 	> cd wrench
 
 4.	Build it with cmake:
-	> cmake . && cmake --build .
+	> cmake . && cmake --build . -- -jN
+	
+	where N is the number of threads to build with.
 	
 	On Ubuntu 18.04, to use g++ 8 (from package `g++-8`) instead of the default compiler, you can instead run:
 	> cmake -DCMAKE_CXX_COMPILER=/usr/bin/g++-8 && cmake --build .
