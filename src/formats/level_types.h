@@ -313,4 +313,8 @@ struct object_list {
 	}
 };
 
+enum class wrench_result {
+	OKAY, NOT_FOUND
+};
+
 #endif

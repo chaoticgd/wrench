@@ -18,6 +18,14 @@
 
 #include "translate_command.h"
 
+void check_error(wrench_result result) {
+	if(result != wrench_result::OKAY) {
+		throw std::runtime_error(
+			"translate_command tried to act on an invalid object. "
+			"The history stack has been corrupted!");
+	}
+}
+
 translate_command::translate_command(
 		level* lvl,
 		object_list objects,
@@ -25,19 +33,22 @@ translate_command::translate_command(
 	: _lvl(lvl),
 	  _displacement(displacement),
 	  _objects(objects) {
-	_lvl->world.for_each_point_object_in(_objects, [=](object_id id, auto& object) {
+	auto result = _lvl->world.for_each_point_object_in(_objects, [=](object_id id, auto& object) {
 		_prev_positions[id] = glm::vec3(object.mat()[3]);
 	});
+	check_error(result);
 }
 
 void translate_command::apply(wrench_project* project) {
-	_lvl->world.for_each_point_object_in(_objects, [=](object_id id, auto& object) {
+	auto result = _lvl->world.for_each_point_object_in(_objects, [=](object_id id, auto& object) {
 		object.translate(_displacement);
 	});
+	check_error(result);
 }
 
 void translate_command::undo(wrench_project* project) {
-	_lvl->world.for_each_point_object_in(_objects, ([=](object_id id, auto& object) {
+	auto result = _lvl->world.for_each_point_object_in(_objects, [=](object_id id, auto& object) {
 		object.set_translation(_prev_positions.at(id));
-	}));
+	});
+	check_error(result);
 }

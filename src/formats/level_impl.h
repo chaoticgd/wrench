@@ -187,19 +187,39 @@ public:
 	#define for_each_point_object_in(list, ...) \
 		for_each_point_object_in_impl(list, {__VA_ARGS__, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__})
 	
-	void for_each_point_object_in_impl(object_list list, point_object_callbacks cbs) {
+	wrench_result for_each_point_object_in_impl(object_list& list, point_object_callbacks cbs) {
+		wrench_result result = wrench_result::OKAY;
+		
 		for(std::size_t i : list.ties) {
-			cbs.tie_cb(object_id{object_type::TIE, i}, _ties[i]);
+			if(i < _ties.size()) {
+				cbs.tie_cb(object_id{object_type::TIE, i}, _ties[i]);
+			} else {
+				result = wrench_result::NOT_FOUND;
+			}
 		}
 		for(std::size_t i : list.shrubs) {
-			cbs.shrub_cb(object_id{object_type::SHRUB, i}, _shrubs[i]);
+			if(i < _shrubs.size()) {
+				cbs.shrub_cb(object_id{object_type::SHRUB, i}, _shrubs[i]);
+			} else {
+				result = wrench_result::NOT_FOUND;
+			}
 		}
 		for(std::size_t i : list.mobies) {
-			cbs.moby_cb(object_id{object_type::MOBY, i}, _mobies[i]);
+			if(i < _mobies.size()) {
+				cbs.moby_cb(object_id{object_type::MOBY, i}, _mobies[i]);
+			} else {
+				result = wrench_result::NOT_FOUND;
+			}
 		}
 		for(std::size_t i : list.splines) {
-			cbs.spline_cb(object_id{object_type::SPLINE, i}, _splines[i]);
+			if(i < _splines.size()) {
+				cbs.spline_cb(object_id{object_type::SPLINE, i}, _splines[i]);
+			} else {
+				result = wrench_result::NOT_FOUND;
+			}
 		}
+		
+		return result;
 	}
 	
 	void read(stream* src);
