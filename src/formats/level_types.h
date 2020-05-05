@@ -51,23 +51,7 @@ packed_struct(racmat,
 	float m42 = 0;
 	float m43 = 0;
 
-	racmat() {
-		m11 = 0;
-		m12 = 0;
-		m13 = 0;
-		m14 = 0;
-		m21 = 0;
-		m22 = 0;
-		m23 = 0;
-		m24 = 0;
-		m31 = 0;
-		m32 = 0;
-		m33 = 0;
-		m34 = 0;
-		m41 = 0;
-		m42 = 0;
-		m43 = 0;
-	}
+	racmat() {}
 
 	racmat(glm::mat4 mat) {
 		m11 = mat[0][0];
@@ -114,11 +98,7 @@ packed_struct(vec3f,
 	float y = 0;
 	float z = 0;
 
-	vec3f() {
-		x = 0;
-		y = 0;
-		z = 0;
-	}
+	vec3f() {}
 
 	vec3f(glm::vec3 vec) {
 		x = vec.x;
@@ -132,6 +112,14 @@ packed_struct(vec3f,
 		result.y = y;
 		result.z = z;
 		return result;
+	}
+	
+	bool operator==(const vec3f& rhs) const {
+		return x == rhs.x && y == rhs.y && z == rhs.z;
+	}
+	
+	bool operator!=(const vec3f& rhs) const {
+		return x != rhs.x || y != rhs.y || z != rhs.z;
 	}
 )
 
@@ -250,7 +238,28 @@ packed_struct(moby,
 	}
 )
 
-using spline = std::vector<glm::vec3>;
+struct spline {
+	std::vector<glm::vec3> points;	
+	
+	glm::mat4 mat() {
+		if(points.size() < 1) {
+			return glm::mat4(1.f);
+		}
+		return glm::translate(glm::mat4(1.f), points[0]);
+	}
+
+	void set_translation(glm::vec3 trans) {
+		// TODO
+	}
+
+	void translate(glm::vec3 trans) {
+		// TODO
+	}
+
+	void rotate(glm::vec3 rot) {
+		// TODO
+	}
+};
 
 enum class object_type {
 	TIE = 1, SHRUB = 2, MOBY = 3, SPLINE = 4	
@@ -272,6 +281,35 @@ struct object_id {
 	
 	bool operator==(const object_id& rhs) const {
 		return type == rhs.type && index == rhs.index;
+	}
+};
+
+struct object_list {
+	std::vector<std::size_t> ties;
+	std::vector<std::size_t> shrubs;
+	std::vector<std::size_t> mobies;
+	std::vector<std::size_t> splines;
+	
+	void add(object_id id) {
+		switch(id.type) {
+			case object_type::TIE: ties.push_back(id.index); break;
+			case object_type::SHRUB: shrubs.push_back(id.index); break;
+			case object_type::MOBY: mobies.push_back(id.index); break;
+			case object_type::SPLINE: splines.push_back(id.index); break;
+		}
+	}
+	
+	std::size_t size() const {
+		return ties.size() + shrubs.size() + mobies.size() + splines.size();
+	}
+	
+	bool contains(object_id id) const {
+		switch(id.type) {
+			case object_type::TIE: return std::find(ties.begin(), ties.end(), id.index) != ties.end(); break;
+			case object_type::SHRUB: return std::find(shrubs.begin(), shrubs.end(), id.index) != shrubs.end(); break;
+			case object_type::MOBY: return std::find(mobies.begin(), mobies.end(), id.index) != mobies.end(); break;
+			case object_type::SPLINE: return std::find(splines.begin(), splines.end(), id.index) != splines.end(); break;
+		}
 	}
 };
 

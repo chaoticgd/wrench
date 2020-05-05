@@ -145,7 +145,7 @@ void view_3d::draw_level(level& lvl) const {
 	lvl.world.for_each<spline>([=](std::size_t index, spline& object) {
 		object_id id { object_type::SPLINE, index };
 		glm::vec3 colour = get_colour(id, glm::vec3(1, 0.5, 0));
-		_renderer->draw_spline(object, world_to_clip, colour);
+		_renderer->draw_spline(object.points, world_to_clip, colour);
 	});
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -287,7 +287,8 @@ void view_3d::pick_object(level& lvl, ImVec2 position) {
 		case object_type::MOBY:
 		case object_type::SPLINE: {
 			object_id id { selected_object.type, index };
-			lvl.world.selection = { id };
+			lvl.world.selection = {};
+			lvl.world.selection.add(id);
 			break;
 		}
 		default:
@@ -343,7 +344,7 @@ void view_3d::draw_pickframe(level& lvl) const {
 	lvl.world.for_each<spline>([=](std::size_t index, spline& object) {
 		object_id id { object_type::SPLINE, index };
 		glm::vec3 colour = encode_pick_colour(id);
-		_renderer->draw_spline(object, world_to_clip, colour);
+		_renderer->draw_spline(object.points, world_to_clip, colour);
 	});
 }
 
@@ -365,16 +366,16 @@ void view_3d::select_rect(level& lvl, ImVec2 position) {
 		lvl.world.selection = {};
 		
 		glm::mat4 world_to_clip = get_world_to_clip();
-		FOR_EACH_MATRIX_OBJECT(lvl.world, ([this, &lvl, world_to_clip](object_id id, auto& object) {
+		lvl.world.for_each_point_object([&](object_id id, auto& object) {
 			glm::vec3 screen_pos = apply_local_to_screen(world_to_clip, object.mat());
 			if(screen_pos.z < 0) {
 				return;
 			}
 			if(screen_pos.x > _selection_begin.x && screen_pos.x < _selection_end.x &&
 			   screen_pos.y > _selection_begin.y && screen_pos.y < _selection_end.y) {
-				lvl.world.selection.push_back(id);
+				lvl.world.selection.add(id);
 			}
-		}));
+		});
 	}
 	_selecting = !_selecting;
 }

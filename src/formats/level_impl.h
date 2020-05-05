@@ -123,7 +123,7 @@ public:
 		std::string content;	
 	};
 	
-	std::vector<object_id> selection;
+	object_list selection;
 	
 	game_world() {}
 	
@@ -133,25 +133,6 @@ public:
 	T& object_at(std::size_t index) {
 		return objects_of_type<T>()[index];
 	}
-
-// Iterate over each point object. Needs to be a macro since the callback needs
-// to take different types as arguments depending on the type of object being
-// handled. Kinda hacky, but it works. (;
-#define FOR_EACH_MATRIX_OBJECT(world, callback) \
-	for(std::size_t i = 0; i < world.count<moby>(); i++) { \
-		callback(object_id { object_type::MOBY, i }, world.object_at<moby>(i)); \
-	} \
-	for(std::size_t i = 0; i < world.count<tie>(); i++) { \
-		callback(object_id { object_type::TIE, i }, world.object_at<tie>(i)); \
-	} \
-	for(std::size_t i = 0; i < world.count<shrub>(); i++) { \
-		callback(object_id { object_type::SHRUB, i }, world.object_at<shrub>(i)); \
-	}
-
-#define OBJECT_FROM_ID(world, id, callback) \
-	if(id.type == object_type::TIE)   callback(world.object_at<tie>(id.index)); \
-	if(id.type == object_type::SHRUB) callback(world.object_at<shrub>(id.index)); \
-	if(id.type == object_type::MOBY)  callback(world.object_at<moby>(id.index));
 
 	template <typename T>
 	std::size_t count() {
@@ -166,10 +147,65 @@ public:
 		}
 	}
 	
+	struct point_object_callbacks {
+		std::function<void(object_id, tie&)> tie_cb;
+		std::function<void(object_id, shrub&)> shrub_cb;
+		std::function<void(object_id, moby&)> moby_cb;
+		std::function<void(object_id, spline&)> spline_cb;
+	};
+	
+	#define find_object_by_id(id, ...) \
+		find_object_by_id_impl(id, {__VA_ARGS__, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__})
+		
+	void find_object_by_id_impl(object_id id, point_object_callbacks cbs) {
+		switch(id.type) {
+			case object_type::TIE: cbs.tie_cb(id, _ties[id.index]);
+			case object_type::SHRUB: cbs.shrub_cb(id, _shrubs[id.index]);
+			case object_type::MOBY: cbs.moby_cb(id, _mobies[id.index]);
+			case object_type::SPLINE: cbs.spline_cb(id, _splines[id.index]);
+		}
+	}
+	
+	#define for_each_point_object(...) \
+		for_each_point_object_impl({__VA_ARGS__, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__})
+	
+	void for_each_point_object_impl(point_object_callbacks cbs) {
+		for(std::size_t i = 0; i < _ties.size(); i++) {
+			cbs.tie_cb(object_id{object_type::TIE, i}, _ties[i]);
+		}
+		for(std::size_t i = 0; i < _shrubs.size(); i++) {
+			cbs.shrub_cb(object_id{object_type::SHRUB, i}, _shrubs[i]);
+		}
+		for(std::size_t i = 0; i < _mobies.size(); i++) {
+			cbs.moby_cb(object_id{object_type::MOBY, i}, _mobies[i]);
+		}
+		for(std::size_t i = 0; i < _splines.size(); i++) {
+			cbs.spline_cb(object_id{object_type::SPLINE, i}, _splines[i]);
+		}
+	}
+	
+	#define for_each_point_object_in(list, ...) \
+		for_each_point_object_in_impl(list, {__VA_ARGS__, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__})
+	
+	void for_each_point_object_in_impl(object_list list, point_object_callbacks cbs) {
+		for(std::size_t i : list.ties) {
+			cbs.tie_cb(object_id{object_type::TIE, i}, _ties[i]);
+		}
+		for(std::size_t i : list.shrubs) {
+			cbs.shrub_cb(object_id{object_type::SHRUB, i}, _shrubs[i]);
+		}
+		for(std::size_t i : list.mobies) {
+			cbs.moby_cb(object_id{object_type::MOBY, i}, _mobies[i]);
+		}
+		for(std::size_t i : list.splines) {
+			cbs.spline_cb(object_id{object_type::SPLINE, i}, _splines[i]);
+		}
+	}
+	
 	void read(stream* src);
 	void write();
 	
-private:
+public:
 	template <typename T>
 	std::vector<T>& objects_of_type() {
 		if constexpr(std::is_same_v<T, tie>) return _ties;

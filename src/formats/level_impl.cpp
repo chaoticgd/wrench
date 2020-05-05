@@ -19,7 +19,7 @@
 #include "level_impl.h"
 
 bool game_world::is_selected(object_id id) const {
-	return std::find(selection.begin(), selection.end(), id) != selection.end();
+	return selection.contains(id);
 }
 
 void game_world::read(stream* src) {
@@ -73,7 +73,7 @@ void game_world::read(stream* src) {
 			float x = src->read<float>();
 			float y = src->read<float>();
 			float z = src->read<float>();
-			object.emplace_back(x, y, z);
+			object.points.emplace_back(x, y, z);
 			src->seek(src->tell() + 4);
 		}
 		
