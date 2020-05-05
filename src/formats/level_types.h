@@ -311,6 +311,14 @@ struct object_list {
 			case object_type::SPLINE: return std::find(splines.begin(), splines.end(), id.index) != splines.end(); break;
 		}
 	}
+	
+	object_id first() {
+		if(ties.size() > 0) return object_id{object_type::TIE, ties[0]};
+		if(shrubs.size() > 0) return object_id{object_type::SHRUB, shrubs[0]};
+		if(mobies.size() > 0) return object_id{object_type::MOBY, mobies[0]};
+		if(splines.size() > 0) return object_id{object_type::SPLINE, splines[0]};
+		throw std::runtime_error("object_list::first called on an empty object_list. Add an if(x.size() > 0) check.");
+	}
 };
 
 enum class wrench_result {

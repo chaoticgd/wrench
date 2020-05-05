@@ -382,13 +382,13 @@ void gui::inspector::render(app& a) {
 	
 	ImGui::Columns(1);
 	
-	_lvl->world.for_each_point_object_in(sel, [&a](object_id id, auto& object) {
-		std::string text = std::to_string(id.index);
-		ImGui::Text("%s", text.c_str());
-		if(ImGui::Button("Hex Dump (Debug)")) {
-			a.emplace_window<hex_dump>((uint8_t*) &object, sizeof(object));
-		}
-	});
+	if(sel.size() == 1) {
+		_lvl->world.find_object_by_id(sel.first(), [&a](object_id id, auto& object) {
+			if(ImGui::Button("Hex Dump (Debug)")) {
+				a.emplace_window<hex_dump>((uint8_t*) &object, sizeof(object));
+			}
+		});
+	}
 }
 
 /*

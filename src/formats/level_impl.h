@@ -159,10 +159,10 @@ public:
 		
 	void find_object_by_id_impl(object_id id, point_object_callbacks cbs) {
 		switch(id.type) {
-			case object_type::TIE: cbs.tie_cb(id, _ties[id.index]);
-			case object_type::SHRUB: cbs.shrub_cb(id, _shrubs[id.index]);
-			case object_type::MOBY: cbs.moby_cb(id, _mobies[id.index]);
-			case object_type::SPLINE: cbs.spline_cb(id, _splines[id.index]);
+			case object_type::TIE: cbs.tie_cb(id, _ties[id.index]); break;
+			case object_type::SHRUB: cbs.shrub_cb(id, _shrubs[id.index]); break;
+			case object_type::MOBY: cbs.moby_cb(id, _mobies[id.index]); break;
+			case object_type::SPLINE: cbs.spline_cb(id, _splines[id.index]); break;
 		}
 	}
 	
