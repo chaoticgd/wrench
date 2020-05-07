@@ -382,7 +382,7 @@ void gui::inspector::render(app& a) {
 	
 	ImGui::Columns(1);
 	
-	if(sel.size() == 1) {
+	if(sel.size() == 1 && sel.splines.size() == 0) {
 		_lvl->world.find_object_by_id(sel.first(), [&a](object_id id, auto& object) {
 			if(ImGui::Button("Hex Dump (Debug)")) {
 				a.emplace_window<hex_dump>((uint8_t*) &object, sizeof(object));
@@ -417,12 +417,11 @@ void gui::moby_list::render(app& a) {
 	ImGui::Text("     UID                Class");
 	ImGui::PushItemWidth(-1);
 	ImGui::ListBoxHeader("##mobylist", size);
-	lvl.world.for_each<moby>([=, &lvl](std::size_t index, moby& object) {
+	lvl.world.for_each_object_of_type<moby>([=, &lvl](object_id id, moby& object) {
 		std::stringstream row;
 		row << std::setfill(' ') << std::setw(8) << std::dec << object.uid << " ";
 		row << std::setfill(' ') << std::setw(20) << std::hex << object.class_num << " ";
 		
-		object_id id { object_type::MOBY, index };
 		bool is_selected = lvl.world.is_selected(id);
 		if(ImGui::Selectable(row.str().c_str(), is_selected)) {
 			lvl.world.selection = {};

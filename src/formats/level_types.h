@@ -265,9 +265,32 @@ enum class object_type {
 	TIE = 1, SHRUB = 2, MOBY = 3, SPLINE = 4	
 };
 
+struct object_key {
+	std::size_t value;
+	
+	bool operator<(const object_key& rhs) const {
+		return value < rhs.value;
+	}
+	
+	bool operator==(const object_key& rhs) const {
+		return value == rhs.value;
+	}
+};
+
 struct object_id {
 	object_type type;
-	std::size_t index;
+	object_key key;
+	
+	template <typename T>
+	static object_id from_key(object_key k) {
+		object_id id;
+		if constexpr(std::is_same_v<T, tie>) id.type = object_type::TIE;
+		if constexpr(std::is_same_v<T, shrub>) id.type = object_type::SHRUB;
+		if constexpr(std::is_same_v<T, moby>) id.type = object_type::MOBY;
+		if constexpr(std::is_same_v<T, spline>) id.type = object_type::SPLINE;
+		id.key = k;
+		return id;
+	}
 	
 	bool operator<(const object_id& rhs) const {
 		if(type < rhs.type) {
@@ -275,27 +298,27 @@ struct object_id {
 		} else if(type > rhs.type) {
 			return false;
 		} else {
-			return index < rhs.index;
+			return key < rhs.key;
 		}
 	}
 	
 	bool operator==(const object_id& rhs) const {
-		return type == rhs.type && index == rhs.index;
+		return type == rhs.type && key == rhs.key;
 	}
 };
 
 struct object_list {
-	std::vector<std::size_t> ties;
-	std::vector<std::size_t> shrubs;
-	std::vector<std::size_t> mobies;
-	std::vector<std::size_t> splines;
+	std::vector<object_key> ties;
+	std::vector<object_key> shrubs;
+	std::vector<object_key> mobies;
+	std::vector<object_key> splines;
 	
 	void add(object_id id) {
 		switch(id.type) {
-			case object_type::TIE: ties.push_back(id.index); break;
-			case object_type::SHRUB: shrubs.push_back(id.index); break;
-			case object_type::MOBY: mobies.push_back(id.index); break;
-			case object_type::SPLINE: splines.push_back(id.index); break;
+			case object_type::TIE: ties.push_back(id.key); break;
+			case object_type::SHRUB: shrubs.push_back(id.key); break;
+			case object_type::MOBY: mobies.push_back(id.key); break;
+			case object_type::SPLINE: splines.push_back(id.key); break;
 		}
 	}
 	
@@ -305,10 +328,10 @@ struct object_list {
 	
 	bool contains(object_id id) const {
 		switch(id.type) {
-			case object_type::TIE: return std::find(ties.begin(), ties.end(), id.index) != ties.end(); break;
-			case object_type::SHRUB: return std::find(shrubs.begin(), shrubs.end(), id.index) != shrubs.end(); break;
-			case object_type::MOBY: return std::find(mobies.begin(), mobies.end(), id.index) != mobies.end(); break;
-			case object_type::SPLINE: return std::find(splines.begin(), splines.end(), id.index) != splines.end(); break;
+			case object_type::TIE: return std::find(ties.begin(), ties.end(), id.key) != ties.end(); break;
+			case object_type::SHRUB: return std::find(shrubs.begin(), shrubs.end(), id.key) != shrubs.end(); break;
+			case object_type::MOBY: return std::find(mobies.begin(), mobies.end(), id.key) != mobies.end(); break;
+			case object_type::SPLINE: return std::find(splines.begin(), splines.end(), id.key) != splines.end(); break;
 		}
 	}
 	
@@ -319,10 +342,6 @@ struct object_list {
 		if(splines.size() > 0) return object_id{object_type::SPLINE, splines[0]};
 		throw std::runtime_error("object_list::first called on an empty object_list. Add an if(x.size() > 0) check.");
 	}
-};
-
-enum class wrench_result {
-	OKAY, NOT_FOUND
 };
 
 #endif

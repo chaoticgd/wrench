@@ -48,16 +48,16 @@ void game_world::read(stream* src) {
 	
 	// Read point objects.
 	auto tie_table = src->read<fmt::object_table>(header.ties);
-	_ties.resize(tie_table.num_elements);
-	src->read_v(_ties);
+	_object_store.ties.resize(tie_table.num_elements);
+	src->read_v(_object_store.ties);
 
 	auto shrub_table = src->read<fmt::object_table>(header.shrubs);
-	_shrubs.resize(shrub_table.num_elements);
-	src->read_v(_shrubs);
+	_object_store.shrubs.resize(shrub_table.num_elements);
+	src->read_v(_object_store.shrubs);
 	
 	auto moby_table = src->read<fmt::object_table>(header.mobies);
-	_mobies.resize(moby_table.num_elements);
-	src->read_v(_mobies);
+	_object_store.mobies.resize(moby_table.num_elements);
+	src->read_v(_object_store.mobies);
 	
 	// Read splines.
 	auto spline_table = src->read<fmt::spline_table_header>(header.splines);
@@ -77,8 +77,19 @@ void game_world::read(stream* src) {
 			src->seek(src->tell() + 4);
 		}
 		
-		_splines.push_back(object);
+		_object_store.splines.push_back(object);
 	}
+	
+	// Assign internal ID's to all the objects.
+	for_each_object_type([&]<typename T>() {
+		auto& objects = objects_of_type<T>();
+		auto& mappings = mappings_of_type<T>();
+		for(std::size_t i = 0; i < objects.size(); i++) {
+			object_key key{_next_object_key++};
+			member_of_type<T>(_object_mappings).key_to_index[key] = i;
+			member_of_type<T>(_object_mappings).index_to_key[i] = key;
+		}
+	});
 }
 
 void game_world::write() {

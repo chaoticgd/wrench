@@ -20,10 +20,10 @@
 
 #include "app.h"
 
-void gl_renderer::draw_spline(const std::vector<glm::vec3>& points, const glm::mat4& mvp, const glm::vec3& colour) const{
+void gl_renderer::draw_spline(const std::vector<glm::vec3>& points, const glm::mat4& mvp, const glm::vec4& colour) const{
 	
 	glUniformMatrix4fv(shaders.solid_colour_transform, 1, GL_FALSE, &mvp[0][0]);
-	glUniform4f(shaders.solid_colour_rgb, colour.x, colour.y, colour.z, 1);
+	glUniform4f(shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
 
 	GLuint vertex_buffer;
 	glGenBuffers(1, &vertex_buffer);
@@ -43,9 +43,9 @@ void gl_renderer::draw_spline(const std::vector<glm::vec3>& points, const glm::m
 
 }
 
-void gl_renderer::draw_tris(const std::vector<float>& vertex_data, const glm::mat4& mvp, const glm::vec3& colour) const {
+void gl_renderer::draw_tris(const std::vector<float>& vertex_data, const glm::mat4& mvp, const glm::vec4& colour) const {
 	glUniformMatrix4fv(shaders.solid_colour_transform, 1, GL_FALSE, &mvp[0][0]);
-	glUniform4f(shaders.solid_colour_rgb, colour.x, colour.y, colour.z, 1);
+	glUniform4f(shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
 
 	GLuint vertex_buffer;
 	glGenBuffers(1, &vertex_buffer);
@@ -64,9 +64,9 @@ void gl_renderer::draw_tris(const std::vector<float>& vertex_data, const glm::ma
 	glDeleteBuffers(1, &vertex_buffer);
 }
 
-void gl_renderer::draw_model(const game_model& mdl, const glm::mat4& mvp, const glm::vec3& colour) const {
+void gl_renderer::draw_model(const game_model& mdl, const glm::mat4& mvp, const glm::vec4& colour) const {
 	glUniformMatrix4fv(shaders.solid_colour_transform, 1, GL_FALSE, &mvp[0][0]);
-	glUniform4f(shaders.solid_colour_rgb, colour.x, colour.y, colour.z, 1);
+	glUniform4f(shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
 	
 	glEnableVertexAttribArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, mdl.vertex_buffer());
@@ -77,7 +77,7 @@ void gl_renderer::draw_model(const game_model& mdl, const glm::mat4& mvp, const 
 	glDisableVertexAttribArray(0);
 }
 
-void gl_renderer::draw_cube(const glm::mat4& mvp, const glm::vec3& colour) const {
+void gl_renderer::draw_cube(const glm::mat4& mvp, const glm::vec4& colour) const {
 	static GLuint vertex_buffer = 0;
 	
 	if(vertex_buffer == 0) {
@@ -104,7 +104,7 @@ void gl_renderer::draw_cube(const glm::mat4& mvp, const glm::vec3& colour) const
 	}
 	
 	glUniformMatrix4fv(shaders.solid_colour_transform, 1, GL_FALSE, &mvp[0][0]);
-	glUniform4f(shaders.solid_colour_rgb, colour.x, colour.y, colour.z, 1);
+	glUniform4f(shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
 	
 	glEnableVertexAttribArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
@@ -119,7 +119,8 @@ void gl_renderer::reset_camera(app* a) {
 	camera_rotation = glm::vec3(0, 0, 0);
 	auto lvl = a->get_level();
 	if(lvl != nullptr && lvl->world.count<moby>() >= 1) {
-		camera_position = lvl->world.object_at<moby>(0).position();
+		// FIXME: Reset camera to spawn/ship position.
+		camera_position = glm::vec3(0, 0, 0);//lvl->world.object_from_key<moby>(0).position();
 	} else {
 		camera_position = glm::vec3(0, 0, 0);
 	}

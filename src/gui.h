@@ -83,13 +83,13 @@ namespace gui {
 		// Handle pushing a new undo/redo command onto the history stack
 		// whenever the value of a property is changed.
 		template <typename T, typename T_value>
-		void set_property(std::vector<std::size_t> indices, T_value T::*member, T_value new_value) {
+		void set_property(std::vector<object_key> keys, T_value T::*member, T_value new_value) {
 			
 			class property_changed_command : public command {
 			public:
 				property_changed_command(
-						std::string level_name, std::vector<std::size_t> object_indices, T_value T::*member, T_value new_value)
-					: _level_name(level_name), _object_indices(object_indices), _member(member), _new_value(new_value) {}
+						std::string level_name, std::vector<object_key> object_keys, T_value T::*member, T_value new_value)
+					: _level_name(level_name), _object_keys(object_keys), _member(member), _new_value(new_value) {}
 				
 			protected:
 				level& get_level(wrench_project* project) {
@@ -103,13 +103,13 @@ namespace gui {
 				}
 			
 				auto& member(level& lvl, std::size_t index) {
-					return lvl.world.object_at<T>(_object_indices[index]).*_member;
+					return lvl.world.object_from_key<T>(_object_keys[index]).*_member;
 				}
 
 				void apply(wrench_project* project) override {
 					level& lvl = get_level(project);
 					
-					_old_values.resize(_object_indices.size());
+					_old_values.resize(_object_keys.size());
 					for(std::size_t i = 0; i < _old_values.size(); i++) {
 						auto& ref = member(lvl, i);
 						_old_values[i] = ref;
@@ -127,70 +127,80 @@ namespace gui {
 
 			private:
 				std::string _level_name;
-				std::vector<std::size_t> _object_indices;
+				std::vector<object_key> _object_keys;
 				T_value T::*_member;
 				T_value _new_value;
 				std::vector<T_value> _old_values;
 			};
 			
+			// Filter out keys for objects that don't current exist.
+			std::vector<object_key> validated_keys;
+			for(object_key key : keys) {
+				if(_lvl->world.object_exists<T>(key)) {
+					validated_keys.push_back(key);
+				}
+			}
+			
 			_project->template emplace_command<property_changed_command>
-				(_project->selected_level_name(), indices, member, new_value);
+				(_project->selected_level_name(), validated_keys, member, new_value);
 		}
 		
 		// If all the objects with the given indices have the same value for
 		// the specified member, return said value, otherwise return a default
 		// value. This is used to handle multiple selection.
 		template <typename T, typename T_value>
-		std::pair<T_value, ImGuiTextFlags> unique_or(std::vector<std::size_t> indices, T_value T::*member, T_value default_value) {
+		std::pair<T_value, ImGuiTextFlags> unique_or(std::vector<object_key> keys, T_value T::*member, T_value default_value) {
 			constexpr ImGuiTextFlags normal_flags = ImGuiInputTextFlags_EnterReturnsTrue;
 			constexpr ImGuiTextFlags default_flags = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_Password;
 			
-			if(indices.size() < 1) {
+			if(keys.size() < 1) {
 				return { default_value, default_flags };
 			}
 			
-			T_value last = _lvl->world.object_at<T>(indices[0]).*member;
-			for(std::size_t i = 1; i < indices.size(); i++) {
-				T_value current = _lvl->world.object_at<T>(indices[i]).*member;
-				if(last != current) {
-					return { default_value, default_flags };
+			std::optional<T_value> previous;
+			for(std::size_t i = 0; i < keys.size(); i++) {
+				if(_lvl->world.object_exists<T>(keys[i])) {
+					T_value current = _lvl->world.object_from_key<T>(keys[i]).*member;
+					if(previous && *previous != current) {
+						return { default_value, default_flags };
+					}
+					previous = current;
 				}
-				last = current;
 			}
 			
-			return { last, normal_flags };
+			return { *previous, normal_flags };
 		}
 		
 		// Functions to draw different types of input fields.
 		
 		template <typename T>
-		void input_u32(std::vector<std::size_t> indices, const char* name, uint32_t T::*member) {
+		void input_u32(std::vector<object_key> keys, const char* name, uint32_t T::*member) {
 			begin_property(name);
-			auto [value, flags] = unique_or<T, uint32_t>(indices, member, 0);
+			auto [value, flags] = unique_or<T, uint32_t>(keys, member, 0);
 			int copy = static_cast<int>(value);
 			if(ImGui::InputInt("##input", &copy, 1, 100, flags)) {
-				set_property(indices, member, static_cast<uint32_t>(copy));
+				set_property(keys, member, static_cast<uint32_t>(copy));
 			}
 			end_property();
 		}
 		
 		template <typename T>
-		void input_i32(std::vector<std::size_t> indices, const char* name, int32_t T::*member) {
+		void input_i32(std::vector<object_key> keys, const char* name, int32_t T::*member) {
 			begin_property(name);
-			auto [value, flags] = unique_or<T, int32_t>(indices, member, 0);
+			auto [value, flags] = unique_or<T, int32_t>(keys, member, 0);
 			int copy = static_cast<int>(value);
 			if(ImGui::InputInt("##input", &copy, 1, 100, flags)) {
-				set_property(indices, member, static_cast<int32_t>(copy));
+				set_property(keys, member, static_cast<int32_t>(copy));
 			}
 			end_property();
 		}
 		
 		template <typename T>
-		void input_vec3(std::vector<std::size_t> indices, const char* name, vec3f T::*member) {
+		void input_vec3(std::vector<object_key> keys, const char* name, vec3f T::*member) {
 			begin_property(name);
-			auto [value, flags] = unique_or<T, vec3f>(indices, member, vec3f());
+			auto [value, flags] = unique_or<T, vec3f>(keys, member, vec3f());
 			if(ImGui::InputFloat3("##input", &value.x, 3, flags)) {
-				set_property(indices, member, value);
+				set_property(keys, member, value);
 			}
 			end_property();
 		}

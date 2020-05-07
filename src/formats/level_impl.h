@@ -35,6 +35,18 @@
 #	Read LEVEL*.WAD files.
 # */
 
+// Access the member of the input struct corresponding to the object type T.
+template <typename T, typename T_in>
+auto& member_of_type(T_in& in) {
+	if constexpr(std::is_same_v<T, tie>) return in.ties;
+	if constexpr(std::is_same_v<T, shrub>) return in.shrubs;
+	if constexpr(std::is_same_v<T, moby>) return in.mobies;
+	if constexpr(std::is_same_v<T, spline>) return in.splines;
+	
+	// FIXME: This should be a compile-time error!
+	throw std::runtime_error("of_type called with invalid object type!");
+}
+
 class game_world {
 public:
 	struct fmt {
@@ -129,9 +141,25 @@ public:
 	
 	bool is_selected(object_id id) const;
 	
+	void read(stream* src);
+	void write();
+	
+	// Maps from logical object keys to physical array indices and vice versa.
+	struct object_mappings {
+		std::map<object_key, std::size_t> key_to_index;
+		std::map<std::size_t, object_key> index_to_key;
+	};
+	
 	template <typename T>
-	T& object_at(std::size_t index) {
-		return objects_of_type<T>()[index];
+	bool object_exists(object_key key) {
+		auto& key_to_index = mappings_of_type<T>().key_to_index;
+		return key_to_index.find(key) != key_to_index.end();
+	}
+	
+	template <typename T>
+	T& object_from_key(object_key key) {
+		object_mappings& mappings = mappings_of_type<T>();
+		return objects_of_type<T>()[mappings.key_to_index.at(key)];
 	}
 
 	template <typename T>
@@ -139,107 +167,93 @@ public:
 		return objects_of_type<T>().size();
 	}
 	
-	template <typename T>
-	void for_each(std::function<void(std::size_t i, T&)> callback) {
-		auto& objects = objects_of_type<T>();
-		for(std::size_t i = 0; i < objects.size(); i++) {
-			callback(i, objects[i]);
-		}
-	}
+	#define for_each_object_type(...) \
+		(__VA_ARGS__).template operator()<tie>(); \
+		(__VA_ARGS__).template operator()<shrub>(); \
+		(__VA_ARGS__).template operator()<moby>(); \
+		(__VA_ARGS__).template operator()<spline>()
 	
-	struct point_object_callbacks {
-		std::function<void(object_id, tie&)> tie_cb;
-		std::function<void(object_id, shrub&)> shrub_cb;
-		std::function<void(object_id, moby&)> moby_cb;
-		std::function<void(object_id, spline&)> spline_cb;
+	struct object_callbacks {
+		std::function<void(object_id, tie&)> ties;
+		std::function<void(object_id, shrub&)> shrubs;
+		std::function<void(object_id, moby&)> mobies;
+		std::function<void(object_id, spline&)> splines;
 	};
 	
 	#define find_object_by_id(id, ...) \
 		find_object_by_id_impl(id, {__VA_ARGS__, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__})
 		
-	void find_object_by_id_impl(object_id id, point_object_callbacks cbs) {
-		switch(id.type) {
-			case object_type::TIE: cbs.tie_cb(id, _ties[id.index]); break;
-			case object_type::SHRUB: cbs.shrub_cb(id, _shrubs[id.index]); break;
-			case object_type::MOBY: cbs.moby_cb(id, _mobies[id.index]); break;
-			case object_type::SPLINE: cbs.spline_cb(id, _splines[id.index]); break;
+	void find_object_by_id_impl(object_id id, object_callbacks cbs) {
+		for_each_object_type([&]<typename T>() {
+			if(object_exists<T>(id.key)) {
+				member_of_type<T>(cbs)(id, object_from_key<T>(id.key));
+			}
+		});
+	}
+	
+	template <typename T>
+	void for_each_object_of_type(std::function<void(object_id, T&)> callback) {
+		for(auto& [key, index] : mappings_of_type<T>().key_to_index) {
+			callback(object_id::from_key<T>(key), object_from_key<T>(key));
 		}
 	}
 	
-	#define for_each_point_object(...) \
-		for_each_point_object_impl({__VA_ARGS__, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__})
+	#define for_each_object(...) \
+		for_each_object_impl({__VA_ARGS__, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__})
 	
-	void for_each_point_object_impl(point_object_callbacks cbs) {
-		for(std::size_t i = 0; i < _ties.size(); i++) {
-			cbs.tie_cb(object_id{object_type::TIE, i}, _ties[i]);
-		}
-		for(std::size_t i = 0; i < _shrubs.size(); i++) {
-			cbs.shrub_cb(object_id{object_type::SHRUB, i}, _shrubs[i]);
-		}
-		for(std::size_t i = 0; i < _mobies.size(); i++) {
-			cbs.moby_cb(object_id{object_type::MOBY, i}, _mobies[i]);
-		}
-		for(std::size_t i = 0; i < _splines.size(); i++) {
-			cbs.spline_cb(object_id{object_type::SPLINE, i}, _splines[i]);
+	void for_each_object_impl(object_callbacks cbs) {
+		for_each_object_type([&]<typename T>() {
+			for_each_object_of_type<T>(member_of_type<T>(cbs));
+		});
+	}
+	
+	template <typename T>
+	void for_each_object_of_type_in(
+			std::vector<object_key> objects, std::function<void(object_id, T&)> callback) {
+		for(object_key key : objects) {
+			if(object_exists<T>(key)) {
+				callback(object_id::from_key<T>(key), object_from_key<T>(key));
+			}
 		}
 	}
 	
-	#define for_each_point_object_in(list, ...) \
-		for_each_point_object_in_impl(list, {__VA_ARGS__, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__})
+	#define for_each_object_in(list, ...) \
+		for_each_object_in_impl(list, {__VA_ARGS__, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__})
 	
-	wrench_result for_each_point_object_in_impl(object_list& list, point_object_callbacks cbs) {
-		wrench_result result = wrench_result::OKAY;
-		
-		for(std::size_t i : list.ties) {
-			if(i < _ties.size()) {
-				cbs.tie_cb(object_id{object_type::TIE, i}, _ties[i]);
-			} else {
-				result = wrench_result::NOT_FOUND;
-			}
-		}
-		for(std::size_t i : list.shrubs) {
-			if(i < _shrubs.size()) {
-				cbs.shrub_cb(object_id{object_type::SHRUB, i}, _shrubs[i]);
-			} else {
-				result = wrench_result::NOT_FOUND;
-			}
-		}
-		for(std::size_t i : list.mobies) {
-			if(i < _mobies.size()) {
-				cbs.moby_cb(object_id{object_type::MOBY, i}, _mobies[i]);
-			} else {
-				result = wrench_result::NOT_FOUND;
-			}
-		}
-		for(std::size_t i : list.splines) {
-			if(i < _splines.size()) {
-				cbs.spline_cb(object_id{object_type::SPLINE, i}, _splines[i]);
-			} else {
-				result = wrench_result::NOT_FOUND;
-			}
-		}
-		
-		return result;
+	void for_each_object_in_impl(object_list& list, object_callbacks cbs) {
+		for_each_object_type([&]<typename T>() {
+			for_each_object_of_type_in<T>
+				(member_of_type<T>(list), member_of_type<T>(cbs));
+		});
 	}
 	
-	void read(stream* src);
-	void write();
-	
-public:
+private:
 	template <typename T>
 	std::vector<T>& objects_of_type() {
-		if constexpr(std::is_same_v<T, tie>) return _ties;
-		if constexpr(std::is_same_v<T, shrub>) return _shrubs;
-		if constexpr(std::is_same_v<T, moby>) return _mobies;
-		if constexpr(std::is_same_v<T, spline>) return _splines;
-		static_assert("Invalid object type.");
+		return member_of_type<T>(_object_store);
 	}
-
+	
+	struct {
+		std::vector<tie> ties;
+		std::vector<shrub> shrubs;
+		std::vector<moby> mobies;
+		std::vector<spline> splines;
+	} _object_store;
+	
+	template <typename T>
+	object_mappings& mappings_of_type() {
+		return member_of_type<T>(_object_mappings);
+	}
+	
+	struct {
+		object_mappings ties;
+		object_mappings shrubs;
+		object_mappings mobies;
+		object_mappings splines;
+	} _object_mappings;
+	std::size_t _next_object_key = 1; // Key to assign to the next new object.
+	
 	std::map<std::string, std::vector<game_string>> _languages;
-	std::vector<tie> _ties;
-	std::vector<shrub> _shrubs;
-	std::vector<moby> _mobies;
-	std::vector<spline> _splines;
 };
 
 class level {
