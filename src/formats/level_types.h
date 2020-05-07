@@ -20,6 +20,7 @@
 #define FORMATS_LEVEL_TYPES_H
 
 #include <variant>
+#include <optional>
 #include <stdint.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -261,86 +262,78 @@ struct spline {
 	}
 };
 
-enum class object_type {
-	TIE = 1, SHRUB = 2, MOBY = 3, SPLINE = 4	
-};
-
-struct object_key {
+struct object_id {
 	std::size_t value;
 	
-	bool operator<(const object_key& rhs) const {
+	bool operator<(const object_id& rhs) const {
 		return value < rhs.value;
 	}
 	
-	bool operator==(const object_key& rhs) const {
+	bool operator==(const object_id& rhs) const {
 		return value == rhs.value;
 	}
 };
 
-struct object_id {
-	object_type type;
-	object_key key;
+#define for_each_object_type(...) \
+	(__VA_ARGS__).template operator()<tie>(); \
+	(__VA_ARGS__).template operator()<shrub>(); \
+	(__VA_ARGS__).template operator()<moby>(); \
+	(__VA_ARGS__).template operator()<spline>()
+
+// Access the member of the input struct corresponding to the object type T.
+template <typename T, typename T_in>
+auto& member_of_type(T_in& in) {
+	if constexpr(std::is_same_v<T, tie>) return in.ties;
+	if constexpr(std::is_same_v<T, shrub>) return in.shrubs;
+	if constexpr(std::is_same_v<T, moby>) return in.mobies;
+	if constexpr(std::is_same_v<T, spline>) return in.splines;
 	
-	template <typename T>
-	static object_id from_key(object_key k) {
-		object_id id;
-		if constexpr(std::is_same_v<T, tie>) id.type = object_type::TIE;
-		if constexpr(std::is_same_v<T, shrub>) id.type = object_type::SHRUB;
-		if constexpr(std::is_same_v<T, moby>) id.type = object_type::MOBY;
-		if constexpr(std::is_same_v<T, spline>) id.type = object_type::SPLINE;
-		id.key = k;
-		return id;
-	}
-	
-	bool operator<(const object_id& rhs) const {
-		if(type < rhs.type) {
-			return true;
-		} else if(type > rhs.type) {
-			return false;
-		} else {
-			return key < rhs.key;
-		}
-	}
-	
-	bool operator==(const object_id& rhs) const {
-		return type == rhs.type && key == rhs.key;
-	}
-};
+	// FIXME: This should be a compile-time error!
+	throw std::runtime_error("member_of_type called with invalid object type!");
+}
 
 struct object_list {
-	std::vector<object_key> ties;
-	std::vector<object_key> shrubs;
-	std::vector<object_key> mobies;
-	std::vector<object_key> splines;
+	std::vector<object_id> ties;
+	std::vector<object_id> shrubs;
+	std::vector<object_id> mobies;
+	std::vector<object_id> splines;
 	
+	template <typename T>
 	void add(object_id id) {
-		switch(id.type) {
-			case object_type::TIE: ties.push_back(id.key); break;
-			case object_type::SHRUB: shrubs.push_back(id.key); break;
-			case object_type::MOBY: mobies.push_back(id.key); break;
-			case object_type::SPLINE: splines.push_back(id.key); break;
-		}
+		member_of_type<T>(*this).push_back(id);
 	}
 	
 	std::size_t size() const {
-		return ties.size() + shrubs.size() + mobies.size() + splines.size();
+		std::size_t result = 0;
+		for_each_object_type([&]<typename T>() {
+			result += member_of_type<T>(*this).size();
+		});
+		return result;
 	}
 	
 	bool contains(object_id id) const {
-		switch(id.type) {
-			case object_type::TIE: return std::find(ties.begin(), ties.end(), id.key) != ties.end(); break;
-			case object_type::SHRUB: return std::find(shrubs.begin(), shrubs.end(), id.key) != shrubs.end(); break;
-			case object_type::MOBY: return std::find(mobies.begin(), mobies.end(), id.key) != mobies.end(); break;
-			case object_type::SPLINE: return std::find(splines.begin(), splines.end(), id.key) != splines.end(); break;
-		}
+		bool result = false;
+		for_each_object_type([&]<typename T>() {
+			const std::vector<object_id>& objects = member_of_type<T>(*this);
+			if(std::find(objects.begin(), objects.end(), id) != objects.end()) {
+				result = true;
+			}
+		});
+		return result;
 	}
 	
-	object_id first() {
-		if(ties.size() > 0) return object_id{object_type::TIE, ties[0]};
-		if(shrubs.size() > 0) return object_id{object_type::SHRUB, shrubs[0]};
-		if(mobies.size() > 0) return object_id{object_type::MOBY, mobies[0]};
-		if(splines.size() > 0) return object_id{object_type::SPLINE, splines[0]};
-		throw std::runtime_error("object_list::first called on an empty object_list. Add an if(x.size() > 0) check.");
+	object_id first() const {
+		std::optional<object_id> result;
+		for_each_object_type([&]<typename T>() {
+			const std::vector<object_id>& objects = member_of_type<T>(*this);
+			if(!result && objects.size() > 0) {
+				result = objects[0];
+			}
+		});
+		if(!result) {
+			throw std::runtime_error("object_list::first called on an empty object_list. Add an if(x.size() > 0) check.");
+		}
+		return *result;
 	}
 };
 

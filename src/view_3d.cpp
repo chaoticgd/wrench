@@ -269,13 +269,12 @@ void view_3d::pick_object(level& lvl, ImVec2 position) {
 		return;
 	}
 
-	std::size_t key_value = *(uint32_t*) &buffer[smallest_index];
-	object_key key{key_value};
+	object_id id{*(uint32_t*) &buffer[smallest_index]};
 	
 	lvl.world.selection = {};
 	for_each_object_type([&]<typename T>() {
-		if(lvl.world.object_exists<T>(key)) {
-			lvl.world.selection.add(object_id::from_key<T>(key));
+		if(lvl.world.object_exists<T>(id)) {
+			lvl.world.selection.add<T>(id);
 		}
 	});
 }
@@ -291,11 +290,11 @@ void view_3d::draw_pickframe(level& lvl) const {
 	
 	auto encode_pick_colour = [=](object_id id) {
 		glm::vec4 colour;
-		// Keys are unique across all object types.
-		colour.r = ((id.key.value & 0xff)       >> 0)  / 255.f;
-		colour.g = ((id.key.value & 0xff00)     >> 8)  / 255.f;
-		colour.b = ((id.key.value & 0xff0000)   >> 16) / 255.f;
-		colour.a = ((id.key.value & 0xff000000) >> 24) / 255.f;
+		// IDs are unique across all object types.
+		colour.r = ((id.value & 0xff)       >> 0)  / 255.f;
+		colour.g = ((id.value & 0xff00)     >> 8)  / 255.f;
+		colour.b = ((id.value & 0xff0000)   >> 16) / 255.f;
+		colour.a = ((id.value & 0xff000000) >> 24) / 255.f;
 		return colour;
 	};
 	
@@ -348,14 +347,14 @@ void view_3d::select_rect(level& lvl, ImVec2 position) {
 		lvl.world.selection = {};
 		
 		glm::mat4 world_to_clip = get_world_to_clip();
-		lvl.world.for_each_object([&](object_id id, auto& object) {
+		lvl.world.for_each_object([&]<typename T>(object_id id, T& object) {
 			glm::vec3 screen_pos = apply_local_to_screen(world_to_clip, object.mat());
 			if(screen_pos.z < 0) {
 				return;
 			}
 			if(screen_pos.x > _selection_begin.x && screen_pos.x < _selection_end.x &&
 			   screen_pos.y > _selection_begin.y && screen_pos.y < _selection_end.y) {
-				lvl.world.selection.add(id);
+				lvl.world.selection.add<T>(id);
 			}
 		});
 	}

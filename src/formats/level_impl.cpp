@@ -82,12 +82,10 @@ void game_world::read(stream* src) {
 	
 	// Assign internal ID's to all the objects.
 	for_each_object_type([&]<typename T>() {
-		auto& objects = objects_of_type<T>();
-		auto& mappings = mappings_of_type<T>();
-		for(std::size_t i = 0; i < objects.size(); i++) {
-			object_key key{_next_object_key++};
-			member_of_type<T>(_object_mappings).key_to_index[key] = i;
-			member_of_type<T>(_object_mappings).index_to_key[i] = key;
+		for(std::size_t i = 0; i < objects_of_type<T>().size(); i++) {
+			object_id id{_next_object_id++};
+			member_of_type<T>(_object_mappings).id_to_index[id] = i;
+			member_of_type<T>(_object_mappings).index_to_id[i] = id;
 		}
 	});
 }

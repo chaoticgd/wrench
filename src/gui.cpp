@@ -425,7 +425,7 @@ void gui::moby_list::render(app& a) {
 		bool is_selected = lvl.world.is_selected(id);
 		if(ImGui::Selectable(row.str().c_str(), is_selected)) {
 			lvl.world.selection = {};
-			lvl.world.selection.add(id);
+			lvl.world.selection.add<moby>(id);
 		}
 	});
 	ImGui::ListBoxFooter();

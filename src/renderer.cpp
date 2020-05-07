@@ -120,7 +120,7 @@ void gl_renderer::reset_camera(app* a) {
 	auto lvl = a->get_level();
 	if(lvl != nullptr && lvl->world.count<moby>() >= 1) {
 		// FIXME: Reset camera to spawn/ship position.
-		camera_position = glm::vec3(0, 0, 0);//lvl->world.object_from_key<moby>(0).position();
+		camera_position = glm::vec3(0, 0, 0);
 	} else {
 		camera_position = glm::vec3(0, 0, 0);
 	}

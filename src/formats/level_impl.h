@@ -35,18 +35,6 @@
 #	Read LEVEL*.WAD files.
 # */
 
-// Access the member of the input struct corresponding to the object type T.
-template <typename T, typename T_in>
-auto& member_of_type(T_in& in) {
-	if constexpr(std::is_same_v<T, tie>) return in.ties;
-	if constexpr(std::is_same_v<T, shrub>) return in.shrubs;
-	if constexpr(std::is_same_v<T, moby>) return in.mobies;
-	if constexpr(std::is_same_v<T, spline>) return in.splines;
-	
-	// FIXME: This should be a compile-time error!
-	throw std::runtime_error("of_type called with invalid object type!");
-}
-
 class game_world {
 public:
 	struct fmt {
@@ -144,35 +132,29 @@ public:
 	void read(stream* src);
 	void write();
 	
-	// Maps from logical object keys to physical array indices and vice versa.
+	// Maps from logical object IDs to physical array indices and vice versa.
 	struct object_mappings {
-		std::map<object_key, std::size_t> key_to_index;
-		std::map<std::size_t, object_key> index_to_key;
+		std::map<object_id, std::size_t> id_to_index;
+		std::map<std::size_t, object_id> index_to_id;
 	};
 	
 	template <typename T>
-	bool object_exists(object_key key) {
-		auto& key_to_index = mappings_of_type<T>().key_to_index;
-		return key_to_index.find(key) != key_to_index.end();
+	bool object_exists(object_id id) {
+		auto& id_to_index = mappings_of_type<T>().id_to_index;
+		return id_to_index.find(id) != id_to_index.end();
 	}
 	
 	template <typename T>
-	T& object_from_key(object_key key) {
+	T& object_from_id(object_id id) {
 		object_mappings& mappings = mappings_of_type<T>();
-		return objects_of_type<T>()[mappings.key_to_index.at(key)];
+		return objects_of_type<T>()[mappings.id_to_index.at(id)];
 	}
 
 	template <typename T>
 	std::size_t count() {
 		return objects_of_type<T>().size();
 	}
-	
-	#define for_each_object_type(...) \
-		(__VA_ARGS__).template operator()<tie>(); \
-		(__VA_ARGS__).template operator()<shrub>(); \
-		(__VA_ARGS__).template operator()<moby>(); \
-		(__VA_ARGS__).template operator()<spline>()
-	
+		
 	struct object_callbacks {
 		std::function<void(object_id, tie&)> ties;
 		std::function<void(object_id, shrub&)> shrubs;
@@ -185,8 +167,8 @@ public:
 		
 	void find_object_by_id_impl(object_id id, object_callbacks cbs) {
 		for_each_object_type([&]<typename T>() {
-			if(object_exists<T>(id.key)) {
-				member_of_type<T>(cbs)(id, object_from_key<T>(id.key));
+			if(object_exists<T>(id)) {
+				member_of_type<T>(cbs)(id, object_from_id<T>(id));
 			}
 		});
 	}
@@ -195,8 +177,8 @@ public:
 	void for_each_object_of_type(std::function<void(object_id, T&)> callback) {
 		auto& objects = objects_of_type<T>();
 		for(std::size_t i = 0; i < objects.size(); i++) {
-			object_key key = mappings_of_type<T>().index_to_key.at(i);
-			callback(object_id::from_key<T>(key), objects[i]);
+			object_id id = mappings_of_type<T>().index_to_id.at(i);
+			callback(id, objects[i]);
 		}
 	}
 	
@@ -211,10 +193,10 @@ public:
 	
 	template <typename T>
 	void for_each_object_of_type_in(
-			std::vector<object_key> objects, std::function<void(object_id, T&)> callback) {
-		for(object_key key : objects) {
-			if(object_exists<T>(key)) {
-				callback(object_id::from_key<T>(key), object_from_key<T>(key));
+			std::vector<object_id> objects, std::function<void(object_id, T&)> callback) {
+		for(object_id id : objects) {
+			if(object_exists<T>(id)) {
+				callback(id, object_from_id<T>(id));
 			}
 		}
 	}
@@ -253,7 +235,7 @@ private:
 		object_mappings mobies;
 		object_mappings splines;
 	} _object_mappings;
-	std::size_t _next_object_key = 1; // Key to assign to the next new object.
+	std::size_t _next_object_id = 1; // ID to assign to the next new object.
 	
 	std::map<std::string, std::vector<game_string>> _languages;
 };
