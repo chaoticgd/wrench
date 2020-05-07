@@ -193,8 +193,10 @@ public:
 	
 	template <typename T>
 	void for_each_object_of_type(std::function<void(object_id, T&)> callback) {
-		for(auto& [key, index] : mappings_of_type<T>().key_to_index) {
-			callback(object_id::from_key<T>(key), object_from_key<T>(key));
+		auto& objects = objects_of_type<T>();
+		for(std::size_t i = 0; i < objects.size(); i++) {
+			object_key key = mappings_of_type<T>().index_to_key.at(i);
+			callback(object_id::from_key<T>(key), objects[i]);
 		}
 	}
 	
