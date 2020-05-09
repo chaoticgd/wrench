@@ -33,6 +33,10 @@
 # 	splines) as PODs.
 # */
 
+// *****************************************************************************
+// Basic types
+// *****************************************************************************
+
 // A racmat is a 4x4 matrix where the
 // last index is used for something else
 packed_struct(racmat,
@@ -122,6 +126,189 @@ packed_struct(vec3f,
 	bool operator!=(const vec3f& rhs) const {
 		return x != rhs.x || y != rhs.y || z != rhs.z;
 	}
+)
+
+struct level_primary_header;
+struct level_asset_header;
+struct level_texture_entry;
+
+// *****************************************************************************
+// Outer level structures
+// *****************************************************************************
+
+packed_struct(level_file_header,
+	uint32_t header_size;    // 0x0
+	uint32_t unknown_4;      // 0x4
+	uint32_t unknown_8;      // 0x8
+	uint32_t unknown_c;      // 0xc
+	sector32 primary_header; // 0x10
+	uint32_t unknown_14;     // 0x14
+	sector32 unknown_18;     // 0x18
+	uint32_t unknown_1c;     // 0x1c
+	sector32 moby_segment;   // 0x20
+)
+
+// Pointers are relative to this header.
+packed_struct(level_primary_header,
+	uint32_t unknown_0;           // 0x0
+	uint32_t unknown_4;           // 0x4
+	uint32_t asset_header;        // 0x8
+	uint32_t snd_header_size;     // 0xc
+	uint32_t tex_pixel_data_base; // 0x10
+	uint32_t unknown_14; // 0x14
+	uint32_t unknown_18; // 0x18
+	uint32_t unknown_1c; // 0x1c
+	uint32_t unknown_20; // 0x20
+	uint32_t unknown_24; // 0x24
+	uint32_t unknown_28; // 0x28
+	uint32_t unknown_2c; // 0x2c
+	uint32_t unknown_30; // 0x30
+	uint32_t unknown_34; // 0x34
+	uint32_t unknown_38; // 0x38
+	uint32_t unknown_3c; // 0x3c
+	uint32_t unknown_40; // 0x40
+	uint32_t unknown_44; // 0x44
+	file_ptr<wad_header> asset_wad; // 0x48
+)
+		
+// Barlow 0x418200
+packed_struct(level_asset_header,
+	uint32_t num_textures; // 0x0
+	file_ptr<level_texture_entry> textures; // 0x4
+	uint32_t ptr_into_asset_wad_8;  // 0x8
+	uint32_t ptr_into_asset_wad_c;  // 0xc
+	uint32_t ptr_into_asset_wad_10; // 0x10
+	uint32_t models_something;      // 0x14
+	uint32_t num_models; // 0x18
+	uint32_t models;     // 0x1c
+	uint32_t unknown_20; // 0x20
+	uint32_t unknown_24; // 0x24
+	uint32_t unknown_28; // 0x28
+	uint32_t unknown_2c; // 0x2c
+	uint32_t terrain_texture_count;  // 0x30
+	uint32_t terrain_texture_offset; // 0x34 Relative to secondary header.
+	uint32_t some1_texture_count;    // 0x38
+	uint32_t some1_texture_offset;   // 0x3c
+	uint32_t tie_texture_count;      // 0x40
+	uint32_t tie_texture_offset;     // 0x44
+	uint32_t shrub_texture_count;    // 0x48
+	uint32_t shrub_texture_offset;   // 0x4c
+	uint32_t some2_texture_count;    // 0x50
+	uint32_t some2_texture_offset;   // 0x54
+	uint32_t sprite_texture_count;   // 0x58
+	uint32_t sprite_texture_offset;  // 0x5c
+	uint32_t tex_data_in_asset_wad;  // 0x60
+	uint32_t ptr_into_asset_wad_64;  // 0x64
+	uint32_t unknown_68; // 0x68
+	uint32_t unknown_6c; // 0x6c
+	uint32_t unknown_70; // 0x70
+	uint32_t unknown_74; // 0x74
+	uint32_t unknown_78; // 0x78
+	uint32_t unknown_7c; // 0x7c
+	uint32_t unknown_80; // 0x80
+	uint32_t unknown_84; // 0x84
+	uint32_t unknown_88; // 0x88
+	uint32_t unknown_8c; // 0x8c
+	uint32_t unknown_90; // 0x90
+	uint32_t unknown_94; // 0x94
+	uint32_t unknown_98; // 0x98
+	uint32_t unknown_9c; // 0x9c
+	uint32_t unknown_a0; // 0xa0
+	uint32_t ptr_into_asset_wad_a4; // 0xa4
+	uint32_t unknown_a8; // 0xa8
+	uint32_t unknown_ac; // 0xac
+	uint32_t ptr_into_asset_wad_b0; // 0xb0
+)
+
+packed_struct(level_texture_entry,
+	uint32_t ptr;
+	uint16_t width;
+	uint16_t height;
+	uint32_t palette;
+	uint32_t field_c;
+);
+
+// *****************************************************************************
+// World segment structures
+// *****************************************************************************
+
+packed_struct(world_header,
+	uint32_t ship;               // 0x0
+	uint32_t directional_lights; // 0x4
+	uint32_t unknown_08;         // 0x8
+	uint32_t unknown_0c;         // 0xc
+	uint32_t english_strings;    // 0x10
+	uint32_t unknown_14;         // 0x14 Points to 16 bytes between the English and French tables (on Barlow).
+	uint32_t french_strings;     // 0x18
+	uint32_t german_strings;     // 0x1c
+	uint32_t spanish_strings;    // 0x20
+	uint32_t italian_strings;    // 0x24
+	uint32_t null_strings;       // 0x28 Also what is this thing?
+	uint32_t unknown_2c;         // 0x2c
+	uint32_t unknown_30;         // 0x30
+	uint32_t ties;               // 0x34
+	uint32_t unknown_38;         // 0x38
+	uint32_t unknown_3c;         // 0x3c
+	uint32_t shrubs;             // 0x40
+	uint32_t unknown_44;         // 0x44
+	uint32_t unknown_48;         // 0x48
+	uint32_t mobies;             // 0x4c
+	uint32_t unknown_50;         // 0x50
+	uint32_t unknown_54;         // 0x54
+	uint32_t unknown_58;         // 0x58
+	uint32_t unknown_5c;         // 0x5c
+	uint32_t unknown_60;         // 0x60
+	uint32_t unknown_64;         // 0x64
+	uint32_t unknown_68;         // 0x68
+	uint32_t unknown_6c;         // 0x6c
+	uint32_t unknown_70;         // 0x70
+	uint32_t unknown_74;         // 0x74
+	uint32_t splines;            // 0x78
+)
+
+packed_struct(world_string_table_header,
+	uint32_t num_strings;
+	uint32_t unknown;
+	// String table entries follow.
+)
+
+packed_struct(world_string_table_entry,
+	file_ptr<char*> string; // Relative to this struct.
+	uint32_t id;
+	uint32_t padding[2];
+)
+
+packed_struct(world_object_table,
+	uint32_t num_elements;
+	uint32_t pad[3];
+	// Elements follow.
+)
+
+packed_struct(world_spline_table_header,
+	uint32_t num_splines;
+	uint32_t data_offset;
+	uint32_t unknown_08;
+	uint32_t unknown_0c;
+)
+
+packed_struct(world_spline_entry,
+	uint32_t num_vertices;
+	uint32_t pad[3];
+)
+
+packed_struct(world_ship_data,
+	uint32_t unknown1[0xf];
+	vec3f position;
+	float rotationZ;
+)
+
+packed_struct(world_directional_light_table,
+	uint32_t num_directional_lights; // Max 0xb.
+	// Directional lights follow.
+)
+
+packed_struct(world_directional_light,
+	uint8_t unknown[64];
 )
 
 packed_struct(tie,
@@ -261,6 +448,10 @@ struct spline {
 		// TODO
 	}
 };
+
+// *****************************************************************************
+// Object system things
+// *****************************************************************************
 
 struct object_id {
 	std::size_t value;

@@ -23,17 +23,17 @@ bool game_world::is_selected(object_id id) const {
 }
 
 void game_world::read(stream* src) {
-	auto header = src->read<fmt::header>(0);
+	auto header = src->read<world_header>(0);
 	
 	// Read game strings.
 	auto read_language = [=](uint32_t offset) {
 		std::vector<game_string> language;
 	
-		auto table = src->read<fmt::string_table_header>(offset);
-		std::vector<fmt::string_table_entry> entries(table.num_strings);
+		auto table = src->read<world_string_table_header>(offset);
+		std::vector<world_string_table_entry> entries(table.num_strings);
 		src->read_v(entries);
 		
-		for(fmt::string_table_entry& entry : entries) {
+		for(world_string_table_entry& entry : entries) {
 			src->seek(offset + entry.string.value);
 			language.push_back({ entry.id, src->read_string() });
 		}
@@ -47,20 +47,20 @@ void game_world::read(stream* src) {
 	_languages["Italian"] = read_language(header.italian_strings);
 	
 	// Read point objects.
-	auto tie_table = src->read<fmt::object_table>(header.ties);
+	auto tie_table = src->read<world_object_table>(header.ties);
 	_object_store.ties.resize(tie_table.num_elements);
 	src->read_v(_object_store.ties);
 
-	auto shrub_table = src->read<fmt::object_table>(header.shrubs);
+	auto shrub_table = src->read<world_object_table>(header.shrubs);
 	_object_store.shrubs.resize(shrub_table.num_elements);
 	src->read_v(_object_store.shrubs);
 	
-	auto moby_table = src->read<fmt::object_table>(header.mobies);
+	auto moby_table = src->read<world_object_table>(header.mobies);
 	_object_store.mobies.resize(moby_table.num_elements);
 	src->read_v(_object_store.mobies);
 	
 	// Read splines.
-	auto spline_table = src->read<fmt::spline_table_header>(header.splines);
+	auto spline_table = src->read<world_spline_table_header>(header.splines);
 	for(std::size_t i = 0; i < spline_table.num_splines; i++) {
 		uint32_t spline_offset = src->read<uint32_t>(header.splines + 0x10 + i * 4);
 		uint32_t num_vertices = src->read<uint32_t>
@@ -98,10 +98,10 @@ level::level(iso_stream* iso, std::size_t offset, std::size_t size, std::string 
 	: offset(offset),
 	  _backing(iso, offset, size) {
 	
-	auto file_header = _backing.read<fmt::file_header>(0);
+	auto file_header = _backing.read<level_file_header>(0);
 	
 	uint32_t primhdr_offset = file_header.primary_header.bytes();
-	auto primary_header = _backing.read<fmt::primary_header>(primhdr_offset);
+	auto primary_header = _backing.read<level_primary_header>(primhdr_offset);
 
 	_moby_stream = iso->get_decompressed(offset + file_header.moby_segment.bytes());
 	world.read(_moby_stream);
@@ -109,10 +109,10 @@ level::level(iso_stream* iso, std::size_t offset, std::size_t size, std::string 
 	stream* asset_seg = iso->get_decompressed
 		(offset + primhdr_offset + primary_header.asset_wad.value, true);
 	
-	uint32_t snd_base = file_header.primary_header.bytes() + primary_header.snd_header.value;
-	auto snd_header = _backing.read<fmt::secondary_header>(snd_base);
+	uint32_t asset_base = file_header.primary_header.bytes() + primary_header.asset_header;
+	auto asset_header = _backing.read<level_asset_header>(asset_base);
 	
-	uint32_t mdl_base = snd_base + snd_header.models;
+	uint32_t mdl_base = asset_base + asset_header.models;
 	_backing.seek(mdl_base);
 	
 	packed_struct(model_entry,
@@ -126,7 +126,7 @@ level::level(iso_stream* iso, std::size_t offset, std::size_t size, std::string 
 		uint32_t unknown_1c;
 	)
 	
-	for(std::size_t i = 0; i < snd_header.num_models; i++) {
+	for(std::size_t i = 0; i < asset_header.num_models; i++) {
 		auto entry = _backing.read<model_entry>(mdl_base + sizeof(model_entry) * i);
 		if(entry.offset_in_asset_wad == 0) {
 			continue;
@@ -151,28 +151,20 @@ level::level(iso_stream* iso, std::size_t offset, std::size_t size, std::string 
 		moby_class_to_model.emplace(class_num, moby_models.size() - 1);
 	}
 	
-	packed_struct(texture_entry,
-		uint32_t ptr;
-		uint16_t width;
-		uint16_t height;
-		uint32_t palette;
-		uint32_t field_c;
-	);
-	
 	auto load_texture_table = [=](stream& backing, std::size_t offset, std::size_t count) {
 		std::vector<texture> textures;
-		backing.seek(snd_base + offset);
+		backing.seek(asset_base + offset);
 		for(std::size_t i = 0; i < count; i++) {
-			auto entry = backing.read<texture_entry>();
-			auto ptr = snd_header.tex_data_in_asset_wad + entry.ptr;
+			auto entry = backing.read<level_texture_entry>();
+			auto ptr = asset_header.tex_data_in_asset_wad + entry.ptr;
 			textures.emplace_back(asset_seg, ptr, ptr, vec2i { entry.width, entry.height });
 		}
 		return textures;
 	};
 	
-	terrain_textures = load_texture_table(_backing, snd_header.terrain_texture_offset, snd_header.terrain_texture_count);
-	tie_textures = load_texture_table(_backing, snd_header.tie_texture_offset, snd_header.tie_texture_count);
-	sprite_textures = load_texture_table(_backing, snd_header.sprite_texture_offset, snd_header.sprite_texture_count);
+	terrain_textures = load_texture_table(_backing, asset_header.terrain_texture_offset, asset_header.terrain_texture_count);
+	tie_textures = load_texture_table(_backing, asset_header.tie_texture_offset, asset_header.tie_texture_count);
+	sprite_textures = load_texture_table(_backing, asset_header.sprite_texture_offset, asset_header.sprite_texture_count);
 }
 
 stream* level::moby_stream() {

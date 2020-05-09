@@ -82,11 +82,11 @@ int main(int argc, char** argv) {
 		proxy_stream file(&project.iso, file_meta.offset, file_meta.size);
 		
 		if(file_meta.type == +gamedb_file_type::LEVEL) {
-			auto file_header = file.read<level::fmt::file_header>(0);
-			auto primary_header = file.read<level::fmt::primary_header>(file_header.primary_header.bytes());
+			auto file_header = file.read<level_file_header>(0);
+			auto primary_header = file.read<level_primary_header>(file_header.primary_header.bytes());
 			
-			std::size_t asset_header_offset = file_header.primary_header.bytes() + primary_header.snd_header.value;
-			auto asset_header = file.read<level::fmt::secondary_header>(asset_header_offset);
+			std::size_t asset_header_offset = file_header.primary_header.bytes() + primary_header.asset_header;
+			auto asset_header = file.read<level_asset_header>(asset_header_offset);
 			
 			packed_struct(texture_entry,
 				uint32_t field_0;
