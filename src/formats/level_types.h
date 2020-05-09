@@ -29,8 +29,7 @@
 #include "game_model.h"
 
 # /*
-# 	Defines the types of game objects the game uses (ties, shrubs, mobies and
-# 	splines) as PODs.
+# 	Defines the types that make up the level format, including game objects.
 # */
 
 // *****************************************************************************
