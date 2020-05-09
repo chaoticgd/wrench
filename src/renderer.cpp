@@ -118,8 +118,12 @@ void gl_renderer::draw_cube(const glm::mat4& mvp, const glm::vec4& colour) const
 void gl_renderer::reset_camera(app* a) {
 	camera_rotation = glm::vec3(0, 0, 0);
 	auto lvl = a->get_level();
-	if(lvl != nullptr) {
-		camera_position = lvl->world.ship.position();
+	if(level* lvl = a->get_level()) {
+		if(lvl->world.count<moby>() > 0) {
+			camera_position = lvl->world.object_from_index<moby>(0).position();
+		} else {
+			camera_position = lvl->world.ship.position();
+		}
 	} else {
 		camera_position = glm::vec3(0, 0, 0);
 	}

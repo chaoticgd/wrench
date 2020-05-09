@@ -144,6 +144,11 @@ public:
 		object_mappings& mappings = mappings_of_type<T>();
 		return objects_of_type<T>()[mappings.id_to_index.at(id)];
 	}
+	
+	template <typename T>
+	T& object_from_index(std::size_t index) {
+		return objects_of_type<T>()[index];
+	}
 
 	template <typename T>
 	std::size_t count() {
