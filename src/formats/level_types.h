@@ -153,7 +153,7 @@ packed_struct(level_primary_header,
 	uint32_t unknown_0;           // 0x0
 	uint32_t unknown_4;           // 0x4
 	uint32_t asset_header;        // 0x8
-	uint32_t snd_header_size;     // 0xc
+	uint32_t asset_header_size;   // 0xc
 	uint32_t tex_pixel_data_base; // 0x10
 	uint32_t unknown_14; // 0x14
 	uint32_t unknown_18; // 0x18
@@ -186,7 +186,7 @@ packed_struct(level_asset_header,
 	uint32_t unknown_28; // 0x28
 	uint32_t unknown_2c; // 0x2c
 	uint32_t terrain_texture_count;  // 0x30
-	uint32_t terrain_texture_offset; // 0x34 Relative to secondary header.
+	uint32_t terrain_texture_offset; // 0x34 Relative to asset header.
 	uint32_t some1_texture_count;    // 0x38
 	uint32_t some1_texture_offset;   // 0x3c
 	uint32_t tie_texture_count;      // 0x40
