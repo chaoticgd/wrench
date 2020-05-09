@@ -25,6 +25,8 @@ bool game_world::is_selected(object_id id) const {
 void game_world::read(stream* src) {
 	auto header = src->read<world_header>(0);
 	
+	ship = src->read<world_ship_data>(header.ship);
+	
 	// Read game strings.
 	auto read_language = [=](uint32_t offset) {
 		std::vector<game_string> language;

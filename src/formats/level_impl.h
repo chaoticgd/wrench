@@ -118,6 +118,7 @@ public:
 	};
 	
 	object_list selection;
+	world_ship_data ship;
 	
 	game_world() {}
 	
