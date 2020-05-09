@@ -307,6 +307,11 @@ std::string iso_stream::init_cache(std::string iso_path, worker_logger& log) {
 		fs::remove(_cache_meta_path);
 		fs::copy(iso_path, _cache_iso_path);
 
+		// Fixes a problem where if the original level file was read-only the
+		// cache would also be made read only, causing the project creation
+		// thread to crash.
+		fs::permissions(_cache_iso_path, fs::perms::owner_read | fs::perms::owner_write);
+
 		file_stream cache_iso(_cache_iso_path, std::ios::in | std::ios::out);
 		write_normal_patches(&cache_iso);
 	}
