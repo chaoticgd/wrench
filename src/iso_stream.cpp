@@ -302,6 +302,10 @@ std::string iso_stream::init_cache(std::string iso_path, worker_logger& log) {
 	} else {
 		log << "[ISO] Rebuilding cache... ";
 
+		if(!fs::is_regular_file(iso_path)) {
+			throw stream_io_error("Invalid ISO file specified!");
+		}
+
 		// The cache is invalid.
 		fs::remove(_cache_iso_path);
 		fs::remove(_cache_meta_path);
