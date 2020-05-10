@@ -240,10 +240,18 @@ private:
 	std::map<std::string, std::vector<game_string>> _languages;
 };
 
+struct level_file_header {
+	uint32_t header_size;
+	uint32_t primary_header_offset;
+	uint32_t moby_segment_offset;
+};
+
 class level {
 public:
 	level(iso_stream* iso, std::size_t offset, std::size_t size, std::string display_name);
-
+	
+	static level_file_header read_file_header(stream* src);
+	
 	std::map<std::string, std::map<uint32_t, std::string>> game_strings() { return {}; }
 
 	stream* moby_stream();
