@@ -89,18 +89,18 @@ level::level(iso_stream* iso, std::size_t offset, std::size_t size, std::string 
 	: offset(offset),
 	  _backing(iso, offset, size) {
 	
-	auto file_header = _backing.read<fmt::file_header>(0);
+	level_file_header file_header = read_file_header(&_backing);
+	uint32_t header_size = _backing.read<uint32_t>(0);
 	
-	uint32_t primhdr_offset = file_header.primary_header.bytes();
-	auto primary_header = _backing.read<fmt::primary_header>(primhdr_offset);
+	auto primary_header = _backing.read<fmt::primary_header>(file_header.primary_header_offset);
 
-	_moby_stream = iso->get_decompressed(offset + file_header.moby_segment.bytes());
+	_moby_stream = iso->get_decompressed(offset + file_header.moby_segment_offset);
 	world.read(_moby_stream);
 	
 	stream* asset_seg = iso->get_decompressed
-		(offset + primhdr_offset + primary_header.asset_wad.value, true);
+		(offset + file_header.primary_header_offset + primary_header.asset_wad.value, true);
 	
-	uint32_t snd_base = file_header.primary_header.bytes() + primary_header.snd_header.value;
+	uint32_t snd_base = file_header.primary_header_offset + primary_header.snd_header.value;
 	auto snd_header = _backing.read<fmt::secondary_header>(snd_base);
 	
 	uint32_t mdl_base = snd_base + snd_header.models;
@@ -164,6 +164,29 @@ level::level(iso_stream* iso, std::size_t offset, std::size_t size, std::string 
 	terrain_textures = load_texture_table(_backing, snd_header.terrain_texture_offset, snd_header.terrain_texture_count);
 	tie_textures = load_texture_table(_backing, snd_header.tie_texture_offset, snd_header.tie_texture_count);
 	sprite_textures = load_texture_table(_backing, snd_header.sprite_texture_offset, snd_header.sprite_texture_count);
+}
+
+level_file_header level::read_file_header(stream* src) {
+	level_file_header result;
+	result.header_size = src->read<uint32_t>(0);
+	switch(result.header_size) {
+		case 0x60: {
+			auto file_header = src->read<fmt::file_header_60>(0);
+			result.primary_header_offset = file_header.primary_header.bytes();
+			result.moby_segment_offset = file_header.moby_segment.bytes();
+			break;
+		}
+		case 0x68: {
+			auto file_header = src->read<fmt::file_header_68>(0);
+			result.primary_header_offset = file_header.primary_header.bytes();
+			result.moby_segment_offset = file_header.moby_segment.bytes();
+			break;
+		}
+		default: {
+			throw stream_format_error("Unknown file header size for level!");
+		}
+	}
+	return result;
 }
 
 stream* level::moby_stream() {

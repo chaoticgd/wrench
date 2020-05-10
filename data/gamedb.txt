@@ -101,3 +101,12 @@ game SCES_532.85
 	# file type, offset (bytes), size (bytes, if known), display name
 	file ARMOR 0x4ecf4800 0x0 ARMOR.WAD
 end
+
+game RC23LEVEL
+	title R&C 2/3 Single Level
+	# Doesn't matter.
+	edition BLACK_LABEL
+	# Doesn't matter.
+	region EUROPE
+	file LEVEL 0x0 0x0 Single Level
+end
