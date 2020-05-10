@@ -139,7 +139,7 @@ packed_struct(level_file_header_60,
 	uint32_t header_size;    // 0x0 Equal to 0x60.
 	uint32_t unknown_4;      // 0x4
 	uint32_t unknown_8;      // 0x8
-	uint32_t pad;            // 0xc
+	uint32_t unknown_c;      // 0xc
 	sector32 primary_header; // 0x10
 	uint32_t unknown_14;     // 0x14
 	sector32 unknown_18;     // 0x18
