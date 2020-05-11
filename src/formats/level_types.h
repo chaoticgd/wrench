@@ -160,8 +160,8 @@ packed_struct(level_file_header_68,
 
 // Pointers are relative to this header.
 packed_struct(level_primary_header,
-	uint32_t unknown_0;           // 0x0
-	uint32_t unknown_4;           // 0x4
+	uint32_t code_segment_offset; // 0x0
+	uint32_t code_segment_size;   // 0x4
 	uint32_t asset_header;        // 0x8
 	uint32_t asset_header_size;   // 0xc
 	uint32_t tex_pixel_data_base; // 0x10
@@ -180,7 +180,15 @@ packed_struct(level_primary_header,
 	uint32_t unknown_44; // 0x44
 	file_ptr<wad_header> asset_wad; // 0x48
 )
-		
+
+packed_struct(level_code_segment_header,
+	uint32_t base_address; // 0x0 Where to load it in RAM.
+	uint32_t unknown_4;
+	uint32_t unknown_8;
+	uint32_t entry_offset; // 0xc The address of the main_loop function, relative to base_address.
+	// Code segment immediately follows.
+)
+
 // Barlow 0x418200
 packed_struct(level_asset_header,
 	uint32_t num_textures; // 0x0

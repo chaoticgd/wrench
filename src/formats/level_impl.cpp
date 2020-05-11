@@ -237,3 +237,15 @@ level_file_header level::read_file_header(stream* src) {
 stream* level::moby_stream() {
 	return _moby_stream;
 }
+
+level_code_segment level::read_code_segment() {
+	level_file_header file_header = read_file_header(&_backing);
+	auto primary_header = _backing.read<level_primary_header>(file_header.primary_header_offset);
+	
+	level_code_segment result;
+	result.header = _backing.read<level_code_segment_header>
+		(file_header.primary_header_offset + primary_header.code_segment_offset);
+	result.bytes.resize(primary_header.code_segment_size - sizeof(level_code_segment_header));
+	_backing.read_v(result.bytes);
+	return result;
+}

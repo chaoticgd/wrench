@@ -162,11 +162,38 @@ void gui::render_menu_bar(app& a) {
 			a.save_project(true);
 		}
 		if(ImGui::BeginMenu("Export")) {
-			if(ImGui::MenuItem("Mobyseg (debug)")) {
-				file_stream dump_file("mobyseg.bin", std::ios::out | std::ios::trunc);
-				stream* src = a.get_level()->moby_stream();
-				src->seek(0);
-				stream::copy_n(dump_file, *src, src->size());
+			if(level* lvl = a.get_level()) {
+				if(ImGui::MenuItem("Mobyseg (debug)")) {
+					file_stream dump_file("mobyseg.bin", std::ios::out | std::ios::trunc);
+					stream* src = lvl->moby_stream();
+					src->seek(0);
+					stream::copy_n(dump_file, *src, src->size());
+				}
+				if(ImGui::MenuItem("Code segment")) {
+					level_code_segment segment = lvl->read_code_segment();
+					
+					std::stringstream name;
+					name << "codeseg";
+					name << "_" << std::hex << segment.header.base_address;
+					name << "_" << std::hex << segment.header.unknown_4;
+					name << "_" << std::hex << segment.header.unknown_8;
+					name << "_" << std::hex << segment.header.entry_offset;
+					name << ".bin";
+					
+					file_stream dump_file(name.str(), std::ios::out | std::ios::trunc);
+					dump_file.write_v(segment.bytes);
+					
+					std::stringstream message;
+					message << "The code segment for the current level has been written to\n\t\"";
+					message << name.str() << "\"\n";
+					message << "relative to the main Wrench directory.\n";
+					message << "\n";
+					message << "Base address: " << std::hex << segment.header.base_address << "\n";
+					message << "Unknown (0x4): " << std::hex << segment.header.unknown_4 << "\n";
+					message << "Unknown (0x8): " << std::hex << segment.header.unknown_8 << "\n";
+					message << "Entry point: " << std::hex << segment.header.entry_offset << "\n";
+					a.emplace_window<message_box>("Export Complete", message.str());
+				}
 			}
 			ImGui::EndMenu();
 		}
