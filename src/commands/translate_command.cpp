@@ -20,29 +20,24 @@
 
 translate_command::translate_command(
 		level* lvl,
-		std::vector<object_id> objects,
+		object_list objects,
 		glm::vec3 displacement)
 	: _lvl(lvl),
-	  _displacement(displacement) {
-	FOR_EACH_MATRIX_OBJECT(_lvl->world, ([=](object_id id, auto& object) {
-		if(std::find(objects.begin(), objects.end(), id) != objects.end()) {
-			_prev_positions[id] = glm::vec3(object.mat()[3]);
-		}
-	}));
+	  _displacement(displacement),
+	  _objects(objects) {
+	_lvl->world.for_each_object_in(_objects, [=](object_id id, auto& object) {
+		_prev_positions[id] = glm::vec3(object.mat()[3]);
+	});
 }
 
 void translate_command::apply(wrench_project* project) {
-	FOR_EACH_MATRIX_OBJECT(_lvl->world, ([=](object_id id, auto& object) {
-		if(_prev_positions.find(id) != _prev_positions.end()) {
-			object.translate(_displacement);
-		}
-	}));
+	_lvl->world.for_each_object_in(_objects, [=](object_id id, auto& object) {
+		object.translate(_displacement);
+	});
 }
 
 void translate_command::undo(wrench_project* project) {
-	FOR_EACH_MATRIX_OBJECT(_lvl->world, ([=](object_id id, auto& object) {
-		if(_prev_positions.find(id) != _prev_positions.end()) {
-			object.set_translation(_prev_positions.at(id));
-		}
-	}));
+	_lvl->world.for_each_object_in(_objects, [=](object_id id, auto& object) {
+		object.set_translation(_prev_positions.at(id));
+	});
 }

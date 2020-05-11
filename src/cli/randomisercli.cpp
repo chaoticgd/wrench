@@ -83,10 +83,10 @@ int main(int argc, char** argv) {
 		
 		if(file_meta.type == +gamedb_file_type::LEVEL) {
 			level_file_header file_header = level::read_file_header(&file);
-			auto primary_header = file.read<level::fmt::primary_header>(file_header.primary_header_offset);
+			auto primary_header = file.read<level_primary_header>(file_header.primary_header_offset);
 			
-			std::size_t asset_header_offset = file_header.primary_header_offset + primary_header.snd_header.value;
-			auto asset_header = file.read<level::fmt::secondary_header>(asset_header_offset);
+			std::size_t asset_header_offset = file_header.primary_header_offset + primary_header.asset_header;
+			auto asset_header = file.read<level_asset_header>(asset_header_offset);
 			
 			packed_struct(texture_entry,
 				uint32_t field_0;

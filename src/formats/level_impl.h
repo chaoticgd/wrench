@@ -36,155 +36,209 @@
 #	Read LEVEL*.WAD files.
 # */
 
+struct object_id {
+	std::size_t value;
+	
+	bool operator<(const object_id& rhs) const {
+		return value < rhs.value;
+	}
+	
+	bool operator==(const object_id& rhs) const {
+		return value == rhs.value;
+	}
+};
+
+#define for_each_object_type(...) \
+	(__VA_ARGS__).template operator()<tie>(); \
+	(__VA_ARGS__).template operator()<shrub>(); \
+	(__VA_ARGS__).template operator()<moby>(); \
+	(__VA_ARGS__).template operator()<spline>()
+
+// Access the member of the input struct corresponding to the object type T.
+template <typename T, typename T_in>
+auto& member_of_type(T_in& in) {
+	if constexpr(std::is_same_v<T, tie>) return in.ties;
+	if constexpr(std::is_same_v<T, shrub>) return in.shrubs;
+	if constexpr(std::is_same_v<T, moby>) return in.mobies;
+	if constexpr(std::is_same_v<T, spline>) return in.splines;
+	
+	// FIXME: This should be a compile-time error!
+	throw std::runtime_error("member_of_type called with invalid object type!");
+}
+
+struct object_list {
+	std::vector<object_id> ties;
+	std::vector<object_id> shrubs;
+	std::vector<object_id> mobies;
+	std::vector<object_id> splines;
+	
+	template <typename T>
+	void add(object_id id) {
+		member_of_type<T>(*this).push_back(id);
+	}
+	
+	std::size_t size() const {
+		std::size_t result = 0;
+		for_each_object_type([&]<typename T>() {
+			result += member_of_type<T>(*this).size();
+		});
+		return result;
+	}
+	
+	bool contains(object_id id) const {
+		bool result = false;
+		for_each_object_type([&]<typename T>() {
+			const std::vector<object_id>& objects = member_of_type<T>(*this);
+			if(std::find(objects.begin(), objects.end(), id) != objects.end()) {
+				result = true;
+			}
+		});
+		return result;
+	}
+	
+	object_id first() const {
+		std::optional<object_id> result;
+		for_each_object_type([&]<typename T>() {
+			const std::vector<object_id>& objects = member_of_type<T>(*this);
+			if(!result && objects.size() > 0) {
+				result = objects[0];
+			}
+		});
+		if(!result) {
+			throw std::runtime_error("object_list::first called on an empty object_list. Add an if(x.size() > 0) check.");
+		}
+		return *result;
+	}
+};
+
 class game_world {
 public:
-	struct fmt {
-		packed_struct(header,
-			uint32_t ship;               // 0x0
-			uint32_t directional_lights; // 0x4
-			uint32_t unknown_08;         // 0x8
-			uint32_t unknown_0c;         // 0xc
-			uint32_t english_strings;    // 0x10
-			uint32_t unknown_14;         // 0x14 Points to 16 bytes between the English and French tables (on Barlow).
-			uint32_t french_strings;     // 0x18
-			uint32_t german_strings;     // 0x1c
-			uint32_t spanish_strings;    // 0x20
-			uint32_t italian_strings;    // 0x24
-			uint32_t null_strings;       // 0x28 Also what is this thing?
-			uint32_t unknown_2c;         // 0x2c
-			uint32_t unknown_30;         // 0x30
-			uint32_t ties;               // 0x34
-			uint32_t unknown_38;         // 0x38
-			uint32_t unknown_3c;         // 0x3c
-			uint32_t shrubs;             // 0x40
-			uint32_t unknown_44;         // 0x44
-			uint32_t unknown_48;         // 0x48
-			uint32_t mobies;             // 0x4c
-			uint32_t unknown_50;         // 0x50
-			uint32_t unknown_54;         // 0x54
-			uint32_t unknown_58;         // 0x58
-			uint32_t unknown_5c;         // 0x5c
-			uint32_t unknown_60;         // 0x60
-			uint32_t unknown_64;         // 0x64
-			uint32_t unknown_68;         // 0x68
-			uint32_t unknown_6c;         // 0x6c
-			uint32_t unknown_70;         // 0x70
-			uint32_t unknown_74;         // 0x74
-			uint32_t splines;            // 0x78
-		)
-		
-		packed_struct(string_table_header,
-			uint32_t num_strings;
-			uint32_t unknown;
-			// String table entries follow.
-		)
-
-		packed_struct(string_table_entry,
-			file_ptr<char*> string; // Relative to this struct.
-			uint32_t id;
-			uint32_t padding[2];
-		)
-		
-		packed_struct(object_table,
-			uint32_t num_elements;
-			uint32_t pad[3];
-			// Elements follow.
-		)
-		
-		packed_struct(spline_table_header,
-			uint32_t num_splines;
-			uint32_t data_offset;
-			uint32_t unknown_08;
-			uint32_t unknown_0c;
-		)
-
-		packed_struct(spline_entry,
-			uint32_t num_vertices;
-			uint32_t pad[3];
-		)
-		
-		packed_struct(ship_data,
-			uint32_t unknown1[0xf];
-			vec3f position;
-			float rotationZ;
-		)
-		
-		packed_struct(directional_light_table,
-			uint32_t num_directional_lights; // Max 0xb.
-			// Directional lights follow.
-		)
-		
-		packed_struct(directional_light,
-			uint8_t unknown[64];
-		)
-	};
-	
 	struct game_string {
 		uint32_t id;
 		std::string content;	
 	};
 	
-	std::vector<object_id> selection;
+	object_list selection;
+	world_ship_data ship;
 	
 	game_world() {}
 	
 	bool is_selected(object_id id) const;
 	
+	void read(stream* src);
+	void write();
+	
+	// Maps from logical object IDs to physical array indices and vice versa.
+	struct object_mappings {
+		std::map<object_id, std::size_t> id_to_index;
+		std::map<std::size_t, object_id> index_to_id;
+	};
+	
 	template <typename T>
-	T& object_at(std::size_t index) {
+	bool object_exists(object_id id) {
+		auto& id_to_index = mappings_of_type<T>().id_to_index;
+		return id_to_index.find(id) != id_to_index.end();
+	}
+	
+	template <typename T>
+	T& object_from_id(object_id id) {
+		object_mappings& mappings = mappings_of_type<T>();
+		return objects_of_type<T>()[mappings.id_to_index.at(id)];
+	}
+	
+	template <typename T>
+	T& object_from_index(std::size_t index) {
 		return objects_of_type<T>()[index];
 	}
-
-// Iterate over each point object. Needs to be a macro since the callback needs
-// to take different types as arguments depending on the type of object being
-// handled. Kinda hacky, but it works. (;
-#define FOR_EACH_MATRIX_OBJECT(world, callback) \
-	for(std::size_t i = 0; i < world.count<moby>(); i++) { \
-		callback(object_id { object_type::MOBY, i }, world.object_at<moby>(i)); \
-	} \
-	for(std::size_t i = 0; i < world.count<tie>(); i++) { \
-		callback(object_id { object_type::TIE, i }, world.object_at<tie>(i)); \
-	} \
-	for(std::size_t i = 0; i < world.count<shrub>(); i++) { \
-		callback(object_id { object_type::SHRUB, i }, world.object_at<shrub>(i)); \
-	}
-
-#define OBJECT_FROM_ID(world, id, callback) \
-	if(id.type == object_type::TIE)   callback(world.object_at<tie>(id.index)); \
-	if(id.type == object_type::SHRUB) callback(world.object_at<shrub>(id.index)); \
-	if(id.type == object_type::MOBY)  callback(world.object_at<moby>(id.index));
 
 	template <typename T>
 	std::size_t count() {
 		return objects_of_type<T>().size();
 	}
+		
+	struct object_callbacks {
+		std::function<void(object_id, tie&)> ties;
+		std::function<void(object_id, shrub&)> shrubs;
+		std::function<void(object_id, moby&)> mobies;
+		std::function<void(object_id, spline&)> splines;
+	};
+	
+	#define find_object_by_id(id, ...) \
+		find_object_by_id_impl(id, {__VA_ARGS__, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__})
+		
+	void find_object_by_id_impl(object_id id, object_callbacks cbs) {
+		for_each_object_type([&]<typename T>() {
+			if(object_exists<T>(id)) {
+				member_of_type<T>(cbs)(id, object_from_id<T>(id));
+			}
+		});
+	}
 	
 	template <typename T>
-	void for_each(std::function<void(std::size_t i, T&)> callback) {
+	void for_each_object_of_type(std::function<void(object_id, T&)> callback) {
 		auto& objects = objects_of_type<T>();
 		for(std::size_t i = 0; i < objects.size(); i++) {
-			callback(i, objects[i]);
+			object_id id = mappings_of_type<T>().index_to_id.at(i);
+			callback(id, objects[i]);
 		}
 	}
 	
-	void read(stream* src);
-	void write();
+	#define for_each_object(...) \
+		for_each_object_impl({__VA_ARGS__, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__})
+	
+	void for_each_object_impl(object_callbacks cbs) {
+		for_each_object_type([&]<typename T>() {
+			for_each_object_of_type<T>(member_of_type<T>(cbs));
+		});
+	}
+	
+	template <typename T>
+	void for_each_object_of_type_in(
+			std::vector<object_id> objects, std::function<void(object_id, T&)> callback) {
+		for(object_id id : objects) {
+			if(object_exists<T>(id)) {
+				callback(id, object_from_id<T>(id));
+			}
+		}
+	}
+	
+	#define for_each_object_in(list, ...) \
+		for_each_object_in_impl(list, {__VA_ARGS__, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__})
+	
+	void for_each_object_in_impl(object_list& list, object_callbacks cbs) {
+		for_each_object_type([&]<typename T>() {
+			for_each_object_of_type_in<T>
+				(member_of_type<T>(list), member_of_type<T>(cbs));
+		});
+	}
 	
 private:
 	template <typename T>
 	std::vector<T>& objects_of_type() {
-		if constexpr(std::is_same_v<T, tie>) return _ties;
-		if constexpr(std::is_same_v<T, shrub>) return _shrubs;
-		if constexpr(std::is_same_v<T, moby>) return _mobies;
-		if constexpr(std::is_same_v<T, spline>) return _splines;
-		static_assert("Invalid object type.");
+		return member_of_type<T>(_object_store);
 	}
-
+	
+	struct {
+		std::vector<tie> ties;
+		std::vector<shrub> shrubs;
+		std::vector<moby> mobies;
+		std::vector<spline> splines;
+	} _object_store;
+	
+	template <typename T>
+	object_mappings& mappings_of_type() {
+		return member_of_type<T>(_object_mappings);
+	}
+	
+	struct {
+		object_mappings ties;
+		object_mappings shrubs;
+		object_mappings mobies;
+		object_mappings splines;
+	} _object_mappings;
+	std::size_t _next_object_id = 1; // ID to assign to the next new object.
+	
 	std::map<std::string, std::vector<game_string>> _languages;
-	std::vector<tie> _ties;
-	std::vector<shrub> _shrubs;
-	std::vector<moby> _mobies;
-	std::vector<spline> _splines;
 };
 
 struct level_file_header {
@@ -195,106 +249,6 @@ struct level_file_header {
 
 class level {
 public:
-	struct fmt {
-		struct primary_header;
-		struct secondary_header;
-
-		packed_struct(file_header_60,
-			uint32_t header_size;    // 0x0 Equal to 0x60.
-			uint32_t unknown_4;      // 0x4
-			uint32_t unknown_8;      // 0x8
-			uint32_t pad;            // 0xc
-			sector32 primary_header; // 0x10
-			uint32_t unknown_14;     // 0x14
-			sector32 unknown_18;     // 0x18
-			uint32_t unknown_1c;     // 0x1c
-			sector32 moby_segment;   // 0x20
-		)
-		
-		packed_struct(file_header_68,
-			uint32_t header_size;    // 0x0 Equal to 0x68.
-			uint32_t unknown_4;      // 0x4
-			uint32_t unknown_8;      // 0x8
-			sector32 primary_header; // 0xc
-			uint32_t unknown_10;     // 0x10
-			sector32 unknown_14;     // 0x14
-			uint32_t unknown_18;     // 0x18
-			sector32 moby_segment;   // 0x1c
-		)
-
-		// Pointers are relative to this header.
-		packed_struct(primary_header,
-			uint32_t unknown_0;                    // 0x0
-			uint32_t unknown_4;                    // 0x4
-			file_ptr<secondary_header> snd_header; // 0x8
-			uint32_t snd_header_size;              // 0xc
-			uint32_t tex_pixel_data_base;          // 0x10
-			uint32_t unknown_14; // 0x14
-			uint32_t unknown_18; // 0x18
-			uint32_t unknown_1c; // 0x1c
-			uint32_t unknown_20; // 0x20
-			uint32_t unknown_24; // 0x24
-			uint32_t unknown_28; // 0x28
-			uint32_t unknown_2c; // 0x2c
-			uint32_t unknown_30; // 0x30
-			uint32_t unknown_34; // 0x34
-			uint32_t unknown_38; // 0x38
-			uint32_t unknown_3c; // 0x3c
-			uint32_t unknown_40; // 0x40
-			uint32_t unknown_44; // 0x44
-			file_ptr<wad_header> asset_wad; // 0x48
-		)
-		
-		// Barlow 0x418200
-		packed_struct(secondary_header,
-			uint32_t num_textures; // 0x0
-			file_ptr<level_texture_provider::fmt::texture_entry> textures; // 0x4
-			uint32_t ptr_into_asset_wad_8;  // 0x8
-			uint32_t ptr_into_asset_wad_c;  // 0xc
-			uint32_t ptr_into_asset_wad_10; // 0x10
-			uint32_t models_something;      // 0x14
-			uint32_t num_models; // 0x18
-			uint32_t models;     // 0x1c
-			uint32_t unknown_20; // 0x20
-			uint32_t unknown_24; // 0x24
-			uint32_t unknown_28; // 0x28
-			uint32_t unknown_2c; // 0x2c
-			uint32_t terrain_texture_count;  // 0x30
-			uint32_t terrain_texture_offset; // 0x34 Relative to secondary header.
-			uint32_t some1_texture_count;    // 0x38
-			uint32_t some1_texture_offset;   // 0x3c
-			uint32_t tie_texture_count;      // 0x40
-			uint32_t tie_texture_offset;     // 0x44
-			uint32_t shrub_texture_count;    // 0x48
-			uint32_t shrub_texture_offset;   // 0x4c
-			uint32_t some2_texture_count;    // 0x50
-			uint32_t some2_texture_offset;   // 0x54
-			uint32_t sprite_texture_count;   // 0x58
-			uint32_t sprite_texture_offset;  // 0x5c
-			uint32_t tex_data_in_asset_wad;  // 0x60
-			uint32_t ptr_into_asset_wad_64;  // 0x64
-			uint32_t unknown_68; // 0x68
-			uint32_t unknown_6c; // 0x6c
-			uint32_t unknown_70; // 0x70
-			uint32_t unknown_74; // 0x74
-			uint32_t unknown_78; // 0x78
-			uint32_t unknown_7c; // 0x7c
-			uint32_t unknown_80; // 0x80
-			uint32_t unknown_84; // 0x84
-			uint32_t unknown_88; // 0x88
-			uint32_t unknown_8c; // 0x8c
-			uint32_t unknown_90; // 0x90
-			uint32_t unknown_94; // 0x94
-			uint32_t unknown_98; // 0x98
-			uint32_t unknown_9c; // 0x9c
-			uint32_t unknown_a0; // 0xa0
-			uint32_t ptr_into_asset_wad_a4; // 0xa4
-			uint32_t unknown_a8; // 0xa8
-			uint32_t unknown_ac; // 0xac
-			uint32_t ptr_into_asset_wad_b0; // 0xb0
-		)
-	};
-
 	level(iso_stream* iso, std::size_t offset, std::size_t size, std::string display_name);
 	
 	static level_file_header read_file_header(stream* src);
