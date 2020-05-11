@@ -37,7 +37,7 @@ class app;
 struct gl_renderer {
 	void draw_spline(const std::vector<glm::vec3>& points, const glm::mat4& vp, const glm::vec4& colour) const;
 	void draw_tris  (const std::vector<float>& vertex_data, const glm::mat4& mvp, const glm::vec4& colour) const;
-	void draw_model (const game_model& mdl, const glm::mat4& mvp, const glm::vec4& colour) const;
+	void draw_model (const model& mdl, const glm::mat4& mvp, const glm::vec4& colour) const;
 	void draw_cube  (const glm::mat4& mvp, const glm::vec4& colour) const;
 
 	shader_programs shaders;

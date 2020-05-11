@@ -140,6 +140,16 @@ void view_3d::draw_level(level& lvl) const {
 		}
 	});
 	
+	for (auto frag : lvl.tfrags) {
+		glm::vec4 colour(0.5, 0.5, 0.5, 1);
+
+		try {
+			_renderer->draw_model(frag, world_to_clip, colour);
+		} catch (stream_error &err) {
+			// We've failed to parse the model data.
+		}
+	}
+	
 	lvl.world.for_each_object_of_type<spline>([=](object_id id, spline& object) {
 		glm::vec4 colour = get_colour(id, glm::vec4(1, 0.5, 0, 1));
 		_renderer->draw_spline(object.points, world_to_clip, colour);

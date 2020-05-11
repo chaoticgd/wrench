@@ -64,7 +64,7 @@ void gl_renderer::draw_tris(const std::vector<float>& vertex_data, const glm::ma
 	glDeleteBuffers(1, &vertex_buffer);
 }
 
-void gl_renderer::draw_model(const game_model& mdl, const glm::mat4& mvp, const glm::vec4& colour) const {
+void gl_renderer::draw_model(const model& mdl, const glm::mat4& mvp, const glm::vec4& colour) const {
 	glUniformMatrix4fv(shaders.solid_colour_transform, 1, GL_FALSE, &mvp[0][0]);
 	glUniform4f(shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
 	
@@ -72,7 +72,7 @@ void gl_renderer::draw_model(const game_model& mdl, const glm::mat4& mvp, const 
 	glBindBuffer(GL_ARRAY_BUFFER, mdl.vertex_buffer());
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
-	glDrawArrays(GL_TRIANGLES, 0, mdl.vertex_buffer_size() * 3);
+	glDrawArrays(GL_TRIANGLES, 0, mdl.vertex_buffer_size() / 3);
 
 	glDisableVertexAttribArray(0);
 }
