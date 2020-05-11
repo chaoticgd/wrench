@@ -50,6 +50,7 @@ void view_3d::render(app& a) {
 	_viewport_size.y -= 19;
 
 	glDeleteTextures(1, &_frame_buffer_texture);
+	glDeleteTextures(1, &_zbuffer_texture);
 
 	// Draw the 3D scene onto a texture.
 	glGenTextures(1, &_frame_buffer_texture);
@@ -58,10 +59,18 @@ void view_3d::render(app& a) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
+	// Z-Buffer.
+	glGenTextures(1, &_zbuffer_texture);
+	glBindTexture(GL_TEXTURE_2D, _zbuffer_texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _viewport_size.x, _viewport_size.y, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
 	GLuint fb_id;
 	glGenFramebuffers(1, &fb_id);
 	glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _frame_buffer_texture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _zbuffer_texture, 0);
 
 	glClearColor(0, 0, 0, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -203,7 +212,7 @@ void view_3d::draw_overlay_text(level& lvl) const {
 
 glm::mat4 view_3d::get_world_to_clip() const {
 	ImVec2 size = _viewport_size;
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), size.x / size.y, 0.1f, 100.0f);
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), size.x / size.y, 0.1f, 10000.0f);
 
 	auto rot = _renderer->camera_rotation;
 	glm::mat4 pitch = glm::rotate(glm::mat4(1.0f), rot.x, glm::vec3(1.0f, 0.0f, 0.0f));

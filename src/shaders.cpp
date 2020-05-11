@@ -94,7 +94,6 @@ shader_programs::shader_programs()
 
 			void main() {
 				gl_Position = transform * vec4(position_model_space, 1);
-				gl_Position.z /= 10;
 			}
 		)",
 		R"(
