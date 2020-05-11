@@ -62,7 +62,7 @@ void view_3d::render(app& a) {
 	// Z-Buffer.
 	glGenTextures(1, &_zbuffer_texture);
 	glBindTexture(GL_TEXTURE_2D, _zbuffer_texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _viewport_size.x, _viewport_size.y, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _viewport_size.x, _viewport_size.y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
