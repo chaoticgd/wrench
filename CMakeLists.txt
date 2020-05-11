@@ -37,6 +37,7 @@ add_executable(wrench
 	src/formats/armor_archive.cpp
 	src/formats/game_model.cpp
 	src/formats/vif.cpp
+	src/formats/tfrag.cpp
 	src/commands/translate_command.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
 	src/imgui_impl_glfw.cpp
