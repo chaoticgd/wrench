@@ -29,7 +29,7 @@
 # */
 
 int main(int argc, char** argv) {
-	cxxopts::Options options("scan", "Scan a given file for game data segments");
+	cxxopts::Options options("scan", "Scan a given file for game data segments.");
 	options.add_options()
 		("s,src", "The input file.",
 			cxxopts::value<std::string>())
