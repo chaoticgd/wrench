@@ -27,7 +27,7 @@
 #include "../formats/vif.h"
 
 int main(int argc, char** argv) {
-	cxxopts::Options options("vif", "Parse PS2 VIF chains until an invalid VIF code is encountered");
+	cxxopts::Options options("vif", "Parse PS2 VIF chains until an invalid VIF code is encountered.");
 	options.add_options()
 		("s,src", "The input file.",
 			cxxopts::value<std::string>())

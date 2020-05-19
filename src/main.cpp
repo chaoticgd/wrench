@@ -34,7 +34,7 @@ void update_camera(app* a);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 int main(int argc, char** argv) {
-	cxxopts::Options options("wrench", "A level editor for the Ratchet & Clank games");
+	cxxopts::Options options("wrench", "A level editor for the Ratchet & Clank games.");
 	options.add_options()
 		("p,project", "Open the specified project (.wrench) file.",
 			cxxopts::value<std::string>());

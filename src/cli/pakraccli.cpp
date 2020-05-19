@@ -35,7 +35,7 @@ void extract_archive(std::string dest_dir, racpak& archive);
 void scan_for_archives(std::string src_path);
 
 int main(int argc, char** argv) {
-	cxxopts::Options options("pakrac", "Read a game archive file");
+	cxxopts::Options options("pakrac", "Read a game archive file.");
 	options.add_options()
 		("c,command", "The operation to perform. Available commands are: ls, extract, extractdir.",
 			cxxopts::value<std::string>())
