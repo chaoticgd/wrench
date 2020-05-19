@@ -30,7 +30,7 @@
 std::vector<std::size_t> hash_pixel_data(char* texture, std::size_t num_bytes);
 
 int main(int argc, char** argv) {
-	cxxopts::Options options("texturefinder", "Scan a game data segment for a given indexed BMP file, even if said file has a different palette. For example, you could dump a texture using PCSX2, convert it to an indexed BMP (with 256 colours) using the GNU Image Manipulation Program, and then feed it into this program to find where it is stored on disc, using the command \"./bin/texturefinder game.iso texture.bmp\"");
+	cxxopts::Options options("texturefinder", "Scan a game data segment for a given indexed BMP file, even if said file has a different palette. For example, you could dump a texture using PCSX2, convert it to an indexed BMP (with 256 colours) using the GNU Image Manipulation Program, and then feed it into this program to find where it is stored on disc, using the command \"./bin/texturefinder game.iso texture.bmp\".");
 	options.add_options()
 		("i,iso", "The data segment to scan.",
 			cxxopts::value<std::string>())

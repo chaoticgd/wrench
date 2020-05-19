@@ -28,7 +28,8 @@ cxxopts::ParseResult parse_command_line_args(int argc, char** argv, cxxopts::Opt
 	options.add_options()
 		("h,help",    "Display help text.")
 		("v,version", "Print version and licensing information.");
-	
+	options.show_positional_help();
+		
 	auto args = options.parse(argc, argv);
 
 	if(args.count("help")) {

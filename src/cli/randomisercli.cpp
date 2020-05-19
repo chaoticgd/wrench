@@ -34,7 +34,7 @@ template <typename T>
 void read_shuffle_write(stream& backing, std::size_t offset, std::size_t num_elements);
 
 int main(int argc, char** argv) {
-	cxxopts::Options options("randomiser", "Randomise textures");
+	cxxopts::Options options("randomiser", "Randomise textures.");
 	options.add_options()
 		("i,iso", "The game ISO to use.",
 			cxxopts::value<std::string>())

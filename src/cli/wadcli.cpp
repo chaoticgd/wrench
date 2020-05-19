@@ -30,7 +30,7 @@ void copy_and_compress(stream& dest, stream& src);
 
 int main(int argc, char** argv) {
 	return run_cli_converter(argc, argv,
-		"Decompress WAD segments",
+		"Decompress WAD segments.",
 		{
 			{ "decompress", copy_and_decompress },
 			{ "compress", copy_and_compress }
