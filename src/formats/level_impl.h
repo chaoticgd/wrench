@@ -247,6 +247,11 @@ struct level_file_header {
 	uint32_t moby_segment_offset;
 };
 
+struct level_code_segment {
+	level_code_segment_header header;
+	std::vector<uint8_t> bytes;
+};
+
 class level {
 public:
 	level(iso_stream* iso, std::size_t offset, std::size_t size, std::string display_name);
@@ -267,6 +272,8 @@ public:
 	std::vector<texture> moby_textures;
 	std::vector<texture> sprite_textures;
     std::vector<tfrag> tfrags;
+	
+	level_code_segment read_code_segment();
 
 private:
 	proxy_stream _backing;
