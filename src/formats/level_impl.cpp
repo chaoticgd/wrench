@@ -100,7 +100,11 @@ level::level(iso_stream* iso, std::size_t offset, std::size_t size, std::string 
 	: offset(offset),
 	  _backing(iso, offset, size) {
 	
-	level_file_header file_header = read_file_header(&_backing);
+	auto file_header_opt = level_read_file_header(&_backing, 0);
+	if(!file_header_opt) {
+		throw stream_format_error("Failed to read file header for level!");
+	}
+	level_file_header file_header = *file_header_opt;
 	
 	auto primary_header = _backing.read<level_primary_header>(file_header.primary_header_offset);
 
@@ -108,7 +112,7 @@ level::level(iso_stream* iso, std::size_t offset, std::size_t size, std::string 
 	world.read(_moby_stream);
 	
 	stream* asset_seg = iso->get_decompressed
-		(offset + file_header.primary_header_offset + primary_header.asset_wad.value, true);
+		(offset + file_header.primary_header_offset + primary_header.asset_wad, true);
 	
 	uint32_t asset_base = file_header.primary_header_offset + primary_header.asset_header;
 	auto asset_header = _backing.read<level_asset_header>(asset_base);
@@ -211,35 +215,16 @@ level::level(iso_stream* iso, std::size_t offset, std::size_t size, std::string 
 	}
 }
 
-level_file_header level::read_file_header(stream* src) {
-	level_file_header result;
-	result.header_size = src->read<uint32_t>(0);
-	switch(result.header_size) {
-		case 0x60: {
-			auto file_header = src->read<level_file_header_60>(0);
-			result.primary_header_offset = file_header.primary_header.bytes();
-			result.moby_segment_offset = file_header.moby_segment.bytes();
-			break;
-		}
-		case 0x68: {
-			auto file_header = src->read<level_file_header_68>(0);
-			result.primary_header_offset = file_header.primary_header.bytes();
-			result.moby_segment_offset = file_header.moby_segment.bytes();
-			break;
-		}
-		default: {
-			throw stream_format_error("Unknown file header size for level!");
-		}
-	}
-	return result;
-}
-
 stream* level::moby_stream() {
 	return _moby_stream;
 }
 
 level_code_segment level::read_code_segment() {
-	level_file_header file_header = read_file_header(&_backing);
+	auto file_header_opt = level_read_file_header(&_backing, 0);
+	if(!file_header_opt) {
+		throw stream_format_error("Failed to read file header for level!");
+	}
+	level_file_header file_header = *file_header_opt;
 	auto primary_header = _backing.read<level_primary_header>(file_header.primary_header_offset);
 	
 	level_code_segment result;

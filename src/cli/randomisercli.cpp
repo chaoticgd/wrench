@@ -78,11 +78,14 @@ int main(int argc, char** argv) {
 	worker_logger log;
 	wrench_project project(game_paths, log, game_id);
 	
-	for(gamedb_file file_meta : game.files) {
-		proxy_stream file(&project.iso, file_meta.offset, file_meta.size);
-		
+	for(gamedb_file file_meta : game.files) {		
 		if(file_meta.type == +gamedb_file_type::LEVEL) {
-			level_file_header file_header = level::read_file_header(&file);
+			proxy_stream file(&project.iso, file_meta.offset, file_meta.size);
+			auto file_header_opt = level_read_file_header(&file, 0);
+			if(!file_header_opt) {
+				throw stream_format_error("Failed to read file header for level!");
+			}
+			level_file_header file_header = *file_header_opt;
 			auto primary_header = file.read<level_primary_header>(file_header.primary_header_offset);
 			
 			std::size_t asset_header_offset = file_header.primary_header_offset + primary_header.asset_header;

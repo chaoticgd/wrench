@@ -26,11 +26,13 @@
 #include "../util.h"
 #include "../stream.h"
 #include "../worker_logger.h"
+#include "toc.h"
 #include "wad.h"
+#include "tfrag.h"
 #include "racpak.h"
+#include "game_model.h"
 #include "level_types.h"
 #include "texture_impl.h"
-#include "tfrag.h"
 
 # /*
 #	Read LEVEL*.WAD files.
@@ -241,12 +243,6 @@ private:
 	std::map<std::string, std::vector<game_string>> _languages;
 };
 
-struct level_file_header {
-	uint32_t header_size;
-	uint32_t primary_header_offset;
-	uint32_t moby_segment_offset;
-};
-
 struct level_code_segment {
 	level_code_segment_header header;
 	std::vector<uint8_t> bytes;
@@ -255,8 +251,6 @@ struct level_code_segment {
 class level {
 public:
 	level(iso_stream* iso, std::size_t offset, std::size_t size, std::string display_name);
-	
-	static level_file_header read_file_header(stream* src);
 	
 	std::map<std::string, std::map<uint32_t, std::string>> game_strings() { return {}; }
 
