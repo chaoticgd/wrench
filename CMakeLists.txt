@@ -38,6 +38,7 @@ add_executable(wrench
 	src/formats/game_model.cpp
 	src/formats/vif.cpp
 	src/formats/tfrag.cpp
+	src/formats/toc.cpp
 	src/commands/translate_command.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
 	src/imgui_impl_glfw.cpp
@@ -139,11 +140,21 @@ add_executable(randomiser
 	src/formats/game_model.cpp
 	src/formats/vif.cpp
 	src/formats/tfrag.cpp
+	src/formats/toc.cpp
 	src/commands/translate_command.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
 	src/imgui_impl_glfw.cpp
 	thirdparty/imgui/examples/imgui_impl_opengl3.cpp
 	src/md5.cpp
+)
+
+add_executable(toc
+	src/cli/toccli.cpp
+	src/stream.cpp
+	src/stacktrace.cpp
+	src/util.cpp
+	src/command_line.cpp
+	src/formats/toc.cpp
 )
 
 if(UNIX)
@@ -178,6 +189,7 @@ target_link_libraries(pakrac cxxopts)
 target_link_libraries(texturefinder cxxopts)
 target_link_libraries(vif cxxopts)
 target_link_libraries(randomiser cxxopts)
+target_link_libraries(toc cxxopts)
 
 # pthreads
 set(THREADS_PREFER_PTHREAD_FLAG ON)

@@ -26,7 +26,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "../stream.h"
-#include "game_model.h"
 
 # /*
 # 	Defines the types that make up the level format, including game objects.
@@ -135,29 +134,6 @@ struct level_texture_entry;
 // Outer level structures
 // *****************************************************************************
 
-packed_struct(level_file_header_60,
-	uint32_t header_size;    // 0x0 Equal to 0x60.
-	uint32_t unknown_4;      // 0x4
-	uint32_t unknown_8;      // 0x8
-	uint32_t unknown_c;      // 0xc
-	sector32 primary_header; // 0x10
-	uint32_t unknown_14;     // 0x14
-	sector32 unknown_18;     // 0x18
-	uint32_t unknown_1c;     // 0x1c
-	sector32 moby_segment;   // 0x20
-)
-
-packed_struct(level_file_header_68,
-	uint32_t header_size;    // 0x0 Equal to 0x68.
-	uint32_t unknown_4;      // 0x4
-	uint32_t unknown_8;      // 0x8
-	sector32 primary_header; // 0xc
-	uint32_t unknown_10;     // 0x10
-	sector32 unknown_14;     // 0x14
-	uint32_t unknown_18;     // 0x18
-	sector32 moby_segment;   // 0x1c
-)
-
 // Pointers are relative to this header.
 packed_struct(level_primary_header,
 	uint32_t code_segment_offset; // 0x0
@@ -178,7 +154,7 @@ packed_struct(level_primary_header,
 	uint32_t unknown_3c; // 0x3c
 	uint32_t unknown_40; // 0x40
 	uint32_t unknown_44; // 0x44
-	file_ptr<wad_header> asset_wad; // 0x48
+	uint32_t asset_wad; // 0x48
 )
 
 packed_struct(level_code_segment_header,
