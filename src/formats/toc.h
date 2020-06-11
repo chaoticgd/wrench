@@ -54,16 +54,16 @@ struct toc_table {
 };
 
 packed_struct(toc_level_table_entry,
-	sector32 level_header;
+	sector32 header_1;
 	uint32_t unknown_4;
-	sector32 audio_header;
+	sector32 header_2;
 	uint32_t unknown_c;
-	sector32 scene_header;
+	sector32 header_3;
 	uint32_t unknown_14;
 )
 
 packed_struct(level_file_header_60,
-	uint32_t header_size;    // 0x0 Equal to 0x60.
+	uint32_t magic;    // 0x0 Equal to 0x60.
 	sector32 base_offset;    // 0x4
 	uint32_t level_number;   // 0x8
 	uint32_t unknown_c;      // 0xc
@@ -75,7 +75,7 @@ packed_struct(level_file_header_60,
 )
 
 packed_struct(level_file_header_68,
-	uint32_t header_size;    // 0x0 Equal to 0x68.
+	uint32_t magic;    // 0x0 Equal to 0x68.
 	sector32 base_offset;    // 0x4
 	uint32_t level_number;   // 0x8
 	sector32 primary_header; // 0xc
@@ -86,7 +86,7 @@ packed_struct(level_file_header_68,
 )
 
 struct level_file_header {
-	uint32_t header_size;
+	uint32_t magic;
 	uint32_t base_offset;
 	uint32_t level_number;
 	uint32_t primary_header_offset;
@@ -94,7 +94,6 @@ struct level_file_header {
 };
 
 struct toc_level {
-	toc_level_table_entry entry;
 	level_file_header main_part;
 	sector32 audio_part;
 	sector32 scene_part;
