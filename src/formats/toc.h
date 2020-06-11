@@ -25,32 +25,15 @@
 # 	Read the sector table/table of contents (.HDR) file.
 # */
 
-enum toc_file_type {
-	FILE_TYPE_MISC     = 0x40,
-	FILE_TYPE_LEVEL_60 = 0x60,
-	FILE_TYPE_LEVEL_68 = 0x68,
-	FILE_TYPE_ARMOR    = 0xf8,
-	FILE_TYPE_MPEG     = 0x328,
-	FILE_TYPE_BONUS    = 0xa48,
-	FILE_TYPE_SPACE    = 0xba8,
-	FILE_TYPE_AUDIO    = 0x1018,
-	FILE_TYPE_SCENE    = 0x137c
-};
-
 packed_struct(toc_table_header,
 	uint32_t size;
 	sector32 base_offset;
 )
 
-packed_struct(toc_table_entry,
-	uint32_t size;
-	sector32 offset;
-)
-
 struct toc_table {
 	uint32_t offset_in_toc;
 	toc_table_header header;
-	std::vector<toc_table_entry> entries;
+	std::vector<uint32_t> data;
 };
 
 packed_struct(toc_level_table_entry,
@@ -106,6 +89,5 @@ struct table_of_contents {
 
 table_of_contents read_toc(stream& iso, std::size_t toc_base);
 std::optional<level_file_header> level_read_file_header(stream* src, std::size_t offset);
-const char* toc_file_type_to_string(toc_file_type type);
 
 #endif

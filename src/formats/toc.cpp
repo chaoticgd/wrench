@@ -37,8 +37,8 @@ table_of_contents read_toc(stream& iso, std::size_t toc_base) {
 		toc_table table;
 		table.offset_in_toc = iso.tell() - toc_base;
 		table.header = iso.read<toc_table_header>();
-		table.entries.resize(table.header.size / 8 - 1);
-		iso.read_v(table.entries);
+		table.data.resize((table.header.size - sizeof(toc_table_header)) / sizeof(uint32_t));
+		iso.read_v(table.data);
 		toc.tables.push_back(table);
 	}
 	
@@ -141,19 +141,4 @@ std::optional<level_file_header> level_read_file_header(stream* src, std::size_t
 		}
 	}
 	return result;
-}
-
-const char* toc_file_type_to_string(toc_file_type type) {
-	switch(type) {
-		case FILE_TYPE_MISC: return "FILE_TYPE_MISC";
-		case FILE_TYPE_LEVEL_60: return "FILE_TYPE_LEVEL_60";
-		case FILE_TYPE_LEVEL_68: return "FILE_TYPE_LEVEL_68";
-		case FILE_TYPE_ARMOR: return "FILE_TYPE_ARMOR";
-		case FILE_TYPE_MPEG: return "FILE_TYPE_MPEG";
-		case FILE_TYPE_BONUS: return "FILE_TYPE_BONUS";
-		case FILE_TYPE_SPACE: return "FILE_TYPE_SPACE";
-		case FILE_TYPE_AUDIO: return "FILE_TYPE_AUDIO";
-		case FILE_TYPE_SCENE: return "FILE_TYPE_SCENE";
-	}
-	return "FILE_TYPE_UNKNOWN";
 }

@@ -46,10 +46,10 @@ int main(int argc, char** argv) {
 	table_of_contents toc = read_toc(src, offset);
 	
 	for(std::size_t i = 0; i < toc.tables.size(); i++) {
-		toc_file_type type_enum = static_cast<toc_file_type>(toc.tables[i].header.size);
-		const char* type = toc_file_type_to_string(type_enum);
-		printf("Table %ld at toc+0x%04x with 0x%03lx entries of type %s.\n",
-			i, toc.tables[i].offset_in_toc, toc.tables[i].entries.size(), type);
+		std::size_t table_size = sizeof(toc_table_header) + toc.tables[i].data.size();
+		std::size_t base_offset = toc.tables[i].header.base_offset.bytes();
+		printf("Table %ld at toc+0x%04x of size 0x%03lx pointing to 0x%08x.\n",
+			i, toc.tables[i].offset_in_toc, table_size, base_offset);
 	}
 	
 	for(toc_level level : toc.levels) {
