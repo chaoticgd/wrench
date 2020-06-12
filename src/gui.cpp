@@ -254,35 +254,36 @@ void gui::render_menu_bar(app& a) {
 			"MP Metropolis", "(not filled in)", "(not filled in)"
 		}
 	};
+	static const int level_list_rows = 20;
 	
 	if(auto project = a.get_project()) {
 		auto& levels = project->toc.levels;
-		int columns = (int) std::ceil(levels.size() / 10.f);
-		
-		// If the number of levels matches the number of levels in a particular
-		// know game, assume that the levels are those from that known game.
-		std::vector<const char*> level_names;
-		for(std::size_t i = 0; i < 2; i++) {
-			if(level_names_table[i].size() == levels.size()) {
-				level_names = level_names_table[i];
-			}
-		}
+		int columns = (int) std::ceil(levels.size() / (float) level_list_rows);
 		
 		ImGui::SetNextWindowContentWidth(columns * 192);
 		if(ImGui::BeginMenu("Levels")) {
+			// If the number of levels matches the number of levels in a particular
+			// know game, assume that the levels are those from that known game.
+			const std::vector<const char*>* level_names = nullptr;
+			for(std::size_t i = 0; i < 2; i++) {
+				if(level_names_table[i].size() == levels.size()) {
+					level_names = &level_names_table[i];
+				}
+			}
+			
 			ImGui::Columns(columns);
 			for(std::size_t i = 0; i < levels.size(); i++) {
 				std::stringstream label;
 				label << std::setfill('0') << std::setw(2) << levels[i].main_part.level_number;
-				if(i < level_names.size()) {
-					label << " " << level_names[i];
+				if(level_names != nullptr) {
+					label << " " << (*level_names)[i];
 				}
 				if(ImGui::MenuItem(label.str().c_str())) {
 					project->open_level(i);
 					a.renderer.reset_camera(&a);
 				}
-				if(i % 10 == 9) {
-					ImGui::SetColumnWidth(i / 10, 192); // Make the columns non-resizable.
+				if(i % level_list_rows == level_list_rows - 1) {
+					ImGui::SetColumnWidth(i / level_list_rows, 192); // Make the columns non-resizable.
 					ImGui::NextColumn();
 				}
 			}
