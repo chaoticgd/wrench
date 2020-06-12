@@ -45,13 +45,6 @@ namespace gui {
 	template <typename T, typename... T_constructor_args>
 	void render_menu_bar_window_toggle(app& a, T_constructor_args... args);
 
-	class project_tree : public window {
-	public:
-		const char* title_text() const override;
-		ImVec2 initial_size() const override;
-		void render(app& a) override;
-	};
-	
 	class inspector : public window {
 	public:
 		const char* title_text() const override;
@@ -88,12 +81,12 @@ namespace gui {
 			class property_changed_command : public command {
 			public:
 				property_changed_command(
-						std::string level_name, std::vector<object_id> object_ids, T_value T::*member, T_value new_value)
-					: _level_name(level_name), _object_ids(object_ids), _member(member), _new_value(new_value) {}
+						std::size_t level_index, std::vector<object_id> object_ids, T_value T::*member, T_value new_value)
+					: _level_index(level_index), _object_ids(object_ids), _member(member), _new_value(new_value) {}
 				
 			protected:
 				level& get_level(wrench_project* project) {
-					level* lvl = project->level_from_name(_level_name);
+					level* lvl = project->level_from_index(_level_index);
 					if (lvl == nullptr) {
 						throw command_error(
 							"The level for which this operation should "
@@ -126,7 +119,7 @@ namespace gui {
 				}
 
 			private:
-				std::string _level_name;
+				std::size_t _level_index;
 				std::vector<object_id> _object_ids;
 				T_value T::*_member;
 				T_value _new_value;
@@ -142,7 +135,7 @@ namespace gui {
 			}
 			
 			_project->template emplace_command<property_changed_command>
-				(_project->selected_level_name(), validated_ids, member, new_value);
+				(_project->selected_level_index(), validated_ids, member, new_value);
 		}
 		
 		// If all the objects with the given indices have the same value for

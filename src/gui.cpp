@@ -18,6 +18,7 @@
 
 #include "gui.h"
 
+#include <cmath>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
@@ -226,9 +227,76 @@ void gui::render_menu_bar(app& a) {
 		}
 		ImGui::EndMenu();
 	}
+	
+	static const std::vector<const char*> level_names_table[] = {
+		{ // R&C2
+			"Aranos", "Oozla", "Maktar", "Endako",
+			"Barlow", "Feltzin", "Notak", "Siberius",
+			"Tabora", "Dobbo", "Hrugis", "Joba",
+			"Todano", "Boldan", "Aranos 2", "Gorn",
+			"Snivelak", "Smolg", "Damosel", "Grelbin",
+			"Yeedil", "Insomniac Museum", "Disposal Facility", "Damosel Orbit",
+			"Ship Shack", "Wupash", "Jamming Array"
+		},
+		{ // R&C3
+			"Veldin", "Florana", "Phoenix", "Marcadia",
+			"Daxx", "Phoenix (Under Attack)", "Annihilation Nation", "Aquatos",
+			"Aquatos 2", "Zeldrin", "Obani Moons", "Blackwater",
+			"(not filled in)", "(not filled in)", "Metropolis", "Crash Site",
+			"(not filled in)", "(not filled in)", "Final Boss", "(not filled in)",
+			"(not filled in)", "(not filled in)", "(not filled in)", "(not filled in)",
+			"Aquatos Sewers", "LEVEL26", "Vid-Comic 1", "Vid-Comic 2",
+			"Vid-Comic 3", "Vid-Comic 4", "Vid-Comic 5", "Vid-Comic 6",
+			"Vid-Comic 7", "(not filled in)", "(not filled in)", "(not filled in)",
+			"(not filled in)", "(not filled in)", "(not filled in)", "(not filled in)",
+			"(not filled in)", "(not filled in)", "MP Aquatos Sewers", "(not filled in)",
+			"MP Bakisi Isles", "(not filled in)", "(not filled in)", "(not filled in)",
+			"MP Metropolis", "(not filled in)", "(not filled in)"
+		}
+	};
+	
+	if(auto project = a.get_project()) {
+		auto& levels = project->toc.levels;
+		int columns = (int) std::ceil(levels.size() / 10.f);
+		
+		// If the number of levels matches the number of levels in a particular
+		// know game, assume that the levels are those from that known game.
+		std::vector<const char*> level_names;
+		for(std::size_t i = 0; i < 2; i++) {
+			if(level_names_table[i].size() == levels.size()) {
+				level_names = level_names_table[i];
+			}
+		}
+		
+		ImGui::SetNextWindowContentWidth(columns * 192);
+		if(ImGui::BeginMenu("Levels")) {
+			ImGui::Columns(columns);
+			for(std::size_t i = 0; i < levels.size(); i++) {
+				std::stringstream label;
+				label << std::setfill('0') << std::setw(2) << levels[i].main_part.level_number;
+				if(i < level_names.size()) {
+					label << " " << level_names[i];
+				}
+				if(ImGui::MenuItem(label.str().c_str())) {
+					project->open_level(i);
+					a.renderer.reset_camera(&a);
+				}
+				if(i % 10 == 9) {
+					ImGui::SetColumnWidth(i / 10, 192); // Make the columns non-resizable.
+					ImGui::NextColumn();
+				}
+			}
+			ImGui::Columns();
+			ImGui::EndMenu();
+		}
+	} else {
+		// If no project is open, draw a dummy menu.
+		if(ImGui::BeginMenu("Levels")) {
+			ImGui::EndMenu();
+		}
+	}
 
 	if(ImGui::BeginMenu("Windows")) {
-		render_menu_bar_window_toggle<project_tree>(a);
 		render_menu_bar_window_toggle<view_3d>(a, &a);
 		render_menu_bar_window_toggle<moby_list>(a);
 		render_menu_bar_window_toggle<inspector>(a);
@@ -290,65 +358,6 @@ void gui::render_menu_bar(app& a) {
 	}
 	
 	ImGui::EndMainMenuBar();
-}
-
-/*
-	project_tree
-*/
-
-const char* gui::project_tree::title_text() const {
-	return "Project";
-}
-
-ImVec2 gui::project_tree::initial_size() const {
-	return ImVec2(200, 500);
-}
-
-void gui::project_tree::render(app& a) {
-	if(!a.get_project()) {
-		ImGui::Text("<no project open>");
-		return;
-	}
-	
-	auto& project = *a.get_project();
-	auto game = a.game_db.at(project.game_id);
-	
-	static gamedb_file_type selected_type = gamedb_file_type::ARMOR;
-	static std::size_t selected_offset = 0x0;
-	
-	auto render_selectable = [=, &project](gamedb_file file, std::string prefix) {
-		bool is_selected =
-			file.type == selected_type && selected_offset == file.offset;
-		std::string text = prefix + file.name;
-		if(ImGui::Selectable(text.c_str(), is_selected)) {
-			selected_type = file.type;
-			selected_offset = file.offset;
-			project.open_file(file);
-			return true;
-		}
-		return false;
-	};
-	
-	ImGui::BeginChild(1);
-	
-	for(gamedb_file file : game.files) {
-		if(file.type != +gamedb_file_type::LEVEL) {
-			render_selectable(file, " ");
-		}
-	}
-	
-	if(ImGui::TreeNode("Levels")) {
-		for(gamedb_file file : game.files) {
-			if(file.type == +gamedb_file_type::LEVEL) {
-				if(render_selectable(file, "")) {
-					a.renderer.reset_camera(&a);
-				}
-			}
-		}
-		ImGui::TreePop();
-	}
-	
-	ImGui::EndChild();
 }
 
 /*

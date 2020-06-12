@@ -250,13 +250,12 @@ struct level_code_segment {
 
 class level {
 public:
-	level(iso_stream* iso, std::size_t offset, std::size_t size, std::string display_name);
+	level(iso_stream* iso, toc_level index);
 	
 	std::map<std::string, std::map<uint32_t, std::string>> game_strings() { return {}; }
 
 	stream* moby_stream();
 
-	const std::size_t offset; // The base offset of the file_header in the ISO file.
 	game_world world;
 	
 	std::map<uint32_t, std::size_t> moby_class_to_model;
@@ -271,6 +270,7 @@ public:
 
 private:
 	proxy_stream _backing;
+	toc_level _index;
 	stream* _moby_stream;
 };
 

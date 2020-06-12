@@ -59,7 +59,6 @@ int main(int argc, char** argv) {
 		a.windows.emplace_back(std::make_unique<view_3d>(&a));
 		a.windows.emplace_back(std::make_unique<gui::texture_browser>());
 		a.windows.emplace_back(std::make_unique<gui::model_browser>());
-		a.windows.emplace_back(std::make_unique<gui::project_tree>());
 		a.windows.emplace_back(std::make_unique<gui::moby_list>());
 		a.windows.emplace_back(std::make_unique<gui::inspector>());
 		a.windows.emplace_back(std::make_unique<gui::viewport_information>());

@@ -25,6 +25,7 @@
 #include "game_db.h"
 #include "iso_stream.h"
 #include "worker_logger.h"
+#include "formats/toc.h"
 #include "formats/racpak.h"
 #include "formats/game_model.h"
 #include "formats/level_impl.h"
@@ -56,9 +57,9 @@ public:
 	void save_as(app* a, std::function<void()> on_done);
 	
 	level* selected_level();
-	std::string selected_level_name();
+	std::size_t selected_level_index();
 	std::vector<level*> levels();
-	level* level_from_name(std::string name);
+	level* level_from_index(std::size_t index);
 	std::map<std::string, std::vector<texture>*> texture_lists();
 	std::map<std::string, std::vector<game_model>*> model_lists();
 	
@@ -71,7 +72,7 @@ public:
 	
 	racpak* open_archive(gamedb_file file);
 	void open_texture_archive(gamedb_file file);
-	void open_level(gamedb_file file);
+	void open_level(std::size_t index);
 	
 	int id();
 	
@@ -92,7 +93,7 @@ private:
 	
 	std::map<std::size_t, std::unique_ptr<racpak>> _archives;
 	std::map<std::string, std::vector<texture>> _texture_wads;
-	std::map<std::string, std::unique_ptr<level>> _levels;
+	std::map<std::size_t, std::unique_ptr<level>> _levels;
 	std::optional<armor_archive> _armor;
 	level* _selected_level;
 	
@@ -101,6 +102,7 @@ private:
 	
 public:
 	iso_stream iso;
+	table_of_contents toc;
 };
 
 template <typename T, typename... T_constructor_args>

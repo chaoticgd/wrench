@@ -96,25 +96,19 @@ void game_world::write() {
 	// TODO
 }
 
-level::level(iso_stream* iso, std::size_t offset, std::size_t size, std::string display_name)
-	: offset(offset),
-	  _backing(iso, offset, size) {
+level::level(iso_stream* iso, toc_level index)
+	: _index(index),
+	  _backing(iso, index.main_part.base_offset, 0) {
 	
-	auto file_header_opt = level_read_file_header(&_backing, 0);
-	if(!file_header_opt) {
-		throw stream_format_error("Failed to read file header for level!");
-	}
-	level_file_header file_header = *file_header_opt;
-	
-	auto primary_header = _backing.read<level_primary_header>(file_header.primary_header_offset);
+	auto primary_header = _backing.read<level_primary_header>(index.main_part.primary_header_offset);
 
-	_moby_stream = iso->get_decompressed(offset + file_header.moby_segment_offset);
+	_moby_stream = iso->get_decompressed(index.main_part.base_offset + index.main_part.moby_segment_offset);
 	world.read(_moby_stream);
 	
 	stream* asset_seg = iso->get_decompressed
-		(offset + file_header.primary_header_offset + primary_header.asset_wad, true);
+		(index.main_part.base_offset + index.main_part.primary_header_offset + primary_header.asset_wad, true);
 	
-	uint32_t asset_base = file_header.primary_header_offset + primary_header.asset_header;
+	uint32_t asset_base = index.main_part.primary_header_offset + primary_header.asset_header;
 	auto asset_header = _backing.read<level_asset_header>(asset_base);
 	
 	uint32_t mdl_base = asset_base + asset_header.models;
@@ -220,16 +214,11 @@ stream* level::moby_stream() {
 }
 
 level_code_segment level::read_code_segment() {
-	auto file_header_opt = level_read_file_header(&_backing, 0);
-	if(!file_header_opt) {
-		throw stream_format_error("Failed to read file header for level!");
-	}
-	level_file_header file_header = *file_header_opt;
-	auto primary_header = _backing.read<level_primary_header>(file_header.primary_header_offset);
+	auto primary_header = _backing.read<level_primary_header>(_index.main_part.primary_header_offset);
 	
 	level_code_segment result;
 	result.header = _backing.read<level_code_segment_header>
-		(file_header.primary_header_offset + primary_header.code_segment_offset);
+		(_index.main_part.primary_header_offset + primary_header.code_segment_offset);
 	result.bytes.resize(primary_header.code_segment_size - sizeof(level_code_segment_header));
 	_backing.read_v(result.bytes);
 	return result;

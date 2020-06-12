@@ -26,6 +26,9 @@
 #include "config.h"
 #include "fs_includes.h"
 
+// This is true for R&C2 and R&C3.
+static const std::size_t TOC_BASE = 0x1f4800;
+
 wrench_project::wrench_project(
 		std::map<std::string, std::string>& game_paths,
 		worker_logger& log,
@@ -36,7 +39,8 @@ wrench_project::wrench_project(
 	  _history_index(0),
 	  _selected_level(nullptr),
 	  _id(_next_id++),
-	  iso(game_id, game_paths.at(game_id), log) {}
+	  iso(game_id, game_paths.at(game_id), log),
+	  toc(read_toc(iso, TOC_BASE)) {}
 
 wrench_project::wrench_project(
 		std::map<std::string, std::string>& game_paths,
@@ -47,7 +51,8 @@ wrench_project::wrench_project(
 	  game_id(read_game_id()),
 	  _history_index(0),
 	  _id(_next_id++),
-	  iso(game_id, game_paths.at(game_id), log, _wrench_archive) {
+	  iso(game_id, game_paths.at(game_id), log, _wrench_archive),
+	  toc(read_toc(iso, TOC_BASE)) {
 	ZipFile::SaveAndClose(_wrench_archive, project_path);
 	_wrench_archive = nullptr;
 }
@@ -87,13 +92,13 @@ level* wrench_project::selected_level() {
 	return nullptr;
 }
 
-std::string wrench_project::selected_level_name() {
-	for(auto& level : _levels) {
-		if(level.second.get() == _selected_level) {
-			return level.first;
+std::size_t wrench_project::selected_level_index() {
+	for(auto& [index, level] : _levels) {
+		if(level.get() == _selected_level) {
+			return index;
 		}
 	}
-	return ""; 
+	return -1; 
 }
 
 std::vector<level*> wrench_project::levels() {
@@ -103,11 +108,11 @@ std::vector<level*> wrench_project::levels() {
 	return result;
 }
 
-level* wrench_project::level_from_name(std::string name) {
-	if(_levels.find(name) == _levels.end()) {
+level* wrench_project::level_from_index(std::size_t index) {
+	if(_levels.find(index) == _levels.end()) {
 		return nullptr;
 	}
-	return _levels.at(name).get();
+	return _levels.at(index).get();
 }
 
 std::map<std::string, std::vector<texture>*> wrench_project::texture_lists() {
@@ -162,9 +167,6 @@ void wrench_project::open_file(gamedb_file file) {
 		case gamedb_file_type::ARMOR:
 			_armor = std::make_optional<armor_archive>(&iso, file.offset, file.size);
 			break;
-		case gamedb_file_type::LEVEL:
-			open_level(file);
-			break;
 	}
 }
 
@@ -187,13 +189,12 @@ void wrench_project::open_texture_archive(gamedb_file file) {
 		enumerate_fip_textures(&iso, archive));
 }
 
-void wrench_project::open_level(gamedb_file file) {
-	if(_levels.find(file.name) == _levels.end()) {
+void wrench_project::open_level(std::size_t index) {
+	if(_levels.find(index) == _levels.end()) {
 		// The level is not already open.
-		_levels.emplace(file.name, std::make_unique<level>
-			(&iso, file.offset, file.size, file.name));
+		_levels.emplace(index, std::make_unique<level>(&iso, toc.levels[index]));
 	}
-	_selected_level = _levels.at(file.name).get();
+	_selected_level = _levels.at(index).get();
 }
 
 int wrench_project::id() {
