@@ -245,13 +245,13 @@ void gui::render_menu_bar(app& a) {
 			"(not filled in)", "(not filled in)", "Metropolis", "Crash Site",
 			"(not filled in)", "(not filled in)", "Final Boss", "(not filled in)",
 			"(not filled in)", "(not filled in)", "(not filled in)", "(not filled in)",
-			"Aquatos Sewers", "LEVEL26", "Vid-Comic 1", "Vid-Comic 2",
-			"Vid-Comic 3", "Vid-Comic 4", "Vid-Comic 5", "Vid-Comic 6",
-			"Vid-Comic 7", "(not filled in)", "(not filled in)", "(not filled in)",
+			"(not filled in)", "Aquatos Sewers", "(not filled in)", "Vid-Comic 1",
+			"Vid-Comic 2", "Vid-Comic 3", "Vid-Comic 4", "Vid-Comic 5",
+			"Vid-Comic 6", "Vid-Comic 7", "(not filled in)", "(not filled in)",
 			"(not filled in)", "(not filled in)", "(not filled in)", "(not filled in)",
-			"(not filled in)", "(not filled in)", "MP Aquatos Sewers", "(not filled in)",
-			"MP Bakisi Isles", "(not filled in)", "(not filled in)", "(not filled in)",
-			"MP Metropolis", "(not filled in)", "(not filled in)"
+			"(not filled in)", "(not filled in)", "(not filled in)", "MP Aquatos Sewers",
+			"(not filled in)", "MP Bakisi Isles", "(not filled in)", "(not filled in)",
+			"(not filled in)", "MP Metropolis", "(not filled in)",
 		}
 	};
 	static const int level_list_rows = 20;
