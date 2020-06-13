@@ -203,6 +203,8 @@ void wrench_project::load_tables() {
 		if(armor.read(iso, table)) {
 			_armor.push_back(armor);
 		}
+		
+		fprintf(stderr, "warning: File at iso+0x%08x ignored.\n", table.header.base_offset.bytes());
 	}
 }
 
