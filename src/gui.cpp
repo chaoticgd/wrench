@@ -297,6 +297,7 @@ void gui::render_menu_bar(app& a) {
 		}
 	}
 
+	ImGui::SetNextWindowContentWidth(0.f); // Reset the menu width after the "Levels" menu made it larger.
 	if(ImGui::BeginMenu("Windows")) {
 		render_menu_bar_window_toggle<view_3d>(a, &a);
 		render_menu_bar_window_toggle<moby_list>(a);
