@@ -37,8 +37,7 @@ table_of_contents read_toc(stream& iso, std::size_t toc_base) {
 		toc_table table;
 		table.offset_in_toc = iso.tell() - toc_base;
 		table.header = iso.read<toc_table_header>();
-		table.data.resize((table.header.size - sizeof(toc_table_header)) / sizeof(uint32_t));
-		iso.read_v(table.data);
+		stream::copy_n(table.data, iso, table.header.size - sizeof(toc_table_header));
 		toc.tables.push_back(table);
 	}
 	

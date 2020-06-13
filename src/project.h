@@ -68,10 +68,6 @@ public:
 	void undo();
 	void redo();
 	
-	void open_file(gamedb_file file);
-	
-	racpak* open_archive(gamedb_file file);
-	void open_texture_archive(gamedb_file file);
 	void open_level(std::size_t index);
 	
 	int id();
@@ -79,6 +75,8 @@ public:
 	void save_to(std::string path);
 
 private:
+	void load_tables();
+
 	std::string read_game_id();
 
 	std::string _project_path;
@@ -94,7 +92,7 @@ private:
 	std::map<std::size_t, std::unique_ptr<racpak>> _archives;
 	std::map<std::string, std::vector<texture>> _texture_wads;
 	std::map<std::size_t, std::unique_ptr<level>> _levels;
-	std::optional<armor_archive> _armor;
+	std::vector<armor_archive> _armor;
 	level* _selected_level;
 	
 	int _id;

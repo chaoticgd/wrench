@@ -33,7 +33,7 @@ packed_struct(toc_table_header,
 struct toc_table {
 	uint32_t offset_in_toc;
 	toc_table_header header;
-	std::vector<uint32_t> data;
+	array_stream data;
 };
 
 packed_struct(toc_level_table_entry,

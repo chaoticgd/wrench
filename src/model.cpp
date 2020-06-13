@@ -23,7 +23,9 @@ model::model()
 	  _vertex_buffer_size(0) {}
 
 model::~model() {
-	glDeleteBuffers(1, &_vertex_buffer);
+	if(_vertex_buffer != 0) {
+		glDeleteBuffers(1, &_vertex_buffer);
+	}
 }
 
 GLuint model::vertex_buffer() const {

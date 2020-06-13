@@ -40,7 +40,9 @@ wrench_project::wrench_project(
 	  _selected_level(nullptr),
 	  _id(_next_id++),
 	  iso(game_id, game_paths.at(game_id), log),
-	  toc(read_toc(iso, TOC_BASE)) {}
+	  toc(read_toc(iso, TOC_BASE)) {
+	load_tables();
+}
 
 wrench_project::wrench_project(
 		std::map<std::string, std::string>& game_paths,
@@ -55,6 +57,7 @@ wrench_project::wrench_project(
 	  toc(read_toc(iso, TOC_BASE)) {
 	ZipFile::SaveAndClose(_wrench_archive, project_path);
 	_wrench_archive = nullptr;
+	load_tables();
 }
 
 std::string wrench_project::project_path() const {
@@ -126,16 +129,16 @@ std::map<std::string, std::vector<texture>*> wrench_project::texture_lists() {
 	for(auto& wad : _texture_wads) {
 		result[wad.first] = &wad.second;
 	}
-	if(_armor) {
-		result["ARMOR.WAD"] = (&_armor->textures);
+	for(auto& armor : _armor) {
+		result["ARMOR.WAD"] = (&armor.textures);
 	}
 	return result;
 }
 
 std::map<std::string, std::vector<game_model>*> wrench_project::model_lists() {
 	std::map<std::string, std::vector<game_model>*> result;
-	if(_armor) {
-		result["ARMOR.WAD"] = &_armor->models;
+	for(auto& armor : _armor) {
+		result["ARMOR.WAD"] = &armor.models;
 	}
 	for(auto& lvl : _levels) {
 		result[lvl.first + "/Mobies"] = &lvl.second->moby_models;
@@ -157,36 +160,6 @@ void wrench_project::redo() {
 	}
 	_history_stack[_history_index]->apply(this);
 	_history_index++;
-}
-
-void wrench_project::open_file(gamedb_file file) {
-	switch(file.type) {
-		case gamedb_file_type::TEXTURES:
-			open_texture_archive(file);
-			break;
-		case gamedb_file_type::ARMOR:
-			_armor = std::make_optional<armor_archive>(&iso, file.offset, file.size);
-			break;
-	}
-}
-
-racpak* wrench_project::open_archive(gamedb_file file) {
-	if(_archives.find(file.offset) == _archives.end()) {
-		_archives.emplace(file.offset, std::make_unique<racpak>(&iso, file.offset, file.size));
-	}
-	
-	return _archives.at(file.offset).get();
-}
-
-void wrench_project::open_texture_archive(gamedb_file file) {
-	if(_texture_wads.find(file.name) != _texture_wads.end()) {
-		// The archive is already open.
-		return;
-	}
-	
-	racpak* archive = open_archive(file);
-	_texture_wads.emplace(file.name,
-		enumerate_fip_textures(&iso, archive));
 }
 
 void wrench_project::open_level(std::size_t index) {
@@ -223,6 +196,15 @@ void wrench_project::save_to(std::string path) {
 /*
 	private
 */
+
+void wrench_project::load_tables() {
+	for(toc_table& table : toc.tables) {
+		armor_archive armor;
+		if(armor.read(iso, table)) {
+			_armor.push_back(armor);
+		}
+	}
+}
 
 std::string wrench_project::read_game_id() {
 	auto entry = _wrench_archive->GetEntry("game_id");

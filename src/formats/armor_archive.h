@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "../stream.h"
+#include "toc.h"
 #include "texture.h"
 #include "game_model.h"
 
@@ -31,29 +32,21 @@
 # 	Read ARMOR.WAD.
 # */
 
+packed_struct(armor_table_entry,
+	sector32 model;
+	uint32_t model_size;
+	sector32 texture;
+	uint32_t texture_size;
+)
+
 class armor_archive {
 public:
-	struct fmt {
-		packed_struct(header,
-			uint32_t header_size;
-			uint32_t pad;
-		)
-		
-		packed_struct(armor,
-			sector32 model;
-			uint32_t model_size;
-			sector32 texture;
-			uint32_t texture_size;
-		)
-	};
+	armor_archive();
 	
-	armor_archive(stream* backing, std::size_t offset, std::size_t size);
+	bool read(stream& iso, toc_table table);
 	
 	std::vector<game_model> models;
 	std::vector<texture> textures;
-
-private:
-	proxy_stream _backing;
 };
 
 #endif
