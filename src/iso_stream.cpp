@@ -204,6 +204,10 @@ wad_stream* iso_stream::get_decompressed(std::size_t offset, bool discard) {
 			std::cerr << e.what() << "\n";
 			std::cerr << "offset: " << std::hex << offset << "\n";
 			return nullptr;
+		} catch(std::out_of_range& e) {
+			std::cerr << e.what() << "\n";
+			std::cerr << "offset: " << std::hex << offset << "\n";
+			return nullptr;
 		}
 	}
 	return _wad_streams.at(offset).get();
