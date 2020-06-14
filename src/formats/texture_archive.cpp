@@ -25,7 +25,7 @@ packed_struct(texture_table_entry,
 	uint32_t unknown_4;
 )
 
-std::vector<texture> enumerate_fip_textures(iso_stream& iso, toc_table table) { printf("reading table at %x\n", table.header.base_offset.bytes());
+std::vector<texture> enumerate_fip_textures(iso_stream& iso, toc_table table) {
 	std::vector<texture> textures;
 	
 	std::size_t bad_textures = 0;
