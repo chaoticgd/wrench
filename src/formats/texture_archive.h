@@ -16,8 +16,13 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#ifndef FORMATS_TEXTURE_ARCHIVE_H
+#define FORMATS_TEXTURE_ARCHIVE_H
+
 #include "../iso_stream.h"
 #include "toc.h"
 #include "texture.h"
 
 std::vector<texture> enumerate_fip_textures(iso_stream& iso, toc_table table);
+
+#endif
