@@ -30,9 +30,9 @@
 #include "wad.h"
 #include "tfrag.h"
 #include "racpak.h"
+#include "texture.h"
 #include "game_model.h"
 #include "level_types.h"
-#include "texture_impl.h"
 
 # /*
 #	Read LEVEL*.WAD files.

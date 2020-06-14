@@ -27,9 +27,9 @@
 #include "worker_logger.h"
 #include "formats/toc.h"
 #include "formats/racpak.h"
+#include "formats/texture.h"
 #include "formats/game_model.h"
 #include "formats/level_impl.h"
-#include "formats/texture_impl.h"
 #include "formats/armor_archive.h"
 
 # /*
@@ -90,7 +90,7 @@ private:
 	std::vector<std::unique_ptr<command>> _history_stack;
 	
 	std::map<std::size_t, std::unique_ptr<racpak>> _archives;
-	std::map<std::string, std::vector<texture>> _texture_wads;
+	std::map<std::size_t, std::vector<texture>> _texture_wads;
 	std::map<std::size_t, std::unique_ptr<level>> _levels;
 	std::vector<armor_archive> _armor;
 	level* _selected_level;

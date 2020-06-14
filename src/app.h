@@ -33,8 +33,8 @@
 #include "project.h"
 #include "renderer.h"
 #include "worker_logger.h"
+#include "formats/texture.h"
 #include "formats/level_impl.h"
-#include "formats/texture_impl.h"
 
 # /*
 #	Represents the current state of the program including the currently open

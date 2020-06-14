@@ -31,7 +31,6 @@ add_executable(wrench
 	src/formats/racpak.cpp
 	src/formats/level_impl.cpp
 	src/formats/texture.cpp
-	src/formats/texture_impl.cpp
 	src/formats/fip.cpp
 	src/formats/bmp.cpp
 	src/formats/armor_archive.cpp
@@ -39,6 +38,7 @@ add_executable(wrench
 	src/formats/vif.cpp
 	src/formats/tfrag.cpp
 	src/formats/toc.cpp
+	src/formats/texture_archive.cpp
 	src/commands/translate_command.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
 	src/imgui_impl_glfw.cpp
@@ -133,7 +133,6 @@ add_executable(randomiser
 	src/formats/racpak.cpp
 	src/formats/level_impl.cpp
 	src/formats/texture.cpp
-	src/formats/texture_impl.cpp
 	src/formats/fip.cpp
 	src/formats/bmp.cpp
 	src/formats/armor_archive.cpp
@@ -141,6 +140,7 @@ add_executable(randomiser
 	src/formats/vif.cpp
 	src/formats/tfrag.cpp
 	src/formats/toc.cpp
+	src/formats/texture_archive.cpp
 	src/commands/translate_command.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
 	src/imgui_impl_glfw.cpp

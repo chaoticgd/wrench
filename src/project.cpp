@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019 chaoticgd
+	Copyright (C) 2019-2020 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include "gui.h"
 #include "config.h"
 #include "fs_includes.h"
+#include "formats/texture_archive.h"
 
 // This is true for R&C2 and R&C3.
 static const std::size_t TOC_BASE = 0x1f4800;
@@ -127,7 +128,7 @@ std::map<std::string, std::vector<texture>*> wrench_project::texture_lists() {
 		result[lvl.first + "/Sprites"] = &lvl.second->sprite_textures;
 	}
 	for(auto& wad : _texture_wads) {
-		result[wad.first] = &wad.second;
+		result[int_to_hex(wad.first)] = &wad.second;
 	}
 	for(auto& armor : _armor) {
 		result["ARMOR.WAD"] = (&armor.textures);
@@ -202,6 +203,13 @@ void wrench_project::load_tables() {
 		armor_archive armor;
 		if(armor.read(iso, table)) {
 			_armor.push_back(armor);
+			continue;
+		}
+		
+		std::vector<texture> textures = enumerate_fip_textures(iso, table);
+		if(textures.size() > 0) {
+			_texture_wads[table.header.base_offset.bytes()] = textures;
+			continue;
 		}
 		
 		fprintf(stderr, "warning: File at iso+0x%08x ignored.\n", table.header.base_offset.bytes());

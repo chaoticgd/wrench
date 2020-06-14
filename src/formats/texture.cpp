@@ -19,6 +19,7 @@
 #include "texture.h"
 
 #include "../util.h" // int_to_hex
+#include "../iso_stream.h"
 #include "fip.h" // decode_palette_index
 
 texture::texture(stream* backing, std::size_t pixel_data_offset, std::size_t palette_offset, vec2i size)
