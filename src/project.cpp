@@ -118,30 +118,39 @@ level* wrench_project::level_from_index(std::size_t index) {
 	return _levels.at(index).get();
 }
 
-std::map<std::string, std::vector<texture>*> wrench_project::texture_lists() {
+std::map<std::string, std::vector<texture>*> wrench_project::texture_lists(app* a) {
+	if(!_game_info) {
+		load_gamedb_info(a);
+	}
+	
 	std::map<std::string, std::vector<texture>*> result;
-	for(auto& lvl : _levels) {
-		result[lvl.first + "/Terrain"] = &lvl.second->terrain_textures;
-		result[lvl.first + "/Ties"] = &lvl.second->tie_textures;
-		//result[lvl.first + "/Mobies"] = &lvl.second->moby_textures;
-		result[lvl.first + "/Sprites"] = &lvl.second->sprite_textures;
+	for(auto& [index, lvl] : _levels) {
+		std::string name = level_index_to_name(index);
+		result[name + "/Terrain"] = &lvl->terrain_textures;
+		result[name + "/Ties"] = &lvl->tie_textures;
+		//result[name + "/Mobies"] = &lvl->moby_textures;
+		result[name + "/Sprites"] = &lvl->sprite_textures;
 	}
-	for(auto& wad : _texture_wads) {
-		result[int_to_hex(wad.first)] = &wad.second;
+	for(auto& [table_index, wad] : _texture_wads) {
+		result[table_index_to_name(table_index)] = &wad;
 	}
-	for(auto& armor : _armor) {
-		result["ARMOR.WAD"] = (&armor.textures);
+	for(auto& [table_index, armor] : _armor) {
+		result[table_index_to_name(table_index)] = &armor.textures;
 	}
 	return result;
 }
 
-std::map<std::string, std::vector<game_model>*> wrench_project::model_lists() {
-	std::map<std::string, std::vector<game_model>*> result;
-	for(auto& armor : _armor) {
-		result["ARMOR.WAD"] = &armor.models;
+std::map<std::string, std::vector<game_model>*> wrench_project::model_lists(app* a) {
+	if(!_game_info) {
+		load_gamedb_info(a);
 	}
-	for(auto& lvl : _levels) {
-		result[lvl.first + "/Mobies"] = &lvl.second->moby_models;
+	
+	std::map<std::string, std::vector<game_model>*> result;
+	for(auto& [table_index, armor] : _armor) {
+		result[table_index_to_name(table_index)] = &armor.models;
+	}
+	for(auto& [level_index, lvl] : _levels) {
+		result[level_index_to_name(level_index) + "/Mobies"] = &lvl->moby_models;
 	}
 	return result;
 }
@@ -198,21 +207,33 @@ void wrench_project::save_to(std::string path) {
 */
 
 void wrench_project::load_tables() {
-	for(toc_table& table : toc.tables) {
+	for(std::size_t i = 0; i < toc.tables.size(); i++) {
+		toc_table& table = toc.tables[i];
+		
 		armor_archive armor;
 		if(armor.read(iso, table)) {
-			_armor.push_back(armor);
+			_armor.emplace(i, armor);
 			continue;
 		}
 		
 		std::vector<texture> textures = enumerate_fip_textures(iso, table);
 		if(textures.size() > 0) {
-			_texture_wads[table.header.base_offset.bytes()] = textures;
+			_texture_wads[i] = textures;
 			continue;
 		}
 		
 		fprintf(stderr, "warning: File at iso+0x%08x ignored.\n", table.header.base_offset.bytes());
 	}
+}
+
+void wrench_project::load_gamedb_info(app* a) {
+	for(std::size_t i = 0 ; i < a->game_db.size(); i++) {
+		if(a->game_db[i].name == game.game_db_entry) {
+			_game_info = a->game_db[i];
+			return;
+		}
+	}
+	throw std::runtime_error("Failed to load gamedb info!");
 }
 
 game_iso wrench_project::read_game_type(std::vector<game_iso> games) {
@@ -230,6 +251,20 @@ game_iso wrench_project::read_game_type(std::vector<game_iso> games) {
 		throw std::runtime_error("Unknown game hash!");
 	}
 	return *game;
+}
+
+std::string wrench_project::table_index_to_name(std::size_t table_index) {
+	if(_game_info->tables.find(table_index) == _game_info->tables.end()) {
+		return int_to_hex(table_index);
+	}
+	return _game_info->tables.at(table_index);
+}
+
+std::string wrench_project::level_index_to_name(std::size_t level_index) {
+	if(_game_info->levels.find(level_index) == _game_info->levels.end()) {
+		return int_to_hex(level_index);
+	}
+	return _game_info->levels.at(level_index);
 }
 
 int wrench_project::_next_id = 0;

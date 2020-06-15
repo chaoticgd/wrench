@@ -65,8 +65,8 @@ public:
 	std::size_t selected_level_index();
 	std::vector<level*> levels();
 	level* level_from_index(std::size_t index);
-	std::map<std::string, std::vector<texture>*> texture_lists();
-	std::map<std::string, std::vector<game_model>*> model_lists();
+	std::map<std::string, std::vector<texture>*> texture_lists(app* a);
+	std::map<std::string, std::vector<game_model>*> model_lists(app* a);
 	
 	template <typename T, typename... T_constructor_args>
 	void emplace_command(T_constructor_args... args);
@@ -81,8 +81,12 @@ public:
 
 private:
 	void load_tables();
+	void load_gamedb_info(app* a);
 
 	game_iso read_game_type(std::vector<game_iso> games);
+
+	std::string table_index_to_name(std::size_t table_index);
+	std::string level_index_to_name(std::size_t level_index);
 
 	std::string _project_path;
 	ZipArchive::Ptr _wrench_archive;
@@ -97,8 +101,10 @@ private:
 	std::map<std::size_t, std::unique_ptr<racpak>> _archives;
 	std::map<std::size_t, std::vector<texture>> _texture_wads;
 	std::map<std::size_t, std::unique_ptr<level>> _levels;
-	std::vector<armor_archive> _armor;
+	std::map<std::size_t, armor_archive> _armor;
 	level* _selected_level;
+	
+	std::optional<gamedb_game> _game_info;
 	
 	int _id;
 	static int _next_id;

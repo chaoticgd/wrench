@@ -624,7 +624,7 @@ void gui::texture_browser::render(app& a) {
 		_project_id = a.get_project()->id();
 	}
 
-	auto tex_lists = a.get_project()->texture_lists();
+	auto tex_lists = a.get_project()->texture_lists(&a);
 	if(tex_lists.find(_list) == tex_lists.end()) {
 		if(tex_lists.size() > 0) {
 			_list = tex_lists.begin()->first;
@@ -890,7 +890,7 @@ void gui::model_browser::render(app& a) {
 game_model* gui::model_browser::render_selection_pane(app& a) {
 	game_model* result = nullptr;
 	
-	auto lists = a.get_project()->model_lists();
+	auto lists = a.get_project()->model_lists(&a);
 	if(ImGui::BeginTabBar("lists")) {
 		for(auto& list : lists) {
 			if(ImGui::BeginTabItem(list.first.c_str())) {

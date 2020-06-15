@@ -93,8 +93,8 @@ iso_stream::iso_stream(std::string game_id, std::string iso_path, worker_logger&
 	: _iso(iso_path),
 	  _patches(read_patches(root)),
 	  _wad_streams(read_wad_streams(root)),
-	  _cache_iso_path(std::string("cache/editor_") + game_id + "_patched.iso"),
-	  _cache_meta_path(std::string("cache/editor_") + game_id + "_metadata.json"),
+	  _cache_iso_path(std::string("cache/") + game_id + "_patched.iso"),
+	  _cache_meta_path(std::string("cache/") + game_id + "_metadata.json"),
 	  _cache(init_cache(iso_path, log), std::ios::in | std::ios::out) {}
 
 std::size_t iso_stream::size() const {
