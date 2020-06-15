@@ -1113,7 +1113,7 @@ void gui::settings::render(app& a) {
 	}
 	
 	ImGui::NewLine();
-	if(ImGui::Button("Okay")) {
+	if(ImGui::Button("Close")) {
 		close(a);
 	}
 }
