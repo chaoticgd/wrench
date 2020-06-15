@@ -26,10 +26,12 @@
 #include <stdlib.h>
 #include <functional>
 
+#include "md5.h"
 #include "util.h"
 #include "config.h"
 #include "window.h"
 #include "renderer.h"
+#include "worker_thread.h"
 #include "formats/bmp.h"
 #include "commands/translate_command.h"
 
@@ -140,11 +142,9 @@ void gui::render_menu_bar(app& a) {
 	
 	if(ImGui::BeginMenu("File")) {
 		if(ImGui::BeginMenu("New")) {
-			for(const auto& game : a.game_db) {
-				std::string text = 
-					game.first + " " + game.second.title;
-				if(ImGui::MenuItem(text.c_str())) {
-					a.new_project(game.first);
+			for(const game_iso& game : a.settings.game_isos) {
+				if(ImGui::MenuItem(game.path.c_str())) {
+					a.new_project(game);
 				}
 			}
 			ImGui::EndMenu();
@@ -1099,7 +1099,26 @@ ImVec2 gui::settings::initial_size() const {
 }
 
 void gui::settings::render(app& a) {
+	if(ImGui::BeginTabBar("tabs")) {
+		if(ImGui::BeginTabItem("Paths")) {
+			render_paths_page(a);
+			ImGui::EndTabItem();
+		}
+		
+		if(ImGui::BeginTabItem("GUI")) {
+			render_gui_page(a);
+			ImGui::EndTabItem();
+		}
+		ImGui::EndTabBar();
+	}
+	
+	ImGui::NewLine();
+	if(ImGui::Button("Okay")) {
+		close(a);
+	}
+}
 
+void gui::settings::render_paths_page(app& a) {
 	ImGui::Text("Emulator Path");
 
 	ImGui::PushItemWidth(-1);
@@ -1112,24 +1131,90 @@ void gui::settings::render(app& a) {
 	ImGui::Text("Game Paths");
 
 	ImGui::Columns(2);
-	ImGui::SetColumnWidth(0, 64);
+	ImGui::SetColumnWidth(0, ImGui::GetWindowSize().x - 32);
 
-	for(auto& [game, path] : a.settings.game_paths) {
-		ImGui::AlignTextToFramePadding();
-		ImGui::Text("%s", game.c_str());
+	for(auto iter = a.settings.game_isos.begin(); iter < a.settings.game_isos.end(); iter++) {
+		ImGui::PushID(0);
+		std::stringstream label;
+		label << iter->game_db_entry << " " << iter->md5;
+		ImGui::InputText(label.str().c_str(), &iter->path, ImGuiInputTextFlags_ReadOnly);
 		ImGui::NextColumn();
-		ImGui::PushItemWidth(-1);
-		std::string label = std::string("##") + game;
-		if(ImGui::InputText(label.c_str(), &path)) {
-			a.save_settings();
+		if(ImGui::Button("X")) {
+			a.settings.game_isos.erase(iter);
+			break;
 		}
-		ImGui::PopItemWidth();
 		ImGui::NextColumn();
+		ImGui::PopID();
 	}
-
-	ImGui::Columns(1);
+	
+	ImGui::Columns();
 	ImGui::NewLine();
 	
+	if(a.game_db.size() < 1) {
+		return;
+	}
+	
+	ImGui::Text("Add Game");
+	ImGui::InputText("ISO Path", &_new_game_path);
+	if(ImGui::BeginCombo("##new_game_type", a.game_db[_new_game_type].name.c_str())) {
+		for(std::size_t i = 0; i < a.game_db.size(); i++) {
+			if(ImGui::Selectable(a.game_db[i].name.c_str())) {
+				_new_game_type = i;
+			}
+		}
+		ImGui::EndCombo();
+	}
+	ImGui::SameLine();
+	if(ImGui::Button("Add Game")) {
+		game_iso game;
+		game.path = _new_game_path;
+		game.game_db_entry = a.game_db[_new_game_type].name;
+		
+		// Generate an MD5 hash on a different thread.
+		a.emplace_window<worker_thread<game_iso, game_iso>>(
+			"Adding Game", game,
+			[](game_iso game, worker_logger& log) {
+				try {
+					file_stream iso(game.path);
+					iso.seek(0);
+					
+					log << "Generating MD5 hash... ";
+					
+					MD5_CTX ctx;
+					MD5Init(&ctx);
+					
+					static const std::size_t BLOCK_SIZE = 1024 * 4;
+					
+					std::vector<uint8_t> block(BLOCK_SIZE);
+					for(std::size_t i = 0; i < iso.size() / BLOCK_SIZE; i++) {
+						iso.read_n((char*) block.data(), BLOCK_SIZE);
+						MD5Update(&ctx, block.data(), BLOCK_SIZE);
+					}
+					iso.read_n((char*) block.data(), iso.size() % BLOCK_SIZE);
+					MD5Update(&ctx, block.data(), iso.size() % BLOCK_SIZE);
+
+					uint8_t digest[MD5_DIGEST_LENGTH];
+					MD5Final(digest, &ctx);
+					
+					log << "done!";
+					
+					game.md5 = md5_to_printable_string(digest);
+					return std::optional<game_iso>(game);
+				} catch(stream_error& e) {
+					log << "Error: " << e.what();
+				}
+				return std::optional<game_iso>();
+			},
+			[&](game_iso game) {
+				a.settings.game_isos.push_back(game);
+			}
+		);
+		
+		_new_game_path = "";
+	}
+}
+
+void gui::settings::render_gui_page(app& a) {
 	ImGui::Text("GUI Scale");
 
 	ImGui::PushItemWidth(-1);
@@ -1138,11 +1223,6 @@ void gui::settings::render(app& a) {
 		a.save_settings();
 	}
 	ImGui::PopItemWidth();
-	ImGui::NewLine();
-
-	if(ImGui::Button("Okay")) {
-		close(a);
-	}
 }
 
 /*

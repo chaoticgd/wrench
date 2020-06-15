@@ -31,30 +31,29 @@
 static const std::size_t TOC_BASE = 0x1f4800;
 
 wrench_project::wrench_project(
-		std::map<std::string, std::string>& game_paths,
-		worker_logger& log,
-		std::string game_id_)
+		game_iso game_,
+		worker_logger& log)
 	: _project_path(""),
 	  _wrench_archive(nullptr),
-	  game_id(game_id_),
+	  game(game_),
 	  _history_index(0),
 	  _selected_level(nullptr),
 	  _id(_next_id++),
-	  iso(game_id, game_paths.at(game_id), log),
+	  iso(game.md5, game.path, log),
 	  toc(read_toc(iso, TOC_BASE)) {
 	load_tables();
 }
 
 wrench_project::wrench_project(
-		std::map<std::string, std::string>& game_paths,
+		std::vector<game_iso> games,
 		std::string project_path,
 		worker_logger& log)
 	: _project_path(project_path),
 	  _wrench_archive(ZipFile::Open(project_path)),
-	  game_id(read_game_id()),
+	  game(read_game_type(games)),
 	  _history_index(0),
 	  _id(_next_id++),
-	  iso(game_id, game_paths.at(game_id), log, _wrench_archive),
+	  iso(game.md5, game.path, log, _wrench_archive),
 	  toc(read_toc(iso, TOC_BASE)) {
 	ZipFile::SaveAndClose(_wrench_archive, project_path);
 	_wrench_archive = nullptr;
@@ -187,9 +186,9 @@ void wrench_project::save_to(std::string path) {
 	version_stream << WRENCH_VERSION_STR;
 	root->CreateEntry("application_version")->SetCompressionStream(version_stream);
 
-	std::stringstream game_id_stream;
-	game_id_stream << game_id;
-	root->CreateEntry("game_id")->SetCompressionStream(game_id_stream);
+	std::stringstream game_md5_stream;
+	game_md5_stream << game.md5;
+	root->CreateEntry("game_md5")->SetCompressionStream(game_md5_stream);
 
 	iso.save_patches_to_and_close(root, path);
 }
@@ -216,12 +215,21 @@ void wrench_project::load_tables() {
 	}
 }
 
-std::string wrench_project::read_game_id() {
-	auto entry = _wrench_archive->GetEntry("game_id");
+game_iso wrench_project::read_game_type(std::vector<game_iso> games) {
+	auto entry = _wrench_archive->GetEntry("game_md5");
 	auto stream = entry->GetDecompressionStream();
 	std::string result;
 	std::getline(*stream, result);
-	return result;
+	std::optional<game_iso> game;
+	for(game_iso current : games) {
+		if(current.md5 == result) {
+			game = current;
+		} 
+	}
+	if(!game) {
+		throw std::runtime_error("Unknown game hash!");
+	}
+	return *game;
 }
 
 int wrench_project::_next_id = 0;

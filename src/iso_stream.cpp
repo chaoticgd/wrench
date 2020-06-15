@@ -385,14 +385,6 @@ void iso_stream::write_normal_patches(file_stream* cache_iso) {
 	}
 }
 
-std::string md5_to_printable_string(std::array<uint8_t, MD5_DIGEST_LENGTH> in) {
-	std::stringstream result;
-	for(std::size_t i = 0; i < MD5_DIGEST_LENGTH; i++) {
-		result << std::hex << (in[i] & 0xff);
-	}
-	return result.str();
-}
-
 std::string iso_stream::hash_patches() {
 	MD5_CTX ctx;
 	MD5Init(&ctx);
@@ -404,7 +396,7 @@ std::string iso_stream::hash_patches() {
 		MD5Update(&ctx, reinterpret_cast<uint8_t*>(p.buffer.data()), p.buffer.size());
 	}
 
-	std::array<uint8_t, MD5_DIGEST_LENGTH> digest;
-	MD5Final(digest.data(), &ctx);
+	uint8_t digest[MD5_DIGEST_LENGTH];
+	MD5Final(digest, &ctx);
 	return md5_to_printable_string(digest);
 }

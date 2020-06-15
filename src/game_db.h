@@ -23,41 +23,16 @@
 #include <string>
 #include <vector>
 
-#include "better-enums/enum.h"
-
 # /*
-# 	Lookup table of different game releases loaded from gamedb.txt.
+# 	List of supported games loaded from gamedb.txt.
 # */
 
-BETTER_ENUM(gamedb_region, char,
-	EUROPE, NORTH_AMERICA, JAPAN
-)
-
-BETTER_ENUM(gamedb_edition, char,
-	BLACK_LABEL, GREATEST_HITS	
-)
-
-BETTER_ENUM(gamedb_file_type, char,
-	TEXTURES, ARMOR, LEVEL
-)
-
-struct gamedb_file {
-	gamedb_file(gamedb_file_type type_) : type(type_) {}
-	
-	gamedb_file_type type;
-	std::size_t offset;
-	std::size_t size;
+struct gamedb_game {
 	std::string name;
+	std::map<std::size_t, std::string> tables;
+	std::map<std::size_t, std::string> levels;
 };
 
-struct gamedb_release {
-	std::string elf_id; // e.g. "SCES_516.07".
-	std::string title;
-	gamedb_edition edition = gamedb_edition::BLACK_LABEL; // obviously
-	gamedb_region region = gamedb_region::EUROPE;
-	std::vector<gamedb_file> files;
-};
-
-std::map<std::string, gamedb_release> gamedb_parse_file();
+std::vector<gamedb_game> gamedb_read();
 
 #endif

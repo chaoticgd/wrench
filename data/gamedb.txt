@@ -1,112 +1,120 @@
-game SCES_516.07
-	title Ratchet & Clank 2: Locked and Loaded
-	edition BLACK_LABEL
-	region EUROPE
-	# file type, offset (bytes), size (bytes, if known), display name
-	file TEXTURES 0x7360f800 0x242b30f HUD.WAD
-	file TEXTURES 0x75a3b000 0x1e49ea5 BONUS.WAD
-	file TEXTURES 0x7e041800 0x10fa980 SPACE.WAD
-	file ARMOR    0x7fa3d800 0x025d930 ARMOR.WAD
-	file LEVEL    0x7fc9b800 0x0ec5a80 00 Aranos
-	file LEVEL    0x81be9000 0x14dea44 01 Oozla
-	file LEVEL    0x85104800 0x13c73f8 02 Maktar
-	file LEVEL    0x89d86000 0x10d9060 03 Endako
-	file LEVEL    0x8d794800 0x17999dc 04 Barlow
-	file LEVEL    0x92064800 0x0ff02d0 05 Feltzin
-	file LEVEL    0x93bd9000 0x12893e0 06 Notak
-	file LEVEL    0x96690800 0x1545530 07 Siberius
-	file LEVEL    0x99685000 0x13ac830 08 Tabora
-	file LEVEL    0x9e8a6000 0x11f8ae0 09 Dobbo
-	file LEVEL    0xa2317800 0x0dc0fe3 10 Hrugis
-	file LEVEL    0xa3fdb000 0x155e2a0 11 Joba
-	file LEVEL    0xaa301000 0x10c5a90 12 Todano
-	file LEVEL    0xae9f0000 0x112bab0 13 Boldan
-	file LEVEL    0xb228b800 0x10947a0 14 Aranos 2
-	file LEVEL    0xb59e0800 0x0d77dc0 15 Gorn
-	file LEVEL    0xb7243000 0x1188be0 16 Snivelak
-	file LEVEL    0xbafab800 0x0fff020 17 Smolg
-	file LEVEL    0xbde52800 0x10e52c0 18 Damosel
-	file LEVEL    0xc05cf000 0x18052d8 19 Grelbin
-	file LEVEL    0xc59e2800 0x1469a5c 20 Yeedil
-	file LEVEL    0xcaeba800 0x0cc30e0 21 Insomniac Museum
-	file LEVEL    0xccc5a000 0x0d02530 22 Disposal Facility
-	file LEVEL    0xce839000 0x0c0b9d0 23 Damosel Orbit
-	file LEVEL    0xcfb68000 0x07fc176 24 Ship Shack
-	file LEVEL    0xd0751000 0x0843c5f 25 Wupash
-	file LEVEL    0xd164e800 0x0a81290 26 Jamming Array
-end
+game {
+	name R&C2
+	tables {
+		0 MPEG.WAD
+		1 MISC.WAD
+		2 HUD.WAD
+		3 BONUS.WAD
+		4 AUDIO.WAD
+		5 SPACE.WAD
+		6 SCENE.WAD
+		7 GADGET.WAD
+		8 ARMOR.WAD
+	}
+	levels {
+		0 Aranos
+		1 Oozla
+		2 Maktar
+		3 Endako
+		4 Barlow
+		5 Feltzin
+		6 Notak
+		7 Siberius
+		8 Tabora
+		9 Dobbo
+		10 Hrugis
+		11 Joba
+		12 Todano
+		13 Boldan
+		14 Aranos 2
+		15 Gorn
+		16 Snivelak
+		17 Smolg
+		18 Damosel
+		19 Grelbin
+		20 Yeedil
+		21 Insomniac Museum
+		22 Disposal Facility
+		23 Damosel Orbit
+		24 Ship Shack
+		25 Wupash
+		26 Jamming Array
+	}
+}
 
-game SCES_524.56
-	title Ratchet & Clank 3
-	edition BLACK_LABEL
-	region EUROPE
-	# file type, offset (bytes), size (bytes, if known), display name
-	file ARMOR 0x56da6000 0x0 ARMOR.WAD
-	file LEVEL 0x92229000 0x0 00 Veldin
-	file LEVEL 0x9349d800 0x0 01 Florana
-	file LEVEL 0x946c4800 0x0 02 Phoenix
-	file LEVEL 0x9576d000 0x0 03 Marcadia
-	file LEVEL 0x96bea800 0x0 04 Daxx
-	file LEVEL 0x97de8000 0x0 05 Phoenix (Under Attack)
-	file LEVEL 0x98d51000 0x0 06 Annihilation Nation
-	file LEVEL 0x9a048000 0x0 07 Aquatos
-	file LEVEL 0x9b2d3000 0x0 08 Aquatos 2
-	file LEVEL 0x9c7b2000 0x0 09 Zeldrin
-	file LEVEL 0x9dbc0800 0x0 10 Obani Moons
-	file LEVEL 0x9ed0e800 0x0 11 Blackwater
-	file LEVEL 0x9fe31800 0x0 12 LEVEL12
-	file LEVEL 0xa0ea3800 0x0 13 LEVEL13
-	file LEVEL 0xa1fd4800 0x0 14 Metropolis
-	file LEVEL 0xa30d5000 0x0 15 Crash Site
-	file LEVEL 0xa41e5000 0x0 16 LEVEL16
-	file LEVEL 0xa5362800 0x0 17 LEVEL17
-	file LEVEL 0xa69fc000 0x0 18 Final Boss
-	file LEVEL 0xa881f000 0x0 20 LEVEL20
-	file LEVEL 0xa98d9800 0x0 21 LEVEL21
-	file LEVEL 0xaa921800 0x0 22 LEVEL22
-	file LEVEL 0xabda5000 0x0 23 LEVEL23
-	file LEVEL 0xaced4000 0x0 24 LEVEL24
-	file LEVEL 0xadcb9800 0x0 25 Aquatos Sewers
-	file LEVEL 0xaebb6000 0x0 26 LEVEL26
-	file LEVEL 0xafcca000 0x0 27 Vid-Comic 1
-	file LEVEL 0xb09a8000 0x0 28 Vid-Comic 2
-	file LEVEL 0xb15d0000 0x0 29 Vid-Comic 3
-	file LEVEL 0xb2349800 0x0 30 Vid-Comic 4
-	file LEVEL 0xb300d000 0x0 31 Vid-Comic 5
-	file LEVEL 0xb3ba7000 0x0 32 Vid-Comic 6
-	file LEVEL 0xb47e6800 0x0 33 Vid-Comic 7
-	file LEVEL 0xb5535000 0x0 34 LEVEL34
-	file LEVEL 0xb5fe6000 0x0 35 LEVEL35
-	file LEVEL 0xb70c8800 0x0 36 LEVEL36
-	file LEVEL 0xb818b000 0x0 37 LEVEL37
-	file LEVEL 0xb930d800 0x0 38 LEVEL38
-	file LEVEL 0xba524000 0x0 39 LEVEL39
-	file LEVEL 0xbb627800 0x0 40 LEVEL40
-	file LEVEL 0xbc7ac800 0x0 41 LEVEL41
-	file LEVEL 0xbd25f000 0x0 42 LEVEL42
-	file LEVEL 0xbde82800 0x0 43 MP Aquatos Sewers
-	file LEVEL 0xbe98f000 0x0 44 LEVEL44
-	file LEVEL 0xbf612800 0x0 45 MP Bakisi Isles
-	file LEVEL 0xc0626000 0x0 46 LEVEL46
-	file LEVEL 0xc169e800 0x0 47 LEVEL47
-	file LEVEL 0xc27f4800 0x0 48 LEVEL48
-	file LEVEL 0xc38d2800 0x0 49 MP Metropolis
-	file LEVEL 0xc49a2000 0x0 50 LEVEL50
-end
+game {
+	name R&C3
+	tables {
+		0 0
+		1 1
+		2 2
+		3 SPACE.WAD
+		4 ARMOR.WAD
+		5 5
+		6 6
+		7 7
+	}
+	levels {
+		0 Veldin
+		1 Florana
+		2 Phoenix
+		3 Marcadia
+		4 Daxx
+		5 Phoenix (Under Attack)
+		6 Annihilation Nation
+		7 Aquatos
+		8 Aquatos 2
+		9 Zeldrin
+		10 Obani Moons
+		11 Blackwater
+		12 (not filled in)
+		13 (not filled in)
+		14 Metropolis
+		15 Crash Site
+		16 (not filled in)
+		17 (not filled in)
+		18 Final Boss
+		19 (not filled in)
+		20 (not filled in)
+		21 (not filled in)
+		22 (not filled in)
+		23 (not filled in)
+		24 (not filled in)
+		25 Aquatos Sewers
+		26 (not filled in)
+		27 Vid-Comic 1
+		28 Vid-Comic 2
+		29 Vid-Comic 3
+		30 Vid-Comic 4
+		31 Vid-Comic 5
+		32 Vid-Comic 6
+		33 Vid-Comic 7
+		34 (not filled in)
+		35 (not filled in)
+		36 (not filled in)
+		37 (not filled in)
+		38 (not filled in)
+		39 (not filled in)
+		40 (not filled in)
+		41 (not filled in)
+		42 (not filled in)
+		43 MP Aquatos Sewers
+		44 (not filled in)
+		45 MP Bakisi Isles
+		46 (not filled in)
+		47 (not filled in)
+		48 (not filled in)
+		49 MP Metropolis
+		50 (not filled in)
+	}
+}
 
-game SCES_532.85
-	title Ratchet: Gladiator
-	edition BLACK_LABEL
-	region EUROPE
-	# file type, offset (bytes), size (bytes, if known), display name
-	file ARMOR 0x4ecf4800 0x0 ARMOR.WAD
-end
-
-game RC23LEVEL
-	title R&C 2/3 Single Level
-	# Doesn't matter.
-	edition BLACK_LABEL
-	# Doesn't matter.
-	region EUROPE
-	file LEVEL 0x0 0x0 Single Level
-end
+game {
+	name Gladiator
+	tables {
+		
+	}
+	levels {
+		
+	}
+}

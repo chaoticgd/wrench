@@ -69,8 +69,6 @@ int main(int argc, char** argv) {
 	MD5Final(hash, &ctx);
 	srand(*(unsigned int*) hash);
 	
-	auto game = gamedb_parse_file().at(game_id);
-	
 	// TODO: Change the wrench_project constructor so this mess isn't required.
 	std::map<std::string, std::string> game_paths
 		{ { game_id, iso_path } };
@@ -78,56 +76,49 @@ int main(int argc, char** argv) {
 	worker_logger log;
 	wrench_project project(game_paths, log, game_id);
 	
-	for(gamedb_file file_meta : game.files) {		
-		if(file_meta.type == +gamedb_file_type::LEVEL) {
-			proxy_stream file(&project.iso, file_meta.offset, file_meta.size);
-			auto file_header_opt = level_read_file_header(&file, 0);
-			if(!file_header_opt) {
-				throw stream_format_error("Failed to read file header for level!");
-			}
-			level_file_header file_header = *file_header_opt;
-			auto primary_header = file.read<level_primary_header>(file_header.primary_header_offset);
+	for(toc_level level : project.toc.levels) {		
+		proxy_stream file(&project.iso, level.main_part.base_offset, 0);
+		auto primary_header = file.read<level_primary_header>(level.main_part.primary_header_offset);
+		
+		std::size_t asset_header_offset = level.main_part.primary_header_offset + primary_header.asset_header;
+		auto asset_header = file.read<level_asset_header>(asset_header_offset);
+		
+		packed_struct(texture_entry,
+			uint32_t field_0;
+			uint32_t field_4;
+			uint32_t field_8;
+			uint32_t field_c;
+		);
+		
+		read_shuffle_write<texture_entry>(
+			file,
+			asset_header_offset + asset_header.terrain_texture_offset,
+			asset_header.terrain_texture_count);
 			
-			std::size_t asset_header_offset = file_header.primary_header_offset + primary_header.asset_header;
-			auto asset_header = file.read<level_asset_header>(asset_header_offset);
-			
-			packed_struct(texture_entry,
-				uint32_t field_0;
-				uint32_t field_4;
-				uint32_t field_8;
-				uint32_t field_c;
-			);
-			
-			read_shuffle_write<texture_entry>(
-				file,
-				asset_header_offset + asset_header.terrain_texture_offset,
-				asset_header.terrain_texture_count);
-				
-			read_shuffle_write<texture_entry>(
-				file,
-				asset_header_offset + asset_header.some1_texture_offset,
-				asset_header.some1_texture_count);
-			
-			read_shuffle_write<texture_entry>(
-				file,
-				asset_header_offset + asset_header.shrub_texture_offset,
-				asset_header.shrub_texture_count);
-			
-			read_shuffle_write<texture_entry>(
-				file,
-				asset_header_offset + asset_header.tie_texture_offset,
-				asset_header.tie_texture_count);
-			
-			read_shuffle_write<texture_entry>(
-				file,
-				asset_header_offset + asset_header.some2_texture_offset,
-				asset_header.some2_texture_count);
-			
-			read_shuffle_write<texture_entry>(
-				file,
-				asset_header_offset + asset_header.sprite_texture_offset,
-				asset_header.sprite_texture_count);
-		}
+		read_shuffle_write<texture_entry>(
+			file,
+			asset_header_offset + asset_header.some1_texture_offset,
+			asset_header.some1_texture_count);
+		
+		read_shuffle_write<texture_entry>(
+			file,
+			asset_header_offset + asset_header.shrub_texture_offset,
+			asset_header.shrub_texture_count);
+		
+		read_shuffle_write<texture_entry>(
+			file,
+			asset_header_offset + asset_header.tie_texture_offset,
+			asset_header.tie_texture_count);
+		
+		read_shuffle_write<texture_entry>(
+			file,
+			asset_header_offset + asset_header.some2_texture_offset,
+			asset_header.some2_texture_count);
+		
+		read_shuffle_write<texture_entry>(
+			file,
+			asset_header_offset + asset_header.sprite_texture_offset,
+			asset_header.sprite_texture_count);
 	}
 	
 	project.save_to(project_path);

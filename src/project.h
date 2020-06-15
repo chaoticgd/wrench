@@ -39,14 +39,19 @@
 
 class app;
 
+struct game_iso {
+	std::string path;
+	std::string game_db_entry; // e.g. "R&C2" corresponding to the entry in the gamedb.txt file.
+	std::string md5;
+};
+
 class wrench_project {
 public:
 	wrench_project(
-		std::map<std::string, std::string>& game_paths,
-		worker_logger& log,
-		std::string game_id_); // New
+		game_iso game_,
+		worker_logger& log); // New
 	wrench_project(
-		std::map<std::string, std::string>& game_paths,
+		std::vector<game_iso> games,
 		std::string project_path,
 		worker_logger& log); // Open
 
@@ -77,13 +82,13 @@ public:
 private:
 	void load_tables();
 
-	std::string read_game_id();
+	game_iso read_game_type(std::vector<game_iso> games);
 
 	std::string _project_path;
 	ZipArchive::Ptr _wrench_archive;
 
 public: // Initialisation order matters.
-	const std::string game_id; // e.g. "SCES_516.07"
+	const game_iso game;
 
 private:
 	std::size_t _history_index;

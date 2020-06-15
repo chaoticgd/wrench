@@ -33,7 +33,7 @@ app::app()
 	  delta_time(0),
 	  current_tool(tool::picker),
 	  translate_tool_displacement(0, 0, 0),
-	  game_db(gamedb_parse_file()),
+	  game_db(gamedb_read()),
 	  _lock_project(false) {
 	
 	read_settings();
@@ -41,7 +41,7 @@ app::app()
 
 using project_ptr = std::unique_ptr<wrench_project>;
 
-void app::new_project(std::string game_id) {
+void app::new_project(game_iso game) {
 	if(_lock_project) {
 		return;
 	}
@@ -50,12 +50,12 @@ void app::new_project(std::string game_id) {
 	_project.reset(nullptr);
 
 	// TODO: Make less ugly.
-	using worker_type = worker_thread<project_ptr, std::pair<std::map<std::string, std::string>, std::string>>;
+	using worker_type = worker_thread<project_ptr, game_iso>;
 	windows.emplace_back(std::make_unique<worker_type>(
-		"New Project", std::make_pair(settings.game_paths, game_id),
-		[](auto data, worker_logger& log) {
+		"New Project", game,
+		[](game_iso game, worker_logger& log) {
 			try {
-				auto result = std::make_unique<wrench_project>(data.first, log, data.second);
+				auto result = std::make_unique<wrench_project>(game, log);
 				log << "\nProject created successfully.";
 				return std::make_optional(std::move(result));
 			} catch(stream_error& err) {
@@ -84,8 +84,8 @@ void app::open_project(std::string path) {
 	_project.reset(nullptr);
 
 	// TODO: Make less ugly.
-	using worker_type = worker_thread<project_ptr, std::pair<std::map<std::string, std::string>, std::string>>;
-	auto in = std::make_pair(settings.game_paths, path);
+	using worker_type = worker_thread<project_ptr, std::pair<std::vector<game_iso>, std::string>>;
+	auto in = std::make_pair(settings.game_isos, path);
 	windows.emplace_back(std::make_unique<worker_type>(
 		"Open Project", in,
 		[](auto paths, worker_logger& log) {
@@ -161,10 +161,6 @@ bool app::has_camera_control() {
 const char* settings_file_path = "wrench_settings.ini";
 
 void app::read_settings() {
-	// Default settings.
-	for(auto& game : game_db) {
-		settings.game_paths[game.first] = "/path/to/game.iso";
-	}
 	settings.gui_scale = 1.f;
 
 	if(fs::exists(settings_file_path)) {
@@ -174,11 +170,6 @@ void app::read_settings() {
 			const auto general_tbl = toml::find(settings_file, "general");
 			settings.emulator_path =
 				toml::find_or(general_tbl, "emulator_path", settings.emulator_path);
-
-			const auto game_paths_tbl = toml::find(settings_file, "game_paths");
-			for(auto& [game, path] : settings.game_paths) {
-				path = toml::find_or(game_paths_tbl, game.c_str(), "");
-			}
 
 			const auto gui_tbl = toml::find(settings_file, "gui");
 			settings.gui_scale = toml::find_or(gui_tbl, "scale", 1.f);
@@ -196,17 +187,11 @@ void app::save_settings() {
 	toml::table genera_tbl;
 	genera_tbl["emulator_path"] = settings.emulator_path;
 
-	toml::table game_paths_tbl;
-	for(auto& [game, path] : settings.game_paths) {
-		game_paths_tbl[game] = path;
-	}
-
 	toml::table gui_tbl;
 	gui_tbl["scale"] = settings.gui_scale;
 
 	std::ofstream settings(settings_file_path);
 	settings << "[general]\n" << toml::format(toml::value(genera_tbl)) << "\n";
-	settings << "[game_paths]\n" << toml::format(toml::value(game_paths_tbl)) << "\n";
 	settings << "[gui]\n" << toml::format(toml::value(gui_tbl));
 }
 

@@ -311,6 +311,13 @@ namespace gui {
 		const char* title_text() const override;
 		ImVec2 initial_size() const override;
 		void render(app& a) override;
+	
+	private:
+		void render_paths_page(app& a);
+		void render_gui_page(app& a);
+		
+		std::size_t _new_game_type = 0;
+		std::string _new_game_path;
 	};
 	
 	class manual_patcher : public window {
