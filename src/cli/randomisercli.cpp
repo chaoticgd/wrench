@@ -38,20 +38,17 @@ int main(int argc, char** argv) {
 	options.add_options()
 		("i,iso", "The game ISO to use.",
 			cxxopts::value<std::string>())
-		("g,gameid", "The game ID (e.g. 'SCES_516.07')",
-			cxxopts::value<std::string>())
 		("p,project", "The path of the new project to create.",
 			cxxopts::value<std::string>())
 		("s,seed", "Password to seed the random number generator.",
 			cxxopts::value<std::string>());
 
 	options.parse_positional({
-		"iso", "gameid", "project", "seed"
+		"iso", "project", "seed"
 	});
 
 	auto args = parse_command_line_args(argc, argv, options);
 	std::string iso_path = cli_get(args, "iso");
-	std::string game_id = cli_get(args, "gameid");
 	std::string project_path = cli_get(args, "project");
 	std::string password = cli_get_or(args, "seed", "");
 	
@@ -69,12 +66,16 @@ int main(int argc, char** argv) {
 	MD5Final(hash, &ctx);
 	srand(*(unsigned int*) hash);
 	
-	// TODO: Change the wrench_project constructor so this mess isn't required.
-	std::map<std::string, std::string> game_paths
-		{ { game_id, iso_path } };
+	game_iso game;
+	game.path = iso_path;
+	game.game_db_entry = ""; // Doesn't matter.
+	{
+		file_stream iso(iso_path);
+		game.md5 = md5_from_stream(iso);
+	}
 	
 	worker_logger log;
-	wrench_project project(game_paths, log, game_id);
+	wrench_project project(game, log);
 	
 	for(toc_level level : project.toc.levels) {		
 		proxy_stream file(&project.iso, level.main_part.base_offset, 0);

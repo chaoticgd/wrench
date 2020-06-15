@@ -26,7 +26,6 @@
 #include <stdlib.h>
 #include <functional>
 
-#include "md5.h"
 #include "util.h"
 #include "config.h"
 #include "window.h"
@@ -1148,29 +1147,9 @@ void gui::settings::render_paths_page(app& a) {
 			[](game_iso game, worker_logger& log) {
 				try {
 					file_stream iso(game.path);
-					iso.seek(0);
-					
 					log << "Generating MD5 hash... ";
-					
-					MD5_CTX ctx;
-					MD5Init(&ctx);
-					
-					static const std::size_t BLOCK_SIZE = 1024 * 4;
-					
-					std::vector<uint8_t> block(BLOCK_SIZE);
-					for(std::size_t i = 0; i < iso.size() / BLOCK_SIZE; i++) {
-						iso.read_n((char*) block.data(), BLOCK_SIZE);
-						MD5Update(&ctx, block.data(), BLOCK_SIZE);
-					}
-					iso.read_n((char*) block.data(), iso.size() % BLOCK_SIZE);
-					MD5Update(&ctx, block.data(), iso.size() % BLOCK_SIZE);
-
-					uint8_t digest[MD5_DIGEST_LENGTH];
-					MD5Final(digest, &ctx);
-					
+					game.md5 = md5_from_stream(iso);
 					log << "done!";
-					
-					game.md5 = md5_to_printable_string(digest);
 					return std::optional<game_iso>(game);
 				} catch(stream_error& e) {
 					log << "Error: " << e.what();

@@ -400,3 +400,26 @@ std::string iso_stream::hash_patches() {
 	MD5Final(digest, &ctx);
 	return md5_to_printable_string(digest);
 }
+
+std::string md5_from_stream(stream& st) {
+	MD5_CTX ctx;
+	MD5Init(&ctx);
+	
+	static const std::size_t BLOCK_SIZE = 1024 * 4;
+	std::size_t file_size = st.size();
+	
+	st.seek(0);
+	
+	std::vector<uint8_t> block(BLOCK_SIZE);
+	for(std::size_t i = 0; i < file_size / BLOCK_SIZE; i++) {
+		st.read_n((char*) block.data(), BLOCK_SIZE);
+		MD5Update(&ctx, block.data(), BLOCK_SIZE);
+	}
+	st.read_n((char*) block.data(), file_size % BLOCK_SIZE);
+	MD5Update(&ctx, block.data(), file_size % BLOCK_SIZE);
+
+	uint8_t digest[MD5_DIGEST_LENGTH];
+	MD5Final(digest, &ctx);
+	
+	return md5_to_printable_string(digest);
+}
