@@ -123,7 +123,7 @@ std::string gamedb_read_token(gamedb_parser& parser) {
 std::string gamedb_read_until_newline(gamedb_parser& parser) {
 	std::string result;
 	while(parser.pos < parser.tokens.size() && !parser.is_eol[parser.pos]) {
-		result += gamedb_read_token(parser);
+		result += gamedb_read_token(parser) + " ";
 	}
 	result += gamedb_read_token(parser);
 	return result;
