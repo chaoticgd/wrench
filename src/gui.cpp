@@ -228,32 +228,6 @@ void gui::render_menu_bar(app& a) {
 		ImGui::EndMenu();
 	}
 	
-	static const std::vector<const char*> level_names_table[] = {
-		{ // R&C2
-			"Aranos", "Oozla", "Maktar", "Endako",
-			"Barlow", "Feltzin", "Notak", "Siberius",
-			"Tabora", "Dobbo", "Hrugis", "Joba",
-			"Todano", "Boldan", "Aranos 2", "Gorn",
-			"Snivelak", "Smolg", "Damosel", "Grelbin",
-			"Yeedil", "Insomniac Museum", "Disposal Facility", "Damosel Orbit",
-			"Ship Shack", "Wupash", "Jamming Array"
-		},
-		{ // R&C3
-			"Veldin", "Florana", "Phoenix", "Marcadia",
-			"Daxx", "Phoenix (Under Attack)", "Annihilation Nation", "Aquatos",
-			"Aquatos 2", "Zeldrin", "Obani Moons", "Blackwater",
-			"(not filled in)", "(not filled in)", "Metropolis", "Crash Site",
-			"(not filled in)", "(not filled in)", "Final Boss", "(not filled in)",
-			"(not filled in)", "(not filled in)", "(not filled in)", "(not filled in)",
-			"(not filled in)", "Aquatos Sewers", "(not filled in)", "Vid-Comic 1",
-			"Vid-Comic 2", "Vid-Comic 3", "Vid-Comic 4", "Vid-Comic 5",
-			"Vid-Comic 6", "Vid-Comic 7", "(not filled in)", "(not filled in)",
-			"(not filled in)", "(not filled in)", "(not filled in)", "(not filled in)",
-			"(not filled in)", "(not filled in)", "(not filled in)", "MP Aquatos Sewers",
-			"(not filled in)", "MP Bakisi Isles", "(not filled in)", "(not filled in)",
-			"(not filled in)", "MP Metropolis", "(not filled in)",
-		}
-	};
 	static const int level_list_rows = 20;
 	
 	if(auto project = a.get_project()) {
@@ -262,12 +236,10 @@ void gui::render_menu_bar(app& a) {
 		
 		ImGui::SetNextWindowContentWidth(columns * 192);
 		if(ImGui::BeginMenu("Levels")) {
-			// If the number of levels matches the number of levels in a particular
-			// know game, assume that the levels are those from that known game.
-			const std::vector<const char*>* level_names = nullptr;
-			for(std::size_t i = 0; i < 2; i++) {
-				if(level_names_table[i].size() == levels.size()) {
-					level_names = &level_names_table[i];
+			const std::map<std::size_t, std::string>* level_names = nullptr;
+			for(const gamedb_game& game : a.game_db) {
+				if(game.name == project->game.game_db_entry) {
+					level_names = &game.levels;
 				}
 			}
 			
@@ -275,8 +247,8 @@ void gui::render_menu_bar(app& a) {
 			for(std::size_t i = 0; i < levels.size(); i++) {
 				std::stringstream label;
 				label << std::setfill('0') << std::setw(2) << levels[i].main_part.level_number;
-				if(level_names != nullptr) {
-					label << " " << (*level_names)[i];
+				if(level_names != nullptr && level_names->find(i) != level_names->end()) {
+					label << " " << level_names->at(i);
 				}
 				if(ImGui::MenuItem(label.str().c_str())) {
 					project->open_level(i);
