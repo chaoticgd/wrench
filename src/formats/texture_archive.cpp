@@ -49,7 +49,7 @@ std::vector<texture> enumerate_fip_textures(iso_stream& iso, toc_table table) {
 		iso.seek(abs_offset);
 		iso.read_n(wad_magic, 3);
 		if(std::memcmp(wad_magic, "WAD", 3) == 0) {
-			file = iso.get_decompressed(abs_offset);
+			file = iso.get_decompressed(abs_offset, true);
 			inner_offset = 0;
 		} else {
 			file = &iso;
