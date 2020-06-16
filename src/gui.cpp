@@ -1105,13 +1105,15 @@ void gui::settings::render_paths_page(app& a) {
 	ImGui::SetColumnWidth(0, ImGui::GetWindowSize().x - 32);
 
 	for(auto iter = a.settings.game_isos.begin(); iter < a.settings.game_isos.end(); iter++) {
-		ImGui::PushID(0);
+		ImGui::PushID(std::distance(a.settings.game_isos.begin(), iter));
 		std::stringstream label;
 		label << iter->game_db_entry << " " << iter->md5;
 		ImGui::InputText(label.str().c_str(), &iter->path, ImGuiInputTextFlags_ReadOnly);
 		ImGui::NextColumn();
 		if(ImGui::Button("X")) {
 			a.settings.game_isos.erase(iter);
+			a.save_settings();
+			ImGui::PopID();
 			break;
 		}
 		ImGui::NextColumn();
@@ -1158,6 +1160,7 @@ void gui::settings::render_paths_page(app& a) {
 			},
 			[&](game_iso game) {
 				a.settings.game_isos.push_back(game);
+				a.save_settings();
 			}
 		);
 		
