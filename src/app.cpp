@@ -49,9 +49,7 @@ void app::new_project(game_iso game) {
 	_lock_project = true;
 	_project.reset(nullptr);
 
-	// TODO: Make less ugly.
-	using worker_type = worker_thread<project_ptr, game_iso>;
-	windows.emplace_back(std::make_unique<worker_type>(
+	emplace_window<worker_thread<project_ptr, game_iso>>(
 		"New Project", game,
 		[](game_iso game, worker_logger& log) {
 			try {
@@ -72,7 +70,7 @@ void app::new_project(game_iso game) {
 			
 			glfwSetWindowTitle(glfw_window, "Wrench Editor - [Unsaved Project]");
 		}
-	));
+	);
 }
 
 void app::open_project(std::string path) {
@@ -83,14 +81,17 @@ void app::open_project(std::string path) {
 	_lock_project = true;
 	_project.reset(nullptr);
 
-	// TODO: Make less ugly.
-	using worker_type = worker_thread<project_ptr, std::pair<std::vector<game_iso>, std::string>>;
-	auto in = std::make_pair(settings.game_isos, path);
-	windows.emplace_back(std::make_unique<worker_type>(
+	struct open_project_input {
+		std::vector<game_iso> game_isos;
+		std::string path;
+	};
+
+	auto in = open_project_input { settings.game_isos, path };
+	emplace_window<worker_thread<project_ptr, open_project_input>>(
 		"Open Project", in,
-		[](auto paths, worker_logger& log) {
+		[](auto in, worker_logger& log) {
 			try {
-				auto result = std::make_unique<wrench_project>(paths.first, paths.second, log);
+				auto result = std::make_unique<wrench_project>(in.game_isos, in.path, log);
 				log << "\nProject opened successfully.";
 				return std::make_optional(std::move(result));
 			} catch(stream_error& err) {
@@ -108,7 +109,7 @@ void app::open_project(std::string path) {
 			auto title = std::string("Wrench Editor - [") + path + "]";
 			glfwSetWindowTitle(glfw_window, title.c_str());
 		}
-	));
+	);
 }
 
 void app::save_project(bool save_as) {
