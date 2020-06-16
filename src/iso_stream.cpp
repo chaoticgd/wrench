@@ -225,6 +225,9 @@ std::vector<patch> iso_stream::read_patches(ZipArchive::Ptr root) {
 	}
 
 	auto patch_list_entry = root->GetEntry("patch_list.json");
+	if(patch_list_entry == nullptr) {
+		throw std::runtime_error("Wrench project does not contain patch_list.json file!");
+	}
 	std::istream* patch_list_file = patch_list_entry->GetDecompressionStream();
 	auto patch_list = nlohmann::json::parse(*patch_list_file);
 
@@ -256,6 +259,9 @@ std::map<std::size_t, std::unique_ptr<wad_stream>> iso_stream::read_wad_streams(
 	std::map<std::size_t, std::unique_ptr<wad_stream>> result;
 	
 	auto entry = root->GetEntry("patch_list.json");
+	if(entry == nullptr) {
+		throw std::runtime_error("Wrench project does not contain patch_list.json file!");
+	}
 	std::istream* patch_list_file = entry->GetDecompressionStream();
 	
 	auto patch_list = nlohmann::json::parse(*patch_list_file);
@@ -269,6 +275,9 @@ std::map<std::size_t, std::unique_ptr<wad_stream>> iso_stream::read_wad_streams(
 		for(auto& patch_json : wad.items()) {
 			std::string patch_src_path = patch_json.value().find("data").value();
 			auto bin_entry = root->GetEntry(patch_src_path);
+			if(bin_entry == nullptr) {
+				throw std::runtime_error("Wrench project does not contain a referenced patch file!");
+			}
 			std::istream* patch_file = bin_entry->GetDecompressionStream();
 			
 			std::vector<char> buffer(bin_entry->GetSize());

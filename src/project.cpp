@@ -238,6 +238,9 @@ void wrench_project::load_gamedb_info(app* a) {
 
 game_iso wrench_project::read_game_type(std::vector<game_iso> games) {
 	auto entry = _wrench_archive->GetEntry("game_md5");
+	if(entry == nullptr) {
+		throw std::runtime_error("Wrench project does not contain game_md5 file!");
+	}
 	auto stream = entry->GetDecompressionStream();
 	std::string result;
 	std::getline(*stream, result);
