@@ -18,19 +18,16 @@
 
 #include "toc.h"
 
+static const std::size_t TOC_MAX_SIZE       = 0x100000;
 static const std::size_t TOC_MAX_INDEX_SIZE = 0x10000;
 static const std::size_t TOC_MAX_LEVELS     = 0x100;
 
-std::size_t toc_get_level_table_offset(stream& iso, uint32_t* buffer);
+std::size_t toc_get_level_table_offset(stream& iso, std::size_t toc_base);
 
 table_of_contents read_toc(stream& iso, std::size_t toc_base) {
 	table_of_contents toc;
 	
-	char buffer[TOC_MAX_INDEX_SIZE];
-	iso.seek(toc_base);
-	iso.read_n(buffer, sizeof(buffer));
-	
-	std::size_t level_table_offset = toc_get_level_table_offset(iso, (uint32_t*) buffer);
+	std::size_t level_table_offset = toc_get_level_table_offset(iso, toc_base);
 	
 	iso.seek(toc_base);
 	while(iso.tell() + 4 * 6 < toc_base + level_table_offset) {
@@ -84,8 +81,12 @@ table_of_contents read_toc(stream& iso, std::size_t toc_base) {
 	return toc;
 }
 
-std::size_t toc_get_level_table_offset(stream& iso, uint32_t* buffer) {
-	for(std::size_t i = 0; i < TOC_MAX_INDEX_SIZE / sizeof(buffer) - 6; i++) {
+std::size_t toc_get_level_table_offset(stream& iso, std::size_t toc_base) {
+	uint8_t buffer[TOC_MAX_SIZE];
+	iso.seek(toc_base);
+	iso.read_n((char*) buffer, sizeof(buffer));
+	
+	for(std::size_t i = 0; i < TOC_MAX_INDEX_SIZE; i += sizeof(uint32_t)) {
 		toc_level_table_entry entry = *(toc_level_table_entry*) &buffer[i];
 		sector32 headers[] = { entry.header_1, entry.header_2, entry.header_3 };
 		
@@ -95,11 +96,17 @@ std::size_t toc_get_level_table_offset(stream& iso, uint32_t* buffer) {
 		
 		int parts = 0;
 		for(sector32 header : headers) {
-			if(header.sectors == 0 || header.bytes() > iso.size()) {
+			if(header.sectors == 0) {
 				break;
 			}
 			
-			uint32_t magic = iso.read<uint32_t>(header.bytes());
+			std::size_t magic_offset = header.bytes() - toc_base;
+			
+			if(magic_offset > TOC_MAX_SIZE - sizeof(uint32_t)) {
+				break;
+			}
+			
+			uint32_t magic = *(uint32_t*) &buffer[magic_offset];
 			for(uint32_t expected : valid_magic_bytes) {
 				if(magic == expected) {
 					parts++;
