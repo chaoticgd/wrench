@@ -96,23 +96,34 @@ void game_world::write() {
 	// TODO
 }
 
-level::level(iso_stream* iso, toc_level index)
-	: _index(index),
-	  _backing(iso, index.main_part.base_offset, 0) {
+bool level::read(iso_stream* iso, toc_level index) {
+	_index = index;
 	
-	auto primary_header = _backing.read<level_primary_header>(index.main_part.primary_header_offset);
+	auto file_header = level_read_file_header(iso, index.main_part.bytes());
+	if(!file_header) {
+		return false;
+	}
+	
+	proxy_stream file(iso, file_header->base_offset, 0);
+	
+	auto primary_header = file.read<level_primary_header>(file_header->primary_header_offset);
 
-	_moby_stream = iso->get_decompressed(index.main_part.base_offset + index.main_part.moby_segment_offset);
+	code_segment.header = file.read<level_code_segment_header>
+		(file_header->primary_header_offset + primary_header.code_segment_offset);
+	code_segment.bytes.resize(primary_header.code_segment_size - sizeof(level_code_segment_header));
+	file.read_v(code_segment.bytes);
+
+	_moby_stream = iso->get_decompressed(file_header->base_offset + file_header->moby_segment_offset);
 	world.read(_moby_stream);
 	
 	stream* asset_seg = iso->get_decompressed
-		(index.main_part.base_offset + index.main_part.primary_header_offset + primary_header.asset_wad, true);
+		(file_header->base_offset + file_header->primary_header_offset + primary_header.asset_wad, true);
 	
-	uint32_t asset_base = index.main_part.primary_header_offset + primary_header.asset_header;
-	auto asset_header = _backing.read<level_asset_header>(asset_base);
+	uint32_t asset_base = file_header->primary_header_offset + primary_header.asset_header;
+	auto asset_header = file.read<level_asset_header>(asset_base);
 	
 	uint32_t mdl_base = asset_base + asset_header.models;
-	_backing.seek(mdl_base);
+	file.seek(mdl_base);
 	
 	packed_struct(model_entry,
 		uint32_t offset_in_asset_wad;
@@ -126,7 +137,7 @@ level::level(iso_stream* iso, toc_level index)
 	)
 	
 	for(std::size_t i = 0; i < asset_header.num_models; i++) {
-		auto entry = _backing.read<model_entry>(mdl_base + sizeof(model_entry) * i);
+		auto entry = file.read<model_entry>(mdl_base + sizeof(model_entry) * i);
 		if(entry.offset_in_asset_wad == 0) {
 			continue;
 		}
@@ -161,9 +172,9 @@ level::level(iso_stream* iso, toc_level index)
 		return textures;
 	};
 	
-	terrain_textures = load_texture_table(_backing, asset_header.terrain_texture_offset, asset_header.terrain_texture_count);
-	tie_textures = load_texture_table(_backing, asset_header.tie_texture_offset, asset_header.tie_texture_count);
-	sprite_textures = load_texture_table(_backing, asset_header.sprite_texture_offset, asset_header.sprite_texture_count);
+	terrain_textures = load_texture_table(file, asset_header.terrain_texture_offset, asset_header.terrain_texture_count);
+	tie_textures = load_texture_table(file, asset_header.tie_texture_offset, asset_header.tie_texture_count);
+	sprite_textures = load_texture_table(file, asset_header.sprite_texture_offset, asset_header.sprite_texture_count);
 
 	packed_struct(tfrag_header,
 		uint32_t entry_list_offset; //0x00
@@ -207,19 +218,10 @@ level::level(iso_stream* iso, toc_level index)
 		tfrag frag = tfrag(asset_seg, tfrag_head.entry_list_offset + entry.offset, entry.vertex_offset, entry.vertex_count);
 		tfrags.emplace_back(frag);
 	}
+	
+	return true;
 }
 
 stream* level::moby_stream() {
 	return _moby_stream;
-}
-
-level_code_segment level::read_code_segment() {
-	auto primary_header = _backing.read<level_primary_header>(_index.main_part.primary_header_offset);
-	
-	level_code_segment result;
-	result.header = _backing.read<level_code_segment_header>
-		(_index.main_part.primary_header_offset + primary_header.code_segment_offset);
-	result.bytes.resize(primary_header.code_segment_size - sizeof(level_code_segment_header));
-	_backing.read_v(result.bytes);
-	return result;
 }

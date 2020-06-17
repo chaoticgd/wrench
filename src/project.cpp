@@ -174,7 +174,9 @@ void wrench_project::redo() {
 void wrench_project::open_level(std::size_t index) {
 	if(_levels.find(index) == _levels.end()) {
 		// The level is not already open.
-		_levels.emplace(index, std::make_unique<level>(&iso, toc.levels[index]));
+		auto lvl = std::make_unique<level>();
+		lvl->read(&iso, toc.levels[index]);
+		_levels.emplace(index, std::move(lvl));
 	}
 	_selected_level = _levels.at(index).get();
 }

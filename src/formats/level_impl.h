@@ -250,7 +250,9 @@ struct level_code_segment {
 
 class level {
 public:
-	level(iso_stream* iso, toc_level index);
+	level() {}
+
+	bool read(iso_stream* iso, toc_level index);
 	
 	std::map<std::string, std::map<uint32_t, std::string>> game_strings() { return {}; }
 
@@ -264,12 +266,11 @@ public:
 	std::vector<texture> tie_textures;
 	std::vector<texture> moby_textures;
 	std::vector<texture> sprite_textures;
-    std::vector<tfrag> tfrags;
+	std::vector<tfrag> tfrags;
 	
-	level_code_segment read_code_segment();
-
+	level_code_segment code_segment;
+	
 private:
-	proxy_stream _backing;
 	toc_level _index;
 	stream* _moby_stream;
 };

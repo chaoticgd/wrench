@@ -77,11 +77,15 @@ int main(int argc, char** argv) {
 	worker_logger log;
 	wrench_project project(game, log);
 	
-	for(toc_level level : project.toc.levels) {		
-		proxy_stream file(&project.iso, level.main_part.base_offset, 0);
-		auto primary_header = file.read<level_primary_header>(level.main_part.primary_header_offset);
+	for(toc_level level : project.toc.levels) {
+		auto file_header = level_read_file_header(&project.iso, level.main_part.bytes());
+		if(!file_header) {
+			break;
+		}
+		proxy_stream file(&project.iso, file_header->base_offset, 0);
+		auto primary_header = file.read<level_primary_header>(file_header->primary_header_offset);
 		
-		std::size_t asset_header_offset = level.main_part.primary_header_offset + primary_header.asset_header;
+		std::size_t asset_header_offset = file_header->primary_header_offset + primary_header.asset_header;
 		auto asset_header = file.read<level_asset_header>(asset_header_offset);
 		
 		packed_struct(texture_entry,

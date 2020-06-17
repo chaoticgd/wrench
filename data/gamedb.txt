@@ -112,7 +112,7 @@ game {
 game {
 	name Gladiator
 	tables {
-		
+		4: ARMOR.WAD
 	}
 	levels {
 		

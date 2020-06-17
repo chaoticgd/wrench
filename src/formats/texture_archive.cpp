@@ -30,7 +30,10 @@ std::vector<texture> enumerate_fip_textures(iso_stream& iso, toc_table table) {
 	
 	std::size_t bad_textures = 0;
 	
-	for(std::size_t off = 0; off < table.data.size(); off += sizeof(texture_table_entry)) {
+	// Prevent crashes when the table.data.size() % sizeof(texture_table_entry) != 0.
+	std::size_t table_size = table.data.size() - sizeof(texture_table_entry) + 1;
+	
+	for(std::size_t off = 0; off < table_size; off += sizeof(texture_table_entry)) {
 		auto entry = table.data.read<texture_table_entry>(off);
 		std::size_t abs_offset = table.header.base_offset.bytes() + entry.offset.bytes();
 		
@@ -44,7 +47,6 @@ std::vector<texture> enumerate_fip_textures(iso_stream& iso, toc_table table) {
 		
 		stream* file;
 		std::size_t inner_offset;
-		
 		char wad_magic[3];
 		iso.seek(abs_offset);
 		iso.read_n(wad_magic, 3);
@@ -56,7 +58,7 @@ std::vector<texture> enumerate_fip_textures(iso_stream& iso, toc_table table) {
 			inner_offset = abs_offset;
 		}
 		
-		if(file == nullptr || file->size() < 0x14) {
+		if(file == nullptr || file->size() < inner_offset + 0x14) {
 			bad_textures++;
 			continue;
 		}

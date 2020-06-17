@@ -77,9 +77,9 @@ struct level_file_header {
 };
 
 struct toc_level {
-	level_file_header main_part;
-	sector32 audio_part;
-	sector32 scene_part;
+	sector32 main_part;
+	std::optional<sector32> audio_part;
+	std::optional<sector32> scene_part;
 };
 
 struct table_of_contents {
