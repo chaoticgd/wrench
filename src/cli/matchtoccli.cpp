@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
 				continue;
 			}
 			
-			printf("Matched table %ld at 0x%04x with file %s\n", i, table.offset_in_toc, file_name.path().string().c_str());
+			printf("Matched table %ld at toc+0x%04x with file %s\n", i, table.offset_in_toc, file_name.path().string().c_str());
 		}
 	}
 	
@@ -105,13 +105,16 @@ int main(int argc, char** argv) {
 		for(std::size_t i = 0; i < toc.levels.size(); i++) {
 			toc_level& lvl = toc.levels[i];
 			if(toc_compare_sector(lvl.main_part)) {
-				printf("Matched main part of level %ld with file %s.\n", i, file_name.path().string().c_str());
+				printf("Matched main part at toc+0x%04lx of level %ld with file %s.\n",
+					lvl.main_part.bytes() - toc_base, i, file_name.path().string().c_str());
 			}
 			if(lvl.audio_part && toc_compare_sector(*lvl.audio_part)) {
-				printf("Matched audio part of level %ld with file %s.\n", i, file_name.path().string().c_str());
+				printf("Matched audio part at toc+0x%04lx of level %ld with file %s.\n",
+					lvl.audio_part->bytes() - toc_base, i, file_name.path().string().c_str());
 			}
 			if(lvl.scene_part && toc_compare_sector(*lvl.scene_part)) {
-				printf("Matched scene part of level %ld with file %s.\n", i, file_name.path().string().c_str());
+				printf("Matched scene part at toc+0x%04lx of level %ld with file %s.\n",
+					lvl.scene_part->bytes() - toc_base, i, file_name.path().string().c_str());
 			}
 		}
 	}

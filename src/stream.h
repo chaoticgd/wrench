@@ -73,7 +73,7 @@ packed_struct(file_ptr,
 packed_struct(sector32,
 	uint32_t sectors = 0;
 	
-	uint32_t bytes() {
+	std::size_t bytes() {
 		return sectors * SECTOR_SIZE;
 	}
 )
