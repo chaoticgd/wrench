@@ -118,3 +118,9 @@ game {
 		
 	}
 }
+
+game {
+	name Other
+	tables { }
+	levels { }
+}
