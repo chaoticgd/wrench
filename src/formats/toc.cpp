@@ -18,11 +18,7 @@
 
 #include "toc.h"
 
-static const std::size_t TOC_MAX_SIZE       = 0x100000;
-static const std::size_t TOC_MAX_INDEX_SIZE = 0x10000;
-static const std::size_t TOC_MAX_LEVELS     = 0x100;
-
-std::size_t toc_get_level_table_offset(stream& iso, std::size_t toc_base);
+#include "../util.h"
 
 table_of_contents read_toc(stream& iso, std::size_t toc_base) {
 	table_of_contents toc;
@@ -63,18 +59,19 @@ table_of_contents read_toc(stream& iso, std::size_t toc_base) {
 			if(header.bytes() > iso.size()) {
 				break;
 			}
+			
 			uint32_t magic = iso.read<uint32_t>(header.bytes());
-			if(magic == 0x60 || magic == 0x68 || magic == 0xc68) {
+			if(contains(TOC_MAIN_PART_MAGIC, magic)) {
 				level.main_part = header;
 				has_main_part = true;
 			}
 			
-			if(magic == 0x1018 || magic == 0x1818 || magic == 0x2a0) {
+			if(contains(TOC_AUDIO_PART_MAGIC, magic)) {
 				level.audio_part = header;
 				has_audio_part = true;
 			}
 			
-			if(magic == 0x137c || magic == 0x26f0) {
+			if(contains(TOC_SCENE_PART_MAGIC, magic)) {
 				level.scene_part = header;
 				has_scene_part = true;
 			}
@@ -105,12 +102,6 @@ std::size_t toc_get_level_table_offset(stream& iso, std::size_t toc_base) {
 			entry2.header_1, entry2.header_2, entry2.header_3
 		};
 		
-		static const uint32_t valid_magic_bytes[] = {
-			0x60, 0x68, 0xc68, // main part
-			0x1018, 0x1818, 0x2a0, // audio part
-			0x137c, 0x26f0 // scene part
-		};
-		
 		int parts = 0;
 		for(sector32 header : headers) {
 			if(header.sectors == 0) {
@@ -124,10 +115,10 @@ std::size_t toc_get_level_table_offset(stream& iso, std::size_t toc_base) {
 			}
 			
 			uint32_t magic = *(uint32_t*) &buffer[magic_offset];
-			for(uint32_t expected : valid_magic_bytes) {
-				if(magic == expected) {
-					parts++;
-				}
+			if(contains(TOC_MAIN_PART_MAGIC, magic) ||
+			   contains(TOC_AUDIO_PART_MAGIC, magic) ||
+			   contains(TOC_SCENE_PART_MAGIC, magic)) {
+				parts++;
 			}
 		}
 		

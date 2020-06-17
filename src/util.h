@@ -37,4 +37,9 @@ std::vector<std::string> to_hex_dump(uint32_t* data, std::size_t align, std::siz
 #define	MD5_DIGEST_LENGTH 16
 std::string md5_to_printable_string(uint8_t in[MD5_DIGEST_LENGTH]);
 
+template <typename T>
+bool contains(T container, typename T::value_type value) {
+	return std::find(container.begin(), container.end(), value) != container.end();
+}
+
 #endif

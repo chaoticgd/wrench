@@ -87,7 +87,16 @@ struct table_of_contents {
 	std::vector<toc_level> levels;
 };
 
+static const std::size_t TOC_MAX_SIZE       = 0x100000;
+static const std::size_t TOC_MAX_INDEX_SIZE = 0x10000;
+static const std::size_t TOC_MAX_LEVELS     = 0x100;
+
+static const std::vector<uint32_t> TOC_MAIN_PART_MAGIC = { 0x60, 0x68, 0xc68 };
+static const std::vector<uint32_t> TOC_AUDIO_PART_MAGIC = { 0x1018, 0x1818, 0x1000, 0x2a0 };
+static const std::vector<uint32_t> TOC_SCENE_PART_MAGIC = { 0x137c, 0x2420, 0x26f0 };
+
 table_of_contents read_toc(stream& iso, std::size_t toc_base);
+std::size_t toc_get_level_table_offset(stream& iso, std::size_t toc_base);
 std::optional<level_file_header> level_read_file_header(stream* src, std::size_t offset);
 
 #endif

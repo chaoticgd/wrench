@@ -157,6 +157,15 @@ add_executable(toc
 	src/formats/toc.cpp
 )
 
+add_executable(matchtoc
+	src/cli/matchtoccli.cpp
+	src/stream.cpp
+	src/stacktrace.cpp
+	src/util.cpp
+	src/command_line.cpp
+	src/formats/toc.cpp
+)
+
 if(UNIX)
 	target_compile_options(wrench PRIVATE -Wall -O3)
 	target_compile_options(fip PRIVATE -Wall -O3)
@@ -165,6 +174,8 @@ if(UNIX)
 	target_compile_options(texturefinder PRIVATE -Wall -O3)
 	target_compile_options(vif PRIVATE -Wall -O3)
 	target_compile_options(randomiser PRIVATE -Wall -O3)
+	target_compile_options(toc PRIVATE -Wall -O3)
+	target_compile_options(matchtoc PRIVATE -Wall -O3)
 endif()
 
 # std::filesystem
@@ -177,6 +188,7 @@ if(UNIX)
 	target_link_libraries(texturefinder stdc++fs)
 	target_link_libraries(vif stdc++fs)
 	target_link_libraries(randomiser stdc++fs)
+	target_link_libraries(matchtoc stdc++fs)
 endif()
 
 # cxxopts
@@ -190,6 +202,7 @@ target_link_libraries(texturefinder cxxopts)
 target_link_libraries(vif cxxopts)
 target_link_libraries(randomiser cxxopts)
 target_link_libraries(toc cxxopts)
+target_link_libraries(matchtoc cxxopts)
 
 # pthreads
 set(THREADS_PREFER_PTHREAD_FLAG ON)
