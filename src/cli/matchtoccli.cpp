@@ -108,13 +108,13 @@ int main(int argc, char** argv) {
 				printf("Matched main part at toc+0x%04lx of level %ld with file %s.\n",
 					lvl.main_part.bytes() - toc_base, i, file_name.path().string().c_str());
 			}
-			if(lvl.audio_part && toc_compare_sector(*lvl.audio_part)) {
+			if(lvl.audio_part.sectors != 0 && toc_compare_sector(lvl.audio_part)) {
 				printf("Matched audio part at toc+0x%04lx of level %ld with file %s.\n",
-					lvl.audio_part->bytes() - toc_base, i, file_name.path().string().c_str());
+					lvl.audio_part.bytes() - toc_base, i, file_name.path().string().c_str());
 			}
-			if(lvl.scene_part && toc_compare_sector(*lvl.scene_part)) {
+			if(lvl.scene_part.sectors != 0 && toc_compare_sector(lvl.scene_part)) {
 				printf("Matched scene part at toc+0x%04lx of level %ld with file %s.\n",
-					lvl.scene_part->bytes() - toc_base, i, file_name.path().string().c_str());
+					lvl.scene_part.bytes() - toc_base, i, file_name.path().string().c_str());
 			}
 		}
 	}

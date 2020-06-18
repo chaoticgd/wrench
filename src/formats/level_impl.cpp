@@ -104,7 +104,7 @@ bool level::read(iso_stream* iso, toc_level index) {
 		return false;
 	}
 	
-	proxy_stream file(iso, file_header->base_offset, 0);
+	proxy_stream file(iso, file_header->base_offset, index.main_part_size.bytes());
 	
 	auto primary_header = file.read<level_primary_header>(file_header->primary_header_offset);
 

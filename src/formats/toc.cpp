@@ -55,24 +55,28 @@ table_of_contents read_toc(stream& iso, std::size_t toc_base) {
 		// The games have the fields in different orders, so we check the type
 		// of what each field points to so we can support them all.
 		sector32 headers[] = { entry.header_1, entry.header_2, entry.header_3 };
-		for(sector32 header : headers) {
-			if(header.bytes() > iso.size()) {
+		sector32 sizes[] = { entry.header_1_size, entry.header_2_size, entry.header_3_size };
+		for(std::size_t j = 0; j < sizeof(headers) / sizeof(sector32); j++) {
+			if(headers[j].bytes() > iso.size()) {
 				break;
 			}
 			
-			uint32_t magic = iso.read<uint32_t>(header.bytes());
+			uint32_t magic = iso.read<uint32_t>(headers[j].bytes());
 			if(contains(TOC_MAIN_PART_MAGIC, magic)) {
-				level.main_part = header;
+				level.main_part = headers[j];
+				level.main_part_size = sizes[j];
 				has_main_part = true;
 			}
 			
 			if(contains(TOC_AUDIO_PART_MAGIC, magic)) {
-				level.audio_part = header;
+				level.audio_part = headers[j];
+				level.audio_part_size = sizes[j];
 				has_audio_part = true;
 			}
 			
 			if(contains(TOC_SCENE_PART_MAGIC, magic)) {
-				level.scene_part = header;
+				level.scene_part = headers[j];
+				level.scene_part_size = sizes[j];
 				has_scene_part = true;
 			}
 		}

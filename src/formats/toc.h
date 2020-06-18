@@ -38,11 +38,11 @@ struct toc_table {
 
 packed_struct(toc_level_table_entry,
 	sector32 header_1;
-	uint32_t unknown_4;
+	sector32 header_1_size;
 	sector32 header_2;
-	uint32_t unknown_c;
+	sector32 header_2_size;
 	sector32 header_3;
-	uint32_t unknown_14;
+	sector32 header_3_size;
 )
 
 packed_struct(level_file_header_60,
@@ -78,8 +78,11 @@ struct level_file_header {
 
 struct toc_level {
 	sector32 main_part;
-	std::optional<sector32> audio_part;
-	std::optional<sector32> scene_part;
+	sector32 main_part_size;
+	sector32 audio_part;
+	sector32 audio_part_size;
+	sector32 scene_part;
+	sector32 scene_part_size;
 };
 
 struct table_of_contents {

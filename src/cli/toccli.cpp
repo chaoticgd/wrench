@@ -56,12 +56,12 @@ int main(int argc, char** argv) {
 		toc_level& lvl = toc.levels[i];
 		std::size_t main_part = src.read<sector32>(lvl.main_part.bytes() + 4).bytes();
 		printf("Level %02d with main part at 0x%08x", i, main_part);
-		if(lvl.audio_part) {
-			std::size_t audio_part = src.read<sector32>(lvl.audio_part->bytes() + 4).bytes();
+		if(lvl.audio_part.sectors != 0) {
+			std::size_t audio_part = src.read<sector32>(lvl.audio_part.bytes() + 4).bytes();
 			printf(", with audio part at 0x%08x", audio_part);
 		}
-		if(lvl.scene_part) {
-			std::size_t scene_part = src.read<sector32>(lvl.scene_part->bytes() + 4).bytes();
+		if(lvl.scene_part.sectors != 0) {
+			std::size_t scene_part = src.read<sector32>(lvl.scene_part.bytes() + 4).bytes();
 			printf(", with scene part at 0x%08x", scene_part);
 		}
 		printf(".\n");
