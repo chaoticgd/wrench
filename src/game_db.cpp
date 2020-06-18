@@ -20,64 +20,111 @@
 
 #include <cctype>
 #include <fstream>
-#include <stdexcept>
+#include <sstream>
+#include <functional>
 
 #include "util.h"
 
-std::string read_token(std::string str, std::size_t& i);
-std::string read_rest_of_line(std::string str, std::size_t& i);
-void skip_whitespace(std::string str, std::size_t& i);
+struct gamedb_parser {
+	std::vector<std::string> tokens;
+	std::vector<bool> is_eol;
+	std::size_t pos = 0;
+};
 
-std::map<std::string, gamedb_release> gamedb_parse_file() {
+gamedb_parser gamedb_lex(std::string input);
+std::map<std::size_t, std::string> gamedb_read_subsection(gamedb_parser& parser);
+std::string gamedb_read_token(gamedb_parser& parser);
+std::string gamedb_read_until_newline(gamedb_parser& parser);
+
+std::vector<gamedb_game> gamedb_read() {
 	std::ifstream file("data/gamedb.txt");
-	std::map<std::string, gamedb_release> result;
+	if(!file) {
+		return {};
+	}
 	
-	gamedb_release game;
-	std::string line;
-	while(std::getline(file, line)) {
-		std::size_t i = 0;
-		std::string type = read_token(line, i);
-		if(type == "" || type[0] == '#') {
-			continue;
+	std::stringstream ss;
+	ss << file.rdbuf();
+	
+	std::string content = ss.str();
+	gamedb_parser parser = gamedb_lex(content);
+	
+	std::vector<gamedb_game> result;
+	while(parser.pos < parser.tokens.size()) {
+		gamedb_game game;
+		if(gamedb_read_token(parser) != "game") {
+			throw std::runtime_error("gamedb: Expected 'game'.");
 		}
-		
-		if(type == "game") {
-			game.elf_id = read_token(line, i);
-		} else if(type == "end") {
-			result.insert({ game.elf_id, game });
-			game = gamedb_release();
-		} else if(type == "title") {
-			game.title = read_rest_of_line(line, i);
-		} else if(type == "edition") {
-			game.edition = gamedb_edition::_from_string(read_token(line, i).c_str());
-		} else if(type == "region") {
-			game.region = gamedb_region::_from_string(read_token(line, i).c_str());
-		} else if(type == "file") {
-			gamedb_file file(gamedb_file_type::_from_string(read_token(line, i).c_str()));
-			file.offset = parse_number(read_token(line, i));
-			file.size = parse_number(read_token(line, i));
-			file.name = read_rest_of_line(line, i);
-			game.files.push_back(file);
-		} else {
-			throw std::runtime_error("Error parsing gamedb: Invalid line type.");
+		if(gamedb_read_token(parser) != "{") {
+			throw std::runtime_error("gamedb: Expected '{'.");
 		}
+		std::string next;
+		while(next = gamedb_read_token(parser), next != "}") {
+			if(next == "name") {
+				game.name = gamedb_read_until_newline(parser);
+			} else if(next == "tables") {
+				game.tables = gamedb_read_subsection(parser);
+			} else if(next == "levels") {
+				game.levels = gamedb_read_subsection(parser);
+			} else {
+				throw std::runtime_error("gamedb: Expected 'name', 'tables', 'levels', or '}'.");
+			}
+		}
+		result.push_back(game);
 	}
 	
 	return result;
 }
 
-std::string read_token(std::string str, std::size_t& i) {
-	skip_whitespace(str, i);
-	std::size_t begin = i;
-	for(; !isspace(str[i]) && str[i] != '\0'; i++);
-	return str.substr(begin, i - begin);
+gamedb_parser gamedb_lex(std::string input) {
+	gamedb_parser parser;
+	std::string current;
+	for(char c : input) {
+		if(isspace(c)) {
+			if(current.size() > 0) {
+				parser.tokens.push_back(current);
+				parser.is_eol.push_back(false);
+				current = "";
+			}
+			if(c == '\n' && parser.is_eol.size() > 0) {
+				parser.is_eol.back() = true;
+			}
+		} else {
+			current += c;
+		}
+	}
+	if(current.size() > 0) {
+		parser.tokens.push_back(current);
+		parser.is_eol.push_back(true);
+	}
+	return parser;
 }
 
-std::string read_rest_of_line(std::string str, std::size_t& i) {
-	skip_whitespace(str, i);
-	return str.substr(i);
+std::map<std::size_t, std::string> gamedb_read_subsection(gamedb_parser& parser) {
+	if(gamedb_read_token(parser) != "{") {
+		throw std::runtime_error("gamedb: Expected '{'.");
+	}
+	std::map<std::size_t, std::string> result;
+	std::string next;
+	while(next = gamedb_read_token(parser), next != "}") {
+		std::size_t key = std::stoi(next);
+		std::string value = gamedb_read_until_newline(parser);
+		result.emplace(key, value);
+	}
+	return result;
 }
 
-void skip_whitespace(std::string str, std::size_t& i) {
-	for(; isspace(str[i]) && str[i] != '\0'; i++);
+std::string gamedb_read_token(gamedb_parser& parser) {
+	if(parser.pos >= parser.tokens.size()) {
+		throw std::runtime_error("gamedb: Unexpected end of file.");
+	}
+	return parser.tokens[parser.pos++];
+}
+
+std::string gamedb_read_until_newline(gamedb_parser& parser) {
+	std::string result;
+	while(parser.pos < parser.tokens.size() && !parser.is_eol[parser.pos]) {
+		result += gamedb_read_token(parser) + " ";
+	}
+	result += gamedb_read_token(parser);
+	return result;
 }

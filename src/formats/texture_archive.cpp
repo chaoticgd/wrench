@@ -16,30 +16,55 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "texture_impl.h"
+#include "texture_archive.h"
 
-#include "../util.h"
 #include "fip.h"
-#include "level_impl.h"
 
-std::vector<texture> enumerate_fip_textures(iso_stream* iso, racpak* archive) {	
+packed_struct(texture_table_entry,
+	sector32 offset;
+	uint32_t unknown_4;
+)
+
+std::vector<texture> enumerate_fip_textures(iso_stream& iso, toc_table table) {
 	std::vector<texture> textures;
 	
-	for(std::size_t i = 0; i < archive->num_entries(); i++) {
-		auto entry = archive->entry(i);
-		stream* file;
-		if(archive->is_compressed(entry)) {
-			file = iso->get_decompressed(archive->base() + entry.offset);
-		} else {
-			file = archive->open(entry);
+	std::size_t bad_textures = 0;
+	
+	// Prevent crashes when the table.data.size() % sizeof(texture_table_entry) != 0.
+	std::size_t table_size = table.data.size() - sizeof(texture_table_entry) + 1;
+	
+	for(std::size_t off = 0; off < table_size; off += sizeof(texture_table_entry)) {
+		auto entry = table.data.read<texture_table_entry>(off);
+		std::size_t abs_offset = table.header.base_offset.bytes() + entry.offset.bytes();
+		
+		if(abs_offset > iso.size()) {
+			return {};
 		}
 		
-		if(file == nullptr || file->size() < 0x14) {
+		if(entry.offset.bytes() == 0) {
+			continue;
+		}
+		
+		stream* file;
+		std::size_t inner_offset;
+		char wad_magic[3];
+		iso.seek(abs_offset);
+		iso.read_n(wad_magic, 3);
+		if(std::memcmp(wad_magic, "WAD", 3) == 0) {
+			file = iso.get_decompressed(abs_offset, true);
+			inner_offset = 0;
+		} else {
+			file = &iso;
+			inner_offset = abs_offset;
+		}
+		
+		if(file == nullptr || file->size() < inner_offset + 0x14) {
+			bad_textures++;
 			continue;
 		}
 		
 		char magic[0x14];
-		file->seek(0);
+		file->seek(inner_offset);
 		file->read_n(magic, 0x14);
 		
 		std::optional<std::size_t> texture_offset;
@@ -51,14 +76,19 @@ std::vector<texture> enumerate_fip_textures(iso_stream* iso, racpak* archive) {
 		}
 		
 		if(texture_offset) {
-			std::optional<texture> tex = create_fip_texture(file, *texture_offset);
+			std::optional<texture> tex = create_fip_texture(file, inner_offset + *texture_offset);
 			if(tex) {
 				textures.emplace_back(*tex);
 			} else {
+				bad_textures++;
 				std::cerr << "Error: Failed to load 2FIP texture at "
 				          << file->resource_path() << "\n";
 			}
 		}
+	}
+	
+	if(bad_textures > 10) {
+		return {};
 	}
 	
 	return textures;

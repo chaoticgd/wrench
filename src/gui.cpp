@@ -18,6 +18,7 @@
 
 #include "gui.h"
 
+#include <cmath>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
@@ -29,6 +30,7 @@
 #include "config.h"
 #include "window.h"
 #include "renderer.h"
+#include "worker_thread.h"
 #include "formats/bmp.h"
 #include "commands/translate_command.h"
 
@@ -139,11 +141,9 @@ void gui::render_menu_bar(app& a) {
 	
 	if(ImGui::BeginMenu("File")) {
 		if(ImGui::BeginMenu("New")) {
-			for(const auto& game : a.game_db) {
-				std::string text = 
-					game.first + " " + game.second.title;
-				if(ImGui::MenuItem(text.c_str())) {
-					a.new_project(game.first);
+			for(const game_iso& game : a.settings.game_isos) {
+				if(ImGui::MenuItem(game.path.c_str())) {
+					a.new_project(game);
 				}
 			}
 			ImGui::EndMenu();
@@ -170,28 +170,26 @@ void gui::render_menu_bar(app& a) {
 					stream::copy_n(dump_file, *src, src->size());
 				}
 				if(ImGui::MenuItem("Code segment")) {
-					level_code_segment segment = lvl->read_code_segment();
-					
 					std::stringstream name;
 					name << "codeseg";
-					name << "_" << std::hex << segment.header.base_address;
-					name << "_" << std::hex << segment.header.unknown_4;
-					name << "_" << std::hex << segment.header.unknown_8;
-					name << "_" << std::hex << segment.header.entry_offset;
+					name << "_" << std::hex << lvl->code_segment.header.base_address;
+					name << "_" << std::hex << lvl->code_segment.header.unknown_4;
+					name << "_" << std::hex << lvl->code_segment.header.unknown_8;
+					name << "_" << std::hex << lvl->code_segment.header.entry_offset;
 					name << ".bin";
 					
 					file_stream dump_file(name.str(), std::ios::out | std::ios::trunc);
-					dump_file.write_v(segment.bytes);
+					dump_file.write_v(lvl->code_segment.bytes);
 					
 					std::stringstream message;
 					message << "The code segment for the current level has been written to\n\t\"";
 					message << name.str() << "\"\n";
 					message << "relative to the main Wrench directory.\n";
 					message << "\n";
-					message << "Base address: " << std::hex << segment.header.base_address << "\n";
-					message << "Unknown (0x4): " << std::hex << segment.header.unknown_4 << "\n";
-					message << "Unknown (0x8): " << std::hex << segment.header.unknown_8 << "\n";
-					message << "Entry point: " << std::hex << segment.header.entry_offset << "\n";
+					message << "Base address: " << std::hex << lvl->code_segment.header.base_address << "\n";
+					message << "Unknown (0x4): " << std::hex << lvl->code_segment.header.unknown_4 << "\n";
+					message << "Unknown (0x8): " << std::hex << lvl->code_segment.header.unknown_8 << "\n";
+					message << "Entry point: " << std::hex << lvl->code_segment.header.entry_offset << "\n";
 					a.emplace_window<message_box>("Export Complete", message.str());
 				}
 			}
@@ -226,9 +224,50 @@ void gui::render_menu_bar(app& a) {
 		}
 		ImGui::EndMenu();
 	}
+	
+	static const int level_list_rows = 20;
+	
+	if(auto project = a.get_project()) {
+		auto& levels = project->toc.levels;
+		int columns = (int) std::ceil(levels.size() / (float) level_list_rows);
+		
+		ImGui::SetNextWindowContentWidth(columns * 192);
+		if(ImGui::BeginMenu("Levels")) {
+			const std::map<std::size_t, std::string>* level_names = nullptr;
+			for(const gamedb_game& game : a.game_db) {
+				if(game.name == project->game.game_db_entry) {
+					level_names = &game.levels;
+				}
+			}
+			
+			ImGui::Columns(columns);
+			for(std::size_t i = 0; i < levels.size(); i++) {
+				std::stringstream label;
+				label << std::setfill('0') << std::setw(2) << i;
+				if(level_names != nullptr && level_names->find(i) != level_names->end()) {
+					label << " " << level_names->at(i);
+				}
+				if(ImGui::MenuItem(label.str().c_str())) {
+					project->open_level(i);
+					a.renderer.reset_camera(&a);
+				}
+				if(i % level_list_rows == level_list_rows - 1) {
+					ImGui::SetColumnWidth(i / level_list_rows, 192); // Make the columns non-resizable.
+					ImGui::NextColumn();
+				}
+			}
+			ImGui::Columns();
+			ImGui::EndMenu();
+		}
+	} else {
+		// If no project is open, draw a dummy menu.
+		if(ImGui::BeginMenu("Levels")) {
+			ImGui::EndMenu();
+		}
+	}
 
+	ImGui::SetNextWindowContentWidth(0.f); // Reset the menu width after the "Levels" menu made it larger.
 	if(ImGui::BeginMenu("Windows")) {
-		render_menu_bar_window_toggle<project_tree>(a);
 		render_menu_bar_window_toggle<view_3d>(a, &a);
 		render_menu_bar_window_toggle<moby_list>(a);
 		render_menu_bar_window_toggle<inspector>(a);
@@ -290,65 +329,6 @@ void gui::render_menu_bar(app& a) {
 	}
 	
 	ImGui::EndMainMenuBar();
-}
-
-/*
-	project_tree
-*/
-
-const char* gui::project_tree::title_text() const {
-	return "Project";
-}
-
-ImVec2 gui::project_tree::initial_size() const {
-	return ImVec2(200, 500);
-}
-
-void gui::project_tree::render(app& a) {
-	if(!a.get_project()) {
-		ImGui::Text("<no project open>");
-		return;
-	}
-	
-	auto& project = *a.get_project();
-	auto game = a.game_db.at(project.game_id);
-	
-	static gamedb_file_type selected_type = gamedb_file_type::ARMOR;
-	static std::size_t selected_offset = 0x0;
-	
-	auto render_selectable = [=, &project](gamedb_file file, std::string prefix) {
-		bool is_selected =
-			file.type == selected_type && selected_offset == file.offset;
-		std::string text = prefix + file.name;
-		if(ImGui::Selectable(text.c_str(), is_selected)) {
-			selected_type = file.type;
-			selected_offset = file.offset;
-			project.open_file(file);
-			return true;
-		}
-		return false;
-	};
-	
-	ImGui::BeginChild(1);
-	
-	for(gamedb_file file : game.files) {
-		if(file.type != +gamedb_file_type::LEVEL) {
-			render_selectable(file, " ");
-		}
-	}
-	
-	if(ImGui::TreeNode("Levels")) {
-		for(gamedb_file file : game.files) {
-			if(file.type == +gamedb_file_type::LEVEL) {
-				if(render_selectable(file, "")) {
-					a.renderer.reset_camera(&a);
-				}
-			}
-		}
-		ImGui::TreePop();
-	}
-	
-	ImGui::EndChild();
 }
 
 /*
@@ -641,7 +621,7 @@ void gui::texture_browser::render(app& a) {
 		_project_id = a.get_project()->id();
 	}
 
-	auto tex_lists = a.get_project()->texture_lists();
+	auto tex_lists = a.get_project()->texture_lists(&a);
 	if(tex_lists.find(_list) == tex_lists.end()) {
 		if(tex_lists.size() > 0) {
 			_list = tex_lists.begin()->first;
@@ -907,7 +887,7 @@ void gui::model_browser::render(app& a) {
 game_model* gui::model_browser::render_selection_pane(app& a) {
 	game_model* result = nullptr;
 	
-	auto lists = a.get_project()->model_lists();
+	auto lists = a.get_project()->model_lists(&a);
 	if(ImGui::BeginTabBar("lists")) {
 		for(auto& list : lists) {
 			if(ImGui::BeginTabItem(list.first.c_str())) {
@@ -1088,7 +1068,26 @@ ImVec2 gui::settings::initial_size() const {
 }
 
 void gui::settings::render(app& a) {
+	if(ImGui::BeginTabBar("tabs")) {
+		if(ImGui::BeginTabItem("Paths")) {
+			render_paths_page(a);
+			ImGui::EndTabItem();
+		}
+		
+		if(ImGui::BeginTabItem("GUI")) {
+			render_gui_page(a);
+			ImGui::EndTabItem();
+		}
+		ImGui::EndTabBar();
+	}
+	
+	ImGui::NewLine();
+	if(ImGui::Button("Close")) {
+		close(a);
+	}
+}
 
+void gui::settings::render_paths_page(app& a) {
 	ImGui::Text("Emulator Path");
 
 	ImGui::PushItemWidth(-1);
@@ -1101,24 +1100,73 @@ void gui::settings::render(app& a) {
 	ImGui::Text("Game Paths");
 
 	ImGui::Columns(2);
-	ImGui::SetColumnWidth(0, 64);
+	ImGui::SetColumnWidth(0, ImGui::GetWindowSize().x - 32);
 
-	for(auto& [game, path] : a.settings.game_paths) {
-		ImGui::AlignTextToFramePadding();
-		ImGui::Text("%s", game.c_str());
+	for(auto iter = a.settings.game_isos.begin(); iter < a.settings.game_isos.end(); iter++) {
+		ImGui::PushID(std::distance(a.settings.game_isos.begin(), iter));
+		std::stringstream label;
+		label << iter->game_db_entry << " " << iter->md5;
+		ImGui::InputText(label.str().c_str(), &iter->path, ImGuiInputTextFlags_ReadOnly);
 		ImGui::NextColumn();
-		ImGui::PushItemWidth(-1);
-		std::string label = std::string("##") + game;
-		if(ImGui::InputText(label.c_str(), &path)) {
+		if(ImGui::Button("X")) {
+			a.settings.game_isos.erase(iter);
 			a.save_settings();
+			ImGui::PopID();
+			break;
 		}
-		ImGui::PopItemWidth();
 		ImGui::NextColumn();
+		ImGui::PopID();
 	}
-
-	ImGui::Columns(1);
+	
+	ImGui::Columns();
 	ImGui::NewLine();
 	
+	if(a.game_db.size() < 1) {
+		return;
+	}
+	
+	ImGui::Text("Add Game");
+	ImGui::InputText("ISO Path", &_new_game_path);
+	if(ImGui::BeginCombo("##new_game_type", a.game_db[_new_game_type].name.c_str())) {
+		for(std::size_t i = 0; i < a.game_db.size(); i++) {
+			if(ImGui::Selectable(a.game_db[i].name.c_str())) {
+				_new_game_type = i;
+			}
+		}
+		ImGui::EndCombo();
+	}
+	ImGui::SameLine();
+	if(ImGui::Button("Add Game")) {
+		game_iso game;
+		game.path = _new_game_path;
+		game.game_db_entry = a.game_db[_new_game_type].name;
+		
+		// Generate an MD5 hash on a different thread.
+		a.emplace_window<worker_thread<game_iso, game_iso>>(
+			"Adding Game", game,
+			[](game_iso game, worker_logger& log) {
+				try {
+					file_stream iso(game.path);
+					log << "Generating MD5 hash... ";
+					game.md5 = md5_from_stream(iso);
+					log << "done!";
+					return std::optional<game_iso>(game);
+				} catch(stream_error& e) {
+					log << "Error: " << e.what();
+				}
+				return std::optional<game_iso>();
+			},
+			[&](game_iso game) {
+				a.settings.game_isos.push_back(game);
+				a.save_settings();
+			}
+		);
+		
+		_new_game_path = "";
+	}
+}
+
+void gui::settings::render_gui_page(app& a) {
 	ImGui::Text("GUI Scale");
 
 	ImGui::PushItemWidth(-1);
@@ -1127,11 +1175,6 @@ void gui::settings::render(app& a) {
 		a.save_settings();
 	}
 	ImGui::PopItemWidth();
-	ImGui::NewLine();
-
-	if(ImGui::Button("Okay")) {
-		close(a);
-	}
 }
 
 /*

@@ -33,8 +33,8 @@
 #include "project.h"
 #include "renderer.h"
 #include "worker_logger.h"
+#include "formats/texture.h"
 #include "formats/level_impl.h"
-#include "formats/texture_impl.h"
 
 # /*
 #	Represents the current state of the program including the currently open
@@ -48,7 +48,7 @@ class view_3d;
 
 struct settings_data {
 	std::string emulator_path;
-	std::map<std::string, std::string> game_paths;
+	std::vector<game_iso> game_isos;
 	float gui_scale;
 };
 
@@ -78,7 +78,7 @@ public:
 	tool current_tool;
 	glm::vec3 translate_tool_displacement;
 
-	void new_project(std::string game_id);
+	void new_project(game_iso game);
 	void open_project(std::string path);
 	void save_project(bool save_as);
 
@@ -100,7 +100,7 @@ public:
 	void init_gui_scale();
 	void update_gui_scale();
 
-	const std::map<std::string, gamedb_release> game_db;
+	const std::vector<gamedb_game> game_db;
 
 private:
 	std::atomic_bool _lock_project; // Prevent race conditions while creating/loading a project.

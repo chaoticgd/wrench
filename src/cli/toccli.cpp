@@ -46,14 +46,24 @@ int main(int argc, char** argv) {
 	table_of_contents toc = read_toc(src, offset);
 	
 	for(std::size_t i = 0; i < toc.tables.size(); i++) {
-		toc_file_type type_enum = static_cast<toc_file_type>(toc.tables[i].header.size);
-		const char* type = toc_file_type_to_string(type_enum);
-		printf("Table %ld at toc+0x%04x with 0x%03lx entries of type %s.\n",
-			i, toc.tables[i].offset_in_toc, toc.tables[i].entries.size(), type);
+		std::size_t table_size = sizeof(toc_table_header) + toc.tables[i].data.size();
+		std::size_t base_offset = toc.tables[i].header.base_offset.bytes();
+		printf("Table %ld at toc+0x%04x of size 0x%03lx pointing to 0x%08x.\n",
+			i, toc.tables[i].offset_in_toc, table_size, base_offset);
 	}
 	
-	for(toc_level level : toc.levels) {
-		printf("Level %02d with main part at 0x%08x, audio part at 0x%08x, scene part at 0x%08x.\n",
-			level.main_part.level_number, level.main_part.base_offset, level.audio_part.bytes(), level.scene_part.bytes());
+	for(std::size_t i = 0 ; i < toc.levels.size(); i++) {
+		toc_level& lvl = toc.levels[i];
+		std::size_t main_part = src.read<sector32>(lvl.main_part.bytes() + 4).bytes();
+		printf("Level %02d with main part at 0x%08x", i, main_part);
+		if(lvl.audio_part.sectors != 0) {
+			std::size_t audio_part = src.read<sector32>(lvl.audio_part.bytes() + 4).bytes();
+			printf(", with audio part at 0x%08x", audio_part);
+		}
+		if(lvl.scene_part.sectors != 0) {
+			std::size_t scene_part = src.read<sector32>(lvl.scene_part.bytes() + 4).bytes();
+			printf(", with scene part at 0x%08x", scene_part);
+		}
+		printf(".\n");
 	}
 }

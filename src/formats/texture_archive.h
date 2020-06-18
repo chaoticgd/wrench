@@ -16,30 +16,13 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef UTIL_H
-#define UTIL_H
+#ifndef FORMATS_TEXTURE_ARCHIVE_H
+#define FORMATS_TEXTURE_ARCHIVE_H
 
-#include <memory>
-#include <string>
-#include <vector>
-#include <algorithm>
+#include "../iso_stream.h"
+#include "toc.h"
+#include "texture.h"
 
-# /*
-#	For things that should be in the standard library, but aren't.
-# */
-
-std::string int_to_hex(std::size_t x);
-std::size_t hex_to_int(std::string x);
-std::size_t parse_number(std::string x);
-
-std::vector<std::string> to_hex_dump(uint32_t* data, std::size_t align, std::size_t size_in_u32s);
-
-#define	MD5_DIGEST_LENGTH 16
-std::string md5_to_printable_string(uint8_t in[MD5_DIGEST_LENGTH]);
-
-template <typename T>
-bool contains(T container, typename T::value_type value) {
-	return std::find(container.begin(), container.end(), value) != container.end();
-}
+std::vector<texture> enumerate_fip_textures(iso_stream& iso, toc_table table);
 
 #endif

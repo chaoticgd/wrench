@@ -25,45 +25,28 @@
 # 	Read the sector table/table of contents (.HDR) file.
 # */
 
-enum toc_file_type {
-	FILE_TYPE_MISC     = 0x40,
-	FILE_TYPE_LEVEL_60 = 0x60,
-	FILE_TYPE_LEVEL_68 = 0x68,
-	FILE_TYPE_ARMOR    = 0xf8,
-	FILE_TYPE_MPEG     = 0x328,
-	FILE_TYPE_BONUS    = 0xa48,
-	FILE_TYPE_SPACE    = 0xba8,
-	FILE_TYPE_AUDIO    = 0x1018,
-	FILE_TYPE_SCENE    = 0x137c
-};
-
 packed_struct(toc_table_header,
 	uint32_t size;
 	sector32 base_offset;
 )
 
-packed_struct(toc_table_entry,
-	uint32_t size;
-	sector32 offset;
-)
-
 struct toc_table {
 	uint32_t offset_in_toc;
 	toc_table_header header;
-	std::vector<toc_table_entry> entries;
+	array_stream data;
 };
 
 packed_struct(toc_level_table_entry,
-	sector32 level_header;
-	uint32_t unknown_4;
-	sector32 audio_header;
-	uint32_t unknown_c;
-	sector32 scene_header;
-	uint32_t unknown_14;
+	sector32 header_1;
+	sector32 header_1_size;
+	sector32 header_2;
+	sector32 header_2_size;
+	sector32 header_3;
+	sector32 header_3_size;
 )
 
 packed_struct(level_file_header_60,
-	uint32_t header_size;    // 0x0 Equal to 0x60.
+	uint32_t magic;    // 0x0 Equal to 0x60.
 	sector32 base_offset;    // 0x4
 	uint32_t level_number;   // 0x8
 	uint32_t unknown_c;      // 0xc
@@ -75,7 +58,7 @@ packed_struct(level_file_header_60,
 )
 
 packed_struct(level_file_header_68,
-	uint32_t header_size;    // 0x0 Equal to 0x68.
+	uint32_t magic;    // 0x0 Equal to 0x68.
 	sector32 base_offset;    // 0x4
 	uint32_t level_number;   // 0x8
 	sector32 primary_header; // 0xc
@@ -86,7 +69,7 @@ packed_struct(level_file_header_68,
 )
 
 struct level_file_header {
-	uint32_t header_size;
+	uint32_t magic;
 	uint32_t base_offset;
 	uint32_t level_number;
 	uint32_t primary_header_offset;
@@ -94,10 +77,12 @@ struct level_file_header {
 };
 
 struct toc_level {
-	toc_level_table_entry entry;
-	level_file_header main_part;
+	sector32 main_part;
+	sector32 main_part_size;
 	sector32 audio_part;
+	sector32 audio_part_size;
 	sector32 scene_part;
+	sector32 scene_part_size;
 };
 
 struct table_of_contents {
@@ -105,8 +90,16 @@ struct table_of_contents {
 	std::vector<toc_level> levels;
 };
 
+static const std::size_t TOC_MAX_SIZE       = 0x100000;
+static const std::size_t TOC_MAX_INDEX_SIZE = 0x10000;
+static const std::size_t TOC_MAX_LEVELS     = 0x100;
+
+static const std::vector<uint32_t> TOC_MAIN_PART_MAGIC = { 0x60, 0x68, 0xc68 };
+static const std::vector<uint32_t> TOC_AUDIO_PART_MAGIC = { 0x1018, 0x1818, 0x1000, 0x2a0 };
+static const std::vector<uint32_t> TOC_SCENE_PART_MAGIC = { 0x137c, 0x2420, 0x26f0 };
+
 table_of_contents read_toc(stream& iso, std::size_t toc_base);
+std::size_t toc_get_level_table_offset(stream& iso, std::size_t toc_base);
 std::optional<level_file_header> level_read_file_header(stream* src, std::size_t offset);
-const char* toc_file_type_to_string(toc_file_type type);
 
 #endif

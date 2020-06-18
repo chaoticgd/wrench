@@ -96,29 +96,34 @@ void game_world::write() {
 	// TODO
 }
 
-level::level(iso_stream* iso, std::size_t offset, std::size_t size, std::string display_name)
-	: offset(offset),
-	  _backing(iso, offset, size) {
+bool level::read(iso_stream* iso, toc_level index) {
+	_index = index;
 	
-	auto file_header_opt = level_read_file_header(&_backing, 0);
-	if(!file_header_opt) {
-		throw stream_format_error("Failed to read file header for level!");
+	auto file_header = level_read_file_header(iso, index.main_part.bytes());
+	if(!file_header) {
+		return false;
 	}
-	level_file_header file_header = *file_header_opt;
 	
-	auto primary_header = _backing.read<level_primary_header>(file_header.primary_header_offset);
+	proxy_stream file(iso, file_header->base_offset, index.main_part_size.bytes());
+	
+	auto primary_header = file.read<level_primary_header>(file_header->primary_header_offset);
 
-	_moby_stream = iso->get_decompressed(offset + file_header.moby_segment_offset);
+	code_segment.header = file.read<level_code_segment_header>
+		(file_header->primary_header_offset + primary_header.code_segment_offset);
+	code_segment.bytes.resize(primary_header.code_segment_size - sizeof(level_code_segment_header));
+	file.read_v(code_segment.bytes);
+
+	_moby_stream = iso->get_decompressed(file_header->base_offset + file_header->moby_segment_offset);
 	world.read(_moby_stream);
 	
 	stream* asset_seg = iso->get_decompressed
-		(offset + file_header.primary_header_offset + primary_header.asset_wad, true);
+		(file_header->base_offset + file_header->primary_header_offset + primary_header.asset_wad, true);
 	
-	uint32_t asset_base = file_header.primary_header_offset + primary_header.asset_header;
-	auto asset_header = _backing.read<level_asset_header>(asset_base);
+	uint32_t asset_base = file_header->primary_header_offset + primary_header.asset_header;
+	auto asset_header = file.read<level_asset_header>(asset_base);
 	
 	uint32_t mdl_base = asset_base + asset_header.models;
-	_backing.seek(mdl_base);
+	file.seek(mdl_base);
 	
 	packed_struct(model_entry,
 		uint32_t offset_in_asset_wad;
@@ -132,7 +137,7 @@ level::level(iso_stream* iso, std::size_t offset, std::size_t size, std::string 
 	)
 	
 	for(std::size_t i = 0; i < asset_header.num_models; i++) {
-		auto entry = _backing.read<model_entry>(mdl_base + sizeof(model_entry) * i);
+		auto entry = file.read<model_entry>(mdl_base + sizeof(model_entry) * i);
 		if(entry.offset_in_asset_wad == 0) {
 			continue;
 		}
@@ -167,9 +172,9 @@ level::level(iso_stream* iso, std::size_t offset, std::size_t size, std::string 
 		return textures;
 	};
 	
-	terrain_textures = load_texture_table(_backing, asset_header.terrain_texture_offset, asset_header.terrain_texture_count);
-	tie_textures = load_texture_table(_backing, asset_header.tie_texture_offset, asset_header.tie_texture_count);
-	sprite_textures = load_texture_table(_backing, asset_header.sprite_texture_offset, asset_header.sprite_texture_count);
+	terrain_textures = load_texture_table(file, asset_header.terrain_texture_offset, asset_header.terrain_texture_count);
+	tie_textures = load_texture_table(file, asset_header.tie_texture_offset, asset_header.tie_texture_count);
+	sprite_textures = load_texture_table(file, asset_header.sprite_texture_offset, asset_header.sprite_texture_count);
 
 	packed_struct(tfrag_header,
 		uint32_t entry_list_offset; //0x00
@@ -213,24 +218,10 @@ level::level(iso_stream* iso, std::size_t offset, std::size_t size, std::string 
 		tfrag frag = tfrag(asset_seg, tfrag_head.entry_list_offset + entry.offset, entry.vertex_offset, entry.vertex_count);
 		tfrags.emplace_back(frag);
 	}
+	
+	return true;
 }
 
 stream* level::moby_stream() {
 	return _moby_stream;
-}
-
-level_code_segment level::read_code_segment() {
-	auto file_header_opt = level_read_file_header(&_backing, 0);
-	if(!file_header_opt) {
-		throw stream_format_error("Failed to read file header for level!");
-	}
-	level_file_header file_header = *file_header_opt;
-	auto primary_header = _backing.read<level_primary_header>(file_header.primary_header_offset);
-	
-	level_code_segment result;
-	result.header = _backing.read<level_code_segment_header>
-		(file_header.primary_header_offset + primary_header.code_segment_offset);
-	result.bytes.resize(primary_header.code_segment_size - sizeof(level_code_segment_header));
-	_backing.read_v(result.bytes);
-	return result;
 }

@@ -134,4 +134,6 @@ private:
 	file_stream _cache; // Must be initialised last.
 };
 
+std::string md5_from_stream(stream& st);
+
 #endif

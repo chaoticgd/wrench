@@ -18,45 +18,72 @@
 
 #include "toc.h"
 
-static const std::size_t TOC_MAX_INDEX_SIZE = 0x10000;
-static const std::size_t TOC_MAX_LEVELS     = 0x100;
-
-std::size_t toc_get_level_table_offset(stream& iso, uint32_t* buffer);
+#include "../util.h"
 
 table_of_contents read_toc(stream& iso, std::size_t toc_base) {
 	table_of_contents toc;
 	
-	char buffer[TOC_MAX_INDEX_SIZE];
-	iso.seek(toc_base);
-	iso.read_n(buffer, sizeof(buffer));
+	std::size_t level_table_offset = toc_get_level_table_offset(iso, toc_base);
+	if(level_table_offset == 0x0) {
+		// We've failed to find the level table, at least try to find some of the other tables.
+		level_table_offset = 0xffff;
+	}
 	
-	std::size_t level_table_offset = toc_get_level_table_offset(iso, (uint32_t*) buffer);
-	
 	iso.seek(toc_base);
-	while(iso.tell() < toc_base + level_table_offset) {
+	while(iso.tell() + 4 * 6 < toc_base + level_table_offset) {
 		toc_table table;
 		table.offset_in_toc = iso.tell() - toc_base;
 		table.header = iso.read<toc_table_header>();
-		table.entries.resize(table.header.size / 8 - 1);
-		iso.read_v(table.entries);
+		if(table.header.size < sizeof(toc_table_header) || table.header.size > 0xffff) {
+			break;
+		}
+		stream::copy_n(table.data, iso, table.header.size - sizeof(toc_table_header));
 		toc.tables.push_back(table);
 	}
 	
+	std::vector<toc_level_table_entry> level_table(TOC_MAX_LEVELS);
+	iso.seek(toc_base + level_table_offset);
+	iso.read_v(level_table);
 	for(std::size_t i = 0; i < TOC_MAX_LEVELS; i++) {
+		toc_level_table_entry entry = level_table[i];
+		
 		toc_level level;
-		level.entry = iso.read<toc_level_table_entry>
-			(toc_base + level_table_offset + i * sizeof(toc_level_table_entry));
-		if(level.entry.level_header.bytes() > iso.size()) {
-			break;
+		bool has_main_part = false;
+		bool has_audio_part = false;
+		bool has_scene_part = false;
+		
+		// The games have the fields in different orders, so we check the type
+		// of what each field points to so we can support them all.
+		sector32 headers[] = { entry.header_1, entry.header_2, entry.header_3 };
+		sector32 sizes[] = { entry.header_1_size, entry.header_2_size, entry.header_3_size };
+		for(std::size_t j = 0; j < sizeof(headers) / sizeof(sector32); j++) {
+			if(headers[j].bytes() > iso.size()) {
+				break;
+			}
+			
+			uint32_t magic = iso.read<uint32_t>(headers[j].bytes());
+			if(contains(TOC_MAIN_PART_MAGIC, magic)) {
+				level.main_part = headers[j];
+				level.main_part_size = sizes[j];
+				has_main_part = true;
+			}
+			
+			if(contains(TOC_AUDIO_PART_MAGIC, magic)) {
+				level.audio_part = headers[j];
+				level.audio_part_size = sizes[j];
+				has_audio_part = true;
+			}
+			
+			if(contains(TOC_SCENE_PART_MAGIC, magic)) {
+				level.scene_part = headers[j];
+				level.scene_part_size = sizes[j];
+				has_scene_part = true;
+			}
 		}
 		
-		auto header_opt = level_read_file_header(&iso, level.entry.level_header.bytes());
-		if(!header_opt) {
-			break;
+		if(!has_main_part) {
+			continue;
 		}
-		level.main_part = *header_opt;
-		level.audio_part = iso.read<sector32>(level.entry.audio_header.bytes() + 4);
-		level.scene_part = iso.read<sector32>(level.entry.scene_header.bytes() + 4);
 		
 		toc.levels.push_back(level);
 	}
@@ -64,41 +91,44 @@ table_of_contents read_toc(stream& iso, std::size_t toc_base) {
 	return toc;
 }
 
-std::size_t toc_get_level_table_offset(stream& iso, uint32_t* buffer) {
-	for(std::size_t i = 0; i < TOC_MAX_INDEX_SIZE / sizeof(uint32_t) - sizeof(toc_level_table_entry); i++) {
-		auto entry = *(toc_level_table_entry*) &buffer[i];
-		if(entry.level_header.sectors == 0) {
-			continue;
-		}
-		if(entry.audio_header.sectors == 0) {
-			continue;
-		}
-		if(entry.scene_header.sectors == 0) {
-			continue;
-		}
-		if(entry.level_header.bytes() > iso.size()) {
-			continue;
-		}
-		if(entry.audio_header.bytes() > iso.size()) {
-			continue;
-		}
-		if(entry.scene_header.bytes() > iso.size()) {
-			continue;
+std::size_t toc_get_level_table_offset(stream& iso, std::size_t toc_base) {
+	uint8_t buffer[TOC_MAX_SIZE];
+	iso.seek(toc_base);
+	iso.read_n((char*) buffer, sizeof(buffer));
+	
+	for(std::size_t i = 0; i < TOC_MAX_INDEX_SIZE - sizeof(toc_level_table_entry); i += sizeof(uint32_t)) {
+		// Check that the two next entries are valid. This is necessary to
+		// get past a false positive in Deadlocked.
+		toc_level_table_entry entry1 = *(toc_level_table_entry*) &buffer[i];
+		toc_level_table_entry entry2 = *(toc_level_table_entry*) &buffer[i + sizeof(toc_level_table_entry)];
+		sector32 headers[] = {
+			entry1.header_1, entry1.header_2, entry1.header_3,
+			entry2.header_1, entry2.header_2, entry2.header_3
+		};
+		
+		int parts = 0;
+		for(sector32 header : headers) {
+			if(header.sectors == 0) {
+				break;
+			}
+			
+			std::size_t magic_offset = header.bytes() - toc_base;
+			
+			if(magic_offset > TOC_MAX_SIZE - sizeof(uint32_t)) {
+				break;
+			}
+			
+			uint32_t magic = *(uint32_t*) &buffer[magic_offset];
+			if(contains(TOC_MAIN_PART_MAGIC, magic) ||
+			   contains(TOC_AUDIO_PART_MAGIC, magic) ||
+			   contains(TOC_SCENE_PART_MAGIC, magic)) {
+				parts++;
+			}
 		}
 		
-		uint32_t level_magic = iso.read<uint32_t>(entry.level_header.bytes());
-		uint32_t audio_magic = iso.read<uint32_t>(entry.audio_header.bytes());
-		uint32_t scene_magic = iso.read<uint32_t>(entry.scene_header.bytes());
-		if(level_magic != 0x60 && level_magic != 0x68) {
-			continue;
-		} 
-		if(audio_magic != 0x1018) {
-			continue;
-		} 
-		if(scene_magic != 0x137c) {
-			continue;
-		} 
-		return i * sizeof(buffer[0]);
+		if(parts == 6) {
+			return i * sizeof(buffer[0]);
+		}
 	}
 	return 0;
 }
@@ -106,8 +136,8 @@ std::size_t toc_get_level_table_offset(stream& iso, uint32_t* buffer) {
 std::optional<level_file_header> level_read_file_header(stream* src, std::size_t offset) {
 	level_file_header result;
 	src->seek(offset);
-	result.header_size = src->peek<uint32_t>();
-	switch(result.header_size) {
+	result.magic = src->peek<uint32_t>();
+	switch(result.magic) {
 		case 0x60: {
 			auto file_header = src->read<level_file_header_60>();
 			result.base_offset = file_header.base_offset.bytes();
@@ -129,19 +159,4 @@ std::optional<level_file_header> level_read_file_header(stream* src, std::size_t
 		}
 	}
 	return result;
-}
-
-const char* toc_file_type_to_string(toc_file_type type) {
-	switch(type) {
-		case FILE_TYPE_MISC: return "FILE_TYPE_MISC";
-		case FILE_TYPE_LEVEL_60: return "FILE_TYPE_LEVEL_60";
-		case FILE_TYPE_LEVEL_68: return "FILE_TYPE_LEVEL_68";
-		case FILE_TYPE_ARMOR: return "FILE_TYPE_ARMOR";
-		case FILE_TYPE_MPEG: return "FILE_TYPE_MPEG";
-		case FILE_TYPE_BONUS: return "FILE_TYPE_BONUS";
-		case FILE_TYPE_SPACE: return "FILE_TYPE_SPACE";
-		case FILE_TYPE_AUDIO: return "FILE_TYPE_AUDIO";
-		case FILE_TYPE_SCENE: return "FILE_TYPE_SCENE";
-	}
-	return "FILE_TYPE_UNKNOWN";
 }

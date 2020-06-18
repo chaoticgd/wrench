@@ -33,7 +33,7 @@ app::app()
 	  delta_time(0),
 	  current_tool(tool::picker),
 	  translate_tool_displacement(0, 0, 0),
-	  game_db(gamedb_parse_file()),
+	  game_db(gamedb_read()),
 	  _lock_project(false) {
 	
 	read_settings();
@@ -41,7 +41,7 @@ app::app()
 
 using project_ptr = std::unique_ptr<wrench_project>;
 
-void app::new_project(std::string game_id) {
+void app::new_project(game_iso game) {
 	if(_lock_project) {
 		return;
 	}
@@ -49,13 +49,11 @@ void app::new_project(std::string game_id) {
 	_lock_project = true;
 	_project.reset(nullptr);
 
-	// TODO: Make less ugly.
-	using worker_type = worker_thread<project_ptr, std::pair<std::map<std::string, std::string>, std::string>>;
-	windows.emplace_back(std::make_unique<worker_type>(
-		"New Project", std::make_pair(settings.game_paths, game_id),
-		[](auto data, worker_logger& log) {
+	emplace_window<worker_thread<project_ptr, game_iso>>(
+		"New Project", game,
+		[](game_iso game, worker_logger& log) {
 			try {
-				auto result = std::make_unique<wrench_project>(data.first, log, data.second);
+				auto result = std::make_unique<wrench_project>(game, log);
 				log << "\nProject created successfully.";
 				return std::make_optional(std::move(result));
 			} catch(stream_error& err) {
@@ -72,7 +70,7 @@ void app::new_project(std::string game_id) {
 			
 			glfwSetWindowTitle(glfw_window, "Wrench Editor - [Unsaved Project]");
 		}
-	));
+	);
 }
 
 void app::open_project(std::string path) {
@@ -83,14 +81,17 @@ void app::open_project(std::string path) {
 	_lock_project = true;
 	_project.reset(nullptr);
 
-	// TODO: Make less ugly.
-	using worker_type = worker_thread<project_ptr, std::pair<std::map<std::string, std::string>, std::string>>;
-	auto in = std::make_pair(settings.game_paths, path);
-	windows.emplace_back(std::make_unique<worker_type>(
+	struct open_project_input {
+		std::vector<game_iso> game_isos;
+		std::string path;
+	};
+
+	auto in = open_project_input { settings.game_isos, path };
+	emplace_window<worker_thread<project_ptr, open_project_input>>(
 		"Open Project", in,
-		[](auto paths, worker_logger& log) {
+		[](auto in, worker_logger& log) {
 			try {
-				auto result = std::make_unique<wrench_project>(paths.first, paths.second, log);
+				auto result = std::make_unique<wrench_project>(in.game_isos, in.path, log);
 				log << "\nProject opened successfully.";
 				return std::make_optional(std::move(result));
 			} catch(stream_error& err) {
@@ -108,7 +109,7 @@ void app::open_project(std::string path) {
 			auto title = std::string("Wrench Editor - [") + path + "]";
 			glfwSetWindowTitle(glfw_window, title.c_str());
 		}
-	));
+	);
 }
 
 void app::save_project(bool save_as) {
@@ -161,27 +162,28 @@ bool app::has_camera_control() {
 const char* settings_file_path = "wrench_settings.ini";
 
 void app::read_settings() {
-	// Default settings.
-	for(auto& game : game_db) {
-		settings.game_paths[game.first] = "/path/to/game.iso";
-	}
 	settings.gui_scale = 1.f;
 
 	if(fs::exists(settings_file_path)) {
 		try {
-			const auto settings_file = toml::parse(settings_file_path);
-
-			const auto general_tbl = toml::find(settings_file, "general");
+			auto settings_file = toml::parse(settings_file_path);
+			
+			auto general_table = toml::find(settings_file, "general");
 			settings.emulator_path =
-				toml::find_or(general_tbl, "emulator_path", settings.emulator_path);
+				toml::find_or(general_table, "emulator_path", settings.emulator_path);
 
-			const auto game_paths_tbl = toml::find(settings_file, "game_paths");
-			for(auto& [game, path] : settings.game_paths) {
-				path = toml::find_or(game_paths_tbl, game.c_str(), "");
+			auto gui_table = toml::find(settings_file, "gui");
+			settings.gui_scale = toml::find_or(gui_table, "scale", 1.f);
+			
+			auto game_paths = toml::find<std::vector<toml::table>>(settings_file, "game_paths");
+			for(auto& game_path : game_paths) {
+				auto game_path_value = toml::value(game_path);
+				game_iso game;
+				game.path = toml::find<std::string>(game_path_value, "path");
+				game.game_db_entry = toml::find<std::string>(game_path_value, "game");
+				game.md5 = toml::find<std::string>(game_path_value, "md5");
+				settings.game_isos.push_back(game);
 			}
-
-			const auto gui_tbl = toml::find(settings_file, "gui");
-			settings.gui_scale = toml::find_or(gui_tbl, "scale", 1.f);
 		} catch(toml::syntax_error& err) {
 			emplace_window<gui::message_box>("Failed to parse settings", err.what());
 		} catch(std::out_of_range& err) {
@@ -193,21 +195,28 @@ void app::read_settings() {
 }
 
 void app::save_settings() {
-	toml::table genera_tbl;
-	genera_tbl["emulator_path"] = settings.emulator_path;
-
-	toml::table game_paths_tbl;
-	for(auto& [game, path] : settings.game_paths) {
-		game_paths_tbl[game] = path;
+	std::vector<toml::value> game_paths_table;
+	for(std::size_t i = 0; i < settings.game_isos.size(); i++) {
+		auto game = settings.game_isos[i];
+		game_paths_table.emplace_back(toml::value {
+			{"path", game.path},
+			{"game", game.game_db_entry},
+			{"md5", game.md5}
+		});
 	}
-
-	toml::table gui_tbl;
-	gui_tbl["scale"] = settings.gui_scale;
-
+	
+	toml::value file {
+		{"general", {
+			{"emulator_path", settings.emulator_path}
+		}},
+		{"gui", {
+			{"scale", settings.gui_scale}
+		}},
+		{"game_paths", toml::value(game_paths_table)}
+	};
+	
 	std::ofstream settings(settings_file_path);
-	settings << "[general]\n" << toml::format(toml::value(genera_tbl)) << "\n";
-	settings << "[game_paths]\n" << toml::format(toml::value(game_paths_tbl)) << "\n";
-	settings << "[gui]\n" << toml::format(toml::value(gui_tbl));
+	settings << toml::format(toml::value(file));
 }
 
 void app::run_emulator() {

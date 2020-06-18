@@ -38,20 +38,17 @@ int main(int argc, char** argv) {
 	options.add_options()
 		("i,iso", "The game ISO to use.",
 			cxxopts::value<std::string>())
-		("g,gameid", "The game ID (e.g. 'SCES_516.07')",
-			cxxopts::value<std::string>())
 		("p,project", "The path of the new project to create.",
 			cxxopts::value<std::string>())
 		("s,seed", "Password to seed the random number generator.",
 			cxxopts::value<std::string>());
 
 	options.parse_positional({
-		"iso", "gameid", "project", "seed"
+		"iso", "project", "seed"
 	});
 
 	auto args = parse_command_line_args(argc, argv, options);
 	std::string iso_path = cli_get(args, "iso");
-	std::string game_id = cli_get(args, "gameid");
 	std::string project_path = cli_get(args, "project");
 	std::string password = cli_get_or(args, "seed", "");
 	
@@ -69,65 +66,64 @@ int main(int argc, char** argv) {
 	MD5Final(hash, &ctx);
 	srand(*(unsigned int*) hash);
 	
-	auto game = gamedb_parse_file().at(game_id);
-	
-	// TODO: Change the wrench_project constructor so this mess isn't required.
-	std::map<std::string, std::string> game_paths
-		{ { game_id, iso_path } };
+	game_iso game;
+	game.path = iso_path;
+	game.game_db_entry = ""; // Doesn't matter.
+	{
+		file_stream iso(iso_path);
+		game.md5 = md5_from_stream(iso);
+	}
 	
 	worker_logger log;
-	wrench_project project(game_paths, log, game_id);
+	wrench_project project(game, log);
 	
-	for(gamedb_file file_meta : game.files) {		
-		if(file_meta.type == +gamedb_file_type::LEVEL) {
-			proxy_stream file(&project.iso, file_meta.offset, file_meta.size);
-			auto file_header_opt = level_read_file_header(&file, 0);
-			if(!file_header_opt) {
-				throw stream_format_error("Failed to read file header for level!");
-			}
-			level_file_header file_header = *file_header_opt;
-			auto primary_header = file.read<level_primary_header>(file_header.primary_header_offset);
-			
-			std::size_t asset_header_offset = file_header.primary_header_offset + primary_header.asset_header;
-			auto asset_header = file.read<level_asset_header>(asset_header_offset);
-			
-			packed_struct(texture_entry,
-				uint32_t field_0;
-				uint32_t field_4;
-				uint32_t field_8;
-				uint32_t field_c;
-			);
-			
-			read_shuffle_write<texture_entry>(
-				file,
-				asset_header_offset + asset_header.terrain_texture_offset,
-				asset_header.terrain_texture_count);
-				
-			read_shuffle_write<texture_entry>(
-				file,
-				asset_header_offset + asset_header.some1_texture_offset,
-				asset_header.some1_texture_count);
-			
-			read_shuffle_write<texture_entry>(
-				file,
-				asset_header_offset + asset_header.shrub_texture_offset,
-				asset_header.shrub_texture_count);
-			
-			read_shuffle_write<texture_entry>(
-				file,
-				asset_header_offset + asset_header.tie_texture_offset,
-				asset_header.tie_texture_count);
-			
-			read_shuffle_write<texture_entry>(
-				file,
-				asset_header_offset + asset_header.some2_texture_offset,
-				asset_header.some2_texture_count);
-			
-			read_shuffle_write<texture_entry>(
-				file,
-				asset_header_offset + asset_header.sprite_texture_offset,
-				asset_header.sprite_texture_count);
+	for(toc_level level : project.toc.levels) {
+		auto file_header = level_read_file_header(&project.iso, level.main_part.bytes());
+		if(!file_header) {
+			break;
 		}
+		proxy_stream file(&project.iso, file_header->base_offset, 0);
+		auto primary_header = file.read<level_primary_header>(file_header->primary_header_offset);
+		
+		std::size_t asset_header_offset = file_header->primary_header_offset + primary_header.asset_header;
+		auto asset_header = file.read<level_asset_header>(asset_header_offset);
+		
+		packed_struct(texture_entry,
+			uint32_t field_0;
+			uint32_t field_4;
+			uint32_t field_8;
+			uint32_t field_c;
+		);
+		
+		read_shuffle_write<texture_entry>(
+			file,
+			asset_header_offset + asset_header.terrain_texture_offset,
+			asset_header.terrain_texture_count);
+			
+		read_shuffle_write<texture_entry>(
+			file,
+			asset_header_offset + asset_header.some1_texture_offset,
+			asset_header.some1_texture_count);
+		
+		read_shuffle_write<texture_entry>(
+			file,
+			asset_header_offset + asset_header.shrub_texture_offset,
+			asset_header.shrub_texture_count);
+		
+		read_shuffle_write<texture_entry>(
+			file,
+			asset_header_offset + asset_header.tie_texture_offset,
+			asset_header.tie_texture_count);
+		
+		read_shuffle_write<texture_entry>(
+			file,
+			asset_header_offset + asset_header.some2_texture_offset,
+			asset_header.some2_texture_count);
+		
+		read_shuffle_write<texture_entry>(
+			file,
+			asset_header_offset + asset_header.sprite_texture_offset,
+			asset_header.sprite_texture_count);
 	}
 	
 	project.save_to(project_path);

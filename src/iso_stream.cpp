@@ -93,8 +93,8 @@ iso_stream::iso_stream(std::string game_id, std::string iso_path, worker_logger&
 	: _iso(iso_path),
 	  _patches(read_patches(root)),
 	  _wad_streams(read_wad_streams(root)),
-	  _cache_iso_path(std::string("cache/editor_") + game_id + "_patched.iso"),
-	  _cache_meta_path(std::string("cache/editor_") + game_id + "_metadata.json"),
+	  _cache_iso_path(std::string("cache/") + game_id + "_patched.iso"),
+	  _cache_meta_path(std::string("cache/") + game_id + "_metadata.json"),
 	  _cache(init_cache(iso_path, log), std::ios::in | std::ios::out) {}
 
 std::size_t iso_stream::size() const {
@@ -204,6 +204,10 @@ wad_stream* iso_stream::get_decompressed(std::size_t offset, bool discard) {
 			std::cerr << e.what() << "\n";
 			std::cerr << "offset: " << std::hex << offset << "\n";
 			return nullptr;
+		} catch(std::out_of_range& e) {
+			std::cerr << e.what() << "\n";
+			std::cerr << "offset: " << std::hex << offset << "\n";
+			return nullptr;
 		}
 	}
 	return _wad_streams.at(offset).get();
@@ -221,6 +225,9 @@ std::vector<patch> iso_stream::read_patches(ZipArchive::Ptr root) {
 	}
 
 	auto patch_list_entry = root->GetEntry("patch_list.json");
+	if(patch_list_entry == nullptr) {
+		throw std::runtime_error("Wrench project does not contain patch_list.json file!");
+	}
 	std::istream* patch_list_file = patch_list_entry->GetDecompressionStream();
 	auto patch_list = nlohmann::json::parse(*patch_list_file);
 
@@ -252,6 +259,9 @@ std::map<std::size_t, std::unique_ptr<wad_stream>> iso_stream::read_wad_streams(
 	std::map<std::size_t, std::unique_ptr<wad_stream>> result;
 	
 	auto entry = root->GetEntry("patch_list.json");
+	if(entry == nullptr) {
+		throw std::runtime_error("Wrench project does not contain patch_list.json file!");
+	}
 	std::istream* patch_list_file = entry->GetDecompressionStream();
 	
 	auto patch_list = nlohmann::json::parse(*patch_list_file);
@@ -265,6 +275,9 @@ std::map<std::size_t, std::unique_ptr<wad_stream>> iso_stream::read_wad_streams(
 		for(auto& patch_json : wad.items()) {
 			std::string patch_src_path = patch_json.value().find("data").value();
 			auto bin_entry = root->GetEntry(patch_src_path);
+			if(bin_entry == nullptr) {
+				throw std::runtime_error("Wrench project does not contain a referenced patch file!");
+			}
 			std::istream* patch_file = bin_entry->GetDecompressionStream();
 			
 			std::vector<char> buffer(bin_entry->GetSize());
@@ -381,14 +394,6 @@ void iso_stream::write_normal_patches(file_stream* cache_iso) {
 	}
 }
 
-std::string md5_to_printable_string(std::array<uint8_t, MD5_DIGEST_LENGTH> in) {
-	std::stringstream result;
-	for(std::size_t i = 0; i < MD5_DIGEST_LENGTH; i++) {
-		result << std::hex << (in[i] & 0xff);
-	}
-	return result.str();
-}
-
 std::string iso_stream::hash_patches() {
 	MD5_CTX ctx;
 	MD5Init(&ctx);
@@ -400,7 +405,30 @@ std::string iso_stream::hash_patches() {
 		MD5Update(&ctx, reinterpret_cast<uint8_t*>(p.buffer.data()), p.buffer.size());
 	}
 
-	std::array<uint8_t, MD5_DIGEST_LENGTH> digest;
-	MD5Final(digest.data(), &ctx);
+	uint8_t digest[MD5_DIGEST_LENGTH];
+	MD5Final(digest, &ctx);
+	return md5_to_printable_string(digest);
+}
+
+std::string md5_from_stream(stream& st) {
+	MD5_CTX ctx;
+	MD5Init(&ctx);
+	
+	static const std::size_t BLOCK_SIZE = 1024 * 4;
+	std::size_t file_size = st.size();
+	
+	st.seek(0);
+	
+	std::vector<uint8_t> block(BLOCK_SIZE);
+	for(std::size_t i = 0; i < file_size / BLOCK_SIZE; i++) {
+		st.read_n((char*) block.data(), BLOCK_SIZE);
+		MD5Update(&ctx, block.data(), BLOCK_SIZE);
+	}
+	st.read_n((char*) block.data(), file_size % BLOCK_SIZE);
+	MD5Update(&ctx, block.data(), file_size % BLOCK_SIZE);
+
+	uint8_t digest[MD5_DIGEST_LENGTH];
+	MD5Final(digest, &ctx);
+	
 	return md5_to_printable_string(digest);
 }

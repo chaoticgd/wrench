@@ -67,3 +67,11 @@ std::vector<std::string> to_hex_dump(uint32_t* data, std::size_t align, std::siz
 	}
 	return result;
 }
+
+std::string md5_to_printable_string(uint8_t in[MD5_DIGEST_LENGTH]) {
+	std::stringstream result;
+	for(std::size_t i = 0; i < MD5_DIGEST_LENGTH; i++) {
+		result << std::hex << (in[i] & 0xff);
+	}
+	return result.str();
+}

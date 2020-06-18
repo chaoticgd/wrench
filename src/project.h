@@ -25,10 +25,11 @@
 #include "game_db.h"
 #include "iso_stream.h"
 #include "worker_logger.h"
+#include "formats/toc.h"
 #include "formats/racpak.h"
+#include "formats/texture.h"
 #include "formats/game_model.h"
 #include "formats/level_impl.h"
-#include "formats/texture_impl.h"
 #include "formats/armor_archive.h"
 
 # /*
@@ -38,14 +39,19 @@
 
 class app;
 
+struct game_iso {
+	std::string path;
+	std::string game_db_entry; // e.g. "R&C2" corresponding to the entry in the gamedb.txt file.
+	std::string md5;
+};
+
 class wrench_project {
 public:
 	wrench_project(
-		std::map<std::string, std::string>& game_paths,
-		worker_logger& log,
-		std::string game_id_); // New
+		game_iso game_,
+		worker_logger& log); // New
 	wrench_project(
-		std::map<std::string, std::string>& game_paths,
+		std::vector<game_iso> games,
 		std::string project_path,
 		worker_logger& log); // Open
 
@@ -56,51 +62,56 @@ public:
 	void save_as(app* a, std::function<void()> on_done);
 	
 	level* selected_level();
-	std::string selected_level_name();
+	std::size_t selected_level_index();
 	std::vector<level*> levels();
-	level* level_from_name(std::string name);
-	std::map<std::string, std::vector<texture>*> texture_lists();
-	std::map<std::string, std::vector<game_model>*> model_lists();
+	level* level_from_index(std::size_t index);
+	std::map<std::string, std::vector<texture>*> texture_lists(app* a);
+	std::map<std::string, std::vector<game_model>*> model_lists(app* a);
 	
 	template <typename T, typename... T_constructor_args>
 	void emplace_command(T_constructor_args... args);
 	void undo();
 	void redo();
 	
-	void open_file(gamedb_file file);
-	
-	racpak* open_archive(gamedb_file file);
-	void open_texture_archive(gamedb_file file);
-	void open_level(gamedb_file file);
+	void open_level(std::size_t index);
 	
 	int id();
 	
 	void save_to(std::string path);
 
 private:
-	std::string read_game_id();
+	void load_tables();
+	void load_gamedb_info(app* a);
+
+	game_iso read_game_type(std::vector<game_iso> games);
+
+	std::string table_index_to_name(std::size_t table_index);
+	std::string level_index_to_name(std::size_t level_index);
 
 	std::string _project_path;
 	ZipArchive::Ptr _wrench_archive;
 
 public: // Initialisation order matters.
-	const std::string game_id; // e.g. "SCES_516.07"
+	const game_iso game;
 
 private:
 	std::size_t _history_index;
 	std::vector<std::unique_ptr<command>> _history_stack;
 	
 	std::map<std::size_t, std::unique_ptr<racpak>> _archives;
-	std::map<std::string, std::vector<texture>> _texture_wads;
-	std::map<std::string, std::unique_ptr<level>> _levels;
-	std::optional<armor_archive> _armor;
+	std::map<std::size_t, std::vector<texture>> _texture_wads;
+	std::map<std::size_t, std::unique_ptr<level>> _levels;
+	std::map<std::size_t, armor_archive> _armor;
 	level* _selected_level;
+	
+	std::optional<gamedb_game> _game_info;
 	
 	int _id;
 	static int _next_id;
 	
 public:
 	iso_stream iso;
+	table_of_contents toc;
 };
 
 template <typename T, typename... T_constructor_args>
