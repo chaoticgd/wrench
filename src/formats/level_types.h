@@ -167,8 +167,8 @@ packed_struct(level_code_segment_header,
 
 // Barlow 0x418200
 packed_struct(level_asset_header,
-	uint32_t num_textures; // 0x0
-	file_ptr<level_texture_entry> textures; // 0x4
+	uint32_t mipmap_count; // 0x0
+	uint32_t mipmap_offset; // 0x4
 	uint32_t ptr_into_asset_wad_8;  // 0x8
 	uint32_t ptr_into_asset_wad_c;  // 0xc
 	uint32_t ptr_into_asset_wad_10; // 0x10
@@ -193,7 +193,7 @@ packed_struct(level_asset_header,
 	uint32_t sprite_texture_offset;  // 0x5c
 	uint32_t tex_data_in_asset_wad;  // 0x60
 	uint32_t ptr_into_asset_wad_64;  // 0x64
-	uint32_t ptr_into_asset_wad_68; // 0x68
+	uint32_t ptr_into_asset_wad_68;  // 0x68
 	uint32_t rel_to_asset_header_6c; // 0x6c
 	uint32_t rel_to_asset_header_70; // 0x70
 	uint32_t unknown_74; // 0x74
@@ -214,13 +214,21 @@ packed_struct(level_asset_header,
 	uint32_t ptr_into_asset_wad_b0; // 0xb0
 )
 
+packed_struct(level_mipmap_entry,
+	uint32_t unknown_0; // Type?
+	uint16_t width;
+	uint16_t height;
+	uint32_t offset_1;
+	uint32_t offset_2; // Duplicate of offset_1?
+)
+
 packed_struct(level_texture_entry,
 	uint32_t ptr;
 	uint16_t width;
 	uint16_t height;
 	uint32_t palette;
 	uint32_t field_c;
-);
+)
 
 // *****************************************************************************
 // World segment structures
