@@ -193,13 +193,13 @@ packed_struct(level_asset_header,
 	uint32_t sprite_texture_offset;  // 0x5c
 	uint32_t tex_data_in_asset_wad;  // 0x60
 	uint32_t ptr_into_asset_wad_64;  // 0x64
-	uint32_t unknown_68; // 0x68
-	uint32_t unknown_6c; // 0x6c
-	uint32_t unknown_70; // 0x70
+	uint32_t ptr_into_asset_wad_68; // 0x68
+	uint32_t rel_to_asset_header_6c; // 0x6c
+	uint32_t rel_to_asset_header_70; // 0x70
 	uint32_t unknown_74; // 0x74
-	uint32_t unknown_78; // 0x78
+	uint32_t rel_to_asset_header_78; // 0x78
 	uint32_t unknown_7c; // 0x7c
-	uint32_t unknown_80; // 0x80
+	uint32_t index_into_some1_texs; // 0x80
 	uint32_t unknown_84; // 0x84
 	uint32_t unknown_88; // 0x88
 	uint32_t unknown_8c; // 0x8c
