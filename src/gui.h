@@ -261,6 +261,7 @@ namespace gui {
 
 		void import_bmp(app& a, texture* tex);
 		void export_bmp(app& a, texture* tex);
+		void export_all(app& a, std::vector<texture>& tex_list);
 
 		int _project_id = 0;
 		std::map<texture*, GLuint> _gl_textures;

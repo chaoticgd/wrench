@@ -681,6 +681,9 @@ void gui::texture_browser::render(app& a) {
 				if(ImGui::Button("Export Selected")) {
 					export_bmp(a, &textures[_selection]);
 				}
+				if(ImGui::Button("Export All")) {
+					export_all(a, textures);
+				}
 			}
 			ImGui::TreePop();
 		}
@@ -792,6 +795,26 @@ void gui::texture_browser::export_bmp(app& a, texture* tex) {
 		try {
 			file_stream bmp_file(path, std::ios::in | std::ios::out | std::ios::trunc);
 			texture_to_bmp(bmp_file, tex);
+		} catch(stream_error& e) {
+			a.emplace_window<message_box>("Error", e.what());
+		}
+	});
+	a.windows.emplace_back(std::move(exporter));
+}
+
+void gui::texture_browser::export_all(app& a, std::vector<texture>& tex_list) {
+	auto exporter = std::make_unique<string_input>
+		("Enter Export Directory", "outdir");
+	exporter->on_okay([&](app& a, std::string path_str) {
+		fs::path path(path_str);
+		if(!fs::exists(path)) {
+			fs::create_directory(path);
+		}
+		try {
+			for(texture& tex : tex_list) {
+				file_stream bmp_file(path / (tex.pixel_data_path() + ".bmp"), std::ios::in | std::ios::out | std::ios::trunc);
+				texture_to_bmp(bmp_file, &tex);
+			}
 		} catch(stream_error& e) {
 			a.emplace_window<message_box>("Error", e.what());
 		}
