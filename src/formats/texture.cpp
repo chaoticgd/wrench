@@ -88,8 +88,3 @@ std::optional<texture> create_fip_texture(stream* backing, std::size_t offset) {
 	std::size_t palette_offset = offset + offsetof(fip_header, palette);
 	return texture(backing, pixel_offset, palette_offset, size);
 }
-
-std::vector<const texture*> texture_provider::textures() const {
-	auto textures_ = const_cast<texture_provider*>(this)->textures();
-	return std::vector<const texture*>(textures_.begin(), textures_.end());
-}

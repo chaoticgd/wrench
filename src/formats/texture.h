@@ -73,15 +73,4 @@ private:
 // Won't affect the position indicator of backing.
 std::optional<texture> create_fip_texture(stream* backing, std::size_t offset);
 
-class texture_provider {
-public:
-	virtual ~texture_provider() = default;
-
-	virtual std::string display_name() const;
-	virtual std::string display_name_of(texture* tex) const { return ""; }
-	virtual std::vector<texture*> textures();
-	
-	std::vector<const texture*> textures() const;
-};
-
 #endif
