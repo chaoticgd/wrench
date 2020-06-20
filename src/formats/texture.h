@@ -48,7 +48,12 @@ struct vec2i {
 
 class texture {
 public:
-	texture(stream* backing, std::size_t pixel_data_offset, std::size_t palette_offset, vec2i size);
+	texture(
+		stream* pixel_backing,
+		std::size_t pixel_data_offset,
+		stream* palette_backing,
+		std::size_t palette_offset,
+		vec2i size);
 
 	vec2i size() const;
 
@@ -64,8 +69,9 @@ public:
 	std::string name;
 	
 private:
-	stream* _backing;
+	stream* _pixel_backing;
 	std::size_t _pixel_data_offset;
+	stream* _palette_backing;
 	std::size_t _palette_offset;
 	vec2i _size;
 };

@@ -160,17 +160,17 @@ level::level(iso_stream* iso, toc_level index)
 	}
 	
 	_file.seek(asset_base + asset_header.mipmap_offset);
-	std::size_t mipmap_base =
+	std::size_t little_texture_base =
 		_file_header.primary_header_offset + primary_header.tex_pixel_data_base;
 	std::size_t last_palette_offset = 0;
 	for(std::size_t i = 0; i < asset_header.mipmap_count; i++) {
 		auto entry = _file.read<level_mipmap_entry>();
-		auto abs_offset = mipmap_base + entry.offset_1;
+		auto abs_offset = little_texture_base + entry.offset_1;
 		if(entry.width == 0) {
 			last_palette_offset = abs_offset;
 			continue;
 		}
-		mipmap_textures.emplace_back(&_file, abs_offset, last_palette_offset, vec2i { entry.width, entry.height });
+		mipmap_textures.emplace_back(&_file, abs_offset, &_file, last_palette_offset, vec2i { entry.width, entry.height });
 	}
 	
 	auto load_texture_table = [=](stream& backing, std::size_t offset, std::size_t count) {
@@ -179,7 +179,8 @@ level::level(iso_stream* iso, toc_level index)
 		for(std::size_t i = 0; i < count; i++) {
 			auto entry = backing.read<level_texture_entry>();
 			auto ptr = asset_header.tex_data_in_asset_wad + entry.ptr;
-			textures.emplace_back(asset_seg, ptr, ptr, vec2i { entry.width, entry.height });
+			auto palette = little_texture_base + entry.palette * 0x100;
+			textures.emplace_back(asset_seg, ptr, &_file, palette, vec2i { entry.width, entry.height });
 		}
 		return textures;
 	};

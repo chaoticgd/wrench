@@ -226,7 +226,8 @@ packed_struct(level_texture_entry,
 	uint32_t ptr;
 	uint16_t width;
 	uint16_t height;
-	uint32_t palette;
+	uint16_t unknown_8;
+	uint16_t palette;
 	uint32_t field_c;
 )
 
