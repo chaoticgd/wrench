@@ -162,7 +162,9 @@ bool app::has_camera_control() {
 const char* settings_file_path = "wrench_settings.ini";
 
 void app::read_settings() {
+	// Default settings
 	settings.gui_scale = 1.f;
+	settings.vsync = true;
 
 	if(fs::exists(settings_file_path)) {
 		try {
@@ -174,6 +176,7 @@ void app::read_settings() {
 
 			auto gui_table = toml::find(settings_file, "gui");
 			settings.gui_scale = toml::find_or(gui_table, "scale", 1.f);
+			settings.vsync = toml::find_or(gui_table, "vsync", true);
 			
 			auto game_paths = toml::find<std::vector<toml::table>>(settings_file, "game_paths");
 			for(auto& game_path : game_paths) {
@@ -210,7 +213,8 @@ void app::save_settings() {
 			{"emulator_path", settings.emulator_path}
 		}},
 		{"gui", {
-			{"scale", settings.gui_scale}
+			{"scale", settings.gui_scale},
+			{"vsync", settings.vsync}
 		}},
 		{"game_paths", toml::value(game_paths_table)}
 	};

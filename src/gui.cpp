@@ -1190,14 +1190,15 @@ void gui::settings::render_paths_page(app& a) {
 }
 
 void gui::settings::render_gui_page(app& a) {
-	ImGui::Text("GUI Scale");
-
-	ImGui::PushItemWidth(-1);
-	if(ImGui::SliderFloat("##gui_scale", &a.settings.gui_scale, 0.5, 2, "%.1f")) {
+	if(ImGui::SliderFloat("GUI Scale", &a.settings.gui_scale, 0.5, 2, "%.1f")) {
 		a.update_gui_scale();
 		a.save_settings();
 	}
-	ImGui::PopItemWidth();
+	
+	if(ImGui::Checkbox("Vsync", &a.settings.vsync)) {
+		glfwSwapInterval(a.settings.vsync ? 1 : 0);
+		a.save_settings();
+	}
 }
 
 /*
