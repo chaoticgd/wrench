@@ -114,7 +114,7 @@ void init_gl(app& a) {
 	}
 
 	glfwMakeContextCurrent(a.glfw_window);
-	glfwSwapInterval(1);
+	glfwSwapInterval(a.settings.vsync ? 1 : 0);
 
 	if(!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
 		throw std::runtime_error("Cannot load GLAD.");

@@ -50,6 +50,7 @@ struct settings_data {
 	std::string emulator_path;
 	std::vector<game_iso> game_isos;
 	float gui_scale;
+	bool vsync;
 };
 
 enum class tool {

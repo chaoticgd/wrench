@@ -452,8 +452,7 @@ ImVec2 gui::viewport_information::initial_size() const {
 }
 
 void gui::viewport_information::render(app& a) {
-	int fps = a.delta_time == 0 ? 0 : 1000000.0 / a.delta_time;
-	ImGui::Text("FPS:\n\t%d\n", fps);
+	ImGui::Text("Frame Time (ms):\n\t%.2f\n", a.delta_time / 1000.f);
 	glm::vec3 cam_pos = a.renderer.camera_position;
 	ImGui::Text("Camera Position:\n\t%.3f, %.3f, %.3f",
 		cam_pos.x, cam_pos.y, cam_pos.z);
@@ -1190,14 +1189,15 @@ void gui::settings::render_paths_page(app& a) {
 }
 
 void gui::settings::render_gui_page(app& a) {
-	ImGui::Text("GUI Scale");
-
-	ImGui::PushItemWidth(-1);
-	if(ImGui::SliderFloat("##gui_scale", &a.settings.gui_scale, 0.5, 2, "%.1f")) {
+	if(ImGui::SliderFloat("GUI Scale", &a.settings.gui_scale, 0.5, 2, "%.1f")) {
 		a.update_gui_scale();
 		a.save_settings();
 	}
-	ImGui::PopItemWidth();
+	
+	if(ImGui::Checkbox("Vsync", &a.settings.vsync)) {
+		glfwSwapInterval(a.settings.vsync ? 1 : 0);
+		a.save_settings();
+	}
 }
 
 /*
