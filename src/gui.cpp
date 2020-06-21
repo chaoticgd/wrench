@@ -452,8 +452,7 @@ ImVec2 gui::viewport_information::initial_size() const {
 }
 
 void gui::viewport_information::render(app& a) {
-	int fps = a.delta_time == 0 ? 0 : 1000000.0 / a.delta_time;
-	ImGui::Text("FPS:\n\t%d\n", fps);
+	ImGui::Text("Frame Time (ms):\n\t%.2f\n", a.delta_time / 1000.f);
 	glm::vec3 cam_pos = a.renderer.camera_position;
 	ImGui::Text("Camera Position:\n\t%.3f, %.3f, %.3f",
 		cam_pos.x, cam_pos.y, cam_pos.z);
