@@ -171,7 +171,7 @@ void view_3d::draw_overlay_text(level& lvl) const {
 	auto draw_list = ImGui::GetWindowDrawList();
 	
 	glm::mat4 world_to_clip = get_world_to_clip();
-	auto draw_text = [=](glm::mat4 mat, std::string text) {
+	auto draw_text = [&](glm::mat4 mat, std::string text) {
 		
 		static const float max_distance = glm::pow(100.f, 2); // squared units	
 		float distance =
@@ -188,15 +188,15 @@ void view_3d::draw_overlay_text(level& lvl) const {
 		}
 	};
 	
-	lvl.world.for_each_object_of_type<tie>([=](object_id, tie& object) {
+	lvl.world.for_each_object_of_type<tie>([&](object_id, tie& object) {
 		draw_text(object.mat(), "t");
 	});
 	
-	lvl.world.for_each_object_of_type<shrub>([=](object_id, shrub& object) {
+	lvl.world.for_each_object_of_type<shrub>([&](object_id, shrub& object) {
 		draw_text(object.mat(), "s");
 	});
 	
-	lvl.world.for_each_object_of_type<moby>([=](object_id, moby& object) {
+	lvl.world.for_each_object_of_type<moby>([&](object_id, moby& object) {
 		static const std::map<uint16_t, const char*> moby_class_names {
 			{ 0x1f4, "crate" },
 			{ 0x2f6, "swingshot_grapple" },
