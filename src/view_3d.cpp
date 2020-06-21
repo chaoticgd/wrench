@@ -125,13 +125,13 @@ void view_3d::draw_level(level& lvl) const {
 		return lvl.world.is_selected(id) ? glm::vec4(1, 0, 0, 1) : normal_colour;
 	};
 	
-	lvl.world.for_each_object_of_type<tie>([=](object_id id, tie& object) {
+	lvl.world.for_each_object_of_type<tie>([&](object_id id, tie& object) {
 		glm::mat4 local_to_clip = world_to_clip * object.mat();
 		glm::vec4 colour = get_colour(id, glm::vec4(0.5, 0, 1, 1));
 		_renderer->draw_cube(local_to_clip, colour);
 	});
 	
-	lvl.world.for_each_object_of_type<moby>([=](object_id id, moby& object) {
+	lvl.world.for_each_object_of_type<moby>([&](object_id id, moby& object) {
 		glm::mat4 local_to_clip = world_to_clip * object.mat();
 		glm::vec4 colour = get_colour(id, glm::vec4(0, 1, 0, 1));
 		
@@ -149,7 +149,7 @@ void view_3d::draw_level(level& lvl) const {
 		}
 	});
 	
-	for (auto frag : lvl.tfrags) {
+	for (auto& frag : lvl.tfrags) {
 		glm::vec4 colour(0.5, 0.5, 0.5, 1);
 
 		try {
@@ -159,7 +159,7 @@ void view_3d::draw_level(level& lvl) const {
 		}
 	}
 	
-	lvl.world.for_each_object_of_type<spline>([=](object_id id, spline& object) {
+	lvl.world.for_each_object_of_type<spline>([&](object_id id, spline& object) {
 		glm::vec4 colour = get_colour(id, glm::vec4(1, 0.5, 0, 1));
 		_renderer->draw_spline(object.points, world_to_clip, colour);
 	});
@@ -307,7 +307,7 @@ void view_3d::draw_pickframe(level& lvl) const {
 	
 	glUseProgram(_renderer->shaders.solid_colour.id());
 	
-	auto encode_pick_colour = [=](object_id id) {
+	auto encode_pick_colour = [&](object_id id) {
 		glm::vec4 colour;
 		// IDs are unique across all object types.
 		colour.r = ((id.value & 0xff)       >> 0)  / 255.f;
@@ -317,14 +317,14 @@ void view_3d::draw_pickframe(level& lvl) const {
 		return colour;
 	};
 	
-	lvl.world.for_each_object_of_type<tie>([=](object_id id, tie& object) {
+	lvl.world.for_each_object_of_type<tie>([&](object_id id, tie& object) {
 		glm::mat4 local_to_clip = world_to_clip * object.mat();
 		glm::vec4 colour = encode_pick_colour(id);
 		_renderer->draw_cube(local_to_clip, colour);
 	});
 
 	
-	lvl.world.for_each_object_of_type<moby>([=](object_id id, moby& object) {
+	lvl.world.for_each_object_of_type<moby>([&](object_id id, moby& object) {
 		glm::mat4 local_to_clip = world_to_clip * object.mat();
 		glm::vec4 colour = encode_pick_colour(id);
 		
@@ -342,7 +342,7 @@ void view_3d::draw_pickframe(level& lvl) const {
 		}
 	});
 
-	lvl.world.for_each_object_of_type<spline>([=](object_id id, spline& object) {
+	lvl.world.for_each_object_of_type<spline>([&](object_id id, spline& object) {
 		glm::vec4 colour = encode_pick_colour(id);
 		_renderer->draw_spline(object.points, world_to_clip, colour);
 	});
