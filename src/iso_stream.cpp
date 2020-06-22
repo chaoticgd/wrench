@@ -24,7 +24,8 @@
 #include "formats/wad.h"
 
 wad_stream::wad_stream(iso_stream* backing, std::size_t offset, std::vector<wad_patch> patches)
-	: _backing(backing),
+	: stream(backing),
+	  _backing(backing),
 	  _offset(offset),
 	  _wad_patches(patches),
 	  _dirty(true) {
@@ -90,7 +91,8 @@ iso_stream::iso_stream(std::string game_id, std::string iso_path, worker_logger&
 	: iso_stream(game_id, iso_path, log, nullptr) {}
 
 iso_stream::iso_stream(std::string game_id, std::string iso_path, worker_logger& log, ZipArchive::Ptr root)
-	: _iso(iso_path),
+	: stream(nullptr), // Don't worry about including the file_stream in the stream tree.
+	  _iso(iso_path),
 	  _patches(read_patches(root)),
 	  _wad_streams(read_wad_streams(root)),
 	  _cache_iso_path(std::string("cache/") + game_id + "_patched.iso"),

@@ -99,6 +99,14 @@ struct stream_format_error : public stream_error {
 
 class stream {
 public:
+	stream(stream* parent_);
+	stream(const stream& rhs);
+	stream(stream&& rhs);
+	virtual ~stream();
+	
+	stream* parent;
+	std::vector<stream*> children;
+
 	virtual std::size_t size() const = 0;
 	virtual void seek(std::size_t offset) = 0;
 	virtual std::size_t tell() const = 0;
@@ -318,7 +326,7 @@ public:
 // a stream to allow for more convenient access a texture within a disk image.
 class proxy_stream : public stream {
 public:
-	proxy_stream(stream* backing, std::size_t zero, std::size_t size);
+	proxy_stream(stream* parent_, std::size_t zero, std::size_t size);
 
 	std::size_t size() const;
 	void seek(std::size_t offset);
@@ -328,7 +336,6 @@ public:
 	std::string resource_path() const;
 
 private:
-	stream* _backing;
 	std::size_t _zero;
 	std::size_t _size;
 };
