@@ -213,7 +213,7 @@ void wrench_project::load_tables() {
 		
 		armor_archive armor;
 		if(armor.read(iso, table)) {
-			_armor.emplace(i, armor);
+			_armor.emplace(i, std::move(armor));
 			continue;
 		}
 		

@@ -246,7 +246,7 @@ level::level(iso_stream* iso, toc_level index)
 	for (int i = 0; i < tfrag_head.count; i++) {
 		auto entry = _asset_segment->read<tfrag_entry>();
 		tfrag frag = tfrag(_asset_segment, tfrag_head.entry_list_offset + entry.offset, entry.vertex_offset, entry.vertex_count);
-		tfrags.emplace_back(frag);
+		tfrags.emplace_back(std::move(frag));
 	}
 }
 

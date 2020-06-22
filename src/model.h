@@ -31,6 +31,8 @@
 class model {
 public:
 	model();
+	model(const model& rhs) = delete;
+	model(model&& rhs);
 	virtual ~model();
 
 	virtual std::vector<float> triangles() const = 0;

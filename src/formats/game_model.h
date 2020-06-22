@@ -62,6 +62,7 @@ public:
 	};
 
 	game_model(stream* backing, std::size_t base_offset, std::size_t submodel_table_offset, std::size_t num_submodels_);
+	game_model(game_model&& rhs);
 
 	std::vector<float> triangles() const override;
 	

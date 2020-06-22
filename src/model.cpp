@@ -22,6 +22,13 @@ model::model()
 	: _vertex_buffer(0),
 	  _vertex_buffer_size(0) {}
 
+model::model(model&& rhs)
+	: _vertex_buffer(rhs._vertex_buffer),
+	  _vertex_buffer_size(rhs._vertex_buffer_size) {
+	rhs._vertex_buffer = 0;
+	rhs._vertex_buffer_size = 0;
+}
+
 model::~model() {
 	if(_vertex_buffer != 0) {
 		glDeleteBuffers(1, &_vertex_buffer);

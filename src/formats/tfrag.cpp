@@ -25,6 +25,11 @@ tfrag::tfrag(stream *backing, std::size_t base_offset, uint16_t vertex_offset, u
 	_backing.name = "TFrag";
 }
 
+tfrag::tfrag(tfrag&& rhs)
+	: _backing(rhs._backing),
+	  _vertex_offset(rhs._vertex_offset),
+	  _vertex_count(rhs._vertex_count) {}
+
 std::vector<float> tfrag::triangles() const {
 	std::vector<float> result;
 
