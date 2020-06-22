@@ -274,6 +274,8 @@ private:
 	level_file_header _file_header;
 	proxy_stream _file;
 	stream* _moby_stream;
+	stream* _asset_segment;
+	std::optional<trace_stream> _asset_segment_tracepoint;
 };
 
 #endif
