@@ -357,6 +357,10 @@ namespace gui {
 		void render(app& a) override;
 		
 		void render_stream_tree_node(stream* node, std::size_t index);
+	
+	private:
+		// Validate this before dereferencing it!
+		stream* _selection = nullptr;
 	};
 
 	class message_box : public window {

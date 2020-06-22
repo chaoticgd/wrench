@@ -1370,18 +1370,30 @@ void gui::stream_viewer::render(app& a) {
 }
 
 void gui::stream_viewer::render_stream_tree_node(stream* node, std::size_t index) {
+	bool is_selected = _selection == node;
+	
+	std::stringstream text;
+	text << index;
+	text << " " << node->name;
+	text << " (" << node->children.size() <<")";
+	
 	ImGui::PushID(reinterpret_cast<std::size_t>(node));
-	bool expanded = ImGui::TreeNode("node", "%4d %s (%ld)", index, node->name.c_str(), node->children.size());
+	bool expanded = ImGui::TreeNodeEx(text.str().c_str(),
+		is_selected ? ImGuiTreeNodeFlags_Selected : ImGuiTreeNodeFlags_None);
 	ImGui::NextColumn();
-	ImGui::Text("%s", node->resource_path().c_str());
+	bool make_selection = false;
+	make_selection |= ImGui::Selectable(node->resource_path().c_str(), is_selected);
 	ImGui::NextColumn();
-	ImGui::Text("%lx", node->size());
+	make_selection |= ImGui::Selectable(int_to_hex(node->size()).c_str(), is_selected);
 	ImGui::NextColumn();
 	if(expanded) {
 		for(std::size_t i = 0; i < node->children.size(); i++) {
 			render_stream_tree_node(node->children[i], i);
 		}
 		ImGui::TreePop();
+	}
+	if(make_selection) {
+		_selection = node;
 	}
 	ImGui::PopID();
 }
