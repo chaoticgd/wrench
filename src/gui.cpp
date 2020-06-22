@@ -142,7 +142,7 @@ void gui::render_menu_bar(app& a) {
 	
 	if(ImGui::BeginMenu("File")) {
 		if(ImGui::BeginMenu("New")) {
-			for(const game_iso& game : a.settings.game_isos) {
+			for(const game_iso& game : config::get().game_isos) {
 				if(ImGui::MenuItem(game.path.c_str())) {
 					a.new_project(game);
 				}
@@ -1123,8 +1123,8 @@ void gui::settings::render_paths_page(app& a) {
 	ImGui::Text("Emulator Path");
 
 	ImGui::PushItemWidth(-1);
-	if(ImGui::InputText("##emulator_path", &a.settings.emulator_path)) {
-		a.save_settings();
+	if(ImGui::InputText("##emulator_path", &config::get().emulator_path)) {
+		config::get().write();
 	}
 	ImGui::PopItemWidth();
 	ImGui::NewLine();
@@ -1134,15 +1134,15 @@ void gui::settings::render_paths_page(app& a) {
 	ImGui::Columns(2);
 	ImGui::SetColumnWidth(0, ImGui::GetWindowSize().x - 32);
 
-	for(auto iter = a.settings.game_isos.begin(); iter < a.settings.game_isos.end(); iter++) {
-		ImGui::PushID(std::distance(a.settings.game_isos.begin(), iter));
+	for(auto iter = config::get().game_isos.begin(); iter < config::get().game_isos.end(); iter++) {
+		ImGui::PushID(std::distance(config::get().game_isos.begin(), iter));
 		std::stringstream label;
 		label << iter->game_db_entry << " " << iter->md5;
 		ImGui::InputText(label.str().c_str(), &iter->path, ImGuiInputTextFlags_ReadOnly);
 		ImGui::NextColumn();
 		if(ImGui::Button("X")) {
-			a.settings.game_isos.erase(iter);
-			a.save_settings();
+			config::get().game_isos.erase(iter);
+			config::get().write();
 			ImGui::PopID();
 			break;
 		}
@@ -1189,8 +1189,8 @@ void gui::settings::render_paths_page(app& a) {
 				return std::optional<game_iso>();
 			},
 			[&](game_iso game) {
-				a.settings.game_isos.push_back(game);
-				a.save_settings();
+				config::get().game_isos.push_back(game);
+				config::get().write();
 			}
 		);
 		
@@ -1199,20 +1199,20 @@ void gui::settings::render_paths_page(app& a) {
 }
 
 void gui::settings::render_gui_page(app& a) {
-	if(ImGui::SliderFloat("GUI Scale", &a.settings.gui_scale, 0.5, 2, "%.1f")) {
+	if(ImGui::SliderFloat("GUI Scale", &config::get().gui_scale, 0.5, 2, "%.1f")) {
 		a.update_gui_scale();
-		a.save_settings();
+		config::get().write();
 	}
 	
-	if(ImGui::Checkbox("Vsync", &a.settings.vsync)) {
-		glfwSwapInterval(a.settings.vsync ? 1 : 0);
-		a.save_settings();
+	if(ImGui::Checkbox("Vsync", &config::get().vsync)) {
+		glfwSwapInterval(config::get().vsync ? 1 : 0);
+		config::get().write();
 	}
 }
 
 void gui::settings::render_debug_page(app& a) {
-	if(ImGui::Checkbox("Stream Tracing", &a.settings.debug.stream_tracing)) {
-		a.save_settings();
+	if(ImGui::Checkbox("Stream Tracing", &config::get().debug.stream_tracing)) {
+		config::get().write();
 	}
 }
 
