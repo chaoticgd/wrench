@@ -115,9 +115,14 @@ level::level(iso_stream* iso, toc_level index)
 	code_segment.bytes.resize(primary_header.code_segment_size - sizeof(level_code_segment_header));
 	_file.read_v(code_segment.bytes);
 
-	_moby_stream = iso->get_decompressed(_file_header.base_offset + _file_header.moby_segment_offset);
-	_moby_stream->name = "World Segment";
-	world.read(_moby_stream);
+	_world_segment = iso->get_decompressed(_file_header.base_offset + _file_header.moby_segment_offset);
+	_world_segment->name = "World Segment";
+	if(config::get().debug.stream_tracing) {
+		// Install a tracepoint for the world segment so we can log reads.
+		_world_segment_tracepoint.emplace(_world_segment);
+		_world_segment = &(*_world_segment_tracepoint);
+	}
+	world.read(_world_segment);
 	
 	_asset_segment = iso->get_decompressed
 		(_file_header.base_offset + _file_header.primary_header_offset + primary_header.asset_wad, true);
@@ -246,5 +251,5 @@ level::level(iso_stream* iso, toc_level index)
 }
 
 stream* level::moby_stream() {
-	return _moby_stream;
+	return _world_segment;
 }
