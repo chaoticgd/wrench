@@ -1358,12 +1358,15 @@ void gui::stream_viewer::render(app& a) {
 		// The stream might not exist anymore, so we need to make sure that
 		// it's still in the tree before dereferencing it.
 		if(!project->iso.contains(selection)) {
+			a.emplace_window<message_box>("Error",
+				"The selected stream no longer exists.");
 			return;
 		}
 		
 		if(selection->size() == 0) {
 			a.emplace_window<message_box>("Error",
 				"The selected stream has an unknown size so cannot be exported.");
+			return;
 		}
 		
 		auto stream_exporter = std::make_unique<string_input>("Enter Export Path");
