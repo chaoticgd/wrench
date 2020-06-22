@@ -316,6 +316,7 @@ namespace gui {
 	private:
 		void render_paths_page(app& a);
 		void render_gui_page(app& a);
+		void render_debug_page(app& a);
 		
 		std::size_t _new_game_type = 0;
 		std::string _new_game_path;

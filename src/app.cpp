@@ -165,20 +165,24 @@ void app::read_settings() {
 	// Default settings
 	settings.gui_scale = 1.f;
 	settings.vsync = true;
+	settings.debug.stream_tracing = false;
 
 	if(fs::exists(settings_file_path)) {
 		try {
 			auto settings_file = toml::parse(settings_file_path);
 			
-			auto general_table = toml::find(settings_file, "general");
+			auto general_table = toml::find_or(settings_file, "general", toml::value());
 			settings.emulator_path =
 				toml::find_or(general_table, "emulator_path", settings.emulator_path);
 
-			auto gui_table = toml::find(settings_file, "gui");
+			auto gui_table = toml::find_or(settings_file, "gui", toml::value());
 			settings.gui_scale = toml::find_or(gui_table, "scale", 1.f);
 			settings.vsync = toml::find_or(gui_table, "vsync", true);
 			
-			auto game_paths = toml::find<std::vector<toml::table>>(settings_file, "game_paths");
+			auto debug_table = toml::find_or(settings_file, "debug", toml::value());
+			settings.debug.stream_tracing = toml::find_or(debug_table, "stream_tracing", false);
+			
+			auto game_paths = toml::find_or<std::vector<toml::table>>(settings_file, "game_paths", {});
 			for(auto& game_path : game_paths) {
 				auto game_path_value = toml::value(game_path);
 				game_iso game;
@@ -215,6 +219,9 @@ void app::save_settings() {
 		{"gui", {
 			{"scale", settings.gui_scale},
 			{"vsync", settings.vsync}
+		}},
+		{"debug", {
+			{"stream_tracing", settings.debug.stream_tracing}
 		}},
 		{"game_paths", toml::value(game_paths_table)}
 	};

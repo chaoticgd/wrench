@@ -1106,6 +1106,10 @@ void gui::settings::render(app& a) {
 			render_gui_page(a);
 			ImGui::EndTabItem();
 		}
+		if(ImGui::BeginTabItem("Debug")) {
+			render_debug_page(a);
+			ImGui::EndTabItem();
+		}
 		ImGui::EndTabBar();
 	}
 	
@@ -1202,6 +1206,12 @@ void gui::settings::render_gui_page(app& a) {
 	
 	if(ImGui::Checkbox("Vsync", &a.settings.vsync)) {
 		glfwSwapInterval(a.settings.vsync ? 1 : 0);
+		a.save_settings();
+	}
+}
+
+void gui::settings::render_debug_page(app& a) {
+	if(ImGui::Checkbox("Stream Tracing", &a.settings.debug.stream_tracing)) {
 		a.save_settings();
 	}
 }

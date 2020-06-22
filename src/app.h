@@ -51,6 +51,9 @@ struct settings_data {
 	std::vector<game_iso> game_isos;
 	float gui_scale;
 	bool vsync;
+	struct {
+		bool stream_tracing;
+	} debug;
 };
 
 enum class tool {
