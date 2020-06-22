@@ -357,6 +357,7 @@ namespace gui {
 		void render(app& a) override;
 		
 		void render_stream_tree_node(stream* node, std::size_t index);
+		void export_trace(trace_stream* node);
 	
 	private:
 		// Validate this before dereferencing it!

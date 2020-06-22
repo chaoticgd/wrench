@@ -355,4 +355,24 @@ private:
 	std::size_t _size;
 };
 
+struct trace_stream_range {
+	std::size_t offset;
+	std::size_t size;
+};
+
+// Records all the locations that have been read from using it.
+class trace_stream : public stream {
+public:
+	trace_stream(stream* parent);
+
+	std::size_t size() const override;
+	void seek(std::size_t offset) override;
+	std::size_t tell() const override;
+	void read_n(char* dest, std::size_t size_) override;
+	void write_n(const char* data, std::size_t size) override;
+	std::string resource_path() const override;
+
+	std::vector<bool> read_mask;
+};
+
 #endif

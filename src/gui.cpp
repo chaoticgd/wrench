@@ -1399,6 +1399,23 @@ void gui::stream_viewer::render(app& a) {
 		});
 		a.windows.emplace_back(std::move(stream_exporter));
 	}
+	trace_stream* trace = dynamic_cast<trace_stream*>(_selection);
+	if(trace != nullptr) {
+		ImGui::SameLine();
+		if(ImGui::Button("Export Trace")) {
+			export_trace(trace);
+		}
+		ImGui::SameLine();
+		ImGui::Text("Image tools:");
+		ImGui::SameLine();
+		if(ImGui::Button("Get Pixel Coords")) {
+			// TODO
+		}
+		ImGui::SameLine();
+		if(ImGui::Button("Get Offset")) {
+			// TODO
+		}
+	}
 		
 	ImGui::BeginChild(1);
 		ImGui::Columns(3);
@@ -1459,6 +1476,10 @@ void gui::stream_viewer::render_stream_tree_node(stream* node, std::size_t index
 		_selection = node;
 	}
 	ImGui::PopID();
+}
+
+void gui::stream_viewer::export_trace(trace_stream* node) {
+	// TODO
 }
 
 /*

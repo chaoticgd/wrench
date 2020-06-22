@@ -192,3 +192,39 @@ std::string proxy_stream::resource_path() const {
 	to_hex << std::hex << _zero;
 	return parent->resource_path() + "+0x" + to_hex.str();
 }
+
+/*
+	trace_stream
+*/
+
+trace_stream::trace_stream(stream* parent)
+	: stream(parent),
+	  read_mask(parent->size()) {}
+
+std::size_t trace_stream::size() const {
+	return parent->size();
+}
+
+void trace_stream::seek(std::size_t offset) {
+	parent->seek(offset);
+}
+
+std::size_t trace_stream::tell() const {
+	return parent->tell();
+}
+
+void trace_stream::read_n(char* dest, std::size_t size_) {
+	parent->read_n(dest, size_);
+	std::size_t pos = tell();
+	for(std::size_t i = pos; i < std::min(size(), pos + size_); i++) {
+		read_mask[i - pos] = true;
+	}
+}
+
+void trace_stream::write_n(const char* data, std::size_t size) {
+	parent->write_n(data, size);
+}
+
+std::string trace_stream::resource_path() const {
+	return "tracepoint(" + parent->resource_path() + ")";
+}
