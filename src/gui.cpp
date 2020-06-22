@@ -104,6 +104,7 @@ void gui::create_dock_layout(const app& a) {
 	ImGui::DockBuilderDockWindow("3D View", centre);
 	ImGui::DockBuilderDockWindow("Texture Browser", centre);
 	ImGui::DockBuilderDockWindow("Model Browser", centre);
+	ImGui::DockBuilderDockWindow("Stream Viewer", centre);
 	ImGui::DockBuilderDockWindow("Documentation", centre);
 	ImGui::DockBuilderDockWindow("Project", project);
 	ImGui::DockBuilderDockWindow("Tools", tools);
@@ -276,9 +277,14 @@ void gui::render_menu_bar(app& a) {
 		render_menu_bar_window_toggle<string_viewer>(a);
 		render_menu_bar_window_toggle<texture_browser>(a);
 		render_menu_bar_window_toggle<model_browser>(a);
-		render_menu_bar_window_toggle<manual_patcher>(a);
 		render_menu_bar_window_toggle<settings>(a);
 		render_menu_bar_window_toggle<document_viewer>(a, "index.md");
+		ImGui::Separator();
+		if(ImGui::BeginMenu("Debug Tools")) {
+			render_menu_bar_window_toggle<manual_patcher>(a);
+			render_menu_bar_window_toggle<stream_viewer>(a);
+			ImGui::EndMenu();
+		}
 		ImGui::EndMenu();
 	}
 	
@@ -1208,7 +1214,7 @@ gui::manual_patcher::manual_patcher()
 	: _scroll_offset(0) {}
 
 const char* gui::manual_patcher::title_text() const {
-	return "Manual Patcher (debug)";
+	return "Manual Patcher";
 }
 
 ImVec2 gui::manual_patcher::initial_size() const {
@@ -1323,6 +1329,61 @@ void gui::document_viewer::load_page(std::string path) {
 		_body = "Cannot open file.";
 		return;
 	}
+}
+
+/*
+	stream_viewer
+*/
+
+gui::stream_viewer::stream_viewer() {}
+		
+const char* gui::stream_viewer::title_text() const {
+	return "Stream Viewer";
+}
+
+ImVec2 gui::stream_viewer::initial_size() const {
+	return ImVec2(800, 600);
+}
+
+void gui::stream_viewer::render(app& a) {
+	wrench_project* project = a.get_project();
+	if(project == nullptr) {
+		ImGui::Text("<no project open>");
+		return;
+	}
+	
+	ImGui::BeginChild(1);
+		ImGui::Columns(3);
+		ImGui::Text("Name");
+		ImGui::NextColumn();
+		ImGui::Text("Path");
+		ImGui::NextColumn();
+		ImGui::Text("Size");
+		ImGui::NextColumn();
+		for(int i = 0; i < 3; i++) {
+			ImGui::NewLine();
+			ImGui::NextColumn();
+		}
+		render_stream_tree_node(&project->iso, 0);
+		ImGui::Columns();
+	ImGui::EndChild();
+}
+
+void gui::stream_viewer::render_stream_tree_node(stream* node, std::size_t index) {
+	ImGui::PushID(reinterpret_cast<std::size_t>(node));
+	bool expanded = ImGui::TreeNode("node", "%4d %s", index, node->name.c_str());
+	ImGui::NextColumn();
+	ImGui::Text("%s", node->resource_path().c_str());
+	ImGui::NextColumn();
+	ImGui::Text("%lx", node->size());
+	ImGui::NextColumn();
+	if(expanded) {
+		for(std::size_t i = 0; i < node->children.size(); i++) {
+			render_stream_tree_node(node->children[i], i);
+		}
+		ImGui::TreePop();
+	}
+	ImGui::PopID();
 }
 
 /*

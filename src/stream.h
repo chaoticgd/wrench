@@ -106,6 +106,7 @@ public:
 	
 	stream* parent;
 	std::vector<stream*> children;
+	std::string name; // Displayed in the string viewer.
 
 	virtual std::size_t size() const = 0;
 	virtual void seek(std::size_t offset) = 0;

@@ -348,6 +348,17 @@ namespace gui {
 		ImGui::MarkdownConfig _config;
 	};
 
+	class stream_viewer : public window {
+	public:
+		stream_viewer();
+		
+		const char* title_text() const override;
+		ImVec2 initial_size() const override;
+		void render(app& a) override;
+		
+		void render_stream_tree_node(stream* node, std::size_t index);
+	};
+
 	class message_box : public window {
 	public:
 		message_box(const char* title, std::string message);
