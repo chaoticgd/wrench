@@ -46,13 +46,6 @@ struct GLFWwindow;
 class window;
 class view_3d;
 
-struct settings_data {
-	std::string emulator_path;
-	std::vector<game_iso> game_isos;
-	float gui_scale;
-	bool vsync;
-};
-
 enum class tool {
 	picker, selection, translate
 };
@@ -62,7 +55,6 @@ public:
 	app();
 
 	std::vector<std::unique_ptr<window>> windows;
-	settings_data settings;
 
 	template <typename T, typename... T_constructor_args>
 	T* emplace_window(T_constructor_args... args);
@@ -93,9 +85,6 @@ public:
 
 	bool has_camera_control();
 
-	void read_settings();
-	void save_settings();
-
 	void run_emulator();
 
 	void init_gui_scale();
@@ -107,6 +96,20 @@ private:
 	std::atomic_bool _lock_project; // Prevent race conditions while creating/loading a project.
 	std::unique_ptr<wrench_project> _project;
 	std::vector<float> _gui_scale_parameters;
+};
+
+struct config {
+	std::string emulator_path;
+	std::vector<game_iso> game_isos;
+	float gui_scale;
+	bool vsync;
+	struct {
+		bool stream_tracing;
+	} debug;
+	
+	static config& get();
+	void read(app& a);
+	void write();
 };
 
 template <typename T, typename... T_constructor_args>

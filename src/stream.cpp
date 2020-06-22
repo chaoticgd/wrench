@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019 chaoticgd
+	Copyright (C) 2019-2020 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -21,6 +21,45 @@
 #include <algorithm>
 
 /*
+	stream
+*/
+
+stream::stream(stream* parent_)
+	: parent(parent_) {
+	if(parent != nullptr) {
+		parent->children.push_back(this);
+	}
+}
+
+stream::stream(const stream& rhs)
+	: parent(rhs.parent),
+	  children(rhs.children),
+	  name(rhs.name) {
+	if(parent != nullptr) {
+		parent->children.push_back(this);
+	}
+}
+
+stream::stream(stream&& rhs)
+	: parent(rhs.parent),
+	  children(rhs.children),
+	  name(rhs.name) {
+	rhs.parent = nullptr;
+	rhs.children = {};
+}
+
+stream::~stream() {
+	if(parent != nullptr) {
+		parent->children.erase(std::find(parent->children.begin(), parent->children.end(), this));
+	}
+	for(stream* child : children) {
+		if(child->parent == this) {
+			child->parent = nullptr;
+		}
+	}
+}
+
+/*
 	file_stream
 */
 
@@ -28,7 +67,8 @@ file_stream::file_stream(std::string path)
 	: file_stream(path, std::ios::in) {}
 
 file_stream::file_stream(std::string path, std::ios_base::openmode mode)
-	: _file(path, mode | std::ios::binary),
+	: stream(nullptr),
+	  _file(path, mode | std::ios::binary),
 	  _path(path) {
 	if(_file.fail()) {
 		throw stream_io_error("Failed to open file.");
@@ -78,7 +118,8 @@ void file_stream::check_error() {
 */
 
 array_stream::array_stream()
-	: pos(0) {}
+	: stream(nullptr),
+	  pos(0) {}
 
 std::size_t array_stream::size() const {
 	return buffer.size();
@@ -121,33 +162,69 @@ char* array_stream::data() {
 	proxy_stream
 */
 
-proxy_stream::proxy_stream(stream* backing, std::size_t zero, std::size_t size)
-	: _backing(backing),
+proxy_stream::proxy_stream(stream* parent_, std::size_t zero, std::size_t size)
+	: stream(parent_),
 	  _zero(zero),
 	  _size(size) {}
 
 std::size_t proxy_stream::size() const {
-	return std::min(_size, _backing->size() - _zero);
+	return std::min(_size, parent->size() - _zero);
 }
 
 void proxy_stream::seek(std::size_t offset) {
-	_backing->seek(offset + _zero);
+	parent->seek(offset + _zero);
 }
 
 std::size_t proxy_stream::tell() const {
-	return _backing->tell() - _zero;
+	return parent->tell() - _zero;
 }
 
 void proxy_stream::read_n(char* dest, std::size_t size) {
-	_backing->read_n(dest, size);
+	parent->read_n(dest, size);
 }
 
 void proxy_stream::write_n(const char* data, std::size_t size) {
-	_backing->write_n(data, size);
+	parent->write_n(data, size);
 }
 	
 std::string proxy_stream::resource_path() const {
 	std::stringstream to_hex;
 	to_hex << std::hex << _zero;
-	return _backing->resource_path() + "+0x" + to_hex.str();
+	return parent->resource_path() + "+0x" + to_hex.str();
+}
+
+/*
+	trace_stream
+*/
+
+trace_stream::trace_stream(stream* parent)
+	: stream(parent),
+	  read_mask(parent->size(), false) {}
+
+std::size_t trace_stream::size() const {
+	return parent->size();
+}
+
+void trace_stream::seek(std::size_t offset) {
+	parent->seek(offset);
+}
+
+std::size_t trace_stream::tell() const {
+	return parent->tell();
+}
+
+void trace_stream::read_n(char* dest, std::size_t size_) {
+	std::size_t pos = tell();
+	parent->read_n(dest, size_);
+	for(std::size_t i = pos; i < std::min(size(), pos + size_); i++) {
+		read_mask[i] = true;
+	}
+}
+
+void trace_stream::write_n(const char* data, std::size_t size) {
+	parent->write_n(data, size);
+}
+
+std::string trace_stream::resource_path() const {
+	return "tracepoint(" + parent->resource_path() + ")";
 }

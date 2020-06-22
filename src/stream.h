@@ -99,6 +99,15 @@ struct stream_format_error : public stream_error {
 
 class stream {
 public:
+	stream(stream* parent_);
+	stream(const stream& rhs);
+	stream(stream&& rhs);
+	virtual ~stream();
+	
+	stream* parent;
+	std::vector<stream*> children;
+	std::string name; // Displayed in the string viewer.
+
 	virtual std::size_t size() const = 0;
 	virtual void seek(std::size_t offset) = 0;
 	virtual std::size_t tell() const = 0;
@@ -189,6 +198,20 @@ public:
 		std::size_t last_chunk_size = size % chunk_size;
 		src.read_n(buffer.data(), last_chunk_size);
 		dest.write_n(buffer.data(), last_chunk_size);
+	}
+	
+	// Check if the stream tree contains a given stream object. This is useful
+	// for checking if a pointer to a stream is still valid.
+	bool contains(stream* needle) {
+		if(needle == this) {
+			return true;
+		}
+		for(stream* child : children) {
+			if(child->contains(needle)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	// Pretty print new data that has been written to the end of the buffer.
@@ -318,7 +341,7 @@ public:
 // a stream to allow for more convenient access a texture within a disk image.
 class proxy_stream : public stream {
 public:
-	proxy_stream(stream* backing, std::size_t zero, std::size_t size);
+	proxy_stream(stream* parent_, std::size_t zero, std::size_t size);
 
 	std::size_t size() const;
 	void seek(std::size_t offset);
@@ -328,9 +351,28 @@ public:
 	std::string resource_path() const;
 
 private:
-	stream* _backing;
 	std::size_t _zero;
 	std::size_t _size;
+};
+
+struct trace_stream_range {
+	std::size_t offset;
+	std::size_t size;
+};
+
+// Records all the locations that have been read from using it.
+class trace_stream : public stream {
+public:
+	trace_stream(stream* parent);
+
+	std::size_t size() const override;
+	void seek(std::size_t offset) override;
+	std::size_t tell() const override;
+	void read_n(char* dest, std::size_t size_) override;
+	void write_n(const char* data, std::size_t size) override;
+	std::string resource_path() const override;
+
+	std::vector<bool> read_mask;
 };
 
 #endif

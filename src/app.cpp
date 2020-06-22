@@ -35,8 +35,7 @@ app::app()
 	  translate_tool_displacement(0, 0, 0),
 	  game_db(gamedb_read()),
 	  _lock_project(false) {
-	
-	read_settings();
+	config::get().read(*this);
 }
 
 using project_ptr = std::unique_ptr<wrench_project>;
@@ -86,7 +85,7 @@ void app::open_project(std::string path) {
 		std::string path;
 	};
 
-	auto in = open_project_input { settings.game_isos, path };
+	auto in = open_project_input { config::get().game_isos, path };
 	emplace_window<worker_thread<project_ptr, open_project_input>>(
 		"Open Project", in,
 		[](auto in, worker_logger& log) {
@@ -159,70 +158,6 @@ bool app::has_camera_control() {
 	return renderer.camera_control;
 }
 
-const char* settings_file_path = "wrench_settings.ini";
-
-void app::read_settings() {
-	// Default settings
-	settings.gui_scale = 1.f;
-	settings.vsync = true;
-
-	if(fs::exists(settings_file_path)) {
-		try {
-			auto settings_file = toml::parse(settings_file_path);
-			
-			auto general_table = toml::find(settings_file, "general");
-			settings.emulator_path =
-				toml::find_or(general_table, "emulator_path", settings.emulator_path);
-
-			auto gui_table = toml::find(settings_file, "gui");
-			settings.gui_scale = toml::find_or(gui_table, "scale", 1.f);
-			settings.vsync = toml::find_or(gui_table, "vsync", true);
-			
-			auto game_paths = toml::find<std::vector<toml::table>>(settings_file, "game_paths");
-			for(auto& game_path : game_paths) {
-				auto game_path_value = toml::value(game_path);
-				game_iso game;
-				game.path = toml::find<std::string>(game_path_value, "path");
-				game.game_db_entry = toml::find<std::string>(game_path_value, "game");
-				game.md5 = toml::find<std::string>(game_path_value, "md5");
-				settings.game_isos.push_back(game);
-			}
-		} catch(toml::syntax_error& err) {
-			emplace_window<gui::message_box>("Failed to parse settings", err.what());
-		} catch(std::out_of_range& err) {
-			emplace_window<gui::message_box>("Failed to load settings", err.what());
-		}
-	} else {
-		emplace_window<gui::settings>();
-	}
-}
-
-void app::save_settings() {
-	std::vector<toml::value> game_paths_table;
-	for(std::size_t i = 0; i < settings.game_isos.size(); i++) {
-		auto game = settings.game_isos[i];
-		game_paths_table.emplace_back(toml::value {
-			{"path", game.path},
-			{"game", game.game_db_entry},
-			{"md5", game.md5}
-		});
-	}
-	
-	toml::value file {
-		{"general", {
-			{"emulator_path", settings.emulator_path}
-		}},
-		{"gui", {
-			{"scale", settings.gui_scale},
-			{"vsync", settings.vsync}
-		}},
-		{"game_paths", toml::value(game_paths_table)}
-	};
-	
-	std::ofstream settings(settings_file_path);
-	settings << toml::format(toml::value(file));
-}
-
 void app::run_emulator() {
 	if(_project.get() == nullptr) {
 		emplace_window<gui::message_box>("Error", "No project open.");
@@ -231,8 +166,8 @@ void app::run_emulator() {
 	
 	_project->iso.commit(); // Recompress WAD segments.
 	
-	if(fs::is_regular_file(settings.emulator_path)) {
-		std::string emulator_path = fs::canonical(settings.emulator_path).string();
+	if(fs::is_regular_file(config::get().emulator_path)) {
+		std::string emulator_path = fs::canonical(config::get().emulator_path).string();
 		std::string cmd = emulator_path + " " + _project->cached_iso_path();
 		system(cmd.c_str());
 	} else {
@@ -274,6 +209,82 @@ void app::init_gui_scale() {
 void app::update_gui_scale() {
 	auto parameters = get_imgui_scale_parameters();
 	for(std::size_t i = 0; i < parameters.size(); i++) {
-		*parameters[i] = _gui_scale_parameters[i] * settings.gui_scale;
+		*parameters[i] = _gui_scale_parameters[i] * config::get().gui_scale;
 	}
+}
+
+config& config::get() {
+	static config instance;
+	return instance;
+}
+
+const char* settings_file_path = "wrench_settings.ini";
+
+void config::read(app& a) {
+	// Default settings
+	gui_scale = 1.f;
+	vsync = true;
+	debug.stream_tracing = false;
+
+	if(fs::exists(settings_file_path)) {
+		try {
+			auto settings_file = toml::parse(settings_file_path);
+			
+			auto general_table = toml::find_or(settings_file, "general", toml::value());
+			emulator_path =
+				toml::find_or(general_table, "emulator_path", emulator_path);
+
+			auto gui_table = toml::find_or(settings_file, "gui", toml::value());
+			gui_scale = toml::find_or(gui_table, "scale", 1.f);
+			vsync = toml::find_or(gui_table, "vsync", true);
+			
+			auto debug_table = toml::find_or(settings_file, "debug", toml::value());
+			debug.stream_tracing = toml::find_or(debug_table, "stream_tracing", false);
+			
+			auto game_paths = toml::find_or<std::vector<toml::table>>(settings_file, "game_paths", {});
+			for(auto& game_path : game_paths) {
+				auto game_path_value = toml::value(game_path);
+				game_iso game;
+				game.path = toml::find<std::string>(game_path_value, "path");
+				game.game_db_entry = toml::find<std::string>(game_path_value, "game");
+				game.md5 = toml::find<std::string>(game_path_value, "md5");
+				game_isos.push_back(game);
+			}
+		} catch(toml::syntax_error& err) {
+			a.emplace_window<gui::message_box>("Failed to parse settings", err.what());
+		} catch(std::out_of_range& err) {
+			a.emplace_window<gui::message_box>("Failed to load settings", err.what());
+		}
+	} else {
+		a.emplace_window<gui::settings>();
+	}
+}
+
+void config::write() {
+	std::vector<toml::value> game_paths_table;
+	for(std::size_t i = 0; i < game_isos.size(); i++) {
+		auto game = game_isos[i];
+		game_paths_table.emplace_back(toml::value {
+			{"path", game.path},
+			{"game", game.game_db_entry},
+			{"md5", game.md5}
+		});
+	}
+	
+	toml::value file {
+		{"general", {
+			{"emulator_path", emulator_path}
+		}},
+		{"gui", {
+			{"scale", gui_scale},
+			{"vsync", vsync}
+		}},
+		{"debug", {
+			{"stream_tracing", debug.stream_tracing}
+		}},
+		{"game_paths", toml::value(game_paths_table)}
+	};
+	
+	std::ofstream settings(settings_file_path);
+	settings << toml::format(toml::value(file));
 }

@@ -104,6 +104,7 @@ void gui::create_dock_layout(const app& a) {
 	ImGui::DockBuilderDockWindow("3D View", centre);
 	ImGui::DockBuilderDockWindow("Texture Browser", centre);
 	ImGui::DockBuilderDockWindow("Model Browser", centre);
+	ImGui::DockBuilderDockWindow("Stream Viewer", centre);
 	ImGui::DockBuilderDockWindow("Documentation", centre);
 	ImGui::DockBuilderDockWindow("Project", project);
 	ImGui::DockBuilderDockWindow("Tools", tools);
@@ -141,7 +142,7 @@ void gui::render_menu_bar(app& a) {
 	
 	if(ImGui::BeginMenu("File")) {
 		if(ImGui::BeginMenu("New")) {
-			for(const game_iso& game : a.settings.game_isos) {
+			for(const game_iso& game : config::get().game_isos) {
 				if(ImGui::MenuItem(game.path.c_str())) {
 					a.new_project(game);
 				}
@@ -276,9 +277,14 @@ void gui::render_menu_bar(app& a) {
 		render_menu_bar_window_toggle<string_viewer>(a);
 		render_menu_bar_window_toggle<texture_browser>(a);
 		render_menu_bar_window_toggle<model_browser>(a);
-		render_menu_bar_window_toggle<manual_patcher>(a);
 		render_menu_bar_window_toggle<settings>(a);
 		render_menu_bar_window_toggle<document_viewer>(a, "index.md");
+		ImGui::Separator();
+		if(ImGui::BeginMenu("Debug Tools")) {
+			render_menu_bar_window_toggle<manual_patcher>(a);
+			render_menu_bar_window_toggle<stream_viewer>(a);
+			ImGui::EndMenu();
+		}
 		ImGui::EndMenu();
 	}
 	
@@ -1100,6 +1106,10 @@ void gui::settings::render(app& a) {
 			render_gui_page(a);
 			ImGui::EndTabItem();
 		}
+		if(ImGui::BeginTabItem("Debug")) {
+			render_debug_page(a);
+			ImGui::EndTabItem();
+		}
 		ImGui::EndTabBar();
 	}
 	
@@ -1113,8 +1123,8 @@ void gui::settings::render_paths_page(app& a) {
 	ImGui::Text("Emulator Path");
 
 	ImGui::PushItemWidth(-1);
-	if(ImGui::InputText("##emulator_path", &a.settings.emulator_path)) {
-		a.save_settings();
+	if(ImGui::InputText("##emulator_path", &config::get().emulator_path)) {
+		config::get().write();
 	}
 	ImGui::PopItemWidth();
 	ImGui::NewLine();
@@ -1124,15 +1134,15 @@ void gui::settings::render_paths_page(app& a) {
 	ImGui::Columns(2);
 	ImGui::SetColumnWidth(0, ImGui::GetWindowSize().x - 32);
 
-	for(auto iter = a.settings.game_isos.begin(); iter < a.settings.game_isos.end(); iter++) {
-		ImGui::PushID(std::distance(a.settings.game_isos.begin(), iter));
+	for(auto iter = config::get().game_isos.begin(); iter < config::get().game_isos.end(); iter++) {
+		ImGui::PushID(std::distance(config::get().game_isos.begin(), iter));
 		std::stringstream label;
 		label << iter->game_db_entry << " " << iter->md5;
 		ImGui::InputText(label.str().c_str(), &iter->path, ImGuiInputTextFlags_ReadOnly);
 		ImGui::NextColumn();
 		if(ImGui::Button("X")) {
-			a.settings.game_isos.erase(iter);
-			a.save_settings();
+			config::get().game_isos.erase(iter);
+			config::get().write();
 			ImGui::PopID();
 			break;
 		}
@@ -1179,8 +1189,8 @@ void gui::settings::render_paths_page(app& a) {
 				return std::optional<game_iso>();
 			},
 			[&](game_iso game) {
-				a.settings.game_isos.push_back(game);
-				a.save_settings();
+				config::get().game_isos.push_back(game);
+				config::get().write();
 			}
 		);
 		
@@ -1189,14 +1199,20 @@ void gui::settings::render_paths_page(app& a) {
 }
 
 void gui::settings::render_gui_page(app& a) {
-	if(ImGui::SliderFloat("GUI Scale", &a.settings.gui_scale, 0.5, 2, "%.1f")) {
+	if(ImGui::SliderFloat("GUI Scale", &config::get().gui_scale, 0.5, 2, "%.1f")) {
 		a.update_gui_scale();
-		a.save_settings();
+		config::get().write();
 	}
 	
-	if(ImGui::Checkbox("Vsync", &a.settings.vsync)) {
-		glfwSwapInterval(a.settings.vsync ? 1 : 0);
-		a.save_settings();
+	if(ImGui::Checkbox("Vsync", &config::get().vsync)) {
+		glfwSwapInterval(config::get().vsync ? 1 : 0);
+		config::get().write();
+	}
+}
+
+void gui::settings::render_debug_page(app& a) {
+	if(ImGui::Checkbox("Stream Tracing", &config::get().debug.stream_tracing)) {
+		config::get().write();
 	}
 }
 
@@ -1208,7 +1224,7 @@ gui::manual_patcher::manual_patcher()
 	: _scroll_offset(0) {}
 
 const char* gui::manual_patcher::title_text() const {
-	return "Manual Patcher (debug)";
+	return "Manual Patcher";
 }
 
 ImVec2 gui::manual_patcher::initial_size() const {
@@ -1323,6 +1339,209 @@ void gui::document_viewer::load_page(std::string path) {
 		_body = "Cannot open file.";
 		return;
 	}
+}
+
+/*
+	stream_viewer
+*/
+
+gui::stream_viewer::stream_viewer() {}
+		
+const char* gui::stream_viewer::title_text() const {
+	return "Stream Viewer";
+}
+
+ImVec2 gui::stream_viewer::initial_size() const {
+	return ImVec2(800, 600);
+}
+
+void gui::stream_viewer::render(app& a) {
+	wrench_project* project = a.get_project();
+	if(project == nullptr) {
+		ImGui::Text("<no project open>");
+		return;
+	}
+	
+	if(ImGui::Button("Export")) {
+		stream* selection = _selection;
+		
+		// The stream might not exist anymore, so we need to make sure that
+		// it's still in the tree before dereferencing it.
+		if(!project->iso.contains(selection)) {
+			a.emplace_window<message_box>("Error",
+				"The selected stream no longer exists.");
+			return;
+		}
+		
+		if(selection->size() == 0) {
+			a.emplace_window<message_box>("Error",
+				"The selected stream has an unknown size so cannot be exported.");
+			return;
+		}
+		
+		auto stream_exporter = std::make_unique<string_input>("Enter Export Path");
+		stream_exporter->on_okay([selection](app& a, std::string path) {
+			// The project might have been unloaded since the string input
+			// box was created.
+			wrench_project* project = a.get_project();
+			if(project == nullptr) {
+				a.emplace_window<message_box>("Error",
+					"The project was unloaded.");
+				return;
+			}
+			
+			// The stream might not exist anymore, so we need to make sure that
+			// it's still in the tree before dereferencing it.
+			if(!project->iso.contains(selection)) {
+				a.emplace_window<message_box>("Error",
+					"The selected stream no longer exists.");
+				return;
+			}
+			
+			// Write out the stream to the specified file.
+			try {
+				file_stream out_file(path, std::ios::out);
+				selection->seek(0);
+				stream::copy_n(out_file, *selection, selection->size());
+			} catch(stream_error& err) {
+				a.emplace_window<message_box>("Error", err.what());
+			}
+		});
+		a.windows.emplace_back(std::move(stream_exporter));
+	}
+	trace_stream* trace = dynamic_cast<trace_stream*>(_selection);
+	if(trace != nullptr) {
+		ImGui::SameLine();
+		if(ImGui::Button("Export Trace")) {
+			export_trace(trace);
+		}
+	}
+		
+	ImGui::BeginChild(1);
+		ImGui::Columns(3);
+		ImGui::Text("Name");
+		ImGui::NextColumn();
+		ImGui::Text("Path");
+		ImGui::NextColumn();
+		ImGui::Text("Size");
+		ImGui::NextColumn();
+		for(int i = 0; i < 3; i++) {
+			ImGui::NewLine();
+			ImGui::NextColumn();
+		}
+		render_stream_tree_node(&project->iso, 0);
+		ImGui::Columns();
+	ImGui::EndChild();
+}
+
+void gui::stream_viewer::render_stream_tree_node(stream* node, std::size_t index) {
+	bool is_selected = _selection == node;
+	
+	std::stringstream text;
+	text << index;
+	text << " " << node->name;
+	text << " (" << node->children.size() <<")";
+	
+	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_None;
+	if(is_selected) {
+		flags |= ImGuiTreeNodeFlags_Selected;
+	}
+	if(node->children.size() == 0) {
+		flags |= ImGuiTreeNodeFlags_Leaf;
+	}
+	
+	ImGui::PushID(reinterpret_cast<std::size_t>(node));
+	bool expanded = ImGui::TreeNodeEx(text.str().c_str(), flags);
+	ImGui::NextColumn();
+	bool make_selection = false;
+	make_selection |= ImGui::Selectable(node->resource_path().c_str(), is_selected);
+	ImGui::NextColumn();
+	make_selection |= ImGui::Selectable(int_to_hex(node->size()).c_str(), is_selected);
+	ImGui::NextColumn();
+	if(expanded) {
+		// Display streams with children before leaf streams.
+		for(std::size_t i = 0; i < node->children.size(); i++) {
+			if(node->children[i]->children.size() != 0) {
+				render_stream_tree_node(node->children[i], i);
+			}
+		}
+		for(std::size_t i = 0; i < node->children.size(); i++) {
+			if(node->children[i]->children.size() == 0) {
+				render_stream_tree_node(node->children[i], i);
+			}
+		}
+		ImGui::TreePop();
+	}
+	if(make_selection) {
+		_selection = node;
+	}
+	ImGui::PopID();
+}
+
+void gui::stream_viewer::export_trace(trace_stream* node) {
+	std::vector<uint8_t> buffer(node->size());
+	node->seek(0);
+	node->parent->read_v(buffer); // Avoid tarnishing the read_mask buffer.
+	
+	static const std::size_t image_side_length = 1024;
+	static const std::size_t image_pixel_count = image_side_length * image_side_length;
+	
+	struct bgr32 {
+		uint8_t	b, g, r, pad;
+	};
+	std::vector<bgr32> bgr_pixel_data(image_pixel_count);
+	
+	// Convert stream to pixel data.
+	float scale_factor = buffer.size() / (float) image_pixel_count;
+	
+	for(std::size_t i = 0; i < image_pixel_count; i++) {
+		std::size_t in_index = (std::size_t) (i * scale_factor);
+		std::size_t in_index_end = (std::size_t) ((i + 1) * scale_factor);
+		if(in_index_end >= buffer.size()) {
+			bgr_pixel_data[i] = { 0, 0, 0, 0 };
+			continue;
+		}
+		
+		uint8_t pixel = buffer[in_index];
+		bool read = false;
+		for(std::size_t j = in_index; j < in_index_end; j++) {
+			read |= node->read_mask[in_index_end];
+		}
+		bgr_pixel_data[i] = bgr32 {
+			(uint8_t) (read ? 0 : pixel),
+			(uint8_t) (read ? 0 : pixel),
+			pixel,
+			0
+		};
+	}
+	
+	// Write out a BMP file.
+	file_stream bmp_file(node->resource_path() + "_trace.bmp", std::ios::out);
+	
+	bmp_file_header header;
+	std::memcpy(header.magic, "BM", 2);
+	header.pixel_data =
+		sizeof(bmp_file_header) + sizeof(bmp_info_header);
+	header.file_size =
+		header.pixel_data.value + image_pixel_count * sizeof(uint32_t);
+	header.reserved = 0x3713;
+	bmp_file.write<bmp_file_header>(0, header);
+
+	bmp_info_header info;
+	info.info_header_size      = 40;
+	info.width                 = image_side_length;
+	info.height                = image_side_length;
+	info.num_colour_planes     = 1;
+	info.bits_per_pixel        = 32;
+	info.compression_method    = 0;
+	info.pixel_data_size       = image_pixel_count * sizeof(uint32_t);
+	info.horizontal_resolution = 0;
+	info.vertical_resolution   = 0;
+	info.num_colours           = 256;
+	info.num_important_colours = 0;
+	bmp_file.write<bmp_info_header>(info);
+	
+	bmp_file.write_v(bgr_pixel_data);
 }
 
 /*

@@ -273,7 +273,10 @@ private:
 	toc_level _index;
 	level_file_header _file_header;
 	proxy_stream _file;
-	stream* _moby_stream;
+	stream* _world_segment;
+	stream* _asset_segment;
+	std::optional<trace_stream> _world_segment_tracepoint;
+	std::optional<trace_stream> _asset_segment_tracepoint;
 };
 
 #endif

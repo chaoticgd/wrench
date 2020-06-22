@@ -18,6 +18,8 @@
 
 #include "level_impl.h"
 
+#include "../app.h"
+
 bool game_world::is_selected(object_id id) const {
 	return selection.contains(id);
 }
@@ -104,6 +106,8 @@ level::level(iso_stream* iso, toc_level index)
 	: _index(index),
 	  _file_header(level_read_file_header_or_throw(iso, index.main_part.bytes())),
 	  _file(iso, _file_header.base_offset, index.main_part_size.bytes()) {
+	_file.name = "LEVEL" + std::to_string(index.level_table_index) + ".WAD";
+	
 	auto primary_header = _file.read<level_primary_header>(_file_header.primary_header_offset);
 
 	code_segment.header = _file.read<level_code_segment_header>
@@ -111,11 +115,24 @@ level::level(iso_stream* iso, toc_level index)
 	code_segment.bytes.resize(primary_header.code_segment_size - sizeof(level_code_segment_header));
 	_file.read_v(code_segment.bytes);
 
-	_moby_stream = iso->get_decompressed(_file_header.base_offset + _file_header.moby_segment_offset);
-	world.read(_moby_stream);
+	_world_segment = iso->get_decompressed(_file_header.base_offset + _file_header.moby_segment_offset);
+	_world_segment->name = "World Segment";
+	if(config::get().debug.stream_tracing) {
+		// Install a tracepoint for the world segment so we can log reads.
+		_world_segment_tracepoint.emplace(_world_segment);
+		_world_segment = &(*_world_segment_tracepoint);
+	}
+	world.read(_world_segment);
 	
-	stream* asset_seg = iso->get_decompressed
+	_asset_segment = iso->get_decompressed
 		(_file_header.base_offset + _file_header.primary_header_offset + primary_header.asset_wad, true);
+	_asset_segment->name = "Asset Segment";
+	
+	if(config::get().debug.stream_tracing) {
+		// Install a tracepoint for the asset segment so we can log reads.
+		_asset_segment_tracepoint.emplace(_asset_segment);
+		_asset_segment = &(*_asset_segment_tracepoint);
+	}
 	
 	uint32_t asset_base = _file_header.primary_header_offset + primary_header.asset_header;
 	auto asset_header = _file.read<level_asset_header>(asset_base);
@@ -150,10 +167,10 @@ level::level(iso_stream* iso, toc_level index)
 			uint32_t unknown_c;
 		)
 		
-		auto model_header = asset_seg->read<asset_mdl_hdr>(entry.offset_in_asset_wad);
+		auto model_header = _asset_segment->read<asset_mdl_hdr>(entry.offset_in_asset_wad);
 		uint32_t rel_offset = model_header.rel_offset;
 		uint32_t abs_offset = entry.offset_in_asset_wad + rel_offset;
-		moby_models.emplace_back(asset_seg, abs_offset, 0, model_header.num_submodels);
+		moby_models.emplace_back(_asset_segment, abs_offset, 0, model_header.num_submodels);
 		
 		uint32_t class_num = entry.class_num;
 		moby_class_to_model.emplace(class_num, moby_models.size() - 1);
@@ -180,7 +197,7 @@ level::level(iso_stream* iso, toc_level index)
 			auto entry = backing.read<level_texture_entry>();
 			auto ptr = asset_header.tex_data_in_asset_wad + entry.ptr;
 			auto palette = little_texture_base + entry.palette * 0x100;
-			textures.emplace_back(asset_seg, ptr, &_file, palette, vec2i { entry.width, entry.height });
+			textures.emplace_back(_asset_segment, ptr, &_file, palette, vec2i { entry.width, entry.height });
 		}
 		return textures;
 	};
@@ -223,16 +240,16 @@ level::level(iso_stream* iso, toc_level index)
 		uint8_t unknown_3f;
 	);
 
-	auto tfrag_head = asset_seg->read<tfrag_header>(0);
-	asset_seg->seek(tfrag_head.entry_list_offset);
+	auto tfrag_head = _asset_segment->read<tfrag_header>(0);
+	_asset_segment->seek(tfrag_head.entry_list_offset);
 
 	for (int i = 0; i < tfrag_head.count; i++) {
-		auto entry = asset_seg->read<tfrag_entry>();
-		tfrag frag = tfrag(asset_seg, tfrag_head.entry_list_offset + entry.offset, entry.vertex_offset, entry.vertex_count);
+		auto entry = _asset_segment->read<tfrag_entry>();
+		tfrag frag = tfrag(_asset_segment, tfrag_head.entry_list_offset + entry.offset, entry.vertex_offset, entry.vertex_count);
 		tfrags.emplace_back(frag);
 	}
 }
 
 stream* level::moby_stream() {
-	return _moby_stream;
+	return _world_segment;
 }
