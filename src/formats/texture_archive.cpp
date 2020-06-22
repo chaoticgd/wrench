@@ -78,6 +78,11 @@ std::vector<texture> enumerate_fip_textures(iso_stream& iso, toc_table table) {
 		if(texture_offset) {
 			std::optional<texture> tex = create_fip_texture(file, inner_offset + *texture_offset);
 			if(tex) {
+				if(file != &iso) {
+					file->name =
+						"Tbl " + std::to_string(table.index) +
+						" Tex " + std::to_string(off / sizeof(texture_table_entry));
+				}
 				textures.emplace_back(*tex);
 			} else {
 				bad_textures++;

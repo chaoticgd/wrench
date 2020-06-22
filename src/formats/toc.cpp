@@ -30,8 +30,10 @@ table_of_contents read_toc(stream& iso, std::size_t toc_base) {
 	}
 	
 	iso.seek(toc_base);
+	std::size_t table_index = 0;
 	while(iso.tell() + 4 * 6 < toc_base + level_table_offset) {
 		toc_table table;
+		table.index = table_index++;
 		table.offset_in_toc = iso.tell() - toc_base;
 		table.header = iso.read<toc_table_header>();
 		if(table.header.size < sizeof(toc_table_header) || table.header.size > 0xffff) {
@@ -48,6 +50,7 @@ table_of_contents read_toc(stream& iso, std::size_t toc_base) {
 		toc_level_table_entry entry = level_table[i];
 		
 		toc_level level;
+		level.level_table_index = i;
 		bool has_main_part = false;
 		bool has_audio_part = false;
 		bool has_scene_part = false;

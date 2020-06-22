@@ -1371,7 +1371,7 @@ void gui::stream_viewer::render(app& a) {
 
 void gui::stream_viewer::render_stream_tree_node(stream* node, std::size_t index) {
 	ImGui::PushID(reinterpret_cast<std::size_t>(node));
-	bool expanded = ImGui::TreeNode("node", "%4d %s", index, node->name.c_str());
+	bool expanded = ImGui::TreeNode("node", "%4d %s (%ld)", index, node->name.c_str(), node->children.size());
 	ImGui::NextColumn();
 	ImGui::Text("%s", node->resource_path().c_str());
 	ImGui::NextColumn();

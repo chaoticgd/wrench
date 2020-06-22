@@ -104,6 +104,8 @@ level::level(iso_stream* iso, toc_level index)
 	: _index(index),
 	  _file_header(level_read_file_header_or_throw(iso, index.main_part.bytes())),
 	  _file(iso, _file_header.base_offset, index.main_part_size.bytes()) {
+	_file.name = "LEVEL" + std::to_string(index.level_table_index) + ".WAD";
+	
 	auto primary_header = _file.read<level_primary_header>(_file_header.primary_header_offset);
 
 	code_segment.header = _file.read<level_code_segment_header>
@@ -112,10 +114,12 @@ level::level(iso_stream* iso, toc_level index)
 	_file.read_v(code_segment.bytes);
 
 	_moby_stream = iso->get_decompressed(_file_header.base_offset + _file_header.moby_segment_offset);
+	_moby_stream->name = "World Segment";
 	world.read(_moby_stream);
 	
 	stream* asset_seg = iso->get_decompressed
 		(_file_header.base_offset + _file_header.primary_header_offset + primary_header.asset_wad, true);
+	asset_seg->name = "Asset Segment";
 	
 	uint32_t asset_base = _file_header.primary_header_offset + primary_header.asset_header;
 	auto asset_header = _file.read<level_asset_header>(asset_base);

@@ -33,7 +33,8 @@ stream::stream(stream* parent_)
 
 stream::stream(const stream& rhs)
 	: parent(rhs.parent),
-	  children(rhs.children) {
+	  children(rhs.children),
+	  name(rhs.name) {
 	if(parent != nullptr) {
 		parent->children.push_back(this);
 	}
@@ -41,7 +42,8 @@ stream::stream(const stream& rhs)
 
 stream::stream(stream&& rhs)
 	: parent(rhs.parent),
-	  children(rhs.children) {
+	  children(rhs.children),
+	  name(rhs.name) {
 	rhs.parent = nullptr;
 	rhs.children = {};
 }

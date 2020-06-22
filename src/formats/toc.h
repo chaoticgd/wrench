@@ -31,6 +31,7 @@ packed_struct(toc_table_header,
 )
 
 struct toc_table {
+	std::size_t index;
 	uint32_t offset_in_toc;
 	toc_table_header header;
 	array_stream data;
@@ -77,6 +78,7 @@ struct level_file_header {
 };
 
 struct toc_level {
+	std::size_t level_table_index;
 	sector32 main_part;
 	sector32 main_part_size;
 	sector32 audio_part;
