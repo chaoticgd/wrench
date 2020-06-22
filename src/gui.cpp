@@ -1425,9 +1425,16 @@ void gui::stream_viewer::render_stream_tree_node(stream* node, std::size_t index
 	text << " " << node->name;
 	text << " (" << node->children.size() <<")";
 	
+	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_None;
+	if(is_selected) {
+		flags |= ImGuiTreeNodeFlags_Selected;
+	}
+	if(node->children.size() == 0) {
+		flags |= ImGuiTreeNodeFlags_Leaf;
+	}
+	
 	ImGui::PushID(reinterpret_cast<std::size_t>(node));
-	bool expanded = ImGui::TreeNodeEx(text.str().c_str(),
-		is_selected ? ImGuiTreeNodeFlags_Selected : ImGuiTreeNodeFlags_None);
+	bool expanded = ImGui::TreeNodeEx(text.str().c_str(), flags);
 	ImGui::NextColumn();
 	bool make_selection = false;
 	make_selection |= ImGui::Selectable(node->resource_path().c_str(), is_selected);
