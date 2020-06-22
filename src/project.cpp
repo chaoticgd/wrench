@@ -79,7 +79,7 @@ void wrench_project::save(app* a, std::function<void()> on_done) {
 
 void wrench_project::save_as(app* a, std::function<void()> on_done) {
 	auto dialog = a->emplace_window<gui::string_input>("Save Project");
-	dialog->on_okay([=](app& a, std::string path) {
+	dialog->on_okay([this, on_done](app& a, std::string path) {
 		_project_path = path;
 		save_to(path);
 		on_done();

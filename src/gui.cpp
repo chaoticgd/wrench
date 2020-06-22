@@ -288,7 +288,7 @@ void gui::render_menu_bar(app& a) {
 		ImGui::EndMenu();
 	}
 	
-	auto open_document_viewer = [=, &a](const char* path) {
+	auto open_document_viewer = [&](const char* path) {
 		// Close any existing documentation windows.
 		for(auto& window : a.windows) {
 			if(dynamic_cast<document_viewer*>(window.get()) != nullptr) {
@@ -430,7 +430,7 @@ void gui::moby_list::render(app& a) {
 	ImGui::Text("     UID                Class");
 	ImGui::PushItemWidth(-1);
 	ImGui::ListBoxHeader("##mobylist", size);
-	lvl.world.for_each_object_of_type<moby>([=, &lvl](object_id id, moby& object) {
+	lvl.world.for_each_object_of_type<moby>([&](object_id id, moby& object) {
 		std::stringstream row;
 		row << std::setfill(' ') << std::setw(8) << std::dec << object.uid << " ";
 		row << std::setfill(' ') << std::setw(20) << std::hex << object.class_num << " ";
@@ -550,10 +550,12 @@ void gui::string_viewer::render(app& a) {
 		ImGui::SetColumnWidth(0, 64);
 
 		if(ImGui::Button("Export")) {
+			std::string selected_language = _selected_language;
+			
 			auto string_exporter = std::make_unique<string_input>("Enter Export Path");
-			string_exporter->on_okay([=](app& a, std::string path) {
+			string_exporter->on_okay([strings, selected_language](app& a, std::string path) {
 				auto lang = std::find_if(strings.begin(), strings.end(),
-					[=](auto& ptr) { return ptr.first == _selected_language; });
+					[&](auto& ptr) { return ptr.first == selected_language; });
 				if(lang == strings.end()) {
 					return;
 				}
@@ -578,7 +580,7 @@ void gui::string_viewer::render(app& a) {
 		ImGui::Columns(1);
 
 		auto lang = std::find_if(strings.begin(), strings.end(),
-			[=](auto& ptr) { return ptr.first == _selected_language; });
+			[&](auto& ptr) { return ptr.first == _selected_language; });
 		if(lang == strings.end()) {
 			return;
 		}
@@ -772,7 +774,7 @@ void gui::texture_browser::cache_texture(texture* tex) {
 
 void gui::texture_browser::import_bmp(app& a, texture* tex) {
 	auto importer = std::make_unique<string_input>("Enter Import Path");
-	importer->on_okay([=](app& a, std::string path) {
+	importer->on_okay([tex, this](app& a, std::string path) {
 		try {
 			file_stream bmp_file(path);
 			bmp_to_texture(tex, bmp_file);
@@ -796,7 +798,7 @@ void gui::texture_browser::export_bmp(app& a, texture* tex) {
 
 	auto exporter = std::make_unique<string_input>
 		("Enter Export Path", default_file_path);
-	exporter->on_okay([=](app& a, std::string path) {
+	exporter->on_okay([tex](app& a, std::string path) {
 		try {
 			file_stream bmp_file(path, std::ios::in | std::ios::out | std::ios::trunc);
 			texture_to_bmp(bmp_file, tex);

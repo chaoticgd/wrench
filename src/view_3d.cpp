@@ -121,7 +121,7 @@ void view_3d::draw_level(level& lvl) const {
 
 	glUseProgram(_renderer->shaders.solid_colour.id());
 	
-	auto get_colour = [=, &lvl](object_id id, glm::vec4 normal_colour) {
+	auto get_colour = [&](object_id id, glm::vec4 normal_colour) {
 		return lvl.world.is_selected(id) ? glm::vec4(1, 0, 0, 1) : normal_colour;
 	};
 	

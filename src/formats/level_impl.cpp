@@ -30,7 +30,7 @@ void game_world::read(stream* src) {
 	ship = src->read<world_ship_data>(header.ship);
 	
 	// Read game strings.
-	auto read_language = [=](uint32_t offset) {
+	auto read_language = [&](uint32_t offset) {
 		std::vector<game_string> language;
 	
 		auto table = src->read<world_string_table_header>(offset);
@@ -190,7 +190,7 @@ level::level(iso_stream* iso, toc_level index)
 		mipmap_textures.emplace_back(&_file, abs_offset, &_file, last_palette_offset, vec2i { entry.width, entry.height });
 	}
 	
-	auto load_texture_table = [=](stream& backing, std::size_t offset, std::size_t count) {
+	auto load_texture_table = [&](stream& backing, std::size_t offset, std::size_t count) {
 		std::vector<texture> textures;
 		backing.seek(asset_base + offset);
 		for(std::size_t i = 0; i < count; i++) {

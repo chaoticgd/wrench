@@ -61,7 +61,7 @@ void app::new_project(game_iso game) {
 			}
 			return std::optional<project_ptr>();
 		},
-		[=](project_ptr project) {
+		[&](project_ptr project) {
 			_project.swap(project);
 			_lock_project = false;
 
@@ -99,7 +99,7 @@ void app::open_project(std::string path) {
 			}
 			return std::optional<project_ptr>();
 		},
-		[=](project_ptr project) {
+		[&](project_ptr project) {
 			_project.swap(project);
 			_lock_project = false;
 
@@ -116,7 +116,7 @@ void app::save_project(bool save_as) {
 		return;
 	}
 
-	auto on_done = [=]() {
+	auto on_done = [&]() {
 		auto title = std::string("Wrench Editor - [") + _project->project_path() + "]";
 		glfwSetWindowTitle(glfw_window, title.c_str());
 	};

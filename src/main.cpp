@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019 chaoticgd
+	Copyright (C) 2019-2020 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -171,7 +171,7 @@ void update_camera(app* a) {
 	float dx = std::sin(a->renderer.camera_rotation.y) * dist;
 	float dz = std::cos(a->renderer.camera_rotation.y) * dist;
 
-	auto is_down = [=](int key) {
+	auto is_down = [&](int key) {
 		return glfwGetKey(a->glfw_window, key);
 	};
 
