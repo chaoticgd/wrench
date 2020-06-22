@@ -1442,8 +1442,16 @@ void gui::stream_viewer::render_stream_tree_node(stream* node, std::size_t index
 	make_selection |= ImGui::Selectable(int_to_hex(node->size()).c_str(), is_selected);
 	ImGui::NextColumn();
 	if(expanded) {
+		// Display streams with children before leaf streams.
 		for(std::size_t i = 0; i < node->children.size(); i++) {
-			render_stream_tree_node(node->children[i], i);
+			if(node->children[i]->children.size() != 0) {
+				render_stream_tree_node(node->children[i], i);
+			}
+		}
+		for(std::size_t i = 0; i < node->children.size(); i++) {
+			if(node->children[i]->children.size() == 0) {
+				render_stream_tree_node(node->children[i], i);
+			}
 		}
 		ImGui::TreePop();
 	}
