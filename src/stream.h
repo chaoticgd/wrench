@@ -199,6 +199,20 @@ public:
 		src.read_n(buffer.data(), last_chunk_size);
 		dest.write_n(buffer.data(), last_chunk_size);
 	}
+	
+	// Check if the stream tree contains a given stream object. This is useful
+	// for checking if a pointer to a stream is still valid.
+	bool contains(stream* needle) {
+		if(needle == this) {
+			return true;
+		}
+		for(stream* child : children) {
+			if(child->contains(needle)) {
+				return true;
+			}
+		}
+		return false;
+	}
 
 	// Pretty print new data that has been written to the end of the buffer.
 	// Compare said data to an 'expected' data file.

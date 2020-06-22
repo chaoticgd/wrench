@@ -1352,6 +1352,51 @@ void gui::stream_viewer::render(app& a) {
 		return;
 	}
 	
+	if(ImGui::Button("Export")) {
+		stream* selection = _selection;
+		
+		// The stream might not exist anymore, so we need to make sure that
+		// it's still in the tree before dereferencing it.
+		if(!project->iso.contains(selection)) {
+			return;
+		}
+		
+		if(selection->size() == 0) {
+			a.emplace_window<message_box>("Error",
+				"The selected stream has an unknown size so cannot be exported.");
+		}
+		
+		auto stream_exporter = std::make_unique<string_input>("Enter Export Path");
+		stream_exporter->on_okay([selection](app& a, std::string path) {
+			// The project might have been unloaded since the string input
+			// box was created.
+			wrench_project* project = a.get_project();
+			if(project == nullptr) {
+				a.emplace_window<message_box>("Error",
+					"The project was unloaded.");
+				return;
+			}
+			
+			// The stream might not exist anymore, so we need to make sure that
+			// it's still in the tree before dereferencing it.
+			if(!project->iso.contains(selection)) {
+				a.emplace_window<message_box>("Error",
+					"The selected stream no longer exists.");
+				return;
+			}
+			
+			// Write out the stream to the specified file.
+			try {
+				file_stream out_file(path, std::ios::out);
+				selection->seek(0);
+				stream::copy_n(out_file, *selection, selection->size());
+			} catch(stream_error& err) {
+				a.emplace_window<message_box>("Error", err.what());
+			}
+		});
+		a.windows.emplace_back(std::move(stream_exporter));
+	}
+		
 	ImGui::BeginChild(1);
 		ImGui::Columns(3);
 		ImGui::Text("Name");
