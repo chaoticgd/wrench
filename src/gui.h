@@ -358,6 +358,10 @@ namespace gui {
 		void render(app& a) override;
 		
 		void render_stream_tree_node(stream* node, std::size_t index);
+		
+		// Write out a BMP image to the Wrench directory representing the passed
+		// trace stream where red areas have been read in by Wrench and
+		// grayscale areas have not (the Y axis is bottom to top).
 		void export_trace(trace_stream* node);
 	
 	private:

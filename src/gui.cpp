@@ -1415,16 +1415,6 @@ void gui::stream_viewer::render(app& a) {
 		if(ImGui::Button("Export Trace")) {
 			export_trace(trace);
 		}
-		ImGui::SameLine();
-		ImGui::Text("Image tools:");
-		ImGui::SameLine();
-		if(ImGui::Button("Get Pixel Coords")) {
-			// TODO
-		}
-		ImGui::SameLine();
-		if(ImGui::Button("Get Offset")) {
-			// TODO
-		}
 	}
 		
 	ImGui::BeginChild(1);
@@ -1489,7 +1479,69 @@ void gui::stream_viewer::render_stream_tree_node(stream* node, std::size_t index
 }
 
 void gui::stream_viewer::export_trace(trace_stream* node) {
-	// TODO
+	std::vector<uint8_t> buffer(node->size());
+	node->seek(0);
+	node->parent->read_v(buffer); // Avoid tarnishing the read_mask buffer.
+	
+	static const std::size_t image_side_length = 1024;
+	static const std::size_t image_pixel_count = image_side_length * image_side_length;
+	
+	struct bgr32 {
+		uint8_t	b, g, r, pad;
+	};
+	std::vector<bgr32> bgr_pixel_data(image_pixel_count);
+	
+	// Convert stream to pixel data.
+	float scale_factor = buffer.size() / (float) image_pixel_count;
+	
+	for(std::size_t i = 0; i < image_pixel_count; i++) {
+		std::size_t in_index = (std::size_t) (i * scale_factor);
+		std::size_t in_index_end = (std::size_t) ((i + 1) * scale_factor);
+		if(in_index_end >= buffer.size()) {
+			bgr_pixel_data[i] = { 0, 0, 0, 0 };
+			continue;
+		}
+		
+		uint8_t pixel = buffer[in_index];
+		bool read = false;
+		for(std::size_t j = in_index; j < in_index_end; j++) {
+			read |= node->read_mask[in_index_end];
+		}
+		bgr_pixel_data[i] = bgr32 {
+			(uint8_t) (read ? 0 : pixel),
+			(uint8_t) (read ? 0 : pixel),
+			pixel,
+			0
+		};
+	}
+	
+	// Write out a BMP file.
+	file_stream bmp_file(node->resource_path() + "_trace.bmp", std::ios::out);
+	
+	bmp_file_header header;
+	std::memcpy(header.magic, "BM", 2);
+	header.pixel_data =
+		sizeof(bmp_file_header) + sizeof(bmp_info_header);
+	header.file_size =
+		header.pixel_data.value + image_pixel_count * sizeof(uint32_t);
+	header.reserved = 0x3713;
+	bmp_file.write<bmp_file_header>(0, header);
+
+	bmp_info_header info;
+	info.info_header_size      = 40;
+	info.width                 = image_side_length;
+	info.height                = image_side_length;
+	info.num_colour_planes     = 1;
+	info.bits_per_pixel        = 32;
+	info.compression_method    = 0;
+	info.pixel_data_size       = image_pixel_count * sizeof(uint32_t);
+	info.horizontal_resolution = 0;
+	info.vertical_resolution   = 0;
+	info.num_colours           = 256;
+	info.num_important_colours = 0;
+	bmp_file.write<bmp_info_header>(info);
+	
+	bmp_file.write_v(bgr_pixel_data);
 }
 
 /*

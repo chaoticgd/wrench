@@ -199,7 +199,7 @@ std::string proxy_stream::resource_path() const {
 
 trace_stream::trace_stream(stream* parent)
 	: stream(parent),
-	  read_mask(parent->size()) {}
+	  read_mask(parent->size(), false) {}
 
 std::size_t trace_stream::size() const {
 	return parent->size();
@@ -214,10 +214,10 @@ std::size_t trace_stream::tell() const {
 }
 
 void trace_stream::read_n(char* dest, std::size_t size_) {
-	parent->read_n(dest, size_);
 	std::size_t pos = tell();
+	parent->read_n(dest, size_);
 	for(std::size_t i = pos; i < std::min(size(), pos + size_); i++) {
-		read_mask[i - pos] = true;
+		read_mask[i] = true;
 	}
 }
 
