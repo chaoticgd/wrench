@@ -1507,7 +1507,7 @@ void gui::stream_viewer::export_trace(trace_stream* node) {
 		uint8_t pixel = buffer[in_index];
 		bool read = false;
 		for(std::size_t j = in_index; j < in_index_end; j++) {
-			read |= node->read_mask[in_index_end];
+			read |= node->read_mask[j];
 		}
 		bgr_pixel_data[i] = bgr32 {
 			(uint8_t) (read ? 0 : pixel),
