@@ -171,7 +171,10 @@ void app::run_emulator() {
 	if(fs::is_regular_file(config::get().emulator_path)) {
 		std::string emulator_path = fs::canonical(config::get().emulator_path).string();
 		std::string cmd = emulator_path + " " + _project->cached_iso_path();
-		system(cmd.c_str());
+		int result = system(cmd.c_str());
+		if(result != 0) {
+			emplace_window<gui::message_box>("Error", "Failed to execute shell command.");
+		}
 	} else {
 		emplace_window<gui::message_box>("Error", "Invalid emulator path.");
 	}

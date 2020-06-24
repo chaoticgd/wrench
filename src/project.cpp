@@ -231,7 +231,7 @@ void wrench_project::load_tables() {
 			continue;
 		}
 		
-		fprintf(stderr, "warning: File at iso+0x%08x ignored.\n", table.header.base_offset.bytes());
+		fprintf(stderr, "warning: File at iso+0x%08lx ignored.\n", table.header.base_offset.bytes());
 	}
 }
 

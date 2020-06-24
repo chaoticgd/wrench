@@ -671,8 +671,8 @@ void gui::texture_browser::render(app& a) {
 		if(ImGui::TreeNodeEx("Details", ImGuiTreeNodeFlags_DefaultOpen)) {
 			if(textures.size() > 0) {
 				vec2i size = textures[_selection].size();
-				ImGui::Text("Width:  %d", size.x);
-				ImGui::Text("Height: %d", size.y);
+				ImGui::Text("Width:  %ld", size.x);
+				ImGui::Text("Height: %ld", size.y);
 			} else {
 				ImGui::Text("<no texture selected>");
 			}
@@ -969,7 +969,7 @@ game_model* gui::model_browser::render_selection_grid(
 			ImVec4(0, 0, 0, 1),
 			ImVec4(1, 1, 1, 1)
 		);
-		ImGui::Text("%d\n", i);
+		ImGui::Text("%ld\n", i);
 		
 		if(clicked) {
 			_list = list;
@@ -1776,5 +1776,8 @@ GLuint gui::load_icon(std::string path) {
 // Don't pass untrusted input to this!
 void gui::open_in_browser(const char* url) {
 	std::string cmd = "xdg-open " + std::string(url);
-	system(cmd.c_str());
+	int result = system(cmd.c_str());
+	if(result != 0) {
+		fprintf(stderr, "error: Failed to execute shell command.\n");
+	}
 }
