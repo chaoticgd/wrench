@@ -43,7 +43,7 @@ class armor_archive {
 public:
 	armor_archive();
 	
-	bool read(stream& iso, toc_table table);
+	bool read(stream& iso, const toc_table& table);
 	
 	std::vector<game_model> models;
 	std::vector<texture> textures;

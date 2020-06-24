@@ -251,6 +251,7 @@ struct level_code_segment {
 class level {
 public:
 	level(iso_stream* iso, toc_level index);
+	level(const level& rhs) = delete;
 	
 	std::map<std::string, std::map<uint32_t, std::string>> game_strings() { return {}; }
 

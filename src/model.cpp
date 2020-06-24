@@ -47,6 +47,7 @@ void model::update() {
 		// We've failed to read the model data.
 		_vertex_buffer = 0;
 		_vertex_buffer_size = 0;
+		fprintf(stderr, "warning: Failed to load model at %p.\n", this);
 		return;
 	}
 	

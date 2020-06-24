@@ -29,11 +29,6 @@ game_model::game_model(stream* backing, std::size_t base_offset, std::size_t sub
 	_backing.name = "Moby Model";
 }
 
-game_model::game_model(game_model&& rhs)
-	: num_submodels(rhs.num_submodels),
-	  _backing(rhs._backing),
-	  _submodel_table_offset(rhs._submodel_table_offset) {}
-
 std::vector<float> game_model::triangles() const {
 	std::vector<float> result;
 	

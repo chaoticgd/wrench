@@ -42,7 +42,6 @@ public:
 	};
 
 	tfrag(stream *backing, std::size_t base_offset, uint16_t vertex_count, uint16_t vertex_offset);
-	tfrag(tfrag&& rhs);
 
 	std::vector<float> triangles() const override;
 

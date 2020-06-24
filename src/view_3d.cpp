@@ -142,21 +142,12 @@ void view_3d::draw_level(level& lvl) const {
 		
 		const game_model& model =
 			lvl.moby_models[lvl.moby_class_to_model.at(object.class_num)];
-		try {
-			_renderer->draw_model(model, local_to_clip, colour);
-		} catch(stream_error& err) {
-			// We've failed to parse the model data.
-		}
+		_renderer->draw_model(model, local_to_clip, colour);
 	});
 	
 	for (auto& frag : lvl.tfrags) {
 		glm::vec4 colour(0.5, 0.5, 0.5, 1);
-
-		try {
-			_renderer->draw_model(frag, world_to_clip, colour);
-		} catch (stream_error &err) {
-			// We've failed to parse the model data.
-		}
+		_renderer->draw_model(frag, world_to_clip, colour);
 	}
 	
 	lvl.world.for_each_object_of_type<spline>([&](object_id id, spline& object) {
@@ -335,11 +326,7 @@ void view_3d::draw_pickframe(level& lvl) const {
 		
 		const game_model& model =
 			lvl.moby_models[lvl.moby_class_to_model.at(object.class_num)];
-		try {
-			_renderer->draw_model(model, local_to_clip, colour);
-		} catch(stream_error& err) {
-			// We've failed to parse the model data.
-		}
+		_renderer->draw_model(model, local_to_clip, colour);
 	});
 
 	lvl.world.for_each_object_of_type<spline>([&](object_id id, spline& object) {
