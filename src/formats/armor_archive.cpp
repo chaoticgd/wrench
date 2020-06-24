@@ -22,14 +22,14 @@
 
 armor_archive::armor_archive() {}
 
-bool armor_archive::read(stream& iso, toc_table table) {
+bool armor_archive::read(stream& iso, const toc_table& table) {
 	std::size_t base_offset = table.header.base_offset.bytes();
 	if(table.header.size > 0x1000) {
 		return false;
 	}
 	
 	for(std::size_t i = 0; i < table.data.size(); i += 16) {
-		auto armor = table.data.read<armor_table_entry>(i);
+		auto armor = table.data.peek<armor_table_entry>(i);
 		if(armor.texture.sectors == 0) {
 			continue; // We're probably reading off the end of the array.
 		}

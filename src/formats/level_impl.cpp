@@ -30,7 +30,7 @@ void game_world::read(stream* src) {
 	ship = src->read<world_ship_data>(header.ship);
 	
 	// Read game strings.
-	auto read_language = [=](uint32_t offset) {
+	auto read_language = [&](uint32_t offset) {
 		std::vector<game_string> language;
 	
 		auto table = src->read<world_string_table_header>(offset);
@@ -171,6 +171,7 @@ level::level(iso_stream* iso, toc_level index)
 		uint32_t rel_offset = model_header.rel_offset;
 		uint32_t abs_offset = entry.offset_in_asset_wad + rel_offset;
 		moby_models.emplace_back(_asset_segment, abs_offset, 0, model_header.num_submodels);
+		moby_models.back().update();
 		
 		uint32_t class_num = entry.class_num;
 		moby_class_to_model.emplace(class_num, moby_models.size() - 1);
@@ -190,7 +191,7 @@ level::level(iso_stream* iso, toc_level index)
 		mipmap_textures.emplace_back(&_file, abs_offset, &_file, last_palette_offset, vec2i { entry.width, entry.height });
 	}
 	
-	auto load_texture_table = [=](stream& backing, std::size_t offset, std::size_t count) {
+	auto load_texture_table = [&](stream& backing, std::size_t offset, std::size_t count) {
 		std::vector<texture> textures;
 		backing.seek(asset_base + offset);
 		for(std::size_t i = 0; i < count; i++) {
@@ -246,7 +247,8 @@ level::level(iso_stream* iso, toc_level index)
 	for (int i = 0; i < tfrag_head.count; i++) {
 		auto entry = _asset_segment->read<tfrag_entry>();
 		tfrag frag = tfrag(_asset_segment, tfrag_head.entry_list_offset + entry.offset, entry.vertex_offset, entry.vertex_count);
-		tfrags.emplace_back(frag);
+		frag.update();
+		tfrags.emplace_back(std::move(frag));
 	}
 }
 

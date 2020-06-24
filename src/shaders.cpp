@@ -105,7 +105,7 @@ shader_programs::shader_programs()
 				gl_FragColor = rgb;
 			}
 		)",
-		[=](GLuint id) {
+		[&](GLuint id) {
 			solid_colour_transform = glGetUniformLocation(id, "transform");
 			solid_colour_rgb       = glGetUniformLocation(id, "rgb");
 		}

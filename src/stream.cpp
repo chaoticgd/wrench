@@ -31,21 +31,24 @@ stream::stream(stream* parent_)
 	}
 }
 
-stream::stream(const stream& rhs)
-	: parent(rhs.parent),
-	  children(rhs.children),
-	  name(rhs.name) {
-	if(parent != nullptr) {
-		parent->children.push_back(this);
-	}
-}
-
 stream::stream(stream&& rhs)
 	: parent(rhs.parent),
 	  children(rhs.children),
 	  name(rhs.name) {
 	rhs.parent = nullptr;
 	rhs.children = {};
+	if(parent != nullptr) {
+		for(stream*& child : parent->children) {
+			if(child == &rhs) {
+				child = this;
+			}
+		}
+	}
+	for(stream* child : children) {
+		if(child->parent == &rhs) {
+			child->parent = this;
+		}
+	}
 }
 
 stream::~stream() {

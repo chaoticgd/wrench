@@ -31,9 +31,14 @@
 class model {
 public:
 	model();
+	model(const model& rhs) = delete;
+	model(model&& rhs);
 	virtual ~model();
 
 	virtual std::vector<float> triangles() const = 0;
+	
+	// Read the model data, load it into a OpenGL buffer. Only call from main thread!
+	void update();
 	
 	GLuint vertex_buffer() const;
 	std::size_t vertex_buffer_size() const;

@@ -73,7 +73,7 @@ packed_struct(file_ptr,
 packed_struct(sector32,
 	uint32_t sectors = 0;
 	
-	std::size_t bytes() {
+	std::size_t bytes() const {
 		return sectors * SECTOR_SIZE;
 	}
 )
@@ -100,7 +100,7 @@ struct stream_format_error : public stream_error {
 class stream {
 public:
 	stream(stream* parent_);
-	stream(const stream& rhs);
+	stream(const stream& rhs) = delete;
 	stream(stream&& rhs);
 	virtual ~stream();
 	

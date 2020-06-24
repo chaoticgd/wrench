@@ -60,6 +60,14 @@ wrench_project::wrench_project(
 	load_tables();
 }
 
+void wrench_project::post_load() {
+	for(auto& [_, armor] : _armor) {
+		for(game_model& model : armor.models) {
+			model.update();
+		}
+	}
+}
+
 std::string wrench_project::project_path() const {
 	return _project_path;
 }
@@ -79,7 +87,7 @@ void wrench_project::save(app* a, std::function<void()> on_done) {
 
 void wrench_project::save_as(app* a, std::function<void()> on_done) {
 	auto dialog = a->emplace_window<gui::string_input>("Save Project");
-	dialog->on_okay([=](app& a, std::string path) {
+	dialog->on_okay([this, on_done](app& a, std::string path) {
 		_project_path = path;
 		save_to(path);
 		on_done();
@@ -213,7 +221,7 @@ void wrench_project::load_tables() {
 		
 		armor_archive armor;
 		if(armor.read(iso, table)) {
-			_armor.emplace(i, armor);
+			_armor.emplace(i, std::move(armor));
 			continue;
 		}
 		

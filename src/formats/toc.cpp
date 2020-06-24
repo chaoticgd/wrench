@@ -40,7 +40,7 @@ table_of_contents read_toc(stream& iso, std::size_t toc_base) {
 			break;
 		}
 		stream::copy_n(table.data, iso, table.header.size - sizeof(toc_table_header));
-		toc.tables.push_back(table);
+		toc.tables.emplace_back(std::move(table));
 	}
 	
 	std::vector<toc_level_table_entry> level_table(TOC_MAX_LEVELS);

@@ -25,19 +25,19 @@ translate_command::translate_command(
 	: _lvl(lvl),
 	  _displacement(displacement),
 	  _objects(objects) {
-	_lvl->world.for_each_object_in(_objects, [=](object_id id, auto& object) {
+	_lvl->world.for_each_object_in(_objects, [&](object_id id, auto& object) {
 		_prev_positions[id] = glm::vec3(object.mat()[3]);
 	});
 }
 
 void translate_command::apply(wrench_project* project) {
-	_lvl->world.for_each_object_in(_objects, [=](object_id id, auto& object) {
+	_lvl->world.for_each_object_in(_objects, [&](object_id id, auto& object) {
 		object.translate(_displacement);
 	});
 }
 
 void translate_command::undo(wrench_project* project) {
-	_lvl->world.for_each_object_in(_objects, [=](object_id id, auto& object) {
+	_lvl->world.for_each_object_in(_objects, [&](object_id id, auto& object) {
 		object.set_translation(_prev_positions.at(id));
 	});
 }

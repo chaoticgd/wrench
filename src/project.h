@@ -55,6 +55,8 @@ public:
 		std::string project_path,
 		worker_logger& log); // Open
 
+	void post_load(); // Called from main thread, used for OpenGL things.
+
 	std::string project_path() const;
 	std::string cached_iso_path() const;
 
