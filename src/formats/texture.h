@@ -35,7 +35,7 @@ struct colour {
 };
 
 struct vec2i {
-	int x, y;
+	std::size_t x, y;
 	
 	bool operator==(vec2i& rhs) {
 		return x == rhs.x && y == rhs.y;

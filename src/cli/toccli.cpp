@@ -48,21 +48,21 @@ int main(int argc, char** argv) {
 	for(std::size_t i = 0; i < toc.tables.size(); i++) {
 		std::size_t table_size = sizeof(toc_table_header) + toc.tables[i].data.size();
 		std::size_t base_offset = toc.tables[i].header.base_offset.bytes();
-		printf("Table %ld at toc+0x%04x of size 0x%03lx pointing to 0x%08x.\n",
+		printf("Table %ld at toc+0x%04x of size 0x%03lx pointing to 0x%08lx.\n",
 			i, toc.tables[i].offset_in_toc, table_size, base_offset);
 	}
 	
 	for(std::size_t i = 0 ; i < toc.levels.size(); i++) {
 		toc_level& lvl = toc.levels[i];
 		std::size_t main_part = src.read<sector32>(lvl.main_part.bytes() + 4).bytes();
-		printf("Level %02d with main part at 0x%08x", i, main_part);
+		printf("Level %02ld with main part at 0x%08lx", i, main_part);
 		if(lvl.audio_part.sectors != 0) {
 			std::size_t audio_part = src.read<sector32>(lvl.audio_part.bytes() + 4).bytes();
-			printf(", with audio part at 0x%08x", audio_part);
+			printf(", with audio part at 0x%08lx", audio_part);
 		}
 		if(lvl.scene_part.sectors != 0) {
 			std::size_t scene_part = src.read<sector32>(lvl.scene_part.bytes() + 4).bytes();
-			printf(", with scene part at 0x%08x", scene_part);
+			printf(", with scene part at 0x%08lx", scene_part);
 		}
 		printf(".\n");
 	}

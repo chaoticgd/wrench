@@ -295,7 +295,6 @@ void compress_wad(array_stream& dest, array_stream& src) {
 			WAD_COMPRESS_DEBUG(std::cout << "\n*** SPECIAL PAD PACKETS ***\n");
 			
 			// Padding must be followed by a packet with a flag of 0x11.
-			std::size_t copy_size = std::min((std::size_t) 0xff, src.buffer.size() - src.pos);
 			dest.write8(0x11);
 			dest.write8(2);
 			dest.write8(0);
@@ -332,7 +331,6 @@ std::vector<char> encode_wad_packet(
 	std::vector<char> packet { 0 };
 	uint8_t flag_byte = 0;
 
-	std::size_t base_src = src.pos;
 	std::vector<char> packet_start_buf(4);
 	src.peek_n(packet_start_buf.data(), src.pos, 4);
 

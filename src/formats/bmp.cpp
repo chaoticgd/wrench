@@ -91,7 +91,10 @@ void bmp_to_texture(texture* dest, stream& src) {
 		throw stream_format_error("The BMP colour palette must contain at most 256 colours.");
 	}
 
-	vec2i size { info_header.width, info_header.height };
+	vec2i size {
+		(std::size_t) std::abs(info_header.width),
+		(std::size_t) std::abs(info_header.height)
+	};
 	if(dest->size() != size) {
 		throw stream_format_error("Texture size mismatch.");
 	}

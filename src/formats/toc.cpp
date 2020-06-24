@@ -52,8 +52,6 @@ table_of_contents read_toc(stream& iso, std::size_t toc_base) {
 		toc_level level;
 		level.level_table_index = i;
 		bool has_main_part = false;
-		bool has_audio_part = false;
-		bool has_scene_part = false;
 		
 		// The games have the fields in different orders, so we check the type
 		// of what each field points to so we can support them all.
@@ -74,13 +72,11 @@ table_of_contents read_toc(stream& iso, std::size_t toc_base) {
 			if(contains(TOC_AUDIO_PART_MAGIC, magic)) {
 				level.audio_part = headers[j];
 				level.audio_part_size = sizes[j];
-				has_audio_part = true;
 			}
 			
 			if(contains(TOC_SCENE_PART_MAGIC, magic)) {
 				level.scene_part = headers[j];
 				level.scene_part_size = sizes[j];
-				has_scene_part = true;
 			}
 		}
 		

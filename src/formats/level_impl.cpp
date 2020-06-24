@@ -244,7 +244,7 @@ level::level(iso_stream* iso, toc_level index)
 	auto tfrag_head = _asset_segment->read<tfrag_header>(0);
 	_asset_segment->seek(tfrag_head.entry_list_offset);
 
-	for (int i = 0; i < tfrag_head.count; i++) {
+	for (std::size_t i = 0; i < tfrag_head.count; i++) {
 		auto entry = _asset_segment->read<tfrag_entry>();
 		tfrag frag = tfrag(_asset_segment, tfrag_head.entry_list_offset + entry.offset, entry.vertex_offset, entry.vertex_count);
 		frag.update();
