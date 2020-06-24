@@ -62,6 +62,7 @@ void app::new_project(game_iso game) {
 			return std::optional<project_ptr>();
 		},
 		[&](project_ptr project) {
+			project->post_load();
 			_project.swap(project);
 			_lock_project = false;
 
@@ -100,6 +101,7 @@ void app::open_project(std::string path) {
 			return std::optional<project_ptr>();
 		},
 		[&](project_ptr project) {
+			project->post_load();
 			_project.swap(project);
 			_lock_project = false;
 

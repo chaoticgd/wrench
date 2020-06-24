@@ -18,6 +18,8 @@
 
 #include "model.h"
 
+#include "stream.h"
+
 model::model()
 	: _vertex_buffer(0),
 	  _vertex_buffer_size(0) {}
@@ -35,25 +37,28 @@ model::~model() {
 	}
 }
 
-GLuint model::vertex_buffer() const {
+void model::update() {
+	glDeleteBuffers(1, &_vertex_buffer);
 	
-	// The vertex buffer cache is not considered a part of this object's logical
-	// state. Only functions that modify the vertices should be non-const.
-	model* this_ = const_cast<model*>(this);
-	
-	if(_vertex_buffer == 0) {
-		std::vector<float> vertex_data = this_->triangles();
-
-		this_->_vertex_buffer_size = vertex_data.size();
-		
-		glDeleteBuffers(1, &this_->_vertex_buffer);
-		glGenBuffers(1, &this_->_vertex_buffer);
-		glBindBuffer(GL_ARRAY_BUFFER, this_->_vertex_buffer);
-		glBufferData(GL_ARRAY_BUFFER,
-			_vertex_buffer_size * sizeof(float),
-			vertex_data.data(), GL_STATIC_DRAW);
+	std::vector<float> vertex_data;
+	try {
+		vertex_data = triangles();
+	} catch(stream_error& e) {
+		// We've failed to read the model data.
+		_vertex_buffer = 0;
+		_vertex_buffer_size = 0;
+		return;
 	}
 	
+	_vertex_buffer_size = vertex_data.size();
+	glGenBuffers(1, &_vertex_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, _vertex_buffer);
+	glBufferData(GL_ARRAY_BUFFER,
+		_vertex_buffer_size * sizeof(float),
+		vertex_data.data(), GL_STATIC_DRAW);
+}
+
+GLuint model::vertex_buffer() const {
 	return _vertex_buffer;
 }
 

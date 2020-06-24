@@ -60,6 +60,14 @@ wrench_project::wrench_project(
 	load_tables();
 }
 
+void wrench_project::post_load() {
+	for(auto& [_, armor] : _armor) {
+		for(game_model& model : armor.models) {
+			model.update();
+		}
+	}
+}
+
 std::string wrench_project::project_path() const {
 	return _project_path;
 }
