@@ -41,6 +41,9 @@ bool armor_archive::read(stream& iso, const toc_table& table) {
 			iso.peek<uint32_t>(base_offset + armor.model.bytes() + 0x10);
 		std::size_t num_submodels =
 			(submodel_table_end - submodel_table_offset) / 0x10;
+		if(submodel_table_offset > 0x100) { // usually equal to 0x10.
+			break; // We're probably reading off the end of the array.
+		}
 		models.emplace_back(&iso, base_offset + armor.model.bytes(), submodel_table_offset, num_submodels);
 		
 		std::string set_name = std::string("set") + std::to_string(i);
