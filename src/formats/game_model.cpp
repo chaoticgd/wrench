@@ -19,65 +19,127 @@
 #include "game_model.h"
 
 #include <glm/glm.hpp>
+#include <glm/common.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "../util.h"
 
-game_model::game_model(stream* backing, std::size_t base_offset, std::size_t submodel_table_offset, std::size_t num_submodels_)
-	:  num_submodels(num_submodels_),
-	  _backing(backing, base_offset, 0),
+moby_model::moby_model(
+	stream* backing,
+	std::size_t base_offset,
+	std::size_t size,
+	std::size_t submodel_table_offset,
+	std::vector<std::size_t> submodel_counts_)
+	: submodel_counts(std::move(submodel_counts_)),
+	  thumbnail(0),
+	  _vertex_buffer(0),
+	  _vertex_count(0),
+	  _backing(backing, base_offset, size),
 	  _submodel_table_offset(submodel_table_offset) {
 	_backing.name = "Moby Model";
+	read();
 }
 
-std::vector<float> game_model::triangles() const {
-	std::vector<float> result;
-	
-	// I'm not entirely sure how the vertex data is stored, and this code
-	// doesn't work very well. More research is needed.
-	for(std::size_t i = 0; i < num_submodels; i++) {
-		auto entry = get_submodel_entry(i);
-		uint32_t base = entry.address_8;
-		bool last_is_vertex = false;
-		for(std::size_t j = 0; j < 0x10000; j++) {
-			auto vertex = _backing.peek<fmt::vertex>(base + j * 0x10);
-			
-			bool is_vertex = vertex.unknown_3 == 0xf4;
-			if(last_is_vertex && !is_vertex) {
-				break;
-			}
-			
-			if(is_vertex) {
-				result.push_back(vertex.x / (float) INT16_MAX);
-				result.push_back(vertex.y / (float) INT16_MAX);
-				result.push_back(vertex.z / (float) INT16_MAX);
-			}
-			
-			last_is_vertex = is_vertex;
-		}
+moby_model::moby_model(moby_model&& rhs)
+	: submodel_counts(std::move(rhs.submodel_counts)),
+	  submodels(std::move(rhs.submodels)),
+	  thumbnail(rhs.thumbnail),
+	  _vertex_buffer(rhs._vertex_buffer),
+	  _vertex_count(rhs._vertex_count),
+	  _backing(std::move(rhs._backing)),
+	  _submodel_table_offset(rhs._submodel_table_offset) {
+	rhs.thumbnail = 0;
+	rhs._vertex_buffer = 0;
+	rhs._vertex_count = 0;
+}
+
+moby_model::~moby_model() {
+	if(_vertex_buffer != 0) {
+		glDeleteBuffers(1, &_vertex_buffer);
+	}
+	if(thumbnail != 0) {
+		glDeleteTextures(1, &thumbnail);
+	}
+}
+
+void moby_model::read() {
+	std::size_t total_submodel_count = 0;
+	for(std::size_t submodel_count : submodel_counts) {
+		total_submodel_count += submodel_count;
 	}
 	
-	return result;
+	std::vector<moby_model_submodel_entry> submodel_entries;
+	submodel_entries.resize(total_submodel_count);
+	_backing.seek(_submodel_table_offset);
+	_backing.read_v(submodel_entries);
+	
+	submodels = {};
+	for(moby_model_submodel_entry& entry : submodel_entries) {
+		moby_model_submodel submodel;
+		
+		submodel.vif_list = parse_vif_chain(&_backing, entry.vif_list_offset, entry.vif_list_qwc);
+		
+		auto vertex_header = _backing.read<moby_model_vertex_table_header>(entry.vertex_offset);
+		submodel.vertex_data.resize(vertex_header.vertex_count);
+		_backing.seek(_submodel_table_offset + entry.vertex_offset + vertex_header.vertex_table_offset);
+		_backing.read_v(submodel.vertex_data);
+		
+		submodels.emplace_back(std::move(submodel));
+	}
 }
 
-std::vector<vif_packet> game_model::get_vif_chain(std::size_t submodel) const {
-	auto entry = get_submodel_entry(submodel);
-	return get_vif_chain_at(entry.address, entry.qwc);
+void moby_model::write() {
+	// TODO
 }
 
-std::string game_model::resource_path() {
+void moby_model::upload_vertex_buffer() {
+	// Append submodels together, creating degenerate tris between them.
+	std::vector<moby_model_vertex> vertex_data;
+	for(moby_model_submodel& submodel : submodels) {
+		if(submodel.vertex_data.size() < 3) {
+			continue;
+		}
+		vertex_data.insert(vertex_data.end(), submodel.vertex_data.begin(), submodel.vertex_data.begin() + 1);
+		vertex_data.insert(vertex_data.end(), submodel.vertex_data.begin(), submodel.vertex_data.end());
+		vertex_data.insert(vertex_data.end(), submodel.vertex_data.end() - 1, submodel.vertex_data.end());
+	}
+	
+	auto opengl_data = moby_vertex_data_to_opengl(vertex_data);
+	
+	_vertex_count = vertex_data.size();
+	glDeleteBuffers(1, &_vertex_buffer);
+	glGenBuffers(1, &_vertex_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, _vertex_buffer);
+	glBufferData(GL_ARRAY_BUFFER,
+		_vertex_count * sizeof(moby_model_opengl_vertex),
+		opengl_data.data(), GL_STATIC_DRAW);
+}
+
+void moby_model::setup_vertex_attributes() const {
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*) offsetof(moby_model_opengl_vertex, x));
+}
+
+GLuint moby_model::vertex_buffer() const {
+	return _vertex_buffer;
+}
+
+std::size_t moby_model::vertex_count() const {
+	return _vertex_count;
+}
+
+std::string moby_model::resource_path() const {
 	return _backing.resource_path();
 }
 
-std::vector<vif_packet> game_model::get_vif_chain_at(std::size_t offset, std::size_t qwc) const {
-	if(_vif_chains.find(offset) == _vif_chains.end()) {
-		const_cast<vif_chains*>(&_vif_chains)->insert
-			({offset, parse_vif_chain(&_backing, offset, qwc)});
+std::vector<moby_model_opengl_vertex> moby_vertex_data_to_opengl(const std::vector<moby_model_vertex>& vertex_data) {
+	std::vector<moby_model_opengl_vertex> result(vertex_data.size());
+	for(std::size_t i = 0; i < result.size(); i++) {
+		const moby_model_vertex& in_vertex = vertex_data[i];
+		result[i] = moby_model_opengl_vertex {
+			in_vertex.x / (float) INT16_MAX,
+			in_vertex.y / (float) INT16_MAX,
+			in_vertex.z / (float) INT16_MAX
+		};
 	}
-	
-	return _vif_chains.at(offset);
-}
-
-game_model::fmt::submodel_entry game_model::get_submodel_entry(std::size_t submodel) const {
-	uint32_t offset = _submodel_table_offset + submodel * sizeof(fmt::submodel_entry);
-	return _backing.peek<fmt::submodel_entry>(offset);
+	return result;
 }

@@ -140,9 +140,9 @@ void view_3d::draw_level(level& lvl) const {
 			return;
 		}
 		
-		const game_model& model =
-			lvl.moby_models[lvl.moby_class_to_model.at(object.class_num)];
-		_renderer->draw_model(model, local_to_clip, colour);
+		//const game_model& model =
+		//	lvl.moby_models[lvl.moby_class_to_model.at(object.class_num)];
+		//_renderer->draw_model(model, local_to_clip, colour);
 	});
 	
 	for (auto& frag : lvl.tfrags) {
@@ -324,9 +324,9 @@ void view_3d::draw_pickframe(level& lvl) const {
 			return;
 		}
 		
-		const game_model& model =
-			lvl.moby_models[lvl.moby_class_to_model.at(object.class_num)];
-		_renderer->draw_model(model, local_to_clip, colour);
+		//const moby_model& model =
+		//	lvl.moby_models[lvl.moby_class_to_model.at(object.class_num)];
+		//_renderer->draw_model(model, local_to_clip, colour);
 	});
 
 	lvl.world.for_each_object_of_type<spline>([&](object_id id, spline& object) {

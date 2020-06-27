@@ -34,9 +34,19 @@
 
 packed_struct(armor_table_entry,
 	sector32 model;
-	uint32_t model_size;
+	sector32 model_size;
 	sector32 texture;
-	uint32_t texture_size;
+	sector32 texture_size;
+)
+
+packed_struct(armor_model_header,
+	uint8_t submodel_count_1;       // 0x0
+	uint8_t submodel_count_2;       // 0x1
+	uint8_t submodel_count_3;       // 0x2
+	uint8_t unknown_3;              // 0x3
+	uint32_t submodel_table_offset; // 0x4
+	uint32_t unknown_8;             // 0x8
+	uint32_t unknown_c;             // 0xc
 )
 
 class armor_archive {
@@ -45,7 +55,7 @@ public:
 	
 	bool read(stream& iso, const toc_table& table);
 	
-	std::vector<game_model> models;
+	std::vector<moby_model> models;
 	std::vector<texture> textures;
 };
 

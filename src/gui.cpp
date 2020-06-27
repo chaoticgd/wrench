@@ -834,12 +834,6 @@ void gui::texture_browser::export_all(app& a, std::vector<texture>& tex_list) {
 */
 
 gui::model_browser::model_browser() {}
-
-gui::model_browser::~model_browser() {
-	for(auto& tex : _model_thumbnails) {
-		glDeleteTextures(1, &tex.second);
-	}
-}
 	
 const char* gui::model_browser::title_text() const {
 	return "Model Browser";
@@ -858,7 +852,7 @@ void gui::model_browser::render(app& a) {
 	ImGui::Columns(2);
 	ImGui::SetColumnWidth(1, 384);
 	
-	game_model* model = render_selection_pane(a);
+	moby_model* model = render_selection_pane(a);
 	if(model == nullptr) {
 		return;
 	}
@@ -877,15 +871,6 @@ void gui::model_browser::render(app& a) {
 		}
 	}
 	
-	// Clear the texture cache when a new project is opened.
-	if(a.get_project()->id() != _project_id) {
-		for(auto& tex : _model_thumbnails) {
-			glDeleteTextures(1, &tex.second);
-		}
-		_model_thumbnails.clear();
-		_project_id = a.get_project()->id();
-	}
-	
 	ImVec2 preview_size { 400, 300 };
 	static GLuint preview_texture = 0;
 	render_preview(&preview_texture, *model, a.renderer, preview_size, _zoom, _pitch_yaw);
@@ -900,7 +885,7 @@ void gui::model_browser::render(app& a) {
 			ImGui::EndTabItem();
 		}
 		
-		if(ImGui::BeginTabItem("VIF Chains (Debug)")) {
+		if(ImGui::BeginTabItem("VIF Lists (Debug)")) {
 			ImGui::BeginChild(2);
 			try {
 				render_dma_debug_info(*model);
@@ -914,8 +899,8 @@ void gui::model_browser::render(app& a) {
 	}
 }
 
-game_model* gui::model_browser::render_selection_pane(app& a) {
-	game_model* result = nullptr;
+moby_model* gui::model_browser::render_selection_pane(app& a) {
+	moby_model* result = nullptr;
 	
 	auto lists = a.get_project()->model_lists(&a);
 	if(ImGui::BeginTabBar("lists")) {
@@ -931,29 +916,28 @@ game_model* gui::model_browser::render_selection_pane(app& a) {
 	return result;
 }
 
-game_model* gui::model_browser::render_selection_grid(
+moby_model* gui::model_browser::render_selection_grid(
 		app& a,
 		std::string list,
-		std::vector<game_model>& models) {
-	game_model* result = nullptr;
+		std::vector<moby_model>& models) {
+	moby_model* result = nullptr;
 	std::size_t num_this_frame = 0;
 	
 	ImGui::BeginChild(1);
 	ImGui::Columns(std::max(1.f, ImGui::GetWindowSize().x / 128));
 	
 	for(std::size_t i = 0; i < models.size(); i++) {
-		game_model* model = &models[i];
-		
-		if(_model_thumbnails.find(model) == _model_thumbnails.end()) {
+		moby_model* model = &models[i];
+
+		if(model->thumbnail == 0) {
 			// Only load 10 textures per frame.
 			if(num_this_frame >= 10) {
 				ImGui::NextColumn();
 				continue;
 			}
 			
-			_model_thumbnails[model] = 0;
 			render_preview(
-				&_model_thumbnails.at(model),
+				&model->thumbnail,
 				*model, a.renderer,
 				ImVec2(128, 128), 1, glm::vec2(0, 0));
 			num_this_frame++;
@@ -961,7 +945,7 @@ game_model* gui::model_browser::render_selection_grid(
 		
 		bool selected = _list == list && _model == i;
 		bool clicked = ImGui::ImageButton(
-			(void*) (intptr_t) _model_thumbnails.at(model),
+			(void*) (intptr_t) model->thumbnail,
 			ImVec2(128, 128),
 			ImVec2(0, 0),
 			ImVec2(1, 1),
@@ -988,7 +972,7 @@ game_model* gui::model_browser::render_selection_grid(
 
 void gui::model_browser::render_preview(
 		GLuint* target,
-		const game_model& model,
+		const moby_model& model,
 		const gl_renderer& renderer,
 		ImVec2 preview_size,
 		float zoom,
@@ -1010,7 +994,7 @@ void gui::model_browser::render_preview(
 		0, -1, 0, 0,
 		0,  0, 0, 1
 	};
-	glm::mat4 vp = projection * view * yzx;
+	glm::mat4 world_to_clip = projection * view * yzx;
 	
 	glDeleteTextures(1, target);
 	
@@ -1032,13 +1016,17 @@ void gui::model_browser::render_preview(
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glUseProgram(renderer.shaders.solid_colour.id());
 	
-	try {
-		renderer.draw_model(model, vp, glm::vec4(0, 1, 0, 1));
-	} catch(stream_error& e) {
-		glClearColor(1, 0, 0, 1);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		ImGui::Text("Error: Out of bounds read.");
-	}
+	static const glm::vec4 colour(0, 1, 0, 1);
+	glUniformMatrix4fv(renderer.shaders.solid_colour_transform, 1, GL_FALSE, &world_to_clip[0][0]);
+	glUniform4f(renderer.shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
+		
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, model.vertex_buffer());
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, model.vertex_count());
+
+	glDisableVertexAttribArray(0);
 
 	glDeleteFramebuffers(1, &fb_id);
 }
@@ -1048,36 +1036,30 @@ glm::vec2 gui::model_browser::get_drag_delta() const {
 	return glm::vec2(delta.y, delta.x) * 0.01f;
 }
 
-void gui::model_browser::render_dma_debug_info(game_model& mdl) {
-	for(std::size_t submodel = 0; submodel < mdl.num_submodels; submodel++) {
-		ImGui::PushID(submodel);
+void gui::model_browser::render_dma_debug_info(moby_model& mdl) {
+	for(std::size_t i = 0; i < mdl.submodels.size(); i++) {
+		ImGui::PushID(i);
+		moby_model_submodel& submodel = mdl.submodels[i];
 		
-		if(ImGui::TreeNode("submodel", "Submodel %ld", submodel)) {
-			std::vector<std::vector<vif_packet>> chains = {
-				mdl.get_vif_chain(submodel)
-			};
-			for(int i = 0; i < 1; i++) {
-				auto& chain = chains[i];
-				ImGui::Text("  Chain %d:", i);
-				for(vif_packet& vpkt : chain) {
-					ImGui::PushID(vpkt.address);
-						
-					if(vpkt.error != "") {
-						ImGui::Text("   (error: %s)", vpkt.error.c_str());
-						ImGui::PopID();
-						continue;
-					}
+		if(ImGui::TreeNode("submodel", "Submodel %ld", i)) {
+			for(vif_packet& vpkt : submodel.vif_list) {
+				ImGui::PushID(vpkt.address);
 					
-					std::string label = vpkt.code.to_string();
-					if(ImGui::TreeNode("packet", "%lx %s", vpkt.address, label.c_str())) {
-						auto lines = to_hex_dump(vpkt.data.data(), vpkt.address, vpkt.data.size());
-						for(std::string& line : lines) {
-							ImGui::Text("    %s", line.c_str());
-						}
-						ImGui::TreePop();
-					}
+				if(vpkt.error != "") {
+					ImGui::Text("   (error: %s)", vpkt.error.c_str());
 					ImGui::PopID();
+					continue;
 				}
+				
+				std::string label = vpkt.code.to_string();
+				if(ImGui::TreeNode("packet", "%lx %s", vpkt.address, label.c_str())) {
+					auto lines = to_hex_dump(vpkt.data.data(), vpkt.address, vpkt.data.size());
+					for(std::string& line : lines) {
+						ImGui::Text("    %s", line.c_str());
+					}
+					ImGui::TreePop();
+				}
+				ImGui::PopID();
 			}
 			ImGui::TreePop();
 		}

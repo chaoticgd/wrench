@@ -68,7 +68,7 @@ public:
 	std::vector<level*> levels();
 	level* level_from_index(std::size_t index);
 	std::map<std::string, std::vector<texture>*> texture_lists(app* a);
-	std::map<std::string, std::vector<game_model>*> model_lists(app* a);
+	std::map<std::string, std::vector<moby_model>*> model_lists(app* a);
 	
 	template <typename T, typename... T_constructor_args>
 	void emplace_command(T_constructor_args... args);

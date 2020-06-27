@@ -170,8 +170,12 @@ level::level(iso_stream* iso, toc_level index)
 		auto model_header = _asset_segment->read<asset_mdl_hdr>(entry.offset_in_asset_wad);
 		uint32_t rel_offset = model_header.rel_offset;
 		uint32_t abs_offset = entry.offset_in_asset_wad + rel_offset;
-		moby_models.emplace_back(_asset_segment, abs_offset, 0, model_header.num_submodels);
-		moby_models.back().update();
+		std::vector<std::size_t> submodel_counts {
+			model_header.num_submodels
+		};
+		moby_model model(_asset_segment, abs_offset, 0, 0, submodel_counts);
+		model.upload_vertex_buffer();
+		moby_models.emplace_back(std::move(model));
 		
 		uint32_t class_num = entry.class_num;
 		moby_class_to_model.emplace(class_num, moby_models.size() - 1);

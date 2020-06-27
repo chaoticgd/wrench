@@ -62,8 +62,8 @@ wrench_project::wrench_project(
 
 void wrench_project::post_load() {
 	for(auto& [_, armor] : _armor) {
-		for(game_model& model : armor.models) {
-			model.update();
+		for(moby_model& model : armor.models) {
+			model.upload_vertex_buffer();
 		}
 	}
 }
@@ -149,12 +149,12 @@ std::map<std::string, std::vector<texture>*> wrench_project::texture_lists(app* 
 	return result;
 }
 
-std::map<std::string, std::vector<game_model>*> wrench_project::model_lists(app* a) {
+std::map<std::string, std::vector<moby_model>*> wrench_project::model_lists(app* a) {
 	if(!_game_info) {
 		load_gamedb_info(a);
 	}
 	
-	std::map<std::string, std::vector<game_model>*> result;
+	std::map<std::string, std::vector<moby_model>*> result;
 	for(auto& [table_index, armor] : _armor) {
 		result[table_index_to_name(table_index)] = &armor.models;
 	}
