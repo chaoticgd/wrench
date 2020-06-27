@@ -884,7 +884,10 @@ void gui::model_browser::render(app& a) {
 			ImGui::InputText("Resource Path", &res_path, ImGuiInputTextFlags_ReadOnly);
 			ImGui::EndTabItem();
 		}
-		
+		if(ImGui::BeginTabItem("Submodels")) {
+			render_submodel_list(*model);
+			ImGui::EndTabItem();
+		}
 		if(ImGui::BeginTabItem("VIF Lists (Debug)")) {
 			ImGui::BeginChild(2);
 			try {
@@ -1034,6 +1037,33 @@ void gui::model_browser::render_preview(
 glm::vec2 gui::model_browser::get_drag_delta() const {
 	auto delta = ImGui::GetMouseDragDelta();
 	return glm::vec2(delta.y, delta.x) * 0.01f;
+}
+
+void gui::model_browser::render_submodel_list(moby_model& model) {
+	std::size_t submodel_base = 0;
+	for(std::size_t i = 0; i < model.submodel_counts.size(); i++) {
+		ImGui::PushID(i);
+		
+		std::size_t count = model.submodel_counts[i];
+		if(ImGui::TreeNode("group", "Group %ld", i)) {
+			for(std::size_t j = 0; j < count; j++) {
+				ImGui::PushID(j);
+				std::size_t submodel_index = submodel_base + j;
+				const moby_model_submodel& submodel = model.submodels[submodel_index];
+				if(ImGui::TreeNode("submodel", "Submodel %ld", submodel_index)) {
+					for(const moby_model_vertex& vertex : submodel.vertex_data) {
+						ImGui::Text("%x %x %x", vertex.x & 0xffff, vertex.y & 0xffff, vertex.z & 0xffff);
+					}
+					ImGui::TreePop();
+				}
+				ImGui::PopID();
+			}
+			ImGui::TreePop();
+		}
+		submodel_base += count;
+		
+		ImGui::PopID();
+	}
 }
 
 void gui::model_browser::render_dma_debug_info(moby_model& mdl) {
