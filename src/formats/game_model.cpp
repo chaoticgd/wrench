@@ -54,11 +54,16 @@ moby_model::moby_model(moby_model&& rhs)
 }
 
 moby_model::~moby_model() {
-	if(_vertex_buffer != 0) {
-		glDeleteBuffers(1, &_vertex_buffer);
+	for(moby_model_submodel& submodel : submodels) {
+		if(submodel.vertex_buffer != 0) {
+			glDeleteBuffers(1, &submodel.vertex_buffer);
+		}
 	}
 	if(thumbnail != 0) {
 		glDeleteTextures(1, &thumbnail);
+	}
+	if(_vertex_buffer != 0) {
+		glDeleteBuffers(1, &_vertex_buffer);
 	}
 }
 
@@ -83,6 +88,9 @@ void moby_model::read() {
 		submodel.vertex_data.resize(vertex_header.vertex_count);
 		_backing.seek(_submodel_table_offset + entry.vertex_offset + vertex_header.vertex_table_offset);
 		_backing.read_v(submodel.vertex_data);
+		
+		submodel.visible_in_model_viewer = true;
+		submodel.vertex_buffer = 0;
 		
 		submodels.emplace_back(std::move(submodel));
 	}

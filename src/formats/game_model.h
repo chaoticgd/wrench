@@ -73,6 +73,8 @@ struct moby_model_opengl_vertex {
 struct moby_model_submodel {
 	std::vector<moby_model_vertex> vertex_data;
 	std::vector<vif_packet> vif_list;
+	bool visible_in_model_viewer;
+	GLuint vertex_buffer;
 };
 
 class moby_model {

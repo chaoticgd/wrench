@@ -961,6 +961,11 @@ moby_model* gui::model_browser::render_selection_grid(
 		if(clicked) {
 			_list = list;
 			_model = i;
+			
+			// Reset submodel visibility.
+			for(moby_model_submodel& submodel : model->submodels) {
+				submodel.visible_in_model_viewer = true;
+			}
 		}
 		if(selected) {
 			result = model;
@@ -975,7 +980,7 @@ moby_model* gui::model_browser::render_selection_grid(
 
 void gui::model_browser::render_preview(
 		GLuint* target,
-		const moby_model& model,
+		moby_model& model,
 		const gl_renderer& renderer,
 		ImVec2 preview_size,
 		float zoom,
@@ -1019,17 +1024,34 @@ void gui::model_browser::render_preview(
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glUseProgram(renderer.shaders.solid_colour.id());
 	
-	static const glm::vec4 colour(0, 1, 0, 1);
-	glUniformMatrix4fv(renderer.shaders.solid_colour_transform, 1, GL_FALSE, &world_to_clip[0][0]);
-	glUniform4f(renderer.shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
+	for(moby_model_submodel& submodel : model.submodels) {
+		if(!submodel.visible_in_model_viewer) {
+			continue;
+		}
 		
-	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, model.vertex_buffer());
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+		if(submodel.vertex_buffer == 0) {
+			auto opengl_data = moby_vertex_data_to_opengl(submodel.vertex_data);
+	
+			glDeleteBuffers(1, &submodel.vertex_buffer);
+			glGenBuffers(1, &submodel.vertex_buffer);
+			glBindBuffer(GL_ARRAY_BUFFER, submodel.vertex_buffer);
+			glBufferData(GL_ARRAY_BUFFER,
+				submodel.vertex_data.size() * sizeof(moby_model_opengl_vertex),
+				opengl_data.data(), GL_STATIC_DRAW);
+		}
+		
+		static const glm::vec4 colour(0, 1, 0, 1);
+		glUniformMatrix4fv(renderer.shaders.solid_colour_transform, 1, GL_FALSE, &world_to_clip[0][0]);
+		glUniform4f(renderer.shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
+			
+		glEnableVertexAttribArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, submodel.vertex_buffer);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, model.vertex_count());
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, submodel.vertex_data.size());
 
-	glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(0);
+	}
 
 	glDeleteFramebuffers(1, &fb_id);
 }
@@ -1040,17 +1062,30 @@ glm::vec2 gui::model_browser::get_drag_delta() const {
 }
 
 void gui::model_browser::render_submodel_list(moby_model& model) {
-	std::size_t submodel_base = 0;
+	std::size_t low = 0;
 	for(std::size_t i = 0; i < model.submodel_counts.size(); i++) {
 		ImGui::PushID(i);
 		
-		std::size_t count = model.submodel_counts[i];
-		if(ImGui::TreeNode("group", "Group %ld", i)) {
-			for(std::size_t j = 0; j < count; j++) {
+		const std::size_t high = low + model.submodel_counts[i];
+		
+		// If every submodel in a given group is visible, we should draw the
+		// box as being ticked.
+		bool group_ticked = true;
+		for(std::size_t j = low; j < high; j++) {
+			group_ticked &= model.submodels[j].visible_in_model_viewer;
+		}
+		const bool group_ticked_before = group_ticked;
+		
+		std::string label = "Group " + std::to_string(i);
+		
+		bool expanded = ImGui::TreeNode("group", "");
+		ImGui::SameLine();
+		ImGui::Checkbox(label.c_str(), &group_ticked);
+		if(expanded) {
+			for(std::size_t j = low; j < high; j++) {
 				ImGui::PushID(j);
-				std::size_t submodel_index = submodel_base + j;
-				const moby_model_submodel& submodel = model.submodels[submodel_index];
-				if(ImGui::TreeNode("submodel", "Submodel %ld", submodel_index)) {
+				const moby_model_submodel& submodel = model.submodels[j];
+				if(ImGui::TreeNode("submodel", "Submodel %ld", j)) {
 					for(const moby_model_vertex& vertex : submodel.vertex_data) {
 						ImGui::Text("%x %x %x", vertex.x & 0xffff, vertex.y & 0xffff, vertex.z & 0xffff);
 					}
@@ -1060,7 +1095,16 @@ void gui::model_browser::render_submodel_list(moby_model& model) {
 			}
 			ImGui::TreePop();
 		}
-		submodel_base += count;
+		
+		// If the user user ticked or unticked the box, apply said changes to
+		// all submodels in the current group.
+		if(group_ticked != group_ticked_before) {
+			for(std::size_t j = low; j < high; j++) {
+				model.submodels[j].visible_in_model_viewer = group_ticked;
+			}
+		}
+		
+		low += model.submodel_counts[i];
 		
 		ImGui::PopID();
 	}

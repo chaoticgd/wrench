@@ -286,7 +286,7 @@ namespace gui {
 		
 		void render_preview(
 			GLuint* target,
-			const moby_model& model,
+			moby_model& model,
 			const gl_renderer& renderer,
 			ImVec2 preview_size,
 			float zoom,
