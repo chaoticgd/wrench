@@ -85,7 +85,7 @@ types:
         type: u4
     instances:
       vertex_table:
-        pos: vertex_table_offset
+        pos: _parent.vertex_offset + vertex_table_offset
         type: vertex
         repeat: expr
         repeat-expr: vertex_count
