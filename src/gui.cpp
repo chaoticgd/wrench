@@ -870,12 +870,14 @@ void gui::model_browser::render(app& a) {
 		is_dragging = true;
 	}
 	
+	ImGui::SliderFloat("Zoom", &_zoom, 0.0, 1.0, "%.1f");
+	
 	// Update zoom and rotation.
 	if(image_hovered || is_dragging) {
 		ImGuiIO& io = ImGui::GetIO();
-		_zoom *= -io.MouseWheel * a.delta_time * 0.0001 + 1;
-		if(_zoom < 0.2) _zoom = 0.2;
-		if(_zoom > 4) _zoom = 4;	
+		_zoom *= io.MouseWheel * a.delta_time * 0.0001 + 1;
+		if(_zoom < 0.f) _zoom = 0.f;
+		if(_zoom > 1.f) _zoom = 1.f;	
 		
 		if(ImGui::IsMouseReleased(0)) {
 			_pitch_yaw += get_drag_delta();
@@ -996,7 +998,7 @@ void gui::model_browser::render_preview(
 		ImVec2 preview_size,
 		float zoom,
 		glm::vec2 pitch_yaw) {
-	glm::vec3 eye = glm::vec3(_zoom, 0, 0);
+	glm::vec3 eye = glm::vec3(1.1f - _zoom, 0, 0);
 	
 	glm::mat4 view_fixed = glm::lookAt(eye, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
 	glm::mat4 view_pitched = glm::rotate(view_fixed, pitch_yaw.x, glm::vec3(0, 0, 1));

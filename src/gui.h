@@ -300,7 +300,7 @@ namespace gui {
 		std::string _list;
 		std::size_t _model;
 	
-		float _zoom = 1.f;
+		float _zoom = 0.5f;
 		glm::vec2 _pitch_yaw = { 0.f, 0.f };
 	};
 
