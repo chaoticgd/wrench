@@ -25,6 +25,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <functional>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "util.h"
 #include "config.h"
@@ -1011,7 +1012,8 @@ void gui::model_browser::render_preview(
 		0, -1, 0, 0,
 		0,  0, 0, 1
 	};
-	glm::mat4 world_to_clip = projection * view * yzx;
+	glm::mat4 local_to_world = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, -0.125f));
+	glm::mat4 local_to_clip = projection * view * yzx * local_to_world;
 	
 	glDeleteTextures(1, target);
 	
@@ -1050,7 +1052,7 @@ void gui::model_browser::render_preview(
 		}
 		
 		static const glm::vec4 colour(0, 1, 0, 1);
-		glUniformMatrix4fv(renderer.shaders.solid_colour_transform, 1, GL_FALSE, &world_to_clip[0][0]);
+		glUniformMatrix4fv(renderer.shaders.solid_colour_transform, 1, GL_FALSE, &local_to_clip[0][0]);
 		glUniform4f(renderer.shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
 			
 		glEnableVertexAttribArray(0);
