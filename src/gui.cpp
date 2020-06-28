@@ -885,11 +885,13 @@ void gui::model_browser::render(app& a) {
 			ImGui::EndTabItem();
 		}
 		if(ImGui::BeginTabItem("Submodels")) {
+			ImGui::BeginChild("submodels");
 			render_submodel_list(*model);
+			ImGui::EndChild();
 			ImGui::EndTabItem();
 		}
 		if(ImGui::BeginTabItem("VIF Lists (Debug)")) {
-			ImGui::BeginChild(2);
+			ImGui::BeginChild("vif_lists");
 			try {
 				render_dma_debug_info(*model);
 			} catch(stream_error& e) {
