@@ -953,7 +953,7 @@ moby_model* gui::model_browser::render_selection_grid(
 			render_preview(
 				&model->thumbnail,
 				*model, a.renderer,
-				ImVec2(128, 128), 1, glm::vec2(0, 0));
+				ImVec2(128, 128), 1, glm::vec2(0, glm::radians(90.f)));
 			num_this_frame++;
 		}
 		
