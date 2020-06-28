@@ -31,7 +31,7 @@ types:
         size: model_size * 0x800
   model:
     seq:
-      - id: submodel_count_1
+      - id: main_submodel_count
         type: u1
       - id: submodel_count_2
         type: u1
@@ -44,11 +44,21 @@ types:
       - id: thing_2
         type: u4
     instances:
-      submodel_table:
+      main_submodel_table:
         pos: submodel_table_offset
         type: submodel
         repeat: expr
-        repeat-expr: submodel_count_1 + submodel_count_2 + submodel_count_3
+        repeat-expr: main_submodel_count
+      submodel_table_2:
+        pos: submodel_table_offset + main_submodel_count * 0x10
+        type: submodel
+        repeat: expr
+        repeat-expr: submodel_count_2
+      submodel_table_3:
+        pos: submodel_table_offset + (main_submodel_count + submodel_count_2) * 0x10
+        type: submodel
+        repeat: expr
+        repeat-expr: submodel_count_3
   submodel:
     seq:
       - id: vu1_vif_list_offset
