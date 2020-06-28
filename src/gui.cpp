@@ -859,8 +859,19 @@ void gui::model_browser::render(app& a) {
 	
 	ImGui::NextColumn();
 	
+	ImVec2 preview_size { 400, 300 };
+	static GLuint preview_texture = 0;
+	ImGui::Image((void*) (intptr_t) preview_texture, preview_size);
+	static bool is_dragging = false;
+	bool image_hovered = ImGui::IsItemHovered();
+	glm::vec2 pitch_yaw = _pitch_yaw;
+	if(ImGui::IsMouseDragging() && (image_hovered || is_dragging)) {
+		pitch_yaw += get_drag_delta();
+		is_dragging = true;
+	}
+	
 	// Update zoom and rotation.
-	if(ImGui::IsWindowHovered()) {
+	if(image_hovered || is_dragging) {
 		ImGuiIO& io = ImGui::GetIO();
 		_zoom *= -io.MouseWheel * a.delta_time * 0.0001 + 1;
 		if(_zoom < 0.2) _zoom = 0.2;
@@ -868,13 +879,11 @@ void gui::model_browser::render(app& a) {
 		
 		if(ImGui::IsMouseReleased(0)) {
 			_pitch_yaw += get_drag_delta();
+			is_dragging = false;
 		}
 	}
 	
-	ImVec2 preview_size { 400, 300 };
-	static GLuint preview_texture = 0;
-	render_preview(&preview_texture, *model, a.renderer, preview_size, _zoom, _pitch_yaw);
-	ImGui::Image((void*) (intptr_t) preview_texture, preview_size);
+	render_preview(&preview_texture, *model, a.renderer, preview_size, _zoom, pitch_yaw);
 	
 	if(ImGui::BeginTabBar("tabs")) {
 		if(ImGui::BeginTabItem("Details")) {
@@ -987,10 +996,6 @@ void gui::model_browser::render_preview(
 		ImVec2 preview_size,
 		float zoom,
 		glm::vec2 pitch_yaw) {
-	if(ImGui::IsMouseDragging()) {
-		pitch_yaw += get_drag_delta();
-	}
-	
 	glm::vec3 eye = glm::vec3(_zoom, 0, 0);
 	
 	glm::mat4 view_fixed = glm::lookAt(eye, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
