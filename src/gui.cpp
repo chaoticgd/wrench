@@ -1078,14 +1078,19 @@ void gui::model_browser::render_submodel_list(moby_model& model) {
 		
 		std::string label = "Group " + std::to_string(i);
 		
-		bool expanded = ImGui::TreeNode("group", "");
+		bool group_expanded = ImGui::TreeNode("group", "%s", "");
 		ImGui::SameLine();
 		ImGui::Checkbox(label.c_str(), &group_ticked);
-		if(expanded) {
+		if(group_expanded) {
 			for(std::size_t j = low; j < high; j++) {
 				ImGui::PushID(j);
-				const moby_model_submodel& submodel = model.submodels[j];
-				if(ImGui::TreeNode("submodel", "Submodel %ld", j)) {
+				moby_model_submodel& submodel = model.submodels[j];
+				
+				std::string submodel_label = "Submodel " + std::to_string(j);
+				bool submodel_expanded = ImGui::TreeNode("submodel", "%s", "");
+				ImGui::SameLine();
+				ImGui::Checkbox(submodel_label.c_str(), &submodel.visible_in_model_viewer);
+				if(submodel_expanded) {
 					for(const moby_model_vertex& vertex : submodel.vertex_data) {
 						ImGui::Text("%x %x %x", vertex.x & 0xffff, vertex.y & 0xffff, vertex.z & 0xffff);
 					}
