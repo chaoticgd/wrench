@@ -1014,57 +1014,40 @@ void gui::model_browser::render_preview(
 	};
 	glm::mat4 local_to_world = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, -0.125f));
 	glm::mat4 local_to_clip = projection * view * yzx * local_to_world;
-	
-	glDeleteTextures(1, target);
-	
-	glGenTextures(1, target);
-	glBindTexture(GL_TEXTURE_2D, *target);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, preview_size.x, preview_size.y, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, 0);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-	GLuint fb_id;
-	glGenFramebuffers(1, &fb_id);
-	glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *target, 0);
-
-	glClearColor(0, 0, 0, 1);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glViewport(0, 0, preview_size.x, preview_size.y);
-
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glUseProgram(renderer.shaders.solid_colour.id());
-	
-	for(moby_model_submodel& submodel : model.submodels) {
-		if(!submodel.visible_in_model_viewer) {
-			continue;
-		}
+	render_to_texture(target, preview_size.x, preview_size.y, [&]() {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		glUseProgram(renderer.shaders.solid_colour.id());
 		
-		if(submodel.vertex_buffer == 0) {
-			auto opengl_data = moby_vertex_data_to_opengl(submodel.vertex_data);
-	
-			glDeleteBuffers(1, &submodel.vertex_buffer);
-			glGenBuffers(1, &submodel.vertex_buffer);
-			glBindBuffer(GL_ARRAY_BUFFER, submodel.vertex_buffer);
-			glBufferData(GL_ARRAY_BUFFER,
-				submodel.vertex_data.size() * sizeof(moby_model_opengl_vertex),
-				opengl_data.data(), GL_STATIC_DRAW);
-		}
-		
-		static const glm::vec4 colour(0, 1, 0, 1);
-		glUniformMatrix4fv(renderer.shaders.solid_colour_transform, 1, GL_FALSE, &local_to_clip[0][0]);
-		glUniform4f(renderer.shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
+		for(moby_model_submodel& submodel : model.submodels) {
+			if(!submodel.visible_in_model_viewer) {
+				continue;
+			}
 			
-		glEnableVertexAttribArray(0);
-		glBindBuffer(GL_ARRAY_BUFFER, submodel.vertex_buffer);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+			if(submodel.vertex_buffer == 0) {
+				auto opengl_data = moby_vertex_data_to_opengl(submodel.vertex_data);
+		
+				glDeleteBuffers(1, &submodel.vertex_buffer);
+				glGenBuffers(1, &submodel.vertex_buffer);
+				glBindBuffer(GL_ARRAY_BUFFER, submodel.vertex_buffer);
+				glBufferData(GL_ARRAY_BUFFER,
+					submodel.vertex_data.size() * sizeof(moby_model_opengl_vertex),
+					opengl_data.data(), GL_STATIC_DRAW);
+			}
+			
+			static const glm::vec4 colour(0, 1, 0, 1);
+			glUniformMatrix4fv(renderer.shaders.solid_colour_transform, 1, GL_FALSE, &local_to_clip[0][0]);
+			glUniform4f(renderer.shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
+				
+			glEnableVertexAttribArray(0);
+			glBindBuffer(GL_ARRAY_BUFFER, submodel.vertex_buffer);
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, submodel.vertex_data.size());
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, submodel.vertex_data.size());
 
-		glDisableVertexAttribArray(0);
-	}
-
-	glDeleteFramebuffers(1, &fb_id);
+			glDisableVertexAttribArray(0);
+		}
+	});
 }
 
 glm::vec2 gui::model_browser::get_drag_delta() const {

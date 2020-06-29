@@ -50,4 +50,28 @@ struct gl_renderer {
 	glm::vec2 camera_rotation { 0, 0 };
 };
 
+template <typename T>
+void render_to_texture(GLuint* target, int width, int height, T draw_callback) {
+	glDeleteTextures(1, target);
+	
+	glGenTextures(1, target);
+	glBindTexture(GL_TEXTURE_2D, *target);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	GLuint fb_id;
+	glGenFramebuffers(1, &fb_id);
+	glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *target, 0);
+
+	glClearColor(0, 0, 0, 1);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glViewport(0, 0, width, height);
+	
+	draw_callback();
+	
+	glDeleteFramebuffers(1, &fb_id);
+}
+
 #endif
