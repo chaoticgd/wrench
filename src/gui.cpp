@@ -1043,7 +1043,7 @@ void gui::model_browser::render_preview(
 			glBindBuffer(GL_ARRAY_BUFFER, submodel.vertex_buffer);
 			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
-			glDrawArrays(GL_TRIANGLE_STRIP, 0, submodel.vertex_data.size());
+			glDrawArrays(GL_POINTS, 0, submodel.vertex_data.size());
 
 			glDisableVertexAttribArray(0);
 		}
