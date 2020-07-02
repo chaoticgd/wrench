@@ -59,6 +59,11 @@ types:
         type: submodel
         repeat: expr
         repeat-expr: submodel_count_3
+      thing_2_inst:
+        pos: thing_2
+        type: thing_2_obj
+        repeat: expr
+        repeat-expr: 4
   submodel:
     seq:
       - id: vu1_vif_list_offset
@@ -127,3 +132,17 @@ types:
         type: s2
       - id: z
         type: s2
+  thing_2_obj:
+    seq:
+      - id: unknown_0
+        type: u4
+      - id: unknown_4
+        type: u4
+      - id: unknown_8
+        type: u4
+      - id: ptr_c
+        type: u4
+    instances:
+      ptr_c_inst:
+        pos: ptr_c
+        type: u4
