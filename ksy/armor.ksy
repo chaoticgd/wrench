@@ -68,8 +68,10 @@ types:
     seq:
       - id: vu1_vif_list_offset
         type: u4
-      - id: thing2
-        type: u4
+      - id: vu1_vif_list_qwc
+        type: u2
+      - id: vu1_vif_list_offset_from_end_in_quadwords
+        type: u2
       - id: vertex_offset
         type: u4
       - id: thing4
@@ -77,14 +79,21 @@ types:
     instances:
       vu1_vif_list:
         pos: vu1_vif_list_offset
-        type: vif_list
+        type: vif_data
+        repeat: expr
+        repeat-expr: (vu1_vif_list_qwc - vu1_vif_list_offset_from_end_in_quadwords) * 0x10
+      vu1_vif_list_texture_data:
+        pos: vu1_vif_list_offset + (vu1_vif_list_qwc - vu1_vif_list_offset_from_end_in_quadwords) * 0x10
+        type: vif_data
+        repeat: expr
+        repeat-expr: vu1_vif_list_offset_from_end_in_quadwords * 0x10
       vertex_list:
         pos: vertex_offset
         type: vertex_header
-  vif_list:
+  vif_data:
     seq:
       - id: use_bin_vif_to_parse_this
-        type: u4
+        type: u1
         doc: VIF DMA list. Use bin/vif to parse this e.g. ./bin/vif ARMOR.WAD -o 0x0ff537
   vertex_header:
     seq:
