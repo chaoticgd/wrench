@@ -3,6 +3,7 @@ meta:
   file-extension: WAD
   application: Ratchet & Clank 2
   endian: le
+  encoding: ascii
 seq:
   - id: header_size
     type: u4
@@ -29,6 +30,10 @@ types:
         pos: model_offset * 0x800
         type: model
         size: model_size * 0x800
+      texture_list:
+        pos: texture_offset * 0x800
+        type: texture_list
+        size: texture_size * 0x800
   model:
     seq:
       - id: main_submodel_count
@@ -155,3 +160,24 @@ types:
       ptr_c_inst:
         pos: ptr_c
         type: u4
+  texture_list:
+    seq:
+      - id: count
+        type: u4
+      - id: textures
+        type: texture
+        repeat: expr
+        repeat-expr: count
+  texture:
+    seq:
+      - id: header_offset
+        type: u4
+    instances:
+      header:
+        pos: header_offset
+        type: pif_header
+  pif_header:
+    seq:
+      - id: magic
+        type: str
+        size: 4
