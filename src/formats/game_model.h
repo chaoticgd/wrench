@@ -34,7 +34,7 @@ struct gl_renderer;
 packed_struct(moby_model_submodel_entry,
 	uint32_t vif_list_offset;
 	uint16_t vif_list_qwc; // size in quadwords
-	uint16_t unknown_6;
+	uint16_t vif_list_texture_unpack_offset; // No third UNPACK if zero.
 	uint32_t vertex_offset;
 	uint32_t unknown_c;
 )
