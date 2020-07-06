@@ -84,6 +84,53 @@ void moby_model::read() {
 		
 		submodel.vif_list = parse_vif_chain(&_backing, entry.vif_list_offset, entry.vif_list_qwc);
 		
+		std::size_t unpack_index = 0;
+		for(vif_packet& packet : submodel.vif_list) {
+			// Skip no-ops.
+			if(!packet.code.is_unpack()) {
+				continue;
+			}
+			
+			switch(unpack_index) {
+				case 0: { // ST unpack.
+					if(packet.code.unpack.vnvl != +vif_vnvl::V2_16) {
+						fprintf(stderr, "Error: Submodel %ld has malformed first UNPACK (wrong format: %s).\n",
+							submodels.size(), packet.code.unpack.vnvl._to_string());
+						continue;
+					}
+					submodel.st_data.resize((packet.data.size() * sizeof(uint32_t)) / sizeof(moby_model_st));
+					std::memcpy(submodel.st_data.data(), packet.data.data(), packet.data.size());
+					break;
+				}
+				case 1: { // Mystery unpack.
+					break;
+				}
+				case 2: { // Texture unpack (optional).
+					if(packet.data.size() * sizeof(uint32_t) != sizeof(moby_model_texture_data)) {
+						fprintf(stderr, "Error: Submodel %ld has malformed third UNPACK (wrong size).\n", submodels.size());
+						continue;
+					}
+					if(packet.code.unpack.vnvl != +vif_vnvl::V4_32) {
+						fprintf(stderr, "Error: Submodel %ld has malformed third UNPACK (wrong format).\n", submodels.size());
+						continue;
+					}
+					submodel.texture = *(moby_model_texture_data*) packet.data.data();
+					break;
+				}
+				case 3: {
+					fprintf(stderr, "Error: Too many UNPACK packets in submodel %ld VIF list.\n", submodels.size());
+					continue;
+				}
+			}
+			
+			unpack_index++;
+		}
+		
+		if(unpack_index < 2) {
+			fprintf(stderr, "Error: VIF list for submodel %ld doesn't have enough UNPACK packets.\n", submodels.size());
+			continue;
+		}
+		
 		auto vertex_header = _backing.read<moby_model_vertex_table_header>(entry.vertex_offset);
 		submodel.vertex_data.resize(vertex_header.vertex_count);
 		_backing.seek(_submodel_table_offset + entry.vertex_offset + vertex_header.vertex_table_offset);
@@ -91,6 +138,7 @@ void moby_model::read() {
 		
 		submodel.visible_in_model_viewer = true;
 		submodel.vertex_buffer = 0;
+		submodel.st_buffer = 0;
 		
 		submodels.emplace_back(std::move(submodel));
 	}

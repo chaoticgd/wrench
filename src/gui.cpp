@@ -902,6 +902,12 @@ void gui::model_browser::render(app& a) {
 			ImGui::EndChild();
 			ImGui::EndTabItem();
 		}
+		if(ImGui::BeginTabItem("ST Coords")) {
+			ImGui::BeginChild("stcoords");
+			render_st_coords(*model, a.renderer.shaders);
+			ImGui::EndChild();
+			ImGui::EndTabItem();
+		}
 		if(ImGui::BeginTabItem("VIF Lists (Debug)")) {
 			ImGui::BeginChild("vif_lists");
 			try {
@@ -1018,8 +1024,8 @@ void gui::model_browser::render_preview(
 	render_to_texture(target, preview_size.x, preview_size.y, [&]() {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glUseProgram(renderer.shaders.solid_colour.id());
-		
-		for(moby_model_submodel& submodel : model.submodels) {
+		for(std::size_t i = 0; i < model.submodels.size(); i++) {
+			moby_model_submodel& submodel = model.submodels[i];
 			if(!submodel.visible_in_model_viewer) {
 				continue;
 			}
@@ -1035,7 +1041,7 @@ void gui::model_browser::render_preview(
 					opengl_data.data(), GL_STATIC_DRAW);
 			}
 			
-			static const glm::vec4 colour(0, 1, 0, 1);
+			glm::vec4 colour = colour_coded_submodel_index(i, model.submodels.size());
 			glUniformMatrix4fv(renderer.shaders.solid_colour_transform, 1, GL_FALSE, &local_to_clip[0][0]);
 			glUniform4f(renderer.shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
 				
@@ -1109,6 +1115,82 @@ void gui::model_browser::render_submodel_list(moby_model& model) {
 	}
 }
 
+void gui::model_browser::render_st_coords(moby_model& model, const shader_programs& shaders) {
+	if(model.submodels.size() < 1) {
+		return;
+	}
+	
+	std::set<int32_t> texture_indices;
+	for(moby_model_submodel& submodel : model.submodels) {
+		if(submodel.texture) {
+			texture_indices.insert(submodel.texture->texture_index);
+		}
+	}
+	
+	static int32_t texture_index = 0;
+	if(ImGui::BeginTabBar("tabs")) {
+		for(int32_t index : texture_indices) {
+			std::string tab_name = std::to_string(index);
+			if(ImGui::BeginTabItem(tab_name.c_str())) {
+				texture_index = index;
+				ImGui::EndTabItem();
+			}
+		}
+		ImGui::EndTabBar();
+	}
+	
+	static GLuint texture = 0;
+	static const ImVec2 size(256, 256);
+	
+	int32_t current_texture_index = 0;
+	render_to_texture(&texture, size.x, size.y, [&]() {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		glUseProgram(shaders.solid_colour.id());
+		
+		for(std::size_t i = 0; i < model.submodels.size(); i++) {
+			moby_model_submodel& submodel = model.submodels[i];
+			
+			if(submodel.texture) {
+				current_texture_index = submodel.texture->texture_index;
+			}
+			
+			if(!submodel.visible_in_model_viewer || current_texture_index != texture_index) {
+				continue;
+			}
+			
+			if(submodel.st_buffer == 0) {
+				std::vector<float> st_data;
+				for(const moby_model_st& st : submodel.st_data) {
+					st_data.push_back((st.s / (float) INT16_MAX) * 8.f);
+					st_data.push_back((st.t / (float) INT16_MAX) * 8.f);
+					st_data.push_back(0.f);
+				}
+				
+				glGenBuffers(1, &submodel.st_buffer);
+				glBindBuffer(GL_ARRAY_BUFFER, submodel.st_buffer);
+				glBufferData(GL_ARRAY_BUFFER,
+					st_data.size() * sizeof(float),
+					st_data.data(), GL_STATIC_DRAW);
+			}
+			
+			glm::vec4 colour = colour_coded_submodel_index(i, model.submodels.size());
+			static const glm::mat4 id(1.f);
+			glUniformMatrix4fv(shaders.solid_colour_transform, 1, GL_FALSE, &id[0][0]);
+			glUniform4f(shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
+			
+			glEnableVertexAttribArray(0);
+			glBindBuffer(GL_ARRAY_BUFFER, submodel.st_buffer);
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+			glDrawArrays(GL_POINTS, 0, submodel.st_data.size());
+
+			glDisableVertexAttribArray(0);
+		}
+	});
+	
+	ImGui::Image((void*) (intptr_t) texture, size);
+}
+
 void gui::model_browser::render_dma_debug_info(moby_model& mdl) {
 	for(std::size_t i = 0; i < mdl.submodels.size(); i++) {
 		ImGui::PushID(i);
@@ -1138,6 +1220,13 @@ void gui::model_browser::render_dma_debug_info(moby_model& mdl) {
 		}
 		ImGui::PopID();
 	}
+}
+
+glm::vec4 gui::model_browser::colour_coded_submodel_index(std::size_t index, std::size_t submodel_count) {
+	glm::vec4 colour;
+	ImGui::ColorConvertHSVtoRGB(fmod(index / (float) submodel_count, 1.f), 1.f, 1.f, colour.r, colour.g, colour.b);
+	colour.a = 1;
+	return colour;
 }
 
 /*

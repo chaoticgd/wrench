@@ -70,11 +70,38 @@ struct moby_model_opengl_vertex {
 	float z;
 };
 
+packed_struct(moby_model_st, // First UNPACK.
+	int16_t s;
+	int16_t t;
+)
+
+packed_struct(moby_model_texture_data, // Third UNPACK.
+	uint32_t unknown_0;
+	uint32_t unknown_4;
+	uint32_t unknown_8;
+	uint32_t unknown_c;
+	uint32_t unknown_10;
+	uint32_t unknown_14;
+	uint32_t unknown_18;
+	uint32_t unknown_1c;
+	int32_t texture_index; // Overwritten with the texture address by the game at runtime.
+	uint32_t unknown_24;
+	uint32_t unknown_28;
+	uint32_t unknown_2c;
+	uint32_t unknown_30;
+	uint32_t unknown_34;
+	uint32_t unknown_38;
+	uint32_t unknown_3c;
+)
+
 struct moby_model_submodel {
-	std::vector<moby_model_vertex> vertex_data;
 	std::vector<vif_packet> vif_list;
+	std::vector<moby_model_st> st_data;
+	std::optional<moby_model_texture_data> texture; // If empty use last submodel.
+	std::vector<moby_model_vertex> vertex_data;
 	bool visible_in_model_viewer;
 	GLuint vertex_buffer;
+	GLuint st_buffer;
 };
 
 class moby_model {
