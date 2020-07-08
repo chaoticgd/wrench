@@ -1208,7 +1208,7 @@ void gui::model_browser::render_dma_debug_info(moby_model& mdl) {
 				
 				std::string label = vpkt.code.to_string();
 				if(ImGui::TreeNode("packet", "%lx %s", vpkt.address, label.c_str())) {
-					auto lines = to_hex_dump(vpkt.data.data(), vpkt.address, vpkt.data.size());
+					auto lines = to_hex_dump((uint32_t*) vpkt.data.data(), vpkt.address, vpkt.data.size() / sizeof(uint32_t));
 					for(std::string& line : lines) {
 						ImGui::Text("    %s", line.c_str());
 					}

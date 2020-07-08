@@ -98,7 +98,7 @@ void moby_model::read() {
 							submodels.size(), packet.code.unpack.vnvl._to_string());
 						continue;
 					}
-					submodel.st_data.resize((packet.data.size() * sizeof(uint32_t)) / sizeof(moby_model_st));
+					submodel.st_data.resize(packet.data.size() / sizeof(moby_model_st));
 					std::memcpy(submodel.st_data.data(), packet.data.data(), packet.data.size());
 					break;
 				}
@@ -106,7 +106,7 @@ void moby_model::read() {
 					break;
 				}
 				case 2: { // Texture unpack (optional).
-					if(packet.data.size() * sizeof(uint32_t) != sizeof(moby_model_texture_data)) {
+					if(packet.data.size() != sizeof(moby_model_texture_data)) {
 						fprintf(stderr, "Error: Submodel %ld has malformed third UNPACK (wrong size).\n", submodels.size());
 						continue;
 					}

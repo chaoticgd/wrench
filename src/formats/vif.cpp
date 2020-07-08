@@ -217,8 +217,8 @@ std::vector<vif_packet> parse_vif_chain(const stream* src, std::size_t base_addr
 		}
 		
 		// Skip VIFcode.
-		for(std::size_t j = 1; j < packet_size / 4; j++) {
-			vpkt.data.push_back(src->peek<uint32_t>(base_address + offset + j * 4));
+		for(std::size_t j = 4; j < packet_size; j++) {
+			vpkt.data.push_back(src->peek<uint8_t>(base_address + offset + j));
 		}
 		
 		offset += packet_size;
