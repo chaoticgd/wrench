@@ -307,6 +307,7 @@ namespace gui {
 		float _zoom = 0.5f;
 		glm::vec2 _pitch_yaw = { 0.f, 0.f };
 		
+		bool _fullscreen_preview = false;
 		bool _show_vertex_indices = false;
 	};
 

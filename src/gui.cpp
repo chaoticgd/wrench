@@ -851,7 +851,11 @@ void gui::model_browser::render(app& a) {
 	}
 	
 	ImGui::Columns(2);
-	ImGui::SetColumnWidth(1, 384);
+	if(_fullscreen_preview) {
+		ImGui::SetColumnWidth(0, 0);
+	} else {
+		ImGui::SetColumnWidth(0, ImGui::GetWindowSize().x - 384);
+	}
 	
 	moby_model* model = render_selection_pane(a);
 	if(model == nullptr) {
@@ -860,7 +864,19 @@ void gui::model_browser::render(app& a) {
 	
 	ImGui::NextColumn();
 	
-	ImVec2 preview_size { 400, 300 };
+	if(ImGui::Button(_fullscreen_preview ? " > " : " < ")) {
+		_fullscreen_preview = !_fullscreen_preview;
+	}
+	ImGui::SameLine();
+	ImGui::SliderFloat("Zoom", &_zoom, 0.0, 1.0, "%.1f");
+	
+	ImVec2 preview_size;
+	if(_fullscreen_preview) {
+		auto win_size = ImGui::GetWindowSize();
+		preview_size = { win_size.x, win_size.y - 300 };
+	} else {
+		preview_size = { 400, 300 };
+	}
 	ImGui::BeginChild("preview", preview_size);
 	{
 		static GLuint preview_texture = 0;
@@ -889,8 +905,6 @@ void gui::model_browser::render(app& a) {
 		render_preview(&preview_texture, *model, a.renderer, preview_size, _zoom, pitch_yaw, _show_vertex_indices);
 	}
 	ImGui::EndChild();
-	
-	ImGui::SliderFloat("Zoom", &_zoom, 0.0, 1.0, "%.1f");
 	
 	if(ImGui::BeginTabBar("tabs")) {
 		if(ImGui::BeginTabItem("Details")) {
