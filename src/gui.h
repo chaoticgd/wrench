@@ -284,13 +284,14 @@ namespace gui {
 			std::string list,
 			std::vector<moby_model>& models);
 		
-		void render_preview(
+		static void render_preview(
 			GLuint* target,
 			moby_model& model,
 			const gl_renderer& renderer,
 			ImVec2 preview_size,
 			float zoom,
-			glm::vec2 pitch_yaw);
+			glm::vec2 pitch_yaw,
+			bool show_vertex_indices);
 		glm::vec2 get_drag_delta() const;
 		
 		static void render_submodel_list(moby_model& model);
@@ -305,6 +306,8 @@ namespace gui {
 	
 		float _zoom = 0.5f;
 		glm::vec2 _pitch_yaw = { 0.f, 0.f };
+		
+		bool _show_vertex_indices = false;
 	};
 
 	class settings : public window {

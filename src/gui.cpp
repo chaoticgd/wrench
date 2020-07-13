@@ -861,32 +861,36 @@ void gui::model_browser::render(app& a) {
 	ImGui::NextColumn();
 	
 	ImVec2 preview_size { 400, 300 };
-	static GLuint preview_texture = 0;
-	ImGui::Image((void*) (intptr_t) preview_texture, preview_size);
-	static bool is_dragging = false;
-	bool image_hovered = ImGui::IsItemHovered();
-	glm::vec2 pitch_yaw = _pitch_yaw;
-	if(ImGui::IsMouseDragging() && (image_hovered || is_dragging)) {
-		pitch_yaw += get_drag_delta();
-		is_dragging = true;
+	ImGui::BeginChild("preview", preview_size);
+	{
+		static GLuint preview_texture = 0;
+		ImGui::Image((void*) (intptr_t) preview_texture, preview_size);
+		static bool is_dragging = false;
+		bool image_hovered = ImGui::IsItemHovered();
+		glm::vec2 pitch_yaw = _pitch_yaw;
+		if(ImGui::IsMouseDragging() && (image_hovered || is_dragging)) {
+			pitch_yaw += get_drag_delta();
+			is_dragging = true;
+		}
+		
+		// Update zoom and rotation.
+		if(image_hovered || is_dragging) {
+			ImGuiIO& io = ImGui::GetIO();
+			_zoom *= io.MouseWheel * a.delta_time * 0.0001 + 1;
+			if(_zoom < 0.f) _zoom = 0.f;
+			if(_zoom > 1.f) _zoom = 1.f;
+			
+			if(ImGui::IsMouseReleased(0)) {
+				_pitch_yaw += get_drag_delta();
+				is_dragging = false;
+			}
+		}
+		
+		render_preview(&preview_texture, *model, a.renderer, preview_size, _zoom, pitch_yaw, _show_vertex_indices);
 	}
+	ImGui::EndChild();
 	
 	ImGui::SliderFloat("Zoom", &_zoom, 0.0, 1.0, "%.1f");
-	
-	// Update zoom and rotation.
-	if(image_hovered || is_dragging) {
-		ImGuiIO& io = ImGui::GetIO();
-		_zoom *= io.MouseWheel * a.delta_time * 0.0001 + 1;
-		if(_zoom < 0.f) _zoom = 0.f;
-		if(_zoom > 1.f) _zoom = 1.f;	
-		
-		if(ImGui::IsMouseReleased(0)) {
-			_pitch_yaw += get_drag_delta();
-			is_dragging = false;
-		}
-	}
-	
-	render_preview(&preview_texture, *model, a.renderer, preview_size, _zoom, pitch_yaw);
 	
 	if(ImGui::BeginTabBar("tabs")) {
 		if(ImGui::BeginTabItem("Details")) {
@@ -894,6 +898,7 @@ void gui::model_browser::render(app& a) {
 			ImGui::InputText("Index", &index, ImGuiInputTextFlags_ReadOnly);
 			std::string res_path = model->resource_path();
 			ImGui::InputText("Resource Path", &res_path, ImGuiInputTextFlags_ReadOnly);
+			ImGui::Checkbox("Show Vertex Indices", &_show_vertex_indices);
 			ImGui::EndTabItem();
 		}
 		if(ImGui::BeginTabItem("Submodels")) {
@@ -962,7 +967,8 @@ moby_model* gui::model_browser::render_selection_grid(
 			render_preview(
 				&model->thumbnail,
 				*model, a.renderer,
-				ImVec2(128, 128), 1, glm::vec2(0, glm::radians(90.f)));
+				ImVec2(128, 128), 0.5, glm::vec2(0, glm::radians(90.f)),
+				false);
 			num_this_frame++;
 		}
 		
@@ -1004,8 +1010,9 @@ void gui::model_browser::render_preview(
 		const gl_renderer& renderer,
 		ImVec2 preview_size,
 		float zoom,
-		glm::vec2 pitch_yaw) {
-	glm::vec3 eye = glm::vec3(1.1f - _zoom, 0, 0);
+		glm::vec2 pitch_yaw,
+		bool show_vertex_indices) {
+	glm::vec3 eye = glm::vec3(1.1f - zoom, 0, 0);
 	
 	glm::mat4 view_fixed = glm::lookAt(eye, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
 	glm::mat4 view_pitched = glm::rotate(view_fixed, pitch_yaw.x, glm::vec3(0, 0, 1));
@@ -1021,6 +1028,22 @@ void gui::model_browser::render_preview(
 	glm::mat4 local_to_world = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, -0.125f));
 	glm::mat4 local_to_clip = projection * view * yzx * local_to_world;
 
+	auto apply_local_to_screen = [&](glm::vec4 pos) {
+		glm::vec4 homogeneous_pos = local_to_clip * pos;
+		glm::vec3 gl_pos {
+				homogeneous_pos.x / homogeneous_pos.w,
+				homogeneous_pos.y / homogeneous_pos.w,
+				homogeneous_pos.z / homogeneous_pos.w
+		};
+		ImVec2 window_pos = ImGui::GetWindowPos();
+		glm::vec3 screen_pos(
+				window_pos.x + (1 + gl_pos.x) * preview_size.x / 2.0,
+				window_pos.y + (1 + gl_pos.y) * preview_size.y / 2.0,
+				gl_pos.z
+		);
+		return screen_pos;
+	};
+
 	render_to_texture(target, preview_size.x, preview_size.y, [&]() {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glUseProgram(renderer.shaders.solid_colour.id());
@@ -1028,6 +1051,17 @@ void gui::model_browser::render_preview(
 			moby_model_submodel& submodel = model.submodels[i];
 			if(!submodel.visible_in_model_viewer) {
 				continue;
+			}
+			
+			if(show_vertex_indices) {
+				auto draw_list = ImGui::GetWindowDrawList();
+				for(std::size_t i = 0; i < submodel.vertex_data.size(); i++) {
+					moby_model_vertex& vert = submodel.vertex_data[i];
+					glm::vec3 proj_pos = apply_local_to_screen(glm::vec4(vert.x / (float) INT16_MAX, vert.y / (float) INT16_MAX, vert.z / (float) INT16_MAX, 1.f));
+					if(proj_pos.z > 0.f) {
+						draw_list->AddText(ImVec2(proj_pos.x, proj_pos.y), 0xffffffff, int_to_hex(i).c_str());
+					}
+				}
 			}
 			
 			if(submodel.vertex_buffer == 0) {
