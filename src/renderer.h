@@ -60,10 +60,21 @@ void render_to_texture(GLuint* target, int width, int height, T draw_callback) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
+	static GLuint zbuffer_texture;
+	glGenTextures(1, &zbuffer_texture);
+	glBindTexture(GL_TEXTURE_2D, zbuffer_texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
 	GLuint fb_id;
 	glGenFramebuffers(1, &fb_id);
 	glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *target, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, zbuffer_texture, 0);
+
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
 
 	glClearColor(0, 0, 0, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -72,6 +83,7 @@ void render_to_texture(GLuint* target, int width, int height, T draw_callback) {
 	draw_callback();
 	
 	glDeleteFramebuffers(1, &fb_id);
+	glDeleteTextures(1, &zbuffer_texture);
 }
 
 #endif
