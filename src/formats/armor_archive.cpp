@@ -48,12 +48,16 @@ bool armor_archive::read(stream& iso, const toc_table& table) {
 		if(armor.model.bytes() == 0) {
 			continue;
 		}
-		models.emplace_back(
+		
+		moby_model model(
 			&iso,
 			base_offset + armor.model.bytes(),
 			armor.model_size.bytes(),
 			submodel_table_offset,
 			submodel_counts);
+		model.set_name("armor " + std::to_string(i / 16));
+		model.read();
+		models.emplace_back(std::move(model));
 		
 		std::string set_name = std::string("set") + std::to_string(i);
 		

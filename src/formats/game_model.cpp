@@ -37,7 +37,6 @@ moby_model::moby_model(
 	  _backing(backing, base_offset, size),
 	  _submodel_table_offset(submodel_table_offset) {
 	_backing.name = "Moby Model";
-	read();
 }
 
 moby_model::moby_model(moby_model&& rhs)
@@ -94,8 +93,8 @@ void moby_model::read() {
 			switch(unpack_index) {
 				case 0: { // ST unpack.
 					if(packet.code.unpack.vnvl != +vif_vnvl::V2_16) {
-						fprintf(stderr, "Error: Submodel %ld has malformed first UNPACK (wrong format: %s).\n",
-							submodels.size(), packet.code.unpack.vnvl._to_string());
+						fprintf(stderr, "Error: Model %s submodel %ld has malformed first UNPACK (wrong format: %s).\n",
+							_backing.name.c_str(), submodels.size(), packet.code.unpack.vnvl._to_string());
 						continue;
 					}
 					submodel.st_data.resize(packet.data.size() / sizeof(moby_model_st));
@@ -109,18 +108,21 @@ void moby_model::read() {
 				}
 				case 2: { // Texture unpack (optional).
 					if(packet.data.size() != sizeof(moby_model_texture_data)) {
-						fprintf(stderr, "Error: Submodel %ld has malformed third UNPACK (wrong size).\n", submodels.size());
+						fprintf(stderr, "Error: Model %s submodel %ld has malformed third UNPACK (wrong size).\n",
+							_backing.name.c_str(), submodels.size());
 						continue;
 					}
 					if(packet.code.unpack.vnvl != +vif_vnvl::V4_32) {
-						fprintf(stderr, "Error: Submodel %ld has malformed third UNPACK (wrong format).\n", submodels.size());
+						fprintf(stderr, "Error: Model %s submodel %ld has malformed third UNPACK (wrong format).\n",
+							_backing.name.c_str(), submodels.size());
 						continue;
 					}
 					submodel.texture = *(moby_model_texture_data*) packet.data.data();
 					break;
 				}
 				case 3: {
-					fprintf(stderr, "Error: Too many UNPACK packets in submodel %ld VIF list.\n", submodels.size());
+					fprintf(stderr, "Error: Too many UNPACK packets in model %s submodel %ld VIF list.\n",
+						_backing.name.c_str(), submodels.size());
 					continue;
 				}
 			}
@@ -129,7 +131,8 @@ void moby_model::read() {
 		}
 		
 		if(unpack_index < 2) {
-			fprintf(stderr, "Error: VIF list for submodel %ld doesn't have enough UNPACK packets.\n", submodels.size());
+			fprintf(stderr, "Error: VIF list for model %s submodel %ld doesn't have enough UNPACK packets.\n",
+				_backing.name.c_str(), submodels.size());
 			continue;
 		}
 		

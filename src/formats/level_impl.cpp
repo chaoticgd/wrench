@@ -174,6 +174,8 @@ level::level(iso_stream* iso, toc_level index)
 			model_header.num_submodels
 		};
 		moby_model model(_asset_segment, abs_offset, 0, 0, submodel_counts);
+		model.set_name("class " + std::to_string(entry.class_num));
+		model.read();
 		model.upload_vertex_buffer();
 		moby_models.emplace_back(std::move(model));
 		

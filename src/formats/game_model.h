@@ -131,7 +131,9 @@ public:
 	GLuint thumbnail;
 
 	std::string resource_path() const;
-
+	
+	void set_name(std::string name) { _backing.name = name; }
+	
 private:
 	GLuint _vertex_buffer;
 	std::size_t _vertex_count;
