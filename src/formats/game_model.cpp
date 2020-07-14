@@ -103,6 +103,8 @@ void moby_model::read() {
 					break;
 				}
 				case 1: { // Mystery unpack.
+					submodel.index_data.resize(packet.data.size()-8);
+					std::memcpy(submodel.index_data.data(), packet.data.data()+8, packet.data.size()-8);
 					break;
 				}
 				case 2: { // Texture unpack (optional).
@@ -133,7 +135,7 @@ void moby_model::read() {
 		
 		auto vertex_header = _backing.read<moby_model_vertex_table_header>(entry.vertex_offset);
 		submodel.vertex_data.resize(vertex_header.vertex_count);
-		_backing.seek(_submodel_table_offset + entry.vertex_offset + vertex_header.vertex_table_offset);
+		_backing.seek(entry.vertex_offset + vertex_header.vertex_table_offset);
 		_backing.read_v(submodel.vertex_data);
 		
 		submodel.visible_in_model_viewer = true;
@@ -160,15 +162,15 @@ void moby_model::upload_vertex_buffer() {
 		vertex_data.insert(vertex_data.end(), submodel.vertex_data.end() - 1, submodel.vertex_data.end());
 	}
 	
-	auto opengl_data = moby_vertex_data_to_opengl(vertex_data);
-	
-	_vertex_count = vertex_data.size();
-	glDeleteBuffers(1, &_vertex_buffer);
-	glGenBuffers(1, &_vertex_buffer);
-	glBindBuffer(GL_ARRAY_BUFFER, _vertex_buffer);
-	glBufferData(GL_ARRAY_BUFFER,
-		_vertex_count * sizeof(moby_model_opengl_vertex),
-		opengl_data.data(), GL_STATIC_DRAW);
+	//auto opengl_data = moby_vertex_data_to_opengl(vertex_data);
+	//
+	//_vertex_count = vertex_data.size();
+	//glDeleteBuffers(1, &_vertex_buffer);
+	//glGenBuffers(1, &_vertex_buffer);
+	//glBindBuffer(GL_ARRAY_BUFFER, _vertex_buffer);
+	//glBufferData(GL_ARRAY_BUFFER,
+	//	_vertex_count * sizeof(moby_model_opengl_vertex),
+	//	opengl_data.data(), GL_STATIC_DRAW);
 }
 
 void moby_model::setup_vertex_attributes() const {
@@ -187,15 +189,23 @@ std::string moby_model::resource_path() const {
 	return _backing.resource_path();
 }
 
-std::vector<moby_model_opengl_vertex> moby_vertex_data_to_opengl(const std::vector<moby_model_vertex>& vertex_data) {
-	std::vector<moby_model_opengl_vertex> result(vertex_data.size());
-	for(std::size_t i = 0; i < result.size(); i++) {
-		const moby_model_vertex& in_vertex = vertex_data[i];
-		result[i] = moby_model_opengl_vertex {
-			in_vertex.x / (float) INT16_MAX,
-			in_vertex.y / (float) INT16_MAX,
-			in_vertex.z / (float) INT16_MAX
-		};
+std::vector<moby_model_opengl_vertex> moby_vertex_data_to_opengl(const moby_model_submodel& submodel) {
+	std::vector<moby_model_opengl_vertex> result;
+	for(std::size_t i = 0; i < submodel.index_data.size(); i++) {
+		try {
+			int index = submodel.index_data[i] & 0xff;
+			if(index < 1) {
+				index += 128;
+			}
+			const moby_model_vertex& in_vertex = submodel.vertex_data.at(index);
+			result.push_back(moby_model_opengl_vertex {
+				in_vertex.x / (float) INT16_MAX,
+				in_vertex.y / (float) INT16_MAX,
+				in_vertex.z / (float) INT16_MAX
+			});
+		} catch(std::out_of_range) {
+			continue;
+		}
 	}
 	return result;
 }

@@ -1079,7 +1079,7 @@ void gui::model_browser::render_preview(
 			}
 			
 			if(submodel.vertex_buffer == 0) {
-				auto opengl_data = moby_vertex_data_to_opengl(submodel.vertex_data);
+				auto opengl_data = moby_vertex_data_to_opengl(submodel);
 		
 				glDeleteBuffers(1, &submodel.vertex_buffer);
 				glGenBuffers(1, &submodel.vertex_buffer);
@@ -1097,7 +1097,7 @@ void gui::model_browser::render_preview(
 			glBindBuffer(GL_ARRAY_BUFFER, submodel.vertex_buffer);
 			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
-			glDrawArrays(GL_POINTS, 0, submodel.vertex_data.size());
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, submodel.vertex_data.size());
 
 			glDisableVertexAttribArray(0);
 		}

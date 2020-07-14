@@ -97,6 +97,7 @@ packed_struct(moby_model_texture_data, // Third UNPACK.
 struct moby_model_submodel {
 	std::vector<vif_packet> vif_list;
 	std::vector<moby_model_st> st_data;
+	std::vector<int8_t> index_data;
 	std::optional<moby_model_texture_data> texture; // If empty use last submodel.
 	std::vector<moby_model_vertex> vertex_data;
 	bool visible_in_model_viewer;
@@ -139,6 +140,6 @@ private:
 	std::size_t _submodel_table_offset; // Relative to base_offset.
 };
 
-std::vector<moby_model_opengl_vertex> moby_vertex_data_to_opengl(const std::vector<moby_model_vertex>& vertex_data);
+std::vector<moby_model_opengl_vertex> moby_vertex_data_to_opengl(const moby_model_submodel& submodel);
 
 #endif
