@@ -1031,7 +1031,7 @@ void gui::model_browser::render_preview(
 	glm::mat4 view_fixed = glm::lookAt(eye, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
 	glm::mat4 view_pitched = glm::rotate(view_fixed, pitch_yaw.x, glm::vec3(0, 0, 1));
 	glm::mat4 view = glm::rotate(view_pitched, pitch_yaw.y, glm::vec3(0, 1, 0));
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), preview_size.x / preview_size.y, 0.1f, 100.0f);
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), preview_size.x / preview_size.y, 0.01f, 100.0f);
 	
 	static const glm::mat4 yzx {
 		0,  0, 1, 0,
