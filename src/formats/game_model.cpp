@@ -196,11 +196,11 @@ std::vector<moby_model_opengl_vertex> moby_vertex_data_to_opengl(const moby_mode
 	std::vector<moby_model_opengl_vertex> result;
 	for(std::size_t i = 0; i < submodel.index_data.size(); i++) {
 		try {
-			int index = submodel.index_data[i] & 0xff;
+			int index = submodel.index_data[i];
 			if(index < 1) {
 				index += 128;
 			}
-			const moby_model_vertex& in_vertex = submodel.vertex_data.at(index);
+			const moby_model_vertex& in_vertex = submodel.vertex_data.at(index - 1);
 			result.push_back(moby_model_opengl_vertex {
 				in_vertex.x / (float) INT16_MAX,
 				in_vertex.y / (float) INT16_MAX,
