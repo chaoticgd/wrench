@@ -33,18 +33,22 @@ struct gl_renderer;
 
 packed_struct(moby_model_submodel_entry,
 	uint32_t vif_list_offset;
-	uint16_t vif_list_qwc; // size in quadwords
+	uint16_t vif_list_quadword_count; // Size in 16 byte units.
 	uint16_t vif_list_texture_unpack_offset; // No third UNPACK if zero.
 	uint32_t vertex_offset;
-	uint32_t unknown_c;
+	uint8_t vertex_data_quadword_count; // Includes header, in 16 byte units.
+	uint8_t unknown_d;
+	uint8_t unknown_e;
+	uint8_t unknown_f;
 )
 
 packed_struct(moby_model_vertex_table_header,
 	uint32_t unknown_0;
 	uint16_t unknown_4;
-	uint16_t vertex_count;
+	uint16_t unknown_6;
 	uint32_t unknown_8;
-	uint32_t vertex_table_offset;
+	uint16_t vertex_table_offset;
+	uint16_t unknown_e;
 	// More stuff comes between this and the vertex table.
 )
 
@@ -132,6 +136,7 @@ public:
 
 	std::string resource_path() const;
 	
+	std::string name() { return _backing.name; }
 	void set_name(std::string name) { _backing.name = name; }
 	
 private:

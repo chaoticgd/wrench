@@ -1061,6 +1061,7 @@ void gui::model_browser::render_preview(
 	render_to_texture(target, preview_size.x, preview_size.y, [&]() {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glUseProgram(renderer.shaders.solid_colour.id());
+		
 		for(std::size_t i = 0; i < model.submodels.size(); i++) {
 			moby_model_submodel& submodel = model.submodels[i];
 			if(!submodel.visible_in_model_viewer) {

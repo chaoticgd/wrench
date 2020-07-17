@@ -67,10 +67,7 @@ moby_model::~moby_model() {
 }
 
 void moby_model::read() {
-	std::size_t total_submodel_count = 0;
-	for(std::size_t submodel_count : submodel_counts) {
-		total_submodel_count += submodel_count;
-	}
+	std::size_t total_submodel_count = submodel_counts[0];
 	
 	std::vector<moby_model_submodel_entry> submodel_entries;
 	submodel_entries.resize(total_submodel_count);
@@ -81,7 +78,7 @@ void moby_model::read() {
 	for(moby_model_submodel_entry& entry : submodel_entries) {
 		moby_model_submodel submodel;
 		
-		submodel.vif_list = parse_vif_chain(&_backing, entry.vif_list_offset, entry.vif_list_qwc);
+		submodel.vif_list = parse_vif_chain(&_backing, entry.vif_list_offset, entry.vif_list_quadword_count);
 		
 		std::size_t unpack_index = 0;
 		for(vif_packet& packet : submodel.vif_list) {
@@ -137,7 +134,12 @@ void moby_model::read() {
 		}
 		
 		auto vertex_header = _backing.read<moby_model_vertex_table_header>(entry.vertex_offset);
-		submodel.vertex_data.resize(vertex_header.vertex_count);
+		if(vertex_header.vertex_table_offset / 0x10 > entry.vertex_data_quadword_count) {
+			fprintf(stderr, "Error: Model %s submodel %ld has bad vertex table offset or size.\n",
+				_backing.name.c_str(), submodels.size());
+			continue;
+		}
+		submodel.vertex_data.resize(entry.vertex_data_quadword_count - vertex_header.vertex_table_offset / 0x10);
 		_backing.seek(entry.vertex_offset + vertex_header.vertex_table_offset);
 		_backing.read_v(submodel.vertex_data);
 		
@@ -193,11 +195,14 @@ std::string moby_model::resource_path() const {
 }
 
 std::vector<moby_model_opengl_vertex> moby_vertex_data_to_opengl(const moby_model_submodel& submodel) {
+	std::string err;
 	std::vector<moby_model_opengl_vertex> result;
 	for(std::size_t i = 0; i < submodel.index_data.size(); i++) {
+		int index = submodel.index_data[i];
 		try {
-			int index = submodel.index_data[i];
-			if(index < 1) {
+			if(index == 0) {
+				break;
+			} else if(index < 1) {
 				index += 128;
 			}
 			const moby_model_vertex& in_vertex = submodel.vertex_data.at(index - 1);
@@ -206,8 +211,10 @@ std::vector<moby_model_opengl_vertex> moby_vertex_data_to_opengl(const moby_mode
 				in_vertex.y / (float) INT16_MAX,
 				in_vertex.z / (float) INT16_MAX
 			});
-		} catch(std::out_of_range) {
-			continue;
+		} catch(std::out_of_range& e) {
+			static int times = 0;
+			if(times++ < 100) printf(" out of range %d: %s\n", index, e.what());
+			if(result.size() > 0) result.push_back(result.back());
 		}
 	}
 	return result;
