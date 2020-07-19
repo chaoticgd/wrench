@@ -245,7 +245,6 @@ namespace gui {
 	class texture_browser : public window {
 	public:
 		texture_browser();
-		~texture_browser();
 
 		const char* title_text() const override;
 		ImVec2 initial_size() const override;
@@ -257,14 +256,11 @@ namespace gui {
 		};
 
 		void render_grid(app& a, std::vector<texture>& tex_list);
-		void cache_texture(texture* tex);
 
 		void import_bmp(app& a, texture* tex);
 		void export_bmp(app& a, texture* tex);
 		void export_all(app& a, std::vector<texture>& tex_list);
-
-		int _project_id = 0;
-		std::map<texture*, GLuint> _gl_textures;
+		
 		std::string _list;
 		std::size_t _selection = 0;
 		filter_parameters _filters = { 0 };

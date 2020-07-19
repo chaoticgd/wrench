@@ -600,12 +600,6 @@ void gui::string_viewer::render(app& a) {
 
 gui::texture_browser::texture_browser() {}
 
-gui::texture_browser::~texture_browser() {
-	for(auto& tex : _gl_textures) {
-		glDeleteTextures(1, &tex.second);
-	}
-}
-
 const char* gui::texture_browser::title_text() const {
 	return "Texture Browser";
 }
@@ -618,15 +612,6 @@ void gui::texture_browser::render(app& a) {
 	if(!a.get_project()) {
 		ImGui::Text("<no project open>");
 		return;
-	}
-	
-	// Clear the texture cache when a new project is opened.
-	if(a.get_project()->id() != _project_id) {
-		for(auto& tex : _gl_textures) {
-			glDeleteTextures(1, &tex.second);
-		}
-		_gl_textures.clear();
-		_project_id = a.get_project()->id();
 	}
 
 	auto tex_lists = a.get_project()->texture_lists(&a);
@@ -715,20 +700,20 @@ void gui::texture_browser::render_grid(app& a, std::vector<texture>& tex_list) {
 			continue;
 		}
 
-		if(_gl_textures.find(tex) == _gl_textures.end()) {
-
+#ifdef WRENCH_EDITOR
+		if(tex->opengl_id() == 0) {
 			// Only load 10 textures per frame.
 			if(num_this_frame >= 10) {
 				ImGui::NextColumn();
 				continue;
 			}
 
-			cache_texture(tex);
+			tex->upload_to_opengl();
 			num_this_frame++;
 		}
 
 		bool clicked = ImGui::ImageButton(
-			(void*) (intptr_t) _gl_textures.at(tex),
+			(void*) (intptr_t) tex->opengl_id(),
 			ImVec2(128, 128),
 			ImVec2(0, 0),
 			ImVec2(1, 1),
@@ -739,6 +724,7 @@ void gui::texture_browser::render_grid(app& a, std::vector<texture>& tex_list) {
 		if(clicked) {
 			_selection = i;
 		}
+#endif
 
 		std::string display_name =
 			std::to_string(i) + " " + tex->name;
@@ -747,39 +733,15 @@ void gui::texture_browser::render_grid(app& a, std::vector<texture>& tex_list) {
 	}
 }
 
-void gui::texture_browser::cache_texture(texture* tex) {
-	auto size = tex->size();
-
-	// Prepare pixel data.
-	std::vector<uint8_t> indexed_pixel_data = tex->pixel_data();
-	std::vector<uint8_t> colour_data(indexed_pixel_data.size() * 4);
-	auto palette = tex->palette();
-	for(std::size_t i = 0; i < indexed_pixel_data.size(); i++) {
-		colour c = palette[indexed_pixel_data[i]];
-		colour_data[i * 4] = c.r;
-		colour_data[i * 4 + 1] = c.g;
-		colour_data[i * 4 + 2] = c.b;
-		colour_data[i * 4 + 3] = static_cast<int>(c.a) * 2 - 1;
-	}
-
-	// Send image to OpenGL.
-	GLuint texture_id;
-	glGenTextures(1, &texture_id);
-	glBindTexture(GL_TEXTURE_2D, texture_id);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, colour_data.data());
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-	_gl_textures[tex] = texture_id;
-}
-
 void gui::texture_browser::import_bmp(app& a, texture* tex) {
 	auto importer = std::make_unique<string_input>("Enter Import Path");
 	importer->on_okay([tex, this](app& a, std::string path) {
 		try {
 			file_stream bmp_file(path);
 			bmp_to_texture(tex, bmp_file);
-			cache_texture(tex);
+#ifdef WRENCH_EDITOR
+			tex->upload_to_opengl();
+#endif
 		} catch(stream_error& e) {
 			a.emplace_window<message_box>("Error", e.what());
 		}

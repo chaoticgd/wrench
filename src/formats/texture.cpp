@@ -101,6 +101,7 @@ void texture::upload_to_opengl() {
 		colour_data[i * 4 + 3] = static_cast<int>(c.a) * 2 - 1;
 	}
 	
+	glDeleteTextures(1, &_opengl_id);
 	glGenTextures(1, &_opengl_id);
 	glBindTexture(GL_TEXTURE_2D, _opengl_id);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, _size.x, _size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, colour_data.data());
