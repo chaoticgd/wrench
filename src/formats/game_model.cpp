@@ -213,13 +213,6 @@ GLuint moby_model::texture(app& a, std::size_t index) {
 #endif
 
 std::vector<moby_model_opengl_vertex> moby_vertex_data_to_opengl(const moby_model_submodel& submodel) {
-	static const auto wrap_st = [](float val) {
-		while(val < 0.f) {
-			val += 1.f;
-		}
-		return val;
-	};
-	
 	std::vector<moby_model_opengl_vertex> result;
 	for(std::size_t i = 0; i < submodel.index_data.size(); i++) {
 		int index = submodel.index_data[i];
@@ -235,8 +228,8 @@ std::vector<moby_model_opengl_vertex> moby_vertex_data_to_opengl(const moby_mode
 				in_vertex.x / (float) INT16_MAX,
 				in_vertex.y / (float) INT16_MAX,
 				in_vertex.z / (float) INT16_MAX,
-				wrap_st((st.s / (float) INT16_MAX) * 8.f),
-				wrap_st((st.t / (float) INT16_MAX) * 8.f)
+				(st.s / (float) INT16_MAX) * 8.f,
+				(st.t / (float) INT16_MAX) * 8.f
 			});
 		} catch(std::out_of_range& e) {
 			static int times = 0;
