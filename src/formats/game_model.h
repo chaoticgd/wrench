@@ -29,6 +29,7 @@
 #	Parse a game model.
 # */
 
+struct app;
 struct gl_renderer;
 
 packed_struct(moby_model_submodel_entry,
@@ -68,11 +69,13 @@ packed_struct(moby_model_vertex,
 	int16_t z;         // 0xe
 )
 
-struct moby_model_opengl_vertex {
+packed_struct(moby_model_opengl_vertex,
 	float x;
 	float y;
 	float z;
-};
+	float u;
+	float v;
+)
 
 packed_struct(moby_model_st, // First UNPACK.
 	int16_t s;
@@ -139,12 +142,23 @@ public:
 	std::string name() { return _backing.name; }
 	void set_name(std::string name) { _backing.name = name; }
 	
+	std::size_t texture_base_index;
+	
+#ifdef WRENCH_EDITOR
+	// This is a bit hacky and needs to be rewritten in the future
+	// to be more generic.
+	GLuint texture(app& a, std::size_t index);
+	void set_texture_source(std::size_t index) { _armor_wad_index = index; }
+#endif
+	
 private:
 	GLuint _vertex_buffer;
 	std::size_t _vertex_count;
 
 	proxy_stream _backing;
 	std::size_t _submodel_table_offset; // Relative to base_offset.
+	
+	std::size_t _armor_wad_index; // Again, hacky.
 };
 
 std::vector<moby_model_opengl_vertex> moby_vertex_data_to_opengl(const moby_model_submodel& submodel);

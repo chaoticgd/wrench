@@ -56,6 +56,7 @@ bool armor_archive::read(stream& iso, const toc_table& table) {
 			submodel_table_offset,
 			submodel_counts);
 		model.set_name("armor " + std::to_string(i / 16));
+		model.texture_base_index = textures.size();
 		model.read();
 		models.emplace_back(std::move(model));
 		

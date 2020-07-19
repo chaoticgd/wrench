@@ -284,14 +284,25 @@ namespace gui {
 			std::string list,
 			std::vector<moby_model>& models);
 		
+		enum class view_mode {
+			WIREFRAME = 0,
+			TEXTURED_POLYGONS = 1
+		};
+		
+		struct view_params {
+			view_mode mode = view_mode::TEXTURED_POLYGONS;
+			float zoom = 0.5f;
+			glm::vec2 pitch_yaw = { 0.f, 0.f };
+			bool show_vertex_indices = false;
+		};
+		
 		static void render_preview(
+			app& a,
 			GLuint* target,
 			moby_model& model,
 			const gl_renderer& renderer,
 			ImVec2 preview_size,
-			float zoom,
-			glm::vec2 pitch_yaw,
-			bool show_vertex_indices);
+			view_params params);
 		glm::vec2 get_drag_delta() const;
 		
 		static void render_submodel_list(moby_model& model);
@@ -303,12 +314,8 @@ namespace gui {
 	private:
 		std::string _list;
 		std::size_t _model;
-	
-		float _zoom = 0.5f;
-		glm::vec2 _pitch_yaw = { 0.f, 0.f };
-		
 		bool _fullscreen_preview = false;
-		bool _show_vertex_indices = false;
+		view_params _view_params;
 	};
 
 	class settings : public window {

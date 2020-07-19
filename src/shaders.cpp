@@ -84,8 +84,8 @@ GLuint shader_program::compile(const GLchar* src, GLuint type) {
 	return id;
 }
 
-shader_programs::shader_programs()
-	: solid_colour(
+shader_programs::shader_programs() :
+	solid_colour(
 		R"(
 			#version 120
 
@@ -109,8 +109,42 @@ shader_programs::shader_programs()
 			solid_colour_transform = glGetUniformLocation(id, "transform");
 			solid_colour_rgb       = glGetUniformLocation(id, "rgb");
 		}
-	) {}
+	),
+	textured(
+		R"(
+			#version 120
+
+			uniform mat4 local_to_clip;
+			attribute vec3 position_model_space;
+			attribute vec2 uv;
+			varying vec2 uv_frag;
+
+			void main() {
+				gl_Position = local_to_clip * vec4(position_model_space, 1);
+				uv_frag = uv;
+			}
+		)",
+		R"(
+			#version 120
+
+			uniform sampler2D sampler;
+			varying vec2 uv_frag;
+
+			void main() {
+				gl_FragColor = texture2D(sampler, uv_frag);
+			}
+		)",
+		[&](GLuint id) {
+			textured_local_to_clip = glGetUniformLocation(id, "local_to_clip");
+			textured_sampler = glGetUniformLocation(id, "sampler");
+			
+			glBindAttribLocation(id, 0, "position_model_space");
+			glBindAttribLocation(id, 1, "uv");
+		}
+	)
+{}
 
 void shader_programs::init() {
 	solid_colour.init();
+	textured.init();
 }

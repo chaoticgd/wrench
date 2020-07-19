@@ -22,6 +22,7 @@
 #include <glm/common.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "../app.h"
 #include "../util.h"
 
 moby_model::moby_model(
@@ -43,6 +44,7 @@ moby_model::moby_model(moby_model&& rhs)
 	: submodel_counts(std::move(rhs.submodel_counts)),
 	  submodels(std::move(rhs.submodels)),
 	  thumbnail(rhs.thumbnail),
+	  texture_base_index(rhs.texture_base_index),
 	  _vertex_buffer(rhs._vertex_buffer),
 	  _vertex_count(rhs._vertex_count),
 	  _backing(std::move(rhs._backing)),
@@ -179,7 +181,8 @@ void moby_model::upload_vertex_buffer() {
 }
 
 void moby_model::setup_vertex_attributes() const {
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*) offsetof(moby_model_opengl_vertex, x));
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(moby_model_opengl_vertex), (void*) offsetof(moby_model_opengl_vertex, x)); // XYZ
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(moby_model_opengl_vertex), (void*) offsetof(moby_model_opengl_vertex, u)); // UV
 }
 
 GLuint moby_model::vertex_buffer() const {
@@ -194,8 +197,29 @@ std::string moby_model::resource_path() const {
 	return _backing.resource_path();
 }
 
+#ifdef WRENCH_EDITOR
+
+GLuint moby_model::texture(app& a, std::size_t index) {
+	GLuint result = 0;
+	if(auto project = a.get_project()) {
+		auto& tex_list = project->armor().textures;
+		if(index < tex_list.size()) {
+			result = tex_list.at(texture_base_index + index).opengl_id();
+		}
+	}
+	return result;
+}
+
+#endif
+
 std::vector<moby_model_opengl_vertex> moby_vertex_data_to_opengl(const moby_model_submodel& submodel) {
-	std::string err;
+	static const auto wrap_st = [](float val) {
+		while(val < 0.f) {
+			val += 1.f;
+		}
+		return val;
+	};
+	
 	std::vector<moby_model_opengl_vertex> result;
 	for(std::size_t i = 0; i < submodel.index_data.size(); i++) {
 		int index = submodel.index_data[i];
@@ -206,10 +230,13 @@ std::vector<moby_model_opengl_vertex> moby_vertex_data_to_opengl(const moby_mode
 				index += 128;
 			}
 			const moby_model_vertex& in_vertex = submodel.vertex_data.at(index - 1);
+			const moby_model_st& st = submodel.st_data.at(index - 1);
 			result.push_back(moby_model_opengl_vertex {
 				in_vertex.x / (float) INT16_MAX,
 				in_vertex.y / (float) INT16_MAX,
-				in_vertex.z / (float) INT16_MAX
+				in_vertex.z / (float) INT16_MAX,
+				wrap_st((st.s / (float) INT16_MAX) * 8.f),
+				wrap_st((st.t / (float) INT16_MAX) * 8.f)
 			});
 		} catch(std::out_of_range& e) {
 			static int times = 0;

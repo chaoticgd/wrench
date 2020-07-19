@@ -868,7 +868,7 @@ void gui::model_browser::render(app& a) {
 		_fullscreen_preview = !_fullscreen_preview;
 	}
 	ImGui::SameLine();
-	ImGui::SliderFloat("Zoom", &_zoom, 0.0, 1.0, "%.1f");
+	ImGui::SliderFloat("Zoom", &_view_params.zoom, 0.0, 1.0, "%.1f");
 	
 	ImVec2 preview_size;
 	if(_fullscreen_preview) {
@@ -877,32 +877,39 @@ void gui::model_browser::render(app& a) {
 	} else {
 		preview_size = { 400, 300 };
 	}
+	
+	// If the mouse is dragging, this will store the displacement from the
+	// mouse position when the button was pressed down.
+	glm::vec2 drag_delta(0, 0);
+	
 	ImGui::BeginChild("preview", preview_size);
 	{
 		static GLuint preview_texture = 0;
 		ImGui::Image((void*) (intptr_t) preview_texture, preview_size);
 		static bool is_dragging = false;
 		bool image_hovered = ImGui::IsItemHovered();
-		glm::vec2 pitch_yaw = _pitch_yaw;
+		glm::vec2 pitch_yaw = _view_params.pitch_yaw;
 		if(ImGui::IsMouseDragging() && (image_hovered || is_dragging)) {
-			pitch_yaw += get_drag_delta();
+			drag_delta = get_drag_delta();
 			is_dragging = true;
 		}
 		
 		// Update zoom and rotation.
 		if(image_hovered || is_dragging) {
 			ImGuiIO& io = ImGui::GetIO();
-			_zoom *= io.MouseWheel * a.delta_time * 0.0001 + 1;
-			if(_zoom < 0.f) _zoom = 0.f;
-			if(_zoom > 1.f) _zoom = 1.f;
+			_view_params.zoom *= io.MouseWheel * a.delta_time * 0.0001 + 1;
+			if(_view_params.zoom < 0.f) _view_params.zoom = 0.f;
+			if(_view_params.zoom > 1.f) _view_params.zoom = 1.f;
 			
 			if(ImGui::IsMouseReleased(0)) {
-				_pitch_yaw += get_drag_delta();
+				_view_params.pitch_yaw += get_drag_delta();
 				is_dragging = false;
 			}
 		}
 		
-		render_preview(&preview_texture, *model, a.renderer, preview_size, _zoom, pitch_yaw, _show_vertex_indices);
+		view_params preview_params = _view_params;
+		preview_params.pitch_yaw += drag_delta;
+		render_preview(a, &preview_texture, *model, a.renderer, preview_size, preview_params);
 	}
 	ImGui::EndChild();
 	
@@ -912,7 +919,22 @@ void gui::model_browser::render(app& a) {
 			ImGui::InputText("Index", &index, ImGuiInputTextFlags_ReadOnly);
 			std::string res_path = model->resource_path();
 			ImGui::InputText("Resource Path", &res_path, ImGuiInputTextFlags_ReadOnly);
-			ImGui::Checkbox("Show Vertex Indices", &_show_vertex_indices);
+			
+			static const std::map<view_mode, const char*> modes = {
+				{ view_mode::WIREFRAME, "Wireframe" },
+				{ view_mode::TEXTURED_POLYGONS, "Textured Polygons" }
+			};
+			if(ImGui::BeginCombo("View Mode", modes.at(_view_params.mode))) {
+				for(auto [mode, name] : modes) {
+					if(ImGui::Selectable(name, _view_params.mode == mode)) {
+						_view_params.mode = mode;
+					}
+				}
+				ImGui::EndCombo();
+			}
+			
+			ImGui::Checkbox("Show Vertex Indices", &_view_params.show_vertex_indices);
+			
 			ImGui::EndTabItem();
 		}
 		if(ImGui::BeginTabItem("Submodels")) {
@@ -979,10 +1001,16 @@ moby_model* gui::model_browser::render_selection_grid(
 			}
 			
 			render_preview(
+				a,
 				&model->thumbnail,
 				*model, a.renderer,
-				ImVec2(128, 128), 0.5, glm::vec2(0, glm::radians(90.f)),
-				false);
+				ImVec2(128, 128),
+				view_params {
+					view_mode::TEXTURED_POLYGONS,     // view_mode
+					0.5f,                             // zoom
+					glm::vec2(0, glm::radians(90.f)), // pitch_yaw
+					false                             // show_vertex_indices
+				});
 			num_this_frame++;
 		}
 		
@@ -1019,18 +1047,17 @@ moby_model* gui::model_browser::render_selection_grid(
 }
 
 void gui::model_browser::render_preview(
+		app& a,
 		GLuint* target,
 		moby_model& model,
 		const gl_renderer& renderer,
 		ImVec2 preview_size,
-		float zoom,
-		glm::vec2 pitch_yaw,
-		bool show_vertex_indices) {
-	glm::vec3 eye = glm::vec3(1.1f - zoom, 0, 0);
+		view_params params) {
+	glm::vec3 eye = glm::vec3(1.1f - params.zoom, 0, 0);
 	
 	glm::mat4 view_fixed = glm::lookAt(eye, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
-	glm::mat4 view_pitched = glm::rotate(view_fixed, pitch_yaw.x, glm::vec3(0, 0, 1));
-	glm::mat4 view = glm::rotate(view_pitched, pitch_yaw.y, glm::vec3(0, 1, 0));
+	glm::mat4 view_pitched = glm::rotate(view_fixed, params.pitch_yaw.x, glm::vec3(0, 0, 1));
+	glm::mat4 view = glm::rotate(view_pitched, params.pitch_yaw.y, glm::vec3(0, 1, 0));
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), preview_size.x / preview_size.y, 0.01f, 100.0f);
 	
 	static const glm::mat4 yzx {
@@ -1059,16 +1086,31 @@ void gui::model_browser::render_preview(
 	};
 
 	render_to_texture(target, preview_size.x, preview_size.y, [&]() {
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		glUseProgram(renderer.shaders.solid_colour.id());
+		switch(params.mode) {
+			case view_mode::WIREFRAME:
+				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				glUseProgram(renderer.shaders.solid_colour.id());
+				break;
+			case view_mode::TEXTURED_POLYGONS:
+				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+				glUseProgram(renderer.shaders.textured.id());
+				break;
+		}
 		
+		moby_model_texture_data texture = {};
 		for(std::size_t i = 0; i < model.submodels.size(); i++) {
 			moby_model_submodel& submodel = model.submodels[i];
 			if(!submodel.visible_in_model_viewer) {
 				continue;
 			}
 			
-			if(show_vertex_indices) {
+			// The third UNPACK packet from the last submodel that has one
+			// determines which texture we should apply to this submodel.
+			if(submodel.texture) {
+				texture = *submodel.texture;
+			}
+			
+			if(params.show_vertex_indices) {
 				auto draw_list = ImGui::GetWindowDrawList();
 				for(std::size_t i = 0; i < submodel.vertex_data.size(); i++) {
 					moby_model_vertex& vert = submodel.vertex_data[i];
@@ -1090,17 +1132,37 @@ void gui::model_browser::render_preview(
 					opengl_data.data(), GL_STATIC_DRAW);
 			}
 			
-			glm::vec4 colour = colour_coded_submodel_index(i, model.submodels.size());
-			glUniformMatrix4fv(renderer.shaders.solid_colour_transform, 1, GL_FALSE, &local_to_clip[0][0]);
-			glUniform4f(renderer.shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
-				
+			switch(params.mode) {
+				case view_mode::WIREFRAME: {
+					glUniformMatrix4fv(renderer.shaders.solid_colour_transform, 1, GL_FALSE, &local_to_clip[0][0]);
+					
+					glm::vec4 colour = colour_coded_submodel_index(i, model.submodels.size());
+					glUniformMatrix4fv(renderer.shaders.solid_colour_transform, 1, GL_FALSE, &local_to_clip[0][0]);
+					glUniform4f(renderer.shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
+					break;
+				}
+				case view_mode::TEXTURED_POLYGONS: {
+					glUniformMatrix4fv(renderer.shaders.textured_local_to_clip, 1, GL_FALSE, &local_to_clip[0][0]);
+					// TODO: This is terrible. This #ifdef is only here because
+					// currently links to everything.
+					#ifdef WRENCH_EDITOR
+						glActiveTexture(GL_TEXTURE0);
+						glBindTexture(GL_TEXTURE_2D, model.texture(a, texture.texture_index));
+						glUniform1i(renderer.shaders.textured_sampler, 0);
+					#endif
+					break;
+				}
+			}
+			
 			glEnableVertexAttribArray(0);
+			glEnableVertexAttribArray(1);
 			glBindBuffer(GL_ARRAY_BUFFER, submodel.vertex_buffer);
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+			model.setup_vertex_attributes(); // glVertexAttribPointer calls.
 
-			glDrawArrays(GL_TRIANGLE_STRIP, 0, submodel.vertex_data.size());
-
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, submodel.index_data.size() - 8);
+			
 			glDisableVertexAttribArray(0);
+			glDisableVertexAttribArray(1);
 		}
 	});
 }

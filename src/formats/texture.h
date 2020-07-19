@@ -25,6 +25,9 @@
 #include <glm/glm.hpp>
 
 #include "../stream.h"
+#ifdef WRENCH_EDITOR
+#include "../gl_includes.h"
+#endif
 
 # /*
 #	Stream-backed indexed texture.
@@ -65,6 +68,11 @@ public:
 
 	std::string palette_path() const;
 	std::string pixel_data_path() const;
+
+#ifdef WRENCH_EDITOR
+	void upload_to_opengl();
+	GLuint opengl_id() const;
+#endif
 	
 	std::string name;
 	
@@ -74,6 +82,9 @@ private:
 	stream* _palette_backing;
 	std::size_t _palette_offset;
 	vec2i _size;
+#ifdef WRENCH_EDITOR
+	GLuint _opengl_id = 0;
+#endif
 };
 
 // Won't affect the position indicator of backing.

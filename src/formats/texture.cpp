@@ -87,6 +87,33 @@ std::string texture::pixel_data_path() const {
 	return _pixel_backing->resource_path() + "+0x" + int_to_hex(_pixel_data_offset);
 }
 
+#ifdef WRENCH_EDITOR
+
+void texture::upload_to_opengl() {
+	std::vector<uint8_t> indexed_pixel_data = pixel_data();
+	std::vector<uint8_t> colour_data(indexed_pixel_data.size() * 4);
+	auto palette_data = palette();
+	for(std::size_t i = 0; i < indexed_pixel_data.size(); i++) {
+		colour c = palette_data[indexed_pixel_data[i]];
+		colour_data[i * 4] = c.r;
+		colour_data[i * 4 + 1] = c.g;
+		colour_data[i * 4 + 2] = c.b;
+		colour_data[i * 4 + 3] = static_cast<int>(c.a) * 2 - 1;
+	}
+	
+	glGenTextures(1, &_opengl_id);
+	glBindTexture(GL_TEXTURE_2D, _opengl_id);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, _size.x, _size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, colour_data.data());
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+}
+
+GLuint texture::opengl_id() const {
+	return _opengl_id;
+}
+
+#endif
+
 std::optional<texture> create_fip_texture(stream* backing, std::size_t offset) {
 	fip_header header = backing->peek<fip_header>(offset);
 	if(!validate_fip(header.magic)) {

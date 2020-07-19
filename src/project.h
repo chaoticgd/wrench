@@ -81,6 +81,8 @@ public:
 	
 	void save_to(std::string path);
 
+	armor_archive& armor() { return _armor.begin()->second; }
+
 private:
 	void load_tables();
 	void load_gamedb_info(app* a);
