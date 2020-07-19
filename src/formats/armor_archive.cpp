@@ -66,7 +66,7 @@ bool armor_archive::read(stream& iso, const toc_table& table) {
 		std::size_t fip_offset = base_offset + armor.texture.bytes();
 		std::optional<texture> tex = create_fip_texture(&iso, fip_offset);
 		if(tex) {
-			textures.emplace_back(*tex);
+			textures.emplace_back(std::move(*tex));
 			textures.back().name = set_name;
 			continue;
 		}
@@ -82,7 +82,7 @@ bool armor_archive::read(stream& iso, const toc_table& table) {
 			std::size_t abs_offset = base_offset + armor.texture.bytes() + rel_offset;
 			std::optional<texture> tex = create_fip_texture(&iso, abs_offset);
 			if(tex) {
-				textures.emplace_back(*tex);
+				textures.emplace_back(std::move(*tex));
 				textures.back().name =
 					set_name + "_part" + std::to_string(j);
 			} else {

@@ -34,6 +34,26 @@ texture::texture(
 	  _palette_offset(palette_offset),
 	  _size(size) {}
 
+texture::texture(texture&& rhs)
+	: _pixel_backing(std::move(rhs._pixel_backing)),
+	  _pixel_data_offset(rhs._pixel_data_offset),
+	  _palette_backing(std::move(rhs._palette_backing)),
+	  _palette_offset(rhs._palette_offset),
+	  _size(rhs._size) {
+#ifdef WRENCH_EDITOR
+	_opengl_id = rhs._opengl_id;
+	rhs._opengl_id = 0;
+#endif
+}
+
+texture::~texture() {
+#ifdef WRENCH_EDITOR
+	if(_opengl_id != 0) {
+		glDeleteTextures(1, &_opengl_id);
+	}
+#endif
+}
+
 vec2i texture::size() const {
 	return _size;
 }
@@ -123,5 +143,5 @@ std::optional<texture> create_fip_texture(stream* backing, std::size_t offset) {
 	vec2i size { header.width, header.height };
 	std::size_t pixel_offset = offset + sizeof(fip_header);
 	std::size_t palette_offset = offset + offsetof(fip_header, palette);
-	return texture(backing, pixel_offset, backing, palette_offset, size);
+	return std::move(texture(backing, pixel_offset, backing, palette_offset, size));
 }

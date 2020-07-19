@@ -57,6 +57,9 @@ public:
 		stream* palette_backing,
 		std::size_t palette_offset,
 		vec2i size);
+	texture(const texture& rhs) = delete;
+	texture(texture&& rhs);
+	~texture();
 
 	vec2i size() const;
 

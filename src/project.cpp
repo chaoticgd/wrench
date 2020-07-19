@@ -232,7 +232,7 @@ void wrench_project::load_tables() {
 		
 		std::vector<texture> textures = enumerate_fip_textures(iso, table);
 		if(textures.size() > 0) {
-			_texture_wads[i] = textures;
+			_texture_wads[i] = std::move(textures);
 			continue;
 		}
 		

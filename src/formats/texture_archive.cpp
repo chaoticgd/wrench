@@ -83,7 +83,7 @@ std::vector<texture> enumerate_fip_textures(iso_stream& iso, const toc_table& ta
 						"Tbl " + std::to_string(table.index) +
 						" Tex " + std::to_string(off / sizeof(texture_table_entry));
 				}
-				textures.emplace_back(*tex);
+				textures.emplace_back(std::move(*tex));
 			} else {
 				bad_textures++;
 				std::cerr << "Error: Failed to load 2FIP texture at "
