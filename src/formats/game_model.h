@@ -109,6 +109,7 @@ struct moby_model_submodel {
 	std::vector<moby_model_vertex> vertex_data;
 	bool visible_in_model_viewer;
 	GLuint vertex_buffer;
+	GLsizei vertex_buffer_count;
 	GLuint st_buffer;
 };
 

@@ -1130,6 +1130,7 @@ void gui::model_browser::render_preview(
 				glBufferData(GL_ARRAY_BUFFER,
 					submodel.vertex_data.size() * sizeof(moby_model_opengl_vertex),
 					opengl_data.data(), GL_STATIC_DRAW);
+				submodel.vertex_buffer_count = opengl_data.size();
 			}
 			
 			switch(params.mode) {
@@ -1159,7 +1160,7 @@ void gui::model_browser::render_preview(
 			glBindBuffer(GL_ARRAY_BUFFER, submodel.vertex_buffer);
 			model.setup_vertex_attributes(); // glVertexAttribPointer calls.
 
-			glDrawArrays(GL_TRIANGLE_STRIP, 0, submodel.index_data.size() - 8);
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, submodel.vertex_buffer_count);
 			
 			glDisableVertexAttribArray(0);
 			glDisableVertexAttribArray(1);
