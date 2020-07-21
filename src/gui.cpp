@@ -700,7 +700,6 @@ void gui::texture_browser::render_grid(app& a, std::vector<texture>& tex_list) {
 			continue;
 		}
 
-#ifdef WRENCH_EDITOR
 		if(tex->opengl_id() == 0) {
 			// Only load 10 textures per frame.
 			if(num_this_frame >= 10) {
@@ -724,7 +723,6 @@ void gui::texture_browser::render_grid(app& a, std::vector<texture>& tex_list) {
 		if(clicked) {
 			_selection = i;
 		}
-#endif
 
 		std::string display_name =
 			std::to_string(i) + " " + tex->name;
@@ -739,9 +737,7 @@ void gui::texture_browser::import_bmp(app& a, texture* tex) {
 		try {
 			file_stream bmp_file(path);
 			bmp_to_texture(tex, bmp_file);
-#ifdef WRENCH_EDITOR
 			tex->upload_to_opengl();
-#endif
 		} catch(stream_error& e) {
 			a.emplace_window<message_box>("Error", e.what());
 		}
@@ -955,7 +951,7 @@ moby_model* gui::model_browser::render_selection_grid(
 	for(std::size_t i = 0; i < models.size(); i++) {
 		moby_model* model = &models[i];
 
-		if(model->thumbnail == 0) {
+		if(model->thumbnail() == 0) {
 			// Only load 10 textures per frame.
 			if(num_this_frame >= 10) {
 				ImGui::NextColumn();
@@ -964,7 +960,7 @@ moby_model* gui::model_browser::render_selection_grid(
 			
 			render_preview(
 				a,
-				&model->thumbnail,
+				&model->thumbnail(),
 				*model, a.renderer,
 				ImVec2(128, 128),
 				view_params {
@@ -978,7 +974,7 @@ moby_model* gui::model_browser::render_selection_grid(
 		
 		bool selected = _list == list && _model == i;
 		bool clicked = ImGui::ImageButton(
-			(void*) (intptr_t) model->thumbnail,
+			(void*) (intptr_t) model->thumbnail(),
 			ImVec2(128, 128),
 			ImVec2(0, 0),
 			ImVec2(1, 1),
@@ -993,7 +989,7 @@ moby_model* gui::model_browser::render_selection_grid(
 			_model = i;
 			
 			// Reset submodel visibility.
-			for(moby_model_submodel& submodel : model->submodels) {
+			for(moby_submodel& submodel : model->submodels) {
 				submodel.visible_in_model_viewer = true;
 			}
 		}
@@ -1061,71 +1057,86 @@ void gui::model_browser::render_preview(
 		
 		moby_model_texture_data texture = {};
 		for(std::size_t i = 0; i < model.submodels.size(); i++) {
-			moby_model_submodel& submodel = model.submodels[i];
+			moby_submodel& submodel = model.submodels[i];
 			if(!submodel.visible_in_model_viewer) {
 				continue;
 			}
 			
-			// The third UNPACK packet from the last submodel that has one
-			// determines which texture we should apply to this submodel.
-			if(submodel.texture) {
-				texture = *submodel.texture;
-			}
-			
 			if(params.show_vertex_indices) {
 				auto draw_list = ImGui::GetWindowDrawList();
-				for(std::size_t i = 0; i < submodel.vertex_data.size(); i++) {
-					moby_model_vertex& vert = submodel.vertex_data[i];
-					glm::vec3 proj_pos = apply_local_to_screen(glm::vec4(vert.x / (float) INT16_MAX, vert.y / (float) INT16_MAX, vert.z / (float) INT16_MAX, 1.f));
+				for(std::size_t j = 0; j < submodel.vertices.size(); j++) {
+					moby_model_vertex& vert = submodel.vertices[j];
+					glm::vec3 proj_pos = apply_local_to_screen(glm::vec4(
+						vert.x / (float) INT16_MAX,
+						vert.y / (float) INT16_MAX,
+						vert.z / (float) INT16_MAX, 1.f));
 					if(proj_pos.z > 0.f) {
-						draw_list->AddText(ImVec2(proj_pos.x, proj_pos.y), 0xffffffff, int_to_hex(i).c_str());
+						draw_list->AddText(ImVec2(proj_pos.x, proj_pos.y), 0xffffffff, int_to_hex(j).c_str());
 					}
 				}
 			}
 			
-			if(submodel.vertex_buffer == 0) {
-				auto opengl_data = moby_vertex_data_to_opengl(submodel);
-		
-				glDeleteBuffers(1, &submodel.vertex_buffer);
-				glGenBuffers(1, &submodel.vertex_buffer);
-				glBindBuffer(GL_ARRAY_BUFFER, submodel.vertex_buffer);
+			if(submodel.vertex_buffer() == 0) {
+				glGenBuffers(1, &submodel.vertex_buffer());
+				glBindBuffer(GL_ARRAY_BUFFER, submodel.vertex_buffer());
 				glBufferData(GL_ARRAY_BUFFER,
-					submodel.vertex_data.size() * sizeof(moby_model_opengl_vertex),
-					opengl_data.data(), GL_STATIC_DRAW);
-				submodel.vertex_buffer_count = opengl_data.size();
+					submodel.vertices.size() * sizeof(moby_model_vertex),
+					submodel.vertices.data(), GL_STATIC_DRAW);
 			}
 			
-			switch(params.mode) {
-				case view_mode::WIREFRAME: {
-					glUniformMatrix4fv(renderer.shaders.solid_colour_transform, 1, GL_FALSE, &local_to_clip[0][0]);
-					
-					glm::vec4 colour = colour_coded_submodel_index(i, model.submodels.size());
-					glUniformMatrix4fv(renderer.shaders.solid_colour_transform, 1, GL_FALSE, &local_to_clip[0][0]);
-					glUniform4f(renderer.shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
-					break;
+			if(submodel.st_buffer() == 0) {
+				glGenBuffers(1, &submodel.st_buffer());
+				glBindBuffer(GL_ARRAY_BUFFER, submodel.st_buffer());
+				glBufferData(GL_ARRAY_BUFFER,
+					submodel.st_coords.size() * sizeof(moby_model_st),
+					submodel.st_coords.data(), GL_STATIC_DRAW);
+			}
+			
+			for(moby_subsubmodel& subsubmodel : submodel.subsubmodels) {
+				if(subsubmodel.index_buffer() == 0) {
+					glGenBuffers(1, &subsubmodel.index_buffer());
+					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subsubmodel.index_buffer());
+					glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+						subsubmodel.indices.size(),
+						subsubmodel.indices.data(), GL_STATIC_DRAW);
 				}
-				case view_mode::TEXTURED_POLYGONS: {
-					glUniformMatrix4fv(renderer.shaders.textured_local_to_clip, 1, GL_FALSE, &local_to_clip[0][0]);
-					// TODO: This is terrible. This #ifdef is only here because
-					// currently links to everything.
-					#ifdef WRENCH_EDITOR
+				
+				if(subsubmodel.texture) {
+					texture = *subsubmodel.texture;
+				}
+				
+				switch(params.mode) {
+					case view_mode::WIREFRAME: {
+						glUniformMatrix4fv(renderer.shaders.solid_colour_transform, 1, GL_FALSE, &local_to_clip[0][0]);
+						
+						glm::vec4 colour = colour_coded_submodel_index(i, model.submodels.size());
+						glUniformMatrix4fv(renderer.shaders.solid_colour_transform, 1, GL_FALSE, &local_to_clip[0][0]);
+						glUniform4f(renderer.shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
+						break;
+					}
+					case view_mode::TEXTURED_POLYGONS: {
+						glUniformMatrix4fv(renderer.shaders.textured_local_to_clip, 1, GL_FALSE, &local_to_clip[0][0]);
 						glActiveTexture(GL_TEXTURE0);
 						glBindTexture(GL_TEXTURE_2D, model.texture(a, texture.texture_index));
 						glUniform1i(renderer.shaders.textured_sampler, 0);
-					#endif
-					break;
+						break;
+					}
 				}
+				
+				glEnableVertexAttribArray(0);
+				glBindBuffer(GL_ARRAY_BUFFER, submodel.vertex_buffer());
+				glVertexAttribPointer(0, 3, GL_SHORT, GL_TRUE, sizeof(moby_model_vertex), (void*) offsetof(moby_model_vertex, x));
+				
+				glEnableVertexAttribArray(1);
+				glBindBuffer(GL_ARRAY_BUFFER, submodel.st_buffer());
+				glVertexAttribPointer(1, 2, GL_SHORT, GL_TRUE, sizeof(moby_model_st), (void*) offsetof(moby_model_st, s));
+				
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subsubmodel.index_buffer());
+				glDrawElements(GL_TRIANGLE_STRIP, subsubmodel.indices.size(), GL_UNSIGNED_BYTE, nullptr);
+				
+				glDisableVertexAttribArray(0);
+				glDisableVertexAttribArray(1);
 			}
-			
-			glEnableVertexAttribArray(0);
-			glEnableVertexAttribArray(1);
-			glBindBuffer(GL_ARRAY_BUFFER, submodel.vertex_buffer);
-			model.setup_vertex_attributes(); // glVertexAttribPointer calls.
-
-			glDrawArrays(GL_TRIANGLE_STRIP, 0, submodel.vertex_buffer_count);
-			
-			glDisableVertexAttribArray(0);
-			glDisableVertexAttribArray(1);
 		}
 	});
 }
@@ -1158,14 +1169,14 @@ void gui::model_browser::render_submodel_list(moby_model& model) {
 		if(group_expanded) {
 			for(std::size_t j = low; j < high; j++) {
 				ImGui::PushID(j);
-				moby_model_submodel& submodel = model.submodels[j];
+				moby_submodel& submodel = model.submodels[j];
 				
 				std::string submodel_label = "Submodel " + std::to_string(j);
 				bool submodel_expanded = ImGui::TreeNode("submodel", "%s", "");
 				ImGui::SameLine();
 				ImGui::Checkbox(submodel_label.c_str(), &submodel.visible_in_model_viewer);
 				if(submodel_expanded) {
-					for(const moby_model_vertex& vertex : submodel.vertex_data) {
+					for(const moby_model_vertex& vertex : submodel.vertices) {
 						ImGui::Text("%x %x %x", vertex.x & 0xffff, vertex.y & 0xffff, vertex.z & 0xffff);
 					}
 					ImGui::TreePop();
@@ -1195,11 +1206,11 @@ void gui::model_browser::render_st_coords(moby_model& model, const shader_progra
 	}
 	
 	std::set<int32_t> texture_indices;
-	for(moby_model_submodel& submodel : model.submodels) {
-		if(submodel.texture) {
-			texture_indices.insert(submodel.texture->texture_index);
-		}
-	}
+	//for(moby_submodel& submodel : model.submodels) {
+	//	if(submodel.texture) {
+	//		texture_indices.insert(submodel.texture->texture_index);
+	//	}
+	//}
 	
 	static int32_t texture_index = 0;
 	if(ImGui::BeginTabBar("tabs")) {
@@ -1222,43 +1233,43 @@ void gui::model_browser::render_st_coords(moby_model& model, const shader_progra
 		glUseProgram(shaders.solid_colour.id());
 		
 		for(std::size_t i = 0; i < model.submodels.size(); i++) {
-			moby_model_submodel& submodel = model.submodels[i];
-			
-			if(submodel.texture) {
-				current_texture_index = submodel.texture->texture_index;
-			}
-			
-			if(!submodel.visible_in_model_viewer || current_texture_index != texture_index) {
-				continue;
-			}
-			
-			if(submodel.st_buffer == 0) {
-				std::vector<float> st_data;
-				for(const moby_model_st& st : submodel.st_data) {
-					st_data.push_back((st.s / (float) INT16_MAX) * 8.f);
-					st_data.push_back((st.t / (float) INT16_MAX) * 8.f);
-					st_data.push_back(0.f);
-				}
-				
-				glGenBuffers(1, &submodel.st_buffer);
-				glBindBuffer(GL_ARRAY_BUFFER, submodel.st_buffer);
-				glBufferData(GL_ARRAY_BUFFER,
-					st_data.size() * sizeof(float),
-					st_data.data(), GL_STATIC_DRAW);
-			}
-			
-			glm::vec4 colour = colour_coded_submodel_index(i, model.submodels.size());
-			static const glm::mat4 id(1.f);
-			glUniformMatrix4fv(shaders.solid_colour_transform, 1, GL_FALSE, &id[0][0]);
-			glUniform4f(shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
-			
-			glEnableVertexAttribArray(0);
-			glBindBuffer(GL_ARRAY_BUFFER, submodel.st_buffer);
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-
-			glDrawArrays(GL_POINTS, 0, submodel.st_data.size());
-
-			glDisableVertexAttribArray(0);
+			//moby_submodel& submodel = model.submodels[i];
+			//
+			//if(submodel.texture) {
+			//	current_texture_index = submodel.texture->texture_index;
+			//}
+			//
+			//if(!submodel.visible_in_model_viewer || current_texture_index != texture_index) {
+			//	continue;
+			//}
+			//
+			//if(submodel.st_buffer == 0) {
+			//	std::vector<float> st_data;
+			//	for(const moby_model_st& st : submodel.st_data) {
+			//		st_data.push_back((st.s / (float) INT16_MAX) * 8.f);
+			//		st_data.push_back((st.t / (float) INT16_MAX) * 8.f);
+			//		st_data.push_back(0.f);
+			//	}
+			//	
+			//	glGenBuffers(1, &submodel.st_buffer());
+			//	glBindBuffer(GL_ARRAY_BUFFER, submodel.st_buffer());
+			//	glBufferData(GL_ARRAY_BUFFER,
+			//		st_data.size() * sizeof(float),
+			//		st_data.data(), GL_STATIC_DRAW);
+			//}
+			//
+			//glm::vec4 colour = colour_coded_submodel_index(i, model.submodels.size());
+			//static const glm::mat4 id(1.f);
+			//glUniformMatrix4fv(shaders.solid_colour_transform, 1, GL_FALSE, &id[0][0]);
+			//glUniform4f(shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
+			//
+			//glEnableVertexAttribArray(0);
+			//glBindBuffer(GL_ARRAY_BUFFER, submodel.st_buffer());
+			//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+			//
+			//glDrawArrays(GL_POINTS, 0, submodel.st_coords.size());
+			//
+			//glDisableVertexAttribArray(0);
 		}
 	});
 	
@@ -1268,7 +1279,7 @@ void gui::model_browser::render_st_coords(moby_model& model, const shader_progra
 void gui::model_browser::render_dma_debug_info(moby_model& mdl) {
 	for(std::size_t i = 0; i < mdl.submodels.size(); i++) {
 		ImGui::PushID(i);
-		moby_model_submodel& submodel = mdl.submodels[i];
+		moby_submodel& submodel = mdl.submodels[i];
 		
 		if(ImGui::TreeNode("submodel", "Submodel %ld", i)) {
 			for(vif_packet& vpkt : submodel.vif_list) {

@@ -19,9 +19,32 @@
 #ifndef GL_INCLUDES_H
 #define GL_INCLUDES_H
 
+#ifdef WRENCH_EDITOR
+
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
 #include <glad/include/glad/glad.h>
 
+struct gl_buffer {
+	GLuint id = 0;
+	gl_buffer() {}
+	gl_buffer(const gl_buffer&) = delete;
+	gl_buffer(gl_buffer&& rhs) : id(rhs.id) { rhs.id = 0; }
+	~gl_buffer() { if(id != 0) glDeleteBuffers(1, &id); }
+	GLuint& operator()() { return id; }
+	const GLuint& operator()() const { return id; }
+};
+
+struct gl_texture {
+	GLuint id = 0;
+	gl_texture() {}
+	gl_texture(const gl_texture&) = delete;
+	gl_texture(gl_texture&& rhs) : id(rhs.id) { rhs.id = 0; }
+	~gl_texture() { if(id != 0) glDeleteTextures(1, &id); }
+	GLuint& operator()() { return id; }
+	const GLuint& operator()() const { return id; }
+};
+
+#endif
 #endif

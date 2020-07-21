@@ -49,7 +49,7 @@ bool armor_archive::read(stream& iso, const toc_table& table) {
 			continue;
 		}
 		
-		moby_model model(
+		moby_model& model = models.emplace_back(
 			&iso,
 			base_offset + armor.model.bytes(),
 			armor.model_size.bytes(),
@@ -58,7 +58,6 @@ bool armor_archive::read(stream& iso, const toc_table& table) {
 		model.set_name("armor " + std::to_string(i / 16));
 		model.texture_base_index = textures.size();
 		model.read();
-		models.emplace_back(std::move(model));
 		
 		std::string set_name = std::string("set") + std::to_string(i);
 		

@@ -46,9 +46,6 @@ add_executable(wrench
 	src/md5.cpp
 )
 
-# This lets us avoid linking stuff for the CLI tools.
-target_compile_definitions(wrench PRIVATE WRENCH_EDITOR=1)
-
 add_executable(fip
 	src/cli/fipcli.cpp
 	src/command_line.cpp
@@ -168,6 +165,10 @@ add_executable(matchtoc
 	src/command_line.cpp
 	src/formats/toc.cpp
 )
+
+# This lets us avoid linking stuff for msot of the CLI tools.
+target_compile_definitions(wrench PRIVATE WRENCH_EDITOR=1)
+target_compile_definitions(randomiser PRIVATE WRENCH_EDITOR=1)
 
 if(UNIX)
 	target_compile_options(wrench PRIVATE -Wall -O3)

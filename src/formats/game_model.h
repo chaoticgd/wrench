@@ -23,6 +23,7 @@
 
 #include "../model.h"
 #include "../stream.h"
+#include "../gl_includes.h"
 #include "vif.h"
 
 # /*
@@ -32,7 +33,7 @@
 struct app;
 struct gl_renderer;
 
-packed_struct(moby_model_submodel_entry,
+packed_struct(moby_submodel_entry,
 	uint32_t vif_list_offset;
 	uint16_t vif_list_quadword_count; // Size in 16 byte units.
 	uint16_t vif_list_texture_unpack_offset; // No third UNPACK if zero.
@@ -101,16 +102,25 @@ packed_struct(moby_model_texture_data, // Third UNPACK.
 	uint32_t unknown_3c;
 )
 
-struct moby_model_submodel {
+// A single submodel may contain vertices with different textures. Since it's
+// unclear as to whether there's a limit on the number of textures a single
+// submodel can have, and for the purposes of simplifying the OpenGL rendering
+// code, we split each submodel into subsubmodels.
+struct moby_subsubmodel {
+	std::vector<uint8_t> indices;
+	std::vector<uint8_t> sign_bits;
+	std::optional<moby_model_texture_data> texture; // If empty use last texture from last submodel with one.
+	gl_buffer index_buffer;
+};
+
+struct moby_submodel {
 	std::vector<vif_packet> vif_list;
-	std::vector<moby_model_st> st_data;
-	std::vector<int8_t> index_data;
-	std::optional<moby_model_texture_data> texture; // If empty use last submodel.
-	std::vector<moby_model_vertex> vertex_data;
-	bool visible_in_model_viewer;
-	GLuint vertex_buffer;
-	GLsizei vertex_buffer_count;
-	GLuint st_buffer;
+	std::vector<moby_subsubmodel> subsubmodels;
+	std::vector<moby_model_vertex> vertices;
+	std::vector<moby_model_st> st_coords;
+	gl_buffer vertex_buffer;
+	gl_buffer st_buffer;
+	bool visible_in_model_viewer = true;
 };
 
 class moby_model {
@@ -121,22 +131,41 @@ public:
 		std::size_t size,
 		std::size_t submodel_table_offset,
 		std::vector<std::size_t> submodel_counts_);
-	moby_model(const moby_model& rhs) = delete;
-	moby_model(moby_model&& rhs);
-	~moby_model();
+	moby_model(const moby_model&) = delete;
+	moby_model(moby_model&&) = default;
+
+	struct interpreted_moby_vif_list {
+		std::vector<moby_model_st> st_data;
+		uint32_t index_header;
+		std::vector<int8_t> indices;
+		std::vector<moby_model_texture_data> textures;
+	};
 
 	void read();
+
+	// Reads data from the parsed VIF DMA list into a more suitable structure.
+	static interpreted_moby_vif_list interpret_vif_list(
+		const std::vector<vif_packet>& vif_list,
+		const char* model_name,
+		std::size_t submodel_index);
+	
+	// Splits a submodel into subsubmodels such that each part of a submodel
+	// with a different texture has its own subsubmodel. The game will change
+	// the applied texture when an index of zero is encountered, so when we
+	// split up the index buffer, we need to make cuts at those positions.
+	// When this returns, current_texture should be equal to the last texture
+	// from the passed submodel data if it has one.
+	static std::vector<moby_subsubmodel> read_subsubmodels(
+		interpreted_moby_vif_list submodel_data,
+		const char* model_name,
+		std::size_t submodel_index);
+	
 	void write();
 	
 	std::vector<std::size_t> submodel_counts;
-	std::vector<moby_model_submodel> submodels;
+	std::vector<moby_submodel> submodels;
 	
-	void upload_vertex_buffer(); // Must be called from main thread.
-	void setup_vertex_attributes() const;
-	GLuint vertex_buffer() const;
-	std::size_t vertex_count() const; // Includes degenerate tris between submodels.
-	
-	GLuint thumbnail;
+	gl_texture thumbnail;
 
 	std::string resource_path() const;
 	
@@ -144,24 +173,17 @@ public:
 	void set_name(std::string name) { _backing.name = name; }
 	
 	std::size_t texture_base_index;
-	
-#ifdef WRENCH_EDITOR
+
 	// This is a bit hacky and needs to be rewritten in the future
 	// to be more generic.
 	GLuint texture(app& a, std::size_t index);
 	void set_texture_source(std::size_t index) { _armor_wad_index = index; }
-#endif
-	
-private:
-	GLuint _vertex_buffer;
-	std::size_t _vertex_count;
 
+private:
 	proxy_stream _backing;
 	std::size_t _submodel_table_offset; // Relative to base_offset.
 	
 	std::size_t _armor_wad_index; // Again, hacky.
 };
-
-std::vector<moby_model_opengl_vertex> moby_vertex_data_to_opengl(const moby_model_submodel& submodel);
 
 #endif

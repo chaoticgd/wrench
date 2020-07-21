@@ -121,7 +121,7 @@ shader_programs::shader_programs() :
 
 			void main() {
 				gl_Position = local_to_clip * vec4(position_model_space, 1);
-				uv_frag = uv;
+				uv_frag = uv * vec2(8.f, 8.f);
 			}
 		)",
 		R"(

@@ -61,16 +61,11 @@ wrench_project::wrench_project(
 }
 
 void wrench_project::post_load() {
-#ifdef WRENCH_EDITOR
 	for(auto& [_, armor] : _armor) {
 		for(texture& tex : armor.textures) {
 			tex.upload_to_opengl();
 		}
-		for(moby_model& model : armor.models) {
-			model.upload_vertex_buffer();
-		}
 	}
-#endif
 }
 
 std::string wrench_project::project_path() const {

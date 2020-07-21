@@ -25,9 +25,7 @@
 #include <glm/glm.hpp>
 
 #include "../stream.h"
-#ifdef WRENCH_EDITOR
 #include "../gl_includes.h"
-#endif
 
 # /*
 #	Stream-backed indexed texture.
@@ -57,9 +55,8 @@ public:
 		stream* palette_backing,
 		std::size_t palette_offset,
 		vec2i size);
-	texture(const texture& rhs) = delete;
-	texture(texture&& rhs);
-	~texture();
+	texture(const texture&) = delete;
+	texture(texture&&) = default;
 
 	vec2i size() const;
 
@@ -71,10 +68,13 @@ public:
 
 	std::string palette_path() const;
 	std::string pixel_data_path() const;
-
+	
 #ifdef WRENCH_EDITOR
 	void upload_to_opengl();
 	GLuint opengl_id() const;
+#else
+	// Dummy to get the randomiser linking.
+	void upload_to_opengl() {}
 #endif
 	
 	std::string name;
@@ -86,7 +86,7 @@ private:
 	std::size_t _palette_offset;
 	vec2i _size;
 #ifdef WRENCH_EDITOR
-	GLuint _opengl_id = 0;
+	gl_texture _opengl_texture;
 #endif
 };
 
