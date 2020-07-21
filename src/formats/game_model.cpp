@@ -68,6 +68,10 @@ void moby_model::read() {
 		_backing.seek(entry.vertex_offset + vertex_header.vertex_table_offset);
 		_backing.read_v(submodel.vertices);
 		
+		if(!validate_indices(submodel)) {
+			fprintf(stderr, "warning: Model %s submodel %ld has indices that overrun the vertex table.\n", _backing.name.c_str(), submodels.size());
+		}
+		
 		submodels.emplace_back(std::move(submodel));
 	}
 }
@@ -187,6 +191,17 @@ std::vector<moby_subsubmodel> moby_model::read_subsubmodels(
 	}
 	
 	return result;
+}
+
+bool moby_model::validate_indices(const moby_submodel& submodel) {
+	for(const moby_subsubmodel& subsubmodel : submodel.subsubmodels) {
+		for(uint8_t index : subsubmodel.indices) {
+			if(index >= submodel.vertices.size()) {
+				return false;
+			}
+		}
+	}
+	return true;
 }
 
 void moby_model::write() {

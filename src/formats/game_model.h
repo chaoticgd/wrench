@@ -160,6 +160,9 @@ public:
 		const char* model_name,
 		std::size_t submodel_index);
 	
+	// Check if any of the indices overrun the vertex table.
+	static bool validate_indices(const moby_submodel& submodel);
+	
 	void write();
 	
 	std::vector<std::size_t> submodel_counts;
