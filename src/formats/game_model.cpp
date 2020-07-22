@@ -54,6 +54,7 @@ void moby_model::read() {
 			
 		auto interpreted_vif_list = interpret_vif_list(
 			submodel.vif_list, _backing.name.c_str(), submodels.size());
+		submodel.index_header = interpreted_vif_list.index_header;
 		submodel.st_coords = std::move(interpreted_vif_list.st_data);
 		submodel.subsubmodels = read_subsubmodels(
 			interpreted_vif_list, _backing.name.c_str(), submodels.size());
@@ -104,7 +105,7 @@ moby_model::interpreted_moby_vif_list moby_model::interpret_vif_list(
 					fprintf(stderr, "warning: Model %s submodel %ld has malformed second UNPACK (too small).\n", model_name, submodel_index);
 					return {};
 				}
-				result.index_header = *(uint32_t*) &packet.data.front();
+				result.index_header = *(moby_model_index_header*) &packet.data.front();
 				result.indices.resize(packet.data.size() - 4);
 				std::memcpy(result.indices.data(), packet.data.data() + 4, packet.data.size() - 4);
 				break;

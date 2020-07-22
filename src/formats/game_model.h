@@ -83,6 +83,14 @@ packed_struct(moby_model_st, // First UNPACK.
 	int16_t t;
 )
 
+packed_struct(moby_model_index_header, // Second UNPACK header.
+	uint8_t unknown_0;
+	uint8_t texture_unpack_offset_quadwords; // Offset of texture data relative to decompressed index buffer in VU mem.
+	uint8_t unknown_2;
+	uint8_t unknown_3;
+	// Indices directly follow.
+)
+
 packed_struct(moby_model_texture_data, // Third UNPACK.
 	uint32_t unknown_0;
 	uint32_t unknown_4;
@@ -115,6 +123,7 @@ struct moby_subsubmodel {
 
 struct moby_submodel {
 	std::vector<vif_packet> vif_list;
+	moby_model_index_header index_header;
 	std::vector<moby_subsubmodel> subsubmodels;
 	std::vector<moby_model_vertex> vertices;
 	std::vector<moby_model_st> st_coords;
@@ -136,7 +145,7 @@ public:
 
 	struct interpreted_moby_vif_list {
 		std::vector<moby_model_st> st_data;
-		uint32_t index_header;
+		moby_model_index_header index_header;
 		std::vector<int8_t> indices;
 		std::vector<moby_model_texture_data> textures;
 	};
