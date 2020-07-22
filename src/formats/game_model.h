@@ -70,14 +70,6 @@ packed_struct(moby_model_vertex,
 	int16_t z;         // 0xe
 )
 
-packed_struct(moby_model_opengl_vertex,
-	float x;
-	float y;
-	float z;
-	float u;
-	float v;
-)
-
 packed_struct(moby_model_st, // First UNPACK.
 	int16_t s;
 	int16_t t;
