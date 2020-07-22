@@ -162,8 +162,6 @@ public:
 	// with a different texture has its own subsubmodel. The game will change
 	// the applied texture when an index of zero is encountered, so when we
 	// split up the index buffer, we need to make cuts at those positions.
-	// When this returns, current_texture should be equal to the last texture
-	// from the passed submodel data if it has one.
 	static std::vector<moby_subsubmodel> read_subsubmodels(
 		interpreted_moby_vif_list submodel_data,
 		const char* model_name,
