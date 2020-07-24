@@ -155,6 +155,8 @@ std::vector<moby_subsubmodel> moby_model::read_subsubmodels(
 	std::size_t next_texture_index = 0;
 	std::size_t start_index = 0;
 	
+	std::vector<int8_t> index_queue; // Like the GS vertex queue.
+	
 	for(std::size_t i = 0; i < submodel_data.indices.size(); i++) {
 		if(submodel_data.indices[i] == 0) {
 			// Not sure if this is correct. We should try to figure out what
@@ -173,18 +175,25 @@ std::vector<moby_subsubmodel> moby_model::read_subsubmodels(
 			// first index in a submodel updates the texture.
 			if(start_index != i) {
 				moby_subsubmodel subsubmodel;
-				subsubmodel.indices.resize(i - start_index - 1);
-				subsubmodel.sign_bits.resize(i - start_index - 1);
-				for(std::size_t i = 0; i < subsubmodel.indices.size(); i++) {
-					int8_t index = submodel_data.indices[start_index + 1 + i];
-					if(index > 0) {
-						subsubmodel.indices[i] = index - 1; // 1-indexed.
-						subsubmodel.sign_bits[i] = 0;
-					} else if(index < 0) {
-						subsubmodel.indices[i] = (index - 1) + 128; // 1-indexed, zero sign bit.
-						subsubmodel.sign_bits[i] = 1;
+				for(std::size_t j = start_index + 1; j < i; j++) {
+					// Unravel the tristrip into a regular GL_TRIANGLES index
+					// buffer, but don't draw a triangle if the sign bit is set.
+					int8_t index = submodel_data.indices[j];
+					if(index_queue.size() < 3) {
+						index_queue.push_back(index);
 					} else {
-						assert(false);
+						index_queue[0] = index_queue[1];
+						index_queue[1] = index_queue[2];
+						index_queue[2] = index;
+						if(index > 0) { // If drawing kick.
+							for(int k = 0; k < 3; k++) {
+								int8_t gl_index = index_queue[k] - 1; // 1-indexed.
+								if(gl_index < 0) {
+									gl_index += 128; // Zero sign bit.
+								}
+								subsubmodel.indices.push_back(gl_index);
+							}
+						}
 					}
 				}
 				subsubmodel.texture = texture;

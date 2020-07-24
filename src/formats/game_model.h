@@ -110,7 +110,6 @@ packed_struct(moby_model_texture_data, // Third UNPACK.
 // code, we split each submodel into subsubmodels.
 struct moby_subsubmodel {
 	std::vector<uint8_t> indices;
-	std::vector<uint8_t> sign_bits;
 	std::optional<moby_model_texture_data> texture; // If empty use last texture from last submodel with one.
 	gl_buffer index_buffer;
 };

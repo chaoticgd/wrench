@@ -1132,7 +1132,7 @@ void gui::model_browser::render_preview(
 				glVertexAttribPointer(1, 2, GL_SHORT, GL_TRUE, sizeof(moby_model_st), (void*) offsetof(moby_model_st, s));
 				
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subsubmodel.index_buffer());
-				glDrawElements(GL_TRIANGLE_STRIP, subsubmodel.indices.size(), GL_UNSIGNED_BYTE, nullptr);
+				glDrawElements(GL_TRIANGLES, subsubmodel.indices.size(), GL_UNSIGNED_BYTE, nullptr);
 				
 				glDisableVertexAttribArray(0);
 				glDisableVertexAttribArray(1);
