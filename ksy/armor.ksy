@@ -134,7 +134,7 @@ types:
         repeat: expr
         repeat-expr: vertex_count_4
       main_vertex_table:
-        pos: _parent.vertex_offset + vertex_table_offset + (vertex_count_2 + vertex_count_8) * 0x10
+        pos: _parent.vertex_offset + vertex_table_offset + (vertex_count_2 + vertex_count_4) * 0x10
         type: vertex
         repeat: expr
         repeat-expr: main_vertex_count
