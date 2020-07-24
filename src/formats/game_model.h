@@ -41,14 +41,16 @@ packed_struct(moby_submodel_entry,
 	uint8_t vertex_data_quadword_count; // Includes header, in 16 byte units.
 	uint8_t unknown_d;
 	uint8_t unknown_e;
-	uint8_t unknown_f;
+	uint8_t transfer_vertex_count; // Number of vertices sent to VU1.
 )
 
 packed_struct(moby_model_vertex_table_header,
-	uint32_t unknown_0;
-	uint16_t unknown_4;
-	uint16_t unknown_6;
-	uint32_t unknown_8;
+	uint16_t unknown_0;
+	uint16_t vertex_count_2;
+	uint16_t vertex_count_4;
+	uint16_t main_vertex_count;
+	uint16_t vertex_count_8;
+	uint16_t transfer_vertex_count; // transfer_vertex_count == vertex_count_2 + vertex_count_4 + main_vertex_count + vertex_count_8
 	uint16_t vertex_table_offset;
 	uint16_t unknown_e;
 	// More stuff comes between this and the vertex table.
