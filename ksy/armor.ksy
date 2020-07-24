@@ -79,8 +79,14 @@ types:
         type: u2
       - id: vertex_offset
         type: u4
+      - id: vertex_table_qwc
+        type: u1
       - id: thing4
-        type: u4
+        type: u1
+      - id: thing5
+        type: u1
+      - id: transfer_vertex_count
+        type: u1
     instances:
       vu1_vif_list:
         pos: vu1_vif_list_offset
@@ -103,21 +109,40 @@ types:
   vertex_header:
     seq:
       - id: unknown_0
-        type: u4
-      - id: unknown_4
         type: u2
-      - id: vertex_count
+      - id: vertex_count_2
         type: u2
-      - id: unknown_8
-        type: u4
+      - id: vertex_count_4
+        type: u2
+      - id: main_vertex_count
+        type: u2
+      - id: vertex_count_8
+        type: u2
+      - id: transfer_vertex_count
+        type: u2
       - id: vertex_table_offset
         type: u4
     instances:
-      vertex_table:
+      vertex_table_2:
         pos: _parent.vertex_offset + vertex_table_offset
         type: vertex
         repeat: expr
-        repeat-expr: vertex_count
+        repeat-expr: vertex_count_2
+      vertex_table_4:
+        pos: _parent.vertex_offset + vertex_table_offset + vertex_count_2 * 0x10
+        type: vertex
+        repeat: expr
+        repeat-expr: vertex_count_4
+      main_vertex_table:
+        pos: _parent.vertex_offset + vertex_table_offset + (vertex_count_2 + vertex_count_8) * 0x10
+        type: vertex
+        repeat: expr
+        repeat-expr: main_vertex_count
+      vertex_table_8:
+        pos: _parent.vertex_offset + 0x10
+        type: u2
+        repeat: expr
+        repeat-expr: vertex_count_8
   vertex:
     seq:
       - id: unknown_0
