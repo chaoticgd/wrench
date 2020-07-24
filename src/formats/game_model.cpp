@@ -65,9 +65,14 @@ void moby_model::read() {
 				_backing.name.c_str(), submodels.size());
 			continue;
 		}
-		submodel.vertices.resize(entry.vertex_data_quadword_count - vertex_header.vertex_table_offset / 0x10);
+		submodel.vertices.resize(vertex_header.vertex_count_2 + vertex_header.vertex_count_4 + vertex_header.main_vertex_count);
 		_backing.seek(entry.vertex_offset + vertex_header.vertex_table_offset);
 		_backing.read_v(submodel.vertices);
+		
+		// This is almost certainly wrong, but makes the models look better for the time being.
+		for(std::size_t i = submodel.vertices.size(); i < vertex_header.transfer_vertex_count; i++) {
+			submodel.vertices.push_back(submodel.vertices.back());
+		}
 		
 		if(!validate_indices(submodel)) {
 			fprintf(stderr, "warning: Model %s submodel %ld has indices that overrun the vertex table.\n", _backing.name.c_str(), submodels.size());
@@ -173,10 +178,10 @@ std::vector<moby_subsubmodel> moby_model::read_subsubmodels(
 				for(std::size_t i = 0; i < subsubmodel.indices.size(); i++) {
 					int8_t index = submodel_data.indices[start_index + 1 + i];
 					if(index > 0) {
-						subsubmodel.indices[i] = index;
+						subsubmodel.indices[i] = index - 1; // 1-indexed.
 						subsubmodel.sign_bits[i] = 0;
 					} else if(index < 0) {
-						subsubmodel.indices[i] = index + 128;
+						subsubmodel.indices[i] = (index - 1) + 128; // 1-indexed, zero sign bit.
 						subsubmodel.sign_bits[i] = 1;
 					} else {
 						assert(false);
