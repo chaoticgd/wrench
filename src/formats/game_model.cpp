@@ -175,6 +175,9 @@ std::vector<moby_subsubmodel> moby_model::read_subsubmodels(
 			// first index in a submodel updates the texture.
 			if(start_index != i) {
 				moby_subsubmodel subsubmodel;
+				// Iterate over one maximal contiguous list of non-zero indices.
+				//                  /-----^-----\ 
+				// indices = { 0x0, 0x1, 0x2, 0x3, 0x0, 0x4, ... }
 				for(std::size_t j = start_index + 1; j < i; j++) {
 					// Unravel the tristrip into a regular GL_TRIANGLES index
 					// buffer, but don't draw a triangle if the sign bit is set.
