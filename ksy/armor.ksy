@@ -108,7 +108,7 @@ types:
         doc: VIF DMA list. Use bin/vif to parse this e.g. ./bin/vif ARMOR.WAD -o 0x0ff537
   vertex_header:
     seq:
-      - id: unknown_0
+      - id: unknown_count_0
         type: u2
       - id: vertex_count_2
         type: u2
@@ -122,6 +122,18 @@ types:
         type: u2
       - id: vertex_table_offset
         type: u4
+      - id: unknown_0_item
+        type: u2
+        repeat: expr
+        repeat-expr: unknown_count_0
+      - id: padding
+        type: u2
+        repeat: expr
+        repeat-expr: 4 - ((unknown_count_0 % 4 == 0) ? 4 : (unknown_count_0 % 4))
+      - id: vertex_table_8
+        type: u2
+        repeat: expr
+        repeat-expr: vertex_count_8
     instances:
       vertex_table_2:
         pos: _parent.vertex_offset + vertex_table_offset
@@ -138,11 +150,6 @@ types:
         type: vertex
         repeat: expr
         repeat-expr: main_vertex_count
-      vertex_table_8:
-        pos: _parent.vertex_offset + 0x10
-        type: u2
-        repeat: expr
-        repeat-expr: vertex_count_8
   vertex:
     seq:
       - id: unknown_0
