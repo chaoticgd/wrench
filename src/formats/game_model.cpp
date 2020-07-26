@@ -168,7 +168,7 @@ std::vector<moby_subsubmodel> moby_model::read_subsubmodels(
 					fprintf(stderr, "warning: Model %s submodel %ld has too few textures for its index buffer!\n", model_name, submodel_index);
 					return {};
 				}
-				*texture = submodel_data.textures[next_texture_index++];
+				texture = submodel_data.textures[next_texture_index++];
 			}
 			// If there were no previous subsubmodels in this submodel, we
 			// don't need to try and create one now. This happens when the
