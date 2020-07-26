@@ -121,7 +121,9 @@ types:
       - id: transfer_vertex_count
         type: u2
       - id: vertex_table_offset
-        type: u4
+        type: u2
+      - id: unknown_e
+        type: u2
       - id: unknown_0_item
         type: u2
         repeat: expr
