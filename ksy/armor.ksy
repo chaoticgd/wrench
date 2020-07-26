@@ -46,7 +46,7 @@ types:
         type: u1
       - id: submodel_table_offset
         type: u4
-      - id: thing_2
+      - id: texture_applications_offset
         type: u4
     instances:
       main_submodel_table:
@@ -64,11 +64,11 @@ types:
         type: submodel
         repeat: expr
         repeat-expr: submodel_count_3
-      thing_2_inst:
-        pos: thing_2
-        type: thing_2_obj
-        repeat: expr
-        repeat-expr: 4
+      texture_applications:
+        pos: texture_applications_offset
+        type: texture_application
+        repeat: until
+        repeat-until: _.composite_pointer_and_end_condition >= 0x80000000
   submodel:
     seq:
       - id: vu1_vif_list_offset
@@ -178,19 +178,17 @@ types:
         type: s2
       - id: z
         type: s2
-  thing_2_obj:
+  texture_application:
     seq:
-      - id: unknown_0
-        type: u4
-      - id: unknown_4
-        type: u4
-      - id: unknown_8
-        type: u4
-      - id: ptr_c
+      - id: texture_indices
+        type: u1
+        repeat: expr
+        repeat-expr: 12
+      - id: composite_pointer_and_end_condition
         type: u4
     instances:
-      ptr_c_inst:
-        pos: ptr_c
+      texture_data:
+        pos: composite_pointer_and_end_condition & 0x00ffffff
         type: u4
   texture_list:
     seq:
