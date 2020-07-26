@@ -173,6 +173,7 @@ level::level(iso_stream* iso, toc_level index)
 		std::vector<std::size_t> submodel_counts {
 			model_header.num_submodels
 		};
+		if(rel_offset==0) continue;
 		moby_model& model = moby_models.emplace_back(_asset_segment, abs_offset, 0, 0, submodel_counts);
 		model.set_name("class " + std::to_string(entry.class_num));
 		model.read();
