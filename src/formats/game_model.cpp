@@ -67,8 +67,10 @@ void moby_model::read() {
 		_backing.read_v(submodel.vertices);
 		
 		// This is almost certainly wrong, but makes the models look better for the time being.
-		for(std::size_t i = submodel.vertices.size(); i < vertex_header.transfer_vertex_count; i++) {
-			submodel.vertices.push_back(submodel.vertices.back());
+		if(submodel.vertices.size() > 0) {
+			for(std::size_t i = 0; i < vertex_header.vertex_count_8; i++) {
+				submodel.vertices.push_back(submodel.vertices.back());
+			}
 		}
 		
 		if(!validate_indices(submodel)) {

@@ -157,7 +157,7 @@ level::level(iso_stream* iso, toc_level index)
 			continue;
 		}
 		
-		packed_struct(asset_mdl_hdr,
+		packed_struct(asset_model_header,
 			uint32_t rel_offset;
 			uint8_t unknown_4;
 			uint8_t unknown_5;
@@ -167,13 +167,15 @@ level::level(iso_stream* iso, toc_level index)
 			uint32_t unknown_c;
 		)
 		
-		auto model_header = _asset_segment->read<asset_mdl_hdr>(entry.offset_in_asset_wad);
+		auto model_header = _asset_segment->read<asset_model_header>(entry.offset_in_asset_wad);
 		uint32_t rel_offset = model_header.rel_offset;
 		uint32_t abs_offset = entry.offset_in_asset_wad + rel_offset;
 		std::vector<std::size_t> submodel_counts {
 			model_header.num_submodels
 		};
-		if(rel_offset==0) continue;
+		if(rel_offset == 0) {
+			continue;
+		}
 		moby_model& model = moby_models.emplace_back(_asset_segment, abs_offset, 0, 0, submodel_counts);
 		model.set_name("class " + std::to_string(entry.class_num));
 		model.read();
