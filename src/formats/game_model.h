@@ -146,22 +146,21 @@ public:
 	void read();
 
 	// Reads data from the parsed VIF DMA list into a more suitable structure.
-	static interpreted_moby_vif_list interpret_vif_list(
-		const std::vector<vif_packet>& vif_list,
-		const char* model_name,
-		std::size_t submodel_index);
+	interpreted_moby_vif_list interpret_vif_list(
+		const std::vector<vif_packet>& vif_list);
 	
 	// Splits a submodel into subsubmodels such that each part of a submodel
 	// with a different texture has its own subsubmodel. The game will change
 	// the applied texture when an index of zero is encountered, so when we
 	// split up the index buffer, we need to make cuts at those positions.
-	static std::vector<moby_subsubmodel> read_subsubmodels(
-		interpreted_moby_vif_list submodel_data,
-		const char* model_name,
-		std::size_t submodel_index);
+	std::vector<moby_subsubmodel> read_subsubmodels(
+		interpreted_moby_vif_list submodel_data);
 	
 	// Check if any of the indices overrun the vertex table.
-	static bool validate_indices(const moby_submodel& submodel);
+	bool validate_indices(const moby_submodel& submodel);
+	
+	// Print message along with details of the current submodel.
+	void warn_current_submodel(const char* message);
 	
 	void write();
 	

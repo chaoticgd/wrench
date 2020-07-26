@@ -52,17 +52,14 @@ void moby_model::read() {
 		submodel.vif_list = parse_vif_chain(
 			&_backing, entry.vif_list_offset, entry.vif_list_quadword_count);
 			
-		auto interpreted_vif_list = interpret_vif_list(
-			submodel.vif_list, _backing.name.c_str(), submodels.size());
+		auto interpreted_vif_list = interpret_vif_list(submodel.vif_list);
 		submodel.index_header = interpreted_vif_list.index_header;
 		submodel.st_coords = std::move(interpreted_vif_list.st_data);
-		submodel.subsubmodels = read_subsubmodels(
-			interpreted_vif_list, _backing.name.c_str(), submodels.size());
+		submodel.subsubmodels = read_subsubmodels(interpreted_vif_list);
 		
 		auto vertex_header = _backing.read<moby_model_vertex_table_header>(entry.vertex_offset);
 		if(vertex_header.vertex_table_offset / 0x10 > entry.vertex_data_quadword_count) {
-			fprintf(stderr, "Error: Model %s submodel %ld has bad vertex table offset or size.\n",
-				_backing.name.c_str(), submodels.size());
+			warn_current_submodel("bad vertex table offset or size");
 			continue;
 		}
 		submodel.vertices.resize(vertex_header.vertex_count_2 + vertex_header.vertex_count_4 + vertex_header.main_vertex_count);
@@ -75,7 +72,7 @@ void moby_model::read() {
 		}
 		
 		if(!validate_indices(submodel)) {
-			fprintf(stderr, "warning: Model %s submodel %ld has indices that overrun the vertex table.\n", _backing.name.c_str(), submodels.size());
+			warn_current_submodel("indices that overrun the vertex table");
 		}
 		
 		submodels.emplace_back(std::move(submodel));
@@ -83,9 +80,7 @@ void moby_model::read() {
 }
 
 moby_model::interpreted_moby_vif_list moby_model::interpret_vif_list(
-		const std::vector<vif_packet>& vif_list,
-		const char* model_name,
-		std::size_t submodel_index) {
+		const std::vector<vif_packet>& vif_list) {
 	interpreted_moby_vif_list result;
 	
 	std::size_t unpack_index = 0;
@@ -98,7 +93,7 @@ moby_model::interpreted_moby_vif_list moby_model::interpret_vif_list(
 		switch(unpack_index) {
 			case 0: { // ST unpack.
 				if(packet.code.unpack.vnvl != +vif_vnvl::V2_16) {
-					fprintf(stderr, "warning: Model %s submodel %ld has malformed first UNPACK (wrong format).\n", model_name, submodel_index);
+					warn_current_submodel("malformed first UNPACK (wrong format)");
 					return {};
 				}
 				result.st_data.resize(packet.data.size() / sizeof(moby_model_st));
@@ -107,7 +102,7 @@ moby_model::interpreted_moby_vif_list moby_model::interpret_vif_list(
 			}
 			case 1: { // Index buffer unpack.
 				if(packet.data.size() < 4) {
-					fprintf(stderr, "warning: Model %s submodel %ld has malformed second UNPACK (too small).\n", model_name, submodel_index);
+					warn_current_submodel("malformed second UNPACK (too small)");
 					return {};
 				}
 				result.index_header = *(moby_model_index_header*) &packet.data.front();
@@ -117,11 +112,11 @@ moby_model::interpreted_moby_vif_list moby_model::interpret_vif_list(
 			}
 			case 2: { // Texture unpack (optional).
 				if(packet.data.size() % sizeof(moby_model_texture_data) != 0) {
-					fprintf(stderr, "warning: Model %s submodel %ld has malformed third UNPACK (wrong size).\n", model_name, submodel_index);
+					warn_current_submodel("malformed third UNPACK (wrong size)");
 					return {};
 				}
 				if(packet.code.unpack.vnvl != +vif_vnvl::V4_32) {
-					fprintf(stderr, "warning: Model %s submodel %ld has malformed third UNPACK (wrong format).\n", model_name, submodel_index);
+					warn_current_submodel("malformed third UNPACK (wrong format)");
 					return {};
 				}
 				result.textures.resize(packet.data.size() / sizeof(moby_model_texture_data));
@@ -129,7 +124,7 @@ moby_model::interpreted_moby_vif_list moby_model::interpret_vif_list(
 				break;
 			}
 			case 3: {
-				fprintf(stderr, "warning: Too many UNPACK packets in model %s submodel %ld VIF list.\n", model_name, submodel_index);
+					warn_current_submodel("too many UNPACK packets");
 				return {};
 			}
 		}
@@ -138,7 +133,7 @@ moby_model::interpreted_moby_vif_list moby_model::interpret_vif_list(
 	}
 	
 	if(unpack_index < 2) {
-		fprintf(stderr, "warning: VIF list for model %s submodel %ld doesn't have enough UNPACK packets.\n", model_name, submodel_index);
+		warn_current_submodel("VIF list with not enough UNPACK packets");
 		return {};
 	}
 	
@@ -146,9 +141,7 @@ moby_model::interpreted_moby_vif_list moby_model::interpret_vif_list(
 }
 
 std::vector<moby_subsubmodel> moby_model::read_subsubmodels(
-		interpreted_moby_vif_list submodel_data,
-		const char* model_name,
-		std::size_t submodel_index) {
+		interpreted_moby_vif_list submodel_data) {
 	std::vector<moby_subsubmodel> result;
 	
 	std::optional<moby_model_texture_data> texture;
@@ -165,7 +158,7 @@ std::vector<moby_subsubmodel> moby_model::read_subsubmodels(
 				// At this point the game would push a command to update the
 				// GS texture registers.
 				if(next_texture_index >= submodel_data.textures.size()) {
-					fprintf(stderr, "warning: Model %s submodel %ld has too few textures for its index buffer!\n", model_name, submodel_index);
+					warn_current_submodel("too few textures for its index buffer");
 					return {};
 				}
 				texture = submodel_data.textures[next_texture_index++];
@@ -220,6 +213,11 @@ bool moby_model::validate_indices(const moby_submodel& submodel) {
 		}
 	}
 	return true;
+}
+
+void moby_model::warn_current_submodel(const char* message) {
+	fprintf(stderr, "warning: Model %s (at %s), submodel %ld has %s.\n",
+		_backing.name.c_str(), _backing.resource_path().c_str(), submodels.size(), message);
 }
 
 void moby_model::write() {
