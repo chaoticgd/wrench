@@ -280,11 +280,6 @@ namespace gui {
 			std::string list,
 			std::vector<moby_model>& models);
 		
-		enum class view_mode {
-			WIREFRAME = 0,
-			TEXTURED_POLYGONS = 1
-		};
-		
 		struct view_params {
 			view_mode mode = view_mode::TEXTURED_POLYGONS;
 			float zoom = 0.5f;
@@ -304,8 +299,6 @@ namespace gui {
 		static void render_submodel_list(moby_model& model);
 		static void render_st_coords(moby_model& model, const shader_programs& shaders);
 		static void render_dma_debug_info(moby_model& mdl);
-	
-		static glm::vec4 colour_coded_submodel_index(std::size_t index, std::size_t submodel_count);
 	
 	private:
 		std::string _list;

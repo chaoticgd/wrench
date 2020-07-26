@@ -175,17 +175,9 @@ public:
 	void set_name(std::string name) { _backing.name = name; }
 	
 	std::size_t texture_base_index;
-
-	// This is a bit hacky and needs to be rewritten in the future
-	// to be more generic.
-	GLuint texture(app& a, std::size_t index);
-	void set_texture_source(std::size_t index) { _armor_wad_index = index; }
-
 private:
 	proxy_stream _backing;
 	std::size_t _submodel_table_offset; // Relative to base_offset.
-	
-	std::size_t _armor_wad_index; // Again, hacky.
 };
 
 #endif

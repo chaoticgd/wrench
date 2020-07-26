@@ -25,8 +25,9 @@
 #include <glm/common.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "formats/game_model.h"
+#include "util.h"
 #include "shaders.h"
+#include "formats/game_model.h"
 
 # /*
 #	Rendering functions.
@@ -34,12 +35,25 @@
 
 class app;
 
+enum class view_mode {
+	WIREFRAME = 0,
+	TEXTURED_POLYGONS = 1
+};
+
 struct gl_renderer {
 	void draw_spline(const std::vector<glm::vec3>& points, const glm::mat4& vp, const glm::vec4& colour) const;
 	void draw_tris  (const std::vector<float>& vertex_data, const glm::mat4& mvp, const glm::vec4& colour) const;
 	void draw_model (const model& mdl, const glm::mat4& mvp, const glm::vec4& colour) const;
 	void draw_cube  (const glm::mat4& mvp, const glm::vec4& colour) const;
 
+	void draw_moby_model(
+		moby_model& model,
+		glm::mat4 local_to_clip,
+		array_view<GLuint> textures,
+		view_mode mode) const;
+	
+	static glm::vec4 colour_coded_submodel_index(std::size_t index, std::size_t submodel_count);
+	
 	shader_programs shaders;
 	
 	void reset_camera(app* a);

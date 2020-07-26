@@ -169,14 +169,14 @@ level::level(iso_stream* iso, toc_level index)
 		
 		auto model_header = _asset_segment->read<asset_model_header>(entry.offset_in_asset_wad);
 		uint32_t rel_offset = model_header.rel_offset;
-		uint32_t abs_offset = entry.offset_in_asset_wad + rel_offset;
+		uint32_t abs_offset = entry.offset_in_asset_wad;
 		std::vector<std::size_t> submodel_counts {
 			model_header.num_submodels
 		};
 		if(rel_offset == 0) {
 			continue;
 		}
-		moby_model& model = moby_models.emplace_back(_asset_segment, abs_offset, 0, 0, submodel_counts);
+		moby_model& model = moby_models.emplace_back(_asset_segment, abs_offset, 0, rel_offset, submodel_counts);
 		model.set_name("class " + std::to_string(entry.class_num));
 		model.read();
 		

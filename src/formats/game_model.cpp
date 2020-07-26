@@ -229,14 +229,3 @@ void moby_model::write() {
 std::string moby_model::resource_path() const {
 	return _backing.resource_path();
 }
-
-GLuint moby_model::texture(app& a, std::size_t index) {
-	GLuint result = 0;
-	if(auto project = a.get_project()) {
-		auto& tex_list = project->armor().textures;
-		if(index < tex_list.size()) {
-			result = tex_list.at(texture_base_index + index).opengl_id();
-		}
-	}
-	return result;
-}

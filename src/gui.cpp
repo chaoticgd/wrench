@@ -1043,101 +1043,13 @@ void gui::model_browser::render_preview(
 		return screen_pos;
 	};
 
+	std::vector<GLuint> textures;
+	for(texture& tex : a.get_project()->armor().textures) {
+		textures.push_back(tex.opengl_id());
+	}
+
 	render_to_texture(target, preview_size.x, preview_size.y, [&]() {
-		switch(params.mode) {
-			case view_mode::WIREFRAME:
-				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-				glUseProgram(renderer.shaders.solid_colour.id());
-				break;
-			case view_mode::TEXTURED_POLYGONS:
-				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-				glUseProgram(renderer.shaders.textured.id());
-				break;
-		}
-		
-		moby_model_texture_data texture = {};
-		for(std::size_t i = 0; i < model.submodels.size(); i++) {
-			moby_submodel& submodel = model.submodels[i];
-			if(!submodel.visible_in_model_viewer) {
-				continue;
-			}
-			
-			if(params.show_vertex_indices) {
-				auto draw_list = ImGui::GetWindowDrawList();
-				for(std::size_t j = 0; j < submodel.vertices.size(); j++) {
-					moby_model_vertex& vert = submodel.vertices[j];
-					glm::vec3 proj_pos = apply_local_to_screen(glm::vec4(
-						vert.x / (float) INT16_MAX,
-						vert.y / (float) INT16_MAX,
-						vert.z / (float) INT16_MAX, 1.f));
-					if(proj_pos.z > 0.f) {
-						draw_list->AddText(ImVec2(proj_pos.x, proj_pos.y), 0xffffffff, int_to_hex(j).c_str());
-					}
-				}
-			}
-			
-			if(submodel.vertex_buffer() == 0) {
-				glGenBuffers(1, &submodel.vertex_buffer());
-				glBindBuffer(GL_ARRAY_BUFFER, submodel.vertex_buffer());
-				glBufferData(GL_ARRAY_BUFFER,
-					submodel.vertices.size() * sizeof(moby_model_vertex),
-					submodel.vertices.data(), GL_STATIC_DRAW);
-			}
-			
-			if(submodel.st_buffer() == 0) {
-				glGenBuffers(1, &submodel.st_buffer());
-				glBindBuffer(GL_ARRAY_BUFFER, submodel.st_buffer());
-				glBufferData(GL_ARRAY_BUFFER,
-					submodel.st_coords.size() * sizeof(moby_model_st),
-					submodel.st_coords.data(), GL_STATIC_DRAW);
-			}
-			
-			for(moby_subsubmodel& subsubmodel : submodel.subsubmodels) {
-				if(subsubmodel.index_buffer() == 0) {
-					glGenBuffers(1, &subsubmodel.index_buffer());
-					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subsubmodel.index_buffer());
-					glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-						subsubmodel.indices.size(),
-						subsubmodel.indices.data(), GL_STATIC_DRAW);
-				}
-				
-				if(subsubmodel.texture) {
-					texture = *subsubmodel.texture;
-				}
-				
-				switch(params.mode) {
-					case view_mode::WIREFRAME: {
-						glUniformMatrix4fv(renderer.shaders.solid_colour_transform, 1, GL_FALSE, &local_to_clip[0][0]);
-						
-						glm::vec4 colour = colour_coded_submodel_index(i, model.submodels.size());
-						glUniformMatrix4fv(renderer.shaders.solid_colour_transform, 1, GL_FALSE, &local_to_clip[0][0]);
-						glUniform4f(renderer.shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
-						break;
-					}
-					case view_mode::TEXTURED_POLYGONS: {
-						glUniformMatrix4fv(renderer.shaders.textured_local_to_clip, 1, GL_FALSE, &local_to_clip[0][0]);
-						glActiveTexture(GL_TEXTURE0);
-						glBindTexture(GL_TEXTURE_2D, model.texture(a, texture.texture_index));
-						glUniform1i(renderer.shaders.textured_sampler, 0);
-						break;
-					}
-				}
-				
-				glEnableVertexAttribArray(0);
-				glBindBuffer(GL_ARRAY_BUFFER, submodel.vertex_buffer());
-				glVertexAttribPointer(0, 3, GL_SHORT, GL_TRUE, sizeof(moby_model_vertex), (void*) offsetof(moby_model_vertex, x));
-				
-				glEnableVertexAttribArray(1);
-				glBindBuffer(GL_ARRAY_BUFFER, submodel.st_buffer());
-				glVertexAttribPointer(1, 2, GL_SHORT, GL_TRUE, sizeof(moby_model_st), (void*) offsetof(moby_model_st, s));
-				
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subsubmodel.index_buffer());
-				glDrawElements(GL_TRIANGLES, subsubmodel.indices.size(), GL_UNSIGNED_BYTE, nullptr);
-				
-				glDisableVertexAttribArray(0);
-				glDisableVertexAttribArray(1);
-			}
-		}
+		renderer.draw_moby_model(model, local_to_clip, textures, params.mode);
 	});
 }
 
@@ -1305,13 +1217,6 @@ void gui::model_browser::render_dma_debug_info(moby_model& mdl) {
 		}
 		ImGui::PopID();
 	}
-}
-
-glm::vec4 gui::model_browser::colour_coded_submodel_index(std::size_t index, std::size_t submodel_count) {
-	glm::vec4 colour;
-	ImGui::ColorConvertHSVtoRGB(fmod(index / (float) submodel_count, 1.f), 1.f, 1.f, colour.r, colour.g, colour.b);
-	colour.a = 1;
-	return colour;
 }
 
 /*
