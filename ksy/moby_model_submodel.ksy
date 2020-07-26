@@ -20,19 +20,19 @@ seq:
   - id: transfer_vertex_count
     type: u1
 instances:
-      vu1_vif_list:
-        pos: vu1_vif_list_offset
-        type: vif_data
-        repeat: expr
-        repeat-expr: (vu1_vif_list_qwc - vu1_vif_list_offset_from_end_in_quadwords) * 0x10
-      vu1_vif_list_texture_data:
-        pos: vu1_vif_list_offset + (vu1_vif_list_qwc - vu1_vif_list_offset_from_end_in_quadwords) * 0x10
-        type: vif_data
-        repeat: expr
-        repeat-expr: vu1_vif_list_offset_from_end_in_quadwords * 0x10
-      vertex_list:
-        pos: vertex_offset
-        type: vertex_header
+  vu1_vif_list:
+    pos: vu1_vif_list_offset
+    type: vif_data
+    repeat: expr
+    repeat-expr: (vu1_vif_list_qwc - vu1_vif_list_offset_from_end_in_quadwords) * 0x10
+  vu1_vif_list_texture_data:
+    pos: vu1_vif_list_offset + (vu1_vif_list_qwc - vu1_vif_list_offset_from_end_in_quadwords) * 0x10
+    type: vif_data
+    repeat: expr
+    repeat-expr: vu1_vif_list_offset_from_end_in_quadwords * 0x10
+  vertex_list:
+    pos: vertex_offset
+    type: vertex_header
 types:
   vif_data:
     seq:
