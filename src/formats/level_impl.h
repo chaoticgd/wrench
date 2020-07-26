@@ -56,16 +56,31 @@ struct object_id {
 	(__VA_ARGS__).template operator()<moby>(); \
 	(__VA_ARGS__).template operator()<spline>()
 
-// Access the member of the input struct corresponding to the object type T.
-template <typename T, typename T_in>
-auto& member_of_type(T_in& in) {
-	if constexpr(std::is_same_v<T, tie>) return in.ties;
-	if constexpr(std::is_same_v<T, shrub>) return in.shrubs;
-	if constexpr(std::is_same_v<T, moby>) return in.mobies;
-	if constexpr(std::is_same_v<T, spline>) return in.splines;
+// Return the argument corresponding to the type T.
+template <
+	typename T,
+	typename T_tie,
+	typename T_shrub,
+	typename T_moby,
+	typename T_spline>
+auto& argument_for_type(
+		T_tie& tie_,
+		T_shrub& shrub_,
+		T_moby& moby_,
+		T_spline& spline_) {
+	if constexpr(std::is_same_v<T, tie>) return tie_;
+	if constexpr(std::is_same_v<T, shrub>) return shrub_;
+	if constexpr(std::is_same_v<T, moby>) return moby_;
+	if constexpr(std::is_same_v<T, spline>) return spline_;
 	
 	// FIXME: This should be a compile-time error!
-	throw std::runtime_error("member_of_type called with invalid object type!");
+	throw std::runtime_error("argument_for_type called with invalid object type!");
+}
+
+// Access the member of the input struct corresponding to the object type T.
+template <typename T, typename T_in>
+auto& member_for_type(T_in& in) {
+	return argument_for_type<T>(in.ties, in.shrubs, in.mobies, in.splines);
 }
 
 struct object_list {
@@ -76,13 +91,13 @@ struct object_list {
 	
 	template <typename T>
 	void add(object_id id) {
-		member_of_type<T>(*this).push_back(id);
+		member_for_type<T>(*this).push_back(id);
 	}
 	
 	std::size_t size() const {
 		std::size_t result = 0;
 		for_each_object_type([&]<typename T>() {
-			result += member_of_type<T>(*this).size();
+			result += member_for_type<T>(*this).size();
 		});
 		return result;
 	}
@@ -90,7 +105,7 @@ struct object_list {
 	bool contains(object_id id) const {
 		bool result = false;
 		for_each_object_type([&]<typename T>() {
-			const std::vector<object_id>& objects = member_of_type<T>(*this);
+			const std::vector<object_id>& objects = member_for_type<T>(*this);
 			if(std::find(objects.begin(), objects.end(), id) != objects.end()) {
 				result = true;
 			}
@@ -101,7 +116,7 @@ struct object_list {
 	object_id first() const {
 		std::optional<object_id> result;
 		for_each_object_type([&]<typename T>() {
-			const std::vector<object_id>& objects = member_of_type<T>(*this);
+			const std::vector<object_id>& objects = member_for_type<T>(*this);
 			if(!result && objects.size() > 0) {
 				result = objects[0];
 			}
@@ -157,27 +172,21 @@ public:
 	std::size_t count() {
 		return objects_of_type<T>().size();
 	}
-		
-	struct object_callbacks {
-		std::function<void(object_id, tie&)> ties;
-		std::function<void(object_id, shrub&)> shrubs;
-		std::function<void(object_id, moby&)> mobies;
-		std::function<void(object_id, spline&)> splines;
-	};
 	
 	#define find_object_by_id(id, ...) \
-		find_object_by_id_impl(id, {__VA_ARGS__, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__})
-		
-	void find_object_by_id_impl(object_id id, object_callbacks cbs) {
+		find_object_by_id_impl(id, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__)
+	
+	template <typename... T_callbacks>
+	void find_object_by_id_impl(object_id id, T_callbacks... cbs) {
 		for_each_object_type([&]<typename T>() {
 			if(object_exists<T>(id)) {
-				member_of_type<T>(cbs)(id, object_from_id<T>(id));
+				argument_for_type<T>(cbs...)(id, object_from_id<T>(id));
 			}
 		});
 	}
 	
-	template <typename T>
-	void for_each_object_of_type(std::function<void(object_id, T&)> callback) {
+	template <typename T, typename T_callback>
+	void for_each_object_of_type(T_callback callback) {
 		auto& objects = objects_of_type<T>();
 		for(std::size_t i = 0; i < objects.size(); i++) {
 			object_id id = mappings_of_type<T>().index_to_id.at(i);
@@ -186,17 +195,18 @@ public:
 	}
 	
 	#define for_each_object(...) \
-		for_each_object_impl({__VA_ARGS__, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__})
+		for_each_object_impl(__VA_ARGS__, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__)
 	
-	void for_each_object_impl(object_callbacks cbs) {
+	template <typename... T_callbacks>
+	void for_each_object_impl(T_callbacks... cbs) {
 		for_each_object_type([&]<typename T>() {
-			for_each_object_of_type<T>(member_of_type<T>(cbs));
+			for_each_object_of_type<T>(argument_for_type<T>(cbs...));
 		});
 	}
 	
-	template <typename T>
+	template <typename T, typename T_callback>
 	void for_each_object_of_type_in(
-			std::vector<object_id> objects, std::function<void(object_id, T&)> callback) {
+			std::vector<object_id> objects, T_callback callback) {
 		for(object_id id : objects) {
 			if(object_exists<T>(id)) {
 				callback(id, object_from_id<T>(id));
@@ -205,19 +215,20 @@ public:
 	}
 	
 	#define for_each_object_in(list, ...) \
-		for_each_object_in_impl(list, {__VA_ARGS__, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__})
+		for_each_object_in_impl(list, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__)
 	
-	void for_each_object_in_impl(object_list& list, object_callbacks cbs) {
+	template <typename... T_callbacks>
+	void for_each_object_in_impl(object_list& list, T_callbacks... cbs) {
 		for_each_object_type([&]<typename T>() {
 			for_each_object_of_type_in<T>
-				(member_of_type<T>(list), member_of_type<T>(cbs));
+				(member_for_type<T>(list), argument_for_type<T>(cbs...));
 		});
 	}
 	
 private:
 	template <typename T>
 	std::vector<T>& objects_of_type() {
-		return member_of_type<T>(_object_store);
+		return member_for_type<T>(_object_store);
 	}
 	
 	struct {
@@ -229,7 +240,7 @@ private:
 	
 	template <typename T>
 	object_mappings& mappings_of_type() {
-		return member_of_type<T>(_object_mappings);
+		return member_for_type<T>(_object_mappings);
 	}
 	
 	struct {

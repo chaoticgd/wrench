@@ -88,8 +88,8 @@ void game_world::read(stream* src) {
 	for_each_object_type([&]<typename T>() {
 		for(std::size_t i = 0; i < objects_of_type<T>().size(); i++) {
 			object_id id{_next_object_id++};
-			member_of_type<T>(_object_mappings).id_to_index[id] = i;
-			member_of_type<T>(_object_mappings).index_to_id[i] = id;
+			member_for_type<T>(_object_mappings).id_to_index[id] = i;
+			member_for_type<T>(_object_mappings).index_to_id[i] = id;
 		}
 	});
 }
