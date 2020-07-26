@@ -58,6 +58,10 @@ struct shader_programs {
 	shader_program solid_colour;
 	GLint solid_colour_transform;
 	GLint solid_colour_rgb;
+	
+	shader_program textured;
+	GLint textured_local_to_clip;
+	GLint textured_sampler;
 };
 
 #endif

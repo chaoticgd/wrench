@@ -121,8 +121,10 @@ void view_3d::draw_level(level& lvl) const {
 
 	glUseProgram(_renderer->shaders.solid_colour.id());
 	
+	static const glm::vec4 selected_colour = glm::vec4(1, 0, 0, 1);
+	
 	auto get_colour = [&](object_id id, glm::vec4 normal_colour) {
-		return lvl.world.is_selected(id) ? glm::vec4(1, 0, 0, 1) : normal_colour;
+		return lvl.world.is_selected(id) ? selected_colour : normal_colour;
 	};
 	
 	lvl.world.for_each_object_of_type<tie>([&](object_id id, tie& object) {
@@ -133,16 +135,19 @@ void view_3d::draw_level(level& lvl) const {
 	
 	lvl.world.for_each_object_of_type<moby>([&](object_id id, moby& object) {
 		glm::mat4 local_to_clip = world_to_clip * object.mat();
-		glm::vec4 colour = get_colour(id, glm::vec4(0, 1, 0, 1));
 		
 		if(lvl.moby_class_to_model.find(object.class_num) == lvl.moby_class_to_model.end()) {
-			_renderer->draw_cube(local_to_clip, colour);
+			_renderer->draw_cube(local_to_clip, get_colour(id, glm::vec4(0, 1, 0, 1)));
 			return;
 		}
 		
-		const game_model& model =
+		moby_model& model =
 			lvl.moby_models[lvl.moby_class_to_model.at(object.class_num)];
-		_renderer->draw_model(model, local_to_clip, colour);
+		_renderer->draw_moby_model(model, local_to_clip, {}, view_mode::WIREFRAME);
+		
+		if(lvl.world.is_selected(id)) {
+			_renderer->draw_cube(local_to_clip, selected_colour);
+		}
 	});
 	
 	for (auto& frag : lvl.tfrags) {
@@ -318,15 +323,7 @@ void view_3d::draw_pickframe(level& lvl) const {
 	lvl.world.for_each_object_of_type<moby>([&](object_id id, moby& object) {
 		glm::mat4 local_to_clip = world_to_clip * object.mat();
 		glm::vec4 colour = encode_pick_colour(id);
-		
-		if(lvl.moby_class_to_model.find(object.class_num) == lvl.moby_class_to_model.end()) {
-			_renderer->draw_cube(local_to_clip, colour);
-			return;
-		}
-		
-		const game_model& model =
-			lvl.moby_models[lvl.moby_class_to_model.at(object.class_num)];
-		_renderer->draw_model(model, local_to_clip, colour);
+		_renderer->draw_cube(local_to_clip, colour);
 	});
 
 	lvl.world.for_each_object_of_type<spline>([&](object_id id, spline& object) {

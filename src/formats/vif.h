@@ -133,7 +133,7 @@ struct vif_code {
 struct vif_packet {
 	std::size_t address;
 	vif_code code;
-	std::vector<uint32_t> data; // Including the code.
+	std::vector<uint8_t> data; // Not including the code.
 	std::string error;
 };
 

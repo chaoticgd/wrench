@@ -42,4 +42,23 @@ bool contains(T container, typename T::value_type value) {
 	return std::find(container.begin(), container.end(), value) != container.end();
 }
 
+template <typename T>
+struct array_view {
+	T* begin_ptr;
+	T* end_ptr;
+	array_view() : begin_ptr(0), end_ptr(0) {}
+	array_view(T* b, T* e) : begin_ptr(b), end_ptr(e) {}
+	array_view(T* ptr, std::size_t size) : begin_ptr(ptr), end_ptr(ptr + size) {}
+	array_view(std::vector<T>& vec) : begin_ptr(&(*vec.begin())), end_ptr(&(*vec.end())) {}
+	T* begin() { return begin_ptr; }
+	T* end() { return end_ptr; }
+	T& at(std::size_t i) {
+		if(begin_ptr + i < end_ptr) {
+			return *(begin_ptr + i);
+		 } else {
+			throw std::runtime_error("array_view::at: Out of bounds access!");
+		 }
+	}
+};
+
 #endif

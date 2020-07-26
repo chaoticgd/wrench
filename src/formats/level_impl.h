@@ -260,7 +260,7 @@ public:
 	game_world world;
 	
 	std::map<uint32_t, std::size_t> moby_class_to_model;
-	std::vector<game_model> moby_models;
+	std::vector<moby_model> moby_models;
 	std::vector<texture> mipmap_textures;
 	std::vector<texture> terrain_textures;
 	std::vector<texture> tie_textures;

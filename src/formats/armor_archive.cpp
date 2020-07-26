@@ -35,16 +35,29 @@ bool armor_archive::read(stream& iso, const toc_table& table) {
 		}
 		
 		// Read the model.
-		std::size_t submodel_table_offset =
-			iso.peek<uint32_t>(base_offset + armor.model.bytes() + 0x4);
-		std::size_t submodel_table_end =
-			iso.peek<uint32_t>(base_offset + armor.model.bytes() + 0x10);
-		std::size_t num_submodels =
-			(submodel_table_end - submodel_table_offset) / 0x10;
-		if(submodel_table_offset > 0x100) { // usually equal to 0x10.
-			break; // We're probably reading off the end of the array.
+		auto model_header = iso.peek<armor_model_header>(base_offset + armor.model.bytes());
+		uint32_t submodel_table_offset = model_header.submodel_table_offset;
+		if(submodel_table_offset > 0x10) {
+			return false;
 		}
-		models.emplace_back(&iso, base_offset + armor.model.bytes(), submodel_table_offset, num_submodels);
+		std::vector<std::size_t> submodel_counts {
+			model_header.submodel_count_1,
+			model_header.submodel_count_2,
+			model_header.submodel_count_3
+		};
+		if(armor.model.bytes() == 0) {
+			continue;
+		}
+		
+		moby_model& model = models.emplace_back(
+			&iso,
+			base_offset + armor.model.bytes(),
+			armor.model_size.bytes(),
+			submodel_table_offset,
+			submodel_counts);
+		model.set_name("armor " + std::to_string(i / 16));
+		model.texture_base_index = textures.size();
+		model.read();
 		
 		std::string set_name = std::string("set") + std::to_string(i);
 		
@@ -52,7 +65,7 @@ bool armor_archive::read(stream& iso, const toc_table& table) {
 		std::size_t fip_offset = base_offset + armor.texture.bytes();
 		std::optional<texture> tex = create_fip_texture(&iso, fip_offset);
 		if(tex) {
-			textures.emplace_back(*tex);
+			textures.emplace_back(std::move(*tex));
 			textures.back().name = set_name;
 			continue;
 		}
@@ -68,7 +81,7 @@ bool armor_archive::read(stream& iso, const toc_table& table) {
 			std::size_t abs_offset = base_offset + armor.texture.bytes() + rel_offset;
 			std::optional<texture> tex = create_fip_texture(&iso, abs_offset);
 			if(tex) {
-				textures.emplace_back(*tex);
+				textures.emplace_back(std::move(*tex));
 				textures.back().name =
 					set_name + "_part" + std::to_string(j);
 			} else {

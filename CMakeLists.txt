@@ -166,6 +166,10 @@ add_executable(matchtoc
 	src/formats/toc.cpp
 )
 
+# This lets us avoid linking stuff for msot of the CLI tools.
+target_compile_definitions(wrench PRIVATE WRENCH_EDITOR=1)
+target_compile_definitions(randomiser PRIVATE WRENCH_EDITOR=1)
+
 if(UNIX)
 	target_compile_options(wrench PRIVATE -Wall -O3)
 	target_compile_options(fip PRIVATE -Wall -O3)

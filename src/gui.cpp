@@ -25,6 +25,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <functional>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "util.h"
 #include "config.h"
@@ -599,12 +600,6 @@ void gui::string_viewer::render(app& a) {
 
 gui::texture_browser::texture_browser() {}
 
-gui::texture_browser::~texture_browser() {
-	for(auto& tex : _gl_textures) {
-		glDeleteTextures(1, &tex.second);
-	}
-}
-
 const char* gui::texture_browser::title_text() const {
 	return "Texture Browser";
 }
@@ -617,15 +612,6 @@ void gui::texture_browser::render(app& a) {
 	if(!a.get_project()) {
 		ImGui::Text("<no project open>");
 		return;
-	}
-	
-	// Clear the texture cache when a new project is opened.
-	if(a.get_project()->id() != _project_id) {
-		for(auto& tex : _gl_textures) {
-			glDeleteTextures(1, &tex.second);
-		}
-		_gl_textures.clear();
-		_project_id = a.get_project()->id();
 	}
 
 	auto tex_lists = a.get_project()->texture_lists(&a);
@@ -714,20 +700,19 @@ void gui::texture_browser::render_grid(app& a, std::vector<texture>& tex_list) {
 			continue;
 		}
 
-		if(_gl_textures.find(tex) == _gl_textures.end()) {
-
+		if(tex->opengl_id() == 0) {
 			// Only load 10 textures per frame.
 			if(num_this_frame >= 10) {
 				ImGui::NextColumn();
 				continue;
 			}
 
-			cache_texture(tex);
+			tex->upload_to_opengl();
 			num_this_frame++;
 		}
 
 		bool clicked = ImGui::ImageButton(
-			(void*) (intptr_t) _gl_textures.at(tex),
+			(void*) (intptr_t) tex->opengl_id(),
 			ImVec2(128, 128),
 			ImVec2(0, 0),
 			ImVec2(1, 1),
@@ -746,39 +731,13 @@ void gui::texture_browser::render_grid(app& a, std::vector<texture>& tex_list) {
 	}
 }
 
-void gui::texture_browser::cache_texture(texture* tex) {
-	auto size = tex->size();
-
-	// Prepare pixel data.
-	std::vector<uint8_t> indexed_pixel_data = tex->pixel_data();
-	std::vector<uint8_t> colour_data(indexed_pixel_data.size() * 4);
-	auto palette = tex->palette();
-	for(std::size_t i = 0; i < indexed_pixel_data.size(); i++) {
-		colour c = palette[indexed_pixel_data[i]];
-		colour_data[i * 4] = c.r;
-		colour_data[i * 4 + 1] = c.g;
-		colour_data[i * 4 + 2] = c.b;
-		colour_data[i * 4 + 3] = static_cast<int>(c.a) * 2 - 1;
-	}
-
-	// Send image to OpenGL.
-	GLuint texture_id;
-	glGenTextures(1, &texture_id);
-	glBindTexture(GL_TEXTURE_2D, texture_id);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, colour_data.data());
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-	_gl_textures[tex] = texture_id;
-}
-
 void gui::texture_browser::import_bmp(app& a, texture* tex) {
 	auto importer = std::make_unique<string_input>("Enter Import Path");
 	importer->on_okay([tex, this](app& a, std::string path) {
 		try {
 			file_stream bmp_file(path);
 			bmp_to_texture(tex, bmp_file);
-			cache_texture(tex);
+			tex->upload_to_opengl();
 		} catch(stream_error& e) {
 			a.emplace_window<message_box>("Error", e.what());
 		}
@@ -834,12 +793,6 @@ void gui::texture_browser::export_all(app& a, std::vector<texture>& tex_list) {
 */
 
 gui::model_browser::model_browser() {}
-
-gui::model_browser::~model_browser() {
-	for(auto& tex : _model_thumbnails) {
-		glDeleteTextures(1, &tex.second);
-	}
-}
 	
 const char* gui::model_browser::title_text() const {
 	return "Model Browser";
@@ -856,40 +809,67 @@ void gui::model_browser::render(app& a) {
 	}
 	
 	ImGui::Columns(2);
-	ImGui::SetColumnWidth(1, 384);
+	if(_fullscreen_preview) {
+		ImGui::SetColumnWidth(0, 0);
+	} else {
+		ImGui::SetColumnWidth(0, ImGui::GetWindowSize().x - 384);
+	}
 	
-	game_model* model = render_selection_pane(a);
+	moby_model* model = render_selection_pane(a);
 	if(model == nullptr) {
 		return;
 	}
 	
 	ImGui::NextColumn();
 	
-	// Update zoom and rotation.
-	if(ImGui::IsWindowHovered()) {
-		ImGuiIO& io = ImGui::GetIO();
-		_zoom *= -io.MouseWheel * a.delta_time * 0.0001 + 1;
-		if(_zoom < 0.2) _zoom = 0.2;
-		if(_zoom > 4) _zoom = 4;	
+	if(ImGui::Button(_fullscreen_preview ? " > " : " < ")) {
+		_fullscreen_preview = !_fullscreen_preview;
+	}
+	ImGui::SameLine();
+	ImGui::SliderFloat("Zoom", &_view_params.zoom, 0.0, 1.0, "%.1f");
+	
+	ImVec2 preview_size;
+	if(_fullscreen_preview) {
+		auto win_size = ImGui::GetWindowSize();
+		preview_size = { win_size.x, win_size.y - 300 };
+	} else {
+		preview_size = { 400, 300 };
+	}
+	
+	// If the mouse is dragging, this will store the displacement from the
+	// mouse position when the button was pressed down.
+	glm::vec2 drag_delta(0, 0);
+	
+	ImGui::BeginChild("preview", preview_size);
+	{
+		static GLuint preview_texture = 0;
+		ImGui::Image((void*) (intptr_t) preview_texture, preview_size);
+		static bool is_dragging = false;
+		bool image_hovered = ImGui::IsItemHovered();
+		glm::vec2 pitch_yaw = _view_params.pitch_yaw;
+		if(ImGui::IsMouseDragging() && (image_hovered || is_dragging)) {
+			drag_delta = get_drag_delta();
+			is_dragging = true;
+		}
 		
-		if(ImGui::IsMouseReleased(0)) {
-			_pitch_yaw += get_drag_delta();
+		// Update zoom and rotation.
+		if(image_hovered || is_dragging) {
+			ImGuiIO& io = ImGui::GetIO();
+			_view_params.zoom *= io.MouseWheel * a.delta_time * 0.0001 + 1;
+			if(_view_params.zoom < 0.f) _view_params.zoom = 0.f;
+			if(_view_params.zoom > 1.f) _view_params.zoom = 1.f;
+			
+			if(ImGui::IsMouseReleased(0)) {
+				_view_params.pitch_yaw += get_drag_delta();
+				is_dragging = false;
+			}
 		}
+		
+		view_params preview_params = _view_params;
+		preview_params.pitch_yaw += drag_delta;
+		render_preview(a, &preview_texture, *model, a.renderer, preview_size, preview_params);
 	}
-	
-	// Clear the texture cache when a new project is opened.
-	if(a.get_project()->id() != _project_id) {
-		for(auto& tex : _model_thumbnails) {
-			glDeleteTextures(1, &tex.second);
-		}
-		_model_thumbnails.clear();
-		_project_id = a.get_project()->id();
-	}
-	
-	ImVec2 preview_size { 400, 300 };
-	static GLuint preview_texture = 0;
-	render_preview(&preview_texture, *model, a.renderer, preview_size, _zoom, _pitch_yaw);
-	ImGui::Image((void*) (intptr_t) preview_texture, preview_size);
+	ImGui::EndChild();
 	
 	if(ImGui::BeginTabBar("tabs")) {
 		if(ImGui::BeginTabItem("Details")) {
@@ -897,11 +877,38 @@ void gui::model_browser::render(app& a) {
 			ImGui::InputText("Index", &index, ImGuiInputTextFlags_ReadOnly);
 			std::string res_path = model->resource_path();
 			ImGui::InputText("Resource Path", &res_path, ImGuiInputTextFlags_ReadOnly);
+			
+			static const std::map<view_mode, const char*> modes = {
+				{ view_mode::WIREFRAME, "Wireframe" },
+				{ view_mode::TEXTURED_POLYGONS, "Textured Polygons" }
+			};
+			if(ImGui::BeginCombo("View Mode", modes.at(_view_params.mode))) {
+				for(auto [mode, name] : modes) {
+					if(ImGui::Selectable(name, _view_params.mode == mode)) {
+						_view_params.mode = mode;
+					}
+				}
+				ImGui::EndCombo();
+			}
+			
+			ImGui::Checkbox("Show Vertex Indices", &_view_params.show_vertex_indices);
+			
 			ImGui::EndTabItem();
 		}
-		
-		if(ImGui::BeginTabItem("VIF Chains (Debug)")) {
-			ImGui::BeginChild(2);
+		if(ImGui::BeginTabItem("Submodels")) {
+			ImGui::BeginChild("submodels");
+			render_submodel_list(*model);
+			ImGui::EndChild();
+			ImGui::EndTabItem();
+		}
+		if(ImGui::BeginTabItem("ST Coords")) {
+			ImGui::BeginChild("stcoords");
+			render_st_coords(*model, a.renderer.shaders);
+			ImGui::EndChild();
+			ImGui::EndTabItem();
+		}
+		if(ImGui::BeginTabItem("VIF Lists (Debug)")) {
+			ImGui::BeginChild("vif_lists");
 			try {
 				render_dma_debug_info(*model);
 			} catch(stream_error& e) {
@@ -914,8 +921,8 @@ void gui::model_browser::render(app& a) {
 	}
 }
 
-game_model* gui::model_browser::render_selection_pane(app& a) {
-	game_model* result = nullptr;
+moby_model* gui::model_browser::render_selection_pane(app& a) {
+	moby_model* result = nullptr;
 	
 	auto lists = a.get_project()->model_lists(&a);
 	if(ImGui::BeginTabBar("lists")) {
@@ -931,37 +938,43 @@ game_model* gui::model_browser::render_selection_pane(app& a) {
 	return result;
 }
 
-game_model* gui::model_browser::render_selection_grid(
+moby_model* gui::model_browser::render_selection_grid(
 		app& a,
 		std::string list,
-		std::vector<game_model>& models) {
-	game_model* result = nullptr;
+		std::vector<moby_model>& models) {
+	moby_model* result = nullptr;
 	std::size_t num_this_frame = 0;
 	
 	ImGui::BeginChild(1);
 	ImGui::Columns(std::max(1.f, ImGui::GetWindowSize().x / 128));
 	
 	for(std::size_t i = 0; i < models.size(); i++) {
-		game_model* model = &models[i];
-		
-		if(_model_thumbnails.find(model) == _model_thumbnails.end()) {
+		moby_model* model = &models[i];
+
+		if(model->thumbnail() == 0) {
 			// Only load 10 textures per frame.
 			if(num_this_frame >= 10) {
 				ImGui::NextColumn();
 				continue;
 			}
 			
-			_model_thumbnails[model] = 0;
 			render_preview(
-				&_model_thumbnails.at(model),
+				a,
+				&model->thumbnail(),
 				*model, a.renderer,
-				ImVec2(128, 128), 1, glm::vec2(0, 0));
+				ImVec2(128, 128),
+				view_params {
+					view_mode::TEXTURED_POLYGONS,     // view_mode
+					0.5f,                             // zoom
+					glm::vec2(0, glm::radians(90.f)), // pitch_yaw
+					false                             // show_vertex_indices
+				});
 			num_this_frame++;
 		}
 		
 		bool selected = _list == list && _model == i;
 		bool clicked = ImGui::ImageButton(
-			(void*) (intptr_t) _model_thumbnails.at(model),
+			(void*) (intptr_t) model->thumbnail(),
 			ImVec2(128, 128),
 			ImVec2(0, 0),
 			ImVec2(1, 1),
@@ -974,6 +987,11 @@ game_model* gui::model_browser::render_selection_grid(
 		if(clicked) {
 			_list = list;
 			_model = i;
+			
+			// Reset submodel visibility.
+			for(moby_submodel& submodel : model->submodels) {
+				submodel.visible_in_model_viewer = true;
+			}
 		}
 		if(selected) {
 			result = model;
@@ -987,22 +1005,18 @@ game_model* gui::model_browser::render_selection_grid(
 }
 
 void gui::model_browser::render_preview(
+		app& a,
 		GLuint* target,
-		const game_model& model,
+		moby_model& model,
 		const gl_renderer& renderer,
 		ImVec2 preview_size,
-		float zoom,
-		glm::vec2 pitch_yaw) {
-	if(ImGui::IsMouseDragging()) {
-		pitch_yaw += get_drag_delta();
-	}
-	
-	glm::vec3 eye = glm::vec3(_zoom, 0, 0);
+		view_params params) {
+	glm::vec3 eye = glm::vec3(1.1f - params.zoom, 0, 0);
 	
 	glm::mat4 view_fixed = glm::lookAt(eye, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
-	glm::mat4 view_pitched = glm::rotate(view_fixed, pitch_yaw.x, glm::vec3(0, 0, 1));
-	glm::mat4 view = glm::rotate(view_pitched, pitch_yaw.y, glm::vec3(0, 1, 0));
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), preview_size.x / preview_size.y, 0.1f, 100.0f);
+	glm::mat4 view_pitched = glm::rotate(view_fixed, params.pitch_yaw.x, glm::vec3(0, 0, 1));
+	glm::mat4 view = glm::rotate(view_pitched, params.pitch_yaw.y, glm::vec3(0, 1, 0));
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), preview_size.x / preview_size.y, 0.01f, 100.0f);
 	
 	static const glm::mat4 yzx {
 		0,  0, 1, 0,
@@ -1010,37 +1024,33 @@ void gui::model_browser::render_preview(
 		0, -1, 0, 0,
 		0,  0, 0, 1
 	};
-	glm::mat4 vp = projection * view * yzx;
-	
-	glDeleteTextures(1, target);
-	
-	glGenTextures(1, target);
-	glBindTexture(GL_TEXTURE_2D, *target);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, preview_size.x, preview_size.y, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, 0);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glm::mat4 local_to_world = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, -0.125f));
+	glm::mat4 local_to_clip = projection * view * yzx * local_to_world;
 
-	GLuint fb_id;
-	glGenFramebuffers(1, &fb_id);
-	glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *target, 0);
+	auto apply_local_to_screen = [&](glm::vec4 pos) {
+		glm::vec4 homogeneous_pos = local_to_clip * pos;
+		glm::vec3 gl_pos {
+				homogeneous_pos.x / homogeneous_pos.w,
+				homogeneous_pos.y / homogeneous_pos.w,
+				homogeneous_pos.z / homogeneous_pos.w
+		};
+		ImVec2 window_pos = ImGui::GetWindowPos();
+		glm::vec3 screen_pos(
+				window_pos.x + (1 + gl_pos.x) * preview_size.x / 2.0,
+				window_pos.y + (1 + gl_pos.y) * preview_size.y / 2.0,
+				gl_pos.z
+		);
+		return screen_pos;
+	};
 
-	glClearColor(0, 0, 0, 1);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glViewport(0, 0, preview_size.x, preview_size.y);
-
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glUseProgram(renderer.shaders.solid_colour.id());
-	
-	try {
-		renderer.draw_model(model, vp, glm::vec4(0, 1, 0, 1));
-	} catch(stream_error& e) {
-		glClearColor(1, 0, 0, 1);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		ImGui::Text("Error: Out of bounds read.");
+	std::vector<GLuint> textures;
+	for(texture& tex : a.get_project()->armor().textures) {
+		textures.push_back(tex.opengl_id());
 	}
 
-	glDeleteFramebuffers(1, &fb_id);
+	render_to_texture(target, preview_size.x, preview_size.y, [&]() {
+		renderer.draw_moby_model(model, local_to_clip, textures, params.mode);
+	});
 }
 
 glm::vec2 gui::model_browser::get_drag_delta() const {
@@ -1048,36 +1058,160 @@ glm::vec2 gui::model_browser::get_drag_delta() const {
 	return glm::vec2(delta.y, delta.x) * 0.01f;
 }
 
-void gui::model_browser::render_dma_debug_info(game_model& mdl) {
-	for(std::size_t submodel = 0; submodel < mdl.num_submodels; submodel++) {
-		ImGui::PushID(submodel);
+void gui::model_browser::render_submodel_list(moby_model& model) {
+	std::size_t low = 0;
+	for(std::size_t i = 0; i < model.submodel_counts.size(); i++) {
+		ImGui::PushID(i);
 		
-		if(ImGui::TreeNode("submodel", "Submodel %ld", submodel)) {
-			std::vector<std::vector<vif_packet>> chains = {
-				mdl.get_vif_chain(submodel)
-			};
-			for(int i = 0; i < 1; i++) {
-				auto& chain = chains[i];
-				ImGui::Text("  Chain %d:", i);
-				for(vif_packet& vpkt : chain) {
-					ImGui::PushID(vpkt.address);
-						
-					if(vpkt.error != "") {
-						ImGui::Text("   (error: %s)", vpkt.error.c_str());
-						ImGui::PopID();
-						continue;
+		const std::size_t high = low + model.submodel_counts[i];
+		
+		// If every submodel in a given group is visible, we should draw the
+		// box as being ticked.
+		bool group_ticked = true;
+		for(std::size_t j = low; j < high; j++) {
+			group_ticked &= model.submodels[j].visible_in_model_viewer;
+		}
+		const bool group_ticked_before = group_ticked;
+		
+		std::string label = "Group " + std::to_string(i);
+		
+		bool group_expanded = ImGui::TreeNode("group", "%s", "");
+		ImGui::SameLine();
+		ImGui::Checkbox(label.c_str(), &group_ticked);
+		if(group_expanded) {
+			for(std::size_t j = low; j < high; j++) {
+				ImGui::PushID(j);
+				moby_submodel& submodel = model.submodels[j];
+				
+				std::string submodel_label = "Submodel " + std::to_string(j);
+				bool submodel_expanded = ImGui::TreeNode("submodel", "%s", "");
+				ImGui::SameLine();
+				ImGui::Checkbox(submodel_label.c_str(), &submodel.visible_in_model_viewer);
+				if(submodel_expanded) {
+					for(const moby_model_vertex& vertex : submodel.vertices) {
+						ImGui::Text("%x %x %x", vertex.x & 0xffff, vertex.y & 0xffff, vertex.z & 0xffff);
 					}
-					
-					std::string label = vpkt.code.to_string();
-					if(ImGui::TreeNode("packet", "%lx %s", vpkt.address, label.c_str())) {
-						auto lines = to_hex_dump(vpkt.data.data(), vpkt.address, vpkt.data.size());
-						for(std::string& line : lines) {
-							ImGui::Text("    %s", line.c_str());
-						}
-						ImGui::TreePop();
-					}
-					ImGui::PopID();
+					ImGui::TreePop();
 				}
+				ImGui::PopID();
+			}
+			ImGui::TreePop();
+		}
+		
+		// If the user user ticked or unticked the box, apply said changes to
+		// all submodels in the current group.
+		if(group_ticked != group_ticked_before) {
+			for(std::size_t j = low; j < high; j++) {
+				model.submodels[j].visible_in_model_viewer = group_ticked;
+			}
+		}
+		
+		low += model.submodel_counts[i];
+		
+		ImGui::PopID();
+	}
+}
+
+void gui::model_browser::render_st_coords(moby_model& model, const shader_programs& shaders) {
+	if(model.submodels.size() < 1) {
+		return;
+	}
+	
+	std::set<int32_t> texture_indices;
+	//for(moby_submodel& submodel : model.submodels) {
+	//	if(submodel.texture) {
+	//		texture_indices.insert(submodel.texture->texture_index);
+	//	}
+	//}
+	
+	static int32_t texture_index = 0;
+	if(ImGui::BeginTabBar("tabs")) {
+		for(int32_t index : texture_indices) {
+			std::string tab_name = std::to_string(index);
+			if(ImGui::BeginTabItem(tab_name.c_str())) {
+				texture_index = index;
+				ImGui::EndTabItem();
+			}
+		}
+		ImGui::EndTabBar();
+	}
+	
+	static GLuint texture = 0;
+	static const ImVec2 size(256, 256);
+	
+	int32_t current_texture_index = 0;
+	render_to_texture(&texture, size.x, size.y, [&]() {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		glUseProgram(shaders.solid_colour.id());
+		
+		for(std::size_t i = 0; i < model.submodels.size(); i++) {
+			//moby_submodel& submodel = model.submodels[i];
+			//
+			//if(submodel.texture) {
+			//	current_texture_index = submodel.texture->texture_index;
+			//}
+			//
+			//if(!submodel.visible_in_model_viewer || current_texture_index != texture_index) {
+			//	continue;
+			//}
+			//
+			//if(submodel.st_buffer == 0) {
+			//	std::vector<float> st_data;
+			//	for(const moby_model_st& st : submodel.st_data) {
+			//		st_data.push_back((st.s / (float) INT16_MAX) * 8.f);
+			//		st_data.push_back((st.t / (float) INT16_MAX) * 8.f);
+			//		st_data.push_back(0.f);
+			//	}
+			//	
+			//	glGenBuffers(1, &submodel.st_buffer());
+			//	glBindBuffer(GL_ARRAY_BUFFER, submodel.st_buffer());
+			//	glBufferData(GL_ARRAY_BUFFER,
+			//		st_data.size() * sizeof(float),
+			//		st_data.data(), GL_STATIC_DRAW);
+			//}
+			//
+			//glm::vec4 colour = colour_coded_submodel_index(i, model.submodels.size());
+			//static const glm::mat4 id(1.f);
+			//glUniformMatrix4fv(shaders.solid_colour_transform, 1, GL_FALSE, &id[0][0]);
+			//glUniform4f(shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
+			//
+			//glEnableVertexAttribArray(0);
+			//glBindBuffer(GL_ARRAY_BUFFER, submodel.st_buffer());
+			//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+			//
+			//glDrawArrays(GL_POINTS, 0, submodel.st_coords.size());
+			//
+			//glDisableVertexAttribArray(0);
+		}
+	});
+	
+	ImGui::Image((void*) (intptr_t) texture, size);
+}
+
+void gui::model_browser::render_dma_debug_info(moby_model& mdl) {
+	for(std::size_t i = 0; i < mdl.submodels.size(); i++) {
+		ImGui::PushID(i);
+		moby_submodel& submodel = mdl.submodels[i];
+		
+		if(ImGui::TreeNode("submodel", "Submodel %ld", i)) {
+			for(vif_packet& vpkt : submodel.vif_list) {
+				ImGui::PushID(vpkt.address);
+					
+				if(vpkt.error != "") {
+					ImGui::Text("   (error: %s)", vpkt.error.c_str());
+					ImGui::PopID();
+					continue;
+				}
+				
+				std::string label = vpkt.code.to_string();
+				if(ImGui::TreeNode("packet", "%lx %s", vpkt.address, label.c_str())) {
+					auto lines = to_hex_dump((uint32_t*) vpkt.data.data(), vpkt.address, vpkt.data.size() / sizeof(uint32_t));
+					for(std::string& line : lines) {
+						ImGui::Text("    %s", line.c_str());
+					}
+					ImGui::TreePop();
+				}
+				ImGui::PopID();
 			}
 			ImGui::TreePop();
 		}

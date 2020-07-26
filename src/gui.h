@@ -245,7 +245,6 @@ namespace gui {
 	class texture_browser : public window {
 	public:
 		texture_browser();
-		~texture_browser();
 
 		const char* title_text() const override;
 		ImVec2 initial_size() const override;
@@ -257,14 +256,11 @@ namespace gui {
 		};
 
 		void render_grid(app& a, std::vector<texture>& tex_list);
-		void cache_texture(texture* tex);
 
 		void import_bmp(app& a, texture* tex);
 		void export_bmp(app& a, texture* tex);
 		void export_all(app& a, std::vector<texture>& tex_list);
-
-		int _project_id = 0;
-		std::map<texture*, GLuint> _gl_textures;
+		
 		std::string _list;
 		std::size_t _selection = 0;
 		filter_parameters _filters = { 0 };
@@ -273,38 +269,42 @@ namespace gui {
 	class model_browser : public window {
 	public:
 		model_browser();
-		~model_browser();
 	
 		const char* title_text() const override;
 		ImVec2 initial_size() const override;
 		void render(app& a) override;
 		
-		game_model* render_selection_pane(app& a);
-		game_model* render_selection_grid(
+		moby_model* render_selection_pane(app& a);
+		moby_model* render_selection_grid(
 			app& a,
 			std::string list,
-			std::vector<game_model>& models);
+			std::vector<moby_model>& models);
 		
-		void render_preview(
+		struct view_params {
+			view_mode mode = view_mode::TEXTURED_POLYGONS;
+			float zoom = 0.5f;
+			glm::vec2 pitch_yaw = { 0.f, 0.f };
+			bool show_vertex_indices = false;
+		};
+		
+		static void render_preview(
+			app& a,
 			GLuint* target,
-			const game_model& model,
+			moby_model& model,
 			const gl_renderer& renderer,
 			ImVec2 preview_size,
-			float zoom,
-			glm::vec2 pitch_yaw);
+			view_params params);
 		glm::vec2 get_drag_delta() const;
 		
-		static void render_dma_debug_info(game_model& mdl);
+		static void render_submodel_list(moby_model& model);
+		static void render_st_coords(moby_model& model, const shader_programs& shaders);
+		static void render_dma_debug_info(moby_model& mdl);
 	
 	private:
 		std::string _list;
 		std::size_t _model;
-	
-		float _zoom = 1.f;
-		glm::vec2 _pitch_yaw = { 0.f, 0.f };
-		
-		int _project_id = 0;
-		std::map<game_model*, GLuint> _model_thumbnails;
+		bool _fullscreen_preview = false;
+		view_params _view_params;
 	};
 
 	class settings : public window {

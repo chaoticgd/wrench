@@ -197,9 +197,9 @@ std::vector<vif_packet> parse_vif_chain(const stream* src, std::size_t base_addr
 	std::size_t offset = 0;
 	while(offset < qwc * 16) {
 		vif_packet vpkt;
-		vpkt.address = base_address + offset;
+		vpkt.address = base_address + offset + 4;
 		
-		uint32_t val = src->peek<uint32_t>(vpkt.address);
+		uint32_t val = src->peek<uint32_t>(base_address + offset);
 		std::optional<vif_code> code = vif_code::parse(val);
 		if(!code) {
 			vpkt.error = "failed to parse VIF code";
@@ -216,8 +216,9 @@ std::vector<vif_packet> parse_vif_chain(const stream* src, std::size_t base_addr
 			break;
 		}
 		
-		for(std::size_t j = 0; j < packet_size / 4; j++) {
-			vpkt.data.push_back(src->peek<uint32_t>(base_address + offset + j * 4));
+		// Skip VIFcode.
+		for(std::size_t j = 4; j < packet_size; j++) {
+			vpkt.data.push_back(src->peek<uint8_t>(base_address + offset + j));
 		}
 		
 		offset += packet_size;
