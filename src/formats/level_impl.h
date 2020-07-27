@@ -174,7 +174,7 @@ public:
 	}
 	
 	#define find_object_by_id(id, ...) \
-		find_object_by_id_impl(id, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__)
+		find_object_by_id_impl(id, (__VA_ARGS__), (__VA_ARGS__), (__VA_ARGS__), (__VA_ARGS__))
 	
 	template <typename... T_callbacks>
 	void find_object_by_id_impl(object_id id, T_callbacks... cbs) {
@@ -195,7 +195,7 @@ public:
 	}
 	
 	#define for_each_object(...) \
-		for_each_object_impl(__VA_ARGS__, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__)
+		for_each_object_impl((__VA_ARGS__), (__VA_ARGS__), (__VA_ARGS__), (__VA_ARGS__))
 	
 	template <typename... T_callbacks>
 	void for_each_object_impl(T_callbacks... cbs) {
@@ -215,7 +215,7 @@ public:
 	}
 	
 	#define for_each_object_in(list, ...) \
-		for_each_object_in_impl(list, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__)
+		for_each_object_in_impl(list, (__VA_ARGS__), (__VA_ARGS__), (__VA_ARGS__), (__VA_ARGS__))
 	
 	template <typename... T_callbacks>
 	void for_each_object_in_impl(object_list& list, T_callbacks... cbs) {
