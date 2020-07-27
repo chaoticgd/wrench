@@ -136,8 +136,8 @@ std::map<std::string, std::vector<texture>*> wrench_project::texture_lists(app* 
 		std::string name = level_index_to_name(index);
 		result[name + "/Mipmaps"] = &lvl->mipmap_textures;
 		result[name + "/Terrain"] = &lvl->terrain_textures;
+		result[name + "/Mobies"] = &lvl->moby_textures;
 		result[name + "/Ties"] = &lvl->tie_textures;
-		//result[name + "/Mobies"] = &lvl->moby_textures;
 		result[name + "/Sprites"] = &lvl->sprite_textures;
 	}
 	for(auto& [table_index, wad] : _texture_wads) {
