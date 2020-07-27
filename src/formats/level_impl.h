@@ -276,6 +276,7 @@ public:
 	std::vector<texture> terrain_textures;
 	std::vector<texture> moby_textures;
 	std::vector<texture> tie_textures;
+	std::vector<texture> shrub_textures;
 	std::vector<texture> sprite_textures;
 	std::vector<tfrag> tfrags;
 	
