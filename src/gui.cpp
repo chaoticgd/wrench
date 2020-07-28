@@ -973,10 +973,10 @@ moby_model* gui::model_browser::render_selection_grid(
 				a.renderer,
 				ImVec2(128, 128),
 				view_params {
-					view_mode::TEXTURED_POLYGONS,     // view_mode
-					0.5f,                             // zoom
-					glm::vec2(0, glm::radians(90.f)), // pitch_yaw
-					false                             // show_vertex_indices
+					view_mode::TEXTURED_POLYGONS,           // view_mode
+					list_name == "ARMOR.WAD" ? 0.8f : 0.5f, // zoom
+					glm::vec2(0, glm::radians(90.f)),       // pitch_yaw
+					false                                   // show_vertex_indices
 				});
 			num_this_frame++;
 		}
@@ -1021,7 +1021,7 @@ void gui::model_browser::render_preview(
 		const gl_renderer& renderer,
 		ImVec2 preview_size,
 		view_params params) {
-	glm::vec3 eye = glm::vec3(1.1f - params.zoom, 0, 0);
+	glm::vec3 eye = glm::vec3(2.f * (1.1f - params.zoom), 0, 0);
 	
 	glm::mat4 view_fixed = glm::lookAt(eye, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
 	glm::mat4 view_pitched = glm::rotate(view_fixed, params.pitch_yaw.x, glm::vec3(0, 0, 1));
