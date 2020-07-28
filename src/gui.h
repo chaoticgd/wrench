@@ -256,10 +256,6 @@ namespace gui {
 		};
 
 		void render_grid(app& a, std::vector<texture>& tex_list);
-
-		void import_bmp(app& a, texture* tex);
-		void export_bmp(app& a, texture* tex);
-		void export_all(app& a, std::vector<texture>& tex_list);
 		
 		std::string _list;
 		std::size_t _selection = 0;
@@ -370,35 +366,38 @@ namespace gui {
 		// Validate this before dereferencing it!
 		stream* _selection = nullptr;
 	};
-
-	class message_box : public window {
+	
+	class alert_box {
 	public:
-		message_box(const char* title, std::string message);
-
-		const char* title_text() const override;
-		ImVec2 initial_size() const override;
-		void render(app& a) override;
-		bool is_unique() const override;
+		alert_box(const char* title) : _title(title) {}
+		
+		void render();
+		void open(std::string new_text);
+	
 	private:
 		const char* _title;
-		std::string _message;
+		bool _is_open = false;
+		std::string _text;
 	};
-
-	class string_input : public window {
+	
+	class prompt_box {
 	public:
-		string_input(const char* title, std::string default_text = "");
-
-		const char* title_text() const override;
-		ImVec2 initial_size() const override;
-		void render(app& a) override;
-		bool is_unique() const override;
-
-		void on_okay(std::function<void(app&, std::string)> callback);
-
+		prompt_box(const char* text) : _button_text(text), _title(text) {}
+		prompt_box(const char* button_text, const char* title) :
+			_button_text(button_text), _title(title) {}
+		
+		// Returns the entered text for one frame when the "Okay" button is
+		// pressed, otherwise returns an empty std::optional.
+		std::optional<std::string> prompt(); // With button.
+		std::optional<std::string> render(); // Without button.
+	
+		void open();
+	
 	private:
-		const char* _title_text;
-		std::string _input;
-		std::function<void(app&, std::string)> _callback;
+		const char* _button_text;
+		const char* _title;
+		bool _is_open = false;
+		std::string _text;
 	};
 
 	class file_dialog : public window {

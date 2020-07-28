@@ -71,27 +71,13 @@ void wrench_project::post_load() {
 std::string wrench_project::project_path() const {
 	return _project_path;
 }
+
+void wrench_project::set_project_path(std::string project_path) {
+	_project_path = project_path;
+}
 	
 std::string wrench_project::cached_iso_path() const {
 	return iso.cached_iso_path();
-}
-
-void wrench_project::save(app* a, std::function<void()> on_done) {
-	if(_project_path == "") {
-		save_as(a, on_done);
-	} else {
-		save_to(_project_path);
-		on_done();
-	}
-}
-
-void wrench_project::save_as(app* a, std::function<void()> on_done) {
-	auto dialog = a->emplace_window<gui::string_input>("Save Project");
-	dialog->on_okay([this, on_done](app& a, std::string path) {
-		_project_path = path;
-		save_to(path);
-		on_done();
-	});
 }
 
 level* wrench_project::selected_level() {
@@ -197,10 +183,10 @@ int wrench_project::id() {
 	return _id;
 }
 
-void wrench_project::save_to(std::string path) {
-	if(fs::exists(path)) {
-		fs::remove(path + ".old");
-		fs::rename(path, path + ".old");
+void wrench_project::save() {
+	if(fs::exists(_project_path)) {
+		fs::remove(_project_path + ".old");
+		fs::rename(_project_path, _project_path + ".old");
 	}
 
 	auto root = ZipArchive::Create();
@@ -213,7 +199,7 @@ void wrench_project::save_to(std::string path) {
 	game_md5_stream << game.md5;
 	root->CreateEntry("game_md5")->SetCompressionStream(game_md5_stream);
 
-	iso.save_patches_to_and_close(root, path);
+	iso.save_patches_to_and_close(root, _project_path);
 }
 
 /*

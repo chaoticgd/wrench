@@ -73,7 +73,6 @@ public:
 
 	void new_project(game_iso game);
 	void open_project(std::string path);
-	void save_project(bool save_as);
 
 	std::string project_path();
 
@@ -84,8 +83,6 @@ public:
 	const level* get_level() const;
 
 	bool has_camera_control();
-
-	void run_emulator();
 
 	void init_gui_scale();
 	void update_gui_scale();

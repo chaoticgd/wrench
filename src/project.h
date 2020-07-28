@@ -63,10 +63,8 @@ public:
 	void post_load(); // Called from main thread, used for OpenGL things.
 
 	std::string project_path() const;
+	void set_project_path(std::string project_path);
 	std::string cached_iso_path() const;
-
-	void save(app* a, std::function<void()> on_done);
-	void save_as(app* a, std::function<void()> on_done);
 	
 	level* selected_level();
 	std::size_t selected_level_index();
@@ -84,7 +82,7 @@ public:
 	
 	int id();
 	
-	void save_to(std::string path);
+	void save();
 
 	armor_archive& armor() { return _armor.begin()->second; }
 
