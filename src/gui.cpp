@@ -1043,7 +1043,7 @@ void gui::model_browser::render_preview(
 	}
 
 	render_to_texture(target, preview_size.x, preview_size.y, [&]() {
-		renderer.draw_moby_model(model, local_to_clip, textures, params.mode);
+		renderer.draw_moby_model(model, local_to_clip, textures, params.mode, false);
 	});
 	
 	if(params.show_vertex_indices) {

@@ -51,7 +51,8 @@ struct gl_renderer {
 		moby_model& model,
 		glm::mat4 local_to_clip,
 		std::vector<texture>& textures,
-		view_mode mode) const;
+		view_mode mode,
+		bool show_all_submodels) const;
 	
 	static glm::vec4 colour_coded_submodel_index(std::size_t index, std::size_t submodel_count);
 	

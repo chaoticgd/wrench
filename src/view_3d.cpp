@@ -143,7 +143,7 @@ void view_3d::draw_level(level& lvl) const {
 		
 		moby_model& model =
 			lvl.moby_models[lvl.moby_class_to_model.at(object.class_num)];
-		_renderer->draw_moby_model(model, local_to_clip, lvl.moby_textures, view_mode::TEXTURED_POLYGONS);
+		_renderer->draw_moby_model(model, local_to_clip, lvl.moby_textures, view_mode::TEXTURED_POLYGONS, true);
 	});
 	
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);

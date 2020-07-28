@@ -120,7 +120,8 @@ void gl_renderer::draw_moby_model(
 		moby_model& model,
 		glm::mat4 local_to_clip,
 		std::vector<texture>& textures,
-		view_mode mode) const {
+		view_mode mode,
+		bool show_all_submodels) const {
 	switch(mode) {
 		case view_mode::WIREFRAME:
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -135,9 +136,9 @@ void gl_renderer::draw_moby_model(
 	moby_model_texture_data texture_data = {};
 	for(std::size_t i = 0; i < model.submodels.size(); i++) {
 		moby_submodel& submodel = model.submodels[i];
-		//if(!submodel.visible_in_model_viewer) {
-		//	continue;
-		//}
+		if(!show_all_submodels && !submodel.visible_in_model_viewer) {
+			continue;
+		}
 		
 		if(submodel.vertices.size() == 0) {
 			continue;
