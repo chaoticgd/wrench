@@ -1037,22 +1037,6 @@ void gui::model_browser::render_preview(
 	glm::mat4 local_to_world = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, -0.125f));
 	glm::mat4 local_to_clip = projection * view * yzx * local_to_world;
 
-	auto apply_local_to_screen = [&](glm::vec4 pos) {
-		glm::vec4 homogeneous_pos = local_to_clip * pos;
-		glm::vec3 gl_pos {
-				homogeneous_pos.x / homogeneous_pos.w,
-				homogeneous_pos.y / homogeneous_pos.w,
-				homogeneous_pos.z / homogeneous_pos.w
-		};
-		ImVec2 window_pos = ImGui::GetWindowPos();
-		glm::vec3 screen_pos(
-				window_pos.x + (1 + gl_pos.x) * preview_size.x / 2.0,
-				window_pos.y + (1 + gl_pos.y) * preview_size.y / 2.0,
-				gl_pos.z
-		);
-		return screen_pos;
-	};
-
 	std::vector<GLuint> gl_textures;
 	for(texture& tex : textures) {
 		gl_textures.push_back(tex.opengl_id());
@@ -1061,6 +1045,39 @@ void gui::model_browser::render_preview(
 	render_to_texture(target, preview_size.x, preview_size.y, [&]() {
 		renderer.draw_moby_model(model, local_to_clip, textures, params.mode);
 	});
+	
+	if(params.show_vertex_indices) {
+		static const auto apply_local_to_screen = [&](glm::vec4 pos) {
+			glm::vec4 homogeneous_pos = local_to_clip * pos;
+			glm::vec3 gl_pos {
+					homogeneous_pos.x / homogeneous_pos.w,
+					homogeneous_pos.y / homogeneous_pos.w,
+					homogeneous_pos.z / homogeneous_pos.w
+			};
+			ImVec2 window_pos = ImGui::GetWindowPos();
+			glm::vec3 screen_pos(
+					window_pos.x + (1 + gl_pos.x) * preview_size.x / 2.0,
+					window_pos.y + (1 + gl_pos.y) * preview_size.y / 2.0,
+					gl_pos.z
+			);
+			return screen_pos;
+		};
+		
+		for(const moby_submodel& submodel : model.submodels) {
+			auto draw_list = ImGui::GetWindowDrawList();
+			for(std::size_t j = 0; j < submodel.vertices.size(); j++) {
+				const moby_model_vertex& vert = submodel.vertices[j];
+				glm::vec3 proj_pos = apply_local_to_screen(glm::vec4(
+					vert.x / (float) INT16_MAX,
+					vert.y / (float) INT16_MAX,
+					vert.z / (float) INT16_MAX, 1.f));
+				if(proj_pos.z > 0.f) {
+					draw_list->AddText(ImVec2(proj_pos.x, proj_pos.y), 0xffffffff, int_to_hex(j).c_str());
+				}
+			}
+		}
+	}
+	
 }
 
 glm::vec2 gui::model_browser::get_drag_delta() const {

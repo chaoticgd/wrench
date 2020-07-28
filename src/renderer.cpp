@@ -139,20 +139,6 @@ void gl_renderer::draw_moby_model(
 		//	continue;
 		//}
 		
-		//if(params.show_vertex_indices) {
-		//	auto draw_list = ImGui::GetWindowDrawList();
-		//	for(std::size_t j = 0; j < submodel.vertices.size(); j++) {
-		//		moby_model_vertex& vert = submodel.vertices[j];
-		//		glm::vec3 proj_pos = apply_local_to_screen(glm::vec4(
-		//			vert.x / (float) INT16_MAX,
-		//			vert.y / (float) INT16_MAX,
-		//			vert.z / (float) INT16_MAX, 1.f));
-		//		if(proj_pos.z > 0.f) {
-		//			draw_list->AddText(ImVec2(proj_pos.x, proj_pos.y), 0xffffffff, int_to_hex(j).c_str());
-		//		}
-		//	}
-		//}
-		
 		if(submodel.vertices.size() == 0) {
 			continue;
 		}
