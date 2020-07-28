@@ -126,7 +126,8 @@ int main(int argc, char** argv) {
 			asset_header.sprite_texture_count);
 	}
 	
-	project.save_to(project_path);
+	project.set_project_path(project_path);
+	project.save();
 }
 
 template <typename T>

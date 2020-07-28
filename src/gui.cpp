@@ -141,6 +141,12 @@ void gui::begin_docking() {
 void gui::render_menu_bar(app& a) {
 	ImGui::BeginMainMenuBar();
 	
+	bool save_in_place = false;
+	static prompt_box save_as_box("Save As", "Enter New Path");
+	
+	static alert_box export_complete_box("Export Complete");
+	export_complete_box.render();
+	
 	if(ImGui::BeginMenu("File")) {
 		if(ImGui::BeginMenu("New")) {
 			for(const game_iso& game : config::get().game_isos) {
@@ -158,10 +164,10 @@ void gui::render_menu_bar(app& a) {
 			});
 		}
 		if(ImGui::MenuItem("Save")) {
-			a.save_project(false);
+			save_in_place = true;
 		}
 		if(ImGui::MenuItem("Save As")) {
-			a.save_project(true);
+			save_as_box.open();
 		}
 		if(ImGui::BeginMenu("Export")) {
 			if(level* lvl = a.get_level()) {
@@ -192,37 +198,81 @@ void gui::render_menu_bar(app& a) {
 					message << "Unknown (0x4): " << std::hex << lvl->code_segment.header.unknown_4 << "\n";
 					message << "Unknown (0x8): " << std::hex << lvl->code_segment.header.unknown_8 << "\n";
 					message << "Entry point: " << std::hex << lvl->code_segment.header.entry_offset << "\n";
-					a.emplace_window<message_box>("Export Complete", message.str());
+					export_complete_box.open(message.str());
 				}
 			}
 			ImGui::EndMenu();
 		}
 		ImGui::EndMenu();
 	}
-
+	
+	static alert_box save_error_box("Error Saving Project");
+	
+	if(auto project = a.get_project()) {
+		auto save_as_new_path = save_as_box.render();
+		if(save_as_new_path) {
+			project->set_project_path(*save_as_new_path);
+		}
+		if(save_as_new_path || save_in_place) {
+			try {
+				project->save();
+				auto window_title = std::string("Wrench Editor - [") + project->project_path() + "]";
+				glfwSetWindowTitle(a.glfw_window, window_title.c_str());
+			} catch(stream_error& err) {
+				std::stringstream error_message;
+				error_message << err.what() << "\n";
+				error_message << err.stack_trace;
+				save_error_box.open(error_message.str());
+			}
+		}
+	}
+	
+	static alert_box undo_error_box("Undo Error");
+	static alert_box redo_error_box("Redo Error");
+	undo_error_box.render();
+	redo_error_box.render();
+	
 	if(ImGui::BeginMenu("Edit")) {
 		if(auto project = a.get_project()) {
 			if(ImGui::MenuItem("Undo")) {
 				try {
 					project->undo();
 				} catch(command_error& error) {
-					a.emplace_window<message_box>("Undo Error", error.what());
+					undo_error_box.open(error.what());
 				}
 			}
 			if(ImGui::MenuItem("Redo")) {
 				try {
 					project->redo();
 				} catch(command_error& error) {
-					a.emplace_window<message_box>("Redo Error", error.what());
+					redo_error_box.open(error.what());
 				}
 			}
 		}
 		ImGui::EndMenu();
 	}
 	
+	static alert_box emu_error_box("Error");
+	emu_error_box.render();
+	
 	if(ImGui::BeginMenu("Emulator")) {
 		if(ImGui::MenuItem("Run")) {
-			a.run_emulator();
+			if(auto project = a.get_project()) {
+				project->iso.commit(); // Recompress WAD segments.
+				
+				if(fs::is_regular_file(config::get().emulator_path)) {
+					std::string emulator_path = fs::canonical(config::get().emulator_path).string();
+					std::string cmd = emulator_path + " " + project->cached_iso_path();
+					int result = system(cmd.c_str());
+					if(result != 0) {
+						emu_error_box.open("Failed to execute shell command.");
+					}
+				} else {
+					emu_error_box.open("Invalid emulator path.");
+				}
+			} else {
+				emu_error_box.open("No project open.");
+			}
 		}
 		ImGui::EndMenu();
 	}
@@ -299,10 +349,12 @@ void gui::render_menu_bar(app& a) {
 		a.emplace_window<document_viewer>(path);
 	};
 	
+	static alert_box about_box("About Wrench Editor");
+	about_box.render();
+	
 	if(ImGui::BeginMenu("Help")) {
 		if(ImGui::MenuItem("About")) {
-			a.emplace_window<message_box>(
-				"About Wrench Editor",
+			about_box.open(
 				"A set of modding tools for the\n"
 				"Ratchet & Clank PS2 games.\n"
 				"\n"
@@ -550,22 +602,17 @@ void gui::string_viewer::render(app& a) {
 		ImGui::Columns(2);
 		ImGui::SetColumnWidth(0, 64);
 
-		if(ImGui::Button("Export")) {
-			std::string selected_language = _selected_language;
-			
-			auto string_exporter = std::make_unique<string_input>("Enter Export Path");
-			string_exporter->on_okay([strings, selected_language](app& a, std::string path) {
-				auto lang = std::find_if(strings.begin(), strings.end(),
-					[&](auto& ptr) { return ptr.first == selected_language; });
-				if(lang == strings.end()) {
-					return;
-				}
-				std::ofstream out_file(path);
-				for(auto& [id, string] : lang->second) {
-					out_file << std::hex << id << ": " << string << "\n";
-				}
-			});
-			a.windows.emplace_back(std::move(string_exporter));
+		static prompt_box string_exporter("Export", "Enter Export Path");
+		if(auto path = string_exporter.prompt()) {
+			auto lang = std::find_if(strings.begin(), strings.end(),
+				[&](auto& ptr) { return ptr.first == _selected_language; });
+			if(lang == strings.end()) {
+				return;
+			}
+			std::ofstream out_file(*path);
+			for(auto& [id, string] : lang->second) {
+				out_file << std::hex << id << ": " << string << "\n";
+			}
 		}
 
 		ImGui::NextColumn();
@@ -665,17 +712,41 @@ void gui::texture_browser::render(app& a) {
 			ImGui::TreePop();
 		}
 		ImGui::NewLine();
-
+		
+		static alert_box error_box("Error");
+		error_box.render();
+		
 		if(ImGui::TreeNodeEx("Actions", ImGuiTreeNodeFlags_DefaultOpen)) {
 			if(textures.size() > 0) {
-				if(ImGui::Button("Replace Selected")) {
-					import_bmp(a, &textures[_selection]);
-				}
-				if(ImGui::Button("Export Selected")) {
-					export_bmp(a, &textures[_selection]);
-				}
-				if(ImGui::Button("Export All")) {
-					export_all(a, textures);
+				try {
+					texture* tex = &textures[_selection];
+					
+					static prompt_box importer("Replace Selected", "Enter Import Path");
+					if(auto path = importer.prompt()) {
+						file_stream bmp_file(*path);
+						bmp_to_texture(tex, bmp_file);
+						tex->upload_to_opengl();
+					}
+					
+					static prompt_box exporter("Export Selected", "Enter Export Path");
+					if(auto path = exporter.prompt()) {
+						file_stream bmp_file(*path, std::ios::in | std::ios::out | std::ios::trunc);
+						texture_to_bmp(bmp_file, tex);
+					}
+					
+					static prompt_box mega_exporter("Export All", "Enter Export Path");
+					if(auto path_str = mega_exporter.prompt()) {
+						fs::path path(*path_str);
+						if(!fs::exists(path)) {
+							fs::create_directory(path);
+						}
+						for(texture& tex : textures) {
+							file_stream bmp_file(path / (tex.pixel_data_path() + ".bmp"), std::ios::in | std::ios::out | std::ios::trunc);
+							texture_to_bmp(bmp_file, &tex);
+						}
+					}
+				} catch(stream_error& e) {
+					error_box.open(e.what());
 				}
 			}
 			ImGui::TreePop();
@@ -729,63 +800,6 @@ void gui::texture_browser::render_grid(app& a, std::vector<texture>& tex_list) {
 		ImGui::Text("%s", display_name.c_str());
 		ImGui::NextColumn();
 	}
-}
-
-void gui::texture_browser::import_bmp(app& a, texture* tex) {
-	auto importer = std::make_unique<string_input>("Enter Import Path");
-	importer->on_okay([tex, this](app& a, std::string path) {
-		try {
-			file_stream bmp_file(path);
-			bmp_to_texture(tex, bmp_file);
-			tex->upload_to_opengl();
-		} catch(stream_error& e) {
-			a.emplace_window<message_box>("Error", e.what());
-		}
-	});
-	a.windows.emplace_back(std::move(importer));
-}
-
-void gui::texture_browser::export_bmp(app& a, texture* tex) {
-	// Filter out characters not allowed in file paths (on certain platforms).
-	std::string default_file_path = tex->pixel_data_path() + ".bmp";
-	const static std::string foridden = "<>:\"/\\|?*";
-	for(char& c : default_file_path) {
-		if(std::find(foridden.begin(), foridden.end(), c) != foridden.end()) {
-			c = '_';
-		}
-	}
-
-	auto exporter = std::make_unique<string_input>
-		("Enter Export Path", default_file_path);
-	exporter->on_okay([tex](app& a, std::string path) {
-		try {
-			file_stream bmp_file(path, std::ios::in | std::ios::out | std::ios::trunc);
-			texture_to_bmp(bmp_file, tex);
-		} catch(stream_error& e) {
-			a.emplace_window<message_box>("Error", e.what());
-		}
-	});
-	a.windows.emplace_back(std::move(exporter));
-}
-
-void gui::texture_browser::export_all(app& a, std::vector<texture>& tex_list) {
-	auto exporter = std::make_unique<string_input>
-		("Enter Export Directory", "outdir");
-	exporter->on_okay([&](app& a, std::string path_str) {
-		fs::path path(path_str);
-		if(!fs::exists(path)) {
-			fs::create_directory(path);
-		}
-		try {
-			for(texture& tex : tex_list) {
-				file_stream bmp_file(path / (tex.pixel_data_path() + ".bmp"), std::ios::in | std::ios::out | std::ios::trunc);
-				texture_to_bmp(bmp_file, &tex);
-			}
-		} catch(stream_error& e) {
-			a.emplace_window<message_box>("Error", e.what());
-		}
-	});
-	a.windows.emplace_back(std::move(exporter));
 }
 
 /*
@@ -1525,53 +1539,35 @@ void gui::stream_viewer::render(app& a) {
 		return;
 	}
 	
-	if(ImGui::Button("Export")) {
+	static alert_box error_box("Error");
+	error_box.render();
+	
+	static prompt_box exporter("Export", "Enter Export Path");
+	if(auto path = exporter.prompt()) {
 		stream* selection = _selection;
 		
 		// The stream might not exist anymore, so we need to make sure that
 		// it's still in the tree before dereferencing it.
 		if(!project->iso.contains(selection)) {
-			a.emplace_window<message_box>("Error",
-				"The selected stream no longer exists.");
+			error_box.open("The selected stream no longer exists.");
 			return;
 		}
 		
 		if(selection->size() == 0) {
-			a.emplace_window<message_box>("Error",
-				"The selected stream has an unknown size so cannot be exported.");
+			error_box.open("The selected stream has an unknown size so cannot be exported.");
 			return;
 		}
-		
-		auto stream_exporter = std::make_unique<string_input>("Enter Export Path");
-		stream_exporter->on_okay([selection](app& a, std::string path) {
-			// The project might have been unloaded since the string input
-			// box was created.
-			wrench_project* project = a.get_project();
-			if(project == nullptr) {
-				a.emplace_window<message_box>("Error",
-					"The project was unloaded.");
-				return;
-			}
 			
-			// The stream might not exist anymore, so we need to make sure that
-			// it's still in the tree before dereferencing it.
-			if(!project->iso.contains(selection)) {
-				a.emplace_window<message_box>("Error",
-					"The selected stream no longer exists.");
-				return;
-			}
-			
-			// Write out the stream to the specified file.
-			try {
-				file_stream out_file(path, std::ios::out);
-				selection->seek(0);
-				stream::copy_n(out_file, *selection, selection->size());
-			} catch(stream_error& err) {
-				a.emplace_window<message_box>("Error", err.what());
-			}
-		});
-		a.windows.emplace_back(std::move(stream_exporter));
+		// Write out the stream to the specified file.
+		try {
+			file_stream out_file(*path, std::ios::out);
+			selection->seek(0);
+			stream::copy_n(out_file, *selection, selection->size());
+		} catch(stream_error& err) {
+			error_box.open(err.what());
+		}
 	}
+	
 	trace_stream* trace = dynamic_cast<trace_stream*>(_selection);
 	if(trace != nullptr) {
 		ImGui::SameLine();
@@ -1708,70 +1704,62 @@ void gui::stream_viewer::export_trace(trace_stream* node) {
 }
 
 /*
-	message_box
+	alert_box
 */
 
-gui::message_box::message_box(const char* title, std::string message)
-	: _title(title), _message(message) {}
-
-const char* gui::message_box::title_text() const {
-	return _title;
-}
-
-ImVec2 gui::message_box::initial_size() const {
-	return ImVec2(300, 200);
-}
-
-void gui::message_box::render(app& a) {
-	ImVec2 size = ImGui::GetWindowSize();
-	size.x -= 16;
-	size.y -= 64;
-	ImGui::PushItemWidth(-1);
-	ImGui::InputTextMultiline("##message", &_message, size, ImGuiInputTextFlags_ReadOnly);
-	ImGui::PopItemWidth();
-	if(ImGui::Button("Close")) {
-		close(a);
+void gui::alert_box::render() {
+	if(_is_open) {
+		ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_FirstUseEver);
+		ImGui::Begin(_title);
+		
+		ImVec2 size = ImGui::GetWindowSize();
+		size.x -= 16;
+		size.y -= 64;
+		
+		ImGui::PushItemWidth(-1);
+		ImGui::InputTextMultiline("##message", &_text, size, ImGuiInputTextFlags_ReadOnly);
+		ImGui::PopItemWidth();
+		if(ImGui::Button("Close")) {
+			_is_open = false;
+		}
+		ImGui::End();
 	}
 }
 
-bool gui::message_box::is_unique() const {
-	return false;
+void gui::alert_box::open(std::string new_text) {
+	_is_open = true;
+	_text = new_text;
 }
 
-/*
-	string_input
-*/
-
-gui::string_input::string_input(const char* title, std::string default_text)
-	: _title_text(title),
-	  _input(default_text) {}
-
-const char* gui::string_input::title_text() const {
-	return _title_text;
-}
-
-ImVec2 gui::string_input::initial_size() const {
-	return ImVec2(400, 100);
-}
-
-void gui::string_input::render(app& a) {
-	ImGui::InputText("", &_input);
-	bool pressed = ImGui::Button("Okay");
-	if(pressed) {
-		_callback(a, _input);
+std::optional<std::string> gui::prompt_box::prompt() {
+	if(ImGui::Button(_button_text)) {
+		open();
 	}
-	pressed |= ImGui::Button("Cancel");
-	if(pressed) {
-		close(a);
+	return render();
+}
+
+std::optional<std::string> gui::prompt_box::render() {
+	std::optional<std::string> result;
+	if(_is_open) {
+		ImGui::SetNextWindowSize(ImVec2(400, 100));
+		ImGui::Begin(_title);
+		ImGui::InputText("##input", &_text);
+		if(ImGui::Button("Okay")) {
+			_is_open = false;
+			result = _text;
+		}
+		ImGui::SameLine();
+		if(ImGui::Button("Cancel")) {
+			_is_open = false;
+		}
+		ImGui::End();
 	}
+	return result;
 }
 
-bool gui::string_input::is_unique() const {
-	return false;
-}
-
-void gui::string_input::on_okay(std::function<void(app&, std::string)> callback) {
-	_callback = callback;
+void gui::prompt_box::open() {
+	_is_open = true;
+	_text = "";
 }
 
 /*

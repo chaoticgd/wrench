@@ -113,30 +113,6 @@ void app::open_project(std::string path) {
 	);
 }
 
-void app::save_project(bool save_as) {
-	if(_project.get() == nullptr) {
-		return;
-	}
-
-	auto on_done = [&]() {
-		auto title = std::string("Wrench Editor - [") + _project->project_path() + "]";
-		glfwSetWindowTitle(glfw_window, title.c_str());
-	};
-
-	try {
-		if(save_as) {
-			_project->save_as(this, on_done);
-		} else {
-			_project->save(this, on_done);
-		}
-	} catch(stream_error& err) {
-		std::stringstream error_message;
-		error_message << err.what() << "\n";
-		error_message << err.stack_trace;
-		emplace_window<gui::message_box>("Error Saving Project", error_message.str());
-	}
-}
-
 wrench_project* app::get_project() {
 	return _project.get();
 }
@@ -158,26 +134,6 @@ const level* app::get_level() const {
 
 bool app::has_camera_control() {
 	return renderer.camera_control;
-}
-
-void app::run_emulator() {
-	if(_project.get() == nullptr) {
-		emplace_window<gui::message_box>("Error", "No project open.");
-		return;
-	}
-	
-	_project->iso.commit(); // Recompress WAD segments.
-	
-	if(fs::is_regular_file(config::get().emulator_path)) {
-		std::string emulator_path = fs::canonical(config::get().emulator_path).string();
-		std::string cmd = emulator_path + " " + _project->cached_iso_path();
-		int result = system(cmd.c_str());
-		if(result != 0) {
-			emplace_window<gui::message_box>("Error", "Failed to execute shell command.");
-		}
-	} else {
-		emplace_window<gui::message_box>("Error", "Invalid emulator path.");
-	}
 }
 
 std::vector<float*> get_imgui_scale_parameters() {
@@ -256,9 +212,9 @@ void config::read(app& a) {
 				game_isos.push_back(game);
 			}
 		} catch(toml::syntax_error& err) {
-			a.emplace_window<gui::message_box>("Failed to parse settings", err.what());
+			fprintf(stderr, "Failed to parse settings: %s", err.what());
 		} catch(std::out_of_range& err) {
-			a.emplace_window<gui::message_box>("Failed to load settings", err.what());
+			fprintf(stderr, "Failed to load settings: %s", err.what());
 		}
 	} else {
 		a.emplace_window<gui::settings>();
