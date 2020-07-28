@@ -27,6 +27,7 @@
 
 #include "util.h"
 #include "shaders.h"
+#include "formats/texture.h"
 #include "formats/game_model.h"
 
 # /*
@@ -49,8 +50,9 @@ struct gl_renderer {
 	void draw_moby_model(
 		moby_model& model,
 		glm::mat4 local_to_clip,
-		array_view<GLuint> textures,
-		view_mode mode) const;
+		std::vector<texture>& textures,
+		view_mode mode,
+		bool show_all_submodels) const;
 	
 	static glm::vec4 colour_coded_submodel_index(std::size_t index, std::size_t submodel_count);
 	

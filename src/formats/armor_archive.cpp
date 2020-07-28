@@ -56,7 +56,6 @@ bool armor_archive::read(stream& iso, const toc_table& table) {
 			submodel_table_offset,
 			submodel_counts);
 		model.set_name("armor " + std::to_string(i / 16));
-		model.texture_base_index = textures.size();
 		model.read();
 		
 		std::string set_name = std::string("set") + std::to_string(i);
@@ -65,6 +64,7 @@ bool armor_archive::read(stream& iso, const toc_table& table) {
 		std::size_t fip_offset = base_offset + armor.texture.bytes();
 		std::optional<texture> tex = create_fip_texture(&iso, fip_offset);
 		if(tex) {
+			model.texture_indices.push_back(textures.size());
 			textures.emplace_back(std::move(*tex));
 			textures.back().name = set_name;
 			continue;
@@ -81,6 +81,7 @@ bool armor_archive::read(stream& iso, const toc_table& table) {
 			std::size_t abs_offset = base_offset + armor.texture.bytes() + rel_offset;
 			std::optional<texture> tex = create_fip_texture(&iso, abs_offset);
 			if(tex) {
+				model.texture_indices.push_back(textures.size());
 				textures.emplace_back(std::move(*tex));
 				textures.back().name =
 					set_name + "_part" + std::to_string(j);

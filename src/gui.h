@@ -277,8 +277,8 @@ namespace gui {
 		moby_model* render_selection_pane(app& a);
 		moby_model* render_selection_grid(
 			app& a,
-			std::string list,
-			std::vector<moby_model>& models);
+			std::string list_name,
+			model_list& list);
 		
 		struct view_params {
 			view_mode mode = view_mode::TEXTURED_POLYGONS;
@@ -291,6 +291,7 @@ namespace gui {
 			app& a,
 			GLuint* target,
 			moby_model& model,
+			std::vector<texture>& textures,
 			const gl_renderer& renderer,
 			ImVec2 preview_size,
 			view_params params);
@@ -301,6 +302,7 @@ namespace gui {
 		static void render_dma_debug_info(moby_model& mdl);
 	
 	private:
+		std::map<std::string, model_list> _model_lists;
 		std::string _list;
 		std::size_t _model;
 		bool _fullscreen_preview = false;

@@ -274,8 +274,9 @@ public:
 	std::vector<moby_model> moby_models;
 	std::vector<texture> mipmap_textures;
 	std::vector<texture> terrain_textures;
-	std::vector<texture> tie_textures;
 	std::vector<texture> moby_textures;
+	std::vector<texture> tie_textures;
+	std::vector<texture> shrub_textures;
 	std::vector<texture> sprite_textures;
 	std::vector<tfrag> tfrags;
 	

@@ -173,16 +173,16 @@ packed_struct(level_asset_header,
 	uint32_t ptr_into_asset_wad_c;  // 0xc
 	uint32_t ptr_into_asset_wad_10; // 0x10
 	uint32_t models_something;      // 0x14
-	uint32_t num_models; // 0x18
-	uint32_t models;     // 0x1c
+	uint32_t moby_model_count;      // 0x18
+	uint32_t moby_model_offset;     // 0x1c
 	uint32_t unknown_20; // 0x20
 	uint32_t unknown_24; // 0x24
 	uint32_t unknown_28; // 0x28
 	uint32_t unknown_2c; // 0x2c
 	uint32_t terrain_texture_count;  // 0x30
 	uint32_t terrain_texture_offset; // 0x34 Relative to asset header.
-	uint32_t some1_texture_count;    // 0x38
-	uint32_t some1_texture_offset;   // 0x3c
+	uint32_t moby_texture_count;     // 0x38
+	uint32_t moby_texture_offset;    // 0x3c
 	uint32_t tie_texture_count;      // 0x40
 	uint32_t tie_texture_offset;     // 0x44
 	uint32_t shrub_texture_count;    // 0x48
@@ -212,6 +212,14 @@ packed_struct(level_asset_header,
 	uint32_t unknown_a8; // 0xa8
 	uint32_t unknown_ac; // 0xac
 	uint32_t ptr_into_asset_wad_b0; // 0xb0
+)
+
+packed_struct(level_moby_model_entry,
+	uint32_t offset_in_asset_wad;
+	uint32_t o_class;
+	uint32_t unknown_8;
+	uint32_t unknown_c;
+	uint8_t textures[16];
 )
 
 packed_struct(level_mipmap_entry,

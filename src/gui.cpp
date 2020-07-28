@@ -815,6 +815,7 @@ void gui::model_browser::render(app& a) {
 		ImGui::SetColumnWidth(0, ImGui::GetWindowSize().x - 384);
 	}
 	
+	_model_lists = a.get_project()->model_lists(&a);
 	moby_model* model = render_selection_pane(a);
 	if(model == nullptr) {
 		return;
@@ -867,7 +868,14 @@ void gui::model_browser::render(app& a) {
 		
 		view_params preview_params = _view_params;
 		preview_params.pitch_yaw += drag_delta;
-		render_preview(a, &preview_texture, *model, a.renderer, preview_size, preview_params);
+		render_preview(
+			a,
+			&preview_texture,
+			*model,
+			*_model_lists.at(_list).textures,
+			a.renderer,
+			preview_size,
+			preview_params);
 	}
 	ImGui::EndChild();
 	
@@ -924,11 +932,10 @@ void gui::model_browser::render(app& a) {
 moby_model* gui::model_browser::render_selection_pane(app& a) {
 	moby_model* result = nullptr;
 	
-	auto lists = a.get_project()->model_lists(&a);
 	if(ImGui::BeginTabBar("lists")) {
-		for(auto& list : lists) {
+		for(auto& list : _model_lists) {
 			if(ImGui::BeginTabItem(list.first.c_str())) {
-				result = render_selection_grid(a, list.first, *list.second);
+				result = render_selection_grid(a, list.first, list.second);
 				ImGui::EndTabItem();
 			}
 		}
@@ -940,18 +947,18 @@ moby_model* gui::model_browser::render_selection_pane(app& a) {
 
 moby_model* gui::model_browser::render_selection_grid(
 		app& a,
-		std::string list,
-		std::vector<moby_model>& models) {
+		std::string list_name,
+		model_list& list) {
 	moby_model* result = nullptr;
 	std::size_t num_this_frame = 0;
 	
 	ImGui::BeginChild(1);
 	ImGui::Columns(std::max(1.f, ImGui::GetWindowSize().x / 128));
 	
-	for(std::size_t i = 0; i < models.size(); i++) {
-		moby_model* model = &models[i];
+	for(std::size_t i = 0; i < list.models->size(); i++) {
+		moby_model& model = (*list.models)[i];
 
-		if(model->thumbnail() == 0) {
+		if(model.thumbnail() == 0) {
 			// Only load 10 textures per frame.
 			if(num_this_frame >= 10) {
 				ImGui::NextColumn();
@@ -960,21 +967,23 @@ moby_model* gui::model_browser::render_selection_grid(
 			
 			render_preview(
 				a,
-				&model->thumbnail(),
-				*model, a.renderer,
+				&model.thumbnail(),
+				model,
+				*list.textures,
+				a.renderer,
 				ImVec2(128, 128),
 				view_params {
-					view_mode::TEXTURED_POLYGONS,     // view_mode
-					0.5f,                             // zoom
-					glm::vec2(0, glm::radians(90.f)), // pitch_yaw
-					false                             // show_vertex_indices
+					view_mode::TEXTURED_POLYGONS,           // view_mode
+					list_name == "ARMOR.WAD" ? 0.8f : 0.5f, // zoom
+					glm::vec2(0, glm::radians(90.f)),       // pitch_yaw
+					false                                   // show_vertex_indices
 				});
 			num_this_frame++;
 		}
 		
-		bool selected = _list == list && _model == i;
+		bool selected = _list == list_name && _model == i;
 		bool clicked = ImGui::ImageButton(
-			(void*) (intptr_t) model->thumbnail(),
+			(void*) (intptr_t) model.thumbnail(),
 			ImVec2(128, 128),
 			ImVec2(0, 0),
 			ImVec2(1, 1),
@@ -985,16 +994,16 @@ moby_model* gui::model_browser::render_selection_grid(
 		ImGui::Text("%ld\n", i);
 		
 		if(clicked) {
-			_list = list;
+			_list = list_name;
 			_model = i;
 			
 			// Reset submodel visibility.
-			for(moby_submodel& submodel : model->submodels) {
+			for(moby_submodel& submodel : model.submodels) {
 				submodel.visible_in_model_viewer = true;
 			}
 		}
 		if(selected) {
-			result = model;
+			result = &model;
 		}
 		
 		ImGui::NextColumn();
@@ -1008,10 +1017,11 @@ void gui::model_browser::render_preview(
 		app& a,
 		GLuint* target,
 		moby_model& model,
+		std::vector<texture>& textures,
 		const gl_renderer& renderer,
 		ImVec2 preview_size,
 		view_params params) {
-	glm::vec3 eye = glm::vec3(1.1f - params.zoom, 0, 0);
+	glm::vec3 eye = glm::vec3(2.f * (1.1f - params.zoom), 0, 0);
 	
 	glm::mat4 view_fixed = glm::lookAt(eye, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
 	glm::mat4 view_pitched = glm::rotate(view_fixed, params.pitch_yaw.x, glm::vec3(0, 0, 1));
@@ -1027,30 +1037,47 @@ void gui::model_browser::render_preview(
 	glm::mat4 local_to_world = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, -0.125f));
 	glm::mat4 local_to_clip = projection * view * yzx * local_to_world;
 
-	auto apply_local_to_screen = [&](glm::vec4 pos) {
-		glm::vec4 homogeneous_pos = local_to_clip * pos;
-		glm::vec3 gl_pos {
-				homogeneous_pos.x / homogeneous_pos.w,
-				homogeneous_pos.y / homogeneous_pos.w,
-				homogeneous_pos.z / homogeneous_pos.w
-		};
-		ImVec2 window_pos = ImGui::GetWindowPos();
-		glm::vec3 screen_pos(
-				window_pos.x + (1 + gl_pos.x) * preview_size.x / 2.0,
-				window_pos.y + (1 + gl_pos.y) * preview_size.y / 2.0,
-				gl_pos.z
-		);
-		return screen_pos;
-	};
-
-	std::vector<GLuint> textures;
-	for(texture& tex : a.get_project()->armor().textures) {
-		textures.push_back(tex.opengl_id());
+	std::vector<GLuint> gl_textures;
+	for(texture& tex : textures) {
+		gl_textures.push_back(tex.opengl_id());
 	}
 
 	render_to_texture(target, preview_size.x, preview_size.y, [&]() {
-		renderer.draw_moby_model(model, local_to_clip, textures, params.mode);
+		renderer.draw_moby_model(model, local_to_clip, textures, params.mode, false);
 	});
+	
+	if(params.show_vertex_indices) {
+		static const auto apply_local_to_screen = [&](glm::vec4 pos) {
+			glm::vec4 homogeneous_pos = local_to_clip * pos;
+			glm::vec3 gl_pos {
+					homogeneous_pos.x / homogeneous_pos.w,
+					homogeneous_pos.y / homogeneous_pos.w,
+					homogeneous_pos.z / homogeneous_pos.w
+			};
+			ImVec2 window_pos = ImGui::GetWindowPos();
+			glm::vec3 screen_pos(
+					window_pos.x + (1 + gl_pos.x) * preview_size.x / 2.0,
+					window_pos.y + (1 + gl_pos.y) * preview_size.y / 2.0,
+					gl_pos.z
+			);
+			return screen_pos;
+		};
+		
+		for(const moby_submodel& submodel : model.submodels) {
+			auto draw_list = ImGui::GetWindowDrawList();
+			for(std::size_t j = 0; j < submodel.vertices.size(); j++) {
+				const moby_model_vertex& vert = submodel.vertices[j];
+				glm::vec3 proj_pos = apply_local_to_screen(glm::vec4(
+					vert.x / (float) INT16_MAX,
+					vert.y / (float) INT16_MAX,
+					vert.z / (float) INT16_MAX, 1.f));
+				if(proj_pos.z > 0.f) {
+					draw_list->AddText(ImVec2(proj_pos.x, proj_pos.y), 0xffffffff, int_to_hex(j).c_str());
+				}
+			}
+		}
+	}
+	
 }
 
 glm::vec2 gui::model_browser::get_drag_delta() const {

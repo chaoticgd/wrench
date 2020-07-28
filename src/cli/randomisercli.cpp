@@ -102,8 +102,8 @@ int main(int argc, char** argv) {
 			
 		read_shuffle_write<texture_entry>(
 			file,
-			asset_header_offset + asset_header.some1_texture_offset,
-			asset_header.some1_texture_count);
+			asset_header_offset + asset_header.moby_texture_offset,
+			asset_header.moby_texture_count);
 		
 		read_shuffle_write<texture_entry>(
 			file,
