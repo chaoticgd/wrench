@@ -815,6 +815,7 @@ void gui::model_browser::render(app& a) {
 		ImGui::SetColumnWidth(0, ImGui::GetWindowSize().x - 384);
 	}
 	
+	_model_lists = a.get_project()->model_lists(&a);
 	moby_model* model = render_selection_pane(a);
 	if(model == nullptr) {
 		return;
@@ -867,7 +868,14 @@ void gui::model_browser::render(app& a) {
 		
 		view_params preview_params = _view_params;
 		preview_params.pitch_yaw += drag_delta;
-		render_preview(a, &preview_texture, *model, a.renderer, preview_size, preview_params);
+		render_preview(
+			a,
+			&preview_texture,
+			*model,
+			*_model_lists.at(_list).textures,
+			a.renderer,
+			preview_size,
+			preview_params);
 	}
 	ImGui::EndChild();
 	
@@ -924,11 +932,10 @@ void gui::model_browser::render(app& a) {
 moby_model* gui::model_browser::render_selection_pane(app& a) {
 	moby_model* result = nullptr;
 	
-	auto lists = a.get_project()->model_lists(&a);
 	if(ImGui::BeginTabBar("lists")) {
-		for(auto& list : lists) {
+		for(auto& list : _model_lists) {
 			if(ImGui::BeginTabItem(list.first.c_str())) {
-				result = render_selection_grid(a, list.first, *list.second);
+				result = render_selection_grid(a, list.first, list.second);
 				ImGui::EndTabItem();
 			}
 		}
@@ -940,18 +947,18 @@ moby_model* gui::model_browser::render_selection_pane(app& a) {
 
 moby_model* gui::model_browser::render_selection_grid(
 		app& a,
-		std::string list,
-		std::vector<moby_model>& models) {
+		std::string list_name,
+		model_list& list) {
 	moby_model* result = nullptr;
 	std::size_t num_this_frame = 0;
 	
 	ImGui::BeginChild(1);
 	ImGui::Columns(std::max(1.f, ImGui::GetWindowSize().x / 128));
 	
-	for(std::size_t i = 0; i < models.size(); i++) {
-		moby_model* model = &models[i];
+	for(std::size_t i = 0; i < list.models->size(); i++) {
+		moby_model& model = (*list.models)[i];
 
-		if(model->thumbnail() == 0) {
+		if(model.thumbnail() == 0) {
 			// Only load 10 textures per frame.
 			if(num_this_frame >= 10) {
 				ImGui::NextColumn();
@@ -960,8 +967,10 @@ moby_model* gui::model_browser::render_selection_grid(
 			
 			render_preview(
 				a,
-				&model->thumbnail(),
-				*model, a.renderer,
+				&model.thumbnail(),
+				model,
+				*list.textures,
+				a.renderer,
 				ImVec2(128, 128),
 				view_params {
 					view_mode::TEXTURED_POLYGONS,     // view_mode
@@ -972,9 +981,9 @@ moby_model* gui::model_browser::render_selection_grid(
 			num_this_frame++;
 		}
 		
-		bool selected = _list == list && _model == i;
+		bool selected = _list == list_name && _model == i;
 		bool clicked = ImGui::ImageButton(
-			(void*) (intptr_t) model->thumbnail(),
+			(void*) (intptr_t) model.thumbnail(),
 			ImVec2(128, 128),
 			ImVec2(0, 0),
 			ImVec2(1, 1),
@@ -985,16 +994,16 @@ moby_model* gui::model_browser::render_selection_grid(
 		ImGui::Text("%ld\n", i);
 		
 		if(clicked) {
-			_list = list;
+			_list = list_name;
 			_model = i;
 			
 			// Reset submodel visibility.
-			for(moby_submodel& submodel : model->submodels) {
+			for(moby_submodel& submodel : model.submodels) {
 				submodel.visible_in_model_viewer = true;
 			}
 		}
 		if(selected) {
-			result = model;
+			result = &model;
 		}
 		
 		ImGui::NextColumn();
@@ -1008,6 +1017,7 @@ void gui::model_browser::render_preview(
 		app& a,
 		GLuint* target,
 		moby_model& model,
+		std::vector<texture>& textures,
 		const gl_renderer& renderer,
 		ImVec2 preview_size,
 		view_params params) {
@@ -1043,9 +1053,9 @@ void gui::model_browser::render_preview(
 		return screen_pos;
 	};
 
-	std::vector<GLuint> textures;
-	for(texture& tex : a.get_project()->armor().textures) {
-		textures.push_back(tex.opengl_id());
+	std::vector<GLuint> gl_textures;
+	for(texture& tex : textures) {
+		gl_textures.push_back(tex.opengl_id());
 	}
 
 	render_to_texture(target, preview_size.x, preview_size.y, [&]() {

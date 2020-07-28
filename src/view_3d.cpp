@@ -143,9 +143,15 @@ void view_3d::draw_level(level& lvl) const {
 		
 		moby_model& model =
 			lvl.moby_models[lvl.moby_class_to_model.at(object.class_num)];
-		_renderer->draw_moby_model(model, local_to_clip, {}, view_mode::WIREFRAME);
-		
+		_renderer->draw_moby_model(model, local_to_clip, lvl.moby_textures, view_mode::TEXTURED_POLYGONS);
+	});
+	
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glUseProgram(_renderer->shaders.solid_colour.id());
+	
+	lvl.world.for_each_object_of_type<moby>([&](object_id id, moby& object) {
 		if(lvl.world.is_selected(id)) {
+			glm::mat4 local_to_clip = world_to_clip * object.mat();
 			_renderer->draw_cube(local_to_clip, selected_colour);
 		}
 	});

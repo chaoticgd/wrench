@@ -137,22 +137,11 @@ level::level(iso_stream* iso, toc_level index)
 	uint32_t asset_base = _file_header.primary_header_offset + primary_header.asset_header;
 	auto asset_header = _file.read<level_asset_header>(asset_base);
 	
-	uint32_t mdl_base = asset_base + asset_header.models;
+	uint32_t mdl_base = asset_base + asset_header.moby_model_offset;
 	_file.seek(mdl_base);
 	
-	packed_struct(model_entry,
-		uint32_t offset_in_asset_wad;
-		uint32_t class_num;
-		uint32_t unknown_8;
-		uint32_t unknown_c;
-		uint32_t unknown_10;
-		uint32_t unknown_14;
-		uint32_t unknown_18;
-		uint32_t unknown_1c;
-	)
-	
-	for(std::size_t i = 0; i < asset_header.num_models; i++) {
-		auto entry = _file.read<model_entry>(mdl_base + sizeof(model_entry) * i);
+	for(std::size_t i = 0; i < asset_header.moby_model_count; i++) {
+		auto entry = _file.read<level_moby_model_entry>(mdl_base + sizeof(level_moby_model_entry) * i);
 		if(entry.offset_in_asset_wad == 0) {
 			continue;
 		}
@@ -177,11 +166,19 @@ level::level(iso_stream* iso, toc_level index)
 			continue;
 		}
 		moby_model& model = moby_models.emplace_back(_asset_segment, abs_offset, 0, rel_offset, submodel_counts);
-		model.set_name("class " + std::to_string(entry.class_num));
+		model.set_name("class " + std::to_string(entry.o_class));
 		model.read();
 		
-		uint32_t class_num = entry.class_num;
-		moby_class_to_model.emplace(class_num, moby_models.size() - 1);
+		for(uint8_t texture : entry.textures) {
+			if(texture == 0xff) {
+				break;
+			}
+			
+			model.texture_indices.push_back(texture);
+		}
+		
+		uint32_t o_class = entry.o_class;
+		moby_class_to_model.emplace(o_class, moby_models.size() - 1);
 	}
 	
 	_file.seek(asset_base + asset_header.mipmap_offset);

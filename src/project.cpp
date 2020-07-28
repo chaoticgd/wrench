@@ -150,17 +150,21 @@ std::map<std::string, std::vector<texture>*> wrench_project::texture_lists(app* 
 	return result;
 }
 
-std::map<std::string, std::vector<moby_model>*> wrench_project::model_lists(app* a) {
+std::map<std::string, model_list> wrench_project::model_lists(app* a) {
 	if(!_game_info) {
 		load_gamedb_info(a);
 	}
 	
-	std::map<std::string, std::vector<moby_model>*> result;
+	std::map<std::string, model_list> result;
 	for(auto& [table_index, armor] : _armor) {
-		result[table_index_to_name(table_index)] = &armor.models;
+		result[table_index_to_name(table_index)] = {
+			&armor.models, &armor.textures
+		};
 	}
 	for(auto& [level_index, lvl] : _levels) {
-		result[level_index_to_name(level_index) + "/Mobies"] = &lvl->moby_models;
+		result[level_index_to_name(level_index) + "/Mobies"] = {
+			&lvl->moby_models, &lvl->moby_textures
+		};
 	}
 	return result;
 }

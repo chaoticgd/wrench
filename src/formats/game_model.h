@@ -174,7 +174,10 @@ public:
 	std::string name() { return _backing.name; }
 	void set_name(std::string name) { _backing.name = name; }
 	
-	std::size_t texture_base_index;
+	// This is used to index into the relevant array of textures depending on
+	// the type of model this is. For example, for moby models this would index
+	// into the std::vector of moby textures.
+	std::vector<std::size_t> texture_indices;
 private:
 	proxy_stream _backing;
 	std::size_t _submodel_table_offset; // Relative to base_offset.

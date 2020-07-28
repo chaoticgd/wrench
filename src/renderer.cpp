@@ -119,7 +119,7 @@ void gl_renderer::draw_cube(const glm::mat4& mvp, const glm::vec4& colour) const
 void gl_renderer::draw_moby_model(
 		moby_model& model,
 		glm::mat4 local_to_clip,
-		array_view<GLuint> textures,
+		std::vector<texture>& textures,
 		view_mode mode) const {
 	switch(mode) {
 		case view_mode::WIREFRAME:
@@ -132,7 +132,7 @@ void gl_renderer::draw_moby_model(
 			break;
 	}
 	
-	moby_model_texture_data texture = {};
+	moby_model_texture_data texture_data = {};
 	for(std::size_t i = 0; i < model.submodels.size(); i++) {
 		moby_submodel& submodel = model.submodels[i];
 		//if(!submodel.visible_in_model_viewer) {
@@ -183,7 +183,7 @@ void gl_renderer::draw_moby_model(
 			}
 			
 			if(subsubmodel.texture) {
-				texture = *subsubmodel.texture;
+				texture_data = *subsubmodel.texture;
 			}
 			
 			switch(mode) {
@@ -197,8 +197,17 @@ void gl_renderer::draw_moby_model(
 				}
 				case view_mode::TEXTURED_POLYGONS: {
 					glUniformMatrix4fv(shaders.textured_local_to_clip, 1, GL_FALSE, &local_to_clip[0][0]);
-					glActiveTexture(GL_TEXTURE0);
-					glBindTexture(GL_TEXTURE_2D, textures.at(texture.texture_index));
+					if(model.texture_indices.size() > (std::size_t) texture_data.texture_index) {
+						texture& tex = textures.at(model.texture_indices.at(texture_data.texture_index));
+						if(tex.opengl_id() == 0) {
+							tex.upload_to_opengl();
+						}
+						
+						glActiveTexture(GL_TEXTURE0);
+						glBindTexture(GL_TEXTURE_2D, tex.opengl_id());
+					} else {
+						fprintf(stderr, "warning: Model %s has bad texture index!\n", model.name().c_str());
+					}
 					glUniform1i(shaders.textured_sampler, 0);
 					break;
 				}
