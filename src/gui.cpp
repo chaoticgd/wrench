@@ -536,19 +536,20 @@ void gui::moby_list::render(app& a) {
 	size.y -= 64;
 	ImGui::Text("     UID                Class");
 	ImGui::PushItemWidth(-1);
-	ImGui::ListBoxHeader("##mobylist", size);
-	lvl.world.for_each_object_of_type<moby>([&](object_id id, moby& object) {
-		std::stringstream row;
-		row << std::setfill(' ') << std::setw(8) << std::dec << object.uid << " ";
-		row << std::setfill(' ') << std::setw(20) << std::hex << object.class_num << " ";
-		
-		bool is_selected = lvl.world.is_selected(id);
-		if(ImGui::Selectable(row.str().c_str(), is_selected)) {
-			lvl.world.selection = {};
-			lvl.world.selection.add<moby>(id);
-		}
-	});
-	ImGui::ListBoxFooter();
+	if(ImGui::ListBoxHeader("##mobylist", size)) {
+		lvl.world.for_each_object_of_type<moby>([&](object_id id, moby& object) {
+			std::stringstream row;
+			row << std::setfill(' ') << std::setw(8) << std::dec << object.uid << " ";
+			row << std::setfill(' ') << std::setw(20) << std::hex << object.class_num << " ";
+			
+			bool is_selected = lvl.world.is_selected(id);
+			if(ImGui::Selectable(row.str().c_str(), is_selected)) {
+				lvl.world.selection = {};
+				lvl.world.selection.add<moby>(id);
+			}
+		});
+		ImGui::ListBoxFooter();
+	}
 	ImGui::PopItemWidth();
 }
 
