@@ -37,7 +37,8 @@
 
 namespace gui {
 	void render(app& a);
-	void render_menu_bar(app& a);
+	float render_menu_bar(app& a);
+	void render_tools(app& a, float menu_bar_height);
 
 	void create_dock_layout(const app& a);
 	void begin_docking();
@@ -215,21 +216,6 @@ namespace gui {
 		const char* title_text() const override;
 		ImVec2 initial_size() const override;
 		void render(app& a) override;
-	};
-	
-	class tools : public window {
-	public:
-		tools();
-		~tools();
-	
-		const char* title_text() const override;
-		ImVec2 initial_size() const override;
-		void render(app& a) override;
-	
-	private:
-		GLuint _picker_icon;
-		GLuint _selection_icon;
-		GLuint _translate_icon;
 	};
 
 	class string_viewer : public window {
@@ -433,8 +419,6 @@ namespace gui {
 	private:
 		std::vector<std::string> _lines;
 	};
-	
-	GLuint load_icon(std::string path);
 	
 	// Don't pass untrusted input to this!
 	void open_in_browser(const char* url);
