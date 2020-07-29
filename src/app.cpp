@@ -31,7 +31,6 @@
 app::app()
 	: mouse_last(0, 0),
 	  delta_time(0),
-	  current_tool(tool::picker),
 	  translate_tool_displacement(0, 0, 0),
 	  game_db(gamedb_read()),
 	  _lock_project(false) {
@@ -248,4 +247,32 @@ void config::write() {
 	
 	std::ofstream settings(settings_file_path);
 	settings << toml::format(toml::value(file));
+}
+
+gl_texture load_icon(std::string path) {
+	std::ifstream image_file(path);
+	
+	uint32_t image_buffer[32][32];
+	for(std::size_t y = 0; y < 32; y++) {
+		std::string line;
+		std::getline(image_file, line);
+		if(line.size() > 32) {
+			line = line.substr(0, 32);
+		}
+		for(std::size_t x = 0; x < line.size(); x++) {
+			image_buffer[y][x] = line[x] == '#' ? 0xffffffff : 0x00000000;
+		}
+		for(std::size_t x = line.size(); x < 32; x++) {
+			image_buffer[y][x] = 0;
+		}
+	}
+	
+	gl_texture texture;
+	glGenTextures(1, &texture());
+	glBindTexture(GL_TEXTURE_2D, texture());
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 32, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_buffer);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	
+	return texture;
 }

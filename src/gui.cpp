@@ -42,8 +42,10 @@ void gui::render(app& a) {
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
+	float menu_height = render_menu_bar(a);
+	render_tools(a, menu_height);
+
 	begin_docking();
-	render_menu_bar(a);
 
 	for(auto& current_window : a.windows) {
 		if(current_window.get() == nullptr) {
@@ -87,30 +89,22 @@ void gui::create_dock_layout(const app& a) {
 	ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
 	ImGui::DockBuilderSetNodeSize(dockspace_id, ImVec2(a.window_width, a.window_height));
 
-	ImGuiID main_left, far_right;
-	ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 8.f / 10.f, &main_left, &far_right);
+	ImGuiID centre, right;
+	ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 8.f / 10.f, &centre, &right);
 	
-	ImGuiID far_left, centre;
-	ImGui::DockBuilderSplitNode(main_left, ImGuiDir_Left, 2.f / 8.f, &far_left, &centre);
+	ImGuiID inspector, middle_right;
+	ImGui::DockBuilderSplitNode(right, ImGuiDir_Up, 1.f / 2.f, &inspector, &middle_right);
 	
-	ImGuiID top_left, mobies;
-	ImGui::DockBuilderSplitNode(far_left, ImGuiDir_Up, 0.75f, &top_left, &mobies);
-	
-	ImGuiID inspector, viewport_info;
-	ImGui::DockBuilderSplitNode(far_right, ImGuiDir_Up, 0.75f, &inspector, &viewport_info);
-	
-	ImGuiID project, tools;
-	ImGui::DockBuilderSplitNode(top_left, ImGuiDir_Up, 0.8f, &project, &tools);
+	ImGuiID mobies, viewport_info;
+	ImGui::DockBuilderSplitNode(middle_right, ImGuiDir_Up, 1.f / 2.f, &mobies, &viewport_info);
 	
 	ImGui::DockBuilderDockWindow("3D View", centre);
 	ImGui::DockBuilderDockWindow("Texture Browser", centre);
 	ImGui::DockBuilderDockWindow("Model Browser", centre);
 	ImGui::DockBuilderDockWindow("Stream Viewer", centre);
 	ImGui::DockBuilderDockWindow("Documentation", centre);
-	ImGui::DockBuilderDockWindow("Project", project);
-	ImGui::DockBuilderDockWindow("Tools", tools);
-	ImGui::DockBuilderDockWindow("Mobies", mobies);
 	ImGui::DockBuilderDockWindow("Inspector", inspector);
+	ImGui::DockBuilderDockWindow("Mobies", mobies);
 	ImGui::DockBuilderDockWindow("Viewport Information", viewport_info);
 
 	ImGui::DockBuilderFinish(dockspace_id);
@@ -118,9 +112,16 @@ void gui::create_dock_layout(const app& a) {
 
 void gui::begin_docking() {
 	ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+	
+	// Make room for the tools.
 	ImGuiViewport* viewport = ImGui::GetMainViewport();
-	ImGui::SetNextWindowPos(viewport->Pos);
-	ImGui::SetNextWindowSize(viewport->Size);
+	ImVec2 pos = viewport->Pos;
+	ImVec2 size = viewport->Size;
+	pos.x += 55;
+	size.x -= 55;
+	
+	ImGui::SetNextWindowPos(pos);
+	ImGui::SetNextWindowSize(size);
 	ImGui::SetNextWindowViewport(viewport->ID);
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
@@ -138,7 +139,7 @@ void gui::begin_docking() {
 	ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
 }
 
-void gui::render_menu_bar(app& a) {
+float gui::render_menu_bar(app& a) {
 	ImGui::BeginMainMenuBar();
 	
 	bool save_in_place = false;
@@ -324,7 +325,6 @@ void gui::render_menu_bar(app& a) {
 		render_menu_bar_window_toggle<moby_list>(a);
 		render_menu_bar_window_toggle<inspector>(a);
 		render_menu_bar_window_toggle<viewport_information>(a);
-		render_menu_bar_window_toggle<tools>(a);
 		render_menu_bar_window_toggle<string_viewer>(a);
 		render_menu_bar_window_toggle<texture_browser>(a);
 		render_menu_bar_window_toggle<model_browser>(a);
@@ -396,7 +396,52 @@ void gui::render_menu_bar(app& a) {
 		ImGui::EndMenu();
 	}
 	
+	float menu_bar_height = ImGui::GetWindowSize().y;
 	ImGui::EndMainMenuBar();
+	return menu_bar_height;
+}
+
+void gui::render_tools(app& a, float menu_bar_height) {
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
+	ImGuiViewport* view = ImGui::GetMainViewport();
+	ImGui::SetNextWindowPos(ImVec2(-1, menu_bar_height - 1));
+	ImGui::SetNextWindowSize(ImVec2(56, view->Size.y));
+	ImGui::Begin("Tools", nullptr,
+		ImGuiWindowFlags_NoDecoration |
+		ImGuiWindowFlags_NoMove);
+	ImGui::PopStyleVar();
+	
+	for(std::size_t i = 0 ; i < a.tools.size(); i++) {
+		bool active = i == a.active_tool_index;
+		if(!active) {
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+		}
+		bool clicked = ImGui::ImageButton(
+			(void*) (intptr_t) a.tools[i].icon(), ImVec2(32, 32), 
+			ImVec2(0, 0), ImVec2(1, 1), -1);
+		if(!active) {
+			ImGui::PopStyleColor();
+		}
+		if(clicked) {
+			a.active_tool_index = i;
+		}
+	}
+	
+	if(a.active_tool().type == tool_type::translate) {
+		ImGui::Begin("Translate Tool");
+		ImGui::Text("Displacement:");
+		ImGui::InputFloat3("##displacement_input", &a.translate_tool_displacement.x);
+		if(ImGui::Button("Apply")) {
+			if(auto lvl = a.get_level()) {
+				a.get_project()->emplace_command<translate_command>
+					(lvl, lvl->world.selection, a.translate_tool_displacement);
+			}
+			a.translate_tool_displacement = glm::vec3(0, 0, 0);
+		}
+		ImGui::End();
+	}
+	
+	ImGui::End();
 }
 
 /*
@@ -532,63 +577,6 @@ void gui::viewport_information::render(app& a) {
 		
 	if(ImGui::Button("Reset Camera")) {
 		a.renderer.reset_camera(&a);
-	}
-}
-
-/*
-	tools
-*/
-
-gui::tools::tools()
-	: _picker_icon(load_icon("data/icons/picker_tool.txt")),
-	  _selection_icon(load_icon("data/icons/selection_tool.txt")),
-	  _translate_icon(load_icon("data/icons/translate_tool.txt")) {}
-
-gui::tools::~tools() {
-	glDeleteTextures(1, &_picker_icon);
-	glDeleteTextures(1, &_selection_icon);
-	glDeleteTextures(1, &_translate_icon);
-}
-
-const char* gui::tools::title_text() const {
-	return "Tools";
-}
-
-ImVec2 gui::tools::initial_size() const {
-	return ImVec2(200, 50);
-}
-
-void gui::tools::render(app& a) {
-	const char* tool_name = "\n";
-	switch(a.current_tool) {
-		case tool::picker:    tool_name = "Picker";    break;
-		case tool::selection: tool_name = "Selection"; break;
-		case tool::translate: tool_name = "Translate"; break;
-	}
-	ImGui::Text("Current Tool: %s", tool_name);
-	
-	if(ImGui::ImageButton((void*) (intptr_t) _picker_icon, ImVec2(32, 32))) {
-		a.current_tool = tool::picker;
-	}
-	ImGui::SameLine();
-	if(ImGui::ImageButton((void*) (intptr_t) _selection_icon, ImVec2(32, 32))) {
-		a.current_tool = tool::selection;
-	}
-	ImGui::SameLine();
-	if(ImGui::ImageButton((void*) (intptr_t) _translate_icon, ImVec2(32, 32))) {
-		a.current_tool = tool::translate;
-	}
-	
-	if(a.current_tool == tool::translate) {
-		ImGui::Text("Displacement:");
-		ImGui::InputFloat3("##displacement_input", &a.translate_tool_displacement.x);
-		if(ImGui::Button("Apply")) {
-			if(auto lvl = a.get_level()) {
-				a.get_project()->emplace_command<translate_command>
-					(lvl, lvl->world.selection, a.translate_tool_displacement);
-			}
-			a.translate_tool_displacement = glm::vec3(0, 0, 0);
-		}
 	}
 }
 
@@ -1901,34 +1889,6 @@ void gui::hex_dump::render(app& a) {
 	if(ImGui::Button("Close")) {
 		close(a);
 	}
-}
-
-GLuint gui::load_icon(std::string path) {
-	std::ifstream image_file(path);
-	
-	uint32_t image_buffer[32][32];
-	for(std::size_t y = 0; y < 32; y++) {
-		std::string line;
-		std::getline(image_file, line);
-		if(line.size() > 32) {
-			line = line.substr(0, 32);
-		}
-		for(std::size_t x = 0; x < line.size(); x++) {
-			image_buffer[y][x] = line[x] == '#' ? 0xffffffff : 0x00000000;
-		}
-		for(std::size_t x = line.size(); x < 32; x++) {
-			image_buffer[y][x] = 0;
-		}
-	}
-	
-	GLuint texture;
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 32, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_buffer);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	
-	return texture;
 }
 
 // Don't pass untrusted input to this!

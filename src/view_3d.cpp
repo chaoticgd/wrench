@@ -93,16 +93,16 @@ void view_3d::render(app& a) {
 	
 	ImGuiIO& io = ImGui::GetIO();
 	if(io.MouseClicked[0] && ImGui::IsWindowHovered()) {
-		switch(a.current_tool) {
-			case tool::picker:	pick_object(*lvl, rel_pos); break;
-			case tool::selection: select_rect(*lvl, cursor_pos); break;
-			case tool::translate: break;
+		switch(a.active_tool().type) {
+			case tool_type::picker:	pick_object(*lvl, rel_pos); break;
+			case tool_type::selection: select_rect(*lvl, cursor_pos); break;
+			case tool_type::translate: break;
 		}
 		io.MouseClicked[0] = false;
 	}
 	
 	auto draw_list = ImGui::GetWindowDrawList();
-	if(a.current_tool == tool::selection && _selecting) {
+	if(a.active_tool().type == tool_type::selection && _selecting) {
 		draw_list->AddRect(_selection_begin, cursor_pos, 0xffffffff);
 	}
 }

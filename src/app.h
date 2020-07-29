@@ -46,8 +46,13 @@ struct GLFWwindow;
 class window;
 class view_3d;
 
-enum class tool {
+enum class tool_type {
 	picker, selection, translate
+};
+
+struct tool {
+	tool_type type;
+	gl_texture icon;
 };
 
 class app {
@@ -58,7 +63,11 @@ public:
 
 	template <typename T, typename... T_constructor_args>
 	T* emplace_window(T_constructor_args... args);
-
+	
+	std::vector<tool> tools;
+	std::size_t active_tool_index = 0;
+	tool& active_tool() { return tools.at(active_tool_index); }
+	
 	glm::vec2 mouse_last;
 
 	GLFWwindow* glfw_window;
@@ -68,7 +77,6 @@ public:
 	
 	int64_t delta_time;
 	
-	tool current_tool;
 	glm::vec3 translate_tool_displacement;
 
 	void new_project(game_iso game);
@@ -92,6 +100,7 @@ public:
 private:
 	std::atomic_bool _lock_project; // Prevent race conditions while creating/loading a project.
 	std::unique_ptr<wrench_project> _project;
+	
 	std::vector<float> _gui_scale_parameters;
 };
 
@@ -108,6 +117,8 @@ struct config {
 	void read(app& a);
 	void write();
 };
+
+gl_texture load_icon(std::string path);
 
 template <typename T, typename... T_constructor_args>
 T* app::emplace_window(T_constructor_args... args) {

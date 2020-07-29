@@ -56,13 +56,16 @@ int main(int argc, char** argv) {
 			a.open_project((old_working_dir / project_path).string());
 		}
 		
+		a.tools.push_back(tool { tool_type::picker, load_icon("data/icons/picker_tool.txt") });
+		a.tools.push_back(tool { tool_type::selection, load_icon("data/icons/selection_tool.txt") });
+		a.tools.push_back(tool { tool_type::translate, load_icon("data/icons/translate_tool.txt") });
+		
 		a.windows.emplace_back(std::make_unique<view_3d>(&a));
 		a.windows.emplace_back(std::make_unique<gui::texture_browser>());
 		a.windows.emplace_back(std::make_unique<gui::model_browser>());
 		a.windows.emplace_back(std::make_unique<gui::moby_list>());
 		a.windows.emplace_back(std::make_unique<gui::inspector>());
 		a.windows.emplace_back(std::make_unique<gui::viewport_information>());
-		a.windows.emplace_back(std::make_unique<gui::tools>());
 
 		auto last_frame_time = std::chrono::steady_clock::now();
 
