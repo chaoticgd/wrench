@@ -396,7 +396,7 @@ packed_struct(moby,
 	uint32_t unknown_20; // 0x20
 	uint32_t unknown_24; // 0x24
 	uint32_t class_num;  // 0x28
-	uint32_t unknown_2c; // 0x2c
+	float    scale;      // 0x2c
 	uint32_t unknown_30; // 0x30
 	uint32_t unknown_34; // 0x34
 	uint32_t unknown_38; // 0x38

@@ -143,6 +143,7 @@ void view_3d::draw_level(level& lvl) const {
 		
 		moby_model& model =
 			lvl.moby_models[lvl.moby_class_to_model.at(object.class_num)];
+		local_to_clip = glm::scale(local_to_clip, glm::vec3(model.scale * object.scale * 32.f));
 		_renderer->draw_moby_model(model, local_to_clip, lvl.moby_textures, view_mode::TEXTURED_POLYGONS, true);
 	});
 	

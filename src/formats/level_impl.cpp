@@ -154,6 +154,12 @@ level::level(iso_stream* iso, toc_level index)
 			uint8_t num_submodels;
 			uint32_t unknown_8;
 			uint32_t unknown_c;
+			uint32_t unknown_10;
+			uint32_t unknown_14;
+			uint32_t unknown_18;
+			uint32_t unknown_1c;
+			uint32_t unknown_20;
+			float scale;
 		)
 		
 		auto model_header = _asset_segment->read<asset_model_header>(entry.offset_in_asset_wad);
@@ -167,6 +173,7 @@ level::level(iso_stream* iso, toc_level index)
 		}
 		moby_model& model = moby_models.emplace_back(_asset_segment, abs_offset, 0, rel_offset, submodel_counts);
 		model.set_name("class " + std::to_string(entry.o_class));
+		model.scale = model_header.scale;
 		model.read();
 		
 		for(uint8_t texture : entry.textures) {
