@@ -166,6 +166,7 @@ public:
 	
 	std::vector<std::size_t> submodel_counts;
 	std::vector<moby_submodel> submodels;
+	float scale = 1.f;
 	
 	gl_texture thumbnail;
 
