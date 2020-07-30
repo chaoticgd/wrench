@@ -32,6 +32,8 @@ int main(int argc, char** argv) {
 		("s,src", "The input file.",
 			cxxopts::value<std::string>())
 		("o,offset", "The offset in the input file where the VIF chain begins.",
+			cxxopts::value<std::string>()->default_value("0"))
+		("e,end", "The minimum offset where if we fail to parse a VIF code, we can stop searching.",
 			cxxopts::value<std::string>()->default_value("0"));
 
 	options.parse_positional({
@@ -41,15 +43,23 @@ int main(int argc, char** argv) {
 	auto args = parse_command_line_args(argc, argv, options);
 	std::string src_path = cli_get(args, "src");
 	std::size_t offset = parse_number(cli_get_or(args, "offset", "0"));
+	std::size_t end_offset = parse_number(cli_get_or(args, "end", "0"));
 
 	file_stream src(src_path);
 	std::vector<vif_packet> chain = parse_vif_chain(&src, offset, SIZE_MAX);
-	for(vif_packet& packet : chain) {
-		if(packet.error != "") {
-			std::cout << packet.error << std::endl;
-			break;
+	while(chain.size() > 0) {
+		vif_packet& packet = chain.front();
+		if(packet.error == "") {
+			std::cout << std::hex << packet.address << " " << packet.code.to_string() << std::endl;
+			chain.erase(chain.begin());
+		} else {
+			std::cout << std::hex << packet.address << " " << packet.error << std::endl;
+			if(packet.address > end_offset) {
+				break;
+			} else {
+				chain = parse_vif_chain(&src, packet.address, SIZE_MAX);
+				continue;
+			}
 		}
-		
-		std::cout << std::hex << packet.address << " " << packet.code.to_string() << std::endl;
 	}
 }
