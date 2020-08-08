@@ -108,11 +108,11 @@ level::level(iso_stream* iso, toc_level index)
 	  _file(iso, _file_header.base_offset, index.main_part_size.bytes()) {
 	_file.name = "LEVEL" + std::to_string(index.level_table_index) + ".WAD";
 	
-	auto primary_header = _file.read<level_primary_header>(_file_header.primary_header_offset);
+	_primary_header = _file.read<level_primary_header>(_file_header.primary_header_offset);
 
 	code_segment.header = _file.read<level_code_segment_header>
-		(_file_header.primary_header_offset + primary_header.code_segment_offset);
-	code_segment.bytes.resize(primary_header.code_segment_size - sizeof(level_code_segment_header));
+		(_file_header.primary_header_offset + _primary_header.code_segment_offset);
+	code_segment.bytes.resize(_primary_header.code_segment_size - sizeof(level_code_segment_header));
 	_file.read_v(code_segment.bytes);
 
 	_world_segment = iso->get_decompressed(_file_header.base_offset + _file_header.moby_segment_offset);
@@ -125,7 +125,7 @@ level::level(iso_stream* iso, toc_level index)
 	world.read(_world_segment);
 	
 	_asset_segment = iso->get_decompressed
-		(_file_header.base_offset + _file_header.primary_header_offset + primary_header.asset_wad, true);
+		(_file_header.base_offset + _file_header.primary_header_offset + _primary_header.asset_wad, true);
 	_asset_segment->name = "Asset Segment";
 	
 	if(config::get().debug.stream_tracing) {
@@ -134,10 +134,16 @@ level::level(iso_stream* iso, toc_level index)
 		_asset_segment = &(*_asset_segment_tracepoint);
 	}
 	
-	uint32_t asset_base = _file_header.primary_header_offset + primary_header.asset_header;
-	auto asset_header = _file.read<level_asset_header>(asset_base);
+	uint32_t asset_offset = _file_header.primary_header_offset + _primary_header.asset_header;
+	auto asset_header = _file.read<level_asset_header>(asset_offset);
 	
-	uint32_t mdl_base = asset_base + asset_header.moby_model_offset;
+	read_moby_models(asset_offset, asset_header);
+	read_textures(asset_offset, asset_header);
+	read_tfrags();
+}
+
+void level::read_moby_models(std::size_t asset_offset, level_asset_header asset_header) {
+	uint32_t mdl_base = asset_offset + asset_header.moby_model_offset;
 	_file.seek(mdl_base);
 	
 	for(std::size_t i = 0; i < asset_header.moby_model_count; i++) {
@@ -187,10 +193,12 @@ level::level(iso_stream* iso, toc_level index)
 		uint32_t o_class = entry.o_class;
 		moby_class_to_model.emplace(o_class, moby_models.size() - 1);
 	}
-	
-	_file.seek(asset_base + asset_header.mipmap_offset);
+}
+
+void level::read_textures(std::size_t asset_offset, level_asset_header asset_header) {
+	_file.seek(asset_offset + asset_header.mipmap_offset);
 	std::size_t little_texture_base =
-		_file_header.primary_header_offset + primary_header.tex_pixel_data_base;
+		_file_header.primary_header_offset + _primary_header.tex_pixel_data_base;
 	std::size_t last_palette_offset = 0;
 	for(std::size_t i = 0; i < asset_header.mipmap_count; i++) {
 		auto entry = _file.read<level_mipmap_entry>();
@@ -204,7 +212,7 @@ level::level(iso_stream* iso, toc_level index)
 	
 	auto load_texture_table = [&](stream& backing, std::size_t offset, std::size_t count) {
 		std::vector<texture> textures;
-		backing.seek(asset_base + offset);
+		backing.seek(asset_offset + offset);
 		for(std::size_t i = 0; i < count; i++) {
 			auto entry = backing.read<level_texture_entry>();
 			auto ptr = asset_header.tex_data_in_asset_wad + entry.ptr;
@@ -219,7 +227,9 @@ level::level(iso_stream* iso, toc_level index)
 	tie_textures = load_texture_table(_file, asset_header.tie_texture_offset, asset_header.tie_texture_count);
 	shrub_textures = load_texture_table(_file, asset_header.shrub_texture_offset, asset_header.shrub_texture_count);
 	sprite_textures = load_texture_table(_file, asset_header.sprite_texture_offset, asset_header.sprite_texture_count);
+}
 
+void level::read_tfrags() {
 	packed_struct(tfrag_header,
 		uint32_t entry_list_offset; //0x00
 		uint32_t count; //0x04

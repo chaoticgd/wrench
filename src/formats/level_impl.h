@@ -264,6 +264,12 @@ public:
 	level(iso_stream* iso, toc_level index);
 	level(const level& rhs) = delete;
 	
+private:
+	void read_moby_models(std::size_t asset_offset, level_asset_header asset_header);
+	void read_textures(std::size_t asset_offset, level_asset_header asset_header);
+	void read_tfrags();
+	
+public:
 	std::map<std::string, std::map<uint32_t, std::string>> game_strings() { return {}; }
 
 	stream* moby_stream();
@@ -285,6 +291,7 @@ public:
 private:
 	toc_level _index;
 	level_file_header _file_header;
+	level_primary_header _primary_header;
 	proxy_stream _file;
 	stream* _world_segment;
 	stream* _asset_segment;
