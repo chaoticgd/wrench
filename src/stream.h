@@ -45,7 +45,7 @@ static const int SECTOR_SIZE = 0x800;
 	#define FORCE_INLINE __forceinline
 #else
 	#define packed_struct(name, ...) \
-		struct __attribute__((__packed__)) name { __VA_ARGS__ };
+		struct __attribute__((__packed__)) __attribute__((aligned (4))) name { __VA_ARGS__ };
 	
 	#define FORCE_INLINE __attribute__((always_inline))
 #endif
