@@ -126,6 +126,12 @@ packed_struct(vec3f,
 	}
 )
 
+packed_struct(colour48,
+	uint32_t red;
+	uint32_t green;
+	uint32_t blue;
+)
+
 struct level_primary_header;
 struct level_asset_header;
 struct level_texture_entry;
@@ -244,7 +250,7 @@ packed_struct(level_texture_entry,
 // *****************************************************************************
 
 packed_struct(world_header,
-	uint32_t ship;               // 0x0
+	uint32_t properties;         // 0x0
 	uint32_t directional_lights; // 0x4
 	uint32_t unknown_08;         // 0x8
 	uint32_t unknown_0c;         // 0xc
@@ -277,6 +283,24 @@ packed_struct(world_header,
 	uint32_t splines;            // 0x78
 )
 
+packed_struct(world_properties,
+	uint32_t unknown_0;     // 0x0
+	uint32_t unknown_4;     // 0x4
+	uint32_t unknown_8;     // 0x8
+	colour48 fog_colour;    // 0xc
+	uint32_t unknown_18;    // 0x18
+	uint32_t unknown_1c;    // 0x1c
+	float fog_distance;     // 0x20
+	uint32_t unknown_24;    // 0x24
+	uint32_t death_plane_z; // 0x28
+	uint32_t unknown_2c;    // 0x2c
+	uint32_t unknown_30;    // 0x30
+	uint32_t unknown_34;    // 0x34
+	uint32_t unknown_38;    // 0x38
+	vec3f ship_position;    // 0x3c
+	float ship_rotation_z;  // 0x40
+)
+
 packed_struct(world_string_table_header,
 	uint32_t num_strings;
 	uint32_t unknown;
@@ -305,12 +329,6 @@ packed_struct(world_spline_table_header,
 packed_struct(world_spline_entry,
 	uint32_t num_vertices;
 	uint32_t pad[3];
-)
-
-packed_struct(world_ship_data,
-	uint32_t unknown1[0xf];
-	vec3f position;
-	float rotationZ;
 )
 
 packed_struct(world_directional_light_table,

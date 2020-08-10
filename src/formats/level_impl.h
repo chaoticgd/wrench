@@ -136,7 +136,7 @@ public:
 	};
 	
 	object_list selection;
-	world_ship_data ship;
+	world_properties properties;
 	
 	game_world() {}
 	

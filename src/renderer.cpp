@@ -230,7 +230,7 @@ void gl_renderer::reset_camera(app* a) {
 		if(lvl->world.count<moby>() > 0) {
 			camera_position = lvl->world.object_from_index<moby>(0).position();
 		} else {
-			camera_position = lvl->world.ship.position();
+			camera_position = lvl->world.properties.ship_position();
 		}
 	} else {
 		camera_position = glm::vec3(0, 0, 0);

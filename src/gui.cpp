@@ -477,6 +477,10 @@ void gui::inspector::render(app& a) {
 
 	object_list& sel = _lvl->world.selection;
 
+	if(sel.size() == 0) {
+		category("Level Properties");
+	}
+
 	if(sel.ties.size() > 0) {
 		category("Tie");
 	}
