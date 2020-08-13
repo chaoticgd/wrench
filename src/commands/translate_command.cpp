@@ -20,24 +20,48 @@
 
 translate_command::translate_command(
 		level* lvl,
-		object_list objects,
 		glm::vec3 displacement)
 	: _lvl(lvl),
-	  _displacement(displacement),
-	  _objects(objects) {
-	_lvl->world.for_each_object_in(_objects, [&](object_id id, auto& object) {
-		_prev_positions[id] = glm::vec3(object.mat()[3]);
+	  _displacement(displacement) {
+	_lvl->for_each<matrix_entity>([&](matrix_entity& ent) {
+		if(ent.selected) {
+			_prev_positions[ent.id] = ent.local_to_world[3];
+		}
+	});
+	_lvl->for_each<euler_entity>([&](euler_entity& ent) {
+		if(ent.selected) {
+			_prev_positions[ent.id] = ent.position;
+		}
 	});
 }
 
 void translate_command::apply(wrench_project* project) {
-	_lvl->world.for_each_object_in(_objects, [&](object_id id, auto& object) {
-		object.translate(_displacement);
+	_lvl->for_each<matrix_entity>([&](matrix_entity& ent) {
+		if(map_contains(_prev_positions, ent.id)) {
+			ent.local_to_world[3].x += _displacement.x;
+			ent.local_to_world[3].y += _displacement.y;
+			ent.local_to_world[3].z += _displacement.z;
+		}
+	});
+	_lvl->for_each<euler_entity>([&](euler_entity& ent) {
+		if(map_contains(_prev_positions, ent.id)) {
+			ent.position += _displacement;
+		}
 	});
 }
 
 void translate_command::undo(wrench_project* project) {
-	_lvl->world.for_each_object_in(_objects, [&](object_id id, auto& object) {
-		object.set_translation(_prev_positions.at(id));
+	_lvl->for_each<matrix_entity>([&](matrix_entity& ent) {
+		if(map_contains(_prev_positions, ent.id)) {
+			glm::vec3& pos = _prev_positions.at(ent.id);
+			ent.local_to_world[3].x = pos.x;
+			ent.local_to_world[3].y = pos.y;
+			ent.local_to_world[3].z = pos.z;
+		}
+	});
+	_lvl->for_each<euler_entity>([&](euler_entity& ent) {
+		if(map_contains(_prev_positions, ent.id)) {
+			ent.position = _prev_positions.at(ent.id);
+		}
 	});
 }

@@ -123,49 +123,52 @@ void view_3d::draw_level(level& lvl) const {
 	
 	static const glm::vec4 selected_colour = glm::vec4(1, 0, 0, 1);
 	
-	auto get_colour = [&](object_id id, glm::vec4 normal_colour) {
-		return lvl.world.is_selected(id) ? selected_colour : normal_colour;
+	auto get_colour = [&](bool selected, glm::vec4 normal_colour) {
+		return selected ? selected_colour : normal_colour;
 	};
 	
-	lvl.world.for_each_object_of_type<tie>([&](object_id id, tie& object) {
-		glm::mat4 local_to_clip = world_to_clip * object.mat();
-		glm::vec4 colour = get_colour(id, glm::vec4(0.5, 0, 1, 1));
+	for(tie_entity& tie : lvl.ties) {
+		glm::mat4 local_to_clip = world_to_clip * tie.local_to_world;
+		glm::vec4 colour = get_colour(tie.selected, glm::vec4(0.5, 0, 1, 1));
 		_renderer->draw_cube(local_to_clip, colour);
-	});
+	}
 	
-	lvl.world.for_each_object_of_type<moby>([&](object_id id, moby& object) {
-		glm::mat4 local_to_clip = world_to_clip * object.mat();
+	for(moby_entity& moby : lvl.mobies) {
+		moby.local_to_world_cache = glm::translate(glm::mat4(1.f), moby.position);
+		moby.local_to_world_cache = glm::rotate(moby.local_to_world_cache, moby.rotation.x, glm::vec3(1, 0, 0));
+		moby.local_to_world_cache = glm::rotate(moby.local_to_world_cache, moby.rotation.y, glm::vec3(0, 1, 0));
+		moby.local_to_world_cache = glm::rotate(moby.local_to_world_cache, moby.rotation.z, glm::vec3(0, 0, 1));
+		moby.local_to_clip_cache = world_to_clip * moby.local_to_world_cache;
 		
-		if(lvl.moby_class_to_model.find(object.class_num) == lvl.moby_class_to_model.end()) {
-			_renderer->draw_cube(local_to_clip, get_colour(id, glm::vec4(0, 1, 0, 1)));
-			return;
+		if(lvl.moby_class_to_model.find(moby.class_num) == lvl.moby_class_to_model.end()) {
+			_renderer->draw_cube(moby.local_to_clip_cache, get_colour(moby.selected, glm::vec4(0, 1, 0, 1)));
+			continue;
 		}
 		
 		moby_model& model =
-			lvl.moby_models[lvl.moby_class_to_model.at(object.class_num)];
-		local_to_clip = glm::scale(local_to_clip, glm::vec3(model.scale * object.scale * 32.f));
-		_renderer->draw_moby_model(model, local_to_clip, lvl.moby_textures, view_mode::TEXTURED_POLYGONS, true);
-	});
+			lvl.moby_models[lvl.moby_class_to_model.at(moby.class_num)];
+		glm::mat4 scaled_local_to_clip = glm::scale(moby.local_to_clip_cache, glm::vec3(model.scale * moby.scale * 32.f));
+		_renderer->draw_moby_model(model, scaled_local_to_clip, lvl.moby_textures, view_mode::TEXTURED_POLYGONS, true);
+	}
 	
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glUseProgram(_renderer->shaders.solid_colour.id());
 	
-	lvl.world.for_each_object_of_type<moby>([&](object_id id, moby& object) {
-		if(lvl.world.is_selected(id)) {
-			glm::mat4 local_to_clip = world_to_clip * object.mat();
-			_renderer->draw_cube(local_to_clip, selected_colour);
+	for(moby_entity& moby : lvl.mobies) {
+		if(moby.selected) {
+			_renderer->draw_cube(moby.local_to_clip_cache, selected_colour);
 		}
-	});
+	}
+	
+	for(spline_entity& spline : lvl.splines) {
+		glm::vec4 colour = get_colour(spline.selected, glm::vec4(1, 0.5, 0, 1));
+		_renderer->draw_spline(spline, world_to_clip, colour);
+	}
 	
 	for (auto& frag : lvl.tfrags) {
 		glm::vec4 colour(0.5, 0.5, 0.5, 1);
 		_renderer->draw_model(frag, world_to_clip, colour);
 	}
-	
-	lvl.world.for_each_object_of_type<spline>([&](object_id id, spline& object) {
-		glm::vec4 colour = get_colour(id, glm::vec4(1, 0.5, 0, 1));
-		_renderer->draw_spline(object.points, world_to_clip, colour);
-	});
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
@@ -191,26 +194,26 @@ void view_3d::draw_overlay_text(level& lvl) const {
 		}
 	};
 	
-	lvl.world.for_each_object_of_type<tie>([&](object_id, tie& object) {
-		draw_text(object.mat(), "t");
-	});
+	for(tie_entity& tie : lvl.ties) {
+		draw_text(tie.local_to_world, "t");
+	}
 	
-	lvl.world.for_each_object_of_type<shrub>([&](object_id, shrub& object) {
-		draw_text(object.mat(), "s");
-	});
+	for(shrub_entity& shrub : lvl.shrubs) {
+		draw_text(shrub.local_to_world, "s");
+	}
 	
-	lvl.world.for_each_object_of_type<moby>([&](object_id, moby& object) {
+	for(moby_entity& moby : lvl.mobies) {
 		static const std::map<uint16_t, const char*> moby_class_names {
 			{ 0x1f4, "crate" },
 			{ 0x2f6, "swingshot_grapple" },
 			{ 0x323, "swingshot_swinging" }
 		};
-		if(moby_class_names.find(object.class_num) != moby_class_names.end()) {
-			draw_text(object.mat(), moby_class_names.at(object.class_num));
+		if(moby_class_names.find(moby.class_num) != moby_class_names.end()) {
+			draw_text(moby.local_to_world_cache, moby_class_names.at(moby.class_num));
 		} else {
-			draw_text(object.mat(), std::to_string(object.class_num));
+			draw_text(moby.local_to_world_cache, std::to_string(moby.class_num));
 		}
-	});
+	}
 }
 
 glm::mat4 view_3d::get_world_to_clip() const {
@@ -242,9 +245,9 @@ glm::mat4 view_3d::get_local_to_clip(glm::mat4 world_to_clip, glm::vec3 position
 	return world_to_clip * model;
 }
 
-glm::vec3 view_3d::apply_local_to_screen(glm::mat4 world_to_clip, glm::mat4 object_matrix) const {
+glm::vec3 view_3d::apply_local_to_screen(glm::mat4 world_to_clip, glm::mat4 local_to_world) const {
 	glm::mat4 local_to_clip = get_local_to_clip(world_to_clip, glm::vec3(1.f), glm::vec3(0.f));
-	glm::vec4 homogeneous_pos = local_to_clip * glm::vec4(glm::vec3(object_matrix[3]), 1);
+	glm::vec4 homogeneous_pos = local_to_clip * glm::vec4(glm::vec3(local_to_world[3]), 1);
 	glm::vec3 gl_pos {
 			homogeneous_pos.x / homogeneous_pos.w,
 			homogeneous_pos.y / homogeneous_pos.w,
@@ -287,17 +290,13 @@ void view_3d::pick_object(level& lvl, ImVec2 position) {
 	}
 
 	if(smallest_value == -1) {
-		lvl.world.selection = {};
+		lvl.clear_selection();
 		return;
 	}
 
-	object_id id{*(uint32_t*) &buffer[smallest_index]};
-	
-	lvl.world.selection = {};
-	for_each_object_type([&]<typename T>() {
-		if(lvl.world.object_exists<T>(id)) {
-			lvl.world.selection.add<T>(id);
-		}
+	entity_id id { *(uint32_t*) &buffer[smallest_index] };
+	lvl.for_each<entity>([&](entity& ent) {
+		ent.selected = id == ent.id;
 	});
 }
 
@@ -310,7 +309,7 @@ void view_3d::draw_pickframe(level& lvl) const {
 	
 	glUseProgram(_renderer->shaders.solid_colour.id());
 	
-	auto encode_pick_colour = [&](object_id id) {
+	auto encode_pick_colour = [&](entity_id id) {
 		glm::vec4 colour;
 		// IDs are unique across all object types.
 		colour.r = ((id.value & 0xff)       >> 0)  / 255.f;
@@ -320,23 +319,21 @@ void view_3d::draw_pickframe(level& lvl) const {
 		return colour;
 	};
 	
-	lvl.world.for_each_object_of_type<tie>([&](object_id id, tie& object) {
-		glm::mat4 local_to_clip = world_to_clip * object.mat();
-		glm::vec4 colour = encode_pick_colour(id);
+	for(tie_entity& tie : lvl.ties) {
+		glm::mat4 local_to_clip = world_to_clip * tie.local_to_world;
+		glm::vec4 colour = encode_pick_colour(tie.id);
 		_renderer->draw_cube(local_to_clip, colour);
-	});
-
+	}
 	
-	lvl.world.for_each_object_of_type<moby>([&](object_id id, moby& object) {
-		glm::mat4 local_to_clip = world_to_clip * object.mat();
-		glm::vec4 colour = encode_pick_colour(id);
-		_renderer->draw_cube(local_to_clip, colour);
-	});
+	for(moby_entity& moby : lvl.mobies) {
+		glm::vec4 colour = encode_pick_colour(moby.id);
+		_renderer->draw_cube(moby.local_to_clip_cache, colour);
+	}
 
-	lvl.world.for_each_object_of_type<spline>([&](object_id id, spline& object) {
-		glm::vec4 colour = encode_pick_colour(id);
-		_renderer->draw_spline(object.points, world_to_clip, colour);
-	});
+	for(spline_entity& spline : lvl.splines) {
+		glm::vec4 colour = encode_pick_colour(spline.id);
+		_renderer->draw_spline(spline, world_to_clip, colour);
+	}
 }
 
 void view_3d::select_rect(level& lvl, ImVec2 position) {
@@ -354,18 +351,20 @@ void view_3d::select_rect(level& lvl, ImVec2 position) {
 		_selection_begin.y -= 20;
 		_selection_end.y -= 20;
 		
-		lvl.world.selection = {};
+		auto in_bounds = [&](glm::vec3 screen_pos) {
+			return screen_pos.z > 0 &&
+				(screen_pos.x > _selection_begin.x && screen_pos.x < _selection_end.x) &&
+				(screen_pos.y > _selection_begin.y && screen_pos.y < _selection_end.y);
+		};
 		
 		glm::mat4 world_to_clip = get_world_to_clip();
-		lvl.world.for_each_object([&]<typename T>(object_id id, T& object) {
-			glm::vec3 screen_pos = apply_local_to_screen(world_to_clip, object.mat());
-			if(screen_pos.z < 0) {
-				return;
-			}
-			if(screen_pos.x > _selection_begin.x && screen_pos.x < _selection_end.x &&
-			   screen_pos.y > _selection_begin.y && screen_pos.y < _selection_end.y) {
-				lvl.world.selection.add<T>(id);
-			}
+		lvl.for_each<matrix_entity>([&](matrix_entity& ent) {
+			glm::vec3 screen_pos = apply_local_to_screen(world_to_clip, ent.local_to_world);
+			ent.selected = in_bounds(screen_pos);
+		});
+		lvl.for_each<euler_entity>([&](euler_entity& ent) {
+			glm::vec3 screen_pos = apply_local_to_screen(world_to_clip, ent.local_to_world_cache);
+			ent.selected = in_bounds(screen_pos);
 		});
 	}
 	_selecting = !_selecting;

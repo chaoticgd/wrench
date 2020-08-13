@@ -434,7 +434,7 @@ void gui::render_tools(app& a, float menu_bar_height) {
 		if(ImGui::Button("Apply")) {
 			if(auto lvl = a.get_level()) {
 				a.get_project()->emplace_command<translate_command>
-					(lvl, lvl->world.selection, a.translate_tool_displacement);
+					(lvl, a.translate_tool_displacement);
 			}
 			a.translate_tool_displacement = glm::vec3(0, 0, 0);
 		}
@@ -460,58 +460,6 @@ void gui::inspector::render(app& a) {
 	if(!a.get_level()) {
 		ImGui::Text("<no level>");
 		return;
-	}
-	
-	_project = a.get_project();
-	_lvl = a.get_level();
-	_num_properties = 0;
-	
-	if(_lvl->world.selection.size() < 1) {
-		ImGui::Text("<no object selected>");
-		return;
-	}
-	
-	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 2));
-	ImGui::Columns(2);
-	ImGui::SetColumnWidth(0, 80);
-
-	object_list& sel = _lvl->world.selection;
-
-	if(sel.size() == 0) {
-		category("Level Properties");
-	}
-
-	if(sel.ties.size() > 0) {
-		category("Tie");
-	}
-	
-	if(sel.shrubs.size() > 0) {
-		category("Shrub");
-	}
-	
-	if(sel.mobies.size() > 0) {
-		category("Moby");
-		
-		input_vec3<moby>(sel.mobies, "Position", &moby::position);
-		input_vec3<moby>(sel.mobies, "Rotation", &moby::rotation);
-		input_i32 <moby>(sel.mobies, "UID",      &moby::uid);
-		input_u32 <moby>(sel.mobies, "Class",    &moby::class_num);
-	}
-	
-	if(sel.splines.size() > 0) {
-		category("Spline");
-	}
-	
-	ImGui::PopStyleVar();
-	
-	ImGui::Columns(1);
-	
-	if(sel.size() == 1 && sel.splines.size() == 0) {
-		_lvl->world.find_object_by_id(sel.first(), [&a](object_id id, auto& object) {
-			if(ImGui::Button("Hex Dump (Debug)")) {
-				a.emplace_window<hex_dump>((uint8_t*) &object, sizeof(object));
-			}
-		});
 	}
 }
 
@@ -541,17 +489,16 @@ void gui::moby_list::render(app& a) {
 	ImGui::Text("     UID                Class");
 	ImGui::PushItemWidth(-1);
 	if(ImGui::ListBoxHeader("##mobylist", size)) {
-		lvl.world.for_each_object_of_type<moby>([&](object_id id, moby& object) {
+		for(moby_entity& moby : lvl.mobies) {
 			std::stringstream row;
-			row << std::setfill(' ') << std::setw(8) << std::dec << object.uid << " ";
-			row << std::setfill(' ') << std::setw(20) << std::hex << object.class_num << " ";
+			row << std::setfill(' ') << std::setw(8) << std::dec << moby.uid << " ";
+			row << std::setfill(' ') << std::setw(20) << std::hex << moby.class_num << " ";
 			
-			bool is_selected = lvl.world.is_selected(id);
-			if(ImGui::Selectable(row.str().c_str(), is_selected)) {
-				lvl.world.selection = {};
-				lvl.world.selection.add<moby>(id);
+			if(ImGui::Selectable(row.str().c_str(), moby.selected)) {
+				lvl.clear_selection();
+				moby.selected = true;
 			}
-		});
+		}
 		ImGui::ListBoxFooter();
 	}
 	ImGui::PopItemWidth();
@@ -598,30 +545,30 @@ ImVec2 gui::string_viewer::initial_size() const {
 }
 
 void gui::string_viewer::render(app& a) {
-	if(auto lvl = a.get_level()) {		
-		auto strings = lvl->game_strings();
-
+	if(auto lvl = a.get_level()) {
+		static std::size_t language = 0;
+		
 		ImGui::Columns(2);
 		ImGui::SetColumnWidth(0, 64);
 
 		static prompt_box string_exporter("Export", "Enter Export Path");
 		if(auto path = string_exporter.prompt()) {
-			auto lang = std::find_if(strings.begin(), strings.end(),
-				[&](auto& ptr) { return ptr.first == _selected_language; });
-			if(lang == strings.end()) {
-				return;
-			}
+			auto strings = lvl->game_strings[language];
 			std::ofstream out_file(*path);
-			for(auto& [id, string] : lang->second) {
-				out_file << std::hex << id << ": " << string << "\n";
+			for(game_string& string : strings) {
+				out_file << std::hex << string.id << ": " << string.str << "\n";
 			}
 		}
 
 		ImGui::NextColumn();
-
-		for(auto& language : strings) {
-			if(ImGui::Button(language.first.c_str())) {
-				_selected_language = language.first;
+		
+		static const char* language_names[] = {
+			"English", "French", "German", "Spanish", "Italian"
+		};
+		
+		for(std::size_t i = 0; i < 5; i++) {
+			if(ImGui::Button(language_names[i])) {
+				language = i;
 			}
 			ImGui::SameLine();
 		}
@@ -629,15 +576,11 @@ void gui::string_viewer::render(app& a) {
 
 		ImGui::Columns(1);
 
-		auto lang = std::find_if(strings.begin(), strings.end(),
-			[&](auto& ptr) { return ptr.first == _selected_language; });
-		if(lang == strings.end()) {
-			return;
-		}
+		auto& strings = lvl->game_strings[language];
 
 		ImGui::BeginChild(1);
-		for(auto& string : lang->second) {
-			ImGui::Text("%x: %s", string.first, string.second.c_str());
+		for(game_string& string : strings) {
+			ImGui::Text("%x: %s", string.id, string.str.c_str());
 		}
 		ImGui::EndChild();
 	}
