@@ -20,80 +20,6 @@
 
 #include "../app.h"
 
-bool game_world::is_selected(object_id id) const {
-	return selection.contains(id);
-}
-
-void game_world::read(stream* src) {
-	auto header = src->read<world_header>(0);
-	
-	ship = src->read<world_ship_data>(header.ship);
-	
-	// Read game strings.
-	auto read_language = [&](uint32_t offset) {
-		std::vector<game_string> language;
-	
-		auto table = src->read<world_string_table_header>(offset);
-		std::vector<world_string_table_entry> entries(table.num_strings);
-		src->read_v(entries);
-		
-		for(world_string_table_entry& entry : entries) {
-			src->seek(offset + entry.string.value);
-			language.push_back({ entry.id, src->read_string() });
-		}
-		
-		return language;
-	};
-	_languages["English"] = read_language(header.english_strings);
-	_languages["French" ] = read_language(header.french_strings);
-	_languages["German" ] = read_language(header.german_strings);
-	_languages["Spanish"] = read_language(header.spanish_strings);
-	_languages["Italian"] = read_language(header.italian_strings);
-	
-	// Read point objects.
-	auto tie_table = src->read<world_object_table>(header.ties);
-	_object_store.ties.resize(tie_table.num_elements);
-	src->read_v(_object_store.ties);
-
-	auto shrub_table = src->read<world_object_table>(header.shrubs);
-	_object_store.shrubs.resize(shrub_table.num_elements);
-	src->read_v(_object_store.shrubs);
-	
-	auto moby_table = src->read<world_object_table>(header.mobies);
-	_object_store.mobies.resize(moby_table.num_elements);
-	src->read_v(_object_store.mobies);
-	
-	// Read splines.
-	auto spline_table = src->read<world_spline_table_header>(header.splines);
-	for(std::size_t i = 0; i < spline_table.num_splines; i++) {
-		uint32_t spline_offset = src->read<uint32_t>(header.splines + 0x10 + i * 4);
-		uint32_t num_vertices = src->read<uint32_t>
-			(header.splines + spline_table.data_offset + spline_offset);
-		
-		spline object;
-		
-		src->seek(src->tell() + 0xc);
-		for(std::size_t i = 0; i < num_vertices; i++) {
-			float x = src->read<float>();
-			float y = src->read<float>();
-			float z = src->read<float>();
-			object.points.emplace_back(x, y, z);
-			src->seek(src->tell() + 4);
-		}
-		
-		_object_store.splines.push_back(object);
-	}
-	
-	// Assign internal ID's to all the objects.
-	for_each_object_type([&]<typename T>() {
-		for(std::size_t i = 0; i < objects_of_type<T>().size(); i++) {
-			object_id id{_next_object_id++};
-			member_for_type<T>(_object_mappings).id_to_index[id] = i;
-			member_for_type<T>(_object_mappings).index_to_id[i] = id;
-		}
-	});
-}
-
 level_file_header level_read_file_header_or_throw(iso_stream* iso, std::size_t offset) {
 	auto file_header = level_read_file_header(iso, offset);
 	if(!file_header) {
@@ -122,7 +48,14 @@ level::level(iso_stream* iso, toc_level index)
 		_world_segment_tracepoint.emplace(_world_segment);
 		_world_segment = &(*_world_segment_tracepoint);
 	}
-	world.read(_world_segment);
+	
+	auto world_hdr = _world_segment->read<world_header>(0);
+	properties = _world_segment->read<world_properties>(world_hdr.properties);
+	read_strings(world_hdr);
+	read_ties(world_hdr.ties);
+	read_shrubs(world_hdr.shrubs);
+	read_mobies(world_hdr.mobies);
+	read_splines(world_hdr.splines);
 	
 	_asset_segment = iso->get_decompressed
 		(_file_header.base_offset + _file_header.primary_header_offset + _primary_header.asset_wad, true);
@@ -140,6 +73,142 @@ level::level(iso_stream* iso, toc_level index)
 	read_moby_models(asset_offset, asset_header);
 	read_textures(asset_offset, asset_header);
 	read_tfrags();
+}
+
+void level::read_strings(world_header header) {
+	auto read_language = [&](uint32_t offset) {
+		std::vector<game_string> language;
+	
+		auto table = _world_segment->read<world_string_table_header>(offset);
+		std::vector<world_string_table_entry> entries(table.num_strings);
+		_world_segment->read_v(entries);
+		
+		for(world_string_table_entry& entry : entries) {
+			_world_segment->seek(offset + entry.string.value);
+			language.push_back({ entry.id, _world_segment->read_string() });
+		}
+		
+		return language;
+	};
+	game_strings[0] = read_language(header.english_strings);
+	game_strings[1] = read_language(header.french_strings);
+	game_strings[2] = read_language(header.german_strings);
+	game_strings[3] = read_language(header.spanish_strings);
+	game_strings[4] = read_language(header.italian_strings);
+}
+
+void level::read_ties(std::size_t offset) {
+	auto tie_table = _world_segment->read<world_object_table>(offset);
+	ties.resize(tie_table.count);
+	for(tie_entity& tie : ties) {
+		world_tie data = _world_segment->read<world_tie>();
+		// entity
+		tie.id = { _next_entity_id++ };
+		tie.selected = false;
+		// matrix_entity
+		tie.local_to_world = data.local_to_world();
+		// tie_entity
+		tie.unknown_0 = data.unknown_0;
+		tie.unknown_4 = data.unknown_4;
+		tie.unknown_8 = data.unknown_8;
+		tie.unknown_c = data.unknown_c;
+		tie.unknown_50 = data.unknown_50;
+		tie.uid = data.uid;
+		tie.unknown_58 = data.unknown_58;
+		tie.unknown_5c = data.unknown_5c;
+	}
+}
+
+void level::read_shrubs(std::size_t offset) {
+	auto shrub_table = _world_segment->read<world_object_table>(offset);
+	shrubs.resize(shrub_table.count);
+	for(shrub_entity& shrub : shrubs) {
+		world_shrub data = _world_segment->read<world_shrub>();
+		// entity
+		shrub.id = { _next_entity_id++ };
+		shrub.selected = false;
+		// matrix_entity
+		shrub.local_to_world = data.local_to_world();
+		// shrub_entity
+		shrub.unknown_0 = data.unknown_0;
+		shrub.unknown_4 = data.unknown_4;
+		shrub.unknown_8 = data.unknown_8;
+		shrub.unknown_c = data.unknown_c;
+		shrub.unknown_50 = data.unknown_50;
+		shrub.unknown_54 = data.unknown_54;
+		shrub.unknown_58 = data.unknown_58;
+		shrub.unknown_5c = data.unknown_5c;
+		shrub.unknown_60 = data.unknown_60;
+		shrub.unknown_64 = data.unknown_64;
+		shrub.unknown_68 = data.unknown_68;
+		shrub.unknown_6c = data.unknown_6c;
+	}
+}
+
+void level::read_mobies(std::size_t offset) {
+	auto moby_table = _world_segment->read<world_object_table>(offset);
+	mobies.resize(moby_table.count);
+	for(moby_entity& moby : mobies) {
+		world_moby data = _world_segment->read<world_moby>();
+		// entity
+		moby.id = { _next_entity_id++ };
+		moby.selected = false;
+		// euler_entity
+		moby.position = data.position();
+		moby.rotation = data.rotation();
+		// moby_entity
+		moby.size = data.size;
+		moby.unknown_4 = data.unknown_4;
+		moby.unknown_8 = data.unknown_8;
+		moby.unknown_c = data.unknown_c;
+		moby.uid = data.uid;
+		moby.unknown_14 = data.unknown_14;
+		moby.unknown_18 = data.unknown_18;
+		moby.unknown_1c = data.unknown_1c;
+		moby.unknown_20 = data.unknown_20;
+		moby.unknown_24 = data.unknown_24;
+		moby.class_num = data.class_num;
+		moby.scale = data.scale;
+		moby.unknown_30 = data.unknown_30;
+		moby.unknown_34 = data.unknown_34;
+		moby.unknown_38 = data.unknown_38;
+		moby.unknown_3c = data.unknown_3c;
+		moby.unknown_58 = data.unknown_58;
+		moby.unknown_5c = data.unknown_5c;
+		moby.unknown_60 = data.unknown_60;
+		moby.unknown_64 = data.unknown_64;
+		moby.unknown_68 = data.unknown_68;
+		moby.unknown_6c = data.unknown_6c;
+		moby.unknown_70 = data.unknown_70;
+		moby.unknown_74 = data.unknown_74;
+		moby.unknown_78 = data.unknown_78;
+		moby.unknown_7c = data.unknown_7c;
+		moby.unknown_80 = data.unknown_80;
+		moby.unknown_84 = data.unknown_84;
+	}
+}
+
+void level::read_splines(std::size_t offset) {
+	auto spline_table = _world_segment->read<world_spline_table>(offset);
+	
+	std::vector<uint32_t> spline_offsets(spline_table.spline_count);
+	_world_segment->read_v(spline_offsets);
+	
+	for(uint32_t spline_offset : spline_offsets) {
+		auto spline_header = _world_segment->read<world_spline_header>
+			(offset + spline_table.data_offset + spline_offset);
+		
+		spline_entity& spline = splines.emplace_back();
+		spline.id = { _next_entity_id++ };
+		spline.selected = false;
+		spline.vertices.resize(spline_header.vertex_count);
+		for(glm::vec4& vertex : spline.vertices) {
+			vertex.x = _world_segment->read<float>();
+			vertex.y = _world_segment->read<float>();
+			vertex.z = _world_segment->read<float>();
+			vertex.w = _world_segment->read<float>();
+		}
+	}
 }
 
 void level::read_moby_models(std::size_t asset_offset, level_asset_header asset_header) {
@@ -277,4 +346,20 @@ void level::read_tfrags() {
 
 stream* level::moby_stream() {
 	return _world_segment;
+}
+
+void level::clear_selection() {
+	for_each<entity>([&](entity& ent) {
+		ent.selected = false;
+	});
+}
+
+std::vector<entity_id> level::selected_entity_ids() {
+	std::vector<entity_id> ids;
+	for_each<entity>([&](entity& ent) {
+		if(ent.selected) {
+			ids.push_back(ent.id);
+		}
+	});
+	return ids;
 }

@@ -21,23 +21,23 @@
 #include "app.h"
 #include "imgui_includes.h" // HSV stuff.
 
-void gl_renderer::draw_spline(const std::vector<glm::vec3>& points, const glm::mat4& mvp, const glm::vec4& colour) const{
+void gl_renderer::draw_spline(spline_entity& spline, const glm::mat4& world_to_clip, const glm::vec4& colour) const{
 	
-	glUniformMatrix4fv(shaders.solid_colour_transform, 1, GL_FALSE, &mvp[0][0]);
+	glUniformMatrix4fv(shaders.solid_colour_transform, 1, GL_FALSE, &world_to_clip[0][0]);
 	glUniform4f(shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
 
 	GLuint vertex_buffer;
 	glGenBuffers(1, &vertex_buffer);
 	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
 	glBufferData(GL_ARRAY_BUFFER,
-		points.size() * sizeof(float) * 3,
-		points.data(), GL_STATIC_DRAW);
+		spline.vertices.size() * sizeof(glm::vec4),
+		spline.vertices.data(), GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), nullptr);
 
-	glDrawArrays(GL_LINE_STRIP, 0, points.size());
+	glDrawArrays(GL_LINE_STRIP, 0, spline.vertices.size());
 
 	glDisableVertexAttribArray(0);
 	glDeleteBuffers(1, &vertex_buffer);
@@ -227,10 +227,10 @@ glm::vec4 gl_renderer::colour_coded_submodel_index(std::size_t index, std::size_
 void gl_renderer::reset_camera(app* a) {
 	camera_rotation = glm::vec3(0, 0, 0);
 	if(level* lvl = a->get_level()) {
-		if(lvl->world.count<moby>() > 0) {
-			camera_position = lvl->world.object_from_index<moby>(0).position();
+		if(lvl->mobies.size() > 0) {
+			camera_position = lvl->mobies[0].position;
 		} else {
-			camera_position = lvl->world.ship.position();
+			camera_position = lvl->properties.ship_position();
 		}
 	} else {
 		camera_position = glm::vec3(0, 0, 0);

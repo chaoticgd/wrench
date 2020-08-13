@@ -20,7 +20,7 @@
 #define FORMATS_LEVEL_IMPL_H
 
 #include <memory>
-#include <variant>
+#include <optional>
 #include <stdint.h>
 
 #include "../util.h"
@@ -38,225 +38,103 @@
 #	Read LEVEL*.WAD files.
 # */
 
-struct object_id {
+struct level_code_segment {
+	level_code_segment_header header;
+	std::vector<uint8_t> bytes;
+};
+
+struct game_string {
+	uint32_t id;
+	std::string str;
+};
+
+struct entity_id {
 	std::size_t value;
 	
-	bool operator<(const object_id& rhs) const {
+	bool operator<(const entity_id& rhs) const {
 		return value < rhs.value;
 	}
 	
-	bool operator==(const object_id& rhs) const {
+	bool operator==(const entity_id& rhs) const {
 		return value == rhs.value;
 	}
 };
 
-#define for_each_object_type(...) \
-	(__VA_ARGS__).template operator()<tie>(); \
-	(__VA_ARGS__).template operator()<shrub>(); \
-	(__VA_ARGS__).template operator()<moby>(); \
-	(__VA_ARGS__).template operator()<spline>()
-
-// Return the argument corresponding to the type T.
-template <
-	typename T,
-	typename T_tie,
-	typename T_shrub,
-	typename T_moby,
-	typename T_spline>
-auto& argument_for_type(
-		T_tie& tie_,
-		T_shrub& shrub_,
-		T_moby& moby_,
-		T_spline& spline_) {
-	if constexpr(std::is_same_v<T, tie>) return tie_;
-	if constexpr(std::is_same_v<T, shrub>) return shrub_;
-	if constexpr(std::is_same_v<T, moby>) return moby_;
-	if constexpr(std::is_same_v<T, spline>) return spline_;
-	
-	// FIXME: This should be a compile-time error!
-	throw std::runtime_error("argument_for_type called with invalid object type!");
-}
-
-// Access the member of the input struct corresponding to the object type T.
-template <typename T, typename T_in>
-auto& member_for_type(T_in& in) {
-	return argument_for_type<T>(in.ties, in.shrubs, in.mobies, in.splines);
-}
-
-struct object_list {
-	std::vector<object_id> ties;
-	std::vector<object_id> shrubs;
-	std::vector<object_id> mobies;
-	std::vector<object_id> splines;
-	
-	template <typename T>
-	void add(object_id id) {
-		member_for_type<T>(*this).push_back(id);
-	}
-	
-	std::size_t size() const {
-		std::size_t result = 0;
-		for_each_object_type([&]<typename T>() {
-			result += member_for_type<T>(*this).size();
-		});
-		return result;
-	}
-	
-	bool contains(object_id id) const {
-		bool result = false;
-		for_each_object_type([&]<typename T>() {
-			const std::vector<object_id>& objects = member_for_type<T>(*this);
-			if(std::find(objects.begin(), objects.end(), id) != objects.end()) {
-				result = true;
-			}
-		});
-		return result;
-	}
-	
-	object_id first() const {
-		std::optional<object_id> result;
-		for_each_object_type([&]<typename T>() {
-			const std::vector<object_id>& objects = member_for_type<T>(*this);
-			if(!result && objects.size() > 0) {
-				result = objects[0];
-			}
-		});
-		if(!result) {
-			throw std::runtime_error("object_list::first called on an empty object_list. Add an if(x.size() > 0) check.");
-		}
-		return *result;
-	}
+struct entity {
+	entity_id id;
+	bool selected;
 };
 
-class game_world {
-public:
-	struct game_string {
-		uint32_t id;
-		std::string content;	
-	};
-	
-	object_list selection;
-	world_ship_data ship;
-	
-	game_world() {}
-	
-	bool is_selected(object_id id) const;
-	
-	void read(stream* src);
-	void write();
-	
-	// Maps from logical object IDs to physical array indices and vice versa.
-	struct object_mappings {
-		std::map<object_id, std::size_t> id_to_index;
-		std::map<std::size_t, object_id> index_to_id;
-	};
-	
-	template <typename T>
-	bool object_exists(object_id id) {
-		auto& id_to_index = mappings_of_type<T>().id_to_index;
-		return id_to_index.find(id) != id_to_index.end();
-	}
-	
-	template <typename T>
-	T& object_from_id(object_id id) {
-		object_mappings& mappings = mappings_of_type<T>();
-		return objects_of_type<T>()[mappings.id_to_index.at(id)];
-	}
-	
-	template <typename T>
-	T& object_from_index(std::size_t index) {
-		return objects_of_type<T>()[index];
-	}
-
-	template <typename T>
-	std::size_t count() {
-		return objects_of_type<T>().size();
-	}
-	
-	#define find_object_by_id(id, ...) \
-		find_object_by_id_impl(id, (__VA_ARGS__), (__VA_ARGS__), (__VA_ARGS__), (__VA_ARGS__))
-	
-	template <typename... T_callbacks>
-	void find_object_by_id_impl(object_id id, T_callbacks... cbs) {
-		for_each_object_type([&]<typename T>() {
-			if(object_exists<T>(id)) {
-				argument_for_type<T>(cbs...)(id, object_from_id<T>(id));
-			}
-		});
-	}
-	
-	template <typename T, typename T_callback>
-	void for_each_object_of_type(T_callback callback) {
-		auto& objects = objects_of_type<T>();
-		for(std::size_t i = 0; i < objects.size(); i++) {
-			object_id id = mappings_of_type<T>().index_to_id.at(i);
-			callback(id, objects[i]);
-		}
-	}
-	
-	#define for_each_object(...) \
-		for_each_object_impl((__VA_ARGS__), (__VA_ARGS__), (__VA_ARGS__), (__VA_ARGS__))
-	
-	template <typename... T_callbacks>
-	void for_each_object_impl(T_callbacks... cbs) {
-		for_each_object_type([&]<typename T>() {
-			for_each_object_of_type<T>(argument_for_type<T>(cbs...));
-		});
-	}
-	
-	template <typename T, typename T_callback>
-	void for_each_object_of_type_in(
-			std::vector<object_id> objects, T_callback callback) {
-		for(object_id id : objects) {
-			if(object_exists<T>(id)) {
-				callback(id, object_from_id<T>(id));
-			}
-		}
-	}
-	
-	#define for_each_object_in(list, ...) \
-		for_each_object_in_impl(list, (__VA_ARGS__), (__VA_ARGS__), (__VA_ARGS__), (__VA_ARGS__))
-	
-	template <typename... T_callbacks>
-	void for_each_object_in_impl(object_list& list, T_callbacks... cbs) {
-		for_each_object_type([&]<typename T>() {
-			for_each_object_of_type_in<T>
-				(member_for_type<T>(list), argument_for_type<T>(cbs...));
-		});
-	}
-	
-private:
-	template <typename T>
-	std::vector<T>& objects_of_type() {
-		return member_for_type<T>(_object_store);
-	}
-	
-	struct {
-		std::vector<tie> ties;
-		std::vector<shrub> shrubs;
-		std::vector<moby> mobies;
-		std::vector<spline> splines;
-	} _object_store;
-	
-	template <typename T>
-	object_mappings& mappings_of_type() {
-		return member_for_type<T>(_object_mappings);
-	}
-	
-	struct {
-		object_mappings ties;
-		object_mappings shrubs;
-		object_mappings mobies;
-		object_mappings splines;
-	} _object_mappings;
-	std::size_t _next_object_id = 1; // ID to assign to the next new object.
-	
-	std::map<std::string, std::vector<game_string>> _languages;
+struct matrix_entity : public entity {
+	glm::mat4 local_to_world;
 };
 
-struct level_code_segment {
-	level_code_segment_header header;
-	std::vector<uint8_t> bytes;
+struct euler_entity : public entity {
+	glm::vec3 position;
+	glm::vec3 rotation;
+	glm::mat4 local_to_world_cache;
+	glm::mat4 local_to_clip_cache;
+};
+
+struct tie_entity final : public matrix_entity {
+	uint32_t unknown_0;
+	uint32_t unknown_4;
+	uint32_t unknown_8;
+	uint32_t unknown_c;
+	uint32_t unknown_50;
+	int32_t  uid;
+	uint32_t unknown_58;
+	uint32_t unknown_5c;
+};
+
+struct shrub_entity final : public matrix_entity {
+	uint32_t unknown_0;
+	uint32_t unknown_4;
+	uint32_t unknown_8;
+	uint32_t unknown_c;
+	uint32_t unknown_50;
+	uint32_t unknown_54;
+	uint32_t unknown_58;
+	uint32_t unknown_5c;
+	uint32_t unknown_60;
+	uint32_t unknown_64;
+	uint32_t unknown_68;
+	uint32_t unknown_6c;
+};
+
+struct moby_entity final : public euler_entity {
+	uint32_t size;
+	uint32_t unknown_4;
+	uint32_t unknown_8;
+	uint32_t unknown_c;
+	int32_t  uid;
+	uint32_t unknown_14;
+	uint32_t unknown_18;
+	uint32_t unknown_1c;
+	uint32_t unknown_20;
+	uint32_t unknown_24;
+	uint32_t class_num;
+	float    scale;
+	uint32_t unknown_30;
+	uint32_t unknown_34;
+	uint32_t unknown_38;
+	uint32_t unknown_3c;
+	uint32_t unknown_58;
+	uint32_t unknown_5c;
+	uint32_t unknown_60;
+	uint32_t unknown_64;
+	uint32_t unknown_68;
+	uint32_t unknown_6c;
+	uint32_t unknown_70;
+	uint32_t unknown_74;
+	uint32_t unknown_78;
+	uint32_t unknown_7c;
+	uint32_t unknown_80;
+	uint32_t unknown_84;
+};
+
+struct spline_entity final : entity {
+	std::vector<glm::vec4> vertices;
 };
 
 class level {
@@ -265,17 +143,48 @@ public:
 	level(const level& rhs) = delete;
 	
 private:
+	void read_strings(world_header header);
+	void read_ties(std::size_t offset);
+	void read_shrubs(std::size_t offset);
+	void read_mobies(std::size_t offset);
+	void read_splines(std::size_t offset);
+	
 	void read_moby_models(std::size_t asset_offset, level_asset_header asset_header);
 	void read_textures(std::size_t asset_offset, level_asset_header asset_header);
 	void read_tfrags();
 	
 public:
-	std::map<std::string, std::map<uint32_t, std::string>> game_strings() { return {}; }
-
 	stream* moby_stream();
-
-	game_world world;
 	
+	// World segment
+	world_properties properties;
+	std::array<std::vector<game_string>, 5> game_strings;
+	std::vector<tie_entity> ties;
+	std::vector<shrub_entity> shrubs;
+	std::vector<moby_entity> mobies;
+	std::vector<spline_entity> splines;
+	
+	template <typename T, typename F>
+	void for_each(F callback) {
+		for_each_if_is_base_of<T, tie_entity>(callback, ties);
+		for_each_if_is_base_of<T, shrub_entity>(callback, shrubs);
+		for_each_if_is_base_of<T, moby_entity>(callback, mobies);
+		for_each_if_is_base_of<T, spline_entity>(callback, splines);
+	}
+	
+	template<typename Base, typename Derived, typename F>
+	void for_each_if_is_base_of(F callback, std::vector<Derived>& entities) {
+		if constexpr(std::is_base_of_v<Base, Derived>) {
+			for(auto& ent : entities) {
+				callback(ent);
+			}
+		}
+	}
+	
+	void clear_selection();
+	std::vector<entity_id> selected_entity_ids();
+	
+	// Asset segment
 	std::map<uint32_t, std::size_t> moby_class_to_model;
 	std::vector<moby_model> moby_models;
 	std::vector<texture> mipmap_textures;
@@ -293,8 +202,12 @@ private:
 	level_file_header _file_header;
 	level_primary_header _primary_header;
 	proxy_stream _file;
+	
 	stream* _world_segment;
+	std::size_t _next_entity_id = 1;
+	
 	stream* _asset_segment;
+	
 	std::optional<trace_stream> _world_segment_tracepoint;
 	std::optional<trace_stream> _asset_segment_tracepoint;
 };

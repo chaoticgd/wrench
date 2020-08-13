@@ -19,6 +19,7 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -38,8 +39,13 @@ std::vector<std::string> to_hex_dump(uint32_t* data, std::size_t align, std::siz
 std::string md5_to_printable_string(uint8_t in[MD5_DIGEST_LENGTH]);
 
 template <typename T>
-bool contains(T container, typename T::value_type value) {
+bool contains(T container, const typename T::value_type& value) {
 	return std::find(container.begin(), container.end(), value) != container.end();
+}
+
+template <typename K, typename V>
+bool map_contains(std::map<K, V> container, const K& key) {
+	return container.find(key) != container.end();
 }
 
 template <typename T>

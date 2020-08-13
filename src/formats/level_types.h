@@ -23,7 +23,6 @@
 #include <optional>
 #include <stdint.h>
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 #include "../stream.h"
 
@@ -124,6 +123,12 @@ packed_struct(vec3f,
 	bool operator!=(const vec3f& rhs) const {
 		return x != rhs.x || y != rhs.y || z != rhs.z;
 	}
+)
+
+packed_struct(colour48,
+	uint32_t red;
+	uint32_t green;
+	uint32_t blue;
 )
 
 struct level_primary_header;
@@ -244,7 +249,7 @@ packed_struct(level_texture_entry,
 // *****************************************************************************
 
 packed_struct(world_header,
-	uint32_t ship;               // 0x0
+	uint32_t properties;         // 0x0
 	uint32_t directional_lights; // 0x4
 	uint32_t unknown_08;         // 0x8
 	uint32_t unknown_0c;         // 0xc
@@ -277,6 +282,24 @@ packed_struct(world_header,
 	uint32_t splines;            // 0x78
 )
 
+packed_struct(world_properties,
+	uint32_t unknown_0;     // 0x0
+	uint32_t unknown_4;     // 0x4
+	uint32_t unknown_8;     // 0x8
+	colour48 fog_colour;    // 0xc
+	uint32_t unknown_18;    // 0x18
+	uint32_t unknown_1c;    // 0x1c
+	float fog_distance;     // 0x20
+	uint32_t unknown_24;    // 0x24
+	uint32_t death_plane_z; // 0x28
+	uint32_t unknown_2c;    // 0x2c
+	uint32_t unknown_30;    // 0x30
+	uint32_t unknown_34;    // 0x34
+	uint32_t unknown_38;    // 0x38
+	vec3f ship_position;    // 0x3c
+	float ship_rotation_z;  // 0x40
+)
+
 packed_struct(world_string_table_header,
 	uint32_t num_strings;
 	uint32_t unknown;
@@ -290,27 +313,21 @@ packed_struct(world_string_table_entry,
 )
 
 packed_struct(world_object_table,
-	uint32_t num_elements;
+	uint32_t count;
 	uint32_t pad[3];
 	// Elements follow.
 )
 
-packed_struct(world_spline_table_header,
-	uint32_t num_splines;
+packed_struct(world_spline_table,
+	uint32_t spline_count;
 	uint32_t data_offset;
-	uint32_t unknown_08;
-	uint32_t unknown_0c;
+	uint32_t unknown_8;
+	uint32_t unknown_c;
 )
 
-packed_struct(world_spline_entry,
-	uint32_t num_vertices;
+packed_struct(world_spline_header,
+	uint32_t vertex_count;
 	uint32_t pad[3];
-)
-
-packed_struct(world_ship_data,
-	uint32_t unknown1[0xf];
-	vec3f position;
-	float rotationZ;
 )
 
 packed_struct(world_directional_light_table,
@@ -322,74 +339,42 @@ packed_struct(world_directional_light,
 	uint8_t unknown[64];
 )
 
-packed_struct(tie,
-	uint32_t unknown_0;  // 0x0
-	uint32_t unknown_4;  // 0x4
-	uint32_t unknown_8;  // 0x8
-	uint32_t unknown_c;  // 0xc
-	racmat mat; //0x10
-	uint32_t unknown_4c; // 0x4c
-	uint32_t unknown_50; // 0x50
-	int32_t  uid;        // 0x54
-	uint32_t unknown_58; // 0x58
-	uint32_t unknown_5c; // 0x5c
-
-	void set_translation(glm::vec3 trans) {
-		mat.m41 = trans.x;
-		mat.m42 = trans.y;
-		mat.m43 = trans.z;
-	}
-
-	void translate(glm::vec3 trans) {
-		mat = glm::translate(mat(), trans);
-	}
-
-	void rotate(glm::vec3 rot) {
-		mat = glm::rotate(mat(), rot.x, glm::vec3(1, 0, 1));
-		mat = glm::rotate(mat(), rot.y, glm::vec3(0, 1, 1));
-		mat = glm::rotate(mat(), rot.z, glm::vec3(0, 0, 1));
-	}
+packed_struct(world_tie,
+	uint32_t unknown_0;      // 0x0
+	uint32_t unknown_4;      // 0x4
+	uint32_t unknown_8;      // 0x8
+	uint32_t unknown_c;      // 0xc
+	racmat   local_to_world; // 0x10
+	uint32_t unknown_4c;     // 0x4c
+	uint32_t unknown_50;     // 0x50
+	int32_t  uid;            // 0x54
+	uint32_t unknown_58;     // 0x58
+	uint32_t unknown_5c;     // 0x5c
 )
 
-packed_struct(shrub,
-	uint32_t unknown_0;  // 0x0
-	uint32_t unknown_4;  // 0x4
-	uint32_t unknown_8;  // 0x8
-	uint32_t unknown_c;  // 0xc
-	racmat mat; //0x10
-	uint32_t unknown_4c; // 0x4c
-	uint32_t unknown_50; // 0x50
-	uint32_t unknown_54; // 0x54
-	uint32_t unknown_58; // 0x58
-	uint32_t unknown_5c; // 0x5c
-	uint32_t unknown_60; // 0x60
-	uint32_t unknown_64; // 0x64
-	uint32_t unknown_68; // 0x68
-	uint32_t unknown_6c; // 0x6c
-
-	void set_translation(glm::vec3 trans) {
-		mat.m41 = trans.x;
-		mat.m42 = trans.y;
-		mat.m43 = trans.z;
-	}
-
-	void translate(glm::vec3 trans) {
-		mat = glm::translate(mat(), trans);
-	}
-
-	void rotate(glm::vec3 rot) {
-		mat = glm::rotate(mat(), rot.x, glm::vec3(1, 0, 1));
-		mat = glm::rotate(mat(), rot.y, glm::vec3(0, 1, 1));
-		mat = glm::rotate(mat(), rot.z, glm::vec3(0, 0, 1));
-	}
+packed_struct(world_shrub,
+	uint32_t unknown_0;      // 0x0
+	uint32_t unknown_4;      // 0x4
+	uint32_t unknown_8;      // 0x8
+	uint32_t unknown_c;      // 0xc
+	racmat   local_to_world; // 0x10
+	uint32_t unknown_4c;     // 0x4c
+	uint32_t unknown_50;     // 0x50
+	uint32_t unknown_54;     // 0x54
+	uint32_t unknown_58;     // 0x58
+	uint32_t unknown_5c;     // 0x5c
+	uint32_t unknown_60;     // 0x60
+	uint32_t unknown_64;     // 0x64
+	uint32_t unknown_68;     // 0x68
+	uint32_t unknown_6c;     // 0x6c
 )
 
-packed_struct(moby,
-	uint32_t size; // 0x0 Always 0x88?
+packed_struct(world_moby,
+	uint32_t size;       // 0x0 Always 0x88?
 	uint32_t unknown_4;  // 0x4
 	uint32_t unknown_8;  // 0x8
 	uint32_t unknown_c;  // 0xc
-	int32_t  uid;    	// 0x10
+	int32_t  uid;        // 0x10
 	uint32_t unknown_14; // 0x14
 	uint32_t unknown_18; // 0x18
 	uint32_t unknown_1c; // 0x1c
@@ -415,49 +400,6 @@ packed_struct(moby,
 	uint32_t unknown_7c; // 0x7c
 	uint32_t unknown_80; // 0x80
 	uint32_t unknown_84; // 0x84
-
-	glm::mat4 mat() {
-		glm::mat4 model_matrix = glm::translate(glm::mat4(1.f), position());
-		model_matrix = glm::rotate(model_matrix, rotation.x, glm::vec3(1, 0, 0));
-		model_matrix = glm::rotate(model_matrix, rotation.y, glm::vec3(0, 1, 0));
-		model_matrix = glm::rotate(model_matrix, rotation.z, glm::vec3(0, 0, 1));
-		return model_matrix;
-	}
-
-	void set_translation(glm::vec3 trans) {
-		position = trans;
-	}
-
-	void translate(glm::vec3 trans) {
-		position = position() + trans;
-	}
-
-	void rotate(glm::vec3 rot) {
-		rotation = rotation() + rot;
-	}
 )
-
-struct spline {
-	std::vector<glm::vec3> points;	
-	
-	glm::mat4 mat() {
-		if(points.size() < 1) {
-			return glm::mat4(1.f);
-		}
-		return glm::translate(glm::mat4(1.f), points[0]);
-	}
-
-	void set_translation(glm::vec3 trans) {
-		// TODO
-	}
-
-	void translate(glm::vec3 trans) {
-		// TODO
-	}
-
-	void rotate(glm::vec3 rot) {
-		// TODO
-	}
-};
 
 #endif
