@@ -155,11 +155,17 @@ std::map<std::string, model_list> wrench_project::model_lists(app* a) {
 	return result;
 }
 
+void wrench_project::push_command(std::function<void()> apply, std::function<void()> undo) {
+	_history_stack.resize(_history_index++);
+	_history_stack.emplace_back(undo_redo_command { apply, undo });
+	apply();
+}
+
 void wrench_project::undo() {
 	if(_history_index <= 0) {
 		throw command_error("Nothing to undo.");
 	}
-	_history_stack[_history_index - 1]->undo(this);
+	_history_stack[_history_index - 1].undo();
 	_history_index--;
 }
 
@@ -167,7 +173,7 @@ void wrench_project::redo() {
 	if(_history_index >= _history_stack.size()) {
 		throw command_error("Nothing to redo.");
 	}
-	_history_stack[_history_index]->apply(this);
+	_history_stack[_history_index].apply();
 	_history_index++;
 }
 
