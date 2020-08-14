@@ -593,14 +593,19 @@ void inspector_input(wrench_project& proj, const char* label, T_field T_entity::
 	// selected entities.
 	std::optional<T_lane> last_value[MAX_LANES];
 	bool values_equal[MAX_LANES] = { true, true, true, true };
-	lvl->for_each<T_entity>([&](T_entity& ent) {
-		if(ent.selected) {
-			for(int i = 0; i < lane_count; i++) {
-				T_lane* value = ((T_lane*) &(ent.*field)) + first_lane + i;
-				if(last_value[i] && *value != last_value[i]) {
-					values_equal[i] = false;
+	bool selection_contains_entity_without_field = false;
+	lvl->for_each<entity>([&](entity& base_ent) {
+		if(base_ent.selected) {
+			if(T_entity* ent = dynamic_cast<T_entity*>(&base_ent)) {
+				for(int i = 0; i < lane_count; i++) {
+					T_lane* value = ((T_lane*) &(*ent.*field)) + first_lane + i;
+					if(last_value[i] && *value != last_value[i]) {
+						values_equal[i] = false;
+					}
+					last_value[i] = *value;
 				}
-				last_value[i] = *value;
+			} else {
+				selection_contains_entity_without_field = true;
 			}
 		}
 	});
@@ -608,6 +613,12 @@ void inspector_input(wrench_project& proj, const char* label, T_field T_entity::
 	if(!last_value[0]) {
 		// None of the selected entities contain the given field, so we
 		// shouldn't draw it.
+		return;
+	}
+	
+	if(selection_contains_entity_without_field) {
+		// We only want to draw an input box if ALL the selected entities have
+		// the corresponding field.
 		return;
 	}
 	
@@ -633,19 +644,30 @@ void inspector_input(wrench_project& proj, const char* label, T_field T_entity::
 				old_values[ent.id] = ent.*field;
 			}
 		});
+		T_lane new_values[MAX_LANES];
+		for(int i = 0; i < MAX_LANES; i++) {
+			if(input_lanes[i].changed) {
+				try {
+					if constexpr(std::is_floating_point_v<T_lane>) {
+						new_values[i] = std::stof(input_lanes[i].str);
+					} else {
+						new_values[i] = std::stoi(input_lanes[i].str);
+					}
+				} catch(std::logic_error&) {
+					// The user has entered an invalid string.
+					return;
+				}
+			}
+		}
 		
 		proj.push_command(
-			[lvl, ids, field, first_lane, input_lanes]() {
+			[lvl, ids, field, first_lane, input_lanes, new_values]() {
 				lvl->template for_each<T_entity>([&](T_entity& ent) {
 					if(contains(ids, ent.id)) {
 						for(int i = 0; i < MAX_LANES; i++) {
 							T_lane* value = ((T_lane*) &(ent.*field)) + first_lane + i;
 							if(input_lanes[i].changed && input_lanes[i].str != std::to_string(*value)) {
-								if constexpr(std::is_floating_point_v<T_lane>) {
-									*value = std::stof(input_lanes[i].str);
-								} else {
-									*value = std::stoi(input_lanes[i].str);
-								}
+								*value = new_values[i];
 							}
 						}
 					}
