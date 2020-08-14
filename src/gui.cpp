@@ -633,19 +633,30 @@ void inspector_input(wrench_project& proj, const char* label, T_field T_entity::
 				old_values[ent.id] = ent.*field;
 			}
 		});
+		T_lane new_values[MAX_LANES];
+		for(int i = 0; i < MAX_LANES; i++) {
+			if(input_lanes[i].changed) {
+				try {
+					if constexpr(std::is_floating_point_v<T_lane>) {
+						new_values[i] = std::stof(input_lanes[i].str);
+					} else {
+						new_values[i] = std::stoi(input_lanes[i].str);
+					}
+				} catch(std::logic_error&) {
+					// The user has entered an invalid string.
+					return;
+				}
+			}
+		}
 		
 		proj.push_command(
-			[lvl, ids, field, first_lane, input_lanes]() {
+			[lvl, ids, field, first_lane, input_lanes, new_values]() {
 				lvl->template for_each<T_entity>([&](T_entity& ent) {
 					if(contains(ids, ent.id)) {
 						for(int i = 0; i < MAX_LANES; i++) {
 							T_lane* value = ((T_lane*) &(ent.*field)) + first_lane + i;
 							if(input_lanes[i].changed && input_lanes[i].str != std::to_string(*value)) {
-								if constexpr(std::is_floating_point_v<T_lane>) {
-									*value = std::stof(input_lanes[i].str);
-								} else {
-									*value = std::stoi(input_lanes[i].str);
-								}
+								*value = new_values[i];
 							}
 						}
 					}
