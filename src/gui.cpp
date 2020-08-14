@@ -33,7 +33,6 @@
 #include "renderer.h"
 #include "worker_thread.h"
 #include "formats/bmp.h"
-#include "commands/translate_command.h"
 
 #include "unwindows.h"
 
@@ -433,8 +432,51 @@ void gui::render_tools(app& a, float menu_bar_height) {
 		ImGui::InputFloat3("##displacement_input", &a.translate_tool_displacement.x);
 		if(ImGui::Button("Apply")) {
 			if(auto lvl = a.get_level()) {
-				a.get_project()->emplace_command<translate_command>
-					(lvl, a.translate_tool_displacement);
+				level_proxy lvlp(a.get_project());
+				std::vector<entity_id> ids = lvl->selected_entity_ids();
+				glm::vec3 displacement = a.translate_tool_displacement;
+				std::map<entity_id, glm::vec3> old_positions;
+				lvl->for_each<matrix_entity>([&](matrix_entity& ent) {
+					if(ent.selected) {
+						old_positions[ent.id] = ent.local_to_world[3];
+					}
+				});
+				lvl->for_each<euler_entity>([&](euler_entity& ent) {
+					if(ent.selected) {
+						old_positions[ent.id] = ent.position;
+					}
+				});
+				
+				a.get_project()->push_command(
+					[lvlp, ids, displacement]() {
+						lvlp.get().for_each<matrix_entity>([&](matrix_entity& ent) {
+							if(contains(ids, ent.id)) {
+								ent.local_to_world[3].x += displacement.x;
+								ent.local_to_world[3].y += displacement.y;
+								ent.local_to_world[3].z += displacement.z;
+							}
+						});
+						lvlp.get().for_each<euler_entity>([&](euler_entity& ent) {
+							if(contains(ids, ent.id)) {
+								ent.position += displacement;
+							}
+						});
+					},
+					[lvlp, old_positions]() {
+						lvlp.get().for_each<matrix_entity>([&](matrix_entity& ent) {
+							if(map_contains(old_positions, ent.id)) {
+								const glm::vec3& pos = old_positions.at(ent.id);
+								ent.local_to_world[3].x = pos.x;
+								ent.local_to_world[3].y = pos.y;
+								ent.local_to_world[3].z = pos.z;
+							}
+						});
+						lvlp.get().for_each<euler_entity>([&](euler_entity& ent) {
+							if(map_contains(old_positions, ent.id)) {
+								ent.position = old_positions.at(ent.id);
+							}
+						});
+					});
 			}
 			a.translate_tool_displacement = glm::vec3(0, 0, 0);
 		}
@@ -545,13 +587,13 @@ template <typename T_lane, typename T_field, typename T_entity>
 void inspector_input(wrench_project& proj, const char* label, T_field T_entity::*field, std::size_t first_lane, int lane_count) {
 	static const int MAX_LANES = 4;
 	assert(lane_count <= MAX_LANES);
-	level& lvl = *proj.selected_level();
+	level* lvl = proj.selected_level();
 	
 	// Determine whether all the values from a given lane are the same for all
 	// selected entities.
 	std::optional<T_lane> last_value[MAX_LANES];
 	bool values_equal[MAX_LANES] = { true, true, true, true };
-	lvl.for_each<T_entity>([&](T_entity& ent) {
+	lvl->for_each<T_entity>([&](T_entity& ent) {
 		if(ent.selected) {
 			for(int i = 0; i < lane_count; i++) {
 				T_lane* value = ((T_lane*) &(ent.*field)) + first_lane + i;
@@ -578,67 +620,44 @@ void inspector_input(wrench_project& proj, const char* label, T_field T_entity::
 	
 	inspector_input_text_n(label, input_lanes, lane_count);
 	
-	struct property_changed_command : public command {
-		property_changed_command() {}
-		property_changed_command(property_changed_command& rhs) = default;
-		property_changed_command(property_changed_command&& rhs) = default;
-		wrench_project* proj;
-		std::size_t level_index;
-		std::vector<entity_id> ids;
-		T_field T_entity::*field;
-		int first_lane;
-		inspector_text_lane input_lanes[MAX_LANES];
-		std::map<entity_id, T_field> old_values;
-		level& lvl() {
-			return *proj->level_from_index(level_index);
-		}
-		void apply(wrench_project* project) override {
-			lvl().template for_each<T_entity>([&](T_entity& ent) {
-				if(contains(ids, ent.id)) {
-					for(int i = 0; i < MAX_LANES; i++) {
-						T_lane* value = ((T_lane*) &(ent.*field)) + first_lane + i;
-						if(input_lanes[i].changed && input_lanes[i].str != std::to_string(*value)) {
-							if constexpr(std::is_floating_point_v<T_lane>) {
-								*value = std::stof(input_lanes[i].str);
-							} else {
-								*value = std::stoi(input_lanes[i].str);
-							}
-						}
-					}
-				}
-			});
-		}
-		void undo(wrench_project* project) override {
-			lvl().template for_each<T_entity>([&](T_entity& ent) {
-				if(contains(ids, ent.id)) {
-					ent.*field = old_values.at(ent.id);
-				}
-			});
-		}
-	};
-	
 	bool any_lane_changed = false;
 	for(int i = 0; i < lane_count; i++) {
 		any_lane_changed |= input_lanes[i].changed;
 	}
 	
 	if(any_lane_changed) {
-		property_changed_command cmd;
-		cmd.proj = &proj;
-		cmd.level_index = proj.selected_level_index();
-		cmd.ids = lvl.selected_entity_ids();
-		cmd.field = field;
-		cmd.first_lane = first_lane;
-		cmd.input_lanes[0] = input_lanes[0];
-		cmd.input_lanes[1] = input_lanes[1];
-		cmd.input_lanes[2] = input_lanes[2];
-		cmd.input_lanes[3] = input_lanes[3];
-		lvl.for_each<T_entity>([&](T_entity& ent) {
+		std::vector<entity_id> ids = lvl->selected_entity_ids();
+		std::map<entity_id, T_field> old_values;
+		lvl->for_each<T_entity>([&](T_entity& ent) {
 			if(ent.selected) {
-				cmd.old_values[ent.id] = ent.*field;
+				old_values[ent.id] = ent.*field;
 			}
 		});
-		proj.emplace_command<property_changed_command>(std::move(cmd));
+		
+		proj.push_command(
+			[lvl, ids, field, first_lane, input_lanes]() {
+				lvl->template for_each<T_entity>([&](T_entity& ent) {
+					if(contains(ids, ent.id)) {
+						for(int i = 0; i < MAX_LANES; i++) {
+							T_lane* value = ((T_lane*) &(ent.*field)) + first_lane + i;
+							if(input_lanes[i].changed && input_lanes[i].str != std::to_string(*value)) {
+								if constexpr(std::is_floating_point_v<T_lane>) {
+									*value = std::stof(input_lanes[i].str);
+								} else {
+									*value = std::stoi(input_lanes[i].str);
+								}
+							}
+						}
+					}
+				});
+			},
+			[lvl, ids, field, old_values]() {
+				lvl->template for_each<T_entity>([&](T_entity& ent) {
+					if(contains(ids, ent.id)) {
+						ent.*field = old_values.at(ent.id);
+					}
+				});
+			});
 	}
 }
 

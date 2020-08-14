@@ -21,7 +21,6 @@
 
 #include <ZipLib/ZipArchive.h>
 
-#include "command.h"
 #include "game_db.h"
 #include "iso_stream.h"
 #include "worker_logger.h"
@@ -50,6 +49,11 @@ struct model_list {
 	std::vector<texture>* textures;
 };
 
+struct undo_redo_command {
+	std::function<void()> apply;
+	std::function<void()> undo;
+};
+
 class wrench_project {
 public:
 	wrench_project(
@@ -73,8 +77,7 @@ public:
 	std::map<std::string, std::vector<texture>*> texture_lists(app* a);
 	std::map<std::string, model_list> model_lists(app* a);
 	
-	template <typename T, typename... T_constructor_args>
-	void emplace_command(T_constructor_args... args);
+	void push_command(std::function<void()> apply, std::function<void()> undo);
 	void undo();
 	void redo();
 	
@@ -103,7 +106,7 @@ public: // Initialisation order matters.
 
 private:
 	std::size_t _history_index;
-	std::vector<std::unique_ptr<command>> _history_stack;
+	std::vector<undo_redo_command> _history_stack;
 	
 	std::map<std::size_t, std::unique_ptr<racpak>> _archives;
 	std::map<std::size_t, std::vector<texture>> _texture_wads;
@@ -121,12 +124,23 @@ public:
 	table_of_contents toc;
 };
 
-template <typename T, typename... T_constructor_args>
-void wrench_project::emplace_command(T_constructor_args... args) {
-	_history_stack.resize(_history_index++);
-	_history_stack.emplace_back(std::make_unique<T>(args...));
-	auto& cmd = _history_stack[_history_index - 1];
-	cmd->apply(this);
-}
+class command_error : public std::runtime_error {
+	using std::runtime_error::runtime_error;
+};
+
+// Store this in an undo/redo command to access a level object. This is required
+// to check if the level has been unloaded or reallocated.
+struct level_proxy {
+	level_proxy(wrench_project* p) : proj(p), index(p->selected_level_index()) {}
+	wrench_project* proj;
+	std::size_t index;
+	level& get() const {
+		level* lvl = proj->level_from_index(index);
+		if(lvl == nullptr) {
+			throw command_error("The level this undo/redo operation applies to is not currently loaded.");
+		}
+		return *lvl;
+	}
+};
 
 #endif
