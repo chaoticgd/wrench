@@ -61,6 +61,7 @@ struct entity_id {
 };
 
 struct entity {
+	virtual ~entity() {}
 	entity_id id;
 	bool selected;
 };

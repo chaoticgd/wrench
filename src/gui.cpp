@@ -593,14 +593,19 @@ void inspector_input(wrench_project& proj, const char* label, T_field T_entity::
 	// selected entities.
 	std::optional<T_lane> last_value[MAX_LANES];
 	bool values_equal[MAX_LANES] = { true, true, true, true };
-	lvl->for_each<T_entity>([&](T_entity& ent) {
-		if(ent.selected) {
-			for(int i = 0; i < lane_count; i++) {
-				T_lane* value = ((T_lane*) &(ent.*field)) + first_lane + i;
-				if(last_value[i] && *value != last_value[i]) {
-					values_equal[i] = false;
+	bool selection_contains_entity_without_field = false;
+	lvl->for_each<entity>([&](entity& base_ent) {
+		if(base_ent.selected) {
+			if(T_entity* ent = dynamic_cast<T_entity*>(&base_ent)) {
+				for(int i = 0; i < lane_count; i++) {
+					T_lane* value = ((T_lane*) &(*ent.*field)) + first_lane + i;
+					if(last_value[i] && *value != last_value[i]) {
+						values_equal[i] = false;
+					}
+					last_value[i] = *value;
 				}
-				last_value[i] = *value;
+			} else {
+				selection_contains_entity_without_field = true;
 			}
 		}
 	});
@@ -608,6 +613,12 @@ void inspector_input(wrench_project& proj, const char* label, T_field T_entity::
 	if(!last_value[0]) {
 		// None of the selected entities contain the given field, so we
 		// shouldn't draw it.
+		return;
+	}
+	
+	if(selection_contains_entity_without_field) {
+		// We only want to draw an input box if ALL the selected entities have
+		// the corresponding field.
 		return;
 	}
 	
