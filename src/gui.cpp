@@ -456,11 +456,211 @@ ImVec2 gui::inspector::initial_size() const {
 	return ImVec2(250, 250);
 }
 
+template <typename T_lane, typename T_field, typename T_entity>
+void inspector_input(wrench_project& proj, const char* label, T_field T_entity::*field, std::size_t first_lane, int lane_count);
+struct inspector_text_lane {
+	std::string str;
+	bool changed = false;
+};
+void inspector_input_text_n(const char* label, inspector_text_lane* lanes, int lane_count);
+
 void gui::inspector::render(app& a) {
 	if(!a.get_level()) {
 		ImGui::Text("<no level>");
 		return;
 	}
+	
+	wrench_project& proj = *a.get_project();
+	level& lvl = *proj.selected_level();
+	
+	bool selection_empty = true;
+	lvl.for_each<entity>([&](entity& ent) {
+		if(ent.selected) {
+			selection_empty = false;
+		}
+	});
+	
+	if(selection_empty) {
+		ImGui::Text("<no entity selected>");
+		return;
+	}
+	
+	inspector_input<float   >(proj, "Mat I ", &matrix_entity::local_to_world, 0, 4);
+	inspector_input<float   >(proj, "Mat J ", &matrix_entity::local_to_world, 4, 4);
+	inspector_input<float   >(proj, "Mat K ", &matrix_entity::local_to_world, 8, 4);
+	inspector_input<float   >(proj, "Mat T ", &matrix_entity::local_to_world, 12, 4);
+	inspector_input<float   >(proj, "Pos   ", &euler_entity::position, 0, 3);
+	inspector_input<float   >(proj, "Rot   ", &euler_entity::rotation, 0, 3);
+	inspector_input<uint32_t>(proj, "Unk 0 ", &tie_entity::unknown_0, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 4 ", &tie_entity::unknown_4, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 8 ", &tie_entity::unknown_8, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk c ", &tie_entity::unknown_c, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 50", &tie_entity::unknown_50, 0, 1);
+	inspector_input<int32_t >(proj, "UID   ", &tie_entity::uid, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 58", &tie_entity::unknown_58, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 5c", &tie_entity::unknown_5c, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 0 ", &shrub_entity::unknown_0, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 4 ", &shrub_entity::unknown_4, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 8 ", &shrub_entity::unknown_8, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk c ", &shrub_entity::unknown_c, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 50", &shrub_entity::unknown_50, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 54", &shrub_entity::unknown_54, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 58", &shrub_entity::unknown_58, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 5c", &shrub_entity::unknown_5c, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 60", &shrub_entity::unknown_60, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 64", &shrub_entity::unknown_64, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 68", &shrub_entity::unknown_68, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 6c", &shrub_entity::unknown_6c, 0, 1);
+	inspector_input<uint32_t>(proj, "Size  ", &moby_entity::size, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 4 ", &moby_entity::unknown_4, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 8 ", &moby_entity::unknown_8, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk c ", &moby_entity::unknown_c, 0, 1);
+	inspector_input<int32_t> (proj, "UID   ", &moby_entity::uid, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 14", &moby_entity::unknown_14, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 18", &moby_entity::unknown_18, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 1c", &moby_entity::unknown_1c, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 20", &moby_entity::unknown_20, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 24", &moby_entity::unknown_24, 0, 1);
+	inspector_input<uint32_t>(proj, "Class ", &moby_entity::class_num, 0, 1);
+	inspector_input<float>   (proj, "Scale ", &moby_entity::scale, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 30", &moby_entity::unknown_30, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 34", &moby_entity::unknown_34, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 38", &moby_entity::unknown_38, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 3c", &moby_entity::unknown_3c, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 58", &moby_entity::unknown_58, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 5c", &moby_entity::unknown_5c, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 60", &moby_entity::unknown_60, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 64", &moby_entity::unknown_64, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 68", &moby_entity::unknown_68, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 6c", &moby_entity::unknown_6c, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 70", &moby_entity::unknown_70, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 74", &moby_entity::unknown_74, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 78", &moby_entity::unknown_78, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 7c", &moby_entity::unknown_7c, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 80", &moby_entity::unknown_80, 0, 1);
+	inspector_input<uint32_t>(proj, "Unk 84", &moby_entity::unknown_84, 0, 1);
+}
+
+template <typename T_lane, typename T_field, typename T_entity>
+void inspector_input(wrench_project& proj, const char* label, T_field T_entity::*field, std::size_t first_lane, int lane_count) {
+	static const int MAX_LANES = 4;
+	assert(lane_count <= MAX_LANES);
+	level& lvl = *proj.selected_level();
+	
+	// Determine whether all the values from a given lane are the same for all
+	// selected entities.
+	std::optional<T_lane> last_value[MAX_LANES];
+	bool values_equal[MAX_LANES] = { true, true, true, true };
+	lvl.for_each<T_entity>([&](T_entity& ent) {
+		if(ent.selected) {
+			for(int i = 0; i < lane_count; i++) {
+				T_lane* value = ((T_lane*) &(ent.*field)) + first_lane + i;
+				if(last_value[i] && *value != last_value[i]) {
+					values_equal[i] = false;
+				}
+				last_value[i] = *value;
+			}
+		}
+	});
+	
+	if(!last_value[0]) {
+		// None of the selected entities contain the given field, so we
+		// shouldn't draw it.
+		return;
+	}
+	
+	inspector_text_lane input_lanes[MAX_LANES];
+	for(int i = 0; i < lane_count; i++) {
+		if(values_equal[i]) {
+			input_lanes[i].str = std::to_string(*last_value[i]);
+		}
+	}
+	
+	inspector_input_text_n(label, input_lanes, lane_count);
+	
+	struct property_changed_command : public command {
+		property_changed_command() {}
+		property_changed_command(property_changed_command& rhs) = default;
+		property_changed_command(property_changed_command&& rhs) = default;
+		wrench_project* proj;
+		std::size_t level_index;
+		std::vector<entity_id> ids;
+		T_field T_entity::*field;
+		int first_lane;
+		inspector_text_lane input_lanes[MAX_LANES];
+		std::map<entity_id, T_field> old_values;
+		level& lvl() {
+			return *proj->level_from_index(level_index);
+		}
+		void apply(wrench_project* project) override {
+			lvl().template for_each<T_entity>([&](T_entity& ent) {
+				if(contains(ids, ent.id)) {
+					for(int i = 0; i < MAX_LANES; i++) {
+						T_lane* value = ((T_lane*) &(ent.*field)) + first_lane + i;
+						if(input_lanes[i].changed && input_lanes[i].str != std::to_string(*value)) {
+							if constexpr(std::is_floating_point_v<T_lane>) {
+								*value = std::stof(input_lanes[i].str);
+							} else {
+								*value = std::stoi(input_lanes[i].str);
+							}
+						}
+					}
+				}
+			});
+		}
+		void undo(wrench_project* project) override {
+			lvl().template for_each<T_entity>([&](T_entity& ent) {
+				if(contains(ids, ent.id)) {
+					ent.*field = old_values.at(ent.id);
+				}
+			});
+		}
+	};
+	
+	bool any_lane_changed = false;
+	for(int i = 0; i < lane_count; i++) {
+		any_lane_changed |= input_lanes[i].changed;
+	}
+	
+	if(any_lane_changed) {
+		property_changed_command cmd;
+		cmd.proj = &proj;
+		cmd.level_index = proj.selected_level_index();
+		cmd.ids = lvl.selected_entity_ids();
+		cmd.field = field;
+		cmd.first_lane = first_lane;
+		cmd.input_lanes[0] = input_lanes[0];
+		cmd.input_lanes[1] = input_lanes[1];
+		cmd.input_lanes[2] = input_lanes[2];
+		cmd.input_lanes[3] = input_lanes[3];
+		lvl.for_each<T_entity>([&](T_entity& ent) {
+			if(ent.selected) {
+				cmd.old_values[ent.id] = ent.*field;
+			}
+		});
+		proj.emplace_command<property_changed_command>(std::move(cmd));
+	}
+}
+
+void inspector_input_text_n(const char* label, inspector_text_lane* lanes, int lane_count) {
+	ImGui::PushID(label);
+	
+	ImGui::AlignTextToFramePadding();
+	ImGui::Text("%s", label);
+	ImGui::SameLine();
+	
+	ImGui::PushMultiItemsWidths(lane_count, ImGui::GetWindowWidth() - lane_count * 16.f);
+	for(int i = 0; i < lane_count; i++) {
+		ImGui::PushID(i);
+		if(i > 0) {
+			ImGui::SameLine();
+		}
+		lanes[i].changed = ImGui::InputText("", &lanes[i].str, ImGuiInputTextFlags_EnterReturnsTrue);
+		ImGui::PopID(); // i
+		ImGui::PopItemWidth();
+	}
+	
+	ImGui::PopID(); // label
 }
 
 /*
