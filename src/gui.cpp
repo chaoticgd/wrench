@@ -542,7 +542,7 @@ void gui::inspector::render(app& a) {
 	inspector_input<uint32_t>(proj, "Unk 58", &tie_entity::unknown_58, 0, 1);
 	inspector_input<uint32_t>(proj, "Unk 5c", &tie_entity::unknown_5c, 0, 1);
 	inspector_input<uint32_t>(proj, "Unk 0 ", &shrub_entity::unknown_0, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 4 ", &shrub_entity::unknown_4, 0, 1);
+	inspector_input<   float>(proj, "Unk 4 ", &shrub_entity::unknown_4, 0, 1);
 	inspector_input<uint32_t>(proj, "Unk 8 ", &shrub_entity::unknown_8, 0, 1);
 	inspector_input<uint32_t>(proj, "Unk c ", &shrub_entity::unknown_c, 0, 1);
 	inspector_input<uint32_t>(proj, "Unk 50", &shrub_entity::unknown_50, 0, 1);

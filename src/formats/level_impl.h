@@ -90,7 +90,7 @@ struct tie_entity final : public matrix_entity {
 
 struct shrub_entity final : public matrix_entity {
 	uint32_t unknown_0;
-	uint32_t unknown_4;
+	float    unknown_4;
 	uint32_t unknown_8;
 	uint32_t unknown_c;
 	uint32_t unknown_50;

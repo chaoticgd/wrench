@@ -354,7 +354,7 @@ packed_struct(world_tie,
 
 packed_struct(world_shrub,
 	uint32_t unknown_0;      // 0x0
-	uint32_t unknown_4;      // 0x4
+	float    unknown_4;      // 0x4
 	uint32_t unknown_8;      // 0x8
 	uint32_t unknown_c;      // 0xc
 	racmat   local_to_world; // 0x10
