@@ -272,8 +272,8 @@ packed_struct(world_header,
 	uint32_t unknown_50;         // 0x50
 	uint32_t unknown_54;         // 0x54
 	uint32_t unknown_58;         // 0x58
-	uint32_t unknown_5c;         // 0x5c
-	uint32_t unknown_60;         // 0x60
+	uint32_t pvar_table;         // 0x5c
+	uint32_t pvar_data;          // 0x60
 	uint32_t unknown_64;         // 0x64
 	uint32_t unknown_68;         // 0x68
 	uint32_t unknown_6c;         // 0x6c
@@ -392,7 +392,7 @@ packed_struct(world_moby,
 	uint32_t unknown_5c; // 0x5c
 	uint32_t unknown_60; // 0x60
 	uint32_t unknown_64; // 0x64
-	uint32_t unknown_68; // 0x68
+	int32_t  pvar_index; // 0x68
 	uint32_t unknown_6c; // 0x6c
 	uint32_t unknown_70; // 0x70
 	uint32_t unknown_74; // 0x74
@@ -400,6 +400,11 @@ packed_struct(world_moby,
 	uint32_t unknown_7c; // 0x7c
 	uint32_t unknown_80; // 0x80
 	int32_t unknown_84; // 0x84
+)
+
+packed_struct(pvar_table_entry,
+	uint32_t offset;
+	uint32_t size;
 )
 
 #endif

@@ -124,7 +124,7 @@ struct moby_entity final : public euler_entity {
 	uint32_t unknown_5c;
 	uint32_t unknown_60;
 	uint32_t unknown_64;
-	uint32_t unknown_68;
+	int32_t  pvar_index;
 	uint32_t unknown_6c;
 	uint32_t unknown_70;
 	uint32_t unknown_74;
@@ -148,6 +148,7 @@ private:
 	void read_ties(std::size_t offset);
 	void read_shrubs(std::size_t offset);
 	void read_mobies(std::size_t offset);
+	void read_pvars(std::size_t table_offset, std::size_t data_offset);
 	void read_splines(std::size_t offset);
 	
 	void read_moby_models(std::size_t asset_offset, level_asset_header asset_header);
@@ -163,6 +164,7 @@ public:
 	std::vector<tie_entity> ties;
 	std::vector<shrub_entity> shrubs;
 	std::vector<moby_entity> mobies;
+	std::vector<std::vector<uint8_t>> pvars;
 	std::vector<spline_entity> splines;
 	
 	template <typename T, typename F>

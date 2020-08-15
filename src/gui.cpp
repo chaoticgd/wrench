@@ -572,8 +572,8 @@ void gui::inspector::render(app& a) {
 	inspector_input< int32_t>(proj, "Unk 58", &moby_entity::unknown_58, 0, 1);
 	inspector_input<uint32_t>(proj, "Unk 5c", &moby_entity::unknown_5c, 0, 1);
 	inspector_input<uint32_t>(proj, "Unk 60", &moby_entity::unknown_60, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 64", &moby_entity::unknown_64, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 68", &moby_entity::unknown_68, 0, 1);
+	inspector_input< int32_t>(proj, "Unk 64", &moby_entity::unknown_64, 0, 1);
+	inspector_input< int32_t>(proj, "Pvar #", &moby_entity::pvar_index, 0, 1);
 	inspector_input<uint32_t>(proj, "Unk 6c", &moby_entity::unknown_6c, 0, 1);
 	inspector_input<uint32_t>(proj, "Unk 70", &moby_entity::unknown_70, 0, 1);
 	inspector_input<uint32_t>(proj, "Unk 74", &moby_entity::unknown_74, 0, 1);
@@ -581,6 +581,54 @@ void gui::inspector::render(app& a) {
 	inspector_input<uint32_t>(proj, "Unk 7c", &moby_entity::unknown_7c, 0, 1);
 	inspector_input<uint32_t>(proj, "Unk 80", &moby_entity::unknown_80, 0, 1);
 	inspector_input< int32_t>(proj, "Unk 84", &moby_entity::unknown_84, 0, 1);
+	
+	// If mobies with different class numbers are selected, or entities other
+	// than mobies are selected, we shouldn't draw the pvars.
+	std::optional<uint32_t> last_class;
+	std::optional<int32_t> last_pvar_index;
+	bool should_draw_pvars = true;
+	lvl.for_each<entity>([&](entity& base_ent) {
+		if(base_ent.selected) {
+			if(moby_entity* ent = dynamic_cast<moby_entity*>(&base_ent)) {
+				if(last_class && *last_class != ent->class_num) {
+					should_draw_pvars = false;
+				} else {
+					last_class = ent->class_num;
+					if(ent->pvar_index > -1) {
+						last_pvar_index = ent->pvar_index;
+					}
+				}
+			} else {
+				should_draw_pvars = false;
+			}
+		}
+	});
+	
+	if(should_draw_pvars && last_pvar_index) {
+		ImGui::Text("Pvar %d", *last_pvar_index);
+		
+		auto& first_pvar = lvl.pvars.at(*last_pvar_index);
+		for(std::size_t i = 0; i < first_pvar.size(); i++) {
+			bool should_be_blank = false;
+			lvl.for_each<moby_entity>([&](moby_entity& ent) {
+				if(ent.selected && ent.pvar_index > -1) {
+					auto& pvar = lvl.pvars.at(ent.pvar_index);
+					if(pvar.at(i) != first_pvar[i]) {
+						should_be_blank = true;
+					}
+				}
+			});
+			if(should_be_blank) {
+				ImGui::Text("  ");
+			} else {
+				uint8_t value = first_pvar[i];
+				ImGui::Text("%02x", value);
+			}
+			if(i % 16 != 15) {
+				ImGui::SameLine();
+			}
+		}
+	}
 }
 
 template <typename T_lane, typename T_field, typename T_entity>
