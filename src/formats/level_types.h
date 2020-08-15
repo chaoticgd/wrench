@@ -371,7 +371,7 @@ packed_struct(world_shrub,
 
 packed_struct(world_moby,
 	uint32_t size;       // 0x0 Always 0x88?
-	uint32_t unknown_4;  // 0x4
+	int32_t unknown_4;  // 0x4
 	uint32_t unknown_8;  // 0x8
 	uint32_t unknown_c;  // 0xc
 	int32_t  uid;        // 0x10
@@ -388,7 +388,7 @@ packed_struct(world_moby,
 	uint32_t unknown_3c; // 0x3c
 	vec3f    position;   // 0x40
 	vec3f    rotation;   // 0x4c
-	uint32_t unknown_58; // 0x58
+	int32_t unknown_58; // 0x58
 	uint32_t unknown_5c; // 0x5c
 	uint32_t unknown_60; // 0x60
 	uint32_t unknown_64; // 0x64
@@ -399,7 +399,7 @@ packed_struct(world_moby,
 	uint32_t unknown_78; // 0x78
 	uint32_t unknown_7c; // 0x7c
 	uint32_t unknown_80; // 0x80
-	uint32_t unknown_84; // 0x84
+	int32_t unknown_84; // 0x84
 )
 
 #endif

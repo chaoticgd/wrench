@@ -105,7 +105,7 @@ struct shrub_entity final : public matrix_entity {
 
 struct moby_entity final : public euler_entity {
 	uint32_t size;
-	uint32_t unknown_4;
+	int32_t unknown_4;
 	uint32_t unknown_8;
 	uint32_t unknown_c;
 	int32_t  uid;
@@ -120,7 +120,7 @@ struct moby_entity final : public euler_entity {
 	uint32_t unknown_34;
 	uint32_t unknown_38;
 	uint32_t unknown_3c;
-	uint32_t unknown_58;
+	int32_t unknown_58;
 	uint32_t unknown_5c;
 	uint32_t unknown_60;
 	uint32_t unknown_64;
@@ -131,7 +131,7 @@ struct moby_entity final : public euler_entity {
 	uint32_t unknown_78;
 	uint32_t unknown_7c;
 	uint32_t unknown_80;
-	uint32_t unknown_84;
+	int32_t unknown_84;
 };
 
 struct spline_entity final : entity {
