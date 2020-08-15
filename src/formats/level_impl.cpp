@@ -55,6 +55,7 @@ level::level(iso_stream* iso, toc_level index)
 	read_ties(world_hdr.ties);
 	read_shrubs(world_hdr.shrubs);
 	read_mobies(world_hdr.mobies);
+	read_pvars(world_hdr.pvar_table, world_hdr.pvar_data);
 	read_splines(world_hdr.splines);
 	
 	_asset_segment = iso->get_decompressed
@@ -177,7 +178,7 @@ void level::read_mobies(std::size_t offset) {
 		moby.unknown_5c = data.unknown_5c;
 		moby.unknown_60 = data.unknown_60;
 		moby.unknown_64 = data.unknown_64;
-		moby.unknown_68 = data.unknown_68;
+		moby.pvar_index = data.pvar_index;
 		moby.unknown_6c = data.unknown_6c;
 		moby.unknown_70 = data.unknown_70;
 		moby.unknown_74 = data.unknown_74;
@@ -187,6 +188,25 @@ void level::read_mobies(std::size_t offset) {
 		moby.unknown_84 = data.unknown_84;
 	}
 }
+
+void level::read_pvars(std::size_t table_offset, std::size_t data_offset) {
+	int32_t pvar_count = 0;
+	for(moby_entity& moby : mobies) {
+		pvar_count = std::max(pvar_count, moby.pvar_index + 1);
+	}
+	
+	std::vector<pvar_table_entry> table(pvar_count);
+	_world_segment->seek(table_offset);
+	_world_segment->read_v(table);
+	
+	for(pvar_table_entry& entry : table) {
+		uint32_t size = entry.size;
+		std::vector<uint8_t>& pvar = pvars.emplace_back(size);
+		_world_segment->seek(data_offset + entry.offset);
+		_world_segment->read_v(pvar);
+	}
+}
+
 
 void level::read_splines(std::size_t offset) {
 	auto spline_table = _world_segment->read<world_spline_table>(offset);

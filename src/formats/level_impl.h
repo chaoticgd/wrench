@@ -90,7 +90,7 @@ struct tie_entity final : public matrix_entity {
 
 struct shrub_entity final : public matrix_entity {
 	uint32_t unknown_0;
-	uint32_t unknown_4;
+	float    unknown_4;
 	uint32_t unknown_8;
 	uint32_t unknown_c;
 	uint32_t unknown_50;
@@ -105,7 +105,7 @@ struct shrub_entity final : public matrix_entity {
 
 struct moby_entity final : public euler_entity {
 	uint32_t size;
-	uint32_t unknown_4;
+	int32_t unknown_4;
 	uint32_t unknown_8;
 	uint32_t unknown_c;
 	int32_t  uid;
@@ -120,18 +120,18 @@ struct moby_entity final : public euler_entity {
 	uint32_t unknown_34;
 	uint32_t unknown_38;
 	uint32_t unknown_3c;
-	uint32_t unknown_58;
+	int32_t unknown_58;
 	uint32_t unknown_5c;
 	uint32_t unknown_60;
 	uint32_t unknown_64;
-	uint32_t unknown_68;
+	int32_t  pvar_index;
 	uint32_t unknown_6c;
 	uint32_t unknown_70;
 	uint32_t unknown_74;
 	uint32_t unknown_78;
 	uint32_t unknown_7c;
 	uint32_t unknown_80;
-	uint32_t unknown_84;
+	int32_t unknown_84;
 };
 
 struct spline_entity final : entity {
@@ -148,6 +148,7 @@ private:
 	void read_ties(std::size_t offset);
 	void read_shrubs(std::size_t offset);
 	void read_mobies(std::size_t offset);
+	void read_pvars(std::size_t table_offset, std::size_t data_offset);
 	void read_splines(std::size_t offset);
 	
 	void read_moby_models(std::size_t asset_offset, level_asset_header asset_header);
@@ -163,6 +164,7 @@ public:
 	std::vector<tie_entity> ties;
 	std::vector<shrub_entity> shrubs;
 	std::vector<moby_entity> mobies;
+	std::vector<std::vector<uint8_t>> pvars;
 	std::vector<spline_entity> splines;
 	
 	template <typename T, typename F>
