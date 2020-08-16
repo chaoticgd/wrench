@@ -685,6 +685,7 @@ void inspector_input(wrench_project& proj, const char* label, T_field T_entity::
 	}
 	
 	if(any_lane_changed) {
+		level_proxy lvlp(&proj);
 		std::vector<entity_id> ids = lvl->selected_entity_ids();
 		std::map<entity_id, T_field> old_values;
 		lvl->for_each<T_entity>([&](T_entity& ent) {
@@ -709,8 +710,8 @@ void inspector_input(wrench_project& proj, const char* label, T_field T_entity::
 		}
 		
 		proj.push_command(
-			[lvl, ids, field, first_lane, input_lanes, new_values]() {
-				lvl->template for_each<T_entity>([&](T_entity& ent) {
+			[lvlp, ids, field, first_lane, input_lanes, new_values]() {
+				lvlp.get().template for_each<T_entity>([&](T_entity& ent) {
 					if(contains(ids, ent.id)) {
 						for(int i = 0; i < MAX_LANES; i++) {
 							T_lane* value = ((T_lane*) &(ent.*field)) + first_lane + i;
@@ -721,8 +722,8 @@ void inspector_input(wrench_project& proj, const char* label, T_field T_entity::
 					}
 				});
 			},
-			[lvl, ids, field, old_values]() {
-				lvl->template for_each<T_entity>([&](T_entity& ent) {
+			[lvlp, ids, field, old_values]() {
+				lvlp.get().template for_each<T_entity>([&](T_entity& ent) {
 					if(contains(ids, ent.id)) {
 						ent.*field = old_values.at(ent.id);
 					}
