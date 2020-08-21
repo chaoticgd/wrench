@@ -56,7 +56,6 @@ public:
 	void select_rect(level& lvl, ImVec2 position);
 private:
 	GLuint _frame_buffer_texture;
-	GLuint _zbuffer_texture;
 	ImVec2 _viewport_size;
 	bool _selecting;
 	ImVec2 _selection_begin;

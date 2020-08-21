@@ -48,41 +48,18 @@ void view_3d::render(app& a) {
 
 	_viewport_size = ImGui::GetWindowSize();
 	_viewport_size.y -= 19;
-
-	glDeleteTextures(1, &_frame_buffer_texture);
-	glDeleteTextures(1, &_zbuffer_texture);
-
-	// Draw the 3D scene onto a texture.
-	glGenTextures(1, &_frame_buffer_texture);
-	glBindTexture(GL_TEXTURE_2D, _frame_buffer_texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _viewport_size.x, _viewport_size.y, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, 0);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-	// Z-Buffer.
-	glGenTextures(1, &_zbuffer_texture);
-	glBindTexture(GL_TEXTURE_2D, _zbuffer_texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _viewport_size.x, _viewport_size.y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-	GLuint fb_id;
-	glGenFramebuffers(1, &fb_id);
-	glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _frame_buffer_texture, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _zbuffer_texture, 0);
-
-	glClearColor(0, 0, 0, 1);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glViewport(0, 0, _viewport_size.x, _viewport_size.y);
-
+	
 	glm::mat4 world_to_clip = get_world_to_clip();
 	_renderer->prepare_frame(*lvl, world_to_clip);
-	draw_level(*lvl, world_to_clip);
-
-	glDeleteFramebuffers(1, &fb_id);
-
-	// Tell ImGui to draw that texture.
+	
+	render_to_texture(&_frame_buffer_texture, _viewport_size.x, _viewport_size.y, [&]() {
+		glClearColor(0, 0, 0, 1);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glViewport(0, 0, _viewport_size.x, _viewport_size.y);
+		
+		draw_level(*lvl, world_to_clip);
+	});
+	
 	ImGui::Image((void*) (intptr_t) _frame_buffer_texture, _viewport_size);
 
 	draw_overlay_text(*lvl);
