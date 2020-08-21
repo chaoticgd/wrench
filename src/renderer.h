@@ -61,10 +61,15 @@ struct gl_renderer {
 	
 	void reset_camera(app* a);
 	
-	// TODO: Put these somewhere else.
 	bool camera_control { false };
 	glm::vec3 camera_position { 0, 0, 0 };
 	glm::vec2 camera_rotation { 0, 0 };
+	
+	bool draw_ties = true;
+	bool draw_shrubs = false;
+	bool draw_mobies = true;
+	bool draw_splines = true;
+	bool draw_tfrags = true;
 };
 
 template <typename T>

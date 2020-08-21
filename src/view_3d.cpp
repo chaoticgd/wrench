@@ -127,47 +127,63 @@ void view_3d::draw_level(level& lvl) const {
 		return selected ? selected_colour : normal_colour;
 	};
 	
-	for(tie_entity& tie : lvl.ties) {
-		glm::mat4 local_to_clip = world_to_clip * tie.local_to_world;
-		glm::vec4 colour = get_colour(tie.selected, glm::vec4(0.5, 0, 1, 1));
-		_renderer->draw_cube(local_to_clip, colour);
-	}
-	
-	for(moby_entity& moby : lvl.mobies) {
-		moby.local_to_world_cache = glm::translate(glm::mat4(1.f), moby.position);
-		moby.local_to_world_cache = glm::rotate(moby.local_to_world_cache, moby.rotation.x, glm::vec3(1, 0, 0));
-		moby.local_to_world_cache = glm::rotate(moby.local_to_world_cache, moby.rotation.y, glm::vec3(0, 1, 0));
-		moby.local_to_world_cache = glm::rotate(moby.local_to_world_cache, moby.rotation.z, glm::vec3(0, 0, 1));
-		moby.local_to_clip_cache = world_to_clip * moby.local_to_world_cache;
-		
-		if(lvl.moby_class_to_model.find(moby.class_num) == lvl.moby_class_to_model.end()) {
-			_renderer->draw_cube(moby.local_to_clip_cache, get_colour(moby.selected, glm::vec4(0, 1, 0, 1)));
-			continue;
-		}
-		
-		moby_model& model =
-			lvl.moby_models[lvl.moby_class_to_model.at(moby.class_num)];
-		glm::mat4 scaled_local_to_clip = glm::scale(moby.local_to_clip_cache, glm::vec3(model.scale * moby.scale * 32.f));
-		_renderer->draw_moby_model(model, scaled_local_to_clip, lvl.moby_textures, view_mode::TEXTURED_POLYGONS, true);
-	}
-	
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glUseProgram(_renderer->shaders.solid_colour.id());
-	
-	for(moby_entity& moby : lvl.mobies) {
-		if(moby.selected) {
-			_renderer->draw_cube(moby.local_to_clip_cache, selected_colour);
+	if(_renderer->draw_ties) {
+		for(tie_entity& tie : lvl.ties) {
+			glm::mat4 local_to_clip = world_to_clip * tie.local_to_world;
+			glm::vec4 colour = get_colour(tie.selected, glm::vec4(0.5, 0, 1, 1));
+			_renderer->draw_cube(local_to_clip, colour);
 		}
 	}
 	
-	for(spline_entity& spline : lvl.splines) {
-		glm::vec4 colour = get_colour(spline.selected, glm::vec4(1, 0.5, 0, 1));
-		_renderer->draw_spline(spline, world_to_clip, colour);
+	if(_renderer->draw_shrubs) {
+		for(shrub_entity& shrub : lvl.shrubs) {
+			glm::mat4 local_to_clip = world_to_clip * shrub.local_to_world;
+			glm::vec4 colour = get_colour(shrub.selected, glm::vec4(0, 0.5, 0, 1));
+			_renderer->draw_cube(local_to_clip, colour);
+		}
 	}
 	
-	for (auto& frag : lvl.tfrags) {
-		glm::vec4 colour(0.5, 0.5, 0.5, 1);
-		_renderer->draw_model(frag, world_to_clip, colour);
+	if(_renderer->draw_mobies) {
+		for(moby_entity& moby : lvl.mobies) {
+			moby.local_to_world_cache = glm::translate(glm::mat4(1.f), moby.position);
+			moby.local_to_world_cache = glm::rotate(moby.local_to_world_cache, moby.rotation.x, glm::vec3(1, 0, 0));
+			moby.local_to_world_cache = glm::rotate(moby.local_to_world_cache, moby.rotation.y, glm::vec3(0, 1, 0));
+			moby.local_to_world_cache = glm::rotate(moby.local_to_world_cache, moby.rotation.z, glm::vec3(0, 0, 1));
+			moby.local_to_clip_cache = world_to_clip * moby.local_to_world_cache;
+			
+			if(lvl.moby_class_to_model.find(moby.class_num) == lvl.moby_class_to_model.end()) {
+				_renderer->draw_cube(moby.local_to_clip_cache, get_colour(moby.selected, glm::vec4(0, 1, 0, 1)));
+				continue;
+			}
+			
+			moby_model& model =
+				lvl.moby_models[lvl.moby_class_to_model.at(moby.class_num)];
+			glm::mat4 scaled_local_to_clip = glm::scale(moby.local_to_clip_cache, glm::vec3(model.scale * moby.scale * 32.f));
+			_renderer->draw_moby_model(model, scaled_local_to_clip, lvl.moby_textures, view_mode::TEXTURED_POLYGONS, true);
+		}
+		
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		glUseProgram(_renderer->shaders.solid_colour.id());
+		
+		for(moby_entity& moby : lvl.mobies) {
+			if(moby.selected) {
+				_renderer->draw_cube(moby.local_to_clip_cache, selected_colour);
+			}
+		}
+	}
+	
+	if(_renderer->draw_splines) {
+		for(spline_entity& spline : lvl.splines) {
+			glm::vec4 colour = get_colour(spline.selected, glm::vec4(1, 0.5, 0, 1));
+			_renderer->draw_spline(spline, world_to_clip, colour);
+		}
+	}
+	
+	if(_renderer->draw_tfrags) {
+		for(auto& frag : lvl.tfrags) {
+			glm::vec4 colour(0.5, 0.5, 0.5, 1);
+			_renderer->draw_model(frag, world_to_clip, colour);
+		}
 	}
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
