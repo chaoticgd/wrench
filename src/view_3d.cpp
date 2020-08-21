@@ -135,6 +135,14 @@ void view_3d::draw_level(level& lvl) const {
 		}
 	}
 	
+	if(_renderer->draw_shrubs) {
+		for(shrub_entity& shrub : lvl.shrubs) {
+			glm::mat4 local_to_clip = world_to_clip * shrub.local_to_world;
+			glm::vec4 colour = get_colour(shrub.selected, glm::vec4(0, 0.5, 0, 1));
+			_renderer->draw_cube(local_to_clip, colour);
+		}
+	}
+	
 	if(_renderer->draw_mobies) {
 		for(moby_entity& moby : lvl.mobies) {
 			moby.local_to_world_cache = glm::translate(glm::mat4(1.f), moby.position);
