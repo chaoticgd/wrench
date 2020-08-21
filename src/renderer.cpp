@@ -159,19 +159,34 @@ void gl_renderer::draw_pickframe(level& lvl, glm::mat4 world_to_clip) const {
 		return colour;
 	};
 	
-	for(tie_entity& tie : lvl.ties) {
-		glm::mat4 local_to_clip = world_to_clip * tie.local_to_world;
-		glm::vec4 colour = encode_pick_colour(tie.id);
-		draw_cube(local_to_clip, colour);
+	if(draw_ties) {
+		for(tie_entity& tie : lvl.ties) {
+			glm::mat4 local_to_clip = world_to_clip * tie.local_to_world;
+			glm::vec4 colour = encode_pick_colour(tie.id);
+			draw_cube(local_to_clip, colour);
+		}
 	}
-	for(moby_entity& moby : lvl.mobies) {
-		glm::vec4 colour = encode_pick_colour(moby.id);
-		draw_cube(moby.local_to_clip_cache, colour);
+	
+	if(draw_shrubs) {
+		for(shrub_entity& shrub : lvl.shrubs) {
+			glm::mat4 local_to_clip = world_to_clip * shrub.local_to_world;
+			glm::vec4 colour = encode_pick_colour(shrub.id);
+			draw_cube(local_to_clip, colour);
+		}
 	}
-
-	for(spline_entity& spline : lvl.splines) {
-		glm::vec4 colour = encode_pick_colour(spline.id);
-		draw_spline(spline, world_to_clip, colour);
+	
+	if(draw_mobies) {
+		for(moby_entity& moby : lvl.mobies) {
+			glm::vec4 colour = encode_pick_colour(moby.id);
+			draw_cube(moby.local_to_clip_cache, colour);
+		}
+	}
+	
+	if(draw_splines) {
+		for(spline_entity& spline : lvl.splines) {
+			glm::vec4 colour = encode_pick_colour(spline.id);
+			draw_spline(spline, world_to_clip, colour);
+		}
 	}
 }
 
