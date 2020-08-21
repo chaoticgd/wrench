@@ -253,12 +253,17 @@ float gui::render_menu_bar(app& a) {
 	}
 	
 	if(ImGui::BeginMenu("View")) {
-		ImGui::Text("Visibility");
-		ImGui::Checkbox("Ties", &a.renderer.draw_ties);
-		ImGui::Checkbox("Shrubs", &a.renderer.draw_shrubs);
-		ImGui::Checkbox("Mobies", &a.renderer.draw_mobies);
-		ImGui::Checkbox("Splines", &a.renderer.draw_splines);
-		ImGui::Checkbox("Tfrags", &a.renderer.draw_tfrags);
+		if(ImGui::MenuItem("Reset Camera")) {
+			a.renderer.reset_camera(&a);
+		}
+		if(ImGui::BeginMenu("Visibility")) {
+			ImGui::Checkbox("Ties", &a.renderer.draw_ties);
+			ImGui::Checkbox("Shrubs", &a.renderer.draw_shrubs);
+			ImGui::Checkbox("Mobies", &a.renderer.draw_mobies);
+			ImGui::Checkbox("Splines", &a.renderer.draw_splines);
+			ImGui::Checkbox("Tfrags", &a.renderer.draw_tfrags);
+			ImGui::EndMenu();
+		}
 		ImGui::EndMenu();
 	}
 	
@@ -826,10 +831,6 @@ void gui::viewport_information::render(app& a) {
 		cam_rot.x, cam_rot.y);
 	ImGui::Text("Camera Control (Z to toggle):\n\t%s",
 		a.renderer.camera_control ? "On" : "Off");
-		
-	if(ImGui::Button("Reset Camera")) {
-		a.renderer.reset_camera(&a);
-	}
 }
 
 /*
