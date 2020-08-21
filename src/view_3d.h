@@ -40,7 +40,7 @@ public:
 	
 	[[nodiscard]] bool has_padding() const override;
 
-	void draw_level(level& lvl) const;
+	void draw_level(level& lvl, glm::mat4 world_to_clip) const;
 	
 	void draw_overlay_text(level& lvl) const;
 	
@@ -50,8 +50,8 @@ public:
 	
 	// Allows the user to select an object by clicking on it. See:
 	// https://www.opengl-tutorial.org/miscellaneous/clicking-on-objects/picking-with-an-opengl-hack/
-	void pick_object(level& lvl, ImVec2 position);
-	void draw_pickframe(level& lvl) const;
+	void pick_object(level& lvl, glm::mat4 world_to_clip, ImVec2 position);
+	void draw_pickframe(level& lvl, glm::mat4 world_to_clip) const;
 	
 	void select_rect(level& lvl, ImVec2 position);
 private:
