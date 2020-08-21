@@ -172,5 +172,6 @@ shader_programs::shader_programs() :
 
 void shader_programs::init() {
 	solid_colour.init();
+	solid_colour_batch.init();
 	textured.init();
 }
