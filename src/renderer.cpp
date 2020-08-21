@@ -226,7 +226,10 @@ void gl_renderer::draw_moby_models(
 						glActiveTexture(GL_TEXTURE0);
 						glBindTexture(GL_TEXTURE_2D, tex.opengl_id());
 					} else {
-						fprintf(stderr, "warning: Model %s has bad texture index!\n", model.name().c_str());
+						// TODO: Actually fix this so model textures get read in
+						// correctly. This warning was commented out because it
+						// was spamming stderr.
+						//fprintf(stderr, "warning: Model %s has bad texture index!\n", model.name().c_str());
 					}
 					glUniform1i(shaders.textured_sampler, 0);
 					break;
