@@ -252,6 +252,16 @@ float gui::render_menu_bar(app& a) {
 		ImGui::EndMenu();
 	}
 	
+	if(ImGui::BeginMenu("View")) {
+		ImGui::Text("Visibility");
+		ImGui::Checkbox("Ties", &a.renderer.draw_ties);
+		ImGui::Checkbox("Shrubs", &a.renderer.draw_shrubs);
+		ImGui::Checkbox("Mobies", &a.renderer.draw_mobies);
+		ImGui::Checkbox("Splines", &a.renderer.draw_splines);
+		ImGui::Checkbox("Tfrags", &a.renderer.draw_tfrags);
+		ImGui::EndMenu();
+	}
+	
 	static alert_box emu_error_box("Error");
 	emu_error_box.render();
 	
