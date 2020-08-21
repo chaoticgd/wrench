@@ -48,39 +48,18 @@ void view_3d::render(app& a) {
 
 	_viewport_size = ImGui::GetWindowSize();
 	_viewport_size.y -= 19;
-
-	glDeleteTextures(1, &_frame_buffer_texture);
-	glDeleteTextures(1, &_zbuffer_texture);
-
-	// Draw the 3D scene onto a texture.
-	glGenTextures(1, &_frame_buffer_texture);
-	glBindTexture(GL_TEXTURE_2D, _frame_buffer_texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _viewport_size.x, _viewport_size.y, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, 0);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-	// Z-Buffer.
-	glGenTextures(1, &_zbuffer_texture);
-	glBindTexture(GL_TEXTURE_2D, _zbuffer_texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _viewport_size.x, _viewport_size.y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-	GLuint fb_id;
-	glGenFramebuffers(1, &fb_id);
-	glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _frame_buffer_texture, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _zbuffer_texture, 0);
-
-	glClearColor(0, 0, 0, 1);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glViewport(0, 0, _viewport_size.x, _viewport_size.y);
-
-	draw_level(*lvl);
-
-	glDeleteFramebuffers(1, &fb_id);
-
-	// Tell ImGui to draw that texture.
+	
+	glm::mat4 world_to_clip = get_world_to_clip();
+	_renderer->prepare_frame(*lvl, world_to_clip);
+	
+	render_to_texture(&_frame_buffer_texture, _viewport_size.x, _viewport_size.y, [&]() {
+		glClearColor(0, 0, 0, 1);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glViewport(0, 0, _viewport_size.x, _viewport_size.y);
+		
+		_renderer->draw_level(*lvl, world_to_clip);
+	});
+	
 	ImGui::Image((void*) (intptr_t) _frame_buffer_texture, _viewport_size);
 
 	draw_overlay_text(*lvl);
@@ -94,7 +73,7 @@ void view_3d::render(app& a) {
 	ImGuiIO& io = ImGui::GetIO();
 	if(io.MouseClicked[0] && ImGui::IsWindowHovered()) {
 		switch(a.active_tool().type) {
-			case tool_type::picker:	pick_object(*lvl, rel_pos); break;
+			case tool_type::picker:	pick_object(*lvl, world_to_clip, rel_pos); break;
 			case tool_type::selection: select_rect(*lvl, cursor_pos); break;
 			case tool_type::translate: break;
 		}
@@ -109,84 +88,6 @@ void view_3d::render(app& a) {
 
 bool view_3d::has_padding() const {
 	return false;
-}
-
-void view_3d::draw_level(level& lvl) const {
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-	glm::mat4 world_to_clip = get_world_to_clip();
-
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
-
-	glUseProgram(_renderer->shaders.solid_colour.id());
-	
-	static const glm::vec4 selected_colour = glm::vec4(1, 0, 0, 1);
-	
-	auto get_colour = [&](bool selected, glm::vec4 normal_colour) {
-		return selected ? selected_colour : normal_colour;
-	};
-	
-	if(_renderer->draw_ties) {
-		for(tie_entity& tie : lvl.ties) {
-			glm::mat4 local_to_clip = world_to_clip * tie.local_to_world;
-			glm::vec4 colour = get_colour(tie.selected, glm::vec4(0.5, 0, 1, 1));
-			_renderer->draw_cube(local_to_clip, colour);
-		}
-	}
-	
-	if(_renderer->draw_shrubs) {
-		for(shrub_entity& shrub : lvl.shrubs) {
-			glm::mat4 local_to_clip = world_to_clip * shrub.local_to_world;
-			glm::vec4 colour = get_colour(shrub.selected, glm::vec4(0, 0.5, 0, 1));
-			_renderer->draw_cube(local_to_clip, colour);
-		}
-	}
-	
-	if(_renderer->draw_mobies) {
-		for(moby_entity& moby : lvl.mobies) {
-			moby.local_to_world_cache = glm::translate(glm::mat4(1.f), moby.position);
-			moby.local_to_world_cache = glm::rotate(moby.local_to_world_cache, moby.rotation.x, glm::vec3(1, 0, 0));
-			moby.local_to_world_cache = glm::rotate(moby.local_to_world_cache, moby.rotation.y, glm::vec3(0, 1, 0));
-			moby.local_to_world_cache = glm::rotate(moby.local_to_world_cache, moby.rotation.z, glm::vec3(0, 0, 1));
-			moby.local_to_clip_cache = world_to_clip * moby.local_to_world_cache;
-			
-			if(lvl.moby_class_to_model.find(moby.class_num) == lvl.moby_class_to_model.end()) {
-				_renderer->draw_cube(moby.local_to_clip_cache, get_colour(moby.selected, glm::vec4(0, 1, 0, 1)));
-				continue;
-			}
-			
-			moby_model& model =
-				lvl.moby_models[lvl.moby_class_to_model.at(moby.class_num)];
-			glm::mat4 scaled_local_to_clip = glm::scale(moby.local_to_clip_cache, glm::vec3(model.scale * moby.scale * 32.f));
-			_renderer->draw_moby_model(model, scaled_local_to_clip, lvl.moby_textures, view_mode::TEXTURED_POLYGONS, true);
-		}
-		
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		glUseProgram(_renderer->shaders.solid_colour.id());
-		
-		for(moby_entity& moby : lvl.mobies) {
-			if(moby.selected) {
-				_renderer->draw_cube(moby.local_to_clip_cache, selected_colour);
-			}
-		}
-	}
-	
-	if(_renderer->draw_splines) {
-		for(spline_entity& spline : lvl.splines) {
-			glm::vec4 colour = get_colour(spline.selected, glm::vec4(1, 0.5, 0, 1));
-			_renderer->draw_spline(spline, world_to_clip, colour);
-		}
-	}
-	
-	if(_renderer->draw_tfrags) {
-		for(auto& frag : lvl.tfrags) {
-			glm::vec4 colour(0.5, 0.5, 0.5, 1);
-			_renderer->draw_model(frag, world_to_clip, colour);
-		}
-	}
-
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 void view_3d::draw_overlay_text(level& lvl) const {
@@ -278,8 +179,8 @@ glm::vec3 view_3d::apply_local_to_screen(glm::mat4 world_to_clip, glm::mat4 loca
 	return screen_pos;
 }
 
-void view_3d::pick_object(level& lvl, ImVec2 position) {
-	draw_pickframe(lvl);
+void view_3d::pick_object(level& lvl, glm::mat4 world_to_clip, ImVec2 position) {
+	_renderer->draw_pickframe(lvl, world_to_clip);
 	
 	glFlush();
 	glFinish();
@@ -314,42 +215,6 @@ void view_3d::pick_object(level& lvl, ImVec2 position) {
 	lvl.for_each<entity>([&](entity& ent) {
 		ent.selected = id == ent.id;
 	});
-}
-
-
-void view_3d::draw_pickframe(level& lvl) const {
-	glm::mat4 world_to_clip = get_world_to_clip();
-
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
-	
-	glUseProgram(_renderer->shaders.solid_colour.id());
-	
-	auto encode_pick_colour = [&](entity_id id) {
-		glm::vec4 colour;
-		// IDs are unique across all object types.
-		colour.r = ((id.value & 0xff)       >> 0)  / 255.f;
-		colour.g = ((id.value & 0xff00)     >> 8)  / 255.f;
-		colour.b = ((id.value & 0xff0000)   >> 16) / 255.f;
-		colour.a = ((id.value & 0xff000000) >> 24) / 255.f;
-		return colour;
-	};
-	
-	for(tie_entity& tie : lvl.ties) {
-		glm::mat4 local_to_clip = world_to_clip * tie.local_to_world;
-		glm::vec4 colour = encode_pick_colour(tie.id);
-		_renderer->draw_cube(local_to_clip, colour);
-	}
-	
-	for(moby_entity& moby : lvl.mobies) {
-		glm::vec4 colour = encode_pick_colour(moby.id);
-		_renderer->draw_cube(moby.local_to_clip_cache, colour);
-	}
-
-	for(spline_entity& spline : lvl.splines) {
-		glm::vec4 colour = encode_pick_colour(spline.id);
-		_renderer->draw_spline(spline, world_to_clip, colour);
-	}
 }
 
 void view_3d::select_rect(level& lvl, ImVec2 position) {

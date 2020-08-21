@@ -21,6 +21,175 @@
 #include "app.h"
 #include "imgui_includes.h" // HSV stuff.
 
+void gl_renderer::prepare_frame(level& lvl, glm::mat4 world_to_clip) {
+	moby_local_to_clip_cache.resize(lvl.mobies.size());
+	for(std::size_t i = 0; i < lvl.mobies.size(); i++) {
+		moby_entity& moby = lvl.mobies[i];
+		moby.local_to_world_cache = glm::translate(glm::mat4(1.f), moby.position);
+		moby.local_to_world_cache = glm::rotate(moby.local_to_world_cache, moby.rotation.x, glm::vec3(1, 0, 0));
+		moby.local_to_world_cache = glm::rotate(moby.local_to_world_cache, moby.rotation.y, glm::vec3(0, 1, 0));
+		moby.local_to_world_cache = glm::rotate(moby.local_to_world_cache, moby.rotation.z, glm::vec3(0, 0, 1));
+		
+		moby.local_to_clip_cache = world_to_clip * moby.local_to_world_cache;
+		
+		glm::mat4& local_to_clip = moby_local_to_clip_cache[i];
+		local_to_clip = moby.local_to_clip_cache;
+		if(lvl.moby_class_to_model.find(moby.class_num) != lvl.moby_class_to_model.end()) {
+			moby_model& model = lvl.moby_models[lvl.moby_class_to_model.at(moby.class_num)];
+			local_to_clip = glm::scale(local_to_clip, glm::vec3(model.scale * moby.scale * 32.f));
+		}
+	}
+}
+
+void gl_renderer::draw_level(level& lvl, glm::mat4 world_to_clip) const {
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+
+	glUseProgram(shaders.solid_colour.id());
+	
+	static const glm::vec4 selected_colour = glm::vec4(1, 0, 0, 1);
+	
+	auto get_colour = [&](bool selected, glm::vec4 normal_colour) {
+		return selected ? selected_colour : normal_colour;
+	};
+	
+	if(draw_ties) {
+		for(tie_entity& tie : lvl.ties) {
+			glm::mat4 local_to_clip = world_to_clip * tie.local_to_world;
+			glm::vec4 colour = get_colour(tie.selected, glm::vec4(0.5, 0, 1, 1));
+			draw_cube(local_to_clip, colour);
+		}
+	}
+	
+	if(draw_shrubs) {
+		for(shrub_entity& shrub : lvl.shrubs) {
+			glm::mat4 local_to_clip = world_to_clip * shrub.local_to_world;
+			glm::vec4 colour = get_colour(shrub.selected, glm::vec4(0, 0.5, 0, 1));
+			draw_cube(local_to_clip, colour);
+		}
+	}
+	
+	if(draw_mobies) {
+		gl_buffer moby_local_to_clip_buffer;
+		glGenBuffers(1, &moby_local_to_clip_buffer());
+		glBindBuffer(GL_ARRAY_BUFFER, moby_local_to_clip_buffer());
+		glBufferData(GL_ARRAY_BUFFER,
+			moby_local_to_clip_cache.size() * sizeof(glm::mat4),
+			moby_local_to_clip_cache.data(), GL_STATIC_DRAW);
+		
+		std::size_t moby_batch_class = INT64_MAX;
+		std::size_t moby_batch_begin = 0;
+		
+		auto draw_moby_batch = [&](std::size_t batch_end) {
+			if(lvl.moby_class_to_model.find(moby_batch_class) != lvl.moby_class_to_model.end()) {
+				std::size_t model_index = lvl.moby_class_to_model.at(moby_batch_class);
+				moby_model& model = lvl.moby_models[model_index];
+				draw_moby_models(
+					model,
+					lvl.moby_textures,
+					view_mode::TEXTURED_POLYGONS,
+					true,
+					moby_local_to_clip_buffer(),
+					moby_batch_begin * sizeof(glm::mat4),
+					batch_end - moby_batch_begin);
+			} else {
+				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				glUseProgram(shaders.solid_colour.id());
+				
+				for(std::size_t i = moby_batch_begin; i < batch_end; i++) {
+					const glm::mat4& local_to_clip = moby_local_to_clip_cache[i];
+					glm::vec4 colour = get_colour(lvl.mobies[i].selected, glm::vec4(0, 1, 0, 1));
+					draw_cube(local_to_clip, colour);
+				}
+			}
+		};
+		
+		for(std::size_t i = 0; i < lvl.mobies.size(); i++) {
+			moby_entity& moby = lvl.mobies[i];
+			if(moby.class_num != moby_batch_class) {
+				draw_moby_batch(i);
+				moby_batch_class = moby.class_num;
+				moby_batch_begin = i;
+			}
+		}
+		draw_moby_batch(lvl.mobies.size());
+		
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		glUseProgram(shaders.solid_colour.id());
+		
+		for(std::size_t i = 0; i < lvl.mobies.size(); i++) {
+			if(lvl.mobies[i].selected) {
+				draw_cube(moby_local_to_clip_cache[i], selected_colour);
+			}
+		}
+	}
+	
+	if(draw_splines) {
+		for(spline_entity& spline : lvl.splines) {
+			glm::vec4 colour = get_colour(spline.selected, glm::vec4(1, 0.5, 0, 1));
+			draw_spline(spline, world_to_clip, colour);
+		}
+	}
+	
+	if(draw_tfrags) {
+		for(auto& frag : lvl.tfrags) {
+			glm::vec4 colour(0.5, 0.5, 0.5, 1);
+			draw_model(frag, world_to_clip, colour);
+		}
+	}
+
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+}
+
+void gl_renderer::draw_pickframe(level& lvl, glm::mat4 world_to_clip) const {
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+	
+	glUseProgram(shaders.solid_colour.id());
+	
+	auto encode_pick_colour = [&](entity_id id) {
+		glm::vec4 colour;
+		// IDs are unique across all object types.
+		colour.r = ((id.value & 0xff)       >> 0)  / 255.f;
+		colour.g = ((id.value & 0xff00)     >> 8)  / 255.f;
+		colour.b = ((id.value & 0xff0000)   >> 16) / 255.f;
+		colour.a = ((id.value & 0xff000000) >> 24) / 255.f;
+		return colour;
+	};
+	
+	if(draw_ties) {
+		for(tie_entity& tie : lvl.ties) {
+			glm::mat4 local_to_clip = world_to_clip * tie.local_to_world;
+			glm::vec4 colour = encode_pick_colour(tie.id);
+			draw_cube(local_to_clip, colour);
+		}
+	}
+	
+	if(draw_shrubs) {
+		for(shrub_entity& shrub : lvl.shrubs) {
+			glm::mat4 local_to_clip = world_to_clip * shrub.local_to_world;
+			glm::vec4 colour = encode_pick_colour(shrub.id);
+			draw_cube(local_to_clip, colour);
+		}
+	}
+	
+	if(draw_mobies) {
+		for(moby_entity& moby : lvl.mobies) {
+			glm::vec4 colour = encode_pick_colour(moby.id);
+			draw_cube(moby.local_to_clip_cache, colour);
+		}
+	}
+	
+	if(draw_splines) {
+		for(spline_entity& spline : lvl.splines) {
+			glm::vec4 colour = encode_pick_colour(spline.id);
+			draw_spline(spline, world_to_clip, colour);
+		}
+	}
+}
+
 void gl_renderer::draw_spline(spline_entity& spline, const glm::mat4& world_to_clip, const glm::vec4& colour) const{
 	
 	glUniformMatrix4fv(shaders.solid_colour_transform, 1, GL_FALSE, &world_to_clip[0][0]);
@@ -116,22 +285,39 @@ void gl_renderer::draw_cube(const glm::mat4& mvp, const glm::vec4& colour) const
 	glDisableVertexAttribArray(0);
 }
 
-void gl_renderer::draw_moby_model(
+void gl_renderer::draw_moby_models(
 		moby_model& model,
-		glm::mat4 local_to_clip,
 		std::vector<texture>& textures,
 		view_mode mode,
-		bool show_all_submodels) const {
+		bool show_all_submodels,
+		GLuint local_to_world_buffer,
+		std::size_t instance_offset,
+		std::size_t count) const {
 	switch(mode) {
 		case view_mode::WIREFRAME:
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			glUseProgram(shaders.solid_colour.id());
+			glUseProgram(shaders.solid_colour_batch.id());
 			break;
 		case view_mode::TEXTURED_POLYGONS:
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 			glUseProgram(shaders.textured.id());
 			break;
 	}
+	
+	glBindBuffer(GL_ARRAY_BUFFER, local_to_world_buffer);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*) (instance_offset + sizeof(glm::vec4) * 0));
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*) (instance_offset + sizeof(glm::vec4) * 1));
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*) (instance_offset + sizeof(glm::vec4) * 2));
+	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*) (instance_offset + sizeof(glm::vec4) * 3));
+	
+	glVertexAttribDivisor(0, 1);
+	glVertexAttribDivisor(1, 1);
+	glVertexAttribDivisor(2, 1);
+	glVertexAttribDivisor(3, 1);
 	
 	moby_model_texture_data texture_data = {};
 	for(std::size_t i = 0; i < model.submodels.size(); i++) {
@@ -175,15 +361,11 @@ void gl_renderer::draw_moby_model(
 			
 			switch(mode) {
 				case view_mode::WIREFRAME: {
-					glUniformMatrix4fv(shaders.solid_colour_transform, 1, GL_FALSE, &local_to_clip[0][0]);
-					
 					glm::vec4 colour = colour_coded_submodel_index(i, model.submodels.size());
-					glUniformMatrix4fv(shaders.solid_colour_transform, 1, GL_FALSE, &local_to_clip[0][0]);
-					glUniform4f(shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
+					glUniform4f(shaders.solid_colour_batch_rgb, colour.r, colour.g, colour.b, colour.a);
 					break;
 				}
 				case view_mode::TEXTURED_POLYGONS: {
-					glUniformMatrix4fv(shaders.textured_local_to_clip, 1, GL_FALSE, &local_to_clip[0][0]);
 					if(model.texture_indices.size() > (std::size_t) texture_data.texture_index) {
 						texture& tex = textures.at(model.texture_indices.at(texture_data.texture_index));
 						if(tex.opengl_id() == 0) {
@@ -193,28 +375,46 @@ void gl_renderer::draw_moby_model(
 						glActiveTexture(GL_TEXTURE0);
 						glBindTexture(GL_TEXTURE_2D, tex.opengl_id());
 					} else {
-						fprintf(stderr, "warning: Model %s has bad texture index!\n", model.name().c_str());
+						// TODO: Actually fix this so model textures get read in
+						// correctly. This warning was commented out because it
+						// was spamming stderr.
+						//fprintf(stderr, "warning: Model %s has bad texture index!\n", model.name().c_str());
 					}
 					glUniform1i(shaders.textured_sampler, 0);
 					break;
 				}
 			}
 			
-			glEnableVertexAttribArray(0);
+			glEnableVertexAttribArray(4);
 			glBindBuffer(GL_ARRAY_BUFFER, submodel.vertex_buffer());
-			glVertexAttribPointer(0, 3, GL_SHORT, GL_TRUE, sizeof(moby_model_vertex), (void*) offsetof(moby_model_vertex, x));
+			glVertexAttribPointer(4, 3, GL_SHORT, GL_TRUE, sizeof(moby_model_vertex), (void*) offsetof(moby_model_vertex, x));
 			
-			glEnableVertexAttribArray(1);
+			glEnableVertexAttribArray(5);
 			glBindBuffer(GL_ARRAY_BUFFER, submodel.st_buffer());
-			glVertexAttribPointer(1, 2, GL_SHORT, GL_TRUE, sizeof(moby_model_st), (void*) offsetof(moby_model_st, s));
+			glVertexAttribPointer(5, 2, GL_SHORT, GL_TRUE, sizeof(moby_model_st), (void*) offsetof(moby_model_st, s));
 			
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subsubmodel.index_buffer());
-			glDrawElements(GL_TRIANGLES, subsubmodel.indices.size(), GL_UNSIGNED_BYTE, nullptr);
+			glDrawElementsInstanced(
+				GL_TRIANGLES,
+				subsubmodel.indices.size(),
+				GL_UNSIGNED_BYTE,
+				nullptr,
+				count);
 			
-			glDisableVertexAttribArray(0);
-			glDisableVertexAttribArray(1);
+			glDisableVertexAttribArray(4);
+			glDisableVertexAttribArray(5);
 		}
 	}
+	
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
+	glDisableVertexAttribArray(2);
+	glDisableVertexAttribArray(3);
+	
+	glVertexAttribDivisor(0, 0);
+	glVertexAttribDivisor(1, 0);
+	glVertexAttribDivisor(2, 0);
+	glVertexAttribDivisor(3, 0);
 }
 
 glm::vec4 gl_renderer::colour_coded_submodel_index(std::size_t index, std::size_t submodel_count) {

@@ -1301,9 +1301,16 @@ void gui::model_browser::render_preview(
 	for(texture& tex : textures) {
 		gl_textures.push_back(tex.opengl_id());
 	}
+	
+	gl_buffer local_to_clip_buffer;
+	glGenBuffers(1, &local_to_clip_buffer());
+	glBindBuffer(GL_ARRAY_BUFFER, local_to_clip_buffer());
+	glBufferData(GL_ARRAY_BUFFER,
+		sizeof(glm::mat4),
+		&local_to_clip, GL_STATIC_DRAW);
 
 	render_to_texture(target, preview_size.x, preview_size.y, [&]() {
-		renderer.draw_moby_model(model, local_to_clip, textures, params.mode, false);
+		renderer.draw_moby_models(model, textures, params.mode, false, local_to_clip_buffer(), 0, 1);
 	});
 	
 	if(params.show_vertex_indices) {
