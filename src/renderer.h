@@ -44,6 +44,8 @@ enum class view_mode {
 
 struct gl_renderer {
 	void prepare_frame(level& lvl, glm::mat4 world_to_clip); // Compute local to world matrices for the moby batch renderer.
+	void draw_level(level& lvl, glm::mat4 world_to_clip) const;
+	void draw_pickframe(level& lvl, glm::mat4 world_to_clip) const;
 	
 	void draw_spline(spline_entity& spline, const glm::mat4& world_to_clip, const glm::vec4& colour) const;
 	void draw_tris  (const std::vector<float>& vertex_data, const glm::mat4& mvp, const glm::vec4& colour) const;
