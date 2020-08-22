@@ -61,7 +61,7 @@ bool armor_archive::read(stream& iso, const toc_table& table) {
 		model.set_name("armor " + std::to_string(i / 16));
 		model.read();
 		
-		std::string set_name = std::string("set") + std::to_string(i);
+		std::string set_name = std::string("set") + std::to_string(i / 16);
 		
 		// Single texture.
 		std::size_t fip_offset = base_offset + armor.texture.bytes();
