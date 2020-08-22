@@ -38,6 +38,9 @@ bool armor_archive::read(stream& iso, const toc_table& table) {
 		auto model_header = iso.peek<armor_model_header>(base_offset + armor.model.bytes());
 		uint32_t submodel_table_offset = model_header.submodel_table_offset;
 		if(submodel_table_offset > 0x10) {
+			if(models.size() > 10) {
+				continue; // Hack the get R&C3's ARMOR.WAD loading.
+			}
 			return false;
 		}
 		std::vector<std::size_t> submodel_counts {
@@ -58,7 +61,7 @@ bool armor_archive::read(stream& iso, const toc_table& table) {
 		model.set_name("armor " + std::to_string(i / 16));
 		model.read();
 		
-		std::string set_name = std::string("set") + std::to_string(i);
+		std::string set_name = std::string("set") + std::to_string(i / 16);
 		
 		// Single texture.
 		std::size_t fip_offset = base_offset + armor.texture.bytes();
