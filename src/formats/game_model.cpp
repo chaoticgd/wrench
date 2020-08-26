@@ -264,7 +264,7 @@ void moby_model::import_ply(std::string path) {
 			ply_vertex& in_vertex = vertices[i];
 			
 			moby_model_vertex& out_vertex = submodel.vertices.emplace_back();
-			out_vertex.unknown_0 = 0;//0xff;
+			out_vertex.unknown_0 = 0xff;
 			out_vertex.unknown_1 = 0;
 			out_vertex.unknown_2 = 0;
 			out_vertex.unknown_3 = 0xf4;
@@ -308,10 +308,10 @@ void moby_model::import_ply(std::string path) {
 	// I'm not sure what the limits are on the size of the index buffer per
 	// submodel, so we're going to be quite conservative for now.
 	std::size_t i;
-	for(i = 0; i < 1; i++) {//vertices.size() / 0x40; i++) {
-		emit_submodel(i * 0x20, (i + 1) * 0x20);
+	for(i = 0; i < vertices.size() / 0x40; i++) {
+		emit_submodel(i * 0x40, (i + 1) * 0x40);
 	}
-	//emit_submodel(i * 0x20, vertices.size());
+	emit_submodel(i * 0x40, vertices.size());
 	printf("**** WRITING ****\n");
 	write();
 	printf("**** READING ****\n");
