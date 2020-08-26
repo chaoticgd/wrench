@@ -185,6 +185,12 @@ public:
 	void write_v(const std::vector<T>& buffer) {
 		write_n(reinterpret_cast<const char*>(buffer.data()), buffer.size() * sizeof(T));
 	}
+	
+	void pad(std::size_t alignment, uint8_t padding) {
+		while(tell() % alignment != 0) {
+			write(padding);
+		}
+	}
 
 	// The dest and src streams should be different.
 	static void copy_n(stream& dest, stream& src, std::size_t size) {

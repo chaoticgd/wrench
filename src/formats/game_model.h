@@ -33,14 +33,43 @@
 struct app;
 struct gl_renderer;
 
+enum class moby_model_header_type {
+	LEVEL, ARMOR
+};
+
+packed_struct(moby_model_level_header,
+	uint32_t rel_offset;    // 0x0
+	uint8_t unknown_4;      // 0x4
+	uint8_t unknown_5;      // 0x5
+	uint8_t unknown_6;      // 0x6
+	uint8_t submodel_count; // 0x7
+	uint32_t unknown_8;     // 0x8
+	uint32_t unknown_c;     // 0xc
+	uint32_t unknown_10;    // 0x10
+	uint32_t unknown_14;    // 0x14
+	uint32_t unknown_18;    // 0x18
+	uint32_t unknown_1c;    // 0x1c
+	uint32_t unknown_20;    // 0x20
+	float scale;            // 0x24
+)
+
+packed_struct(moby_model_armor_header,
+	uint8_t submodel_count_1;             // 0x0
+	uint8_t submodel_count_2;             // 0x1
+	uint8_t submodel_count_3;             // 0x2
+	uint8_t submodel_count_1_plus_2;      // 0x3
+	uint32_t submodel_table_offset;       // 0x4
+	uint32_t texture_applications_offset; // 0x8
+)
+
 packed_struct(moby_submodel_entry,
 	uint32_t vif_list_offset;
 	uint16_t vif_list_quadword_count; // Size in 16 byte units.
 	uint16_t vif_list_texture_unpack_offset; // No third UNPACK if zero.
 	uint32_t vertex_offset;
 	uint8_t vertex_data_quadword_count; // Includes header, in 16 byte units.
-	uint8_t unknown_d;
-	uint8_t unknown_e;
+	uint8_t unknown_d; // unknown_d == (0xf + transfer_vertex_count * 6) / 0x10
+	uint8_t unknown_e; // unknown_e == (3 + transfer_vertex_count) / 4
 	uint8_t transfer_vertex_count; // Number of vertices sent to VU1.
 )
 
@@ -131,8 +160,7 @@ public:
 		stream* backing,
 		std::size_t base_offset,
 		std::size_t size,
-		std::size_t submodel_table_offset,
-		std::vector<std::size_t> submodel_counts_);
+		moby_model_header_type type);
 	moby_model(const moby_model&) = delete;
 	moby_model(moby_model&&) = default;
 
@@ -162,9 +190,10 @@ public:
 	// Print message along with details of the current submodel.
 	void warn_current_submodel(const char* message);
 	
+	void import_ply(std::string path);
+	static std::vector<vif_packet> regenerate_submodel_vif_list(moby_submodel& submodel);
 	void write();
 	
-	std::vector<std::size_t> submodel_counts;
 	std::vector<moby_submodel> submodels;
 	float scale = 1.f;
 	
@@ -181,7 +210,7 @@ public:
 	std::vector<std::size_t> texture_indices;
 private:
 	proxy_stream _backing;
-	std::size_t _submodel_table_offset; // Relative to base_offset.
+	moby_model_header_type _type;
 };
 
 #endif

@@ -241,32 +241,13 @@ void level::read_moby_models(std::size_t asset_offset, level_asset_header asset_
 			continue;
 		}
 		
-		packed_struct(asset_model_header,
-			uint32_t rel_offset;
-			uint8_t unknown_4;
-			uint8_t unknown_5;
-			uint8_t unknown_6;
-			uint8_t num_submodels;
-			uint32_t unknown_8;
-			uint32_t unknown_c;
-			uint32_t unknown_10;
-			uint32_t unknown_14;
-			uint32_t unknown_18;
-			uint32_t unknown_1c;
-			uint32_t unknown_20;
-			float scale;
-		)
-		
-		auto model_header = _asset_segment->read<asset_model_header>(entry.offset_in_asset_wad);
+		auto model_header = _asset_segment->read<moby_model_level_header>(entry.offset_in_asset_wad);
 		uint32_t rel_offset = model_header.rel_offset;
 		uint32_t abs_offset = entry.offset_in_asset_wad;
-		std::vector<std::size_t> submodel_counts {
-			model_header.num_submodels
-		};
 		if(rel_offset == 0) {
 			continue;
 		}
-		moby_model& model = moby_models.emplace_back(_asset_segment, abs_offset, 0, rel_offset, submodel_counts);
+		moby_model& model = moby_models.emplace_back(_asset_segment, abs_offset, 0, moby_model_header_type::LEVEL);
 		model.set_name("class " + std::to_string(entry.o_class));
 		model.scale = model_header.scale;
 		model.read();

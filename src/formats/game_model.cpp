@@ -24,25 +24,39 @@
 
 #include "../app.h"
 #include "../util.h"
+#include "model_utils.h"
 
 moby_model::moby_model(
 	stream* backing,
 	std::size_t base_offset,
 	std::size_t size,
-	std::size_t submodel_table_offset,
-	std::vector<std::size_t> submodel_counts_)
-	: submodel_counts(std::move(submodel_counts_)),
-	  _backing(backing, base_offset, size),
-	  _submodel_table_offset(submodel_table_offset) {
+	moby_model_header_type type)
+	: _backing(backing, base_offset, size),
+	  _type(type) {
 	_backing.name = "Moby Model";
 }
 
 void moby_model::read() {
-	std::size_t total_submodel_count = submodel_counts[0];
+	std::size_t submodel_count;
+	std::size_t submodel_table_offset;
+	switch(_type) {
+		case moby_model_header_type::LEVEL: {
+			auto header = _backing.read<moby_model_level_header>(0);
+			submodel_count = header.submodel_count;
+			submodel_table_offset = header.rel_offset;
+			break;
+		}
+		case moby_model_header_type::ARMOR: {
+			auto header = _backing.read<moby_model_armor_header>(0);
+			submodel_count = header.submodel_count_1;
+			submodel_table_offset = header.submodel_table_offset;
+			break;
+		}
+	}
 	
 	std::vector<moby_submodel_entry> submodel_entries;
-	submodel_entries.resize(total_submodel_count);
-	_backing.seek(_submodel_table_offset);
+	submodel_entries.resize(submodel_count);
+	_backing.seek(submodel_table_offset);
 	_backing.read_v(submodel_entries);
 	
 	submodels.clear();
@@ -62,9 +76,25 @@ void moby_model::read() {
 			warn_current_submodel("bad vertex table offset or size");
 			continue;
 		}
+		if(entry.transfer_vertex_count != vertex_header.transfer_vertex_count) {
+			warn_current_submodel("conflicting vertex counts");
+			continue;
+		}
+		if(entry.unknown_e != (3 + entry.transfer_vertex_count) / 4) {
+			warn_current_submodel("weird value in submodel table entry at +0xe");
+			continue;
+		}
+		if(entry.unknown_d != (0xf + entry.transfer_vertex_count * 6) / 0x10) {
+			warn_current_submodel("weird value in submodel table entry at +0xd");
+			continue;
+		}
 		submodel.vertices.resize(vertex_header.vertex_count_2 + vertex_header.vertex_count_4 + vertex_header.main_vertex_count);
 		_backing.seek(entry.vertex_offset + vertex_header.vertex_table_offset);
 		_backing.read_v(submodel.vertices);
+		
+		if(vertex_header.main_vertex_count == vertex_header.transfer_vertex_count) {
+			warn_current_submodel("woooooo");
+		}
 		
 		// This is almost certainly wrong, but makes the models look better for the time being.
 		if(submodel.vertices.size() > 0) {
@@ -222,8 +252,265 @@ void moby_model::warn_current_submodel(const char* message) {
 		_backing.name.c_str(), _backing.resource_path().c_str(), submodels.size(), message);
 }
 
+void moby_model::import_ply(std::string path) {
+	std::vector<ply_vertex> vertices = read_ply_model(path);
+	
+	submodels.clear();
+	
+	const auto emit_submodel = [&](std::size_t begin, std::size_t end) {
+		moby_submodel& submodel = submodels.emplace_back();
+		
+		for(std::size_t i = begin; i < end; i++) {
+			ply_vertex& in_vertex = vertices[i];
+			
+			moby_model_vertex& out_vertex = submodel.vertices.emplace_back();
+			out_vertex.unknown_0 = 0;//0xff;
+			out_vertex.unknown_1 = 0;
+			out_vertex.unknown_2 = 0;
+			out_vertex.unknown_3 = 0xf4;
+			out_vertex.unknown_4 = 0;
+			out_vertex.unknown_5 = 0;
+			out_vertex.unknown_6 = 0;
+			out_vertex.unknown_7 = 0;
+			out_vertex.unknown_8 = 0;
+			out_vertex.unknown_9 = 0;
+			out_vertex.x = in_vertex.x * INT16_MAX / 8.f;
+			out_vertex.y = in_vertex.y * INT16_MAX / 8.f;
+			out_vertex.z = in_vertex.z * INT16_MAX / 8.f;
+			
+			moby_model_st& st = submodel.st_coords.emplace_back();
+			st.s = in_vertex.s * INT16_MAX;
+			st.t = in_vertex.t * INT16_MAX;
+		}
+		
+		moby_model_vertex terminators[] = {
+			{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+			{ 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+			{ 0xff, 0x00, 0x00, 0x00, 0xff, 0x00, 0xff, 0x00, 0xff, 0x00, 0xff, 0x00, 0x00 }
+		};
+		for(moby_model_vertex& term : terminators) {
+			submodel.vertices.push_back(term);
+		}
+		
+		moby_subsubmodel& subsubmodel = submodel.subsubmodels.emplace_back();
+		if(begin == 0) {
+			moby_model_texture_data tex;
+			tex.texture_index = 0;
+			subsubmodel.texture = tex;
+		}
+		for(std::size_t i = 0; i < end - begin; i++) {
+			subsubmodel.indices.push_back(i);
+		}
+		
+		submodel.vif_list = regenerate_submodel_vif_list(submodel);
+	};
+	
+	// I'm not sure what the limits are on the size of the index buffer per
+	// submodel, so we're going to be quite conservative for now.
+	std::size_t i;
+	for(i = 0; i < 1; i++) {//vertices.size() / 0x40; i++) {
+		emit_submodel(i * 0x20, (i + 1) * 0x20);
+	}
+	//emit_submodel(i * 0x20, vertices.size());
+	printf("**** WRITING ****\n");
+	write();
+	printf("**** READING ****\n");
+	read();
+	
+	//printf("%s %lx %s\n", resource_path().c_str(), _backing.size(), _backing.name.c_str());
+}
+
+std::vector<vif_packet> moby_model::regenerate_submodel_vif_list(moby_submodel& submodel) {
+	std::vector<vif_packet> result;
+	
+	static const std::size_t ST_UNPACK_ADDR_QUADWORDS = 0xc2;
+	static const std::size_t INDEX_UNPACK_ADDR_QUADWORDS = 0x12d;
+	
+	vif_packet& st_unpack = result.emplace_back();
+	
+	st_unpack.data.resize(submodel.st_coords.size() * sizeof(moby_model_st));
+	std::memcpy(st_unpack.data.data(), submodel.st_coords.data(), st_unpack.data.size());
+	
+	st_unpack.address = 0; // Fake address.
+	st_unpack.code.interrupt = 0;
+	st_unpack.code.cmd = (vif_cmd) 0b1100000; // UNPACK
+	st_unpack.code.num = submodel.st_coords.size();
+	st_unpack.code.unpack.vnvl = vif_vnvl::V2_16;
+	st_unpack.code.unpack.flg = vif_flg::USE_VIF1_TOPS;
+	st_unpack.code.unpack.usn = vif_usn::SIGNED;
+	st_unpack.code.unpack.addr = ST_UNPACK_ADDR_QUADWORDS;
+	
+	vif_packet& index_unpack = result.emplace_back();
+	
+	moby_model_index_header index_header;
+	index_header.unknown_0 = 0xfe;
+	index_header.texture_unpack_offset_quadwords = 0;
+	index_header.unknown_2 = 0;
+	index_header.unknown_3 = 0;
+	index_unpack.data.resize(sizeof(index_header));
+	std::memcpy(index_unpack.data.data(), &index_header, sizeof(index_header));
+	
+	for(moby_subsubmodel& subsubmodel : submodel.subsubmodels) {
+		if(subsubmodel.texture) {
+			index_unpack.data.push_back(0); // Push new texture.
+		}
+		for(uint8_t index : subsubmodel.indices) {
+			index_unpack.data.push_back(index + 1); // Garbage but it'll give some kind of result.
+		}
+		index_unpack.data.push_back(1);
+		index_unpack.data.push_back(1);
+		index_unpack.data.push_back(1);
+		index_unpack.data.push_back(0);
+		while(index_unpack.data.size() % 4 != 0) {
+			index_unpack.data.push_back(0);
+		}
+	}
+	
+	index_unpack.address = 1; // Fake address.
+	index_unpack.code.interrupt = 0;
+	index_unpack.code.cmd = (vif_cmd) 0b1100000; // UNPACK
+	index_unpack.code.num = index_unpack.data.size() / 4;
+	index_unpack.code.unpack.vnvl = vif_vnvl::V4_8;
+	index_unpack.code.unpack.flg = vif_flg::USE_VIF1_TOPS;
+	index_unpack.code.unpack.usn = vif_usn::SIGNED;
+	index_unpack.code.unpack.addr = INDEX_UNPACK_ADDR_QUADWORDS;
+	
+	bool has_texture_unpack = false;
+	for(moby_subsubmodel& subsubmodel : submodel.subsubmodels) {
+		if(subsubmodel.texture) {
+			has_texture_unpack = true;
+		}
+	}
+	
+	// TODO: Alignment?
+	if(has_texture_unpack) {
+		vif_packet& texture_unpack = result.emplace_back();
+		
+		for(moby_subsubmodel& subsubmodel : submodel.subsubmodels) {
+			if(subsubmodel.texture) {
+				// GIF A+D data. See EE User's Manual 7.3.2.
+				uint8_t ad_data[0x40] = {
+					0x27, 0xff, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x04, 0x00, 0xa0, 0x41, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x34, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+				};
+				*(uint32_t*) &ad_data[0x30] = subsubmodel.texture->texture_index;
+				for(uint8_t byte : ad_data) {
+					texture_unpack.data.push_back(byte);
+				}
+			}
+		}
+		
+		texture_unpack.address = 2; // Fake address.
+		texture_unpack.code.interrupt = 0;
+		texture_unpack.code.cmd = (vif_cmd) 0b1100000; // UNPACK
+		texture_unpack.code.num = texture_unpack.data.size() / 0x10;
+		texture_unpack.code.unpack.vnvl = vif_vnvl::V4_32;
+		texture_unpack.code.unpack.flg = vif_flg::USE_VIF1_TOPS;
+		texture_unpack.code.unpack.usn = vif_usn::SIGNED;
+		texture_unpack.code.unpack.addr = INDEX_UNPACK_ADDR_QUADWORDS + result[1].data.size() / 4;
+		
+		// Write texture UNPACK offset in quadwords.
+		result[1].data[1] = result[1].data.size() / 4;
+	}
+	
+	return result;
+}
+
 void moby_model::write() {
-	// TODO
+	if(_type == moby_model_header_type::LEVEL) {
+		throw std::runtime_error("moby_model::write not yet implemented for level models!");
+	}
+	
+	// Skip past the submodel table.
+	_backing.seek((submodels.size() + 1) * 0x10);
+	
+	uint32_t texture_unpack_offset = 0;
+	
+	std::vector<moby_submodel_entry> submodel_table;
+	for(moby_submodel& submodel : submodels) {
+		moby_submodel_entry& entry = submodel_table.emplace_back();
+		
+		_backing.pad(0x10, 0x0);
+		entry.vif_list_offset = _backing.tell();
+		
+		for(std::size_t i = 0; i < submodel.vif_list.size(); i++) {
+			vif_packet& packet = submodel.vif_list[i];
+			if(packet.code.is_unpack()) {
+				if(i == 2) {
+					texture_unpack_offset = _backing.tell();
+				}
+				if(i == 2) { // Texture unpack.
+					while(_backing.tell() % 0x10 != 0xc) {
+						_backing.write<uint8_t>(0);
+					}
+				} else {
+					_backing.pad(0x4, 0);
+				}
+				_backing.write<uint32_t>(packet.code.encode_unpack());
+			} else if(packet.code.cmd == vif_cmd::NOP) {
+				_backing.pad(0x4, 0);
+				_backing.write<uint32_t>(0);
+			} else {
+				throw std::runtime_error("vif_code has bad cmd (must be NOP or UNPACK).");
+			}
+			_backing.write_v(packet.data);
+		}
+		entry.vif_list_quadword_count = std::ceil((_backing.tell() - entry.vif_list_offset) / 16.f);
+		entry.vif_list_texture_unpack_offset = 0;
+		
+		_backing.pad(0x10, 0x0);
+		entry.vertex_offset = _backing.tell();
+		
+		moby_model_vertex_table_header vertex_header;
+		vertex_header.unknown_0 = 0;
+		vertex_header.vertex_count_2 = 0;
+		vertex_header.vertex_count_4 = 0;
+		vertex_header.main_vertex_count = submodel.vertices.size();
+		vertex_header.vertex_count_8 = 0;
+		vertex_header.transfer_vertex_count =
+			vertex_header.vertex_count_2 +
+			vertex_header.vertex_count_4 +
+			vertex_header.main_vertex_count +
+			vertex_header.vertex_count_8;
+		vertex_header.vertex_table_offset = 0x10;
+		vertex_header.unknown_e = 0;
+		_backing.write(vertex_header);
+		
+		_backing.write_v(submodel.vertices);
+		
+		entry.vertex_data_quadword_count = std::ceil((_backing.tell() - entry.vertex_offset) / 16.f);
+		
+		// Not sure what these are for but these expressions seem to match
+		// all the existing models.
+		entry.unknown_d = (0xf + vertex_header.transfer_vertex_count * 6) / 0x10;
+		entry.unknown_e = (3 + vertex_header.transfer_vertex_count) / 4;
+		
+		entry.transfer_vertex_count = vertex_header.transfer_vertex_count;
+	}
+	
+	uint32_t tex_application_offset = _backing.tell();
+	
+	// Write out bogus texture application table.
+	uint8_t tex_application_table[12] = {
+		0x0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+	};
+	_backing.write_n((const char*) tex_application_table, 12);
+	_backing.write<uint32_t>(texture_unpack_offset | 0x80000000); // pointer + terminator
+	
+	_backing.seek(0x10);
+	_backing.write_v(submodel_table);
+	
+	moby_model_armor_header header;
+	header.submodel_count_1 = submodels.size();
+	header.submodel_count_2 = 0;
+	header.submodel_count_3 = 0;
+	header.submodel_count_1_plus_2 = header.submodel_count_1 + header.submodel_count_2;
+	header.submodel_table_offset = 0x10;
+	header.texture_applications_offset = tex_application_offset;
+	_backing.seek(0x0);
+	_backing.write(header);
 }
 
 std::string moby_model::resource_path() const {

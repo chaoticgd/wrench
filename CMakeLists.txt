@@ -39,6 +39,7 @@ add_executable(wrench
 	src/formats/tfrag.cpp
 	src/formats/toc.cpp
 	src/formats/texture_archive.cpp
+	src/formats/model_utils.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
 	src/imgui_impl_glfw.cpp
 	thirdparty/imgui/examples/imgui_impl_opengl3.cpp
@@ -140,6 +141,7 @@ add_executable(randomiser
 	src/formats/tfrag.cpp
 	src/formats/toc.cpp
 	src/formats/texture_archive.cpp
+	src/formats/model_utils.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
 	src/imgui_impl_glfw.cpp
 	thirdparty/imgui/examples/imgui_impl_opengl3.cpp
