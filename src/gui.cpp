@@ -1342,6 +1342,10 @@ void gui::model_browser::render_preview(
 		};
 		
 		for(const moby_submodel& submodel : model.submodels) {
+			if(!submodel.visible_in_model_viewer) {
+				continue;
+			}
+			
 			auto draw_list = ImGui::GetWindowDrawList();
 			for(std::size_t j = 0; j < submodel.vertices.size(); j++) {
 				const moby_model_vertex& vert = submodel.vertices[j];
