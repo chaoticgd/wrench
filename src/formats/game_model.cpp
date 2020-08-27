@@ -395,7 +395,7 @@ std::vector<vif_packet> moby_model::regenerate_submodel_vif_list(moby_submodel& 
 					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x34, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 				};
-				*(uint32_t*) &ad_data[0x30] = subsubmodel.texture->texture_index;
+				*(uint32_t*) &ad_data[0x20] = subsubmodel.texture->texture_index;
 				for(uint8_t byte : ad_data) {
 					texture_unpack.data.push_back(byte);
 				}
@@ -426,7 +426,7 @@ void moby_model::write() {
 	// Skip past the submodel table.
 	_backing.seek((submodels.size() + 1) * 0x10);
 	
-	uint32_t texture_unpack_offset = 0;
+	uint32_t texture_unpack_offset_all = 0;
 	
 	std::vector<moby_submodel_entry> submodel_table;
 	for(moby_submodel& submodel : submodels) {
@@ -435,16 +435,17 @@ void moby_model::write() {
 		_backing.pad(0x10, 0x0);
 		entry.vif_list_offset = _backing.tell();
 		
+		uint32_t texture_unpack_offset = 0;
+		
 		for(std::size_t i = 0; i < submodel.vif_list.size(); i++) {
 			vif_packet& packet = submodel.vif_list[i];
 			if(packet.code.is_unpack()) {
-				if(i == 2) {
-					texture_unpack_offset = _backing.tell();
-				}
 				if(i == 2) { // Texture unpack.
 					while(_backing.tell() % 0x10 != 0xc) {
 						_backing.write<uint8_t>(0);
 					}
+					texture_unpack_offset = _backing.tell() - 0xc;
+					texture_unpack_offset_all = texture_unpack_offset;
 				} else {
 					_backing.pad(0x4, 0);
 				}
@@ -457,8 +458,13 @@ void moby_model::write() {
 			}
 			_backing.write_v(packet.data);
 		}
-		entry.vif_list_quadword_count = std::ceil((_backing.tell() - entry.vif_list_offset) / 16.f);
-		entry.vif_list_texture_unpack_offset = 0;
+		uint32_t end_of_vif_list_offset = _backing.tell();
+		entry.vif_list_quadword_count = std::ceil((end_of_vif_list_offset - entry.vif_list_offset) / 16.f);
+		if(texture_unpack_offset != 0) {
+			entry.vif_list_texture_unpack_offset = std::ceil((end_of_vif_list_offset - texture_unpack_offset) / 16.f) - 1;
+		} else {
+			entry.vif_list_texture_unpack_offset = 0;
+		}
 		
 		_backing.pad(0x10, 0x0);
 		entry.vertex_offset = _backing.tell();
@@ -497,7 +503,7 @@ void moby_model::write() {
 		0x0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
 	};
 	_backing.write_n((const char*) tex_application_table, 12);
-	_backing.write<uint32_t>(texture_unpack_offset | 0x80000000); // pointer + terminator
+	_backing.write<uint32_t>(texture_unpack_offset_all | 0x80000000); // pointer + terminator
 	
 	_backing.seek(0x10);
 	_backing.write_v(submodel_table);
