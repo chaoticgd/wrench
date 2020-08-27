@@ -18,12 +18,14 @@
 
 #include "vif.h"
 
+#include <iomanip>
 #include <sstream>
 
 #include "../util.h"
 
 std::optional<vif_code> vif_code::parse(uint32_t val) {
 	vif_code code;
+	code.raw = val;
 	code.interrupt = bit_range(val, 31, 31);
 	code.cmd       = static_cast<vif_cmd>(bit_range(val, 24, 30));
 	code.num       = bit_range(val, 16, 23);
@@ -96,6 +98,22 @@ std::optional<vif_code> vif_code::parse(uint32_t val) {
 	return code;
 }
 
+uint32_t vif_code::encode_unpack() {
+	if(!is_unpack()) {
+		throw std::runtime_error("vif_code::encode_unpack called on a VIF code where cmd != UNPACK.");
+	}
+	
+	uint32_t value;
+	value |= (interrupt & 0b1) << 31;
+	value |= (((uint32_t) cmd) & 0b11111111) << 24;
+	value |= (num & 0b11111111) << 16;
+	value |= (unpack.vnvl._to_integral() & 0b1111) << 24;
+	value |= (unpack.flg._to_integral() & 0b1) << 15;
+	value |= (unpack.usn._to_integral() & 0b1) << 14;
+	value |= (unpack.addr & 0b1111111111) << 0;
+	return value;
+}
+
 bool vif_code::is_unpack() const {
 	return (static_cast<int>(cmd) & 0b1100000) == 0b1100000;
 }
@@ -154,7 +172,7 @@ std::size_t vif_code::packet_size() const {
 std::string vif_code::to_string() const {
 	std::stringstream ss;
 	ss << std::hex;
-	ss << "vif_code cmd=";
+	ss << std::setw(8) << std::setfill('0') << raw << " ";
 	switch(cmd) {
 		case vif_cmd::NOP:      ss << "NOP"; break;
 		case vif_cmd::STCYCL:   ss << "STCYCL num=" << num << " wl=" << stcycl.wl << " cl=" << stcycl.cl; break;

@@ -1161,6 +1161,17 @@ void gui::model_browser::render(app& a) {
 			
 			ImGui::Checkbox("Show Vertex Indices", &_view_params.show_vertex_indices);
 			
+			static prompt_box importer("Import .ply");
+			static alert_box import_error("Import Error");
+			import_error.render();
+			if(auto path = importer.prompt()) {
+				try {
+					model->import_ply(*path);
+				} catch(stream_error& e) {
+					import_error.open(e.what());
+				}
+			}
+			
 			ImGui::EndTabItem();
 		}
 		if(ImGui::BeginTabItem("Submodels")) {
@@ -1331,6 +1342,10 @@ void gui::model_browser::render_preview(
 		};
 		
 		for(const moby_submodel& submodel : model.submodels) {
+			if(!submodel.visible_in_model_viewer) {
+				continue;
+			}
+			
 			auto draw_list = ImGui::GetWindowDrawList();
 			for(std::size_t j = 0; j < submodel.vertices.size(); j++) {
 				const moby_model_vertex& vert = submodel.vertices[j];
@@ -1353,11 +1368,15 @@ glm::vec2 gui::model_browser::get_drag_delta() const {
 }
 
 void gui::model_browser::render_submodel_list(moby_model& model) {
+	// We're only reading in the main submodels for now, but there seem to
+	// be more in some of the armour models.
+	static const std::size_t SUBMODEL_GROUPS = 1;
+	
 	std::size_t low = 0;
-	for(std::size_t i = 0; i < model.submodel_counts.size(); i++) {
+	for(std::size_t i = 0; i < SUBMODEL_GROUPS; i++) {
 		ImGui::PushID(i);
 		
-		const std::size_t high = low + model.submodel_counts[i];
+		const std::size_t high = model.submodels.size();
 		
 		// If every submodel in a given group is visible, we should draw the
 		// box as being ticked.
@@ -1399,8 +1418,6 @@ void gui::model_browser::render_submodel_list(moby_model& model) {
 				model.submodels[j].visible_in_model_viewer = group_ticked;
 			}
 		}
-		
-		low += model.submodel_counts[i];
 		
 		ImGui::PopID();
 	}

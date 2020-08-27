@@ -97,6 +97,7 @@ BETTER_ENUM(vif_usn, char,
 )
 
 struct vif_code {
+	uint32_t raw = 0;
 	int interrupt;
 	vif_cmd cmd;
 	int num;
@@ -114,8 +115,8 @@ struct vif_code {
 		struct { int size; } direct;
 		struct { int size; } directhl;
 		struct {
-			int vn;
-			int vl;
+			int vn; // Ignored by encode_pack.
+			int vl; // Ignored by encode_pack.
 			vif_vnvl vnvl;
 			vif_flg flg;
 			vif_usn usn;
@@ -125,6 +126,7 @@ struct vif_code {
 	
 	vif_code() {}
 	static std::optional<vif_code> parse(uint32_t val);
+	uint32_t encode_unpack();
 	bool is_unpack() const;
 	std::size_t packet_size() const; // In bytes.
 	std::string to_string() const;

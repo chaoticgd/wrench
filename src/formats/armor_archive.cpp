@@ -35,7 +35,7 @@ bool armor_archive::read(stream& iso, const toc_table& table) {
 		}
 		
 		// Read the model.
-		auto model_header = iso.peek<armor_model_header>(base_offset + armor.model.bytes());
+		auto model_header = iso.peek<moby_model_armor_header>(base_offset + armor.model.bytes());
 		uint32_t submodel_table_offset = model_header.submodel_table_offset;
 		if(submodel_table_offset > 0x10) {
 			if(models.size() > 10) {
@@ -43,11 +43,6 @@ bool armor_archive::read(stream& iso, const toc_table& table) {
 			}
 			return false;
 		}
-		std::vector<std::size_t> submodel_counts {
-			model_header.submodel_count_1,
-			model_header.submodel_count_2,
-			model_header.submodel_count_3
-		};
 		if(armor.model.bytes() == 0) {
 			continue;
 		}
@@ -56,8 +51,7 @@ bool armor_archive::read(stream& iso, const toc_table& table) {
 			&iso,
 			base_offset + armor.model.bytes(),
 			armor.model_size.bytes(),
-			submodel_table_offset,
-			submodel_counts);
+			moby_model_header_type::ARMOR);
 		model.set_name("armor " + std::to_string(i / 16));
 		model.read();
 		
