@@ -283,15 +283,6 @@ void moby_model::import_ply(std::string path) {
 			st.t = in_vertex.t * INT16_MAX;
 		}
 		
-		moby_model_vertex terminators[] = {
-			{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
-			{ 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
-			{ 0xff, 0x00, 0x00, 0x00, 0xff, 0x00, 0xff, 0x00, 0xff, 0x00, 0xff, 0x00, 0x00 }
-		};
-		for(moby_model_vertex& term : terminators) {
-			submodel.vertices.push_back(term);
-		}
-		
 		moby_subsubmodel& subsubmodel = submodel.subsubmodels.emplace_back();
 		if(begin == 0) {
 			moby_model_texture_data tex;
@@ -312,12 +303,9 @@ void moby_model::import_ply(std::string path) {
 		emit_submodel(i * 0x40, (i + 1) * 0x40);
 	}
 	emit_submodel(i * 0x40, vertices.size());
-	printf("**** WRITING ****\n");
-	write();
-	printf("**** READING ****\n");
-	read();
 	
-	//printf("%s %lx %s\n", resource_path().c_str(), _backing.size(), _backing.name.c_str());
+	write();
+	read();
 }
 
 std::vector<vif_packet> moby_model::regenerate_submodel_vif_list(moby_submodel& submodel) {
