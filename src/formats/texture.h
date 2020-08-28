@@ -93,4 +93,10 @@ private:
 // Won't affect the position indicator of backing.
 std::optional<texture> create_fip_texture(stream* backing, std::size_t offset);
 
+// Read a list of textures in the following format:
+//  uint32_t count;
+//  uint32_t offsets[count];
+//  ... PIF textures ...
+std::vector<texture> read_pif_list(stream* backing, std::size_t offset);
+
 #endif

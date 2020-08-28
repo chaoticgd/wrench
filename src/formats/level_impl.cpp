@@ -76,6 +76,7 @@ level::level(iso_stream* iso, toc_level index)
 	read_tfrags();
 	
 	read_hud_banks(iso);
+	read_loading_screen_textures(iso);
 }
 
 void level::read_strings(world_header header) {
@@ -362,6 +363,12 @@ void level::read_hud_banks(iso_stream* iso) {
 	read_hud_bank(2, _primary_header.hud_bank_2_offset, _primary_header.hud_bank_2_size);
 	read_hud_bank(3, _primary_header.hud_bank_3_offset, _primary_header.hud_bank_3_size);
 	read_hud_bank(4, _primary_header.hud_bank_4_offset, _primary_header.hud_bank_4_size);
+}
+
+void level::read_loading_screen_textures(iso_stream* iso) {
+	std::size_t primary_header_offset = _file_header.base_offset + _file_header.primary_header_offset;
+	stream* textures = iso->get_decompressed(primary_header_offset + _primary_header.loading_screen_textures_offset);
+	loading_screen_textures = read_pif_list(textures, 0);
 }
 
 stream* level::moby_stream() {

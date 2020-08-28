@@ -125,3 +125,20 @@ std::optional<texture> create_fip_texture(stream* backing, std::size_t offset) {
 	std::size_t palette_offset = offset + offsetof(fip_header, palette);
 	return texture(backing, pixel_offset, backing, palette_offset, size);
 }
+
+std::vector<texture> read_pif_list(stream* backing, std::size_t offset) {
+	uint32_t count = backing->read<uint32_t>(0);
+	
+	std::vector<uint32_t> offsets(count);
+	backing->read_v(offsets);
+	
+	std::vector<texture> textures;
+	for(uint32_t texture_offset : offsets) {
+		auto texture = create_fip_texture(backing, offset + texture_offset);
+		if(texture) {
+			textures.emplace_back(std::move(*texture));
+		}
+	}
+	
+	return textures;
+}

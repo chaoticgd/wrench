@@ -160,6 +160,9 @@ packed_struct(level_primary_header,
 	uint32_t hud_bank_4_offset;   // 0x40
 	uint32_t hud_bank_4_size;     // 0x44
 	uint32_t asset_wad;           // 0x48
+	uint32_t unknown_4c;          // 0x4c
+	uint32_t loading_screen_textures_offset; // 0x50
+	uint32_t loading_screen_textures_size;   // 0x54
 )
 
 packed_struct(level_code_segment_header,
