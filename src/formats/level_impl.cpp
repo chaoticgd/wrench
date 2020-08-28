@@ -353,6 +353,10 @@ void level::read_hud_banks(iso_stream* iso) {
 		if(size > 0x10) {
 			uint32_t absolute_offset = _file_header.primary_header_offset + relative_offset;
 			stream* bank = iso->get_decompressed(_file_header.base_offset + absolute_offset);
+			if(bank == nullptr) {
+				fprintf(stderr, "warning: Failed to decompress HUD bank %d.\n", index);
+				return;
+			}
 			bank->name = "HUD Bank " + std::to_string(index);
 		}
 	};
@@ -368,6 +372,10 @@ void level::read_hud_banks(iso_stream* iso) {
 void level::read_loading_screen_textures(iso_stream* iso) {
 	std::size_t primary_header_offset = _file_header.base_offset + _file_header.primary_header_offset;
 	stream* textures = iso->get_decompressed(primary_header_offset + _primary_header.loading_screen_textures_offset);
+	if(textures == nullptr) {
+		fprintf(stderr, "warning: Failed to decompress loading screen textures.\n");
+		return;
+	}
 	loading_screen_textures = read_pif_list(textures, 0);
 }
 
