@@ -155,6 +155,9 @@ private:
 	void read_textures(std::size_t asset_offset, level_asset_header asset_header);
 	void read_tfrags();
 	
+	void read_hud_banks(iso_stream* iso);
+	void read_loading_screen_textures(iso_stream* iso);
+	
 public:
 	stream* moby_stream();
 	
@@ -199,6 +202,8 @@ public:
 	std::vector<tfrag> tfrags;
 	
 	level_code_segment code_segment;
+	
+	std::vector<texture> loading_screen_textures;
 	
 private:
 	toc_level _index;
