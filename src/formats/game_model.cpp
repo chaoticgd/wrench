@@ -92,10 +92,6 @@ void moby_model::read() {
 		_backing.seek(entry.vertex_offset + vertex_header.vertex_table_offset);
 		_backing.read_v(submodel.vertices);
 		
-		if(vertex_header.main_vertex_count == vertex_header.transfer_vertex_count) {
-			warn_current_submodel("woooooo");
-		}
-		
 		// This is almost certainly wrong, but makes the models look better for the time being.
 		if(submodel.vertices.size() > 0) {
 			for(std::size_t i = 0; i < vertex_header.vertex_count_8; i++) {
