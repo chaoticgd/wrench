@@ -74,6 +74,8 @@ level::level(iso_stream* iso, toc_level index)
 	read_moby_models(asset_offset, asset_header);
 	read_textures(asset_offset, asset_header);
 	read_tfrags();
+	
+	read_hud_banks(iso);
 }
 
 void level::read_strings(world_header header) {
@@ -343,6 +345,23 @@ void level::read_tfrags() {
 		frag.update();
 		tfrags.emplace_back(std::move(frag));
 	}
+}
+
+void level::read_hud_banks(iso_stream* iso) {
+	const auto read_hud_bank = [&](int index, uint32_t relative_offset, uint32_t size) {
+		if(size > 0x10) {
+			uint32_t absolute_offset = _file_header.primary_header_offset + relative_offset;
+			stream* bank = iso->get_decompressed(_file_header.base_offset + absolute_offset);
+			bank->name = "HUD Bank " + std::to_string(index);
+		}
+	};
+	
+	//auto hud_header = _file.read<level_hud_header>(_file_header.primary_header_offset + _primary_header.hud_header_offset);
+	read_hud_bank(0, _primary_header.hud_bank_0_offset, _primary_header.hud_bank_0_size);
+	read_hud_bank(1, _primary_header.hud_bank_1_offset, _primary_header.hud_bank_1_size);
+	read_hud_bank(2, _primary_header.hud_bank_2_offset, _primary_header.hud_bank_2_size);
+	read_hud_bank(3, _primary_header.hud_bank_3_offset, _primary_header.hud_bank_3_size);
+	read_hud_bank(4, _primary_header.hud_bank_4_offset, _primary_header.hud_bank_4_size);
 }
 
 stream* level::moby_stream() {

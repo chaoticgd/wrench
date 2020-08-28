@@ -155,6 +155,8 @@ private:
 	void read_textures(std::size_t asset_offset, level_asset_header asset_header);
 	void read_tfrags();
 	
+	void read_hud_banks(iso_stream* iso);
+	
 public:
 	stream* moby_stream();
 	
