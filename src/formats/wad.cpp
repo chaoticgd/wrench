@@ -59,12 +59,6 @@ void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_t
 		throw stream_format_error("Invalid WAD header.");
 	}
 
-	uint32_t starting_byte = src.read8();
-	if(starting_byte == 0) {
-		starting_byte = src.read8() + 0xf;
-	}
-	copy_bytes(dest, src, starting_byte + 3);
-
 	while(
 		src.pos < header.total_size &&
 		(bytes_to_decompress == 0 || dest.pos < bytes_to_decompress)) {
@@ -83,61 +77,62 @@ void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_t
 		WAD_DEBUG(std::cout << "flag_byte = " << std::hex << (flag_byte & 0xff) << "\n";)
 
 		bool read_from_dest = false;
-		bool read_from_src = false;
 		std::size_t lookback_offset = -1;
 		int bytes_to_copy = 0;
 
-		if(flag_byte < 0x40) {
-			if(flag_byte > 0x1f) {
-				WAD_DEBUG(std::cout << " -- packet type B\n";)
-
-				bytes_to_copy = flag_byte & 0x1f;
-				if(bytes_to_copy == 0) {
-					bytes_to_copy = src.read8() + 0x1f;
-				}
-				bytes_to_copy += 2;
-
-				uint8_t b1 = src.read8();
-				uint8_t b2 = src.read8();
-				lookback_offset = dest.pos - ((b1 >> 2) + b2 * 0x40) - 1;
-
-				read_from_dest = true;
+		if(flag_byte < 0x10) {
+			uint8_t num_bytes;
+			if(flag_byte != 0) {
+				num_bytes = flag_byte + 3;
 			} else {
-				WAD_DEBUG(std::cout << " -- packet type C\n";)
+				num_bytes = src.read8() + 18;
+			}
+			WAD_DEBUG(std::cout << " => copy 0x" << (int) num_bytes << " (decision) bytes from compressed stream at 0x" << src.pos << " to 0x" << dest.pos << "\n";)
+			copy_bytes(dest, src, num_bytes);
+			continue;
+		} else if(flag_byte < 0x20) {
+			WAD_DEBUG(std::cout << " -- packet type C\n";)
 
-				if(flag_byte < 0x10) {
-					WAD_DEBUG(std::cout.flush();)
-					throw stream_format_error("WAD decompression failed!");
-				}
-
-				bytes_to_copy = flag_byte & 7;
-				if(bytes_to_copy == 0) {
-					bytes_to_copy = src.read8() + 7;
-				}
-
-				uint8_t b0 = src.read8();
-				uint8_t b1 = src.read8();
-
-				if(b0 > 0 && flag_byte == 0x11) {
-					copy_bytes(dest, src, b0);
-					continue;
-				}
-
-				lookback_offset = dest.pos + ((flag_byte & 8) * -0x800 - ((b0 >> 2) + b1 * 0x40));
-				if(lookback_offset != dest.pos) {
-					bytes_to_copy += 2;
-					lookback_offset -= 0x4000;
-					read_from_dest = true;
-				} else if(bytes_to_copy == 1) {
-					read_from_src = true;
-				} else {
-					WAD_DEBUG(std::cout << " -- padding detected\n";)
-					while(src.pos % 0x1000 != 0x10) {
-						src.pos++;
-					}
-					read_from_src = true;
+			bytes_to_copy = flag_byte & 7;
+			if(bytes_to_copy == 0) {
+				bytes_to_copy = src.read8() + 7;
+			}
+			
+			uint8_t b0 = src.read8();
+			uint8_t b1 = src.read8();
+			
+			if(b0 > 0 && flag_byte == 0x11) {
+				copy_bytes(dest, src, b0);
+				continue;
+			}
+			
+			lookback_offset = dest.pos + ((flag_byte & 8) * -0x800 - ((b0 >> 2) + b1 * 0x40));
+			if(lookback_offset != dest.pos) {
+				bytes_to_copy += 2;
+				lookback_offset -= 0x4000;
+				read_from_dest = true;
+			} else if(bytes_to_copy == 1) {
+				
+			} else {
+				WAD_DEBUG(std::cout << " -- padding detected\n";)
+				while(src.pos % 0x1000 != 0x10) {
+					src.pos++;
 				}
 			}
+		} else if(flag_byte < 0x40) {
+			WAD_DEBUG(std::cout << " -- packet type B\n";)
+
+			bytes_to_copy = flag_byte & 0x1f;
+			if(bytes_to_copy == 0) {
+				bytes_to_copy = src.read8() + 0x1f;
+			}
+			bytes_to_copy += 2;
+
+			uint8_t b1 = src.read8();
+			uint8_t b2 = src.read8();
+			lookback_offset = dest.pos - ((b1 >> 2) + b2 * 0x40) - 1;
+
+			read_from_dest = true;
 		} else {
 			WAD_DEBUG(std::cout << " -- packet type A\n";)
 
@@ -161,29 +156,6 @@ void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_t
 				WAD_DEBUG(std::cout << " => copy 0x" << snd_pos << " (snd_pos) bytes from compressed stream at 0x" << src.pos << " to 0x" << dest.pos << "\n";)
 				copy_bytes(dest, src, snd_pos);
 				continue;
-			}
-
-			read_from_src = true;
-		}
-
-		if(read_from_src&& src.pos < src.buffer.size()) {
-			uint8_t decision_byte = src.peek8();
-			WAD_DEBUG(std::cout << " -- decision = " << (decision_byte & 0xff) << "\n";)
-			if(decision_byte > 0xf) {
-				// decision_byte is the control byte.
-				continue;
-			}
-			src.pos++;
-
-			if(decision_byte <= 0xf) {
-				uint8_t num_bytes;
-				if(decision_byte != 0) {
-					num_bytes = decision_byte + 3;
-				} else {
-					num_bytes = src.read8() + 18;
-				}
-				WAD_DEBUG(std::cout << " => copy 0x" << (int) num_bytes << " (decision) bytes from compressed stream at 0x" << src.pos << " to 0x" << dest.pos << ".\n";)
-				copy_bytes(dest, src, num_bytes);
 			}
 		}
 	}
