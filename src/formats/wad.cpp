@@ -69,9 +69,9 @@ void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_t
 		)
 
 		WAD_DEBUG(
-				static int count = 0;
-				std::cout << "*** PACKET " << count++ << " ***\n";
-				)
+			static int count = 0;
+			std::cout << "*** PACKET " << count++ << " ***\n";
+		)
 
 		uint8_t flag_byte = src.read8();
 		WAD_DEBUG(std::cout << "flag_byte = " << std::hex << (flag_byte & 0xff) << "\n";)
@@ -143,7 +143,7 @@ void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_t
 			read_from_dest = true;
 		}
 
-		WAD_DEBUG(std::cout << " -- read_from_dest = " << read_from_dest << ", read_from_src = " << read_from_src << "\n";)
+		WAD_DEBUG(std::cout << " -- read_from_dest = " << read_from_dest << "\n";)
 
 		if(read_from_dest) {
 			WAD_DEBUG(std::cout << " => copy 0x" << (int) bytes_to_copy << " bytes from uncompressed stream at 0x" << lookback_offset << "\n";)
