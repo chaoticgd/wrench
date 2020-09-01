@@ -25,6 +25,7 @@
 
 // Enable/disable debug output for the decompression function.
 #define WAD_DEBUG(cmd) //cmd
+#define WAD_DEBUG_STATS(cmd) //cmd // Print statistics about packet counts/min and max values.
 // If this code breaks, dump the correct output and point to that here.
 //#define WAD_DEBUG_EXPECTED_PATH "<file path goes here>"
 
@@ -53,7 +54,21 @@ void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_t
 			std::optional<file_stream*> expected_ptr;
 		#endif
 	)
-
+	
+	WAD_DEBUG_STATS(
+		uint32_t stat_literals_count = 0;
+		uint32_t stat_literals_max_size = 0;
+		
+		size_t big_match_min_lookback_diff = UINT32_MAX;
+		size_t big_match_max_lookback_diff = 0;
+		int big_match_min_bytes = INT32_MAX;
+		int big_match_max_bytes = INT32_MIN;
+		size_t little_match_min_lookback_diff = UINT32_MAX;
+		size_t little_match_max_lookback_diff = 0;
+		int little_match_min_bytes = INT32_MAX;
+		int little_match_max_bytes = INT32_MIN;
+	)
+	
 	auto header = src.read<wad_header>(0);
 	if(!validate_wad(header.magic)) {
 		throw stream_format_error("Invalid WAD header.");
@@ -81,7 +96,7 @@ void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_t
 		int bytes_to_copy = 0;
 
 		if(flag_byte < 0x10) { // Literal packet.
-			uint8_t num_bytes;
+			uint32_t num_bytes;
 			if(flag_byte != 0) {
 				num_bytes = flag_byte + 3;
 			} else {
@@ -89,6 +104,12 @@ void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_t
 			}
 			WAD_DEBUG(std::cout << " => copy 0x" << (int) num_bytes << " (decision) bytes from compressed stream at 0x" << src.pos << " to 0x" << dest.pos << "\n";)
 			copy_bytes(dest, src, num_bytes);
+			
+			WAD_DEBUG_STATS(
+				stat_literals_count++;
+				stat_literals_max_size = std::max(num_bytes, stat_literals_max_size);
+			)
+			
 			continue;
 		} else if(flag_byte < 0x20) {
 			WAD_DEBUG(std::cout << " -- packet type C\n";)
@@ -129,8 +150,15 @@ void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_t
 			uint8_t b1 = src.read8();
 			uint8_t b2 = src.read8();
 			lookback_offset = dest.pos - ((b1 >> 2) + b2 * 0x40) - 1;
-
 			read_from_dest = true;
+			
+			WAD_DEBUG_STATS(
+				size_t lookback_diff = dest.pos - lookback_offset;
+				big_match_min_lookback_diff = std::min(lookback_diff, big_match_min_lookback_diff);
+				big_match_max_lookback_diff = std::max(lookback_diff, big_match_max_lookback_diff);
+				big_match_min_bytes = std::min(bytes_to_copy, big_match_min_bytes);
+				big_match_max_bytes = std::max(bytes_to_copy, big_match_max_bytes);
+			)
 		} else { // Little match packet.
 			WAD_DEBUG(std::cout << " -- packet type A\n";)
 
@@ -139,6 +167,14 @@ void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_t
 			lookback_offset = dest.pos - b1 * 8 - ((flag_byte >> 2) & 7) - 1;
 			bytes_to_copy = (flag_byte >> 5) + 1;
 			read_from_dest = true;
+			
+			WAD_DEBUG_STATS(
+				size_t lookback_diff = dest.pos - lookback_offset;
+				little_match_min_lookback_diff = std::min(lookback_diff, little_match_min_lookback_diff);
+				little_match_max_lookback_diff = std::max(lookback_diff, little_match_max_lookback_diff);
+				little_match_min_bytes = std::min(bytes_to_copy, little_match_min_bytes);
+				little_match_max_bytes = std::max(bytes_to_copy, little_match_max_bytes);
+			)
 		}
 
 		WAD_DEBUG(std::cout << " -- read_from_dest = " << read_from_dest << "\n";)
@@ -159,6 +195,23 @@ void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_t
 	}
 
 	WAD_DEBUG(std::cout << "Stopped reading at " << src.pos << "\n";)
+	
+	WAD_DEBUG_STATS(
+		std::cout << "\n*** stats ***\n";
+		std::cout << "literals count = " << stat_literals_count << "\n";
+		std::cout << "literals max size = " << stat_literals_max_size << "\n";
+		
+		std::cout << "big_match_min_lookback_diff = " << big_match_min_lookback_diff << "\n";
+		std::cout << "big_match_max_lookback_diff = " << big_match_max_lookback_diff << "\n";
+		std::cout << "big_match_min_bytes = " << big_match_min_bytes << "\n";
+		std::cout << "big_match_max_bytes = " << big_match_max_bytes << "\n";
+		
+		
+		std::cout << "little_match_min_lookback_diff = " << little_match_min_lookback_diff << "\n";
+		std::cout << "little_match_max_lookback_diff = " << little_match_max_lookback_diff << "\n";
+		std::cout << "little_match_min_bytes = " << little_match_min_bytes << "\n";
+		std::cout << "little_match_max_bytes = " << little_match_max_bytes << "\n";
+	)
 }
 
 // Used for calculating the bounds of the sliding window.
