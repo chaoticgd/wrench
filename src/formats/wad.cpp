@@ -101,7 +101,7 @@ void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_t
 			uint8_t b0 = src.read8();
 			uint8_t b1 = src.read8();
 			
-			if(b0 > 0 && flag_byte == 0x11) {
+			if(flag_byte == 0x11) {
 				copy_bytes(dest, src, b0);
 				continue;
 			}
@@ -111,8 +111,6 @@ void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_t
 				bytes_to_copy += 2;
 				lookback_offset -= 0x4000;
 				read_from_dest = true;
-			} else if(bytes_to_copy == 1) {
-				
 			} else {
 				WAD_DEBUG(std::cout << " -- padding detected\n";)
 				while(src.pos % 0x1000 != 0x10) {
