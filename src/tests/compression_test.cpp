@@ -22,7 +22,6 @@
 #include "../formats/wad.h"
 
 static const int TEST_ITERATIONS = 128;
-static const int BUFFER_SIZE = 1024;
 
 void compression_test_iter(int buffer_size, int& happy, int& sad);
 
@@ -74,7 +73,7 @@ void compression_test_iter(int buffer_size, int& happy, int& sad) {
 	}
 	
 	bool happy_this_time = true;
-	for(int j = 0; j < BUFFER_SIZE; j++) {
+	for(int j = 0; j < buffer_size; j++) {
 		if(plaintext.buffer[j] != plaintext.buffer[j]) {
 			write_sad_file();
 			happy_this_time = false;
