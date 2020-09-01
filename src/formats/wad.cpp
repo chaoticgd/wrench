@@ -200,7 +200,7 @@ void compress_wad(array_stream& dest, array_stream& src) {
 	dest.write_n(header, 0x10);
 	
 	src.seek(0);
-	for(size_t i = 0; src.pos + 64 < src.buffer.size(); i++) {
+	for(size_t i = 0; src.pos + 0x100 < src.buffer.size(); i++) {
 		WAD_COMPRESS_DEBUG(
 			std::cout << "{dest.pos -> " << dest.pos << ", src.pos -> " << src.pos << "}\n\n";
 		)
