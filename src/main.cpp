@@ -24,6 +24,7 @@
 #include "app.h"
 #include "gui.h"
 #include "renderer.h"
+#include "tests/tests.h"
 
 # /*
 #	Setup code, the main loop, and GLFW stuff.
@@ -37,10 +38,16 @@ int main(int argc, char** argv) {
 	cxxopts::Options options("wrench", "A level editor for the Ratchet & Clank games.");
 	options.add_options()
 		("p,project", "Open the specified project (.wrench) file.",
-			cxxopts::value<std::string>());
+			cxxopts::value<std::string>())
+		("t,run-tests", "Run automated tests.");
 
 	auto args = parse_command_line_args(argc, argv, options);
 	std::string project_path = cli_get_or(args, "project", "");
+
+	if(args.count("run-tests")) {
+		run_tests();
+		return 0;
+	}
 
 	// Set the working dir.
 	fs::path old_working_dir = fs::current_path();

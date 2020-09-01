@@ -313,11 +313,7 @@ public:
 	// seems to provide a nice speedup too, at least on my machine. (;
 	
 	FORCE_INLINE uint8_t read8() {
-		return read8(pos);
-	}
-
-	FORCE_INLINE uint8_t read8(std::size_t offset) {
-		if(offset >= buffer.size()) {
+		if(pos >= buffer.size()) {
 			throw stream_io_error("Tried to read past end of array_stream!");
 		}
 		return buffer[pos++];
