@@ -49,14 +49,12 @@ void compression_test() {
 void compression_test_iter(int buffer_size, int& happy, int& sad) {
 	array_stream plaintext;
 	for(int j = 0; j < buffer_size; j++) {
-		plaintext.write8(rand());
+		if(rand() % 8 <= 0) {
+			plaintext.write8(rand());
+		} else {
+			plaintext.write8(0);
+		}
 	}
-	
-	array_stream compressed;
-	compress_wad(compressed, plaintext);
-	
-	array_stream output;
-	decompress_wad(output, compressed);
 	
 	auto write_sad_file = [&]() {
 		sad++;
@@ -67,6 +65,18 @@ void compression_test_iter(int buffer_size, int& happy, int& sad) {
 		printf("Written sad file to %s\n", sad_file_path.c_str());
 	};
 	
+	array_stream compressed;
+	compress_wad(compressed, plaintext);
+	
+	array_stream output;
+	try {
+	decompress_wad(output, compressed);
+	} catch(std::exception& e) {
+		printf("decompress_wad threw: %s\n", e.what());
+		write_sad_file();
+		return;
+	}
+	
 	if(plaintext.buffer.size() != output.buffer.size()) {
 		write_sad_file();
 		return;
@@ -74,7 +84,7 @@ void compression_test_iter(int buffer_size, int& happy, int& sad) {
 	
 	bool happy_this_time = true;
 	for(int j = 0; j < buffer_size; j++) {
-		if(plaintext.buffer[j] != plaintext.buffer[j]) {
+		if(plaintext.buffer[j] != output.buffer[j]) {
 			write_sad_file();
 			happy_this_time = false;
 			break;
