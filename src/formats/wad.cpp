@@ -282,10 +282,8 @@ void compress_wad(array_stream& dest, array_stream& src) {
 			
 			// Padding must be followed by a packet with a flag of 0x11.
 			dest.write8(0x11);
-			dest.write8(2);
 			dest.write8(0);
-			dest.write8(src.read8());
-			dest.write8(src.read8());
+			dest.write8(0);
 			
 			i += 2;
 		}
