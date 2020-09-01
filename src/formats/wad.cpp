@@ -251,14 +251,9 @@ void compress_wad(array_stream& dest, array_stream& src) {
 	// End of file packets.
 	while(src.pos < src.buffer.size()) {
 		dest.write8(0x11);
-		dest.write8(2); // size
+		dest.write8(1); // size
 		dest.write8(0); // unused
 		dest.write8(src.read8());
-		if(src.pos < src.buffer.size()) {
-			dest.write8(src.read8());
-		} else {
-			dest.write8(0);
-		}
 	}
 
 	std::size_t total_size = dest.pos;
