@@ -95,7 +95,7 @@ void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_t
 		std::size_t lookback_offset = -1;
 		int bytes_to_copy = 0;
 
-		if(flag_byte < 0x10) { // Literal packet.
+		if(flag_byte < 0x10) { // Literal packet (0x0-0xf).
 			uint32_t num_bytes;
 			if(flag_byte != 0) {
 				num_bytes = flag_byte + 3;
@@ -111,7 +111,7 @@ void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_t
 			)
 			
 			continue;
-		} else if(flag_byte < 0x20) {
+		} else if(flag_byte < 0x20) { // (0x10-0x1f)
 			WAD_DEBUG(std::cout << " -- packet type C\n";)
 
 			bytes_to_copy = flag_byte & 7;
@@ -138,7 +138,7 @@ void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_t
 					src.pos++;
 				}
 			}
-		} else if(flag_byte < 0x40) { // Big match packet.
+		} else if(flag_byte < 0x40) { // Big match packet (0x20-0x3f).
 			WAD_DEBUG(std::cout << " -- packet type B\n";)
 
 			bytes_to_copy = flag_byte & 0x1f;
@@ -159,7 +159,7 @@ void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_t
 				big_match_min_bytes = std::min(bytes_to_copy, big_match_min_bytes);
 				big_match_max_bytes = std::max(bytes_to_copy, big_match_max_bytes);
 			)
-		} else { // Little match packet.
+		} else { // Little match packet (0x40-0xff).
 			WAD_DEBUG(std::cout << " -- packet type A\n";)
 
 			uint8_t b1 = src.read8();
