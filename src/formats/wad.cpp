@@ -288,6 +288,7 @@ void compress_wad(array_stream& dest, array_stream& src) {
 			dest.write8(0x11);
 			dest.write8(0);
 			dest.write8(0);
+			last_flag = 0x11;
 			
 			i += 2;
 		}
