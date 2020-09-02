@@ -220,9 +220,11 @@ std::size_t sub_clamped(std::size_t lhs, std::size_t rhs) {
 //#define WAD_COMPRESS_DEBUG_EXPECTED_PATH "dumps/mobyseg_compressed_null"
 
 std::vector<char> encode_wad_packet(
+		array_stream& dest,
 		array_stream& src,
 		std::size_t dest_pos,
-		std::size_t packet_no);
+		std::size_t packet_no,
+		uint8_t& last_flag);
 
 void compress_wad(array_stream& dest, array_stream& src) {
 	WAD_COMPRESS_DEBUG(
@@ -242,6 +244,8 @@ void compress_wad(array_stream& dest, array_stream& src) {
 		"WRENCH010";       // pad
 	dest.write_n(header, 0x10);
 	
+	uint8_t last_flag = 0;
+	
 	src.seek(0);
 	for(size_t i = 0; src.pos + 0x100 < src.buffer.size(); i++) {
 		WAD_COMPRESS_DEBUG(
@@ -254,9 +258,9 @@ void compress_wad(array_stream& dest, array_stream& src) {
 		)
 
 		if(i % 100 == 0) std::cout << "Encoded " << std::fixed << std::setprecision(4) <<  100 * (float) src.pos / src.buffer.size() << "%\n";
-
+		
 		size_t old_src_pos = src.pos;
-		std::vector<char> packet = encode_wad_packet(src, dest.pos, i);
+		std::vector<char> packet = encode_wad_packet(dest, src, dest.pos, i, last_flag);
 		
 		bool overrun = false;
 		if((dest.pos % 0x2000) + packet.size() < 0x2000) {
@@ -303,9 +307,11 @@ void compress_wad(array_stream& dest, array_stream& src) {
 }
 
 std::vector<char> encode_wad_packet(
+		array_stream& dest,
 		array_stream& src,
 		std::size_t dest_pos,
-		std::size_t packet_no) {
+		std::size_t packet_no,
+		uint8_t& last_flag) {
 
 	std::vector<char> packet { 0 };
 	uint8_t flag_byte = 0;
@@ -401,25 +407,26 @@ std::vector<char> encode_wad_packet(
 				<< " bytes from uncompressed stream at 0x" << match_offset << " (source = " << src.pos << ")\n";
 		)
 		src.pos += match_size;
-		
-		// See if we can squeeze a tiny literal into this match packet.
-		find_match();
-		if(literal_size > 3) {
-			literal_size = 3;
-		}
-		WAD_COMPRESS_DEBUG(
-			if(literal_size > 0) {
-				std::cout << " => copy 0x" << std::hex << (int) literal_size
-					<< " (snd_pos) bytes from compressed stream at 0x" << dest_pos + packet.size() << " (target = " << src.pos << ")\n";
-			}
-		)
-		packet[packet.size() - 2] |= literal_size;
-		packet.insert(packet.end(), src.buffer.begin() + src.pos, src.buffer.begin() + src.pos + literal_size);
-		src.pos += literal_size;
 	} else { // Literal packet.
-		
 		if(literal_size <= 3) {
-			literal_size = 4;
+			// If the current literal is small and the last packet was a match
+			// packet, we can stuff the literal size in the last packet.
+			if(last_flag >= 0x10) {
+				WAD_COMPRESS_DEBUG(
+					if(literal_size > 0) {
+						std::cout << " => copy 0x" << std::hex << (int) literal_size
+							<< " (snd_pos) bytes from compressed stream at 0x" << dest_pos + packet.size() << " (target = " << src.pos << ")\n";
+					}
+				)
+				dest.buffer[dest.pos - 2] |= literal_size;
+				packet.insert(packet.end(), src.buffer.begin() + src.pos, src.buffer.begin() + src.pos + literal_size);
+				src.pos += literal_size;
+				packet.erase(packet.begin()); // We don't need no flag byte!
+				return packet;
+			} else {
+				// Bad path.
+				literal_size = 4;
+			}
 		}
 		if(literal_size <= 18) {
 			// We can encode the size in the flag byte.
@@ -436,8 +443,9 @@ std::vector<char> encode_wad_packet(
 		packet.insert(packet.end(), src.buffer.begin() + src.pos, src.buffer.begin() + src.pos + literal_size);
 		src.pos += literal_size;
 	}
-
+	
 	packet[0] |= flag_byte;
+	last_flag = flag_byte;
 
 	WAD_COMPRESS_DEBUG(std::cout << "flag_byte = " << std::hex << (packet[0] & 0xff) << "\n");
 
