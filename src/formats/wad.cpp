@@ -224,7 +224,9 @@ std::vector<char> encode_wad_packet(
 		array_stream& src,
 		std::size_t dest_pos,
 		std::size_t packet_no,
-		uint8_t& last_flag);
+		uint32_t& last_flag);
+
+static const int DO_NOT_INJECT_FLAG = 0x100;
 
 void compress_wad(array_stream& dest, array_stream& src) {
 	WAD_COMPRESS_DEBUG(
@@ -244,7 +246,7 @@ void compress_wad(array_stream& dest, array_stream& src) {
 		"WRENCH010";       // pad
 	dest.write_n(header, 0x10);
 	
-	uint8_t last_flag = 0;
+	uint32_t last_flag = DO_NOT_INJECT_FLAG;
 	
 	src.seek(0);
 	for(size_t i = 0; src.pos + 0x100 < src.buffer.size(); i++) {
@@ -289,7 +291,7 @@ void compress_wad(array_stream& dest, array_stream& src) {
 			dest.write8(1);
 			dest.write8(0);
 			dest.write8(src.read8());
-			last_flag = 0x0; // Don't inject this with a tiny literal.
+			last_flag = DO_NOT_INJECT_FLAG; // Don't inject this with a tiny literal.
 			
 			i += 2;
 		}
@@ -313,7 +315,7 @@ std::vector<char> encode_wad_packet(
 		array_stream& src,
 		std::size_t dest_pos,
 		std::size_t packet_no,
-		uint8_t& last_flag) {
+		uint32_t& last_flag) {
 
 	std::vector<char> packet { 0 };
 	uint8_t flag_byte = 0;
@@ -411,7 +413,7 @@ std::vector<char> encode_wad_packet(
 		src.pos += match_size;
 	} else { // Literal packet.
 		if(last_flag <= 0xf) { // Two literals in a row? Implausible!
-			last_flag = 0x0; // Don't inject this with a tiny literal.
+			last_flag = DO_NOT_INJECT_FLAG; // Don't inject this with a tiny literal.
 			char lit = src.read8();
 			return { 0x11, 0x01, 0x00, lit };
 		}
@@ -419,7 +421,7 @@ std::vector<char> encode_wad_packet(
 		if(literal_size <= 3) {
 			// If the current literal is small and the last packet was a match
 			// packet, we can stuff the literal size in the last packet.
-			if(last_flag >= 0x10) {
+			if(last_flag >= 0x10 && last_flag != DO_NOT_INJECT_FLAG) {
 				WAD_COMPRESS_DEBUG(
 					if(literal_size > 0) {
 						std::cout << " => copy 0x" << std::hex << (int) literal_size
