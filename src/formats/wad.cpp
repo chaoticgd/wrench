@@ -286,9 +286,10 @@ void compress_wad(array_stream& dest, array_stream& src) {
 			
 			// Padding must be followed by a packet with a flag of 0x11.
 			dest.write8(0x11);
+			dest.write8(1);
 			dest.write8(0);
-			dest.write8(0);
-			last_flag = 0x11;
+			dest.write8(src.read8());
+			last_flag = 0x0; // Don't inject this with a tiny literal.
 			
 			i += 2;
 		}
@@ -297,8 +298,8 @@ void compress_wad(array_stream& dest, array_stream& src) {
 	// End of file packets.
 	while(src.pos < src.buffer.size()) {
 		dest.write8(0x11);
-		dest.write8(1); // size
-		dest.write8(0); // unused
+		dest.write8(1);
+		dest.write8(0);
 		dest.write8(src.read8());
 	}
 
@@ -409,6 +410,12 @@ std::vector<char> encode_wad_packet(
 		)
 		src.pos += match_size;
 	} else { // Literal packet.
+		if(last_flag <= 0xf) { // Two literals in a row? Implausible!
+			last_flag = 0x0; // Don't inject this with a tiny literal.
+			char lit = src.read8();
+			return { 0x11, 0x01, 0x00, lit };
+		}
+	
 		if(literal_size <= 3) {
 			// If the current literal is small and the last packet was a match
 			// packet, we can stuff the literal size in the last packet.
