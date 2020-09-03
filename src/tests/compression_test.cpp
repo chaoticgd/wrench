@@ -66,11 +66,17 @@ void compression_test_iter(int buffer_size, int& happy, int& sad) {
 	};
 	
 	array_stream compressed;
-	compress_wad(compressed, plaintext);
+	try {
+		compress_wad(compressed, plaintext);
+	} catch(std::exception& e) {
+		printf("compress_wad threw: %s\n", e.what());
+		write_sad_file();
+		return;
+	}
 	
 	array_stream output;
 	try {
-	decompress_wad(output, compressed);
+		decompress_wad(output, compressed);
 	} catch(std::exception& e) {
 		printf("decompress_wad threw: %s\n", e.what());
 		write_sad_file();
