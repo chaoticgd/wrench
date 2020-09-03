@@ -44,6 +44,7 @@ add_executable(wrench
 	src/imgui_impl_glfw.cpp
 	thirdparty/imgui/examples/imgui_impl_opengl3.cpp
 	src/md5.cpp
+	src/tests/compression_test.cpp
 )
 
 add_executable(fip
