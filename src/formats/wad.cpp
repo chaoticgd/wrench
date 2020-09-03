@@ -109,6 +109,11 @@ void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_t
 				stat_literals_max_size = std::max(num_bytes, stat_literals_max_size);
 			)
 			
+			if(src.pos < src.buffer.size() && src.peek8() < 0x10) {
+				// The game disallows this so lets complain.
+				throw std::runtime_error("WAD decompression failed: Two literals in a row? Implausible!");
+			}
+			
 			continue;
 		} else if(flag_byte < 0x20) { // (0x10-0x1f)
 			WAD_DEBUG(std::cout << " -- packet type C\n";)
@@ -307,12 +312,12 @@ void compress_wad(array_stream& dest, array_stream& src) {
 	
 	while(src.pos < src.buffer.size()) {
 		size_t literal_size = std::min(src.buffer.size() - src.pos, MAX_LITERAL_SIZE);
+		if(last_flag < 0x10 || last_flag == DO_NOT_INJECT_FLAG) {
+			dest.write8(0x11);
+			dest.write8(0x0);
+			dest.write8(0x0);
+		}
 		if(literal_size <= 3) {
-			if(last_flag < 0x10 || last_flag == DO_NOT_INJECT_FLAG) {
-				dest.write8(0x11);
-				dest.write8(0x0);
-				dest.write8(0x0);
-			}
 			dest.buffer[dest.pos - 2] |= literal_size; // Inject the literal size into the last packet.
 		} else if(literal_size <= 18) {
 			// We can encode the size in the flag byte.
@@ -429,11 +434,16 @@ std::vector<char> encode_wad_packet(
 		)
 		src.pos += match_size;
 	} else { // Literal packet.
+		if(last_flag < 0x10) { // Two literals in a row? Implausible!
+			last_flag = 0x11;
+			return { 0x11, 0x00, 0x00 };
+		}
+	
 		if(literal_size <= 3) {
 			// If the last flag is a literal, or there's already a small literal
 			// injected into the last packet, we need to push a new dummy packet
 			// that we can stuff a literal into on the next iteration.
-			if(last_flag < 0x10 || last_flag == DO_NOT_INJECT_FLAG) {
+			if(last_flag == DO_NOT_INJECT_FLAG) {
 				last_flag = 0x11;
 				return { 0x11, 0x00, 0x00 };
 			}
