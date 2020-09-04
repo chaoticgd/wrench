@@ -268,8 +268,6 @@ void compress_wad(array_stream& dest, array_stream& src) {
 			std::cout << "*** PACKET " << count++ << " ***\n";
 		)
 
-		if(i % 100 == 0) std::cout << "Encoded " << std::fixed << std::setprecision(4) <<  100 * (float) src.pos / src.buffer.size() << "%\n";
-		
 		size_t old_src_pos = src.pos;
 		std::vector<char> packet = encode_wad_packet(dest, src, dest.pos, i, last_flag);
 		
@@ -356,20 +354,15 @@ std::vector<char> encode_wad_packet(
 		match_size = 0;
 		
 		for(size_t i = 0; i < MAX_LITERAL_SIZE; i++) {
-			size_t high = sub_clamped(src.pos + i, 1);
+			size_t high = src.pos + i;
 			size_t low = sub_clamped(high, TYPE_A_MAX_LOOKBACK);
 			for(size_t j = low; j < high; j++) {
 				// Count number of equal bytes.
-				size_t st_size = src.buffer.size();
-				size_t l = src.pos + i;
-				size_t r = j;
+				size_t target = src.pos + i;
 				size_t k = 0;
 				for(; k < MAX_MATCH_SIZE; k++) {
-					if(l + k >= st_size || r + k >= st_size) {
-						break;
-					}
-					auto l_val = src.peek8(l + k);
-					auto r_val = src.peek8(r + k);
+					auto l_val = src.buffer[target + k];
+					auto r_val = src.buffer[j + k];
 					if(l_val != r_val) {
 						break;
 					}
