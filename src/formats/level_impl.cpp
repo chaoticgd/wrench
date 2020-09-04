@@ -50,13 +50,7 @@ level::level(iso_stream* iso, toc_level index)
 	}
 	
 	auto world_hdr = _world_segment->read<world_header>(0);
-	properties = _world_segment->read<world_properties>(world_hdr.properties);
-	read_strings(world_hdr);
-	read_ties(world_hdr.ties);
-	read_shrubs(world_hdr.shrubs);
-	read_mobies(world_hdr.mobies);
-	read_pvars(world_hdr.pvar_table, world_hdr.pvar_data);
-	read_splines(world_hdr.splines);
+	read_world_segment(world_hdr);
 	
 	_asset_segment = iso->get_decompressed
 		(_file_header.base_offset + _file_header.primary_header_offset + _primary_header.asset_wad);
@@ -79,8 +73,11 @@ level::level(iso_stream* iso, toc_level index)
 	read_loading_screen_textures(iso);
 }
 
-void level::read_strings(world_header header) {
-	auto read_language = [&](uint32_t offset) {
+void level::read_world_segment(world_header header) {
+	properties = _world_segment->read<world_properties>(header.properties);
+	
+	// Strings
+	const auto read_language = [&](uint32_t offset) {
 		std::vector<game_string> language;
 	
 		auto table = _world_segment->read<world_string_table_header>(offset);
@@ -99,72 +96,61 @@ void level::read_strings(world_header header) {
 	game_strings[2] = read_language(header.german_strings);
 	game_strings[3] = read_language(header.spanish_strings);
 	game_strings[4] = read_language(header.italian_strings);
-}
-
-void level::read_ties(std::size_t offset) {
-	auto tie_table = _world_segment->read<world_object_table>(offset);
-	ties.resize(tie_table.count);
-	for(tie_entity& tie : ties) {
-		world_tie data = _world_segment->read<world_tie>();
-		// entity
-		tie.id = { _next_entity_id++ };
-		tie.selected = false;
-		swap_tie(tie, data);
+	
+	// Point entities
+	auto tie_table = _world_segment->read<world_object_table>(header.ties);
+	auto ties_in = _world_segment->read_multiple<world_tie>(tie_table.count);
+	for(world_tie& on_disc : ties_in) {
+		tie_entity& ent = ties.emplace_back();
+		ent.id = { _next_entity_id++ };
+		ent.selected = false;
+		swap_tie(ent, on_disc);
 	}
-}
-
-void level::read_shrubs(std::size_t offset) {
-	auto shrub_table = _world_segment->read<world_object_table>(offset);
-	shrubs.resize(shrub_table.count);
-	for(shrub_entity& shrub : shrubs) {
-		world_shrub data = _world_segment->read<world_shrub>();
-		// entity
-		shrub.id = { _next_entity_id++ };
-		shrub.selected = false;
-		swap_shrub(shrub, data);
+	
+	auto shrub_table = _world_segment->read<world_object_table>(header.shrubs);
+	auto shrubs_in = _world_segment->read_multiple<world_shrub>(shrub_table.count);
+	for(world_shrub& on_disc : shrubs_in) {
+		shrub_entity& ent = shrubs.emplace_back();
+		ent.id = { _next_entity_id++ };
+		ent.selected = false;
+		swap_shrub(ent, on_disc);
 	}
-}
-
-void level::read_mobies(std::size_t offset) {
-	auto moby_table = _world_segment->read<world_object_table>(offset);
-	mobies.resize(moby_table.count);
-	for(moby_entity& moby : mobies) {
-		world_moby data = _world_segment->read<world_moby>();
-		// entity
-		moby.id = { _next_entity_id++ };
-		moby.selected = false;
-		swap_moby(moby, data);
+	
+	auto moby_table = _world_segment->read<world_object_table>(header.mobies);
+	auto mobies_in = _world_segment->read_multiple<world_moby>(moby_table.count);
+	for(world_moby& on_disc : mobies_in) {
+		moby_entity& ent = mobies.emplace_back();
+		ent.id = { _next_entity_id++ };
+		ent.selected = false;
+		swap_moby(ent, on_disc);
 	}
-}
-
-void level::read_pvars(std::size_t table_offset, std::size_t data_offset) {
+	
+	// Pvars
 	int32_t pvar_count = 0;
 	for(moby_entity& moby : mobies) {
 		pvar_count = std::max(pvar_count, moby.pvar_index + 1);
 	}
 	
 	std::vector<pvar_table_entry> table(pvar_count);
-	_world_segment->seek(table_offset);
+	_world_segment->seek(header.pvar_table);
 	_world_segment->read_v(table);
 	
 	for(pvar_table_entry& entry : table) {
 		uint32_t size = entry.size;
 		std::vector<uint8_t>& pvar = pvars.emplace_back(size);
-		_world_segment->seek(data_offset + entry.offset);
+		_world_segment->seek(header.pvar_data + entry.offset);
 		_world_segment->read_v(pvar);
 	}
-}
-
-
-void level::read_splines(std::size_t offset) {
-	auto spline_table = _world_segment->read<world_spline_table>(offset);
+	
+	// Splines
+	auto spline_table = _world_segment->read<world_spline_table>(header.splines);
 	
 	std::vector<uint32_t> spline_offsets(spline_table.spline_count);
 	_world_segment->read_v(spline_offsets);
 	
 	for(uint32_t spline_offset : spline_offsets) {
 		auto spline_header = _world_segment->read<world_spline_header>
-			(offset + spline_table.data_offset + spline_offset);
+			(header.splines + spline_table.data_offset + spline_offset);
 		
 		spline_entity& spline = splines.emplace_back();
 		spline.id = { _next_entity_id++ };

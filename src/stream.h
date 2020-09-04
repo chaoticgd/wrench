@@ -175,7 +175,14 @@ public:
 		this_->seek(whence_you_came);
 		return value;
 	}
-
+	
+	template <typename T>
+	std::vector<T> read_multiple(size_t count) {
+		std::vector<T> buffer(count);
+		read_n(reinterpret_cast<char*>(buffer.data()), buffer.size() * sizeof(T));
+		return buffer;
+	}
+	
 	template <typename T>
 	void read_v(std::vector<T>& buffer) {
 		read_n(reinterpret_cast<char*>(buffer.data()), buffer.size() * sizeof(T));
