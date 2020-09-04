@@ -109,17 +109,7 @@ void level::read_ties(std::size_t offset) {
 		// entity
 		tie.id = { _next_entity_id++ };
 		tie.selected = false;
-		// matrix_entity
-		tie.local_to_world = data.local_to_world();
-		// tie_entity
-		tie.unknown_0 = data.unknown_0;
-		tie.unknown_4 = data.unknown_4;
-		tie.unknown_8 = data.unknown_8;
-		tie.unknown_c = data.unknown_c;
-		tie.unknown_50 = data.unknown_50;
-		tie.uid = data.uid;
-		tie.unknown_58 = data.unknown_58;
-		tie.unknown_5c = data.unknown_5c;
+		swap_tie(tie, data);
 	}
 }
 
@@ -131,21 +121,7 @@ void level::read_shrubs(std::size_t offset) {
 		// entity
 		shrub.id = { _next_entity_id++ };
 		shrub.selected = false;
-		// matrix_entity
-		shrub.local_to_world = data.local_to_world();
-		// shrub_entity
-		shrub.unknown_0 = data.unknown_0;
-		shrub.unknown_4 = data.unknown_4;
-		shrub.unknown_8 = data.unknown_8;
-		shrub.unknown_c = data.unknown_c;
-		shrub.unknown_50 = data.unknown_50;
-		shrub.unknown_54 = data.unknown_54;
-		shrub.unknown_58 = data.unknown_58;
-		shrub.unknown_5c = data.unknown_5c;
-		shrub.unknown_60 = data.unknown_60;
-		shrub.unknown_64 = data.unknown_64;
-		shrub.unknown_68 = data.unknown_68;
-		shrub.unknown_6c = data.unknown_6c;
+		swap_shrub(shrub, data);
 	}
 }
 
@@ -157,38 +133,7 @@ void level::read_mobies(std::size_t offset) {
 		// entity
 		moby.id = { _next_entity_id++ };
 		moby.selected = false;
-		// euler_entity
-		moby.position = data.position();
-		moby.rotation = data.rotation();
-		// moby_entity
-		moby.size = data.size;
-		moby.unknown_4 = data.unknown_4;
-		moby.unknown_8 = data.unknown_8;
-		moby.unknown_c = data.unknown_c;
-		moby.uid = data.uid;
-		moby.unknown_14 = data.unknown_14;
-		moby.unknown_18 = data.unknown_18;
-		moby.unknown_1c = data.unknown_1c;
-		moby.unknown_20 = data.unknown_20;
-		moby.unknown_24 = data.unknown_24;
-		moby.class_num = data.class_num;
-		moby.scale = data.scale;
-		moby.unknown_30 = data.unknown_30;
-		moby.unknown_34 = data.unknown_34;
-		moby.unknown_38 = data.unknown_38;
-		moby.unknown_3c = data.unknown_3c;
-		moby.unknown_58 = data.unknown_58;
-		moby.unknown_5c = data.unknown_5c;
-		moby.unknown_60 = data.unknown_60;
-		moby.unknown_64 = data.unknown_64;
-		moby.pvar_index = data.pvar_index;
-		moby.unknown_6c = data.unknown_6c;
-		moby.unknown_70 = data.unknown_70;
-		moby.unknown_74 = data.unknown_74;
-		moby.unknown_78 = data.unknown_78;
-		moby.unknown_7c = data.unknown_7c;
-		moby.unknown_80 = data.unknown_80;
-		moby.unknown_84 = data.unknown_84;
+		swap_moby(moby, data);
 	}
 }
 
@@ -397,4 +342,89 @@ std::vector<entity_id> level::selected_entity_ids() {
 		}
 	});
 	return ids;
+}
+
+// We're using packed structs so we can't pass around references to fields so
+// instead of std::swap we have to use this macro.
+#define SWAP_PACKED(inmem, packed) \
+	{ \
+		auto p = packed; \
+		packed = inmem; \
+		inmem = p; \
+	}
+
+void swap_tie(tie_entity& l, world_tie& r) {
+	// matrix_entity
+	swap_mat4(l.local_to_world, r.local_to_world);
+	// tie_entity
+	SWAP_PACKED(l.unknown_0, r.unknown_0);
+	SWAP_PACKED(l.unknown_4, r.unknown_4);
+	SWAP_PACKED(l.unknown_8, r.unknown_8);
+	SWAP_PACKED(l.unknown_c, r.unknown_c);
+	SWAP_PACKED(l.unknown_50, r.unknown_50);
+	SWAP_PACKED(l.uid, r.uid);
+	SWAP_PACKED(l.unknown_58, r.unknown_58);
+	SWAP_PACKED(l.unknown_5c, r.unknown_5c);
+}
+
+void swap_shrub(shrub_entity& l, world_shrub& r) {
+	// matrix_entity
+	swap_mat4(l.local_to_world, r.local_to_world);
+	// shrub_entity
+	SWAP_PACKED(l.unknown_0, r.unknown_0);
+	SWAP_PACKED(l.unknown_4, r.unknown_4);
+	SWAP_PACKED(l.unknown_8, r.unknown_8);
+	SWAP_PACKED(l.unknown_c, r.unknown_c);
+	SWAP_PACKED(l.unknown_50, r.unknown_50);
+	SWAP_PACKED(l.unknown_54, r.unknown_54);
+	SWAP_PACKED(l.unknown_58, r.unknown_58);
+	SWAP_PACKED(l.unknown_5c, r.unknown_5c);
+	SWAP_PACKED(l.unknown_60, r.unknown_60);
+	SWAP_PACKED(l.unknown_64, r.unknown_64);
+	SWAP_PACKED(l.unknown_68, r.unknown_68);
+	SWAP_PACKED(l.unknown_6c, r.unknown_6c);
+}
+
+void swap_moby(moby_entity& l, world_moby& r) {
+	// euler_entity
+	swap_vec3(l.position, r.position);
+	swap_vec3(l.rotation, r.rotation);
+	// moby_entity
+	SWAP_PACKED(l.size, r.size);
+	SWAP_PACKED(l.unknown_4, r.unknown_4);
+	SWAP_PACKED(l.unknown_8, r.unknown_8);
+	SWAP_PACKED(l.unknown_c, r.unknown_c);
+	SWAP_PACKED(l.uid, r.uid);
+	SWAP_PACKED(l.unknown_14, r.unknown_14);
+	SWAP_PACKED(l.unknown_18, r.unknown_18);
+	SWAP_PACKED(l.unknown_1c, r.unknown_1c);
+	SWAP_PACKED(l.unknown_20, r.unknown_20);
+	SWAP_PACKED(l.unknown_24, r.unknown_24);
+	SWAP_PACKED(l.class_num, r.class_num);
+	SWAP_PACKED(l.scale, r.scale);
+	SWAP_PACKED(l.unknown_30, r.unknown_30);
+	SWAP_PACKED(l.unknown_34, r.unknown_34);
+	SWAP_PACKED(l.unknown_38, r.unknown_38);
+	SWAP_PACKED(l.unknown_3c, r.unknown_3c);
+	SWAP_PACKED(l.unknown_58, r.unknown_58);
+	SWAP_PACKED(l.unknown_5c, r.unknown_5c);
+	SWAP_PACKED(l.unknown_60, r.unknown_60);
+	SWAP_PACKED(l.unknown_64, r.unknown_64);
+	SWAP_PACKED(l.pvar_index, r.pvar_index);
+	SWAP_PACKED(l.unknown_6c, r.unknown_6c);
+	SWAP_PACKED(l.unknown_70, r.unknown_70);
+	SWAP_PACKED(l.unknown_74, r.unknown_74);
+	SWAP_PACKED(l.unknown_78, r.unknown_78);
+	SWAP_PACKED(l.unknown_7c, r.unknown_7c);
+	SWAP_PACKED(l.unknown_80, r.unknown_80);
+	SWAP_PACKED(l.unknown_84, r.unknown_84);
+}
+
+void swap_vec3(glm::vec3& l, vec3f& r) {
+	SWAP_PACKED(*(vec3f*) &l, r);
+}
+
+void swap_mat4(glm::mat4& l, racmat& r) {
+	SWAP_PACKED(*(racmat*) &l, r);
+	l[3][3] = 1.f;
 }

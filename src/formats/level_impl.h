@@ -220,4 +220,13 @@ private:
 	std::optional<trace_stream> _asset_segment_tracepoint;
 };
 
+// Swaps data between the on-disc and in-memory representation of entities.
+// These functions can hence be used for both reading and writing.
+void swap_tie(tie_entity& l, world_tie& r);
+void swap_shrub(shrub_entity& l, world_shrub& r);
+void swap_moby(moby_entity& l, world_moby& r);
+
+void swap_vec3(glm::vec3& l, vec3f& r);
+void swap_mat4(glm::mat4& l, racmat& r);
+
 #endif
