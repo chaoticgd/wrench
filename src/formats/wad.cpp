@@ -354,7 +354,7 @@ std::vector<char> encode_wad_packet(
 		match_size = 0;
 		
 		for(size_t i = 0; i < MAX_LITERAL_SIZE; i++) {
-			size_t high = sub_clamped(src.pos + i, 1);
+			size_t high = src.pos + i;
 			size_t low = sub_clamped(high, TYPE_A_MAX_LOOKBACK);
 			for(size_t j = low; j < high; j++) {
 				// Count number of equal bytes.
