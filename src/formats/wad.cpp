@@ -358,16 +358,11 @@ std::vector<char> encode_wad_packet(
 			size_t low = sub_clamped(high, TYPE_A_MAX_LOOKBACK);
 			for(size_t j = low; j < high; j++) {
 				// Count number of equal bytes.
-				size_t st_size = src.buffer.size();
-				size_t l = src.pos + i;
-				size_t r = j;
+				size_t target = src.pos + i;
 				size_t k = 0;
 				for(; k < MAX_MATCH_SIZE; k++) {
-					if(l + k >= st_size || r + k >= st_size) {
-						break;
-					}
-					auto l_val = src.peek8(l + k);
-					auto r_val = src.peek8(r + k);
+					auto l_val = src.buffer[target + k];
+					auto r_val = src.buffer[j + k];
 					if(l_val != r_val) {
 						break;
 					}
