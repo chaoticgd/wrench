@@ -268,8 +268,6 @@ void compress_wad(array_stream& dest, array_stream& src) {
 			std::cout << "*** PACKET " << count++ << " ***\n";
 		)
 
-		if(i % 100 == 0) std::cout << "Encoded " << std::fixed << std::setprecision(4) <<  100 * (float) src.pos / src.buffer.size() << "%\n";
-		
 		size_t old_src_pos = src.pos;
 		std::vector<char> packet = encode_wad_packet(dest, src, dest.pos, i, last_flag);
 		
