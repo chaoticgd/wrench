@@ -74,6 +74,7 @@ struct gl_renderer {
 	bool draw_ties = true;
 	bool draw_shrubs = false;
 	bool draw_mobies = true;
+	bool draw_triggers = false;
 	bool draw_splines = true;
 	bool draw_tfrags = true;
 	

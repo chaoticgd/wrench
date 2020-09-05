@@ -134,6 +134,10 @@ struct moby_entity final : public euler_entity {
 	int32_t unknown_84;
 };
 
+struct trigger_entity final : matrix_entity {
+	glm::mat4 matrix_reloaded;
+};
+
 struct spline_entity final : entity {
 	std::vector<glm::vec4> vertices;
 };
@@ -163,6 +167,7 @@ public:
 	std::vector<shrub_entity> shrubs;
 	std::vector<moby_entity> mobies;
 	std::vector<std::vector<uint8_t>> pvars;
+	std::vector<trigger_entity> triggers;
 	std::vector<spline_entity> splines;
 	
 	template <typename T, typename F>

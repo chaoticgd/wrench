@@ -260,6 +260,7 @@ float gui::render_menu_bar(app& a) {
 			ImGui::Checkbox("Ties", &a.renderer.draw_ties);
 			ImGui::Checkbox("Shrubs", &a.renderer.draw_shrubs);
 			ImGui::Checkbox("Mobies", &a.renderer.draw_mobies);
+			ImGui::Checkbox("Triggers", &a.renderer.draw_triggers);
 			ImGui::Checkbox("Splines", &a.renderer.draw_splines);
 			ImGui::Checkbox("Tfrags", &a.renderer.draw_tfrags);
 			ImGui::EndMenu();

@@ -90,7 +90,7 @@ packed_struct(mat4f,
 		result[3][0] = m41;
 		result[3][1] = m42;
 		result[3][2] = m43;
-		result[3][3] = m44 * 100.f;
+		result[3][3] = 1.f;
 		return result;
 	}
 )
@@ -311,7 +311,7 @@ packed_struct(world_header,
 	uint32_t pvar_table;         // 0x5c
 	uint32_t pvar_data;          // 0x60
 	uint32_t unknown_64;         // 0x64
-	uint32_t unknown_68;         // 0x68
+	uint32_t thing_matrices;     // 0x68
 	uint32_t unknown_6c;         // 0x6c
 	uint32_t unknown_70;         // 0x70
 	uint32_t unknown_74;         // 0x74
@@ -439,6 +439,11 @@ packed_struct(world_moby,
 packed_struct(pvar_table_entry,
 	uint32_t offset;
 	uint32_t size;
+)
+
+packed_struct(world_trigger,
+	mat4f mat1;
+	mat4f mat2;
 )
 
 #endif

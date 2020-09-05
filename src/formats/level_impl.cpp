@@ -125,6 +125,16 @@ void level::read_world_segment(world_header header) {
 		swap_moby(ent, on_disc);
 	}
 	
+	auto trigger_table = _world_segment->read<world_object_table>(header.thing_matrices);
+	auto triggers_in = _world_segment->read_multiple<world_trigger>(trigger_table.count);
+	for(world_trigger& on_disc : triggers_in) {
+		trigger_entity& ent = triggers.emplace_back();
+		ent.id = { _next_entity_id++ };
+		ent.selected = false;
+		swap_mat4(ent.local_to_world, on_disc.mat1);
+		swap_mat4(ent.matrix_reloaded, on_disc.mat2);
+	}
+	
 	// Pvars
 	int32_t pvar_count = 0;
 	for(moby_entity& moby : mobies) {
