@@ -222,6 +222,6 @@ void swap_shrub(shrub_entity& l, world_shrub& r);
 void swap_moby(moby_entity& l, world_moby& r);
 
 void swap_vec3(glm::vec3& l, vec3f& r);
-void swap_mat4(glm::mat4& l, racmat& r);
+void swap_mat4(glm::mat4& l, mat4f& r);
 
 #endif

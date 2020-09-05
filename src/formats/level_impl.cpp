@@ -407,10 +407,9 @@ void swap_moby(moby_entity& l, world_moby& r) {
 }
 
 void swap_vec3(glm::vec3& l, vec3f& r) {
-	SWAP_PACKED(*(vec3f*) &l, r);
+	SWAP_PACKED(l, r);
 }
 
-void swap_mat4(glm::mat4& l, racmat& r) {
-	SWAP_PACKED(*(racmat*) &l, r);
-	l[3][3] = 1.f;
+void swap_mat4(glm::mat4& l, mat4f& r) {
+	SWAP_PACKED(l, r);
 }

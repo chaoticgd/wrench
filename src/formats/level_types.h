@@ -34,9 +34,7 @@
 // Basic types
 // *****************************************************************************
 
-// A racmat is a 4x4 matrix where the
-// last index is used for something else
-packed_struct(racmat,
+packed_struct(mat4f,
 	float m11 = 0;
 	float m12 = 0;
 	float m13 = 0;
@@ -52,10 +50,11 @@ packed_struct(racmat,
 	float m41 = 0;
 	float m42 = 0;
 	float m43 = 0;
+	float m44 = 0; // Always equal to 0.01f (in the game files)?
 
-	racmat() {}
+	mat4f() {}
 
-	racmat(glm::mat4 mat) {
+	mat4f(glm::mat4 mat) {
 		m11 = mat[0][0];
 		m12 = mat[0][1];
 		m13 = mat[0][2];
@@ -71,9 +70,10 @@ packed_struct(racmat,
 		m41 = mat[3][0];
 		m42 = mat[3][1];
 		m43 = mat[3][2];
+		m44 = mat[3][3];
 	}
 
-	glm::mat4 operator()() const {
+	operator glm::mat4() const {
 		glm::mat4 result;
 		result[0][0] = m11;
 		result[0][1] = m12;
@@ -90,7 +90,7 @@ packed_struct(racmat,
 		result[3][0] = m41;
 		result[3][1] = m42;
 		result[3][2] = m43;
-		result[3][3] = 1;
+		result[3][3] = m44 * 100.f;
 		return result;
 	}
 )
@@ -108,12 +108,16 @@ packed_struct(vec3f,
 		z = vec.z;
 	}
 
-	glm::vec3 operator()() const {
+	operator glm::vec3() const {
 		glm::vec3 result;
 		result.x = x;
 		result.y = y;
 		result.z = z;
 		return result;
+	}
+	
+	glm::vec3 operator()() const {
+		return static_cast<glm::vec3>(*this);
 	}
 	
 	bool operator==(const vec3f& rhs) const {
@@ -376,8 +380,7 @@ packed_struct(world_tie,
 	uint32_t unknown_4;      // 0x4
 	uint32_t unknown_8;      // 0x8
 	uint32_t unknown_c;      // 0xc
-	racmat   local_to_world; // 0x10
-	uint32_t unknown_4c;     // 0x4c
+	mat4f    local_to_world; // 0x10
 	uint32_t unknown_50;     // 0x50
 	int32_t  uid;            // 0x54
 	uint32_t unknown_58;     // 0x58
@@ -389,8 +392,7 @@ packed_struct(world_shrub,
 	float    unknown_4;      // 0x4
 	uint32_t unknown_8;      // 0x8
 	uint32_t unknown_c;      // 0xc
-	racmat   local_to_world; // 0x10
-	uint32_t unknown_4c;     // 0x4c
+	mat4f    local_to_world; // 0x10
 	uint32_t unknown_50;     // 0x50
 	uint32_t unknown_54;     // 0x54
 	uint32_t unknown_58;     // 0x58
