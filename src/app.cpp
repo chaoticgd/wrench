@@ -34,7 +34,7 @@ app::app()
 	  translate_tool_displacement(0, 0, 0),
 	  game_db(gamedb_read()),
 	  _lock_project(false) {
-	config::get().read(*this);
+	config::get().read();
 }
 
 using project_ptr = std::unique_ptr<wrench_project>;
@@ -180,7 +180,7 @@ config& config::get() {
 
 const char* settings_file_path = "wrench_settings.ini";
 
-void config::read(app& a) {
+void config::read() {
 	// Default settings
 	gui_scale = 1.f;
 	vsync = true;
@@ -216,7 +216,7 @@ void config::read(app& a) {
 			fprintf(stderr, "Failed to load settings: %s", err.what());
 		}
 	} else {
-		a.emplace_window<gui::settings>();
+		request_open_settings_dialog = true;
 	}
 }
 

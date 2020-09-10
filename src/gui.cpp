@@ -78,6 +78,11 @@ void gui::render(app& a) {
 		is_first_frame = false;
 	}
 	
+	if(config::get().request_open_settings_dialog) {
+		config::get().request_open_settings_dialog = false;
+		a.emplace_window<gui::settings>();
+	}
+	
 	ImGui::End(); // docking
 }
 

@@ -113,8 +113,10 @@ struct config {
 		bool stream_tracing;
 	} debug;
 	
+	bool request_open_settings_dialog = false;
+	
 	static config& get();
-	void read(app& a);
+	void read();
 	void write();
 };
 
