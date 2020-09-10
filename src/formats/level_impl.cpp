@@ -272,10 +272,12 @@ void level::read_world_segment() {
 		(thing_98_header.part_2_end - thing_98_header.part_2_begin) / sizeof(uint32_t) + 5);
 	thing_98_header_c = thing_98_header.unknown_c;
 	
-	auto thing_90_header = _world_segment->read<world_thing_90_header>(header.unknown_90);
-	thing_90_1s = _world_segment->read_multiple<world_thing_90>(thing_90_header.count_1);
-	thing_90_2s = _world_segment->read_multiple<world_thing_90>(thing_90_header.count_2);
-	thing_90_3s = _world_segment->read_multiple<world_thing_90>(thing_90_header.count_3);
+	if(header.unknown_90 != 0) {
+		auto thing_90_header = _world_segment->read<world_thing_90_header>(header.unknown_90);
+		thing_90_1s = _world_segment->read_multiple<world_thing_90>(thing_90_header.count_1);
+		thing_90_2s = _world_segment->read_multiple<world_thing_90>(thing_90_header.count_2);
+		thing_90_3s = _world_segment->read_multiple<world_thing_90>(thing_90_header.count_3);
+	}
 }
 
 static const std::vector<char> EMPTY_VECTOR;
@@ -547,8 +549,10 @@ void level::write_world_segment() {
 	_world_segment->write_v(thing_98_1s);
 	_world_segment->write_v(thing_98_2s);
 	
-	_world_segment->pad(0x100, 0);
-	header.unknown_90 = write_table(thing_90_1s, thing_90_2s, thing_90_3s);
+	if(thing_90_1s.size() > 0 || thing_90_2s.size() > 0 || thing_90_3s.size() > 0) {
+		_world_segment->pad(0x100, 0);
+		header.unknown_90 = write_table(thing_90_1s, thing_90_2s, thing_90_3s);
+	}
 }
 
 void level::read_moby_models(std::size_t asset_offset, level_asset_header asset_header) {
