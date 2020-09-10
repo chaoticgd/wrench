@@ -90,7 +90,7 @@ packed_struct(mat4f,
 		result[3][0] = m41;
 		result[3][1] = m42;
 		result[3][2] = m43;
-		result[3][3] = 1.f;
+		result[3][3] = m44;
 		return result;
 	}
 )
@@ -287,16 +287,16 @@ packed_struct(level_hud_header,
 packed_struct(world_header,
 	uint32_t properties;         // 0x0
 	uint32_t directional_lights; // 0x4
-	uint32_t unknown_08;         // 0x8
-	uint32_t unknown_0c;         // 0xc
+	uint32_t unknown_8;          // 0x8
+	uint32_t unknown_c;          // 0xc
 	uint32_t english_strings;    // 0x10
-	uint32_t unknown_14;         // 0x14 Points to 16 bytes between the English and French tables (on Barlow).
+	uint32_t unknown_14;         // 0x14
 	uint32_t french_strings;     // 0x18
 	uint32_t german_strings;     // 0x1c
 	uint32_t spanish_strings;    // 0x20
 	uint32_t italian_strings;    // 0x24
-	uint32_t null_strings;       // 0x28 Also what is this thing?
-	uint32_t unknown_2c;         // 0x2c
+	uint32_t unused1_strings;    // 0x28
+	uint32_t unused2_strings;    // 0x2c
 	uint32_t unknown_30;         // 0x30
 	uint32_t ties;               // 0x34
 	uint32_t unknown_38;         // 0x38
@@ -311,11 +311,19 @@ packed_struct(world_header,
 	uint32_t pvar_table;         // 0x5c
 	uint32_t pvar_data;          // 0x60
 	uint32_t unknown_64;         // 0x64
-	uint32_t thing_matrices;     // 0x68
+	uint32_t triggers;           // 0x68
 	uint32_t unknown_6c;         // 0x6c
 	uint32_t unknown_70;         // 0x70
 	uint32_t unknown_74;         // 0x74
 	uint32_t splines;            // 0x78
+	uint32_t unknown_7c;         // 0x7c
+	uint32_t unknown_80;         // 0x80
+	uint32_t unknown_84;         // 0x84
+	uint32_t unknown_88;         // 0x88
+	uint32_t unknown_8c;         // 0x8c
+	uint32_t unknown_90;         // 0x90
+	uint32_t unknown_94;         // 0x94
+	uint32_t unknown_98;         // 0x98
 )
 
 packed_struct(world_properties,
@@ -333,46 +341,57 @@ packed_struct(world_properties,
 	uint32_t unknown_34;    // 0x34
 	uint32_t unknown_38;    // 0x38
 	vec3f ship_position;    // 0x3c
-	float ship_rotation_z;  // 0x40
+	float ship_rotation_z;  // 0x48
+	uint32_t unknown_4c;    // 0x4c
+	uint32_t unknown_50;    // 0x50
+	uint32_t unknown_54;    // 0x54
+	uint32_t unknown_58;    // 0x58
+	uint32_t unknown_5c;    // 0x5c
+	uint32_t unknown_60;    // 0x60
+	uint32_t unknown_64;    // 0x64
+	uint32_t unknown_68;    // 0x68
+	uint32_t unknown_6c;    // 0x6c
+	uint32_t unknown_70;    // 0x70
+	uint32_t unknown_74;    // 0x74
+	uint32_t unknown_78;    // 0x78
+	uint32_t unknown_7c;    // 0x7c
+)
+
+packed_struct(world_object_table,
+	uint32_t count_1;
+	uint32_t count_2;
+	uint32_t count_3;
+	uint32_t pad;
+	// Elements follow.
+)
+
+packed_struct(world_directional_light,
+	uint8_t unknown[0x40];
+)
+
+packed_struct(world_thing_8,
+	uint8_t unknown[0x20];
+)
+
+packed_struct(world_thing_c,
+	uint8_t unknown[0x90];
 )
 
 packed_struct(world_string_table_header,
 	uint32_t num_strings;
-	uint32_t unknown;
+	uint32_t size; // Size of table + string data.
 	// String table entries follow.
 )
 
 packed_struct(world_string_table_entry,
 	file_ptr<char*> string; // Relative to this struct.
 	uint32_t id;
-	uint32_t padding[2];
+	uint32_t secondary_id; // Usually -1.
+	uint32_t padding;
 )
 
-packed_struct(world_object_table,
-	uint32_t count;
-	uint32_t pad[3];
-	// Elements follow.
-)
-
-packed_struct(world_spline_table,
-	uint32_t spline_count;
-	uint32_t data_offset;
-	uint32_t unknown_8;
-	uint32_t unknown_c;
-)
-
-packed_struct(world_spline_header,
-	uint32_t vertex_count;
-	uint32_t pad[3];
-)
-
-packed_struct(world_directional_light_table,
-	uint32_t num_directional_lights; // Max 0xb.
-	// Directional lights follow.
-)
-
-packed_struct(world_directional_light,
-	uint8_t unknown[64];
+packed_struct(world_thing_14,
+	uint8_t unknown[0x10];
 )
 
 packed_struct(world_tie,
@@ -436,14 +455,102 @@ packed_struct(world_moby,
 	int32_t unknown_84; // 0x84
 )
 
+packed_struct(world_thing_58,
+	int32_t unknown_0;
+	int32_t unknown_4;
+)
+
 packed_struct(pvar_table_entry,
 	uint32_t offset;
 	uint32_t size;
 )
 
+packed_struct(world_thing_64,
+	uint8_t unknown[0x8];
+)
+
 packed_struct(world_trigger,
 	mat4f mat1;
 	mat4f mat2;
+)
+
+packed_struct(world_thing_6c,
+	mat4f mat1;
+	mat4f mat2;
+)
+
+packed_struct(world_thing_70,
+	mat4f mat1;
+	mat4f mat2;
+)
+
+packed_struct(world_spline_table,
+	uint32_t spline_count;
+	uint32_t data_offset;
+	uint32_t data_size;
+	uint32_t pad;
+)
+
+packed_struct(world_vertex_header,
+	uint32_t vertex_count;
+	uint32_t pad[3];
+)
+
+packed_struct(world_thing_7c_header,
+	uint32_t count;
+	uint32_t part_2_data_offset;
+	uint32_t part_2_data_size;
+	uint32_t pad;
+)
+
+packed_struct(world_thing_7c_1,
+	uint8_t unknown[0x20];
+)
+
+packed_struct(world_thing_84,
+	uint8_t unknown[0x90];
+)
+
+packed_struct(world_thing_8c,
+	uint8_t unknown[0x20];
+)
+
+packed_struct(world_thing_90_header,
+	uint32_t count_1;
+	uint32_t count_2;
+	uint32_t count_3;
+	uint32_t pad;
+)
+
+packed_struct(world_thing_90,
+	uint32_t unknown_0;
+	uint32_t unknown_4;
+)
+
+packed_struct(world_thing_94,
+	int16_t index;
+	int16_t size;
+	// Data follows.
+)
+
+packed_struct(world_thing_98_header,
+	uint32_t part_2_end;
+	uint32_t part_1_count;
+	uint32_t part_2_begin;
+	uint32_t unknown_c;
+)
+
+packed_struct(world_thing_98,
+	uint32_t unknown_0;  // 0x0
+	uint32_t unknown_4;  // 0x4
+	uint32_t unknown_8;  // 0x8
+	uint32_t unknown_c;  // 0xc
+	uint32_t unknown_10; // 0x10
+	vec3f    position;   // 0x14
+	uint32_t unknown_20; // 0x20
+	uint32_t unknown_24; // 0x24
+	uint32_t unknown_28; // 0x28
+	uint32_t unknown_2c; // 0x2c
 )
 
 #endif

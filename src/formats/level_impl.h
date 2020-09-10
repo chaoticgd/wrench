@@ -45,6 +45,7 @@ struct level_code_segment {
 
 struct game_string {
 	uint32_t id;
+	uint32_t secondary_id;
 	std::string str;
 };
 
@@ -142,13 +143,19 @@ struct spline_entity final : entity {
 	std::vector<glm::vec4> vertices;
 };
 
+struct thing_7c_2 {
+	std::vector<glm::vec4> vertices;
+};
+
 class level {
 public:
 	level(iso_stream* iso, toc_level index);
 	level(const level& rhs) = delete;
 	
+	void write();
 private:
-	void read_world_segment(world_header header);
+	void read_world_segment();
+	void write_world_segment();
 	
 	void read_moby_models(std::size_t asset_offset, level_asset_header asset_header);
 	void read_textures(std::size_t asset_offset, level_asset_header asset_header);
@@ -158,17 +165,52 @@ private:
 	void read_loading_screen_textures(iso_stream* iso);
 	
 public:
+
 	stream* moby_stream();
 	
 	// World segment
 	world_properties properties;
-	std::array<std::vector<game_string>, 5> game_strings;
+	std::vector<world_directional_light> directional_lights;
+	std::vector<world_thing_8> thing_8s;
+	std::vector<world_thing_c> thing_cs;
+	std::array<std::vector<game_string>, 7> game_strings;
+	world_thing_14 thing_14;
+	std::vector<uint32_t> thing_30s;
 	std::vector<tie_entity> ties;
+	std::vector<uint32_t> thing_38_1s;
+	std::vector<uint8_t> thing_38_2s;
+	std::vector<uint32_t> thing_3cs;
 	std::vector<shrub_entity> shrubs;
+	std::vector<uint32_t> thing_44s;
+	std::vector<uint32_t> thing_48s;
 	std::vector<moby_entity> mobies;
+	uint32_t max_moby_count;
+	std::vector<uint32_t> thing_50_1s;
+	std::vector<uint8_t> thing_50_2s;
+	std::vector<uint8_t> thing_54_1s;
+	std::vector<uint64_t> thing_54_2s;
+	std::vector<world_thing_58> thing_58s;
 	std::vector<std::vector<uint8_t>> pvars;
+	std::vector<world_thing_64> thing_64s;
 	std::vector<trigger_entity> triggers;
+	std::vector<world_thing_6c> thing_6cs;
+	std::vector<world_thing_70> thing_70s;
+	std::vector<uint32_t> thing_74s; // Unknown type.
 	std::vector<spline_entity> splines;
+	std::vector<world_thing_7c_1> thing_7c_1s;
+	std::vector<thing_7c_2> thing_7c_2s;
+	std::vector<uint8_t> thing_80_1;
+	std::vector<uint8_t> thing_80_2;
+	std::vector<world_thing_84> thing_84s;
+	std::vector<uint8_t> thing_88;
+	std::vector<world_thing_8c> thing_8cs;
+	std::vector<world_thing_90> thing_90_1s;
+	std::vector<world_thing_90> thing_90_2s;
+	std::vector<world_thing_90> thing_90_3s;
+	std::vector<std::vector<uint8_t>> thing_94s;
+	std::vector<world_thing_98> thing_98_1s;
+	std::vector<uint32_t> thing_98_2s;
+	uint32_t thing_98_header_c; // Not sure what this is.
 	
 	template <typename T, typename F>
 	void for_each(F callback) {
@@ -220,13 +262,20 @@ private:
 	std::optional<trace_stream> _asset_segment_tracepoint;
 };
 
+// We're using packed structs so we can't pass around references to fields so
+// instead of std::swap we have to use this macro.
+#define SWAP_PACKED(inmem, packed) \
+	{ \
+		auto p = packed; \
+		packed = inmem; \
+		inmem = p; \
+	}
+
 // Swaps data between the on-disc and in-memory representation of entities.
 // These functions can hence be used for both reading and writing.
 void swap_tie(tie_entity& l, world_tie& r);
 void swap_shrub(shrub_entity& l, world_shrub& r);
 void swap_moby(moby_entity& l, world_moby& r);
-
-void swap_vec3(glm::vec3& l, vec3f& r);
-void swap_mat4(glm::mat4& l, mat4f& r);
+void swap_trigger(trigger_entity& l, world_trigger& r);
 
 #endif

@@ -274,6 +274,9 @@ float gui::render_menu_bar(app& a) {
 	if(ImGui::BeginMenu("Emulator")) {
 		if(ImGui::MenuItem("Run")) {
 			if(auto project = a.get_project()) {
+				if(auto lvl = a.get_level()) {
+					lvl->write();
+				}
 				project->iso.commit(); // Recompress WAD segments.
 				
 				if(fs::is_regular_file(config::get().emulator_path)) {

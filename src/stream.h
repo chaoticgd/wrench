@@ -193,6 +193,11 @@ public:
 		write_n(reinterpret_cast<const char*>(buffer.data()), buffer.size() * sizeof(T));
 	}
 	
+	void align(std::size_t alignment, uint8_t padding) {
+		size_t pos = tell();
+		seek(pos + ((pos % alignment != 0) ? (alignment - (pos % alignment)) : 0));
+	}
+	
 	void pad(std::size_t alignment, uint8_t padding) {
 		while(tell() % alignment != 0) {
 			write(padding);
