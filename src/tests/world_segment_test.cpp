@@ -53,14 +53,45 @@ void world_segment_test() {
 		level* lvl = project.selected_level();
 		assert(lvl != nullptr);
 		
-		std::string before = md5_from_stream(*lvl->moby_stream());
+		array_stream before;
+		lvl->moby_stream()->seek(0);
+		stream::copy_n(before, *lvl->moby_stream(), lvl->moby_stream()->size());
 		lvl->write();
-		std::string after = md5_from_stream(*lvl->moby_stream());
+		array_stream after;
+		lvl->moby_stream()->seek(0);
+		stream::copy_n(after, *lvl->moby_stream(), lvl->moby_stream()->size());
 		
-		if(before != after) {
+		auto write_sad_file = [&]() {
 			sad++;
-			printf("Level %ld was written incorrectly!\n", i);
-		} else {
+			
+			std::string before_path = "/tmp/l" + std::to_string(i) + "_worldseg_before.bin";
+			file_stream before_file(before_path, std::ios::out);
+			before.seek(0);
+			stream::copy_n(before_file, before, before.size());
+			printf("Written before file to %s\n", before_path.c_str());
+			
+			std::string after_path = "/tmp/l" + std::to_string(i) + "_worldseg_after.bin";
+			file_stream after_file(after_path, std::ios::out);
+			after.seek(0);
+			stream::copy_n(after_file, after, after.size());
+			printf("Written after file to %s\n", after_path.c_str());
+		};
+		
+		if(before.buffer.size() != after.buffer.size()) {
+			write_sad_file();
+			continue;
+		}
+		
+		bool happy_this_time = true;
+		for(size_t j = 0; j < before.buffer.size(); j++) {
+			if(before.buffer[j] != after.buffer[j]) {
+				write_sad_file();
+				happy_this_time = false;
+				break;
+			}
+		}
+		
+		if(happy_this_time) {
 			happy++;
 		}
 	}
