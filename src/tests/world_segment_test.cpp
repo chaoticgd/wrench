@@ -41,6 +41,7 @@ void world_segment_test() {
 	}
 	if(!iso) {
 		fprintf(stderr, "error: Cannot find ISO in config file!\n");
+		return;
 	}
 	
 	worker_logger dummy;

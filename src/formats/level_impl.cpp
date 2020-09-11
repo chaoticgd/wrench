@@ -201,7 +201,7 @@ void level::read_world_segment() {
 	read_table(header.unknown_38, &thing_38_1s, &thing_38_2s, (std::vector<char>*) nullptr, true);
 	thing_3cs = read_u32_list(header.unknown_3c);
 	shrubs = read_entity_table.operator()<shrub_entity, world_shrub>(header.shrubs, swap_shrub);
-	read_table(header.unknown_44, &thing_44s);
+	read_table(header.unknown_44, &thing_44_1s, &thing_44_2s, (std::vector<char>*) nullptr, true);
 	
 	const auto read_vertex_list = [&](
 			uint32_t table_offset,
@@ -439,7 +439,7 @@ void level::write_world_segment() {
 	header.unknown_38 = write_table(thing_38_1s, thing_38_2s, EMPTY_VECTOR, true);
 	header.unknown_3c = write_u32_list(thing_3cs);
 	header.shrubs = write_entity_table.operator()<shrub_entity, world_shrub>(shrubs, swap_shrub);
-	header.unknown_44 = write_table(thing_44s);
+	header.unknown_44 = write_table(thing_44_1s, thing_44_2s, EMPTY_VECTOR, true);
 	
 	const auto write_vertex_list = [&](std::vector<std::vector<glm::vec4>> list) {
 		size_t base_pos = _world_segment->tell();

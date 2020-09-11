@@ -181,7 +181,8 @@ public:
 	std::vector<uint8_t> thing_38_2s;
 	std::vector<uint32_t> thing_3cs;
 	std::vector<shrub_entity> shrubs;
-	std::vector<uint32_t> thing_44s;
+	std::vector<uint32_t> thing_44_1s;
+	std::vector<uint8_t> thing_44_2s;
 	std::vector<uint32_t> thing_48s;
 	std::vector<moby_entity> mobies;
 	uint32_t max_moby_count;
