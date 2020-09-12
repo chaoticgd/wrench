@@ -347,14 +347,17 @@ packed_struct(world_properties,
 	uint32_t unknown_54;    // 0x54
 	uint32_t unknown_58;    // 0x58
 	uint32_t unknown_5c;    // 0x5c
-	uint32_t unknown_60;    // 0x60
-	uint32_t unknown_64;    // 0x64
-	uint32_t unknown_68;    // 0x68
-	uint32_t unknown_6c;    // 0x6c
-	uint32_t unknown_70;    // 0x70
-	uint32_t unknown_74;    // 0x74
-	uint32_t unknown_78;    // 0x78
-	uint32_t unknown_7c;    // 0x7c
+)
+
+packed_struct(world_property_thing,
+	uint32_t unknown_0;
+	uint32_t unknown_4;
+	uint32_t count;
+	uint32_t unknown_c;
+	uint32_t unknown_10;
+	uint32_t unknown_14;
+	uint32_t unknown_18;
+	uint32_t unknown_1c;
 )
 
 packed_struct(world_object_table,

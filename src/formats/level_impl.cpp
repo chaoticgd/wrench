@@ -102,6 +102,11 @@ void level::read_world_segment() {
 	read_table(header.unknown_8c, &thing_8cs);
 	
 	properties = _world_segment->read<world_properties>(header.properties);
+	world_property_thing property_thing;
+	do {
+		property_thing = _world_segment->read<world_property_thing>();
+		property_things.push_back(property_thing);
+	} while(property_things.size() < property_thing.count);
 	
 	// Strings
 	const auto read_language = [&](uint32_t offset) {
@@ -310,6 +315,7 @@ void level::write_world_segment() {
 	_world_segment->pad(0x10, 0);
 	header.properties = _world_segment->tell();
 	_world_segment->write(properties);
+	_world_segment->write_v(property_things);
 	
 	const auto write_language = [&](std::vector<game_string>& strings) {
 		_world_segment->pad(0x10, 0);

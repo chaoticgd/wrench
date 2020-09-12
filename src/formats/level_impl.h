@@ -170,6 +170,7 @@ public:
 	
 	// World segment
 	world_properties properties;
+	std::vector<world_property_thing> property_things;
 	std::vector<world_directional_light> directional_lights;
 	std::vector<world_thing_8> thing_8s;
 	std::vector<world_thing_c> thing_cs;
