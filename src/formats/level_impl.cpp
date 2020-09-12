@@ -549,6 +549,8 @@ void level::write_world_segment() {
 	if(thing_90_1s.size() > 0 || thing_90_2s.size() > 0 || thing_90_3s.size() > 0) {
 		_world_segment->pad(0x40, 0);
 		header.unknown_90 = write_table(thing_90_1s, thing_90_2s, thing_90_3s);
+	} else {
+		header.unknown_90 = 0;
 	}
 }
 
