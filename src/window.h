@@ -20,11 +20,12 @@
 #define WINDOW_H
 
 #include "imgui_includes.h"
-#include "app.h"
 
 # /*
 #	Virtual base class representing a Dear ImGui sub-window.
 # */
+
+struct app;
 
 class window {
 public:

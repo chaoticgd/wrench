@@ -28,7 +28,9 @@
 #include <functional>
 #include <glm/glm.hpp>
 
+#include "tools.h"
 #include "stream.h"
+#include "window.h"
 #include "game_db.h"
 #include "project.h"
 #include "renderer.h"
@@ -43,41 +45,27 @@
 
 struct GLFWwindow;
 
-class window;
-class view_3d;
-
-enum class tool_type {
-	picker, selection, translate
-};
-
-struct tool {
-	tool_type type;
-	gl_texture icon;
-};
-
 class app {
 public:
-	app();
+	app() {}
 
 	std::vector<std::unique_ptr<window>> windows;
 
 	template <typename T, typename... T_constructor_args>
 	T* emplace_window(T_constructor_args... args);
 	
-	std::vector<tool> tools;
+	std::vector<std::unique_ptr<tool>> tools;
 	std::size_t active_tool_index = 0;
-	tool& active_tool() { return tools.at(active_tool_index); }
+	tool& active_tool() { return *tools.at(active_tool_index).get(); }
 	
-	glm::vec2 mouse_last;
+	glm::vec2 mouse_last { 0, 0 };
 
 	GLFWwindow* glfw_window;
 	int window_width, window_height;
 	
 	gl_renderer renderer;
 	
-	int64_t delta_time;
-	
-	glm::vec3 translate_tool_displacement;
+	int64_t delta_time = 0;
 
 	void new_project(game_iso game);
 	void open_project(std::string path);
@@ -95,10 +83,10 @@ public:
 	void init_gui_scale();
 	void update_gui_scale();
 
-	const std::vector<gamedb_game> game_db;
+	std::vector<gamedb_game> game_db;
 
 private:
-	std::atomic_bool _lock_project; // Prevent race conditions while creating/loading a project.
+	std::atomic_bool _lock_project = false; // Prevent race conditions while creating/loading a project.
 	std::unique_ptr<wrench_project> _project;
 	
 	std::vector<float> _gui_scale_parameters;

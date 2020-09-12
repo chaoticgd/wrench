@@ -28,15 +28,6 @@
 #include "fs_includes.h"
 #include "worker_thread.h"
 
-app::app()
-	: mouse_last(0, 0),
-	  delta_time(0),
-	  translate_tool_displacement(0, 0, 0),
-	  game_db(gamedb_read()),
-	  _lock_project(false) {
-	config::get().read();
-}
-
 using project_ptr = std::unique_ptr<wrench_project>;
 
 void app::new_project(game_iso game) {

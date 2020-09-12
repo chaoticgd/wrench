@@ -32,7 +32,7 @@
 
 class view_3d : public window {
 public:
-	view_3d(app* a);
+	view_3d() {}
 	~view_3d();
 	const char* title_text() const;
 	ImVec2 initial_size() const;
@@ -40,25 +40,10 @@ public:
 	
 	[[nodiscard]] bool has_padding() const override;
 	
-	void draw_overlay_text(level& lvl) const;
+	void draw_overlay_text(app& a, glm::mat4 world_to_clip) const;
 	
-	[[nodiscard]] glm::mat4 get_world_to_clip() const;
-	[[nodiscard]] glm::mat4 get_local_to_clip(glm::mat4 world_to_clip, glm::vec3 position, glm::vec3 rotation) const;
-	[[nodiscard]] glm::vec3 apply_local_to_screen(glm::mat4 world_to_clip, glm::mat4 local_to_world) const;
-	
-	// Allows the user to select an object by clicking on it. See:
-	// https://www.opengl-tutorial.org/miscellaneous/clicking-on-objects/picking-with-an-opengl-hack/
-	void pick_object(level& lvl, glm::mat4 world_to_clip, ImVec2 position);
-	
-	void select_rect(level& lvl, ImVec2 position);
 private:
-	GLuint _frame_buffer_texture;
-	ImVec2 _viewport_size;
-	bool _selecting;
-	ImVec2 _selection_begin;
-	ImVec2 _selection_end;
-	
-	gl_renderer* _renderer;
+	GLuint _frame_buffer_texture = 0;
 };
 
 #endif

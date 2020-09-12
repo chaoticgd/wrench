@@ -44,6 +44,7 @@ struct gl_texture {
 	~gl_texture() { if(id != 0) glDeleteTextures(1, &id); }
 	GLuint& operator()() { return id; }
 	const GLuint& operator()() const { return id; }
+	gl_texture& operator=(gl_texture&& rhs) { id = rhs.id; rhs.id = 0; return *this; }
 };
 
 #endif
