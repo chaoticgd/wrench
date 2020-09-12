@@ -126,6 +126,14 @@ void gl_renderer::draw_level(level& lvl, glm::mat4 world_to_clip) const {
 		}
 	}
 	
+	if(draw_triggers) {
+		for(trigger_entity& trigger : lvl.triggers) {
+			glm::mat4 local_to_clip = world_to_clip * trigger.local_to_world;
+			glm::vec4 colour = get_colour(trigger.selected, glm::vec4(0, 0, 1, 1));
+			draw_cube(local_to_clip, colour);
+		}
+	}
+	
 	if(draw_splines) {
 		for(spline_entity& spline : lvl.splines) {
 			glm::vec4 colour = get_colour(spline.selected, glm::vec4(1, 0.5, 0, 1));

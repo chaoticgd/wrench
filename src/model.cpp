@@ -38,6 +38,11 @@ model::~model() {
 }
 
 void model::update() {
+	if(glDeleteBuffers == nullptr) {
+		// If we're running a test, OpenGL won't be loaded.
+		return;
+	}
+	
 	glDeleteBuffers(1, &_vertex_buffer);
 	
 	std::vector<float> vertex_data;

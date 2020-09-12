@@ -17,7 +17,9 @@
 */
 
 void compression_test();
+void world_segment_test();
 
 void run_tests() {
 	compression_test();
+	world_segment_test();
 }

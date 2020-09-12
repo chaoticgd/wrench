@@ -175,7 +175,14 @@ public:
 		this_->seek(whence_you_came);
 		return value;
 	}
-
+	
+	template <typename T>
+	std::vector<T> read_multiple(size_t count) {
+		std::vector<T> buffer(count);
+		read_n(reinterpret_cast<char*>(buffer.data()), buffer.size() * sizeof(T));
+		return buffer;
+	}
+	
 	template <typename T>
 	void read_v(std::vector<T>& buffer) {
 		read_n(reinterpret_cast<char*>(buffer.data()), buffer.size() * sizeof(T));
@@ -184,6 +191,11 @@ public:
 	template <typename T>
 	void write_v(const std::vector<T>& buffer) {
 		write_n(reinterpret_cast<const char*>(buffer.data()), buffer.size() * sizeof(T));
+	}
+	
+	void align(std::size_t alignment, uint8_t padding) {
+		size_t pos = tell();
+		seek(pos + ((pos % alignment != 0) ? (alignment - (pos % alignment)) : 0));
 	}
 	
 	void pad(std::size_t alignment, uint8_t padding) {

@@ -78,6 +78,11 @@ void gui::render(app& a) {
 		is_first_frame = false;
 	}
 	
+	if(config::get().request_open_settings_dialog) {
+		config::get().request_open_settings_dialog = false;
+		a.emplace_window<gui::settings>();
+	}
+	
 	ImGui::End(); // docking
 }
 
@@ -260,6 +265,7 @@ float gui::render_menu_bar(app& a) {
 			ImGui::Checkbox("Ties", &a.renderer.draw_ties);
 			ImGui::Checkbox("Shrubs", &a.renderer.draw_shrubs);
 			ImGui::Checkbox("Mobies", &a.renderer.draw_mobies);
+			ImGui::Checkbox("Triggers", &a.renderer.draw_triggers);
 			ImGui::Checkbox("Splines", &a.renderer.draw_splines);
 			ImGui::Checkbox("Tfrags", &a.renderer.draw_tfrags);
 			ImGui::EndMenu();
@@ -273,6 +279,9 @@ float gui::render_menu_bar(app& a) {
 	if(ImGui::BeginMenu("Emulator")) {
 		if(ImGui::MenuItem("Run")) {
 			if(auto project = a.get_project()) {
+				if(auto lvl = a.get_level()) {
+					lvl->write();
+				}
 				project->iso.commit(); // Recompress WAD segments.
 				
 				if(fs::is_regular_file(config::get().emulator_path)) {

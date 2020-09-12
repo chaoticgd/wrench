@@ -43,7 +43,7 @@ void compression_test() {
 		compression_test_iter(16 * 1024, happy, sad);
 	}
 	
-	printf("results: %d happy, %d sad", happy, sad);
+	printf("results: %d happy, %d sad\n", happy, sad);
 }
 
 void compression_test_iter(int buffer_size, int& happy, int& sad) {
