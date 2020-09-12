@@ -262,9 +262,9 @@ void level::read_world_segment() {
 	
 	auto thing_98_header = _world_segment->read<world_thing_98_header>(header.unknown_98);
 	thing_98_1s = _world_segment->read_multiple<world_thing_98>(thing_98_header.part_1_count);
-	_world_segment->seek(header.unknown_98 + thing_98_header.part_2_begin - 0x10);
 	thing_98_2s = _world_segment->read_multiple<uint32_t>(
-		(thing_98_header.part_2_end - thing_98_header.part_2_begin) / sizeof(uint32_t) + 5);
+		((thing_98_header.size - thing_98_header.part_1_count * sizeof(world_thing_98) - 0xc) / sizeof(uint32_t)));
+	thing_98_header_8 = thing_98_header.unknown_8;
 	thing_98_header_c = thing_98_header.unknown_c;
 	
 	if(header.unknown_90 != 0) {
@@ -534,11 +534,13 @@ void level::write_world_segment() {
 	_world_segment->pad(0x10, 0);
 	header.unknown_98 = _world_segment->tell();
 	world_thing_98_header thing_98_header;
-	thing_98_header.part_2_begin = sizeof(world_thing_98_header) +
-		thing_98_1s.size() * sizeof(world_thing_98) + 0x10;
+	thing_98_header.size =
+		sizeof(world_thing_98_header) - // header
+		sizeof(uint32_t) + // size field (not included in the size)
+		thing_98_1s.size() * sizeof(world_thing_98) + // part 1
+		thing_98_2s.size() * sizeof(uint32_t); // part 2
 	thing_98_header.part_1_count = thing_98_1s.size();
-	thing_98_header.part_2_end = thing_98_header.part_2_begin - 0x10 +
-		(thing_98_2s.size() - 1) * sizeof(uint32_t);
+	thing_98_header.unknown_8 = thing_98_header_8;
 	thing_98_header.unknown_c = thing_98_header_c;
 	_world_segment->write(thing_98_header);
 	_world_segment->write_v(thing_98_1s);

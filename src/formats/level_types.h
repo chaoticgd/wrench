@@ -534,9 +534,9 @@ packed_struct(world_thing_94,
 )
 
 packed_struct(world_thing_98_header,
-	uint32_t part_2_end;
+	uint32_t size; // Not including this field.
 	uint32_t part_1_count;
-	uint32_t part_2_begin;
+	uint32_t unknown_8;
 	uint32_t unknown_c;
 )
 

@@ -211,6 +211,7 @@ public:
 	std::vector<std::vector<uint8_t>> thing_94s;
 	std::vector<world_thing_98> thing_98_1s;
 	std::vector<uint32_t> thing_98_2s;
+	uint32_t thing_98_header_8; // Not sure what this is.
 	uint32_t thing_98_header_c; // Not sure what this is.
 	
 	template <typename T, typename F>
