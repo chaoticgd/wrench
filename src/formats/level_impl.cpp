@@ -692,12 +692,21 @@ void level::read_hud_banks(iso_stream* iso) {
 }
 
 void level::read_loading_screen_textures(iso_stream* iso) {
-	std::size_t primary_header_offset = _file_header.base_offset + _file_header.primary_header_offset;
-	try {
-		stream* textures = iso->get_decompressed(primary_header_offset + _primary_header.loading_screen_textures_offset);
+	size_t primary_header_offset = _file_header.base_offset + _file_header.primary_header_offset;
+	size_t load_wad_offset = primary_header_offset + _primary_header.loading_screen_textures_offset;
+	if(load_wad_offset > iso->size()) {
+		fprintf(stderr, "warning: Failed to read loading screen textures (seek pos > iso size).\n");
+		return;
+	}
+	
+	char wad_magic[3];
+	iso->seek(load_wad_offset);
+	iso->read_n(wad_magic, 3);
+	if(std::memcmp(wad_magic, "WAD", 3) == 0) {
+		stream* textures = iso->get_decompressed(load_wad_offset);
 		loading_screen_textures = read_pif_list(textures, 0);
-	} catch(stream_error&) {
-		fprintf(stderr, "warning: Failed to read loading screen textures (this currently happens for R&C3).\n");
+	} else {
+		fprintf(stderr, "warning: Failed to read loading screen textures (missing magic bytes).\n");
 	}
 }
 
