@@ -693,8 +693,12 @@ void level::read_hud_banks(iso_stream* iso) {
 
 void level::read_loading_screen_textures(iso_stream* iso) {
 	std::size_t primary_header_offset = _file_header.base_offset + _file_header.primary_header_offset;
-	stream* textures = iso->get_decompressed(primary_header_offset + _primary_header.loading_screen_textures_offset);
-	loading_screen_textures = read_pif_list(textures, 0);
+	try {
+		stream* textures = iso->get_decompressed(primary_header_offset + _primary_header.loading_screen_textures_offset);
+		loading_screen_textures = read_pif_list(textures, 0);
+	} catch(stream_error&) {
+		fprintf(stderr, "warning: Failed to read loading screen textures (this currently happens for R&C3).\n");
+	}
 }
 
 stream* level::moby_stream() {
