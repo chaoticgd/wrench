@@ -195,21 +195,11 @@ void iso_stream::save_patches_to_and_close(ZipArchive::Ptr& root, std::string pr
 wad_stream* iso_stream::get_decompressed(std::size_t offset, bool discard) {
 	if(_wad_streams.find(offset) == _wad_streams.end()) {
 		// The segment hasn't been patched yet.
-		try {
-			_wad_streams.emplace(offset, std::make_unique<wad_stream>
-				(this, offset, std::vector<wad_patch>()));
-			if(discard) {
-				// HACK: See the comment for wad_stream::discard in iso_stream.h.
-				_wad_streams.at(offset)->discard = true;
-			}
-		} catch(stream_error& e) {
-			std::cerr << e.what() << "\n";
-			std::cerr << "offset: " << std::hex << offset << "\n";
-			throw;
-		} catch(std::out_of_range& e) {
-			std::cerr << e.what() << "\n";
-			std::cerr << "offset: " << std::hex << offset << "\n";
-			throw;
+		_wad_streams.emplace(offset, std::make_unique<wad_stream>
+			(this, offset, std::vector<wad_patch>()));
+		if(discard) {
+			// HACK: See the comment for wad_stream::discard in iso_stream.h.
+			_wad_streams.at(offset)->discard = true;
 		}
 	}
 	return _wad_streams.at(offset).get();
