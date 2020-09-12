@@ -236,11 +236,6 @@ void level::read_world_segment() {
 		spline.vertices = vertices;
 	}
 	
-	for(spline_entity& spline : splines) {
-		spline.id = { _next_entity_id++ };
-		spline.selected = false;
-	}
-	
 	triggers = read_entity_table.operator()<trigger_entity, world_trigger>(header.triggers, swap_trigger);
 	
 	read_table(header.unknown_6c, &thing_6cs);
