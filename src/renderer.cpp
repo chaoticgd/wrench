@@ -465,7 +465,7 @@ glm::vec3 gl_renderer::apply_local_to_screen(glm::mat4 world_to_clip, glm::mat4 
 	glm::vec3 gl_pos {
 			homogeneous_pos.x / homogeneous_pos.w,
 			homogeneous_pos.y / homogeneous_pos.w,
-			homogeneous_pos.z / homogeneous_pos.w
+			homogeneous_pos.z
 	};
 	ImVec2 window_pos = ImGui::GetWindowPos();
 	glm::vec3 screen_pos(
