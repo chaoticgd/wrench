@@ -27,6 +27,7 @@
 
 #include "util.h"
 #include "shaders.h"
+#include "imgui_includes.h"
 #include "formats/texture.h"
 #include "formats/game_model.h"
 #include "formats/level_impl.h"
@@ -62,6 +63,12 @@ struct gl_renderer {
 		std::size_t count) const;
 	
 	static glm::vec4 colour_coded_submodel_index(std::size_t index, std::size_t submodel_count);
+	
+	ImVec2 viewport_size;
+	
+	glm::mat4 get_world_to_clip() const;
+	glm::mat4 get_local_to_clip(glm::mat4 world_to_clip, glm::vec3 position, glm::vec3 rotation) const;
+	glm::vec3 apply_local_to_screen(glm::mat4 world_to_clip, glm::mat4 local_to_world) const;
 	
 	shader_programs shaders;
 	

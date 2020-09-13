@@ -18,6 +18,8 @@
 
 #include "window.h"
 
+#include "app.h"
+
 window::window() {
 	static int s_id = 0;
 	_id = ++s_id;

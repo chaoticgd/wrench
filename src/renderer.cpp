@@ -19,7 +19,6 @@
 #include "renderer.h"
 
 #include "app.h"
-#include "imgui_includes.h" // HSV stuff.
 
 void gl_renderer::prepare_frame(level& lvl, glm::mat4 world_to_clip) {
 	moby_local_to_clip_cache.resize(lvl.mobies.size());
@@ -430,6 +429,51 @@ glm::vec4 gl_renderer::colour_coded_submodel_index(std::size_t index, std::size_
 	ImGui::ColorConvertHSVtoRGB(fmod(index / (float) submodel_count, 1.f), 1.f, 1.f, colour.r, colour.g, colour.b);
 	colour.a = 1;
 	return colour;
+}
+
+glm::mat4 gl_renderer::get_world_to_clip() const {
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), viewport_size.x / viewport_size.y, 0.1f, 10000.0f);
+
+	auto rot = camera_rotation;
+	glm::mat4 pitch = glm::rotate(glm::mat4(1.0f), rot.x, glm::vec3(1.0f, 0.0f, 0.0f));
+	glm::mat4 yaw   = glm::rotate(glm::mat4(1.0f), rot.y, glm::vec3(0.0f, 1.0f, 0.0f));
+ 
+	glm::mat4 translate =
+		glm::translate(glm::mat4(1.0f), -camera_position);
+	static const glm::mat4 yzx {
+		0,  0, 1, 0,
+		1,  0, 0, 0,
+		0, -1, 0, 0,
+		0,  0, 0, 1
+	};
+	glm::mat4 view = pitch * yaw * yzx * translate;
+
+	return projection * view;
+}
+
+glm::mat4 gl_renderer::get_local_to_clip(glm::mat4 world_to_clip, glm::vec3 position, glm::vec3 rotation) const {
+	glm::mat4 model = glm::translate(glm::mat4(1.f), position);
+	model = glm::rotate(model, rotation.x, glm::vec3(1, 0, 0));
+	model = glm::rotate(model, rotation.y, glm::vec3(0, 1, 0));
+	model = glm::rotate(model, rotation.z, glm::vec3(0, 0, 1));
+	return world_to_clip * model;
+}
+
+glm::vec3 gl_renderer::apply_local_to_screen(glm::mat4 world_to_clip, glm::mat4 local_to_world) const {
+	glm::mat4 local_to_clip = get_local_to_clip(world_to_clip, glm::vec3(1.f), glm::vec3(0.f));
+	glm::vec4 homogeneous_pos = local_to_clip * glm::vec4(glm::vec3(local_to_world[3]), 1);
+	glm::vec3 gl_pos {
+			homogeneous_pos.x / homogeneous_pos.w,
+			homogeneous_pos.y / homogeneous_pos.w,
+			homogeneous_pos.z
+	};
+	ImVec2 window_pos = ImGui::GetWindowPos();
+	glm::vec3 screen_pos(
+			window_pos.x + (1 + gl_pos.x) * viewport_size.x / 2.0,
+			window_pos.y + (1 + gl_pos.y) * viewport_size.y / 2.0,
+			gl_pos.z
+	);
+	return screen_pos;
 }
 
 void gl_renderer::reset_camera(app* a) {

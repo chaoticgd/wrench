@@ -344,7 +344,7 @@ float gui::render_menu_bar(app& a) {
 
 	ImGui::SetNextWindowContentWidth(0.f); // Reset the menu width after the "Levels" menu made it larger.
 	if(ImGui::BeginMenu("Windows")) {
-		render_menu_bar_window_toggle<view_3d>(a, &a);
+		render_menu_bar_window_toggle<view_3d>(a);
 		render_menu_bar_window_toggle<moby_list>(a);
 		render_menu_bar_window_toggle<inspector>(a);
 		render_menu_bar_window_toggle<viewport_information>(a);
@@ -440,7 +440,7 @@ void gui::render_tools(app& a, float menu_bar_height) {
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 		}
 		bool clicked = ImGui::ImageButton(
-			(void*) (intptr_t) a.tools[i].icon(), ImVec2(32, 32), 
+			(void*) (intptr_t) a.tools[i]->icon(), ImVec2(32, 32), 
 			ImVec2(0, 0), ImVec2(1, 1), -1);
 		if(!active) {
 			ImGui::PopStyleColor();
@@ -448,63 +448,6 @@ void gui::render_tools(app& a, float menu_bar_height) {
 		if(clicked) {
 			a.active_tool_index = i;
 		}
-	}
-	
-	if(a.active_tool().type == tool_type::translate) {
-		ImGui::Begin("Translate Tool");
-		ImGui::Text("Displacement:");
-		ImGui::InputFloat3("##displacement_input", &a.translate_tool_displacement.x);
-		if(ImGui::Button("Apply")) {
-			if(auto lvl = a.get_level()) {
-				level_proxy lvlp(a.get_project());
-				std::vector<entity_id> ids = lvl->selected_entity_ids();
-				glm::vec3 displacement = a.translate_tool_displacement;
-				std::map<entity_id, glm::vec3> old_positions;
-				lvl->for_each<matrix_entity>([&](matrix_entity& ent) {
-					if(ent.selected) {
-						old_positions[ent.id] = ent.local_to_world[3];
-					}
-				});
-				lvl->for_each<euler_entity>([&](euler_entity& ent) {
-					if(ent.selected) {
-						old_positions[ent.id] = ent.position;
-					}
-				});
-				
-				a.get_project()->push_command(
-					[lvlp, ids, displacement]() {
-						lvlp.get().for_each<matrix_entity>([&](matrix_entity& ent) {
-							if(contains(ids, ent.id)) {
-								ent.local_to_world[3].x += displacement.x;
-								ent.local_to_world[3].y += displacement.y;
-								ent.local_to_world[3].z += displacement.z;
-							}
-						});
-						lvlp.get().for_each<euler_entity>([&](euler_entity& ent) {
-							if(contains(ids, ent.id)) {
-								ent.position += displacement;
-							}
-						});
-					},
-					[lvlp, old_positions]() {
-						lvlp.get().for_each<matrix_entity>([&](matrix_entity& ent) {
-							if(map_contains(old_positions, ent.id)) {
-								const glm::vec3& pos = old_positions.at(ent.id);
-								ent.local_to_world[3].x = pos.x;
-								ent.local_to_world[3].y = pos.y;
-								ent.local_to_world[3].z = pos.z;
-							}
-						});
-						lvlp.get().for_each<euler_entity>([&](euler_entity& ent) {
-							if(map_contains(old_positions, ent.id)) {
-								ent.position = old_positions.at(ent.id);
-							}
-						});
-					});
-			}
-			a.translate_tool_displacement = glm::vec3(0, 0, 0);
-		}
-		ImGui::End();
 	}
 	
 	ImGui::End();

@@ -27,6 +27,7 @@ add_executable(wrench
 	src/model.cpp
 	src/util.cpp
 	src/game_db.cpp
+	src/tools.cpp
 	src/formats/wad.cpp
 	src/formats/racpak.cpp
 	src/formats/level_impl.cpp
@@ -131,6 +132,7 @@ add_executable(randomiser
 	src/model.cpp
 	src/util.cpp
 	src/game_db.cpp
+	src/tools.cpp
 	src/formats/wad.cpp
 	src/formats/racpak.cpp
 	src/formats/level_impl.cpp
