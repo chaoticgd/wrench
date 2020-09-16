@@ -32,10 +32,10 @@ For UYA/Deadlocked:
 | ------ | ----         | ---- | -----------                                 |
 | 0x0    | audio_pos    | u32  | AUDIO%d.WAD ToC header position in sectors. |
 | 0x4    | audio_size   | u32  | AUDIO%d.WAD size in sectors.                |
-| 0x0    | level_pos    | u32  | LEVEL%d.WAD ToC header position in sectors. |
-| 0x4    | level_size   | u32  | LEVEL%d.WAD size in sectors.                |
-| 0x0    | scene_pos    | u32  | SCENE%d.WAD ToC header position in sectors. |
-| 0x4    | scene_size   | u32  | SCENE%d.WAD size in sectors.                |
+| 0x8    | level_pos    | u32  | LEVEL%d.WAD ToC header position in sectors. |
+| 0xc    | level_size   | u32  | LEVEL%d.WAD size in sectors.                |
+| 0x10   | scene_pos    | u32  | SCENE%d.WAD ToC header position in sectors. |
+| 0x14   | scene_size   | u32  | SCENE%d.WAD size in sectors.                |
 
 Each header pointed to has the following fields:
 
