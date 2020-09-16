@@ -2,11 +2,11 @@
 
 ## Table of Contents
 
-- [Table of Contents](##table-of-contents)
-- [Disc Table of Contents](##disc-table-of-contents)
-- [Model Formats](##mdoel-formats)
-	- [Graphics on the PS2](##graphics-on-the-ps2)
-	- [Moby Models](##moby-models)
+- [Table of Contents](#table-of-contents)
+- [Disc Table of Contents](#disc-table-of-contents)
+- [Model Formats](#model-formats)
+	- [Graphics on the PS2](#graphics-on-the-ps2)
+	- [Moby Models](#moby-models)
 
 ## Disc Table of Contents
 
@@ -140,4 +140,13 @@ The vertex table is structured like so:
 | 0xc    | vertex_table_offset   | u16  | Relative offset of the main vertex table.         |
 | 0xe    | unknown_e             | u16  | Padding?                                          |
 
-The main vertex table has a size of `vertex_count_2 + vertex_count_4 + main_vertex_count`.
+After the header there's an array of unknown `u16`s of length `unknown_count_9`. After that there's an array of more unknown `u16`s of length `vertex_count_8`. The main vertex table has a size of `vertex_count_2 + vertex_count_4 + main_vertex_count`.
+
+Each vertex in the main vertex table is structured like so:
+
+| Offset | Name                  | Type | Description                                       |
+| ------ | ----                  | ---- | -----------                                       |
+| ...    | ...                   | ...  | ...                                               |
+| 0xa    | x                     | i16  | X component of the vertex position.               |
+| 0xc    | y                     | i16  | Y component of the vertex position.               |
+| 0xe    | z                     | i16  | Z component of the vertex position.               |
