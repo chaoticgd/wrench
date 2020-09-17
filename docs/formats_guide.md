@@ -166,19 +166,19 @@ The compressed data follows immediately after the padding field and consists of 
 
 The packet types are listed below:
 
-| Condition                               | Type          | Bitstream                                   | Decompressed Data                |
-| ---------                               | ----          | ---------                                   | -----------------                |
-| flag == 0 && last_flag >= 0x10          | Big Literal   | 00000000 + N[8] + L[(N+18)*8]               | L                                |
-| 0x1 <= flag <= 0xf && last_flag >= 0x10 | Small Literal | 0000 + N[4] + L[(N+3)*8]                    | L                                |
-| flag == 0x12                            | Pad           | 00010010 + A[8] + B[8]                      | Nothing.                         |
-| flag == 0x10 \|\| flag == 0x18          | Long Match    | 0001 + A[1] + 000 + M[8] + B[6] + N[2] + C[8] + L[N] | M+9 bytes from dest_pos-0x4000-A\*0x800-B-C\*0x40 in the output plus L. |
-| 0x11 <= flag <= 0x1f (implies M >= 1)   | Long Match    | 0001 + A[1] + M[3] + B[6] + N[2] + C[8] + L[N]       | M+2 bytes from dest_pos-0x4000-A\*0x800-B-C\*0x40 in the output plus L. |
-| flag == 0x20                            | Bigger Match  | 00100000 + M[8] + A[6] + N[2] + B[8] + L[N] | M+33 bytes from dest_pos-A+B\*0x40 in the output plus L.
-| 0x21 <= flag <= 0x3f (implies M >= 1)   | Big Match     | 001 + M[5] + A[6] + N[2] + B[8] + L[N]      | M+2 bytes from dest_pos-A+B\*0x40 in the output plus L.
-| 0x40 <= flag <= 0xff (implies M >= 2)   | Little Match  | M[3] + A[3] + N[2] + B[8] + L[N]            | M+1 bytes from dest_pos-B\*8-A-1 in the output plus L. | |
+| Condition                               | Type          | Bitstream                                               | Decompressed Data                                                       |
+| ---------                               | ----          | ---------                                               | -----------------                                                       |
+| flag == 0 && last_flag >= 0x10          | Big Literal   | 00000000 + N[8] + L[(N+18)\*8]                          | L                                                                       |
+| 0x1 <= flag <= 0xf && last_flag >= 0x10 | Small Literal | 0000 + N[4] + L[(N+3)\*8]                               | L                                                                       |
+| 0x11 <= flag <= 0x1f (implies M >= 1)   | Dummy         | 00010 + M[3] + 000000 + N[2] + 00000000 + L[N\*8]       | L                                                                       |
+| flag == 0x10 \|\| flag == 0x18          | Far Match     | 0001 + A[1] + 000 + M[8] + B[6] + N[2] + C[8] + L[N\*8] | M+9 bytes from dest_pos-0x4000-A\*0x800-B-C\*0x40 in the output plus L. |
+| 0x11 <= flag <= 0x1f (implies M >= 1)   | Far Match     | 0001 + A[1] + M[3] + B[6] + N[2] + C[8] + L[N\*8]       | M+2 bytes from dest_pos-0x4000-A\*0x800-B-C\*0x40 in the output plus L. |
+| flag == 0x20                            | Bigger Match  | 00100000 + M[8] + A[6] + N[2] + B[8] + L[N\*8]          | M+33 bytes from dest_pos-A+B\*0x40 in the output plus L.                |
+| 0x21 <= flag <= 0x3f (implies M >= 1)   | Big Match     | 001 + M[5] + A[6] + N[2] + B[8] + L[N\*8]               | M+2 bytes from dest_pos-A+B\*0x40 in the output plus L.                 |
+| 0x40 <= flag <= 0xff (implies M >= 2)   | Little Match  | M[3] + A[3] + N[2] + B[8] + L[N\*8]                     | M+1 bytes from dest_pos-B\*8-A-1 in the output plus L.                  |
 
 where `A[B]` means the bitstream contains a field `A` of length `B` bits, `A + B` means concatenate `A` and `B` and `dest_pos` is equal to the position indicator of the output/decompressed stream.
 
-*Important: I'm still not entirely sure about the long match packets. There might be edge cases not represented here.*
+*Important: I'm still not entirely sure about the dummy/far match packets. There might be edge cases not represented here.*
 
-Normal compression packets cannot cross a 0x2000 byte boundary. I think this is because of how the game buffers the compressed data into the EE's scratchpad memory. To get around this, Insomniac's compressor inserts a packet in the form `12 00 00` (in hex) followed by `0xEE`s until `dest_pos % 0x2000 == 0x10` (where `dest_pos` is offset 0x10 bytes by the WAD header). Additionally, two literal packets in a row is not allowed. To get around this, you can insert a dummy `11 00 00` packet between them (you can encode a tiny literal in this packet). The `N[2] + ... + L[N]` string at the end of the bitstream for the match packets is a mechanism to squash a tiny literal (3 bytes or smaller) into the previous packet.
+Normal compression packets cannot cross a 0x2000 byte boundary. I think this is because of how the game buffers the compressed data into the EE's scratchpad memory. To get around this, Insomniac's compressor inserts a packet in the form `12 00 00` (in hex) followed by `0xEE`s until `dest_pos % 0x2000 == 0x10` (where `dest_pos` is offset 0x10 bytes by the WAD header). Additionally, two literal packets in a row is not allowed. To get around this, you can insert a dummy `11 00 00` packet between them (you can encode a tiny literal in this packet). The `N[2] + ... + L[N*8]` string at the end of the bitstream for the match packets is a mechanism to squash a tiny literal (3 bytes or smaller) into the previous packet.
