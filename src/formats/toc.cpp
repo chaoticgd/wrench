@@ -63,18 +63,18 @@ table_of_contents read_toc(stream& iso, std::size_t toc_base) {
 			}
 			
 			uint32_t magic = iso.read<uint32_t>(headers[j].bytes());
-			if(contains(TOC_MAIN_PART_MAGIC, magic)) {printf("main %ld\n", j);
+			if(contains(TOC_MAIN_PART_MAGIC, magic)) {
 				level.main_part = headers[j];
 				level.main_part_size = sizes[j];
 				has_main_part = true;
 			}
 			
-			if(contains(TOC_AUDIO_PART_MAGIC, magic)) {printf("audio %ld\n", j);
+			if(contains(TOC_AUDIO_PART_MAGIC, magic)) {
 				level.audio_part = headers[j];
 				level.audio_part_size = sizes[j];
 			}
 			
-			if(contains(TOC_SCENE_PART_MAGIC, magic)) {printf("scene %ld\n", j);
+			if(contains(TOC_SCENE_PART_MAGIC, magic)) {
 				level.scene_part = headers[j];
 				level.scene_part_size = sizes[j];
 			}
