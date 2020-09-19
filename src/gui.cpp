@@ -939,7 +939,8 @@ void gui::texture_browser::render(app& a) {
 							fs::create_directory(path);
 						}
 						for(texture& tex : textures) {
-							file_stream bmp_file(path / (tex.pixel_data_path() + ".bmp"), std::ios::in | std::ios::out | std::ios::trunc);
+							fs::path bmp_file_path = path / (tex.pixel_data_path() + ".bmp");
+							file_stream bmp_file(bmp_file_path.string(), std::ios::in | std::ios::out | std::ios::trunc);
 							texture_to_bmp(bmp_file, &tex);
 						}
 					}
