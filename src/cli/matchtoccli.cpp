@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
 			continue;
 		}
 		
-		file_stream loose_file(file_name.path());
+		file_stream loose_file(file_name.path().string());
 		uint32_t size = loose_file.read<uint32_t>();
 		if(size > 0xffff) {
 			continue;
@@ -91,7 +91,7 @@ int main(int argc, char** argv) {
 		if(!file_name.is_regular_file()) {
 			continue;
 		}
-		file_stream loose_file(file_name.path());
+		file_stream loose_file(file_name.path().string());
 		if(loose_file.size() < SECTOR_SIZE) {
 			continue;
 		}
