@@ -20,17 +20,9 @@
 
 #include "../app.h"
 
-level_file_header level_read_file_header_or_throw(iso_stream* iso, std::size_t offset) {
-	auto file_header = level_read_file_header(iso, offset);
-	if(!file_header) {
-		throw stream_format_error("Invalid level file header in ToC!");
-	}
-	return *file_header;
-}
-
 level::level(iso_stream* iso, toc_level index)
 	: _index(index),
-	  _file_header(level_read_file_header_or_throw(iso, index.main_part.bytes())),
+	  _file_header(read_file_header(iso, index.main_part.bytes())),
 	  _file(iso, _file_header.base_offset, index.main_part_size.bytes()) {
 	_file.name = "LEVEL" + std::to_string(index.level_table_index) + ".WAD";
 	
@@ -74,6 +66,34 @@ level::level(iso_stream* iso, toc_level index)
 
 void level::write() {
 	write_world_segment();
+}
+
+level_file_header level::read_file_header(stream* src, std::size_t offset) {
+	level_file_header result;
+	src->seek(offset);
+	result.magic = src->peek<uint32_t>();
+	switch(result.magic) {
+		case 0x60: {
+			auto file_header = src->read<level_file_header_60>();
+			result.base_offset = file_header.base_offset.bytes();
+			result.level_number = file_header.level_number;
+			result.primary_header_offset = file_header.primary_header.bytes();
+			result.moby_segment_offset = file_header.moby_segment.bytes();
+			break;
+		}
+		case 0x68: {
+			auto file_header = src->read<level_file_header_68>();
+			result.base_offset = file_header.base_offset.bytes();
+			result.level_number = file_header.level_number;
+			result.primary_header_offset = file_header.primary_header.bytes();
+			result.moby_segment_offset = file_header.moby_segment.bytes();
+			break;
+		}
+		default: {
+			throw stream_format_error("Invalid level file header!");
+		}
+	}
+	return result;
 }
 
 void level::read_world_segment() {

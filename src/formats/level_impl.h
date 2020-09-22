@@ -153,6 +153,9 @@ public:
 	level(const level& rhs) = delete;
 	
 	void write();
+	
+	static level_file_header read_file_header(stream* src, std::size_t offset);
+
 private:
 	void read_world_segment();
 	void write_world_segment();

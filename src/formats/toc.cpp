@@ -131,31 +131,3 @@ std::size_t toc_get_level_table_offset(stream& iso, std::size_t toc_base) {
 	}
 	return 0;
 }
-
-std::optional<level_file_header> level_read_file_header(stream* src, std::size_t offset) {
-	level_file_header result;
-	src->seek(offset);
-	result.magic = src->peek<uint32_t>();
-	switch(result.magic) {
-		case 0x60: {
-			auto file_header = src->read<level_file_header_60>();
-			result.base_offset = file_header.base_offset.bytes();
-			result.level_number = file_header.level_number;
-			result.primary_header_offset = file_header.primary_header.bytes();
-			result.moby_segment_offset = file_header.moby_segment.bytes();
-			break;
-		}
-		case 0x68: {
-			auto file_header = src->read<level_file_header_68>();
-			result.base_offset = file_header.base_offset.bytes();
-			result.level_number = file_header.level_number;
-			result.primary_header_offset = file_header.primary_header.bytes();
-			result.moby_segment_offset = file_header.moby_segment.bytes();
-			break;
-		}
-		default: {
-			return {};
-		}
-	}
-	return result;
-}
