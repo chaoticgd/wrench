@@ -36,7 +36,7 @@
 #	A set of utility classes and macros for working with binary files.
 # */
 
-static const int SECTOR_SIZE = 0x800;
+static const size_t SECTOR_SIZE = 0x800;
 
 #ifdef _MSC_VER
 	#define packed_struct(name, ...) \
