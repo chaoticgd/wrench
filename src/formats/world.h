@@ -177,26 +177,6 @@ public:
 	std::vector<uint32_t> thing_98_2s;
 	uint32_t thing_98_header_8; // Not sure what this is.
 	uint32_t thing_98_header_c; // Not sure what this is.
-	
-	template <typename T, typename F>
-	void for_each(F callback) {
-		for_each_if_is_base_of<T, tie_entity>(callback, ties);
-		for_each_if_is_base_of<T, shrub_entity>(callback, shrubs);
-		for_each_if_is_base_of<T, moby_entity>(callback, mobies);
-		for_each_if_is_base_of<T, spline_entity>(callback, splines);
-	}
-	
-	template<typename Base, typename Derived, typename F>
-	void for_each_if_is_base_of(F callback, std::vector<Derived>& entities) {
-		if constexpr(std::is_base_of_v<Base, Derived>) {
-			for(auto& ent : entities) {
-				callback(ent);
-			}
-		}
-	}
-	
-	void clear_selection();
-	std::vector<entity_id> selected_entity_ids();
 
 	stream* backing;
 	void read_rac23();

@@ -20,22 +20,6 @@
 
 #include "../util.h"
 
-void world_segment::clear_selection() {
-	for_each<entity>([&](entity& ent) {
-		ent.selected = false;
-	});
-}
-
-std::vector<entity_id> world_segment::selected_entity_ids() {
-	std::vector<entity_id> ids;
-	for_each<entity>([&](entity& ent) {
-		if(ent.selected) {
-			ids.push_back(ent.id);
-		}
-	});
-	return ids;
-}
-
 void world_segment::read_rac23() {
 	world_header header = backing->read<world_header>(0);
 	

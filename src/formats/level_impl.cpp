@@ -118,6 +118,22 @@ level_file_header level::read_file_header(stream* src, std::size_t offset) {
 	return result;
 }
 
+void level::clear_selection() {
+	for_each<entity>([&](entity& ent) {
+		ent.selected = false;
+	});
+}
+
+std::vector<entity_id> level::selected_entity_ids() {
+	std::vector<entity_id> ids;
+	for_each<entity>([&](entity& ent) {
+		if(ent.selected) {
+			ids.push_back(ent.id);
+		}
+	});
+	return ids;
+}
+
 void level::read_moby_models(std::size_t asset_offset, level_asset_header asset_header) {
 	uint32_t mdl_base = asset_offset + asset_header.moby_model_offset;
 	_file.seek(mdl_base);

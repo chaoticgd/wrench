@@ -67,6 +67,26 @@ public:
 	
 	world_segment world;
 	
+	template <typename T, typename F>
+	void for_each(F callback) {
+		for_each_if_is_base_of<T, tie_entity>(callback, world.ties);
+		for_each_if_is_base_of<T, shrub_entity>(callback, world.shrubs);
+		for_each_if_is_base_of<T, moby_entity>(callback, world.mobies);
+		for_each_if_is_base_of<T, spline_entity>(callback, world.splines);
+	}
+	
+	template<typename Base, typename Derived, typename F>
+	void for_each_if_is_base_of(F callback, std::vector<Derived>& entities) {
+		if constexpr(std::is_base_of_v<Base, Derived>) {
+			for(auto& ent : entities) {
+				callback(ent);
+			}
+		}
+	}
+	
+	void clear_selection();
+	std::vector<entity_id> selected_entity_ids();
+	
 private:
 	void read_moby_models(std::size_t asset_offset, level_asset_header asset_header);
 	void read_textures(std::size_t asset_offset, level_asset_header asset_header);
