@@ -21,7 +21,7 @@
 #include "../util.h"
 
 void world_segment::read_rac23() {
-	world_header header = backing->read<world_header>(0);
+	world_header_rac23 header = backing->read<world_header_rac23>(0);
 	
 	read_table(header.unknown_8c, &thing_8cs);
 	
@@ -45,7 +45,7 @@ void world_segment::read_rac23() {
 	read_table(header.unknown_8, &thing_8s);
 	read_table(header.unknown_c, &thing_cs);
 	thing_48s = read_u32_list(header.unknown_48);
-	mobies = read_entity_table<moby_entity, world_moby>(header.mobies, swap_moby);
+	mobies = read_entity_table<moby_entity, world_moby_rac23>(header.mobies, swap_moby_rac23);
 	max_moby_count = mobies.size() + backing->read<uint32_t>(header.mobies + sizeof(uint32_t));
 	pvars = read_pvars(header.pvar_table, header.pvar_data);
 	read_terminated_array(thing_58s, header.unknown_58);
@@ -111,7 +111,10 @@ void world_segment::read_rac23() {
 }
 
 void world_segment::read_rac4() {
+	world_header_rac4 header = backing->read<world_header_rac4>(0);
 	
+	mobies = read_entity_table<moby_entity, world_moby_rac4>(header.mobies, swap_moby_rac4);
+	max_moby_count = mobies.size() + backing->read<uint32_t>(header.mobies + sizeof(uint32_t));
 }
 
 template <typename T_1, typename T_2 = char, typename T_3 = char>
@@ -229,11 +232,11 @@ std::vector<spline_entity> world_segment::read_splines(
 static const std::vector<char> EMPTY_VECTOR;
 
 void world_segment::write_rac2() {
-	world_header header;
+	world_header_rac23 header;
 	defer([&] {
 		backing->write(0, header);
 	});
-	backing->seek(sizeof(world_header));
+	backing->seek(sizeof(world_header_rac23));
 	
 	const auto write_table = [&]<typename T_1, typename T_2 = char, typename T_3 = char>(
 			const std::vector<T_1>& first,
@@ -332,7 +335,7 @@ void world_segment::write_rac2() {
 		}
 		return write_table(dest);
 	};
-	header.mobies = write_entity_table.operator()<moby_entity, world_moby>(mobies, swap_moby);
+	header.mobies = write_entity_table.operator()<moby_entity, world_moby_rac23>(mobies, swap_moby_rac23);
 	size_t pos_after_mobies = backing->tell();
 	backing->write<uint32_t>(header.mobies + sizeof(uint32_t), max_moby_count - mobies.size());
 	backing->seek(pos_after_mobies);
@@ -551,7 +554,7 @@ void swap_shrub(shrub_entity& l, world_shrub& r) {
 	SWAP_PACKED(l.unknown_6c, r.unknown_6c);
 }
 
-void swap_moby(moby_entity& l, world_moby& r) {
+void swap_moby_rac23(moby_entity& l, world_moby_rac23& r) {
 	// euler_entity
 	SWAP_PACKED(l.position, r.position);
 	SWAP_PACKED(l.rotation, r.rotation);
@@ -584,6 +587,42 @@ void swap_moby(moby_entity& l, world_moby& r) {
 	SWAP_PACKED(l.unknown_7c, r.unknown_7c);
 	SWAP_PACKED(l.unknown_80, r.unknown_80);
 	SWAP_PACKED(l.unknown_84, r.unknown_84);
+}
+
+void swap_moby_rac4(moby_entity& l, world_moby_rac4& r) {
+	// euler_entity
+	SWAP_PACKED(l.position, r.position);
+	SWAP_PACKED(l.rotation, r.rotation);
+	// moby_entity
+	SWAP_PACKED(l.size, r.size);
+	SWAP_PACKED(l.uid, r.uid);
+	SWAP_PACKED(l.class_num, r.class_num);
+	SWAP_PACKED(l.scale, r.scale);
+	// TODO: Figure out what the rest of the fields are and swap them.
+	l.unknown_4 = 0;
+	l.unknown_8 = 0;
+	l.unknown_c = 0;
+	l.unknown_14 = 0;
+	l.unknown_18 = 0;
+	l.unknown_1c = 0;
+	l.unknown_20 = 0;
+	l.unknown_24 = 0;
+	l.unknown_30 = 0;
+	l.unknown_34 = 0;
+	l.unknown_38 = 0;
+	l.unknown_3c = 0;
+	l.unknown_58 = 0;
+	l.unknown_5c = 0;
+	l.unknown_60 = 0;
+	l.unknown_64 = 0;
+	l.pvar_index = 0;
+	l.unknown_6c = 0;
+	l.unknown_70 = 0;
+	l.unknown_74 = 0;
+	l.unknown_78 = 0;
+	l.unknown_7c = 0;
+	l.unknown_80 = 0;
+	l.unknown_84 = 0;
 }
 
 void swap_trigger(trigger_entity& l, world_trigger& r) {

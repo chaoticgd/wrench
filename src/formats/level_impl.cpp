@@ -28,10 +28,12 @@ level::level(iso_stream* iso, toc_level index)
 	
 	_primary_header = _file.read<level_primary_header>(_file_header.primary_header_offset);
 
-	code_segment.header = _file.read<level_code_segment_header>
-		(_file_header.primary_header_offset + _primary_header.code_segment_offset);
-	code_segment.bytes.resize(_primary_header.code_segment_size - sizeof(level_code_segment_header));
-	_file.read_v(code_segment.bytes);
+	if(_file_header.type != level_type::RAC4) {
+		code_segment.header = _file.read<level_code_segment_header>
+			(_file_header.primary_header_offset + _primary_header.code_segment_offset);
+		code_segment.bytes.resize(_primary_header.code_segment_size - sizeof(level_code_segment_header));
+		_file.read_v(code_segment.bytes);
+	}
 
 	_world_segment = iso->get_decompressed(_file_header.base_offset + _file_header.world_segment_offset);
 	_world_segment->name = "World Segment";

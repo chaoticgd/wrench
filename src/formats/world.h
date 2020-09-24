@@ -214,7 +214,8 @@ private:
 // These functions can hence be used for both reading and writing.
 void swap_tie(tie_entity& l, world_tie& r);
 void swap_shrub(shrub_entity& l, world_shrub& r);
-void swap_moby(moby_entity& l, world_moby& r);
+void swap_moby_rac23(moby_entity& l, world_moby_rac23& r);
+void swap_moby_rac4(moby_entity& l, world_moby_rac4& r);
 void swap_trigger(trigger_entity& l, world_trigger& r);
 
 #endif
