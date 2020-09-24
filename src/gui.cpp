@@ -483,7 +483,7 @@ void gui::inspector::render(app& a) {
 	level& lvl = *proj.selected_level();
 	
 	bool selection_empty = true;
-	lvl.for_each<entity>([&](entity& ent) {
+	lvl.world.for_each<entity>([&](entity& ent) {
 		if(ent.selected) {
 			selection_empty = false;
 		}
@@ -554,7 +554,7 @@ void gui::inspector::render(app& a) {
 	std::optional<uint32_t> last_class;
 	std::optional<int32_t> last_pvar_index;
 	bool should_draw_pvars = true;
-	lvl.for_each<entity>([&](entity& base_ent) {
+	lvl.world.for_each<entity>([&](entity& base_ent) {
 		if(base_ent.selected) {
 			if(moby_entity* ent = dynamic_cast<moby_entity*>(&base_ent)) {
 				if(last_class && *last_class != ent->class_num) {
@@ -574,12 +574,12 @@ void gui::inspector::render(app& a) {
 	if(should_draw_pvars && last_pvar_index) {
 		ImGui::Text("Pvar %d", *last_pvar_index);
 		
-		auto& first_pvar = lvl.pvars.at(*last_pvar_index);
+		auto& first_pvar = lvl.world.pvars.at(*last_pvar_index);
 		for(std::size_t i = 0; i < first_pvar.size(); i++) {
 			bool should_be_blank = false;
-			lvl.for_each<moby_entity>([&](moby_entity& ent) {
+			lvl.world.for_each<moby_entity>([&](moby_entity& ent) {
 				if(ent.selected && ent.pvar_index > -1) {
-					auto& pvar = lvl.pvars.at(ent.pvar_index);
+					auto& pvar = lvl.world.pvars.at(ent.pvar_index);
 					if(pvar.at(i) != first_pvar[i]) {
 						should_be_blank = true;
 					}
@@ -609,7 +609,7 @@ void inspector_input(wrench_project& proj, const char* label, T_field T_entity::
 	std::optional<T_lane> last_value[MAX_LANES];
 	bool values_equal[MAX_LANES] = { true, true, true, true };
 	bool selection_contains_entity_without_field = false;
-	lvl->for_each<entity>([&](entity& base_ent) {
+	lvl->world.for_each<entity>([&](entity& base_ent) {
 		if(base_ent.selected) {
 			if(T_entity* ent = dynamic_cast<T_entity*>(&base_ent)) {
 				for(int i = 0; i < lane_count; i++) {
@@ -653,9 +653,9 @@ void inspector_input(wrench_project& proj, const char* label, T_field T_entity::
 	
 	if(any_lane_changed) {
 		level_proxy lvlp(&proj);
-		std::vector<entity_id> ids = lvl->selected_entity_ids();
+		std::vector<entity_id> ids = lvl->world.selected_entity_ids();
 		std::map<entity_id, T_field> old_values;
-		lvl->for_each<T_entity>([&](T_entity& ent) {
+		lvl->world.for_each<T_entity>([&](T_entity& ent) {
 			if(ent.selected) {
 				old_values[ent.id] = ent.*field;
 			}
@@ -678,7 +678,7 @@ void inspector_input(wrench_project& proj, const char* label, T_field T_entity::
 		
 		proj.push_command(
 			[lvlp, ids, field, first_lane, input_lanes, new_values]() {
-				lvlp.get().template for_each<T_entity>([&](T_entity& ent) {
+				lvlp.get().world.for_each<T_entity>([&](T_entity& ent) {
 					if(contains(ids, ent.id)) {
 						for(int i = 0; i < MAX_LANES; i++) {
 							T_lane* value = ((T_lane*) &(ent.*field)) + first_lane + i;
@@ -690,7 +690,7 @@ void inspector_input(wrench_project& proj, const char* label, T_field T_entity::
 				});
 			},
 			[lvlp, ids, field, old_values]() {
-				lvlp.get().template for_each<T_entity>([&](T_entity& ent) {
+				lvlp.get().world.for_each<T_entity>([&](T_entity& ent) {
 					if(contains(ids, ent.id)) {
 						ent.*field = old_values.at(ent.id);
 					}
@@ -746,13 +746,13 @@ void gui::moby_list::render(app& a) {
 	ImGui::Text("     UID                Class");
 	ImGui::PushItemWidth(-1);
 	if(ImGui::ListBoxHeader("##mobylist", size)) {
-		for(moby_entity& moby : lvl.mobies) {
+		for(moby_entity& moby : lvl.world.mobies) {
 			std::stringstream row;
 			row << std::setfill(' ') << std::setw(8) << std::dec << moby.uid << " ";
 			row << std::setfill(' ') << std::setw(20) << std::hex << moby.class_num << " ";
 			
 			if(ImGui::Selectable(row.str().c_str(), moby.selected)) {
-				lvl.clear_selection();
+				lvl.world.clear_selection();
 				moby.selected = true;
 			}
 		}
@@ -806,7 +806,7 @@ void gui::string_viewer::render(app& a) {
 
 		static prompt_box string_exporter("Export", "Enter Export Path");
 		if(auto path = string_exporter.prompt()) {
-			auto strings = lvl->game_strings[language];
+			auto strings = lvl->world.game_strings[language];
 			std::ofstream out_file(*path);
 			for(game_string& string : strings) {
 				out_file << std::hex << string.id << ": " << string.str << "\n";
@@ -829,7 +829,7 @@ void gui::string_viewer::render(app& a) {
 
 		ImGui::Columns(1);
 
-		auto& strings = lvl->game_strings[language];
+		auto& strings = lvl->world.game_strings[language];
 
 		ImGui::BeginChild(1);
 		for(game_string& string : strings) {

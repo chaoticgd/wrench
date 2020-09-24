@@ -46,14 +46,6 @@ packed_struct(toc_level_table_entry,
 	sector32 header_3_size;
 )
 
-struct level_file_header {
-	uint32_t magic;
-	uint32_t base_offset;
-	uint32_t level_number;
-	uint32_t primary_header_offset;
-	uint32_t moby_segment_offset;
-};
-
 struct toc_level {
 	std::size_t level_table_index;
 	sector32 main_part;

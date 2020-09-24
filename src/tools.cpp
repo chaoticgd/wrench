@@ -72,11 +72,11 @@ void picker_tool::pick_object(app& a, glm::mat4 world_to_clip, ImVec2 position) 
 	}
 
 	if(smallest_value == -1) {
-		lvl.clear_selection();
+		lvl.world.clear_selection();
 		return;
 	}
 
-	lvl.for_each<entity>([&](entity& ent) {
+	lvl.world.for_each<entity>([&](entity& ent) {
 		ent.selected = ent.id.value == buffer[smallest_index];
 	});
 }
@@ -117,11 +117,11 @@ void selection_tool::draw(app& a, glm::mat4 world_to_clip) {
 		};
 		
 		level& lvl = *a.get_level();
-		lvl.for_each<matrix_entity>([&](matrix_entity& ent) {
+		lvl.world.for_each<matrix_entity>([&](matrix_entity& ent) {
 			glm::vec3 screen_pos = a.renderer.apply_local_to_screen(world_to_clip, ent.local_to_world);
 			ent.selected = in_bounds(screen_pos);
 		});
-		lvl.for_each<euler_entity>([&](euler_entity& ent) {
+		lvl.world.for_each<euler_entity>([&](euler_entity& ent) {
 			glm::vec3 screen_pos = a.renderer.apply_local_to_screen(world_to_clip, ent.local_to_world_cache);
 			ent.selected = in_bounds(screen_pos);
 		});
@@ -139,15 +139,15 @@ void translate_tool::draw(app& a, glm::mat4 world_to_clip) {
 	if(ImGui::Button("Apply")) {
 		level* lvl = a.get_level();
 		level_proxy lvlp(a.get_project());
-		std::vector<entity_id> ids = lvl->selected_entity_ids();
+		std::vector<entity_id> ids = lvl->world.selected_entity_ids();
 		glm::vec3 displacement = _displacement;
 		std::map<entity_id, glm::vec3> old_positions;
-		lvl->for_each<matrix_entity>([&](matrix_entity& ent) {
+		lvl->world.for_each<matrix_entity>([&](matrix_entity& ent) {
 			if(ent.selected) {
 				old_positions[ent.id] = ent.local_to_world[3];
 			}
 		});
-		lvl->for_each<euler_entity>([&](euler_entity& ent) {
+		lvl->world.for_each<euler_entity>([&](euler_entity& ent) {
 			if(ent.selected) {
 				old_positions[ent.id] = ent.position;
 			}
@@ -155,21 +155,21 @@ void translate_tool::draw(app& a, glm::mat4 world_to_clip) {
 		
 		a.get_project()->push_command(
 			[lvlp, ids, displacement]() {
-				lvlp.get().for_each<matrix_entity>([&](matrix_entity& ent) {
+				lvlp.get().world.for_each<matrix_entity>([&](matrix_entity& ent) {
 					if(contains(ids, ent.id)) {
 						ent.local_to_world[3].x += displacement.x;
 						ent.local_to_world[3].y += displacement.y;
 						ent.local_to_world[3].z += displacement.z;
 					}
 				});
-				lvlp.get().for_each<euler_entity>([&](euler_entity& ent) {
+				lvlp.get().world.for_each<euler_entity>([&](euler_entity& ent) {
 					if(contains(ids, ent.id)) {
 						ent.position += displacement;
 					}
 				});
 			},
 			[lvlp, old_positions]() {
-				lvlp.get().for_each<matrix_entity>([&](matrix_entity& ent) {
+				lvlp.get().world.for_each<matrix_entity>([&](matrix_entity& ent) {
 					if(map_contains(old_positions, ent.id)) {
 						const glm::vec3& pos = old_positions.at(ent.id);
 						ent.local_to_world[3].x = pos.x;
@@ -177,7 +177,7 @@ void translate_tool::draw(app& a, glm::mat4 world_to_clip) {
 						ent.local_to_world[3].z = pos.z;
 					}
 				});
-				lvlp.get().for_each<euler_entity>([&](euler_entity& ent) {
+				lvlp.get().world.for_each<euler_entity>([&](euler_entity& ent) {
 					if(map_contains(old_positions, ent.id)) {
 						ent.position = old_positions.at(ent.id);
 					}

@@ -89,15 +89,15 @@ void view_3d::draw_overlay_text(app& a, glm::mat4 world_to_clip) const {
 	
 	level& lvl = *a.get_level();
 	
-	for(tie_entity& tie : lvl.ties) {
+	for(tie_entity& tie : lvl.world.ties) {
 		draw_text(tie.local_to_world, "t");
 	}
 	
-	for(shrub_entity& shrub : lvl.shrubs) {
+	for(shrub_entity& shrub : lvl.world.shrubs) {
 		draw_text(shrub.local_to_world, "s");
 	}
 	
-	for(moby_entity& moby : lvl.mobies) {
+	for(moby_entity& moby : lvl.world.mobies) {
 		static const std::map<uint16_t, const char*> moby_class_names {
 			{ 0x1f4, "crate" },
 			{ 0x2f6, "swingshot_grapple" },

@@ -144,8 +144,8 @@ struct level_texture_entry;
 // *****************************************************************************
 
 // These are also present in the table of contents for GC, UYA and DL.
-packed_struct(level_file_header_60,
-	uint32_t magic;    // 0x0 Equal to 0x60.
+packed_struct(level_file_header_rac23,
+	uint32_t magic;          // 0x0 Equal to 0x60.
 	sector32 base_offset;    // 0x4
 	uint32_t level_number;   // 0x8
 	uint32_t unknown_c;      // 0xc
@@ -153,18 +153,45 @@ packed_struct(level_file_header_60,
 	uint32_t unknown_14;     // 0x14
 	sector32 unknown_18;     // 0x18
 	uint32_t unknown_1c;     // 0x1c
-	sector32 moby_segment;   // 0x20
+	sector32 world_segment;  // 0x20
 )
 
-packed_struct(level_file_header_68,
-	uint32_t magic;    // 0x0 Equal to 0x68.
+packed_struct(level_file_header_rac2_68,
+	uint32_t magic;          // 0x0 Equal to 0x68.
 	sector32 base_offset;    // 0x4
 	uint32_t level_number;   // 0x8
 	sector32 primary_header; // 0xc
 	uint32_t unknown_10;     // 0x10
 	sector32 unknown_14;     // 0x14
 	uint32_t unknown_18;     // 0x18
-	sector32 moby_segment;   // 0x1c
+	sector32 world_segment;  // 0x1c
+)
+
+packed_struct(level_file_header_rac4,
+	uint32_t magic;          // 0x0 Equal to 0xc68.
+	sector32 base_offset;    // 0x4
+	uint32_t level_number;   // 0x8
+	uint32_t unknown_c;      // 0xc
+	uint32_t unknown_10;     // 0x10
+	uint32_t unknown_14;     // 0x14
+	sector32 primary_header; // 0x18
+	uint32_t unknown_1c;     // 0x1c
+	uint32_t unknown_20;     // 0x20
+	uint32_t unknown_24;     // 0x24
+	uint32_t unknown_28;     // 0x28
+	uint32_t unknown_2c;     // 0x2c
+	uint32_t unknown_30;     // 0x30
+	uint32_t unknown_34;     // 0x34
+	uint32_t unknown_38;     // 0x38
+	uint32_t unknown_3c;     // 0x3c
+	uint32_t unknown_40;     // 0x40
+	uint32_t unknown_44;     // 0x44
+	uint32_t unknown_48;     // 0x48
+	uint32_t unknown_4c;     // 0x4c
+	uint32_t unknown_50;     // 0x50
+	uint32_t unknown_54;     // 0x54
+	sector32 world_segment;  // 0x58
+	uint32_t unknown_5c;     // 0x5c
 )
 
 // Pointers are relative to this header.

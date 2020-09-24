@@ -21,9 +21,9 @@
 #include "app.h"
 
 void gl_renderer::prepare_frame(level& lvl, glm::mat4 world_to_clip) {
-	moby_local_to_clip_cache.resize(lvl.mobies.size());
-	for(std::size_t i = 0; i < lvl.mobies.size(); i++) {
-		moby_entity& moby = lvl.mobies[i];
+	moby_local_to_clip_cache.resize(lvl.world.mobies.size());
+	for(std::size_t i = 0; i < lvl.world.mobies.size(); i++) {
+		moby_entity& moby = lvl.world.mobies[i];
 		moby.local_to_world_cache = glm::translate(glm::mat4(1.f), moby.position);
 		moby.local_to_world_cache = glm::rotate(moby.local_to_world_cache, moby.rotation.x, glm::vec3(1, 0, 0));
 		moby.local_to_world_cache = glm::rotate(moby.local_to_world_cache, moby.rotation.y, glm::vec3(0, 1, 0));
@@ -55,7 +55,7 @@ void gl_renderer::draw_level(level& lvl, glm::mat4 world_to_clip) const {
 	};
 	
 	if(draw_ties) {
-		for(tie_entity& tie : lvl.ties) {
+		for(tie_entity& tie : lvl.world.ties) {
 			glm::mat4 local_to_clip = world_to_clip * tie.local_to_world;
 			glm::vec4 colour = get_colour(tie.selected, glm::vec4(0.5, 0, 1, 1));
 			draw_cube(local_to_clip, colour);
@@ -63,7 +63,7 @@ void gl_renderer::draw_level(level& lvl, glm::mat4 world_to_clip) const {
 	}
 	
 	if(draw_shrubs) {
-		for(shrub_entity& shrub : lvl.shrubs) {
+		for(shrub_entity& shrub : lvl.world.shrubs) {
 			glm::mat4 local_to_clip = world_to_clip * shrub.local_to_world;
 			glm::vec4 colour = get_colour(shrub.selected, glm::vec4(0, 0.5, 0, 1));
 			draw_cube(local_to_clip, colour);
@@ -99,34 +99,34 @@ void gl_renderer::draw_level(level& lvl, glm::mat4 world_to_clip) const {
 				
 				for(std::size_t i = moby_batch_begin; i < batch_end; i++) {
 					const glm::mat4& local_to_clip = moby_local_to_clip_cache[i];
-					glm::vec4 colour = get_colour(lvl.mobies[i].selected, glm::vec4(0, 1, 0, 1));
+					glm::vec4 colour = get_colour(lvl.world.mobies[i].selected, glm::vec4(0, 1, 0, 1));
 					draw_cube(local_to_clip, colour);
 				}
 			}
 		};
 		
-		for(std::size_t i = 0; i < lvl.mobies.size(); i++) {
-			moby_entity& moby = lvl.mobies[i];
+		for(std::size_t i = 0; i < lvl.world.mobies.size(); i++) {
+			moby_entity& moby = lvl.world.mobies[i];
 			if(moby.class_num != moby_batch_class) {
 				draw_moby_batch(i);
 				moby_batch_class = moby.class_num;
 				moby_batch_begin = i;
 			}
 		}
-		draw_moby_batch(lvl.mobies.size());
+		draw_moby_batch(lvl.world.mobies.size());
 		
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glUseProgram(shaders.solid_colour.id());
 		
-		for(std::size_t i = 0; i < lvl.mobies.size(); i++) {
-			if(lvl.mobies[i].selected) {
+		for(std::size_t i = 0; i < lvl.world.mobies.size(); i++) {
+			if(lvl.world.mobies[i].selected) {
 				draw_cube(moby_local_to_clip_cache[i], selected_colour);
 			}
 		}
 	}
 	
 	if(draw_triggers) {
-		for(trigger_entity& trigger : lvl.triggers) {
+		for(trigger_entity& trigger : lvl.world.triggers) {
 			glm::mat4 local_to_clip = world_to_clip * trigger.local_to_world;
 			glm::vec4 colour = get_colour(trigger.selected, glm::vec4(0, 0, 1, 1));
 			draw_cube(local_to_clip, colour);
@@ -134,7 +134,7 @@ void gl_renderer::draw_level(level& lvl, glm::mat4 world_to_clip) const {
 	}
 	
 	if(draw_splines) {
-		for(spline_entity& spline : lvl.splines) {
+		for(spline_entity& spline : lvl.world.splines) {
 			glm::vec4 colour = get_colour(spline.selected, glm::vec4(1, 0.5, 0, 1));
 			draw_spline(spline, world_to_clip, colour);
 		}
@@ -167,7 +167,7 @@ void gl_renderer::draw_pickframe(level& lvl, glm::mat4 world_to_clip) const {
 	};
 	
 	if(draw_ties) {
-		for(tie_entity& tie : lvl.ties) {
+		for(tie_entity& tie : lvl.world.ties) {
 			glm::mat4 local_to_clip = world_to_clip * tie.local_to_world;
 			glm::vec4 colour = encode_pick_colour(tie.id);
 			draw_cube(local_to_clip, colour);
@@ -175,7 +175,7 @@ void gl_renderer::draw_pickframe(level& lvl, glm::mat4 world_to_clip) const {
 	}
 	
 	if(draw_shrubs) {
-		for(shrub_entity& shrub : lvl.shrubs) {
+		for(shrub_entity& shrub : lvl.world.shrubs) {
 			glm::mat4 local_to_clip = world_to_clip * shrub.local_to_world;
 			glm::vec4 colour = encode_pick_colour(shrub.id);
 			draw_cube(local_to_clip, colour);
@@ -183,14 +183,14 @@ void gl_renderer::draw_pickframe(level& lvl, glm::mat4 world_to_clip) const {
 	}
 	
 	if(draw_mobies) {
-		for(moby_entity& moby : lvl.mobies) {
+		for(moby_entity& moby : lvl.world.mobies) {
 			glm::vec4 colour = encode_pick_colour(moby.id);
 			draw_cube(moby.local_to_clip_cache, colour);
 		}
 	}
 	
 	if(draw_splines) {
-		for(spline_entity& spline : lvl.splines) {
+		for(spline_entity& spline : lvl.world.splines) {
 			glm::vec4 colour = encode_pick_colour(spline.id);
 			draw_spline(spline, world_to_clip, colour);
 		}
@@ -479,10 +479,10 @@ glm::vec3 gl_renderer::apply_local_to_screen(glm::mat4 world_to_clip, glm::mat4 
 void gl_renderer::reset_camera(app* a) {
 	camera_rotation = glm::vec3(0, 0, 0);
 	if(level* lvl = a->get_level()) {
-		if(lvl->mobies.size() > 0) {
-			camera_position = lvl->mobies[0].position;
+		if(lvl->world.mobies.size() > 0) {
+			camera_position = lvl->world.mobies[0].position;
 		} else {
-			camera_position = lvl->properties.ship_position();
+			camera_position = lvl->world.properties.ship_position();
 		}
 	} else {
 		camera_position = glm::vec3(0, 0, 0);
