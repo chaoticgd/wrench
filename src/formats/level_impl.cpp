@@ -48,8 +48,10 @@ level::level(iso_stream* iso, toc_level index)
 		case level_type::RAC23:
 		case level_type::RAC2_68:
 			world.read_rac23();
+			break;
 		case level_type::RAC4:
 			world.read_rac4();
+			break;
 	}
 	
 	if(_file_header.type == level_type::RAC4) {
