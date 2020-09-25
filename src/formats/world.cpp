@@ -615,7 +615,7 @@ void swap_moby_rac4(moby_entity& l, world_moby_rac4& r) {
 	l.unknown_5c = 0;
 	l.unknown_60 = 0;
 	l.unknown_64 = 0;
-	l.pvar_index = 0;
+	l.pvar_index = -1;
 	l.unknown_6c = 0;
 	l.unknown_70 = 0;
 	l.unknown_74 = 0;
