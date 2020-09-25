@@ -74,15 +74,16 @@ level::level(iso_stream* iso, toc_level index)
 		_asset_segment = &(*_asset_segment_tracepoint);
 	}
 	
-	if(_file_header.type == level_type::RAC4) {
-		return;
-	}
-	
 	uint32_t asset_offset = _file_header.primary_header_offset + _primary_header.asset_header;
 	auto asset_header = _file.read<level_asset_header>(asset_offset);
 	
 	read_moby_models(asset_offset, asset_header);
 	read_textures(asset_offset, asset_header);
+	
+	if(_file_header.type == level_type::RAC4) {
+		return;
+	}
+	
 	read_tfrags();
 	
 	
@@ -329,8 +330,8 @@ void swap_primary_header_rac4(level_primary_header& l, level_primary_header_rac4
 	// TODO: Swap these all prpoperly.
 	SWAP_PACKED(l.code_segment_offset, r.code_segment_offset);
 	SWAP_PACKED(l.code_segment_size, r.code_segment_size);
-	l.asset_header = 0;
-	l.asset_header_size = 0;
+	SWAP_PACKED(l.asset_header, r.asset_header);
+	SWAP_PACKED(l.asset_header_size, r.asset_header_size);
 	l.tex_pixel_data_base = 0;
 	l.hud_header_offset = 0;
 	l.hud_bank_0_offset = 0;

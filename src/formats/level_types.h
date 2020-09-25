@@ -225,8 +225,8 @@ packed_struct(level_primary_header_rac4,
 	uint32_t unknown_4;           // 0x4
 	uint32_t code_segment_offset; // 0x8
 	uint32_t code_segment_size;   // 0xc
-	uint32_t unknown_10;          // 0x10
-	uint32_t unknown_14;          // 0x14
+	uint32_t asset_header;        // 0x10
+	uint32_t asset_header_size;   // 0x14
 	uint32_t unknown_18;          // 0x18
 	uint32_t unknown_1c;          // 0x1c
 	uint32_t unknown_20;          // 0x20
