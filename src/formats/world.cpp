@@ -115,6 +115,12 @@ void world_segment::read_rac4() {
 	
 	mobies = read_entity_table<moby_entity, world_moby_rac4>(header.mobies, swap_moby_rac4);
 	max_moby_count = mobies.size() + backing->read<uint32_t>(header.mobies + sizeof(uint32_t));
+	
+	auto spline_table = backing->read<world_spline_table>(header.splines);
+	splines = read_splines(
+		backing->tell(),
+		spline_table.spline_count,
+		header.splines + spline_table.data_offset);
 }
 
 template <typename T_1, typename T_2 = char, typename T_3 = char>

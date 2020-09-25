@@ -401,7 +401,7 @@ packed_struct(world_header_rac4,
 	uint32_t unknown_50;         // 0x50
 	uint32_t unknown_54;         // 0x54
 	uint32_t unknown_58;         // 0x58
-	uint32_t unknown_5c;         // 0x5c
+	uint32_t splines;            // 0x5c
 	uint32_t unknown_60;         // 0x60
 	uint32_t unknown_64;         // 0x64
 	uint32_t unknown_68;         // 0x68
