@@ -78,6 +78,7 @@ struct gl_renderer {
 	glm::vec3 camera_position { 0, 0, 0 };
 	glm::vec2 camera_rotation { 0, 0 };
 	
+	view_mode mode = view_mode::TEXTURED_POLYGONS;
 	bool draw_ties = true;
 	bool draw_shrubs = false;
 	bool draw_mobies = true;

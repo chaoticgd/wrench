@@ -88,7 +88,7 @@ void gl_renderer::draw_level(level& lvl, glm::mat4 world_to_clip) const {
 				draw_moby_models(
 					model,
 					lvl.moby_textures,
-					view_mode::TEXTURED_POLYGONS,
+					mode,
 					true,
 					moby_local_to_clip_buffer(),
 					moby_batch_begin * sizeof(glm::mat4),

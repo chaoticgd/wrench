@@ -261,6 +261,15 @@ float gui::render_menu_bar(app& a) {
 		if(ImGui::MenuItem("Reset Camera")) {
 			a.renderer.reset_camera(&a);
 		}
+		if(ImGui::BeginMenu("View Mode")) {
+			if(ImGui::RadioButton("Wireframe", a.renderer.mode == view_mode::WIREFRAME)) {
+				a.renderer.mode = view_mode::WIREFRAME;
+			}
+			if(ImGui::RadioButton("Textured Polygons", a.renderer.mode == view_mode::TEXTURED_POLYGONS)) {
+				a.renderer.mode = view_mode::TEXTURED_POLYGONS;
+			}
+			ImGui::EndMenu();
+		}
 		if(ImGui::BeginMenu("Visibility")) {
 			ImGui::Checkbox("Ties", &a.renderer.draw_ties);
 			ImGui::Checkbox("Shrubs", &a.renderer.draw_shrubs);
