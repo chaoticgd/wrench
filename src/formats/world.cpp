@@ -515,15 +515,6 @@ void world_segment::write_rac2() {
 	}
 }
 
-// We can't pass around references to fields as we're using packed structs so
-// instead of std::swap we have to use this macro.
-#define SWAP_PACKED(inmem, packed) \
-	{ \
-		auto p = packed; \
-		packed = inmem; \
-		inmem = p; \
-	}
-
 void swap_tie(tie_entity& l, world_tie& r) {
 	// matrix_entity
 	SWAP_PACKED(l.local_to_world, r.local_to_world);

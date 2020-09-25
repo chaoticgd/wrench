@@ -25,15 +25,25 @@ level::level(iso_stream* iso, toc_level index)
 	  _file_header(read_file_header(iso, index.main_part.bytes())),
 	  _file(iso, _file_header.base_offset, index.main_part_size.bytes()) {
 	_file.name = "LEVEL" + std::to_string(index.level_table_index) + ".WAD";
-	
-	_primary_header = _file.read<level_primary_header>(_file_header.primary_header_offset);
 
-	if(_file_header.type != level_type::RAC4) {
-		code_segment.header = _file.read<level_code_segment_header>
-			(_file_header.primary_header_offset + _primary_header.code_segment_offset);
-		code_segment.bytes.resize(_primary_header.code_segment_size - sizeof(level_code_segment_header));
-		_file.read_v(code_segment.bytes);
+	switch(_file_header.type) {
+		case level_type::RAC23:
+		case level_type::RAC2_68: {
+			auto header = _file.read<level_primary_header_rac23>(_file_header.primary_header_offset);
+			swap_primary_header_rac23(_primary_header, header);
+			break;
+		}
+		case level_type::RAC4: {
+			auto header = _file.read<level_primary_header_rac4>(_file_header.primary_header_offset);
+			swap_primary_header_rac4(_primary_header, header);
+			break;
+		}
 	}
+
+	code_segment.header = _file.read<level_code_segment_header>
+		(_file_header.primary_header_offset + _primary_header.code_segment_offset);
+	code_segment.bytes.resize(_primary_header.code_segment_size - sizeof(level_code_segment_header));
+	_file.read_v(code_segment.bytes);
 
 	_world_segment = iso->get_decompressed(_file_header.base_offset + _file_header.world_segment_offset);
 	_world_segment->name = "World Segment";
@@ -54,10 +64,6 @@ level::level(iso_stream* iso, toc_level index)
 			break;
 	}
 	
-	if(_file_header.type == level_type::RAC4) {
-		return;
-	}
-	
 	_asset_segment = iso->get_decompressed
 		(_file_header.base_offset + _file_header.primary_header_offset + _primary_header.asset_wad);
 	_asset_segment->name = "Asset Segment";
@@ -68,12 +74,17 @@ level::level(iso_stream* iso, toc_level index)
 		_asset_segment = &(*_asset_segment_tracepoint);
 	}
 	
+	if(_file_header.type == level_type::RAC4) {
+		return;
+	}
+	
 	uint32_t asset_offset = _file_header.primary_header_offset + _primary_header.asset_header;
 	auto asset_header = _file.read<level_asset_header>(asset_offset);
 	
 	read_moby_models(asset_offset, asset_header);
 	read_textures(asset_offset, asset_header);
 	read_tfrags();
+	
 	
 	read_hud_banks(iso);
 	read_loading_screen_textures(iso);
@@ -290,4 +301,49 @@ void level::read_loading_screen_textures(iso_stream* iso) {
 
 stream* level::moby_stream() {
 	return _world_segment;
+}
+
+void swap_primary_header_rac23(level_primary_header& l, level_primary_header_rac23& r) {
+	SWAP_PACKED(l.code_segment_offset, r.code_segment_offset);
+	SWAP_PACKED(l.code_segment_size, r.code_segment_size);
+	SWAP_PACKED(l.asset_header, r.asset_header);
+	SWAP_PACKED(l.asset_header_size, r.asset_header_size);
+	SWAP_PACKED(l.tex_pixel_data_base, r.tex_pixel_data_base);
+	SWAP_PACKED(l.hud_header_offset, r.hud_header_offset);
+	SWAP_PACKED(l.hud_bank_0_offset, r.hud_bank_0_offset);
+	SWAP_PACKED(l.hud_bank_0_size, r.hud_bank_0_size);
+	SWAP_PACKED(l.hud_bank_1_offset, r.hud_bank_1_offset);
+	SWAP_PACKED(l.hud_bank_1_size, r.hud_bank_1_size);
+	SWAP_PACKED(l.hud_bank_2_offset, r.hud_bank_2_offset);
+	SWAP_PACKED(l.hud_bank_2_size, r.hud_bank_2_size);
+	SWAP_PACKED(l.hud_bank_3_offset, r.hud_bank_3_offset);
+	SWAP_PACKED(l.hud_bank_3_size, r.hud_bank_3_size);
+	SWAP_PACKED(l.hud_bank_4_offset, r.hud_bank_4_offset);
+	SWAP_PACKED(l.hud_bank_4_size, r.hud_bank_4_size);
+	SWAP_PACKED(l.asset_wad, r.asset_wad);
+	SWAP_PACKED(l.loading_screen_textures_offset, r.loading_screen_textures_offset);
+	SWAP_PACKED(l.loading_screen_textures_size, r.loading_screen_textures_size);
+}
+
+void swap_primary_header_rac4(level_primary_header& l, level_primary_header_rac4& r) {
+	// TODO: Swap these all prpoperly.
+	SWAP_PACKED(l.code_segment_offset, r.code_segment_offset);
+	SWAP_PACKED(l.code_segment_size, r.code_segment_size);
+	l.asset_header = 0;
+	l.asset_header_size = 0;
+	l.tex_pixel_data_base = 0;
+	l.hud_header_offset = 0;
+	l.hud_bank_0_offset = 0;
+	l.hud_bank_0_size = 0;
+	l.hud_bank_1_offset = 0;
+	l.hud_bank_1_size = 0;
+	l.hud_bank_2_offset = 0;
+	l.hud_bank_2_size = 0;
+	l.hud_bank_3_offset = 0;
+	l.hud_bank_3_size = 0;
+	l.hud_bank_4_offset = 0;
+	l.hud_bank_4_size = 0;
+	SWAP_PACKED(l.asset_wad, r.asset_wad);
+	l.loading_screen_textures_offset = 0;
+	l.loading_screen_textures_size = 0;
 }

@@ -56,6 +56,28 @@ struct level_code_segment {
 	std::vector<uint8_t> bytes;
 };
 
+struct level_primary_header {
+	uint32_t code_segment_offset;
+	uint32_t code_segment_size;
+	uint32_t asset_header;
+	uint32_t asset_header_size;
+	uint32_t tex_pixel_data_base;
+	uint32_t hud_header_offset;
+	uint32_t hud_bank_0_offset;
+	uint32_t hud_bank_0_size;
+	uint32_t hud_bank_1_offset;
+	uint32_t hud_bank_1_size;
+	uint32_t hud_bank_2_offset;
+	uint32_t hud_bank_2_size;
+	uint32_t hud_bank_3_offset;
+	uint32_t hud_bank_3_size;
+	uint32_t hud_bank_4_offset;
+	uint32_t hud_bank_4_size;
+	uint32_t asset_wad;
+	uint32_t loading_screen_textures_offset;
+	uint32_t loading_screen_textures_size;
+};
+
 class level {
 public:
 	level(iso_stream* iso, toc_level index);
@@ -127,5 +149,8 @@ private:
 	std::optional<trace_stream> _world_segment_tracepoint;
 	std::optional<trace_stream> _asset_segment_tracepoint;
 };
+
+void swap_primary_header_rac23(level_primary_header& l, level_primary_header_rac23& r);
+void swap_primary_header_rac4(level_primary_header& l, level_primary_header_rac4& r);
 
 #endif
