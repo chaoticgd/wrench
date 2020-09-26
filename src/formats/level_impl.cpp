@@ -80,12 +80,11 @@ level::level(iso_stream* iso, toc_level index)
 	read_moby_models(asset_offset, asset_header);
 	read_textures(asset_offset, asset_header);
 	
+	read_tfrags();
+	
 	if(_file_header.type == level_type::RAC4) {
 		return;
 	}
-	
-	read_tfrags();
-	
 	
 	read_hud_banks(iso);
 	read_loading_screen_textures(iso);
@@ -241,7 +240,8 @@ void level::read_tfrags() {
 		uint32_t unknown_20;
 		uint32_t unknown_24;
 		uint32_t unknown_28;
-		uint16_t vertex_count;
+		uint8_t vertex_count;
+		uint8_t unknown_2d;
 		uint16_t vertex_offset;
 		uint16_t unknown_30;
 		uint16_t unknown_32;
