@@ -573,16 +573,16 @@ packed_struct(world_moby_rac23,
 packed_struct(world_moby_rac4,
 	uint32_t size;       // 0x0 Always 0x70.
 	uint32_t unknown_4;  // 0x4
-	uint32_t uid;        // 0x8
+	int32_t  uid;        // 0x8
 	uint32_t unknown_c;  // 0xc
 	uint32_t class_num;  // 0x10
-	uint32_t scale;      // 0x14
+	float    scale;      // 0x14
 	uint32_t unknown_18; // 0x18
 	uint32_t unknown_1c; // 0x1c
 	uint32_t unknown_20; // 0x20
 	uint32_t unknown_24; // 0x24
-	vec3f position;      // 0x28
-	vec3f rotation;      // 0x34
+	vec3f    position;   // 0x28
+	vec3f    rotation;   // 0x34
 	uint32_t unknown_40; // 0x40
 	uint32_t unknown_44; // 0x44
 	uint32_t unknown_48; // 0x48
