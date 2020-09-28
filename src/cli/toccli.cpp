@@ -45,25 +45,41 @@ int main(int argc, char** argv) {
 	file_stream src(src_path);
 	table_of_contents toc = read_toc(src, offset);
 	
-	for(std::size_t i = 0; i < toc.tables.size(); i++) {
-		std::size_t table_size = sizeof(toc_table_header) + toc.tables[i].data.size();
-		std::size_t base_offset = toc.tables[i].header.base_offset.bytes();
-		printf("Table %ld at toc+0x%04x of size 0x%03lx pointing to 0x%08lx.\n",
-			i, toc.tables[i].offset_in_toc, table_size, base_offset);
+	printf("+-[Non-level Sections]--+-------------+-------------+\n");
+	printf("| Index | Offset in ToC | Size in ToC | Data Offset |\n");
+	printf("| ----- | ------------- | ----------- | ----------- |\n");
+	for(size_t i = 0; i < toc.tables.size(); i++) {
+		toc_table& table = toc.tables[i];
+		size_t table_size = sizeof(toc_table_header) + table.data.size();
+		size_t base_offset = table.header.base_offset.bytes();
+	printf("| %02ld    | %08x      | %08lx    | %08lx    |\n",
+		i, table.offset_in_toc, table_size, base_offset);
 	}
+	printf("+-------+---------------+-------------+-------------+\n");
 	
-	for(std::size_t i = 0 ; i < toc.levels.size(); i++) {
+	printf("+-[Level Table]------------------+------------------------+------------------------+\n");
+	printf("|       | LEVELn.WAD             | AUDIOn.WAD             | SCENEn.WAD             |\n");
+	printf("|       | ----------             | ----------             | ----------             |\n");
+	printf("| Index | Offset      Size       | Offset      Size       | Offset      Size       |\n");
+	printf("| ----- | ------      ----       | ------      ----       | ------      ----       |\n");
+	for(size_t i = 0; i < toc.levels.size(); i++) {
 		toc_level& lvl = toc.levels[i];
-		std::size_t main_part = src.read<sector32>(lvl.main_part.bytes() + 4).bytes();
-		printf("Level %02ld with main part at 0x%08lx", i, main_part);
+		size_t main_part_base = src.read<sector32>(lvl.main_part.bytes() + 4).bytes();
+		printf("| %02ld    | %010lx  %010lx |",
+			i, main_part_base, lvl.main_part_size.bytes());
 		if(lvl.audio_part.sectors != 0) {
-			std::size_t audio_part = src.read<sector32>(lvl.audio_part.bytes() + 4).bytes();
-			printf(", with audio part at 0x%08lx", audio_part);
+			size_t audio_part_base = src.read<sector32>(lvl.audio_part.bytes() + 4).bytes();
+			printf(" %010lx  %010lx |", audio_part_base, lvl.audio_part_size.bytes());
+		} else {
+			printf(" N/A         N/A        |");
 		}
 		if(lvl.scene_part.sectors != 0) {
-			std::size_t scene_part = src.read<sector32>(lvl.scene_part.bytes() + 4).bytes();
-			printf(", with scene part at 0x%08lx", scene_part);
+			size_t scene_part_base = src.read<sector32>(lvl.scene_part.bytes() + 4).bytes();
+			printf(" %010lx  %010lx |", scene_part_base, lvl.scene_part_size.bytes());
+		} else {
+			printf(" N/A         N/A        |");
 		}
-		printf(".\n");
+		printf("\n");
 	}
+	printf("+-------+------------------------+------------------------+------------------------+\n");
 }

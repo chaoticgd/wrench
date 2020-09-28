@@ -31,6 +31,7 @@ add_executable(wrench
 	src/formats/wad.cpp
 	src/formats/racpak.cpp
 	src/formats/level_impl.cpp
+	src/formats/world.cpp
 	src/formats/texture.cpp
 	src/formats/fip.cpp
 	src/formats/bmp.cpp
@@ -136,6 +137,7 @@ add_executable(randomiser
 	src/formats/wad.cpp
 	src/formats/racpak.cpp
 	src/formats/level_impl.cpp
+	src/formats/world.cpp
 	src/formats/texture.cpp
 	src/formats/fip.cpp
 	src/formats/bmp.cpp

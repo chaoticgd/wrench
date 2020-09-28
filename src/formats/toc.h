@@ -46,37 +46,6 @@ packed_struct(toc_level_table_entry,
 	sector32 header_3_size;
 )
 
-packed_struct(level_file_header_60,
-	uint32_t magic;    // 0x0 Equal to 0x60.
-	sector32 base_offset;    // 0x4
-	uint32_t level_number;   // 0x8
-	uint32_t unknown_c;      // 0xc
-	sector32 primary_header; // 0x10
-	uint32_t unknown_14;     // 0x14
-	sector32 unknown_18;     // 0x18
-	uint32_t unknown_1c;     // 0x1c
-	sector32 moby_segment;   // 0x20
-)
-
-packed_struct(level_file_header_68,
-	uint32_t magic;    // 0x0 Equal to 0x68.
-	sector32 base_offset;    // 0x4
-	uint32_t level_number;   // 0x8
-	sector32 primary_header; // 0xc
-	uint32_t unknown_10;     // 0x10
-	sector32 unknown_14;     // 0x14
-	uint32_t unknown_18;     // 0x18
-	sector32 moby_segment;   // 0x1c
-)
-
-struct level_file_header {
-	uint32_t magic;
-	uint32_t base_offset;
-	uint32_t level_number;
-	uint32_t primary_header_offset;
-	uint32_t moby_segment_offset;
-};
-
 struct toc_level {
 	std::size_t level_table_index;
 	sector32 main_part;
@@ -102,6 +71,5 @@ static const std::vector<uint32_t> TOC_SCENE_PART_MAGIC = { 0x137c, 0x2420, 0x26
 
 table_of_contents read_toc(stream& iso, std::size_t toc_base);
 std::size_t toc_get_level_table_offset(stream& iso, std::size_t toc_base);
-std::optional<level_file_header> level_read_file_header(stream* src, std::size_t offset);
 
 #endif
