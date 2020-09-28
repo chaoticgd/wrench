@@ -227,24 +227,24 @@ packed_struct(level_primary_header_rac4,
 	uint32_t code_segment_size;   // 0xc
 	uint32_t asset_header;        // 0x10
 	uint32_t asset_header_size;   // 0x14
-	uint32_t unknown_18;          // 0x18
-	uint32_t unknown_1c;          // 0x1c
-	uint32_t unknown_20;          // 0x20
-	uint32_t unknown_24;          // 0x24
-	uint32_t unknown_28;          // 0x28
-	uint32_t unknown_2c;          // 0x2c
-	uint32_t unknown_30;          // 0x30
-	uint32_t unknown_34;          // 0x34
-	uint32_t unknown_38;          // 0x38
-	uint32_t unknown_3c;          // 0x3c
-	uint32_t unknown_40;          // 0x40
-	uint32_t unknown_44;          // 0x44
-	uint32_t unknown_48;          // 0x48
-	uint32_t unknown_4c;          // 0x4c
+	uint32_t tex_pixel_data_base; // 0x18
+	uint32_t unknown_14;          // 0x1c
+	uint32_t hud_header_offset;   // 0x20
+	uint32_t unknown_1c;          // 0x24
+	uint32_t hud_bank_0_offset;   // 0x28
+	uint32_t hud_bank_0_size;     // 0x2c
+	uint32_t hud_bank_1_offset;   // 0x30
+	uint32_t hud_bank_1_size;     // 0x34
+	uint32_t hud_bank_2_offset;   // 0x38
+	uint32_t hud_bank_2_size;     // 0x3c
+	uint32_t hud_bank_3_offset;   // 0x40
+	uint32_t hud_bank_3_size;     // 0x44
+	uint32_t hud_bank_4_offset;   // 0x48
+	uint32_t hud_bank_4_size;     // 0x4c
 	uint32_t asset_wad;           // 0x50
 	uint32_t unknown_54;          // 0x54
-	uint32_t unknown_58;          // 0x58
-	uint32_t unknown_5c;          // 0x5c
+	uint32_t loading_screen_textures_offset; // 0x58
+	uint32_t loading_screen_textures_size;   // 0x5c
 	
 )
 

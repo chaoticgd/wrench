@@ -327,24 +327,24 @@ void swap_primary_header_rac23(level_primary_header& l, level_primary_header_rac
 }
 
 void swap_primary_header_rac4(level_primary_header& l, level_primary_header_rac4& r) {
-	// TODO: Swap these all prpoperly.
+	// TODO: Figure out what unknown_0 and unknown_4 are, then swap them properly.
 	SWAP_PACKED(l.code_segment_offset, r.code_segment_offset);
 	SWAP_PACKED(l.code_segment_size, r.code_segment_size);
 	SWAP_PACKED(l.asset_header, r.asset_header);
 	SWAP_PACKED(l.asset_header_size, r.asset_header_size);
-	l.tex_pixel_data_base = 0;
-	l.hud_header_offset = 0;
-	l.hud_bank_0_offset = 0;
-	l.hud_bank_0_size = 0;
-	l.hud_bank_1_offset = 0;
-	l.hud_bank_1_size = 0;
-	l.hud_bank_2_offset = 0;
-	l.hud_bank_2_size = 0;
-	l.hud_bank_3_offset = 0;
-	l.hud_bank_3_size = 0;
-	l.hud_bank_4_offset = 0;
-	l.hud_bank_4_size = 0;
+	SWAP_PACKED(l.tex_pixel_data_base, r.tex_pixel_data_base);
+	SWAP_PACKED(l.hud_header_offset, r.hud_header_offset);
+	SWAP_PACKED(l.hud_bank_0_offset, r.hud_bank_0_offset);
+	SWAP_PACKED(l.hud_bank_0_size, r.hud_bank_0_size);
+	SWAP_PACKED(l.hud_bank_1_offset, r.hud_bank_1_offset);
+	SWAP_PACKED(l.hud_bank_1_size, r.hud_bank_1_size);
+	SWAP_PACKED(l.hud_bank_2_offset, r.hud_bank_2_offset);
+	SWAP_PACKED(l.hud_bank_2_size, r.hud_bank_2_size);
+	SWAP_PACKED(l.hud_bank_3_offset, r.hud_bank_3_offset);
+	SWAP_PACKED(l.hud_bank_3_size, r.hud_bank_3_size);
+	SWAP_PACKED(l.hud_bank_4_offset, r.hud_bank_4_offset);
+	SWAP_PACKED(l.hud_bank_4_size, r.hud_bank_4_size);
 	SWAP_PACKED(l.asset_wad, r.asset_wad);
-	l.loading_screen_textures_offset = 0;
-	l.loading_screen_textures_size = 0;
+	SWAP_PACKED(l.loading_screen_textures_offset, r.loading_screen_textures_offset);
+	SWAP_PACKED(l.loading_screen_textures_size, r.loading_screen_textures_size);
 }
