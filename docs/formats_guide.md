@@ -118,7 +118,7 @@ Each entry in the main submodel table is structured like so:
 | 0xe    | unknown_e                      | u8   | (3 + transfer_vertex_count) / 4              |
 | 0xf    | transfer_vertex_count          | u8   | Number of vertices sent to VU1 memory.       |
 
-The VIF command list consists of two to three `UNPACK` commands, sometimes with `NOP` commands between them. The first `UNPACK` command stores ST coordinates. The vertices to VU memory and the ST coordinates are indexed into the same way.
+The VIF command list consists of two to three `UNPACK` commands, sometimes with `NOP` commands between them. The first `UNPACK` command stores ST coordinates. The vertices sent to VU memory and the ST coordinates are indexed into the same way.
 
 The second `UNPACK` packet is the index buffer. The first four bytes are special (in the compressed data), the second one is the relative quadword offset to the third `UNPACK` in VU memory if it exists. The rest of the bytes are 1-indexed indices into the vertex buffer in VU memory. Note that more vertex positions are sent to VU memory than are stored directly in the vertex table. At the time of writing, I'm not entirely sure how this works, although the additional vertex positions seem to be duplicates. This makes some amount of sense I think, since it means they can have different ST coordinates.
 
@@ -137,7 +137,7 @@ The vertex table is structured like so:
 | 0x4    | vertex_count_4        | u16  | These come second in the vertex table.            |
 | 0x6    | main_vertex_count     | u16  | These come third in the vertex table.             |
 | 0x8    | vertex_count_8        | u16  | This is the weird duplicate vertex type.          |
-| 0xa    | transfer_vertex_couht | u16  | Usually equal to the other transfer_vertex_count. |
+| 0xa    | transfer_vertex_count | u16  | Usually equal to the other transfer_vertex_count. |
 | 0xc    | vertex_table_offset   | u16  | Relative offset of the main vertex table.         |
 | 0xe    | unknown_e             | u16  | Padding?                                          |
 
@@ -173,8 +173,8 @@ The packet types are listed below:
 | 0x11 <= flag <= 0x1f (implies M >= 1)   | Dummy         | 00010 + M[3] + 000000 + N[2] + 00000000 + L[N\*8]       | L                                                                       |
 | flag == 0x10 \|\| flag == 0x18          | Far Match     | 0001 + A[1] + 000 + M[8] + B[6] + N[2] + C[8] + L[N\*8] | M+9 bytes from dest_pos-0x4000-A\*0x800-B-C\*0x40 in the output plus L. |
 | 0x11 <= flag <= 0x1f (implies M >= 1)   | Far Match     | 0001 + A[1] + M[3] + B[6] + N[2] + C[8] + L[N\*8]       | M+2 bytes from dest_pos-0x4000-A\*0x800-B-C\*0x40 in the output plus L. |
-| flag == 0x20                            | Bigger Match  | 00100000 + M[8] + A[6] + N[2] + B[8] + L[N\*8]          | M+33 bytes from dest_pos-A+B\*0x40 in the output plus L.                |
-| 0x21 <= flag <= 0x3f (implies M >= 1)   | Big Match     | 001 + M[5] + A[6] + N[2] + B[8] + L[N\*8]               | M+2 bytes from dest_pos-A+B\*0x40 in the output plus L.                 |
+| flag == 0x20                            | Bigger Match  | 00100000 + M[8] + A[6] + N[2] + B[8] + L[N\*8]          | M+33 bytes from dest_pos-A-B\*0x40 in the output plus L.                |
+| 0x21 <= flag <= 0x3f (implies M >= 1)   | Big Match     | 001 + M[5] + A[6] + N[2] + B[8] + L[N\*8]               | M+2 bytes from dest_pos-A-B\*0x40 in the output plus L.                 |
 | 0x40 <= flag <= 0xff (implies M >= 2)   | Little Match  | M[3] + A[3] + N[2] + B[8] + L[N\*8]                     | M+1 bytes from dest_pos-B\*8-A-1 in the output plus L.                  |
 
 where `A[B]` means the bitstream contains a field `A` of length `B` bits, `A + B` means concatenate `A` and `B` and `dest_pos` is equal to the position indicator of the output/decompressed stream.
