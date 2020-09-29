@@ -90,7 +90,7 @@ void world_segment::read_rac23() {
 	
 	world_thing_7c_header thing_7c_header = backing->read<world_thing_7c_header>(header.unknown_7c);
 	thing_7c_1s = backing->read_multiple<world_thing_7c_1>(thing_7c_header.count);
-	thing_7c_2s = read_splines(
+	grind_rails = read_splines(
 		backing->tell(),
 		thing_7c_header.count,
 		header.unknown_7c + thing_7c_header.part_2_data_offset);
@@ -482,12 +482,12 @@ void world_segment::write_rac2() {
 	backing->write_v(thing_7c_1s);
 	backing->pad(0x10, 0);
 	
-	std::vector<std::vector<glm::vec4>> thing_7c_vertices;
-	for(spline_entity& thing : thing_7c_2s) {
-		thing_7c_vertices.push_back(thing.vertices);
+	std::vector<std::vector<glm::vec4>> grind_rail_vertices;
+	for(spline_entity& grind_rail : grind_rails) {
+		grind_rail_vertices.push_back(grind_rail.vertices);
 	}
 	thing_7c_header.count = thing_7c_1s.size();
-	thing_7c_header.part_2_data_offset = write_vertex_list(thing_7c_vertices) - header.unknown_7c;
+	thing_7c_header.part_2_data_offset = write_vertex_list(grind_rail_vertices) - header.unknown_7c;
 	thing_7c_header.part_2_data_size = backing->tell() -
 		thing_7c_header.part_2_data_offset - header.unknown_7c;
 	thing_7c_header.pad = 0;

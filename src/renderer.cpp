@@ -140,6 +140,13 @@ void gl_renderer::draw_level(level& lvl, glm::mat4 world_to_clip) const {
 		}
 	}
 	
+	if(draw_grind_rails) {
+		for(spline_entity& spline : lvl.world.grind_rails) {
+			glm::vec4 colour = get_colour(spline.selected, glm::vec4(0, 0.5, 1, 1));
+			draw_spline(spline, world_to_clip, colour);
+		}
+	}
+	
 	if(draw_tfrags) {
 		for(auto& frag : lvl.tfrags) {
 			glm::vec4 colour(0.5, 0.5, 0.5, 1);

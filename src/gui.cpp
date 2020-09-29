@@ -276,6 +276,7 @@ float gui::render_menu_bar(app& a) {
 			ImGui::Checkbox("Mobies", &a.renderer.draw_mobies);
 			ImGui::Checkbox("Triggers", &a.renderer.draw_triggers);
 			ImGui::Checkbox("Splines", &a.renderer.draw_splines);
+			ImGui::Checkbox("Grind Rails", &a.renderer.draw_grind_rails);
 			ImGui::Checkbox("Tfrags", &a.renderer.draw_tfrags);
 			ImGui::EndMenu();
 		}

@@ -163,7 +163,7 @@ public:
 	std::vector<uint32_t> thing_74s; // Unknown type.
 	std::vector<spline_entity> splines;
 	std::vector<world_thing_7c_1> thing_7c_1s;
-	std::vector<spline_entity> thing_7c_2s;
+	std::vector<spline_entity> grind_rails;
 	std::vector<uint8_t> thing_80_1;
 	std::vector<uint8_t> thing_80_2;
 	std::vector<world_thing_84> thing_84s;
