@@ -94,7 +94,9 @@ public:
 		for_each_if_is_base_of<T, tie_entity>(callback, world.ties);
 		for_each_if_is_base_of<T, shrub_entity>(callback, world.shrubs);
 		for_each_if_is_base_of<T, moby_entity>(callback, world.mobies);
-		for_each_if_is_base_of<T, spline_entity>(callback, world.splines);
+		for_each_if_is_base_of<T, trigger_entity>(callback, world.triggers);
+		for_each_if_is_base_of<T, regular_spline_entity>(callback, world.splines);
+		for_each_if_is_base_of<T, grindrail_spline_entity>(callback, world.grindrails);
 	}
 	
 	template<typename Base, typename Derived, typename F>
