@@ -134,9 +134,19 @@ void gl_renderer::draw_level(level& lvl, glm::mat4 world_to_clip) const {
 	}
 	
 	if(draw_splines) {
-		for(spline_entity& spline : lvl.world.splines) {
+		for(regular_spline_entity& spline : lvl.world.splines) {
 			glm::vec4 colour = get_colour(spline.selected, glm::vec4(1, 0.5, 0, 1));
 			draw_spline(spline, world_to_clip, colour);
+		}
+	}
+	
+	if(draw_grind_rails) {
+		for(grindrail_spline_entity& spline : lvl.world.grindrails) {
+			glm::vec4 colour = get_colour(spline.selected, glm::vec4(0, 0.5, 1, 1));
+			draw_spline(spline, world_to_clip, colour);
+			
+			glm::mat4 local_to_world = glm::translate(glm::mat4(1.f), glm::vec3(spline.special_point));
+			draw_cube(world_to_clip * local_to_world, colour);
 		}
 	}
 	

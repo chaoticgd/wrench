@@ -84,6 +84,7 @@ struct gl_renderer {
 	bool draw_mobies = true;
 	bool draw_triggers = false;
 	bool draw_splines = true;
+	bool draw_grind_rails = true;
 	bool draw_tfrags = true;
 	
 	std::vector<glm::mat4> moby_local_to_clip_cache;

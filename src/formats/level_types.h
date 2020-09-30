@@ -395,7 +395,7 @@ packed_struct(world_header_rac23,
 	uint32_t unknown_70;         // 0x70
 	uint32_t unknown_74;         // 0x74
 	uint32_t splines;            // 0x78
-	uint32_t unknown_7c;         // 0x7c
+	uint32_t grindrails;         // 0x7c
 	uint32_t unknown_80;         // 0x80
 	uint32_t unknown_84;         // 0x84
 	uint32_t unknown_88;         // 0x88
@@ -638,15 +638,19 @@ packed_struct(world_vertex_header,
 	uint32_t pad[3];
 )
 
-packed_struct(world_thing_7c_header,
+packed_struct(world_grindrail_header,
 	uint32_t count;
 	uint32_t part_2_data_offset;
 	uint32_t part_2_data_size;
 	uint32_t pad;
 )
 
-packed_struct(world_thing_7c_1,
-	uint8_t unknown[0x20];
+packed_struct(world_grindrail_part_1,
+	float x;
+	float y;
+	float z;
+	float w;
+	uint8_t unknown_10[0x10];
 )
 
 packed_struct(world_thing_84,

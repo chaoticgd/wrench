@@ -120,12 +120,15 @@ struct trigger_entity final : matrix_entity {
 	glm::mat4 matrix_reloaded;
 };
 
-struct spline_entity final : entity {
+struct spline_entity : entity {
 	std::vector<glm::vec4> vertices;
 };
 
-struct thing_7c_2 {
-	std::vector<glm::vec4> vertices;
+struct regular_spline_entity final : spline_entity {};
+
+struct grindrail_spline_entity final : spline_entity {
+	glm::vec4 special_point;
+	uint8_t unknown_10[0x10];
 };
 
 class world_segment {
@@ -161,9 +164,8 @@ public:
 	std::vector<world_thing_6c> thing_6cs;
 	std::vector<world_thing_70> thing_70s;
 	std::vector<uint32_t> thing_74s; // Unknown type.
-	std::vector<spline_entity> splines;
-	std::vector<world_thing_7c_1> thing_7c_1s;
-	std::vector<spline_entity> thing_7c_2s;
+	std::vector<regular_spline_entity> splines;
+	std::vector<grindrail_spline_entity> grindrails;
 	std::vector<uint8_t> thing_80_1;
 	std::vector<uint8_t> thing_80_2;
 	std::vector<world_thing_84> thing_84s;
@@ -198,7 +200,8 @@ private:
 	std::vector<std::vector<uint8_t>> read_pvars(uint32_t table_offset, uint32_t data_offset);
 	template <typename T>
 	void read_terminated_array(std::vector<T>& dest, uint32_t offset); // Defined in world.cpp.
-	std::vector<spline_entity> read_splines(
+	template <typename T> // Either regular_spline_entity or grindrail_spline_entity.
+	std::vector<T> read_splines( // Defined in world.cpp.
 		uint32_t table_offset,
 		uint32_t table_count,
 		uint32_t data_offset);

@@ -71,7 +71,7 @@ void world_segment::read_rac23() {
 	read_table(header.unknown_44, &thing_44_1s, &thing_44_2s, (std::vector<char>*) nullptr, true);
 	
 	auto spline_table = backing->read<world_spline_table>(header.splines);
-	splines = read_splines(
+	splines = read_splines<regular_spline_entity>(
 		backing->tell(),
 		spline_table.spline_count,
 		header.splines + spline_table.data_offset);
@@ -88,12 +88,18 @@ void world_segment::read_rac23() {
 	thing_80_1 = backing->read_multiple<uint8_t>(0x800);
 	thing_80_2 = backing->read_multiple<uint8_t>(thing_80_table.count_1 * 0x10);
 	
-	world_thing_7c_header thing_7c_header = backing->read<world_thing_7c_header>(header.unknown_7c);
-	thing_7c_1s = backing->read_multiple<world_thing_7c_1>(thing_7c_header.count);
-	thing_7c_2s = read_splines(
+	world_grindrail_header thing_7c_header = backing->read<world_grindrail_header>(header.grindrails);
+	auto grindrails_part_1 = backing->read_multiple<world_grindrail_part_1>(thing_7c_header.count);
+	grindrails = read_splines<grindrail_spline_entity>(
 		backing->tell(),
 		thing_7c_header.count,
-		header.unknown_7c + thing_7c_header.part_2_data_offset);
+		header.grindrails + thing_7c_header.part_2_data_offset);
+	for(size_t i = 0; i < thing_7c_header.count; i++) {
+		grindrail_spline_entity& dest = grindrails[i];
+		auto& src = grindrails_part_1[i];
+		dest.special_point = glm::vec4(src.x, src.y, src.z, src.w);
+		std::memcpy(dest.unknown_10, src.unknown_10, 0x10);
+	}
 	
 	auto thing_98_header = backing->read<world_thing_98_header>(header.unknown_98);
 	thing_98_1s = backing->read_multiple<world_thing_98>(thing_98_header.part_1_count);
@@ -117,7 +123,7 @@ void world_segment::read_rac4() {
 	max_moby_count = mobies.size() + backing->read<uint32_t>(header.mobies + sizeof(uint32_t));
 	
 	auto spline_table = backing->read<world_spline_table>(header.splines);
-	splines = read_splines(
+	splines = read_splines<regular_spline_entity>(
 		backing->tell(),
 		spline_table.spline_count,
 		header.splines + spline_table.data_offset);
@@ -212,15 +218,16 @@ std::vector<std::vector<uint8_t>> world_segment::read_pvars(uint32_t table_offse
 	return pvars;
 }
 
-std::vector<spline_entity> world_segment::read_splines(
+template <typename T>
+std::vector<T> world_segment::read_splines(
 		uint32_t table_offset,
 		uint32_t table_count,
 		uint32_t data_offset) {
-	std::vector<spline_entity> splines;
+	std::vector<T> splines;
 	std::vector<uint32_t> offsets = backing->read_multiple<uint32_t>(table_count);
 	for(uint32_t offset : offsets) {
 		auto vertex_header = backing->read<world_vertex_header>(data_offset + offset);
-		spline_entity& spline = splines.emplace_back();
+		T& spline = splines.emplace_back();
 		spline.id = { _next_entity_id++ };
 		spline.selected = false;
 		for(size_t i = 0; i < vertex_header.vertex_count; i++) {
@@ -471,25 +478,32 @@ void world_segment::write_rac2() {
 	backing->write_v(thing_80_2);
 	
 	backing->pad(0x10, 0);
-	header.unknown_7c = backing->tell();
+	header.grindrails = backing->tell();
 	
-	world_thing_7c_header thing_7c_header;
+	world_grindrail_header thing_7c_header;
 	defer([&]() {
-		backing->write(header.unknown_7c, thing_7c_header);
+		backing->write(header.grindrails, thing_7c_header);
 	});
-	backing->seek(backing->tell() + sizeof(world_thing_7c_header));
+	backing->seek(backing->tell() + sizeof(world_grindrail_header));
 	
-	backing->write_v(thing_7c_1s);
-	backing->pad(0x10, 0);
-	
-	std::vector<std::vector<glm::vec4>> thing_7c_vertices;
-	for(spline_entity& thing : thing_7c_2s) {
-		thing_7c_vertices.push_back(thing.vertices);
+	for(grindrail_spline_entity& grindrail : grindrails) {
+		world_grindrail_part_1 dest;
+		dest.x = grindrail.special_point.x;
+		dest.y = grindrail.special_point.y;
+		dest.z = grindrail.special_point.z;
+		dest.w = grindrail.special_point.w;
+		std::memcpy(dest.unknown_10, grindrail.unknown_10, 0x10);
+		backing->write(dest);
 	}
-	thing_7c_header.count = thing_7c_1s.size();
-	thing_7c_header.part_2_data_offset = write_vertex_list(thing_7c_vertices) - header.unknown_7c;
+	
+	std::vector<std::vector<glm::vec4>> grind_rail_vertices;
+	for(spline_entity& grindrail : grindrails) {
+		grind_rail_vertices.push_back(grindrail.vertices);
+	}
+	thing_7c_header.count = grindrails.size();
+	thing_7c_header.part_2_data_offset = write_vertex_list(grind_rail_vertices) - header.grindrails;
 	thing_7c_header.part_2_data_size = backing->tell() -
-		thing_7c_header.part_2_data_offset - header.unknown_7c;
+		thing_7c_header.part_2_data_offset - header.grindrails;
 	thing_7c_header.pad = 0;
 	
 	backing->pad(0x10, 0);
