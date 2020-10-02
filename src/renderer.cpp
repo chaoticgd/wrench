@@ -309,6 +309,35 @@ void gl_renderer::draw_cube(const glm::mat4& mvp, const glm::vec4& colour) const
 	glDisableVertexAttribArray(0);
 }
 
+void gl_renderer::draw_static_mesh(
+		const float* vertex_data,
+		size_t vertex_data_size, const
+		glm::mat4 local_to_clip,
+		glm::vec4 colour) {
+	static std::map<const float*, GLint> vertex_buffers;
+	
+	GLuint vertex_buffer = 0;
+	if(vertex_buffers.find(vertex_data) == vertex_buffers.end()) {
+		glGenBuffers(1, &vertex_buffer);
+		glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+		glBufferData(GL_ARRAY_BUFFER, vertex_data_size, vertex_data, GL_STATIC_DRAW);
+		vertex_buffers[vertex_data] = vertex_buffer;
+	} else {
+		vertex_buffer = vertex_buffers.at(vertex_data);
+	}
+	
+	glUniformMatrix4fv(shaders.solid_colour_transform, 1, GL_FALSE, &local_to_clip[0][0]);
+	glUniform4f(shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
+	
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+	glDrawArrays(GL_TRIANGLES, 0, vertex_data_size / sizeof(float));
+
+	glDisableVertexAttribArray(0);
+}
+
 void gl_renderer::draw_moby_models(
 		moby_model& model,
 		std::vector<texture>& textures,

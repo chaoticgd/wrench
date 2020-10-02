@@ -21,6 +21,7 @@
 #include <glm/gtx/intersect.hpp>
 
 #include "app.h"
+#include "meshes.h"
 
 std::vector<std::unique_ptr<tool>> enumerate_tools() {
 	std::vector<std::unique_ptr<tool>> tools;
@@ -280,6 +281,15 @@ void spline_tool::draw(app& a, glm::mat4 world_to_clip) {
 		}
 		_selected_spline = NULL_ENTITY_ID;
 	}
+	
+	lvl.for_each<spline_entity>([&](spline_entity& spline) {
+		for(glm::vec4 vertex : spline.vertices) {
+			a.renderer.draw_static_mesh(
+				SPHERE_MESH_VERTICES, sizeof(SPHERE_MESH_VERTICES),
+				world_to_clip * glm::translate(glm::mat4(1.f), glm::vec3(vertex)),
+				glm::vec4(1.f, 0.f, 0.f, 1.f));
+		}
+	});
 	
 	ImGui::Begin("Spline Tool");
 	ImGui::Text("Normal");
