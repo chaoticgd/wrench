@@ -18,6 +18,8 @@
 
 #include "tools.h"
 
+#include <glm/gtx/intersect.hpp>
+
 #include "app.h"
 
 std::vector<std::unique_ptr<tool>> enumerate_tools() {
@@ -25,6 +27,7 @@ std::vector<std::unique_ptr<tool>> enumerate_tools() {
 	tools.emplace_back(std::make_unique<picker_tool>());
 	tools.emplace_back(std::make_unique<selection_tool>());
 	tools.emplace_back(std::make_unique<translate_tool>());
+	tools.emplace_back(std::make_unique<spline_tool>());
 	return tools;
 }
 
@@ -45,6 +48,10 @@ void picker_tool::draw(app& a, glm::mat4 world_to_clip) {
 void picker_tool::pick_object(app& a, glm::mat4 world_to_clip, ImVec2 position) {
 	level& lvl = *a.get_level();
 	
+	GLint last_framebuffer;
+	glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &last_framebuffer);
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	a.renderer.draw_pickframe(lvl, world_to_clip);
 	
 	glFlush();
@@ -79,6 +86,8 @@ void picker_tool::pick_object(app& a, glm::mat4 world_to_clip, ImVec2 position) 
 	lvl.for_each<entity>([&](entity& ent) {
 		ent.selected = ent.id.value == buffer[smallest_index];
 	});
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, last_framebuffer);
 }
 
 selection_tool::selection_tool() {
@@ -185,5 +194,109 @@ void translate_tool::draw(app& a, glm::mat4 world_to_clip) {
 			});
 		_displacement = glm::vec3(0, 0, 0);
 	}
+	ImGui::End();
+}
+
+spline_tool::spline_tool() {
+	icon = load_icon("data/icons/spline_tool.txt");
+}
+
+void spline_tool::draw(app& a, glm::mat4 world_to_clip) {
+	level& lvl = *a.get_level();
+	
+	if(ImGui::IsMouseClicked(0) && ImGui::IsWindowHovered()) {
+		glm::vec3 ray = a.renderer.create_ray(world_to_clip, ImGui::GetMousePos());
+		
+		// Test if we clicked on a spline vertex.
+		float selected_distance = 0.f;
+		lvl.for_each<spline_entity>([&](spline_entity& spline) {
+			for(size_t i = 0; i < spline.vertices.size(); i++) {
+				glm::vec3 vertex_pos(spline.vertices[i]);
+				glm::vec3 intersect_pos, normal;
+				if(glm::intersectRaySphere(a.renderer.camera_position, ray, vertex_pos, 4.f, intersect_pos, normal)) {
+					float dist = glm::distance(a.renderer.camera_position, intersect_pos);
+					if(_selected_spline.value == 0 || dist < selected_distance || spline.selected) {
+						selected_distance = dist;
+						_selected_spline = spline.id;
+						_selected_vertex = i;
+					}
+				}
+			}
+		});
+	}
+	
+	auto calculate_new_point = [&](spline_entity* spline, glm::vec3 ray) -> std::optional<glm::vec3> {
+		if(spline != nullptr && spline->vertices.size() > _selected_vertex) {
+			glm::vec4& vertex = spline->vertices[_selected_vertex];
+			float distance = 0;
+			glm::intersectRayPlane(a.renderer.camera_position, ray, glm::vec3(vertex), glm::normalize(_plane_normal), distance);
+			if(distance > 0) {
+				glm::vec3 new_pos(a.renderer.camera_position + ray * distance);
+				return new_pos;
+			}
+		}
+		return std::nullopt;
+	};
+	
+	if(ImGui::IsMouseDown(0) && _selected_spline != NULL_ENTITY_ID) {
+		glm::vec3 ray = a.renderer.create_ray(world_to_clip, ImGui::GetMousePos());
+		spline_entity* spline = lvl.entity_from_id<spline_entity>(_selected_spline);
+		auto point = calculate_new_point(spline, ray);
+		if(point) {
+			spline_entity preview;
+			if(_selected_vertex >= 1) {
+				preview.vertices.push_back(spline->vertices[_selected_vertex - 1]);
+			}
+			preview.vertices.push_back(glm::vec4(*point, -1.f));
+			if(_selected_vertex < spline->vertices.size() - 1) {
+				preview.vertices.push_back(spline->vertices[_selected_vertex + 1]);
+			}
+			a.renderer.draw_spline(preview, world_to_clip, glm::vec4(1.f, 0.5f, 0.7f, 1.f));
+		}
+	}
+	
+	if(ImGui::IsMouseReleased(0)) {
+		glm::vec3 ray = a.renderer.create_ray(world_to_clip, ImGui::GetMousePos());
+		spline_entity* spline = lvl.entity_from_id<spline_entity>(_selected_spline);
+		auto point = calculate_new_point(spline, ray);
+		if(point) {
+			level_proxy lvlp(a.get_project());
+			auto id = _selected_spline;
+			auto vertex = _selected_vertex;
+			glm::vec4 old_point = spline->vertices[_selected_vertex];
+			a.get_project()->push_command(
+				[lvlp, id, vertex, old_point, point]() {
+					spline_entity* spline = lvlp.get().entity_from_id<spline_entity>(id);
+					assert(spline != nullptr);
+					assert(spline->vertices.size() > vertex);
+					spline->vertices[vertex] = glm::vec4(*point, old_point.w);
+				},
+				[lvlp, id, vertex, old_point]() {
+					spline_entity* spline = lvlp.get().entity_from_id<spline_entity>(id);
+					assert(spline != nullptr);
+					assert(spline->vertices.size() > vertex);
+					spline->vertices[vertex] = old_point;
+				});
+		}
+		_selected_spline = NULL_ENTITY_ID;
+	}
+	
+	ImGui::Begin("Spline Tool");
+	ImGui::Text("Normal");
+	bool i = _plane_normal == glm::vec3(1.f, 0.f, 0.f);
+	bool j = _plane_normal == glm::vec3(0.f, 1.f, 0.f);
+	bool k = _plane_normal == glm::vec3(0.f, 0.f, 1.f);
+	if(ImGui::RadioButton("I (X)", i) || ImGui::IsKeyPressed('X')) {
+		_plane_normal = glm::vec3(1.f, 0.f, 0.f);
+	}
+	if(ImGui::RadioButton("J (C)", j) || ImGui::IsKeyPressed('C')) {
+		_plane_normal = glm::vec3(0.f, 1.f, 0.f);
+	}
+	if(ImGui::RadioButton("K (V)", k) || ImGui::IsKeyPressed('V')) {
+		_plane_normal = glm::vec3(0.f, 0.f, 1.f);
+	}
+	ImGui::RadioButton("Custom", !i && !j && !k);
+	ImGui::SameLine();
+	ImGui::SliderFloat3("##custom_normal", &_plane_normal[0], 0.f, 1.f);
 	ImGui::End();
 }

@@ -40,6 +40,9 @@ void view_3d::render(app& a) {
 		return;
 	}
 
+	a.renderer.viewport_pos = ImGui::GetWindowPos();
+	a.renderer.viewport_pos.x += ImGui::GetWindowContentRegionMin().x;
+	a.renderer.viewport_pos.y += ImGui::GetWindowContentRegionMin().y;
 	ImVec2& viewport_size = a.renderer.viewport_size;
 	viewport_size = ImGui::GetWindowContentRegionMax();
 	viewport_size.x -= ImGui::GetWindowContentRegionMin().x;
@@ -54,13 +57,16 @@ void view_3d::render(app& a) {
 		glViewport(0, 0, viewport_size.x, viewport_size.y);
 		
 		a.renderer.draw_level(*lvl, world_to_clip);
+		
+		ImGuiContext& g = *GImGui;
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, g.Style.WindowPadding * 2.0f);
+		a.active_tool().draw(a, world_to_clip);
+		ImGui::PopStyleVar();
 	});
 	
 	ImGui::Image((void*) (intptr_t) _frame_buffer_texture, viewport_size);
 
 	draw_overlay_text(a, world_to_clip);
-	
-	a.active_tool().draw(a, world_to_clip);
 }
 
 bool view_3d::has_padding() const {

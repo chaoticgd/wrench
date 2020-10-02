@@ -64,11 +64,14 @@ struct gl_renderer {
 	
 	static glm::vec4 colour_coded_submodel_index(std::size_t index, std::size_t submodel_count);
 	
+	ImVec2 viewport_pos;
 	ImVec2 viewport_size;
 	
 	glm::mat4 get_world_to_clip() const;
 	glm::mat4 get_local_to_clip(glm::mat4 world_to_clip, glm::vec3 position, glm::vec3 rotation) const;
 	glm::vec3 apply_local_to_screen(glm::mat4 world_to_clip, glm::mat4 local_to_world) const;
+	
+	glm::vec3 create_ray(glm::mat4 world_to_clip, ImVec2 screen_pos);
 	
 	shader_programs shaders;
 	

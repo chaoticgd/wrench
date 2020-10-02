@@ -200,7 +200,14 @@ void gl_renderer::draw_pickframe(level& lvl, glm::mat4 world_to_clip) const {
 	}
 	
 	if(draw_splines) {
-		for(spline_entity& spline : lvl.world.splines) {
+		for(regular_spline_entity& spline : lvl.world.splines) {
+			glm::vec4 colour = encode_pick_colour(spline.id);
+			draw_spline(spline, world_to_clip, colour);
+		}
+	}
+	
+	if(draw_grind_rails) {
+		for(grindrail_spline_entity& spline : lvl.world.grindrails) {
 			glm::vec4 colour = encode_pick_colour(spline.id);
 			draw_spline(spline, world_to_clip, colour);
 		}
@@ -484,6 +491,17 @@ glm::vec3 gl_renderer::apply_local_to_screen(glm::mat4 world_to_clip, glm::mat4 
 			gl_pos.z
 	);
 	return screen_pos;
+}
+
+glm::vec3 gl_renderer::create_ray(glm::mat4 world_to_clip, ImVec2 screen_pos) {
+	auto imgui_to_glm = [](ImVec2 v) { return glm::vec2(v.x, v.y); };
+	glm::vec2 relative_pos = imgui_to_glm(screen_pos) - imgui_to_glm(viewport_pos);
+	glm::vec2 device_space_pos = 2.f * relative_pos / imgui_to_glm(viewport_size) - 1.f;
+	glm::vec4 clip_pos(device_space_pos.x, device_space_pos.y, 1.f, 1.f);
+	glm::mat4 clip_to_world = glm::inverse(world_to_clip);
+	glm::vec4 world_pos = clip_to_world * clip_pos;
+	glm::vec3 direction = glm::normalize(glm::vec3(world_pos));
+	return direction;
 }
 
 void gl_renderer::reset_camera(app* a) {

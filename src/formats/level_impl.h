@@ -111,6 +111,17 @@ public:
 	void clear_selection();
 	std::vector<entity_id> selected_entity_ids();
 	
+	template <typename T>
+	T* entity_from_id(entity_id id) {
+		T* result = nullptr;
+		for_each<T>([&](T& ent) {
+			if(ent.id == id) {
+				result = &ent;
+			}
+		});
+		return result;
+	}
+	
 private:
 	void read_moby_models(std::size_t asset_offset, level_asset_header asset_header);
 	void read_textures(std::size_t asset_offset, level_asset_header asset_header);
