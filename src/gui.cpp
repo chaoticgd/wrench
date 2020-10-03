@@ -475,6 +475,8 @@ ImVec2 gui::inspector::initial_size() const {
 	return ImVec2(250, 250);
 }
 
+template <typename T_field, typename T_entity>
+void inspector_input_scalar(wrench_project& proj, const char* label, T_field T_entity::*field);
 template <typename T_lane, typename T_field, typename T_entity>
 void inspector_input(wrench_project& proj, const char* label, T_field T_entity::*field, std::size_t first_lane, int lane_count);
 struct inspector_text_lane {
@@ -504,60 +506,60 @@ void gui::inspector::render(app& a) {
 		return;
 	}
 	
-	inspector_input<   float>(proj, "Mat I ", &matrix_entity::local_to_world, 0, 4);
-	inspector_input<   float>(proj, "Mat J ", &matrix_entity::local_to_world, 4, 4);
-	inspector_input<   float>(proj, "Mat K ", &matrix_entity::local_to_world, 8, 4);
-	inspector_input<   float>(proj, "Mat T ", &matrix_entity::local_to_world, 12, 4);
-	inspector_input<   float>(proj, "Pos   ", &euler_entity::position, 0, 3);
-	inspector_input<   float>(proj, "Rot   ", &euler_entity::rotation, 0, 3);
-	inspector_input<uint32_t>(proj, "Unk 0 ", &tie_entity::unknown_0, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 4 ", &tie_entity::unknown_4, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 8 ", &tie_entity::unknown_8, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk c ", &tie_entity::unknown_c, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 50", &tie_entity::unknown_50, 0, 1);
-	inspector_input< int32_t>(proj, "UID   ", &tie_entity::uid, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 58", &tie_entity::unknown_58, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 5c", &tie_entity::unknown_5c, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 0 ", &shrub_entity::unknown_0, 0, 1);
-	inspector_input<   float>(proj, "Unk 4 ", &shrub_entity::unknown_4, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 8 ", &shrub_entity::unknown_8, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk c ", &shrub_entity::unknown_c, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 50", &shrub_entity::unknown_50, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 54", &shrub_entity::unknown_54, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 58", &shrub_entity::unknown_58, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 5c", &shrub_entity::unknown_5c, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 60", &shrub_entity::unknown_60, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 64", &shrub_entity::unknown_64, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 68", &shrub_entity::unknown_68, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 6c", &shrub_entity::unknown_6c, 0, 1);
-	inspector_input<uint32_t>(proj, "Size  ", &moby_entity::size, 0, 1);
-	inspector_input< int32_t>(proj, "Unk 4 ", &moby_entity::unknown_4, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 8 ", &moby_entity::unknown_8, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk c ", &moby_entity::unknown_c, 0, 1);
-	inspector_input< int32_t>(proj, "UID   ", &moby_entity::uid, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 14", &moby_entity::unknown_14, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 18", &moby_entity::unknown_18, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 1c", &moby_entity::unknown_1c, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 20", &moby_entity::unknown_20, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 24", &moby_entity::unknown_24, 0, 1);
-	inspector_input<uint32_t>(proj, "Class ", &moby_entity::class_num, 0, 1);
-	inspector_input<   float>(proj, "Scale ", &moby_entity::scale, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 30", &moby_entity::unknown_30, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 34", &moby_entity::unknown_34, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 38", &moby_entity::unknown_38, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 3c", &moby_entity::unknown_3c, 0, 1);
-	inspector_input< int32_t>(proj, "Unk 58", &moby_entity::unknown_58, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 5c", &moby_entity::unknown_5c, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 60", &moby_entity::unknown_60, 0, 1);
-	inspector_input< int32_t>(proj, "Unk 64", &moby_entity::unknown_64, 0, 1);
-	inspector_input< int32_t>(proj, "Pvar #", &moby_entity::pvar_index, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 6c", &moby_entity::unknown_6c, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 70", &moby_entity::unknown_70, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 74", &moby_entity::unknown_74, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 78", &moby_entity::unknown_78, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 7c", &moby_entity::unknown_7c, 0, 1);
-	inspector_input<uint32_t>(proj, "Unk 80", &moby_entity::unknown_80, 0, 1);
-	inspector_input< int32_t>(proj, "Unk 84", &moby_entity::unknown_84, 0, 1);
+	inspector_input<float>(proj, "Mat I ", &matrix_entity::local_to_world, 0, 4);
+	inspector_input<float>(proj, "Mat J ", &matrix_entity::local_to_world, 4, 4);
+	inspector_input<float>(proj, "Mat K ", &matrix_entity::local_to_world, 8, 4);
+	inspector_input<float>(proj, "Mat T ", &matrix_entity::local_to_world, 12, 4);
+	inspector_input<float>(proj, "Pos   ", &euler_entity::position, 0, 3);
+	inspector_input<float>(proj, "Rot   ", &euler_entity::rotation, 0, 3);
+	inspector_input_scalar(proj, "Unk 0 ", &tie_entity::unknown_0);
+	inspector_input_scalar(proj, "Unk 4 ", &tie_entity::unknown_4);
+	inspector_input_scalar(proj, "Unk 8 ", &tie_entity::unknown_8);
+	inspector_input_scalar(proj, "Unk c ", &tie_entity::unknown_c);
+	inspector_input_scalar(proj, "Unk 50", &tie_entity::unknown_50);
+	inspector_input_scalar(proj, "UID   ", &tie_entity::uid);
+	inspector_input_scalar(proj, "Unk 58", &tie_entity::unknown_58);
+	inspector_input_scalar(proj, "Unk 5c", &tie_entity::unknown_5c);
+	inspector_input_scalar(proj, "Unk 0 ", &shrub_entity::unknown_0);
+	inspector_input_scalar(proj, "Unk 4 ", &shrub_entity::unknown_4);
+	inspector_input_scalar(proj, "Unk 8 ", &shrub_entity::unknown_8);
+	inspector_input_scalar(proj, "Unk c ", &shrub_entity::unknown_c);
+	inspector_input_scalar(proj, "Unk 50", &shrub_entity::unknown_50);
+	inspector_input_scalar(proj, "Unk 54", &shrub_entity::unknown_54);
+	inspector_input_scalar(proj, "Unk 58", &shrub_entity::unknown_58);
+	inspector_input_scalar(proj, "Unk 5c", &shrub_entity::unknown_5c);
+	inspector_input_scalar(proj, "Unk 60", &shrub_entity::unknown_60);
+	inspector_input_scalar(proj, "Unk 64", &shrub_entity::unknown_64);
+	inspector_input_scalar(proj, "Unk 68", &shrub_entity::unknown_68);
+	inspector_input_scalar(proj, "Unk 6c", &shrub_entity::unknown_6c);
+	inspector_input_scalar(proj, "Size  ", &moby_entity::size);
+	inspector_input_scalar(proj, "Unk 4 ", &moby_entity::unknown_4);
+	inspector_input_scalar(proj, "Unk 8 ", &moby_entity::unknown_8);
+	inspector_input_scalar(proj, "Unk c ", &moby_entity::unknown_c);
+	inspector_input_scalar(proj, "UID   ", &moby_entity::uid);
+	inspector_input_scalar(proj, "Unk 14", &moby_entity::unknown_14);
+	inspector_input_scalar(proj, "Unk 18", &moby_entity::unknown_18);
+	inspector_input_scalar(proj, "Unk 1c", &moby_entity::unknown_1c);
+	inspector_input_scalar(proj, "Unk 20", &moby_entity::unknown_20);
+	inspector_input_scalar(proj, "Unk 24", &moby_entity::unknown_24);
+	inspector_input_scalar(proj, "Class ", &moby_entity::class_num);
+	inspector_input_scalar(proj, "Scale ", &moby_entity::scale);
+	inspector_input_scalar(proj, "Unk 30", &moby_entity::unknown_30);
+	inspector_input_scalar(proj, "Unk 34", &moby_entity::unknown_34);
+	inspector_input_scalar(proj, "Unk 38", &moby_entity::unknown_38);
+	inspector_input_scalar(proj, "Unk 3c", &moby_entity::unknown_3c);
+	inspector_input_scalar(proj, "Unk 58", &moby_entity::unknown_58);
+	inspector_input_scalar(proj, "Unk 5c", &moby_entity::unknown_5c);
+	inspector_input_scalar(proj, "Unk 60", &moby_entity::unknown_60);
+	inspector_input_scalar(proj, "Unk 64", &moby_entity::unknown_64);
+	inspector_input_scalar(proj, "Pvar #", &moby_entity::pvar_index);
+	inspector_input_scalar(proj, "Unk 6c", &moby_entity::unknown_6c);
+	inspector_input_scalar(proj, "Unk 70", &moby_entity::unknown_70);
+	inspector_input_scalar(proj, "Unk 74", &moby_entity::unknown_74);
+	inspector_input_scalar(proj, "Unk 78", &moby_entity::unknown_78);
+	inspector_input_scalar(proj, "Unk 7c", &moby_entity::unknown_7c);
+	inspector_input_scalar(proj, "Unk 80", &moby_entity::unknown_80);
+	inspector_input_scalar(proj, "Unk 84", &moby_entity::unknown_84);
 	
 	// If mobies with different class numbers are selected, or entities other
 	// than mobies are selected, we shouldn't draw the pvars.
@@ -606,6 +608,11 @@ void gui::inspector::render(app& a) {
 			}
 		}
 	}
+}
+
+template <typename T_field, typename T_entity>
+void inspector_input_scalar(wrench_project& proj, const char* label, T_field T_entity::*field) {
+	inspector_input<T_field>(proj, label, field, 0, 1);
 }
 
 template <typename T_lane, typename T_field, typename T_entity>
