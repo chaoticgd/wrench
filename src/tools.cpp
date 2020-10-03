@@ -282,11 +282,12 @@ void spline_tool::draw(app& a, glm::mat4 world_to_clip) {
 		_selected_spline = NULL_ENTITY_ID;
 	}
 	
+	static const glm::mat4 SPLINE_VERTEX_SCALE = glm::scale(glm::mat4(1.f), glm::vec3(0.25f));
 	lvl.for_each<spline_entity>([&](spline_entity& spline) {
 		for(glm::vec4 vertex : spline.vertices) {
 			a.renderer.draw_static_mesh(
 				SPHERE_MESH_VERTICES, sizeof(SPHERE_MESH_VERTICES),
-				world_to_clip * glm::translate(glm::mat4(1.f), glm::vec3(vertex)),
+				world_to_clip * glm::translate(glm::mat4(1.f), glm::vec3(vertex)) * SPLINE_VERTEX_SCALE,
 				glm::vec4(1.f, 0.f, 0.f, 1.f));
 		}
 	});
