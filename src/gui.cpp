@@ -560,6 +560,7 @@ void gui::inspector::render(app& a) {
 	inspector_input_scalar(proj, "Unk 7c", &moby_entity::unknown_7c);
 	inspector_input_scalar(proj, "Unk 80", &moby_entity::unknown_80);
 	inspector_input_scalar(proj, "Unk 84", &moby_entity::unknown_84);
+	inspector_input<float>(proj, "Point ", &grindrail_spline_entity::special_point, 0, 4);
 	
 	// If mobies with different class numbers are selected, or entities other
 	// than mobies are selected, we shouldn't draw the pvars.
