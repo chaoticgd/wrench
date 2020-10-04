@@ -52,7 +52,14 @@ struct gl_renderer {
 	void draw_tris  (const std::vector<float>& vertex_data, const glm::mat4& mvp, const glm::vec4& colour) const;
 	void draw_model (const model& mdl, const glm::mat4& mvp, const glm::vec4& colour) const;
 	void draw_cube  (const glm::mat4& mvp, const glm::vec4& colour) const;
-
+	
+	// Only call this with vertex data that's completely static e.g. a const global.
+	void draw_static_mesh(
+		const float* vertex_data,
+		size_t vertex_data_size, const
+		glm::mat4 local_to_clip,
+		glm::vec4 colour);
+		
 	void draw_moby_models(
 		moby_model& model,
 		std::vector<texture>& textures,
@@ -64,11 +71,14 @@ struct gl_renderer {
 	
 	static glm::vec4 colour_coded_submodel_index(std::size_t index, std::size_t submodel_count);
 	
+	ImVec2 viewport_pos;
 	ImVec2 viewport_size;
 	
 	glm::mat4 get_world_to_clip() const;
 	glm::mat4 get_local_to_clip(glm::mat4 world_to_clip, glm::vec3 position, glm::vec3 rotation) const;
 	glm::vec3 apply_local_to_screen(glm::mat4 world_to_clip, glm::mat4 local_to_world) const;
+	
+	glm::vec3 create_ray(glm::mat4 world_to_clip, ImVec2 screen_pos);
 	
 	shader_programs shaders;
 	

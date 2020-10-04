@@ -33,14 +33,12 @@ struct game_string {
 struct entity_id {
 	std::size_t value;
 	
-	bool operator<(const entity_id& rhs) const {
-		return value < rhs.value;
-	}
-	
-	bool operator==(const entity_id& rhs) const {
-		return value == rhs.value;
-	}
+	bool operator<(const entity_id& rhs) const { return value < rhs.value; }
+	bool operator==(const entity_id& rhs) const { return value == rhs.value; }
+	bool operator!=(const entity_id& rhs) const { return value != rhs.value; }
 };
+
+static const entity_id NULL_ENTITY_ID { 0 };
 
 struct entity {
 	virtual ~entity() {}

@@ -200,7 +200,14 @@ void gl_renderer::draw_pickframe(level& lvl, glm::mat4 world_to_clip) const {
 	}
 	
 	if(draw_splines) {
-		for(spline_entity& spline : lvl.world.splines) {
+		for(regular_spline_entity& spline : lvl.world.splines) {
+			glm::vec4 colour = encode_pick_colour(spline.id);
+			draw_spline(spline, world_to_clip, colour);
+		}
+	}
+	
+	if(draw_grind_rails) {
+		for(grindrail_spline_entity& spline : lvl.world.grindrails) {
 			glm::vec4 colour = encode_pick_colour(spline.id);
 			draw_spline(spline, world_to_clip, colour);
 		}
@@ -298,6 +305,35 @@ void gl_renderer::draw_cube(const glm::mat4& mvp, const glm::vec4& colour) const
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
 	glDrawArrays(GL_TRIANGLES, 0, 108);
+
+	glDisableVertexAttribArray(0);
+}
+
+void gl_renderer::draw_static_mesh(
+		const float* vertex_data,
+		size_t vertex_data_size, const
+		glm::mat4 local_to_clip,
+		glm::vec4 colour) {
+	static std::map<const float*, GLint> vertex_buffers;
+	
+	GLuint vertex_buffer = 0;
+	if(vertex_buffers.find(vertex_data) == vertex_buffers.end()) {
+		glGenBuffers(1, &vertex_buffer);
+		glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+		glBufferData(GL_ARRAY_BUFFER, vertex_data_size, vertex_data, GL_STATIC_DRAW);
+		vertex_buffers[vertex_data] = vertex_buffer;
+	} else {
+		vertex_buffer = vertex_buffers.at(vertex_data);
+	}
+	
+	glUniformMatrix4fv(shaders.solid_colour_transform, 1, GL_FALSE, &local_to_clip[0][0]);
+	glUniform4f(shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
+	
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+	glDrawArrays(GL_TRIANGLES, 0, vertex_data_size / sizeof(float));
 
 	glDisableVertexAttribArray(0);
 }
@@ -484,6 +520,17 @@ glm::vec3 gl_renderer::apply_local_to_screen(glm::mat4 world_to_clip, glm::mat4 
 			gl_pos.z
 	);
 	return screen_pos;
+}
+
+glm::vec3 gl_renderer::create_ray(glm::mat4 world_to_clip, ImVec2 screen_pos) {
+	auto imgui_to_glm = [](ImVec2 v) { return glm::vec2(v.x, v.y); };
+	glm::vec2 relative_pos = imgui_to_glm(screen_pos) - imgui_to_glm(viewport_pos);
+	glm::vec2 device_space_pos = 2.f * relative_pos / imgui_to_glm(viewport_size) - 1.f;
+	glm::vec4 clip_pos(device_space_pos.x, device_space_pos.y, 1.f, 1.f);
+	glm::mat4 clip_to_world = glm::inverse(world_to_clip);
+	glm::vec4 world_pos = clip_to_world * clip_pos;
+	glm::vec3 direction = glm::normalize(glm::vec3(world_pos));
+	return direction;
 }
 
 void gl_renderer::reset_camera(app* a) {
