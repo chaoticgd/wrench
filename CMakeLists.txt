@@ -44,7 +44,7 @@ add_executable(wrench
 	src/formats/model_utils.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
 	src/imgui_impl_glfw.cpp
-	thirdparty/imgui/examples/imgui_impl_opengl3.cpp
+	thirdparty/imgui/backends/imgui_impl_opengl3.cpp
 	src/md5.cpp
 	src/tests/compression_test.cpp
 	src/tests/world_segment_test.cpp
@@ -150,7 +150,7 @@ add_executable(randomiser
 	src/formats/model_utils.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
 	src/imgui_impl_glfw.cpp
-	thirdparty/imgui/examples/imgui_impl_opengl3.cpp
+	thirdparty/imgui/backends/imgui_impl_opengl3.cpp
 	src/md5.cpp
 )
 
