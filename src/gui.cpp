@@ -91,7 +91,7 @@ void gui::create_dock_layout(const app& a) {
 	
 	ImGui::DockBuilderRemoveNode(dockspace_id);
 	ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
-	ImGui::DockBuilderSetNodeSize(dockspace_id, ImVec2(a.window_width, a.window_height));
+	ImGui::DockBuilderSetNodeSize(dockspace_id, ImVec2(1.f, 1.f));
 
 	ImGuiID centre, right;
 	ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 8.f / 10.f, &centre, &right);
@@ -316,8 +316,7 @@ float gui::render_menu_bar(app& a) {
 	if(auto project = a.get_project()) {
 		auto& levels = project->toc.levels;
 		int columns = (int) std::ceil(levels.size() / (float) level_list_rows);
-		
-		ImGui::SetNextWindowContentWidth(columns * 192);
+		ImGui::SetNextWindowContentSize(ImVec2(columns * 192, 0.f));
 		if(ImGui::BeginMenu("Levels")) {
 			const std::map<std::size_t, std::string>* level_names = nullptr;
 			for(const gamedb_game& game : a.game_db) {
@@ -352,7 +351,7 @@ float gui::render_menu_bar(app& a) {
 		}
 	}
 
-	ImGui::SetNextWindowContentWidth(0.f); // Reset the menu width after the "Levels" menu made it larger.
+	ImGui::SetNextWindowContentSize(ImVec2(0.f, 0.f)); // Reset the menu width after the "Levels" menu made it larger.
 	if(ImGui::BeginMenu("Windows")) {
 		render_menu_bar_window_toggle<view_3d>(a);
 		render_menu_bar_window_toggle<moby_list>(a);
@@ -1079,7 +1078,7 @@ void gui::model_browser::render(app& a) {
 		static bool is_dragging = false;
 		bool image_hovered = ImGui::IsItemHovered();
 		glm::vec2 pitch_yaw = _view_params.pitch_yaw;
-		if(ImGui::IsMouseDragging() && (image_hovered || is_dragging)) {
+		if(ImGui::IsMouseDragging(ImGuiMouseButton_Left) && (image_hovered || is_dragging)) {
 			drag_delta = get_drag_delta();
 			is_dragging = true;
 		}
