@@ -172,6 +172,10 @@ add_executable(matchtoc
 	src/formats/toc.cpp
 )
 
+add_executable(memmap
+	src/cli/memmap.c
+)
+
 # This lets us avoid linking stuff for msot of the CLI tools.
 target_compile_definitions(wrench PRIVATE WRENCH_EDITOR=1)
 target_compile_definitions(randomiser PRIVATE WRENCH_EDITOR=1)
