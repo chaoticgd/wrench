@@ -258,18 +258,18 @@ packed_struct(level_code_segment_header,
 
 // Barlow 0x418200
 packed_struct(level_asset_header,
-	uint32_t mipmap_count; // 0x0
-	uint32_t mipmap_offset; // 0x4
-	uint32_t ptr_into_asset_wad_8;  // 0x8
-	uint32_t ptr_into_asset_wad_c;  // 0xc
-	uint32_t ptr_into_asset_wad_10; // 0x10
-	uint32_t models_something;      // 0x14
-	uint32_t moby_model_count;      // 0x18
-	uint32_t moby_model_offset;     // 0x1c
-	uint32_t unknown_20; // 0x20
-	uint32_t unknown_24; // 0x24
-	uint32_t unknown_28; // 0x28
-	uint32_t unknown_2c; // 0x2c
+	uint32_t mipmap_count;           // 0x0
+	uint32_t mipmap_offset;          // 0x4
+	uint32_t tfrag_geomtry;          // 0x8
+	uint32_t occlusion;              // 0xc
+	uint32_t sky;                    // 0x10
+	uint32_t collision;              // 0x14
+	uint32_t moby_model_count;       // 0x18
+	uint32_t moby_model_offset;      // 0x1c
+	uint32_t unknown_20;             // 0x20
+	uint32_t unknown_24;             // 0x24
+	uint32_t unknown_28;             // 0x28
+	uint32_t unknown_2c;             // 0x2c
 	uint32_t terrain_texture_count;  // 0x30
 	uint32_t terrain_texture_offset; // 0x34 Relative to asset header.
 	uint32_t moby_texture_count;     // 0x38
