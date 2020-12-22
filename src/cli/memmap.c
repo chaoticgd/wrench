@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
 		
 		// The addresses must be in ascending order.
 		int should_skip = 0;
-		for(j = 0; j < 10; j++) {
+		for(j = 0; j < 5; j++) {
 			if(ptr[j] > ptr[j + 1] || ptr[j] > EE_MEMORY_SIZE) {
 				should_skip = 1;
 			}
