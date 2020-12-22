@@ -4,14 +4,14 @@
 #include <string.h>
 
 // Prints out a memory map from an eeMemory.bin file.
-// Currently only works for R&C2 and R&C3.
+// Supports R&C2, R&C3 and Deadlocked.
 
 #define GAME_COUNT         4
 #define MIN_SEGMENT_COUNT  10
 #define RAC1_SEGMENT_COUNT 40 // Not sure.
 #define RAC2_SEGMENT_COUNT 35
 #define RAC3_SEGMENT_COUNT 36
-#define DL_SEGMENT_COUNT   40 // Not sure.
+#define DL_SEGMENT_COUNT   53
 #define EE_MEMORY_SIZE     (32 * 1024 * 1024)
 #define KERNEL_BASE        0x0
 #define CODE_SEGMENT_BASE  0x100000
@@ -36,7 +36,7 @@ static const char** SEGMENT_LABELS[GAME_COUNT] = {
 int main(int argc, char** argv) {
 	if(argc != 2) {
 		fprintf(stderr, "usage: %s path/to/eeMemory.bin\n", argv[0]);
-		fprintf(stderr, "Currently only works for R&C2 and R&C3.\n");
+		fprintf(stderr, "Supports R&C2, R&C3 and Deadlocked.\n");
 		exit(1);
 	}
 	uint32_t* ee_memory = malloc(EE_MEMORY_SIZE);
@@ -52,9 +52,9 @@ int main(int argc, char** argv) {
 	int game = detect_game((uint8_t*) ee_memory);
 	switch(game) {
 		case 0: printf("--- Detected R&C1. Game not supported!\n"); exit(1);
-		case 1: printf("--- Detected R&C2\n"); break;
-		case 2: printf("--- Detected R&C3\n"); break;
-		case 3: printf("--- Detected DL. Game not supported!\n"); exit(1);
+		case 1: printf("--- Detected R&C2.\n"); break;
+		case 2: printf("--- Detected R&C3.\n"); break;
+		case 3: printf("--- Detected DL. Segment sizes may be inaccurate.\n"); break;
 		default: fprintf(stderr, "Cannot detect game!\n"); exit(1);
 	}
 	uint32_t i, j;
@@ -78,13 +78,20 @@ int main(int argc, char** argv) {
 		}
 		
 		for(j = 0; j < SEGMENT_COUNTS[game]; j++) {
-			uint32_t size;
-			if(j == SEGMENT_COUNTS[game] - 1) {
+			int32_t size;
+			if(ptr[j] == 0 || ptr[j + 1] < ptr[j]) {
+				size = -1;
+			} else if(j == SEGMENT_COUNTS[game] - 1) {
 				size = EE_MEMORY_SIZE - ptr[j];
 			} else {
 				size = ptr[j + 1] - ptr[j];
 			}
-			printf("%08x %-16s%8x%8d k\n", (i + j) * 4, SEGMENT_LABELS[game][j], ptr[j], size / 1024);
+			printf("%08x %-16s%8x", (i + j) * 4, SEGMENT_LABELS[game][j], ptr[j]);
+			if(size == -1) {
+				printf("     ??? k\n");
+			} else {
+				printf("%8d k\n", size / 1024);
+			}
 		}
 		return 0;
 	}
@@ -207,14 +214,57 @@ static const char* RAC3_SEGMENT_LABELS[RAC3_SEGMENT_COUNT] = {
 };
 
 static const char* DL_SEGMENT_LABELS[DL_SEGMENT_COUNT] = {
-	"", "", "", "",
-	"", "", "", "",
-	"", "", "", "",
-	"", "", "", "",
-	"", "", "", "",
-	"", "", "", "",
-	"", "", "", "",
-	"", "", "", "",
-	"", "", "", "",
-	"", "", "", ""
+	"OS",
+	"Code",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	""
 };
