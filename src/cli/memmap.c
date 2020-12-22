@@ -4,7 +4,7 @@
 #include <string.h>
 
 // Prints out a memory map from an eeMemory.bin file.
-// Currently only works for R&C2.
+// Currently only works for R&C2 and R&C3.
 
 #define GAME_COUNT         4
 #define MIN_SEGMENT_COUNT  10
@@ -36,7 +36,7 @@ static const char** SEGMENT_LABELS[GAME_COUNT] = {
 int main(int argc, char** argv) {
 	if(argc != 2) {
 		fprintf(stderr, "usage: %s path/to/eeMemory.bin\n", argv[0]);
-		fprintf(stderr, "Currently only works for R&C2.\n");
+		fprintf(stderr, "Currently only works for R&C2 and R&C3.\n");
 		exit(1);
 	}
 	uint32_t* ee_memory = malloc(EE_MEMORY_SIZE);
