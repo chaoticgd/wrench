@@ -91,9 +91,9 @@ table_of_contents read_toc(stream& iso, std::size_t toc_base) {
 }
 
 std::size_t toc_get_level_table_offset(stream& iso, std::size_t toc_base) {
-	uint8_t buffer[TOC_MAX_SIZE];
+	std::vector<uint8_t> buffer(TOC_MAX_SIZE);
 	iso.seek(toc_base);
-	iso.read_n((char*) buffer, sizeof(buffer));
+	iso.read_v(buffer);
 	
 	for(std::size_t i = 0; i < TOC_MAX_INDEX_SIZE - sizeof(toc_level_table_entry); i += sizeof(uint32_t)) {
 		// Check that the two next entries are valid. This is necessary to
