@@ -6,6 +6,12 @@ include_directories(thirdparty/imgui)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+if(MSVC)
+	# Without this, MSVC won't report the correct standards version via the
+	# __cplusplus macro. See:
+	#  https://devblogs.microsoft.com/cppblog/msvc-now-correctly-reports-__cplusplus/
+	set(CMAKE_CXX_FLAGS "/Zc:__cplusplus")
+endif()
 
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $<1:${CMAKE_SOURCE_DIR}/bin>)
