@@ -120,7 +120,7 @@ moby_model::interpreted_moby_vif_list moby_model::interpret_vif_list(
 		
 		switch(unpack_index) {
 			case 0: { // ST unpack.
-				if(packet.code.unpack.vnvl != +vif_vnvl::V2_16) {
+				if(packet.code.unpack.vnvl != vif_vnvl::V2_16) {
 					warn_current_submodel("malformed first UNPACK (wrong format)");
 					return {};
 				}
@@ -143,7 +143,7 @@ moby_model::interpreted_moby_vif_list moby_model::interpret_vif_list(
 					warn_current_submodel("malformed third UNPACK (wrong size)");
 					return {};
 				}
-				if(packet.code.unpack.vnvl != +vif_vnvl::V4_32) {
+				if(packet.code.unpack.vnvl != vif_vnvl::V4_32) {
 					warn_current_submodel("malformed third UNPACK (wrong format)");
 					return {};
 				}

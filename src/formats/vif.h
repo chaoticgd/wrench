@@ -21,7 +21,6 @@
 
 #include <string>
 #include <optional>
-#include <better-enums/enum.h>
 
 #include "../stream.h"
 
@@ -53,21 +52,25 @@ enum class vif_cmd {
 	DIRECTHL = 0b1010001
 };
 
-BETTER_ENUM(vif_vn, char,
+enum class vif_vn {
 	ONE   = 0b00,
 	TWO   = 0b01,
 	THREE = 0b10,
 	FOUR  = 0b11
-)
+};
+#define VIF_VN_STRINGS \
+	"ONE", "TWO", "THREE", "FOUR"
 
-BETTER_ENUM(vif_vl, char,
+enum class vif_vl {
 	QWORD = 0b00,
 	DWORD = 0b01,
 	BYTE  = 0b10,
 	B5551 = 0b11
-)
+};
+#define VIF_VL_STRINGS \
+	"QWORD", "DWORD", "BYTE", "B5551"
 
-BETTER_ENUM(vif_vnvl, char,
+enum class vif_vnvl {
 	S_32     = 0b0000,
 	S_16     = 0b0001,
 	ERR_0010 = 0b0010,
@@ -84,17 +87,26 @@ BETTER_ENUM(vif_vnvl, char,
 	V4_16    = 0b1101,
 	V4_8     = 0b1110,
 	V4_5     = 0b1111
-)
+};
+#define VIF_VNVL_STRINGS \
+	"S_32", "S_16", "ERR_0010", "ERR_0011", \
+	"V2_32", "V2_16", "V2_8", "ERR_0111", \
+	"V3_32", "V3_16", "V3_8", "ERR_1011", \
+	"V4_32", "V4_16", "V4_8", "V4_5"
 
-BETTER_ENUM(vif_flg, char,
+enum class vif_flg {
 	DO_NOT_USE_VIF1_TOPS = 0x0,
 	USE_VIF1_TOPS        = 0x1
-)
+};
+#define VIF_FLG_STRINGS \
+	"DO_NOT_USE_VIF1_TOPS", "USE_VIF1_TOPS"
 
-BETTER_ENUM(vif_usn, char,
+enum class vif_usn {
 	SIGNED   = 0x0,
 	UNSIGNED = 0x1
-)
+};
+#define VIF_USN_STRINGS \
+	"SIGNED", "UNSIGNED"
 
 struct vif_code {
 	uint32_t raw = 0;
@@ -142,5 +154,15 @@ struct vif_packet {
 std::vector<vif_packet> parse_vif_chain(const stream* src, std::size_t base_address, std::size_t qwc);
 
 int bit_range(uint64_t val, int lo, int hi);
+
+template <typename T>
+const char* enum_to_string(const std::vector<const char*> strings, T value) {
+	size_t index = static_cast<size_t>(value);
+	if(index < strings.size()) {
+		return strings[index];
+	} else {
+		return "ERR_OUT_OF_RANGE";
+	}
+}
 
 #endif

@@ -24,6 +24,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <stdexcept>
 
 # /*
 #	For things that should be in the standard library, but aren't.
