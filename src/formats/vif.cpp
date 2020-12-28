@@ -89,9 +89,9 @@ std::optional<vif_code> vif_code::parse(uint32_t val) {
 			}
 			code.unpack.vn = bit_range(val, 26, 27);
 			code.unpack.vl = bit_range(val, 24, 25);
-			code.unpack.vnvl = vif_vnvl ::_from_integral(bit_range(val, 24, 27));
-			code.unpack.flg  = vif_flg::_from_integral(bit_range(val, 15, 15));
-			code.unpack.usn  = vif_usn::_from_integral(bit_range(val, 14, 14));
+			code.unpack.vnvl = static_cast<vif_vnvl>(bit_range(val, 24, 27));
+			code.unpack.flg  = static_cast<vif_flg>(bit_range(val, 15, 15));
+			code.unpack.usn  = static_cast<vif_usn>(bit_range(val, 14, 14));
 			code.unpack.addr = bit_range(val, 0, 9);
 	}
 	
@@ -107,9 +107,9 @@ uint32_t vif_code::encode_unpack() {
 	value |= (interrupt & 0b1) << 31;
 	value |= (((uint32_t) cmd) & 0b11111111) << 24;
 	value |= (num & 0b11111111) << 16;
-	value |= (unpack.vnvl._to_integral() & 0b1111) << 24;
-	value |= (unpack.flg._to_integral() & 0b1) << 15;
-	value |= (unpack.usn._to_integral() & 0b1) << 14;
+	value |= (static_cast<uint32_t>(unpack.vnvl) & 0b1111) << 24;
+	value |= (static_cast<uint32_t>(unpack.flg) & 0b1) << 15;
+	value |= (static_cast<uint32_t>(unpack.usn) & 0b1) << 14;
 	value |= (unpack.addr & 0b1111111111) << 0;
 	return value;
 }
@@ -198,10 +198,10 @@ std::string vif_code::to_string() const {
 			if(!is_unpack()) {
 				return "INVALID VIF CODE";
 			}
-			ss << "UNPACK vnvl=" << unpack.vnvl
+			ss << "UNPACK vnvl=" << enum_to_string({VIF_VNVL_STRINGS}, unpack.vnvl)
 			   << " num=" << num
-			   << " flg=" << unpack.flg
-			   << " usn=" << unpack.usn 
+			   << " flg=" << enum_to_string({VIF_FLG_STRINGS}, unpack.flg)
+			   << " usn=" << enum_to_string({VIF_USN_STRINGS}, unpack.usn)
 			   << " addr=" << unpack.addr;
 	}
 	ss << " interrupt=" << interrupt

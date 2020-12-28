@@ -399,7 +399,6 @@ float gui::render_menu_bar(app& a) {
 				" - tsparkles / detolly\n"
 				"\n"
 				"Libraries used:\n"
-				" - better-enums: https://github.com/aantron/better-enums (BSD 2-Clause)\n"
 				" - cxxopts: https://github.com/jarro2783/cxxopts (MIT)\n"
 				" - glad: https://github.com/Dav1dde/glad (MIT)\n"
 				" - glfw: https://github.com/glfw/glfw (zlib)\n"
