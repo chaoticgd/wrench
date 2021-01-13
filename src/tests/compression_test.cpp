@@ -59,7 +59,7 @@ void compression_test() {
 		} catch(std::exception& e) {
 			printf("compress_wad threw: %s\n", e.what());
 			write_sad_file();
-			break;
+			continue;
 		}
 		
 		array_stream output;
@@ -68,12 +68,12 @@ void compression_test() {
 		} catch(std::exception& e) {
 			printf("decompress_wad threw: %s\n", e.what());
 			write_sad_file();
-			break;
+			continue;
 		}
 		
 		if(!array_stream::compare_contents(plaintext, output)) {
 			write_sad_file();
-			break;
+			continue;
 		}
 		
 		bool sad_file_written = false;
@@ -82,6 +82,7 @@ void compression_test() {
 				printf("Incorrect padding!\n");
 				write_sad_file();
 				sad_file_written = true;
+				break;
 			}
 		}
 		
