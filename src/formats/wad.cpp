@@ -296,14 +296,6 @@ void compress_wad(array_stream& dest, array_stream& src) {
 			while(dest.pos % 0x2000 != 0x10) {
 				dest.write8(0xee);
 			}
-			
-			WAD_COMPRESS_DEBUG(std::cout << "\n*** SPECIAL PAD PACKETS ***\n");
-			
-			// Padding must be followed by a packet with a flag of 0x11 so we
-			// can inject a tiny literal.
-			dest.write8(0x11);
-			dest.write8(0);
-			dest.write8(0);
 		}
 		dest.buffer.insert(dest.buffer.end(),
 			intermediate.buffer.begin() + intermediate.pos,
