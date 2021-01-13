@@ -341,8 +341,7 @@ std::vector<char> encode_wad_packet(
 		return eof_packet;
 	}
 	
-	std::vector<char> packet { 0 };
-	uint8_t flag_byte = 0;
+	std::vector<char> packet;
 	
 	// Determine where the next repeating pattern is.
 	size_t literal_size = MAX_LITERAL_SIZE;
@@ -392,8 +391,6 @@ std::vector<char> encode_wad_packet(
 				std::cout << "match at 0x" << std::hex << match_offset << " of size 0x" << match_size << "\n";
 			)
 
-			flag_byte |= (match_size - 1) << 5;
-
 			uint8_t pos_major = delta / 8;
 			uint8_t pos_minor = delta % 8;
 
@@ -401,22 +398,21 @@ std::vector<char> encode_wad_packet(
 				std::cout << "pos_major = " << (int) pos_major << ", pos_minor = " << (int) pos_minor << "\n";
 			)
 
-			flag_byte |= pos_minor << 2;
+			packet.push_back(((match_size - 1) << 5) | (pos_minor << 2));
 			packet.push_back(pos_major);
 		} else { // B type
 			WAD_COMPRESS_DEBUG(std::cout << "B type detected!\n";)
 			
 			if(match_size > (0b11111 + 2)) {
+				packet.push_back(1 << 5); // flag
 				packet.push_back(match_size - (0b11111 + 2));
 			} else {
-				flag_byte |= match_size - 2;
+				packet.push_back((1 << 5) | match_size - 2); // flag
 			}
-
-			flag_byte |= 1 << 5; // Set packet type.
 
 			uint8_t pos_minor = delta % 0x40;
 			uint8_t pos_major = delta / 0x40;
-
+			
 			packet.push_back(pos_minor << 2);
 			packet.push_back(pos_major);
 		}
@@ -448,14 +444,14 @@ std::vector<char> encode_wad_packet(
 			dest.buffer[dest.pos - 2] |= literal_size;
 			packet.insert(packet.end(), src.buffer.begin() + src.pos, src.buffer.begin() + src.pos + literal_size);
 			src.pos += literal_size;
-			packet.erase(packet.begin()); // We don't need no flag byte!
 			last_flag = DO_NOT_INJECT_FLAG;
 			return packet;
 		} else if(literal_size <= 18) {
 			// We can encode the size in the flag byte.
-			flag_byte |= literal_size - 3;
+			packet.push_back(literal_size - 3); // flag
 		} else {
-			// We have to push it as a seperate byte (leave the flag as zero).
+			// We have to push it as a seperate byte.
+			packet.push_back(0); // flag
 			packet.push_back(literal_size - 18);
 		}
 		
@@ -467,9 +463,7 @@ std::vector<char> encode_wad_packet(
 		src.pos += literal_size;
 	}
 	
-	packet[0] |= flag_byte;
-	last_flag = flag_byte;
-
+	last_flag = packet[0];
 	WAD_COMPRESS_DEBUG(std::cout << "flag_byte = " << std::hex << (packet[0] & 0xff) << "\n");
 
 	return packet;
