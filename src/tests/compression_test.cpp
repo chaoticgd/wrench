@@ -76,19 +76,7 @@ void compression_test() {
 			continue;
 		}
 		
-		bool sad_file_written = false;
-		for(size_t i = 0x2010; i < compressed.size(); i += 0x2000) {
-			if(compressed.buffer[i] != 0x11) {
-				printf("Incorrect padding!\n");
-				write_sad_file();
-				sad_file_written = true;
-				break;
-			}
-		}
-		
-		if(!sad_file_written) {
-			happy++;
-		}
+		happy++;
 	}
 	
 	printf("results: %d happy, %d sad\n", happy, sad);
