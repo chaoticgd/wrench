@@ -249,16 +249,13 @@ void compress_wad(array_stream& dest, array_stream& src) {
 
 	dest.seek(0);
 
-	const char* header =
-		"\x57\x41\x44"     // magic
-		"\x00\x00\x00\x00" // size (placeholder)
-		"WRENCH010";       // pad
+	const char* header = "\x57\x41\x44\x00\x00\x00\x00\x57\x52\x45\x4e\x43\x48\x30\x31\x30";
 	dest.write_n(header, 0x10);
 	
 	uint32_t last_flag = DO_NOT_INJECT_FLAG;
 	
 	src.seek(0);
-	for(size_t i = 0; src.pos + 0x100 < src.buffer.size(); i++) {
+	for(size_t i = 0; src.pos < src.buffer.size(); i++) {
 		WAD_COMPRESS_DEBUG(
 			std::cout << "{dest.pos -> " << dest.pos << ", src.pos -> " << src.pos << "}\n\n";
 		)
@@ -305,29 +302,6 @@ void compress_wad(array_stream& dest, array_stream& src) {
 			i += 2;
 		}
 	}
-	
-	WAD_COMPRESS_DEBUG(std::cout << "\n*** SPECIAL EOF PACKETS ***\n");
-	
-	while(src.pos < src.buffer.size()) {
-		size_t literal_size = std::min(src.buffer.size() - src.pos, MAX_LITERAL_SIZE);
-		if(last_flag < 0x10 || last_flag == DO_NOT_INJECT_FLAG) {
-			dest.write8(0x11);
-			dest.write8(0x0);
-			dest.write8(0x0);
-		}
-		if(literal_size <= 3) {
-			dest.buffer[dest.pos - 2] |= literal_size; // Inject the literal size into the last packet.
-		} else if(literal_size <= 18) {
-			// We can encode the size in the flag byte.
-			dest.write8(literal_size - 3);
-		} else {
-			// We have to push it as a seperate byte (leave the flag as zero).
-			dest.write8(0);
-			dest.write8(literal_size - 18);
-		}
-		last_flag = DO_NOT_INJECT_FLAG;
-		copy_bytes(dest, src, literal_size);
-	}
 
 	std::size_t total_size = dest.pos;
 	dest.seek(3);
@@ -340,7 +314,33 @@ std::vector<char> encode_wad_packet(
 		std::size_t dest_pos,
 		std::size_t packet_no,
 		uint32_t& last_flag) {
-
+	// Just emit literals at the end so we don't have to worry about overrunning
+	// the input buffer.
+	if(src.pos + MAX_MATCH_SIZE >= src.buffer.size()) {
+		WAD_COMPRESS_DEBUG(std::cout << "\n*** SPECIAL EOF PACKET ***\n");
+		if(last_flag < 0x10 || last_flag == DO_NOT_INJECT_FLAG) {
+			last_flag = 0x11;
+			return { 0x11, 0, 0 };
+		}
+		std::vector<char> eof_packet;
+		size_t literal_size = std::min(src.buffer.size() - src.pos, MAX_LITERAL_SIZE);
+		if(literal_size <= 3) {
+			dest.buffer[dest.pos - 2] |= literal_size; // Inject the literal size into the last packet.
+		} else if(literal_size <= 18) {
+			// We can encode the size in the flag byte.
+			eof_packet.push_back(literal_size - 3);
+		} else {
+			// We have to push it as a seperate byte (leave the flag as zero).
+			eof_packet.push_back(0);
+			eof_packet.push_back(literal_size - 18);
+		}
+		last_flag = DO_NOT_INJECT_FLAG;
+		auto iter = src.buffer.begin() + src.pos;
+		eof_packet.insert(eof_packet.end(), iter, iter + literal_size);
+		src.pos += literal_size;
+		return eof_packet;
+	}
+	
 	std::vector<char> packet { 0 };
 	uint8_t flag_byte = 0;
 	
