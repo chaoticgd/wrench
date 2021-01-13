@@ -227,8 +227,6 @@ std::size_t sub_clamped(std::size_t lhs, std::size_t rhs) {
 void encode_wad_packet(
 		array_stream& dest,
 		array_stream& src,
-		std::size_t dest_pos,
-		std::size_t packet_no,
 		uint32_t& last_flag);
 
 size_t get_wad_packet_size(uint8_t* src, size_t bytes_left);
@@ -265,7 +263,7 @@ void compress_wad(array_stream& dest, array_stream& src) {
 			std::cout << "*** PACKET " << count++ << " ***\n";
 		)
 
-		encode_wad_packet(intermediate, src, intermediate.pos, i, last_flag);
+		encode_wad_packet(intermediate, src, last_flag);
 		intermediate.pos = intermediate.buffer.size();
 	}
 	
@@ -314,8 +312,6 @@ const std::vector<char> DUMMY_PACKET = { 0x11, 0, 0 };
 void encode_wad_packet(
 		array_stream& dest,
 		array_stream& src,
-		std::size_t dest_pos,
-		std::size_t packet_no,
 		uint32_t& last_flag) {
 	// Just emit literals at the end so we don't have to worry about overrunning
 	// the input buffer.
