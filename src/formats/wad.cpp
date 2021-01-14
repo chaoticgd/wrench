@@ -309,28 +309,29 @@ void compress_wad(array_stream& dest, array_stream& src) {
 	
 	// Append the compressed data and insert padding where required.
 	for(int i = 0; i < thread_count; i++) {
-		// The different blocks each thread generates may begin/end with
-		// literal packets. Two consecutive literal packets aren't allowed, so
-		// we add a dummy packet in between.
-		if(i != 0) {
-			dest.write8(0x11);
-			dest.write8(0);
-			dest.write8(0);
-		}
-		
 		array_stream& intermediate = intermediates[i];
 		intermediate.pos = 0;
 		while(intermediate.pos < intermediate.size()) {
 			size_t packet_size = get_wad_packet_size(
 				(uint8_t*) intermediate.buffer.data() + intermediate.pos,
 				intermediate.buffer.size() - intermediate.pos);
+			// The different blocks each thread generates may begin/end with
+			// literal packets. Two consecutive literal packets aren't allowed,
+			// so we add a dummy packet in between. We need to do this while
+			// respecting the 0x2000 buffer size (see comment below), so we do
+			// it here.
+			bool insert_dummy = i != 0 && intermediate.pos == 0;
+			size_t insert_size = packet_size;
+			if(insert_dummy) {
+				insert_size += 3;
+			}
 			// dest.pos is offset 0x10 bytes by the header:
 			//  0x0000 WAD. .... .... ....
 			//	0x0010 [data]
 			//   ...
 			//	0x2000 [data]
 			//	0x2010 [start of new block]
-			if(((dest.pos + 0x1ff0) % 0x2000) + packet_size > 0x2000 - 3) {
+			if(((dest.pos + 0x1ff0) % 0x2000) + insert_size > 0x2000 - 3) {
 				// Every 0x2000 bytes or so there must be a pad packet or the
 				// game crashes with a teq exception. This is because the game
 				// copies the compressed data into the EE core's scratchpad, which
@@ -341,6 +342,11 @@ void compress_wad(array_stream& dest, array_stream& src) {
 				while(dest.pos % 0x2000 != 0x10) {
 					dest.write8(0xee);
 				}
+			}
+			if(insert_dummy) {
+				dest.write8(0x11);
+				dest.write8(0);
+				dest.write8(0);
 			}
 			dest.buffer.insert(dest.buffer.end(),
 				intermediate.buffer.begin() + intermediate.pos,
