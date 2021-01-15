@@ -32,72 +32,53 @@ void compression_test() {
 	
 	int happy = 0, sad = 0;
 	
-	for(int i = 0; i < TEST_ITERATIONS / 8; i++) {
-		compression_test_iter(0, happy, sad);
-		compression_test_iter(1, happy, sad);
-		compression_test_iter(4, happy, sad);
-		compression_test_iter(8, happy, sad);
-		compression_test_iter(1024, happy, sad);
-		compression_test_iter(4 * 1024, happy, sad);
-		compression_test_iter(8 * 1024, happy, sad);
-		compression_test_iter(16 * 1024, happy, sad);
+	for(int i = 0; i < TEST_ITERATIONS; i++) {
+		int buffer_size = rand() % (64 * 1024);
+		
+		array_stream plaintext;
+		for(int j = 0; j < buffer_size; j++) {
+			if(rand() % 8 <= 0) {
+				plaintext.write8(rand());
+			} else {
+				plaintext.write8(0);
+			}
+		}
+		
+		auto write_sad_file = [&]() {
+			sad++;
+			std::string sad_file_path = "/tmp/wad_is_sad_" + std::to_string(sad) + ".bin";
+			file_stream sad_file(sad_file_path, std::ios::out);
+			plaintext.seek(0);
+			stream::copy_n(sad_file, plaintext, plaintext.size());
+			printf("Written sad file to %s\n", sad_file_path.c_str());
+		};
+		
+		array_stream compressed;
+		try {
+			int thread_count = 1 + (rand() % 15);
+			compress_wad(compressed, plaintext, thread_count);
+		} catch(std::exception& e) {
+			printf("compress_wad threw: %s\n", e.what());
+			write_sad_file();
+			continue;
+		}
+		
+		array_stream output;
+		try {
+			decompress_wad(output, compressed);
+		} catch(std::exception& e) {
+			printf("decompress_wad threw: %s\n", e.what());
+			write_sad_file();
+			continue;
+		}
+		
+		if(!array_stream::compare_contents(plaintext, output)) {
+			write_sad_file();
+			continue;
+		}
+		
+		happy++;
 	}
 	
 	printf("results: %d happy, %d sad\n", happy, sad);
-}
-
-void compression_test_iter(int buffer_size, int& happy, int& sad) {
-	array_stream plaintext;
-	for(int j = 0; j < buffer_size; j++) {
-		if(rand() % 8 <= 0) {
-			plaintext.write8(rand());
-		} else {
-			plaintext.write8(0);
-		}
-	}
-	
-	auto write_sad_file = [&]() {
-		sad++;
-		std::string sad_file_path = "/tmp/wad_is_sad_" + std::to_string(sad) + ".bin";
-		file_stream sad_file(sad_file_path, std::ios::out);
-		plaintext.seek(0);
-		stream::copy_n(sad_file, plaintext, plaintext.size());
-		printf("Written sad file to %s\n", sad_file_path.c_str());
-	};
-	
-	array_stream compressed;
-	try {
-		compress_wad(compressed, plaintext);
-	} catch(std::exception& e) {
-		printf("compress_wad threw: %s\n", e.what());
-		write_sad_file();
-		return;
-	}
-	
-	array_stream output;
-	try {
-		decompress_wad(output, compressed);
-	} catch(std::exception& e) {
-		printf("decompress_wad threw: %s\n", e.what());
-		write_sad_file();
-		return;
-	}
-	
-	if(plaintext.buffer.size() != output.buffer.size()) {
-		write_sad_file();
-		return;
-	}
-	
-	bool happy_this_time = true;
-	for(int j = 0; j < buffer_size; j++) {
-		if(plaintext.buffer[j] != output.buffer[j]) {
-			write_sad_file();
-			happy_this_time = false;
-			break;
-		}
-	}
-	
-	if(happy_this_time) {
-		happy++;
-	}
 }

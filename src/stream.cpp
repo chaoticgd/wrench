@@ -161,6 +161,18 @@ char* array_stream::data() {
 	return buffer.data();
 }
 
+bool array_stream::compare_contents(array_stream& a, array_stream& b) {
+	if(a.buffer.size() != b.buffer.size()) {
+		return false;
+	}
+	for(size_t i = 0; i < a.buffer.size(); i++) {
+		if(a.buffer[i] != b.buffer[i]) {
+			return false;
+		}
+	}
+	return true;
+}
+
 /*
 	proxy_stream
 */

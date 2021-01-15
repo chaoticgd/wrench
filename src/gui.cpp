@@ -1513,8 +1513,8 @@ ImVec2 gui::settings::initial_size() const {
 
 void gui::settings::render(app& a) {
 	if(ImGui::BeginTabBar("tabs")) {
-		if(ImGui::BeginTabItem("Paths")) {
-			render_paths_page(a);
+		if(ImGui::BeginTabItem("General")) {
+			render_general_page(a);
 			ImGui::EndTabItem();
 		}
 		
@@ -1535,7 +1535,7 @@ void gui::settings::render(app& a) {
 	}
 }
 
-void gui::settings::render_paths_page(app& a) {
+void gui::settings::render_general_page(app& a) {
 	ImGui::Text("Emulator Path");
 
 	ImGui::PushItemWidth(-1);
@@ -1611,6 +1611,16 @@ void gui::settings::render_paths_page(app& a) {
 		);
 		
 		_new_game_path = "";
+	}
+	ImGui::NewLine();
+	
+	ImGui::Text("Compression Threads");
+	int compression_threads = config::get().compression_threads;
+	if(ImGui::InputInt("##compression_threads", &compression_threads)) {
+		if(compression_threads >= 1 && compression_threads <= 256) {
+			config::get().compression_threads = compression_threads;
+			config::get().write();
+		}
 	}
 }
 
