@@ -144,7 +144,7 @@ namespace gui {
 		void render(app& a) override;
 	
 	private:
-		void render_paths_page(app& a);
+		void render_general_page(app& a);
 		void render_gui_page(app& a);
 		void render_debug_page(app& a);
 		

@@ -173,6 +173,7 @@ const char* settings_file_path = "wrench_settings.ini";
 
 void config::read() {
 	// Default settings
+	compression_threads = 8;
 	gui_scale = 1.f;
 	vsync = true;
 	debug.stream_tracing = false;
@@ -184,6 +185,7 @@ void config::read() {
 			auto general_table = toml::find_or(settings_file, "general", toml::value());
 			emulator_path =
 				toml::find_or(general_table, "emulator_path", emulator_path);
+			compression_threads = toml::find_or(general_table, "compression_threads", 8);
 
 			auto gui_table = toml::find_or(settings_file, "gui", toml::value());
 			gui_scale = toml::find_or(gui_table, "scale", 1.f);
@@ -224,7 +226,8 @@ void config::write() {
 	
 	toml::value file {
 		{"general", {
-			{"emulator_path", emulator_path}
+			{"emulator_path", emulator_path},
+			{"compression_threads", compression_threads}
 		}},
 		{"gui", {
 			{"scale", gui_scale},
