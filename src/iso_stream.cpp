@@ -80,7 +80,7 @@ void wad_stream::commit() {
 	
 	array_stream compressed_buffer;
 	_uncompressed_buffer.seek(0);
-	compress_wad(compressed_buffer, _uncompressed_buffer);
+	compress_wad(compressed_buffer, _uncompressed_buffer, 8);
 	
 	compressed_buffer.seek(0);
 	_backing->seek(_offset);

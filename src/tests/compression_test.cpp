@@ -55,7 +55,8 @@ void compression_test() {
 		
 		array_stream compressed;
 		try {
-			compress_wad(compressed, plaintext);
+			int thread_count = 1 + (rand() % 15);
+			compress_wad(compressed, plaintext, thread_count);
 		} catch(std::exception& e) {
 			printf("compress_wad threw: %s\n", e.what());
 			write_sad_file();

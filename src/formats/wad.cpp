@@ -240,7 +240,7 @@ static const size_t TYPE_A_MAX_LOOKBACK = 2044;
 static const size_t MAX_LITERAL_SIZE = 255;//255 + 18;
 static const size_t MAX_MATCH_SIZE = 0x100;
 
-void compress_wad(array_stream& dest, array_stream& src) {
+void compress_wad(array_stream& dest, array_stream& src, int thread_count) {
 	WAD_COMPRESS_DEBUG(
 		#ifdef WAD_COMPRESS_DEBUG_EXPECTED_PATH
 			file_stream expected(WAD_COMPRESS_DEBUG_EXPECTED_PATH);
@@ -250,17 +250,10 @@ void compress_wad(array_stream& dest, array_stream& src) {
 		#endif
 	)
 	
-	// TODO: Pass these in as arguments.
-	bool enable_multithreading = src.size() > 1024 * 1024;
-	int thread_count = 8;
-	if(!enable_multithreading) {
-		thread_count = 1;
-	}
-	
 	std::vector<array_stream> intermediates(thread_count);
 	
 	// Compress the data into a stream of packets.
-	if(!enable_multithreading) {
+	if(thread_count == 1) {
 		uint32_t last_flag = DO_NOT_INJECT_FLAG;
 		
 		src.seek(0);

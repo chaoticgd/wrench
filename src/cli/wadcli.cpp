@@ -18,49 +18,68 @@
 
 #include <sstream>
 
+#include "../util.h"
 #include "../command_line.h"
 #include "../formats/wad.h"
 
-# /*
-#	CLI tool to decompress and recompress WAD segments. Not to be confused with WAD archives.
-# */
+// CLI tool to decompress and recompress WAD segments.
+// Not to be confused with the *.WAD files in R&C2's filesystem.
 
 void copy_and_decompress(stream& dest, stream& src);
 void copy_and_compress(stream& dest, stream& src);
 
 int main(int argc, char** argv) {
-	return run_cli_converter(argc, argv,
-		"Decompress WAD segments.",
-		{
-			{ "decompress", copy_and_decompress },
-			{ "compress", copy_and_compress }
-		});
-}
+	cxxopts::Options options(argv[0], "Decompress WAD segments.");
+	options.add_options()
+		("c,command", "The operation to perform. Possible values are: decompress, compress.",
+			cxxopts::value<std::string>())
+		("s,src", "The input file.",
+			cxxopts::value<std::string>())
+		("d,dest", "The output file.", cxxopts::value<std::string>())
+		("o,offset", "The offset in the input file where the header begins.",
+			cxxopts::value<std::string>()->default_value("0"))
+		("t,threads", "The number of threads to use. Only applies for compression.",
+			cxxopts::value<std::string>()->default_value("1"));
 
-void copy_and_decompress(stream& dest, stream& src) {
-	array_stream dest_array;
-	array_stream src_array;
+	options.parse_positional({
+		"command", "src", "dest"
+	});
+
+	auto args = parse_command_line_args(argc, argv, options);
+	std::string command = cli_get(args, "command");
+	std::string src_path = cli_get(args, "src");
+	std::string dest_path = cli_get(args, "dest");
+	size_t offset = parse_number(cli_get_or(args, "offset", "0"));
+	size_t thread_count = parse_number(cli_get_or(args, "threads", "1"));
 	
-	uint32_t compressed_size = src.read<uint32_t>(0x3);
-	src.seek(0);
-	stream::copy_n(src_array, src, compressed_size);
+	if(thread_count < 1) {
+		std::cerr << "You must choose a positive number of threads. Defaulting to 1.\n";
+		thread_count = 1;
+	}
 	
-	decompress_wad(dest_array, src_array);
+	bool decompress = command == "decompress";
+	bool compress = command == "compress";
+	if(!decompress && !compress) {
+		std::cerr << "Invalid command.\n";
+		return 1;
+	}
+	
+	file_stream src_file(src_path);
+	file_stream dest_file(dest_path, std::ios::in | std::ios::out | std::ios::trunc);
+	
+	array_stream src, dest;
+	if(decompress) {
+		uint32_t compressed_size = src_file.read<uint32_t>(offset + 0x3);
+		src_file.seek(offset);
+		stream::copy_n(src, src_file, compressed_size);
+		decompress_wad(dest, src);
+	} else {
+		stream::copy_n(src, src_file, src_file.size());
+		compress_wad(dest, src, thread_count);
+	}
 	
 	dest.seek(0);
-	dest_array.seek(0);
-	stream::copy_n(dest, dest_array, dest_array.size());
-}
+	stream::copy_n(dest_file, dest, dest.size());
 
-void copy_and_compress(stream& dest, stream& src) {
-	array_stream dest_array;
-	array_stream src_array;
-	
-	stream::copy_n(src_array, src, src.size());
-	
-	compress_wad(dest_array, src_array);
-	
-	dest.seek(0);
-	dest_array.seek(0);
-	stream::copy_n(dest, dest_array, dest_array.size());
+	return 0;
 }
