@@ -368,14 +368,14 @@ packed_struct(world_header_rac23,
 	uint32_t directional_lights; // 0x4
 	uint32_t unknown_8;          // 0x8
 	uint32_t unknown_c;          // 0xc
-	uint32_t english_strings;    // 0x10
-	uint32_t unknown_14;         // 0x14
+	uint32_t us_english_strings; // 0x10
+	uint32_t uk_english_strings; // 0x14
 	uint32_t french_strings;     // 0x18
 	uint32_t german_strings;     // 0x1c
 	uint32_t spanish_strings;    // 0x20
 	uint32_t italian_strings;    // 0x24
-	uint32_t unused1_strings;    // 0x28
-	uint32_t unused2_strings;    // 0x2c
+	uint32_t japanese_strings;   // 0x28
+	uint32_t korean_strings;     // 0x2c
 	uint32_t unknown_30;         // 0x30
 	uint32_t ties;               // 0x34
 	uint32_t unknown_38;         // 0x38
@@ -502,7 +502,8 @@ packed_struct(world_string_table_entry,
 	file_ptr<char*> string; // Relative to this struct.
 	uint32_t id;
 	uint32_t secondary_id; // Usually -1.
-	uint32_t padding;
+	uint16_t unknown_c; // Always zero for R&C2.
+	uint16_t unknown_e; // Always zero for R&C2.
 )
 
 packed_struct(world_thing_14,

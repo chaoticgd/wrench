@@ -32,14 +32,28 @@ void world_segment::read_rac23() {
 		property_things.push_back(property_thing);
 	} while(property_things.size() < property_thing.count);
 	
-	game_strings[0] = read_language(header.english_strings);
-	thing_14 = backing->read<world_thing_14>(header.unknown_14);
-	game_strings[1] = read_language(header.french_strings);
-	game_strings[2] = read_language(header.german_strings);
-	game_strings[3] = read_language(header.spanish_strings);
-	game_strings[4] = read_language(header.italian_strings);
-	game_strings[5] = read_language(header.unused1_strings);
-	game_strings[6] = read_language(header.unused2_strings);
+	switch(header.us_english_strings % 0x10) {
+		case 0x0:
+			game = world_type::RAC2;
+			break;
+		case 0x4:
+			game = world_type::RAC3;
+			break;
+		case 0x8:
+			game = world_type::DL;
+			break;
+		default:
+			throw stream_format_error("Invalid language block alignment.");
+	}
+	
+	languages[0] = read_language(header.us_english_strings, true);
+	languages[1] = read_language(header.uk_english_strings, false);
+	languages[2] = read_language(header.french_strings, false);
+	languages[3] = read_language(header.german_strings, false);
+	languages[4] = read_language(header.spanish_strings, false);
+	languages[5] = read_language(header.italian_strings, false);
+	languages[6] = read_language(header.japanese_strings, false);
+	languages[7] = read_language(header.korean_strings, false);
 	read_table(header.directional_lights, &directional_lights);
 	read_table(header.unknown_84, &thing_84s);
 	read_table(header.unknown_8, &thing_8s);
@@ -150,16 +164,30 @@ void world_segment::read_table(
 	}
 }
 
-std::vector<game_string> world_segment::read_language(uint32_t offset) {
-	std::vector<game_string> language;
+game_language world_segment::read_language(uint32_t offset, bool is_english) {
+	game_language language;
+	
+	if(game == world_type::RAC3 && is_english) {
+		language.unknown = backing->read<uint32_t>(offset - 0x4);
+	}
 	
 	auto table = backing->read<world_string_table_header>(offset);
 	std::vector<world_string_table_entry> entries(table.num_strings);
 	backing->read_v(entries);
 	
+	if(game == world_type::RAC3) {
+		offset += sizeof(world_string_table_header);
+	}
+	
 	for(world_string_table_entry& entry : entries) {
 		backing->seek(offset + entry.string.value);
-		language.push_back({ entry.id, entry.secondary_id, backing->read_string() });
+		language.strings.push_back({
+			entry.id,
+			entry.secondary_id,
+			entry.unknown_c, entry.unknown_e,
+			backing->read_string()
+		});
+		if(entry.string.value == 0xf648) printf("its here %x\n",*(uint32_t*)language.strings.back().str.c_str() & 0xff);
 	}
 	
 	return language;
@@ -279,49 +307,64 @@ void world_segment::write_rac2() {
 	backing->write(properties);
 	backing->write_v(property_things);
 	
-	const auto write_language = [&](std::vector<game_string>& strings) {
+	const auto write_language = [&](game_language& language, bool is_english) {
 		backing->pad(0x10, 0);
+		if(game == world_type::RAC3 && is_english) {
+			assert(language.unknown.has_value());
+			backing->write<uint32_t>(*language.unknown);
+		}
 		size_t base_pos = backing->tell();
 		backing->seek(base_pos + sizeof(world_string_table_header));
+		if(!is_english)printf("bp=%x tell=%x\n", base_pos, backing->tell());
 		
 		size_t data_pos = sizeof(world_string_table_header) +
-			strings.size() * sizeof(world_string_table_entry);
-		for(game_string& str : strings) {
+			language.strings.size() * sizeof(world_string_table_entry);
+		for(game_string& str : language.strings) {
 			world_string_table_entry entry;
 			entry.string = data_pos;
+			if(game == world_type::RAC3) {
+				entry.string.value -= sizeof(world_string_table_header);
+			}
 			entry.id = str.id;
 			entry.secondary_id = str.secondary_id;
-			entry.padding = 0;
+			entry.unknown_c = str.unknown_c;
+			entry.unknown_e = str.unknown_e;
 			backing->write(entry);
 			data_pos += str.str.size() + 1;
-			while(data_pos % 4 != 0) data_pos++;
+			if(game == world_type::RAC2) {
+				while(data_pos % 4 != 0) data_pos++;
+			}
 		}
 		
-		for(game_string& str : strings) {
-			backing->pad(0x4, 0);
+		for(game_string& str : language.strings) {
+			if(game == world_type::RAC2) {
+				backing->pad(0x4, 0);
+			}
+			if(str.str == "\x81\xBA\x83\x9C\x81\x66\x20\x83\x03\x82\xAF\x80\x67\x20\x56\x34") printf("write here %x %x\n", backing->tell()-base_pos,*(uint32_t*)str.str.c_str() & 0xff);
 			backing->write_n(str.str.c_str(), str.str.size() + 1);
 		}
 		backing->pad(0x10, 0);
 		
 		world_string_table_header string_table;
-		string_table.num_strings = strings.size();
+		string_table.num_strings = language.strings.size();
 		string_table.size = data_pos;
+		if(game == world_type::RAC3) {
+			string_table.size -= sizeof(world_string_table_header);
+		}
 		backing->write(base_pos, string_table);
 		
 		backing->seek(base_pos + data_pos);
 		
 		return base_pos;
 	};
-	header.english_strings = write_language(game_strings[0]);
-	backing->pad(0x10, 0);
-	header.unknown_14 = backing->tell();
-	backing->write(thing_14);
-	header.french_strings = write_language(game_strings[1]);
-	header.german_strings = write_language(game_strings[2]);
-	header.spanish_strings = write_language(game_strings[3]);
-	header.italian_strings = write_language(game_strings[4]);
-	header.unused1_strings = write_language(game_strings[5]);
-	header.unused2_strings = write_language(game_strings[6]);
+	header.us_english_strings = write_language(languages[0], true);
+	header.uk_english_strings = write_language(languages[1], false);
+	header.french_strings = write_language(languages[2], false);
+	header.german_strings = write_language(languages[3], false);
+	header.spanish_strings = write_language(languages[4], false);
+	header.italian_strings = write_language(languages[5], false);
+	header.japanese_strings = write_language(languages[6], false);
+	header.korean_strings = write_language(languages[7], false);
 	
 	header.directional_lights = write_table(directional_lights);
 	header.unknown_84 = write_table(thing_84s);

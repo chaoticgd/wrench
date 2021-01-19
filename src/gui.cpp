@@ -815,29 +815,27 @@ ImVec2 gui::string_viewer::initial_size() const {
 
 void gui::string_viewer::render(app& a) {
 	if(auto lvl = a.get_level()) {
-		static std::size_t language = 0;
+		static std::size_t language_index = 0;
+		game_language& language = lvl->world.languages[language_index];
 		
 		ImGui::Columns(2);
 		ImGui::SetColumnWidth(0, 64);
 
 		static prompt_box string_exporter("Export", "Enter Export Path");
 		if(auto path = string_exporter.prompt()) {
-			auto strings = lvl->world.game_strings[language];
+			game_language language = lvl->world.languages[language_index];
 			std::ofstream out_file(*path);
-			for(game_string& string : strings) {
+			for(game_string& string : language.strings) {
 				out_file << std::hex << string.id << ": " << string.str << "\n";
 			}
 		}
-
+		
+		const char* lang_names[LANGUAGE_COUNT] = {LANGUAGE_NAMES};
+		
 		ImGui::NextColumn();
-		
-		static const char* language_names[] = {
-			"English", "French", "German", "Spanish", "Italian"
-		};
-		
-		for(std::size_t i = 0; i < 5; i++) {
-			if(ImGui::Button(language_names[i])) {
-				language = i;
+		for(std::size_t i = 0; i < LANGUAGE_COUNT; i++) {
+			if(ImGui::Button(lang_names[i])) {
+				language_index = i;
 			}
 			ImGui::SameLine();
 		}
@@ -845,10 +843,8 @@ void gui::string_viewer::render(app& a) {
 
 		ImGui::Columns(1);
 
-		auto& strings = lvl->world.game_strings[language];
-
 		ImGui::BeginChild(1);
-		for(game_string& string : strings) {
+		for(game_string& string : language.strings) {
 			ImGui::Text("%x: %s", string.id, string.str.c_str());
 		}
 		ImGui::EndChild();

@@ -24,12 +24,6 @@
 
 #include "level_types.h"
 
-struct game_string {
-	uint32_t id;
-	uint32_t secondary_id;
-	std::string str;
-};
-
 struct entity_id {
 	std::size_t value;
 	
@@ -129,16 +123,40 @@ struct grindrail_spline_entity final : spline_entity {
 	uint8_t unknown_10[0x10];
 };
 
+enum class world_type {
+	RAC2, RAC3, DL
+};
+
+struct game_string {
+	uint32_t id;
+	uint32_t secondary_id;
+	uint16_t unknown_c;
+	uint16_t unknown_e;
+	std::string str;
+};
+
+struct game_language {
+	std::optional<uint32_t> unknown; // Only present for R&C3 (and possibly DL).
+	std::vector<game_string> strings;
+};
+
+#define LANGUAGE_COUNT 8
+#define LANGUAGE_NAMES \
+	"US English", "UK English", "French", "German", \
+	"Spanish", "Italian", "Japanese", "Korean"
+
 class world_segment {
 public:
 	world_segment() {}
-
+	
+	world_type game;
+	
 	world_properties properties;
 	std::vector<world_property_thing> property_things;
 	std::vector<world_directional_light> directional_lights;
 	std::vector<world_thing_8> thing_8s;
 	std::vector<world_thing_c> thing_cs;
-	std::array<std::vector<game_string>, 7> game_strings;
+	std::array<game_language, LANGUAGE_COUNT> languages;
 	world_thing_14 thing_14;
 	std::vector<uint32_t> thing_30s;
 	std::vector<tie_entity> ties;
@@ -190,7 +208,7 @@ private:
 		std::vector<T_2>* second = nullptr,
 		std::vector<T_3>* third = nullptr,
 		bool align = false);
-	std::vector<game_string> read_language(uint32_t offset);
+	game_language read_language(uint32_t offset, bool is_english);
 	std::vector<uint32_t> read_u32_list(uint32_t offset);
 	template <typename T_in_mem, typename T_on_disc>
 	std::vector<T_in_mem> read_entity_table( // Defined in world.cpp.
