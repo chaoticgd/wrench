@@ -354,6 +354,50 @@ void compress_wad(array_stream& dest, array_stream& src, int thread_count) {
 	dest.write<uint32_t>(total_size);
 }
 
+template <bool end_of_buffer>
+void find_match(
+	size_t& literal_size,
+	size_t& match_offset,
+	size_t& match_size,
+	const uint8_t* src,
+	size_t src_pos,
+	size_t src_end) {
+	
+	size_t max_literal_size = end_of_buffer ?
+		std::min(MAX_LITERAL_SIZE, src_end - src_pos) : MAX_LITERAL_SIZE;
+	literal_size = max_literal_size;
+	match_offset = 0;
+	match_size = 0;
+	
+	for(size_t i = 0; i < max_literal_size; i++) {
+		size_t high = src_pos + i;
+		size_t low = sub_clamped(high, TYPE_A_MAX_LOOKBACK);
+		size_t max_match_size = end_of_buffer ?
+			std::min(MAX_MATCH_SIZE, src_end - src_pos - i) : MAX_MATCH_SIZE;
+		for(size_t j = low; j < high; j++) {
+			// Count number of equal bytes.
+			size_t target = src_pos + i;
+			size_t k = 0;
+			for(; k < max_match_size; k++) {
+				auto l_val = src[target + k];
+				auto r_val = src[j + k];
+				if(l_val != r_val) {
+					break;
+				}
+			}
+			
+			if(k >= 3 && k > match_size) {
+				match_offset = j;
+				match_size = k;
+			}
+		}
+		if(match_size >= 3) {
+			literal_size = i;
+			break;
+		}
+	}
+}
+
 const std::vector<char> DUMMY_PACKET = { 0x11, 0, 0 };
 
 void encode_wad_packet(
@@ -362,69 +406,15 @@ void encode_wad_packet(
 		size_t& src_pos, // Position in the buffer to compress.
 		size_t src_end, // End of the part of the buffer to compress.
 		uint32_t& last_flag) {
-	// Just emit literals at the end so we don't have to worry about overrunning
-	// the input buffer.
-	if(src_pos + MAX_MATCH_SIZE >= src_end) {
-		WAD_COMPRESS_DEBUG(std::cout << "\n*** SPECIAL EOF PACKET ***\n");
-		if(last_flag < 0x10 || last_flag == DO_NOT_INJECT_FLAG) {
-			last_flag = 0x11;
-			dest.buffer.insert(dest.buffer.end(), DUMMY_PACKET.begin(), DUMMY_PACKET.end());
-			return;
-		}
-		size_t literal_size = std::min(src_end - src_pos, MAX_LITERAL_SIZE);
-		if(literal_size <= 3) {
-			dest.buffer[dest.pos - 2] |= literal_size; // Inject the literal size into the last packet.
-		} else if(literal_size <= 18) {
-			// We can encode the size in the flag byte.
-			dest.buffer.push_back(literal_size - 3);
-		} else {
-			// We have to push it as a seperate byte (leave the flag as zero).
-			dest.buffer.push_back(0);
-			dest.buffer.push_back(literal_size - 18);
-		}
-		last_flag = DO_NOT_INJECT_FLAG;
-		auto iter = src + src_pos;
-		dest.buffer.insert(dest.buffer.end(), iter, iter + literal_size);
-		src_pos += literal_size;
-		return;
-	}
-	
 	// Determine where the next repeating pattern is.
 	size_t literal_size = MAX_LITERAL_SIZE;
 	size_t match_offset = 0;
 	size_t match_size = 0;
-	const auto find_match = [&]() {
-		literal_size = MAX_LITERAL_SIZE;
-		match_offset = 0;
-		match_size = 0;
-		
-		for(size_t i = 0; i < MAX_LITERAL_SIZE; i++) {
-			size_t high = src_pos + i;
-			size_t low = sub_clamped(high, TYPE_A_MAX_LOOKBACK);
-			for(size_t j = low; j < high; j++) {
-				// Count number of equal bytes.
-				size_t target = src_pos + i;
-				size_t k = 0;
-				for(; k < MAX_MATCH_SIZE; k++) {
-					auto l_val = src[target + k];
-					auto r_val = src[j + k];
-					if(l_val != r_val) {
-						break;
-					}
-				}
-				
-				if(k >= 3 && k > match_size) {
-					match_offset = j;
-					match_size = k;
-				}
-			}
-			if(match_size >= 3) {
-				literal_size = i;
-				break;
-			}
-		}
-	};
-	find_match();
+	if(src_pos + MAX_MATCH_SIZE >= src_end) {
+		find_match<true>(literal_size, match_offset, match_size, src, src_pos, src_end);
+	} else {
+		find_match<false>(literal_size, match_offset, match_size, src, src_pos, src_end);
+	}
 	
 	if(literal_size == 0) { // Match packet.
 		std::size_t delta = src_pos - match_offset - 1;
