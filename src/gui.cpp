@@ -832,10 +832,10 @@ void gui::string_viewer::render(app& a) {
 		ImGui::NextColumn();
 		
 		static const char* language_names[] = {
-			"English", "French", "German", "Spanish", "Italian"
+			"American English", "British English", "French", "German", "Spanish", "Italian", "Japanese", "Korean"
 		};
 		
-		for(std::size_t i = 0; i < 5; i++) {
+		for(std::size_t i = 0; i < 8; i++) {
 			if(ImGui::Button(language_names[i])) {
 				language = i;
 			}

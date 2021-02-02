@@ -32,14 +32,14 @@ void world_segment::read_rac23() {
 		property_things.push_back(property_thing);
 	} while(property_things.size() < property_thing.count);
 	
-	game_strings[0] = read_language(header.english_strings);
-	thing_14 = backing->read<world_thing_14>(header.unknown_14);
-	game_strings[1] = read_language(header.french_strings);
-	game_strings[2] = read_language(header.german_strings);
-	game_strings[3] = read_language(header.spanish_strings);
-	game_strings[4] = read_language(header.italian_strings);
-	game_strings[5] = read_language(header.unused1_strings);
-	game_strings[6] = read_language(header.unused2_strings);
+	game_strings[0] = read_language(header.am_english_strings);
+	game_strings[1] = read_language(header.uk_english_strings);
+	game_strings[2] = read_language(header.french_strings);
+	game_strings[3] = read_language(header.german_strings);
+	game_strings[4] = read_language(header.spanish_strings);
+	game_strings[5] = read_language(header.italian_strings);
+	game_strings[6] = read_language(header.unused1_strings);
+	game_strings[7] = read_language(header.unused2_strings);
 	read_table(header.directional_lights, &directional_lights);
 	read_table(header.unknown_84, &thing_84s);
 	read_table(header.unknown_8, &thing_8s);
@@ -102,11 +102,11 @@ void world_segment::read_rac23() {
 	}
 	
 	auto thing_98_header = backing->read<world_thing_98_header>(header.unknown_98);
+	for (int i = 0; i < 5; ++i)
+		thing_98_part_offsets[i] = thing_98_header.part_offsets[i];
 	thing_98_1s = backing->read_multiple<world_thing_98>(thing_98_header.part_1_count);
 	thing_98_2s = backing->read_multiple<uint32_t>(
-		((thing_98_header.size - thing_98_header.part_1_count * sizeof(world_thing_98) - 0xc) / sizeof(uint32_t)));
-	thing_98_header_8 = thing_98_header.unknown_8;
-	thing_98_header_c = thing_98_header.unknown_c;
+		(thing_98_header.size - thing_98_header.part_1_count * sizeof(world_thing_98) - sizeof(world_thing_98_header) + 4) / sizeof(uint32_t));
 	
 	if(header.unknown_90 != 0) {
 		auto thing_90_header = backing->read<world_thing_90_header>(header.unknown_90);
@@ -118,15 +118,95 @@ void world_segment::read_rac23() {
 
 void world_segment::read_rac4() {
 	world_header_rac4 header = backing->read<world_header_rac4>(0);
-	
+
+	// 
+	properties = backing->read<world_properties>(header.properties);
+	world_property_thing property_thing;
+	do {
+		property_thing = backing->read<world_property_thing>();
+		property_things.push_back(property_thing);
+	} while (property_things.size() < property_thing.count);
+
+	// equivalent to rac23 0x08
+	read_table(header.unknown_4, &thing_8s);
+
+	// equivalent to rac23 0x0c
+	read_table(header.unknown_8, &thing_cs);
+
+	// 
+	game_strings[0] = read_language(header.am_english_strings);
+	game_strings[1] = read_language(header.uk_english_strings);
+	game_strings[2] = read_language(header.french_strings);
+	game_strings[3] = read_language(header.german_strings);
+	game_strings[4] = read_language(header.spanish_strings);
+	game_strings[5] = read_language(header.italian_strings);
+	game_strings[6] = read_language(header.japanese_strings);
+	game_strings[7] = read_language(header.korean_strings);
+
+	// equivalent to rac23 0x48
+	thing_48s = read_u32_list(header.unknown_2c);
+
+	//
 	mobies = read_entity_table<moby_entity, world_moby_rac4>(header.mobies, swap_moby_rac4);
 	max_moby_count = mobies.size() + backing->read<uint32_t>(header.mobies + sizeof(uint32_t));
-	
+
+	// 
+	read_table(header.unknown_34, &thing_50_1s, &thing_50_2s);
+	read_table(header.unknown_38, &thing_54_1s, &thing_54_2s);
+	read_terminated_array(thing_58s, header.unknown_3c);
+
+	// 
+	pvars = read_pvars(header.pvar_table, header.pvar_data);
+
+	// equivalent to rac23 0x64
+	read_terminated_array(thing_64s, header.unknown_48);
+
+	// 
+	triggers = read_entity_table<trigger_entity, world_trigger>(header.triggers, swap_trigger);
+	read_table(header.unknown_50, &thing_6cs);
+	read_table(header.unknown_54, &thing_70s);
+	read_table(header.unknown_58, &thing_74s);
+
+	// 
 	auto spline_table = backing->read<world_spline_table>(header.splines);
 	splines = read_splines<regular_spline_entity>(
 		backing->tell(),
 		spline_table.spline_count,
 		header.splines + spline_table.data_offset);
+
+	// 
+	world_grindrail_header thing_7c_header = backing->read<world_grindrail_header>(header.grindrails);
+	auto grindrails_part_1 = backing->read_multiple<world_grindrail_part_1>(thing_7c_header.count);
+	grindrails = read_splines<grindrail_spline_entity>(
+		backing->tell(),
+		thing_7c_header.count,
+		header.grindrails + thing_7c_header.part_2_data_offset);
+	for (size_t i = 0; i < thing_7c_header.count; i++) {
+		grindrail_spline_entity& dest = grindrails[i];
+		auto& src = grindrails_part_1[i];
+		dest.special_point = glm::vec4(src.x, src.y, src.z, src.w);
+		std::memcpy(dest.unknown_10, src.unknown_10, 0x10);
+	}
+
+	// equivalent to rac23 0x80
+	auto thing_80_table = backing->read<world_object_table>(header.unknown_64);
+	thing_80_1 = backing->read_multiple<uint8_t>(0x800);
+	thing_80_2 = backing->read_multiple<uint8_t>(thing_80_table.count_1 * 0x10);
+
+	// equivalent to rac23 0x8c
+	read_table(header.unknown_70, &thing_8cs);
+
+	// equivalent to rac23 0x88
+	uint32_t thing_88_size = backing->read<uint32_t>(header.unknown_6c);
+	thing_88 = backing->read_multiple<uint8_t>(thing_88_size);
+
+	// equivalent to rac23 0x98
+	auto thing_98_header = backing->read<world_thing_98_header>(header.unknown_74);
+	for (int i = 0; i < 5; ++i)
+		thing_98_part_offsets[i] = thing_98_header.part_offsets[i];
+	thing_98_1s = backing->read_multiple<world_thing_98>(thing_98_header.part_1_count);
+	thing_98_2s = backing->read_multiple<uint32_t>(
+		(thing_98_header.size - thing_98_header.part_1_count * sizeof(world_thing_98) - sizeof(world_thing_98_header) + 4) / sizeof(uint32_t));
 }
 
 template <typename T_1, typename T_2 = char, typename T_3 = char>
@@ -312,16 +392,14 @@ void world_segment::write_rac2() {
 		
 		return base_pos;
 	};
-	header.english_strings = write_language(game_strings[0]);
-	backing->pad(0x10, 0);
-	header.unknown_14 = backing->tell();
-	backing->write(thing_14);
-	header.french_strings = write_language(game_strings[1]);
-	header.german_strings = write_language(game_strings[2]);
-	header.spanish_strings = write_language(game_strings[3]);
-	header.italian_strings = write_language(game_strings[4]);
-	header.unused1_strings = write_language(game_strings[5]);
-	header.unused2_strings = write_language(game_strings[6]);
+	header.am_english_strings = write_language(game_strings[0]);
+	header.uk_english_strings = write_language(game_strings[1]);
+	header.french_strings = write_language(game_strings[2]);
+	header.german_strings = write_language(game_strings[3]);
+	header.spanish_strings = write_language(game_strings[4]);
+	header.italian_strings = write_language(game_strings[5]);
+	header.unused1_strings = write_language(game_strings[6]);
+	header.unused2_strings = write_language(game_strings[7]);
 	
 	header.directional_lights = write_table(directional_lights);
 	header.unknown_84 = write_table(thing_84s);
@@ -515,8 +593,8 @@ void world_segment::write_rac2() {
 		thing_98_1s.size() * sizeof(world_thing_98) + // part 1
 		thing_98_2s.size() * sizeof(uint32_t); // part 2
 	thing_98_header.part_1_count = thing_98_1s.size();
-	thing_98_header.unknown_8 = thing_98_header_8;
-	thing_98_header.unknown_c = thing_98_header_c;
+	for (int i = 0; i < 5; ++i)
+		thing_98_header.part_offsets[i] = thing_98_part_offsets[i];
 	backing->write(thing_98_header);
 	backing->write_v(thing_98_1s);
 	backing->write_v(thing_98_2s);
@@ -626,7 +704,7 @@ void swap_moby_rac4(moby_entity& l, world_moby_rac4& r) {
 	l.unknown_5c = 0;
 	l.unknown_60 = 0;
 	l.unknown_64 = 0;
-	l.pvar_index = -1;
+	SWAP_PACKED(l.pvar_index, r.pvar_index);
 	l.unknown_6c = 0;
 	l.unknown_70 = 0;
 	l.unknown_74 = 0;

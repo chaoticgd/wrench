@@ -368,8 +368,8 @@ packed_struct(world_header_rac23,
 	uint32_t directional_lights; // 0x4
 	uint32_t unknown_8;          // 0x8
 	uint32_t unknown_c;          // 0xc
-	uint32_t english_strings;    // 0x10
-	uint32_t unknown_14;         // 0x14
+	uint32_t am_english_strings; // 0x10
+	uint32_t uk_english_strings; // 0x14
 	uint32_t french_strings;     // 0x18
 	uint32_t german_strings;     // 0x1c
 	uint32_t spanish_strings;    // 0x20
@@ -406,36 +406,36 @@ packed_struct(world_header_rac23,
 )
 
 packed_struct(world_header_rac4,
-	uint32_t unknown_0;          // 0x0
-	uint32_t unknown_4;          // 0x4
-	uint32_t unknown_8;          // 0x8
-	uint32_t unknown_c;          // 0xc
-	uint32_t unknown_10;         // 0x10
-	uint32_t unknown_14;         // 0x14
-	uint32_t unknown_18;         // 0x18
-	uint32_t unknown_1c;         // 0x1c
-	uint32_t unknown_20;         // 0x20
-	uint32_t unknown_24;         // 0x24
-	uint32_t unknown_28;         // 0x28
-	uint32_t unknown_2c;         // 0x2c
+	uint32_t properties;         // 0x0
+	uint32_t unknown_4;          // 0x4 -- rac3 0x08
+	uint32_t unknown_8;          // 0x8 -- rac3 0x0c
+	uint32_t am_english_strings; // 0xc
+	uint32_t uk_english_strings; // 0x10
+	uint32_t french_strings;     // 0x14
+	uint32_t german_strings;     // 0x18
+	uint32_t spanish_strings;    // 0x1c
+	uint32_t italian_strings;    // 0x20
+	uint32_t japanese_strings;   // 0x24
+	uint32_t korean_strings;     // 0x28
+	uint32_t unknown_2c;         // 0x2c -- rac3 0x48
 	uint32_t mobies;             // 0x30
 	uint32_t unknown_34;         // 0x34
 	uint32_t unknown_38;         // 0x38
 	uint32_t unknown_3c;         // 0x3c
-	uint32_t unknown_40;         // 0x40
-	uint32_t unknown_44;         // 0x44
-	uint32_t unknown_48;         // 0x48
-	uint32_t unknown_4c;         // 0x4c
-	uint32_t unknown_50;         // 0x50
-	uint32_t unknown_54;         // 0x54
-	uint32_t unknown_58;         // 0x58
+	uint32_t pvar_table;         // 0x40
+	uint32_t pvar_data;          // 0x44
+	uint32_t unknown_48;         // 0x48 -- rac3 0x64
+	uint32_t triggers;	         // 0x4c
+	uint32_t unknown_50;         // 0x50 -- rac3 0x6c
+	uint32_t unknown_54;         // 0x54 -- rac3 0x70
+	uint32_t unknown_58;         // 0x58 -- rac3 0x74
 	uint32_t splines;            // 0x5c
-	uint32_t unknown_60;         // 0x60
-	uint32_t unknown_64;         // 0x64
+	uint32_t grindrails;         // 0x60
+	uint32_t unknown_64;         // 0x64 -- rac3 0x80?
 	uint32_t unknown_68;         // 0x68
-	uint32_t unknown_6c;         // 0x6c
-	uint32_t unknown_70;         // 0x70
-	uint32_t unknown_74;         // 0x74
+	uint32_t unknown_6c;         // 0x6c -- rac3 0x88
+	uint32_t unknown_70;         // 0x70 -- rac3 0x8c
+	uint32_t unknown_74;         // 0x74 -- rac3 0x98
 )
 
 packed_struct(world_properties,
@@ -587,7 +587,7 @@ packed_struct(world_moby_rac4,
 	uint32_t unknown_44; // 0x44
 	uint32_t unknown_48; // 0x48
 	uint32_t unknown_4c; // 0x4c
-	uint32_t unknown_50; // 0x50
+	uint32_t pvar_index; // 0x50
 	uint32_t unknown_54; // 0x54
 	uint32_t unknown_58; // 0x58
 	uint32_t unknown_5c; // 0x5c
@@ -682,21 +682,16 @@ packed_struct(world_thing_94,
 packed_struct(world_thing_98_header,
 	uint32_t size; // Not including this field.
 	uint32_t part_1_count;
-	uint32_t unknown_8;
-	uint32_t unknown_c;
+	uint32_t part_offsets[5];
+	uint32_t unknown_1c;
+	uint32_t unknown_20;
 )
 
 packed_struct(world_thing_98,
-	uint32_t unknown_0;  // 0x0
-	uint32_t unknown_4;  // 0x4
-	uint32_t unknown_8;  // 0x8
-	uint32_t unknown_c;  // 0xc
-	uint32_t unknown_10; // 0x10
-	vec3f    position;   // 0x14
-	uint32_t unknown_20; // 0x20
-	uint32_t unknown_24; // 0x24
-	uint32_t unknown_28; // 0x28
-	uint32_t unknown_2c; // 0x2c
+	vec3f    position;   // 0x0
+	float 	 unknown_c;  // 0xc
+	uint16_t counts[6];  // 0x10 -- only 5 are used, last one is padding
+	uint32_t offsets[5]; // 0x1c
 )
 
 #endif
