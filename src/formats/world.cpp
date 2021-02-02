@@ -238,7 +238,7 @@ std::vector<game_string> world_segment::read_language(uint32_t offset) {
 	backing->read_v(entries);
 	
 	for(world_string_table_entry& entry : entries) {
-		backing->seek(offset + entry.string.value + 8);
+		backing->seek(offset + entry.string.value);
 		language.push_back({ entry.id, entry.secondary_id, backing->read_string() });
 	}
 	
