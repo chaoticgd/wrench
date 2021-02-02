@@ -138,8 +138,7 @@ public:
 	std::vector<world_directional_light> directional_lights;
 	std::vector<world_thing_8> thing_8s;
 	std::vector<world_thing_c> thing_cs;
-	std::array<std::vector<game_string>, 7> game_strings;
-	world_thing_14 thing_14;
+	std::array<std::vector<game_string>, 8> game_strings;
 	std::vector<uint32_t> thing_30s;
 	std::vector<tie_entity> ties;
 	std::vector<uint32_t> thing_38_1s;
@@ -175,8 +174,7 @@ public:
 	std::vector<std::vector<uint8_t>> thing_94s;
 	std::vector<world_thing_98> thing_98_1s;
 	std::vector<uint32_t> thing_98_2s;
-	uint32_t thing_98_header_8; // Not sure what this is.
-	uint32_t thing_98_header_c; // Not sure what this is.
+	std::array<uint32_t, 5> thing_98_part_offsets;
 
 	stream* backing;
 	void read_rac23();
