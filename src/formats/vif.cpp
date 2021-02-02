@@ -118,6 +118,10 @@ bool vif_code::is_unpack() const {
 	return (static_cast<int>(cmd) & 0b1100000) == 0b1100000;
 }
 
+bool vif_code::is_strow() const {
+	return (static_cast<int>(cmd) & 0b0110000) == 0b0110000;
+}
+
 std::size_t vif_code::packet_size() const {
 	std::size_t result = 0;
 	switch(cmd) {
@@ -158,7 +162,11 @@ std::size_t vif_code::packet_size() const {
 				// This is what PCSX2 does when wl <= cl.
 				// Assume wl = cl = 4.
 				int gsize = ((32 >> unpack.vl) * (unpack.vn + 1)) / 8;
-				result = 1 + (num * gsize) / 4;
+				int size = num * gsize;
+				if (size % 4 != 0)
+					size += 4 - (size % 4);
+
+				result = 1 + (size / 4);
 			}
 	}
 	

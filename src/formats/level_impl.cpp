@@ -17,6 +17,7 @@
 */
 
 #include "level_impl.h"
+#include "tfrag.h"
 
 #include "../app.h"
 
@@ -226,39 +227,12 @@ void level::read_tfrags() {
 	// 0x30 padding
 	);
 
-	packed_struct(tfrag_entry,
-		uint32_t unknown_0; //0x00
-		uint32_t unknown_4; //0x04
-		uint32_t unknown_8; //0x08
-		uint32_t unknown_c; //0x0c
-		uint32_t offset; //0x10 offset from start of tfrag_entry list
-		uint16_t unknown_14;
-		uint16_t unknown_16;
-		uint32_t unknown_18;
-		uint16_t unknown_1c;
-		uint16_t color_offset;
-		uint32_t unknown_20;
-		uint32_t unknown_24;
-		uint32_t unknown_28;
-		uint8_t vertex_count;
-		uint8_t unknown_2d;
-		uint16_t vertex_offset;
-		uint16_t unknown_30;
-		uint16_t unknown_32;
-		uint32_t unknown_34;
-		uint32_t unknown_38;
-		uint8_t color_count;
-		uint8_t unknown_3d;
-		uint8_t unknown_3e;
-		uint8_t unknown_3f;
-	);
-
 	auto tfrag_head = _asset_segment->read<tfrag_header>(0);
 	_asset_segment->seek(tfrag_head.entry_list_offset);
 
 	for (std::size_t i = 0; i < tfrag_head.count; i++) {
 		auto entry = _asset_segment->read<tfrag_entry>();
-		tfrag frag = tfrag(_asset_segment, tfrag_head.entry_list_offset + entry.offset, entry.vertex_offset, entry.vertex_count);
+		tfrag frag = tfrag(_asset_segment, tfrag_head.entry_list_offset + entry.offset, entry);
 		frag.update();
 		tfrags.emplace_back(std::move(frag));
 	}
