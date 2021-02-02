@@ -18,6 +18,7 @@
 
 #include "iso_stream.h"
 
+#include "app.h"
 #include "md5.h"
 #include "util.h"
 #include "fs_includes.h"
@@ -80,7 +81,7 @@ void wad_stream::commit() {
 	
 	array_stream compressed_buffer;
 	_uncompressed_buffer.seek(0);
-	compress_wad(compressed_buffer, _uncompressed_buffer);
+	compress_wad(compressed_buffer, _uncompressed_buffer, config::get().compression_threads);
 	
 	compressed_buffer.seek(0);
 	_backing->seek(_offset);

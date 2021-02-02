@@ -328,6 +328,8 @@ public:
 	std::string resource_path() const;
 	
 	char* data();
+	static bool compare_contents(array_stream& a, array_stream& b);
+	
 
 	// Non-virtual inlined functions for use in the WAD decompression loop.
 	// It's way too slow with virtual calls, and inlining these functions

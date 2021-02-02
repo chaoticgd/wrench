@@ -18,6 +18,7 @@
 
 #include "wad.h"
 
+#include <thread>
 #include <cassert>
 #include <iomanip>
 #include <iostream>
@@ -224,12 +225,14 @@ std::size_t sub_clamped(std::size_t lhs, std::size_t rhs) {
 // to write the algorithm, but probably won't be for debugging it.
 //#define WAD_COMPRESS_DEBUG_EXPECTED_PATH "dumps/mobyseg_compressed_null"
 
-std::vector<char> encode_wad_packet(
+void encode_wad_packet(
 		array_stream& dest,
-		array_stream& src,
-		std::size_t dest_pos,
-		std::size_t packet_no,
+		const uint8_t* src,
+		size_t& src_pos,
+		size_t src_end,
 		uint32_t& last_flag);
+
+size_t get_wad_packet_size(uint8_t* src, size_t bytes_left);
 
 static const int DO_NOT_INJECT_FLAG = 0x100;
 
@@ -237,7 +240,7 @@ static const size_t TYPE_A_MAX_LOOKBACK = 2044;
 static const size_t MAX_LITERAL_SIZE = 255;//255 + 18;
 static const size_t MAX_MATCH_SIZE = 0x100;
 
-void compress_wad(array_stream& dest, array_stream& src) {
+void compress_wad(array_stream& dest, array_stream& src, int thread_count) {
 	WAD_COMPRESS_DEBUG(
 		#ifdef WAD_COMPRESS_DEBUG_EXPECTED_PATH
 			file_stream expected(WAD_COMPRESS_DEBUG_EXPECTED_PATH);
@@ -246,103 +249,145 @@ void compress_wad(array_stream& dest, array_stream& src) {
 			std::optional<stream*> expected_ptr;
 		#endif
 	)
-
+	
+	std::vector<array_stream> intermediates(thread_count);
+	
+	// Compress the data into a stream of packets.
+	if(thread_count == 1) {
+		uint32_t last_flag = DO_NOT_INJECT_FLAG;
+		
+		src.seek(0);
+		for(size_t i = 0; src.pos < src.buffer.size(); i++) {
+			WAD_COMPRESS_DEBUG(
+				std::cout << "{dest.pos -> " << dest.pos << ", src.pos -> " << src.pos << "}\n\n";
+			)
+			
+			WAD_COMPRESS_DEBUG(
+				std::cout << "*** PACKET " << i << " ***\n";
+			)
+			
+			encode_wad_packet(intermediates[0], (uint8_t*) src.buffer.data(), src.pos, src.buffer.size(), last_flag);
+			intermediates[0].pos = intermediates[0].buffer.size();
+		}
+	} else {
+		size_t min_block_size = 0x100 * thread_count;
+		size_t total_size = src.buffer.size();
+		total_size += min_block_size - (total_size % min_block_size);
+		size_t block_size = total_size / thread_count;
+		
+		std::vector<std::thread> threads(thread_count);
+		for(int i = 0; i < thread_count; i++) {
+			const uint8_t* src_ptr = (uint8_t*) src.buffer.data();
+			size_t src_pos_val = block_size * i;
+			size_t src_end = std::min(src.buffer.size(), (block_size * (i + 1)));
+			threads[i] = std::thread([&intermediates, i, src_ptr, src_pos_val, src_end]() {
+				size_t src_pos = src_pos_val; // Make non-const.
+				uint32_t last_flag = DO_NOT_INJECT_FLAG;
+				array_stream thread_dest;
+				while(src_pos < src_end) {
+					encode_wad_packet(thread_dest, src_ptr, src_pos, src_end, last_flag);
+					thread_dest.pos = thread_dest.buffer.size();
+				}
+				intermediates[i].buffer = std::move(thread_dest.buffer);
+			});
+		}
+		for(int i = 0; i < thread_count; i++) {
+			threads[i].join();
+		}
+	}
+	
 	dest.seek(0);
-
-	const char* header =
-		"\x57\x41\x44"     // magic
-		"\x00\x00\x00\x00" // size (placeholder)
-		"WRENCH010";       // pad
+	const char* header = "\x57\x41\x44\x00\x00\x00\x00\x57\x52\x45\x4e\x43\x48\x30\x31\x30";
 	dest.write_n(header, 0x10);
 	
-	uint32_t last_flag = DO_NOT_INJECT_FLAG;
-	
-	src.seek(0);
-	for(size_t i = 0; src.pos + 0x100 < src.buffer.size(); i++) {
-		WAD_COMPRESS_DEBUG(
-			std::cout << "{dest.pos -> " << dest.pos << ", src.pos -> " << src.pos << "}\n\n";
-		)
-
-		WAD_COMPRESS_DEBUG(
-			static int count = 0;
-			std::cout << "*** PACKET " << count++ << " ***\n";
-		)
-
-		size_t old_src_pos = src.pos;
-		std::vector<char> packet = encode_wad_packet(dest, src, dest.pos, i, last_flag);
-		
-		bool overrun = false;
-		if((dest.pos % 0x2000) + packet.size() < 0x2000) {
-			dest.write_n(packet.data(), packet.size());
-		} else {
-			// The packet has overrun a 0x2000 byte boundary, this simply cannot be.
-			src.pos = old_src_pos;
-			i--;
-			overrun = true;
-		}
-		
-		if(dest.pos % 0x2000 > 0x1ff0 || overrun) {
-			// Every 0x2000 bytes or so there must be a pad packet or the
-			// game crashes with a teq exception. This is because the game
-			// copies the compressed data into the EE core's scratchpad, which
-			// is 0x4000 bytes in size.
-			dest.write8(0x12);
-			dest.write8(0x0);
-			dest.write8(0x0);
-			while(dest.pos % 0x2000 != 0x10) {
-				dest.write8(0xee);
+	// Append the compressed data and insert padding where required.
+	for(int i = 0; i < thread_count; i++) {
+		array_stream& intermediate = intermediates[i];
+		intermediate.pos = 0;
+		while(intermediate.pos < intermediate.size()) {
+			size_t packet_size = get_wad_packet_size(
+				(uint8_t*) intermediate.buffer.data() + intermediate.pos,
+				intermediate.buffer.size() - intermediate.pos);
+			// The different blocks each thread generates may begin/end with
+			// literal packets. Two consecutive literal packets aren't allowed,
+			// so we add a dummy packet in between. We need to do this while
+			// respecting the 0x2000 buffer size (see comment below), so we do
+			// it here.
+			bool insert_dummy = i != 0 && intermediate.pos == 0;
+			size_t insert_size = packet_size;
+			if(insert_dummy) {
+				insert_size += 3;
 			}
-			
-			WAD_COMPRESS_DEBUG(std::cout << "\n*** SPECIAL PAD PACKETS ***\n");
-			
-			// Padding must be followed by a packet with a flag of 0x11 so we
-			// can inject a tiny literal.
-			dest.write8(0x11);
-			dest.write8(0);
-			dest.write8(0);
-			last_flag = 0x11;
-			
-			i += 2;
+			// dest.pos is offset 0x10 bytes by the header:
+			//  0x0000 WAD. .... .... ....
+			//	0x0010 [data]
+			//   ...
+			//	0x2000 [data]
+			//	0x2010 [start of new block]
+			if(((dest.pos + 0x1ff0) % 0x2000) + insert_size > 0x2000 - 3) {
+				// Every 0x2000 bytes or so there must be a pad packet or the
+				// game crashes with a teq exception. This is because the game
+				// copies the compressed data into the EE core's scratchpad, which
+				// is 0x4000 bytes in size.
+				dest.write8(0x12);
+				dest.write8(0x0);
+				dest.write8(0x0);
+				while(dest.pos % 0x2000 != 0x10) {
+					dest.write8(0xee);
+				}
+			}
+			if(insert_dummy) {
+				dest.write8(0x11);
+				dest.write8(0);
+				dest.write8(0);
+			}
+			dest.buffer.insert(dest.buffer.end(),
+				intermediate.buffer.begin() + intermediate.pos,
+				intermediate.buffer.begin() + intermediate.pos + packet_size);
+			dest.pos += packet_size;
+			intermediate.pos += packet_size;
 		}
 	}
 	
-	WAD_COMPRESS_DEBUG(std::cout << "\n*** SPECIAL EOF PACKETS ***\n");
-	
-	while(src.pos < src.buffer.size()) {
-		size_t literal_size = std::min(src.buffer.size() - src.pos, MAX_LITERAL_SIZE);
-		if(last_flag < 0x10 || last_flag == DO_NOT_INJECT_FLAG) {
-			dest.write8(0x11);
-			dest.write8(0x0);
-			dest.write8(0x0);
-		}
-		if(literal_size <= 3) {
-			dest.buffer[dest.pos - 2] |= literal_size; // Inject the literal size into the last packet.
-		} else if(literal_size <= 18) {
-			// We can encode the size in the flag byte.
-			dest.write8(literal_size - 3);
-		} else {
-			// We have to push it as a seperate byte (leave the flag as zero).
-			dest.write8(0);
-			dest.write8(literal_size - 18);
-		}
-		last_flag = DO_NOT_INJECT_FLAG;
-		copy_bytes(dest, src, literal_size);
-	}
-
-	std::size_t total_size = dest.pos;
+	uint32_t total_size = dest.pos;
 	dest.seek(3);
 	dest.write<uint32_t>(total_size);
 }
 
-std::vector<char> encode_wad_packet(
-		array_stream& dest,
-		array_stream& src,
-		std::size_t dest_pos,
-		std::size_t packet_no,
-		uint32_t& last_flag) {
+const std::vector<char> DUMMY_PACKET = { 0x11, 0, 0 };
 
-	std::vector<char> packet { 0 };
-	uint8_t flag_byte = 0;
+void encode_wad_packet(
+		array_stream& dest,
+		const uint8_t* src, // Beginning of the whole buffer. Minimum lookback position.
+		size_t& src_pos, // Position in the buffer to compress.
+		size_t src_end, // End of the part of the buffer to compress.
+		uint32_t& last_flag) {
+	// Just emit literals at the end so we don't have to worry about overrunning
+	// the input buffer.
+	if(src_pos + MAX_MATCH_SIZE >= src_end) {
+		WAD_COMPRESS_DEBUG(std::cout << "\n*** SPECIAL EOF PACKET ***\n");
+		if(last_flag < 0x10 || last_flag == DO_NOT_INJECT_FLAG) {
+			last_flag = 0x11;
+			dest.buffer.insert(dest.buffer.end(), DUMMY_PACKET.begin(), DUMMY_PACKET.end());
+			return;
+		}
+		size_t literal_size = std::min(src_end - src_pos, MAX_LITERAL_SIZE);
+		if(literal_size <= 3) {
+			dest.buffer[dest.pos - 2] |= literal_size; // Inject the literal size into the last packet.
+		} else if(literal_size <= 18) {
+			// We can encode the size in the flag byte.
+			dest.buffer.push_back(literal_size - 3);
+		} else {
+			// We have to push it as a seperate byte (leave the flag as zero).
+			dest.buffer.push_back(0);
+			dest.buffer.push_back(literal_size - 18);
+		}
+		last_flag = DO_NOT_INJECT_FLAG;
+		auto iter = src + src_pos;
+		dest.buffer.insert(dest.buffer.end(), iter, iter + literal_size);
+		src_pos += literal_size;
+		return;
+	}
 	
 	// Determine where the next repeating pattern is.
 	size_t literal_size = MAX_LITERAL_SIZE;
@@ -354,15 +399,15 @@ std::vector<char> encode_wad_packet(
 		match_size = 0;
 		
 		for(size_t i = 0; i < MAX_LITERAL_SIZE; i++) {
-			size_t high = src.pos + i;
+			size_t high = src_pos + i;
 			size_t low = sub_clamped(high, TYPE_A_MAX_LOOKBACK);
 			for(size_t j = low; j < high; j++) {
 				// Count number of equal bytes.
-				size_t target = src.pos + i;
+				size_t target = src_pos + i;
 				size_t k = 0;
 				for(; k < MAX_MATCH_SIZE; k++) {
-					auto l_val = src.buffer[target + k];
-					auto r_val = src.buffer[j + k];
+					auto l_val = src[target + k];
+					auto r_val = src[j + k];
 					if(l_val != r_val) {
 						break;
 					}
@@ -382,7 +427,7 @@ std::vector<char> encode_wad_packet(
 	find_match();
 	
 	if(literal_size == 0) { // Match packet.
-		std::size_t delta = src.pos - match_offset - 1;
+		std::size_t delta = src_pos - match_offset - 1;
 
 		// Max bytes_to_copy for a packet of type A is 0x8.
 		if(match_size <= 0x8) { // A type
@@ -392,8 +437,6 @@ std::vector<char> encode_wad_packet(
 				std::cout << "match at 0x" << std::hex << match_offset << " of size 0x" << match_size << "\n";
 			)
 
-			flag_byte |= (match_size - 1) << 5;
-
 			uint8_t pos_major = delta / 8;
 			uint8_t pos_minor = delta % 8;
 
@@ -401,35 +444,35 @@ std::vector<char> encode_wad_packet(
 				std::cout << "pos_major = " << (int) pos_major << ", pos_minor = " << (int) pos_minor << "\n";
 			)
 
-			flag_byte |= pos_minor << 2;
-			packet.push_back(pos_major);
+			dest.buffer.push_back(((match_size - 1) << 5) | (pos_minor << 2));
+			dest.buffer.push_back(pos_major);
 		} else { // B type
 			WAD_COMPRESS_DEBUG(std::cout << "B type detected!\n";)
 			
 			if(match_size > (0b11111 + 2)) {
-				packet.push_back(match_size - (0b11111 + 2));
+				dest.buffer.push_back(1 << 5); // flag
+				dest.buffer.push_back(match_size - (0b11111 + 2));
 			} else {
-				flag_byte |= match_size - 2;
+				dest.buffer.push_back((1 << 5) | (match_size - 2)); // flag
 			}
-
-			flag_byte |= 1 << 5; // Set packet type.
 
 			uint8_t pos_minor = delta % 0x40;
 			uint8_t pos_major = delta / 0x40;
-
-			packet.push_back(pos_minor << 2);
-			packet.push_back(pos_major);
+			
+			dest.buffer.push_back(pos_minor << 2);
+			dest.buffer.push_back(pos_major);
 		}
 
 		WAD_COMPRESS_DEBUG(
 			std::cout << " => copy 0x" << std::hex << (int) match_size
-				<< " bytes from uncompressed stream at 0x" << match_offset << " (source = " << src.pos << ")\n";
+				<< " bytes from uncompressed stream at 0x" << match_offset << " (source = " << src_pos << ")\n";
 		)
-		src.pos += match_size;
+		src_pos += match_size;
 	} else { // Literal packet.
 		if(last_flag < 0x10) { // Two literals in a row? Implausible!
 			last_flag = 0x11;
-			return { 0x11, 0x00, 0x00 };
+			dest.buffer.insert(dest.buffer.end(), DUMMY_PACKET.begin(), DUMMY_PACKET.end());
+			return;
 		}
 	
 		if(literal_size <= 3) {
@@ -438,39 +481,68 @@ std::vector<char> encode_wad_packet(
 			// that we can stuff a literal into on the next iteration.
 			if(last_flag == DO_NOT_INJECT_FLAG) {
 				last_flag = 0x11;
-				return { 0x11, 0x00, 0x00 };
+				dest.buffer.insert(dest.buffer.end(), DUMMY_PACKET.begin(), DUMMY_PACKET.end());
+				return;
 			}
 			
 			WAD_COMPRESS_DEBUG(
 				std::cout << " => copy 0x" << std::hex << (int) literal_size
-					<< " (snd_pos) bytes from compressed stream at 0x" << dest_pos + packet.size() << " (target = " << src.pos << ")\n";
+					<< " (snd_pos) bytes from compressed stream at 0x" << dest_pos + packet.size() << " (target = " << src_pos << ")\n";
 			)
 			dest.buffer[dest.pos - 2] |= literal_size;
-			packet.insert(packet.end(), src.buffer.begin() + src.pos, src.buffer.begin() + src.pos + literal_size);
-			src.pos += literal_size;
-			packet.erase(packet.begin()); // We don't need no flag byte!
+			dest.buffer.insert(dest.buffer.end(), src + src_pos, src + src_pos + literal_size);
+			src_pos += literal_size;
 			last_flag = DO_NOT_INJECT_FLAG;
-			return packet;
+			return;
 		} else if(literal_size <= 18) {
 			// We can encode the size in the flag byte.
-			flag_byte |= literal_size - 3;
+			dest.buffer.push_back(literal_size - 3); // flag
 		} else {
-			// We have to push it as a seperate byte (leave the flag as zero).
-			packet.push_back(literal_size - 18);
+			// We have to push it as a seperate byte.
+			dest.buffer.push_back(0); // flag
+			dest.buffer.push_back(literal_size - 18);
 		}
 		
 		WAD_COMPRESS_DEBUG(
 			std::cout << " => copy 0x" << std::hex << (int) literal_size
-				<< " bytes from compressed stream at 0x" << dest_pos + packet.size() << " (target = " << src.pos << ")\n";
+				<< " bytes from compressed stream at 0x" << dest_pos + packet.size() << " (target = " << src_pos << ")\n";
 		)
-		packet.insert(packet.end(), src.buffer.begin() + src.pos, src.buffer.begin() + src.pos + literal_size);
-		src.pos += literal_size;
+		dest.buffer.insert(dest.buffer.end(), src + src_pos, src + src_pos + literal_size);
+		src_pos += literal_size;
 	}
 	
-	packet[0] |= flag_byte;
-	last_flag = flag_byte;
-
+	last_flag = dest.buffer[dest.pos];
 	WAD_COMPRESS_DEBUG(std::cout << "flag_byte = " << std::hex << (packet[0] & 0xff) << "\n");
+}
 
-	return packet;
+size_t get_wad_packet_size(uint8_t* src, size_t bytes_left) {
+	size_t size_of_packet = 1; // flag
+	uint8_t flag_byte = src[0];
+	if(flag_byte < 0x10) { // Literal packet (0x0-0xf).
+		if(flag_byte != 0) {
+			size_of_packet += flag_byte + 3; // smalllit
+		} else {
+			size_of_packet += 1 + (src[1] + 18); // size + biglit
+		}
+		if(size_of_packet < bytes_left && src[size_of_packet] < 0x10) {
+			throw std::runtime_error("Compression failed: Intermediate buffer corrupted (double literal)!\n");
+		}
+		return size_of_packet; // We can't put a tiny literal inside another literal.
+	} else if(flag_byte < 0x20) { // (0x10-0x1f)
+		uint8_t bytes_to_copy = flag_byte & 7;
+		if(bytes_to_copy == 0) {
+			size_of_packet++; // bytes_to_copy
+		}
+		size_of_packet += 1 + 1; // b0 + b1
+	} else if(flag_byte < 0x40) { // Big match packet (0x20-0x3f).
+		uint8_t bytes_to_copy = flag_byte & 0x1f;
+		if(bytes_to_copy == 0) {
+			size_of_packet++;
+		}
+		size_of_packet += 1 + 1; // b1 + b2
+	} else { // Little match packet (0x40-0xff).
+		size_of_packet++; // pos_major
+	}
+	size_of_packet += src[size_of_packet - 2] & 3; // Add on the tiny literal.
+	return size_of_packet;
 }

@@ -228,6 +228,9 @@ target_link_libraries(matchtoc cxxopts)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 target_link_libraries(wrench Threads::Threads)
+target_link_libraries(scan Threads::Threads)
+target_link_libraries(pakrac Threads::Threads)
+target_link_libraries(wad Threads::Threads)
 target_link_libraries(randomiser Threads::Threads)
 
 # GLAD
