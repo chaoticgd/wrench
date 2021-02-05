@@ -378,6 +378,10 @@ void compress_wad_intermediate(
 			encode_match_packet(thread_dest, src, src_pos, src_end, last_flag, match.match_offset, match.match_size);
 		} else {
 			encode_literal_packet(thread_dest, src, src_pos, src_end, last_flag, match.literal_size);
+			if(match.match_size > 0) {
+				thread_dest.pos = thread_dest.buffer.size();
+				encode_match_packet(thread_dest, src, src_pos, src_end, last_flag, match.match_offset, match.match_size);
+			}
 		}
 		thread_dest.pos = thread_dest.buffer.size();
 	}
@@ -493,7 +497,7 @@ void encode_literal_packet(
 	if(last_flag < 0x10) { // Two literals in a row? Implausible!
 		last_flag = 0x11;
 		dest.buffer.insert(dest.buffer.end(), DUMMY_PACKET.begin(), DUMMY_PACKET.end());
-		return;
+		dest.pos = dest.buffer.size();
 	}
 	
 	if(literal_size <= 3) {
@@ -503,7 +507,7 @@ void encode_literal_packet(
 		if(last_flag == DO_NOT_INJECT_FLAG) {
 			last_flag = 0x11;
 			dest.buffer.insert(dest.buffer.end(), DUMMY_PACKET.begin(), DUMMY_PACKET.end());
-			return;
+			dest.pos = dest.buffer.size();
 		}
 		
 		WAD_COMPRESS_DEBUG(
