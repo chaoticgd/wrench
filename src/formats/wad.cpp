@@ -228,6 +228,7 @@ std::size_t sub_clamped(std::size_t lhs, std::size_t rhs) {
 void compress_wad_intermediate(
 		std::vector<char>* intermediate,
 		const uint8_t* src,
+		const uint8_t* trihash,
 		size_t src_pos,
 		size_t src_end);
 
@@ -240,6 +241,7 @@ struct match_result {
 template <bool end_of_buffer>
 match_result find_match(
 	const uint8_t* src,
+	const uint8_t* trihash,
 	size_t src_pos,
 	size_t src_end);
 
@@ -278,11 +280,17 @@ void compress_wad(array_stream& dest, array_stream& src, int thread_count) {
 		#endif
 	)
 	
-	std::vector<array_stream> intermediates(thread_count);
+	std::vector<uint8_t> trihash(src.buffer.size());
+	for(size_t i = 0; i < src.buffer.size() - 2; i++) {
+		trihash[i] = 31 * (31 * src.buffer[i] + src.buffer[i + 1]) + src.buffer[i + 2];
+	}
+	trihash[src.buffer.size() - 2] = 0;
+	trihash[src.buffer.size() - 1] = 0;
 	
 	// Compress the data into a stream of packets.
+	std::vector<array_stream> intermediates(thread_count);
 	if(thread_count == 1) {
-		compress_wad_intermediate(&intermediates[0].buffer, (uint8_t*) src.buffer.data(), 0, src.buffer.size());
+		compress_wad_intermediate(&intermediates[0].buffer, (uint8_t*) src.buffer.data(), trihash.data(), 0, src.buffer.size());
 	} else {
 		size_t min_block_size = 0x100 * thread_count;
 		size_t total_size = src.buffer.size();
@@ -294,7 +302,7 @@ void compress_wad(array_stream& dest, array_stream& src, int thread_count) {
 			const uint8_t* src_ptr = (uint8_t*) src.buffer.data();
 			size_t src_pos = block_size * i;
 			size_t src_end = std::min(src.buffer.size(), (block_size * (i + 1)));
-			threads[i] = std::thread(compress_wad_intermediate, &intermediates[i].buffer, src_ptr, src_pos, src_end);
+			threads[i] = std::thread(compress_wad_intermediate, &intermediates[i].buffer, src_ptr, trihash.data(), src_pos, src_end);
 		}
 		for(int i = 0; i < thread_count; i++) {
 			threads[i].join();
@@ -362,6 +370,7 @@ void compress_wad(array_stream& dest, array_stream& src, int thread_count) {
 void compress_wad_intermediate(
 		std::vector<char>* intermediate,
 		const uint8_t* src,
+		const uint8_t* trihash,
 		size_t src_pos,
 		size_t src_end) {
 	uint32_t last_flag = DO_NOT_INJECT_FLAG;
@@ -369,9 +378,9 @@ void compress_wad_intermediate(
 	while(src_pos < src_end) {
 		match_result match;
 		if(src_pos + MAX_MATCH_SIZE >= src_end) {
-			match = find_match<true>(src, src_pos, src_end);
+			match = find_match<true>(src, trihash, src_pos, src_end);
 		} else {
-			match = find_match<false>(src, src_pos, src_end);
+			match = find_match<false>(src, trihash, src_pos, src_end);
 		}
 		
 		if(match.literal_size == 0) {
@@ -391,6 +400,7 @@ void compress_wad_intermediate(
 template <bool end_of_buffer>
 match_result find_match(
 	const uint8_t* src,
+	const uint8_t* trihash,
 	size_t src_pos,
 	size_t src_end) {
 	size_t max_literal_size = end_of_buffer ?
@@ -402,13 +412,19 @@ match_result find_match(
 	match.match_size = 0;
 	
 	for(size_t i = 0; i < max_literal_size; i++) {
-		size_t high = src_pos + i;
-		size_t low = sub_clamped(high, TYPE_A_MAX_LOOKBACK);
+		size_t target = src_pos + i;
+		size_t low = sub_clamped(target, TYPE_A_MAX_LOOKBACK);
 		size_t max_match_size = end_of_buffer ?
 			std::min(MAX_MATCH_SIZE, src_end - src_pos - i) : MAX_MATCH_SIZE;
-		for(size_t j = low; j < high; j++) {
+		uint8_t target_hash = trihash[target];
+		for(size_t j = low; j < target; j++) {
+			// Compare the hash of the next three bytes of the buffer first.
+			// This makes matching much faster.
+			if(trihash[j] != target_hash) {
+				continue;
+			}
+			
 			// Count number of equal bytes.
-			size_t target = src_pos + i;
 			size_t k = 0;
 			for(; k < max_match_size; k++) {
 				auto l_val = src[target + k];
