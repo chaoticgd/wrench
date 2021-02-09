@@ -140,6 +140,7 @@ struct vif_code {
 	static std::optional<vif_code> parse(uint32_t val);
 	uint32_t encode_unpack();
 	bool is_unpack() const;
+	bool is_strow() const;
 	std::size_t packet_size() const; // In bytes.
 	std::string to_string() const;
 };

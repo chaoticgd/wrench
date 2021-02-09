@@ -115,7 +115,54 @@ game {
 		4: ARMOR.WAD
 	}
 	levels {
-		
+		0 (not filled in)
+		1 (not filled in)
+		2 (not filled in)
+		3 (not filled in)
+		4 (not filled in)
+		5 (not filled in)
+		6 (not filled in)
+		7 (not filled in)
+		8 (not filled in)
+		9 (not filled in)
+		10 (not filled in)
+		11 (not filled in)
+		12 (not filled in)
+		13 (not filled in)
+		14 (not filled in)
+		15 (not filled in)
+		16 (not filled in)
+		17 (not filled in)
+		18 (not filled in)
+		19 (not filled in)
+		20 (not filled in)
+		21 (not filled in)
+		22 (not filled in)
+		23 (not filled in)
+		24 (not filled in)
+		25 MP Battledome
+		26 MP Catacrom Graveyard
+		27 MP Sarathos Swamp
+		28 MP Dark Cathedral
+		29 MP Temple of Shaar
+		30 MP Valix Lighthouse
+		31 MP Mining Facility
+		32 MP Torval Ruins
+		33 MP Tempus Station
+		34 MP Maraxus Prison
+		35 MP Ghost Station
+		36 MP 2P Battledome
+		37 MP 2P Catacrom Graveyard
+		38 MP 2P Sarathos Swamp
+		39 MP 2P Dark Cathedral
+		40 MP 2P Temple of Shaar
+		41 MP 2P Valix Lighthouse
+		42 MP 2P Mining Facility
+		43 MP 2P Torval Ruins
+		44 MP 2P Tempus Station
+		45 MP 2P Maraxus Prison
+		46 MP 2P Ghost Station
+		47 (not filled in)
 	}
 }
 

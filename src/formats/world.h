@@ -135,11 +135,6 @@ struct game_string {
 	std::string str;
 };
 
-struct game_language {
-	std::optional<uint32_t> unknown; // Only present for R&C3 (and possibly DL).
-	std::vector<game_string> strings;
-};
-
 #define LANGUAGE_COUNT 8
 #define LANGUAGE_NAMES \
 	"US English", "UK English", "French", "German", \
@@ -156,8 +151,8 @@ public:
 	std::vector<world_directional_light> directional_lights;
 	std::vector<world_thing_8> thing_8s;
 	std::vector<world_thing_c> thing_cs;
-	std::array<game_language, LANGUAGE_COUNT> languages;
-	world_thing_14 thing_14;
+	std::optional<uint32_t> unknown_10_val; // Just before the US strings.
+	std::array<std::vector<game_string>, LANGUAGE_COUNT> languages;
 	std::vector<uint32_t> thing_30s;
 	std::vector<tie_entity> ties;
 	std::vector<uint32_t> thing_38_1s;
@@ -193,8 +188,7 @@ public:
 	std::vector<std::vector<uint8_t>> thing_94s;
 	std::vector<world_thing_98> thing_98_1s;
 	std::vector<uint32_t> thing_98_2s;
-	uint32_t thing_98_header_8; // Not sure what this is.
-	uint32_t thing_98_header_c; // Not sure what this is.
+	std::array<uint32_t, 5> thing_98_part_offsets;
 
 	stream* backing;
 	void read_rac23();
@@ -208,7 +202,7 @@ private:
 		std::vector<T_2>* second = nullptr,
 		std::vector<T_3>* third = nullptr,
 		bool align = false);
-	game_language read_language(uint32_t offset, bool is_english);
+	std::vector<game_string> read_language(uint32_t offset);
 	std::vector<uint32_t> read_u32_list(uint32_t offset);
 	template <typename T_in_mem, typename T_on_disc>
 	std::vector<T_in_mem> read_entity_table( // Defined in world.cpp.

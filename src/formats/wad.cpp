@@ -225,12 +225,40 @@ std::size_t sub_clamped(std::size_t lhs, std::size_t rhs) {
 // to write the algorithm, but probably won't be for debugging it.
 //#define WAD_COMPRESS_DEBUG_EXPECTED_PATH "dumps/mobyseg_compressed_null"
 
-void encode_wad_packet(
+void compress_wad_intermediate(
+		std::vector<char>* intermediate,
+		const uint8_t* src,
+		size_t src_pos,
+		size_t src_end);
+
+struct match_result {
+	size_t literal_size; // The number of bytes before a match was found.
+	size_t match_offset;
+	size_t match_size;
+};
+
+template <bool end_of_buffer>
+match_result find_match(
+	const uint8_t* src,
+	size_t src_pos,
+	size_t src_end);
+
+void encode_match_packet(
 		array_stream& dest,
 		const uint8_t* src,
 		size_t& src_pos,
 		size_t src_end,
-		uint32_t& last_flag);
+		uint32_t& last_flag,
+		size_t match_offset,
+		size_t match_size);
+
+void encode_literal_packet(
+		array_stream& dest,
+		const uint8_t* src,
+		size_t& src_pos,
+		size_t src_end,
+		uint32_t& last_flag,
+		size_t literal_size);
 
 size_t get_wad_packet_size(uint8_t* src, size_t bytes_left);
 
@@ -250,25 +278,10 @@ void compress_wad(array_stream& dest, array_stream& src, int thread_count) {
 		#endif
 	)
 	
-	std::vector<array_stream> intermediates(thread_count);
-	
 	// Compress the data into a stream of packets.
+	std::vector<array_stream> intermediates(thread_count);
 	if(thread_count == 1) {
-		uint32_t last_flag = DO_NOT_INJECT_FLAG;
-		
-		src.seek(0);
-		for(size_t i = 0; src.pos < src.buffer.size(); i++) {
-			WAD_COMPRESS_DEBUG(
-				std::cout << "{dest.pos -> " << dest.pos << ", src.pos -> " << src.pos << "}\n\n";
-			)
-			
-			WAD_COMPRESS_DEBUG(
-				std::cout << "*** PACKET " << i << " ***\n";
-			)
-			
-			encode_wad_packet(intermediates[0], (uint8_t*) src.buffer.data(), src.pos, src.buffer.size(), last_flag);
-			intermediates[0].pos = intermediates[0].buffer.size();
-		}
+		compress_wad_intermediate(&intermediates[0].buffer, (uint8_t*) src.buffer.data(), 0, src.buffer.size());
 	} else {
 		size_t min_block_size = 0x100 * thread_count;
 		size_t total_size = src.buffer.size();
@@ -278,18 +291,9 @@ void compress_wad(array_stream& dest, array_stream& src, int thread_count) {
 		std::vector<std::thread> threads(thread_count);
 		for(int i = 0; i < thread_count; i++) {
 			const uint8_t* src_ptr = (uint8_t*) src.buffer.data();
-			size_t src_pos_val = block_size * i;
+			size_t src_pos = block_size * i;
 			size_t src_end = std::min(src.buffer.size(), (block_size * (i + 1)));
-			threads[i] = std::thread([&intermediates, i, src_ptr, src_pos_val, src_end]() {
-				size_t src_pos = src_pos_val; // Make non-const.
-				uint32_t last_flag = DO_NOT_INJECT_FLAG;
-				array_stream thread_dest;
-				while(src_pos < src_end) {
-					encode_wad_packet(thread_dest, src_ptr, src_pos, src_end, last_flag);
-					thread_dest.pos = thread_dest.buffer.size();
-				}
-				intermediates[i].buffer = std::move(thread_dest.buffer);
-			});
+			threads[i] = std::thread(compress_wad_intermediate, &intermediates[i].buffer, src_ptr, src_pos, src_end);
 		}
 		for(int i = 0; i < thread_count; i++) {
 			threads[i].join();
@@ -354,165 +358,187 @@ void compress_wad(array_stream& dest, array_stream& src, int thread_count) {
 	dest.write<uint32_t>(total_size);
 }
 
-const std::vector<char> DUMMY_PACKET = { 0x11, 0, 0 };
-
-void encode_wad_packet(
-		array_stream& dest,
-		const uint8_t* src, // Beginning of the whole buffer. Minimum lookback position.
-		size_t& src_pos, // Position in the buffer to compress.
-		size_t src_end, // End of the part of the buffer to compress.
-		uint32_t& last_flag) {
-	// Just emit literals at the end so we don't have to worry about overrunning
-	// the input buffer.
-	if(src_pos + MAX_MATCH_SIZE >= src_end) {
-		WAD_COMPRESS_DEBUG(std::cout << "\n*** SPECIAL EOF PACKET ***\n");
-		if(last_flag < 0x10 || last_flag == DO_NOT_INJECT_FLAG) {
-			last_flag = 0x11;
-			dest.buffer.insert(dest.buffer.end(), DUMMY_PACKET.begin(), DUMMY_PACKET.end());
-			return;
-		}
-		size_t literal_size = std::min(src_end - src_pos, MAX_LITERAL_SIZE);
-		if(literal_size <= 3) {
-			dest.buffer[dest.pos - 2] |= literal_size; // Inject the literal size into the last packet.
-		} else if(literal_size <= 18) {
-			// We can encode the size in the flag byte.
-			dest.buffer.push_back(literal_size - 3);
+void compress_wad_intermediate(
+		std::vector<char>* intermediate,
+		const uint8_t* src,
+		size_t src_pos,
+		size_t src_end) {
+	uint32_t last_flag = DO_NOT_INJECT_FLAG;
+	array_stream thread_dest;
+	while(src_pos < src_end) {
+		match_result match;
+		if(src_pos + MAX_MATCH_SIZE >= src_end) {
+			match = find_match<true>(src, src_pos, src_end);
 		} else {
-			// We have to push it as a seperate byte (leave the flag as zero).
-			dest.buffer.push_back(0);
-			dest.buffer.push_back(literal_size - 18);
+			match = find_match<false>(src, src_pos, src_end);
 		}
-		last_flag = DO_NOT_INJECT_FLAG;
-		auto iter = src + src_pos;
-		dest.buffer.insert(dest.buffer.end(), iter, iter + literal_size);
-		src_pos += literal_size;
-		return;
+		
+		if(match.literal_size == 0) {
+			encode_match_packet(thread_dest, src, src_pos, src_end, last_flag, match.match_offset, match.match_size);
+		} else {
+			encode_literal_packet(thread_dest, src, src_pos, src_end, last_flag, match.literal_size);
+			if(match.match_size > 0) {
+				thread_dest.pos = thread_dest.buffer.size();
+				encode_match_packet(thread_dest, src, src_pos, src_end, last_flag, match.match_offset, match.match_size);
+			}
+		}
+		thread_dest.pos = thread_dest.buffer.size();
+	}
+	*intermediate = std::move(thread_dest.buffer);
+}
+
+template <bool end_of_buffer>
+match_result find_match(
+	const uint8_t* src,
+	size_t src_pos,
+	size_t src_end) {
+	size_t max_literal_size = end_of_buffer ?
+		std::min(MAX_LITERAL_SIZE, src_end - src_pos) : MAX_LITERAL_SIZE;
+	
+	match_result match;
+	match.literal_size = max_literal_size;
+	match.match_offset = 0;
+	match.match_size = 0;
+	
+	for(size_t i = 0; i < max_literal_size; i++) {
+		size_t target = src_pos + i;
+		size_t low = sub_clamped(target, TYPE_A_MAX_LOOKBACK);
+		size_t max_match_size = end_of_buffer ?
+			std::min(MAX_MATCH_SIZE, src_end - src_pos - i) : MAX_MATCH_SIZE;
+		for(size_t j = low; j < target; j++) {
+			// This makes matching much faster.
+			if(!end_of_buffer && *(uint16_t*) &src[j] != *(uint16_t*) &src[target]) {
+				continue;
+			}
+			
+			// Count number of equal bytes.
+			size_t k = end_of_buffer ? 0 : 2;
+			for(; k < max_match_size; k++) {
+				auto l_val = src[target + k];
+				auto r_val = src[j + k];
+				if(l_val != r_val) {
+					break;
+				}
+			}
+			
+			if(k >= 3 && k > match.match_size) {
+				match.match_offset = j;
+				match.match_size = k;
+			}
+		}
+		if(match.match_size >= 3) {
+			match.literal_size = i;
+			break;
+		}
 	}
 	
-	// Determine where the next repeating pattern is.
-	size_t literal_size = MAX_LITERAL_SIZE;
-	size_t match_offset = 0;
-	size_t match_size = 0;
-	const auto find_match = [&]() {
-		literal_size = MAX_LITERAL_SIZE;
-		match_offset = 0;
-		match_size = 0;
-		
-		for(size_t i = 0; i < MAX_LITERAL_SIZE; i++) {
-			size_t high = src_pos + i;
-			size_t low = sub_clamped(high, TYPE_A_MAX_LOOKBACK);
-			for(size_t j = low; j < high; j++) {
-				// Count number of equal bytes.
-				size_t target = src_pos + i;
-				size_t k = 0;
-				for(; k < MAX_MATCH_SIZE; k++) {
-					auto l_val = src[target + k];
-					auto r_val = src[j + k];
-					if(l_val != r_val) {
-						break;
-					}
-				}
-				
-				if(k >= 3 && k > match_size) {
-					match_offset = j;
-					match_size = k;
-				}
-			}
-			if(match_size >= 3) {
-				literal_size = i;
-				break;
-			}
-		}
-	};
-	find_match();
+	return match;
+}
+
+const std::vector<char> DUMMY_PACKET = { 0x11, 0, 0 };
+
+void encode_match_packet(
+		array_stream& dest,
+		const uint8_t* src,
+		size_t& src_pos,
+		size_t src_end,
+		uint32_t& last_flag,
+		size_t match_offset,
+		size_t match_size) {
+	std::size_t delta = src_pos - match_offset - 1;
 	
-	if(literal_size == 0) { // Match packet.
-		std::size_t delta = src_pos - match_offset - 1;
-
-		// Max bytes_to_copy for a packet of type A is 0x8.
-		if(match_size <= 0x8) { // A type
-			assert(match_size >= 3);
+	// Max bytes_to_copy for a packet of type A is 0x8.
+	if(match_size <= 0x8) { // A type
+		assert(match_size >= 3);
 		
-			WAD_COMPRESS_DEBUG(
-				std::cout << "match at 0x" << std::hex << match_offset << " of size 0x" << match_size << "\n";
-			)
-
-			uint8_t pos_major = delta / 8;
-			uint8_t pos_minor = delta % 8;
-
-			WAD_COMPRESS_DEBUG(
-				std::cout << "pos_major = " << (int) pos_major << ", pos_minor = " << (int) pos_minor << "\n";
-			)
-
-			dest.buffer.push_back(((match_size - 1) << 5) | (pos_minor << 2));
-			dest.buffer.push_back(pos_major);
-		} else { // B type
-			WAD_COMPRESS_DEBUG(std::cout << "B type detected!\n";)
-			
-			if(match_size > (0b11111 + 2)) {
-				dest.buffer.push_back(1 << 5); // flag
-				dest.buffer.push_back(match_size - (0b11111 + 2));
-			} else {
-				dest.buffer.push_back((1 << 5) | (match_size - 2)); // flag
-			}
-
-			uint8_t pos_minor = delta % 0x40;
-			uint8_t pos_major = delta / 0x40;
-			
-			dest.buffer.push_back(pos_minor << 2);
-			dest.buffer.push_back(pos_major);
-		}
-
 		WAD_COMPRESS_DEBUG(
-			std::cout << " => copy 0x" << std::hex << (int) match_size
-				<< " bytes from uncompressed stream at 0x" << match_offset << " (source = " << src_pos << ")\n";
+			std::cout << "match at 0x" << std::hex << match_offset << " of size 0x" << match_size << "\n";
 		)
-		src_pos += match_size;
-	} else { // Literal packet.
-		if(last_flag < 0x10) { // Two literals in a row? Implausible!
+		
+		uint8_t pos_major = delta / 8;
+		uint8_t pos_minor = delta % 8;
+		
+		WAD_COMPRESS_DEBUG(
+			std::cout << "pos_major = " << (int) pos_major << ", pos_minor = " << (int) pos_minor << "\n";
+		)
+		
+		dest.buffer.push_back(((match_size - 1) << 5) | (pos_minor << 2));
+		dest.buffer.push_back(pos_major);
+	} else { // B type
+		WAD_COMPRESS_DEBUG(std::cout << "B type detected!\n";)
+		
+		if(match_size > (0b11111 + 2)) {
+			dest.buffer.push_back(1 << 5); // flag
+			dest.buffer.push_back(match_size - (0b11111 + 2));
+		} else {
+			dest.buffer.push_back((1 << 5) | (match_size - 2)); // flag
+		}
+		
+		uint8_t pos_minor = delta % 0x40;
+		uint8_t pos_major = delta / 0x40;
+		
+		dest.buffer.push_back(pos_minor << 2);
+		dest.buffer.push_back(pos_major);
+	}
+	
+	WAD_COMPRESS_DEBUG(
+		std::cout << " => copy 0x" << std::hex << (int) match_size
+			<< " bytes from uncompressed stream at 0x" << match_offset << " (source = " << src_pos << ")\n";
+	)
+	src_pos += match_size;
+	
+	last_flag = dest.buffer[dest.pos];
+}
+
+void encode_literal_packet(
+		array_stream& dest,
+		const uint8_t* src,
+		size_t& src_pos,
+		size_t src_end,
+		uint32_t& last_flag,
+		size_t literal_size) {
+	if(last_flag < 0x10) { // Two literals in a row? Implausible!
+		last_flag = 0x11;
+		dest.buffer.insert(dest.buffer.end(), DUMMY_PACKET.begin(), DUMMY_PACKET.end());
+		dest.pos = dest.buffer.size();
+	}
+	
+	if(literal_size <= 3) {
+		// If the last flag is a literal, or there's already a small literal
+		// injected into the last packet, we need to push a new dummy packet
+		// that we can stuff a literal into on the next iteration.
+		if(last_flag == DO_NOT_INJECT_FLAG) {
 			last_flag = 0x11;
 			dest.buffer.insert(dest.buffer.end(), DUMMY_PACKET.begin(), DUMMY_PACKET.end());
-			return;
-		}
-	
-		if(literal_size <= 3) {
-			// If the last flag is a literal, or there's already a small literal
-			// injected into the last packet, we need to push a new dummy packet
-			// that we can stuff a literal into on the next iteration.
-			if(last_flag == DO_NOT_INJECT_FLAG) {
-				last_flag = 0x11;
-				dest.buffer.insert(dest.buffer.end(), DUMMY_PACKET.begin(), DUMMY_PACKET.end());
-				return;
-			}
-			
-			WAD_COMPRESS_DEBUG(
-				std::cout << " => copy 0x" << std::hex << (int) literal_size
-					<< " (snd_pos) bytes from compressed stream at 0x" << dest_pos + packet.size() << " (target = " << src_pos << ")\n";
-			)
-			dest.buffer[dest.pos - 2] |= literal_size;
-			dest.buffer.insert(dest.buffer.end(), src + src_pos, src + src_pos + literal_size);
-			src_pos += literal_size;
-			last_flag = DO_NOT_INJECT_FLAG;
-			return;
-		} else if(literal_size <= 18) {
-			// We can encode the size in the flag byte.
-			dest.buffer.push_back(literal_size - 3); // flag
-		} else {
-			// We have to push it as a seperate byte.
-			dest.buffer.push_back(0); // flag
-			dest.buffer.push_back(literal_size - 18);
+			dest.pos = dest.buffer.size();
 		}
 		
 		WAD_COMPRESS_DEBUG(
 			std::cout << " => copy 0x" << std::hex << (int) literal_size
-				<< " bytes from compressed stream at 0x" << dest_pos + packet.size() << " (target = " << src_pos << ")\n";
+				<< " (snd_pos) bytes from compressed stream at 0x" << dest_pos + packet.size() << " (target = " << src_pos << ")\n";
 		)
+		dest.buffer[dest.pos - 2] |= literal_size;
 		dest.buffer.insert(dest.buffer.end(), src + src_pos, src + src_pos + literal_size);
 		src_pos += literal_size;
+		last_flag = DO_NOT_INJECT_FLAG;
+		return;
+	} else if(literal_size <= 18) {
+		// We can encode the size in the flag byte.
+		dest.buffer.push_back(literal_size - 3); // flag
+	} else {
+		// We have to push it as a seperate byte.
+		dest.buffer.push_back(0); // flag
+		dest.buffer.push_back(literal_size - 18);
 	}
 	
+	WAD_COMPRESS_DEBUG(
+		std::cout << " => copy 0x" << std::hex << (int) literal_size
+			<< " bytes from compressed stream at 0x" << dest_pos + packet.size() << " (target = " << src_pos << ")\n";
+	)
+	dest.buffer.insert(dest.buffer.end(), src + src_pos, src + src_pos + literal_size);
+	src_pos += literal_size;
+	
 	last_flag = dest.buffer[dest.pos];
-	WAD_COMPRESS_DEBUG(std::cout << "flag_byte = " << std::hex << (packet[0] & 0xff) << "\n");
 }
 
 size_t get_wad_packet_size(uint8_t* src, size_t bytes_left) {

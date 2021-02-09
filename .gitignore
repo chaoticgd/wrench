@@ -10,3 +10,5 @@ __pycache__
 /imgui.ini
 /bin
 /lib
+/cache
+wrench_settings.ini

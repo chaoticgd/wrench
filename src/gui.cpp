@@ -816,16 +816,15 @@ ImVec2 gui::string_viewer::initial_size() const {
 void gui::string_viewer::render(app& a) {
 	if(auto lvl = a.get_level()) {
 		static std::size_t language_index = 0;
-		game_language& language = lvl->world.languages[language_index];
+		std::vector<game_string>& language = lvl->world.languages[language_index];
 		
 		ImGui::Columns(2);
 		ImGui::SetColumnWidth(0, 64);
 
 		static prompt_box string_exporter("Export", "Enter Export Path");
 		if(auto path = string_exporter.prompt()) {
-			game_language language = lvl->world.languages[language_index];
 			std::ofstream out_file(*path);
-			for(game_string& string : language.strings) {
+			for(game_string& string : language) {
 				out_file << std::hex << string.id << ": " << string.str << "\n";
 			}
 		}
@@ -844,7 +843,7 @@ void gui::string_viewer::render(app& a) {
 		ImGui::Columns(1);
 
 		ImGui::BeginChild(1);
-		for(game_string& string : language.strings) {
+		for(game_string& string : language) {
 			ImGui::Text("%x: %s", string.id, string.str.c_str());
 		}
 		ImGui::EndChild();
