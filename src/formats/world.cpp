@@ -659,6 +659,8 @@ void world_segment::write_rac2() {
 	thing_98_header.part_1_count = thing_98_1s.size();
 	for (int i = 0; i < 5; ++i)
 		thing_98_header.part_offsets[i] = thing_98_part_offsets[i];
+	thing_98_header.unknown_1c = 0;
+	thing_98_header.unknown_20 = 0;
 	backing->write(thing_98_header);
 	backing->write_v(thing_98_1s);
 	backing->write_v(thing_98_2s);
