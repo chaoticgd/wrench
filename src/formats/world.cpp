@@ -368,7 +368,7 @@ std::vector<T> world_segment::read_splines(
 
 static const std::vector<char> EMPTY_VECTOR;
 
-void world_segment::write_rac2() {
+void world_segment::write_rac23() {
 	world_header_rac23 header;
 	defer([&] {
 		backing->write(0, header);

@@ -92,7 +92,7 @@ level::level(iso_stream* iso, toc_level index)
 }
 
 void level::write() {
-	world.write_rac2();
+	world.write_rac23();
 }
 
 level_file_header level::read_file_header(stream* src, std::size_t offset) {
