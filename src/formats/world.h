@@ -153,6 +153,7 @@ public:
 	std::vector<world_thing_c> thing_cs;
 	std::optional<uint32_t> unknown_10_val; // Just before the US strings.
 	std::array<std::vector<game_string>, LANGUAGE_COUNT> languages;
+	std::vector<uint8_t> korean_strings_hack;
 	std::vector<uint32_t> thing_30s;
 	std::vector<tie_entity> ties;
 	std::vector<uint32_t> thing_38_1s;

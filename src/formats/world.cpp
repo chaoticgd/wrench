@@ -56,7 +56,21 @@ void world_segment::read_rac23() {
 	languages[4] = read_language(header.spanish_strings);
 	languages[5] = read_language(header.italian_strings);
 	languages[6] = read_language(header.japanese_strings);
-	languages[7] = read_language(header.korean_strings);
+	languages[7] = read_language(header.korean_strings); // Currently broken!
+	
+	// HACK: We can't read in the korean strings properly, so just store them
+	// as raw binary data so we can write them out as-is later.
+	uint32_t after_korean_strings = 0xffffffff;
+	for(size_t i = 0; i < sizeof(world_header_rac23) / 4; i++) {
+		uint32_t offset = *(((uint32_t*) &header) + i);
+		if(offset > header.korean_strings && offset < after_korean_strings) {
+			after_korean_strings = offset;
+		}
+	}
+	assert(after_korean_strings != 0xffffffff);
+	backing->seek(header.korean_strings);
+	korean_strings_hack = backing->read_multiple<uint8_t>(after_korean_strings - header.korean_strings);
+	
 	read_table(header.directional_lights, &directional_lights);
 	read_table(header.unknown_84, &thing_84s);
 	read_table(header.unknown_8, &thing_8s);
@@ -447,7 +461,9 @@ void world_segment::write_rac2() {
 	backing->pad(0x10, 0);
 	header.japanese_strings = write_language(languages[6]);
 	backing->pad(0x10, 0);
-	header.korean_strings = write_language(languages[7]);
+	//header.korean_strings = write_language(languages[7]);
+	header.korean_strings = backing->tell();
+	backing->write_v(korean_strings_hack); // HACK: See read_rac23 comment.
 	
 	header.directional_lights = write_table(directional_lights);
 	header.unknown_84 = write_table(thing_84s);
