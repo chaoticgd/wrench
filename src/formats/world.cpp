@@ -88,9 +88,13 @@ void world_segment::read_rac23() {
 	
 	backing->seek(header.unknown_94);
 	for(;;) {
-		world_thing_94 thing_94 = backing->read<world_thing_94>();
-		if(thing_94.index > -1) {
-			thing_94s.push_back(backing->read_multiple<uint8_t>(thing_94.size << 1));
+		int16_t index = backing->read<int16_t>();
+		int16_t size = backing->read<int16_t>();
+		if(index > -1) {
+			thing_94 thing;
+			thing.index = index;
+			thing.data = backing->read_multiple<uint8_t>(size * 2);
+			thing_94s.emplace_back(thing);
 		} else {
 			break;
 		}
@@ -532,12 +536,10 @@ void world_segment::write_rac2() {
 	
 	backing->pad(0x10, 0);
 	header.unknown_94 = backing->tell();
-	for(size_t i = 0; i < thing_94s.size(); i++) {
-		world_thing_94 thing_94_header;
-		thing_94_header.index = i;
-		thing_94_header.size = thing_94s[i].size() >> 1;
-		backing->write(thing_94_header);
-		backing->write_v(thing_94s[i]);
+	for(thing_94& thing : thing_94s) {
+		backing->write<int16_t>(thing.index);
+		backing->write<int16_t>(thing.data.size() / 2);
+		backing->write_v(thing.data);
 	}
 	backing->write<uint16_t>(0xffff);
 	

@@ -135,6 +135,11 @@ struct game_string {
 	std::string str;
 };
 
+struct thing_94 {
+	size_t index;
+	std::vector<uint8_t> data;
+};
+
 #define LANGUAGE_COUNT 8
 #define LANGUAGE_NAMES \
 	"US English", "UK English", "French", "German", \
@@ -186,7 +191,7 @@ public:
 	std::vector<world_thing_90> thing_90_1s;
 	std::vector<world_thing_90> thing_90_2s;
 	std::vector<world_thing_90> thing_90_3s;
-	std::vector<std::vector<uint8_t>> thing_94s;
+	std::vector<thing_94> thing_94s;
 	std::vector<world_thing_98> thing_98_1s;
 	std::vector<uint32_t> thing_98_2s;
 	std::array<uint32_t, 5> thing_98_part_offsets;

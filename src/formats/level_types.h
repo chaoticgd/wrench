@@ -674,12 +674,6 @@ packed_struct(world_thing_90,
 	uint32_t unknown_4;
 )
 
-packed_struct(world_thing_94,
-	int16_t index;
-	int16_t size;
-	// Data follows.
-)
-
 packed_struct(world_thing_98_header,
 	uint32_t size; // Not including this field.
 	uint32_t part_1_count;
