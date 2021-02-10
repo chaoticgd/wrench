@@ -32,14 +32,45 @@ void world_segment::read_rac23() {
 		property_things.push_back(property_thing);
 	} while(property_things.size() < property_thing.count);
 	
-	game_strings[0] = read_language(header.am_english_strings);
-	game_strings[1] = read_language(header.uk_english_strings);
-	game_strings[2] = read_language(header.french_strings);
-	game_strings[3] = read_language(header.german_strings);
-	game_strings[4] = read_language(header.spanish_strings);
-	game_strings[5] = read_language(header.italian_strings);
-	game_strings[6] = read_language(header.unused1_strings);
-	game_strings[7] = read_language(header.unused2_strings);
+	switch(header.us_english_strings % 0x10) {
+		case 0x0:
+			game = world_type::RAC2;
+			break;
+		case 0x4:
+			game = world_type::RAC3;
+			break;
+		case 0x8:
+			game = world_type::DL;
+			break;
+		default:
+			throw stream_format_error("Invalid language block alignment.");
+	}
+	
+	if(game == world_type::RAC3 || game == world_type::DL) {
+		unknown_10_val = backing->read<uint32_t>(header.us_english_strings - 0x4);
+	}
+	languages[0] = read_language(header.us_english_strings);
+	languages[1] = read_language(header.uk_english_strings);
+	languages[2] = read_language(header.french_strings);
+	languages[3] = read_language(header.german_strings);
+	languages[4] = read_language(header.spanish_strings);
+	languages[5] = read_language(header.italian_strings);
+	languages[6] = read_language(header.japanese_strings);
+	languages[7] = read_language(header.korean_strings); // Currently broken!
+	
+	// HACK: We can't read in the korean strings properly, so just store them
+	// as raw binary data so we can write them out as-is later.
+	uint32_t after_korean_strings = 0xffffffff;
+	for(size_t i = 0; i < sizeof(world_header_rac23) / 4; i++) {
+		uint32_t offset = *(((uint32_t*) &header) + i);
+		if(offset > header.korean_strings && offset < after_korean_strings) {
+			after_korean_strings = offset;
+		}
+	}
+	assert(after_korean_strings != 0xffffffff);
+	backing->seek(header.korean_strings);
+	korean_strings_hack = backing->read_multiple<uint8_t>(after_korean_strings - header.korean_strings);
+	
 	read_table(header.directional_lights, &directional_lights);
 	read_table(header.unknown_84, &thing_84s);
 	read_table(header.unknown_8, &thing_8s);
@@ -57,9 +88,13 @@ void world_segment::read_rac23() {
 	
 	backing->seek(header.unknown_94);
 	for(;;) {
-		world_thing_94 thing_94 = backing->read<world_thing_94>();
-		if(thing_94.index > -1) {
-			thing_94s.push_back(backing->read_multiple<uint8_t>(thing_94.size << 1));
+		int16_t index = backing->read<int16_t>();
+		int16_t size = backing->read<int16_t>();
+		if(index > -1) {
+			thing_94 thing;
+			thing.index = index;
+			thing.data = backing->read_multiple<uint8_t>(size * 2);
+			thing_94s.emplace_back(thing);
 		} else {
 			break;
 		}
@@ -134,14 +169,14 @@ void world_segment::read_rac4() {
 	read_table(header.unknown_8, &thing_cs);
 
 	// 
-	game_strings[0] = read_language(header.am_english_strings);
-	game_strings[1] = read_language(header.uk_english_strings);
-	game_strings[2] = read_language(header.french_strings);
-	game_strings[3] = read_language(header.german_strings);
-	game_strings[4] = read_language(header.spanish_strings);
-	game_strings[5] = read_language(header.italian_strings);
-	game_strings[6] = read_language(header.japanese_strings);
-	game_strings[7] = read_language(header.korean_strings);
+	languages[0] = read_language(header.us_english_strings);
+	languages[1] = read_language(header.uk_english_strings);
+	languages[2] = read_language(header.french_strings);
+	languages[3] = read_language(header.german_strings);
+	languages[4] = read_language(header.spanish_strings);
+	languages[5] = read_language(header.italian_strings);
+	languages[6] = read_language(header.japanese_strings);
+	languages[7] = read_language(header.korean_strings);
 
 	// equivalent to rac23 0x48
 	thing_48s = read_u32_list(header.unknown_2c);
@@ -237,9 +272,18 @@ std::vector<game_string> world_segment::read_language(uint32_t offset) {
 	std::vector<world_string_table_entry> entries(table.num_strings);
 	backing->read_v(entries);
 	
+	if(game == world_type::RAC3) {
+		offset += sizeof(world_string_table_header);
+	}
+	
 	for(world_string_table_entry& entry : entries) {
 		backing->seek(offset + entry.string.value);
-		language.push_back({ entry.id, entry.secondary_id, backing->read_string() });
+		language.push_back({
+			entry.id,
+			entry.secondary_id,
+			entry.unknown_c, entry.unknown_e,
+			backing->read_string()
+		});
 	}
 	
 	return language;
@@ -324,7 +368,7 @@ std::vector<T> world_segment::read_splines(
 
 static const std::vector<char> EMPTY_VECTOR;
 
-void world_segment::write_rac2() {
+void world_segment::write_rac23() {
 	world_header_rac23 header;
 	defer([&] {
 		backing->write(0, header);
@@ -359,47 +403,71 @@ void world_segment::write_rac2() {
 	backing->write(properties);
 	backing->write_v(property_things);
 	
-	const auto write_language = [&](std::vector<game_string>& strings) {
-		backing->pad(0x10, 0);
+	const auto write_language = [&](std::vector<game_string>& language) {
 		size_t base_pos = backing->tell();
 		backing->seek(base_pos + sizeof(world_string_table_header));
 		
 		size_t data_pos = sizeof(world_string_table_header) +
-			strings.size() * sizeof(world_string_table_entry);
-		for(game_string& str : strings) {
+			language.size() * sizeof(world_string_table_entry);
+		for(game_string& str : language) {
 			world_string_table_entry entry;
 			entry.string = data_pos;
+			if(game == world_type::RAC3) {
+				entry.string.value -= sizeof(world_string_table_header);
+			}
 			entry.id = str.id;
 			entry.secondary_id = str.secondary_id;
-			entry.padding = 0;
+			entry.unknown_c = str.unknown_c;
+			entry.unknown_e = str.unknown_e;
 			backing->write(entry);
 			data_pos += str.str.size() + 1;
-			while(data_pos % 4 != 0) data_pos++;
+			if(game == world_type::RAC2) {
+				while(data_pos % 4 != 0) data_pos++;
+			}
 		}
 		
-		for(game_string& str : strings) {
-			backing->pad(0x4, 0);
+		for(game_string& str : language) {
+			if(game == world_type::RAC2) {
+				backing->pad(0x4, 0);
+			}
 			backing->write_n(str.str.c_str(), str.str.size() + 1);
 		}
 		backing->pad(0x10, 0);
 		
 		world_string_table_header string_table;
-		string_table.num_strings = strings.size();
+		string_table.num_strings = language.size();
 		string_table.size = data_pos;
+		if(game == world_type::RAC3) {
+			string_table.size -= sizeof(world_string_table_header);
+		}
 		backing->write(base_pos, string_table);
 		
 		backing->seek(base_pos + data_pos);
 		
 		return base_pos;
 	};
-	header.am_english_strings = write_language(game_strings[0]);
-	header.uk_english_strings = write_language(game_strings[1]);
-	header.french_strings = write_language(game_strings[2]);
-	header.german_strings = write_language(game_strings[3]);
-	header.spanish_strings = write_language(game_strings[4]);
-	header.italian_strings = write_language(game_strings[5]);
-	header.unused1_strings = write_language(game_strings[6]);
-	header.unused2_strings = write_language(game_strings[7]);
+	backing->pad(0x10, 0);
+	if(game == world_type::RAC3 || game == world_type::DL) {
+		assert(unknown_10_val.has_value());
+		backing->write<uint32_t>(*unknown_10_val);
+	}
+	header.us_english_strings = write_language(languages[0]);
+	backing->pad(0x10, 0);
+	header.uk_english_strings = write_language(languages[1]);
+	backing->pad(0x10, 0);
+	header.french_strings = write_language(languages[2]);
+	backing->pad(0x10, 0);
+	header.german_strings = write_language(languages[3]);
+	backing->pad(0x10, 0);
+	header.spanish_strings = write_language(languages[4]);
+	backing->pad(0x10, 0);
+	header.italian_strings = write_language(languages[5]);
+	backing->pad(0x10, 0);
+	header.japanese_strings = write_language(languages[6]);
+	backing->pad(0x10, 0);
+	//header.korean_strings = write_language(languages[7]);
+	header.korean_strings = backing->tell();
+	backing->write_v(korean_strings_hack); // HACK: See read_rac23 comment.
 	
 	header.directional_lights = write_table(directional_lights);
 	header.unknown_84 = write_table(thing_84s);
@@ -468,12 +536,10 @@ void world_segment::write_rac2() {
 	
 	backing->pad(0x10, 0);
 	header.unknown_94 = backing->tell();
-	for(size_t i = 0; i < thing_94s.size(); i++) {
-		world_thing_94 thing_94_header;
-		thing_94_header.index = i;
-		thing_94_header.size = thing_94s[i].size() >> 1;
-		backing->write(thing_94_header);
-		backing->write_v(thing_94s[i]);
+	for(thing_94& thing : thing_94s) {
+		backing->write<int16_t>(thing.index);
+		backing->write<int16_t>(thing.data.size() / 2);
+		backing->write_v(thing.data);
 	}
 	backing->write<uint16_t>(0xffff);
 	
@@ -595,6 +661,8 @@ void world_segment::write_rac2() {
 	thing_98_header.part_1_count = thing_98_1s.size();
 	for (int i = 0; i < 5; ++i)
 		thing_98_header.part_offsets[i] = thing_98_part_offsets[i];
+	thing_98_header.unknown_1c = 0;
+	thing_98_header.unknown_20 = 0;
 	backing->write(thing_98_header);
 	backing->write_v(thing_98_1s);
 	backing->write_v(thing_98_2s);

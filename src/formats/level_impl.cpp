@@ -66,7 +66,7 @@ level::level(iso_stream* iso, toc_level index)
 	}
 	
 	_asset_segment = iso->get_decompressed
-		(_file_header.base_offset + _file_header.primary_header_offset + _primary_header.asset_wad);
+		(_file_header.base_offset + _file_header.primary_header_offset + _primary_header.asset_wad, true);
 	_asset_segment->name = "Asset Segment";
 	
 	if(config::get().debug.stream_tracing) {
@@ -92,7 +92,7 @@ level::level(iso_stream* iso, toc_level index)
 }
 
 void level::write() {
-	world.write_rac2();
+	world.write_rac23();
 }
 
 level_file_header level::read_file_header(stream* src, std::size_t offset) {

@@ -24,12 +24,6 @@
 
 #include "level_types.h"
 
-struct game_string {
-	uint32_t id;
-	uint32_t secondary_id;
-	std::string str;
-};
-
 struct entity_id {
 	std::size_t value;
 	
@@ -129,16 +123,42 @@ struct grindrail_spline_entity final : spline_entity {
 	uint8_t unknown_10[0x10];
 };
 
+enum class world_type {
+	RAC2, RAC3, DL
+};
+
+struct game_string {
+	uint32_t id;
+	uint32_t secondary_id;
+	uint16_t unknown_c;
+	uint16_t unknown_e;
+	std::string str;
+};
+
+struct thing_94 {
+	size_t index;
+	std::vector<uint8_t> data;
+};
+
+#define LANGUAGE_COUNT 8
+#define LANGUAGE_NAMES \
+	"US English", "UK English", "French", "German", \
+	"Spanish", "Italian", "Japanese", "Korean"
+
 class world_segment {
 public:
 	world_segment() {}
-
+	
+	world_type game;
+	
 	world_properties properties;
 	std::vector<world_property_thing> property_things;
 	std::vector<world_directional_light> directional_lights;
 	std::vector<world_thing_8> thing_8s;
 	std::vector<world_thing_c> thing_cs;
-	std::array<std::vector<game_string>, 8> game_strings;
+	std::optional<uint32_t> unknown_10_val; // Just before the US strings.
+	std::array<std::vector<game_string>, LANGUAGE_COUNT> languages;
+	std::vector<uint8_t> korean_strings_hack;
 	std::vector<uint32_t> thing_30s;
 	std::vector<tie_entity> ties;
 	std::vector<uint32_t> thing_38_1s;
@@ -171,7 +191,7 @@ public:
 	std::vector<world_thing_90> thing_90_1s;
 	std::vector<world_thing_90> thing_90_2s;
 	std::vector<world_thing_90> thing_90_3s;
-	std::vector<std::vector<uint8_t>> thing_94s;
+	std::vector<thing_94> thing_94s;
 	std::vector<world_thing_98> thing_98_1s;
 	std::vector<uint32_t> thing_98_2s;
 	std::array<uint32_t, 5> thing_98_part_offsets;
@@ -203,7 +223,7 @@ private:
 		uint32_t data_offset);
 	
 public:
-	void write_rac2();
+	void write_rac23();
 	
 private:
 	std::size_t _next_entity_id = 1;
