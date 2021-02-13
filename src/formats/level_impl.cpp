@@ -24,29 +24,29 @@
 level::level(iso_stream* iso, toc_level index)
 	: _index(index),
 	  _file_header(read_file_header(iso, index.main_part.bytes())),
-	  _file(iso, _file_header.base_offset, index.main_part_size.bytes()) {
+	  _file(iso, _file_header.base_offset.bytes(), index.main_part_size.bytes()) {
 	_file.name = "LEVEL" + std::to_string(index.level_table_index) + ".WAD";
 
 	switch(_file_header.type) {
 		case level_type::RAC23:
 		case level_type::RAC2_68: {
-			auto header = _file.read<level_primary_header_rac23>(_file_header.primary_header_offset);
+			auto header = _file.read<level_primary_header_rac23>(_file_header.primary_header.offset.bytes());
 			swap_primary_header_rac23(_primary_header, header);
 			break;
 		}
 		case level_type::RAC4: {
-			auto header = _file.read<level_primary_header_rac4>(_file_header.primary_header_offset);
+			auto header = _file.read<level_primary_header_rac4>(_file_header.primary_header.offset.bytes());
 			swap_primary_header_rac4(_primary_header, header);
 			break;
 		}
 	}
 
 	code_segment.header = _file.read<level_code_segment_header>
-		(_file_header.primary_header_offset + _primary_header.code_segment_offset);
+		(_file_header.primary_header.offset.bytes() + _primary_header.code_segment_offset);
 	code_segment.bytes.resize(_primary_header.code_segment_size - sizeof(level_code_segment_header));
 	_file.read_v(code_segment.bytes);
 
-	_world_segment = iso->get_decompressed(_file_header.base_offset + _file_header.world_segment_offset);
+	_world_segment = iso->get_decompressed(_file_header.base_offset.bytes() + _file_header.world_segment.offset.bytes());
 	_world_segment->name = "World Segment";
 	if(config::get().debug.stream_tracing) {
 		// Install a tracepoint for the world segment so we can log reads.
@@ -66,7 +66,7 @@ level::level(iso_stream* iso, toc_level index)
 	}
 	
 	_asset_segment = iso->get_decompressed
-		(_file_header.base_offset + _file_header.primary_header_offset + _primary_header.asset_wad, true);
+		(_file_header.base_offset.bytes() + _file_header.primary_header.offset.bytes() + _primary_header.asset_wad, true);
 	_asset_segment->name = "Asset Segment";
 	
 	if(config::get().debug.stream_tracing) {
@@ -75,7 +75,7 @@ level::level(iso_stream* iso, toc_level index)
 		_asset_segment = &(*_asset_segment_tracepoint);
 	}
 	
-	uint32_t asset_offset = _file_header.primary_header_offset + _primary_header.asset_header;
+	uint32_t asset_offset = _file_header.primary_header.offset.bytes() + _primary_header.asset_header;
 	auto asset_header = _file.read<level_asset_header>(asset_offset);
 	
 	read_moby_models(asset_offset, asset_header);
@@ -103,28 +103,28 @@ level_file_header level::read_file_header(stream* src, std::size_t offset) {
 		case 0x60: {
 			auto file_header = src->read<level_file_header_rac23>();
 			result.type = level_type::RAC23;
-			result.base_offset = file_header.base_offset.bytes();
+			result.base_offset = file_header.base_offset;
 			result.level_number = file_header.level_number;
-			result.primary_header_offset = file_header.primary_header.bytes();
-			result.world_segment_offset = file_header.world_segment.bytes();
+			result.primary_header = file_header.primary_header;
+			result.world_segment = file_header.world_segment;
 			break;
 		}
 		case 0x68: {
 			auto file_header = src->read<level_file_header_rac2_68>();
 			result.type = level_type::RAC2_68;
-			result.base_offset = file_header.base_offset.bytes();
+			result.base_offset = file_header.base_offset;
 			result.level_number = file_header.level_number;
-			result.primary_header_offset = file_header.primary_header.bytes();
-			result.world_segment_offset = file_header.world_segment.bytes();
+			result.primary_header = file_header.primary_header;
+			result.world_segment = file_header.world_segment;
 			break;
 		}
 		case 0xc68: {
 			auto file_header = src->read<level_file_header_rac4>();
 			result.type = level_type::RAC4;
-			result.base_offset = file_header.base_offset.bytes();
+			result.base_offset = file_header.base_offset;
 			result.level_number = file_header.level_number;
-			result.primary_header_offset = file_header.primary_header.bytes();
-			result.world_segment_offset = file_header.world_segment.bytes();
+			result.primary_header = file_header.primary_header;
+			result.world_segment = file_header.world_segment;
 			break;
 		}
 		default: {
@@ -187,7 +187,7 @@ void level::read_moby_models(std::size_t asset_offset, level_asset_header asset_
 void level::read_textures(std::size_t asset_offset, level_asset_header asset_header) {
 	_file.seek(asset_offset + asset_header.mipmap_offset);
 	std::size_t little_texture_base =
-		_file_header.primary_header_offset + _primary_header.tex_pixel_data_base;
+		_file_header.primary_header.offset.bytes() + _primary_header.tex_pixel_data_base;
 	std::size_t last_palette_offset = 0;
 	for(std::size_t i = 0; i < asset_header.mipmap_count; i++) {
 		auto entry = _file.read<level_mipmap_entry>();
@@ -241,8 +241,8 @@ void level::read_tfrags() {
 void level::read_hud_banks(iso_stream* iso) {
 	const auto read_hud_bank = [&](int index, uint32_t relative_offset, uint32_t size) {
 		if(size > 0x10) {
-			uint32_t absolute_offset = _file_header.primary_header_offset + relative_offset;
-			stream* bank = iso->get_decompressed(_file_header.base_offset + absolute_offset);
+			uint32_t absolute_offset = _file_header.primary_header.offset.bytes() + relative_offset;
+			stream* bank = iso->get_decompressed(_file_header.base_offset.bytes() + absolute_offset);
 			bank->name = "HUD Bank " + std::to_string(index);
 		}
 	};
@@ -256,7 +256,7 @@ void level::read_hud_banks(iso_stream* iso) {
 }
 
 void level::read_loading_screen_textures(iso_stream* iso) {
-	size_t primary_header_offset = _file_header.base_offset + _file_header.primary_header_offset;
+	size_t primary_header_offset = _file_header.base_offset.bytes() + _file_header.primary_header.offset.bytes();
 	size_t load_wad_offset = primary_header_offset + _primary_header.loading_screen_textures_offset;
 	if(load_wad_offset > iso->size()) {
 		fprintf(stderr, "warning: Failed to read loading screen textures (seek pos > iso size).\n");

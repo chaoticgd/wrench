@@ -79,10 +79,10 @@ int main(int argc, char** argv) {
 	
 	for(toc_level level : project.toc.levels) {
 		auto file_header = level::read_file_header(&project.iso, level.main_part.bytes());
-		proxy_stream file(&project.iso, file_header.base_offset, 0);
-		auto primary_header = file.read<level_primary_header>(file_header.primary_header_offset);
+		proxy_stream file(&project.iso, file_header.base_offset.bytes(), 0);
+		auto primary_header = file.read<level_primary_header>(file_header.primary_header.offset.bytes());
 		
-		std::size_t asset_header_offset = file_header.primary_header_offset + primary_header.asset_header;
+		std::size_t asset_header_offset = file_header.primary_header.offset.bytes() + primary_header.asset_header;
 		auto asset_header = file.read<level_asset_header>(asset_header_offset);
 		
 		packed_struct(texture_entry,

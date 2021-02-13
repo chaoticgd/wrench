@@ -45,10 +45,10 @@ enum class level_type {
 
 struct level_file_header {
 	level_type type;
-	uint32_t base_offset;
+	sector32 base_offset;
 	uint32_t level_number;
-	uint32_t primary_header_offset;
-	uint32_t world_segment_offset;
+	sector_range primary_header;
+	sector_range world_segment;
 };
 
 struct level_code_segment {
