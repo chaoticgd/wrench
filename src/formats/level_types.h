@@ -129,7 +129,7 @@ packed_struct(vec3f,
 	}
 )
 
-packed_struct(colour48,
+packed_struct(colour96,
 	uint32_t red;
 	uint32_t green;
 	uint32_t blue;
@@ -454,7 +454,7 @@ packed_struct(world_properties,
 	uint32_t unknown_0;     // 0x0
 	uint32_t unknown_4;     // 0x4
 	uint32_t unknown_8;     // 0x8
-	colour48 fog_colour;    // 0xc
+	colour96 fog_colour;    // 0xc
 	uint32_t unknown_18;    // 0x18
 	uint32_t unknown_1c;    // 0x1c
 	float fog_distance;     // 0x20
