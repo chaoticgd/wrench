@@ -60,20 +60,20 @@ packed_struct(level_file_header_rac23,
 	sector_range unknown_28;     // 0x28
 	sector_range unknown_30;     // 0x30
 	sector_range unknown_38;     // 0x38
-	uint32_t unknown_40;         // 0x40
-	uint32_t unknown_44;         // 0x44
+	sector_range unknown_40;     // 0x40
 	sector_range sound_bank_2;   // 0x48
 	sector_range sound_bank_3;   // 0x50
+	sector_range sound_bank_4;   // 0x58
 )
 
 packed_struct(level_file_header_rac2_68,
-	uint32_t magic;              // 0x0 Equal to 0x68.
-	sector32 base_offset;        // 0x4
-	uint32_t level_number;       // 0x8
-	sector_range primary_header; // 0xc
-	sector32 unknown_14;         // 0x14
-	uint32_t unknown_18;         // 0x18
-	sector_range world_segment;  // 0x1c
+	uint32_t magic;               // 0x0 Equal to 0x68.
+	sector32 base_offset;         // 0x4
+	uint32_t level_number;        // 0x8
+	sector_range primary_header;  // 0xc
+	sector_range sound_bank_1;    // 0x14
+	sector_range world_segment_1; // 0x1c
+	sector_range world_segment_2; // 0x24
 )
 
 packed_struct(level_file_header_rac4,

@@ -95,40 +95,24 @@ void level::write_back() {
 	world.write_rac23();
 }
 
-void level::write(array_stream& dest) {
-	
-}
-
 level_file_header level::read_file_header(stream* src, std::size_t offset) {
-	level_file_header result;
+	level_file_header result { (level_type) 0 };
 	src->seek(offset);
-	uint32_t magic = src->peek<uint32_t>();
-	switch(magic) {
-		case 0x60: {
+	result.type = (level_type) src->peek<uint32_t>();
+	switch(result.type) {
+		case level_type::RAC23: {
 			auto file_header = src->read<level_file_header_rac23>();
-			result.type = level_type::RAC23;
-			result.base_offset = file_header.base_offset;
-			result.level_number = file_header.level_number;
-			result.primary_header = file_header.primary_header;
-			result.world_segment = file_header.world_segment;
+			swap_level_file_header_rac23(result, file_header);
 			break;
 		}
-		case 0x68: {
+		case level_type::RAC2_68: {
 			auto file_header = src->read<level_file_header_rac2_68>();
-			result.type = level_type::RAC2_68;
-			result.base_offset = file_header.base_offset;
-			result.level_number = file_header.level_number;
-			result.primary_header = file_header.primary_header;
-			result.world_segment = file_header.world_segment;
+			swap_level_file_header_rac2_68(result, file_header);
 			break;
 		}
-		case 0xc68: {
+		case level_type::RAC4: {
 			auto file_header = src->read<level_file_header_rac4>();
-			result.type = level_type::RAC4;
-			result.base_offset = file_header.base_offset;
-			result.level_number = file_header.level_number;
-			result.primary_header = file_header.primary_header;
-			result.world_segment = file_header.world_segment;
+			swap_level_file_header_rac4(result, file_header);
 			break;
 		}
 		default: {
@@ -278,8 +262,106 @@ void level::read_loading_screen_textures(iso_stream* iso) {
 	}
 }
 
+void level::write(array_stream& dest) {
+	level_file_header header;
+	defer([&]() {
+		dest.seek(0);
+		switch(_file_header.type) {
+			case level_type::RAC23: {
+				level_file_header_rac23 ondisc {0};
+				swap_level_file_header_rac23(header, ondisc);
+				dest.write(ondisc);
+				break;
+			}
+			case level_type::RAC2_68: {
+				level_file_header_rac2_68 ondisc {0};
+				swap_level_file_header_rac2_68(header, ondisc);
+				dest.write(ondisc);
+				break;
+			}
+			case level_type::RAC4: {
+				level_file_header_rac4 ondisc {0};
+				swap_level_file_header_rac4(header, ondisc);
+				dest.write(ondisc);
+				break;
+			}
+		}
+	});
+	dest.seek(SECTOR_SIZE); // Leave some space for the header.
+	
+	auto copy_segment = [&](sector_range range) {
+		if(range.size.sectors == 0) {
+			return sector_range {{0}, {0}};
+		}
+		size_t begin_offset = dest.tell();
+		_file.seek(range.offset.bytes());
+		stream::copy_n(dest, _file, range.size.bytes());
+		dest.pad(SECTOR_SIZE, 0);
+		size_t end_offset = dest.tell();
+		sector_range result {
+			(uint32_t) (begin_offset / SECTOR_SIZE),
+			(uint32_t) ((end_offset - begin_offset) / SECTOR_SIZE)
+		};
+		// If this ever asserts then hello from the distant past.
+		assert(result.offset.sectors == begin_offset / SECTOR_SIZE);
+		assert(result.size.sectors == (end_offset - begin_offset) / SECTOR_SIZE);
+		return result;
+	};
+	
+	header.base_offset = sector32{0};
+	header.level_number = _file_header.level_number;
+	header.unknown_c = _file_header.unknown_c;
+	
+	header.sound_bank_1 = copy_segment(_file_header.sound_bank_1);
+	header.primary_header = copy_segment(_file_header.primary_header);
+	header.world_segment = copy_segment(_file_header.world_segment);
+	header.unknown_28 = copy_segment(_file_header.unknown_28);
+	header.unknown_30 = copy_segment(_file_header.unknown_30);
+	header.unknown_38 = copy_segment(_file_header.unknown_38);
+	header.unknown_40 = copy_segment(_file_header.unknown_40);
+	header.sound_bank_2 = copy_segment(_file_header.sound_bank_2);
+	header.sound_bank_3 = copy_segment(_file_header.sound_bank_3);
+	header.sound_bank_4 = copy_segment(_file_header.sound_bank_4);
+}
+
 stream* level::moby_stream() {
 	return _world_segment;
+}
+
+void swap_level_file_header_rac23(level_file_header& l, level_file_header_rac23& r) {
+	l.type = level_type::RAC23;
+	r.magic = (uint32_t) level_type::RAC23;
+	SWAP_PACKED(l.base_offset, r.base_offset);
+	SWAP_PACKED(l.level_number, r.level_number);
+	SWAP_PACKED(l.unknown_c, r.unknown_c);
+	SWAP_PACKED(l.primary_header, r.primary_header);
+	SWAP_PACKED(l.sound_bank_1, r.sound_bank_1);
+	SWAP_PACKED(l.world_segment, r.world_segment);
+	SWAP_PACKED(l.unknown_28, r.unknown_28);
+	SWAP_PACKED(l.unknown_30, r.unknown_30);
+	SWAP_PACKED(l.unknown_38, r.unknown_38);
+	SWAP_PACKED(l.unknown_40, r.unknown_40);
+	SWAP_PACKED(l.sound_bank_2, r.sound_bank_2);
+	SWAP_PACKED(l.sound_bank_3, r.sound_bank_3);
+	SWAP_PACKED(l.sound_bank_4, r.sound_bank_4);
+}
+
+void swap_level_file_header_rac2_68(level_file_header& l, level_file_header_rac2_68& r) {
+	l.type = level_type::RAC2_68;
+	r.magic = (uint32_t) level_type::RAC2_68;
+	SWAP_PACKED(l.base_offset, r.base_offset);
+	SWAP_PACKED(l.level_number, r.level_number);
+	SWAP_PACKED(l.primary_header, r.primary_header);
+	SWAP_PACKED(l.world_segment, r.world_segment_1);
+}
+
+void swap_level_file_header_rac4(level_file_header& l, level_file_header_rac4& r) {
+	l.type = level_type::RAC4;
+	r.magic = (uint32_t) level_type::RAC4;
+	SWAP_PACKED(l.base_offset, r.base_offset);
+	SWAP_PACKED(l.level_number, r.level_number);
+	SWAP_PACKED(l.primary_header, r.primary_header);
+	SWAP_PACKED(l.world_segment, r.world_segment);
 }
 
 void swap_primary_header_rac23(level_primary_header& l, level_primary_header_rac23& r) {

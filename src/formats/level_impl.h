@@ -39,16 +39,25 @@
 #	Read LEVEL*.WAD files.
 # */
 
-enum class level_type {
-	RAC23, RAC2_68, RAC4
+enum class level_type : uint32_t {
+	RAC23 = 0x60, RAC2_68 = 0x68, RAC4 = 0xc68
 };
 
 struct level_file_header {
 	level_type type;
 	sector32 base_offset;
 	uint32_t level_number;
+	uint32_t unknown_c;
 	sector_range primary_header;
+	sector_range sound_bank_1;
 	sector_range world_segment;
+	sector_range unknown_28;
+	sector_range unknown_30;
+	sector_range unknown_38;
+	sector_range unknown_40;
+	sector_range sound_bank_2;
+	sector_range sound_bank_3;
+	sector_range sound_bank_4;
 };
 
 struct level_code_segment {
@@ -77,7 +86,6 @@ public:
 	level(const level& rhs) = delete;
 	
 	void write_back();
-	void write(array_stream& dest);
 	
 	static level_file_header read_file_header(stream* src, std::size_t offset);
 	
@@ -125,6 +133,7 @@ private:
 	void read_loading_screen_textures(iso_stream* iso);
 	
 public:
+	void write(array_stream& dest);
 
 	stream* moby_stream();
 	
@@ -156,6 +165,10 @@ private:
 	std::optional<trace_stream> _world_segment_tracepoint;
 	std::optional<trace_stream> _asset_segment_tracepoint;
 };
+
+void swap_level_file_header_rac23(level_file_header& l, level_file_header_rac23& r);
+void swap_level_file_header_rac2_68(level_file_header& l, level_file_header_rac2_68& r);
+void swap_level_file_header_rac4(level_file_header& l, level_file_header_rac4& r);
 
 void swap_primary_header_rac23(level_primary_header& l, level_primary_header_rac23& r);
 void swap_primary_header_rac4(level_primary_header& l, level_primary_header_rac4& r);
