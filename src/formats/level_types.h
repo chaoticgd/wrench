@@ -30,111 +30,6 @@
 # 	Defines the types that make up the level format, including game objects.
 # */
 
-// *****************************************************************************
-// Basic types
-// *****************************************************************************
-
-packed_struct(mat4f,
-	float m11 = 0;
-	float m12 = 0;
-	float m13 = 0;
-	float m14 = 0;
-	float m21 = 0;
-	float m22 = 0;
-	float m23 = 0;
-	float m24 = 0;
-	float m31 = 0;
-	float m32 = 0;
-	float m33 = 0;
-	float m34 = 0;
-	float m41 = 0;
-	float m42 = 0;
-	float m43 = 0;
-	float m44 = 0; // Always equal to 0.01f (in the game files)?
-
-	mat4f() {}
-
-	mat4f(glm::mat4 mat) {
-		m11 = mat[0][0];
-		m12 = mat[0][1];
-		m13 = mat[0][2];
-		m14 = mat[0][3];
-		m21 = mat[1][0];
-		m22 = mat[1][1];
-		m23 = mat[1][2];
-		m24 = mat[1][3];
-		m31 = mat[2][0];
-		m32 = mat[2][1];
-		m33 = mat[2][2];
-		m34 = mat[2][3];
-		m41 = mat[3][0];
-		m42 = mat[3][1];
-		m43 = mat[3][2];
-		m44 = mat[3][3];
-	}
-
-	operator glm::mat4() const {
-		glm::mat4 result;
-		result[0][0] = m11;
-		result[0][1] = m12;
-		result[0][2] = m13;
-		result[0][3] = m14;
-		result[1][0] = m21;
-		result[1][1] = m22;
-		result[1][2] = m23;
-		result[1][3] = m24;
-		result[2][0] = m31;
-		result[2][1] = m32;
-		result[2][2] = m33;
-		result[2][3] = m34;
-		result[3][0] = m41;
-		result[3][1] = m42;
-		result[3][2] = m43;
-		result[3][3] = m44;
-		return result;
-	}
-)
-
-packed_struct(vec3f,
-	float x = 0;
-	float y = 0;
-	float z = 0;
-
-	vec3f() {}
-
-	vec3f(glm::vec3 vec) {
-		x = vec.x;
-		y = vec.y;
-		z = vec.z;
-	}
-
-	operator glm::vec3() const {
-		glm::vec3 result;
-		result.x = x;
-		result.y = y;
-		result.z = z;
-		return result;
-	}
-	
-	glm::vec3 operator()() const {
-		return static_cast<glm::vec3>(*this);
-	}
-	
-	bool operator==(const vec3f& rhs) const {
-		return x == rhs.x && y == rhs.y && z == rhs.z;
-	}
-	
-	bool operator!=(const vec3f& rhs) const {
-		return x != rhs.x || y != rhs.y || z != rhs.z;
-	}
-)
-
-packed_struct(colour96,
-	uint32_t red;
-	uint32_t green;
-	uint32_t blue;
-)
-
 struct level_primary_header;
 struct level_asset_header;
 struct level_texture_entry;
@@ -349,6 +244,107 @@ packed_struct(level_hud_header,
 // *****************************************************************************
 // World segment structures
 // *****************************************************************************
+
+packed_struct(mat4f,
+	float m11 = 0;
+	float m12 = 0;
+	float m13 = 0;
+	float m14 = 0;
+	float m21 = 0;
+	float m22 = 0;
+	float m23 = 0;
+	float m24 = 0;
+	float m31 = 0;
+	float m32 = 0;
+	float m33 = 0;
+	float m34 = 0;
+	float m41 = 0;
+	float m42 = 0;
+	float m43 = 0;
+	float m44 = 0; // Always equal to 0.01f (in the game files)?
+
+	mat4f() {}
+
+	mat4f(glm::mat4 mat) {
+		m11 = mat[0][0];
+		m12 = mat[0][1];
+		m13 = mat[0][2];
+		m14 = mat[0][3];
+		m21 = mat[1][0];
+		m22 = mat[1][1];
+		m23 = mat[1][2];
+		m24 = mat[1][3];
+		m31 = mat[2][0];
+		m32 = mat[2][1];
+		m33 = mat[2][2];
+		m34 = mat[2][3];
+		m41 = mat[3][0];
+		m42 = mat[3][1];
+		m43 = mat[3][2];
+		m44 = mat[3][3];
+	}
+
+	operator glm::mat4() const {
+		glm::mat4 result;
+		result[0][0] = m11;
+		result[0][1] = m12;
+		result[0][2] = m13;
+		result[0][3] = m14;
+		result[1][0] = m21;
+		result[1][1] = m22;
+		result[1][2] = m23;
+		result[1][3] = m24;
+		result[2][0] = m31;
+		result[2][1] = m32;
+		result[2][2] = m33;
+		result[2][3] = m34;
+		result[3][0] = m41;
+		result[3][1] = m42;
+		result[3][2] = m43;
+		result[3][3] = m44;
+		return result;
+	}
+)
+
+packed_struct(vec3f,
+	float x = 0;
+	float y = 0;
+	float z = 0;
+
+	vec3f() {}
+
+	vec3f(glm::vec3 vec) {
+		x = vec.x;
+		y = vec.y;
+		z = vec.z;
+	}
+
+	operator glm::vec3() const {
+		glm::vec3 result;
+		result.x = x;
+		result.y = y;
+		result.z = z;
+		return result;
+	}
+	
+	glm::vec3 operator()() const {
+		return static_cast<glm::vec3>(*this);
+	}
+	
+	bool operator==(const vec3f& rhs) const {
+		return x == rhs.x && y == rhs.y && z == rhs.z;
+	}
+	
+	bool operator!=(const vec3f& rhs) const {
+		return x != rhs.x || y != rhs.y || z != rhs.z;
+	}
+)
+
+packed_struct(colour96,
+	uint32_t red;
+	uint32_t green;
+	uint32_t blue;
+)
 
 packed_struct(world_header_rac23,
 	uint32_t properties;         // 0x0
