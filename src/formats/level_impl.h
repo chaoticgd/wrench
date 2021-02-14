@@ -76,7 +76,8 @@ public:
 	level(iso_stream* iso, toc_level index);
 	level(const level& rhs) = delete;
 	
-	void write();
+	void write_back();
+	void write(array_stream& dest);
 	
 	static level_file_header read_file_header(stream* src, std::size_t offset);
 	

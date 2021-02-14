@@ -18,8 +18,10 @@
 
 void compression_test();
 void world_segment_test();
+void write_level_test();
 
 void run_tests() {
 	compression_test();
 	world_segment_test();
+	write_level_test();
 }

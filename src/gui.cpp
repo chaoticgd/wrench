@@ -290,7 +290,7 @@ float gui::render_menu_bar(app& a) {
 		if(ImGui::MenuItem("Run")) {
 			if(auto project = a.get_project()) {
 				if(auto lvl = a.get_level()) {
-					lvl->write();
+					lvl->write_back();
 				}
 				project->iso.commit(); // Recompress WAD segments.
 				

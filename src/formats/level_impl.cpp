@@ -91,8 +91,12 @@ level::level(iso_stream* iso, toc_level index)
 	read_loading_screen_textures(iso);
 }
 
-void level::write() {
+void level::write_back() {
 	world.write_rac23();
+}
+
+void level::write(array_stream& dest) {
+	
 }
 
 level_file_header level::read_file_header(stream* src, std::size_t offset) {
