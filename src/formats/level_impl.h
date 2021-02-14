@@ -57,25 +57,18 @@ struct level_code_segment {
 };
 
 struct level_primary_header {
-	uint32_t code_segment_offset;
-	uint32_t code_segment_size;
-	uint32_t asset_header;
-	uint32_t asset_header_size;
-	uint32_t tex_pixel_data_base;
-	uint32_t hud_header_offset;
-	uint32_t hud_bank_0_offset;
-	uint32_t hud_bank_0_size;
-	uint32_t hud_bank_1_offset;
-	uint32_t hud_bank_1_size;
-	uint32_t hud_bank_2_offset;
-	uint32_t hud_bank_2_size;
-	uint32_t hud_bank_3_offset;
-	uint32_t hud_bank_3_size;
-	uint32_t hud_bank_4_offset;
-	uint32_t hud_bank_4_size;
-	uint32_t asset_wad;
-	uint32_t loading_screen_textures_offset;
-	uint32_t loading_screen_textures_size;
+	byte_range unknown_0;
+	byte_range code_segment;
+	byte_range asset_header;
+	byte_range small_textures;
+	byte_range hud_header;
+	byte_range hud_bank_0;
+	byte_range hud_bank_1;
+	byte_range hud_bank_2;
+	byte_range hud_bank_3;
+	byte_range hud_bank_4;
+	byte_range asset_wad;
+	byte_range loading_screen_textures;
 };
 
 class level {

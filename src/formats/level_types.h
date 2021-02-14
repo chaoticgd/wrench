@@ -206,58 +206,33 @@ packed_struct(level_file_header_rac4,
 	sector_range world_segment; // 0x58
 )
 
-// Pointers are relative to this header.
 packed_struct(level_primary_header_rac23,
-	uint32_t code_segment_offset; // 0x0
-	uint32_t code_segment_size;   // 0x4
-	uint32_t asset_header;        // 0x8
-	uint32_t asset_header_size;   // 0xc
-	uint32_t tex_pixel_data_base; // 0x10
-	uint32_t unknown_14;          // 0x14
-	uint32_t hud_header_offset;   // 0x18
-	uint32_t unknown_1c;          // 0x1c
-	uint32_t hud_bank_0_offset;   // 0x20
-	uint32_t hud_bank_0_size;     // 0x24
-	uint32_t hud_bank_1_offset;   // 0x28
-	uint32_t hud_bank_1_size;     // 0x2c
-	uint32_t hud_bank_2_offset;   // 0x30
-	uint32_t hud_bank_2_size;     // 0x34
-	uint32_t hud_bank_3_offset;   // 0x38
-	uint32_t hud_bank_3_size;     // 0x3c
-	uint32_t hud_bank_4_offset;   // 0x40
-	uint32_t hud_bank_4_size;     // 0x44
-	uint32_t asset_wad;           // 0x48
-	uint32_t unknown_4c;          // 0x4c
-	uint32_t loading_screen_textures_offset; // 0x50
-	uint32_t loading_screen_textures_size;   // 0x54
+	byte_range code_segment;   // 0x0
+	byte_range asset_header;   // 0x8
+	byte_range small_textures; // 0x10
+	byte_range hud_header;     // 0x18
+	byte_range hud_bank_0;     // 0x20
+	byte_range hud_bank_1;     // 0x28
+	byte_range hud_bank_2;     // 0x30
+	byte_range hud_bank_3;     // 0x38
+	byte_range hud_bank_4;     // 0x40
+	byte_range asset_wad;      // 0x48
+	byte_range loading_screen_textures; // 0x50
 )
 
 packed_struct(level_primary_header_rac4,
-	uint32_t unknown_0;           // 0x0
-	uint32_t unknown_4;           // 0x4
-	uint32_t code_segment_offset; // 0x8
-	uint32_t code_segment_size;   // 0xc
-	uint32_t asset_header;        // 0x10
-	uint32_t asset_header_size;   // 0x14
-	uint32_t tex_pixel_data_base; // 0x18
-	uint32_t unknown_14;          // 0x1c
-	uint32_t hud_header_offset;   // 0x20
-	uint32_t unknown_1c;          // 0x24
-	uint32_t hud_bank_0_offset;   // 0x28
-	uint32_t hud_bank_0_size;     // 0x2c
-	uint32_t hud_bank_1_offset;   // 0x30
-	uint32_t hud_bank_1_size;     // 0x34
-	uint32_t hud_bank_2_offset;   // 0x38
-	uint32_t hud_bank_2_size;     // 0x3c
-	uint32_t hud_bank_3_offset;   // 0x40
-	uint32_t hud_bank_3_size;     // 0x44
-	uint32_t hud_bank_4_offset;   // 0x48
-	uint32_t hud_bank_4_size;     // 0x4c
-	uint32_t asset_wad;           // 0x50
-	uint32_t unknown_54;          // 0x54
-	uint32_t loading_screen_textures_offset; // 0x58
-	uint32_t loading_screen_textures_size;   // 0x5c
-	
+	byte_range unknown_0;      // 0x0
+	byte_range code_segment;   // 0x8
+	byte_range asset_header;   // 0x10
+	byte_range small_textures; // 0x18
+	byte_range hud_header;     // 0x20
+	byte_range hud_bank_0;     // 0x28
+	byte_range hud_bank_1;     // 0x30
+	byte_range hud_bank_2;     // 0x38
+	byte_range hud_bank_3;     // 0x40
+	byte_range hud_bank_4;     // 0x48
+	byte_range asset_wad;      // 0x50
+	byte_range loading_screen_textures; // 0x58
 )
 
 packed_struct(level_code_segment_header,

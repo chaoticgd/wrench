@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
 		proxy_stream file(&project.iso, file_header.base_offset.bytes(), 0);
 		auto primary_header = file.read<level_primary_header>(file_header.primary_header.offset.bytes());
 		
-		std::size_t asset_header_offset = file_header.primary_header.offset.bytes() + primary_header.asset_header;
+		std::size_t asset_header_offset = file_header.primary_header.offset.bytes() + primary_header.asset_header.offset;
 		auto asset_header = file.read<level_asset_header>(asset_header_offset);
 		
 		packed_struct(texture_entry,

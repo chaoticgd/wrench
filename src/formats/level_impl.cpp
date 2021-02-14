@@ -42,8 +42,8 @@ level::level(iso_stream* iso, toc_level index)
 	}
 
 	code_segment.header = _file.read<level_code_segment_header>
-		(_file_header.primary_header.offset.bytes() + _primary_header.code_segment_offset);
-	code_segment.bytes.resize(_primary_header.code_segment_size - sizeof(level_code_segment_header));
+		(_file_header.primary_header.offset.bytes() + _primary_header.code_segment.offset);
+	code_segment.bytes.resize(_primary_header.code_segment.size - sizeof(level_code_segment_header));
 	_file.read_v(code_segment.bytes);
 
 	_world_segment = iso->get_decompressed(_file_header.base_offset.bytes() + _file_header.world_segment.offset.bytes());
@@ -66,7 +66,7 @@ level::level(iso_stream* iso, toc_level index)
 	}
 	
 	_asset_segment = iso->get_decompressed
-		(_file_header.base_offset.bytes() + _file_header.primary_header.offset.bytes() + _primary_header.asset_wad, true);
+		(_file_header.base_offset.bytes() + _file_header.primary_header.offset.bytes() + _primary_header.asset_wad.offset, true);
 	_asset_segment->name = "Asset Segment";
 	
 	if(config::get().debug.stream_tracing) {
@@ -75,7 +75,7 @@ level::level(iso_stream* iso, toc_level index)
 		_asset_segment = &(*_asset_segment_tracepoint);
 	}
 	
-	uint32_t asset_offset = _file_header.primary_header.offset.bytes() + _primary_header.asset_header;
+	uint32_t asset_offset = _file_header.primary_header.offset.bytes() + _primary_header.asset_header.offset;
 	auto asset_header = _file.read<level_asset_header>(asset_offset);
 	
 	read_moby_models(asset_offset, asset_header);
@@ -186,12 +186,12 @@ void level::read_moby_models(std::size_t asset_offset, level_asset_header asset_
 
 void level::read_textures(std::size_t asset_offset, level_asset_header asset_header) {
 	_file.seek(asset_offset + asset_header.mipmap_offset);
-	std::size_t little_texture_base =
-		_file_header.primary_header.offset.bytes() + _primary_header.tex_pixel_data_base;
+	std::size_t small_texture_base =
+		_file_header.primary_header.offset.bytes() + _primary_header.small_textures.offset;
 	std::size_t last_palette_offset = 0;
 	for(std::size_t i = 0; i < asset_header.mipmap_count; i++) {
 		auto entry = _file.read<level_mipmap_entry>();
-		auto abs_offset = little_texture_base + entry.offset_1;
+		auto abs_offset = small_texture_base + entry.offset_1;
 		if(entry.width == 0) {
 			last_palette_offset = abs_offset;
 			continue;
@@ -205,7 +205,7 @@ void level::read_textures(std::size_t asset_offset, level_asset_header asset_hea
 		for(std::size_t i = 0; i < count; i++) {
 			auto entry = backing.read<level_texture_entry>();
 			auto ptr = asset_header.tex_data_in_asset_wad + entry.ptr;
-			auto palette = little_texture_base + entry.palette * 0x100;
+			auto palette = small_texture_base + entry.palette * 0x100;
 			textures.emplace_back(_asset_segment, ptr, &_file, palette, vec2i { entry.width, entry.height });
 		}
 		return textures;
@@ -248,16 +248,16 @@ void level::read_hud_banks(iso_stream* iso) {
 	};
 	
 	//auto hud_header = _file.read<level_hud_header>(_file_header.primary_header_offset + _primary_header.hud_header_offset);
-	read_hud_bank(0, _primary_header.hud_bank_0_offset, _primary_header.hud_bank_0_size);
-	read_hud_bank(1, _primary_header.hud_bank_1_offset, _primary_header.hud_bank_1_size);
-	read_hud_bank(2, _primary_header.hud_bank_2_offset, _primary_header.hud_bank_2_size);
-	read_hud_bank(3, _primary_header.hud_bank_3_offset, _primary_header.hud_bank_3_size);
-	read_hud_bank(4, _primary_header.hud_bank_4_offset, _primary_header.hud_bank_4_size);
+	read_hud_bank(0, _primary_header.hud_bank_0.offset, _primary_header.hud_bank_0.size);
+	read_hud_bank(1, _primary_header.hud_bank_1.offset, _primary_header.hud_bank_1.size);
+	read_hud_bank(2, _primary_header.hud_bank_2.offset, _primary_header.hud_bank_2.size);
+	read_hud_bank(3, _primary_header.hud_bank_3.offset, _primary_header.hud_bank_3.size);
+	read_hud_bank(4, _primary_header.hud_bank_4.offset, _primary_header.hud_bank_4.size);
 }
 
 void level::read_loading_screen_textures(iso_stream* iso) {
 	size_t primary_header_offset = _file_header.base_offset.bytes() + _file_header.primary_header.offset.bytes();
-	size_t load_wad_offset = primary_header_offset + _primary_header.loading_screen_textures_offset;
+	size_t load_wad_offset = primary_header_offset + _primary_header.loading_screen_textures.offset;
 	if(load_wad_offset > iso->size()) {
 		fprintf(stderr, "warning: Failed to read loading screen textures (seek pos > iso size).\n");
 		return;
@@ -279,46 +279,31 @@ stream* level::moby_stream() {
 }
 
 void swap_primary_header_rac23(level_primary_header& l, level_primary_header_rac23& r) {
-	SWAP_PACKED(l.code_segment_offset, r.code_segment_offset);
-	SWAP_PACKED(l.code_segment_size, r.code_segment_size);
+	l.unknown_0 = { 0, 0 };
+	SWAP_PACKED(l.code_segment, r.code_segment);
 	SWAP_PACKED(l.asset_header, r.asset_header);
-	SWAP_PACKED(l.asset_header_size, r.asset_header_size);
-	SWAP_PACKED(l.tex_pixel_data_base, r.tex_pixel_data_base);
-	SWAP_PACKED(l.hud_header_offset, r.hud_header_offset);
-	SWAP_PACKED(l.hud_bank_0_offset, r.hud_bank_0_offset);
-	SWAP_PACKED(l.hud_bank_0_size, r.hud_bank_0_size);
-	SWAP_PACKED(l.hud_bank_1_offset, r.hud_bank_1_offset);
-	SWAP_PACKED(l.hud_bank_1_size, r.hud_bank_1_size);
-	SWAP_PACKED(l.hud_bank_2_offset, r.hud_bank_2_offset);
-	SWAP_PACKED(l.hud_bank_2_size, r.hud_bank_2_size);
-	SWAP_PACKED(l.hud_bank_3_offset, r.hud_bank_3_offset);
-	SWAP_PACKED(l.hud_bank_3_size, r.hud_bank_3_size);
-	SWAP_PACKED(l.hud_bank_4_offset, r.hud_bank_4_offset);
-	SWAP_PACKED(l.hud_bank_4_size, r.hud_bank_4_size);
+	SWAP_PACKED(l.small_textures, r.small_textures);
+	SWAP_PACKED(l.hud_header, r.hud_header);
+	SWAP_PACKED(l.hud_bank_0, r.hud_bank_0);
+	SWAP_PACKED(l.hud_bank_1, r.hud_bank_1);
+	SWAP_PACKED(l.hud_bank_2, r.hud_bank_2);
+	SWAP_PACKED(l.hud_bank_3, r.hud_bank_3);
+	SWAP_PACKED(l.hud_bank_4, r.hud_bank_4);
 	SWAP_PACKED(l.asset_wad, r.asset_wad);
-	SWAP_PACKED(l.loading_screen_textures_offset, r.loading_screen_textures_offset);
-	SWAP_PACKED(l.loading_screen_textures_size, r.loading_screen_textures_size);
+	SWAP_PACKED(l.loading_screen_textures, r.loading_screen_textures);
 }
 
 void swap_primary_header_rac4(level_primary_header& l, level_primary_header_rac4& r) {
-	// TODO: Figure out what unknown_0 and unknown_4 are, then swap them properly.
-	SWAP_PACKED(l.code_segment_offset, r.code_segment_offset);
-	SWAP_PACKED(l.code_segment_size, r.code_segment_size);
+	SWAP_PACKED(l.unknown_0, r.unknown_0);
+	SWAP_PACKED(l.code_segment, r.code_segment);
 	SWAP_PACKED(l.asset_header, r.asset_header);
-	SWAP_PACKED(l.asset_header_size, r.asset_header_size);
-	SWAP_PACKED(l.tex_pixel_data_base, r.tex_pixel_data_base);
-	SWAP_PACKED(l.hud_header_offset, r.hud_header_offset);
-	SWAP_PACKED(l.hud_bank_0_offset, r.hud_bank_0_offset);
-	SWAP_PACKED(l.hud_bank_0_size, r.hud_bank_0_size);
-	SWAP_PACKED(l.hud_bank_1_offset, r.hud_bank_1_offset);
-	SWAP_PACKED(l.hud_bank_1_size, r.hud_bank_1_size);
-	SWAP_PACKED(l.hud_bank_2_offset, r.hud_bank_2_offset);
-	SWAP_PACKED(l.hud_bank_2_size, r.hud_bank_2_size);
-	SWAP_PACKED(l.hud_bank_3_offset, r.hud_bank_3_offset);
-	SWAP_PACKED(l.hud_bank_3_size, r.hud_bank_3_size);
-	SWAP_PACKED(l.hud_bank_4_offset, r.hud_bank_4_offset);
-	SWAP_PACKED(l.hud_bank_4_size, r.hud_bank_4_size);
+	SWAP_PACKED(l.small_textures, r.small_textures);
+	SWAP_PACKED(l.hud_header, r.hud_header);
+	SWAP_PACKED(l.hud_bank_0, r.hud_bank_0);
+	SWAP_PACKED(l.hud_bank_1, r.hud_bank_1);
+	SWAP_PACKED(l.hud_bank_2, r.hud_bank_2);
+	SWAP_PACKED(l.hud_bank_3, r.hud_bank_3);
+	SWAP_PACKED(l.hud_bank_4, r.hud_bank_4);
 	SWAP_PACKED(l.asset_wad, r.asset_wad);
-	SWAP_PACKED(l.loading_screen_textures_offset, r.loading_screen_textures_offset);
-	SWAP_PACKED(l.loading_screen_textures_size, r.loading_screen_textures_size);
+	SWAP_PACKED(l.loading_screen_textures, r.loading_screen_textures);
 }
