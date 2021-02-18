@@ -262,11 +262,26 @@ void encode_literal_packet(
 
 size_t get_wad_packet_size(uint8_t* src, size_t bytes_left);
 
-static const int DO_NOT_INJECT_FLAG = 0x100;
+const int DO_NOT_INJECT_FLAG = 0x100;
 
-static const size_t TYPE_A_MAX_LOOKBACK = 2044;
-static const size_t MAX_LITERAL_SIZE = 255 + 18;
-static const size_t MAX_MATCH_SIZE = 0x100;
+const size_t TYPE_A_MAX_LOOKBACK = 2044;
+const size_t MAX_MATCH_SIZE = 0x100;
+
+const size_t MAX_LITERAL_SIZE = 273; // 0b11111111 + 18
+
+const size_t MIN_LITTLE_MATCH_SIZE = 3;
+const size_t MAX_LITTLE_MATCH_SIZE = 8; // 0b111 + 1
+const size_t MIN_BIG_MATCH_SIZE = 3;
+const size_t MAX_BIG_MATCH_SIZE = 33; // 0b11111 + 2
+const size_t MIN_BIGGER_MATCH_SIZE = 33;
+const size_t MAX_BIGGER_MATCH_SIZE = 288; // 0b11111111 + 33
+
+const size_t MIN_LITTLE_MATCH_LOOKBACK = 1;
+const size_t MAX_LITTLE_MATCH_LOOKBACK = 2048; // 0b11111111 * 8 + 0b111 + 1
+const size_t MIN_BIG_MATCH_LOOKBACK = 1;
+const size_t MAX_BIG_MATCH_LOOKBACK = 16384; // 0b111111 + 0b11111111 * 0x40 + 1
+const size_t MIN_BIGGER_MATCH_LOOKBACK = 1;
+const size_t MAX_BIGGER_MATCH_LOOKBACK = 16384; // 0b111111 + 0b11111111 * 0x40 + 1
 
 void compress_wad(array_stream& dest, array_stream& src, int thread_count) {
 	WAD_COMPRESS_DEBUG(
@@ -402,7 +417,7 @@ match_result find_match(
 	
 	for(size_t i = 0; i < max_literal_size; i++) {
 		size_t target = src_pos + i;
-		size_t low = sub_clamped(target, TYPE_A_MAX_LOOKBACK);
+		size_t low = sub_clamped(target, MAX_BIGGER_MATCH_LOOKBACK);
 		size_t max_match_size = end_of_buffer ?
 			std::min(MAX_MATCH_SIZE, src_end - src_pos - i) : MAX_MATCH_SIZE;
 		for(size_t j = low; j < target; j++) {
@@ -445,32 +460,22 @@ void encode_match_packet(
 		uint32_t& last_flag,
 		size_t match_offset,
 		size_t match_size) {
-	std::size_t delta = src_pos - match_offset - 1;
+	size_t lookback = src_pos - match_offset;
+	size_t delta = src_pos - match_offset - 1;
 	
-	// Max bytes_to_copy for a packet of type A is 0x8.
-	if(match_size <= 0x8) { // A type
+	if(match_size <= MAX_LITTLE_MATCH_SIZE && lookback <= MAX_LITTLE_MATCH_LOOKBACK) { // A type
 		assert(match_size >= 3);
-		
-		WAD_COMPRESS_DEBUG(
-			std::cout << "match at 0x" << std::hex << match_offset << " of size 0x" << match_size << "\n";
-		)
 		
 		uint8_t pos_major = delta / 8;
 		uint8_t pos_minor = delta % 8;
 		
-		WAD_COMPRESS_DEBUG(
-			std::cout << "pos_major = " << (int) pos_major << ", pos_minor = " << (int) pos_minor << "\n";
-		)
-		
 		dest.buffer.push_back(((match_size - 1) << 5) | (pos_minor << 2));
 		dest.buffer.push_back(pos_major);
-	} else { // B type
-		WAD_COMPRESS_DEBUG(std::cout << "B type detected!\n";)
-		
-		if(match_size > (0b11111 + 2)) {
+	} else {
+		if(match_size > MAX_BIG_MATCH_SIZE) { // Bigger match
 			dest.buffer.push_back(1 << 5); // flag
 			dest.buffer.push_back(match_size - (0b11111 + 2));
-		} else {
+		} else { // Big match
 			dest.buffer.push_back((1 << 5) | (match_size - 2)); // flag
 		}
 		
