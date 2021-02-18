@@ -171,7 +171,7 @@ The packet types are listed below:
 | flag == 0 && last_flag >= 0x10          | Big Literal   | 00000000 + N[8] + L[(N+18)\*8]                          | L                                                                       |
 | 0x1 <= flag <= 0xf && last_flag >= 0x10 | Small Literal | 0000 + N[4] + L[(N+3)\*8]                               | L                                                                       |
 | 0x11 <= flag <= 0x1f (implies M >= 1)   | Dummy         | 00010 + M[3] + 000000 + N[2] + 00000000 + L[N\*8]       | L                                                                       |
-| flag == 0x10 \|\| flag == 0x18          | Far Match     | 0001 + A[1] + 000 + M[8] + B[6] + N[2] + C[8] + L[N\*8] | M+9 bytes from dest_pos-0x4000-A\*0x800-B-C\*0x40 in the output plus L. |
+| flag == 0x10 \|\| flag == 0x18          | Bigger Far Match | 0001 + A[1] + 000 + M[8] + B[6] + N[2] + C[8] + L[N\*8] | M+9 bytes from dest_pos-0x4000-A\*0x800-B-C\*0x40 in the output plus L. |
 | 0x11 <= flag <= 0x1f (implies M >= 1)   | Far Match     | 0001 + A[1] + M[3] + B[6] + N[2] + C[8] + L[N\*8]       | M+2 bytes from dest_pos-0x4000-A\*0x800-B-C\*0x40 in the output plus L. |
 | flag == 0x20                            | Bigger Match  | 00100000 + M[8] + A[6] + N[2] + B[8] + L[N\*8]          | M+33 bytes from dest_pos-A-B\*0x40-1 in the output plus L.                |
 | 0x21 <= flag <= 0x3f (implies M >= 1)   | Big Match     | 001 + M[5] + A[6] + N[2] + B[8] + L[N\*8]               | M+2 bytes from dest_pos-A-B\*0x40-1 in the output plus L.                 |
