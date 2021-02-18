@@ -173,8 +173,8 @@ The packet types are listed below:
 | 0x11 <= flag <= 0x1f (implies M >= 1)   | Dummy         | 00010 + M[3] + 000000 + N[2] + 00000000 + L[N\*8]       | L                                                                       |
 | flag == 0x10 \|\| flag == 0x18          | Far Match     | 0001 + A[1] + 000 + M[8] + B[6] + N[2] + C[8] + L[N\*8] | M+9 bytes from dest_pos-0x4000-A\*0x800-B-C\*0x40 in the output plus L. |
 | 0x11 <= flag <= 0x1f (implies M >= 1)   | Far Match     | 0001 + A[1] + M[3] + B[6] + N[2] + C[8] + L[N\*8]       | M+2 bytes from dest_pos-0x4000-A\*0x800-B-C\*0x40 in the output plus L. |
-| flag == 0x20                            | Bigger Match  | 00100000 + M[8] + A[6] + N[2] + B[8] + L[N\*8]          | M+33 bytes from dest_pos-A-B\*0x40 in the output plus L.                |
-| 0x21 <= flag <= 0x3f (implies M >= 1)   | Big Match     | 001 + M[5] + A[6] + N[2] + B[8] + L[N\*8]               | M+2 bytes from dest_pos-A-B\*0x40 in the output plus L.                 |
+| flag == 0x20                            | Bigger Match  | 00100000 + M[8] + A[6] + N[2] + B[8] + L[N\*8]          | M+33 bytes from dest_pos-A-B\*0x40-1 in the output plus L.                |
+| 0x21 <= flag <= 0x3f (implies M >= 1)   | Big Match     | 001 + M[5] + A[6] + N[2] + B[8] + L[N\*8]               | M+2 bytes from dest_pos-A-B\*0x40-1 in the output plus L.                 |
 | 0x40 <= flag <= 0xff (implies M >= 2)   | Little Match  | M[3] + A[3] + N[2] + B[8] + L[N\*8]                     | M+1 bytes from dest_pos-B\*8-A-1 in the output plus L.                  |
 
 where `A[B]` means the bitstream contains a field `A` of length `B` bits, `A + B` means concatenate `A` and `B` and `dest_pos` is equal to the position indicator of the output/decompressed stream.
