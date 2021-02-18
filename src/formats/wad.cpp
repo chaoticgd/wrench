@@ -95,11 +95,11 @@ void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_t
 		std::size_t lookback_offset = -1;
 		int bytes_to_copy = 0;
 
-		if(flag_byte < 0x10) { // Literal packet (0x0-0xf).
+		if(flag_byte < 0x10) { // Medium/big iteral packet (0x0-0xf).
 			uint32_t num_bytes;
 			if(flag_byte != 0) {
 				num_bytes = flag_byte + 3;
-			} else {
+			} else { // Big literal.
 				num_bytes = src.read8() + 18;
 			}
 			WAD_DEBUG(std::cout << " => copy 0x" << (int) num_bytes << " (decision) bytes from compressed stream at 0x" << src.pos << " to 0x" << dest.pos << "\n";)
@@ -116,7 +116,7 @@ void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_t
 			}
 			
 			continue;
-		} else if(flag_byte < 0x20) { // (0x10-0x1f)
+		} else if(flag_byte < 0x20) { // Far match packets + special cases (0x10-0x1f)
 			WAD_DEBUG(std::cout << " -- packet type C\n";)
 
 			bytes_to_copy = flag_byte & 7;
@@ -138,7 +138,7 @@ void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_t
 				}
 				continue;
 			}
-		} else if(flag_byte < 0x40) { // Big match packet (0x20-0x3f).
+		} else if(flag_byte < 0x40) { // Medium/big match packet (0x20-0x3f).
 			WAD_DEBUG(std::cout << " -- packet type B\n";)
 
 			bytes_to_copy = flag_byte & 0x1f;
@@ -182,12 +182,8 @@ void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_t
 			}
 		}
 		
-		uint32_t snd_pos = src.peek8(src.pos - 2) & 3;
-		if(snd_pos != 0) {
-			WAD_DEBUG(std::cout << " => copy 0x" << snd_pos << " (snd_pos) bytes from compressed stream at 0x" << src.pos << " to 0x" << dest.pos << "\n";)
-			copy_bytes(dest, src, snd_pos);
-			continue;
-		}
+		uint32_t little_literal_size = src.peek8(src.pos - 2) & 3;
+		copy_bytes(dest, src, little_literal_size);
 	}
 
 	WAD_DEBUG(std::cout << "Stopped reading at " << src.pos << "\n";)
@@ -271,17 +267,20 @@ const size_t MAX_LITERAL_SIZE = 273; // 0b11111111 + 18
 
 const size_t MIN_LITTLE_MATCH_SIZE = 3;
 const size_t MAX_LITTLE_MATCH_SIZE = 8; // 0b111 + 1
-const size_t MIN_BIG_MATCH_SIZE = 3;
-const size_t MAX_BIG_MATCH_SIZE = 33; // 0b11111 + 2
-const size_t MIN_BIGGER_MATCH_SIZE = 33;
-const size_t MAX_BIGGER_MATCH_SIZE = 288; // 0b11111111 + 33
+const size_t MIN_MEDIUM_MATCH_SIZE = 3;
+const size_t MAX_MEDIUM_MATCH_SIZE = 33; // 0b11111 + 2
+const size_t MIN_BIG_MATCH_SIZE = 33;
+const size_t MAX_BIG_MATCH_SIZE = 288; // 0b11111111 + 33
+
 
 const size_t MIN_LITTLE_MATCH_LOOKBACK = 1;
 const size_t MAX_LITTLE_MATCH_LOOKBACK = 2048; // 0b11111111 * 8 + 0b111 + 1
+const size_t MIN_MEDIUM_MATCH_LOOKBACK = 1;
+const size_t MAX_MEDIUM_MATCH_LOOKBACK = 16384; // 0b111111 + 0b11111111 * 0x40 + 1
 const size_t MIN_BIG_MATCH_LOOKBACK = 1;
 const size_t MAX_BIG_MATCH_LOOKBACK = 16384; // 0b111111 + 0b11111111 * 0x40 + 1
-const size_t MIN_BIGGER_MATCH_LOOKBACK = 1;
-const size_t MAX_BIGGER_MATCH_LOOKBACK = 16384; // 0b111111 + 0b11111111 * 0x40 + 1
+
+const std::vector<char> EMPTY_LITTLE_LITERAL = { 0x11, 0, 0 };
 
 void compress_wad(array_stream& dest, array_stream& src, int thread_count) {
 	WAD_COMPRESS_DEBUG(
@@ -417,7 +416,7 @@ match_result find_match(
 	
 	for(size_t i = 0; i < max_literal_size; i++) {
 		size_t target = src_pos + i;
-		size_t low = sub_clamped(target, MAX_BIGGER_MATCH_LOOKBACK);
+		size_t low = sub_clamped(target, MAX_BIG_MATCH_LOOKBACK);
 		size_t max_match_size = end_of_buffer ?
 			std::min(MAX_MATCH_SIZE, src_end - src_pos - i) : MAX_MATCH_SIZE;
 		for(size_t j = low; j < target; j++) {
@@ -450,8 +449,6 @@ match_result find_match(
 	return match;
 }
 
-const std::vector<char> DUMMY_PACKET = { 0x11, 0, 0 };
-
 void encode_match_packet(
 		array_stream& dest,
 		const uint8_t* src,
@@ -472,7 +469,7 @@ void encode_match_packet(
 		dest.buffer.push_back(((match_size - 1) << 5) | (pos_minor << 2));
 		dest.buffer.push_back(pos_major);
 	} else {
-		if(match_size > MAX_BIG_MATCH_SIZE) { // Bigger match
+		if(match_size > MAX_MEDIUM_MATCH_SIZE) { // Bigger match
 			dest.buffer.push_back(1 << 5); // flag
 			dest.buffer.push_back(match_size - (0b11111 + 2));
 		} else { // Big match
@@ -504,17 +501,17 @@ void encode_literal_packet(
 		size_t literal_size) {
 	if(last_flag < 0x10) { // Two literals in a row? Implausible!
 		last_flag = 0x11;
-		dest.buffer.insert(dest.buffer.end(), DUMMY_PACKET.begin(), DUMMY_PACKET.end());
+		dest.buffer.insert(dest.buffer.end(), EMPTY_LITTLE_LITERAL.begin(), EMPTY_LITTLE_LITERAL.end());
 		dest.pos = dest.buffer.size();
 	}
 	
 	if(literal_size <= 3) {
-		// If the last flag is a literal, or there's already a small literal
+		// If the last flag is a literal, or there's already a little literal
 		// injected into the last packet, we need to push a new dummy packet
 		// that we can stuff a literal into on the next iteration.
 		if(last_flag == DO_NOT_INJECT_FLAG) {
 			last_flag = 0x11;
-			dest.buffer.insert(dest.buffer.end(), DUMMY_PACKET.begin(), DUMMY_PACKET.end());
+			dest.buffer.insert(dest.buffer.end(), EMPTY_LITTLE_LITERAL.begin(), EMPTY_LITTLE_LITERAL.end());
 			dest.pos = dest.buffer.size();
 		}
 		
@@ -551,29 +548,29 @@ size_t get_wad_packet_size(uint8_t* src, size_t bytes_left) {
 	uint8_t flag_byte = src[0];
 	if(flag_byte < 0x10) { // Literal packet (0x0-0xf).
 		if(flag_byte != 0) {
-			size_of_packet += flag_byte + 3; // smalllit
+			size_of_packet += flag_byte + 3; // mediumlit
 		} else {
 			size_of_packet += 1 + (src[1] + 18); // size + biglit
 		}
 		if(size_of_packet < bytes_left && src[size_of_packet] < 0x10) {
 			throw std::runtime_error("Compression failed: Intermediate buffer corrupted (double literal)!\n");
 		}
-		return size_of_packet; // We can't put a tiny literal inside another literal.
+		return size_of_packet; // We can't put a little literal inside another literal.
 	} else if(flag_byte < 0x20) { // (0x10-0x1f)
 		uint8_t bytes_to_copy = flag_byte & 7;
 		if(bytes_to_copy == 0) {
 			size_of_packet++; // bytes_to_copy
 		}
 		size_of_packet += 1 + 1; // b0 + b1
-	} else if(flag_byte < 0x40) { // Big match packet (0x20-0x3f).
+	} else if(flag_byte < 0x40) { // Big/medium match packet (0x20-0x3f).
 		uint8_t bytes_to_copy = flag_byte & 0x1f;
-		if(bytes_to_copy == 0) {
+		if(bytes_to_copy == 0) { // Big match packet.
 			size_of_packet++;
 		}
 		size_of_packet += 1 + 1; // b1 + b2
 	} else { // Little match packet (0x40-0xff).
 		size_of_packet++; // pos_major
 	}
-	size_of_packet += src[size_of_packet - 2] & 3; // Add on the tiny literal.
+	size_of_packet += src[size_of_packet - 2] & 3; // Add on the little literal.
 	return size_of_packet;
 }
