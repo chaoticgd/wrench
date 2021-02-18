@@ -265,7 +265,7 @@ size_t get_wad_packet_size(uint8_t* src, size_t bytes_left);
 static const int DO_NOT_INJECT_FLAG = 0x100;
 
 static const size_t TYPE_A_MAX_LOOKBACK = 2044;
-static const size_t MAX_LITERAL_SIZE = 255;//255 + 18;
+static const size_t MAX_LITERAL_SIZE = 255 + 18;
 static const size_t MAX_MATCH_SIZE = 0x100;
 
 void compress_wad(array_stream& dest, array_stream& src, int thread_count) {
