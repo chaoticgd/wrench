@@ -376,7 +376,7 @@ match_result find_match(
 				}
 			}
 			
-			if(k >= 3 && k > match.match_size) {
+			if(k >= 3 && k >= match.match_size) {
 				match.match_offset = j;
 				match.match_size = k;
 			}
