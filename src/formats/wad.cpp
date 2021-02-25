@@ -328,16 +328,14 @@ void compress_wad_intermediate(
 			match = find_match<false>(src, src_pos, src_end);
 		}
 		
-		if(match.literal_size == 0) {
-			encode_match_packet(thread_dest, src, src_pos, src_end, last_flag, match.match_offset, match.match_size);
-		} else {
+		if(match.literal_size > 0) {
 			encode_literal_packet(thread_dest, src, src_pos, src_end, last_flag, match.literal_size);
-			if(match.match_size > 0) {
-				thread_dest.pos = thread_dest.buffer.size();
-				encode_match_packet(thread_dest, src, src_pos, src_end, last_flag, match.match_offset, match.match_size);
-			}
+			thread_dest.pos = thread_dest.buffer.size();
 		}
-		thread_dest.pos = thread_dest.buffer.size();
+		if(match.match_size > 0) {
+			encode_match_packet(thread_dest, src, src_pos, src_end, last_flag, match.match_offset, match.match_size);
+			thread_dest.pos = thread_dest.buffer.size();
+		}
 	}
 	*intermediate = std::move(thread_dest.buffer);
 }
