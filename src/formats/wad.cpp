@@ -197,9 +197,7 @@ size_t get_wad_packet_size(uint8_t* src, size_t bytes_left);
 
 const int DO_NOT_INJECT_FLAG = 0x100;
 
-const size_t TYPE_A_MAX_LOOKBACK = 2044;
-const size_t MAX_MATCH_SIZE = 0x100;
-
+const size_t MAX_MATCH_SIZE = 264;
 const size_t MAX_LITERAL_SIZE = 273; // 0b11111111 + 18
 
 const size_t MIN_LITTLE_MATCH_SIZE = 3;
@@ -208,7 +206,10 @@ const size_t MIN_MEDIUM_MATCH_SIZE = 3;
 const size_t MAX_MEDIUM_MATCH_SIZE = 33; // 0b11111 + 2
 const size_t MIN_BIG_MATCH_SIZE = 33;
 const size_t MAX_BIG_MATCH_SIZE = 288; // 0b11111111 + 33
-
+const size_t MIN_MEDIUM_FAR_MATCH_SIZE = 3;
+const size_t MAX_MEDIUM_FAR_MATCH_SIZE = 9; // 0b111 + 2
+const size_t MIN_BIG_FAR_MATCH_SIZE = 9;
+const size_t MAX_BIG_FAR_MATCH_SIZE = 264; // 0b11111111 + 9
 
 const size_t MIN_LITTLE_MATCH_LOOKBACK = 1;
 const size_t MAX_LITTLE_MATCH_LOOKBACK = 2048; // 0b11111111 * 8 + 0b111 + 1
@@ -216,6 +217,9 @@ const size_t MIN_MEDIUM_MATCH_LOOKBACK = 1;
 const size_t MAX_MEDIUM_MATCH_LOOKBACK = 16384; // 0b111111 + 0b11111111 * 0x40 + 1
 const size_t MIN_BIG_MATCH_LOOKBACK = 1;
 const size_t MAX_BIG_MATCH_LOOKBACK = 16384; // 0b111111 + 0b11111111 * 0x40 + 1
+const size_t MIN_FAR_MATCH_LOOKBACK = 16385; // 16384 is reserved as a special case.
+const size_t MAX_FAR_MATCH_LOOKBACK = 34752; // 0x4000 + 0x800 + 0b11111111 * 0x40
+const size_t MAX_FAR_MATCH_LOOKBACK_WITH_A_EQ_ZERO = 32704; // 0x4000 + 0b11111111 * 0x40
 
 const std::vector<char> EMPTY_LITTLE_LITERAL = { 0x11, 0, 0 };
 
@@ -353,7 +357,7 @@ match_result find_match(
 	
 	for(size_t i = 0; i < max_literal_size; i++) {
 		size_t target = src_pos + i;
-		size_t low = sub_clamped(target, MAX_BIG_MATCH_LOOKBACK);
+		size_t low = sub_clamped(target, MAX_FAR_MATCH_LOOKBACK_WITH_A_EQ_ZERO);
 		size_t max_match_size = end_of_buffer ?
 			std::min(MAX_MATCH_SIZE, src_end - src_pos - i) : MAX_MATCH_SIZE;
 		for(size_t j = low; j < target; j++) {
@@ -395,37 +399,49 @@ void encode_match_packet(
 		size_t match_offset,
 		size_t match_size) {
 	size_t lookback = src_pos - match_offset;
-	size_t delta = src_pos - match_offset - 1;
 	
 	if(match_size <= MAX_LITTLE_MATCH_SIZE && lookback <= MAX_LITTLE_MATCH_LOOKBACK) { // A type
 		assert(match_size >= 3);
 		
-		uint8_t pos_major = delta / 8;
-		uint8_t pos_minor = delta % 8;
+		uint8_t a = (lookback - 1) % 8;
+		uint8_t b = (lookback - 1) / 8;
 		
-		dest.buffer.push_back(((match_size - 1) << 5) | (pos_minor << 2));
-		dest.buffer.push_back(pos_major);
-	} else {
-		if(match_size > MAX_MEDIUM_MATCH_SIZE) { // Bigger match
-			dest.buffer.push_back(1 << 5); // flag
-			dest.buffer.push_back(match_size - (0b11111 + 2));
-		} else { // Big match
-			dest.buffer.push_back((1 << 5) | (match_size - 2)); // flag
+		dest.buffer.push_back(((match_size - 1) << 5) | (a << 2)); // flag
+		dest.buffer.push_back(b);
+	} else if(lookback <= MAX_BIG_MATCH_LOOKBACK) {
+		if(match_size > MAX_MEDIUM_MATCH_SIZE) { // Big match
+			dest.buffer.push_back(0b00100000); // flag
+			dest.buffer.push_back(match_size - MAX_MEDIUM_MATCH_SIZE);
+		} else { // Medium match
+			dest.buffer.push_back(0b00100000 | (match_size - 2)); // flag
 		}
 		
-		uint8_t pos_minor = delta % 0x40;
-		uint8_t pos_major = delta / 0x40;
+		uint8_t a = (lookback - 1) % 0x40;
+		uint8_t b = (lookback - 1) / 0x40;
 		
-		dest.buffer.push_back(pos_minor << 2);
-		dest.buffer.push_back(pos_major);
+		dest.buffer.push_back(a << 2);
+		dest.buffer.push_back(b);
+	} else { // Far matches.
+		assert(lookback <= MAX_FAR_MATCH_LOOKBACK);
+		
+		uint8_t a = lookback > MAX_FAR_MATCH_LOOKBACK_WITH_A_EQ_ZERO;
+		uint32_t diff = a ? 0x4800 : 0x4000;
+		uint8_t b = (lookback - diff) % 0x40;
+		uint8_t c = (lookback - diff) / 0x40;
+		
+		if(match_size > MAX_MEDIUM_FAR_MATCH_SIZE) { // Big far match.
+			assert(match_size <= MAX_BIG_FAR_MATCH_SIZE);
+			dest.buffer.push_back(0b00010000 | (a << 3)); // flag
+			dest.buffer.push_back(match_size - MAX_MEDIUM_FAR_MATCH_SIZE);
+		} else {
+			dest.buffer.push_back(0b00010000 | (a << 3) | (match_size - 2)); // flag
+		}
+		
+		dest.buffer.push_back(b << 2);
+		dest.buffer.push_back(c);
 	}
 	
-	WAD_COMPRESS_DEBUG(
-		std::cout << " => copy 0x" << std::hex << (int) match_size
-			<< " bytes from uncompressed stream at 0x" << match_offset << " (source = " << src_pos << ")\n";
-	)
 	src_pos += match_size;
-	
 	last_flag = dest.buffer[dest.pos];
 }
 
@@ -493,18 +509,18 @@ size_t get_wad_packet_size(uint8_t* src, size_t bytes_left) {
 			throw std::runtime_error("Compression failed: Intermediate buffer corrupted (double literal)!\n");
 		}
 		return size_of_packet; // We can't put a little literal inside another literal.
-	} else if(flag_byte < 0x20) { // (0x10-0x1f)
+	} else if(flag_byte < 0x20) { // Far matches (0x10-0x1f)
 		uint8_t bytes_to_copy = flag_byte & 7;
 		if(bytes_to_copy == 0) {
 			size_of_packet++; // bytes_to_copy
 		}
-		size_of_packet += 1 + 1; // b0 + b1
+		size_of_packet += 1 + 1; // (b + n) + c
 	} else if(flag_byte < 0x40) { // Big/medium match packet (0x20-0x3f).
 		uint8_t bytes_to_copy = flag_byte & 0x1f;
 		if(bytes_to_copy == 0) { // Big match packet.
 			size_of_packet++;
 		}
-		size_of_packet += 1 + 1; // b1 + b2
+		size_of_packet += 1 + 1; // a + b
 	} else { // Little match packet (0x40-0xff).
 		size_of_packet++; // pos_major
 	}
