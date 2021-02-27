@@ -174,7 +174,9 @@ template <bool end_of_buffer>
 match_result find_match(
 	const uint8_t* src,
 	size_t src_pos,
-	size_t src_end);
+	size_t src_end,
+	std::vector<int32_t>& ht,
+	std::vector<int32_t>& chain);
 
 void encode_match_packet(
 		array_stream& dest,
@@ -220,6 +222,9 @@ const size_t MAX_BIG_MATCH_LOOKBACK = 16384; // 0b111111 + 0b11111111 * 0x40 + 1
 const size_t MIN_FAR_MATCH_LOOKBACK = 16385; // 16384 is reserved as a special case.
 const size_t MAX_FAR_MATCH_LOOKBACK = 34752; // 0x4000 + 0x800 + 0b11111111 * 0x40
 const size_t MAX_FAR_MATCH_LOOKBACK_WITH_A_EQ_ZERO = 32704; // 0x4000 + 0b11111111 * 0x40
+
+const size_t WINDOW_SIZE = 32768;
+const size_t WINDOW_MASK = WINDOW_SIZE - 1;
 
 const std::vector<char> EMPTY_LITTLE_LITERAL = { 0x11, 0, 0 };
 
@@ -320,12 +325,14 @@ void compress_wad_intermediate(
 		size_t src_end) {
 	uint32_t last_flag = DO_NOT_INJECT_FLAG;
 	array_stream thread_dest;
+	std::vector<int32_t> ht(WINDOW_SIZE, -WINDOW_SIZE);
+	std::vector<int32_t> chain(WINDOW_SIZE, -WINDOW_SIZE);
 	while(src_pos < src_end) {
 		match_result match;
 		if(src_pos + MAX_MATCH_SIZE >= src_end) {
-			match = find_match<true>(src, src_pos, src_end);
+			match = find_match<true>(src, src_pos, src_end, ht, chain);
 		} else {
-			match = find_match<false>(src, src_pos, src_end);
+			match = find_match<false>(src, src_pos, src_end, ht, chain);
 		}
 		
 		if(match.literal_size > 0) {
@@ -340,11 +347,17 @@ void compress_wad_intermediate(
 	*intermediate = std::move(thread_dest.buffer);
 }
 
+int32_t hash32(int32_t n) {
+	return n;
+}
+
 template <bool end_of_buffer>
 match_result find_match(
 	const uint8_t* src,
 	size_t src_pos,
-	size_t src_end) {
+	size_t src_end,
+	std::vector<int32_t>& ht,
+	std::vector<int32_t>& chain) {
 	size_t max_literal_size = end_of_buffer ?
 		std::min(MAX_LITERAL_SIZE, src_end - src_pos) : MAX_LITERAL_SIZE;
 	
@@ -353,14 +366,21 @@ match_result find_match(
 	match.match_offset = 0;
 	match.match_size = 0;
 	
+	// Matching algorithm taken from: https://glinscott.github.io/lz/
 	for(size_t i = 0; i < max_literal_size; i++) {
-		size_t target = src_pos + i;
-		size_t low = sub_clamped(target, MAX_FAR_MATCH_LOOKBACK_WITH_A_EQ_ZERO);
+		int64_t target = src_pos + i;
 		size_t max_match_size = end_of_buffer ?
 			std::min(MAX_MATCH_SIZE, src_end - src_pos - i) : MAX_MATCH_SIZE;
-		for(size_t j = low; j < target; j++) {
+		
+		int32_t key = hash32(src[target] | (src[target + 1] << 8) | (src[target + 2] << 16));
+		key &= WINDOW_MASK;
+		int64_t next = ht[key];
+		
+		int64_t low = target - MAX_FAR_MATCH_LOOKBACK_WITH_A_EQ_ZERO;
+		int hits = 0;
+		while(next > low && ++hits < 16) {
 			// This makes matching much faster.
-			if(!end_of_buffer && *(uint16_t*) &src[j] != *(uint16_t*) &src[target]) {
+			if(!end_of_buffer && *(uint16_t*) &src[next] != *(uint16_t*) &src[target]) {
 				continue;
 			}
 			
@@ -368,21 +388,31 @@ match_result find_match(
 			size_t k = end_of_buffer ? 0 : 2;
 			for(; k < max_match_size; k++) {
 				auto l_val = src[target + k];
-				auto r_val = src[j + k];
+				auto r_val = src[next + k];
 				if(l_val != r_val) {
 					break;
 				}
 			}
 			
-			if(k >= 3 && k >= match.match_size) {
-				match.match_offset = j;
+			if(k > match.match_size) {
 				match.match_size = k;
+				match.match_offset = next;
 			}
+			next = chain[next & WINDOW_MASK];
 		}
+
+		chain[target & WINDOW_MASK] = ht[key];
+		ht[key] = target;
+		
 		if(match.match_size >= 3) {
 			match.literal_size = i;
 			break;
 		}
+	}
+	
+	if(match.match_size < 3) {
+		match.match_offset = 0;
+		match.match_size = 0;
 	}
 	
 	return match;
