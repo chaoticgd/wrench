@@ -348,7 +348,7 @@ void compress_wad_intermediate(
 }
 
 int32_t hash32(int32_t n) {
-	return n;
+	return (n * 12) + n >> 3;
 }
 
 template <bool end_of_buffer>
