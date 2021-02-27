@@ -223,8 +223,8 @@ const size_t MIN_FAR_MATCH_LOOKBACK = 16385; // 16384 is reserved as a special c
 const size_t MAX_FAR_MATCH_LOOKBACK = 34752; // 0x4000 + 0x800 + 0b11111111 * 0x40
 const size_t MAX_FAR_MATCH_LOOKBACK_WITH_A_EQ_ZERO = 32704; // 0x4000 + 0b11111111 * 0x40
 
-const size_t WINDOW_SIZE = 32768;
-const size_t WINDOW_MASK = WINDOW_SIZE - 1;
+const int32_t WINDOW_SIZE = 32768;
+const int32_t WINDOW_MASK = WINDOW_SIZE - 1;
 
 const std::vector<char> EMPTY_LITTLE_LITERAL = { 0x11, 0, 0 };
 
