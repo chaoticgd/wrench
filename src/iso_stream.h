@@ -62,11 +62,8 @@ public:
 	
 	void commit();
 
-	// HACK: Discard certain streams as the recompression code isn't currently
-	// reliable enough to compress them correctly. For example, the asset WAD
-	// for each level should not be recompressed for now. This means that we
-	// can't modify those assets, which isn't great, but it's the best we can
-	// do for now.
+	// We don't want to recompress some WAD segments right now for speed.
+	// This is the switch for that.
 	bool discard = false;
 
 private:

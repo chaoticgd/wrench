@@ -66,7 +66,7 @@ level::level(iso_stream* iso, toc_level index)
 	}
 	
 	_asset_segment = iso->get_decompressed
-		(_file_header.base_offset.bytes() + _file_header.primary_header.offset.bytes() + _primary_header.asset_wad.offset, true);
+		(_file_header.base_offset.bytes() + _file_header.primary_header.offset.bytes() + _primary_header.asset_wad.offset);
 	_asset_segment->name = "Asset Segment";
 	
 	if(config::get().debug.stream_tracing) {

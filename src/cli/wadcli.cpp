@@ -29,14 +29,15 @@ void copy_and_decompress(stream& dest, stream& src);
 void copy_and_compress(stream& dest, stream& src);
 
 int main(int argc, char** argv) {
-	cxxopts::Options options(argv[0], "Decompress WAD segments.");
+	cxxopts::Options options(argv[0], "Compress and decompress WAD segments.");
+	options.positional_help("compress|decompress <input file> <output file>");
 	options.add_options()
-		("c,command", "The operation to perform. Possible values are: decompress, compress.",
+		("c,command", "The operation to perform. Possible values are: compress, decompress.",
 			cxxopts::value<std::string>())
 		("s,src", "The input file.",
 			cxxopts::value<std::string>())
 		("d,dest", "The output file.", cxxopts::value<std::string>())
-		("o,offset", "The offset in the input file where the header begins.",
+		("o,offset", "The offset in the input file where the header begins. Only applies for decompression.",
 			cxxopts::value<std::string>()->default_value("0"))
 		("t,threads", "The number of threads to use. Only applies for compression.",
 			cxxopts::value<std::string>()->default_value("1"));
