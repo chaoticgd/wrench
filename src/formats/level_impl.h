@@ -39,16 +39,25 @@
 #	Read LEVEL*.WAD files.
 # */
 
-enum class level_type {
-	RAC23, RAC2_68, RAC4
+enum class level_type : uint32_t {
+	RAC23 = 0x60, RAC2_68 = 0x68, RAC4 = 0xc68
 };
 
 struct level_file_header {
 	level_type type;
-	uint32_t base_offset;
+	sector32 base_offset;
 	uint32_t level_number;
-	uint32_t primary_header_offset;
-	uint32_t world_segment_offset;
+	uint32_t unknown_c;
+	sector_range primary_header;
+	sector_range sound_bank_1;
+	sector_range world_segment;
+	sector_range unknown_28;
+	sector_range unknown_30;
+	sector_range unknown_38;
+	sector_range unknown_40;
+	sector_range sound_bank_2;
+	sector_range sound_bank_3;
+	sector_range sound_bank_4;
 };
 
 struct level_code_segment {
@@ -57,36 +66,38 @@ struct level_code_segment {
 };
 
 struct level_primary_header {
-	uint32_t code_segment_offset;
-	uint32_t code_segment_size;
-	uint32_t asset_header;
-	uint32_t asset_header_size;
-	uint32_t tex_pixel_data_base;
-	uint32_t hud_header_offset;
-	uint32_t hud_bank_0_offset;
-	uint32_t hud_bank_0_size;
-	uint32_t hud_bank_1_offset;
-	uint32_t hud_bank_1_size;
-	uint32_t hud_bank_2_offset;
-	uint32_t hud_bank_2_size;
-	uint32_t hud_bank_3_offset;
-	uint32_t hud_bank_3_size;
-	uint32_t hud_bank_4_offset;
-	uint32_t hud_bank_4_size;
-	uint32_t asset_wad;
-	uint32_t loading_screen_textures_offset;
-	uint32_t loading_screen_textures_size;
+	byte_range unknown_0;
+	byte_range code_segment;
+	byte_range asset_header;
+	byte_range small_textures;
+	byte_range hud_header;
+	byte_range hud_bank_0;
+	byte_range hud_bank_1;
+	byte_range hud_bank_2;
+	byte_range hud_bank_3;
+	byte_range hud_bank_4;
+	byte_range asset_wad;
+	byte_range loading_screen_textures;
 };
 
 class level {
 public:
-	level(iso_stream* iso, toc_level index);
+	level() {}
 	level(const level& rhs) = delete;
+	void reset();
 	
-	void write();
+	void read(
+			stream* src,
+			toc_level index_,
+			size_t header_offset,
+			sector32 base_offset, // Where to put the level in the ISO.
+			sector32 effective_base_offset, // Where to actually load the level from the input file.
+			size_t size_in_bytes);
 	
 	static level_file_header read_file_header(stream* src, std::size_t offset);
 	
+	toc_level index;
+	level_file_header file_header;
 	world_segment world;
 	
 	template <typename T, typename F>
@@ -127,10 +138,12 @@ private:
 	void read_textures(std::size_t asset_offset, level_asset_header asset_header);
 	void read_tfrags();
 	
-	void read_hud_banks(iso_stream* iso);
-	void read_loading_screen_textures(iso_stream* iso);
+	void read_hud_banks(stream* file);
+	void read_loading_screen_textures(stream* file);
 	
 public:
+	void write_back(stream* iso);
+	void write(array_stream& dest);
 
 	stream* moby_stream();
 	
@@ -150,18 +163,15 @@ public:
 	std::vector<texture> loading_screen_textures;
 	
 private:
-	toc_level _index;
-	level_file_header _file_header;
 	level_primary_header _primary_header;
-	proxy_stream _file;
-	
-	stream* _world_segment;
-	
-	stream* _asset_segment;
-	
-	std::optional<trace_stream> _world_segment_tracepoint;
-	std::optional<trace_stream> _asset_segment_tracepoint;
+	std::optional<array_stream> _file;
+	std::optional<simple_wad_stream> _world_segment;
+	std::optional<simple_wad_stream> _asset_segment;
 };
+
+void swap_level_file_header_rac23(level_file_header& l, level_file_header_rac23& r);
+void swap_level_file_header_rac2_68(level_file_header& l, level_file_header_rac2_68& r);
+void swap_level_file_header_rac4(level_file_header& l, level_file_header_rac4& r);
 
 void swap_primary_header_rac23(level_primary_header& l, level_primary_header_rac23& r);
 void swap_primary_header_rac4(level_primary_header& l, level_primary_header_rac4& r);

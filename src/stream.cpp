@@ -121,8 +121,10 @@ void file_stream::check_error() {
 */
 
 array_stream::array_stream()
-	: stream(nullptr),
-	  pos(0) {}
+	: stream(nullptr) {}
+
+array_stream::array_stream(stream* parent_)
+	: stream(parent_) {}
 
 std::size_t array_stream::size() const {
 	return buffer.size();

@@ -260,7 +260,7 @@ void compress_wad(array_stream& dest, array_stream& src, int thread_count) {
 		}
 	}
 	
-	dest.seek(0);
+	size_t header_pos = dest.tell();
 	const char* header = "\x57\x41\x44\x00\x00\x00\x00\x57\x52\x45\x4e\x43\x48\x30\x31\x30";
 	dest.write_n(header, 0x10);
 	
@@ -288,7 +288,7 @@ void compress_wad(array_stream& dest, array_stream& src, int thread_count) {
 			//   ...
 			//	0x2000 [data]
 			//	0x2010 [start of new block]
-			if(((dest.pos + 0x1ff0) % 0x2000) + insert_size > 0x2000 - 3) {
+			if((((dest.pos - header_pos) + 0x1ff0) % 0x2000) + insert_size > 0x2000 - 3) {
 				// Every 0x2000 bytes or so there must be a pad packet or the
 				// game crashes with a teq exception. This is because the game
 				// copies the compressed data into the EE core's scratchpad, which
@@ -296,7 +296,7 @@ void compress_wad(array_stream& dest, array_stream& src, int thread_count) {
 				dest.write8(0x12);
 				dest.write8(0x0);
 				dest.write8(0x0);
-				while(dest.pos % 0x2000 != 0x10) {
+				while((dest.pos - header_pos) % 0x2000 != 0x10) {
 					dest.write8(0xee);
 				}
 			}
@@ -313,9 +313,10 @@ void compress_wad(array_stream& dest, array_stream& src, int thread_count) {
 		}
 	}
 	
-	uint32_t total_size = dest.pos;
-	dest.seek(3);
-	dest.write<uint32_t>(total_size);
+	size_t end_pos = dest.tell();
+	uint32_t total_size = end_pos - header_pos;
+	dest.write<uint32_t>(header_pos + 0x3, total_size);
+	dest.seek(end_pos);
 }
 
 void compress_wad_intermediate(

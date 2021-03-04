@@ -223,7 +223,7 @@ private:
 		uint32_t data_offset);
 	
 public:
-	void write_rac23();
+	void write_rac23(array_stream& dest);
 	
 private:
 	std::size_t _next_entity_id = 1;

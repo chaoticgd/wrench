@@ -181,7 +181,11 @@ void wrench_project::redo() {
 void wrench_project::open_level(std::size_t index) {
 	if(_levels.find(index) == _levels.end()) {
 		// The level is not already open.
-		_levels.emplace(index, std::make_unique<level>(&iso, toc.levels[index]));
+		auto lvl = std::make_unique<level>();
+		toc_level& header = toc.levels[index];
+		sector32 base_offset = iso.read<sector32>(header.main_part.bytes() + 4);
+		lvl->read(&iso, header, header.main_part.bytes(), base_offset, base_offset, header.main_part_size.bytes());
+		_levels.emplace(index, std::move(lvl));
 	}
 	_selected_level = _levels.at(index).get();
 }
@@ -218,7 +222,7 @@ void wrench_project::load_tables() {
 		toc_table& table = toc.tables[i];
 		
 		armor_archive armor;
-		if(armor.read(iso, table)) {
+		if(armor.read(iso._iso, table)) {
 			_armor.emplace(i, std::move(armor));
 			continue;
 		}

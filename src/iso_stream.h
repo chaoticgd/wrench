@@ -31,6 +31,13 @@
 #	rest of the program and loading patches from .wrench files.
 # */
 
+class simple_wad_stream : public array_stream {
+public:
+	simple_wad_stream(stream* backing, size_t offset);
+};
+
+// All code below this point is obsolete and should be removed at some point.
+
 struct patch {
 	patch() {}
 	
@@ -101,6 +108,8 @@ public:
 	// Recompress all open WAD segments.
 	void commit();
 
+	file_stream _iso;
+	
 private:
 
 	std::vector<patch> read_patches(ZipArchive::Ptr root);
@@ -122,7 +131,6 @@ private:
 	// Generate a hash based on _patches.
 	std::string hash_patches();
 
-	file_stream _iso;
 	std::vector<patch> _patches;
 	std::map<std::size_t, std::unique_ptr<wad_stream>> _wad_streams;
 

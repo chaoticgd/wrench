@@ -368,44 +368,44 @@ std::vector<T> world_segment::read_splines(
 
 static const std::vector<char> EMPTY_VECTOR;
 
-void world_segment::write_rac23() {
+void world_segment::write_rac23(array_stream& dest) {
 	world_header_rac23 header;
 	defer([&] {
-		backing->write(0, header);
+		dest.write(0, header);
 	});
-	backing->seek(sizeof(world_header_rac23));
+	dest.seek(sizeof(world_header_rac23));
 	
 	const auto write_table = [&]<typename T_1, typename T_2 = char, typename T_3 = char>(
 			const std::vector<T_1>& first,
 			const std::vector<T_2>& second = EMPTY_VECTOR,
 			const std::vector<T_3>& third = EMPTY_VECTOR,
 			bool align = false) {
-		backing->pad(0x10, 0);
-		size_t base_pos = backing->tell();
+		dest.pad(0x10, 0);
+		size_t base_pos = dest.tell();
 		world_object_table table;
 		table.count_1 = first.size();
 		table.count_2 = second.size();
 		table.count_3 = third.size();
 		table.pad = 0;
-		backing->write(table);
-		backing->write_v(first);
-		if(align) backing->pad(0x10, 0);
-		backing->write_v(second);
-		if(align) backing->pad(0x10, 0);
-		backing->write_v(third);
+		dest.write(table);
+		dest.write_v(first);
+		if(align) dest.pad(0x10, 0);
+		dest.write_v(second);
+		if(align) dest.pad(0x10, 0);
+		dest.write_v(third);
 		return base_pos;
 	};
 	
 	header.unknown_8c = write_table(thing_8cs);
 	
-	backing->pad(0x10, 0);
-	header.properties = backing->tell();
-	backing->write(properties);
-	backing->write_v(property_things);
+	dest.pad(0x10, 0);
+	header.properties = dest.tell();
+	dest.write(properties);
+	dest.write_v(property_things);
 	
 	const auto write_language = [&](std::vector<game_string>& language) {
-		size_t base_pos = backing->tell();
-		backing->seek(base_pos + sizeof(world_string_table_header));
+		size_t base_pos = dest.tell();
+		dest.seek(base_pos + sizeof(world_string_table_header));
 		
 		size_t data_pos = sizeof(world_string_table_header) +
 			language.size() * sizeof(world_string_table_entry);
@@ -419,7 +419,7 @@ void world_segment::write_rac23() {
 			entry.secondary_id = str.secondary_id;
 			entry.unknown_c = str.unknown_c;
 			entry.unknown_e = str.unknown_e;
-			backing->write(entry);
+			dest.write(entry);
 			data_pos += str.str.size() + 1;
 			if(game == world_type::RAC2) {
 				while(data_pos % 4 != 0) data_pos++;
@@ -428,11 +428,11 @@ void world_segment::write_rac23() {
 		
 		for(game_string& str : language) {
 			if(game == world_type::RAC2) {
-				backing->pad(0x4, 0);
+				dest.pad(0x4, 0);
 			}
-			backing->write_n(str.str.c_str(), str.str.size() + 1);
+			dest.write_n(str.str.c_str(), str.str.size() + 1);
 		}
-		backing->pad(0x10, 0);
+		dest.pad(0x10, 0);
 		
 		world_string_table_header string_table;
 		string_table.num_strings = language.size();
@@ -440,34 +440,34 @@ void world_segment::write_rac23() {
 		if(game == world_type::RAC3) {
 			string_table.size -= sizeof(world_string_table_header);
 		}
-		backing->write(base_pos, string_table);
+		dest.write(base_pos, string_table);
 		
-		backing->seek(base_pos + data_pos);
+		dest.seek(base_pos + data_pos);
 		
 		return base_pos;
 	};
-	backing->pad(0x10, 0);
+	dest.pad(0x10, 0);
 	if(game == world_type::RAC3 || game == world_type::DL) {
 		assert(unknown_10_val.has_value());
-		backing->write<uint32_t>(*unknown_10_val);
+		dest.write<uint32_t>(*unknown_10_val);
 	}
 	header.us_english_strings = write_language(languages[0]);
-	backing->pad(0x10, 0);
+	dest.pad(0x10, 0);
 	header.uk_english_strings = write_language(languages[1]);
-	backing->pad(0x10, 0);
+	dest.pad(0x10, 0);
 	header.french_strings = write_language(languages[2]);
-	backing->pad(0x10, 0);
+	dest.pad(0x10, 0);
 	header.german_strings = write_language(languages[3]);
-	backing->pad(0x10, 0);
+	dest.pad(0x10, 0);
 	header.spanish_strings = write_language(languages[4]);
-	backing->pad(0x10, 0);
+	dest.pad(0x10, 0);
 	header.italian_strings = write_language(languages[5]);
-	backing->pad(0x10, 0);
+	dest.pad(0x10, 0);
 	header.japanese_strings = write_language(languages[6]);
-	backing->pad(0x10, 0);
+	dest.pad(0x10, 0);
 	//header.korean_strings = write_language(languages[7]);
-	header.korean_strings = backing->tell();
-	backing->write_v(korean_strings_hack); // HACK: See read_rac23 comment.
+	header.korean_strings = dest.tell();
+	dest.write_v(korean_strings_hack); // HACK: See read_rac23 comment.
 	
 	header.directional_lights = write_table(directional_lights);
 	header.unknown_84 = write_table(thing_84s);
@@ -475,10 +475,10 @@ void world_segment::write_rac23() {
 	header.unknown_c = write_table(thing_cs);
 	
 	const auto write_u32_list = [&](const std::vector<uint32_t>& list) {
-		backing->pad(0x10, 0);
-		size_t base_pos = backing->tell();
-		backing->write<uint32_t>(list.size());
-		backing->write_v(list);
+		dest.pad(0x10, 0);
+		size_t base_pos = dest.tell();
+		dest.write<uint32_t>(list.size());
+		dest.write_v(list);
 		return base_pos;
 	};
 	header.unknown_48 = write_u32_list(thing_48s);
@@ -495,12 +495,12 @@ void world_segment::write_rac23() {
 		return write_table(dest);
 	};
 	header.mobies = write_entity_table.operator()<moby_entity, world_moby_rac23>(mobies, swap_moby_rac23);
-	size_t pos_after_mobies = backing->tell();
-	backing->write<uint32_t>(header.mobies + sizeof(uint32_t), max_moby_count - mobies.size());
-	backing->seek(pos_after_mobies);
+	size_t pos_after_mobies = dest.tell();
+	dest.write<uint32_t>(header.mobies + sizeof(uint32_t), max_moby_count - mobies.size());
+	dest.seek(pos_after_mobies);
 	
-	backing->pad(0x10, 0);
-	header.pvar_table = backing->tell();
+	dest.pad(0x10, 0);
+	header.pvar_table = dest.tell();
 	size_t next_pvar_offset = 0;
 	header.pvar_data = header.pvar_table + pvars.size() * sizeof(pvar_table_entry);
 	while(header.pvar_data % 0x10 != 0) header.pvar_data++;
@@ -508,23 +508,23 @@ void world_segment::write_rac23() {
 		pvar_table_entry entry;
 		entry.offset = next_pvar_offset;
 		entry.size = pvar.size();
-		backing->write(entry);
-		size_t next_pos = backing->tell();
+		dest.write(entry);
+		size_t next_pos = dest.tell();
 		
-		backing->seek(header.pvar_data + next_pvar_offset);
-		backing->write_v(pvar);
+		dest.seek(header.pvar_data + next_pvar_offset);
+		dest.write_v(pvar);
 		
 		next_pvar_offset += pvar.size();
-		backing->seek(next_pos);
+		dest.seek(next_pos);
 	}
-	backing->pad(0x10, 0);
-	backing->seek(header.pvar_data + next_pvar_offset); // Skip past the pvar data section.
+	dest.pad(0x10, 0);
+	dest.seek(header.pvar_data + next_pvar_offset); // Skip past the pvar data section.
 	
 	const auto write_terminated_array = [&]<typename T>(const std::vector<T>& things) {
-		backing->pad(0x10, 0);
-		size_t result = backing->tell();
-		backing->write_v(things);
-		backing->write<uint64_t>(0xffffffffffffffff); // terminator
+		dest.pad(0x10, 0);
+		size_t result = dest.tell();
+		dest.write_v(things);
+		dest.write<uint64_t>(0xffffffffffffffff); // terminator
 		return result;
 	};
 	header.unknown_58 = write_terminated_array(thing_58s);
@@ -534,14 +534,14 @@ void world_segment::write_rac23() {
 	header.unknown_30 = write_u32_list(thing_30s);
 	header.ties = write_entity_table.operator()<tie_entity, world_tie>(ties, swap_tie);
 	
-	backing->pad(0x10, 0);
-	header.unknown_94 = backing->tell();
+	dest.pad(0x10, 0);
+	header.unknown_94 = dest.tell();
 	for(thing_94& thing : thing_94s) {
-		backing->write<int16_t>(thing.index);
-		backing->write<int16_t>(thing.data.size() / 2);
-		backing->write_v(thing.data);
+		dest.write<int16_t>(thing.index);
+		dest.write<int16_t>(thing.data.size() / 2);
+		dest.write_v(thing.data);
 	}
-	backing->write<uint16_t>(0xffff);
+	dest.write<uint16_t>(0xffff);
 	
 	header.unknown_38 = write_table(thing_38_1s, thing_38_2s, EMPTY_VECTOR, true);
 	header.unknown_3c = write_u32_list(thing_3cs);
@@ -549,46 +549,46 @@ void world_segment::write_rac23() {
 	header.unknown_44 = write_table(thing_44_1s, thing_44_2s, EMPTY_VECTOR, true);
 	
 	const auto write_vertex_list = [&](std::vector<std::vector<glm::vec4>> list) {
-		size_t base_pos = backing->tell();
+		size_t base_pos = dest.tell();
 		
-		backing->seek(backing->tell() + list.size() * sizeof(uint32_t));
-		backing->pad(0x10, 0);
-		size_t data_pos = backing->tell();
+		dest.seek(dest.tell() + list.size() * sizeof(uint32_t));
+		dest.pad(0x10, 0);
+		size_t data_pos = dest.tell();
 		
 		std::vector<uint32_t> offsets;
 		for(std::vector<glm::vec4> vertices : list) {
-			backing->pad(0x10, 0);
-			offsets.push_back(backing->tell() - data_pos);
+			dest.pad(0x10, 0);
+			offsets.push_back(dest.tell() - data_pos);
 			world_vertex_header vertex_header;
 			vertex_header.vertex_count = vertices.size();
 			vertex_header.pad[0] = 0;
 			vertex_header.pad[1] = 0;
 			vertex_header.pad[2] = 0;
-			backing->write(vertex_header);
+			dest.write(vertex_header);
 			for(glm::vec4& vertex : vertices) {
-				backing->write(vertex.x);
-				backing->write(vertex.y);
-				backing->write(vertex.z);
-				backing->write(vertex.w);
+				dest.write(vertex.x);
+				dest.write(vertex.y);
+				dest.write(vertex.z);
+				dest.write(vertex.w);
 			}
 		}
 		
-		size_t end_pos = backing->tell();
-		backing->seek(base_pos);
-		backing->write_v(offsets);
-		backing->seek(end_pos);
+		size_t end_pos = dest.tell();
+		dest.seek(base_pos);
+		dest.write_v(offsets);
+		dest.seek(end_pos);
 		
 		return data_pos;
 	};
 	
-	backing->pad(0x10, 0);
-	header.splines = backing->tell();
+	dest.pad(0x10, 0);
+	header.splines = dest.tell();
 	
 	world_spline_table spline_table;
 	defer([&]() {
-		backing->write(header.splines, spline_table);
+		dest.write(header.splines, spline_table);
 	});
-	backing->seek(backing->tell() + sizeof(world_spline_table));
+	dest.seek(dest.tell() + sizeof(world_spline_table));
 	
 	std::vector<std::vector<glm::vec4>> spline_vertices;
 	for(spline_entity& spline : splines) {
@@ -596,7 +596,7 @@ void world_segment::write_rac23() {
 	} 
 	spline_table.spline_count = splines.size();
 	spline_table.data_offset = write_vertex_list(spline_vertices) - header.splines;
-	spline_table.data_size = backing->tell() - header.splines - spline_table.data_offset;
+	spline_table.data_size = dest.tell() - header.splines - spline_table.data_offset;
 	spline_table.pad = 0;
 	
 	header.triggers = write_entity_table.operator()<trigger_entity, world_trigger>(triggers, swap_trigger);
@@ -605,39 +605,39 @@ void world_segment::write_rac23() {
 	header.unknown_70 = write_table(thing_70s);
 	header.unknown_74 = write_table(thing_74s); // Not sure if this is right.
 	
-	backing->pad(0x10, 0);
-	header.unknown_88 = backing->tell();
-	backing->write<uint32_t>(thing_88.size());
-	backing->write_v(thing_88);
+	dest.pad(0x10, 0);
+	header.unknown_88 = dest.tell();
+	dest.write<uint32_t>(thing_88.size());
+	dest.write_v(thing_88);
 	
-	backing->pad(0x10, 0);
-	header.unknown_80 = backing->tell();
+	dest.pad(0x10, 0);
+	header.unknown_80 = dest.tell();
 	world_object_table thing_80_table;
 	thing_80_table.count_1 = thing_80_2.size() / 0x10;
 	thing_80_table.count_2 = 0;
 	thing_80_table.count_3 = 0;
 	thing_80_table.pad = 0;
-	backing->write(thing_80_table);
-	backing->write_v(thing_80_1);
-	backing->write_v(thing_80_2);
+	dest.write(thing_80_table);
+	dest.write_v(thing_80_1);
+	dest.write_v(thing_80_2);
 	
-	backing->pad(0x10, 0);
-	header.grindrails = backing->tell();
+	dest.pad(0x10, 0);
+	header.grindrails = dest.tell();
 	
 	world_grindrail_header thing_7c_header;
 	defer([&]() {
-		backing->write(header.grindrails, thing_7c_header);
+		dest.write(header.grindrails, thing_7c_header);
 	});
-	backing->seek(backing->tell() + sizeof(world_grindrail_header));
+	dest.seek(dest.tell() + sizeof(world_grindrail_header));
 	
-	for(grindrail_spline_entity& grindrail : grindrails) {
-		world_grindrail_part_1 dest;
-		dest.x = grindrail.special_point.x;
-		dest.y = grindrail.special_point.y;
-		dest.z = grindrail.special_point.z;
-		dest.w = grindrail.special_point.w;
-		std::memcpy(dest.unknown_10, grindrail.unknown_10, 0x10);
-		backing->write(dest);
+	for(grindrail_spline_entity& ent : grindrails) {
+		world_grindrail_part_1 grindrail;
+		grindrail.x = ent.special_point.x;
+		grindrail.y = ent.special_point.y;
+		grindrail.z = ent.special_point.z;
+		grindrail.w = ent.special_point.w;
+		std::memcpy(grindrail.unknown_10, ent.unknown_10, 0x10);
+		dest.write(grindrail);
 	}
 	
 	std::vector<std::vector<glm::vec4>> grind_rail_vertices;
@@ -646,12 +646,12 @@ void world_segment::write_rac23() {
 	}
 	thing_7c_header.count = grindrails.size();
 	thing_7c_header.part_2_data_offset = write_vertex_list(grind_rail_vertices) - header.grindrails;
-	thing_7c_header.part_2_data_size = backing->tell() -
+	thing_7c_header.part_2_data_size = dest.tell() -
 		thing_7c_header.part_2_data_offset - header.grindrails;
 	thing_7c_header.pad = 0;
 	
-	backing->pad(0x10, 0);
-	header.unknown_98 = backing->tell();
+	dest.pad(0x10, 0);
+	header.unknown_98 = dest.tell();
 	world_thing_98_header thing_98_header;
 	thing_98_header.size =
 		sizeof(world_thing_98_header) - // header
@@ -663,12 +663,12 @@ void world_segment::write_rac23() {
 		thing_98_header.part_offsets[i] = thing_98_part_offsets[i];
 	thing_98_header.unknown_1c = 0;
 	thing_98_header.unknown_20 = 0;
-	backing->write(thing_98_header);
-	backing->write_v(thing_98_1s);
-	backing->write_v(thing_98_2s);
+	dest.write(thing_98_header);
+	dest.write_v(thing_98_1s);
+	dest.write_v(thing_98_2s);
 	
 	if(thing_90_1s.size() > 0 || thing_90_2s.size() > 0 || thing_90_3s.size() > 0) {
-		backing->pad(0x40, 0);
+		dest.pad(0x40, 0);
 		header.unknown_90 = write_table(thing_90_1s, thing_90_2s, thing_90_3s);
 	} else {
 		header.unknown_90 = 0;

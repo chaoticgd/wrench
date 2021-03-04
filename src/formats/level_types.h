@@ -30,111 +30,6 @@
 # 	Defines the types that make up the level format, including game objects.
 # */
 
-// *****************************************************************************
-// Basic types
-// *****************************************************************************
-
-packed_struct(mat4f,
-	float m11 = 0;
-	float m12 = 0;
-	float m13 = 0;
-	float m14 = 0;
-	float m21 = 0;
-	float m22 = 0;
-	float m23 = 0;
-	float m24 = 0;
-	float m31 = 0;
-	float m32 = 0;
-	float m33 = 0;
-	float m34 = 0;
-	float m41 = 0;
-	float m42 = 0;
-	float m43 = 0;
-	float m44 = 0; // Always equal to 0.01f (in the game files)?
-
-	mat4f() {}
-
-	mat4f(glm::mat4 mat) {
-		m11 = mat[0][0];
-		m12 = mat[0][1];
-		m13 = mat[0][2];
-		m14 = mat[0][3];
-		m21 = mat[1][0];
-		m22 = mat[1][1];
-		m23 = mat[1][2];
-		m24 = mat[1][3];
-		m31 = mat[2][0];
-		m32 = mat[2][1];
-		m33 = mat[2][2];
-		m34 = mat[2][3];
-		m41 = mat[3][0];
-		m42 = mat[3][1];
-		m43 = mat[3][2];
-		m44 = mat[3][3];
-	}
-
-	operator glm::mat4() const {
-		glm::mat4 result;
-		result[0][0] = m11;
-		result[0][1] = m12;
-		result[0][2] = m13;
-		result[0][3] = m14;
-		result[1][0] = m21;
-		result[1][1] = m22;
-		result[1][2] = m23;
-		result[1][3] = m24;
-		result[2][0] = m31;
-		result[2][1] = m32;
-		result[2][2] = m33;
-		result[2][3] = m34;
-		result[3][0] = m41;
-		result[3][1] = m42;
-		result[3][2] = m43;
-		result[3][3] = m44;
-		return result;
-	}
-)
-
-packed_struct(vec3f,
-	float x = 0;
-	float y = 0;
-	float z = 0;
-
-	vec3f() {}
-
-	vec3f(glm::vec3 vec) {
-		x = vec.x;
-		y = vec.y;
-		z = vec.z;
-	}
-
-	operator glm::vec3() const {
-		glm::vec3 result;
-		result.x = x;
-		result.y = y;
-		result.z = z;
-		return result;
-	}
-	
-	glm::vec3 operator()() const {
-		return static_cast<glm::vec3>(*this);
-	}
-	
-	bool operator==(const vec3f& rhs) const {
-		return x == rhs.x && y == rhs.y && z == rhs.z;
-	}
-	
-	bool operator!=(const vec3f& rhs) const {
-		return x != rhs.x || y != rhs.y || z != rhs.z;
-	}
-)
-
-packed_struct(colour48,
-	uint32_t red;
-	uint32_t green;
-	uint32_t blue;
-)
-
 struct level_primary_header;
 struct level_asset_header;
 struct level_texture_entry;
@@ -143,28 +38,42 @@ struct level_texture_entry;
 // Outer level structures
 // *****************************************************************************
 
+packed_struct(sector_range,
+	sector32 offset;
+	sector32 size;
+)
+
+packed_struct(byte_range,
+	uint32_t offset;
+	uint32_t size;
+)
+
 // These are also present in the table of contents for GC, UYA and DL.
 packed_struct(level_file_header_rac23,
-	uint32_t magic;          // 0x0 Equal to 0x60.
-	sector32 base_offset;    // 0x4
-	uint32_t level_number;   // 0x8
-	uint32_t unknown_c;      // 0xc
-	sector32 primary_header; // 0x10
-	uint32_t unknown_14;     // 0x14
-	sector32 unknown_18;     // 0x18
-	uint32_t unknown_1c;     // 0x1c
-	sector32 world_segment;  // 0x20
+	uint32_t magic;              // 0x0 Equal to 0x60.
+	sector32 base_offset;        // 0x4
+	uint32_t level_number;       // 0x8
+	uint32_t unknown_c;          // 0xc
+	sector_range primary_header; // 0x10
+	sector_range sound_bank_1;   // 0x18
+	sector_range world_segment;  // 0x20
+	sector_range unknown_28;     // 0x28
+	sector_range unknown_30;     // 0x30
+	sector_range unknown_38;     // 0x38
+	sector_range unknown_40;     // 0x40
+	sector_range sound_bank_2;   // 0x48
+	sector_range sound_bank_3;   // 0x50
+	sector_range sound_bank_4;   // 0x58
 )
 
 packed_struct(level_file_header_rac2_68,
-	uint32_t magic;          // 0x0 Equal to 0x68.
-	sector32 base_offset;    // 0x4
-	uint32_t level_number;   // 0x8
-	sector32 primary_header; // 0xc
-	uint32_t unknown_10;     // 0x10
-	sector32 unknown_14;     // 0x14
-	uint32_t unknown_18;     // 0x18
-	sector32 world_segment;  // 0x1c
+	uint32_t magic;               // 0x0 Equal to 0x68.
+	sector32 base_offset;         // 0x4
+	uint32_t level_number;        // 0x8
+	sector_range primary_header;  // 0xc
+	sector_range sound_bank_1;    // 0x14
+	sector_range world_segment_1; // 0x1c
+	sector_range world_segment_2; // 0x24
 )
 
 packed_struct(level_file_header_rac4,
@@ -174,8 +83,7 @@ packed_struct(level_file_header_rac4,
 	uint32_t unknown_c;      // 0xc
 	uint32_t unknown_10;     // 0x10
 	uint32_t unknown_14;     // 0x14
-	sector32 primary_header; // 0x18
-	uint32_t unknown_1c;     // 0x1c
+	sector_range primary_header; // 0x18
 	uint32_t unknown_20;     // 0x20
 	uint32_t unknown_24;     // 0x24
 	uint32_t unknown_28;     // 0x28
@@ -190,62 +98,36 @@ packed_struct(level_file_header_rac4,
 	uint32_t unknown_4c;     // 0x4c
 	uint32_t unknown_50;     // 0x50
 	uint32_t unknown_54;     // 0x54
-	sector32 world_segment;  // 0x58
-	uint32_t unknown_5c;     // 0x5c
+	sector_range world_segment; // 0x58
 )
 
-// Pointers are relative to this header.
 packed_struct(level_primary_header_rac23,
-	uint32_t code_segment_offset; // 0x0
-	uint32_t code_segment_size;   // 0x4
-	uint32_t asset_header;        // 0x8
-	uint32_t asset_header_size;   // 0xc
-	uint32_t tex_pixel_data_base; // 0x10
-	uint32_t unknown_14;          // 0x14
-	uint32_t hud_header_offset;   // 0x18
-	uint32_t unknown_1c;          // 0x1c
-	uint32_t hud_bank_0_offset;   // 0x20
-	uint32_t hud_bank_0_size;     // 0x24
-	uint32_t hud_bank_1_offset;   // 0x28
-	uint32_t hud_bank_1_size;     // 0x2c
-	uint32_t hud_bank_2_offset;   // 0x30
-	uint32_t hud_bank_2_size;     // 0x34
-	uint32_t hud_bank_3_offset;   // 0x38
-	uint32_t hud_bank_3_size;     // 0x3c
-	uint32_t hud_bank_4_offset;   // 0x40
-	uint32_t hud_bank_4_size;     // 0x44
-	uint32_t asset_wad;           // 0x48
-	uint32_t unknown_4c;          // 0x4c
-	uint32_t loading_screen_textures_offset; // 0x50
-	uint32_t loading_screen_textures_size;   // 0x54
+	byte_range code_segment;   // 0x0
+	byte_range asset_header;   // 0x8
+	byte_range small_textures; // 0x10
+	byte_range hud_header;     // 0x18
+	byte_range hud_bank_0;     // 0x20
+	byte_range hud_bank_1;     // 0x28
+	byte_range hud_bank_2;     // 0x30
+	byte_range hud_bank_3;     // 0x38
+	byte_range hud_bank_4;     // 0x40
+	byte_range asset_wad;      // 0x48
+	byte_range loading_screen_textures; // 0x50
 )
 
 packed_struct(level_primary_header_rac4,
-	uint32_t unknown_0;           // 0x0
-	uint32_t unknown_4;           // 0x4
-	uint32_t code_segment_offset; // 0x8
-	uint32_t code_segment_size;   // 0xc
-	uint32_t asset_header;        // 0x10
-	uint32_t asset_header_size;   // 0x14
-	uint32_t tex_pixel_data_base; // 0x18
-	uint32_t unknown_14;          // 0x1c
-	uint32_t hud_header_offset;   // 0x20
-	uint32_t unknown_1c;          // 0x24
-	uint32_t hud_bank_0_offset;   // 0x28
-	uint32_t hud_bank_0_size;     // 0x2c
-	uint32_t hud_bank_1_offset;   // 0x30
-	uint32_t hud_bank_1_size;     // 0x34
-	uint32_t hud_bank_2_offset;   // 0x38
-	uint32_t hud_bank_2_size;     // 0x3c
-	uint32_t hud_bank_3_offset;   // 0x40
-	uint32_t hud_bank_3_size;     // 0x44
-	uint32_t hud_bank_4_offset;   // 0x48
-	uint32_t hud_bank_4_size;     // 0x4c
-	uint32_t asset_wad;           // 0x50
-	uint32_t unknown_54;          // 0x54
-	uint32_t loading_screen_textures_offset; // 0x58
-	uint32_t loading_screen_textures_size;   // 0x5c
-	
+	byte_range unknown_0;      // 0x0
+	byte_range code_segment;   // 0x8
+	byte_range asset_header;   // 0x10
+	byte_range small_textures; // 0x18
+	byte_range hud_header;     // 0x20
+	byte_range hud_bank_0;     // 0x28
+	byte_range hud_bank_1;     // 0x30
+	byte_range hud_bank_2;     // 0x38
+	byte_range hud_bank_3;     // 0x40
+	byte_range hud_bank_4;     // 0x48
+	byte_range asset_wad;      // 0x50
+	byte_range loading_screen_textures; // 0x58
 )
 
 packed_struct(level_code_segment_header,
@@ -363,6 +245,107 @@ packed_struct(level_hud_header,
 // World segment structures
 // *****************************************************************************
 
+packed_struct(mat4f,
+	float m11 = 0;
+	float m12 = 0;
+	float m13 = 0;
+	float m14 = 0;
+	float m21 = 0;
+	float m22 = 0;
+	float m23 = 0;
+	float m24 = 0;
+	float m31 = 0;
+	float m32 = 0;
+	float m33 = 0;
+	float m34 = 0;
+	float m41 = 0;
+	float m42 = 0;
+	float m43 = 0;
+	float m44 = 0; // Always equal to 0.01f (in the game files)?
+
+	mat4f() {}
+
+	mat4f(glm::mat4 mat) {
+		m11 = mat[0][0];
+		m12 = mat[0][1];
+		m13 = mat[0][2];
+		m14 = mat[0][3];
+		m21 = mat[1][0];
+		m22 = mat[1][1];
+		m23 = mat[1][2];
+		m24 = mat[1][3];
+		m31 = mat[2][0];
+		m32 = mat[2][1];
+		m33 = mat[2][2];
+		m34 = mat[2][3];
+		m41 = mat[3][0];
+		m42 = mat[3][1];
+		m43 = mat[3][2];
+		m44 = mat[3][3];
+	}
+
+	operator glm::mat4() const {
+		glm::mat4 result;
+		result[0][0] = m11;
+		result[0][1] = m12;
+		result[0][2] = m13;
+		result[0][3] = m14;
+		result[1][0] = m21;
+		result[1][1] = m22;
+		result[1][2] = m23;
+		result[1][3] = m24;
+		result[2][0] = m31;
+		result[2][1] = m32;
+		result[2][2] = m33;
+		result[2][3] = m34;
+		result[3][0] = m41;
+		result[3][1] = m42;
+		result[3][2] = m43;
+		result[3][3] = m44;
+		return result;
+	}
+)
+
+packed_struct(vec3f,
+	float x = 0;
+	float y = 0;
+	float z = 0;
+
+	vec3f() {}
+
+	vec3f(glm::vec3 vec) {
+		x = vec.x;
+		y = vec.y;
+		z = vec.z;
+	}
+
+	operator glm::vec3() const {
+		glm::vec3 result;
+		result.x = x;
+		result.y = y;
+		result.z = z;
+		return result;
+	}
+	
+	glm::vec3 operator()() const {
+		return static_cast<glm::vec3>(*this);
+	}
+	
+	bool operator==(const vec3f& rhs) const {
+		return x == rhs.x && y == rhs.y && z == rhs.z;
+	}
+	
+	bool operator!=(const vec3f& rhs) const {
+		return x != rhs.x || y != rhs.y || z != rhs.z;
+	}
+)
+
+packed_struct(colour96,
+	uint32_t red;
+	uint32_t green;
+	uint32_t blue;
+)
+
 packed_struct(world_header_rac23,
 	uint32_t properties;         // 0x0
 	uint32_t directional_lights; // 0x4
@@ -442,7 +425,7 @@ packed_struct(world_properties,
 	uint32_t unknown_0;     // 0x0
 	uint32_t unknown_4;     // 0x4
 	uint32_t unknown_8;     // 0x8
-	colour48 fog_colour;    // 0xc
+	colour96 fog_colour;    // 0xc
 	uint32_t unknown_18;    // 0x18
 	uint32_t unknown_1c;    // 0x1c
 	float fog_distance;     // 0x20

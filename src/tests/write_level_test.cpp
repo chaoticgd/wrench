@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2020 chaoticgd
+	Copyright (C) 2019-2021 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,13 +16,14 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+
 #include "../app.h"
 #include "../project.h"
 
 #include <stdlib.h>
 
-void world_segment_test() {
-	printf("**** world segment test ****\n");
+void write_level_test() {
+	printf("**** write level test ****\n");
 	
 	const char* iso_md5 = getenv("TEST_ISO_MD5");
 	if(iso_md5 == nullptr) {
@@ -50,30 +51,34 @@ void world_segment_test() {
 	int happy = 0, sad = 0;
 	
 	for(size_t i = 0; i < project.toc.levels.size(); i++) {
+		toc_level& toc = project.toc.levels[i];
+		sector32 base_offset = project.iso.read<sector32>(toc.main_part.bytes() + 0x4);
+		
 		project.open_level(i);
 		level* lvl = project.selected_level();
 		assert(lvl != nullptr);
 		
-		array_stream before;
-		lvl->moby_stream()->seek(0);
-		stream::copy_n(before, *lvl->moby_stream(), lvl->moby_stream()->size());
-		array_stream after;
-		lvl->world.write_rac23(after);
+		array_stream original;
+		project.iso.seek(base_offset.bytes());
+		stream::copy_n(original, project.iso, toc.main_part_size.bytes());
 		
-		if(!array_stream::compare_contents(before, after)) {
+		array_stream written;
+		lvl->write(written);
+		
+		if(!array_stream::compare_contents(original, written)) {
 			sad++;
 			
-			std::string before_path = "/tmp/l" + std::to_string(i) + "_worldseg_before.bin";
-			file_stream before_file(before_path, std::ios::out);
-			before.seek(0);
-			stream::copy_n(before_file, before, before.size());
-			printf("Written before file to %s\n", before_path.c_str());
+			std::string original_path = "/tmp/LEVEL" + std::to_string(i) + "_original.bin";
+			file_stream original_file(original_path, std::ios::out);
+			original.seek(0);
+			stream::copy_n(original_file, original, original.size());
+			printf("Written original file to %s\n", original_path.c_str());
 			
-			std::string after_path = "/tmp/l" + std::to_string(i) + "_worldseg_after.bin";
-			file_stream after_file(after_path, std::ios::out);
-			after.seek(0);
-			stream::copy_n(after_file, after, after.size());
-			printf("Written after file to %s\n", after_path.c_str());
+			std::string new_path = "/tmp/LEVEL" + std::to_string(i) + "_new.bin";
+			file_stream new_file(new_path, std::ios::out);
+			written.seek(0);
+			stream::copy_n(new_file, written, written.size());
+			printf("Written new file to %s\n", new_path.c_str());
 		} else {
 			happy++;
 		}

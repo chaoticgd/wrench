@@ -48,6 +48,7 @@ packed_struct(toc_level_table_entry,
 
 struct toc_level {
 	std::size_t level_table_index;
+	size_t main_part_size_offset; // Absolute offset of size field in ISO.
 	sector32 main_part;
 	sector32 main_part_size;
 	sector32 audio_part;

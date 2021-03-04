@@ -54,6 +54,7 @@ add_executable(wrench
 	src/md5.cpp
 	src/tests/compression_test.cpp
 	src/tests/world_segment_test.cpp
+	src/tests/write_level_test.cpp
 )
 
 add_executable(fip

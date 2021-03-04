@@ -144,16 +144,48 @@ void gui::begin_docking() {
 }
 
 float gui::render_menu_bar(app& a) {
+	//bool save_in_place = false;
+	//static prompt_box save_as_box("Save As", "Enter New Path");
+	
+	static alert_box message_box("Information");
+	message_box.render();
+	
+	static prompt_box import_level_box("Import Level");
+	if(auto path = import_level_box.render()) {
+		if(level* lvl = a.get_level()) {
+			try {
+				file_stream file(*path);
+				toc_level index = lvl->index;
+				sector32 base_offset = lvl->file_header.base_offset;
+				lvl->reset();
+				lvl->read(&file, index, 0, base_offset, sector32{0}, file.size());
+			} catch(stream_error&) {
+				message_box.open("Import failed!");
+			}
+		}
+	}
+	
+	static prompt_box export_level_box("Export Level");
+	if(auto path = export_level_box.render()) {
+		if(level* lvl = a.get_level()) {
+			try {
+				array_stream dest;
+				lvl->write(dest);
+				
+				file_stream file(*path, std::ios::out);
+				file.write_n(dest.buffer.data(), dest.buffer.size());
+			} catch(stream_error&) {
+				message_box.open("Export failed!");
+			}
+		}
+	}
+	
 	ImGui::BeginMainMenuBar();
-	
-	bool save_in_place = false;
-	static prompt_box save_as_box("Save As", "Enter New Path");
-	
-	static alert_box export_complete_box("Export Complete");
-	export_complete_box.render();
-	
 	if(ImGui::BeginMenu("File")) {
 		if(ImGui::BeginMenu("New")) {
+			if(config::get().game_isos.size() == 0) {
+				ImGui::Text("You must import your games before creating a new project (Windows->Settings).");
+			}
 			for(const game_iso& game : config::get().game_isos) {
 				if(ImGui::MenuItem(game.path.c_str())) {
 					a.new_project(game);
@@ -161,21 +193,43 @@ float gui::render_menu_bar(app& a) {
 			}
 			ImGui::EndMenu();
 		}
-		if(ImGui::MenuItem("Open")) {
-			auto dialog = a.emplace_window<file_dialog>
-				("Open Project (.wrench)", file_dialog::open, std::vector<std::string> { ".wrench" });
-			dialog->on_okay([&a](std::string path) {
-				a.open_project(path);
-			});
-		}
-		if(ImGui::MenuItem("Save")) {
-			save_in_place = true;
-		}
-		if(ImGui::MenuItem("Save As")) {
-			save_as_box.open();
+		// This let you open/save a list of binary patches using the old
+		// patching system. Since I'm phasing that out, I've disabled the
+		// options to open/save projects as this would just confuse users.
+		//if(ImGui::MenuItem("Open")) {
+		//	auto dialog = a.emplace_window<file_dialog>
+		//		("Open Project (.wrench)", file_dialog::open, std::vector<std::string> { ".wrench" });
+		//	dialog->on_okay([&a](std::string path) {
+		//		a.open_project(path);
+		//	});
+		//}
+		//if(ImGui::MenuItem("Save")) {
+		//	save_in_place = true;
+		//}
+		//if(ImGui::MenuItem("Save As")) {
+		//	save_as_box.open();
+		//}
+		if(ImGui::BeginMenu("Import")) {
+			if(!a.get_project()) {
+				ImGui::Text("You must create a new project (File->New) before importing a level.");
+			}
+			else if(level* lvl = a.get_level()) {
+				if(ImGui::MenuItem("Level WAD")) {
+					import_level_box.open();
+				}
+			} else {
+				ImGui::Text("You must open the level you want to replace (Levels->...) before importing another one.");
+			}
+			ImGui::EndMenu();
 		}
 		if(ImGui::BeginMenu("Export")) {
+			if(!a.get_project()) {
+				ImGui::Text("You must create a new project (File->New) before exporting a level.");
+			}
 			if(level* lvl = a.get_level()) {
+				if(ImGui::MenuItem("Level WAD")) {
+					export_level_box.open();
+				}
 				if(ImGui::MenuItem("Mobyseg (debug)")) {
 					file_stream dump_file("mobyseg.bin", std::ios::out | std::ios::trunc);
 					stream* src = lvl->moby_stream();
@@ -203,7 +257,7 @@ float gui::render_menu_bar(app& a) {
 					message << "Unknown (0x4): " << std::hex << lvl->code_segment.header.unknown_4 << "\n";
 					message << "Unknown (0x8): " << std::hex << lvl->code_segment.header.unknown_8 << "\n";
 					message << "Entry point: " << std::hex << lvl->code_segment.header.entry_offset << "\n";
-					export_complete_box.open(message.str());
+					message_box.open(message.str());
 				}
 			}
 			ImGui::EndMenu();
@@ -213,24 +267,24 @@ float gui::render_menu_bar(app& a) {
 	
 	static alert_box save_error_box("Error Saving Project");
 	
-	if(auto project = a.get_project()) {
-		auto save_as_new_path = save_as_box.render();
-		if(save_as_new_path) {
-			project->set_project_path(*save_as_new_path);
-		}
-		if(save_as_new_path || save_in_place) {
-			try {
-				project->save();
-				auto window_title = std::string("Wrench Editor - [") + project->project_path() + "]";
-				glfwSetWindowTitle(a.glfw_window, window_title.c_str());
-			} catch(stream_error& err) {
-				std::stringstream error_message;
-				error_message << err.what() << "\n";
-				error_message << err.stack_trace;
-				save_error_box.open(error_message.str());
-			}
-		}
-	}
+	//if(auto project = a.get_project()) {
+	//	auto save_as_new_path = save_as_box.render();
+	//	if(save_as_new_path) {
+	//		project->set_project_path(*save_as_new_path);
+	//	}
+	//	if(save_as_new_path || save_in_place) {
+	//		try {
+	//			project->save();
+	//			auto window_title = std::string("Wrench Editor - [") + project->project_path() + "]";
+	//			glfwSetWindowTitle(a.glfw_window, window_title.c_str());
+	//		} catch(stream_error& err) {
+	//			std::stringstream error_message;
+	//			error_message << err.what() << "\n";
+	//			error_message << err.stack_trace;
+	//			save_error_box.open(error_message.str());
+	//		}
+	//	}
+	//}
 	
 	static alert_box undo_error_box("Undo Error");
 	static alert_box redo_error_box("Redo Error");
@@ -290,9 +344,12 @@ float gui::render_menu_bar(app& a) {
 		if(ImGui::MenuItem("Run")) {
 			if(auto project = a.get_project()) {
 				if(auto lvl = a.get_level()) {
-					lvl->write();
+					// Write out the level and ToC header.
+					lvl->write_back(&project->iso);
 				}
-				project->iso.commit(); // Recompress WAD segments.
+				
+				// Recompress WAD segments still using the old patching system.
+				project->iso.commit();
 				
 				if(fs::is_regular_file(config::get().emulator_path)) {
 					std::string emulator_path = fs::canonical(config::get().emulator_path).string();
