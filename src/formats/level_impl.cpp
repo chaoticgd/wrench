@@ -24,7 +24,11 @@
 void level::read(stream* iso, toc_level index) {
 	_index = index;
 	_file_header = read_file_header(iso, index.main_part.bytes());
-	_file.emplace(iso, _file_header.base_offset.bytes(), index.main_part_size.bytes());
+	
+	_file.emplace(iso);
+	_file->buffer.resize(index.main_part_size.bytes());
+	iso->seek(_file_header.base_offset.bytes());
+	iso->read_n(_file->buffer.data(), _file->buffer.size());
 	_file->name = "LEVEL" + std::to_string(index.level_table_index) + ".WAD";
 
 	switch(_file_header.type) {
@@ -255,8 +259,8 @@ void level::write_back(stream* iso) {
 	write(lvl);
 	
 	// Write the level to the ISO.
-	_file->seek(0);
-	_file->write_n(lvl.buffer.data(), lvl.buffer.size());
+	iso->seek(_file_header.base_offset.bytes());
+	iso->write_n(lvl.buffer.data(), lvl.buffer.size());
 	
 	// Copy the header into the table of contents.
 	uint32_t base_offset = iso->read<uint32_t>(_index.main_part.bytes() + 0x4);

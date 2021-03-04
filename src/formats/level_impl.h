@@ -157,12 +157,9 @@ private:
 	toc_level _index;
 	level_file_header _file_header;
 	level_primary_header _primary_header;
-	std::optional<proxy_stream> _file;
+	std::optional<array_stream> _file;
 	std::optional<simple_wad_stream> _world_segment;
 	std::optional<simple_wad_stream> _asset_segment;
-	
-	std::optional<trace_stream> _world_segment_tracepoint;
-	std::optional<trace_stream> _asset_segment_tracepoint;
 };
 
 void swap_level_file_header_rac23(level_file_header& l, level_file_header_rac23& r);
