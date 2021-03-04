@@ -183,6 +183,9 @@ float gui::render_menu_bar(app& a) {
 	ImGui::BeginMainMenuBar();
 	if(ImGui::BeginMenu("File")) {
 		if(ImGui::BeginMenu("New")) {
+			if(config::get().game_isos.size() == 0) {
+				ImGui::Text("You must import your games before creating a new project (Windows->Settings).");
+			}
 			for(const game_iso& game : config::get().game_isos) {
 				if(ImGui::MenuItem(game.path.c_str())) {
 					a.new_project(game);
@@ -207,14 +210,22 @@ float gui::render_menu_bar(app& a) {
 		//	save_as_box.open();
 		//}
 		if(ImGui::BeginMenu("Import")) {
-			if(level* lvl = a.get_level()) {
+			if(!a.get_project()) {
+				ImGui::Text("You must create a new project (File->New) before importing a level.");
+			}
+			else if(level* lvl = a.get_level()) {
 				if(ImGui::MenuItem("Level WAD")) {
 					import_level_box.open();
 				}
+			} else {
+				ImGui::Text("You must open the level you want to replace (Levels->...) before importing another one.");
 			}
 			ImGui::EndMenu();
 		}
 		if(ImGui::BeginMenu("Export")) {
+			if(!a.get_project()) {
+				ImGui::Text("You must create a new project (File->New) before exporting a level.");
+			}
 			if(level* lvl = a.get_level()) {
 				if(ImGui::MenuItem("Level WAD")) {
 					export_level_box.open();
