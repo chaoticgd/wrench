@@ -315,7 +315,7 @@ void level::write(array_stream& dest) {
 		return result;
 	};
 	
-	auto copy_segment = [&](sector_range range) {
+	auto copy_lump = [&](sector_range range) {
 		if(range.size.sectors == 0) {
 			return sector_range {{0}, {0}};
 		}
@@ -331,8 +331,8 @@ void level::write(array_stream& dest) {
 	header.level_number = _file_header.level_number;
 	header.unknown_c = _file_header.unknown_c;
 	
-	header.sound_bank_1 = copy_segment(_file_header.sound_bank_1);
-	header.primary_header = copy_segment(_file_header.primary_header);
+	header.sound_bank_1 = copy_lump(_file_header.sound_bank_1);
+	header.primary_header = copy_lump(_file_header.primary_header);
 	
 	dest.pad(SECTOR_SIZE, 0);
 	size_t beginning_of_the_world = dest.tell();
@@ -342,13 +342,13 @@ void level::write(array_stream& dest) {
 	size_t end_of_the_world = dest.tell(); // mwuhuhuhu!
 	header.world_segment = bytes_to_range(beginning_of_the_world, end_of_the_world);
 	
-	header.unknown_28 = copy_segment(_file_header.unknown_28);
-	header.unknown_30 = copy_segment(_file_header.unknown_30);
-	header.unknown_38 = copy_segment(_file_header.unknown_38);
-	header.unknown_40 = copy_segment(_file_header.unknown_40);
-	header.sound_bank_2 = copy_segment(_file_header.sound_bank_2);
-	header.sound_bank_3 = copy_segment(_file_header.sound_bank_3);
-	header.sound_bank_4 = copy_segment(_file_header.sound_bank_4);
+	header.unknown_28 = copy_lump(_file_header.unknown_28);
+	header.unknown_30 = copy_lump(_file_header.unknown_30);
+	header.unknown_38 = copy_lump(_file_header.unknown_38);
+	header.unknown_40 = copy_lump(_file_header.unknown_40);
+	header.sound_bank_2 = copy_lump(_file_header.sound_bank_2);
+	header.sound_bank_3 = copy_lump(_file_header.sound_bank_3);
+	header.sound_bank_4 = copy_lump(_file_header.sound_bank_4);
 }
 
 stream* level::moby_stream() {
