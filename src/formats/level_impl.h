@@ -87,8 +87,6 @@ public:
 	
 	void read(stream* iso, toc_level index);
 	
-	void write_back();
-	
 	static level_file_header read_file_header(stream* src, std::size_t offset);
 	
 	world_segment world;
@@ -135,6 +133,7 @@ private:
 	void read_loading_screen_textures(stream* file);
 	
 public:
+	void write_back(stream* iso);
 	void write(array_stream& dest);
 
 	stream* moby_stream();

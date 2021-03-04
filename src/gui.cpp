@@ -290,9 +290,12 @@ float gui::render_menu_bar(app& a) {
 		if(ImGui::MenuItem("Run")) {
 			if(auto project = a.get_project()) {
 				if(auto lvl = a.get_level()) {
-					lvl->write_back();
+					// Write out the level and ToC header.
+					lvl->write_back(&project->iso);
 				}
-				project->iso.commit(); // Recompress WAD segments.
+				
+				// Recompress WAD segments still using the old patching system.
+				project->iso.commit();
 				
 				if(fs::is_regular_file(config::get().emulator_path)) {
 					std::string emulator_path = fs::canonical(config::get().emulator_path).string();

@@ -82,10 +82,6 @@ void level::read(stream* iso, toc_level index) {
 	read_loading_screen_textures(iso);
 }
 
-void level::write_back() {
-	world.write_rac23();
-}
-
 level_file_header level::read_file_header(stream* src, std::size_t offset) {
 	level_file_header result { (level_type) 0 };
 	src->seek(offset);
@@ -253,6 +249,30 @@ void level::read_loading_screen_textures(stream* file) {
 	//}
 }
 
+void level::write_back(stream* iso) {
+	// Build the level.
+	array_stream lvl;
+	write(lvl);
+	
+	// Write the level to the ISO.
+	_file->seek(0);
+	_file->write_n(lvl.buffer.data(), lvl.buffer.size());
+	
+	// Copy the header into the table of contents.
+	uint32_t base_offset = iso->read<uint32_t>(_index.main_part.bytes() + 0x4);
+	assert(lvl.size() >= SECTOR_SIZE);
+	iso->seek(_index.main_part.bytes());
+	iso->write_n(lvl.buffer.data(), SECTOR_SIZE); // Assume the header is a single sector.
+	iso->write<uint32_t>(_index.main_part.bytes() + 0x4, base_offset);
+	
+	// Write the file size into the level table.
+	size_t size = lvl.size();
+	if(size % SECTOR_SIZE != 0) {
+		size += SECTOR_SIZE - (size % SECTOR_SIZE);
+	}
+	iso->write<uint32_t>(_index.main_part_size_offset, size / SECTOR_SIZE);
+}
+
 void level::write(array_stream& dest) {
 	level_file_header header;
 	defer([&]() {
@@ -279,24 +299,32 @@ void level::write(array_stream& dest) {
 		}
 	});
 	dest.seek(SECTOR_SIZE); // Leave some space for the header.
+
+	auto bytes_to_range = [&](size_t begin, size_t end) {
+		assert(begin % SECTOR_SIZE == 0);
+		if(end % SECTOR_SIZE != 0) {
+			end += SECTOR_SIZE - (end % SECTOR_SIZE);
+		}
+		sector_range result {
+			(uint32_t) (begin / SECTOR_SIZE),
+			(uint32_t) ((end - begin) / SECTOR_SIZE)
+		};
+		// If this ever asserts then hello from the distant past.
+		assert(result.offset.sectors == begin / SECTOR_SIZE);
+		assert(result.size.sectors == (end - begin) / SECTOR_SIZE);
+		return result;
+	};
 	
 	auto copy_segment = [&](sector_range range) {
 		if(range.size.sectors == 0) {
 			return sector_range {{0}, {0}};
 		}
+		dest.pad(SECTOR_SIZE, 0);
 		size_t begin_offset = dest.tell();
 		_file->seek(range.offset.bytes());
 		stream::copy_n(dest, *_file, range.size.bytes());
-		dest.pad(SECTOR_SIZE, 0);
 		size_t end_offset = dest.tell();
-		sector_range result {
-			(uint32_t) (begin_offset / SECTOR_SIZE),
-			(uint32_t) ((end_offset - begin_offset) / SECTOR_SIZE)
-		};
-		// If this ever asserts then hello from the distant past.
-		assert(result.offset.sectors == begin_offset / SECTOR_SIZE);
-		assert(result.size.sectors == (end_offset - begin_offset) / SECTOR_SIZE);
-		return result;
+		return bytes_to_range(begin_offset, end_offset);
 	};
 	
 	header.base_offset = sector32{0};
@@ -305,7 +333,15 @@ void level::write(array_stream& dest) {
 	
 	header.sound_bank_1 = copy_segment(_file_header.sound_bank_1);
 	header.primary_header = copy_segment(_file_header.primary_header);
-	header.world_segment = copy_segment(_file_header.world_segment);
+	
+	dest.pad(SECTOR_SIZE, 0);
+	size_t beginning_of_the_world = dest.tell();
+	array_stream world_dest;
+	world.write_rac23(world_dest);
+	compress_wad(dest, world_dest, config::get().compression_threads);
+	size_t end_of_the_world = dest.tell(); // mwuhuhuhu!
+	header.world_segment = bytes_to_range(beginning_of_the_world, end_of_the_world);
+	
 	header.unknown_28 = copy_segment(_file_header.unknown_28);
 	header.unknown_30 = copy_segment(_file_header.unknown_30);
 	header.unknown_38 = copy_segment(_file_header.unknown_38);

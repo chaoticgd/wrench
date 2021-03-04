@@ -57,10 +57,8 @@ void world_segment_test() {
 		array_stream before;
 		lvl->moby_stream()->seek(0);
 		stream::copy_n(before, *lvl->moby_stream(), lvl->moby_stream()->size());
-		lvl->write_back();
 		array_stream after;
-		lvl->moby_stream()->seek(0);
-		stream::copy_n(after, *lvl->moby_stream(), lvl->moby_stream()->size());
+		lvl->world.write_rac23(after);
 		
 		if(!array_stream::compare_contents(before, after)) {
 			sad++;
