@@ -66,7 +66,8 @@ table_of_contents read_toc(stream& iso, std::size_t toc_base) {
 			if(contains(TOC_MAIN_PART_MAGIC, magic)) {
 				level.main_part = headers[j];
 				level.main_part_size = sizes[j];
-				level.main_part_size_offset = toc_base + level_table_offset + (i * 4 * 6) + 4;
+				// Find where the file size is stored on disk so we can patch it later.
+				level.main_part_size_offset = toc_base + level_table_offset + (i * 4 * 6) + (j * 8) + 4;
 				has_main_part = true;
 			}
 			
