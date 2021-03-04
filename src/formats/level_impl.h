@@ -82,8 +82,10 @@ struct level_primary_header {
 
 class level {
 public:
-	level(iso_stream* iso, toc_level index);
+	level() {}
 	level(const level& rhs) = delete;
+	
+	void read(stream* iso, toc_level index);
 	
 	void write_back();
 	
@@ -129,8 +131,8 @@ private:
 	void read_textures(std::size_t asset_offset, level_asset_header asset_header);
 	void read_tfrags();
 	
-	void read_hud_banks(iso_stream* iso);
-	void read_loading_screen_textures(iso_stream* iso);
+	void read_hud_banks(stream* file);
+	void read_loading_screen_textures(stream* file);
 	
 public:
 	void write(array_stream& dest);
@@ -156,11 +158,9 @@ private:
 	toc_level _index;
 	level_file_header _file_header;
 	level_primary_header _primary_header;
-	proxy_stream _file;
-	
-	stream* _world_segment;
-	
-	stream* _asset_segment;
+	std::optional<proxy_stream> _file;
+	std::optional<simple_wad_stream> _world_segment;
+	std::optional<simple_wad_stream> _asset_segment;
 	
 	std::optional<trace_stream> _world_segment_tracepoint;
 	std::optional<trace_stream> _asset_segment_tracepoint;

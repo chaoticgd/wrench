@@ -24,6 +24,17 @@
 #include "fs_includes.h"
 #include "formats/wad.h"
 
+simple_wad_stream::simple_wad_stream(stream* backing, size_t offset)
+	: array_stream(backing) {
+	array_stream compressed;
+	uint32_t compressed_size = backing->peek<uint32_t>(offset + 0x3);
+	backing->seek(offset);
+	stream::copy_n(compressed, *backing, compressed_size);
+	decompress_wad(*this, compressed);
+}
+
+// All code below this point is obsolete and should be removed at some point.
+
 wad_stream::wad_stream(iso_stream* backing, std::size_t offset, std::vector<wad_patch> patches)
 	: stream(backing),
 	  _backing(backing),

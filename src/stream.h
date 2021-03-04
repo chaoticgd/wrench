@@ -319,6 +319,7 @@ private:
 class array_stream : public stream {
 public:
 	array_stream();
+	array_stream(stream* parent_);
 	
 	std::size_t size() const;
 	void seek(std::size_t offset);
@@ -359,13 +360,14 @@ public:
 	}
 
 	std::vector<char> buffer;
-	std::size_t pos;
+	std::size_t pos = 0;
 };
 
 // Point to a data segment within a larger stream. For example, you could create
 // a stream to allow for more convenient access a texture within a disk image.
 class proxy_stream : public stream {
 public:
+	proxy_stream() {}
 	proxy_stream(stream* parent_, std::size_t zero, std::size_t size);
 
 	std::size_t size() const;
