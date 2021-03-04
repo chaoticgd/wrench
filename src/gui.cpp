@@ -161,19 +161,22 @@ float gui::render_menu_bar(app& a) {
 			}
 			ImGui::EndMenu();
 		}
-		if(ImGui::MenuItem("Open")) {
-			auto dialog = a.emplace_window<file_dialog>
-				("Open Project (.wrench)", file_dialog::open, std::vector<std::string> { ".wrench" });
-			dialog->on_okay([&a](std::string path) {
-				a.open_project(path);
-			});
-		}
-		if(ImGui::MenuItem("Save")) {
-			save_in_place = true;
-		}
-		if(ImGui::MenuItem("Save As")) {
-			save_as_box.open();
-		}
+		// This let you open/save a list of binary patches using the old
+		// patching system. Since I'm phasing that out, I've disabled the
+		// options to open/save projects as this would just confuse users.
+		//if(ImGui::MenuItem("Open")) {
+		//	auto dialog = a.emplace_window<file_dialog>
+		//		("Open Project (.wrench)", file_dialog::open, std::vector<std::string> { ".wrench" });
+		//	dialog->on_okay([&a](std::string path) {
+		//		a.open_project(path);
+		//	});
+		//}
+		//if(ImGui::MenuItem("Save")) {
+		//	save_in_place = true;
+		//}
+		//if(ImGui::MenuItem("Save As")) {
+		//	save_as_box.open();
+		//}
 		if(ImGui::BeginMenu("Export")) {
 			if(level* lvl = a.get_level()) {
 				if(ImGui::MenuItem("Mobyseg (debug)")) {
