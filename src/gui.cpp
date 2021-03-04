@@ -144,14 +144,24 @@ void gui::begin_docking() {
 }
 
 float gui::render_menu_bar(app& a) {
-	ImGui::BeginMainMenuBar();
-	
 	bool save_in_place = false;
 	static prompt_box save_as_box("Save As", "Enter New Path");
 	
 	static alert_box export_complete_box("Export Complete");
 	export_complete_box.render();
 	
+	static prompt_box export_level_box("Export Level");
+	if(auto path = export_level_box.render()) {
+		if(level* lvl = a.get_level()) {
+			array_stream dest;
+			lvl->write(dest);
+			
+			file_stream file(*path, std::ios::out);
+			file.write_n(dest.buffer.data(), dest.buffer.size());
+		}
+	}
+	
+	ImGui::BeginMainMenuBar();
 	if(ImGui::BeginMenu("File")) {
 		if(ImGui::BeginMenu("New")) {
 			for(const game_iso& game : config::get().game_isos) {
@@ -179,6 +189,9 @@ float gui::render_menu_bar(app& a) {
 		//}
 		if(ImGui::BeginMenu("Export")) {
 			if(level* lvl = a.get_level()) {
+				if(ImGui::MenuItem("Level WAD")) {
+					export_level_box.open();
+				}
 				if(ImGui::MenuItem("Mobyseg (debug)")) {
 					file_stream dump_file("mobyseg.bin", std::ios::out | std::ios::trunc);
 					stream* src = lvl->moby_stream();
