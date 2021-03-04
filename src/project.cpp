@@ -182,7 +182,9 @@ void wrench_project::open_level(std::size_t index) {
 	if(_levels.find(index) == _levels.end()) {
 		// The level is not already open.
 		auto lvl = std::make_unique<level>();
-		lvl->read(&iso, toc.levels[index]);
+		toc_level& header = toc.levels[index];
+		sector32 base_offset = iso.read<sector32>(header.main_part.bytes() + 4);
+		lvl->read(&iso, header, header.main_part.bytes(), base_offset, base_offset, header.main_part_size.bytes());
 		_levels.emplace(index, std::move(lvl));
 	}
 	_selected_level = _levels.at(index).get();

@@ -21,40 +21,70 @@
 
 #include "../app.h"
 
-void level::read(stream* iso, toc_level index) {
-	_index = index;
-	_file_header = read_file_header(iso, index.main_part.bytes());
+// TODO: Replace this with something neater.
+void level::reset() {
+	index = {};
+	world = {};
+	moby_class_to_model.clear();
+	moby_models.clear();
+	mipmap_textures.clear();
+	terrain_textures.clear();
+	moby_textures.clear();
+	tie_textures.clear();
+	shrub_textures.clear();
+	sprite_textures.clear();
+	tfrags.clear();
+	code_segment = {};
+	loading_screen_textures.clear();
+	file_header = {};
+	_primary_header = {};
+	_file = std::nullopt;
+	_world_segment = std::nullopt;
+	_asset_segment = std::nullopt;
+}
+
+void level::read(
+		stream* src,
+		toc_level index_,
+		size_t header_offset,
+		sector32 base_offset,
+		sector32 effective_base_offset,
+		size_t size_in_bytes) {
+	index = index_;
+	index.main_part_size = sector32::size_from_bytes(size_in_bytes);
+	file_header = read_file_header(src, header_offset);
+	file_header.base_offset = base_offset;
 	
-	_file.emplace(iso);
+	_file.emplace(src);
 	_file->buffer.resize(index.main_part_size.bytes());
-	iso->seek(_file_header.base_offset.bytes());
-	iso->read_n(_file->buffer.data(), _file->buffer.size());
+	src->seek(effective_base_offset.bytes());
+	src->read_n(_file->buffer.data(), _file->buffer.size());
 	_file->name = "LEVEL" + std::to_string(index.level_table_index) + ".WAD";
 
-	switch(_file_header.type) {
+	switch(file_header.type) {
 		case level_type::RAC23:
 		case level_type::RAC2_68: {
-			auto header = _file->read<level_primary_header_rac23>(_file_header.primary_header.offset.bytes());
+			auto header = _file->read<level_primary_header_rac23>(file_header.primary_header.offset.bytes());
 			swap_primary_header_rac23(_primary_header, header);
 			break;
 		}
 		case level_type::RAC4: {
-			auto header = _file->read<level_primary_header_rac4>(_file_header.primary_header.offset.bytes());
+			auto header = _file->read<level_primary_header_rac4>(file_header.primary_header.offset.bytes());
 			swap_primary_header_rac4(_primary_header, header);
 			break;
 		}
 	}
 
 	code_segment.header = _file->read<level_code_segment_header>
-		(_file_header.primary_header.offset.bytes() + _primary_header.code_segment.offset);
+		(file_header.primary_header.offset.bytes() + _primary_header.code_segment.offset);
 	code_segment.bytes.resize(_primary_header.code_segment.size - sizeof(level_code_segment_header));
 	_file->read_v(code_segment.bytes);
 
-	_world_segment.emplace(&(*_file), _file_header.world_segment.offset.bytes());
+	_world_segment.emplace(&(*_file), file_header.world_segment.offset.bytes());
 	_world_segment->name = "World Segment";
 	
 	world.backing = &(*_world_segment);
-	switch(_file_header.type) {
+	switch(file_header.type) {
 		case level_type::RAC23:
 		case level_type::RAC2_68:
 			world.read_rac23();
@@ -65,12 +95,12 @@ void level::read(stream* iso, toc_level index) {
 	}
 	
 	size_t asset_wad_offset =
-		_file_header.primary_header.offset.bytes() +
+		file_header.primary_header.offset.bytes() +
 		_primary_header.asset_wad.offset;
 	_asset_segment.emplace(&(*_file), asset_wad_offset);
 	_asset_segment->name = "Asset Segment";
 	
-	uint32_t asset_offset = _file_header.primary_header.offset.bytes() + _primary_header.asset_header.offset;
+	uint32_t asset_offset = file_header.primary_header.offset.bytes() + _primary_header.asset_header.offset;
 	auto asset_header = _file->read<level_asset_header>(asset_offset);
 	
 	read_moby_models(asset_offset, asset_header);
@@ -78,12 +108,12 @@ void level::read(stream* iso, toc_level index) {
 	
 	read_tfrags();
 	
-	if(_file_header.type == level_type::RAC4) {
+	if(file_header.type == level_type::RAC4) {
 		return;
 	}
 	
-	read_hud_banks(iso);
-	read_loading_screen_textures(iso);
+	read_hud_banks(src);
+	read_loading_screen_textures(src);
 }
 
 level_file_header level::read_file_header(stream* src, std::size_t offset) {
@@ -166,7 +196,7 @@ void level::read_moby_models(std::size_t asset_offset, level_asset_header asset_
 void level::read_textures(std::size_t asset_offset, level_asset_header asset_header) {
 	_file->seek(asset_offset + asset_header.mipmap_offset);
 	std::size_t small_texture_base =
-		_file_header.primary_header.offset.bytes() + _primary_header.small_textures.offset;
+		file_header.primary_header.offset.bytes() + _primary_header.small_textures.offset;
 	std::size_t last_palette_offset = 0;
 	for(std::size_t i = 0; i < asset_header.mipmap_count; i++) {
 		auto entry = _file->read<level_mipmap_entry>();
@@ -259,29 +289,29 @@ void level::write_back(stream* iso) {
 	write(lvl);
 	
 	// Write the level to the ISO.
-	iso->seek(_file_header.base_offset.bytes());
+	iso->seek(file_header.base_offset.bytes());
 	iso->write_n(lvl.buffer.data(), lvl.buffer.size());
 	
 	// Copy the header into the table of contents.
-	uint32_t base_offset = iso->read<uint32_t>(_index.main_part.bytes() + 0x4);
+	uint32_t base_offset = iso->read<uint32_t>(index.main_part.bytes() + 0x4);
 	assert(lvl.size() >= SECTOR_SIZE);
-	iso->seek(_index.main_part.bytes());
+	iso->seek(index.main_part.bytes());
 	iso->write_n(lvl.buffer.data(), SECTOR_SIZE); // Assume the header is a single sector.
-	iso->write<uint32_t>(_index.main_part.bytes() + 0x4, base_offset);
+	iso->write<uint32_t>(index.main_part.bytes() + 0x4, base_offset);
 	
 	// Write the file size into the level table.
 	size_t size = lvl.size();
 	if(size % SECTOR_SIZE != 0) {
 		size += SECTOR_SIZE - (size % SECTOR_SIZE);
 	}
-	iso->write<uint32_t>(_index.main_part_size_offset, size / SECTOR_SIZE);
+	iso->write<uint32_t>(index.main_part_size_offset, size / SECTOR_SIZE);
 }
 
 void level::write(array_stream& dest) {
 	level_file_header header;
 	defer([&]() {
 		dest.seek(0);
-		switch(_file_header.type) {
+		switch(file_header.type) {
 			case level_type::RAC23: {
 				level_file_header_rac23 ondisc {0};
 				swap_level_file_header_rac23(header, ondisc);
@@ -332,11 +362,11 @@ void level::write(array_stream& dest) {
 	};
 	
 	header.base_offset = sector32{0};
-	header.level_number = _file_header.level_number;
-	header.unknown_c = _file_header.unknown_c;
+	header.level_number = file_header.level_number;
+	header.unknown_c = file_header.unknown_c;
 	
-	header.sound_bank_1 = copy_lump(_file_header.sound_bank_1);
-	header.primary_header = copy_lump(_file_header.primary_header);
+	header.sound_bank_1 = copy_lump(file_header.sound_bank_1);
+	header.primary_header = copy_lump(file_header.primary_header);
 	
 	dest.pad(SECTOR_SIZE, 0);
 	size_t beginning_of_the_world = dest.tell();
@@ -346,13 +376,13 @@ void level::write(array_stream& dest) {
 	size_t end_of_the_world = dest.tell(); // mwuhuhuhu!
 	header.world_segment = bytes_to_range(beginning_of_the_world, end_of_the_world);
 	
-	header.unknown_28 = copy_lump(_file_header.unknown_28);
-	header.unknown_30 = copy_lump(_file_header.unknown_30);
-	header.unknown_38 = copy_lump(_file_header.unknown_38);
-	header.unknown_40 = copy_lump(_file_header.unknown_40);
-	header.sound_bank_2 = copy_lump(_file_header.sound_bank_2);
-	header.sound_bank_3 = copy_lump(_file_header.sound_bank_3);
-	header.sound_bank_4 = copy_lump(_file_header.sound_bank_4);
+	header.unknown_28 = copy_lump(file_header.unknown_28);
+	header.unknown_30 = copy_lump(file_header.unknown_30);
+	header.unknown_38 = copy_lump(file_header.unknown_38);
+	header.unknown_40 = copy_lump(file_header.unknown_40);
+	header.sound_bank_2 = copy_lump(file_header.sound_bank_2);
+	header.sound_bank_3 = copy_lump(file_header.sound_bank_3);
+	header.sound_bank_4 = copy_lump(file_header.sound_bank_4);
 }
 
 stream* level::moby_stream() {

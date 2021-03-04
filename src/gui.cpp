@@ -144,11 +144,22 @@ void gui::begin_docking() {
 }
 
 float gui::render_menu_bar(app& a) {
-	bool save_in_place = false;
-	static prompt_box save_as_box("Save As", "Enter New Path");
+	//bool save_in_place = false;
+	//static prompt_box save_as_box("Save As", "Enter New Path");
 	
-	static alert_box export_complete_box("Export Complete");
-	export_complete_box.render();
+	static alert_box message_box("Information");
+	message_box.render();
+	
+	static prompt_box import_level_box("Import Level");
+	if(auto path = import_level_box.render()) {
+		if(level* lvl = a.get_level()) {
+			file_stream file(*path);
+			toc_level index = lvl->index;
+			sector32 base_offset = lvl->file_header.base_offset;
+			lvl->reset();
+			lvl->read(&file, index, 0, base_offset, sector32{0}, file.size());
+		}
+	}
 	
 	static prompt_box export_level_box("Export Level");
 	if(auto path = export_level_box.render()) {
@@ -187,6 +198,14 @@ float gui::render_menu_bar(app& a) {
 		//if(ImGui::MenuItem("Save As")) {
 		//	save_as_box.open();
 		//}
+		if(ImGui::BeginMenu("Import")) {
+			if(level* lvl = a.get_level()) {
+				if(ImGui::MenuItem("Level WAD")) {
+					import_level_box.open();
+				}
+			}
+			ImGui::EndMenu();
+		}
 		if(ImGui::BeginMenu("Export")) {
 			if(level* lvl = a.get_level()) {
 				if(ImGui::MenuItem("Level WAD")) {
@@ -219,7 +238,7 @@ float gui::render_menu_bar(app& a) {
 					message << "Unknown (0x4): " << std::hex << lvl->code_segment.header.unknown_4 << "\n";
 					message << "Unknown (0x8): " << std::hex << lvl->code_segment.header.unknown_8 << "\n";
 					message << "Entry point: " << std::hex << lvl->code_segment.header.entry_offset << "\n";
-					export_complete_box.open(message.str());
+					message_box.open(message.str());
 				}
 			}
 			ImGui::EndMenu();
@@ -229,24 +248,24 @@ float gui::render_menu_bar(app& a) {
 	
 	static alert_box save_error_box("Error Saving Project");
 	
-	if(auto project = a.get_project()) {
-		auto save_as_new_path = save_as_box.render();
-		if(save_as_new_path) {
-			project->set_project_path(*save_as_new_path);
-		}
-		if(save_as_new_path || save_in_place) {
-			try {
-				project->save();
-				auto window_title = std::string("Wrench Editor - [") + project->project_path() + "]";
-				glfwSetWindowTitle(a.glfw_window, window_title.c_str());
-			} catch(stream_error& err) {
-				std::stringstream error_message;
-				error_message << err.what() << "\n";
-				error_message << err.stack_trace;
-				save_error_box.open(error_message.str());
-			}
-		}
-	}
+	//if(auto project = a.get_project()) {
+	//	auto save_as_new_path = save_as_box.render();
+	//	if(save_as_new_path) {
+	//		project->set_project_path(*save_as_new_path);
+	//	}
+	//	if(save_as_new_path || save_in_place) {
+	//		try {
+	//			project->save();
+	//			auto window_title = std::string("Wrench Editor - [") + project->project_path() + "]";
+	//			glfwSetWindowTitle(a.glfw_window, window_title.c_str());
+	//		} catch(stream_error& err) {
+	//			std::stringstream error_message;
+	//			error_message << err.what() << "\n";
+	//			error_message << err.stack_trace;
+	//			save_error_box.open(error_message.str());
+	//		}
+	//	}
+	//}
 	
 	static alert_box undo_error_box("Undo Error");
 	static alert_box redo_error_box("Redo Error");

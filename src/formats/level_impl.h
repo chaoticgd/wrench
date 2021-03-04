@@ -84,11 +84,20 @@ class level {
 public:
 	level() {}
 	level(const level& rhs) = delete;
+	void reset();
 	
-	void read(stream* iso, toc_level index);
+	void read(
+			stream* src,
+			toc_level index_,
+			size_t header_offset,
+			sector32 base_offset, // Where to put the level in the ISO.
+			sector32 effective_base_offset, // Where to actually load the level from the input file.
+			size_t size_in_bytes);
 	
 	static level_file_header read_file_header(stream* src, std::size_t offset);
 	
+	toc_level index;
+	level_file_header file_header;
 	world_segment world;
 	
 	template <typename T, typename F>
@@ -154,8 +163,6 @@ public:
 	std::vector<texture> loading_screen_textures;
 	
 private:
-	toc_level _index;
-	level_file_header _file_header;
 	level_primary_header _primary_header;
 	std::optional<array_stream> _file;
 	std::optional<simple_wad_stream> _world_segment;

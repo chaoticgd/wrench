@@ -85,6 +85,13 @@ packed_struct(sector32,
 	std::size_t bytes() const {
 		return sectors * SECTOR_SIZE;
 	}
+	
+	static sector32 size_from_bytes(size_t size_in_bytes) {
+		if(size_in_bytes % SECTOR_SIZE != 0) {
+			size_in_bytes += SECTOR_SIZE - (size_in_bytes % SECTOR_SIZE);
+		}
+		return sector32{size_in_bytes / SECTOR_SIZE};
+	}
 )
 
 struct stream_error : public std::runtime_error {
