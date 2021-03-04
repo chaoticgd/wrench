@@ -153,22 +153,30 @@ float gui::render_menu_bar(app& a) {
 	static prompt_box import_level_box("Import Level");
 	if(auto path = import_level_box.render()) {
 		if(level* lvl = a.get_level()) {
-			file_stream file(*path);
-			toc_level index = lvl->index;
-			sector32 base_offset = lvl->file_header.base_offset;
-			lvl->reset();
-			lvl->read(&file, index, 0, base_offset, sector32{0}, file.size());
+			try {
+				file_stream file(*path);
+				toc_level index = lvl->index;
+				sector32 base_offset = lvl->file_header.base_offset;
+				lvl->reset();
+				lvl->read(&file, index, 0, base_offset, sector32{0}, file.size());
+			} catch(stream_error&) {
+				message_box.open("Import failed!");
+			}
 		}
 	}
 	
 	static prompt_box export_level_box("Export Level");
 	if(auto path = export_level_box.render()) {
 		if(level* lvl = a.get_level()) {
-			array_stream dest;
-			lvl->write(dest);
-			
-			file_stream file(*path, std::ios::out);
-			file.write_n(dest.buffer.data(), dest.buffer.size());
+			try {
+				array_stream dest;
+				lvl->write(dest);
+				
+				file_stream file(*path, std::ios::out);
+				file.write_n(dest.buffer.data(), dest.buffer.size());
+			} catch(stream_error&) {
+				message_box.open("Export failed!");
+			}
 		}
 	}
 	
