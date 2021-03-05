@@ -108,6 +108,8 @@ private:
 	std::size_t _history_index;
 	std::vector<undo_redo_command> _history_stack;
 	
+	std::map<std::string, std::pair<size_t, size_t>> _root_directory;
+	
 	std::map<std::size_t, std::unique_ptr<racpak>> _archives;
 	std::map<std::size_t, std::vector<texture>> _texture_wads;
 	std::map<std::size_t, std::unique_ptr<level>> _levels;

@@ -25,6 +25,7 @@
 #include "gui.h"
 #include "config.h"
 #include "fs_includes.h"
+#include "formats/iso_filesystem.h"
 #include "formats/texture_archive.h"
 
 // This is true for R&C2 and R&C3.
@@ -41,6 +42,9 @@ wrench_project::wrench_project(
 	  _id(_next_id++),
 	  iso(game.md5, game.path, log),
 	  toc(read_toc(iso, TOC_BASE)) {
+	if(!read_iso_filesystem(_root_directory, iso._iso)) {
+		throw stream_format_error("Invalid or missing ISO filesystem!");
+	}
 	load_tables();
 }
 
