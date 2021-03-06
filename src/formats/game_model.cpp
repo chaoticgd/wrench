@@ -38,7 +38,7 @@ moby_model::moby_model(
 
 void moby_model::read() {
 	std::size_t submodel_count;
-	std::size_t submodel_table_offset;
+	std::size_t submodel_table_offset = 0;
 	switch(_type) {
 		case moby_model_header_type::LEVEL: {
 			auto header = _backing.read<moby_model_level_header>(0);

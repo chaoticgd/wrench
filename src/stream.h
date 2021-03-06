@@ -24,6 +24,7 @@
 #include <cstring>
 #include <fstream>
 #include <sstream>
+#include <assert.h>
 #include <iostream>
 #include <stddef.h>
 #include <optional>
@@ -90,7 +91,10 @@ packed_struct(sector32,
 		if(size_in_bytes % SECTOR_SIZE != 0) {
 			size_in_bytes += SECTOR_SIZE - (size_in_bytes % SECTOR_SIZE);
 		}
-		return sector32{size_in_bytes / SECTOR_SIZE};
+		uint32_t size_in_sectors = (uint32_t) (size_in_bytes / SECTOR_SIZE);
+		// If this ever asserts then hello from the distant past.
+		assert(size_in_sectors == size_in_bytes / SECTOR_SIZE);
+		return { size_in_sectors };
 	}
 )
 
