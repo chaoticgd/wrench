@@ -123,7 +123,7 @@ private:
 	proxy_stream _backing;
 
 	uint8_t _final_vertex_count;
-	uint32_t _base_offset;
+	size_t _base_offset;
 
 	std::vector<vec3f> _tfrag_points;
 	std::vector<vif_packet> _vif_list;

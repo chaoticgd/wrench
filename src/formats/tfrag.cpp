@@ -32,11 +32,6 @@ tfrag::tfrag(stream *backing, std::size_t base_offset, tfrag_entry & entry)
 		_tfrag_points[i].z = vertex.z;
 	}
 
-	if (_base_offset == 0x12fc0)
-	{
-		printf("a");
-	}
-
 	_vif_list = parse_vif_chain(
 		&_backing, 0, entry.color_offset / 0x10);
 
@@ -63,7 +58,7 @@ tfrag::tfrag(stream *backing, std::size_t base_offset, tfrag_entry & entry)
 	// but its possible that its based on the vu program
 	// or perhaps another value in the tfrag
 	// this just builds the triangles by connecting each vertex to its previous vertex and the first vertex
-	for (int i = 2; i < interpreted_vif_list.indices.size(); ++i)
+	for (size_t i = 2; i < interpreted_vif_list.indices.size(); ++i)
 	{
 		// The indices map to the st_data array where the actual vertex id is held
 		// The st_data object also contains the st/uv whatever values for the vertex

@@ -103,7 +103,7 @@ uint32_t vif_code::encode_unpack() {
 		throw std::runtime_error("vif_code::encode_unpack called on a VIF code where cmd != UNPACK.");
 	}
 	
-	uint32_t value;
+	uint32_t value = 0;
 	value |= (interrupt & 0b1) << 31;
 	value |= (((uint32_t) cmd) & 0b11111111) << 24;
 	value |= (num & 0b11111111) << 16;

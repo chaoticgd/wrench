@@ -126,7 +126,6 @@ namespace gui {
 		glm::vec2 get_drag_delta() const;
 		
 		static void render_submodel_list(moby_model& model);
-		static void render_st_coords(moby_model& model, const shader_programs& shaders);
 		static void render_dma_debug_info(moby_model& mdl);
 	
 	private:
