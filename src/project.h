@@ -80,6 +80,7 @@ public:
 	void push_command(std::function<void()> apply, std::function<void()> undo);
 	void undo();
 	void redo();
+	void clear_undo_history();
 	
 	void open_level(std::size_t index);
 	
