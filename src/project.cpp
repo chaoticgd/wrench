@@ -178,6 +178,11 @@ void wrench_project::redo() {
 	_history_index++;
 }
 
+void wrench_project::clear_undo_history() {
+	_history_stack.clear();
+	_history_index = 0;
+}
+
 void wrench_project::open_level(std::size_t index) {
 	if(_levels.find(index) == _levels.end()) {
 		// The level is not already open.
