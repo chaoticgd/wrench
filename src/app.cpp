@@ -201,7 +201,11 @@ void config::read() {
 				game.path = toml::find<std::string>(game_path_value, "path");
 				game.game_db_entry = toml::find<std::string>(game_path_value, "game");
 				game.md5 = toml::find<std::string>(game_path_value, "md5");
-				game_isos.push_back(game);
+				// Earlier versions of wrench would generate corrupted MD5
+				// hashes that were too short.
+				if(game.md5.size() == 32) {
+					game_isos.push_back(game);
+				}
 			}
 		} catch(toml::syntax_error& err) {
 			fprintf(stderr, "Failed to parse settings: %s", err.what());
