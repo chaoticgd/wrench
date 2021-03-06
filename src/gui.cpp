@@ -160,6 +160,7 @@ float gui::render_menu_bar(app& a) {
 				level new_lvl;
 				new_lvl.read(&file, index, 0, base_offset, sector32{0}, file.size());
 				*old_lvl = std::move(new_lvl);
+				a.get_project()->clear_undo_history();
 			} catch(stream_error&) {
 				message_box.open("Import failed!");
 			}
