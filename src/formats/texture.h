@@ -27,10 +27,6 @@
 #include "../stream.h"
 #include "../gl_includes.h"
 
-# /*
-#	Stream-backed indexed texture.
-# */
-
 struct colour {
 	uint8_t r, g, b, a;
 };
@@ -47,48 +43,22 @@ struct vec2i {
 	}
 };
 
-class texture {
-public:
-	texture(
-		stream* pixel_backing,
-		std::size_t pixel_data_offset,
-		stream* palette_backing,
-		std::size_t palette_offset,
-		vec2i size);
-	texture(const texture&) = delete;
-	texture(texture&&) = default;
-
-	vec2i size() const;
-
-	std::array<colour, 256> palette() const;
-	void set_palette(std::array<colour, 256> palette_);
-
-	std::vector<uint8_t> pixel_data() const;
-	void set_pixel_data(std::vector<uint8_t> pixel_data_);
-
-	std::string palette_path() const;
-	std::string pixel_data_path() const;
+struct texture {
+	vec2i size;
+	std::vector<uint8_t> pixels;
+	colour palette[256];
+	std::string name;
 	
 #ifdef WRENCH_EDITOR
 	void upload_to_opengl();
-	GLuint opengl_id() const;
+	gl_texture opengl_texture;
 #else
 	// Dummy to get the randomiser linking.
 	void upload_to_opengl() {}
 #endif
-	
-	std::string name;
-	
-private:
-	stream* _pixel_backing;
-	std::size_t _pixel_data_offset;
-	stream* _palette_backing;
-	std::size_t _palette_offset;
-	vec2i _size;
-#ifdef WRENCH_EDITOR
-	gl_texture _opengl_texture;
-#endif
 };
+
+texture create_texture_from_streams(vec2i size, stream* pixel_src, size_t pixel_offset, stream* palette_src, size_t palette_offset);
 
 // Won't affect the position indicator of backing.
 std::optional<texture> create_fip_texture(stream* backing, std::size_t offset);

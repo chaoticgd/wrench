@@ -21,28 +21,6 @@
 
 #include "../app.h"
 
-// TODO: Replace this with something neater.
-void level::reset() {
-	index = {};
-	world = {};
-	moby_class_to_model.clear();
-	moby_models.clear();
-	mipmap_textures.clear();
-	terrain_textures.clear();
-	moby_textures.clear();
-	tie_textures.clear();
-	shrub_textures.clear();
-	sprite_textures.clear();
-	tfrags.clear();
-	code_segment = {};
-	loading_screen_textures.clear();
-	file_header = {};
-	_primary_header = {};
-	_file = std::nullopt;
-	_world_segment = std::nullopt;
-	_asset_segment = std::nullopt;
-}
-
 void level::read(
 		stream* src,
 		toc_level index_,
@@ -194,28 +172,35 @@ void level::read_moby_models(std::size_t asset_offset, level_asset_header asset_
 }
 
 void level::read_textures(std::size_t asset_offset, level_asset_header asset_header) {
-	_file->seek(asset_offset + asset_header.mipmap_offset);
 	std::size_t small_texture_base =
 		file_header.primary_header.offset.bytes() + _primary_header.small_textures.offset;
 	std::size_t last_palette_offset = 0;
-	for(std::size_t i = 0; i < asset_header.mipmap_count; i++) {
-		auto entry = _file->read<level_mipmap_entry>();
-		auto abs_offset = small_texture_base + entry.offset_1;
-		if(entry.width == 0) {
+	
+	std::vector<level_mipmap_descriptor> mipmap_descriptors(asset_header.mipmap_count);
+	_file->seek(asset_offset + asset_header.mipmap_offset);
+	_file->read_v(mipmap_descriptors);
+	for(level_mipmap_descriptor& descriptor : mipmap_descriptors) {
+		auto abs_offset = small_texture_base + descriptor.offset_1;
+		if(descriptor.width == 0) {
 			last_palette_offset = abs_offset;
 			continue;
 		}
-		mipmap_textures.emplace_back(&(*_file), abs_offset, &(*_file), last_palette_offset, vec2i { entry.width, entry.height });
+		vec2i size { descriptor.width, descriptor.height };
+		texture tex = create_texture_from_streams(size, &(*_file), abs_offset, &(*_file), last_palette_offset);
+		mipmap_textures.emplace_back(std::move(tex));
 	}
 	
 	auto load_texture_table = [&](stream& backing, std::size_t offset, std::size_t count) {
 		std::vector<texture> textures;
+		std::vector<level_texture_descriptor> texture_descriptors(count);
 		backing.seek(asset_offset + offset);
-		for(std::size_t i = 0; i < count; i++) {
-			auto entry = backing.read<level_texture_entry>();
-			auto ptr = asset_header.tex_data_in_asset_wad + entry.ptr;
-			auto palette = small_texture_base + entry.palette * 0x100;
-			textures.emplace_back(&(*_asset_segment), ptr, &(*_file), palette, vec2i { entry.width, entry.height });
+		backing.read_v(texture_descriptors);
+		for(level_texture_descriptor& descriptor : texture_descriptors) {
+			vec2i size { descriptor.width, descriptor.height };
+			auto ptr = asset_header.tex_data_in_asset_wad + descriptor.ptr;
+			auto palette = small_texture_base + descriptor.palette * 0x100;
+			texture tex = create_texture_from_streams(size, &(*_asset_segment), ptr, &(*_file), palette);
+			textures.emplace_back(std::move(tex));
 		}
 		return textures;
 	};
