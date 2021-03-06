@@ -421,12 +421,12 @@ void gl_renderer::draw_moby_models(
 				case view_mode::TEXTURED_POLYGONS: {
 					if(model.texture_indices.size() > (std::size_t) texture_data.texture_index) {
 						texture& tex = textures.at(model.texture_indices.at(texture_data.texture_index));
-						if(tex.opengl_id() == 0) {
+						if(tex.opengl_texture.id == 0) {
 							tex.upload_to_opengl();
 						}
 						
 						glActiveTexture(GL_TEXTURE0);
-						glBindTexture(GL_TEXTURE_2D, tex.opengl_id());
+						glBindTexture(GL_TEXTURE_2D, tex.opengl_texture.id);
 					} else {
 						// TODO: Actually fix this so model textures get read in
 						// correctly. This warning was commented out because it

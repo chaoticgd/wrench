@@ -195,7 +195,7 @@ packed_struct(level_moby_model_entry,
 	uint8_t textures[16];
 )
 
-packed_struct(level_mipmap_entry,
+packed_struct(level_mipmap_descriptor,
 	uint32_t unknown_0; // Type?
 	uint16_t width;
 	uint16_t height;
@@ -203,7 +203,7 @@ packed_struct(level_mipmap_entry,
 	uint32_t offset_2; // Duplicate of offset_1?
 )
 
-packed_struct(level_texture_entry,
+packed_struct(level_texture_descriptor,
 	uint32_t ptr;
 	uint16_t width;
 	uint16_t height;

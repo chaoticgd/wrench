@@ -142,12 +142,5 @@ void bmp_to_fip(stream& dest, stream& src) {
 uint8_t decode_palette_index(uint8_t index) {
 	// Swap middle two bits
 	//  e.g. 00010000 becomes 00001000.
-	int a = index & 8;
-	int b = index & 16;
-	if(a && !b) {
-		index += 8;
-	} else if(!a && b) {
-		index -= 8;
-	}
-	return index;
+	return (((index & 16) >> 1) != (index & 8)) ? (index ^ 0b00011000) : index;
 }
