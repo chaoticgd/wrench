@@ -215,7 +215,7 @@ float gui::render_menu_bar(app& a) {
 			if(!a.get_project()) {
 				ImGui::Text("You must create a new project (File->New) before importing a level.");
 			}
-			else if(level* lvl = a.get_level()) {
+			else if(a.get_level()) {
 				if(ImGui::MenuItem("Level WAD")) {
 					import_level_box.open();
 				}
@@ -1036,7 +1036,7 @@ void gui::texture_browser::render_grid(app& a, std::vector<texture>& tex_list) {
 	for(std::size_t i = 0; i < tex_list.size(); i++) {
 		texture* tex = &tex_list[i];
 
-		if(tex->size.x < _filters.min_width) {
+		if(tex->size.x < (size_t ) _filters.min_width) {
 			continue;
 		}
 
@@ -1130,7 +1130,6 @@ void gui::model_browser::render(app& a) {
 		ImGui::Image((void*) (intptr_t) preview_texture, preview_size);
 		static bool is_dragging = false;
 		bool image_hovered = ImGui::IsItemHovered();
-		glm::vec2 pitch_yaw = _view_params.pitch_yaw;
 		if(ImGui::IsMouseDragging(ImGuiMouseButton_Left) && (image_hovered || is_dragging)) {
 			drag_delta = get_drag_delta();
 			is_dragging = true;
@@ -1200,12 +1199,6 @@ void gui::model_browser::render(app& a) {
 		if(ImGui::BeginTabItem("Submodels")) {
 			ImGui::BeginChild("submodels");
 			render_submodel_list(*model);
-			ImGui::EndChild();
-			ImGui::EndTabItem();
-		}
-		if(ImGui::BeginTabItem("ST Coords")) {
-			ImGui::BeginChild("stcoords");
-			render_st_coords(*model, a.renderer.shaders);
 			ImGui::EndChild();
 			ImGui::EndTabItem();
 		}
@@ -1444,82 +1437,6 @@ void gui::model_browser::render_submodel_list(moby_model& model) {
 		
 		ImGui::PopID();
 	}
-}
-
-void gui::model_browser::render_st_coords(moby_model& model, const shader_programs& shaders) {
-	if(model.submodels.size() < 1) {
-		return;
-	}
-	
-	std::set<int32_t> texture_indices;
-	//for(moby_submodel& submodel : model.submodels) {
-	//	if(submodel.texture) {
-	//		texture_indices.insert(submodel.texture->texture_index);
-	//	}
-	//}
-	
-	static int32_t texture_index = 0;
-	if(ImGui::BeginTabBar("tabs")) {
-		for(int32_t index : texture_indices) {
-			std::string tab_name = std::to_string(index);
-			if(ImGui::BeginTabItem(tab_name.c_str())) {
-				texture_index = index;
-				ImGui::EndTabItem();
-			}
-		}
-		ImGui::EndTabBar();
-	}
-	
-	static GLuint texture = 0;
-	static const ImVec2 size(256, 256);
-	
-	int32_t current_texture_index = 0;
-	render_to_texture(&texture, size.x, size.y, [&]() {
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		glUseProgram(shaders.solid_colour.id());
-		
-		for(std::size_t i = 0; i < model.submodels.size(); i++) {
-			//moby_submodel& submodel = model.submodels[i];
-			//
-			//if(submodel.texture) {
-			//	current_texture_index = submodel.texture->texture_index;
-			//}
-			//
-			//if(!submodel.visible_in_model_viewer || current_texture_index != texture_index) {
-			//	continue;
-			//}
-			//
-			//if(submodel.st_buffer == 0) {
-			//	std::vector<float> st_data;
-			//	for(const moby_model_st& st : submodel.st_data) {
-			//		st_data.push_back((st.s / (float) INT16_MAX) * 8.f);
-			//		st_data.push_back((st.t / (float) INT16_MAX) * 8.f);
-			//		st_data.push_back(0.f);
-			//	}
-			//	
-			//	glGenBuffers(1, &submodel.st_buffer());
-			//	glBindBuffer(GL_ARRAY_BUFFER, submodel.st_buffer());
-			//	glBufferData(GL_ARRAY_BUFFER,
-			//		st_data.size() * sizeof(float),
-			//		st_data.data(), GL_STATIC_DRAW);
-			//}
-			//
-			//glm::vec4 colour = colour_coded_submodel_index(i, model.submodels.size());
-			//static const glm::mat4 id(1.f);
-			//glUniformMatrix4fv(shaders.solid_colour_transform, 1, GL_FALSE, &id[0][0]);
-			//glUniform4f(shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
-			//
-			//glEnableVertexAttribArray(0);
-			//glBindBuffer(GL_ARRAY_BUFFER, submodel.st_buffer());
-			//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-			//
-			//glDrawArrays(GL_POINTS, 0, submodel.st_coords.size());
-			//
-			//glDisableVertexAttribArray(0);
-		}
-	});
-	
-	ImGui::Image((void*) (intptr_t) texture, size);
 }
 
 void gui::model_browser::render_dma_debug_info(moby_model& mdl) {
