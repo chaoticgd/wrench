@@ -152,13 +152,14 @@ float gui::render_menu_bar(app& a) {
 	
 	static prompt_box import_level_box("Import Level");
 	if(auto path = import_level_box.render()) {
-		if(level* lvl = a.get_level()) {
+		if(level* old_lvl = a.get_level()) {
 			try {
 				file_stream file(*path);
-				toc_level index = lvl->index;
-				sector32 base_offset = lvl->file_header.base_offset;
-				lvl->reset();
-				lvl->read(&file, index, 0, base_offset, sector32{0}, file.size());
+				toc_level index = old_lvl->index;
+				sector32 base_offset = old_lvl->file_header.base_offset;
+				level new_lvl;
+				new_lvl.read(&file, index, 0, base_offset, sector32{0}, file.size());
+				*old_lvl = std::move(new_lvl);
 			} catch(stream_error&) {
 				message_box.open("Import failed!");
 			}
@@ -969,7 +970,7 @@ void gui::texture_browser::render(app& a) {
 
 		if(ImGui::TreeNodeEx("Details", ImGuiTreeNodeFlags_DefaultOpen)) {
 			if(textures.size() > 0) {
-				vec2i size = textures[_selection].size();
+				vec2i size = textures[_selection].size;
 				ImGui::Text("Width:  %ld", size.x);
 				ImGui::Text("Height: %ld", size.y);
 			} else {
@@ -1007,7 +1008,7 @@ void gui::texture_browser::render(app& a) {
 							fs::create_directory(path);
 						}
 						for(texture& tex : textures) {
-							fs::path bmp_file_path = path / (tex.pixel_data_path() + ".bmp");
+							fs::path bmp_file_path = path / (tex.name + ".bmp");
 							file_stream bmp_file(bmp_file_path.string(), std::ios::in | std::ios::out | std::ios::trunc);
 							texture_to_bmp(bmp_file, &tex);
 						}
@@ -1034,11 +1035,11 @@ void gui::texture_browser::render_grid(app& a, std::vector<texture>& tex_list) {
 	for(std::size_t i = 0; i < tex_list.size(); i++) {
 		texture* tex = &tex_list[i];
 
-		if(tex->size().x < _filters.min_width) {
+		if(tex->size.x < _filters.min_width) {
 			continue;
 		}
 
-		if(tex->opengl_id() == 0) {
+		if(tex->opengl_texture.id == 0) {
 			// Only load 10 textures per frame.
 			if(num_this_frame >= 10) {
 				ImGui::NextColumn();
@@ -1050,7 +1051,7 @@ void gui::texture_browser::render_grid(app& a, std::vector<texture>& tex_list) {
 		}
 
 		bool clicked = ImGui::ImageButton(
-			(void*) (intptr_t) tex->opengl_id(),
+			(void*) (intptr_t) tex->opengl_texture.id,
 			ImVec2(128, 128),
 			ImVec2(0, 0),
 			ImVec2(1, 1),
@@ -1331,7 +1332,7 @@ void gui::model_browser::render_preview(
 
 	std::vector<GLuint> gl_textures;
 	for(texture& tex : textures) {
-		gl_textures.push_back(tex.opengl_id());
+		gl_textures.push_back(tex.opengl_texture.id);
 	}
 	
 	gl_buffer local_to_clip_buffer;

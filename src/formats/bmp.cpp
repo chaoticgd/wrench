@@ -27,7 +27,7 @@ bool validate_bmp(bmp_file_header header) {
 }
 
 void texture_to_bmp(stream& dest, texture* src) {
-	auto size = src->size();
+	auto size = src->size;
 
 	bmp_file_header header;
 	std::memcpy(header.magic, "BM", 2);
@@ -55,20 +55,18 @@ void texture_to_bmp(stream& dest, texture* src) {
 	info.num_important_colours = 0;
 	dest.write<bmp_info_header>(info);
 
-	auto palette = src->palette();
 	for(int i = 0; i < 256; i++) {
 		bmp_colour_table_entry pixel;
-		pixel.b = palette[i].b;
-		pixel.g = palette[i].g;
-		pixel.r = palette[i].r;
+		pixel.b = src->palette[i].b;
+		pixel.g = src->palette[i].g;
+		pixel.r = src->palette[i].r;
 		pixel.pad = 0;
 		dest.write<bmp_colour_table_entry>(pixel);
 	}
 
 	uint32_t row_size = ((info.bits_per_pixel * info.width + 31) / 32) * 4;
-	auto pixels = src->pixel_data();
 	for(int y = info.height - 1; y >= 0; y--) {
-		dest.write_n(reinterpret_cast<char*>(pixels.data()) + y * row_size, row_size);
+		dest.write_n(reinterpret_cast<char*>(src->pixels.data()) + y * row_size, row_size);
 	}
 }
 
@@ -95,29 +93,27 @@ void bmp_to_texture(texture* dest, stream& src) {
 		(std::size_t) std::abs(info_header.width),
 		(std::size_t) std::abs(info_header.height)
 	};
-	if(dest->size() != size) {
+	if(dest->size != size) {
 		throw stream_format_error("Texture size mismatch.");
 	}
 
 	// Some BMP files have a larger header.
 	src.seek(secondary_header_offset + info_header.info_header_size);
 	
-	std::array<colour, 256> palette;
 	uint32_t i;
 	for(i = 0; i < info_header.num_colours; i++) {
 		auto src_pixel = src.read<bmp_colour_table_entry>();
-		palette[i] = { src_pixel.r, src_pixel.g, src_pixel.b, 0x80 };
+		dest->palette[i] = { src_pixel.r, src_pixel.g, src_pixel.b, 0x80 };
 	}
 	for(; i < 256; i++) {
 		// Set unused palette entries to black.
-		palette[i] = { 0, 0, 0, 0x80 };
+		dest->palette[i] = { 0, 0, 0, 0x80 };
 	}
-	dest->set_palette(palette);
 
 	uint32_t row_size = ((info_header.bits_per_pixel * info_header.width + 31) / 32) * 4;
 	std::vector<uint8_t> pixels(info_header.width * info_header.height);
 	for(int y = info_header.height - 1; y >= 0; y--) {
 		src.read_n(reinterpret_cast<char*>(pixels.data()) + y * row_size, row_size);
 	}
-	dest->set_pixel_data(pixels);
+	dest->pixels = pixels;
 }

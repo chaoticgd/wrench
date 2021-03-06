@@ -84,7 +84,7 @@ class level {
 public:
 	level() {}
 	level(const level& rhs) = delete;
-	void reset();
+	level& operator=(level&& rhs) = default;
 	
 	void read(
 			stream* src,

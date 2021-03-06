@@ -118,6 +118,7 @@ public:
 	stream(stream* parent_);
 	stream(const stream& rhs) = delete;
 	stream(stream&& rhs);
+	stream& operator=(stream&& rhs);
 	virtual ~stream();
 	
 	stream* parent;
