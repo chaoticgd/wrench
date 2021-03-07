@@ -455,6 +455,7 @@ float gui::render_menu_bar(app& a) {
 				"Contributors:\n"
 				" - chaoticgd (original author)\n"
 				" - clip / stiantoften\n"
+				" - Dnawrkshp\n"
 				" - tsparkles / detolly\n"
 				"\n"
 				"Libraries used:\n"
