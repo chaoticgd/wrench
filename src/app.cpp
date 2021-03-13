@@ -63,46 +63,6 @@ void app::new_project(game_iso game) {
 	);
 }
 
-void app::open_project(std::string path) {
-	if(_lock_project) {
-		return;
-	}
-
-	_lock_project = true;
-	_project.reset(nullptr);
-
-	struct open_project_input {
-		std::vector<game_iso> game_isos;
-		std::string path;
-	};
-
-	auto in = open_project_input { config::get().game_isos, path };
-	emplace_window<worker_thread<project_ptr, open_project_input>>(
-		"Open Project", in,
-		[](auto in, worker_logger& log) {
-			try {
-				auto result = std::make_unique<wrench_project>(in.game_isos, in.path, log);
-				log << "\nProject opened successfully.";
-				return std::make_optional(std::move(result));
-			} catch(stream_error& err) {
-				log << err.what() << "\n";
-				log << err.stack_trace;
-			}
-			return std::optional<project_ptr>();
-		},
-		[&](project_ptr project) {
-			project->post_load();
-			_project.swap(project);
-			_lock_project = false;
-
-			renderer.reset_camera(this);
-			
-			auto title = std::string("Wrench Editor - [") + path + "]";
-			glfwSetWindowTitle(glfw_window, title.c_str());
-		}
-	);
-}
-
 wrench_project* app::get_project() {
 	return _project.get();
 }

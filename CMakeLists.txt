@@ -123,46 +123,6 @@ add_executable(vif
 	src/formats/vif.cpp
 )
 
-add_executable(randomiser
-	src/cli/randomisercli.cpp
-	# TODO: Clean up depdendency graph.
-	src/app.cpp
-	src/command_line.cpp
-	src/gui.cpp
-	src/view_3d.cpp
-	src/stream.cpp
-	src/stacktrace.cpp
-	src/window.cpp
-	src/renderer.cpp
-	src/shaders.cpp
-	src/worker_logger.cpp
-	src/project.cpp
-	src/iso_stream.cpp
-	src/model.cpp
-	src/util.cpp
-	src/game_db.cpp
-	src/tools.cpp
-	src/formats/wad.cpp
-	src/formats/racpak.cpp
-	src/formats/level_impl.cpp
-	src/formats/world.cpp
-	src/formats/texture.cpp
-	src/formats/fip.cpp
-	src/formats/bmp.cpp
-	src/formats/armor_archive.cpp
-	src/formats/game_model.cpp
-	src/formats/vif.cpp
-	src/formats/tfrag.cpp
-	src/formats/toc.cpp
-	src/formats/texture_archive.cpp
-	src/formats/model_utils.cpp
-	src/formats/iso_filesystem.cpp
-	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
-	src/imgui_impl_glfw.cpp
-	thirdparty/imgui/backends/imgui_impl_opengl3.cpp
-	src/md5.cpp
-)
-
 add_executable(toc
 	src/cli/toccli.cpp
 	src/stream.cpp
@@ -185,9 +145,8 @@ add_executable(memmap
 	src/cli/memmap.c
 )
 
-# This lets us avoid linking stuff for msot of the CLI tools.
+# This lets us avoid linking stuff for most of the CLI tools.
 target_compile_definitions(wrench PRIVATE WRENCH_EDITOR=1)
-target_compile_definitions(randomiser PRIVATE WRENCH_EDITOR=1)
 
 if(UNIX)
 	target_compile_options(wrench PRIVATE -Wall -O3)
@@ -196,7 +155,6 @@ if(UNIX)
 	target_compile_options(pakrac PRIVATE -Wall -O3)
 	target_compile_options(texturefinder PRIVATE -Wall -O3)
 	target_compile_options(vif PRIVATE -Wall -O3)
-	target_compile_options(randomiser PRIVATE -Wall -O3)
 	target_compile_options(toc PRIVATE -Wall -O3)
 	target_compile_options(matchtoc PRIVATE -Wall -O3)
 endif()
@@ -210,7 +168,6 @@ if(UNIX)
 	target_link_libraries(pakrac stdc++fs)
 	target_link_libraries(texturefinder stdc++fs)
 	target_link_libraries(vif stdc++fs)
-	target_link_libraries(randomiser stdc++fs)
 	target_link_libraries(matchtoc stdc++fs)
 endif()
 
@@ -223,7 +180,6 @@ target_link_libraries(scan cxxopts)
 target_link_libraries(pakrac cxxopts)
 target_link_libraries(texturefinder cxxopts)
 target_link_libraries(vif cxxopts)
-target_link_libraries(randomiser cxxopts)
 target_link_libraries(toc cxxopts)
 target_link_libraries(matchtoc cxxopts)
 
@@ -234,22 +190,18 @@ target_link_libraries(wrench Threads::Threads)
 target_link_libraries(scan Threads::Threads)
 target_link_libraries(pakrac Threads::Threads)
 target_link_libraries(wad Threads::Threads)
-target_link_libraries(randomiser Threads::Threads)
 
 # GLAD
 add_subdirectory(thirdparty/glad)
 target_link_libraries(wrench glad)
-target_link_libraries(randomiser glad)
 
 # GLFW
 add_subdirectory(thirdparty/glfw)
 target_link_libraries(wrench glfw)
-target_link_libraries(randomiser glfw)
 
 # GLM
 add_subdirectory(thirdparty/glm)
 target_link_libraries(wrench glm)
-target_link_libraries(randomiser glm)
 include_directories(thirdparty/glm)
 
 # Dear ImGui
@@ -268,16 +220,9 @@ add_library(imgui STATIC
 	thirdparty/imgui/imstb_truetype.h
 )
 target_link_libraries(wrench imgui)
-target_link_libraries(randomiser imgui)
 
 # JSON
 include_directories(thirdparty/json/single_include)
-
-# ZipLib
-include("cmake/ziplib.cmake")
-target_link_libraries(wrench ziplib)
-target_link_libraries(randomiser ziplib)
-include_directories(SYSTEM thirdparty/ziplib/Source) # Suppress warnings for ZipLib headers.
 
 # Source Map
 # if(UNIX)

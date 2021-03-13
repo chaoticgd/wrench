@@ -23,6 +23,6 @@
 #include "toc.h"
 #include "texture.h"
 
-std::vector<texture> enumerate_fip_textures(iso_stream& iso, const toc_table& table);
+std::vector<texture> enumerate_pif_textures(stream& iso, const toc_table& table);
 
 #endif

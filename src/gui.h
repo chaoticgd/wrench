@@ -151,18 +151,6 @@ namespace gui {
 		std::string _new_game_path;
 	};
 	
-	class manual_patcher : public window {
-	public:
-		manual_patcher();
-	
-		const char* title_text() const override;
-		ImVec2 initial_size() const override;
-		void render(app& a) override;
-	private:
-		std::string _scroll_offset_str;
-		std::size_t _scroll_offset;
-	};
-	
 	class document_viewer : public window {
 	public:
 		document_viewer(const char* path);

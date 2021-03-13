@@ -37,12 +37,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 int main(int argc, char** argv) {
 	cxxopts::Options options("wrench", "A level editor for the Ratchet & Clank games.");
 	options.add_options()
-		("p,project", "Open the specified project (.wrench) file.",
-			cxxopts::value<std::string>())
 		("t,run-tests", "Run automated tests.");
 
 	auto args = parse_command_line_args(argc, argv, options);
-	std::string project_path = cli_get_or(args, "project", "");
 
 	if(args.count("run-tests")) {
 		run_tests();
@@ -60,10 +57,6 @@ int main(int argc, char** argv) {
 	{
 		app a;
 		init_gl(a);
-
-		if(project_path != "") {
-			a.open_project((old_working_dir / project_path).string());
-		}
 		
 		a.tools = enumerate_tools();
 		a.game_db = gamedb_read();

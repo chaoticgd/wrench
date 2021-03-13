@@ -52,9 +52,6 @@ struct texture {
 #ifdef WRENCH_EDITOR
 	void upload_to_opengl();
 	gl_texture opengl_texture;
-#else
-	// Dummy to get the randomiser linking.
-	void upload_to_opengl() {}
 #endif
 };
 

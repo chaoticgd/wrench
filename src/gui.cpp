@@ -145,9 +145,6 @@ void gui::begin_docking() {
 }
 
 float gui::render_menu_bar(app& a) {
-	//bool save_in_place = false;
-	//static prompt_box save_as_box("Save As", "Enter New Path");
-	
 	static alert_box message_box("Information");
 	message_box.render();
 	
@@ -196,22 +193,6 @@ float gui::render_menu_bar(app& a) {
 			}
 			ImGui::EndMenu();
 		}
-		// This let you open/save a list of binary patches using the old
-		// patching system. Since I'm phasing that out, I've disabled the
-		// options to open/save projects as this would just confuse users.
-		//if(ImGui::MenuItem("Open")) {
-		//	auto dialog = a.emplace_window<file_dialog>
-		//		("Open Project (.wrench)", file_dialog::open, std::vector<std::string> { ".wrench" });
-		//	dialog->on_okay([&a](std::string path) {
-		//		a.open_project(path);
-		//	});
-		//}
-		//if(ImGui::MenuItem("Save")) {
-		//	save_in_place = true;
-		//}
-		//if(ImGui::MenuItem("Save As")) {
-		//	save_as_box.open();
-		//}
 		if(ImGui::BeginMenu("Import")) {
 			if(!a.get_project()) {
 				ImGui::Text("You must create a new project (File->New) before importing a level.");
@@ -269,25 +250,6 @@ float gui::render_menu_bar(app& a) {
 	}
 	
 	static alert_box save_error_box("Error Saving Project");
-	
-	//if(auto project = a.get_project()) {
-	//	auto save_as_new_path = save_as_box.render();
-	//	if(save_as_new_path) {
-	//		project->set_project_path(*save_as_new_path);
-	//	}
-	//	if(save_as_new_path || save_in_place) {
-	//		try {
-	//			project->save();
-	//			auto window_title = std::string("Wrench Editor - [") + project->project_path() + "]";
-	//			glfwSetWindowTitle(a.glfw_window, window_title.c_str());
-	//		} catch(stream_error& err) {
-	//			std::stringstream error_message;
-	//			error_message << err.what() << "\n";
-	//			error_message << err.stack_trace;
-	//			save_error_box.open(error_message.str());
-	//		}
-	//	}
-	//}
 	
 	static alert_box undo_error_box("Undo Error");
 	static alert_box redo_error_box("Redo Error");
@@ -418,7 +380,6 @@ float gui::render_menu_bar(app& a) {
 		render_menu_bar_window_toggle<document_viewer>(a, "index.md");
 		ImGui::Separator();
 		if(ImGui::BeginMenu("Debug Tools")) {
-			render_menu_bar_window_toggle<manual_patcher>(a);
 			render_menu_bar_window_toggle<stream_viewer>(a);
 			ImGui::EndMenu();
 		}
@@ -462,7 +423,6 @@ float gui::render_menu_bar(app& a) {
 				" - imgui_markdown: https://github.com/juliettef/imgui_markdown (zlib)\n"
 				" - nlohmann json: https://github.com/nlohmann/json (MIT)\n"
 				" - toml11: https://github.com/ToruNiina/toml11 (MIT)\n"
-				" - ZipLib: https://bitbucket.org/wbenny/ziplib/wiki/Home (zlib)\n"
 				" - MD5 implementation by Colin Plumb\n"
 			);
 		}
@@ -1607,94 +1567,6 @@ void gui::settings::render_debug_page(app& a) {
 	if(ImGui::Checkbox("Stream Tracing", &config::get().debug.stream_tracing)) {
 		config::get().write();
 	}
-}
-
-/*
-	manual_patcher
-*/
-
-gui::manual_patcher::manual_patcher()
-	: _scroll_offset(0) {}
-
-const char* gui::manual_patcher::title_text() const {
-	return "Manual Patcher";
-}
-
-ImVec2 gui::manual_patcher::initial_size() const {
-	return ImVec2(800, 600);
-}
-
-void gui::manual_patcher::render(app& a) {
-	auto* project = a.get_project();
-	if(project == nullptr) {
-		return;
-	}
-	
-	ImGui::Text("Goto:");
-	ImGui::SameLine();
-	if(ImGui::InputText("##hex_goto", &_scroll_offset_str)) {
-		_scroll_offset = parse_number(_scroll_offset_str);
-	}
-	
-	if(_scroll_offset + 1 >= project->iso.size()) {
-		ImGui::Text("<end of file>");
-		return;
-	}
-	
-	static const int row_size = 16;
-	static const int num_rows = 16;
-	
-	std::vector<char> buffer(row_size * num_rows);
-
-	std::size_t size_to_read = buffer.size();
-	
-	if(_scroll_offset >= project->iso.size() - row_size * num_rows) {
-		size_to_read = project->iso.size() - _scroll_offset - 1;
-	}
-	
-	if(_scroll_offset < project->iso.size()) {
-		project->iso.seek(_scroll_offset);
-	}
-	project->iso.read_n(buffer.data(), size_to_read);
-	
-	// If we're viewing past the end of the file, display zeroes.
-	for(std::size_t i = size_to_read; i < buffer.size(); i++) {
-		buffer[i] = 0;
-	}
-	
-	ImGui::BeginChild(1);
-	for(std::size_t row = 0; row < num_rows; row++) {
-		ImGui::Text("%010lx: ", _scroll_offset + row * row_size);
-		ImGui::SameLine();
-		for(std::size_t column = 0; column < row_size; column++) {
-			if(column % 4 == 0) {
-				ImGui::Text(" ");
-				ImGui::SameLine();
-			}
-			std::size_t offset = row * row_size + column;
-			char byte = buffer[offset];
-			auto display_hex = int_to_hex(byte & 0xff);
-			while(display_hex.size() < 2) display_hex = "0" + display_hex;
-			std::string label = std::string("##") + std::to_string(offset);
-			ImGui::SetNextItemWidth(20);
-			if(ImGui::InputText(label.c_str(), &display_hex, ImGuiInputTextFlags_EnterReturnsTrue)) {
-				char new_byte = hex_to_int(display_hex);
-				if(byte != new_byte) {
-					project->iso.write<char>(_scroll_offset + offset, new_byte);
-				}
-			}
-			ImGui::SameLine();
-		}
-		for(std::size_t column = 0; column < row_size; column++) {
-			std::size_t offset = row * row_size + column;
-			char byte = buffer[offset];
-			ImGui::Text("%c", byte);
-			ImGui::SameLine();
-		}
-		ImGui::NewLine();
-	}
-	ImGui::EndChild();
-	
 }
 
 /*

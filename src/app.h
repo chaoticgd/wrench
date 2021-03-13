@@ -68,7 +68,6 @@ public:
 	int64_t delta_time = 0;
 
 	void new_project(game_iso game);
-	void open_project(std::string path);
 
 	std::string project_path();
 

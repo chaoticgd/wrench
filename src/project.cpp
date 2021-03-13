@@ -18,9 +18,6 @@
 
 #include "project.h"
 
-#include <ZipLib/ZipArchive.h>
-#include <ZipLib/ZipFile.h>
-
 #include "app.h"
 #include "gui.h"
 #include "config.h"
@@ -33,33 +30,13 @@ static const std::size_t TOC_BASE = 0x1f4800;
 wrench_project::wrench_project(
 		game_iso game_,
 		worker_logger& log)
-	: _project_path(""),
-	  _wrench_archive(nullptr),
-	  game(game_),
-	  _history_index(0),
-	  _selected_level(nullptr),
+	: game(game_),
 	  _id(_next_id++),
-	  iso(game.md5, game.path, log),
+	  iso(game.path),
 	  toc(read_toc(iso, TOC_BASE)) {
-	if(!read_iso_filesystem(_root_directory, iso._iso)) {
+	if(!read_iso_filesystem(_root_directory, iso)) {
 		throw stream_format_error("Invalid or missing ISO filesystem!");
 	}
-	load_tables();
-}
-
-wrench_project::wrench_project(
-		std::vector<game_iso> games,
-		std::string project_path,
-		worker_logger& log)
-	: _project_path(project_path),
-	  _wrench_archive(ZipFile::Open(project_path)),
-	  game(read_game_type(games)),
-	  _history_index(0),
-	  _id(_next_id++),
-	  iso(game.md5, game.path, log, _wrench_archive),
-	  toc(read_toc(iso, TOC_BASE)) {
-	ZipFile::SaveAndClose(_wrench_archive, project_path);
-	_wrench_archive = nullptr;
 	load_tables();
 }
 
@@ -69,14 +46,6 @@ void wrench_project::post_load() {
 			tex.upload_to_opengl();
 		}
 	}
-}
-
-std::string wrench_project::project_path() const {
-	return _project_path;
-}
-
-void wrench_project::set_project_path(std::string project_path) {
-	_project_path = project_path;
 }
 	
 std::string wrench_project::cached_iso_path() const {
@@ -202,25 +171,6 @@ int wrench_project::id() {
 	return _id;
 }
 
-void wrench_project::save() {
-	if(fs::exists(_project_path)) {
-		fs::remove(_project_path + ".old");
-		fs::rename(_project_path, _project_path + ".old");
-	}
-
-	auto root = ZipArchive::Create();
-
-	std::stringstream version_stream;
-	version_stream << WRENCH_VERSION_STR;
-	root->CreateEntry("application_version")->SetCompressionStream(version_stream);
-
-	std::stringstream game_md5_stream;
-	game_md5_stream << game.md5;
-	root->CreateEntry("game_md5")->SetCompressionStream(game_md5_stream);
-
-	iso.save_patches_to_and_close(root, _project_path);
-}
-
 void wrench_project::write_iso_file() {
 	array_stream dest;
 	write_iso_filesystem(dest, _root_directory);
@@ -230,8 +180,8 @@ void wrench_project::write_iso_file() {
 			dest.write<uint8_t>(0);
 		}
 		assert(dest.tell() == file.lba.bytes());
-		iso._iso.seek(file.lba.bytes());
-		stream::copy_n(dest, iso._iso, file.size);
+		iso.seek(file.lba.bytes());
+		stream::copy_n(dest, iso, file.size);
 	}
 	dest.pad(SECTOR_SIZE, 0);
 	
@@ -239,8 +189,8 @@ void wrench_project::write_iso_file() {
 	dest.seek(0);
 	stream::copy_n(output_file, dest, dest.size());
 	
-	iso._iso.seek(output_file.size());
-	stream::copy_n(output_file, iso._iso, iso._iso.size() - output_file.size());
+	iso.seek(output_file.size());
+	stream::copy_n(output_file, iso, iso.size() - output_file.size());
 	
 	size_t vol_size = sector32::size_from_bytes(output_file.size()).sectors;
 	output_file.write<uint32_t>(0x8050, vol_size);
@@ -255,12 +205,12 @@ void wrench_project::load_tables() {
 		toc_table& table = toc.tables[i];
 		
 		armor_archive armor;
-		if(armor.read(iso._iso, table)) {
+		if(armor.read(iso, table)) {
 			_armor.emplace(i, std::move(armor));
 			continue;
 		}
 		
-		std::vector<texture> textures = enumerate_fip_textures(iso, table);
+		std::vector<texture> textures = enumerate_pif_textures(iso, table);
 		if(textures.size() > 0) {
 			_texture_wads[i] = std::move(textures);
 			continue;
@@ -278,26 +228,6 @@ void wrench_project::load_gamedb_info(app* a) {
 		}
 	}
 	throw std::runtime_error("Failed to load gamedb info!");
-}
-
-game_iso wrench_project::read_game_type(std::vector<game_iso> games) {
-	auto entry = _wrench_archive->GetEntry("game_md5");
-	if(entry == nullptr) {
-		throw std::runtime_error("Wrench project does not contain game_md5 file!");
-	}
-	auto stream = entry->GetDecompressionStream();
-	std::string result;
-	std::getline(*stream, result);
-	std::optional<game_iso> game;
-	for(game_iso current : games) {
-		if(current.md5 == result) {
-			game = current;
-		} 
-	}
-	if(!game) {
-		throw std::runtime_error("Unknown game hash!");
-	}
-	return *game;
 }
 
 std::string wrench_project::table_index_to_name(std::size_t table_index) {

@@ -19,8 +19,6 @@
 #ifndef PROJECT_H
 #define PROJECT_H
 
-#include <ZipLib/ZipArchive.h>
-
 #include "game_db.h"
 #include "iso_stream.h"
 #include "worker_logger.h"
@@ -57,18 +55,10 @@ struct undo_redo_command {
 
 class wrench_project {
 public:
-	wrench_project(
-		game_iso game_,
-		worker_logger& log); // New
-	wrench_project(
-		std::vector<game_iso> games,
-		std::string project_path,
-		worker_logger& log); // Open
+	wrench_project(game_iso game_, worker_logger& log);
 
 	void post_load(); // Called from main thread, used for OpenGL things.
 
-	std::string project_path() const;
-	void set_project_path(std::string project_path);
 	std::string cached_iso_path() const;
 	
 	level* selected_level();
@@ -87,8 +77,6 @@ public:
 	
 	int id();
 	
-	void save();
-
 	armor_archive& armor() { return _armor.begin()->second; }
 	
 	void write_iso_file();
@@ -97,19 +85,14 @@ private:
 	void load_tables();
 	void load_gamedb_info(app* a);
 
-	game_iso read_game_type(std::vector<game_iso> games);
-
 	std::string table_index_to_name(std::size_t table_index);
 	std::string level_index_to_name(std::size_t level_index);
-
-	std::string _project_path;
-	ZipArchive::Ptr _wrench_archive;
 
 public: // Initialisation order matters.
 	const game_iso game;
 
 private:
-	std::size_t _history_index;
+	std::size_t _history_index = 0;
 	std::vector<undo_redo_command> _history_stack;
 	
 	std::vector<iso_file_record> _root_directory;
@@ -118,7 +101,7 @@ private:
 	std::map<std::size_t, std::vector<texture>> _texture_wads;
 	std::map<std::size_t, std::unique_ptr<level>> _levels;
 	std::map<std::size_t, armor_archive> _armor;
-	level* _selected_level;
+	level* _selected_level = nullptr;
 	
 	std::optional<gamedb_game> _game_info;
 	
@@ -126,7 +109,7 @@ private:
 	static int _next_id;
 	
 public:
-	iso_stream iso;
+	file_stream iso;
 	table_of_contents toc;
 };
 
