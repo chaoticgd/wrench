@@ -25,7 +25,6 @@
 #include "gui.h"
 #include "config.h"
 #include "fs_includes.h"
-#include "formats/iso_filesystem.h"
 #include "formats/texture_archive.h"
 
 // This is true for R&C2 and R&C3.
@@ -81,7 +80,7 @@ void wrench_project::set_project_path(std::string project_path) {
 }
 	
 std::string wrench_project::cached_iso_path() const {
-	return iso.cached_iso_path();
+	return "cache/debug.iso";
 }
 
 level* wrench_project::selected_level() {
@@ -220,6 +219,31 @@ void wrench_project::save() {
 	root->CreateEntry("game_md5")->SetCompressionStream(game_md5_stream);
 
 	iso.save_patches_to_and_close(root, _project_path);
+}
+
+void wrench_project::write_iso_file() {
+	array_stream dest;
+	write_iso_filesystem(dest, _root_directory);
+	
+	for(iso_file_record& file : _root_directory) {
+		while(dest.tell() < file.lba.bytes()) {
+			dest.write<uint8_t>(0);
+		}
+		assert(dest.tell() == file.lba.bytes());
+		iso._iso.seek(file.lba.bytes());
+		stream::copy_n(dest, iso._iso, file.size);
+	}
+	dest.pad(SECTOR_SIZE, 0);
+	
+	file_stream output_file("cache/debug.iso", std::ios::out);
+	dest.seek(0);
+	stream::copy_n(output_file, dest, dest.size());
+	
+	iso._iso.seek(output_file.size());
+	stream::copy_n(output_file, iso._iso, iso._iso.size() - output_file.size());
+	
+	size_t vol_size = sector32::size_from_bytes(output_file.size()).sectors;
+	output_file.write<uint32_t>(0x8050, vol_size);
 }
 
 /*

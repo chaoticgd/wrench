@@ -23,12 +23,18 @@
 
 #include "../stream.h"
 
+struct iso_file_record {
+	std::string name;
+	sector32 lba;
+	uint32_t size;
+};
+
 // Read an ISO filesystem and output a map (dest) of the files in the root
 // directory. Return true on success, false on failure.
-bool read_iso_filesystem(std::map<std::string, std::pair<size_t, size_t>>& dest, stream& iso);
+bool read_iso_filesystem(std::vector<iso_file_record>& dest, stream& iso);
 
 // Given a list of files of a specific size, write and ISO filesystem (not the
 // files themselves) and return a map specifying where each file should go.
-std::map<std::string, size_t> write_iso_filesystem(stream& dest, const std::map<std::string, size_t>& file_sizes);
+std::map<std::string, size_t> write_iso_filesystem(stream& dest, const std::vector<iso_file_record>& files);
 
 #endif

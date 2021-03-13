@@ -30,6 +30,7 @@
 #include "formats/game_model.h"
 #include "formats/level_impl.h"
 #include "formats/armor_archive.h"
+#include "formats/iso_filesystem.h"
 
 # /*
 #	A project is a mod that patches the game's ISO file. Additional metadata
@@ -89,7 +90,9 @@ public:
 	void save();
 
 	armor_archive& armor() { return _armor.begin()->second; }
-
+	
+	void write_iso_file();
+	
 private:
 	void load_tables();
 	void load_gamedb_info(app* a);
@@ -109,7 +112,7 @@ private:
 	std::size_t _history_index;
 	std::vector<undo_redo_command> _history_stack;
 	
-	std::map<std::string, std::pair<size_t, size_t>> _root_directory;
+	std::vector<iso_file_record> _root_directory;
 	
 	std::map<std::size_t, std::unique_ptr<racpak>> _archives;
 	std::map<std::size_t, std::vector<texture>> _texture_wads;

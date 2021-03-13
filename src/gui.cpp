@@ -33,6 +33,7 @@
 #include "renderer.h"
 #include "worker_thread.h"
 #include "formats/bmp.h"
+#include "formats/iso_filesystem.h"
 
 #include "unwindows.h"
 
@@ -345,13 +346,7 @@ float gui::render_menu_bar(app& a) {
 	if(ImGui::BeginMenu("Emulator")) {
 		if(ImGui::MenuItem("Run")) {
 			if(auto project = a.get_project()) {
-				if(auto lvl = a.get_level()) {
-					// Write out the level and ToC header.
-					lvl->write_back(&project->iso);
-				}
-				
-				// Recompress WAD segments still using the old patching system.
-				project->iso.commit();
+				project->write_iso_file();
 				
 				if(fs::is_regular_file(config::get().emulator_path)) {
 					std::string emulator_path = fs::canonical(config::get().emulator_path).string();
