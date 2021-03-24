@@ -156,6 +156,13 @@ void gl_renderer::draw_level(level& lvl, glm::mat4 world_to_clip) const {
 			draw_model(frag, world_to_clip, colour);
 		}
 	}
+	
+	if (draw_tcols) {
+		for (auto& col : lvl.baked_collisions) {
+			glm::vec4 colour(0.5, 0.5, 0.5, 1);
+			draw_model(col, world_to_clip, colour);
+		}
+	}
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }

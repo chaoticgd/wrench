@@ -96,6 +96,7 @@ struct gl_renderer {
 	bool draw_splines = true;
 	bool draw_grind_rails = true;
 	bool draw_tfrags = true;
+	bool draw_tcols = true;
 	
 	std::vector<glm::mat4> moby_local_to_clip_cache;
 };
