@@ -273,12 +273,12 @@ std::map<std::string, size_t> write_iso_filesystem(stream& dest, const std::vect
 	dest.pad(SECTOR_SIZE, 0);
 	uint32_t root_dir_lba = (uint32_t) dest.tell() / SECTOR_SIZE;
 	assert(root_dir_lba == path_table_lba + 4);
-	uint32_t root_dir_size = (sizeof(iso9660_directory_record) + 1 + 14) * 2;
+	uint32_t root_dir_size = (sizeof(iso9660_directory_record) + 1) * 2;
 	for(const iso_file_record& file : files) {
 		root_dir_size +=
 			sizeof(iso9660_directory_record) +
 			file.name.size() +
-			(file.name.size() % 2 == 0) + 14;
+			(file.name.size() % 2 == 0);
 	}
 	pvd.root_directory.lba = iso9660_i32_lsb_msb::from_scalar(root_dir_lba);
 	pvd.root_directory.data_length = iso9660_i32_lsb_msb::from_scalar(root_dir_size);
@@ -289,7 +289,7 @@ std::map<std::string, size_t> write_iso_filesystem(stream& dest, const std::vect
 		record.record_length =
 			sizeof(iso9660_directory_record) +
 			file.name.size() +
-			(file.name.size() % 2 == 0) + 14;
+			(file.name.size() % 2 == 0);
 		record.extended_attribute_record_length = 0;
 		record.lba = iso9660_i32_lsb_msb::from_scalar(file.lba.sectors);
 		record.data_length = iso9660_i32_lsb_msb::from_scalar(file.size);
@@ -302,11 +302,6 @@ std::map<std::string, size_t> write_iso_filesystem(stream& dest, const std::vect
 		dest.write(record);
 		dest.write_n(file.name.data(), file.name.size());
 		if(file.name.size() % 2 == 0) {
-			dest.write<uint8_t>(0);
-		}
-		
-		// Not sure why we need this padding.
-		for(int i = 0; i < 14; i++) {
 			dest.write<uint8_t>(0);
 		}
 	};
