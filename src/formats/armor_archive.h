@@ -24,7 +24,6 @@
 #include <vector>
 
 #include "../stream.h"
-#include "toc.h"
 #include "texture.h"
 #include "game_model.h"
 
@@ -43,7 +42,7 @@ class armor_archive {
 public:
 	armor_archive();
 	
-	bool read(stream& iso, const toc_table& table);
+	bool read(stream& iso);
 	
 	std::vector<moby_model> models;
 	std::vector<texture> textures;

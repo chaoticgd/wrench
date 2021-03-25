@@ -21,23 +21,17 @@
 
 #include "../app.h"
 
-void level::read(
-		stream* src,
-		toc_level index_,
-		size_t header_offset,
-		sector32 base_offset,
-		sector32 effective_base_offset,
-		size_t size_in_bytes) {
-	index = index_;
-	index.main_part_size = sector32::size_from_bytes(size_in_bytes);
-	file_header = read_file_header(src, header_offset);
-	file_header.base_offset = base_offset;
+void level::read(stream* src) {
+	//index = index_;
+	//index.main_part_size = sector32::size_from_bytes(size_in_bytes);
+	//file_header = read_file_header(src, header_offset);
+	//file_header.base_offset = base_offset;
 	
-	_file.emplace(src);
-	_file->buffer.resize(index.main_part_size.bytes());
-	src->seek(effective_base_offset.bytes());
-	src->read_n(_file->buffer.data(), _file->buffer.size());
-	_file->name = "LEVEL" + std::to_string(index.level_table_index) + ".WAD";
+	//_file.emplace(src);
+	//_file->buffer.resize(index.main_part_size.bytes());
+	//src->seek(effective_base_offset.bytes());
+	//src->read_n(_file->buffer.data(), _file->buffer.size());
+	//_file->name = "LEVEL" + std::to_string(index.level_table_index) + ".WAD";
 
 	switch(file_header.type) {
 		case level_type::RAC23:
@@ -266,30 +260,6 @@ void level::read_loading_screen_textures(stream* file) {
 	//} else {
 	//	fprintf(stderr, "warning: Failed to read loading screen textures (missing magic bytes).\n");
 	//}
-}
-
-void level::write_back(stream* iso) {
-	// Build the level.
-	array_stream lvl;
-	write(lvl);
-	
-	// Write the level to the ISO.
-	iso->seek(file_header.base_offset.bytes());
-	iso->write_n(lvl.buffer.data(), lvl.buffer.size());
-	
-	// Copy the header into the table of contents.
-	uint32_t base_offset = iso->read<uint32_t>(index.main_part.bytes() + 0x4);
-	assert(lvl.size() >= SECTOR_SIZE);
-	iso->seek(index.main_part.bytes());
-	iso->write_n(lvl.buffer.data(), SECTOR_SIZE); // Assume the header is a single sector.
-	iso->write<uint32_t>(index.main_part.bytes() + 0x4, base_offset);
-	
-	// Write the file size into the level table.
-	size_t size = lvl.size();
-	if(size % SECTOR_SIZE != 0) {
-		size += SECTOR_SIZE - (size % SECTOR_SIZE);
-	}
-	iso->write<uint32_t>(index.main_part_size_offset, size / SECTOR_SIZE);
 }
 
 void level::write(array_stream& dest) {

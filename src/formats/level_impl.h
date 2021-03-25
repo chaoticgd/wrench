@@ -27,7 +27,6 @@
 #include "../stream.h"
 #include "../worker_logger.h"
 #include "world.h"
-#include "toc.h"
 #include "wad.h"
 #include "tfrag.h"
 #include "racpak.h"
@@ -86,17 +85,10 @@ public:
 	level(const level& rhs) = delete;
 	level& operator=(level&& rhs) = default;
 	
-	void read(
-			stream* src,
-			toc_level index_,
-			size_t header_offset,
-			sector32 base_offset, // Where to put the level in the ISO.
-			sector32 effective_base_offset, // Where to actually load the level from the input file.
-			size_t size_in_bytes);
+	void read(stream* src);
 	
 	static level_file_header read_file_header(stream* src, std::size_t offset);
 	
-	toc_level index;
 	level_file_header file_header;
 	world_segment world;
 	
@@ -142,7 +134,6 @@ private:
 	void read_loading_screen_textures(stream* file);
 	
 public:
-	void write_back(stream* iso);
 	void write(array_stream& dest);
 
 	stream* moby_stream();

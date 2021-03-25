@@ -151,6 +151,23 @@ bool read_iso_filesystem(std::vector<iso_file_record>& dest, stream& iso) {
 			iso_file_record file;
 			file.name.resize(record.identifier_length);
 			iso.read_n(file.name.data(), file.name.size());
+			if(record.identifier_length >= 5) {
+				std::string ext = file.name.substr(file.name.size() - 5, 3);
+				// The WAD files are accessed by LBA, so the ISO file records
+				// are not used by the game, and for R&C1, R&C3 and Deadlocked
+				// aren't present, hence they must be extracted seperately.
+				if(ext == "WAD") {
+					iso.seek(pos + record.record_length);
+					continue;
+				}
+			}
+			if(file.name[file.name.size() - 1] == '1') {
+				// Remove the ";1" at the end.
+				file.name = file.name.substr(0, file.name.size() - 2);
+			}
+			for(char& c : file.name) {
+				c = tolower(c);
+			}
 			file.lba = {(uint32_t) record.lba.lsb};
 			file.size = record.data_length.lsb;
 			dest.push_back(file);
@@ -218,13 +235,13 @@ std::map<std::string, size_t> write_iso_filesystem(stream& dest, const std::vect
 	pvd.root_directory.volume_sequence_number = iso9660_i16_lsb_msb::from_scalar(1);
 	pvd.root_directory.identifier_length = 1;
 	pvd.root_directory_pad = 0;
-	copy_and_pad(pvd.volume_set_identifier, "WRENCH", sizeof(pvd.volume_set_identifier));
-	copy_and_pad(pvd.publisher_identifier, "WRENCH", sizeof(pvd.publisher_identifier));
-	copy_and_pad(pvd.data_preparer_identifier, "WRENCH", sizeof(pvd.data_preparer_identifier));
-	copy_and_pad(pvd.application_identifier, "WRENCH", sizeof(pvd.application_identifier));
-	copy_and_pad(pvd.copyright_file_identifier, "WRENCH", sizeof(pvd.copyright_file_identifier));
-	copy_and_pad(pvd.abstract_file_identifier, "WRENCH", sizeof(pvd.abstract_file_identifier));
-	copy_and_pad(pvd.bibliographic_file_identifier, "WRENCH", sizeof(pvd.bibliographic_file_identifier));
+	copy_and_pad(pvd.volume_set_identifier, "", sizeof(pvd.volume_set_identifier));
+	copy_and_pad(pvd.publisher_identifier, "", sizeof(pvd.publisher_identifier));
+	copy_and_pad(pvd.data_preparer_identifier, "", sizeof(pvd.data_preparer_identifier));
+	copy_and_pad(pvd.application_identifier, "", sizeof(pvd.application_identifier));
+	copy_and_pad(pvd.copyright_file_identifier, "", sizeof(pvd.copyright_file_identifier));
+	copy_and_pad(pvd.abstract_file_identifier, "", sizeof(pvd.abstract_file_identifier));
+	copy_and_pad(pvd.bibliographic_file_identifier, "", sizeof(pvd.bibliographic_file_identifier));
 	pvd.volume_creation_date_time = zeroed_datetime;
 	pvd.volume_modification_date_time = zeroed_datetime;
 	pvd.volume_expiration_date_time = zeroed_datetime;
@@ -300,7 +317,11 @@ std::map<std::string, size_t> write_iso_filesystem(stream& dest, const std::vect
 		record.volume_sequence_number = iso9660_i16_lsb_msb::from_scalar(1);
 		record.identifier_length = file.name.size() + (file.name.size() == 0);
 		dest.write(record);
-		dest.write_n(file.name.data(), file.name.size());
+		std::string upper_name = file.name;
+		for(char& c : upper_name) {
+			c = toupper(c);
+		}
+		dest.write_n(upper_name.data(), upper_name.size());
 		if(file.name.size() % 2 == 0) {
 			dest.write<uint8_t>(0);
 		}

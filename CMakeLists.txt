@@ -45,17 +45,14 @@ add_executable(wrench
 	src/formats/game_model.cpp
 	src/formats/vif.cpp
 	src/formats/tfrag.cpp
-	src/formats/toc.cpp
 	src/formats/texture_archive.cpp
 	src/formats/model_utils.cpp
-	src/formats/iso_filesystem.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
 	src/imgui_impl_glfw.cpp
 	thirdparty/imgui/backends/imgui_impl_opengl3.cpp
 	src/md5.cpp
 	src/tests/compression_test.cpp
 	src/tests/world_segment_test.cpp
-	src/tests/write_level_test.cpp
 )
 
 add_executable(fip
@@ -123,23 +120,16 @@ add_executable(vif
 	src/formats/vif.cpp
 )
 
-add_executable(toc
-	src/cli/toccli.cpp
+add_executable(iso
+	src/iso/main.cpp
+	src/iso/iso_filesystem.cpp
+	src/iso/table_of_contents.cpp
 	src/stream.cpp
 	src/stacktrace.cpp
 	src/util.cpp
 	src/command_line.cpp
-	src/formats/toc.cpp
 )
 
-add_executable(matchtoc
-	src/cli/matchtoccli.cpp
-	src/stream.cpp
-	src/stacktrace.cpp
-	src/util.cpp
-	src/command_line.cpp
-	src/formats/toc.cpp
-)
 
 add_executable(memmap
 	src/cli/memmap.c
@@ -155,8 +145,7 @@ if(UNIX)
 	target_compile_options(pakrac PRIVATE -Wall -O3)
 	target_compile_options(texturefinder PRIVATE -Wall -O3)
 	target_compile_options(vif PRIVATE -Wall -O3)
-	target_compile_options(toc PRIVATE -Wall -O3)
-	target_compile_options(matchtoc PRIVATE -Wall -O3)
+	target_compile_options(iso PRIVATE -Wall -O3)
 endif()
 
 # std::filesystem
@@ -168,7 +157,7 @@ if(UNIX)
 	target_link_libraries(pakrac stdc++fs)
 	target_link_libraries(texturefinder stdc++fs)
 	target_link_libraries(vif stdc++fs)
-	target_link_libraries(matchtoc stdc++fs)
+	target_link_libraries(iso stdc++fs)
 endif()
 
 # cxxopts
@@ -180,8 +169,7 @@ target_link_libraries(scan cxxopts)
 target_link_libraries(pakrac cxxopts)
 target_link_libraries(texturefinder cxxopts)
 target_link_libraries(vif cxxopts)
-target_link_libraries(toc cxxopts)
-target_link_libraries(matchtoc cxxopts)
+target_link_libraries(iso cxxopts)
 
 # pthreads
 set(THREADS_PREFER_PTHREAD_FLAG ON)

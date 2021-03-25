@@ -33,7 +33,6 @@
 #include "renderer.h"
 #include "worker_thread.h"
 #include "formats/bmp.h"
-#include "formats/iso_filesystem.h"
 
 #include "unwindows.h"
 
@@ -152,13 +151,13 @@ float gui::render_menu_bar(app& a) {
 	if(auto path = import_level_box.render()) {
 		if(level* old_lvl = a.get_level()) {
 			try {
-				file_stream file(*path);
-				toc_level index = old_lvl->index;
-				sector32 base_offset = old_lvl->file_header.base_offset;
-				level new_lvl;
-				new_lvl.read(&file, index, 0, base_offset, sector32{0}, file.size());
-				*old_lvl = std::move(new_lvl);
-				a.get_project()->clear_undo_history();
+				//file_stream file(*path);
+				//toc_level index = old_lvl->index;
+				//sector32 base_offset = old_lvl->file_header.base_offset;
+				//level new_lvl;
+				//new_lvl.read(&file, index, 0, base_offset, sector32{0}, file.size());
+				//*old_lvl = std::move(new_lvl);
+				//a.get_project()->clear_undo_history();
 			} catch(stream_error&) {
 				message_box.open("Import failed!");
 			}
@@ -330,7 +329,7 @@ float gui::render_menu_bar(app& a) {
 	static const int level_list_rows = 20;
 	
 	if(auto project = a.get_project()) {
-		auto& levels = project->toc.levels;
+		/*auto& levels = project->toc.levels;
 		int columns = (int) std::ceil(levels.size() / (float) level_list_rows);
 		ImGui::SetNextWindowContentSize(ImVec2(columns * 192, 0.f));
 		if(ImGui::BeginMenu("Levels")) {
@@ -359,7 +358,7 @@ float gui::render_menu_bar(app& a) {
 			}
 			ImGui::Columns();
 			ImGui::EndMenu();
-		}
+		}*/
 	} else {
 		// If no project is open, draw a dummy menu.
 		if(ImGui::BeginMenu("Levels")) {

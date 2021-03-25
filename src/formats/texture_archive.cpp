@@ -26,8 +26,8 @@ packed_struct(texture_table_entry,
 	sector32 size;
 )
 
-std::vector<texture> enumerate_pif_textures(stream& iso, const toc_table& table) {
-	std::vector<texture> textures;
+std::vector<texture> enumerate_pif_textures(stream& iso) {
+	/*std::vector<texture> textures;
 	
 	std::size_t bad_textures = 0;
 	
@@ -88,5 +88,5 @@ std::vector<texture> enumerate_pif_textures(stream& iso, const toc_table& table)
 		return {};
 	}
 	
-	return textures;
+	return textures;*/ return {};
 }

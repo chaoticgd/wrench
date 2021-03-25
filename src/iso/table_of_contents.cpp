@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2020 chaoticgd
+	Copyright (C) 2019-2021 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,11 +16,11 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "toc.h"
+#include "table_of_contents.h"
 
 #include "../util.h"
 
-table_of_contents read_toc(stream& iso, std::size_t toc_base) {
+table_of_contents read_table_of_contents(stream& iso, std::size_t toc_base) {
 	table_of_contents toc;
 	
 	std::size_t level_table_offset = toc_get_level_table_offset(iso, toc_base);
@@ -36,10 +36,11 @@ table_of_contents read_toc(stream& iso, std::size_t toc_base) {
 		table.index = table_index++;
 		table.offset_in_toc = iso.tell() - toc_base;
 		table.header = iso.read<toc_table_header>();
-		if(table.header.size < sizeof(toc_table_header) || table.header.size > 0xffff) {
+		if(table.header.header_size < sizeof(toc_table_header) || table.header.header_size > 0xffff) {
 			break;
 		}
-		stream::copy_n(table.data, iso, table.header.size - sizeof(toc_table_header));
+		table.lumps.resize((table.header.header_size - sizeof(toc_table_header)) / sizeof(sector_range));
+		iso.read_v(table.lumps);
 		toc.tables.emplace_back(std::move(table));
 	}
 	

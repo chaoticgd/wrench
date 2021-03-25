@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2020 chaoticgd
+	Copyright (C) 2019-2021 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef FORMATS_TOC_H
-#define FORMATS_TOC_H
+#ifndef ISO_TABLE_OF_CONTENTS_H
+#define ISO_TABLE_OF_CONTENTS_H
 
 #include "../stream.h"
 
@@ -26,7 +26,7 @@
 # */
 
 packed_struct(toc_table_header,
-	uint32_t size;
+	uint32_t header_size;
 	sector32 base_offset;
 )
 
@@ -34,7 +34,7 @@ struct toc_table {
 	std::size_t index;
 	uint32_t offset_in_toc;
 	toc_table_header header;
-	array_stream data;
+	std::vector<sector_range> lumps;
 };
 
 packed_struct(toc_level_table_entry,
@@ -70,7 +70,7 @@ static const std::vector<uint32_t> TOC_MAIN_PART_MAGIC = { 0x60, 0x68, 0xc68 };
 static const std::vector<uint32_t> TOC_AUDIO_PART_MAGIC = { 0x1018, 0x1818, 0x1000, 0x2a0 };
 static const std::vector<uint32_t> TOC_SCENE_PART_MAGIC = { 0x137c, 0x2420, 0x26f0 };
 
-table_of_contents read_toc(stream& iso, std::size_t toc_base);
+table_of_contents read_table_of_contents(stream& iso, std::size_t toc_base);
 std::size_t toc_get_level_table_offset(stream& iso, std::size_t toc_base);
 
 #endif

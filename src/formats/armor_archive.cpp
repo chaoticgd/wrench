@@ -22,8 +22,8 @@
 
 armor_archive::armor_archive() {}
 
-bool armor_archive::read(stream& iso, const toc_table& table) {
-	std::size_t base_offset = table.header.base_offset.bytes();
+bool armor_archive::read(stream& iso) {
+	/*std::size_t base_offset = table.header.base_offset.bytes();
 	if(table.header.size > 0x1000) {
 		return false;
 	}
@@ -89,6 +89,6 @@ bool armor_archive::read(stream& iso, const toc_table& table) {
 			}
 		}
 	}
-	
+	*/
 	return true;
 }

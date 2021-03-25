@@ -38,16 +38,6 @@ struct level_texture_entry;
 // Outer level structures
 // *****************************************************************************
 
-packed_struct(sector_range,
-	sector32 offset;
-	sector32 size;
-)
-
-packed_struct(byte_range,
-	uint32_t offset;
-	uint32_t size;
-)
-
 // These are also present in the table of contents for GC, UYA and DL.
 packed_struct(level_file_header_rac23,
 	uint32_t magic;              // 0x0 Equal to 0x60.

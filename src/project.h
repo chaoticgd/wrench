@@ -22,13 +22,11 @@
 #include "game_db.h"
 #include "iso_stream.h"
 #include "worker_logger.h"
-#include "formats/toc.h"
 #include "formats/racpak.h"
 #include "formats/texture.h"
 #include "formats/game_model.h"
 #include "formats/level_impl.h"
 #include "formats/armor_archive.h"
-#include "formats/iso_filesystem.h"
 
 # /*
 #	A project is a mod that patches the game's ISO file. Additional metadata
@@ -95,8 +93,6 @@ private:
 	std::size_t _history_index = 0;
 	std::vector<undo_redo_command> _history_stack;
 	
-	std::vector<iso_file_record> _root_directory;
-	
 	std::map<std::size_t, std::unique_ptr<racpak>> _archives;
 	std::map<std::size_t, std::vector<texture>> _texture_wads;
 	std::map<std::size_t, std::unique_ptr<level>> _levels;
@@ -110,7 +106,6 @@ private:
 	
 public:
 	file_stream iso;
-	table_of_contents toc;
 };
 
 class command_error : public std::runtime_error {

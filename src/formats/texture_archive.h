@@ -20,9 +20,8 @@
 #define FORMATS_TEXTURE_ARCHIVE_H
 
 #include "../iso_stream.h"
-#include "toc.h"
 #include "texture.h"
 
-std::vector<texture> enumerate_pif_textures(stream& iso, const toc_table& table);
+std::vector<texture> enumerate_pif_textures(stream& iso);
 
 #endif

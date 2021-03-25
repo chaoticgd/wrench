@@ -1,0 +1,9 @@
+add_executable(iso
+	main.cpp
+	iso_filesystem.cpp
+	table_of_contents.cpp
+	../stream.cpp
+	../stacktrace.cpp
+	../util.cpp
+	../command_line.cpp
+)

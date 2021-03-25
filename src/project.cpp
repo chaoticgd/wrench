@@ -24,19 +24,12 @@
 #include "fs_includes.h"
 #include "formats/texture_archive.h"
 
-// This is true for R&C2 and R&C3.
-static const std::size_t TOC_BASE = 0x1f4800;
-
 wrench_project::wrench_project(
 		game_iso game_,
 		worker_logger& log)
 	: game(game_),
 	  _id(_next_id++),
-	  iso(game.path),
-	  toc(read_toc(iso, TOC_BASE)) {
-	if(!read_iso_filesystem(_root_directory, iso)) {
-		throw stream_format_error("Invalid or missing ISO filesystem!");
-	}
+	  iso(game.path) {
 	load_tables();
 }
 
@@ -156,15 +149,15 @@ void wrench_project::clear_undo_history() {
 }
 
 void wrench_project::open_level(std::size_t index) {
-	if(_levels.find(index) == _levels.end()) {
-		// The level is not already open.
-		auto lvl = std::make_unique<level>();
-		toc_level& header = toc.levels[index];
-		sector32 base_offset = iso.read<sector32>(header.main_part.bytes() + 4);
-		lvl->read(&iso, header, header.main_part.bytes(), base_offset, base_offset, header.main_part_size.bytes());
-		_levels.emplace(index, std::move(lvl));
-	}
-	_selected_level = _levels.at(index).get();
+	//if(_levels.find(index) == _levels.end()) {
+	//	// The level is not already open.
+	//	auto lvl = std::make_unique<level>();
+	//	toc_level& header = toc.levels[index];
+	//	sector32 base_offset = iso.read<sector32>(header.main_part.bytes() + 4);
+	//	lvl->read(&iso, header, header.main_part.bytes(), base_offset, base_offset, header.main_part_size.bytes());
+	//	_levels.emplace(index, std::move(lvl));
+	//}
+	//_selected_level = _levels.at(index).get();
 }
 
 int wrench_project::id() {
@@ -172,28 +165,28 @@ int wrench_project::id() {
 }
 
 void wrench_project::write_iso_file() {
-	array_stream dest;
-	write_iso_filesystem(dest, _root_directory);
-	
-	for(iso_file_record& file : _root_directory) {
-		while(dest.tell() < file.lba.bytes()) {
-			dest.write<uint8_t>(0);
-		}
-		assert(dest.tell() == file.lba.bytes());
-		iso.seek(file.lba.bytes());
-		stream::copy_n(dest, iso, file.size);
-	}
-	dest.pad(SECTOR_SIZE, 0);
-	
-	file_stream output_file("cache/debug.iso", std::ios::out);
-	dest.seek(0);
-	stream::copy_n(output_file, dest, dest.size());
-	
-	iso.seek(output_file.size());
-	stream::copy_n(output_file, iso, iso.size() - output_file.size());
-	
-	size_t vol_size = sector32::size_from_bytes(output_file.size()).sectors;
-	output_file.write<uint32_t>(0x8050, vol_size);
+	//array_stream dest;
+	//write_iso_filesystem(dest, _root_directory);
+	//
+	//for(iso_file_record& file : _root_directory) {
+	//	while(dest.tell() < file.lba.bytes()) {
+	//		dest.write<uint8_t>(0);
+	//	}
+	//	assert(dest.tell() == file.lba.bytes());
+	//	iso.seek(file.lba.bytes());
+	//	stream::copy_n(dest, iso, file.size);
+	//}
+	//dest.pad(SECTOR_SIZE, 0);
+	//
+	//file_stream output_file("cache/debug.iso", std::ios::out);
+	//dest.seek(0);
+	//stream::copy_n(output_file, dest, dest.size());
+	//
+	//iso.seek(output_file.size());
+	//stream::copy_n(output_file, iso, iso.size() - output_file.size());
+	//
+	//size_t vol_size = sector32::size_from_bytes(output_file.size()).sectors;
+	//output_file.write<uint32_t>(0x8050, vol_size);
 }
 
 /*
@@ -201,23 +194,23 @@ void wrench_project::write_iso_file() {
 */
 
 void wrench_project::load_tables() {
-	for(std::size_t i = 0; i < toc.tables.size(); i++) {
-		toc_table& table = toc.tables[i];
-		
-		armor_archive armor;
-		if(armor.read(iso, table)) {
-			_armor.emplace(i, std::move(armor));
-			continue;
-		}
-		
-		std::vector<texture> textures = enumerate_pif_textures(iso, table);
-		if(textures.size() > 0) {
-			_texture_wads[i] = std::move(textures);
-			continue;
-		}
-		
-		fprintf(stderr, "warning: File at iso+0x%08lx ignored.\n", table.header.base_offset.bytes());
-	}
+	//for(std::size_t i = 0; i < toc.tables.size(); i++) {
+	//	toc_table& table = toc.tables[i];
+	//	
+	//	armor_archive armor;
+	//	if(armor.read(iso, table)) {
+	//		_armor.emplace(i, std::move(armor));
+	//		continue;
+	//	}
+	//	
+	//	std::vector<texture> textures = enumerate_pif_textures(iso, table);
+	//	if(textures.size() > 0) {
+	//		_texture_wads[i] = std::move(textures);
+	//		continue;
+	//	}
+	//	
+	//	fprintf(stderr, "warning: File at iso+0x%08lx ignored.\n", table.header.base_offset.bytes());
+	//}
 }
 
 void wrench_project::load_gamedb_info(app* a) {
