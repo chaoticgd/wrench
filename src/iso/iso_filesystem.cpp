@@ -161,10 +161,6 @@ bool read_iso_filesystem(std::vector<iso_file_record>& dest, stream& iso) {
 					continue;
 				}
 			}
-			if(file.name[file.name.size() - 1] == '1') {
-				// Remove the ";1" at the end.
-				file.name = file.name.substr(0, file.name.size() - 2);
-			}
 			for(char& c : file.name) {
 				c = tolower(c);
 			}
@@ -290,15 +286,28 @@ std::map<std::string, size_t> write_iso_filesystem(stream& dest, const std::vect
 	dest.pad(SECTOR_SIZE, 0);
 	uint32_t root_dir_lba = (uint32_t) dest.tell() / SECTOR_SIZE;
 	assert(root_dir_lba == path_table_lba + 4);
-	uint32_t root_dir_size = (sizeof(iso9660_directory_record) + 1) * 2;
+	sector32 root_dir_size_sectors {0};
+	uint32_t root_dir_size_bytes = (sizeof(iso9660_directory_record) + 1) * 2;
 	for(const iso_file_record& file : files) {
-		root_dir_size +=
+		if(file.name.size() > 255) {
+			fprintf(stderr, "error: File name \"%s\" too long!\n", file.name.c_str());
+			exit(1);
+		}
+		
+		size_t record_size =
 			sizeof(iso9660_directory_record) +
 			file.name.size() +
 			(file.name.size() % 2 == 0);
+		if(root_dir_size_bytes + record_size > 0x800) {
+			root_dir_size_sectors.sectors++;
+			root_dir_size_bytes = record_size;
+		} else {
+			root_dir_size_bytes += record_size;
+		}
 	}
+	size_t root_dir_size_total = root_dir_size_sectors.bytes() + root_dir_size_bytes;
 	pvd.root_directory.lba = iso9660_i32_lsb_msb::from_scalar(root_dir_lba);
-	pvd.root_directory.data_length = iso9660_i32_lsb_msb::from_scalar(root_dir_size);
+	pvd.root_directory.data_length = iso9660_i32_lsb_msb::from_scalar(root_dir_size_total);
 	
 	// Write out root directory records.
 	auto write_directory_record = [&](const iso_file_record& file, uint8_t flags) {
@@ -316,6 +325,10 @@ std::map<std::string, size_t> write_iso_filesystem(stream& dest, const std::vect
 		record.interleave_gap_size = 0;
 		record.volume_sequence_number = iso9660_i16_lsb_msb::from_scalar(1);
 		record.identifier_length = file.name.size() + (file.name.size() == 0);
+		if((dest.tell() % SECTOR_SIZE) + record.record_length > 0x800) {
+			// Directory records cannot cross sector boundaries.
+			dest.pad(SECTOR_SIZE, 0);
+		}
 		dest.write(record);
 		std::string upper_name = file.name;
 		for(char& c : upper_name) {
@@ -326,13 +339,16 @@ std::map<std::string, size_t> write_iso_filesystem(stream& dest, const std::vect
 			dest.write<uint8_t>(0);
 		}
 	};
-	iso_file_record dot = {"", root_dir_lba, root_dir_size};
+	iso_file_record dot = {"", root_dir_lba, (uint32_t) root_dir_size_total};
 	write_directory_record(dot, 2);
-	iso_file_record dot_dot = {"\x01", root_dir_lba, root_dir_size};
+	iso_file_record dot_dot = {"\x01", root_dir_lba, (uint32_t) root_dir_size_total};
 	write_directory_record(dot_dot, 2);
 	for(const iso_file_record& file : files) {
 		write_directory_record(file, 0);
 	}
+	
+	// Ensure our size calculation for the root directory was correct.
+	assert(dest.tell() == root_dir_lba * SECTOR_SIZE + root_dir_size_total);
 	
 	return {};
 }

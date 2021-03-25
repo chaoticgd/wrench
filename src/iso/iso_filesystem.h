@@ -22,11 +22,13 @@
 #include <map>
 
 #include "../stream.h"
+#include "../fs_includes.h"
 
 struct iso_file_record {
 	std::string name;
 	sector32 lba;
 	uint32_t size;
+	fs::path source; // Only used while writing out a new ISO.
 };
 
 // Read an ISO filesystem and output a map (dest) of the files in the root

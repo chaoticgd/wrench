@@ -16,6 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include "../util.h"
 #include "../stream.h"
 #include "../fs_includes.h"
 #include "../command_line.h"
@@ -23,11 +24,13 @@
 #include "table_of_contents.h"
 
 // This is true for R&C2, R&C3 and Deadlocked.
-static const size_t TABLE_OF_CONTENTS_LBA = 0x3e9;
+static const uint32_t TABLE_OF_CONTENTS_LBA = 0x3e9;
+const char* LEVEL_PART_NAMES[3] = { "level", "audio", "scene" };
 
 void ls(std::string iso_path);
 void extract(std::string iso_path, fs::path output_dir);
-void build(std::string iso_path, fs::path input_directory);
+void build(std::string iso_path, fs::path input_dir);
+void enumerate_files_recursive(std::vector<fs::path>& files, fs::path dir, int depth);
 
 int main(int argc, char** argv) {
 	cxxopts::Options options(argv[0],
@@ -140,7 +143,7 @@ void extract(std::string iso_path, fs::path output_dir) {
 		exit(1);
 	}
 	for(iso_file_record& file : files) {
-		fs::path file_path = output_dir/file.name;
+		fs::path file_path = output_dir/file.name.substr(0, file.name.size() - 2);
 		file_stream output_file(file_path.string(), std::ios::out);
 		iso.seek(file.lba.bytes());
 		stream::copy_n(output_file, iso, file.size);
@@ -181,9 +184,8 @@ void extract(std::string iso_path, fs::path output_dir) {
 	for(toc_level& level : toc.levels) {
 		sector32 header_lbas[3] = { level.main_part, level.audio_part, level.scene_part };
 		sector32 file_sizes[3] = { level.main_part_size, level.audio_part_size, level.scene_part_size };
-		const char* names[3] = { "level", "audio", "scene" };
 		for(int i = 0; i < 3; i++) {
-			auto name = names[i] + std::to_string(level.level_table_index) + ".wad";
+			auto name = LEVEL_PART_NAMES[i] + std::to_string(level.level_table_index) + ".wad";
 			auto path = levels_dir/name;
 			file_stream output_file(path.string(), std::ios::out);
 			
@@ -202,6 +204,252 @@ void extract(std::string iso_path, fs::path output_dir) {
 	}
 }
 
-void build(std::string iso_path, fs::path input_directory) {
+struct global_file {
+	fs::path path;
+	sector32 lba;
+	bool operator<(global_file& rhs) { return path < rhs.path; }
+};
+
+const size_t LEVEL_PART = 0;
+const size_t AUDIO_PART = 1;
+const size_t SCENE_PART = 2;
+struct level_parts {
+	std::optional<fs::path> parts[3];
+	sector32 data_offsets[3];
+	sector32 data_lbas[3]; // For writing out the table of contents.
+	sector32 sizes[3]; // For writing out the table of contents.
+};
+
+void build(std::string iso_path, fs::path input_dir) {
+	std::vector<fs::path> input_files;
+	enumerate_files_recursive(input_files, input_dir, 0);
 	
+	auto str_to_lower = [](std::string str) {
+		for(char& c : str) {
+			c = tolower(c);
+		}
+		return str;
+	};
+	
+	// Seperate asset (*.WAD) files from other files (e.g. SYSTEM.CNF).
+	std::vector<fs::path> wad_files;
+	std::vector<fs::path> other_files;
+	for(fs::path& path : input_files) {
+		auto name = str_to_lower(path.filename().string());
+		if(name.find(".wad") != std::string::npos) {
+			wad_files.push_back(path);
+		} else {
+			other_files.push_back(path);
+		}
+	}
+	
+	// Seperate global files (ARMOR.WAD, etc) from level files (LEVEL0.WAD, AUDIO0.WAD, etc).
+	std::vector<global_file> global_files;
+	std::vector<level_parts> level_files;
+	for(fs::path& path : wad_files) {
+		auto name = str_to_lower(path.filename().string());
+		bool is_global = true;
+		for(int part = 0; part < 3; part++) {
+			if(name.find(LEVEL_PART_NAMES[part]) == 0) {
+				assert(name.size() >= 9);
+				int level_index;
+				try {
+					level_index = std::stoi(name.substr(5, name.size() - 9).c_str());
+				} catch(std::invalid_argument&) {
+					break;
+				}
+				if(level_index < 0 || level_index > 100) {
+					fprintf(stderr, "error: Level index is out of range.\n");
+					exit(1);
+				}
+				if(level_files.size() <= (size_t) level_index) {
+					level_files.resize(level_index + 1);
+				}
+				level_files[level_index].parts[part] = path;
+				is_global = false;
+			}
+		}
+		if(is_global) {
+			global_files.push_back({path});
+		}
+	}
+	
+	// HACK: Assume that global files are numbered 0.wad, 1.wad, etc.
+	// This is usually only true for files extracted using this tool!
+	std::sort(global_files.begin(), global_files.end());
+	
+	// Sanity check: Make sure that if there's a AUDIOn.WAD file or a SCENEn.WAD
+	// file that there's also a LEVELn.WAD file.
+	for(level_parts& level : level_files) {
+		if(level.parts[AUDIO_PART] && !level.parts[LEVEL_PART]) {
+			fprintf(stderr, "error: An audio file is missing an associated level file!\n");
+			exit(1);
+		}
+		if(level.parts[SCENE_PART] && !level.parts[LEVEL_PART]) {
+			fprintf(stderr, "error: A scene file is missing an associated level file!\n");
+			exit(1);
+		}
+	}
+	
+	// Calculate the size of the table of contents file so we can determine the
+	// LBAs of all the files that come after it.
+	size_t global_toc_size_bytes = 0;
+	for(global_file& global : global_files) {
+		file_stream file(global.path);
+		uint32_t size = file.read<uint32_t>();
+		if(size > 0xffff) {
+			fprintf(stderr, "error: File '%s' has a header size > 0xffff bytes.\n", global.path.filename().c_str());
+			exit(1);
+		}
+		global_toc_size_bytes += size;
+	}
+	global_toc_size_bytes += level_files.size() * sizeof(sector_range) * 3;
+	sector32 global_toc_size = sector32::size_from_bytes(global_toc_size_bytes);
+	assert(global_toc_size.sectors <= 0xb); // This size is hardcoded in the boot ELF for R&C2.
+	sector32 total_toc_size = global_toc_size;
+	for(auto& level : level_files) {
+		// Assume all of these headers are a single sector.
+		total_toc_size.sectors += !!level.parts[LEVEL_PART];
+		total_toc_size.sectors += !!level.parts[AUDIO_PART];
+		total_toc_size.sectors += !!level.parts[SCENE_PART];
+	}
+	
+	// Determine the LBAs of files on disc and build the root directory.
+	std::vector<iso_file_record> root_dir;
+	sector32 lba {TABLE_OF_CONTENTS_LBA + total_toc_size.sectors};
+	for(fs::path& path : other_files) {
+		auto name = str_to_lower(path.filename().string());
+		if(name == "rc2.hdr") {
+			// We're writing out a new table of contents, so this one
+			// isn't needed.
+			continue;
+		}
+		iso_file_record record;
+		record.name = name + ";1";
+		record.lba = lba;
+		record.size = file_stream(path).size();
+		record.source = path;
+		root_dir.push_back(record);
+		lba.sectors += sector32::size_from_bytes(record.size).sectors;
+	}
+	for(global_file& global : global_files) {
+		global.lba = lba;
+		
+		file_stream file(global.path);
+		sector32 data_offset = file.read<sector32>(0x4);
+		
+		iso_file_record record;
+		record.name = global.path.filename().string() + ";1";
+		record.lba = global.lba;
+		record.size = file.size() - data_offset.bytes();
+		record.source = global.path;
+		root_dir.push_back(record);
+		lba.sectors += sector32::size_from_bytes(record.size).sectors;
+	}
+	// Note: This matches how the levels are laid out for R&C2 (AoS), but for
+	// R&C3 and DL they're laid out on disc SoA, audio first.
+	for(level_parts& level : level_files) {
+		for(int i = 0; i < 3; i++) {
+			if(level.parts[i]) {
+				file_stream file(*level.parts[i]);
+				level.data_offsets[i] = file.read<sector32>(0x4);
+				level.data_lbas[i] = lba;
+				level.sizes[i] = sector32::size_from_bytes(file.size() - level.data_offsets[i].bytes());
+				
+				iso_file_record record;
+				record.name = level.parts[i]->filename().string() + ";1";
+				record.lba = lba;
+				record.size = level.sizes[i].bytes();
+				record.source = *level.parts[i];
+				root_dir.push_back(record);
+				lba.sectors += level.sizes[i].sectors;
+			}
+		}
+	}
+	
+	file_stream iso(iso_path, std::ios::out);
+	
+	printf("Writing ISO filesystem\n");
+	write_iso_filesystem(iso, root_dir);
+	
+	iso.pad(SECTOR_SIZE, 0);
+	static const uint8_t zeroed_sector[SECTOR_SIZE] = {0};
+	while(iso.tell() < TABLE_OF_CONTENTS_LBA * SECTOR_SIZE) {
+		iso.write_n((char*) zeroed_sector, SECTOR_SIZE);
+	}
+	
+	// Write out the table of contents.
+	printf("Writing table of contents at LBA %x\n", TABLE_OF_CONTENTS_LBA);
+	for(global_file& global : global_files) {
+		file_stream file(global.path);
+		uint32_t size = file.read<uint32_t>();
+		iso.write<uint32_t>(size);
+		iso.write<sector32>(global.lba);
+		file.seek(8);
+		stream::copy_n(iso, file, size - 8);
+	}
+	std::vector<sector_range> level_table(level_files.size() * 3);
+	size_t level_table_pos = iso.tell();
+	defer([&]() {
+		iso.seek(level_table_pos);
+		iso.write_v(level_table);
+	});
+	iso.seek(iso.tell() + level_table.size() + sizeof(sector_range));
+	for(size_t i = 0; i < level_files.size(); i++) {
+		auto& level = level_files[i];
+		for(int part = 0; part < 3; part++) {
+			if(level.parts[part]) {
+				uint32_t header[SECTOR_SIZE / 4]; // Assume the headers are all a single sector.
+				file_stream file(*level.parts[part]);
+				file.read_n((char*) header, SECTOR_SIZE);
+				header[1] = level.data_lbas[part].sectors;
+				
+				iso.pad(SECTOR_SIZE, 0);
+				level_table[i * 3 + part].offset.sectors = iso.tell() / SECTOR_SIZE;
+				level_table[i * 3 + part].size = level.sizes[part];
+				iso.write_n((char*) header, SECTOR_SIZE);
+			}
+		}
+	}
+	
+	// Write out the rest of the files.
+	for(const iso_file_record& record : root_dir) {
+		file_stream file(record.source);
+		uint32_t data_offset = 0;
+		std::string name = str_to_lower(record.name);
+		if(name.find(".wad") != std::string::npos) {
+			// For the .WAD files the ToC header is added to the beginning of
+			// the file.
+			data_offset = file.read<sector32>(0x4).bytes();
+		}
+		file.seek(data_offset);
+		iso.pad(SECTOR_SIZE, 0);
+		assert(iso.tell() == record.lba.bytes());
+		printf("Writing %s at LBA 0x%x\n", record.name.c_str(), record.lba.sectors);
+		stream::copy_n(iso, file, file.size() - data_offset);
+	}
+	
+	// Make sure we've written out the right amount of data.
+	assert(iso.tell() == lba.bytes());
+	
+	// Write the volume size into the primary volume descriptor.
+	iso.write<uint32_t>(0x8050, lba.sectors);
+}
+
+void enumerate_files_recursive(std::vector<fs::path>& files, fs::path dir, int depth) {
+	if(depth > 10) {
+		fprintf(stderr, "error: Directory depth limit (10 levels) reached!\n");
+		exit(1);
+	}
+	for(const fs::directory_entry& file : fs::directory_iterator(dir)) {
+		if(file.is_regular_file()) {
+			if(files.size() > 1000) {
+				fprintf(stderr, "error: File count limit (1000) reached!\n");
+				exit(1);
+			}
+			files.push_back(file.path());
+		} else if(file.is_directory()) {
+			enumerate_files_recursive(files, file.path(), depth + 1);
+		}
+	}
 }
