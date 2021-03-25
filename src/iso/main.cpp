@@ -151,14 +151,16 @@ void extract(std::string iso_path, fs::path output_dir) {
 	for(toc_table& table : toc.tables) {
 		auto name = std::to_string(table.index) + ".wad";
 		auto path = global_dir/name;
-		if(table.header.header_size == 0x328) {
-			continue; // R&C2 MPEG.WAD
-		}
 		size_t file_size = 0;
 		for(sector_range& lump : table.lumps) {
-			// The high byte of some of the sizes seems to be being used.
-			// TODO: Figure out what this is.
-			size_t lump_size = lump.size.bytes();
+			size_t lump_size;
+			// HACK: MPEG.WAD stores some sizes in bytes.
+			if(lump.size.sectors > 0xfffff) {
+				lump_size = lump.size.sectors;
+			} else {
+				lump_size = lump.size.bytes();
+			}
+			
 			size_t lump_end = lump.offset.bytes() + lump_size;
 			if(lump_end > file_size) {
 				file_size = lump_end;
