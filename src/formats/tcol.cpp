@@ -189,6 +189,26 @@ void tcol::push_face(vec3f offset, tcol::tcol_face face, tcol::tcol_data data) {
 		_tcol_triangles.push_back(v3.y);
 		_tcol_triangles.push_back(v3.z);
 	}
+
+	auto color = get_collision_color(face.collision_id);
+	int v_count = 3 + (face.is_quad ? 3 : 0);
+	for (int i = 0; i < v_count; ++i) {
+		_tcol_vertex_colors.push_back(color.x);
+		_tcol_vertex_colors.push_back(color.y);
+		_tcol_vertex_colors.push_back(color.z);
+	}
+}
+
+vec3f tcol::get_collision_color(uint8_t colId) {
+	vec3f v;
+
+	// from https://github.com/RatchetModding/replanetizer/blob/ada7ca73418d7b01cc70eec58a41238986b84112/LibReplanetizer/Models/Collision.cs#L26
+	// Colorize different types of collision without knowing what they are
+	v.x = (uint8_t)((uint64_t)(colId & 0x3) << 6) / 255.0;
+	v.y = (uint8_t)((uint64_t)(colId & 0xC) << 4) / 255.0;
+	v.z = (uint8_t)(colId & 0xF0) / 255.0;
+
+	return v;
 }
 
 vec3f tcol::unpack_vertex(uint32_t vertex) {
@@ -206,7 +226,9 @@ vec3f tcol::unpack_vertex(uint32_t vertex) {
 }
 
 std::vector<float> tcol::triangles() const {
-	std::vector<float> result;
-
 	return _tcol_triangles;
+}
+
+std::vector<float> tcol::colors() const {
+	return _tcol_vertex_colors;
 }

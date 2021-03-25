@@ -167,6 +167,36 @@ shader_programs::shader_programs() :
 			glBindAttribLocation(id, 4, "position_model_space");
 			glBindAttribLocation(id, 5, "uv");
 		}
+	),
+	vertex_color(
+		R"(
+			#version 120
+
+			uniform mat4 transform;
+			attribute vec3 position_model_space;
+			attribute vec3 color;
+			varying vec4 color_frag;
+
+			void main() {
+				gl_Position = transform * vec4(position_model_space, 1);
+				color_frag = vec4(color, 1);
+			}
+		)",
+		R"(
+			#version 120
+
+			varying vec4 color_frag;
+
+			void main() {
+				gl_FragColor = color_frag;
+			}
+		)",
+		[&](GLuint id) {
+			vertex_color_transform = glGetUniformLocation(id, "transform");
+
+			glBindAttribLocation(id, 0, "position_model_space");
+			glBindAttribLocation(id, 1, "color");
+		}
 	)
 {}
 
@@ -174,4 +204,5 @@ void shader_programs::init() {
 	solid_colour.init();
 	solid_colour_batch.init();
 	textured.init();
+	vertex_color.init();
 }

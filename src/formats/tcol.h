@@ -58,8 +58,12 @@ public:
 	tcol(stream *backing, std::size_t base_offset);
 
 	void push_face(vec3f offset, tcol::tcol_face face, tcol::tcol_data data);
+
+	vec3f get_collision_color(uint8_t colId);
 	vec3f unpack_vertex(uint32_t vertex);
+
 	std::vector<float> triangles() const override;
+	std::vector<float> colors() const override;
 
 	tcol_list<tcol_list<tcol_list<tcol_data>>> data;
 
@@ -70,6 +74,7 @@ private:
 	size_t _base_offset;
 
 	std::vector<float> _tcol_triangles;
+	std::vector<float> _tcol_vertex_colors;
 };
 
 #endif

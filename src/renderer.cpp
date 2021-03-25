@@ -159,8 +159,7 @@ void gl_renderer::draw_level(level& lvl, glm::mat4 world_to_clip) const {
 	
 	if (draw_tcols) {
 		for (auto& col : lvl.baked_collisions) {
-			glm::vec4 colour(0.5, 0.5, 0.5, 1);
-			draw_model(col, world_to_clip, colour);
+			draw_model_vcolor(col, world_to_clip);
 		}
 	}
 
@@ -276,6 +275,32 @@ void gl_renderer::draw_model(const model& mdl, const glm::mat4& mvp, const glm::
 	glDrawArrays(GL_TRIANGLES, 0, mdl.vertex_buffer_size() / 3);
 
 	glDisableVertexAttribArray(0);
+}
+
+void gl_renderer::draw_model_vcolor(const model& mdl, const glm::mat4& mvp) const {
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glUseProgram(shaders.vertex_color.id());
+	glUniformMatrix4fv(shaders.vertex_color_transform, 1, GL_FALSE, &mvp[0][0]);
+
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, mdl.vertex_buffer());
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+	glEnableVertexAttribArray(1);
+	glBindBuffer(GL_ARRAY_BUFFER, mdl.vertex_color_buffer());
+	glVertexAttribPointer(
+		1,                                // attribute. No particular reason for 1, but must match the layout in the shader.
+		3,                                // size
+		GL_FLOAT,                         // type
+		GL_TRUE,                          // normalized?
+		3 * sizeof(float),                // stride
+		(void*)0                          // array buffer offset
+	);
+
+	glDrawArrays(GL_TRIANGLES, 0, mdl.vertex_buffer_size() / 3);
+
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
 }
 
 void gl_renderer::draw_cube(const glm::mat4& mvp, const glm::vec4& colour) const {

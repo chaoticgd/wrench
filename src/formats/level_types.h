@@ -313,6 +313,8 @@ packed_struct(vec3f,
 
 	vec3f() {}
 
+	vec3f(float _x, float _y, float _z) { x = x; y = y; z = z; }
+
 	vec3f(glm::vec3 vec) {
 		x = vec.x;
 		y = vec.y;

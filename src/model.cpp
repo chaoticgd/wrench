@@ -46,6 +46,7 @@ void model::update() {
 	glDeleteBuffers(1, &_vertex_buffer);
 	
 	std::vector<float> vertex_data;
+	std::vector<float> vertex_color_data;
 	try {
 		vertex_data = triangles();
 	} catch(stream_error& e) {
@@ -62,6 +63,23 @@ void model::update() {
 	glBufferData(GL_ARRAY_BUFFER,
 		_vertex_buffer_size * sizeof(float),
 		vertex_data.data(), GL_STATIC_DRAW);
+
+	try {
+		vertex_color_data = colors();
+	}
+	catch (stream_error& e) {
+		// no colors
+		_vertex_color_buffer = 0;
+		_vertex_color_buffer_size = 0;
+		return;
+	}
+
+	_vertex_color_buffer_size = vertex_color_data.size();
+	glGenBuffers(1, &_vertex_color_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, _vertex_color_buffer);
+	glBufferData(GL_ARRAY_BUFFER,
+		_vertex_color_buffer_size * sizeof(float),
+		vertex_color_data.data(), GL_STATIC_DRAW);
 }
 
 GLuint model::vertex_buffer() const {
@@ -70,4 +88,12 @@ GLuint model::vertex_buffer() const {
 
 std::size_t model::vertex_buffer_size() const {
 	return _vertex_buffer_size;
+}
+
+GLuint model::vertex_color_buffer() const {
+	return _vertex_color_buffer;
+}
+
+std::size_t model::vertex_color_buffer_size() const {
+	return _vertex_color_buffer_size;
 }

@@ -36,16 +36,21 @@ public:
 	virtual ~model();
 
 	virtual std::vector<float> triangles() const = 0;
+	virtual std::vector<float> colors() const = 0;
 	
 	// Read the model data, load it into a OpenGL buffer. Only call from main thread!
 	void update();
 	
 	GLuint vertex_buffer() const;
 	std::size_t vertex_buffer_size() const;
+	GLuint vertex_color_buffer() const;
+	std::size_t vertex_color_buffer_size() const;
 	
 private:
 	GLuint _vertex_buffer;
 	std::size_t _vertex_buffer_size;
+	GLuint _vertex_color_buffer;
+	std::size_t _vertex_color_buffer_size;
 };
 
 #endif

@@ -118,6 +118,7 @@ public:
 
 	void warn_current_tfrag(const char* message);
 	std::vector<float> triangles() const override;
+	std::vector<float> colors() const override;
 
 private:
 	proxy_stream _backing;
