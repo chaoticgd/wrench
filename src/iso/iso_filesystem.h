@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef FORMATS_ISOFS_H
-#define FORMATS_ISOFS_H
+#ifndef ISO_FILESYSTEM_H
+#define ISO_FILESYSTEM_H
 
 #include <map>
 
