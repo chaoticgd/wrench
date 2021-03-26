@@ -82,11 +82,14 @@ tfrag::tfrag(stream *backing, std::size_t base_offset, tfrag_entry & entry)
 }
 
 std::vector<float> tfrag::triangles() const {
-	std::vector<float> result;
-
 	return _tfrag_triangles;
 }
 
+
+std::vector<float> tfrag::colors() const {
+	std::vector<float> result;
+	return result;
+}
 
 tfrag::interpreted_tfrag_vif_list tfrag::interpret_vif_list(
 	const std::vector<vif_packet>& vif_list) {

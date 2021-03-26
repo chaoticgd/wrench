@@ -85,6 +85,7 @@ void level::read(
 	read_textures(asset_offset, asset_header);
 	
 	read_tfrags();
+	read_tcol(asset_offset, asset_header);
 	
 	if(file_header.type == level_type::RAC4) {
 		return;
@@ -229,6 +230,14 @@ void level::read_tfrags() {
 		tfrag frag = tfrag(&(*_asset_segment), tfrag_head.entry_list_offset + entry.offset, entry);
 		frag.update();
 		tfrags.emplace_back(std::move(frag));
+	}
+}
+
+void level::read_tcol(std::size_t asset_offset, level_asset_header asset_header) {
+	baked_collisions.push_back(tcol(&(*_asset_segment), asset_header.collision));
+
+	for (auto& col : baked_collisions) {
+		col.update();
 	}
 }
 

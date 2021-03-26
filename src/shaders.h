@@ -58,6 +58,9 @@ struct shader_programs {
 	shader_program solid_colour;
 	GLint solid_colour_transform;
 	GLint solid_colour_rgb;
+
+	shader_program vertex_color;
+	GLint vertex_color_transform;
 	
 	shader_program solid_colour_batch;
 	GLint solid_colour_batch_rgb;
