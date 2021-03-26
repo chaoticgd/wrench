@@ -234,10 +234,7 @@ const size_t AUDIO_PART = 1;
 const size_t SCENE_PART = 2;
 struct level_parts {
 	std::optional<fs::path> parts[3];
-	sector32 data_offsets[3];
-	sector32 data_lbas[3]; // For writing out the table of contents.
-	sector32 sizes[3]; // For writing out the table of contents.
-	size_t header_sizes_in_sectors[3];
+	uint32_t header_sizes_in_sectors[3];
 };
 
 void build(std::string iso_path, fs::path input_dir) {
@@ -333,19 +330,19 @@ void build(std::string iso_path, fs::path input_dir) {
 	}
 	switch(game) {
 		case GAME_RAC1:
-			printf("Detected game: Ratchet & Clank 1\n");
+			printf("Detected game: Ratchet & Clank 1\n\n");
 			break;
 		case GAME_RAC2:
-			printf("Detected game: Ratchet & Clank 2\n");
+			printf("Detected game: Ratchet & Clank 2\n\n");
 			break;
 		case GAME_RAC3:
-			printf("Detected game: Ratchet & Clank 3\n");
+			printf("Detected game: Ratchet & Clank 3\n\n");
 			break;
 		case GAME_RAC4:
-			printf("Detected game: Ratchet: Deadlocked\n");
+			printf("Detected game: Ratchet: Deadlocked\n\n");
 			break;
 		case GAME_RAC2_OTHER:
-			printf("Detected game: Ratchet & Clank 2 Other\n");
+			printf("Detected game: Ratchet & Clank 2 Other\n\n");
 			break;
 		default:
 			fprintf(stderr, "warning: Unable to detect game! Assuming Ratchet & Clank 2...\n");
@@ -366,12 +363,6 @@ void build(std::string iso_path, fs::path input_dir) {
 	}
 	global_toc_size_bytes += level_files.size() * sizeof(sector_range) * 3;
 	sector32 global_toc_size = sector32::size_from_bytes(global_toc_size_bytes);
-	// Hardcoded sizes.
-	switch(game) {
-		case GAME_RAC2: assert(global_toc_size.sectors <= 0xb); break;
-		case GAME_RAC3: assert(global_toc_size.sectors <= 0x10); break;
-		case GAME_RAC4: assert(global_toc_size.sectors <= 0x1a); break;
-	}
 	sector32 total_toc_size = global_toc_size;
 	for(auto& level : level_files) {
 		for(int part = 0; part < 3; part++) {
@@ -381,9 +372,109 @@ void build(std::string iso_path, fs::path input_dir) {
 		}
 	}
 	
-	// Determine the LBAs of files on disc and build the root directory.
+	// After all the other files have been written out, write out an ISO
+	// filesystem at the beginning of the image.
+	file_stream iso(iso_path, std::ios::out);
 	std::vector<iso_file_record> root_dir;
-	sector32 lba {TABLE_OF_CONTENTS_LBA + total_toc_size.sectors};
+	uint32_t volume_size = 0;
+	defer([&]() {
+		iso.seek(0);
+		write_iso_filesystem(iso, root_dir);
+		assert(iso.tell() <= TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
+		
+		iso.write<uint32_t>(0x8050, volume_size);
+	});
+	
+	// After all the other files have been written out, write out the table of
+	// contents file at its hardcoded position.
+	std::vector<toc_table> toc_tables;
+	std::vector<toc_level> toc_levels;
+	defer([&]() {
+		iso.seek(TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
+		for(toc_table& table : toc_tables) {
+			iso.write(table.header);
+			iso.write_v(table.lumps);
+		}
+		
+		size_t level_table_pos = iso.tell();
+		std::vector<sector_range> level_table(toc_levels.size() * 3, {{0}, {0}});
+		defer([&]() {
+			iso.seek(level_table_pos);
+			iso.write_v(level_table);
+		});
+		iso.seek(iso.tell() + level_table.size() * sizeof(sector_range));
+		
+		size_t toc_start_size_bytes = iso.tell() - TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
+		sector32 toc_start_size = sector32::size_from_bytes(toc_start_size_bytes);
+		
+		// Size limits hardcoded in the boot ELF.
+		switch(game) {
+			case GAME_RAC2: assert(toc_start_size.sectors <= 0xb); break;
+			case GAME_RAC3: assert(toc_start_size.sectors <= 0x10); break;
+			case GAME_RAC4: assert(toc_start_size.sectors <= 0x1a); break;
+		}
+		
+		iso.pad(SECTOR_SIZE, 0);
+		for(toc_level& level : toc_levels) {
+			for(std::optional<toc_level_part>& part : level.parts) {
+				if(!part) {
+					continue;
+				}
+				
+				uint32_t header_lba = iso.tell() / SECTOR_SIZE;
+				iso.write(part->magic);
+				iso.write(part->file_lba);
+				iso.write_v(part->lumps);
+				
+				// The order of fields in the level table entries is different
+				// for R&C2 versus R&C3 and Deadlocked.
+				size_t field = 0;
+				bool is_rac2 = game == GAME_RAC2 || game == GAME_RAC2_OTHER;
+				switch(part->info.type) {
+					case level_file_type::AUDIO: field = !is_rac2; break;
+					case level_file_type::LEVEL: field = is_rac2; break;
+					case level_file_type::SCENE: field = 2; break;
+				}
+				size_t index = level.level_table_index * 3 + field;
+				level_table[index].offset.sectors = header_lba;
+				level_table[index].size = part->file_size;
+				
+				assert(iso.tell() % SECTOR_SIZE == 0);
+			}
+		}
+	});
+	
+	// Write out blank sectors that are to be filled in later.
+	iso.pad(SECTOR_SIZE, 0);
+	static const uint8_t zeroed_sector[SECTOR_SIZE] = {0};
+	while(iso.tell() < TABLE_OF_CONTENTS_LBA * SECTOR_SIZE + total_toc_size.bytes()) {
+		iso.write_n((char*) zeroed_sector, SECTOR_SIZE);
+	}
+	
+	printf("LBA             Size (bytes)    Filename\n");
+	printf("---             ------------    --------\n");
+	
+	// Write out the files and fill in the ISO filesystem/ToC structures so they
+	// can be written out later.
+	auto print_file_record = [](iso_file_record& record) {
+		assert(record.name.size() >= 2);
+		auto display_name = record.name.substr(0, record.name.size() - 2);
+		printf("0x%-14x0x%-14x%s\n", record.lba.sectors, record.size, display_name.c_str());
+	};
+	{
+		iso_file_record toc_record;
+		switch(game) {
+			case GAME_RAC1: toc_record.name = "rc1.hdr;1"; break;
+			case GAME_RAC2: toc_record.name = "rc2.hdr;1"; break;
+			case GAME_RAC3: toc_record.name = "rc3.hdr;1"; break;
+			case GAME_RAC4: toc_record.name = "rc4.hdr;1"; break;
+			case GAME_RAC2_OTHER: toc_record.name = "rc2.hdr;1"; break;
+		}
+		toc_record.lba = {TABLE_OF_CONTENTS_LBA};
+		toc_record.size = iso.tell() - TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
+		root_dir.push_back(toc_record);
+		print_file_record(toc_record);
+	}
 	for(fs::path& path : other_files) {
 		auto name = str_to_lower(path.filename().string());
 		if(name == "rc2.hdr") {
@@ -391,119 +482,114 @@ void build(std::string iso_path, fs::path input_dir) {
 			// isn't needed.
 			continue;
 		}
+		
+		file_stream file(path);
+		iso.pad(SECTOR_SIZE, 0);
+		
 		iso_file_record record;
 		record.name = name + ";1";
-		record.lba = lba;
-		record.size = file_stream(path).size();
-		record.source = path;
+		record.lba = {(uint32_t) (iso.tell() / SECTOR_SIZE)};
+		record.size = file.size();
 		root_dir.push_back(record);
-		lba.sectors += sector32::size_from_bytes(record.size).sectors;
+		
+		print_file_record(record);
+		
+		stream::copy_n(iso, file, record.size);
 	}
 	for(global_file& global : global_files) {
-		global.lba = lba;
-		
 		file_stream file(global.path);
 		sector32 data_offset = file.read<sector32>(0x4);
+		iso.pad(SECTOR_SIZE, 0);
+		
+		toc_table table;
+		table.index = 0; // Don't care.
+		table.offset_in_toc = 0; // Don't care.
+		table.header.header_size = file.read<uint32_t>(0);
+		table.header.base_offset = {(uint32_t) (iso.tell() / SECTOR_SIZE)};
+		table.lumps.resize((table.header.header_size - 8) / sizeof(sector_range));
+		file.seek(0x8);
+		file.read_v(table.lumps);
+		toc_tables.push_back(table);
 		
 		iso_file_record record;
 		record.name = global.path.filename().string() + ";1";
-		record.lba = global.lba;
+		record.lba = table.header.base_offset;
 		record.size = file.size() - data_offset.bytes();
-		record.source = global.path;
 		root_dir.push_back(record);
-		lba.sectors += sector32::size_from_bytes(record.size).sectors;
+		
+		print_file_record(record);
+		
+		file.seek(data_offset.bytes());
+		stream::copy_n(iso, file, record.size);
 	}
-	// Note: This matches how the levels are laid out for R&C2 (AoS), but for
-	// R&C3 and DL they're laid out on disc SoA, audio first.
-	for(level_parts& level : level_files) {
-		for(int i = 0; i < 3; i++) {
-			if(level.parts[i]) {
-				file_stream file(*level.parts[i]);
-				level.data_offsets[i] = file.read<sector32>(0x4);
-				level.data_lbas[i] = lba;
-				level.sizes[i] = sector32::size_from_bytes(file.size() - level.data_offsets[i].bytes());
-				
-				iso_file_record record;
-				record.name = level.parts[i]->filename().string() + ";1";
-				record.lba = lba;
-				record.size = level.sizes[i].bytes();
-				record.source = *level.parts[i];
-				root_dir.push_back(record);
-				lba.sectors += level.sizes[i].sectors;
+	auto write_level_part = [&](fs::path& path) {
+		file_stream file(path);
+		sector32 data_offset = file.read<sector32>(0x4);
+		iso.pad(SECTOR_SIZE, 0);
+		
+		toc_level_part part;
+		part.header_lba = {0}; // Don't care.
+		part.file_size = sector32::size_from_bytes(file.size() - data_offset.bytes());
+		part.magic = file.read<uint32_t>(0);
+		part.file_lba = {(uint32_t) (iso.tell() / SECTOR_SIZE)};
+		auto info = LEVEL_FILE_TYPES.find(part.magic);
+		if(info == LEVEL_FILE_TYPES.end()) {
+			fprintf(stderr, "error: Level '%s' has an invalid header!\n", path.filename().c_str());
+			exit(1);
+		}
+		part.info = info->second;
+		size_t header_size = part.info.header_size_sectors * SECTOR_SIZE;
+		part.lumps.resize((header_size - 8) / sizeof(sector_range));
+		file.seek(0x8);
+		file.read_v(part.lumps);
+		
+		iso_file_record record;
+		record.name = path.filename().string() + ";1";
+		record.lba = part.file_lba;
+		record.size = part.file_size.bytes();
+		root_dir.push_back(record);
+		
+		print_file_record(record);
+		
+		file.seek(data_offset.bytes());
+		stream::copy_n(iso, file, record.size);
+		
+		return part;
+	};
+	toc_levels.resize(level_files.size());
+	if(game == GAME_RAC2 || game == GAME_RAC2_OTHER) {
+		// The level files are laid out AoS.
+		for(size_t i = 0; i < level_files.size(); i++) {
+			level_parts& level = level_files[i];
+			auto& p = level.parts;
+			if(p[LEVEL_PART]) toc_levels[i].parts[0] = write_level_part(*p[LEVEL_PART]);
+			if(p[AUDIO_PART]) toc_levels[i].parts[1] = write_level_part(*p[AUDIO_PART]);
+			if(p[SCENE_PART]) toc_levels[i].parts[2] = write_level_part(*p[SCENE_PART]);
+		}
+	} else {
+		// The level files are laid out SoA, audio files first.
+		for(size_t i = 0; i < level_files.size(); i++) {
+			level_parts& level = level_files[i];
+			if(level.parts[AUDIO_PART]) {
+				toc_levels[i].parts[0] = write_level_part(*level.parts[AUDIO_PART]);
+			}
+		}
+		for(size_t i = 0; i < level_files.size(); i++) {
+			level_parts& level = level_files[i];
+			if(level.parts[LEVEL_PART]) {
+				toc_levels[i].parts[1] = write_level_part(*level.parts[LEVEL_PART]);
+			}
+		}
+		for(size_t i = 0; i < level_files.size(); i++) {
+			level_parts& level = level_files[i];
+			if(level.parts[SCENE_PART]) {
+				toc_levels[i].parts[2] = write_level_part(*level.parts[SCENE_PART]);
 			}
 		}
 	}
-	
-	file_stream iso(iso_path, std::ios::out);
-	
-	printf("Writing ISO filesystem\n");
-	write_iso_filesystem(iso, root_dir);
 	
 	iso.pad(SECTOR_SIZE, 0);
-	static const uint8_t zeroed_sector[SECTOR_SIZE] = {0};
-	while(iso.tell() < TABLE_OF_CONTENTS_LBA * SECTOR_SIZE) {
-		iso.write_n((char*) zeroed_sector, SECTOR_SIZE);
-	}
-	
-	// Write out the table of contents.
-	printf("Writing table of contents at LBA %x\n", TABLE_OF_CONTENTS_LBA);
-	for(global_file& global : global_files) {
-		file_stream file(global.path);
-		uint32_t size = file.read<uint32_t>();
-		iso.write<uint32_t>(size);
-		iso.write<sector32>(global.lba);
-		file.seek(8);
-		stream::copy_n(iso, file, size - 8);
-	}
-	std::vector<sector_range> level_table(level_files.size() * 3);
-	size_t level_table_pos = iso.tell();
-	defer([&]() {
-		iso.seek(level_table_pos);
-		iso.write_v(level_table);
-	});
-	iso.seek(iso.tell() + level_table.size() + sizeof(sector_range));
-	for(size_t i = 0; i < level_files.size(); i++) {
-		auto& level = level_files[i];
-		for(int part = 0; part < 3; part++) {
-			if(level.parts[part]) {
-				const size_t MAX_HEADER_SIZE_IN_SECTORS = 5;
-				size_t header_size_bytes = level.header_sizes_in_sectors[part] * SECTOR_SIZE;
-				
-				uint32_t header[MAX_HEADER_SIZE_IN_SECTORS * SECTOR_SIZE / 4];
-				file_stream file(*level.parts[part]);
-				file.read_n((char*) header, header_size_bytes);
-				header[1] = level.data_lbas[part].sectors;
-				
-				iso.pad(SECTOR_SIZE, 0);
-				level_table[i * 3 + part].offset.sectors = iso.tell() / SECTOR_SIZE;
-				level_table[i * 3 + part].size = level.sizes[part];
-				iso.write_n((char*) header, header_size_bytes);
-			}
-		}
-	}
-	
-	// Write out the rest of the files.
-	for(const iso_file_record& record : root_dir) {
-		file_stream file(record.source);
-		uint32_t data_offset = 0;
-		std::string name = str_to_lower(record.name);
-		if(name.find(".wad") != std::string::npos) {
-			// For the .WAD files the ToC header is added to the beginning of
-			// the file.
-			data_offset = file.read<sector32>(0x4).bytes();
-		}
-		file.seek(data_offset);
-		iso.pad(SECTOR_SIZE, 0);
-		assert(iso.tell() == record.lba.bytes());
-		printf("Writing %s at LBA 0x%x\n", record.name.c_str(), record.lba.sectors);
-		stream::copy_n(iso, file, file.size() - data_offset);
-	}
-	
-	// Make sure we've written out the right amount of data.
-	assert(iso.tell() == lba.bytes());
-	
-	// Write the volume size into the primary volume descriptor.
-	iso.write<uint32_t>(0x8050, lba.sectors);
+	volume_size = iso.tell() / SECTOR_SIZE;
 }
 
 void enumerate_files_recursive(std::vector<fs::path>& files, fs::path dir, int depth) {

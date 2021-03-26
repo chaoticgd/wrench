@@ -28,15 +28,15 @@ struct iso_file_record {
 	std::string name;
 	sector32 lba;
 	uint32_t size;
-	fs::path source; // Only used while writing out a new ISO.
 };
 
 // Read an ISO filesystem and output a map (dest) of the files in the root
 // directory. Return true on success, false on failure.
 bool read_iso_filesystem(std::vector<iso_file_record>& dest, stream& iso);
 
-// Given a list of files of a specific size, write and ISO filesystem (not the
-// files themselves) and return a map specifying where each file should go.
-std::map<std::string, size_t> write_iso_filesystem(stream& dest, const std::vector<iso_file_record>& files);
+// Given a list of files including their LBA and size, write out an ISO
+// filesystem. This function is "dumb" in that it doesn't work out any positions
+// by itself.
+void write_iso_filesystem(stream& dest, const std::vector<iso_file_record>& files);
 
 #endif

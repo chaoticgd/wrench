@@ -187,7 +187,7 @@ void copy_and_pad(char* dest, const char* src, size_t size) {
 	}
 }
 
-std::map<std::string, size_t> write_iso_filesystem(stream& dest, const std::vector<iso_file_record>& files) {
+void write_iso_filesystem(stream& dest, const std::vector<iso_file_record>& files) {
 	// Write out system area.
 	static const uint8_t zeroed_sector[SECTOR_SIZE] = {0};
 	for(int i = 0; i < 0x10; i++) {
@@ -200,9 +200,10 @@ std::map<std::string, size_t> write_iso_filesystem(stream& dest, const std::vect
 	size_t pvd_pos = dest.tell();
 	iso9660_primary_volume_desc pvd;
 	defer([&]() {
+		size_t pos = dest.tell();
 		dest.seek(pvd_pos);
 		dest.write(pvd);
-		dest.seek(dest.size());
+		dest.seek(pos);
 	});
 	dest.seek(dest.tell() + sizeof(pvd));
 	pvd.type_code = 0x01;
@@ -349,6 +350,4 @@ std::map<std::string, size_t> write_iso_filesystem(stream& dest, const std::vect
 	
 	// Ensure our size calculation for the root directory was correct.
 	assert(dest.tell() == root_dir_lba * SECTOR_SIZE + root_dir_size_total);
-	
-	return {};
 }
