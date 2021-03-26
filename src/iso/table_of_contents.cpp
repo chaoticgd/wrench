@@ -47,89 +47,74 @@ table_of_contents read_table_of_contents(stream& iso, std::size_t toc_base) {
 	std::vector<toc_level_table_entry> level_table(TOC_MAX_LEVELS);
 	iso.seek(toc_base + level_table_offset);
 	iso.read_v(level_table);
-	for(std::size_t i = 0; i < TOC_MAX_LEVELS; i++) {
+	for(size_t i = 0; i < TOC_MAX_LEVELS; i++) {
 		toc_level_table_entry entry = level_table[i];
 		
 		toc_level level;
 		level.level_table_index = i;
-		bool has_main_part = false;
+		bool has_level_part = false;
 		
 		// The games have the fields in different orders, so we check the type
 		// of what each field points to so we can support them all.
-		sector32 headers[] = { entry.header_1, entry.header_2, entry.header_3 };
-		sector32 sizes[] = { entry.header_1_size, entry.header_2_size, entry.header_3_size };
-		for(std::size_t j = 0; j < sizeof(headers) / sizeof(sector32); j++) {
-			if(headers[j].bytes() > iso.size()) {
+		for(size_t j = 0; j < 3; j++) {
+			toc_level_part part;
+			part.header_lba = entry.parts[j].offset;
+			part.file_size = entry.parts[j].size;
+			
+			if(part.header_lba.sectors == 0) {
+				continue;
+			}
+			if(part.header_lba.bytes() > iso.size()) {
 				break;
 			}
 			
-			uint32_t magic = iso.read<uint32_t>(headers[j].bytes());
-			if(contains(TOC_MAIN_PART_MAGIC, magic)) {
-				level.main_part = headers[j];
-				level.main_part_size = sizes[j];
-				// Find where the file size is stored on disk so we can patch it later.
-				level.main_part_size_offset = toc_base + level_table_offset + (i * 4 * 6) + (j * 8) + 4;
-				has_main_part = true;
-			}
+			part.magic = iso.read<uint32_t>(part.header_lba.bytes());
+			part.file_lba = iso.read<sector32>();
 			
-			if(contains(TOC_AUDIO_PART_MAGIC, magic)) {
-				level.audio_part = headers[j];
-				level.audio_part_size = sizes[j];
+			auto info = LEVEL_FILE_TYPES.find(part.magic);
+			if(info == LEVEL_FILE_TYPES.end()) {
+				continue;
 			}
+			part.info = info->second;
 			
-			if(contains(TOC_SCENE_PART_MAGIC, magic)) {
-				level.scene_part = headers[j];
-				level.scene_part_size = sizes[j];
-			}
+			size_t header_size = part.info.header_size_sectors * SECTOR_SIZE;
+			part.lumps.resize((header_size - 8) / sizeof(sector_range));
+			iso.read_v(part.lumps);
+			
+			has_level_part |= part.info.type == level_file_type::LEVEL;
+			level.parts[j] = part;
 		}
 		
-		if(!has_main_part) {
-			continue;
+		if(has_level_part) {
+			toc.levels.push_back(level);
 		}
-		
-		toc.levels.push_back(level);
 	}
 	
 	return toc;
 }
 
 std::size_t toc_get_level_table_offset(stream& iso, std::size_t toc_base) {
-	std::vector<uint8_t> buffer(TOC_MAX_SIZE);
+	std::vector<uint32_t> buffer(TOC_MAX_SIZE / 4);
 	iso.seek(toc_base);
 	iso.read_v(buffer);
 	
-	for(std::size_t i = 0; i < TOC_MAX_INDEX_SIZE - sizeof(toc_level_table_entry); i += sizeof(uint32_t)) {
-		// Check that the two next entries are valid. This is necessary to
-		// get past a false positive in Deadlocked.
-		toc_level_table_entry entry1 = *(toc_level_table_entry*) &buffer[i];
-		toc_level_table_entry entry2 = *(toc_level_table_entry*) &buffer[i + sizeof(toc_level_table_entry)];
-		sector32 headers[] = {
-			entry1.header_1, entry1.header_2, entry1.header_3,
-			entry2.header_1, entry2.header_2, entry2.header_3
-		};
-		
+	// Check that the two next entries are valid. This is necessary to
+	// get past a false positive in Deadlocked.
+	for(size_t i = 0; i < buffer.size() - 6; i++) {
 		int parts = 0;
-		for(sector32 header : headers) {
-			if(header.sectors == 0) {
+		for(int j = 0; j < 6; j++) {
+			sector32 lba = {buffer[i + j * 2]};
+			size_t header_offset = lba.bytes() - toc_base;
+			if(lba.sectors == 0 || header_offset > TOC_MAX_SIZE - 4) {
 				break;
 			}
-			
-			std::size_t magic_offset = header.bytes() - toc_base;
-			
-			if(magic_offset > TOC_MAX_SIZE - sizeof(uint32_t)) {
-				break;
-			}
-			
-			uint32_t magic = *(uint32_t*) &buffer[magic_offset];
-			if(contains(TOC_MAIN_PART_MAGIC, magic) ||
-			   contains(TOC_AUDIO_PART_MAGIC, magic) ||
-			   contains(TOC_SCENE_PART_MAGIC, magic)) {
+			uint32_t magic = *(uint32_t*) &buffer[header_offset / 4];
+			if(LEVEL_FILE_TYPES.find(magic) != LEVEL_FILE_TYPES.end()) {
 				parts++;
 			}
 		}
-		
 		if(parts == 6) {
-			return i * sizeof(buffer[0]);
+			return i * 4;
 		}
 	}
 	return 0;

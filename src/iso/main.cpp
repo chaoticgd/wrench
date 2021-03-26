@@ -25,7 +25,6 @@
 
 // This is true for R&C2, R&C3 and Deadlocked.
 static const uint32_t TABLE_OF_CONTENTS_LBA = 0x3e9;
-const char* LEVEL_PART_NAMES[3] = { "level", "audio", "scene" };
 
 void ls(std::string iso_path);
 void extract(std::string iso_path, fs::path output_dir);
@@ -90,22 +89,35 @@ void ls(std::string iso_path) {
 	printf("|       | ----------             | ----------             | ----------             |\n");
 	printf("| Index | Offset      Size       | Offset      Size       | Offset      Size       |\n");
 	printf("| ----- | ------      ----       | ------      ----       | ------      ----       |\n");
-	for(size_t i = 0; i < toc.levels.size(); i++) {
-		toc_level& lvl = toc.levels[i];
-		size_t main_part_base = iso.read<sector32>(lvl.main_part.bytes() + 4).bytes();
-		printf("| %02ld    | %010lx  %010lx |",
-			i, main_part_base, lvl.main_part_size.bytes());
-		if(lvl.audio_part.sectors != 0) {
-			size_t audio_part_base = iso.read<sector32>(lvl.audio_part.bytes() + 4).bytes();
-			printf(" %010lx  %010lx |", audio_part_base, lvl.audio_part_size.bytes());
-		} else {
-			printf(" N/A         N/A        |");
+	for(toc_level& level : toc.levels) {
+		size_t offsets[3] = {0, 0, 0};
+		size_t sizes[3] = {0, 0, 0};
+		
+		for(std::optional<toc_level_part>& part : level.parts) {
+			if(!part) {
+				continue;
+			}
+			size_t part_column = 0;
+			switch(part->info.type) {
+				case level_file_type::LEVEL: part_column = 0; break;
+				case level_file_type::AUDIO: part_column = 1; break;
+				case level_file_type::SCENE: part_column = 2; break;
+			}
+			if(offsets[part_column] != 0) {
+				fprintf(stderr, "error: Level table entry references multiple files of same type.\n");
+				exit(1);
+			}
+			offsets[part_column] = part->file_lba.bytes();
+			sizes[part_column] = part->file_size.bytes();
 		}
-		if(lvl.scene_part.sectors != 0) {
-			size_t scene_part_base = iso.read<sector32>(lvl.scene_part.bytes() + 4).bytes();
-			printf(" %010lx  %010lx |", scene_part_base, lvl.scene_part_size.bytes());
-		} else {
-			printf(" N/A         N/A        |");
+		
+		printf("| %03ld   |", level.level_table_index);
+		for(int i = 0; i < 3; i++) {
+			if(offsets[i] != 0) {
+				printf(" %010lx  %010lx |", offsets[i], sizes[i]);
+			} else {
+				printf(" N/A         N/A        |");
+			}
 		}
 		printf("\n");
 	}
@@ -155,28 +167,28 @@ void extract(std::string iso_path, fs::path output_dir) {
 		fprintf(stderr, "error: Unable to locate level table!\n");
 		exit(1);
 	}
-	for(size_t i = 0; i < toc.tables.size(); i++) {
-		toc_table& table = toc.tables[i];
+	for(toc_table& table : toc.tables) {
 		auto name = std::to_string(table.index) + ".wad";
 		auto path = global_dir/name;
 		
 		size_t start_of_file = table.header.base_offset.bytes();
-		size_t end_of_file;
-		if(i == toc.tables.size() - 1) {
-			// Assume one of these level files comes next.
-			toc_level& first = toc.levels[0];
-			end_of_file = iso.read<sector32>(toc.levels[0].main_part.bytes() + 0x4).bytes();
-			if(first.audio_part.sectors != 0) {
-				size_t audio_pos = iso.read<sector32>(first.audio_part.bytes() + 0x4).bytes();
-				end_of_file = std::min(end_of_file, audio_pos);
+		size_t end_of_file = SIZE_MAX;
+		// Assume the beginning of the next file after this one is also the end
+		// of this file.
+		for(toc_table& other_table : toc.tables) {
+			sector32 lba = other_table.header.base_offset;
+			if(lba.bytes() > start_of_file) {
+				end_of_file = std::min(end_of_file, lba.bytes());
 			}
-			if(first.scene_part.sectors != 0) {
-				size_t scene_pos = iso.read<sector32>(first.scene_part.bytes() + 0x4).bytes();
-				end_of_file = std::min(end_of_file, scene_pos);
-			}
-		} else {
-			end_of_file = toc.tables[i + 1].header.base_offset.bytes();
 		}
+		for(toc_level& other_level : toc.levels) {
+			for(std::optional<toc_level_part>& part : other_level.parts) {
+				if(part && part->file_lba.bytes() > start_of_file) {
+					end_of_file = std::min(end_of_file, part->file_lba.bytes());
+				}
+			}
+		}
+		assert(end_of_file != SIZE_MAX);
 		assert(end_of_file >= start_of_file);
 		size_t file_size = end_of_file - start_of_file;
 		
@@ -192,24 +204,19 @@ void extract(std::string iso_path, fs::path output_dir) {
 		stream::copy_n(output_file, iso, file_size);
 	}
 	for(toc_level& level : toc.levels) {
-		sector32 header_lbas[3] = { level.main_part, level.audio_part, level.scene_part };
-		sector32 file_sizes[3] = { level.main_part_size, level.audio_part_size, level.scene_part_size };
-		for(int i = 0; i < 3; i++) {
-			auto name = LEVEL_PART_NAMES[i] + std::to_string(level.level_table_index) + ".wad";
+		for(std::optional<toc_level_part>& part : level.parts) {
+			if(!part) {
+				continue;
+			}
+			auto name = part->info.prefix + std::to_string(level.level_table_index) + ".wad";
 			auto path = levels_dir/name;
 			file_stream output_file(path.string(), std::ios::out);
 			
-			uint8_t header[SECTOR_SIZE];
-			iso.seek(header_lbas[i].bytes());
-			iso.read_n((char*) header, SECTOR_SIZE);
-			
-			sector32* file_lba_ptr = (sector32*) &header[4];
-			sector32 file_lba = *file_lba_ptr;
-			*file_lba_ptr = sector32{sizeof(header) / SECTOR_SIZE}; // Same as above.
-			
-			output_file.write_n((char*) header, SECTOR_SIZE);
-			iso.seek(file_lba.bytes());
-			stream::copy_n(output_file, iso, file_sizes[i].bytes());
+			output_file.write<uint32_t>(part->magic);
+			output_file.write<uint32_t>(part->info.header_size_sectors); // Same as above.
+			output_file.write_v(part->lumps);
+			iso.seek(part->file_lba.bytes());
+			stream::copy_n(output_file, iso, part->file_size.bytes());
 		}
 	}
 }
@@ -260,6 +267,7 @@ void build(std::string iso_path, fs::path input_dir) {
 		auto name = str_to_lower(path.filename().string());
 		bool is_global = true;
 		for(int part = 0; part < 3; part++) {
+			static const char* LEVEL_PART_NAMES[3] = { "level", "audio", "scene" };
 			if(name.find(LEVEL_PART_NAMES[part]) == 0) {
 				assert(name.size() >= 9);
 				int level_index;
