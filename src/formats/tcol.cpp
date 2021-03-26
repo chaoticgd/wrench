@@ -135,14 +135,14 @@ tcol::tcol(stream *backing, std::size_t base_offset)
 	}
 
 	// 
-	position_offset.z = data.coordinate_value;
+	position_offset.z = data.coordinate_value + 2;
 	for (auto ystrip : data.list)
 	{
-		position_offset.y = ystrip.coordinate_value;
+		position_offset.y = ystrip.coordinate_value + 2;
 
 		for (auto xstrip : ystrip.list)
 		{
-			position_offset.x = xstrip.coordinate_value;
+			position_offset.x = xstrip.coordinate_value + 2;
 
 			for (auto coldata : xstrip.list)
 			{
