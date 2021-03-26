@@ -227,6 +227,8 @@ struct global_file {
 	bool operator<(global_file& rhs) { return path < rhs.path; }
 };
 
+// Note: Files aren't necessarily written out in this order. The structure of
+// the level table depends on the game!
 const size_t LEVEL_PART = 0;
 const size_t AUDIO_PART = 1;
 const size_t SCENE_PART = 2;
@@ -235,6 +237,7 @@ struct level_parts {
 	sector32 data_offsets[3];
 	sector32 data_lbas[3]; // For writing out the table of contents.
 	sector32 sizes[3]; // For writing out the table of contents.
+	size_t header_sizes_in_sectors[3];
 };
 
 void build(std::string iso_path, fs::path input_dir) {
@@ -309,6 +312,23 @@ void build(std::string iso_path, fs::path input_dir) {
 		}
 	}
 	
+	// Read the magic identifier from each of the level files. Yes I'm opening
+	// each file to read just 4 bytes.
+	for(level_parts& level : level_files) {
+		for(int i = 0; i < 3; i++) {
+			if(!level.parts[i]) {
+				continue;
+			}
+			uint32_t magic = file_stream(level.parts[i]->string()).read<uint32_t>();
+			auto info = LEVEL_FILE_TYPES.find(magic);
+			if(info == LEVEL_FILE_TYPES.end()) {
+				fprintf(stderr, "error: File '%s' has invalid header!\n", level.parts[i]->filename().c_str());
+				exit(1);
+			}
+			level.header_sizes_in_sectors[i] = info->second.header_size_sectors;
+		}
+	}
+	
 	// Calculate the size of the table of contents file so we can determine the
 	// LBAs of all the files that come after it.
 	size_t global_toc_size_bytes = 0;
@@ -326,10 +346,11 @@ void build(std::string iso_path, fs::path input_dir) {
 	assert(global_toc_size.sectors <= 0xb); // This size is hardcoded in the boot ELF for R&C2.
 	sector32 total_toc_size = global_toc_size;
 	for(auto& level : level_files) {
-		// Assume all of these headers are a single sector.
-		total_toc_size.sectors += !!level.parts[LEVEL_PART];
-		total_toc_size.sectors += !!level.parts[AUDIO_PART];
-		total_toc_size.sectors += !!level.parts[SCENE_PART];
+		for(int part = 0; part < 3; part++) {
+			if(level.parts[part]) {
+				total_toc_size.sectors += level.header_sizes_in_sectors[part];
+			}
+		}
 	}
 	
 	// Determine the LBAs of files on disc and build the root directory.
@@ -417,15 +438,18 @@ void build(std::string iso_path, fs::path input_dir) {
 		auto& level = level_files[i];
 		for(int part = 0; part < 3; part++) {
 			if(level.parts[part]) {
-				uint32_t header[SECTOR_SIZE / 4]; // Assume the headers are all a single sector.
+				const size_t MAX_HEADER_SIZE_IN_SECTORS = 5;
+				size_t header_size_bytes = level.header_sizes_in_sectors[part] * SECTOR_SIZE;
+				
+				uint32_t header[MAX_HEADER_SIZE_IN_SECTORS * SECTOR_SIZE / 4];
 				file_stream file(*level.parts[part]);
-				file.read_n((char*) header, SECTOR_SIZE);
+				file.read_n((char*) header, header_size_bytes);
 				header[1] = level.data_lbas[part].sectors;
 				
 				iso.pad(SECTOR_SIZE, 0);
 				level_table[i * 3 + part].offset.sectors = iso.tell() / SECTOR_SIZE;
 				level_table[i * 3 + part].size = level.sizes[part];
-				iso.write_n((char*) header, SECTOR_SIZE);
+				iso.write_n((char*) header, header_size_bytes);
 			}
 		}
 	}
