@@ -151,24 +151,34 @@ void extract(std::string iso_path, fs::path output_dir) {
 	
 	// Extract levels and other asset files.
 	table_of_contents toc = read_table_of_contents(iso, TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
-	for(toc_table& table : toc.tables) {
+	if(toc.levels.size() == 0) {
+		fprintf(stderr, "error: Unable to locate level table!\n");
+		exit(1);
+	}
+	for(size_t i = 0; i < toc.tables.size(); i++) {
+		toc_table& table = toc.tables[i];
 		auto name = std::to_string(table.index) + ".wad";
 		auto path = global_dir/name;
-		size_t file_size = 0;
-		for(sector_range& lump : table.lumps) {
-			size_t lump_size;
-			// HACK: MPEG.WAD stores some sizes in bytes.
-			if(lump.size.sectors > 0xfffff) {
-				lump_size = lump.size.sectors;
-			} else {
-				lump_size = lump.size.bytes();
+		
+		size_t start_of_file = table.header.base_offset.bytes();
+		size_t end_of_file;
+		if(i == toc.tables.size() - 1) {
+			// Assume one of these level files comes next.
+			toc_level& first = toc.levels[0];
+			end_of_file = iso.read<sector32>(toc.levels[0].main_part.bytes() + 0x4).bytes();
+			if(first.audio_part.sectors != 0) {
+				size_t audio_pos = iso.read<sector32>(first.audio_part.bytes() + 0x4).bytes();
+				end_of_file = std::min(end_of_file, audio_pos);
 			}
-			
-			size_t lump_end = lump.offset.bytes() + lump_size;
-			if(lump_end > file_size) {
-				file_size = lump_end;
+			if(first.scene_part.sectors != 0) {
+				size_t scene_pos = iso.read<sector32>(first.scene_part.bytes() + 0x4).bytes();
+				end_of_file = std::min(end_of_file, scene_pos);
 			}
+		} else {
+			end_of_file = toc.tables[i + 1].header.base_offset.bytes();
 		}
+		assert(end_of_file >= start_of_file);
+		size_t file_size = end_of_file - start_of_file;
 		
 		file_stream output_file(path, std::ios::out);
 		iso.seek(table.header.base_offset.bytes());
