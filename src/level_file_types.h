@@ -35,7 +35,8 @@ enum which_game {
 	GAME_RAC2 = 2,
 	GAME_RAC3 = 4,
 	GAME_RAC4 = 8,
-	GAME_RAC2_OTHER = 16
+	GAME_RAC2_OTHER = 16,
+	GAME_ANY = GAME_RAC1 | GAME_RAC2 | GAME_RAC3 | GAME_RAC4 | GAME_RAC2_OTHER
 };
 
 // R&C2 and R&C3 levels have the same magic identifier, but the level table

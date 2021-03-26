@@ -312,8 +312,10 @@ void build(std::string iso_path, fs::path input_dir) {
 		}
 	}
 	
-	// Read the magic identifier from each of the level files. Yes I'm opening
-	// each file to read just 4 bytes.
+	int game = GAME_ANY;
+	
+	// Read the magic identifier from each of the level files and determine the
+	// game we're working with. Yes I'm opening each file to read just 4 bytes.
 	for(level_parts& level : level_files) {
 		for(int i = 0; i < 3; i++) {
 			if(!level.parts[i]) {
@@ -326,7 +328,28 @@ void build(std::string iso_path, fs::path input_dir) {
 				exit(1);
 			}
 			level.header_sizes_in_sectors[i] = info->second.header_size_sectors;
+			game &= info->second.game;
 		}
+	}
+	switch(game) {
+		case GAME_RAC1:
+			printf("Detected game: Ratchet & Clank 1\n");
+			break;
+		case GAME_RAC2:
+			printf("Detected game: Ratchet & Clank 2\n");
+			break;
+		case GAME_RAC3:
+			printf("Detected game: Ratchet & Clank 3\n");
+			break;
+		case GAME_RAC4:
+			printf("Detected game: Ratchet: Deadlocked\n");
+			break;
+		case GAME_RAC2_OTHER:
+			printf("Detected game: Ratchet & Clank 2 Other\n");
+			break;
+		default:
+			fprintf(stderr, "warning: Unable to detect game! Assuming Ratchet & Clank 2...\n");
+			game = GAME_RAC2;
 	}
 	
 	// Calculate the size of the table of contents file so we can determine the
@@ -343,7 +366,12 @@ void build(std::string iso_path, fs::path input_dir) {
 	}
 	global_toc_size_bytes += level_files.size() * sizeof(sector_range) * 3;
 	sector32 global_toc_size = sector32::size_from_bytes(global_toc_size_bytes);
-	assert(global_toc_size.sectors <= 0xb); // This size is hardcoded in the boot ELF for R&C2.
+	// Hardcoded sizes.
+	switch(game) {
+		case GAME_RAC2: assert(global_toc_size.sectors <= 0xb); break;
+		case GAME_RAC3: assert(global_toc_size.sectors <= 0x10); break;
+		case GAME_RAC4: assert(global_toc_size.sectors <= 0x1a); break;
+	}
 	sector32 total_toc_size = global_toc_size;
 	for(auto& level : level_files) {
 		for(int part = 0; part < 3; part++) {
