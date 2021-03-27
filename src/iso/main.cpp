@@ -158,6 +158,9 @@ void extract(std::string iso_path, fs::path output_dir) {
 	
 	file_stream iso(iso_path);
 	
+	printf("LBA             Size (bytes)    Filename\n");
+	printf("---             ------------    --------\n");
+	
 	// Extract SYSTEM.CNF, the boot ELF, etc.
 	iso_directory root_dir;
 	if(!read_iso_filesystem(root_dir, iso)) {
@@ -197,6 +200,8 @@ void extract(std::string iso_path, fs::path output_dir) {
 		assert(end_of_file >= start_of_file);
 		size_t file_size = end_of_file - start_of_file;
 		
+		printf("0x%-14x0x%-14lx%s\n", table.header.base_offset.sectors, file_size, name.c_str());
+		
 		file_stream output_file(path, std::ios::out);
 		iso.seek(table.header.base_offset.bytes());
 		// This doesn't really matter, but I decided to make the LBA field
@@ -220,6 +225,8 @@ void extract(std::string iso_path, fs::path output_dir) {
 			auto path = level_dirs.at(part->info.type)/name;
 			file_stream output_file(path.string(), std::ios::out);
 			
+			printf("0x%-14x0x%-14lx%s\n", part->file_lba.sectors, part->file_size.bytes(), name.c_str());
+			
 			output_file.write<uint32_t>(part->magic);
 			output_file.write<uint32_t>(part->info.header_size_sectors); // Same as above.
 			output_file.write_v(part->lumps);
@@ -233,6 +240,7 @@ void extract_non_wads_recursive(stream& iso, fs::path out, iso_directory& in) {
 	for(iso_file_record& file : in.files) {
 		fs::path file_path = out/file.name.substr(0, file.name.size() - 2);
 		if(file_path.string().find(".wad") == std::string::npos) {
+			print_file_record(file);
 			file_stream output_file(file_path.string(), std::ios::out);
 			iso.seek(file.lba.bytes());
 			stream::copy_n(output_file, iso, file.size);

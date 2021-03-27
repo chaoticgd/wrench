@@ -59,7 +59,7 @@ struct table_of_contents {
 
 static const std::size_t TOC_MAX_SIZE       = 0x100000;
 static const std::size_t TOC_MAX_INDEX_SIZE = 0x10000;
-static const std::size_t TOC_MAX_LEVELS     = 0x100;
+static const std::size_t TOC_MAX_LEVELS     = 100;
 
 table_of_contents read_table_of_contents(stream& iso, std::size_t toc_base);
 std::size_t toc_get_level_table_offset(stream& iso, std::size_t toc_base);

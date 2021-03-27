@@ -155,7 +155,7 @@ void read_directory_record(iso_directory& dest, stream& iso, size_t pos, size_t 
 	for(i = 0; i < 1000 && iso.tell() < pos + size; i++) {
 		size_t record_pos = iso.tell();
 		auto record = iso.read<iso9660_directory_record>();
-		if(record.record_length < 0) {
+		if(record.record_length < 1) {
 			iso.seek(record_pos + 1);
 			continue;
 		}
@@ -187,7 +187,7 @@ void read_directory_record(iso_directory& dest, stream& iso, size_t pos, size_t 
 		iso.seek(record_pos + record.record_length);
 	}
 	if(i == 1000) {
-		fprintf(stderr, "error: Maximum file count reached!\n");
+		fprintf(stderr, "error: Iteration limit exceeded while reading directory!\n");
 		exit(1);
 	}
 }
