@@ -208,7 +208,9 @@ void extract(std::string iso_path, fs::path output_dir) {
 			if(!part) {
 				continue;
 			}
-			auto name = part->info.prefix + std::to_string(level.level_table_index) + ".wad";
+			auto num = std::to_string(level.level_table_index);
+			if(num.size() == 1) num = "0" + num;
+			auto name = part->info.prefix + num + ".wad";
 			auto path = levels_dir/name;
 			file_stream output_file(path.string(), std::ios::out);
 			
