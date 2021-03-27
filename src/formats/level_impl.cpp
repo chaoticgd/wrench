@@ -200,12 +200,18 @@ void level::read_textures(std::size_t asset_offset, level_asset_header asset_hea
 			vec2i size { descriptor.width, descriptor.height };
 			auto ptr = asset_header.tex_data_in_asset_wad + descriptor.ptr;
 			auto palette = small_texture_base + descriptor.palette * 0x100;
-			texture tex = create_texture_from_streams(size, &(*_asset_segment), ptr, &(*_file), palette);
+			texture tex;
+			if (file_header.type == level_type::RAC4) {
+				tex = create_texture_from_streams_rac4(size, &(*_asset_segment), ptr, &(*_file), palette);
+			}
+			else {
+				tex = create_texture_from_streams(size, &(*_asset_segment), ptr, &(*_file), palette);
+			}
 			textures.emplace_back(std::move(tex));
 		}
 		return textures;
 	};
-	
+
 	terrain_textures = load_texture_table(*_file, asset_header.terrain_texture_offset, asset_header.terrain_texture_count);
 	moby_textures = load_texture_table(*_file, asset_header.moby_texture_offset, asset_header.moby_texture_count);
 	tie_textures = load_texture_table(*_file, asset_header.tie_texture_offset, asset_header.tie_texture_count);

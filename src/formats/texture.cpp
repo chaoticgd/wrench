@@ -42,10 +42,68 @@ void texture::upload_to_opengl() {
 }
 #endif
 
+int remap_pixel_index_rac4(int i, int width) {
+	int s = i / (width * 2);
+	int r = 0;
+	if (s % 2 == 0)
+		r = s * 2;
+	else
+		r = (s - 1) * 2 + 1;
+
+	int q = ((i % (width * 2)) / 32);
+
+	int m = i % 4;
+	int n = (i / 4) % 4;
+	int o = i % 2;
+	int p = (i / 16) % 2;
+
+	if ((s / 2) % 2 == 1)
+		p = 1 - p;
+
+	if (o == 0)
+		m = (m + p) % 4;
+	else
+		m = ((m - p) + 4) % 4;
+
+
+	int x = n + ((m + q * 4) * 4);
+	int y = r + (o * 2);
+
+	return (x%width) + (y * width);
+}
+
+texture create_texture_from_streams_rac4(vec2i size, stream* pixel_src, size_t pixel_offset, stream* palette_src, size_t palette_offset) {
+	texture result;
+	int buffer_size = size.x * size.y;
+	result.size = size;
+	result.pixels.resize(buffer_size);
+	pixel_src->seek(pixel_offset);
+	if (size.x >= 32 && size.y >= 4) {
+		for (int i = 0; i < buffer_size; ++i) {
+			int map = remap_pixel_index_rac4(i, size.x);
+			if (map >= buffer_size) {
+				map = buffer_size - 1;
+			}
+			result.pixels[map] = pixel_src->read<uint8_t>();
+		}
+	}
+	else {
+		pixel_src->read_v(result.pixels);
+	}
+	colour temp_palette[256];
+	palette_src->seek(palette_offset);
+	palette_src->read_n((char*)temp_palette, sizeof(temp_palette));
+	for (int i = 0; i < 256; i++) {
+		result.palette[i] = temp_palette[decode_palette_index(i)];
+	}
+	return result;
+}
+
 texture create_texture_from_streams(vec2i size, stream* pixel_src, size_t pixel_offset, stream* palette_src, size_t palette_offset) {
 	texture result;
+	int buffer_size = size.x * size.y;
 	result.size = size;
-	result.pixels.resize(size.x * size.y);
+	result.pixels.resize(buffer_size);
 	pixel_src->seek(pixel_offset);
 	pixel_src->read_v(result.pixels);
 	colour temp_palette[256];
