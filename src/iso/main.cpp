@@ -415,7 +415,8 @@ void build(std::string iso_path, fs::path input_dir) {
 		}
 		
 		iso.pad(SECTOR_SIZE, 0);
-		for(toc_level& level : toc_levels) {
+		for(size_t i = 0; i < toc_levels.size(); i++) {
+			toc_level& level = toc_levels[i]; 
 			for(std::optional<toc_level_part>& part : level.parts) {
 				if(!part) {
 					continue;
@@ -435,7 +436,7 @@ void build(std::string iso_path, fs::path input_dir) {
 					case level_file_type::LEVEL: field = is_rac2; break;
 					case level_file_type::SCENE: field = 2; break;
 				}
-				size_t index = level.level_table_index * 3 + field;
+				size_t index = i * 3 + field;
 				level_table[index].offset.sectors = header_lba;
 				level_table[index].size = part->file_size;
 				
