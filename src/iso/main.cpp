@@ -130,7 +130,11 @@ void ls(std::string iso_path) {
 
 void extract(std::string iso_path, fs::path output_dir) {
 	fs::path global_dir = output_dir/"global";
-	fs::path levels_dir = output_dir/"levels";
+	std::map<level_file_type, fs::path> level_dirs = {
+		{level_file_type::LEVEL, output_dir/"levels"},
+		{level_file_type::AUDIO, output_dir/"audio"},
+		{level_file_type::SCENE, output_dir/"scenes"}
+	};
 	if(!fs::is_directory(output_dir)) {
 		fprintf(stderr, "error: The output directory does not exist!\n");
 		exit(1);
@@ -139,15 +143,17 @@ void extract(std::string iso_path, fs::path output_dir) {
 		fprintf(stderr, "error: Existing files are cluttering up the output directory!\n");
 		exit(1);
 	}
-	if(fs::exists(levels_dir) && !fs::is_directory(levels_dir)) {
-		fprintf(stderr, "error: Existing files are cluttering up the output directory!\n");
-		exit(1);
-	}
 	if(!fs::exists(global_dir)) {
 		fs::create_directory(global_dir);
 	}
-	if(!fs::exists(levels_dir)) {
-		fs::create_directory(levels_dir);
+	for(auto& [_, dir] : level_dirs) {
+		if(fs::exists(dir) && !fs::is_directory(dir)) {
+			fprintf(stderr, "error: Existing files are cluttering up the output directory!\n");
+			exit(1);
+		}
+		if(!fs::exists(dir)) {
+			fs::create_directory(dir);
+		}
 	}
 	
 	file_stream iso(iso_path);
@@ -207,10 +213,11 @@ void extract(std::string iso_path, fs::path output_dir) {
 			if(!part) {
 				continue;
 			}
+			
 			auto num = std::to_string(level.level_table_index);
 			if(num.size() == 1) num = "0" + num;
 			auto name = part->info.prefix + num + ".wad";
-			auto path = levels_dir/name;
+			auto path = level_dirs.at(part->info.type)/name;
 			file_stream output_file(path.string(), std::ios::out);
 			
 			output_file.write<uint32_t>(part->magic);
