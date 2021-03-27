@@ -617,13 +617,13 @@ void enumerate_non_wads_recursive(stream& iso, iso_directory& out, fs::path dir,
 		if(entry.is_regular_file()) {
 			if(name.find(".wad") != std::string::npos) {
 				// WAD files are handled by enumerate_wads_recursive.
-				return;
+				continue;
 			}
 			
 			if(name.find(".hdr") != std::string::npos) {
 				// We're writing out a new table of contents, so if an old one
 				// already exists we don't want to write it out.
-				return;
+				continue;
 			}
 			
 			file_stream file(entry.path());
