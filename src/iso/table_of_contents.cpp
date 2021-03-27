@@ -44,6 +44,13 @@ table_of_contents read_table_of_contents(stream& iso, std::size_t toc_base) {
 		toc.tables.emplace_back(std::move(table));
 	}
 	
+	// This fixes an off-by-one error with R&C3 where since the first entry of
+	// the level table is supposed to be zeroed out, this code would otherwise
+	// think that the level table starts 0x18 bytes later than it actually does.
+	if(iso.tell() + 0x18 == toc_base + level_table_offset) {
+		level_table_offset -= 0x18;
+	}
+	
 	std::vector<toc_level_table_entry> level_table(TOC_MAX_LEVELS);
 	iso.seek(toc_base + level_table_offset);
 	iso.read_v(level_table);
