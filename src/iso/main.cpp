@@ -570,7 +570,7 @@ void enumerate_wads_recursive(std::vector<fs::path>& wads, fs::path dir, int dep
 		exit(1);
 	}
 	for(const fs::directory_entry& file : fs::directory_iterator(dir)) {
-		auto name = file.path().filename().string();
+		auto name = str_to_lower(file.path().filename().string());
 		if(file.is_regular_file() && name.find(".wad") != std::string::npos) {
 			if(wads.size() > 1000) {
 				fprintf(stderr, "error: File count limit (1000) reached!\n");
