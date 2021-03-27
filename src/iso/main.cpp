@@ -432,8 +432,8 @@ void build(std::string iso_path, fs::path input_dir) {
 				size_t field = 0;
 				bool is_rac2 = game == GAME_RAC2 || game == GAME_RAC2_OTHER;
 				switch(part->info.type) {
-					case level_file_type::AUDIO: field = !is_rac2; break;
-					case level_file_type::LEVEL: field = is_rac2; break;
+					case level_file_type::AUDIO: field = is_rac2; break;
+					case level_file_type::LEVEL: field = !is_rac2; break;
 					case level_file_type::SCENE: field = 2; break;
 				}
 				size_t index = i * 3 + field;
