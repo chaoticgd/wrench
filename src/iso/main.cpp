@@ -280,7 +280,8 @@ void build(std::string iso_path, fs::path input_dir) {
 	
 	// HACK: Assume that global files are numbered 0.wad, 1.wad, etc.
 	// This is usually only true for files extracted using this tool!
-	std::sort(global_files.begin(), global_files.end());
+	std::sort(global_files.begin(), global_files.end(),
+		[](global_file& l, global_file& r) { return l.path.filename() < r.path.filename(); });
 	
 	// Sanity check: Make sure that if there's a AUDIOn.WAD file or a SCENEn.WAD
 	// file that there's also a LEVELn.WAD file.
