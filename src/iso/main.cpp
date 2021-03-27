@@ -29,7 +29,10 @@ static const uint32_t TABLE_OF_CONTENTS_LBA = 0x3e9;
 void ls(std::string iso_path);
 void extract(std::string iso_path, fs::path output_dir);
 void build(std::string iso_path, fs::path input_dir);
-void enumerate_files_recursive(std::vector<fs::path>& files, fs::path dir, int depth);
+void enumerate_wads_recursive(std::vector<fs::path>& wads, fs::path dir, int depth);
+void enumerate_non_wads_recursive(stream& iso, iso_directory& out, fs::path dir, int depth);
+void print_file_record(iso_file_record& record);
+std::string str_to_lower(std::string str);
 
 int main(int argc, char** argv) {
 	cxxopts::Options options(argv[0],
@@ -240,27 +243,8 @@ struct level_parts {
 };
 
 void build(std::string iso_path, fs::path input_dir) {
-	std::vector<fs::path> input_files;
-	enumerate_files_recursive(input_files, input_dir, 0);
-	
-	auto str_to_lower = [](std::string str) {
-		for(char& c : str) {
-			c = tolower(c);
-		}
-		return str;
-	};
-	
-	// Seperate asset (*.WAD) files from other files (e.g. SYSTEM.CNF).
 	std::vector<fs::path> wad_files;
-	std::vector<fs::path> other_files;
-	for(fs::path& path : input_files) {
-		auto name = str_to_lower(path.filename().string());
-		if(name.find(".wad") != std::string::npos) {
-			wad_files.push_back(path);
-		} else {
-			other_files.push_back(path);
-		}
-	}
+	enumerate_wads_recursive(wad_files, input_dir, 0);
 	
 	// Seperate global files (ARMOR.WAD, etc) from level files (LEVEL0.WAD, AUDIO0.WAD, etc).
 	std::vector<global_file> global_files;
@@ -459,11 +443,6 @@ void build(std::string iso_path, fs::path input_dir) {
 	
 	// Write out the files and fill in the ISO filesystem/ToC structures so they
 	// can be written out later.
-	auto print_file_record = [](iso_file_record& record) {
-		assert(record.name.size() >= 2);
-		auto display_name = record.name.substr(0, record.name.size() - 2);
-		printf("0x%-14x0x%-14x%s\n", record.lba.sectors, record.size, display_name.c_str());
-	};
 	{
 		iso_file_record toc_record;
 		switch(game) {
@@ -478,27 +457,8 @@ void build(std::string iso_path, fs::path input_dir) {
 		root_dir.files.push_back(toc_record);
 		print_file_record(toc_record);
 	}
-	for(fs::path& path : other_files) {
-		auto name = str_to_lower(path.filename().string());
-		if(name == "rc2.hdr") {
-			// We're writing out a new table of contents, so this one
-			// isn't needed.
-			continue;
-		}
-		
-		file_stream file(path);
-		iso.pad(SECTOR_SIZE, 0);
-		
-		iso_file_record record;
-		record.name = name + ";1";
-		record.lba = {(uint32_t) (iso.tell() / SECTOR_SIZE)};
-		record.size = file.size();
-		root_dir.files.push_back(record);
-		
-		print_file_record(record);
-		
-		stream::copy_n(iso, file, record.size);
-	}
+	// Enumerate various files e.g. SYSTEM.CNF, the boot ELF, etc.
+	enumerate_non_wads_recursive(iso, root_dir, input_dir, 0);
 	iso_directory global_dir {"global"};
 	for(global_file& global : global_files) {
 		file_stream file(global.path);
@@ -604,20 +564,74 @@ void build(std::string iso_path, fs::path input_dir) {
 	volume_size = iso.tell() / SECTOR_SIZE;
 }
 
-void enumerate_files_recursive(std::vector<fs::path>& files, fs::path dir, int depth) {
+void enumerate_wads_recursive(std::vector<fs::path>& wads, fs::path dir, int depth) {
 	if(depth > 10) {
 		fprintf(stderr, "error: Directory depth limit (10 levels) reached!\n");
 		exit(1);
 	}
 	for(const fs::directory_entry& file : fs::directory_iterator(dir)) {
-		if(file.is_regular_file()) {
-			if(files.size() > 1000) {
+		auto name = file.path().filename().string();
+		if(file.is_regular_file() && name.find(".wad") != std::string::npos) {
+			if(wads.size() > 1000) {
 				fprintf(stderr, "error: File count limit (1000) reached!\n");
 				exit(1);
 			}
-			files.push_back(file.path());
+			wads.push_back(file.path());
 		} else if(file.is_directory()) {
-			enumerate_files_recursive(files, file.path(), depth + 1);
+			enumerate_wads_recursive(wads, file.path(), depth + 1);
 		}
 	}
+}
+
+void enumerate_non_wads_recursive(stream& iso, iso_directory& out, fs::path dir, int depth) {
+	for(const fs::directory_entry& entry : fs::directory_iterator(dir)) {
+		auto name = str_to_lower(entry.path().filename().string());
+		if(entry.is_regular_file()) {
+			if(name.find(".wad") != std::string::npos) {
+				// WAD files are handled by enumerate_wads_recursive.
+				return;
+			}
+			
+			if(name.find(".hdr") != std::string::npos) {
+				// We're writing out a new table of contents, so if an old one
+				// already exists we don't want to write it out.
+				return;
+			}
+			
+			file_stream file(entry.path());
+			iso.pad(SECTOR_SIZE, 0);
+			
+			iso_file_record record;
+			record.name = name + ";1";
+			record.lba = {(uint32_t) (iso.tell() / SECTOR_SIZE)};
+			record.size = file.size();
+			out.files.push_back(record);
+			print_file_record(record);
+			
+			stream::copy_n(iso, file, file.size());
+		} else if(entry.is_directory()) {
+			iso_directory subdir {name};
+			// Prevent name collisions with the auto-generated directories.
+			if(depth == 0 && (name == "global" || name == "levels" || name == "audio" || name == "scenes")) {
+				continue;
+			}
+			enumerate_non_wads_recursive(iso, subdir, entry.path(), depth + 1);
+			if(subdir.files.size() > 0 || subdir.subdirs.size() > 0) {
+				out.subdirs.push_back(subdir);
+			}
+		}
+	}
+}
+
+void print_file_record(iso_file_record& record) {
+	assert(record.name.size() >= 2);
+	auto display_name = record.name.substr(0, record.name.size() - 2);
+	printf("0x%-14x0x%-14x%s\n", record.lba.sectors, record.size, display_name.c_str());
+}
+
+std::string str_to_lower(std::string str) {
+	for(char& c : str) {
+		c = tolower(c);
+	}
+	return str;
 }
