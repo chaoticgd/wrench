@@ -30,6 +30,19 @@ struct iso_file_record {
 	uint32_t size;
 };
 
+struct iso_directory {
+	std::string name;
+	std::vector<iso_file_record> files;
+	std::vector<iso_directory> subdirs;
+	
+	// Fields below used internally by write_iso_filesystem.
+	iso_directory* parent = nullptr;
+	size_t index = 0;
+	size_t parent_index = 0;
+	sector32 lba = {0};
+	uint32_t size = 0;
+};
+
 // Read an ISO filesystem and output a map (dest) of the files in the root
 // directory. Return true on success, false on failure.
 bool read_iso_filesystem(std::vector<iso_file_record>& dest, stream& iso);
@@ -37,6 +50,6 @@ bool read_iso_filesystem(std::vector<iso_file_record>& dest, stream& iso);
 // Given a list of files including their LBA and size, write out an ISO
 // filesystem. This function is "dumb" in that it doesn't work out any positions
 // by itself.
-void write_iso_filesystem(stream& dest, const std::vector<iso_file_record>& files);
+void write_iso_filesystem(stream& dest, iso_directory* root_dir);
 
 #endif

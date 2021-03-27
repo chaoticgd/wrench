@@ -116,14 +116,11 @@ packed_struct(iso9660_primary_volume_desc,
 
 static_assert(sizeof(iso9660_primary_volume_desc) == 0x800);
 
-// We're only worried about the root directory.
 packed_struct(iso9660_path_table_entry,
 	uint8_t identifier_length;
 	uint8_t record_length;
 	uint32_t lba;
 	uint16_t parent;
-	char identifier;
-	char pad;
 )
 
 bool read_iso_filesystem(std::vector<iso_file_record>& dest, stream& iso) {
@@ -187,7 +184,20 @@ void copy_and_pad(char* dest, const char* src, size_t size) {
 	}
 }
 
-void write_iso_filesystem(stream& dest, const std::vector<iso_file_record>& files) {
+void flatten_subdirs(std::vector<iso_directory*>* flat_dirs, iso_directory* dir) {
+	for(size_t i = 0; i < dir->subdirs.size(); i++) {
+		iso_directory* subdir = &dir->subdirs[i];
+		subdir->parent = dir;
+		subdir->index = flat_dirs->size();
+		subdir->parent_index = dir->index;
+		flat_dirs->push_back(subdir);
+		flatten_subdirs(flat_dirs, subdir);
+	}
+}
+
+void write_directory_records(stream& dest, const iso_directory& dir);
+
+void write_iso_filesystem(stream& dest, iso_directory* root_dir) {
 	// Write out system area.
 	static const uint8_t zeroed_sector[SECTOR_SIZE] = {0};
 	for(int i = 0; i < 0x10; i++) {
@@ -218,7 +228,7 @@ void write_iso_filesystem(stream& dest, const std::vector<iso_file_record>& file
 	pvd.volume_set_size = iso9660_i16_lsb_msb::from_scalar(1);
 	pvd.volume_sequence_number = iso9660_i16_lsb_msb::from_scalar(1);
 	pvd.logical_block_size = iso9660_i16_lsb_msb::from_scalar(SECTOR_SIZE);
-	pvd.path_table_size = iso9660_i32_lsb_msb::from_scalar(sizeof(iso9660_path_table_entry));
+	pvd.path_table_size = {0, 0};
 	pvd.l_path_table = 0;
 	pvd.optional_l_path_table = 0;
 	pvd.m_path_table = 0;
@@ -252,65 +262,107 @@ void write_iso_filesystem(stream& dest, const std::vector<iso_file_record>& file
 	static const uint8_t volume_desc_set_terminator[] = {0xff, 'C', 'D', '0', '0', '1', 0x01};
 	dest.write_n((char*) volume_desc_set_terminator, sizeof(volume_desc_set_terminator));
 	
-	// Write out path tables.
-	iso9660_path_table_entry path_table;
-	path_table.identifier_length = 1;
-	path_table.record_length = 0;
-	path_table.parent = 1;
-	path_table.identifier = 0;
-	path_table.pad = 0;
-	
 	// It seems like the path table is always expected to be at this LBA even if
 	// we write a different one into the PVD. Maybe it's hardcoded?
 	dest.pad(SECTOR_SIZE, 0);
 	while(dest.tell() < 0x101 * SECTOR_SIZE) {
 		dest.write_n((char*) zeroed_sector, sizeof(zeroed_sector));
 	}
-	size_t path_table_lba = dest.tell() / SECTOR_SIZE;
-	path_table.lba = path_table_lba + 4;
-	dest.write(path_table);
-	dest.pad(SECTOR_SIZE, 0);
-	dest.write(path_table);
 	
-	path_table.lba = byte_swap_32(path_table.lba);
-	dest.pad(SECTOR_SIZE, 0);
-	dest.write(path_table);
-	dest.pad(SECTOR_SIZE, 0);
-	dest.write(path_table);
+	// Get a linear list of all the directories. This also sets the parent
+	// pointers and indices.
+	std::vector<iso_directory*> flat_dirs;
+	flatten_subdirs(&flat_dirs, root_dir);
 	
-	pvd.l_path_table = path_table_lba;
-	pvd.optional_l_path_table = path_table_lba + 1;
-	pvd.m_path_table = byte_swap_32(path_table_lba + 2);
-	pvd.optional_m_path_table = byte_swap_32(path_table_lba + 3);
-	
-	// Determine root directory LBA and size.
+	// Determine the LBAs of the path table and the root directory.
 	dest.pad(SECTOR_SIZE, 0);
-	uint32_t root_dir_lba = (uint32_t) dest.tell() / SECTOR_SIZE;
-	assert(root_dir_lba == path_table_lba + 4);
-	sector32 root_dir_size_sectors {0};
-	uint32_t root_dir_size_bytes = (sizeof(iso9660_directory_record) + 1) * 2;
-	for(const iso_file_record& file : files) {
-		if(file.name.size() > 255) {
-			fprintf(stderr, "error: File name \"%s\" too long!\n", file.name.c_str());
-			exit(1);
-		}
-		
-		size_t record_size =
-			sizeof(iso9660_directory_record) +
-			file.name.size() +
-			(file.name.size() % 2 == 0);
-		if(root_dir_size_bytes + record_size > 0x800) {
-			root_dir_size_sectors.sectors++;
-			root_dir_size_bytes = record_size;
-		} else {
-			root_dir_size_bytes += record_size;
+	pvd.l_path_table = dest.tell() / SECTOR_SIZE;
+	pvd.optional_l_path_table = 0;
+	pvd.m_path_table = byte_swap_32(pvd.l_path_table + 1);
+	pvd.optional_m_path_table = 0;
+	pvd.root_directory.lba = iso9660_i32_lsb_msb::from_scalar(pvd.l_path_table + 2);
+	
+	// Determine directory record LBAs and sizes.
+	size_t next_dir_lba = pvd.root_directory.lba.lsb;
+	root_dir->lba = {(uint32_t) pvd.root_directory.lba.lsb};
+	array_stream root_dummy;
+	write_directory_records(root_dummy, *root_dir);
+	root_dir->size = root_dummy.size();
+	pvd.root_directory.data_length = iso9660_i32_lsb_msb::from_scalar(root_dir->size);
+	next_dir_lba += sector32::size_from_bytes(root_dir->size).sectors;
+	for(size_t i = 0; i < flat_dirs.size(); i++) {
+		iso_directory* dir = flat_dirs[i];
+		dir->lba = {(uint32_t) next_dir_lba};
+		array_stream dummy;
+		write_directory_records(dummy, *dir);
+		dir->size = dummy.size();
+		next_dir_lba += sector32::size_from_bytes(dir->size).sectors;
+	}
+	
+	// Write out little endian path table.
+	size_t start_of_path_table = dest.tell();
+	iso9660_path_table_entry root_pte_lsb;
+	root_pte_lsb.identifier_length = 1;
+	root_pte_lsb.record_length = 0;
+	root_pte_lsb.lba = pvd.root_directory.lba.lsb;
+	root_pte_lsb.parent = 1;
+	dest.write(root_pte_lsb);
+	dest.write<uint8_t>(0); // identifier
+	dest.write<uint8_t>(0); // pad
+	for(iso_directory* dir : flat_dirs) {
+		iso9660_path_table_entry root_pte;
+		root_pte.identifier_length = dir->name.size();
+		root_pte.record_length = 0;
+		root_pte.lba = dir->lba.sectors;
+		root_pte.parent = dir->parent_index;
+		dest.write(root_pte);
+		dest.write_n(dir->name.data(), dir->name.size());
+		if(root_pte.identifier_length % 2 == 1) {
+			dest.write<uint8_t>(0); // pad
 		}
 	}
-	size_t root_dir_size_total = root_dir_size_sectors.bytes() + root_dir_size_bytes;
-	pvd.root_directory.lba = iso9660_i32_lsb_msb::from_scalar(root_dir_lba);
-	pvd.root_directory.data_length = iso9660_i32_lsb_msb::from_scalar(root_dir_size_total);
+	size_t end_of_path_table = dest.tell();
 	
-	// Write out root directory records.
+	pvd.path_table_size = iso9660_i32_lsb_msb::from_scalar(end_of_path_table - start_of_path_table);
+	
+	// Write out big endian path table.
+	dest.pad(SECTOR_SIZE, 0);
+	iso9660_path_table_entry root_pte_msb;
+	root_pte_msb.identifier_length = 1;
+	root_pte_msb.record_length = 0;
+	root_pte_msb.lba = pvd.root_directory.lba.msb;
+	root_pte_msb.parent = 1;
+	dest.write(root_pte_msb);
+	dest.write<uint8_t>(0); // identifier
+	dest.write<uint8_t>(0); // pad
+	for(iso_directory* dir : flat_dirs) {
+		iso9660_path_table_entry root_pte;
+		root_pte.identifier_length = dir->name.size();
+		root_pte.record_length = 0;
+		root_pte.lba = byte_swap_32(dir->lba.sectors);
+		root_pte.parent = dir->parent_index;
+		dest.write(root_pte);
+		dest.write_n(dir->name.data(), dir->name.size());
+		if(root_pte.identifier_length % 2 == 1) {
+			dest.write<uint8_t>(0); // pad
+		}
+	}
+	
+	// Write out all the directories.
+	dest.pad(SECTOR_SIZE, 0);
+	assert(dest.tell() == pvd.root_directory.lba.lsb * SECTOR_SIZE);
+	write_directory_records(dest, *root_dir);
+	for(iso_directory* dir : flat_dirs) {
+		dest.pad(SECTOR_SIZE, 0);
+		write_directory_records(dest, *dir);
+	}
+}
+
+void write_directory_records(stream& dest, const iso_directory& dir) {
+	// Either this is being written out to a dummy stream to calculate the space
+	// required for the directory record, or this should be being written out at
+	// the correct LBA.
+	assert(dest.tell() == 0 || dest.tell() == dir.lba.bytes());
 	auto write_directory_record = [&](const iso_file_record& file, uint8_t flags) {
 		iso9660_directory_record record;
 		record.record_length =
@@ -340,14 +392,19 @@ void write_iso_filesystem(stream& dest, const std::vector<iso_file_record>& file
 			dest.write<uint8_t>(0);
 		}
 	};
-	iso_file_record dot = {"", root_dir_lba, (uint32_t) root_dir_size_total};
+	iso_file_record dot = {"", dir.lba, dir.size};
 	write_directory_record(dot, 2);
-	iso_file_record dot_dot = {"\x01", root_dir_lba, (uint32_t) root_dir_size_total};
+	iso_file_record dot_dot = {"\x01", dir.lba, dir.size};
+	if(dir.parent != nullptr) {
+		dot_dot.lba = dir.parent->lba;
+		dot_dot.size = dir.parent->size;
+	}
 	write_directory_record(dot_dot, 2);
-	for(const iso_file_record& file : files) {
+	for(const iso_file_record& file : dir.files) {
 		write_directory_record(file, 0);
 	}
-	
-	// Ensure our size calculation for the root directory was correct.
-	assert(dest.tell() == root_dir_lba * SECTOR_SIZE + root_dir_size_total);
+	for(const iso_directory& dir : dir.subdirs) {
+		iso_file_record record = {dir.name, dir.lba, dir.size};
+		write_directory_record(record, 2);
+	}
 }

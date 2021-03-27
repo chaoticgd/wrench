@@ -375,11 +375,11 @@ void build(std::string iso_path, fs::path input_dir) {
 	// After all the other files have been written out, write out an ISO
 	// filesystem at the beginning of the image.
 	file_stream iso(iso_path, std::ios::out);
-	std::vector<iso_file_record> root_dir;
+	iso_directory root_dir;
 	uint32_t volume_size = 0;
 	defer([&]() {
 		iso.seek(0);
-		write_iso_filesystem(iso, root_dir);
+		write_iso_filesystem(iso, &root_dir);
 		assert(iso.tell() <= TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
 		
 		iso.write<uint32_t>(0x8050, volume_size);
@@ -472,7 +472,7 @@ void build(std::string iso_path, fs::path input_dir) {
 		}
 		toc_record.lba = {TABLE_OF_CONTENTS_LBA};
 		toc_record.size = iso.tell() - TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
-		root_dir.push_back(toc_record);
+		root_dir.files.push_back(toc_record);
 		print_file_record(toc_record);
 	}
 	for(fs::path& path : other_files) {
@@ -490,12 +490,13 @@ void build(std::string iso_path, fs::path input_dir) {
 		record.name = name + ";1";
 		record.lba = {(uint32_t) (iso.tell() / SECTOR_SIZE)};
 		record.size = file.size();
-		root_dir.push_back(record);
+		root_dir.files.push_back(record);
 		
 		print_file_record(record);
 		
 		stream::copy_n(iso, file, record.size);
 	}
+	iso_directory global_dir {"global"};
 	for(global_file& global : global_files) {
 		file_stream file(global.path);
 		sector32 data_offset = file.read<sector32>(0x4);
@@ -515,14 +516,15 @@ void build(std::string iso_path, fs::path input_dir) {
 		record.name = global.path.filename().string() + ";1";
 		record.lba = table.header.base_offset;
 		record.size = file.size() - data_offset.bytes();
-		root_dir.push_back(record);
+		global_dir.files.push_back(record);
 		
 		print_file_record(record);
 		
 		file.seek(data_offset.bytes());
 		stream::copy_n(iso, file, record.size);
 	}
-	auto write_level_part = [&](fs::path& path) {
+	root_dir.subdirs.push_back(global_dir);
+	auto write_level_part = [&](iso_directory& parent, fs::path& path) {
 		file_stream file(path);
 		sector32 data_offset = file.read<sector32>(0x4);
 		iso.pad(SECTOR_SIZE, 0);
@@ -547,7 +549,7 @@ void build(std::string iso_path, fs::path input_dir) {
 		record.name = path.filename().string() + ";1";
 		record.lba = part.file_lba;
 		record.size = part.file_size.bytes();
-		root_dir.push_back(record);
+		parent.files.push_back(record);
 		
 		print_file_record(record);
 		
@@ -556,37 +558,44 @@ void build(std::string iso_path, fs::path input_dir) {
 		
 		return part;
 	};
+	// Create directories for the level files.
+	iso_directory levels_dir {"levels"};
+	iso_directory audio_dir {"audio"};
+	iso_directory scenes_dir {"scenes"};
 	toc_levels.resize(level_files.size());
 	if(game == GAME_RAC2 || game == GAME_RAC2_OTHER) {
 		// The level files are laid out AoS.
 		for(size_t i = 0; i < level_files.size(); i++) {
 			level_parts& level = level_files[i];
 			auto& p = level.parts;
-			if(p[LEVEL_PART]) toc_levels[i].parts[0] = write_level_part(*p[LEVEL_PART]);
-			if(p[AUDIO_PART]) toc_levels[i].parts[1] = write_level_part(*p[AUDIO_PART]);
-			if(p[SCENE_PART]) toc_levels[i].parts[2] = write_level_part(*p[SCENE_PART]);
+			if(p[LEVEL_PART]) toc_levels[i].parts[0] = write_level_part(levels_dir, *p[LEVEL_PART]);
+			if(p[AUDIO_PART]) toc_levels[i].parts[1] = write_level_part(audio_dir, *p[AUDIO_PART]);
+			if(p[SCENE_PART]) toc_levels[i].parts[2] = write_level_part(scenes_dir, *p[SCENE_PART]);
 		}
 	} else {
 		// The level files are laid out SoA, audio files first.
 		for(size_t i = 0; i < level_files.size(); i++) {
 			level_parts& level = level_files[i];
 			if(level.parts[AUDIO_PART]) {
-				toc_levels[i].parts[0] = write_level_part(*level.parts[AUDIO_PART]);
+				toc_levels[i].parts[0] = write_level_part(audio_dir, *level.parts[AUDIO_PART]);
 			}
 		}
 		for(size_t i = 0; i < level_files.size(); i++) {
 			level_parts& level = level_files[i];
 			if(level.parts[LEVEL_PART]) {
-				toc_levels[i].parts[1] = write_level_part(*level.parts[LEVEL_PART]);
+				toc_levels[i].parts[1] = write_level_part(levels_dir, *level.parts[LEVEL_PART]);
 			}
 		}
 		for(size_t i = 0; i < level_files.size(); i++) {
 			level_parts& level = level_files[i];
 			if(level.parts[SCENE_PART]) {
-				toc_levels[i].parts[2] = write_level_part(*level.parts[SCENE_PART]);
+				toc_levels[i].parts[2] = write_level_part(scenes_dir, *level.parts[SCENE_PART]);
 			}
 		}
 	}
+	root_dir.subdirs.push_back(levels_dir);
+	root_dir.subdirs.push_back(audio_dir);
+	root_dir.subdirs.push_back(scenes_dir);
 	
 	iso.pad(SECTOR_SIZE, 0);
 	volume_size = iso.tell() / SECTOR_SIZE;
