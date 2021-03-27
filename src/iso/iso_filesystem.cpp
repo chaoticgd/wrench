@@ -123,7 +123,9 @@ packed_struct(iso9660_path_table_entry,
 	uint16_t parent;
 )
 
-bool read_iso_filesystem(std::vector<iso_file_record>& dest, stream& iso) {
+void read_directory_record(iso_directory& dest, stream& iso, size_t pos, size_t size, size_t depth);
+
+bool read_iso_filesystem(iso_directory& dest, stream& iso) {
 	auto pvd = iso.read<iso9660_primary_volume_desc>(0x10 * SECTOR_SIZE);
 	if(pvd.type_code != 0x01) {
 		return false;
@@ -135,43 +137,59 @@ bool read_iso_filesystem(std::vector<iso_file_record>& dest, stream& iso) {
 		return false;
 	}
 	
-	size_t root_directory_pos = pvd.root_directory.lba.lsb * SECTOR_SIZE;
-	iso.seek(root_directory_pos);
-	while(iso.tell() < root_directory_pos + pvd.root_directory.data_length.lsb) {
-		size_t pos = iso.tell();
+	size_t root_dir_pos = pvd.root_directory.lba.lsb * SECTOR_SIZE;
+	size_t root_dir_size = pvd.root_directory.data_length.lsb;
+	read_directory_record(dest, iso, root_dir_pos, root_dir_size, 0);
+	
+	return true;
+}
+
+void read_directory_record(iso_directory& dest, stream& iso, size_t pos, size_t size, size_t depth) {
+	if(depth > 8) {
+		fprintf(stderr, "error: Depth limit (8 levels) reached!\n");
+		exit(1);
+	}
+	
+	iso.seek(pos);
+	size_t i;
+	for(i = 0; i < 1000 && iso.tell() < pos + size; i++) {
+		size_t record_pos = iso.tell();
 		auto record = iso.read<iso9660_directory_record>();
-		if(record.record_length < 1) {
-			break;
+		if(record.record_length < 0) {
+			iso.seek(record_pos + 1);
+			continue;
 		}
-		
-		if(record.identifier_length >= 2) {
+		if(record.file_flags & 2) {
+			if(i < 2) {
+				// Skip dot and dot dot.
+				iso.seek(record_pos + record.record_length);
+				continue;
+			}
+			iso_directory subdir;
+			subdir.name.resize(record.identifier_length);
+			iso.read_n(subdir.name.data(), subdir.name.size());
+			for(char& c : subdir.name) {
+				c = tolower(c);
+			}
+			read_directory_record(subdir, iso, record.lba.lsb * SECTOR_SIZE, record.data_length.lsb, depth + 1);
+			dest.subdirs.push_back(subdir);
+		} else if(record.identifier_length >= 2) {
 			iso_file_record file;
 			file.name.resize(record.identifier_length);
 			iso.read_n(file.name.data(), file.name.size());
-			if(record.identifier_length >= 5) {
-				std::string ext = file.name.substr(file.name.size() - 5, 3);
-				// The WAD files are accessed by LBA, so the ISO file records
-				// are not used by the game, and for R&C1, R&C3 and Deadlocked
-				// aren't present, hence they must be extracted seperately.
-				if(ext == "WAD") {
-					iso.seek(pos + record.record_length);
-					continue;
-				}
-			}
 			for(char& c : file.name) {
 				c = tolower(c);
 			}
 			file.lba = {(uint32_t) record.lba.lsb};
 			file.size = record.data_length.lsb;
-			dest.push_back(file);
+			dest.files.push_back(file);
 		}
-		
-		iso.seek(pos + record.record_length);
+		iso.seek(record_pos + record.record_length);
 	}
-	
-	
-	
-	return true;
+	if(i == 1000) {
+		fprintf(stderr, "error: Maximum file count reached!\n");
+		exit(1);
+	}
 }
 
 void copy_and_pad(char* dest, const char* src, size_t size) {

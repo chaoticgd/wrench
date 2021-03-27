@@ -28,6 +28,7 @@ static const uint32_t TABLE_OF_CONTENTS_LBA = 0x3e9;
 
 void ls(std::string iso_path);
 void extract(std::string iso_path, fs::path output_dir);
+void extract_non_wads_recursive(stream& iso, fs::path out, iso_directory& in);
 void build(std::string iso_path, fs::path input_dir);
 void enumerate_wads_recursive(std::vector<fs::path>& wads, fs::path dir, int depth);
 void enumerate_non_wads_recursive(stream& iso, iso_directory& out, fs::path dir, int depth);
@@ -152,17 +153,12 @@ void extract(std::string iso_path, fs::path output_dir) {
 	file_stream iso(iso_path);
 	
 	// Extract SYSTEM.CNF, the boot ELF, etc.
-	std::vector<iso_file_record> files;
-	if(!read_iso_filesystem(files, iso)) {
+	iso_directory root_dir;
+	if(!read_iso_filesystem(root_dir, iso)) {
 		fprintf(stderr, "error: Missing or invalid ISO filesystem!\n");
 		exit(1);
 	}
-	for(iso_file_record& file : files) {
-		fs::path file_path = output_dir/file.name.substr(0, file.name.size() - 2);
-		file_stream output_file(file_path.string(), std::ios::out);
-		iso.seek(file.lba.bytes());
-		stream::copy_n(output_file, iso, file.size);
-	}
+	extract_non_wads_recursive(iso, output_dir, root_dir);
 	
 	// Extract levels and other asset files.
 	table_of_contents toc = read_table_of_contents(iso, TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
@@ -223,6 +219,22 @@ void extract(std::string iso_path, fs::path output_dir) {
 			iso.seek(part->file_lba.bytes());
 			stream::copy_n(output_file, iso, part->file_size.bytes());
 		}
+	}
+}
+
+void extract_non_wads_recursive(stream& iso, fs::path out, iso_directory& in) {
+	for(iso_file_record& file : in.files) {
+		fs::path file_path = out/file.name.substr(0, file.name.size() - 2);
+		if(file_path.string().find(".wad") == std::string::npos) {
+			file_stream output_file(file_path.string(), std::ios::out);
+			iso.seek(file.lba.bytes());
+			stream::copy_n(output_file, iso, file.size);
+		}
+	}
+	for(iso_directory& subdir : in.subdirs) {
+		auto dir_path = out/subdir.name;
+		fs::create_directory(dir_path);
+		extract_non_wads_recursive(iso, out/subdir.name, subdir);
 	}
 }
 
