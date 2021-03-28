@@ -35,6 +35,9 @@ void enumerate_non_wads_recursive(stream& iso, iso_directory& out, fs::path dir,
 void print_file_record(iso_file_record& record);
 std::string str_to_lower(std::string str);
 
+// C format string for printing out LBA, size, filename lines.
+const char* row_format;
+
 int main(int argc, char** argv) {
 	cxxopts::Options options(argv[0],
 		"Extract files from and rebuild Ratchet & Clank ISO images. The games\n"
@@ -47,7 +50,8 @@ int main(int argc, char** argv) {
 		("i,iso", "The ISO file.",
 			cxxopts::value<std::string>())
 		("d,directory", "The input/output directory.",
-			cxxopts::value<std::string>());
+			cxxopts::value<std::string>())
+		("b,base", "Print out the LBAs and sizes in hex instead of decimal.\n");
 
 	options.parse_positional({
 		"command", "iso", "directory"
@@ -57,6 +61,12 @@ int main(int argc, char** argv) {
 	std::string command = cli_get(args, "command");
 	std::string iso_path = cli_get(args, "iso");
 	std::string directory_path = cli_get_or(args, "directory", "");
+	
+	if(args.count("base")) {
+		row_format = "0x%-14lx0x%-14lx%s\n";
+	} else {
+		row_format = "%-16ld%-16ld%s\n";
+	}
 	
 	if(command == "ls") {
 		ls(iso_path);
@@ -200,7 +210,7 @@ void extract(std::string iso_path, fs::path output_dir) {
 		assert(end_of_file >= start_of_file);
 		size_t file_size = end_of_file - start_of_file;
 		
-		printf("0x%-14x0x%-14lx%s\n", table.header.base_offset.sectors, file_size, name.c_str());
+		printf(row_format, (size_t) table.header.base_offset.sectors, (size_t) file_size, name.c_str());
 		
 		file_stream output_file(path, std::ios::out);
 		iso.seek(table.header.base_offset.bytes());
@@ -225,7 +235,7 @@ void extract(std::string iso_path, fs::path output_dir) {
 			auto path = level_dirs.at(part->info.type)/name;
 			file_stream output_file(path.string(), std::ios::out);
 			
-			printf("0x%-14x0x%-14lx%s\n", part->file_lba.sectors, part->file_size.bytes(), name.c_str());
+			printf(row_format, (size_t) part->file_lba.sectors, part->file_size.bytes(), name.c_str());
 			
 			output_file.write<uint32_t>(part->magic);
 			output_file.write<uint32_t>(part->info.header_size_sectors); // Same as above.
@@ -654,7 +664,7 @@ void enumerate_non_wads_recursive(stream& iso, iso_directory& out, fs::path dir,
 void print_file_record(iso_file_record& record) {
 	assert(record.name.size() >= 2);
 	auto display_name = record.name.substr(0, record.name.size() - 2);
-	printf("0x%-14x0x%-14x%s\n", record.lba.sectors, record.size, display_name.c_str());
+	printf(row_format, (size_t) record.lba.sectors, (size_t) record.size, display_name.c_str());
 }
 
 std::string str_to_lower(std::string str) {
