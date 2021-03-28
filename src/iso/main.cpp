@@ -29,7 +29,7 @@ static const uint32_t TABLE_OF_CONTENTS_LBA = 0x3e9;
 void ls(std::string iso_path);
 void extract(std::string iso_path, fs::path output_dir);
 void extract_non_wads_recursive(stream& iso, fs::path out, iso_directory& in);
-void build(std::string iso_path, fs::path input_dir);
+void build(std::string input_dir, fs::path iso_path);
 void enumerate_wads_recursive(std::vector<fs::path>& wads, fs::path dir, int depth);
 void enumerate_non_wads_recursive(stream& iso, iso_directory& out, fs::path dir, int depth);
 void print_file_record(iso_file_record& record);
@@ -43,37 +43,37 @@ int main(int argc, char** argv) {
 		"Extract files from and rebuild Ratchet & Clank ISO images. The games\n"
 		"use raw disk I/O and a custom table of contents file to access assets\n"
 		"so just writing a standard ISO filesystem won't work.");
-	options.positional_help("ls|extract|rebuild <iso file> [<input/output directory>]");
+	options.positional_help("ls|extract|rebuild <input path> [<output path>]");
 	options.add_options()
 		("c,command", "The operation to perform. Possible values are: ls, extract, build.",
 			cxxopts::value<std::string>())
-		("i,iso", "The ISO file.",
+		("i,input", "The input path.",
 			cxxopts::value<std::string>())
-		("d,directory", "The input/output directory.",
+		("o,output", "The output path.",
 			cxxopts::value<std::string>())
-		("b,base", "Print out the LBAs and sizes in hex instead of decimal.\n");
+		("d,decimal", "Print out the LBAs and sizes of files in decimal instead of hex.\n");
 
 	options.parse_positional({
-		"command", "iso", "directory"
+		"command", "input", "output"
 	});
 
 	auto args = parse_command_line_args(argc, argv, options);
 	std::string command = cli_get(args, "command");
-	std::string iso_path = cli_get(args, "iso");
-	std::string directory_path = cli_get_or(args, "directory", "");
+	std::string input_path = cli_get(args, "input");
+	std::string output_path = cli_get_or(args, "output", "");
 	
-	if(args.count("base")) {
-		row_format = "0x%-14lx0x%-14lx%s\n";
-	} else {
+	if(args.count("decimal")) {
 		row_format = "%-16ld%-16ld%s\n";
+	} else {
+		row_format = "0x%-14lx0x%-14lx%s\n";
 	}
 	
 	if(command == "ls") {
-		ls(iso_path);
+		ls(input_path);
 	} else if(command == "extract") {
-		extract(iso_path, directory_path);
+		extract(input_path, output_path);
 	} else if(command == "build") {
-		build(iso_path, directory_path);
+		build(input_path, output_path);
 	} else {
 		fprintf(stderr, "Invalid command: %s\n",  command.c_str());
 		fprintf(stderr, "Available commands are: ls, extract, build\n");
@@ -145,6 +145,10 @@ void extract(std::string iso_path, fs::path output_dir) {
 		{level_file_type::AUDIO, output_dir/"audio"},
 		{level_file_type::SCENE, output_dir/"scenes"}
 	};
+	if(fs::is_directory(iso_path)) {
+		fprintf(stderr, "error: Input path is a directory!\n");
+		exit(1);
+	}
 	if(!fs::is_directory(output_dir)) {
 		fprintf(stderr, "error: The output directory does not exist!\n");
 		exit(1);
@@ -279,7 +283,24 @@ struct level_parts {
 	uint32_t header_sizes_in_sectors[3];
 };
 
-void build(std::string iso_path, fs::path input_dir) {
+void build(std::string input_dir, fs::path iso_path) {
+	if(!fs::is_directory(input_dir)) {
+		fprintf(stderr, "error: Input path is not a directory!\n");
+		exit(1);
+	}
+	if(iso_path == "") {
+		fprintf(stderr, "error: No output path specified!\n");
+		exit(1);
+	}
+	if(!fs::is_directory(iso_path.parent_path())) {
+		fprintf(stderr, "error: Parent directory of output file does not exist!\n");
+		exit(1);
+	}
+	if(fs::is_directory(iso_path)) {
+		fprintf(stderr, "error: Output path is a directory!\n");
+		exit(1);
+	}
+	
 	std::vector<fs::path> wad_files;
 	enumerate_wads_recursive(wad_files, input_dir, 0);
 	
