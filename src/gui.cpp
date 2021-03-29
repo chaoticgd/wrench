@@ -154,38 +154,6 @@ float gui::render_menu_bar(app& a) {
 	static alert_box message_box("Information");
 	message_box.render();
 	
-	static prompt_box import_level_box("Import Level");
-	if(auto path = import_level_box.render()) {
-		if(level* old_lvl = a.get_level()) {
-			try {
-				//file_stream file(*path);
-				//toc_level index = old_lvl->index;
-				//sector32 base_offset = old_lvl->file_header.base_offset;
-				//level new_lvl;
-				//new_lvl.read(&file, index, 0, base_offset, sector32{0}, file.size());
-				//*old_lvl = std::move(new_lvl);
-				//a.get_project()->clear_undo_history();
-			} catch(stream_error&) {
-				message_box.open("Import failed!");
-			}
-		}
-	}
-	
-	static prompt_box export_level_box("Export Level");
-	if(auto path = export_level_box.render()) {
-		if(level* lvl = a.get_level()) {
-			try {
-				array_stream dest;
-				lvl->write(dest);
-				
-				file_stream file(*path, std::ios::out);
-				file.write_n(dest.buffer.data(), dest.buffer.size());
-			} catch(stream_error&) {
-				message_box.open("Export failed!");
-			}
-		}
-	}
-	
 	enum class file_dialog_type {
 		OPEN, SAVE, DIR
 	};
@@ -247,27 +215,8 @@ float gui::render_menu_bar(app& a) {
 			}
 			ImGui::EndMenu();
 		}
-		if(ImGui::BeginMenu("Import")) {
-			if(!a.get_project()) {
-				ImGui::Text("You must create a new project (File->New) before importing a level.");
-			}
-			else if(a.get_level()) {
-				if(ImGui::MenuItem("Level WAD")) {
-					import_level_box.open();
-				}
-			} else {
-				ImGui::Text("You must open the level you want to replace (Levels->...) before importing another one.");
-			}
-			ImGui::EndMenu();
-		}
 		if(ImGui::BeginMenu("Export")) {
-			if(!a.get_project()) {
-				ImGui::Text("You must create a new project (File->New) before exporting a level.");
-			}
 			if(level* lvl = a.get_level()) {
-				if(ImGui::MenuItem("Level WAD")) {
-					export_level_box.open();
-				}
 				if(ImGui::MenuItem("Mobyseg (debug)")) {
 					file_stream dump_file("mobyseg.bin", std::ios::out | std::ios::trunc);
 					stream* src = lvl->moby_stream();
