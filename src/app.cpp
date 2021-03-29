@@ -31,7 +31,7 @@
 
 using project_ptr = std::unique_ptr<wrench_project>;
 
-void after_project_load(app& a) {
+void after_directory_loaded(app& a) {
 	for(auto& window : a.windows) {
 		if(dynamic_cast<gui::start_screen*>(window.get()) != nullptr) {
 			window->close(a);
@@ -70,13 +70,14 @@ void app::extract_iso(fs::path iso_path, fs::path dir) {
 			renderer.reset_camera(this);
 			auto title = std::string("Wrench Editor - [") + dir.string() + "]";
 			glfwSetWindowTitle(glfw_window, title.c_str());
-			after_project_load(*this);
+			after_directory_loaded(*this);
 		}
 	);
 }
 
 void app::open_directory(fs::path dir) {
 	directory = dir;
+	after_directory_loaded(*this);
 }
 
 void app::build_iso(fs::path dir, fs::path iso_path) {
