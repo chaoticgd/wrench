@@ -77,3 +77,17 @@ std::string md5_to_printable_string(uint8_t in[MD5_DIGEST_LENGTH]) {
 	}
 	return result;
 }
+
+int execute_shell_command(std::string executable, std::vector<std::string> arguments) {
+#ifdef DECENT_OS
+	//
+#else
+	#warning *** COMPILING WITH INSECURE execute_shell_command IMPLEMENTATION ***
+	
+	std::string command = executable;
+	for(std::string& arg : arguments) {
+		command += " \"" + arg + "\"";
+	}
+	return system(command.c_str());
+#endif
+}

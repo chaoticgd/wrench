@@ -34,6 +34,7 @@
 #include "game_db.h"
 #include "project.h"
 #include "renderer.h"
+#include "fs_includes.h"
 #include "worker_logger.h"
 #include "formats/texture.h"
 #include "formats/level_impl.h"
@@ -67,7 +68,9 @@ public:
 	
 	int64_t delta_time = 0;
 
-	void new_project(game_iso game);
+	void extract_iso(fs::path iso_path, fs::path dir);
+	void open_directory(fs::path dir);
+	void build_iso(fs::path dir, fs::path iso_path);
 
 	std::string project_path();
 

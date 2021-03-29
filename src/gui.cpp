@@ -94,8 +94,11 @@ void gui::create_dock_layout(const app& a) {
 	ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
 	ImGui::DockBuilderSetNodeSize(dockspace_id, ImVec2(1.f, 1.f));
 
-	ImGuiID centre, right;
-	ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 8.f / 10.f, &centre, &right);
+	ImGuiID left_centre, right;
+	ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 8.f / 10.f, &left_centre, &right);
+	
+	ImGuiID left, centre;
+	ImGui::DockBuilderSplitNode(left_centre, ImGuiDir_Left, 2.f / 10.f, &left, &centre);
 	
 	ImGuiID inspector, middle_right;
 	ImGui::DockBuilderSplitNode(right, ImGuiDir_Up, 1.f / 2.f, &inspector, &middle_right);
@@ -103,6 +106,7 @@ void gui::create_dock_layout(const app& a) {
 	ImGuiID mobies, viewport_info;
 	ImGui::DockBuilderSplitNode(middle_right, ImGuiDir_Up, 1.f / 2.f, &mobies, &viewport_info);
 	
+	ImGui::DockBuilderDockWindow("Project Tree", left);
 	ImGui::DockBuilderDockWindow("Start Screen", centre);
 	ImGui::DockBuilderDockWindow("3D View", centre);
 	ImGui::DockBuilderDockWindow("Texture Browser", centre);
@@ -183,14 +187,35 @@ float gui::render_menu_bar(app& a) {
 	
 	ImGui::BeginMainMenuBar();
 	if(ImGui::BeginMenu("File")) {
-		if(ImGui::BeginMenu("New")) {
-			if(config::get().game_isos.size() == 0) {
-				ImGui::Text("You must import your games before creating a new project (Windows->Settings).");
+		if(ImGui::BeginMenu("Extract ISO")) {
+			static std::string input_iso;
+			static std::string output_dir;
+			ImGui::InputText("Input ISO", &input_iso);
+			ImGui::InputText("Output Directory", &output_dir);
+			if(ImGui::Button("Extract")) {
+				a.extract_iso(input_iso, output_dir);
+				input_iso = "";
+				output_dir = "";
 			}
-			for(const game_iso& game : config::get().game_isos) {
-				if(ImGui::MenuItem(game.path.c_str())) {
-					a.new_project(game);
-				}
+			ImGui::EndMenu();
+		}
+		if(ImGui::BeginMenu("Open Directory")) {
+			static std::string dir;
+			ImGui::InputText("Path", &dir);
+			if(ImGui::Button("Open")) {
+				a.open_directory(dir);
+				dir = "";
+			}
+			ImGui::EndMenu();
+		}
+		if(ImGui::BeginMenu("Build ISO")) {
+			static std::string input_dir;
+			static std::string output_iso;
+			ImGui::InputText("Input Directory", &input_dir);
+			ImGui::InputText("Output ISO", &output_iso);
+			if(ImGui::Button("Build")) {
+				input_dir = "";
+				output_iso = "";
 			}
 			ImGui::EndMenu();
 		}
@@ -372,6 +397,7 @@ float gui::render_menu_bar(app& a) {
 	if(ImGui::BeginMenu("Windows")) {
 		render_menu_bar_window_toggle<start_screen>(a);
 		render_menu_bar_window_toggle<view_3d>(a);
+		render_menu_bar_window_toggle<project_tree>(a);
 		render_menu_bar_window_toggle<moby_list>(a);
 		render_menu_bar_window_toggle<inspector>(a);
 		render_menu_bar_window_toggle<viewport_information>(a);
@@ -558,6 +584,76 @@ bool gui::start_screen::button(const char* str, ImTextureID user_texture_id, con
 	window->DrawList->AddText(text_mid, 0xffffffff, str);
 	
 	return pressed;
+}
+
+/*
+	project_tree
+*/
+		
+const char* gui::project_tree::title_text() const {
+	return "Project Tree";
+}
+
+ImVec2 gui::project_tree::initial_size() const {
+	return ImVec2(100, 200);
+}
+
+void gui::project_tree::render(app& a) {
+	if(auto proj = a.get_project()) {
+		if((proj->directory != _project_dir.path) | ImGui::Button("Reload")) {
+			reload(proj->directory);
+		}
+		render_tree_node(_project_dir);
+	} else {
+		ImGui::Text("<no project open>");
+	}
+}
+
+void gui::project_tree::render_tree_node(project_tree_node& node) {
+	ImGui::PushID(&node.path);
+	if(ImGui::TreeNodeEx(fs::path(node.path).filename().c_str(), ImGuiTreeNodeFlags_None)) {
+		for(project_tree_node& subdir : node.dirs) {
+			render_tree_node(subdir);
+		}
+		for(fs::path& file : node.files) {
+			if(ImGui::Selectable(file.filename().c_str())) {
+				// do stuff
+			}
+		}
+		ImGui::TreePop();
+	}
+	ImGui::PopID();
+}
+
+void gui::project_tree::reload(fs::path path) {
+	int files = 0;
+	project_tree_node new_project_dir;
+	reload(files, new_project_dir, path, 0);
+	_project_dir = new_project_dir;
+}
+
+void gui::project_tree::reload(int& files, project_tree_node& dest, fs::path path, int depth) {
+	dest.path = path;
+	if(depth > 8) {
+		fprintf(stderr, "warning: Directory depth exceeds 8!\n");
+		return;
+	}
+	for(auto& file : fs::directory_iterator(path)) {
+		if(file.is_directory()) {
+			project_tree_node node;
+			reload(files, node, file, depth + 1);
+			dest.dirs.push_back(node);
+		} else if(file.is_regular_file()) {
+			if(files > 10000) {
+				fprintf(stderr, "warning: More than 10000 files in directory!\n");
+			}
+			files++;
+			dest.files.push_back(file);
+		}
+	}
+	std::sort(dest.dirs.begin(), dest.dirs.end(),
+		[](auto& l, auto& r) { return l.path < r.path; });
+	std::sort(dest.files.begin(), dest.files.end());
 }
 
 /*
@@ -1705,7 +1801,7 @@ ImVec2 gui::stream_viewer::initial_size() const {
 }
 
 void gui::stream_viewer::render(app& a) {
-	wrench_project* project = a.get_project();
+	/*wrench_project* project = a.get_project();
 	if(project == nullptr) {
 		ImGui::Text("<no project open>");
 		return;
@@ -1762,7 +1858,7 @@ void gui::stream_viewer::render(app& a) {
 		}
 		render_stream_tree_node(&project->iso, 0);
 		ImGui::Columns();
-	ImGui::EndChild();
+	ImGui::EndChild();*/
 }
 
 void gui::stream_viewer::render_stream_tree_node(stream* node, std::size_t index) {

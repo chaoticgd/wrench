@@ -21,6 +21,7 @@
 
 #include "game_db.h"
 #include "iso_stream.h"
+#include "fs_includes.h"
 #include "worker_logger.h"
 #include "formats/racpak.h"
 #include "formats/texture.h"
@@ -53,7 +54,9 @@ struct undo_redo_command {
 
 class wrench_project {
 public:
-	wrench_project(game_iso game_, worker_logger& log);
+	fs::path directory;
+
+	wrench_project(app& a, fs::path dir);
 
 	void post_load(); // Called from main thread, used for OpenGL things.
 
@@ -86,10 +89,6 @@ private:
 	std::string table_index_to_name(std::size_t table_index);
 	std::string level_index_to_name(std::size_t level_index);
 
-public: // Initialisation order matters.
-	const game_iso game;
-
-private:
 	std::size_t _history_index = 0;
 	std::vector<undo_redo_command> _history_stack;
 	
@@ -99,13 +98,8 @@ private:
 	std::map<std::size_t, armor_archive> _armor;
 	level* _selected_level = nullptr;
 	
-	std::optional<gamedb_game> _game_info;
-	
 	int _id;
 	static int _next_id;
-	
-public:
-	file_stream iso;
 };
 
 class command_error : public std::runtime_error {

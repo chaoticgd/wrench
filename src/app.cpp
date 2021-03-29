@@ -30,37 +30,61 @@
 
 using project_ptr = std::unique_ptr<wrench_project>;
 
-void app::new_project(game_iso game) {
+void app::extract_iso(fs::path iso_path, fs::path dir) {
 	if(_lock_project) {
 		return;
 	}
 
 	_lock_project = true;
 	_project.reset(nullptr);
-
-	emplace_window<worker_thread<project_ptr, game_iso>>(
-		"New Project", game,
-		[](game_iso game, worker_logger& log) {
-			try {
-				auto result = std::make_unique<wrench_project>(game, log);
-				log << "\nProject created successfully.";
-				return std::make_optional(std::move(result));
-			} catch(stream_error& err) {
-				log << err.what() << "\n";
-				log << err.stack_trace;
+	
+	std::pair<std::string, std::string> in(iso_path, dir);
+	
+	emplace_window<worker_thread<int, decltype(in)>>(
+		"Extract ISO", in,
+		[](std::pair<std::string, std::string> in, worker_logger& log) {
+			std::vector<std::string> args = {"extract", in.first, in.second};
+			int exit_code = execute_shell_command("bin/iso", args);
+			if(exit_code != 0) {
+				log << "\nProject creation failed!\n";
 			}
-			return std::optional<project_ptr>();
+			return exit_code;
 		},
-		[&](project_ptr project) {
-			project->post_load();
-			_project.swap(project);
+		[=, this](int exit_code) {
+			if(exit_code != 0) {
+				_lock_project = false;
+				return;
+			}
+			auto proj = std::make_unique<wrench_project>(*this, dir);
+			_project.swap(proj);
+			_project->post_load();
 			_lock_project = false;
-
 			renderer.reset_camera(this);
-			
-			glfwSetWindowTitle(glfw_window, "Wrench Editor - [Unsaved Project]");
+			auto title = std::string("Wrench Editor - [") + dir.string() + "]";
+			glfwSetWindowTitle(glfw_window, title.c_str());
+			for(auto& window : windows) {
+				if(dynamic_cast<gui::start_screen*>(window.get())) {
+					window->close(*this);
+					break;
+				}
+			}
+			for(auto& window : windows) {
+				if(dynamic_cast<gui::project_tree*>(window.get())) {
+					return;
+				}
+			}
+			emplace_window<gui::project_tree>();
 		}
 	);
+}
+
+void app::open_directory(fs::path dir) {
+	auto proj = std::make_unique<wrench_project>(*this, dir);
+	_project.swap(proj);
+}
+
+void app::build_iso(fs::path dir, fs::path iso_path) {
+	
 }
 
 wrench_project* app::get_project() {

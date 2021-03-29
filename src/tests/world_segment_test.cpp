@@ -44,8 +44,9 @@ void world_segment_test() {
 		return;
 	}
 	
+	app a;
 	worker_logger dummy;
-	wrench_project project(*iso, dummy);
+	wrench_project project(a, "");
 	
 	int happy = 0, sad = 0;
 	

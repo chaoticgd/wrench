@@ -24,13 +24,9 @@
 #include "fs_includes.h"
 #include "formats/texture_archive.h"
 
-wrench_project::wrench_project(
-		game_iso game_,
-		worker_logger& log)
-	: game(game_),
-	  _id(_next_id++),
-	  iso(game.path) {
-	load_tables();
+wrench_project::wrench_project(app& a, fs::path dir)
+	: directory(dir), _id(_next_id++) {
+	//load_tables();
 }
 
 void wrench_project::post_load() {
@@ -78,10 +74,6 @@ level* wrench_project::level_from_index(std::size_t index) {
 }
 
 std::map<std::string, std::vector<texture>*> wrench_project::texture_lists(app* a) {
-	if(!_game_info) {
-		load_gamedb_info(a);
-	}
-	
 	std::map<std::string, std::vector<texture>*> result;
 	for(auto& [index, lvl] : _levels) {
 		std::string name = level_index_to_name(index);
@@ -103,10 +95,6 @@ std::map<std::string, std::vector<texture>*> wrench_project::texture_lists(app* 
 }
 
 std::map<std::string, model_list> wrench_project::model_lists(app* a) {
-	if(!_game_info) {
-		load_gamedb_info(a);
-	}
-	
 	std::map<std::string, model_list> result;
 	for(auto& [table_index, armor] : _armor) {
 		result[table_index_to_name(table_index)] = {
@@ -214,27 +202,29 @@ void wrench_project::load_tables() {
 }
 
 void wrench_project::load_gamedb_info(app* a) {
-	for(std::size_t i = 0 ; i < a->game_db.size(); i++) {
-		if(a->game_db[i].name == game.game_db_entry) {
-			_game_info = a->game_db[i];
-			return;
-		}
-	}
-	throw std::runtime_error("Failed to load gamedb info!");
+	//for(std::size_t i = 0 ; i < a->game_db.size(); i++) {
+	//	if(a->game_db[i].name == game.game_db_entry) {
+	//		_game_info = a->game_db[i];
+	//		return;
+	//	}
+	//}
+	//throw std::runtime_error("Failed to load gamedb info!");
 }
 
 std::string wrench_project::table_index_to_name(std::size_t table_index) {
-	if(_game_info->tables.find(table_index) == _game_info->tables.end()) {
-		return int_to_hex(table_index);
-	}
-	return _game_info->tables.at(table_index);
+	return std::to_string(table_index);
+	//if(_game_info->tables.find(table_index) == _game_info->tables.end()) {
+	//	return int_to_hex(table_index);
+	//}
+	//return _game_info->tables.at(table_index);
 }
 
 std::string wrench_project::level_index_to_name(std::size_t level_index) {
-	if(_game_info->levels.find(level_index) == _game_info->levels.end()) {
-		return int_to_hex(level_index);
-	}
-	return _game_info->levels.at(level_index);
+	return std::to_string(level_index);
+	//if(_game_info->levels.find(level_index) == _game_info->levels.end()) {
+	//	return int_to_hex(level_index);
+	//}
+	//return _game_info->levels.at(level_index);
 }
 
 int wrench_project::_next_id = 0;

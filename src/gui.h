@@ -60,6 +60,26 @@ namespace gui {
 		gl_texture dvd, folder, floppy;
 	};
 	
+	struct project_tree_node {
+		std::string path;
+		std::vector<project_tree_node> dirs;
+		std::vector<fs::path> files;
+	};
+	
+	class project_tree : public window {
+	public:
+		const char* title_text() const override;
+		ImVec2 initial_size() const override;
+		void render(app& a) override;
+		void render_tree_node(project_tree_node& node);
+		
+		void reload(fs::path path);
+		void reload(int& files, project_tree_node& dest, fs::path path, int depth);
+		
+	private:
+		project_tree_node _project_dir;
+	};
+	
 	class inspector : public window {
 	public:
 		const char* title_text() const override;
