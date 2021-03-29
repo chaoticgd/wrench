@@ -252,29 +252,6 @@ namespace gui {
 		bool _is_open = false;
 		std::string _text;
 	};
-
-	class file_dialog : public window {
-	public:
-		enum mode { open, save };
-
-		file_dialog(const char* title, mode m, std::vector<std::string> extensions);
-
-		const char* title_text() const override;
-		ImVec2 initial_size() const override;
-		void render(app& a) override;
-		bool is_unique() const override;
-
-		void on_okay(std::function<void(std::string)> callback);
-
-	private:
-		const char* _title;
-		mode _mode;
-		std::vector<std::string> _extensions;
-		std::string _directory_input;
-		fs::path _directory;
-		std::string _file;
-		std::function<void(std::string)> _callback;
-	};
 	
 	class hex_dump : public window {
 	public:
