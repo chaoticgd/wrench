@@ -332,8 +332,8 @@ float gui::render_menu_bar(app& a) {
 	}
 	
 	ImGui::SetNextWindowContentSize(ImVec2(256.f, 0.f));
-	if(ImGui::BeginMenu("Files")) {
-		render_files_menu(a);
+	if(ImGui::BeginMenu("Tree")) {
+		render_tree_menu(a);
 		ImGui::EndMenu();
 	}
 
@@ -448,7 +448,7 @@ void gui::render_tools(app& a, float menu_bar_height) {
 	ImGui::End();
 }
 
-void gui::render_files_menu(app& a) {
+void gui::render_tree_menu(app& a) {
 	struct project_tree_node {
 		std::string path;
 		std::vector<project_tree_node> dirs;
