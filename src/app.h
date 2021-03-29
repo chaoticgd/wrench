@@ -67,18 +67,23 @@ public:
 	gl_renderer renderer;
 	
 	int64_t delta_time = 0;
-
+	
+	fs::path directory; // The directory to build new ISO files from.
+	
 	void extract_iso(fs::path iso_path, fs::path dir);
 	void open_directory(fs::path dir);
 	void build_iso(fs::path dir, fs::path iso_path);
-
-	std::string project_path();
-
-	wrench_project* get_project();
-	const wrench_project* get_project() const;
+	void open_file(fs::path path);
 	
 	level* get_level();
 	const level* get_level() const;
+	
+	std::map<std::string, std::vector<texture>*> texture_lists() { return {}; }
+	std::map<std::string, model_list> model_lists() { return {}; }
+private:
+	std::optional<level> _lvl;
+
+public:
 
 	bool has_camera_control();
 

@@ -26,6 +26,7 @@
 #include "../util.h"
 #include "../stream.h"
 #include "../worker_logger.h"
+#include "../level_file_types.h"
 #include "world.h"
 #include "wad.h"
 #include "tfrag.h"
@@ -83,13 +84,14 @@ class level {
 public:
 	level() {}
 	level(const level& rhs) = delete;
-	level& operator=(level&& rhs) = default;
+	level(level&& rhs) = default;
 	
-	void read(stream* src);
+	void read(stream& src);
 	
-	static level_file_header read_file_header(stream* src, std::size_t offset);
+	void read_file_header(stream& file);
 	
 	level_file_header file_header;
+	level_file_info info; // Stores information derived from the magic identifier e.g. header size.
 	world_segment world;
 	
 	template <typename T, typename F>

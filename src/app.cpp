@@ -27,6 +27,7 @@
 #include "renderer.h"
 #include "fs_includes.h"
 #include "worker_thread.h"
+#include "level_file_types.h"
 
 using project_ptr = std::unique_ptr<wrench_project>;
 
@@ -45,7 +46,7 @@ void app::extract_iso(fs::path iso_path, fs::path dir) {
 	}
 
 	_lock_project = true;
-	_project.reset(nullptr);
+	directory = "";
 	
 	std::pair<std::string, std::string> in(iso_path, dir);
 	
@@ -55,7 +56,7 @@ void app::extract_iso(fs::path iso_path, fs::path dir) {
 			std::vector<std::string> args = {"extract", in.first, in.second};
 			int exit_code = execute_shell_command("bin/iso", args);
 			if(exit_code != 0) {
-				log << "\nProject creation failed!\n";
+				log << "\nFailed to extract files from ISO file!\n";
 			}
 			return exit_code;
 		},
@@ -64,9 +65,7 @@ void app::extract_iso(fs::path iso_path, fs::path dir) {
 				_lock_project = false;
 				return;
 			}
-			auto proj = std::make_unique<wrench_project>(*this, dir);
-			_project.swap(proj);
-			_project->post_load();
+			directory = dir;
 			_lock_project = false;
 			renderer.reset_camera(this);
 			auto title = std::string("Wrench Editor - [") + dir.string() + "]";
@@ -77,32 +76,47 @@ void app::extract_iso(fs::path iso_path, fs::path dir) {
 }
 
 void app::open_directory(fs::path dir) {
-	auto proj = std::make_unique<wrench_project>(*this, dir);
-	_project.swap(proj);
-	after_project_load(*this);
+	directory = dir;
 }
 
 void app::build_iso(fs::path dir, fs::path iso_path) {
 	
 }
 
-wrench_project* app::get_project() {
-	return _project.get();
-}
-
-const wrench_project* app::get_project() const {
-	return const_cast<app*>(this)->get_project();
+void app::open_file(fs::path path) {
+	file_stream file(path);
+	uint32_t magic = file.read<uint32_t>(0x0);
+	auto info = LEVEL_FILE_TYPES.find(magic);
+	if(info == LEVEL_FILE_TYPES.end()) {
+		return;
+	}
+	
+	switch(info->second.type) {
+		case level_file_type::LEVEL: {
+			level new_lvl;
+			try {
+				new_lvl.read(file);
+			} catch(stream_error& e) {
+				printf("error: Failed to load level! %s\n", e.what());
+				return;
+			}
+			_lvl.emplace(std::move(new_lvl));
+			renderer.reset_camera(this);
+			break;
+		}
+		case level_file_type::AUDIO:
+			break;
+		case level_file_type::SCENE:
+			break;
+	}
 }
 
 level* app::get_level() {
-	if(auto project = get_project()) {
-		return project->selected_level();
-	}
-	return nullptr;
+	return _lvl ? &(*_lvl) : nullptr;
 }
 
 const level* app::get_level() const {
-	return const_cast<app*>(this)->get_level();
+	return _lvl ? &(*_lvl) : nullptr;
 }
 
 bool app::has_camera_control() {

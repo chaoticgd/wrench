@@ -21,17 +21,26 @@
 
 #include "../app.h"
 
-void level::read(stream* src) {
-	//index = index_;
-	//index.main_part_size = sector32::size_from_bytes(size_in_bytes);
-	//file_header = read_file_header(src, header_offset);
-	//file_header.base_offset = base_offset;
+void level::read(stream& src) {
+	if(src.size() > 1024 * 1024 * 1024) {
+		throw stream_format_error("The file is over 1GB in size.");
+	}
 	
-	//_file.emplace(src);
-	//_file->buffer.resize(index.main_part_size.bytes());
-	//src->seek(effective_base_offset.bytes());
-	//src->read_n(_file->buffer.data(), _file->buffer.size());
-	//_file->name = "LEVEL" + std::to_string(index.level_table_index) + ".WAD";
+	read_file_header(src);
+	
+	// Load the level data into memory. This logic should handle both levels
+	// that have been written out by my ISO tool, and levels that have been
+	// extracted from the disc with a traditional ISO tool. This doesn't handle
+	// the case where the ToC header has been appended to the beginning of the
+	// file without patching the base_offset field, and it doesn't handle the
+	// case where the ToC header is stored in a seperate file.
+	if(file_header.base_offset.sectors != 0 && file_header.base_offset.sectors != info.header_size_sectors) {
+		throw stream_format_error("Invalid base offset field in file header!\n");
+	}
+	_file.emplace();
+	_file->buffer.resize(src.size() - file_header.base_offset.sectors * SECTOR_SIZE);
+	src.seek(file_header.base_offset.sectors * SECTOR_SIZE);
+	src.read_n(_file->buffer.data(), _file->buffer.size());
 
 	switch(file_header.type) {
 		case level_type::RAC23:
@@ -84,35 +93,33 @@ void level::read(stream* src) {
 		return;
 	}
 	
-	read_hud_banks(src);
-	read_loading_screen_textures(src);
+	read_hud_banks(&src);
+	read_loading_screen_textures(&src);
 }
 
-level_file_header level::read_file_header(stream* src, std::size_t offset) {
-	level_file_header result { (level_type) 0 };
-	src->seek(offset);
-	result.type = (level_type) src->peek<uint32_t>();
-	switch(result.type) {
+void level::read_file_header(stream& file) {
+	file.seek(0);
+	file_header.type = (level_type) file.peek<uint32_t>();
+	auto info_iter = LEVEL_FILE_TYPES.find((uint32_t) file_header.type);
+	assert(info_iter != LEVEL_FILE_TYPES.end());
+	info = info_iter->second;
+	switch(file_header.type) {
 		case level_type::RAC23: {
-			auto file_header = src->read<level_file_header_rac23>();
-			swap_level_file_header_rac23(result, file_header);
+			auto header = file.read<level_file_header_rac23>();
+			swap_level_file_header_rac23(file_header, header);
 			break;
 		}
 		case level_type::RAC2_68: {
-			auto file_header = src->read<level_file_header_rac2_68>();
-			swap_level_file_header_rac2_68(result, file_header);
+			auto header = file.read<level_file_header_rac2_68>();
+			swap_level_file_header_rac2_68(file_header, header);
 			break;
 		}
 		case level_type::RAC4: {
-			auto file_header = src->read<level_file_header_rac4>();
-			swap_level_file_header_rac4(result, file_header);
+			auto header = file.read<level_file_header_rac4>();
+			swap_level_file_header_rac4(file_header, header);
 			break;
 		}
-		default: {
-			throw stream_format_error("Invalid level file header!");
-		}
 	}
-	return result;
 }
 
 void level::clear_selection() {

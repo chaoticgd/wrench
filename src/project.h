@@ -49,8 +49,6 @@ struct model_list {
 
 class wrench_project {
 public:
-	fs::path directory;
-
 	wrench_project(app& a, fs::path dir);
 
 	void post_load(); // Called from main thread, used for OpenGL things.
@@ -61,8 +59,6 @@ public:
 	std::size_t selected_level_index();
 	std::vector<level*> levels();
 	level* level_from_index(std::size_t index);
-	std::map<std::string, std::vector<texture>*> texture_lists(app* a);
-	std::map<std::string, model_list> model_lists(app* a);
 	
 	void open_level(std::size_t index);
 	

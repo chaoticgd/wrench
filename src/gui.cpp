@@ -313,19 +313,19 @@ float gui::render_menu_bar(app& a) {
 	
 	if(ImGui::BeginMenu("Emulator")) {
 		if(ImGui::MenuItem("Run")) {
-			if(auto project = a.get_project()) {
-				project->write_iso_file();
-				
-				if(fs::is_regular_file(config::get().emulator_path)) {
-					std::string emulator_path = fs::canonical(config::get().emulator_path).string();
-					std::string cmd = emulator_path + " " + project->cached_iso_path();
-					int result = system(cmd.c_str());
-					if(result != 0) {
-						emu_error_box.open("Failed to execute shell command.");
-					}
-				} else {
-					emu_error_box.open("Invalid emulator path.");
-				}
+			if(!a.directory.empty()) {
+				//project->write_iso_file();
+				//
+				//if(fs::is_regular_file(config::get().emulator_path)) {
+				//	std::string emulator_path = fs::canonical(config::get().emulator_path).string();
+				//	std::string cmd = emulator_path + " " + project->cached_iso_path();
+				//	int result = system(cmd.c_str());
+				//	if(result != 0) {
+				//		emu_error_box.open("Failed to execute shell command.");
+				//	}
+				//} else {
+				//	emu_error_box.open("Invalid emulator path.");
+				//}
 			} else {
 				emu_error_box.open("No project open.");
 			}
@@ -465,7 +465,7 @@ void gui::render_tree_menu(app& a) {
 			}
 			for(fs::path& file : node.files) {
 				if(ImGui::Selectable(file.filename().c_str())) {
-					// do stuff
+					a.open_file(file);
 				}
 			}
 			ImGui::TreePop();
@@ -499,16 +499,16 @@ void gui::render_tree_menu(app& a) {
 	};
 	
 	static project_tree_node project_dir;
-	if(auto proj = a.get_project()) {
-		if((proj->directory != project_dir.path) | ImGui::Button("Reload")) {
+	if(!a.directory.empty()) {
+		if((a.directory != project_dir.path) | ImGui::Button("Reload")) {
 			int files = 0;
 			project_tree_node new_project_dir;
-			reload(files, new_project_dir, proj->directory, 0);
+			reload(files, new_project_dir, a.directory, 0);
 			project_dir = new_project_dir;
 		}
 		render_tree_node(project_dir);
 	} else {
-		ImGui::Text("<no project open>");
+		ImGui::Text("<no directory open>");
 	}
 }
 
@@ -633,9 +633,9 @@ ImVec2 gui::inspector::initial_size() const {
 }
 
 template <typename T_field, typename T_entity>
-void inspector_input_scalar(wrench_project& proj, const char* label, T_field T_entity::*field);
+void inspector_input_scalar(level& lvl, const char* label, T_field T_entity::*field);
 template <typename T_lane, typename T_field, typename T_entity>
-void inspector_input(wrench_project& proj, const char* label, T_field T_entity::*field, std::size_t first_lane, int lane_count);
+void inspector_input(level& lvl, const char* label, T_field T_entity::*field, std::size_t first_lane, int lane_count);
 struct inspector_text_lane {
 	std::string str;
 	bool changed = false;
@@ -647,9 +647,7 @@ void gui::inspector::render(app& a) {
 		ImGui::Text("<no level>");
 		return;
 	}
-	
-	wrench_project& proj = *a.get_project();
-	level& lvl = *proj.selected_level();
+	level& lvl = *a.get_level();
 	
 	bool selection_empty = true;
 	lvl.for_each<entity>([&](entity& ent) {
@@ -663,61 +661,61 @@ void gui::inspector::render(app& a) {
 		return;
 	}
 	
-	inspector_input<float>(proj, "Mat I ", &matrix_entity::local_to_world, 0, 4);
-	inspector_input<float>(proj, "Mat J ", &matrix_entity::local_to_world, 4, 4);
-	inspector_input<float>(proj, "Mat K ", &matrix_entity::local_to_world, 8, 4);
-	inspector_input<float>(proj, "Mat T ", &matrix_entity::local_to_world, 12, 4);
-	inspector_input<float>(proj, "Pos   ", &euler_entity::position, 0, 3);
-	inspector_input<float>(proj, "Rot   ", &euler_entity::rotation, 0, 3);
-	inspector_input_scalar(proj, "Unk 0 ", &tie_entity::unknown_0);
-	inspector_input_scalar(proj, "Unk 4 ", &tie_entity::unknown_4);
-	inspector_input_scalar(proj, "Unk 8 ", &tie_entity::unknown_8);
-	inspector_input_scalar(proj, "Unk c ", &tie_entity::unknown_c);
-	inspector_input_scalar(proj, "Unk 50", &tie_entity::unknown_50);
-	inspector_input_scalar(proj, "UID   ", &tie_entity::uid);
-	inspector_input_scalar(proj, "Unk 58", &tie_entity::unknown_58);
-	inspector_input_scalar(proj, "Unk 5c", &tie_entity::unknown_5c);
-	inspector_input_scalar(proj, "Unk 0 ", &shrub_entity::unknown_0);
-	inspector_input_scalar(proj, "Unk 4 ", &shrub_entity::unknown_4);
-	inspector_input_scalar(proj, "Unk 8 ", &shrub_entity::unknown_8);
-	inspector_input_scalar(proj, "Unk c ", &shrub_entity::unknown_c);
-	inspector_input_scalar(proj, "Unk 50", &shrub_entity::unknown_50);
-	inspector_input_scalar(proj, "Unk 54", &shrub_entity::unknown_54);
-	inspector_input_scalar(proj, "Unk 58", &shrub_entity::unknown_58);
-	inspector_input_scalar(proj, "Unk 5c", &shrub_entity::unknown_5c);
-	inspector_input_scalar(proj, "Unk 60", &shrub_entity::unknown_60);
-	inspector_input_scalar(proj, "Unk 64", &shrub_entity::unknown_64);
-	inspector_input_scalar(proj, "Unk 68", &shrub_entity::unknown_68);
-	inspector_input_scalar(proj, "Unk 6c", &shrub_entity::unknown_6c);
-	inspector_input_scalar(proj, "Size  ", &moby_entity::size);
-	inspector_input_scalar(proj, "Unk 4 ", &moby_entity::unknown_4);
-	inspector_input_scalar(proj, "Unk 8 ", &moby_entity::unknown_8);
-	inspector_input_scalar(proj, "Unk c ", &moby_entity::unknown_c);
-	inspector_input_scalar(proj, "UID   ", &moby_entity::uid);
-	inspector_input_scalar(proj, "Unk 14", &moby_entity::unknown_14);
-	inspector_input_scalar(proj, "Unk 18", &moby_entity::unknown_18);
-	inspector_input_scalar(proj, "Unk 1c", &moby_entity::unknown_1c);
-	inspector_input_scalar(proj, "Unk 20", &moby_entity::unknown_20);
-	inspector_input_scalar(proj, "Unk 24", &moby_entity::unknown_24);
-	inspector_input_scalar(proj, "Class ", &moby_entity::class_num);
-	inspector_input_scalar(proj, "Scale ", &moby_entity::scale);
-	inspector_input_scalar(proj, "Unk 30", &moby_entity::unknown_30);
-	inspector_input_scalar(proj, "Unk 34", &moby_entity::unknown_34);
-	inspector_input_scalar(proj, "Unk 38", &moby_entity::unknown_38);
-	inspector_input_scalar(proj, "Unk 3c", &moby_entity::unknown_3c);
-	inspector_input_scalar(proj, "Unk 58", &moby_entity::unknown_58);
-	inspector_input_scalar(proj, "Unk 5c", &moby_entity::unknown_5c);
-	inspector_input_scalar(proj, "Unk 60", &moby_entity::unknown_60);
-	inspector_input_scalar(proj, "Unk 64", &moby_entity::unknown_64);
-	inspector_input_scalar(proj, "Pvar #", &moby_entity::pvar_index);
-	inspector_input_scalar(proj, "Unk 6c", &moby_entity::unknown_6c);
-	inspector_input_scalar(proj, "Unk 70", &moby_entity::unknown_70);
-	inspector_input_scalar(proj, "Unk 74", &moby_entity::unknown_74);
-	inspector_input_scalar(proj, "Unk 78", &moby_entity::unknown_78);
-	inspector_input_scalar(proj, "Unk 7c", &moby_entity::unknown_7c);
-	inspector_input_scalar(proj, "Unk 80", &moby_entity::unknown_80);
-	inspector_input_scalar(proj, "Unk 84", &moby_entity::unknown_84);
-	inspector_input<float>(proj, "Point ", &grindrail_spline_entity::special_point, 0, 4);
+	inspector_input<float>(lvl, "Mat I ", &matrix_entity::local_to_world, 0, 4);
+	inspector_input<float>(lvl, "Mat J ", &matrix_entity::local_to_world, 4, 4);
+	inspector_input<float>(lvl, "Mat K ", &matrix_entity::local_to_world, 8, 4);
+	inspector_input<float>(lvl, "Mat T ", &matrix_entity::local_to_world, 12, 4);
+	inspector_input<float>(lvl, "Pos   ", &euler_entity::position, 0, 3);
+	inspector_input<float>(lvl, "Rot   ", &euler_entity::rotation, 0, 3);
+	inspector_input_scalar(lvl, "Unk 0 ", &tie_entity::unknown_0);
+	inspector_input_scalar(lvl, "Unk 4 ", &tie_entity::unknown_4);
+	inspector_input_scalar(lvl, "Unk 8 ", &tie_entity::unknown_8);
+	inspector_input_scalar(lvl, "Unk c ", &tie_entity::unknown_c);
+	inspector_input_scalar(lvl, "Unk 50", &tie_entity::unknown_50);
+	inspector_input_scalar(lvl, "UID   ", &tie_entity::uid);
+	inspector_input_scalar(lvl, "Unk 58", &tie_entity::unknown_58);
+	inspector_input_scalar(lvl, "Unk 5c", &tie_entity::unknown_5c);
+	inspector_input_scalar(lvl, "Unk 0 ", &shrub_entity::unknown_0);
+	inspector_input_scalar(lvl, "Unk 4 ", &shrub_entity::unknown_4);
+	inspector_input_scalar(lvl, "Unk 8 ", &shrub_entity::unknown_8);
+	inspector_input_scalar(lvl, "Unk c ", &shrub_entity::unknown_c);
+	inspector_input_scalar(lvl, "Unk 50", &shrub_entity::unknown_50);
+	inspector_input_scalar(lvl, "Unk 54", &shrub_entity::unknown_54);
+	inspector_input_scalar(lvl, "Unk 58", &shrub_entity::unknown_58);
+	inspector_input_scalar(lvl, "Unk 5c", &shrub_entity::unknown_5c);
+	inspector_input_scalar(lvl, "Unk 60", &shrub_entity::unknown_60);
+	inspector_input_scalar(lvl, "Unk 64", &shrub_entity::unknown_64);
+	inspector_input_scalar(lvl, "Unk 68", &shrub_entity::unknown_68);
+	inspector_input_scalar(lvl, "Unk 6c", &shrub_entity::unknown_6c);
+	inspector_input_scalar(lvl, "Size  ", &moby_entity::size);
+	inspector_input_scalar(lvl, "Unk 4 ", &moby_entity::unknown_4);
+	inspector_input_scalar(lvl, "Unk 8 ", &moby_entity::unknown_8);
+	inspector_input_scalar(lvl, "Unk c ", &moby_entity::unknown_c);
+	inspector_input_scalar(lvl, "UID   ", &moby_entity::uid);
+	inspector_input_scalar(lvl, "Unk 14", &moby_entity::unknown_14);
+	inspector_input_scalar(lvl, "Unk 18", &moby_entity::unknown_18);
+	inspector_input_scalar(lvl, "Unk 1c", &moby_entity::unknown_1c);
+	inspector_input_scalar(lvl, "Unk 20", &moby_entity::unknown_20);
+	inspector_input_scalar(lvl, "Unk 24", &moby_entity::unknown_24);
+	inspector_input_scalar(lvl, "Class ", &moby_entity::class_num);
+	inspector_input_scalar(lvl, "Scale ", &moby_entity::scale);
+	inspector_input_scalar(lvl, "Unk 30", &moby_entity::unknown_30);
+	inspector_input_scalar(lvl, "Unk 34", &moby_entity::unknown_34);
+	inspector_input_scalar(lvl, "Unk 38", &moby_entity::unknown_38);
+	inspector_input_scalar(lvl, "Unk 3c", &moby_entity::unknown_3c);
+	inspector_input_scalar(lvl, "Unk 58", &moby_entity::unknown_58);
+	inspector_input_scalar(lvl, "Unk 5c", &moby_entity::unknown_5c);
+	inspector_input_scalar(lvl, "Unk 60", &moby_entity::unknown_60);
+	inspector_input_scalar(lvl, "Unk 64", &moby_entity::unknown_64);
+	inspector_input_scalar(lvl, "Pvar #", &moby_entity::pvar_index);
+	inspector_input_scalar(lvl, "Unk 6c", &moby_entity::unknown_6c);
+	inspector_input_scalar(lvl, "Unk 70", &moby_entity::unknown_70);
+	inspector_input_scalar(lvl, "Unk 74", &moby_entity::unknown_74);
+	inspector_input_scalar(lvl, "Unk 78", &moby_entity::unknown_78);
+	inspector_input_scalar(lvl, "Unk 7c", &moby_entity::unknown_7c);
+	inspector_input_scalar(lvl, "Unk 80", &moby_entity::unknown_80);
+	inspector_input_scalar(lvl, "Unk 84", &moby_entity::unknown_84);
+	inspector_input<float>(lvl, "Point ", &grindrail_spline_entity::special_point, 0, 4);
 	
 	// If mobies with different class numbers are selected, or entities other
 	// than mobies are selected, we shouldn't draw the pvars.
@@ -769,22 +767,21 @@ void gui::inspector::render(app& a) {
 }
 
 template <typename T_field, typename T_entity>
-void inspector_input_scalar(wrench_project& proj, const char* label, T_field T_entity::*field) {
-	inspector_input<T_field>(proj, label, field, 0, 1);
+void inspector_input_scalar(level& lvl, const char* label, T_field T_entity::*field) {
+	inspector_input<T_field>(lvl, label, field, 0, 1);
 }
 
 template <typename T_lane, typename T_field, typename T_entity>
-void inspector_input(wrench_project& proj, const char* label, T_field T_entity::*field, std::size_t first_lane, int lane_count) {
+void inspector_input(level& lvl, const char* label, T_field T_entity::*field, std::size_t first_lane, int lane_count) {
 	static const int MAX_LANES = 4;
 	assert(lane_count <= MAX_LANES);
-	level* lvl = proj.selected_level();
 	
 	// Determine whether all the values from a given lane are the same for all
 	// selected entities.
 	std::optional<T_lane> last_value[MAX_LANES];
 	bool values_equal[MAX_LANES] = { true, true, true, true };
 	bool selection_contains_entity_without_field = false;
-	lvl->for_each<entity>([&](entity& base_ent) {
+	lvl.for_each<entity>([&](entity& base_ent) {
 		if(base_ent.selected) {
 			if(T_entity* ent = dynamic_cast<T_entity*>(&base_ent)) {
 				for(int i = 0; i < lane_count; i++) {
@@ -827,9 +824,9 @@ void inspector_input(wrench_project& proj, const char* label, T_field T_entity::
 	}
 	
 	if(any_lane_changed) {
-		std::vector<entity_id> ids = lvl->selected_entity_ids();
+		std::vector<entity_id> ids = lvl.selected_entity_ids();
 		std::map<entity_id, T_field> old_values;
-		lvl->for_each<T_entity>([&](T_entity& ent) {
+		lvl.for_each<T_entity>([&](T_entity& ent) {
 			if(ent.selected) {
 				old_values[ent.id] = ent.*field;
 			}
@@ -850,7 +847,7 @@ void inspector_input(wrench_project& proj, const char* label, T_field T_entity::
 			}
 		}
 		
-		lvl->push_command(
+		lvl.push_command(
 			[ids, field, first_lane, input_lanes, new_values](level& lvl) {
 				lvl.for_each<T_entity>([&](T_entity& ent) {
 					if(contains(ids, ent.id)) {
@@ -1023,12 +1020,7 @@ ImVec2 gui::texture_browser::initial_size() const {
 }
 
 void gui::texture_browser::render(app& a) {
-	if(!a.get_project()) {
-		ImGui::Text("<no project open>");
-		return;
-	}
-
-	auto tex_lists = a.get_project()->texture_lists(&a);
+	auto tex_lists = a.texture_lists();
 	if(tex_lists.find(_list) == tex_lists.end()) {
 		if(tex_lists.size() > 0) {
 			_list = tex_lists.begin()->first;
@@ -1185,11 +1177,6 @@ ImVec2 gui::model_browser::initial_size() const {
 }
 
 void gui::model_browser::render(app& a) {
-	if(!a.get_project()) {
-		ImGui::Text("<no project open>");
-		return;
-	}
-	
 	ImGui::Columns(2);
 	if(_fullscreen_preview) {
 		ImGui::SetColumnWidth(0, 0);
@@ -1197,7 +1184,7 @@ void gui::model_browser::render(app& a) {
 		ImGui::SetColumnWidth(0, ImGui::GetWindowSize().x - 384);
 	}
 	
-	_model_lists = a.get_project()->model_lists(&a);
+	_model_lists = a.model_lists();
 	moby_model* model = render_selection_pane(a);
 	if(model == nullptr) {
 		return;

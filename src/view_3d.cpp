@@ -35,7 +35,7 @@ ImVec2 view_3d::initial_size() const {
 }
 
 void view_3d::render(app& a) {
-	if(!a.get_project()) {
+	if(a.directory.empty()) {
 		ImGui::TextWrapped("%s", "");
 		ImGui::TextWrapped(
 			"   No directory open. To open a directory, either extract an ISO file "

@@ -25,7 +25,7 @@
 #include "formats/texture_archive.h"
 
 wrench_project::wrench_project(app& a, fs::path dir)
-	: directory(dir), _id(_next_id++) {
+	: _id(_next_id++) {
 	//load_tables();
 }
 
@@ -73,41 +73,41 @@ level* wrench_project::level_from_index(std::size_t index) {
 	return _levels.at(index).get();
 }
 
-std::map<std::string, std::vector<texture>*> wrench_project::texture_lists(app* a) {
-	std::map<std::string, std::vector<texture>*> result;
-	for(auto& [index, lvl] : _levels) {
-		std::string name = level_index_to_name(index);
-		result[name + "/Mipmaps"] = &lvl->mipmap_textures;
-		result[name + "/Terrain"] = &lvl->terrain_textures;
-		result[name + "/Mobies"] = &lvl->moby_textures;
-		result[name + "/Ties"] = &lvl->tie_textures;
-		result[name + "/Shrubs"] = &lvl->shrub_textures;
-		result[name + "/Sprites"] = &lvl->sprite_textures;
-		result[name + "/Loading Screen"] = &lvl->loading_screen_textures;
-	}
-	for(auto& [table_index, wad] : _texture_wads) {
-		result[table_index_to_name(table_index)] = &wad;
-	}
-	for(auto& [table_index, armor] : _armor) {
-		result[table_index_to_name(table_index)] = &armor.textures;
-	}
-	return result;
-}
-
-std::map<std::string, model_list> wrench_project::model_lists(app* a) {
-	std::map<std::string, model_list> result;
-	for(auto& [table_index, armor] : _armor) {
-		result[table_index_to_name(table_index)] = {
-			&armor.models, &armor.textures
-		};
-	}
-	for(auto& [level_index, lvl] : _levels) {
-		result[level_index_to_name(level_index) + "/Mobies"] = {
-			&lvl->moby_models, &lvl->moby_textures
-		};
-	}
-	return result;
-}
+//std::map<std::string, std::vector<texture>*> wrench_project::texture_lists(app* a) {
+//	std::map<std::string, std::vector<texture>*> result;
+//	for(auto& [index, lvl] : _levels) {
+//		std::string name = level_index_to_name(index);
+//		result[name + "/Mipmaps"] = &lvl->mipmap_textures;
+//		result[name + "/Terrain"] = &lvl->terrain_textures;
+//		result[name + "/Mobies"] = &lvl->moby_textures;
+//		result[name + "/Ties"] = &lvl->tie_textures;
+//		result[name + "/Shrubs"] = &lvl->shrub_textures;
+//		result[name + "/Sprites"] = &lvl->sprite_textures;
+//		result[name + "/Loading Screen"] = &lvl->loading_screen_textures;
+//	}
+//	for(auto& [table_index, wad] : _texture_wads) {
+//		result[table_index_to_name(table_index)] = &wad;
+//	}
+//	for(auto& [table_index, armor] : _armor) {
+//		result[table_index_to_name(table_index)] = &armor.textures;
+//	}
+//	return result;
+//}
+//
+//std::map<std::string, model_list> wrench_project::model_lists(app* a) {
+//	std::map<std::string, model_list> result;
+//	for(auto& [table_index, armor] : _armor) {
+//		result[table_index_to_name(table_index)] = {
+//			&armor.models, &armor.textures
+//		};
+//	}
+//	for(auto& [level_index, lvl] : _levels) {
+//		result[level_index_to_name(level_index) + "/Mobies"] = {
+//			&lvl->moby_models, &lvl->moby_textures
+//		};
+//	}
+//	return result;
+//}
 
 void wrench_project::open_level(std::size_t index) {
 	//if(_levels.find(index) == _levels.end()) {
