@@ -213,11 +213,17 @@ target_link_libraries(wrench imgui)
 # JSON
 include_directories(thirdparty/json/single_include)
 
-# Source Map
-# if(UNIX)
-# 	add_custom_target(sourcemap
-# 		COMMAND rm -f docs/dev/source_map.svg
-# 		COMMAND python3 ./scripts/graphifier/graphify.py src docs/dev/# source_map.svg
-# 	)
-# 	add_dependencies(wrench sourcemap)
-# endif()
+# Native File Dialog
+if(WIN32)
+	add_library(nativefiledialog STATIC
+		thirdparty/nativefiledialog/src/nfd_common.c
+		thirdparty/nativefiledialog/src/nfd_win.c
+	)
+else()
+	add_library(nativefiledialog STATIC
+		thirdparty/nativefiledialog/src/nfd_common.c
+		thirdparty/nativefiledialog/src/nfd_zenity.c
+	)
+endif()
+target_link_libraries(wrench nativefiledialog)
+include_directories(thirdparty/nativefiledialog/src/include)

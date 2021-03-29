@@ -19,6 +19,7 @@
 #include "gui.h"
 
 #include <cmath>
+#include <nfd.h>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
@@ -185,13 +186,38 @@ float gui::render_menu_bar(app& a) {
 		}
 	}
 	
+	enum class file_dialog_type {
+		OPEN, SAVE, DIR
+	};
+	
+	auto input_path = [](const char* label, std::string* dest, file_dialog_type type) {
+		ImGui::PushID(label);
+		ImGui::Text(label);
+		ImGui::SameLine();
+		ImGui::InputText("##input", dest);
+		ImGui::SameLine();
+		if(ImGui::Button("Browse")) {
+			nfdresult_t result;
+			nfdchar_t* path;
+			switch(type) {
+				case file_dialog_type::OPEN: result = NFD_OpenDialog(nullptr, nullptr, &path); break;
+				case file_dialog_type::SAVE: result = NFD_SaveDialog(nullptr, nullptr, &path); break;
+				case file_dialog_type::DIR: result = NFD_PickFolder(nullptr, &path); break;
+			}
+			if(result == NFD_OKAY) {
+				*dest = std::string(path);
+			}
+		}
+		ImGui::PopID();
+	};
+	
 	ImGui::BeginMainMenuBar();
 	if(ImGui::BeginMenu("File")) {
 		if(ImGui::BeginMenu("Extract ISO")) {
 			static std::string input_iso;
 			static std::string output_dir;
-			ImGui::InputText("Input ISO", &input_iso);
-			ImGui::InputText("Output Directory", &output_dir);
+			input_path("Input ISO       ", &input_iso, file_dialog_type::OPEN);
+			input_path("Output Directory", &output_dir, file_dialog_type::DIR);
 			if(ImGui::Button("Extract")) {
 				a.extract_iso(input_iso, output_dir);
 				input_iso = "";
@@ -201,7 +227,7 @@ float gui::render_menu_bar(app& a) {
 		}
 		if(ImGui::BeginMenu("Open Directory")) {
 			static std::string dir;
-			ImGui::InputText("Path", &dir);
+			input_path("Path", &dir, file_dialog_type::DIR);
 			if(ImGui::Button("Open")) {
 				a.open_directory(dir);
 				dir = "";
@@ -211,8 +237,8 @@ float gui::render_menu_bar(app& a) {
 		if(ImGui::BeginMenu("Build ISO")) {
 			static std::string input_dir;
 			static std::string output_iso;
-			ImGui::InputText("Input Directory", &input_dir);
-			ImGui::InputText("Output ISO", &output_iso);
+			input_path("Input Directory", &input_dir, file_dialog_type::DIR);
+			input_path("Output ISO     ", &output_iso, file_dialog_type::SAVE);
 			if(ImGui::Button("Build")) {
 				input_dir = "";
 				output_iso = "";
@@ -449,6 +475,7 @@ float gui::render_menu_bar(app& a) {
 				" - glm: https://github.com/g-truc/glm (Happy Bunny/MIT)\n"
 				" - imgui: https://github.com/ocornut/imgui (MIT)\n"
 				" - imgui_markdown: https://github.com/juliettef/imgui_markdown (zlib)\n"
+				" - nativefiledialog: https://github.com/mlabbe/nativefiledialog (zlib)\n"
 				" - nlohmann json: https://github.com/nlohmann/json (MIT)\n"
 				" - toml11: https://github.com/ToruNiina/toml11 (MIT)\n"
 				" - MD5 implementation by Colin Plumb\n"
