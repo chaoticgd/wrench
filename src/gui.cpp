@@ -381,51 +381,16 @@ float gui::render_menu_bar(app& a) {
 		ImGui::EndMenu();
 	}
 	
-	static const int level_list_rows = 20;
-	
-	if(auto project = a.get_project()) {
-		/*auto& levels = project->toc.levels;
-		int columns = (int) std::ceil(levels.size() / (float) level_list_rows);
-		ImGui::SetNextWindowContentSize(ImVec2(columns * 192, 0.f));
-		if(ImGui::BeginMenu("Levels")) {
-			const std::map<std::size_t, std::string>* level_names = nullptr;
-			for(const gamedb_game& game : a.game_db) {
-				if(game.name == project->game.game_db_entry) {
-					level_names = &game.levels;
-				}
-			}
-			
-			ImGui::Columns(columns);
-			for(std::size_t i = 0; i < levels.size(); i++) {
-				std::stringstream label;
-				label << std::setfill('0') << std::setw(2) << i;
-				if(level_names != nullptr && level_names->find(i) != level_names->end()) {
-					label << " " << level_names->at(i);
-				}
-				if(ImGui::MenuItem(label.str().c_str())) {
-					project->open_level(i);
-					a.renderer.reset_camera(&a);
-				}
-				if(i % level_list_rows == level_list_rows - 1) {
-					ImGui::SetColumnWidth(i / level_list_rows, 192); // Make the columns non-resizable.
-					ImGui::NextColumn();
-				}
-			}
-			ImGui::Columns();
-			ImGui::EndMenu();
-		}*/
-	} else {
-		// If no project is open, draw a dummy menu.
-		if(ImGui::BeginMenu("Levels")) {
-			ImGui::EndMenu();
-		}
+	ImGui::SetNextWindowContentSize(ImVec2(256.f, 0.f));
+	if(ImGui::BeginMenu("Files")) {
+		render_files_menu(a);
+		ImGui::EndMenu();
 	}
 
 	ImGui::SetNextWindowContentSize(ImVec2(0.f, 0.f)); // Reset the menu width after the "Levels" menu made it larger.
 	if(ImGui::BeginMenu("Windows")) {
 		render_menu_bar_window_toggle<start_screen>(a);
 		render_menu_bar_window_toggle<view_3d>(a);
-		render_menu_bar_window_toggle<project_tree>(a);
 		render_menu_bar_window_toggle<moby_list>(a);
 		render_menu_bar_window_toggle<inspector>(a);
 		render_menu_bar_window_toggle<viewport_information>(a);
@@ -533,6 +498,68 @@ void gui::render_tools(app& a, float menu_bar_height) {
 	ImGui::End();
 }
 
+void gui::render_files_menu(app& a) {
+	struct project_tree_node {
+		std::string path;
+		std::vector<project_tree_node> dirs;
+		std::vector<fs::path> files;
+	};
+	
+	std::function<void(project_tree_node&)> render_tree_node = [&](auto& node) {
+		ImGui::PushID(&node.path);
+		if(ImGui::TreeNodeEx(fs::path(node.path).filename().c_str(), ImGuiTreeNodeFlags_None)) {
+			for(project_tree_node& subdir : node.dirs) {
+				render_tree_node(subdir);
+			}
+			for(fs::path& file : node.files) {
+				if(ImGui::Selectable(file.filename().c_str())) {
+					// do stuff
+				}
+			}
+			ImGui::TreePop();
+		}
+		ImGui::PopID();
+	};
+	
+	using reload_fun = std::function<void(int&, project_tree_node&, fs::path, int)>;
+	reload_fun reload = [&](int& files, auto& dest, auto path, int depth) {
+		dest.path = path;
+		if(depth > 8) {
+			fprintf(stderr, "warning: Directory depth exceeds 8!\n");
+			return;
+		}
+		for(auto& file : fs::directory_iterator(path)) {
+			if(file.is_directory()) {
+				project_tree_node node;
+				reload(files, node, file, depth + 1);
+				dest.dirs.push_back(node);
+			} else if(file.is_regular_file()) {
+				if(files > 10000) {
+					fprintf(stderr, "warning: More than 10000 files in directory!\n");
+				}
+				files++;
+				dest.files.push_back(file);
+			}
+		}
+		std::sort(dest.dirs.begin(), dest.dirs.end(),
+			[](auto& l, auto& r) { return l.path < r.path; });
+		std::sort(dest.files.begin(), dest.files.end());
+	};
+	
+	static project_tree_node project_dir;
+	if(auto proj = a.get_project()) {
+		if((proj->directory != project_dir.path) | ImGui::Button("Reload")) {
+			int files = 0;
+			project_tree_node new_project_dir;
+			reload(files, new_project_dir, proj->directory, 0);
+			project_dir = new_project_dir;
+		}
+		render_tree_node(project_dir);
+	} else {
+		ImGui::Text("<no project open>");
+	}
+}
+
 /*
 	start_screen
 */
@@ -613,76 +640,6 @@ bool gui::start_screen::button(const char* str, ImTextureID user_texture_id, con
 	window->DrawList->AddText(text_mid, 0xffffffff, str);
 	
 	return pressed;
-}
-
-/*
-	project_tree
-*/
-		
-const char* gui::project_tree::title_text() const {
-	return "Project Tree";
-}
-
-ImVec2 gui::project_tree::initial_size() const {
-	return ImVec2(100, 200);
-}
-
-void gui::project_tree::render(app& a) {
-	if(auto proj = a.get_project()) {
-		if((proj->directory != _project_dir.path) | ImGui::Button("Reload")) {
-			reload(proj->directory);
-		}
-		render_tree_node(_project_dir);
-	} else {
-		ImGui::Text("<no project open>");
-	}
-}
-
-void gui::project_tree::render_tree_node(project_tree_node& node) {
-	ImGui::PushID(&node.path);
-	if(ImGui::TreeNodeEx(fs::path(node.path).filename().c_str(), ImGuiTreeNodeFlags_None)) {
-		for(project_tree_node& subdir : node.dirs) {
-			render_tree_node(subdir);
-		}
-		for(fs::path& file : node.files) {
-			if(ImGui::Selectable(file.filename().c_str())) {
-				// do stuff
-			}
-		}
-		ImGui::TreePop();
-	}
-	ImGui::PopID();
-}
-
-void gui::project_tree::reload(fs::path path) {
-	int files = 0;
-	project_tree_node new_project_dir;
-	reload(files, new_project_dir, path, 0);
-	_project_dir = new_project_dir;
-}
-
-void gui::project_tree::reload(int& files, project_tree_node& dest, fs::path path, int depth) {
-	dest.path = path;
-	if(depth > 8) {
-		fprintf(stderr, "warning: Directory depth exceeds 8!\n");
-		return;
-	}
-	for(auto& file : fs::directory_iterator(path)) {
-		if(file.is_directory()) {
-			project_tree_node node;
-			reload(files, node, file, depth + 1);
-			dest.dirs.push_back(node);
-		} else if(file.is_regular_file()) {
-			if(files > 10000) {
-				fprintf(stderr, "warning: More than 10000 files in directory!\n");
-			}
-			files++;
-			dest.files.push_back(file);
-		}
-	}
-	std::sort(dest.dirs.begin(), dest.dirs.end(),
-		[](auto& l, auto& r) { return l.path < r.path; });
-	std::sort(dest.files.begin(), dest.files.end());
 }
 
 /*

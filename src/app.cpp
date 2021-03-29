@@ -37,12 +37,6 @@ void after_project_load(app& a) {
 			break;
 		}
 	}
-	for(auto& window : a.windows) {
-		if(dynamic_cast<gui::project_tree*>(window.get()) != nullptr) {
-			return;
-		}
-	}
-	a.emplace_window<gui::project_tree>();
 }
 
 void app::extract_iso(fs::path iso_path, fs::path dir) {
