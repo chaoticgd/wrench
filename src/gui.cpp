@@ -170,12 +170,13 @@ float gui::render_menu_bar(app& a) {
 			nfdresult_t result;
 			nfdchar_t* path;
 			switch(type) {
-				case file_dialog_type::OPEN: result = NFD_OpenDialog(nullptr, nullptr, &path); break;
-				case file_dialog_type::SAVE: result = NFD_SaveDialog(nullptr, nullptr, &path); break;
+				case file_dialog_type::OPEN: result = NFD_OpenDialog("iso", nullptr, &path); break;
+				case file_dialog_type::SAVE: result = NFD_SaveDialog("iso", nullptr, &path); break;
 				case file_dialog_type::DIR: result = NFD_PickFolder(nullptr, &path); break;
 			}
 			if(result == NFD_OKAY) {
 				*dest = std::string(path);
+				free(path);
 			}
 		}
 		ImGui::PopID();
@@ -536,11 +537,37 @@ void gui::start_screen::render(app& a) {
 	ImGui::SetCursorPos(start_pos);
 	
 	ImVec2 icon_size(START_SCREEN_ICON_SIDE, START_SCREEN_ICON_SIDE);
-	button("Extract ISO", (void*) (intptr_t) dvd.id, icon_size);
+	if(button("Extract ISO", (void*) (intptr_t) dvd.id, icon_size)) {
+		nfdchar_t* in_path;
+		if(NFD_OpenDialog("iso", nullptr, &in_path) == NFD_OKAY) {
+			nfdchar_t* out_path;
+			if(NFD_PickFolder(nullptr, &out_path) == NFD_OKAY) {
+				a.extract_iso(in_path, out_path);
+				free(out_path);
+			}
+			free(in_path);
+		}
+	}
 	ImGui::SameLine();
-	button("Open Project", (void*) (intptr_t) folder.id, icon_size);
+	if(button("Open Dir", (void*) (intptr_t) folder.id, icon_size)) {
+		nfdchar_t* path;
+		if(NFD_PickFolder(nullptr, &path) == NFD_OKAY) {
+			a.open_directory(path);
+			free(path);
+		}
+	}
 	ImGui::SameLine();
-	button("Build ISO", (void*) (intptr_t) floppy.id, icon_size);
+	if(button("Build ISO", (void*) (intptr_t) floppy.id, icon_size)) {
+		nfdchar_t* in_path;
+		if(NFD_PickFolder(nullptr, &in_path) == NFD_OKAY) {
+			nfdchar_t* out_path;
+			if(NFD_SaveDialog("iso", nullptr, &out_path) == NFD_OKAY) {
+				a.build_iso(in_path, out_path);
+				free(out_path);
+			}
+			free(in_path);
+		}
+	}
 	ImGui::SameLine();
 	
 	if(content_size.y == 0) {
