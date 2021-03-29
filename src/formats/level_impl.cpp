@@ -344,6 +344,28 @@ stream* level::moby_stream() {
 	return &(*_world_segment);
 }
 
+void level::push_command(std::function<void(level&)> apply, std::function<void(level&)> undo) {
+	_history_stack.resize(_history_index++);
+	_history_stack.emplace_back(undo_redo_command { apply, undo });
+	apply(*this);
+}
+
+void level::undo() {
+	if(_history_index <= 0) {
+		throw command_error("Nothing to undo.");
+	}
+	_history_stack[_history_index - 1].undo(*this);
+	_history_index--;
+}
+
+void level::redo() {
+	if(_history_index >= _history_stack.size()) {
+		throw command_error("Nothing to redo.");
+	}
+	_history_stack[_history_index].apply(*this);
+	_history_index++;
+}
+
 void swap_level_file_header_rac23(level_file_header& l, level_file_header_rac23& r) {
 	l.type = level_type::RAC23;
 	r.magic = (uint32_t) level_type::RAC23;

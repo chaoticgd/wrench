@@ -47,11 +47,6 @@ struct model_list {
 	std::vector<texture>* textures;
 };
 
-struct undo_redo_command {
-	std::function<void()> apply;
-	std::function<void()> undo;
-};
-
 class wrench_project {
 public:
 	fs::path directory;
@@ -69,11 +64,6 @@ public:
 	std::map<std::string, std::vector<texture>*> texture_lists(app* a);
 	std::map<std::string, model_list> model_lists(app* a);
 	
-	void push_command(std::function<void()> apply, std::function<void()> undo);
-	void undo();
-	void redo();
-	void clear_undo_history();
-	
 	void open_level(std::size_t index);
 	
 	int id();
@@ -88,9 +78,6 @@ private:
 
 	std::string table_index_to_name(std::size_t table_index);
 	std::string level_index_to_name(std::size_t level_index);
-
-	std::size_t _history_index = 0;
-	std::vector<undo_redo_command> _history_stack;
 	
 	std::map<std::size_t, std::unique_ptr<racpak>> _archives;
 	std::map<std::size_t, std::vector<texture>> _texture_wads;
@@ -100,25 +87,6 @@ private:
 	
 	int _id;
 	static int _next_id;
-};
-
-class command_error : public std::runtime_error {
-	using std::runtime_error::runtime_error;
-};
-
-// Store this in an undo/redo command to access a level object. This is required
-// to check if the level has been unloaded or reallocated.
-struct level_proxy {
-	level_proxy(wrench_project* p) : proj(p), index(p->selected_level_index()) {}
-	wrench_project* proj;
-	std::size_t index;
-	level& get() const {
-		level* lvl = proj->level_from_index(index);
-		if(lvl == nullptr) {
-			throw command_error("The level this undo/redo operation applies to is not currently loaded.");
-		}
-		return *lvl;
-	}
 };
 
 #endif

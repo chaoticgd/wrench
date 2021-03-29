@@ -158,6 +158,23 @@ private:
 	std::optional<array_stream> _file;
 	std::optional<simple_wad_stream> _world_segment;
 	std::optional<simple_wad_stream> _asset_segment;
+
+public:
+	void push_command(std::function<void(level&)> apply, std::function<void(level&)> undo);
+	void undo();
+	void redo();
+private:
+	struct undo_redo_command {
+		std::function<void(level& lvl)> apply;
+		std::function<void(level& lvl)> undo;
+	};
+
+	std::size_t _history_index = 0;
+	std::vector<undo_redo_command> _history_stack;
+};
+
+class command_error : public std::runtime_error {
+	using std::runtime_error::runtime_error;
 };
 
 void swap_level_file_header_rac23(level_file_header& l, level_file_header_rac23& r);

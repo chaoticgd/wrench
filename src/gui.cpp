@@ -261,21 +261,23 @@ float gui::render_menu_bar(app& a) {
 	redo_error_box.render();
 	
 	if(ImGui::BeginMenu("Edit")) {
-		if(auto project = a.get_project()) {
+		if(auto lvl = a.get_level()) {
 			if(ImGui::MenuItem("Undo")) {
 				try {
-					project->undo();
+					lvl->undo();
 				} catch(command_error& error) {
 					undo_error_box.open(error.what());
 				}
 			}
 			if(ImGui::MenuItem("Redo")) {
 				try {
-					project->redo();
+					lvl->redo();
 				} catch(command_error& error) {
 					redo_error_box.open(error.what());
 				}
 			}
+		} else {
+			ImGui::Text("<no level>");
 		}
 		ImGui::EndMenu();
 	}
@@ -825,7 +827,6 @@ void inspector_input(wrench_project& proj, const char* label, T_field T_entity::
 	}
 	
 	if(any_lane_changed) {
-		level_proxy lvlp(&proj);
 		std::vector<entity_id> ids = lvl->selected_entity_ids();
 		std::map<entity_id, T_field> old_values;
 		lvl->for_each<T_entity>([&](T_entity& ent) {
@@ -849,9 +850,9 @@ void inspector_input(wrench_project& proj, const char* label, T_field T_entity::
 			}
 		}
 		
-		proj.push_command(
-			[lvlp, ids, field, first_lane, input_lanes, new_values]() {
-				lvlp.get().for_each<T_entity>([&](T_entity& ent) {
+		lvl->push_command(
+			[ids, field, first_lane, input_lanes, new_values](level& lvl) {
+				lvl.for_each<T_entity>([&](T_entity& ent) {
 					if(contains(ids, ent.id)) {
 						for(int i = 0; i < MAX_LANES; i++) {
 							T_lane* value = ((T_lane*) &(ent.*field)) + first_lane + i;
@@ -862,8 +863,8 @@ void inspector_input(wrench_project& proj, const char* label, T_field T_entity::
 					}
 				});
 			},
-			[lvlp, ids, field, old_values]() {
-				lvlp.get().for_each<T_entity>([&](T_entity& ent) {
+			[ids, field, old_values](level& lvl) {
+				lvl.for_each<T_entity>([&](T_entity& ent) {
 					if(contains(ids, ent.id)) {
 						ent.*field = old_values.at(ent.id);
 					}
