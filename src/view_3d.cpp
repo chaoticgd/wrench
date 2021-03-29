@@ -35,8 +35,17 @@ ImVec2 view_3d::initial_size() const {
 }
 
 void view_3d::render(app& a) {
+	if(!a.get_project()) {
+		ImGui::TextWrapped("%s", "");
+		ImGui::TextWrapped(
+			"   No directory open. To open a directory, either extract an ISO "
+			"file (File->Extract ISO) or open a directory (File->Open Directory).");
+		return;
+	}
 	auto lvl = a.get_level();
 	if(lvl == nullptr) {
+		ImGui::TextWrapped("%s", "");
+		ImGui::TextWrapped("   No level open. To open a level, use the 'Files' menu.");
 		return;
 	}
 
