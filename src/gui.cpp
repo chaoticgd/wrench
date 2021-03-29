@@ -27,6 +27,7 @@
 #include <functional>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "icons.h"
 #include "util.h"
 #include "config.h"
 #include "window.h"
@@ -102,6 +103,7 @@ void gui::create_dock_layout(const app& a) {
 	ImGuiID mobies, viewport_info;
 	ImGui::DockBuilderSplitNode(middle_right, ImGuiDir_Up, 1.f / 2.f, &mobies, &viewport_info);
 	
+	ImGui::DockBuilderDockWindow("Start Screen", centre);
 	ImGui::DockBuilderDockWindow("3D View", centre);
 	ImGui::DockBuilderDockWindow("Texture Browser", centre);
 	ImGui::DockBuilderDockWindow("Model Browser", centre);
@@ -368,6 +370,7 @@ float gui::render_menu_bar(app& a) {
 
 	ImGui::SetNextWindowContentSize(ImVec2(0.f, 0.f)); // Reset the menu width after the "Levels" menu made it larger.
 	if(ImGui::BeginMenu("Windows")) {
+		render_menu_bar_window_toggle<start_screen>(a);
 		render_menu_bar_window_toggle<view_3d>(a);
 		render_menu_bar_window_toggle<moby_list>(a);
 		render_menu_bar_window_toggle<inspector>(a);
@@ -473,6 +476,88 @@ void gui::render_tools(app& a, float menu_bar_height) {
 	}
 	
 	ImGui::End();
+}
+
+/*
+	start_screen
+*/
+
+gui::start_screen::start_screen()
+	: dvd(create_dvd_icon()),
+	  folder(create_folder_icon()),
+	  floppy(create_floppy_icon()) {}
+
+const char* gui::start_screen::title_text() const {
+	return "Start Screen";
+}
+
+ImVec2 gui::start_screen::initial_size() const {
+	return ImVec2(800, 600);
+}
+
+void gui::start_screen::render(app& a) {
+	static ImVec2 content_size(0, 0);
+	
+	ImVec2 start_pos(ImGui::GetWindowSize() / 2 - content_size / 2);
+	// Fix horrible artifacting with the icons.
+	start_pos.x = ceilf(start_pos.x);
+	start_pos.y = ceilf(start_pos.y);
+	ImGui::SetCursorPos(start_pos);
+	
+	ImVec2 icon_size(START_SCREEN_ICON_SIDE, START_SCREEN_ICON_SIDE);
+	button("Extract ISO", (void*) (intptr_t) dvd.id, icon_size);
+	ImGui::SameLine();
+	button("Open Project", (void*) (intptr_t) folder.id, icon_size);
+	ImGui::SameLine();
+	button("Build ISO", (void*) (intptr_t) floppy.id, icon_size);
+	ImGui::SameLine();
+	
+	if(content_size.y == 0) {
+		ImVec2 end_pos = ImGui::GetCursorPos();
+		content_size = end_pos - start_pos;
+		content_size.y += 110; // Hack the get it vertically centred.
+	}
+}
+
+// Adapted from ImGui::ImageButton.
+bool gui::start_screen::button(const char* str, ImTextureID user_texture_id, const ImVec2& icon_size) const {
+	ImVec4 bg_col(0, 0, 0, 0);
+	
+	ImGuiContext& g = *GImGui;
+	ImGuiWindow* window = ImGui::GetCurrentWindow();
+	if(window->SkipItems) {
+		return false;
+	}
+	
+	// Default to using texture ID as ID. User can still push string/integer prefixes.
+	ImGui::PushID((void*)(intptr_t)user_texture_id);
+	const ImGuiID id = window->GetID("#image");
+	ImGui::PopID();
+	
+	const ImVec2 size(128, 128);
+	const ImVec2 padding(8, 6);
+	const ImRect bb(window->DC.CursorPos, window->DC.CursorPos + size);
+	ImGui::ItemSize(bb);
+	if(!ImGui::ItemAdd(bb, id)) {
+		return false;
+	}
+	const ImVec2 icon_mid((bb.Min.x + bb.Max.x) / 2, bb.Min.y + padding.y + icon_size.y / 2);
+	
+	bool hovered, held;
+	bool pressed = ImGui::ButtonBehavior(bb, id, &hovered, &held);
+	
+	// Render
+	const ImU32 col = (held && hovered) ? ImGui::GetColorU32(ImGuiCol_ButtonActive) : hovered ? ImGui::GetColorU32(ImGuiCol_ButtonHovered) : 0;
+	ImGui::RenderNavHighlight(bb, id);
+	ImGui::RenderFrame(bb.Min, bb.Max, col, true, ImClamp((float)ImMin(padding.x, padding.y), 0.0f, g.Style.FrameRounding));
+	window->DrawList->AddRectFilled(bb.Min, bb.Max, ImGui::GetColorU32(bg_col));
+	window->DrawList->AddImage(user_texture_id, icon_mid - icon_size / 2, icon_mid + icon_size / 2);
+	
+	float text_size = ImGui::GetFontSize() * (strlen(str) + 1) / 2;
+	ImVec2 text_mid(icon_mid.x - text_size / 2, bb.Max.y - padding.y - ImGui::GetFontSize());
+	window->DrawList->AddText(text_mid, 0xffffffff, str);
+	
+	return pressed;
 }
 
 /*

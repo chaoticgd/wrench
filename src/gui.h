@@ -45,7 +45,21 @@ namespace gui {
 
 	template <typename T, typename... T_constructor_args>
 	void render_menu_bar_window_toggle(app& a, T_constructor_args... args);
-
+	
+	class start_screen : public window {
+	public:
+		start_screen();
+		
+		const char* title_text() const override;
+		ImVec2 initial_size() const override;
+		void render(app& a) override;
+	
+	private:
+		bool button(const char* str, ImTextureID user_texture_id, const ImVec2& icon_size) const;
+	
+		gl_texture dvd, folder, floppy;
+	};
+	
 	class inspector : public window {
 	public:
 		const char* title_text() const override;

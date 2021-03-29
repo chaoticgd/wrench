@@ -61,6 +61,7 @@ int main(int argc, char** argv) {
 		a.tools = enumerate_tools();
 		a.game_db = gamedb_read();
 		
+		a.windows.emplace_back(std::make_unique<gui::start_screen>());
 		a.windows.emplace_back(std::make_unique<view_3d>());
 		a.windows.emplace_back(std::make_unique<gui::texture_browser>());
 		a.windows.emplace_back(std::make_unique<gui::model_browser>());
