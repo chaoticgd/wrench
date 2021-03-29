@@ -38,8 +38,8 @@ void view_3d::render(app& a) {
 	if(!a.get_project()) {
 		ImGui::TextWrapped("%s", "");
 		ImGui::TextWrapped(
-			"   No directory open. To open a directory, either extract an ISO "
-			"file (File->Extract ISO) or open a directory (File->Open Directory).");
+			"   No directory open. To open a directory, either extract an ISO file "
+			"(File->Extract ISO) or open an existing directory (File->Open Directory).");
 		return;
 	}
 	auto lvl = a.get_level();
