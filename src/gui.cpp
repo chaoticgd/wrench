@@ -161,7 +161,7 @@ float gui::render_menu_bar(app& a) {
 	auto input_path = [](const char* label, std::string* dest, file_dialog_type type) {
 		ImGui::PushID(label);
 		if(strlen(label) > 0) {
-			ImGui::Text(label);
+			ImGui::Text("%s", label);
 			ImGui::SameLine();
 		}
 		ImGui::InputText("##input", dest);
@@ -334,13 +334,11 @@ float gui::render_menu_bar(app& a) {
 		ImGui::EndMenu();
 	}
 	
-	ImGui::SetNextWindowContentSize(ImVec2(256.f, 0.f));
 	if(ImGui::BeginMenu("Tree")) {
 		render_tree_menu(a);
 		ImGui::EndMenu();
 	}
-
-	ImGui::SetNextWindowContentSize(ImVec2(0.f, 0.f)); // Reset the menu width after the "Levels" menu made it larger.
+	
 	if(ImGui::BeginMenu("Windows")) {
 		render_menu_bar_window_toggle<start_screen>(a);
 		render_menu_bar_window_toggle<view_3d>(a);
@@ -459,19 +457,20 @@ void gui::render_tree_menu(app& a) {
 	};
 	
 	std::function<void(project_tree_node&)> render_tree_node = [&](auto& node) {
-		ImGui::PushID(&node.path);
-		if(ImGui::TreeNodeEx(fs::path(node.path).filename().c_str(), ImGuiTreeNodeFlags_None)) {
+		if(ImGui::BeginMenu(fs::path(node.path).filename().c_str())) {
 			for(project_tree_node& subdir : node.dirs) {
 				render_tree_node(subdir);
 			}
+			if(node.dirs.size() > 0 && node.files.size() > 0) {
+				ImGui::Separator();
+			}
 			for(fs::path& file : node.files) {
-				if(ImGui::Selectable(file.filename().c_str())) {
+				if(ImGui::MenuItem(file.filename().c_str())) {
 					a.open_file(file);
 				}
 			}
-			ImGui::TreePop();
+			ImGui::EndMenu();
 		}
-		ImGui::PopID();
 	};
 	
 	using reload_fun = std::function<void(int&, project_tree_node&, fs::path, int)>;
@@ -501,12 +500,13 @@ void gui::render_tree_menu(app& a) {
 	
 	static project_tree_node project_dir;
 	if(!a.directory.empty()) {
-		if((a.directory != project_dir.path) | ImGui::Button("Reload")) {
+		if((a.directory != project_dir.path) | ImGui::MenuItem("Reload")) {
 			int files = 0;
 			project_tree_node new_project_dir;
 			reload(files, new_project_dir, a.directory, 0);
 			project_dir = new_project_dir;
 		}
+		ImGui::Separator();
 		render_tree_node(project_dir);
 	} else {
 		ImGui::Text("<no directory open>");
