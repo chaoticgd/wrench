@@ -303,6 +303,7 @@ float gui::render_menu_bar(app& a) {
 			ImGui::Checkbox("Splines", &a.renderer.draw_splines);
 			ImGui::Checkbox("Grind Rails", &a.renderer.draw_grind_rails);
 			ImGui::Checkbox("Tfrags", &a.renderer.draw_tfrags);
+			ImGui::Checkbox("Baked Collision", &a.renderer.draw_tcols);
 			ImGui::EndMenu();
 		}
 		ImGui::EndMenu();

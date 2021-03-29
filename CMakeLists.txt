@@ -46,6 +46,7 @@ add_executable(wrench
 	src/formats/game_model.cpp
 	src/formats/vif.cpp
 	src/formats/tfrag.cpp
+	src/formats/tcol.cpp
 	src/formats/texture_archive.cpp
 	src/formats/model_utils.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp

@@ -303,6 +303,8 @@ packed_struct(vec3f,
 
 	vec3f() {}
 
+	vec3f(float _x, float _y, float _z) { x = x; y = y; z = z; }
+
 	vec3f(glm::vec3 vec) {
 		x = vec.x;
 		y = vec.y;
@@ -327,6 +329,14 @@ packed_struct(vec3f,
 	
 	bool operator!=(const vec3f& rhs) const {
 		return x != rhs.x || y != rhs.y || z != rhs.z;
+	}
+
+	vec3f operator+(const vec3f& rhs) {
+		vec3f r;
+		r.x = x + rhs.x;
+		r.y = y + rhs.y;
+		r.z = z + rhs.z;
+		return r;
 	}
 )
 

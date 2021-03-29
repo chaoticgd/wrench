@@ -56,6 +56,7 @@ struct texture {
 };
 
 texture create_texture_from_streams(vec2i size, stream* pixel_src, size_t pixel_offset, stream* palette_src, size_t palette_offset);
+texture create_texture_from_streams_rac4(vec2i size, stream* pixel_src, size_t pixel_offset, stream* palette_src, size_t palette_offset);
 
 // Won't affect the position indicator of backing.
 std::optional<texture> create_fip_texture(stream* backing, std::size_t offset);

@@ -30,6 +30,7 @@
 #include "world.h"
 #include "wad.h"
 #include "tfrag.h"
+#include "tcol.h"
 #include "racpak.h"
 #include "texture.h"
 #include "game_model.h"
@@ -131,6 +132,7 @@ private:
 	void read_moby_models(std::size_t asset_offset, level_asset_header asset_header);
 	void read_textures(std::size_t asset_offset, level_asset_header asset_header);
 	void read_tfrags();
+	void read_tcol(std::size_t asset_offset, level_asset_header asset_header);
 	
 	void read_hud_banks(stream* file);
 	void read_loading_screen_textures(stream* file);
@@ -150,6 +152,7 @@ public:
 	std::vector<texture> shrub_textures;
 	std::vector<texture> sprite_textures;
 	std::vector<tfrag> tfrags;
+	std::vector<tcol> baked_collisions;
 	
 	level_code_segment code_segment;
 	

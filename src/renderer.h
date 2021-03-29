@@ -51,6 +51,7 @@ struct gl_renderer {
 	void draw_spline(spline_entity& spline, const glm::mat4& world_to_clip, const glm::vec4& colour) const;
 	void draw_tris  (const std::vector<float>& vertex_data, const glm::mat4& mvp, const glm::vec4& colour) const;
 	void draw_model (const model& mdl, const glm::mat4& mvp, const glm::vec4& colour) const;
+	void draw_model_vcolor (const model& mdl, const glm::mat4& mvp) const;
 	void draw_cube  (const glm::mat4& mvp, const glm::vec4& colour) const;
 	
 	// Only call this with vertex data that's completely static e.g. a const global.
@@ -96,6 +97,7 @@ struct gl_renderer {
 	bool draw_splines = true;
 	bool draw_grind_rails = true;
 	bool draw_tfrags = true;
+	bool draw_tcols = true;
 	
 	std::vector<glm::mat4> moby_local_to_clip_cache;
 };
