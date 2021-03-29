@@ -72,7 +72,7 @@ public:
 	
 	void extract_iso(fs::path iso_path, fs::path dir);
 	void open_directory(fs::path dir);
-	void build_iso(fs::path dir, fs::path iso_path);
+	void build_iso(fs::path dir, fs::path iso_path, std::function<void(fs::path)> after);
 	void open_file(fs::path path);
 	
 	level* get_level();

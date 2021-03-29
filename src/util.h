@@ -80,6 +80,6 @@ struct _deferer {
 #define CONCAT_TOKEN(x, y) CONCAT_TOKEN_IMPL(x, y)
 #define defer(...) _deferer CONCAT_TOKEN(_deferer_object_, __COUNTER__)(__VA_ARGS__);
 
-int execute_shell_command(std::string executable, std::vector<std::string> arguments);
+int execute_command(std::string executable, std::vector<std::string> arguments);
 
 #endif

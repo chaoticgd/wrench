@@ -169,10 +169,11 @@ float gui::render_menu_bar(app& a) {
 		if(ImGui::Button("Browse")) {
 			nfdresult_t result;
 			nfdchar_t* path;
+			const char* work_dir = (fs::current_path().string() + "/").c_str();
 			switch(type) {
-				case file_dialog_type::OPEN: result = NFD_OpenDialog("iso", nullptr, &path); break;
-				case file_dialog_type::SAVE: result = NFD_SaveDialog("iso", nullptr, &path); break;
-				case file_dialog_type::DIR: result = NFD_PickFolder(nullptr, &path); break;
+				case file_dialog_type::OPEN: result = NFD_OpenDialog("iso", work_dir, &path); break;
+				case file_dialog_type::SAVE: result = NFD_SaveDialog("iso", work_dir, &path); break;
+				case file_dialog_type::DIR: result = NFD_PickFolder(work_dir, &path); break;
 			}
 			if(result == NFD_OKAY) {
 				*dest = std::string(path);
@@ -206,11 +207,46 @@ float gui::render_menu_bar(app& a) {
 			ImGui::EndMenu();
 		}
 		if(ImGui::BeginMenu("Build ISO")) {
-			static std::string input_dir;
-			static std::string output_iso;
-			input_path("Input Directory", &input_dir, file_dialog_type::DIR);
-			input_path("Output ISO     ", &output_iso, file_dialog_type::SAVE);
-			if(ImGui::Button("Build")) {
+			static bool build_from_custom_dir = false;
+			static std::string custom_input_dir;
+			
+			static bool build_to_custom_path = false;
+			static std::string custom_output_iso;
+			
+			static bool launch_emulator = false;
+			
+			ImGui::Checkbox("Custom Input Directory", &build_from_custom_dir);
+			input_path("Input Directory", &custom_input_dir, file_dialog_type::DIR);
+			
+			ImGui::Checkbox("Custom Output Path", &build_to_custom_path);
+			input_path("Output ISO     ", &custom_output_iso, file_dialog_type::SAVE);
+			
+			ImGui::Checkbox("Launch emulator after building", &launch_emulator);
+			
+			if(((build_from_custom_dir || build_to_custom_path) && a.directory.empty())) {
+				ImGui::TextWrapped("No directory open!\n");
+			} else if(ImGui::Button("Build")) {
+				std::string input_dir;
+				if(build_from_custom_dir) {
+					input_dir = custom_input_dir;
+				} else {
+					input_dir = a.directory;
+				}
+				
+				std::string output_iso;
+				if(build_to_custom_path) {
+					output_iso = custom_output_iso;
+				} else {
+					output_iso = a.directory / "build.iso";
+				}
+				
+				bool launch_emulator_copy = launch_emulator;
+				a.build_iso(input_dir, output_iso, [launch_emulator_copy](std::string iso) {
+					if(launch_emulator_copy) {
+						fs::path emu_path = config::get().emulator_path;
+						execute_command(emu_path, {iso});
+					}
+				});
 				input_dir = "";
 				output_iso = "";
 			}
@@ -311,28 +347,6 @@ float gui::render_menu_bar(app& a) {
 	
 	static alert_box emu_error_box("Error");
 	emu_error_box.render();
-	
-	if(ImGui::BeginMenu("Emulator")) {
-		if(ImGui::MenuItem("Run")) {
-			if(!a.directory.empty()) {
-				//project->write_iso_file();
-				//
-				//if(fs::is_regular_file(config::get().emulator_path)) {
-				//	std::string emulator_path = fs::canonical(config::get().emulator_path).string();
-				//	std::string cmd = emulator_path + " " + project->cached_iso_path();
-				//	int result = system(cmd.c_str());
-				//	if(result != 0) {
-				//		emu_error_box.open("Failed to execute shell command.");
-				//	}
-				//} else {
-				//	emu_error_box.open("Invalid emulator path.");
-				//}
-			} else {
-				emu_error_box.open("No project open.");
-			}
-		}
-		ImGui::EndMenu();
-	}
 	
 	if(ImGui::BeginMenu("Tree")) {
 		render_tree_menu(a);
@@ -539,12 +553,14 @@ void gui::start_screen::render(app& a) {
 	start_pos.y = ceilf(start_pos.y);
 	ImGui::SetCursorPos(start_pos);
 	
+	const char* work_dir = (fs::current_path().string() + "/").c_str();
+	
 	ImVec2 icon_size(START_SCREEN_ICON_SIDE, START_SCREEN_ICON_SIDE);
 	if(button("Extract ISO", (void*) (intptr_t) dvd.id, icon_size)) {
 		nfdchar_t* in_path;
-		if(NFD_OpenDialog("iso", nullptr, &in_path) == NFD_OKAY) {
+		if(NFD_OpenDialog("iso", work_dir, &in_path) == NFD_OKAY) {
 			nfdchar_t* out_path;
-			if(NFD_PickFolder(nullptr, &out_path) == NFD_OKAY) {
+			if(NFD_PickFolder(work_dir, &out_path) == NFD_OKAY) {
 				a.extract_iso(in_path, out_path);
 				free(out_path);
 			}
@@ -554,7 +570,7 @@ void gui::start_screen::render(app& a) {
 	ImGui::SameLine();
 	if(button("Open Dir", (void*) (intptr_t) folder.id, icon_size)) {
 		nfdchar_t* path;
-		if(NFD_PickFolder(nullptr, &path) == NFD_OKAY) {
+		if(NFD_PickFolder(work_dir, &path) == NFD_OKAY) {
 			a.open_directory(path);
 			free(path);
 		}
@@ -562,10 +578,10 @@ void gui::start_screen::render(app& a) {
 	ImGui::SameLine();
 	if(button("Build ISO", (void*) (intptr_t) floppy.id, icon_size)) {
 		nfdchar_t* in_path;
-		if(NFD_PickFolder(nullptr, &in_path) == NFD_OKAY) {
+		if(NFD_PickFolder(work_dir, &in_path) == NFD_OKAY) {
 			nfdchar_t* out_path;
-			if(NFD_SaveDialog("iso", nullptr, &out_path) == NFD_OKAY) {
-				a.build_iso(in_path, out_path);
+			if(NFD_SaveDialog("iso", work_dir, &out_path) == NFD_OKAY) {
+				a.build_iso(in_path, out_path, [](fs::path){});
 				free(out_path);
 			}
 			free(in_path);
