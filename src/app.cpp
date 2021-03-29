@@ -30,6 +30,21 @@
 
 using project_ptr = std::unique_ptr<wrench_project>;
 
+void after_project_load(app& a) {
+	for(auto& window : a.windows) {
+		if(dynamic_cast<gui::start_screen*>(window.get()) != nullptr) {
+			window->close(a);
+			break;
+		}
+	}
+	for(auto& window : a.windows) {
+		if(dynamic_cast<gui::project_tree*>(window.get()) != nullptr) {
+			return;
+		}
+	}
+	a.emplace_window<gui::project_tree>();
+}
+
 void app::extract_iso(fs::path iso_path, fs::path dir) {
 	if(_lock_project) {
 		return;
@@ -62,18 +77,7 @@ void app::extract_iso(fs::path iso_path, fs::path dir) {
 			renderer.reset_camera(this);
 			auto title = std::string("Wrench Editor - [") + dir.string() + "]";
 			glfwSetWindowTitle(glfw_window, title.c_str());
-			for(auto& window : windows) {
-				if(dynamic_cast<gui::start_screen*>(window.get())) {
-					window->close(*this);
-					break;
-				}
-			}
-			for(auto& window : windows) {
-				if(dynamic_cast<gui::project_tree*>(window.get())) {
-					return;
-				}
-			}
-			emplace_window<gui::project_tree>();
+			after_project_load(*this);
 		}
 	);
 }
@@ -81,6 +85,7 @@ void app::extract_iso(fs::path iso_path, fs::path dir) {
 void app::open_directory(fs::path dir) {
 	auto proj = std::make_unique<wrench_project>(*this, dir);
 	_project.swap(proj);
+	after_project_load(*this);
 }
 
 void app::build_iso(fs::path dir, fs::path iso_path) {
