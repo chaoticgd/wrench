@@ -588,9 +588,11 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		sector32 data_offset = file.read<sector32>(0x4);
 		iso.pad(SECTOR_SIZE, 0);
 		
+		size_t data_size_bytes = file.size() - data_offset.bytes();
+		
 		toc_level_part part;
 		part.header_lba = {0}; // Don't care.
-		part.file_size = sector32::size_from_bytes(file.size() - data_offset.bytes());
+		part.file_size = sector32::size_from_bytes(data_size_bytes);
 		part.magic = file.read<uint32_t>(0);
 		part.file_lba = {(uint32_t) (iso.tell() / SECTOR_SIZE)};
 		auto info = LEVEL_FILE_TYPES.find(part.magic);
@@ -607,13 +609,12 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		iso_file_record record;
 		record.name = path.filename().string() + ";1";
 		record.lba = part.file_lba;
-		record.size = part.file_size.bytes();
+		record.size = data_size_bytes;
 		parent.files.push_back(record);
 		
 		print_file_record(record);
-		
 		file.seek(data_offset.bytes());
-		stream::copy_n(iso, file, record.size);
+		stream::copy_n(iso, file, data_size_bytes);
 		
 		return part;
 	};
