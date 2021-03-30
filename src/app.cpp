@@ -76,26 +76,31 @@ void app::extract_iso(fs::path iso_path, fs::path dir) {
 }
 
 void app::open_directory(fs::path dir) {
-	directory = dir;
-	after_directory_loaded(*this);
+	if(fs::is_directory(dir)) {
+		directory = dir;
+		after_directory_loaded(*this);
+	}
 }
 
-void app::build_iso(fs::path dir, fs::path iso_path, std::function<void(fs::path)> after) {
-	std::pair<fs::path, fs::path> in(dir, iso_path);
-	
-	emplace_window<worker_thread<int, decltype(in)>>(
-		"Build ISO", in,
-		[](std::pair<std::string, std::string> in, worker_logger& log) {
-			std::vector<std::string> args = {"build", in.first, in.second};
+void app::build_iso(build_settings settings) {
+	emplace_window<worker_thread<int, build_settings>>(
+		"Build ISO", settings,
+		[](build_settings settings, worker_logger& log) {
+			std::vector<std::string> args = {"build", settings.input_dir, settings.output_iso};
+			if(settings.single_level) {
+				args.push_back("--single-level");
+				args.push_back(std::to_string(settings.single_level_index));
+			}
 			int exit_code = execute_command("bin/iso", args);
 			if(exit_code != 0) {
 				log << "\nFailed to build ISO file!\n";
 			}
 			return exit_code;
 		},
-		[after, iso_path](int exit_code) {
-			if(exit_code == 0) {
-				after(iso_path);
+		[settings](int exit_code) {
+			if(exit_code == 0 && settings.launch_emulator) {
+				fs::path emu_path = config::get().emulator_path;
+				execute_command(emu_path, {settings.output_iso});
 			}
 		}
 	);

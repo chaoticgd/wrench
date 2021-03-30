@@ -215,40 +215,48 @@ float gui::render_menu_bar(app& a) {
 			
 			static bool launch_emulator = false;
 			
+			static bool single_level = false;
+			static int single_level_index = 0;
+			
 			ImGui::Checkbox("Custom Input Directory", &build_from_custom_dir);
-			input_path("Input Directory", &custom_input_dir, file_dialog_type::DIR);
+			if(build_from_custom_dir) {
+				input_path("Input Directory", &custom_input_dir, file_dialog_type::DIR);
+			}
 			
 			ImGui::Checkbox("Custom Output Path", &build_to_custom_path);
-			input_path("Output ISO     ", &custom_output_iso, file_dialog_type::SAVE);
+			if(build_to_custom_path) {
+				input_path("Output ISO     ", &custom_output_iso, file_dialog_type::SAVE);
+			}
 			
 			ImGui::Checkbox("Launch emulator after building", &launch_emulator);
 			
-			if(((build_from_custom_dir || build_to_custom_path) && a.directory.empty())) {
+			ImGui::Checkbox("Only write out single level", &single_level);
+			if(single_level) {
+				ImGui::InputInt("Single Level Index", &single_level_index);
+			}
+			
+			if(((!build_from_custom_dir || !build_to_custom_path) && a.directory.empty())) {
 				ImGui::TextWrapped("No directory open!\n");
 			} else if(ImGui::Button("Build")) {
-				std::string input_dir;
+				build_settings settings;
 				if(build_from_custom_dir) {
-					input_dir = custom_input_dir;
+					settings.input_dir = custom_input_dir;
 				} else {
-					input_dir = a.directory;
+					settings.input_dir = a.directory;
 				}
 				
 				std::string output_iso;
 				if(build_to_custom_path) {
-					output_iso = custom_output_iso;
+					settings.output_iso = custom_output_iso;
 				} else {
-					output_iso = a.directory / "build.iso";
+					settings.output_iso = a.directory / "build.iso";
 				}
 				
-				bool launch_emulator_copy = launch_emulator;
-				a.build_iso(input_dir, output_iso, [launch_emulator_copy](std::string iso) {
-					if(launch_emulator_copy) {
-						fs::path emu_path = config::get().emulator_path;
-						execute_command(emu_path, {iso});
-					}
-				});
-				input_dir = "";
-				output_iso = "";
+				settings.launch_emulator = launch_emulator;
+				settings.single_level = single_level;
+				settings.single_level_index = single_level_index;
+				
+				a.build_iso(settings);
 			}
 			ImGui::EndMenu();
 		}
@@ -581,7 +589,7 @@ void gui::start_screen::render(app& a) {
 		if(NFD_PickFolder(work_dir, &in_path) == NFD_OKAY) {
 			nfdchar_t* out_path;
 			if(NFD_SaveDialog("iso", work_dir, &out_path) == NFD_OKAY) {
-				a.build_iso(in_path, out_path, [](fs::path){});
+				a.build_iso({in_path, out_path});
 				free(out_path);
 			}
 			free(in_path);

@@ -29,7 +29,7 @@ static const uint32_t TABLE_OF_CONTENTS_LBA = 0x3e9;
 void ls(std::string iso_path);
 void extract(std::string iso_path, fs::path output_dir);
 void extract_non_wads_recursive(stream& iso, fs::path out, iso_directory& in);
-void build(std::string input_dir, fs::path iso_path);
+void build(std::string input_dir, fs::path iso_path, int single_level_index);
 void enumerate_wads_recursive(std::vector<fs::path>& wads, fs::path dir, int depth);
 void enumerate_non_wads_recursive(stream& iso, iso_directory& out, fs::path dir, int depth);
 void print_file_record(iso_file_record& record);
@@ -51,7 +51,11 @@ int main(int argc, char** argv) {
 			cxxopts::value<std::string>())
 		("o,output", "The output path.",
 			cxxopts::value<std::string>())
-		("d,decimal", "Print out the LBAs and sizes of files in decimal instead of hex.\n");
+		("d,decimal", "Print out the LBAs and sizes of files in decimal instead of hex.")
+		("s,single-level",
+			"Write out a single level, then point every other level at it.\n"
+			"Only applies for rebuilding.",
+			cxxopts::value<int>());
 
 	options.parse_positional({
 		"command", "input", "output"
@@ -61,6 +65,10 @@ int main(int argc, char** argv) {
 	std::string command = cli_get(args, "command");
 	std::string input_path = cli_get(args, "input");
 	std::string output_path = cli_get_or(args, "output", "");
+	int single_level_index = -1; // -1 means write out all levels normally.
+	if(args.count("single-level")) {
+		single_level_index = args["single-level"].as<int>();
+	}
 	
 	if(args.count("decimal")) {
 		row_format = "%-16ld%-16ld%s\n";
@@ -73,7 +81,7 @@ int main(int argc, char** argv) {
 	} else if(command == "extract") {
 		extract(input_path, output_path);
 	} else if(command == "build") {
-		build(input_path, output_path);
+		build(input_path, output_path, single_level_index);
 	} else {
 		fprintf(stderr, "Invalid command: %s\n",  command.c_str());
 		fprintf(stderr, "Available commands are: ls, extract, build\n");
@@ -283,7 +291,7 @@ struct level_parts {
 	uint32_t header_sizes_in_sectors[3];
 };
 
-void build(std::string input_dir, fs::path iso_path) {
+void build(std::string input_dir, fs::path iso_path, int single_level_index) {
 	if(!fs::is_directory(input_dir)) {
 		fprintf(stderr, "error: Input path is not a directory!\n");
 		exit(1);
@@ -585,7 +593,22 @@ void build(std::string input_dir, fs::path iso_path) {
 	iso_directory audio_dir {"audio"};
 	iso_directory scenes_dir {"scenes"};
 	toc_levels.resize(level_files.size());
-	if(game == GAME_RAC2 || game == GAME_RAC2_OTHER) {
+	if(single_level_index > -1) {
+		// Only write out a single level, and point every level at it.
+		if(single_level_index >= (int) level_files.size()) {
+			fprintf(stderr, "error: Single level index greater than maximum level index!\n");
+			exit(1);
+		}
+		auto& p = level_files[single_level_index].parts;
+		auto level_part = write_level_part(levels_dir, *p[LEVEL_PART]);
+		auto audio_part = write_level_part(audio_dir, *p[AUDIO_PART]);
+		auto scene_part = write_level_part(scenes_dir, *p[SCENE_PART]);
+		for(size_t i = 0; i < level_files.size(); i++) {
+			if(p[LEVEL_PART]) toc_levels[i].parts[0] = level_part;
+			if(p[AUDIO_PART]) toc_levels[i].parts[1] = audio_part;
+			if(p[SCENE_PART]) toc_levels[i].parts[2] = scene_part;
+		}
+	} else if(game == GAME_RAC2 || game == GAME_RAC2_OTHER) {
 		// The level files are laid out AoS.
 		for(size_t i = 0; i < level_files.size(); i++) {
 			level_parts& level = level_files[i];

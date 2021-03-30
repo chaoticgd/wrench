@@ -19,6 +19,7 @@
 #include "util.h"
 
 #include <sstream>
+#include <stdio.h>
 
 std::string int_to_hex(std::size_t x) {
 	std::stringstream ss;
@@ -88,6 +89,7 @@ int execute_command(std::string executable, std::vector<std::string> arguments) 
 	for(std::string& arg : arguments) {
 		command += " \"" + arg + "\"";
 	}
+	printf("command: %s\n", command.c_str());
 	return system(command.c_str());
 #endif
 }
