@@ -710,6 +710,10 @@ void enumerate_non_wads_recursive(stream& iso, iso_directory& out, fs::path dir,
 				continue;
 			}
 			
+			if(name.find(".iso") != std::string::npos) {
+				continue;
+			}
+			
 			file_stream file(entry.path());
 			iso.pad(SECTOR_SIZE, 0);
 			
