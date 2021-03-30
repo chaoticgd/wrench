@@ -91,6 +91,9 @@ void app::build_iso(build_settings settings) {
 				args.push_back("--single-level");
 				args.push_back(std::to_string(settings.single_level_index));
 			}
+			if(settings.no_mpegs) {
+				args.push_back("--no-mpegs");
+			}
 			int exit_code = execute_command("bin/iso", args);
 			if(exit_code != 0) {
 				log << "\nFailed to build ISO file!\n";

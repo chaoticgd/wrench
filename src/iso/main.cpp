@@ -29,7 +29,7 @@ static const uint32_t TABLE_OF_CONTENTS_LBA = 0x3e9;
 void ls(std::string iso_path);
 void extract(std::string iso_path, fs::path output_dir);
 void extract_non_wads_recursive(stream& iso, fs::path out, iso_directory& in);
-void build(std::string input_dir, fs::path iso_path, int single_level_index);
+void build(std::string input_dir, fs::path iso_path, int single_level_index, bool no_mpegs);
 void enumerate_wads_recursive(std::vector<fs::path>& wads, fs::path dir, int depth);
 void enumerate_non_wads_recursive(stream& iso, iso_directory& out, fs::path dir, int depth);
 void print_file_record(iso_file_record& record);
@@ -54,8 +54,9 @@ int main(int argc, char** argv) {
 		("d,decimal", "Print out the LBAs and sizes of files in decimal instead of hex.")
 		("s,single-level",
 			"Write out a single level, then point every other level at it.\n"
-			"Only applies for rebuilding.",
-			cxxopts::value<int>());
+			"Much faster. Only applies for rebuilding.",
+			cxxopts::value<int>())
+		("n,no-mpegs", "Don't write out MPEG cutscenes. Much faster.");
 
 	options.parse_positional({
 		"command", "input", "output"
@@ -69,6 +70,7 @@ int main(int argc, char** argv) {
 	if(args.count("single-level")) {
 		single_level_index = args["single-level"].as<int>();
 	}
+	bool no_mpegs = args.count("no-mpegs");
 	
 	if(args.count("decimal")) {
 		row_format = "%-16ld%-16ld%s\n";
@@ -81,7 +83,7 @@ int main(int argc, char** argv) {
 	} else if(command == "extract") {
 		extract(input_path, output_path);
 	} else if(command == "build") {
-		build(input_path, output_path, single_level_index);
+		build(input_path, output_path, single_level_index, no_mpegs);
 	} else {
 		fprintf(stderr, "Invalid command: %s\n",  command.c_str());
 		fprintf(stderr, "Available commands are: ls, extract, build\n");
@@ -291,7 +293,7 @@ struct level_parts {
 	uint32_t header_sizes_in_sectors[3];
 };
 
-void build(std::string input_dir, fs::path iso_path, int single_level_index) {
+void build(std::string input_dir, fs::path iso_path, int single_level_index, bool no_mpegs) {
 	if(!fs::is_directory(input_dir)) {
 		fprintf(stderr, "error: Input path is not a directory!\n");
 		exit(1);
@@ -540,18 +542,45 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index) {
 		table.lumps.resize((table.header.header_size - 8) / sizeof(sector_range));
 		file.seek(0x8);
 		file.read_v(table.lumps);
+		
+		bool skipped = false;
+		if(no_mpegs) {
+			// Detect if the current file is the one that contains all the MPEG
+			// cutscenes. If it is, null out the header and omit the contents.
+			// The MPEG file is the only one that stores some of the lump sizes
+			// in bytes instead of sectors, so if the lump sizes are large, we
+			// know that it's probably in bytes intead of sectors and hence this
+			// file must be the MPEG file.
+			size_t lump_sizes_probably_in_bytes = 0;
+			for(sector_range& range : table.lumps) {
+				if(range.size.sectors > 0xffff) {
+					lump_sizes_probably_in_bytes++;
+				}
+			}
+			// Arbitrary threshold.
+			if(lump_sizes_probably_in_bytes > 10) {
+				for(sector_range& range : table.lumps) {
+					range.offset.sectors = 0;
+					range.size.sectors = 0;
+				}
+				skipped = true;
+			}
+		}
+		
 		toc_tables.push_back(table);
 		
-		iso_file_record record;
-		record.name = global.path.filename().string() + ";1";
-		record.lba = table.header.base_offset;
-		record.size = file.size() - data_offset.bytes();
-		global_dir.files.push_back(record);
-		
-		print_file_record(record);
-		
-		file.seek(data_offset.bytes());
-		stream::copy_n(iso, file, record.size);
+		if(!skipped) {
+			iso_file_record record;
+			record.name = global.path.filename().string() + ";1";
+			record.lba = table.header.base_offset;
+			record.size = file.size() - data_offset.bytes();
+			global_dir.files.push_back(record);
+			
+			print_file_record(record);
+			
+			file.seek(data_offset.bytes());
+			stream::copy_n(iso, file, record.size);
+		}
 	}
 	root_dir.subdirs.push_back(global_dir);
 	auto write_level_part = [&](iso_directory& parent, fs::path& path) {

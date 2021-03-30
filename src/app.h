@@ -52,6 +52,7 @@ struct build_settings {
 	bool launch_emulator = false;
 	bool single_level = false; // Write out just a single level?
 	int single_level_index = -1; // If so, which one?
+	bool no_mpegs = false;
 };
 
 class app {

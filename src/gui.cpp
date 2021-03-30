@@ -218,6 +218,8 @@ float gui::render_menu_bar(app& a) {
 			static bool single_level = false;
 			static int single_level_index = 0;
 			
+			static bool no_mpegs = false;
+			
 			ImGui::Checkbox("Custom Input Directory", &build_from_custom_dir);
 			if(build_from_custom_dir) {
 				input_path("Input Directory", &custom_input_dir, file_dialog_type::DIR);
@@ -230,10 +232,12 @@ float gui::render_menu_bar(app& a) {
 			
 			ImGui::Checkbox("Launch emulator after building", &launch_emulator);
 			
-			ImGui::Checkbox("Only write out single level", &single_level);
+			ImGui::Checkbox("Only write out single level (much faster)", &single_level);
 			if(single_level) {
 				ImGui::InputInt("Single Level Index", &single_level_index);
 			}
+			
+			ImGui::Checkbox("Skip writing out MPEG cutscenes (much faster)", &no_mpegs);
 			
 			if(((!build_from_custom_dir || !build_to_custom_path) && a.directory.empty())) {
 				ImGui::TextWrapped("No directory open!\n");
@@ -255,6 +259,7 @@ float gui::render_menu_bar(app& a) {
 				settings.launch_emulator = launch_emulator;
 				settings.single_level = single_level;
 				settings.single_level_index = single_level_index;
+				settings.no_mpegs = no_mpegs;
 				
 				a.build_iso(settings);
 			}
