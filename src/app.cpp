@@ -83,6 +83,14 @@ void app::open_directory(fs::path dir) {
 }
 
 void app::build_iso(build_settings settings) {
+	if(level* lvl = get_level()) {
+		array_stream dest;
+		lvl->write(dest);
+		
+		file_stream file(lvl->path, std::ios::out);
+		file.write_n(dest.buffer.data(), dest.buffer.size());
+	}
+	
 	emplace_window<worker_thread<int, build_settings>>(
 		"Build ISO", settings,
 		[](build_settings settings, worker_logger& log) {
@@ -121,7 +129,7 @@ void app::open_file(fs::path path) {
 		case level_file_type::LEVEL: {
 			level new_lvl;
 			try {
-				new_lvl.read(file);
+				new_lvl.read(file, path);
 			} catch(stream_error& e) {
 				printf("error: Failed to load level! %s\n", e.what());
 				return;

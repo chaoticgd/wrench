@@ -21,7 +21,9 @@
 
 #include "../app.h"
 
-void level::read(stream& src) {
+void level::read(stream& src, fs::path path_) {
+	path = path_;
+	
 	if(src.size() > 1024 * 1024 * 1024) {
 		throw stream_format_error("The file is over 1GB in size.");
 	}

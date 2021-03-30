@@ -25,6 +25,7 @@
 
 #include "../util.h"
 #include "../stream.h"
+#include "../fs_includes.h"
 #include "../worker_logger.h"
 #include "../level_file_types.h"
 #include "world.h"
@@ -87,10 +88,11 @@ public:
 	level(const level& rhs) = delete;
 	level(level&& rhs) = default;
 	
-	void read(stream& src);
+	void read(stream& src, fs::path path_);
 	
 	void read_file_header(stream& file);
 	
+	fs::path path;
 	level_file_header file_header;
 	level_file_info info; // Stores information derived from the magic identifier e.g. header size.
 	world_segment world;
