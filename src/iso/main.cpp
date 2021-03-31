@@ -791,9 +791,19 @@ void parse_pcsx2_stdout(std::string iso_path) {
 	
 	const char* before_text = "DvdRead: Reading Sector ";
 	
+	auto file_from_lba = [&](size_t lba) -> iso_file_record* {
+		for(iso_file_record& file : files) {
+			size_t end_lba = file.lba.sectors + sector32::size_from_bytes(file.size).sectors;
+			if(lba >= file.lba.sectors && lba < end_lba) {
+				return &file;
+			}
+		}
+		return nullptr;
+	};
+	
 	// If we get a line reporting a sector read from PCSX2, determine which file
 	// is being read and print out its name.
-	size_t last_base_lba = SIZE_MAX;
+	iso_file_record* last_file = nullptr;
 	size_t last_lba = SIZE_MAX;
 	std::string line;
 	while(std::getline(std::cin, line)) {
@@ -810,33 +820,26 @@ void parse_pcsx2_stdout(std::string iso_path) {
 			} catch(std::logic_error& e) {
 				continue;
 			}
-			if(lba > last_lba && lba <= last_lba + 0x10) {
+			iso_file_record* file = file_from_lba(lba);
+			if(lba > last_lba && lba <= last_lba + 0x10 && file == last_file) {
 				// Don't spam stdout with every new sector that needs to be read
 				// in. Only print when it's reading a different file, or it
 				// seeks to a different position.
 				last_lba = lba;
 				continue;
 			} else if(last_lba != SIZE_MAX) {
-				printf(" ... 0x%lx\n", last_lba - last_base_lba);
+				printf(" ... 0x%lx\n", last_lba - (last_file ? last_file->lba.sectors : 0));
 			}
-			bool known_read = false;
-			for(iso_file_record& file : files) {
-				if(lba >= file.lba.sectors && lba * SECTOR_SIZE < file.lba.bytes() + file.size) {
-					printf("%s + 0x%lx", file.name.c_str(), lba - file.lba.sectors);
-					known_read = true;
-					last_lba = lba;
-					last_base_lba = file.lba.sectors;
-					break;
-				}
-			}
-			if(!known_read) {
+			if(file) {
+				printf("%s + 0x%lx", file->name.c_str(), lba - file->lba.sectors);
+			} else {
 				printf("unknown read 0x%lx", lba);
-				last_lba = lba;
-				last_base_lba = 0;
 			}
+			last_lba = lba;
+			last_file = file;
 		}
 	}
 	if(last_lba != SIZE_MAX) {
-		printf(" ... 0x%lx\n", last_lba - last_base_lba);
+		printf(" ... 0x%lx\n", last_lba - (last_file ? last_file->lba.sectors : 0));
 	}
 }
