@@ -568,7 +568,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 			case GAME_RAC2_OTHER: toc_record.name = "rc2.hdr;1"; break;
 		}
 		toc_record.lba = {TABLE_OF_CONTENTS_LBA};
-		toc_record.size = iso.tell() - TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
+		toc_record.size = total_toc_size.bytes();
 		root_dir.files.push_back(toc_record);
 		print_file_record(toc_record);
 	}
