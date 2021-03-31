@@ -34,6 +34,7 @@ void enumerate_wads_recursive(std::vector<fs::path>& wads, fs::path dir, int dep
 void enumerate_non_wads_recursive(stream& iso, iso_directory& out, fs::path dir, int depth);
 void print_file_record(iso_file_record& record);
 std::string str_to_lower(std::string str);
+void parse_pcsx2_stdout(std::string iso_path);
 
 // C format string for printing out LBA, size, filename lines.
 const char* row_format;
@@ -43,9 +44,9 @@ int main(int argc, char** argv) {
 		"Extract files from and rebuild Ratchet & Clank ISO images. The games\n"
 		"use raw disk I/O and a custom table of contents file to access assets\n"
 		"so just writing a standard ISO filesystem won't work.");
-	options.positional_help("ls|extract|rebuild <input path> [<output path>]");
+	options.positional_help("ls|extract|rebuild|parse_pcsx2_stdout <input path> [<output path>]");
 	options.add_options()
-		("c,command", "The operation to perform. Possible values are: ls, extract, build.",
+		("c,command", "The operation to perform. Possible values are: ls, extract, build, parse_pcsx2_stdout.",
 			cxxopts::value<std::string>())
 		("i,input", "The input path.",
 			cxxopts::value<std::string>())
@@ -84,9 +85,11 @@ int main(int argc, char** argv) {
 		extract(input_path, output_path);
 	} else if(command == "build") {
 		build(input_path, output_path, single_level_index, no_mpegs);
+	} else if(command == "parse_pcsx2_stdout") {
+		parse_pcsx2_stdout(input_path);
 	} else {
 		fprintf(stderr, "Invalid command: %s\n",  command.c_str());
-		fprintf(stderr, "Available commands are: ls, extract, build\n");
+		fprintf(stderr, "Pass --help for documentation.\n");
 		exit(1);
 	}
 }
@@ -764,4 +767,76 @@ std::string str_to_lower(std::string str) {
 		c = tolower(c);
 	}
 	return str;
+}
+
+void parse_pcsx2_stdout(std::string iso_path) {
+	file_stream iso(iso_path);
+	
+	// First we enumerate where all the files on the ISO are. Note that this
+	// command only works for stuff referenced by the filesystem.
+	std::vector<iso_file_record> files;
+	iso_directory root_dir;
+	root_dir.files.push_back({"primary volume descriptor", 0x10, SECTOR_SIZE});
+	if(!read_iso_filesystem(root_dir, iso)) {
+		fprintf(stderr, "error: Failed to read ISO filesystem!\n");
+		exit(1);
+	}
+	std::function<void(iso_directory&)> enumerate_dir = [&](iso_directory& dir) {
+		for(iso_directory& subdir : dir.subdirs) {
+			enumerate_dir(subdir);
+		}
+		files.insert(files.end(), dir.files.begin(), dir.files.end());
+	};
+	enumerate_dir(root_dir);
+	
+	const char* before_text = "DvdRead: Reading Sector ";
+	
+	// If we get a line reporting a sector read from PCSX2, determine which file
+	// is being read and print out its name.
+	size_t last_base_lba = SIZE_MAX;
+	size_t last_lba = SIZE_MAX;
+	std::string line;
+	while(std::getline(std::cin, line)) {
+		size_t before_pos = line.find(before_text);
+		if(line.find(before_text) != std::string::npos) {
+			line = line.substr(before_pos + strlen(before_text));
+			if(line.find(" ") == std::string::npos) {
+				continue;
+			}
+			line = line.substr(0, line.find(" "));
+			size_t lba;
+			try {
+				lba = std::stoi(line);
+			} catch(std::logic_error& e) {
+				continue;
+			}
+			if(lba > last_lba && lba <= last_lba + 0x10) {
+				// Don't spam stdout with every new sector that needs to be read
+				// in. Only print when it's reading a different file, or it
+				// seeks to a different position.
+				last_lba = lba;
+				continue;
+			} else if(last_lba != SIZE_MAX) {
+				printf(" ... 0x%lx\n", last_lba - last_base_lba);
+			}
+			bool known_read = false;
+			for(iso_file_record& file : files) {
+				if(lba >= file.lba.sectors && lba * SECTOR_SIZE < file.lba.bytes() + file.size) {
+					printf("%s + 0x%lx", file.name.c_str(), lba - file.lba.sectors);
+					known_read = true;
+					last_lba = lba;
+					last_base_lba = file.lba.sectors;
+					break;
+				}
+			}
+			if(!known_read) {
+				printf("unknown read 0x%lx", lba);
+				last_lba = lba;
+				last_base_lba = 0;
+			}
+		}
+	}
+	if(last_lba != SIZE_MAX) {
+		printf(" ... 0x%lx\n", last_lba - last_base_lba);
+	}
 }
