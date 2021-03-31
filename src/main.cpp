@@ -38,8 +38,8 @@ int main(int argc, char** argv) {
 	cxxopts::Options options("wrench", "A level editor for the Ratchet & Clank games.");
 	options.add_options()
 		("t,run-tests", "Run automated tests.")
-		("d,directory", "Open a directory.",
-			cxxopts::value<std::string>());
+		("d,directory", "Open a directory on startup.", cxxopts::value<std::string>())
+		("f,file", "Open a file on startup.", cxxopts::value<std::string>());
 
 	auto args = parse_command_line_args(argc, argv, options);
 
@@ -72,7 +72,21 @@ int main(int argc, char** argv) {
 		a.windows.emplace_back(std::make_unique<gui::viewport_information>());
 		
 		if(args.count("directory")) {
-			a.open_directory(old_working_dir / args["directory"].as<std::string>());
+			fs::path dir = args["directory"].as<std::string>();
+			if(dir.is_relative()) {
+				a.open_directory(old_working_dir / dir);
+			} else {
+				a.open_directory(dir);
+			}
+		}
+		
+		if(args.count("file")) {
+			fs::path file = args["file"].as<std::string>();
+			if(file.is_relative()) {
+				a.open_file(old_working_dir / file);
+			} else {
+				a.open_file(file);
+			}
 		}
 		
 		auto last_frame_time = std::chrono::steady_clock::now();
