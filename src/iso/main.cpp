@@ -487,7 +487,6 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 			case GAME_RAC4: assert(toc_start_size.sectors <= 0x1a); break;
 		}
 		
-		iso.pad(SECTOR_SIZE, 0);
 		for(size_t i = 0; i < toc_levels.size(); i++) {
 			toc_level& level = toc_levels[i]; 
 			for(std::optional<toc_level_part>& part : level.parts) {
@@ -495,10 +494,12 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 					continue;
 				}
 				
+				iso.pad(SECTOR_SIZE, 0);
 				uint32_t header_lba = iso.tell() / SECTOR_SIZE;
 				iso.write(part->magic);
 				iso.write(part->file_lba);
 				iso.write_v(part->lumps);
+				iso.pad(SECTOR_SIZE, 0);
 				
 				// The order of fields in the level table entries is different
 				// for R&C2 versus R&C3 and Deadlocked.
@@ -512,8 +513,6 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 				size_t index = i * 3 + field;
 				level_table[index].offset.sectors = header_lba;
 				level_table[index].size = part->file_size;
-				
-				assert(iso.tell() % SECTOR_SIZE == 0);
 			}
 		}
 		
@@ -643,7 +642,8 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		sector32 data_offset = file.read<sector32>(0x4);
 		iso.pad(SECTOR_SIZE, 0);
 		
-		size_t data_size_bytes = file.size() - data_offset.bytes();
+		size_t file_size = file.size();
+		size_t data_size_bytes = file_size - data_offset.bytes();
 		
 		toc_level_part part;
 		part.header_lba = {0}; // Don't care.
@@ -657,7 +657,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		}
 		part.info = info->second;
 		size_t header_size = part.info.header_size_sectors * SECTOR_SIZE;
-		part.lumps.resize((header_size - 8) / sizeof(sector_range));
+		part.lumps.resize((std::min(file_size, header_size) - 8) / sizeof(sector_range));
 		file.seek(0x8);
 		file.read_v(part.lumps);
 		
@@ -668,8 +668,12 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		parent.files.push_back(record);
 		
 		print_file_record(record);
-		file.seek(data_offset.bytes());
-		stream::copy_n(iso, file, data_size_bytes);
+		
+		if(data_offset.bytes() < file_size) {
+			iso.pad(SECTOR_SIZE, 0);
+			file.seek(data_offset.bytes());
+			stream::copy_n(iso, file, data_size_bytes);
+		}
 		
 		return part;
 	};
