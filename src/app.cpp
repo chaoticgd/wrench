@@ -157,6 +157,21 @@ bool app::has_camera_control() {
 	return renderer.camera_control;
 }
 
+std::map<std::string, std::vector<texture>*> app::texture_lists() {
+	std::map<std::string, std::vector<texture>*> result;
+	if(auto* lvl = get_level()) {
+		auto name = lvl->path.filename().string();
+		result[name + "/Mipmaps"] = &lvl->mipmap_textures;
+		result[name + "/Tfrags"] = &lvl->tfrag_textures;
+		result[name + "/Mobies"] = &lvl->moby_textures;
+		result[name + "/Ties"] = &lvl->tie_textures;
+		result[name + "/Shrubs"] = &lvl->shrub_textures;
+		result[name + "/Sprites"] = &lvl->sprite_textures;
+		result[name + "/Loading Screen"] = &lvl->loading_screen_textures;
+	}
+	return result;
+}
+
 std::vector<float*> get_imgui_scale_parameters() {
 	ImGuiStyle& s = ImGui::GetStyle();
 	ImGuiIO& i = ImGui::GetIO();

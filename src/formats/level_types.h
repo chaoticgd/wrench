@@ -142,8 +142,8 @@ packed_struct(level_asset_header,
 	uint32_t unknown_24;             // 0x24
 	uint32_t unknown_28;             // 0x28
 	uint32_t unknown_2c;             // 0x2c
-	uint32_t terrain_texture_count;  // 0x30
-	uint32_t terrain_texture_offset; // 0x34 Relative to asset header.
+	uint32_t tfrag_texture_count;    // 0x30
+	uint32_t tfrag_texture_offset;   // 0x34 Relative to asset header.
 	uint32_t moby_texture_count;     // 0x38
 	uint32_t moby_texture_offset;    // 0x3c
 	uint32_t tie_texture_count;      // 0x40

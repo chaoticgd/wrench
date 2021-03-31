@@ -87,7 +87,7 @@ public:
 	level* get_level();
 	const level* get_level() const;
 	
-	std::map<std::string, std::vector<texture>*> texture_lists() { return {}; }
+	std::map<std::string, std::vector<texture>*> texture_lists();
 	std::map<std::string, model_list> model_lists() { return {}; }
 private:
 	std::optional<level> _lvl;
