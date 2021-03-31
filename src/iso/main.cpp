@@ -328,7 +328,8 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 				try {
 					level_index = std::stoi(name.substr(5, name.size() - 9).c_str());
 				} catch(std::invalid_argument&) {
-					break;
+					fprintf(stderr, "error: Unable to convert level index to integer.\n");
+					exit(1);
 				}
 				if(level_index < 0 || level_index > 100) {
 					fprintf(stderr, "error: Level index is out of range.\n");
@@ -419,10 +420,23 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 	global_toc_size_bytes += level_files.size() * sizeof(sector_range) * 3;
 	sector32 global_toc_size = sector32::size_from_bytes(global_toc_size_bytes);
 	sector32 total_toc_size = global_toc_size;
-	for(auto& level : level_files) {
+	if(single_level_index > -1) {
+		if(single_level_index >= (int) level_files.size()) {
+			fprintf(stderr, "error: Single level index greater than maximum level index!\n");
+			exit(1);
+		}
 		for(int part = 0; part < 3; part++) {
+			auto& level = level_files[single_level_index];
 			if(level.parts[part]) {
-				total_toc_size.sectors += level.header_sizes_in_sectors[part];
+				total_toc_size.sectors += level.header_sizes_in_sectors[part] * level_files.size();
+			}
+		}
+	} else {
+		for(auto& level : level_files) {
+			for(int part = 0; part < 3; part++) {
+				if(level.parts[part]) {
+					total_toc_size.sectors += level.header_sizes_in_sectors[part];
+				}
 			}
 		}
 	}
@@ -498,6 +512,8 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 				assert(iso.tell() % SECTOR_SIZE == 0);
 			}
 		}
+		
+		assert(iso.tell() <= TABLE_OF_CONTENTS_LBA * SECTOR_SIZE + total_toc_size.bytes());
 	});
 	
 	// Write out blank sectors that are to be filled in later.
@@ -625,10 +641,6 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 	toc_levels.resize(level_files.size());
 	if(single_level_index > -1) {
 		// Only write out a single level, and point every level at it.
-		if(single_level_index >= (int) level_files.size()) {
-			fprintf(stderr, "error: Single level index greater than maximum level index!\n");
-			exit(1);
-		}
 		auto& p = level_files[single_level_index].parts;
 		auto level_part = write_level_part(levels_dir, *p[LEVEL_PART]);
 		auto audio_part = write_level_part(audio_dir, *p[AUDIO_PART]);
@@ -717,14 +729,16 @@ void enumerate_non_wads_recursive(stream& iso, iso_directory& out, fs::path dir,
 			file_stream file(entry.path());
 			iso.pad(SECTOR_SIZE, 0);
 			
+			size_t file_size = file.size();
+			
 			iso_file_record record;
 			record.name = name + ";1";
 			record.lba = {(uint32_t) (iso.tell() / SECTOR_SIZE)};
-			record.size = file.size();
+			record.size = file_size;
 			out.files.push_back(record);
 			print_file_record(record);
 			
-			stream::copy_n(iso, file, file.size());
+			stream::copy_n(iso, file, file_size);
 		} else if(entry.is_directory()) {
 			iso_directory subdir {name};
 			// Prevent name collisions with the auto-generated directories.
