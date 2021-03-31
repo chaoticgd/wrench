@@ -828,18 +828,18 @@ void parse_pcsx2_stdout(std::string iso_path) {
 				last_lba = lba;
 				continue;
 			} else if(last_lba != SIZE_MAX) {
-				printf(" ... 0x%lx\n", last_lba - (last_file ? last_file->lba.sectors : 0));
+				printf(" ... 0x%lx abs 0x%lx\n", last_lba - (last_file ? last_file->lba.sectors : 0), last_lba);
 			}
 			if(file) {
-				printf("%s + 0x%lx", file->name.c_str(), lba - file->lba.sectors);
+				printf("%8lx %32s + 0x%lx", lba, file->name.c_str(), lba - file->lba.sectors);
 			} else {
-				printf("unknown read 0x%lx", lba);
+				printf("%8lx %32s + 0x%lx", lba, "(unknown)", lba);
 			}
 			last_lba = lba;
 			last_file = file;
 		}
 	}
 	if(last_lba != SIZE_MAX) {
-		printf(" ... 0x%lx\n", last_lba - (last_file ? last_file->lba.sectors : 0));
+		printf(" ... 0x%lx abs 0x%lx\n", last_lba - (last_file ? last_file->lba.sectors : 0), last_lba);
 	}
 }
