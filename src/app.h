@@ -32,7 +32,6 @@
 #include "stream.h"
 #include "window.h"
 #include "game_db.h"
-#include "project.h"
 #include "renderer.h"
 #include "fs_includes.h"
 #include "worker_logger.h"
@@ -110,14 +109,12 @@ public:
 
 private:
 	std::atomic_bool _lock_project = false; // Prevent race conditions while creating/loading a project.
-	std::unique_ptr<wrench_project> _project;
 	
 	std::vector<float> _gui_scale_parameters;
 };
 
 struct config {
 	std::string emulator_path;
-	std::vector<game_iso> game_isos;
 	int compression_threads;
 	float gui_scale;
 	bool vsync;

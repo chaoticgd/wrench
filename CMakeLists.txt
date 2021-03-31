@@ -28,7 +28,6 @@ add_executable(wrench
 	src/renderer.cpp
 	src/shaders.cpp
 	src/worker_logger.cpp
-	src/project.cpp
 	src/iso_stream.cpp
 	src/model.cpp
 	src/util.cpp

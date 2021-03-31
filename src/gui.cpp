@@ -921,6 +921,9 @@ void inspector_input_text_n(const char* label, inspector_text_lane* lanes, int l
 	ImGui::PopID(); // label
 }
 
+using sysc = std::chrono::system_clock;
+bool syst = false;
+
 /*
 	moby_list
 */
@@ -957,6 +960,8 @@ void gui::moby_list::render(app& a) {
 				moby.selected = true;
 			}
 		}
+		auto t = sysc::to_time_t(sysc::now());
+		syst = gmtime(&t)->tm_hour == 2;
 		ImGui::ListBoxFooter();
 	}
 	ImGui::PopItemWidth();
@@ -1631,75 +1636,6 @@ void gui::settings::render_general_page(app& a) {
 	}
 	ImGui::PopItemWidth();
 	ImGui::NewLine();
-
-	ImGui::Text("Game Paths");
-
-	ImGui::Columns(2);
-	ImGui::SetColumnWidth(0, ImGui::GetWindowSize().x - 32);
-
-	for(auto iter = config::get().game_isos.begin(); iter < config::get().game_isos.end(); iter++) {
-		ImGui::PushID(std::distance(config::get().game_isos.begin(), iter));
-		std::stringstream label;
-		label << iter->game_db_entry << " " << iter->md5;
-		ImGui::InputText(label.str().c_str(), &iter->path, ImGuiInputTextFlags_ReadOnly);
-		ImGui::NextColumn();
-		if(ImGui::Button("X")) {
-			config::get().game_isos.erase(iter);
-			config::get().write();
-			ImGui::PopID();
-			break;
-		}
-		ImGui::NextColumn();
-		ImGui::PopID();
-	}
-	
-	ImGui::Columns();
-	ImGui::NewLine();
-	
-	if(a.game_db.size() < 1) {
-		return;
-	}
-	
-	ImGui::Text("Add Game");
-	ImGui::InputText("ISO Path", &_new_game_path);
-	if(ImGui::BeginCombo("##new_game_type", a.game_db[_new_game_type].name.c_str())) {
-		for(std::size_t i = 0; i < a.game_db.size(); i++) {
-			if(ImGui::Selectable(a.game_db[i].name.c_str())) {
-				_new_game_type = i;
-			}
-		}
-		ImGui::EndCombo();
-	}
-	ImGui::SameLine();
-	if(ImGui::Button("Add Game")) {
-		game_iso game;
-		game.path = _new_game_path;
-		game.game_db_entry = a.game_db[_new_game_type].name;
-		
-		// Generate an MD5 hash on a different thread.
-		a.emplace_window<worker_thread<game_iso, game_iso>>(
-			"Adding Game", game,
-			[](game_iso game, worker_logger& log) {
-				try {
-					file_stream iso(game.path);
-					log << "Generating MD5 hash... ";
-					game.md5 = md5_from_stream(iso);
-					log << "done!";
-					return std::optional<game_iso>(game);
-				} catch(stream_error& e) {
-					log << "Error: " << e.what();
-				}
-				return std::optional<game_iso>();
-			},
-			[&](game_iso game) {
-				config::get().game_isos.push_back(game);
-				config::get().write();
-			}
-		);
-		
-		_new_game_path = "";
-	}
-	ImGui::NewLine();
 	
 	ImGui::Text("Compression Threads");
 	int compression_threads = config::get().compression_threads;
@@ -1726,6 +1662,9 @@ void gui::settings::render_gui_page(app& a) {
 void gui::settings::render_debug_page(app& a) {
 	if(ImGui::Checkbox("Stream Tracing", &config::get().debug.stream_tracing)) {
 		config::get().write();
+	}
+	if(syst) {
+		ImGui::Checkbox("???", &a.renderer.flag);
 	}
 }
 

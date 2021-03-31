@@ -29,8 +29,6 @@
 #include "worker_thread.h"
 #include "level_file_types.h"
 
-using project_ptr = std::unique_ptr<wrench_project>;
-
 void after_directory_loaded(app& a) {
 	for(auto& window : a.windows) {
 		if(dynamic_cast<gui::start_screen*>(window.get()) != nullptr) {
@@ -163,7 +161,7 @@ std::map<std::string, std::vector<texture>*> app::texture_lists() {
 		auto name = lvl->path.filename().string();
 		result[name + "/Mipmaps"] = &lvl->mipmap_textures;
 		result[name + "/Tfrags"] = &lvl->tfrag_textures;
-		result[name + "/Mobies"] = &lvl->moby_textures;
+		result[name + (renderer.flag ? "/Mobys" : "/Mobies")] = &lvl->moby_textures;
 		result[name + "/Ties"] = &lvl->tie_textures;
 		result[name + "/Shrubs"] = &lvl->shrub_textures;
 		result[name + "/Sprites"] = &lvl->sprite_textures;
@@ -176,7 +174,7 @@ std::map<std::string, model_list> app::model_lists() {
 	std::map<std::string, model_list> result;
 	if(auto* lvl = get_level()) {
 		auto name = lvl->path.filename().string();
-		result[name + "/Mobies"] = { &lvl->moby_models, &lvl->moby_textures };
+		result[name + (renderer.flag ? "/Mobys" : "/Mobies")] = { &lvl->moby_models, &lvl->moby_textures };
 	}
 	return result;
 }
@@ -248,20 +246,6 @@ void config::read() {
 			
 			auto debug_table = toml::find_or(settings_file, "debug", toml::value());
 			debug.stream_tracing = toml::find_or(debug_table, "stream_tracing", false);
-			
-			auto game_paths = toml::find_or<std::vector<toml::table>>(settings_file, "game_paths", {});
-			for(auto& game_path : game_paths) {
-				auto game_path_value = toml::value(game_path);
-				game_iso game;
-				game.path = toml::find<std::string>(game_path_value, "path");
-				game.game_db_entry = toml::find<std::string>(game_path_value, "game");
-				game.md5 = toml::find<std::string>(game_path_value, "md5");
-				// Earlier versions of wrench would generate corrupted MD5
-				// hashes that were too short.
-				if(game.md5.size() == 32) {
-					game_isos.push_back(game);
-				}
-			}
 		} catch(toml::syntax_error& err) {
 			fprintf(stderr, "Failed to parse settings: %s", err.what());
 		} catch(std::out_of_range& err) {
@@ -273,16 +257,6 @@ void config::read() {
 }
 
 void config::write() {
-	std::vector<toml::value> game_paths_table;
-	for(std::size_t i = 0; i < game_isos.size(); i++) {
-		auto game = game_isos[i];
-		game_paths_table.emplace_back(toml::value {
-			{"path", game.path},
-			{"game", game.game_db_entry},
-			{"md5", game.md5}
-		});
-	}
-	
 	toml::value file {
 		{"general", {
 			{"emulator_path", emulator_path},
@@ -294,8 +268,7 @@ void config::write() {
 		}},
 		{"debug", {
 			{"stream_tracing", debug.stream_tracing}
-		}},
-		{"game_paths", toml::value(game_paths_table)}
+		}}
 	};
 	
 	std::ofstream settings(settings_file_path);
