@@ -37,7 +37,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 int main(int argc, char** argv) {
 	cxxopts::Options options("wrench", "A level editor for the Ratchet & Clank games.");
 	options.add_options()
-		("t,run-tests", "Run automated tests.");
+		("t,run-tests", "Run automated tests.")
+		("d,directory", "Open a directory.",
+			cxxopts::value<std::string>());
 
 	auto args = parse_command_line_args(argc, argv, options);
 
@@ -68,7 +70,11 @@ int main(int argc, char** argv) {
 		a.windows.emplace_back(std::make_unique<gui::moby_list>());
 		a.windows.emplace_back(std::make_unique<gui::inspector>());
 		a.windows.emplace_back(std::make_unique<gui::viewport_information>());
-
+		
+		if(args.count("directory")) {
+			a.open_directory(old_working_dir / args["directory"].as<std::string>());
+		}
+		
 		auto last_frame_time = std::chrono::steady_clock::now();
 
 		while(!glfwWindowShouldClose(a.glfw_window)) {
