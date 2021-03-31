@@ -117,29 +117,35 @@ void app::build_iso(build_settings settings) {
 
 void app::open_file(fs::path path) {
 	file_stream file(path);
+	
 	uint32_t magic = file.read<uint32_t>(0x0);
 	auto info = LEVEL_FILE_TYPES.find(magic);
-	if(info == LEVEL_FILE_TYPES.end()) {
+	if(info != LEVEL_FILE_TYPES.end()) {
+		switch(info->second.type) {
+			case level_file_type::LEVEL: {
+				level new_lvl;
+				try {
+					new_lvl.read(file, path);
+				} catch(stream_error& e) {
+					printf("error: Failed to load level! %s\n", e.what());
+					return;
+				}
+				_lvl.emplace(std::move(new_lvl));
+				renderer.reset_camera(this);
+				break;
+			}
+			case level_file_type::AUDIO:
+				break;
+			case level_file_type::SCENE:
+				break;
+		}
 		return;
 	}
 	
-	switch(info->second.type) {
-		case level_file_type::LEVEL: {
-			level new_lvl;
-			try {
-				new_lvl.read(file, path);
-			} catch(stream_error& e) {
-				printf("error: Failed to load level! %s\n", e.what());
-				return;
-			}
-			_lvl.emplace(std::move(new_lvl));
-			renderer.reset_camera(this);
-			break;
-		}
-		case level_file_type::AUDIO:
-			break;
-		case level_file_type::SCENE:
-			break;
+	armor_archive armor;
+	if(armor.read(file)) {
+		_armor.emplace(std::move(armor));
+		return;
 	}
 }
 
@@ -167,6 +173,9 @@ std::map<std::string, std::vector<texture>*> app::texture_lists() {
 		result[name + "/Sprites"] = &lvl->sprite_textures;
 		result[name + "/Loading Screen"] = &lvl->loading_screen_textures;
 	}
+	if(_armor) {
+		result["Armour"] = &_armor->textures;
+	}
 	return result;
 }
 
@@ -175,6 +184,9 @@ std::map<std::string, model_list> app::model_lists() {
 	if(auto* lvl = get_level()) {
 		auto name = lvl->path.filename().string();
 		result[name + (renderer.flag ? "/Mobys" : "/Mobies")] = { &lvl->moby_models, &lvl->moby_textures };
+	}
+	if(_armor) {
+		result["Armour"] = { &_armor->models, &_armor->textures };
 	}
 	return result;
 }

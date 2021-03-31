@@ -38,12 +38,10 @@ packed_struct(armor_table_entry,
 	sector32 texture_size;
 )
 
-class armor_archive {
-public:
-	armor_archive();
+struct armor_archive {
+	bool read(stream& file_);
 	
-	bool read(stream& iso);
-	
+	array_stream file;
 	std::vector<moby_model> models;
 	std::vector<texture> textures;
 };

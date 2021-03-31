@@ -38,6 +38,7 @@
 #include "formats/texture.h"
 #include "formats/game_model.h"
 #include "formats/level_impl.h"
+#include "formats/armor_archive.h"
 
 # /*
 #	Represents the current state of the program including the currently open
@@ -97,6 +98,7 @@ public:
 	
 private:
 	std::optional<level> _lvl;
+	std::optional<armor_archive> _armor;
 
 public:
 

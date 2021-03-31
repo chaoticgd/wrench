@@ -20,26 +20,32 @@
 
 #include "../util.h"
 
-armor_archive::armor_archive() {}
-
-bool armor_archive::read(stream& iso) {
-	/*std::size_t base_offset = table.header.base_offset.bytes();
-	if(table.header.size > 0x1000) {
+bool armor_archive::read(stream& file_) {
+	file.buffer.resize(file_.size());
+	file_.seek(0);
+	file_.read_n(file.buffer.data(), file.buffer.size());
+	
+	uint32_t header_size = file.read<uint32_t>(0);
+	size_t base_offset = file.read<sector32>(4).bytes();
+	if(header_size > 0x1000 || header_size < 8) {
 		return false;
 	}
 	
-	for(std::size_t i = 0; i < table.data.size(); i += 16) {
-		auto armor = table.data.peek<armor_table_entry>(i);
+	std::vector<armor_table_entry> lumps((header_size - 8) / sizeof(armor_table_entry));
+	file.read_v(lumps);
+	
+	for(size_t i = 0; i < lumps.size(); i++) {
+		armor_table_entry& armor = lumps[i];
 		if(armor.texture.sectors == 0) {
 			continue; // We're probably reading off the end of the array.
 		}
 		
 		// Read the model.
-		auto model_header = iso.peek<moby_model_armor_header>(base_offset + armor.model.bytes());
+		auto model_header = file.read<moby_model_armor_header>(base_offset + armor.model.bytes());
 		uint32_t submodel_table_offset = model_header.submodel_table_offset;
 		if(submodel_table_offset > 0x10) {
 			if(models.size() > 10) {
-				continue; // Hack the get R&C3's ARMOR.WAD loading.
+				continue; // Hack to get R&C3's ARMOR.WAD loading.
 			}
 			return false;
 		}
@@ -47,48 +53,46 @@ bool armor_archive::read(stream& iso) {
 			continue;
 		}
 		
-		moby_model& model = models.emplace_back(
-			&iso,
+		moby_model& mdl = models.emplace_back(
+			&file,
 			base_offset + armor.model.bytes(),
 			armor.model_size.bytes(),
 			moby_model_header_type::ARMOR);
-		model.set_name("armor " + std::to_string(i / 16));
-		model.read();
+		mdl.set_name("armor " + std::to_string(i));
+		mdl.read();
 		
-		std::string set_name = std::string("set") + std::to_string(i / 16);
+		std::string set_name = std::string("set") + std::to_string(i);
 		
 		// Single texture.
-		std::size_t fip_offset = base_offset + armor.texture.bytes();
-		std::optional<texture> tex = create_fip_texture(&iso, fip_offset);
+		size_t pif_offset = base_offset + armor.texture.bytes();
+		std::optional<texture> tex = create_fip_texture(&file, pif_offset);
 		if(tex) {
-			model.texture_indices.push_back(textures.size());
+			mdl.texture_indices.push_back(textures.size());
 			textures.emplace_back(std::move(*tex));
 			textures.back().name = set_name;
 			continue;
 		}
 	
 		// One or more textures.
-		auto num_textures = iso.read<uint32_t>(base_offset + armor.texture.bytes());
+		auto num_textures = file.read<uint32_t>(base_offset + armor.texture.bytes());
 		if(num_textures > 0x1000) {
 			return false;
 		}
 		
 		for(std::size_t j = 0; j < num_textures; j++) {
-			auto rel_offset = iso.read<uint32_t>();
+			auto rel_offset = file.read<uint32_t>();
 			std::size_t abs_offset = base_offset + armor.texture.bytes() + rel_offset;
-			std::optional<texture> tex = create_fip_texture(&iso, abs_offset);
+			std::optional<texture> tex = create_fip_texture(&file, abs_offset);
 			if(tex) {
-				model.texture_indices.push_back(textures.size());
+				mdl.texture_indices.push_back(textures.size());
 				textures.emplace_back(std::move(*tex));
 				textures.back().name =
 					set_name + "_part" + std::to_string(j);
 			} else {
-				std::cerr << "Failed to load 2FIP texture from ARMOR.WAD at "
-				          << iso.resource_path().c_str()
-				          << "+0x" << std::hex << fip_offset << "\n";
+				std::cerr << "Failed to load PIF texture from armor file at "
+				          << std::hex << (base_offset + pif_offset) << ".";
 			}
 		}
 	}
-	*/
 	return true;
 }
