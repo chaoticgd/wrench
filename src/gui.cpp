@@ -478,25 +478,25 @@ void gui::render_tools(app& a, float menu_bar_height) {
 
 void gui::render_tree_menu(app& a) {
 	struct project_tree_node {
-		std::string path;
+		fs::path path;
 		std::vector<project_tree_node> dirs;
 		std::vector<fs::path> files;
 	};
 	
 	std::function<void(project_tree_node&)> render_tree_node = [&](auto& node) {
-		if(ImGui::BeginMenu(fs::path(node.path).filename().c_str())) {
-			for(project_tree_node& subdir : node.dirs) {
+		for(project_tree_node& subdir : node.dirs) {
+			if(ImGui::BeginMenu(subdir.path.filename().c_str())) {
 				render_tree_node(subdir);
+				ImGui::EndMenu();
 			}
-			if(node.dirs.size() > 0 && node.files.size() > 0) {
-				ImGui::Separator();
+		}
+		if(node.dirs.size() > 0 && node.files.size() > 0) {
+			ImGui::Separator();
+		}
+		for(fs::path& file : node.files) {
+			if(ImGui::MenuItem(file.filename().c_str())) {
+				a.open_file(file);
 			}
-			for(fs::path& file : node.files) {
-				if(ImGui::MenuItem(file.filename().c_str())) {
-					a.open_file(file);
-				}
-			}
-			ImGui::EndMenu();
 		}
 	};
 	
