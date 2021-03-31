@@ -42,11 +42,6 @@ struct game_iso {
 	std::string md5;
 };
 
-struct model_list {
-	std::vector<moby_model>* models;
-	std::vector<texture>* textures;
-};
-
 class wrench_project {
 public:
 	wrench_project(app& a, fs::path dir);

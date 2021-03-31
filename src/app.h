@@ -37,6 +37,7 @@
 #include "fs_includes.h"
 #include "worker_logger.h"
 #include "formats/texture.h"
+#include "formats/game_model.h"
 #include "formats/level_impl.h"
 
 # /*
@@ -53,6 +54,11 @@ struct build_settings {
 	bool single_level = false; // Write out just a single level?
 	int single_level_index = -1; // If so, which one?
 	bool no_mpegs = false;
+};
+
+struct model_list {
+	std::vector<moby_model>* models;
+	std::vector<texture>* textures;
 };
 
 class app {
@@ -88,7 +94,8 @@ public:
 	const level* get_level() const;
 	
 	std::map<std::string, std::vector<texture>*> texture_lists();
-	std::map<std::string, model_list> model_lists() { return {}; }
+	std::map<std::string, model_list> model_lists();
+	
 private:
 	std::optional<level> _lvl;
 

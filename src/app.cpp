@@ -172,6 +172,15 @@ std::map<std::string, std::vector<texture>*> app::texture_lists() {
 	return result;
 }
 
+std::map<std::string, model_list> app::model_lists() {
+	std::map<std::string, model_list> result;
+	if(auto* lvl = get_level()) {
+		auto name = lvl->path.filename().string();
+		result[name + "/Mobies"] = { &lvl->moby_models, &lvl->moby_textures };
+	}
+	return result;
+}
+
 std::vector<float*> get_imgui_scale_parameters() {
 	ImGuiStyle& s = ImGui::GetStyle();
 	ImGuiIO& i = ImGui::GetIO();
