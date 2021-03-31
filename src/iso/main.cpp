@@ -24,7 +24,8 @@
 #include "table_of_contents.h"
 
 // This is true for R&C2, R&C3 and Deadlocked.
-static const uint32_t TABLE_OF_CONTENTS_LBA = 0x3e9;
+static const uint32_t SYSTEM_CNF_LBA = 1000;
+static const uint32_t TABLE_OF_CONTENTS_LBA = 1001;
 
 void ls(std::string iso_path);
 void extract(std::string iso_path, fs::path output_dir);
@@ -522,16 +523,43 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 	// Write out blank sectors that are to be filled in later.
 	iso.pad(SECTOR_SIZE, 0);
 	static const uint8_t zeroed_sector[SECTOR_SIZE] = {0};
-	while(iso.tell() < TABLE_OF_CONTENTS_LBA * SECTOR_SIZE + total_toc_size.bytes()) {
+	while(iso.tell() < SYSTEM_CNF_LBA * SECTOR_SIZE) {
 		iso.write_n((char*) zeroed_sector, SECTOR_SIZE);
 	}
 	
 	printf("LBA             Size (bytes)    Filename\n");
 	printf("---             ------------    --------\n");
 	
-	// Write out the files and fill in the ISO filesystem/ToC structures so they
-	// can be written out later.
+	// SYSTEM.CNF must come first at LBA 1000.
 	{
+		// Find SYSTEM.CNF
+		fs::path system_cnf_path;
+		for(fs::path path : fs::directory_iterator(input_dir)) {
+			if(str_to_lower(path.filename()) == "system.cnf") {
+				system_cnf_path = path;
+			}
+		}
+		if(system_cnf_path.empty()) {
+			fprintf(stderr, "error: No SYSTEM.CNF file in input directory!\n");
+			exit(1);
+		}
+		
+		file_stream system_cnf(system_cnf_path);
+		size_t system_cnf_size = system_cnf.size();
+		
+		iso_file_record record;
+		record.name = "system.cnf;1";
+		record.lba = {(uint32_t) (iso.tell() / SECTOR_SIZE)};
+		record.size = system_cnf_size;
+		root_dir.files.push_back(record);
+		
+		print_file_record(record);
+		
+		stream::copy_n(iso, system_cnf, system_cnf_size);
+	}
+	// Then the table of contents at LBA 1001.
+	{
+		iso.pad(SECTOR_SIZE, 0);
 		iso_file_record toc_record;
 		switch(game) {
 			case GAME_RAC1: toc_record.name = "rc1.hdr;1"; break;
@@ -545,8 +573,15 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		root_dir.files.push_back(toc_record);
 		print_file_record(toc_record);
 	}
-	// Enumerate various files e.g. SYSTEM.CNF, the boot ELF, etc.
+	// Write out blank sectors that are to be filled in by the table of contents later.
+	iso.pad(SECTOR_SIZE, 0);
+	assert(iso.tell() == TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
+	while(iso.tell() < TABLE_OF_CONTENTS_LBA * SECTOR_SIZE + total_toc_size.bytes()) {
+		iso.write_n((char*) zeroed_sector, SECTOR_SIZE);
+	}
+	// Then various other files e.g. the boot ELF, etc.
 	enumerate_non_wads_recursive(iso, root_dir, input_dir, 0);
+	// Then the global files e.g. MISC.WAD, MPEG.WAD, ARMOR.WAD, etc.
 	iso_directory global_dir {"global"};
 	for(global_file& global : global_files) {
 		file_stream file(global.path);
@@ -601,6 +636,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 			stream::copy_n(iso, file, record.size);
 		}
 	}
+	// Then the level files.
 	root_dir.subdirs.push_back(global_dir);
 	auto write_level_part = [&](iso_directory& parent, fs::path& path) {
 		file_stream file(path);
@@ -722,6 +758,12 @@ void enumerate_non_wads_recursive(stream& iso, iso_directory& out, fs::path dir,
 			if(name.find(".hdr") != std::string::npos) {
 				// We're writing out a new table of contents, so if an old one
 				// already exists we don't want to write it out.
+				continue;
+			}
+			
+			if(name.find("system.cnf") == 0) {
+				// SYSTEM.CNF must be written out at a fixed LBA so we handle
+				// it seperately.
 				continue;
 			}
 			
