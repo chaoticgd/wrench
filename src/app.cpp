@@ -120,7 +120,7 @@ void app::build_iso(build_settings settings) {
 }
 
 void app::open_file(fs::path path) {
-	file_stream file(path);
+	file_stream file(path.string());
 	
 	uint32_t magic = file.read<uint32_t>(0x0);
 	auto info = LEVEL_FILE_TYPES.find(magic);
