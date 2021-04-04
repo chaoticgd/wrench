@@ -670,6 +670,7 @@ void world_segment::write_rac23(array_stream& dest) {
 	if(thing_90_1s.size() > 0 || thing_90_2s.size() > 0 || thing_90_3s.size() > 0) {
 		dest.pad(0x40, 0);
 		header.unknown_90 = write_table(thing_90_1s, thing_90_2s, thing_90_3s);
+		dest.pad(0x40, 0);
 	} else {
 		header.unknown_90 = 0;
 	}
