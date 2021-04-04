@@ -413,7 +413,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 	// LBAs of all the files that come after it.
 	size_t global_toc_size_bytes = 0;
 	for(global_file& global : global_files) {
-		file_stream file(global.path);
+		file_stream file(global.path.string());
 		uint32_t size = file.read<uint32_t>();
 		if(size > 0xffff) {
 			fprintf(stderr, "error: File '%s' has a header size > 0xffff bytes.\n", global.path.filename().c_str());

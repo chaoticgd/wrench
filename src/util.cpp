@@ -83,7 +83,7 @@ int execute_command(std::string executable, std::vector<std::string> arguments) 
 #ifdef DECENT_OS
 	//
 #else
-	#warning *** COMPILING WITH INSECURE execute_command IMPLEMENTATION ***
+	printf("*** USING INSECURE execute_command IMPLEMENTATION ***\n");
 	
 	std::string command = executable;
 	for(std::string& arg : arguments) {

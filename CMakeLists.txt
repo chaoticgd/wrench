@@ -217,7 +217,7 @@ include_directories(thirdparty/json/single_include)
 if(WIN32)
 	add_library(nativefiledialog STATIC
 		thirdparty/nativefiledialog/src/nfd_common.c
-		thirdparty/nativefiledialog/src/nfd_win.c
+		thirdparty/nativefiledialog/src/nfd_win.cpp
 	)
 else()
 	add_library(nativefiledialog STATIC
