@@ -24,7 +24,7 @@ tcol::tcol(stream *backing, std::size_t base_offset)
 	_backing.name = "TCol";
 
 	int triangle_count = 0;
-	vec3f position_offset;
+	glm::vec3 position_offset;
 
 	// read header
 	auto header = _backing.peek<tcol_header>(0);
@@ -161,7 +161,7 @@ tcol::tcol(stream *backing, std::size_t base_offset)
 	}
 }
 
-void tcol::push_face(vec3f offset, tcol::tcol_face face, tcol::tcol_data data) {
+void tcol::push_face(glm::vec3 offset, tcol::tcol_face face, tcol::tcol_data data) {
 	auto v0 = data.vertices[face.v0] + offset;
 	auto v1 = data.vertices[face.v1] + offset;
 	auto v2 = data.vertices[face.v2] + offset;
@@ -191,6 +191,8 @@ void tcol::push_face(vec3f offset, tcol::tcol_face face, tcol::tcol_data data) {
 	}
 
 	auto color = get_collision_color(face.collision_id);
+	glm::vec3 normal = glm::normalize(glm::cross(v2 - v0, v1 - v0));
+	color -= fabs((normal.x + normal.y + normal.z) / 10.f);
 	int v_count = 3 + (face.is_quad ? 3 : 0);
 	for (int i = 0; i < v_count; ++i) {
 		_tcol_vertex_colors.push_back(color.x);
@@ -199,7 +201,7 @@ void tcol::push_face(vec3f offset, tcol::tcol_face face, tcol::tcol_data data) {
 	}
 }
 
-vec3f tcol::get_collision_color(uint8_t colId) {
+glm::vec3 tcol::get_collision_color(uint8_t colId) {
 	vec3f v;
 
 	// from https://github.com/RatchetModding/replanetizer/blob/ada7ca73418d7b01cc70eec58a41238986b84112/LibReplanetizer/Models/Collision.cs#L26
@@ -211,8 +213,8 @@ vec3f tcol::get_collision_color(uint8_t colId) {
 	return v;
 }
 
-vec3f tcol::unpack_vertex(uint32_t vertex) {
-	vec3f v;
+glm::vec3 tcol::unpack_vertex(uint32_t vertex) {
+	glm::vec3 v;
 
 	auto x = (int32_t)(vertex << 22) >> 22;
 	auto y = (int32_t)(vertex << 12) >> 22;
