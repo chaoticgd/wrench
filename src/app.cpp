@@ -46,7 +46,7 @@ void app::extract_iso(fs::path iso_path, fs::path dir) {
 	_lock_project = true;
 	directory = "";
 	
-	std::pair<std::string, std::string> in(iso_path, dir);
+	std::pair<std::string, std::string> in(iso_path.string(), dir.string());
 	
 	emplace_window<worker_thread<int, decltype(in)>>(
 		"Extract ISO", in,
@@ -85,14 +85,18 @@ void app::build_iso(build_settings settings) {
 		array_stream dest;
 		lvl->write(dest);
 		
-		file_stream file(lvl->path, std::ios::out);
+		file_stream file(lvl->path.string(), std::ios::out);
 		file.write_n(dest.buffer.data(), dest.buffer.size());
 	}
 	
 	emplace_window<worker_thread<int, build_settings>>(
 		"Build ISO", settings,
 		[](build_settings settings, worker_logger& log) {
-			std::vector<std::string> args = {"build", settings.input_dir, settings.output_iso};
+			std::vector<std::string> args = {
+				"build",
+				settings.input_dir.string(),
+				settings.output_iso.string()
+			};
 			if(settings.single_level) {
 				args.push_back("--single-level");
 				args.push_back(std::to_string(settings.single_level_index));
@@ -109,7 +113,7 @@ void app::build_iso(build_settings settings) {
 		[settings](int exit_code) {
 			if(exit_code == 0 && settings.launch_emulator) {
 				fs::path emu_path = config::get().emulator_path;
-				execute_command(emu_path, {settings.output_iso});
+				execute_command(emu_path.string(), {settings.output_iso.string()});
 			}
 		}
 	);

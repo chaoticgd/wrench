@@ -485,7 +485,7 @@ void gui::render_tree_menu(app& a) {
 	
 	std::function<void(project_tree_node&)> render_tree_node = [&](auto& node) {
 		for(project_tree_node& subdir : node.dirs) {
-			if(ImGui::BeginMenu(subdir.path.filename().c_str())) {
+			if(ImGui::BeginMenu(subdir.path.filename().string().c_str())) {
 				render_tree_node(subdir);
 				ImGui::EndMenu();
 			}
@@ -494,7 +494,7 @@ void gui::render_tree_menu(app& a) {
 			ImGui::Separator();
 		}
 		for(fs::path& file : node.files) {
-			if(ImGui::MenuItem(file.filename().c_str())) {
+			if(ImGui::MenuItem(file.filename().string().c_str())) {
 				a.open_file(file);
 			}
 		}

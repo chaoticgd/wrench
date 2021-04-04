@@ -35,10 +35,10 @@ void world_segment_test() {
 	
 	int happy = 0, sad = 0;
 	for(auto& iter : fs::directory_iterator(levels_dir)) {
-		file_stream lvl_file(iter.path());
+		file_stream lvl_file(iter.path().string());
 		
 		level lvl;
-		lvl.read(lvl_file, iter.path());
+		lvl.read(lvl_file, iter.path().string());
 		
 		array_stream original;
 		lvl.moby_stream()->seek(0);

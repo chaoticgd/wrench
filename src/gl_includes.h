@@ -45,4 +45,6 @@ struct gl_texture {
 	gl_texture& operator=(gl_texture&& rhs) { id = rhs.id; rhs.id = 0; return *this; }
 };
 
+#define M_PI 3.14159265358979323846
+
 #endif

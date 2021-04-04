@@ -230,7 +230,7 @@ void extract(std::string iso_path, fs::path output_dir) {
 		
 		printf(row_format, (size_t) table.header.base_offset.sectors, (size_t) file_size, name.c_str());
 		
-		file_stream output_file(path, std::ios::out);
+		file_stream output_file(path.string(), std::ios::out);
 		iso.seek(table.header.base_offset.bytes());
 		// This doesn't really matter, but I decided to make the LBA field
 		// of the extracted header be equal to the offset of where the data
@@ -447,7 +447,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 	
 	// After all the other files have been written out, write out an ISO
 	// filesystem at the beginning of the image.
-	file_stream iso(iso_path, std::ios::out);
+	file_stream iso(iso_path.string(), std::ios::out);
 	iso_directory root_dir;
 	uint32_t volume_size = 0;
 	defer([&]() {
@@ -534,7 +534,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		// Find SYSTEM.CNF
 		fs::path system_cnf_path;
 		for(fs::path path : fs::directory_iterator(input_dir)) {
-			if(str_to_lower(path.filename()) == "system.cnf") {
+			if(str_to_lower(path.filename().string()) == "system.cnf") {
 				system_cnf_path = path;
 			}
 		}
@@ -543,7 +543,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 			exit(1);
 		}
 		
-		file_stream system_cnf(system_cnf_path);
+		file_stream system_cnf(system_cnf_path.string());
 		size_t system_cnf_size = system_cnf.size();
 		
 		iso_file_record record;
@@ -583,7 +583,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 	// Then the global files e.g. MISC.WAD, MPEG.WAD, ARMOR.WAD, etc.
 	iso_directory global_dir {"global"};
 	for(global_file& global : global_files) {
-		file_stream file(global.path);
+		file_stream file(global.path.string());
 		sector32 data_offset = file.read<sector32>(0x4);
 		iso.pad(SECTOR_SIZE, 0);
 		
@@ -638,7 +638,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 	// Then the level files.
 	root_dir.subdirs.push_back(global_dir);
 	auto write_level_part = [&](iso_directory& parent, fs::path& path) {
-		file_stream file(path);
+		file_stream file(path.string());
 		sector32 data_offset = file.read<sector32>(0x4);
 		iso.pad(SECTOR_SIZE, 0);
 		
@@ -775,7 +775,7 @@ void enumerate_non_wads_recursive(stream& iso, iso_directory& out, fs::path dir,
 				continue;
 			}
 			
-			file_stream file(entry.path());
+			file_stream file(entry.path().string());
 			iso.pad(SECTOR_SIZE, 0);
 			
 			size_t file_size = file.size();
