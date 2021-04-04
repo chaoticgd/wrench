@@ -25,7 +25,9 @@
 #include <glm/glm.hpp>
 
 #include "../stream.h"
+#ifdef WRENCH_EDITOR
 #include "../gl_includes.h"
+#endif
 
 struct colour {
 	uint8_t r, g, b, a;
