@@ -35,7 +35,6 @@ add_executable(wrench
 	src/tools.cpp
 	src/icons.cpp
 	src/formats/wad.cpp
-	src/formats/racpak.cpp
 	src/formats/level_impl.cpp
 	src/formats/world.cpp
 	src/formats/texture.cpp
@@ -76,42 +75,6 @@ add_executable(wad
 	src/formats/wad.cpp
 )
 
-add_executable(scan
-	src/cli/scancli.cpp
-	src/command_line.cpp
-	src/util.cpp
-	src/stream.cpp
-	src/stacktrace.cpp
-	src/formats/wad.cpp
-	src/formats/texture.cpp
-	src/formats/fip.cpp
-	src/formats/bmp.cpp
-)
-
-add_executable(pakrac
-	src/cli/pakraccli.cpp
-	src/util.cpp
-	src/command_line.cpp
-	src/stream.cpp
-	src/stacktrace.cpp
-	src/formats/racpak.cpp
-	src/formats/wad.cpp
-	src/formats/texture.cpp
-	src/formats/fip.cpp
-	src/formats/bmp.cpp
-)
-
-add_executable(texturefinder
-	src/cli/texturefindercli.cpp
-	src/util.cpp
-	src/stream.cpp
-	src/stacktrace.cpp
-	src/command_line.cpp
-	src/formats/texture.cpp
-	src/formats/fip.cpp
-	src/formats/bmp.cpp
-)
-
 add_executable(vif
 	src/cli/vifcli.cpp
 	src/stream.cpp
@@ -143,8 +106,6 @@ if(UNIX)
 	target_compile_options(wrench PRIVATE -Wall -O3)
 	target_compile_options(fip PRIVATE -Wall -O3)
 	target_compile_options(wad PRIVATE -Wall -O3)
-	target_compile_options(pakrac PRIVATE -Wall -O3)
-	target_compile_options(texturefinder PRIVATE -Wall -O3)
 	target_compile_options(vif PRIVATE -Wall -O3)
 	target_compile_options(iso PRIVATE -Wall -O3)
 endif()
@@ -154,9 +115,6 @@ if(UNIX)
 	target_link_libraries(wrench stdc++fs)
 	target_link_libraries(fip stdc++fs)
 	target_link_libraries(wad stdc++fs)
-	target_link_libraries(scan stdc++fs)
-	target_link_libraries(pakrac stdc++fs)
-	target_link_libraries(texturefinder stdc++fs)
 	target_link_libraries(vif stdc++fs)
 	target_link_libraries(iso stdc++fs)
 endif()
@@ -166,9 +124,6 @@ add_subdirectory(thirdparty/cxxopts)
 target_link_libraries(wrench cxxopts)
 target_link_libraries(fip cxxopts)
 target_link_libraries(wad cxxopts)
-target_link_libraries(scan cxxopts)
-target_link_libraries(pakrac cxxopts)
-target_link_libraries(texturefinder cxxopts)
 target_link_libraries(vif cxxopts)
 target_link_libraries(iso cxxopts)
 
@@ -176,8 +131,6 @@ target_link_libraries(iso cxxopts)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 target_link_libraries(wrench Threads::Threads)
-target_link_libraries(scan Threads::Threads)
-target_link_libraries(pakrac Threads::Threads)
 target_link_libraries(wad Threads::Threads)
 
 # GLAD

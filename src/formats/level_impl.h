@@ -25,6 +25,7 @@
 
 #include "../util.h"
 #include "../stream.h"
+#include "../iso_stream.h"
 #include "../fs_includes.h"
 #include "../worker_logger.h"
 #include "../level_file_types.h"
@@ -32,7 +33,6 @@
 #include "wad.h"
 #include "tfrag.h"
 #include "tcol.h"
-#include "racpak.h"
 #include "texture.h"
 #include "game_model.h"
 #include "level_types.h"
