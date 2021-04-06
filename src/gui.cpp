@@ -169,7 +169,7 @@ float gui::render_menu_bar(app& a) {
 		if(ImGui::Button("Browse")) {
 			nfdresult_t result;
 			nfdchar_t* path;
-			const char* work_dir = (fs::current_path().string() + "/").c_str();
+			const char* work_dir = fs::current_path().string().c_str();
 			switch(type) {
 				case file_dialog_type::OPEN: result = NFD_OpenDialog("iso", work_dir, &path); break;
 				case file_dialog_type::SAVE: result = NFD_SaveDialog("iso", work_dir, &path); break;
