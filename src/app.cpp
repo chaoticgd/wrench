@@ -38,6 +38,12 @@ void after_directory_loaded(app& a) {
 	}
 }
 
+#ifdef _WIN32
+	const char* ISO_UTILITY_PATH = ".\\bin\\iso";
+#else
+	const char* ISO_UTILITY_PATH = "./bin/iso";
+#endif
+
 void app::extract_iso(fs::path iso_path, fs::path dir) {
 	if(_lock_project) {
 		return;
@@ -52,7 +58,7 @@ void app::extract_iso(fs::path iso_path, fs::path dir) {
 		"Extract ISO", in,
 		[](std::pair<std::string, std::string> in, worker_logger& log) {
 			std::vector<std::string> args = {"extract", in.first, in.second};
-			int exit_code = execute_command("bin/iso", args);
+			int exit_code = execute_command(ISO_UTILITY_PATH, args);
 			if(exit_code != 0) {
 				log << "\nFailed to extract files from ISO file!\n";
 			}
@@ -104,7 +110,7 @@ void app::build_iso(build_settings settings) {
 			if(settings.no_mpegs) {
 				args.push_back("--no-mpegs");
 			}
-			int exit_code = execute_command("bin/iso", args);
+			int exit_code = execute_command(ISO_UTILITY_PATH, args);
 			if(exit_code != 0) {
 				log << "\nFailed to build ISO file!\n";
 			}
