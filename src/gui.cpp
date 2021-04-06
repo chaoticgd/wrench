@@ -169,11 +169,10 @@ float gui::render_menu_bar(app& a) {
 		if(ImGui::Button("Browse")) {
 			nfdresult_t result;
 			nfdchar_t* path;
-			const char* work_dir = fs::current_path().string().c_str();
 			switch(type) {
-				case file_dialog_type::OPEN: result = NFD_OpenDialog("iso", work_dir, &path); break;
-				case file_dialog_type::SAVE: result = NFD_SaveDialog("iso", work_dir, &path); break;
-				case file_dialog_type::DIR: result = NFD_PickFolder(work_dir, &path); break;
+				case file_dialog_type::OPEN: result = NFD_OpenDialog("iso", nullptr, &path); break;
+				case file_dialog_type::SAVE: result = NFD_SaveDialog("iso", nullptr, &path); break;
+				case file_dialog_type::DIR: result = NFD_PickFolder(nullptr, &path); break;
 			}
 			if(result == NFD_OKAY) {
 				*dest = std::string(path);
@@ -566,14 +565,12 @@ void gui::start_screen::render(app& a) {
 	start_pos.y = ceilf(start_pos.y);
 	ImGui::SetCursorPos(start_pos);
 	
-	const char* work_dir = (fs::current_path().string() + "/").c_str();
-	
 	ImVec2 icon_size(START_SCREEN_ICON_SIDE, START_SCREEN_ICON_SIDE);
 	if(button("Extract ISO", (void*) (intptr_t) dvd.id, icon_size)) {
 		nfdchar_t* in_path;
-		if(NFD_OpenDialog("iso", work_dir, &in_path) == NFD_OKAY) {
+		if(NFD_OpenDialog("iso", nullptr, &in_path) == NFD_OKAY) {
 			nfdchar_t* out_path;
-			if(NFD_PickFolder(work_dir, &out_path) == NFD_OKAY) {
+			if(NFD_PickFolder(nullptr, &out_path) == NFD_OKAY) {
 				a.extract_iso(in_path, out_path);
 				free(out_path);
 			}
@@ -583,7 +580,7 @@ void gui::start_screen::render(app& a) {
 	ImGui::SameLine();
 	if(button("Open Dir", (void*) (intptr_t) folder.id, icon_size)) {
 		nfdchar_t* path;
-		if(NFD_PickFolder(work_dir, &path) == NFD_OKAY) {
+		if(NFD_PickFolder(nullptr, &path) == NFD_OKAY) {
 			a.open_directory(path);
 			free(path);
 		}
@@ -591,9 +588,9 @@ void gui::start_screen::render(app& a) {
 	ImGui::SameLine();
 	if(button("Build ISO", (void*) (intptr_t) floppy.id, icon_size)) {
 		nfdchar_t* in_path;
-		if(NFD_PickFolder(work_dir, &in_path) == NFD_OKAY) {
+		if(NFD_PickFolder(nullptr, &in_path) == NFD_OKAY) {
 			nfdchar_t* out_path;
-			if(NFD_SaveDialog("iso", work_dir, &out_path) == NFD_OKAY) {
+			if(NFD_SaveDialog("iso", nullptr, &out_path) == NFD_OKAY) {
 				a.build_iso({in_path, out_path});
 				free(out_path);
 			}
