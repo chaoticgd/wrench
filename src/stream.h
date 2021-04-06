@@ -98,6 +98,16 @@ packed_struct(sector32,
 	}
 )
 
+packed_struct(sector_range,
+	sector32 offset;
+	sector32 size;
+)
+
+packed_struct(byte_range,
+	uint32_t offset;
+	uint32_t size;
+)
+
 struct stream_error : public std::runtime_error {
 	stream_error(const char* what)
 		: std::runtime_error(what) {

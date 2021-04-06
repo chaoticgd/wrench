@@ -19,6 +19,7 @@
 #include "gui.h"
 
 #include <cmath>
+#include <nfd.h>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
@@ -27,6 +28,7 @@
 #include <functional>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "icons.h"
 #include "util.h"
 #include "config.h"
 #include "window.h"
@@ -93,8 +95,11 @@ void gui::create_dock_layout(const app& a) {
 	ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
 	ImGui::DockBuilderSetNodeSize(dockspace_id, ImVec2(1.f, 1.f));
 
-	ImGuiID centre, right;
-	ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 8.f / 10.f, &centre, &right);
+	ImGuiID left_centre, right;
+	ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 8.f / 10.f, &left_centre, &right);
+	
+	ImGuiID left, centre;
+	ImGui::DockBuilderSplitNode(left_centre, ImGuiDir_Left, 2.f / 10.f, &left, &centre);
 	
 	ImGuiID inspector, middle_right;
 	ImGui::DockBuilderSplitNode(right, ImGuiDir_Up, 1.f / 2.f, &inspector, &middle_right);
@@ -102,6 +107,8 @@ void gui::create_dock_layout(const app& a) {
 	ImGuiID mobies, viewport_info;
 	ImGui::DockBuilderSplitNode(middle_right, ImGuiDir_Up, 1.f / 2.f, &mobies, &viewport_info);
 	
+	ImGui::DockBuilderDockWindow("Project Tree", left);
+	ImGui::DockBuilderDockWindow("Start Screen", centre);
 	ImGui::DockBuilderDockWindow("3D View", centre);
 	ImGui::DockBuilderDockWindow("Texture Browser", centre);
 	ImGui::DockBuilderDockWindow("Model Browser", centre);
@@ -144,94 +151,121 @@ void gui::begin_docking() {
 }
 
 float gui::render_menu_bar(app& a) {
-	//bool save_in_place = false;
-	//static prompt_box save_as_box("Save As", "Enter New Path");
-	
 	static alert_box message_box("Information");
 	message_box.render();
 	
-	static prompt_box import_level_box("Import Level");
-	if(auto path = import_level_box.render()) {
-		if(level* old_lvl = a.get_level()) {
-			try {
-				file_stream file(*path);
-				toc_level index = old_lvl->index;
-				sector32 base_offset = old_lvl->file_header.base_offset;
-				level new_lvl;
-				new_lvl.read(&file, index, 0, base_offset, sector32{0}, file.size());
-				*old_lvl = std::move(new_lvl);
-				a.get_project()->clear_undo_history();
-			} catch(stream_error&) {
-				message_box.open("Import failed!");
-			}
-		}
-	}
+	enum class file_dialog_type {
+		OPEN, SAVE, DIR
+	};
 	
-	static prompt_box export_level_box("Export Level");
-	if(auto path = export_level_box.render()) {
-		if(level* lvl = a.get_level()) {
-			try {
-				array_stream dest;
-				lvl->write(dest);
-				
-				file_stream file(*path, std::ios::out);
-				file.write_n(dest.buffer.data(), dest.buffer.size());
-			} catch(stream_error&) {
-				message_box.open("Export failed!");
+	auto input_path = [](const char* label, std::string* dest, file_dialog_type type) {
+		ImGui::PushID(label);
+		if(strlen(label) > 0) {
+			ImGui::Text("%s", label);
+			ImGui::SameLine();
+		}
+		ImGui::InputText("##input", dest);
+		ImGui::SameLine();
+		if(ImGui::Button("Browse")) {
+			nfdresult_t result;
+			nfdchar_t* path;
+			switch(type) {
+				case file_dialog_type::OPEN: result = NFD_OpenDialog("iso", nullptr, &path); break;
+				case file_dialog_type::SAVE: result = NFD_SaveDialog("iso", nullptr, &path); break;
+				case file_dialog_type::DIR: result = NFD_PickFolder(nullptr, &path); break;
+			}
+			if(result == NFD_OKAY) {
+				*dest = std::string(path);
+				free(path);
 			}
 		}
-	}
+		ImGui::PopID();
+	};
 	
 	ImGui::BeginMainMenuBar();
 	if(ImGui::BeginMenu("File")) {
-		if(ImGui::BeginMenu("New")) {
-			if(config::get().game_isos.size() == 0) {
-				ImGui::Text("You must import your games before creating a new project (Windows->Settings).");
-			}
-			for(const game_iso& game : config::get().game_isos) {
-				if(ImGui::MenuItem(game.path.c_str())) {
-					a.new_project(game);
-				}
+		if(ImGui::BeginMenu("Extract ISO")) {
+			static std::string input_iso;
+			static std::string output_dir;
+			input_path("Input ISO       ", &input_iso, file_dialog_type::OPEN);
+			input_path("Output Directory", &output_dir, file_dialog_type::DIR);
+			if(ImGui::Button("Extract")) {
+				a.extract_iso(input_iso, output_dir);
+				input_iso = "";
+				output_dir = "";
 			}
 			ImGui::EndMenu();
 		}
-		// This let you open/save a list of binary patches using the old
-		// patching system. Since I'm phasing that out, I've disabled the
-		// options to open/save projects as this would just confuse users.
-		//if(ImGui::MenuItem("Open")) {
-		//	auto dialog = a.emplace_window<file_dialog>
-		//		("Open Project (.wrench)", file_dialog::open, std::vector<std::string> { ".wrench" });
-		//	dialog->on_okay([&a](std::string path) {
-		//		a.open_project(path);
-		//	});
-		//}
-		//if(ImGui::MenuItem("Save")) {
-		//	save_in_place = true;
-		//}
-		//if(ImGui::MenuItem("Save As")) {
-		//	save_as_box.open();
-		//}
-		if(ImGui::BeginMenu("Import")) {
-			if(!a.get_project()) {
-				ImGui::Text("You must create a new project (File->New) before importing a level.");
+		if(ImGui::BeginMenu("Open Directory")) {
+			static std::string dir;
+			input_path("", &dir, file_dialog_type::DIR);
+			if(ImGui::Button("Open")) {
+				a.open_directory(dir);
+				dir = "";
 			}
-			else if(a.get_level()) {
-				if(ImGui::MenuItem("Level WAD")) {
-					import_level_box.open();
+			ImGui::EndMenu();
+		}
+		if(ImGui::BeginMenu("Build ISO")) {
+			static bool build_from_custom_dir = false;
+			static std::string custom_input_dir;
+			
+			static bool build_to_custom_path = false;
+			static std::string custom_output_iso;
+			
+			static bool launch_emulator = false;
+			
+			static bool single_level = false;
+			static int single_level_index = 0;
+			
+			static bool no_mpegs = false;
+			
+			ImGui::Checkbox("Custom Input Directory", &build_from_custom_dir);
+			if(build_from_custom_dir) {
+				input_path("Input Directory", &custom_input_dir, file_dialog_type::DIR);
+			}
+			
+			ImGui::Checkbox("Custom Output Path", &build_to_custom_path);
+			if(build_to_custom_path) {
+				input_path("Output ISO     ", &custom_output_iso, file_dialog_type::SAVE);
+			}
+			
+			ImGui::Checkbox("Launch emulator after building", &launch_emulator);
+			
+			ImGui::Checkbox("Only write out single level (much faster)", &single_level);
+			if(single_level) {
+				ImGui::InputInt("Single Level Index", &single_level_index);
+			}
+			
+			ImGui::Checkbox("Skip writing out MPEG cutscenes (much faster)", &no_mpegs);
+			
+			if(((!build_from_custom_dir || !build_to_custom_path) && a.directory.empty())) {
+				ImGui::TextWrapped("No directory open!\n");
+			} else if(ImGui::Button("Build")) {
+				build_settings settings;
+				if(build_from_custom_dir) {
+					settings.input_dir = custom_input_dir;
+				} else {
+					settings.input_dir = a.directory;
 				}
-			} else {
-				ImGui::Text("You must open the level you want to replace (Levels->...) before importing another one.");
+				
+				std::string output_iso;
+				if(build_to_custom_path) {
+					settings.output_iso = custom_output_iso;
+				} else {
+					settings.output_iso = a.directory / "build.iso";
+				}
+				
+				settings.launch_emulator = launch_emulator;
+				settings.single_level = single_level;
+				settings.single_level_index = single_level_index;
+				settings.no_mpegs = no_mpegs;
+				
+				a.build_iso(settings);
 			}
 			ImGui::EndMenu();
 		}
 		if(ImGui::BeginMenu("Export")) {
-			if(!a.get_project()) {
-				ImGui::Text("You must create a new project (File->New) before exporting a level.");
-			}
 			if(level* lvl = a.get_level()) {
-				if(ImGui::MenuItem("Level WAD")) {
-					export_level_box.open();
-				}
 				if(ImGui::MenuItem("Mobyseg (debug)")) {
 					file_stream dump_file("mobyseg.bin", std::ios::out | std::ios::trunc);
 					stream* src = lvl->moby_stream();
@@ -269,46 +303,29 @@ float gui::render_menu_bar(app& a) {
 	
 	static alert_box save_error_box("Error Saving Project");
 	
-	//if(auto project = a.get_project()) {
-	//	auto save_as_new_path = save_as_box.render();
-	//	if(save_as_new_path) {
-	//		project->set_project_path(*save_as_new_path);
-	//	}
-	//	if(save_as_new_path || save_in_place) {
-	//		try {
-	//			project->save();
-	//			auto window_title = std::string("Wrench Editor - [") + project->project_path() + "]";
-	//			glfwSetWindowTitle(a.glfw_window, window_title.c_str());
-	//		} catch(stream_error& err) {
-	//			std::stringstream error_message;
-	//			error_message << err.what() << "\n";
-	//			error_message << err.stack_trace;
-	//			save_error_box.open(error_message.str());
-	//		}
-	//	}
-	//}
-	
 	static alert_box undo_error_box("Undo Error");
 	static alert_box redo_error_box("Redo Error");
 	undo_error_box.render();
 	redo_error_box.render();
 	
 	if(ImGui::BeginMenu("Edit")) {
-		if(auto project = a.get_project()) {
+		if(auto lvl = a.get_level()) {
 			if(ImGui::MenuItem("Undo")) {
 				try {
-					project->undo();
+					lvl->undo();
 				} catch(command_error& error) {
 					undo_error_box.open(error.what());
 				}
 			}
 			if(ImGui::MenuItem("Redo")) {
 				try {
-					project->redo();
+					lvl->redo();
 				} catch(command_error& error) {
 					redo_error_box.open(error.what());
 				}
 			}
+		} else {
+			ImGui::Text("<no level>");
 		}
 		ImGui::EndMenu();
 	}
@@ -343,76 +360,13 @@ float gui::render_menu_bar(app& a) {
 	static alert_box emu_error_box("Error");
 	emu_error_box.render();
 	
-	if(ImGui::BeginMenu("Emulator")) {
-		if(ImGui::MenuItem("Run")) {
-			if(auto project = a.get_project()) {
-				if(auto lvl = a.get_level()) {
-					// Write out the level and ToC header.
-					lvl->write_back(&project->iso);
-				}
-				
-				// Recompress WAD segments still using the old patching system.
-				project->iso.commit();
-				
-				if(fs::is_regular_file(config::get().emulator_path)) {
-					std::string emulator_path = fs::canonical(config::get().emulator_path).string();
-					std::string cmd = emulator_path + " " + project->cached_iso_path();
-					int result = system(cmd.c_str());
-					if(result != 0) {
-						emu_error_box.open("Failed to execute shell command.");
-					}
-				} else {
-					emu_error_box.open("Invalid emulator path.");
-				}
-			} else {
-				emu_error_box.open("No project open.");
-			}
-		}
+	if(ImGui::BeginMenu("Tree")) {
+		render_tree_menu(a);
 		ImGui::EndMenu();
 	}
 	
-	static const int level_list_rows = 20;
-	
-	if(auto project = a.get_project()) {
-		auto& levels = project->toc.levels;
-		int columns = (int) std::ceil(levels.size() / (float) level_list_rows);
-		ImGui::SetNextWindowContentSize(ImVec2(columns * 192, 0.f));
-		if(ImGui::BeginMenu("Levels")) {
-			const std::map<std::size_t, std::string>* level_names = nullptr;
-			for(const gamedb_game& game : a.game_db) {
-				if(game.name == project->game.game_db_entry) {
-					level_names = &game.levels;
-				}
-			}
-			
-			ImGui::Columns(columns);
-			for(std::size_t i = 0; i < levels.size(); i++) {
-				std::stringstream label;
-				label << std::setfill('0') << std::setw(2) << i;
-				if(level_names != nullptr && level_names->find(i) != level_names->end()) {
-					label << " " << level_names->at(i);
-				}
-				if(ImGui::MenuItem(label.str().c_str())) {
-					project->open_level(i);
-					a.renderer.reset_camera(&a);
-				}
-				if(i % level_list_rows == level_list_rows - 1) {
-					ImGui::SetColumnWidth(i / level_list_rows, 192); // Make the columns non-resizable.
-					ImGui::NextColumn();
-				}
-			}
-			ImGui::Columns();
-			ImGui::EndMenu();
-		}
-	} else {
-		// If no project is open, draw a dummy menu.
-		if(ImGui::BeginMenu("Levels")) {
-			ImGui::EndMenu();
-		}
-	}
-
-	ImGui::SetNextWindowContentSize(ImVec2(0.f, 0.f)); // Reset the menu width after the "Levels" menu made it larger.
 	if(ImGui::BeginMenu("Windows")) {
+		render_menu_bar_window_toggle<start_screen>(a);
 		render_menu_bar_window_toggle<view_3d>(a);
 		render_menu_bar_window_toggle<moby_list>(a);
 		render_menu_bar_window_toggle<inspector>(a);
@@ -424,7 +378,6 @@ float gui::render_menu_bar(app& a) {
 		render_menu_bar_window_toggle<document_viewer>(a, "index.md");
 		ImGui::Separator();
 		if(ImGui::BeginMenu("Debug Tools")) {
-			render_menu_bar_window_toggle<manual_patcher>(a);
 			render_menu_bar_window_toggle<stream_viewer>(a);
 			ImGui::EndMenu();
 		}
@@ -466,9 +419,9 @@ float gui::render_menu_bar(app& a) {
 				" - glm: https://github.com/g-truc/glm (Happy Bunny/MIT)\n"
 				" - imgui: https://github.com/ocornut/imgui (MIT)\n"
 				" - imgui_markdown: https://github.com/juliettef/imgui_markdown (zlib)\n"
+				" - nativefiledialog: https://github.com/mlabbe/nativefiledialog (zlib)\n"
 				" - nlohmann json: https://github.com/nlohmann/json (MIT)\n"
 				" - toml11: https://github.com/ToruNiina/toml11 (MIT)\n"
-				" - ZipLib: https://bitbucket.org/wbenny/ziplib/wiki/Home (zlib)\n"
 				" - MD5 implementation by Colin Plumb\n"
 			);
 		}
@@ -522,6 +475,178 @@ void gui::render_tools(app& a, float menu_bar_height) {
 	ImGui::End();
 }
 
+void gui::render_tree_menu(app& a) {
+	struct project_tree_node {
+		fs::path path;
+		std::vector<project_tree_node> dirs;
+		std::vector<fs::path> files;
+	};
+	
+	std::function<void(project_tree_node&)> render_tree_node = [&](auto& node) {
+		for(project_tree_node& subdir : node.dirs) {
+			if(ImGui::BeginMenu(subdir.path.filename().string().c_str())) {
+				render_tree_node(subdir);
+				ImGui::EndMenu();
+			}
+		}
+		if(node.dirs.size() > 0 && node.files.size() > 0) {
+			ImGui::Separator();
+		}
+		for(fs::path& file : node.files) {
+			if(ImGui::MenuItem(file.filename().string().c_str())) {
+				a.open_file(file);
+			}
+		}
+	};
+	
+	using reload_fun = std::function<void(int&, project_tree_node&, fs::path, int)>;
+	reload_fun reload = [&](int& files, auto& dest, auto path, int depth) {
+		dest.path = path;
+		if(depth > 8) {
+			fprintf(stderr, "warning: Directory depth exceeds 8!\n");
+			return;
+		}
+		for(auto& file : fs::directory_iterator(path)) {
+			if(file.is_directory()) {
+				project_tree_node node;
+				reload(files, node, file, depth + 1);
+				dest.dirs.push_back(node);
+			} else if(file.is_regular_file()) {
+				if(files > 10000) {
+					fprintf(stderr, "warning: More than 10000 files in directory!\n");
+				}
+				files++;
+				dest.files.push_back(file);
+			}
+		}
+		std::sort(dest.dirs.begin(), dest.dirs.end(),
+			[](auto& l, auto& r) { return l.path < r.path; });
+		std::sort(dest.files.begin(), dest.files.end());
+	};
+	
+	static project_tree_node project_dir;
+	if(!a.directory.empty()) {
+		if((a.directory != project_dir.path) | ImGui::MenuItem("Reload")) {
+			int files = 0;
+			project_tree_node new_project_dir;
+			reload(files, new_project_dir, a.directory, 0);
+			project_dir = new_project_dir;
+		}
+		ImGui::Separator();
+		render_tree_node(project_dir);
+	} else {
+		ImGui::Text("<no directory open>");
+	}
+}
+
+/*
+	start_screen
+*/
+
+gui::start_screen::start_screen()
+	: dvd(create_dvd_icon()),
+	  folder(create_folder_icon()),
+	  floppy(create_floppy_icon()) {}
+
+const char* gui::start_screen::title_text() const {
+	return "Start Screen";
+}
+
+ImVec2 gui::start_screen::initial_size() const {
+	return ImVec2(800, 600);
+}
+
+void gui::start_screen::render(app& a) {
+	static ImVec2 content_size(0, 0);
+	
+	ImVec2 start_pos(ImGui::GetWindowSize() / 2 - content_size / 2);
+	// Fix horrible artifacting with the icons.
+	start_pos.x = ceilf(start_pos.x);
+	start_pos.y = ceilf(start_pos.y);
+	ImGui::SetCursorPos(start_pos);
+	
+	ImVec2 icon_size(START_SCREEN_ICON_SIDE, START_SCREEN_ICON_SIDE);
+	if(button("Extract ISO", (void*) (intptr_t) dvd.id, icon_size)) {
+		nfdchar_t* in_path;
+		if(NFD_OpenDialog("iso", nullptr, &in_path) == NFD_OKAY) {
+			nfdchar_t* out_path;
+			if(NFD_PickFolder(nullptr, &out_path) == NFD_OKAY) {
+				a.extract_iso(in_path, out_path);
+				free(out_path);
+			}
+			free(in_path);
+		}
+	}
+	ImGui::SameLine();
+	if(button("Open Dir", (void*) (intptr_t) folder.id, icon_size)) {
+		nfdchar_t* path;
+		if(NFD_PickFolder(nullptr, &path) == NFD_OKAY) {
+			a.open_directory(path);
+			free(path);
+		}
+	}
+	ImGui::SameLine();
+	if(button("Build ISO", (void*) (intptr_t) floppy.id, icon_size)) {
+		nfdchar_t* in_path;
+		if(NFD_PickFolder(nullptr, &in_path) == NFD_OKAY) {
+			nfdchar_t* out_path;
+			if(NFD_SaveDialog("iso", nullptr, &out_path) == NFD_OKAY) {
+				a.build_iso({in_path, out_path});
+				free(out_path);
+			}
+			free(in_path);
+		}
+	}
+	ImGui::SameLine();
+	
+	if(content_size.y == 0) {
+		ImVec2 end_pos = ImGui::GetCursorPos();
+		content_size = end_pos - start_pos;
+		content_size.y += 110; // Hack the get it vertically centred.
+	}
+}
+
+// Adapted from ImGui::ImageButton.
+bool gui::start_screen::button(const char* str, ImTextureID user_texture_id, const ImVec2& icon_size) const {
+	ImVec4 bg_col(0, 0, 0, 0);
+	
+	ImGuiContext& g = *GImGui;
+	ImGuiWindow* window = ImGui::GetCurrentWindow();
+	if(window->SkipItems) {
+		return false;
+	}
+	
+	// Default to using texture ID as ID. User can still push string/integer prefixes.
+	ImGui::PushID((void*)(intptr_t)user_texture_id);
+	const ImGuiID id = window->GetID("#image");
+	ImGui::PopID();
+	
+	const ImVec2 size(128, 128);
+	const ImVec2 padding(8, 6);
+	const ImRect bb(window->DC.CursorPos, window->DC.CursorPos + size);
+	ImGui::ItemSize(bb);
+	if(!ImGui::ItemAdd(bb, id)) {
+		return false;
+	}
+	const ImVec2 icon_mid((bb.Min.x + bb.Max.x) / 2, bb.Min.y + padding.y + icon_size.y / 2);
+	
+	bool hovered, held;
+	bool pressed = ImGui::ButtonBehavior(bb, id, &hovered, &held);
+	
+	// Render
+	const ImU32 col = (held && hovered) ? ImGui::GetColorU32(ImGuiCol_ButtonActive) : hovered ? ImGui::GetColorU32(ImGuiCol_ButtonHovered) : 0;
+	ImGui::RenderNavHighlight(bb, id);
+	ImGui::RenderFrame(bb.Min, bb.Max, col, true, ImClamp((float)ImMin(padding.x, padding.y), 0.0f, g.Style.FrameRounding));
+	window->DrawList->AddRectFilled(bb.Min, bb.Max, ImGui::GetColorU32(bg_col));
+	window->DrawList->AddImage(user_texture_id, icon_mid - icon_size / 2, icon_mid + icon_size / 2);
+	
+	float text_size = ImGui::GetFontSize() * (strlen(str) + 1) / 2;
+	ImVec2 text_mid(icon_mid.x - text_size / 2, bb.Max.y - padding.y - ImGui::GetFontSize());
+	window->DrawList->AddText(text_mid, 0xffffffff, str);
+	
+	return pressed;
+}
+
 /*
 	inspector
 */
@@ -535,9 +660,9 @@ ImVec2 gui::inspector::initial_size() const {
 }
 
 template <typename T_field, typename T_entity>
-void inspector_input_scalar(wrench_project& proj, const char* label, T_field T_entity::*field);
+void inspector_input_scalar(level& lvl, const char* label, T_field T_entity::*field);
 template <typename T_lane, typename T_field, typename T_entity>
-void inspector_input(wrench_project& proj, const char* label, T_field T_entity::*field, std::size_t first_lane, int lane_count);
+void inspector_input(level& lvl, const char* label, T_field T_entity::*field, std::size_t first_lane, int lane_count);
 struct inspector_text_lane {
 	std::string str;
 	bool changed = false;
@@ -549,9 +674,7 @@ void gui::inspector::render(app& a) {
 		ImGui::Text("<no level>");
 		return;
 	}
-	
-	wrench_project& proj = *a.get_project();
-	level& lvl = *proj.selected_level();
+	level& lvl = *a.get_level();
 	
 	bool selection_empty = true;
 	lvl.for_each<entity>([&](entity& ent) {
@@ -565,61 +688,61 @@ void gui::inspector::render(app& a) {
 		return;
 	}
 	
-	inspector_input<float>(proj, "Mat I ", &matrix_entity::local_to_world, 0, 4);
-	inspector_input<float>(proj, "Mat J ", &matrix_entity::local_to_world, 4, 4);
-	inspector_input<float>(proj, "Mat K ", &matrix_entity::local_to_world, 8, 4);
-	inspector_input<float>(proj, "Mat T ", &matrix_entity::local_to_world, 12, 4);
-	inspector_input<float>(proj, "Pos   ", &euler_entity::position, 0, 3);
-	inspector_input<float>(proj, "Rot   ", &euler_entity::rotation, 0, 3);
-	inspector_input_scalar(proj, "Unk 0 ", &tie_entity::unknown_0);
-	inspector_input_scalar(proj, "Unk 4 ", &tie_entity::unknown_4);
-	inspector_input_scalar(proj, "Unk 8 ", &tie_entity::unknown_8);
-	inspector_input_scalar(proj, "Unk c ", &tie_entity::unknown_c);
-	inspector_input_scalar(proj, "Unk 50", &tie_entity::unknown_50);
-	inspector_input_scalar(proj, "UID   ", &tie_entity::uid);
-	inspector_input_scalar(proj, "Unk 58", &tie_entity::unknown_58);
-	inspector_input_scalar(proj, "Unk 5c", &tie_entity::unknown_5c);
-	inspector_input_scalar(proj, "Unk 0 ", &shrub_entity::unknown_0);
-	inspector_input_scalar(proj, "Unk 4 ", &shrub_entity::unknown_4);
-	inspector_input_scalar(proj, "Unk 8 ", &shrub_entity::unknown_8);
-	inspector_input_scalar(proj, "Unk c ", &shrub_entity::unknown_c);
-	inspector_input_scalar(proj, "Unk 50", &shrub_entity::unknown_50);
-	inspector_input_scalar(proj, "Unk 54", &shrub_entity::unknown_54);
-	inspector_input_scalar(proj, "Unk 58", &shrub_entity::unknown_58);
-	inspector_input_scalar(proj, "Unk 5c", &shrub_entity::unknown_5c);
-	inspector_input_scalar(proj, "Unk 60", &shrub_entity::unknown_60);
-	inspector_input_scalar(proj, "Unk 64", &shrub_entity::unknown_64);
-	inspector_input_scalar(proj, "Unk 68", &shrub_entity::unknown_68);
-	inspector_input_scalar(proj, "Unk 6c", &shrub_entity::unknown_6c);
-	inspector_input_scalar(proj, "Size  ", &moby_entity::size);
-	inspector_input_scalar(proj, "Unk 4 ", &moby_entity::unknown_4);
-	inspector_input_scalar(proj, "Unk 8 ", &moby_entity::unknown_8);
-	inspector_input_scalar(proj, "Unk c ", &moby_entity::unknown_c);
-	inspector_input_scalar(proj, "UID   ", &moby_entity::uid);
-	inspector_input_scalar(proj, "Unk 14", &moby_entity::unknown_14);
-	inspector_input_scalar(proj, "Unk 18", &moby_entity::unknown_18);
-	inspector_input_scalar(proj, "Unk 1c", &moby_entity::unknown_1c);
-	inspector_input_scalar(proj, "Unk 20", &moby_entity::unknown_20);
-	inspector_input_scalar(proj, "Unk 24", &moby_entity::unknown_24);
-	inspector_input_scalar(proj, "Class ", &moby_entity::class_num);
-	inspector_input_scalar(proj, "Scale ", &moby_entity::scale);
-	inspector_input_scalar(proj, "Unk 30", &moby_entity::unknown_30);
-	inspector_input_scalar(proj, "Unk 34", &moby_entity::unknown_34);
-	inspector_input_scalar(proj, "Unk 38", &moby_entity::unknown_38);
-	inspector_input_scalar(proj, "Unk 3c", &moby_entity::unknown_3c);
-	inspector_input_scalar(proj, "Unk 58", &moby_entity::unknown_58);
-	inspector_input_scalar(proj, "Unk 5c", &moby_entity::unknown_5c);
-	inspector_input_scalar(proj, "Unk 60", &moby_entity::unknown_60);
-	inspector_input_scalar(proj, "Unk 64", &moby_entity::unknown_64);
-	inspector_input_scalar(proj, "Pvar #", &moby_entity::pvar_index);
-	inspector_input_scalar(proj, "Unk 6c", &moby_entity::unknown_6c);
-	inspector_input_scalar(proj, "Unk 70", &moby_entity::unknown_70);
-	inspector_input_scalar(proj, "Unk 74", &moby_entity::unknown_74);
-	inspector_input_scalar(proj, "Unk 78", &moby_entity::unknown_78);
-	inspector_input_scalar(proj, "Unk 7c", &moby_entity::unknown_7c);
-	inspector_input_scalar(proj, "Unk 80", &moby_entity::unknown_80);
-	inspector_input_scalar(proj, "Unk 84", &moby_entity::unknown_84);
-	inspector_input<float>(proj, "Point ", &grindrail_spline_entity::special_point, 0, 4);
+	inspector_input<float>(lvl, "Mat I ", &matrix_entity::local_to_world, 0, 4);
+	inspector_input<float>(lvl, "Mat J ", &matrix_entity::local_to_world, 4, 4);
+	inspector_input<float>(lvl, "Mat K ", &matrix_entity::local_to_world, 8, 4);
+	inspector_input<float>(lvl, "Mat T ", &matrix_entity::local_to_world, 12, 4);
+	inspector_input<float>(lvl, "Pos   ", &euler_entity::position, 0, 3);
+	inspector_input<float>(lvl, "Rot   ", &euler_entity::rotation, 0, 3);
+	inspector_input_scalar(lvl, "Unk 0 ", &tie_entity::unknown_0);
+	inspector_input_scalar(lvl, "Unk 4 ", &tie_entity::unknown_4);
+	inspector_input_scalar(lvl, "Unk 8 ", &tie_entity::unknown_8);
+	inspector_input_scalar(lvl, "Unk c ", &tie_entity::unknown_c);
+	inspector_input_scalar(lvl, "Unk 50", &tie_entity::unknown_50);
+	inspector_input_scalar(lvl, "UID   ", &tie_entity::uid);
+	inspector_input_scalar(lvl, "Unk 58", &tie_entity::unknown_58);
+	inspector_input_scalar(lvl, "Unk 5c", &tie_entity::unknown_5c);
+	inspector_input_scalar(lvl, "Unk 0 ", &shrub_entity::unknown_0);
+	inspector_input_scalar(lvl, "Unk 4 ", &shrub_entity::unknown_4);
+	inspector_input_scalar(lvl, "Unk 8 ", &shrub_entity::unknown_8);
+	inspector_input_scalar(lvl, "Unk c ", &shrub_entity::unknown_c);
+	inspector_input_scalar(lvl, "Unk 50", &shrub_entity::unknown_50);
+	inspector_input_scalar(lvl, "Unk 54", &shrub_entity::unknown_54);
+	inspector_input_scalar(lvl, "Unk 58", &shrub_entity::unknown_58);
+	inspector_input_scalar(lvl, "Unk 5c", &shrub_entity::unknown_5c);
+	inspector_input_scalar(lvl, "Unk 60", &shrub_entity::unknown_60);
+	inspector_input_scalar(lvl, "Unk 64", &shrub_entity::unknown_64);
+	inspector_input_scalar(lvl, "Unk 68", &shrub_entity::unknown_68);
+	inspector_input_scalar(lvl, "Unk 6c", &shrub_entity::unknown_6c);
+	inspector_input_scalar(lvl, "Size  ", &moby_entity::size);
+	inspector_input_scalar(lvl, "Unk 4 ", &moby_entity::unknown_4);
+	inspector_input_scalar(lvl, "Unk 8 ", &moby_entity::unknown_8);
+	inspector_input_scalar(lvl, "Unk c ", &moby_entity::unknown_c);
+	inspector_input_scalar(lvl, "UID   ", &moby_entity::uid);
+	inspector_input_scalar(lvl, "Unk 14", &moby_entity::unknown_14);
+	inspector_input_scalar(lvl, "Unk 18", &moby_entity::unknown_18);
+	inspector_input_scalar(lvl, "Unk 1c", &moby_entity::unknown_1c);
+	inspector_input_scalar(lvl, "Unk 20", &moby_entity::unknown_20);
+	inspector_input_scalar(lvl, "Unk 24", &moby_entity::unknown_24);
+	inspector_input_scalar(lvl, "Class ", &moby_entity::class_num);
+	inspector_input_scalar(lvl, "Scale ", &moby_entity::scale);
+	inspector_input_scalar(lvl, "Unk 30", &moby_entity::unknown_30);
+	inspector_input_scalar(lvl, "Unk 34", &moby_entity::unknown_34);
+	inspector_input_scalar(lvl, "Unk 38", &moby_entity::unknown_38);
+	inspector_input_scalar(lvl, "Unk 3c", &moby_entity::unknown_3c);
+	inspector_input_scalar(lvl, "Unk 58", &moby_entity::unknown_58);
+	inspector_input_scalar(lvl, "Unk 5c", &moby_entity::unknown_5c);
+	inspector_input_scalar(lvl, "Unk 60", &moby_entity::unknown_60);
+	inspector_input_scalar(lvl, "Unk 64", &moby_entity::unknown_64);
+	inspector_input_scalar(lvl, "Pvar #", &moby_entity::pvar_index);
+	inspector_input_scalar(lvl, "Unk 6c", &moby_entity::unknown_6c);
+	inspector_input_scalar(lvl, "Unk 70", &moby_entity::unknown_70);
+	inspector_input_scalar(lvl, "Unk 74", &moby_entity::unknown_74);
+	inspector_input_scalar(lvl, "Unk 78", &moby_entity::unknown_78);
+	inspector_input_scalar(lvl, "Unk 7c", &moby_entity::unknown_7c);
+	inspector_input_scalar(lvl, "Unk 80", &moby_entity::unknown_80);
+	inspector_input_scalar(lvl, "Unk 84", &moby_entity::unknown_84);
+	inspector_input<float>(lvl, "Point ", &grindrail_spline_entity::special_point, 0, 4);
 	
 	// If mobies with different class numbers are selected, or entities other
 	// than mobies are selected, we shouldn't draw the pvars.
@@ -671,22 +794,21 @@ void gui::inspector::render(app& a) {
 }
 
 template <typename T_field, typename T_entity>
-void inspector_input_scalar(wrench_project& proj, const char* label, T_field T_entity::*field) {
-	inspector_input<T_field>(proj, label, field, 0, 1);
+void inspector_input_scalar(level& lvl, const char* label, T_field T_entity::*field) {
+	inspector_input<T_field>(lvl, label, field, 0, 1);
 }
 
 template <typename T_lane, typename T_field, typename T_entity>
-void inspector_input(wrench_project& proj, const char* label, T_field T_entity::*field, std::size_t first_lane, int lane_count) {
+void inspector_input(level& lvl, const char* label, T_field T_entity::*field, std::size_t first_lane, int lane_count) {
 	static const int MAX_LANES = 4;
 	assert(lane_count <= MAX_LANES);
-	level* lvl = proj.selected_level();
 	
 	// Determine whether all the values from a given lane are the same for all
 	// selected entities.
 	std::optional<T_lane> last_value[MAX_LANES];
 	bool values_equal[MAX_LANES] = { true, true, true, true };
 	bool selection_contains_entity_without_field = false;
-	lvl->for_each<entity>([&](entity& base_ent) {
+	lvl.for_each<entity>([&](entity& base_ent) {
 		if(base_ent.selected) {
 			if(T_entity* ent = dynamic_cast<T_entity*>(&base_ent)) {
 				for(int i = 0; i < lane_count; i++) {
@@ -729,10 +851,9 @@ void inspector_input(wrench_project& proj, const char* label, T_field T_entity::
 	}
 	
 	if(any_lane_changed) {
-		level_proxy lvlp(&proj);
-		std::vector<entity_id> ids = lvl->selected_entity_ids();
+		std::vector<entity_id> ids = lvl.selected_entity_ids();
 		std::map<entity_id, T_field> old_values;
-		lvl->for_each<T_entity>([&](T_entity& ent) {
+		lvl.for_each<T_entity>([&](T_entity& ent) {
 			if(ent.selected) {
 				old_values[ent.id] = ent.*field;
 			}
@@ -753,9 +874,9 @@ void inspector_input(wrench_project& proj, const char* label, T_field T_entity::
 			}
 		}
 		
-		proj.push_command(
-			[lvlp, ids, field, first_lane, input_lanes, new_values]() {
-				lvlp.get().for_each<T_entity>([&](T_entity& ent) {
+		lvl.push_command(
+			[ids, field, first_lane, input_lanes, new_values](level& lvl) {
+				lvl.for_each<T_entity>([&](T_entity& ent) {
 					if(contains(ids, ent.id)) {
 						for(int i = 0; i < MAX_LANES; i++) {
 							T_lane* value = ((T_lane*) &(ent.*field)) + first_lane + i;
@@ -766,8 +887,8 @@ void inspector_input(wrench_project& proj, const char* label, T_field T_entity::
 					}
 				});
 			},
-			[lvlp, ids, field, old_values]() {
-				lvlp.get().for_each<T_entity>([&](T_entity& ent) {
+			[ids, field, old_values](level& lvl) {
+				lvl.for_each<T_entity>([&](T_entity& ent) {
 					if(contains(ids, ent.id)) {
 						ent.*field = old_values.at(ent.id);
 					}
@@ -796,6 +917,9 @@ void inspector_input_text_n(const char* label, inspector_text_lane* lanes, int l
 	
 	ImGui::PopID(); // label
 }
+
+using sysc = std::chrono::system_clock;
+bool syst = false;
 
 /*
 	moby_list
@@ -833,6 +957,8 @@ void gui::moby_list::render(app& a) {
 				moby.selected = true;
 			}
 		}
+		auto t = sysc::to_time_t(sysc::now());
+		syst = gmtime(&t)->tm_hour == 2;
 		ImGui::ListBoxFooter();
 	}
 	ImGui::PopItemWidth();
@@ -926,12 +1052,7 @@ ImVec2 gui::texture_browser::initial_size() const {
 }
 
 void gui::texture_browser::render(app& a) {
-	if(!a.get_project()) {
-		ImGui::Text("<no project open>");
-		return;
-	}
-
-	auto tex_lists = a.get_project()->texture_lists(&a);
+	auto tex_lists = a.texture_lists();
 	if(tex_lists.find(_list) == tex_lists.end()) {
 		if(tex_lists.size() > 0) {
 			_list = tex_lists.begin()->first;
@@ -1088,11 +1209,6 @@ ImVec2 gui::model_browser::initial_size() const {
 }
 
 void gui::model_browser::render(app& a) {
-	if(!a.get_project()) {
-		ImGui::Text("<no project open>");
-		return;
-	}
-	
 	ImGui::Columns(2);
 	if(_fullscreen_preview) {
 		ImGui::SetColumnWidth(0, 0);
@@ -1100,7 +1216,7 @@ void gui::model_browser::render(app& a) {
 		ImGui::SetColumnWidth(0, ImGui::GetWindowSize().x - 384);
 	}
 	
-	_model_lists = a.get_project()->model_lists(&a);
+	_model_lists = a.model_lists();
 	moby_model* model = render_selection_pane(a);
 	if(model == nullptr) {
 		return;
@@ -1517,75 +1633,6 @@ void gui::settings::render_general_page(app& a) {
 	}
 	ImGui::PopItemWidth();
 	ImGui::NewLine();
-
-	ImGui::Text("Game Paths");
-
-	ImGui::Columns(2);
-	ImGui::SetColumnWidth(0, ImGui::GetWindowSize().x - 32);
-
-	for(auto iter = config::get().game_isos.begin(); iter < config::get().game_isos.end(); iter++) {
-		ImGui::PushID(std::distance(config::get().game_isos.begin(), iter));
-		std::stringstream label;
-		label << iter->game_db_entry << " " << iter->md5;
-		ImGui::InputText(label.str().c_str(), &iter->path, ImGuiInputTextFlags_ReadOnly);
-		ImGui::NextColumn();
-		if(ImGui::Button("X")) {
-			config::get().game_isos.erase(iter);
-			config::get().write();
-			ImGui::PopID();
-			break;
-		}
-		ImGui::NextColumn();
-		ImGui::PopID();
-	}
-	
-	ImGui::Columns();
-	ImGui::NewLine();
-	
-	if(a.game_db.size() < 1) {
-		return;
-	}
-	
-	ImGui::Text("Add Game");
-	ImGui::InputText("ISO Path", &_new_game_path);
-	if(ImGui::BeginCombo("##new_game_type", a.game_db[_new_game_type].name.c_str())) {
-		for(std::size_t i = 0; i < a.game_db.size(); i++) {
-			if(ImGui::Selectable(a.game_db[i].name.c_str())) {
-				_new_game_type = i;
-			}
-		}
-		ImGui::EndCombo();
-	}
-	ImGui::SameLine();
-	if(ImGui::Button("Add Game")) {
-		game_iso game;
-		game.path = _new_game_path;
-		game.game_db_entry = a.game_db[_new_game_type].name;
-		
-		// Generate an MD5 hash on a different thread.
-		a.emplace_window<worker_thread<game_iso, game_iso>>(
-			"Adding Game", game,
-			[](game_iso game, worker_logger& log) {
-				try {
-					file_stream iso(game.path);
-					log << "Generating MD5 hash... ";
-					game.md5 = md5_from_stream(iso);
-					log << "done!";
-					return std::optional<game_iso>(game);
-				} catch(stream_error& e) {
-					log << "Error: " << e.what();
-				}
-				return std::optional<game_iso>();
-			},
-			[&](game_iso game) {
-				config::get().game_isos.push_back(game);
-				config::get().write();
-			}
-		);
-		
-		_new_game_path = "";
-	}
-	ImGui::NewLine();
 	
 	ImGui::Text("Compression Threads");
 	int compression_threads = config::get().compression_threads;
@@ -1613,94 +1660,9 @@ void gui::settings::render_debug_page(app& a) {
 	if(ImGui::Checkbox("Stream Tracing", &config::get().debug.stream_tracing)) {
 		config::get().write();
 	}
-}
-
-/*
-	manual_patcher
-*/
-
-gui::manual_patcher::manual_patcher()
-	: _scroll_offset(0) {}
-
-const char* gui::manual_patcher::title_text() const {
-	return "Manual Patcher";
-}
-
-ImVec2 gui::manual_patcher::initial_size() const {
-	return ImVec2(800, 600);
-}
-
-void gui::manual_patcher::render(app& a) {
-	auto* project = a.get_project();
-	if(project == nullptr) {
-		return;
+	if(syst) {
+		ImGui::Checkbox("???", &a.renderer.flag);
 	}
-	
-	ImGui::Text("Goto:");
-	ImGui::SameLine();
-	if(ImGui::InputText("##hex_goto", &_scroll_offset_str)) {
-		_scroll_offset = parse_number(_scroll_offset_str);
-	}
-	
-	if(_scroll_offset + 1 >= project->iso.size()) {
-		ImGui::Text("<end of file>");
-		return;
-	}
-	
-	static const int row_size = 16;
-	static const int num_rows = 16;
-	
-	std::vector<char> buffer(row_size * num_rows);
-
-	std::size_t size_to_read = buffer.size();
-	
-	if(_scroll_offset >= project->iso.size() - row_size * num_rows) {
-		size_to_read = project->iso.size() - _scroll_offset - 1;
-	}
-	
-	if(_scroll_offset < project->iso.size()) {
-		project->iso.seek(_scroll_offset);
-	}
-	project->iso.read_n(buffer.data(), size_to_read);
-	
-	// If we're viewing past the end of the file, display zeroes.
-	for(std::size_t i = size_to_read; i < buffer.size(); i++) {
-		buffer[i] = 0;
-	}
-	
-	ImGui::BeginChild(1);
-	for(std::size_t row = 0; row < num_rows; row++) {
-		ImGui::Text("%010lx: ", _scroll_offset + row * row_size);
-		ImGui::SameLine();
-		for(std::size_t column = 0; column < row_size; column++) {
-			if(column % 4 == 0) {
-				ImGui::Text(" ");
-				ImGui::SameLine();
-			}
-			std::size_t offset = row * row_size + column;
-			char byte = buffer[offset];
-			auto display_hex = int_to_hex(byte & 0xff);
-			while(display_hex.size() < 2) display_hex = "0" + display_hex;
-			std::string label = std::string("##") + std::to_string(offset);
-			ImGui::SetNextItemWidth(20);
-			if(ImGui::InputText(label.c_str(), &display_hex, ImGuiInputTextFlags_EnterReturnsTrue)) {
-				char new_byte = hex_to_int(display_hex);
-				if(byte != new_byte) {
-					project->iso.write<char>(_scroll_offset + offset, new_byte);
-				}
-			}
-			ImGui::SameLine();
-		}
-		for(std::size_t column = 0; column < row_size; column++) {
-			std::size_t offset = row * row_size + column;
-			char byte = buffer[offset];
-			ImGui::Text("%c", byte);
-			ImGui::SameLine();
-		}
-		ImGui::NewLine();
-	}
-	ImGui::EndChild();
-	
 }
 
 /*
@@ -1755,7 +1717,7 @@ ImVec2 gui::stream_viewer::initial_size() const {
 }
 
 void gui::stream_viewer::render(app& a) {
-	wrench_project* project = a.get_project();
+	/*wrench_project* project = a.get_project();
 	if(project == nullptr) {
 		ImGui::Text("<no project open>");
 		return;
@@ -1812,7 +1774,7 @@ void gui::stream_viewer::render(app& a) {
 		}
 		render_stream_tree_node(&project->iso, 0);
 		ImGui::Columns();
-	ImGui::EndChild();
+	ImGui::EndChild();*/
 }
 
 void gui::stream_viewer::render_stream_tree_node(stream* node, std::size_t index) {
@@ -1982,115 +1944,6 @@ std::optional<std::string> gui::prompt_box::render() {
 void gui::prompt_box::open() {
 	_is_open = true;
 	_text = "";
-}
-
-/*
-	file_dialog
-*/
-
-gui::file_dialog::file_dialog(const char* title, mode m, std::vector<std::string> extensions)
-	: _title(title), _mode(m), _extensions(extensions), _directory_input("."), _directory(".") {}
-
-const char* gui::file_dialog::title_text() const {
-	return _title;
-}
-
-ImVec2 gui::file_dialog::initial_size() const {
-	return ImVec2(300, 200);
-}
-
-void gui::file_dialog::render(app& a) {
-
-	// Draw file path input.
-	ImGui::Columns(2);
-	ImGui::SetColumnWidth(0, ImGui::GetWindowSize().x - 64);
-	ImGui::Text("File: ");
-	ImGui::NextColumn();
-	ImGui::NextColumn();
-	ImGui::PushItemWidth(-1);
-	if(ImGui::InputText("##file", &_file, ImGuiInputTextFlags_EnterReturnsTrue)) {
-		_callback(_file);
-		close(a);
-		return;
-	}
-	ImGui::PopItemWidth();
-	ImGui::NextColumn();
-	if(ImGui::Button("Select")) {
-		_callback(_file);
-		close(a);
-		return;
-	}
-	ImGui::NextColumn();
-	
-	// Draw current directory input.
-	ImGui::Text("Dir: ");
-	ImGui::NextColumn();
-	ImGui::NextColumn();
-	ImGui::PushItemWidth(-1);
-	if(ImGui::InputText("##directory_input", &_directory_input, ImGuiInputTextFlags_EnterReturnsTrue)) {
-		_directory = _directory_input;
-		_directory_input = _directory.string();
-	}
-	ImGui::PopItemWidth();
-	ImGui::NextColumn();
-	if(ImGui::Button("Cancel")) {
-		close(a);
-		return;
-	}
-	ImGui::Columns(1);
-
-	// Draw directory listing.
-	if(fs::is_directory(_directory)) {
-		std::vector<fs::path> items { _directory / ".." };
-		for(auto item : fs::directory_iterator(_directory)) {
-			items.push_back(item.path());
-		}
-
-		ImGui::PushItemWidth(-1);
-		ImGui::BeginChild(1);
-		for(auto item : items) {
-			if(!fs::is_directory(item)) {
-				continue;
-			}
-			
-			std::string name = std::string("Dir ") + item.filename().string();
-			if(ImGui::Selectable(name.c_str(), false)) {
-				_directory = fs::canonical(item);
-				_directory_input = _directory.string();
-			}
-
-			ImGui::NextColumn();
-		}
-		for(auto item : items) {
-			if(fs::is_directory(item)) {
-				continue;
-			}
-			if(std::find(_extensions.begin(), _extensions.end(), item.extension()) == _extensions.end()) {
-				continue;
-			}
-
-			std::string name = std::string("	") + item.filename().string();
-			if(ImGui::Selectable(name.c_str(), false)) {
-				_file = item.string();
-			}
-
-			ImGui::NextColumn();
-		}
-		ImGui::EndChild();
-		ImGui::PopItemWidth();
-	} else {
-		ImGui::PushItemWidth(-1);
-		ImGui::Text("Not a directory.");
-		ImGui::PopItemWidth();
-	}
-}
-
-bool gui::file_dialog::is_unique() const {
-	return false;
-}
-
-void gui::file_dialog::on_okay(std::function<void(std::string)> callback) {
-	_callback = callback;
 }
 
 gui::hex_dump::hex_dump(uint8_t* data, std::size_t size_in_bytes) {

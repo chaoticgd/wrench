@@ -19,6 +19,7 @@
 #include "util.h"
 
 #include <sstream>
+#include <stdio.h>
 
 std::string int_to_hex(std::size_t x) {
 	std::stringstream ss;
@@ -76,4 +77,19 @@ std::string md5_to_printable_string(uint8_t in[MD5_DIGEST_LENGTH]) {
 		result += HEX_DIGITS[in[i] & 0xf];
 	}
 	return result;
+}
+
+int execute_command(std::string executable, std::vector<std::string> arguments) {
+#ifdef DECENT_OS
+	//
+#else
+	printf("*** USING INSECURE execute_command IMPLEMENTATION ***\n");
+	
+	std::string command = executable;
+	for(std::string& arg : arguments) {
+		command += " \"" + arg + "\"";
+	}
+	printf("command: %s\n", command.c_str());
+	return system(command.c_str());
+#endif
 }

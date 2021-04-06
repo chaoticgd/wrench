@@ -17,63 +17,49 @@
 */
 
 #include "../app.h"
-#include "../project.h"
 
 #include <stdlib.h>
 
 void world_segment_test() {
 	printf("**** world segment test ****\n");
 	
-	const char* iso_md5 = getenv("TEST_ISO_MD5");
-	if(iso_md5 == nullptr) {
+	const char* dir = getenv("GAME_DIR");
+	if(dir == nullptr) {
 		// If no ISO file is provided, we can't run this test.
 		printf("No ISO file provided, test skipped.\n");
-		printf("To run this test, you must set the TEST_ISO_MD5 enviroment variable.\n");
+		printf("To run this test, you must set the GAME_DIR enviroment variable.\n");
 		return;
 	}
 	
-	config::get().read();
-	std::optional<game_iso> iso;
-	for(game_iso current_iso : config::get().game_isos) {
-		if(current_iso.md5 == std::string(iso_md5)) {
-			iso = current_iso;
-		}
-	}
-	if(!iso) {
-		fprintf(stderr, "error: Cannot find ISO in config file!\n");
-		return;
-	}
-	
-	worker_logger dummy;
-	wrench_project project(*iso, dummy);
+	auto levels_dir = fs::path(dir) / "levels";
 	
 	int happy = 0, sad = 0;
-	
-	for(size_t i = 0; i < project.toc.levels.size(); i++) {
-		project.open_level(i);
-		level* lvl = project.selected_level();
-		assert(lvl != nullptr);
+	for(auto& iter : fs::directory_iterator(levels_dir)) {
+		file_stream lvl_file(iter.path().string());
 		
-		array_stream before;
-		lvl->moby_stream()->seek(0);
-		stream::copy_n(before, *lvl->moby_stream(), lvl->moby_stream()->size());
-		array_stream after;
-		lvl->world.write_rac23(after);
+		level lvl;
+		lvl.read(lvl_file, iter.path().string());
 		
-		if(!array_stream::compare_contents(before, after)) {
+		array_stream original;
+		lvl.moby_stream()->seek(0);
+		stream::copy_n(original, *lvl.moby_stream(), lvl.moby_stream()->size());
+		array_stream built;
+		lvl.world.write_rac23(built);
+		
+		if(!array_stream::compare_contents(original, built)) {
 			sad++;
 			
-			std::string before_path = "/tmp/l" + std::to_string(i) + "_worldseg_before.bin";
-			file_stream before_file(before_path, std::ios::out);
-			before.seek(0);
-			stream::copy_n(before_file, before, before.size());
-			printf("Written before file to %s\n", before_path.c_str());
+			std::string original_path = "/tmp/" + iter.path().filename().string() + "_worldseg_original.bin";
+			file_stream original_file(original_path, std::ios::out);
+			original.seek(0);
+			stream::copy_n(original_file, original, original.size());
+			printf("Written original file to %s\n", original_path.c_str());
 			
-			std::string after_path = "/tmp/l" + std::to_string(i) + "_worldseg_after.bin";
-			file_stream after_file(after_path, std::ios::out);
-			after.seek(0);
-			stream::copy_n(after_file, after, after.size());
-			printf("Written after file to %s\n", after_path.c_str());
+			std::string built_path = "/tmp/" + iter.path().filename().string() + "_worldseg_built.bin";
+			file_stream built_file(built_path, std::ios::out);
+			built.seek(0);
+			stream::copy_n(built_file, built, built.size());
+			printf("Written built file to %s\n", built_path.c_str());
 		} else {
 			happy++;
 		}

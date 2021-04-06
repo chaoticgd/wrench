@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2020 chaoticgd
+	Copyright (C) 2019-2021 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,17 +16,14 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef FORMATS_TOC_H
-#define FORMATS_TOC_H
+#ifndef ISO_TABLE_OF_CONTENTS_H
+#define ISO_TABLE_OF_CONTENTS_H
 
 #include "../stream.h"
-
-# /*
-# 	Read the sector table/table of contents (.HDR) file.
-# */
+#include "../level_file_types.h"
 
 packed_struct(toc_table_header,
-	uint32_t size;
+	uint32_t header_size;
 	sector32 base_offset;
 )
 
@@ -34,27 +31,25 @@ struct toc_table {
 	std::size_t index;
 	uint32_t offset_in_toc;
 	toc_table_header header;
-	array_stream data;
+	std::vector<sector_range> lumps;
 };
 
 packed_struct(toc_level_table_entry,
-	sector32 header_1;
-	sector32 header_1_size;
-	sector32 header_2;
-	sector32 header_2_size;
-	sector32 header_3;
-	sector32 header_3_size;
+	sector_range parts[3];
 )
 
+struct toc_level_part {
+	sector32 header_lba;
+	sector32 file_size;
+	uint32_t magic;
+	sector32 file_lba;
+	level_file_info info;
+	std::vector<sector_range> lumps;
+};
+
 struct toc_level {
-	std::size_t level_table_index;
-	size_t main_part_size_offset; // Absolute offset of size field in ISO.
-	sector32 main_part;
-	sector32 main_part_size;
-	sector32 audio_part;
-	sector32 audio_part_size;
-	sector32 scene_part;
-	sector32 scene_part_size;
+	size_t level_table_index;
+	std::optional<toc_level_part> parts[3];
 };
 
 struct table_of_contents {
@@ -64,13 +59,9 @@ struct table_of_contents {
 
 static const std::size_t TOC_MAX_SIZE       = 0x100000;
 static const std::size_t TOC_MAX_INDEX_SIZE = 0x10000;
-static const std::size_t TOC_MAX_LEVELS     = 0x100;
+static const std::size_t TOC_MAX_LEVELS     = 100;
 
-static const std::vector<uint32_t> TOC_MAIN_PART_MAGIC = { 0x60, 0x68, 0xc68 };
-static const std::vector<uint32_t> TOC_AUDIO_PART_MAGIC = { 0x1018, 0x1818, 0x1000, 0x2a0 };
-static const std::vector<uint32_t> TOC_SCENE_PART_MAGIC = { 0x137c, 0x2420, 0x26f0 };
-
-table_of_contents read_toc(stream& iso, std::size_t toc_base);
+table_of_contents read_table_of_contents(stream& iso, std::size_t toc_base);
 std::size_t toc_get_level_table_offset(stream& iso, std::size_t toc_base);
 
 #endif

@@ -25,7 +25,9 @@
 #include <glm/glm.hpp>
 
 #include "../stream.h"
+#ifdef WRENCH_EDITOR
 #include "../gl_includes.h"
+#endif
 
 struct colour {
 	uint8_t r, g, b, a;
@@ -52,9 +54,6 @@ struct texture {
 #ifdef WRENCH_EDITOR
 	void upload_to_opengl();
 	gl_texture opengl_texture;
-#else
-	// Dummy to get the randomiser linking.
-	void upload_to_opengl() {}
 #endif
 };
 

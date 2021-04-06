@@ -37,12 +37,11 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 int main(int argc, char** argv) {
 	cxxopts::Options options("wrench", "A level editor for the Ratchet & Clank games.");
 	options.add_options()
-		("p,project", "Open the specified project (.wrench) file.",
-			cxxopts::value<std::string>())
-		("t,run-tests", "Run automated tests.");
+		("t,run-tests", "Run automated tests.")
+		("d,directory", "Open a directory on startup.", cxxopts::value<std::string>())
+		("f,file", "Open a file on startup.", cxxopts::value<std::string>());
 
 	auto args = parse_command_line_args(argc, argv, options);
-	std::string project_path = cli_get_or(args, "project", "");
 
 	if(args.count("run-tests")) {
 		run_tests();
@@ -60,21 +59,36 @@ int main(int argc, char** argv) {
 	{
 		app a;
 		init_gl(a);
-
-		if(project_path != "") {
-			a.open_project((old_working_dir / project_path).string());
-		}
 		
 		a.tools = enumerate_tools();
 		a.game_db = gamedb_read();
 		
+		a.windows.emplace_back(std::make_unique<gui::start_screen>());
 		a.windows.emplace_back(std::make_unique<view_3d>());
 		a.windows.emplace_back(std::make_unique<gui::texture_browser>());
 		a.windows.emplace_back(std::make_unique<gui::model_browser>());
 		a.windows.emplace_back(std::make_unique<gui::moby_list>());
 		a.windows.emplace_back(std::make_unique<gui::inspector>());
 		a.windows.emplace_back(std::make_unique<gui::viewport_information>());
-
+		
+		if(args.count("directory")) {
+			fs::path dir = args["directory"].as<std::string>();
+			if(dir.is_relative()) {
+				a.open_directory(old_working_dir / dir);
+			} else {
+				a.open_directory(dir);
+			}
+		}
+		
+		if(args.count("file")) {
+			fs::path file = args["file"].as<std::string>();
+			if(file.is_relative()) {
+				a.open_file(old_working_dir / file);
+			} else {
+				a.open_file(file);
+			}
+		}
+		
 		auto last_frame_time = std::chrono::steady_clock::now();
 
 		while(!glfwWindowShouldClose(a.glfw_window)) {

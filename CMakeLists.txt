@@ -28,14 +28,13 @@ add_executable(wrench
 	src/renderer.cpp
 	src/shaders.cpp
 	src/worker_logger.cpp
-	src/project.cpp
 	src/iso_stream.cpp
 	src/model.cpp
 	src/util.cpp
 	src/game_db.cpp
 	src/tools.cpp
+	src/icons.cpp
 	src/formats/wad.cpp
-	src/formats/racpak.cpp
 	src/formats/level_impl.cpp
 	src/formats/world.cpp
 	src/formats/texture.cpp
@@ -46,7 +45,6 @@ add_executable(wrench
 	src/formats/vif.cpp
 	src/formats/tfrag.cpp
 	src/formats/tcol.cpp
-	src/formats/toc.cpp
 	src/formats/texture_archive.cpp
 	src/formats/model_utils.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
@@ -55,7 +53,6 @@ add_executable(wrench
 	src/md5.cpp
 	src/tests/compression_test.cpp
 	src/tests/world_segment_test.cpp
-	src/tests/write_level_test.cpp
 )
 
 add_executable(fip
@@ -78,42 +75,6 @@ add_executable(wad
 	src/formats/wad.cpp
 )
 
-add_executable(scan
-	src/cli/scancli.cpp
-	src/command_line.cpp
-	src/util.cpp
-	src/stream.cpp
-	src/stacktrace.cpp
-	src/formats/wad.cpp
-	src/formats/texture.cpp
-	src/formats/fip.cpp
-	src/formats/bmp.cpp
-)
-
-add_executable(pakrac
-	src/cli/pakraccli.cpp
-	src/util.cpp
-	src/command_line.cpp
-	src/stream.cpp
-	src/stacktrace.cpp
-	src/formats/racpak.cpp
-	src/formats/wad.cpp
-	src/formats/texture.cpp
-	src/formats/fip.cpp
-	src/formats/bmp.cpp
-)
-
-add_executable(texturefinder
-	src/cli/texturefindercli.cpp
-	src/util.cpp
-	src/stream.cpp
-	src/stacktrace.cpp
-	src/command_line.cpp
-	src/formats/texture.cpp
-	src/formats/fip.cpp
-	src/formats/bmp.cpp
-)
-
 add_executable(vif
 	src/cli/vifcli.cpp
 	src/stream.cpp
@@ -123,82 +84,30 @@ add_executable(vif
 	src/formats/vif.cpp
 )
 
-add_executable(randomiser
-	src/cli/randomisercli.cpp
-	# TODO: Clean up depdendency graph.
-	src/app.cpp
-	src/command_line.cpp
-	src/gui.cpp
-	src/view_3d.cpp
+add_executable(iso
+	src/iso/main.cpp
+	src/iso/iso_filesystem.cpp
+	src/iso/table_of_contents.cpp
 	src/stream.cpp
 	src/stacktrace.cpp
-	src/window.cpp
-	src/renderer.cpp
-	src/shaders.cpp
-	src/worker_logger.cpp
-	src/project.cpp
-	src/iso_stream.cpp
-	src/model.cpp
 	src/util.cpp
-	src/game_db.cpp
-	src/tools.cpp
-	src/formats/wad.cpp
-	src/formats/racpak.cpp
-	src/formats/level_impl.cpp
-	src/formats/world.cpp
-	src/formats/texture.cpp
-	src/formats/fip.cpp
-	src/formats/bmp.cpp
-	src/formats/armor_archive.cpp
-	src/formats/game_model.cpp
-	src/formats/vif.cpp
-	src/formats/tfrag.cpp
-	src/formats/tcol.cpp
-	src/formats/toc.cpp
-	src/formats/texture_archive.cpp
-	src/formats/model_utils.cpp
-	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
-	src/imgui_impl_glfw.cpp
-	thirdparty/imgui/backends/imgui_impl_opengl3.cpp
-	src/md5.cpp
+	src/command_line.cpp
 )
 
-add_executable(toc
-	src/cli/toccli.cpp
-	src/stream.cpp
-	src/stacktrace.cpp
-	src/util.cpp
-	src/command_line.cpp
-	src/formats/toc.cpp
-)
-
-add_executable(matchtoc
-	src/cli/matchtoccli.cpp
-	src/stream.cpp
-	src/stacktrace.cpp
-	src/util.cpp
-	src/command_line.cpp
-	src/formats/toc.cpp
-)
 
 add_executable(memmap
 	src/cli/memmap.c
 )
 
-# This lets us avoid linking stuff for msot of the CLI tools.
+# This lets us avoid linking stuff for most of the CLI tools.
 target_compile_definitions(wrench PRIVATE WRENCH_EDITOR=1)
-target_compile_definitions(randomiser PRIVATE WRENCH_EDITOR=1)
 
 if(UNIX)
 	target_compile_options(wrench PRIVATE -Wall -O3)
 	target_compile_options(fip PRIVATE -Wall -O3)
 	target_compile_options(wad PRIVATE -Wall -O3)
-	target_compile_options(pakrac PRIVATE -Wall -O3)
-	target_compile_options(texturefinder PRIVATE -Wall -O3)
 	target_compile_options(vif PRIVATE -Wall -O3)
-	target_compile_options(randomiser PRIVATE -Wall -O3)
-	target_compile_options(toc PRIVATE -Wall -O3)
-	target_compile_options(matchtoc PRIVATE -Wall -O3)
+	target_compile_options(iso PRIVATE -Wall -O3)
 endif()
 
 # std::filesystem
@@ -206,12 +115,8 @@ if(UNIX)
 	target_link_libraries(wrench stdc++fs)
 	target_link_libraries(fip stdc++fs)
 	target_link_libraries(wad stdc++fs)
-	target_link_libraries(scan stdc++fs)
-	target_link_libraries(pakrac stdc++fs)
-	target_link_libraries(texturefinder stdc++fs)
 	target_link_libraries(vif stdc++fs)
-	target_link_libraries(randomiser stdc++fs)
-	target_link_libraries(matchtoc stdc++fs)
+	target_link_libraries(iso stdc++fs)
 endif()
 
 # cxxopts
@@ -219,37 +124,26 @@ add_subdirectory(thirdparty/cxxopts)
 target_link_libraries(wrench cxxopts)
 target_link_libraries(fip cxxopts)
 target_link_libraries(wad cxxopts)
-target_link_libraries(scan cxxopts)
-target_link_libraries(pakrac cxxopts)
-target_link_libraries(texturefinder cxxopts)
 target_link_libraries(vif cxxopts)
-target_link_libraries(randomiser cxxopts)
-target_link_libraries(toc cxxopts)
-target_link_libraries(matchtoc cxxopts)
+target_link_libraries(iso cxxopts)
 
 # pthreads
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 target_link_libraries(wrench Threads::Threads)
-target_link_libraries(scan Threads::Threads)
-target_link_libraries(pakrac Threads::Threads)
 target_link_libraries(wad Threads::Threads)
-target_link_libraries(randomiser Threads::Threads)
 
 # GLAD
 add_subdirectory(thirdparty/glad)
 target_link_libraries(wrench glad)
-target_link_libraries(randomiser glad)
 
 # GLFW
 add_subdirectory(thirdparty/glfw)
 target_link_libraries(wrench glfw)
-target_link_libraries(randomiser glfw)
 
 # GLM
 add_subdirectory(thirdparty/glm)
 target_link_libraries(wrench glm)
-target_link_libraries(randomiser glm)
 include_directories(thirdparty/glm)
 
 # Dear ImGui
@@ -268,22 +162,21 @@ add_library(imgui STATIC
 	thirdparty/imgui/imstb_truetype.h
 )
 target_link_libraries(wrench imgui)
-target_link_libraries(randomiser imgui)
 
 # JSON
 include_directories(thirdparty/json/single_include)
 
-# ZipLib
-include("cmake/ziplib.cmake")
-target_link_libraries(wrench ziplib)
-target_link_libraries(randomiser ziplib)
-include_directories(SYSTEM thirdparty/ziplib/Source) # Suppress warnings for ZipLib headers.
-
-# Source Map
-# if(UNIX)
-# 	add_custom_target(sourcemap
-# 		COMMAND rm -f docs/dev/source_map.svg
-# 		COMMAND python3 ./scripts/graphifier/graphify.py src docs/dev/# source_map.svg
-# 	)
-# 	add_dependencies(wrench sourcemap)
-# endif()
+# Native File Dialog
+if(WIN32)
+	add_library(nativefiledialog STATIC
+		thirdparty/nativefiledialog/src/nfd_common.c
+		thirdparty/nativefiledialog/src/nfd_win.cpp
+	)
+else()
+	add_library(nativefiledialog STATIC
+		thirdparty/nativefiledialog/src/nfd_common.c
+		thirdparty/nativefiledialog/src/nfd_zenity.c
+	)
+endif()
+target_link_libraries(wrench nativefiledialog)
+include_directories(thirdparty/nativefiledialog/src/include)

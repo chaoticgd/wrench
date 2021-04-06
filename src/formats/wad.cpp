@@ -91,7 +91,7 @@ void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_t
 			
 			if(src.pos < src.buffer.size() && src.peek8() < 0x10) {
 				// The game disallows this so lets complain.
-				throw std::runtime_error("WAD decompression failed: Two literals in a row? Implausible!");
+				throw stream_format_error("WAD decompression failed: Two literals in a row? Implausible!");
 			}
 			
 			continue;

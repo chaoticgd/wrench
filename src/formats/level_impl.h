@@ -25,13 +25,14 @@
 
 #include "../util.h"
 #include "../stream.h"
+#include "../iso_stream.h"
+#include "../fs_includes.h"
 #include "../worker_logger.h"
+#include "../level_file_types.h"
 #include "world.h"
-#include "toc.h"
 #include "wad.h"
 #include "tfrag.h"
 #include "tcol.h"
-#include "racpak.h"
 #include "texture.h"
 #include "game_model.h"
 #include "level_types.h"
@@ -85,20 +86,15 @@ class level {
 public:
 	level() {}
 	level(const level& rhs) = delete;
-	level& operator=(level&& rhs) = default;
+	level(level&& rhs) = default;
 	
-	void read(
-			stream* src,
-			toc_level index_,
-			size_t header_offset,
-			sector32 base_offset, // Where to put the level in the ISO.
-			sector32 effective_base_offset, // Where to actually load the level from the input file.
-			size_t size_in_bytes);
+	void read(stream& src, fs::path path_);
 	
-	static level_file_header read_file_header(stream* src, std::size_t offset);
+	void read_file_header(stream& file);
 	
-	toc_level index;
+	fs::path path;
 	level_file_header file_header;
+	level_file_info info; // Stores information derived from the magic identifier e.g. header size.
 	world_segment world;
 	
 	template <typename T, typename F>
@@ -144,7 +140,6 @@ private:
 	void read_loading_screen_textures(stream* file);
 	
 public:
-	void write_back(stream* iso);
 	void write(array_stream& dest);
 
 	stream* moby_stream();
@@ -153,7 +148,7 @@ public:
 	std::map<uint32_t, std::size_t> moby_class_to_model;
 	std::vector<moby_model> moby_models;
 	std::vector<texture> mipmap_textures;
-	std::vector<texture> terrain_textures;
+	std::vector<texture> tfrag_textures;
 	std::vector<texture> moby_textures;
 	std::vector<texture> tie_textures;
 	std::vector<texture> shrub_textures;
@@ -170,6 +165,23 @@ private:
 	std::optional<array_stream> _file;
 	std::optional<simple_wad_stream> _world_segment;
 	std::optional<simple_wad_stream> _asset_segment;
+
+public:
+	void push_command(std::function<void(level&)> apply, std::function<void(level&)> undo);
+	void undo();
+	void redo();
+private:
+	struct undo_redo_command {
+		std::function<void(level& lvl)> apply;
+		std::function<void(level& lvl)> undo;
+	};
+
+	std::size_t _history_index = 0;
+	std::vector<undo_redo_command> _history_stack;
+};
+
+class command_error : public std::runtime_error {
+	using std::runtime_error::runtime_error;
 };
 
 void swap_level_file_header_rac23(level_file_header& l, level_file_header_rac23& r);

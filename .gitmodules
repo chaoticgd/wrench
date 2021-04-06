@@ -5,18 +5,12 @@
 	path = thirdparty/json
 	url = https://github.com/nlohmann/json
 	branch = master
-[submodule "thirdparty/ziplib"]
-	path = thirdparty/ziplib
-	url = https://bitbucket.org/wbenny/ziplib
 [submodule "thirdparty/toml11"]
 	path = thirdparty/toml11
 	url = https://github.com/ToruNiina/toml11
 [submodule "thirdparty/imgui_markdown"]
 	path = thirdparty/imgui_markdown
 	url = https://github.com/juliettef/imgui_markdown
-[submodule "scripts/graphifier"]
-	path = scripts/graphifier
-	url = https://github.com/chaoticgd/graphifier
 [submodule "thirdparty/glfw"]
 	path = thirdparty/glfw
 	url = https://github.com/glfw/glfw
@@ -26,3 +20,6 @@
 [submodule "thirdparty/glm"]
 	path = thirdparty/glm
 	url = https://github.com/g-truc/glm
+[submodule "thirdparty/nativefiledialog"]
+	path = thirdparty/nativefiledialog
+	url = https://github.com/mlabbe/nativefiledialog

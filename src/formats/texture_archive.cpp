@@ -19,14 +19,15 @@
 #include "texture_archive.h"
 
 #include "fip.h"
+#include "wad.h"
 
 packed_struct(texture_table_entry,
 	sector32 offset;
-	uint32_t unknown_4;
+	sector32 size;
 )
 
-std::vector<texture> enumerate_fip_textures(iso_stream& iso, const toc_table& table) {
-	std::vector<texture> textures;
+std::vector<texture> enumerate_pif_textures(stream& iso) {
+	/*std::vector<texture> textures;
 	
 	std::size_t bad_textures = 0;
 	
@@ -41,53 +42,44 @@ std::vector<texture> enumerate_fip_textures(iso_stream& iso, const toc_table& ta
 			return {};
 		}
 		
-		if(entry.offset.bytes() == 0) {
+		if(entry.offset.sectors == 0 || entry.size.sectors == 0 || entry.size.bytes() > 0x1000000) {
 			continue;
 		}
 		
-		stream* file;
-		std::size_t inner_offset;
-		char wad_magic[3];
+		array_stream raw;
+		raw.buffer.resize(entry.size.bytes());
 		iso.seek(abs_offset);
-		iso.read_n(wad_magic, 3);
-		if(std::memcmp(wad_magic, "WAD", 3) == 0) {
-			file = iso.get_decompressed(abs_offset, true);
-			inner_offset = 0;
+		iso.read_v(raw.buffer);
+		raw.seek(0);
+		
+		array_stream uncompressed;
+		if(memcmp(raw.buffer.data(), "WAD", 3) == 0) {
+			// TODO: Handle compressed segments here.
+			continue;
 		} else {
-			file = &iso;
-			inner_offset = abs_offset;
+			uncompressed = std::move(raw);
 		}
 		
-		if(file == nullptr || file->size() < inner_offset + 0x14) {
+		if(uncompressed.size() < 0x14) {
 			bad_textures++;
 			continue;
 		}
 		
-		char magic[0x14];
-		file->seek(inner_offset);
-		file->read_n(magic, 0x14);
-		
 		std::optional<std::size_t> texture_offset;
-		if(validate_fip(magic)) {
+		if(validate_fip(uncompressed.buffer.data())) {
 			texture_offset = 0;
 		}
-		if(validate_fip(magic + 0x10)) {
+		if(validate_fip(uncompressed.buffer.data() + 0x10)) {
 			texture_offset = 0x10;
 		}
 		
 		if(texture_offset) {
-			std::optional<texture> tex = create_fip_texture(file, inner_offset + *texture_offset);
+			std::optional<texture> tex = create_fip_texture(&uncompressed, *texture_offset);
 			if(tex) {
-				if(file != &iso) {
-					file->name =
-						"Tbl " + std::to_string(table.index) +
-						" Tex " + std::to_string(off / sizeof(texture_table_entry));
-				}
 				textures.emplace_back(std::move(*tex));
 			} else {
 				bad_textures++;
-				std::cerr << "Error: Failed to load 2FIP texture at "
-				          << file->resource_path() << "\n";
+				fprintf(stderr, "error: Failed to read PIF texture at %lx\n", abs_offset);
 			}
 		}
 	}
@@ -96,5 +88,5 @@ std::vector<texture> enumerate_fip_textures(iso_stream& iso, const toc_table& ta
 		return {};
 	}
 	
-	return textures;
+	return textures;*/ return {};
 }

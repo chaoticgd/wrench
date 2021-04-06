@@ -1,6 +1,6 @@
-"""
+/*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019 chaoticgd
+	Copyright (C) 2019-2021 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -14,13 +14,16 @@
 
 	You should have received a copy of the GNU General Public License
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
-"""
+*/
 
-import sys
-import json
-import subprocess
+#ifndef ICONS_H
+#define ICONS_H
 
-def get_segments(path, align=128):
-	args = [sys.path[0] + '/../bin/scan', path, '-a', str(align)]
-	segments_str = subprocess.check_output(args)
-	return [json.loads(line) for line in segments_str.decode().split('\n')[:-1]]
+#include "gl_includes.h"
+
+const int START_SCREEN_ICON_SIDE = 96;
+gl_texture create_dvd_icon();
+gl_texture create_folder_icon();
+gl_texture create_floppy_icon();
+
+#endif

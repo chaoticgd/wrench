@@ -99,6 +99,7 @@ struct gl_renderer {
 	bool draw_tfrags = true;
 	bool draw_tcols = true;
 	
+	bool flag = false;
 	std::vector<glm::mat4> moby_local_to_clip_cache;
 };
 

@@ -38,16 +38,6 @@ struct level_texture_entry;
 // Outer level structures
 // *****************************************************************************
 
-packed_struct(sector_range,
-	sector32 offset;
-	sector32 size;
-)
-
-packed_struct(byte_range,
-	uint32_t offset;
-	uint32_t size;
-)
-
 // These are also present in the table of contents for GC, UYA and DL.
 packed_struct(level_file_header_rac23,
 	uint32_t magic;              // 0x0 Equal to 0x60.
@@ -152,8 +142,8 @@ packed_struct(level_asset_header,
 	uint32_t unknown_24;             // 0x24
 	uint32_t unknown_28;             // 0x28
 	uint32_t unknown_2c;             // 0x2c
-	uint32_t terrain_texture_count;  // 0x30
-	uint32_t terrain_texture_offset; // 0x34 Relative to asset header.
+	uint32_t tfrag_texture_count;    // 0x30
+	uint32_t tfrag_texture_offset;   // 0x34 Relative to asset header.
 	uint32_t moby_texture_count;     // 0x38
 	uint32_t moby_texture_offset;    // 0x3c
 	uint32_t tie_texture_count;      // 0x40
@@ -339,14 +329,6 @@ packed_struct(vec3f,
 	
 	bool operator!=(const vec3f& rhs) const {
 		return x != rhs.x || y != rhs.y || z != rhs.z;
-	}
-
-	vec3f operator+(const vec3f& rhs) {
-		vec3f r;
-		r.x = x + rhs.x;
-		r.y = y + rhs.y;
-		r.z = z + rhs.z;
-		return r;
 	}
 )
 

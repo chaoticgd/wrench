@@ -51,16 +51,16 @@ public:
 	};
 
 	struct tcol_data {
-		std::vector<vec3f> vertices; // these are relative to coordinate_values
+		std::vector<glm::vec3> vertices; // these are relative to coordinate_values
 		std::vector<tcol_face> faces;
 	};
 
 	tcol(stream *backing, std::size_t base_offset);
 
-	void push_face(vec3f offset, tcol::tcol_face face, tcol::tcol_data data);
+	void push_face(glm::vec3 offset, tcol::tcol_face face, tcol::tcol_data data);
 
-	vec3f get_collision_color(uint8_t colId);
-	vec3f unpack_vertex(uint32_t vertex);
+	glm::vec3 get_collision_color(uint8_t colId);
+	glm::vec3 unpack_vertex(uint32_t vertex);
 
 	std::vector<float> triangles() const override;
 	std::vector<float> colors() const override;

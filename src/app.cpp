@@ -27,103 +27,178 @@
 #include "renderer.h"
 #include "fs_includes.h"
 #include "worker_thread.h"
+#include "level_file_types.h"
 
-using project_ptr = std::unique_ptr<wrench_project>;
-
-void app::new_project(game_iso game) {
-	if(_lock_project) {
-		return;
-	}
-
-	_lock_project = true;
-	_project.reset(nullptr);
-
-	emplace_window<worker_thread<project_ptr, game_iso>>(
-		"New Project", game,
-		[](game_iso game, worker_logger& log) {
-			try {
-				auto result = std::make_unique<wrench_project>(game, log);
-				log << "\nProject created successfully.";
-				return std::make_optional(std::move(result));
-			} catch(stream_error& err) {
-				log << err.what() << "\n";
-				log << err.stack_trace;
-			}
-			return std::optional<project_ptr>();
-		},
-		[&](project_ptr project) {
-			project->post_load();
-			_project.swap(project);
-			_lock_project = false;
-
-			renderer.reset_camera(this);
-			
-			glfwSetWindowTitle(glfw_window, "Wrench Editor - [Unsaved Project]");
+void after_directory_loaded(app& a) {
+	for(auto& window : a.windows) {
+		if(dynamic_cast<gui::start_screen*>(window.get()) != nullptr) {
+			window->close(a);
+			break;
 		}
-	);
+	}
 }
 
-void app::open_project(std::string path) {
+#ifdef _WIN32
+	const char* ISO_UTILITY_PATH = ".\\bin\\iso";
+#else
+	const char* ISO_UTILITY_PATH = "./bin/iso";
+#endif
+
+void app::extract_iso(fs::path iso_path, fs::path dir) {
 	if(_lock_project) {
 		return;
 	}
 
 	_lock_project = true;
-	_project.reset(nullptr);
-
-	struct open_project_input {
-		std::vector<game_iso> game_isos;
-		std::string path;
-	};
-
-	auto in = open_project_input { config::get().game_isos, path };
-	emplace_window<worker_thread<project_ptr, open_project_input>>(
-		"Open Project", in,
-		[](auto in, worker_logger& log) {
-			try {
-				auto result = std::make_unique<wrench_project>(in.game_isos, in.path, log);
-				log << "\nProject opened successfully.";
-				return std::make_optional(std::move(result));
-			} catch(stream_error& err) {
-				log << err.what() << "\n";
-				log << err.stack_trace;
+	directory = "";
+	
+	std::pair<std::string, std::string> in(iso_path.string(), dir.string());
+	
+	emplace_window<worker_thread<int, decltype(in)>>(
+		"Extract ISO", in,
+		[](std::pair<std::string, std::string> in, worker_logger& log) {
+			std::vector<std::string> args = {"extract", in.first, in.second};
+			int exit_code = execute_command(ISO_UTILITY_PATH, args);
+			if(exit_code != 0) {
+				log << "\nFailed to extract files from ISO file!\n";
 			}
-			return std::optional<project_ptr>();
+			return exit_code;
 		},
-		[&](project_ptr project) {
-			project->post_load();
-			_project.swap(project);
+		[dir, this](int exit_code) {
+			if(exit_code != 0) {
+				_lock_project = false;
+				return;
+			}
+			directory = dir;
 			_lock_project = false;
-
 			renderer.reset_camera(this);
-			
-			auto title = std::string("Wrench Editor - [") + path + "]";
+			auto title = std::string("Wrench Editor - [") + dir.string() + "]";
 			glfwSetWindowTitle(glfw_window, title.c_str());
+			after_directory_loaded(*this);
 		}
 	);
 }
 
-wrench_project* app::get_project() {
-	return _project.get();
+void app::open_directory(fs::path dir) {
+	if(fs::is_directory(dir)) {
+		directory = dir;
+		after_directory_loaded(*this);
+	}
 }
 
-const wrench_project* app::get_project() const {
-	return const_cast<app*>(this)->get_project();
+void app::build_iso(build_settings settings) {
+	if(level* lvl = get_level()) {
+		array_stream dest;
+		lvl->write(dest);
+		
+		file_stream file(lvl->path.string(), std::ios::out);
+		file.write_n(dest.buffer.data(), dest.buffer.size());
+	}
+	
+	emplace_window<worker_thread<int, build_settings>>(
+		"Build ISO", settings,
+		[](build_settings settings, worker_logger& log) {
+			std::vector<std::string> args = {
+				"build",
+				settings.input_dir.string(),
+				settings.output_iso.string()
+			};
+			if(settings.single_level) {
+				args.push_back("--single-level");
+				args.push_back(std::to_string(settings.single_level_index));
+			}
+			if(settings.no_mpegs) {
+				args.push_back("--no-mpegs");
+			}
+			int exit_code = execute_command(ISO_UTILITY_PATH, args);
+			if(exit_code != 0) {
+				log << "\nFailed to build ISO file!\n";
+			}
+			return exit_code;
+		},
+		[settings](int exit_code) {
+			if(exit_code == 0 && settings.launch_emulator) {
+				fs::path emu_path = config::get().emulator_path;
+				execute_command(emu_path.string(), {settings.output_iso.string()});
+			}
+		}
+	);
+}
+
+void app::open_file(fs::path path) {
+	file_stream file(path.string());
+	
+	uint32_t magic = file.read<uint32_t>(0x0);
+	auto info = LEVEL_FILE_TYPES.find(magic);
+	if(info != LEVEL_FILE_TYPES.end()) {
+		switch(info->second.type) {
+			case level_file_type::LEVEL: {
+				level new_lvl;
+				try {
+					new_lvl.read(file, path);
+				} catch(stream_error& e) {
+					printf("error: Failed to load level! %s\n", e.what());
+					return;
+				}
+				_lvl.emplace(std::move(new_lvl));
+				renderer.reset_camera(this);
+				break;
+			}
+			case level_file_type::AUDIO:
+				break;
+			case level_file_type::SCENE:
+				break;
+		}
+		return;
+	}
+	
+	armor_archive armor;
+	if(armor.read(file)) {
+		_armor.emplace(std::move(armor));
+		return;
+	}
 }
 
 level* app::get_level() {
-	if(auto project = get_project()) {
-		return project->selected_level();
-	}
-	return nullptr;
+	return _lvl ? &(*_lvl) : nullptr;
 }
 
 const level* app::get_level() const {
-	return const_cast<app*>(this)->get_level();
+	return _lvl ? &(*_lvl) : nullptr;
 }
 
 bool app::has_camera_control() {
 	return renderer.camera_control;
+}
+
+std::map<std::string, std::vector<texture>*> app::texture_lists() {
+	std::map<std::string, std::vector<texture>*> result;
+	if(auto* lvl = get_level()) {
+		auto name = lvl->path.filename().string();
+		result[name + "/Mipmaps"] = &lvl->mipmap_textures;
+		result[name + "/Tfrags"] = &lvl->tfrag_textures;
+		result[name + (renderer.flag ? "/Mobys" : "/Mobies")] = &lvl->moby_textures;
+		result[name + "/Ties"] = &lvl->tie_textures;
+		result[name + "/Shrubs"] = &lvl->shrub_textures;
+		result[name + "/Sprites"] = &lvl->sprite_textures;
+		result[name + "/Loading Screen"] = &lvl->loading_screen_textures;
+	}
+	if(_armor) {
+		result["Armour"] = &_armor->textures;
+	}
+	return result;
+}
+
+std::map<std::string, model_list> app::model_lists() {
+	std::map<std::string, model_list> result;
+	if(auto* lvl = get_level()) {
+		auto name = lvl->path.filename().string();
+		result[name + (renderer.flag ? "/Mobys" : "/Mobies")] = { &lvl->moby_models, &lvl->moby_textures };
+	}
+	if(_armor) {
+		result["Armour"] = { &_armor->models, &_armor->textures };
+	}
+	return result;
 }
 
 std::vector<float*> get_imgui_scale_parameters() {
@@ -193,20 +268,6 @@ void config::read() {
 			
 			auto debug_table = toml::find_or(settings_file, "debug", toml::value());
 			debug.stream_tracing = toml::find_or(debug_table, "stream_tracing", false);
-			
-			auto game_paths = toml::find_or<std::vector<toml::table>>(settings_file, "game_paths", {});
-			for(auto& game_path : game_paths) {
-				auto game_path_value = toml::value(game_path);
-				game_iso game;
-				game.path = toml::find<std::string>(game_path_value, "path");
-				game.game_db_entry = toml::find<std::string>(game_path_value, "game");
-				game.md5 = toml::find<std::string>(game_path_value, "md5");
-				// Earlier versions of wrench would generate corrupted MD5
-				// hashes that were too short.
-				if(game.md5.size() == 32) {
-					game_isos.push_back(game);
-				}
-			}
 		} catch(toml::syntax_error& err) {
 			fprintf(stderr, "Failed to parse settings: %s", err.what());
 		} catch(std::out_of_range& err) {
@@ -218,16 +279,6 @@ void config::read() {
 }
 
 void config::write() {
-	std::vector<toml::value> game_paths_table;
-	for(std::size_t i = 0; i < game_isos.size(); i++) {
-		auto game = game_isos[i];
-		game_paths_table.emplace_back(toml::value {
-			{"path", game.path},
-			{"game", game.game_db_entry},
-			{"md5", game.md5}
-		});
-	}
-	
 	toml::value file {
 		{"general", {
 			{"emulator_path", emulator_path},
@@ -239,8 +290,7 @@ void config::write() {
 		}},
 		{"debug", {
 			{"stream_tracing", debug.stream_tracing}
-		}},
-		{"game_paths", toml::value(game_paths_table)}
+		}}
 	};
 	
 	std::ofstream settings(settings_file_path);

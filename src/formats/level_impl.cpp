@@ -21,23 +21,28 @@
 
 #include "../app.h"
 
-void level::read(
-		stream* src,
-		toc_level index_,
-		size_t header_offset,
-		sector32 base_offset,
-		sector32 effective_base_offset,
-		size_t size_in_bytes) {
-	index = index_;
-	index.main_part_size = sector32::size_from_bytes(size_in_bytes);
-	file_header = read_file_header(src, header_offset);
-	file_header.base_offset = base_offset;
+void level::read(stream& src, fs::path path_) {
+	path = path_;
 	
-	_file.emplace(src);
-	_file->buffer.resize(index.main_part_size.bytes());
-	src->seek(effective_base_offset.bytes());
-	src->read_n(_file->buffer.data(), _file->buffer.size());
-	_file->name = "LEVEL" + std::to_string(index.level_table_index) + ".WAD";
+	if(src.size() > 1024 * 1024 * 1024) {
+		throw stream_format_error("The file is over 1GB in size.");
+	}
+	
+	read_file_header(src);
+	
+	// Load the level data into memory. This logic should handle both levels
+	// that have been written out by my ISO tool, and levels that have been
+	// extracted from the disc with a traditional ISO tool. This doesn't handle
+	// the case where the ToC header has been appended to the beginning of the
+	// file without patching the base_offset field, and it doesn't handle the
+	// case where the ToC header is stored in a seperate file.
+	if(file_header.base_offset.sectors != 0 && file_header.base_offset.sectors != info.header_size_sectors) {
+		throw stream_format_error("Invalid base offset field in file header!\n");
+	}
+	_file.emplace();
+	_file->buffer.resize(src.size() - file_header.base_offset.sectors * SECTOR_SIZE);
+	src.seek(file_header.base_offset.sectors * SECTOR_SIZE);
+	src.read_n(_file->buffer.data(), _file->buffer.size());
 
 	switch(file_header.type) {
 		case level_type::RAC23:
@@ -91,35 +96,33 @@ void level::read(
 		return;
 	}
 	
-	read_hud_banks(src);
-	read_loading_screen_textures(src);
+	read_hud_banks(&src);
+	read_loading_screen_textures(&src);
 }
 
-level_file_header level::read_file_header(stream* src, std::size_t offset) {
-	level_file_header result { (level_type) 0 };
-	src->seek(offset);
-	result.type = (level_type) src->peek<uint32_t>();
-	switch(result.type) {
+void level::read_file_header(stream& file) {
+	file.seek(0);
+	file_header.type = (level_type) file.peek<uint32_t>();
+	auto info_iter = LEVEL_FILE_TYPES.find((uint32_t) file_header.type);
+	assert(info_iter != LEVEL_FILE_TYPES.end());
+	info = info_iter->second;
+	switch(file_header.type) {
 		case level_type::RAC23: {
-			auto file_header = src->read<level_file_header_rac23>();
-			swap_level_file_header_rac23(result, file_header);
+			auto header = file.read<level_file_header_rac23>();
+			swap_level_file_header_rac23(file_header, header);
 			break;
 		}
 		case level_type::RAC2_68: {
-			auto file_header = src->read<level_file_header_rac2_68>();
-			swap_level_file_header_rac2_68(result, file_header);
+			auto header = file.read<level_file_header_rac2_68>();
+			swap_level_file_header_rac2_68(file_header, header);
 			break;
 		}
 		case level_type::RAC4: {
-			auto file_header = src->read<level_file_header_rac4>();
-			swap_level_file_header_rac4(result, file_header);
+			auto header = file.read<level_file_header_rac4>();
+			swap_level_file_header_rac4(file_header, header);
 			break;
 		}
-		default: {
-			throw stream_format_error("Invalid level file header!");
-		}
 	}
-	return result;
 }
 
 void level::clear_selection() {
@@ -212,7 +215,7 @@ void level::read_textures(std::size_t asset_offset, level_asset_header asset_hea
 		return textures;
 	};
 
-	terrain_textures = load_texture_table(*_file, asset_header.terrain_texture_offset, asset_header.terrain_texture_count);
+	tfrag_textures = load_texture_table(*_file, asset_header.tfrag_texture_offset, asset_header.tfrag_texture_count);
 	moby_textures = load_texture_table(*_file, asset_header.moby_texture_offset, asset_header.moby_texture_count);
 	tie_textures = load_texture_table(*_file, asset_header.tie_texture_offset, asset_header.tie_texture_count);
 	shrub_textures = load_texture_table(*_file, asset_header.shrub_texture_offset, asset_header.shrub_texture_count);
@@ -281,30 +284,6 @@ void level::read_loading_screen_textures(stream* file) {
 	//} else {
 	//	fprintf(stderr, "warning: Failed to read loading screen textures (missing magic bytes).\n");
 	//}
-}
-
-void level::write_back(stream* iso) {
-	// Build the level.
-	array_stream lvl;
-	write(lvl);
-	
-	// Write the level to the ISO.
-	iso->seek(file_header.base_offset.bytes());
-	iso->write_n(lvl.buffer.data(), lvl.buffer.size());
-	
-	// Copy the header into the table of contents.
-	uint32_t base_offset = iso->read<uint32_t>(index.main_part.bytes() + 0x4);
-	assert(lvl.size() >= SECTOR_SIZE);
-	iso->seek(index.main_part.bytes());
-	iso->write_n(lvl.buffer.data(), SECTOR_SIZE); // Assume the header is a single sector.
-	iso->write<uint32_t>(index.main_part.bytes() + 0x4, base_offset);
-	
-	// Write the file size into the level table.
-	size_t size = lvl.size();
-	if(size % SECTOR_SIZE != 0) {
-		size += SECTOR_SIZE - (size % SECTOR_SIZE);
-	}
-	iso->write<uint32_t>(index.main_part_size_offset, size / SECTOR_SIZE);
 }
 
 void level::write(array_stream& dest) {
@@ -387,6 +366,28 @@ void level::write(array_stream& dest) {
 
 stream* level::moby_stream() {
 	return &(*_world_segment);
+}
+
+void level::push_command(std::function<void(level&)> apply, std::function<void(level&)> undo) {
+	_history_stack.resize(_history_index++);
+	_history_stack.emplace_back(undo_redo_command { apply, undo });
+	apply(*this);
+}
+
+void level::undo() {
+	if(_history_index <= 0) {
+		throw command_error("Nothing to undo.");
+	}
+	_history_stack[_history_index - 1].undo(*this);
+	_history_index--;
+}
+
+void level::redo() {
+	if(_history_index >= _history_stack.size()) {
+		throw command_error("Nothing to redo.");
+	}
+	_history_stack[_history_index].apply(*this);
+	_history_index++;
 }
 
 void swap_level_file_header_rac23(level_file_header& l, level_file_header_rac23& r) {

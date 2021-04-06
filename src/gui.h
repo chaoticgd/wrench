@@ -42,10 +42,26 @@ namespace gui {
 
 	void create_dock_layout(const app& a);
 	void begin_docking();
-
+	
+	void render_tree_menu(app& a);
+	
 	template <typename T, typename... T_constructor_args>
 	void render_menu_bar_window_toggle(app& a, T_constructor_args... args);
-
+	
+	class start_screen : public window {
+	public:
+		start_screen();
+		
+		const char* title_text() const override;
+		ImVec2 initial_size() const override;
+		void render(app& a) override;
+	
+	private:
+		bool button(const char* str, ImTextureID user_texture_id, const ImVec2& icon_size) const;
+	
+		gl_texture dvd, folder, floppy;
+	};
+	
 	class inspector : public window {
 	public:
 		const char* title_text() const override;
@@ -151,18 +167,6 @@ namespace gui {
 		std::string _new_game_path;
 	};
 	
-	class manual_patcher : public window {
-	public:
-		manual_patcher();
-	
-		const char* title_text() const override;
-		ImVec2 initial_size() const override;
-		void render(app& a) override;
-	private:
-		std::string _scroll_offset_str;
-		std::size_t _scroll_offset;
-	};
-	
 	class document_viewer : public window {
 	public:
 		document_viewer(const char* path);
@@ -229,29 +233,6 @@ namespace gui {
 		const char* _title;
 		bool _is_open = false;
 		std::string _text;
-	};
-
-	class file_dialog : public window {
-	public:
-		enum mode { open, save };
-
-		file_dialog(const char* title, mode m, std::vector<std::string> extensions);
-
-		const char* title_text() const override;
-		ImVec2 initial_size() const override;
-		void render(app& a) override;
-		bool is_unique() const override;
-
-		void on_okay(std::function<void(std::string)> callback);
-
-	private:
-		const char* _title;
-		mode _mode;
-		std::vector<std::string> _extensions;
-		std::string _directory_input;
-		fs::path _directory;
-		std::string _file;
-		std::function<void(std::string)> _callback;
 	};
 	
 	class hex_dump : public window {

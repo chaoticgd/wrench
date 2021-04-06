@@ -32,11 +32,13 @@
 #include "stream.h"
 #include "window.h"
 #include "game_db.h"
-#include "project.h"
 #include "renderer.h"
+#include "fs_includes.h"
 #include "worker_logger.h"
 #include "formats/texture.h"
+#include "formats/game_model.h"
 #include "formats/level_impl.h"
+#include "formats/armor_archive.h"
 
 # /*
 #	Represents the current state of the program including the currently open
@@ -44,6 +46,20 @@
 # */
 
 struct GLFWwindow;
+
+struct build_settings {
+	fs::path input_dir;
+	fs::path output_iso;
+	bool launch_emulator = false;
+	bool single_level = false; // Write out just a single level?
+	int single_level_index = -1; // If so, which one?
+	bool no_mpegs = false;
+};
+
+struct model_list {
+	std::vector<moby_model>* models;
+	std::vector<texture>* textures;
+};
 
 class app {
 public:
@@ -66,17 +82,25 @@ public:
 	gl_renderer renderer;
 	
 	int64_t delta_time = 0;
-
-	void new_project(game_iso game);
-	void open_project(std::string path);
-
-	std::string project_path();
-
-	wrench_project* get_project();
-	const wrench_project* get_project() const;
+	
+	fs::path directory; // The directory to build new ISO files from.
+	
+	void extract_iso(fs::path iso_path, fs::path dir);
+	void open_directory(fs::path dir);
+	void build_iso(build_settings settings);
+	void open_file(fs::path path);
 	
 	level* get_level();
 	const level* get_level() const;
+	
+	std::map<std::string, std::vector<texture>*> texture_lists();
+	std::map<std::string, model_list> model_lists();
+	
+private:
+	std::optional<level> _lvl;
+	std::optional<armor_archive> _armor;
+
+public:
 
 	bool has_camera_control();
 
@@ -87,14 +111,12 @@ public:
 
 private:
 	std::atomic_bool _lock_project = false; // Prevent race conditions while creating/loading a project.
-	std::unique_ptr<wrench_project> _project;
 	
 	std::vector<float> _gui_scale_parameters;
 };
 
 struct config {
 	std::string emulator_path;
-	std::vector<game_iso> game_isos;
 	int compression_threads;
 	float gui_scale;
 	bool vsync;

@@ -148,7 +148,6 @@ void translate_tool::draw(app& a, glm::mat4 world_to_clip) {
 	ImGui::InputFloat3("##displacement_input", &_displacement.x);
 	if(ImGui::Button("Apply")) {
 		level* lvl = a.get_level();
-		level_proxy lvlp(a.get_project());
 		std::vector<entity_id> ids = lvl->selected_entity_ids();
 		glm::vec3 displacement = _displacement;
 		std::map<entity_id, glm::vec3> old_positions;
@@ -163,23 +162,23 @@ void translate_tool::draw(app& a, glm::mat4 world_to_clip) {
 			}
 		});
 		
-		a.get_project()->push_command(
-			[lvlp, ids, displacement]() {
-				lvlp.get().for_each<matrix_entity>([&](matrix_entity& ent) {
+		lvl->push_command(
+			[ids, displacement](level& lvl) {
+				lvl.for_each<matrix_entity>([&](matrix_entity& ent) {
 					if(contains(ids, ent.id)) {
 						ent.local_to_world[3].x += displacement.x;
 						ent.local_to_world[3].y += displacement.y;
 						ent.local_to_world[3].z += displacement.z;
 					}
 				});
-				lvlp.get().for_each<euler_entity>([&](euler_entity& ent) {
+				lvl.for_each<euler_entity>([&](euler_entity& ent) {
 					if(contains(ids, ent.id)) {
 						ent.position += displacement;
 					}
 				});
 			},
-			[lvlp, old_positions]() {
-				lvlp.get().for_each<matrix_entity>([&](matrix_entity& ent) {
+			[old_positions](level& lvl) {
+				lvl.for_each<matrix_entity>([&](matrix_entity& ent) {
 					if(map_contains(old_positions, ent.id)) {
 						const glm::vec3& pos = old_positions.at(ent.id);
 						ent.local_to_world[3].x = pos.x;
@@ -187,7 +186,7 @@ void translate_tool::draw(app& a, glm::mat4 world_to_clip) {
 						ent.local_to_world[3].z = pos.z;
 					}
 				});
-				lvlp.get().for_each<euler_entity>([&](euler_entity& ent) {
+				lvl.for_each<euler_entity>([&](euler_entity& ent) {
 					if(map_contains(old_positions, ent.id)) {
 						ent.position = old_positions.at(ent.id);
 					}
@@ -261,19 +260,18 @@ void spline_tool::draw(app& a, glm::mat4 world_to_clip) {
 		spline_entity* spline = lvl.entity_from_id<spline_entity>(_selected_spline);
 		auto point = calculate_new_point(spline, ray);
 		if(point) {
-			level_proxy lvlp(a.get_project());
 			auto id = _selected_spline;
 			auto vertex = _selected_vertex;
 			glm::vec4 old_point = spline->vertices[_selected_vertex];
-			a.get_project()->push_command(
-				[lvlp, id, vertex, old_point, point]() {
-					spline_entity* spline = lvlp.get().entity_from_id<spline_entity>(id);
+			lvl.push_command(
+				[id, vertex, old_point, point](level& lvl) {
+					spline_entity* spline = lvl.entity_from_id<spline_entity>(id);
 					assert(spline != nullptr);
 					assert(spline->vertices.size() > vertex);
 					spline->vertices[vertex] = glm::vec4(*point, old_point.w);
 				},
-				[lvlp, id, vertex, old_point]() {
-					spline_entity* spline = lvlp.get().entity_from_id<spline_entity>(id);
+				[id, vertex, old_point](level& lvl) {
+					spline_entity* spline = lvl.entity_from_id<spline_entity>(id);
 					assert(spline != nullptr);
 					assert(spline->vertices.size() > vertex);
 					spline->vertices[vertex] = old_point;

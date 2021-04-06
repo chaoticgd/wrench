@@ -19,8 +19,6 @@
 #ifndef GL_INCLUDES_H
 #define GL_INCLUDES_H
 
-#ifdef WRENCH_EDITOR
-
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
@@ -47,5 +45,6 @@ struct gl_texture {
 	gl_texture& operator=(gl_texture&& rhs) { id = rhs.id; rhs.id = 0; return *this; }
 };
 
-#endif
+#define M_PI 3.14159265358979323846
+
 #endif
