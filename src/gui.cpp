@@ -1237,37 +1237,14 @@ void gui::model_browser::render(app& a) {
 	} else {
 		preview_size = { 400, 300 };
 	}
-	
-	// If the mouse is dragging, this will store the displacement from the
-	// mouse position when the button was pressed down.
-	glm::vec2 drag_delta(0, 0);
+
+	static bool is_dragging = false;
+	static GLuint preview_texture = 0;
 	
 	ImGui::BeginChild("preview", preview_size);
 	{
-		static GLuint preview_texture = 0;
 		ImGui::Image((void*) (intptr_t) preview_texture, preview_size);
-		static bool is_dragging = false;
-		bool image_hovered = ImGui::IsItemHovered();
-		if(ImGui::IsMouseDragging(ImGuiMouseButton_Left) && (image_hovered || is_dragging)) {
-			drag_delta = get_drag_delta();
-			is_dragging = true;
-		}
-		
-		// Update zoom and rotation.
-		if(image_hovered || is_dragging) {
-			ImGuiIO& io = ImGui::GetIO();
-			_view_params.zoom *= io.MouseWheel * a.delta_time * 0.0001 + 1;
-			if(_view_params.zoom < 0.f) _view_params.zoom = 0.f;
-			if(_view_params.zoom > 1.f) _view_params.zoom = 1.f;
-			
-			if(ImGui::IsMouseReleased(0)) {
-				_view_params.pitch_yaw += get_drag_delta();
-				is_dragging = false;
-			}
-		}
-		
-		view_params preview_params = _view_params;
-		preview_params.pitch_yaw += drag_delta;
+
 		render_preview(
 			a,
 			&preview_texture,
@@ -1275,7 +1252,26 @@ void gui::model_browser::render(app& a) {
 			*_model_lists.at(_list).textures,
 			a.renderer,
 			preview_size,
-			preview_params);
+			_view_params);
+
+		ImGuiIO& io = ImGui::GetIO();
+		glm::vec2 mouseDelta = glm::vec2(io.MouseDelta.y, io.MouseDelta.x) * 0.01f;
+		bool image_hovered = ImGui::IsItemHovered();
+
+		if(image_hovered || is_dragging) {
+			if(ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
+				is_dragging = true;
+				_view_params.pitch_yaw += mouseDelta;
+			}
+	
+			_view_params.zoom *= io.MouseWheel * a.delta_time * 0.0001 + 1;
+			if(_view_params.zoom < 0.f) _view_params.zoom = 0.f;
+			if(_view_params.zoom > 1.f) _view_params.zoom = 1.f;
+		}
+
+		if(ImGui::IsMouseReleased(0)) {
+			is_dragging = false;
+		}
 	}
 	ImGui::EndChild();
 	
@@ -1290,6 +1286,7 @@ void gui::model_browser::render(app& a) {
 				{ view_mode::WIREFRAME, "Wireframe" },
 				{ view_mode::TEXTURED_POLYGONS, "Textured Polygons" }
 			};
+
 			if(ImGui::BeginCombo("View Mode", modes.at(_view_params.mode))) {
 				for(auto [mode, name] : modes) {
 					if(ImGui::Selectable(name, _view_params.mode == mode)) {
@@ -1494,11 +1491,6 @@ void gui::model_browser::render_preview(
 		}
 	}
 	
-}
-
-glm::vec2 gui::model_browser::get_drag_delta() const {
-	auto delta = ImGui::GetMouseDragDelta();
-	return glm::vec2(delta.y, delta.x) * 0.01f;
 }
 
 void gui::model_browser::render_submodel_list(moby_model& model) {
