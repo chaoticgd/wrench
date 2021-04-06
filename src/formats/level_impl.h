@@ -80,6 +80,7 @@ struct level_primary_header {
 	byte_range hud_bank_4;
 	byte_range asset_wad;
 	byte_range loading_screen_textures;
+	byte_range instances_wad;
 };
 
 class level {

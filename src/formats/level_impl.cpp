@@ -23,6 +23,7 @@
 
 void level::read(stream& src, fs::path path_) {
 	path = path_;
+	std::optional<simple_wad_stream> _instances_segment;
 	
 	if(src.size() > 1024 * 1024 * 1024) {
 		throw stream_format_error("The file is over 1GB in size.");
@@ -73,7 +74,13 @@ void level::read(stream& src, fs::path path_) {
 			world.read_rac23();
 			break;
 		case level_type::RAC4:
-			world.read_rac4();
+			size_t instances_wad_offset =
+				file_header.primary_header.offset.bytes() +
+				_primary_header.instances_wad.offset;
+			_instances_segment.emplace(&(*_file), instances_wad_offset);
+			_instances_segment->name = "Instances Segment";
+
+			world.read_rac4(&(*_instances_segment));
 			break;
 	}
 	
@@ -453,5 +460,5 @@ void swap_primary_header_rac4(level_primary_header& l, level_primary_header_rac4
 	SWAP_PACKED(l.hud_bank_3, r.hud_bank_3);
 	SWAP_PACKED(l.hud_bank_4, r.hud_bank_4);
 	SWAP_PACKED(l.asset_wad, r.asset_wad);
-	SWAP_PACKED(l.loading_screen_textures, r.loading_screen_textures);
+	SWAP_PACKED(l.instances_wad, r.instances_wad);
 }

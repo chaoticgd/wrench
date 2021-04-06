@@ -117,7 +117,8 @@ packed_struct(level_primary_header_rac4,
 	byte_range hud_bank_3;     // 0x40
 	byte_range hud_bank_4;     // 0x48
 	byte_range asset_wad;      // 0x50
-	byte_range loading_screen_textures; // 0x58
+	byte_range instances_wad;  // 0x58
+	byte_range world_wad;      // 0x60
 )
 
 packed_struct(level_code_segment_header,
@@ -378,6 +379,25 @@ packed_struct(world_header_rac23,
 	uint32_t unknown_90;         // 0x90
 	uint32_t unknown_94;         // 0x94
 	uint32_t unknown_98;         // 0x98
+)
+
+packed_struct(instances_header_rac4,
+	uint32_t directional_lights; // 0x0
+	uint32_t unknown_4;          // 0x4
+	uint32_t ties;               // 0x8
+	uint32_t unknown_c;          // 0xc
+	uint32_t unknown_10;         // 0x10
+	uint32_t shrubs;             // 0x14
+	uint32_t unknown_18;         // 0x18
+	uint32_t unknown_1c;         // 0x1c
+	uint32_t unknown_20;         // 0x20
+	uint32_t unknown_24;         // 0x24
+	uint32_t unknown_28;         // 0x28
+	uint32_t unknown_2c;         // 0x2c
+	uint32_t unknown_30;         // 0x30
+	uint32_t unknown_34;         // 0x34
+	uint32_t unknown_38;         // 0x38
+	uint32_t unknown_3c;         // 0x3c
 )
 
 packed_struct(world_header_rac4,
