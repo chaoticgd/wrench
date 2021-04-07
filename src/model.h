@@ -30,7 +30,7 @@
 
 class model {
 public:
-	model();
+	model() {}
 	model(const model& rhs) = delete;
 	model(model&& rhs);
 	virtual ~model();
@@ -47,9 +47,9 @@ public:
 	std::size_t vertex_color_buffer_size() const;
 	
 private:
-	GLuint _vertex_buffer;
+	GLuint _vertex_buffer = 0;
 	std::size_t _vertex_buffer_size;
-	GLuint _vertex_color_buffer;
+	GLuint _vertex_color_buffer = 0;
 	std::size_t _vertex_color_buffer_size;
 };
 
