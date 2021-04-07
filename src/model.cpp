@@ -20,20 +20,23 @@
 
 #include "stream.h"
 
-model::model()
-	: _vertex_buffer(0),
-	  _vertex_buffer_size(0) {}
-
 model::model(model&& rhs)
 	: _vertex_buffer(rhs._vertex_buffer),
-	  _vertex_buffer_size(rhs._vertex_buffer_size) {
+	  _vertex_buffer_size(rhs._vertex_buffer_size),
+	  _vertex_color_buffer(rhs._vertex_color_buffer),
+	  _vertex_color_buffer_size(rhs._vertex_color_buffer_size) {
 	rhs._vertex_buffer = 0;
 	rhs._vertex_buffer_size = 0;
+	rhs._vertex_color_buffer = 0;
+	rhs._vertex_color_buffer_size = 0;
 }
 
 model::~model() {
 	if(_vertex_buffer != 0) {
 		glDeleteBuffers(1, &_vertex_buffer);
+	}
+	if(_vertex_color_buffer != 0) {
+		glDeleteBuffers(1, &_vertex_color_buffer);
 	}
 }
 
@@ -45,18 +48,7 @@ void model::update() {
 	
 	glDeleteBuffers(1, &_vertex_buffer);
 	
-	std::vector<float> vertex_data;
-	std::vector<float> vertex_color_data;
-	try {
-		vertex_data = triangles();
-	} catch(stream_error& e) {
-		// We've failed to read the model data.
-		_vertex_buffer = 0;
-		_vertex_buffer_size = 0;
-		fprintf(stderr, "warning: Failed to load model at %p.\n", this);
-		return;
-	}
-	
+	std::vector<float> vertex_data = triangles();
 	_vertex_buffer_size = vertex_data.size();
 	glGenBuffers(1, &_vertex_buffer);
 	glBindBuffer(GL_ARRAY_BUFFER, _vertex_buffer);
@@ -64,16 +56,7 @@ void model::update() {
 		_vertex_buffer_size * sizeof(float),
 		vertex_data.data(), GL_STATIC_DRAW);
 
-	try {
-		vertex_color_data = colors();
-	}
-	catch (stream_error& e) {
-		// no colors
-		_vertex_color_buffer = 0;
-		_vertex_color_buffer_size = 0;
-		return;
-	}
-
+	std::vector<float> vertex_color_data = colors();
 	_vertex_color_buffer_size = vertex_color_data.size();
 	glGenBuffers(1, &_vertex_color_buffer);
 	glBindBuffer(GL_ARRAY_BUFFER, _vertex_color_buffer);
