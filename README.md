@@ -4,7 +4,7 @@ A set of modding tools for the Ratchet & Clank PS2 games.
 
 Current features include an ISO extractor/builder, a level editor, facilities for extracting textures, and a number of command line tools for development.
 
-For build instructions, see the [Build](#build) section below. For usage instructions, see the [User Guide](docs/user_guide.md). To find out which games are compatible, see the [Compatibility Matrix](docs/compatibility_matrix.md). For information on the game's file formats, see the [Formats Guide](docs/formats_guide.md).
+For build instructions, see the Build section below. For usage instructions, see the [User Guide](docs/user_guide.md). To find out which games are compatible, see the [Compatibility Matrix](docs/compatibility_matrix.md). For information on the game's file formats, see the [Formats Guide](docs/formats_guide.md).
 
 ## Screenshots
 
