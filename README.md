@@ -21,6 +21,7 @@ For build instructions, see the Build section below. For usage instructions, see
 	- cmake
 	- g++ 8 or newer
 	- xorg-dev (needed to build GLFW)
+	- zenity
 
 2.	cd into the directory above where you want Wrench to live e.g. `cd ~/code`.
 
