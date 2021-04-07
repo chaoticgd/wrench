@@ -39,7 +39,7 @@ For build instructions, see the Build section below. For usage instructions, see
 
 1.	Install the following tools:
 	- git
-	- Visual Studio (with cmake integration)
+	- Visual Studio (with desktop C++/cmake support)
 
 2.	Open a Visual Studio developer command prompt.
 
