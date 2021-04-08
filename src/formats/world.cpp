@@ -151,8 +151,9 @@ void world_segment::read_rac23() {
 	}
 }
 
-void world_segment::read_rac4() {
+void world_segment::read_rac4(stream* instances_backing) {
 	world_header_rac4 header = backing->read<world_header_rac4>(0);
+	instances_header_rac4 instances_header = instances_backing->read<instances_header_rac4>(0);
 
 	// 
 	properties = backing->read<world_properties>(header.properties);
@@ -242,6 +243,10 @@ void world_segment::read_rac4() {
 	thing_98_1s = backing->read_multiple<world_thing_98>(thing_98_header.part_1_count);
 	thing_98_2s = backing->read_multiple<uint32_t>(
 		(thing_98_header.size - thing_98_header.part_1_count * sizeof(world_thing_98) - sizeof(world_thing_98_header) + 4) / sizeof(uint32_t));
+
+	// read world instances
+	shrubs = read_entity_table<shrub_entity, world_shrub>(instances_backing, instances_header.shrubs, swap_shrub);
+	ties = read_entity_table<tie_entity, world_tie>(instances_backing, instances_header.ties, swap_tie);
 }
 
 template <typename T_1, typename T_2 = char, typename T_3 = char>
@@ -297,10 +302,16 @@ std::vector<uint32_t> world_segment::read_u32_list(uint32_t offset) {
 template <typename T_in_mem, typename T_on_disc>
 std::vector<T_in_mem> world_segment::read_entity_table(
 		uint32_t offset, std::function<void(T_in_mem&, T_on_disc&)> swap_ent) {
+	return read_entity_table(backing, offset, swap_ent);
+}
+
+template <typename T_in_mem, typename T_on_disc>
+std::vector<T_in_mem> world_segment::read_entity_table(
+	stream* backing, uint32_t offset, std::function<void(T_in_mem&, T_on_disc&)> swap_ent) {
 	auto table = backing->read<world_object_table>(offset);
 	std::vector<T_on_disc> src = backing->read_multiple<T_on_disc>(table.count_1);
 	std::vector<T_in_mem> dest;
-	for(T_on_disc& on_disc : src) {
+	for (T_on_disc& on_disc : src) {
 		T_in_mem& ent = dest.emplace_back();
 		ent.id = { _next_entity_id++ };
 		ent.selected = false;

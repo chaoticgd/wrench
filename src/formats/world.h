@@ -198,7 +198,7 @@ public:
 
 	stream* backing;
 	void read_rac23();
-	void read_rac4();
+	void read_rac4(stream* instances_backing);
 	
 private:
 	template <typename T_1, typename T_2 = char, typename T_3 = char>
@@ -213,6 +213,9 @@ private:
 	template <typename T_in_mem, typename T_on_disc>
 	std::vector<T_in_mem> read_entity_table( // Defined in world.cpp.
 		uint32_t offset, std::function<void(T_in_mem&, T_on_disc&)> swap_ent);
+	template <typename T_in_mem, typename T_on_disc>
+	std::vector<T_in_mem> read_entity_table( // Defined in world.cpp.
+		stream* backing, uint32_t offset, std::function<void(T_in_mem&, T_on_disc&)> swap_ent);
 	std::vector<std::vector<uint8_t>> read_pvars(uint32_t table_offset, uint32_t data_offset);
 	template <typename T>
 	void read_terminated_array(std::vector<T>& dest, uint32_t offset); // Defined in world.cpp.

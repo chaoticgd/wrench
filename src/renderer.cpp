@@ -38,6 +38,18 @@ void gl_renderer::prepare_frame(level& lvl, glm::mat4 world_to_clip) {
 			local_to_clip = glm::scale(local_to_clip, glm::vec3(model.scale * moby.scale * 32.f));
 		}
 	}
+
+	shrub_local_to_clip_cache.resize(lvl.world.shrubs.size());
+	for (std::size_t i = 0; i < lvl.world.shrubs.size(); i++) {
+		shrub_entity& shrub = lvl.world.shrubs[i];
+
+		glm::mat4& local_to_clip = shrub_local_to_clip_cache[i];
+		local_to_clip = world_to_clip * shrub.local_to_world;
+		if (lvl.shrub_class_to_model.find(shrub.unknown_0) != lvl.shrub_class_to_model.end()) {
+			shrub_model& model = lvl.shrub_models[lvl.shrub_class_to_model.at(shrub.unknown_0)];
+			local_to_clip = glm::scale(local_to_clip, glm::vec3(model.scale * 32.f));
+		}
+	}
 }
 
 void gl_renderer::draw_level(level& lvl, glm::mat4 world_to_clip) const {
@@ -63,10 +75,66 @@ void gl_renderer::draw_level(level& lvl, glm::mat4 world_to_clip) const {
 	}
 	
 	if(draw_shrubs) {
-		for(shrub_entity& shrub : lvl.world.shrubs) {
-			glm::mat4 local_to_clip = world_to_clip * shrub.local_to_world;
+		/*for(shrub_entity& shrub : lvl.world.shrubs) {
+			auto shrub_model_id = lvl.shrub_class_to_model.at(shrub.unknown_0);
+			shrub_model& shrub_m = lvl.shrub_models[shrub_model_id];
+			glm::mat4 local_to_clip = world_to_clip * glm::scale(shrub.local_to_world, glm::vec3(shrub_m.scale, shrub_m.scale, shrub_m.scale));
 			glm::vec4 colour = get_colour(shrub.selected, glm::vec4(0, 0.5, 0, 1));
-			draw_cube(local_to_clip, colour);
+			draw_model(shrub_m, local_to_clip, colour);
+			// draw_cube(local_to_clip, colour);
+		}*/
+		gl_buffer shrub_local_to_clip_buffer;
+		glGenBuffers(1, &shrub_local_to_clip_buffer());
+		glBindBuffer(GL_ARRAY_BUFFER, shrub_local_to_clip_buffer());
+		glBufferData(GL_ARRAY_BUFFER,
+			shrub_local_to_clip_cache.size() * sizeof(glm::mat4),
+			shrub_local_to_clip_cache.data(), GL_STATIC_DRAW);
+
+		std::size_t shrub_batch_class = INT64_MAX;
+		std::size_t shrub_batch_begin = 0;
+
+		auto draw_shrub_batch = [&](std::size_t batch_end) {
+			if (lvl.shrub_class_to_model.find(shrub_batch_class) != lvl.shrub_class_to_model.end()) {
+				std::size_t model_index = lvl.shrub_class_to_model.at(shrub_batch_class);
+				shrub_model& model = lvl.shrub_models[model_index];
+				draw_shrub_models(
+					model,
+					lvl.shrub_textures,
+					mode,
+					true,
+					shrub_local_to_clip_buffer(),
+					shrub_batch_begin * sizeof(glm::mat4),
+					batch_end - shrub_batch_begin);
+			}
+			else {
+				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				glUseProgram(shaders.solid_colour.id());
+
+				for (std::size_t i = shrub_batch_begin; i < batch_end; i++) {
+					const glm::mat4& local_to_clip = moby_local_to_clip_cache[i];
+					glm::vec4 colour = get_colour(lvl.world.shrubs[i].selected, glm::vec4(0, 1, 0, 1));
+					draw_cube(local_to_clip, colour);
+				}
+			}
+		};
+
+		for (std::size_t i = 0; i < lvl.world.shrubs.size(); i++) {
+			shrub_entity& shrub = lvl.world.shrubs[i];
+			if (shrub.unknown_0 != shrub_batch_class) {
+				draw_shrub_batch(i);
+				shrub_batch_class = shrub.unknown_0;
+				shrub_batch_begin = i;
+			}
+		}
+		draw_shrub_batch(lvl.world.shrubs.size());
+
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		glUseProgram(shaders.solid_colour.id());
+
+		for (std::size_t i = 0; i < lvl.world.shrubs.size(); i++) {
+			if (lvl.world.shrubs[i].selected) {
+				draw_cube(shrub_local_to_clip_cache[i], selected_colour);
+			}
 		}
 	}
 	
@@ -496,6 +564,140 @@ void gl_renderer::draw_moby_models(
 	glDisableVertexAttribArray(2);
 	glDisableVertexAttribArray(3);
 	
+	glVertexAttribDivisor(0, 0);
+	glVertexAttribDivisor(1, 0);
+	glVertexAttribDivisor(2, 0);
+	glVertexAttribDivisor(3, 0);
+}
+
+
+void gl_renderer::draw_shrub_models(
+	shrub_model& model,
+	std::vector<texture>& textures,
+	view_mode mode,
+	bool show_all_submodels,
+	GLuint local_to_world_buffer,
+	std::size_t instance_offset,
+	std::size_t count) const {
+	switch (mode) {
+	case view_mode::WIREFRAME:
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		glUseProgram(shaders.solid_colour_batch.id());
+		break;
+	case view_mode::TEXTURED_POLYGONS:
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		glUseProgram(shaders.textured.id());
+		break;
+	}
+
+	glBindBuffer(GL_ARRAY_BUFFER, local_to_world_buffer);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(instance_offset + sizeof(glm::vec4) * 0));
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(instance_offset + sizeof(glm::vec4) * 1));
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(instance_offset + sizeof(glm::vec4) * 2));
+	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(instance_offset + sizeof(glm::vec4) * 3));
+
+	glVertexAttribDivisor(0, 1);
+	glVertexAttribDivisor(1, 1);
+	glVertexAttribDivisor(2, 1);
+	glVertexAttribDivisor(3, 1);
+
+	shrub_texture_entry texture_data = {};
+	for (std::size_t i = 0; i < model.submodels.size(); i++) {
+		shrub_submodel& submodel = model.submodels[i];
+		if (!show_all_submodels && !submodel.visible_in_model_viewer) {
+			continue;
+		}
+
+		if (submodel.vertices.size() == 0) {
+			continue;
+		}
+
+		if (submodel.vertex_buffer() == 0) {
+			glGenBuffers(1, &submodel.vertex_buffer());
+			glBindBuffer(GL_ARRAY_BUFFER, submodel.vertex_buffer());
+			glBufferData(GL_ARRAY_BUFFER,
+				submodel.vertices.size() * sizeof(moby_model_vertex),
+				submodel.vertices.data(), GL_STATIC_DRAW);
+		}
+
+		if (submodel.st_buffer() == 0) {
+			glGenBuffers(1, &submodel.st_buffer());
+			glBindBuffer(GL_ARRAY_BUFFER, submodel.st_buffer());
+			glBufferData(GL_ARRAY_BUFFER,
+				submodel.st_coords.size() * sizeof(moby_model_st),
+				submodel.st_coords.data(), GL_STATIC_DRAW);
+		}
+
+		for (shrub_subsubmodel& subsubmodel : submodel.subsubmodels) {
+			if (subsubmodel.index_buffer() == 0) {
+				glGenBuffers(1, &subsubmodel.index_buffer());
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subsubmodel.index_buffer());
+				glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+					subsubmodel.indices.size(),
+					subsubmodel.indices.data(), GL_STATIC_DRAW);
+			}
+
+			if (subsubmodel.texture) {
+				texture_data = *subsubmodel.texture;
+			}
+
+			switch (mode) {
+			case view_mode::WIREFRAME: {
+				glm::vec4 colour = colour_coded_submodel_index(i, model.submodels.size());
+				glUniform4f(shaders.solid_colour_batch_rgb, colour.r, colour.g, colour.b, colour.a);
+				break;
+			}
+			case view_mode::TEXTURED_POLYGONS: {
+				if (model.texture_indices.size() > (std::size_t)texture_data.texture_index_1) {
+					texture& tex = textures.at(model.texture_indices.at(texture_data.texture_index_1));
+					if (tex.opengl_texture.id == 0) {
+						tex.upload_to_opengl();
+					}
+
+					glActiveTexture(GL_TEXTURE0);
+					glBindTexture(GL_TEXTURE_2D, tex.opengl_texture.id);
+				}
+				else {
+					// TODO: Actually fix this so model textures get read in
+					// correctly. This warning was commented out because it
+					// was spamming stderr.
+					//fprintf(stderr, "warning: Model %s has bad texture index!\n", model.name().c_str());
+				}
+				glUniform1i(shaders.textured_sampler, 0);
+				break;
+			}
+			}
+
+			glEnableVertexAttribArray(4);
+			glBindBuffer(GL_ARRAY_BUFFER, submodel.vertex_buffer());
+			glVertexAttribPointer(4, 3, GL_SHORT, GL_TRUE, sizeof(shrub_model_vertex), (void*)offsetof(shrub_model_vertex, x));
+
+			glEnableVertexAttribArray(5);
+			glBindBuffer(GL_ARRAY_BUFFER, submodel.st_buffer());
+			glVertexAttribPointer(5, 2, GL_SHORT, GL_TRUE, sizeof(shrub_model_st), (void*)offsetof(shrub_model_st, s));
+
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subsubmodel.index_buffer());
+			glDrawElementsInstanced(
+				GL_TRIANGLES,
+				subsubmodel.indices.size(),
+				GL_UNSIGNED_BYTE,
+				nullptr,
+				count);
+
+			glDisableVertexAttribArray(4);
+			glDisableVertexAttribArray(5);
+		}
+	}
+
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
+	glDisableVertexAttribArray(2);
+	glDisableVertexAttribArray(3);
+
 	glVertexAttribDivisor(0, 0);
 	glVertexAttribDivisor(1, 0);
 	glVertexAttribDivisor(2, 0);

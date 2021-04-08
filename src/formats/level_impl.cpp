@@ -23,6 +23,7 @@
 
 void level::read(stream& src, fs::path path_) {
 	path = path_;
+	std::optional<simple_wad_stream> _instances_segment;
 	
 	if(src.size() > 1024 * 1024 * 1024) {
 		throw stream_format_error("The file is over 1GB in size.");
@@ -73,7 +74,13 @@ void level::read(stream& src, fs::path path_) {
 			world.read_rac23();
 			break;
 		case level_type::RAC4:
-			world.read_rac4();
+			size_t instances_wad_offset =
+				file_header.primary_header.offset.bytes() +
+				_primary_header.instances_wad.offset;
+			_instances_segment.emplace(&(*_file), instances_wad_offset);
+			_instances_segment->name = "Instances Segment";
+
+			world.read_rac4(&(*_instances_segment));
 			break;
 	}
 	
@@ -87,6 +94,7 @@ void level::read(stream& src, fs::path path_) {
 	auto asset_header = _file->read<level_asset_header>(asset_offset);
 	
 	read_moby_models(asset_offset, asset_header);
+	read_shrub_models(asset_offset, asset_header);
 	read_textures(asset_offset, asset_header);
 	
 	read_tfrags();
@@ -172,6 +180,35 @@ void level::read_moby_models(std::size_t asset_offset, level_asset_header asset_
 		
 		uint32_t o_class = entry.o_class;
 		moby_class_to_model.emplace(o_class, moby_models.size() - 1);
+	}
+}
+
+void level::read_shrub_models(std::size_t asset_offset, level_asset_header asset_header) {
+	uint32_t mdl_base = asset_offset + asset_header.shrub_model_offset;
+	_file->seek(mdl_base);
+
+	for (std::size_t i = 0; i < asset_header.shrub_model_count; i++) {
+		auto entry = _file->read<level_shrub_model_entry>(mdl_base + sizeof(level_shrub_model_entry) * i);
+		if (entry.offset_in_asset_wad == 0) {
+			continue;
+		}
+
+		auto abs_offset = entry.offset_in_asset_wad;
+		shrub_model& model = shrub_models.emplace_back(&(*_asset_segment), abs_offset, 0);
+		model.set_name("class " + std::to_string(entry.o_class));
+		model.read();
+
+		for (uint8_t texture : entry.textures) {
+			if (texture == 0xff) {
+				break;
+			}
+
+			model.texture_indices.push_back(texture);
+		}
+
+		model.update();
+		uint32_t o_class = entry.o_class;
+		shrub_class_to_model.emplace(o_class, shrub_models.size() - 1);
 	}
 }
 
@@ -453,5 +490,5 @@ void swap_primary_header_rac4(level_primary_header& l, level_primary_header_rac4
 	SWAP_PACKED(l.hud_bank_3, r.hud_bank_3);
 	SWAP_PACKED(l.hud_bank_4, r.hud_bank_4);
 	SWAP_PACKED(l.asset_wad, r.asset_wad);
-	SWAP_PACKED(l.loading_screen_textures, r.loading_screen_textures);
+	SWAP_PACKED(l.instances_wad, r.instances_wad);
 }

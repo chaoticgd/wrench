@@ -35,6 +35,7 @@
 #include "tcol.h"
 #include "texture.h"
 #include "game_model.h"
+#include "shrub.h"
 #include "level_types.h"
 
 # /*
@@ -80,6 +81,7 @@ struct level_primary_header {
 	byte_range hud_bank_4;
 	byte_range asset_wad;
 	byte_range loading_screen_textures;
+	byte_range instances_wad;
 };
 
 class level {
@@ -132,6 +134,7 @@ public:
 	
 private:
 	void read_moby_models(std::size_t asset_offset, level_asset_header asset_header);
+	void read_shrub_models(std::size_t asset_offset, level_asset_header asset_header);
 	void read_textures(std::size_t asset_offset, level_asset_header asset_header);
 	void read_tfrags();
 	void read_tcol(std::size_t asset_offset, level_asset_header asset_header);
@@ -146,7 +149,9 @@ public:
 	
 	// Asset segment
 	std::map<uint32_t, std::size_t> moby_class_to_model;
+	std::map<uint32_t, std::size_t> shrub_class_to_model;
 	std::vector<moby_model> moby_models;
+	std::vector<shrub_model> shrub_models;
 	std::vector<texture> mipmap_textures;
 	std::vector<texture> tfrag_textures;
 	std::vector<texture> moby_textures;
