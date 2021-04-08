@@ -193,7 +193,8 @@ void level::read_shrub_models(std::size_t asset_offset, level_asset_header asset
 			continue;
 		}
 
-		shrub_model& model = shrub_models.emplace_back(&(*_asset_segment), entry.offset_in_asset_wad, 0);
+		auto abs_offset = entry.offset_in_asset_wad;
+		shrub_model& model = shrub_models.emplace_back(&(*_asset_segment), abs_offset, 0);
 		model.set_name("class " + std::to_string(entry.o_class));
 		model.read();
 
