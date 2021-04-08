@@ -38,6 +38,7 @@ shrub_model::shrub_model(
 void shrub_model::read() {
 	std::size_t submodel_count;
 	std::size_t submodel_table_offset = 0;
+	std::size_t p1 = 0, p2 = 0;
 
 	auto header = _backing.read<shrub_model_header>(0);
 	submodel_count = header.submodel_count;
@@ -64,19 +65,54 @@ void shrub_model::read() {
 		submodel.vertices.resize(interpreted_vif_list.vertices.size());
 		memcpy(submodel.vertices.data(), interpreted_vif_list.vertices.data(), interpreted_vif_list.vertices.size() * sizeof(shrub_model_vertex));
 
-		for (int i = 2; i < submodel.vertices.size(); ++i) {
-			for (int j = i - 2; j <= i; ++j) {
-				_triangles.push_back(submodel.vertices[j].x / 1024.0);
-				_triangles.push_back(submodel.vertices[j].y / 1024.0);
-				_triangles.push_back(submodel.vertices[j].z / 1024.0);
+		// Basically shrubs only contain a collection of vertices
+		// These vertices contain some kind of id/index that is used to group vertices together
+		// into a chain
+		// 
+		// Given a chain of vertices 0,1,2,3,4 the following faces will be generated:
+		//	0,1,2
+		//  1,2,3
+		//  2,3,4
+		//  
+		// The id for vertex n will match the id for vertex n-1 iff the id for vertex n is equal to the id for n-1 plus 3.
+		// To mark the end of a chain, the id delta will be 4 instead of 3.
+
+		// The following code uses p1 and p2 to find the start and end of a chain
+		for (p2 = 1; p2 < submodel.vertices.size(); ++p2) {
+			auto vertex = submodel.vertices[p2];
+			auto last_vertex = submodel.vertices[p2 - 1];
+
+			// if this vertex id is not equal to the last vertex id plus 3, then we've found a vertex chain
+			if (vertex.id != (last_vertex.id + 3)) {
+				add_vertex_chain(submodel, p1, p2 - 1);
+				p1 = p2;
 			}
 		}
+
+		// add the final vertex chain
+		if (p1 < p2-1)
+			add_vertex_chain(submodel, p1, p2 - 1);
+		
 
 		if (!validate_indices(submodel)) {
 			warn_current_submodel("indices that overrun the vertex table");
 		}
 
 		submodels.emplace_back(std::move(submodel));
+	}
+}
+
+void shrub_model::add_vertex_chain(
+	const shrub_submodel& submodel,
+	size_t start,
+	size_t end) {
+
+	for (int i = start+2; i < end; ++i) {
+		for (int j = i - 2; j <= i; ++j) {
+			_triangles.push_back(submodel.vertices[j].x / 1024.0);
+			_triangles.push_back(submodel.vertices[j].y / 1024.0);
+			_triangles.push_back(submodel.vertices[j].z / 1024.0);
+		}
 	}
 }
 

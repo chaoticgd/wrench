@@ -123,6 +123,12 @@ public:
 	// Print message along with details of the current submodel.
 	void warn_current_submodel(const char* message);
 
+	// adds vertex chain to triangle list
+	void add_vertex_chain(
+		const shrub_submodel& submodel,
+		size_t start,
+		size_t end);
+
 	std::vector<shrub_submodel> submodels;
 	float scale = 1.f;
 
