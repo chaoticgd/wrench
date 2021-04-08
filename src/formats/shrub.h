@@ -71,12 +71,46 @@ packed_struct(shrub_model_st, // Third UNPACK
 	int16_t unknown_6;
 )
 
+struct shrub_vertex_chain_entry {
+	uint32_t vertex_count;
+	uint32_t unknown_4;
+	uint32_t unknown_8;
+	uint32_t id_start;			// takes up 1
+};
+
+struct shrub_texture_entry {
+	uint32_t unknown_0;
+	uint32_t unknown_4;
+	uint32_t unknown_8;
+	uint32_t id_start;			// this takes up 5
+	uint32_t unknown_10;
+	uint32_t unknown_14;
+	uint32_t unknown_18;
+	uint32_t unknown_1c;
+	uint32_t texture_index_1;
+	uint32_t unknown_24;
+	uint32_t unknown_28;
+	uint32_t unknown_2c;
+	uint32_t texture_index_2;
+	uint32_t unknown_34;
+	uint32_t unknown_38;
+	uint32_t unknown_3c;
+};
+
+struct shrub_submodel_header {
+	uint32_t texture_def_count;
+	uint32_t vertex_chain_count;
+	uint32_t vertex_count;
+	uint32_t unknown_c;
+};
+
 // A single submodel may contain vertices with different textures. Since it's
 // unclear as to whether there's a limit on the number of textures a single
 // submodel can have, and for the purposes of simplifying the OpenGL rendering
 // code, we split each submodel into subsubmodels.
 struct shrub_subsubmodel {
 	std::vector<uint8_t> indices;
+	std::optional<shrub_texture_entry> texture; // If empty use last texture from last submodel with one.
 	gl_buffer index_buffer;
 };
 
@@ -102,6 +136,9 @@ public:
 	struct interpreted_shrub_vif_list {
 		std::vector<shrub_model_vertex> vertices;
 		std::vector<shrub_model_st> st_data;
+		std::vector<shrub_texture_entry> texture_defs;
+		std::vector< shrub_vertex_chain_entry> vertex_chain_defs;
+		shrub_submodel_header header;
 	};
 
 	void read();

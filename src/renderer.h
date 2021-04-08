@@ -69,6 +69,15 @@ struct gl_renderer {
 		GLuint local_to_world_buffer,
 		std::size_t instance_offset, 
 		std::size_t count) const;
+
+	void draw_shrub_models(
+		shrub_model& model,
+		std::vector<texture>& textures,
+		view_mode mode,
+		bool show_all_submodels,
+		GLuint local_to_world_buffer,
+		std::size_t instance_offset,
+		std::size_t count) const;
 	
 	static glm::vec4 colour_coded_submodel_index(std::size_t index, std::size_t submodel_count);
 	
@@ -101,6 +110,7 @@ struct gl_renderer {
 	
 	bool flag = false;
 	std::vector<glm::mat4> moby_local_to_clip_cache;
+	std::vector<glm::mat4> shrub_local_to_clip_cache;
 };
 
 template <typename T>

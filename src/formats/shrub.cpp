@@ -60,11 +60,12 @@ void shrub_model::read() {
 
 		auto interpreted_vif_list = interpret_vif_list(submodel.vif_list);
 		submodel.st_coords = std::move(interpreted_vif_list.st_data);
-		//submodel.subsubmodels = read_subsubmodels(interpreted_vif_list);
+		submodel.subsubmodels = read_subsubmodels(interpreted_vif_list);
 
 		submodel.vertices.resize(interpreted_vif_list.vertices.size());
 		memcpy(submodel.vertices.data(), interpreted_vif_list.vertices.data(), interpreted_vif_list.vertices.size() * sizeof(shrub_model_vertex));
 
+		/*
 		// Basically shrubs only contain a collection of vertices
 		// These vertices contain some kind of id/index that is used to group vertices together
 		// into a chain
@@ -92,7 +93,7 @@ void shrub_model::read() {
 		// add the final vertex chain
 		if (p1 < p2-1)
 			add_vertex_chain(submodel, p1, p2 - 1);
-		
+		*/
 
 		if (!validate_indices(submodel)) {
 			warn_current_submodel("indices that overrun the vertex table");
@@ -128,6 +129,30 @@ shrub_model::interpreted_shrub_vif_list shrub_model::interpret_vif_list(
 		}
 
 		switch (unpack_index) {
+		case 0: { // Texture def/vertex chain def data unpack
+			if (packet.data.size() % 0x10 != 0) {
+				warn_current_submodel("malformed first UNPACK (wrong size)");
+				return {};
+			}
+			if (packet.code.unpack.vnvl != vif_vnvl::V4_32) {
+				warn_current_submodel("malformed first UNPACK (wrong format)");
+				return {};
+			}
+
+			std::memcpy(&result.header, packet.data.data(), sizeof(shrub_submodel_header));
+
+			result.vertex_chain_defs.resize(result.header.vertex_chain_count);
+			std::memcpy(result.vertex_chain_defs.data(),
+				packet.data.data() + sizeof(shrub_submodel_header),
+				result.header.vertex_chain_count * sizeof(shrub_vertex_chain_entry));
+
+			result.texture_defs.resize(result.header.texture_def_count);
+			std::memcpy(result.texture_defs.data(),
+				packet.data.data() + sizeof(shrub_submodel_header) + sizeof(shrub_vertex_chain_entry)* result.header.vertex_chain_count,
+				result.header.texture_def_count * sizeof(shrub_texture_entry));
+
+			break;
+		}
 		case 1: { // Vertex buffer unpack
 			if (packet.data.size() % sizeof(shrub_model_vertex) != 0) {
 				warn_current_submodel("malformed second UNPACK (wrong size)");
@@ -177,6 +202,68 @@ std::vector<float> shrub_model::triangles() const {
 
 std::vector<float> shrub_model::colors() const {
 	return _vertex_colors;
+}
+
+
+std::vector<shrub_subsubmodel> shrub_model::read_subsubmodels(
+	interpreted_shrub_vif_list submodel_data) {
+	std::vector<shrub_subsubmodel> result;
+
+	std::optional<shrub_texture_entry> texture;
+	std::size_t next_texture_index = 0;
+	std::size_t start_index = 0;
+
+	std::size_t vertex_index = 0;
+	std::size_t tex_def_index = 0;
+
+	std::vector<int8_t> index_queue; // Like the GS vertex queue.
+
+
+	for (std::size_t i = 0; i < submodel_data.header.vertex_chain_count; ++i)
+	{
+		auto chain = submodel_data.vertex_chain_defs[i];
+
+		// find texture
+		while (tex_def_index < submodel_data.header.texture_def_count && submodel_data.texture_defs[tex_def_index].id_start > chain.id_start)
+			++tex_def_index;
+
+		// if doesn't exist use last texture
+		if (tex_def_index >= submodel_data.header.texture_def_count)
+			tex_def_index = submodel_data.header.texture_def_count - 1;
+
+		// 
+		shrub_subsubmodel subsubmodel;
+		subsubmodel.texture = submodel_data.texture_defs[tex_def_index];
+		vertex_index += 2;
+
+		// find end
+		if (i < (submodel_data.header.vertex_chain_count - 1))
+		{
+			auto end_chain = submodel_data.vertex_chain_defs[i + 1];
+			while (submodel_data.vertices[vertex_index].id < end_chain.id_start)
+			{
+				subsubmodel.indices.push_back(vertex_index - 2);
+				subsubmodel.indices.push_back(vertex_index - 1);
+				subsubmodel.indices.push_back(vertex_index - 0);
+				++vertex_index;
+			}
+		}
+		else
+		{
+			while (vertex_index < submodel_data.header.vertex_count)
+			{
+				subsubmodel.indices.push_back(vertex_index - 2);
+				subsubmodel.indices.push_back(vertex_index - 1);
+				subsubmodel.indices.push_back(vertex_index - 0);
+				++vertex_index;
+			}
+		}
+
+		// 
+		result.emplace_back(std::move(subsubmodel));
+	}
+
+	return result;
 }
 
 
