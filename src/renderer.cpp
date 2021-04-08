@@ -64,9 +64,12 @@ void gl_renderer::draw_level(level& lvl, glm::mat4 world_to_clip) const {
 	
 	if(draw_shrubs) {
 		for(shrub_entity& shrub : lvl.world.shrubs) {
-			glm::mat4 local_to_clip = world_to_clip * shrub.local_to_world;
+			auto shrub_model_id = lvl.shrub_class_to_model.at(shrub.unknown_0);
+			shrub_model& shrub_m = lvl.shrub_models[shrub_model_id];
+			glm::mat4 local_to_clip = world_to_clip * glm::scale(shrub.local_to_world, glm::vec3(shrub_m.scale, shrub_m.scale, shrub_m.scale));
 			glm::vec4 colour = get_colour(shrub.selected, glm::vec4(0, 0.5, 0, 1));
-			draw_cube(local_to_clip, colour);
+			draw_model(shrub_m, local_to_clip, colour);
+			// draw_cube(local_to_clip, colour);
 		}
 	}
 	

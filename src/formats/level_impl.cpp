@@ -94,6 +94,7 @@ void level::read(stream& src, fs::path path_) {
 	auto asset_header = _file->read<level_asset_header>(asset_offset);
 	
 	read_moby_models(asset_offset, asset_header);
+	read_shrub_models(asset_offset, asset_header);
 	read_textures(asset_offset, asset_header);
 	
 	read_tfrags();
@@ -179,6 +180,34 @@ void level::read_moby_models(std::size_t asset_offset, level_asset_header asset_
 		
 		uint32_t o_class = entry.o_class;
 		moby_class_to_model.emplace(o_class, moby_models.size() - 1);
+	}
+}
+
+void level::read_shrub_models(std::size_t asset_offset, level_asset_header asset_header) {
+	uint32_t mdl_base = asset_offset + asset_header.shrub_model_offset;
+	_file->seek(mdl_base);
+
+	for (std::size_t i = 0; i < asset_header.shrub_model_count; i++) {
+		auto entry = _file->read<level_shrub_model_entry>(mdl_base + sizeof(level_shrub_model_entry) * i);
+		if (entry.offset_in_asset_wad == 0) {
+			continue;
+		}
+
+		shrub_model& model = shrub_models.emplace_back(&(*_asset_segment), entry.offset_in_asset_wad, 0);
+		model.set_name("class " + std::to_string(entry.o_class));
+		model.read();
+
+		for (uint8_t texture : entry.textures) {
+			if (texture == 0xff) {
+				break;
+			}
+
+			model.texture_indices.push_back(texture);
+		}
+
+		model.update();
+		uint32_t o_class = entry.o_class;
+		shrub_class_to_model.emplace(o_class, shrub_models.size() - 1);
 	}
 }
 

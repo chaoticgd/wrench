@@ -139,10 +139,10 @@ packed_struct(level_asset_header,
 	uint32_t collision;              // 0x14
 	uint32_t moby_model_count;       // 0x18
 	uint32_t moby_model_offset;      // 0x1c
-	uint32_t unknown_20;             // 0x20
-	uint32_t unknown_24;             // 0x24
-	uint32_t unknown_28;             // 0x28
-	uint32_t unknown_2c;             // 0x2c
+	uint32_t tie_model_count;        // 0x20
+	uint32_t tie_model_offset;       // 0x24
+	uint32_t shrub_model_count;      // 0x28
+	uint32_t shrub_model_offset;     // 0x2c
 	uint32_t tfrag_texture_count;    // 0x30
 	uint32_t tfrag_texture_offset;   // 0x34 Relative to asset header.
 	uint32_t moby_texture_count;     // 0x38
@@ -184,6 +184,15 @@ packed_struct(level_moby_model_entry,
 	uint32_t unknown_8;
 	uint32_t unknown_c;
 	uint8_t textures[16];
+)
+
+packed_struct(level_shrub_model_entry,
+	uint32_t offset_in_asset_wad;
+	uint32_t o_class;
+	uint32_t unknown_8;
+	uint32_t unknown_c;
+	uint8_t textures[16];
+	uint8_t unknown_20[16];
 )
 
 packed_struct(level_mipmap_descriptor,
