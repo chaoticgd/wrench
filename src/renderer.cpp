@@ -90,6 +90,7 @@ void gl_renderer::draw_level(level& lvl, glm::mat4 world_to_clip) const {
 					lvl.moby_textures,
 					mode,
 					true,
+					false,
 					moby_local_to_clip_buffer(),
 					moby_batch_begin * sizeof(glm::mat4),
 					batch_end - moby_batch_begin);
@@ -375,6 +376,7 @@ void gl_renderer::draw_moby_models(
 		std::vector<texture>& textures,
 		view_mode mode,
 		bool show_all_submodels,
+		bool show_bounding_box,
 		GLuint local_to_world_buffer,
 		std::size_t instance_offset,
 		std::size_t count) const {
@@ -490,12 +492,54 @@ void gl_renderer::draw_moby_models(
 			glDisableVertexAttribArray(5);
 		}
 	}
+
+	if (show_bounding_box) {
+		glm::vec3 max = model.bounding_box.max / (float) INT16_MAX, min = model.bounding_box.min / (float) INT16_MAX;
+
+		std::vector<float> bounding_box_verts {
+			min.x, min.y, min.z, max.x, max.y, min.z, max.x, min.y,  min.z,
+			min.x, max.y, min.z, max.x, max.y, min.z, min.x, min.y, min.z,
+			min.x, min.y, max.z, max.x, max.y, max.z, max.x, min.y,  max.z,
+			min.x, max.y, max.z, max.x, max.y, max.z, min.x, min.y, max.z,
+			min.x, max.y, min.z, min.x, max.y, max.z, max.x, max.y,  min.z,
+			min.x, max.y, max.z, max.x, max.y, max.z, max.x, max.y, min.z,
+			min.x, min.y, min.z, min.x, min.y, max.z, max.x, min.y,  min.z,
+			min.x, min.y, max.z, max.x, min.y, max.z, max.x, min.y, min.z,
+			min.x, min.y, min.z, min.x, max.y, min.z, min.x, min.y, max.z,
+			min.x, max.y, min.z, min.x, max.y, max.z, min.x, min.y, max.z,
+			max.x, min.y, min.z, max.x, max.y, min.z, max.x, min.y,  max.z,
+			max.x, max.y, min.z, max.x, max.y, max.z, max.x, min.y, max.z
+		};
+
+		glm::vec4 colour = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+		GLuint vertex_buffer;
+
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		glUseProgram(shaders.solid_colour_batch.id());
+
+		glBindBuffer(GL_ARRAY_BUFFER, local_to_world_buffer);
+
+		glGenBuffers(4, &vertex_buffer);
+		glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+		glBufferData(GL_ARRAY_BUFFER,
+			bounding_box_verts.size() * sizeof(float),
+			bounding_box_verts.data(), GL_STATIC_DRAW);
+
+		glEnableVertexAttribArray(4);
+		glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+		glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+		
+		glUniform4f(shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
+
+		glDrawArrays(GL_TRIANGLES, 0, bounding_box_verts.size() * 3);
+	}
 	
 	glDisableVertexAttribArray(0);
 	glDisableVertexAttribArray(1);
 	glDisableVertexAttribArray(2);
 	glDisableVertexAttribArray(3);
-	
+	glDisableVertexAttribArray(4);
+
 	glVertexAttribDivisor(0, 0);
 	glVertexAttribDivisor(1, 0);
 	glVertexAttribDivisor(2, 0);
