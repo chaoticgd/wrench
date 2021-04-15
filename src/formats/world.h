@@ -101,9 +101,7 @@ struct moby_entity final : public euler_entity {
 	int32_t  pvar_index;
 	uint32_t unknown_6c;
 	uint32_t unknown_70;
-	uint32_t unknown_74;
-	uint32_t unknown_78;
-	uint32_t unknown_7c;
+	colour96 colour;
 	uint32_t unknown_80;
 	int32_t unknown_84;
 };

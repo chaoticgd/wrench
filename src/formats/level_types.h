@@ -544,7 +544,7 @@ packed_struct(world_shrub,
 
 packed_struct(world_moby_rac23,
 	uint32_t size;       // 0x0 Always 0x88.
-	int32_t unknown_4;  // 0x4
+	int32_t unknown_4;   // 0x4
 	uint32_t unknown_8;  // 0x8
 	uint32_t unknown_c;  // 0xc
 	int32_t  uid;        // 0x10
@@ -561,18 +561,16 @@ packed_struct(world_moby_rac23,
 	uint32_t unknown_3c; // 0x3c
 	vec3f    position;   // 0x40
 	vec3f    rotation;   // 0x4c
-	int32_t unknown_58; // 0x58
+	int32_t unknown_58;  // 0x58
 	uint32_t unknown_5c; // 0x5c
 	uint32_t unknown_60; // 0x60
 	uint32_t unknown_64; // 0x64
 	int32_t  pvar_index; // 0x68
 	uint32_t unknown_6c; // 0x6c
 	uint32_t unknown_70; // 0x70
-	uint32_t unknown_74; // 0x74
-	uint32_t unknown_78; // 0x78
-	uint32_t unknown_7c; // 0x7c
+	colour96 colour;     // 0x74
 	uint32_t unknown_80; // 0x80
-	int32_t unknown_84; // 0x84
+	int32_t unknown_84;  // 0x84
 )
 
 packed_struct(world_moby_rac4,

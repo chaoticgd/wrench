@@ -751,9 +751,7 @@ void swap_moby_rac23(moby_entity& l, world_moby_rac23& r) {
 	SWAP_PACKED(l.pvar_index, r.pvar_index);
 	SWAP_PACKED(l.unknown_6c, r.unknown_6c);
 	SWAP_PACKED(l.unknown_70, r.unknown_70);
-	SWAP_PACKED(l.unknown_74, r.unknown_74);
-	SWAP_PACKED(l.unknown_78, r.unknown_78);
-	SWAP_PACKED(l.unknown_7c, r.unknown_7c);
+	SWAP_PACKED(l.colour, r.colour);
 	SWAP_PACKED(l.unknown_80, r.unknown_80);
 	SWAP_PACKED(l.unknown_84, r.unknown_84);
 }
@@ -787,9 +785,7 @@ void swap_moby_rac4(moby_entity& l, world_moby_rac4& r) {
 	SWAP_PACKED(l.pvar_index, r.pvar_index);
 	l.unknown_6c = 0;
 	l.unknown_70 = 0;
-	l.unknown_74 = 0;
-	l.unknown_78 = 0;
-	l.unknown_7c = 0;
+	l.colour = { 0, 0, 0 };
 	l.unknown_80 = 0;
 	l.unknown_84 = 0;
 }
