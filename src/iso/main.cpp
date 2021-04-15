@@ -429,6 +429,10 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 			fprintf(stderr, "error: Single level index greater than maximum level index!\n");
 			exit(1);
 		}
+		if(!level_files[single_level_index].parts[LEVEL_PART]) {
+			fprintf(stderr, "error: No level file with index %d.\n", single_level_index);
+			exit(1);
+		}
 		for(int part = 0; part < 3; part++) {
 			auto& level = level_files[single_level_index];
 			if(level.parts[part]) {
@@ -685,11 +689,13 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 	if(single_level_index > -1) {
 		// Only write out a single level, and point every level at it.
 		auto& p = level_files[single_level_index].parts;
-		auto level_part = write_level_part(levels_dir, *p[LEVEL_PART]);
-		auto audio_part = write_level_part(audio_dir, *p[AUDIO_PART]);
-		auto scene_part = write_level_part(scenes_dir, *p[SCENE_PART]);
+		toc_level_part level_part, audio_part, scene_part;
+		assert(p[LEVEL_PART]);
+		level_part = write_level_part(levels_dir, *p[LEVEL_PART]);
+		if(p[AUDIO_PART]) audio_part = write_level_part(audio_dir, *p[AUDIO_PART]);
+		if(p[SCENE_PART]) scene_part = write_level_part(scenes_dir, *p[SCENE_PART]);
 		for(size_t i = 0; i < level_files.size(); i++) {
-			if(p[LEVEL_PART]) toc_levels[i].parts[0] = level_part;
+			toc_levels[i].parts[0] = level_part;
 			if(p[AUDIO_PART]) toc_levels[i].parts[1] = audio_part;
 			if(p[SCENE_PART]) toc_levels[i].parts[2] = scene_part;
 		}
