@@ -737,9 +737,7 @@ void gui::inspector::render(app& a) {
 	inspector_input_scalar(lvl, "Pvar #", &moby_entity::pvar_index);
 	inspector_input_scalar(lvl, "Unk 6c", &moby_entity::unknown_6c);
 	inspector_input_scalar(lvl, "Unk 70", &moby_entity::unknown_70);
-	inspector_input_scalar(lvl, "Unk 74", &moby_entity::unknown_74);
-	inspector_input_scalar(lvl, "Unk 78", &moby_entity::unknown_78);
-	inspector_input_scalar(lvl, "Unk 7c", &moby_entity::unknown_7c);
+	inspector_input<uint32_t>(lvl, "Colour", &moby_entity::colour, 0, 3);
 	inspector_input_scalar(lvl, "Unk 80", &moby_entity::unknown_80);
 	inspector_input_scalar(lvl, "Unk 84", &moby_entity::unknown_84);
 	inspector_input<float>(lvl, "Point ", &grindrail_spline_entity::special_point, 0, 4);
