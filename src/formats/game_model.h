@@ -204,6 +204,7 @@ public:
 	float scale = 1.f;
 	
 	moby_bounding_box bounding_box;
+	gl_buffer bounding_box_buffer;
 
 	gl_texture thumbnail;
 

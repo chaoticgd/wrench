@@ -259,7 +259,7 @@ void gl_renderer::draw_tris(const std::vector<float>& vertex_data, const glm::ma
 	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
-	glDrawArrays(GL_TRIANGLES, 0, vertex_data.size() * 3);
+	glDrawArrays(GL_TRIANGLES, 0, vertex_data.size());
 
 	glDisableVertexAttribArray(0);
 	glDeleteBuffers(1, &vertex_buffer);
@@ -511,27 +511,25 @@ void gl_renderer::draw_moby_models(
 			max.x, max.y, min.z, max.x, max.y, max.z, max.x, min.y, max.z
 		};
 
-		glm::vec4 colour = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-		GLuint vertex_buffer;
-
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glUseProgram(shaders.solid_colour_batch.id());
 
-		glBindBuffer(GL_ARRAY_BUFFER, local_to_world_buffer);
+		if(model.bounding_box_buffer() == 0) {
+			glGenBuffers(1, &model.bounding_box_buffer());
+			glBindBuffer(GL_ARRAY_BUFFER, model.bounding_box_buffer());
+			glBufferData(GL_ARRAY_BUFFER,
+				bounding_box_verts.size() * sizeof(float),
+				bounding_box_verts.data(), GL_STATIC_DRAW);
+		}
 
-		glGenBuffers(4, &vertex_buffer);
-		glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-		glBufferData(GL_ARRAY_BUFFER,
-			bounding_box_verts.size() * sizeof(float),
-			bounding_box_verts.data(), GL_STATIC_DRAW);
-
-		glEnableVertexAttribArray(4);
-		glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-		glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-		
+		glm::vec4 colour = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 		glUniform4f(shaders.solid_colour_rgb, colour.r, colour.g, colour.b, colour.a);
 
-		glDrawArrays(GL_TRIANGLES, 0, bounding_box_verts.size() * 3);
+		glEnableVertexAttribArray(4);
+		glBindBuffer(GL_ARRAY_BUFFER, model.bounding_box_buffer());
+		glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+		
+		glDrawArrays(GL_TRIANGLES, 0, 108);
 	}
 	
 	glDisableVertexAttribArray(0);
@@ -559,9 +557,8 @@ glm::mat4 gl_renderer::get_world_to_clip() const {
 	auto rot = camera_rotation;
 	glm::mat4 pitch = glm::rotate(glm::mat4(1.0f), rot.x, glm::vec3(1.0f, 0.0f, 0.0f));
 	glm::mat4 yaw   = glm::rotate(glm::mat4(1.0f), rot.y, glm::vec3(0.0f, 1.0f, 0.0f));
- 
-	glm::mat4 translate =
-		glm::translate(glm::mat4(1.0f), -camera_position);
+	glm::mat4 translate = glm::translate(glm::mat4(1.0f), -camera_position);
+
 	static const glm::mat4 yzx {
 		0,  0, 1, 0,
 		1,  0, 0, 0,

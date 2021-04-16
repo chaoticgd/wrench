@@ -18,7 +18,9 @@
 
 #include "gui.h"
 
+#include <X11/Xmd.h>
 #include <cmath>
+#include <cstdint>
 #include <nfd.h>
 #include <fstream>
 #include <iomanip>
@@ -28,6 +30,7 @@
 #include <functional>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "glm/common.hpp"
 #include "glm/ext/matrix_transform.hpp"
 #include "icons.h"
 #include "util.h"
@@ -463,7 +466,7 @@ void gui::render_tools(app& a, float menu_bar_height) {
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 		}
 		bool clicked = ImGui::ImageButton(
-			(void*) (intptr_t) a.tools[i]->icon(), ImVec2(32, 32), 
+			(void*) (intptr_t) a.tools[i]->icon(), ImVec2(32, 32),
 			ImVec2(0, 0), ImVec2(1, 1), -1);
 		if(!active) {
 			ImGui::PopStyleColor();
@@ -1420,7 +1423,7 @@ moby_model* gui::model_browser::render_selection_grid(
 
 void gui::model_browser::render_preview(
 		app& a,
-		GLuint* target,	
+		GLuint* target,
 		moby_model& model,
 		std::vector<texture>& textures,
 		const gl_renderer& renderer,
@@ -1429,34 +1432,43 @@ void gui::model_browser::render_preview(
 
 	auto draw_list = ImGui::GetWindowDrawList();
 
-    glm::vec3 center_point = (model.bounding_box.max + model.bounding_box.min) * 0.5f / (float) INT16_MAX; 
+    glm::vec3 center_point = (model.bounding_box.max + model.bounding_box.min) * 0.5f / (float) INT16_MAX;
 	
-	//Figure out a rough camera distance 
-	float bounding_box_width = glm::abs(model.bounding_box.max.x - model.bounding_box.min.x),
-			bounding_box_height = glm::abs(model.bounding_box.max.y - model.bounding_box.min.y),
-			fov_y = 45.0f,
-			camera_distance;
+	float fov_y = 45.0f,
+		camera_distance,
+		zoom_ratio;
 
-	if (bounding_box_width > bounding_box_height) {
-		float fov_x = fov_y * preview_size.x / preview_size.y;
-		//Get a radio of how wide the bounding box of the model is compared to the render window width.
-		float zoom_ratio = bounding_box_height / preview_size.x / (float) INT16_MAX * 10.0f;
-		//Figure out the 'default' camera depth to fit an object of width preview_size.x on screen.
-		float initial_depth = (preview_size.x/2) * tan(glm::radians(fov_x));
-		//Fit the camera to the model bounding box.
-		camera_distance = zoom_ratio * initial_depth;
-	} else {	//Same as above, but use height if the model is taller than wide.
-		float zoom_ratio = bounding_box_height / preview_size.y / (float) INT16_MAX * 10.0f;
-		float initial_depth = (preview_size.y/2) * tan(glm::radians(fov_y));
-		camera_distance = zoom_ratio * initial_depth;
+	//Get the largest dimension of the model.
+	float model_size = glm::max(glm::abs(model.bounding_box.max.x - model.bounding_box.min.x), 
+							glm::abs(model.bounding_box.max.y - model.bounding_box.min.y));
+	model_size = glm::max(model_size, glm::abs(model.bounding_box.max.z - model.bounding_box.min.z));
+
+	float focal_length = (preview_size.y/2) / tan(glm::radians(fov_y/2));
+
+	//Get a radio of how wide the largest dimension of the model is compared to the render window width.
+	if (preview_size.x < preview_size.y) {
+		zoom_ratio = model_size / preview_size.x;
+	} else {	//Same as above, but use height if the render window is shorter than wide.
+		zoom_ratio = model_size / preview_size.y;
 	}
+	 
+	//Fit the camera to the model bounding box.
+	camera_distance = focal_length * zoom_ratio / (float) INT16_MAX;
 
-	glm::vec3 eye = glm::vec3(((camera_distance) * (1.1f - params.zoom)), 0, 0);
+	glm::vec3 eye = glm::vec3(((camera_distance) * (2.0f - params.zoom)), 0, 0);
+
+	//Rotates the model to match the game model orientation.
+	static const glm::mat4 yzx {
+		0,  0, 1, 0,
+		1,  0, 0, 0,
+		0, -1, 0, 0,
+		0,  0, 0, 1
+	};
 
 	glm::mat4 view_fixed = glm::lookAt(eye, glm::vec3(0), glm::vec3(0, 1, 0));
 	glm::mat4 view_pitched = glm::rotate(view_fixed, params.pitch_yaw.x, glm::vec3(0, 0, 1));
 	glm::mat4 view = glm::rotate(view_pitched, params.pitch_yaw.y, glm::vec3(0, 1, 0));
-	glm::mat4 offset_view = glm::translate(view, -center_point);
+	glm::mat4 offset_view = glm::translate(view * yzx, -center_point);
 
 	glm::mat4 projection = glm::perspective(glm::radians(fov_y), preview_size.x / preview_size.y, 0.01f, 100.0f);
 	
