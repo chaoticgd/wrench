@@ -24,9 +24,7 @@
 #include "../model.h"
 #include "../stream.h"
 #include "../gl_includes.h"
-#include "glm/ext/vector_float3.hpp"
 #include "glm/vec3.hpp"
-#include "glm/fwd.hpp"
 #include "vif.h"
 
 # /*

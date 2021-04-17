@@ -18,7 +18,6 @@
 
 #include "gui.h"
 
-#include <X11/Xmd.h>
 #include <cmath>
 #include <cstdint>
 #include <nfd.h>
@@ -28,10 +27,9 @@
 #include <iostream>
 #include <stdlib.h>
 #include <functional>
+#include <glm/common.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "glm/common.hpp"
-#include "glm/ext/matrix_transform.hpp"
 #include "icons.h"
 #include "util.h"
 #include "config.h"
