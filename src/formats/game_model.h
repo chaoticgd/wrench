@@ -24,6 +24,7 @@
 #include "../model.h"
 #include "../stream.h"
 #include "../gl_includes.h"
+#include "glm/vec3.hpp"
 #include "vif.h"
 
 # /*
@@ -154,6 +155,12 @@ struct moby_submodel {
 	bool visible_in_model_viewer = true;
 };
 
+//Axis aligned bounding box of verts
+struct moby_bounding_box {
+	glm::vec3 min = glm::vec3(INT16_MAX);
+	glm::vec3 max = glm::vec3(-INT16_MAX);
+};
+
 class moby_model {
 public:
 	moby_model(
@@ -184,9 +191,6 @@ public:
 	std::vector<moby_subsubmodel> read_subsubmodels(
 		interpreted_moby_vif_list submodel_data);
 	
-	// Check if any of the indices overrun the vertex table.
-	bool validate_indices(const moby_submodel& submodel);
-	
 	// Print message along with details of the current submodel.
 	void warn_current_submodel(const char* message);
 	
@@ -197,6 +201,9 @@ public:
 	std::vector<moby_submodel> submodels;
 	float scale = 1.f;
 	
+	moby_bounding_box bounding_box;
+	gl_buffer bounding_box_buffer;
+
 	gl_texture thumbnail;
 
 	std::string resource_path() const;

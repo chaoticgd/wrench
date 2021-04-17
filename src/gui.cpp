@@ -19,6 +19,7 @@
 #include "gui.h"
 
 #include <cmath>
+#include <cstdint>
 #include <nfd.h>
 #include <fstream>
 #include <iomanip>
@@ -26,6 +27,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <functional>
+#include <glm/common.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "icons.h"
@@ -462,7 +464,7 @@ void gui::render_tools(app& a, float menu_bar_height) {
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 		}
 		bool clicked = ImGui::ImageButton(
-			(void*) (intptr_t) a.tools[i]->icon(), ImVec2(32, 32), 
+			(void*) (intptr_t) a.tools[i]->icon(), ImVec2(32, 32),
 			ImVec2(0, 0), ImVec2(1, 1), -1);
 		if(!active) {
 			ImGui::PopStyleColor();
@@ -1253,13 +1255,13 @@ void gui::model_browser::render(app& a) {
 			_view_params);
 
 		ImGuiIO& io = ImGui::GetIO();
-		glm::vec2 mouseDelta = glm::vec2(io.MouseDelta.y, io.MouseDelta.x) * 0.01f;
+		glm::vec2 mouse_delta = glm::vec2(io.MouseDelta.y, io.MouseDelta.x) * 0.01f;
 		bool image_hovered = ImGui::IsItemHovered();
 
 		if(image_hovered || is_dragging) {
 			if(ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
 				is_dragging = true;
-				_view_params.pitch_yaw += mouseDelta;
+				_view_params.pitch_yaw += mouse_delta;
 			}
 	
 			_view_params.zoom *= io.MouseWheel * a.delta_time * 0.0001 + 1;
@@ -1295,7 +1297,8 @@ void gui::model_browser::render(app& a) {
 			}
 			
 			ImGui::Checkbox("Show Vertex Indices", &_view_params.show_vertex_indices);
-			
+			ImGui::Checkbox("Show Bounding Box", &_view_params.show_bounding_box);
+
 			static prompt_box importer("Import .ply");
 			static alert_box import_error("Import Error");
 			import_error.render();
@@ -1376,7 +1379,8 @@ moby_model* gui::model_browser::render_selection_grid(
 					view_mode::TEXTURED_POLYGONS,           // view_mode
 					list_name == "ARMOR.WAD" ? 0.8f : 0.5f, // zoom
 					glm::vec2(0, glm::radians(90.f)),       // pitch_yaw
-					false                                   // show_vertex_indices
+					false,                                  // show_vertex_indices
+					false									// show bounding box
 				});
 			num_this_frame++;
 		}
@@ -1421,21 +1425,50 @@ void gui::model_browser::render_preview(
 		const gl_renderer& renderer,
 		ImVec2 preview_size,
 		view_params params) {
-	glm::vec3 eye = glm::vec3(2.f * (1.1f - params.zoom), 0, 0);
+
+	auto draw_list = ImGui::GetWindowDrawList();
+
+    glm::vec3 center_point = (model.bounding_box.max + model.bounding_box.min) * 0.5f / (float) INT16_MAX;
 	
-	glm::mat4 view_fixed = glm::lookAt(eye, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
-	glm::mat4 view_pitched = glm::rotate(view_fixed, params.pitch_yaw.x, glm::vec3(0, 0, 1));
-	glm::mat4 view = glm::rotate(view_pitched, params.pitch_yaw.y, glm::vec3(0, 1, 0));
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), preview_size.x / preview_size.y, 0.01f, 100.0f);
-	
+	float fov_y = 45.0f,
+		camera_distance,
+		zoom_ratio;
+
+	//Get the largest dimension of the model.
+	float model_size = glm::max(glm::abs(model.bounding_box.max.x - model.bounding_box.min.x), 
+							glm::abs(model.bounding_box.max.y - model.bounding_box.min.y));
+	model_size = glm::max(model_size, glm::abs(model.bounding_box.max.z - model.bounding_box.min.z));
+
+	float focal_length = (preview_size.y/2) / tan(glm::radians(fov_y/2));
+
+	//Get a radio of how wide the largest dimension of the model is compared to the render window width.
+	if (preview_size.x < preview_size.y) {
+		zoom_ratio = model_size / preview_size.x;
+	} else {	//Same as above, but use height if the render window is shorter than wide.
+		zoom_ratio = model_size / preview_size.y;
+	}
+	 
+	//Fit the camera to the model bounding box.
+	camera_distance = focal_length * zoom_ratio / (float) INT16_MAX;
+
+	glm::vec3 eye = glm::vec3(((camera_distance) * (2.0f - params.zoom)), 0, 0);
+
+	//Rotates the model to match the game model orientation.
 	static const glm::mat4 yzx {
 		0,  0, 1, 0,
 		1,  0, 0, 0,
 		0, -1, 0, 0,
 		0,  0, 0, 1
 	};
-	glm::mat4 local_to_world = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, -0.125f));
-	glm::mat4 local_to_clip = projection * view * yzx * local_to_world;
+
+	glm::mat4 view_fixed = glm::lookAt(eye, glm::vec3(0), glm::vec3(0, 1, 0));
+	glm::mat4 view_pitched = glm::rotate(view_fixed, params.pitch_yaw.x, glm::vec3(0, 0, 1));
+	glm::mat4 view = glm::rotate(view_pitched, params.pitch_yaw.y, glm::vec3(0, 1, 0));
+	glm::mat4 offset_view = glm::translate(view * yzx, -center_point);
+
+	glm::mat4 projection = glm::perspective(glm::radians(fov_y), preview_size.x / preview_size.y, 0.01f, 100.0f);
+	
+	glm::mat4 local_to_clip = projection * offset_view;
 
 	std::vector<GLuint> gl_textures;
 	for(texture& tex : textures) {
@@ -1450,9 +1483,9 @@ void gui::model_browser::render_preview(
 		&local_to_clip, GL_STATIC_DRAW);
 
 	render_to_texture(target, preview_size.x, preview_size.y, [&]() {
-		renderer.draw_moby_models(model, textures, params.mode, false, local_to_clip_buffer(), 0, 1);
+		renderer.draw_moby_models(model, textures, params.mode, false, params.show_bounding_box, local_to_clip_buffer(), 0, 1);
 	});
-	
+
 	if(params.show_vertex_indices) {
 		static const auto apply_local_to_screen = [&](glm::vec4 pos) {
 			glm::vec4 homogeneous_pos = local_to_clip * pos;
@@ -1469,13 +1502,12 @@ void gui::model_browser::render_preview(
 			);
 			return screen_pos;
 		};
-		
+
 		for(const moby_submodel& submodel : model.submodels) {
 			if(!submodel.visible_in_model_viewer) {
 				continue;
 			}
 			
-			auto draw_list = ImGui::GetWindowDrawList();
 			for(std::size_t j = 0; j < submodel.vertices.size(); j++) {
 				const moby_model_vertex& vert = submodel.vertices[j];
 				glm::vec3 proj_pos = apply_local_to_screen(glm::vec4(
@@ -1488,7 +1520,6 @@ void gui::model_browser::render_preview(
 			}
 		}
 	}
-	
 }
 
 void gui::model_browser::render_submodel_list(moby_model& model) {

@@ -66,6 +66,7 @@ struct gl_renderer {
 		std::vector<texture>& textures,
 		view_mode mode,
 		bool show_all_submodels,
+		bool show_bounding_box,
 		GLuint local_to_world_buffer,
 		std::size_t instance_offset, 
 		std::size_t count) const;

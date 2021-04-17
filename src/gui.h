@@ -129,6 +129,7 @@ namespace gui {
 			float zoom = 0.5f;
 			glm::vec2 pitch_yaw = { 0.f, 0.f };
 			bool show_vertex_indices = false;
+			bool show_bounding_box = false;
 		};
 		
 		static void render_preview(

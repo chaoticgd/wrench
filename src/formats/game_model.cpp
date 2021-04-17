@@ -91,7 +91,7 @@ void moby_model::read() {
 		submodel.vertices.resize(vertex_header.vertex_count_2 + vertex_header.vertex_count_4 + vertex_header.main_vertex_count);
 		_backing.seek(entry.vertex_offset + vertex_header.vertex_table_offset);
 		_backing.read_v(submodel.vertices);
-		
+
 		// This is almost certainly wrong, but makes the models look better for the time being.
 		if(submodel.vertices.size() > 0) {
 			for(std::size_t i = 0; i < vertex_header.vertex_count_8; i++) {
@@ -99,8 +99,24 @@ void moby_model::read() {
 			}
 		}
 		
-		if(!validate_indices(submodel)) {
-			warn_current_submodel("indices that overrun the vertex table");
+		for(const moby_subsubmodel& subsubmodel : submodel.subsubmodels) {
+			for(uint8_t index : subsubmodel.indices) {
+				//Validate index
+				if(index >= submodel.vertices.size()) {
+					warn_current_submodel("indices that overrun the vertex table");
+					break;	//Current submodel is corrupted, abort.
+				}
+
+				//Generate (Axis aligned) bounding box
+				moby_model_vertex out_vertex = submodel.vertices[index];
+
+				if (out_vertex.x < bounding_box.min.x) bounding_box.min.x = out_vertex.x;
+				if (out_vertex.y < bounding_box.min.y) bounding_box.min.y = out_vertex.y;
+				if (out_vertex.z < bounding_box.min.z) bounding_box.min.z = out_vertex.z;
+				if (out_vertex.x > bounding_box.max.x) bounding_box.max.x = out_vertex.x;
+				if (out_vertex.y > bounding_box.max.y) bounding_box.max.y = out_vertex.y;
+				if (out_vertex.z > bounding_box.max.z) bounding_box.max.z = out_vertex.z;
+			}
 		}
 		
 		submodels.emplace_back(std::move(submodel));
@@ -230,17 +246,6 @@ std::vector<moby_subsubmodel> moby_model::read_subsubmodels(
 	}
 	
 	return result;
-}
-
-bool moby_model::validate_indices(const moby_submodel& submodel) {
-	for(const moby_subsubmodel& subsubmodel : submodel.subsubmodels) {
-		for(uint8_t index : subsubmodel.indices) {
-			if(index >= submodel.vertices.size()) {
-				return false;
-			}
-		}
-	}
-	return true;
 }
 
 void moby_model::warn_current_submodel(const char* message) {
