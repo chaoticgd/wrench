@@ -8,9 +8,6 @@
 [submodule "thirdparty/toml11"]
 	path = thirdparty/toml11
 	url = https://github.com/ToruNiina/toml11
-[submodule "thirdparty/imgui_markdown"]
-	path = thirdparty/imgui_markdown
-	url = https://github.com/juliettef/imgui_markdown
 [submodule "thirdparty/glfw"]
 	path = thirdparty/glfw
 	url = https://github.com/glfw/glfw

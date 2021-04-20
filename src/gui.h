@@ -21,7 +21,6 @@
 
 #include <functional>
 #include "imgui_includes.h"
-#include <imgui_markdown/imgui_markdown.h>
 
 #include "app.h"
 #include "window.h"
@@ -166,21 +165,6 @@ namespace gui {
 		
 		std::size_t _new_game_type = 0;
 		std::string _new_game_path;
-	};
-	
-	class document_viewer : public window {
-	public:
-		document_viewer(const char* path);
-	
-		const char* title_text() const override;
-		ImVec2 initial_size() const override;
-		void render(app& a) override;
-		
-		void load_page(std::string path);
-		
-	private:
-		std::string _body;
-		ImGui::MarkdownConfig _config;
 	};
 
 	class stream_viewer : public window {
