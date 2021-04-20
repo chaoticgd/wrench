@@ -377,7 +377,6 @@ float gui::render_menu_bar(app& a) {
 		render_menu_bar_window_toggle<texture_browser>(a);
 		render_menu_bar_window_toggle<model_browser>(a);
 		render_menu_bar_window_toggle<settings>(a);
-		render_menu_bar_window_toggle<document_viewer>(a, "index.md");
 		ImGui::Separator();
 		if(ImGui::BeginMenu("Debug Tools")) {
 			render_menu_bar_window_toggle<stream_viewer>(a);
@@ -385,16 +384,6 @@ float gui::render_menu_bar(app& a) {
 		}
 		ImGui::EndMenu();
 	}
-	
-	auto open_document_viewer = [&](const char* path) {
-		// Close any existing documentation windows.
-		for(auto& window : a.windows) {
-			if(dynamic_cast<document_viewer*>(window.get()) != nullptr) {
-				window->close(a);
-			}
-		}
-		a.emplace_window<document_viewer>(path);
-	};
 	
 	static alert_box about_box("About Wrench Editor");
 	about_box.render();
@@ -420,15 +409,11 @@ float gui::render_menu_bar(app& a) {
 				" - glfw: https://github.com/glfw/glfw (zlib)\n"
 				" - glm: https://github.com/g-truc/glm (Happy Bunny/MIT)\n"
 				" - imgui: https://github.com/ocornut/imgui (MIT)\n"
-				" - imgui_markdown: https://github.com/juliettef/imgui_markdown (zlib)\n"
 				" - nativefiledialog: https://github.com/mlabbe/nativefiledialog (zlib)\n"
 				" - nlohmann json: https://github.com/nlohmann/json (MIT)\n"
 				" - toml11: https://github.com/ToruNiina/toml11 (MIT)\n"
 				" - MD5 implementation by Colin Plumb\n"
 			);
-		}
-		if(ImGui::MenuItem("User Guide")) {
-			open_document_viewer("user_guide.md");
 		}
 		ImGui::Separator();
 		if(ImGui::MenuItem("GitHub")) {
@@ -1683,43 +1668,6 @@ void gui::settings::render_debug_page(app& a) {
 	}
 	if(syst) {
 		ImGui::Checkbox("???", &a.renderer.flag);
-	}
-}
-
-/*
-	document_viewer
-*/
-
-gui::document_viewer::document_viewer(const char* path) {
-	_config.linkCallback = [](ImGui::MarkdownLinkCallbackData link) {
-		document_viewer* window = static_cast<document_viewer*>(link.userData);
-		std::string path(link.link, link.linkLength);
-		window->load_page(path);
-	};
-	_config.userData = this;
-	load_page(path);
-}
-	
-const char* gui::document_viewer::title_text() const {
-	return "Documentation";
-}
-
-ImVec2 gui::document_viewer::initial_size() const {
-	return ImVec2(400, 300);
-}
-
-void gui::document_viewer::render(app& a) {
-	ImGui::Markdown(_body.c_str(), _body.size(), _config);
-}
-
-void gui::document_viewer::load_page(std::string path) {
-	try {
-		file_stream file(std::string("docs/") + path);
-		_body.resize(file.size());
-		file.read_n(_body.data(), file.size());
-	} catch(stream_error&) {
-		_body = "Cannot open file.";
-		return;
 	}
 }
 
