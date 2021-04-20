@@ -681,7 +681,7 @@ void gui::inspector::render(app& a) {
 	inspector_input<float>(lvl, "Mat T ", &matrix_entity::local_to_world, 12, 4);
 	inspector_input<float>(lvl, "Pos   ", &euler_entity::position, 0, 3);
 	inspector_input<float>(lvl, "Rot   ", &euler_entity::rotation, 0, 3);
-	inspector_input_scalar(lvl, "Unk 0 ", &tie_entity::unknown_0);
+	inspector_input_scalar(lvl, "Class ", &tie_entity::o_class);
 	inspector_input_scalar(lvl, "Unk 4 ", &tie_entity::unknown_4);
 	inspector_input_scalar(lvl, "Unk 8 ", &tie_entity::unknown_8);
 	inspector_input_scalar(lvl, "Unk c ", &tie_entity::unknown_c);
@@ -689,7 +689,7 @@ void gui::inspector::render(app& a) {
 	inspector_input_scalar(lvl, "UID   ", &tie_entity::uid);
 	inspector_input_scalar(lvl, "Unk 58", &tie_entity::unknown_58);
 	inspector_input_scalar(lvl, "Unk 5c", &tie_entity::unknown_5c);
-	inspector_input_scalar(lvl, "Unk 0 ", &shrub_entity::unknown_0);
+	inspector_input_scalar(lvl, "Class ", &shrub_entity::o_class);
 	inspector_input_scalar(lvl, "Unk 4 ", &shrub_entity::unknown_4);
 	inspector_input_scalar(lvl, "Unk 8 ", &shrub_entity::unknown_8);
 	inspector_input_scalar(lvl, "Unk c ", &shrub_entity::unknown_c);
@@ -711,7 +711,7 @@ void gui::inspector::render(app& a) {
 	inspector_input_scalar(lvl, "Unk 1c", &moby_entity::unknown_1c);
 	inspector_input_scalar(lvl, "Unk 20", &moby_entity::unknown_20);
 	inspector_input_scalar(lvl, "Unk 24", &moby_entity::unknown_24);
-	inspector_input_scalar(lvl, "Class ", &moby_entity::class_num);
+	inspector_input_scalar(lvl, "Class ", &moby_entity::o_class);
 	inspector_input_scalar(lvl, "Scale ", &moby_entity::scale);
 	inspector_input_scalar(lvl, "Unk 30", &moby_entity::unknown_30);
 	inspector_input_scalar(lvl, "Unk 34", &moby_entity::unknown_34);
@@ -737,10 +737,10 @@ void gui::inspector::render(app& a) {
 	lvl.for_each<entity>([&](entity& base_ent) {
 		if(base_ent.selected) {
 			if(moby_entity* ent = dynamic_cast<moby_entity*>(&base_ent)) {
-				if(last_class && *last_class != ent->class_num) {
+				if(last_class && *last_class != ent->o_class) {
 					should_draw_pvars = false;
 				} else {
-					last_class = ent->class_num;
+					last_class = ent->o_class;
 					if(ent->pvar_index > -1) {
 						last_pvar_index = ent->pvar_index;
 					}
@@ -935,7 +935,7 @@ void gui::moby_list::render(app& a) {
 		for(moby_entity& moby : lvl.world.mobies) {
 			std::stringstream row;
 			row << std::setfill(' ') << std::setw(8) << std::dec << moby.uid << " ";
-			row << std::setfill(' ') << std::setw(20) << std::hex << moby.class_num << " ";
+			row << std::setfill(' ') << std::setw(20) << std::hex << moby.o_class << " ";
 			
 			if(ImGui::Selectable(row.str().c_str(), moby.selected)) {
 				lvl.clear_selection();

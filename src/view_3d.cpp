@@ -118,10 +118,10 @@ void view_3d::draw_overlay_text(app& a, glm::mat4 world_to_clip) const {
 			{ 0x2f6, "swingshot_grapple" },
 			{ 0x323, "swingshot_swinging" }
 		};
-		if(moby_class_names.find(moby.class_num) != moby_class_names.end()) {
-			draw_text(moby.local_to_world_cache, moby_class_names.at(moby.class_num));
+		if(moby_class_names.find(moby.o_class) != moby_class_names.end()) {
+			draw_text(moby.local_to_world_cache, moby_class_names.at(moby.o_class));
 		} else {
-			draw_text(moby.local_to_world_cache, std::to_string(moby.class_num));
+			draw_text(moby.local_to_world_cache, std::to_string(moby.o_class));
 		}
 	}
 }

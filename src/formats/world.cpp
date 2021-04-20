@@ -693,7 +693,7 @@ void swap_tie(tie_entity& l, world_tie& r) {
 	l.local_to_world[3][3] = 1.f;
 	r.local_to_world.m44 = 0.01f;
 	// tie_entity
-	SWAP_PACKED(l.unknown_0, r.unknown_0);
+	SWAP_PACKED(l.o_class, r.o_class);
 	SWAP_PACKED(l.unknown_4, r.unknown_4);
 	SWAP_PACKED(l.unknown_8, r.unknown_8);
 	SWAP_PACKED(l.unknown_c, r.unknown_c);
@@ -709,7 +709,7 @@ void swap_shrub(shrub_entity& l, world_shrub& r) {
 	l.local_to_world[3][3] = 1.f;
 	r.local_to_world.m44 = 0.01f;
 	// shrub_entity
-	SWAP_PACKED(l.unknown_0, r.unknown_0);
+	SWAP_PACKED(l.o_class, r.o_class);
 	SWAP_PACKED(l.unknown_4, r.unknown_4);
 	SWAP_PACKED(l.unknown_8, r.unknown_8);
 	SWAP_PACKED(l.unknown_c, r.unknown_c);
@@ -738,7 +738,7 @@ void swap_moby_rac23(moby_entity& l, world_moby_rac23& r) {
 	SWAP_PACKED(l.unknown_1c, r.unknown_1c);
 	SWAP_PACKED(l.unknown_20, r.unknown_20);
 	SWAP_PACKED(l.unknown_24, r.unknown_24);
-	SWAP_PACKED(l.class_num, r.class_num);
+	SWAP_PACKED(l.o_class, r.o_class);
 	SWAP_PACKED(l.scale, r.scale);
 	SWAP_PACKED(l.unknown_30, r.unknown_30);
 	SWAP_PACKED(l.unknown_34, r.unknown_34);
@@ -763,7 +763,7 @@ void swap_moby_rac4(moby_entity& l, world_moby_rac4& r) {
 	// moby_entity
 	SWAP_PACKED(l.size, r.size);
 	SWAP_PACKED(l.uid, r.uid);
-	SWAP_PACKED(l.class_num, r.class_num);
+	SWAP_PACKED(l.o_class, r.o_class);
 	SWAP_PACKED(l.scale, r.scale);
 	// TODO: Figure out what the rest of the fields are and swap them.
 	l.unknown_4 = 0;
