@@ -52,7 +52,7 @@ struct euler_entity : public entity {
 };
 
 struct tie_entity final : public matrix_entity {
-	uint32_t unknown_0;
+	uint32_t o_class;
 	uint32_t unknown_4;
 	uint32_t unknown_8;
 	uint32_t unknown_c;
@@ -63,7 +63,7 @@ struct tie_entity final : public matrix_entity {
 };
 
 struct shrub_entity final : public matrix_entity {
-	uint32_t unknown_0;
+	uint32_t o_class;
 	float    unknown_4;
 	uint32_t unknown_8;
 	uint32_t unknown_c;
@@ -88,7 +88,7 @@ struct moby_entity final : public euler_entity {
 	uint32_t unknown_1c;
 	uint32_t unknown_20;
 	uint32_t unknown_24;
-	uint32_t class_num;
+	uint32_t o_class;
 	float    scale;
 	uint32_t unknown_30;
 	uint32_t unknown_34;

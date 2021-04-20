@@ -33,8 +33,8 @@ void gl_renderer::prepare_frame(level& lvl, glm::mat4 world_to_clip) {
 		
 		glm::mat4& local_to_clip = moby_local_to_clip_cache[i];
 		local_to_clip = moby.local_to_clip_cache;
-		if(lvl.moby_class_to_model.find(moby.class_num) != lvl.moby_class_to_model.end()) {
-			moby_model& model = lvl.moby_models[lvl.moby_class_to_model.at(moby.class_num)];
+		if(lvl.moby_class_to_model.find(moby.o_class) != lvl.moby_class_to_model.end()) {
+			moby_model& model = lvl.moby_models[lvl.moby_class_to_model.at(moby.o_class)];
 			local_to_clip = glm::scale(local_to_clip, glm::vec3(model.scale * moby.scale * 32.f));
 		}
 	}
@@ -45,8 +45,8 @@ void gl_renderer::prepare_frame(level& lvl, glm::mat4 world_to_clip) {
 
 		glm::mat4& local_to_clip = shrub_local_to_clip_cache[i];
 		local_to_clip = world_to_clip * shrub.local_to_world;
-		if (lvl.shrub_class_to_model.find(shrub.unknown_0) != lvl.shrub_class_to_model.end()) {
-			shrub_model& model = lvl.shrub_models[lvl.shrub_class_to_model.at(shrub.unknown_0)];
+		if (lvl.shrub_class_to_model.find(shrub.o_class) != lvl.shrub_class_to_model.end()) {
+			shrub_model& model = lvl.shrub_models[lvl.shrub_class_to_model.at(shrub.o_class)];
 			local_to_clip = glm::scale(local_to_clip, glm::vec3(model.scale * 32.f));
 		}
 	}
@@ -75,14 +75,6 @@ void gl_renderer::draw_level(level& lvl, glm::mat4 world_to_clip) const {
 	}
 	
 	if(draw_shrubs) {
-		/*for(shrub_entity& shrub : lvl.world.shrubs) {
-			auto shrub_model_id = lvl.shrub_class_to_model.at(shrub.unknown_0);
-			shrub_model& shrub_m = lvl.shrub_models[shrub_model_id];
-			glm::mat4 local_to_clip = world_to_clip * glm::scale(shrub.local_to_world, glm::vec3(shrub_m.scale, shrub_m.scale, shrub_m.scale));
-			glm::vec4 colour = get_colour(shrub.selected, glm::vec4(0, 0.5, 0, 1));
-			draw_model(shrub_m, local_to_clip, colour);
-			// draw_cube(local_to_clip, colour);
-		}*/
 		gl_buffer shrub_local_to_clip_buffer;
 		glGenBuffers(1, &shrub_local_to_clip_buffer());
 		glBindBuffer(GL_ARRAY_BUFFER, shrub_local_to_clip_buffer());
@@ -120,9 +112,9 @@ void gl_renderer::draw_level(level& lvl, glm::mat4 world_to_clip) const {
 
 		for (std::size_t i = 0; i < lvl.world.shrubs.size(); i++) {
 			shrub_entity& shrub = lvl.world.shrubs[i];
-			if (shrub.unknown_0 != shrub_batch_class) {
+			if (shrub.o_class != shrub_batch_class) {
 				draw_shrub_batch(i);
-				shrub_batch_class = shrub.unknown_0;
+				shrub_batch_class = shrub.o_class;
 				shrub_batch_begin = i;
 			}
 		}
@@ -176,9 +168,9 @@ void gl_renderer::draw_level(level& lvl, glm::mat4 world_to_clip) const {
 		
 		for(std::size_t i = 0; i < lvl.world.mobies.size(); i++) {
 			moby_entity& moby = lvl.world.mobies[i];
-			if(moby.class_num != moby_batch_class) {
+			if(moby.o_class != moby_batch_class) {
 				draw_moby_batch(i);
-				moby_batch_class = moby.class_num;
+				moby_batch_class = moby.o_class;
 				moby_batch_begin = i;
 			}
 		}

@@ -515,7 +515,7 @@ packed_struct(world_thing_14,
 )
 
 packed_struct(world_tie,
-	uint32_t unknown_0;      // 0x0
+	uint32_t o_class;        // 0x0
 	uint32_t unknown_4;      // 0x4
 	uint32_t unknown_8;      // 0x8
 	uint32_t unknown_c;      // 0xc
@@ -527,7 +527,7 @@ packed_struct(world_tie,
 )
 
 packed_struct(world_shrub,
-	uint32_t unknown_0;      // 0x0
+	uint32_t o_class;        // 0x0
 	float    unknown_4;      // 0x4
 	uint32_t unknown_8;      // 0x8
 	uint32_t unknown_c;      // 0xc
@@ -553,7 +553,7 @@ packed_struct(world_moby_rac23,
 	uint32_t unknown_1c; // 0x1c
 	uint32_t unknown_20; // 0x20
 	uint32_t unknown_24; // 0x24
-	uint32_t class_num;  // 0x28
+	uint32_t o_class;    // 0x28
 	float    scale;      // 0x2c
 	uint32_t unknown_30; // 0x30
 	uint32_t unknown_34; // 0x34
@@ -578,7 +578,7 @@ packed_struct(world_moby_rac4,
 	uint32_t unknown_4;  // 0x4
 	int32_t  uid;        // 0x8
 	uint32_t unknown_c;  // 0xc
-	uint32_t class_num;  // 0x10
+	uint32_t o_class;    // 0x10
 	float    scale;      // 0x14
 	uint32_t unknown_18; // 0x18
 	uint32_t unknown_1c; // 0x1c
