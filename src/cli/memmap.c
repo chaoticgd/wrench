@@ -130,22 +130,11 @@ int main(int argc, char** argv) {
 int detect_game(uint8_t* ee_memory) {
 	int i, j, k;
 	for(i = GAME_COUNT - 1; i >= 0; i--) {
-		int game_matches = 0;
 		int pattern_size = strlen(PATTERNS[i]);
-		for(j = CODE_SEGMENT_BASE; j < EE_MEMORY_SIZE - 0x1000; j++) {
-			int address_matches = 1;
-			for(k = 0; k < pattern_size; k++) {
-				if(ee_memory[j + k] != PATTERNS[i][k]) {
-					address_matches = 0;
-					break;
-				}
+		for(j = CODE_SEGMENT_BASE; j < EE_MEMORY_SIZE - pattern_size; j++) {
+			if(memcmp(&ee_memory[j], PATTERNS[i], pattern_size) == 0) {
+				return i;
 			}
-			if(address_matches) {
-				game_matches = 1;
-			}
-		}
-		if(game_matches) {
-			return i;
 		}
 	}
 	return -1;
