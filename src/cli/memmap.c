@@ -187,7 +187,7 @@ void build_memory_map_rac1(memory_segment* map, uint8_t* ee_memory) {
 	map[i].pointer = 0;
 	map[i].address = 0;
 	i++;
-	map[i].name = "Unknown"; // code, dead space, vu chain bufs, hud, gadget buffer
+	map[i].name = ""; // code, dead space, vu chain bufs, hud, gadget buffer
 	map[i].pointer = 0;
 	map[i].address = 0x100000;
 	i++;
