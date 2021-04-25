@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
 		"Extract files from and rebuild Ratchet & Clank ISO images. The games\n"
 		"use raw disk I/O and a custom table of contents file to access assets\n"
 		"so just writing a standard ISO filesystem won't work.");
-	options.positional_help("ls|extract|rebuild|parse_pcsx2_stdout <input path> [<output path>]");
+	options.positional_help("ls|extract|build|parse_pcsx2_stdout <input path> [<output path>]");
 	options.add_options()
 		("c,command", "The operation to perform. Possible values are: ls, extract, build, parse_pcsx2_stdout.",
 			cxxopts::value<std::string>())
