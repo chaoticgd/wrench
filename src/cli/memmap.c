@@ -184,9 +184,11 @@ void build_memory_map_rac1(memory_segment* map, uint8_t* ee_memory) {
 	// Build the memory map by determining the addresses of pointers to memory
 	// segments from the aforementioned code that references them.
 	map[i].name = "OS";
+	map[i].pointer = 0;
 	map[i].address = 0;
 	i++;
 	map[i].name = "Unknown"; // code, dead space, vu chain bufs, hud, gadget buffer
+	map[i].pointer = 0;
 	map[i].address = 0x100000;
 	i++;
 	//RAC1_SEGMENT_SEQ("Tfrag Geomtry + Occlusion", 0x138);
