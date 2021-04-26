@@ -149,6 +149,7 @@ namespace gui {
 		std::string _list;
 		std::size_t _model;
 		bool _fullscreen_preview = false;
+		float _selection_pane_width;
 		view_params _view_params;
 	};
 

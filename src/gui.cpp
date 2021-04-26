@@ -437,7 +437,8 @@ void gui::render_tools(app& a, float menu_bar_height) {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
 	ImGuiViewport* view = ImGui::GetMainViewport();
 	ImGui::SetNextWindowPos(ImVec2(-1, menu_bar_height - 1));
-	ImGui::SetNextWindowSize(ImVec2(56, view->Size.y));
+
+	ImGui::SetNextWindowSize(ImVec2(34 + (ImGui::GetStyle().ItemSpacing.x*2), view->Size.y));
 	ImGui::Begin("Tools", nullptr,
 		ImGuiWindowFlags_NoDecoration |
 		ImGuiWindowFlags_NoMove);
@@ -448,6 +449,7 @@ void gui::render_tools(app& a, float menu_bar_height) {
 		if(!active) {
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 		}
+
 		bool clicked = ImGui::ImageButton(
 			(void*) (intptr_t) a.tools[i]->icon(), ImVec2(32, 32),
 			ImVec2(0, 0), ImVec2(1, 1), -1);
@@ -1053,7 +1055,7 @@ void gui::texture_browser::render(app& a) {
 	}
 
 	ImGui::Columns(2);
-	ImGui::SetColumnWidth(0, 192);
+	ImGui::SetColumnWidth(0, 220 * config::get().gui_scale);
 
 	ImGui::BeginChild(1);
 		if(ImGui::TreeNodeEx("Sources", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -1132,7 +1134,7 @@ void gui::texture_browser::render(app& a) {
 	ImGui::NextColumn();
 
 	ImGui::BeginChild(2);
-		ImGui::Columns(std::max(1.f, ImGui::GetWindowSize().x / 128));
+		ImGui::Columns(std::max(1.f, ImGui::GetWindowSize().x / (128 + ImGui::GetStyle().ItemSpacing.x)));
 		render_grid(a, textures);
 	ImGui::EndChild();
 	ImGui::NextColumn();
@@ -1147,7 +1149,6 @@ void gui::texture_browser::render_grid(app& a, std::vector<texture>& tex_list) {
 		if(tex->size.x < (size_t ) _filters.min_width) {
 			continue;
 		}
-
 		if(tex->opengl_texture.id == 0) {
 			// Only load 10 textures per frame.
 			if(num_this_frame >= 10) {
@@ -1159,6 +1160,7 @@ void gui::texture_browser::render_grid(app& a, std::vector<texture>& tex_list) {
 			num_this_frame++;
 		}
 
+		ImGui::SetCursorPosX(ImGui::GetColumnOffset() + (ImGui::GetColumnWidth()/2) - 64);
 		bool clicked = ImGui::ImageButton(
 			(void*) (intptr_t) tex->opengl_texture.id,
 			ImVec2(128, 128),
@@ -1172,8 +1174,7 @@ void gui::texture_browser::render_grid(app& a, std::vector<texture>& tex_list) {
 			_selection = i;
 		}
 
-		std::string display_name =
-			std::to_string(i) + " " + tex->name;
+		std::string display_name = std::to_string(i) + " " + tex->name;
 		ImGui::Text("%s", display_name.c_str());
 		ImGui::NextColumn();
 	}
@@ -1182,7 +1183,6 @@ void gui::texture_browser::render_grid(app& a, std::vector<texture>& tex_list) {
 /*
 	model_browser
 */
-
 gui::model_browser::model_browser() {}
 	
 const char* gui::model_browser::title_text() const {
@@ -1195,11 +1195,6 @@ ImVec2 gui::model_browser::initial_size() const {
 
 void gui::model_browser::render(app& a) {
 	ImGui::Columns(2);
-	if(_fullscreen_preview) {
-		ImGui::SetColumnWidth(0, 0);
-	} else {
-		ImGui::SetColumnWidth(0, ImGui::GetWindowSize().x - 384);
-	}
 	
 	_model_lists = a.model_lists();
 	moby_model* model = render_selection_pane(a);
@@ -1211,16 +1206,24 @@ void gui::model_browser::render(app& a) {
 	
 	if(ImGui::Button(_fullscreen_preview ? " > " : " < ")) {
 		_fullscreen_preview = !_fullscreen_preview;
+
+		if (!_fullscreen_preview) {
+			ImGui::SetColumnWidth(0, _selection_pane_width);
+		} else {
+		 	_selection_pane_width = ImGui::GetColumnWidth(0);
+			ImGui::SetColumnWidth(0, 0);
+		}
 	}
+	
 	ImGui::SameLine();
 	ImGui::SliderFloat("Zoom", &_view_params.zoom, 0.0, 1.0, "%.1f");
 	
 	ImVec2 preview_size;
 	if(_fullscreen_preview) {
 		auto win_size = ImGui::GetWindowSize();
-		preview_size = { win_size.x, win_size.y - 300 };
+		preview_size = { win_size.x, ImGui::GetColumnWidth() * 3.0f/4.0f};
 	} else {
-		preview_size = { 400, 300 };
+		preview_size = { ImGui::GetColumnWidth(), ImGui::GetColumnWidth() * 3.0f/4.0f };
 	}
 
 	static bool is_dragging = false;
@@ -1266,6 +1269,8 @@ void gui::model_browser::render(app& a) {
 			ImGui::InputText("Index", &index, ImGuiInputTextFlags_ReadOnly);
 			std::string res_path = model->resource_path();
 			ImGui::InputText("Resource Path", &res_path, ImGuiInputTextFlags_ReadOnly);
+			std::string model_class = model->name().substr(6, std::string::npos);
+			ImGui::InputText("Class", &model_class, ImGuiInputTextFlags_ReadOnly);
 			
 			static const std::map<view_mode, const char*> modes = {
 				{ view_mode::WIREFRAME, "Wireframe" },
@@ -1341,7 +1346,7 @@ moby_model* gui::model_browser::render_selection_grid(
 	std::size_t num_this_frame = 0;
 	
 	ImGui::BeginChild(1);
-	ImGui::Columns(std::max(1.f, ImGui::GetWindowSize().x / 128));
+	ImGui::Columns(std::max(1.f, ImGui::GetWindowSize().x / (128 + ImGui::GetStyle().ItemSpacing.x)));
 	
 	for(std::size_t i = 0; i < list.models->size(); i++) {
 		moby_model& model = (*list.models)[i];
@@ -1371,6 +1376,9 @@ moby_model* gui::model_browser::render_selection_grid(
 		}
 		
 		bool selected = _list == list_name && _model == i;
+
+		ImGui::SetCursorPosX(ImGui::GetColumnOffset() + (ImGui::GetColumnWidth()/2) - 64);
+	
 		bool clicked = ImGui::ImageButton(
 			(void*) (intptr_t) model.thumbnail(),
 			ImVec2(128, 128),
@@ -1380,7 +1388,7 @@ moby_model* gui::model_browser::render_selection_grid(
 			ImVec4(0, 0, 0, 1),
 			ImVec4(1, 1, 1, 1)
 		);
-		ImGui::Text("%ld %s\n", i, model.name().c_str());
+		ImGui::Text("%ld\n", i);
 		
 		if(clicked) {
 			_list = list_name;
