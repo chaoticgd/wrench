@@ -1380,7 +1380,7 @@ moby_model* gui::model_browser::render_selection_grid(
 			ImVec4(0, 0, 0, 1),
 			ImVec4(1, 1, 1, 1)
 		);
-		ImGui::Text("%ld\n", i);
+		ImGui::Text("%ld %s\n", i, model.name().c_str());
 		
 		if(clicked) {
 			_list = list_name;
