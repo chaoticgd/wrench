@@ -89,6 +89,7 @@ public:
 	void open_directory(fs::path dir);
 	void build_iso(build_settings settings);
 	void open_file(fs::path path);
+	void save_level();
 	
 	level* get_level();
 	const level* get_level() const;

@@ -87,14 +87,6 @@ void app::open_directory(fs::path dir) {
 }
 
 void app::build_iso(build_settings settings) {
-	if(level* lvl = get_level()) {
-		array_stream dest;
-		lvl->write(dest);
-		
-		file_stream file(lvl->path.string(), std::ios::out);
-		file.write_n(dest.buffer.data(), dest.buffer.size());
-	}
-	
 	emplace_window<worker_thread<int, build_settings>>(
 		"Build ISO", settings,
 		[](build_settings settings, worker_logger& log) {
@@ -157,6 +149,16 @@ void app::open_file(fs::path path) {
 		_armor.emplace(std::move(armor));
 		return;
 	}
+}
+
+void app::save_level() {
+	level* lvl = get_level();
+	
+	array_stream dest;
+	lvl->write(dest);
+	
+	file_stream file(lvl->path.string(), std::ios::out);
+	file.write_n(dest.buffer.data(), dest.buffer.size());
 }
 
 level* app::get_level() {
