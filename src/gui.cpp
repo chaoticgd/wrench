@@ -210,35 +210,33 @@ float gui::render_menu_bar(app& a) {
 		if(ImGui::BeginMenu("Build ISO")) {
 			static bool build_from_custom_dir = false;
 			static std::string custom_input_dir;
-			
-			static bool build_to_custom_path = false;
-			static std::string custom_output_iso;
-			
-			static bool launch_emulator = false;
-			
-			static bool single_level = false;
-			static int single_level_index = 0;
-			
-			static bool no_mpegs = false;
-			
 			ImGui::Checkbox("Custom Input Directory", &build_from_custom_dir);
 			if(build_from_custom_dir) {
 				input_path("Input Directory", &custom_input_dir, file_dialog_type::DIR);
 			}
 			
+			static bool build_to_custom_path = false;
+			static std::string custom_output_iso;
 			ImGui::Checkbox("Custom Output Path", &build_to_custom_path);
 			if(build_to_custom_path) {
 				input_path("Output ISO     ", &custom_output_iso, file_dialog_type::SAVE);
 			}
 			
+			static bool launch_emulator = false;
 			ImGui::Checkbox("Launch emulator after building", &launch_emulator);
 			
+			static bool single_level = false;
+			static int single_level_index = 0;
 			ImGui::Checkbox("Only write out single level (much faster)", &single_level);
 			if(single_level) {
 				ImGui::InputInt("Single Level Index", &single_level_index);
 			}
 			
+			static bool no_mpegs = false;
 			ImGui::Checkbox("Skip writing out MPEG cutscenes (much faster)", &no_mpegs);
+			
+			static bool save_current_level = true;
+			ImGui::Checkbox("Save currently open level", &save_current_level);
 			
 			if(((!build_from_custom_dir || !build_to_custom_path) && a.directory.empty())) {
 				ImGui::TextWrapped("No directory open!\n");
@@ -262,9 +260,15 @@ float gui::render_menu_bar(app& a) {
 				settings.single_level_index = single_level_index;
 				settings.no_mpegs = no_mpegs;
 				
+				if(save_current_level && a.get_level()) {
+					a.save_level();
+				}
 				a.build_iso(settings);
 			}
 			ImGui::EndMenu();
+		}
+		if(ImGui::MenuItem("Save Level", nullptr, nullptr, a.get_level())) {
+			a.save_level();
 		}
 		if(ImGui::BeginMenu("Export")) {
 			if(level* lvl = a.get_level()) {
