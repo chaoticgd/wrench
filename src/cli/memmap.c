@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
 	print_memory_map(map, SEGMENT_COUNTS[game]);
 	free(ee_memory);
 	fclose(file);
-	return 1;
+	return 0;
 }
 
 int detect_game(uint8_t* ee_memory) {
