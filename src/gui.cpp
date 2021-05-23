@@ -18,7 +18,6 @@
 
 #include "gui.h"
 
-#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <nfd.h>
@@ -32,7 +31,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "icons.h"
-#include "imgui.h"
 #include "util.h"
 #include "config.h"
 #include "window.h"
@@ -767,6 +765,8 @@ void gui::inspector::render(app& a) {
 				}
 
 		ImGui::Image((void*) (intptr_t) preview_texture, ImVec2(ImGui::GetWindowWidth(), 200));
+	} else {
+		ImGui::Text("Multiple Moby types/non Moby selected\n\n");
 	}
 
 	inspector_input<float>(lvl, "Mat I ", &matrix_entity::local_to_world, 0, 4);
