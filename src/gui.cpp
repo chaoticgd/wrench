@@ -130,8 +130,8 @@ void gui::begin_docking() {
 	ImGuiViewport* viewport = ImGui::GetMainViewport();
 	ImVec2 pos = viewport->Pos;
 	ImVec2 size = viewport->Size;
-	pos.x += 55;
-	size.x -= 55;
+	pos.x += 55 * config::get().gui_scale;
+	size.x -= 55 * config::get().gui_scale;
 	
 	ImGui::SetNextWindowPos(pos);
 	ImGui::SetNextWindowSize(size);
@@ -405,6 +405,7 @@ float gui::render_menu_bar(app& a) {
 				" - chaoticgd (original author)\n"
 				" - clip / stiantoften\n"
 				" - Dnawrkshp\n"
+				" - Pritchy96\n"
 				" - tsparkles / detolly\n"
 				"\n"
 				"Libraries used:\n"
@@ -441,7 +442,8 @@ void gui::render_tools(app& a, float menu_bar_height) {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
 	ImGuiViewport* view = ImGui::GetMainViewport();
 	ImGui::SetNextWindowPos(ImVec2(-1, menu_bar_height - 1));
-	ImGui::SetNextWindowSize(ImVec2(56, view->Size.y));
+	
+	ImGui::SetNextWindowSize(ImVec2(56 * config::get().gui_scale, view->Size.y));
 	ImGui::Begin("Tools", nullptr,
 		ImGuiWindowFlags_NoDecoration |
 		ImGuiWindowFlags_NoMove);
@@ -452,9 +454,10 @@ void gui::render_tools(app& a, float menu_bar_height) {
 		if(!active) {
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 		}
+
 		bool clicked = ImGui::ImageButton(
-			(void*) (intptr_t) a.tools[i]->icon(), ImVec2(32, 32),
-			ImVec2(0, 0), ImVec2(1, 1), -1);
+			(void*) (intptr_t) a.tools[i]->icon(), ImVec2(32*config::get().gui_scale, 32*config::get().gui_scale),
+						ImVec2(0, 0), ImVec2(1, 1), -1);
 		if(!active) {
 			ImGui::PopStyleColor();
 		}
@@ -678,7 +681,98 @@ void gui::inspector::render(app& a) {
 		ImGui::Text("<no entity selected>");
 		return;
 	}
+
+	GLuint preview_texture = 0;
 	
+	// If mobies with different class numbers are selected, or entities other
+	// than mobies are selected, we shouldn't draw the pvars.
+	std::optional<uint32_t> last_class;
+	std::optional<int32_t> last_pvar_index;
+	bool one_moby_type_selected = true;
+	lvl.for_each<entity>([&](entity& base_ent) {
+		if(base_ent.selected) {
+			if(moby_entity* ent = dynamic_cast<moby_entity*>(&base_ent)) {
+				if(last_class && *last_class != ent->o_class) {
+					one_moby_type_selected = false;
+				} else {
+					last_class = ent->o_class;
+					if(ent->pvar_index > -1) {
+						last_pvar_index = ent->pvar_index;
+					}
+				}
+			last_class = ent->o_class;
+			} else {
+				one_moby_type_selected = false;	
+			}
+		}
+	});
+	
+	if(one_moby_type_selected) {
+		if(lvl.moby_class_to_model.find(*last_class) != lvl.moby_class_to_model.end()) {
+					std::size_t model_index = lvl.moby_class_to_model.at(*last_class);
+					moby_model& model = lvl.moby_models[model_index];
+	
+					float zoom = 0.3f;
+					glm::vec2 pitch_yaw = glm::vec2(0, glm::radians(90.f));
+					glm::vec3 center_point = (model.bounding_box.max + model.bounding_box.min) * 0.5f / (float) INT16_MAX;
+					ImVec2 preview_size = ImVec2(ImGui::GetWindowWidth(), 200);
+	
+					float fov_y = 45.0f,
+						camera_distance,
+						zoom_ratio;
+
+					//Get the largest dimension of the model.
+					float model_size = glm::max(glm::abs(model.bounding_box.max.x - model.bounding_box.min.x), 
+											glm::abs(model.bounding_box.max.y - model.bounding_box.min.y));
+					model_size = glm::max(model_size, glm::abs(model.bounding_box.max.z - model.bounding_box.min.z));
+
+					float focal_length = (preview_size.y/2) / tan(glm::radians(fov_y/2));
+
+					//Get a radio of how wide the largest dimension of the model is compared to the render window width.
+					if (preview_size.x < preview_size.y) {
+						zoom_ratio = model_size / preview_size.x;
+					} else {	//Same as above, but use height if the render window is shorter than wide.
+						zoom_ratio = model_size / preview_size.y;
+					}
+					
+					//Fit the camera to the model bounding box.
+					camera_distance = focal_length * zoom_ratio / (float) INT16_MAX;
+
+					glm::vec3 eye = glm::vec3(((camera_distance) * (2.0f - zoom)), 0, 0);
+
+					//Rotates the model to match the game model orientation.
+					static const glm::mat4 yzx {
+						0,  0, 1, 0,
+						1,  0, 0, 0,
+						0, -1, 0, 0,
+						0,  0, 0, 1
+					};
+
+					glm::mat4 view_fixed = glm::lookAt(eye, glm::vec3(0), glm::vec3(0, 1, 0));
+					glm::mat4 view_pitched = glm::rotate(view_fixed, pitch_yaw.x, glm::vec3(0, 0, 1));
+					glm::mat4 view = glm::rotate(view_pitched, pitch_yaw.y, glm::vec3(0, 1, 0));
+					glm::mat4 offset_view = glm::translate(view * yzx, -center_point);
+
+					glm::mat4 projection = glm::perspective(glm::radians(fov_y), preview_size.x / preview_size.y, 0.01f, 100.0f);
+					
+					glm::mat4 local_to_clip = projection * offset_view;
+					
+					gl_buffer local_to_clip_buffer;
+					glGenBuffers(1, &local_to_clip_buffer());
+					glBindBuffer(GL_ARRAY_BUFFER, local_to_clip_buffer());
+					glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4), &local_to_clip, GL_STATIC_DRAW);
+
+					render_to_texture(&preview_texture, preview_size.x, preview_size.y, [&]() {
+						a.renderer.draw_moby_models(model, lvl.moby_textures, view_mode::TEXTURED_POLYGONS, false, false, local_to_clip_buffer(), 0, 1);
+					});
+
+				}
+
+		ImGui::Image((void*) (intptr_t) preview_texture, ImVec2(ImGui::GetWindowWidth(), 200));
+	} else {
+		ImGui::Text("Multiple Moby types/non Moby selected\n\n");
+	}
+
 	inspector_input<float>(lvl, "Mat I ", &matrix_entity::local_to_world, 0, 4);
 	inspector_input<float>(lvl, "Mat J ", &matrix_entity::local_to_world, 4, 4);
 	inspector_input<float>(lvl, "Mat K ", &matrix_entity::local_to_world, 8, 4);
@@ -733,54 +827,32 @@ void gui::inspector::render(app& a) {
 	inspector_input_scalar(lvl, "Unk 84", &moby_entity::unknown_84);
 	inspector_input<float>(lvl, "Point ", &grindrail_spline_entity::special_point, 0, 4);
 	
-	// If mobies with different class numbers are selected, or entities other
-	// than mobies are selected, we shouldn't draw the pvars.
-	std::optional<uint32_t> last_class;
-	std::optional<int32_t> last_pvar_index;
-	bool should_draw_pvars = true;
-	lvl.for_each<entity>([&](entity& base_ent) {
-		if(base_ent.selected) {
-			if(moby_entity* ent = dynamic_cast<moby_entity*>(&base_ent)) {
-				if(last_class && *last_class != ent->o_class) {
-					should_draw_pvars = false;
+	if (one_moby_type_selected && last_pvar_index) {
+			ImGui::Text("Pvar %d", *last_pvar_index);
+			
+			auto& first_pvar = lvl.world.pvars.at(*last_pvar_index);
+			for(std::size_t i = 0; i < first_pvar.size(); i++) {
+				bool should_be_blank = false;
+				lvl.for_each<moby_entity>([&](moby_entity& ent) {
+					if(ent.selected && ent.pvar_index > -1) {
+						auto& pvar = lvl.world.pvars.at(ent.pvar_index);
+						if(pvar.at(i) != first_pvar[i]) {
+							should_be_blank = true;
+						}
+					}
+				});
+				if(should_be_blank) {
+					ImGui::Text("  ");
 				} else {
-					last_class = ent->o_class;
-					if(ent->pvar_index > -1) {
-						last_pvar_index = ent->pvar_index;
-					}
+					uint8_t value = first_pvar[i];
+					ImGui::Text("%02x", value);
 				}
-			} else {
-				should_draw_pvars = false;
-			}
-		}
-	});
-	
-	if(should_draw_pvars && last_pvar_index) {
-		ImGui::Text("Pvar %d", *last_pvar_index);
-		
-		auto& first_pvar = lvl.world.pvars.at(*last_pvar_index);
-		for(std::size_t i = 0; i < first_pvar.size(); i++) {
-			bool should_be_blank = false;
-			lvl.for_each<moby_entity>([&](moby_entity& ent) {
-				if(ent.selected && ent.pvar_index > -1) {
-					auto& pvar = lvl.world.pvars.at(ent.pvar_index);
-					if(pvar.at(i) != first_pvar[i]) {
-						should_be_blank = true;
-					}
+				if(i % 16 != 15) {
+					ImGui::SameLine();
 				}
-			});
-			if(should_be_blank) {
-				ImGui::Text("  ");
-			} else {
-				uint8_t value = first_pvar[i];
-				ImGui::Text("%02x", value);
-			}
-			if(i % 16 != 15) {
-				ImGui::SameLine();
 			}
 		}
 	}
-}
 
 template <typename T_field, typename T_entity>
 void inspector_input_scalar(level& lvl, const char* label, T_field T_entity::*field) {
@@ -927,7 +999,7 @@ void gui::moby_list::render(app& a) {
 		ImGui::Text("<no level>");
 		return;
 	}
-	
+
 	level& lvl = *a.get_level();
 	
 	ImVec2 size = ImGui::GetWindowSize();
@@ -1057,7 +1129,7 @@ void gui::texture_browser::render(app& a) {
 	}
 
 	ImGui::Columns(2);
-	ImGui::SetColumnWidth(0, 192);
+	ImGui::SetColumnWidth(0, 220 * config::get().gui_scale);
 
 	ImGui::BeginChild(1);
 		if(ImGui::TreeNodeEx("Sources", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -1136,7 +1208,7 @@ void gui::texture_browser::render(app& a) {
 	ImGui::NextColumn();
 
 	ImGui::BeginChild(2);
-		ImGui::Columns(std::max(1.f, ImGui::GetWindowSize().x / 128));
+		ImGui::Columns(std::max(1.f, ImGui::GetWindowSize().x / (128 + ImGui::GetStyle().ItemSpacing.x)));
 		render_grid(a, textures);
 	ImGui::EndChild();
 	ImGui::NextColumn();
@@ -1151,7 +1223,6 @@ void gui::texture_browser::render_grid(app& a, std::vector<texture>& tex_list) {
 		if(tex->size.x < (size_t ) _filters.min_width) {
 			continue;
 		}
-
 		if(tex->opengl_texture.id == 0) {
 			// Only load 10 textures per frame.
 			if(num_this_frame >= 10) {
@@ -1163,6 +1234,7 @@ void gui::texture_browser::render_grid(app& a, std::vector<texture>& tex_list) {
 			num_this_frame++;
 		}
 
+		ImGui::SetCursorPosX(ImGui::GetColumnOffset() + (ImGui::GetColumnWidth()/2) - 64);
 		bool clicked = ImGui::ImageButton(
 			(void*) (intptr_t) tex->opengl_texture.id,
 			ImVec2(128, 128),
@@ -1176,8 +1248,7 @@ void gui::texture_browser::render_grid(app& a, std::vector<texture>& tex_list) {
 			_selection = i;
 		}
 
-		std::string display_name =
-			std::to_string(i) + " " + tex->name;
+		std::string display_name = std::to_string(i) + " " + tex->name;
 		ImGui::Text("%s", display_name.c_str());
 		ImGui::NextColumn();
 	}
@@ -1186,7 +1257,6 @@ void gui::texture_browser::render_grid(app& a, std::vector<texture>& tex_list) {
 /*
 	model_browser
 */
-
 gui::model_browser::model_browser() {}
 	
 const char* gui::model_browser::title_text() const {
@@ -1199,13 +1269,15 @@ ImVec2 gui::model_browser::initial_size() const {
 
 void gui::model_browser::render(app& a) {
 	ImGui::Columns(2);
-	if(_fullscreen_preview) {
-		ImGui::SetColumnWidth(0, 0);
-	} else {
-		ImGui::SetColumnWidth(0, ImGui::GetWindowSize().x - 384);
+
+	_model_lists = a.model_lists();
+
+	if (!_fullscreen_preview) {
+		float min_grid_width = (4 * (128 + ImGui::GetStyle().ItemSpacing.x));
+		if (ImGui::GetColumnWidth(0) < min_grid_width)
+			ImGui::SetColumnWidth(0, min_grid_width);
 	}
 	
-	_model_lists = a.model_lists();
 	moby_model* model = render_selection_pane(a);
 	if(model == nullptr) {
 		return;
@@ -1215,16 +1287,24 @@ void gui::model_browser::render(app& a) {
 	
 	if(ImGui::Button(_fullscreen_preview ? " > " : " < ")) {
 		_fullscreen_preview = !_fullscreen_preview;
+
+		if (!_fullscreen_preview) {
+			ImGui::SetColumnWidth(0, _selection_pane_width);
+		} else {
+		 	_selection_pane_width = ImGui::GetColumnWidth(0);
+			ImGui::SetColumnWidth(0, 0);
+		}
 	}
+	
 	ImGui::SameLine();
 	ImGui::SliderFloat("Zoom", &_view_params.zoom, 0.0, 1.0, "%.1f");
 	
 	ImVec2 preview_size;
 	if(_fullscreen_preview) {
 		auto win_size = ImGui::GetWindowSize();
-		preview_size = { win_size.x, win_size.y - 300 };
+		preview_size = { win_size.x, ImGui::GetColumnWidth() * 3.0f/4.0f};
 	} else {
-		preview_size = { 400, 300 };
+		preview_size = { ImGui::GetColumnWidth(), ImGui::GetColumnWidth() * 3.0f/4.0f };
 	}
 
 	static bool is_dragging = false;
@@ -1345,7 +1425,7 @@ moby_model* gui::model_browser::render_selection_grid(
 	std::size_t num_this_frame = 0;
 	
 	ImGui::BeginChild(1);
-	ImGui::Columns(std::max(1.f, ImGui::GetWindowSize().x / 128));
+	ImGui::Columns(std::max(1.f, ImGui::GetWindowSize().x / (128 + ImGui::GetStyle().ItemSpacing.x)));
 	
 	for(std::size_t i = 0; i < list.models->size(); i++) {
 		moby_model& model = (*list.models)[i];
@@ -1375,6 +1455,10 @@ moby_model* gui::model_browser::render_selection_grid(
 		}
 		
 		bool selected = _list == list_name && _model == i;
+
+		ImGui::SetCursorPosX(ImGui::GetColumnOffset() + (ImGui::GetColumnWidth()/2) - 64);
+		ImGui::Text("%ld", i);
+
 		bool clicked = ImGui::ImageButton(
 			(void*) (intptr_t) model.thumbnail(),
 			ImVec2(128, 128),
@@ -1384,7 +1468,11 @@ moby_model* gui::model_browser::render_selection_grid(
 			ImVec4(0, 0, 0, 1),
 			ImVec4(1, 1, 1, 1)
 		);
-		ImGui::Text("%ld %s\n", i, model.name().c_str());
+
+		ImVec2 text_width = ImGui::CalcTextSize(model.name().c_str());
+		ImGui::SetCursorPosX(ImGui::GetColumnOffset() + (ImGui::GetColumnWidth()/2) - text_width.x/2);
+
+		ImGui::Text("%s\n\n", model.name().c_str());
 		
 		if(clicked) {
 			_list = list_name;
