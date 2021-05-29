@@ -709,68 +709,24 @@ void gui::inspector::render(app& a) {
 	
 	if(one_moby_type_selected) {
 		if(lvl.moby_class_to_model.find(*last_class) != lvl.moby_class_to_model.end()) {
-					std::size_t model_index = lvl.moby_class_to_model.at(*last_class);
-					moby_model& model = lvl.moby_models[model_index];
-	
-					float zoom = 0.3f;
-					glm::vec2 pitch_yaw = glm::vec2(0, glm::radians(90.f));
-					glm::vec3 center_point = (model.bounding_box.max + model.bounding_box.min) * 0.5f / (float) INT16_MAX;
-					ImVec2 preview_size = ImVec2(ImGui::GetWindowWidth(), 200);
-	
-					float fov_y = 45.0f,
-						camera_distance,
-						zoom_ratio;
-
-					//Get the largest dimension of the model.
-					float model_size = glm::max(glm::abs(model.bounding_box.max.x - model.bounding_box.min.x), 
-											glm::abs(model.bounding_box.max.y - model.bounding_box.min.y));
-					model_size = glm::max(model_size, glm::abs(model.bounding_box.max.z - model.bounding_box.min.z));
-
-					float focal_length = (preview_size.y/2) / tan(glm::radians(fov_y/2));
-
-					//Get a radio of how wide the largest dimension of the model is compared to the render window width.
-					if (preview_size.x < preview_size.y) {
-						zoom_ratio = model_size / preview_size.x;
-					} else {	//Same as above, but use height if the render window is shorter than wide.
-						zoom_ratio = model_size / preview_size.y;
-					}
-					
-					//Fit the camera to the model bounding box.
-					camera_distance = focal_length * zoom_ratio / (float) INT16_MAX;
-
-					glm::vec3 eye = glm::vec3(((camera_distance) * (2.0f - zoom)), 0, 0);
-
-					//Rotates the model to match the game model orientation.
-					static const glm::mat4 yzx {
-						0,  0, 1, 0,
-						1,  0, 0, 0,
-						0, -1, 0, 0,
-						0,  0, 0, 1
-					};
-
-					glm::mat4 view_fixed = glm::lookAt(eye, glm::vec3(0), glm::vec3(0, 1, 0));
-					glm::mat4 view_pitched = glm::rotate(view_fixed, pitch_yaw.x, glm::vec3(0, 0, 1));
-					glm::mat4 view = glm::rotate(view_pitched, pitch_yaw.y, glm::vec3(0, 1, 0));
-					glm::mat4 offset_view = glm::translate(view * yzx, -center_point);
-
-					glm::mat4 projection = glm::perspective(glm::radians(fov_y), preview_size.x / preview_size.y, 0.01f, 100.0f);
-					
-					glm::mat4 local_to_clip = projection * offset_view;
-					
-					gl_buffer local_to_clip_buffer;
-					glGenBuffers(1, &local_to_clip_buffer());
-					glBindBuffer(GL_ARRAY_BUFFER, local_to_clip_buffer());
-					glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4), &local_to_clip, GL_STATIC_DRAW);
-
-					render_to_texture(&preview_texture, preview_size.x, preview_size.y, [&]() {
-						a.renderer.draw_moby_models(model, lvl.moby_textures, view_mode::TEXTURED_POLYGONS, false, false, local_to_clip_buffer(), 0, 1);
-					});
-
-				}
+			std::size_t model_index = lvl.moby_class_to_model.at(*last_class);
+			moby_model& model = lvl.moby_models[model_index];
+			
+			view_params params;
+			params.mode = view_mode::TEXTURED_POLYGONS;
+			params.zoom = 0.3f;
+			params.pitch_yaw = glm::vec2(0, glm::radians(90.f));
+			params.show_vertex_indices = false;
+			params.show_bounding_box = false;
+			
+			ImVec2 preview_size = ImVec2(ImGui::GetWindowWidth(), 200);
+			
+			render_to_texture(&preview_texture, preview_size.x, preview_size.y, [&]() {
+				a.renderer.draw_single_moby(model, lvl.moby_textures, params, preview_size.x, preview_size.y);
+			});
+		}
 
 		ImGui::Image((void*) (intptr_t) preview_texture, ImVec2(ImGui::GetWindowWidth(), 200));
-	} else {
-		ImGui::Text("Multiple Moby types/non Moby selected\n\n");
 	}
 
 	inspector_input<float>(lvl, "Mat I ", &matrix_entity::local_to_world, 0, 4);
@@ -1502,68 +1458,15 @@ void gui::model_browser::render_preview(
 		const gl_renderer& renderer,
 		ImVec2 preview_size,
 		view_params params) {
-
-	auto draw_list = ImGui::GetWindowDrawList();
-
-    glm::vec3 center_point = (model.bounding_box.max + model.bounding_box.min) * 0.5f / (float) INT16_MAX;
+	glm::mat4 local_to_clip;
 	
-	float fov_y = 45.0f,
-		camera_distance,
-		zoom_ratio;
-
-	//Get the largest dimension of the model.
-	float model_size = glm::max(glm::abs(model.bounding_box.max.x - model.bounding_box.min.x), 
-							glm::abs(model.bounding_box.max.y - model.bounding_box.min.y));
-	model_size = glm::max(model_size, glm::abs(model.bounding_box.max.z - model.bounding_box.min.z));
-
-	float focal_length = (preview_size.y/2) / tan(glm::radians(fov_y/2));
-
-	//Get a radio of how wide the largest dimension of the model is compared to the render window width.
-	if (preview_size.x < preview_size.y) {
-		zoom_ratio = model_size / preview_size.x;
-	} else {	//Same as above, but use height if the render window is shorter than wide.
-		zoom_ratio = model_size / preview_size.y;
-	}
-	 
-	//Fit the camera to the model bounding box.
-	camera_distance = focal_length * zoom_ratio / (float) INT16_MAX;
-
-	glm::vec3 eye = glm::vec3(((camera_distance) * (2.0f - params.zoom)), 0, 0);
-
-	//Rotates the model to match the game model orientation.
-	static const glm::mat4 yzx {
-		0,  0, 1, 0,
-		1,  0, 0, 0,
-		0, -1, 0, 0,
-		0,  0, 0, 1
-	};
-
-	glm::mat4 view_fixed = glm::lookAt(eye, glm::vec3(0), glm::vec3(0, 1, 0));
-	glm::mat4 view_pitched = glm::rotate(view_fixed, params.pitch_yaw.x, glm::vec3(0, 0, 1));
-	glm::mat4 view = glm::rotate(view_pitched, params.pitch_yaw.y, glm::vec3(0, 1, 0));
-	glm::mat4 offset_view = glm::translate(view * yzx, -center_point);
-
-	glm::mat4 projection = glm::perspective(glm::radians(fov_y), preview_size.x / preview_size.y, 0.01f, 100.0f);
-	
-	glm::mat4 local_to_clip = projection * offset_view;
-
-	std::vector<GLuint> gl_textures;
-	for(texture& tex : textures) {
-		gl_textures.push_back(tex.opengl_texture.id);
-	}
-	
-	gl_buffer local_to_clip_buffer;
-	glGenBuffers(1, &local_to_clip_buffer());
-	glBindBuffer(GL_ARRAY_BUFFER, local_to_clip_buffer());
-	glBufferData(GL_ARRAY_BUFFER,
-		sizeof(glm::mat4),
-		&local_to_clip, GL_STATIC_DRAW);
-
 	render_to_texture(target, preview_size.x, preview_size.y, [&]() {
-		renderer.draw_moby_models(model, textures, params.mode, false, params.show_bounding_box, local_to_clip_buffer(), 0, 1);
+		local_to_clip = renderer.draw_single_moby(model, textures, params, preview_size.x, preview_size.y);
 	});
 
 	if(params.show_vertex_indices) {
+		auto draw_list = ImGui::GetWindowDrawList();
+		
 		static const auto apply_local_to_screen = [&](glm::vec4 pos) {
 			glm::vec4 homogeneous_pos = local_to_clip * pos;
 			glm::vec3 gl_pos {

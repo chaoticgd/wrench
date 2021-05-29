@@ -43,6 +43,22 @@ enum class view_mode {
 	TEXTURED_POLYGONS = 1
 };
 
+struct view_params {
+	view_mode mode = view_mode::TEXTURED_POLYGONS;
+	float zoom = 0.5f;
+	glm::vec2 pitch_yaw = { 0.f, 0.f };
+	bool show_vertex_indices = false;
+	bool show_bounding_box = false;
+};
+
+// The games use a Z-up coordinate system, OpenGL uses a Y-up coordinate system.
+const glm::mat4 RATCHET_TO_OPENGL_MATRIX = {
+	0,  0, 1, 0,
+	1,  0, 0, 0,
+	0, -1, 0, 0,
+	0,  0, 0, 1
+};;
+
 struct gl_renderer {
 	void prepare_frame(level& lvl, glm::mat4 world_to_clip); // Compute local to world matrices for the moby batch renderer.
 	void draw_level(level& lvl, glm::mat4 world_to_clip) const;
@@ -70,7 +86,14 @@ struct gl_renderer {
 		GLuint local_to_world_buffer,
 		std::size_t instance_offset, 
 		std::size_t count) const;
-
+	
+	glm::mat4 draw_single_moby(
+		moby_model& model,
+		std::vector<texture>& textures,
+		view_params params,
+		int width,
+		int height) const;
+	
 	void draw_shrub_models(
 		shrub_model& model,
 		std::vector<texture>& textures,
