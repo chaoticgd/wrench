@@ -727,8 +727,6 @@ void gui::inspector::render(app& a) {
 		}
 
 		ImGui::Image((void*) (intptr_t) preview_texture, ImVec2(ImGui::GetWindowWidth(), 200));
-	} else {
-		ImGui::Text("Multiple Moby types/non Moby selected\n\n");
 	}
 
 	inspector_input<float>(lvl, "Mat I ", &matrix_entity::local_to_world, 0, 4);
