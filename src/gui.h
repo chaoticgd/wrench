@@ -64,14 +64,6 @@ namespace gui {
 	class inspector : public window {
 
 	public:
-		struct view_params {
-			view_mode mode = view_mode::TEXTURED_POLYGONS;
-			float zoom = 0.5f;
-			glm::vec2 pitch_yaw = { 0.f, 0.f };
-			bool show_vertex_indices = false;
-			bool show_bounding_box = false;
-		};
-
 		const char* title_text() const override;
 		ImVec2 initial_size() const override;
 		void render(app& a) override;
@@ -131,14 +123,6 @@ namespace gui {
 			app& a,
 			std::string list_name,
 			model_list& list);
-		
-		struct view_params {
-			view_mode mode = view_mode::TEXTURED_POLYGONS;
-			float zoom = 0.5f;
-			glm::vec2 pitch_yaw = { 0.f, 0.f };
-			bool show_vertex_indices = false;
-			bool show_bounding_box = false;
-		};
 		
 		static void render_preview(
 			app& a,

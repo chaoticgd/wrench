@@ -604,6 +604,61 @@ void gl_renderer::draw_moby_models(
 	glVertexAttribDivisor(3, 0);
 }
 
+glm::mat4 gl_renderer::draw_single_moby(
+		moby_model& model,
+		std::vector<texture>& textures,
+		view_params params,
+		int width,
+		int height) const {
+	float fov_y = 45.0f;
+	float camera_distance;
+	float zoom_ratio;
+
+	// Get the largest dimension of the model.
+	float model_size = 0;
+	model_size = glm::max(model_size, glm::abs(model.bounding_box.max.x - model.bounding_box.min.x));
+	model_size = glm::max(model_size, glm::abs(model.bounding_box.max.y - model.bounding_box.min.y));
+	model_size = glm::max(model_size, glm::abs(model.bounding_box.max.z - model.bounding_box.min.z));
+
+	float focal_length = (height/2) / tan(glm::radians(fov_y/2));
+
+	// Get a ratio of how wide the largest dimension of the model is compared to the render window width.
+	if (width < height) {
+		zoom_ratio = model_size / width;
+	} else { // Same as above, but use height if the render window is shorter than wide.
+		zoom_ratio = model_size / height;
+	}
+	 
+	// Fit the camera to the model bounding box.
+	camera_distance = focal_length * zoom_ratio / (float) INT16_MAX;
+
+	glm::vec3 eye = glm::vec3(((camera_distance) * (2.0f - params.zoom)), 0, 0);
+
+	glm::mat4 view_fixed = glm::lookAt(eye, glm::vec3(0), glm::vec3(0, 1, 0));
+	glm::mat4 view_pitched = glm::rotate(view_fixed, params.pitch_yaw.x, glm::vec3(0, 0, 1));
+	glm::mat4 view = glm::rotate(view_pitched, params.pitch_yaw.y, glm::vec3(0, 1, 0));
+	glm::vec3 center_point = (model.bounding_box.max + model.bounding_box.min) * 0.5f / (float) INT16_MAX;
+	glm::mat4 offset_view = glm::translate(view * RATCHET_TO_OPENGL_MATRIX, -center_point);
+
+	glm::mat4 projection = glm::perspective(glm::radians(fov_y), width / (float) height, 0.01f, 100.0f);
+	
+	glm::mat4 local_to_clip = projection * offset_view;
+
+	std::vector<GLuint> gl_textures;
+	for(texture& tex : textures) {
+		gl_textures.push_back(tex.opengl_texture.id);
+	}
+	
+	gl_buffer local_to_clip_buffer;
+	glGenBuffers(1, &local_to_clip_buffer());
+	glBindBuffer(GL_ARRAY_BUFFER, local_to_clip_buffer());
+	glBufferData(GL_ARRAY_BUFFER,
+		sizeof(glm::mat4),
+		&local_to_clip, GL_STATIC_DRAW);
+	
+	draw_moby_models(model, textures, params.mode, false, params.show_bounding_box, local_to_clip_buffer(), 0, 1);
+	return local_to_clip;
+}
 
 void gl_renderer::draw_shrub_models(
 	shrub_model& model,
@@ -752,15 +807,7 @@ glm::mat4 gl_renderer::get_world_to_clip() const {
 	glm::mat4 pitch = glm::rotate(glm::mat4(1.0f), rot.x, glm::vec3(1.0f, 0.0f, 0.0f));
 	glm::mat4 yaw   = glm::rotate(glm::mat4(1.0f), rot.y, glm::vec3(0.0f, 1.0f, 0.0f));
 	glm::mat4 translate = glm::translate(glm::mat4(1.0f), -camera_position);
-
-	static const glm::mat4 yzx {
-		0,  0, 1, 0,
-		1,  0, 0, 0,
-		0, -1, 0, 0,
-		0,  0, 0, 1
-	};
-	glm::mat4 view = pitch * yaw * yzx * translate;
-
+	glm::mat4 view = pitch * yaw * RATCHET_TO_OPENGL_MATRIX * translate;
 	return projection * view;
 }
 
