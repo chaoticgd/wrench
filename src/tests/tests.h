@@ -16,10 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-void compression_test();
 void world_segment_test();
 
 void run_tests() {
-	compression_test();
 	world_segment_test();
 }

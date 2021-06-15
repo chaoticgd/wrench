@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2020 chaoticgd
+	Copyright (C) 2019-2021 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef FORMATS_WAD_H
-#define FORMATS_WAD_H
+#ifndef LZ_COMPRESSION_H
+#define LZ_COMPRESSION_H
 
 #include "../stream.h"
 
@@ -25,10 +25,8 @@
 #include <cstring>
 #include <utility>
 
-# /*
-#	Decompress and recompress WAD segments used by the games to store various
-#	assets. Not to be confused with WAD archives.
-# */
+// Decompress and recompress WAD segments used by the games to store various
+// assets. Not to be confused with WAD archives.
 
 packed_struct(wad_header,
 	char magic[3]; // "WAD"
@@ -41,7 +39,6 @@ bool validate_wad(char* magic);
 
 // Throws stream_io_error, stream_format_error.
 void decompress_wad(array_stream& dest, array_stream& src);
-void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_to_decompress);
 
 void compress_wad(array_stream& dest, array_stream& src, int thread_count);
 

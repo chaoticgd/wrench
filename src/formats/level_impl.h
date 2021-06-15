@@ -30,7 +30,6 @@
 #include "../worker_logger.h"
 #include "../level_file_types.h"
 #include "world.h"
-#include "wad.h"
 #include "tfrag.h"
 #include "tcol.h"
 #include "texture.h"
