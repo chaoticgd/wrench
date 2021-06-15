@@ -22,17 +22,16 @@
 #include "../command_line.h"
 #include "compression.h"
 
-// CLI tool to decompress and recompress WAD segments.
+// CLI tool to decompress and recompress WAD LZ segments.
 // Not to be confused with the *.WAD files in R&C2's filesystem.
 
-void copy_and_decompress(stream& dest, stream& src);
-void copy_and_compress(stream& dest, stream& src);
+static int run_test();
 
 int main(int argc, char** argv) {
-	cxxopts::Options options(argv[0], "Compress and decompress WAD segments.");
-	options.positional_help("compress|decompress <input file> <output file>");
+	cxxopts::Options options(argv[0], "Compress and decompress WAD LZ segments.");
+	options.positional_help("compress|decompress|test [<input file> <output file>]");
 	options.add_options()
-		("c,command", "The operation to perform. Possible values are: compress, decompress.",
+		("c,command", "The operation to perform. Possible values are: compress, decompress, test.",
 			cxxopts::value<std::string>())
 		("s,src", "The input file.",
 			cxxopts::value<std::string>())
@@ -48,14 +47,18 @@ int main(int argc, char** argv) {
 
 	auto args = parse_command_line_args(argc, argv, options);
 	std::string command = cli_get(args, "command");
-	std::string src_path = cli_get(args, "src");
-	std::string dest_path = cli_get(args, "dest");
+	std::string src_path = cli_get_or(args, "src", "");
+	std::string dest_path = cli_get_or(args, "dest", "");
 	size_t offset = parse_number(cli_get_or(args, "offset", "0"));
 	size_t thread_count = parse_number(cli_get_or(args, "threads", "1"));
 	
 	if(thread_count < 1) {
 		std::cerr << "You must choose a positive number of threads. Defaulting to 1.\n";
 		thread_count = 1;
+	}
+	
+	if(command == "test") {
+		return run_test();
 	}
 	
 	bool decompress = command == "decompress";
@@ -83,4 +86,65 @@ int main(int argc, char** argv) {
 	stream::copy_n(dest_file, dest, dest.size());
 
 	return 0;
+}
+
+static const int TEST_ITERATIONS = 128;
+
+static int run_test() {
+	printf("**** compression test ****\n");
+	
+	srand(time(NULL));
+	
+	int happy = 0, sad = 0;
+	
+	for(int i = 0; i < TEST_ITERATIONS; i++) {
+		int buffer_size = rand() % (64 * 1024);
+		
+		array_stream plaintext;
+		for(int j = 0; j < buffer_size; j++) {
+			if(rand() % 8 <= 0) {
+				plaintext.write8(rand());
+			} else {
+				plaintext.write8(0);
+			}
+		}
+		
+		auto write_sad_file = [&]() {
+			sad++;
+			std::string sad_file_path = "/tmp/wad_is_sad_" + std::to_string(sad) + ".bin";
+			file_stream sad_file(sad_file_path, std::ios::out);
+			plaintext.seek(0);
+			stream::copy_n(sad_file, plaintext, plaintext.size());
+			printf("Written sad file to %s\n", sad_file_path.c_str());
+		};
+		
+		array_stream compressed;
+		try {
+			int thread_count = 1 + (rand() % 15);
+			compress_wad(compressed, plaintext, thread_count);
+		} catch(std::exception& e) {
+			printf("compress_wad threw: %s\n", e.what());
+			write_sad_file();
+			continue;
+		}
+		
+		array_stream output;
+		try {
+			decompress_wad(output, compressed);
+		} catch(std::exception& e) {
+			printf("decompress_wad threw: %s\n", e.what());
+			write_sad_file();
+			continue;
+		}
+		
+		if(!array_stream::compare_contents(plaintext, output)) {
+			write_sad_file();
+			continue;
+		}
+		
+		happy++;
+	}
+	
+	printf("results: %d happy, %d sad\n", happy, sad);
+	return sad != 0;
 }

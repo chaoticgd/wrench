@@ -52,7 +52,6 @@ add_executable(wrench
 	src/imgui_impl_glfw.cpp
 	thirdparty/imgui/backends/imgui_impl_opengl3.cpp
 	src/md5.cpp
-	src/tests/compression_test.cpp
 	src/tests/world_segment_test.cpp
 )
 
