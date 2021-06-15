@@ -231,14 +231,6 @@ void extract(std::string iso_path, fs::path output_dir) {
 		printf(row_format, (size_t) table.header.base_offset.sectors, (size_t) file_size, name.c_str());
 		
 		file_stream output_file(path.string(), std::ios::out);
-		iso.seek(table.header.base_offset.bytes());
-		// This doesn't really matter, but I decided to make the LBA field
-		// of the extracted header be equal to the offset of where the data
-		// starts in the extracted file in sectors.
-		table.header.base_offset = sector32::size_from_bytes(table.header.header_size);
-		output_file.write(table.header);
-		output_file.write_v(table.lumps);
-		output_file.pad(SECTOR_SIZE, 0);
 		stream::copy_n(output_file, iso, file_size);
 	}
 	for(toc_level& level : toc.levels) {
@@ -255,9 +247,6 @@ void extract(std::string iso_path, fs::path output_dir) {
 			
 			printf(row_format, (size_t) part->file_lba.sectors, part->file_size.bytes(), name.c_str());
 			
-			output_file.write<uint32_t>(part->magic);
-			output_file.write<uint32_t>(part->info.header_size_sectors); // Same as above.
-			output_file.write_v(part->lumps);
 			iso.seek(part->file_lba.bytes());
 			stream::copy_n(output_file, iso, part->file_size.bytes());
 		}
@@ -588,7 +577,6 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 	iso_directory global_dir {"global"};
 	for(global_file& global : global_files) {
 		file_stream file(global.path.string());
-		sector32 data_offset = file.read<sector32>(0x4);
 		iso.pad(SECTOR_SIZE, 0);
 		
 		toc_table table;
@@ -630,12 +618,12 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 			iso_file_record record;
 			record.name = global.path.filename().string() + ";1";
 			record.lba = table.header.base_offset;
-			record.size = file.size() - data_offset.bytes();
+			record.size = file.size();
 			global_dir.files.push_back(record);
 			
 			print_file_record(record);
 			
-			file.seek(data_offset.bytes());
+			file.seek(0);
 			stream::copy_n(iso, file, record.size);
 		}
 	}
@@ -643,15 +631,13 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 	root_dir.subdirs.push_back(global_dir);
 	auto write_level_part = [&](iso_directory& parent, fs::path& path) {
 		file_stream file(path.string());
-		sector32 data_offset = file.read<sector32>(0x4);
 		iso.pad(SECTOR_SIZE, 0);
 		
 		size_t file_size = file.size();
-		size_t data_size_bytes = file_size - data_offset.bytes();
 		
 		toc_level_part part;
 		part.header_lba = {0}; // Don't care.
-		part.file_size = sector32::size_from_bytes(data_size_bytes);
+		part.file_size = sector32::size_from_bytes(file_size);
 		part.magic = file.read<uint32_t>(0);
 		part.file_lba = {(uint32_t) (iso.tell() / SECTOR_SIZE)};
 		auto info = LEVEL_FILE_TYPES.find(part.magic);
@@ -668,16 +654,14 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		iso_file_record record;
 		record.name = path.filename().string() + ";1";
 		record.lba = part.file_lba;
-		record.size = data_size_bytes;
+		record.size = file_size;
 		parent.files.push_back(record);
 		
 		print_file_record(record);
 		
-		if(data_offset.bytes() < file_size) {
-			iso.pad(SECTOR_SIZE, 0);
-			file.seek(data_offset.bytes());
-			stream::copy_n(iso, file, data_size_bytes);
-		}
+		iso.pad(SECTOR_SIZE, 0);
+		file.seek(0);
+		stream::copy_n(iso, file, file_size);
 		
 		return part;
 	};
