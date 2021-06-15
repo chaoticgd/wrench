@@ -32,11 +32,6 @@
 bool validate_wad(char* magic) {
 	return std::memcmp(magic, "WAD", 3) == 0;
 }
-
-void decompress_wad(array_stream& dest, array_stream& src) {
-	decompress_wad_n(dest, src, 0);
-}
-
 // We don't want to use stream::copy_n since it uses virtual functions.
 void copy_bytes(array_stream& dest, array_stream& src, std::size_t bytes) {
 	for(std::size_t i = 0; i < bytes; i++) {
@@ -44,7 +39,7 @@ void copy_bytes(array_stream& dest, array_stream& src, std::size_t bytes) {
 	}
 }
 
-void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_to_decompress) {
+void decompress_wad(array_stream& dest, array_stream& src) {
 
 	WAD_DEBUG(
 		#ifdef WAD_DEBUG_EXPECTED_PATH
@@ -60,10 +55,7 @@ void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_t
 		throw stream_format_error("Invalid WAD header.");
 	}
 
-	while(
-		src.pos < header.total_size &&
-		(bytes_to_decompress == 0 || dest.pos < bytes_to_decompress)) {
-
+	while(src.pos < header.total_size) {
 		WAD_DEBUG(
 			dest.print_diff(expected_ptr);
 			std::cout << "{dest.pos -> " << dest.pos << ", src.pos -> " << src.pos << "}\n\n";

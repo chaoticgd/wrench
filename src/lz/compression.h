@@ -41,7 +41,6 @@ bool validate_wad(char* magic);
 
 // Throws stream_io_error, stream_format_error.
 void decompress_wad(array_stream& dest, array_stream& src);
-void decompress_wad_n(array_stream& dest, array_stream& src, std::size_t bytes_to_decompress);
 
 void compress_wad(array_stream& dest, array_stream& src, int thread_count);
 
