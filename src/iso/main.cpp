@@ -231,6 +231,7 @@ void extract(std::string iso_path, fs::path output_dir) {
 		printf(row_format, (size_t) table.header.base_offset.sectors, (size_t) file_size, name.c_str());
 		
 		file_stream output_file(path.string(), std::ios::out);
+		iso.seek(table.header.base_offset.bytes());
 		stream::copy_n(output_file, iso, file_size);
 	}
 	for(toc_level& level : toc.levels) {
