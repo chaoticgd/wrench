@@ -25,10 +25,8 @@
 #include <cstring>
 #include <utility>
 
-# /*
-#	Decompress and recompress WAD segments used by the games to store various
-#	assets. Not to be confused with WAD archives.
-# */
+// Decompress and recompress WAD segments used by the games to store various
+// assets. Not to be confused with WAD archives.
 
 packed_struct(wad_header,
 	char magic[3]; // "WAD"
