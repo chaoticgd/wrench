@@ -22,7 +22,7 @@
 #include "md5.h"
 #include "util.h"
 #include "fs_includes.h"
-#include "formats/wad.h"
+#include "lz/compression.h"
 
 simple_wad_stream::simple_wad_stream(stream* backing, size_t offset)
 	: array_stream(backing) {

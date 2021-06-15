@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "wad.h"
+#include "compression.h"
 
 #include <thread>
 #include <cassert>

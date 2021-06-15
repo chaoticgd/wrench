@@ -19,7 +19,7 @@
 #include "texture_archive.h"
 
 #include "fip.h"
-#include "wad.h"
+#include "../lz/compression.h"
 
 packed_struct(texture_table_entry,
 	sector32 offset;

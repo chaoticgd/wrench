@@ -20,7 +20,7 @@
 
 #include "../util.h"
 #include "../command_line.h"
-#include "../formats/wad.h"
+#include "compression.h"
 
 // CLI tool to decompress and recompress WAD segments.
 // Not to be confused with the *.WAD files in R&C2's filesystem.

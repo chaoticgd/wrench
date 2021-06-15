@@ -34,7 +34,7 @@ add_executable(wrench
 	src/game_db.cpp
 	src/tools.cpp
 	src/icons.cpp
-	src/formats/wad.cpp
+	src/lz/compression.cpp
 	src/formats/level_impl.cpp
 	src/formats/world.cpp
 	src/formats/texture.cpp
@@ -67,13 +67,13 @@ add_executable(fip
 	src/formats/bmp.cpp
 )
 
-add_executable(wad
-	src/cli/wadcli.cpp
+add_executable(lz
+	src/lz/main.cpp
+	src/lz/compression.cpp
 	src/util.cpp
 	src/command_line.cpp
 	src/stream.cpp
 	src/stacktrace.cpp
-	src/formats/wad.cpp
 )
 
 add_executable(vif
@@ -106,7 +106,7 @@ target_compile_definitions(wrench PRIVATE WRENCH_EDITOR=1)
 if(UNIX)
 	target_compile_options(wrench PRIVATE -Wall -O3)
 	target_compile_options(fip PRIVATE -Wall -O3)
-	target_compile_options(wad PRIVATE -Wall -O3)
+	target_compile_options(lz PRIVATE -Wall -O3)
 	target_compile_options(vif PRIVATE -Wall -O3)
 	target_compile_options(iso PRIVATE -Wall -O3)
 endif()
@@ -115,7 +115,7 @@ endif()
 if(UNIX)
 	target_link_libraries(wrench stdc++fs)
 	target_link_libraries(fip stdc++fs)
-	target_link_libraries(wad stdc++fs)
+	target_link_libraries(lz stdc++fs)
 	target_link_libraries(vif stdc++fs)
 	target_link_libraries(iso stdc++fs)
 endif()
@@ -124,7 +124,7 @@ endif()
 add_subdirectory(thirdparty/cxxopts)
 target_link_libraries(wrench cxxopts)
 target_link_libraries(fip cxxopts)
-target_link_libraries(wad cxxopts)
+target_link_libraries(lz cxxopts)
 target_link_libraries(vif cxxopts)
 target_link_libraries(iso cxxopts)
 
@@ -132,7 +132,7 @@ target_link_libraries(iso cxxopts)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 target_link_libraries(wrench Threads::Threads)
-target_link_libraries(wad Threads::Threads)
+target_link_libraries(lz Threads::Threads)
 
 # GLAD
 add_subdirectory(thirdparty/glad)

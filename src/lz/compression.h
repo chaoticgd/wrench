@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2020 chaoticgd
+	Copyright (C) 2019-2021 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef FORMATS_WAD_H
-#define FORMATS_WAD_H
+#ifndef LZ_COMPRESSION_H
+#define LZ_COMPRESSION_H
 
 #include "../stream.h"
 

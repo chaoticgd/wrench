@@ -18,6 +18,7 @@
 
 #include "level_impl.h"
 #include "tfrag.h"
+#include "../lz/compression.h"
 
 #include "../app.h"
 

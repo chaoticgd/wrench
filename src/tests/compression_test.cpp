@@ -19,7 +19,7 @@
 #include <time.h>
 #include <stdlib.h>
 
-#include "../formats/wad.h"
+#include "../lz/compression.h"
 
 static const int TEST_ITERATIONS = 128;
 
