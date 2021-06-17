@@ -53,4 +53,6 @@ For build instructions, see the Build section below. For usage instructions, see
 	> cd wrench
 
 6.	Build it with cmake:
-	> cmake . && cmake --build .
+	> cmake -DCMAKE_BUILD_TYPE=Release . && cmake --build . --config Release
+
+	(Note that you can add an optional `-DMP_NUM=X` right before the first `.`, which will get passed as a `/MP` flag and *should* make MSVC use X threads)
