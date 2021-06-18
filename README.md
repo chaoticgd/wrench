@@ -53,4 +53,6 @@ For build instructions, see the Build section below. For usage instructions, see
 	> cd wrench
 
 6.	Build it with cmake:
-	> cmake . && cmake --build .
+	> cmake . && cmake --build . --config Release
+	* Omitting `--config Release` will build the project in Debug configuration, *which also disables optimizations*
+	* Note that PDBs will be generated into each project's `XXXX.dir` subfolder as `vcZZZ.pdb` instead of the `bin` directory when building in Release configuration
