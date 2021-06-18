@@ -163,15 +163,15 @@ struct match_result {
 };
 
 template <bool end_of_buffer>
-match_result find_match(
+static match_result find_match(
 	const uint8_t* src,
 	size_t src_pos,
 	size_t src_end,
 	std::vector<int32_t>& ht,
 	std::vector<int32_t>& chain);
 
-void encode_match_packet(
-		array_stream& dest,
+static void encode_match_packet(
+		std::vector<uint8_t>& dest,
 		const uint8_t* src,
 		size_t& src_pos,
 		size_t src_end,
@@ -179,8 +179,8 @@ void encode_match_packet(
 		size_t match_offset,
 		size_t match_size);
 
-void encode_literal_packet(
-		array_stream& dest,
+static void encode_literal_packet(
+		std::vector<uint8_t>& dest,
 		const uint8_t* src,
 		size_t& src_pos,
 		size_t src_end,
@@ -329,11 +329,11 @@ void compress_wad_intermediate(
 		}
 		
 		if(match.literal_size > 0) {
-			encode_literal_packet(thread_dest, src, src_pos, src_end, last_flag, match.literal_size);
+			encode_literal_packet((std::vector<uint8_t>&) thread_dest.buffer, src, src_pos, src_end, last_flag, match.literal_size);
 			thread_dest.pos = thread_dest.buffer.size();
 		}
 		if(match.match_size > 0) {
-			encode_match_packet(thread_dest, src, src_pos, src_end, last_flag, match.match_offset, match.match_size);
+			encode_match_packet((std::vector<uint8_t>&) thread_dest.buffer, src, src_pos, src_end, last_flag, match.match_offset, match.match_size);
 			thread_dest.pos = thread_dest.buffer.size();
 		}
 	}
@@ -345,7 +345,7 @@ int32_t hash32(int32_t n) {
 }
 
 template <bool end_of_buffer>
-match_result find_match(
+static match_result find_match(
 	const uint8_t* src,
 	size_t src_pos,
 	size_t src_end,
@@ -411,14 +411,15 @@ match_result find_match(
 	return match;
 }
 
-void encode_match_packet(
-		array_stream& dest,
+static void encode_match_packet(
+		std::vector<uint8_t>& dest,
 		const uint8_t* src,
 		size_t& src_pos,
 		size_t src_end,
 		uint32_t& last_flag,
 		size_t match_offset,
 		size_t match_size) {
+	size_t start_of_packet = dest.size();
 	size_t lookback = src_pos - match_offset;
 	
 	if(match_size <= MAX_LITTLE_MATCH_SIZE && lookback <= MAX_LITTLE_MATCH_LOOKBACK) { // A type
@@ -427,21 +428,21 @@ void encode_match_packet(
 		uint8_t a = (lookback - 1) % 8;
 		uint8_t b = (lookback - 1) / 8;
 		
-		dest.buffer.push_back(((match_size - 1) << 5) | (a << 2)); // flag
-		dest.buffer.push_back(b);
+		dest.push_back(((match_size - 1) << 5) | (a << 2)); // flag
+		dest.push_back(b);
 	} else if(lookback <= MAX_BIG_MATCH_LOOKBACK) {
 		if(match_size > MAX_MEDIUM_MATCH_SIZE) { // Big match
-			dest.buffer.push_back(0b00100000); // flag
-			dest.buffer.push_back(match_size - MAX_MEDIUM_MATCH_SIZE);
+			dest.push_back(0b00100000); // flag
+			dest.push_back(match_size - MAX_MEDIUM_MATCH_SIZE);
 		} else { // Medium match
-			dest.buffer.push_back(0b00100000 | (match_size - 2)); // flag
+			dest.push_back(0b00100000 | (match_size - 2)); // flag
 		}
 		
 		uint8_t a = (lookback - 1) % 0x40;
 		uint8_t b = (lookback - 1) / 0x40;
 		
-		dest.buffer.push_back(a << 2);
-		dest.buffer.push_back(b);
+		dest.push_back(a << 2);
+		dest.push_back(b);
 	} else { // Far matches.
 		assert(lookback <= MAX_FAR_MATCH_LOOKBACK);
 		
@@ -452,31 +453,33 @@ void encode_match_packet(
 		
 		if(match_size > MAX_MEDIUM_FAR_MATCH_SIZE) { // Big far match.
 			assert(match_size <= MAX_BIG_FAR_MATCH_SIZE);
-			dest.buffer.push_back(0b00010000 | (a << 3)); // flag
-			dest.buffer.push_back(match_size - MAX_MEDIUM_FAR_MATCH_SIZE);
+			dest.push_back(0b00010000 | (a << 3)); // flag
+			dest.push_back(match_size - MAX_MEDIUM_FAR_MATCH_SIZE);
 		} else {
-			dest.buffer.push_back(0b00010000 | (a << 3) | (match_size - 2)); // flag
+			dest.push_back(0b00010000 | (a << 3) | (match_size - 2)); // flag
 		}
 		
-		dest.buffer.push_back(b << 2);
-		dest.buffer.push_back(c);
+		dest.push_back(b << 2);
+		dest.push_back(c);
 	}
 	
 	src_pos += match_size;
-	last_flag = dest.buffer[dest.pos];
+	last_flag = dest[start_of_packet];
 }
 
-void encode_literal_packet(
-		array_stream& dest,
+static void encode_literal_packet(
+		std::vector<uint8_t>& dest,
 		const uint8_t* src,
 		size_t& src_pos,
 		size_t src_end,
 		uint32_t& last_flag,
 		size_t literal_size) {
+	size_t start_of_packet = dest.size();
+	
 	if(last_flag < 0x10) { // Two literals in a row? Implausible!
 		last_flag = 0x11;
-		dest.buffer.insert(dest.buffer.end(), EMPTY_LITTLE_LITERAL.begin(), EMPTY_LITTLE_LITERAL.end());
-		dest.pos = dest.buffer.size();
+		dest.insert(dest.end(), EMPTY_LITTLE_LITERAL.begin(), EMPTY_LITTLE_LITERAL.end());
+		start_of_packet = dest.size();
 	}
 	
 	if(literal_size <= 3) {
@@ -485,36 +488,36 @@ void encode_literal_packet(
 		// that we can stuff a literal into on the next iteration.
 		if(last_flag == DO_NOT_INJECT_FLAG) {
 			last_flag = 0x11;
-			dest.buffer.insert(dest.buffer.end(), EMPTY_LITTLE_LITERAL.begin(), EMPTY_LITTLE_LITERAL.end());
-			dest.pos = dest.buffer.size();
+			dest.insert(dest.end(), EMPTY_LITTLE_LITERAL.begin(), EMPTY_LITTLE_LITERAL.end());
+			start_of_packet = dest.size();
 		}
 		
 		WAD_COMPRESS_DEBUG(
 			std::cout << " => copy 0x" << std::hex << (int) literal_size
 				<< " (snd_pos) bytes from compressed stream at 0x" << dest_pos + packet.size() << " (target = " << src_pos << ")\n";
 		)
-		dest.buffer[dest.pos - 2] |= literal_size;
-		dest.buffer.insert(dest.buffer.end(), src + src_pos, src + src_pos + literal_size);
+		dest[start_of_packet - 2] |= literal_size;
+		dest.insert(dest.end(), src + src_pos, src + src_pos + literal_size);
 		src_pos += literal_size;
 		last_flag = DO_NOT_INJECT_FLAG;
 		return;
 	} else if(literal_size <= 18) {
 		// We can encode the size in the flag byte.
-		dest.buffer.push_back(literal_size - 3); // flag
+		dest.push_back(literal_size - 3); // flag
 	} else {
 		// We have to push it as a seperate byte.
-		dest.buffer.push_back(0); // flag
-		dest.buffer.push_back(literal_size - 18);
+		dest.push_back(0); // flag
+		dest.push_back(literal_size - 18);
 	}
 	
 	WAD_COMPRESS_DEBUG(
 		std::cout << " => copy 0x" << std::hex << (int) literal_size
 			<< " bytes from compressed stream at 0x" << dest_pos + packet.size() << " (target = " << src_pos << ")\n";
 	)
-	dest.buffer.insert(dest.buffer.end(), src + src_pos, src + src_pos + literal_size);
+	dest.insert(dest.end(), src + src_pos, src + src_pos + literal_size);
 	src_pos += literal_size;
 	
-	last_flag = dest.buffer[dest.pos];
+	last_flag = dest[start_of_packet];
 }
 
 size_t get_wad_packet_size(uint8_t* src, size_t bytes_left) {
