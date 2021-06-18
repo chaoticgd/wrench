@@ -110,6 +110,17 @@ if(UNIX)
 	target_compile_options(iso PRIVATE -Wall -O3)
 endif()
 
+if (MSVC)
+	# /W4 - enable all non-default-disabled warnings (-Wall equivalent)
+	# /Zi - emit debugging informations to PDB
+	# /EHsc - needed for proper C++ exception handling
+	target_compile_options(wrench	PRIVATE /W4 /Zi /EHsc)	
+	target_compile_options(fip		PRIVATE /W4 /Zi /EHsc)
+	target_compile_options(lz		PRIVATE /W4 /Zi /EHsc)
+	target_compile_options(vif		PRIVATE /W4 /Zi /EHsc)
+	target_compile_options(iso		PRIVATE /W4 /Zi /EHsc)
+endif()
+
 # std::filesystem
 if(UNIX)
 	target_link_libraries(wrench stdc++fs)
