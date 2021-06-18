@@ -73,7 +73,6 @@ add_executable(lz
 	src/command_line.cpp
 	src/stream.cpp
 	src/stacktrace.cpp
-	src/win32_profiler/win32_profiler.cpp
 )
 
 add_executable(vif
@@ -93,7 +92,6 @@ add_executable(iso
 	src/stacktrace.cpp
 	src/util.cpp
 	src/command_line.cpp
-	src/win32_profiler/win32_profiler.cpp
 )
 
 
