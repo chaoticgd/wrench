@@ -41,5 +41,6 @@ bool validate_wad(char* magic);
 void decompress_wad(array_stream& dest, array_stream& src);
 
 void compress_wad(array_stream& dest, array_stream& src, int thread_count);
+void compress_wad(std::vector<uint8_t>& dest, const std::vector<uint8_t>& src, int thread_count);
 
 #endif
