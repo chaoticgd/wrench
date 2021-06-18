@@ -6,7 +6,6 @@ include_directories(thirdparty/imgui)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_VERBOSE_MAKEFILE 1)
 if(MSVC)
 	# Without this, MSVC won't report the correct standards version via the
 	# __cplusplus macro. See:
@@ -74,6 +73,7 @@ add_executable(lz
 	src/command_line.cpp
 	src/stream.cpp
 	src/stacktrace.cpp
+	src/win32_profiler/win32_profiler.cpp
 )
 
 add_executable(vif
@@ -93,6 +93,7 @@ add_executable(iso
 	src/stacktrace.cpp
 	src/util.cpp
 	src/command_line.cpp
+	src/win32_profiler/win32_profiler.cpp
 )
 
 
@@ -111,26 +112,15 @@ if(UNIX)
 	target_compile_options(iso PRIVATE -Wall -O3)
 endif()
 
-#By default, on Win32 cmake builds in Debug mode.
-#This causes a problem, because the default build flags in Debug mode include /RTC1 (Run-time checks),
-#which disallow optimization. We need to check this is building in Release mode before applying optimization flags,
-#or building will fail.
-if (DEFINED MSVC AND CMAKE_BUILD_TYPE MATCHES "Release")
-	message(AUTHOR_WARNING "Building with Release compiler flags...")
-	if (DEFINED MP_NUM)
-		message(AUTHOR_WARNING "Building with multiprocessing flag /MP"${MP_NUM})
-		target_compile_options(wrench PRIVATE /W4 /O2 /Ot /Zi /EHsc /MP${MP_NUM})
-		target_compile_options(fip PRIVATE /W4 /O2 /Ot /Zi /EHsc /MP${MP_NUM})
-		target_compile_options(lz PRIVATE  /W4 /O2 /Ot /Zi /EHsc /MP${MP_NUM})
-		target_compile_options(vif PRIVATE /W4 /O2 /Ot /Zi /EHsc /MP${MP_NUM})
-		target_compile_options(iso PRIVATE /W4 /O2 /Ot /Zi /EHsc /MP${MP_NUM})
-	else()
-	target_compile_options(wrench PRIVATE /W4 /O2 /Ot /Zi /EHsc) 	#/W4 - warn all
-	target_compile_options(fip PRIVATE /W4 /O2 /Ot /Zi /EHsc)		#/O2 - optimize (maximum level)
-	target_compile_options(lz PRIVATE /W4 /O2 /Ot /Zi /EHsc)		#/Ot - optimize for speed (bigger but faster binary)
-	target_compile_options(vif PRIVATE /W4 /O2 /Ot /Zi /EHsc)		#/Zi - create PDB
-	target_compile_options(iso PRIVATE /W4 /O2 /Ot /Zi /EHsc)		#/EHsc - needed for proper C++ exception handling
-	endif()
+if (MSVC)
+	# /W4 - enable all non-default-disabled warnings (-Wall equivalent)
+	# /Zi - emit debugging informations to PDB
+	# /EHsc - needed for proper C++ exception handling
+	target_compile_options(wrench	PRIVATE /W4 /Zi /EHsc)	
+	target_compile_options(fip		PRIVATE /W4 /Zi /EHsc)
+	target_compile_options(lz		PRIVATE /W4 /Zi /EHsc)
+	target_compile_options(vif		PRIVATE /W4 /Zi /EHsc)
+	target_compile_options(iso		PRIVATE /W4 /Zi /EHsc)
 endif()
 
 # std::filesystem

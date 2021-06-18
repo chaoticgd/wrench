@@ -53,6 +53,6 @@ For build instructions, see the Build section below. For usage instructions, see
 	> cd wrench
 
 6.	Build it with cmake:
-	> cmake -DCMAKE_BUILD_TYPE=Release . && cmake --build . --config Release
-
-	(Note that you can add an optional `-DMP_NUM=X` right before the first `.`, which will get passed as a `/MP` flag and *should* make MSVC use X threads)
+	> cmake . && cmake --build . --config Release
+	* Omitting `--config Release` will build the project in Debug configuration, *which also disables optimizations*
+	* Note that PDBs will be generated into each project's `XXXX.dir` subfolder as `vcZZZ.pdb` instead of the `bin` directory when building in Release configuration
