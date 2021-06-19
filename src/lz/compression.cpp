@@ -27,12 +27,8 @@
 // Enable/disable debug output for the decompression function.
 #define WAD_DEBUG(cmd) //cmd
 
-bool validate_wad(char* magic) {
-	return std::memcmp(magic, "WAD", 3) == 0;
-}
-
-uint8_t* safe_cast(char* ptr) {
-	return (uint8_t*) ptr;
+bool validate_wad(const uint8_t* magic) {
+	return memcmp(magic, "WAD", 3) == 0;
 }
 
 static void decompress_packet(std::vector<uint8_t>& dest, const uint8_t*& ptr, const uint8_t* begin, const uint8_t* end);
@@ -42,11 +38,10 @@ bool decompress_wad(std::vector<uint8_t>& dest, WadBuffer src) {
 		return false;
 	}
 	
-	auto header = *(WadHeader*) src.ptr;
-	if(!validate_wad(header.magic)) {
+	if(!validate_wad(src.ptr)) {
 		return false;
 	}
-	int32_t compressed_size = header.total_size;
+	int32_t compressed_size = *(int32_t*) (src.ptr + 3);
 	if(src.ptr + compressed_size > src.end) {
 		return false;
 	}
@@ -147,7 +142,7 @@ static void decompress_packet(std::vector<uint8_t>& dest, const uint8_t*& ptr, c
 			}
 			size_t copy_pos = dest.size();
 			dest.resize(dest.size() + match_size);
-			for(size_t i = 0; i < match_size; i++) {
+			for(int i = 0; i < match_size; i++) {
 				dest[copy_pos + i] = dest[lookback_offset + i];
 			}
 		}
@@ -243,12 +238,6 @@ const int32_t WINDOW_MASK = WINDOW_SIZE - 1;
 
 const std::vector<char> EMPTY_LITTLE_LITERAL = { 0x11, 0, 0 };
 
-void compress_wad(array_stream& dest, array_stream& src, int thread_count) {
-	// Kludge since we're moving away from using array_stream.
-	compress_wad((std::vector<uint8_t>&) dest.buffer, (std::vector<uint8_t>&) src.buffer, thread_count);
-	dest.pos = dest.buffer.size();
-}
-
 void compress_wad(std::vector<uint8_t>& dest, const std::vector<uint8_t>& src, int thread_count) {
 	WAD_COMPRESS_DEBUG(
 		#ifdef WAD_COMPRESS_DEBUG_EXPECTED_PATH
@@ -293,7 +282,7 @@ void compress_wad(std::vector<uint8_t>& dest, const std::vector<uint8_t>& src, i
 		append_buffer(dest, intermediates[i], header_pos);
 	}
 	
-	((WadHeader*) &dest[header_pos])->total_size = dest.size() - header_pos;
+	*((int32_t*) &dest[header_pos + 3]) = dest.size() - header_pos;
 }
 
 static void compress_wad_intermediate(
