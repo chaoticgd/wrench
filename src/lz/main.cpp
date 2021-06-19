@@ -69,21 +69,23 @@ int main(int argc, char** argv) {
 	}
 	
 	file_stream src_file(src_path);
-	file_stream dest_file(dest_path, std::ios::in | std::ios::out | std::ios::trunc);
+	file_stream dest_file(dest_path, std::ios::out | std::ios::trunc);
 	
-	array_stream src, dest;
+	std::vector<uint8_t> dest, src;
 	if(decompress) {
 		uint32_t compressed_size = src_file.read<uint32_t>(offset + 0x3);
+		src.resize(compressed_size);
 		src_file.seek(offset);
-		stream::copy_n(src, src_file, compressed_size);
+		src_file.read_v(src);
 		decompress_wad(dest, src);
+		
 	} else {
-		stream::copy_n(src, src_file, src_file.size());
+		src.resize(src_file.size());
+		src_file.read_v(src);
 		compress_wad(dest, src, thread_count);
 	}
 	
-	dest.seek(0);
-	stream::copy_n(dest_file, dest, dest.size());
+	dest_file.write_v(dest);
 
 	return 0;
 }
@@ -100,12 +102,12 @@ static int run_test() {
 	for(int i = 0; i < TEST_ITERATIONS; i++) {
 		int buffer_size = rand() % (64 * 1024);
 		
-		array_stream plaintext;
+		std::vector<uint8_t> plaintext(buffer_size);
 		for(int j = 0; j < buffer_size; j++) {
 			if(rand() % 8 <= 0) {
-				plaintext.write8(rand());
+				plaintext[j] = rand();
 			} else {
-				plaintext.write8(0);
+				plaintext[j] = 0;
 			}
 		}
 		
@@ -113,12 +115,11 @@ static int run_test() {
 			sad++;
 			std::string sad_file_path = "/tmp/wad_is_sad_" + std::to_string(sad) + ".bin";
 			file_stream sad_file(sad_file_path, std::ios::out);
-			plaintext.seek(0);
-			stream::copy_n(sad_file, plaintext, plaintext.size());
+			sad_file.write_v(plaintext);
 			printf("Written sad file to %s\n", sad_file_path.c_str());
 		};
 		
-		array_stream compressed;
+		std::vector<uint8_t> compressed;
 		try {
 			int thread_count = 1 + (rand() % 15);
 			compress_wad(compressed, plaintext, thread_count);
@@ -128,7 +129,7 @@ static int run_test() {
 			continue;
 		}
 		
-		array_stream output;
+		std::vector<uint8_t> output;
 		try {
 			decompress_wad(output, compressed);
 		} catch(std::exception& e) {
@@ -137,7 +138,7 @@ static int run_test() {
 			continue;
 		}
 		
-		if(!array_stream::compare_contents(plaintext, output)) {
+		if(plaintext != output) {
 			write_sad_file();
 			continue;
 		}

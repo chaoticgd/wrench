@@ -19,27 +19,25 @@
 #ifndef LZ_COMPRESSION_H
 #define LZ_COMPRESSION_H
 
-#include "../stream.h"
-
 #include <map>
+#include <vector>
 #include <cstring>
 #include <utility>
 
 // Decompress and recompress WAD segments used by the games to store various
 // assets. Not to be confused with WAD archives.
 
-packed_struct(wad_header,
-	char magic[3]; // "WAD"
-	uint32_t total_size; // Including header.
-	uint8_t pad[9];
-)
-
 // Check the magic bytes.
-bool validate_wad(char* magic);
+bool validate_wad(const uint8_t* magic);
 
-// Throws stream_io_error, stream_format_error.
-void decompress_wad(array_stream& dest, array_stream& src);
+struct WadBuffer {
+	WadBuffer(std::vector<uint8_t>& vec) : ptr(&(*vec.begin())), end(&(*vec.end())) {}
+	
+	const uint8_t* ptr;
+	const uint8_t* end;
+};
 
-void compress_wad(array_stream& dest, array_stream& src, int thread_count);
+bool decompress_wad(std::vector<uint8_t>& dest, WadBuffer src);
+void compress_wad(std::vector<uint8_t>& dest, const std::vector<uint8_t>& src, int thread_count);
 
 #endif

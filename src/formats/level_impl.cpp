@@ -324,6 +324,12 @@ void level::read_loading_screen_textures(stream* file) {
 	//}
 }
 
+void compress_wad(array_stream& dest, array_stream& src, int thread_count) {
+	// Kludge since we're moving away from using array_stream.
+	compress_wad((std::vector<uint8_t>&) dest.buffer, (std::vector<uint8_t>&) src.buffer, thread_count);
+	dest.pos = dest.buffer.size();
+}
+
 void level::write(array_stream& dest) {
 	level_file_header header;
 	defer([&]() {
