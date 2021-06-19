@@ -26,11 +26,11 @@
 
 simple_wad_stream::simple_wad_stream(stream* backing, size_t offset)
 	: array_stream(backing) {
-	array_stream compressed;
 	uint32_t compressed_size = backing->peek<uint32_t>(offset + 0x3);
+	std::vector<uint8_t> compressed(compressed_size);
 	backing->seek(offset);
-	stream::copy_n(compressed, *backing, compressed_size);
-	decompress_wad(*this, compressed);
+	backing->read_v(compressed);
+	decompress_wad((std::vector<uint8_t>&) buffer, compressed);
 }
 
 std::string md5_from_stream(stream& st) {

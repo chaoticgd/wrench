@@ -26,112 +26,134 @@
 
 // Enable/disable debug output for the decompression function.
 #define WAD_DEBUG(cmd) //cmd
-// If this code breaks, dump the correct output and point to that here.
-//#define WAD_DEBUG_EXPECTED_PATH "<file path goes here>"
 
 bool validate_wad(char* magic) {
 	return std::memcmp(magic, "WAD", 3) == 0;
 }
-// We don't want to use stream::copy_n since it uses virtual functions.
-void copy_bytes(array_stream& dest, array_stream& src, std::size_t bytes) {
-	for(std::size_t i = 0; i < bytes; i++) {
-		dest.write8(src.read8());
-	}
+
+uint8_t* safe_cast(char* ptr) {
+	return (uint8_t*) ptr;
 }
 
-void decompress_wad(array_stream& dest, array_stream& src) {
+static void decompress_packet(std::vector<uint8_t>& dest, const uint8_t*& ptr, const uint8_t* begin, const uint8_t* end);
 
-	WAD_DEBUG(
-		#ifdef WAD_DEBUG_EXPECTED_PATH
-			file_stream expected(WAD_DEBUG_EXPECTED_PATH);
-			std::optional<file_stream*> expected_ptr(&expected);
-		#else
-			std::optional<file_stream*> expected_ptr;
-		#endif
-	)
-	
-	auto header = src.read<wad_header>(0);
-	if(!validate_wad(header.magic)) {
-		throw stream_format_error("Invalid WAD header.");
+bool decompress_wad(std::vector<uint8_t>& dest, WadBuffer src) {
+	if(src.ptr + 0x10 > src.end) {
+		return false;
 	}
+	
+	auto header = *(WadHeader*) src.ptr;
+	if(!validate_wad(header.magic)) {
+		return false;
+	}
+	int32_t compressed_size = header.total_size;
+	if(src.ptr + compressed_size > src.end) {
+		return false;
+	}
+	src.end = src.ptr + compressed_size;
+	src.ptr += 0x10;
+	const uint8_t* begin = src.ptr;
+	try {
+		while(src.ptr < src.end) {
+			decompress_packet(dest, src.ptr, begin, src.end);
+		}
+	} catch(std::domain_error& error) {
+		printf("Failed to decompress WAD: %s\n", error.what());
+		return false;
+	}
+	
+	return true;
+}
 
-	while(src.pos < header.total_size) {
-		WAD_DEBUG(
-			dest.print_diff(expected_ptr);
-			std::cout << "{dest.pos -> " << dest.pos << ", src.pos -> " << src.pos << "}\n\n";
-		)
-
-		WAD_DEBUG(
-			static int count = 0;
-			std::cout << "*** PACKET " << count++ << " ***\n";
-		)
-
-		uint8_t flag_byte = src.read8();
-		WAD_DEBUG(std::cout << "flag_byte = " << std::hex << (flag_byte & 0xff) << "\n";)
-
-		std::size_t lookback_offset = -1;
-		int bytes_to_copy = 0;
-
-		if(flag_byte < 0x10) { // Medium/big iteral packet (0x0-0xf).
-			uint32_t num_bytes;
-			if(flag_byte != 0) {
-				num_bytes = flag_byte + 3;
-			} else { // Big literal.
-				num_bytes = src.read8() + 18;
+static void decompress_packet(std::vector<uint8_t>& dest, const uint8_t*& ptr, const uint8_t* begin, const uint8_t* end) {
+	auto read8 = [&]() {
+		if(ptr >= end || ptr < begin) {
+			throw std::domain_error("Unexpected end of buffer.");
+		}
+		return *(ptr++);
+	};
+	
+	auto copy_lit = [&](size_t size) {
+		if(ptr + size > end || ptr < begin) {
+			throw std::domain_error("Unexpected end of buffer.");
+		}
+		size_t copy_pos = dest.size();
+		dest.resize(dest.size() + size);
+		for(size_t i = 0; i < size; i++) {
+			dest[copy_pos + i] = *(ptr + i);
+		}
+		ptr += size;
+		return;
+	};
+	
+	uint8_t flag_byte = read8();
+	WAD_DEBUG(std::cout << "offs = " << (dest.size()) << ", flag_byte = " << std::hex << (flag_byte & 0xff) << "\n";)
+	
+	size_t lookback_offset = -1;
+	int match_size = 0;
+	
+	if(flag_byte < 0x10) { // Medium/big iteral packet (0x0-0xf).
+		uint32_t literal_size;
+		if(flag_byte != 0) {
+			literal_size = flag_byte + 3;
+		} else { // Big literal.
+			literal_size = read8() + 18;
+		}
+		copy_lit(literal_size);
+		
+		if(ptr < end && *ptr < 0x10) {
+			// The game disallows this so lets complain.
+			throw std::domain_error("Unexpected double literal.");
+		}
+	} else {
+		if(flag_byte < 0x20) { // Far match packets + special cases (0x10-0x1f)
+			match_size = flag_byte & 7;
+			if(match_size == 0) {
+				match_size = read8() + 7;
 			}
-			copy_bytes(dest, src, num_bytes);
 			
-			if(src.pos < src.buffer.size() && src.peek8() < 0x10) {
-				// The game disallows this so lets complain.
-				throw stream_format_error("WAD decompression failed: Two literals in a row? Implausible!");
-			}
+			uint8_t b0 = read8();
+			uint8_t b1 = read8();
 			
-			continue;
-		} else if(flag_byte < 0x20) { // Far match packets + special cases (0x10-0x1f)
-			WAD_DEBUG(std::cout << " -- packet type C\n";)
-
-			bytes_to_copy = flag_byte & 7;
-			if(bytes_to_copy == 0) {
-				bytes_to_copy = src.read8() + 7;
-			}
-			
-			uint8_t b0 = src.read8();
-			uint8_t b1 = src.read8();
-			
-			lookback_offset = dest.pos + ((flag_byte & 8) * -0x800 - ((b0 >> 2) + b1 * 0x40));
-			if(lookback_offset != dest.pos) {
-				bytes_to_copy += 2;
+			lookback_offset = dest.size() - ((flag_byte & 8) * 0x800) - (b1 * 0x40) - (b0 >> 2);
+			if(lookback_offset != dest.size()) {
+				match_size += 2;
 				lookback_offset -= 0x4000;
-			} else if(bytes_to_copy != 1) {
-				while(src.pos % 0x1000 != 0x10) {
-					src.pos++;
+			} else if(match_size != 1) {
+				while((ptr - begin) % 0x1000 != 0) {
+					ptr++;
 				}
-				continue;
+				return;
 			}
 		} else if(flag_byte < 0x40) { // Medium/big match packet (0x20-0x3f).
-			bytes_to_copy = flag_byte & 0x1f;
-			if(bytes_to_copy == 0) {
-				bytes_to_copy = src.read8() + 0x1f;
+			match_size = flag_byte & 0x1f;
+			if(match_size == 0) {
+				match_size = read8() + 0x1f;
 			}
-			bytes_to_copy += 2;
-
-			uint8_t b1 = src.read8();
-			uint8_t b2 = src.read8();
-			lookback_offset = dest.pos - ((b1 >> 2) + b2 * 0x40) - 1;
+			match_size += 2;
+			
+			uint8_t b1 = read8();
+			uint8_t b2 = read8();
+			lookback_offset = dest.size() - (b2 * 0x40) - (b1 >> 2) - 1;
 		} else { // Little match packet (0x40-0xff).
-			uint8_t b1 = src.read8();
-			lookback_offset = dest.pos - b1 * 8 - ((flag_byte >> 2) & 7) - 1;
-			bytes_to_copy = (flag_byte >> 5) + 1;
+			uint8_t b1 = read8();
+			lookback_offset = dest.size() - b1 * 8 - ((flag_byte >> 2) & 7) - 1;
+			match_size = (flag_byte >> 5) + 1;
 		}
-
-		if(bytes_to_copy != 1) {
-			for(int i = 0; i < bytes_to_copy; i++) {
-				dest.write8(dest.peek8(lookback_offset + i));
+		
+		if(match_size != 1) {
+			if(lookback_offset < 0 || lookback_offset >= dest.size()) {
+				throw std::domain_error("Match packet points outside of buffer.");
+			}
+			size_t copy_pos = dest.size();
+			dest.resize(dest.size() + match_size);
+			for(size_t i = 0; i < match_size; i++) {
+				dest[copy_pos + i] = dest[lookback_offset + i];
 			}
 		}
 		
-		uint32_t little_literal_size = src.peek8(src.pos - 2) & 3;
-		copy_bytes(dest, src, little_literal_size);
+		uint32_t little_literal_size = *(ptr - 2) & 3;
+		copy_lit(little_literal_size);
 	}
 }
 
@@ -271,7 +293,7 @@ void compress_wad(std::vector<uint8_t>& dest, const std::vector<uint8_t>& src, i
 		append_buffer(dest, intermediates[i], header_pos);
 	}
 	
-	((wad_header*) &dest[header_pos])->total_size = dest.size() - header_pos;
+	((WadHeader*) &dest[header_pos])->total_size = dest.size() - header_pos;
 }
 
 static void compress_wad_intermediate(
@@ -498,7 +520,7 @@ static void append_buffer(std::vector<uint8_t>& dest, const std::vector<uint8_t>
 		}
 		// dest.pos is offset 0x10 bytes by the header:
 		//  0x0000 WAD. .... .... ....
-		//  0x0010 [data]
+		//  0x0010 [start of new block]
 		//   ...
 		//  0x2000 [data]
 		//  0x2010 [start of new block]
