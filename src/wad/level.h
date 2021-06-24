@@ -139,14 +139,14 @@ struct GrindRails {
 	std::vector<std::vector<Vec4f>> splines;
 };
 
-packed_struct(Gp_GC_98_DL_74_FirstPart,
+packed_struct(GpGameplayAreaListFirstPart,
 	Vec4f position;      // 0x0
 	uint16_t counts[6];  // 0x10 -- only 5 are used, last one is padding
 	uint32_t offsets[5]; // 0x1c
 )
 
-struct Gp_GC_98_DL_74 {
-	std::vector<Gp_GC_98_DL_74_FirstPart> first_part;
+struct GpGameplayAreaList {
+	std::vector<GpGameplayAreaListFirstPart> first_part;
 	std::vector<s32> second_part;
 	s32 part_offsets[5];
 };
@@ -178,7 +178,7 @@ struct Gameplay {
 	std::vector<u8> gc_88_dl_6c;
 	Gp_GC_80_DL_64 gc_80_dl_64;
 	GrindRails grindrails;
-	Gp_GC_98_DL_74 gc_98_dl_74;
+	GpGameplayAreaList gameplay_area_list;
 };
 
 struct LevelWad : Wad {

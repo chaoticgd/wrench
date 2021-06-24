@@ -460,7 +460,7 @@ struct GrindRailBlock {
 	}
 };
 
-packed_struct(GC_98_DL_74_Header,
+packed_struct(GameplayAreaListHeader,
 	s32 size; // Not including this field.
 	s32 part_1_count;
 	s32 part_offsets[5];
@@ -468,24 +468,24 @@ packed_struct(GC_98_DL_74_Header,
 	s32 unknown_20;
 )
 
-struct GC_98_DL_74_Block {
-	static void read(Gp_GC_98_DL_74& dest, Buffer src) {
-		s64 header_size = sizeof(GC_98_DL_74_Header);
+struct GameplayAreaListBlock {
+	static void read(GpGameplayAreaList& dest, Buffer src) {
+		s64 header_size = sizeof(GameplayAreaListHeader);
 		s64 header_size_minus_size = header_size - 4;
 		
-		auto header = src.read<GC_98_DL_74_Header>(0, "block header");
+		auto header = src.read<GameplayAreaListHeader>(0, "block header");
 		memcpy(dest.part_offsets, header.part_offsets, sizeof(header.part_offsets));
-		dest.first_part = src.read_multiple<Gp_GC_98_DL_74_FirstPart>(header_size, header.part_1_count, "first part block").copy();
-		s64 first_part_size = header.part_1_count * sizeof(Gp_GC_98_DL_74_FirstPart);
+		dest.first_part = src.read_multiple<GpGameplayAreaListFirstPart>(header_size, header.part_1_count, "first part block").copy();
+		s64 first_part_size = header.part_1_count * sizeof(GpGameplayAreaListFirstPart);
 		s64 second_part_size = header.size - first_part_size - header_size_minus_size;
 		dest.second_part = src.read_multiple<s32>(header_size + first_part_size, second_part_size / 4, "second part of block").copy();
 	}
 	
-	static void write(OutBuffer dest, const Gp_GC_98_DL_74& src) {
-		s64 first_part_size = src.first_part.size() * sizeof(Gp_GC_98_DL_74_FirstPart);
+	static void write(OutBuffer dest, const GpGameplayAreaList& src) {
+		s64 first_part_size = src.first_part.size() * sizeof(GpGameplayAreaListFirstPart);
 		s64 second_part_size = src.second_part.size() * 4;
 		
-		GC_98_DL_74_Header header = {0};
+		GameplayAreaListHeader header = {0};
 		header.size = 0x20 + first_part_size + second_part_size;
 		header.part_1_count = src.first_part.size();
 		memcpy(header.part_offsets, src.part_offsets, sizeof(src.part_offsets));
@@ -538,5 +538,5 @@ const std::vector<GameplayBlockDescription> gameplay_blocks = {
 	{{NONE, NONE}, {0x88, NONE}, {0x6c, 0x1a}, bf<GC_88_DL_6c_Block>(&Gameplay::gc_88_dl_6c), "GC 88 DL 6c"},
 	{{NONE, NONE}, {0x80, NONE}, {0x64, 0x1b}, bf<GC_80_DL_64_Block>(&Gameplay::gc_80_dl_64), "GC 80 DL 64"},
 	{{NONE, NONE}, {0x7c, NONE}, {0x60, 0x1c}, bf<GrindRailBlock>(&Gameplay::grindrails), "grindrails"},
-	{{NONE, NONE}, {0x98, NONE}, {0x74, 0x1d}, bf<GC_98_DL_74_Block>(&Gameplay::gc_98_dl_74), "GC 98 DL 74"}
+	{{NONE, NONE}, {0x98, NONE}, {0x74, 0x1d}, bf<GameplayAreaListBlock>(&Gameplay::gameplay_area_list), "gameplay area list"}
 };
