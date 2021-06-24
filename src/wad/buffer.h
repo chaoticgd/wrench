@@ -27,6 +27,11 @@ struct BufferArray {
 	const T* hi = nullptr;
 	const T* begin() { return lo; }
 	const T* end() { return hi; }
+	std::vector<T> copy() {
+		std::vector<T> vec(hi - lo);
+		memcpy(vec.data(), lo, (hi - lo) * sizeof(T));
+		return vec;
+	}
 };
 
 struct Buffer {
@@ -62,6 +67,58 @@ struct Buffer {
 	void hexdump(FILE* file, s64 column, const char* ansi_colour_code = "0") const;
 };
 
-void diff_buffers(Buffer lhs, Buffer rhs, const char* subject);
+void diff_buffers(Buffer lhs, Buffer rhs, s64 offset, const char* subject);
+
+struct OutBuffer {
+	std::vector<u8>& vec;
+	
+	OutBuffer(std::vector<u8>& v) : vec(v) {}
+	s64 tell() const { return vec.size(); }
+	
+	template <typename T>
+	s64 alloc() {
+		s64 write_pos = vec.size();
+		vec.resize(vec.size() + sizeof(T));
+		return write_pos;
+	}
+	
+	template <typename T>
+	s64 alloc_multiple(s64 count) {
+		size_t write_pos = vec.size();
+		vec.resize(vec.size() + count * sizeof(T));
+		return write_pos;
+	}
+	
+	template <typename T>
+	s64 write(const T& thing) {
+		size_t write_pos = vec.size();
+		vec.resize(vec.size() + sizeof(T));
+		*(T*) &vec[write_pos] = thing;
+		return write_pos;
+	}
+	
+	template <typename T>
+	s64 write(s64 offset, const T& thing) {
+		assert(offset > 0);
+		assert(offset + sizeof(T) <= vec.size());
+		*(T*) &vec[offset] = thing;
+		return offset;
+	}
+	
+	template <typename T>
+	s64 write_multiple(const std::vector<T>& things) {
+		size_t write_pos = vec.size();
+		vec.resize(vec.size() + things.size() * sizeof(T));
+		memcpy(&vec[write_pos], things.data(), things.size() * sizeof(T));
+		return write_pos;
+	}
+	
+	void pad(s64 align, u8 padding = 0) {
+		if(vec.size() % align != 0) {
+			s64 pad_size = align - (vec.size() % align);
+			vec.resize(vec.size() + pad_size, padding);
+		}
+	}
+};
 
 #endif

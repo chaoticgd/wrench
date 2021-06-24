@@ -38,6 +38,8 @@ using s16 = int16_t;
 using s32 = int32_t;
 using s64 = int64_t;
 
+using f32 = float;
+
 namespace fs = std::filesystem;
 
 // Like assert, but for user errors.
@@ -86,11 +88,37 @@ packed_struct(SectorRange,
 	Sector32 size;
 )
 
+packed_struct(Vec3f,
+	float x;
+	float y;
+	float z;
+)
+
+packed_struct(Vec4f,
+	float x;
+	float y;
+	float z;
+	float w;
+)
+
+packed_struct(Mat4,
+	float m[4 * 4];
+)
+
 template <typename> struct MemberTraits;
 template <typename Return, typename Object>
 struct MemberTraits<Return (Object::*)> {
 	typedef Object instance_type;
 };
+
+// We can't pass around references to fields as we're using packed structs so
+// instead of std::swap we have to use this macro.
+#define SWAP_PACKED(inmem, packed) \
+	{ \
+		auto p = packed; \
+		packed = inmem; \
+		inmem = p; \
+	}
 
 struct BinaryAsset {
 	bool is_array;

@@ -103,10 +103,13 @@ static void run_test(fs::path input_path) {
 	std::vector<u8> src;
 	verify(decompress_wad(src, compressed), "Decompressing gameplay file failed.");
 	Gameplay gameplay;
-	verify(read_gameplay(gameplay, src), "Failed to parse gameplay file.");
+	read_gameplay(gameplay, src);
 	std::vector<u8> dest = write_gameplay(gameplay);
 	
-	diff_buffers(src, dest, "Gameplay");
+	Buffer dest_buf(dest);
+	Buffer src_buf(src);
+	diff_buffers(src_buf.subbuf(0, 0x80), dest_buf.subbuf(0, 0x80), 0, "Gameplay header");
+	diff_buffers(src_buf.subbuf(0x80), dest_buf.subbuf(0x80), 0x80, "Gameplay data");
 }
 
 static std::vector<u8> read_header(FILE* file) {

@@ -27,8 +27,8 @@ struct GameplayBlockPos {
 	s32 order; // The ordering of the blocks in the file.
 };
 
-using GameplayBlockReadFunc = std::function<bool(Gameplay& gameplay, Buffer src)>;
-using GameplayBlockWriteFunc = std::function<bool(std::vector<u8>& dest, const Gameplay& gameplay)>;
+using GameplayBlockReadFunc = std::function<void(Gameplay& gameplay, Buffer src)>;
+using GameplayBlockWriteFunc = std::function<void(OutBuffer dest, const Gameplay& gameplay)>;
 
 struct GameplayBlockFuncs {
 	GameplayBlockReadFunc read;
@@ -45,7 +45,7 @@ struct GameplayBlockDescription {
 
 extern const std::vector<GameplayBlockDescription> gameplay_blocks;
 
-bool read_gameplay(Gameplay& gameplay, Buffer src);
+void read_gameplay(Gameplay& gameplay, Buffer src);
 std::vector<u8> write_gameplay(const Gameplay& gameplay);
 
 #endif

@@ -48,7 +48,8 @@ struct GameplayLump {
 		if(!decompress_wad(decompressed, src)) {
 			return false;
 		}
-		return read_gameplay(dest, decompressed);
+		read_gameplay(dest, decompressed);
+		return true;
 	}
 	
 	static bool write(WadLumpDescription desc, std::vector<u8>& dest, const Gameplay& src) {

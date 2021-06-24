@@ -26,7 +26,7 @@ Buffer Buffer::subbuf(s64 offset) const {
 
 Buffer Buffer::subbuf(s64 offset, s64 new_size) const {
 	verify(offset >= 0, "Failed to create buffer: Offset cannot be negative.");
-	verify(lo + offset + new_size < hi, "Failed to create buffer: Out of bounds.");
+	verify(lo + offset + new_size <= hi, "Failed to create buffer: Out of bounds.");
 	return Buffer(lo + offset, lo + offset + new_size);
 }
 
@@ -35,11 +35,7 @@ std::string Buffer::read_string(s64 offset) const {
 	verify(lo + offset <= hi, "Failed to read string: Attempted to read past end of buffer.");
 	std::string result;
 	for(const uint8_t* ptr = lo + offset; ptr < hi && *ptr != '\0'; ptr++) {
-		if(isprint(*ptr)) {
-			result += *ptr;
-		} else {
-			result += ' ';
-		}
+		result += *ptr;
 	}
 	return result;
 }
@@ -55,7 +51,7 @@ void Buffer::hexdump(FILE* file, s64 column, const char* ansi_colour_code) const
 	fprintf(file, "\033[0m");
 }
 
-void diff_buffers(Buffer lhs, Buffer rhs, const char* subject) {
+void diff_buffers(Buffer lhs, Buffer rhs, s64 offset, const char* subject) {
 	s64 min_size = std::min(lhs.size(), rhs.size());
 	s64 max_size = std::max(lhs.size(), rhs.size());
 	s64 diff_pos = -1;
@@ -76,12 +72,13 @@ void diff_buffers(Buffer lhs, Buffer rhs, const char* subject) {
 	printf("%s buffers differ.\n", subject);
 	s64 row_start = (diff_pos / 0x10) * 0x10;
 	s64 hexdump_begin = std::max((s64) 0, row_start - 0x50);
-	s64 hexdump_end = std::min(max_size, row_start + 0x50);
+	s64 hexdump_end = max_size;//std::min(max_size, row_start + 0xa0);
 	for(s64 i = hexdump_begin; i < hexdump_end; i += 0x10) {
+		printf("%08x: ", (s32) (offset + i));
 		for(Buffer current : {lhs, rhs}) {
 			for(s64 j = 0; j < 0x10; j++) {
 				s64 pos = i + j;
-				const char* colour;
+				const char* colour = nullptr;
 				if(lhs.in_bounds(pos) && rhs.in_bounds(pos)) {
 					if(lhs[pos] == rhs[pos]) {
 						colour = "32";
@@ -92,9 +89,10 @@ void diff_buffers(Buffer lhs, Buffer rhs, const char* subject) {
 					colour = "33";
 				} else {
 					printf("   ");
-					continue;
 				}
-				printf("\033[%sm%02x\033[0m ", colour, current[pos]);
+				if(colour != nullptr) {
+					printf("\033[%sm%02x\033[0m ", colour, current[pos]);
+				}
 				if(j % 4 == 3 && j != 0xf) {
 					printf(" ");
 				}
