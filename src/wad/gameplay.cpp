@@ -538,6 +538,5 @@ const std::vector<GameplayBlockDescription> gameplay_blocks = {
 	{{NONE, NONE}, {0x88, NONE}, {0x6c, 0x1a}, bf<GC_88_DL_6c_Block>(&Gameplay::gc_88_dl_6c), "GC 88 DL 6c"},
 	{{NONE, NONE}, {0x80, NONE}, {0x64, 0x1b}, bf<GC_80_DL_64_Block>(&Gameplay::gc_80_dl_64), "GC 80 DL 64"},
 	{{NONE, NONE}, {0x7c, NONE}, {0x60, 0x1c}, bf<GrindRailBlock>(&Gameplay::grindrails), "grindrails"},
-	{{NONE, NONE}, {0x98, NONE}, {0x74, 0x1c}, bf<GC_98_DL_74_Block>(&Gameplay::gc_98_dl_74), "GC 98 DL 74"}
-	
+	{{NONE, NONE}, {0x98, NONE}, {0x74, 0x1d}, bf<GC_98_DL_74_Block>(&Gameplay::gc_98_dl_74), "GC 98 DL 74"}
 };
