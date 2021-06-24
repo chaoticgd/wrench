@@ -43,7 +43,7 @@ struct GpString {
 	s16 unknown_e;
 };
 
-packed_struct(Gp_GC_8_DL_4,
+packed_struct(GpImportCamera,
 	u8 data[0x20];
 )
 
@@ -105,7 +105,7 @@ packed_struct(Gp_GC_64_DL_48,
 	uint8_t unknown[0x8];
 )
 
-struct Gp_GC_50_DL_34 {
+struct GpMobyGroups {
 	std::vector<s32> first_part;
 	std::vector<s8> second_part;
 };
@@ -163,15 +163,15 @@ struct Gameplay {
 	std::vector<GpString> italian_strings;
 	std::vector<GpString> japanese_strings;
 	std::vector<GpString> korean_strings;
-	std::vector<Gp_GC_8_DL_4> gc_8_dl_4;
+	std::vector<GpImportCamera> import_cameras;
 	std::vector<Gp_GC_c_DL_8> gc_c_dl_8;
 	MobyStore moby;
 	std::vector<Gp_DL_3c> dl_3c;
 	std::vector<Gp_GC_64_DL_48> gc_64_dl_48;
-	Gp_GC_50_DL_34 gc_50_dl_34;
+	GpMobyGroups moby_groups;
 	Gp_GC_54_DL_38 gc_54_dl_38;
-	std::vector<DualMatrix> gc_6c_dl_50;
-	std::vector<DualMatrix> gc_70_dl_54;
+	std::vector<DualMatrix> spheres;
+	std::vector<DualMatrix> cylinders;
 	std::vector<s32> gc_74_dl_58;
 	std::vector<std::vector<Vec4f>> splines;
 	std::vector<DualMatrix> cuboids;
