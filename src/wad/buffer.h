@@ -67,7 +67,7 @@ struct Buffer {
 	void hexdump(FILE* file, s64 column, const char* ansi_colour_code = "0") const;
 };
 
-void diff_buffers(Buffer lhs, Buffer rhs, s64 offset, const char* subject);
+bool diff_buffers(Buffer lhs, Buffer rhs, s64 offset, const char* subject);
 
 struct OutBuffer {
 	std::vector<u8>& vec;

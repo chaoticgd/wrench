@@ -81,35 +81,50 @@ static void run_extractor(fs::path input_path, fs::path output_path) {
 }
 
 static void run_test(fs::path input_path) {
-	FILE* file = fopen(input_path.string().c_str(), "rb");
-	verify(file, "Failed to open input file.");
-	
-	const std::vector<u8> header = read_header(file);
-	const WadFileDescription file_desc = match_wad(file, header);
-	
-	std::unique_ptr<Wad> wad = file_desc.create();
-	assert(wad.get());
-	
-	std::optional<WadLumpDescription> gameplay_desc;
-	for(const WadLumpDescription& lump_desc : file_desc.fields) {
-		if(strcmp(lump_desc.name, "gameplay_core") == 0) {
-			gameplay_desc = lump_desc;
+	for(fs::path wad_file_path : fs::directory_iterator(input_path)) {
+		FILE* file = fopen(wad_file_path.string().c_str(), "rb");
+		verify(file, "Failed to open input file.");
+		
+		const std::vector<u8> header = read_header(file);
+		const WadFileDescription file_desc = match_wad(file, header);
+		
+		std::unique_ptr<Wad> wad = file_desc.create();
+		assert(wad.get());
+		
+		std::optional<WadLumpDescription> gameplay_desc;
+		for(const WadLumpDescription& lump_desc : file_desc.fields) {
+			if(strcmp(lump_desc.name, "gameplay_core") == 0) {
+				gameplay_desc = lump_desc;
+			}
+		}
+		verify(gameplay_desc.has_value(), "The given WAD doesn't contain a gameplay file.");
+		
+		auto& [offset, size] = Buffer(header).read<SectorRange>(gameplay_desc->offset, "WAD header");
+		std::vector<u8> compressed = read_lump(file, offset, size);
+		std::vector<u8> src;
+		verify(decompress_wad(src, compressed), "Decompressing gameplay file failed.");
+		Gameplay gameplay;
+		read_gameplay(gameplay, src);
+		std::vector<u8> dest = write_gameplay(gameplay);
+		
+		Buffer dest_buf(dest);
+		Buffer src_buf(src);
+		
+		std::string gameplay_header_str = wad_file_path.filename().string() + " gameplay header";
+		std::string gameplay_data_str = wad_file_path.filename().string() + " gameplay data";
+		
+		bool good = true;
+		good &= diff_buffers(src_buf.subbuf(0, 0x80), dest_buf.subbuf(0, 0x80), 0, gameplay_header_str.c_str());
+		good &= diff_buffers(src_buf.subbuf(0x80), dest_buf.subbuf(0x80), 0x80, gameplay_data_str.c_str());
+		
+		if(!good) {
+			FILE* gameplay_file = fopen("/tmp/gameplay.bin", "wb");
+			verify(gameplay_file, "Failed to open /tmp/gameplay.bin for writing.");
+			fwrite(src.data(), src.size(), 1, gameplay_file);
+			fclose(gameplay_file);
+			exit(1);
 		}
 	}
-	verify(gameplay_desc.has_value(), "The given WAD doesn't contain a gameplay file.");
-	
-	auto& [offset, size] = Buffer(header).read<SectorRange>(gameplay_desc->offset, "WAD header");
-	std::vector<u8> compressed = read_lump(file, offset, size);
-	std::vector<u8> src;
-	verify(decompress_wad(src, compressed), "Decompressing gameplay file failed.");
-	Gameplay gameplay;
-	read_gameplay(gameplay, src);
-	std::vector<u8> dest = write_gameplay(gameplay);
-	
-	Buffer dest_buf(dest);
-	Buffer src_buf(src);
-	diff_buffers(src_buf.subbuf(0, 0x80), dest_buf.subbuf(0, 0x80), 0, "Gameplay header");
-	diff_buffers(src_buf.subbuf(0x80), dest_buf.subbuf(0x80), 0x80, "Gameplay data");
 }
 
 static std::vector<u8> read_header(FILE* file) {
