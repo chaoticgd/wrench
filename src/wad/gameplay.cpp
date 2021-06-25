@@ -83,11 +83,11 @@ struct TableBlock {
 
 struct PropertiesBlock {
 	static void read(GpProperties& dest, Buffer src) {
-		dest = src.read<GpProperties>(0, "gameplay properties");
+		dest.first_part = src.read<GpPropertiesFirstPart>(0, "gameplay properties");
 	}
 	
 	static void write(OutBuffer dest, const GpProperties& src) {
-		dest.write(src);
+		dest.write(src.first_part);
 	}
 };
 

@@ -26,9 +26,31 @@ packed_struct(Gp_GC_8c_DL_70,
 	u8 data[0x20];
 )
 
-packed_struct(GpProperties,
-	u8 data[0x340];
+packed_struct(GpPropertiesFirstPart,
+	s32 background_r;       // 0x0
+	s32 background_g;       // 0x4
+	s32 background_b;       // 0x8
+	s32 fog_r;              // 0xc
+	s32 fog_g;              // 0x10
+	s32 fog_b;              // 0x14
+	f32 fog_near_dist;      // 0x18
+	f32 fog_far_dist;       // 0x1c
+	f32 fog_near_intensity; // 0x20
+	f32 fog_far_intensity;  // 0x24
+	f32 death_height;       // 0x28
+	s32 is_spherical_world; // 0x2c
+	Vec3f sphere_centre;    // 0x30
+	s32 unknown_3c;         // 0x3c
+	s32 unknown_40;         // 0x40
+	s32 unknown_44;         // 0x44
+	s32 unknown_48;         // 0x48
+	s32 unknown_4c;         // 0x4c
+	u8 unknown_50[0x340 - 0x50]; // 0x50
 )
+
+struct GpProperties {
+	GpPropertiesFirstPart first_part;
+};
 
 enum class Language {
 	ENGLISH_US, ENGLISH_UK
