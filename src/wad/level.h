@@ -128,7 +128,7 @@ struct MobyInstance {
 	s32 o_class;
 	f32 scale;
 	s16 draw_dist;
-	s8 update_dist;
+	s32 update_dist;
 	Vec3f position;
 	Vec3f rotation;
 	s8 group;

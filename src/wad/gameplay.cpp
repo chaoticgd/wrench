@@ -218,8 +218,7 @@ packed_struct(MobyInstanceDL,
 	s32 o_class;     // 0x10
 	f32 scale;       // 0x14
 	s32 draw_dist;   // 0x18
-	s8 update_dist;  // 0x1c
-	s8 pad[3] = {0}; // 0x1d
+	s32 update_dist; // 0x1c
 	s32 unknown_20;  // 0x20
 	s32 unknown_24;  // 0x24
 	Vec3f position;  // 0x28
