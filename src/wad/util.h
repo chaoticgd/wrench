@@ -101,8 +101,12 @@ packed_struct(Vec4f,
 	float w;
 )
 
+packed_struct(Mat3,
+	Vec4f m[3];
+)
+
 packed_struct(Mat4,
-	float m[4 * 4];
+	Vec4f m[4];
 )
 
 template <typename> struct MemberTraits;

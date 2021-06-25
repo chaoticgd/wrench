@@ -137,14 +137,30 @@ struct Gp_GC_54_DL_38 {
 	std::vector<s64> second_part;
 };
 
-packed_struct(DualMatrix,
-	Mat4 mat_1;
-	Mat4 mat_2;
+packed_struct(GpSphere,
+	Mat3 matrix;
+	Vec4f pos;
+	Mat3 imatrix;
+	Vec4f rot;
+)
+
+packed_struct(GpCylinder,
+	Mat3 matrix;
+	Vec4f pos;
+	Mat3 imatrix;
+	Vec4f rot;
 )
 
 struct Grindrail {
 	std::vector<Vec4f> vertices;
 };
+
+packed_struct(GpCuboid,
+	Mat3 matrix;
+	Vec4f pos;
+	Mat3 imatrix;
+	Vec4f rot;
+)
 
 struct Gp_GC_80_DL_64 {
 	std::vector<u8> first_part;
@@ -192,11 +208,11 @@ struct Gameplay {
 	std::vector<Gp_GC_64_DL_48> gc_64_dl_48;
 	GpMobyGroups moby_groups;
 	Gp_GC_54_DL_38 gc_54_dl_38;
-	std::vector<DualMatrix> spheres;
-	std::vector<DualMatrix> cylinders;
+	std::vector<GpSphere> spheres;
+	std::vector<GpCylinder> cylinders;
 	std::vector<s32> gc_74_dl_58;
 	std::vector<std::vector<Vec4f>> splines;
-	std::vector<DualMatrix> cuboids;
+	std::vector<GpCuboid> cuboids;
 	std::vector<u8> gc_88_dl_6c;
 	Gp_GC_80_DL_64 gc_80_dl_64;
 	GrindRails grindrails;
