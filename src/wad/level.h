@@ -45,11 +45,56 @@ packed_struct(GpPropertiesFirstPart,
 	s32 unknown_44;         // 0x44
 	s32 unknown_48;         // 0x48
 	s32 unknown_4c;         // 0x4c
-	u8 unknown_50[0x340 - 0x50]; // 0x50
+	s32 unknown_50;         // 0x50
+	s32 unknown_54;         // 0x54
+	s32 unknown_58;         // 0x58
+)
+
+packed_struct(GpPropertiesSecondPart,
+	s32 unknown_0;
+	s32 unknown_4;
+	s32 unknown_8;
+	s32 unknown_c;
+	s32 unknown_10;
+	s32 unknown_14;
+	s32 unknown_18;
+	s32 unknown_1c;
+)
+
+packed_struct(GpPropertiesThirdPart,
+	s32 unknown_0;
+	s32 unknown_4;
+	s32 unknown_8;
+	s32 unknown_c;
+)
+
+packed_struct(GpPropertiesFourthPart,
+	s32 unknown_0;
+	s32 unknown_4;
+	s32 unknown_8;
+	s32 unknown_c;
+	s32 unknown_10;
+	s32 unknown_14;
+)
+
+packed_struct(GpPropertiesFifthPart,
+	s32 unknown_0;
+	s32 unknown_4;
+	s32 unknown_8;
+	s32 unknown_c;
+	s32 unknown_10;
+	s32 unknown_14;
+	s32 sixth_part_count;
 )
 
 struct GpProperties {
 	GpPropertiesFirstPart first_part;
+	std::vector<GpPropertiesSecondPart> second_part;
+	s32 core_sounds_count;
+	std::vector<GpPropertiesThirdPart> third_part;
+	GpPropertiesFourthPart fourth_part;
+	GpPropertiesFifthPart fifth_part;
+	std::vector<s8> sixth_part;
 };
 
 enum class Language {
@@ -192,7 +237,6 @@ struct GpGameplayAreaList {
 struct Gameplay {
 	std::vector<Gp_GC_8c_DL_70> gc_8c_dl_70;
 	GpProperties properties;
-	s32 before_us_strings[3] = {0, 0, 0};
 	std::vector<GpString> us_english_strings;
 	std::vector<GpString> uk_english_strings;
 	std::vector<GpString> french_strings;

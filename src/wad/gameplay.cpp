@@ -24,11 +24,6 @@ void read_gameplay(Gameplay& gameplay, Buffer src) {
 	for(const GameplayBlockDescription& block_desc : gameplay_blocks) {
 		auto& pos = block_desc.rac4;
 		s32 block_offset = src.read<s32>(pos.offset, "gameplay header");
-		if(strcmp(block_desc.name, "us english strings") == 0) {
-			gameplay.before_us_strings[0] = src.read<s32>(block_offset - 0xc, "weird US string values");
-			gameplay.before_us_strings[1] = src.read<s32>(block_offset - 0x8, "weird US string values");
-			gameplay.before_us_strings[2] = src.read<s32>(block_offset - 0x4, "weird US string values");
-		}
 		block_desc.funcs.read(gameplay, src.subbuf(block_offset));
 	}
 }
@@ -44,11 +39,8 @@ std::vector<u8> write_gameplay(const Gameplay& gameplay) {
 	OutBuffer dest(dest_vec);
 	for(const GameplayBlockDescription& block : blocks) {
 		if(block.rac4.offset != NONE) {
+			if(strcmp(block.name, "us english strings") != 0) {
 			dest.pad(0x10, 0);
-			if(strcmp(block.name, "us english strings") == 0) {
-				dest.write<s32>(gameplay.before_us_strings[0]);
-				dest.write<s32>(gameplay.before_us_strings[1]);
-				dest.write<s32>(gameplay.before_us_strings[2]);
 			}
 			s32 pos = (s32) dest_vec.size();
 			block.funcs.write(dest, gameplay);
@@ -83,11 +75,52 @@ struct TableBlock {
 
 struct PropertiesBlock {
 	static void read(GpProperties& dest, Buffer src) {
-		dest.first_part = src.read<GpPropertiesFirstPart>(0, "gameplay properties");
+		s32 ofs = 0;
+		dest.first_part = src.read<GpPropertiesFirstPart>(ofs, "gameplay properties");
+		ofs += sizeof(GpPropertiesFirstPart);
+		s32 second_part_count = src.read<s32>(ofs + 0xc, "second part count");
+		if(second_part_count > 0) {
+			dest.second_part = src.read_multiple<GpPropertiesSecondPart>(ofs, second_part_count, "second part").copy();
+			ofs += second_part_count * sizeof(GpPropertiesSecondPart);
+		} else {
+			ofs += sizeof(GpPropertiesSecondPart);
+		}
+		dest.core_sounds_count = src.read<s32>(ofs, "core sounds count");
+		ofs += 4;
+		s64 third_part_count = src.read<s32>(ofs, "third part count");
+		ofs += 4;
+		if(third_part_count >= 0) {
+			dest.third_part = src.read_multiple<GpPropertiesThirdPart>(ofs, third_part_count, "third part").copy();
+			ofs += third_part_count * sizeof(GpPropertiesThirdPart);
+			dest.fourth_part = src.read<GpPropertiesFourthPart>(ofs, "fourth part");
+			ofs += sizeof(GpPropertiesFourthPart);
+		} else {
+			ofs += sizeof(GpPropertiesThirdPart);
+		}
+		dest.fifth_part = src.read<GpPropertiesFifthPart>(ofs, "fifth part");
+		ofs += sizeof(GpPropertiesFifthPart);
+		dest.sixth_part = src.read_multiple<s8>(ofs, dest.fifth_part.sixth_part_count, "sixth part").copy();
 	}
 	
 	static void write(OutBuffer dest, const GpProperties& src) {
 		dest.write(src.first_part);
+		if(src.second_part.size() > 0) {
+			dest.write_multiple(src.second_part);
+		} else {
+			GpPropertiesSecondPart terminator = {0};
+			dest.write(terminator);
+		}
+		dest.write(src.core_sounds_count);
+		dest.write((s32) src.third_part.size());
+		if(src.third_part.size() > 0) {
+			dest.write_multiple(src.third_part);
+			dest.write(src.fourth_part);
+		} else {
+			GpPropertiesSecondPart terminator = {0};
+			dest.write(terminator);
+		}
+		dest.write(src.fifth_part);
+		dest.write_multiple(src.sixth_part);
 	}
 };
 
