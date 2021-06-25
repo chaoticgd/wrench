@@ -116,8 +116,7 @@ struct PropertiesBlock {
 			dest.write_multiple(src.third_part);
 			dest.write(src.fourth_part);
 		} else {
-			GpPropertiesSecondPart terminator = {0};
-			dest.write(terminator);
+			dest.vec.resize(dest.tell() + 0x18, 0);
 		}
 		dest.write(src.fifth_part);
 		dest.write_multiple(src.sixth_part);
