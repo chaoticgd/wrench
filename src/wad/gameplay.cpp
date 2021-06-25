@@ -179,40 +179,40 @@ packed_struct(MobyBlockHeader,
 )
 
 packed_struct(MobyInstanceDL,
-	s32 size;       // 0x0 Always 0x70.
-	s32 unknown_4;  // 0x4
-	s32 uid;        // 0x8
-	s32 unknown_c;  // 0xc
-	s32 o_class;    // 0x10
-	f32 scale;      // 0x14
-	s32 unknown_18; // 0x18
-	s32 unknown_1c; // 0x1c
-	s32 unknown_20; // 0x20
-	s32 unknown_24; // 0x24
-	Vec3f position; // 0x28
-	Vec3f rotation; // 0x34
-	s32 unknown_40; // 0x40
-	s32 unknown_44; // 0x44
-	s32 unknown_48; // 0x48
-	s32 unknown_4c; // 0x4c
-	s32 pvar_index; // 0x50
-	s32 unknown_54; // 0x54
-	s32 unknown_58; // 0x58
-	s32 unknown_5c; // 0x5c
-	s32 unknown_60; // 0x60
-	s32 unknown_64; // 0x64
-	s32 unknown_68; // 0x68
-	s32 unknown_6c; // 0x6c
+	s32 size;        // 0x0 Always 0x70.
+	s32 mission;     // 0x4
+	s32 uid;         // 0x8
+	s32 bolts;       // 0xc
+	s32 o_class;     // 0x10
+	f32 scale;       // 0x14
+	f32 draw_dist;   // 0x18
+	s32 update_dist; // 0x1c
+	s32 unknown_20;  // 0x20
+	s32 unknown_24;  // 0x24
+	Vec3f position;  // 0x28
+	Vec3f rotation;  // 0x34
+	s32 group;       // 0x40
+	s32 is_rooted;   // 0x44
+	f32 rooted_dist; // 0x48
+	s32 unknown_4c;  // 0x4c
+	s32 pvar_index;  // 0x50
+	s32 unknown_54;  // 0x54
+	s32 unknown_58;  // 0x58
+	s32 lights_1;    // 0x5c
+	s32 lights_2;    // 0x60
+	s32 lights_3;    // 0x64
+	s32 unknown_68;  // 0x68
+	s32 unknown_6c;  // 0x6c
 )
+static_assert(sizeof(MobyInstanceDL) == 0x70);
 
 struct MobyBlock {
 	static void read(MobyStore& dest, Buffer src) {
 		auto& header = src.read<MobyBlockHeader>(0, "moby block header");
 		dest.dynamic_count = header.dynamic_count;
-		for(auto& entry : src.read_multiple<MobyInstanceDL>(0x10, header.static_count, "moby instances")) {
-			MobyInstanceDL mut_entry = entry;
+		for(MobyInstanceDL entry : src.read_multiple<MobyInstanceDL>(0x10, header.static_count, "moby instances")) {
 			MobyInstance instance;
-			swap_moby(instance, mut_entry);
+			swap_moby(instance, entry);
 			dest.instances.push_back(instance);
 		}
 	}
@@ -222,37 +222,36 @@ struct MobyBlock {
 		header.static_count = src.instances.size();
 		header.dynamic_count = src.dynamic_count;
 		dest.write(header);
-		for(const MobyInstance& instance : src.instances) {
-			MobyInstance mut_instance = instance;
+		for(MobyInstance instance : src.instances) {
 			MobyInstanceDL entry;
-			swap_moby(mut_instance, entry);
+			swap_moby(instance, entry);
 			dest.write(entry);
 		}
 	}
 	
 	static void swap_moby(MobyInstance& l, MobyInstanceDL& r) {
 		SWAP_PACKED(l.size, r.size);
+		SWAP_PACKED(l.mission, r.mission);
 		SWAP_PACKED(l.uid, r.uid);
+		SWAP_PACKED(l.bolts, r.bolts);
 		SWAP_PACKED(l.o_class, r.o_class);
 		SWAP_PACKED(l.scale, r.scale);
-		SWAP_PACKED(l.position, r.position);
-		SWAP_PACKED(l.rotation, r.rotation);
-		SWAP_PACKED(l.pvar_index, r.pvar_index);
-		SWAP_PACKED(l.dl.unknown_4, r.unknown_4);
-		SWAP_PACKED(l.dl.unknown_c, r.unknown_c);
-		SWAP_PACKED(l.dl.unknown_18, r.unknown_18);
-		SWAP_PACKED(l.dl.unknown_1c, r.unknown_1c);
+		SWAP_PACKED(l.draw_dist, r.draw_dist);
+		SWAP_PACKED(l.update_dist, r.update_dist);
 		SWAP_PACKED(l.dl.unknown_20, r.unknown_20);
 		SWAP_PACKED(l.dl.unknown_24, r.unknown_24);
-		SWAP_PACKED(l.dl.unknown_40, r.unknown_40);
-		SWAP_PACKED(l.dl.unknown_44, r.unknown_44);
-		SWAP_PACKED(l.dl.unknown_48, r.unknown_48);
+		SWAP_PACKED(l.position, r.position);
+		SWAP_PACKED(l.rotation, r.rotation);
+		SWAP_PACKED(l.group, r.group);
+		SWAP_PACKED(l.is_rooted, r.is_rooted);
+		SWAP_PACKED(l.rooted_dist, r.rooted_dist);
 		SWAP_PACKED(l.dl.unknown_4c, r.unknown_4c);
+		SWAP_PACKED(l.pvar_index, r.pvar_index);
 		SWAP_PACKED(l.dl.unknown_54, r.unknown_54);
 		SWAP_PACKED(l.dl.unknown_58, r.unknown_58);
-		SWAP_PACKED(l.dl.unknown_5c, r.unknown_5c);
-		SWAP_PACKED(l.dl.unknown_60, r.unknown_60);
-		SWAP_PACKED(l.dl.unknown_64, r.unknown_64);
+		SWAP_PACKED(l.lights_1, r.lights_1);
+		SWAP_PACKED(l.lights_2, r.lights_2);
+		SWAP_PACKED(l.lights_3, r.lights_3);
 		SWAP_PACKED(l.dl.unknown_68, r.unknown_68);
 		SWAP_PACKED(l.dl.unknown_6c, r.unknown_6c);
 	}

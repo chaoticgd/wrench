@@ -77,28 +77,28 @@ packed_struct(Gp_GC_c_DL_8,
 
 struct MobyInstance {
 	s32 size;
+	s8 mission;
 	s32 uid;
+	s32 bolts;
 	s32 o_class;
 	f32 scale;
+	s16 draw_dist;
+	s8 update_dist;
 	Vec3f position;
 	Vec3f rotation;
+	s8 group;
+	s32 is_rooted;
+	f32 rooted_dist;
 	s32 pvar_index;
+	s32 lights_1;
+	s32 lights_2;
+	s32 lights_3;
 	struct {
-		s32 unknown_4;
-		s32 unknown_c;
-		s32 unknown_18;
-		s32 unknown_1c;
 		s32 unknown_20;
 		s32 unknown_24;
-		s32 unknown_40;
-		s32 unknown_44;
-		s32 unknown_48;
 		s32 unknown_4c;
 		s32 unknown_54;
 		s32 unknown_58;
-		s32 unknown_5c;
-		s32 unknown_60;
-		s32 unknown_64;
 		s32 unknown_68;
 		s32 unknown_6c;
 	} dl;
