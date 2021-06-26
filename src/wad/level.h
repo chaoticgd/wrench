@@ -308,20 +308,39 @@ packed_struct(GpBSphere,
 	f32 y;
 	f32 z;
 	f32 rad;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_PACKED_FIELD("x", x);
+		DEF_PACKED_FIELD("y", y);
+		DEF_PACKED_FIELD("z", z);
+		DEF_PACKED_FIELD("rad", rad);
+	}
 )
 
-enum class AreaPart {
-	PATHS = 0,
-	CUBOIDS = 1,
-	SPHERES = 2,
-	CYLINDERS = 3,
-	NEG_CUBOIDS = 4
+enum AreaPart {
+	AREA_PART_PATHS = 0,
+	AREA_PART_CUBOIDS = 1,
+	AREA_PART_SPHERES = 2,
+	AREA_PART_CYLINDERS = 3,
+	AREA_PART_NEG_CUBOIDS = 4
 };
 
 struct GpArea {
 	GpBSphere bsphere;
 	s32 last_update_time;
 	std::vector<s32> parts[5];
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD("bounding_sphere", bsphere);
+		DEF_FIELD("last_update_time", last_update_time);
+		DEF_FIELD("paths", parts[AREA_PART_PATHS]);
+		DEF_FIELD("cuboids", parts[AREA_PART_CUBOIDS]);
+		DEF_FIELD("spheres", parts[AREA_PART_SPHERES]);
+		DEF_FIELD("cylinders", parts[AREA_PART_CYLINDERS]);
+		DEF_FIELD("negative_cuboids", parts[AREA_PART_NEG_CUBOIDS]);
+	}
 };
 
 struct Gameplay {
@@ -364,6 +383,7 @@ struct Gameplay {
 		DEF_FIELD("spheres", spheres);
 		DEF_FIELD("cylinders", cylinders);
 		DEF_FIELD("cuboids", cuboids);
+		DEF_FIELD("gameplay_area_list", gameplay_area_list);
 	}
 };
 
