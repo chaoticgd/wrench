@@ -303,16 +303,25 @@ struct GrindRails {
 	std::vector<std::vector<Vec4f>> splines;
 };
 
-packed_struct(GpGameplayAreaListFirstPart,
-	Vec4f position;      // 0x0
-	uint16_t counts[6];  // 0x10 -- only 5 are used, last one is padding
-	uint32_t offsets[5]; // 0x1c
+packed_struct(GpBSphere,
+	f32 x;
+	f32 y;
+	f32 z;
+	f32 rad;
 )
 
-struct GpGameplayAreaList {
-	std::vector<GpGameplayAreaListFirstPart> first_part;
-	std::vector<s32> second_part;
-	s32 part_offsets[5];
+enum class AreaPart {
+	PATHS = 0,
+	CUBOIDS = 1,
+	SPHERES = 2,
+	CYLINDERS = 3,
+	NEG_CUBOIDS = 4
+};
+
+struct GpArea {
+	GpBSphere bsphere;
+	s32 last_update_time;
+	std::vector<s32> parts[5];
 };
 
 struct Gameplay {
@@ -341,7 +350,7 @@ struct Gameplay {
 	std::vector<u8> gc_88_dl_6c;
 	Gp_GC_80_DL_64 gc_80_dl_64;
 	GrindRails grindrails;
-	GpGameplayAreaList gameplay_area_list;
+	std::vector<GpArea> gameplay_area_list;
 	
 	// Only used while reading the binary gameplay file, empty otherwise.
 	std::optional<std::vector<PvarTableEntry>> pvars_temp;

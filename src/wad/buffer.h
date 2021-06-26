@@ -99,7 +99,7 @@ struct OutBuffer {
 	
 	template <typename T>
 	s64 write(s64 offset, const T& thing) {
-		assert(offset > 0);
+		assert(offset >= 0);
 		assert(offset + sizeof(T) <= vec.size());
 		*(T*) &vec[offset] = thing;
 		return offset;
@@ -111,6 +111,14 @@ struct OutBuffer {
 		vec.resize(vec.size() + things.size() * sizeof(T));
 		memcpy(&vec[write_pos], things.data(), things.size() * sizeof(T));
 		return write_pos;
+	}
+	
+	template <typename T>
+	s64 write_multiple(s64 offset, const std::vector<T>& things) {
+		assert(offset >= 0);
+		assert(offset + things.size() * sizeof(T) <= vec.size());
+		memcpy(&vec[offset], things.data(), things.size() * sizeof(T));
+		return offset;
 	}
 	
 	void pad(s64 align, u8 padding = 0) {

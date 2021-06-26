@@ -582,37 +582,80 @@ struct GrindRailBlock {
 };
 
 packed_struct(GameplayAreaListHeader,
-	s32 size; // Not including this field.
-	s32 part_1_count;
+	s32 area_count;
 	s32 part_offsets[5];
 	s32 unknown_1c;
 	s32 unknown_20;
 )
 
+packed_struct(GameplayAreaPacked,
+	GpBSphere bsphere;
+	s16 part_counts[5];
+	s16 last_update_time;
+	s32 relative_part_offsets[5];
+)
+
 struct GameplayAreaListBlock {
-	static void read(GpGameplayAreaList& dest, Buffer src) {
+	static void read(std::vector<GpArea>& dest, Buffer src) {
+		src = src.subbuf(4); // Skip past size field.
 		s64 header_size = sizeof(GameplayAreaListHeader);
-		s64 header_size_minus_size = header_size - 4;
-		
-		auto header = src.read<GameplayAreaListHeader>(0, "block header");
-		memcpy(dest.part_offsets, header.part_offsets, sizeof(header.part_offsets));
-		dest.first_part = src.read_multiple<GpGameplayAreaListFirstPart>(header_size, header.part_1_count, "first part block").copy();
-		s64 first_part_size = header.part_1_count * sizeof(GpGameplayAreaListFirstPart);
-		s64 second_part_size = header.size - first_part_size - header_size_minus_size;
-		dest.second_part = src.read_multiple<s32>(header_size + first_part_size, second_part_size / 4, "second part of block").copy();
+		auto header = src.read<GameplayAreaListHeader>(0, "area list block header");
+		auto entries = src.read_multiple<GameplayAreaPacked>(header_size, header.area_count, "area list table");
+		for(const GameplayAreaPacked& entry : entries) {
+			GpArea area;
+			area.bsphere = entry.bsphere;
+			area.last_update_time = entry.last_update_time;
+			for(s32 part = 0; part < 5; part++) {
+				s32 part_ofs = header.part_offsets[part] + entry.relative_part_offsets[part];
+				area.parts[part] = src.read_multiple<s32>(part_ofs, entry.part_counts[part], "area list data").copy();
+			}
+			dest.emplace_back(std::move(area));
+		}
 	}
 	
-	static void write(OutBuffer dest, const GpGameplayAreaList& src) {
-		s64 first_part_size = src.first_part.size() * sizeof(GpGameplayAreaListFirstPart);
-		s64 second_part_size = src.second_part.size() * 4;
+	static void write(OutBuffer dest, const std::vector<GpArea>& src) {
+		s64 size_ofs = dest.alloc<s32>();
+		s64 header_ofs = dest.alloc<GameplayAreaListHeader>();
+		s64 table_ofs = dest.alloc_multiple<GameplayAreaPacked>(src.size());
 		
-		GameplayAreaListHeader header = {0};
-		header.size = 0x20 + first_part_size + second_part_size;
-		header.part_1_count = src.first_part.size();
-		memcpy(header.part_offsets, src.part_offsets, sizeof(src.part_offsets));
-		dest.write(header);
-		dest.write_multiple(src.first_part);
-		dest.write_multiple(src.second_part);
+		s64 total_part_counts[5] = {0, 0, 0, 0, 0};
+		
+		GameplayAreaListHeader header;
+		std::vector<GameplayAreaPacked> table;
+		for(const GpArea& area : src) {
+			GameplayAreaPacked packed;
+			packed.bsphere = area.bsphere;
+			for(s32 part = 0; part < 5; part++) {
+				packed.part_counts[part] = area.parts[part].size();
+				total_part_counts[part] += area.parts[part].size();
+			}
+			packed.last_update_time = area.last_update_time;
+			table.emplace_back(std::move(packed));
+		}
+		
+		for(s32 part = 0; part < 5; part++) {
+			s64 paths_ofs = dest.tell();
+			if(total_part_counts[part] > 0) {
+				header.part_offsets[part] = paths_ofs - header_ofs;
+			} else {
+				header.part_offsets[part] = 0;
+			}
+			for(size_t area = 0; area < src.size(); area++) {
+				if(table[area].part_counts[part] > 0) {
+					table[area].relative_part_offsets[part] = dest.tell() - paths_ofs;
+					dest.write_multiple(src[area].parts[part]);
+				} else {
+					table[area].relative_part_offsets[part] = 0;
+				}
+			}
+		}
+		header.area_count = src.size();
+		header.unknown_1c = 0;
+		header.unknown_20 = 0;
+		
+		dest.write(size_ofs, dest.tell() - header_ofs);
+		dest.write(header_ofs, header);
+		dest.write_multiple(table_ofs, table);
 	}
 };
 
