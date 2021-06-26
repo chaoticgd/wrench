@@ -110,15 +110,33 @@ struct GpString {
 	s16 unknown_e;
 };
 
-packed_struct(GpImportCamera,
-	u8 data[0x20];
+struct ImportCamera {
+	s32 unknown_0;
+	s32 unknown_4;
+	s32 unknown_8;
+	s32 unknown_c;
+	s32 unknown_10;
+	s32 unknown_14;
+	s32 unknown_18;
+	s32 pvar_index;
+	std::vector<u8> pvars;
+};
+
+packed_struct(GpCuboid,
+	Mat3 matrix;
+	Vec4f pos;
+	Mat3 imatrix;
+	Vec4f rot;
 )
 
-packed_struct(Gp_GC_c_DL_8,
-	u8 unknown_0[0x10];
-	Mat4 mat_1;
-	Mat4 mat_2;
-)
+struct SoundInstance {
+	s16 o_class;
+	s16 m_class;
+	s32 pvar_index;
+	f32 range;
+	GpCuboid cuboid;
+	std::vector<u8> pvars;
+};
 
 struct MobyInstance {
 	s32 size;
@@ -147,7 +165,7 @@ struct MobyInstance {
 		s32 unknown_68;
 		s32 unknown_6c;
 	} dl;
-	std::vector<u8> pvar;
+	std::vector<u8> pvars;
 };
 
 packed_struct(PvarTableEntry,
@@ -159,8 +177,6 @@ struct MobyStore {
 	std::vector<s32> classes;
 	s32 dynamic_count;
 	std::vector<MobyInstance> instances;
-	std::optional<std::vector<PvarTableEntry>> pvars_temp; // Only used during reading.
-	std::vector<u8> pvar_data;
 };
 
 packed_struct(Gp_DL_3c,
@@ -200,13 +216,6 @@ struct Grindrail {
 	std::vector<Vec4f> vertices;
 };
 
-packed_struct(GpCuboid,
-	Mat3 matrix;
-	Vec4f pos;
-	Mat3 imatrix;
-	Vec4f rot;
-)
-
 struct Gp_GC_80_DL_64 {
 	std::vector<u8> first_part;
 	std::vector<u8> second_part;
@@ -245,8 +254,8 @@ struct Gameplay {
 	std::vector<GpString> italian_strings;
 	std::vector<GpString> japanese_strings;
 	std::vector<GpString> korean_strings;
-	std::vector<GpImportCamera> import_cameras;
-	std::vector<Gp_GC_c_DL_8> gc_c_dl_8;
+	std::vector<ImportCamera> import_cameras;
+	std::vector<SoundInstance> sound_instances;
 	MobyStore moby;
 	std::vector<Gp_DL_3c> dl_3c;
 	std::vector<Gp_GC_64_DL_48> gc_64_dl_48;
@@ -261,6 +270,9 @@ struct Gameplay {
 	Gp_GC_80_DL_64 gc_80_dl_64;
 	GrindRails grindrails;
 	GpGameplayAreaList gameplay_area_list;
+	
+	// Only used while reading the binary gameplay file, empty otherwise.
+	std::optional<std::vector<PvarTableEntry>> pvars_temp;
 };
 
 struct LevelWad : Wad {

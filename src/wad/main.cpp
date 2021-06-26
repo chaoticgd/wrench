@@ -112,7 +112,6 @@ static void run_test(fs::path input_path) {
 		
 		std::string gameplay_header_str = wad_file_path.filename().string() + " gameplay header";
 		std::string gameplay_data_str = wad_file_path.filename().string() + " gameplay data";
-		
 		bool good = true;
 		good &= diff_buffers(src_buf.subbuf(0, 0x80), dest_buf.subbuf(0, 0x80), 0, gameplay_header_str.c_str());
 		good &= diff_buffers(src_buf.subbuf(0x80), dest_buf.subbuf(0x80), 0x80, gameplay_data_str.c_str());
