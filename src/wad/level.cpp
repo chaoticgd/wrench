@@ -19,6 +19,19 @@
 #include "level.h"
 
 Json write_gameplay_json(Gameplay& gameplay) {
-	Json json = to_json(gameplay);
+	Json json;
+	
+	json["metadata"] = Json {
+		{"format", "gameplay"},
+		{"format_version", 0},
+		{"application", "Wrench WAD Extractor"},
+		{"application_version", "0"}
+	};
+	
+	Json data = to_json(gameplay);
+	for(auto& object : data.items()) {
+		json[object.key()] = object.value();
+	}
+	
 	return json;
 }
