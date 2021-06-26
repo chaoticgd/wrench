@@ -18,4 +18,7 @@
 
 #include "level.h"
 
-#include <iostream>
+Json write_gameplay_json(Gameplay& gameplay) {
+	Json json = to_json(gameplay);
+	return json;
+}

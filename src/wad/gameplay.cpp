@@ -242,7 +242,7 @@ packed_struct(SoundInstancePacked,
 	u32 update_fun_ptr;
 	s32 pvar_index;
 	f32 range;
-	GpCuboid cuboid;
+	GpShape cuboid;
 )
 
 static void swap_instance(SoundInstance& l, SoundInstancePacked& r) {
@@ -652,9 +652,9 @@ const std::vector<GameplayBlockDescription> gameplay_blocks = {
 	{{NONE, NONE}, {0x50, NONE}, {0x34, 0x13}, bf<DualTableBlock<GpMobyGroups>>(&Gameplay::moby_groups), "moby groups"},
 	{{NONE, NONE}, {0x54, NONE}, {0x38, 0x14}, bf<DualTableBlock<Gp_GC_54_DL_38>>(&Gameplay::gc_54_dl_38), "GC 54 DL 38"},
 	{{NONE, NONE}, {0x78, NONE}, {0x5c, 0x15}, bf<SplineBlock>(&Gameplay::splines), "splines"},
-	{{NONE, NONE}, {0x68, NONE}, {0x4c, 0x16}, bf<TableBlock<GpCuboid>>(&Gameplay::cuboids), "cuboids"},
-	{{NONE, NONE}, {0x6c, NONE}, {0x50, 0x17}, bf<TableBlock<GpSphere>>(&Gameplay::spheres), "spheres"},
-	{{NONE, NONE}, {0x70, NONE}, {0x54, 0x18}, bf<TableBlock<GpCylinder>>(&Gameplay::cylinders), "cylinders"},
+	{{NONE, NONE}, {0x68, NONE}, {0x4c, 0x16}, bf<TableBlock<GpShape>>(&Gameplay::cuboids), "cuboids"},
+	{{NONE, NONE}, {0x6c, NONE}, {0x50, 0x17}, bf<TableBlock<GpShape>>(&Gameplay::spheres), "spheres"},
+	{{NONE, NONE}, {0x70, NONE}, {0x54, 0x18}, bf<TableBlock<GpShape>>(&Gameplay::cylinders), "cylinders"},
 	{{NONE, NONE}, {0x74, NONE}, {0x58, 0x19}, bf<TableBlock<s32>>(&Gameplay::gc_74_dl_58), "GC 74 DL 58"},
 	{{NONE, NONE}, {0x88, NONE}, {0x6c, 0x1a}, bf<GC_88_DL_6c_Block>(&Gameplay::gc_88_dl_6c), "GC 88 DL 6c"},
 	{{NONE, NONE}, {0x80, NONE}, {0x64, 0x1b}, bf<GC_80_DL_64_Block>(&Gameplay::gc_80_dl_64), "GC 80 DL 64"},

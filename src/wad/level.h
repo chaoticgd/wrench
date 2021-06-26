@@ -19,6 +19,7 @@
 #ifndef WAD_LEVEL_H
 #define WAD_LEVEL_H
 
+#include "json.h"
 #include "util.h"
 #include "buffer.h"
 
@@ -26,13 +27,22 @@ packed_struct(Gp_GC_8c_DL_70,
 	u8 data[0x20];
 )
 
+packed_struct(Rgb96,
+	s32 r;
+	s32 g;
+	s32 b;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD("r", r);
+		DEF_FIELD("g", g);
+		DEF_FIELD("b", b);
+	}
+)
+
 packed_struct(GpPropertiesFirstPart,
-	s32 background_r;       // 0x0
-	s32 background_g;       // 0x4
-	s32 background_b;       // 0x8
-	s32 fog_r;              // 0xc
-	s32 fog_g;              // 0x10
-	s32 fog_b;              // 0x14
+	Rgb96 background_col;   // 0x0
+	Rgb96 fog_col;          // 0xc
 	f32 fog_near_dist;      // 0x18
 	f32 fog_far_dist;       // 0x1c
 	f32 fog_near_intensity; // 0x20
@@ -40,14 +50,35 @@ packed_struct(GpPropertiesFirstPart,
 	f32 death_height;       // 0x28
 	s32 is_spherical_world; // 0x2c
 	Vec3f sphere_centre;    // 0x30
-	s32 unknown_3c;         // 0x3c
-	s32 unknown_40;         // 0x40
-	s32 unknown_44;         // 0x44
+	f32 unknown_3c;         // 0x3c
+	f32 unknown_40;         // 0x40
+	f32 unknown_44;         // 0x44
 	s32 unknown_48;         // 0x48
 	s32 unknown_4c;         // 0x4c
 	s32 unknown_50;         // 0x50
 	s32 unknown_54;         // 0x54
 	s32 unknown_58;         // 0x58
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_OBJECT("background_col", background_col);
+		DEF_OBJECT("fog_col", fog_col);
+		DEF_FIELD("fog_near_dist", fog_near_dist);
+		DEF_FIELD("fog_far_dist", fog_far_dist);
+		DEF_FIELD("fog_near_intensity", fog_near_intensity);
+		DEF_FIELD("fog_far_intensity", fog_far_intensity);
+		DEF_FIELD("death_height", death_height);
+		DEF_FIELD("is_spherical_world", is_spherical_world);
+		DEF_OBJECT("sphere_centre", sphere_centre);
+		DEF_FIELD("unknown_3c", unknown_3c);
+		DEF_FIELD("unknown_40", unknown_40);
+		DEF_FIELD("unknown_44", unknown_44);
+		DEF_FIELD("unknown_48", unknown_48);
+		DEF_FIELD("unknown_4c", unknown_4c);
+		DEF_FIELD("unknown_50", unknown_50);
+		DEF_FIELD("unknown_54", unknown_54);
+		DEF_FIELD("unknown_58", unknown_58);
+	}
 )
 
 packed_struct(GpPropertiesSecondPart,
@@ -95,6 +126,11 @@ struct GpProperties {
 	GpPropertiesFourthPart fourth_part;
 	GpPropertiesFifthPart fifth_part;
 	std::vector<s8> sixth_part;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		first_part.enumerate_fields(t);
+	}
 };
 
 enum class Language {
@@ -118,24 +154,46 @@ struct ImportCamera {
 	s32 unknown_10;
 	s32 unknown_14;
 	s32 unknown_18;
-	s32 pvar_index;
+	s32 pvar_index; // Only used during reading!
 	std::vector<u8> pvars;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_HEXDUMP("pvar", pvars);
+	}
 };
 
-packed_struct(GpCuboid,
+packed_struct(GpShape,
 	Mat3 matrix;
 	Vec4f pos;
 	Mat3 imatrix;
 	Vec4f rot;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_OBJECT("matrix", matrix);
+		DEF_OBJECT("pos", pos);
+		DEF_OBJECT("imatrix", imatrix);
+		DEF_OBJECT("rot", rot);
+	}
 )
 
 struct SoundInstance {
 	s16 o_class;
 	s16 m_class;
-	s32 pvar_index;
+	s32 pvar_index; // Only used during reading!
 	f32 range;
-	GpCuboid cuboid;
+	GpShape cuboid;
 	std::vector<u8> pvars;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD("o_class", o_class);
+		DEF_FIELD("m_class", m_class);
+		DEF_FIELD("range", range);
+		DEF_OBJECT("cuboid", cuboid);
+		DEF_HEXDUMP("pvar", pvars);
+	}
 };
 
 struct MobyInstance {
@@ -152,7 +210,7 @@ struct MobyInstance {
 	s8 group;
 	s32 is_rooted;
 	f32 rooted_dist;
-	s32 pvar_index;
+	s32 pvar_index; // Only used during reading!
 	s32 lights_1;
 	s32 lights_2;
 	s32 lights_3;
@@ -166,6 +224,34 @@ struct MobyInstance {
 		s32 unknown_6c;
 	} dl;
 	std::vector<u8> pvars;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD("size", size);
+		DEF_FIELD("mission", mission);
+		DEF_FIELD("uid", uid);
+		DEF_FIELD("bolts", bolts);
+		DEF_FIELD("o_class", o_class);
+		DEF_FIELD("scale", scale);
+		DEF_FIELD("draw_dist", draw_dist);
+		DEF_FIELD("update_dist", update_dist);
+		DEF_OBJECT("position", position);
+		DEF_OBJECT("rotation", rotation);
+		DEF_FIELD("group", group);
+		DEF_FIELD("is_rooted", is_rooted);
+		DEF_FIELD("rooted_dist", rooted_dist);
+		DEF_FIELD("lights_1", lights_1);
+		DEF_FIELD("lights_2", lights_2);
+		DEF_FIELD("lights_3", lights_3);
+		DEF_FIELD("unknown_20", dl.unknown_20);
+		DEF_FIELD("unknown_24", dl.unknown_24);
+		DEF_FIELD("unknown_4c", dl.unknown_4c);
+		DEF_FIELD("unknown_54", dl.unknown_54);
+		DEF_FIELD("unknown_58", dl.unknown_58);
+		DEF_FIELD("unknown_68", dl.unknown_68);
+		DEF_FIELD("unknown_6c", dl.unknown_6c);
+		DEF_HEXDUMP("pvar", pvars);
+	}
 };
 
 packed_struct(PvarTableEntry,
@@ -197,20 +283,6 @@ struct Gp_GC_54_DL_38 {
 	std::vector<s8> first_part;
 	std::vector<s64> second_part;
 };
-
-packed_struct(GpSphere,
-	Mat3 matrix;
-	Vec4f pos;
-	Mat3 imatrix;
-	Vec4f rot;
-)
-
-packed_struct(GpCylinder,
-	Mat3 matrix;
-	Vec4f pos;
-	Mat3 imatrix;
-	Vec4f rot;
-)
 
 struct Grindrail {
 	std::vector<Vec4f> vertices;
@@ -261,11 +333,11 @@ struct Gameplay {
 	std::vector<Gp_GC_64_DL_48> gc_64_dl_48;
 	GpMobyGroups moby_groups;
 	Gp_GC_54_DL_38 gc_54_dl_38;
-	std::vector<GpSphere> spheres;
-	std::vector<GpCylinder> cylinders;
+	std::vector<GpShape> spheres;
+	std::vector<GpShape> cylinders;
 	std::vector<s32> gc_74_dl_58;
 	std::vector<std::vector<Vec4f>> splines;
-	std::vector<GpCuboid> cuboids;
+	std::vector<GpShape> cuboids;
 	std::vector<u8> gc_88_dl_6c;
 	Gp_GC_80_DL_64 gc_80_dl_64;
 	GrindRails grindrails;
@@ -273,10 +345,23 @@ struct Gameplay {
 	
 	// Only used while reading the binary gameplay file, empty otherwise.
 	std::optional<std::vector<PvarTableEntry>> pvars_temp;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_OBJECT("properties", properties);
+		DEF_OBJECT_LIST("cameras", import_cameras);
+		DEF_OBJECT_LIST("sound_instances", sound_instances);
+		DEF_OBJECT_LIST("moby_instances", moby.instances);
+		DEF_OBJECT_LIST("spheres", spheres);
+		DEF_OBJECT_LIST("cylinders", cylinders);
+		DEF_OBJECT_LIST("cuboids", cuboids);
+	}
 };
 
 struct LevelWad : Wad {
 	Gameplay gameplay_core;
 };
+
+Json write_gameplay_json(Gameplay& gameplay);
 
 #endif

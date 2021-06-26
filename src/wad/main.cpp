@@ -77,6 +77,14 @@ static void run_extractor(fs::path input_path, fs::path output_path) {
 		}
 	}
 	
+	if(LevelWad* level = dynamic_cast<LevelWad*>(wad.get())) {
+		Json json = write_gameplay_json(level->gameplay_core);
+		std::string str = json.dump(1, '\t');
+		
+		fs::path path = output_path/"gameplay.json";
+		write_file(path.c_str(), Buffer((uint8_t*) &(*str.begin()), (uint8_t*) &(*str.end())));
+	}
+	
 	fclose(file);
 }
 

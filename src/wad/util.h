@@ -88,25 +88,86 @@ packed_struct(SectorRange,
 	Sector32 size;
 )
 
+// Kludge since C++ still doesn't have proper reflection.
+#define DEF_FIELD(name, member) \
+	{ \
+		auto temp = member; \
+		t.field(name, temp); \
+		member = temp; \
+	}
+#define DEF_OBJECT(name, member) \
+	{ \
+		auto temp = std::move(member); \
+		t.object(name, temp); \
+		member = std::move(temp); \
+	}
+#define DEF_OBJECT_LIST(name, member) \
+	{ \
+		auto temp = std::move(member); \
+		t.object_list(name, temp); \
+		member = std::move(temp); \
+	}
+#define DEF_HEXDUMP(name, member) \
+	{ \
+		auto temp = std::move(member); \
+		t.hexdump(name, temp); \
+		member = std::move(temp); \
+	}
+
 packed_struct(Vec3f,
-	float x;
-	float y;
-	float z;
+	f32 x;
+	f32 y;
+	f32 z;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD("x", x);
+		DEF_FIELD("y", y);
+		DEF_FIELD("z", z);
+	}
 )
 
 packed_struct(Vec4f,
-	float x;
-	float y;
-	float z;
-	float w;
+	f32 x;
+	f32 y;
+	f32 z;
+	f32 w;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD("x", x);
+		DEF_FIELD("y", y);
+		DEF_FIELD("z", z);
+		DEF_FIELD("w", w);
+	}
 )
 
 packed_struct(Mat3,
-	Vec4f m[3];
+	Vec4f i;
+	Vec4f j;
+	Vec4f k;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_OBJECT("i", i);
+		DEF_OBJECT("j", j);
+		DEF_OBJECT("k", k);
+	}
 )
 
 packed_struct(Mat4,
-	Vec4f m[4];
+	Vec4f i;
+	Vec4f j;
+	Vec4f k;
+	Vec4f l;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_OBJECT("i", i);
+		DEF_OBJECT("j", j);
+		DEF_OBJECT("k", k);
+		DEF_OBJECT("l", l);
+	}
 )
 
 template <typename> struct MemberTraits;
