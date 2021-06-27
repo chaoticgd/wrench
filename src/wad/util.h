@@ -89,22 +89,22 @@ packed_struct(SectorRange,
 )
 
 // Kludge since C++ still doesn't have proper reflection.
-#define DEF_FIELD(name, member) \
+#define DEF_FIELD(member) \
 	{ \
 		auto temp = std::move(member); \
-		t.field(name, temp); \
+		t.field(#member, temp); \
 		member = std::move(temp); \
 	}
-#define DEF_PACKED_FIELD(name, member) \
+#define DEF_PACKED_FIELD(member) \
 	{ \
 		auto temp = member; \
-		t.field(name, temp); \
+		t.field(#member, temp); \
 		member = temp; \
 	}
-#define DEF_HEXDUMP(name, member) \
+#define DEF_HEXDUMP(member) \
 	{ \
 		auto temp = std::move(member); \
-		t.hexdump(name, temp); \
+		t.hexdump(#member, temp); \
 		member = std::move(temp); \
 	}
 
@@ -115,9 +115,9 @@ packed_struct(Vec3f,
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD("x", x);
-		DEF_PACKED_FIELD("y", y);
-		DEF_PACKED_FIELD("z", z);
+		DEF_PACKED_FIELD(x)
+		DEF_PACKED_FIELD(y)
+		DEF_PACKED_FIELD(z)
 	}
 )
 
@@ -129,10 +129,10 @@ packed_struct(Vec4f,
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD("x", x);
-		DEF_PACKED_FIELD("y", y);
-		DEF_PACKED_FIELD("z", z);
-		DEF_PACKED_FIELD("w", w);
+		DEF_PACKED_FIELD(x)
+		DEF_PACKED_FIELD(y)
+		DEF_PACKED_FIELD(z)
+		DEF_PACKED_FIELD(w)
 	}
 )
 
@@ -143,9 +143,9 @@ packed_struct(Mat3,
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD("i", i);
-		DEF_PACKED_FIELD("j", j);
-		DEF_PACKED_FIELD("k", k);
+		DEF_PACKED_FIELD(i)
+		DEF_PACKED_FIELD(j)
+		DEF_PACKED_FIELD(k)
 	}
 )
 
@@ -157,10 +157,10 @@ packed_struct(Mat4,
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD("i", i);
-		DEF_PACKED_FIELD("j", j);
-		DEF_PACKED_FIELD("k", k);
-		DEF_PACKED_FIELD("l", l);
+		DEF_PACKED_FIELD(i)
+		DEF_PACKED_FIELD(j)
+		DEF_PACKED_FIELD(k)
+		DEF_PACKED_FIELD(l)
 	}
 )
 

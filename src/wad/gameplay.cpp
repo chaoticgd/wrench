@@ -355,7 +355,7 @@ struct MobyBlock {
 struct PvarTableBlock {
 	static void read(Gameplay& dest, Buffer src) {
 		s32 pvar_count = 0;
-		for(const ImportCamera& camera : dest.import_cameras) {
+		for(const ImportCamera& camera : dest.cameras) {
 			pvar_count = std::max(pvar_count, camera.pvar_index + 1);
 		}
 		for(const SoundInstance& inst : dest.sound_instances) {
@@ -371,7 +371,7 @@ struct PvarTableBlock {
 	
 	static void write(OutBuffer dest, const Gameplay& src) {
 		s32 data_offset = 0;
-		for(const ImportCamera& camera : src.import_cameras) {
+		for(const ImportCamera& camera : src.cameras) {
 			if(camera.pvars.size() > 0) {
 				dest.write(data_offset);
 				dest.write((s32) camera.pvars.size());
@@ -397,7 +397,7 @@ struct PvarTableBlock {
 
 struct PvarDataBlock {
 	static void read(Gameplay& dest, Buffer src) {
-		for(ImportCamera& camera : dest.import_cameras) {
+		for(ImportCamera& camera : dest.cameras) {
 			if(camera.pvar_index >= 0) {
 				PvarTableEntry& entry = dest.pvars_temp->at(camera.pvar_index);
 				camera.pvars = src.read_multiple<u8>(entry.offset, entry.size, "camera pvar data").copy();
@@ -420,7 +420,7 @@ struct PvarDataBlock {
 	}
 	
 	static void write(OutBuffer dest, const Gameplay& src) {
-		for(const ImportCamera& camera : src.import_cameras) {
+		for(const ImportCamera& camera : src.cameras) {
 			dest.write_multiple(camera.pvars);
 		}
 		for(const SoundInstance& inst : src.sound_instances) {
@@ -612,7 +612,7 @@ packed_struct(GameplayAreaListHeader,
 )
 
 packed_struct(GameplayAreaPacked,
-	GpBoundingSphere bsphere;
+	GpBoundingSphere bounding_sphere;
 	s16 part_counts[5];
 	s16 last_update_time;
 	s32 relative_part_offsets[5];
@@ -626,7 +626,7 @@ struct GameplayAreaListBlock {
 		auto entries = src.read_multiple<GameplayAreaPacked>(header_size, header.area_count, "area list table");
 		for(const GameplayAreaPacked& entry : entries) {
 			GpArea area;
-			area.bsphere = entry.bsphere;
+			area.bounding_sphere = entry.bounding_sphere;
 			area.last_update_time = entry.last_update_time;
 			for(s32 part = 0; part < 5; part++) {
 				s32 part_ofs = header.part_offsets[part] + entry.relative_part_offsets[part];
@@ -647,7 +647,7 @@ struct GameplayAreaListBlock {
 		std::vector<GameplayAreaPacked> table;
 		for(const GpArea& area : src) {
 			GameplayAreaPacked packed;
-			packed.bsphere = area.bsphere;
+			packed.bounding_sphere = area.bounding_sphere;
 			for(s32 part = 0; part < 5; part++) {
 				packed.part_counts[part] = area.parts[part].size();
 				total_part_counts[part] += area.parts[part].size();
@@ -707,7 +707,7 @@ const std::vector<GameplayBlockDescription> gameplay_blocks = {
 	{{NONE, NONE}, {NONE, NONE}, {0x20, 0x08}, bf<StringBlock>(&Gameplay::italian_strings), "italian strings"},
 	{{NONE, NONE}, {NONE, NONE}, {0x24, 0x09}, bf<StringBlock>(&Gameplay::japanese_strings), "japanese strings"},
 	{{NONE, NONE}, {NONE, NONE}, {0x28, 0x0a}, bf<StringBlock>(&Gameplay::korean_strings), "korean strings"},
-	{{NONE, NONE}, {0x08, NONE}, {0x04, 0x0b}, bf<InstanceBlock<ImportCamera, ImportCameraPacked>>(&Gameplay::import_cameras), "import cameras"},
+	{{NONE, NONE}, {0x08, NONE}, {0x04, 0x0b}, bf<InstanceBlock<ImportCamera, ImportCameraPacked>>(&Gameplay::cameras), "import cameras"},
 	{{NONE, NONE}, {0x0c, NONE}, {0x08, 0x0c}, bf<InstanceBlock<SoundInstance, SoundInstancePacked>>(&Gameplay::sound_instances), "sound instances"},
 	{{NONE, NONE}, {0x48, NONE}, {0x2c, 0x0d}, bf<ClassBlock<MobyStore>>(&Gameplay::moby), "moby classes"},
 	{{NONE, NONE}, {0x4c, NONE}, {0x30, 0x0e}, bf<MobyBlock>(&Gameplay::moby), "moby instances"},
