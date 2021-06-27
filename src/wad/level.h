@@ -289,14 +289,7 @@ struct Gp_GC_80_DL_64 {
 	std::vector<u8> second_part;
 };
 
-struct GrindPath {
-	Vec4f bounding_sphere;
-	s32 wrap;
-	s32 inactive;
-	std::vector<Vec4f> vertices;
-};
-
-packed_struct(GpBSphere,
+packed_struct(GpBoundingSphere,
 	f32 x;
 	f32 y;
 	f32 z;
@@ -311,6 +304,21 @@ packed_struct(GpBSphere,
 	}
 )
 
+struct GrindPath {
+	GpBoundingSphere bounding_sphere;
+	s32 wrap;
+	s32 inactive;
+	std::vector<Vec4f> vertices;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD("bounding_sphere", bounding_sphere);
+		DEF_FIELD("wrap", wrap);
+		DEF_FIELD("inactive", inactive);
+		DEF_FIELD("vertices", vertices);
+	}
+};
+
 enum AreaPart {
 	AREA_PART_PATHS = 0,
 	AREA_PART_CUBOIDS = 1,
@@ -320,7 +328,7 @@ enum AreaPart {
 };
 
 struct GpArea {
-	GpBSphere bsphere;
+	GpBoundingSphere bsphere;
 	s32 last_update_time;
 	std::vector<s32> parts[5];
 	
@@ -375,7 +383,9 @@ struct Gameplay {
 		DEF_FIELD("moby_instances", moby.instances);
 		DEF_FIELD("spheres", spheres);
 		DEF_FIELD("cylinders", cylinders);
+		DEF_FIELD("paths", paths);
 		DEF_FIELD("cuboids", cuboids);
+		DEF_FIELD("grindpaths", grindpaths);
 		DEF_FIELD("gameplay_area_list", gameplay_area_list);
 	}
 };

@@ -561,7 +561,7 @@ struct GC_80_DL_64_Block {
 };
 
 packed_struct(GrindPathData,
-	Vec4f bounding_sphere;
+	GpBoundingSphere bounding_sphere;
 	s32 ptr = 0;
 	s32 wrap;
 	s32 inactive;
@@ -612,7 +612,7 @@ packed_struct(GameplayAreaListHeader,
 )
 
 packed_struct(GameplayAreaPacked,
-	GpBSphere bsphere;
+	GpBoundingSphere bsphere;
 	s16 part_counts[5];
 	s16 last_update_time;
 	s32 relative_part_offsets[5];
