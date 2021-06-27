@@ -115,9 +115,9 @@ packed_struct(Vec3f,
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD(x)
-		DEF_PACKED_FIELD(y)
-		DEF_PACKED_FIELD(z)
+		DEF_PACKED_FIELD(x);
+		DEF_PACKED_FIELD(y);
+		DEF_PACKED_FIELD(z);
 	}
 )
 
@@ -129,10 +129,10 @@ packed_struct(Vec4f,
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD(x)
-		DEF_PACKED_FIELD(y)
-		DEF_PACKED_FIELD(z)
-		DEF_PACKED_FIELD(w)
+		DEF_PACKED_FIELD(x);
+		DEF_PACKED_FIELD(y);
+		DEF_PACKED_FIELD(z);
+		DEF_PACKED_FIELD(w);
 	}
 )
 
@@ -143,9 +143,9 @@ packed_struct(Mat3,
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD(i)
-		DEF_PACKED_FIELD(j)
-		DEF_PACKED_FIELD(k)
+		DEF_PACKED_FIELD(i);
+		DEF_PACKED_FIELD(j);
+		DEF_PACKED_FIELD(k);
 	}
 )
 
@@ -157,10 +157,10 @@ packed_struct(Mat4,
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD(i)
-		DEF_PACKED_FIELD(j)
-		DEF_PACKED_FIELD(k)
-		DEF_PACKED_FIELD(l)
+		DEF_PACKED_FIELD(i);
+		DEF_PACKED_FIELD(j);
+		DEF_PACKED_FIELD(k);
+		DEF_PACKED_FIELD(l);
 	}
 )
 

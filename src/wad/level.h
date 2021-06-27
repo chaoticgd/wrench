@@ -34,9 +34,9 @@ packed_struct(Rgb96,
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD(r)
-		DEF_PACKED_FIELD(g)
-		DEF_PACKED_FIELD(b)
+		DEF_PACKED_FIELD(r);
+		DEF_PACKED_FIELD(g);
+		DEF_PACKED_FIELD(b);
 	}
 )
 
@@ -61,23 +61,23 @@ packed_struct(GpPropertiesFirstPart,
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD(background_col)
-		DEF_PACKED_FIELD(fog_col)
-		DEF_PACKED_FIELD(fog_near_dist)
-		DEF_PACKED_FIELD(fog_far_dist)
-		DEF_PACKED_FIELD(fog_near_intensity)
-		DEF_PACKED_FIELD(fog_far_intensity)
-		DEF_PACKED_FIELD(death_height)
-		DEF_PACKED_FIELD(is_spherical_world)
-		DEF_PACKED_FIELD(sphere_centre)
-		DEF_PACKED_FIELD(unknown_3c)
-		DEF_PACKED_FIELD(unknown_40)
-		DEF_PACKED_FIELD(unknown_44)
-		DEF_PACKED_FIELD(unknown_48)
-		DEF_PACKED_FIELD(unknown_4c)
-		DEF_PACKED_FIELD(unknown_50)
-		DEF_PACKED_FIELD(unknown_54)
-		DEF_PACKED_FIELD(unknown_58)
+		DEF_PACKED_FIELD(background_col);
+		DEF_PACKED_FIELD(fog_col);
+		DEF_PACKED_FIELD(fog_near_dist);
+		DEF_PACKED_FIELD(fog_far_dist);
+		DEF_PACKED_FIELD(fog_near_intensity);
+		DEF_PACKED_FIELD(fog_far_intensity);
+		DEF_PACKED_FIELD(death_height);
+		DEF_PACKED_FIELD(is_spherical_world);
+		DEF_PACKED_FIELD(sphere_centre);
+		DEF_PACKED_FIELD(unknown_3c);
+		DEF_PACKED_FIELD(unknown_40);
+		DEF_PACKED_FIELD(unknown_44);
+		DEF_PACKED_FIELD(unknown_48);
+		DEF_PACKED_FIELD(unknown_4c);
+		DEF_PACKED_FIELD(unknown_50);
+		DEF_PACKED_FIELD(unknown_54);
+		DEF_PACKED_FIELD(unknown_58);
 	}
 )
 
@@ -171,10 +171,10 @@ packed_struct(GpShape,
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD(matrix)
-		DEF_PACKED_FIELD(pos)
-		DEF_PACKED_FIELD(imatrix)
-		DEF_PACKED_FIELD(rot)
+		DEF_PACKED_FIELD(matrix);
+		DEF_PACKED_FIELD(pos);
+		DEF_PACKED_FIELD(imatrix);
+		DEF_PACKED_FIELD(rot);
 	}
 )
 
@@ -188,11 +188,11 @@ struct SoundInstance {
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(o_class)
-		DEF_FIELD(m_class)
-		DEF_FIELD(range)
-		DEF_FIELD(cuboid)
-		DEF_HEXDUMP(pvars)
+		DEF_FIELD(o_class);
+		DEF_FIELD(m_class);
+		DEF_FIELD(range);
+		DEF_FIELD(cuboid);
+		DEF_HEXDUMP(pvars);
 	}
 };
 
@@ -227,30 +227,30 @@ struct MobyInstance {
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(size)
-		DEF_FIELD(mission)
-		DEF_FIELD(uid)
-		DEF_FIELD(bolts)
-		DEF_FIELD(o_class)
-		DEF_FIELD(scale)
-		DEF_FIELD(draw_dist)
-		DEF_FIELD(update_dist)
-		DEF_FIELD(position)
-		DEF_FIELD(rotation)
-		DEF_FIELD(group)
-		DEF_FIELD(is_rooted)
-		DEF_FIELD(rooted_dist)
-		DEF_FIELD(lights_1)
-		DEF_FIELD(lights_2)
-		DEF_FIELD(lights_3)
-		DEF_FIELD(dl.unknown_20)
-		DEF_FIELD(dl.unknown_24)
-		DEF_FIELD(dl.unknown_4c)
-		DEF_FIELD(dl.unknown_54)
-		DEF_FIELD(dl.unknown_58)
-		DEF_FIELD(dl.unknown_68)
-		DEF_FIELD(dl.unknown_6c)
-		DEF_HEXDUMP(pvars)
+		DEF_FIELD(size);
+		DEF_FIELD(mission);
+		DEF_FIELD(uid);
+		DEF_FIELD(bolts);
+		DEF_FIELD(o_class);
+		DEF_FIELD(scale);
+		DEF_FIELD(draw_dist);
+		DEF_FIELD(update_dist);
+		DEF_FIELD(position);
+		DEF_FIELD(rotation);
+		DEF_FIELD(group);
+		DEF_FIELD(is_rooted);
+		DEF_FIELD(rooted_dist);
+		DEF_FIELD(lights_1);
+		DEF_FIELD(lights_2);
+		DEF_FIELD(lights_3);
+		DEF_FIELD(dl.unknown_20);
+		DEF_FIELD(dl.unknown_24);
+		DEF_FIELD(dl.unknown_4c);
+		DEF_FIELD(dl.unknown_54);
+		DEF_FIELD(dl.unknown_58);
+		DEF_FIELD(dl.unknown_68);
+		DEF_FIELD(dl.unknown_6c);
+		DEF_HEXDUMP(pvars);
 	}
 };
 
@@ -297,10 +297,10 @@ packed_struct(GpBoundingSphere,
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD(x)
-		DEF_PACKED_FIELD(y)
-		DEF_PACKED_FIELD(z)
-		DEF_PACKED_FIELD(radius)
+		DEF_PACKED_FIELD(x);
+		DEF_PACKED_FIELD(y);
+		DEF_PACKED_FIELD(z);
+		DEF_PACKED_FIELD(radius);
 	}
 )
 
@@ -312,10 +312,10 @@ struct GrindPath {
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(bounding_sphere)
-		DEF_FIELD(wrap)
-		DEF_FIELD(inactive)
-		DEF_FIELD(vertices)
+		DEF_FIELD(bounding_sphere);
+		DEF_FIELD(wrap);
+		DEF_FIELD(inactive);
+		DEF_FIELD(vertices);
 	}
 };
 
@@ -340,13 +340,13 @@ struct GpArea {
 		std::vector<s32>& cylinders = parts[AREA_PART_CYLINDERS];
 		std::vector<s32>& negative_cuboids = parts[AREA_PART_NEG_CUBOIDS];
 		
-		DEF_FIELD(bounding_sphere)
-		DEF_FIELD(last_update_time)
-		DEF_FIELD(paths)
-		DEF_FIELD(cuboids)
-		DEF_FIELD(spheres)
-		DEF_FIELD(cylinders)
-		DEF_FIELD(negative_cuboids)
+		DEF_FIELD(bounding_sphere);
+		DEF_FIELD(last_update_time);
+		DEF_FIELD(paths);
+		DEF_FIELD(cuboids);
+		DEF_FIELD(spheres);
+		DEF_FIELD(cylinders);
+		DEF_FIELD(negative_cuboids);
 	}
 };
 
@@ -384,16 +384,16 @@ struct Gameplay {
 	template <typename T>
 	void enumerate_fields(T& t) {
 		auto& moby_instances = moby.instances;
-		DEF_FIELD(properties)
-		DEF_FIELD(cameras)
-		DEF_FIELD(sound_instances)
-		DEF_FIELD(moby_instances)
-		DEF_FIELD(spheres)
-		DEF_FIELD(cylinders)
-		DEF_FIELD(paths)
-		DEF_FIELD(cuboids)
-		DEF_FIELD(grindpaths)
-		DEF_FIELD(gameplay_area_list)
+		DEF_FIELD(properties);
+		DEF_FIELD(cameras);
+		DEF_FIELD(sound_instances);
+		DEF_FIELD(moby_instances);
+		DEF_FIELD(spheres);
+		DEF_FIELD(cylinders);
+		DEF_FIELD(paths);
+		DEF_FIELD(cuboids);
+		DEF_FIELD(grindpaths);
+		DEF_FIELD(gameplay_area_list);
 	}
 };
 
