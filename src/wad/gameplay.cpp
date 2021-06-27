@@ -516,7 +516,7 @@ packed_struct(SplineBlockHeader,
 	s32 pad;
 )
 
-struct SplineBlock {
+struct PathBlock {
 	static void read(std::vector<std::vector<Vec4f>>& dest, Buffer src) {
 		auto& header = src.read<SplineBlockHeader>(0, "spline block header");
 		dest = read_splines(src.subbuf(0x10), header.spline_count, header.data_offset - 0x10);
@@ -560,21 +560,44 @@ struct GC_80_DL_64_Block {
 	}
 };
 
-struct GrindRailBlock {
-	static void read(GrindRails& dest, Buffer src) {
+packed_struct(GrindPathData,
+	Vec4f bounding_sphere;
+	s32 ptr = 0;
+	s32 wrap;
+	s32 inactive;
+	s32 pad = 0;
+)
+
+struct GrindPathBlock {
+	static void read(std::vector<GrindPath>& dest, Buffer src) {
 		auto& header = src.read<SplineBlockHeader>(0, "spline block header");
-		dest.grindrails = src.read_multiple<GrindRailData>(0x10, header.spline_count, "grindrail data").copy();
-		s64 offsets_pos = 0x10 + header.spline_count * sizeof(GrindRailData);
-		dest.splines = read_splines(src.subbuf(offsets_pos), header.spline_count, header.data_offset - offsets_pos);
+		auto grindpaths = src.read_multiple<GrindPathData>(0x10, header.spline_count, "grindrail data");
+		s64 offsets_pos = 0x10 + header.spline_count * sizeof(GrindPathData);
+		auto splines = read_splines(src.subbuf(offsets_pos), header.spline_count, header.data_offset - offsets_pos);
+		for(s64 i = 0; i < header.spline_count; i++) {
+			GrindPath path;
+			path.bounding_sphere = grindpaths[i].bounding_sphere;
+			path.wrap = grindpaths[i].wrap;
+			path.inactive = grindpaths[i].inactive;
+			path.vertices = splines[i];
+			dest.emplace_back(std::move(path));
+		}
 	}
 	
-	static void write(OutBuffer dest, const GrindRails& src) {
-		assert(src.grindrails.size() == src.splines.size());
+	static void write(OutBuffer dest, const std::vector<GrindPath>& src) {
 		s64 header_pos = dest.alloc<SplineBlockHeader>();
-		dest.write_multiple(src.grindrails);
+		std::vector<std::vector<Vec4f>> splines;
+		for(const GrindPath& path : src) {
+			GrindPathData packed;
+			packed.bounding_sphere = path.bounding_sphere;
+			packed.wrap = path.wrap;
+			packed.inactive = path.inactive;
+			dest.write(packed);
+			splines.emplace_back(path.vertices);
+		}
 		SplineBlockHeader header = {0};
-		header.spline_count = src.grindrails.size();
-		header.data_offset = write_splines(dest, src.splines);
+		header.spline_count = src.size();
+		header.data_offset = write_splines(dest, splines);
 		header.data_size = dest.tell() - header.data_offset;
 		header.data_offset -= header_pos;
 		dest.write(header_pos, header);
@@ -694,13 +717,13 @@ const std::vector<GameplayBlockDescription> gameplay_blocks = {
 	{{NONE, NONE}, {0x64, NONE}, {0x48, 0x12}, bf<TerminatedArrayBlock<Gp_GC_64_DL_48>>(&Gameplay::gc_64_dl_48), "GC 64 DL 48"},
 	{{NONE, NONE}, {0x50, NONE}, {0x34, 0x13}, bf<DualTableBlock<GpMobyGroups>>(&Gameplay::moby_groups), "moby groups"},
 	{{NONE, NONE}, {0x54, NONE}, {0x38, 0x14}, bf<DualTableBlock<Gp_GC_54_DL_38>>(&Gameplay::gc_54_dl_38), "GC 54 DL 38"},
-	{{NONE, NONE}, {0x78, NONE}, {0x5c, 0x15}, bf<SplineBlock>(&Gameplay::splines), "splines"},
+	{{NONE, NONE}, {0x78, NONE}, {0x5c, 0x15}, bf<PathBlock>(&Gameplay::paths), "paths"},
 	{{NONE, NONE}, {0x68, NONE}, {0x4c, 0x16}, bf<TableBlock<GpShape>>(&Gameplay::cuboids), "cuboids"},
 	{{NONE, NONE}, {0x6c, NONE}, {0x50, 0x17}, bf<TableBlock<GpShape>>(&Gameplay::spheres), "spheres"},
 	{{NONE, NONE}, {0x70, NONE}, {0x54, 0x18}, bf<TableBlock<GpShape>>(&Gameplay::cylinders), "cylinders"},
 	{{NONE, NONE}, {0x74, NONE}, {0x58, 0x19}, bf<TableBlock<s32>>(&Gameplay::gc_74_dl_58), "GC 74 DL 58"},
 	{{NONE, NONE}, {0x88, NONE}, {0x6c, 0x1a}, bf<GC_88_DL_6c_Block>(&Gameplay::gc_88_dl_6c), "GC 88 DL 6c"},
 	{{NONE, NONE}, {0x80, NONE}, {0x64, 0x1b}, bf<GC_80_DL_64_Block>(&Gameplay::gc_80_dl_64), "GC 80 DL 64"},
-	{{NONE, NONE}, {0x7c, NONE}, {0x60, 0x1c}, bf<GrindRailBlock>(&Gameplay::grindrails), "grindrails"},
+	{{NONE, NONE}, {0x7c, NONE}, {0x60, 0x1c}, bf<GrindPathBlock>(&Gameplay::grindpaths), "grindpaths"},
 	{{NONE, NONE}, {0x98, NONE}, {0x74, 0x1d}, bf<GameplayAreaListBlock>(&Gameplay::gameplay_area_list), "gameplay area list"}
 };

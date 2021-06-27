@@ -25,8 +25,10 @@ template <typename T>
 struct BufferArray {
 	const T* lo = nullptr;
 	const T* hi = nullptr;
+	const T& operator[](s64 i) const { return lo[i]; }
 	const T* begin() { return lo; }
 	const T* end() { return hi; }
+	s64 size() const { return hi - lo; }
 	std::vector<T> copy() {
 		std::vector<T> vec(hi - lo);
 		memcpy(vec.data(), lo, (hi - lo) * sizeof(T));

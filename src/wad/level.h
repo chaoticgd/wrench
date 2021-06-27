@@ -284,23 +284,16 @@ struct Gp_GC_54_DL_38 {
 	std::vector<s64> second_part;
 };
 
-struct Grindrail {
-	std::vector<Vec4f> vertices;
-};
-
 struct Gp_GC_80_DL_64 {
 	std::vector<u8> first_part;
 	std::vector<u8> second_part;
 };
 
-packed_struct(GrindRailData,
-	Vec4f point;
-	uint8_t unknown_10[0x10];
-)
-
-struct GrindRails {
-	std::vector<GrindRailData> grindrails;
-	std::vector<std::vector<Vec4f>> splines;
+struct GrindPath {
+	Vec4f bounding_sphere;
+	s32 wrap;
+	s32 inactive;
+	std::vector<Vec4f> vertices;
 };
 
 packed_struct(GpBSphere,
@@ -364,11 +357,11 @@ struct Gameplay {
 	std::vector<GpShape> spheres;
 	std::vector<GpShape> cylinders;
 	std::vector<s32> gc_74_dl_58;
-	std::vector<std::vector<Vec4f>> splines;
+	std::vector<std::vector<Vec4f>> paths;
 	std::vector<GpShape> cuboids;
 	std::vector<u8> gc_88_dl_6c;
 	Gp_GC_80_DL_64 gc_80_dl_64;
-	GrindRails grindrails;
+	std::vector<GrindPath> grindpaths;
 	std::vector<GpArea> gameplay_area_list;
 	
 	// Only used while reading the binary gameplay file, empty otherwise.
