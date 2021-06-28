@@ -33,9 +33,9 @@
 //  	
 //  	template <typename T>
 //  	void enumerate_fields(T& t) {
-//  		DEF_PACKED_FIELD("x", x);
-//  		DEF_PACKED_FIELD("y", y);
-//  		DEF_PACKED_FIELD("z", z);
+//  		DEF_PACKED_FIELD(x);
+//  		DEF_PACKED_FIELD(y);
+//  		DEF_PACKED_FIELD(z);
 //  	}
 //  )
 
