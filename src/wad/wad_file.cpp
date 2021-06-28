@@ -116,3 +116,42 @@ const std::vector<WadFileDescription> wad_files = {
 		{0xc60, 1,   lt<ArtInstancesLump>(&LevelWad::gameplay),   "art_instances"}
 	}}
 };
+
+std::vector<u8> read_header(FILE* file) {
+	const char* ERR_READ_HEADER = "Failed to read header.";
+	s32 header_size;
+	verify(fseek(file, 0, SEEK_SET) == 0, ERR_READ_HEADER);
+	verify(fread(&header_size, 4, 1, file) == 1, ERR_READ_HEADER);
+	verify(header_size < 0x10000, "Invalid header.");
+	std::vector<u8> header(header_size);
+	verify(fseek(file, 0, SEEK_SET) == 0, ERR_READ_HEADER);
+	verify(fread(header.data(), header.size(), 1, file) == 1, ERR_READ_HEADER);
+	return header;
+}
+
+WadFileDescription match_wad(FILE* file, const std::vector<u8>& header) {
+	for(const WadFileDescription& desc : wad_files) {
+		if(desc.header_size == header.size()) {
+			return desc;
+		}
+	}
+	verify_not_reached("Unable to identify WAD file.");
+}
+
+std::vector<u8> read_lump(FILE* file, Sector32 offset, Sector32 size) {
+	const char* ERR_READ_BLOCK = "Failed to read lump.";
+	
+	std::vector<u8> lump(size.bytes());
+	verify(fseek(file, offset.bytes(), SEEK_SET) == 0, ERR_READ_BLOCK);
+	verify(fread(lump.data(), lump.size(), 1, file) == 1, ERR_READ_BLOCK);
+	return lump;
+}
+
+void write_file(const char* path, Buffer buffer) {
+	FILE* file = fopen(path, "wb");
+	verify(file, "Failed to open file '%s' for writing.", path);
+	assert(buffer.size() > 0);
+	verify(fwrite(buffer.lo, buffer.size(), 1, file) == 1, "Failed to write output file '%s'.", path);
+	fclose(file);
+	printf("Wrote %s (%ld KiB)\n", path, buffer.size() / 1024);
+}

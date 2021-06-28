@@ -866,3 +866,14 @@ const std::vector<GameplayBlockDescription> ART_INSTANCE_BLOCKS = {
 	{{NONE, NONE}, {NONE, NONE}, {0x38, 0x0f}, {nullptr, nullptr}, "pad 6"},
 	{{NONE, NONE}, {NONE, NONE}, {0x3c, 0x10}, {nullptr, nullptr}, "pad 7"}
 };
+
+const std::vector<GameplayBlockDescription> GAMEPLAY_MISSION_INSTANCE_BLOCKS = {
+	{{NONE, NONE}, {NONE, NONE}, {0x00, 0x01}, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},
+	{{NONE, NONE}, {NONE, NONE}, {0x04, 0x02}, {MobyBlock::read, MobyBlock::write}, "moby instances"},
+	{{NONE, NONE}, {NONE, NONE}, {0x14, 0x03}, {PvarTableBlock::read, PvarTableBlock::write}, "pvar table"},
+	{{NONE, NONE}, {NONE, NONE}, {0x18, 0x04}, {PvarDataBlock::read, PvarDataBlock::write}, "pvar data"},
+	{{NONE, NONE}, {NONE, NONE}, {0x10, 0x05}, {nullptr, nullptr}, "unk 1"},
+	{{NONE, NONE}, {NONE, NONE}, {0x1c, 0x06}, {nullptr, nullptr}, "unk 2"},
+	{{NONE, NONE}, {NONE, NONE}, {0x08, 0x07}, bf<DualTableBlock<GpMobyGroups>>(&Gameplay::moby_groups), "moby groups"},
+	{{NONE, NONE}, {NONE, NONE}, {0x0c, 0x08}, {nullptr, nullptr}, "unk 3"}
+};

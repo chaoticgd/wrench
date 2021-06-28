@@ -45,6 +45,7 @@ struct GameplayBlockDescription {
 
 extern const std::vector<GameplayBlockDescription> GAMEPLAY_CORE_BLOCKS;
 extern const std::vector<GameplayBlockDescription> ART_INSTANCE_BLOCKS;
+extern const std::vector<GameplayBlockDescription> GAMEPLAY_MISSION_INSTANCE_BLOCKS;
 
 void read_gameplay(Gameplay& gameplay, Buffer src, const std::vector<GameplayBlockDescription>& blocks);
 std::vector<u8> write_gameplay(const Gameplay& gameplay, std::vector<GameplayBlockDescription> blocks);

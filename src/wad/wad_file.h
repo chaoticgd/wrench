@@ -58,4 +58,9 @@ struct WadFileDescription {
 
 extern const std::vector<WadFileDescription> wad_files;
 
+std::vector<u8> read_header(FILE* file);
+WadFileDescription match_wad(FILE* file, const std::vector<u8>& header);
+std::vector<u8> read_lump(FILE* file, Sector32 offset, Sector32 size);
+void write_file(const char* path, Buffer buffer);
+
 #endif
