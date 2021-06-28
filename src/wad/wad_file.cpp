@@ -19,62 +19,52 @@
 #include "wad_file.h"
 
 struct BinaryLump {
-	static constexpr const char* extension = "bin";
-	
-	static bool read(WadLumpDescription desc, std::map<std::string, BinaryAsset>& dest, std::vector<u8>& src) {
+	static void read(WadLumpDescription desc, std::map<std::string, BinaryAsset>& dest, std::vector<u8>& src) {
 		auto& asset = dest[desc.name];
 		asset.is_array = desc.count != 1;
 		asset.buffers.push_back(std::move(src));
-		return true;
 	}
 	
-	static bool write(WadLumpDescription desc, std::vector<u8>& dest, const std::map<std::string, BinaryAsset>& src) {
-		//auto iter = src.find(desc.name);
-		//verify(iter != src.end(), "Missing %s.", desc.name);
-		//dest = iter->second.copy();
-		return true;
+	static void write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const std::map<std::string, BinaryAsset>& src) {
+		
 	}
-};
-
-struct SoundBankLump : BinaryLump {
-	static constexpr const char* extension = "bnk";
 };
 
 struct GameplayLump {
-	static constexpr const char* extension = "json";
-	
-	static bool read(WadLumpDescription desc, Gameplay& dest, std::vector<u8>& src) {
+	static void read(WadLumpDescription desc, Gameplay& dest, std::vector<u8>& src) {
 		std::vector<u8> decompressed;
-		if(!decompress_wad(decompressed, src)) {
-			return false;
-		}
+		verify(decompress_wad(decompressed, src), "Failed to decompress gameplay lump.");
 		read_gameplay(dest, decompressed, GAMEPLAY_CORE_BLOCKS);
-		return true;
 	}
 	
-	static bool write(WadLumpDescription desc, std::vector<u8>& dest, const Gameplay& src) {
+	static void write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const Gameplay& src) {
 		std::vector<u8> uncompressed = write_gameplay(src, GAMEPLAY_CORE_BLOCKS);
 		compress_wad(dest, uncompressed, 8);
-		return true;
 	}
 };
 
 struct ArtInstancesLump {
-	static constexpr const char* extension = "json";
-	
-	static bool read(WadLumpDescription desc, Gameplay& dest, std::vector<u8>& src) {
+	static void read(WadLumpDescription desc, Gameplay& dest, std::vector<u8>& src) {
 		std::vector<u8> decompressed;
-		if(!decompress_wad(decompressed, src)) {
-			return false;
-		}
+		verify(decompress_wad(decompressed, src), "Failed to decompress art instances WAD.");
 		read_gameplay(dest, decompressed, ART_INSTANCE_BLOCKS);
-		return true;
 	}
 	
-	static bool write(WadLumpDescription desc, std::vector<u8>& dest, const Gameplay& src) {
+	static void write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const Gameplay& src) {
 		std::vector<u8> uncompressed = write_gameplay(src, ART_INSTANCE_BLOCKS);
 		compress_wad(dest, uncompressed, 8);
-		return true;
+	}
+};
+
+struct GameplayMissionInstancesLump {
+	static void read(WadLumpDescription desc, std::vector<Gameplay>& dest, std::vector<u8>& src) {
+		Gameplay mission_instances;
+		read_gameplay(mission_instances, src, GAMEPLAY_MISSION_INSTANCE_BLOCKS);
+		dest.emplace_back(std::move(mission_instances));
+	}
+	
+	static void write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const std::vector<Gameplay>& src) {
+		dest = write_gameplay(src.at(index), GAMEPLAY_MISSION_INSTANCE_BLOCKS);
 	}
 };
 
@@ -84,36 +74,35 @@ static std::unique_ptr<Wad> create_wad() {
 }
 
 template <typename Lump, typename Field>
-static LumpType lt(Field field) {
+static LumpFuncs lf(Field field) {
 	// e.g. if field = &LevelWad::binary_assets then ThisWad = LevelWad.
 	using ThisWad = MemberTraits<Field>::instance_type;
 	
-	LumpType type;
-	type.extension = Lump::extension;
-	type.read = [field](WadLumpDescription desc, Wad& dest, std::vector<u8>& src) {
+	LumpFuncs funcs;
+	funcs.read = [field](WadLumpDescription desc, Wad& dest, std::vector<u8>& src) {
 		ThisWad* this_wad = dynamic_cast<ThisWad*>(&dest);
 		assert(this_wad);
-		return Lump::read(desc, this_wad->*field, src);
+		Lump::read(desc, this_wad->*field, src);
 	};
-	type.write = [field](WadLumpDescription desc, std::vector<u8>& dest, const Wad& src) {
+	funcs.write = [field](WadLumpDescription desc, s32 index, std::vector<u8>& dest, const Wad& src) {
 		const ThisWad* this_wad = dynamic_cast<const ThisWad*>(&src);
 		assert(this_wad);
-		return Lump::write(desc, dest, this_wad->*field);
+		Lump::write(desc, index, dest, this_wad->*field);
 	};
-	return type;
+	return funcs;
 }
 
 const std::vector<WadFileDescription> wad_files = {
 	{"level", 0xc68, &create_wad<LevelWad>, {
-		{0x018, 1,   lt<BinaryLump>(&LevelWad::binary_assets),    "data"},
-		{0x020, 1,   lt<BinaryLump>(&LevelWad::binary_assets),    "core_bank"},
-		{0x028, 3,   lt<BinaryLump>(&LevelWad::binary_assets),    "chunk"},
-		{0x040, 3,   lt<SoundBankLump>(&LevelWad::binary_assets), "chunkbank"},
-		{0x058, 1,   lt<GameplayLump>(&LevelWad::gameplay),       "gameplay_core"},
-		{0x060, 128, lt<BinaryLump>(&LevelWad::binary_assets),    "gameplay_mission_instances"},
-		{0x460, 128, lt<BinaryLump>(&LevelWad::binary_assets),    "gameplay_mission_data"},
-		{0x860, 128, lt<SoundBankLump>(&LevelWad::binary_assets), "mission_banks"},
-		{0xc60, 1,   lt<ArtInstancesLump>(&LevelWad::gameplay),   "art_instances"}
+		{0x018, 1,   lf<BinaryLump>(&LevelWad::binary_assets), "data"},
+		{0x020, 1,   lf<BinaryLump>(&LevelWad::binary_assets), "core_bank"},
+		{0x028, 3,   lf<BinaryLump>(&LevelWad::binary_assets), "chunk"},
+		{0x040, 3,   lf<BinaryLump>(&LevelWad::binary_assets), "chunkbank"},
+		{0x058, 1,   lf<GameplayLump>(&LevelWad::gameplay), "gameplay_core"},
+		{0x060, 128, lf<GameplayMissionInstancesLump>(&LevelWad::gameplay_mission_instances), "gameplay_mission_instances"},
+		{0x460, 128, lf<BinaryLump>(&LevelWad::binary_assets), "gameplay_mission_data"},
+		{0x860, 128, lf<BinaryLump>(&LevelWad::binary_assets), "mission_banks"},
+		{0xc60, 1,   lf<ArtInstancesLump>(&LevelWad::gameplay), "art_instances"}
 	}}
 };
 

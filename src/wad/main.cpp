@@ -52,7 +52,7 @@ static void run_extractor(fs::path input_path, fs::path output_path) {
 			auto& [offset, size] = Buffer(header).read<SectorRange>(lump_desc.offset + i * 8, "WAD header");
 			if(size.sectors != 0) {
 				std::vector<u8> src = read_lump(file, offset, size);
-				verify(lump_desc.types.read(lump_desc, *wad.get(), src), "Failed to convert lump.");
+				lump_desc.funcs.read(lump_desc, *wad.get(), src);
 			}
 		}
 	}
@@ -77,7 +77,18 @@ static void run_extractor(fs::path input_path, fs::path output_path) {
 		std::string str = json.dump(1, '\t');
 		
 		fs::path path = output_path/"gameplay.json";
-		write_file(path.c_str(), Buffer((uint8_t*) &(*str.begin()), (uint8_t*) &(*str.end())));
+		write_file(path.c_str(), str);
+		
+		fs::path mission_instances_dir =  output_path/"gameplay_mission_instances";
+		fs::create_directories(mission_instances_dir);
+		
+		for(size_t i = 0; i < level->gameplay_mission_instances.size(); i++) {
+			Gameplay& mission_instances = level->gameplay_mission_instances[i];
+			Json mission_instances_json = write_gameplay_json(mission_instances);
+			std::string mission_instances_str = mission_instances_json.dump(1, '\t');
+			fs::path path = mission_instances_dir/(std::to_string(i) + ".json");
+			write_file(path.c_str(), mission_instances_str);
+		}
 	}
 	
 	fclose(file);

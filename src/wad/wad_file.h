@@ -33,11 +33,10 @@ enum class Game {
 
 struct WadLumpDescription;
 
-using ReadLumpFunc = std::function<bool(WadLumpDescription desc, Wad& dest, std::vector<u8>& src)>;
-using WriteLumpFunc = std::function<bool(WadLumpDescription desc, std::vector<u8>& dest, const Wad& src)>;
+using ReadLumpFunc = std::function<void(WadLumpDescription desc, Wad& dest, std::vector<u8>& src)>;
+using WriteLumpFunc = std::function<void(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const Wad& src)>;
 
-struct LumpType {
-	const char* extension;
+struct LumpFuncs {
 	ReadLumpFunc read;
 	WriteLumpFunc write;
 };
@@ -45,7 +44,7 @@ struct LumpType {
 struct WadLumpDescription {
 	s32 offset;
 	s32 count;
-	LumpType types;
+	LumpFuncs funcs;
 	const char* name;
 };
 

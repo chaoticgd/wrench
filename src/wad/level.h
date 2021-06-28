@@ -540,6 +540,7 @@ struct Gameplay {
 
 struct LevelWad : Wad {
 	Gameplay gameplay;
+	std::vector<Gameplay> gameplay_mission_instances;
 };
 
 Json write_gameplay_json(Gameplay& gameplay);

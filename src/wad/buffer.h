@@ -43,6 +43,9 @@ struct Buffer {
 	Buffer() {}
 	Buffer(const uint8_t* l, const uint8_t* h) : lo(l), hi(h) {}
 	Buffer(const std::vector<u8>& src) : lo(&(*src.begin())), hi(&(*src.end())) {}
+	Buffer(const std::string& src)
+		: lo((const uint8_t*) &(*src.begin()))
+		, hi((const uint8_t*) &(*src.end())) {}
 	const uint8_t& operator[](s64 i) const { return lo[i]; }
 	s64 size() const { return hi - lo; }
 	bool in_bounds(s64 offset) { return offset >= 0 && lo + offset < hi; }
