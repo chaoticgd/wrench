@@ -306,7 +306,7 @@ packed_struct(MobyInstanceDL,
 	s32 unknown_4c;  // 0x4c
 	s32 pvar_index;  // 0x50
 	s32 unknown_54;  // 0x54
-	s32 unknown_58;  // 0x58
+	s32 mode_bits;   // 0x58
 	s32 lights_1;    // 0x5c
 	s32 lights_2;    // 0x60
 	s32 lights_3;    // 0x64
@@ -361,7 +361,7 @@ struct MobyBlock {
 		SWAP_PACKED(l.dl.unknown_4c, r.unknown_4c);
 		SWAP_PACKED(l.pvar_index, r.pvar_index);
 		SWAP_PACKED(l.dl.unknown_54, r.unknown_54);
-		SWAP_PACKED(l.dl.unknown_58, r.unknown_58);
+		SWAP_PACKED(l.mode_bits, r.mode_bits);
 		SWAP_PACKED(l.lights_1, r.lights_1);
 		SWAP_PACKED(l.lights_2, r.lights_2);
 		SWAP_PACKED(l.lights_3, r.lights_3);
