@@ -101,6 +101,12 @@ packed_struct(SectorRange,
 		t.field(#member, temp); \
 		member = temp; \
 	}
+#define DEF_OPTIONAL_FIELD(member) \
+	{ \
+		auto temp = member; \
+		t.optional(#member, temp); \
+		member = temp; \
+	}
 #define DEF_HEXDUMP(member) \
 	{ \
 		auto temp = std::move(member); \

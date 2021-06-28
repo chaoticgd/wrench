@@ -28,7 +28,7 @@ struct GameplayBlockPos {
 };
 
 using GameplayBlockReadFunc = std::function<void(Gameplay& gameplay, Buffer src)>;
-using GameplayBlockWriteFunc = std::function<void(OutBuffer dest, const Gameplay& gameplay)>;
+using GameplayBlockWriteFunc = std::function<bool(OutBuffer dest, const Gameplay& gameplay)>;
 
 struct GameplayBlockFuncs {
 	GameplayBlockReadFunc read;
@@ -43,9 +43,10 @@ struct GameplayBlockDescription {
 	const char* name;
 };
 
-extern const std::vector<GameplayBlockDescription> gameplay_blocks;
+extern const std::vector<GameplayBlockDescription> GAMEPLAY_CORE_BLOCKS;
+extern const std::vector<GameplayBlockDescription> ART_INSTANCE_BLOCKS;
 
-void read_gameplay(Gameplay& gameplay, Buffer src);
-std::vector<u8> write_gameplay(const Gameplay& gameplay);
+void read_gameplay(Gameplay& gameplay, Buffer src, const std::vector<GameplayBlockDescription>& blocks);
+std::vector<u8> write_gameplay(const Gameplay& gameplay, std::vector<GameplayBlockDescription> blocks);
 
 #endif

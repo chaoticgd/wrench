@@ -20,32 +20,47 @@
 
 const s32 NONE = -1;
 
-void read_gameplay(Gameplay& gameplay, Buffer src) {
-	for(const GameplayBlockDescription& block_desc : gameplay_blocks) {
+void read_gameplay(Gameplay& gameplay, Buffer src, const std::vector<GameplayBlockDescription>& blocks) {
+	for(const GameplayBlockDescription& block_desc : blocks) {
 		auto& pos = block_desc.rac4;
 		s32 block_offset = src.read<s32>(pos.offset, "gameplay header");
-		block_desc.funcs.read(gameplay, src.subbuf(block_offset));
+		if(block_offset != 0 && block_desc.funcs.read != nullptr) {
+			block_desc.funcs.read(gameplay, src.subbuf(block_offset));
+		}
 	}
 }
 
-std::vector<u8> write_gameplay(const Gameplay& gameplay) {
-	std::vector<GameplayBlockDescription> blocks = gameplay_blocks;
+std::vector<u8> write_gameplay(const Gameplay& gameplay, std::vector<GameplayBlockDescription> blocks) {
 	std::sort(blocks.begin(), blocks.end(), [](auto& lhs, auto& rhs)
 		{ return lhs.rac4.order < rhs.rac4.order; });
 	
-	s64 block_count = 0x20;
+	s32 header_size = 0;
+	s32 block_count = 0;
+	for(const GameplayBlockDescription& block : blocks) {
+		header_size = std::max(header_size, block.rac4.offset + 4);
+		if(block.rac4.offset != NONE) {
+			block_count++;
+		}
+	}
+	assert(header_size == block_count * 4);
 	
-	std::vector<u8> dest_vec(block_count * 4, 0);
+	std::vector<u8> dest_vec(header_size, 0);
 	OutBuffer dest(dest_vec);
 	for(const GameplayBlockDescription& block : blocks) {
-		if(block.rac4.offset != NONE) {
+		if(block.rac4.offset != NONE && block.funcs.write != nullptr) {
 			if(strcmp(block.name, "us english strings") != 0) {
-			dest.pad(0x10, 0);
+				dest.pad(0x10, 0);
 			}
-			s32 pos = (s32) dest_vec.size();
-			block.funcs.write(dest, gameplay);
-			assert(block.rac4.offset + 4 <= (s32) dest_vec.size());
-			*(s32*) &dest_vec[block.rac4.offset] = pos;
+			s32 ofs = (s32) dest_vec.size();
+			if(block.funcs.write(dest, gameplay)) {
+				assert(block.rac4.offset + 4 <= (s32) dest_vec.size());
+				*(s32*) &dest_vec[block.rac4.offset] = ofs;
+				if(strcmp(block.name, "shrub groups") == 0
+					&& gameplay.shrub_groups.has_value()
+					&& gameplay.shrub_groups->second_part.size() > 0) {
+					dest.pad(0x40, 0);
+				}
+			}
 		}
 	}
 	return dest_vec;
@@ -254,16 +269,15 @@ static void swap_instance(SoundInstance& l, SoundInstancePacked& r) {
 	SWAP_PACKED(l.cuboid, r.cuboid);
 }
 
-template <typename T>
 struct ClassBlock {
-	static void read(T& dest, Buffer src) {
+	static void read(std::vector<s32>& dest, Buffer src) {
 		s32 count = src.read<s32>(0, "class count");
-		dest.classes = src.read_multiple<s32>(4, count, "class data").copy();
+		dest = src.read_multiple<s32>(4, count, "class data").copy();
 	}
 	
-	static void write(OutBuffer dest, const T& src) {
-		dest.write((s32) src.classes.size());
-		dest.write_multiple(src.classes);
+	static void write(OutBuffer dest, const std::vector<s32>& src) {
+		dest.write((s32) src.size());
+		dest.write_multiple(src);
 	}
 };
 
@@ -302,26 +316,30 @@ packed_struct(MobyInstanceDL,
 static_assert(sizeof(MobyInstanceDL) == 0x70);
 
 struct MobyBlock {
-	static void read(MobyStore& dest, Buffer src) {
+	static void read(Gameplay& dest, Buffer src) {
+		dest.moby_instances = std::vector<MobyInstance>();
 		auto& header = src.read<MobyBlockHeader>(0, "moby block header");
-		dest.dynamic_count = header.dynamic_count;
 		for(MobyInstanceDL entry : src.read_multiple<MobyInstanceDL>(0x10, header.static_count, "moby instances")) {
 			MobyInstance instance;
 			swap_moby(instance, entry);
-			dest.instances.push_back(instance);
+			dest.moby_instances->push_back(instance);
 		}
+		dest.dynamic_moby_count = header.dynamic_count;
 	}
 	
-	static void write(OutBuffer dest, const MobyStore& src) {
+	static bool write(OutBuffer dest, const Gameplay& src) {
+		assert(src.moby_instances.has_value());
+		assert(src.dynamic_moby_count.has_value());
 		MobyBlockHeader header = {0};
-		header.static_count = src.instances.size();
-		header.dynamic_count = src.dynamic_count;
+		header.static_count = src.moby_instances->size();
+		header.dynamic_count = *src.dynamic_moby_count;
 		dest.write(header);
-		for(MobyInstance instance : src.instances) {
+		for(MobyInstance instance : *src.moby_instances) {
 			MobyInstanceDL entry;
 			swap_moby(instance, entry);
 			dest.write(entry);
 		}
+		return true;
 	}
 	
 	static void swap_moby(MobyInstance& l, MobyInstanceDL& r) {
@@ -355,80 +373,107 @@ struct MobyBlock {
 struct PvarTableBlock {
 	static void read(Gameplay& dest, Buffer src) {
 		s32 pvar_count = 0;
-		for(const ImportCamera& camera : dest.cameras) {
-			pvar_count = std::max(pvar_count, camera.pvar_index + 1);
+		if(dest.cameras.has_value()) {
+			for(const ImportCamera& camera : *dest.cameras) {
+				pvar_count = std::max(pvar_count, camera.pvar_index + 1);
+			}
 		}
-		for(const SoundInstance& inst : dest.sound_instances) {
-			pvar_count = std::max(pvar_count, inst.pvar_index + 1);
+		if(dest.sound_instances.has_value()) {
+			for(const SoundInstance& inst : *dest.sound_instances) {
+				pvar_count = std::max(pvar_count, inst.pvar_index + 1);
+			}
 		}
-		for(const MobyInstance& inst : dest.moby.instances) {
-			pvar_count = std::max(pvar_count, inst.pvar_index + 1);
+		if(dest.moby_instances.has_value()) {
+			for(const MobyInstance& inst : *dest.moby_instances) {
+				pvar_count = std::max(pvar_count, inst.pvar_index + 1);
+			}
 		}
 		
 		// Store the table for use in PvarDataBlock::read.
 		dest.pvars_temp = src.read_multiple<PvarTableEntry>(0, pvar_count, "pvar table").copy();
 	}
 	
-	static void write(OutBuffer dest, const Gameplay& src) {
+	static bool write(OutBuffer dest, const Gameplay& src) {
 		s32 data_offset = 0;
-		for(const ImportCamera& camera : src.cameras) {
-			if(camera.pvars.size() > 0) {
-				dest.write(data_offset);
-				dest.write((s32) camera.pvars.size());
-				data_offset += camera.pvars.size();
+		if(src.cameras.has_value()) {
+			for(const ImportCamera& camera : *src.cameras) {
+				if(camera.pvars.size() > 0) {
+					dest.write(data_offset);
+					dest.write((s32) camera.pvars.size());
+					data_offset += camera.pvars.size();
+				}
 			}
 		}
-		for(const SoundInstance& inst : src.sound_instances) {
-			if(inst.pvars.size() > 0) {
-				dest.write(data_offset);
-				dest.write((s32) inst.pvars.size());
-				data_offset += inst.pvars.size();
+		if(src.sound_instances.has_value()) {
+			for(const SoundInstance& inst : *src.sound_instances) {
+				if(inst.pvars.size() > 0) {
+					dest.write(data_offset);
+					dest.write((s32) inst.pvars.size());
+					data_offset += inst.pvars.size();
+				}
 			}
 		}
-		for(const MobyInstance& inst : src.moby.instances) {
-			if(inst.pvars.size() > 0) {
-				dest.write(data_offset);
-				dest.write((s32) inst.pvars.size());
-				data_offset += inst.pvars.size();
+		if(src.moby_instances.has_value()) {
+			for(const MobyInstance& inst : *src.moby_instances) {
+				if(inst.pvars.size() > 0) {
+					dest.write(data_offset);
+					dest.write((s32) inst.pvars.size());
+					data_offset += inst.pvars.size();
+				}
 			}
 		}
+		return true;
 	}
 };
 
 struct PvarDataBlock {
 	static void read(Gameplay& dest, Buffer src) {
-		for(ImportCamera& camera : dest.cameras) {
-			if(camera.pvar_index >= 0) {
-				PvarTableEntry& entry = dest.pvars_temp->at(camera.pvar_index);
-				camera.pvars = src.read_multiple<u8>(entry.offset, entry.size, "camera pvar data").copy();
+		assert(dest.pvars_temp.has_value());
+		if(dest.cameras.has_value()) {
+			for(ImportCamera& camera : *dest.cameras) {
+				if(camera.pvar_index >= 0) {
+					PvarTableEntry& entry = dest.pvars_temp->at(camera.pvar_index);
+					camera.pvars = src.read_multiple<u8>(entry.offset, entry.size, "camera pvar data").copy();
+				}
 			}
 		}
-		for(SoundInstance& inst : dest.sound_instances) {
-			if(inst.pvar_index >= 0) {
-				PvarTableEntry& entry = dest.pvars_temp->at(inst.pvar_index);
-				inst.pvars = src.read_multiple<u8>(entry.offset, entry.size, "sound instance pvar data").copy();
+		if(dest.sound_instances.has_value()) {
+			for(SoundInstance& inst : *dest.sound_instances) {
+				if(inst.pvar_index >= 0) {
+					PvarTableEntry& entry = dest.pvars_temp->at(inst.pvar_index);
+					inst.pvars = src.read_multiple<u8>(entry.offset, entry.size, "sound instance pvar data").copy();
+				}
 			}
 		}
-		for(MobyInstance& inst : dest.moby.instances) {
-			if(inst.pvar_index >= 0) {
-				PvarTableEntry& entry = dest.pvars_temp->at(inst.pvar_index);
-				inst.pvars = src.read_multiple<u8>(entry.offset, entry.size, "moby pvar data").copy();
+		if(dest.moby_instances.has_value()) {
+			for(MobyInstance& inst : *dest.moby_instances) {
+				if(inst.pvar_index >= 0) {
+					PvarTableEntry& entry = dest.pvars_temp->at(inst.pvar_index);
+					inst.pvars = src.read_multiple<u8>(entry.offset, entry.size, "moby pvar data").copy();
+				}
 			}
 		}
 		
 		dest.pvars_temp = {};
 	}
 	
-	static void write(OutBuffer dest, const Gameplay& src) {
-		for(const ImportCamera& camera : src.cameras) {
-			dest.write_multiple(camera.pvars);
+	static bool write(OutBuffer dest, const Gameplay& src) {
+		if(src.cameras.has_value()) {
+			for(const ImportCamera& camera : *src.cameras) {
+				dest.write_multiple(camera.pvars);
+			}
 		}
-		for(const SoundInstance& inst : src.sound_instances) {
-			dest.write_multiple(inst.pvars);
+		if(src.sound_instances.has_value()) {
+			for(const SoundInstance& inst : *src.sound_instances) {
+				dest.write_multiple(inst.pvars);
+			}
 		}
-		for(const MobyInstance& inst : src.moby.instances) {
-			dest.write_multiple(inst.pvars);
+		if(src.moby_instances.has_value()) {
+			for(const MobyInstance& inst : *src.moby_instances) {
+				dest.write_multiple(inst.pvars);
+			}
 		}
+		return true;
 	}
 };
 
@@ -464,6 +509,9 @@ struct DualTableBlock {
 		verify(header.pad[0] == 0, "DualTableBlock contains more than two tables.");
 		dest.first_part = src.read_multiple<FirstType>(0x10, header.count_1, "table body").copy();
 		s64 first_part_size = header.count_1 * sizeof(FirstType);
+		if(first_part_size % 0x10 != 0) {
+			first_part_size += 0x10 - (first_part_size % 0x10);
+		}
 		dest.second_part = src.read_multiple<SecondType>(0x10 + first_part_size, header.count_2, "table body").copy();
 	}
 	
@@ -475,6 +523,7 @@ struct DualTableBlock {
 		for(const FirstType& elem : src.first_part) {
 			dest.write(elem);
 		}
+		dest.pad(0x10, 0);
 		for(const SecondType& elem : src.second_part) {
 			dest.write(elem);
 		}
@@ -682,19 +731,89 @@ struct GameplayAreaListBlock {
 	}
 };
 
+struct TieAmbientRgbaBlock {
+	static void read(std::vector<GpTieAmbientRgbas>& dest, Buffer src) {
+		s64 ofs = 0;
+		for(;;) {
+			s16 id = src.read<s16>(ofs, "index");
+			ofs += 2;
+			if(id == -1) {
+				break;
+			}
+			s64 size = ((s64) src.read<s16>(ofs, "size")) * 2;
+			ofs += 2;
+			GpTieAmbientRgbas part;
+			part.id = id;
+			part.data = src.read_multiple<u8>(ofs, size, "tie rgba data").copy();
+			dest.emplace_back(std::move(part));
+			ofs += size;
+		}
+	}
+	
+	static void write(OutBuffer dest, const std::vector<GpTieAmbientRgbas>& src) {
+		for(const GpTieAmbientRgbas& part : src) {
+			dest.write(part.id);
+			assert(part.data.size() % 2 == 0);
+			dest.write<s16>(part.data.size() / 2);
+			dest.write_multiple(part.data);
+		}
+		dest.write<s16>(-1);
+	}
+};
+
+packed_struct(OcclusionHeader,
+	s32 count_1;
+	s32 count_2;
+	s32 count_3;
+	s32 pad = 0;
+)
+
+struct OcclusionBlock {
+	static void read(OcclusionClusters& dest, Buffer src) {
+		auto& header = src.read<OcclusionHeader>(0, "occlusion header");
+		s64 ofs = 0x10;
+		dest.first_part = src.read_multiple<OcclusionPair>(ofs, header.count_1, "first part of occlusion").copy();
+		ofs += header.count_1 * sizeof(OcclusionPair);
+		dest.second_part = src.read_multiple<OcclusionPair>(ofs, header.count_2, "second part of occlusion").copy();
+		ofs += header.count_2 * sizeof(OcclusionPair);
+		dest.third_part = src.read_multiple<OcclusionPair>(ofs, header.count_3, "third part of occlusion").copy();
+	}
+	
+	static void write(OutBuffer dest, const OcclusionClusters& src) {
+		OcclusionHeader header;
+		header.count_1 = (s32) src.first_part.size();
+		header.count_2 = (s32) src.second_part.size();
+		header.count_3 = (s32) src.third_part.size();
+		dest.write(header);
+		dest.write_multiple(src.first_part);
+		dest.write_multiple(src.second_part);
+		dest.write_multiple(src.third_part);
+		dest.pad(0x40, 0);
+	}
+};
+
 template <typename Block, typename Field>
 static GameplayBlockFuncs bf(Field field) {
+	// e.g. if field = &Gameplay::moby_instances then FieldType = std::vector<MobyInstance>.
+	using FieldType = std::remove_reference<decltype(Gameplay().*field)>::type::value_type;
+	
 	GameplayBlockFuncs funcs;
 	funcs.read = [field](Gameplay& gameplay, Buffer src) {
-		Block::read(gameplay.*field, src);
+		FieldType value;
+		Block::read(value, src);
+		gameplay.*field = std::move(value);
 	};
 	funcs.write = [field](OutBuffer dest, const Gameplay& gameplay) {
-		Block::write(dest, gameplay.*field);
+		if(!(gameplay.*field).has_value()) {
+			return false;
+		}
+		Block::write(dest, *(gameplay.*field));
+		return true;
 	};
 	return funcs;
 }
 
-const std::vector<GameplayBlockDescription> gameplay_blocks = {
+const std::vector<GameplayBlockDescription> GAMEPLAY_CORE_BLOCKS = {
 	//   R&C1         GC/UYA      Deadlocked
 	//   ----         ------      ----------
 	{{NONE, NONE}, {0x8c, NONE}, {0x70, 0x01}, bf<TableBlock<Gp_GC_8c_DL_70>>(&Gameplay::gc_8c_dl_70), "GC 8c DL 70"},
@@ -709,8 +828,8 @@ const std::vector<GameplayBlockDescription> gameplay_blocks = {
 	{{NONE, NONE}, {NONE, NONE}, {0x28, 0x0a}, bf<StringBlock>(&Gameplay::korean_strings), "korean strings"},
 	{{NONE, NONE}, {0x08, NONE}, {0x04, 0x0b}, bf<InstanceBlock<ImportCamera, ImportCameraPacked>>(&Gameplay::cameras), "import cameras"},
 	{{NONE, NONE}, {0x0c, NONE}, {0x08, 0x0c}, bf<InstanceBlock<SoundInstance, SoundInstancePacked>>(&Gameplay::sound_instances), "sound instances"},
-	{{NONE, NONE}, {0x48, NONE}, {0x2c, 0x0d}, bf<ClassBlock<MobyStore>>(&Gameplay::moby), "moby classes"},
-	{{NONE, NONE}, {0x4c, NONE}, {0x30, 0x0e}, bf<MobyBlock>(&Gameplay::moby), "moby instances"},
+	{{NONE, NONE}, {0x48, NONE}, {0x2c, 0x0d}, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},
+	{{NONE, NONE}, {0x4c, NONE}, {0x30, 0x0e}, {MobyBlock::read, MobyBlock::write}, "moby instances"},
 	{{NONE, NONE}, {NONE, NONE}, {0x40, 0x0f}, {PvarTableBlock::read, PvarTableBlock::write}, "pvar table"},
 	{{NONE, NONE}, {NONE, NONE}, {0x44, 0x10}, {PvarDataBlock::read, PvarDataBlock::write}, "pvar data"},
 	{{NONE, NONE}, {NONE, NONE}, {0x3c, 0x11}, bf<TerminatedArrayBlock<Gp_DL_3c>>(&Gameplay::dl_3c), "DL 3c"},
@@ -725,5 +844,25 @@ const std::vector<GameplayBlockDescription> gameplay_blocks = {
 	{{NONE, NONE}, {0x88, NONE}, {0x6c, 0x1a}, bf<GC_88_DL_6c_Block>(&Gameplay::gc_88_dl_6c), "GC 88 DL 6c"},
 	{{NONE, NONE}, {0x80, NONE}, {0x64, 0x1b}, bf<GC_80_DL_64_Block>(&Gameplay::gc_80_dl_64), "GC 80 DL 64"},
 	{{NONE, NONE}, {0x7c, NONE}, {0x60, 0x1c}, bf<GrindPathBlock>(&Gameplay::grindpaths), "grindpaths"},
-	{{NONE, NONE}, {0x98, NONE}, {0x74, 0x1d}, bf<GameplayAreaListBlock>(&Gameplay::gameplay_area_list), "gameplay area list"}
+	{{NONE, NONE}, {0x98, NONE}, {0x74, 0x1d}, bf<GameplayAreaListBlock>(&Gameplay::gameplay_area_list), "gameplay area list"},
+	{{NONE, NONE}, {NONE, NONE}, {0x68, 0x1e}, {nullptr, nullptr}, "pad"}
+};
+
+const std::vector<GameplayBlockDescription> ART_INSTANCE_BLOCKS = {
+	{{NONE, NONE}, {NONE, NONE}, {0x00, 0x01}, bf<TableBlock<GpDirectionalLight>>(&Gameplay::lights), "directional lights"},
+	{{NONE, NONE}, {NONE, NONE}, {0x04, 0x02}, bf<ClassBlock>(&Gameplay::tie_classes), "tie classes"},
+	{{NONE, NONE}, {NONE, NONE}, {0x08, 0x03}, bf<TableBlock<GpTieInstance>>(&Gameplay::tie_instances), "tie instances"},
+	{{NONE, NONE}, {NONE, NONE}, {0x20, 0x04}, bf<TieAmbientRgbaBlock>(&Gameplay::tie_ambient_rgbas), "tie ambient rgbas"},
+	{{NONE, NONE}, {NONE, NONE}, {0x0c, 0x05}, bf<DualTableBlock<GpTieGroups>>(&Gameplay::tie_groups), "tie groups"},
+	{{NONE, NONE}, {NONE, NONE}, {0x10, 0x06}, bf<ClassBlock>(&Gameplay::shrub_classes), "shrub classes"},
+	{{NONE, NONE}, {NONE, NONE}, {0x14, 0x07}, bf<TableBlock<GpShrubInstance>>(&Gameplay::shrub_instances), "shrub instances"},
+	{{NONE, NONE}, {NONE, NONE}, {0x18, 0x08}, bf<DualTableBlock<GpShrubGroups>>(&Gameplay::shrub_groups), "shrub groups"},
+	{{NONE, NONE}, {NONE, NONE}, {0x1c, 0x09}, bf<OcclusionBlock>(&Gameplay::occlusion_clusters), "occlusion clusters"},
+	{{NONE, NONE}, {NONE, NONE}, {0x24, 0x0a}, {nullptr, nullptr}, "pad 1"},
+	{{NONE, NONE}, {NONE, NONE}, {0x28, 0x0b}, {nullptr, nullptr}, "pad 2"},
+	{{NONE, NONE}, {NONE, NONE}, {0x2c, 0x0c}, {nullptr, nullptr}, "pad 3"},
+	{{NONE, NONE}, {NONE, NONE}, {0x30, 0x0d}, {nullptr, nullptr}, "pad 4"},
+	{{NONE, NONE}, {NONE, NONE}, {0x34, 0x0e}, {nullptr, nullptr}, "pad 5"},
+	{{NONE, NONE}, {NONE, NONE}, {0x38, 0x0f}, {nullptr, nullptr}, "pad 6"},
+	{{NONE, NONE}, {NONE, NONE}, {0x3c, 0x10}, {nullptr, nullptr}, "pad 7"}
 };

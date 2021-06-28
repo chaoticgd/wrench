@@ -259,12 +259,6 @@ packed_struct(PvarTableEntry,
 	s32 size;
 )
 
-struct MobyStore {
-	std::vector<s32> classes;
-	s32 dynamic_count;
-	std::vector<MobyInstance> instances;
-};
-
 packed_struct(Gp_DL_3c,
 	int32_t unknown_0;
 	int32_t unknown_4;
@@ -350,55 +344,202 @@ struct GpArea {
 	}
 };
 
-struct Gameplay {
-	std::vector<Gp_GC_8c_DL_70> gc_8c_dl_70;
-	GpProperties properties;
-	std::vector<GpString> us_english_strings;
-	std::vector<GpString> uk_english_strings;
-	std::vector<GpString> french_strings;
-	std::vector<GpString> german_strings;
-	std::vector<GpString> spanish_strings;
-	std::vector<GpString> italian_strings;
-	std::vector<GpString> japanese_strings;
-	std::vector<GpString> korean_strings;
-	std::vector<ImportCamera> cameras;
-	std::vector<SoundInstance> sound_instances;
-	MobyStore moby;
-	std::vector<Gp_DL_3c> dl_3c;
-	std::vector<Gp_GC_64_DL_48> gc_64_dl_48;
-	GpMobyGroups moby_groups;
-	Gp_GC_54_DL_38 gc_54_dl_38;
-	std::vector<GpShape> spheres;
-	std::vector<GpShape> cylinders;
-	std::vector<s32> gc_74_dl_58;
-	std::vector<std::vector<Vec4f>> paths;
-	std::vector<GpShape> cuboids;
-	std::vector<u8> gc_88_dl_6c;
-	Gp_GC_80_DL_64 gc_80_dl_64;
-	std::vector<GrindPath> grindpaths;
-	std::vector<GpArea> gameplay_area_list;
-	
-	// Only used while reading the binary gameplay file, empty otherwise.
-	std::optional<std::vector<PvarTableEntry>> pvars_temp;
+struct GpDirectionalLight {
+	Vec4f color_a;
+	Vec4f dir_a;
+	Vec4f color_b;
+	Vec4f dir_b;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		auto& moby_instances = moby.instances;
-		DEF_FIELD(properties);
-		DEF_FIELD(cameras);
-		DEF_FIELD(sound_instances);
-		DEF_FIELD(moby_instances);
-		DEF_FIELD(spheres);
-		DEF_FIELD(cylinders);
-		DEF_FIELD(paths);
-		DEF_FIELD(cuboids);
-		DEF_FIELD(grindpaths);
-		DEF_FIELD(gameplay_area_list);
+		DEF_FIELD(color_a);
+		DEF_FIELD(dir_a);
+		DEF_FIELD(color_b);
+		DEF_FIELD(dir_b);
+	}
+};
+
+packed_struct(GpTieInstance,
+	s32 o_class;    // 0x0
+	s32 unknown_4;  // 0x4
+	s32 unknown_8;  // 0x8
+	s32 unknown_c;  // 0xc
+	Mat3 matrix;    // 0x10
+	Vec4f position; // 0x40
+	s32 unknown_50; // 0x50
+	s32 uid;        // 0x54
+	s32 unknown_58; // 0x58
+	s32 unknown_5c; // 0x5c
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_PACKED_FIELD(o_class);
+		DEF_PACKED_FIELD(unknown_4);
+		DEF_PACKED_FIELD(unknown_8);
+		DEF_PACKED_FIELD(unknown_c);
+		DEF_PACKED_FIELD(matrix);
+		DEF_PACKED_FIELD(position);
+		DEF_PACKED_FIELD(unknown_50);
+		DEF_PACKED_FIELD(uid);
+		DEF_PACKED_FIELD(unknown_58);
+		DEF_PACKED_FIELD(unknown_5c);
+	}
+)
+static_assert(sizeof(GpTieInstance) == 0x60);
+
+struct GpTieAmbientRgbas {
+	s16 id;
+	std::vector<u8> data;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD(id);
+		DEF_FIELD(data);
+	}
+};
+
+struct GpTieGroups {
+	std::vector<s32> first_part;
+	std::vector<s8> second_part;
+};
+
+packed_struct(GpShrubInstance,
+	s32 o_class;    // 0x0
+	f32 unknown_4;  // 0x4
+	s32 unknown_8;  // 0x8
+	s32 unknown_c;  // 0xc
+	Mat3 matrix;    // 0x10
+	Vec4f position; // 0x40
+	s32 unknown_50; // 0x50
+	s32 unknown_54; // 0x54
+	s32 unknown_58; // 0x58
+	s32 unknown_5c; // 0x5c
+	s32 unknown_60; // 0x60
+	s32 unknown_64; // 0x64
+	s32 unknown_68; // 0x68
+	s32 unknown_6c; // 0x6c
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_PACKED_FIELD(o_class);
+		DEF_PACKED_FIELD(unknown_4);
+		DEF_PACKED_FIELD(unknown_8);
+		DEF_PACKED_FIELD(unknown_c);
+		DEF_PACKED_FIELD(matrix);
+		DEF_PACKED_FIELD(position);
+		DEF_PACKED_FIELD(unknown_50);
+		DEF_PACKED_FIELD(unknown_54);
+		DEF_PACKED_FIELD(unknown_58);
+		DEF_PACKED_FIELD(unknown_5c);
+		DEF_PACKED_FIELD(unknown_60);
+		DEF_PACKED_FIELD(unknown_64);
+		DEF_PACKED_FIELD(unknown_68);
+		DEF_PACKED_FIELD(unknown_6c);
+	}
+)
+
+struct GpShrubGroups {
+	std::vector<s32> first_part;
+	std::vector<s8> second_part;
+};
+
+packed_struct(OcclusionPair,
+	s32 unknown_0;
+	s32 unknown_4;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_PACKED_FIELD(unknown_0);
+		DEF_PACKED_FIELD(unknown_4);
+	}
+)
+
+struct OcclusionClusters {
+	std::vector<OcclusionPair> first_part;
+	std::vector<OcclusionPair> second_part;
+	std::vector<OcclusionPair> third_part;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD(first_part);
+		DEF_FIELD(second_part);
+		DEF_FIELD(third_part);
+	}
+};
+
+template <typename T>
+using Opt = std::optional<T>;
+
+struct Gameplay {
+	// Deadlocked gameplay core
+	Opt<std::vector<Gp_GC_8c_DL_70>> gc_8c_dl_70;
+	Opt<GpProperties> properties;
+	Opt<std::vector<GpString>> us_english_strings;
+	Opt<std::vector<GpString>> uk_english_strings;
+	Opt<std::vector<GpString>> french_strings;
+	Opt<std::vector<GpString>> german_strings;
+	Opt<std::vector<GpString>> spanish_strings;
+	Opt<std::vector<GpString>> italian_strings;
+	Opt<std::vector<GpString>> japanese_strings;
+	Opt<std::vector<GpString>> korean_strings;
+	Opt<std::vector<ImportCamera>> cameras;
+	Opt<std::vector<SoundInstance>> sound_instances;
+	Opt<std::vector<s32>> moby_classes;
+	Opt<std::vector<MobyInstance>> moby_instances;
+	Opt<s32> dynamic_moby_count;
+	Opt<std::vector<Gp_DL_3c>> dl_3c;
+	Opt<std::vector<Gp_GC_64_DL_48>> gc_64_dl_48;
+	Opt<GpMobyGroups> moby_groups;
+	Opt<Gp_GC_54_DL_38> gc_54_dl_38;
+	Opt<std::vector<GpShape>> spheres;
+	Opt<std::vector<GpShape>> cylinders;
+	Opt<std::vector<s32>> gc_74_dl_58;
+	Opt<std::vector<std::vector<Vec4f>>> paths;
+	Opt<std::vector<GpShape>> cuboids;
+	Opt<std::vector<u8>> gc_88_dl_6c;
+	Opt<Gp_GC_80_DL_64> gc_80_dl_64;
+	Opt<std::vector<GrindPath>> grindpaths;
+	Opt<std::vector<GpArea>> gameplay_area_list;
+	
+	// Deadlocked art instances
+	Opt<std::vector<GpDirectionalLight>> lights;
+	Opt<std::vector<s32>> tie_classes;
+	Opt<std::vector<GpTieInstance>> tie_instances;
+	Opt<std::vector<GpTieAmbientRgbas>> tie_ambient_rgbas;
+	Opt<GpTieGroups> tie_groups;
+	Opt<std::vector<s32>> shrub_classes;
+	Opt<std::vector<GpShrubInstance>> shrub_instances;
+	Opt<GpShrubGroups> shrub_groups;
+	Opt<OcclusionClusters> occlusion_clusters;
+	
+	// Only used while reading the binary gameplay file, empty otherwise.
+	Opt<std::vector<PvarTableEntry>> pvars_temp;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_OPTIONAL_FIELD(properties);
+		DEF_OPTIONAL_FIELD(cameras);
+		DEF_OPTIONAL_FIELD(sound_instances);
+		DEF_OPTIONAL_FIELD(moby_instances);
+		DEF_OPTIONAL_FIELD(spheres);
+		DEF_OPTIONAL_FIELD(cylinders);
+		DEF_OPTIONAL_FIELD(paths);
+		DEF_OPTIONAL_FIELD(cuboids);
+		DEF_OPTIONAL_FIELD(grindpaths);
+		DEF_OPTIONAL_FIELD(gameplay_area_list);
+		
+		DEF_OPTIONAL_FIELD(lights);
+		DEF_OPTIONAL_FIELD(tie_classes);
+		DEF_OPTIONAL_FIELD(tie_instances);
+		DEF_OPTIONAL_FIELD(tie_ambient_rgbas);
+		DEF_OPTIONAL_FIELD(shrub_classes);
+		DEF_OPTIONAL_FIELD(shrub_instances);
+		DEF_OPTIONAL_FIELD(occlusion_clusters);
 	}
 };
 
 struct LevelWad : Wad {
-	Gameplay gameplay_core;
+	Gameplay gameplay;
 };
 
 Json write_gameplay_json(Gameplay& gameplay);

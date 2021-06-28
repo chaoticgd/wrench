@@ -102,8 +102,19 @@ struct ToJsonVisitor {
 		}
 		json[name] = outer_json;
 	}
+	template <typename OptionalField>
+	void optional(const char* name, OptionalField& opt) {
+		if(opt.has_value()) {
+			field(name, *opt);
+		}
+	}
 	void hexdump(const char* name, std::vector<u8>& buffer) {
 		json[name] = buffer_to_json_hexdump(buffer);
+	}
+	void hexdump(const char* name, std::vector<std::vector<u8>>& list) {
+		for(auto& buffer : list) {
+			json[name].emplace_back(buffer_to_json_hexdump(buffer));
+		}
 	}
 };
 

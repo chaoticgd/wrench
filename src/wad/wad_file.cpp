@@ -48,12 +48,31 @@ struct GameplayLump {
 		if(!decompress_wad(decompressed, src)) {
 			return false;
 		}
-		read_gameplay(dest, decompressed);
+		read_gameplay(dest, decompressed, GAMEPLAY_CORE_BLOCKS);
 		return true;
 	}
 	
 	static bool write(WadLumpDescription desc, std::vector<u8>& dest, const Gameplay& src) {
-		std::vector<u8> uncompressed = write_gameplay(src);
+		std::vector<u8> uncompressed = write_gameplay(src, GAMEPLAY_CORE_BLOCKS);
+		compress_wad(dest, uncompressed, 8);
+		return true;
+	}
+};
+
+struct ArtInstancesLump {
+	static constexpr const char* extension = "json";
+	
+	static bool read(WadLumpDescription desc, Gameplay& dest, std::vector<u8>& src) {
+		std::vector<u8> decompressed;
+		if(!decompress_wad(decompressed, src)) {
+			return false;
+		}
+		read_gameplay(dest, decompressed, ART_INSTANCE_BLOCKS);
+		return true;
+	}
+	
+	static bool write(WadLumpDescription desc, std::vector<u8>& dest, const Gameplay& src) {
+		std::vector<u8> uncompressed = write_gameplay(src, ART_INSTANCE_BLOCKS);
 		compress_wad(dest, uncompressed, 8);
 		return true;
 	}
@@ -66,7 +85,7 @@ static std::unique_ptr<Wad> create_wad() {
 
 template <typename Lump, typename Field>
 static LumpType lt(Field field) {
-	// e.g. if Field = LevelWad::binary_assets then ThisWad = LevelWad.
+	// e.g. if field = &LevelWad::binary_assets then ThisWad = LevelWad.
 	using ThisWad = MemberTraits<Field>::instance_type;
 	
 	LumpType type;
@@ -90,10 +109,10 @@ const std::vector<WadFileDescription> wad_files = {
 		{0x020, 1,   lt<BinaryLump>(&LevelWad::binary_assets),    "core_bank"},
 		{0x028, 3,   lt<BinaryLump>(&LevelWad::binary_assets),    "chunk"},
 		{0x040, 3,   lt<SoundBankLump>(&LevelWad::binary_assets), "chunkbank"},
-		{0x058, 1,   lt<GameplayLump>(&LevelWad::gameplay_core),  "gameplay_core"},
+		{0x058, 1,   lt<GameplayLump>(&LevelWad::gameplay),       "gameplay_core"},
 		{0x060, 128, lt<BinaryLump>(&LevelWad::binary_assets),    "gameplay_mission_instances"},
 		{0x460, 128, lt<BinaryLump>(&LevelWad::binary_assets),    "gameplay_mission_data"},
 		{0x860, 128, lt<SoundBankLump>(&LevelWad::binary_assets), "mission_banks"},
-		{0xc60, 1,   lt<BinaryLump>(&LevelWad::binary_assets),    "art_instances"}
+		{0xc60, 1,   lt<ArtInstancesLump>(&LevelWad::gameplay),   "art_instances"}
 	}}
 };
