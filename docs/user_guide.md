@@ -41,6 +41,12 @@ This let you extract/build Ratchet & Clank ISO files. The games use raw disk I/O
 	0xa2f           0x40901         ioprp255.img
 	...
 
+### lz
+
+Decompresses and recompresses LZ compressed segments. These are not to be confused with the WAD files on the game's filesystem. The decompressor must be directed to look at the beginning of the WAD header which starts with "WAD" in ASCII. Sample usage:
+
+	$ ./bin/lz decompress LEVEL4.WAD gameplay.bin -o 0x1078800
+
 ### memmap
 
 Given an image of the game's memory (the eeMemory.bin file from an unzipped PCSX2 save state), determine its memory layout. Sample usage:
@@ -80,6 +86,6 @@ Disassembles VIF command lists. This is useful for inspecting model data. Sample
 
 ### wad
 
-Decompresses and recompresses WAD segments. These are not to be confused with the .WAD files on the game's filesystem. The decompressor must be directed to look at the beginning of the WAD header which starts with "WAD" in ASCII. Sample usage:
+Extracts the contents of WAD files.
 
-	$ ./bin/wad decompress LEVEL4.WAD gameplay.bin -o 0x1078800
+	$ ./bin/wad extract level.wad outdir/
