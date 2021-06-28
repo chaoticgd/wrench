@@ -394,7 +394,7 @@ struct GpTieAmbientRgbas {
 	template <typename T>
 	void enumerate_fields(T& t) {
 		DEF_FIELD(id);
-		DEF_FIELD(data);
+		DEF_HEXDUMP(data);
 	}
 };
 
