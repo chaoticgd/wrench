@@ -211,16 +211,16 @@ struct MobyInstance {
 	s32 is_rooted;
 	f32 rooted_dist;
 	s32 pvar_index; // Only used during reading!
+	s32 occlusion;
 	s32 mode_bits;
 	s32 lights_1;
 	s32 lights_2;
 	s32 lights_3;
+	s32 lights_low;
 	struct {
 		s32 unknown_20;
 		s32 unknown_24;
 		s32 unknown_4c;
-		s32 unknown_54;
-		s32 unknown_68;
 		s32 unknown_6c;
 	} dl;
 	std::vector<u8> pvars;
@@ -240,15 +240,15 @@ struct MobyInstance {
 		DEF_FIELD(group);
 		DEF_FIELD(is_rooted);
 		DEF_FIELD(rooted_dist);
+		DEF_FIELD(occlusion);
 		DEF_FIELD(mode_bits);
 		DEF_FIELD(lights_1);
 		DEF_FIELD(lights_2);
 		DEF_FIELD(lights_3);
+		DEF_FIELD(lights_low);
 		DEF_FIELD(dl.unknown_20);
 		DEF_FIELD(dl.unknown_24);
 		DEF_FIELD(dl.unknown_4c);
-		DEF_FIELD(dl.unknown_54);
-		DEF_FIELD(dl.unknown_68);
 		DEF_FIELD(dl.unknown_6c);
 		DEF_HEXDUMP(pvars);
 	}

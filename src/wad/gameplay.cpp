@@ -305,12 +305,12 @@ packed_struct(MobyInstanceDL,
 	f32 rooted_dist; // 0x48
 	s32 unknown_4c;  // 0x4c
 	s32 pvar_index;  // 0x50
-	s32 unknown_54;  // 0x54
+	s32 occlusion;   // 0x54
 	s32 mode_bits;   // 0x58
 	s32 lights_1;    // 0x5c
 	s32 lights_2;    // 0x60
 	s32 lights_3;    // 0x64
-	s32 unknown_68;  // 0x68
+	s32 lights_low;  // 0x68
 	s32 unknown_6c;  // 0x6c
 )
 static_assert(sizeof(MobyInstanceDL) == 0x70);
@@ -360,12 +360,12 @@ struct MobyBlock {
 		SWAP_PACKED(l.rooted_dist, r.rooted_dist);
 		SWAP_PACKED(l.dl.unknown_4c, r.unknown_4c);
 		SWAP_PACKED(l.pvar_index, r.pvar_index);
-		SWAP_PACKED(l.dl.unknown_54, r.unknown_54);
+		SWAP_PACKED(l.occlusion, r.occlusion);
 		SWAP_PACKED(l.mode_bits, r.mode_bits);
 		SWAP_PACKED(l.lights_1, r.lights_1);
 		SWAP_PACKED(l.lights_2, r.lights_2);
 		SWAP_PACKED(l.lights_3, r.lights_3);
-		SWAP_PACKED(l.dl.unknown_68, r.unknown_68);
+		SWAP_PACKED(l.lights_low, r.lights_low);
 		SWAP_PACKED(l.dl.unknown_6c, r.unknown_6c);
 	}
 };
