@@ -34,11 +34,11 @@ struct GameplayLump {
 	static void read(WadLumpDescription desc, Gameplay& dest, std::vector<u8>& src) {
 		std::vector<u8> decompressed;
 		verify(decompress_wad(decompressed, src), "Failed to decompress gameplay lump.");
-		read_gameplay(dest, decompressed, GAMEPLAY_CORE_BLOCKS);
+		read_gameplay(dest, decompressed, DL_GAMEPLAY_CORE_BLOCKS);
 	}
 	
 	static void write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const Gameplay& src) {
-		std::vector<u8> uncompressed = write_gameplay(src, GAMEPLAY_CORE_BLOCKS);
+		std::vector<u8> uncompressed = write_gameplay(src, DL_GAMEPLAY_CORE_BLOCKS);
 		compress_wad(dest, uncompressed, 8);
 	}
 };
@@ -47,11 +47,11 @@ struct ArtInstancesLump {
 	static void read(WadLumpDescription desc, Gameplay& dest, std::vector<u8>& src) {
 		std::vector<u8> decompressed;
 		verify(decompress_wad(decompressed, src), "Failed to decompress art instances WAD.");
-		read_gameplay(dest, decompressed, ART_INSTANCE_BLOCKS);
+		read_gameplay(dest, decompressed, DL_ART_INSTANCE_BLOCKS);
 	}
 	
 	static void write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const Gameplay& src) {
-		std::vector<u8> uncompressed = write_gameplay(src, ART_INSTANCE_BLOCKS);
+		std::vector<u8> uncompressed = write_gameplay(src, DL_ART_INSTANCE_BLOCKS);
 		compress_wad(dest, uncompressed, 8);
 	}
 };
@@ -59,12 +59,12 @@ struct ArtInstancesLump {
 struct GameplayMissionInstancesLump {
 	static void read(WadLumpDescription desc, std::vector<Gameplay>& dest, std::vector<u8>& src) {
 		Gameplay mission_instances;
-		read_gameplay(mission_instances, src, GAMEPLAY_MISSION_INSTANCE_BLOCKS);
+		read_gameplay(mission_instances, src, DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS);
 		dest.emplace_back(std::move(mission_instances));
 	}
 	
 	static void write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const std::vector<Gameplay>& src) {
-		dest = write_gameplay(src.at(index), GAMEPLAY_MISSION_INSTANCE_BLOCKS);
+		dest = write_gameplay(src.at(index), DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS);
 	}
 };
 

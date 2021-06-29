@@ -53,17 +53,17 @@ void run_tests(fs::path input_path) {
 		
 		auto gameplay_core = find_lump(file_desc, "gameplay_core");
 		assert(gameplay_core.has_value());
-		run_gameplay_lump_test(build_args(gameplay_core->offset, gameplay_core->name, GAMEPLAY_CORE_BLOCKS, true));
+		run_gameplay_lump_test(build_args(gameplay_core->offset, gameplay_core->name, DL_GAMEPLAY_CORE_BLOCKS, true));
 		
 		auto art_instances = find_lump(file_desc, "art_instances");
 		assert(art_instances.has_value());
-		run_gameplay_lump_test(build_args(art_instances->offset, art_instances->name, ART_INSTANCE_BLOCKS, true));
+		run_gameplay_lump_test(build_args(art_instances->offset, art_instances->name, DL_ART_INSTANCE_BLOCKS, true));
 		
 		auto missions_instances = find_lump(file_desc, "gameplay_mission_instances");
 		assert(missions_instances.has_value());
 		for(s32 i = 0; i < missions_instances->count; i++) {
 			std::string name = std::string(missions_instances->name) + " " + std::to_string(i);
-			run_gameplay_lump_test(build_args(missions_instances->offset + i * 8, name.c_str(), GAMEPLAY_MISSION_INSTANCE_BLOCKS, false));
+			run_gameplay_lump_test(build_args(missions_instances->offset + i * 8, name.c_str(), DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS, false));
 		}
 	}
 }

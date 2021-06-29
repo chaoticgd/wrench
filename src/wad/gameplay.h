@@ -22,11 +22,6 @@
 #include "util.h"
 #include "level.h"
 
-struct GameplayBlockPos {
-	s32 offset; // The offset of the pointer in the header.
-	s32 order; // The ordering of the blocks in the file.
-};
-
 using GameplayBlockReadFunc = std::function<void(Gameplay& gameplay, Buffer src)>;
 using GameplayBlockWriteFunc = std::function<bool(OutBuffer dest, const Gameplay& gameplay)>;
 
@@ -36,18 +31,16 @@ struct GameplayBlockFuncs {
 };
 
 struct GameplayBlockDescription {
-	GameplayBlockPos rac1;
-	GameplayBlockPos rac23;
-	GameplayBlockPos rac4;
+	s32 header_pointer_offset;
 	GameplayBlockFuncs funcs;
 	const char* name;
 };
 
-extern const std::vector<GameplayBlockDescription> GAMEPLAY_CORE_BLOCKS;
-extern const std::vector<GameplayBlockDescription> ART_INSTANCE_BLOCKS;
-extern const std::vector<GameplayBlockDescription> GAMEPLAY_MISSION_INSTANCE_BLOCKS;
+extern const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS;
+extern const std::vector<GameplayBlockDescription> DL_ART_INSTANCE_BLOCKS;
+extern const std::vector<GameplayBlockDescription> DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS;
 
 void read_gameplay(Gameplay& gameplay, Buffer src, const std::vector<GameplayBlockDescription>& blocks);
-std::vector<u8> write_gameplay(const Gameplay& gameplay, std::vector<GameplayBlockDescription> blocks);
+std::vector<u8> write_gameplay(const Gameplay& gameplay, const std::vector<GameplayBlockDescription>& blocks);
 
 #endif

@@ -21,24 +21,20 @@
 const s32 NONE = -1;
 
 void read_gameplay(Gameplay& gameplay, Buffer src, const std::vector<GameplayBlockDescription>& blocks) {
-	for(const GameplayBlockDescription& block_desc : blocks) {
-		auto& pos = block_desc.rac4;
-		s32 block_offset = src.read<s32>(pos.offset, "gameplay header");
-		if(block_offset != 0 && block_desc.funcs.read != nullptr) {
-			block_desc.funcs.read(gameplay, src.subbuf(block_offset));
+	for(const GameplayBlockDescription& block : blocks) {
+		s32 block_offset = src.read<s32>(block.header_pointer_offset, "gameplay header");
+		if(block_offset != 0 && block.funcs.read != nullptr) {
+			block.funcs.read(gameplay, src.subbuf(block_offset));
 		}
 	}
 }
 
-std::vector<u8> write_gameplay(const Gameplay& gameplay, std::vector<GameplayBlockDescription> blocks) {
-	std::sort(blocks.begin(), blocks.end(), [](auto& lhs, auto& rhs)
-		{ return lhs.rac4.order < rhs.rac4.order; });
-	
+std::vector<u8> write_gameplay(const Gameplay& gameplay, const std::vector<GameplayBlockDescription>& blocks) {
 	s32 header_size = 0;
 	s32 block_count = 0;
 	for(const GameplayBlockDescription& block : blocks) {
-		header_size = std::max(header_size, block.rac4.offset + 4);
-		if(block.rac4.offset != NONE) {
+		header_size = std::max(header_size, block.header_pointer_offset + 4);
+		if(block.header_pointer_offset != NONE) {
 			block_count++;
 		}
 	}
@@ -47,14 +43,14 @@ std::vector<u8> write_gameplay(const Gameplay& gameplay, std::vector<GameplayBlo
 	std::vector<u8> dest_vec(header_size, 0);
 	OutBuffer dest(dest_vec);
 	for(const GameplayBlockDescription& block : blocks) {
-		if(block.rac4.offset != NONE && block.funcs.write != nullptr) {
+		if(block.header_pointer_offset != NONE && block.funcs.write != nullptr) {
 			if(strcmp(block.name, "us english strings") != 0) {
 				dest.pad(0x10, 0);
 			}
 			s32 ofs = (s32) dest_vec.size();
 			if(block.funcs.write(dest, gameplay)) {
-				assert(block.rac4.offset + 4 <= (s32) dest_vec.size());
-				*(s32*) &dest_vec[block.rac4.offset] = ofs;
+				assert(block.header_pointer_offset + 4 <= (s32) dest_vec.size());
+				*(s32*) &dest_vec[block.header_pointer_offset] = ofs;
 				if(strcmp(block.name, "shrub groups") == 0
 					&& gameplay.shrub_groups.has_value()
 					&& gameplay.shrub_groups->second_part.size() > 0) {
@@ -818,67 +814,65 @@ static GameplayBlockFuncs bf(Field field) {
 	return funcs;
 }
 
-const std::vector<GameplayBlockDescription> GAMEPLAY_CORE_BLOCKS = {
-	//   R&C1         GC/UYA      Deadlocked
-	//   ----         ------      ----------
-	{{NONE, NONE}, {0x8c, NONE}, {0x70, 0x01}, bf<TableBlock<Gp_GC_8c_DL_70>>(&Gameplay::gc_8c_dl_70), "GC 8c DL 70"},
-	{{NONE, NONE}, {NONE, NONE}, {0x00, 0x02}, bf<PropertiesBlock>(&Gameplay::properties), "properties"},
-	{{NONE, NONE}, {NONE, NONE}, {0x0c, 0x03}, bf<StringBlock>(&Gameplay::us_english_strings), "us english strings"},
-	{{NONE, NONE}, {NONE, NONE}, {0x10, 0x04}, bf<StringBlock>(&Gameplay::uk_english_strings), "uk english strings"},
-	{{NONE, NONE}, {NONE, NONE}, {0x14, 0x05}, bf<StringBlock>(&Gameplay::french_strings), "french strings"},
-	{{NONE, NONE}, {NONE, NONE}, {0x18, 0x06}, bf<StringBlock>(&Gameplay::german_strings), "german strings"},
-	{{NONE, NONE}, {NONE, NONE}, {0x1c, 0x07}, bf<StringBlock>(&Gameplay::spanish_strings), "spanish strings"},
-	{{NONE, NONE}, {NONE, NONE}, {0x20, 0x08}, bf<StringBlock>(&Gameplay::italian_strings), "italian strings"},
-	{{NONE, NONE}, {NONE, NONE}, {0x24, 0x09}, bf<StringBlock>(&Gameplay::japanese_strings), "japanese strings"},
-	{{NONE, NONE}, {NONE, NONE}, {0x28, 0x0a}, bf<StringBlock>(&Gameplay::korean_strings), "korean strings"},
-	{{NONE, NONE}, {0x08, NONE}, {0x04, 0x0b}, bf<InstanceBlock<ImportCamera, ImportCameraPacked>>(&Gameplay::cameras), "import cameras"},
-	{{NONE, NONE}, {0x0c, NONE}, {0x08, 0x0c}, bf<InstanceBlock<SoundInstance, SoundInstancePacked>>(&Gameplay::sound_instances), "sound instances"},
-	{{NONE, NONE}, {0x48, NONE}, {0x2c, 0x0d}, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},
-	{{NONE, NONE}, {0x4c, NONE}, {0x30, 0x0e}, {MobyBlock::read, MobyBlock::write}, "moby instances"},
-	{{NONE, NONE}, {NONE, NONE}, {0x40, 0x0f}, {PvarTableBlock::read, PvarTableBlock::write}, "pvar table"},
-	{{NONE, NONE}, {NONE, NONE}, {0x44, 0x10}, {PvarDataBlock::read, PvarDataBlock::write}, "pvar data"},
-	{{NONE, NONE}, {NONE, NONE}, {0x3c, 0x11}, bf<TerminatedArrayBlock<Gp_DL_3c>>(&Gameplay::dl_3c), "DL 3c"},
-	{{NONE, NONE}, {0x64, NONE}, {0x48, 0x12}, bf<TerminatedArrayBlock<Gp_GC_64_DL_48>>(&Gameplay::gc_64_dl_48), "GC 64 DL 48"},
-	{{NONE, NONE}, {0x50, NONE}, {0x34, 0x13}, bf<DualTableBlock<GpMobyGroups>>(&Gameplay::moby_groups), "moby groups"},
-	{{NONE, NONE}, {0x54, NONE}, {0x38, 0x14}, bf<DualTableBlock<Gp_GC_54_DL_38>>(&Gameplay::gc_54_dl_38), "GC 54 DL 38"},
-	{{NONE, NONE}, {0x78, NONE}, {0x5c, 0x15}, bf<PathBlock>(&Gameplay::paths), "paths"},
-	{{NONE, NONE}, {0x68, NONE}, {0x4c, 0x16}, bf<TableBlock<GpShape>>(&Gameplay::cuboids), "cuboids"},
-	{{NONE, NONE}, {0x6c, NONE}, {0x50, 0x17}, bf<TableBlock<GpShape>>(&Gameplay::spheres), "spheres"},
-	{{NONE, NONE}, {0x70, NONE}, {0x54, 0x18}, bf<TableBlock<GpShape>>(&Gameplay::cylinders), "cylinders"},
-	{{NONE, NONE}, {0x74, NONE}, {0x58, 0x19}, bf<TableBlock<s32>>(&Gameplay::gc_74_dl_58), "GC 74 DL 58"},
-	{{NONE, NONE}, {0x88, NONE}, {0x6c, 0x1a}, bf<GC_88_DL_6c_Block>(&Gameplay::gc_88_dl_6c), "GC 88 DL 6c"},
-	{{NONE, NONE}, {0x80, NONE}, {0x64, 0x1b}, bf<GC_80_DL_64_Block>(&Gameplay::gc_80_dl_64), "GC 80 DL 64"},
-	{{NONE, NONE}, {0x7c, NONE}, {0x60, 0x1c}, bf<GrindPathBlock>(&Gameplay::grindpaths), "grindpaths"},
-	{{NONE, NONE}, {0x98, NONE}, {0x74, 0x1d}, bf<GameplayAreaListBlock>(&Gameplay::gameplay_area_list), "gameplay area list"},
-	{{NONE, NONE}, {NONE, NONE}, {0x68, 0x1e}, {nullptr, nullptr}, "pad"}
+const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS = {
+	{0x70, bf<TableBlock<Gp_GC_8c_DL_70>>(&Gameplay::gc_8c_dl_70), "GC 8c DL 70"},
+	{0x00, bf<PropertiesBlock>(&Gameplay::properties), "properties"},
+	{0x0c, bf<StringBlock>(&Gameplay::us_english_strings), "us english strings"},
+	{0x10, bf<StringBlock>(&Gameplay::uk_english_strings), "uk english strings"},
+	{0x14, bf<StringBlock>(&Gameplay::french_strings), "french strings"},
+	{0x18, bf<StringBlock>(&Gameplay::german_strings), "german strings"},
+	{0x1c, bf<StringBlock>(&Gameplay::spanish_strings), "spanish strings"},
+	{0x20, bf<StringBlock>(&Gameplay::italian_strings), "italian strings"},
+	{0x24, bf<StringBlock>(&Gameplay::japanese_strings), "japanese strings"},
+	{0x28, bf<StringBlock>(&Gameplay::korean_strings), "korean strings"},
+	{0x04, bf<InstanceBlock<ImportCamera, ImportCameraPacked>>(&Gameplay::cameras), "import cameras"},
+	{0x08, bf<InstanceBlock<SoundInstance, SoundInstancePacked>>(&Gameplay::sound_instances), "sound instances"},
+	{0x2c, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},
+	{0x30, {MobyBlock::read, MobyBlock::write}, "moby instances"},
+	{0x40, {PvarTableBlock::read, PvarTableBlock::write}, "pvar table"},
+	{0x44, {PvarDataBlock::read, PvarDataBlock::write}, "pvar data"},
+	{0x3c, bf<TerminatedArrayBlock<Gp_DL_3c>>(&Gameplay::dl_3c), "DL 3c"},
+	{0x48, bf<TerminatedArrayBlock<Gp_GC_64_DL_48>>(&Gameplay::gc_64_dl_48), "GC 64 DL 48"},
+	{0x34, bf<DualTableBlock<GpMobyGroups>>(&Gameplay::moby_groups), "moby groups"},
+	{0x38, bf<DualTableBlock<Gp_GC_54_DL_38>>(&Gameplay::gc_54_dl_38), "GC 54 DL 38"},
+	{0x5c, bf<PathBlock>(&Gameplay::paths), "paths"},
+	{0x4c, bf<TableBlock<GpShape>>(&Gameplay::cuboids), "cuboids"},
+	{0x50, bf<TableBlock<GpShape>>(&Gameplay::spheres), "spheres"},
+	{0x54, bf<TableBlock<GpShape>>(&Gameplay::cylinders), "cylinders"},
+	{0x58, bf<TableBlock<s32>>(&Gameplay::gc_74_dl_58), "GC 74 DL 58"},
+	{0x6c, bf<GC_88_DL_6c_Block>(&Gameplay::gc_88_dl_6c), "GC 88 DL 6c"},
+	{0x64, bf<GC_80_DL_64_Block>(&Gameplay::gc_80_dl_64), "GC 80 DL 64"},
+	{0x60, bf<GrindPathBlock>(&Gameplay::grindpaths), "grindpaths"},
+	{0x74, bf<GameplayAreaListBlock>(&Gameplay::gameplay_area_list), "gameplay area list"},
+	{0x68, {nullptr, nullptr}, "pad"}
 };
 
-const std::vector<GameplayBlockDescription> ART_INSTANCE_BLOCKS = {
-	{{NONE, NONE}, {NONE, NONE}, {0x00, 0x01}, bf<TableBlock<GpDirectionalLight>>(&Gameplay::lights), "directional lights"},
-	{{NONE, NONE}, {NONE, NONE}, {0x04, 0x02}, bf<ClassBlock>(&Gameplay::tie_classes), "tie classes"},
-	{{NONE, NONE}, {NONE, NONE}, {0x08, 0x03}, bf<TableBlock<GpTieInstance>>(&Gameplay::tie_instances), "tie instances"},
-	{{NONE, NONE}, {NONE, NONE}, {0x20, 0x04}, bf<TieAmbientRgbaBlock>(&Gameplay::tie_ambient_rgbas), "tie ambient rgbas"},
-	{{NONE, NONE}, {NONE, NONE}, {0x0c, 0x05}, bf<DualTableBlock<GpTieGroups>>(&Gameplay::tie_groups), "tie groups"},
-	{{NONE, NONE}, {NONE, NONE}, {0x10, 0x06}, bf<ClassBlock>(&Gameplay::shrub_classes), "shrub classes"},
-	{{NONE, NONE}, {NONE, NONE}, {0x14, 0x07}, bf<TableBlock<GpShrubInstance>>(&Gameplay::shrub_instances), "shrub instances"},
-	{{NONE, NONE}, {NONE, NONE}, {0x18, 0x08}, bf<DualTableBlock<GpShrubGroups>>(&Gameplay::shrub_groups), "shrub groups"},
-	{{NONE, NONE}, {NONE, NONE}, {0x1c, 0x09}, bf<OcclusionBlock>(&Gameplay::occlusion_clusters), "occlusion clusters"},
-	{{NONE, NONE}, {NONE, NONE}, {0x24, 0x0a}, {nullptr, nullptr}, "pad 1"},
-	{{NONE, NONE}, {NONE, NONE}, {0x28, 0x0b}, {nullptr, nullptr}, "pad 2"},
-	{{NONE, NONE}, {NONE, NONE}, {0x2c, 0x0c}, {nullptr, nullptr}, "pad 3"},
-	{{NONE, NONE}, {NONE, NONE}, {0x30, 0x0d}, {nullptr, nullptr}, "pad 4"},
-	{{NONE, NONE}, {NONE, NONE}, {0x34, 0x0e}, {nullptr, nullptr}, "pad 5"},
-	{{NONE, NONE}, {NONE, NONE}, {0x38, 0x0f}, {nullptr, nullptr}, "pad 6"},
-	{{NONE, NONE}, {NONE, NONE}, {0x3c, 0x10}, {nullptr, nullptr}, "pad 7"}
+const std::vector<GameplayBlockDescription> DL_ART_INSTANCE_BLOCKS = {
+	{0x00, bf<TableBlock<GpDirectionalLight>>(&Gameplay::lights), "directional lights"},
+	{0x04, bf<ClassBlock>(&Gameplay::tie_classes), "tie classes"},
+	{0x08, bf<TableBlock<GpTieInstance>>(&Gameplay::tie_instances), "tie instances"},
+	{0x20, bf<TieAmbientRgbaBlock>(&Gameplay::tie_ambient_rgbas), "tie ambient rgbas"},
+	{0x0c, bf<DualTableBlock<GpTieGroups>>(&Gameplay::tie_groups), "tie groups"},
+	{0x10, bf<ClassBlock>(&Gameplay::shrub_classes), "shrub classes"},
+	{0x14, bf<TableBlock<GpShrubInstance>>(&Gameplay::shrub_instances), "shrub instances"},
+	{0x18, bf<DualTableBlock<GpShrubGroups>>(&Gameplay::shrub_groups), "shrub groups"},
+	{0x1c, bf<OcclusionBlock>(&Gameplay::occlusion_clusters), "occlusion clusters"},
+	{0x24, {nullptr, nullptr}, "pad 1"},
+	{0x28, {nullptr, nullptr}, "pad 2"},
+	{0x2c, {nullptr, nullptr}, "pad 3"},
+	{0x30, {nullptr, nullptr}, "pad 4"},
+	{0x34, {nullptr, nullptr}, "pad 5"},
+	{0x38, {nullptr, nullptr}, "pad 6"},
+	{0x3c, {nullptr, nullptr}, "pad 7"}
 };
 
-const std::vector<GameplayBlockDescription> GAMEPLAY_MISSION_INSTANCE_BLOCKS = {
-	{{NONE, NONE}, {NONE, NONE}, {0x00, 0x01}, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},
-	{{NONE, NONE}, {NONE, NONE}, {0x04, 0x02}, {MobyBlock::read, MobyBlock::write}, "moby instances"},
-	{{NONE, NONE}, {NONE, NONE}, {0x14, 0x03}, {PvarTableBlock::read, PvarTableBlock::write}, "pvar table"},
-	{{NONE, NONE}, {NONE, NONE}, {0x18, 0x04}, {PvarDataBlock::read, PvarDataBlock::write}, "pvar data"},
-	{{NONE, NONE}, {NONE, NONE}, {0x10, 0x05}, bf<TerminatedArrayBlock<Gp_DL_3c>>(&Gameplay::dl_3c), "GC 54 DL 38"},
-	{{NONE, NONE}, {NONE, NONE}, {0x1c, 0x06}, bf<TerminatedArrayBlock<Gp_GC_64_DL_48>>(&Gameplay::gc_64_dl_48), "GC 64 DL 48"},
-	{{NONE, NONE}, {NONE, NONE}, {0x08, 0x07}, bf<DualTableBlock<GpMobyGroups>>(&Gameplay::moby_groups), "moby groups"},
-	{{NONE, NONE}, {NONE, NONE}, {0x0c, 0x08}, bf<DualTableBlock<Gp_GC_54_DL_38>>(&Gameplay::gc_54_dl_38), "GC 54 DL 38"}
+const std::vector<GameplayBlockDescription> DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS = {
+	{0x00, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},
+	{0x04, {MobyBlock::read, MobyBlock::write}, "moby instances"},
+	{0x14, {PvarTableBlock::read, PvarTableBlock::write}, "pvar table"},
+	{0x18, {PvarDataBlock::read, PvarDataBlock::write}, "pvar data"},
+	{0x10, bf<TerminatedArrayBlock<Gp_DL_3c>>(&Gameplay::dl_3c), "GC 54 DL 38"},
+	{0x1c, bf<TerminatedArrayBlock<Gp_GC_64_DL_48>>(&Gameplay::gc_64_dl_48), "GC 64 DL 48"},
+	{0x08, bf<DualTableBlock<GpMobyGroups>>(&Gameplay::moby_groups), "moby groups"},
+	{0x0c, bf<DualTableBlock<Gp_GC_54_DL_38>>(&Gameplay::gc_54_dl_38), "GC 54 DL 38"}
 };
