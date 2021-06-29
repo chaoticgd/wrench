@@ -92,6 +92,10 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 	read_gameplay(gameplay, src, *args.blocks);
 	std::vector<u8> dest = write_gameplay(gameplay, *args.blocks);
 	
+	// The input buffer may or may not already be padded to the sector size.
+	OutBuffer(dest).pad(SECTOR_SIZE, 0);
+	OutBuffer(src).pad(SECTOR_SIZE, 0);
+	
 	Buffer dest_buf(dest);
 	Buffer src_buf(src);
 	
