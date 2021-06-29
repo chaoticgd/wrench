@@ -217,12 +217,6 @@ struct MobyInstance {
 	s32 lights_2;
 	s32 lights_3;
 	s32 lights_low;
-	struct {
-		s32 unknown_20;
-		s32 unknown_24;
-		s32 unknown_4c;
-		s32 unknown_6c;
-	} dl;
 	std::vector<u8> pvars;
 	
 	template <typename T>
@@ -246,10 +240,6 @@ struct MobyInstance {
 		DEF_FIELD(lights_2);
 		DEF_FIELD(lights_3);
 		DEF_FIELD(lights_low);
-		DEF_FIELD(dl.unknown_20);
-		DEF_FIELD(dl.unknown_24);
-		DEF_FIELD(dl.unknown_4c);
-		DEF_FIELD(dl.unknown_6c);
 		DEF_HEXDUMP(pvars);
 	}
 };

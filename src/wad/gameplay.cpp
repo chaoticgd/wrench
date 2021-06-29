@@ -351,14 +351,14 @@ struct MobyBlock {
 		SWAP_PACKED(l.scale, r.scale);
 		SWAP_PACKED(l.draw_dist, r.draw_dist);
 		SWAP_PACKED(l.update_dist, r.update_dist);
-		SWAP_PACKED(l.dl.unknown_20, r.unknown_20);
-		SWAP_PACKED(l.dl.unknown_24, r.unknown_24);
+		r.unknown_20 = 32;
+		r.unknown_24 = 64;
 		SWAP_PACKED(l.position, r.position);
 		SWAP_PACKED(l.rotation, r.rotation);
 		SWAP_PACKED(l.group, r.group);
 		SWAP_PACKED(l.is_rooted, r.is_rooted);
 		SWAP_PACKED(l.rooted_dist, r.rooted_dist);
-		SWAP_PACKED(l.dl.unknown_4c, r.unknown_4c);
+		r.unknown_4c = 1;
 		SWAP_PACKED(l.pvar_index, r.pvar_index);
 		SWAP_PACKED(l.occlusion, r.occlusion);
 		SWAP_PACKED(l.mode_bits, r.mode_bits);
@@ -366,7 +366,7 @@ struct MobyBlock {
 		SWAP_PACKED(l.lights_2, r.lights_2);
 		SWAP_PACKED(l.lights_3, r.lights_3);
 		SWAP_PACKED(l.lights_low, r.lights_low);
-		SWAP_PACKED(l.dl.unknown_6c, r.unknown_6c);
+		r.unknown_6c = -1;
 	}
 };
 
