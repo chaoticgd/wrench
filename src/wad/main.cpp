@@ -23,6 +23,7 @@
 #include "wad_file.h"
 
 static void run_extractor(fs::path input_path, fs::path output_path);
+static void run_raw_extractor(fs::path input_path, fs::path output_path);
 
 int main(int argc, char** argv) {
 	verify(argc == 3 || argc == 4, "Wrong number of arguments.");
@@ -32,6 +33,8 @@ int main(int argc, char** argv) {
 	
 	if(mode == "extract") {
 		run_extractor(input_path, argc == 4 ? argv[3] : "wad_extracted");
+	} else if(mode == "extract_raw") {
+		run_raw_extractor(input_path, argc == 4 ? argv[3] : "raw_extracted");
 	} else if(mode == "test") {
 		run_tests(input_path);
 	} else {
@@ -92,4 +95,33 @@ static void run_extractor(fs::path input_path, fs::path output_path) {
 	}
 	
 	fclose(file);
+}
+
+static void run_raw_extractor(fs::path input_path, fs::path output_path) {
+	FILE* file = fopen(input_path.string().c_str(), "rb");
+	verify(file, "Failed to open input file.");
+	
+	const std::vector<u8> header = read_header(file);
+	const WadFileDescription file_desc = match_wad(file, header);
+	std::unique_ptr<Wad> wad = file_desc.create();
+	assert(wad.get());
+	for(const WadLumpDescription& lump_desc : file_desc.fields) {
+		if(lump_desc.count > 1) {
+			fs::path dir = output_path/lump_desc.name;
+			fs::create_directories(dir);
+		}
+		for(s32 i = 0; i < lump_desc.count; i++) {
+			auto& [offset, size] = Buffer(header).read<SectorRange>(lump_desc.offset + i * 8, "WAD header");
+			if(size.sectors != 0) {
+				std::vector<u8> src = read_lump(file, offset, size);
+				if(lump_desc.count > 1) {
+					fs::path path = output_path/lump_desc.name/(std::to_string(i) + ".bin");
+					write_file(path.string().c_str(), src);
+				} else {
+					fs::path path = output_path/(std::string(lump_desc.name) + ".bin");
+					write_file(path.string().c_str(), src);
+				}
+			}
+		}
+	}
 }
