@@ -320,6 +320,11 @@ struct MobyBlock {
 		dest.moby_instances = std::vector<MobyInstance>();
 		auto& header = src.read<MobyBlockHeader>(0, "moby block header");
 		for(MobyInstanceDL entry : src.read_multiple<MobyInstanceDL>(0x10, header.static_count, "moby instances")) {
+			verify(entry.unknown_20 == 32, "Moby field has weird value.");
+			verify(entry.unknown_24 == 64, "Moby field has weird value.");
+			verify(entry.unknown_4c == 1, "Moby field has weird value.");
+			verify(entry.unknown_6c == -1, "Moby field has weird value.");
+			
 			MobyInstance instance;
 			swap_moby(instance, entry);
 			dest.moby_instances->push_back(instance);
