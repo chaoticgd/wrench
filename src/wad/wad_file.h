@@ -27,10 +27,6 @@
 #include "gameplay.h"
 #include "../lz/compression.h"
 
-enum class Game {
-	RAC1, RAC2, RAC3, RAC4
-};
-
 struct WadLumpDescription;
 
 using ReadLumpFunc = std::function<void(WadLumpDescription desc, Wad& dest, std::vector<u8>& src)>;

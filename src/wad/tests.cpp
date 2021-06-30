@@ -26,6 +26,7 @@ struct GameplayTestArgs {
 	const char* name;
 	const std::vector<GameplayBlockDescription>* blocks;
 	bool compressed;
+	Game game;
 };
 static void run_gameplay_lump_test(GameplayTestArgs args);
 
@@ -40,7 +41,7 @@ void run_tests(fs::path input_path) {
 		std::unique_ptr<Wad> wad = file_desc.create();
 		assert(wad.get());
 		
-		auto build_args = [&](s32 header_offset, const char* name, const std::vector<GameplayBlockDescription>& blocks, bool compressed) {
+		auto build_args = [&](s32 header_offset, const char* name, const std::vector<GameplayBlockDescription>& blocks, bool compressed, Game game) {
 			GameplayTestArgs args;
 			args.wad_file_path = wad_file_path.string();
 			args.file = file;
@@ -48,22 +49,34 @@ void run_tests(fs::path input_path) {
 			args.name = name;
 			args.blocks = &blocks;
 			args.compressed = compressed;
+			args.game = game;
 			return args;
 		};
 		
-		auto gameplay_core = find_lump(file_desc, "gameplay_core");
-		assert(gameplay_core.has_value());
-		run_gameplay_lump_test(build_args(gameplay_core->offset, gameplay_core->name, DL_GAMEPLAY_CORE_BLOCKS, true));
-		
-		auto art_instances = find_lump(file_desc, "art_instances");
-		assert(art_instances.has_value());
-		run_gameplay_lump_test(build_args(art_instances->offset, art_instances->name, DL_ART_INSTANCE_BLOCKS, true));
-		
-		auto missions_instances = find_lump(file_desc, "gameplay_mission_instances");
-		assert(missions_instances.has_value());
-		for(s32 i = 0; i < missions_instances->count; i++) {
-			std::string name = std::string(missions_instances->name) + " " + std::to_string(i);
-			run_gameplay_lump_test(build_args(missions_instances->offset + i * 8, name.c_str(), DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS, false));
+		switch(file_desc.header_size) {
+			case 0x60: { // GC/UYA
+				auto gameplay_core = find_lump(file_desc, "gameplay_core");
+				assert(gameplay_core.has_value());
+				run_gameplay_lump_test(build_args(gameplay_core->offset, gameplay_core->name, RAC23_GAMEPLAY_BLOCKS, true, Game::RAC2));
+				break;
+			}
+			case 0xc68: { // Deadlocked
+				auto gameplay_core = find_lump(file_desc, "gameplay_core");
+				assert(gameplay_core.has_value());
+				run_gameplay_lump_test(build_args(gameplay_core->offset, gameplay_core->name, DL_GAMEPLAY_CORE_BLOCKS, true, Game::DL));
+				
+				auto art_instances = find_lump(file_desc, "art_instances");
+				assert(art_instances.has_value());
+				run_gameplay_lump_test(build_args(art_instances->offset, art_instances->name, DL_ART_INSTANCE_BLOCKS, true, Game::DL));
+				
+				auto missions_instances = find_lump(file_desc, "gameplay_mission_instances");
+				assert(missions_instances.has_value());
+				for(s32 i = 0; i < missions_instances->count; i++) {
+					std::string name = std::string(missions_instances->name) + " " + std::to_string(i);
+					run_gameplay_lump_test(build_args(missions_instances->offset + i * 8, name.c_str(), DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS, false, Game::DL));
+				}
+				break;
+			}
 		}
 	}
 }
@@ -89,8 +102,8 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 		src = std::move(raw);
 	}
 	Gameplay gameplay;
-	read_gameplay(gameplay, src, *args.blocks);
-	std::vector<u8> dest = write_gameplay(gameplay, *args.blocks);
+	read_gameplay(gameplay, src, args.game, *args.blocks);
+	std::vector<u8> dest = write_gameplay(gameplay, args.game, *args.blocks);
 	
 	// The input buffer may or may not already be padded to the sector size.
 	OutBuffer(dest).pad(SECTOR_SIZE, 0);
@@ -103,8 +116,8 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 	
 	std::string gameplay_header_str = args.wad_file_path + " " + args.name + " header";
 	std::string gameplay_data_str = args.wad_file_path + " " + args.name + " data";
-	good &= diff_buffers(src_buf.subbuf(0, 0x80), dest_buf.subbuf(0, 0x80), 0, gameplay_header_str.c_str());
-	good &= diff_buffers(src_buf.subbuf(0x80), dest_buf.subbuf(0x80), 0x80, gameplay_data_str.c_str());
+	good &= diff_buffers(src_buf.subbuf(0, 0xa0), dest_buf.subbuf(0, 0xa0), 0, gameplay_header_str.c_str());
+	good &= diff_buffers(src_buf.subbuf(0xa0), dest_buf.subbuf(0xa0), 0xa0, gameplay_data_str.c_str());
 	
 	if(!good) {
 		FILE* gameplay_file = fopen("/tmp/gameplay.bin", "wb");

@@ -195,4 +195,8 @@ struct Wad {
 	virtual ~Wad() {}
 };
 
+enum class Game {
+	RAC1, RAC2, RAC3, DL
+};
+
 #endif

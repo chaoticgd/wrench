@@ -30,15 +30,28 @@ struct BinaryLump {
 	}
 };
 
-struct GameplayLump {
+struct Rac23GameplayLump {
 	static void read(WadLumpDescription desc, Gameplay& dest, std::vector<u8>& src) {
 		std::vector<u8> decompressed;
 		verify(decompress_wad(decompressed, src), "Failed to decompress gameplay lump.");
-		read_gameplay(dest, decompressed, DL_GAMEPLAY_CORE_BLOCKS);
+		read_gameplay(dest, decompressed, Game::RAC2, RAC23_GAMEPLAY_BLOCKS);
 	}
 	
 	static void write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const Gameplay& src) {
-		std::vector<u8> uncompressed = write_gameplay(src, DL_GAMEPLAY_CORE_BLOCKS);
+		std::vector<u8> uncompressed = write_gameplay(src, Game::RAC2, RAC23_GAMEPLAY_BLOCKS);
+		compress_wad(dest, uncompressed, 8);
+	}
+};
+
+struct DlGameplayLump {
+	static void read(WadLumpDescription desc, Gameplay& dest, std::vector<u8>& src) {
+		std::vector<u8> decompressed;
+		verify(decompress_wad(decompressed, src), "Failed to decompress gameplay lump.");
+		read_gameplay(dest, decompressed, Game::DL, DL_GAMEPLAY_CORE_BLOCKS);
+	}
+	
+	static void write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const Gameplay& src) {
+		std::vector<u8> uncompressed = write_gameplay(src, Game::DL, DL_GAMEPLAY_CORE_BLOCKS);
 		compress_wad(dest, uncompressed, 8);
 	}
 };
@@ -47,11 +60,11 @@ struct ArtInstancesLump {
 	static void read(WadLumpDescription desc, Gameplay& dest, std::vector<u8>& src) {
 		std::vector<u8> decompressed;
 		verify(decompress_wad(decompressed, src), "Failed to decompress art instances WAD.");
-		read_gameplay(dest, decompressed, DL_ART_INSTANCE_BLOCKS);
+		read_gameplay(dest, decompressed, Game::DL, DL_ART_INSTANCE_BLOCKS);
 	}
 	
 	static void write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const Gameplay& src) {
-		std::vector<u8> uncompressed = write_gameplay(src, DL_ART_INSTANCE_BLOCKS);
+		std::vector<u8> uncompressed = write_gameplay(src, Game::DL, DL_ART_INSTANCE_BLOCKS);
 		compress_wad(dest, uncompressed, 8);
 	}
 };
@@ -59,12 +72,12 @@ struct ArtInstancesLump {
 struct GameplayMissionInstancesLump {
 	static void read(WadLumpDescription desc, std::vector<Gameplay>& dest, std::vector<u8>& src) {
 		Gameplay mission_instances;
-		read_gameplay(mission_instances, src, DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS);
+		read_gameplay(mission_instances, src, Game::DL, DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS);
 		dest.emplace_back(std::move(mission_instances));
 	}
 	
 	static void write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const std::vector<Gameplay>& src) {
-		dest = write_gameplay(src.at(index), DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS);
+		dest = write_gameplay(src.at(index), Game::DL, DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS);
 	}
 };
 
@@ -93,12 +106,29 @@ static LumpFuncs lf(Field field) {
 }
 
 const std::vector<WadFileDescription> wad_files = {
+	{"level", 0x60, &create_wad<LevelWad>, {
+		{0x10, 1, lf<BinaryLump>(&LevelWad::binary_assets), "data"},
+		{0x18, 1, lf<BinaryLump>(&LevelWad::binary_assets), "core_bank"},
+		{0x20, 1, lf<Rac23GameplayLump>(&LevelWad::gameplay), "gameplay_core"},
+		{0x28, 1, lf<BinaryLump>(&LevelWad::binary_assets), "unknown_28"},
+		{0x30, 3, lf<BinaryLump>(&LevelWad::binary_assets), "chunk"},
+		{0x48, 3, lf<BinaryLump>(&LevelWad::binary_assets), "chunkbank"}
+	}},
+	{"level", 0x68, &create_wad<LevelWad>, {
+		{0x0c, 1, lf<BinaryLump>(&LevelWad::binary_assets), "data"},
+		{0x14, 1, lf<BinaryLump>(&LevelWad::binary_assets), "core_bank"},
+		{0x1c, 1, lf<Rac23GameplayLump>(&LevelWad::gameplay), "gameplay_1"},
+		{0x24, 1, lf<Rac23GameplayLump>(&LevelWad::gameplay), "gameplay_2"},
+		{0x2c, 1, lf<BinaryLump>(&LevelWad::binary_assets), "unknown_2c"},
+		{0x34, 3, lf<BinaryLump>(&LevelWad::binary_assets), "chunk"},
+		{0x50, 3, lf<BinaryLump>(&LevelWad::binary_assets), "chunkbank"}
+	}},
 	{"level", 0xc68, &create_wad<LevelWad>, {
 		{0x018, 1,   lf<BinaryLump>(&LevelWad::binary_assets), "data"},
 		{0x020, 1,   lf<BinaryLump>(&LevelWad::binary_assets), "core_bank"},
 		{0x028, 3,   lf<BinaryLump>(&LevelWad::binary_assets), "chunk"},
 		{0x040, 3,   lf<BinaryLump>(&LevelWad::binary_assets), "chunkbank"},
-		{0x058, 1,   lf<GameplayLump>(&LevelWad::gameplay), "gameplay_core"},
+		{0x058, 1,   lf<DlGameplayLump>(&LevelWad::gameplay), "gameplay_core"},
 		{0x060, 128, lf<GameplayMissionInstancesLump>(&LevelWad::gameplay_mission_instances), "gameplay_mission_instances"},
 		{0x460, 128, lf<BinaryLump>(&LevelWad::binary_assets), "gameplay_mission_data"},
 		{0x860, 128, lf<BinaryLump>(&LevelWad::binary_assets), "mission_banks"},

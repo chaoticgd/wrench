@@ -210,13 +210,26 @@ struct MobyInstance {
 	s8 group;
 	s32 is_rooted;
 	f32 rooted_dist;
-	s32 pvar_index; // Only used during reading!
 	s32 occlusion;
 	s32 mode_bits;
-	s32 lights_1;
-	s32 lights_2;
-	s32 lights_3;
-	s32 lights_low;
+	Rgb96 light_col;
+	s32 light;
+	
+	struct {
+		s32 unknown_4;
+		s32 unknown_8;
+		s32 unknown_c;
+		s32 unknown_18;
+		s32 unknown_1c;
+		s32 unknown_20;
+		s32 unknown_24;
+		s32 unknown_38;
+		s32 unknown_3c;
+		s32 unknown_4c;
+		s32 unknown_84;
+	} rac23;
+	
+	s32 pvar_index; // Only used during reading!
 	std::vector<u8> pvars;
 	
 	template <typename T>
@@ -236,10 +249,8 @@ struct MobyInstance {
 		DEF_FIELD(rooted_dist);
 		DEF_FIELD(occlusion);
 		DEF_FIELD(mode_bits);
-		DEF_FIELD(lights_1);
-		DEF_FIELD(lights_2);
-		DEF_FIELD(lights_3);
-		DEF_FIELD(lights_low);
+		DEF_FIELD(light_col);
+		DEF_FIELD(light);
 		DEF_HEXDUMP(pvars);
 	}
 };
@@ -461,6 +472,10 @@ template <typename T>
 using Opt = std::optional<T>;
 
 struct Gameplay {
+	Opt<std::vector<s32>> gc_84;
+	Opt<std::vector<s32>> gc_58;
+	Opt<std::vector<s32>> gc_64;
+	
 	// Deadlocked gameplay core
 	Opt<std::vector<Gp_GC_8c_DL_70>> gc_8c_dl_70;
 	Opt<GpProperties> properties;
@@ -477,7 +492,7 @@ struct Gameplay {
 	Opt<std::vector<s32>> moby_classes;
 	Opt<std::vector<MobyInstance>> moby_instances;
 	Opt<s32> dynamic_moby_count;
-	Opt<std::vector<Gp_DL_3c>> dl_3c;
+	Opt<std::vector<Gp_DL_3c>> gc_58_dl_3c;
 	Opt<std::vector<Gp_GC_64_DL_48>> gc_64_dl_48;
 	Opt<GpMobyGroups> moby_groups;
 	Opt<Gp_GC_54_DL_38> gc_54_dl_38;
