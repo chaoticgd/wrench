@@ -178,6 +178,14 @@ packed_struct(GpShape,
 	}
 )
 
+packed_struct(GC_84_Instance,
+	u8 unknown_0[0x90];
+	
+	template <typename T>
+	void enumerate_fields(T& t) {}
+)
+static_assert(sizeof(GC_84_Instance) == 0x90);
+
 struct SoundInstance {
 	s16 o_class;
 	s16 m_class;
@@ -472,9 +480,7 @@ template <typename T>
 using Opt = std::optional<T>;
 
 struct Gameplay {
-	Opt<std::vector<s32>> gc_84;
-	Opt<std::vector<s32>> gc_58;
-	Opt<std::vector<s32>> gc_64;
+	Opt<std::vector<GC_84_Instance>> gc_84;
 	
 	// Deadlocked gameplay core
 	Opt<std::vector<Gp_GC_8c_DL_70>> gc_8c_dl_70;
@@ -522,6 +528,8 @@ struct Gameplay {
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
+		DEF_OPTIONAL_FIELD(gc_84);
+		
 		DEF_OPTIONAL_FIELD(properties);
 		DEF_OPTIONAL_FIELD(cameras);
 		DEF_OPTIONAL_FIELD(sound_instances);

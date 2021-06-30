@@ -216,17 +216,6 @@ struct StringBlock {
 	}
 };
 
-packed_struct(ImportCameraPacked,
-	s32 unknown_0;
-	s32 unknown_4;
-	s32 unknown_8;
-	s32 unknown_c;
-	s32 unknown_10;
-	s32 unknown_14;
-	s32 unknown_18;
-	s32 pvar_index;
-)
-
 template <typename Instance, typename Packed>
 struct InstanceBlock {
 	static void read(std::vector<Instance>& dest, Buffer src, Game game) {
@@ -249,6 +238,17 @@ struct InstanceBlock {
 		}
 	}
 };
+
+packed_struct(ImportCameraPacked,
+	s32 unknown_0;
+	s32 unknown_4;
+	s32 unknown_8;
+	s32 unknown_c;
+	s32 unknown_10;
+	s32 unknown_14;
+	s32 unknown_18;
+	s32 pvar_index;
+)
 
 static void swap_instance(ImportCamera& l, ImportCameraPacked& r) {
 	SWAP_PACKED(l.unknown_0, r.unknown_0);
@@ -929,7 +929,7 @@ const std::vector<GameplayBlockDescription> RAC23_GAMEPLAY_BLOCKS = {
 	{0x28, bf<StringBlock>(&Gameplay::japanese_strings), "japanese strings"},
 	{0x2c, bf<StringBlock>(&Gameplay::korean_strings), "korean strings"},
 	{0x04, bf<TableBlock<GpDirectionalLight>>(&Gameplay::lights), "directional lights"},
-	{0x84, bf<TableBlock<s32>>(&Gameplay::gc_84), "GC 84"},
+	{0x84, bf<TableBlock<GC_84_Instance>>(&Gameplay::gc_84), "GC 84"},
 	{0x08, bf<InstanceBlock<ImportCamera, ImportCameraPacked>>(&Gameplay::cameras), "import cameras"},
 	{0x0c, bf<InstanceBlock<SoundInstance, SoundInstancePacked>>(&Gameplay::sound_instances), "sound instances"},
 	{0x48, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},
