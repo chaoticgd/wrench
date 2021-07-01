@@ -100,8 +100,10 @@ struct PropertiesBlock {
 			ofs += sizeof(GpPropertiesSecondPart);
 		}
 		dest.core_sounds_count = src.read<s32>(ofs, "core sounds count");
-		if(game == Game::DL) {
-			ofs += 4;
+		ofs += 4;
+		if(game == Game::RAC3) {
+			dest.rac3_third_part = src.read<s32>(ofs, "R&C3 third part");
+		} else if(game == Game::DL) {
 			s64 third_part_count = src.read<s32>(ofs, "third part count");
 			ofs += 4;
 			if(third_part_count >= 0) {
@@ -127,7 +129,9 @@ struct PropertiesBlock {
 			dest.write(terminator);
 		}
 		dest.write(src.core_sounds_count);
-		if(game == Game::DL) {
+		if(game == Game::RAC3) {
+			dest.write(src.rac3_third_part);
+		} else if(game == Game::DL) {
 			dest.write((s32) src.third_part.size());
 			if(src.third_part.size() > 0) {
 				dest.write_multiple(src.third_part);

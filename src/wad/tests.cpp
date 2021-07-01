@@ -30,7 +30,7 @@ struct GameplayTestArgs {
 };
 static void run_gameplay_lump_test(GameplayTestArgs args);
 
-void run_tests(fs::path input_path) {
+void run_tests(fs::path input_path, Game game) {
 	for(fs::path wad_file_path : fs::directory_iterator(input_path)) {
 		FILE* file = fopen(wad_file_path.string().c_str(), "rb");
 		verify(file, "Failed to open input file.");
@@ -55,25 +55,27 @@ void run_tests(fs::path input_path) {
 		
 		switch(file_desc.header_size) {
 			case 0x60: { // GC/UYA
+				verify(game == Game::RAC2 || game == Game::RAC3, "R&C2/R&C3 detected but other game specified.");
 				auto gameplay_core = find_lump(file_desc, "gameplay_core");
 				assert(gameplay_core.has_value());
-				run_gameplay_lump_test(build_args(gameplay_core->offset, gameplay_core->name, RAC23_GAMEPLAY_BLOCKS, true, Game::RAC2));
+				run_gameplay_lump_test(build_args(gameplay_core->offset, gameplay_core->name, RAC23_GAMEPLAY_BLOCKS, true, game));
 				break;
 			}
 			case 0xc68: { // Deadlocked
+				verify(game == Game::DL, "Deadlocked detected but other game specified.");
 				auto gameplay_core = find_lump(file_desc, "gameplay_core");
 				assert(gameplay_core.has_value());
-				run_gameplay_lump_test(build_args(gameplay_core->offset, gameplay_core->name, DL_GAMEPLAY_CORE_BLOCKS, true, Game::DL));
+				run_gameplay_lump_test(build_args(gameplay_core->offset, gameplay_core->name, DL_GAMEPLAY_CORE_BLOCKS, true, game));
 				
 				auto art_instances = find_lump(file_desc, "art_instances");
 				assert(art_instances.has_value());
-				run_gameplay_lump_test(build_args(art_instances->offset, art_instances->name, DL_ART_INSTANCE_BLOCKS, true, Game::DL));
+				run_gameplay_lump_test(build_args(art_instances->offset, art_instances->name, DL_ART_INSTANCE_BLOCKS, true, game));
 				
 				auto missions_instances = find_lump(file_desc, "gameplay_mission_instances");
 				assert(missions_instances.has_value());
 				for(s32 i = 0; i < missions_instances->count; i++) {
 					std::string name = std::string(missions_instances->name) + " " + std::to_string(i);
-					run_gameplay_lump_test(build_args(missions_instances->offset + i * 8, name.c_str(), DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS, false, Game::DL));
+					run_gameplay_lump_test(build_args(missions_instances->offset + i * 8, name.c_str(), DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS, false, game));
 				}
 				break;
 			}

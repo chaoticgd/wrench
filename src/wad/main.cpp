@@ -36,7 +36,20 @@ int main(int argc, char** argv) {
 	} else if(mode == "extract_raw") {
 		run_raw_extractor(input_path, argc == 4 ? argv[3] : "raw_extracted");
 	} else if(mode == "test") {
-		run_tests(input_path);
+		verify(argc == 4, "No game specified.");
+		Game game;
+		if(strcmp(argv[3], "rac1") == 0) {
+			game = Game::RAC1;
+		} else if(strcmp(argv[3], "rac2") == 0) {
+			game = Game::RAC2;
+		} else if(strcmp(argv[3], "rac3") == 0) {
+			game = Game::RAC3;
+		} else if(strcmp(argv[3], "dl") == 0) {
+			game = Game::DL;
+		} else {
+			verify_not_reached("Invalid game specified.");
+		}
+		run_tests(input_path, game);
 	} else {
 		verify_not_reached("Invalid command: %s", mode.c_str());
 	}

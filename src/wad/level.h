@@ -122,6 +122,7 @@ struct GpProperties {
 	GpPropertiesFirstPart first_part;
 	std::vector<GpPropertiesSecondPart> second_part;
 	s32 core_sounds_count;
+	s32 rac3_third_part;
 	std::vector<GpPropertiesThirdPart> third_part;
 	GpPropertiesFourthPart fourth_part;
 	GpPropertiesFifthPart fifth_part;

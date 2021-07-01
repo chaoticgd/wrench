@@ -20,4 +20,4 @@
 #include "util.h"
 #include "wad_file.h"
 
-void run_tests(fs::path input_path);
+void run_tests(fs::path input_path, Game game);
