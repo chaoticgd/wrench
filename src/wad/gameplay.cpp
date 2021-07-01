@@ -159,6 +159,7 @@ packed_struct(StringTableEntry,
 	s16 unknown_e;
 )
 
+template <bool is_korean>
 struct StringBlock {
 	static void read(std::vector<GpString>& dest, Buffer src, Game game) {
 		auto& header = src.read<StringBlockHeader>(0, "string block header");
@@ -171,7 +172,7 @@ struct StringBlock {
 		for(StringTableEntry entry : table) {
 			GpString string;
 			if(entry.offset != 0) {
-				string.string = src.read_string(entry.offset);
+				string.string = src.read_string(entry.offset, is_korean);
 			}
 			string.id = entry.id;
 			string.unknown_6 = entry.unknown_6;
@@ -929,14 +930,14 @@ static GameplayBlockFuncs bf(Field field) {
 const std::vector<GameplayBlockDescription> RAC23_GAMEPLAY_BLOCKS = {
 	{0x8c, bf<TableBlock<Gp_GC_8c_DL_70>>(&Gameplay::gc_8c_dl_70), "GC 8c DL 70"},
 	{0x00, bf<PropertiesBlock>(&Gameplay::properties), "properties"},
-	{0x10, bf<StringBlock>(&Gameplay::us_english_strings), "us english strings"},
-	{0x14, bf<StringBlock>(&Gameplay::uk_english_strings), "uk english strings"},
-	{0x18, bf<StringBlock>(&Gameplay::french_strings), "french strings"},
-	{0x1c, bf<StringBlock>(&Gameplay::german_strings), "german strings"},
-	{0x20, bf<StringBlock>(&Gameplay::spanish_strings), "spanish strings"},
-	{0x24, bf<StringBlock>(&Gameplay::italian_strings), "italian strings"},
-	{0x28, bf<StringBlock>(&Gameplay::japanese_strings), "japanese strings"},
-	{0x2c, bf<StringBlock>(&Gameplay::korean_strings), "korean strings"},
+	{0x10, bf<StringBlock<false>>(&Gameplay::us_english_strings), "us english strings"},
+	{0x14, bf<StringBlock<false>>(&Gameplay::uk_english_strings), "uk english strings"},
+	{0x18, bf<StringBlock<false>>(&Gameplay::french_strings), "french strings"},
+	{0x1c, bf<StringBlock<false>>(&Gameplay::german_strings), "german strings"},
+	{0x20, bf<StringBlock<false>>(&Gameplay::spanish_strings), "spanish strings"},
+	{0x24, bf<StringBlock<false>>(&Gameplay::italian_strings), "italian strings"},
+	{0x28, bf<StringBlock<false>>(&Gameplay::japanese_strings), "japanese strings"},
+	{0x2c, bf<StringBlock<true>>(&Gameplay::korean_strings), "korean strings"},
 	{0x04, bf<TableBlock<GpDirectionalLight>>(&Gameplay::lights), "directional lights"},
 	{0x84, bf<TableBlock<GC_84_Instance>>(&Gameplay::gc_84), "GC 84"},
 	{0x08, bf<InstanceBlock<ImportCamera, ImportCameraPacked>>(&Gameplay::cameras), "import cameras"},
@@ -971,14 +972,14 @@ const std::vector<GameplayBlockDescription> RAC23_GAMEPLAY_BLOCKS = {
 const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS = {
 	{0x70, bf<TableBlock<Gp_GC_8c_DL_70>>(&Gameplay::gc_8c_dl_70), "GC 8c DL 70"},
 	{0x00, bf<PropertiesBlock>(&Gameplay::properties), "properties"},
-	{0x0c, bf<StringBlock>(&Gameplay::us_english_strings), "us english strings"},
-	{0x10, bf<StringBlock>(&Gameplay::uk_english_strings), "uk english strings"},
-	{0x14, bf<StringBlock>(&Gameplay::french_strings), "french strings"},
-	{0x18, bf<StringBlock>(&Gameplay::german_strings), "german strings"},
-	{0x1c, bf<StringBlock>(&Gameplay::spanish_strings), "spanish strings"},
-	{0x20, bf<StringBlock>(&Gameplay::italian_strings), "italian strings"},
-	{0x24, bf<StringBlock>(&Gameplay::japanese_strings), "japanese strings"},
-	{0x28, bf<StringBlock>(&Gameplay::korean_strings), "korean strings"},
+	{0x0c, bf<StringBlock<false>>(&Gameplay::us_english_strings), "us english strings"},
+	{0x10, bf<StringBlock<false>>(&Gameplay::uk_english_strings), "uk english strings"},
+	{0x14, bf<StringBlock<false>>(&Gameplay::french_strings), "french strings"},
+	{0x18, bf<StringBlock<false>>(&Gameplay::german_strings), "german strings"},
+	{0x1c, bf<StringBlock<false>>(&Gameplay::spanish_strings), "spanish strings"},
+	{0x20, bf<StringBlock<false>>(&Gameplay::italian_strings), "italian strings"},
+	{0x24, bf<StringBlock<false>>(&Gameplay::japanese_strings), "japanese strings"},
+	{0x28, bf<StringBlock<true>>(&Gameplay::korean_strings), "korean strings"},
 	{0x04, bf<InstanceBlock<ImportCamera, ImportCameraPacked>>(&Gameplay::cameras), "import cameras"},
 	{0x08, bf<InstanceBlock<SoundInstance, SoundInstancePacked>>(&Gameplay::sound_instances), "sound instances"},
 	{0x2c, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},

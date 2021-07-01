@@ -68,7 +68,7 @@ struct Buffer {
 		return {iter_lo, iter_lo + count};
 	}
 	
-	std::string read_string(s64 offset) const;
+	std::string read_string(s64 offset, bool is_korean = false) const;
 	void hexdump(FILE* file, s64 column, const char* ansi_colour_code = "0") const;
 };
 
