@@ -302,7 +302,7 @@ packed_struct(MobyBlockHeader,
 
 packed_struct(MobyInstanceRAC23,
 	s32 size;        // 0x0 Always 0x88.
-	s32 unknown_4;   // 0x4
+	s32 mission;     // 0x4
 	s32 unknown_8;   // 0x8
 	s32 unknown_c;   // 0xc
 	s32 uid;         // 0x10
@@ -362,7 +362,7 @@ struct RAC23MobyBlock {
 	
 	static void swap_moby(MobyInstance& l, MobyInstanceRAC23& r) {
 		SWAP_PACKED(l.size, r.size);
-		SWAP_PACKED(l.rac23.unknown_4, r.unknown_4);
+		SWAP_PACKED(l.mission, r.mission);
 		SWAP_PACKED(l.rac23.unknown_8, r.unknown_8);
 		SWAP_PACKED(l.rac23.unknown_c, r.unknown_c);
 		SWAP_PACKED(l.uid, r.uid);

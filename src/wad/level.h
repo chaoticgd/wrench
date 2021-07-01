@@ -224,7 +224,6 @@ struct MobyInstance {
 	s32 light;
 	
 	struct {
-		s32 unknown_4;
 		s32 unknown_8;
 		s32 unknown_c;
 		s32 unknown_18;
