@@ -47,6 +47,9 @@ std::vector<u8> write_gameplay(const Gameplay& gameplay, Game game, const std::v
 			if(strcmp(block.name, "us english strings") != 0) {
 				dest.pad(0x10, 0);
 			}
+			if(strcmp(block.name, "occlusion clusters") == 0) {
+				dest.pad(0x40, 0);
+			}
 			s32 ofs = (s32) dest_vec.size();
 			if(block.funcs.write(dest, gameplay, game)) {
 				assert(block.header_pointer_offset + 4 <= (s32) dest_vec.size());
@@ -715,7 +718,7 @@ struct GC_80_DL_64_Block {
 
 packed_struct(GrindPathData,
 	GpBoundingSphere bounding_sphere;
-	s32 ptr = 0;
+	s32 unknown_4;
 	s32 wrap;
 	s32 inactive;
 	s32 pad = 0;
@@ -730,6 +733,7 @@ struct GrindPathBlock {
 		for(s64 i = 0; i < header.spline_count; i++) {
 			GrindPath path;
 			path.bounding_sphere = grindpaths[i].bounding_sphere;
+			path.unknown_4 = grindpaths[i].unknown_4;
 			path.wrap = grindpaths[i].wrap;
 			path.inactive = grindpaths[i].inactive;
 			path.vertices = splines[i];
@@ -743,6 +747,7 @@ struct GrindPathBlock {
 		for(const GrindPath& path : src) {
 			GrindPathData packed;
 			packed.bounding_sphere = path.bounding_sphere;
+			packed.unknown_4 = path.unknown_4;
 			packed.wrap = path.wrap;
 			packed.inactive = path.inactive;
 			dest.write(packed);

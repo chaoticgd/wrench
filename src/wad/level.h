@@ -309,6 +309,7 @@ packed_struct(GpBoundingSphere,
 
 struct GrindPath {
 	GpBoundingSphere bounding_sphere;
+	s32 unknown_4;
 	s32 wrap;
 	s32 inactive;
 	std::vector<Vec4f> vertices;
@@ -316,6 +317,7 @@ struct GrindPath {
 	template <typename T>
 	void enumerate_fields(T& t) {
 		DEF_FIELD(bounding_sphere);
+		DEF_FIELD(unknown_4);
 		DEF_FIELD(wrap);
 		DEF_FIELD(inactive);
 		DEF_FIELD(vertices);
