@@ -101,6 +101,10 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 	} else {
 		src = std::move(raw);
 	}
+	if(args.blocks == &DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS && src.size() >= 4 && *(s32*) src.data() == 0x90) {
+		printf("warning: Skipping %s %s. Weird format.\n", args.wad_file_path.c_str(), args.name);
+		return;
+	}
 	Gameplay gameplay;
 	read_gameplay(gameplay, src, args.game, *args.blocks);
 	std::vector<u8> dest = write_gameplay(gameplay, args.game, *args.blocks);
