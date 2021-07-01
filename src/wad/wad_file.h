@@ -29,8 +29,8 @@
 
 struct WadLumpDescription;
 
-using ReadLumpFunc = std::function<void(WadLumpDescription desc, Wad& dest, std::vector<u8>& src)>;
-using WriteLumpFunc = std::function<void(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const Wad& src)>;
+using ReadLumpFunc = std::function<void(WadLumpDescription desc, Wad& dest, std::vector<u8>& src, Game& game)>;
+using WriteLumpFunc = std::function<void(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const Wad& src, Game& game)>;
 
 struct LumpFuncs {
 	ReadLumpFunc read;

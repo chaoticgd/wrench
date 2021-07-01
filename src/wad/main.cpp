@@ -50,15 +50,25 @@ static void run_extractor(fs::path input_path, fs::path output_path) {
 	const WadFileDescription file_desc = match_wad(file, header);
 	std::unique_ptr<Wad> wad = file_desc.create();
 	assert(wad.get());
+	Game game;
 	for(const WadLumpDescription& lump_desc : file_desc.fields) {
 		for(s32 i = 0; i < lump_desc.count; i++) {
 			auto& [offset, size] = Buffer(header).read<SectorRange>(lump_desc.offset + i * 8, "WAD header");
 			if(size.sectors != 0) {
 				std::vector<u8> src = read_lump(file, offset, size);
-				lump_desc.funcs.read(lump_desc, *wad.get(), src);
+				lump_desc.funcs.read(lump_desc, *wad.get(), src, game);
 			}
 		}
 	}
+	
+	printf("Detected game: ");
+	switch(game) {
+		case Game::RAC1: printf("R&C1"); break;
+		case Game::RAC2: printf("R&C2"); break;
+		case Game::RAC3: printf("R&C3"); break;
+		case Game::DL: printf("Deadlocked"); break;
+	}
+	printf("\n");
 	
 	for(auto& [name, asset] : wad->binary_assets) {
 		if(asset.is_array) {
