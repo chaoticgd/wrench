@@ -50,10 +50,8 @@ packed_struct(GpPropertiesFirstPart,
 	f32 death_height;       // 0x28
 	s32 is_spherical_world; // 0x2c
 	Vec3f sphere_centre;    // 0x30
-	f32 unknown_3c;         // 0x3c
-	f32 unknown_40;         // 0x40
-	f32 unknown_44;         // 0x44
-	s32 unknown_48;         // 0x48
+	Vec3f ship_position;    // 0x3c
+	f32 ship_rotation_z;    // 0x48
 	s32 unknown_4c;         // 0x4c
 	s32 unknown_50;         // 0x50
 	s32 unknown_54;         // 0x54
@@ -70,10 +68,8 @@ packed_struct(GpPropertiesFirstPart,
 		DEF_PACKED_FIELD(death_height);
 		DEF_PACKED_FIELD(is_spherical_world);
 		DEF_PACKED_FIELD(sphere_centre);
-		DEF_PACKED_FIELD(unknown_3c);
-		DEF_PACKED_FIELD(unknown_40);
-		DEF_PACKED_FIELD(unknown_44);
-		DEF_PACKED_FIELD(unknown_48);
+		DEF_PACKED_FIELD(ship_position);
+		DEF_PACKED_FIELD(ship_rotation_z);
 		DEF_PACKED_FIELD(unknown_4c);
 		DEF_PACKED_FIELD(unknown_50);
 		DEF_PACKED_FIELD(unknown_54);
