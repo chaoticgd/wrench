@@ -25,7 +25,7 @@
 
 using OriginalIndex = s32;
 
-packed_struct(Gp_GC_8c_DL_70,
+packed_struct(GC_8c_DL_70,
 	u8 data[0x20];
 )
 
@@ -42,7 +42,7 @@ packed_struct(Rgb96,
 	}
 )
 
-packed_struct(GpPropertiesFirstPart,
+packed_struct(PropertiesFirstPart,
 	Rgb96 background_col;   // 0x0
 	Rgb96 fog_col;          // 0xc
 	f32 fog_near_dist;      // 0x18
@@ -79,7 +79,7 @@ packed_struct(GpPropertiesFirstPart,
 	}
 )
 
-packed_struct(GpPropertiesSecondPart,
+packed_struct(PropertiesSecondPart,
 	s32 unknown_0;
 	s32 unknown_4;
 	s32 unknown_8;
@@ -90,14 +90,14 @@ packed_struct(GpPropertiesSecondPart,
 	s32 unknown_1c;
 )
 
-packed_struct(GpPropertiesThirdPart,
+packed_struct(PropertiesThirdPart,
 	s32 unknown_0;
 	s32 unknown_4;
 	s32 unknown_8;
 	s32 unknown_c;
 )
 
-packed_struct(GpPropertiesFourthPart,
+packed_struct(PropertiesFourthPart,
 	s32 unknown_0;
 	s32 unknown_4;
 	s32 unknown_8;
@@ -106,7 +106,7 @@ packed_struct(GpPropertiesFourthPart,
 	s32 unknown_14;
 )
 
-packed_struct(GpPropertiesFifthPart,
+packed_struct(PropertiesFifthPart,
 	s32 unknown_0;
 	s32 unknown_4;
 	s32 unknown_8;
@@ -116,14 +116,14 @@ packed_struct(GpPropertiesFifthPart,
 	s32 sixth_part_count;
 )
 
-struct GpProperties {
-	GpPropertiesFirstPart first_part;
-	std::vector<GpPropertiesSecondPart> second_part;
+struct Properties {
+	PropertiesFirstPart first_part;
+	std::vector<PropertiesSecondPart> second_part;
 	s32 core_sounds_count;
 	s32 rac3_third_part;
-	std::vector<GpPropertiesThirdPart> third_part;
-	GpPropertiesFourthPart fourth_part;
-	GpPropertiesFifthPart fifth_part;
+	std::vector<PropertiesThirdPart> third_part;
+	PropertiesFourthPart fourth_part;
+	PropertiesFifthPart fifth_part;
 	std::vector<s8> sixth_part;
 	
 	template <typename T>
@@ -132,7 +132,7 @@ struct GpProperties {
 	}
 };
 
-struct GpHelpMessage {
+struct HelpMessage {
 	std::optional<std::string> string;
 	s16 id;
 	s16 short_id;
@@ -182,7 +182,7 @@ struct ImportCamera {
 	}
 };
 
-packed_struct(GpShapePacked,
+packed_struct(ShapePacked,
 	Mat3 matrix;
 	Vec4f pos;
 	Mat3 imatrix;
@@ -197,7 +197,7 @@ packed_struct(GpShapePacked,
 	}
 )
 
-struct GpShape {
+struct Shape {
 	Mat3 matrix;
 	Vec4f pos;
 	Mat3 imatrix;
@@ -219,7 +219,7 @@ struct SoundInstance {
 	s16 m_class;
 	s32 pvar_index; // Only used during reading!
 	f32 range;
-	GpShapePacked cuboid;
+	ShapePacked cuboid;
 	std::vector<u8> pvars;
 	OriginalIndex original_index;
 	
@@ -297,26 +297,26 @@ packed_struct(PvarTableEntry,
 	s32 size;
 )
 
-packed_struct(Gp_DL_3c,
+packed_struct(DL_3c,
 	int32_t unknown_0;
 	int32_t unknown_4;
 )
 
-packed_struct(Gp_GC_64_DL_48,
+packed_struct(GC_64_DL_48,
 	uint8_t unknown[0x8];
 )
 
-struct GpMobyGroups {
+struct MobyGroups {
 	std::vector<s32> first_part;
 	std::vector<s8> second_part;
 };
 
-struct Gp_GC_54_DL_38 {
+struct GC_54_DL_38 {
 	std::vector<s8> first_part;
 	std::vector<s64> second_part;
 };
 
-struct GpPath {
+struct Path {
 	std::vector<Vec4f> vertices;
 	OriginalIndex original_index;
 	
@@ -327,12 +327,12 @@ struct GpPath {
 	}
 };
 
-struct Gp_GC_80_DL_64 {
+struct GC_80_DL_64 {
 	std::vector<u8> first_part;
 	std::vector<u8> second_part;
 };
 
-packed_struct(GpBoundingSphere,
+packed_struct(BoundingSphere,
 	f32 x;
 	f32 y;
 	f32 z;
@@ -348,7 +348,7 @@ packed_struct(GpBoundingSphere,
 )
 
 struct GrindPath {
-	GpBoundingSphere bounding_sphere;
+	BoundingSphere bounding_sphere;
 	s32 unknown_4;
 	s32 wrap;
 	s32 inactive;
@@ -374,8 +374,8 @@ enum AreaPart {
 	AREA_PART_NEG_CUBOIDS = 4
 };
 
-struct GpArea {
-	GpBoundingSphere bounding_sphere;
+struct Area {
+	BoundingSphere bounding_sphere;
 	s32 last_update_time;
 	std::vector<s32> parts[5];
 	OriginalIndex original_index;
@@ -399,7 +399,7 @@ struct GpArea {
 	}
 };
 
-struct GpDirectionalLight {
+struct DirectionalLight {
 	Vec4f color_a;
 	Vec4f dir_a;
 	Vec4f color_b;
@@ -416,7 +416,7 @@ struct GpDirectionalLight {
 	}
 };
 
-struct GpTieInstance {
+struct TieInstance {
 	s32 o_class;
 	s32 unknown_4;
 	s32 unknown_8;
@@ -445,7 +445,7 @@ struct GpTieInstance {
 	}
 };
 
-struct GpTieAmbientRgbas {
+struct TieAmbientRgbas {
 	s16 id;
 	std::vector<u8> data;
 	OriginalIndex original_index;
@@ -458,12 +458,12 @@ struct GpTieAmbientRgbas {
 	}
 };
 
-struct GpTieGroups {
+struct TieGroups {
 	std::vector<s32> first_part;
 	std::vector<s8> second_part;
 };
 
-struct GpShrubInstance {
+struct ShrubInstance {
 	s32 o_class;
 	f32 unknown_4;
 	s32 unknown_8;
@@ -500,7 +500,7 @@ struct GpShrubInstance {
 	}
 };
 
-struct GpShrubGroups {
+struct ShrubGroups {
 	std::vector<s32> first_part;
 	std::vector<s8> second_part;
 };
@@ -536,45 +536,45 @@ using Opt = std::optional<T>;
 
 struct Gameplay {
 	// Deadlocked gameplay core
-	Opt<std::vector<Gp_GC_8c_DL_70>> gc_8c_dl_70;
-	Opt<GpProperties> properties;
-	Opt<std::vector<GpHelpMessage>> us_english_help_messages;
-	Opt<std::vector<GpHelpMessage>> uk_english_help_messages;
-	Opt<std::vector<GpHelpMessage>> french_help_messages;
-	Opt<std::vector<GpHelpMessage>> german_help_messages;
-	Opt<std::vector<GpHelpMessage>> spanish_help_messages;
-	Opt<std::vector<GpHelpMessage>> italian_help_messages;
-	Opt<std::vector<GpHelpMessage>> japanese_help_messages;
-	Opt<std::vector<GpHelpMessage>> korean_help_messages;
+	Opt<std::vector<GC_8c_DL_70>> gc_8c_dl_70;
+	Opt<Properties> properties;
+	Opt<std::vector<HelpMessage>> us_english_help_messages;
+	Opt<std::vector<HelpMessage>> uk_english_help_messages;
+	Opt<std::vector<HelpMessage>> french_help_messages;
+	Opt<std::vector<HelpMessage>> german_help_messages;
+	Opt<std::vector<HelpMessage>> spanish_help_messages;
+	Opt<std::vector<HelpMessage>> italian_help_messages;
+	Opt<std::vector<HelpMessage>> japanese_help_messages;
+	Opt<std::vector<HelpMessage>> korean_help_messages;
 	Opt<std::vector<GC_84_Instance>> gc_84;
 	Opt<std::vector<ImportCamera>> cameras;
 	Opt<std::vector<SoundInstance>> sound_instances;
 	Opt<std::vector<s32>> moby_classes;
 	Opt<std::vector<MobyInstance>> moby_instances;
 	Opt<s32> dynamic_moby_count;
-	Opt<std::vector<Gp_DL_3c>> gc_58_dl_3c;
-	Opt<std::vector<Gp_GC_64_DL_48>> gc_64_dl_48;
-	Opt<GpMobyGroups> moby_groups;
-	Opt<Gp_GC_54_DL_38> gc_54_dl_38;
-	Opt<std::vector<GpShape>> spheres;
-	Opt<std::vector<GpShape>> cylinders;
+	Opt<std::vector<DL_3c>> gc_58_dl_3c;
+	Opt<std::vector<GC_64_DL_48>> gc_64_dl_48;
+	Opt<MobyGroups> moby_groups;
+	Opt<GC_54_DL_38> gc_54_dl_38;
+	Opt<std::vector<Shape>> spheres;
+	Opt<std::vector<Shape>> cylinders;
 	Opt<std::vector<s32>> gc_74_dl_58;
-	Opt<std::vector<GpPath>> paths;
-	Opt<std::vector<GpShape>> cuboids;
+	Opt<std::vector<Path>> paths;
+	Opt<std::vector<Shape>> cuboids;
 	Opt<std::vector<u8>> gc_88_dl_6c;
-	Opt<Gp_GC_80_DL_64> gc_80_dl_64;
+	Opt<GC_80_DL_64> gc_80_dl_64;
 	Opt<std::vector<GrindPath>> grindpaths;
-	Opt<std::vector<GpArea>> gameplay_area_list;
+	Opt<std::vector<Area>> gameplay_area_list;
 	
 	// Deadlocked art instances
-	Opt<std::vector<GpDirectionalLight>> lights;
+	Opt<std::vector<DirectionalLight>> lights;
 	Opt<std::vector<s32>> tie_classes;
-	Opt<std::vector<GpTieInstance>> tie_instances;
-	Opt<std::vector<GpTieAmbientRgbas>> tie_ambient_rgbas;
-	Opt<GpTieGroups> tie_groups;
+	Opt<std::vector<TieInstance>> tie_instances;
+	Opt<std::vector<TieAmbientRgbas>> tie_ambient_rgbas;
+	Opt<TieGroups> tie_groups;
 	Opt<std::vector<s32>> shrub_classes;
-	Opt<std::vector<GpShrubInstance>> shrub_instances;
-	Opt<GpShrubGroups> shrub_groups;
+	Opt<std::vector<ShrubInstance>> shrub_instances;
+	Opt<ShrubGroups> shrub_groups;
 	Opt<OcclusionClusters> occlusion_clusters;
 	
 	// Only used while reading the binary gameplay file, empty otherwise.

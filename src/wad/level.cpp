@@ -48,7 +48,7 @@ Json write_help_messages(Gameplay& gameplay) {
 	
 	struct {
 		const char* name;
-		Opt<std::vector<GpHelpMessage>>* messages;
+		Opt<std::vector<HelpMessage>>* messages;
 	} languages[8] = {
 		{"us_english", &gameplay.us_english_help_messages},
 		{"uk_english", &gameplay.uk_english_help_messages},
@@ -61,7 +61,7 @@ Json write_help_messages(Gameplay& gameplay) {
 	};
 	for(auto& language : languages) {
 		if(language.messages->has_value()) {
-			for(GpHelpMessage& message : **language.messages) {
+			for(HelpMessage& message : **language.messages) {
 				json[language.name].emplace_back(to_json(message));
 			}
 		}
