@@ -54,5 +54,8 @@ For build instructions, see the Build section below. For usage instructions, see
 
 6.	Build it with cmake:
 	> cmake . && cmake --build . --config Release
-	* Omitting `--config Release` will build the project in Debug configuration, *which also disables optimizations*
-	* Note that PDBs will be generated into each project's `XXXX.dir` subfolder as `vcZZZ.pdb` instead of the `bin` directory when building in Release configuration
+	
+	Omitting `--config Release` will build the project in Debug configuration, *which disables optimizations*.
+	Note that PDBs will be generated into each target's `[...].dir` subfolder as `vc[...].pdb` instead of the `bin` directory when building in Release configuration.
+	
+Recommended: You should have a valid git executable file in your path so that the build can identify its version number and commit hash.
