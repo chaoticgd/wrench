@@ -130,17 +130,25 @@ struct GpProperties {
 	}
 };
 
-enum class Language {
-	ENGLISH_US, ENGLISH_UK
-};
-
-struct GpString {
+struct GpHelpMessage {
 	std::optional<std::string> string;
 	s16 id;
-	s16 unknown_6;
-	s32 unknown_8;
-	s16 unknown_c;
-	s16 unknown_e;
+	s16 short_id;
+	s16 third_person_id;
+	s16 coop_id;
+	s16 vag;
+	s16 character;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_STRING(string);
+		DEF_FIELD(id);
+		DEF_FIELD(short_id);
+		DEF_FIELD(third_person_id);
+		DEF_FIELD(coop_id);
+		DEF_FIELD(vag);
+		DEF_FIELD(character);
+	}
 };
 
 struct ImportCamera {
@@ -483,14 +491,14 @@ struct Gameplay {
 	// Deadlocked gameplay core
 	Opt<std::vector<Gp_GC_8c_DL_70>> gc_8c_dl_70;
 	Opt<GpProperties> properties;
-	Opt<std::vector<GpString>> us_english_strings;
-	Opt<std::vector<GpString>> uk_english_strings;
-	Opt<std::vector<GpString>> french_strings;
-	Opt<std::vector<GpString>> german_strings;
-	Opt<std::vector<GpString>> spanish_strings;
-	Opt<std::vector<GpString>> italian_strings;
-	Opt<std::vector<GpString>> japanese_strings;
-	Opt<std::vector<GpString>> korean_strings;
+	Opt<std::vector<GpHelpMessage>> us_english_help_messages;
+	Opt<std::vector<GpHelpMessage>> uk_english_help_messages;
+	Opt<std::vector<GpHelpMessage>> french_help_messages;
+	Opt<std::vector<GpHelpMessage>> german_help_messages;
+	Opt<std::vector<GpHelpMessage>> spanish_help_messages;
+	Opt<std::vector<GpHelpMessage>> italian_help_messages;
+	Opt<std::vector<GpHelpMessage>> japanese_help_messages;
+	Opt<std::vector<GpHelpMessage>> korean_help_messages;
 	Opt<std::vector<ImportCamera>> cameras;
 	Opt<std::vector<SoundInstance>> sound_instances;
 	Opt<std::vector<s32>> moby_classes;
@@ -555,5 +563,6 @@ struct LevelWad : Wad {
 };
 
 Json write_gameplay_json(Gameplay& gameplay);
+Json write_help_messages(Gameplay& gameplay);
 
 #endif

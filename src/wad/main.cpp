@@ -105,6 +105,11 @@ static void run_extractor(fs::path input_path, fs::path output_path) {
 		fs::path path = output_path/"gameplay.json";
 		write_file(path.c_str(), str);
 		
+		Json help_json = write_help_messages(level->gameplay);
+		std::string help_str = help_json.dump(1, '\t');
+		fs::path help_path = output_path/"help_messages.json";
+		write_file(help_path.c_str(), help_str);
+		
 		fs::path mission_instances_dir =  output_path/"gameplay_mission_instances";
 		fs::create_directories(mission_instances_dir);
 		

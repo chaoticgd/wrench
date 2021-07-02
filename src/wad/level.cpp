@@ -35,3 +35,28 @@ Json write_gameplay_json(Gameplay& gameplay) {
 	
 	return json;
 }
+
+Json write_help_messages(Gameplay& gameplay) {
+	struct {
+		const char* name;
+		Opt<std::vector<GpHelpMessage>>* messages;
+	} languages[8] = {
+		{"us_english", &gameplay.us_english_help_messages},
+		{"uk_english", &gameplay.uk_english_help_messages},
+		{"french", &gameplay.french_help_messages},
+		{"german", &gameplay.german_help_messages},
+		{"spanish", &gameplay.spanish_help_messages},
+		{"italian", &gameplay.italian_help_messages},
+		{"japanese", &gameplay.japanese_help_messages},
+		{"korean", &gameplay.korean_help_messages}
+	};
+	Json json;
+	for(auto& language : languages) {
+		if(language.messages->has_value()) {
+			for(GpHelpMessage& message : **language.messages) {
+				json[language.name].emplace_back(to_json(message));
+			}
+		}
+	}
+	return json;
+}

@@ -64,6 +64,21 @@ static const char* HEX_DIGITS = "0123456789abcdef";
 	return {};
 }
 
+static std::string encode_json_string(const std::string& input) {
+	std::string output;
+	for(char c : input) {
+		if(c >= 0x20 && c < 0x7f) {
+			output += c;
+		} else {
+			output += '\\';
+			output += 'x';
+			output += HEX_DIGITS[(c & 0xff) >> 4];
+			output += HEX_DIGITS[(c & 0xff) & 0xf];
+		}
+	}
+	return output;
+}
+
 struct ToJsonVisitor {
 	Json json;
 	template <typename Field>
@@ -114,6 +129,11 @@ struct ToJsonVisitor {
 	void hexdump(const char* name, std::vector<std::vector<u8>>& list) {
 		for(auto& buffer : list) {
 			json[name].emplace_back(buffer_to_json_hexdump(buffer));
+		}
+	}
+	void string(const char* name, std::optional<std::string>& string) {
+		if(string.has_value()) {
+			json[name] = encode_json_string(*string);
 		}
 	}
 };

@@ -44,7 +44,7 @@ std::vector<u8> write_gameplay(const Gameplay& gameplay, Game game, const std::v
 	OutBuffer dest(dest_vec);
 	for(const GameplayBlockDescription& block : blocks) {
 		if(block.header_pointer_offset != NONE && block.funcs.write != nullptr) {
-			if(strcmp(block.name, "us english strings") != 0) {
+			if(strcmp(block.name, "us english help messages") != 0) {
 				dest.pad(0x10, 0);
 			}
 			if(strcmp(block.name, "occlusion clusters") == 0) {
@@ -145,47 +145,49 @@ struct PropertiesBlock {
 	}
 };
 
-packed_struct(StringBlockHeader,
-	s32 string_count;
+packed_struct(HelpMessageHeader,
+	s32 count;
 	s32 size;
 )
 
-packed_struct(StringTableEntry,
+packed_struct(HelpMessageEntry,
 	s32 offset;
 	s16 id;
-	s16 unknown_6;
-	s32 unknown_8;
-	s16 unknown_c;
-	s16 unknown_e;
+	s16 short_id;
+	s16 third_person_id;
+	s16 coop_id;
+	s16 vag;
+	s16 character;
 )
 
 template <bool is_korean>
-struct StringBlock {
-	static void read(std::vector<GpString>& dest, Buffer src, Game game) {
-		auto& header = src.read<StringBlockHeader>(0, "string block header");
-		auto table = src.read_multiple<StringTableEntry>(8, header.string_count, "string table");
+struct HelpMessageBlock {
+	static void read(std::vector<GpHelpMessage>& dest, Buffer src, Game game) {
+		auto& header = src.read<HelpMessageHeader>(0, "string block header");
+		auto table = src.read_multiple<HelpMessageEntry>(8, header.count, "string table");
 		
 		if(game == Game::RAC3 || game == Game::DL) {
 			src = src.subbuf(8);
 		}
 		
-		for(StringTableEntry entry : table) {
-			GpString string;
+		for(HelpMessageEntry entry : table) {
+			GpHelpMessage message;
 			if(entry.offset != 0) {
-				string.string = src.read_string(entry.offset, is_korean);
+				message.string = src.read_string(entry.offset, is_korean);
 			}
-			string.id = entry.id;
-			string.unknown_6 = entry.unknown_6;
-			string.unknown_8 = entry.unknown_8;
-			string.unknown_c = entry.unknown_c;
-			string.unknown_e = entry.unknown_e;
-			dest.emplace_back(std::move(string));
+			message.id = entry.id;
+			message.short_id = entry.short_id;
+			message.third_person_id = entry.third_person_id;
+			message.coop_id = entry.coop_id;
+			message.vag = entry.vag;
+			message.character = entry.character;
+			dest.emplace_back(std::move(message));
 		}
 	}
 	
-	static void write(OutBuffer dest, const std::vector<GpString>& src, Game game) {
-		s64 header_ofs = dest.alloc<StringBlockHeader>();
-		s64 table_ofs = dest.alloc_multiple<StringTableEntry>(src.size());
+	static void write(OutBuffer dest, const std::vector<GpHelpMessage>& src, Game game) {
+		s64 header_ofs = dest.alloc<HelpMessageHeader>();
+		s64 table_ofs = dest.alloc_multiple<HelpMessageEntry>(src.size());
 		
 		s64 base_ofs;
 		if(game == Game::RAC3 || game == Game::DL) {
@@ -195,20 +197,21 @@ struct StringBlock {
 		}
 		
 		s64 entry_ofs = table_ofs;
-		for(const GpString& string : src) {
-			StringTableEntry entry {0};
-			if(string.string) {
+		for(const GpHelpMessage& message : src) {
+			HelpMessageEntry entry {0};
+			if(message.string) {
 				entry.offset = dest.tell() - base_ofs;
 			}
-			entry.id = string.id;
-			entry.unknown_6 = string.unknown_6;
-			entry.unknown_8 = string.unknown_8;
-			entry.unknown_c = string.unknown_c;
-			entry.unknown_e = string.unknown_e;
+			entry.id = message.id;
+			entry.short_id = message.short_id;
+			entry.third_person_id = message.third_person_id;
+			entry.coop_id = message.coop_id;
+			entry.vag = message.vag;
+			entry.character = message.character;
 			dest.write(entry_ofs, entry);
-			entry_ofs += sizeof(StringTableEntry);
-			if(string.string) {
-				for(char c : *string.string) {
+			entry_ofs += sizeof(HelpMessageEntry);
+			if(message.string) {
+				for(char c : *message.string) {
 					dest.write(c);
 				}
 				dest.write('\0');
@@ -217,8 +220,8 @@ struct StringBlock {
 				}
 			}
 		}
-		StringBlockHeader header;
-		header.string_count = src.size();
+		HelpMessageHeader header;
+		header.count = src.size();
 		header.size = dest.tell() - base_ofs;
 		dest.write(header_ofs, header);
 	}
@@ -930,14 +933,14 @@ static GameplayBlockFuncs bf(Field field) {
 const std::vector<GameplayBlockDescription> RAC23_GAMEPLAY_BLOCKS = {
 	{0x8c, bf<TableBlock<Gp_GC_8c_DL_70>>(&Gameplay::gc_8c_dl_70), "GC 8c DL 70"},
 	{0x00, bf<PropertiesBlock>(&Gameplay::properties), "properties"},
-	{0x10, bf<StringBlock<false>>(&Gameplay::us_english_strings), "us english strings"},
-	{0x14, bf<StringBlock<false>>(&Gameplay::uk_english_strings), "uk english strings"},
-	{0x18, bf<StringBlock<false>>(&Gameplay::french_strings), "french strings"},
-	{0x1c, bf<StringBlock<false>>(&Gameplay::german_strings), "german strings"},
-	{0x20, bf<StringBlock<false>>(&Gameplay::spanish_strings), "spanish strings"},
-	{0x24, bf<StringBlock<false>>(&Gameplay::italian_strings), "italian strings"},
-	{0x28, bf<StringBlock<false>>(&Gameplay::japanese_strings), "japanese strings"},
-	{0x2c, bf<StringBlock<true>>(&Gameplay::korean_strings), "korean strings"},
+	{0x10, bf<HelpMessageBlock<false>>(&Gameplay::us_english_help_messages), "us english help messages"},
+	{0x14, bf<HelpMessageBlock<false>>(&Gameplay::uk_english_help_messages), "uk english help messages"},
+	{0x18, bf<HelpMessageBlock<false>>(&Gameplay::french_help_messages), "french help messages"},
+	{0x1c, bf<HelpMessageBlock<false>>(&Gameplay::german_help_messages), "german help messages"},
+	{0x20, bf<HelpMessageBlock<false>>(&Gameplay::spanish_help_messages), "spanish help messages"},
+	{0x24, bf<HelpMessageBlock<false>>(&Gameplay::italian_help_messages), "italian help messages"},
+	{0x28, bf<HelpMessageBlock<false>>(&Gameplay::japanese_help_messages), "japanese help messages"},
+	{0x2c, bf<HelpMessageBlock<true>>(&Gameplay::korean_help_messages), "korean help messages"},
 	{0x04, bf<TableBlock<GpDirectionalLight>>(&Gameplay::lights), "directional lights"},
 	{0x84, bf<TableBlock<GC_84_Instance>>(&Gameplay::gc_84), "GC 84"},
 	{0x08, bf<InstanceBlock<ImportCamera, ImportCameraPacked>>(&Gameplay::cameras), "import cameras"},
@@ -972,14 +975,14 @@ const std::vector<GameplayBlockDescription> RAC23_GAMEPLAY_BLOCKS = {
 const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS = {
 	{0x70, bf<TableBlock<Gp_GC_8c_DL_70>>(&Gameplay::gc_8c_dl_70), "GC 8c DL 70"},
 	{0x00, bf<PropertiesBlock>(&Gameplay::properties), "properties"},
-	{0x0c, bf<StringBlock<false>>(&Gameplay::us_english_strings), "us english strings"},
-	{0x10, bf<StringBlock<false>>(&Gameplay::uk_english_strings), "uk english strings"},
-	{0x14, bf<StringBlock<false>>(&Gameplay::french_strings), "french strings"},
-	{0x18, bf<StringBlock<false>>(&Gameplay::german_strings), "german strings"},
-	{0x1c, bf<StringBlock<false>>(&Gameplay::spanish_strings), "spanish strings"},
-	{0x20, bf<StringBlock<false>>(&Gameplay::italian_strings), "italian strings"},
-	{0x24, bf<StringBlock<false>>(&Gameplay::japanese_strings), "japanese strings"},
-	{0x28, bf<StringBlock<true>>(&Gameplay::korean_strings), "korean strings"},
+	{0x0c, bf<HelpMessageBlock<false>>(&Gameplay::us_english_help_messages), "us english help messages"},
+	{0x10, bf<HelpMessageBlock<false>>(&Gameplay::uk_english_help_messages), "uk english help messages"},
+	{0x14, bf<HelpMessageBlock<false>>(&Gameplay::french_help_messages), "french help messages"},
+	{0x18, bf<HelpMessageBlock<false>>(&Gameplay::german_help_messages), "german help messages"},
+	{0x1c, bf<HelpMessageBlock<false>>(&Gameplay::spanish_help_messages), "spanish help messages"},
+	{0x20, bf<HelpMessageBlock<false>>(&Gameplay::italian_help_messages), "italian help messages"},
+	{0x24, bf<HelpMessageBlock<false>>(&Gameplay::japanese_help_messages), "japanese help messages"},
+	{0x28, bf<HelpMessageBlock<true>>(&Gameplay::korean_help_messages), "korean help messages"},
 	{0x04, bf<InstanceBlock<ImportCamera, ImportCameraPacked>>(&Gameplay::cameras), "import cameras"},
 	{0x08, bf<InstanceBlock<SoundInstance, SoundInstancePacked>>(&Gameplay::sound_instances), "sound instances"},
 	{0x2c, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},
