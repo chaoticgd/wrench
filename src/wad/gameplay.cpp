@@ -170,6 +170,7 @@ struct HelpMessageBlock {
 			src = src.subbuf(8);
 		}
 		
+		OriginalIndex original_index = 0;
 		for(HelpMessageEntry entry : table) {
 			HelpMessage message;
 			if(entry.offset != 0) {
@@ -181,6 +182,7 @@ struct HelpMessageBlock {
 			message.coop_id = entry.coop_id;
 			message.vag = entry.vag;
 			message.character = entry.character;
+			message.original_index = original_index++;
 			dest.emplace_back(std::move(message));
 		}
 	}

@@ -140,6 +140,7 @@ struct HelpMessage {
 	s16 coop_id;
 	s16 vag;
 	s16 character;
+	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
@@ -150,6 +151,7 @@ struct HelpMessage {
 		DEF_FIELD(coop_id);
 		DEF_FIELD(vag);
 		DEF_FIELD(character);
+		DEF_FIELD(original_index);
 	}
 };
 
