@@ -471,9 +471,7 @@ struct ShrubInstance {
 	s32 unknown_c;
 	Mat3 matrix;
 	Vec4f position;
-	s32 unknown_50;
-	s32 unknown_54;
-	s32 unknown_58;
+	Rgb96 light_col;
 	s32 unknown_5c;
 	s32 unknown_60;
 	s32 unknown_64;
@@ -489,9 +487,7 @@ struct ShrubInstance {
 		DEF_FIELD(unknown_c);
 		DEF_FIELD(matrix);
 		DEF_FIELD(position);
-		DEF_FIELD(unknown_50);
-		DEF_FIELD(unknown_54);
-		DEF_FIELD(unknown_58);
+		DEF_FIELD(light_col);
 		DEF_FIELD(unknown_5c);
 		DEF_FIELD(unknown_60);
 		DEF_FIELD(unknown_64);

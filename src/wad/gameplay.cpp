@@ -1006,20 +1006,18 @@ static void swap_instance(TieInstance& l, TieInstancePacked& r) {
 }
 
 packed_struct(ShrubInstancePacked,
-	s32 o_class;    // 0x0
-	f32 unknown_4;  // 0x4
-	s32 unknown_8;  // 0x8
-	s32 unknown_c;  // 0xc
-	Mat3 matrix;    // 0x10
-	Vec4f position; // 0x40
-	s32 unknown_50; // 0x50
-	s32 unknown_54; // 0x54
-	s32 unknown_58; // 0x58
-	s32 unknown_5c; // 0x5c
-	s32 unknown_60; // 0x60
-	s32 unknown_64; // 0x64
-	s32 unknown_68; // 0x68
-	s32 unknown_6c; // 0x6c
+	s32 o_class;     // 0x0
+	f32 unknown_4;   // 0x4
+	s32 unknown_8;   // 0x8
+	s32 unknown_c;   // 0xc
+	Mat3 matrix;     // 0x10
+	Vec4f position;  // 0x40
+	Rgb96 light_col; // 0x50
+	s32 unknown_5c;  // 0x5c
+	s32 unknown_60;  // 0x60
+	s32 unknown_64;  // 0x64
+	s32 unknown_68;  // 0x68
+	s32 unknown_6c;  // 0x6c
 )
 
 static void swap_instance(ShrubInstance& l, ShrubInstancePacked& r) {
@@ -1029,9 +1027,7 @@ static void swap_instance(ShrubInstance& l, ShrubInstancePacked& r) {
 	SWAP_PACKED(l.unknown_c, r.unknown_c);
 	SWAP_PACKED(l.matrix, r.matrix);
 	SWAP_PACKED(l.position, r.position);
-	SWAP_PACKED(l.unknown_50, r.unknown_50);
-	SWAP_PACKED(l.unknown_54, r.unknown_54);
-	SWAP_PACKED(l.unknown_58, r.unknown_58);
+	SWAP_PACKED(l.light_col, r.light_col);
 	SWAP_PACKED(l.unknown_5c, r.unknown_5c);
 	SWAP_PACKED(l.unknown_60, r.unknown_60);
 	SWAP_PACKED(l.unknown_64, r.unknown_64);
