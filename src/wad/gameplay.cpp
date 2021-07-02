@@ -912,7 +912,7 @@ struct OcclusionBlock {
 template <typename Block, typename Field>
 static GameplayBlockFuncs bf(Field field) {
 	// e.g. if field = &Gameplay::moby_instances then FieldType = std::vector<MobyInstance>.
-	using FieldType = std::remove_reference<decltype(Gameplay().*field)>::type::value_type;
+	using FieldType = typename std::remove_reference<decltype(Gameplay().*field)>::type::value_type;
 	
 	GameplayBlockFuncs funcs;
 	funcs.read = [field](Gameplay& gameplay, Buffer src, Game game) {
