@@ -210,7 +210,6 @@ struct SoundInstance {
 };
 
 struct MobyInstance {
-	s32 size;
 	s8 mission;
 	s32 uid;
 	s32 bolts;
@@ -246,7 +245,6 @@ struct MobyInstance {
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(size);
 		DEF_FIELD(mission);
 		DEF_FIELD(uid);
 		DEF_FIELD(bolts);

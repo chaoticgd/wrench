@@ -369,7 +369,7 @@ struct RAC23MobyBlock {
 	}
 	
 	static void swap_moby(MobyInstance& l, MobyInstanceRAC23& r) {
-		SWAP_PACKED(l.size, r.size);
+		r.size = 0x88;
 		SWAP_PACKED(l.mission, r.mission);
 		SWAP_PACKED(l.rac23.unknown_8, r.unknown_8);
 		SWAP_PACKED(l.rac23.unknown_c, r.unknown_c);
@@ -460,7 +460,7 @@ struct DeadlockedMobyBlock {
 	}
 	
 	static void swap_moby(MobyInstance& l, MobyInstanceDL& r) {
-		SWAP_PACKED(l.size, r.size);
+		r.size = 0x70;
 		SWAP_PACKED(l.mission, r.mission);
 		SWAP_PACKED(l.uid, r.uid);
 		SWAP_PACKED(l.bolts, r.bolts);
