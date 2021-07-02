@@ -111,6 +111,8 @@ struct ArtInstancesLump {
 	}
 };
 
+// NOTE: For now this isn't working because certain mission instance lumps
+// appear to be in a different format to most.
 struct GameplayMissionInstancesLump {
 	static void read(WadLumpDescription desc, std::vector<Gameplay>& dest, std::vector<u8>& src, Game& game) {
 		assert(game == Game::DL);
@@ -173,7 +175,7 @@ const std::vector<WadFileDescription> wad_files = {
 		{0x028, 3,   lf<BinaryLump>(&LevelWad::binary_assets), "chunk"},
 		{0x040, 3,   lf<BinaryLump>(&LevelWad::binary_assets), "chunkbank"},
 		{0x058, 1,   lf<DlGameplayLump>(&LevelWad::gameplay), "gameplay_core"},
-		{0x060, 128, lf<GameplayMissionInstancesLump>(&LevelWad::gameplay_mission_instances), "gameplay_mission_instances"},
+		{0x060, 128, lf<BinaryLump>(&LevelWad::binary_assets), "gameplay_mission_instances"},
 		{0x460, 128, lf<BinaryLump>(&LevelWad::binary_assets), "gameplay_mission_data"},
 		{0x860, 128, lf<BinaryLump>(&LevelWad::binary_assets), "mission_banks"},
 		{0xc60, 1,   lf<ArtInstancesLump>(&LevelWad::gameplay), "art_instances"}

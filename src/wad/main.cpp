@@ -110,16 +110,16 @@ static void run_extractor(fs::path input_path, fs::path output_path) {
 		fs::path help_path = output_path/"help_messages.json";
 		write_file(help_path.string().c_str(), help_str);
 		
-		fs::path mission_instances_dir =  output_path/"gameplay_mission_instances";
-		fs::create_directories(mission_instances_dir);
-		
-		for(size_t i = 0; i < level->gameplay_mission_instances.size(); i++) {
-			Gameplay& mission_instances = level->gameplay_mission_instances[i];
-			Json mission_instances_json = write_gameplay_json(mission_instances);
-			std::string mission_instances_str = mission_instances_json.dump(1, '\t');
-			fs::path path = mission_instances_dir/(std::to_string(i) + ".json");
-			write_file(path.string().c_str(), mission_instances_str);
-		}
+		//fs::path mission_instances_dir =  output_path/"gameplay_mission_instances";
+		//fs::create_directories(mission_instances_dir);
+		//
+		//for(size_t i = 0; i < level->gameplay_mission_instances.size(); i++) {
+		//	Gameplay& mission_instances = level->gameplay_mission_instances[i];
+		//	Json mission_instances_json = write_gameplay_json(mission_instances);
+		//	std::string mission_instances_str = mission_instances_json.dump(1, '\t');
+		//	fs::path path = mission_instances_dir/(std::to_string(i) + ".json");
+		//	write_file(path.string().c_str(), mission_instances_str);
+		//}
 	}
 	
 	fclose(file);
