@@ -616,8 +616,8 @@ packed_struct(DualTableHeader,
 
 template <typename T>
 struct DualTableBlock {
-	using FirstType = decltype(T::first_part)::value_type;
-	using SecondType = decltype(T::second_part)::value_type;
+	using FirstType = typename decltype(T::first_part)::value_type;
+	using SecondType = typename decltype(T::second_part)::value_type;
 	
 	static void read(T& dest, Buffer src, Game game) {
 		auto header = src.read<DualTableHeader>(0, "dual table header");
