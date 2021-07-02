@@ -133,7 +133,7 @@ static std::unique_ptr<Wad> create_wad() {
 template <typename Lump, typename Field>
 static LumpFuncs lf(Field field) {
 	// e.g. if field = &LevelWad::binary_assets then ThisWad = LevelWad.
-	using ThisWad = MemberTraits<Field>::instance_type;
+	using ThisWad = typename MemberTraits<Field>::instance_type;
 	
 	LumpFuncs funcs;
 	funcs.read = [field](WadLumpDescription desc, Wad& dest, std::vector<u8>& src, Game& game) {

@@ -103,12 +103,12 @@ static void run_extractor(fs::path input_path, fs::path output_path) {
 		std::string str = json.dump(1, '\t');
 		
 		fs::path path = output_path/"gameplay.json";
-		write_file(path.c_str(), str);
+		write_file(path.string().c_str(), str);
 		
 		Json help_json = write_help_messages(level->gameplay);
 		std::string help_str = help_json.dump(1, '\t');
 		fs::path help_path = output_path/"help_messages.json";
-		write_file(help_path.c_str(), help_str);
+		write_file(help_path.string().c_str(), help_str);
 		
 		fs::path mission_instances_dir =  output_path/"gameplay_mission_instances";
 		fs::create_directories(mission_instances_dir);
@@ -118,7 +118,7 @@ static void run_extractor(fs::path input_path, fs::path output_path) {
 			Json mission_instances_json = write_gameplay_json(mission_instances);
 			std::string mission_instances_str = mission_instances_json.dump(1, '\t');
 			fs::path path = mission_instances_dir/(std::to_string(i) + ".json");
-			write_file(path.c_str(), mission_instances_str);
+			write_file(path.string().c_str(), mission_instances_str);
 		}
 	}
 	
