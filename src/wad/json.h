@@ -67,7 +67,10 @@ static const char* HEX_DIGITS = "0123456789abcdef";
 static std::string encode_json_string(const std::string& input) {
 	std::string output;
 	for(char c : input) {
-		if(c >= 0x20 && c < 0x7f) {
+		if(c == '\\') {
+			output += '\\';
+			output += '\\';
+		} else if(c >= 0x20 && c < 0x7f) {
 			output += c;
 		} else {
 			output += '\\';
