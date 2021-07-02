@@ -24,7 +24,7 @@ Json write_gameplay_json(Gameplay& gameplay) {
 	json["metadata"] = Json {
 		{"format", "gameplay"},
 		{"format_version", 0},
-		{"application", "Wrench WAD Extractor"},
+		{"application", "Wrench WAD Utility"},
 		{"application_version", get_application_version_string()}
 	};
 	
@@ -42,7 +42,7 @@ Json write_help_messages(Gameplay& gameplay) {
 	json["metadata"] = Json {
 		{"format", "help_messages"},
 		{"format_version", 0},
-		{"application", "Wrench WAD Extractor"},
+		{"application", "Wrench WAD Utility"},
 		{"application_version", get_application_version_string()}
 	};
 	
