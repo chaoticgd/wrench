@@ -926,24 +926,16 @@ static void swap_instance(GC_84_Instance& l, GC_84_Packed& r) {
 }
 
 packed_struct(ImportCameraPacked,
-	s32 unknown_0;
-	s32 unknown_4;
-	s32 unknown_8;
-	s32 unknown_c;
-	s32 unknown_10;
-	s32 unknown_14;
-	s32 unknown_18;
-	s32 pvar_index;
+	s32 type;       // 0x0
+	Vec3f position; // 0x4
+	Vec3f rotation; // 0x10
+	s32 pvar_index; // 0x1c
 )
 
 static void swap_instance(ImportCamera& l, ImportCameraPacked& r) {
-	SWAP_PACKED(l.unknown_0, r.unknown_0);
-	SWAP_PACKED(l.unknown_4, r.unknown_4);
-	SWAP_PACKED(l.unknown_8, r.unknown_8);
-	SWAP_PACKED(l.unknown_c, r.unknown_c);
-	SWAP_PACKED(l.unknown_10, r.unknown_10);
-	SWAP_PACKED(l.unknown_14, r.unknown_14);
-	SWAP_PACKED(l.unknown_18, r.unknown_18);
+	SWAP_PACKED(l.type, r.type);
+	SWAP_PACKED(l.position, r.position);
+	SWAP_PACKED(l.rotation, r.rotation);
 	SWAP_PACKED(l.pvar_index, r.pvar_index);
 }
 

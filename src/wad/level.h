@@ -166,19 +166,18 @@ struct GC_84_Instance {
 };
 
 struct ImportCamera {
-	s32 unknown_0;
-	s32 unknown_4;
-	s32 unknown_8;
-	s32 unknown_c;
-	s32 unknown_10;
-	s32 unknown_14;
-	s32 unknown_18;
+	s32 type;
+	Vec3f position;
+	Vec3f rotation;
 	s32 pvar_index; // Only used during reading!
 	std::vector<u8> pvars;
 	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
+		DEF_FIELD(position);
+		DEF_FIELD(type);
+		DEF_FIELD(rotation);
 		DEF_HEXDUMP(pvars);
 		DEF_FIELD(original_index);
 	}
