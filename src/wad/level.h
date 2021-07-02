@@ -565,7 +565,7 @@ struct Gameplay {
 	Opt<std::vector<Shape>> cuboids;
 	Opt<std::vector<u8>> gc_88_dl_6c;
 	Opt<GC_80_DL_64> gc_80_dl_64;
-	Opt<std::vector<GrindPath>> grindpaths;
+	Opt<std::vector<GrindPath>> grind_paths;
 	Opt<std::vector<Area>> gameplay_area_list;
 	
 	// Deadlocked art instances
@@ -593,7 +593,7 @@ struct Gameplay {
 		DEF_OPTIONAL_FIELD(cylinders);
 		DEF_OPTIONAL_FIELD(paths);
 		DEF_OPTIONAL_FIELD(cuboids);
-		DEF_OPTIONAL_FIELD(grindpaths);
+		DEF_OPTIONAL_FIELD(grind_paths);
 		DEF_OPTIONAL_FIELD(gameplay_area_list);
 		
 		DEF_OPTIONAL_FIELD(lights);
