@@ -466,7 +466,7 @@ struct TieGroups {
 
 struct ShrubInstance {
 	s32 o_class;
-	f32 unknown_4;
+	f32 draw_distance;
 	s32 unknown_8;
 	s32 unknown_c;
 	Mat3 matrix;
@@ -482,7 +482,7 @@ struct ShrubInstance {
 	template <typename T>
 	void enumerate_fields(T& t) {
 		DEF_FIELD(o_class);
-		DEF_FIELD(unknown_4);
+		DEF_FIELD(draw_distance);
 		DEF_FIELD(unknown_8);
 		DEF_FIELD(unknown_c);
 		DEF_FIELD(matrix);
