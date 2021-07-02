@@ -98,27 +98,14 @@ struct ToJsonVisitor {
 		for(auto& elem : list) {
 			if constexpr(std::is_compound_v<Element>) {
 				json_list.emplace_back(to_json(elem));
+				assert((json_list.back().find("original_index") != json_list.back().end()
+					|| std::is_same_v<Element, Vec3f>
+					|| std::is_same_v<Element, Vec4f>));
 			} else {
 				json_list.emplace_back(elem);
 			}
 		}
 		json[name] = json_list;
-	}
-	template <typename Element>
-	void field(const char* name, std::vector<std::vector<Element>>& list) {
-		Json outer_json;
-		for(auto& inner : list) {
-			Json inner_json;
-			for(auto& elem : inner) {
-				if constexpr(std::is_compound_v<Element>) {
-					inner_json.emplace_back(to_json(elem));
-				} else {
-					inner_json.emplace_back(elem);
-				}
-			}
-			outer_json.emplace_back(inner_json);
-		}
-		json[name] = outer_json;
 	}
 	template <typename OptionalField>
 	void optional(const char* name, OptionalField& opt) {

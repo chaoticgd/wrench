@@ -232,9 +232,11 @@ struct InstanceBlock {
 	static void read(std::vector<Instance>& dest, Buffer src, Game game) {
 		TableHeader header = src.read<TableHeader>(0, "instance block header");
 		auto entries = src.read_multiple<Packed>(0x10, header.count_1, "instances");
+		OriginalIndex original_index = 0;
 		for(Packed packed : entries) {
 			Instance inst;
 			swap_instance(inst, packed);
+			inst.original_index = original_index++;
 			dest.push_back(inst);
 		}
 	}
@@ -249,46 +251,6 @@ struct InstanceBlock {
 		}
 	}
 };
-
-packed_struct(ImportCameraPacked,
-	s32 unknown_0;
-	s32 unknown_4;
-	s32 unknown_8;
-	s32 unknown_c;
-	s32 unknown_10;
-	s32 unknown_14;
-	s32 unknown_18;
-	s32 pvar_index;
-)
-
-static void swap_instance(ImportCamera& l, ImportCameraPacked& r) {
-	SWAP_PACKED(l.unknown_0, r.unknown_0);
-	SWAP_PACKED(l.unknown_4, r.unknown_4);
-	SWAP_PACKED(l.unknown_8, r.unknown_8);
-	SWAP_PACKED(l.unknown_c, r.unknown_c);
-	SWAP_PACKED(l.unknown_10, r.unknown_10);
-	SWAP_PACKED(l.unknown_14, r.unknown_14);
-	SWAP_PACKED(l.unknown_18, r.unknown_18);
-	SWAP_PACKED(l.pvar_index, r.pvar_index);
-}
-
-packed_struct(SoundInstancePacked,
-	s16 o_class;
-	s16 m_class;
-	u32 update_fun_ptr;
-	s32 pvar_index;
-	f32 range;
-	GpShape cuboid;
-)
-
-static void swap_instance(SoundInstance& l, SoundInstancePacked& r) {
-	SWAP_PACKED(l.o_class, r.o_class);
-	SWAP_PACKED(l.m_class, r.m_class);
-	r.update_fun_ptr = 0;
-	SWAP_PACKED(l.pvar_index, r.pvar_index);
-	SWAP_PACKED(l.range, r.range);
-	SWAP_PACKED(l.cuboid, r.cuboid);
-}
 
 struct ClassBlock {
 	static void read(std::vector<s32>& dest, Buffer src, Game game) {
@@ -343,11 +305,13 @@ struct RAC23MobyBlock {
 	static void read(Gameplay& dest, Buffer src, Game game) {
 		dest.moby_instances = std::vector<MobyInstance>();
 		auto& header = src.read<MobyBlockHeader>(0, "moby block header");
+		OriginalIndex original_index = 0;
 		for(MobyInstanceRAC23 entry : src.read_multiple<MobyInstanceRAC23>(0x10, header.static_count, "moby instances")) {
 			verify(entry.size == 0x88, "Moby size field has invalid value.");
 			
 			MobyInstance instance;
 			swap_moby(instance, entry);
+			instance.original_index = original_index++;
 			dest.moby_instances->push_back(instance);
 		}
 		dest.dynamic_moby_count = header.dynamic_count;
@@ -430,6 +394,7 @@ struct DeadlockedMobyBlock {
 	static void read(Gameplay& dest, Buffer src, Game game) {
 		dest.moby_instances = std::vector<MobyInstance>();
 		auto& header = src.read<MobyBlockHeader>(0, "moby block header");
+		OriginalIndex original_index = 0;
 		for(MobyInstanceDL entry : src.read_multiple<MobyInstanceDL>(0x10, header.static_count, "moby instances")) {
 			verify(entry.size == 0x70, "Moby size field has invalid value.");
 			verify(entry.unknown_20 == 32, "Moby field has weird value.");
@@ -439,6 +404,7 @@ struct DeadlockedMobyBlock {
 			
 			MobyInstance instance;
 			swap_moby(instance, entry);
+			instance.original_index = original_index++;
 			dest.moby_instances->push_back(instance);
 		}
 		dest.dynamic_moby_count = header.dynamic_count;
@@ -673,7 +639,7 @@ static s32 write_splines(OutBuffer dest, const std::vector<std::vector<Vec4f>>& 
 	return data_offset;
 }
 
-packed_struct(SplineBlockHeader,
+packed_struct(PathBlockHeader,
 	s32 spline_count;
 	s32 data_offset;
 	s32 data_size;
@@ -681,22 +647,30 @@ packed_struct(SplineBlockHeader,
 )
 
 struct PathBlock {
-	static void read(std::vector<std::vector<Vec4f>>& dest, Buffer src, Game game) {
-		auto& header = src.read<SplineBlockHeader>(0, "spline block header");
-		dest = read_splines(src.subbuf(0x10), header.spline_count, header.data_offset - 0x10);
+	static void read(std::vector<GpPath>& dest, Buffer src, Game game) {
+		auto& header = src.read<PathBlockHeader>(0, "path block header");
+		std::vector<std::vector<Vec4f>> splines = read_splines(src.subbuf(0x10), header.spline_count, header.data_offset - 0x10);
+		for(size_t i = 0; i < splines.size(); i++) {
+			dest.emplace_back(GpPath{std::move(splines[i]), (OriginalIndex) i});
+		}
 	}
 	
-	static void write(OutBuffer dest, const std::vector<std::vector<Vec4f>>& src, Game game) {
-		s64 header_pos = dest.alloc<SplineBlockHeader>();
-		SplineBlockHeader header = {0};
+	static void write(OutBuffer dest, const std::vector<GpPath>& src, Game game) {
+		std::vector<std::vector<Vec4f>> splines;
+		for(const GpPath& path : src) {
+			splines.emplace_back(path.vertices);
+		}
+		
+		s64 header_pos = dest.alloc<PathBlockHeader>();
+		PathBlockHeader header = {0};
 		header.spline_count = src.size();
-		header.data_offset = write_splines(dest, src);
+		header.data_offset = write_splines(dest, splines);
 		header.data_size = dest.tell() - header.data_offset;
 		header.data_offset -= header_pos;
 		dest.write(header_pos, header);
 	}
 };
-
+	
 struct GC_88_DL_6c_Block {
 	static void read(std::vector<u8>& dest, Buffer src, Game game) {
 		s32 size = src.read<s32>(0, "block size");
@@ -734,7 +708,7 @@ packed_struct(GrindPathData,
 
 struct GrindPathBlock {
 	static void read(std::vector<GrindPath>& dest, Buffer src, Game game) {
-		auto& header = src.read<SplineBlockHeader>(0, "spline block header");
+		auto& header = src.read<PathBlockHeader>(0, "spline block header");
 		auto grindpaths = src.read_multiple<GrindPathData>(0x10, header.spline_count, "grindrail data");
 		s64 offsets_pos = 0x10 + header.spline_count * sizeof(GrindPathData);
 		auto splines = read_splines(src.subbuf(offsets_pos), header.spline_count, header.data_offset - offsets_pos);
@@ -745,12 +719,13 @@ struct GrindPathBlock {
 			path.wrap = grindpaths[i].wrap;
 			path.inactive = grindpaths[i].inactive;
 			path.vertices = splines[i];
+			path.original_index = (OriginalIndex) std::move(i);
 			dest.emplace_back(std::move(path));
 		}
 	}
 	
 	static void write(OutBuffer dest, const std::vector<GrindPath>& src, Game game) {
-		s64 header_pos = dest.alloc<SplineBlockHeader>();
+		s64 header_pos = dest.alloc<PathBlockHeader>();
 		std::vector<std::vector<Vec4f>> splines;
 		for(const GrindPath& path : src) {
 			GrindPathData packed;
@@ -761,7 +736,7 @@ struct GrindPathBlock {
 			dest.write(packed);
 			splines.emplace_back(path.vertices);
 		}
-		SplineBlockHeader header = {0};
+		PathBlockHeader header = {0};
 		header.spline_count = src.size();
 		header.data_offset = write_splines(dest, splines);
 		header.data_size = dest.tell() - header.data_offset;
@@ -790,6 +765,7 @@ struct GameplayAreaListBlock {
 		s64 header_size = sizeof(GameplayAreaListHeader);
 		auto header = src.read<GameplayAreaListHeader>(0, "area list block header");
 		auto entries = src.read_multiple<GameplayAreaPacked>(header_size, header.area_count, "area list table");
+		OriginalIndex original_index = 0;
 		for(const GameplayAreaPacked& entry : entries) {
 			GpArea area;
 			area.bounding_sphere = entry.bounding_sphere;
@@ -798,6 +774,7 @@ struct GameplayAreaListBlock {
 				s32 part_ofs = header.part_offsets[part] + entry.relative_part_offsets[part];
 				area.parts[part] = src.read_multiple<s32>(part_ofs, entry.part_counts[part], "area list data").copy();
 			}
+			area.original_index = original_index++;
 			dest.emplace_back(std::move(area));
 		}
 	}
@@ -851,6 +828,7 @@ struct GameplayAreaListBlock {
 struct TieAmbientRgbaBlock {
 	static void read(std::vector<GpTieAmbientRgbas>& dest, Buffer src, Game game) {
 		s64 ofs = 0;
+		OriginalIndex original_index = 0;
 		for(;;) {
 			s16 id = src.read<s16>(ofs, "index");
 			ofs += 2;
@@ -862,6 +840,7 @@ struct TieAmbientRgbaBlock {
 			GpTieAmbientRgbas part;
 			part.id = id;
 			part.data = src.read_multiple<u8>(ofs, size, "tie rgba data").copy();
+			part.original_index = original_index++;
 			dest.emplace_back(std::move(part));
 			ofs += size;
 		}
@@ -885,15 +864,29 @@ packed_struct(OcclusionHeader,
 	s32 pad = 0;
 )
 
+packed_struct(OcclusionPairPacked,
+	s32 unknown_0;
+	s32 unknown_4;
+)
+
 struct OcclusionBlock {
 	static void read(OcclusionClusters& dest, Buffer src, Game game) {
 		auto& header = src.read<OcclusionHeader>(0, "occlusion header");
 		s64 ofs = 0x10;
-		dest.first_part = src.read_multiple<OcclusionPair>(ofs, header.count_1, "first part of occlusion").copy();
-		ofs += header.count_1 * sizeof(OcclusionPair);
-		dest.second_part = src.read_multiple<OcclusionPair>(ofs, header.count_2, "second part of occlusion").copy();
-		ofs += header.count_2 * sizeof(OcclusionPair);
-		dest.third_part = src.read_multiple<OcclusionPair>(ofs, header.count_3, "third part of occlusion").copy();
+		OriginalIndex original_index_1 = 0;
+		for(auto& pair : src.read_multiple<OcclusionPairPacked>(ofs, header.count_1, "first part of occlusion")) {
+			dest.first_part.emplace_back(OcclusionPair{pair.unknown_0, pair.unknown_4, original_index_1++});
+		}
+		ofs += header.count_1 * sizeof(OcclusionPairPacked);
+		OriginalIndex original_index_2 = 0;
+		for(auto& pair : src.read_multiple<OcclusionPairPacked>(ofs, header.count_2, "second part of occlusion")) {
+			dest.second_part.emplace_back(OcclusionPair{pair.unknown_0, pair.unknown_4, original_index_2++});
+		}
+		ofs += header.count_2 * sizeof(OcclusionPairPacked);
+		OriginalIndex original_index_3 = 0;
+		for(auto& pair : src.read_multiple<OcclusionPairPacked>(ofs, header.count_3, "third part of occlusion")) {
+			dest.third_part.emplace_back(OcclusionPair{pair.unknown_0, pair.unknown_4, original_index_3++});
+		}
 	}
 	
 	static void write(OutBuffer dest, const OcclusionClusters& src, Game game) {
@@ -902,12 +895,155 @@ struct OcclusionBlock {
 		header.count_2 = (s32) src.second_part.size();
 		header.count_3 = (s32) src.third_part.size();
 		dest.write(header);
-		dest.write_multiple(src.first_part);
-		dest.write_multiple(src.second_part);
-		dest.write_multiple(src.third_part);
+		for(const OcclusionPair& pair : src.first_part) {
+			dest.write(pair.unknown_0);
+			dest.write(pair.unknown_4);
+		}
+		for(const OcclusionPair& pair : src.second_part) {
+			dest.write(pair.unknown_0);
+			dest.write(pair.unknown_4);
+		}
+		for(const OcclusionPair& pair : src.third_part) {
+			dest.write(pair.unknown_0);
+			dest.write(pair.unknown_4);
+		}
 		dest.pad(0x40, 0);
 	}
 };
+
+packed_struct(GC_84_Packed,
+	u8 unknown_0[0x90];
+)
+static_assert(sizeof(GC_84_Packed) == 0x90);
+
+static void swap_instance(GC_84_Instance& l, GC_84_Packed& r) {
+	u8 temp[0x90];
+	memcpy(temp, r.unknown_0, 0x90);
+	memcpy(r.unknown_0, l.unknown_0, 0x90);
+	memcpy(l.unknown_0, temp, 0x90);
+}
+
+packed_struct(ImportCameraPacked,
+	s32 unknown_0;
+	s32 unknown_4;
+	s32 unknown_8;
+	s32 unknown_c;
+	s32 unknown_10;
+	s32 unknown_14;
+	s32 unknown_18;
+	s32 pvar_index;
+)
+
+static void swap_instance(ImportCamera& l, ImportCameraPacked& r) {
+	SWAP_PACKED(l.unknown_0, r.unknown_0);
+	SWAP_PACKED(l.unknown_4, r.unknown_4);
+	SWAP_PACKED(l.unknown_8, r.unknown_8);
+	SWAP_PACKED(l.unknown_c, r.unknown_c);
+	SWAP_PACKED(l.unknown_10, r.unknown_10);
+	SWAP_PACKED(l.unknown_14, r.unknown_14);
+	SWAP_PACKED(l.unknown_18, r.unknown_18);
+	SWAP_PACKED(l.pvar_index, r.pvar_index);
+}
+
+packed_struct(SoundInstancePacked,
+	s16 o_class;
+	s16 m_class;
+	u32 update_fun_ptr;
+	s32 pvar_index;
+	f32 range;
+	GpShapePacked cuboid;
+)
+
+static void swap_instance(SoundInstance& l, SoundInstancePacked& r) {
+	SWAP_PACKED(l.o_class, r.o_class);
+	SWAP_PACKED(l.m_class, r.m_class);
+	r.update_fun_ptr = 0;
+	SWAP_PACKED(l.pvar_index, r.pvar_index);
+	SWAP_PACKED(l.range, r.range);
+	SWAP_PACKED(l.cuboid, r.cuboid);
+}
+
+static void swap_instance(GpShape& l, GpShapePacked& r) {
+	SWAP_PACKED(l.matrix, r.matrix);
+	SWAP_PACKED(l.pos, r.pos);
+	SWAP_PACKED(l.imatrix, r.imatrix);
+	SWAP_PACKED(l.rot, r.rot);
+}
+
+packed_struct(DirectionalLightPacked,
+	Vec4f color_a;
+	Vec4f dir_a;
+	Vec4f color_b;
+	Vec4f dir_b;
+)
+
+static void swap_instance(GpDirectionalLight& l, DirectionalLightPacked& r) {
+	SWAP_PACKED(l.color_a, r.color_a);
+	SWAP_PACKED(l.dir_a, r.dir_a);
+	SWAP_PACKED(l.color_b, r.color_b);
+	SWAP_PACKED(l.dir_b, r.dir_b);
+}
+
+packed_struct(GpTieInstancePacked,
+	s32 o_class;    // 0x0
+	s32 unknown_4;  // 0x4
+	s32 unknown_8;  // 0x8
+	s32 unknown_c;  // 0xc
+	Mat3 matrix;    // 0x10
+	Vec4f position; // 0x40
+	s32 unknown_50; // 0x50
+	s32 uid;        // 0x54
+	s32 unknown_58; // 0x58
+	s32 unknown_5c; // 0x5c
+)
+static_assert(sizeof(GpTieInstancePacked) == 0x60);
+
+static void swap_instance(GpTieInstance& l, GpTieInstancePacked& r) {
+	SWAP_PACKED(l.o_class, r.o_class);
+	SWAP_PACKED(l.unknown_4, r.unknown_4);
+	SWAP_PACKED(l.unknown_8, r.unknown_8);
+	SWAP_PACKED(l.unknown_c, r.unknown_c);
+	SWAP_PACKED(l.matrix, r.matrix);
+	SWAP_PACKED(l.position, r.position);
+	SWAP_PACKED(l.unknown_50, r.unknown_50);
+	SWAP_PACKED(l.uid, r.uid);
+	SWAP_PACKED(l.unknown_58, r.unknown_58);
+	SWAP_PACKED(l.unknown_5c, r.unknown_5c);
+}
+
+packed_struct(GpShrubInstancePacked,
+	s32 o_class;    // 0x0
+	f32 unknown_4;  // 0x4
+	s32 unknown_8;  // 0x8
+	s32 unknown_c;  // 0xc
+	Mat3 matrix;    // 0x10
+	Vec4f position; // 0x40
+	s32 unknown_50; // 0x50
+	s32 unknown_54; // 0x54
+	s32 unknown_58; // 0x58
+	s32 unknown_5c; // 0x5c
+	s32 unknown_60; // 0x60
+	s32 unknown_64; // 0x64
+	s32 unknown_68; // 0x68
+	s32 unknown_6c; // 0x6c
+)
+
+static void swap_instance(GpShrubInstance& l, GpShrubInstancePacked& r) {
+	SWAP_PACKED(l.o_class, r.o_class);
+	SWAP_PACKED(l.unknown_4, r.unknown_4);
+	SWAP_PACKED(l.unknown_8, r.unknown_8);
+	SWAP_PACKED(l.unknown_c, r.unknown_c);
+	SWAP_PACKED(l.matrix, r.matrix);
+	SWAP_PACKED(l.position, r.position);
+	SWAP_PACKED(l.unknown_50, r.unknown_50);
+	SWAP_PACKED(l.unknown_54, r.unknown_54);
+	SWAP_PACKED(l.unknown_58, r.unknown_58);
+	SWAP_PACKED(l.unknown_5c, r.unknown_5c);
+	SWAP_PACKED(l.unknown_60, r.unknown_60);
+	SWAP_PACKED(l.unknown_64, r.unknown_64);
+	SWAP_PACKED(l.unknown_68, r.unknown_68);
+	SWAP_PACKED(l.unknown_6c, r.unknown_6c);
+}
 
 template <typename Block, typename Field>
 static GameplayBlockFuncs bf(Field field) {
@@ -941,8 +1077,8 @@ const std::vector<GameplayBlockDescription> RAC23_GAMEPLAY_BLOCKS = {
 	{0x24, bf<HelpMessageBlock<false>>(&Gameplay::italian_help_messages), "italian help messages"},
 	{0x28, bf<HelpMessageBlock<false>>(&Gameplay::japanese_help_messages), "japanese help messages"},
 	{0x2c, bf<HelpMessageBlock<true>>(&Gameplay::korean_help_messages), "korean help messages"},
-	{0x04, bf<TableBlock<GpDirectionalLight>>(&Gameplay::lights), "directional lights"},
-	{0x84, bf<TableBlock<GC_84_Instance>>(&Gameplay::gc_84), "GC 84"},
+	{0x04, bf<InstanceBlock<GpDirectionalLight, DirectionalLightPacked>>(&Gameplay::lights), "directional lights"},
+	{0x84, bf<InstanceBlock<GC_84_Instance, GC_84_Packed>>(&Gameplay::gc_84), "GC 84"},
 	{0x08, bf<InstanceBlock<ImportCamera, ImportCameraPacked>>(&Gameplay::cameras), "import cameras"},
 	{0x0c, bf<InstanceBlock<SoundInstance, SoundInstancePacked>>(&Gameplay::sound_instances), "sound instances"},
 	{0x48, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},
@@ -954,16 +1090,16 @@ const std::vector<GameplayBlockDescription> RAC23_GAMEPLAY_BLOCKS = {
 	{0x50, bf<DualTableBlock<GpMobyGroups>>(&Gameplay::moby_groups), "moby groups"},
 	{0x54, bf<DualTableBlock<Gp_GC_54_DL_38>>(&Gameplay::gc_54_dl_38), "GC 54 DL 38"},
 	{0x30, bf<ClassBlock>(&Gameplay::tie_classes), "tie classes"},
-	{0x34, bf<TableBlock<GpTieInstance>>(&Gameplay::tie_instances), "tie instances"},
+	{0x34, bf<InstanceBlock<GpTieInstance, GpTieInstancePacked>>(&Gameplay::tie_instances), "tie instances"},
 	{0x94, bf<TieAmbientRgbaBlock>(&Gameplay::tie_ambient_rgbas), "tie ambient rgbas"},
 	{0x38, bf<DualTableBlock<GpTieGroups>>(&Gameplay::tie_groups), "tie groups"},
 	{0x3c, bf<ClassBlock>(&Gameplay::shrub_classes), "shrub classes"},
-	{0x40, bf<TableBlock<GpShrubInstance>>(&Gameplay::shrub_instances), "shrub instances"},
+	{0x40, bf<InstanceBlock<GpShrubInstance, GpShrubInstancePacked>>(&Gameplay::shrub_instances), "shrub instances"},
 	{0x44, bf<DualTableBlock<GpShrubGroups>>(&Gameplay::shrub_groups), "shrub groups"},
 	{0x78, bf<PathBlock>(&Gameplay::paths), "paths"},
-	{0x68, bf<TableBlock<GpShape>>(&Gameplay::cuboids), "cuboids"},
-	{0x6c, bf<TableBlock<GpShape>>(&Gameplay::spheres), "spheres"},
-	{0x70, bf<TableBlock<GpShape>>(&Gameplay::cylinders), "cylinders"},
+	{0x68, bf<InstanceBlock<GpShape, GpShapePacked>>(&Gameplay::cuboids), "cuboids"},
+	{0x6c, bf<InstanceBlock<GpShape, GpShapePacked>>(&Gameplay::spheres), "spheres"},
+	{0x70, bf<InstanceBlock<GpShape, GpShapePacked>>(&Gameplay::cylinders), "cylinders"},
 	{0x74, bf<TableBlock<s32>>(&Gameplay::gc_74_dl_58), "GC 74 DL 58"},
 	{0x88, bf<GC_88_DL_6c_Block>(&Gameplay::gc_88_dl_6c), "GC 88 DL 6c"},
 	{0x80, bf<GC_80_DL_64_Block>(&Gameplay::gc_80_dl_64), "GC 80 DL 64"},
@@ -994,9 +1130,9 @@ const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS = {
 	{0x34, bf<DualTableBlock<GpMobyGroups>>(&Gameplay::moby_groups), "moby groups"},
 	{0x38, bf<DualTableBlock<Gp_GC_54_DL_38>>(&Gameplay::gc_54_dl_38), "GC 54 DL 38"},
 	{0x5c, bf<PathBlock>(&Gameplay::paths), "paths"},
-	{0x4c, bf<TableBlock<GpShape>>(&Gameplay::cuboids), "cuboids"},
-	{0x50, bf<TableBlock<GpShape>>(&Gameplay::spheres), "spheres"},
-	{0x54, bf<TableBlock<GpShape>>(&Gameplay::cylinders), "cylinders"},
+	{0x4c, bf<InstanceBlock<GpShape, GpShapePacked>>(&Gameplay::cuboids), "cuboids"},
+	{0x50, bf<InstanceBlock<GpShape, GpShapePacked>>(&Gameplay::spheres), "spheres"},
+	{0x54, bf<InstanceBlock<GpShape, GpShapePacked>>(&Gameplay::cylinders), "cylinders"},
 	{0x58, bf<TableBlock<s32>>(&Gameplay::gc_74_dl_58), "GC 74 DL 58"},
 	{0x6c, bf<GC_88_DL_6c_Block>(&Gameplay::gc_88_dl_6c), "GC 88 DL 6c"},
 	{0x64, bf<GC_80_DL_64_Block>(&Gameplay::gc_80_dl_64), "GC 80 DL 64"},
@@ -1006,13 +1142,13 @@ const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS = {
 };
 
 const std::vector<GameplayBlockDescription> DL_ART_INSTANCE_BLOCKS = {
-	{0x00, bf<TableBlock<GpDirectionalLight>>(&Gameplay::lights), "directional lights"},
+	{0x00, bf<InstanceBlock<GpDirectionalLight, DirectionalLightPacked>>(&Gameplay::lights), "directional lights"},
 	{0x04, bf<ClassBlock>(&Gameplay::tie_classes), "tie classes"},
-	{0x08, bf<TableBlock<GpTieInstance>>(&Gameplay::tie_instances), "tie instances"},
+	{0x08, bf<InstanceBlock<GpTieInstance, GpTieInstancePacked>>(&Gameplay::tie_instances), "tie instances"},
 	{0x20, bf<TieAmbientRgbaBlock>(&Gameplay::tie_ambient_rgbas), "tie ambient rgbas"},
 	{0x0c, bf<DualTableBlock<GpTieGroups>>(&Gameplay::tie_groups), "tie groups"},
 	{0x10, bf<ClassBlock>(&Gameplay::shrub_classes), "shrub classes"},
-	{0x14, bf<TableBlock<GpShrubInstance>>(&Gameplay::shrub_instances), "shrub instances"},
+	{0x14, bf<InstanceBlock<GpShrubInstance, GpShrubInstancePacked>>(&Gameplay::shrub_instances), "shrub instances"},
 	{0x18, bf<DualTableBlock<GpShrubGroups>>(&Gameplay::shrub_groups), "art instance shrub groups"},
 	{0x1c, bf<OcclusionBlock>(&Gameplay::occlusion_clusters), "occlusion clusters"},
 	{0x24, {nullptr, nullptr}, "pad 1"},

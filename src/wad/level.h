@@ -23,6 +23,8 @@
 #include "util.h"
 #include "buffer.h"
 
+using OriginalIndex = s32;
+
 packed_struct(Gp_GC_8c_DL_70,
 	u8 data[0x20];
 )
@@ -151,6 +153,16 @@ struct GpHelpMessage {
 	}
 };
 
+struct GC_84_Instance {
+	u8 unknown_0[0x90];
+	OriginalIndex original_index;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD(original_index);
+	}
+};
+
 struct ImportCamera {
 	s32 unknown_0;
 	s32 unknown_4;
@@ -161,14 +173,16 @@ struct ImportCamera {
 	s32 unknown_18;
 	s32 pvar_index; // Only used during reading!
 	std::vector<u8> pvars;
+	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
 		DEF_HEXDUMP(pvars);
+		DEF_FIELD(original_index);
 	}
 };
 
-packed_struct(GpShape,
+packed_struct(GpShapePacked,
 	Mat3 matrix;
 	Vec4f pos;
 	Mat3 imatrix;
@@ -183,21 +197,31 @@ packed_struct(GpShape,
 	}
 )
 
-packed_struct(GC_84_Instance,
-	u8 unknown_0[0x90];
+struct GpShape {
+	Mat3 matrix;
+	Vec4f pos;
+	Mat3 imatrix;
+	Vec4f rot;
+	OriginalIndex original_index;
 	
 	template <typename T>
-	void enumerate_fields(T& t) {}
-)
-static_assert(sizeof(GC_84_Instance) == 0x90);
+	void enumerate_fields(T& t) {
+		DEF_FIELD(matrix);
+		DEF_FIELD(pos);
+		DEF_FIELD(imatrix);
+		DEF_FIELD(rot);
+		DEF_FIELD(original_index);
+	}
+};
 
 struct SoundInstance {
 	s16 o_class;
 	s16 m_class;
 	s32 pvar_index; // Only used during reading!
 	f32 range;
-	GpShape cuboid;
+	GpShapePacked cuboid;
 	std::vector<u8> pvars;
+	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
@@ -206,6 +230,7 @@ struct SoundInstance {
 		DEF_FIELD(range);
 		DEF_FIELD(cuboid);
 		DEF_HEXDUMP(pvars);
+		DEF_FIELD(original_index);
 	}
 };
 
@@ -242,6 +267,7 @@ struct MobyInstance {
 	
 	s32 pvar_index; // Only used during reading!
 	std::vector<u8> pvars;
+	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
@@ -262,6 +288,7 @@ struct MobyInstance {
 		DEF_FIELD(light_col);
 		DEF_FIELD(light);
 		DEF_HEXDUMP(pvars);
+		DEF_FIELD(original_index);
 	}
 };
 
@@ -287,6 +314,17 @@ struct GpMobyGroups {
 struct Gp_GC_54_DL_38 {
 	std::vector<s8> first_part;
 	std::vector<s64> second_part;
+};
+
+struct GpPath {
+	std::vector<Vec4f> vertices;
+	OriginalIndex original_index;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD(vertices);
+		DEF_FIELD(original_index);
+	}
 };
 
 struct Gp_GC_80_DL_64 {
@@ -315,6 +353,7 @@ struct GrindPath {
 	s32 wrap;
 	s32 inactive;
 	std::vector<Vec4f> vertices;
+	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
@@ -323,6 +362,7 @@ struct GrindPath {
 		DEF_FIELD(wrap);
 		DEF_FIELD(inactive);
 		DEF_FIELD(vertices);
+		DEF_FIELD(original_index);
 	}
 };
 
@@ -338,6 +378,7 @@ struct GpArea {
 	GpBoundingSphere bounding_sphere;
 	s32 last_update_time;
 	std::vector<s32> parts[5];
+	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
@@ -354,6 +395,7 @@ struct GpArea {
 		DEF_FIELD(spheres);
 		DEF_FIELD(cylinders);
 		DEF_FIELD(negative_cuboids);
+		DEF_FIELD(original_index);
 	}
 };
 
@@ -362,6 +404,7 @@ struct GpDirectionalLight {
 	Vec4f dir_a;
 	Vec4f color_b;
 	Vec4f dir_b;
+	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
@@ -369,45 +412,49 @@ struct GpDirectionalLight {
 		DEF_FIELD(dir_a);
 		DEF_FIELD(color_b);
 		DEF_FIELD(dir_b);
+		DEF_FIELD(original_index);
 	}
 };
 
-packed_struct(GpTieInstance,
-	s32 o_class;    // 0x0
-	s32 unknown_4;  // 0x4
-	s32 unknown_8;  // 0x8
-	s32 unknown_c;  // 0xc
-	Mat3 matrix;    // 0x10
-	Vec4f position; // 0x40
-	s32 unknown_50; // 0x50
-	s32 uid;        // 0x54
-	s32 unknown_58; // 0x58
-	s32 unknown_5c; // 0x5c
+struct GpTieInstance {
+	s32 o_class;
+	s32 unknown_4;
+	s32 unknown_8;
+	s32 unknown_c;
+	Mat3 matrix;
+	Vec4f position;
+	s32 unknown_50;
+	s32 uid;
+	s32 unknown_58;
+	s32 unknown_5c;
+	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD(o_class);
-		DEF_PACKED_FIELD(unknown_4);
-		DEF_PACKED_FIELD(unknown_8);
-		DEF_PACKED_FIELD(unknown_c);
-		DEF_PACKED_FIELD(matrix);
-		DEF_PACKED_FIELD(position);
-		DEF_PACKED_FIELD(unknown_50);
-		DEF_PACKED_FIELD(uid);
-		DEF_PACKED_FIELD(unknown_58);
-		DEF_PACKED_FIELD(unknown_5c);
+		DEF_FIELD(o_class);
+		DEF_FIELD(unknown_4);
+		DEF_FIELD(unknown_8);
+		DEF_FIELD(unknown_c);
+		DEF_FIELD(matrix);
+		DEF_FIELD(position);
+		DEF_FIELD(unknown_50);
+		DEF_FIELD(uid);
+		DEF_FIELD(unknown_58);
+		DEF_FIELD(unknown_5c);
+		DEF_FIELD(original_index);
 	}
-)
-static_assert(sizeof(GpTieInstance) == 0x60);
+};
 
 struct GpTieAmbientRgbas {
 	s16 id;
 	std::vector<u8> data;
+	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
 		DEF_FIELD(id);
 		DEF_HEXDUMP(data);
+		DEF_FIELD(original_index);
 	}
 };
 
@@ -416,56 +463,60 @@ struct GpTieGroups {
 	std::vector<s8> second_part;
 };
 
-packed_struct(GpShrubInstance,
-	s32 o_class;    // 0x0
-	f32 unknown_4;  // 0x4
-	s32 unknown_8;  // 0x8
-	s32 unknown_c;  // 0xc
-	Mat3 matrix;    // 0x10
-	Vec4f position; // 0x40
-	s32 unknown_50; // 0x50
-	s32 unknown_54; // 0x54
-	s32 unknown_58; // 0x58
-	s32 unknown_5c; // 0x5c
-	s32 unknown_60; // 0x60
-	s32 unknown_64; // 0x64
-	s32 unknown_68; // 0x68
-	s32 unknown_6c; // 0x6c
+struct GpShrubInstance {
+	s32 o_class;
+	f32 unknown_4;
+	s32 unknown_8;
+	s32 unknown_c;
+	Mat3 matrix;
+	Vec4f position;
+	s32 unknown_50;
+	s32 unknown_54;
+	s32 unknown_58;
+	s32 unknown_5c;
+	s32 unknown_60;
+	s32 unknown_64;
+	s32 unknown_68;
+	s32 unknown_6c;
+	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD(o_class);
-		DEF_PACKED_FIELD(unknown_4);
-		DEF_PACKED_FIELD(unknown_8);
-		DEF_PACKED_FIELD(unknown_c);
-		DEF_PACKED_FIELD(matrix);
-		DEF_PACKED_FIELD(position);
-		DEF_PACKED_FIELD(unknown_50);
-		DEF_PACKED_FIELD(unknown_54);
-		DEF_PACKED_FIELD(unknown_58);
-		DEF_PACKED_FIELD(unknown_5c);
-		DEF_PACKED_FIELD(unknown_60);
-		DEF_PACKED_FIELD(unknown_64);
-		DEF_PACKED_FIELD(unknown_68);
-		DEF_PACKED_FIELD(unknown_6c);
+		DEF_FIELD(o_class);
+		DEF_FIELD(unknown_4);
+		DEF_FIELD(unknown_8);
+		DEF_FIELD(unknown_c);
+		DEF_FIELD(matrix);
+		DEF_FIELD(position);
+		DEF_FIELD(unknown_50);
+		DEF_FIELD(unknown_54);
+		DEF_FIELD(unknown_58);
+		DEF_FIELD(unknown_5c);
+		DEF_FIELD(unknown_60);
+		DEF_FIELD(unknown_64);
+		DEF_FIELD(unknown_68);
+		DEF_FIELD(unknown_6c);
+		DEF_FIELD(original_index);
 	}
-)
+};
 
 struct GpShrubGroups {
 	std::vector<s32> first_part;
 	std::vector<s8> second_part;
 };
 
-packed_struct(OcclusionPair,
+struct OcclusionPair {
 	s32 unknown_0;
 	s32 unknown_4;
+	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD(unknown_0);
-		DEF_PACKED_FIELD(unknown_4);
+		DEF_FIELD(unknown_0);
+		DEF_FIELD(unknown_4);
+		DEF_FIELD(original_index);
 	}
-)
+};
 
 struct OcclusionClusters {
 	std::vector<OcclusionPair> first_part;
@@ -484,8 +535,6 @@ template <typename T>
 using Opt = std::optional<T>;
 
 struct Gameplay {
-	Opt<std::vector<GC_84_Instance>> gc_84;
-	
 	// Deadlocked gameplay core
 	Opt<std::vector<Gp_GC_8c_DL_70>> gc_8c_dl_70;
 	Opt<GpProperties> properties;
@@ -497,6 +546,7 @@ struct Gameplay {
 	Opt<std::vector<GpHelpMessage>> italian_help_messages;
 	Opt<std::vector<GpHelpMessage>> japanese_help_messages;
 	Opt<std::vector<GpHelpMessage>> korean_help_messages;
+	Opt<std::vector<GC_84_Instance>> gc_84;
 	Opt<std::vector<ImportCamera>> cameras;
 	Opt<std::vector<SoundInstance>> sound_instances;
 	Opt<std::vector<s32>> moby_classes;
@@ -509,7 +559,7 @@ struct Gameplay {
 	Opt<std::vector<GpShape>> spheres;
 	Opt<std::vector<GpShape>> cylinders;
 	Opt<std::vector<s32>> gc_74_dl_58;
-	Opt<std::vector<std::vector<Vec4f>>> paths;
+	Opt<std::vector<GpPath>> paths;
 	Opt<std::vector<GpShape>> cuboids;
 	Opt<std::vector<u8>> gc_88_dl_6c;
 	Opt<Gp_GC_80_DL_64> gc_80_dl_64;
@@ -532,9 +582,8 @@ struct Gameplay {
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_OPTIONAL_FIELD(gc_84);
-		
 		DEF_OPTIONAL_FIELD(properties);
+		DEF_OPTIONAL_FIELD(gc_84);
 		DEF_OPTIONAL_FIELD(cameras);
 		DEF_OPTIONAL_FIELD(sound_instances);
 		DEF_OPTIONAL_FIELD(moby_instances);
