@@ -24,6 +24,7 @@
 #include <cstring>
 #include <stdio.h>
 #include <assert.h>
+#include <optional>
 #include <stdint.h>
 #include <filesystem>
 #include <functional>
