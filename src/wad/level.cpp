@@ -25,7 +25,7 @@ Json write_gameplay_json(Gameplay& gameplay) {
 		{"format", "gameplay"},
 		{"format_version", 0},
 		{"application", "Wrench WAD Extractor"},
-		{"application_version", "0"}
+		{"application_version", get_application_version_string()}
 	};
 	
 	Json data = to_json(gameplay);
@@ -37,6 +37,15 @@ Json write_gameplay_json(Gameplay& gameplay) {
 }
 
 Json write_help_messages(Gameplay& gameplay) {
+	Json json;
+	
+	json["metadata"] = Json {
+		{"format", "help_messages"},
+		{"format_version", 0},
+		{"application", "Wrench WAD Extractor"},
+		{"application_version", get_application_version_string()}
+	};
+	
 	struct {
 		const char* name;
 		Opt<std::vector<GpHelpMessage>>* messages;
@@ -50,7 +59,6 @@ Json write_help_messages(Gameplay& gameplay) {
 		{"japanese", &gameplay.japanese_help_messages},
 		{"korean", &gameplay.korean_help_messages}
 	};
-	Json json;
 	for(auto& language : languages) {
 		if(language.messages->has_value()) {
 			for(GpHelpMessage& message : **language.messages) {

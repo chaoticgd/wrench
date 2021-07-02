@@ -191,6 +191,21 @@ struct MemberTraits<Return (Object::*)> {
 		inmem = p; \
 	}
 
+[[maybe_unused]] static std::string get_application_version_string() {
+	std::string version;
+#if defined(GIT_COMMIT) && defined(GIT_TAG)
+	if(strlen(GIT_TAG) > 0 && strlen(GIT_COMMIT) > 0) {
+		version += GIT_TAG " " GIT_COMMIT;
+	} else if(strlen(GIT_COMMIT) > 0) {
+		version += GIT_COMMIT;
+	}
+#endif
+	if(version == "") {
+		version = "error: No git in path during build or cmake problem.";
+	}
+	return version;
+}
+
 struct BinaryAsset {
 	bool is_array;
 	std::vector<std::vector<u8>> buffers;
