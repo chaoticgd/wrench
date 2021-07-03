@@ -109,12 +109,6 @@ packed_struct(SectorRange,
 		t.hexdump(#member, temp); \
 		member = std::move(temp); \
 	}
-#define DEF_STRING(member) \
-	{ \
-		auto temp = std::move(member); \
-		t.string(#member, temp); \
-		member = std::move(temp); \
-	}
 
 packed_struct(Vec3f,
 	f32 x;

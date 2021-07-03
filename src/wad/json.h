@@ -46,7 +46,7 @@ using Json = nlohmann::ordered_json;
 
 static const char* HEX_DIGITS = "0123456789abcdef";
 
-static std::string encode_json_string(const std::string& input) {
+[[maybe_unused]] static std::string encode_json_string(const std::string& input) {
 	std::string output;
 	for(char c : input) {
 		output += HEX_DIGITS[(c & 0xff) >> 4];
@@ -55,7 +55,7 @@ static std::string encode_json_string(const std::string& input) {
 	return output;
 }
 
-static std::string decode_json_string(const std::string& input) {
+[[maybe_unused]] static std::string decode_json_string(const std::string& input) {
 	std::string output;
 	verify(input.size() % 2 == 0, "Invalid string.");
 	for(size_t i = 0; i < input.size(); i += 2) {
@@ -106,8 +106,12 @@ struct PropertiesThirdPart;
 struct ToJsonVisitor {
 	Json json;
 	template <typename T>
-	void field(const char* name, T& field) {
-		json[name] = to_json(field);
+	void field(const char* name, T& value) {
+		if constexpr(std::is_same_v<T, std::string>) {
+			json[name] = encode_json_string(value);
+		} else {
+			json[name] = to_json(value);
+		}
 	}
 	template <typename T>
 	void field(const char* name, std::vector<T>& list) {
@@ -138,11 +142,6 @@ struct ToJsonVisitor {
 	void hexdump(const char* name, std::vector<u8>& buffer) {
 		json[name] = buffer_to_json_hexdump(buffer);
 	}
-	void string(const char* name, std::optional<std::string>& string) {
-		if(string.has_value()) {
-			json[name] = encode_json_string(*string);
-		}
-	}
 };
 
 template <typename Object>
@@ -161,10 +160,15 @@ void from_json(Object& dest, Json src);
 
 struct FromJsonVisitor {
 	Json& json;
-	template <typename Field>
-	void field(const char* name, Field& field) {
-		verify(json.contains(name) && !json[name].is_null(), "Missing field '%s'.", name);
-		from_json(field, json[name]);
+	template <typename T>
+	void field(const char* name, T& value) {
+		if constexpr(std::is_same_v<T, std::string>) {
+			verify(json.contains(name) && json[name].is_string(), "Expected string for field '%s'.", name);
+			value = decode_json_string(json[name]);
+		} else {
+			verify(json.contains(name) && !json[name].is_null(), "Missing field '%s'.", name);
+			from_json(value, json[name]);
+		}
 	}
 	template <typename Field>
 	void field(const char* name, std::vector<Field>& vec) {
@@ -190,10 +194,6 @@ struct FromJsonVisitor {
 		} else {
 			buffer = {};
 		}
-	}
-	void string(const char* name, std::optional<std::string>& string) {
-		verify(json.contains(name) && !json[name].is_null(), "Missing string field '%s'.", name);
-		string = decode_json_string(json[name]);
 	}
 };
 
