@@ -18,29 +18,8 @@
 
 #include "level.h"
 
-// Given two disjoint gameplay structs first and second, this will merge all
-// members into the first.
-struct GameplayMerger {
-	Gameplay* first;
-	Gameplay* second;
-	template <typename T>
-	void field(const char*, T&) {}
-	template <typename T>
-	bool field_ptr(const char* name, T ptr) {
-		auto& thing = first->*ptr;
-		auto& other = second->*ptr;
-		assert(!(thing.has_value() && other.has_value()));
-		if(other.has_value()) {
-			thing.swap(other);
-		}
-		return true;
-	}
-};
-
 void read_gameplay_json(Gameplay& gameplay, Json& json) {
-	Gameplay temp = from_json<Gameplay>(json);
-	GameplayMerger merger{&gameplay, &temp};
-	gameplay.enumerate_fields(merger);
+	from_json(gameplay, json);
 }
 
 template <typename Object>

@@ -23,7 +23,7 @@
 //  Vec3f vec;
 //  ...
 //  Json json = to_json(vec);
-//  vec = from_json<Vec3f>(json);
+//  from_json(vec, json);
 //  
 // Given the type definition:
 //  packed_struct(Vec3f,
@@ -143,8 +143,6 @@ struct ToJsonVisitor {
 			json[name] = encode_json_string(*string);
 		}
 	}
-	template <typename T>
-	bool field_ptr(const char*, T) { return false; }
 };
 
 template <typename Object>
@@ -159,20 +157,22 @@ Json to_json(Object object) {
 }
 
 template <typename Object>
-Object from_json(Json json);
+void from_json(Object& dest, Json src);
 
 struct FromJsonVisitor {
 	Json& json;
 	template <typename Field>
 	void field(const char* name, Field& field) {
 		verify(json.contains(name) && !json[name].is_null(), "Missing field '%s'.", name);
-		field = from_json<Field>(json[name]);
+		from_json(field, json[name]);
 	}
 	template <typename Field>
 	void field(const char* name, std::vector<Field>& vec) {
 		verify(json.contains(name) && !json[name].is_null(), "Missing field '%s'.", name);
-		for(Json& element : json[name]) {
-			vec.emplace_back(from_json<Field>(element));
+		for(Json& element_json : json[name]) {
+			Field element;
+			from_json<Field>(element, element_json);
+			vec.emplace_back(element);
 		}
 	}
 	template <typename T>
@@ -195,19 +195,15 @@ struct FromJsonVisitor {
 		verify(json.contains(name) && !json[name].is_null(), "Missing string field '%s'.", name);
 		string = decode_json_string(json[name]);
 	}
-	template <typename T>
-	bool field_ptr(const char*, T) { return false; }
 };
 
 template <typename Object>
-Object from_json(Json json) {
+void from_json(Object& dest, Json src) {
 	if constexpr(std::is_compound_v<Object>) {
-		Object object;
-		FromJsonVisitor visitor{json};
-		object.enumerate_fields(visitor);
-		return object;
+		FromJsonVisitor visitor{src};
+		dest.enumerate_fields(visitor);
 	} else {
-		return json;
+		dest = src;
 	}
 }
 

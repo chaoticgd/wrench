@@ -115,14 +115,6 @@ packed_struct(SectorRange,
 		t.string(#member, temp); \
 		member = std::move(temp); \
 	}
-#define DEF_GAMEPLAY_FIELD(name, ptr) \
-	{ \
-		auto temp = std::move(this->*ptr); \
-		t.field(name, temp); \
-		if(!t.field_ptr(name, ptr)) { \
-			this->*ptr = std::move(temp); \
-		} \
-	}
 
 packed_struct(Vec3f,
 	f32 x;
