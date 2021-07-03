@@ -18,6 +18,7 @@
 
 #include "tests.h"
 
+static void run_gameplay_tests(fs::path input_path, Game game);
 static std::optional<WadLumpDescription> find_lump(WadFileDescription file_desc, const char* name);
 struct GameplayTestArgs {
 	std::string wad_file_path;
@@ -30,7 +31,14 @@ struct GameplayTestArgs {
 };
 static void run_gameplay_lump_test(GameplayTestArgs args);
 
+
 void run_tests(fs::path input_path, Game game) {
+	run_gameplay_tests(input_path, game);
+	
+	printf("\nALL TESTS PASSED\n");
+}
+
+static void run_gameplay_tests(fs::path input_path, Game game) {
 	for(fs::path wad_file_path : fs::directory_iterator(input_path)) {
 		FILE* file = fopen(wad_file_path.string().c_str(), "rb");
 		verify(file, "Failed to open input file.");
@@ -122,8 +130,9 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 	
 	bool good = true;
 	
-	std::string gameplay_header_str = args.wad_file_path + " " + args.name + " header";
-	std::string gameplay_data_str = args.wad_file_path + " " + args.name + " data";
+	std::string prefix_str = args.wad_file_path + " " + args.name;
+	std::string gameplay_header_str = prefix_str + " header";
+	std::string gameplay_data_str = prefix_str + " data";
 	good &= diff_buffers(src_buf.subbuf(0, 0xa0), dest_buf.subbuf(0, 0xa0), 0, gameplay_header_str.c_str());
 	good &= diff_buffers(src_buf.subbuf(0xa0), dest_buf.subbuf(0xa0), 0xa0, gameplay_data_str.c_str());
 	
@@ -143,7 +152,9 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 	read_help_messages(test_gameplay, help_messages_json);
 	std::vector<u8> test_dest = write_gameplay(test_gameplay, args.game, *args.blocks);
 	OutBuffer(test_dest).pad(SECTOR_SIZE, 0);
-	if(test_dest != dest) {
+	if(test_dest == dest) {
+		fprintf(stderr, "%s JSON matches.\n", prefix_str.c_str());
+	} else {
 		fprintf(stderr, "File read from JSON doesn't match original.\n");
 		write_file("/tmp/gameplay_orig.bin", dest);
 		write_file("/tmp/gameplay_test.bin", test_dest);
