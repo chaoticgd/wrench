@@ -736,7 +736,6 @@ template <typename T>
 using Opt = std::optional<T>;
 
 struct Gameplay {
-	// Deadlocked gameplay core
 	Opt<std::vector<GC_8c_DL_70>> gc_8c_dl_70;
 	Opt<Properties> properties;
 	Opt<std::vector<HelpMessage>> us_english_help_messages;
@@ -767,7 +766,6 @@ struct Gameplay {
 	Opt<std::vector<GrindPath>> grind_paths;
 	Opt<std::vector<Area>> gameplay_area_list;
 	
-	// Deadlocked art instances
 	Opt<std::vector<DirectionalLight>> lights;
 	Opt<std::vector<s32>> tie_classes;
 	Opt<std::vector<TieInstance>> tie_instances;
