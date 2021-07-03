@@ -18,6 +18,51 @@
 
 #include "level.h"
 
+// Given two disjoint gameplay structs first and second, this will merge all
+// members into the first.
+struct GameplayMerger {
+	Gameplay* first;
+	Gameplay* second;
+	template <typename T>
+	void field(const char*, T&) {}
+	template <typename T>
+	bool field_ptr(const char* name, T ptr) {
+		auto& thing = first->*ptr;
+		auto& other = second->*ptr;
+		assert(!(thing.has_value() && other.has_value()));
+		if(other.has_value()) {
+			thing.swap(other);
+		}
+		return true;
+	}
+};
+
+void read_gameplay_json(Gameplay& gameplay, Json& json) {
+	Gameplay temp = from_json<Gameplay>(json);
+	GameplayMerger merger{&gameplay, &temp};
+	gameplay.enumerate_fields(merger);
+}
+
+template <typename Object>
+void write_gameplay_section(Json& dest, std::optional<Object>& src, const char* name) {
+	if(!src.has_value()) {
+		dest[name] = {};
+		return;
+	}
+	dest[name] = to_json(*src);
+}
+
+template <typename Object>
+void write_gameplay_section(Json& dest, std::optional<std::vector<Object>>& src, const char* name) {
+	if(!src.has_value()) {
+		dest[name] = {};
+		return;
+	}
+	for(Object& object : *src) {
+		dest[name].emplace_back(to_json(object));
+	}
+}
+
 Json write_gameplay_json(Gameplay& gameplay) {
 	Json json;
 	
@@ -29,11 +74,15 @@ Json write_gameplay_json(Gameplay& gameplay) {
 	};
 	
 	Json data = to_json(gameplay);
-	for(auto& object : data.items()) {
-		json[object.key()] = object.value();
+	for(auto& item : data.items()) {
+		json[item.key()] = item.value();
 	}
 	
 	return json;
+}
+
+void read_help_messages(Gameplay& gameplay, Json& json) {
+	
 }
 
 Json write_help_messages(Gameplay& gameplay) {
@@ -67,4 +116,35 @@ Json write_help_messages(Gameplay& gameplay) {
 		}
 	}
 	return json;
+}
+
+void fixup_pvar_indices(Gameplay& gameplay) {
+	s32 pvar_index = 0;
+	if(gameplay.cameras.has_value()) {
+		for(ImportCamera& camera : *gameplay.cameras) {
+			if(camera.pvars.size() > 0) {
+				camera.pvar_index = pvar_index++;
+			} else {
+				camera.pvar_index = -1;
+			}
+		}
+	}
+	if(gameplay.sound_instances.has_value()) {
+		for(SoundInstance& inst : *gameplay.sound_instances) {
+			if(inst.pvars.size() > 0) {
+				inst.pvar_index = pvar_index++;
+			} else {
+				inst.pvar_index = -1;
+			}
+		}
+	}
+	if(gameplay.moby_instances.has_value()) {
+		for(MobyInstance& inst : *gameplay.moby_instances) {
+			if(inst.pvars.size() > 0) {
+				inst.pvar_index = pvar_index++;
+			} else {
+				inst.pvar_index = -1;
+			}
+		}
+	}
 }

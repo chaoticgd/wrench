@@ -23,7 +23,7 @@
 //  Vec3f vec;
 //  ...
 //  Json json = to_json(vec);
-//  vec = from_json(json);
+//  vec = from_json<Vec3f>(json);
 //  
 // Given the type definition:
 //  packed_struct(Vec3f,
@@ -46,6 +46,26 @@ using Json = nlohmann::ordered_json;
 
 static const char* HEX_DIGITS = "0123456789abcdef";
 
+static std::string encode_json_string(const std::string& input) {
+	std::string output;
+	for(char c : input) {
+		output += HEX_DIGITS[(c & 0xff) >> 4];
+		output += HEX_DIGITS[(c & 0xff) & 0xf];
+	}
+	return output;
+}
+
+static std::string decode_json_string(const std::string& input) {
+	std::string output;
+	verify(input.size() % 2 == 0, "Invalid string.");
+	for(size_t i = 0; i < input.size(); i += 2) {
+		u32 c;
+		sscanf(&input[i], "%02x", &c);
+		output += (char) (c & 0xff);
+	}
+	return output;
+}
+
 [[maybe_unused]] static Json buffer_to_json_hexdump(const std::vector<u8>& buffer) {
 	Json json;
 	for(size_t i = 0; i < buffer.size(); i += 0x10) {
@@ -61,54 +81,56 @@ static const char* HEX_DIGITS = "0123456789abcdef";
 }
 
 [[maybe_unused]] static std::vector<u8> buffer_from_json_hexdump(const Json& json) {
-	return {};
-}
-
-static std::string encode_json_string(const std::string& input) {
-	std::string output;
-	for(char c : input) {
-		if(c == '\\') {
-			output += '\\';
-			output += '\\';
-		} else if(c >= 0x20 && c < 0x7f) {
-			output += c;
-		} else {
-			output += '\\';
-			output += 'x';
-			output += HEX_DIGITS[(c & 0xff) >> 4];
-			output += HEX_DIGITS[(c & 0xff) & 0xf];
+	verify(json.is_array(), "Expected JSON array for hexdump.");
+	std::vector<u8> result;
+	for(const Json& line : json) {
+		verify(line.is_string(), "Expected JSON string.");
+		std::string line_str = decode_json_string(line.get<std::string>());
+		for(char c : line_str) {
+			result.push_back(c);
 		}
 	}
-	return output;
+	return result;
 }
+
+template <typename Object>
+Json to_json(Object object);
+
+struct GC_8c_DL_70;
+struct Rgb96;
+struct DL_3c;
+struct GC_64_DL_48;
+struct PropertiesSecondPart;
+struct PropertiesThirdPart;
 
 struct ToJsonVisitor {
 	Json json;
-	template <typename Field>
-	void field(const char* name, Field& field) {
-		if constexpr(std::is_compound_v<Field>) {
-			json[name] = to_json(field);
-		} else {
-			json[name] = field;
-		}
+	template <typename T>
+	void field(const char* name, T& field) {
+		json[name] = to_json(field);
 	}
-	template <typename Element>
-	void field(const char* name, std::vector<Element>& list) {
-		Json json_list;
+	template <typename T>
+	void field(const char* name, std::vector<T>& list) {
+		Json json_list = Json::array();
 		for(auto& elem : list) {
-			if constexpr(std::is_compound_v<Element>) {
-				json_list.emplace_back(to_json(elem));
+			json_list.emplace_back(to_json(elem));
+			if constexpr(std::is_compound_v<T>) {
 				assert((json_list.back().find("original_index") != json_list.back().end()
-					|| std::is_same_v<Element, Vec3f>
-					|| std::is_same_v<Element, Vec4f>));
-			} else {
-				json_list.emplace_back(elem);
+					|| std::is_same_v<T, Vec3f>
+					|| std::is_same_v<T, Vec4f>
+					|| std::is_same_v<T, GC_8c_DL_70>
+					|| std::is_same_v<T, Rgb96>
+					|| std::is_same_v<T, DL_3c>
+					|| std::is_same_v<T, GC_64_DL_48>
+					|| std::is_same_v<T, PropertiesSecondPart>
+					|| std::is_same_v<T, PropertiesThirdPart>
+				));
 			}
 		}
 		json[name] = json_list;
 	}
-	template <typename OptionalField>
-	void optional(const char* name, OptionalField& opt) {
+	template <typename T>
+	void field(const char* name, std::optional<T>& opt) {
 		if(opt.has_value()) {
 			field(name, *opt);
 		}
@@ -116,24 +138,25 @@ struct ToJsonVisitor {
 	void hexdump(const char* name, std::vector<u8>& buffer) {
 		json[name] = buffer_to_json_hexdump(buffer);
 	}
-	void hexdump(const char* name, std::vector<std::vector<u8>>& list) {
-		for(auto& buffer : list) {
-			json[name].emplace_back(buffer_to_json_hexdump(buffer));
-		}
-	}
 	void string(const char* name, std::optional<std::string>& string) {
 		if(string.has_value()) {
 			json[name] = encode_json_string(*string);
 		}
 	}
+	template <typename T>
+	bool field_ptr(const char*, T) { return false; }
 };
 
 template <typename Object>
 Json to_json(Object object) {
-	ToJsonVisitor visitor;
-	object.enumerate_fields(visitor);
-	return visitor.json;
-};
+	if constexpr(std::is_compound_v<Object>) {
+		ToJsonVisitor visitor;
+		object.enumerate_fields(visitor);
+		return visitor.json;
+	} else {
+		return object;
+	}
+}
 
 template <typename Object>
 Object from_json(Json json);
@@ -142,18 +165,50 @@ struct FromJsonVisitor {
 	Json& json;
 	template <typename Field>
 	void field(const char* name, Field& field) {
-		field = json[name];
+		verify(json.contains(name) && !json[name].is_null(), "Missing field '%s'.", name);
+		field = from_json<Field>(json[name]);
+	}
+	template <typename Field>
+	void field(const char* name, std::vector<Field>& vec) {
+		verify(json.contains(name) && !json[name].is_null(), "Missing field '%s'.", name);
+		for(Json& element : json[name]) {
+			vec.emplace_back(from_json<Field>(element));
+		}
+	}
+	template <typename T>
+	void field(const char* name, std::optional<T>& opt) {
+		if(json.contains(name) && !json[name].is_null()) {
+			T value;
+			field(name, value);
+			opt = value;
+		}
 	}
 	void hexdump(const char* name, std::vector<u8>& buffer) {
-		buffer = buffer_from_json_hexdump(json[name]);
+		verify(json.contains(name), "Missing hexdump field '%s'.", name);
+		if(!json[name].is_null()) {
+			buffer = buffer_from_json_hexdump(json[name]);
+		} else {
+			buffer = {};
+		}
 	}
+	void string(const char* name, std::optional<std::string>& string) {
+		verify(json.contains(name) && !json[name].is_null(), "Missing string field '%s'.", name);
+		string = decode_json_string(json[name]);
+	}
+	template <typename T>
+	bool field_ptr(const char*, T) { return false; }
 };
 
 template <typename Object>
 Object from_json(Json json) {
-	Object object;
-	object.enumerate_fields(FromJsonVisitor{json});
-	return object;
-};
+	if constexpr(std::is_compound_v<Object>) {
+		Object object;
+		FromJsonVisitor visitor{json};
+		object.enumerate_fields(visitor);
+		return object;
+	} else {
+		return json;
+	}
+}
 
 #endif

@@ -26,7 +26,26 @@
 using OriginalIndex = s32;
 
 packed_struct(GC_8c_DL_70,
-	u8 data[0x20];
+	u32 unknown_0;
+	u32 unknown_4;
+	u32 unknown_8;
+	u32 unknown_c;
+	u32 unknown_10;
+	u32 unknown_14;
+	u32 unknown_18;
+	u32 unknown_1c;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_PACKED_FIELD(unknown_0);
+		DEF_PACKED_FIELD(unknown_4);
+		DEF_PACKED_FIELD(unknown_8);
+		DEF_PACKED_FIELD(unknown_c);
+		DEF_PACKED_FIELD(unknown_10);
+		DEF_PACKED_FIELD(unknown_14);
+		DEF_PACKED_FIELD(unknown_18);
+		DEF_PACKED_FIELD(unknown_1c);
+	}
 )
 
 packed_struct(Rgb96,
@@ -88,6 +107,18 @@ packed_struct(PropertiesSecondPart,
 	s32 unknown_14;
 	s32 unknown_18;
 	s32 unknown_1c;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_PACKED_FIELD(unknown_0);
+		DEF_PACKED_FIELD(unknown_4);
+		DEF_PACKED_FIELD(unknown_8);
+		DEF_PACKED_FIELD(unknown_c);
+		DEF_PACKED_FIELD(unknown_10);
+		DEF_PACKED_FIELD(unknown_14);
+		DEF_PACKED_FIELD(unknown_18);
+		DEF_PACKED_FIELD(unknown_1c);
+	}
 )
 
 packed_struct(PropertiesThirdPart,
@@ -95,6 +126,14 @@ packed_struct(PropertiesThirdPart,
 	s32 unknown_4;
 	s32 unknown_8;
 	s32 unknown_c;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_PACKED_FIELD(unknown_0);
+		DEF_PACKED_FIELD(unknown_4);
+		DEF_PACKED_FIELD(unknown_8);
+		DEF_PACKED_FIELD(unknown_c);
+	}
 )
 
 packed_struct(PropertiesFourthPart,
@@ -104,6 +143,16 @@ packed_struct(PropertiesFourthPart,
 	s32 unknown_c;
 	s32 unknown_10;
 	s32 unknown_14;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_PACKED_FIELD(unknown_0);
+		DEF_PACKED_FIELD(unknown_4);
+		DEF_PACKED_FIELD(unknown_8);
+		DEF_PACKED_FIELD(unknown_c);
+		DEF_PACKED_FIELD(unknown_10);
+		DEF_PACKED_FIELD(unknown_14);
+	}
 )
 
 packed_struct(PropertiesFifthPart,
@@ -114,13 +163,24 @@ packed_struct(PropertiesFifthPart,
 	s32 unknown_10;
 	s32 unknown_14;
 	s32 sixth_part_count;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_PACKED_FIELD(unknown_0);
+		DEF_PACKED_FIELD(unknown_4);
+		DEF_PACKED_FIELD(unknown_8);
+		DEF_PACKED_FIELD(unknown_c);
+		DEF_PACKED_FIELD(unknown_10);
+		DEF_PACKED_FIELD(unknown_14);
+		DEF_PACKED_FIELD(sixth_part_count);
+	}
 )
 
 struct Properties {
 	PropertiesFirstPart first_part;
 	std::vector<PropertiesSecondPart> second_part;
 	s32 core_sounds_count;
-	s32 rac3_third_part;
+	s32 rac3_third_part = 0;
 	std::vector<PropertiesThirdPart> third_part;
 	PropertiesFourthPart fourth_part;
 	PropertiesFifthPart fifth_part;
@@ -128,7 +188,14 @@ struct Properties {
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		first_part.enumerate_fields(t);
+		DEF_FIELD(first_part);
+		DEF_FIELD(second_part);
+		DEF_FIELD(core_sounds_count);
+		DEF_FIELD(rac3_third_part);
+		DEF_FIELD(third_part);
+		DEF_FIELD(fourth_part);
+		DEF_FIELD(fifth_part);
+		DEF_FIELD(sixth_part);
 	}
 };
 
@@ -156,11 +223,82 @@ struct HelpMessage {
 };
 
 struct GC_84_Instance {
-	u8 unknown_0[0x90];
+	u32 unknown_0;
+	u32 unknown_4;
+	u32 unknown_8;
+	u32 unknown_c;
+	u32 unknown_10;
+	u32 unknown_14;
+	u32 unknown_18;
+	u32 unknown_1c;
+	u32 unknown_20;
+	u32 unknown_24;
+	u32 unknown_28;
+	u32 unknown_2c;
+	u32 unknown_30;
+	u32 unknown_34;
+	u32 unknown_38;
+	u32 unknown_3c;
+	u32 unknown_40;
+	u32 unknown_44;
+	u32 unknown_48;
+	u32 unknown_4c;
+	u32 unknown_50;
+	u32 unknown_54;
+	u32 unknown_58;
+	u32 unknown_5c;
+	u32 unknown_60;
+	u32 unknown_64;
+	u32 unknown_68;
+	u32 unknown_6c;
+	u32 unknown_70;
+	u32 unknown_74;
+	u32 unknown_78;
+	u32 unknown_7c;
+	u32 unknown_80;
+	u32 unknown_84;
+	u32 unknown_88;
+	u32 unknown_8c;
 	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
+		DEF_FIELD(unknown_0);
+		DEF_FIELD(unknown_4);
+		DEF_FIELD(unknown_8);
+		DEF_FIELD(unknown_c);
+		DEF_FIELD(unknown_10);
+		DEF_FIELD(unknown_14);
+		DEF_FIELD(unknown_18);
+		DEF_FIELD(unknown_1c);
+		DEF_FIELD(unknown_20);
+		DEF_FIELD(unknown_24);
+		DEF_FIELD(unknown_28);
+		DEF_FIELD(unknown_2c);
+		DEF_FIELD(unknown_30);
+		DEF_FIELD(unknown_34);
+		DEF_FIELD(unknown_38);
+		DEF_FIELD(unknown_3c);
+		DEF_FIELD(unknown_40);
+		DEF_FIELD(unknown_44);
+		DEF_FIELD(unknown_48);
+		DEF_FIELD(unknown_4c);
+		DEF_FIELD(unknown_50);
+		DEF_FIELD(unknown_54);
+		DEF_FIELD(unknown_58);
+		DEF_FIELD(unknown_5c);
+		DEF_FIELD(unknown_60);
+		DEF_FIELD(unknown_64);
+		DEF_FIELD(unknown_68);
+		DEF_FIELD(unknown_6c);
+		DEF_FIELD(unknown_70);
+		DEF_FIELD(unknown_74);
+		DEF_FIELD(unknown_78);
+		DEF_FIELD(unknown_7c);
+		DEF_FIELD(unknown_80);
+		DEF_FIELD(unknown_84);
+		DEF_FIELD(unknown_88);
+		DEF_FIELD(unknown_8c);
 		DEF_FIELD(original_index);
 	}
 };
@@ -169,14 +307,14 @@ struct ImportCamera {
 	s32 type;
 	Vec3f position;
 	Vec3f rotation;
-	s32 pvar_index; // Only used during reading!
+	s32 pvar_index;
 	std::vector<u8> pvars;
 	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(position);
 		DEF_FIELD(type);
+		DEF_FIELD(position);
 		DEF_FIELD(rotation);
 		DEF_HEXDUMP(pvars);
 		DEF_FIELD(original_index);
@@ -218,7 +356,7 @@ struct Shape {
 struct SoundInstance {
 	s16 o_class;
 	s16 m_class;
-	s32 pvar_index; // Only used during reading!
+	s32 pvar_index;
 	f32 range;
 	ShapePacked cuboid;
 	std::vector<u8> pvars;
@@ -290,6 +428,17 @@ struct MobyInstance {
 		DEF_FIELD(light);
 		DEF_HEXDUMP(pvars);
 		DEF_FIELD(original_index);
+		
+		DEF_FIELD(rac23.unknown_8);
+		DEF_FIELD(rac23.unknown_c);
+		DEF_FIELD(rac23.unknown_18);
+		DEF_FIELD(rac23.unknown_1c);
+		DEF_FIELD(rac23.unknown_20);
+		DEF_FIELD(rac23.unknown_24);
+		DEF_FIELD(rac23.unknown_38);
+		DEF_FIELD(rac23.unknown_3c);
+		DEF_FIELD(rac23.unknown_4c);
+		DEF_FIELD(rac23.unknown_84);
 	}
 };
 
@@ -301,20 +450,57 @@ packed_struct(PvarTableEntry,
 packed_struct(DL_3c,
 	int32_t unknown_0;
 	int32_t unknown_4;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_PACKED_FIELD(unknown_0);
+		DEF_PACKED_FIELD(unknown_4);
+	}
 )
 
 packed_struct(GC_64_DL_48,
-	uint8_t unknown[0x8];
+	uint8_t unknown_0;
+	uint8_t unknown_4;
+	uint8_t unknown_8;
+	uint8_t unknown_c;
+	uint8_t unknown_10;
+	uint8_t unknown_14;
+	uint8_t unknown_18;
+	uint8_t unknown_1c;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_PACKED_FIELD(unknown_0);
+		DEF_PACKED_FIELD(unknown_4);
+		DEF_PACKED_FIELD(unknown_8);
+		DEF_PACKED_FIELD(unknown_c);
+		DEF_PACKED_FIELD(unknown_10);
+		DEF_PACKED_FIELD(unknown_14);
+		DEF_PACKED_FIELD(unknown_18);
+		DEF_PACKED_FIELD(unknown_1c);
+	}
 )
 
 struct MobyGroups {
 	std::vector<s32> first_part;
 	std::vector<s8> second_part;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD(first_part);
+		DEF_FIELD(second_part);
+	}
 };
 
 struct GC_54_DL_38 {
 	std::vector<s8> first_part;
 	std::vector<s64> second_part;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD(first_part);
+		DEF_FIELD(second_part);
+	}
 };
 
 struct Path {
@@ -331,6 +517,12 @@ struct Path {
 struct GC_80_DL_64 {
 	std::vector<u8> first_part;
 	std::vector<u8> second_part;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD(first_part);
+		DEF_FIELD(second_part);
+	}
 };
 
 packed_struct(BoundingSphere,
@@ -462,6 +654,12 @@ struct TieAmbientRgbas {
 struct TieGroups {
 	std::vector<s32> first_part;
 	std::vector<s8> second_part;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD(first_part);
+		DEF_FIELD(second_part);
+	}
 };
 
 struct ShrubInstance {
@@ -500,6 +698,12 @@ struct ShrubInstance {
 struct ShrubGroups {
 	std::vector<s32> first_part;
 	std::vector<s8> second_part;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD(first_part);
+		DEF_FIELD(second_part);
+	}
 };
 
 struct OcclusionPair {
@@ -579,25 +783,44 @@ struct Gameplay {
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_OPTIONAL_FIELD(properties);
-		DEF_OPTIONAL_FIELD(gc_84);
-		DEF_OPTIONAL_FIELD(cameras);
-		DEF_OPTIONAL_FIELD(sound_instances);
-		DEF_OPTIONAL_FIELD(moby_instances);
-		DEF_OPTIONAL_FIELD(spheres);
-		DEF_OPTIONAL_FIELD(cylinders);
-		DEF_OPTIONAL_FIELD(paths);
-		DEF_OPTIONAL_FIELD(cuboids);
-		DEF_OPTIONAL_FIELD(grind_paths);
-		DEF_OPTIONAL_FIELD(gameplay_area_list);
-		
-		DEF_OPTIONAL_FIELD(lights);
-		DEF_OPTIONAL_FIELD(tie_classes);
-		DEF_OPTIONAL_FIELD(tie_instances);
-		DEF_OPTIONAL_FIELD(tie_ambient_rgbas);
-		DEF_OPTIONAL_FIELD(shrub_classes);
-		DEF_OPTIONAL_FIELD(shrub_instances);
-		DEF_OPTIONAL_FIELD(occlusion_clusters);
+		DEF_GAMEPLAY_FIELD("gc_8c_dl_70", &Gameplay::gc_8c_dl_70);
+		DEF_GAMEPLAY_FIELD("properties", &Gameplay::properties);
+		DEF_GAMEPLAY_FIELD("us_english_help_messages", &Gameplay::us_english_help_messages);
+		DEF_GAMEPLAY_FIELD("uk_english_help_messages", &Gameplay::uk_english_help_messages);
+		DEF_GAMEPLAY_FIELD("french_help_messages", &Gameplay::french_help_messages);
+		DEF_GAMEPLAY_FIELD("german_help_messages", &Gameplay::german_help_messages);
+		DEF_GAMEPLAY_FIELD("spanish_help_messages", &Gameplay::spanish_help_messages);
+		DEF_GAMEPLAY_FIELD("italian_help_messages", &Gameplay::italian_help_messages);
+		DEF_GAMEPLAY_FIELD("japanese_help_messages", &Gameplay::japanese_help_messages);
+		DEF_GAMEPLAY_FIELD("korean_help_messages", &Gameplay::korean_help_messages);
+		DEF_GAMEPLAY_FIELD("gc_84", &Gameplay::gc_84);
+		DEF_GAMEPLAY_FIELD("cameras", &Gameplay::cameras);
+		DEF_GAMEPLAY_FIELD("sound_instances", &Gameplay::sound_instances);
+		DEF_GAMEPLAY_FIELD("moby_classes", &Gameplay::moby_classes);
+		DEF_GAMEPLAY_FIELD("moby_instances", &Gameplay::moby_instances);
+		DEF_GAMEPLAY_FIELD("dynamic_moby_count", &Gameplay::dynamic_moby_count);
+		DEF_GAMEPLAY_FIELD("gc_58_dl_3c", &Gameplay::gc_58_dl_3c);
+		DEF_GAMEPLAY_FIELD("gc_64_dl_48", &Gameplay::gc_64_dl_48);
+		DEF_GAMEPLAY_FIELD("moby_groups", &Gameplay::moby_groups);
+		DEF_GAMEPLAY_FIELD("gc_54_dl_38", &Gameplay::gc_54_dl_38);
+		DEF_GAMEPLAY_FIELD("spheres", &Gameplay::spheres);
+		DEF_GAMEPLAY_FIELD("cylinders", &Gameplay::cylinders);
+		DEF_GAMEPLAY_FIELD("gc_74_dl_58", &Gameplay::gc_74_dl_58);
+		DEF_GAMEPLAY_FIELD("paths", &Gameplay::paths);
+		DEF_GAMEPLAY_FIELD("cuboids", &Gameplay::cuboids);
+		DEF_GAMEPLAY_FIELD("gc_88_dl_6c", &Gameplay::gc_88_dl_6c);
+		DEF_GAMEPLAY_FIELD("gc_80_dl_64", &Gameplay::gc_80_dl_64);
+		DEF_GAMEPLAY_FIELD("grind_paths", &Gameplay::grind_paths);
+		DEF_GAMEPLAY_FIELD("gameplay_area_list", &Gameplay::gameplay_area_list);
+		DEF_GAMEPLAY_FIELD("lights", &Gameplay::lights);
+		DEF_GAMEPLAY_FIELD("tie_classes", &Gameplay::tie_classes);
+		DEF_GAMEPLAY_FIELD("tie_instances", &Gameplay::tie_instances);
+		DEF_GAMEPLAY_FIELD("tie_ambient_rgbas", &Gameplay::tie_ambient_rgbas);
+		DEF_GAMEPLAY_FIELD("tie_groups", &Gameplay::tie_groups);
+		DEF_GAMEPLAY_FIELD("shrub_classes", &Gameplay::shrub_classes);
+		DEF_GAMEPLAY_FIELD("shrub_instances", &Gameplay::shrub_instances);
+		DEF_GAMEPLAY_FIELD("shrub_groups", &Gameplay::shrub_groups);
+		DEF_GAMEPLAY_FIELD("occlusion_clusters", &Gameplay::occlusion_clusters);
 	}
 };
 
@@ -606,7 +829,11 @@ struct LevelWad : Wad {
 	std::vector<Gameplay> gameplay_mission_instances;
 };
 
+void read_gameplay_json(Gameplay& gameplay, Json& json);
 Json write_gameplay_json(Gameplay& gameplay);
+void read_help_messages(Gameplay& gameplay, Json& json);
 Json write_help_messages(Gameplay& gameplay);
+
+void fixup_pvar_indices(Gameplay& gameplay);
 
 #endif

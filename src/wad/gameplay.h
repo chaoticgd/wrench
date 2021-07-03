@@ -42,6 +42,6 @@ extern const std::vector<GameplayBlockDescription> DL_ART_INSTANCE_BLOCKS;
 extern const std::vector<GameplayBlockDescription> DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS;
 
 void read_gameplay(Gameplay& gameplay, Buffer src, Game game, const std::vector<GameplayBlockDescription>& blocks);
-std::vector<u8> write_gameplay(const Gameplay& gameplay, Game game, const std::vector<GameplayBlockDescription>& blocks);
+std::vector<u8> write_gameplay(const Gameplay& gameplay_arg, Game game, const std::vector<GameplayBlockDescription>& blocks);
 
 #endif

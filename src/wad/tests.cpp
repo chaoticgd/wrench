@@ -107,6 +107,8 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 		printf("warning: Skipping %s %s. Weird format.\n", args.wad_file_path.c_str(), args.name);
 		return;
 	}
+	
+	// Test the binary reading/writing functions.
 	Gameplay gameplay;
 	read_gameplay(gameplay, src, args.game, *args.blocks);
 	std::vector<u8> dest = write_gameplay(gameplay, args.game, *args.blocks);
@@ -130,6 +132,21 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 		verify(gameplay_file, "Failed to open /tmp/gameplay.bin for writing.");
 		fwrite(src.data(), src.size(), 1, gameplay_file);
 		fclose(gameplay_file);
+		exit(1);
+	}
+	
+	// Test the JSON reading/writing functions.
+	Json gameplay_json = write_gameplay_json(gameplay);
+	Json help_messages_json = write_help_messages(gameplay);
+	Gameplay test_gameplay;
+	read_gameplay_json(test_gameplay, gameplay_json);
+	read_help_messages(test_gameplay, help_messages_json);
+	std::vector<u8> test_dest = write_gameplay(test_gameplay, args.game, *args.blocks);
+	OutBuffer(test_dest).pad(SECTOR_SIZE, 0);
+	if(test_dest != dest) {
+		fprintf(stderr, "File read from JSON doesn't match original.\n");
+		write_file("/tmp/gameplay_orig.bin", dest);
+		write_file("/tmp/gameplay_test.bin", test_dest);
 		exit(1);
 	}
 }

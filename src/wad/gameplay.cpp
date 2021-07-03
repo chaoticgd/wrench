@@ -29,7 +29,9 @@ void read_gameplay(Gameplay& gameplay, Buffer src, Game game, const std::vector<
 	}
 }
 
-std::vector<u8> write_gameplay(const Gameplay& gameplay, Game game, const std::vector<GameplayBlockDescription>& blocks) {
+std::vector<u8> write_gameplay(const Gameplay& gameplay_arg, Game game, const std::vector<GameplayBlockDescription>& blocks) {
+	Gameplay gameplay = gameplay_arg;
+	
 	s32 header_size = 0;
 	s32 block_count = 0;
 	for(const GameplayBlockDescription& block : blocks) {
@@ -39,6 +41,8 @@ std::vector<u8> write_gameplay(const Gameplay& gameplay, Game game, const std::v
 		}
 	}
 	assert(header_size == block_count * 4);
+	
+	fixup_pvar_indices(gameplay); // Set pvar_index fields.
 	
 	std::vector<u8> dest_vec(header_size, 0);
 	OutBuffer dest(dest_vec);
@@ -921,8 +925,8 @@ static_assert(sizeof(GC_84_Packed) == 0x90);
 static void swap_instance(GC_84_Instance& l, GC_84_Packed& r) {
 	u8 temp[0x90];
 	memcpy(temp, r.unknown_0, 0x90);
-	memcpy(r.unknown_0, l.unknown_0, 0x90);
-	memcpy(l.unknown_0, temp, 0x90);
+	memcpy(r.unknown_0, &l.unknown_0, 0x90);
+	memcpy(&l.unknown_0, temp, 0x90);
 }
 
 packed_struct(ImportCameraPacked,

@@ -28,6 +28,7 @@
 #include <stdint.h>
 #include <filesystem>
 #include <functional>
+#include <type_traits>
 
 using u8 = uint8_t;
 using u16 = uint16_t;
@@ -102,12 +103,6 @@ packed_struct(SectorRange,
 		t.field(#member, temp); \
 		member = temp; \
 	}
-#define DEF_OPTIONAL_FIELD(member) \
-	{ \
-		auto temp = member; \
-		t.optional(#member, temp); \
-		member = temp; \
-	}
 #define DEF_HEXDUMP(member) \
 	{ \
 		auto temp = std::move(member); \
@@ -119,6 +114,14 @@ packed_struct(SectorRange,
 		auto temp = std::move(member); \
 		t.string(#member, temp); \
 		member = std::move(temp); \
+	}
+#define DEF_GAMEPLAY_FIELD(name, ptr) \
+	{ \
+		auto temp = std::move(this->*ptr); \
+		t.field(name, temp); \
+		if(!t.field_ptr(name, ptr)) { \
+			this->*ptr = std::move(temp); \
+		} \
 	}
 
 packed_struct(Vec3f,
