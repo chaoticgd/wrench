@@ -822,16 +822,18 @@ struct Gameplay {
 	}
 };
 
-struct LevelWad : Wad {
-	Gameplay gameplay;
-	std::vector<Gameplay> gameplay_mission_instances;
-};
-
 void read_gameplay_json(Gameplay& gameplay, Json& json);
 Json write_gameplay_json(Gameplay& gameplay);
 void read_help_messages(Gameplay& gameplay, Json& json);
 Json write_help_messages(Gameplay& gameplay);
 
 void fixup_pvar_indices(Gameplay& gameplay);
+
+struct LevelWad : Wad {
+	Gameplay gameplay;
+	std::vector<Gameplay> gameplay_mission_instances;
+};
+
+LevelWad build_level_wad(fs::path input_dir, Json index_json);
 
 #endif

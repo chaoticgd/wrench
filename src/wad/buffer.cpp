@@ -117,3 +117,28 @@ bool diff_buffers(Buffer lhs, Buffer rhs, s64 offset, const char* subject) {
 	}
 	return false;
 }
+
+s64 file_size_in_bytes(FILE* file) {
+	long whence_you_came = ftell(file);
+	fseek(file, 0, SEEK_END);
+	s64 ofs = ftell(file);
+	fseek(file, whence_you_came, SEEK_SET);
+	return ofs;
+}
+
+std::vector<u8> read_file(fs::path path) {
+	FILE* file = fopen(path.string().c_str(), "rb");
+	verify(file, "Failed to open file '%s' for reading.", path.string().c_str());
+	std::vector<u8> buffer(file_size_in_bytes(file));
+	verify(fread(buffer.data(), buffer.size(), 1, file) == 1, "Failed to read file '%s'.", path.string().c_str());
+	fclose(file);
+	return buffer;
+}
+
+void write_file(fs::path path, Buffer buffer) {
+	FILE* file = fopen(path.string().c_str(), "wb");
+	verify(file, "Failed to open file '%s' for writing.", path.string().c_str());
+	verify(fwrite(buffer.lo, buffer.size(), 1, file) == 1, "Failed to write output file '%s'.", path.string().c_str());
+	fclose(file);
+	printf("Wrote %s (%ld KiB)\n", path.string().c_str(), buffer.size() / 1024);
+}

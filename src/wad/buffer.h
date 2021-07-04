@@ -134,4 +134,9 @@ struct OutBuffer {
 	}
 };
 
+s64 file_size_in_bytes(FILE* file);
+std::vector<u8> read_file(fs::path path);
+void write_file(fs::path path, Buffer buffer);
+s64 pad_to_sector_size(FILE* file);
+
 #endif

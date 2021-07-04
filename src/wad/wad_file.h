@@ -30,7 +30,7 @@
 struct WadLumpDescription;
 
 using ReadLumpFunc = std::function<void(WadLumpDescription desc, Wad& dest, std::vector<u8>& src, Game& game)>;
-using WriteLumpFunc = std::function<void(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const Wad& src, Game& game)>;
+using WriteLumpFunc = std::function<bool(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const Wad& src, Game& game)>;
 
 struct LumpFuncs {
 	ReadLumpFunc read;
@@ -58,6 +58,5 @@ std::vector<u8> read_header(FILE* file);
 WadFileDescription match_wad(FILE* file, Buffer header);
 std::vector<u8> read_lump(FILE* file, Sector32 offset, Sector32 size);
 std::optional<WadLumpDescription> find_lump(WadFileDescription file_desc, const char* name);
-void write_file(fs::path path, Buffer buffer);
 
 #endif

@@ -25,8 +25,13 @@ struct BinaryLump {
 		asset.buffers.push_back(std::move(src));
 	}
 	
-	static void write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const std::map<std::string, BinaryAsset>& src, Game& game) {
-		
+	static bool write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const std::map<std::string, BinaryAsset>& src, Game& game) {
+		verify(src.find(desc.name) != src.end(), "Missing lump '%s' (with index %d) in level JSON.", desc.name, index);
+		if(src.at(desc.name).buffers.size() <= (size_t) index) {
+			return false;
+		}
+		dest = src.at(desc.name).buffers.at(index);
+		return true;
 	}
 };
 
@@ -36,8 +41,8 @@ struct Rac23PrimaryLump {
 		BinaryLump::read(desc, dest, src, game);
 	}
 	
-	static void write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const std::map<std::string, BinaryAsset>& src, Game& game) {
-		BinaryLump::write(desc, index, dest, src, game);
+	static bool write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const std::map<std::string, BinaryAsset>& src, Game& game) {
+		return BinaryLump::write(desc, index, dest, src, game);
 	}
 	
 	static Game detect_game(std::vector<u8>& src) {
@@ -61,8 +66,8 @@ struct DlPrimaryLump {
 		BinaryLump::read(desc, dest, src, game);
 	}
 	
-	static void write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const std::map<std::string, BinaryAsset>& src, Game& game) {
-		BinaryLump::write(desc, index, dest, src, game);
+	static bool write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const std::map<std::string, BinaryAsset>& src, Game& game) {
+		return BinaryLump::write(desc, index, dest, src, game);
 	}
 };
 
@@ -74,10 +79,11 @@ struct Rac23GameplayLump {
 		read_gameplay(dest, decompressed, game, RAC23_GAMEPLAY_BLOCKS);
 	}
 	
-	static void write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const Gameplay& src, Game& game) {
+	static bool write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const Gameplay& src, Game& game) {
 		assert(game == Game::RAC2 || game == Game::RAC3);
 		std::vector<u8> uncompressed = write_gameplay(src, game, RAC23_GAMEPLAY_BLOCKS);
 		compress_wad(dest, uncompressed, 8);
+		return true;
 	}
 };
 
@@ -89,10 +95,11 @@ struct DlGameplayLump {
 		read_gameplay(dest, decompressed, Game::DL, DL_GAMEPLAY_CORE_BLOCKS);
 	}
 	
-	static void write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const Gameplay& src, Game& game) {
+	static bool write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const Gameplay& src, Game& game) {
 		assert(game == Game::DL);
 		std::vector<u8> uncompressed = write_gameplay(src, Game::DL, DL_GAMEPLAY_CORE_BLOCKS);
 		compress_wad(dest, uncompressed, 8);
+		return true;
 	}
 };
 
@@ -104,10 +111,11 @@ struct ArtInstancesLump {
 		read_gameplay(dest, decompressed, Game::DL, DL_ART_INSTANCE_BLOCKS);
 	}
 	
-	static void write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const Gameplay& src, Game& game) {
+	static bool write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const Gameplay& src, Game& game) {
 		assert(game == Game::DL);
 		std::vector<u8> uncompressed = write_gameplay(src, Game::DL, DL_ART_INSTANCE_BLOCKS);
 		compress_wad(dest, uncompressed, 8);
+		return true;
 	}
 };
 
@@ -121,9 +129,10 @@ struct GameplayMissionInstancesLump {
 		dest.emplace_back(std::move(mission_instances));
 	}
 	
-	static void write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const std::vector<Gameplay>& src, Game& game) {
+	static bool write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const std::vector<Gameplay>& src, Game& game) {
 		assert(game == Game::DL);
 		dest = write_gameplay(src.at(index), Game::DL, DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS);
+		return true;
 	}
 };
 
@@ -146,18 +155,18 @@ static LumpFuncs lf(Field field) {
 	funcs.write = [field](WadLumpDescription desc, s32 index, std::vector<u8>& dest, const Wad& src, Game& game) {
 		const ThisWad* this_wad = dynamic_cast<const ThisWad*>(&src);
 		assert(this_wad);
-		Lump::write(desc, index, dest, this_wad->*field, game);
+		return Lump::write(desc, index, dest, this_wad->*field, game);
 	};
 	return funcs;
 }
 
 const std::vector<WadFileDescription> wad_files = {
-	{"level", {Game::RAC2}, 0x60, &create_wad<LevelWad>, {
+	{"level", {Game::RAC2, Game::RAC3}, 0x60, &create_wad<LevelWad>, {
 		{0x00, 0, {nullptr, nullptr}, "header_size"},
 		{0x08, 0, {nullptr, nullptr}, "level_number"},
 		{0x0c, 0, {nullptr, nullptr}, "reverb"},
-		{0x10, 1, lf<Rac23PrimaryLump>(&LevelWad::binary_assets), "data"},
 		{0x18, 1, lf<BinaryLump>(&LevelWad::binary_assets), "core_bank"},
+		{0x10, 1, lf<Rac23PrimaryLump>(&LevelWad::binary_assets), "primary"},
 		{0x20, 1, lf<Rac23GameplayLump>(&LevelWad::gameplay), "gameplay_core"},
 		{0x28, 1, lf<BinaryLump>(&LevelWad::binary_assets), "unknown_28"},
 		{0x30, 3, lf<BinaryLump>(&LevelWad::binary_assets), "chunk"},
@@ -166,8 +175,8 @@ const std::vector<WadFileDescription> wad_files = {
 	{"level", {}, 0x68, &create_wad<LevelWad>, {
 		{0x00, 0, {nullptr, nullptr}, "header_size"},
 		{0x08, 0, {nullptr, nullptr}, "level_number"},
-		{0x0c, 1, lf<Rac23PrimaryLump>(&LevelWad::binary_assets), "data"},
 		{0x14, 1, lf<BinaryLump>(&LevelWad::binary_assets), "core_bank"},
+		{0x0c, 1, lf<Rac23PrimaryLump>(&LevelWad::binary_assets), "primary"},
 		{0x1c, 1, lf<Rac23GameplayLump>(&LevelWad::gameplay), "gameplay_1"},
 		{0x24, 1, lf<Rac23GameplayLump>(&LevelWad::gameplay), "gameplay_2"},
 		{0x2c, 1, lf<BinaryLump>(&LevelWad::binary_assets), "unknown_2c"},
@@ -180,8 +189,8 @@ const std::vector<WadFileDescription> wad_files = {
 		{0x0c,  0,   {nullptr, nullptr}, "reverb"},
 		{0x10,  0,   {nullptr, nullptr}, "max_mission_size_1"},
 		{0x14,  0,   {nullptr, nullptr}, "max_mission_size_2"},
-		{0x018, 1,   lf<DlPrimaryLump>(&LevelWad::binary_assets), "data"},
 		{0x020, 1,   lf<BinaryLump>(&LevelWad::binary_assets), "core_bank"},
+		{0x018, 1,   lf<DlPrimaryLump>(&LevelWad::binary_assets), "primary"},
 		{0x028, 3,   lf<BinaryLump>(&LevelWad::binary_assets), "chunk"},
 		{0x040, 3,   lf<BinaryLump>(&LevelWad::binary_assets), "chunkbank"},
 		{0x058, 1,   lf<DlGameplayLump>(&LevelWad::gameplay), "gameplay_core"},
@@ -229,13 +238,4 @@ std::optional<WadLumpDescription> find_lump(WadFileDescription file_desc, const 
 		}
 	}
 	return {};
-}
-
-void write_file(fs::path path, Buffer buffer) {
-	FILE* file = fopen(path.string().c_str(), "wb");
-	verify(file, "Failed to open file '%s' for writing.", path.string().c_str());
-	assert(buffer.size() > 0);
-	verify(fwrite(buffer.lo, buffer.size(), 1, file) == 1, "Failed to write output file '%s'.", path.string().c_str());
-	fclose(file);
-	printf("Wrote %s (%ld KiB)\n", path.string().c_str(), buffer.size() / 1024);
 }

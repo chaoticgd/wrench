@@ -127,3 +127,47 @@ void fixup_pvar_indices(Gameplay& gameplay) {
 		}
 	}
 }
+
+LevelWad build_level_wad(fs::path input_dir, Json index_json) {
+	LevelWad wad;
+	
+	std::string gameplay_path = index_json["gameplay"];
+	Json gameplay_json = Json::parse(read_file(input_dir/gameplay_path));
+	read_gameplay_json(wad.gameplay, gameplay_json);
+	
+	if(index_json.contains("art_instances")) {
+		std::string art_instances_path = index_json["art_instances"];
+		Json art_instances_json = Json::parse(read_file(art_instances_path));
+		read_gameplay_json(wad.gameplay, art_instances_json);
+	}
+	
+	// Read binary lumps from disk. This is extremely hacky.
+	for(auto& item : index_json.items()) {
+		if(item.value().is_string()) {
+			std::string value = item.value();
+			if(!value.ends_with(".bin")) {
+				continue;
+			}
+			BinaryAsset asset;
+			asset.is_array = false;
+			asset.buffers.emplace_back(read_file(input_dir/value));
+			wad.binary_assets.emplace(item.key(), std::move(asset));
+		} else if(item.value().is_array()) {
+			BinaryAsset asset;
+			asset.is_array = true;
+			for(auto& element : item.value()) {
+				if(!element.is_string()) {
+					continue;
+				}
+				std::string value = element;
+				if(!value.ends_with(".bin")) {
+					continue;
+				}
+				asset.buffers.emplace_back(read_file(input_dir/value));
+			}
+			wad.binary_assets.emplace(item.key(), std::move(asset));
+		}
+	}
+	
+	return wad;
+}

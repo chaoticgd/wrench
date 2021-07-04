@@ -124,7 +124,7 @@ struct FromJsonVisitor {
 			verify(json.contains(name) && json[name].is_string(), "Expected string for field '%s'.", name);
 			value = decode_json_string(json[name]);
 		} else {
-			verify(json.contains(name) && !json[name].is_null(), "Missing field '%s'.", name);
+			verify(json.contains(name), "Missing field '%s'.", name);
 			from_json(value, json[name]);
 		}
 	}
@@ -160,6 +160,8 @@ void from_json(Object& dest, Json src) {
 	if constexpr(std::is_compound_v<Object>) {
 		FromJsonVisitor visitor{src};
 		dest.enumerate_fields(visitor);
+	} else if(src.is_null()) {
+		dest = Object();
 	} else {
 		dest = src;
 	}

@@ -44,6 +44,8 @@ using f32 = float;
 
 namespace fs = std::filesystem;
 
+#define BEGIN_END(container) container.begin(), container.end()
+
 // Like assert, but for user errors.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-security"

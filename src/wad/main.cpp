@@ -22,8 +22,10 @@
 #include "tests.h"
 #include "wad_file.h"
 
-static void run_extractor(fs::path input_path, fs::path output_path);
-static void run_raw_extractor(fs::path input_path, fs::path output_path);
+static void extract(fs::path input_path, fs::path output_path);
+static void extract_raw(fs::path input_path, fs::path output_path);
+static void build(fs::path input_path, fs::path output_path);
+static Game game_from_string(std::string game_str);
 
 int main(int argc, char** argv) {
 	verify(argc == 3 || argc == 4, "Wrong number of arguments.");
@@ -32,9 +34,11 @@ int main(int argc, char** argv) {
 	fs::path input_path = argv[2];
 	
 	if(mode == "extract") {
-		run_extractor(input_path, argc == 4 ? argv[3] : "wad_extracted");
+		extract(input_path, argc == 4 ? argv[3] : "wad_extracted");
 	} else if(mode == "extract_raw") {
-		run_raw_extractor(input_path, argc == 4 ? argv[3] : "raw_extracted");
+		extract_raw(input_path, argc == 4 ? argv[3] : "raw_extracted");
+	} else if(mode == "build") {
+		build(input_path, argc == 4 ? argv[3] : "built.wad");
 	} else if(mode == "test") {
 		verify(argc == 4, "No game specified.");
 		Game game;
@@ -55,7 +59,7 @@ int main(int argc, char** argv) {
 	}
 }
 
-static void run_extractor(fs::path input_path, fs::path output_path) {
+static void extract(fs::path input_path, fs::path output_path) {
 	FILE* file = fopen(input_path.string().c_str(), "rb");
 	verify(file, "Failed to open input file.");
 	
@@ -152,7 +156,7 @@ static void run_extractor(fs::path input_path, fs::path output_path) {
 	fclose(file);
 }
 
-static void run_raw_extractor(fs::path input_path, fs::path output_path) {
+static void extract_raw(fs::path input_path, fs::path output_path) {
 	FILE* file = fopen(input_path.string().c_str(), "rb");
 	verify(file, "Failed to open input file.");
 	
@@ -179,4 +183,71 @@ static void run_raw_extractor(fs::path input_path, fs::path output_path) {
 			}
 		}
 	}
+}
+
+static void build(fs::path input_path, fs::path output_path) {
+	fs::path input_dir = input_path.parent_path();
+	Json index_json = Json::parse(read_file(input_path));
+	Game game = game_from_string(index_json["game"]);
+	
+	std::optional<WadFileDescription> file_desc;
+	for(const WadFileDescription& desc : wad_files) {
+		if(std::find(BEGIN_END(desc.games), game) != desc.games.end()) {
+			file_desc = desc;
+		}
+	}
+	assert(file_desc);
+	
+	FILE* wad_file = fopen(output_path.string().c_str(), "wb");
+	
+	std::vector<u8> header_vec(file_desc->header_size);
+	OutBuffer header{header_vec};
+	header.pad(SECTOR_SIZE, 0);
+	
+	header.write<s32>(0, file_desc->header_size);
+	
+	verify(fwrite(header_vec.data(), header_vec.size(), 1, wad_file) == 1, "Failed to write to output file.");
+	
+	LevelWad wad = build_level_wad(input_dir, index_json);
+	
+	for(const WadLumpDescription& lump_desc : file_desc->fields) {
+		if(lump_desc.funcs.write != nullptr) {
+			for(s32 i = 0; i < lump_desc.count; i++) {
+				s64 bytes = ftell(wad_file);
+				s64 sector = bytes / SECTOR_SIZE;
+				assert(sector * SECTOR_SIZE == bytes);
+				
+				std::vector<u8> lump;
+				if(!lump_desc.funcs.write(lump_desc, i, lump, wad, game)) {
+					continue;
+				}
+				OutBuffer(lump).pad(SECTOR_SIZE, 0);
+				
+				if(lump.size() > 0) {
+					verify(fwrite(lump.data(), lump.size(), 1, wad_file) == 1, "Failed to write %s lump.", lump_desc.name);
+				}
+				
+				SectorRange range{sector, lump.size() / SECTOR_SIZE};
+				header.write(lump_desc.offset + i * 8, range);
+			}
+		}
+	}
+	
+	verify(fseek(wad_file, 0, SEEK_SET) == 0, "Failed to seek?");
+	verify(fwrite(header_vec.data(), header_vec.size(), 1, wad_file) == 1, "Failed to write header to output file.");
+	
+	fclose(wad_file);
+}
+
+static Game game_from_string(std::string game_str) {
+	if(game_str == "R&C1") {
+		return Game::RAC1;
+	} else if(game_str == "R&C2") {
+		return Game::RAC2;
+	} else if(game_str == "R&C3") {
+		return Game::RAC3;
+	} else if(game_str == "Deadlocked") {
+		return Game::DL;
+	}
+	verify_not_reached("Invalid game specified in level JSON.");
 }
