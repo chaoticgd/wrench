@@ -152,7 +152,10 @@ static LumpFuncs lf(Field field) {
 }
 
 const std::vector<WadFileDescription> wad_files = {
-	{"level", 0x60, &create_wad<LevelWad>, {
+	{"level", {Game::RAC2}, 0x60, &create_wad<LevelWad>, {
+		{0x00, 0, {nullptr, nullptr}, "header_size"},
+		{0x08, 0, {nullptr, nullptr}, "level_number"},
+		{0x0c, 0, {nullptr, nullptr}, "reverb"},
 		{0x10, 1, lf<Rac23PrimaryLump>(&LevelWad::binary_assets), "data"},
 		{0x18, 1, lf<BinaryLump>(&LevelWad::binary_assets), "core_bank"},
 		{0x20, 1, lf<Rac23GameplayLump>(&LevelWad::gameplay), "gameplay_core"},
@@ -160,7 +163,9 @@ const std::vector<WadFileDescription> wad_files = {
 		{0x30, 3, lf<BinaryLump>(&LevelWad::binary_assets), "chunk"},
 		{0x48, 3, lf<BinaryLump>(&LevelWad::binary_assets), "chunkbank"}
 	}},
-	{"level", 0x68, &create_wad<LevelWad>, {
+	{"level", {}, 0x68, &create_wad<LevelWad>, {
+		{0x00, 0, {nullptr, nullptr}, "header_size"},
+		{0x08, 0, {nullptr, nullptr}, "level_number"},
 		{0x0c, 1, lf<Rac23PrimaryLump>(&LevelWad::binary_assets), "data"},
 		{0x14, 1, lf<BinaryLump>(&LevelWad::binary_assets), "core_bank"},
 		{0x1c, 1, lf<Rac23GameplayLump>(&LevelWad::gameplay), "gameplay_1"},
@@ -169,7 +174,12 @@ const std::vector<WadFileDescription> wad_files = {
 		{0x34, 3, lf<BinaryLump>(&LevelWad::binary_assets), "chunk"},
 		{0x50, 3, lf<BinaryLump>(&LevelWad::binary_assets), "chunkbank"}
 	}},
-	{"level", 0xc68, &create_wad<LevelWad>, {
+	{"level", {Game::DL}, 0xc68, &create_wad<LevelWad>, {
+		{0x00,  0,   {nullptr, nullptr}, "header_size"},
+		{0x08,  0,   {nullptr, nullptr}, "level_number"},
+		{0x0c,  0,   {nullptr, nullptr}, "reverb"},
+		{0x10,  0,   {nullptr, nullptr}, "max_mission_size_1"},
+		{0x14,  0,   {nullptr, nullptr}, "max_mission_size_2"},
 		{0x018, 1,   lf<DlPrimaryLump>(&LevelWad::binary_assets), "data"},
 		{0x020, 1,   lf<BinaryLump>(&LevelWad::binary_assets), "core_bank"},
 		{0x028, 3,   lf<BinaryLump>(&LevelWad::binary_assets), "chunk"},
@@ -194,7 +204,7 @@ std::vector<u8> read_header(FILE* file) {
 	return header;
 }
 
-WadFileDescription match_wad(FILE* file, const std::vector<u8>& header) {
+WadFileDescription match_wad(FILE* file, Buffer header) {
 	for(const WadFileDescription& desc : wad_files) {
 		if(desc.header_size == header.size()) {
 			return desc;
@@ -212,11 +222,20 @@ std::vector<u8> read_lump(FILE* file, Sector32 offset, Sector32 size) {
 	return lump;
 }
 
-void write_file(const char* path, Buffer buffer) {
-	FILE* file = fopen(path, "wb");
-	verify(file, "Failed to open file '%s' for writing.", path);
+std::optional<WadLumpDescription> find_lump(WadFileDescription file_desc, const char* name) {
+	for(const WadLumpDescription& lump_desc : file_desc.fields) {
+		if(strcmp(lump_desc.name, name) == 0) {
+			return lump_desc;
+		}
+	}
+	return {};
+}
+
+void write_file(fs::path path, Buffer buffer) {
+	FILE* file = fopen(path.string().c_str(), "wb");
+	verify(file, "Failed to open file '%s' for writing.", path.string().c_str());
 	assert(buffer.size() > 0);
-	verify(fwrite(buffer.lo, buffer.size(), 1, file) == 1, "Failed to write output file '%s'.", path);
+	verify(fwrite(buffer.lo, buffer.size(), 1, file) == 1, "Failed to write output file '%s'.", path.string().c_str());
 	fclose(file);
-	printf("Wrote %s (%ld KiB)\n", path, buffer.size() / 1024);
+	printf("Wrote %s (%ld KiB)\n", path.string().c_str(), buffer.size() / 1024);
 }

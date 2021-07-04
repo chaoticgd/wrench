@@ -59,56 +59,65 @@ static void run_extractor(fs::path input_path, fs::path output_path) {
 	FILE* file = fopen(input_path.string().c_str(), "rb");
 	verify(file, "Failed to open input file.");
 	
-	const std::vector<u8> header = read_header(file);
+	const std::vector<u8> header_vec = read_header(file);
+	Buffer header(header_vec);
 	const WadFileDescription file_desc = match_wad(file, header);
 	std::unique_ptr<Wad> wad = file_desc.create();
 	assert(wad.get());
 	Game game;
 	for(const WadLumpDescription& lump_desc : file_desc.fields) {
-		for(s32 i = 0; i < lump_desc.count; i++) {
-			auto& [offset, size] = Buffer(header).read<SectorRange>(lump_desc.offset + i * 8, "WAD header");
-			if(size.sectors != 0) {
-				std::vector<u8> src = read_lump(file, offset, size);
-				lump_desc.funcs.read(lump_desc, *wad.get(), src, game);
+		if(lump_desc.funcs.read != nullptr) {
+			for(s32 i = 0; i < lump_desc.count; i++) {
+				auto& [offset, size] = header.read<SectorRange>(lump_desc.offset + i * 8, "WAD header");
+				if(size.sectors != 0) {
+					std::vector<u8> src = read_lump(file, offset, size);
+					lump_desc.funcs.read(lump_desc, *wad.get(), src, game);
+				}
 			}
 		}
 	}
 	
-	printf("Detected game: ");
+	const char* index_file_name;
+	Json index_json;
+	
 	switch(game) {
-		case Game::RAC1: printf("R&C1"); break;
-		case Game::RAC2: printf("R&C2"); break;
-		case Game::RAC3: printf("R&C3"); break;
-		case Game::DL: printf("Deadlocked"); break;
-	}
-	printf("\n");
-	
-	for(auto& [name, asset] : wad->binary_assets) {
-		if(asset.is_array) {
-			fs::path dir = output_path/name;
-			fs::create_directories(dir);
-			for(size_t i = 0; i < asset.buffers.size(); i++) {
-				fs::path path = dir/(std::to_string(i) + ".bin");
-				write_file(path.string().c_str(), asset.buffers[i]);
-			}
-		} else {
-			assert(asset.buffers.size() == 1);
-			fs::path path = output_path/(name + ".bin");
-			write_file(path.string().c_str(), asset.buffers[0]);
-		}
+		case Game::RAC1: index_json["game"] = "R&C1"; break;
+		case Game::RAC2: index_json["game"] = "R&C2"; break;
+		case Game::RAC3: index_json["game"] = "R&C3"; break;
+		case Game::DL: index_json["game"] = "Deadlocked"; break;
 	}
 	
 	if(LevelWad* level = dynamic_cast<LevelWad*>(wad.get())) {
-		Json json = write_gameplay_json(level->gameplay);
-		std::string str = json.dump(1, '\t');
+		index_file_name = "level.json";
 		
-		fs::path path = output_path/"gameplay.json";
-		write_file(path.string().c_str(), str);
+		auto level_number = find_lump(file_desc, "level_number");
+		assert(level_number);
+		index_json["level_number"] = header.read<s32>(level_number->offset, "level number");
+		
+		auto reverb = find_lump(file_desc, "reverb");
+		if(reverb.has_value()) {
+			index_json["reverb"] = header.read<s32>(reverb->offset, "reverb");
+		}
+		
+		auto max_mission_size_1 = find_lump(file_desc, "max_mission_size_1");
+		if(max_mission_size_1.has_value()) {
+			index_json["max_mission_size_1"] = header.read<s32>(max_mission_size_1->offset, "max_mission_size_1");
+		}
+		
+		auto max_mission_size_2 = find_lump(file_desc, "max_mission_size_2");
+		if(max_mission_size_2.has_value()) {
+			index_json["max_mission_size_2"] = header.read<s32>(max_mission_size_2->offset, "max_mission_size_2");
+		}
+		
+		Json gameplay_json = write_gameplay_json(level->gameplay);
+		fs::path path = "gameplay.json";
+		write_file(output_path/path, gameplay_json.dump(1, '\t'));
+		index_json["gameplay"] = path.string();
 		
 		Json help_json = write_help_messages(level->gameplay);
-		std::string help_str = help_json.dump(1, '\t');
-		fs::path help_path = output_path/"help_messages.json";
-		write_file(help_path.string().c_str(), help_str);
+		fs::path help_path = "help_messages.json";
+		write_file(output_path/help_path, help_json.dump(1, '\t'));
+		index_json["help_messages"] = help_path.string();
 		
 		//fs::path mission_instances_dir =  output_path/"gameplay_mission_instances";
 		//fs::create_directories(mission_instances_dir);
@@ -121,6 +130,24 @@ static void run_extractor(fs::path input_path, fs::path output_path) {
 		//	write_file(path.string().c_str(), mission_instances_str);
 		//}
 	}
+	
+	for(auto& [name, asset] : wad->binary_assets) {
+		if(asset.is_array) {
+			fs::create_directories(output_path/name);
+			for(size_t i = 0; i < asset.buffers.size(); i++) {
+				fs::path path = fs::path(name)/(std::to_string(i) + ".bin");
+				write_file(output_path/path, asset.buffers[i]);
+				index_json[name].emplace_back(path.string());
+			}
+		} else {
+			assert(asset.buffers.size() == 1);
+			fs::path path = name + ".bin";
+			write_file(output_path/path, asset.buffers[0]);
+			index_json[name] = path.string();
+		}
+	}
+	
+	write_file(output_path/index_file_name, index_json.dump(1, '\t'));
 	
 	fclose(file);
 }

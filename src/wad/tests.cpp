@@ -19,7 +19,6 @@
 #include "tests.h"
 
 static void run_gameplay_tests(fs::path input_path, Game game);
-static std::optional<WadLumpDescription> find_lump(WadFileDescription file_desc, const char* name);
 struct GameplayTestArgs {
 	std::string wad_file_path;
 	FILE* file;
@@ -89,15 +88,6 @@ static void run_gameplay_tests(fs::path input_path, Game game) {
 			}
 		}
 	}
-}
-
-static std::optional<WadLumpDescription> find_lump(WadFileDescription file_desc, const char* name) {
-	for(const WadLumpDescription& lump_desc : file_desc.fields) {
-		if(strcmp(lump_desc.name, name) == 0) {
-			return lump_desc;
-		}
-	}
-	return {};
 }
 
 static void run_gameplay_lump_test(GameplayTestArgs args) {

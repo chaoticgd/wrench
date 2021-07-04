@@ -46,6 +46,7 @@ struct WadLumpDescription {
 
 struct WadFileDescription {
 	const char* name;
+	std::vector<Game> games;
 	u32 header_size;
 	std::unique_ptr<Wad> (*create)();
 	std::vector<WadLumpDescription> fields;
@@ -54,8 +55,9 @@ struct WadFileDescription {
 extern const std::vector<WadFileDescription> wad_files;
 
 std::vector<u8> read_header(FILE* file);
-WadFileDescription match_wad(FILE* file, const std::vector<u8>& header);
+WadFileDescription match_wad(FILE* file, Buffer header);
 std::vector<u8> read_lump(FILE* file, Sector32 offset, Sector32 size);
-void write_file(const char* path, Buffer buffer);
+std::optional<WadLumpDescription> find_lump(WadFileDescription file_desc, const char* name);
+void write_file(fs::path path, Buffer buffer);
 
 #endif
