@@ -27,36 +27,75 @@
 #include "gameplay.h"
 #include "../lz/compression.h"
 
-struct WadLumpDescription;
+packed_struct(Rac23LevelWadHeader,
+	/* 0x00 */ s32 header_size;
+	/* 0x04 */ s32 lba;
+	/* 0x08 */ s32 level_number;
+	/* 0x0c */ s32 reverb;
+	/* 0x10 */ SectorRange primary;
+	/* 0x18 */ SectorRange core_bank;
+	/* 0x20 */ SectorRange gameplay;
+	/* 0x28 */ SectorRange unknown_28;
+	/* 0x30 */ SectorRange chunks[3];
+	/* 0x48 */ SectorRange chunk_banks[3];
+)
+static_assert(sizeof(Rac23LevelWadHeader) == 0x60);
 
-using ReadLumpFunc = std::function<void(WadLumpDescription desc, Wad& dest, std::vector<u8>& src, Game& game)>;
-using WriteLumpFunc = std::function<bool(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const Wad& src, Game& game)>;
+packed_struct(Rac23LevelWadHeader68,
+	/* 0x00 */ s32 header_size;
+	/* 0x04 */ s32 lba;
+	/* 0x08 */ s32 level_number;
+	/* 0x0c */ SectorRange primary;
+	/* 0x14 */ SectorRange core_bank;
+	/* 0x1c */ SectorRange gameplay_1;
+	/* 0x24 */ SectorRange gameplay_2;
+	/* 0x2c */ SectorRange unknown_2c;
+	/* 0x34 */ SectorRange chunks[3];
+	/* 0x4c */ s32 reverb;
+	/* 0x50 */ SectorRange chunk_banks[3];
+)
+static_assert(sizeof(Rac23LevelWadHeader68) == 0x68);
 
-struct LumpFuncs {
-	ReadLumpFunc read;
-	WriteLumpFunc write;
-};
+packed_struct(DeadlockedLevelWadHeader,
+	/* 0x000 */ s32 header_size;
+	/* 0x004 */ s32 lba;
+	/* 0x008 */ s32 level_number;
+	/* 0x00c */ s32 reverb;
+	/* 0x010 */ s32 max_mission_sizes[2];
+	/* 0x018 */ SectorRange primary;
+	/* 0x020 */ SectorRange core_bank;
+	/* 0x028 */ SectorRange chunks[3];
+	/* 0x040 */ SectorRange chunk_banks[3];
+	/* 0x058 */ SectorRange gameplay_core;
+	/* 0x060 */ SectorRange gameplay_mission_instances[128];
+	/* 0x460 */ SectorRange gameplay_mission_data[128];
+	/* 0x860 */ SectorRange mission_banks[128];
+	/* 0xc60 */ SectorRange art_instances;
+)
+static_assert(sizeof(DeadlockedLevelWadHeader) == 0xc68);
 
-struct WadLumpDescription {
-	s32 offset;
-	s32 count;
-	LumpFuncs funcs;
-	const char* name;
-};
+packed_struct(ChunkHeader,
+	/* 0x0 */ s32 tfrags;
+	/* 0x4 */ s32 collision;
+)
 
-struct WadFileDescription {
-	const char* name;
-	std::vector<Game> games;
-	u32 header_size;
-	std::unique_ptr<Wad> (*create)();
-	std::vector<WadLumpDescription> fields;
-};
+// These offsets are relative to the beginning of the level file.
+packed_struct(MissionHeader,
+	/* 0x0 */ ByteRange instances;
+	/* 0x8 */ ByteRange classes;
+)
 
-extern const std::vector<WadFileDescription> wad_files;
+std::unique_ptr<Wad> read_wad(FILE* file);
+void write_wad(FILE* file, const Wad* wad);
 
-std::vector<u8> read_header(FILE* file);
-WadFileDescription match_wad(FILE* file, Buffer header);
-std::vector<u8> read_lump(FILE* file, Sector32 offset, Sector32 size);
-std::optional<WadLumpDescription> find_lump(WadFileDescription file_desc, const char* name);
+std::vector<u8> read_lump(FILE* file, SectorRange range, const char* name);
+template <typename Header>
+static Header read_header(FILE* file) {
+	Header header;
+	verify(fseek(file, 0, SEEK_SET) == 0, "Failed to seek to WAD header.");
+	verify(fread(&header, sizeof(Header), 1, file) == 1, "Failed to read WAD header.");
+	return header;
+}
+Game detect_game_rac23(std::vector<u8>& src);
 
 #endif

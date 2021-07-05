@@ -81,8 +81,14 @@ template <typename... Args>
 
 static const size_t SECTOR_SIZE = 0x800;
 
+packed_struct(ByteRange,
+	s32 offset;
+	s32 size;
+)
+
 packed_struct(Sector32,
 	s32 sectors;
+	Sector32() : sectors(0) {}
 	Sector32(s32 s) : sectors(s) {}
 	s64 bytes() const { return sectors * SECTOR_SIZE; }
 )
@@ -198,18 +204,18 @@ struct MemberTraits<Return (Object::*)> {
 	return version;
 }
 
-struct BinaryAsset {
-	bool is_array;
-	std::vector<std::vector<u8>> buffers;
+enum class Game {
+	RAC1, RAC2, RAC3, DL
+};
+
+enum class WadType {
+	UNKNOWN, LEVEL
 };
 
 struct Wad {
-	std::map<std::string, BinaryAsset> binary_assets;
+	Game game;
+	WadType type = WadType::UNKNOWN;
 	virtual ~Wad() {}
-};
-
-enum class Game {
-	RAC1, RAC2, RAC3, DL
 };
 
 #endif

@@ -128,46 +128,81 @@ void fixup_pvar_indices(Gameplay& gameplay) {
 	}
 }
 
-LevelWad build_level_wad(fs::path input_dir, Json index_json) {
-	LevelWad wad;
+std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
+	assert(false);
+}
+
+void write_wad_json(fs::path dest_path, Wad* base) {
+	const char* json_file_name = nullptr;
+	Json json;
 	
-	std::string gameplay_path = index_json["gameplay"];
-	Json gameplay_json = Json::parse(read_file(input_dir/gameplay_path));
-	read_gameplay_json(wad.gameplay, gameplay_json);
+	json["metadata"] = Json {
+		{"format", "level"},
+		{"format_version", 0},
+		{"application", "Wrench WAD Utility"},
+		{"application_version", get_application_version_string()}
+	};
 	
-	if(index_json.contains("art_instances")) {
-		std::string art_instances_path = index_json["art_instances"];
-		Json art_instances_json = Json::parse(read_file(art_instances_path));
-		read_gameplay_json(wad.gameplay, art_instances_json);
+	switch(base->game) {
+		case Game::RAC1: json["game"] = "R&C1"; break;
+		case Game::RAC2: json["game"] = "R&C2"; break;
+		case Game::RAC3: json["game"] = "R&C3"; break;
+		case Game::DL: json["game"] = "Deadlocked"; break;
+		default: assert(false);
 	}
 	
-	// Read binary lumps from disk. This is extremely hacky.
-	for(auto& item : index_json.items()) {
-		if(item.value().is_string()) {
-			std::string value = item.value();
-			if(!value.ends_with(".bin")) {
-				continue;
+	switch(base->type) {
+		case WadType::LEVEL: {
+			json_file_name = "level.json";
+			LevelWad& wad = *dynamic_cast<LevelWad*>(base);
+			json["type"] = "level";
+			json["level_number"] = wad.level_number;
+			if(wad.reverb.has_value()) {
+				json["reverb"] = *wad.reverb;
 			}
-			BinaryAsset asset;
-			asset.is_array = false;
-			asset.buffers.emplace_back(read_file(input_dir/value));
-			wad.binary_assets.emplace(item.key(), std::move(asset));
-		} else if(item.value().is_array()) {
-			BinaryAsset asset;
-			asset.is_array = true;
-			for(auto& element : item.value()) {
-				if(!element.is_string()) {
-					continue;
-				}
-				std::string value = element;
-				if(!value.ends_with(".bin")) {
-					continue;
-				}
-				asset.buffers.emplace_back(read_file(input_dir/value));
+			json["primary"] = write_file(dest_path, "primary.bin", wad.primary);
+			json["core_bank"] = write_file(dest_path, "core_bank.bin", wad.core_bank);
+			std::string gameplay_str = write_gameplay_json(wad.gameplay).dump(1, '\t');
+			json["gameplay"] = write_file(dest_path, "gameplay.json", gameplay_str);
+			if(wad.unknown_28.size() > 0) {
+				json["unknown"] = write_file(dest_path, "unknown.bin", wad.unknown_28);
 			}
-			wad.binary_assets.emplace(item.key(), std::move(asset));
+			for(auto& [index, chunk] : wad.chunks) {
+				auto chunk_name = [&](const char* name) {
+					return "chunk" + std::to_string(index) + "_" + name + ".bin";
+				};
+				json["chunks"].emplace_back(Json {
+					{"index", index},
+					{"tfrags", write_file(dest_path, chunk_name("tfrags"), chunk.tfrags)},
+					{"collision", write_file(dest_path, chunk_name("collision"), chunk.collision)},
+					{"bank", write_file(dest_path, chunk_name("bank"), chunk.sound_bank)}
+				});
+			}
+			fs::path mission_instances_dir = "mission_instances";
+			fs::path mission_classes_dir = "mission_classes";
+			fs::path missions_banks_dir = "mission_banks";
+			if(wad.missions.size() > 0) {
+				fs::create_directory(dest_path/mission_instances_dir);
+				fs::create_directory(dest_path/mission_classes_dir);
+				fs::create_directory(dest_path/missions_banks_dir);
+			}
+			for(auto& [index, mission] : wad.missions) {
+				auto mission_name = [&](fs::path name) {
+					return name/(std::to_string(index) + ".bin");
+				};
+				json["missions"].emplace_back(Json {
+					{"index", index},
+					{"instances", write_file(dest_path, mission_name(mission_instances_dir), mission.instances)},
+					{"classes", write_file(dest_path, mission_name(mission_classes_dir), mission.classes)},
+					{"bank", write_file(dest_path, mission_name(missions_banks_dir), mission.sound_bank)}
+				});
+			}
+			break;
 		}
+		default:
+			assert(false);
 	}
 	
-	return wad;
+	assert(json_file_name);
+	write_file(dest_path, json_file_name, json.dump(1, '\t'));
 }

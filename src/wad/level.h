@@ -829,11 +829,30 @@ Json write_help_messages(Gameplay& gameplay);
 
 void fixup_pvar_indices(Gameplay& gameplay);
 
-struct LevelWad : Wad {
-	Gameplay gameplay;
-	std::vector<Gameplay> gameplay_mission_instances;
+struct Chunk {
+	std::vector<u8> tfrags;
+	std::vector<u8> collision;
+	std::vector<u8> sound_bank;
 };
 
-LevelWad build_level_wad(fs::path input_dir, Json index_json);
+struct Mission {
+	std::vector<u8> instances;
+	std::vector<u8> classes;
+	std::vector<u8> sound_bank;
+};
+
+struct LevelWad : Wad {
+	s32 level_number;
+	std::optional<s32> reverb;
+	std::vector<u8> primary;
+	std::vector<u8> core_bank;
+	Gameplay gameplay;
+	std::vector<u8> unknown_28;
+	std::map<s32, Chunk> chunks;
+	std::map<s32, Mission> missions;
+};
+
+std::unique_ptr<Wad> read_wad_json(fs::path src_path);
+void write_wad_json(fs::path dest_path, Wad* base);
 
 #endif

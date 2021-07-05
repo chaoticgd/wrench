@@ -18,7 +18,7 @@
 
 #include "tests.h"
 
-static void run_gameplay_tests(fs::path input_path, Game game);
+static void run_gameplay_tests(fs::path input_path);
 struct GameplayTestArgs {
 	std::string wad_file_path;
 	FILE* file;
@@ -30,29 +30,22 @@ struct GameplayTestArgs {
 };
 static void run_gameplay_lump_test(GameplayTestArgs args);
 
-
-void run_tests(fs::path input_path, Game game) {
-	run_gameplay_tests(input_path, game);
+void run_tests(fs::path input_path) {
+	run_gameplay_tests(input_path);
 	
 	printf("\nALL TESTS PASSED\n");
 }
 
-static void run_gameplay_tests(fs::path input_path, Game game) {
+static void run_gameplay_tests(fs::path input_path) {
 	for(fs::path wad_file_path : fs::directory_iterator(input_path)) {
 		FILE* file = fopen(wad_file_path.string().c_str(), "rb");
 		verify(file, "Failed to open input file.");
 		
-		const std::vector<u8> header = read_header(file);
-		const WadFileDescription file_desc = match_wad(file, header);
-		
-		std::unique_ptr<Wad> wad = file_desc.create();
-		assert(wad.get());
-		
-		auto build_args = [&](s32 header_offset, const char* name, const std::vector<GameplayBlockDescription>& blocks, bool compressed, Game game) {
+		auto build_args = [&](SectorRange lump, const char* name, const std::vector<GameplayBlockDescription>& blocks, bool compressed, Game game) {
 			GameplayTestArgs args;
 			args.wad_file_path = wad_file_path.string();
 			args.file = file;
-			args.lump = Buffer(header).read<SectorRange>(header_offset, "WAD header");
+			args.lump = lump;
 			args.name = name;
 			args.blocks = &blocks;
 			args.compressed = compressed;
@@ -60,32 +53,32 @@ static void run_gameplay_tests(fs::path input_path, Game game) {
 			return args;
 		};
 		
-		switch(file_desc.header_size) {
-			case 0x60: { // GC/UYA
-				verify(game == Game::RAC2 || game == Game::RAC3, "R&C2/R&C3 detected but other game specified.");
-				auto gameplay_core = find_lump(file_desc, "gameplay_core");
-				assert(gameplay_core.has_value());
-				run_gameplay_lump_test(build_args(gameplay_core->offset, gameplay_core->name, RAC23_GAMEPLAY_BLOCKS, true, game));
+		s32 header_size;
+		verify(fread(&header_size, 4, 1, file) == 1, "Failed to read WAD header.");
+		
+		switch(header_size) {
+			case sizeof(Rac23LevelWadHeader): {
+				auto header = read_header<Rac23LevelWadHeader>(file);
+				std::vector<u8> primary = read_lump(file, header.primary, "primary");
+				Game game = detect_game_rac23(primary);
+				run_gameplay_lump_test(build_args(header.gameplay, "gameplay", RAC23_GAMEPLAY_BLOCKS, true, game));
 				break;
 			}
-			case 0xc68: { // Deadlocked
-				verify(game == Game::DL, "Deadlocked detected but other game specified.");
-				auto gameplay_core = find_lump(file_desc, "gameplay_core");
-				assert(gameplay_core.has_value());
-				run_gameplay_lump_test(build_args(gameplay_core->offset, gameplay_core->name, DL_GAMEPLAY_CORE_BLOCKS, true, game));
+			case sizeof(DeadlockedLevelWadHeader): {
+				auto header = read_header<DeadlockedLevelWadHeader>(file);
+				std::vector<u8> primary = read_lump(file, header.primary, "primary");
 				
-				auto art_instances = find_lump(file_desc, "art_instances");
-				assert(art_instances.has_value());
-				run_gameplay_lump_test(build_args(art_instances->offset, art_instances->name, DL_ART_INSTANCE_BLOCKS, true, game));
+				run_gameplay_lump_test(build_args(header.gameplay_core, "gameplay core", DL_GAMEPLAY_CORE_BLOCKS, true, Game::DL));
+				run_gameplay_lump_test(build_args(header.art_instances, "art instances", DL_ART_INSTANCE_BLOCKS, true, Game::DL));
 				
-				auto missions_instances = find_lump(file_desc, "gameplay_mission_instances");
-				assert(missions_instances.has_value());
-				for(s32 i = 0; i < missions_instances->count; i++) {
-					std::string name = std::string(missions_instances->name) + " " + std::to_string(i);
-					run_gameplay_lump_test(build_args(missions_instances->offset + i * 8, name.c_str(), DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS, false, game));
+				for(s32 i = 0; i < 128; i++) {
+					std::string name = "mission instances " + std::to_string(i);
+					run_gameplay_lump_test(build_args(header.gameplay_mission_instances[i], name.c_str(), DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS, false, Game::DL));
 				}
 				break;
 			}
+			default:
+				verify_not_reached("Unable to identify '%s'.", wad_file_path.string().c_str());
 		}
 	}
 }
@@ -94,7 +87,7 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 	if(args.lump.offset.sectors == 0) {
 		return;
 	}
-	std::vector<u8> raw = read_lump(args.file, args.lump.offset, args.lump.size);
+	std::vector<u8> raw = read_lump(args.file, args.lump, args.name);
 	std::vector<u8> src;
 	if(args.compressed) {
 		verify(decompress_wad(src, raw), "Decompressing %s file failed.", args.name);
@@ -146,8 +139,8 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 		fprintf(stderr, "%s JSON matches.\n", prefix_str.c_str());
 	} else {
 		fprintf(stderr, "File read from JSON doesn't match original.\n");
-		write_file("/tmp/gameplay_orig.bin", dest);
-		write_file("/tmp/gameplay_test.bin", test_dest);
+		write_file("/tmp/", "gameplay_orig.bin", dest);
+		write_file("/tmp/", "gameplay_test.bin", test_dest);
 		exit(1);
 	}
 }

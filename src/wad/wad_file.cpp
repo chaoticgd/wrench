@@ -18,224 +18,147 @@
 
 #include "wad_file.h"
 
-struct BinaryLump {
-	static void read(WadLumpDescription desc, std::map<std::string, BinaryAsset>& dest, std::vector<u8>& src, Game& game) {
-		auto& asset = dest[desc.name];
-		asset.is_array = desc.count != 1;
-		asset.buffers.push_back(std::move(src));
-	}
-	
-	static bool write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const std::map<std::string, BinaryAsset>& src, Game& game) {
-		verify(src.find(desc.name) != src.end(), "Missing lump '%s' (with index %d) in level JSON.", desc.name, index);
-		if(src.at(desc.name).buffers.size() <= (size_t) index) {
-			return false;
-		}
-		dest = src.at(desc.name).buffers.at(index);
-		return true;
-	}
-};
+static std::vector<u8> read_compressed_lump(FILE* file, SectorRange range, const char* name);
+static std::map<s32, Chunk> read_chunks(FILE* file, SectorRange chunk_ranges[3], SectorRange chunk_bank_ranges[3]);
+static std::map<s32, Mission> read_missions(FILE* file, SectorRange mission_ranges[128], SectorRange mission_bank_ranges[128]);
 
-struct Rac23PrimaryLump {
-	static void read(WadLumpDescription desc, std::map<std::string, BinaryAsset>& dest, std::vector<u8>& src, Game& game) {
-		game = detect_game(src);
-		BinaryLump::read(desc, dest, src, game);
-	}
-	
-	static bool write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const std::map<std::string, BinaryAsset>& src, Game& game) {
-		return BinaryLump::write(desc, index, dest, src, game);
-	}
-	
-	static Game detect_game(std::vector<u8>& src) {
-		for(size_t i = 0; i < src.size() - 0x10; i++) {
-			if(memcmp((char*) &src[i], "IOPRP300.IMG", 12) == 0) {
-				return Game::RAC3;
-			}
-		}
-		for(size_t i = 0; i < src.size() - 0x10; i++) {
-			if(memcmp((char*) &src[i], "IOPRP255.IMG", 12) == 0) {
-				return Game::RAC2;
-			}
-		}
-		verify_not_reached("Unable to detect game!");
-	}
-};
-
-struct DlPrimaryLump {
-	static void read(WadLumpDescription desc, std::map<std::string, BinaryAsset>& dest, std::vector<u8>& src, Game& game) {
-		game = Game::DL;
-		BinaryLump::read(desc, dest, src, game);
-	}
-	
-	static bool write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const std::map<std::string, BinaryAsset>& src, Game& game) {
-		return BinaryLump::write(desc, index, dest, src, game);
-	}
-};
-
-struct Rac23GameplayLump {
-	static void read(WadLumpDescription desc, Gameplay& dest, std::vector<u8>& src, Game& game) {
-		assert(game == Game::RAC2 || game == Game::RAC3);
-		std::vector<u8> decompressed;
-		verify(decompress_wad(decompressed, src), "Failed to decompress gameplay lump.");
-		read_gameplay(dest, decompressed, game, RAC23_GAMEPLAY_BLOCKS);
-	}
-	
-	static bool write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const Gameplay& src, Game& game) {
-		assert(game == Game::RAC2 || game == Game::RAC3);
-		std::vector<u8> uncompressed = write_gameplay(src, game, RAC23_GAMEPLAY_BLOCKS);
-		compress_wad(dest, uncompressed, 8);
-		return true;
-	}
-};
-
-struct DlGameplayLump {
-	static void read(WadLumpDescription desc, Gameplay& dest, std::vector<u8>& src, Game& game) {
-		assert(game == Game::DL);
-		std::vector<u8> decompressed;
-		verify(decompress_wad(decompressed, src), "Failed to decompress gameplay lump.");
-		read_gameplay(dest, decompressed, Game::DL, DL_GAMEPLAY_CORE_BLOCKS);
-	}
-	
-	static bool write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const Gameplay& src, Game& game) {
-		assert(game == Game::DL);
-		std::vector<u8> uncompressed = write_gameplay(src, Game::DL, DL_GAMEPLAY_CORE_BLOCKS);
-		compress_wad(dest, uncompressed, 8);
-		return true;
-	}
-};
-
-struct ArtInstancesLump {
-	static void read(WadLumpDescription desc, Gameplay& dest, std::vector<u8>& src, Game& game) {
-		assert(game == Game::DL);
-		std::vector<u8> decompressed;
-		verify(decompress_wad(decompressed, src), "Failed to decompress art instances WAD.");
-		read_gameplay(dest, decompressed, Game::DL, DL_ART_INSTANCE_BLOCKS);
-	}
-	
-	static bool write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const Gameplay& src, Game& game) {
-		assert(game == Game::DL);
-		std::vector<u8> uncompressed = write_gameplay(src, Game::DL, DL_ART_INSTANCE_BLOCKS);
-		compress_wad(dest, uncompressed, 8);
-		return true;
-	}
-};
-
-// NOTE: For now this isn't working because certain mission instance lumps
-// appear to be in a different format to most.
-struct GameplayMissionInstancesLump {
-	static void read(WadLumpDescription desc, std::vector<Gameplay>& dest, std::vector<u8>& src, Game& game) {
-		assert(game == Game::DL);
-		Gameplay mission_instances;
-		read_gameplay(mission_instances, src, Game::DL, DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS);
-		dest.emplace_back(std::move(mission_instances));
-	}
-	
-	static bool write(WadLumpDescription desc, s32 index, std::vector<u8>& dest, const std::vector<Gameplay>& src, Game& game) {
-		assert(game == Game::DL);
-		dest = write_gameplay(src.at(index), Game::DL, DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS);
-		return true;
-	}
-};
-
-template <typename ThisWad> 
-static std::unique_ptr<Wad> create_wad() {
-	return std::make_unique<ThisWad>();
-}
-
-template <typename Lump, typename Field>
-static LumpFuncs lf(Field field) {
-	// e.g. if field = &LevelWad::binary_assets then ThisWad = LevelWad.
-	using ThisWad = typename MemberTraits<Field>::instance_type;
-	
-	LumpFuncs funcs;
-	funcs.read = [field](WadLumpDescription desc, Wad& dest, std::vector<u8>& src, Game& game) {
-		ThisWad* this_wad = dynamic_cast<ThisWad*>(&dest);
-		assert(this_wad);
-		Lump::read(desc, this_wad->*field, src, game);
-	};
-	funcs.write = [field](WadLumpDescription desc, s32 index, std::vector<u8>& dest, const Wad& src, Game& game) {
-		const ThisWad* this_wad = dynamic_cast<const ThisWad*>(&src);
-		assert(this_wad);
-		return Lump::write(desc, index, dest, this_wad->*field, game);
-	};
-	return funcs;
-}
-
-const std::vector<WadFileDescription> wad_files = {
-	{"level", {Game::RAC2, Game::RAC3}, 0x60, &create_wad<LevelWad>, {
-		{0x00, 0, {nullptr, nullptr}, "header_size"},
-		{0x08, 0, {nullptr, nullptr}, "level_number"},
-		{0x0c, 0, {nullptr, nullptr}, "reverb"},
-		{0x18, 1, lf<BinaryLump>(&LevelWad::binary_assets), "core_bank"},
-		{0x10, 1, lf<Rac23PrimaryLump>(&LevelWad::binary_assets), "primary"},
-		{0x20, 1, lf<Rac23GameplayLump>(&LevelWad::gameplay), "gameplay_core"},
-		{0x28, 1, lf<BinaryLump>(&LevelWad::binary_assets), "unknown_28"},
-		{0x30, 3, lf<BinaryLump>(&LevelWad::binary_assets), "chunk"},
-		{0x48, 3, lf<BinaryLump>(&LevelWad::binary_assets), "chunkbank"}
-	}},
-	{"level", {}, 0x68, &create_wad<LevelWad>, {
-		{0x00, 0, {nullptr, nullptr}, "header_size"},
-		{0x08, 0, {nullptr, nullptr}, "level_number"},
-		{0x14, 1, lf<BinaryLump>(&LevelWad::binary_assets), "core_bank"},
-		{0x0c, 1, lf<Rac23PrimaryLump>(&LevelWad::binary_assets), "primary"},
-		{0x1c, 1, lf<Rac23GameplayLump>(&LevelWad::gameplay), "gameplay_1"},
-		{0x24, 1, lf<Rac23GameplayLump>(&LevelWad::gameplay), "gameplay_2"},
-		{0x2c, 1, lf<BinaryLump>(&LevelWad::binary_assets), "unknown_2c"},
-		{0x34, 3, lf<BinaryLump>(&LevelWad::binary_assets), "chunk"},
-		{0x50, 3, lf<BinaryLump>(&LevelWad::binary_assets), "chunkbank"}
-	}},
-	{"level", {Game::DL}, 0xc68, &create_wad<LevelWad>, {
-		{0x00,  0,   {nullptr, nullptr}, "header_size"},
-		{0x08,  0,   {nullptr, nullptr}, "level_number"},
-		{0x0c,  0,   {nullptr, nullptr}, "reverb"},
-		{0x10,  0,   {nullptr, nullptr}, "max_mission_size_1"},
-		{0x14,  0,   {nullptr, nullptr}, "max_mission_size_2"},
-		{0x020, 1,   lf<BinaryLump>(&LevelWad::binary_assets), "core_bank"},
-		{0x018, 1,   lf<DlPrimaryLump>(&LevelWad::binary_assets), "primary"},
-		{0x028, 3,   lf<BinaryLump>(&LevelWad::binary_assets), "chunk"},
-		{0x040, 3,   lf<BinaryLump>(&LevelWad::binary_assets), "chunkbank"},
-		{0x058, 1,   lf<DlGameplayLump>(&LevelWad::gameplay), "gameplay_core"},
-		{0x060, 128, lf<BinaryLump>(&LevelWad::binary_assets), "gameplay_mission_instances"},
-		{0x460, 128, lf<BinaryLump>(&LevelWad::binary_assets), "gameplay_mission_data"},
-		{0x860, 128, lf<BinaryLump>(&LevelWad::binary_assets), "mission_banks"},
-		{0xc60, 1,   lf<ArtInstancesLump>(&LevelWad::gameplay), "art_instances"}
-	}}
-};
-
-std::vector<u8> read_header(FILE* file) {
-	const char* ERR_READ_HEADER = "Failed to read header.";
+std::unique_ptr<Wad> read_wad(FILE* file) {
 	s32 header_size;
-	verify(fseek(file, 0, SEEK_SET) == 0, ERR_READ_HEADER);
-	verify(fread(&header_size, 4, 1, file) == 1, ERR_READ_HEADER);
-	verify(header_size < 0x10000, "Invalid header.");
-	std::vector<u8> header(header_size);
-	verify(fseek(file, 0, SEEK_SET) == 0, ERR_READ_HEADER);
-	verify(fread(header.data(), header.size(), 1, file) == 1, ERR_READ_HEADER);
-	return header;
-}
-
-WadFileDescription match_wad(FILE* file, Buffer header) {
-	for(const WadFileDescription& desc : wad_files) {
-		if(desc.header_size == header.size()) {
-			return desc;
+	verify(fread(&header_size, 4, 1, file) == 1, "Failed to read WAD header.");
+	switch(header_size) {
+		case sizeof(Rac23LevelWadHeader): {
+			auto header = read_header<Rac23LevelWadHeader>(file);
+			LevelWad wad;
+			wad.type = WadType::LEVEL;
+			wad.level_number = header.level_number;
+			s32 reverb = header.reverb;
+			wad.reverb = reverb;
+			wad.primary = read_lump(file, header.primary, "primary");
+			wad.game = detect_game_rac23(wad.primary);
+			wad.core_bank = read_lump(file, header.core_bank, "core bank");
+			std::vector<u8> gameplay_lump = read_compressed_lump(file, header.gameplay, "gameplay");
+			read_gameplay(wad.gameplay, gameplay_lump, wad.game, RAC23_GAMEPLAY_BLOCKS);
+			wad.unknown_28 = read_lump(file, header.unknown_28, "unknown lump");
+			wad.chunks = read_chunks(file, header.chunks, header.chunk_banks);
+			return std::make_unique<LevelWad>(std::move(wad));
+		}
+		case sizeof(Rac23LevelWadHeader68): {
+			auto header = read_header<Rac23LevelWadHeader68>(file);
+			LevelWad wad;
+			wad.game = Game::RAC2;
+			wad.type = WadType::LEVEL;
+			wad.level_number = header.level_number;
+			s32 reverb = header.reverb;
+			wad.reverb = reverb;
+			wad.primary = read_lump(file, header.primary, "primary");
+			wad.core_bank = read_lump(file, header.core_bank, "core bank");
+			std::vector<u8> gameplay_lump = read_compressed_lump(file, header.gameplay_1, "gameplay");
+			read_gameplay(wad.gameplay, gameplay_lump, wad.game, RAC23_GAMEPLAY_BLOCKS);
+			wad.unknown_28 = read_lump(file, header.unknown_2c, "unknown lump");
+			wad.chunks = read_chunks(file, header.chunks, header.chunk_banks);
+			return std::make_unique<LevelWad>(std::move(wad));
+		}
+		case sizeof(DeadlockedLevelWadHeader): {
+			auto header = read_header<DeadlockedLevelWadHeader>(file);
+			LevelWad wad;
+			wad.game = Game::DL;
+			wad.type = WadType::LEVEL;
+			wad.level_number = header.level_number;
+			s32 reverb = header.reverb;
+			wad.reverb = reverb;
+			wad.primary = read_lump(file, header.primary, "primary");
+			wad.core_bank = read_lump(file, header.core_bank, "core bank");
+			wad.chunks = read_chunks(file, header.chunks, header.chunk_banks);
+			std::vector<u8> gameplay_lump = read_compressed_lump(file, header.gameplay_core, "gameplay core");
+			read_gameplay(wad.gameplay, gameplay_lump, wad.game, DL_GAMEPLAY_CORE_BLOCKS);
+			wad.missions = read_missions(file, header.gameplay_mission_data, header.mission_banks);
+			std::vector<u8> art_instances_lump = read_compressed_lump(file, header.art_instances, "art instances");
+			read_gameplay(wad.gameplay, art_instances_lump, wad.game, DL_ART_INSTANCE_BLOCKS);
+			return std::make_unique<LevelWad>(std::move(wad));
 		}
 	}
-	verify_not_reached("Unable to identify WAD file.");
+	verify_not_reached("Failed to identify WAD.");
 }
 
-std::vector<u8> read_lump(FILE* file, Sector32 offset, Sector32 size) {
-	const char* ERR_READ_BLOCK = "Failed to read lump.";
+std::vector<u8> read_lump(FILE* file, SectorRange range, const char* name) {
+	std::vector<u8> buffer(range.size.bytes());
+	verify(fseek(file, range.offset.bytes(), SEEK_SET) == 0, "Failed to seek to %s lump.", name);
+	if(buffer.size() > 0) {
+		verify(fread(buffer.data(), buffer.size(), 1, file) == 1, "Failed to read %s lump.", name);
+	}
+	return buffer;
+}
+
+Game detect_game_rac23(std::vector<u8>& src) {
+	for(size_t i = 0; i < src.size() - 0x10; i++) {
+		if(memcmp((char*) &src[i], "IOPRP300.IMG", 12) == 0) {
+			return Game::RAC3;
+		}
+		if(memcmp((char*) &src[i], "DNAS300.IMG", 11) == 0) {
+			return Game::RAC3;
+		}
+	}
+	for(size_t i = 0; i < src.size() - 0x10; i++) {
+		if(memcmp((char*) &src[i], "IOPRP255.IMG", 12) == 0) {
+			return Game::RAC2;
+		}
+	}
+	verify_not_reached("Unable to detect game!");
+}
+
+static std::vector<u8> read_compressed_lump(FILE* file, SectorRange range, const char* name) {
+	std::vector<u8> compressed_lump = read_lump(file, range, name);
+	std::vector<u8> decompressed_lump;
+	verify(decompress_wad(decompressed_lump, compressed_lump), "Failed to decompress %s lump.", name);
+	return decompressed_lump;
+}
+
+static WadBuffer wad_buffer(Buffer buf) {
+	return {buf.lo, buf.hi};
+}
+
+static std::map<s32, Chunk> read_chunks(FILE* file, SectorRange chunk_ranges[3], SectorRange chunk_bank_ranges[3]) {
+	std::map<s32, Chunk> chunks;
+	for(s32 i = 0; i < 3; i++) {
+		if(chunk_ranges[i].size.sectors > 0 && chunk_bank_ranges[i].size.sectors > 0) {
+			Chunk chunk;
+			std::vector<u8> chunk_lump_vec = read_lump(file, chunk_ranges[i], "chunk");
+			Buffer chunk_lump(chunk_lump_vec);
+			auto& header = chunk_lump.read<ChunkHeader>(0, "chunk header");
+			Buffer tfrag_buffer = chunk_lump.subbuf(header.tfrags);
+			Buffer collision_buffer = chunk_lump.subbuf(header.collision);
+			verify(decompress_wad(chunk.tfrags, wad_buffer(tfrag_buffer)), "Failed to decompress chunk tfrags.");
+			verify(decompress_wad(chunk.collision, wad_buffer(collision_buffer)), "Failed to decompress chunk collision.");
+			chunk.sound_bank = read_lump(file, chunk_bank_ranges[i], "chunk bank");
+			chunks.emplace(i, std::move(chunk));
+		}
+	}
+	return chunks;
+}
+
+static std::map<s32, Mission> read_missions(FILE* file, SectorRange mission_ranges[128], SectorRange mission_bank_ranges[128]) {
+	std::map<s32, Mission> missions;
+	for(s32 i = 0; i < 128; i++) {
+		if(mission_ranges[i].size.sectors > 0 && mission_bank_ranges[i].size.sectors > 0) {
+			Mission mission;
+			std::vector<u8> mission_lump_vec = read_lump(file, mission_ranges[i], "mission lump");
+			Buffer mission_lump(mission_lump_vec);
+			auto& header = mission_lump.read<MissionHeader>(0, "mission header");
+			//if(header.instances.offset > 0) {
+			Buffer instances_buffer = mission_lump.subbuf(header.instances.offset - mission_ranges[i].offset.bytes());
+			verify(decompress_wad(mission.instances, wad_buffer(instances_buffer)), "Failed to decompress mission instances.");
+			//}
+			printf("clofs %x\n", header.classes.offset);
+			//if(header.classes.offset > 0) {
+			Buffer classes_buffer = mission_lump.subbuf(header.classes.offset - mission_ranges[i].offset.bytes());
+			verify(decompress_wad(mission.classes, wad_buffer(classes_buffer)), "Failed to decompress mission classes.");
+			mission.sound_bank = read_lump(file, mission_bank_ranges[i], "mission bank lump");
+			missions.emplace(i, std::move(mission));
+		}
+	}
+	return missions;
+}
+
+void write_wad(FILE* file, const Wad* wad) {
 	
-	std::vector<u8> lump(size.bytes());
-	verify(fseek(file, offset.bytes(), SEEK_SET) == 0, ERR_READ_BLOCK);
-	verify(fread(lump.data(), lump.size(), 1, file) == 1, ERR_READ_BLOCK);
-	return lump;
-}
-
-std::optional<WadLumpDescription> find_lump(WadFileDescription file_desc, const char* name) {
-	for(const WadLumpDescription& lump_desc : file_desc.fields) {
-		if(strcmp(lump_desc.name, name) == 0) {
-			return lump_desc;
-		}
-	}
-	return {};
 }
