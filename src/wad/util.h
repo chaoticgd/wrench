@@ -192,8 +192,19 @@ struct MemberTraits<Return (Object::*)> {
 	}
 
 [[maybe_unused]] static std::string get_application_version_string() {
-	std::string tag = get_git_tag();
-	std::string commit = get_git_commit();
+	std::string raw_tag = get_git_tag();
+	std::string raw_commit = get_git_commit();
+	std::string tag, commit;
+	for(char c : raw_tag) {
+		if(isprint(c) && c != ' ') {
+			tag += c;
+		}
+	}
+	for(char c : raw_commit) {
+		if(isprint(c) && c != ' ') {
+			commit += c;
+		}
+	}
 	std::string version;
 	if(tag.size() > 0 && commit.size() > 0) {
 		version += tag + " " + commit;
