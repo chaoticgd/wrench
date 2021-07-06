@@ -917,6 +917,14 @@ struct OcclusionBlock {
 	}
 };
 
+std::vector<u8> write_occlusion(const Gameplay& gameplay, Game game) {
+	std::vector<u8> dest;
+	if(gameplay.occlusion_clusters.has_value()) {
+		OcclusionBlock::write(dest, *gameplay.occlusion_clusters, game);
+	}
+	return dest;
+}
+
 packed_struct(GC_84_Packed,
 	u8 unknown_0[0x90];
 )

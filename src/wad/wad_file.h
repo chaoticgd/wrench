@@ -35,7 +35,7 @@ packed_struct(Rac23LevelWadHeader,
 	/* 0x10 */ SectorRange primary;
 	/* 0x18 */ SectorRange core_bank;
 	/* 0x20 */ SectorRange gameplay;
-	/* 0x28 */ SectorRange unknown_28;
+	/* 0x28 */ SectorRange occlusion;
 	/* 0x30 */ SectorRange chunks[3];
 	/* 0x48 */ SectorRange chunk_banks[3];
 )
@@ -49,7 +49,7 @@ packed_struct(Rac23LevelWadHeader68,
 	/* 0x14 */ SectorRange core_bank;
 	/* 0x1c */ SectorRange gameplay_1;
 	/* 0x24 */ SectorRange gameplay_2;
-	/* 0x2c */ SectorRange unknown_2c;
+	/* 0x2c */ SectorRange occlusion;
 	/* 0x34 */ SectorRange chunks[3];
 	/* 0x4c */ s32 reverb;
 	/* 0x50 */ SectorRange chunk_banks[3];

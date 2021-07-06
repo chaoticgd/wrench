@@ -43,5 +43,6 @@ extern const std::vector<GameplayBlockDescription> DL_GAMEPLAY_MISSION_INSTANCE_
 
 void read_gameplay(Gameplay& gameplay, Buffer src, Game game, const std::vector<GameplayBlockDescription>& blocks);
 std::vector<u8> write_gameplay(const Gameplay& gameplay_arg, Game game, const std::vector<GameplayBlockDescription>& blocks);
+std::vector<u8> write_occlusion(const Gameplay& gameplay, Game game);
 
 #endif

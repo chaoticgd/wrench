@@ -847,7 +847,6 @@ struct LevelWad : Wad {
 	std::vector<u8> primary;
 	std::vector<u8> core_bank;
 	Gameplay gameplay;
-	std::vector<u8> unknown_28;
 	std::map<s32, Chunk> chunks;
 	std::map<s32, Mission> missions;
 };

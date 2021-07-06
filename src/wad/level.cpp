@@ -171,7 +171,6 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			wad.core_bank = read_file(src_dir/json["core_sound_bank"]);
 			Json gameplay_json = Json::parse(read_file(src_dir/json["gameplay"]));
 			read_gameplay_json(wad.gameplay, gameplay_json);
-			wad.unknown_28 = read_file(src_dir/json["unknown"]);
 			for(Json& chunk_json : json["chunks"]) {
 				Chunk chunk;
 				if(chunk_json.contains("tfrags")) {
@@ -226,9 +225,6 @@ void write_wad_json(fs::path dest_path, Wad* base) {
 			json["core_sound_bank"] = write_file(dest_path, "core_bank.bin", wad.core_bank);
 			std::string gameplay_str = write_gameplay_json(wad.gameplay).dump(1, '\t');
 			json["gameplay"] = write_file(dest_path, "gameplay.json", gameplay_str);
-			if(wad.unknown_28.size() > 0) {
-				json["unknown"] = write_file(dest_path, "unknown.bin", wad.unknown_28);
-			}
 			for(auto& [index, chunk] : wad.chunks) {
 				auto chunk_name = [&](const char* name) {
 					return "chunk" + std::to_string(index) + "_" + name + ".bin";

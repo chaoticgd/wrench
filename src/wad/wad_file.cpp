@@ -38,7 +38,6 @@ std::unique_ptr<Wad> read_wad(FILE* file) {
 			wad.core_bank = read_lump(file, header.core_bank, "core bank");
 			std::vector<u8> gameplay_lump = read_compressed_lump(file, header.gameplay, "gameplay");
 			read_gameplay(wad.gameplay, gameplay_lump, wad.game, RAC23_GAMEPLAY_BLOCKS);
-			wad.unknown_28 = read_lump(file, header.unknown_28, "unknown lump");
 			wad.chunks = read_chunks(file, header.chunks, header.chunk_banks);
 			return std::make_unique<LevelWad>(std::move(wad));
 		}
@@ -54,7 +53,6 @@ std::unique_ptr<Wad> read_wad(FILE* file) {
 			wad.core_bank = read_lump(file, header.core_bank, "core bank");
 			std::vector<u8> gameplay_lump = read_compressed_lump(file, header.gameplay_1, "gameplay");
 			read_gameplay(wad.gameplay, gameplay_lump, wad.game, RAC23_GAMEPLAY_BLOCKS);
-			wad.unknown_28 = read_lump(file, header.unknown_2c, "unknown lump");
 			wad.chunks = read_chunks(file, header.chunks, header.chunk_banks);
 			return std::make_unique<LevelWad>(std::move(wad));
 		}
@@ -192,7 +190,7 @@ static std::vector<u8> build_level_wad(const LevelWad& wad) {
 			std::vector<u8> compressed_gameplay;
 			compress_wad(compressed_gameplay, gameplay, 8);
 			header.gameplay = write_lump(dest, compressed_gameplay);
-			header.unknown_28 = write_lump(dest, wad.unknown_28);
+			header.occlusion = write_lump(dest, write_occlusion(wad.gameplay, wad.game));
 			write_chunks(dest, header, wad.chunks);
 			dest.write(0, header);
 			break;
