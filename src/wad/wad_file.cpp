@@ -159,6 +159,80 @@ static std::map<s32, Mission> read_missions(FILE* file, SectorRange mission_rang
 	return missions;
 }
 
+static std::vector<u8> build_level_wad(const LevelWad& wad);
+static SectorRange write_lump(OutBuffer dest, const std::vector<u8>& buffer);
+template <typename Header>
+static void write_chunks(OutBuffer dest, Header& header, const std::map<s32, Chunk>& chunks);
+
 void write_wad(FILE* file, const Wad* wad) {
-	
+	if(wad->type == WadType::LEVEL) {
+		std::vector<u8> level = build_level_wad(*dynamic_cast<const LevelWad*>(wad));
+		fwrite(level.data(), level.size(), 1, file);
+	}
+}
+
+static std::vector<u8> build_level_wad(const LevelWad& wad) {
+	std::vector<u8> dest_vec;
+	OutBuffer dest(dest_vec);
+	switch(wad.game) {
+		case Game::RAC1: {
+			verify_not_reached("R&C1 not supported.");
+			break;
+		}
+		case Game::RAC2:
+		case Game::RAC3: {
+			Rac23LevelWadHeader header = {0};
+			header.header_size = sizeof(Rac23LevelWadHeader);
+			header.level_number = wad.level_number;
+			header.reverb = *wad.reverb;
+			dest.alloc<Rac23LevelWadHeader>();
+			header.core_bank = write_lump(dest, wad.core_bank);
+			header.primary = write_lump(dest, wad.primary);
+			std::vector<u8> gameplay = write_gameplay(wad.gameplay, wad.game, RAC23_GAMEPLAY_BLOCKS);
+			std::vector<u8> compressed_gameplay;
+			compress_wad(compressed_gameplay, gameplay, 8);
+			header.gameplay = write_lump(dest, compressed_gameplay);
+			header.unknown_28 = write_lump(dest, wad.unknown_28);
+			write_chunks(dest, header, wad.chunks);
+			dest.write(0, header);
+			break;
+		}
+		case Game::DL: {
+			break;
+		}
+	}
+	return dest_vec;
+}
+
+static SectorRange write_lump(OutBuffer dest, const std::vector<u8>& buffer) {
+	dest.pad(SECTOR_SIZE, 0);
+	s64 offset_bytes = dest.tell();
+	dest.write_multiple(buffer);
+	s64 size_bytes = dest.tell() - offset_bytes;
+	return {
+		offset_bytes / SECTOR_SIZE,
+		Sector32::size_from_bytes(size_bytes)
+	};
+}
+
+template <typename Header>
+static void write_chunks(OutBuffer dest, Header& header, const std::map<s32, Chunk>& chunks) {
+	for(const auto& [index, chunk] : chunks) {
+		assert(index >= 0 && index <= 2);
+		std::vector<u8> chunk_vec;
+		OutBuffer chunk_buffer(chunk_vec);
+		s64 header_ofs = chunk_buffer.alloc<ChunkHeader>();
+		ChunkHeader chunk_header;
+		chunk_buffer.pad(0x10, 0);
+		chunk_header.tfrags = chunk_buffer.tell();
+		compress_wad(chunk_vec, chunk.tfrags, 8);
+		chunk_buffer.pad(0x10, 0);
+		chunk_header.collision = chunk_buffer.tell();
+		compress_wad(chunk_vec, chunk.collision, 8);
+		chunk_buffer.write(header_ofs, chunk_header);
+		header.chunks[index] = write_lump(dest, chunk_vec);
+	}
+	for(const auto& [index, chunk] : chunks) {
+		header.chunk_banks[index] = write_lump(dest, chunk.sound_bank);
+	}
 }

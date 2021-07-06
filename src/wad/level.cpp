@@ -128,9 +128,70 @@ void fixup_pvar_indices(Gameplay& gameplay) {
 	}
 }
 
+#define CHECK(condition) if(!(condition)) return nullptr
+
 std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
-	assert(false);
-	return std::make_unique<Wad>();
+	fs::path src_dir = src_path.parent_path();
+	Json json = Json::parse(read_file(src_path));
+	
+	Game game;
+	CHECK(json.contains("game") && json["game"].is_string());
+	std::string game_str = json["game"];
+	if(game_str == "R&C1") {
+		game = Game::RAC1;
+	} else if(game_str == "R&C2") {
+		game = Game::RAC2;
+	} else if(game_str == "R&C3") {
+		game = Game::RAC3;
+	} else if(game_str == "Deadlocked") {
+		game = Game::DL;
+	} else {
+		fprintf(stderr, "error: Invalid game.\n");
+		return nullptr;
+	}
+	
+	WadType type;
+	CHECK(json.contains("type") && json["type"].is_string());
+	std::string type_str = json["type"];
+	if(type_str == "level") {
+		type = WadType::LEVEL;
+	} else {
+		fprintf(stderr, "error: Invalid WAD type.\n");
+		return nullptr;
+	}
+	
+	switch(type) {
+		case WadType::LEVEL: {
+			LevelWad wad;
+			wad.game = game;
+			wad.type = type;
+			wad.level_number = json["level_number"];
+			wad.reverb = json["reverb"];
+			wad.primary = read_file(src_dir/json["primary"]);
+			wad.core_bank = read_file(src_dir/json["core_sound_bank"]);
+			Json gameplay_json = Json::parse(read_file(src_dir/json["gameplay"]));
+			read_gameplay_json(wad.gameplay, gameplay_json);
+			wad.unknown_28 = read_file(src_dir/json["unknown"]);
+			for(Json& chunk_json : json["chunks"]) {
+				Chunk chunk;
+				if(chunk_json.contains("tfrags")) {
+					chunk.tfrags = read_file(src_dir/chunk_json["tfrags"]);
+				}
+				if(chunk_json.contains("collision")) {
+					chunk.collision = read_file(src_dir/chunk_json["collision"]);
+				}
+				if(chunk_json.contains("sound_bank")) {
+					chunk.sound_bank = read_file(src_dir/chunk_json["sound_bank"]);
+				}
+				s32 index = chunk_json["index"];
+				wad.chunks.emplace(index, std::move(chunk));
+			}
+			return std::make_unique<LevelWad>(std::move(wad));
+		}
+		default:
+			assert(0);
+	}
+	return nullptr;
 }
 
 void write_wad_json(fs::path dest_path, Wad* base) {
@@ -162,7 +223,7 @@ void write_wad_json(fs::path dest_path, Wad* base) {
 				json["reverb"] = *wad.reverb;
 			}
 			json["primary"] = write_file(dest_path, "primary.bin", wad.primary);
-			json["core_bank"] = write_file(dest_path, "core_bank.bin", wad.core_bank);
+			json["core_sound_bank"] = write_file(dest_path, "core_bank.bin", wad.core_bank);
 			std::string gameplay_str = write_gameplay_json(wad.gameplay).dump(1, '\t');
 			json["gameplay"] = write_file(dest_path, "gameplay.json", gameplay_str);
 			if(wad.unknown_28.size() > 0) {
@@ -176,7 +237,7 @@ void write_wad_json(fs::path dest_path, Wad* base) {
 					{"index", index},
 					{"tfrags", write_file(dest_path, chunk_name("tfrags"), chunk.tfrags)},
 					{"collision", write_file(dest_path, chunk_name("collision"), chunk.collision)},
-					{"bank", write_file(dest_path, chunk_name("bank"), chunk.sound_bank)}
+					{"sound_bank", write_file(dest_path, chunk_name("bank"), chunk.sound_bank)}
 				});
 			}
 			fs::path mission_instances_dir = "mission_instances";
@@ -207,7 +268,7 @@ void write_wad_json(fs::path dest_path, Wad* base) {
 			break;
 		}
 		default:
-			assert(false);
+			assert(0);
 	}
 	
 	assert(json_file_name);

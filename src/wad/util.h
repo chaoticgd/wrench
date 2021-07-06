@@ -81,7 +81,7 @@ template <typename... Args>
 		struct __attribute__((__packed__)) name { __VA_ARGS__ };
 #endif
 
-static const size_t SECTOR_SIZE = 0x800;
+static const s64 SECTOR_SIZE = 0x800;
 
 packed_struct(ByteRange,
 	s32 offset;
@@ -93,6 +93,15 @@ packed_struct(Sector32,
 	Sector32() : sectors(0) {}
 	Sector32(s32 s) : sectors(s) {}
 	s64 bytes() const { return sectors * SECTOR_SIZE; }
+	static Sector32 size_from_bytes(s64 size_in_bytes) {
+		if(size_in_bytes % SECTOR_SIZE != 0) {
+			size_in_bytes += SECTOR_SIZE - (size_in_bytes % SECTOR_SIZE);
+		}
+		s32 size_in_sectors = (s32) (size_in_bytes / SECTOR_SIZE);
+		// If this ever asserts then hello from the distant past.
+		assert(size_in_sectors == (s64) size_in_bytes / SECTOR_SIZE);
+		return { size_in_sectors };
+	}
 )
 
 packed_struct(SectorRange,
