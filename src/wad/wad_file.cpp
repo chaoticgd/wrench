@@ -144,14 +144,14 @@ static std::map<s32, Mission> read_missions(FILE* file, SectorRange mission_rang
 			std::vector<u8> mission_lump_vec = read_lump(file, mission_ranges[i], "mission lump");
 			Buffer mission_lump(mission_lump_vec);
 			auto& header = mission_lump.read<MissionHeader>(0, "mission header");
-			//if(header.instances.offset > 0) {
-			Buffer instances_buffer = mission_lump.subbuf(header.instances.offset - mission_ranges[i].offset.bytes());
-			verify(decompress_wad(mission.instances, wad_buffer(instances_buffer)), "Failed to decompress mission instances.");
-			//}
-			printf("clofs %x\n", header.classes.offset);
-			//if(header.classes.offset > 0) {
-			Buffer classes_buffer = mission_lump.subbuf(header.classes.offset - mission_ranges[i].offset.bytes());
-			verify(decompress_wad(mission.classes, wad_buffer(classes_buffer)), "Failed to decompress mission classes.");
+			if(header.instances.offset > 0) {
+				Buffer instances_buffer = mission_lump.subbuf(header.instances.offset - mission_ranges[i].offset.bytes());
+				verify(decompress_wad(mission.instances, wad_buffer(instances_buffer)), "Failed to decompress mission instances.");
+			}
+			if(header.classes.offset > 0) {
+				Buffer classes_buffer = mission_lump.subbuf(header.classes.offset - mission_ranges[i].offset.bytes());
+				verify(decompress_wad(mission.classes, wad_buffer(classes_buffer)), "Failed to decompress mission classes.");
+			}
 			mission.sound_bank = read_lump(file, mission_bank_ranges[i], "mission bank lump");
 			missions.emplace(i, std::move(mission));
 		}

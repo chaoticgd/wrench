@@ -191,12 +191,18 @@ void write_wad_json(fs::path dest_path, Wad* base) {
 				auto mission_name = [&](fs::path name) {
 					return name/(std::to_string(index) + ".bin");
 				};
-				json["missions"].emplace_back(Json {
-					{"index", index},
-					{"instances", write_file(dest_path, mission_name(mission_instances_dir), mission.instances)},
-					{"classes", write_file(dest_path, mission_name(mission_classes_dir), mission.classes)},
-					{"bank", write_file(dest_path, mission_name(missions_banks_dir), mission.sound_bank)}
-				});
+				Json mission_json;
+				mission_json["index"] = index;
+				if(mission.instances.size() > 0) {
+					mission_json["instances"] = write_file(dest_path, mission_name(mission_instances_dir), mission.instances);
+				}
+				if(mission.classes.size() > 0) {
+					mission_json["classes"] = write_file(dest_path, mission_name(mission_classes_dir), mission.classes);
+				}
+				if(mission.sound_bank.size() > 0) {
+					mission_json["sound_bank"] = write_file(dest_path, mission_name(missions_banks_dir), mission.sound_bank);
+				}
+				json["missions"].emplace_back(std::move(mission_json));
 			}
 			break;
 		}
