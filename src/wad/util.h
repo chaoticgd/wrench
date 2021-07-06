@@ -30,6 +30,8 @@
 #include <functional>
 #include <type_traits>
 
+#include "../version_check/version_check.h"
+
 using u8 = uint8_t;
 using u16 = uint16_t;
 using u32 = uint32_t;
@@ -190,14 +192,14 @@ struct MemberTraits<Return (Object::*)> {
 	}
 
 [[maybe_unused]] static std::string get_application_version_string() {
+	std::string tag = get_git_tag();
+	std::string commit = get_git_commit();
 	std::string version;
-#if defined(GIT_COMMIT) && defined(GIT_TAG)
-	if(strlen(GIT_TAG) > 0 && strlen(GIT_COMMIT) > 0) {
-		version += GIT_TAG " " GIT_COMMIT;
-	} else if(strlen(GIT_COMMIT) > 0) {
-		version += GIT_COMMIT;
+	if(tag.size() > 0 && commit.size() > 0) {
+		version += tag + " " + commit;
+	} else if(commit.size() > 0) {
+		version += commit;
 	}
-#endif
 	if(version == "") {
 		version = "error: No git in path during build or cmake problem.";
 	}

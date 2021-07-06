@@ -205,15 +205,6 @@ endif()
 target_link_libraries(wrench nativefiledialog)
 include_directories(thirdparty/nativefiledialog/src/include)
 
-# Pass git tag and commit hash to the compiler
-execute_process(COMMAND git tag --points-at HEAD
-	OUTPUT_VARIABLE GIT_TAG
-	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-execute_process(COMMAND git rev-parse HEAD
-	OUTPUT_VARIABLE GIT_COMMIT
-	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-string(REGEX REPLACE "\r\n" "" GIT_TAG "${GIT_TAG}")
-string(REGEX REPLACE "\r\n" "" GIT_COMMIT "${GIT_COMMIT}")
-string(REGEX REPLACE "\n" "" GIT_TAG "${GIT_TAG}")
-string(REGEX REPLACE "\n" "" GIT_COMMIT "${GIT_COMMIT}")
-add_definitions(-DGIT_TAG="${GIT_TAG}" -DGIT_COMMIT="${GIT_COMMIT}")
+add_subdirectory(src/version_check)
+target_link_libraries(wrench version_check)
+target_link_libraries(wad version_check)
