@@ -141,6 +141,10 @@ fs::path write_file(fs::path dest_dir, fs::path rel_path, Buffer buffer) {
 	verify(file, "Failed to open file '%s' for writing.", dest_path.string().c_str());
 	verify(fwrite(buffer.lo, buffer.size(), 1, file) == 1, "Failed to write output file '%s'.", dest_path.string().c_str());
 	fclose(file);
-	printf("Wrote %s (%ld KiB)\n", dest_path.string().c_str(), buffer.size() / 1024);
+	if(buffer.size() < 1024) {
+		printf("Wrote %s (%ld bytes)\n", dest_path.string().c_str(), buffer.size());
+	} else {
+		printf("Wrote %s (%ld KiB)\n", dest_path.string().c_str(), buffer.size() / 1024);
+	}
 	return rel_path;
 }
