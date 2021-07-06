@@ -26,11 +26,11 @@ add_custom_command(
 
 if(MSVC)
 	add_custom_target(generated_tag ALL
-		COMMAND type ${QUOTE_BEGIN} ${GIT_TAG_RAW} ${QUOTE_END} > ${GIT_TAG}
+		COMMAND copy "/y /b \"${QUOTE_BEGIN}\" + \"${GIT_TAG_RAW}\" + \"${QUOTE_END}\" \"${GIT_TAG}\""
 		DEPENDS ${GIT_TAG_RAW}
 	)
 	add_custom_target(generated_commit ALL
-		COMMAND type ${QUOTE_BEGIN} ${GIT_COMMIT_RAW} ${QUOTE_END} > ${GIT_COMMIT}
+		COMMAND copy "/y /b \"${QUOTE_BEGIN}\" + \"${GIT_COMMIT_RAW}\" + \"${QUOTE_END}\" \"${GIT_COMMIT}"
 		DEPENDS ${GIT_COMMIT_RAW}
 	)
 else()

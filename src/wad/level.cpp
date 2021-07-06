@@ -130,6 +130,7 @@ void fixup_pvar_indices(Gameplay& gameplay) {
 
 std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 	assert(false);
+	return std::make_unique<Wad>();
 }
 
 void write_wad_json(fs::path dest_path, Wad* base) {
