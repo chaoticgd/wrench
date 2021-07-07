@@ -61,7 +61,8 @@ packed_struct(DeadlockedLevelWadHeader,
 	/* 0x004 */ s32 lba;
 	/* 0x008 */ s32 level_number;
 	/* 0x00c */ s32 reverb;
-	/* 0x010 */ s32 max_mission_sizes[2];
+	/* 0x010 */ s32 max_mission_instances_size;
+	/* 0x014 */ s32 max_mission_classes_size;
 	/* 0x018 */ SectorRange primary;
 	/* 0x020 */ SectorRange core_bank;
 	/* 0x028 */ SectorRange chunks[3];

@@ -130,7 +130,9 @@ std::vector<u8> read_file(fs::path path) {
 	FILE* file = fopen(path.string().c_str(), "rb");
 	verify(file, "Failed to open file '%s' for reading.", path.string().c_str());
 	std::vector<u8> buffer(file_size_in_bytes(file));
-	verify(fread(buffer.data(), buffer.size(), 1, file) == 1, "Failed to read file '%s'.", path.string().c_str());
+	if(buffer.size() > 0) {
+		verify(fread(buffer.data(), buffer.size(), 1, file) == 1, "Failed to read file '%s'.", path.string().c_str());
+	}
 	fclose(file);
 	return buffer;
 }
@@ -139,7 +141,9 @@ fs::path write_file(fs::path dest_dir, fs::path rel_path, Buffer buffer) {
 	fs::path dest_path = dest_dir/rel_path;
 	FILE* file = fopen(dest_path.string().c_str(), "wb");
 	verify(file, "Failed to open file '%s' for writing.", dest_path.string().c_str());
-	verify(fwrite(buffer.lo, buffer.size(), 1, file) == 1, "Failed to write output file '%s'.", dest_path.string().c_str());
+	if(buffer.size() > 0) {
+		verify(fwrite(buffer.lo, buffer.size(), 1, file) == 1, "Failed to write output file '%s'.", dest_path.string().c_str());
+	}
 	fclose(file);
 	if(buffer.size() < 1024) {
 		printf("Wrote %s (%ld bytes)\n", dest_path.string().c_str(), buffer.size());

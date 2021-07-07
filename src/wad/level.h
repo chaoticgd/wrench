@@ -830,15 +830,15 @@ Json write_help_messages(Gameplay& gameplay);
 void fixup_pvar_indices(Gameplay& gameplay);
 
 struct Chunk {
-	std::vector<u8> tfrags;
-	std::vector<u8> collision;
-	std::vector<u8> sound_bank;
+	Opt<std::vector<u8>> tfrags;
+	Opt<std::vector<u8>> collision;
+	Opt<std::vector<u8>> sound_bank;
 };
 
 struct Mission {
-	std::vector<u8> instances;
-	std::vector<u8> classes;
-	std::vector<u8> sound_bank;
+	Opt<std::vector<u8>> instances;
+	Opt<std::vector<u8>> classes;
+	Opt<std::vector<u8>> sound_bank;
 };
 
 struct LevelWad : Wad {

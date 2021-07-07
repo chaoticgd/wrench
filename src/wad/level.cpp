@@ -171,19 +171,38 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			wad.core_bank = read_file(src_dir/json["core_sound_bank"]);
 			Json gameplay_json = Json::parse(read_file(src_dir/json["gameplay"]));
 			read_gameplay_json(wad.gameplay, gameplay_json);
-			for(Json& chunk_json : json["chunks"]) {
-				Chunk chunk;
-				if(chunk_json.contains("tfrags")) {
-					chunk.tfrags = read_file(src_dir/chunk_json["tfrags"]);
+			if(json.contains("chunks")) {
+				for(Json& chunk_json : json["chunks"]) {
+					Chunk chunk;
+					if(chunk_json.contains("tfrags")) {
+						chunk.tfrags = read_file(src_dir/chunk_json["tfrags"]);
+					}
+					if(chunk_json.contains("collision")) {
+						chunk.collision = read_file(src_dir/chunk_json["collision"]);
+					}
+					if(chunk_json.contains("sound_bank")) {
+						chunk.sound_bank = read_file(src_dir/chunk_json["sound_bank"]);
+					}
+					s32 index = chunk_json["index"];
+					wad.chunks.emplace(index, std::move(chunk));
 				}
-				if(chunk_json.contains("collision")) {
-					chunk.collision = read_file(src_dir/chunk_json["collision"]);
+			}
+			if(json.contains("missions")) {
+				for(Json& mission_json : json["missions"]) {
+					Mission mission;
+					if(mission_json.contains("instances")) {
+						mission.instances = read_file(src_dir/mission_json["instances"]);
+					}
+					if(mission_json.contains("classes")) {
+						mission.classes = read_file(src_dir/mission_json["classes"]);
+					}
+					if(mission_json.contains("sound_bank")) {
+						mission.sound_bank = read_file(src_dir/mission_json["sound_bank"]);
+					}
+					s32 index = mission_json["index"];
+					verify(index >= 0 || index <= 127, "Mission index must be between 0 and 127.");
+					wad.missions.emplace(index, std::move(mission));
 				}
-				if(chunk_json.contains("sound_bank")) {
-					chunk.sound_bank = read_file(src_dir/chunk_json["sound_bank"]);
-				}
-				s32 index = chunk_json["index"];
-				wad.chunks.emplace(index, std::move(chunk));
 			}
 			return std::make_unique<LevelWad>(std::move(wad));
 		}
@@ -229,12 +248,18 @@ void write_wad_json(fs::path dest_path, Wad* base) {
 				auto chunk_name = [&](const char* name) {
 					return "chunk" + std::to_string(index) + "_" + name + ".bin";
 				};
-				json["chunks"].emplace_back(Json {
-					{"index", index},
-					{"tfrags", write_file(dest_path, chunk_name("tfrags"), chunk.tfrags)},
-					{"collision", write_file(dest_path, chunk_name("collision"), chunk.collision)},
-					{"sound_bank", write_file(dest_path, chunk_name("bank"), chunk.sound_bank)}
-				});
+				Json chunk_json;
+				chunk_json["index"] = index;
+				if(chunk.tfrags.has_value()) {
+					chunk_json["tfrags"] = write_file(dest_path, chunk_name("tfrags"), *chunk.tfrags);
+				}
+				if(chunk.collision.has_value()) {
+					chunk_json["collision"] = write_file(dest_path, chunk_name("collision"), *chunk.collision);
+				}
+				if(chunk.tfrags.has_value()) {
+					chunk_json["sound_bank"] = write_file(dest_path, chunk_name("bank"), *chunk.sound_bank);
+				}
+				json["chunks"].emplace_back(chunk_json);
 			}
 			fs::path mission_instances_dir = "mission_instances";
 			fs::path mission_classes_dir = "mission_classes";
@@ -250,14 +275,14 @@ void write_wad_json(fs::path dest_path, Wad* base) {
 				};
 				Json mission_json;
 				mission_json["index"] = index;
-				if(mission.instances.size() > 0) {
-					mission_json["instances"] = write_file(dest_path, mission_name(mission_instances_dir), mission.instances);
+				if(mission.instances.has_value()) {
+					mission_json["instances"] = write_file(dest_path, mission_name(mission_instances_dir), *mission.instances);
 				}
-				if(mission.classes.size() > 0) {
-					mission_json["classes"] = write_file(dest_path, mission_name(mission_classes_dir), mission.classes);
+				if(mission.classes.has_value()) {
+					mission_json["classes"] = write_file(dest_path, mission_name(mission_classes_dir), *mission.classes);
 				}
-				if(mission.sound_bank.size() > 0) {
-					mission_json["sound_bank"] = write_file(dest_path, mission_name(missions_banks_dir), mission.sound_bank);
+				if(mission.sound_bank.has_value()) {
+					mission_json["sound_bank"] = write_file(dest_path, mission_name(missions_banks_dir), *mission.sound_bank);
 				}
 				json["missions"].emplace_back(std::move(mission_json));
 			}

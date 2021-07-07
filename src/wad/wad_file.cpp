@@ -118,16 +118,25 @@ static WadBuffer wad_buffer(Buffer buf) {
 static std::map<s32, Chunk> read_chunks(FILE* file, SectorRange chunk_ranges[3], SectorRange chunk_bank_ranges[3]) {
 	std::map<s32, Chunk> chunks;
 	for(s32 i = 0; i < 3; i++) {
-		if(chunk_ranges[i].size.sectors > 0 && chunk_bank_ranges[i].size.sectors > 0) {
-			Chunk chunk;
+		Chunk chunk;
+		bool is_chunky = false;
+		if(chunk_ranges[i].size.sectors > 0) {
 			std::vector<u8> chunk_lump_vec = read_lump(file, chunk_ranges[i], "chunk");
 			Buffer chunk_lump(chunk_lump_vec);
 			auto& header = chunk_lump.read<ChunkHeader>(0, "chunk header");
 			Buffer tfrag_buffer = chunk_lump.subbuf(header.tfrags);
 			Buffer collision_buffer = chunk_lump.subbuf(header.collision);
-			verify(decompress_wad(chunk.tfrags, wad_buffer(tfrag_buffer)), "Failed to decompress chunk tfrags.");
-			verify(decompress_wad(chunk.collision, wad_buffer(collision_buffer)), "Failed to decompress chunk collision.");
+			chunk.tfrags = std::vector<u8>();
+			chunk.collision = std::vector<u8>();
+			verify(decompress_wad(*chunk.tfrags, wad_buffer(tfrag_buffer)), "Failed to decompress chunk tfrags.");
+			verify(decompress_wad(*chunk.collision, wad_buffer(collision_buffer)), "Failed to decompress chunk collision.");
+			is_chunky = true;
+		}
+		if(chunk_bank_ranges[i].size.sectors > 0) {
 			chunk.sound_bank = read_lump(file, chunk_bank_ranges[i], "chunk bank");
+			is_chunky = true;
+		}
+		if(is_chunky) {
 			chunks.emplace(i, std::move(chunk));
 		}
 	}
@@ -137,20 +146,29 @@ static std::map<s32, Chunk> read_chunks(FILE* file, SectorRange chunk_ranges[3],
 static std::map<s32, Mission> read_missions(FILE* file, SectorRange mission_ranges[128], SectorRange mission_bank_ranges[128]) {
 	std::map<s32, Mission> missions;
 	for(s32 i = 0; i < 128; i++) {
-		if(mission_ranges[i].size.sectors > 0 && mission_bank_ranges[i].size.sectors > 0) {
-			Mission mission;
+		Mission mission;
+		bool is_mission = false;
+		if(mission_ranges[i].size.sectors > 0) {
 			std::vector<u8> mission_lump_vec = read_lump(file, mission_ranges[i], "mission lump");
 			Buffer mission_lump(mission_lump_vec);
 			auto& header = mission_lump.read<MissionHeader>(0, "mission header");
 			if(header.instances.offset > 0) {
 				Buffer instances_buffer = mission_lump.subbuf(header.instances.offset - mission_ranges[i].offset.bytes());
-				verify(decompress_wad(mission.instances, wad_buffer(instances_buffer)), "Failed to decompress mission instances.");
+				mission.instances = std::vector<u8>();
+				verify(decompress_wad(*mission.instances, wad_buffer(instances_buffer)), "Failed to decompress mission instances.");
 			}
 			if(header.classes.offset > 0) {
 				Buffer classes_buffer = mission_lump.subbuf(header.classes.offset - mission_ranges[i].offset.bytes());
-				verify(decompress_wad(mission.classes, wad_buffer(classes_buffer)), "Failed to decompress mission classes.");
+				mission.classes = std::vector<u8>();
+				verify(decompress_wad(*mission.classes, wad_buffer(classes_buffer)), "Failed to decompress mission classes.");
 			}
+			is_mission = true;
+		}
+		if(mission_bank_ranges[i].size.sectors > 0) {
 			mission.sound_bank = read_lump(file, mission_bank_ranges[i], "mission bank lump");
+			is_mission = true;
+		}
+		if(is_mission) {
 			missions.emplace(i, std::move(mission));
 		}
 	}
@@ -159,8 +177,10 @@ static std::map<s32, Mission> read_missions(FILE* file, SectorRange mission_rang
 
 static std::vector<u8> build_level_wad(const LevelWad& wad);
 static SectorRange write_lump(OutBuffer dest, const std::vector<u8>& buffer);
+static SectorRange write_compressed_lump(OutBuffer dest, const std::vector<u8>& buffer);
 template <typename Header>
 static void write_chunks(OutBuffer dest, Header& header, const std::map<s32, Chunk>& chunks);
+static void write_missions(OutBuffer dest, DeadlockedLevelWadHeader& header, const std::map<s32, Mission>& missions);
 
 void write_wad(FILE* file, const Wad* wad) {
 	if(wad->type == WadType::LEVEL) {
@@ -187,15 +207,35 @@ static std::vector<u8> build_level_wad(const LevelWad& wad) {
 			header.core_bank = write_lump(dest, wad.core_bank);
 			header.primary = write_lump(dest, wad.primary);
 			std::vector<u8> gameplay = write_gameplay(wad.gameplay, wad.game, RAC23_GAMEPLAY_BLOCKS);
-			std::vector<u8> compressed_gameplay;
-			compress_wad(compressed_gameplay, gameplay, 8);
-			header.gameplay = write_lump(dest, compressed_gameplay);
+			header.gameplay = write_lump(dest, gameplay);
 			header.occlusion = write_lump(dest, write_occlusion(wad.gameplay, wad.game));
 			write_chunks(dest, header, wad.chunks);
 			dest.write(0, header);
 			break;
 		}
 		case Game::DL: {
+			DeadlockedLevelWadHeader header = {0};
+			header.header_size = sizeof(DeadlockedLevelWadHeader);
+			header.level_number = wad.level_number;
+			header.reverb = *wad.reverb;
+			for(const auto& [index, mission] : wad.missions) {
+				if(mission.instances.has_value() && (s32) mission.instances->size() > header.max_mission_instances_size) {
+					header.max_mission_instances_size = mission.instances->size();
+				}
+				if(mission.classes.has_value() && (s32) mission.classes->size() > header.max_mission_classes_size) {
+					header.max_mission_classes_size = mission.classes->size();
+				}
+			}
+			dest.alloc<DeadlockedLevelWadHeader>();
+			header.core_bank = write_lump(dest, wad.core_bank);
+			header.primary = write_lump(dest, wad.primary);
+			write_chunks(dest, header, wad.chunks);
+			std::vector<u8> gameplay = write_gameplay(wad.gameplay, wad.game, DL_GAMEPLAY_CORE_BLOCKS);
+			header.gameplay_core = write_compressed_lump(dest, gameplay);
+			write_missions(dest, header, wad.missions);
+			std::vector<u8> art_instances = write_gameplay(wad.gameplay, wad.game, DL_ART_INSTANCE_BLOCKS);
+			header.art_instances = write_compressed_lump(dest, art_instances);
+			dest.write(0, header);
 			break;
 		}
 	}
@@ -213,24 +253,74 @@ static SectorRange write_lump(OutBuffer dest, const std::vector<u8>& buffer) {
 	};
 }
 
+static SectorRange write_compressed_lump(OutBuffer dest, const std::vector<u8>& buffer) {
+	std::vector<u8> compressed;
+	compress_wad(compressed, buffer, 8);
+	return write_lump(dest, compressed);
+}
+
 template <typename Header>
 static void write_chunks(OutBuffer dest, Header& header, const std::map<s32, Chunk>& chunks) {
 	for(const auto& [index, chunk] : chunks) {
-		assert(index >= 0 && index <= 2);
-		std::vector<u8> chunk_vec;
-		OutBuffer chunk_buffer(chunk_vec);
-		s64 header_ofs = chunk_buffer.alloc<ChunkHeader>();
-		ChunkHeader chunk_header;
-		chunk_buffer.pad(0x10, 0);
-		chunk_header.tfrags = chunk_buffer.tell();
-		compress_wad(chunk_vec, chunk.tfrags, 8);
-		chunk_buffer.pad(0x10, 0);
-		chunk_header.collision = chunk_buffer.tell();
-		compress_wad(chunk_vec, chunk.collision, 8);
-		chunk_buffer.write(header_ofs, chunk_header);
-		header.chunks[index] = write_lump(dest, chunk_vec);
+		if(chunk.tfrags.has_value() && chunk.collision.has_value()) {
+			assert(index >= 0 && index <= 2);
+			std::vector<u8> chunk_vec;
+			OutBuffer chunk_buffer(chunk_vec);
+			s64 header_ofs = chunk_buffer.alloc<ChunkHeader>();
+			ChunkHeader chunk_header;
+			chunk_buffer.pad(0x10, 0);
+			chunk_header.tfrags = chunk_buffer.tell();
+			compress_wad(chunk_vec, *chunk.tfrags, 8);
+			chunk_buffer.pad(0x10, 0);
+			chunk_header.collision = chunk_buffer.tell();
+			compress_wad(chunk_vec, *chunk.collision, 8);
+			chunk_buffer.write(header_ofs, chunk_header);
+			header.chunks[index] = write_lump(dest, chunk_vec);
+		}
 	}
 	for(const auto& [index, chunk] : chunks) {
-		header.chunk_banks[index] = write_lump(dest, chunk.sound_bank);
+		if(chunk.sound_bank.has_value()) {
+			header.chunk_banks[index] = write_lump(dest, *chunk.sound_bank);
+		}
+	}
+}
+
+static void write_missions(OutBuffer dest, DeadlockedLevelWadHeader& header, const std::map<s32, Mission>& missions) {
+	for(const auto& [index, mission] : missions) {
+		assert(index >= 0 && index <= 127);
+		if(mission.instances.has_value()) {
+			header.gameplay_mission_instances[index] = write_lump(dest, *mission.instances);
+		}
+	}
+	for(const auto& [index, mission] : missions) {
+		std::vector<u8> mission_vec;
+		OutBuffer mission_buffer(mission_vec);
+		s64 header_ofs = mission_buffer.alloc<MissionHeader>();
+		MissionHeader mission_header = {0};
+		if(mission.instances.has_value()) {
+			mission_buffer.pad(0x40, 0);
+			mission_header.instances.offset = mission_buffer.tell();
+			compress_wad(mission_vec, *mission.instances, 8);
+			mission_header.instances.size = mission_buffer.tell() - mission_header.instances.offset;
+			mission_header.instances.offset += dest.tell();
+		} else {
+			mission_header.instances.offset = -1;
+		}
+		if(mission.classes.has_value()) {
+			mission_buffer.pad(0x40, 0);
+			mission_header.classes.offset = mission_buffer.tell();
+			compress_wad(mission_vec, *mission.classes, 8);
+			mission_header.classes.size = mission_buffer.tell() - mission_header.classes.offset;
+			mission_header.classes.offset += dest.tell();
+		} else {
+			mission_header.instances.offset = -1;
+		}
+		mission_buffer.write(header_ofs, mission_header);
+		header.gameplay_mission_data[index] = write_lump(dest, mission_vec);
+	}
+	for(const auto& [index, mission] : missions) {
+		if(mission.sound_bank.has_value()) {
+			header.mission_banks[index] = write_lump(dest, *mission.sound_bank);
+		}
 	}
 }
