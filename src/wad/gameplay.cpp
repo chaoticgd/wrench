@@ -992,7 +992,7 @@ static void swap_instance(DirectionalLight& l, DirectionalLightPacked& r) {
 
 packed_struct(TieInstancePacked,
 	s32 o_class;    // 0x0
-	s32 unknown_4;  // 0x4
+	s32 draw_distance; // 0x4
 	s32 unknown_8;  // 0x8
 	s32 occlusion_index; // 0xc
 	Mat3 matrix;    // 0x10
@@ -1006,7 +1006,7 @@ static_assert(sizeof(TieInstancePacked) == 0x60);
 
 static void swap_instance(TieInstance& l, TieInstancePacked& r) {
 	SWAP_PACKED(l.o_class, r.o_class);
-	SWAP_PACKED(l.unknown_4, r.unknown_4);
+	SWAP_PACKED(l.draw_distance, r.draw_distance);
 	SWAP_PACKED(l.unknown_8, r.unknown_8);
 	SWAP_PACKED(l.occlusion_index, r.occlusion_index);
 	SWAP_PACKED(l.matrix, r.matrix);

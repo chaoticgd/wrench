@@ -611,7 +611,7 @@ struct DirectionalLight {
 
 struct TieInstance {
 	s32 o_class;
-	s32 unknown_4;
+	s32 draw_distance;
 	s32 unknown_8;
 	s32 occlusion_index;
 	Mat3 matrix;
@@ -625,7 +625,7 @@ struct TieInstance {
 	template <typename T>
 	void enumerate_fields(T& t) {
 		DEF_FIELD(o_class);
-		DEF_FIELD(unknown_4);
+		DEF_FIELD(draw_distance);
 		DEF_FIELD(unknown_8);
 		DEF_FIELD(occlusion_index);
 		DEF_FIELD(matrix);
