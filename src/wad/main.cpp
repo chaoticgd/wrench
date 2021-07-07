@@ -26,20 +26,28 @@ static void extract(fs::path input_path, fs::path output_path);
 static void build(fs::path input_path, fs::path output_path);
 
 int main(int argc, char** argv) {
-	verify(argc == 3 || argc == 4, "Wrong number of arguments.");
-	
-	std::string mode = argv[1];
-	fs::path input_path = argv[2];
-	
-	if(mode == "extract") {
-		extract(input_path, argc == 4 ? argv[3] : "wad_extracted");
-	} else if(mode == "build") {
-		build(input_path, argc == 4 ? argv[3] : "built.wad");
-	} else if(mode == "test") {
-		run_tests(input_path);
-	} else {
-		verify_not_reached("Invalid command: %s", mode.c_str());
+	if(argc == 3 || argc == 4) {
+		std::string mode = argv[1];
+		fs::path input_path = argv[2];
+		if(mode == "extract") {
+			extract(input_path, argc == 4 ? argv[3] : "wad_extracted");
+			return 0;
+		} else if(mode == "build") {
+			build(input_path, argc == 4 ? argv[3] : "built.wad");
+			return 0;
+		} else if(mode == "test") {
+			run_tests(input_path);
+			return 0;
+		}
 	}
+	
+	printf("Extract and build Ratchet & Clank WAD files.\n");
+	printf("\n");
+	printf("usage: \n");
+	printf("  %s extract <input wad> <output dir>\n", argv[0]);
+	printf("  %s build <input level json> <output wad>\n", argv[0]);
+	printf("  %s test <level wads dir>\n", argv[0]);
+	return 1;
 }
 
 static void extract(fs::path input_path, fs::path output_path) {
