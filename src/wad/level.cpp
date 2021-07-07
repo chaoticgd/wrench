@@ -18,39 +18,21 @@
 
 #include "level.h"
 
-void read_gameplay_json(Gameplay& gameplay, Json& json) {
-	from_json(gameplay, json);
+Json get_file_metadata(const char* format, const char* application) {
+	return Json {
+		{"format", format},
+		{"format_version", 0},
+		{"application", application},
+		{"application_version", get_application_version_string()}
+	};
 }
 
-template <typename Object>
-void write_gameplay_section(Json& dest, std::optional<Object>& src, const char* name) {
-	if(!src.has_value()) {
-		dest[name] = {};
-		return;
-	}
-	dest[name] = to_json(*src);
-}
-
-template <typename Object>
-void write_gameplay_section(Json& dest, std::optional<std::vector<Object>>& src, const char* name) {
-	if(!src.has_value()) {
-		dest[name] = {};
-		return;
-	}
-	for(Object& object : *src) {
-		dest[name].emplace_back(to_json(object));
-	}
-}
+static const char* APPLICATION_NAME = "Wrench WAD Utility";
 
 Json write_gameplay_json(Gameplay& gameplay) {
 	Json json;
 	
-	json["metadata"] = Json {
-		{"format", "gameplay"},
-		{"format_version", 0},
-		{"application", "Wrench WAD Utility"},
-		{"application_version", get_application_version_string()}
-	};
+	json["metadata"] = get_file_metadata("gameplay", APPLICATION_NAME);
 	
 	Json data = to_json(gameplay);
 	for(auto& item : data.items()) {
@@ -60,40 +42,16 @@ Json write_gameplay_json(Gameplay& gameplay) {
 	return json;
 }
 
-void read_help_messages(Gameplay& gameplay, Json& json) {
-	
-}
-
-Json write_help_messages(Gameplay& gameplay) {
+Json write_help_messages_json(HelpMessages& help_messages) {
 	Json json;
 	
-	json["metadata"] = Json {
-		{"format", "help_messages"},
-		{"format_version", 0},
-		{"application", "Wrench WAD Utility"},
-		{"application_version", get_application_version_string()}
-	};
+	json["metadata"] = get_file_metadata("help_messages", APPLICATION_NAME);
 	
-	struct {
-		const char* name;
-		Opt<std::vector<HelpMessage>>* messages;
-	} languages[8] = {
-		{"us_english", &gameplay.us_english_help_messages},
-		{"uk_english", &gameplay.uk_english_help_messages},
-		{"french", &gameplay.french_help_messages},
-		{"german", &gameplay.german_help_messages},
-		{"spanish", &gameplay.spanish_help_messages},
-		{"italian", &gameplay.italian_help_messages},
-		{"japanese", &gameplay.japanese_help_messages},
-		{"korean", &gameplay.korean_help_messages}
-	};
-	for(auto& language : languages) {
-		if(language.messages->has_value()) {
-			for(HelpMessage& message : **language.messages) {
-				json[language.name].emplace_back(to_json(message));
-			}
-		}
+	Json data = to_json(help_messages);
+	for(auto& item : data.items()) {
+		json[item.key()] = item.value();
 	}
+	
 	return json;
 }
 
@@ -170,7 +128,9 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			wad.primary = read_file(src_dir/json["primary"]);
 			wad.core_bank = read_file(src_dir/json["core_sound_bank"]);
 			Json gameplay_json = Json::parse(read_file(src_dir/json["gameplay"]));
-			read_gameplay_json(wad.gameplay, gameplay_json);
+			from_json(wad.gameplay, gameplay_json);
+			Json help_messages_json = Json::parse(read_file(src_dir/json["help_messages"]));
+			from_json(wad.help_messages, help_messages_json);
 			if(json.contains("chunks")) {
 				for(Json& chunk_json : json["chunks"]) {
 					Chunk chunk;
@@ -216,12 +176,7 @@ void write_wad_json(fs::path dest_path, Wad* base) {
 	const char* json_file_name = nullptr;
 	Json json;
 	
-	json["metadata"] = Json {
-		{"format", "level"},
-		{"format_version", 0},
-		{"application", "Wrench WAD Utility"},
-		{"application_version", get_application_version_string()}
-	};
+	json["metadata"] = get_file_metadata("wad", APPLICATION_NAME);
 	
 	switch(base->game) {
 		case Game::RAC1: json["game"] = "R&C1"; break;
@@ -244,6 +199,8 @@ void write_wad_json(fs::path dest_path, Wad* base) {
 			json["core_sound_bank"] = write_file(dest_path, "core_bank.bin", wad.core_bank);
 			std::string gameplay_str = write_gameplay_json(wad.gameplay).dump(1, '\t');
 			json["gameplay"] = write_file(dest_path, "gameplay.json", gameplay_str);
+			std::string help_messages_str = write_help_messages_json(wad.help_messages).dump(1, '\t');
+			json["help_messages"] = write_file(dest_path, "help_messages.json", help_messages_str);
 			for(auto& [index, chunk] : wad.chunks) {
 				auto chunk_name = [&](const char* name) {
 					return "chunk" + std::to_string(index) + "_" + name + ".bin";

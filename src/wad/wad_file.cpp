@@ -38,6 +38,7 @@ std::unique_ptr<Wad> read_wad(FILE* file) {
 			wad.core_bank = read_lump(file, header.core_bank, "core bank");
 			std::vector<u8> gameplay_lump = read_compressed_lump(file, header.gameplay, "gameplay");
 			read_gameplay(wad.gameplay, gameplay_lump, wad.game, RAC23_GAMEPLAY_BLOCKS);
+			wad.help_messages.swap(wad.gameplay);
 			wad.chunks = read_chunks(file, header.chunks, header.chunk_banks);
 			return std::make_unique<LevelWad>(std::move(wad));
 		}
@@ -53,6 +54,7 @@ std::unique_ptr<Wad> read_wad(FILE* file) {
 			wad.core_bank = read_lump(file, header.core_bank, "core bank");
 			std::vector<u8> gameplay_lump = read_compressed_lump(file, header.gameplay_1, "gameplay");
 			read_gameplay(wad.gameplay, gameplay_lump, wad.game, RAC23_GAMEPLAY_BLOCKS);
+			wad.help_messages.swap(wad.gameplay);
 			wad.chunks = read_chunks(file, header.chunks, header.chunk_banks);
 			return std::make_unique<LevelWad>(std::move(wad));
 		}
@@ -69,6 +71,7 @@ std::unique_ptr<Wad> read_wad(FILE* file) {
 			wad.chunks = read_chunks(file, header.chunks, header.chunk_banks);
 			std::vector<u8> gameplay_lump = read_compressed_lump(file, header.gameplay_core, "gameplay core");
 			read_gameplay(wad.gameplay, gameplay_lump, wad.game, DL_GAMEPLAY_CORE_BLOCKS);
+			wad.help_messages.swap(wad.gameplay);
 			wad.missions = read_missions(file, header.gameplay_mission_data, header.mission_banks);
 			std::vector<u8> art_instances_lump = read_compressed_lump(file, header.art_instances, "art instances");
 			read_gameplay(wad.gameplay, art_instances_lump, wad.game, DL_ART_INSTANCE_BLOCKS);
@@ -175,21 +178,21 @@ static std::map<s32, Mission> read_missions(FILE* file, SectorRange mission_rang
 	return missions;
 }
 
-static std::vector<u8> build_level_wad(const LevelWad& wad);
+static std::vector<u8> build_level_wad(LevelWad& wad);
 static SectorRange write_lump(OutBuffer dest, const std::vector<u8>& buffer);
 static SectorRange write_compressed_lump(OutBuffer dest, const std::vector<u8>& buffer);
 template <typename Header>
 static void write_chunks(OutBuffer dest, Header& header, const std::map<s32, Chunk>& chunks);
 static void write_missions(OutBuffer dest, DeadlockedLevelWadHeader& header, const std::map<s32, Mission>& missions);
 
-void write_wad(FILE* file, const Wad* wad) {
+void write_wad(FILE* file, Wad* wad) {
 	if(wad->type == WadType::LEVEL) {
-		std::vector<u8> level = build_level_wad(*dynamic_cast<const LevelWad*>(wad));
+		std::vector<u8> level = build_level_wad(*dynamic_cast<LevelWad*>(wad));
 		fwrite(level.data(), level.size(), 1, file);
 	}
 }
 
-static std::vector<u8> build_level_wad(const LevelWad& wad) {
+static std::vector<u8> build_level_wad(LevelWad& wad) {
 	std::vector<u8> dest_vec;
 	OutBuffer dest(dest_vec);
 	switch(wad.game) {
@@ -206,8 +209,10 @@ static std::vector<u8> build_level_wad(const LevelWad& wad) {
 			dest.alloc<Rac23LevelWadHeader>();
 			header.core_bank = write_lump(dest, wad.core_bank);
 			header.primary = write_lump(dest, wad.primary);
+			wad.help_messages.swap(wad.gameplay);
 			std::vector<u8> gameplay = write_gameplay(wad.gameplay, wad.game, RAC23_GAMEPLAY_BLOCKS);
-			header.gameplay = write_lump(dest, gameplay);
+			wad.help_messages.swap(wad.gameplay);
+			header.gameplay = write_compressed_lump(dest, gameplay);
 			header.occlusion = write_lump(dest, write_occlusion(wad.gameplay, wad.game));
 			write_chunks(dest, header, wad.chunks);
 			dest.write(0, header);
@@ -230,7 +235,9 @@ static std::vector<u8> build_level_wad(const LevelWad& wad) {
 			header.core_bank = write_lump(dest, wad.core_bank);
 			header.primary = write_lump(dest, wad.primary);
 			write_chunks(dest, header, wad.chunks);
+			wad.help_messages.swap(wad.gameplay);
 			std::vector<u8> gameplay = write_gameplay(wad.gameplay, wad.game, DL_GAMEPLAY_CORE_BLOCKS);
+			wad.help_messages.swap(wad.gameplay);
 			header.gameplay_core = write_compressed_lump(dest, gameplay);
 			write_missions(dest, header, wad.missions);
 			std::vector<u8> art_instances = write_gameplay(wad.gameplay, wad.game, DL_ART_INSTANCE_BLOCKS);

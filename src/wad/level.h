@@ -783,14 +783,6 @@ struct Gameplay {
 	void enumerate_fields(T& t) {
 		DEF_FIELD(gc_8c_dl_70);
 		DEF_FIELD(properties);
-		DEF_FIELD(us_english_help_messages);
-		DEF_FIELD(uk_english_help_messages);
-		DEF_FIELD(french_help_messages);
-		DEF_FIELD(german_help_messages);
-		DEF_FIELD(spanish_help_messages);
-		DEF_FIELD(italian_help_messages);
-		DEF_FIELD(japanese_help_messages);
-		DEF_FIELD(korean_help_messages);
 		DEF_FIELD(gc_84);
 		DEF_FIELD(cameras);
 		DEF_FIELD(sound_instances);
@@ -822,10 +814,42 @@ struct Gameplay {
 	}
 };
 
-void read_gameplay_json(Gameplay& gameplay, Json& json);
+struct HelpMessages {
+	Opt<std::vector<HelpMessage>> us_english;
+	Opt<std::vector<HelpMessage>> uk_english;
+	Opt<std::vector<HelpMessage>> french;
+	Opt<std::vector<HelpMessage>> german;
+	Opt<std::vector<HelpMessage>> spanish;
+	Opt<std::vector<HelpMessage>> italian;
+	Opt<std::vector<HelpMessage>> japanese;
+	Opt<std::vector<HelpMessage>> korean;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD(us_english);
+		DEF_FIELD(uk_english);
+		DEF_FIELD(french);
+		DEF_FIELD(german);
+		DEF_FIELD(spanish);
+		DEF_FIELD(italian);
+		DEF_FIELD(japanese);
+		DEF_FIELD(korean);
+	}
+	
+	void swap(Gameplay& gameplay) {
+		us_english.swap(gameplay.us_english_help_messages);
+		uk_english.swap(gameplay.uk_english_help_messages);
+		french.swap(gameplay.french_help_messages);
+		german.swap(gameplay.german_help_messages);
+		spanish.swap(gameplay.spanish_help_messages);
+		italian.swap(gameplay.italian_help_messages);
+		japanese.swap(gameplay.japanese_help_messages);
+		korean.swap(gameplay.korean_help_messages);
+	}
+};
+
 Json write_gameplay_json(Gameplay& gameplay);
-void read_help_messages(Gameplay& gameplay, Json& json);
-Json write_help_messages(Gameplay& gameplay);
+Json write_help_messages_json(HelpMessages& help_messages);
 
 void fixup_pvar_indices(Gameplay& gameplay);
 
@@ -847,6 +871,7 @@ struct LevelWad : Wad {
 	std::vector<u8> primary;
 	std::vector<u8> core_bank;
 	Gameplay gameplay;
+	HelpMessages help_messages;
 	std::map<s32, Chunk> chunks;
 	std::map<s32, Mission> missions;
 };

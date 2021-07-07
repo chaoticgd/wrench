@@ -87,7 +87,7 @@ packed_struct(MissionHeader,
 )
 
 std::unique_ptr<Wad> read_wad(FILE* file);
-void write_wad(FILE* file, const Wad* wad);
+void write_wad(FILE* file, Wad* wad);
 
 std::vector<u8> read_lump(FILE* file, SectorRange range, const char* name);
 template <typename Header>

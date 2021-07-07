@@ -129,10 +129,8 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 	
 	// Test the JSON reading/writing functions.
 	Json gameplay_json = write_gameplay_json(gameplay);
-	Json help_messages_json = write_help_messages(gameplay);
 	Gameplay test_gameplay;
-	read_gameplay_json(test_gameplay, gameplay_json);
-	read_help_messages(test_gameplay, help_messages_json);
+	from_json(test_gameplay, gameplay_json);
 	std::vector<u8> test_dest = write_gameplay(test_gameplay, args.game, *args.blocks);
 	OutBuffer(test_dest).pad(SECTOR_SIZE, 0);
 	if(test_dest == dest) {
