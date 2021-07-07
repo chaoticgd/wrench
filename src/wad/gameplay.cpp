@@ -938,10 +938,10 @@ static void swap_instance(GC_84_Instance& l, GC_84_Packed& r) {
 }
 
 packed_struct(ImportCameraPacked,
-	s32 type;       // 0x0
-	Vec3f position; // 0x4
-	Vec3f rotation; // 0x10
-	s32 pvar_index; // 0x1c
+	/* 0x00 */ s32 type;
+	/* 0x04 */ Vec3f position;
+	/* 0x10 */ Vec3f rotation;
+	/* 0x1c */ s32 pvar_index;
 )
 
 static void swap_instance(ImportCamera& l, ImportCameraPacked& r) {
@@ -991,16 +991,16 @@ static void swap_instance(DirectionalLight& l, DirectionalLightPacked& r) {
 }
 
 packed_struct(TieInstancePacked,
-	s32 o_class;    // 0x0
-	s32 draw_distance; // 0x4
-	s32 pad_8;      // 0x8
-	s32 occlusion_index; // 0xc
-	Mat3 matrix;    // 0x10
-	Vec4f position; // 0x40
-	s32 directional_lights; // 0x50
-	s32 uid;        // 0x54
-	s32 pad_58;     // 0x58
-	s32 pad_5c;     // 0x5c
+	/* 0x00 */ s32 o_class;
+	/* 0x04 */ s32 draw_distance;
+	/* 0x08 */ s32 pad_8;
+	/* 0x0c */ s32 occlusion_index;
+	/* 0x10 */ Mat3 matrix;
+	/* 0x40 */ Vec4f position;
+	/* 0x50 */ s32 directional_lights;
+	/* 0x54 */ s32 uid;
+	/* 0x58 */ s32 pad_58;
+	/* 0x5c */ s32 pad_5c;
 )
 static_assert(sizeof(TieInstancePacked) == 0x60);
 
@@ -1018,18 +1018,18 @@ static void swap_instance(TieInstance& l, TieInstancePacked& r) {
 }
 
 packed_struct(ShrubInstancePacked,
-	s32 o_class;       // 0x0
-	f32 draw_distance; // 0x4
-	s32 unknown_8;     // 0x8
-	s32 unknown_c;     // 0xc
-	Mat3 matrix;       // 0x10
-	Vec4f position;    // 0x40
-	Rgb96 light_col;   // 0x50
-	s32 unknown_5c;    // 0x5c
-	s32 unknown_60;    // 0x60
-	s32 unknown_64;    // 0x64
-	s32 unknown_68;    // 0x68
-	s32 unknown_6c;    // 0x6c
+	/* 0x00 */ s32 o_class;
+	/* 0x04 */ f32 draw_distance;
+	/* 0x08 */ s32 unknown_8;
+	/* 0x0c */ s32 unknown_c;
+	/* 0x10 */ Mat3 matrix;
+	/* 0x40 */ Vec4f position;
+	/* 0x50 */ Rgb96 light_col;
+	/* 0x5c */ s32 unknown_5c;
+	/* 0x60 */ s32 unknown_60;
+	/* 0x64 */ s32 unknown_64;
+	/* 0x68 */ s32 unknown_68;
+	/* 0x6c */ s32 unknown_6c;
 )
 
 static void swap_instance(ShrubInstance& l, ShrubInstancePacked& r) {
