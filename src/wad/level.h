@@ -617,8 +617,6 @@ struct TieInstance {
 	Vec4f position;
 	s32 directional_lights;
 	s32 uid;
-	s32 unknown_58;
-	s32 unknown_5c;
 	OriginalIndex original_index;
 	
 	template <typename T>
@@ -630,8 +628,6 @@ struct TieInstance {
 		DEF_FIELD(position);
 		DEF_FIELD(directional_lights);
 		DEF_FIELD(uid);
-		DEF_FIELD(unknown_58);
-		DEF_FIELD(unknown_5c);
 		DEF_FIELD(original_index);
 	}
 };

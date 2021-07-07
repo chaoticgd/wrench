@@ -993,28 +993,28 @@ static void swap_instance(DirectionalLight& l, DirectionalLightPacked& r) {
 packed_struct(TieInstancePacked,
 	s32 o_class;    // 0x0
 	s32 draw_distance; // 0x4
-	s32 unknown_8;  // 0x8
+	s32 pad_8;      // 0x8
 	s32 occlusion_index; // 0xc
 	Mat3 matrix;    // 0x10
 	Vec4f position; // 0x40
 	s32 directional_lights; // 0x50
 	s32 uid;        // 0x54
-	s32 unknown_58; // 0x58
-	s32 unknown_5c; // 0x5c
+	s32 pad_58;     // 0x58
+	s32 pad_5c;     // 0x5c
 )
 static_assert(sizeof(TieInstancePacked) == 0x60);
 
 static void swap_instance(TieInstance& l, TieInstancePacked& r) {
 	SWAP_PACKED(l.o_class, r.o_class);
 	SWAP_PACKED(l.draw_distance, r.draw_distance);
-	r.unknown_8 = 0;
+	r.pad_8 = 0;
 	SWAP_PACKED(l.occlusion_index, r.occlusion_index);
 	SWAP_PACKED(l.matrix, r.matrix);
 	SWAP_PACKED(l.position, r.position);
 	SWAP_PACKED(l.directional_lights, r.directional_lights);
 	SWAP_PACKED(l.uid, r.uid);
-	SWAP_PACKED(l.unknown_58, r.unknown_58);
-	SWAP_PACKED(l.unknown_5c, r.unknown_5c);
+	r.pad_58 = 0;
+	r.pad_5c = 0;
 }
 
 packed_struct(ShrubInstancePacked,
