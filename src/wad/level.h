@@ -612,11 +612,10 @@ struct DirectionalLight {
 struct TieInstance {
 	s32 o_class;
 	s32 draw_distance;
-	s32 unknown_8;
 	s32 occlusion_index;
 	Mat3 matrix;
 	Vec4f position;
-	s32 unknown_50;
+	s32 directional_lights;
 	s32 uid;
 	s32 unknown_58;
 	s32 unknown_5c;
@@ -626,11 +625,10 @@ struct TieInstance {
 	void enumerate_fields(T& t) {
 		DEF_FIELD(o_class);
 		DEF_FIELD(draw_distance);
-		DEF_FIELD(unknown_8);
 		DEF_FIELD(occlusion_index);
 		DEF_FIELD(matrix);
 		DEF_FIELD(position);
-		DEF_FIELD(unknown_50);
+		DEF_FIELD(directional_lights);
 		DEF_FIELD(uid);
 		DEF_FIELD(unknown_58);
 		DEF_FIELD(unknown_5c);
