@@ -613,7 +613,7 @@ struct TieInstance {
 	s32 o_class;
 	s32 unknown_4;
 	s32 unknown_8;
-	s32 unknown_c;
+	s32 occlusion_index;
 	Mat3 matrix;
 	Vec4f position;
 	s32 unknown_50;
@@ -627,7 +627,7 @@ struct TieInstance {
 		DEF_FIELD(o_class);
 		DEF_FIELD(unknown_4);
 		DEF_FIELD(unknown_8);
-		DEF_FIELD(unknown_c);
+		DEF_FIELD(occlusion_index);
 		DEF_FIELD(matrix);
 		DEF_FIELD(position);
 		DEF_FIELD(unknown_50);

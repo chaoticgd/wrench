@@ -994,7 +994,7 @@ packed_struct(TieInstancePacked,
 	s32 o_class;    // 0x0
 	s32 unknown_4;  // 0x4
 	s32 unknown_8;  // 0x8
-	s32 unknown_c;  // 0xc
+	s32 occlusion_index; // 0xc
 	Mat3 matrix;    // 0x10
 	Vec4f position; // 0x40
 	s32 unknown_50; // 0x50
@@ -1008,7 +1008,7 @@ static void swap_instance(TieInstance& l, TieInstancePacked& r) {
 	SWAP_PACKED(l.o_class, r.o_class);
 	SWAP_PACKED(l.unknown_4, r.unknown_4);
 	SWAP_PACKED(l.unknown_8, r.unknown_8);
-	SWAP_PACKED(l.unknown_c, r.unknown_c);
+	SWAP_PACKED(l.occlusion_index, r.occlusion_index);
 	SWAP_PACKED(l.matrix, r.matrix);
 	SWAP_PACKED(l.position, r.position);
 	SWAP_PACKED(l.unknown_50, r.unknown_50);
