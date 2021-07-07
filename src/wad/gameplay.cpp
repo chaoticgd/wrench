@@ -1106,7 +1106,7 @@ const std::vector<GameplayBlockDescription> RAC23_GAMEPLAY_BLOCKS = {
 	{0x88, bf<GC_88_DL_6c_Block>(&Gameplay::gc_88_dl_6c), "GC 88 DL 6c"},
 	{0x80, bf<GC_80_DL_64_Block>(&Gameplay::gc_80_dl_64), "GC 80 DL 64"},
 	{0x7c, bf<GrindPathBlock>(&Gameplay::grind_paths), "grindpaths"},
-	{0x98, bf<GameplayAreaListBlock>(&Gameplay::gameplay_area_list), "gameplay area list"},
+	{0x98, bf<GameplayAreaListBlock>(&Gameplay::areas), "areas"},
 	{0x90, bf<OcclusionBlock>(&Gameplay::occlusion_clusters), "occlusion clusters"}
 };
 
@@ -1139,7 +1139,7 @@ const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS = {
 	{0x6c, bf<GC_88_DL_6c_Block>(&Gameplay::gc_88_dl_6c), "GC 88 DL 6c"},
 	{0x64, bf<GC_80_DL_64_Block>(&Gameplay::gc_80_dl_64), "GC 80 DL 64"},
 	{0x60, bf<GrindPathBlock>(&Gameplay::grind_paths), "grindpaths"},
-	{0x74, bf<GameplayAreaListBlock>(&Gameplay::gameplay_area_list), "gameplay area list"},
+	{0x74, bf<GameplayAreaListBlock>(&Gameplay::areas), "areas"},
 	{0x68, {nullptr, nullptr}, "pad"}
 };
 

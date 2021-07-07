@@ -764,7 +764,7 @@ struct Gameplay {
 	Opt<std::vector<u8>> gc_88_dl_6c;
 	Opt<GC_80_DL_64> gc_80_dl_64;
 	Opt<std::vector<GrindPath>> grind_paths;
-	Opt<std::vector<Area>> gameplay_area_list;
+	Opt<std::vector<Area>> areas;
 	
 	Opt<std::vector<DirectionalLight>> lights;
 	Opt<std::vector<s32>> tie_classes;
@@ -809,7 +809,7 @@ struct Gameplay {
 		DEF_FIELD(gc_88_dl_6c);
 		DEF_FIELD(gc_80_dl_64);
 		DEF_FIELD(grind_paths);
-		DEF_FIELD(gameplay_area_list);
+		DEF_FIELD(areas);
 		DEF_FIELD(lights);
 		DEF_FIELD(tie_classes);
 		DEF_FIELD(tie_instances);
