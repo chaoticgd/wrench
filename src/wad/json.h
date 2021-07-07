@@ -44,8 +44,6 @@ using Json = nlohmann::ordered_json;
 
 #include "util.h"
 
-static const char* HEX_DIGITS = "0123456789abcdef";
-
 std::string encode_json_string(const std::string& input);
 std::string decode_json_string(const std::string& input);
 Json buffer_to_json_hexdump(const std::vector<u8>& buffer);

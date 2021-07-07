@@ -18,6 +18,8 @@
 
 #include "json.h"
 
+static const char* HEX_DIGITS = "0123456789abcdef";
+
 std::string encode_json_string(const std::string& input) {
 	std::string output;
 	for(char c : input) {
