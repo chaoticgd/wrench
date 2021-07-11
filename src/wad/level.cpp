@@ -249,8 +249,8 @@ void write_wad_json(fs::path dest_path, Wad* base) {
 			std::string gameplay_str = write_gameplay_json(wad.gameplay).dump(1, '\t');
 			json["gameplay"] = write_file(dest_path, "gameplay.json", gameplay_str);
 			std::string help_messages_str = write_help_messages_json(wad.help_messages).dump(1, '\t');
-			json["camera_classes"] = write_file(dest_path, "camera_classes.json", map_to_json(wad.moby_classes, "class").dump(1, '\t'));
-			json["sound_classes"] = write_file(dest_path, "sound_classes.json", map_to_json(wad.moby_classes, "class").dump(1, '\t'));
+			json["camera_classes"] = write_file(dest_path, "camera_classes.json", map_to_json(wad.camera_classes, "class").dump(1, '\t'));
+			json["sound_classes"] = write_file(dest_path, "sound_classes.json", map_to_json(wad.sound_classes, "class").dump(1, '\t'));
 			json["moby_classes"] = write_file(dest_path, "moby_classes.json", map_to_json(wad.moby_classes, "class").dump(1, '\t'));
 			json["pvar_types"] = write_file(dest_path, "pvar_types.json", map_to_json(wad.pvar_types, "name").dump(1, '\t'));
 			json["help_messages"] = write_file(dest_path, "help_messages.json", help_messages_str);
