@@ -68,13 +68,14 @@ s32 PvarField::size() const {
 		case PVAR_F32:
 		case PVAR_RUNTIME_POINTER:
 		case PVAR_RELATIVE_POINTER:
+		case PVAR_SCRATCHPAD_POINTER:
 			return 4;
 		default:
 			assert(0);
 	}
 }
 
-bool PvarType::insert_field(PvarField to_insert) {
+bool PvarType::insert_field(PvarField to_insert, bool sort) {
 	// If a field already exists in the given byte range, try to merge them.
 	for(PvarField& existing : fields) {
 		s32 to_insert_end = to_insert.offset + to_insert.size();
@@ -95,6 +96,10 @@ bool PvarType::insert_field(PvarField to_insert) {
 		}
 	}
 	fields.emplace_back(std::move(to_insert));
+	if(sort) {
+		std::sort(BEGIN_END(fields), [](PvarField& lhs, PvarField& rhs)
+			{ return lhs.offset < rhs.offset; });
+	}
 	return true;
 }
 
@@ -317,6 +322,7 @@ std::string pvar_descriptor_to_string(PvarFieldDescriptor descriptor) {
 		case PVAR_F32: return "f32";
 		case PVAR_RUNTIME_POINTER: return "runtime_pointer";
 		case PVAR_RELATIVE_POINTER: return "relative_pointer";
+		case PVAR_SCRATCHPAD_POINTER: return "scratchpad_pointer";
 		case PVAR_STRUCT: return "struct";
 		default: assert(0);
 	}
@@ -331,6 +337,7 @@ PvarFieldDescriptor pvar_string_to_descriptor(std::string str) {
 	if(str == "f32") return PVAR_F32;
 	if(str == "runtime_pointer") return PVAR_RUNTIME_POINTER;
 	if(str == "relative_pointer") return PVAR_RELATIVE_POINTER;
+	if(str == "scratchpad_pointer") return PVAR_SCRATCHPAD_POINTER;
 	if(str == "struct") return PVAR_STRUCT;
 	verify_not_reached("Invalid pvar field type.");
 }

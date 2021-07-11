@@ -447,17 +447,6 @@ packed_struct(PvarTableEntry,
 	s32 size;
 )
 
-packed_struct(DL_3c,
-	int32_t unknown_0;
-	int32_t unknown_4;
-	
-	template <typename T>
-	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD(unknown_0);
-		DEF_PACKED_FIELD(unknown_4);
-	}
-)
-
 struct MobyGroups {
 	std::vector<s32> first_part;
 	std::vector<s8> second_part;
@@ -720,7 +709,6 @@ struct Gameplay {
 	Opt<std::vector<s32>> moby_classes;
 	Opt<std::vector<MobyInstance>> moby_instances;
 	Opt<s32> dynamic_moby_count;
-	Opt<std::vector<DL_3c>> gc_58_dl_3c;
 	Opt<MobyGroups> moby_groups;
 	Opt<GC_54_DL_38> gc_54_dl_38;
 	Opt<std::vector<Shape>> spheres;
@@ -756,7 +744,6 @@ struct Gameplay {
 		DEF_FIELD(moby_classes);
 		DEF_FIELD(moby_instances);
 		DEF_FIELD(dynamic_moby_count);
-		DEF_FIELD(gc_58_dl_3c);
 		DEF_FIELD(moby_groups);
 		DEF_FIELD(gc_54_dl_38);
 		DEF_FIELD(spheres);
@@ -864,7 +851,8 @@ enum PvarFieldDescriptor {
 	PVAR_F32 = 8,
 	PVAR_RUNTIME_POINTER = 100,
 	PVAR_RELATIVE_POINTER = 101,
-	PVAR_STRUCT = 102,
+	PVAR_SCRATCHPAD_POINTER = 102,
+	PVAR_STRUCT = 103,
 };
 
 std::string pvar_descriptor_to_string(PvarFieldDescriptor descriptor);
@@ -894,7 +882,7 @@ struct PvarField {
 struct PvarType {
 	std::vector<PvarField> fields;
 	
-	bool insert_field(PvarField to_insert);
+	bool insert_field(PvarField to_insert, bool sort);
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
