@@ -56,11 +56,7 @@ struct ToJsonVisitor {
 	Json json;
 	template <typename T>
 	void field(const char* name, T& value) {
-		if constexpr(std::is_same_v<T, std::string>) {
-			json[name] = encode_json_string(value);
-		} else {
-			json[name] = to_json(value);
-		}
+		json[name] = to_json(value);
 	}
 	template <typename T>
 	void field(const char* name, std::vector<T>& list) {
@@ -76,6 +72,11 @@ struct ToJsonVisitor {
 			field(name, *opt);
 		}
 	}
+	void encoded_string(const char* name, std::optional<std::string>& str) {
+		if(str.has_value()) {
+			json[name] = encode_json_string(*str);
+		}
+	}
 	void hexdump(const char* name, std::vector<u8>& buffer) {
 		json[name] = buffer_to_json_hexdump(buffer);
 	}
@@ -83,7 +84,7 @@ struct ToJsonVisitor {
 
 template <typename Object>
 Json to_json(Object object) {
-	if constexpr(std::is_compound_v<Object>) {
+	if constexpr(std::is_compound_v<Object> && !std::is_same_v<Object, std::string>) {
 		ToJsonVisitor visitor;
 		object.enumerate_fields(visitor);
 		return visitor.json;
@@ -114,13 +115,8 @@ struct FromJsonVisitor {
 	Json& json;
 	template <typename T>
 	void field(const char* name, T& value) {
-		if constexpr(std::is_same_v<T, std::string>) {
-			verify(json.contains(name) && json[name].is_string(), "Expected string for field '%s'.", name);
-			value = decode_json_string(json[name]);
-		} else {
-			verify(json.contains(name), "Missing field '%s'.", name);
-			from_json(value, json[name]);
-		}
+		verify(json.contains(name), "Missing field '%s'.", name);
+		from_json(value, json[name]);
 	}
 	template <typename Field>
 	void field(const char* name, std::vector<Field>& vec) {
@@ -139,6 +135,11 @@ struct FromJsonVisitor {
 			opt = value;
 		}
 	}
+	void encoded_string(const char* name, std::optional<std::string>& str) {
+		if(json.contains(name)) {
+			str = decode_json_string(json[name]);
+		}
+	}
 	void hexdump(const char* name, std::vector<u8>& buffer) {
 		verify(json.contains(name), "Missing hexdump field '%s'.", name);
 		if(!json[name].is_null()) {
@@ -151,7 +152,7 @@ struct FromJsonVisitor {
 
 template <typename Object>
 void from_json(Object& dest, Json src) {
-	if constexpr(std::is_compound_v<Object>) {
+	if constexpr(std::is_compound_v<Object> && !std::is_same_v<Object, std::string>) {
 		FromJsonVisitor visitor{src};
 		dest.enumerate_fields(visitor);
 	} else if(src.is_null()) {

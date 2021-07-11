@@ -211,7 +211,7 @@ struct HelpMessage {
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(string);
+		t.encoded_string("string", string);
 		DEF_FIELD(id);
 		DEF_FIELD(short_id);
 		DEF_FIELD(third_person_id);
