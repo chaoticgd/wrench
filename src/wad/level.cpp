@@ -55,34 +55,79 @@ Json write_help_messages_json(HelpMessages& help_messages) {
 	return json;
 }
 
-void fixup_pvar_indices(Gameplay& gameplay) {
-	s32 pvar_index = 0;
-	if(gameplay.cameras.has_value()) {
-		for(ImportCamera& camera : *gameplay.cameras) {
-			if(camera.pvars.size() > 0) {
-				camera.pvar_index = pvar_index++;
-			} else {
-				camera.pvar_index = -1;
+s32 PvarField::size() const {
+	switch(descriptor) {
+		case PVAR_S8:
+		case PVAR_U8:
+			return 1;
+		case PVAR_S16:
+		case PVAR_U16:
+			return 2;
+		case PVAR_S32:
+		case PVAR_U32:
+		case PVAR_F32:
+		case PVAR_RUNTIME_POINTER:
+		case PVAR_RELATIVE_POINTER:
+			return 4;
+		default:
+			assert(0);
+	}
+}
+
+bool PvarType::insert_field(PvarField to_insert) {
+	// If a field already exists in the given byte range, try to merge them.
+	for(PvarField& existing : fields) {
+		s32 to_insert_end = to_insert.offset + to_insert.size();
+		s32 existing_end = existing.offset + existing.size();
+		if((to_insert.offset >= existing.offset && to_insert.offset < existing_end)
+			|| (to_insert_end > existing.offset && to_insert_end <= existing_end)) {
+			bool offsets_equal = to_insert.offset == existing.offset;
+			bool descriptors_equal = to_insert.descriptor == existing.descriptor;
+			bool type_equal = to_insert.value_type == existing.value_type ||
+				(to_insert.descriptor != PVAR_STRUCT && to_insert.descriptor != PVAR_RELATIVE_POINTER);
+			if(offsets_equal && descriptors_equal && type_equal) {
+				if(to_insert.name != "") {
+					existing.name = to_insert.name;
+				}
+				return true;
 			}
+			return false;
 		}
 	}
-	if(gameplay.sound_instances.has_value()) {
-		for(SoundInstance& inst : *gameplay.sound_instances) {
-			if(inst.pvars.size() > 0) {
-				inst.pvar_index = pvar_index++;
-			} else {
-				inst.pvar_index = -1;
-			}
-		}
+	fields.emplace_back(std::move(to_insert));
+	return true;
+}
+
+CameraClass& LevelWad::lookup_camera_class(s32 class_number) {
+	auto iter = camera_classes.find(class_number);
+	if(iter != camera_classes.end()) {
+		return iter->second;
+	} else {
+		CameraClass& class_object = camera_classes[class_number];
+		class_object.pvar_type = "Camera" + std::to_string(class_number) + "Pvars";
+		return class_object;
 	}
-	if(gameplay.moby_instances.has_value()) {
-		for(MobyInstance& inst : *gameplay.moby_instances) {
-			if(inst.pvars.size() > 0) {
-				inst.pvar_index = pvar_index++;
-			} else {
-				inst.pvar_index = -1;
-			}
-		}
+}
+
+SoundClass& LevelWad::lookup_sound_class(s32 class_number) {
+	auto iter = sound_classes.find(class_number);
+	if(iter != sound_classes.end()) {
+		return iter->second;
+	} else {
+		SoundClass& class_object = sound_classes[class_number];
+		class_object.pvar_type = "Sound" + std::to_string(class_number) + "Pvars";
+		return class_object;
+	}
+}
+
+MobyClass& LevelWad::lookup_moby_class(s32 class_number) {
+	auto iter = moby_classes.find(class_number);
+	if(iter != moby_classes.end()) {
+		return iter->second;
+	} else {
+		MobyClass& class_object = moby_classes[class_number];
+		class_object.pvar_type = "Moby" + std::to_string(class_number) + "Pvars";
+		return class_object;
 	}
 }
 
@@ -129,6 +174,10 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			wad.core_bank = read_file(src_dir/json["core_sound_bank"]);
 			Json gameplay_json = Json::parse(read_file(src_dir/json["gameplay"]));
 			from_json(wad.gameplay, gameplay_json);
+			map_from_json(wad.camera_classes, Json::parse(read_file(src_dir/json["camera_classes"])), "class");
+			map_from_json(wad.sound_classes, Json::parse(read_file(src_dir/json["sound_classes"])), "class");
+			map_from_json(wad.moby_classes, Json::parse(read_file(src_dir/json["moby_classes"])), "class");
+			map_from_json(wad.pvar_types, Json::parse(read_file(src_dir/json["pvar_types"])), "name");
 			Json help_messages_json = Json::parse(read_file(src_dir/json["help_messages"]));
 			from_json(wad.help_messages, help_messages_json);
 			if(json.contains("chunks")) {
@@ -200,6 +249,10 @@ void write_wad_json(fs::path dest_path, Wad* base) {
 			std::string gameplay_str = write_gameplay_json(wad.gameplay).dump(1, '\t');
 			json["gameplay"] = write_file(dest_path, "gameplay.json", gameplay_str);
 			std::string help_messages_str = write_help_messages_json(wad.help_messages).dump(1, '\t');
+			json["camera_classes"] = write_file(dest_path, "camera_classes.json", map_to_json(wad.moby_classes, "class").dump(1, '\t'));
+			json["sound_classes"] = write_file(dest_path, "sound_classes.json", map_to_json(wad.moby_classes, "class").dump(1, '\t'));
+			json["moby_classes"] = write_file(dest_path, "moby_classes.json", map_to_json(wad.moby_classes, "class").dump(1, '\t'));
+			json["pvar_types"] = write_file(dest_path, "pvar_types.json", map_to_json(wad.pvar_types, "name").dump(1, '\t'));
 			json["help_messages"] = write_file(dest_path, "help_messages.json", help_messages_str);
 			for(auto& [index, chunk] : wad.chunks) {
 				auto chunk_name = [&](const char* name) {
@@ -251,4 +304,33 @@ void write_wad_json(fs::path dest_path, Wad* base) {
 	
 	assert(json_file_name);
 	write_file(dest_path, json_file_name, json.dump(1, '\t'));
+}
+
+std::string pvar_descriptor_to_string(PvarFieldDescriptor descriptor) {
+	switch(descriptor) {
+		case PVAR_S8: return "s8";
+		case PVAR_S16: return "s16";
+		case PVAR_S32: return "s32";
+		case PVAR_U8: return "u8";
+		case PVAR_U16: return "u16";
+		case PVAR_U32: return "u32";
+		case PVAR_F32: return "f32";
+		case PVAR_RUNTIME_POINTER: return "runtime_pointer";
+		case PVAR_RELATIVE_POINTER: return "relative_pointer";
+		case PVAR_STRUCT: return "struct";
+		default: assert(0);
+	}
+}
+PvarFieldDescriptor pvar_string_to_descriptor(std::string str) {
+	if(str == "s8") return PVAR_S8;
+	if(str == "s16") return PVAR_S16;
+	if(str == "s32") return PVAR_S32;
+	if(str == "u8") return PVAR_U8;
+	if(str == "u16") return PVAR_U16;
+	if(str == "u32") return PVAR_U32;
+	if(str == "f32") return PVAR_F32;
+	if(str == "runtime_pointer") return PVAR_RUNTIME_POINTER;
+	if(str == "relative_pointer") return PVAR_RELATIVE_POINTER;
+	if(str == "struct") return PVAR_STRUCT;
+	verify_not_reached("Invalid pvar field type.");
 }

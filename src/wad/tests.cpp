@@ -100,9 +100,10 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 	}
 	
 	// Test the binary reading/writing functions.
+	LevelWad wad;
 	Gameplay gameplay;
-	read_gameplay(gameplay, src, args.game, *args.blocks);
-	std::vector<u8> dest = write_gameplay(gameplay, args.game, *args.blocks);
+	read_gameplay(wad, gameplay, src, args.game, *args.blocks);
+	std::vector<u8> dest = write_gameplay(wad, gameplay, args.game, *args.blocks);
 	
 	// The input buffer may or may not already be padded to the sector size.
 	OutBuffer(dest).pad(SECTOR_SIZE, 0);
@@ -135,7 +136,7 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 	Gameplay test_gameplay;
 	from_json(test_gameplay, gameplay_json);
 	help_messages.swap(test_gameplay); // Move the help messages into the test_gameplay object.
-	std::vector<u8> test_dest = write_gameplay(test_gameplay, args.game, *args.blocks);
+	std::vector<u8> test_dest = write_gameplay(wad, test_gameplay, args.game, *args.blocks);
 	OutBuffer(test_dest).pad(SECTOR_SIZE, 0);
 	if(test_dest == dest) {
 		fprintf(stderr, "%s JSON matches.\n", prefix_str.c_str());

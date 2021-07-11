@@ -458,29 +458,6 @@ packed_struct(DL_3c,
 	}
 )
 
-packed_struct(GC_64_DL_48,
-	uint8_t unknown_0;
-	uint8_t unknown_4;
-	uint8_t unknown_8;
-	uint8_t unknown_c;
-	uint8_t unknown_10;
-	uint8_t unknown_14;
-	uint8_t unknown_18;
-	uint8_t unknown_1c;
-	
-	template <typename T>
-	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD(unknown_0);
-		DEF_PACKED_FIELD(unknown_4);
-		DEF_PACKED_FIELD(unknown_8);
-		DEF_PACKED_FIELD(unknown_c);
-		DEF_PACKED_FIELD(unknown_10);
-		DEF_PACKED_FIELD(unknown_14);
-		DEF_PACKED_FIELD(unknown_18);
-		DEF_PACKED_FIELD(unknown_1c);
-	}
-)
-
 struct MobyGroups {
 	std::vector<s32> first_part;
 	std::vector<s8> second_part;
@@ -726,9 +703,6 @@ struct OcclusionClusters {
 	}
 };
 
-template <typename T>
-using Opt = std::optional<T>;
-
 struct Gameplay {
 	Opt<std::vector<GC_8c_DL_70>> gc_8c_dl_70;
 	Opt<Properties> properties;
@@ -747,7 +721,6 @@ struct Gameplay {
 	Opt<std::vector<MobyInstance>> moby_instances;
 	Opt<s32> dynamic_moby_count;
 	Opt<std::vector<DL_3c>> gc_58_dl_3c;
-	Opt<std::vector<GC_64_DL_48>> gc_64_dl_48;
 	Opt<MobyGroups> moby_groups;
 	Opt<GC_54_DL_38> gc_54_dl_38;
 	Opt<std::vector<Shape>> spheres;
@@ -770,7 +743,7 @@ struct Gameplay {
 	Opt<ShrubGroups> shrub_groups;
 	Opt<OcclusionClusters> occlusion_clusters;
 	
-	// Only used while reading the binary gameplay file, empty otherwise.
+	// Only used while reading the binary gameplay file.
 	Opt<std::vector<PvarTableEntry>> pvars_temp;
 	
 	template <typename T>
@@ -784,7 +757,6 @@ struct Gameplay {
 		DEF_FIELD(moby_instances);
 		DEF_FIELD(dynamic_moby_count);
 		DEF_FIELD(gc_58_dl_3c);
-		DEF_FIELD(gc_64_dl_48);
 		DEF_FIELD(moby_groups);
 		DEF_FIELD(gc_54_dl_38);
 		DEF_FIELD(spheres);
@@ -845,8 +817,6 @@ struct HelpMessages {
 Json write_gameplay_json(Gameplay& gameplay);
 Json write_help_messages_json(HelpMessages& help_messages);
 
-void fixup_pvar_indices(Gameplay& gameplay);
-
 struct Chunk {
 	Opt<std::vector<u8>> tfrags;
 	Opt<std::vector<u8>> collision;
@@ -859,6 +829,79 @@ struct Mission {
 	Opt<std::vector<u8>> sound_bank;
 };
 
+struct CameraClass {
+	std::string pvar_type;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD(pvar_type);
+	}
+};
+
+struct SoundClass {
+	std::string pvar_type;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD(pvar_type);
+	}
+};
+
+struct MobyClass {
+	std::string pvar_type;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD(pvar_type);
+	}
+};
+
+enum PvarFieldDescriptor {
+	PVAR_INTEGERS_BEGIN = 0,
+	PVAR_S8 = 1, PVAR_S16 = 2, PVAR_S32 = 3,
+	PVAR_U8 = 4, PVAR_U16 = 5, PVAR_U32 = 6,
+	PVAR_INTEGERS_END = 7,
+	PVAR_F32 = 8,
+	PVAR_RUNTIME_POINTER = 100,
+	PVAR_RELATIVE_POINTER = 101,
+	PVAR_STRUCT = 102,
+};
+
+std::string pvar_descriptor_to_string(PvarFieldDescriptor descriptor);
+PvarFieldDescriptor pvar_string_to_descriptor(std::string str);
+
+struct PvarField {
+	s32 offset;
+	std::string name;
+	PvarFieldDescriptor descriptor = PVAR_U8;
+	std::string value_type; // Only set for PVAR_RELATIVE_POINTER and PVAR_STRUCT.
+	
+	s32 size() const;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD(offset);
+		DEF_FIELD(name);
+		std::string type = pvar_descriptor_to_string(descriptor);
+		DEF_FIELD(type);
+		descriptor = pvar_string_to_descriptor(type);
+		if(descriptor == PVAR_RELATIVE_POINTER || descriptor == PVAR_STRUCT) {
+			DEF_FIELD(value_type);
+		}
+	}
+};
+
+struct PvarType {
+	std::vector<PvarField> fields;
+	
+	bool insert_field(PvarField to_insert);
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD(fields);
+	}
+};
+
 struct LevelWad : Wad {
 	s32 level_number;
 	std::optional<s32> reverb;
@@ -868,6 +911,14 @@ struct LevelWad : Wad {
 	HelpMessages help_messages;
 	std::map<s32, Chunk> chunks;
 	std::map<s32, Mission> missions;
+	std::map<s32, CameraClass> camera_classes;
+	std::map<s32, SoundClass> sound_classes;
+	std::map<s32, MobyClass> moby_classes;
+	std::map<std::string, PvarType> pvar_types;
+	
+	CameraClass& lookup_camera_class(s32 class_number);
+	SoundClass& lookup_sound_class(s32 class_number);
+	MobyClass& lookup_moby_class(s32 class_number);
 };
 
 std::unique_ptr<Wad> read_wad_json(fs::path src_path);

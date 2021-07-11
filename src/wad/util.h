@@ -200,6 +200,29 @@ struct MemberTraits<Return (Object::*)> {
 		inmem = p; \
 	}
 
+template <typename T>
+using Opt = std::optional<T>;
+
+template <typename T>
+const T& opt_iterator(const Opt<T>& opt) {
+	if(opt.has_value()) {
+		return *opt;
+	} else {
+		static const T empty;
+		return empty;
+	}
+}
+
+template <typename T>
+T& opt_iterator(Opt<T>& opt) {
+	if(opt.has_value()) {
+		return *opt;
+	} else {
+		static T empty;
+		return empty;
+	}
+}
+
 [[maybe_unused]] static std::string get_application_version_string() {
 	std::string raw_tag = get_git_tag();
 	std::string raw_commit = get_git_commit();

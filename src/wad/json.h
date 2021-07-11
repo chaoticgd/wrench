@@ -52,13 +52,6 @@ std::vector<u8> buffer_from_json_hexdump(const Json& json);
 template <typename Object>
 Json to_json(Object object);
 
-struct GC_8c_DL_70;
-struct Rgb96;
-struct DL_3c;
-struct GC_64_DL_48;
-struct PropertiesSecondPart;
-struct PropertiesThirdPart;
-
 struct ToJsonVisitor {
 	Json json;
 	template <typename T>
@@ -74,18 +67,6 @@ struct ToJsonVisitor {
 		Json json_list = Json::array();
 		for(auto& elem : list) {
 			json_list.emplace_back(to_json(elem));
-			if constexpr(std::is_compound_v<T>) {
-				assert((json_list.back().find("original_index") != json_list.back().end()
-					|| std::is_same_v<T, Vec3f>
-					|| std::is_same_v<T, Vec4f>
-					|| std::is_same_v<T, GC_8c_DL_70>
-					|| std::is_same_v<T, Rgb96>
-					|| std::is_same_v<T, DL_3c>
-					|| std::is_same_v<T, GC_64_DL_48>
-					|| std::is_same_v<T, PropertiesSecondPart>
-					|| std::is_same_v<T, PropertiesThirdPart>
-				));
-			}
 		}
 		json[name] = json_list;
 	}
@@ -109,6 +90,21 @@ Json to_json(Object object) {
 	} else {
 		return object;
 	}
+}
+
+template <typename Map>
+Json map_to_json(Map map, const char* key_name) {
+	Json json = Json::array();
+	for(auto& [key, value] : map) {
+		Json element;
+		element[key_name] = key;
+		Json data = to_json(value);
+		for(auto& item : data.items()) {
+			element[item.key()] = item.value();
+		}
+		json.emplace_back(element);
+	}
+	return json;
 }
 
 template <typename Object>
@@ -162,6 +158,15 @@ void from_json(Object& dest, Json src) {
 		dest = Object();
 	} else {
 		dest = src;
+	}
+}
+
+template <typename Map>
+void map_from_json(Map& map, Json src, const char* key_name) {
+	for(Json& element : src) {
+		typename Map::mapped_type value;
+		from_json(value, element);
+		map.emplace(element[key_name], value);
 	}
 }
 

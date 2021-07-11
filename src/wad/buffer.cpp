@@ -127,6 +127,7 @@ s64 file_size_in_bytes(FILE* file) {
 }
 
 std::vector<u8> read_file(fs::path path) {
+	verify(!fs::is_directory(path), "Tried to open directory '%s' as regular file.", path.string().c_str());
 	FILE* file = fopen(path.string().c_str(), "rb");
 	verify(file, "Failed to open file '%s' for reading.", path.string().c_str());
 	std::vector<u8> buffer(file_size_in_bytes(file));
