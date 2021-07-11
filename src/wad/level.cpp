@@ -104,7 +104,7 @@ CameraClass& LevelWad::lookup_camera_class(s32 class_number) {
 		return iter->second;
 	} else {
 		CameraClass& class_object = camera_classes[class_number];
-		class_object.pvar_type = "Camera" + std::to_string(class_number) + "Pvars";
+		class_object.pvar_type = "Camera" + std::to_string(class_number) + "Vars";
 		return class_object;
 	}
 }
@@ -115,7 +115,7 @@ SoundClass& LevelWad::lookup_sound_class(s32 class_number) {
 		return iter->second;
 	} else {
 		SoundClass& class_object = sound_classes[class_number];
-		class_object.pvar_type = "Sound" + std::to_string(class_number) + "Pvars";
+		class_object.pvar_type = "Sound" + std::to_string(class_number) + "Vars";
 		return class_object;
 	}
 }
@@ -126,7 +126,7 @@ MobyClass& LevelWad::lookup_moby_class(s32 class_number) {
 		return iter->second;
 	} else {
 		MobyClass& class_object = moby_classes[class_number];
-		class_object.pvar_type = "Moby" + std::to_string(class_number) + "Pvars";
+		class_object.pvar_type = "Moby" + std::to_string(class_number) + "Vars";
 		return class_object;
 	}
 }
