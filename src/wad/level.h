@@ -26,25 +26,37 @@
 using OriginalIndex = s32;
 
 packed_struct(GC_8c_DL_70,
-	u32 unknown_0;
-	u32 unknown_4;
+	s16 unknown_0;
+	s16 unknown_2;
+	s16 unknown_4;
+	s16 unknown_6;
 	u32 unknown_8;
-	u32 unknown_c;
-	u32 unknown_10;
+	s16 unknown_c;
+	s16 unknown_e;
+	s8 unknown_10;
+	s8 unknown_11;
+	s16 unknown_12;
 	u32 unknown_14;
 	u32 unknown_18;
-	u32 unknown_1c;
+	s16 unknown_1c;
+	s16 unknown_1e;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
 		DEF_PACKED_FIELD(unknown_0);
+		DEF_PACKED_FIELD(unknown_2);
 		DEF_PACKED_FIELD(unknown_4);
+		DEF_PACKED_FIELD(unknown_6);
 		DEF_PACKED_FIELD(unknown_8);
 		DEF_PACKED_FIELD(unknown_c);
+		DEF_PACKED_FIELD(unknown_e);
 		DEF_PACKED_FIELD(unknown_10);
+		DEF_PACKED_FIELD(unknown_11);
+		DEF_PACKED_FIELD(unknown_12);
 		DEF_PACKED_FIELD(unknown_14);
 		DEF_PACKED_FIELD(unknown_18);
 		DEF_PACKED_FIELD(unknown_1c);
+		DEF_PACKED_FIELD(unknown_1e);
 	}
 )
 
@@ -180,10 +192,10 @@ struct Properties {
 	PropertiesFirstPart first_part;
 	std::vector<PropertiesSecondPart> second_part;
 	s32 core_sounds_count;
-	s32 rac3_third_part = 0;
+	Opt<s32> rac3_third_part;
 	std::vector<PropertiesThirdPart> third_part;
-	PropertiesFourthPart fourth_part;
-	PropertiesFifthPart fifth_part;
+	Opt<PropertiesFourthPart> fourth_part;
+	Opt<PropertiesFifthPart> fifth_part;
 	std::vector<s8> sixth_part;
 	
 	template <typename T>

@@ -122,7 +122,7 @@ struct PropertiesBlock {
 			}
 			dest.fifth_part = src.read<PropertiesFifthPart>(ofs, "fifth part");
 			ofs += sizeof(PropertiesFifthPart);
-			dest.sixth_part = src.read_multiple<s8>(ofs, dest.fifth_part.sixth_part_count, "sixth part").copy();
+			dest.sixth_part = src.read_multiple<s8>(ofs, dest.fifth_part->sixth_part_count, "sixth part").copy();
 		}
 	}
 	
@@ -136,16 +136,19 @@ struct PropertiesBlock {
 		}
 		dest.write(src.core_sounds_count);
 		if(game == Game::RAC3) {
-			dest.write(src.rac3_third_part);
+			verify(src.rac3_third_part.has_value(), "Invalid properties block.");
+			dest.write(*src.rac3_third_part);
 		} else if(game == Game::DL) {
 			dest.write((s32) src.third_part.size());
 			if(src.third_part.size() > 0) {
 				dest.write_multiple(src.third_part);
-				dest.write(src.fourth_part);
+				verify(src.fourth_part.has_value(), "Invalid properties block.");
+				dest.write(*src.fourth_part);
 			} else {
 				dest.vec.resize(dest.tell() + 0x18, 0);
 			}
-			dest.write(src.fifth_part);
+			verify(src.fifth_part.has_value(), "Invalid properties block.");
+			dest.write(*src.fifth_part);
 			dest.write_multiple(src.sixth_part);
 		}
 	}
