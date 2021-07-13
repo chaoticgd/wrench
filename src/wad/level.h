@@ -296,12 +296,16 @@ struct LightTriggerInstance {
 	}
 };
 
-struct ImportCamera {
+struct Pvars {
+	std::vector<u8> pvars;
+	s32 pvar_index; // Only used during reading/writing!
+	std::vector<std::pair<s32, s32>> global_pvar_pointers; // Only used when writing!
+};
+
+struct ImportCamera : Pvars {
 	s32 type;
 	Vec3f position;
 	Vec3f rotation;
-	s32 pvar_index;
-	std::vector<u8> pvars;
 	OriginalIndex original_index;
 	
 	template <typename T>
@@ -313,6 +317,7 @@ struct ImportCamera {
 		DEF_FIELD(original_index);
 	}
 };
+
 
 struct Shape {
 	Mat3 matrix;
@@ -331,13 +336,11 @@ struct Shape {
 	}
 };
 
-struct SoundInstance {
+struct SoundInstance : Pvars {
 	s16 o_class;
 	s16 m_class;
-	s32 pvar_index;
 	f32 range;
 	ShapePacked cuboid;
-	std::vector<u8> pvars;
 	OriginalIndex original_index;
 	
 	template <typename T>
@@ -351,7 +354,7 @@ struct SoundInstance {
 	}
 };
 
-struct MobyInstance {
+struct MobyInstance : Pvars {
 	s8 mission;
 	s32 uid;
 	s32 bolts;
@@ -382,8 +385,6 @@ struct MobyInstance {
 		s32 unknown_84;
 	} rac23;
 	
-	s32 pvar_index; // Only used during reading!
-	std::vector<u8> pvars;
 	OriginalIndex original_index;
 	
 	template <typename T>
@@ -670,6 +671,8 @@ struct OcclusionClusters {
 	}
 };
 
+struct LevelWad;
+
 struct Gameplay {
 	Opt<std::vector<GC_8c_DL_70>> gc_8c_dl_70;
 	Opt<Properties> properties;
@@ -688,7 +691,7 @@ struct Gameplay {
 	Opt<std::vector<MobyInstance>> moby_instances;
 	Opt<s32> dynamic_moby_count;
 	Opt<MobyGroups> moby_groups;
-	Opt<GC_54_DL_38> gc_54_dl_38;
+	Opt<std::vector<u8>> global_pvar;
 	Opt<std::vector<Shape>> spheres;
 	Opt<std::vector<Shape>> cylinders;
 	Opt<std::vector<s32>> gc_74_dl_58;
@@ -712,6 +715,12 @@ struct Gameplay {
 	// Only used while reading the binary gameplay file.
 	Opt<std::vector<PvarTableEntry>> pvars_temp;
 	
+	template <typename Callback>
+	void for_each_pvar_instance(const LevelWad& wad, Callback callback);
+	
+	template <typename Callback>
+	void for_each_pvar_instance(const LevelWad& wad, Callback callback) const;
+	
 	template <typename T>
 	void enumerate_fields(T& t) {
 		DEF_FIELD(gc_8c_dl_70);
@@ -723,7 +732,7 @@ struct Gameplay {
 		DEF_FIELD(moby_instances);
 		DEF_FIELD(dynamic_moby_count);
 		DEF_FIELD(moby_groups);
-		DEF_FIELD(gc_54_dl_38);
+		DEF_HEXDUMP(global_pvar);
 		DEF_FIELD(spheres);
 		DEF_FIELD(cylinders);
 		DEF_FIELD(gc_74_dl_58);
@@ -830,7 +839,8 @@ enum PvarFieldDescriptor {
 	PVAR_RUNTIME_POINTER = 100,
 	PVAR_RELATIVE_POINTER = 101,
 	PVAR_SCRATCHPAD_POINTER = 102,
-	PVAR_STRUCT = 103,
+	PVAR_GLOBAL_PVAR_POINTER = 103,
+	PVAR_STRUCT = 104
 };
 
 std::string pvar_descriptor_to_string(PvarFieldDescriptor descriptor);
@@ -889,5 +899,55 @@ struct LevelWad : Wad {
 
 std::unique_ptr<Wad> read_wad_json(fs::path src_path);
 void write_wad_json(fs::path dest_path, Wad* base);
+
+template <typename Callback>
+void Gameplay::for_each_pvar_instance(const LevelWad& wad, Callback callback) {
+	for(ImportCamera& inst : opt_iterator(cameras)) {
+		auto iter = wad.camera_classes.find(inst.type);
+		if(iter != wad.camera_classes.end()) {
+			const PvarType& type = wad.pvar_types.at(iter->second.pvar_type);
+			callback(type, inst);
+		}
+	}
+	for(SoundInstance& inst : opt_iterator(sound_instances)) {
+		auto iter = wad.sound_classes.find(inst.o_class);
+		if(iter != wad.sound_classes.end()) {
+			const PvarType& type = wad.pvar_types.at(iter->second.pvar_type);
+			callback(type, inst);
+		}
+	}
+	for(MobyInstance& inst : opt_iterator(moby_instances)) {
+		auto iter = wad.moby_classes.find(inst.o_class);
+		if(iter != wad.moby_classes.end()) {
+			const PvarType& type = wad.pvar_types.at(iter->second.pvar_type);
+			callback(type, inst);
+		}
+	}
+}
+
+template <typename Callback>
+void Gameplay::for_each_pvar_instance(const LevelWad& wad, Callback callback) const {
+	for(const ImportCamera& inst : opt_iterator(cameras)) {
+		auto iter = wad.camera_classes.find(inst.type);
+		if(iter != wad.camera_classes.end()) {
+			const PvarType& type = wad.pvar_types.at(iter->second.pvar_type);
+			callback(type, inst);
+		}
+	}
+	for(const SoundInstance& inst : opt_iterator(sound_instances)) {
+		auto iter = wad.sound_classes.find(inst.o_class);
+		if(iter != wad.sound_classes.end()) {
+			const PvarType& type = wad.pvar_types.at(iter->second.pvar_type);
+			callback(type, inst);
+		}
+	}
+	for(const MobyInstance& inst : opt_iterator(moby_instances)) {
+		auto iter = wad.moby_classes.find(inst.o_class);
+		if(iter != wad.moby_classes.end()) {
+			const PvarType& type = wad.pvar_types.at(iter->second.pvar_type);
+			callback(type, inst);
+		}
+	}
+}
 
 #endif

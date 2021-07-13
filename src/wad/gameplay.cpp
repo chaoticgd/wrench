@@ -21,6 +21,7 @@
 const s32 NONE = -1;
 
 static void rewire_pvar_indices(Gameplay& gameplay);
+static void rewire_global_pvar_pointers(const LevelWad& wad, Gameplay& gameplay);
 
 void read_gameplay(LevelWad& wad, Gameplay& gameplay, Buffer src, Game game, const std::vector<GameplayBlockDescription>& blocks) {
 	for(const GameplayBlockDescription& block : blocks) {
@@ -45,6 +46,7 @@ std::vector<u8> write_gameplay(const LevelWad& wad, const Gameplay& gameplay_arg
 	assert(header_size == block_count * 4);
 	
 	rewire_pvar_indices(gameplay); // Set pvar_index fields.
+	rewire_global_pvar_pointers(wad, gameplay); // Extract global pvar pointers from pvars.
 	
 	std::vector<u8> dest_vec(header_size, 0);
 	OutBuffer dest(dest_vec);
@@ -773,6 +775,83 @@ struct DualTableBlock {
 	}
 };
 
+packed_struct(GlobalPvarBlockHeader,
+	s32 global_pvar_size;
+	s32 pointer_count;
+	s32 pad[2];
+)
+
+packed_struct(GlobalPvarPointer,
+	u16 pvar_index;
+	u16 pointer_offset;
+	s32 global_pvar_offset;
+)
+
+struct GlobalPvarBlock {
+	static void read(LevelWad& wad, Gameplay& dest, Buffer src, Game game) {
+		auto& header = src.read<GlobalPvarBlockHeader>(0, "global pvar block header");
+		dest.global_pvar = src.read_multiple<u8>(0x10, header.global_pvar_size, "global pvar").copy();
+		auto pointers = src.read_multiple<GlobalPvarPointer>(0x10 + header.global_pvar_size, header.pointer_count, "global pvar pointers");
+		for(const GlobalPvarPointer& entry : pointers) {
+			PvarType& type = get_pvar_type(entry.pvar_index, wad, dest);
+			PvarField field;
+			field.offset = entry.pointer_offset;
+			field.descriptor = PVAR_GLOBAL_PVAR_POINTER;
+			verify(type.insert_field(field, false), "Conflicting pvar type information.");
+			
+			for(const ImportCamera& inst : opt_iterator(dest.cameras)) {
+				if(inst.pvar_index == entry.pvar_index) {
+					verify(inst.pvars.size() >= (size_t) entry.pointer_offset + 4, "Pvar too small.");
+					*(s32*) &inst.pvars[entry.pointer_offset] = entry.global_pvar_offset;
+				}
+			}
+			for(const SoundInstance& inst : opt_iterator(dest.sound_instances)) {
+				if(inst.pvar_index == entry.pvar_index) {
+					verify(inst.pvars.size() >= (size_t) entry.pointer_offset + 4, "Pvar too small.");
+					*(s32*) &inst.pvars[entry.pointer_offset] = entry.global_pvar_offset;
+				}
+			}
+			for(const MobyInstance& inst : opt_iterator(dest.moby_instances)) {
+				if(inst.pvar_index == entry.pvar_index) {
+					verify(inst.pvars.size() >= (size_t) entry.pointer_offset + 4, "Pvar too small.");
+					*(s32*) &inst.pvars[entry.pointer_offset] = entry.global_pvar_offset;
+				}
+			}
+		}
+	}
+	
+	static bool write(OutBuffer dest, const LevelWad& wad, const Gameplay& src, Game game) {
+		if(!src.global_pvar.has_value()) {
+			GlobalPvarBlockHeader header {0};
+			dest.write(header);
+			return true;
+		}
+		
+		s32 header_ofs = dest.alloc<GlobalPvarBlockHeader>();
+		GlobalPvarBlockHeader header = {0};
+		header.global_pvar_size = src.global_pvar->size();
+		
+		dest.write_multiple(*src.global_pvar);
+		
+		std::vector<GlobalPvarPointer> pointers;
+		src.for_each_pvar_instance(wad, [&](const PvarType& type, const Pvars& pvars) {
+			for(auto& [offset, value] : pvars.global_pvar_pointers) {
+				GlobalPvarPointer entry;
+				entry.pvar_index = pvars.pvar_index;
+				entry.pointer_offset = offset;
+				entry.global_pvar_offset = value;
+				pointers.push_back(entry);
+			}
+		});
+		std::stable_sort(BEGIN_END(pointers), [](const GlobalPvarPointer& l, const GlobalPvarPointer& r)
+			{ return l.global_pvar_offset < r.global_pvar_offset; });
+		header.pointer_count = pointers.size();
+		dest.write_multiple(pointers);
+		dest.write(header_ofs, header);
+		return true;
+	}
+};
+
 static std::vector<std::vector<Vec4f>> read_splines(Buffer src, s32 count, s32 data_offset) {
 	std::vector<std::vector<Vec4f>> splines;
 	auto relative_offsets = src.read_multiple<s32>(0, count, "spline offsets");
@@ -1193,33 +1272,39 @@ static void swap_instance(ShrubInstance& l, ShrubInstancePacked& r) {
 
 static void rewire_pvar_indices(Gameplay& gameplay) {
 	s32 pvar_index = 0;
-	if(gameplay.cameras.has_value()) {
-		for(ImportCamera& camera : *gameplay.cameras) {
-			if(camera.pvars.size() > 0) {
-				camera.pvar_index = pvar_index++;
-			} else {
-				camera.pvar_index = -1;
-			}
+	for(ImportCamera& inst : opt_iterator(gameplay.cameras)) {
+		if(inst.pvars.size() > 0) {
+			inst.pvar_index = pvar_index++;
+		} else {
+			inst.pvar_index = -1;
 		}
 	}
-	if(gameplay.sound_instances.has_value()) {
-		for(SoundInstance& inst : *gameplay.sound_instances) {
-			if(inst.pvars.size() > 0) {
-				inst.pvar_index = pvar_index++;
-			} else {
-				inst.pvar_index = -1;
-			}
+	for(SoundInstance& inst : opt_iterator(gameplay.sound_instances)) {
+		if(inst.pvars.size() > 0) {
+			inst.pvar_index = pvar_index++;
+		} else {
+			inst.pvar_index = -1;
 		}
 	}
-	if(gameplay.moby_instances.has_value()) {
-		for(MobyInstance& inst : *gameplay.moby_instances) {
-			if(inst.pvars.size() > 0) {
-				inst.pvar_index = pvar_index++;
-			} else {
-				inst.pvar_index = -1;
-			}
+	for(MobyInstance& inst : opt_iterator(gameplay.moby_instances)) {
+		if(inst.pvars.size() > 0) {
+			inst.pvar_index = pvar_index++;
+		} else {
+			inst.pvar_index = -1;
 		}
 	}
+}
+
+static void rewire_global_pvar_pointers(const LevelWad& wad, Gameplay& gameplay) {
+	gameplay.for_each_pvar_instance(wad, [&](const PvarType& type, Pvars& pvars) {
+		for(const PvarField& field : type.fields) {
+			if(field.descriptor == PVAR_GLOBAL_PVAR_POINTER) {
+				verify(pvars.pvars.size() >= (size_t) field.offset + 4, "Pvars too small.");
+				pvars.global_pvar_pointers.emplace_back(field.offset, *(s32*) &pvars.pvars[field.offset]);
+				*(s32*) &pvars.pvars[field.offset] = 0;
+			}
+		}
+	});
 }
 
 template <typename Block, typename Field>
@@ -1265,7 +1350,7 @@ const std::vector<GameplayBlockDescription> RAC23_GAMEPLAY_BLOCKS = {
 	{0x58, {PvarScratchpadBlock::read, PvarScratchpadBlock::write}, "pvar pointer scratchpad table"},
 	{0x64, {PvarPointerRewireBlock::read, PvarPointerRewireBlock::write}, "pvar pointer rewire table"},
 	{0x50, bf<DualTableBlock<MobyGroups>>(&Gameplay::moby_groups), "moby groups"},
-	{0x54, bf<DualTableBlock<GC_54_DL_38>>(&Gameplay::gc_54_dl_38), "GC 54 DL 38"},
+	{0x54, {GlobalPvarBlock::read, GlobalPvarBlock::write}, "global pvar"},
 	{0x30, bf<ClassBlock>(&Gameplay::tie_classes), "tie classes"},
 	{0x34, bf<InstanceBlock<TieInstance, TieInstancePacked>>(&Gameplay::tie_instances), "tie instances"},
 	{0x94, bf<TieAmbientRgbaBlock>(&Gameplay::tie_ambient_rgbas), "tie ambient rgbas"},
@@ -1305,7 +1390,7 @@ const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS = {
 	{0x3c, {PvarScratchpadBlock::read, PvarScratchpadBlock::write}, "pvar pointer scratchpad table"},
 	{0x48, {PvarPointerRewireBlock::read, PvarPointerRewireBlock::write}, "pvar pointer rewire table"},
 	{0x34, bf<DualTableBlock<MobyGroups>>(&Gameplay::moby_groups), "moby groups"},
-	{0x38, bf<DualTableBlock<GC_54_DL_38>>(&Gameplay::gc_54_dl_38), "GC 54 DL 38"},
+	{0x38, {GlobalPvarBlock::read, GlobalPvarBlock::write}, "global pvar"},
 	{0x5c, bf<PathBlock>(&Gameplay::paths), "paths"},
 	{0x4c, bf<InstanceBlock<Shape, ShapePacked>>(&Gameplay::cuboids), "cuboids"},
 	{0x50, bf<InstanceBlock<Shape, ShapePacked>>(&Gameplay::spheres), "spheres"},
@@ -1345,5 +1430,5 @@ const std::vector<GameplayBlockDescription> DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS 
 	{0x10, {PvarScratchpadBlock::read, PvarScratchpadBlock::write}, "pvar pointer scratchpad table"},
 	{0x1c, {PvarPointerRewireBlock::read, PvarPointerRewireBlock::write}, "pvar pointer rewire table"},
 	{0x08, bf<DualTableBlock<MobyGroups>>(&Gameplay::moby_groups), "moby groups"},
-	{0x0c, bf<DualTableBlock<GC_54_DL_38>>(&Gameplay::gc_54_dl_38), "GC 54 DL 38"}
+	{0x0c, {GlobalPvarBlock::read, GlobalPvarBlock::write}, "global pvar"},
 };

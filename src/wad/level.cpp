@@ -69,6 +69,7 @@ s32 PvarField::size() const {
 		case PVAR_RUNTIME_POINTER:
 		case PVAR_RELATIVE_POINTER:
 		case PVAR_SCRATCHPAD_POINTER:
+		case PVAR_GLOBAL_PVAR_POINTER:
 			return 4;
 		default:
 			assert(0);
@@ -323,6 +324,7 @@ std::string pvar_descriptor_to_string(PvarFieldDescriptor descriptor) {
 		case PVAR_RUNTIME_POINTER: return "runtime_pointer";
 		case PVAR_RELATIVE_POINTER: return "relative_pointer";
 		case PVAR_SCRATCHPAD_POINTER: return "scratchpad_pointer";
+		case PVAR_GLOBAL_PVAR_POINTER: return "global_pvar_pointer";
 		case PVAR_STRUCT: return "struct";
 		default: assert(0);
 	}
@@ -338,6 +340,7 @@ PvarFieldDescriptor pvar_string_to_descriptor(std::string str) {
 	if(str == "runtime_pointer") return PVAR_RUNTIME_POINTER;
 	if(str == "relative_pointer") return PVAR_RELATIVE_POINTER;
 	if(str == "scratchpad_pointer") return PVAR_SCRATCHPAD_POINTER;
+	if(str == "global_pvar_pointer") return PVAR_GLOBAL_PVAR_POINTER;
 	if(str == "struct") return PVAR_STRUCT;
 	verify_not_reached("Invalid pvar field type.");
 }

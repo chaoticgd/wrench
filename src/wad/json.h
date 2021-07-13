@@ -80,6 +80,12 @@ struct ToJsonVisitor {
 	void hexdump(const char* name, std::vector<u8>& buffer) {
 		json[name] = buffer_to_json_hexdump(buffer);
 	}
+	template <typename T>
+	void hexdump(const char* name, std::optional<T>& opt) {
+		if(opt.has_value()) {
+			hexdump(name, *opt);
+		}
+	}
 };
 
 template <typename Object>
@@ -154,6 +160,14 @@ struct FromJsonVisitor {
 			buffer = buffer_from_json_hexdump(json[name]);
 		} else {
 			buffer = {};
+		}
+	}
+	template <typename T>
+	void hexdump(const char* name, std::optional<T>& opt) {
+		if(json.contains(name) && !json[name].is_null()) {
+			T value;
+			hexdump(name, value);
+			opt = value;
 		}
 	}
 };
