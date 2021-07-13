@@ -238,6 +238,78 @@ struct HelpMessageBlock {
 	}
 };
 
+packed_struct(GC_84_Packed,
+	Mat3 matrix;
+	Vec4f point_2;
+	s32 unknown_40;
+	s32 unknown_44;
+	s32 unknown_48;
+	s32 unknown_4c;
+	s32 unknown_50;
+	s32 unknown_54;
+	s32 unknown_58;
+	s32 unknown_5c;
+	s32 unknown_60;
+	s32 unknown_64;
+	s32 unknown_68;
+	s32 unknown_6c;
+	s32 unknown_70;
+	s32 unknown_74;
+	s32 unknown_78;
+	s32 unknown_7c;
+)
+
+struct GC_84_Block {
+	static void read(std::vector<GC_84_Instance>& dest, Buffer src, Game game) {
+		TableHeader header = src.read<TableHeader>(0, "GC 84 block header");
+		dest.resize(header.count_1);
+		s64 ofs = 0x10;
+		auto points = src.read_multiple<Vec4f>(ofs, header.count_1, "GC 84 points");
+		ofs += header.count_1 * sizeof(Vec4f);
+		auto data = src.read_multiple<GC_84_Packed>(ofs, header.count_1, "GC 84 data");
+		for(s64 i = 0; i < header.count_1; i++) {
+			dest[i].point = points[i];
+			GC_84_Packed packed = data[i];
+			swap_gc_84(dest[i], packed);
+			dest[i].original_index = i;
+		}
+	}
+	
+	static void write(OutBuffer dest, const std::vector<GC_84_Instance>& src, Game game) {
+		TableHeader header = {(s32) src.size()};
+		dest.write(header);
+		for(const GC_84_Instance& inst : src) {
+			dest.write(inst.point);
+		}
+		for(GC_84_Instance inst : src) {
+			GC_84_Packed packed;
+			swap_gc_84(inst, packed);
+			dest.write(packed);
+		}
+	}
+	
+	static void swap_gc_84(GC_84_Instance& l, GC_84_Packed& r) {
+		SWAP_PACKED(l.matrix, r.matrix);
+		SWAP_PACKED(l.point_2, r.point_2);
+		SWAP_PACKED(l.unknown_40, r.unknown_40);
+		SWAP_PACKED(l.unknown_44, r.unknown_44);
+		SWAP_PACKED(l.unknown_48, r.unknown_48);
+		SWAP_PACKED(l.unknown_4c, r.unknown_4c);
+		SWAP_PACKED(l.unknown_50, r.unknown_50);
+		SWAP_PACKED(l.unknown_54, r.unknown_54);
+		SWAP_PACKED(l.unknown_58, r.unknown_58);
+		SWAP_PACKED(l.unknown_5c, r.unknown_5c);
+		SWAP_PACKED(l.unknown_60, r.unknown_60);
+		SWAP_PACKED(l.unknown_64, r.unknown_64);
+		SWAP_PACKED(l.unknown_68, r.unknown_68);
+		SWAP_PACKED(l.unknown_6c, r.unknown_6c);
+		SWAP_PACKED(l.unknown_70, r.unknown_70);
+		SWAP_PACKED(l.unknown_74, r.unknown_74);
+		SWAP_PACKED(l.unknown_78, r.unknown_78);
+		SWAP_PACKED(l.unknown_7c, r.unknown_7c);
+	}
+};
+
 template <typename Instance, typename Packed>
 struct InstanceBlock {
 	static void read(std::vector<Instance>& dest, Buffer src, Game game) {
@@ -1009,18 +1081,6 @@ std::vector<u8> write_occlusion(const Gameplay& gameplay, Game game) {
 	return dest;
 }
 
-packed_struct(GC_84_Packed,
-	u8 unknown_0[0x90];
-)
-static_assert(sizeof(GC_84_Packed) == 0x90);
-
-static void swap_instance(GC_84_Instance& l, GC_84_Packed& r) {
-	u8 temp[0x90];
-	memcpy(temp, r.unknown_0, 0x90);
-	memcpy(r.unknown_0, &l.unknown_0, 0x90);
-	memcpy(&l.unknown_0, temp, 0x90);
-}
-
 packed_struct(ImportCameraPacked,
 	/* 0x00 */ s32 type;
 	/* 0x04 */ Vec3f position;
@@ -1195,7 +1255,7 @@ const std::vector<GameplayBlockDescription> RAC23_GAMEPLAY_BLOCKS = {
 	{0x28, bf<HelpMessageBlock<false>>(&Gameplay::japanese_help_messages), "japanese help messages"},
 	{0x2c, bf<HelpMessageBlock<true>>(&Gameplay::korean_help_messages), "korean help messages"},
 	{0x04, bf<InstanceBlock<DirectionalLight, DirectionalLightPacked>>(&Gameplay::lights), "directional lights"},
-	{0x84, bf<InstanceBlock<GC_84_Instance, GC_84_Packed>>(&Gameplay::gc_84), "GC 84"},
+	{0x84, bf<GC_84_Block>(&Gameplay::gc_84), "GC 84"},
 	{0x08, bf<InstanceBlock<ImportCamera, ImportCameraPacked>>(&Gameplay::cameras), "import cameras"},
 	{0x0c, bf<InstanceBlock<SoundInstance, SoundInstancePacked>>(&Gameplay::sound_instances), "sound instances"},
 	{0x48, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},

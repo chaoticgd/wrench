@@ -234,31 +234,33 @@ struct HelpMessage {
 	}
 };
 
+packed_struct(ShapePacked,
+	Mat3 matrix;
+	Vec4f pos;
+	Mat3 imatrix;
+	Vec4f rot;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_PACKED_FIELD(matrix);
+		DEF_PACKED_FIELD(pos);
+		DEF_PACKED_FIELD(imatrix);
+		DEF_PACKED_FIELD(rot);
+	}
+)
+
 struct GC_84_Instance {
-	f32 unknown_0;
-	f32 unknown_4;
-	f32 unknown_8;
-	f32 unknown_c;
-	f32 unknown_10;
-	f32 unknown_14;
-	f32 unknown_18;
-	f32 unknown_1c;
-	s32 unknown_20;
-	s32 unknown_24;
-	s32 unknown_28;
-	s32 unknown_2c;
-	s32 unknown_30;
-	s32 unknown_34;
-	s32 unknown_38;
-	s32 unknown_3c;
+	Vec4f point;
+	Mat3 matrix;
+	Vec4f point_2;
 	s32 unknown_40;
 	s32 unknown_44;
 	s32 unknown_48;
 	s32 unknown_4c;
-	f32 unknown_50;
-	f32 unknown_54;
-	f32 unknown_58;
-	f32 unknown_5c;
+	s32 unknown_50;
+	s32 unknown_54;
+	s32 unknown_58;
+	s32 unknown_5c;
 	s32 unknown_60;
 	s32 unknown_64;
 	s32 unknown_68;
@@ -267,30 +269,13 @@ struct GC_84_Instance {
 	s32 unknown_74;
 	s32 unknown_78;
 	s32 unknown_7c;
-	s32 unknown_80;
-	s32 unknown_84;
-	s32 unknown_88;
-	s32 unknown_8c;
 	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(unknown_0);
-		DEF_FIELD(unknown_4);
-		DEF_FIELD(unknown_8);
-		DEF_FIELD(unknown_c);
-		DEF_FIELD(unknown_10);
-		DEF_FIELD(unknown_14);
-		DEF_FIELD(unknown_18);
-		DEF_FIELD(unknown_1c);
-		DEF_FIELD(unknown_20);
-		DEF_FIELD(unknown_24);
-		DEF_FIELD(unknown_28);
-		DEF_FIELD(unknown_2c);
-		DEF_FIELD(unknown_30);
-		DEF_FIELD(unknown_34);
-		DEF_FIELD(unknown_38);
-		DEF_FIELD(unknown_3c);
+		DEF_FIELD(point);
+		DEF_FIELD(matrix);
+		DEF_FIELD(point_2);
 		DEF_FIELD(unknown_40);
 		DEF_FIELD(unknown_44);
 		DEF_FIELD(unknown_48);
@@ -307,10 +292,6 @@ struct GC_84_Instance {
 		DEF_FIELD(unknown_74);
 		DEF_FIELD(unknown_78);
 		DEF_FIELD(unknown_7c);
-		DEF_FIELD(unknown_80);
-		DEF_FIELD(unknown_84);
-		DEF_FIELD(unknown_88);
-		DEF_FIELD(unknown_8c);
 		DEF_FIELD(original_index);
 	}
 };
@@ -332,21 +313,6 @@ struct ImportCamera {
 		DEF_FIELD(original_index);
 	}
 };
-
-packed_struct(ShapePacked,
-	Mat3 matrix;
-	Vec4f pos;
-	Mat3 imatrix;
-	Vec4f rot;
-	
-	template <typename T>
-	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD(matrix);
-		DEF_PACKED_FIELD(pos);
-		DEF_PACKED_FIELD(imatrix);
-		DEF_PACKED_FIELD(rot);
-	}
-)
 
 struct Shape {
 	Mat3 matrix;
