@@ -129,12 +129,11 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 	}
 	
 	// Test the JSON reading/writing functions.
-	Json gameplay_json = write_gameplay_json(gameplay);
+	std::string gameplay_json = write_gameplay_json(gameplay).dump();
 	HelpMessages help_messages;
 	help_messages.swap(gameplay); // Move the help messages into the help_messages object.
-	Json help_messages_json = write_help_messages_json(help_messages);
 	Gameplay test_gameplay;
-	from_json(test_gameplay, gameplay_json);
+	from_json(test_gameplay, Json::parse(gameplay_json));
 	help_messages.swap(test_gameplay); // Move the help messages into the test_gameplay object.
 	std::vector<u8> test_dest = write_gameplay(wad, test_gameplay, args.game, *args.blocks);
 	OutBuffer(test_dest).pad(SECTOR_SIZE, 0);
