@@ -20,6 +20,7 @@
 #define WAD_UTIL_H
 
 #include <map>
+#include <cmath>
 #include <vector>
 #include <cstring>
 #include <stdio.h>
