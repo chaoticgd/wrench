@@ -33,7 +33,7 @@ static void run_gameplay_lump_test(GameplayTestArgs args);
 void run_tests(fs::path input_path) {
 	run_gameplay_tests(input_path);
 	
-	printf("\nALL TESTS PASSED\n");
+	printf("\nALL TESTS HAPPY\n");
 }
 
 static void run_gameplay_tests(fs::path input_path) {
