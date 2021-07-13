@@ -238,12 +238,12 @@ struct HelpMessageBlock {
 	}
 };
 
-packed_struct(GC_84_Packed,
+packed_struct(LightTriggerPacked,
 	Mat3 matrix;
 	Vec4f point_2;
 	s32 unknown_40;
 	s32 unknown_44;
-	s32 unknown_48;
+	s32 light_index;
 	s32 unknown_4c;
 	s32 unknown_50;
 	s32 unknown_54;
@@ -259,41 +259,41 @@ packed_struct(GC_84_Packed,
 	s32 unknown_7c;
 )
 
-struct GC_84_Block {
-	static void read(std::vector<GC_84_Instance>& dest, Buffer src, Game game) {
+struct LightTriggerBlock {
+	static void read(std::vector<LightTriggerInstance>& dest, Buffer src, Game game) {
 		TableHeader header = src.read<TableHeader>(0, "GC 84 block header");
 		dest.resize(header.count_1);
 		s64 ofs = 0x10;
 		auto points = src.read_multiple<Vec4f>(ofs, header.count_1, "GC 84 points");
 		ofs += header.count_1 * sizeof(Vec4f);
-		auto data = src.read_multiple<GC_84_Packed>(ofs, header.count_1, "GC 84 data");
+		auto data = src.read_multiple<LightTriggerPacked>(ofs, header.count_1, "GC 84 data");
 		for(s64 i = 0; i < header.count_1; i++) {
 			dest[i].point = points[i];
-			GC_84_Packed packed = data[i];
+			LightTriggerPacked packed = data[i];
 			swap_gc_84(dest[i], packed);
 			dest[i].original_index = i;
 		}
 	}
 	
-	static void write(OutBuffer dest, const std::vector<GC_84_Instance>& src, Game game) {
+	static void write(OutBuffer dest, const std::vector<LightTriggerInstance>& src, Game game) {
 		TableHeader header = {(s32) src.size()};
 		dest.write(header);
-		for(const GC_84_Instance& inst : src) {
+		for(const LightTriggerInstance& inst : src) {
 			dest.write(inst.point);
 		}
-		for(GC_84_Instance inst : src) {
-			GC_84_Packed packed;
+		for(LightTriggerInstance inst : src) {
+			LightTriggerPacked packed;
 			swap_gc_84(inst, packed);
 			dest.write(packed);
 		}
 	}
 	
-	static void swap_gc_84(GC_84_Instance& l, GC_84_Packed& r) {
+	static void swap_gc_84(LightTriggerInstance& l, LightTriggerPacked& r) {
 		SWAP_PACKED(l.matrix, r.matrix);
 		SWAP_PACKED(l.point_2, r.point_2);
 		SWAP_PACKED(l.unknown_40, r.unknown_40);
 		SWAP_PACKED(l.unknown_44, r.unknown_44);
-		SWAP_PACKED(l.unknown_48, r.unknown_48);
+		SWAP_PACKED(l.light_index, r.light_index);
 		SWAP_PACKED(l.unknown_4c, r.unknown_4c);
 		SWAP_PACKED(l.unknown_50, r.unknown_50);
 		SWAP_PACKED(l.unknown_54, r.unknown_54);
@@ -1255,7 +1255,7 @@ const std::vector<GameplayBlockDescription> RAC23_GAMEPLAY_BLOCKS = {
 	{0x28, bf<HelpMessageBlock<false>>(&Gameplay::japanese_help_messages), "japanese help messages"},
 	{0x2c, bf<HelpMessageBlock<true>>(&Gameplay::korean_help_messages), "korean help messages"},
 	{0x04, bf<InstanceBlock<DirectionalLight, DirectionalLightPacked>>(&Gameplay::lights), "directional lights"},
-	{0x84, bf<GC_84_Block>(&Gameplay::gc_84), "GC 84"},
+	{0x84, bf<LightTriggerBlock>(&Gameplay::light_triggers), "light triggers"},
 	{0x08, bf<InstanceBlock<ImportCamera, ImportCameraPacked>>(&Gameplay::cameras), "import cameras"},
 	{0x0c, bf<InstanceBlock<SoundInstance, SoundInstancePacked>>(&Gameplay::sound_instances), "sound instances"},
 	{0x48, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},

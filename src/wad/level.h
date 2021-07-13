@@ -249,13 +249,13 @@ packed_struct(ShapePacked,
 	}
 )
 
-struct GC_84_Instance {
+struct LightTriggerInstance {
 	Vec4f point;
 	Mat3 matrix;
 	Vec4f point_2;
 	s32 unknown_40;
 	s32 unknown_44;
-	s32 unknown_48;
+	s32 light_index;
 	s32 unknown_4c;
 	s32 unknown_50;
 	s32 unknown_54;
@@ -278,7 +278,7 @@ struct GC_84_Instance {
 		DEF_FIELD(point_2);
 		DEF_FIELD(unknown_40);
 		DEF_FIELD(unknown_44);
-		DEF_FIELD(unknown_48);
+		DEF_FIELD(light_index);
 		DEF_FIELD(unknown_4c);
 		DEF_FIELD(unknown_50);
 		DEF_FIELD(unknown_54);
@@ -681,7 +681,7 @@ struct Gameplay {
 	Opt<std::vector<HelpMessage>> italian_help_messages;
 	Opt<std::vector<HelpMessage>> japanese_help_messages;
 	Opt<std::vector<HelpMessage>> korean_help_messages;
-	Opt<std::vector<GC_84_Instance>> gc_84;
+	Opt<std::vector<LightTriggerInstance>> light_triggers;
 	Opt<std::vector<ImportCamera>> cameras;
 	Opt<std::vector<SoundInstance>> sound_instances;
 	Opt<std::vector<s32>> moby_classes;
@@ -716,7 +716,7 @@ struct Gameplay {
 	void enumerate_fields(T& t) {
 		DEF_FIELD(gc_8c_dl_70);
 		DEF_FIELD(properties);
-		DEF_FIELD(gc_84);
+		DEF_FIELD(light_triggers);
 		DEF_FIELD(cameras);
 		DEF_FIELD(sound_instances);
 		DEF_FIELD(moby_classes);
