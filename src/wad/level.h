@@ -74,28 +74,28 @@ packed_struct(Rgb96,
 )
 
 packed_struct(PropertiesFirstPart,
-	Rgb96 background_col;   // 0x0
-	Rgb96 fog_col;          // 0xc
-	f32 fog_near_dist;      // 0x18
-	f32 fog_far_dist;       // 0x1c
-	f32 fog_near_intensity; // 0x20
-	f32 fog_far_intensity;  // 0x24
-	f32 death_height;       // 0x28
-	s32 is_spherical_world; // 0x2c
-	Vec3f sphere_centre;    // 0x30
-	Vec3f ship_position;    // 0x3c
-	f32 ship_rotation_z;    // 0x48
-	s32 unknown_4c;         // 0x4c
-	s32 unknown_50;         // 0x50
-	s32 unknown_54;         // 0x54
-	s32 unknown_58;         // 0x58
+	/* 0x00 */ Rgb96 background_colour;
+	/* 0x0c */ Rgb96 fog_colour;
+	/* 0x18 */ f32 fog_near_distance;
+	/* 0x1c */ f32 fog_far_distance;
+	/* 0x20 */ f32 fog_near_intensity;
+	/* 0x24 */ f32 fog_far_intensity;
+	/* 0x28 */ f32 death_height;
+	/* 0x2c */ s32 is_spherical_world;
+	/* 0x30 */ Vec3f sphere_centre;
+	/* 0x3c */ Vec3f ship_position;
+	/* 0x48 */ f32 ship_rotation_z;
+	/* 0x4c */ s32 unknown_4c;
+	/* 0x50 */ s32 unknown_50;
+	/* 0x54 */ s32 unknown_54;
+	/* 0x58 */ s32 unknown_58;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD(background_col);
-		DEF_PACKED_FIELD(fog_col);
-		DEF_PACKED_FIELD(fog_near_dist);
-		DEF_PACKED_FIELD(fog_far_dist);
+		DEF_PACKED_FIELD(background_colour);
+		DEF_PACKED_FIELD(fog_colour);
+		DEF_PACKED_FIELD(fog_near_distance);
+		DEF_PACKED_FIELD(fog_far_distance);
 		DEF_PACKED_FIELD(fog_near_intensity);
 		DEF_PACKED_FIELD(fog_far_intensity);
 		DEF_PACKED_FIELD(death_height);
@@ -236,16 +236,16 @@ struct HelpMessage {
 
 packed_struct(ShapePacked,
 	Mat3 matrix;
-	Vec4f pos;
-	Mat3 imatrix;
-	Vec4f rot;
+	Vec4f position;
+	Mat3 inverse_matrix;
+	Vec4f rotation;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
 		DEF_PACKED_FIELD(matrix);
-		DEF_PACKED_FIELD(pos);
-		DEF_PACKED_FIELD(imatrix);
-		DEF_PACKED_FIELD(rot);
+		DEF_PACKED_FIELD(position);
+		DEF_PACKED_FIELD(inverse_matrix);
+		DEF_PACKED_FIELD(rotation);
 	}
 )
 
@@ -321,17 +321,17 @@ struct ImportCamera : Pvars {
 
 struct Shape {
 	Mat3 matrix;
-	Vec4f pos;
-	Mat3 imatrix;
-	Vec4f rot;
+	Vec4f position;
+	Mat3 inverse_matrix;
+	Vec4f rotation;
 	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
 		DEF_FIELD(matrix);
-		DEF_FIELD(pos);
-		DEF_FIELD(imatrix);
-		DEF_FIELD(rot);
+		DEF_FIELD(position);
+		DEF_FIELD(inverse_matrix);
+		DEF_FIELD(rotation);
 		DEF_FIELD(original_index);
 	}
 };
@@ -360,16 +360,16 @@ struct MobyInstance : Pvars {
 	s32 bolts;
 	s32 o_class;
 	f32 scale;
-	s32 draw_dist;
-	s32 update_dist;
+	s32 draw_distance;
+	s32 update_distance;
 	Vec3f position;
 	Vec3f rotation;
 	s32 group;
 	s32 is_rooted;
-	f32 rooted_dist;
+	f32 rooted_distance;
 	s32 occlusion;
 	s32 mode_bits;
-	Rgb96 light_col;
+	Rgb96 light_colour;
 	s32 light;
 	
 	struct {
@@ -394,16 +394,16 @@ struct MobyInstance : Pvars {
 		DEF_FIELD(bolts);
 		DEF_FIELD(o_class);
 		DEF_FIELD(scale);
-		DEF_FIELD(draw_dist);
-		DEF_FIELD(update_dist);
+		DEF_FIELD(draw_distance);
+		DEF_FIELD(update_distance);
 		DEF_FIELD(position);
 		DEF_FIELD(rotation);
 		DEF_FIELD(group);
 		DEF_FIELD(is_rooted);
-		DEF_FIELD(rooted_dist);
+		DEF_FIELD(rooted_distance);
 		DEF_FIELD(occlusion);
 		DEF_FIELD(mode_bits);
-		DEF_FIELD(light_col);
+		DEF_FIELD(light_colour);
 		DEF_FIELD(light);
 		DEF_HEXDUMP(pvars);
 		DEF_FIELD(original_index);
@@ -538,18 +538,18 @@ struct Area {
 };
 
 struct DirectionalLight {
-	Vec4f color_a;
-	Vec4f dir_a;
-	Vec4f color_b;
-	Vec4f dir_b;
+	Vec4f colour_a;
+	Vec4f direction_a;
+	Vec4f colour_b;
+	Vec4f direction_b;
 	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(color_a);
-		DEF_FIELD(dir_a);
-		DEF_FIELD(color_b);
-		DEF_FIELD(dir_b);
+		DEF_FIELD(colour_a);
+		DEF_FIELD(direction_a);
+		DEF_FIELD(colour_b);
+		DEF_FIELD(direction_b);
 		DEF_FIELD(original_index);
 	}
 };
@@ -608,7 +608,7 @@ struct ShrubInstance {
 	s32 unknown_c;
 	Mat3 matrix;
 	Vec4f position;
-	Rgb96 light_col;
+	Rgb96 light_colour;
 	s32 unknown_5c;
 	s32 unknown_60;
 	s32 unknown_64;
@@ -624,7 +624,7 @@ struct ShrubInstance {
 		DEF_FIELD(unknown_c);
 		DEF_FIELD(matrix);
 		DEF_FIELD(position);
-		DEF_FIELD(light_col);
+		DEF_FIELD(light_colour);
 		DEF_FIELD(unknown_5c);
 		DEF_FIELD(unknown_60);
 		DEF_FIELD(unknown_64);

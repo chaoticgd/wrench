@@ -356,34 +356,34 @@ packed_struct(MobyBlockHeader,
 )
 
 packed_struct(MobyInstanceRAC23,
-	s32 size;        // 0x0 Always 0x88.
-	s32 mission;     // 0x4
-	s32 unknown_8;   // 0x8
-	s32 unknown_c;   // 0xc
-	s32 uid;         // 0x10
-	s32 bolts;       // 0x14
-	s32 unknown_18;  // 0x18
-	s32 unknown_1c;  // 0x1c
-	s32 unknown_20;  // 0x20
-	s32 unknown_24;  // 0x24
-	s32 o_class;     // 0x28
-	f32 scale;       // 0x2c
-	s32 draw_dist;   // 0x30
-	s32 update_dist; // 0x34
-	s32 unknown_38;  // 0x38
-	s32 unknown_3c;  // 0x3c
-	Vec3f position;  // 0x40
-	Vec3f rotation;  // 0x4c
-	s32 group;       // 0x58
-	s32 is_rooted;   // 0x5c
-	f32 rooted_dist; // 0x60
-	s32 unknown_4c;  // 0x64
-	s32 pvar_index;  // 0x68
-	s32 occlusion;   // 0x6c
-	s32 mode_bits;   // 0x70
-	Rgb96 light_col; // 0x74
-	s32 light;       // 0x80
-	s32 unknown_84;  // 0x84
+	/* 0x00 */ s32 size; // Always 0x88.
+	/* 0x04 */ s32 mission;
+	/* 0x08 */ s32 unknown_8;
+	/* 0x0c */ s32 unknown_c;
+	/* 0x10 */ s32 uid;
+	/* 0x14 */ s32 bolts;
+	/* 0x18 */ s32 unknown_18;
+	/* 0x1c */ s32 unknown_1c;
+	/* 0x20 */ s32 unknown_20;
+	/* 0x24 */ s32 unknown_24;
+	/* 0x28 */ s32 o_class;
+	/* 0x2c */ f32 scale;
+	/* 0x30 */ s32 draw_distance;
+	/* 0x34 */ s32 update_distance;
+	/* 0x38 */ s32 unknown_38;
+	/* 0x3c */ s32 unknown_3c;
+	/* 0x40 */ Vec3f position;
+	/* 0x4c */ Vec3f rotation;
+	/* 0x58 */ s32 group;
+	/* 0x5c */ s32 is_rooted;
+	/* 0x60 */ f32 rooted_distance;
+	/* 0x64 */ s32 unknown_4c;
+	/* 0x68 */ s32 pvar_index;
+	/* 0x6c */ s32 occlusion;
+	/* 0x70 */ s32 mode_bits;
+	/* 0x74 */ Rgb96 light_colour;
+	/* 0x80 */ s32 light;
+	/* 0x84 */ s32 unknown_84;
 )
 
 struct RAC23MobyBlock {
@@ -430,48 +430,48 @@ struct RAC23MobyBlock {
 		SWAP_PACKED(l.rac23.unknown_24, r.unknown_24);
 		SWAP_PACKED(l.o_class, r.o_class);
 		SWAP_PACKED(l.scale, r.scale);
-		SWAP_PACKED(l.draw_dist, r.draw_dist);
-		SWAP_PACKED(l.update_dist, r.update_dist);
+		SWAP_PACKED(l.draw_distance, r.draw_distance);
+		SWAP_PACKED(l.update_distance, r.update_distance);
 		SWAP_PACKED(l.rac23.unknown_38, r.unknown_38);
 		SWAP_PACKED(l.rac23.unknown_3c, r.unknown_3c);
 		SWAP_PACKED(l.position, r.position);
 		SWAP_PACKED(l.rotation, r.rotation);
 		SWAP_PACKED(l.group, r.group);
 		SWAP_PACKED(l.is_rooted, r.is_rooted);
-		SWAP_PACKED(l.rooted_dist, r.rooted_dist);
+		SWAP_PACKED(l.rooted_distance, r.rooted_distance);
 		SWAP_PACKED(l.rac23.unknown_4c, r.unknown_4c);
 		SWAP_PACKED(l.pvar_index, r.pvar_index);
 		SWAP_PACKED(l.occlusion, r.occlusion);
 		SWAP_PACKED(l.mode_bits, r.mode_bits);
-		SWAP_PACKED(l.light_col, r.light_col);
+		SWAP_PACKED(l.light_colour, r.light_colour);
 		SWAP_PACKED(l.light, r.light);
 		SWAP_PACKED(l.rac23.unknown_84, r.unknown_84);
 	}
 };
 
 packed_struct(MobyInstanceDL,
-	s32 size;        // 0x0 Always 0x70.
-	s32 mission;     // 0x4
-	s32 uid;         // 0x8
-	s32 bolts;       // 0xc
-	s32 o_class;     // 0x10
-	f32 scale;       // 0x14
-	s32 draw_dist;   // 0x18
-	s32 update_dist; // 0x1c
-	s32 unknown_20;  // 0x20
-	s32 unknown_24;  // 0x24
-	Vec3f position;  // 0x28
-	Vec3f rotation;  // 0x34
-	s32 group;       // 0x40
-	s32 is_rooted;   // 0x44
-	f32 rooted_dist; // 0x48
-	s32 unknown_4c;  // 0x4c
-	s32 pvar_index;  // 0x50
-	s32 occlusion;   // 0x54
-	s32 mode_bits;   // 0x58
-	Rgb96 light_col; // 0x5c
-	s32 light;       // 0x68
-	s32 unknown_6c;  // 0x6c
+	/* 0x00 */ s32 size; // Always 0x70.
+	/* 0x04 */ s32 mission;
+	/* 0x08 */ s32 uid;
+	/* 0x0c */ s32 bolts;
+	/* 0x10 */ s32 o_class;
+	/* 0x14 */ f32 scale;
+	/* 0x18 */ s32 draw_distance;
+	/* 0x1c */ s32 update_distance;
+	/* 0x20 */ s32 unknown_20;
+	/* 0x24 */ s32 unknown_24;
+	/* 0x28 */ Vec3f position;
+	/* 0x34 */ Vec3f rotation;
+	/* 0x40 */ s32 group;
+	/* 0x44 */ s32 is_rooted;
+	/* 0x48 */ f32 rooted_distance;
+	/* 0x4c */ s32 unknown_4c;
+	/* 0x50 */ s32 pvar_index;
+	/* 0x54 */ s32 occlusion;
+	/* 0x58 */ s32 mode_bits;
+	/* 0x5c */ Rgb96 light_colour;
+	/* 0x68 */ s32 light;
+	/* 0x6c */ s32 unknown_6c;
 )
 static_assert(sizeof(MobyInstanceDL) == 0x70);
 
@@ -517,20 +517,20 @@ struct DeadlockedMobyBlock {
 		SWAP_PACKED(l.bolts, r.bolts);
 		SWAP_PACKED(l.o_class, r.o_class);
 		SWAP_PACKED(l.scale, r.scale);
-		SWAP_PACKED(l.draw_dist, r.draw_dist);
-		SWAP_PACKED(l.update_dist, r.update_dist);
+		SWAP_PACKED(l.draw_distance, r.draw_distance);
+		SWAP_PACKED(l.update_distance, r.update_distance);
 		r.unknown_20 = 32;
 		r.unknown_24 = 64;
 		SWAP_PACKED(l.position, r.position);
 		SWAP_PACKED(l.rotation, r.rotation);
 		SWAP_PACKED(l.group, r.group);
 		SWAP_PACKED(l.is_rooted, r.is_rooted);
-		SWAP_PACKED(l.rooted_dist, r.rooted_dist);
+		SWAP_PACKED(l.rooted_distance, r.rooted_distance);
 		r.unknown_4c = 1;
 		SWAP_PACKED(l.pvar_index, r.pvar_index);
 		SWAP_PACKED(l.occlusion, r.occlusion);
 		SWAP_PACKED(l.mode_bits, r.mode_bits);
-		SWAP_PACKED(l.light_col, r.light_col);
+		SWAP_PACKED(l.light_colour, r.light_colour);
 		SWAP_PACKED(l.light, r.light);
 		r.unknown_6c = -1;
 	}
@@ -1194,23 +1194,23 @@ static void swap_instance(SoundInstance& l, SoundInstancePacked& r) {
 
 static void swap_instance(Shape& l, ShapePacked& r) {
 	SWAP_PACKED(l.matrix, r.matrix);
-	SWAP_PACKED(l.pos, r.pos);
-	SWAP_PACKED(l.imatrix, r.imatrix);
-	SWAP_PACKED(l.rot, r.rot);
+	SWAP_PACKED(l.position, r.position);
+	SWAP_PACKED(l.inverse_matrix, r.inverse_matrix);
+	SWAP_PACKED(l.rotation, r.rotation);
 }
 
 packed_struct(DirectionalLightPacked,
-	Vec4f color_a;
-	Vec4f dir_a;
-	Vec4f color_b;
-	Vec4f dir_b;
+	Vec4f colour_a;
+	Vec4f direction_a;
+	Vec4f colour_b;
+	Vec4f direction_b;
 )
 
 static void swap_instance(DirectionalLight& l, DirectionalLightPacked& r) {
-	SWAP_PACKED(l.color_a, r.color_a);
-	SWAP_PACKED(l.dir_a, r.dir_a);
-	SWAP_PACKED(l.color_b, r.color_b);
-	SWAP_PACKED(l.dir_b, r.dir_b);
+	SWAP_PACKED(l.colour_a, r.colour_a);
+	SWAP_PACKED(l.direction_a, r.direction_a);
+	SWAP_PACKED(l.colour_b, r.colour_b);
+	SWAP_PACKED(l.direction_b, r.direction_b);
 }
 
 packed_struct(TieInstancePacked,
@@ -1247,7 +1247,7 @@ packed_struct(ShrubInstancePacked,
 	/* 0x0c */ s32 unknown_c;
 	/* 0x10 */ Mat3 matrix;
 	/* 0x40 */ Vec4f position;
-	/* 0x50 */ Rgb96 light_col;
+	/* 0x50 */ Rgb96 light_colour;
 	/* 0x5c */ s32 unknown_5c;
 	/* 0x60 */ s32 unknown_60;
 	/* 0x64 */ s32 unknown_64;
@@ -1262,7 +1262,7 @@ static void swap_instance(ShrubInstance& l, ShrubInstancePacked& r) {
 	SWAP_PACKED(l.unknown_c, r.unknown_c);
 	SWAP_PACKED(l.matrix, r.matrix);
 	SWAP_PACKED(l.position, r.position);
-	SWAP_PACKED(l.light_col, r.light_col);
+	SWAP_PACKED(l.light_colour, r.light_colour);
 	SWAP_PACKED(l.unknown_5c, r.unknown_5c);
 	SWAP_PACKED(l.unknown_60, r.unknown_60);
 	SWAP_PACKED(l.unknown_64, r.unknown_64);
