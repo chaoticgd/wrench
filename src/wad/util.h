@@ -219,6 +219,11 @@ T& opt_iterator(Opt<T>& opt) {
 	}
 }
 
+template <typename>
+struct IsVector : std::false_type {};
+template <typename Element>
+struct IsVector<std::vector<Element>> : std::true_type {};
+
 [[maybe_unused]] static std::string get_application_version_string() {
 	std::string raw_tag = get_git_tag();
 	std::string raw_commit = get_git_commit();

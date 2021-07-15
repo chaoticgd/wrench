@@ -52,21 +52,13 @@ Json f32_to_json(f32 value);
 f32 json_to_f32(Json json);
 
 template <typename Object>
-Json to_json(Object object);
+Json to_json(Object& object);
 
 struct ToJsonVisitor {
 	Json json;
 	template <typename T>
 	void field(const char* name, T& value) {
 		json[name] = to_json(value);
-	}
-	template <typename T>
-	void field(const char* name, std::vector<T>& list) {
-		Json json_list = Json::array();
-		for(auto& elem : list) {
-			json_list.emplace_back(to_json(elem));
-		}
-		json[name] = json_list;
 	}
 	template <typename T>
 	void field(const char* name, std::optional<T>& opt) {
@@ -91,15 +83,21 @@ struct ToJsonVisitor {
 };
 
 template <typename Object>
-Json to_json(Object object) {
+Json to_json(Object& src) {
 	if constexpr(std::is_same_v<Object, f32>) {
-		return f32_to_json(object);
+		return f32_to_json(src);
+	} else if constexpr(IsVector<Object>::value) {
+		Json json = Json::array();
+		for(auto& elem : src) {
+			json.emplace_back(to_json(elem));
+		}
+		return json;
 	} else if constexpr(std::is_compound_v<Object> && !std::is_same_v<Object, std::string>) {
 		ToJsonVisitor visitor;
-		object.enumerate_fields(visitor);
+		src.enumerate_fields(visitor);
 		return visitor.json;
 	} else {
-		return object;
+		return src;
 	}
 }
 
@@ -127,15 +125,6 @@ struct FromJsonVisitor {
 	void field(const char* name, T& value) {
 		verify(json.contains(name), "Missing field '%s'.", name);
 		from_json(value, json[name]);
-	}
-	template <typename Field>
-	void field(const char* name, std::vector<Field>& vec) {
-		verify(json.contains(name) && !json[name].is_null(), "Missing field '%s'.", name);
-		for(Json& element_json : json[name]) {
-			Field element;
-			from_json<Field>(element, element_json);
-			vec.emplace_back(element);
-		}
 	}
 	template <typename T>
 	void field(const char* name, std::optional<T>& opt) {
@@ -172,6 +161,12 @@ template <typename Object>
 void from_json(Object& dest, Json src) {
 	if constexpr(std::is_same_v<Object, f32>) {
 		dest = json_to_f32(src);
+	} else if constexpr(IsVector<Object>::value) {
+		for(Json& element_json : src) {
+			typename Object::value_type element;
+			from_json(element, element_json);
+			dest.emplace_back(std::move(element));
+		}
 	} else if constexpr(std::is_compound_v<Object> && !std::is_same_v<Object, std::string>) {
 		FromJsonVisitor visitor{src};
 		dest.enumerate_fields(visitor);

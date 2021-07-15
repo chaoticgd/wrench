@@ -29,32 +29,6 @@ Json get_file_metadata(const char* format, const char* application) {
 
 static const char* APPLICATION_NAME = "Wrench WAD Utility";
 
-Json write_gameplay_json(Gameplay& gameplay) {
-	Json json;
-	
-	json["metadata"] = get_file_metadata("gameplay", APPLICATION_NAME);
-	
-	Json data = to_json(gameplay);
-	for(auto& item : data.items()) {
-		json[item.key()] = item.value();
-	}
-	
-	return json;
-}
-
-Json write_help_messages_json(HelpMessages& help_messages) {
-	Json json;
-	
-	json["metadata"] = get_file_metadata("help_messages", APPLICATION_NAME);
-	
-	Json data = to_json(help_messages);
-	for(auto& item : data.items()) {
-		json[item.key()] = item.value();
-	}
-	
-	return json;
-}
-
 s32 PvarField::size() const {
 	switch(descriptor) {
 		case PVAR_S8:
@@ -178,14 +152,12 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			wad.reverb = json["reverb"];
 			wad.primary = read_file(src_dir/json["primary"]);
 			wad.core_bank = read_file(src_dir/json["core_sound_bank"]);
-			Json gameplay_json = Json::parse(read_file(src_dir/json["gameplay"]));
-			from_json(wad.gameplay, gameplay_json);
+			GameplayJsonReader gameplay_reader{src_dir, json, read_file};
+			wad.gameplay.enumerate_files(gameplay_reader);
 			map_from_json(wad.camera_classes, Json::parse(read_file(src_dir/json["camera_classes"])), "class");
 			map_from_json(wad.sound_classes, Json::parse(read_file(src_dir/json["sound_classes"])), "class");
 			map_from_json(wad.moby_classes, Json::parse(read_file(src_dir/json["moby_classes"])), "class");
 			map_from_json(wad.pvar_types, Json::parse(read_file(src_dir/json["pvar_types"])), "name");
-			Json help_messages_json = Json::parse(read_file(src_dir/json["help_messages"]));
-			from_json(wad.help_messages, help_messages_json);
 			if(json.contains("chunks")) {
 				for(Json& chunk_json : json["chunks"]) {
 					Chunk chunk;
@@ -252,14 +224,12 @@ void write_wad_json(fs::path dest_path, Wad* base) {
 			}
 			json["primary"] = write_file(dest_path, "primary.bin", wad.primary);
 			json["core_sound_bank"] = write_file(dest_path, "core_bank.bin", wad.core_bank);
-			std::string gameplay_str = write_gameplay_json(wad.gameplay).dump(1, '\t');
-			json["gameplay"] = write_file(dest_path, "gameplay.json", gameplay_str);
-			std::string help_messages_str = write_help_messages_json(wad.help_messages).dump(1, '\t');
+			GameplayJsonWriter gameplay_writer{dest_path, json, write_file};
+			wad.gameplay.enumerate_files(gameplay_writer);
 			json["camera_classes"] = write_file(dest_path, "camera_classes.json", map_to_json(wad.camera_classes, "class").dump(1, '\t'));
 			json["sound_classes"] = write_file(dest_path, "sound_classes.json", map_to_json(wad.sound_classes, "class").dump(1, '\t'));
 			json["moby_classes"] = write_file(dest_path, "moby_classes.json", map_to_json(wad.moby_classes, "class").dump(1, '\t'));
 			json["pvar_types"] = write_file(dest_path, "pvar_types.json", map_to_json(wad.pvar_types, "name").dump(1, '\t'));
-			json["help_messages"] = write_file(dest_path, "help_messages.json", help_messages_str);
 			for(auto& [index, chunk] : wad.chunks) {
 				auto chunk_name = [&](const char* name) {
 					return "chunk" + std::to_string(index) + "_" + name + ".bin";
