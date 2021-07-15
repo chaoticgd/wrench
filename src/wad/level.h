@@ -824,11 +824,13 @@ enum PvarFieldDescriptor {
 	PVAR_U8 = 4, PVAR_U16 = 5, PVAR_U32 = 6,
 	PVAR_INTEGERS_END = 7,
 	PVAR_F32 = 8,
-	PVAR_RUNTIME_POINTER = 100,
-	PVAR_RELATIVE_POINTER = 101,
-	PVAR_SCRATCHPAD_POINTER = 102,
-	PVAR_GLOBAL_PVAR_POINTER = 103,
-	PVAR_STRUCT = 104
+	PVAR_POINTERS_BEGIN = 100,
+	PVAR_RUNTIME_POINTER = 101,
+	PVAR_RELATIVE_POINTER = 102,
+	PVAR_SCRATCHPAD_POINTER = 103,
+	PVAR_GLOBAL_PVAR_POINTER = 104,
+	PVAR_POINTERS_END = 105,
+	PVAR_STRUCT = 106
 };
 
 std::string pvar_descriptor_to_string(PvarFieldDescriptor descriptor);
@@ -838,7 +840,7 @@ struct PvarField {
 	s32 offset;
 	std::string name;
 	PvarFieldDescriptor descriptor = PVAR_U8;
-	std::string value_type; // Only set for PVAR_RELATIVE_POINTER and PVAR_STRUCT.
+	std::string value_type; // Only set for pointer types.
 	
 	s32 size() const;
 	
@@ -849,7 +851,7 @@ struct PvarField {
 		std::string type = pvar_descriptor_to_string(descriptor);
 		DEF_FIELD(type);
 		descriptor = pvar_string_to_descriptor(type);
-		if(descriptor == PVAR_RELATIVE_POINTER || descriptor == PVAR_STRUCT) {
+		if(descriptor > PVAR_POINTERS_BEGIN || descriptor < PVAR_POINTERS_END) {
 			DEF_FIELD(value_type);
 		}
 	}
