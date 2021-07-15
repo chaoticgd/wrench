@@ -212,6 +212,7 @@ struct Properties {
 };
 
 struct HelpMessage {
+	OriginalIndex original_index;
 	std::optional<std::string> string;
 	s16 id;
 	s16 short_id;
@@ -219,10 +220,10 @@ struct HelpMessage {
 	s16 coop_id;
 	s16 vag;
 	s16 character;
-	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
+		DEF_FIELD(original_index);
 		t.encoded_string("string", string);
 		DEF_FIELD(id);
 		DEF_FIELD(short_id);
@@ -230,7 +231,6 @@ struct HelpMessage {
 		DEF_FIELD(coop_id);
 		DEF_FIELD(vag);
 		DEF_FIELD(character);
-		DEF_FIELD(original_index);
 	}
 };
 
@@ -250,6 +250,7 @@ packed_struct(ShapePacked,
 )
 
 struct LightTriggerInstance {
+	OriginalIndex original_index;
 	Vec4f point;
 	Mat3 matrix;
 	Vec4f point_2;
@@ -269,10 +270,10 @@ struct LightTriggerInstance {
 	s32 unknown_74;
 	s32 unknown_78;
 	s32 unknown_7c;
-	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
+		DEF_FIELD(original_index);
 		DEF_FIELD(point);
 		DEF_FIELD(matrix);
 		DEF_FIELD(point_2);
@@ -292,7 +293,6 @@ struct LightTriggerInstance {
 		DEF_FIELD(unknown_74);
 		DEF_FIELD(unknown_78);
 		DEF_FIELD(unknown_7c);
-		DEF_FIELD(original_index);
 	}
 };
 
@@ -303,58 +303,59 @@ struct Pvars {
 };
 
 struct ImportCamera : Pvars {
+	OriginalIndex original_index;
 	s32 type;
 	Vec3f position;
 	Vec3f rotation;
-	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
+		DEF_FIELD(original_index);
 		DEF_FIELD(type);
 		DEF_FIELD(position);
 		DEF_FIELD(rotation);
 		DEF_HEXDUMP(pvars);
-		DEF_FIELD(original_index);
 	}
 };
 
 
 struct Shape {
+	OriginalIndex original_index;
 	Mat3 matrix;
 	Vec4f position;
 	Mat3 inverse_matrix;
 	Vec4f rotation;
-	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
+		DEF_FIELD(original_index);
 		DEF_FIELD(matrix);
 		DEF_FIELD(position);
 		DEF_FIELD(inverse_matrix);
 		DEF_FIELD(rotation);
-		DEF_FIELD(original_index);
 	}
 };
 
 struct SoundInstance : Pvars {
+	OriginalIndex original_index;
 	s16 o_class;
 	s16 m_class;
 	f32 range;
 	ShapePacked cuboid;
-	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
+		DEF_FIELD(original_index);
 		DEF_FIELD(o_class);
 		DEF_FIELD(m_class);
 		DEF_FIELD(range);
 		DEF_FIELD(cuboid);
 		DEF_HEXDUMP(pvars);
-		DEF_FIELD(original_index);
 	}
 };
 
 struct MobyInstance : Pvars {
+	OriginalIndex original_index;
 	s8 mission;
 	s32 uid;
 	s32 bolts;
@@ -385,10 +386,9 @@ struct MobyInstance : Pvars {
 		s32 unknown_84;
 	} rac23;
 	
-	OriginalIndex original_index;
-	
 	template <typename T>
 	void enumerate_fields(T& t) {
+		DEF_FIELD(original_index);
 		DEF_FIELD(mission);
 		DEF_FIELD(uid);
 		DEF_FIELD(bolts);
@@ -406,7 +406,6 @@ struct MobyInstance : Pvars {
 		DEF_FIELD(light_colour);
 		DEF_FIELD(light);
 		DEF_HEXDUMP(pvars);
-		DEF_FIELD(original_index);
 		
 		DEF_FIELD(rac23.unknown_8);
 		DEF_FIELD(rac23.unknown_c);
@@ -438,13 +437,13 @@ struct MobyGroups {
 };
 
 struct Group {
-	std::vector<u16> members;
 	OriginalIndex original_index;
+	std::vector<u16> members;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(members);
 		DEF_FIELD(original_index);
+		DEF_FIELD(members);
 	}
 };
 
@@ -460,13 +459,13 @@ struct GC_54_DL_38 {
 };
 
 struct Path {
-	std::vector<Vec4f> vertices;
 	OriginalIndex original_index;
+	std::vector<Vec4f> vertices;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(vertices);
 		DEF_FIELD(original_index);
+		DEF_FIELD(vertices);
 	}
 };
 
@@ -497,21 +496,21 @@ packed_struct(BoundingSphere,
 )
 
 struct GrindPath {
+	OriginalIndex original_index;
 	BoundingSphere bounding_sphere;
 	s32 unknown_4;
 	s32 wrap;
 	s32 inactive;
 	std::vector<Vec4f> vertices;
-	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
+		DEF_FIELD(original_index);
 		DEF_FIELD(bounding_sphere);
 		DEF_FIELD(unknown_4);
 		DEF_FIELD(wrap);
 		DEF_FIELD(inactive);
 		DEF_FIELD(vertices);
-		DEF_FIELD(original_index);
 	}
 };
 
@@ -524,10 +523,10 @@ enum AreaPart {
 };
 
 struct Area {
+	OriginalIndex original_index;
 	BoundingSphere bounding_sphere;
 	s32 last_update_time;
 	std::vector<s32> parts[5];
-	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
@@ -537,6 +536,7 @@ struct Area {
 		std::vector<s32>& cylinders = parts[AREA_PART_CYLINDERS];
 		std::vector<s32>& negative_cuboids = parts[AREA_PART_NEG_CUBOIDS];
 		
+		DEF_FIELD(original_index);
 		DEF_FIELD(bounding_sphere);
 		DEF_FIELD(last_update_time);
 		DEF_FIELD(paths);
@@ -544,28 +544,28 @@ struct Area {
 		DEF_FIELD(spheres);
 		DEF_FIELD(cylinders);
 		DEF_FIELD(negative_cuboids);
-		DEF_FIELD(original_index);
 	}
 };
 
 struct DirectionalLight {
+	OriginalIndex original_index;
 	Vec4f colour_a;
 	Vec4f direction_a;
 	Vec4f colour_b;
 	Vec4f direction_b;
-	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
+		DEF_FIELD(original_index);
 		DEF_FIELD(colour_a);
 		DEF_FIELD(direction_a);
 		DEF_FIELD(colour_b);
 		DEF_FIELD(direction_b);
-		DEF_FIELD(original_index);
 	}
 };
 
 struct TieInstance {
+	OriginalIndex original_index;
 	s32 o_class;
 	s32 draw_distance;
 	s32 occlusion_index;
@@ -573,10 +573,10 @@ struct TieInstance {
 	Vec4f position;
 	s32 directional_lights;
 	s32 uid;
-	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
+		DEF_FIELD(original_index);
 		DEF_FIELD(o_class);
 		DEF_FIELD(draw_distance);
 		DEF_FIELD(occlusion_index);
@@ -584,24 +584,24 @@ struct TieInstance {
 		DEF_FIELD(position);
 		DEF_FIELD(directional_lights);
 		DEF_FIELD(uid);
-		DEF_FIELD(original_index);
 	}
 };
 
 struct TieAmbientRgbas {
+	OriginalIndex original_index;
 	s16 id;
 	std::vector<u8> data;
-	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
+		DEF_FIELD(original_index);
 		DEF_FIELD(id);
 		DEF_HEXDUMP(data);
-		DEF_FIELD(original_index);
 	}
 };
 
 struct ShrubInstance {
+	OriginalIndex original_index;
 	s32 o_class;
 	f32 draw_distance;
 	s32 unknown_8;
@@ -614,10 +614,10 @@ struct ShrubInstance {
 	s32 unknown_64;
 	s32 unknown_68;
 	s32 unknown_6c;
-	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
+		DEF_FIELD(original_index);
 		DEF_FIELD(o_class);
 		DEF_FIELD(draw_distance);
 		DEF_FIELD(unknown_8);
@@ -630,20 +630,19 @@ struct ShrubInstance {
 		DEF_FIELD(unknown_64);
 		DEF_FIELD(unknown_68);
 		DEF_FIELD(unknown_6c);
-		DEF_FIELD(original_index);
 	}
 };
 
 struct OcclusionPair {
+	OriginalIndex original_index;
 	s32 unknown_0;
 	s32 unknown_4;
-	OriginalIndex original_index;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
+		DEF_FIELD(original_index);
 		DEF_FIELD(unknown_0);
 		DEF_FIELD(unknown_4);
-		DEF_FIELD(original_index);
 	}
 };
 

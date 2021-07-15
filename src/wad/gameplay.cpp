@@ -184,6 +184,7 @@ struct HelpMessageBlock {
 		OriginalIndex original_index = 0;
 		for(HelpMessageEntry entry : table) {
 			HelpMessage message;
+			message.original_index = original_index++;
 			if(entry.offset != 0) {
 				message.string = src.read_string(entry.offset, is_korean);
 			}
@@ -193,7 +194,6 @@ struct HelpMessageBlock {
 			message.coop_id = entry.coop_id;
 			message.vag = entry.vag;
 			message.character = entry.character;
-			message.original_index = original_index++;
 			dest.emplace_back(std::move(message));
 		}
 	}
@@ -270,10 +270,10 @@ struct LightTriggerBlock {
 		ofs += header.count_1 * sizeof(Vec4f);
 		auto data = src.read_multiple<LightTriggerPacked>(ofs, header.count_1, "GC 84 data");
 		for(s64 i = 0; i < header.count_1; i++) {
+			dest[i].original_index = i;
 			dest[i].point = points[i];
 			LightTriggerPacked packed = data[i];
 			swap_gc_84(dest[i], packed);
-			dest[i].original_index = i;
 		}
 	}
 	
@@ -320,8 +320,8 @@ struct InstanceBlock {
 		OriginalIndex original_index = 0;
 		for(Packed packed : entries) {
 			Instance inst;
-			swap_instance(inst, packed);
 			inst.original_index = original_index++;
+			swap_instance(inst, packed);
 			dest.push_back(inst);
 		}
 	}
@@ -395,8 +395,8 @@ struct RAC23MobyBlock {
 			verify(entry.size == 0x88, "Moby size field has invalid value.");
 			
 			MobyInstance instance;
-			swap_moby(instance, entry);
 			instance.original_index = original_index++;
+			swap_moby(instance, entry);
 			dest.moby_instances->push_back(instance);
 		}
 		dest.dynamic_moby_count = header.dynamic_count;
@@ -488,8 +488,8 @@ struct DeadlockedMobyBlock {
 			verify(entry.unknown_6c == -1, "Moby field has weird value.");
 			
 			MobyInstance instance;
-			swap_moby(instance, entry);
 			instance.original_index = original_index++;
+			swap_moby(instance, entry);
 			dest.moby_instances->push_back(instance);
 		}
 		dest.dynamic_moby_count = header.dynamic_count;
@@ -757,6 +757,7 @@ struct GroupBlock {
 		for(s32 pointer : pointers) {
 			s32 member_index = pointer / 2;
 			Group group;
+			group.original_index = original_index++;
 			s32 member;
 			if(pointer >= 0) {
 				do {
@@ -764,7 +765,6 @@ struct GroupBlock {
 					group.members.push_back(member & 0x7fff);
 				} while(!(member & 0x8000));
 			}
-			group.original_index = original_index++;
 			dest.emplace_back(std::move(group));
 		}
 	}
@@ -919,7 +919,7 @@ struct PathBlock {
 		auto& header = src.read<PathBlockHeader>(0, "path block header");
 		std::vector<std::vector<Vec4f>> splines = read_splines(src.subbuf(0x10), header.spline_count, header.data_offset - 0x10);
 		for(size_t i = 0; i < splines.size(); i++) {
-			dest.emplace_back(Path{std::move(splines[i]), (OriginalIndex) i});
+			dest.emplace_back(Path{(OriginalIndex) i, std::move(splines[i])});
 		}
 	}
 	
@@ -982,12 +982,12 @@ struct GrindPathBlock {
 		auto splines = read_splines(src.subbuf(offsets_pos), header.spline_count, header.data_offset - offsets_pos);
 		for(s64 i = 0; i < header.spline_count; i++) {
 			GrindPath path;
+			path.original_index = i;
 			path.bounding_sphere = grindpaths[i].bounding_sphere;
 			path.unknown_4 = grindpaths[i].unknown_4;
 			path.wrap = grindpaths[i].wrap;
 			path.inactive = grindpaths[i].inactive;
 			path.vertices = splines[i];
-			path.original_index = (OriginalIndex) std::move(i);
 			dest.emplace_back(std::move(path));
 		}
 	}
@@ -1036,13 +1036,13 @@ struct GameplayAreaListBlock {
 		OriginalIndex original_index = 0;
 		for(const GameplayAreaPacked& entry : entries) {
 			Area area;
+			area.original_index = original_index++;
 			area.bounding_sphere = entry.bounding_sphere;
 			area.last_update_time = entry.last_update_time;
 			for(s32 part = 0; part < 5; part++) {
 				s32 part_ofs = header.part_offsets[part] + entry.relative_part_offsets[part];
 				area.parts[part] = src.read_multiple<s32>(part_ofs, entry.part_counts[part], "area list data").copy();
 			}
-			area.original_index = original_index++;
 			dest.emplace_back(std::move(area));
 		}
 	}
@@ -1106,9 +1106,9 @@ struct TieAmbientRgbaBlock {
 			s64 size = ((s64) src.read<s16>(ofs, "size")) * 2;
 			ofs += 2;
 			TieAmbientRgbas part;
+			part.original_index = original_index++;
 			part.id = id;
 			part.data = src.read_multiple<u8>(ofs, size, "tie rgba data").copy();
-			part.original_index = original_index++;
 			dest.emplace_back(std::move(part));
 			ofs += size;
 		}
@@ -1143,17 +1143,17 @@ struct OcclusionBlock {
 		s64 ofs = 0x10;
 		OriginalIndex original_index_1 = 0;
 		for(auto& pair : src.read_multiple<OcclusionPairPacked>(ofs, header.count_1, "first part of occlusion")) {
-			dest.first_part.emplace_back(OcclusionPair{pair.unknown_0, pair.unknown_4, original_index_1++});
+			dest.first_part.emplace_back(OcclusionPair{original_index_1++, pair.unknown_0, pair.unknown_4});
 		}
 		ofs += header.count_1 * sizeof(OcclusionPairPacked);
 		OriginalIndex original_index_2 = 0;
 		for(auto& pair : src.read_multiple<OcclusionPairPacked>(ofs, header.count_2, "second part of occlusion")) {
-			dest.second_part.emplace_back(OcclusionPair{pair.unknown_0, pair.unknown_4, original_index_2++});
+			dest.second_part.emplace_back(OcclusionPair{original_index_2++, pair.unknown_0, pair.unknown_4});
 		}
 		ofs += header.count_2 * sizeof(OcclusionPairPacked);
 		OriginalIndex original_index_3 = 0;
 		for(auto& pair : src.read_multiple<OcclusionPairPacked>(ofs, header.count_3, "third part of occlusion")) {
-			dest.third_part.emplace_back(OcclusionPair{pair.unknown_0, pair.unknown_4, original_index_3++});
+			dest.third_part.emplace_back(OcclusionPair{original_index_3++, pair.unknown_0, pair.unknown_4});
 		}
 	}
 	
