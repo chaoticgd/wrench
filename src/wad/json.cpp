@@ -66,3 +66,34 @@ std::vector<u8> buffer_from_json_hexdump(const Json& json) {
 	}
 	return result;
 }
+
+Json f32_to_json(f32 value) {
+	if(std::fpclassify(value) == FP_NAN || std::fpclassify(value) == FP_INFINITE) {
+		u8* bytes = (u8*) &value;
+		std::string str;
+		str += HEX_DIGITS[bytes[0] >> 4];
+		str += HEX_DIGITS[bytes[0] & 0xf];
+		str += HEX_DIGITS[bytes[1] >> 4];
+		str += HEX_DIGITS[bytes[1] & 0xf];
+		str += HEX_DIGITS[bytes[2] >> 4];
+		str += HEX_DIGITS[bytes[2] & 0xf];
+		str += HEX_DIGITS[bytes[3] >> 4];
+		str += HEX_DIGITS[bytes[3] & 0xf];
+		return str;
+	} else {
+		return value;
+	}
+}
+
+f32 json_to_f32(Json json) {
+	if(json.is_string()) {
+		f32 value = 0;
+		u8* bytes = (u8*) &value;
+		sscanf(json.get<std::string>().c_str(), "%02hhx%02hhx%02hhx%02hhx", &bytes[0], &bytes[1], &bytes[2], &bytes[3]);
+		return value;
+	} else if(json.is_number()) {
+		return json;
+	} else {
+		verify_not_reached("Expected float.");
+	}
+}

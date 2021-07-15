@@ -48,6 +48,8 @@ std::string encode_json_string(const std::string& input);
 std::string decode_json_string(const std::string& input);
 Json buffer_to_json_hexdump(const std::vector<u8>& buffer);
 std::vector<u8> buffer_from_json_hexdump(const Json& json);
+Json f32_to_json(f32 value);
+f32 json_to_f32(Json json);
 
 template <typename Object>
 Json to_json(Object object);
@@ -91,13 +93,7 @@ struct ToJsonVisitor {
 template <typename Object>
 Json to_json(Object object) {
 	if constexpr(std::is_same_v<Object, f32>) {
-		if(std::fpclassify(object) == FP_NAN || std::fpclassify(object) == FP_INFINITE) {
-			std::vector<u8> float_buffer(4);
-			memcpy(float_buffer.data(), &object, 4);
-			return buffer_to_json_hexdump(float_buffer);
-		} else {
-			return object;
-		}
+		return f32_to_json(object);
 	} else if constexpr(std::is_compound_v<Object> && !std::is_same_v<Object, std::string>) {
 		ToJsonVisitor visitor;
 		object.enumerate_fields(visitor);
@@ -175,13 +171,7 @@ struct FromJsonVisitor {
 template <typename Object>
 void from_json(Object& dest, Json src) {
 	if constexpr(std::is_same_v<Object, f32>) {
-		if(src.is_array()) {
-			std::vector<u8> float_buffer = buffer_from_json_hexdump(src);
-			verify(float_buffer.size() == 4, "Invalid float value.");
-			dest = *(f32*) float_buffer.data();
-		} else if(src.is_number()) {
-			dest = src;
-		}
+		dest = json_to_f32(src);
 	} else if constexpr(std::is_compound_v<Object> && !std::is_same_v<Object, std::string>) {
 		FromJsonVisitor visitor{src};
 		dest.enumerate_fields(visitor);
