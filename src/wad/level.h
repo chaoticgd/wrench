@@ -420,21 +420,21 @@ struct MobyInstance : PvarInstance {
 	}
 };
 
+struct MobyInstances {
+	s32 dynamic_instance_count;
+	std::vector<MobyInstance> static_instances;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD(dynamic_instance_count);
+		DEF_FIELD(static_instances);
+	}
+};
+
 packed_struct(PvarTableEntry,
 	s32 offset;
 	s32 size;
 )
-
-struct MobyGroups {
-	std::vector<s32> first_part;
-	std::vector<s8> second_part;
-	
-	template <typename T>
-	void enumerate_fields(T& t) {
-		DEF_FIELD(first_part);
-		DEF_FIELD(second_part);
-	}
-};
 
 struct Group {
 	InstanceIndex index;
@@ -676,7 +676,7 @@ struct Gameplay {
 	Opt<std::vector<ImportCamera>> cameras;
 	Opt<std::vector<SoundInstance>> sound_instances;
 	Opt<std::vector<s32>> moby_classes;
-	Opt<std::vector<MobyInstance>> moby_instances;
+	Opt<MobyInstances> moby_instances;
 	Opt<s32> dynamic_moby_count;
 	Opt<std::vector<Group>> moby_groups;
 	Opt<std::vector<u8>> global_pvar;
@@ -724,7 +724,6 @@ struct Gameplay {
 		DEF_FIELD(sound_instances);
 		DEF_FIELD(moby_classes);
 		DEF_FIELD(moby_instances);
-		DEF_FIELD(dynamic_moby_count);
 		DEF_FIELD(moby_groups);
 		DEF_HEXDUMP(global_pvar);
 		DEF_FIELD(spheres);
@@ -904,8 +903,10 @@ void Gameplay::for_each_pvar_instance_const(Callback callback) const {
 	for(const SoundInstance& inst : opt_iterator(sound_instances)) {
 		callback(inst);
 	}
-	for(const MobyInstance& inst : opt_iterator(moby_instances)) {
-		callback(inst);
+	if(moby_instances.has_value()) {
+		for(const MobyInstance& inst : moby_instances->static_instances) {
+			callback(inst);
+		}
 	}
 }
 
@@ -932,11 +933,13 @@ void Gameplay::for_each_pvar_instance_const(const LevelWad& wad, Callback callba
 			callback(inst, type);
 		}
 	}
-	for(const MobyInstance& inst : opt_iterator(moby_instances)) {
-		auto iter = wad.moby_classes.find(inst.o_class);
-		if(iter != wad.moby_classes.end()) {
-			const PvarType& type = wad.pvar_types.at(iter->second.pvar_type);
-			callback(inst, type);
+	if(moby_instances.has_value()) {
+		for(const MobyInstance& inst : moby_instances->static_instances) {
+			auto iter = wad.moby_classes.find(inst.o_class);
+			if(iter != wad.moby_classes.end()) {
+				const PvarType& type = wad.pvar_types.at(iter->second.pvar_type);
+				callback(inst, type);
+			}
 		}
 	}
 }

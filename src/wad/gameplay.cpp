@@ -390,34 +390,31 @@ packed_struct(MobyInstanceRAC23,
 )
 
 struct RAC23MobyBlock {
-	static void read(LevelWad& wad, Gameplay& dest, Buffer src, Game game) {
-		dest.moby_instances = std::vector<MobyInstance>();
+	static void read(MobyInstances& dest, Buffer src, Game game) {
 		auto& header = src.read<MobyBlockHeader>(0, "moby block header");
+		dest.dynamic_instance_count = header.dynamic_count;
 		InstanceIndex index = 0;
+		dest.static_instances.reserve(header.static_count);
 		for(MobyInstanceRAC23 entry : src.read_multiple<MobyInstanceRAC23>(0x10, header.static_count, "moby instances")) {
 			verify(entry.size == 0x88, "Moby size field has invalid value.");
 			
 			MobyInstance instance;
 			instance.index = index++;
 			swap_moby(instance, entry);
-			dest.moby_instances->push_back(instance);
+			dest.static_instances.push_back(instance);
 		}
-		dest.dynamic_moby_count = header.dynamic_count;
 	}
 	
-	static bool write(OutBuffer dest, const LevelWad& wad, const Gameplay& src, Game game) {
-		assert(src.moby_instances.has_value());
-		assert(src.dynamic_moby_count.has_value());
+	static void write(OutBuffer dest, const MobyInstances& src, Game game) {
 		MobyBlockHeader header = {0};
-		header.static_count = src.moby_instances->size();
-		header.dynamic_count = *src.dynamic_moby_count;
+		header.static_count = src.static_instances.size();
+		header.dynamic_count = src.dynamic_instance_count;
 		dest.write(header);
-		for(MobyInstance instance : *src.moby_instances) {
+		for(MobyInstance instance : src.static_instances) {
 			MobyInstanceRAC23 entry;
 			swap_moby(instance, entry);
 			dest.write(entry);
 		}
-		return true;
 	}
 	
 	static void swap_moby(MobyInstance& l, MobyInstanceRAC23& r) {
@@ -479,10 +476,11 @@ packed_struct(MobyInstanceDL,
 static_assert(sizeof(MobyInstanceDL) == 0x70);
 
 struct DeadlockedMobyBlock {
-	static void read(LevelWad& wad, Gameplay& dest, Buffer src, Game game) {
-		dest.moby_instances = std::vector<MobyInstance>();
+	static void read(MobyInstances& dest, Buffer src, Game game) {
 		auto& header = src.read<MobyBlockHeader>(0, "moby block header");
+		dest.dynamic_instance_count = header.dynamic_count;
 		InstanceIndex index = 0;
+		dest.static_instances.reserve(header.static_count);
 		for(MobyInstanceDL entry : src.read_multiple<MobyInstanceDL>(0x10, header.static_count, "moby instances")) {
 			verify(entry.size == 0x70, "Moby size field has invalid value.");
 			verify(entry.unknown_20 == 32, "Moby field has weird value.");
@@ -493,24 +491,20 @@ struct DeadlockedMobyBlock {
 			MobyInstance instance;
 			instance.index = index++;
 			swap_moby(instance, entry);
-			dest.moby_instances->push_back(instance);
+			dest.static_instances.push_back(instance);
 		}
-		dest.dynamic_moby_count = header.dynamic_count;
 	}
 	
-	static bool write(OutBuffer dest, const LevelWad& wad, const Gameplay& src, Game game) {
-		assert(src.moby_instances.has_value());
-		assert(src.dynamic_moby_count.has_value());
+	static void write(OutBuffer dest, const MobyInstances& src, Game game) {
 		MobyBlockHeader header = {0};
-		header.static_count = src.moby_instances->size();
-		header.dynamic_count = *src.dynamic_moby_count;
+		header.static_count = src.static_instances.size();
+		header.dynamic_count = src.dynamic_instance_count;
 		dest.write(header);
-		for(MobyInstance instance : *src.moby_instances) {
+		for(MobyInstance instance : src.static_instances) {
 			MobyInstanceDL entry;
 			swap_moby(instance, entry);
 			dest.write(entry);
 		}
-		return true;
 	}
 	
 	static void swap_moby(MobyInstance& l, MobyInstanceDL& r) {
@@ -603,10 +597,12 @@ static PvarType& get_pvar_type(s32 pvar_index, LevelWad& wad, Gameplay& dest) {
 			return wad.pvar_types[cls.pvar_type];
 		}
 	}
-	for(MobyInstance& inst : opt_iterator(dest.moby_instances)) {
-		if(inst.pvar_index == pvar_index) {
-			MobyClass& cls = wad.lookup_moby_class(inst.o_class);
-			return wad.pvar_types[cls.pvar_type];
+	if(dest.moby_instances.has_value()) {
+		for(MobyInstance& inst : dest.moby_instances->static_instances) {
+			if(inst.pvar_index == pvar_index) {
+				MobyClass& cls = wad.lookup_moby_class(inst.o_class);
+				return wad.pvar_types[cls.pvar_type];
+			}
 		}
 	}
 	verify_not_reached("Invalid pvar index.");
@@ -1283,7 +1279,7 @@ const std::vector<GameplayBlockDescription> RAC23_GAMEPLAY_BLOCKS = {
 	{0x08, bf<InstanceBlock<ImportCamera, ImportCameraPacked>>(&Gameplay::cameras), "import cameras"},
 	{0x0c, bf<InstanceBlock<SoundInstance, SoundInstancePacked>>(&Gameplay::sound_instances), "sound instances"},
 	{0x48, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},
-	{0x4c, {RAC23MobyBlock::read, RAC23MobyBlock::write}, "moby instances"},
+	{0x4c, bf<RAC23MobyBlock>(&Gameplay::moby_instances), "moby instances"},
 	{0x5c, {PvarTableBlock::read, PvarTableBlock::write}, "pvar table"},
 	{0x60, {PvarDataBlock::read, PvarDataBlock::write}, "pvar data"},
 	{0x58, {PvarScratchpadBlock::read, PvarScratchpadBlock::write}, "pvar pointer scratchpad table"},
@@ -1323,7 +1319,7 @@ const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS = {
 	{0x04, bf<InstanceBlock<ImportCamera, ImportCameraPacked>>(&Gameplay::cameras), "import cameras"},
 	{0x08, bf<InstanceBlock<SoundInstance, SoundInstancePacked>>(&Gameplay::sound_instances), "sound instances"},
 	{0x2c, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},
-	{0x30, {DeadlockedMobyBlock::read, DeadlockedMobyBlock::write}, "moby instances"},
+	{0x30, bf<DeadlockedMobyBlock>(&Gameplay::moby_instances), "moby instances"},
 	{0x40, {PvarTableBlock::read, PvarTableBlock::write}, "pvar table"},
 	{0x44, {PvarDataBlock::read, PvarDataBlock::write}, "pvar data"},
 	{0x3c, {PvarScratchpadBlock::read, PvarScratchpadBlock::write}, "pvar pointer scratchpad table"},
@@ -1363,7 +1359,7 @@ const std::vector<GameplayBlockDescription> DL_ART_INSTANCE_BLOCKS = {
 
 const std::vector<GameplayBlockDescription> DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS = {
 	{0x00, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},
-	{0x04, {DeadlockedMobyBlock::read, DeadlockedMobyBlock::write}, "moby instances"},
+	{0x04, bf<DeadlockedMobyBlock>(&Gameplay::moby_instances), "moby instances"},
 	{0x14, {PvarTableBlock::read, PvarTableBlock::write}, "pvar table"},
 	{0x18, {PvarDataBlock::read, PvarDataBlock::write}, "pvar data"},
 	{0x10, {PvarScratchpadBlock::read, PvarScratchpadBlock::write}, "pvar pointer scratchpad table"},
