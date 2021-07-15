@@ -437,6 +437,17 @@ struct MobyGroups {
 	}
 };
 
+struct Group {
+	std::vector<u16> members;
+	OriginalIndex original_index;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD(members);
+		DEF_FIELD(original_index);
+	}
+};
+
 struct GC_54_DL_38 {
 	std::vector<s8> first_part;
 	std::vector<s64> second_part;
@@ -590,17 +601,6 @@ struct TieAmbientRgbas {
 	}
 };
 
-struct TieGroups {
-	std::vector<s32> first_part;
-	std::vector<s8> second_part;
-	
-	template <typename T>
-	void enumerate_fields(T& t) {
-		DEF_FIELD(first_part);
-		DEF_FIELD(second_part);
-	}
-};
-
 struct ShrubInstance {
 	s32 o_class;
 	f32 draw_distance;
@@ -631,17 +631,6 @@ struct ShrubInstance {
 		DEF_FIELD(unknown_68);
 		DEF_FIELD(unknown_6c);
 		DEF_FIELD(original_index);
-	}
-};
-
-struct ShrubGroups {
-	std::vector<s32> first_part;
-	std::vector<s8> second_part;
-	
-	template <typename T>
-	void enumerate_fields(T& t) {
-		DEF_FIELD(first_part);
-		DEF_FIELD(second_part);
 	}
 };
 
@@ -690,7 +679,7 @@ struct Gameplay {
 	Opt<std::vector<s32>> moby_classes;
 	Opt<std::vector<MobyInstance>> moby_instances;
 	Opt<s32> dynamic_moby_count;
-	Opt<MobyGroups> moby_groups;
+	Opt<std::vector<Group>> moby_groups;
 	Opt<std::vector<u8>> global_pvar;
 	Opt<std::vector<Shape>> spheres;
 	Opt<std::vector<Shape>> cylinders;
@@ -706,10 +695,10 @@ struct Gameplay {
 	Opt<std::vector<s32>> tie_classes;
 	Opt<std::vector<TieInstance>> tie_instances;
 	Opt<std::vector<TieAmbientRgbas>> tie_ambient_rgbas;
-	Opt<TieGroups> tie_groups;
+	Opt<std::vector<Group>> tie_groups;
 	Opt<std::vector<s32>> shrub_classes;
 	Opt<std::vector<ShrubInstance>> shrub_instances;
-	Opt<ShrubGroups> shrub_groups;
+	Opt<std::vector<Group>> shrub_groups;
 	Opt<OcclusionClusters> occlusion_clusters;
 	
 	// Only used while reading the binary gameplay file.

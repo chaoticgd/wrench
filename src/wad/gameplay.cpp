@@ -64,7 +64,7 @@ std::vector<u8> write_gameplay(const LevelWad& wad, const Gameplay& gameplay_arg
 				*(s32*) &dest_vec[block.header_pointer_offset] = ofs;
 				if(strcmp(block.name, "art instance shrub groups") == 0
 					&& gameplay.shrub_groups.has_value()
-					&& gameplay.shrub_groups->second_part.size() > 0) {
+					&& gameplay.shrub_groups->size() > 0) {
 					dest.pad(0x40, 0);
 				}
 			}
@@ -738,40 +738,67 @@ struct PvarPointerRewireBlock {
 	}
 };
 
-packed_struct(DualTableHeader,
-	s32 count_1;
-	s32 count_2;
+packed_struct(GroupHeader,
+	s32 group_count;
+	s32 data_size;
 	s32 pad[2];
 )
 
-template <typename T>
-struct DualTableBlock {
-	using FirstType = typename decltype(T::first_part)::value_type;
-	using SecondType = typename decltype(T::second_part)::value_type;
-	
-	static void read(T& dest, Buffer src, Game game) {
-		auto header = src.read<DualTableHeader>(0, "dual table header");
-		verify(header.pad[0] == 0, "DualTableBlock contains more than two tables.");
-		dest.first_part = src.read_multiple<FirstType>(0x10, header.count_1, "table body").copy();
-		s64 first_part_size = header.count_1 * sizeof(FirstType);
-		if(first_part_size % 0x10 != 0) {
-			first_part_size += 0x10 - (first_part_size % 0x10);
+struct GroupBlock {
+	static void read(std::vector<Group>& dest, Buffer src, Game game) {
+		auto& header = src.read<GroupHeader>(0, "group block header");
+		auto pointers = src.read_multiple<s32>(0x10, header.group_count, "group pointers");
+		s64 data_ofs = 0x10 + header.group_count * 4;
+		if(data_ofs % 0x10 != 0) {
+			data_ofs += 0x10 - (data_ofs % 0x10);
 		}
-		dest.second_part = src.read_multiple<SecondType>(0x10 + first_part_size, header.count_2, "table body").copy();
+		auto members = src.read_multiple<u16>(data_ofs, header.data_size / 2, "groups");
+		OriginalIndex original_index = 0;
+		for(s32 pointer : pointers) {
+			s32 member_index = pointer / 2;
+			Group group;
+			s32 member;
+			if(pointer >= 0) {
+				do {
+					member = members[member_index++];
+					group.members.push_back(member & 0x7fff);
+				} while(!(member & 0x8000));
+			}
+			group.original_index = original_index++;
+			dest.emplace_back(std::move(group));
+		}
 	}
 	
-	static void write(OutBuffer dest, const T& src, Game game) {
-		DualTableHeader header = {0};
-		header.count_1 = src.first_part.size();
-		header.count_2 = src.second_part.size();
-		dest.write(header);
-		for(const FirstType& elem : src.first_part) {
-			dest.write(elem);
-		}
+	static void write(OutBuffer dest, const std::vector<Group>& src, Game game) {
+		s64 header_ofs = dest.alloc<GroupHeader>();
+		s64 pointer_ofs = dest.alloc_multiple<s32>(src.size());
 		dest.pad(0x10, 0);
-		for(const SecondType& elem : src.second_part) {
-			dest.write(elem);
+		s64 data_ofs = dest.tell();
+		
+		std::vector<s32> pointers;
+		pointers.reserve(src.size());
+		for(const Group& group : src) {
+			if(group.members.size() > 0) {
+				pointers.push_back(dest.tell() - data_ofs);
+				for(size_t i = 0; i < group.members.size(); i++) {
+					if(i == group.members.size() - 1) {
+						dest.write<u16>(group.members[i] | 0x8000);
+					} else {
+						dest.write<u16>(group.members[i]);
+					}
+				}
+			} else {
+				pointers.push_back(-1);
+			}
 		}
+		
+		dest.pad(0x10, 0);
+		
+		GroupHeader header = {0};
+		header.group_count = src.size();
+		header.data_size = dest.tell() - data_ofs;
+		dest.write(header_ofs, header);
+		dest.write_multiple(pointer_ofs, pointers);
 	}
 };
 
@@ -1349,15 +1376,15 @@ const std::vector<GameplayBlockDescription> RAC23_GAMEPLAY_BLOCKS = {
 	{0x60, {PvarDataBlock::read, PvarDataBlock::write}, "pvar data"},
 	{0x58, {PvarScratchpadBlock::read, PvarScratchpadBlock::write}, "pvar pointer scratchpad table"},
 	{0x64, {PvarPointerRewireBlock::read, PvarPointerRewireBlock::write}, "pvar pointer rewire table"},
-	{0x50, bf<DualTableBlock<MobyGroups>>(&Gameplay::moby_groups), "moby groups"},
+	{0x50, bf<GroupBlock>(&Gameplay::moby_groups), "moby groups"},
 	{0x54, {GlobalPvarBlock::read, GlobalPvarBlock::write}, "global pvar"},
 	{0x30, bf<ClassBlock>(&Gameplay::tie_classes), "tie classes"},
 	{0x34, bf<InstanceBlock<TieInstance, TieInstancePacked>>(&Gameplay::tie_instances), "tie instances"},
 	{0x94, bf<TieAmbientRgbaBlock>(&Gameplay::tie_ambient_rgbas), "tie ambient rgbas"},
-	{0x38, bf<DualTableBlock<TieGroups>>(&Gameplay::tie_groups), "tie groups"},
+	{0x38, bf<GroupBlock>(&Gameplay::tie_groups), "tie groups"},
 	{0x3c, bf<ClassBlock>(&Gameplay::shrub_classes), "shrub classes"},
 	{0x40, bf<InstanceBlock<ShrubInstance, ShrubInstancePacked>>(&Gameplay::shrub_instances), "shrub instances"},
-	{0x44, bf<DualTableBlock<ShrubGroups>>(&Gameplay::shrub_groups), "shrub groups"},
+	{0x44, bf<GroupBlock>(&Gameplay::shrub_groups), "shrub groups"},
 	{0x78, bf<PathBlock>(&Gameplay::paths), "paths"},
 	{0x68, bf<InstanceBlock<Shape, ShapePacked>>(&Gameplay::cuboids), "cuboids"},
 	{0x6c, bf<InstanceBlock<Shape, ShapePacked>>(&Gameplay::spheres), "spheres"},
@@ -1389,7 +1416,7 @@ const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS = {
 	{0x44, {PvarDataBlock::read, PvarDataBlock::write}, "pvar data"},
 	{0x3c, {PvarScratchpadBlock::read, PvarScratchpadBlock::write}, "pvar pointer scratchpad table"},
 	{0x48, {PvarPointerRewireBlock::read, PvarPointerRewireBlock::write}, "pvar pointer rewire table"},
-	{0x34, bf<DualTableBlock<MobyGroups>>(&Gameplay::moby_groups), "moby groups"},
+	{0x34, bf<GroupBlock>(&Gameplay::moby_groups), "moby groups"},
 	{0x38, {GlobalPvarBlock::read, GlobalPvarBlock::write}, "global pvar"},
 	{0x5c, bf<PathBlock>(&Gameplay::paths), "paths"},
 	{0x4c, bf<InstanceBlock<Shape, ShapePacked>>(&Gameplay::cuboids), "cuboids"},
@@ -1408,10 +1435,10 @@ const std::vector<GameplayBlockDescription> DL_ART_INSTANCE_BLOCKS = {
 	{0x04, bf<ClassBlock>(&Gameplay::tie_classes), "tie classes"},
 	{0x08, bf<InstanceBlock<TieInstance, TieInstancePacked>>(&Gameplay::tie_instances), "tie instances"},
 	{0x20, bf<TieAmbientRgbaBlock>(&Gameplay::tie_ambient_rgbas), "tie ambient rgbas"},
-	{0x0c, bf<DualTableBlock<TieGroups>>(&Gameplay::tie_groups), "tie groups"},
+	{0x0c, bf<GroupBlock>(&Gameplay::tie_groups), "tie groups"},
 	{0x10, bf<ClassBlock>(&Gameplay::shrub_classes), "shrub classes"},
 	{0x14, bf<InstanceBlock<ShrubInstance, ShrubInstancePacked>>(&Gameplay::shrub_instances), "shrub instances"},
-	{0x18, bf<DualTableBlock<ShrubGroups>>(&Gameplay::shrub_groups), "art instance shrub groups"},
+	{0x18, bf<GroupBlock>(&Gameplay::shrub_groups), "art instance shrub groups"},
 	{0x1c, bf<OcclusionBlock>(&Gameplay::occlusion_clusters), "occlusion clusters"},
 	{0x24, {nullptr, nullptr}, "pad 1"},
 	{0x28, {nullptr, nullptr}, "pad 2"},
@@ -1429,6 +1456,6 @@ const std::vector<GameplayBlockDescription> DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS 
 	{0x18, {PvarDataBlock::read, PvarDataBlock::write}, "pvar data"},
 	{0x10, {PvarScratchpadBlock::read, PvarScratchpadBlock::write}, "pvar pointer scratchpad table"},
 	{0x1c, {PvarPointerRewireBlock::read, PvarPointerRewireBlock::write}, "pvar pointer rewire table"},
-	{0x08, bf<DualTableBlock<MobyGroups>>(&Gameplay::moby_groups), "moby groups"},
+	{0x08, bf<GroupBlock>(&Gameplay::moby_groups), "moby groups"},
 	{0x0c, {GlobalPvarBlock::read, GlobalPvarBlock::write}, "global pvar"},
 };
