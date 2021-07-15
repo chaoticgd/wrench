@@ -193,10 +193,10 @@ struct Properties {
 	std::vector<PropertiesSecondPart> second_part;
 	s32 core_sounds_count;
 	Opt<s32> rac3_third_part;
-	std::vector<PropertiesThirdPart> third_part;
+	Opt<std::vector<PropertiesThirdPart>> third_part;
 	Opt<PropertiesFourthPart> fourth_part;
 	Opt<PropertiesFifthPart> fifth_part;
-	std::vector<s8> sixth_part;
+	Opt<std::vector<s8>> sixth_part;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {

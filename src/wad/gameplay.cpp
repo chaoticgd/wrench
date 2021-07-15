@@ -129,6 +129,7 @@ struct PropertiesBlock {
 	}
 	
 	static void write(OutBuffer dest, const Properties& src, Game game) {
+		static const char* ERROR_MESSAGE = "Invalid properties block.";
 		dest.write(src.first_part);
 		if(src.second_part.size() > 0) {
 			dest.write_multiple(src.second_part);
@@ -138,20 +139,22 @@ struct PropertiesBlock {
 		}
 		dest.write(src.core_sounds_count);
 		if(game == Game::RAC3) {
-			verify(src.rac3_third_part.has_value(), "Invalid properties block.");
+			verify(src.rac3_third_part.has_value(), ERROR_MESSAGE);
 			dest.write(*src.rac3_third_part);
 		} else if(game == Game::DL) {
-			dest.write((s32) src.third_part.size());
-			if(src.third_part.size() > 0) {
-				dest.write_multiple(src.third_part);
-				verify(src.fourth_part.has_value(), "Invalid properties block.");
+			verify(src.third_part.has_value(), ERROR_MESSAGE);
+			dest.write((s32) src.third_part->size());
+			if(src.third_part->size() > 0) {
+				dest.write_multiple(*src.third_part);
+				verify(src.fourth_part.has_value(), ERROR_MESSAGE);
 				dest.write(*src.fourth_part);
 			} else {
 				dest.vec.resize(dest.tell() + 0x18, 0);
 			}
-			verify(src.fifth_part.has_value(), "Invalid properties block.");
+			verify(src.fifth_part.has_value(), ERROR_MESSAGE);
 			dest.write(*src.fifth_part);
-			dest.write_multiple(src.sixth_part);
+			verify(src.sixth_part.has_value(), ERROR_MESSAGE);
+			dest.write_multiple(*src.sixth_part);
 		}
 	}
 };
