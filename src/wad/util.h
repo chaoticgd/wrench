@@ -159,30 +159,25 @@ packed_struct(Vec4f,
 )
 
 packed_struct(Mat3,
-	Vec4f i;
-	Vec4f j;
-	Vec4f k;
+	Vec4f m_0;
+	Vec4f m_1;
+	Vec4f m_2;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD(i);
-		DEF_PACKED_FIELD(j);
-		DEF_PACKED_FIELD(k);
-	}
-)
-
-packed_struct(Mat4,
-	Vec4f i;
-	Vec4f j;
-	Vec4f k;
-	Vec4f l;
-	
-	template <typename T>
-	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD(i);
-		DEF_PACKED_FIELD(j);
-		DEF_PACKED_FIELD(k);
-		DEF_PACKED_FIELD(l);
+		Vec4f temp;
+		
+		temp = m_0;
+		t.field("0", temp);
+		m_0 = temp;
+		
+		temp = m_1;
+		t.field("1", temp);
+		m_1 = temp;
+		
+		temp = m_2;
+		t.field("2", temp);
+		m_2 = temp;
 	}
 )
 
