@@ -296,13 +296,13 @@ struct LightTriggerInstance {
 	}
 };
 
-struct Pvars {
+struct PvarInstance {
 	std::vector<u8> pvars;
 	s32 pvar_index; // Only used during reading/writing!
 	std::vector<std::pair<s32, s32>> global_pvar_pointers; // Only used when writing!
 };
 
-struct ImportCamera : Pvars {
+struct ImportCamera : PvarInstance {
 	InstanceIndex index;
 	s32 type;
 	Vec3f position;
@@ -336,7 +336,7 @@ struct Shape {
 	}
 };
 
-struct SoundInstance : Pvars {
+struct SoundInstance : PvarInstance {
 	InstanceIndex index;
 	s16 o_class;
 	s16 m_class;
@@ -354,7 +354,7 @@ struct SoundInstance : Pvars {
 	}
 };
 
-struct MobyInstance : Pvars {
+struct MobyInstance : PvarInstance {
 	InstanceIndex index;
 	s8 mission;
 	s32 uid;
@@ -703,11 +703,17 @@ struct Gameplay {
 	// Only used while reading the binary gameplay file.
 	Opt<std::vector<PvarTableEntry>> pvars_temp;
 	
+	// These functions don't skip over instances where pvars.size() == 0.
+	template <typename Callback>
+	void for_each_pvar_instance_const(Callback callback) const;
+	template <typename Callback>
+	void for_each_pvar_instance(Callback callback);
+	template <typename Callback>
+	// And these skip over instances that don't have an associated class in the
+	// relevant JSON file.
+	void for_each_pvar_instance_const(const LevelWad& wad, Callback callback) const;
 	template <typename Callback>
 	void for_each_pvar_instance(const LevelWad& wad, Callback callback);
-	
-	template <typename Callback>
-	void for_each_pvar_instance(const LevelWad& wad, Callback callback) const;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
@@ -891,53 +897,55 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path);
 void write_wad_json(fs::path dest_path, Wad* base);
 
 template <typename Callback>
-void Gameplay::for_each_pvar_instance(const LevelWad& wad, Callback callback) {
-	for(ImportCamera& inst : opt_iterator(cameras)) {
-		auto iter = wad.camera_classes.find(inst.type);
-		if(iter != wad.camera_classes.end()) {
-			const PvarType& type = wad.pvar_types.at(iter->second.pvar_type);
-			callback(type, inst);
-		}
+void Gameplay::for_each_pvar_instance_const(Callback callback) const {
+	for(const ImportCamera& inst : opt_iterator(cameras)) {
+		callback(inst);
 	}
-	for(SoundInstance& inst : opt_iterator(sound_instances)) {
-		auto iter = wad.sound_classes.find(inst.o_class);
-		if(iter != wad.sound_classes.end()) {
-			const PvarType& type = wad.pvar_types.at(iter->second.pvar_type);
-			callback(type, inst);
-		}
+	for(const SoundInstance& inst : opt_iterator(sound_instances)) {
+		callback(inst);
 	}
-	for(MobyInstance& inst : opt_iterator(moby_instances)) {
-		auto iter = wad.moby_classes.find(inst.o_class);
-		if(iter != wad.moby_classes.end()) {
-			const PvarType& type = wad.pvar_types.at(iter->second.pvar_type);
-			callback(type, inst);
-		}
+	for(const MobyInstance& inst : opt_iterator(moby_instances)) {
+		callback(inst);
 	}
 }
 
 template <typename Callback>
-void Gameplay::for_each_pvar_instance(const LevelWad& wad, Callback callback) const {
+void Gameplay::for_each_pvar_instance(Callback callback) {
+	for_each_pvar_instance_const([&](const PvarInstance& inst) {
+		callback(const_cast<PvarInstance&>(inst));
+	});
+}
+
+template <typename Callback>
+void Gameplay::for_each_pvar_instance_const(const LevelWad& wad, Callback callback) const {
 	for(const ImportCamera& inst : opt_iterator(cameras)) {
 		auto iter = wad.camera_classes.find(inst.type);
 		if(iter != wad.camera_classes.end()) {
 			const PvarType& type = wad.pvar_types.at(iter->second.pvar_type);
-			callback(type, inst);
+			callback(inst, type);
 		}
 	}
 	for(const SoundInstance& inst : opt_iterator(sound_instances)) {
 		auto iter = wad.sound_classes.find(inst.o_class);
 		if(iter != wad.sound_classes.end()) {
 			const PvarType& type = wad.pvar_types.at(iter->second.pvar_type);
-			callback(type, inst);
+			callback(inst, type);
 		}
 	}
 	for(const MobyInstance& inst : opt_iterator(moby_instances)) {
 		auto iter = wad.moby_classes.find(inst.o_class);
 		if(iter != wad.moby_classes.end()) {
 			const PvarType& type = wad.pvar_types.at(iter->second.pvar_type);
-			callback(type, inst);
+			callback(inst, type);
 		}
 	}
+}
+
+template <typename Callback>
+void Gameplay::for_each_pvar_instance(const LevelWad& wad, Callback callback) {
+	for_each_pvar_instance_const(wad, [&](const PvarInstance& inst, const PvarType& type) {
+		callback(const_cast<PvarInstance&>(inst), type);
+	});
 }
 
 #endif
