@@ -691,11 +691,9 @@ struct Gameplay {
 	Opt<std::vector<Area>> areas;
 	
 	Opt<std::vector<DirectionalLight>> lights;
-	Opt<std::vector<s32>> tie_classes;
 	Opt<std::vector<TieInstance>> tie_instances;
 	Opt<std::vector<TieAmbientRgbas>> tie_ambient_rgbas;
 	Opt<std::vector<Group>> tie_groups;
-	Opt<std::vector<s32>> shrub_classes;
 	Opt<std::vector<ShrubInstance>> shrub_instances;
 	Opt<std::vector<Group>> shrub_groups;
 	Opt<OcclusionClusters> occlusion_clusters;
@@ -744,11 +742,9 @@ struct Gameplay {
 		t.file(grind_paths, nullptr, "grind_paths");
 		t.file(areas, nullptr, "areas");
 		t.file(lights, nullptr, "lights");
-		t.file(tie_classes, nullptr, "gameplay_tie_classes");
 		t.file(tie_instances, nullptr, "tie_instances");
 		t.file(tie_ambient_rgbas, nullptr, "tie_ambient_rgbas");
 		t.file(tie_groups, nullptr, "tie_groups");
-		t.file(shrub_classes, nullptr, "gameplay_shrub_classes");
 		t.file(shrub_instances, nullptr, "shrub_instances");
 		t.file(shrub_groups, nullptr, "shrub_groups");
 		t.file(occlusion_clusters, nullptr, "occlusion_clusters");

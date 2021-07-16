@@ -1047,6 +1047,38 @@ struct TieAmbientRgbaBlock {
 	}
 };
 
+struct TieClassBlock {
+	static void read(LevelWad& wad, Gameplay& dest, Buffer src, Game game) {}
+	
+	static bool write(OutBuffer dest, const LevelWad& wad, const Gameplay& src, Game game) {
+		std::vector<s32> classes;
+		for(const TieInstance& inst : opt_iterator(src.tie_instances)) {
+			if(std::find(BEGIN_END(classes), inst.o_class) == classes.end()) {
+				classes.push_back(inst.o_class);
+			}
+		}
+		dest.write<s32>(classes.size());
+		dest.write_multiple(classes);
+		return true;
+	}
+};
+
+struct ShrubClassBlock {
+	static void read(LevelWad& wad, Gameplay& dest, Buffer src, Game game) {}
+	
+	static bool write(OutBuffer dest, const LevelWad& wad, const Gameplay& src, Game game) {
+		std::vector<s32> classes;
+		for(const ShrubInstance& inst : opt_iterator(src.shrub_instances)) {
+			if(std::find(BEGIN_END(classes), inst.o_class) == classes.end()) {
+				classes.push_back(inst.o_class);
+			}
+		}
+		dest.write<s32>(classes.size());
+		dest.write_multiple(classes);
+		return true;
+	}
+};
+
 packed_struct(OcclusionHeader,
 	s32 count_1;
 	s32 count_2;
@@ -1286,11 +1318,11 @@ const std::vector<GameplayBlockDescription> RAC23_GAMEPLAY_BLOCKS = {
 	{0x64, {PvarPointerRewireBlock::read, PvarPointerRewireBlock::write}, "pvar pointer rewire table"},
 	{0x50, bf<GroupBlock>(&Gameplay::moby_groups), "moby groups"},
 	{0x54, {GlobalPvarBlock::read, GlobalPvarBlock::write}, "global pvar"},
-	{0x30, bf<ClassBlock>(&Gameplay::tie_classes), "tie classes"},
+	{0x30, {TieClassBlock::read, TieClassBlock::write}, "tie classes"},
 	{0x34, bf<InstanceBlock<TieInstance, TieInstancePacked>>(&Gameplay::tie_instances), "tie instances"},
 	{0x94, bf<TieAmbientRgbaBlock>(&Gameplay::tie_ambient_rgbas), "tie ambient rgbas"},
 	{0x38, bf<GroupBlock>(&Gameplay::tie_groups), "tie groups"},
-	{0x3c, bf<ClassBlock>(&Gameplay::shrub_classes), "shrub classes"},
+	{0x3c, {ShrubClassBlock::read, ShrubClassBlock::write}, "shrub classes"},
 	{0x40, bf<InstanceBlock<ShrubInstance, ShrubInstancePacked>>(&Gameplay::shrub_instances), "shrub instances"},
 	{0x44, bf<GroupBlock>(&Gameplay::shrub_groups), "shrub groups"},
 	{0x78, bf<PathBlock>(&Gameplay::paths), "paths"},
@@ -1340,11 +1372,11 @@ const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS = {
 
 const std::vector<GameplayBlockDescription> DL_ART_INSTANCE_BLOCKS = {
 	{0x00, bf<InstanceBlock<DirectionalLight, DirectionalLightPacked>>(&Gameplay::lights), "directional lights"},
-	{0x04, bf<ClassBlock>(&Gameplay::tie_classes), "tie classes"},
+	{0x04, {TieClassBlock::read, TieClassBlock::write}, "tie classes"},
 	{0x08, bf<InstanceBlock<TieInstance, TieInstancePacked>>(&Gameplay::tie_instances), "tie instances"},
 	{0x20, bf<TieAmbientRgbaBlock>(&Gameplay::tie_ambient_rgbas), "tie ambient rgbas"},
 	{0x0c, bf<GroupBlock>(&Gameplay::tie_groups), "tie groups"},
-	{0x10, bf<ClassBlock>(&Gameplay::shrub_classes), "shrub classes"},
+	{0x10, {ShrubClassBlock::read, ShrubClassBlock::write}, "shrub classes"},
 	{0x14, bf<InstanceBlock<ShrubInstance, ShrubInstancePacked>>(&Gameplay::shrub_instances), "shrub instances"},
 	{0x18, bf<GroupBlock>(&Gameplay::shrub_groups), "art instance shrub groups"},
 	{0x1c, bf<OcclusionBlock>(&Gameplay::occlusion_clusters), "occlusion clusters"},
