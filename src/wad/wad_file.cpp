@@ -248,7 +248,7 @@ static SectorRange write_lump(OutBuffer dest, const std::vector<u8>& buffer) {
 	dest.write_multiple(buffer);
 	s64 size_bytes = dest.tell() - offset_bytes;
 	return {
-		offset_bytes / SECTOR_SIZE,
+		(s32) (offset_bytes / SECTOR_SIZE),
 		Sector32::size_from_bytes(size_bytes)
 	};
 }
