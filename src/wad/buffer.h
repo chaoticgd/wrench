@@ -136,6 +136,6 @@ struct OutBuffer {
 
 s64 file_size_in_bytes(FILE* file);
 std::vector<u8> read_file(fs::path path);
-fs::path write_file(fs::path dest_dir, fs::path rel_path, Buffer buffer);
+std::string write_file(fs::path dest_dir, fs::path rel_path, Buffer buffer);
 
 #endif

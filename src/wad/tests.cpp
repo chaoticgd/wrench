@@ -137,7 +137,7 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 	};
 	auto write_file_mocked = [&](fs::path dest_dir, fs::path path, Buffer buffer) {
 		filesystem_mock[path] = std::vector(buffer.lo, buffer.hi);
-		return path;
+		return path.string();
 	};
 	
 	Json json;

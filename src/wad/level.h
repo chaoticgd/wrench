@@ -776,7 +776,7 @@ struct GameplayJsonReader {
 struct GameplayJsonWriter {
 	fs::path& dest_dir;
 	Json& json;
-	std::function<fs::path(fs::path, fs::path, Buffer)> write_file_func;
+	std::function<std::string(fs::path, fs::path, Buffer)> write_file_func;
 	template <typename T>
 	void file(Opt<T>& dest, const char* dir, const char* file_name) {
 		if(dest.has_value()) {
@@ -784,10 +784,10 @@ struct GameplayJsonWriter {
 				fs::create_directory(dest_dir/dir);
 				Json& json_dir = json[dir];
 				fs::path path = fs::path(dir)/(std::string(file_name) + ".json");
-				json_dir[file_name] = write_file_func(dest_dir, path, to_json(*dest).dump(1, '\t')).string();
+				json_dir[file_name] = write_file_func(dest_dir, path, to_json(*dest).dump(1, '\t'));
 			} else {
 				fs::path path = std::string(file_name) + ".json";
-				json[file_name] = write_file_func(dest_dir, path, to_json(*dest).dump(1, '\t')).string();
+				json[file_name] = write_file_func(dest_dir, path, to_json(*dest).dump(1, '\t'));
 			}
 		}
 	}	

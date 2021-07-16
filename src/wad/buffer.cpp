@@ -138,7 +138,7 @@ std::vector<u8> read_file(fs::path path) {
 	return buffer;
 }
 
-fs::path write_file(fs::path dest_dir, fs::path rel_path, Buffer buffer) {
+std::string write_file(fs::path dest_dir, fs::path rel_path, Buffer buffer) {
 	fs::path dest_path = dest_dir/rel_path;
 	FILE* file = fopen(dest_path.string().c_str(), "wb");
 	verify(file, "Failed to open file '%s' for writing.", dest_path.string().c_str());
@@ -151,5 +151,5 @@ fs::path write_file(fs::path dest_dir, fs::path rel_path, Buffer buffer) {
 	} else {
 		printf("Wrote %s (%ld KiB)\n", dest_path.string().c_str(), buffer.size() / 1024);
 	}
-	return rel_path;
+	return rel_path.string();
 }
