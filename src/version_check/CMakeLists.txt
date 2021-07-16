@@ -51,5 +51,5 @@ add_dependencies(version_check generated_tag generated_commit)
 
 add_custom_command(
 	TARGET version_check POST_BUILD
-	COMMAND $(CMAKE_COMMAND) -E rm ${GIT_TAG_RAW} ${GIT_COMMIT_RAW} ${GIT_TAG} ${GIT_COMMIT}
+	COMMAND ${CMAKE_COMMAND} -E rm ${GIT_TAG_RAW} ${GIT_COMMIT_RAW} ${GIT_TAG} ${GIT_COMMIT}
 )
