@@ -366,7 +366,7 @@ struct MobyInstance : PvarInstance {
 	Vec3f position;
 	Vec3f rotation;
 	s32 group;
-	s32 is_rooted;
+	bool is_rooted;
 	f32 rooted_distance;
 	s32 occlusion;
 	s32 mode_bits;
