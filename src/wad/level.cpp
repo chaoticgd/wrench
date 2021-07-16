@@ -111,14 +111,14 @@ MobyClass& LevelWad::lookup_moby_class(s32 class_number) {
 	}
 }
 
-#define CHECK(condition) if(!(condition)) return nullptr
-
 std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 	fs::path src_dir = src_path.parent_path();
 	Json json = Json::parse(read_file(src_path));
 	
 	Game game;
-	CHECK(json.contains("game") && json["game"].is_string());
+	if(!json.contains("game") || !json["game"].is_string()) {
+		return nullptr;
+	}
 	std::string game_str = json["game"];
 	if(game_str == "R&C1") {
 		game = Game::RAC1;
@@ -134,7 +134,9 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 	}
 	
 	WadType type;
-	CHECK(json.contains("type") && json["type"].is_string());
+	if(!json.contains("type") || !json["type"].is_string()) {
+		return nullptr;
+	}
 	std::string type_str = json["type"];
 	if(type_str == "level") {
 		type = WadType::LEVEL;
