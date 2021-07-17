@@ -935,7 +935,7 @@ struct GrindPathBlock {
 	}
 };
 
-packed_struct(GameplayAreaListHeader,
+packed_struct(AreasHeader,
 	s32 area_count;
 	s32 part_offsets[5];
 	s32 unknown_1c;
@@ -949,11 +949,11 @@ packed_struct(GameplayAreaPacked,
 	s32 relative_part_offsets[5];
 )
 
-struct GameplayAreaListBlock {
+struct AreasBlock {
 	static void read(std::vector<Area>& dest, Buffer src, Game game) {
 		src = src.subbuf(4); // Skip past size field.
-		s64 header_size = sizeof(GameplayAreaListHeader);
-		auto header = src.read<GameplayAreaListHeader>(0, "area list block header");
+		s64 header_size = sizeof(AreasHeader);
+		auto header = src.read<AreasHeader>(0, "area list block header");
 		auto entries = src.read_multiple<GameplayAreaPacked>(header_size, header.area_count, "area list table");
 		InstanceIndex index = 0;
 		for(const GameplayAreaPacked& entry : entries) {
@@ -971,12 +971,12 @@ struct GameplayAreaListBlock {
 	
 	static void write(OutBuffer dest, const std::vector<Area>& src, Game game) {
 		s64 size_ofs = dest.alloc<s32>();
-		s64 header_ofs = dest.alloc<GameplayAreaListHeader>();
+		s64 header_ofs = dest.alloc<AreasHeader>();
 		s64 table_ofs = dest.alloc_multiple<GameplayAreaPacked>(src.size());
 		
 		s64 total_part_counts[5] = {0, 0, 0, 0, 0};
 		
-		GameplayAreaListHeader header;
+		AreasHeader header;
 		std::vector<GameplayAreaPacked> table;
 		for(const Area& area : src) {
 			GameplayAreaPacked packed;
@@ -1310,7 +1310,7 @@ const std::vector<GameplayBlockDescription> RAC23_GAMEPLAY_BLOCKS = {
 	{0x88, bf<GC_88_DL_6c_Block>(&Gameplay::gc_88_dl_6c), "GC 88 DL 6c"},
 	{0x80, bf<GC_80_DL_64_Block>(&Gameplay::gc_80_dl_64), "GC 80 DL 64"},
 	{0x7c, bf<GrindPathBlock>(&Gameplay::grind_paths), "grindpaths"},
-	{0x98, bf<GameplayAreaListBlock>(&Gameplay::areas), "areas"},
+	{0x98, bf<AreasBlock>(&Gameplay::areas), "areas"},
 	{0x90, bf<OcclusionBlock>(&Gameplay::occlusion), "occlusion"}
 };
 
@@ -1343,7 +1343,7 @@ const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS = {
 	{0x6c, bf<GC_88_DL_6c_Block>(&Gameplay::gc_88_dl_6c), "GC 88 DL 6c"},
 	{0x64, bf<GC_80_DL_64_Block>(&Gameplay::gc_80_dl_64), "GC 80 DL 64"},
 	{0x60, bf<GrindPathBlock>(&Gameplay::grind_paths), "grindpaths"},
-	{0x74, bf<GameplayAreaListBlock>(&Gameplay::areas), "areas"},
+	{0x74, bf<AreasBlock>(&Gameplay::areas), "areas"},
 	{0x68, {nullptr, nullptr}, "pad"}
 };
 
