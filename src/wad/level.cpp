@@ -21,7 +21,7 @@
 Json get_file_metadata(const char* format, const char* application) {
 	return Json {
 		{"format", format},
-		{"format_version", 0},
+		{"format_version", 1},
 		{"application", application},
 		{"application_version", get_application_version_string()}
 	};
