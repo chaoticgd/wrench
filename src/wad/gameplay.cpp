@@ -55,7 +55,7 @@ std::vector<u8> write_gameplay(const LevelWad& wad, const Gameplay& gameplay_arg
 			if(strcmp(block.name, "us english help messages") != 0) {
 				dest.pad(0x10, 0);
 			}
-			if(strcmp(block.name, "occlusion clusters") == 0) {
+			if(strcmp(block.name, "occlusion") == 0) {
 				dest.pad(0x40, 0);
 			}
 			s32 ofs = (s32) dest_vec.size();
@@ -1086,57 +1086,34 @@ packed_struct(OcclusionHeader,
 	s32 pad = 0;
 )
 
-packed_struct(OcclusionPairPacked,
-	s32 unknown_0;
-	s32 unknown_4;
-)
-
 struct OcclusionBlock {
-	static void read(OcclusionClusters& dest, Buffer src, Game game) {
+	static void read(Occlusion& dest, Buffer src, Game game) {
 		auto& header = src.read<OcclusionHeader>(0, "occlusion header");
 		s64 ofs = 0x10;
-		InstanceIndex index_1 = 0;
-		for(auto& pair : src.read_multiple<OcclusionPairPacked>(ofs, header.count_1, "first part of occlusion")) {
-			dest.first_part.emplace_back(OcclusionPair{index_1++, pair.unknown_0, pair.unknown_4});
-		}
-		ofs += header.count_1 * sizeof(OcclusionPairPacked);
-		InstanceIndex index_2 = 0;
-		for(auto& pair : src.read_multiple<OcclusionPairPacked>(ofs, header.count_2, "second part of occlusion")) {
-			dest.second_part.emplace_back(OcclusionPair{index_2++, pair.unknown_0, pair.unknown_4});
-		}
-		ofs += header.count_2 * sizeof(OcclusionPairPacked);
-		InstanceIndex index_3 = 0;
-		for(auto& pair : src.read_multiple<OcclusionPairPacked>(ofs, header.count_3, "third part of occlusion")) {
-			dest.third_part.emplace_back(OcclusionPair{index_3++, pair.unknown_0, pair.unknown_4});
-		}
+		dest.first_part = src.read_multiple<u8>(ofs, header.count_1 * 8, "first part of occlusion").copy();
+		ofs += header.count_1 * 8;
+		dest.second_part = src.read_multiple<u8>(ofs, header.count_2 * 8, "second part of occlusion").copy();
+		ofs += header.count_2 * 8;
+		dest.third_part = src.read_multiple<u8>(ofs, header.count_3 * 8, "third part of occlusion").copy();
 	}
 	
-	static void write(OutBuffer dest, const OcclusionClusters& src, Game game) {
+	static void write(OutBuffer dest, const Occlusion& src, Game game) {
 		OcclusionHeader header;
-		header.count_1 = (s32) src.first_part.size();
-		header.count_2 = (s32) src.second_part.size();
-		header.count_3 = (s32) src.third_part.size();
+		header.count_1 = (s32) src.first_part.size() / 8;
+		header.count_2 = (s32) src.second_part.size() / 8;
+		header.count_3 = (s32) src.third_part.size() / 8;
 		dest.write(header);
-		for(const OcclusionPair& pair : src.first_part) {
-			dest.write(pair.unknown_0);
-			dest.write(pair.unknown_4);
-		}
-		for(const OcclusionPair& pair : src.second_part) {
-			dest.write(pair.unknown_0);
-			dest.write(pair.unknown_4);
-		}
-		for(const OcclusionPair& pair : src.third_part) {
-			dest.write(pair.unknown_0);
-			dest.write(pair.unknown_4);
-		}
+		dest.write_multiple(src.first_part);
+		dest.write_multiple(src.second_part);
+		dest.write_multiple(src.third_part);
 		dest.pad(0x40, 0);
 	}
 };
 
 std::vector<u8> write_occlusion(const Gameplay& gameplay, Game game) {
 	std::vector<u8> dest;
-	if(gameplay.occlusion_clusters.has_value()) {
-		OcclusionBlock::write(dest, *gameplay.occlusion_clusters, game);
+	if(gameplay.occlusion.has_value()) {
+		OcclusionBlock::write(dest, *gameplay.occlusion, game);
 	}
 	return dest;
 }
@@ -1334,7 +1311,7 @@ const std::vector<GameplayBlockDescription> RAC23_GAMEPLAY_BLOCKS = {
 	{0x80, bf<GC_80_DL_64_Block>(&Gameplay::gc_80_dl_64), "GC 80 DL 64"},
 	{0x7c, bf<GrindPathBlock>(&Gameplay::grind_paths), "grindpaths"},
 	{0x98, bf<GameplayAreaListBlock>(&Gameplay::areas), "areas"},
-	{0x90, bf<OcclusionBlock>(&Gameplay::occlusion_clusters), "occlusion clusters"}
+	{0x90, bf<OcclusionBlock>(&Gameplay::occlusion), "occlusion"}
 };
 
 const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS = {
@@ -1379,7 +1356,7 @@ const std::vector<GameplayBlockDescription> DL_ART_INSTANCE_BLOCKS = {
 	{0x10, {ShrubClassBlock::read, ShrubClassBlock::write}, "shrub classes"},
 	{0x14, bf<InstanceBlock<ShrubInstance, ShrubInstancePacked>>(&Gameplay::shrub_instances), "shrub instances"},
 	{0x18, bf<GroupBlock>(&Gameplay::shrub_groups), "art instance shrub groups"},
-	{0x1c, bf<OcclusionBlock>(&Gameplay::occlusion_clusters), "occlusion clusters"},
+	{0x1c, bf<OcclusionBlock>(&Gameplay::occlusion), "occlusion"},
 	{0x24, {nullptr, nullptr}, "pad 1"},
 	{0x28, {nullptr, nullptr}, "pad 2"},
 	{0x2c, {nullptr, nullptr}, "pad 3"},

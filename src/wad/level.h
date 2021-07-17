@@ -633,29 +633,16 @@ struct ShrubInstance {
 	}
 };
 
-struct OcclusionPair {
-	InstanceIndex index;
-	s32 unknown_0;
-	s32 unknown_4;
+struct Occlusion {
+	std::vector<u8> first_part;
+	std::vector<u8> second_part;
+	std::vector<u8> third_part;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(index);
-		DEF_FIELD(unknown_0);
-		DEF_FIELD(unknown_4);
-	}
-};
-
-struct OcclusionClusters {
-	std::vector<OcclusionPair> first_part;
-	std::vector<OcclusionPair> second_part;
-	std::vector<OcclusionPair> third_part;
-	
-	template <typename T>
-	void enumerate_fields(T& t) {
-		DEF_FIELD(first_part);
-		DEF_FIELD(second_part);
-		DEF_FIELD(third_part);
+		DEF_HEXDUMP(first_part);
+		DEF_HEXDUMP(second_part);
+		DEF_HEXDUMP(third_part);
 	}
 };
 
@@ -696,7 +683,7 @@ struct Gameplay {
 	Opt<std::vector<Group>> tie_groups;
 	Opt<std::vector<ShrubInstance>> shrub_instances;
 	Opt<std::vector<Group>> shrub_groups;
-	Opt<OcclusionClusters> occlusion_clusters;
+	Opt<Occlusion> occlusion;
 	
 	// Only used while reading the binary gameplay file.
 	Opt<std::vector<PvarTableEntry>> pvars_temp;
@@ -747,7 +734,7 @@ struct Gameplay {
 		t.file(tie_groups, nullptr, "tie_groups");
 		t.file(shrub_instances, nullptr, "shrub_instances");
 		t.file(shrub_groups, nullptr, "shrub_groups");
-		t.file(occlusion_clusters, nullptr, "occlusion_clusters");
+		t.file(occlusion, nullptr, "occlusion");
 	}
 };
 
