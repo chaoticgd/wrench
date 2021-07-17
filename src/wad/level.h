@@ -728,7 +728,7 @@ struct Gameplay {
 		t.file(light_triggers, nullptr, "light_triggers");
 		t.file(cameras, nullptr, "cameras");
 		t.file(sound_instances, nullptr, "sound_instances");
-		t.file(moby_classes, nullptr, "gameplay_moby_classes");
+		t.file(moby_classes, nullptr, "used_moby_classes");
 		t.file(moby_instances, nullptr, "moby_instances");
 		t.file(moby_groups, nullptr, "moby_groups");
 		t.file(global_pvar, nullptr, "global_pvar");
