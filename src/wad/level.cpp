@@ -244,7 +244,7 @@ void write_wad_json(fs::path dest_path, Wad* base) {
 				if(chunk.collision.has_value()) {
 					chunk_json["collision"] = write_file(dest_path, chunk_name("collision"), *chunk.collision);
 				}
-				if(chunk.tfrags.has_value()) {
+				if(chunk.sound_bank.has_value()) {
 					chunk_json["sound_bank"] = write_file(dest_path, chunk_name("bank"), *chunk.sound_bank);
 				}
 				json["chunks"].emplace_back(chunk_json);
