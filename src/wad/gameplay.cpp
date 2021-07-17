@@ -184,14 +184,14 @@ struct HelpMessageBlock {
 			src = src.subbuf(8);
 		}
 		
-		InstanceIndex index = 0;
+		InstanceId index = 0;
 		for(HelpMessageEntry entry : table) {
 			HelpMessage message;
-			message.index = index++;
+			message.id = index++;
 			if(entry.offset != 0) {
 				message.string = src.read_string(entry.offset, is_korean);
 			}
-			message.id = entry.id;
+			message.string_id = entry.id;
 			message.short_id = entry.short_id;
 			message.third_person_id = entry.third_person_id;
 			message.coop_id = entry.coop_id;
@@ -218,7 +218,7 @@ struct HelpMessageBlock {
 			if(message.string) {
 				entry.offset = dest.tell() - base_ofs;
 			}
-			entry.id = message.id;
+			entry.id = message.string_id;
 			entry.short_id = message.short_id;
 			entry.third_person_id = message.third_person_id;
 			entry.coop_id = message.coop_id;
@@ -273,7 +273,7 @@ struct LightTriggerBlock {
 		ofs += header.count_1 * sizeof(Vec4f);
 		auto data = src.read_multiple<LightTriggerPacked>(ofs, header.count_1, "GC 84 data");
 		for(s64 i = 0; i < header.count_1; i++) {
-			dest[i].index = i;
+			dest[i].id = i;
 			dest[i].point = points[i];
 			LightTriggerPacked packed = data[i];
 			swap_gc_84(dest[i], packed);
@@ -320,10 +320,10 @@ struct InstanceBlock {
 	static void read(std::vector<Instance>& dest, Buffer src, Game game) {
 		TableHeader header = src.read<TableHeader>(0, "instance block header");
 		auto entries = src.read_multiple<Packed>(0x10, header.count_1, "instances");
-		InstanceIndex index = 0;
+		InstanceId index = 0;
 		for(Packed packed : entries) {
 			Instance inst;
-			inst.index = index++;
+			inst.id = index++;
 			swap_instance(inst, packed);
 			dest.push_back(inst);
 		}
@@ -393,13 +393,13 @@ struct RAC23MobyBlock {
 	static void read(MobyInstances& dest, Buffer src, Game game) {
 		auto& header = src.read<MobyBlockHeader>(0, "moby block header");
 		dest.dynamic_instance_count = header.dynamic_count;
-		InstanceIndex index = 0;
+		InstanceId index = 0;
 		dest.static_instances.reserve(header.static_count);
 		for(MobyInstanceRAC23 entry : src.read_multiple<MobyInstanceRAC23>(0x10, header.static_count, "moby instances")) {
 			verify(entry.size == 0x88, "Moby size field has invalid value.");
 			
 			MobyInstance instance;
-			instance.index = index++;
+			instance.id = index++;
 			swap_moby(instance, entry);
 			dest.static_instances.push_back(instance);
 		}
@@ -479,7 +479,7 @@ struct DeadlockedMobyBlock {
 	static void read(MobyInstances& dest, Buffer src, Game game) {
 		auto& header = src.read<MobyBlockHeader>(0, "moby block header");
 		dest.dynamic_instance_count = header.dynamic_count;
-		InstanceIndex index = 0;
+		InstanceId index = 0;
 		dest.static_instances.reserve(header.static_count);
 		for(MobyInstanceDL entry : src.read_multiple<MobyInstanceDL>(0x10, header.static_count, "moby instances")) {
 			verify(entry.size == 0x70, "Moby size field has invalid value.");
@@ -489,7 +489,7 @@ struct DeadlockedMobyBlock {
 			verify(entry.unknown_6c == -1, "Moby field has weird value.");
 			
 			MobyInstance instance;
-			instance.index = index++;
+			instance.id = index++;
 			swap_moby(instance, entry);
 			dest.static_instances.push_back(instance);
 		}
@@ -687,11 +687,11 @@ struct GroupBlock {
 			data_ofs += 0x10 - (data_ofs % 0x10);
 		}
 		auto members = src.read_multiple<u16>(data_ofs, header.data_size / 2, "groups");
-		InstanceIndex index = 0;
+		InstanceId index = 0;
 		for(s32 pointer : pointers) {
 			s32 member_index = pointer / 2;
 			Group group;
-			group.index = index++;
+			group.id = index++;
 			s32 member;
 			if(pointer >= 0) {
 				do {
@@ -841,7 +841,7 @@ struct PathBlock {
 		auto& header = src.read<PathBlockHeader>(0, "path block header");
 		std::vector<std::vector<Vec4f>> splines = read_splines(src.subbuf(0x10), header.spline_count, header.data_offset - 0x10);
 		for(size_t i = 0; i < splines.size(); i++) {
-			dest.emplace_back(Path{(InstanceIndex) i, std::move(splines[i])});
+			dest.emplace_back(Path{(InstanceId) i, std::move(splines[i])});
 		}
 	}
 	
@@ -904,7 +904,7 @@ struct GrindPathBlock {
 		auto splines = read_splines(src.subbuf(offsets_pos), header.spline_count, header.data_offset - offsets_pos);
 		for(s64 i = 0; i < header.spline_count; i++) {
 			GrindPath path;
-			path.index = i;
+			path.id = i;
 			path.bounding_sphere = grindpaths[i].bounding_sphere;
 			path.unknown_4 = grindpaths[i].unknown_4;
 			path.wrap = grindpaths[i].wrap;
@@ -955,10 +955,10 @@ struct AreasBlock {
 		s64 header_size = sizeof(AreasHeader);
 		auto header = src.read<AreasHeader>(0, "area list block header");
 		auto entries = src.read_multiple<GameplayAreaPacked>(header_size, header.area_count, "area list table");
-		InstanceIndex index = 0;
+		InstanceId index = 0;
 		for(const GameplayAreaPacked& entry : entries) {
 			Area area;
-			area.index = index++;
+			area.id = index++;
 			area.bounding_sphere = entry.bounding_sphere;
 			area.last_update_time = entry.last_update_time;
 			for(s32 part = 0; part < 5; part++) {
@@ -1018,7 +1018,7 @@ struct AreasBlock {
 struct TieAmbientRgbaBlock {
 	static void read(std::vector<TieAmbientRgbas>& dest, Buffer src, Game game) {
 		s64 ofs = 0;
-		InstanceIndex index = 0;
+		InstanceId index = 0;
 		for(;;) {
 			s16 id = src.read<s16>(ofs, "index");
 			ofs += 2;
@@ -1028,8 +1028,8 @@ struct TieAmbientRgbaBlock {
 			s64 size = ((s64) src.read<s16>(ofs, "size")) * 2;
 			ofs += 2;
 			TieAmbientRgbas part;
-			part.index = index++;
-			part.id = id;
+			part.id = index++;
+			part.number = id;
 			part.data = src.read_multiple<u8>(ofs, size, "tie rgba data").copy();
 			dest.emplace_back(std::move(part));
 			ofs += size;
@@ -1038,7 +1038,7 @@ struct TieAmbientRgbaBlock {
 	
 	static void write(OutBuffer dest, const std::vector<TieAmbientRgbas>& src, Game game) {
 		for(const TieAmbientRgbas& part : src) {
-			dest.write(part.id);
+			dest.write(part.number);
 			assert(part.data.size() % 2 == 0);
 			dest.write<s16>(part.data.size() / 2);
 			dest.write_multiple(part.data);

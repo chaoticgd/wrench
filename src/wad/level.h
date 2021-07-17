@@ -23,7 +23,7 @@
 #include "util.h"
 #include "buffer.h"
 
-using InstanceIndex = s32;
+using InstanceId = s32;
 
 packed_struct(GC_8c_DL_70,
 	s16 unknown_0;
@@ -212,9 +212,9 @@ struct Properties {
 };
 
 struct HelpMessage {
-	InstanceIndex index;
+	InstanceId id;
 	std::optional<std::string> string;
-	s16 id;
+	s16 string_id;
 	s16 short_id;
 	s16 third_person_id;
 	s16 coop_id;
@@ -223,9 +223,9 @@ struct HelpMessage {
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(index);
-		t.encoded_string("string", string);
 		DEF_FIELD(id);
+		t.encoded_string("string", string);
+		DEF_FIELD(string_id);
 		DEF_FIELD(short_id);
 		DEF_FIELD(third_person_id);
 		DEF_FIELD(coop_id);
@@ -250,7 +250,7 @@ packed_struct(ShapePacked,
 )
 
 struct LightTriggerInstance {
-	InstanceIndex index;
+	InstanceId id;
 	Vec4f point;
 	Mat3 matrix;
 	Vec4f point_2;
@@ -273,7 +273,7 @@ struct LightTriggerInstance {
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(index);
+		DEF_FIELD(id);
 		DEF_FIELD(point);
 		DEF_FIELD(matrix);
 		DEF_FIELD(point_2);
@@ -303,14 +303,14 @@ struct PvarInstance {
 };
 
 struct ImportCamera : PvarInstance {
-	InstanceIndex index;
+	InstanceId id;
 	s32 type;
 	Vec3f position;
 	Vec3f rotation;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(index);
+		DEF_FIELD(id);
 		DEF_FIELD(type);
 		DEF_FIELD(position);
 		DEF_FIELD(rotation);
@@ -320,7 +320,7 @@ struct ImportCamera : PvarInstance {
 
 
 struct Shape {
-	InstanceIndex index;
+	InstanceId id;
 	Mat3 matrix;
 	Vec4f position;
 	Mat3 inverse_matrix;
@@ -328,7 +328,7 @@ struct Shape {
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(index);
+		DEF_FIELD(id);
 		DEF_FIELD(matrix);
 		DEF_FIELD(position);
 		DEF_FIELD(inverse_matrix);
@@ -337,7 +337,7 @@ struct Shape {
 };
 
 struct SoundInstance : PvarInstance {
-	InstanceIndex index;
+	InstanceId id;
 	s16 o_class;
 	s16 m_class;
 	f32 range;
@@ -345,7 +345,7 @@ struct SoundInstance : PvarInstance {
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(index);
+		DEF_FIELD(id);
 		DEF_FIELD(o_class);
 		DEF_FIELD(m_class);
 		DEF_FIELD(range);
@@ -355,7 +355,7 @@ struct SoundInstance : PvarInstance {
 };
 
 struct MobyInstance : PvarInstance {
-	InstanceIndex index;
+	InstanceId id;
 	s8 mission;
 	s32 uid;
 	s32 bolts;
@@ -388,7 +388,7 @@ struct MobyInstance : PvarInstance {
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(index);
+		DEF_FIELD(id);
 		DEF_FIELD(mission);
 		DEF_FIELD(uid);
 		DEF_FIELD(bolts);
@@ -437,12 +437,12 @@ packed_struct(PvarTableEntry,
 )
 
 struct Group {
-	InstanceIndex index;
+	InstanceId id;
 	std::vector<u16> members;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(index);
+		DEF_FIELD(id);
 		DEF_FIELD(members);
 	}
 };
@@ -459,12 +459,12 @@ struct GC_54_DL_38 {
 };
 
 struct Path {
-	InstanceIndex index;
+	InstanceId id;
 	std::vector<Vec4f> vertices;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(index);
+		DEF_FIELD(id);
 		DEF_FIELD(vertices);
 	}
 };
@@ -496,7 +496,7 @@ packed_struct(BoundingSphere,
 )
 
 struct GrindPath {
-	InstanceIndex index;
+	InstanceId id;
 	BoundingSphere bounding_sphere;
 	s32 unknown_4;
 	s32 wrap;
@@ -505,7 +505,7 @@ struct GrindPath {
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(index);
+		DEF_FIELD(id);
 		DEF_FIELD(bounding_sphere);
 		DEF_FIELD(unknown_4);
 		DEF_FIELD(wrap);
@@ -523,7 +523,7 @@ enum AreaPart {
 };
 
 struct Area {
-	InstanceIndex index;
+	InstanceId id;
 	BoundingSphere bounding_sphere;
 	s32 last_update_time;
 	std::vector<s32> parts[5];
@@ -536,7 +536,7 @@ struct Area {
 		std::vector<s32>& cylinders = parts[AREA_PART_CYLINDERS];
 		std::vector<s32>& negative_cuboids = parts[AREA_PART_NEG_CUBOIDS];
 		
-		DEF_FIELD(index);
+		DEF_FIELD(id);
 		DEF_FIELD(bounding_sphere);
 		DEF_FIELD(last_update_time);
 		DEF_FIELD(paths);
@@ -548,7 +548,7 @@ struct Area {
 };
 
 struct DirectionalLight {
-	InstanceIndex index;
+	InstanceId id;
 	Vec4f colour_a;
 	Vec4f direction_a;
 	Vec4f colour_b;
@@ -556,7 +556,7 @@ struct DirectionalLight {
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(index);
+		DEF_FIELD(id);
 		DEF_FIELD(colour_a);
 		DEF_FIELD(direction_a);
 		DEF_FIELD(colour_b);
@@ -565,7 +565,7 @@ struct DirectionalLight {
 };
 
 struct TieInstance {
-	InstanceIndex index;
+	InstanceId id;
 	s32 o_class;
 	s32 draw_distance;
 	s32 occlusion_index;
@@ -576,7 +576,7 @@ struct TieInstance {
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(index);
+		DEF_FIELD(id);
 		DEF_FIELD(o_class);
 		DEF_FIELD(draw_distance);
 		DEF_FIELD(occlusion_index);
@@ -588,20 +588,20 @@ struct TieInstance {
 };
 
 struct TieAmbientRgbas {
-	InstanceIndex index;
-	s16 id;
+	InstanceId id;
+	s16 number;
 	std::vector<u8> data;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(index);
 		DEF_FIELD(id);
+		DEF_FIELD(number);
 		DEF_HEXDUMP(data);
 	}
 };
 
 struct ShrubInstance {
-	InstanceIndex index;
+	InstanceId id;
 	s32 o_class;
 	f32 draw_distance;
 	s32 unknown_8;
@@ -617,7 +617,7 @@ struct ShrubInstance {
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(index);
+		DEF_FIELD(id);
 		DEF_FIELD(o_class);
 		DEF_FIELD(draw_distance);
 		DEF_FIELD(unknown_8);
