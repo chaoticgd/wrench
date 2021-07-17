@@ -760,13 +760,13 @@ struct GameplayJsonReader {
 		if(dir) {
 			if(json.contains(dir) && json[dir].contains(file_name)) {
 				T object;
-				from_json(object, Json::parse(read_file_func(src_dir/json[dir][file_name])));
+				from_json(object, Json::parse(read_file_func(src_dir/std::string(json[dir][file_name]))));
 				dest = std::move(object);
 			}
 		} else {
 			if(json.contains(file_name)) {
 				T object;
-				from_json(object, Json::parse(read_file_func(src_dir/json[file_name])));
+				from_json(object, Json::parse(read_file_func(src_dir/std::string(json[file_name]))));
 				dest = std::move(object);
 			}
 		}

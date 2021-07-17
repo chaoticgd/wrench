@@ -152,25 +152,25 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			wad.type = type;
 			wad.level_number = json["level_number"];
 			wad.reverb = json["reverb"];
-			wad.primary = read_file(src_dir/json["primary"]);
-			wad.core_bank = read_file(src_dir/json["core_sound_bank"]);
+			wad.primary = read_file(src_dir/std::string(json["primary"]));
+			wad.core_bank = read_file(src_dir/std::string(json["core_sound_bank"]));
 			GameplayJsonReader gameplay_reader{src_dir, json, read_file};
 			wad.gameplay.enumerate_files(gameplay_reader);
-			map_from_json(wad.camera_classes, Json::parse(read_file(src_dir/json["camera_classes"])), "class");
-			map_from_json(wad.sound_classes, Json::parse(read_file(src_dir/json["sound_classes"])), "class");
-			map_from_json(wad.moby_classes, Json::parse(read_file(src_dir/json["moby_classes"])), "class");
-			map_from_json(wad.pvar_types, Json::parse(read_file(src_dir/json["pvar_types"])), "name");
+			map_from_json(wad.camera_classes, Json::parse(read_file(src_dir/std::string(json["camera_classes"]))), "class");
+			map_from_json(wad.sound_classes, Json::parse(read_file(src_dir/std::string(json["sound_classes"]))), "class");
+			map_from_json(wad.moby_classes, Json::parse(read_file(src_dir/std::string(json["moby_classes"]))), "class");
+			map_from_json(wad.pvar_types, Json::parse(read_file(src_dir/std::string(json["pvar_types"]))), "name");
 			if(json.contains("chunks")) {
 				for(Json& chunk_json : json["chunks"]) {
 					Chunk chunk;
 					if(chunk_json.contains("tfrags")) {
-						chunk.tfrags = read_file(src_dir/chunk_json["tfrags"]);
+						chunk.tfrags = read_file(src_dir/std::string(chunk_json["tfrags"]));
 					}
 					if(chunk_json.contains("collision")) {
-						chunk.collision = read_file(src_dir/chunk_json["collision"]);
+						chunk.collision = read_file(src_dir/std::string(chunk_json["collision"]));
 					}
 					if(chunk_json.contains("sound_bank")) {
-						chunk.sound_bank = read_file(src_dir/chunk_json["sound_bank"]);
+						chunk.sound_bank = read_file(src_dir/std::string(chunk_json["sound_bank"]));
 					}
 					s32 index = chunk_json["index"];
 					wad.chunks.emplace(index, std::move(chunk));
@@ -180,13 +180,13 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 				for(Json& mission_json : json["missions"]) {
 					Mission mission;
 					if(mission_json.contains("instances")) {
-						mission.instances = read_file(src_dir/mission_json["instances"]);
+						mission.instances = read_file(src_dir/std::string(mission_json["instances"]));
 					}
 					if(mission_json.contains("classes")) {
-						mission.classes = read_file(src_dir/mission_json["classes"]);
+						mission.classes = read_file(src_dir/std::string(mission_json["classes"]));
 					}
 					if(mission_json.contains("sound_bank")) {
-						mission.sound_bank = read_file(src_dir/mission_json["sound_bank"]);
+						mission.sound_bank = read_file(src_dir/std::string(mission_json["sound_bank"]));
 					}
 					s32 index = mission_json["index"];
 					verify(index >= 0 || index <= 127, "Mission index must be between 0 and 127.");
