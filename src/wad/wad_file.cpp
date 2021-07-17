@@ -293,6 +293,7 @@ static void write_missions(OutBuffer dest, DeadlockedLevelWadHeader& header, con
 		}
 	}
 	for(const auto& [index, mission] : missions) {
+		dest.pad(SECTOR_SIZE, 0);
 		std::vector<u8> mission_vec;
 		OutBuffer mission_buffer(mission_vec);
 		s64 header_ofs = mission_buffer.alloc<MissionHeader>();
