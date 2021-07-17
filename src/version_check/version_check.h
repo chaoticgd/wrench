@@ -16,29 +16,5 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef LZ_COMPRESSION_H
-#define LZ_COMPRESSION_H
-
-#include <map>
-#include <vector>
-#include <cstring>
-#include <utility>
-
-// Decompress and recompress WAD segments used by the games to store various
-// assets. Not to be confused with WAD archives.
-
-// Check the magic bytes.
-bool validate_wad(const uint8_t* magic);
-
-struct WadBuffer {
-	WadBuffer(const uint8_t* p, const uint8_t* e) : ptr(p), end(e) {}
-	WadBuffer(const std::vector<uint8_t>& vec) : ptr(&(*vec.begin())), end(&(*vec.end())) {}
-	
-	const uint8_t* ptr;
-	const uint8_t* end;
-};
-
-bool decompress_wad(std::vector<uint8_t>& dest, WadBuffer src);
-void compress_wad(std::vector<uint8_t>& dest, const std::vector<uint8_t>& src, int thread_count);
-
-#endif
+const char* get_git_tag();
+const char* get_git_commit();

@@ -41,6 +41,8 @@ For build instructions, see the Build section below. For usage instructions, see
 1.	Install the following tools:
 	- git
 	- Visual Studio (with desktop C++/cmake support)
+	
+	Note: Git should be in the PATH enviroment variable so that the version of Wrench being built can be identified. The Git installer has an option for this named "Git from the command line and also from 3rd-party software" under "Adjusting your PATH enviroment".
 
 2.	Open a Visual Studio developer command prompt.
 
@@ -54,5 +56,6 @@ For build instructions, see the Build section below. For usage instructions, see
 
 6.	Build it with cmake:
 	> cmake . && cmake --build . --config Release
-	* Omitting `--config Release` will build the project in Debug configuration, *which also disables optimizations*
-	* Note that PDBs will be generated into each project's `XXXX.dir` subfolder as `vcZZZ.pdb` instead of the `bin` directory when building in Release configuration
+	
+	Omitting `--config Release` will build the project in Debug configuration, *which disables optimizations*.
+	Note that PDBs will be generated into each target's `[...].dir` subfolder as `vc[...].pdb` instead of the `bin` directory when building in Release configuration.

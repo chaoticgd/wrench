@@ -94,9 +94,19 @@ add_executable(iso
 	src/command_line.cpp
 )
 
-
 add_executable(memmap
 	src/cli/memmap.c
+)
+
+add_executable(wad
+	src/wad/main.cpp
+	src/wad/wad_file.cpp
+	src/wad/level.cpp
+	src/wad/gameplay.cpp
+	src/wad/buffer.cpp
+	src/wad/json.cpp
+	src/wad/tests.cpp
+	src/lz/compression.cpp
 )
 
 # This lets us avoid linking stuff for most of the CLI tools.
@@ -108,6 +118,7 @@ if(UNIX)
 	target_compile_options(lz PRIVATE -Wall -O3)
 	target_compile_options(vif PRIVATE -Wall -O3)
 	target_compile_options(iso PRIVATE -Wall -O3)
+	target_compile_options(wad PRIVATE -Wall -O3)
 endif()
 
 if (MSVC)
@@ -119,6 +130,7 @@ if (MSVC)
 	target_compile_options(lz		PRIVATE /W4 /Zi /EHsc)
 	target_compile_options(vif		PRIVATE /W4 /Zi /EHsc)
 	target_compile_options(iso		PRIVATE /W4 /Zi /EHsc)
+	target_compile_options(wad		PRIVATE /W4 /Zi /EHsc)
 endif()
 
 # std::filesystem
@@ -143,6 +155,7 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 target_link_libraries(wrench Threads::Threads)
 target_link_libraries(lz Threads::Threads)
+target_link_libraries(wad Threads::Threads)
 
 # GLAD
 add_subdirectory(thirdparty/glad)
@@ -191,3 +204,7 @@ else()
 endif()
 target_link_libraries(wrench nativefiledialog)
 include_directories(thirdparty/nativefiledialog/src/include)
+
+add_subdirectory(src/version_check)
+target_link_libraries(wrench version_check)
+target_link_libraries(wad version_check)
