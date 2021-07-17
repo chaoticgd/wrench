@@ -18,7 +18,7 @@
 
 #include "table_of_contents.h"
 
-#include "../util.h"
+#include "../editor/util.h"
 
 table_of_contents read_table_of_contents(stream& iso, std::size_t toc_base) {
 	table_of_contents toc;

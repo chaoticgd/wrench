@@ -18,8 +18,8 @@
 
 #include <sstream>
 
-#include "../command_line.h"
-#include "../formats/fip.h"
+#include "../editor/command_line.h"
+#include "../editor/formats/fip.h"
 
 # /*
 #	CLI tool to convert 2FIP textures to BMP files and vice versa.

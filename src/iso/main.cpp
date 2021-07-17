@@ -16,10 +16,10 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "../util.h"
-#include "../stream.h"
-#include "../fs_includes.h"
-#include "../command_line.h"
+#include "../editor/util.h"
+#include "../editor/stream.h"
+#include "../editor/fs_includes.h"
+#include "../editor/command_line.h"
 #include "iso_filesystem.h"
 #include "table_of_contents.h"
 

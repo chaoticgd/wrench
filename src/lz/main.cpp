@@ -18,8 +18,8 @@
 
 #include <sstream>
 
-#include "../util.h"
-#include "../command_line.h"
+#include "../editor/util.h"
+#include "../editor/command_line.h"
 #include "compression.h"
 
 // CLI tool to decompress and recompress WAD LZ segments.
