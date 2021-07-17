@@ -19,8 +19,8 @@
 #ifndef ISO_TABLE_OF_CONTENTS_H
 #define ISO_TABLE_OF_CONTENTS_H
 
-#include "../stream.h"
-#include "../level_file_types.h"
+#include "../editor/stream.h"
+#include "../editor/level_file_types.h"
 
 packed_struct(toc_table_header,
 	uint32_t header_size;

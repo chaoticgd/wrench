@@ -21,8 +21,8 @@
 
 #include <map>
 
-#include "../stream.h"
-#include "../fs_includes.h"
+#include "../editor/stream.h"
+#include "../editor/fs_includes.h"
 
 struct iso_file_record {
 	std::string name;

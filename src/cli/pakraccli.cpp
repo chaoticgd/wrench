@@ -19,12 +19,12 @@
 #include <sstream>
 #include <iostream>
 
-#include "../util.h"
-#include "../command_line.h"
-#include "../fs_includes.h"
-#include "../formats/fip.h"
-#include "../formats/wad.h"
-#include "../formats/racpak.h"
+#include "../editor/util.h"
+#include "../editor/command_line.h"
+#include "../editor/fs_includes.h"
+#include "../editor/formats/fip.h"
+#include "../editor/formats/wad.h"
+#include "../editor/formats/racpak.h"
 
 
 # /*

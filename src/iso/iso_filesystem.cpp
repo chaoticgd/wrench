@@ -18,7 +18,7 @@
 
 #include "iso_filesystem.h"
 
-#include "../util.h"
+#include "../editor/util.h"
 
 uint16_t byte_swap_16(uint16_t val) {
 	return (val >> 8) | (val << 8);

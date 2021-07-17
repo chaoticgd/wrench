@@ -22,9 +22,9 @@
 
 #include <iostream>
 
-#include "../util.h"
-#include "../command_line.h"
-#include "../formats/vif.h"
+#include "../editor/util.h"
+#include "../editor/command_line.h"
+#include "../editor/formats/vif.h"
 
 int main(int argc, char** argv) {
 	cxxopts::Options options("vif", "Parse PS2 VIF chains until an invalid VIF code is encountered.");

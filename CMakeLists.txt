@@ -17,81 +17,81 @@ set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $<1:${CMAKE_SOURCE_DIR}/bin>)
 
 add_executable(wrench
-	src/main.cpp
-	src/app.cpp
-	src/command_line.cpp
-	src/gui.cpp
-	src/view_3d.cpp
-	src/stream.cpp
-	src/stacktrace.cpp
-	src/window.cpp
-	src/renderer.cpp
-	src/shaders.cpp
-	src/worker_logger.cpp
-	src/iso_stream.cpp
-	src/model.cpp
-	src/util.cpp
-	src/game_db.cpp
-	src/tools.cpp
-	src/icons.cpp
-	src/lz/compression.cpp
-	src/formats/level_impl.cpp
-	src/formats/world.cpp
-	src/formats/texture.cpp
-	src/formats/fip.cpp
-	src/formats/bmp.cpp
-	src/formats/armor_archive.cpp
-	src/formats/game_model.cpp
-	src/formats/vif.cpp
-	src/formats/tfrag.cpp
-	src/formats/tcol.cpp
-	src/formats/shrub.cpp
-	src/formats/texture_archive.cpp
-	src/formats/model_utils.cpp
+	src/editor/main.cpp
+	src/editor/app.cpp
+	src/editor/command_line.cpp
+	src/editor/gui.cpp
+	src/editor/view_3d.cpp
+	src/editor/stream.cpp
+	src/editor/stacktrace.cpp
+	src/editor/window.cpp
+	src/editor/renderer.cpp
+	src/editor/shaders.cpp
+	src/editor/worker_logger.cpp
+	src/editor/iso_stream.cpp
+	src/editor/model.cpp
+	src/editor/util.cpp
+	src/editor/game_db.cpp
+	src/editor/tools.cpp
+	src/editor/icons.cpp
+	src/editor/formats/level_impl.cpp
+	src/editor/formats/world.cpp
+	src/editor/formats/texture.cpp
+	src/editor/formats/fip.cpp
+	src/editor/formats/bmp.cpp
+	src/editor/formats/armor_archive.cpp
+	src/editor/formats/game_model.cpp
+	src/editor/formats/vif.cpp
+	src/editor/formats/tfrag.cpp
+	src/editor/formats/tcol.cpp
+	src/editor/formats/shrub.cpp
+	src/editor/formats/texture_archive.cpp
+	src/editor/formats/model_utils.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
-	src/imgui_impl_glfw.cpp
+	src/editor/imgui_impl_glfw.cpp
 	thirdparty/imgui/backends/imgui_impl_opengl3.cpp
-	src/md5.cpp
-	src/tests/world_segment_test.cpp
+	src/editor/md5.cpp
+	src/editor/tests/world_segment_test.cpp
+	src/lz/compression.cpp
 )
 
 add_executable(fip
 	src/cli/fipcli.cpp
-	src/command_line.cpp
-	src/util.cpp
-	src/stream.cpp
-	src/stacktrace.cpp
-	src/formats/texture.cpp
-	src/formats/fip.cpp
-	src/formats/bmp.cpp
+	src/editor/command_line.cpp
+	src/editor/util.cpp
+	src/editor/stream.cpp
+	src/editor/stacktrace.cpp
+	src/editor/formats/texture.cpp
+	src/editor/formats/fip.cpp
+	src/editor/formats/bmp.cpp
 )
 
 add_executable(lz
 	src/lz/main.cpp
 	src/lz/compression.cpp
-	src/util.cpp
-	src/command_line.cpp
-	src/stream.cpp
-	src/stacktrace.cpp
+	src/editor/util.cpp
+	src/editor/command_line.cpp
+	src/editor/stream.cpp
+	src/editor/stacktrace.cpp
 )
 
 add_executable(vif
 	src/cli/vifcli.cpp
-	src/stream.cpp
-	src/stacktrace.cpp
-	src/util.cpp
-	src/command_line.cpp
-	src/formats/vif.cpp
+	src/editor/stream.cpp
+	src/editor/stacktrace.cpp
+	src/editor/util.cpp
+	src/editor/command_line.cpp
+	src/editor/formats/vif.cpp
 )
 
 add_executable(iso
 	src/iso/main.cpp
 	src/iso/iso_filesystem.cpp
 	src/iso/table_of_contents.cpp
-	src/stream.cpp
-	src/stacktrace.cpp
-	src/util.cpp
-	src/command_line.cpp
+	src/editor/stream.cpp
+	src/editor/stacktrace.cpp
+	src/editor/util.cpp
+	src/editor/command_line.cpp
 )
 
 add_executable(memmap
