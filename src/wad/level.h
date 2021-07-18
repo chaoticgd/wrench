@@ -701,83 +701,67 @@ struct Gameplay {
 	void for_each_pvar_instance(const LevelWad& wad, Callback callback);
 	
 	template <typename T>
-	void enumerate_files(T& t) {
-		t.file(gc_8c_dl_70, nullptr, "gameplay_gc_8c_dl_70");
-		t.file(properties, nullptr, "properties");
-		t.file(us_english_help_messages, "help_messages", "us_english");
-		t.file(uk_english_help_messages, "help_messages", "uk_english");
-		t.file(french_help_messages, "help_messages", "french");
-		t.file(german_help_messages, "help_messages", "german");
-		t.file(spanish_help_messages, "help_messages", "spanish");
-		t.file(italian_help_messages, "help_messages", "italian");
-		t.file(japanese_help_messages, "help_messages", "japanese");
-		t.file(korean_help_messages, "help_messages", "korean");
-		t.file(light_triggers, nullptr, "light_triggers");
-		t.file(cameras, nullptr, "cameras");
-		t.file(sound_instances, nullptr, "sound_instances");
-		t.file(moby_classes, nullptr, "used_moby_classes");
-		t.file(moby_instances, nullptr, "moby_instances");
-		t.file(moby_groups, nullptr, "moby_groups");
-		t.file(global_pvar, nullptr, "global_pvar");
-		t.file(spheres, nullptr,"spheres");
-		t.file(cylinders, nullptr, "cylinders");
-		t.file(gc_74_dl_58, nullptr, "gameplay_gc_74_dl_58");
-		t.file(paths, nullptr, "paths");
-		t.file(cuboids, nullptr,"cuboids");
-		t.file(gc_88_dl_6c, nullptr, "gameplay_gc_88_dl_6c");
-		t.file(gc_80_dl_64, nullptr, "gameplay_gc_80_dl_64");
-		t.file(grind_paths, nullptr, "grind_paths");
-		t.file(areas, nullptr, "areas");
-		t.file(lights, nullptr, "lights");
-		t.file(tie_instances, nullptr, "tie_instances");
-		t.file(tie_ambient_rgbas, nullptr, "tie_ambient_rgbas");
-		t.file(tie_groups, nullptr, "tie_groups");
-		t.file(shrub_instances, nullptr, "shrub_instances");
-		t.file(shrub_groups, nullptr, "shrub_groups");
-		t.file(occlusion, nullptr, "occlusion");
+	void enumerate_fields(T& t) {
+		DEF_FIELD(gc_8c_dl_70);
+		DEF_FIELD(properties);
+		DEF_FIELD(light_triggers);
+		DEF_FIELD(cameras);
+		DEF_FIELD(sound_instances);
+		DEF_FIELD(moby_classes);
+		DEF_FIELD(moby_instances);
+		DEF_FIELD(moby_groups);
+		DEF_FIELD(global_pvar);
+		DEF_FIELD(spheres);
+		DEF_FIELD(cylinders);
+		DEF_FIELD(gc_74_dl_58);
+		DEF_FIELD(paths);
+		DEF_FIELD(cuboids);
+		DEF_FIELD(gc_88_dl_6c);
+		DEF_FIELD(gc_80_dl_64);
+		DEF_FIELD(grind_paths);
+		DEF_FIELD(areas);
+		DEF_FIELD(lights);
+		DEF_FIELD(tie_instances);
+		DEF_FIELD(tie_ambient_rgbas);
+		DEF_FIELD(tie_groups);
+		DEF_FIELD(shrub_instances);
+		DEF_FIELD(shrub_groups);
+		DEF_FIELD(occlusion);
 	}
 };
 
-struct GameplayJsonReader {
-	fs::path& src_dir;
-	Json& json;
-	std::function<std::vector<u8>(fs::path)> read_file_func;
+struct HelpMessages {
+	Opt<std::vector<HelpMessage>> us_english;
+	Opt<std::vector<HelpMessage>> uk_english;
+	Opt<std::vector<HelpMessage>> french;
+	Opt<std::vector<HelpMessage>> german;
+	Opt<std::vector<HelpMessage>> spanish;
+	Opt<std::vector<HelpMessage>> italian;
+	Opt<std::vector<HelpMessage>> japanese;
+	Opt<std::vector<HelpMessage>> korean;
+	
+	void swap(Gameplay& gameplay) {
+		us_english.swap(gameplay.us_english_help_messages);
+		uk_english.swap(gameplay.uk_english_help_messages);
+		french.swap(gameplay.french_help_messages);
+		german.swap(gameplay.german_help_messages);
+		spanish.swap(gameplay.spanish_help_messages);
+		italian.swap(gameplay.italian_help_messages);
+		japanese.swap(gameplay.japanese_help_messages);
+		korean.swap(gameplay.korean_help_messages);
+	}
+	
 	template <typename T>
-	void file(Opt<T>& dest, const char* dir, const char* file_name) {
-		if(dir) {
-			if(json.contains(dir) && json[dir].contains(file_name)) {
-				T object;
-				from_json(object, Json::parse(read_file_func(src_dir/std::string(json[dir][file_name]))));
-				dest = std::move(object);
-			}
-		} else {
-			if(json.contains(file_name)) {
-				T object;
-				from_json(object, Json::parse(read_file_func(src_dir/std::string(json[file_name]))));
-				dest = std::move(object);
-			}
-		}
-	}	
-};
-
-struct GameplayJsonWriter {
-	fs::path& dest_dir;
-	Json& json;
-	std::function<std::string(fs::path, fs::path, Buffer)> write_file_func;
-	template <typename T>
-	void file(Opt<T>& dest, const char* dir, const char* file_name) {
-		if(dest.has_value()) {
-			if(dir) {
-				fs::create_directory(dest_dir/dir);
-				Json& json_dir = json[dir];
-				fs::path path = fs::path(dir)/(std::string(file_name) + ".json");
-				json_dir[file_name] = write_file_func(dest_dir, path, to_json(*dest).dump(1, '\t'));
-			} else {
-				fs::path path = std::string(file_name) + ".json";
-				json[file_name] = write_file_func(dest_dir, path, to_json(*dest).dump(1, '\t'));
-			}
-		}
-	}	
+	void enumerate_fields(T& t) {
+		DEF_FIELD(us_english);
+		DEF_FIELD(uk_english);
+		DEF_FIELD(french);
+		DEF_FIELD(german);
+		DEF_FIELD(spanish);
+		DEF_FIELD(italian);
+		DEF_FIELD(japanese);
+		DEF_FIELD(korean);
+	}
 };
 
 struct Chunk {
@@ -874,13 +858,14 @@ struct LevelWad : Wad {
 	std::optional<s32> reverb;
 	std::vector<u8> primary;
 	std::vector<u8> core_bank;
-	Gameplay gameplay;
-	std::map<s32, Chunk> chunks;
-	std::map<s32, Mission> missions;
 	std::map<s32, CameraClass> camera_classes;
 	std::map<s32, SoundClass> sound_classes;
 	std::map<s32, MobyClass> moby_classes;
 	std::map<std::string, PvarType> pvar_types;
+	HelpMessages help_messages;
+	Gameplay gameplay;
+	std::map<s32, Chunk> chunks;
+	std::map<s32, Mission> missions;
 	
 	CameraClass& lookup_camera_class(s32 class_number);
 	SoundClass& lookup_sound_class(s32 class_number);
