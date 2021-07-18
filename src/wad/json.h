@@ -109,7 +109,7 @@ Json map_to_json(Map map, const char* key_name) {
 		element[key_name] = key;
 		Json data = to_json(value);
 		for(auto& item : data.items()) {
-			element[item.key()] = item.value();
+			element[item.key()] = std::move(item.value());
 		}
 		json.emplace_back(element);
 	}

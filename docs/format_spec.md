@@ -14,4 +14,5 @@ Changed "index" to "id" for instances. Changed the existing "id" from the help m
 
 ### Version 3
 
-Moved from storing each type of instance seperately to storing them all in a single gameplay.json file.
+- Moved from storing each type of instance seperately to storing them all in a single gameplay.json file.
+- Include format version and application version metadata in more files (the class files, the pvar type file).

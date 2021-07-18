@@ -111,6 +111,11 @@ MobyClass& LevelWad::lookup_moby_class(s32 class_number) {
 	}
 }
 
+template <typename Map>
+static void read_json_file_into_map(Map& map, const fs::path& src_dir, const Json& json, const char* name, const char* key_name) {
+	map_from_json(map, Json::parse(read_file(src_dir/json[name]))[name], key_name);
+}
+
 std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 	fs::path src_dir = src_path.parent_path();
 	Json json = Json::parse(read_file(src_path));
@@ -154,10 +159,10 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			wad.reverb = json["reverb"];
 			wad.primary = read_file(src_dir/std::string(json["primary"]));
 			wad.core_bank = read_file(src_dir/std::string(json["core_sound_bank"]));
-			map_from_json(wad.camera_classes, Json::parse(read_file(src_dir/std::string(json["camera_classes"]))), "class");
-			map_from_json(wad.sound_classes, Json::parse(read_file(src_dir/std::string(json["sound_classes"]))), "class");
-			map_from_json(wad.moby_classes, Json::parse(read_file(src_dir/std::string(json["moby_classes"]))), "class");
-			map_from_json(wad.pvar_types, Json::parse(read_file(src_dir/std::string(json["pvar_types"]))), "name");
+			read_json_file_into_map(wad.camera_classes, src_dir, json, "camera_classes", "class");
+			read_json_file_into_map(wad.sound_classes, src_dir, json, "sound_classes", "class");
+			read_json_file_into_map(wad.moby_classes, src_dir, json, "moby_classes", "class");
+			read_json_file_into_map(wad.pvar_types, src_dir, json, "pvar_types", "name");
 			from_json(wad.help_messages, Json::parse(read_file(src_dir/std::string(json["help_messages"]))));
 			from_json(wad.gameplay, Json::parse(read_file(src_dir/std::string(json["gameplay"]))));
 			if(json.contains("chunks")) {
@@ -201,7 +206,14 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 	return nullptr;
 }
 
-std::string write_json_file(fs::path dest_dir, const char* file_name, Json data_json) {
+static std::string write_json_array_file(fs::path dest_dir, const char* file_name, Json data_json) {
+	Json json;
+	json["metadata"] = get_file_metadata(file_name, APPLICATION_NAME);
+	json[file_name] = std::move(data_json);
+	return write_file(dest_dir, std::string(file_name) + ".json", json.dump(1, '\t'));
+}
+
+static std::string write_json_object_file(fs::path dest_dir, const char* file_name, Json data_json) {
 	Json json;
 	json["metadata"] = get_file_metadata(file_name, APPLICATION_NAME);
 	for(auto& item : data_json.items()) {
@@ -235,12 +247,12 @@ void write_wad_json(fs::path dest_dir, Wad* base) {
 			}
 			json["primary"] = write_file(dest_dir, "primary.bin", wad.primary);
 			json["core_sound_bank"] = write_file(dest_dir, "core_bank.bin", wad.core_bank);
-			json["camera_classes"] = write_json_file(dest_dir, "camera_classes", map_to_json(wad.camera_classes, "class"));
-			json["sound_classes"] = write_json_file(dest_dir, "sound_classes", map_to_json(wad.sound_classes, "class"));
-			json["moby_classes"] = write_json_file(dest_dir, "moby_classes", map_to_json(wad.moby_classes, "class"));
-			json["pvar_types"] = write_json_file(dest_dir, "pvar_types", map_to_json(wad.pvar_types, "name"));
-			json["help_messages"] = write_json_file(dest_dir, "help_messages", to_json(wad.gameplay));
-			json["gameplay"] = write_json_file(dest_dir, "gameplay", to_json(wad.gameplay));
+			json["camera_classes"] = write_json_array_file(dest_dir, "camera_classes", map_to_json(wad.camera_classes, "class"));
+			json["sound_classes"] = write_json_array_file(dest_dir, "sound_classes", map_to_json(wad.sound_classes, "class"));
+			json["moby_classes"] = write_json_array_file(dest_dir, "moby_classes", map_to_json(wad.moby_classes, "class"));
+			json["pvar_types"] = write_json_array_file(dest_dir, "pvar_types", map_to_json(wad.pvar_types, "name"));
+			json["help_messages"] = write_json_object_file(dest_dir, "help_messages", to_json(wad.gameplay));
+			json["gameplay"] = write_json_object_file(dest_dir, "gameplay", to_json(wad.gameplay));
 			for(auto& [index, chunk] : wad.chunks) {
 				auto chunk_name = [&](const char* name) {
 					return "chunk" + std::to_string(index) + "_" + name + ".bin";
