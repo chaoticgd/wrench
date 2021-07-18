@@ -21,7 +21,7 @@
 Json get_file_metadata(const char* format, const char* application) {
 	return Json {
 		{"format", format},
-		{"format_version", 2},
+		{"format_version", 3},
 		{"application", application},
 		{"application_version", get_application_version_string()}
 	};
@@ -154,12 +154,12 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			wad.reverb = json["reverb"];
 			wad.primary = read_file(src_dir/std::string(json["primary"]));
 			wad.core_bank = read_file(src_dir/std::string(json["core_sound_bank"]));
-			GameplayJsonReader gameplay_reader{src_dir, json, read_file};
-			wad.gameplay.enumerate_files(gameplay_reader);
 			map_from_json(wad.camera_classes, Json::parse(read_file(src_dir/std::string(json["camera_classes"]))), "class");
 			map_from_json(wad.sound_classes, Json::parse(read_file(src_dir/std::string(json["sound_classes"]))), "class");
 			map_from_json(wad.moby_classes, Json::parse(read_file(src_dir/std::string(json["moby_classes"]))), "class");
 			map_from_json(wad.pvar_types, Json::parse(read_file(src_dir/std::string(json["pvar_types"]))), "name");
+			from_json(wad.help_messages, Json::parse(read_file(src_dir/std::string(json["help_messages"]))));
+			from_json(wad.gameplay, Json::parse(read_file(src_dir/std::string(json["gameplay"]))));
 			if(json.contains("chunks")) {
 				for(Json& chunk_json : json["chunks"]) {
 					Chunk chunk;
@@ -201,7 +201,16 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 	return nullptr;
 }
 
-void write_wad_json(fs::path dest_path, Wad* base) {
+std::string write_json_file(fs::path dest_dir, const char* file_name, Json data_json) {
+	Json json;
+	json["metadata"] = get_file_metadata(file_name, APPLICATION_NAME);
+	for(auto& item : data_json.items()) {
+		json[item.key()] = std::move(item.value());
+	}
+	return write_file(dest_dir, std::string(file_name) + ".json", json.dump(1, '\t'));
+}
+
+void write_wad_json(fs::path dest_dir, Wad* base) {
 	const char* json_file_name = nullptr;
 	Json json;
 	
@@ -224,14 +233,14 @@ void write_wad_json(fs::path dest_path, Wad* base) {
 			if(wad.reverb.has_value()) {
 				json["reverb"] = *wad.reverb;
 			}
-			json["primary"] = write_file(dest_path, "primary.bin", wad.primary);
-			json["core_sound_bank"] = write_file(dest_path, "core_bank.bin", wad.core_bank);
-			GameplayJsonWriter gameplay_writer{dest_path, json, write_file};
-			wad.gameplay.enumerate_files(gameplay_writer);
-			json["camera_classes"] = write_file(dest_path, "camera_classes.json", map_to_json(wad.camera_classes, "class").dump(1, '\t'));
-			json["sound_classes"] = write_file(dest_path, "sound_classes.json", map_to_json(wad.sound_classes, "class").dump(1, '\t'));
-			json["moby_classes"] = write_file(dest_path, "moby_classes.json", map_to_json(wad.moby_classes, "class").dump(1, '\t'));
-			json["pvar_types"] = write_file(dest_path, "pvar_types.json", map_to_json(wad.pvar_types, "name").dump(1, '\t'));
+			json["primary"] = write_file(dest_dir, "primary.bin", wad.primary);
+			json["core_sound_bank"] = write_file(dest_dir, "core_bank.bin", wad.core_bank);
+			json["camera_classes"] = write_json_file(dest_dir, "camera_classes", map_to_json(wad.camera_classes, "class"));
+			json["sound_classes"] = write_json_file(dest_dir, "sound_classes", map_to_json(wad.sound_classes, "class"));
+			json["moby_classes"] = write_json_file(dest_dir, "moby_classes", map_to_json(wad.moby_classes, "class"));
+			json["pvar_types"] = write_json_file(dest_dir, "pvar_types", map_to_json(wad.pvar_types, "name"));
+			json["help_messages"] = write_json_file(dest_dir, "help_messages", to_json(wad.gameplay));
+			json["gameplay"] = write_json_file(dest_dir, "gameplay", to_json(wad.gameplay));
 			for(auto& [index, chunk] : wad.chunks) {
 				auto chunk_name = [&](const char* name) {
 					return "chunk" + std::to_string(index) + "_" + name + ".bin";
@@ -239,13 +248,13 @@ void write_wad_json(fs::path dest_path, Wad* base) {
 				Json chunk_json;
 				chunk_json["index"] = index;
 				if(chunk.tfrags.has_value()) {
-					chunk_json["tfrags"] = write_file(dest_path, chunk_name("tfrags"), *chunk.tfrags);
+					chunk_json["tfrags"] = write_file(dest_dir, chunk_name("tfrags"), *chunk.tfrags);
 				}
 				if(chunk.collision.has_value()) {
-					chunk_json["collision"] = write_file(dest_path, chunk_name("collision"), *chunk.collision);
+					chunk_json["collision"] = write_file(dest_dir, chunk_name("collision"), *chunk.collision);
 				}
 				if(chunk.sound_bank.has_value()) {
-					chunk_json["sound_bank"] = write_file(dest_path, chunk_name("bank"), *chunk.sound_bank);
+					chunk_json["sound_bank"] = write_file(dest_dir, chunk_name("bank"), *chunk.sound_bank);
 				}
 				json["chunks"].emplace_back(chunk_json);
 			}
@@ -253,9 +262,9 @@ void write_wad_json(fs::path dest_path, Wad* base) {
 			fs::path mission_classes_dir = "mission_classes";
 			fs::path missions_banks_dir = "mission_banks";
 			if(wad.missions.size() > 0) {
-				fs::create_directory(dest_path/mission_instances_dir);
-				fs::create_directory(dest_path/mission_classes_dir);
-				fs::create_directory(dest_path/missions_banks_dir);
+				fs::create_directory(dest_dir/mission_instances_dir);
+				fs::create_directory(dest_dir/mission_classes_dir);
+				fs::create_directory(dest_dir/missions_banks_dir);
 			}
 			for(auto& [index, mission] : wad.missions) {
 				auto mission_name = [&](fs::path name) {
@@ -264,13 +273,13 @@ void write_wad_json(fs::path dest_path, Wad* base) {
 				Json mission_json;
 				mission_json["index"] = index;
 				if(mission.instances.has_value()) {
-					mission_json["instances"] = write_file(dest_path, mission_name(mission_instances_dir), *mission.instances);
+					mission_json["instances"] = write_file(dest_dir, mission_name(mission_instances_dir), *mission.instances);
 				}
 				if(mission.classes.has_value()) {
-					mission_json["classes"] = write_file(dest_path, mission_name(mission_classes_dir), *mission.classes);
+					mission_json["classes"] = write_file(dest_dir, mission_name(mission_classes_dir), *mission.classes);
 				}
 				if(mission.sound_bank.has_value()) {
-					mission_json["sound_bank"] = write_file(dest_path, mission_name(missions_banks_dir), *mission.sound_bank);
+					mission_json["sound_bank"] = write_file(dest_dir, mission_name(missions_banks_dir), *mission.sound_bank);
 				}
 				json["missions"].emplace_back(std::move(mission_json));
 			}
@@ -281,7 +290,7 @@ void write_wad_json(fs::path dest_path, Wad* base) {
 	}
 	
 	assert(json_file_name);
-	write_file(dest_path, json_file_name, json.dump(1, '\t'));
+	write_file(dest_dir, json_file_name, json.dump(1, '\t'));
 }
 
 std::string pvar_descriptor_to_string(PvarFieldDescriptor descriptor) {

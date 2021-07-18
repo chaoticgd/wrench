@@ -129,24 +129,13 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 	}
 	
 	// Test the JSON reading/writing functions.
-	std::map<fs::path, std::vector<u8>> filesystem_mock;
-	auto read_file_mocked = [&](fs::path path) {
-		auto iter = filesystem_mock.find(path);
-		verify(iter != filesystem_mock.end(), "Tried to read file '%s' that wasn't written.", path.string().c_str());
-		return iter->second;
-	};
-	auto write_file_mocked = [&](fs::path dest_dir, fs::path path, Buffer buffer) {
-		filesystem_mock[path] = std::vector(buffer.lo, buffer.hi);
-		return path.string();
-	};
-	
-	Json json;
-	fs::path empty;
-	GameplayJsonWriter gameplay_writer{empty, json, write_file_mocked};
-	gameplay.enumerate_files(gameplay_writer);
-	GameplayJsonReader gameplay_reader{empty, json, read_file_mocked};
+	Json gameplay_json = to_json(gameplay);
+	HelpMessages help_messages;
+	help_messages.swap(gameplay); // gameplay -> help_messages
+	Json help_messages_json = to_json(help_messages);
 	Gameplay test_gameplay;
-	test_gameplay.enumerate_files(gameplay_reader);
+	from_json(test_gameplay, gameplay_json);
+	help_messages.swap(test_gameplay); // help_messages -> test_gameplay
 	std::vector<u8> test_dest = write_gameplay(wad, test_gameplay, args.game, *args.blocks);
 	OutBuffer(test_dest).pad(SECTOR_SIZE, 0);
 	if(test_dest == dest) {
