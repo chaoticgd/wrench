@@ -251,7 +251,7 @@ void write_wad_json(fs::path dest_dir, Wad* base) {
 			json["sound_classes"] = write_json_array_file(dest_dir, "sound_classes", map_to_json(wad.sound_classes, "class"));
 			json["moby_classes"] = write_json_array_file(dest_dir, "moby_classes", map_to_json(wad.moby_classes, "class"));
 			json["pvar_types"] = write_json_array_file(dest_dir, "pvar_types", map_to_json(wad.pvar_types, "name"));
-			json["help_messages"] = write_json_object_file(dest_dir, "help_messages", to_json(wad.gameplay));
+			json["help_messages"] = write_json_object_file(dest_dir, "help_messages", to_json(wad.help_messages));
 			json["gameplay"] = write_json_object_file(dest_dir, "gameplay", to_json(wad.gameplay));
 			for(auto& [index, chunk] : wad.chunks) {
 				auto chunk_name = [&](const char* name) {
