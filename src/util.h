@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WAD_UTIL_H
-#define WAD_UTIL_H
+#ifndef UTIL_H
+#define UTIL_H
 
 #include <map>
 #include <cmath>
@@ -31,7 +31,7 @@
 #include <functional>
 #include <type_traits>
 
-#include "../version_check/version_check.h"
+#include "version_check/version_check.h"
 
 using u8 = uint8_t;
 using u16 = uint16_t;

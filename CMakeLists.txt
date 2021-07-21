@@ -100,11 +100,11 @@ add_executable(memmap
 
 add_executable(wad
 	src/wad/main.cpp
+	src/buffer.cpp
+	src/json.cpp
+	src/level.cpp
 	src/wad/wad_file.cpp
-	src/wad/level.cpp
 	src/wad/gameplay.cpp
-	src/wad/buffer.cpp
-	src/wad/json.cpp
 	src/wad/tests.cpp
 	src/lz/compression.cpp
 )
