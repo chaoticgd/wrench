@@ -156,6 +156,8 @@ private:
 public:
 template <typename T>
 	void enumerate_fields(T& t) {
+		s32& id = _id.value;
+		DEF_FIELD(id);
 		if(has_component(COM_TRANSFORM)) {
 			switch(_transform_mode) {
 				case TransformMode::MATRIX: {
