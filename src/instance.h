@@ -254,8 +254,9 @@ template <typename T>
 			DEF_FIELD(vertices);
 		}
 		if(has_component(COM_BOUNDING_SPHERE)) {
-			auto& bounding_sphere = (BoundingSphere&) _bounding_sphere;
+			BoundingSphere bounding_sphere = BoundingSphere::pack(_bounding_sphere);
 			DEF_FIELD(bounding_sphere);
+			_bounding_sphere = bounding_sphere.unpack();
 		}
 	}
 };
