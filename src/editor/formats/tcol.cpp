@@ -202,7 +202,7 @@ void tcol::push_face(glm::vec3 offset, tcol::tcol_face face, tcol::tcol_data dat
 }
 
 glm::vec3 tcol::get_collision_color(uint8_t colId) {
-	vec3f v;
+	glm::vec3 v;
 
 	// from https://github.com/RatchetModding/replanetizer/blob/ada7ca73418d7b01cc70eec58a41238986b84112/LibReplanetizer/Models/Collision.cs#L26
 	// Colorize different types of collision without knowing what they are

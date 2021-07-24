@@ -16,8 +16,6 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-void world_segment_test();
-
 void run_tests() {
-	world_segment_test();
+	
 }

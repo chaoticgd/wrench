@@ -50,6 +50,12 @@ s32 PvarField::size() const {
 	}
 }
 
+void Gameplay::clear_selection() {
+	for_each_instance([&](Instance& inst) {
+		inst.selected = false;
+	});
+}
+
 bool PvarType::insert_field(PvarField to_insert, bool sort) {
 	// If a field already exists in the given byte range, try to merge them.
 	for(PvarField& existing : fields) {

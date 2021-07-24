@@ -64,7 +64,7 @@ struct gl_renderer {
 	void draw_level(level& lvl, glm::mat4 world_to_clip) const;
 	void draw_pickframe(level& lvl, glm::mat4 world_to_clip) const;
 	
-	void draw_spline(spline_entity& spline, const glm::mat4& world_to_clip, const glm::vec4& colour) const;
+	void draw_spline(const std::vector<glm::vec4>& spline, const glm::mat4& world_to_clip, const glm::vec4& colour) const;
 	void draw_tris  (const std::vector<float>& vertex_data, const glm::mat4& mvp, const glm::vec4& colour) const;
 	void draw_model (const model& mdl, const glm::mat4& mvp, const glm::vec4& colour) const;
 	void draw_model_vcolor (const model& mdl, const glm::mat4& mvp) const;
@@ -133,8 +133,8 @@ struct gl_renderer {
 	bool draw_tcols = true;
 	
 	bool flag = false;
-	std::vector<glm::mat4> moby_local_to_clip_cache;
-	std::vector<glm::mat4> shrub_local_to_clip_cache;
+	std::vector<glm::mat4> moby_matrices;
+	std::vector<glm::mat4> shrub_matrices;
 };
 
 template <typename T>

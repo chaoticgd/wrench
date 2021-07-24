@@ -23,7 +23,8 @@
 
 #include "util.h"
 
-enum InstanceType : u32 {
+enum InstanceType : s32 {
+	INST_NONE = -1,
 	INST_GC_8c_DL_70,
 	INST_LIGHT_TRIGGER,
 	INST_CAMERA,
@@ -45,12 +46,16 @@ struct InstanceId {
 	s32 value;
 };
 
+static constexpr const InstanceId NULL_INSTANCE_ID = {
+	INST_NONE, -1, -1
+};
+
 enum InstanceComponent : u32 {
 	COM_TRANSFORM = (1 << 1),
 	COM_PVARS = (1 << 2),
 	COM_COLOUR = (1 << 3),
 	COM_DRAW_DISTANCE = (1 << 4),
-	COM_PATH = (1 << 5),
+	COM_SPLINE = (1 << 5),
 	COM_BOUNDING_SPHERE = (1 << 6)
 };
 
@@ -117,6 +122,7 @@ struct Instance {
 	InstanceId id() const { return _id; }
 	void set_id_value(s32 value) { assert(_id.value == -1); _id.value = value; }
 	InstanceType type() const { return _id.type; }
+	u32 components_mask() const { return _components_mask; }
 	bool has_component(InstanceComponent component) const { return _components_mask & component; }
 	bool selected = false;
 	
@@ -143,8 +149,8 @@ struct Instance {
 	const f32& draw_distance() const;
 	f32& draw_distance();
 	
-	const std::vector<glm::vec4>& path() const;
-	std::vector<glm::vec4>& path();
+	const std::vector<glm::vec4>& spline() const;
+	std::vector<glm::vec4>& spline();
 	
 	const glm::vec4& bounding_sphere() const;
 	glm::vec4& bounding_sphere();
@@ -168,7 +174,7 @@ private:
 	GlobalPvarPointers _global_pvar_pointers; // Only used when writing!
 	Colour _colour = {0, 0, 0};
 	f32 _draw_distance = 0.f;
-	std::vector<glm::vec4> _path;
+	std::vector<glm::vec4> _spline;
 	glm::vec4 _bounding_sphere = glm::vec4(0.f);
 
 public:
@@ -249,8 +255,8 @@ template <typename T>
 			auto& draw_distance = _draw_distance;
 			DEF_FIELD(draw_distance);
 		}
-		if(has_component(COM_PATH)) {
-			auto& vertices = _path;
+		if(has_component(COM_SPLINE)) {
+			auto& vertices = _spline;
 			DEF_FIELD(vertices);
 		}
 		if(has_component(COM_BOUNDING_SPHERE)) {

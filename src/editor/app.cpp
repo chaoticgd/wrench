@@ -120,45 +120,24 @@ void app::build_iso(build_settings settings) {
 void app::open_file(fs::path path) {
 	file_stream file(path.string());
 	
-	uint32_t magic = file.read<uint32_t>(0x0);
-	auto info = LEVEL_FILE_TYPES.find(magic);
-	if(info != LEVEL_FILE_TYPES.end()) {
-		switch(info->second.type) {
-			case level_file_type::LEVEL: {
-				level new_lvl;
-				try {
-					new_lvl.read(file, path);
-				} catch(stream_error& e) {
-					printf("error: Failed to load level! %s\n", e.what());
-					return;
-				}
-				_lvl.emplace(std::move(new_lvl));
-				renderer.reset_camera(this);
-				break;
-			}
-			case level_file_type::AUDIO:
-				break;
-			case level_file_type::SCENE:
-				break;
+	Json json = Json::parse(read_file(path));
+	if(json.contains("metadata") && json["metadata"].contains("format") && json["metadata"]["format"] == "wad") {
+		level new_lvl;
+		try {
+			new_lvl.open(path, json);
+		} catch(stream_error& e) {
+			printf("error: Failed to load level! %s\n", e.what());
+			return;
 		}
-		return;
-	}
-	
-	armor_archive armor;
-	if(armor.read(file)) {
-		_armor.emplace(std::move(armor));
-		return;
+		_lvl.emplace(std::move(new_lvl));
+		renderer.reset_camera(this);
 	}
 }
 
 void app::save_level() {
 	level* lvl = get_level();
 	
-	array_stream dest;
-	lvl->write(dest);
-	
-	file_stream file(lvl->path.string(), std::ios::out);
-	file.write_n(dest.buffer.data(), dest.buffer.size());
+	assert(0); // TODO: Level saving.
 }
 
 level* app::get_level() {

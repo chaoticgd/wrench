@@ -60,14 +60,6 @@ namespace gui {
 	
 		gl_texture dvd, folder, floppy;
 	};
-	
-	class inspector : public window {
-
-	public:
-		const char* title_text() const override;
-		ImVec2 initial_size() const override;
-		void render(app& a) override;
-	};
 
 	class moby_list : public window {
 	public:
@@ -77,13 +69,6 @@ namespace gui {
 	};
 
 	class viewport_information : public window {
-	public:
-		const char* title_text() const override;
-		ImVec2 initial_size() const override;
-		void render(app& a) override;
-	};
-
-	class string_viewer : public window {
 	public:
 		const char* title_text() const override;
 		ImVec2 initial_size() const override;
@@ -159,26 +144,6 @@ namespace gui {
 		
 		std::size_t _new_game_type = 0;
 		std::string _new_game_path;
-	};
-
-	class stream_viewer : public window {
-	public:
-		stream_viewer();
-		
-		const char* title_text() const override;
-		ImVec2 initial_size() const override;
-		void render(app& a) override;
-		
-		void render_stream_tree_node(stream* node, std::size_t index);
-		
-		// Write out a BMP image to the Wrench directory representing the passed
-		// trace stream where red areas have been read in by Wrench and
-		// grayscale areas have not (the Y axis is bottom to top).
-		void export_trace(trace_stream* node);
-	
-	private:
-		// Validate this before dereferencing it!
-		stream* _selection = nullptr;
 	};
 	
 	class alert_box {

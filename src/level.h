@@ -408,7 +408,7 @@ struct GC_54_DL_38 {
 };
 
 struct Path : Instance {
-	Path() : Instance(INST_PATH, COM_PATH, TransformMode::NONE) {}
+	Path() : Instance(INST_PATH, COM_SPLINE, TransformMode::NONE) {}
 };
 
 struct GC_80_DL_64 {
@@ -423,7 +423,7 @@ struct GC_80_DL_64 {
 };
 
 struct GrindPath : Instance {
-	GrindPath() : Instance(INST_GRIND_PATH, COM_PATH | COM_BOUNDING_SPHERE, TransformMode::NONE) {}
+	GrindPath() : Instance(INST_GRIND_PATH, COM_SPLINE | COM_BOUNDING_SPHERE, TransformMode::NONE) {}
 	s32 unknown_4;
 	s32 wrap;
 	s32 inactive;
@@ -592,6 +592,20 @@ struct Gameplay {
 	// Only used while reading the binary gameplay file.
 	Opt<std::vector<PvarTableEntry>> pvars_temp;
 	
+	template <typename Callback>
+	void for_each_instance_with(u32 required_components_mask, Callback callback) const;
+	template <typename Callback>
+	void for_each_instance_with(u32 required_components_mask, Callback callback);
+	
+	template <typename Callback>
+	void for_each_instance(Callback callback) const {
+		for_each_instance_with(0, callback);
+	}
+	template <typename Callback>
+	void for_each_instance(Callback callback) {
+		for_each_instance_with(0, callback);
+	}
+	
 	// These functions don't skip over instances where pvars.size() == 0.
 	template <typename Callback>
 	void for_each_pvar_instance_const(Callback callback) const;
@@ -603,6 +617,8 @@ struct Gameplay {
 	void for_each_pvar_instance_const(const LevelWad& wad, Callback callback) const;
 	template <typename Callback>
 	void for_each_pvar_instance(const LevelWad& wad, Callback callback);
+	
+	void clear_selection();
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
@@ -778,6 +794,43 @@ struct LevelWad : Wad {
 
 std::unique_ptr<Wad> read_wad_json(fs::path src_path);
 void write_wad_json(fs::path dest_path, Wad* base);
+
+template <typename Callback, typename InstanceVec>
+static void for_each_instance_of_type_with(u32 required_components_mask, const InstanceVec& instances, Callback callback) {
+	if(instances.has_value() && instances->size() > 0) {
+		if(((*instances)[0].components_mask() & required_components_mask) == required_components_mask) {
+			for(const Instance& instance : *instances) {
+				callback(instance);
+			}
+		}
+	}
+}
+
+template <typename Callback>
+void Gameplay::for_each_instance_with(u32 required_components_mask, Callback callback) const {
+	for_each_instance_of_type_with(required_components_mask, cameras, callback);
+	for_each_instance_of_type_with(required_components_mask, sound_instances, callback);
+	if(moby_instances.has_value() && (moby_instances->static_instances[0].components_mask() & required_components_mask) == required_components_mask) {
+		for(const Instance& instance : moby_instances->static_instances) {
+			callback(instance);
+		}
+	}
+	for_each_instance_of_type_with(required_components_mask, spheres, callback);
+	for_each_instance_of_type_with(required_components_mask, cylinders, callback);
+	for_each_instance_of_type_with(required_components_mask, paths, callback);
+	for_each_instance_of_type_with(required_components_mask, cuboids, callback);
+	for_each_instance_of_type_with(required_components_mask, grind_paths, callback);
+	for_each_instance_of_type_with(required_components_mask, lights, callback);
+	for_each_instance_of_type_with(required_components_mask, tie_instances, callback);
+	for_each_instance_of_type_with(required_components_mask, shrub_instances, callback);
+}
+
+template <typename Callback>
+void Gameplay::for_each_instance_with(u32 required_components_mask, Callback callback) {
+	static_cast<const Gameplay*>(this)->for_each_instance_with(required_components_mask, [&](const Instance& inst) {
+		callback(const_cast<Instance&>(inst));
+	});
+}
 
 template <typename Callback>
 void Gameplay::for_each_pvar_instance_const(Callback callback) const {

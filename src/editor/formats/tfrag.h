@@ -126,7 +126,7 @@ private:
 	uint8_t _final_vertex_count;
 	size_t _base_offset;
 
-	std::vector<vec3f> _tfrag_points;
+	std::vector<glm::vec3> _tfrag_points;
 	std::vector<vif_packet> _vif_list;
 	std::vector<float> _tfrag_triangles;
 };

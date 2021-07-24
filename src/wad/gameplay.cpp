@@ -881,7 +881,7 @@ struct PathBlock {
 		for(size_t i = 0; i < splines.size(); i++) {
 			Path inst;
 			inst.set_id_value(i);
-			inst.path() = std::move(splines[i]);
+			inst.spline() = std::move(splines[i]);
 			dest.emplace_back(std::move(inst));
 		}
 	}
@@ -889,7 +889,7 @@ struct PathBlock {
 	static void write(OutBuffer dest, const std::vector<Path>& src, Game game) {
 		std::vector<std::vector<glm::vec4>> splines;
 		for(const Path& inst : src) {
-			splines.emplace_back(inst.path());
+			splines.emplace_back(inst.spline());
 		}
 		
 		s64 header_pos = dest.alloc<PathBlockHeader>();
@@ -950,7 +950,7 @@ struct GrindPathBlock {
 			inst.unknown_4 = grindpaths[i].unknown_4;
 			inst.wrap = grindpaths[i].wrap;
 			inst.inactive = grindpaths[i].inactive;
-			inst.path() = splines[i];
+			inst.spline() = splines[i];
 			dest.emplace_back(std::move(inst));
 		}
 	}
@@ -965,7 +965,7 @@ struct GrindPathBlock {
 			packed.wrap = inst.wrap;
 			packed.inactive = inst.inactive;
 			dest.write(packed);
-			splines.emplace_back(inst.path());
+			splines.emplace_back(inst.spline());
 		}
 		PathBlockHeader header = {0};
 		header.spline_count = src.size();

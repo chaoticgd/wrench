@@ -77,7 +77,7 @@ public:
 	void draw(app& a, glm::mat4 world_to_clip) override;
 
 private:
-	entity_id _selected_spline = NULL_ENTITY_ID;
+	InstanceId _selected_spline = NULL_INSTANCE_ID;
 	size_t _selected_vertex = 0;
 	glm::vec3 _plane_normal { 0.f, 0.f, 1.f };
 };

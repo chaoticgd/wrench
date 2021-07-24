@@ -124,14 +124,14 @@ f32& Instance::draw_distance() {
 	return _draw_distance;
 }
 
-const std::vector<glm::vec4>& Instance::path() const { 
-	assert(_components_mask & COM_PATH);
-	return _path;
+const std::vector<glm::vec4>& Instance::spline() const { 
+	assert(_components_mask & COM_SPLINE);
+	return _spline;
 }
 
-std::vector<glm::vec4>& Instance::path() { 
-	assert(_components_mask & COM_PATH);
-	return _path;
+std::vector<glm::vec4>& Instance::spline() { 
+	assert(_components_mask & COM_SPLINE);
+	return _spline;
 }
 
 const glm::vec4& Instance::bounding_sphere() const { 

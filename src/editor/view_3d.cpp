@@ -104,24 +104,24 @@ void view_3d::draw_overlay_text(app& a, glm::mat4 world_to_clip) const {
 	
 	level& lvl = *a.get_level();
 	
-	for(tie_entity& tie : lvl.world.ties) {
-		draw_text(tie.local_to_world, "t");
-	}
-	
-	for(shrub_entity& shrub : lvl.world.shrubs) {
-		draw_text(shrub.local_to_world, "s");
-	}
-	
-	for(moby_entity& moby : lvl.world.mobies) {
-		static const std::map<uint16_t, const char*> moby_class_names {
-			{ 0x1f4, "crate" },
-			{ 0x2f6, "swingshot_grapple" },
-			{ 0x323, "swingshot_swinging" }
-		};
-		if(moby_class_names.find(moby.o_class) != moby_class_names.end()) {
-			draw_text(moby.local_to_world_cache, moby_class_names.at(moby.o_class));
-		} else {
-			draw_text(moby.local_to_world_cache, std::to_string(moby.o_class));
-		}
-	}
+	//for(tie_entity& tie : lvl.world.ties) {
+	//	draw_text(tie.local_to_world, "t");
+	//}
+	//
+	//for(shrub_entity& shrub : lvl.world.shrubs) {
+	//	draw_text(shrub.local_to_world, "s");
+	//}
+	//
+	//for(moby_entity& moby : lvl.world.mobies) {
+	//	static const std::map<uint16_t, const char*> moby_class_names {
+	//		{ 0x1f4, "crate" },
+	//		{ 0x2f6, "swingshot_grapple" },
+	//		{ 0x323, "swingshot_swinging" }
+	//	};
+	//	if(moby_class_names.find(moby.o_class) != moby_class_names.end()) {
+	//		draw_text(moby.local_to_world_cache, moby_class_names.at(moby.o_class));
+	//	} else {
+	//		draw_text(moby.local_to_world_cache, std::to_string(moby.o_class));
+	//	}
+	//}
 }

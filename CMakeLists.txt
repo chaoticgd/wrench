@@ -18,6 +18,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $<1:${CMAKE_SOURCE_DIR}/bin>)
 
 add_executable(wrench
 	src/editor/main.cpp
+	src/buffer.cpp
+	src/json.cpp
+	src/instance.cpp
+	src/level.cpp
 	src/editor/app.cpp
 	src/editor/command_line.cpp
 	src/editor/gui.cpp
@@ -35,7 +39,6 @@ add_executable(wrench
 	src/editor/tools.cpp
 	src/editor/icons.cpp
 	src/editor/formats/level_impl.cpp
-	src/editor/formats/world.cpp
 	src/editor/formats/texture.cpp
 	src/editor/formats/fip.cpp
 	src/editor/formats/bmp.cpp
@@ -51,7 +54,6 @@ add_executable(wrench
 	src/editor/imgui_impl_glfw.cpp
 	thirdparty/imgui/backends/imgui_impl_opengl3.cpp
 	src/editor/md5.cpp
-	src/editor/tests/world_segment_test.cpp
 	src/lz/compression.cpp
 )
 
