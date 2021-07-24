@@ -31,6 +31,8 @@
 #include <functional>
 #include <type_traits>
 
+#include <glm/glm.hpp>
+
 #include "version_check/version_check.h"
 
 using u8 = uint8_t;
@@ -49,9 +51,21 @@ namespace fs = std::filesystem;
 
 #define BEGIN_END(container) container.begin(), container.end()
 
-// Like assert, but for user errors.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-security"
+
+template <typename... Args>
+[[noreturn]] void assert_not_reached_impl(const char* file, int line, const char* error_message, Args... args) {
+	fprintf(stderr, "[%s:%d] assert: ", file, line);
+	fprintf(stderr, error_message, args...);
+	fprintf(stderr, "\n");
+	exit(1);
+}
+#define assert_not_reached(...) \
+	assert_not_reached_impl(__FILE__, __LINE__, __VA_ARGS__)
+
+
+// Like assert, but for user errors.
 template <typename... Args>
 void verify_impl(const char* file, int line, bool condition, const char* error_message, Args... args) {
 	if(!condition) {
@@ -65,13 +79,14 @@ void verify_impl(const char* file, int line, bool condition, const char* error_m
 	verify_impl(__FILE__, __LINE__, condition, __VA_ARGS__)
 template <typename... Args>
 [[noreturn]] void verify_not_reached_impl(const char* file, int line, const char* error_message, Args... args) {
-	fprintf(stderr, "[%s:%d] ", file, line);
+	fprintf(stderr, "[%s:%d] error: ", file, line);
 	fprintf(stderr, error_message, args...);
 	fprintf(stderr, "\n");
 	exit(1);
 }
 #define verify_not_reached(...) \
 	verify_not_reached_impl(__FILE__, __LINE__, __VA_ARGS__)
+	
 #pragma GCC diagnostic pop
 
 #ifdef _MSC_VER
@@ -141,6 +156,18 @@ packed_struct(Vec3f,
 		DEF_PACKED_FIELD(y);
 		DEF_PACKED_FIELD(z);
 	}
+	
+	glm::vec3 unpack() const {
+		return glm::vec3(x, y, z);
+	}
+	
+	static Vec3f pack(glm::vec3 vec) {
+		Vec3f result;
+		result.x = vec.x;
+		result.y = vec.y;
+		result.z = vec.z;
+		return result;
+	}
 )
 
 packed_struct(Vec4f,
@@ -155,6 +182,19 @@ packed_struct(Vec4f,
 		DEF_PACKED_FIELD(y);
 		DEF_PACKED_FIELD(z);
 		DEF_PACKED_FIELD(w);
+	}
+	
+	glm::vec4 unpack() const {
+		return glm::vec4(x, y, z, w);
+	}
+	
+	static Vec4f pack(glm::vec4 vec) {
+		Vec4f result;
+		result.x = vec.x;
+		result.y = vec.y;
+		result.z = vec.z;
+		result.w = vec.w;
+		return result;
 	}
 )
 
@@ -178,6 +218,68 @@ packed_struct(Mat3,
 		temp = m_2;
 		t.field("2", temp);
 		m_2 = temp;
+	}
+	
+	glm::mat3x4 unpack() const {
+		glm::mat3x4 result;
+		result[0] = m_0.unpack();
+		result[1] = m_1.unpack();
+		result[2] = m_2.unpack();
+		return result;
+	}
+	
+	static Mat3 pack(glm::mat3x4 mat) {
+		Mat3 result;
+		result.m_0 = Vec4f::pack(mat[0]);
+		result.m_1 = Vec4f::pack(mat[1]);
+		result.m_2 = Vec4f::pack(mat[2]);
+		return result;
+	}
+)
+
+packed_struct(Mat4,
+	Vec4f m_0;
+	Vec4f m_1;
+	Vec4f m_2;
+	Vec4f m_3;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		Vec4f temp;
+		
+		temp = m_0;
+		t.field("0", temp);
+		m_0 = temp;
+		
+		temp = m_1;
+		t.field("1", temp);
+		m_1 = temp;
+		
+		temp = m_2;
+		t.field("2", temp);
+		m_2 = temp;
+		
+		temp = m_3;
+		t.field("3", temp);
+		m_3 = temp;
+	}
+	
+	glm::mat4 unpack() const {
+		glm::mat4 result;
+		result[0] = m_0.unpack();
+		result[1] = m_1.unpack();
+		result[2] = m_2.unpack();
+		result[3] = m_3.unpack();
+		return result;
+	}
+	
+	static Mat4 pack(glm::mat4 mat) {
+		Mat4 result;
+		result.m_0 = Vec4f::pack(mat[0]);
+		result.m_1 = Vec4f::pack(mat[1]);
+		result.m_2 = Vec4f::pack(mat[2]);
+		result.m_3 = Vec4f::pack(mat[3]);
+		return result;
 	}
 )
 

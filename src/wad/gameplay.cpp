@@ -73,6 +73,44 @@ std::vector<u8> write_gameplay(const LevelWad& wad, const Gameplay& gameplay_arg
 	return dest_vec;
 }
 
+template <typename Packed>
+static void swap_matrix(Instance& inst, Packed& packed) {
+	glm::mat4 matrix = inst.matrix();
+	inst.set_transform(packed.matrix.unpack());
+	packed.matrix = Mat4::pack(matrix);
+}
+
+template <typename Packed>
+static void swap_matrix_inverse_rotation(Instance& inst, Packed& packed) {
+	glm::mat4 matrix = inst.matrix();
+	glm::mat3 inverse_matrix = inst.inverse_matrix();
+	glm::vec3 rotation = inst.rotation();
+	inst.set_transform(packed.matrix.unpack(), packed.inverse_matrix.unpack(), packed.rotation.unpack());
+	packed.matrix = Mat4::pack(matrix);
+	packed.inverse_matrix = Mat3::pack(inverse_matrix);
+	packed.rotation = Vec3f::pack(rotation);
+}
+
+template <typename Packed>
+static void swap_position_rotation(Instance& instance, Packed& packed) {
+	glm::vec3 pos = instance.position();
+	glm::vec3 rot = instance.rotation();
+	instance.set_transform(packed.position.unpack(), packed.rotation.unpack());
+	packed.position = Vec3f::pack(pos);
+	packed.rotation = Vec3f::pack(rot);
+}
+
+template <typename Packed>
+static void swap_position_rotation_scale(Instance& instance, Packed& packed) {
+	glm::vec3 pos = instance.position();
+	glm::vec3 rot = instance.rotation();
+	f32 scale = instance.scale();
+	instance.set_transform(packed.position.unpack(), packed.rotation.unpack(), packed.scale);
+	packed.position = Vec3f::pack(pos);
+	packed.rotation = Vec3f::pack(rot);
+	packed.scale = scale;
+}
+
 packed_struct(TableHeader,
 	s32 count_1;
 	s32 pad[3];
@@ -184,7 +222,7 @@ struct HelpMessageBlock {
 			src = src.subbuf(8);
 		}
 		
-		InstanceId index = 0;
+		s32 index = 0;
 		for(HelpMessageEntry entry : table) {
 			HelpMessage message;
 			message.id = index++;
@@ -315,24 +353,24 @@ struct LightTriggerBlock {
 	}
 };
 
-template <typename Instance, typename Packed>
+template <typename ThisInstance, typename Packed>
 struct InstanceBlock {
-	static void read(std::vector<Instance>& dest, Buffer src, Game game) {
+	static void read(std::vector<ThisInstance>& dest, Buffer src, Game game) {
 		TableHeader header = src.read<TableHeader>(0, "instance block header");
 		auto entries = src.read_multiple<Packed>(0x10, header.count_1, "instances");
-		InstanceId index = 0;
+		s32 index = 0;
 		for(Packed packed : entries) {
-			Instance inst;
-			inst.id = index++;
+			ThisInstance inst;
+			inst.set_id_value(index++);
 			swap_instance(inst, packed);
 			dest.push_back(inst);
 		}
 	}
 	
-	static void write(OutBuffer dest, const std::vector<Instance>& src, Game game) {
+	static void write(OutBuffer dest, const std::vector<ThisInstance>& src, Game game) {
 		TableHeader header = {(s32) src.size()};
 		dest.write(header);
-		for(Instance camera : src) {
+		for(ThisInstance camera : src) {
 			Packed packed;
 			swap_instance(camera, packed);
 			dest.write(packed);
@@ -393,13 +431,13 @@ struct RAC23MobyBlock {
 	static void read(MobyInstances& dest, Buffer src, Game game) {
 		auto& header = src.read<MobyBlockHeader>(0, "moby block header");
 		dest.dynamic_instance_count = header.dynamic_count;
-		InstanceId index = 0;
+		s32 index = 0;
 		dest.static_instances.reserve(header.static_count);
 		for(MobyInstanceRAC23 entry : src.read_multiple<MobyInstanceRAC23>(0x10, header.static_count, "moby instances")) {
 			verify(entry.size == 0x88, "Moby size field has invalid value.");
 			
 			MobyInstance instance;
-			instance.id = index++;
+			instance.set_id_value(index++);
 			swap_moby(instance, entry);
 			dest.static_instances.push_back(instance);
 		}
@@ -419,6 +457,12 @@ struct RAC23MobyBlock {
 	
 	static void swap_moby(MobyInstance& l, MobyInstanceRAC23& r) {
 		r.size = 0x88;
+		swap_position_rotation_scale(l, r);
+		SWAP_PACKED(l.temp_pvar_index(), r.pvar_index);
+		SWAP_PACKED(l.draw_distance(), r.draw_distance);
+		SWAP_PACKED(l.colour().r, r.light_colour.r);
+		SWAP_PACKED(l.colour().g, r.light_colour.g);
+		SWAP_PACKED(l.colour().b, r.light_colour.b);
 		SWAP_PACKED(l.mission, r.mission);
 		SWAP_PACKED(l.rac23.unknown_8, r.unknown_8);
 		SWAP_PACKED(l.rac23.unknown_c, r.unknown_c);
@@ -429,21 +473,15 @@ struct RAC23MobyBlock {
 		SWAP_PACKED(l.rac23.unknown_20, r.unknown_20);
 		SWAP_PACKED(l.rac23.unknown_24, r.unknown_24);
 		SWAP_PACKED(l.o_class, r.o_class);
-		SWAP_PACKED(l.scale, r.scale);
-		SWAP_PACKED(l.draw_distance, r.draw_distance);
 		SWAP_PACKED(l.update_distance, r.update_distance);
 		SWAP_PACKED(l.rac23.unknown_38, r.unknown_38);
 		SWAP_PACKED(l.rac23.unknown_3c, r.unknown_3c);
-		SWAP_PACKED(l.position, r.position);
-		SWAP_PACKED(l.rotation, r.rotation);
 		SWAP_PACKED(l.group, r.group);
 		SWAP_PACKED(l.is_rooted, r.is_rooted);
 		SWAP_PACKED(l.rooted_distance, r.rooted_distance);
 		SWAP_PACKED(l.rac23.unknown_4c, r.unknown_4c);
-		SWAP_PACKED(l.pvar_index, r.pvar_index);
 		SWAP_PACKED(l.occlusion, r.occlusion);
 		SWAP_PACKED(l.mode_bits, r.mode_bits);
-		SWAP_PACKED(l.light_colour, r.light_colour);
 		SWAP_PACKED(l.light, r.light);
 		SWAP_PACKED(l.rac23.unknown_84, r.unknown_84);
 	}
@@ -479,7 +517,7 @@ struct DeadlockedMobyBlock {
 	static void read(MobyInstances& dest, Buffer src, Game game) {
 		auto& header = src.read<MobyBlockHeader>(0, "moby block header");
 		dest.dynamic_instance_count = header.dynamic_count;
-		InstanceId index = 0;
+		s32 index = 0;
 		dest.static_instances.reserve(header.static_count);
 		for(MobyInstanceDL entry : src.read_multiple<MobyInstanceDL>(0x10, header.static_count, "moby instances")) {
 			verify(entry.size == 0x70, "Moby size field has invalid value.");
@@ -489,7 +527,7 @@ struct DeadlockedMobyBlock {
 			verify(entry.unknown_6c == -1, "Moby field has weird value.");
 			
 			MobyInstance instance;
-			instance.id = index++;
+			instance.set_id_value(index++);
 			swap_moby(instance, entry);
 			dest.static_instances.push_back(instance);
 		}
@@ -509,25 +547,25 @@ struct DeadlockedMobyBlock {
 	
 	static void swap_moby(MobyInstance& l, MobyInstanceDL& r) {
 		r.size = 0x70;
+		swap_position_rotation_scale(l, r);
+		SWAP_PACKED(l.temp_pvar_index(), r.pvar_index);
+		SWAP_PACKED(l.draw_distance(), r.draw_distance);
+		SWAP_PACKED(l.colour().r, r.light_colour.r);
+		SWAP_PACKED(l.colour().g, r.light_colour.g);
+		SWAP_PACKED(l.colour().b, r.light_colour.b);
 		SWAP_PACKED(l.mission, r.mission);
 		SWAP_PACKED(l.uid, r.uid);
 		SWAP_PACKED(l.bolts, r.bolts);
 		SWAP_PACKED(l.o_class, r.o_class);
-		SWAP_PACKED(l.scale, r.scale);
-		SWAP_PACKED(l.draw_distance, r.draw_distance);
 		SWAP_PACKED(l.update_distance, r.update_distance);
 		r.unknown_20 = 32;
 		r.unknown_24 = 64;
-		SWAP_PACKED(l.position, r.position);
-		SWAP_PACKED(l.rotation, r.rotation);
 		SWAP_PACKED(l.group, r.group);
 		SWAP_PACKED(l.is_rooted, r.is_rooted);
 		SWAP_PACKED(l.rooted_distance, r.rooted_distance);
 		r.unknown_4c = 1;
-		SWAP_PACKED(l.pvar_index, r.pvar_index);
 		SWAP_PACKED(l.occlusion, r.occlusion);
 		SWAP_PACKED(l.mode_bits, r.mode_bits);
-		SWAP_PACKED(l.light_colour, r.light_colour);
 		SWAP_PACKED(l.light, r.light);
 		r.unknown_6c = -1;
 	}
@@ -536,8 +574,8 @@ struct DeadlockedMobyBlock {
 struct PvarTableBlock {
 	static void read(LevelWad& wad, Gameplay& dest, Buffer src, Game game) {
 		s32 pvar_count = 0;
-		dest.for_each_pvar_instance([&](PvarInstance& inst) {
-			pvar_count = std::max(pvar_count, inst.pvar_index + 1);
+		dest.for_each_pvar_instance([&](Instance& inst) {
+			pvar_count = std::max(pvar_count, inst.temp_pvar_index() + 1);
 		});
 		
 		// Store the table for use in PvarDataBlock::read.
@@ -546,11 +584,11 @@ struct PvarTableBlock {
 	
 	static bool write(OutBuffer dest, const LevelWad& wad, const Gameplay& src, Game game) {
 		s32 data_offset = 0;
-		src.for_each_pvar_instance_const([&](const PvarInstance& inst) {
-			if(inst.pvars.size() > 0) {
+		src.for_each_pvar_instance_const([&](const Instance& inst) {
+			if(inst.pvars().size() > 0) {
 				dest.write(data_offset);
-				dest.write((s32) inst.pvars.size());
-				data_offset += inst.pvars.size();
+				dest.write((s32) inst.pvars().size());
+				data_offset += inst.pvars().size();
 			}
 		});
 		return true;
@@ -560,10 +598,10 @@ struct PvarTableBlock {
 struct PvarDataBlock {
 	static void read(LevelWad& wad, Gameplay& dest, Buffer src, Game game) {
 		assert(dest.pvars_temp.has_value());
-		dest.for_each_pvar_instance([&](PvarInstance& inst) {
-			if(inst.pvar_index >= 0) {
-				PvarTableEntry& entry = dest.pvars_temp->at(inst.pvar_index);
-				inst.pvars = src.read_multiple<u8>(entry.offset, entry.size, "pvar data").copy();
+		dest.for_each_pvar_instance([&](Instance& inst) {
+			if(inst.temp_pvar_index() >= 0) {
+				PvarTableEntry& entry = dest.pvars_temp->at(inst.temp_pvar_index());
+				inst.pvars() = src.read_multiple<u8>(entry.offset, entry.size, "pvar data").copy();
 			}
 		});
 		
@@ -571,8 +609,8 @@ struct PvarDataBlock {
 	}
 	
 	static bool write(OutBuffer dest, const LevelWad& wad, const Gameplay& src, Game game) {
-		src.for_each_pvar_instance_const([&](const PvarInstance& inst) {
-			dest.write_multiple(inst.pvars);
+		src.for_each_pvar_instance_const([&](const Instance& inst) {
+			dest.write_multiple(inst.pvars());
 		});
 		return true;
 	}
@@ -585,21 +623,21 @@ packed_struct(PvarPointerEntry,
 
 static PvarType& get_pvar_type(s32 pvar_index, LevelWad& wad, Gameplay& dest) {
 	Opt<std::string> pvar_type_name;
-	for(ImportCamera& inst : opt_iterator(dest.cameras)) {
-		if(inst.pvar_index == pvar_index) {
+	for(Camera& inst : opt_iterator(dest.cameras)) {
+		if(inst.temp_pvar_index() == pvar_index) {
 			CameraClass& cls = wad.lookup_camera_class(inst.type);
 			return wad.pvar_types[cls.pvar_type];
 		}
 	}
 	for(SoundInstance& inst : opt_iterator(dest.sound_instances)) {
-		if(inst.pvar_index == pvar_index) {
+		if(inst.temp_pvar_index() == pvar_index) {
 			SoundClass& cls = wad.lookup_sound_class(inst.o_class);
 			return wad.pvar_types[cls.pvar_type];
 		}
 	}
 	if(dest.moby_instances.has_value()) {
 		for(MobyInstance& inst : dest.moby_instances->static_instances) {
-			if(inst.pvar_index == pvar_index) {
+			if(inst.temp_pvar_index() == pvar_index) {
 				MobyClass& cls = wad.lookup_moby_class(inst.o_class);
 				return wad.pvar_types[cls.pvar_type];
 			}
@@ -609,11 +647,11 @@ static PvarType& get_pvar_type(s32 pvar_index, LevelWad& wad, Gameplay& dest) {
 }
 
 auto write_pvar_pointer_entries(PvarFieldDescriptor descriptor, OutBuffer dest, const LevelWad& wad, const Gameplay& src, Game game) {
-	src.for_each_pvar_instance_const(wad, [&](const PvarInstance& inst, const PvarType& type) {
+	src.for_each_pvar_instance_const(wad, [&](const Instance& inst, const PvarType& type) {
 		for(const PvarField& field : type.fields) {
-			if(field.descriptor == descriptor && (descriptor == PVAR_RELATIVE_POINTER || Buffer(inst.pvars).read<s32>(field.offset, "pvar pointer") >= 0)) {
+			if(field.descriptor == descriptor && (descriptor == PVAR_RELATIVE_POINTER || Buffer(inst.pvars()).read<s32>(field.offset, "pvar pointer") >= 0)) {
 				PvarPointerEntry entry;
-				entry.pvar_index = inst.pvar_index;
+				entry.pvar_index = inst.temp_pvar_index();
 				entry.pointer_offset = field.offset;
 				dest.write(entry);
 			}
@@ -687,7 +725,7 @@ struct GroupBlock {
 			data_ofs += 0x10 - (data_ofs % 0x10);
 		}
 		auto members = src.read_multiple<u16>(data_ofs, header.data_size / 2, "groups");
-		InstanceId index = 0;
+		s32 index = 0;
 		for(s32 pointer : pointers) {
 			s32 member_index = pointer / 2;
 			Group group;
@@ -760,10 +798,10 @@ struct GlobalPvarBlock {
 			field.descriptor = PVAR_GLOBAL_PVAR_POINTER;
 			verify(type.insert_field(field, false), "Conflicting pvar type information.");
 			
-			dest.for_each_pvar_instance([&](PvarInstance& inst) {
-				if(inst.pvar_index == entry.pvar_index) {
-					verify(inst.pvars.size() >= (size_t) entry.pointer_offset + 4, "Pvar too small.");
-					*(s32*) &inst.pvars[entry.pointer_offset] = entry.global_pvar_offset;
+			dest.for_each_pvar_instance([&](Instance& inst) {
+				if(inst.temp_pvar_index() == entry.pvar_index) {
+					verify(inst.pvars().size() >= (size_t) entry.pointer_offset + 4, "Pvar too small.");
+					*(s32*) &inst.pvars()[entry.pointer_offset] = entry.global_pvar_offset;
 				}
 			});
 		}
@@ -783,10 +821,10 @@ struct GlobalPvarBlock {
 		dest.write_multiple(*src.global_pvar);
 		
 		std::vector<GlobalPvarPointer> pointers;
-		src.for_each_pvar_instance_const(wad, [&](const PvarInstance& inst, const PvarType& type) {
-			for(auto& [offset, value] : inst.global_pvar_pointers) {
+		src.for_each_pvar_instance_const(wad, [&](const Instance& inst, const PvarType& type) {
+			for(auto& [offset, value] : inst.temp_global_pvar_pointers()) {
 				GlobalPvarPointer entry;
-				entry.pvar_index = inst.pvar_index;
+				entry.pvar_index = inst.temp_pvar_index();
 				entry.pointer_offset = offset;
 				entry.global_pvar_offset = value;
 				pointers.push_back(entry);
@@ -841,7 +879,7 @@ struct PathBlock {
 		auto& header = src.read<PathBlockHeader>(0, "path block header");
 		std::vector<std::vector<Vec4f>> splines = read_splines(src.subbuf(0x10), header.spline_count, header.data_offset - 0x10);
 		for(size_t i = 0; i < splines.size(); i++) {
-			dest.emplace_back(Path{(InstanceId) i, std::move(splines[i])});
+			dest.emplace_back(Path{(s32) i, std::move(splines[i])});
 		}
 	}
 	
@@ -955,7 +993,7 @@ struct AreasBlock {
 		s64 header_size = sizeof(AreasHeader);
 		auto header = src.read<AreasHeader>(0, "area list block header");
 		auto entries = src.read_multiple<GameplayAreaPacked>(header_size, header.area_count, "area list table");
-		InstanceId index = 0;
+		s32 index = 0;
 		for(const GameplayAreaPacked& entry : entries) {
 			Area area;
 			area.id = index++;
@@ -1018,7 +1056,7 @@ struct AreasBlock {
 struct TieAmbientRgbaBlock {
 	static void read(std::vector<TieAmbientRgbas>& dest, Buffer src, Game game) {
 		s64 ofs = 0;
-		InstanceId index = 0;
+		s32 index = 0;
 		for(;;) {
 			s16 id = src.read<s16>(ofs, "index");
 			ofs += 2;
@@ -1118,18 +1156,17 @@ std::vector<u8> write_occlusion(const Gameplay& gameplay, Game game) {
 	return dest;
 }
 
-packed_struct(ImportCameraPacked,
+packed_struct(CameraPacked,
 	/* 0x00 */ s32 type;
 	/* 0x04 */ Vec3f position;
 	/* 0x10 */ Vec3f rotation;
 	/* 0x1c */ s32 pvar_index;
 )
 
-static void swap_instance(ImportCamera& l, ImportCameraPacked& r) {
+static void swap_instance(Camera& l, CameraPacked& r) {
+	swap_position_rotation(l, r);
+	SWAP_PACKED(l.temp_pvar_index(), r.pvar_index);
 	SWAP_PACKED(l.type, r.type);
-	SWAP_PACKED(l.position, r.position);
-	SWAP_PACKED(l.rotation, r.rotation);
-	SWAP_PACKED(l.pvar_index, r.pvar_index);
 }
 
 packed_struct(SoundInstancePacked,
@@ -1138,23 +1175,42 @@ packed_struct(SoundInstancePacked,
 	u32 update_fun_ptr;
 	s32 pvar_index;
 	f32 range;
-	ShapePacked cuboid;
+	Mat4 matrix;
+	Mat3 inverse_matrix;
+	Vec3f rotation;
+	f32 pad;
 )
 
 static void swap_instance(SoundInstance& l, SoundInstancePacked& r) {
+	swap_matrix_inverse_rotation(l, r);
+	SWAP_PACKED(l.temp_pvar_index(), r.pvar_index);
 	SWAP_PACKED(l.o_class, r.o_class);
 	SWAP_PACKED(l.m_class, r.m_class);
 	r.update_fun_ptr = 0;
-	SWAP_PACKED(l.pvar_index, r.pvar_index);
 	SWAP_PACKED(l.range, r.range);
-	SWAP_PACKED(l.cuboid, r.cuboid);
+	r.pad = 0.f;
 }
 
-static void swap_instance(Shape& l, ShapePacked& r) {
-	SWAP_PACKED(l.matrix, r.matrix);
-	SWAP_PACKED(l.position, r.position);
-	SWAP_PACKED(l.inverse_matrix, r.inverse_matrix);
-	SWAP_PACKED(l.rotation, r.rotation);
+packed_struct(ShapePacked,
+	Mat4 matrix;
+	Mat3 inverse_matrix;
+	Vec3f rotation;
+	f32 pad;
+)
+
+static void swap_instance(Cuboid& l, ShapePacked& r) {
+	swap_matrix_inverse_rotation(l, r);
+	r.pad = 0.f;
+}
+
+static void swap_instance(Sphere& l, ShapePacked& r) {
+	swap_matrix_inverse_rotation(l, r);
+	r.pad = 0.f;
+}
+
+static void swap_instance(Cylinder& l, ShapePacked& r) {
+	swap_matrix_inverse_rotation(l, r);
+	r.pad = 0.f;
 }
 
 packed_struct(DirectionalLightPacked,
@@ -1176,8 +1232,7 @@ packed_struct(TieInstancePacked,
 	/* 0x04 */ s32 draw_distance;
 	/* 0x08 */ s32 pad_8;
 	/* 0x0c */ s32 occlusion_index;
-	/* 0x10 */ Mat3 matrix;
-	/* 0x40 */ Vec4f position;
+	/* 0x10 */ Mat4 matrix;
 	/* 0x50 */ s32 directional_lights;
 	/* 0x54 */ s32 uid;
 	/* 0x58 */ s32 pad_58;
@@ -1186,12 +1241,11 @@ packed_struct(TieInstancePacked,
 static_assert(sizeof(TieInstancePacked) == 0x60);
 
 static void swap_instance(TieInstance& l, TieInstancePacked& r) {
+	swap_matrix(l, r);
+	SWAP_PACKED(l.draw_distance(), r.draw_distance);
 	SWAP_PACKED(l.o_class, r.o_class);
-	SWAP_PACKED(l.draw_distance, r.draw_distance);
 	r.pad_8 = 0;
 	SWAP_PACKED(l.occlusion_index, r.occlusion_index);
-	SWAP_PACKED(l.matrix, r.matrix);
-	SWAP_PACKED(l.position, r.position);
 	SWAP_PACKED(l.directional_lights, r.directional_lights);
 	SWAP_PACKED(l.uid, r.uid);
 	r.pad_58 = 0;
@@ -1203,8 +1257,7 @@ packed_struct(ShrubInstancePacked,
 	/* 0x04 */ f32 draw_distance;
 	/* 0x08 */ s32 unknown_8;
 	/* 0x0c */ s32 unknown_c;
-	/* 0x10 */ Mat3 matrix;
-	/* 0x40 */ Vec4f position;
+	/* 0x10 */ Mat4 matrix;
 	/* 0x50 */ Rgb96 light_colour;
 	/* 0x5c */ s32 unknown_5c;
 	/* 0x60 */ s32 unknown_60;
@@ -1214,13 +1267,14 @@ packed_struct(ShrubInstancePacked,
 )
 
 static void swap_instance(ShrubInstance& l, ShrubInstancePacked& r) {
+	swap_matrix(l, r);
+	SWAP_PACKED(l.draw_distance(), r.draw_distance);
+	SWAP_PACKED(l.colour().r, r.light_colour.r);
+	SWAP_PACKED(l.colour().g, r.light_colour.g);
+	SWAP_PACKED(l.colour().b, r.light_colour.b);
 	SWAP_PACKED(l.o_class, r.o_class);
-	SWAP_PACKED(l.draw_distance, r.draw_distance);
 	SWAP_PACKED(l.unknown_8, r.unknown_8);
 	SWAP_PACKED(l.unknown_c, r.unknown_c);
-	SWAP_PACKED(l.matrix, r.matrix);
-	SWAP_PACKED(l.position, r.position);
-	SWAP_PACKED(l.light_colour, r.light_colour);
 	SWAP_PACKED(l.unknown_5c, r.unknown_5c);
 	SWAP_PACKED(l.unknown_60, r.unknown_60);
 	SWAP_PACKED(l.unknown_64, r.unknown_64);
@@ -1230,22 +1284,22 @@ static void swap_instance(ShrubInstance& l, ShrubInstancePacked& r) {
 
 static void rewire_pvar_indices(Gameplay& gameplay) {
 	s32 pvar_index = 0;
-	gameplay.for_each_pvar_instance([&](PvarInstance& inst) {
-		if(inst.pvars.size() > 0) {
-			inst.pvar_index = pvar_index++;
+	gameplay.for_each_pvar_instance([&](Instance& inst) {
+		if(inst.pvars().size() > 0) {
+			inst.temp_pvar_index() = pvar_index++;
 		} else {
-			inst.pvar_index = -1;
+			inst.temp_pvar_index() = -1;
 		}
 	});
 }
 
 static void rewire_global_pvar_pointers(const LevelWad& wad, Gameplay& gameplay) {
-	gameplay.for_each_pvar_instance(wad, [&](PvarInstance& inst, const PvarType& type) {
+	gameplay.for_each_pvar_instance(wad, [&](Instance& inst, const PvarType& type) {
 		for(const PvarField& field : type.fields) {
 			if(field.descriptor == PVAR_GLOBAL_PVAR_POINTER) {
-				verify(inst.pvars.size() >= (size_t) field.offset + 4, "Pvars too small.");
-				inst.global_pvar_pointers.emplace_back(field.offset, *(s32*) &inst.pvars[field.offset]);
-				*(s32*) &inst.pvars[field.offset] = 0;
+				verify(inst.pvars().size() >= (size_t) field.offset + 4, "Pvars too small.");
+				inst.temp_global_pvar_pointers().emplace_back(field.offset, *(s32*) &inst.pvars()[field.offset]);
+				*(s32*) &inst.pvars()[field.offset] = 0;
 			}
 		}
 	});
@@ -1285,7 +1339,7 @@ const std::vector<GameplayBlockDescription> RAC23_GAMEPLAY_BLOCKS = {
 	{0x2c, bf<HelpMessageBlock<true>>(&Gameplay::korean_help_messages), "korean help messages"},
 	{0x04, bf<InstanceBlock<DirectionalLight, DirectionalLightPacked>>(&Gameplay::lights), "directional lights"},
 	{0x84, bf<LightTriggerBlock>(&Gameplay::light_triggers), "light triggers"},
-	{0x08, bf<InstanceBlock<ImportCamera, ImportCameraPacked>>(&Gameplay::cameras), "import cameras"},
+	{0x08, bf<InstanceBlock<Camera, CameraPacked>>(&Gameplay::cameras), "cameras"},
 	{0x0c, bf<InstanceBlock<SoundInstance, SoundInstancePacked>>(&Gameplay::sound_instances), "sound instances"},
 	{0x48, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},
 	{0x4c, bf<RAC23MobyBlock>(&Gameplay::moby_instances), "moby instances"},
@@ -1303,9 +1357,9 @@ const std::vector<GameplayBlockDescription> RAC23_GAMEPLAY_BLOCKS = {
 	{0x40, bf<InstanceBlock<ShrubInstance, ShrubInstancePacked>>(&Gameplay::shrub_instances), "shrub instances"},
 	{0x44, bf<GroupBlock>(&Gameplay::shrub_groups), "shrub groups"},
 	{0x78, bf<PathBlock>(&Gameplay::paths), "paths"},
-	{0x68, bf<InstanceBlock<Shape, ShapePacked>>(&Gameplay::cuboids), "cuboids"},
-	{0x6c, bf<InstanceBlock<Shape, ShapePacked>>(&Gameplay::spheres), "spheres"},
-	{0x70, bf<InstanceBlock<Shape, ShapePacked>>(&Gameplay::cylinders), "cylinders"},
+	{0x68, bf<InstanceBlock<Cuboid, ShapePacked>>(&Gameplay::cuboids), "cuboids"},
+	{0x6c, bf<InstanceBlock<Sphere, ShapePacked>>(&Gameplay::spheres), "spheres"},
+	{0x70, bf<InstanceBlock<Cylinder, ShapePacked>>(&Gameplay::cylinders), "cylinders"},
 	{0x74, bf<TableBlock<s32>>(&Gameplay::gc_74_dl_58), "GC 74 DL 58"},
 	{0x88, bf<GC_88_DL_6c_Block>(&Gameplay::gc_88_dl_6c), "GC 88 DL 6c"},
 	{0x80, bf<GC_80_DL_64_Block>(&Gameplay::gc_80_dl_64), "GC 80 DL 64"},
@@ -1325,7 +1379,7 @@ const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS = {
 	{0x20, bf<HelpMessageBlock<false>>(&Gameplay::italian_help_messages), "italian help messages"},
 	{0x24, bf<HelpMessageBlock<false>>(&Gameplay::japanese_help_messages), "japanese help messages"},
 	{0x28, bf<HelpMessageBlock<true>>(&Gameplay::korean_help_messages), "korean help messages"},
-	{0x04, bf<InstanceBlock<ImportCamera, ImportCameraPacked>>(&Gameplay::cameras), "import cameras"},
+	{0x04, bf<InstanceBlock<Camera, CameraPacked>>(&Gameplay::cameras), "import cameras"},
 	{0x08, bf<InstanceBlock<SoundInstance, SoundInstancePacked>>(&Gameplay::sound_instances), "sound instances"},
 	{0x2c, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},
 	{0x30, bf<DeadlockedMobyBlock>(&Gameplay::moby_instances), "moby instances"},
@@ -1336,9 +1390,9 @@ const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS = {
 	{0x34, bf<GroupBlock>(&Gameplay::moby_groups), "moby groups"},
 	{0x38, {GlobalPvarBlock::read, GlobalPvarBlock::write}, "global pvar"},
 	{0x5c, bf<PathBlock>(&Gameplay::paths), "paths"},
-	{0x4c, bf<InstanceBlock<Shape, ShapePacked>>(&Gameplay::cuboids), "cuboids"},
-	{0x50, bf<InstanceBlock<Shape, ShapePacked>>(&Gameplay::spheres), "spheres"},
-	{0x54, bf<InstanceBlock<Shape, ShapePacked>>(&Gameplay::cylinders), "cylinders"},
+	{0x4c, bf<InstanceBlock<Cuboid, ShapePacked>>(&Gameplay::cuboids), "cuboids"},
+	{0x50, bf<InstanceBlock<Sphere, ShapePacked>>(&Gameplay::spheres), "spheres"},
+	{0x54, bf<InstanceBlock<Cylinder, ShapePacked>>(&Gameplay::cylinders), "cylinders"},
 	{0x58, bf<TableBlock<s32>>(&Gameplay::gc_74_dl_58), "GC 74 DL 58"},
 	{0x6c, bf<GC_88_DL_6c_Block>(&Gameplay::gc_88_dl_6c), "GC 88 DL 6c"},
 	{0x64, bf<GC_80_DL_64_Block>(&Gameplay::gc_80_dl_64), "GC 80 DL 64"},

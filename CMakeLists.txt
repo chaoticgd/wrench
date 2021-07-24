@@ -102,6 +102,7 @@ add_executable(wad
 	src/wad/main.cpp
 	src/buffer.cpp
 	src/json.cpp
+	src/instance.cpp
 	src/level.cpp
 	src/wad/wad_file.cpp
 	src/wad/gameplay.cpp

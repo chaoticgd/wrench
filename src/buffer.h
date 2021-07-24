@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WAD_BUFFER_H
-#define WAD_BUFFER_H
+#ifndef BUFFER_H
+#define BUFFER_H
 
 #include "util.h"
 

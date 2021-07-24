@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WAD_JSON_H
-#define WAD_JSON_H
+#ifndef JSON_H
+#define JSON_H
 
 // Example usage:
 //  Vec3f vec;
@@ -39,6 +39,7 @@
 //  	}
 //  )
 
+#include <glm/glm.hpp>
 #include <nlohmann/json.hpp>
 using Json = nlohmann::ordered_json;
 
@@ -92,6 +93,22 @@ Json to_json(Object& src) {
 			json.emplace_back(to_json(elem));
 		}
 		return json;
+	} else if constexpr(std::is_same_v<Object, glm::vec3>) {
+		ToJsonVisitor visitor;
+		Vec3f::pack(src).enumerate_fields(visitor);
+		return visitor.json;
+	} else if constexpr(std::is_same_v<Object, glm::vec4>) {
+		ToJsonVisitor visitor;
+		Vec4f::pack(src).enumerate_fields(visitor);
+		return visitor.json;
+	} else if constexpr(std::is_same_v<Object, glm::mat3x4>) {
+		ToJsonVisitor visitor;
+		Mat3::pack(src).enumerate_fields(visitor);
+		return visitor.json;
+	} else if constexpr(std::is_same_v<Object, glm::mat4>) {
+		ToJsonVisitor visitor;
+		Mat4::pack(src).enumerate_fields(visitor);
+		return visitor.json;
 	} else if constexpr(std::is_compound_v<Object> && !std::is_same_v<Object, std::string>) {
 		ToJsonVisitor visitor;
 		src.enumerate_fields(visitor);
@@ -167,6 +184,26 @@ void from_json(Object& dest, Json src) {
 			from_json(element, element_json);
 			dest.emplace_back(std::move(element));
 		}
+	} else if constexpr(std::is_same_v<Object, glm::vec3>) {
+		FromJsonVisitor visitor{src};
+		Vec3f packed;
+		packed.enumerate_fields(visitor);
+		dest = packed.unpack();
+	} else if constexpr(std::is_same_v<Object, glm::vec4>) {
+		FromJsonVisitor visitor{src};
+		Vec4f packed;
+		packed.enumerate_fields(visitor);
+		dest = packed.unpack();
+	} else if constexpr(std::is_same_v<Object, glm::mat3x4>) {
+		FromJsonVisitor visitor{src};
+		Mat3 packed;
+		packed.enumerate_fields(visitor);
+		dest = packed.unpack();
+	} else if constexpr(std::is_same_v<Object, glm::mat4>) {
+		FromJsonVisitor visitor{src};
+		Mat4 packed;
+		packed.enumerate_fields(visitor);
+		dest = packed.unpack();
 	} else if constexpr(std::is_compound_v<Object> && !std::is_same_v<Object, std::string>) {
 		FromJsonVisitor visitor{src};
 		dest.enumerate_fields(visitor);
