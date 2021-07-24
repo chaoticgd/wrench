@@ -29,3 +29,4 @@ You don't need to support version 3.
 - For instances with matrices, the position is now stored in the 4th column of the matrix instead of under a seperate position key.
 - The transformation information of sound instances is no longer nested under a "cuboid" key.
 - Removed the redundant "id" field from the help messages, renamed the "string_id" field to just "id".
+- Removed the redundant "number" field from the tie ambient RGBA values.

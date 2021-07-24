@@ -503,14 +503,12 @@ struct TieInstance : Instance {
 };
 
 struct TieAmbientRgbas {
-	s32 id;
-	s16 number;
+	s16 id;
 	std::vector<u8> data;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
 		DEF_FIELD(id);
-		DEF_FIELD(number);
 		DEF_HEXDUMP(data);
 	}
 };

@@ -222,7 +222,6 @@ struct HelpMessageBlock {
 			src = src.subbuf(8);
 		}
 		
-		s32 index = 0;
 		for(HelpMessageEntry entry : table) {
 			HelpMessage message;
 			if(entry.offset != 0) {
@@ -1060,18 +1059,15 @@ struct AreasBlock {
 struct TieAmbientRgbaBlock {
 	static void read(std::vector<TieAmbientRgbas>& dest, Buffer src, Game game) {
 		s64 ofs = 0;
-		s32 index = 0;
 		for(;;) {
-			s16 id = src.read<s16>(ofs, "index");
+			TieAmbientRgbas part;
+			part.id = src.read<s16>(ofs, "id");
 			ofs += 2;
-			if(id == -1) {
+			if(part.id == -1) {
 				break;
 			}
 			s64 size = ((s64) src.read<s16>(ofs, "size")) * 2;
 			ofs += 2;
-			TieAmbientRgbas part;
-			part.id = index++;
-			part.number = id;
 			part.data = src.read_multiple<u8>(ofs, size, "tie rgba data").copy();
 			dest.emplace_back(std::move(part));
 			ofs += size;
@@ -1080,7 +1076,7 @@ struct TieAmbientRgbaBlock {
 	
 	static void write(OutBuffer dest, const std::vector<TieAmbientRgbas>& src, Game game) {
 		for(const TieAmbientRgbas& part : src) {
-			dest.write(part.number);
+			dest.write(part.id);
 			assert(part.data.size() % 2 == 0);
 			dest.write<s16>(part.data.size() / 2);
 			dest.write_multiple(part.data);
