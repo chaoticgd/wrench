@@ -225,11 +225,10 @@ struct HelpMessageBlock {
 		s32 index = 0;
 		for(HelpMessageEntry entry : table) {
 			HelpMessage message;
-			message.id = index++;
 			if(entry.offset != 0) {
 				message.string = src.read_string(entry.offset, is_korean);
 			}
-			message.string_id = entry.id;
+			message.id = entry.id;
 			message.short_id = entry.short_id;
 			message.third_person_id = entry.third_person_id;
 			message.coop_id = entry.coop_id;
@@ -256,7 +255,7 @@ struct HelpMessageBlock {
 			if(message.string) {
 				entry.offset = dest.tell() - base_ofs;
 			}
-			entry.id = message.string_id;
+			entry.id = message.id;
 			entry.short_id = message.short_id;
 			entry.third_person_id = message.third_person_id;
 			entry.coop_id = message.coop_id;
