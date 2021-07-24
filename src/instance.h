@@ -189,8 +189,9 @@ template <typename T>
 					break;
 				}
 				case TransformMode::POSITION_ROTATION: {
-					glm::vec4& position = _transform.matrix[3];
+					glm::vec3 position = _transform.matrix[3];
 					DEF_FIELD(position);
+					_transform.matrix[3] = glm::vec4(position, 1.f);
 					glm::vec3& rotation = _transform.rotation;
 					DEF_FIELD(rotation);
 					if constexpr(std::is_same_v<T, FromJsonVisitor>) {
@@ -199,8 +200,9 @@ template <typename T>
 					break;
 				}
 				case TransformMode::POSITION_ROTATION_SCALE: {
-					glm::vec4& position = _transform.matrix[3];
+					glm::vec3 position = _transform.matrix[3];
 					DEF_FIELD(position);
+					_transform.matrix[3] = glm::vec4(position, 1.f);
 					glm::vec3& rotation = _transform.rotation;
 					DEF_FIELD(rotation);
 					f32& scale = _transform.scale;
