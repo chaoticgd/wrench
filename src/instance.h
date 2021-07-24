@@ -212,6 +212,9 @@ template <typename T>
 					}
 					break;
 				}
+				default: {
+					assert_not_reached("Instance with a transform component lacks a valid transform mode.");
+				}
 			}
 		}
 		if(has_component(COM_PVARS)) {
