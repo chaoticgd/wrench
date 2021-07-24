@@ -214,7 +214,7 @@ template <typename T>
 		}
 		if(has_component(COM_PVARS)) {
 			auto& pvars = _pvars;
-			DEF_FIELD(pvars);
+			DEF_HEXDUMP(pvars);
 		}
 		if(has_component(COM_COLOUR)) {
 			auto& colour = _colour;
