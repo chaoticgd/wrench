@@ -838,22 +838,23 @@ struct GlobalPvarBlock {
 	}
 };
 
-static std::vector<std::vector<Vec4f>> read_splines(Buffer src, s32 count, s32 data_offset) {
-	std::vector<std::vector<Vec4f>> splines;
+static std::vector<std::vector<glm::vec4>> read_splines(Buffer src, s32 count, s32 data_offset) {
+	std::vector<std::vector<glm::vec4>> splines;
 	auto relative_offsets = src.read_multiple<s32>(0, count, "spline offsets");
 	for(s32 relative_offset : relative_offsets) {
 		s32 spline_offset = data_offset + relative_offset;
 		auto header = src.read<TableHeader>(spline_offset, "spline vertex count");
-		splines.emplace_back(src.read_multiple<Vec4f>(spline_offset + 0x10, header.count_1, "spline vertices").copy());
+		static_assert(sizeof(glm::vec4) == 16);
+		splines.emplace_back(src.read_multiple<glm::vec4>(spline_offset + 0x10, header.count_1, "spline vertices").copy());
 	}
 	return splines;
 }
 
-static s32 write_splines(OutBuffer dest, const std::vector<std::vector<Vec4f>>& src) {
+static s32 write_splines(OutBuffer dest, const std::vector<std::vector<glm::vec4>>& src) {
 	s64 offsets_pos = dest.alloc_multiple<s32>(src.size());
 	dest.pad(0x10, 0);
 	s32 data_offset = (s32) dest.tell();
-	for(std::vector<Vec4f> spline : src) {
+	for(std::vector<glm::vec4> spline : src) {
 		dest.pad(0x10, 0);
 		s32 offset = dest.tell() - data_offset;
 		dest.write(offsets_pos, offset);
@@ -861,6 +862,7 @@ static s32 write_splines(OutBuffer dest, const std::vector<std::vector<Vec4f>>& 
 		
 		TableHeader header {(s32) spline.size()};
 		dest.write(header);
+		static_assert(sizeof(glm::vec4) == 16);
 		dest.write_multiple(spline);
 	}
 	return data_offset;
@@ -876,16 +878,19 @@ packed_struct(PathBlockHeader,
 struct PathBlock {
 	static void read(std::vector<Path>& dest, Buffer src, Game game) {
 		auto& header = src.read<PathBlockHeader>(0, "path block header");
-		std::vector<std::vector<Vec4f>> splines = read_splines(src.subbuf(0x10), header.spline_count, header.data_offset - 0x10);
+		std::vector<std::vector<glm::vec4>> splines = read_splines(src.subbuf(0x10), header.spline_count, header.data_offset - 0x10);
 		for(size_t i = 0; i < splines.size(); i++) {
-			dest.emplace_back(Path{(s32) i, std::move(splines[i])});
+			Path inst;
+			inst.set_id_value(i);
+			inst.path() = std::move(splines[i]);
+			dest.emplace_back(std::move(inst));
 		}
 	}
 	
 	static void write(OutBuffer dest, const std::vector<Path>& src, Game game) {
-		std::vector<std::vector<Vec4f>> splines;
-		for(const Path& path : src) {
-			splines.emplace_back(path.vertices);
+		std::vector<std::vector<glm::vec4>> splines;
+		for(const Path& inst : src) {
+			splines.emplace_back(inst.path());
 		}
 		
 		s64 header_pos = dest.alloc<PathBlockHeader>();
@@ -940,28 +945,28 @@ struct GrindPathBlock {
 		s64 offsets_pos = 0x10 + header.spline_count * sizeof(GrindPathData);
 		auto splines = read_splines(src.subbuf(offsets_pos), header.spline_count, header.data_offset - offsets_pos);
 		for(s64 i = 0; i < header.spline_count; i++) {
-			GrindPath path;
-			path.id = i;
-			path.bounding_sphere = grindpaths[i].bounding_sphere;
-			path.unknown_4 = grindpaths[i].unknown_4;
-			path.wrap = grindpaths[i].wrap;
-			path.inactive = grindpaths[i].inactive;
-			path.vertices = splines[i];
-			dest.emplace_back(std::move(path));
+			GrindPath inst;
+			inst.set_id_value(i);
+			inst.bounding_sphere() = grindpaths[i].bounding_sphere.unpack();
+			inst.unknown_4 = grindpaths[i].unknown_4;
+			inst.wrap = grindpaths[i].wrap;
+			inst.inactive = grindpaths[i].inactive;
+			inst.path() = splines[i];
+			dest.emplace_back(std::move(inst));
 		}
 	}
 	
 	static void write(OutBuffer dest, const std::vector<GrindPath>& src, Game game) {
 		s64 header_pos = dest.alloc<PathBlockHeader>();
-		std::vector<std::vector<Vec4f>> splines;
-		for(const GrindPath& path : src) {
+		std::vector<std::vector<glm::vec4>> splines;
+		for(const GrindPath& inst : src) {
 			GrindPathData packed;
-			packed.bounding_sphere = path.bounding_sphere;
-			packed.unknown_4 = path.unknown_4;
-			packed.wrap = path.wrap;
-			packed.inactive = path.inactive;
+			packed.bounding_sphere = BoundingSphere::pack(inst.bounding_sphere());
+			packed.unknown_4 = inst.unknown_4;
+			packed.wrap = inst.wrap;
+			packed.inactive = inst.inactive;
 			dest.write(packed);
-			splines.emplace_back(path.vertices);
+			splines.emplace_back(inst.path());
 		}
 		PathBlockHeader header = {0};
 		header.spline_count = src.size();

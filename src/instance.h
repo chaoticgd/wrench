@@ -91,6 +91,24 @@ packed_struct(BoundingSphere,
 		DEF_PACKED_FIELD(z);
 		DEF_PACKED_FIELD(radius);
 	}
+	
+	glm::vec4 unpack() const {
+		glm::vec4 result;
+		result.x = x;
+		result.y = y;
+		result.z = z;
+		result.w = radius;
+		return result;
+	}
+	
+	static BoundingSphere pack(glm::vec4 vec) {
+		BoundingSphere result;
+		result.x = vec.x;
+		result.y = vec.y;
+		result.z = vec.z;
+		result.radius = vec.w;
+		return result;
+	}
 )
 
 struct FromJsonVisitor;

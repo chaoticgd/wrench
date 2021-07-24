@@ -281,6 +281,7 @@ struct LightTriggerInstance {
 struct Camera : Instance {
 	Camera() : Instance(INST_CAMERA, COM_TRANSFORM | COM_PVARS, TransformMode::POSITION_ROTATION) {}
 	s32 type;
+	
 	template <typename T>
 	void enumerate_fields(T& t) {
 		Instance::enumerate_fields(t);
@@ -340,6 +341,7 @@ struct MobyInstance : Instance {
 		s32 unknown_4c;
 		s32 unknown_84;
 	} rac23;
+	
 	template <typename T>
 	void enumerate_fields(T& t) {
 		Instance::enumerate_fields(t);
@@ -405,15 +407,8 @@ struct GC_54_DL_38 {
 	}
 };
 
-struct Path {
-	s32 id;
-	std::vector<Vec4f> vertices;
-	
-	template <typename T>
-	void enumerate_fields(T& t) {
-		DEF_FIELD(id);
-		DEF_FIELD(vertices);
-	}
+struct Path : Instance {
+	Path() : Instance(INST_PATH, COM_PATH, TransformMode::NONE) {}
 };
 
 struct GC_80_DL_64 {
@@ -427,22 +422,18 @@ struct GC_80_DL_64 {
 	}
 };
 
-struct GrindPath {
-	s32 id;
-	BoundingSphere bounding_sphere;
+struct GrindPath : Instance {
+	GrindPath() : Instance(INST_GRIND_PATH, COM_PATH | COM_BOUNDING_SPHERE, TransformMode::NONE) {}
 	s32 unknown_4;
 	s32 wrap;
 	s32 inactive;
-	std::vector<Vec4f> vertices;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(id);
-		DEF_FIELD(bounding_sphere);
+		Instance::enumerate_fields(t);
 		DEF_FIELD(unknown_4);
 		DEF_FIELD(wrap);
 		DEF_FIELD(inactive);
-		DEF_FIELD(vertices);
 	}
 };
 
