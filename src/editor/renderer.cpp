@@ -21,30 +21,26 @@
 #include "app.h"
 
 void gl_renderer::prepare_frame(level& lvl, glm::mat4 world_to_clip) {
-	moby_matrices.resize(opt_size(lvl.gameplay().moby_instances));
-	size_t i = 0;
+	moby_matrices.clear();
+	moby_matrices.reserve(opt_size(lvl.gameplay().moby_instances));
 	for(MobyInstance& inst : opt_iterator(lvl.gameplay().moby_instances)) {
-		moby_matrices[i] = world_to_clip * inst.matrix();
+		moby_matrices.push_back(world_to_clip * inst.matrix());
 		auto model_iter = lvl.moby_class_to_model.find(inst.o_class);
 		if(model_iter != lvl.moby_class_to_model.end()) {
 			moby_model& moby = lvl.moby_models.at(model_iter->second);
-			moby_matrices[i] = glm::scale(moby_matrices[i], glm::vec3(moby.scale * 32.f));
+			moby_matrices.back() = glm::scale(moby_matrices.back(), glm::vec3(moby.scale * 32.f));
 		}
-		i++;
 	}
 	
-	if(lvl.gameplay().shrub_instances.has_value()) {
-		shrub_matrices.resize(lvl.gameplay().shrub_instances->size());
-		//for (std::size_t i = 0; i < lvl.world.shrubs.size(); i++) {
-		//	shrub_entity& shrub = lvl.world.shrubs[i];
-		//
-		//	glm::mat4& local_to_clip = shrub_local_to_clip_cache[i];
-		//	local_to_clip = world_to_clip * shrub.local_to_world;
-		//	if (lvl.shrub_class_to_model.find(shrub.o_class) != lvl.shrub_class_to_model.end()) {
-		//		shrub_model& model = lvl.shrub_models[lvl.shrub_class_to_model.at(shrub.o_class)];
-		//		local_to_clip = glm::scale(local_to_clip, glm::vec3(model.scale * 32.f));
-		//	}
-		//}
+	shrub_matrices.clear();
+	shrub_matrices.reserve(opt_size(lvl.gameplay().shrub_instances));
+	for(ShrubInstance& inst : opt_iterator(lvl.gameplay().shrub_instances)) {
+		shrub_matrices.push_back(world_to_clip * inst.matrix());
+		auto model_iter = lvl.shrub_class_to_model.find(inst.o_class);
+		if(model_iter != lvl.shrub_class_to_model.end()) {
+			shrub_model& model = lvl.shrub_models.at(model_iter->second);
+			shrub_matrices.back() = glm::scale(shrub_matrices.back(), glm::vec3(model.scale * 32.f));
+		}
 	}
 }
 
@@ -82,7 +78,7 @@ void gl_renderer::draw_level(level& lvl, glm::mat4 world_to_clip) const {
 		std::size_t shrub_batch_begin = 0;
 
 		auto draw_shrub_batch = [&](std::size_t batch_end) {
-			if (lvl.shrub_class_to_model.find(shrub_batch_class) != lvl.shrub_class_to_model.end()) {
+			if(lvl.shrub_class_to_model.find(shrub_batch_class) != lvl.shrub_class_to_model.end()) {
 				std::size_t model_index = lvl.shrub_class_to_model.at(shrub_batch_class);
 				shrub_model& model = lvl.shrub_models[model_index];
 				draw_shrub_models(
@@ -98,7 +94,7 @@ void gl_renderer::draw_level(level& lvl, glm::mat4 world_to_clip) const {
 				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 				glUseProgram(shaders.solid_colour.id());
 				
-				for (std::size_t i = shrub_batch_begin; i < batch_end; i++) {
+				for(std::size_t i = shrub_batch_begin; i < batch_end; i++) {
 					const glm::mat4& local_to_clip = shrub_matrices[i];
 					glm::vec4 colour = get_colour((*lvl.gameplay().shrub_instances)[i].selected, glm::vec4(0, 1, 0, 1));
 					draw_cube(local_to_clip, colour);

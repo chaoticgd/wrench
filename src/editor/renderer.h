@@ -124,7 +124,7 @@ struct gl_renderer {
 	
 	view_mode mode = view_mode::TEXTURED_POLYGONS;
 	bool draw_ties = true;
-	bool draw_shrubs = false;
+	bool draw_shrubs = true;
 	bool draw_mobies = true;
 	bool draw_cuboids = false;
 	bool draw_paths = true;
