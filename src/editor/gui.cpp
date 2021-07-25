@@ -657,16 +657,14 @@ void gui::moby_list::render(app& a) {
 	ImGui::Text("     UID                Class");
 	ImGui::PushItemWidth(-1);
 	if(ImGui::ListBoxHeader("##mobylist", size)) {
-		if(lvl.gameplay().moby_instances.has_value()) {
-			for(MobyInstance& inst : lvl.gameplay().moby_instances->static_instances) {
-				std::stringstream row;
-				row << std::setfill(' ') << std::setw(8) << std::dec << inst.uid << " ";
-				row << std::setfill(' ') << std::setw(20) << std::hex << inst.o_class << " ";
-				
-				if(ImGui::Selectable(row.str().c_str(), inst.selected)) {
-					lvl.gameplay().clear_selection();
-					inst.selected = true;
-				}
+		for(MobyInstance& inst : opt_iterator(lvl.gameplay().moby_instances)) {
+			std::stringstream row;
+			row << std::setfill(' ') << std::setw(8) << std::dec << inst.uid << " ";
+			row << std::setfill(' ') << std::setw(20) << std::hex << inst.o_class << " ";
+			
+			if(ImGui::Selectable(row.str().c_str(), inst.selected)) {
+				lvl.gameplay().clear_selection();
+				inst.selected = true;
 			}
 		}
 		auto t = sysc::to_time_t(sysc::now());

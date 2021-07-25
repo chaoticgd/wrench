@@ -312,6 +312,15 @@ const T& opt_iterator(const Opt<T>& opt) {
 }
 
 template <typename T>
+const size_t opt_size(const Opt<std::vector<T>>& opt_vec) {
+	if(opt_vec.has_value()) {
+		return opt_vec->size();
+	} else {
+		return 0;
+	}
+}
+
+template <typename T>
 T& opt_iterator(Opt<T>& opt) {
 	if(opt.has_value()) {
 		return *opt;

@@ -369,17 +369,6 @@ struct MobyInstance : Instance {
 	}
 };
 
-struct MobyInstances {
-	s32 dynamic_instance_count;
-	std::vector<MobyInstance> static_instances;
-	
-	template <typename T>
-	void enumerate_fields(T& t) {
-		DEF_FIELD(dynamic_instance_count);
-		DEF_FIELD(static_instances);
-	}
-};
-
 packed_struct(PvarTableEntry,
 	s32 offset;
 	s32 size;
@@ -567,8 +556,8 @@ struct Gameplay {
 	Opt<std::vector<Camera>> cameras;
 	Opt<std::vector<SoundInstance>> sound_instances;
 	Opt<std::vector<s32>> moby_classes;
-	Opt<MobyInstances> moby_instances;
 	Opt<s32> dynamic_moby_count;
+	Opt<std::vector<MobyInstance>> moby_instances;
 	Opt<std::vector<Group>> moby_groups;
 	Opt<std::vector<u8>> global_pvar;
 	Opt<std::vector<Sphere>> spheres;
@@ -810,11 +799,7 @@ template <typename Callback>
 void Gameplay::for_each_instance_with(u32 required_components_mask, Callback callback) const {
 	for_each_instance_of_type_with(required_components_mask, cameras, callback);
 	for_each_instance_of_type_with(required_components_mask, sound_instances, callback);
-	if(moby_instances.has_value() && (moby_instances->static_instances[0].components_mask() & required_components_mask) == required_components_mask) {
-		for(const Instance& instance : moby_instances->static_instances) {
-			callback(instance);
-		}
-	}
+	for_each_instance_of_type_with(required_components_mask, moby_instances, callback);
 	for_each_instance_of_type_with(required_components_mask, spheres, callback);
 	for_each_instance_of_type_with(required_components_mask, cylinders, callback);
 	for_each_instance_of_type_with(required_components_mask, paths, callback);
@@ -840,10 +825,8 @@ void Gameplay::for_each_pvar_instance_const(Callback callback) const {
 	for(const SoundInstance& inst : opt_iterator(sound_instances)) {
 		callback(inst);
 	}
-	if(moby_instances.has_value()) {
-		for(const MobyInstance& inst : moby_instances->static_instances) {
-			callback(inst);
-		}
+	for(const MobyInstance& inst : opt_iterator(moby_instances)) {
+		callback(inst);
 	}
 }
 
@@ -870,13 +853,11 @@ void Gameplay::for_each_pvar_instance_const(const LevelWad& wad, Callback callba
 			callback(inst, type);
 		}
 	}
-	if(moby_instances.has_value()) {
-		for(const MobyInstance& inst : moby_instances->static_instances) {
-			auto iter = wad.moby_classes.find(inst.o_class);
-			if(iter != wad.moby_classes.end()) {
-				const PvarType& type = wad.pvar_types.at(iter->second.pvar_type);
-				callback(inst, type);
-			}
+	for(const MobyInstance& inst : opt_iterator(moby_instances)) {
+		auto iter = wad.moby_classes.find(inst.o_class);
+		if(iter != wad.moby_classes.end()) {
+			const PvarType& type = wad.pvar_types.at(iter->second.pvar_type);
+			callback(inst, type);
 		}
 	}
 }

@@ -21,12 +21,10 @@
 #include "app.h"
 
 void gl_renderer::prepare_frame(level& lvl, glm::mat4 world_to_clip) {
-	if(lvl.gameplay().moby_instances.has_value()) {
-		moby_matrices.resize(lvl.gameplay().moby_instances->static_instances.size());
-		for(std::size_t i = 0; i < moby_matrices.size(); i++) {
-			MobyInstance& inst = lvl.gameplay().moby_instances->static_instances[i];
-			moby_matrices[i] = world_to_clip * inst.matrix();
-		}
+	moby_matrices.resize(opt_size(lvl.gameplay().moby_instances));
+	size_t i = 0;
+	for(MobyInstance& inst : opt_iterator(lvl.gameplay().moby_instances)) {
+		moby_matrices[i++] = world_to_clip * inst.matrix();
 	}
 	
 	if(lvl.gameplay().shrub_instances.has_value()) {
@@ -152,29 +150,32 @@ void gl_renderer::draw_level(level& lvl, glm::mat4 world_to_clip) const {
 				
 				for(std::size_t i = moby_batch_begin; i < batch_end; i++) {
 					const glm::mat4& local_to_clip = moby_matrices[i];
-					glm::vec4 colour = get_colour(lvl.gameplay().moby_instances->static_instances[i].selected, glm::vec4(0, 1, 0, 1));
+					glm::vec4 colour = get_colour((*lvl.gameplay().moby_instances)[i].selected, glm::vec4(0, 1, 0, 1));
 					draw_cube(local_to_clip, colour);
 				}
 			}
 		};
 		
-		for(std::size_t i = 0; i < lvl.gameplay().moby_instances->static_instances.size(); i++) {
-			MobyInstance& inst = lvl.gameplay().moby_instances->static_instances[i];
+		size_t i = 0;
+		for(MobyInstance& inst : opt_iterator(lvl.gameplay().moby_instances)) {
 			if(inst.o_class != moby_batch_class) {
 				draw_moby_batch(i);
 				moby_batch_class = inst.o_class;
 				moby_batch_begin = i;
 			}
+			i++;
 		}
-		draw_moby_batch(lvl.gameplay().moby_instances->static_instances.size());
+		draw_moby_batch(lvl.gameplay().moby_instances->size());
 		
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glUseProgram(shaders.solid_colour.id());
 		
-		for(std::size_t i = 0; i < lvl.gameplay().moby_instances->static_instances.size(); i++) {
-			if(lvl.gameplay().moby_instances->static_instances[i].selected) {
+		i = 0;
+		for(MobyInstance& inst : opt_iterator(lvl.gameplay().moby_instances)) {
+			if(inst.selected) {
 				draw_cube(moby_matrices[i], selected_colour);
 			}
+			i++;
 		}
 	}
 	
@@ -842,8 +843,8 @@ glm::vec3 gl_renderer::create_ray(glm::mat4 world_to_clip, ImVec2 screen_pos) {
 void gl_renderer::reset_camera(app* a) {
 	camera_rotation = glm::vec3(0, 0, 0);
 	if(level* lvl = a->get_level()) {
-		if(lvl->gameplay().moby_instances.has_value() && lvl->gameplay().moby_instances->static_instances.size() > 0) {
-			camera_position = lvl->gameplay().moby_instances->static_instances[0].position();
+		if(opt_size(lvl->gameplay().moby_instances) > 0) {
+			camera_position = (*lvl->gameplay().moby_instances)[0].position();
 		} else if(lvl->gameplay().properties.has_value()) {
 			camera_position = lvl->gameplay().properties->first_part.ship_position.unpack();
 		} else {
