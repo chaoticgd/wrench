@@ -84,9 +84,11 @@ void picker_tool::pick_object(app& a, glm::mat4 world_to_clip, ImVec2 position) 
 		return;
 	}
 
+	u8 picked_type = buffer[smallest_index] & 0xff;
+	u16 picked_id = (buffer[smallest_index] & 0x00ffff00) >> 8;
 	lvl.gameplay().for_each_instance([&](Instance& inst) {
-		bool same_type = inst.id().type == buffer[smallest_index] & 0xffff0000;
-		bool same_id_value = inst.id().value == buffer[smallest_index] & 0xffff;
+		bool same_type = inst.id().type == picked_type;
+		bool same_id_value = inst.id().value == picked_id;
 		inst.selected = same_type && same_id_value;
 	});
 	
