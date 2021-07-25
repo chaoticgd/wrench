@@ -617,6 +617,7 @@ struct Gameplay {
 		DEF_FIELD(cameras);
 		DEF_FIELD(sound_instances);
 		DEF_FIELD(moby_classes);
+		DEF_FIELD(dynamic_moby_count);
 		DEF_FIELD(moby_instances);
 		DEF_FIELD(moby_groups);
 		DEF_FIELD(global_pvar);
