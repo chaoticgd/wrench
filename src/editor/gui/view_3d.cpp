@@ -18,7 +18,7 @@
 
 #include "view_3d.h"
 
-#include "formats/level_impl.h"
+#include "../formats/level_impl.h"
 
 view_3d::~view_3d() {
 	if(_frame_buffer_texture != 0) {

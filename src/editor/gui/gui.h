@@ -16,19 +16,19 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GUI_H
-#define GUI_H
+#ifndef EDITOR_GUI_H
+#define EDITOR_GUI_H
 
 #include <functional>
-#include "imgui_includes.h"
 
-#include "app.h"
+#include "../app.h"
+#include "../fs_includes.h"
+#include "../gl_includes.h"
+#include "../formats/game_model.h"
+#include "../formats/level_impl.h"
 #include "window.h"
 #include "view_3d.h"
-#include "fs_includes.h"
-#include "gl_includes.h"
-#include "formats/game_model.h"
-#include "formats/level_impl.h"
+#include "imgui_includes.h"
 
 # /*
 #	Implements most of the GUI.

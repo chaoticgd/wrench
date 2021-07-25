@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019 chaoticgd
+	Copyright (C) 2019-2020 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,16 +16,30 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef IMGUI_INCLUDES_H
-#define IMGUI_INCLUDES_H
+#ifndef EDITOR_GUI_VIEW_3D_H
+#define EDITOR_GUI_VIEW_3D_H
 
-#define IMGUI_DEFINE_MATH_OPERATORS
 
-#include "gl_includes.h"
-#include <imgui/imgui.h>
-#include <imgui/imgui_internal.h>
-#include <imgui/misc/cpp/imgui_stdlib.h>
-#include "imgui_impl_glfw.h"
-#include <imgui/backends/imgui_impl_opengl3.h>
+#define GLM_ENABLE_EXPERIMENTAL
+
+#include "../app.h"
+#include "../model.h"
+#include "window.h"
+
+class view_3d : public window {
+public:
+	view_3d() {}
+	~view_3d();
+	const char* title_text() const;
+	ImVec2 initial_size() const;
+	void render(app& a);
+	
+	[[nodiscard]] bool has_padding() const override;
+	
+	void draw_overlay_text(app& a, glm::mat4 world_to_clip) const;
+	
+private:
+	GLuint _frame_buffer_texture = 0;
+};
 
 #endif

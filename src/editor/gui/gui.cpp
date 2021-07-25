@@ -30,15 +30,14 @@
 #include <glm/common.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "icons.h"
-#include "util.h"
-#include "config.h"
+#include "../icons.h"
+#include "../util.h"
+#include "../config.h"
+#include "../renderer.h"
+#include "../unwindows.h"
+#include "../worker_thread.h"
+#include "../formats/bmp.h"
 #include "window.h"
-#include "renderer.h"
-#include "worker_thread.h"
-#include "formats/bmp.h"
-
-#include "unwindows.h"
 
 void gui::render(app& a) {
 	ImGui_ImplOpenGL3_NewFrame();

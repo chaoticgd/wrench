@@ -27,7 +27,7 @@
 
 #include "util.h"
 #include "shaders.h"
-#include "imgui_includes.h"
+#include "gui/imgui_includes.h"
 #include "formats/texture.h"
 #include "formats/game_model.h"
 #include "formats/level_impl.h"

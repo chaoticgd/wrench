@@ -30,11 +30,11 @@
 
 #include "tools.h"
 #include "stream.h"
-#include "window.h"
 #include "game_db.h"
 #include "renderer.h"
 #include "fs_includes.h"
 #include "worker_logger.h"
+#include "gui/window.h"
 #include "formats/texture.h"
 #include "formats/game_model.h"
 #include "formats/level_impl.h"

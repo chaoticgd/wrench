@@ -24,11 +24,8 @@ add_executable(wrench
 	src/level.cpp
 	src/editor/app.cpp
 	src/editor/command_line.cpp
-	src/editor/gui.cpp
-	src/editor/view_3d.cpp
 	src/editor/stream.cpp
 	src/editor/stacktrace.cpp
-	src/editor/window.cpp
 	src/editor/renderer.cpp
 	src/editor/shaders.cpp
 	src/editor/worker_logger.cpp
@@ -38,6 +35,10 @@ add_executable(wrench
 	src/editor/game_db.cpp
 	src/editor/tools.cpp
 	src/editor/icons.cpp
+	src/editor/gui/gui.cpp
+	src/editor/gui/window.cpp
+	src/editor/gui/view_3d.cpp
+	src/editor/gui/imgui_impl_glfw.cpp
 	src/editor/formats/level_impl.cpp
 	src/editor/formats/texture.cpp
 	src/editor/formats/fip.cpp
@@ -51,7 +52,6 @@ add_executable(wrench
 	src/editor/formats/texture_archive.cpp
 	src/editor/formats/model_utils.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
-	src/editor/imgui_impl_glfw.cpp
 	thirdparty/imgui/backends/imgui_impl_opengl3.cpp
 	src/editor/md5.cpp
 	src/lz/compression.cpp

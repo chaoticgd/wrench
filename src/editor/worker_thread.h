@@ -24,7 +24,7 @@
 #include <optional>
 #include <functional>
 
-#include "window.h"
+#include "gui/window.h"
 #include "worker_logger.h"
 
 # /*

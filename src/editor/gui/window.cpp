@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019 chaoticgd
+	Copyright (C) 2019-2020 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,34 +16,29 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WINDOW_H
-#define WINDOW_H
+#include "window.h"
 
-#include "imgui_includes.h"
+#include "../app.h"
 
-# /*
-#	Virtual base class representing a Dear ImGui sub-window.
-# */
+window::window() {
+	static int s_id = 0;
+	_id = ++s_id;
+}
 
-struct app;
+int window::id() {
+	return _id;
+}
 
-class window {
-public:
-	window();
-	virtual ~window() {}
+bool window::is_unique() const {
+	return true;
+}
 
-	virtual const char* title_text() const = 0;
-	virtual ImVec2 initial_size() const = 0;
-	virtual void render(app& a) = 0;
-	
-	[[nodiscard]] virtual bool is_unique() const; // Can multiple instances of this window appear at once?
-	[[nodiscard]] virtual bool has_padding() const;
+bool window::has_padding() const {
+	return true;
+}
 
-	int id();
-	void close(app& a);
-
-private:
-	int _id;
-};
-
-#endif
+void window::close(app& a) {
+	auto iter = std::find_if(a.windows.begin(), a.windows.end(),
+		[&](auto& ptr) { return ptr.get() == this; });
+	a.windows.erase(iter);
+}

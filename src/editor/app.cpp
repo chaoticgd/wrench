@@ -22,7 +22,7 @@
 #include "unwindows.h"
 #include <toml11/toml.hpp>
 
-#include "gui.h"
+#include "gui/gui.h"
 #include "stream.h"
 #include "renderer.h"
 #include "fs_includes.h"

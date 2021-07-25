@@ -20,7 +20,7 @@
 #define TOOLS_H
 
 #include "gl_includes.h"
-#include "imgui_includes.h"
+#include "gui/imgui_includes.h"
 #include "formats/level_impl.h"
 
 struct app;

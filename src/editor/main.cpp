@@ -22,7 +22,7 @@
 #include "gl_includes.h"
 #include "command_line.h"
 #include "app.h"
-#include "gui.h"
+#include "gui/gui.h"
 #include "renderer.h"
 #include "tests/tests.h"
 
