@@ -24,7 +24,13 @@ void gl_renderer::prepare_frame(level& lvl, glm::mat4 world_to_clip) {
 	moby_matrices.resize(opt_size(lvl.gameplay().moby_instances));
 	size_t i = 0;
 	for(MobyInstance& inst : opt_iterator(lvl.gameplay().moby_instances)) {
-		moby_matrices[i++] = world_to_clip * inst.matrix();
+		moby_matrices[i] = world_to_clip * inst.matrix();
+		auto model_iter = lvl.moby_class_to_model.find(inst.o_class);
+		if(model_iter != lvl.moby_class_to_model.end()) {
+			moby_model& moby = lvl.moby_models.at(model_iter->second);
+			moby_matrices[i] = glm::scale(moby_matrices[i], glm::vec3(moby.scale * 32.f));
+		}
+		i++;
 	}
 	
 	if(lvl.gameplay().shrub_instances.has_value()) {
