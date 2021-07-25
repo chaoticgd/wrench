@@ -347,9 +347,9 @@ float gui::render_menu_bar(app& a) {
 			ImGui::Checkbox("Ties", &a.renderer.draw_ties);
 			ImGui::Checkbox("Shrubs", &a.renderer.draw_shrubs);
 			ImGui::Checkbox("Mobies", &a.renderer.draw_mobies);
-			ImGui::Checkbox("Triggers", &a.renderer.draw_triggers);
-			ImGui::Checkbox("Splines", &a.renderer.draw_splines);
-			ImGui::Checkbox("Grind Rails", &a.renderer.draw_grind_rails);
+			ImGui::Checkbox("Cuboids", &a.renderer.draw_cuboids);
+			ImGui::Checkbox("Paths", &a.renderer.draw_paths);
+			ImGui::Checkbox("Grind Paths", &a.renderer.draw_paths);
 			ImGui::Checkbox("Tfrags", &a.renderer.draw_tfrags);
 			ImGui::Checkbox("Baked Collision", &a.renderer.draw_tcols);
 			ImGui::EndMenu();
