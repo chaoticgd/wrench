@@ -74,72 +74,107 @@ void Instance::set_transform(glm::vec3 position, glm::vec3 rotation, f32 scale) 
 	_transform.scale = scale;
 }
 
-const std::vector<u8>& Instance::pvars() const { 
+glm::mat4 Instance::matrix() const {
+	return _transform.matrix;
+}
+
+glm::mat3x4 Instance::inverse_matrix() const {
+	return _transform.inverse_matrix;
+}
+ 
+glm::vec3 Instance::position() const {
+	return _transform.matrix[3];
+}
+
+void Instance::set_position(glm::vec3 position) {
+	_transform.matrix[3] = glm::vec4(position, 1.f);
+}
+
+glm::vec3 Instance::rotation() const {
+	return _transform.rotation;
+}
+
+void Instance::set_rotation(glm::vec3 rotation) {
+	_transform.matrix = glm::rotate(_transform.matrix, -_transform.rotation.z, glm::vec3(0, 0, 1));
+	_transform.matrix = glm::rotate(_transform.matrix, -_transform.rotation.y, glm::vec3(0, 1, 0));
+	_transform.matrix = glm::rotate(_transform.matrix, -_transform.rotation.x, glm::vec3(1, 0, 0));
+	_transform.rotation = rotation;
+	_transform.matrix = glm::rotate(_transform.matrix, _transform.rotation.x, glm::vec3(1, 0, 0));
+	_transform.matrix = glm::rotate(_transform.matrix, _transform.rotation.y, glm::vec3(0, 1, 0));
+	_transform.matrix = glm::rotate(_transform.matrix, _transform.rotation.z, glm::vec3(0, 0, 1));
+	_transform.inverse_matrix = glm::inverse(_transform.matrix);
+}
+
+f32 Instance::scale() const {
+	return _transform.scale;
+}
+
+const std::vector<u8>& Instance::pvars() const {
 	assert(_components_mask & COM_PVARS);
 	return _pvars;
 }
 
-std::vector<u8>& Instance::pvars() { 
+std::vector<u8>& Instance::pvars() {
 	assert(_components_mask & COM_PVARS);
 	return _pvars;
 }
 
-s32 Instance::temp_pvar_index() const { 
+s32 Instance::temp_pvar_index() const {
 	assert(_components_mask & COM_PVARS);
 	return _pvar_index;
 }
 
-s32& Instance::temp_pvar_index() { 
+s32& Instance::temp_pvar_index() {
 	assert(_components_mask & COM_PVARS);
 	return _pvar_index;
 }
 
-const GlobalPvarPointers& Instance::temp_global_pvar_pointers() const { 
+const GlobalPvarPointers& Instance::temp_global_pvar_pointers() const {
 	assert(_components_mask & COM_PVARS);
 	return _global_pvar_pointers;
 }
 
-GlobalPvarPointers& Instance::temp_global_pvar_pointers() { 
+GlobalPvarPointers& Instance::temp_global_pvar_pointers() {
 	assert(_components_mask & COM_PVARS);
 	return _global_pvar_pointers;
 }
 
-const Colour& Instance::colour() const { 
+const Colour& Instance::colour() const {
 	assert(_components_mask & COM_COLOUR);
 	return _colour;
 }
 
-Colour& Instance::colour() { 
+Colour& Instance::colour() {
 	assert(_components_mask & COM_COLOUR);
 	return _colour;
 }
 
-const f32& Instance::draw_distance() const { 
+f32 Instance::draw_distance() const {
 	assert(_components_mask & COM_DRAW_DISTANCE);
 	return _draw_distance;
 }
 
-f32& Instance::draw_distance() { 
+f32& Instance::draw_distance() {
 	assert(_components_mask & COM_DRAW_DISTANCE);
 	return _draw_distance;
 }
 
-const std::vector<glm::vec4>& Instance::spline() const { 
+const std::vector<glm::vec4>& Instance::spline() const {
 	assert(_components_mask & COM_SPLINE);
 	return _spline;
 }
 
-std::vector<glm::vec4>& Instance::spline() { 
+std::vector<glm::vec4>& Instance::spline() {
 	assert(_components_mask & COM_SPLINE);
 	return _spline;
 }
 
-const glm::vec4& Instance::bounding_sphere() const { 
+const glm::vec4& Instance::bounding_sphere() const {
 	assert(_components_mask & COM_BOUNDING_SPHERE);
 	return _bounding_sphere;
 }
 
-glm::vec4& Instance::bounding_sphere() { 
+glm::vec4& Instance::bounding_sphere() {
 	assert(_components_mask & COM_BOUNDING_SPHERE);
 	return _bounding_sphere;
 }

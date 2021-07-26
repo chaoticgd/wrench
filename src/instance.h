@@ -44,6 +44,10 @@ struct InstanceId {
 	InstanceType type;
 	s32 generation;
 	s32 value;
+	
+	bool operator==(const InstanceId& rhs) const {
+		return type == rhs.type && generation == rhs.generation && value == rhs.value;
+	}
 };
 
 static constexpr const InstanceId NULL_INSTANCE_ID = {
@@ -51,6 +55,7 @@ static constexpr const InstanceId NULL_INSTANCE_ID = {
 };
 
 enum InstanceComponent : u32 {
+	COM_NONE = 0,
 	COM_TRANSFORM = (1 << 1),
 	COM_PVARS = (1 << 2),
 	COM_COLOUR = (1 << 3),
@@ -119,21 +124,25 @@ packed_struct(BoundingSphere,
 struct FromJsonVisitor;
 
 struct Instance {
+	virtual ~Instance() {}
+	
 	InstanceId id() const { return _id; }
 	void set_id_value(s32 value) { assert(_id.value == -1); _id.value = value; }
 	InstanceType type() const { return _id.type; }
 	u32 components_mask() const { return _components_mask; }
-	bool has_component(InstanceComponent component) const { return _components_mask & component; }
+	bool has_component(InstanceComponent component) const { return (_components_mask & component) == component; }
 	bool selected = false;
 	
 	void set_transform(glm::mat4 matrix, glm::mat3x4* inverse = nullptr);
 	void set_transform(glm::mat4 matrix, glm::mat3x4 inverse, glm::vec3 rotation);
 	void set_transform(glm::vec3 position, glm::vec3 rotation, f32 scale = 1.f);
-	glm::mat4 matrix() const { return _transform.matrix; }
-	glm::mat3x4 inverse_matrix() const { return _transform.inverse_matrix; }
-	glm::vec3 position() const { return _transform.matrix[3]; }
-	glm::vec3 rotation() const { return _transform.rotation; }
-	f32 scale() const { return _transform.scale; }
+	glm::mat4 matrix() const;
+	glm::mat3x4 inverse_matrix() const;
+	glm::vec3 position() const;
+	void set_position(glm::vec3 position);
+	glm::vec3 rotation() const;
+	void set_rotation(glm::vec3 rotation);
+	f32 scale() const;
 	
 	const std::vector<u8>& pvars() const;
 	std::vector<u8>& pvars();
@@ -146,7 +155,7 @@ struct Instance {
 	const Colour& colour() const;
 	Colour& colour();
 	
-	const f32& draw_distance() const;
+	f32 draw_distance() const;
 	f32& draw_distance();
 	
 	const std::vector<glm::vec4>& spline() const;

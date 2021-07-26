@@ -460,7 +460,7 @@ struct Area {
 };
 
 struct DirectionalLight : Instance {
-	DirectionalLight() : Instance(INST_LIGHT, 0, TransformMode::NONE) {}
+	DirectionalLight() : Instance(INST_LIGHT, COM_NONE, TransformMode::NONE) {}
 	Vec4f colour_a;
 	Vec4f direction_a;
 	Vec4f colour_b;
@@ -588,11 +588,11 @@ struct Gameplay {
 	
 	template <typename Callback>
 	void for_each_instance(Callback callback) const {
-		for_each_instance_with(0, callback);
+		for_each_instance_with(COM_NONE, callback);
 	}
 	template <typename Callback>
 	void for_each_instance(Callback callback) {
-		for_each_instance_with(0, callback);
+		for_each_instance_with(COM_NONE, callback);
 	}
 	
 	// These functions don't skip over instances where pvars.size() == 0.
@@ -608,6 +608,7 @@ struct Gameplay {
 	void for_each_pvar_instance(const LevelWad& wad, Callback callback);
 	
 	void clear_selection();
+	std::vector<InstanceId> selected_instances() const;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {

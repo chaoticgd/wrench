@@ -38,6 +38,7 @@ add_executable(wrench
 	src/editor/gui/gui.cpp
 	src/editor/gui/window.cpp
 	src/editor/gui/view_3d.cpp
+	src/editor/gui/inspector.cpp
 	src/editor/gui/imgui_impl_glfw.cpp
 	src/editor/formats/level_impl.cpp
 	src/editor/formats/texture.cpp

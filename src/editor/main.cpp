@@ -69,6 +69,7 @@ int main(int argc, char** argv) {
 		a.windows.emplace_back(std::make_unique<gui::model_browser>());
 		a.windows.emplace_back(std::make_unique<gui::moby_list>());
 		a.windows.emplace_back(std::make_unique<gui::viewport_information>());
+		a.windows.emplace_back(std::make_unique<Inspector>());
 		
 		if(args.count("directory")) {
 			fs::path dir = args["directory"].as<std::string>();

@@ -28,6 +28,7 @@
 #include "../formats/level_impl.h"
 #include "window.h"
 #include "view_3d.h"
+#include "inspector.h"
 #include "imgui_includes.h"
 
 # /*

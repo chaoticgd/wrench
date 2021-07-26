@@ -56,6 +56,16 @@ void Gameplay::clear_selection() {
 	});
 }
 
+std::vector<InstanceId> Gameplay::selected_instances() const {
+	std::vector<InstanceId> ids;
+	for_each_instance([&](const Instance& inst) {
+		if(inst.selected) {
+			ids.push_back(inst.id());
+		}
+	});
+	return ids;
+}
+
 bool PvarType::insert_field(PvarField to_insert, bool sort) {
 	// If a field already exists in the given byte range, try to merge them.
 	for(PvarField& existing : fields) {

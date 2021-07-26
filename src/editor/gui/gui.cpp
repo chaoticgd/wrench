@@ -369,6 +369,7 @@ float gui::render_menu_bar(app& a) {
 		render_menu_bar_window_toggle<view_3d>(a);
 		render_menu_bar_window_toggle<moby_list>(a);
 		render_menu_bar_window_toggle<viewport_information>(a);
+		render_menu_bar_window_toggle<Inspector>(a);
 		render_menu_bar_window_toggle<texture_browser>(a);
 		render_menu_bar_window_toggle<model_browser>(a);
 		render_menu_bar_window_toggle<settings>(a);
