@@ -75,26 +75,32 @@ void Instance::set_transform(glm::vec3 position, glm::vec3 rotation, f32 scale) 
 }
 
 glm::mat4 Instance::matrix() const {
+	assert(_components_mask & COM_TRANSFORM);
 	return _transform.matrix;
 }
 
 glm::mat3x4 Instance::inverse_matrix() const {
+	assert(_components_mask & COM_TRANSFORM);
 	return _transform.inverse_matrix;
 }
  
 glm::vec3 Instance::position() const {
+	assert(_components_mask & COM_TRANSFORM);
 	return _transform.matrix[3];
 }
 
 void Instance::set_position(glm::vec3 position) {
+	assert(_components_mask & COM_TRANSFORM);
 	_transform.matrix[3] = glm::vec4(position, 1.f);
 }
 
 glm::vec3 Instance::rotation() const {
+	assert(_components_mask & COM_TRANSFORM);
 	return _transform.rotation;
 }
 
 void Instance::set_rotation(glm::vec3 rotation) {
+	assert(_components_mask & COM_TRANSFORM);
 	_transform.matrix = glm::rotate(_transform.matrix, -_transform.rotation.z, glm::vec3(0, 0, 1));
 	_transform.matrix = glm::rotate(_transform.matrix, -_transform.rotation.y, glm::vec3(0, 1, 0));
 	_transform.matrix = glm::rotate(_transform.matrix, -_transform.rotation.x, glm::vec3(1, 0, 0));
@@ -106,6 +112,7 @@ void Instance::set_rotation(glm::vec3 rotation) {
 }
 
 f32 Instance::scale() const {
+	assert(_components_mask & COM_TRANSFORM);
 	return _transform.scale;
 }
 
