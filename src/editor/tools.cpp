@@ -100,46 +100,42 @@ selection_tool::selection_tool() {
 }
 
 void selection_tool::draw(app& a, glm::mat4 world_to_clip) {
-	//if(ImGui::IsMouseClicked(0) && ImGui::IsWindowHovered()) {
-	//	_selecting = true;
-	//	_selection_begin = ImGui::GetMousePos();
-	//}
-	//
-	//if(_selecting) {
-	//	auto draw_list = ImGui::GetWindowDrawList();
-	//	draw_list->AddRect(_selection_begin, ImGui::GetMousePos(), 0xffffffff);
-	//}
-	//
-	//if(ImGui::IsMouseReleased(0) && _selecting) {
-	//	_selecting = false;
-	//	
-	//	ImVec2 p1 = _selection_begin;
-	//	ImVec2 p2 = ImGui::GetMousePos();
-	//	if(p1.x > p2.x) {
-	//		std::swap(p1.x, p2.x);
-	//	}
-	//	if(p1.y > p2.y) {
-	//		std::swap(p1.y, p2.y);
-	//	}
-	//	p1.y -= 20;
-	//	p2.y -= 20;
-	//	
-	//	auto in_bounds = [&](glm::vec3 screen_pos) {
-	//		return screen_pos.z > 0 &&
-	//			(screen_pos.x > p1.x && screen_pos.x < p2.x) &&
-	//			(screen_pos.y > p1.y && screen_pos.y < p2.y);
-	//	};
-	//	
-	//	level& lvl = *a.get_level();
-	//	lvl.for_each<matrix_entity>([&](matrix_entity& ent) {
-	//		glm::vec3 screen_pos = a.renderer.apply_local_to_screen(world_to_clip, ent.local_to_world);
-	//		ent.selected = in_bounds(screen_pos);
-	//	});
-	//	lvl.for_each<euler_entity>([&](euler_entity& ent) {
-	//		glm::vec3 screen_pos = a.renderer.apply_local_to_screen(world_to_clip, ent.local_to_world_cache);
-	//		ent.selected = in_bounds(screen_pos);
-	//	});
-	//}
+	if(ImGui::IsMouseClicked(0) && ImGui::IsWindowHovered()) {
+		_selecting = true;
+		_selection_begin = ImGui::GetMousePos();
+	}
+	
+	if(_selecting) {
+		auto draw_list = ImGui::GetWindowDrawList();
+		draw_list->AddRect(_selection_begin, ImGui::GetMousePos(), 0xffffffff);
+	}
+	
+	if(ImGui::IsMouseReleased(0) && _selecting) {
+		_selecting = false;
+		
+		ImVec2 p1 = _selection_begin;
+		ImVec2 p2 = ImGui::GetMousePos();
+		if(p1.x > p2.x) {
+			std::swap(p1.x, p2.x);
+		}
+		if(p1.y > p2.y) {
+			std::swap(p1.y, p2.y);
+		}
+		p1.y -= 20;
+		p2.y -= 20;
+		
+		auto in_bounds = [&](glm::vec3 screen_pos) {
+			return screen_pos.z > 0 &&
+				(screen_pos.x > p1.x && screen_pos.x < p2.x) &&
+				(screen_pos.y > p1.y && screen_pos.y < p2.y);
+		};
+		
+		level& lvl = *a.get_level();
+		lvl.gameplay().for_each_instance_with(COM_TRANSFORM, [&](Instance& inst) {
+			glm::vec3 screen_pos = a.renderer.apply_local_to_screen(world_to_clip, inst.matrix());
+			inst.selected = in_bounds(screen_pos);
+		});
+	}
 }
 
 translate_tool::translate_tool() {
