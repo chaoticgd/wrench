@@ -471,26 +471,26 @@ struct RAC23MobyBlock {
 		SWAP_PACKED(l.colour().g, r.light_colour.g);
 		SWAP_PACKED(l.colour().b, r.light_colour.b);
 		SWAP_PACKED(l.mission, r.mission);
-		SWAP_PACKED(l.rac23.unknown_8, r.unknown_8);
-		SWAP_PACKED(l.rac23.unknown_c, r.unknown_c);
+		SWAP_PACKED(l.rac23_unknown_8, r.unknown_8);
+		SWAP_PACKED(l.rac23_unknown_c, r.unknown_c);
 		SWAP_PACKED(l.uid, r.uid);
 		SWAP_PACKED(l.bolts, r.bolts);
-		SWAP_PACKED(l.rac23.unknown_18, r.unknown_18);
-		SWAP_PACKED(l.rac23.unknown_1c, r.unknown_1c);
-		SWAP_PACKED(l.rac23.unknown_20, r.unknown_20);
-		SWAP_PACKED(l.rac23.unknown_24, r.unknown_24);
+		SWAP_PACKED(l.rac23_unknown_18, r.unknown_18);
+		SWAP_PACKED(l.rac23_unknown_1c, r.unknown_1c);
+		SWAP_PACKED(l.rac23_unknown_20, r.unknown_20);
+		SWAP_PACKED(l.rac23_unknown_24, r.unknown_24);
 		SWAP_PACKED(l.o_class, r.o_class);
 		SWAP_PACKED(l.update_distance, r.update_distance);
-		SWAP_PACKED(l.rac23.unknown_38, r.unknown_38);
-		SWAP_PACKED(l.rac23.unknown_3c, r.unknown_3c);
+		SWAP_PACKED(l.rac23_unknown_38, r.unknown_38);
+		SWAP_PACKED(l.rac23_unknown_3c, r.unknown_3c);
 		SWAP_PACKED(l.group, r.group);
 		SWAP_PACKED(l.is_rooted, r.is_rooted);
 		SWAP_PACKED(l.rooted_distance, r.rooted_distance);
-		SWAP_PACKED(l.rac23.unknown_4c, r.unknown_4c);
+		SWAP_PACKED(l.rac23_unknown_4c, r.unknown_4c);
 		SWAP_PACKED(l.occlusion, r.occlusion);
 		SWAP_PACKED(l.mode_bits, r.mode_bits);
 		SWAP_PACKED(l.light, r.light);
-		SWAP_PACKED(l.rac23.unknown_84, r.unknown_84);
+		SWAP_PACKED(l.rac23_unknown_84, r.unknown_84);
 	}
 };
 

@@ -110,6 +110,7 @@ struct Instance {
 	glm::vec3 rotation() const;
 	void set_rotation(glm::vec3 rotation);
 	f32 scale() const;
+	void set_scale(f32 scale);
 	f32& m33_value_do_not_use();
 	
 	const std::vector<u8>& pvars() const;

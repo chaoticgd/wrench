@@ -329,18 +329,16 @@ struct MobyInstance : Instance {
 	s32 occlusion;
 	s32 mode_bits;
 	s32 light;
-	struct {
-		s32 unknown_8;
-		s32 unknown_c;
-		s32 unknown_18;
-		s32 unknown_1c;
-		s32 unknown_20;
-		s32 unknown_24;
-		s32 unknown_38;
-		s32 unknown_3c;
-		s32 unknown_4c;
-		s32 unknown_84;
-	} rac23;
+	s32 rac23_unknown_8;
+	s32 rac23_unknown_c;
+	s32 rac23_unknown_18;
+	s32 rac23_unknown_1c;
+	s32 rac23_unknown_20;
+	s32 rac23_unknown_24;
+	s32 rac23_unknown_38;
+	s32 rac23_unknown_3c;
+	s32 rac23_unknown_4c;
+	s32 rac23_unknown_84;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
@@ -356,16 +354,16 @@ struct MobyInstance : Instance {
 		DEF_FIELD(occlusion);
 		DEF_FIELD(mode_bits);
 		DEF_FIELD(light);
-		DEF_FIELD(rac23.unknown_8);
-		DEF_FIELD(rac23.unknown_c);
-		DEF_FIELD(rac23.unknown_18);
-		DEF_FIELD(rac23.unknown_1c);
-		DEF_FIELD(rac23.unknown_20);
-		DEF_FIELD(rac23.unknown_24);
-		DEF_FIELD(rac23.unknown_38);
-		DEF_FIELD(rac23.unknown_3c);
-		DEF_FIELD(rac23.unknown_4c);
-		DEF_FIELD(rac23.unknown_84);
+		DEF_FIELD(rac23_unknown_8);
+		DEF_FIELD(rac23_unknown_c);
+		DEF_FIELD(rac23_unknown_18);
+		DEF_FIELD(rac23_unknown_1c);
+		DEF_FIELD(rac23_unknown_20);
+		DEF_FIELD(rac23_unknown_24);
+		DEF_FIELD(rac23_unknown_38);
+		DEF_FIELD(rac23_unknown_3c);
+		DEF_FIELD(rac23_unknown_4c);
+		DEF_FIELD(rac23_unknown_84);
 	}
 };
 

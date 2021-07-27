@@ -30,6 +30,7 @@ ImVec2 Inspector::initial_size() const {
 
 static const s32 MAX_LANES = 4;
 struct InspectorFieldFuncs {
+	s32 lane_count;
 	std::function<bool(Instance& lhs, Instance& rhs, s32 lane)> compare;
 	std::function<void(level& lvl, Instance& first, bool values_equal[MAX_LANES])> draw;
 };
@@ -37,37 +38,41 @@ struct InspectorFieldFuncs {
 struct InspectorField {
 	InstanceComponent required_component;
 	InstanceType required_type;
-	s32 lane_count;
 	const char* name;
 	InspectorFieldFuncs funcs;
 };
 
-static InspectorFieldFuncs position_funcs();
-static InspectorFieldFuncs rotation_funcs();
-static InspectorFieldFuncs pvar_funcs();
 template <typename Value>
-static InspectorFieldFuncs member_func_pointer_funcs(Value& (Instance::*member_function)());
-template <typename Value, typename ThisInstance>
-static InspectorFieldFuncs member_pointer_funcs(Value ThisInstance::*field);
+struct InspectorGetterSetter {
+	std::function<Value(Instance& inst)> get;
+	std::function<void(Instance& inst, Value value)> set;
+};
+
+template <typename Value>
+static InspectorFieldFuncs scalar_funcs(InspectorGetterSetter<Value> getset);
+static InspectorFieldFuncs vec3_funcs(InspectorGetterSetter<glm::vec3> getset);
+static InspectorFieldFuncs vec4_funcs(InspectorGetterSetter<glm::vec4> getset);
+static InspectorFieldFuncs pvar_funcs();
 template <typename ThisInstance>
 static InspectorFieldFuncs foreign_id_funcs(InstanceType foreign_type, s32 ThisInstance::*field);
 static InspectorFieldFuncs moby_rooted_funcs();
 
-static bool should_draw_field(level& lvl, InspectorField& field);
-static void should_draw_current_values(bool values_equal[MAX_LANES], level& lvl, InspectorField& field);
+static bool should_draw_field(level& lvl, const InspectorField& field);
+static void should_draw_current_values(bool values_equal[MAX_LANES], level& lvl, const InspectorField& field);
 
+template <s32 lane_count, typename Value>
+static void apply_to_all_selected(level& lvl, Value value, std::array<bool, MAX_LANES> lanes, InspectorGetterSetter<Value> funcs);
 template <typename Value>
-struct InspectorGetterSetterFuncs {
-	std::function<Value(Instance& inst)> get;
-	std::function<void(Instance& inst, std::array<bool, MAX_LANES> lanes, Value value)> set;
-};
+static InspectorGetterSetter<Value> adapt_getter_setter(Value (Instance::*getter)() const, void (Instance::*setter)(Value));
 template <typename Value>
-static void apply_to_all_selected(level& lvl, Value value, std::array<bool, MAX_LANES> lanes, InspectorGetterSetterFuncs<Value> funcs);
+static InspectorGetterSetter<Value> adapt_reference_member_function(Value& (Instance::*member_function)());
+template <typename Value, typename ThisInstance>
+static InspectorGetterSetter<Value> adapt_member_pointer(Value ThisInstance::*member_pointer);
 
 static float calc_remaining_item_width();
-static bool inspector_input_text_n(std::array<std::string, 3>& strings, std::array<bool, MAX_LANES>& changed, int lane_count);
-static std::array<std::string, 3> vec3_to_strings(glm::vec3 vec, bool values_equal[MAX_LANES]);
-static Opt<glm::vec3> strings_to_vec3(std::array<std::string, 3>& strings);
+static bool inspector_input_text_n(std::array<std::string, MAX_LANES>& strings, std::array<bool, MAX_LANES>& changed, int lane_count);
+static std::array<std::string, MAX_LANES> vec4_to_strings(glm::vec4 vec, bool values_equal[MAX_LANES]);
+static Opt<glm::vec4> strings_to_vec4(std::array<std::string, MAX_LANES>& strings);
 template <typename Scalar>
 static Opt<Scalar> string_to_scalar(std::string& string);
 
@@ -78,25 +83,68 @@ void Inspector::render(app& a) {
 	}
 	level& lvl = *a.get_level();
 	
-	std::vector<InspectorField> fields = {
-		{COM_TRANSFORM    , INST_NONE, 3, "Position ", position_funcs()},
-		{COM_TRANSFORM    , INST_NONE, 3, "Rotation ", rotation_funcs()},
-		{COM_PVARS        , INST_NONE, 1, "Pvars    ", pvar_funcs()},
-		{COM_DRAW_DISTANCE, INST_NONE, 1, "Draw Dist", member_func_pointer_funcs(&Instance::draw_distance)},
-		{COM_NONE         , INST_MOBY, 1, "Mission  ", member_pointer_funcs(&MobyInstance::mission)},
-		{COM_NONE         , INST_MOBY, 1, "UID      ", member_pointer_funcs(&MobyInstance::uid)},
-		{COM_NONE         , INST_MOBY, 1, "Bolts    ", member_pointer_funcs(&MobyInstance::bolts)},
-		{COM_NONE         , INST_MOBY, 1, "Class    ", member_pointer_funcs(&MobyInstance::o_class)},
-		{COM_NONE         , INST_MOBY, 1, "Updt Dist", member_pointer_funcs(&MobyInstance::update_distance)},
-		{COM_NONE         , INST_MOBY, 1, "Group    ", member_pointer_funcs(&MobyInstance::group)},
-		{COM_NONE         , INST_MOBY, 1, "Rooted   ", moby_rooted_funcs()},
-		{COM_NONE         , INST_MOBY, 1, "Occlusion", member_pointer_funcs(&MobyInstance::occlusion)},
-		{COM_NONE         , INST_MOBY, 1, "Mode Bits", member_pointer_funcs(&MobyInstance::mode_bits)},
-		{COM_NONE         , INST_MOBY, 1, "Light    ", foreign_id_funcs(INST_LIGHT, &MobyInstance::light)}
+	const std::vector<InspectorField> fields = {
+		// Components
+		{COM_TRANSFORM      , INST_NONE      , "Position ", vec3_funcs(adapt_getter_setter(&Instance::position, &Instance::set_position))},
+		{COM_TRANSFORM      , INST_NONE      , "Rotation ", vec3_funcs(adapt_getter_setter(&Instance::rotation, &Instance::set_rotation))},
+		{COM_TRANSFORM      , INST_NONE      , "Scale    ", scalar_funcs(adapt_getter_setter(&Instance::scale, &Instance::set_scale))},
+		{COM_PVARS          , INST_NONE      , "Pvars    ", pvar_funcs()},
+		{COM_DRAW_DISTANCE  , INST_NONE      , "Draw Dist", scalar_funcs(adapt_reference_member_function(&Instance::draw_distance))},
+		{COM_BOUNDING_SPHERE, INST_NONE      , "Bsphere  ", vec4_funcs(adapt_reference_member_function(&Instance::bounding_sphere))},
+		// Camera
+		{COM_NONE           , INST_CAMERA    , "Type     ", scalar_funcs(adapt_member_pointer(&Camera::type))},
+		// SoundInstance
+		{COM_NONE           , INST_SOUND     , "O Class  ", scalar_funcs(adapt_member_pointer(&SoundInstance::o_class))},
+		{COM_NONE           , INST_SOUND     , "M Class  ", scalar_funcs(adapt_member_pointer(&SoundInstance::m_class))},
+		{COM_NONE           , INST_SOUND     , "Range    ", scalar_funcs(adapt_member_pointer(&SoundInstance::range))},
+		// MobyInstance
+		{COM_NONE           , INST_MOBY      , "Mission  ", scalar_funcs(adapt_member_pointer(&MobyInstance::mission))},
+		{COM_NONE           , INST_MOBY      , "UID      ", scalar_funcs(adapt_member_pointer(&MobyInstance::uid))},
+		{COM_NONE           , INST_MOBY      , "Bolts    ", scalar_funcs(adapt_member_pointer(&MobyInstance::bolts))},
+		{COM_NONE           , INST_MOBY      , "Class    ", scalar_funcs(adapt_member_pointer(&MobyInstance::o_class))},
+		{COM_NONE           , INST_MOBY      , "Updt Dist", scalar_funcs(adapt_member_pointer(&MobyInstance::update_distance))},
+		{COM_NONE           , INST_MOBY      , "Group    ", scalar_funcs(adapt_member_pointer(&MobyInstance::group))},
+		{COM_NONE           , INST_MOBY      , "Rooted   ", moby_rooted_funcs()},
+		{COM_NONE           , INST_MOBY      , "Occlusion", scalar_funcs(adapt_member_pointer(&MobyInstance::occlusion))},
+		{COM_NONE           , INST_MOBY      , "Mode Bits", scalar_funcs(adapt_member_pointer(&MobyInstance::mode_bits))},
+		{COM_NONE           , INST_MOBY      , "Light    ", foreign_id_funcs(INST_LIGHT, &MobyInstance::light)},
+		{COM_NONE           , INST_MOBY      , "Unk 8    ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_8))},
+		{COM_NONE           , INST_MOBY      , "Unk c    ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_c))},
+		{COM_NONE           , INST_MOBY      , "Unk 18   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_18))},
+		{COM_NONE           , INST_MOBY      , "Unk 1c   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_1c))},
+		{COM_NONE           , INST_MOBY      , "Unk 20   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_20))},
+		{COM_NONE           , INST_MOBY      , "Unk 24   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_24))},
+		{COM_NONE           , INST_MOBY      , "Unk 38   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_38))},
+		{COM_NONE           , INST_MOBY      , "Unk 3c   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_3c))},
+		{COM_NONE           , INST_MOBY      , "Unk 4c   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_4c))},
+		{COM_NONE           , INST_MOBY      , "Unk 84   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_84))},
+		// GrindPath
+		{COM_NONE           , INST_GRIND_PATH, "Wrap     ", scalar_funcs(adapt_member_pointer(&GrindPath::wrap))},
+		{COM_NONE           , INST_GRIND_PATH, "Inactive ", scalar_funcs(adapt_member_pointer(&GrindPath::inactive))},
+		{COM_NONE           , INST_GRIND_PATH, "Unk 4    ", scalar_funcs(adapt_member_pointer(&GrindPath::unknown_4))},
+		// DirectionalLight
+		{COM_NONE           , INST_LIGHT     , "Colour A ", vec4_funcs(adapt_member_pointer(&DirectionalLight::colour_a))},
+		{COM_NONE           , INST_LIGHT     , "Dir A    ", vec4_funcs(adapt_member_pointer(&DirectionalLight::direction_a))},
+		{COM_NONE           , INST_LIGHT     , "Colour B ", vec4_funcs(adapt_member_pointer(&DirectionalLight::colour_b))},
+		{COM_NONE           , INST_LIGHT     , "Dir B    ", vec4_funcs(adapt_member_pointer(&DirectionalLight::direction_b))},
+		// TieInstance
+		{COM_NONE           , INST_TIE       , "Class    ", scalar_funcs(adapt_member_pointer(&TieInstance::o_class))},
+		{COM_NONE           , INST_TIE       , "Occlusion", scalar_funcs(adapt_member_pointer(&TieInstance::occlusion_index))},
+		{COM_NONE           , INST_TIE       , "Light    ", foreign_id_funcs(INST_LIGHT, &TieInstance::directional_lights)},
+		{COM_NONE           , INST_TIE       , "UID      ", scalar_funcs(adapt_member_pointer(&TieInstance::uid))},
+		// ShrubInstance
+		{COM_NONE           , INST_SHRUB     , "Class    ", scalar_funcs(adapt_member_pointer(&ShrubInstance::o_class))},
+		{COM_NONE           , INST_SHRUB     , "Unk 8    ", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_8))},
+		{COM_NONE           , INST_SHRUB     , "Unk c    ", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_c))},
+		{COM_NONE           , INST_SHRUB     , "Unk 5c   ", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_5c))},
+		{COM_NONE           , INST_SHRUB     , "Unk 60   ", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_60))},
+		{COM_NONE           , INST_SHRUB     , "Unk 64   ", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_64))},
+		{COM_NONE           , INST_SHRUB     , "Unk 68   ", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_68))},
+		{COM_NONE           , INST_SHRUB     , "Unk 6c   ", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_6c))},
 	};
 	
-	for(InspectorField& field : fields) {
-		assert(field.lane_count <= MAX_LANES);
+	for(const InspectorField& field : fields) {
+		assert(field.funcs.lane_count <= MAX_LANES);
 		if(should_draw_field(lvl, field)) {
 			// If selected objects have fields with conflicting values, we
 			// shouldn't draw the old value.
@@ -121,63 +169,69 @@ void Inspector::render(app& a) {
 	}
 }
 
-static InspectorFieldFuncs position_funcs() {
+template <typename Value>
+static InspectorFieldFuncs scalar_funcs(InspectorGetterSetter<Value> getset) {
 	InspectorFieldFuncs funcs;
-	funcs.compare = [](Instance& lhs, Instance& rhs, s32 lane) {
-		return lhs.position()[lane] == rhs.position()[lane];
+	funcs.lane_count = 1;
+	funcs.compare = [getset](Instance& lhs, Instance& rhs, s32) {
+		return getset.get(lhs) == getset.get(rhs);
 	};
-	funcs.draw = [](level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
-		glm::vec3 value = first.position();
-		std::array<std::string, 3> strings = vec3_to_strings(value, values_equal);
-		std::array<bool, MAX_LANES> changed;
-		if(inspector_input_text_n(strings, changed, 3)) {
-			Opt<glm::vec3> new_value = strings_to_vec3(strings);
-			if(!new_value.has_value()) {
-				return;
+	funcs.draw = [getset](level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
+		Value value = getset.get(first);
+		std::string value_str;
+		if(values_equal[0]) {
+			value_str = std::to_string(value);
+		}
+		ImGui::PushItemWidth(calc_remaining_item_width());
+		bool changed = ImGui::InputText("", &value_str);
+		ImGui::PopItemWidth();
+		if(changed) {
+			Opt<Value> new_value = string_to_scalar<Value>(value_str);
+			if(new_value.has_value()) {
+				std::array<bool, MAX_LANES> dummy;
+				apply_to_all_selected<0>(lvl, *new_value, dummy, getset);
 			}
-			apply_to_all_selected<glm::vec3>(lvl, *new_value, changed, {
-				[](Instance& inst) { return inst.position(); },
-				[](Instance& inst, std::array<bool, MAX_LANES> lanes, glm::vec3 value) {
-					auto temp = inst.position();
-					for(s32 lane = 0; lane < MAX_LANES; lane++) {
-						if(lanes[lane]) {
-							temp[lane] = value[lane];
-						}
-					}
-					inst.set_position(temp);
-				}
-			});
 		}
 	};
 	return funcs;
 }
 
-static InspectorFieldFuncs rotation_funcs() {
+static InspectorFieldFuncs vec3_funcs(InspectorGetterSetter<glm::vec3> getset) {
 	InspectorFieldFuncs funcs;
-	funcs.compare = [](Instance& lhs, Instance& rhs, s32 lane) {
-		return lhs.rotation()[lane] == rhs.rotation()[lane];
+	funcs.lane_count = 3;
+	funcs.compare = [getset](Instance& lhs, Instance& rhs, s32 lane) {
+		return getset.get(lhs)[lane] == getset.get(rhs)[lane];
 	};
-	funcs.draw = [](level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
-		glm::vec3 value = first.rotation();
-		std::array<std::string, 3> strings = vec3_to_strings(value, values_equal);
+	funcs.draw = [getset](level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
+		glm::vec3 value = getset.get(first);
+		std::array<std::string, MAX_LANES> strings = vec4_to_strings(glm::vec4(value, -1.f), values_equal);
 		std::array<bool, MAX_LANES> changed;
 		if(inspector_input_text_n(strings, changed, 3)) {
-			Opt<glm::vec3> new_value = strings_to_vec3(strings);
-			if(!new_value.has_value()) {
-				return;
+			Opt<glm::vec4> new_value_4 = strings_to_vec4(strings);
+			if(new_value_4.has_value()) {
+				glm::vec3 new_value = glm::vec3(*new_value_4);
+				apply_to_all_selected<3>(lvl, new_value, changed, getset);
 			}
-			apply_to_all_selected<glm::vec3>(lvl, *new_value, changed, {
-				[](Instance& inst) { return inst.rotation(); },
-				[](Instance& inst, std::array<bool, MAX_LANES> lanes, glm::vec3 value) {
-					auto temp = inst.rotation();
-					for(s32 lane = 0; lane < MAX_LANES; lane++) {
-						if(lanes[lane]) {
-							temp[lane] = value[lane];
-						}
-					}
-					inst.set_rotation(temp);
-				}
-			});
+		}
+	};
+	return funcs;
+}
+
+static InspectorFieldFuncs vec4_funcs(InspectorGetterSetter<glm::vec4> getset) {
+	InspectorFieldFuncs funcs;
+	funcs.lane_count = 4;
+	funcs.compare = [getset](Instance& lhs, Instance& rhs, s32 lane) {
+		return getset.get(lhs)[lane] == getset.get(rhs)[lane];
+	};
+	funcs.draw = [getset](level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
+		glm::vec4 value = getset.get(first);
+		std::array<std::string, 4> strings = vec4_to_strings(value, values_equal);
+		std::array<bool, MAX_LANES> changed;
+		if(inspector_input_text_n(strings, changed, 4)) {
+			Opt<glm::vec4> new_value = strings_to_vec4(strings);
+			if(new_value.has_value()) {
+				apply_to_all_selected<4>(lvl, *new_value, changed, getset);
+			}
 		}
 	};
 	return funcs;
@@ -185,6 +239,7 @@ static InspectorFieldFuncs rotation_funcs() {
 
 static InspectorFieldFuncs pvar_funcs() {
 	InspectorFieldFuncs funcs;
+	funcs.lane_count = 1;
 	funcs.compare = [](Instance& lhs, Instance& rhs, s32 lane) {
 		return lhs.pvars().size() == 0 && rhs.pvars().size() == 0;
 	};
@@ -198,81 +253,10 @@ static InspectorFieldFuncs pvar_funcs() {
 	return funcs;
 }
 
-template <typename Value>
-static InspectorFieldFuncs member_func_pointer_funcs(Value& (Instance::*member_function)()) {
-	InspectorFieldFuncs funcs;
-	funcs.compare = [member_function](Instance& lhs, Instance& rhs, s32) {
-		return (lhs.*member_function)() == (rhs.*member_function)();
-	};
-	funcs.draw = [member_function](level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
-		Value value = (first.*member_function)();
-		std::string value_str;
-		if(values_equal[0]) {
-			value_str = std::to_string(value);
-		}
-		ImGui::PushItemWidth(calc_remaining_item_width());
-		bool changed = ImGui::InputText("", &value_str);
-		ImGui::PopItemWidth();
-		if(changed) {
-			Opt<Value> new_value = string_to_scalar<Value>(value_str);
-			if(new_value.has_value()) {
-				std::array<bool, MAX_LANES> dummy;
-				apply_to_all_selected<Value>(lvl, *new_value, dummy, {
-					[member_function](Instance& inst) {
-						Value value = (inst.*member_function)();
-						return value;
-					},
-					[member_function](Instance& inst, std::array<bool, MAX_LANES>, Value value) {
-						(inst.*member_function)() = value;
-					}
-				});
-			}
-		}
-	};
-	return funcs;
-}
-
-template <typename Value, typename ThisInstance>
-static InspectorFieldFuncs member_pointer_funcs(Value ThisInstance::*field) {
-	InspectorFieldFuncs funcs;
-	funcs.compare = [field](Instance& lhs, Instance& rhs, s32) {
-		auto& this_lhs = dynamic_cast<ThisInstance&>(lhs);
-		auto& this_rhs = dynamic_cast<ThisInstance&>(rhs);
-		return (this_lhs.*field) == (this_rhs.*field);
-	};
-	funcs.draw = [field](level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
-		auto& this_first = dynamic_cast<ThisInstance&>(first);
-		Value value = (this_first.*field);
-		std::string value_str;
-		if(values_equal[0]) {
-			value_str = std::to_string(value);
-		}
-		ImGui::PushItemWidth(calc_remaining_item_width());
-		bool changed = ImGui::InputText("", &value_str);
-		ImGui::PopItemWidth();
-		if(changed) {
-			Opt<Value> new_value = string_to_scalar<Value>(value_str);
-			if(new_value.has_value()) {
-				std::array<bool, MAX_LANES> dummy;
-				apply_to_all_selected<Value>(lvl, *new_value, dummy, {
-					[field](Instance& inst) {
-						auto& this_inst = dynamic_cast<ThisInstance&>(inst);
-						return this_inst.*field;
-					},
-					[field](Instance& inst, std::array<bool, MAX_LANES>, Value value) {
-						auto& this_inst = dynamic_cast<ThisInstance&>(inst);
-						this_inst.*field = value;
-					}
-				});
-			}
-		}
-	};
-	return funcs;
-}
-
 template <typename ThisInstance>
 static InspectorFieldFuncs foreign_id_funcs(InstanceType foreign_type, s32 ThisInstance::*field) {
 	InspectorFieldFuncs funcs;
+	funcs.lane_count = 1;
 	funcs.compare = [field](Instance& lhs, Instance& rhs, s32) {
 		auto& this_lhs = dynamic_cast<ThisInstance&>(lhs);
 		auto& this_rhs = dynamic_cast<ThisInstance&>(rhs);
@@ -303,16 +287,7 @@ static InspectorFieldFuncs foreign_id_funcs(InstanceType foreign_type, s32 ThisI
 		ImGui::PopItemWidth();
 		if(changed) {
 			std::array<bool, MAX_LANES> dummy;
-			apply_to_all_selected<s32>(lvl, value, dummy, {
-				[field](Instance& inst) {
-					auto& this_inst = dynamic_cast<ThisInstance&>(inst);
-					return this_inst.*field;
-				},
-				[field](Instance& inst, std::array<bool, MAX_LANES>, s32 value) {
-					auto& this_inst = dynamic_cast<ThisInstance&>(inst);
-					this_inst.*field = value;
-				}
-			});
+			apply_to_all_selected<0>(lvl, value, dummy, adapt_member_pointer(field));
 		}
 	};
 	return funcs;
@@ -320,6 +295,7 @@ static InspectorFieldFuncs foreign_id_funcs(InstanceType foreign_type, s32 ThisI
 
 static InspectorFieldFuncs moby_rooted_funcs() {
 	InspectorFieldFuncs funcs;
+	funcs.lane_count = 1;
 	funcs.compare = [](Instance& lhs, Instance& rhs, s32 lane) {
 		auto& moby_lhs = dynamic_cast<MobyInstance&>(lhs);
 		auto& moby_rhs = dynamic_cast<MobyInstance&>(rhs);
@@ -343,12 +319,12 @@ static InspectorFieldFuncs moby_rooted_funcs() {
 		
 		if(changed) {
 			std::array<bool, MAX_LANES> dummy;
-			apply_to_all_selected<std::pair<bool, f32>>(lvl, {is_rooted, rooted_distance}, dummy, {
+			apply_to_all_selected<0>(lvl, std::pair<bool, f32>(is_rooted, rooted_distance), dummy, {
 				[](Instance& inst) {
 					auto& moby = dynamic_cast<MobyInstance&>(inst);
 					return std::pair<bool, f32>(moby.is_rooted, moby.rooted_distance);
 				},
-				[](Instance& inst, std::array<bool, MAX_LANES>, std::pair<bool, f32> value) {
+				[](Instance& inst, std::pair<bool, f32> value) {
 					auto& moby = dynamic_cast<MobyInstance&>(inst);
 					moby.is_rooted = value.first;
 					moby.rooted_distance = value.second;
@@ -359,7 +335,7 @@ static InspectorFieldFuncs moby_rooted_funcs() {
 	return funcs;
 }
 
-static bool should_draw_field(level& lvl, InspectorField& field) {
+static bool should_draw_field(level& lvl, const InspectorField& field) {
 	bool one_instance_has_field = false;
 	bool all_instances_have_field = true;
 	lvl.gameplay().for_each_instance([&](Instance& inst) {
@@ -375,7 +351,7 @@ static bool should_draw_field(level& lvl, InspectorField& field) {
 	return one_instance_has_field && all_instances_have_field;
 }
 
-static void should_draw_current_values(bool values_equal[MAX_LANES], level& lvl, InspectorField& field) {
+static void should_draw_current_values(bool values_equal[MAX_LANES], level& lvl, const InspectorField& field) {
 	for(s32 lane = 0; lane < MAX_LANES; lane++) {
 		values_equal[lane] = true;
 	}
@@ -383,7 +359,7 @@ static void should_draw_current_values(bool values_equal[MAX_LANES], level& lvl,
 	lvl.gameplay().for_each_instance([&](Instance& inst) {
 		if(inst.selected) {
 			if(last_inst != nullptr) {
-				for(s32 lane = 0; lane < field.lane_count; lane++) {
+				for(s32 lane = 0; lane < field.funcs.lane_count; lane++) {
 					if(!field.funcs.compare(*last_inst, inst, lane)) {
 						values_equal[lane] = false;
 					}
@@ -394,8 +370,8 @@ static void should_draw_current_values(bool values_equal[MAX_LANES], level& lvl,
 	});
 }
 
-template <typename Value>
-static void apply_to_all_selected(level& lvl, Value value, std::array<bool, MAX_LANES> lanes, InspectorGetterSetterFuncs<Value> funcs) {
+template <s32 lane_count, typename Value>
+static void apply_to_all_selected(level& lvl, Value value, std::array<bool, MAX_LANES> lanes, InspectorGetterSetter<Value> funcs) {
 	std::vector<InstanceId> ids = lvl.gameplay().selected_instances();
 	
 	std::vector<Value> old_values;
@@ -409,7 +385,17 @@ static void apply_to_all_selected(level& lvl, Value value, std::array<bool, MAX_
 		[funcs, lanes, ids, value](level& lvl) {
 			lvl.gameplay().for_each_instance([&](Instance& inst) {
 				if(contains(ids, inst.id())) {
-					funcs.set(inst, lanes, value);
+					if constexpr(lane_count > 0) {
+						Value temp = funcs.get(inst);
+						for(s32 lane = 0; lane < lane_count; lane++) {
+							if(lanes[lane]) {
+								temp[lane] = value[lane];
+							}
+						}
+						funcs.set(inst, temp);
+					} else {
+						funcs.set(inst, value);
+					}
 				}
 			});
 		},
@@ -417,18 +403,55 @@ static void apply_to_all_selected(level& lvl, Value value, std::array<bool, MAX_
 			size_t i = 0;
 			lvl.gameplay().for_each_instance([&](Instance& inst) {
 				if(contains(ids, inst.id())) {
-					funcs.set(inst, lanes, old_values[i++]);
+					funcs.set(inst, old_values[i++]);
 				}
 			});
 		}
 	);
 }
 
+template <typename Value>
+static InspectorGetterSetter<Value> adapt_getter_setter(Value (Instance::*getter)() const, void (Instance::*setter)(Value)) {
+	InspectorGetterSetter<Value> funcs;
+	funcs.get = [getter](Instance& inst) {
+		return (inst.*getter)();
+	};
+	funcs.set = [setter](Instance& inst, Value value) {
+		(inst.*setter)(value);
+	};
+	return funcs;
+}
+
+template <typename Value>
+static InspectorGetterSetter<Value> adapt_reference_member_function(Value& (Instance::*member_function)()) {
+	InspectorGetterSetter<Value> funcs;
+	funcs.get = [member_function](Instance& inst) {
+		Value value = (inst.*member_function)();
+		return value;
+	};
+	funcs.set = [member_function](Instance& inst, Value value) {
+		(inst.*member_function)() = value;
+	};
+	return funcs;
+}
+
+template <typename Value, typename ThisInstance>
+static InspectorGetterSetter<Value> adapt_member_pointer(Value ThisInstance::*member_pointer) {
+	InspectorGetterSetter<Value> funcs;
+	funcs.get = [member_pointer](Instance& inst) {
+		return dynamic_cast<ThisInstance&>(inst).*member_pointer;
+	};
+	funcs.set = [member_pointer](Instance& inst, Value value) {
+		dynamic_cast<ThisInstance&>(inst).*member_pointer = value;
+	};
+	return funcs;
+}
+
 static float calc_remaining_item_width() {
 	return ImGui::GetWindowSize().x - ImGui::GetCursorPos().x - 16.f;
 }
 
-static bool inspector_input_text_n(std::array<std::string, 3>& strings, std::array<bool, MAX_LANES>& changed, int lane_count) {
+static bool inspector_input_text_n(std::array<std::string, MAX_LANES>& strings, std::array<bool, MAX_LANES>& changed, int lane_count) {
 	for(s32 lane = 0; lane < MAX_LANES; lane++) {
 		changed[lane] = false;
 	}
@@ -447,9 +470,9 @@ static bool inspector_input_text_n(std::array<std::string, 3>& strings, std::arr
 	return any_lane_changed;
 }
 
-static std::array<std::string, 3> vec3_to_strings(glm::vec3 vec, bool values_equal[MAX_LANES]) {
-	std::array<std::string, 3> strings;
-	for(s32 lane = 0; lane < 3; lane++) {
+static std::array<std::string, MAX_LANES> vec4_to_strings(glm::vec4 vec, bool values_equal[MAX_LANES]) {
+	std::array<std::string, MAX_LANES> strings;
+	for(s32 lane = 0; lane < 4; lane++) {
 		if(values_equal[lane]) {
 			strings[lane] = std::to_string(vec[lane]);
 		}
@@ -457,10 +480,10 @@ static std::array<std::string, 3> vec3_to_strings(glm::vec3 vec, bool values_equ
 	return strings;
 }
 
-static Opt<glm::vec3> strings_to_vec3(std::array<std::string, 3>& strings) {
-	glm::vec3 vec;
+static Opt<glm::vec4> strings_to_vec4(std::array<std::string, MAX_LANES>& strings) {
+	glm::vec4 vec;
 	try {
-		for(s32 lane = 0; lane < 3; lane++) {
+		for(s32 lane = 0; lane < 4; lane++) {
 			vec[lane] = std::stof(strings[lane]);
 		}
 	} catch(std::logic_error&) {

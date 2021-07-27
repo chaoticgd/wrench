@@ -116,6 +116,11 @@ f32 Instance::scale() const {
 	return _transform.scale;
 }
 
+void Instance::set_scale(f32 scale) {
+	assert(_components_mask & COM_TRANSFORM);
+	_transform.scale = scale;
+}
+
 f32& Instance::m33_value_do_not_use() {
 	assert(_components_mask & COM_TRANSFORM);
 	return _transform.m33;
