@@ -125,6 +125,16 @@ packed_struct(SectorRange,
 	Sector32 size;
 )
 
+// We can't pass around references to fields as we're using packed structs so
+// instead of std::swap we have to use this macro.
+#define SWAP_PACKED(inmem, packed) \
+	{ \
+		auto p = packed; \
+		packed = inmem; \
+		inmem = p; \
+	}
+
+
 // Kludge since C++ still doesn't have proper reflection.
 #define DEF_FIELD(member) \
 	{ \
@@ -195,6 +205,13 @@ packed_struct(Vec4f,
 		result.z = vec.z;
 		result.w = vec.w;
 		return result;
+	}
+	
+	void swap(glm::vec4& vec) {
+		SWAP_PACKED(x, vec.x);
+		SWAP_PACKED(y, vec.y);
+		SWAP_PACKED(z, vec.z);
+		SWAP_PACKED(w, vec.w);
 	}
 )
 
@@ -288,15 +305,6 @@ template <typename Return, typename Object>
 struct MemberTraits<Return (Object::*)> {
 	typedef Object instance_type;
 };
-
-// We can't pass around references to fields as we're using packed structs so
-// instead of std::swap we have to use this macro.
-#define SWAP_PACKED(inmem, packed) \
-	{ \
-		auto p = packed; \
-		packed = inmem; \
-		inmem = p; \
-	}
 
 template <typename T>
 using Opt = std::optional<T>;

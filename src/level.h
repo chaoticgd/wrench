@@ -461,10 +461,10 @@ struct Area {
 
 struct DirectionalLight : Instance {
 	DirectionalLight() : Instance(INST_LIGHT, COM_NONE, TransformMode::NONE) {}
-	Vec4f colour_a;
-	Vec4f direction_a;
-	Vec4f colour_b;
-	Vec4f direction_b;
+	glm::vec4 colour_a;
+	glm::vec4 direction_a;
+	glm::vec4 colour_b;
+	glm::vec4 direction_b;
 	template <typename T>
 	void enumerate_fields(T& t) {
 		Instance::enumerate_fields(t);

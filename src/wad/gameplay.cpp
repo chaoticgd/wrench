@@ -1232,10 +1232,10 @@ packed_struct(DirectionalLightPacked,
 )
 
 static void swap_instance(DirectionalLight& l, DirectionalLightPacked& r) {
-	SWAP_PACKED(l.colour_a, r.colour_a);
-	SWAP_PACKED(l.direction_a, r.direction_a);
-	SWAP_PACKED(l.colour_b, r.colour_b);
-	SWAP_PACKED(l.direction_b, r.direction_b);
+	r.colour_a.swap(l.colour_a);
+	r.direction_a.swap(l.direction_a);
+	r.colour_b.swap(l.colour_b);
+	r.direction_b.swap(l.direction_b);
 }
 
 packed_struct(TieInstancePacked,
