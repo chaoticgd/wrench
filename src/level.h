@@ -436,7 +436,7 @@ enum AreaPart {
 
 struct Area {
 	s32 id;
-	BoundingSphere bounding_sphere;
+	glm::vec4 bounding_sphere;
 	s32 last_update_time;
 	std::vector<s32> parts[5];
 	

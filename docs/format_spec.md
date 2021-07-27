@@ -25,3 +25,4 @@ The source level format created for Wrench. Version 4 and up is currently suppor
 - Removed the redundant "id" field from the help messages, renamed the "string_id" field to just "id".
 - Removed the redundant "number" field from the tie ambient RGBA values.
 - The moby instances list is no longer nested under a "static_instances" key. The dynamic moby count is now called "dynamic_moby_count" in the top-level object.
+- Bounding spheres are now stored as regular 4D vectors, so the "redius" key is now "w".

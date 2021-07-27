@@ -941,7 +941,7 @@ struct GC_80_DL_64_Block {
 };
 
 packed_struct(GrindPathData,
-	BoundingSphere bounding_sphere;
+	Vec4f bounding_sphere;
 	s32 unknown_4;
 	s32 wrap;
 	s32 inactive;
@@ -971,7 +971,7 @@ struct GrindPathBlock {
 		std::vector<std::vector<glm::vec4>> splines;
 		for(const GrindPath& inst : src) {
 			GrindPathData packed;
-			packed.bounding_sphere = BoundingSphere::pack(inst.bounding_sphere());
+			packed.bounding_sphere = Vec4f::pack(inst.bounding_sphere());
 			packed.unknown_4 = inst.unknown_4;
 			packed.wrap = inst.wrap;
 			packed.inactive = inst.inactive;
@@ -995,7 +995,7 @@ packed_struct(AreasHeader,
 )
 
 packed_struct(GameplayAreaPacked,
-	BoundingSphere bounding_sphere;
+	Vec4f bounding_sphere;
 	s16 part_counts[5];
 	s16 last_update_time;
 	s32 relative_part_offsets[5];
@@ -1011,7 +1011,7 @@ struct AreasBlock {
 		for(const GameplayAreaPacked& entry : entries) {
 			Area area;
 			area.id = index++;
-			area.bounding_sphere = entry.bounding_sphere;
+			area.bounding_sphere = entry.bounding_sphere.unpack();
 			area.last_update_time = entry.last_update_time;
 			for(s32 part = 0; part < 5; part++) {
 				s32 part_ofs = header.part_offsets[part] + entry.relative_part_offsets[part];
@@ -1032,7 +1032,7 @@ struct AreasBlock {
 		std::vector<GameplayAreaPacked> table;
 		for(const Area& area : src) {
 			GameplayAreaPacked packed;
-			packed.bounding_sphere = area.bounding_sphere;
+			packed.bounding_sphere = Vec4f::pack(area.bounding_sphere);
 			for(s32 part = 0; part < 5; part++) {
 				packed.part_counts[part] = area.parts[part].size();
 				total_part_counts[part] += area.parts[part].size();

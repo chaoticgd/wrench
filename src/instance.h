@@ -88,39 +88,6 @@ enum class TransformMode {
 
 using GlobalPvarPointers = std::vector<std::pair<s32, s32>>;
 
-packed_struct(BoundingSphere,
-	f32 x;
-	f32 y;
-	f32 z;
-	f32 radius;
-	
-	template <typename T>
-	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD(x);
-		DEF_PACKED_FIELD(y);
-		DEF_PACKED_FIELD(z);
-		DEF_PACKED_FIELD(radius);
-	}
-	
-	glm::vec4 unpack() const {
-		glm::vec4 result;
-		result.x = x;
-		result.y = y;
-		result.z = z;
-		result.w = radius;
-		return result;
-	}
-	
-	static BoundingSphere pack(glm::vec4 vec) {
-		BoundingSphere result;
-		result.x = vec.x;
-		result.y = vec.y;
-		result.z = vec.z;
-		result.radius = vec.w;
-		return result;
-	}
-)
-
 struct FromJsonVisitor;
 
 struct Instance {
@@ -280,9 +247,8 @@ template <typename T>
 			DEF_FIELD(vertices);
 		}
 		if(has_component(COM_BOUNDING_SPHERE)) {
-			BoundingSphere bounding_sphere = BoundingSphere::pack(_bounding_sphere);
+			auto& bounding_sphere = _bounding_sphere;
 			DEF_FIELD(bounding_sphere);
-			_bounding_sphere = bounding_sphere.unpack();
 		}
 	}
 };
