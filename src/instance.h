@@ -143,6 +143,7 @@ struct Instance {
 	glm::vec3 rotation() const;
 	void set_rotation(glm::vec3 rotation);
 	f32 scale() const;
+	f32& m33_value_do_not_use();
 	
 	const std::vector<u8>& pvars() const;
 	std::vector<u8>& pvars();
@@ -177,6 +178,7 @@ private:
 		glm::mat3x4 inverse_matrix = glm::mat3x4(1.f);
 		glm::vec3 rotation = glm::vec3(0.f);
 		f32 scale;
+		f32 m33 = 0.01f; // Preserve the original value of matrix[3][3].
 	} _transform;
 	std::vector<u8> _pvars;
 	s32 _pvar_index = -1; // Only used during reading/writing!
@@ -195,7 +197,10 @@ template <typename T>
 			switch(_transform_mode) {
 				case TransformMode::MATRIX: {
 					glm::mat4& matrix = _transform.matrix;
+					matrix[3][3] = _transform.m33;
 					DEF_FIELD(matrix);
+					_transform.m33 = matrix[3][3];
+					matrix[3][3] = 1.f;
 					if constexpr(std::is_same_v<T, FromJsonVisitor>) {
 						set_transform(_transform.matrix);
 					}
@@ -203,7 +208,10 @@ template <typename T>
 				}
 				case TransformMode::MATRIX_AND_INVERSE: {
 					glm::mat4& matrix = _transform.matrix;
+					matrix[3][3] = _transform.m33;
 					DEF_FIELD(matrix);
+					_transform.m33 = matrix[3][3];
+					matrix[3][3] = 1.f;
 					glm::mat3x4& inverse_matrix = _transform.inverse_matrix;
 					DEF_FIELD(inverse_matrix);
 					if constexpr(std::is_same_v<T, FromJsonVisitor>) {
@@ -213,7 +221,10 @@ template <typename T>
 				}
 				case TransformMode::MATRIX_INVERSE_ROTATION: {
 					glm::mat4& matrix = _transform.matrix;
+					matrix[3][3] = _transform.m33;
 					DEF_FIELD(matrix);
+					_transform.m33 = matrix[3][3];
+					matrix[3][3] = 1.f;
 					glm::mat3x4& inverse_matrix = _transform.inverse_matrix;
 					DEF_FIELD(inverse_matrix);
 					glm::vec3& rotation = _transform.rotation;

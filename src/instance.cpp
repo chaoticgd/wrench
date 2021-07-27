@@ -109,6 +109,11 @@ f32 Instance::scale() const {
 	return _transform.scale;
 }
 
+f32& Instance::m33_value_do_not_use() {
+	assert(_components_mask & COM_TRANSFORM);
+	return _transform.m33;
+}
+
 const std::vector<u8>& Instance::pvars() const {
 	assert(_components_mask & COM_PVARS);
 	return _pvars;
