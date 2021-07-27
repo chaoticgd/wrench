@@ -143,58 +143,44 @@ translate_tool::translate_tool() {
 }
 
 void translate_tool::draw(app& a, glm::mat4 world_to_clip) {
-	//ImGui::Begin("Translate Tool");
-	//ImGui::Text("Displacement:");
-	//ImGui::InputFloat3("##displacement_input", &_displacement.x);
-	//if(ImGui::Button("Apply")) {
-	//	level* lvl = a.get_level();
-	//	std::vector<entity_id> ids = lvl->selected_entity_ids();
-	//	glm::vec3 displacement = _displacement;
-	//	std::map<entity_id, glm::vec3> old_positions;
-	//	lvl->for_each<matrix_entity>([&](matrix_entity& ent) {
-	//		if(ent.selected) {
-	//			old_positions[ent.id] = ent.local_to_world[3];
-	//		}
-	//	});
-	//	lvl->for_each<euler_entity>([&](euler_entity& ent) {
-	//		if(ent.selected) {
-	//			old_positions[ent.id] = ent.position;
-	//		}
-	//	});
-	//	
-	//	lvl->push_command(
-	//		[ids, displacement](level& lvl) {
-	//			lvl.for_each<matrix_entity>([&](matrix_entity& ent) {
-	//				if(contains(ids, ent.id)) {
-	//					ent.local_to_world[3].x += displacement.x;
-	//					ent.local_to_world[3].y += displacement.y;
-	//					ent.local_to_world[3].z += displacement.z;
-	//				}
-	//			});
-	//			lvl.for_each<euler_entity>([&](euler_entity& ent) {
-	//				if(contains(ids, ent.id)) {
-	//					ent.position += displacement;
-	//				}
-	//			});
-	//		},
-	//		[old_positions](level& lvl) {
-	//			lvl.for_each<matrix_entity>([&](matrix_entity& ent) {
-	//				if(map_contains(old_positions, ent.id)) {
-	//					const glm::vec3& pos = old_positions.at(ent.id);
-	//					ent.local_to_world[3].x = pos.x;
-	//					ent.local_to_world[3].y = pos.y;
-	//					ent.local_to_world[3].z = pos.z;
-	//				}
-	//			});
-	//			lvl.for_each<euler_entity>([&](euler_entity& ent) {
-	//				if(map_contains(old_positions, ent.id)) {
-	//					ent.position = old_positions.at(ent.id);
-	//				}
-	//			});
-	//		});
-	//	_displacement = glm::vec3(0, 0, 0);
-	//}
-	//ImGui::End();
+	ImGui::Begin("Translate Tool");
+	ImGui::Text("Displacement:");
+	ImGui::InputFloat3("##displacement_input", &_displacement.x);
+	if(ImGui::Button("Apply") && glm::length(_displacement) > 0.001f) {
+		assert(a.get_level());
+		level& lvl = *a.get_level();
+		std::vector<InstanceId> ids = lvl.gameplay().selected_instances();
+		glm::vec3 displacement = _displacement;
+		std::vector<std::pair<InstanceId, glm::vec3>> old_positions;
+		lvl.gameplay().for_each_instance_with(COM_TRANSFORM, [&](Instance& inst) {
+			if(inst.selected) {
+				old_positions.emplace_back(inst.id(), inst.position());
+			}
+		});
+		
+		lvl.push_command(
+			[ids, displacement](level& lvl) {
+				lvl.gameplay().for_each_instance_with(COM_TRANSFORM, [&](Instance& inst) {
+					if(contains(ids, inst.id())) {
+						inst.set_position(inst.position() + displacement);
+					}
+				});
+			},
+			[old_positions](level& lvl) {
+				size_t i = 0;
+				while(i < old_positions.size()) {
+					lvl.gameplay().for_each_instance_with(COM_TRANSFORM, [&](Instance& inst) {
+						if(inst.id() == old_positions[i].first) {
+							inst.set_position(old_positions[i].second);
+							i++;
+						}
+					});
+				}
+			}
+		);
+		_displacement = glm::vec3(0, 0, 0);
+	}
+	ImGui::End();
 }
 
 spline_tool::spline_tool() {
