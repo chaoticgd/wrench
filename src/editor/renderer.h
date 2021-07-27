@@ -32,10 +32,6 @@
 #include "formats/game_model.h"
 #include "formats/level_impl.h"
 
-# /*
-#	Rendering functions.
-# */
-
 class app;
 
 enum class view_mode {
@@ -127,6 +123,8 @@ struct gl_renderer {
 	bool draw_shrubs = true;
 	bool draw_mobies = true;
 	bool draw_cuboids = false;
+	bool draw_spheres = false;
+	bool draw_cylinders = false;
 	bool draw_paths = true;
 	bool draw_grind_paths = true;
 	bool draw_tfrags = true;

@@ -189,6 +189,22 @@ void gl_renderer::draw_level(level& lvl, glm::mat4 world_to_clip) const {
 		}
 	}
 	
+	if(draw_spheres) {
+		for(Sphere& inst : opt_iterator(lvl.gameplay().spheres)) {
+			glm::mat4 local_to_clip = world_to_clip * inst.matrix();
+			glm::vec4 colour = get_colour(inst.selected, glm::vec4(0, 0, 1, 1));
+			draw_cube(local_to_clip, colour);
+		}
+	}
+	
+	if(draw_cylinders) {
+		for(Cylinder& inst : opt_iterator(lvl.gameplay().cylinders)) {
+			glm::mat4 local_to_clip = world_to_clip * inst.matrix();
+			glm::vec4 colour = get_colour(inst.selected, glm::vec4(0, 0, 1, 1));
+			draw_cube(local_to_clip, colour);
+		}
+	}
+	
 	if(draw_paths) {
 		for(Path& inst : opt_iterator(lvl.gameplay().paths)) {
 			glm::vec4 colour = get_colour(inst.selected, glm::vec4(1, 0.5, 0, 1));
