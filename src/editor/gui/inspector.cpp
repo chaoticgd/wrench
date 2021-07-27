@@ -74,7 +74,7 @@ static InspectorGetterSetter<Value> adapt_member_pointer(Value ThisInstance::*me
 static float calc_remaining_item_width();
 static bool inspector_input_text_n(std::array<std::string, MAX_LANES>& strings, std::array<bool, MAX_LANES>& changed, int lane_count);
 static std::array<std::string, MAX_LANES> vec4_to_strings(glm::vec4 vec, bool values_equal[MAX_LANES]);
-static Opt<glm::vec4> strings_to_vec4(std::array<std::string, MAX_LANES>& strings);
+static Opt<glm::vec4> strings_to_vec4(std::array<std::string, MAX_LANES>& strings, std::array<bool, MAX_LANES>& changed);
 template <typename Scalar>
 static Opt<Scalar> string_to_scalar(std::string& string);
 
@@ -261,7 +261,7 @@ static InspectorFieldFuncs vec3_funcs(InspectorGetterSetter<glm::vec3> getset) {
 		std::array<std::string, MAX_LANES> strings = vec4_to_strings(glm::vec4(value, -1.f), values_equal);
 		std::array<bool, MAX_LANES> changed;
 		if(inspector_input_text_n(strings, changed, 3)) {
-			Opt<glm::vec4> new_value_4 = strings_to_vec4(strings);
+			Opt<glm::vec4> new_value_4 = strings_to_vec4(strings, changed);
 			if(new_value_4.has_value()) {
 				glm::vec3 new_value = glm::vec3(*new_value_4);
 				apply_to_all_selected<3>(lvl, new_value, changed, getset);
@@ -282,7 +282,7 @@ static InspectorFieldFuncs vec4_funcs(InspectorGetterSetter<glm::vec4> getset) {
 		std::array<std::string, 4> strings = vec4_to_strings(value, values_equal);
 		std::array<bool, MAX_LANES> changed;
 		if(inspector_input_text_n(strings, changed, 4)) {
-			Opt<glm::vec4> new_value = strings_to_vec4(strings);
+			Opt<glm::vec4> new_value = strings_to_vec4(strings, changed);
 			if(new_value.has_value()) {
 				apply_to_all_selected<4>(lvl, *new_value, changed, getset);
 			}
@@ -534,11 +534,15 @@ static std::array<std::string, MAX_LANES> vec4_to_strings(glm::vec4 vec, bool va
 	return strings;
 }
 
-static Opt<glm::vec4> strings_to_vec4(std::array<std::string, MAX_LANES>& strings) {
+static Opt<glm::vec4> strings_to_vec4(std::array<std::string, MAX_LANES>& strings, std::array<bool, MAX_LANES>& changed) {
 	glm::vec4 vec;
 	try {
 		for(s32 lane = 0; lane < 4; lane++) {
-			vec[lane] = std::stof(strings[lane]);
+			if(changed[lane]) {
+				vec[lane] = std::stof(strings[lane]);
+			} else {
+				vec[lane] = -1.f; // Don't care.
+			}
 		}
 	} catch(std::logic_error&) {
 		return {};
