@@ -48,6 +48,8 @@ struct InspectorGetterSetter {
 	std::function<void(Instance& inst, Value value)> set;
 };
 
+static InspectorFieldFuncs type_funcs();
+static InspectorFieldFuncs id_funcs();
 template <typename Value>
 static InspectorFieldFuncs scalar_funcs(InspectorGetterSetter<Value> getset);
 static InspectorFieldFuncs vec3_funcs(InspectorGetterSetter<glm::vec3> getset);
@@ -85,6 +87,8 @@ void Inspector::render(app& a) {
 	
 	const std::vector<InspectorField> fields = {
 		// Components
+		{COM_NONE           , INST_NONE      , "Type     ", type_funcs()},
+		{COM_NONE           , INST_NONE      , "ID       ", id_funcs()},
 		{COM_TRANSFORM      , INST_NONE      , "Position ", vec3_funcs(adapt_getter_setter(&Instance::position, &Instance::set_position))},
 		{COM_TRANSFORM      , INST_NONE      , "Rotation ", vec3_funcs(adapt_getter_setter(&Instance::rotation, &Instance::set_rotation))},
 		{COM_TRANSFORM      , INST_NONE      , "Scale    ", scalar_funcs(adapt_getter_setter(&Instance::scale, &Instance::set_scale))},
@@ -167,6 +171,56 @@ void Inspector::render(app& a) {
 			ImGui::PopID();
 		}
 	}
+}
+
+static InspectorFieldFuncs type_funcs() {
+	InspectorFieldFuncs funcs;
+	funcs.lane_count = 1;
+	funcs.compare = [](Instance& lhs, Instance& rhs, s32 lane) {
+		return lhs.type() == rhs.type();
+	};
+	funcs.draw = [](level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
+		if(values_equal[0]) {
+			const char* type;
+			switch(first.type()) {
+				case INST_NONE: assert(0); break;
+				case INST_GC_8c_DL_70: type = "GC 8c DL 70"; break;
+				case INST_LIGHT_TRIGGER: type = "Light Trigger"; break;
+				case INST_CAMERA: type = "Camera"; break;
+				case INST_SOUND: type = "Sound"; break;
+				case INST_MOBY: type = "Moby"; break;
+				case INST_PATH: type = "Path"; break;
+				case INST_CUBOID: type = "Cuboid"; break;
+				case INST_SPHERE: type = "Sphere"; break;
+				case INST_CYLINDER: type = "Cylinder"; break;
+				case INST_GRIND_PATH: type = "Grind Path"; break;
+				case INST_LIGHT: type = "Light"; break;
+				case INST_TIE: type = "Tie"; break;
+				case INST_SHRUB: type = "Shrub"; break;
+				default: assert(0);
+			}
+			ImGui::Text("%s", type);
+		} else {
+			ImGui::Text("<multiple selected>");
+		}
+	};
+	return funcs;
+}
+
+static InspectorFieldFuncs id_funcs() {
+	InspectorFieldFuncs funcs;
+	funcs.lane_count = 1;
+	funcs.compare = [](Instance& lhs, Instance& rhs, s32 lane) {
+		return lhs.id() == rhs.id();
+	};
+	funcs.draw = [](level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
+		if(values_equal[0]) {
+			ImGui::Text("%d", first.id().value);
+		} else {
+			ImGui::Text("<multiple selected>");
+		}
+	};
+	return funcs;
 }
 
 template <typename Value>
