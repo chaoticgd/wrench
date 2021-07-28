@@ -783,6 +783,7 @@ struct LevelWad : Wad {
 	MobyClass& lookup_moby_class(s32 class_number);
 };
 
+Opt<Game> game_from_string(std::string str);
 std::unique_ptr<Wad> read_wad_json(fs::path src_path);
 void write_wad_json(fs::path dest_path, Wad* base);
 

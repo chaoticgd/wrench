@@ -132,24 +132,29 @@ static void read_json_file_into_map(Map& map, const fs::path& src_dir, const Jso
 	map_from_json(map, Json::parse(read_file(src_dir/std::string(json[name])))[name], key_name);
 }
 
+Opt<Game> game_from_string(std::string str) {
+	if(str == "R&C1") {
+		return Game::RAC1;
+	} else if(str == "R&C2") {
+		return Game::RAC2;
+	} else if(str == "R&C3") {
+		return Game::RAC3;
+	} else if(str == "Deadlocked") {
+		return Game::DL;
+	} else {
+		return {};
+	}
+}
+
 std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 	fs::path src_dir = src_path.parent_path();
 	Json json = Json::parse(read_file(src_path));
 	
-	Game game;
 	if(!json.contains("game") || !json["game"].is_string()) {
 		return nullptr;
 	}
-	std::string game_str = json["game"];
-	if(game_str == "R&C1") {
-		game = Game::RAC1;
-	} else if(game_str == "R&C2") {
-		game = Game::RAC2;
-	} else if(game_str == "R&C3") {
-		game = Game::RAC3;
-	} else if(game_str == "Deadlocked") {
-		game = Game::DL;
-	} else {
+	Opt<Game> game = game_from_string(json["game"]);
+	if(!game.has_value()) {
 		fprintf(stderr, "error: Invalid game.\n");
 		return nullptr;
 	}
@@ -169,7 +174,7 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 	switch(type) {
 		case WadType::LEVEL: {
 			LevelWad wad;
-			wad.game = game;
+			wad.game = *game;
 			wad.type = type;
 			wad.level_number = json["level_number"];
 			wad.reverb = json["reverb"];
