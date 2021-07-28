@@ -129,7 +129,7 @@ MobyClass& LevelWad::lookup_moby_class(s32 class_number) {
 
 template <typename Map>
 static void read_json_file_into_map(Map& map, const fs::path& src_dir, const Json& json, const char* name, const char* key_name) {
-	map_from_json(map, Json::parse(read_file(src_dir/json[name]))[name], key_name);
+	map_from_json(map, Json::parse(read_file(src_dir/std::string(json[name])))[name], key_name);
 }
 
 std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
