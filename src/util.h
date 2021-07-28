@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WAD_UTIL_H
-#define WAD_UTIL_H
+#ifndef UTIL_H
+#define UTIL_H
 
 #include <map>
 #include <cmath>
@@ -31,7 +31,9 @@
 #include <functional>
 #include <type_traits>
 
-#include "../version_check/version_check.h"
+#include <glm/glm.hpp>
+
+#include "version_check/version_check.h"
 
 using u8 = uint8_t;
 using u16 = uint16_t;
@@ -49,9 +51,21 @@ namespace fs = std::filesystem;
 
 #define BEGIN_END(container) container.begin(), container.end()
 
-// Like assert, but for user errors.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-security"
+
+template <typename... Args>
+[[noreturn]] void assert_not_reached_impl(const char* file, int line, const char* error_message, Args... args) {
+	fprintf(stderr, "[%s:%d] assert: ", file, line);
+	fprintf(stderr, error_message, args...);
+	fprintf(stderr, "\n");
+	exit(1);
+}
+#define assert_not_reached(...) \
+	assert_not_reached_impl(__FILE__, __LINE__, __VA_ARGS__)
+
+
+// Like assert, but for user errors.
 template <typename... Args>
 void verify_impl(const char* file, int line, bool condition, const char* error_message, Args... args) {
 	if(!condition) {
@@ -65,13 +79,14 @@ void verify_impl(const char* file, int line, bool condition, const char* error_m
 	verify_impl(__FILE__, __LINE__, condition, __VA_ARGS__)
 template <typename... Args>
 [[noreturn]] void verify_not_reached_impl(const char* file, int line, const char* error_message, Args... args) {
-	fprintf(stderr, "[%s:%d] ", file, line);
+	fprintf(stderr, "[%s:%d] error: ", file, line);
 	fprintf(stderr, error_message, args...);
 	fprintf(stderr, "\n");
 	exit(1);
 }
 #define verify_not_reached(...) \
 	verify_not_reached_impl(__FILE__, __LINE__, __VA_ARGS__)
+	
 #pragma GCC diagnostic pop
 
 #ifdef _MSC_VER
@@ -110,6 +125,16 @@ packed_struct(SectorRange,
 	Sector32 size;
 )
 
+// We can't pass around references to fields as we're using packed structs so
+// instead of std::swap we have to use this macro.
+#define SWAP_PACKED(inmem, packed) \
+	{ \
+		auto p = packed; \
+		packed = inmem; \
+		inmem = p; \
+	}
+
+
 // Kludge since C++ still doesn't have proper reflection.
 #define DEF_FIELD(member) \
 	{ \
@@ -141,6 +166,18 @@ packed_struct(Vec3f,
 		DEF_PACKED_FIELD(y);
 		DEF_PACKED_FIELD(z);
 	}
+	
+	glm::vec3 unpack() const {
+		return glm::vec3(x, y, z);
+	}
+	
+	static Vec3f pack(glm::vec3 vec) {
+		Vec3f result;
+		result.x = vec.x;
+		result.y = vec.y;
+		result.z = vec.z;
+		return result;
+	}
 )
 
 packed_struct(Vec4f,
@@ -155,6 +192,26 @@ packed_struct(Vec4f,
 		DEF_PACKED_FIELD(y);
 		DEF_PACKED_FIELD(z);
 		DEF_PACKED_FIELD(w);
+	}
+	
+	glm::vec4 unpack() const {
+		return glm::vec4(x, y, z, w);
+	}
+	
+	static Vec4f pack(glm::vec4 vec) {
+		Vec4f result;
+		result.x = vec.x;
+		result.y = vec.y;
+		result.z = vec.z;
+		result.w = vec.w;
+		return result;
+	}
+	
+	void swap(glm::vec4& vec) {
+		SWAP_PACKED(x, vec.x);
+		SWAP_PACKED(y, vec.y);
+		SWAP_PACKED(z, vec.z);
+		SWAP_PACKED(w, vec.w);
 	}
 )
 
@@ -179,6 +236,68 @@ packed_struct(Mat3,
 		t.field("2", temp);
 		m_2 = temp;
 	}
+	
+	glm::mat3x4 unpack() const {
+		glm::mat3x4 result;
+		result[0] = m_0.unpack();
+		result[1] = m_1.unpack();
+		result[2] = m_2.unpack();
+		return result;
+	}
+	
+	static Mat3 pack(glm::mat3x4 mat) {
+		Mat3 result;
+		result.m_0 = Vec4f::pack(mat[0]);
+		result.m_1 = Vec4f::pack(mat[1]);
+		result.m_2 = Vec4f::pack(mat[2]);
+		return result;
+	}
+)
+
+packed_struct(Mat4,
+	Vec4f m_0;
+	Vec4f m_1;
+	Vec4f m_2;
+	Vec4f m_3;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		Vec4f temp;
+		
+		temp = m_0;
+		t.field("0", temp);
+		m_0 = temp;
+		
+		temp = m_1;
+		t.field("1", temp);
+		m_1 = temp;
+		
+		temp = m_2;
+		t.field("2", temp);
+		m_2 = temp;
+		
+		temp = m_3;
+		t.field("3", temp);
+		m_3 = temp;
+	}
+	
+	glm::mat4 unpack() const {
+		glm::mat4 result;
+		result[0] = m_0.unpack();
+		result[1] = m_1.unpack();
+		result[2] = m_2.unpack();
+		result[3] = m_3.unpack();
+		return result;
+	}
+	
+	static Mat4 pack(glm::mat4 mat) {
+		Mat4 result;
+		result.m_0 = Vec4f::pack(mat[0]);
+		result.m_1 = Vec4f::pack(mat[1]);
+		result.m_2 = Vec4f::pack(mat[2]);
+		result.m_3 = Vec4f::pack(mat[3]);
+		return result;
+	}
 )
 
 template <typename> struct MemberTraits;
@@ -186,15 +305,6 @@ template <typename Return, typename Object>
 struct MemberTraits<Return (Object::*)> {
 	typedef Object instance_type;
 };
-
-// We can't pass around references to fields as we're using packed structs so
-// instead of std::swap we have to use this macro.
-#define SWAP_PACKED(inmem, packed) \
-	{ \
-		auto p = packed; \
-		packed = inmem; \
-		inmem = p; \
-	}
 
 template <typename T>
 using Opt = std::optional<T>;
@@ -206,6 +316,15 @@ const T& opt_iterator(const Opt<T>& opt) {
 	} else {
 		static const T empty;
 		return empty;
+	}
+}
+
+template <typename T>
+const size_t opt_size(const Opt<std::vector<T>>& opt_vec) {
+	if(opt_vec.has_value()) {
+		return opt_vec->size();
+	} else {
+		return 0;
 	}
 }
 

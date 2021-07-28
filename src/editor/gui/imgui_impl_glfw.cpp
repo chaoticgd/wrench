@@ -364,7 +364,7 @@ static void ImGui_ImplGlfw_UpdateGamepads()
         io.BackendFlags &= ~ImGuiBackendFlags_HasGamepad;
 }
 
-#include "app.h"
+#include "../app.h"
 
 void ImGui_ImplGlfw_NewFrame()
 {

@@ -16,14 +16,13 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WAD_LEVEL_H
-#define WAD_LEVEL_H
+#ifndef LEVEL_H
+#define LEVEL_H
 
 #include "json.h"
 #include "util.h"
 #include "buffer.h"
-
-using InstanceId = s32;
+#include "instance.h"
 
 packed_struct(GC_8c_DL_70,
 	s16 unknown_0;
@@ -212,9 +211,8 @@ struct Properties {
 };
 
 struct HelpMessage {
-	InstanceId id;
 	std::optional<std::string> string;
-	s16 string_id;
+	s32 id;
 	s16 short_id;
 	s16 third_person_id;
 	s16 coop_id;
@@ -223,9 +221,8 @@ struct HelpMessage {
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(id);
 		t.encoded_string("string", string);
-		DEF_FIELD(string_id);
+		DEF_FIELD(id);
 		DEF_FIELD(short_id);
 		DEF_FIELD(third_person_id);
 		DEF_FIELD(coop_id);
@@ -234,29 +231,14 @@ struct HelpMessage {
 	}
 };
 
-packed_struct(ShapePacked,
-	Mat3 matrix;
-	Vec4f position;
-	Mat3 inverse_matrix;
-	Vec4f rotation;
-	
-	template <typename T>
-	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD(matrix);
-		DEF_PACKED_FIELD(position);
-		DEF_PACKED_FIELD(inverse_matrix);
-		DEF_PACKED_FIELD(rotation);
-	}
-)
-
 struct LightTriggerInstance {
-	InstanceId id;
+	s32 id;
 	Vec4f point;
 	Mat3 matrix;
 	Vec4f point_2;
 	s32 unknown_40;
 	s32 unknown_44;
-	s32 light_index;
+	s32 light;
 	s32 unknown_4c;
 	s32 unknown_50;
 	s32 unknown_54;
@@ -279,7 +261,7 @@ struct LightTriggerInstance {
 		DEF_FIELD(point_2);
 		DEF_FIELD(unknown_40);
 		DEF_FIELD(unknown_44);
-		DEF_FIELD(light_index);
+		DEF_FIELD(light);
 		DEF_FIELD(unknown_4c);
 		DEF_FIELD(unknown_50);
 		DEF_FIELD(unknown_54);
@@ -296,138 +278,92 @@ struct LightTriggerInstance {
 	}
 };
 
-struct PvarInstance {
-	std::vector<u8> pvars;
-	s32 pvar_index; // Only used during reading/writing!
-	std::vector<std::pair<s32, s32>> global_pvar_pointers; // Only used when writing!
-};
-
-struct ImportCamera : PvarInstance {
-	InstanceId id;
+struct Camera : Instance {
+	Camera() : Instance(INST_CAMERA, COM_TRANSFORM | COM_PVARS, TransformMode::POSITION_ROTATION) {}
 	s32 type;
-	Vec3f position;
-	Vec3f rotation;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(id);
+		Instance::enumerate_fields(t);
 		DEF_FIELD(type);
-		DEF_FIELD(position);
-		DEF_FIELD(rotation);
-		DEF_HEXDUMP(pvars);
 	}
 };
 
-
-struct Shape {
-	InstanceId id;
-	Mat3 matrix;
-	Vec4f position;
-	Mat3 inverse_matrix;
-	Vec4f rotation;
-	
-	template <typename T>
-	void enumerate_fields(T& t) {
-		DEF_FIELD(id);
-		DEF_FIELD(matrix);
-		DEF_FIELD(position);
-		DEF_FIELD(inverse_matrix);
-		DEF_FIELD(rotation);
-	}
+struct Cuboid : Instance {
+	Cuboid() : Instance(INST_SPHERE, COM_TRANSFORM, TransformMode::MATRIX_INVERSE_ROTATION) {}
 };
 
-struct SoundInstance : PvarInstance {
-	InstanceId id;
+struct Sphere : Instance {
+	Sphere() : Instance(INST_SPHERE, COM_TRANSFORM, TransformMode::MATRIX_INVERSE_ROTATION) {}
+};
+
+struct Cylinder : Instance {
+	Cylinder() : Instance(INST_SPHERE, COM_TRANSFORM, TransformMode::MATRIX_INVERSE_ROTATION) {}
+};
+
+struct SoundInstance : Instance {
+	SoundInstance() : Instance(INST_SOUND, COM_TRANSFORM | COM_PVARS, TransformMode::MATRIX_INVERSE_ROTATION) {}
 	s16 o_class;
 	s16 m_class;
 	f32 range;
-	ShapePacked cuboid;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(id);
+		Instance::enumerate_fields(t);
 		DEF_FIELD(o_class);
 		DEF_FIELD(m_class);
 		DEF_FIELD(range);
-		DEF_FIELD(cuboid);
-		DEF_HEXDUMP(pvars);
 	}
 };
 
-struct MobyInstance : PvarInstance {
-	InstanceId id;
+struct MobyInstance : Instance {
+	MobyInstance() : Instance(INST_MOBY, COM_TRANSFORM | COM_PVARS | COM_DRAW_DISTANCE | COM_COLOUR, TransformMode::POSITION_ROTATION_SCALE) {}
 	s8 mission;
 	s32 uid;
 	s32 bolts;
 	s32 o_class;
-	f32 scale;
-	s32 draw_distance;
 	s32 update_distance;
-	Vec3f position;
-	Vec3f rotation;
 	s32 group;
 	bool is_rooted;
 	f32 rooted_distance;
 	s32 occlusion;
 	s32 mode_bits;
-	Rgb96 light_colour;
 	s32 light;
-	
-	struct {
-		s32 unknown_8;
-		s32 unknown_c;
-		s32 unknown_18;
-		s32 unknown_1c;
-		s32 unknown_20;
-		s32 unknown_24;
-		s32 unknown_38;
-		s32 unknown_3c;
-		s32 unknown_4c;
-		s32 unknown_84;
-	} rac23;
+	s32 rac23_unknown_8;
+	s32 rac23_unknown_c;
+	s32 rac23_unknown_18;
+	s32 rac23_unknown_1c;
+	s32 rac23_unknown_20;
+	s32 rac23_unknown_24;
+	s32 rac23_unknown_38;
+	s32 rac23_unknown_3c;
+	s32 rac23_unknown_4c;
+	s32 rac23_unknown_84;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(id);
+		Instance::enumerate_fields(t);
 		DEF_FIELD(mission);
 		DEF_FIELD(uid);
 		DEF_FIELD(bolts);
 		DEF_FIELD(o_class);
-		DEF_FIELD(scale);
-		DEF_FIELD(draw_distance);
 		DEF_FIELD(update_distance);
-		DEF_FIELD(position);
-		DEF_FIELD(rotation);
 		DEF_FIELD(group);
 		DEF_FIELD(is_rooted);
 		DEF_FIELD(rooted_distance);
 		DEF_FIELD(occlusion);
 		DEF_FIELD(mode_bits);
-		DEF_FIELD(light_colour);
 		DEF_FIELD(light);
-		DEF_HEXDUMP(pvars);
-		
-		DEF_FIELD(rac23.unknown_8);
-		DEF_FIELD(rac23.unknown_c);
-		DEF_FIELD(rac23.unknown_18);
-		DEF_FIELD(rac23.unknown_1c);
-		DEF_FIELD(rac23.unknown_20);
-		DEF_FIELD(rac23.unknown_24);
-		DEF_FIELD(rac23.unknown_38);
-		DEF_FIELD(rac23.unknown_3c);
-		DEF_FIELD(rac23.unknown_4c);
-		DEF_FIELD(rac23.unknown_84);
-	}
-};
-
-struct MobyInstances {
-	s32 dynamic_instance_count;
-	std::vector<MobyInstance> static_instances;
-	
-	template <typename T>
-	void enumerate_fields(T& t) {
-		DEF_FIELD(dynamic_instance_count);
-		DEF_FIELD(static_instances);
+		DEF_FIELD(rac23_unknown_8);
+		DEF_FIELD(rac23_unknown_c);
+		DEF_FIELD(rac23_unknown_18);
+		DEF_FIELD(rac23_unknown_1c);
+		DEF_FIELD(rac23_unknown_20);
+		DEF_FIELD(rac23_unknown_24);
+		DEF_FIELD(rac23_unknown_38);
+		DEF_FIELD(rac23_unknown_3c);
+		DEF_FIELD(rac23_unknown_4c);
+		DEF_FIELD(rac23_unknown_84);
 	}
 };
 
@@ -437,7 +373,7 @@ packed_struct(PvarTableEntry,
 )
 
 struct Group {
-	InstanceId id;
+	s32 id;
 	std::vector<u16> members;
 	
 	template <typename T>
@@ -458,15 +394,8 @@ struct GC_54_DL_38 {
 	}
 };
 
-struct Path {
-	InstanceId id;
-	std::vector<Vec4f> vertices;
-	
-	template <typename T>
-	void enumerate_fields(T& t) {
-		DEF_FIELD(id);
-		DEF_FIELD(vertices);
-	}
+struct Path : Instance {
+	Path() : Instance(INST_PATH, COM_SPLINE, TransformMode::NONE) {}
 };
 
 struct GC_80_DL_64 {
@@ -480,37 +409,18 @@ struct GC_80_DL_64 {
 	}
 };
 
-packed_struct(BoundingSphere,
-	f32 x;
-	f32 y;
-	f32 z;
-	f32 radius;
-	
-	template <typename T>
-	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD(x);
-		DEF_PACKED_FIELD(y);
-		DEF_PACKED_FIELD(z);
-		DEF_PACKED_FIELD(radius);
-	}
-)
-
-struct GrindPath {
-	InstanceId id;
-	BoundingSphere bounding_sphere;
+struct GrindPath : Instance {
+	GrindPath() : Instance(INST_GRIND_PATH, COM_SPLINE | COM_BOUNDING_SPHERE, TransformMode::NONE) {}
 	s32 unknown_4;
 	s32 wrap;
 	s32 inactive;
-	std::vector<Vec4f> vertices;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(id);
-		DEF_FIELD(bounding_sphere);
+		Instance::enumerate_fields(t);
 		DEF_FIELD(unknown_4);
 		DEF_FIELD(wrap);
 		DEF_FIELD(inactive);
-		DEF_FIELD(vertices);
 	}
 };
 
@@ -523,8 +433,8 @@ enum AreaPart {
 };
 
 struct Area {
-	InstanceId id;
-	BoundingSphere bounding_sphere;
+	s32 id;
+	glm::vec4 bounding_sphere;
 	s32 last_update_time;
 	std::vector<s32> parts[5];
 	
@@ -547,16 +457,15 @@ struct Area {
 	}
 };
 
-struct DirectionalLight {
-	InstanceId id;
-	Vec4f colour_a;
-	Vec4f direction_a;
-	Vec4f colour_b;
-	Vec4f direction_b;
-	
+struct DirectionalLight : Instance {
+	DirectionalLight() : Instance(INST_LIGHT, COM_NONE, TransformMode::NONE) {}
+	glm::vec4 colour_a;
+	glm::vec4 direction_a;
+	glm::vec4 colour_b;
+	glm::vec4 direction_b;
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(id);
+		Instance::enumerate_fields(t);
 		DEF_FIELD(colour_a);
 		DEF_FIELD(direction_a);
 		DEF_FIELD(colour_b);
@@ -564,67 +473,49 @@ struct DirectionalLight {
 	}
 };
 
-struct TieInstance {
-	InstanceId id;
+struct TieInstance : Instance {
+	TieInstance() : Instance(INST_TIE, COM_TRANSFORM | COM_DRAW_DISTANCE, TransformMode::MATRIX) {}
 	s32 o_class;
-	s32 draw_distance;
 	s32 occlusion_index;
-	Mat3 matrix;
-	Vec4f position;
 	s32 directional_lights;
 	s32 uid;
-	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(id);
+		Instance::enumerate_fields(t);
 		DEF_FIELD(o_class);
-		DEF_FIELD(draw_distance);
 		DEF_FIELD(occlusion_index);
-		DEF_FIELD(matrix);
-		DEF_FIELD(position);
 		DEF_FIELD(directional_lights);
 		DEF_FIELD(uid);
 	}
 };
 
 struct TieAmbientRgbas {
-	InstanceId id;
-	s16 number;
+	s16 id;
 	std::vector<u8> data;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
 		DEF_FIELD(id);
-		DEF_FIELD(number);
 		DEF_HEXDUMP(data);
 	}
 };
 
-struct ShrubInstance {
-	InstanceId id;
+struct ShrubInstance : Instance {
+	ShrubInstance() : Instance(INST_SHRUB, COM_TRANSFORM | COM_DRAW_DISTANCE | COM_COLOUR, TransformMode::MATRIX) {}
 	s32 o_class;
-	f32 draw_distance;
 	s32 unknown_8;
 	s32 unknown_c;
-	Mat3 matrix;
-	Vec4f position;
-	Rgb96 light_colour;
 	s32 unknown_5c;
 	s32 unknown_60;
 	s32 unknown_64;
 	s32 unknown_68;
 	s32 unknown_6c;
-	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(id);
+		Instance::enumerate_fields(t);
 		DEF_FIELD(o_class);
-		DEF_FIELD(draw_distance);
 		DEF_FIELD(unknown_8);
 		DEF_FIELD(unknown_c);
-		DEF_FIELD(matrix);
-		DEF_FIELD(position);
-		DEF_FIELD(light_colour);
 		DEF_FIELD(unknown_5c);
 		DEF_FIELD(unknown_60);
 		DEF_FIELD(unknown_64);
@@ -660,18 +551,18 @@ struct Gameplay {
 	Opt<std::vector<HelpMessage>> japanese_help_messages;
 	Opt<std::vector<HelpMessage>> korean_help_messages;
 	Opt<std::vector<LightTriggerInstance>> light_triggers;
-	Opt<std::vector<ImportCamera>> cameras;
+	Opt<std::vector<Camera>> cameras;
 	Opt<std::vector<SoundInstance>> sound_instances;
 	Opt<std::vector<s32>> moby_classes;
-	Opt<MobyInstances> moby_instances;
 	Opt<s32> dynamic_moby_count;
+	Opt<std::vector<MobyInstance>> moby_instances;
 	Opt<std::vector<Group>> moby_groups;
 	Opt<std::vector<u8>> global_pvar;
-	Opt<std::vector<Shape>> spheres;
-	Opt<std::vector<Shape>> cylinders;
 	Opt<std::vector<s32>> gc_74_dl_58;
 	Opt<std::vector<Path>> paths;
-	Opt<std::vector<Shape>> cuboids;
+	Opt<std::vector<Cuboid>> cuboids;
+	Opt<std::vector<Sphere>> spheres;
+	Opt<std::vector<Cylinder>> cylinders;
 	Opt<std::vector<u8>> gc_88_dl_6c;
 	Opt<GC_80_DL_64> gc_80_dl_64;
 	Opt<std::vector<GrindPath>> grind_paths;
@@ -688,17 +579,34 @@ struct Gameplay {
 	// Only used while reading the binary gameplay file.
 	Opt<std::vector<PvarTableEntry>> pvars_temp;
 	
+	template <typename Callback>
+	void for_each_instance_with(u32 required_components_mask, Callback callback) const;
+	template <typename Callback>
+	void for_each_instance_with(u32 required_components_mask, Callback callback);
+	
+	template <typename Callback>
+	void for_each_instance(Callback callback) const {
+		for_each_instance_with(COM_NONE, callback);
+	}
+	template <typename Callback>
+	void for_each_instance(Callback callback) {
+		for_each_instance_with(COM_NONE, callback);
+	}
+	
 	// These functions don't skip over instances where pvars.size() == 0.
 	template <typename Callback>
 	void for_each_pvar_instance_const(Callback callback) const;
 	template <typename Callback>
 	void for_each_pvar_instance(Callback callback);
-	template <typename Callback>
 	// And these skip over instances that don't have an associated class in the
 	// relevant JSON file.
+	template <typename Callback>
 	void for_each_pvar_instance_const(const LevelWad& wad, Callback callback) const;
 	template <typename Callback>
 	void for_each_pvar_instance(const LevelWad& wad, Callback callback);
+	
+	void clear_selection();
+	std::vector<InstanceId> selected_instances() const;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
@@ -708,14 +616,15 @@ struct Gameplay {
 		DEF_FIELD(cameras);
 		DEF_FIELD(sound_instances);
 		DEF_FIELD(moby_classes);
+		DEF_FIELD(dynamic_moby_count);
 		DEF_FIELD(moby_instances);
 		DEF_FIELD(moby_groups);
 		DEF_FIELD(global_pvar);
-		DEF_FIELD(spheres);
-		DEF_FIELD(cylinders);
 		DEF_FIELD(gc_74_dl_58);
 		DEF_FIELD(paths);
 		DEF_FIELD(cuboids);
+		DEF_FIELD(spheres);
+		DEF_FIELD(cylinders);
 		DEF_FIELD(gc_88_dl_6c);
 		DEF_FIELD(gc_80_dl_64);
 		DEF_FIELD(grind_paths);
@@ -803,6 +712,8 @@ struct MobyClass {
 	}
 };
 
+Json get_file_metadata(const char* format, const char* application);
+
 enum PvarFieldDescriptor {
 	PVAR_INTEGERS_BEGIN = 0,
 	PVAR_S8 = 1, PVAR_S16 = 2, PVAR_S32 = 3,
@@ -875,31 +786,62 @@ struct LevelWad : Wad {
 std::unique_ptr<Wad> read_wad_json(fs::path src_path);
 void write_wad_json(fs::path dest_path, Wad* base);
 
-template <typename Callback>
-void Gameplay::for_each_pvar_instance_const(Callback callback) const {
-	for(const ImportCamera& inst : opt_iterator(cameras)) {
-		callback(inst);
-	}
-	for(const SoundInstance& inst : opt_iterator(sound_instances)) {
-		callback(inst);
-	}
-	if(moby_instances.has_value()) {
-		for(const MobyInstance& inst : moby_instances->static_instances) {
-			callback(inst);
+template <typename Callback, typename InstanceVec>
+static void for_each_instance_of_type_with(u32 required_components_mask, const InstanceVec& instances, Callback callback) {
+	if(instances.has_value() && instances->size() > 0) {
+		if(((*instances)[0].components_mask() & required_components_mask) == required_components_mask) {
+			for(const Instance& instance : *instances) {
+				callback(instance);
+			}
 		}
 	}
 }
 
 template <typename Callback>
+void Gameplay::for_each_instance_with(u32 required_components_mask, Callback callback) const {
+	for_each_instance_of_type_with(required_components_mask, cameras, callback);
+	for_each_instance_of_type_with(required_components_mask, sound_instances, callback);
+	for_each_instance_of_type_with(required_components_mask, moby_instances, callback);
+	for_each_instance_of_type_with(required_components_mask, spheres, callback);
+	for_each_instance_of_type_with(required_components_mask, cylinders, callback);
+	for_each_instance_of_type_with(required_components_mask, paths, callback);
+	for_each_instance_of_type_with(required_components_mask, cuboids, callback);
+	for_each_instance_of_type_with(required_components_mask, grind_paths, callback);
+	for_each_instance_of_type_with(required_components_mask, lights, callback);
+	for_each_instance_of_type_with(required_components_mask, tie_instances, callback);
+	for_each_instance_of_type_with(required_components_mask, shrub_instances, callback);
+}
+
+template <typename Callback>
+void Gameplay::for_each_instance_with(u32 required_components_mask, Callback callback) {
+	static_cast<const Gameplay*>(this)->for_each_instance_with(required_components_mask, [&](const Instance& inst) {
+		callback(const_cast<Instance&>(inst));
+	});
+}
+
+template <typename Callback>
+void Gameplay::for_each_pvar_instance_const(Callback callback) const {
+	for(const Camera& inst : opt_iterator(cameras)) {
+		callback(inst);
+	}
+	for(const SoundInstance& inst : opt_iterator(sound_instances)) {
+		callback(inst);
+	}
+	for(const MobyInstance& inst : opt_iterator(moby_instances)) {
+		callback(inst);
+	}
+}
+
+template <typename Callback>
 void Gameplay::for_each_pvar_instance(Callback callback) {
-	for_each_pvar_instance_const([&](const PvarInstance& inst) {
-		callback(const_cast<PvarInstance&>(inst));
+	for_each_pvar_instance_const([&](const Instance& inst) {
+		callback(const_cast<Instance&>(inst));
 	});
 }
 
 template <typename Callback>
 void Gameplay::for_each_pvar_instance_const(const LevelWad& wad, Callback callback) const {
-	for(const ImportCamera& inst : opt_iterator(cameras)) {
+	for(const Camera& inst : opt_iterator(cameras)) {
 		auto iter = wad.camera_classes.find(inst.type);
 		if(iter != wad.camera_classes.end()) {
 			const PvarType& type = wad.pvar_types.at(iter->second.pvar_type);
@@ -913,21 +855,19 @@ void Gameplay::for_each_pvar_instance_const(const LevelWad& wad, Callback callba
 			callback(inst, type);
 		}
 	}
-	if(moby_instances.has_value()) {
-		for(const MobyInstance& inst : moby_instances->static_instances) {
-			auto iter = wad.moby_classes.find(inst.o_class);
-			if(iter != wad.moby_classes.end()) {
-				const PvarType& type = wad.pvar_types.at(iter->second.pvar_type);
-				callback(inst, type);
-			}
+	for(const MobyInstance& inst : opt_iterator(moby_instances)) {
+		auto iter = wad.moby_classes.find(inst.o_class);
+		if(iter != wad.moby_classes.end()) {
+			const PvarType& type = wad.pvar_types.at(iter->second.pvar_type);
+			callback(inst, type);
 		}
 	}
 }
 
 template <typename Callback>
 void Gameplay::for_each_pvar_instance(const LevelWad& wad, Callback callback) {
-	for_each_pvar_instance_const(wad, [&](const PvarInstance& inst, const PvarType& type) {
-		callback(const_cast<PvarInstance&>(inst), type);
+	for_each_pvar_instance_const(wad, [&](const Instance& inst, const PvarType& type) {
+		callback(const_cast<Instance&>(inst), type);
 	});
 }
 

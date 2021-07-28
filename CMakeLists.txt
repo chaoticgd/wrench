@@ -18,13 +18,14 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $<1:${CMAKE_SOURCE_DIR}/bin>)
 
 add_executable(wrench
 	src/editor/main.cpp
+	src/buffer.cpp
+	src/json.cpp
+	src/instance.cpp
+	src/level.cpp
 	src/editor/app.cpp
 	src/editor/command_line.cpp
-	src/editor/gui.cpp
-	src/editor/view_3d.cpp
 	src/editor/stream.cpp
 	src/editor/stacktrace.cpp
-	src/editor/window.cpp
 	src/editor/renderer.cpp
 	src/editor/shaders.cpp
 	src/editor/worker_logger.cpp
@@ -34,8 +35,12 @@ add_executable(wrench
 	src/editor/game_db.cpp
 	src/editor/tools.cpp
 	src/editor/icons.cpp
+	src/editor/gui/gui.cpp
+	src/editor/gui/window.cpp
+	src/editor/gui/view_3d.cpp
+	src/editor/gui/inspector.cpp
+	src/editor/gui/imgui_impl_glfw.cpp
 	src/editor/formats/level_impl.cpp
-	src/editor/formats/world.cpp
 	src/editor/formats/texture.cpp
 	src/editor/formats/fip.cpp
 	src/editor/formats/bmp.cpp
@@ -48,10 +53,8 @@ add_executable(wrench
 	src/editor/formats/texture_archive.cpp
 	src/editor/formats/model_utils.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
-	src/editor/imgui_impl_glfw.cpp
 	thirdparty/imgui/backends/imgui_impl_opengl3.cpp
 	src/editor/md5.cpp
-	src/editor/tests/world_segment_test.cpp
 	src/lz/compression.cpp
 )
 
@@ -100,11 +103,12 @@ add_executable(memmap
 
 add_executable(wad
 	src/wad/main.cpp
+	src/buffer.cpp
+	src/json.cpp
+	src/instance.cpp
+	src/level.cpp
 	src/wad/wad_file.cpp
-	src/wad/level.cpp
 	src/wad/gameplay.cpp
-	src/wad/buffer.cpp
-	src/wad/json.cpp
 	src/wad/tests.cpp
 	src/lz/compression.cpp
 )

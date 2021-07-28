@@ -21,7 +21,7 @@
 Json get_file_metadata(const char* format, const char* application) {
 	return Json {
 		{"format", format},
-		{"format_version", 3},
+		{"format_version", 4},
 		{"application", application},
 		{"application_version", get_application_version_string()}
 	};
@@ -48,6 +48,22 @@ s32 PvarField::size() const {
 		default:
 			assert(0);
 	}
+}
+
+void Gameplay::clear_selection() {
+	for_each_instance([&](Instance& inst) {
+		inst.selected = false;
+	});
+}
+
+std::vector<InstanceId> Gameplay::selected_instances() const {
+	std::vector<InstanceId> ids;
+	for_each_instance([&](const Instance& inst) {
+		if(inst.selected) {
+			ids.push_back(inst.id());
+		}
+	});
+	return ids;
 }
 
 bool PvarType::insert_field(PvarField to_insert, bool sort) {

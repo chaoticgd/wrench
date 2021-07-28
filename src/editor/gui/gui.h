@@ -16,19 +16,20 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GUI_H
-#define GUI_H
+#ifndef EDITOR_GUI_H
+#define EDITOR_GUI_H
 
 #include <functional>
-#include "imgui_includes.h"
 
-#include "app.h"
+#include "../app.h"
+#include "../fs_includes.h"
+#include "../gl_includes.h"
+#include "../formats/game_model.h"
+#include "../formats/level_impl.h"
 #include "window.h"
 #include "view_3d.h"
-#include "fs_includes.h"
-#include "gl_includes.h"
-#include "formats/game_model.h"
-#include "formats/level_impl.h"
+#include "inspector.h"
+#include "imgui_includes.h"
 
 # /*
 #	Implements most of the GUI.
@@ -60,14 +61,6 @@ namespace gui {
 	
 		gl_texture dvd, folder, floppy;
 	};
-	
-	class inspector : public window {
-
-	public:
-		const char* title_text() const override;
-		ImVec2 initial_size() const override;
-		void render(app& a) override;
-	};
 
 	class moby_list : public window {
 	public:
@@ -77,13 +70,6 @@ namespace gui {
 	};
 
 	class viewport_information : public window {
-	public:
-		const char* title_text() const override;
-		ImVec2 initial_size() const override;
-		void render(app& a) override;
-	};
-
-	class string_viewer : public window {
 	public:
 		const char* title_text() const override;
 		ImVec2 initial_size() const override;
@@ -159,26 +145,6 @@ namespace gui {
 		
 		std::size_t _new_game_type = 0;
 		std::string _new_game_path;
-	};
-
-	class stream_viewer : public window {
-	public:
-		stream_viewer();
-		
-		const char* title_text() const override;
-		ImVec2 initial_size() const override;
-		void render(app& a) override;
-		
-		void render_stream_tree_node(stream* node, std::size_t index);
-		
-		// Write out a BMP image to the Wrench directory representing the passed
-		// trace stream where red areas have been read in by Wrench and
-		// grayscale areas have not (the Y axis is bottom to top).
-		void export_trace(trace_stream* node);
-	
-	private:
-		// Validate this before dereferencing it!
-		stream* _selection = nullptr;
 	};
 	
 	class alert_box {

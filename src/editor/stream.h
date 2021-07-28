@@ -31,13 +31,12 @@
 #include <stdexcept>
 #include <type_traits>
 
+#include "../util.h"
 #include "stacktrace.h"
 
 # /*
 #	A set of utility classes and macros for working with binary files.
 # */
-
-static const size_t SECTOR_SIZE = 0x800;
 
 #ifdef _MSC_VER
 	#define packed_struct(name, ...) \
@@ -52,15 +51,6 @@ static const size_t SECTOR_SIZE = 0x800;
 #endif
 
 #define offsetof32(x, y) static_cast<uint32_t>(offsetof(x, y))
-
-// We can't pass around references to fields as we're using packed structs so
-// instead of std::swap we have to use this macro.
-#define SWAP_PACKED(inmem, packed) \
-	{ \
-		auto p = packed; \
-		packed = inmem; \
-		inmem = p; \
-	}
 
 template <typename T>
 packed_struct(file_ptr,

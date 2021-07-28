@@ -18,7 +18,7 @@
 
 #include <fstream>
 
-#include "util.h"
+#include "../util.h"
 #include "tests.h"
 #include "wad_file.h"
 

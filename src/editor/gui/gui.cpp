@@ -30,15 +30,14 @@
 #include <glm/common.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "icons.h"
-#include "util.h"
-#include "config.h"
+#include "../icons.h"
+#include "../util.h"
+#include "../config.h"
+#include "../renderer.h"
+#include "../unwindows.h"
+#include "../worker_thread.h"
+#include "../formats/bmp.h"
 #include "window.h"
-#include "renderer.h"
-#include "worker_thread.h"
-#include "formats/bmp.h"
-
-#include "unwindows.h"
 
 void gui::render(app& a) {
 	ImGui_ImplOpenGL3_NewFrame();
@@ -236,7 +235,7 @@ float gui::render_menu_bar(app& a) {
 			ImGui::Checkbox("Skip writing out MPEG cutscenes (much faster)", &no_mpegs);
 			
 			static bool save_current_level = true;
-			ImGui::Checkbox("Save currently open level", &save_current_level);
+			ImGui::Checkbox("Save and build currently open level", &save_current_level);
 			
 			if(((!build_from_custom_dir || !build_to_custom_path) && a.directory.empty())) {
 				ImGui::TextWrapped("No directory open!\n");
@@ -245,7 +244,7 @@ float gui::render_menu_bar(app& a) {
 				if(build_from_custom_dir) {
 					settings.input_dir = custom_input_dir;
 				} else {
-					settings.input_dir = a.directory;
+					settings.input_dir = a.directory/"built";
 				}
 				
 				std::string output_iso;
@@ -267,17 +266,11 @@ float gui::render_menu_bar(app& a) {
 			}
 			ImGui::EndMenu();
 		}
-		if(ImGui::MenuItem("Save Level", nullptr, nullptr, a.get_level())) {
+		if(ImGui::MenuItem("Save and Build Level", nullptr, nullptr, a.get_level())) {
 			a.save_level();
 		}
 		if(ImGui::BeginMenu("Export")) {
 			if(level* lvl = a.get_level()) {
-				if(ImGui::MenuItem("Mobyseg (debug)")) {
-					file_stream dump_file("mobyseg.bin", std::ios::out | std::ios::trunc);
-					stream* src = lvl->moby_stream();
-					src->seek(0);
-					stream::copy_n(dump_file, *src, src->size());
-				}
 				if(ImGui::MenuItem("Code segment")) {
 					std::stringstream name;
 					name << "codeseg";
@@ -353,9 +346,11 @@ float gui::render_menu_bar(app& a) {
 			ImGui::Checkbox("Ties", &a.renderer.draw_ties);
 			ImGui::Checkbox("Shrubs", &a.renderer.draw_shrubs);
 			ImGui::Checkbox("Mobies", &a.renderer.draw_mobies);
-			ImGui::Checkbox("Triggers", &a.renderer.draw_triggers);
-			ImGui::Checkbox("Splines", &a.renderer.draw_splines);
-			ImGui::Checkbox("Grind Rails", &a.renderer.draw_grind_rails);
+			ImGui::Checkbox("Cuboids", &a.renderer.draw_cuboids);
+			ImGui::Checkbox("Spheres", &a.renderer.draw_spheres);
+			ImGui::Checkbox("Cylinders", &a.renderer.draw_cylinders);
+			ImGui::Checkbox("Paths", &a.renderer.draw_paths);
+			ImGui::Checkbox("Grind Paths", &a.renderer.draw_grind_paths);
 			ImGui::Checkbox("Tfrags", &a.renderer.draw_tfrags);
 			ImGui::Checkbox("Baked Collision", &a.renderer.draw_tcols);
 			ImGui::EndMenu();
@@ -375,17 +370,11 @@ float gui::render_menu_bar(app& a) {
 		render_menu_bar_window_toggle<start_screen>(a);
 		render_menu_bar_window_toggle<view_3d>(a);
 		render_menu_bar_window_toggle<moby_list>(a);
-		render_menu_bar_window_toggle<inspector>(a);
 		render_menu_bar_window_toggle<viewport_information>(a);
-		render_menu_bar_window_toggle<string_viewer>(a);
+		render_menu_bar_window_toggle<Inspector>(a);
 		render_menu_bar_window_toggle<texture_browser>(a);
 		render_menu_bar_window_toggle<model_browser>(a);
 		render_menu_bar_window_toggle<settings>(a);
-		ImGui::Separator();
-		if(ImGui::BeginMenu("Debug Tools")) {
-			render_menu_bar_window_toggle<stream_viewer>(a);
-			ImGui::EndMenu();
-		}
 		ImGui::EndMenu();
 	}
 	
@@ -641,300 +630,6 @@ bool gui::start_screen::button(const char* str, ImTextureID user_texture_id, con
 	return pressed;
 }
 
-/*
-	inspector
-*/
-
-const char* gui::inspector::title_text() const {
-	return "Inspector";
-}
-
-ImVec2 gui::inspector::initial_size() const {
-	return ImVec2(250, 250);
-}
-
-template <typename T_field, typename T_entity>
-void inspector_input_scalar(level& lvl, const char* label, T_field T_entity::*field);
-template <typename T_lane, typename T_field, typename T_entity>
-void inspector_input(level& lvl, const char* label, T_field T_entity::*field, std::size_t first_lane, int lane_count);
-struct inspector_text_lane {
-	std::string str;
-	bool changed = false;
-};
-void inspector_input_text_n(const char* label, inspector_text_lane* lanes, int lane_count);
-
-void gui::inspector::render(app& a) {
-	if(!a.get_level()) {
-		ImGui::Text("<no level>");
-		return;
-	}
-	level& lvl = *a.get_level();
-	
-	bool selection_empty = true;
-	lvl.for_each<entity>([&](entity& ent) {
-		if(ent.selected) {
-			selection_empty = false;
-		}
-	});
-	
-	if(selection_empty) {
-		ImGui::Text("<no entity selected>");
-		return;
-	}
-
-	GLuint preview_texture = 0;
-	
-	// If mobies with different class numbers are selected, or entities other
-	// than mobies are selected, we shouldn't draw the pvars.
-	std::optional<uint32_t> last_class;
-	std::optional<int32_t> last_pvar_index;
-	bool one_moby_type_selected = true;
-	lvl.for_each<entity>([&](entity& base_ent) {
-		if(base_ent.selected) {
-			if(moby_entity* ent = dynamic_cast<moby_entity*>(&base_ent)) {
-				if(last_class && *last_class != ent->o_class) {
-					one_moby_type_selected = false;
-				} else {
-					last_class = ent->o_class;
-					if(ent->pvar_index > -1) {
-						last_pvar_index = ent->pvar_index;
-					}
-				}
-			last_class = ent->o_class;
-			} else {
-				one_moby_type_selected = false;	
-			}
-		}
-	});
-	
-	if(one_moby_type_selected) {
-		if(lvl.moby_class_to_model.find(*last_class) != lvl.moby_class_to_model.end()) {
-			std::size_t model_index = lvl.moby_class_to_model.at(*last_class);
-			moby_model& model = lvl.moby_models[model_index];
-			
-			view_params params;
-			params.mode = view_mode::TEXTURED_POLYGONS;
-			params.zoom = 0.3f;
-			params.pitch_yaw = glm::vec2(0, glm::radians(90.f));
-			params.show_vertex_indices = false;
-			params.show_bounding_box = false;
-			
-			ImVec2 preview_size = ImVec2(ImGui::GetWindowWidth(), 200);
-			
-			render_to_texture(&preview_texture, preview_size.x, preview_size.y, [&]() {
-				a.renderer.draw_single_moby(model, lvl.moby_textures, params, preview_size.x, preview_size.y);
-			});
-		}
-
-		ImGui::Image((void*) (intptr_t) preview_texture, ImVec2(ImGui::GetWindowWidth(), 200));
-	}
-
-	inspector_input<float>(lvl, "Mat I ", &matrix_entity::local_to_world, 0, 4);
-	inspector_input<float>(lvl, "Mat J ", &matrix_entity::local_to_world, 4, 4);
-	inspector_input<float>(lvl, "Mat K ", &matrix_entity::local_to_world, 8, 4);
-	inspector_input<float>(lvl, "Mat T ", &matrix_entity::local_to_world, 12, 4);
-	inspector_input<float>(lvl, "Pos   ", &euler_entity::position, 0, 3);
-	inspector_input<float>(lvl, "Rot   ", &euler_entity::rotation, 0, 3);
-	inspector_input_scalar(lvl, "Class ", &tie_entity::o_class);
-	inspector_input_scalar(lvl, "Unk 4 ", &tie_entity::unknown_4);
-	inspector_input_scalar(lvl, "Unk 8 ", &tie_entity::unknown_8);
-	inspector_input_scalar(lvl, "Unk c ", &tie_entity::unknown_c);
-	inspector_input_scalar(lvl, "Unk 50", &tie_entity::unknown_50);
-	inspector_input_scalar(lvl, "UID   ", &tie_entity::uid);
-	inspector_input_scalar(lvl, "Unk 58", &tie_entity::unknown_58);
-	inspector_input_scalar(lvl, "Unk 5c", &tie_entity::unknown_5c);
-	inspector_input_scalar(lvl, "Class ", &shrub_entity::o_class);
-	inspector_input_scalar(lvl, "Unk 4 ", &shrub_entity::unknown_4);
-	inspector_input_scalar(lvl, "Unk 8 ", &shrub_entity::unknown_8);
-	inspector_input_scalar(lvl, "Unk c ", &shrub_entity::unknown_c);
-	inspector_input_scalar(lvl, "Unk 50", &shrub_entity::unknown_50);
-	inspector_input_scalar(lvl, "Unk 54", &shrub_entity::unknown_54);
-	inspector_input_scalar(lvl, "Unk 58", &shrub_entity::unknown_58);
-	inspector_input_scalar(lvl, "Unk 5c", &shrub_entity::unknown_5c);
-	inspector_input_scalar(lvl, "Unk 60", &shrub_entity::unknown_60);
-	inspector_input_scalar(lvl, "Unk 64", &shrub_entity::unknown_64);
-	inspector_input_scalar(lvl, "Unk 68", &shrub_entity::unknown_68);
-	inspector_input_scalar(lvl, "Unk 6c", &shrub_entity::unknown_6c);
-	inspector_input_scalar(lvl, "Size  ", &moby_entity::size);
-	inspector_input_scalar(lvl, "Unk 4 ", &moby_entity::unknown_4);
-	inspector_input_scalar(lvl, "Unk 8 ", &moby_entity::unknown_8);
-	inspector_input_scalar(lvl, "Unk c ", &moby_entity::unknown_c);
-	inspector_input_scalar(lvl, "UID   ", &moby_entity::uid);
-	inspector_input_scalar(lvl, "Unk 14", &moby_entity::unknown_14);
-	inspector_input_scalar(lvl, "Unk 18", &moby_entity::unknown_18);
-	inspector_input_scalar(lvl, "Unk 1c", &moby_entity::unknown_1c);
-	inspector_input_scalar(lvl, "Unk 20", &moby_entity::unknown_20);
-	inspector_input_scalar(lvl, "Unk 24", &moby_entity::unknown_24);
-	inspector_input_scalar(lvl, "Class ", &moby_entity::o_class);
-	inspector_input_scalar(lvl, "Scale ", &moby_entity::scale);
-	inspector_input_scalar(lvl, "Unk 30", &moby_entity::unknown_30);
-	inspector_input_scalar(lvl, "Unk 34", &moby_entity::unknown_34);
-	inspector_input_scalar(lvl, "Unk 38", &moby_entity::unknown_38);
-	inspector_input_scalar(lvl, "Unk 3c", &moby_entity::unknown_3c);
-	inspector_input_scalar(lvl, "Unk 58", &moby_entity::unknown_58);
-	inspector_input_scalar(lvl, "Unk 5c", &moby_entity::unknown_5c);
-	inspector_input_scalar(lvl, "Unk 60", &moby_entity::unknown_60);
-	inspector_input_scalar(lvl, "Unk 64", &moby_entity::unknown_64);
-	inspector_input_scalar(lvl, "Pvar #", &moby_entity::pvar_index);
-	inspector_input_scalar(lvl, "Unk 6c", &moby_entity::unknown_6c);
-	inspector_input_scalar(lvl, "Unk 70", &moby_entity::unknown_70);
-	inspector_input<uint32_t>(lvl, "Colour", &moby_entity::colour, 0, 3);
-	inspector_input_scalar(lvl, "Unk 80", &moby_entity::unknown_80);
-	inspector_input_scalar(lvl, "Unk 84", &moby_entity::unknown_84);
-	inspector_input<float>(lvl, "Point ", &grindrail_spline_entity::special_point, 0, 4);
-	
-	if (one_moby_type_selected && last_pvar_index) {
-			ImGui::Text("Pvar %d", *last_pvar_index);
-			
-			auto& first_pvar = lvl.world.pvars.at(*last_pvar_index);
-			for(std::size_t i = 0; i < first_pvar.size(); i++) {
-				bool should_be_blank = false;
-				lvl.for_each<moby_entity>([&](moby_entity& ent) {
-					if(ent.selected && ent.pvar_index > -1) {
-						auto& pvar = lvl.world.pvars.at(ent.pvar_index);
-						if(pvar.at(i) != first_pvar[i]) {
-							should_be_blank = true;
-						}
-					}
-				});
-				if(should_be_blank) {
-					ImGui::Text("  ");
-				} else {
-					uint8_t value = first_pvar[i];
-					ImGui::Text("%02x", value);
-				}
-				if(i % 16 != 15) {
-					ImGui::SameLine();
-				}
-			}
-		}
-	}
-
-template <typename T_field, typename T_entity>
-void inspector_input_scalar(level& lvl, const char* label, T_field T_entity::*field) {
-	inspector_input<T_field>(lvl, label, field, 0, 1);
-}
-
-template <typename T_lane, typename T_field, typename T_entity>
-void inspector_input(level& lvl, const char* label, T_field T_entity::*field, std::size_t first_lane, int lane_count) {
-	static const int MAX_LANES = 4;
-	assert(lane_count <= MAX_LANES);
-	
-	// Determine whether all the values from a given lane are the same for all
-	// selected entities.
-	std::optional<T_lane> last_value[MAX_LANES];
-	bool values_equal[MAX_LANES] = { true, true, true, true };
-	bool selection_contains_entity_without_field = false;
-	lvl.for_each<entity>([&](entity& base_ent) {
-		if(base_ent.selected) {
-			if(T_entity* ent = dynamic_cast<T_entity*>(&base_ent)) {
-				for(int i = 0; i < lane_count; i++) {
-					T_lane* value = ((T_lane*) &(*ent.*field)) + first_lane + i;
-					if(last_value[i] && *value != last_value[i]) {
-						values_equal[i] = false;
-					}
-					last_value[i] = *value;
-				}
-			} else {
-				selection_contains_entity_without_field = true;
-			}
-		}
-	});
-	
-	if(!last_value[0]) {
-		// None of the selected entities contain the given field, so we
-		// shouldn't draw it.
-		return;
-	}
-	
-	if(selection_contains_entity_without_field) {
-		// We only want to draw an input box if ALL the selected entities have
-		// the corresponding field.
-		return;
-	}
-	
-	inspector_text_lane input_lanes[MAX_LANES];
-	for(int i = 0; i < lane_count; i++) {
-		if(values_equal[i]) {
-			input_lanes[i].str = std::to_string(*last_value[i]);
-		}
-	}
-	
-	inspector_input_text_n(label, input_lanes, lane_count);
-	
-	bool any_lane_changed = false;
-	for(int i = 0; i < lane_count; i++) {
-		any_lane_changed |= input_lanes[i].changed;
-	}
-	
-	if(any_lane_changed) {
-		std::vector<entity_id> ids = lvl.selected_entity_ids();
-		std::map<entity_id, T_field> old_values;
-		lvl.for_each<T_entity>([&](T_entity& ent) {
-			if(ent.selected) {
-				old_values[ent.id] = ent.*field;
-			}
-		});
-		T_lane new_values[MAX_LANES];
-		for(int i = 0; i < MAX_LANES; i++) {
-			if(input_lanes[i].changed) {
-				try {
-					if constexpr(std::is_floating_point_v<T_lane>) {
-						new_values[i] = std::stof(input_lanes[i].str);
-					} else {
-						new_values[i] = std::stoi(input_lanes[i].str);
-					}
-				} catch(std::logic_error&) {
-					// The user has entered an invalid string.
-					return;
-				}
-			}
-		}
-		
-		lvl.push_command(
-			[ids, field, first_lane, input_lanes, new_values](level& lvl) {
-				lvl.for_each<T_entity>([&](T_entity& ent) {
-					if(contains(ids, ent.id)) {
-						for(int i = 0; i < MAX_LANES; i++) {
-							T_lane* value = ((T_lane*) &(ent.*field)) + first_lane + i;
-							if(input_lanes[i].changed && input_lanes[i].str != std::to_string(*value)) {
-								*value = new_values[i];
-							}
-						}
-					}
-				});
-			},
-			[ids, field, old_values](level& lvl) {
-				lvl.for_each<T_entity>([&](T_entity& ent) {
-					if(contains(ids, ent.id)) {
-						ent.*field = old_values.at(ent.id);
-					}
-				});
-			});
-	}
-}
-
-void inspector_input_text_n(const char* label, inspector_text_lane* lanes, int lane_count) {
-	ImGui::PushID(label);
-	
-	ImGui::AlignTextToFramePadding();
-	ImGui::Text("%s", label);
-	ImGui::SameLine();
-	
-	ImGui::PushMultiItemsWidths(lane_count, ImGui::GetWindowWidth() - lane_count * 16.f);
-	for(int i = 0; i < lane_count; i++) {
-		ImGui::PushID(i);
-		if(i > 0) {
-			ImGui::SameLine();
-		}
-		lanes[i].changed = ImGui::InputText("", &lanes[i].str, ImGuiInputTextFlags_EnterReturnsTrue);
-		ImGui::PopID(); // i
-		ImGui::PopItemWidth();
-	}
-	
-	ImGui::PopID(); // label
-}
-
 using sysc = std::chrono::system_clock;
 bool syst = false;
 
@@ -964,14 +659,14 @@ void gui::moby_list::render(app& a) {
 	ImGui::Text("     UID                Class");
 	ImGui::PushItemWidth(-1);
 	if(ImGui::ListBoxHeader("##mobylist", size)) {
-		for(moby_entity& moby : lvl.world.mobies) {
+		for(MobyInstance& inst : opt_iterator(lvl.gameplay().moby_instances)) {
 			std::stringstream row;
-			row << std::setfill(' ') << std::setw(8) << std::dec << moby.uid << " ";
-			row << std::setfill(' ') << std::setw(20) << std::hex << moby.o_class << " ";
+			row << std::setfill(' ') << std::setw(8) << std::dec << inst.uid << " ";
+			row << std::setfill(' ') << std::setw(20) << std::hex << inst.o_class << " ";
 			
-			if(ImGui::Selectable(row.str().c_str(), moby.selected)) {
-				lvl.clear_selection();
-				moby.selected = true;
+			if(ImGui::Selectable(row.str().c_str(), inst.selected)) {
+				lvl.gameplay().clear_selection();
+				inst.selected = true;
 			}
 		}
 		auto t = sysc::to_time_t(sysc::now());
@@ -1003,55 +698,6 @@ void gui::viewport_information::render(app& a) {
 		cam_rot.x, cam_rot.y);
 	ImGui::Text("Camera Control (Z to toggle):\n\t%s",
 		a.renderer.camera_control ? "On" : "Off");
-}
-
-/*
-	string_viewer
-*/
-
-const char* gui::string_viewer::title_text() const {
-	return "String Viewer";
-}
-
-ImVec2 gui::string_viewer::initial_size() const {
-	return ImVec2(500, 400);
-}
-
-void gui::string_viewer::render(app& a) {
-	if(auto lvl = a.get_level()) {
-		static std::size_t language_index = 0;
-		std::vector<game_string>& language = lvl->world.languages[language_index];
-		
-		ImGui::Columns(2);
-		ImGui::SetColumnWidth(0, 64);
-
-		static prompt_box string_exporter("Export", "Enter Export Path");
-		if(auto path = string_exporter.prompt()) {
-			std::ofstream out_file(*path);
-			for(game_string& string : language) {
-				out_file << std::hex << string.id << ": " << string.str << "\n";
-			}
-		}
-		
-		const char* lang_names[LANGUAGE_COUNT] = {LANGUAGE_NAMES};
-		
-		ImGui::NextColumn();
-		for(std::size_t i = 0; i < LANGUAGE_COUNT; i++) {
-			if(ImGui::Button(lang_names[i])) {
-				language_index = i;
-			}
-			ImGui::SameLine();
-		}
-		ImGui::NewLine();
-
-		ImGui::Columns(1);
-
-		ImGui::BeginChild(1);
-		for(game_string& string : language) {
-			ImGui::Text("%x: %s", string.id, string.str.c_str());
-		}
-		ImGui::EndChild();
-	}
 }
 
 /*
@@ -1664,191 +1310,6 @@ void gui::settings::render_debug_page(app& a) {
 	if(syst) {
 		ImGui::Checkbox("???", &a.renderer.flag);
 	}
-}
-
-/*
-	stream_viewer
-*/
-
-gui::stream_viewer::stream_viewer() {}
-		
-const char* gui::stream_viewer::title_text() const {
-	return "Stream Viewer";
-}
-
-ImVec2 gui::stream_viewer::initial_size() const {
-	return ImVec2(800, 600);
-}
-
-void gui::stream_viewer::render(app& a) {
-	/*wrench_project* project = a.get_project();
-	if(project == nullptr) {
-		ImGui::Text("<no project open>");
-		return;
-	}
-	
-	static alert_box error_box("Error");
-	error_box.render();
-	
-	static prompt_box exporter("Export", "Enter Export Path");
-	if(auto path = exporter.prompt()) {
-		stream* selection = _selection;
-		
-		// The stream might not exist anymore, so we need to make sure that
-		// it's still in the tree before dereferencing it.
-		if(!project->iso.contains(selection)) {
-			error_box.open("The selected stream no longer exists.");
-			return;
-		}
-		
-		if(selection->size() == 0) {
-			error_box.open("The selected stream has an unknown size so cannot be exported.");
-			return;
-		}
-			
-		// Write out the stream to the specified file.
-		try {
-			file_stream out_file(*path, std::ios::out);
-			selection->seek(0);
-			stream::copy_n(out_file, *selection, selection->size());
-		} catch(stream_error& err) {
-			error_box.open(err.what());
-		}
-	}
-	
-	trace_stream* trace = dynamic_cast<trace_stream*>(_selection);
-	if(trace != nullptr) {
-		ImGui::SameLine();
-		if(ImGui::Button("Export Trace")) {
-			export_trace(trace);
-		}
-	}
-		
-	ImGui::BeginChild(1);
-		ImGui::Columns(3);
-		ImGui::Text("Name");
-		ImGui::NextColumn();
-		ImGui::Text("Path");
-		ImGui::NextColumn();
-		ImGui::Text("Size");
-		ImGui::NextColumn();
-		for(int i = 0; i < 3; i++) {
-			ImGui::NewLine();
-			ImGui::NextColumn();
-		}
-		render_stream_tree_node(&project->iso, 0);
-		ImGui::Columns();
-	ImGui::EndChild();*/
-}
-
-void gui::stream_viewer::render_stream_tree_node(stream* node, std::size_t index) {
-	bool is_selected = _selection == node;
-	
-	std::stringstream text;
-	text << index;
-	text << " " << node->name;
-	text << " (" << node->children.size() <<")";
-	
-	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_None;
-	if(is_selected) {
-		flags |= ImGuiTreeNodeFlags_Selected;
-	}
-	if(node->children.size() == 0) {
-		flags |= ImGuiTreeNodeFlags_Leaf;
-	}
-	
-	ImGui::PushID(reinterpret_cast<std::size_t>(node));
-	bool expanded = ImGui::TreeNodeEx(text.str().c_str(), flags);
-	ImGui::NextColumn();
-	bool make_selection = false;
-	make_selection |= ImGui::Selectable(node->resource_path().c_str(), is_selected);
-	ImGui::NextColumn();
-	make_selection |= ImGui::Selectable(int_to_hex(node->size()).c_str(), is_selected);
-	ImGui::NextColumn();
-	if(expanded) {
-		// Display streams with children before leaf streams.
-		for(std::size_t i = 0; i < node->children.size(); i++) {
-			if(node->children[i]->children.size() != 0) {
-				render_stream_tree_node(node->children[i], i);
-			}
-		}
-		for(std::size_t i = 0; i < node->children.size(); i++) {
-			if(node->children[i]->children.size() == 0) {
-				render_stream_tree_node(node->children[i], i);
-			}
-		}
-		ImGui::TreePop();
-	}
-	if(make_selection) {
-		_selection = node;
-	}
-	ImGui::PopID();
-}
-
-void gui::stream_viewer::export_trace(trace_stream* node) {
-	std::vector<uint8_t> buffer(node->size());
-	node->seek(0);
-	node->parent->read_v(buffer); // Avoid tarnishing the read_mask buffer.
-	
-	static const std::size_t image_side_length = 1024;
-	static const std::size_t image_pixel_count = image_side_length * image_side_length;
-	
-	struct bgr32 {
-		uint8_t	b, g, r, pad;
-	};
-	std::vector<bgr32> bgr_pixel_data(image_pixel_count);
-	
-	// Convert stream to pixel data.
-	float scale_factor = buffer.size() / (float) image_pixel_count;
-	
-	for(std::size_t i = 0; i < image_pixel_count; i++) {
-		std::size_t in_index = (std::size_t) (i * scale_factor);
-		std::size_t in_index_end = (std::size_t) ((i + 1) * scale_factor);
-		if(in_index_end >= buffer.size()) {
-			bgr_pixel_data[i] = { 0, 0, 0, 0 };
-			continue;
-		}
-		
-		uint8_t pixel = buffer[in_index];
-		bool read = false;
-		for(std::size_t j = in_index; j < in_index_end; j++) {
-			read |= node->read_mask[j];
-		}
-		bgr_pixel_data[i] = bgr32 {
-			(uint8_t) (read ? 0 : pixel),
-			(uint8_t) (read ? 0 : pixel),
-			pixel,
-			0
-		};
-	}
-	
-	// Write out a BMP file.
-	file_stream bmp_file(node->resource_path() + "_trace.bmp", std::ios::out);
-	
-	bmp_file_header header;
-	std::memcpy(header.magic, "BM", 2);
-	header.pixel_data =
-		sizeof(bmp_file_header) + sizeof(bmp_info_header);
-	header.file_size =
-		header.pixel_data.value + image_pixel_count * sizeof(uint32_t);
-	header.reserved = 0x3713;
-	bmp_file.write<bmp_file_header>(0, header);
-
-	bmp_info_header info;
-	info.info_header_size      = 40;
-	info.width                 = image_side_length;
-	info.height                = image_side_length;
-	info.num_colour_planes     = 1;
-	info.bits_per_pixel        = 32;
-	info.compression_method    = 0;
-	info.pixel_data_size       = image_pixel_count * sizeof(uint32_t);
-	info.horizontal_resolution = 0;
-	info.vertical_resolution   = 0;
-	info.num_colours           = 256;
-	info.num_important_colours = 0;
-	bmp_file.write<bmp_info_header>(info);
-	
-	bmp_file.write_v(bgr_pixel_data);
 }
 
 /*

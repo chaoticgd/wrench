@@ -16,29 +16,30 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#ifndef EDITOR_GUI_VIEW_3D_H
+#define EDITOR_GUI_VIEW_3D_H
+
+
+#define GLM_ENABLE_EXPERIMENTAL
+
+#include "../app.h"
+#include "../model.h"
 #include "window.h"
 
-#include "app.h"
+class view_3d : public window {
+public:
+	view_3d() {}
+	~view_3d();
+	const char* title_text() const;
+	ImVec2 initial_size() const;
+	void render(app& a);
+	
+	[[nodiscard]] bool has_padding() const override;
+	
+	void draw_overlay_text(app& a, glm::mat4 world_to_clip) const;
+	
+private:
+	GLuint _frame_buffer_texture = 0;
+};
 
-window::window() {
-	static int s_id = 0;
-	_id = ++s_id;
-}
-
-int window::id() {
-	return _id;
-}
-
-bool window::is_unique() const {
-	return true;
-}
-
-bool window::has_padding() const {
-	return true;
-}
-
-void window::close(app& a) {
-	auto iter = std::find_if(a.windows.begin(), a.windows.end(),
-		[&](auto& ptr) { return ptr.get() == this; });
-	a.windows.erase(iter);
-}
+#endif

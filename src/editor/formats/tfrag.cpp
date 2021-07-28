@@ -38,7 +38,7 @@ tfrag::tfrag(stream *backing, std::size_t base_offset, tfrag_entry & entry)
 
 	auto interpreted_vif_list = interpret_vif_list(_vif_list);
 
-	std::vector<vec3f> vertices;
+	std::vector<glm::vec3> vertices;
 
 	// generate vertices
 	vertices.resize(entry.color_count);

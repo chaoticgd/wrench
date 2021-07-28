@@ -27,14 +27,10 @@
 
 #include "util.h"
 #include "shaders.h"
-#include "imgui_includes.h"
+#include "gui/imgui_includes.h"
 #include "formats/texture.h"
 #include "formats/game_model.h"
 #include "formats/level_impl.h"
-
-# /*
-#	Rendering functions.
-# */
 
 class app;
 
@@ -64,7 +60,7 @@ struct gl_renderer {
 	void draw_level(level& lvl, glm::mat4 world_to_clip) const;
 	void draw_pickframe(level& lvl, glm::mat4 world_to_clip) const;
 	
-	void draw_spline(spline_entity& spline, const glm::mat4& world_to_clip, const glm::vec4& colour) const;
+	void draw_spline(const std::vector<glm::vec4>& spline, const glm::mat4& world_to_clip, const glm::vec4& colour) const;
 	void draw_tris  (const std::vector<float>& vertex_data, const glm::mat4& mvp, const glm::vec4& colour) const;
 	void draw_model (const model& mdl, const glm::mat4& mvp, const glm::vec4& colour) const;
 	void draw_model_vcolor (const model& mdl, const glm::mat4& mvp) const;
@@ -124,17 +120,19 @@ struct gl_renderer {
 	
 	view_mode mode = view_mode::TEXTURED_POLYGONS;
 	bool draw_ties = true;
-	bool draw_shrubs = false;
+	bool draw_shrubs = true;
 	bool draw_mobies = true;
-	bool draw_triggers = false;
-	bool draw_splines = true;
-	bool draw_grind_rails = true;
+	bool draw_cuboids = false;
+	bool draw_spheres = false;
+	bool draw_cylinders = false;
+	bool draw_paths = true;
+	bool draw_grind_paths = true;
 	bool draw_tfrags = true;
 	bool draw_tcols = true;
 	
 	bool flag = false;
-	std::vector<glm::mat4> moby_local_to_clip_cache;
-	std::vector<glm::mat4> shrub_local_to_clip_cache;
+	std::vector<glm::mat4> moby_matrices;
+	std::vector<glm::mat4> shrub_matrices;
 };
 
 template <typename T>

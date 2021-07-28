@@ -22,7 +22,7 @@
 #include "unwindows.h"
 #include <toml11/toml.hpp>
 
-#include "gui.h"
+#include "gui/gui.h"
 #include "stream.h"
 #include "renderer.h"
 #include "fs_includes.h"
@@ -40,8 +40,10 @@ void after_directory_loaded(app& a) {
 
 #ifdef _WIN32
 	const char* ISO_UTILITY_PATH = ".\\bin\\iso";
+	const char* WAD_UTILITY_PATH = ".\\bin\\wad";
 #else
 	const char* ISO_UTILITY_PATH = "./bin/iso";
+	const char* WAD_UTILITY_PATH = "./bin/wad";
 #endif
 
 void app::extract_iso(fs::path iso_path, fs::path dir) {
@@ -52,17 +54,39 @@ void app::extract_iso(fs::path iso_path, fs::path dir) {
 	_lock_project = true;
 	directory = "";
 	
-	std::pair<std::string, std::string> in(iso_path.string(), dir.string());
+	std::pair<fs::path, fs::path> in(iso_path, dir);
 	
 	emplace_window<worker_thread<int, decltype(in)>>(
 		"Extract ISO", in,
-		[](std::pair<std::string, std::string> in, worker_logger& log) {
-			std::vector<std::string> args = {"extract", in.first, in.second};
-			int exit_code = execute_command(ISO_UTILITY_PATH, args);
-			if(exit_code != 0) {
-				log << "\nFailed to extract files from ISO file!\n";
+		[](std::pair<fs::path, fs::path> in, worker_logger& log) {
+			if(!fs::exists(in.second)) {
+				log << "Destination directory does not exist.\n";
+				return 1;
 			}
-			return exit_code;
+			fs::path built_dir = in.second/"built";
+			fs::create_directory(built_dir);
+			std::vector<std::string> iso_args = {"extract", in.first, built_dir.string()};
+			int iso_exit_code = execute_command(ISO_UTILITY_PATH, iso_args);
+			if(iso_exit_code != 0) {
+				log << "\nFailed to extract files from ISO file!\n";
+				return iso_exit_code;
+			}
+			
+			fs::path levels_dir = in.second/"levels";
+			fs::create_directory(levels_dir);
+			for(fs::path input_file : fs::directory_iterator(built_dir/"levels")) {
+				log << "Unpacking level " << input_file.string() << "\n";
+				fs::path level_dir = levels_dir/input_file.filename();
+				fs::create_directory(level_dir);
+				std::vector<std::string> wad_args = {"extract", input_file, level_dir};
+				int wad_exit_code = execute_command(WAD_UTILITY_PATH, wad_args);
+				if(wad_exit_code != 0) {
+					log << "\nFailed to unpack level file!\n";
+					return wad_exit_code;
+				}
+			}
+			log << "\nDone!\n";
+			return 0;
 		},
 		[dir, this](int exit_code) {
 			if(exit_code != 0) {
@@ -120,45 +144,31 @@ void app::build_iso(build_settings settings) {
 void app::open_file(fs::path path) {
 	file_stream file(path.string());
 	
-	uint32_t magic = file.read<uint32_t>(0x0);
-	auto info = LEVEL_FILE_TYPES.find(magic);
-	if(info != LEVEL_FILE_TYPES.end()) {
-		switch(info->second.type) {
-			case level_file_type::LEVEL: {
-				level new_lvl;
-				try {
-					new_lvl.read(file, path);
-				} catch(stream_error& e) {
-					printf("error: Failed to load level! %s\n", e.what());
-					return;
-				}
-				_lvl.emplace(std::move(new_lvl));
-				renderer.reset_camera(this);
-				break;
-			}
-			case level_file_type::AUDIO:
-				break;
-			case level_file_type::SCENE:
-				break;
+	Json json = Json::parse(read_file(path));
+	if(json.contains("metadata") && json["metadata"].contains("format") && json["metadata"]["format"] == "wad") {
+		level new_lvl;
+		try {
+			new_lvl.open(path, json);
+		} catch(stream_error& e) {
+			printf("error: Failed to load level! %s\n", e.what());
+			return;
 		}
-		return;
-	}
-	
-	armor_archive armor;
-	if(armor.read(file)) {
-		_armor.emplace(std::move(armor));
-		return;
+		_lvl.emplace(std::move(new_lvl));
+		renderer.reset_camera(this);
 	}
 }
 
 void app::save_level() {
-	level* lvl = get_level();
-	
-	array_stream dest;
-	lvl->write(dest);
-	
-	file_stream file(lvl->path.string(), std::ios::out);
-	file.write_n(dest.buffer.data(), dest.buffer.size());
+	assert(get_level());
+	level& lvl = *get_level();
+	lvl.save();
+	if(!fs::exists(directory) || !fs::exists(directory/"built") || !fs::exists(directory/"levels")) {
+		printf("error: A valid directory must be open to build a level.\n");
+		return;
+	}
+	fs::path level_name = lvl.path.parent_path().filename();
+	std::vector<std::string> wad_args = {"build", lvl.path.string(), (directory/"built"/level_name).string()};
+	execute_command(WAD_UTILITY_PATH, wad_args);
 }
 
 level* app::get_level() {

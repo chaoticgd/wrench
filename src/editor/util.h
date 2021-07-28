@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef UTIL_H
-#define UTIL_H
+#ifndef EDITOR_UTIL_H
+#define EDITOR_UTIL_H
 
 #include <map>
 #include <memory>
