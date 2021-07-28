@@ -40,7 +40,8 @@ void level::save() {
 	}
 	fs::path dest_dir = path.parent_path();
 	Json level_json = Json::parse(read_file(path));
-	write_file(dest_dir, level_json["gameplay"], gameplay_json.dump(1, '\t'));
+	std::string gameplay_path = level_json["gameplay"];
+	write_file(dest_dir, fs::path(gameplay_path), gameplay_json.dump(1, '\t'));
 }
 
 void level::read_primary(fs::path bin_path, Game game) {
