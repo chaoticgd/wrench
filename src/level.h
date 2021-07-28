@@ -404,8 +404,8 @@ struct GC_80_DL_64 {
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(first_part);
-		DEF_FIELD(second_part);
+		DEF_HEXDUMP(first_part);
+		DEF_HEXDUMP(second_part);
 	}
 };
 
@@ -619,13 +619,13 @@ struct Gameplay {
 		DEF_FIELD(dynamic_moby_count);
 		DEF_FIELD(moby_instances);
 		DEF_FIELD(moby_groups);
-		DEF_FIELD(global_pvar);
+		DEF_HEXDUMP(global_pvar);
 		DEF_FIELD(gc_74_dl_58);
 		DEF_FIELD(paths);
 		DEF_FIELD(cuboids);
 		DEF_FIELD(spheres);
 		DEF_FIELD(cylinders);
-		DEF_FIELD(gc_88_dl_6c);
+		DEF_HEXDUMP(gc_88_dl_6c);
 		DEF_FIELD(gc_80_dl_64);
 		DEF_FIELD(grind_paths);
 		DEF_FIELD(areas);
