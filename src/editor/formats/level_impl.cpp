@@ -23,11 +23,24 @@
 #include "../app.h"
 
 void level::open(fs::path json_path, Json& json) {
-	fs::path level_dir = json_path.remove_filename();
+	fs::path level_dir = json_path.parent_path();
 	path = json_path;
 	from_json(_gameplay, Json::parse(read_file(level_dir/std::string(json["gameplay"]))));
 	fs::path primary_path = level_dir/std::string(json["primary"]);
 	read_primary(primary_path, Game::RAC2);
+}
+
+void level::save() {
+	Json data_json = to_json(_gameplay);
+	
+	Json gameplay_json;
+	gameplay_json["metadata"] = get_file_metadata("gameplay", "Wrench Level Editor");
+	for(auto& item : data_json.items()) {
+		gameplay_json[item.key()] = std::move(item.value());
+	}
+	fs::path dest_dir = path.parent_path();
+	Json level_json = Json::parse(read_file(path));
+	write_file(dest_dir, level_json["gameplay"], gameplay_json.dump(1, '\t'));
 }
 
 void level::read_primary(fs::path bin_path, Game game) {

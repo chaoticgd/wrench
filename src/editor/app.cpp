@@ -159,9 +159,16 @@ void app::open_file(fs::path path) {
 }
 
 void app::save_level() {
-	level* lvl = get_level();
-	
-	assert(0); // TODO: Level saving.
+	assert(get_level());
+	level& lvl = *get_level();
+	lvl.save();
+	if(!fs::exists(directory) || !fs::exists(directory/"built") || !fs::exists(directory/"levels")) {
+		printf("error: A valid directory must be open to build a level.\n");
+		return;
+	}
+	fs::path level_name = lvl.path.parent_path().filename();
+	std::vector<std::string> wad_args = {"build", lvl.path.string(), (directory/"built"/level_name).string()};
+	execute_command(WAD_UTILITY_PATH, wad_args);
 }
 
 level* app::get_level() {

@@ -69,6 +69,7 @@ public:
 	level(level&& rhs) = default;
 	
 	void open(fs::path json_path, Json& json);
+	void save();
 	
 	fs::path path;
 	

@@ -235,7 +235,7 @@ float gui::render_menu_bar(app& a) {
 			ImGui::Checkbox("Skip writing out MPEG cutscenes (much faster)", &no_mpegs);
 			
 			static bool save_current_level = true;
-			ImGui::Checkbox("Save currently open level", &save_current_level);
+			ImGui::Checkbox("Save and build currently open level", &save_current_level);
 			
 			if(((!build_from_custom_dir || !build_to_custom_path) && a.directory.empty())) {
 				ImGui::TextWrapped("No directory open!\n");
@@ -244,7 +244,7 @@ float gui::render_menu_bar(app& a) {
 				if(build_from_custom_dir) {
 					settings.input_dir = custom_input_dir;
 				} else {
-					settings.input_dir = a.directory;
+					settings.input_dir = a.directory/"built";
 				}
 				
 				std::string output_iso;
@@ -266,7 +266,7 @@ float gui::render_menu_bar(app& a) {
 			}
 			ImGui::EndMenu();
 		}
-		if(ImGui::MenuItem("Save Level", nullptr, nullptr, a.get_level())) {
+		if(ImGui::MenuItem("Save and Build Level", nullptr, nullptr, a.get_level())) {
 			a.save_level();
 		}
 		if(ImGui::BeginMenu("Export")) {

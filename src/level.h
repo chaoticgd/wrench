@@ -712,6 +712,8 @@ struct MobyClass {
 	}
 };
 
+Json get_file_metadata(const char* format, const char* application);
+
 enum PvarFieldDescriptor {
 	PVAR_INTEGERS_BEGIN = 0,
 	PVAR_S8 = 1, PVAR_S16 = 2, PVAR_S32 = 3,
