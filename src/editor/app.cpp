@@ -65,7 +65,7 @@ void app::extract_iso(fs::path iso_path, fs::path dir) {
 			}
 			fs::path built_dir = in.second/"built";
 			fs::create_directory(built_dir);
-			std::vector<std::string> iso_args = {"extract", in.first, built_dir.string()};
+			std::vector<std::string> iso_args = {"extract", in.first.string(), built_dir.string()};
 			int iso_exit_code = execute_command(ISO_UTILITY_PATH, iso_args);
 			if(iso_exit_code != 0) {
 				log << "\nFailed to extract files from ISO file!\n";
@@ -78,7 +78,7 @@ void app::extract_iso(fs::path iso_path, fs::path dir) {
 				log << "Unpacking level " << input_file.string() << "\n";
 				fs::path level_dir = levels_dir/input_file.filename();
 				fs::create_directory(level_dir);
-				std::vector<std::string> wad_args = {"extract", input_file, level_dir};
+				std::vector<std::string> wad_args = {"extract", input_file.string(), level_dir.string()};
 				int wad_exit_code = execute_command(WAD_UTILITY_PATH, wad_args);
 				if(wad_exit_code != 0) {
 					log << "\nFailed to unpack level file!\n";
