@@ -65,9 +65,9 @@ void Instance::set_transform(glm::vec3 position, glm::vec3 rotation, f32 scale) 
 	glm::mat4 matrix(1);
 	matrix = glm::translate(matrix, position);
 	matrix = glm::scale(matrix, glm::vec3(scale));
-	matrix = glm::rotate(matrix, rotation.x, glm::vec3(1, 0, 0));
-	matrix = glm::rotate(matrix, rotation.y, glm::vec3(0, 1, 0));
 	matrix = glm::rotate(matrix, rotation.z, glm::vec3(0, 0, 1));
+	matrix = glm::rotate(matrix, rotation.y, glm::vec3(0, 1, 0));
+	matrix = glm::rotate(matrix, rotation.x, glm::vec3(1, 0, 0));
 	_transform.matrix = matrix;
 	_transform.inverse_matrix = glm::inverse(matrix);
 	_transform.rotation = rotation;
@@ -101,13 +101,13 @@ glm::vec3 Instance::rotation() const {
 
 void Instance::set_rotation(glm::vec3 rotation) {
 	assert(_components_mask & COM_TRANSFORM);
-	_transform.matrix = glm::rotate(_transform.matrix, -_transform.rotation.z, glm::vec3(0, 0, 1));
-	_transform.matrix = glm::rotate(_transform.matrix, -_transform.rotation.y, glm::vec3(0, 1, 0));
 	_transform.matrix = glm::rotate(_transform.matrix, -_transform.rotation.x, glm::vec3(1, 0, 0));
+	_transform.matrix = glm::rotate(_transform.matrix, -_transform.rotation.y, glm::vec3(0, 1, 0));
+	_transform.matrix = glm::rotate(_transform.matrix, -_transform.rotation.z, glm::vec3(0, 0, 1));
 	_transform.rotation = rotation;
-	_transform.matrix = glm::rotate(_transform.matrix, _transform.rotation.x, glm::vec3(1, 0, 0));
-	_transform.matrix = glm::rotate(_transform.matrix, _transform.rotation.y, glm::vec3(0, 1, 0));
 	_transform.matrix = glm::rotate(_transform.matrix, _transform.rotation.z, glm::vec3(0, 0, 1));
+	_transform.matrix = glm::rotate(_transform.matrix, _transform.rotation.y, glm::vec3(0, 1, 0));
+	_transform.matrix = glm::rotate(_transform.matrix, _transform.rotation.x, glm::vec3(1, 0, 0));
 	_transform.inverse_matrix = glm::inverse(_transform.matrix);
 }
 
