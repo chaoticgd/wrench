@@ -93,8 +93,8 @@ void Inspector::render(app& a) {
 		{COM_TRANSFORM      , INST_NONE      , "Rotation ", vec3_funcs(adapt_getter_setter(&Instance::rotation, &Instance::set_rotation))},
 		{COM_TRANSFORM      , INST_NONE      , "Scale    ", scalar_funcs(adapt_getter_setter(&Instance::scale, &Instance::set_scale))},
 		{COM_PVARS          , INST_NONE      , "Pvars    ", pvar_funcs()},
-		{COM_DRAW_DISTANCE  , INST_NONE      , "Draw Dist", scalar_funcs(adapt_reference_member_function(&Instance::draw_distance))},
-		{COM_BOUNDING_SPHERE, INST_NONE      , "Bsphere  ", vec4_funcs(adapt_reference_member_function(&Instance::bounding_sphere))},
+		{COM_DRAW_DISTANCE  , INST_NONE      , "Draw Dist", scalar_funcs(adapt_reference_member_function<f32>(&Instance::draw_distance))},
+		{COM_BOUNDING_SPHERE, INST_NONE      , "Bsphere  ", vec4_funcs(adapt_reference_member_function<glm::vec4>(&Instance::bounding_sphere))},
 		// Camera
 		{COM_NONE           , INST_CAMERA    , "Type     ", scalar_funcs(adapt_member_pointer(&Camera::type))},
 		// SoundInstance
