@@ -393,6 +393,7 @@ float gui::render_menu_bar(app& a) {
 				"Contributors:\n"
 				" - chaoticgd (original author)\n"
 				" - clip / stiantoften\n"
+				" - CreepNT\n"
 				" - Dnawrkshp\n"
 				" - Pritchy96\n"
 				" - tsparkles / detolly\n"
