@@ -23,11 +23,15 @@
 #include "../app.h"
 
 void level::open(fs::path json_path, Json& json) {
+	Opt<Game> game = game_from_string(json["game"]);
+	if(!game.has_value()) {
+		return;
+	}
 	fs::path level_dir = json_path.parent_path();
 	path = json_path;
 	from_json(_gameplay, Json::parse(read_file(level_dir/std::string(json["gameplay"]))));
 	fs::path primary_path = level_dir/std::string(json["primary"]);
-	read_primary(primary_path, Game::RAC2);
+	read_primary(primary_path, *game);
 }
 
 void level::save() {
