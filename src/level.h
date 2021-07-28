@@ -238,7 +238,7 @@ struct LightTriggerInstance {
 	Vec4f point_2;
 	s32 unknown_40;
 	s32 unknown_44;
-	s32 light_index;
+	s32 light;
 	s32 unknown_4c;
 	s32 unknown_50;
 	s32 unknown_54;
@@ -261,7 +261,7 @@ struct LightTriggerInstance {
 		DEF_FIELD(point_2);
 		DEF_FIELD(unknown_40);
 		DEF_FIELD(unknown_44);
-		DEF_FIELD(light_index);
+		DEF_FIELD(light);
 		DEF_FIELD(unknown_4c);
 		DEF_FIELD(unknown_50);
 		DEF_FIELD(unknown_54);

@@ -290,7 +290,7 @@ packed_struct(LightTriggerPacked,
 	Vec4f point_2;
 	s32 unknown_40;
 	s32 unknown_44;
-	s32 light_index;
+	s32 light;
 	s32 unknown_4c;
 	s32 unknown_50;
 	s32 unknown_54;
@@ -340,7 +340,7 @@ struct LightTriggerBlock {
 		SWAP_PACKED(l.point_2, r.point_2);
 		SWAP_PACKED(l.unknown_40, r.unknown_40);
 		SWAP_PACKED(l.unknown_44, r.unknown_44);
-		SWAP_PACKED(l.light_index, r.light_index);
+		SWAP_PACKED(l.light, r.light);
 		SWAP_PACKED(l.unknown_4c, r.unknown_4c);
 		SWAP_PACKED(l.unknown_50, r.unknown_50);
 		SWAP_PACKED(l.unknown_54, r.unknown_54);
