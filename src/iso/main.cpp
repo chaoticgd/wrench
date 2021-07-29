@@ -25,11 +25,11 @@
 
 // This is true for R&C2, R&C3 and Deadlocked.
 static const uint32_t SYSTEM_CNF_LBA = 1000;
-static const uint32_t TABLE_OF_CONTENTS_LBA = 1001;
+static const s64 MAX_FILESYSTEM_SIZE_BYTES = RAC1_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
 
 void ls(std::string iso_path);
 void extract(std::string iso_path, fs::path output_dir);
-void extract_non_wads_recursive(stream& iso, fs::path out, iso_directory& in);
+void extract_non_wads_recursive(FILE* iso, fs::path out, iso_directory& in);
 void build(std::string input_dir, fs::path iso_path, int single_level_index, bool no_mpegs);
 void enumerate_wads_recursive(std::vector<fs::path>& wads, fs::path dir, int depth);
 void enumerate_non_wads_recursive(stream& iso, iso_directory& out, fs::path dir, int depth);
@@ -98,8 +98,11 @@ int main(int argc, char** argv) {
 // Fun fact: This used to be its own command line tool called "toc". Now, it's
 // been reduced to a humble subcommand within a greater tool. Pity it.
 void ls(std::string iso_path) {
-	file_stream iso(iso_path);
-	table_of_contents toc = read_table_of_contents(iso, TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
+	FILE* iso = fopen(iso_path.c_str(), "rb");
+	verify(iso, "Failed to open ISO file.");
+	defer([&]() { fclose(iso); });
+	
+	table_of_contents toc = read_table_of_contents(iso);
 	
 	printf("+-[Non-level Sections]--+-------------+-------------+\n");
 	printf("| Index | Offset in ToC | Size in ToC | Data Offset |\n");
@@ -184,21 +187,24 @@ void extract(std::string iso_path, fs::path output_dir) {
 		}
 	}
 	
-	file_stream iso(iso_path);
+	FILE* iso = fopen(iso_path.c_str(), "rb");
+	verify(iso, "Failed to open ISO file.");
+	defer([&]() { fclose(iso); });
 	
 	printf("LBA             Size (bytes)    Filename\n");
 	printf("---             ------------    --------\n");
 	
 	// Extract SYSTEM.CNF, the boot ELF, etc.
+	std::vector<u8> filesystem_buf = read_file(iso, 0, MAX_FILESYSTEM_SIZE_BYTES);
 	iso_directory root_dir;
-	if(!read_iso_filesystem(root_dir, iso)) {
+	if(!read_iso_filesystem(root_dir, Buffer(filesystem_buf))) {
 		fprintf(stderr, "error: Missing or invalid ISO filesystem!\n");
 		exit(1);
 	}
 	extract_non_wads_recursive(iso, output_dir, root_dir);
 	
 	// Extract levels and other asset files.
-	table_of_contents toc = read_table_of_contents(iso, TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
+	table_of_contents toc = read_table_of_contents(iso);
 	if(toc.levels.size() == 0) {
 		fprintf(stderr, "error: Unable to locate level table!\n");
 		exit(1);
@@ -227,12 +233,9 @@ void extract(std::string iso_path, fs::path output_dir) {
 		assert(end_of_file != SIZE_MAX);
 		assert(end_of_file >= start_of_file);
 		size_t file_size = end_of_file - start_of_file;
-		
 		printf(row_format, (size_t) table.header.base_offset.sectors, (size_t) file_size, name.c_str());
 		
-		file_stream output_file(path.string(), std::ios::out);
-		iso.seek(table.header.base_offset.bytes());
-		stream::copy_n(output_file, iso, file_size);
+		extract_file(path, iso, table.header.base_offset.bytes(), file_size);
 	}
 	for(toc_level& level : toc.levels) {
 		for(std::optional<toc_level_part>& part : level.parts) {
@@ -244,24 +247,19 @@ void extract(std::string iso_path, fs::path output_dir) {
 			if(num.size() == 1) num = "0" + num;
 			auto name = part->info.prefix + num + ".wad";
 			auto path = level_dirs.at(part->info.type)/name;
-			file_stream output_file(path.string(), std::ios::out);
-			
 			printf(row_format, (size_t) part->file_lba.sectors, part->file_size.bytes(), name.c_str());
 			
-			iso.seek(part->file_lba.bytes());
-			stream::copy_n(output_file, iso, part->file_size.bytes());
+			extract_file(path, iso, part->file_lba.bytes(), part->file_size.bytes());
 		}
 	}
 }
 
-void extract_non_wads_recursive(stream& iso, fs::path out, iso_directory& in) {
+void extract_non_wads_recursive(FILE* iso, fs::path out, iso_directory& in) {
 	for(iso_file_record& file : in.files) {
 		fs::path file_path = out/file.name.substr(0, file.name.size() - 2);
 		if(file_path.string().find(".wad") == std::string::npos) {
 			print_file_record(file);
-			file_stream output_file(file_path.string(), std::ios::out);
-			iso.seek(file.lba.bytes());
-			stream::copy_n(output_file, iso, file.size);
+			extract_file(file_path, iso, file.lba.bytes(), file.size);
 		}
 	}
 	for(iso_directory& subdir : in.subdirs) {
@@ -447,7 +445,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 	defer([&]() {
 		iso.seek(0);
 		write_iso_filesystem(iso, &root_dir);
-		assert(iso.tell() <= TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
+		assert(iso.tell() <= RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
 		
 		iso.write<uint32_t>(0x8050, volume_size);
 	});
@@ -457,7 +455,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 	std::vector<toc_table> toc_tables;
 	std::vector<toc_level> toc_levels;
 	defer([&]() {
-		iso.seek(TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
+		iso.seek(RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
 		for(toc_table& table : toc_tables) {
 			iso.write(table.header);
 			iso.write_v(table.lumps);
@@ -471,7 +469,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		});
 		iso.seek(iso.tell() + level_table.size() * sizeof(sector_range));
 		
-		size_t toc_start_size_bytes = iso.tell() - TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
+		size_t toc_start_size_bytes = iso.tell() - RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
 		sector32 toc_start_size = sector32::size_from_bytes(toc_start_size_bytes);
 		
 		// Size limits hardcoded in the boot ELF.
@@ -510,7 +508,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 			}
 		}
 		
-		assert(iso.tell() <= TABLE_OF_CONTENTS_LBA * SECTOR_SIZE + total_toc_size.bytes());
+		assert(iso.tell() <= RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE + total_toc_size.bytes());
 	});
 	
 	// Write out blank sectors that are to be filled in later.
@@ -561,15 +559,15 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 			case GAME_RAC4: toc_record.name = "rc4.hdr;1"; break;
 			case GAME_RAC2_OTHER: toc_record.name = "rc2.hdr;1"; break;
 		}
-		toc_record.lba = {TABLE_OF_CONTENTS_LBA};
+		toc_record.lba = {RAC234_TABLE_OF_CONTENTS_LBA};
 		toc_record.size = total_toc_size.bytes();
 		root_dir.files.push_back(toc_record);
 		print_file_record(toc_record);
 	}
 	// Write out blank sectors that are to be filled in by the table of contents later.
 	iso.pad(SECTOR_SIZE, 0);
-	assert(iso.tell() == TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
-	while(iso.tell() < TABLE_OF_CONTENTS_LBA * SECTOR_SIZE + total_toc_size.bytes()) {
+	assert(iso.tell() == RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
+	while(iso.tell() < RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE + total_toc_size.bytes()) {
 		iso.write_n((char*) zeroed_sector, SECTOR_SIZE);
 	}
 	// Then various other files e.g. the boot ELF, etc.
@@ -807,14 +805,17 @@ std::string str_to_lower(std::string str) {
 }
 
 void parse_pcsx2_stdout(std::string iso_path) {
-	file_stream iso(iso_path);
+	FILE* iso = fopen(iso_path.c_str(), "rb");
+	verify(iso, "Failed to open ISO file for reading.");
+	std::vector<u8> filesystem_buf = read_file(iso, 0, MAX_FILESYSTEM_SIZE_BYTES);
+	fclose(iso);
 	
 	// First we enumerate where all the files on the ISO are. Note that this
 	// command only works for stuff referenced by the filesystem.
 	std::vector<iso_file_record> files;
 	iso_directory root_dir;
 	root_dir.files.push_back({"primary volume descriptor", 0x10, SECTOR_SIZE});
-	if(!read_iso_filesystem(root_dir, iso)) {
+	if(!read_iso_filesystem(root_dir, filesystem_buf)) {
 		fprintf(stderr, "error: Failed to read ISO filesystem!\n");
 		exit(1);
 	}

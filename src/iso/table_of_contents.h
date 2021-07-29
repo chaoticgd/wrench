@@ -57,11 +57,13 @@ struct table_of_contents {
 	std::vector<toc_level> levels;
 };
 
-static const std::size_t TOC_MAX_SIZE       = 0x100000;
+static const uint32_t RAC1_TABLE_OF_CONTENTS_LBA = 1500;
+static const uint32_t RAC234_TABLE_OF_CONTENTS_LBA = 1001;
+
+static const std::size_t TOC_MAX_SIZE       = 0x200000;
 static const std::size_t TOC_MAX_INDEX_SIZE = 0x10000;
 static const std::size_t TOC_MAX_LEVELS     = 100;
 
-table_of_contents read_table_of_contents(stream& iso, std::size_t toc_base);
-std::size_t toc_get_level_table_offset(stream& iso, std::size_t toc_base);
+table_of_contents read_table_of_contents(FILE* file);
 
 #endif

@@ -54,6 +54,15 @@ std::string Buffer::read_string(s64 offset, bool is_korean) const {
 	return result;
 }
 
+std::string Buffer::read_fixed_string(s64 offset, s64 size) const {
+	verify(offset > 0, "Failed to read string: Offset cannot be negative.");
+	verify(lo + offset + size <= hi, "Failed to read string: Attempted to read past end of buffer.");
+	std::string string;
+	string.resize(size);
+	memcpy(string.data(), lo + offset, size);
+	return string;
+}
+
 void Buffer::hexdump(FILE* file, s64 column, const char* ansi_colour_code) const {
 	fprintf(file, "\033[%sm", ansi_colour_code);
 	for(s64 i = 0; i < size(); i++) {
@@ -126,6 +135,15 @@ s64 file_size_in_bytes(FILE* file) {
 	return ofs;
 }
 
+std::vector<u8> read_file(FILE* file, s64 offset, s64 size) {
+	std::vector<u8> buffer(size);
+	verify(fseek(file, offset, SEEK_SET) == 0, "Failed to seek.");
+	if(buffer.size() > 0) {
+		verify(fread(buffer.data(), buffer.size(), 1, file) == 1, "Failed to read file.");
+	}
+	return buffer;
+}
+
 std::vector<u8> read_file(fs::path path) {
 	verify(!fs::is_directory(path), "Tried to open directory '%s' as regular file.", path.string().c_str());
 	FILE* file = fopen(path.string().c_str(), "rb");
@@ -152,4 +170,26 @@ std::string write_file(fs::path dest_dir, fs::path rel_path, Buffer buffer) {
 		printf("Wrote %s (%ld KiB)\n", dest_path.string().c_str(), buffer.size() / 1024);
 	}
 	return rel_path.string();
+}
+
+void extract_file(fs::path dest_path, FILE* src, s64 offset, s64 size) {
+	static const s32 BUFFER_SIZE = 1024 * 1024;
+	static std::vector<u8> copy_buffer(BUFFER_SIZE);
+	verify(fseek(src, offset, SEEK_SET) == 0, "Failed to seek while extracting '%s'.", dest_path.string().c_str());
+	FILE* dest_file = fopen(dest_path.string().c_str(), "wb");
+	verify(dest_file, "Failed to open file '%s' for writing.", dest_path.string().c_str());
+	for(s64 i = 0; i < size / BUFFER_SIZE; i++) {
+		verify(fread(copy_buffer.data(), BUFFER_SIZE, 1, src) == 1,
+			"Failed to read source file while extracting '%s'.", dest_path.string().c_str());
+		verify(fwrite(copy_buffer.data(), BUFFER_SIZE, 1, dest_file) == 1,
+			"Failed to write to file '%s'.", dest_path.string().c_str());
+
+	}
+	if(size % BUFFER_SIZE != 0) {
+		verify(fread(copy_buffer.data(), size % BUFFER_SIZE, 1, src) == 1,
+			"Failed to read source file while extracting '%s'.", dest_path.string().c_str());
+		verify(fwrite(copy_buffer.data(), size % BUFFER_SIZE, 1, dest_file) == 1,
+			"Failed to write to file '%s'.", dest_path.string().c_str());
+	}
+	fclose(dest_file);
 }

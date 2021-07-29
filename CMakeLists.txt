@@ -95,6 +95,7 @@ add_executable(iso
 	src/editor/stacktrace.cpp
 	src/editor/util.cpp
 	src/editor/command_line.cpp
+	src/buffer.cpp
 )
 
 add_executable(memmap

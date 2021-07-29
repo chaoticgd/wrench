@@ -123,10 +123,10 @@ packed_struct(iso9660_path_table_entry,
 	uint16_t parent;
 )
 
-void read_directory_record(iso_directory& dest, stream& iso, size_t pos, size_t size, size_t depth);
+void read_directory_record(iso_directory& dest, Buffer src, s64 ofs, size_t size, size_t depth);
 
-bool read_iso_filesystem(iso_directory& dest, stream& iso) {
-	auto pvd = iso.read<iso9660_primary_volume_desc>(0x10 * SECTOR_SIZE);
+bool read_iso_filesystem(iso_directory& dest, Buffer src) {
+	auto& pvd = src.read<iso9660_primary_volume_desc>(0x10 * SECTOR_SIZE, "primary volume descriptor");
 	if(pvd.type_code != 0x01) {
 		return false;
 	}
@@ -137,46 +137,48 @@ bool read_iso_filesystem(iso_directory& dest, stream& iso) {
 		return false;
 	}
 	
-	size_t root_dir_pos = pvd.root_directory.lba.lsb * SECTOR_SIZE;
+	size_t root_dir_ofs = pvd.root_directory.lba.lsb * SECTOR_SIZE;
 	size_t root_dir_size = pvd.root_directory.data_length.lsb;
-	read_directory_record(dest, iso, root_dir_pos, root_dir_size, 0);
+	read_directory_record(dest, src, root_dir_ofs, root_dir_size, 0);
 	
 	return true;
 }
 
-void read_directory_record(iso_directory& dest, stream& iso, size_t pos, size_t size, size_t depth) {
+void read_directory_record(iso_directory& dest, Buffer src, s64 ofs, size_t size, size_t depth) {
 	if(depth > 8) {
 		fprintf(stderr, "error: Depth limit (8 levels) reached!\n");
 		exit(1);
 	}
 	
-	iso.seek(pos);
+	s64 end = ofs + size;
+	
 	size_t i;
-	for(i = 0; i < 1000 && iso.tell() < pos + size; i++) {
-		size_t record_pos = iso.tell();
-		auto record = iso.read<iso9660_directory_record>();
+	for(i = 0; i < 1000 && ofs < end; i++) {
+		s64 record_ofs = ofs;
+		auto& record = src.read<iso9660_directory_record>(ofs, "directory record");
+		ofs += sizeof(iso9660_directory_record);
 		if(record.record_length < 1) {
-			iso.seek(record_pos + 1);
+			ofs = record_ofs + 1;
 			continue;
 		}
 		if(record.file_flags & 2) {
 			if(i < 2) {
 				// Skip dot and dot dot.
-				iso.seek(record_pos + record.record_length);
+				ofs = record_ofs + record.record_length;
 				continue;
 			}
 			iso_directory subdir;
-			subdir.name.resize(record.identifier_length);
-			iso.read_n(subdir.name.data(), subdir.name.size());
+			subdir.name = src.read_fixed_string(ofs, record.identifier_length);
+			ofs += record.identifier_length;
 			for(char& c : subdir.name) {
 				c = tolower(c);
 			}
-			read_directory_record(subdir, iso, record.lba.lsb * SECTOR_SIZE, record.data_length.lsb, depth + 1);
+			read_directory_record(subdir, src, record.lba.lsb * SECTOR_SIZE, record.data_length.lsb, depth + 1);
 			dest.subdirs.push_back(subdir);
 		} else if(record.identifier_length >= 2) {
 			iso_file_record file;
-			file.name.resize(record.identifier_length);
-			iso.read_n(file.name.data(), file.name.size());
+			file.name = src.read_fixed_string(ofs, record.identifier_length);
+			ofs += record.identifier_length;
 			for(char& c : file.name) {
 				c = tolower(c);
 			}
@@ -184,7 +186,7 @@ void read_directory_record(iso_directory& dest, stream& iso, size_t pos, size_t 
 			file.size = record.data_length.lsb;
 			dest.files.push_back(file);
 		}
-		iso.seek(record_pos + record.record_length);
+		ofs = record_ofs + record.record_length;
 	}
 	if(i == 1000) {
 		fprintf(stderr, "error: Iteration limit exceeded while reading directory!\n");

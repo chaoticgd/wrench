@@ -18,42 +18,47 @@
 
 #include "table_of_contents.h"
 
+#include "../buffer.h"
 #include "../editor/util.h"
 
-table_of_contents read_table_of_contents(stream& iso, std::size_t toc_base) {
+static std::size_t get_rac234_level_table_offset(Buffer src);
+
+table_of_contents read_table_of_contents(FILE* file) {
+	std::vector<u8> bytes = read_file(file, RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE, TOC_MAX_SIZE);
+	Buffer buffer(bytes);
+	
 	table_of_contents toc;
 	
-	std::size_t level_table_offset = toc_get_level_table_offset(iso, toc_base);
+	std::size_t level_table_offset = get_rac234_level_table_offset(buffer);
 	if(level_table_offset == 0x0) {
 		// We've failed to find the level table, at least try to find some of the other tables.
 		level_table_offset = 0xffff;
 	}
 	
-	iso.seek(toc_base);
 	std::size_t table_index = 0;
-	while(iso.tell() + 4 * 6 < toc_base + level_table_offset) {
+	s64 ofs = 0;
+	while(ofs + 4 * 6 < level_table_offset) {
 		toc_table table;
 		table.index = table_index++;
-		table.offset_in_toc = iso.tell() - toc_base;
-		table.header = iso.read<toc_table_header>();
+		table.offset_in_toc = ofs;
+		table.header = buffer.read<toc_table_header>(ofs, "table of contents");
 		if(table.header.header_size < sizeof(toc_table_header) || table.header.header_size > 0xffff) {
 			break;
 		}
-		table.lumps.resize((table.header.header_size - sizeof(toc_table_header)) / sizeof(sector_range));
-		iso.read_v(table.lumps);
+		s64 lump_count = (table.header.header_size - 8) / 8;
+		table.lumps = buffer.read_multiple<sector_range>(ofs + 8, lump_count, "table of contents").copy();
 		toc.tables.emplace_back(std::move(table));
+		ofs += table.header.header_size;
 	}
 	
 	// This fixes an off-by-one error with R&C3 where since the first entry of
 	// the level table is supposed to be zeroed out, this code would otherwise
 	// think that the level table starts 0x18 bytes later than it actually does.
-	if(iso.tell() + 0x18 == toc_base + level_table_offset) {
+	if(ofs + 0x18 == level_table_offset) {
 		level_table_offset -= 0x18;
 	}
 	
-	std::vector<toc_level_table_entry> level_table(TOC_MAX_LEVELS);
-	iso.seek(toc_base + level_table_offset);
-	iso.read_v(level_table);
+	auto level_table = buffer.read_multiple<toc_level_table_entry>(level_table_offset, TOC_MAX_LEVELS, "level table");
 	for(size_t i = 0; i < TOC_MAX_LEVELS; i++) {
 		toc_level_table_entry entry = level_table[i];
 		
@@ -68,15 +73,16 @@ table_of_contents read_table_of_contents(stream& iso, std::size_t toc_base) {
 			part.header_lba = entry.parts[j].offset;
 			part.file_size = entry.parts[j].size;
 			
+			sector32 sector = {part.header_lba.sectors - RAC234_TABLE_OF_CONTENTS_LBA};
 			if(part.header_lba.sectors == 0) {
 				continue;
 			}
-			if(part.header_lba.bytes() > iso.size()) {
+			if(sector.bytes() > buffer.size()) {
 				break;
 			}
 			
-			part.magic = iso.read<uint32_t>(part.header_lba.bytes());
-			part.file_lba = iso.read<sector32>();
+			part.magic = buffer.read<uint32_t>(sector.bytes(), "level header size");
+			part.file_lba = buffer.read<sector32>(sector.bytes() + 4, "level sector number");
 			
 			auto info = LEVEL_FILE_TYPES.find(part.magic);
 			if(info == LEVEL_FILE_TYPES.end()) {
@@ -85,8 +91,8 @@ table_of_contents read_table_of_contents(stream& iso, std::size_t toc_base) {
 			part.info = info->second;
 			
 			size_t header_size = part.info.header_size_sectors * SECTOR_SIZE;
-			part.lumps.resize((header_size - 8) / sizeof(sector_range));
-			iso.read_v(part.lumps);
+			s64 lump_count = (header_size - 8) / 8;
+			part.lumps = buffer.read_multiple<sector_range>(sector.bytes() + 8, lump_count, "level header").copy();
 			
 			has_level_part |= part.info.type == level_file_type::LEVEL;
 			level.parts[j] = part;
@@ -100,23 +106,19 @@ table_of_contents read_table_of_contents(stream& iso, std::size_t toc_base) {
 	return toc;
 }
 
-std::size_t toc_get_level_table_offset(stream& iso, std::size_t toc_base) {
-	std::vector<uint32_t> buffer(TOC_MAX_SIZE / 4);
-	iso.seek(toc_base);
-	iso.read_v(buffer);
-	
+static std::size_t get_rac234_level_table_offset(Buffer src) {
 	// Check that the two next entries are valid. This is necessary to
 	// get past a false positive in Deadlocked.
-	for(size_t i = 0; i < buffer.size() - 6; i++) {
+	for(size_t i = 0; i < src.size() / 4 - 12; i++) {
 		int parts = 0;
 		for(int j = 0; j < 6; j++) {
-			sector32 lba = {buffer[i + j * 2]};
-			size_t header_offset = lba.bytes() - toc_base;
-			if(lba.sectors == 0 || header_offset > TOC_MAX_SIZE - 4) {
+			Sector32 lsn = src.read<Sector32>((i + j * 2) * 4, "table of contents");
+			size_t header_offset = lsn.bytes() - RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
+			if(lsn.sectors == 0 || header_offset > TOC_MAX_SIZE - 4) {
 				break;
 			}
-			uint32_t magic = *(uint32_t*) &buffer[header_offset / 4];
-			if(LEVEL_FILE_TYPES.find(magic) != LEVEL_FILE_TYPES.end()) {
+			uint32_t header_size = src.read<uint32_t>(header_offset, "level header size");
+			if(LEVEL_FILE_TYPES.find(header_size) != LEVEL_FILE_TYPES.end()) {
 				parts++;
 			}
 		}
