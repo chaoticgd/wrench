@@ -310,14 +310,14 @@ void write_iso_filesystem(stream& dest, iso_directory* root_dir) {
 	write_directory_records(root_dummy, *root_dir);
 	root_dir->size = root_dummy.size();
 	pvd.root_directory.data_length = iso9660_i32_lsb_msb::from_scalar(root_dir->size);
-	next_dir_lba += sector32::size_from_bytes(root_dir->size).sectors;
+	next_dir_lba += Sector32::size_from_bytes(root_dir->size).sectors;
 	for(size_t i = 0; i < flat_dirs.size(); i++) {
 		iso_directory* dir = flat_dirs[i];
 		dir->lba = {(uint32_t) next_dir_lba};
 		array_stream dummy;
 		write_directory_records(dummy, *dir);
 		dir->size = dummy.size();
-		next_dir_lba += sector32::size_from_bytes(dir->size).sectors;
+		next_dir_lba += Sector32::size_from_bytes(dir->size).sectors;
 	}
 	
 	// Write out little endian path table.

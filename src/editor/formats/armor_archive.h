@@ -32,10 +32,10 @@
 # */
 
 packed_struct(armor_table_entry,
-	sector32 model;
-	sector32 model_size;
-	sector32 texture;
-	sector32 texture_size;
+	Sector32 model;
+	Sector32 model_size;
+	Sector32 texture;
+	Sector32 texture_size;
 )
 
 struct armor_archive {

@@ -22,8 +22,8 @@
 #include "../../lz/compression.h"
 
 packed_struct(texture_table_entry,
-	sector32 offset;
-	sector32 size;
+	Sector32 offset;
+	Sector32 size;
 )
 
 std::vector<texture> enumerate_pif_textures(stream& iso) {

@@ -46,7 +46,7 @@ table_of_contents read_table_of_contents_rac1(FILE* file) {
 				toc_level_part part;
 				part.header_lba = {0};
 				part.magic = 0x2434;
-				part.file_lba = {(uint32_t) lsn.sectors};
+				part.file_lba = lsn;
 				part.info = rac1_level;
 				
 				toc_level level;
@@ -58,9 +58,9 @@ table_of_contents read_table_of_contents_rac1(FILE* file) {
 	}
 	if(toc.levels.size() > 0) {
 		for(size_t i = 0; i < toc.levels.size() - 1; i++) {
-			toc.levels[i].parts[0]->file_size = {(uint32_t) toc.levels[i + 1].parts[0]->file_lba.sectors - toc.levels[i].parts[0]->file_lba.sectors};
+			toc.levels[i].parts[0]->file_size = {toc.levels[i + 1].parts[0]->file_lba.sectors - toc.levels[i].parts[0]->file_lba.sectors};
 		}
-		toc.levels.back().parts[0]->file_size = {(uint32_t) file_size_in_bytes(file) / SECTOR_SIZE - toc.levels.back().parts[0]->file_lba.sectors};
+		toc.levels.back().parts[0]->file_size = {file_size_in_bytes(file) / SECTOR_SIZE - toc.levels.back().parts[0]->file_lba.sectors};
 	}
 	return toc;
 }
@@ -115,7 +115,7 @@ table_of_contents read_table_of_contents(FILE* file) {
 			part.header_lba = entry.parts[j].offset;
 			part.file_size = entry.parts[j].size;
 			
-			sector32 sector = {part.header_lba.sectors - RAC234_TABLE_OF_CONTENTS_LBA};
+			Sector32 sector = {part.header_lba.sectors - RAC234_TABLE_OF_CONTENTS_LBA};
 			if(part.header_lba.sectors == 0) {
 				continue;
 			}
@@ -124,7 +124,7 @@ table_of_contents read_table_of_contents(FILE* file) {
 			}
 			
 			part.magic = buffer.read<uint32_t>(sector.bytes(), "level header size");
-			part.file_lba = buffer.read<sector32>(sector.bytes() + 4, "level sector number");
+			part.file_lba = buffer.read<Sector32>(sector.bytes() + 4, "level sector number");
 			
 			auto info = LEVEL_FILE_TYPES.find(part.magic);
 			if(info == LEVEL_FILE_TYPES.end()) {

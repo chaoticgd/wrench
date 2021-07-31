@@ -24,7 +24,7 @@
 
 packed_struct(toc_table_header,
 	uint32_t header_size;
-	sector32 base_offset;
+	Sector32 base_offset;
 )
 
 struct toc_table {
@@ -39,10 +39,10 @@ packed_struct(toc_level_table_entry,
 )
 
 struct toc_level_part {
-	sector32 header_lba;
-	sector32 file_size;
+	Sector32 header_lba;
+	Sector32 file_size;
 	uint32_t magic;
-	sector32 file_lba;
+	Sector32 file_lba;
 	level_file_info info;
 	std::vector<sector_range> lumps;
 };

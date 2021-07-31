@@ -26,7 +26,7 @@ bool armor_archive::read(stream& file_) {
 	file_.read_n(file.buffer.data(), file.buffer.size());
 	
 	uint32_t header_size = file.read<uint32_t>(0);
-	size_t base_offset = file.read<sector32>(4).bytes();
+	size_t base_offset = file.read<Sector32>(4).bytes();
 	if(header_size > 0x1000 || header_size < 8) {
 		return false;
 	}

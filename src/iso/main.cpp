@@ -226,15 +226,15 @@ void extract(std::string iso_path, fs::path output_dir) {
 		// Assume the beginning of the next file after this one is also the end
 		// of this file.
 		for(toc_table& other_table : toc.tables) {
-			sector32 lba = other_table.header.base_offset;
+			Sector32 lba = other_table.header.base_offset;
 			if(lba.bytes() > start_of_file) {
-				end_of_file = std::min(end_of_file, lba.bytes());
+				end_of_file = std::min(end_of_file, (size_t) lba.bytes());
 			}
 		}
 		for(toc_level& other_level : toc.levels) {
 			for(std::optional<toc_level_part>& part : other_level.parts) {
 				if(part && part->file_lba.bytes() > start_of_file) {
-					end_of_file = std::min(end_of_file, part->file_lba.bytes());
+					end_of_file = std::min(end_of_file, (size_t) part->file_lba.bytes());
 				}
 			}
 		}
@@ -279,7 +279,7 @@ void extract_non_wads_recursive(FILE* iso, fs::path out, iso_directory& in) {
 
 struct global_file {
 	fs::path path;
-	sector32 lba;
+	Sector32 lba;
 	bool operator<(global_file& rhs) { return path < rhs.path; }
 };
 
@@ -418,8 +418,8 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		global_toc_size_bytes += size;
 	}
 	global_toc_size_bytes += level_files.size() * sizeof(sector_range) * 3;
-	sector32 global_toc_size = sector32::size_from_bytes(global_toc_size_bytes);
-	sector32 total_toc_size = global_toc_size;
+	Sector32 global_toc_size = Sector32::size_from_bytes(global_toc_size_bytes);
+	Sector32 total_toc_size = global_toc_size;
 	if(single_level_index > -1) {
 		if(single_level_index >= (int) level_files.size()) {
 			fprintf(stderr, "error: Single level index greater than maximum level index!\n");
@@ -478,7 +478,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		iso.seek(iso.tell() + level_table.size() * sizeof(sector_range));
 		
 		size_t toc_start_size_bytes = iso.tell() - RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
-		sector32 toc_start_size = sector32::size_from_bytes(toc_start_size_bytes);
+		Sector32 toc_start_size = Sector32::size_from_bytes(toc_start_size_bytes);
 		
 		// Size limits hardcoded in the boot ELF.
 		switch(game) {
@@ -548,7 +548,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		
 		iso_file_record record;
 		record.name = "system.cnf;1";
-		record.lba = {(uint32_t) (iso.tell() / SECTOR_SIZE)};
+		record.lba = {(s32) (iso.tell() / SECTOR_SIZE)};
 		record.size = system_cnf_size;
 		root_dir.files.push_back(record);
 		
@@ -590,7 +590,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		table.index = 0; // Don't care.
 		table.offset_in_toc = 0; // Don't care.
 		table.header.header_size = file.read<uint32_t>(0);
-		table.header.base_offset = {(uint32_t) (iso.tell() / SECTOR_SIZE)};
+		table.header.base_offset = {(s32) (iso.tell() / SECTOR_SIZE)};
 		table.lumps.resize((table.header.header_size - 8) / sizeof(sector_range));
 		file.seek(0x8);
 		file.read_v(table.lumps);
@@ -644,9 +644,9 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		
 		toc_level_part part;
 		part.header_lba = {0}; // Don't care.
-		part.file_size = sector32::size_from_bytes(file_size);
+		part.file_size = Sector32::size_from_bytes(file_size);
 		part.magic = file.read<uint32_t>(0);
-		part.file_lba = {(uint32_t) (iso.tell() / SECTOR_SIZE)};
+		part.file_lba = {(s32) (iso.tell() / SECTOR_SIZE)};
 		auto info = LEVEL_FILE_TYPES.find(part.magic);
 		if(info == LEVEL_FILE_TYPES.end()) {
 			fprintf(stderr, "error: Level '%s' has an invalid header!\n", path.filename().c_str());
@@ -779,7 +779,7 @@ void enumerate_non_wads_recursive(stream& iso, iso_directory& out, fs::path dir,
 			
 			iso_file_record record;
 			record.name = name + ";1";
-			record.lba = {(uint32_t) (iso.tell() / SECTOR_SIZE)};
+			record.lba = {(s32) (iso.tell() / SECTOR_SIZE)};
 			record.size = file_size;
 			out.files.push_back(record);
 			print_file_record(record);
@@ -840,7 +840,7 @@ void parse_pcsx2_stdout(std::string iso_path) {
 	
 	auto file_from_lba = [&](size_t lba) -> iso_file_record* {
 		for(iso_file_record& file : files) {
-			size_t end_lba = file.lba.sectors + sector32::size_from_bytes(file.size).sectors;
+			size_t end_lba = file.lba.sectors + Sector32::size_from_bytes(file.size).sectors;
 			if(lba >= file.lba.sectors && lba < end_lba) {
 				return &file;
 			}

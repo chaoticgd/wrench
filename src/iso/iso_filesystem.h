@@ -27,7 +27,7 @@
 
 struct iso_file_record {
 	std::string name;
-	sector32 lba;
+	Sector32 lba;
 	uint32_t size;
 };
 
@@ -40,7 +40,7 @@ struct iso_directory {
 	iso_directory* parent = nullptr;
 	size_t index = 0;
 	size_t parent_index = 0;
-	sector32 lba = {0};
+	Sector32 lba = {0};
 	uint32_t size = 0;
 };
 
