@@ -135,7 +135,7 @@ struct OutBuffer {
 	}
 };
 
-// This functions all call exit on error.
+// These functions all call exit on error.
 s64 file_size_in_bytes(FILE* file);
 std::vector<u8> read_file(FILE* file, s64 offset, s64 size);
 std::vector<u8> read_file(fs::path path);

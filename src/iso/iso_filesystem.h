@@ -46,7 +46,7 @@ struct iso_directory {
 
 // Read an ISO filesystem and output a map (dest) of the files in the root
 // directory. Return true on success, false on failure.
-bool read_iso_filesystem(iso_directory& dest, Buffer src);
+bool read_iso_filesystem(iso_directory& dest, std::string& volume_id, Buffer src);
 
 // Given a list of files including their LBA and size, write out an ISO
 // filesystem. This function is "dumb" in that it doesn't work out any positions

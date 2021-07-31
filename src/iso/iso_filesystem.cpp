@@ -125,7 +125,7 @@ packed_struct(iso9660_path_table_entry,
 
 void read_directory_record(iso_directory& dest, Buffer src, s64 ofs, size_t size, size_t depth);
 
-bool read_iso_filesystem(iso_directory& dest, Buffer src) {
+bool read_iso_filesystem(iso_directory& dest, std::string& volume_id, Buffer src) {
 	auto& pvd = src.read<iso9660_primary_volume_desc>(0x10 * SECTOR_SIZE, "primary volume descriptor");
 	if(pvd.type_code != 0x01) {
 		return false;
@@ -140,7 +140,8 @@ bool read_iso_filesystem(iso_directory& dest, Buffer src) {
 	size_t root_dir_ofs = pvd.root_directory.lba.lsb * SECTOR_SIZE;
 	size_t root_dir_size = pvd.root_directory.data_length.lsb;
 	read_directory_record(dest, src, root_dir_ofs, root_dir_size, 0);
-	
+	volume_id.resize(32);
+	memcpy(volume_id.data(), pvd.volume_identifier, 32);
 	return true;
 }
 

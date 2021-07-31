@@ -64,6 +64,7 @@ static const std::size_t TOC_MAX_SIZE       = 0x200000;
 static const std::size_t TOC_MAX_INDEX_SIZE = 0x10000;
 static const std::size_t TOC_MAX_LEVELS     = 100;
 
+table_of_contents read_table_of_contents_rac1(FILE* file);
 table_of_contents read_table_of_contents(FILE* file);
 
 #endif

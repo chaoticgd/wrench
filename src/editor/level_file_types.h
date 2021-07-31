@@ -56,6 +56,8 @@ struct level_file_info {
 // will have depending on the game. The key of the map is the magic identifier
 // stored at 0x0 in these files.
 static const std::map<uint32_t, level_file_info> LEVEL_FILE_TYPES = {
+	{0x2434, level_file_info {level_file_type::LEVEL, "level", 5, GAME_RAC1}},
+	
 	{0x0060, level_file_info {level_file_type::LEVEL, "level", 1, (which_game) (GAME_RAC2 | GAME_RAC3)}},
 	{0x1018, level_file_info {level_file_type::AUDIO, "audio", 3, GAME_RAC2}},
 	{0x137c, level_file_info {level_file_type::SCENE, "scene", 3, GAME_RAC2}},

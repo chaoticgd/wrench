@@ -26,6 +26,8 @@
 // This is true for R&C2, R&C3 and Deadlocked.
 static const uint32_t SYSTEM_CNF_LBA = 1000;
 static const s64 MAX_FILESYSTEM_SIZE_BYTES = RAC1_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
+static const std::string RAC1_VOLUME_ID =
+	"RATCHETANDCLANK                 ";
 
 void ls(std::string iso_path);
 void extract(std::string iso_path, fs::path output_dir);
@@ -197,17 +199,23 @@ void extract(std::string iso_path, fs::path output_dir) {
 	// Extract SYSTEM.CNF, the boot ELF, etc.
 	std::vector<u8> filesystem_buf = read_file(iso, 0, MAX_FILESYSTEM_SIZE_BYTES);
 	iso_directory root_dir;
-	if(!read_iso_filesystem(root_dir, Buffer(filesystem_buf))) {
+	std::string volume_id;
+	if(!read_iso_filesystem(root_dir, volume_id, Buffer(filesystem_buf))) {
 		fprintf(stderr, "error: Missing or invalid ISO filesystem!\n");
 		exit(1);
 	}
 	extract_non_wads_recursive(iso, output_dir, root_dir);
 	
 	// Extract levels and other asset files.
-	table_of_contents toc = read_table_of_contents(iso);
-	if(toc.levels.size() == 0) {
-		fprintf(stderr, "error: Unable to locate level table!\n");
-		exit(1);
+	table_of_contents toc;
+	if(volume_id == RAC1_VOLUME_ID) {
+		toc = read_table_of_contents_rac1(iso);
+	} else {
+		toc = read_table_of_contents(iso);
+		if(toc.levels.size() == 0) {
+			fprintf(stderr, "error: Unable to locate level table!\n");
+			exit(1);
+		}
 	}
 	for(toc_table& table : toc.tables) {
 		auto name = std::to_string(table.index) + ".wad";
@@ -815,7 +823,8 @@ void parse_pcsx2_stdout(std::string iso_path) {
 	std::vector<iso_file_record> files;
 	iso_directory root_dir;
 	root_dir.files.push_back({"primary volume descriptor", 0x10, SECTOR_SIZE});
-	if(!read_iso_filesystem(root_dir, filesystem_buf)) {
+	std::string dummy_volume_id;
+	if(!read_iso_filesystem(root_dir, dummy_volume_id, filesystem_buf)) {
 		fprintf(stderr, "error: Failed to read ISO filesystem!\n");
 		exit(1);
 	}

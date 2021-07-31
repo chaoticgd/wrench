@@ -23,6 +23,48 @@
 
 static std::size_t get_rac234_level_table_offset(Buffer src);
 
+table_of_contents read_table_of_contents_rac1(FILE* file) {
+	s32 magic, toc_size;
+	fseek(file, RAC1_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE, SEEK_SET);
+	verify(fread(&magic, 4, 1, file) == 1, "Failed to read R&C1 table of contents.");
+	verify(fread(&toc_size, 4, 1, file) == 1, "Failed to read R&C1 table of contents.");
+	verify(toc_size > 0 && toc_size < 1024 * 1024 * 1024, "Invalid R&C1 table of contents.");
+	verify(magic == 1, "Invalid R&C1 table of contents.");
+	std::vector<u8> bytes = read_file(file, RAC1_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE, toc_size);
+	Buffer buffer(bytes);
+	
+	level_file_info rac1_level = LEVEL_FILE_TYPES.at(0x2434);
+	
+	table_of_contents toc;
+	for(s64 ofs = 8; ofs < buffer.size(); ofs += 8) {
+		Sector32 lsn = buffer.read<Sector32>(ofs, "sector");
+		Sector32 size = buffer.read<Sector32>(ofs + 4, "size");
+		if(lsn.sectors != 0) {
+			std::vector<u8> header_bytes = read_file(file, lsn.bytes(), 0x2434);
+			Buffer header(header_bytes);
+			if(header.read<s32>(4, "file header") == 0x2434) {
+				toc_level_part part;
+				part.header_lba = {0};
+				part.magic = 0x2434;
+				part.file_lba = {(uint32_t) lsn.sectors};
+				part.info = rac1_level;
+				
+				toc_level level;
+				level.level_table_index = header.read<uint32_t>(0, "level number");
+				level.parts[0] = part;
+				toc.levels.emplace_back(std::move(level));
+			}
+		}
+	}
+	if(toc.levels.size() > 0) {
+		for(size_t i = 0; i < toc.levels.size() - 1; i++) {
+			toc.levels[i].parts[0]->file_size = {(uint32_t) toc.levels[i + 1].parts[0]->file_lba.sectors - toc.levels[i].parts[0]->file_lba.sectors};
+		}
+		toc.levels.back().parts[0]->file_size = {(uint32_t) file_size_in_bytes(file) / SECTOR_SIZE - toc.levels.back().parts[0]->file_lba.sectors};
+	}
+	return toc;
+}
+
 table_of_contents read_table_of_contents(FILE* file) {
 	std::vector<u8> bytes = read_file(file, RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE, TOC_MAX_SIZE);
 	Buffer buffer(bytes);
