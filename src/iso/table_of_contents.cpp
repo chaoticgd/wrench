@@ -83,14 +83,14 @@ table_of_contents read_table_of_contents(FILE* file) {
 		toc_table table;
 		table.index = table_index++;
 		table.offset_in_toc = ofs;
-		table.header = buffer.read<toc_table_header>(ofs, "table of contents");
-		if(table.header.header_size < sizeof(toc_table_header) || table.header.header_size > 0xffff) {
+		s32 header_size = buffer.read<s32>(ofs, "global header");
+		if(header_size < 8 || header_size > 0xffff) {
 			break;
 		}
-		s64 lump_count = (table.header.header_size - 8) / 8;
-		table.lumps = buffer.read_multiple<sector_range>(ofs + 8, lump_count, "table of contents").copy();
+		table.sector = buffer.read<Sector32>(ofs + 4, "global header");
+		table.header = buffer.read_multiple<u8>(ofs, header_size, "global header").copy();
 		toc.tables.emplace_back(std::move(table));
-		ofs += table.header.header_size;
+		ofs += header_size;
 	}
 	
 	// This fixes an off-by-one error with R&C3 where since the first entry of
@@ -132,9 +132,7 @@ table_of_contents read_table_of_contents(FILE* file) {
 			}
 			part.info = info->second;
 			
-			size_t header_size = part.info.header_size_sectors * SECTOR_SIZE;
-			s64 lump_count = (header_size - 8) / 8;
-			part.lumps = buffer.read_multiple<sector_range>(sector.bytes() + 8, lump_count, "level header").copy();
+			part.header = buffer.read_multiple<u8>(sector.bytes(), part.magic, "level header").copy();
 			
 			has_level_part |= part.info.type == level_file_type::LEVEL;
 			level.parts[j] = part;

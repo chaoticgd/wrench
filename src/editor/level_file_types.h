@@ -48,7 +48,6 @@ struct level_file_identifier {
 struct level_file_info {
 	level_file_type type;
 	const char* prefix;
-	uint32_t header_size_sectors;
 	which_game game;
 };
 
@@ -56,21 +55,21 @@ struct level_file_info {
 // will have depending on the game. The key of the map is the magic identifier
 // stored at 0x0 in these files.
 static const std::map<uint32_t, level_file_info> LEVEL_FILE_TYPES = {
-	{0x2434, level_file_info {level_file_type::LEVEL, "level", 5, GAME_RAC1}},
+	{0x2434, level_file_info {level_file_type::LEVEL, "level",  GAME_RAC1}},
 	
-	{0x0060, level_file_info {level_file_type::LEVEL, "level", 1, (which_game) (GAME_RAC2 | GAME_RAC3)}},
-	{0x1018, level_file_info {level_file_type::AUDIO, "audio", 3, GAME_RAC2}},
-	{0x137c, level_file_info {level_file_type::SCENE, "scene", 3, GAME_RAC2}},
+	{0x0060, level_file_info {level_file_type::LEVEL, "level", (which_game) (GAME_RAC2 | GAME_RAC3)}},
+	{0x1018, level_file_info {level_file_type::AUDIO, "audio", GAME_RAC2}},
+	{0x137c, level_file_info {level_file_type::SCENE, "scene", GAME_RAC2}},
 	
-	{0x1818, level_file_info {level_file_type::AUDIO, "audio", 4, GAME_RAC3}},
-	{0x26f0, level_file_info {level_file_type::SCENE, "scene", 5, (which_game) (GAME_RAC3 | GAME_RAC4)}},
+	{0x1818, level_file_info {level_file_type::AUDIO, "audio", GAME_RAC3}},
+	{0x26f0, level_file_info {level_file_type::SCENE, "scene", (which_game) (GAME_RAC3 | GAME_RAC4)}},
 	
-	{0x0c68, level_file_info {level_file_type::LEVEL, "level", 2, GAME_RAC4}},
-	{0x02a0, level_file_info {level_file_type::AUDIO, "audio", 1, GAME_RAC4}},
+	{0x0c68, level_file_info {level_file_type::LEVEL, "level", GAME_RAC4}},
+	{0x02a0, level_file_info {level_file_type::AUDIO, "audio", GAME_RAC4}},
 	
-	{0x0068, level_file_info {level_file_type::LEVEL, "level", 1, GAME_RAC2_OTHER}},
-	{0x1000, level_file_info {level_file_type::AUDIO, "audio", 2, GAME_RAC2_OTHER}},
-	{0x2420, level_file_info {level_file_type::SCENE, "scene", 5, GAME_RAC2_OTHER}}
+	{0x0068, level_file_info {level_file_type::LEVEL, "level", GAME_RAC2_OTHER}},
+	{0x1000, level_file_info {level_file_type::AUDIO, "audio", GAME_RAC2_OTHER}},
+	{0x2420, level_file_info {level_file_type::SCENE, "scene", GAME_RAC2_OTHER}}
 };
 
 #endif

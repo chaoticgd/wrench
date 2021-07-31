@@ -111,9 +111,9 @@ void ls(std::string iso_path) {
 	printf("| ----- | ------------- | ----------- | ----------- |\n");
 	for(size_t i = 0; i < toc.tables.size(); i++) {
 		toc_table& table = toc.tables[i];
-		size_t base_offset = table.header.base_offset.bytes();
+		size_t base_offset = table.sector.bytes();
 	printf("| %02ld    | %08x      | %08x    | %08lx    |\n",
-		i, table.offset_in_toc, table.header.header_size, base_offset);
+		i, table.offset_in_toc, table.header.size(), base_offset);
 	}
 	printf("+-------+---------------+-------------+-------------+\n");
 	
@@ -221,12 +221,12 @@ void extract(std::string iso_path, fs::path output_dir) {
 		auto name = std::to_string(table.index) + ".wad";
 		auto path = global_dir/name;
 		
-		size_t start_of_file = table.header.base_offset.bytes();
+		size_t start_of_file = table.sector.bytes();
 		size_t end_of_file = SIZE_MAX;
 		// Assume the beginning of the next file after this one is also the end
 		// of this file.
 		for(toc_table& other_table : toc.tables) {
-			Sector32 lba = other_table.header.base_offset;
+			Sector32 lba = other_table.sector;
 			if(lba.bytes() > start_of_file) {
 				end_of_file = std::min(end_of_file, (size_t) lba.bytes());
 			}
@@ -241,9 +241,9 @@ void extract(std::string iso_path, fs::path output_dir) {
 		assert(end_of_file != SIZE_MAX);
 		assert(end_of_file >= start_of_file);
 		size_t file_size = end_of_file - start_of_file;
-		printf(row_format, (size_t) table.header.base_offset.sectors, (size_t) file_size, name.c_str());
+		printf(row_format, (size_t) table.sector.sectors, (size_t) file_size, name.c_str());
 		
-		extract_file(path, iso, table.header.base_offset.bytes(), file_size);
+		extract_file(path, iso, table.sector.bytes(), file_size);
 	}
 	for(toc_level& level : toc.levels) {
 		for(std::optional<toc_level_part>& part : level.parts) {
@@ -380,7 +380,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 				fprintf(stderr, "error: File '%s' has invalid header!\n", level.parts[i]->filename().c_str());
 				exit(1);
 			}
-			level.header_sizes_in_sectors[i] = info->second.header_size_sectors;
+			level.header_sizes_in_sectors[i] = Sector32::size_from_bytes(magic).sectors;
 			game &= info->second.game;
 		}
 	}
@@ -465,8 +465,9 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 	defer([&]() {
 		iso.seek(RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
 		for(toc_table& table : toc_tables) {
-			iso.write(table.header);
-			iso.write_v(table.lumps);
+			*(Sector32*) &table.header[4] = table.sector;
+			iso.write_v(table.header);
+			*(Sector32*) &table.header[4] = {0};
 		}
 		
 		size_t level_table_pos = iso.tell();
@@ -496,9 +497,9 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 				
 				iso.pad(SECTOR_SIZE, 0);
 				uint32_t header_lba = iso.tell() / SECTOR_SIZE;
-				iso.write(part->magic);
-				iso.write(part->file_lba);
-				iso.write_v(part->lumps);
+				*(Sector32*) &part->header[4] = part->file_lba;
+				iso.write_v(part->header);
+				*(Sector32*) &part->header[4] = {0};
 				iso.pad(SECTOR_SIZE, 0);
 				
 				// The order of fields in the level table entries is different
@@ -589,11 +590,11 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		toc_table table;
 		table.index = 0; // Don't care.
 		table.offset_in_toc = 0; // Don't care.
-		table.header.header_size = file.read<uint32_t>(0);
-		table.header.base_offset = {(s32) (iso.tell() / SECTOR_SIZE)};
-		table.lumps.resize((table.header.header_size - 8) / sizeof(sector_range));
-		file.seek(0x8);
-		file.read_v(table.lumps);
+		s64 header_size = file.read<s32>(0);
+		table.sector = {(s32) (iso.tell() / SECTOR_SIZE)};
+		table.header.resize(header_size);
+		file.seek(0);
+		file.read_v(table.header);
 		
 		bool skipped = false;
 		if(no_mpegs) {
@@ -604,16 +605,18 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 			// know that it's probably in bytes intead of sectors and hence this
 			// file must be the MPEG file.
 			size_t lump_sizes_probably_in_bytes = 0;
-			for(sector_range& range : table.lumps) {
+			size_t lump_count = (table.header.size() - 8) / 8;
+			Buffer header_buf(table.header);
+			auto lumps = header_buf.read_multiple<sector_range>(8, lump_count, "global header");
+			for(sector_range range : lumps) {
 				if(range.size.sectors > 0xffff) {
 					lump_sizes_probably_in_bytes++;
 				}
 			}
 			// Arbitrary threshold.
 			if(lump_sizes_probably_in_bytes > 10) {
-				for(sector_range& range : table.lumps) {
-					range.offset.sectors = 0;
-					range.size.sectors = 0;
+				for(size_t i = 8; i < table.header.size(); i++) {
+					table.header[i] = 0;
 				}
 				skipped = true;
 			}
@@ -624,7 +627,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		if(!skipped) {
 			iso_file_record record;
 			record.name = global.path.filename().string() + ";1";
-			record.lba = table.header.base_offset;
+			record.lba = table.sector;
 			record.size = file.size();
 			global_dir.files.push_back(record);
 			
@@ -653,10 +656,10 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 			exit(1);
 		}
 		part.info = info->second;
-		size_t header_size = part.info.header_size_sectors * SECTOR_SIZE;
-		part.lumps.resize((std::min(file_size, header_size) - 8) / sizeof(sector_range));
-		file.seek(0x8);
-		file.read_v(part.lumps);
+		size_t header_size = Sector32::size_from_bytes(part.magic).bytes();
+		part.header.resize(header_size);
+		file.seek(0);
+		file.read_v(part.header);
 		
 		iso_file_record record;
 		record.name = path.filename().string() + ";1";

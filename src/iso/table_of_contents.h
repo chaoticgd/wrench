@@ -22,16 +22,11 @@
 #include "../editor/stream.h"
 #include "../editor/level_file_types.h"
 
-packed_struct(toc_table_header,
-	uint32_t header_size;
-	Sector32 base_offset;
-)
-
 struct toc_table {
 	std::size_t index;
 	uint32_t offset_in_toc;
-	toc_table_header header;
-	std::vector<sector_range> lumps;
+	Sector32 sector;
+	std::vector<u8> header;
 };
 
 packed_struct(toc_level_table_entry,
@@ -44,7 +39,7 @@ struct toc_level_part {
 	uint32_t magic;
 	Sector32 file_lba;
 	level_file_info info;
-	std::vector<sector_range> lumps;
+	std::vector<u8> header;
 };
 
 struct toc_level {
