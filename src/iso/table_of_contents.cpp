@@ -288,7 +288,7 @@ table_of_contents read_table_of_contents_rac234(FILE* iso) {
 			part.header_lba = entry.parts[j].offset;
 			part.file_size = entry.parts[j].size;
 			
-			Sector32 sector = {part.header_lba.sectors - RAC234_TABLE_OF_CONTENTS_LBA};
+			Sector32 sector = {part.header_lba.sectors - (s32) RAC234_TABLE_OF_CONTENTS_LBA};
 			if(part.header_lba.sectors == 0) {
 				continue;
 			}

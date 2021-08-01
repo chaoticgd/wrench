@@ -170,7 +170,7 @@ void read_directory_record(iso_directory& dest, Buffer src, s64 ofs, size_t size
 			for(char& c : file.name) {
 				c = tolower(c);
 			}
-			file.lba = {(uint32_t) record.lba.lsb};
+			file.lba = {(s32) record.lba.lsb};
 			file.size = record.data_length.lsb;
 			dest.files.push_back(file);
 		}
@@ -292,7 +292,7 @@ void write_iso_filesystem(stream& dest, iso_directory* root_dir) {
 	
 	// Determine directory record LBAs and sizes.
 	size_t next_dir_lba = pvd.root_directory.lba.lsb;
-	root_dir->lba = {(uint32_t) pvd.root_directory.lba.lsb};
+	root_dir->lba = {(s32) pvd.root_directory.lba.lsb};
 	array_stream root_dummy;
 	write_directory_records(root_dummy, *root_dir);
 	root_dir->size = root_dummy.size();
@@ -300,7 +300,7 @@ void write_iso_filesystem(stream& dest, iso_directory* root_dir) {
 	next_dir_lba += Sector32::size_from_bytes(root_dir->size).sectors;
 	for(size_t i = 0; i < flat_dirs.size(); i++) {
 		iso_directory* dir = flat_dirs[i];
-		dir->lba = {(uint32_t) next_dir_lba};
+		dir->lba = {(s32) next_dir_lba};
 		array_stream dummy;
 		write_directory_records(dummy, *dir);
 		dir->size = dummy.size();
