@@ -82,13 +82,19 @@ void picker_tool::pick_object(app& a, glm::mat4 world_to_clip, ImVec2 position) 
 		lvl.gameplay().clear_selection();
 		return;
 	}
+	
+	bool is_multi_selecting = ImGui::GetIO().KeyCtrl;
 
 	u8 picked_type = buffer[smallest_index] & 0xff;
 	u16 picked_id = (buffer[smallest_index] & 0x00ffff00) >> 8;
 	lvl.gameplay().for_each_instance([&](Instance& inst) {
 		bool same_type = inst.id().type == picked_type;
 		bool same_id_value = inst.id().value == picked_id;
-		inst.selected = same_type && same_id_value;
+		if(is_multi_selecting) {
+			inst.selected ^= same_type && same_id_value;
+		} else {
+			inst.selected = same_type && same_id_value;
+		}
 	});
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, last_framebuffer);
