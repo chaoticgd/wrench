@@ -123,7 +123,23 @@ packed_struct(Sector32,
 packed_struct(SectorRange,
 	Sector32 offset;
 	Sector32 size;
+	
+	Sector32 end() const {
+		return {offset.sectors + size.sectors};
+	}
 )
+
+packed_struct(SectorByteRange,
+	Sector32 offset;
+	s32 size_bytes;
+	
+	Sector32 end() const {
+		return {offset.sectors + Sector32::size_from_bytes(size_bytes).sectors};
+	}
+)
+
+u16 byte_swap_16(u16 val);
+u32 byte_swap_32(u32 val);
 
 // We can't pass around references to fields as we're using packed structs so
 // instead of std::swap we have to use this macro.

@@ -104,7 +104,7 @@ void ls(std::string iso_path) {
 	verify(iso, "Failed to open ISO file.");
 	defer([&]() { fclose(iso); });
 	
-	table_of_contents toc = read_table_of_contents(iso);
+	table_of_contents toc = read_table_of_contents_rac234(iso);
 	
 	printf("+-[Non-level Sections]--+-------------+-------------+\n");
 	printf("| Index | Offset in ToC | Size in ToC | Data Offset |\n");
@@ -211,7 +211,7 @@ void extract(std::string iso_path, fs::path output_dir) {
 	if(volume_id == RAC1_VOLUME_ID) {
 		toc = read_table_of_contents_rac1(iso);
 	} else {
-		toc = read_table_of_contents(iso);
+		toc = read_table_of_contents_rac234(iso);
 		if(toc.levels.size() == 0) {
 			fprintf(stderr, "error: Unable to locate level table!\n");
 			exit(1);
@@ -243,7 +243,10 @@ void extract(std::string iso_path, fs::path output_dir) {
 		size_t file_size = end_of_file - start_of_file;
 		printf(row_format, (size_t) table.sector.sectors, (size_t) file_size, name.c_str());
 		
-		extract_file(path, iso, table.sector.bytes(), file_size);
+		FILE* dest_file = fopen(path.string().c_str(), "wb");
+		verify(dest_file, "Failed to open '%s' for writing.", path.string().c_str());
+		extract_file(path, dest_file, iso, table.sector.bytes(), file_size);
+		fclose(dest_file);
 	}
 	for(toc_level& level : toc.levels) {
 		for(std::optional<toc_level_part>& part : level.parts) {
@@ -257,7 +260,17 @@ void extract(std::string iso_path, fs::path output_dir) {
 			auto path = level_dirs.at(part->info.type)/name;
 			printf(row_format, (size_t) part->file_lba.sectors, part->file_size.bytes(), name.c_str());
 			
-			extract_file(path, iso, part->file_lba.bytes(), part->file_size.bytes());
+			FILE* dest_file = fopen(path.string().c_str(), "wb");
+			verify(dest_file, "Failed to open '%s' for writing.", path.string().c_str());
+			if(part->prepend_header) {
+				std::vector<u8> padded_header;
+				OutBuffer(padded_header).write_multiple<u8>(part->header);
+				OutBuffer(padded_header).pad(SECTOR_SIZE, 0);
+				verify(fwrite(padded_header.data(), padded_header.size(), 1, dest_file) == 1,
+					"Failed to write header to '%s'.", path.string().c_str());
+			}
+			extract_file(path, dest_file, iso, part->file_lba.bytes(), part->file_size.bytes());
+			fclose(dest_file);
 		}
 	}
 }
@@ -267,7 +280,10 @@ void extract_non_wads_recursive(FILE* iso, fs::path out, iso_directory& in) {
 		fs::path file_path = out/file.name.substr(0, file.name.size() - 2);
 		if(file_path.string().find(".wad") == std::string::npos) {
 			print_file_record(file);
-			extract_file(file_path, iso, file.lba.bytes(), file.size);
+			FILE* dest_file = fopen(file_path.string().c_str(), "wb");
+			verify(dest_file, "Failed to open '%s' for writing.", file_path.string().c_str());
+			extract_file(file_path, dest_file, iso, file.lba.bytes(), file.size);
+			fclose(dest_file);
 		}
 	}
 	for(iso_directory& subdir : in.subdirs) {

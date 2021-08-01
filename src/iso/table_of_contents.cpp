@@ -21,52 +21,225 @@
 #include "../buffer.h"
 #include "../editor/util.h"
 
+static toc_level_part adapt_rac1_level_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header);
+static Opt<toc_level_part> adapt_rac1_audio_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header);
+static Opt<toc_level_part> adapt_rac1_scene_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header);
+static Sector32 get_vag_size(FILE* iso, Sector32 sector);
+static Sector32 get_lz_size(FILE* iso, Sector32 sector);
+
 static std::size_t get_rac234_level_table_offset(Buffer src);
 
-table_of_contents read_table_of_contents_rac1(FILE* file) {
+table_of_contents read_table_of_contents_rac1(FILE* iso) {
 	s32 magic, toc_size;
-	fseek(file, RAC1_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE, SEEK_SET);
-	verify(fread(&magic, 4, 1, file) == 1, "Failed to read R&C1 table of contents.");
-	verify(fread(&toc_size, 4, 1, file) == 1, "Failed to read R&C1 table of contents.");
+	fseek(iso, RAC1_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE, SEEK_SET);
+	verify(fread(&magic, 4, 1, iso) == 1, "Failed to read R&C1 table of contents.");
+	verify(fread(&toc_size, 4, 1, iso) == 1, "Failed to read R&C1 table of contents.");
 	verify(toc_size > 0 && toc_size < 1024 * 1024 * 1024, "Invalid R&C1 table of contents.");
 	verify(magic == 1, "Invalid R&C1 table of contents.");
-	std::vector<u8> bytes = read_file(file, RAC1_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE, toc_size);
+	std::vector<u8> bytes = read_file(iso, RAC1_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE, toc_size);
 	Buffer buffer(bytes);
-	
-	level_file_info rac1_level = LEVEL_FILE_TYPES.at(0x2434);
 	
 	table_of_contents toc;
 	for(s64 ofs = 8; ofs < buffer.size(); ofs += 8) {
 		Sector32 lsn = buffer.read<Sector32>(ofs, "sector");
 		Sector32 size = buffer.read<Sector32>(ofs + 4, "size");
 		if(lsn.sectors != 0) {
-			std::vector<u8> header_bytes = read_file(file, lsn.bytes(), 0x2434);
-			Buffer header(header_bytes);
-			if(header.read<s32>(4, "file header") == 0x2434) {
-				toc_level_part part;
-				part.header_lba = {0};
-				part.magic = 0x2434;
-				part.file_lba = lsn;
-				part.info = rac1_level;
+			std::vector<u8> header_bytes = read_file(iso, lsn.bytes(), 0x2434);
+			Buffer header_buffer(header_bytes);
+			if(header_buffer.read<s32>(4, "file header") == 0x2434) {
+				Rac1AmalgamatedWadHeader header = header_buffer.read<Rac1AmalgamatedWadHeader>(0, "level header");
 				
 				toc_level level;
-				level.level_table_index = header.read<uint32_t>(0, "level number");
-				level.parts[0] = part;
+				level.level_table_index = header.level_number;
+				level.parts[0] = adapt_rac1_level_wad_header(iso, header);
+				level.parts[1] = adapt_rac1_audio_wad_header(iso, header);
+				level.parts[2] = adapt_rac1_scene_wad_header(iso, header);
 				toc.levels.emplace_back(std::move(level));
 			}
 		}
 	}
-	if(toc.levels.size() > 0) {
-		for(size_t i = 0; i < toc.levels.size() - 1; i++) {
-			toc.levels[i].parts[0]->file_size = {toc.levels[i + 1].parts[0]->file_lba.sectors - toc.levels[i].parts[0]->file_lba.sectors};
-		}
-		toc.levels.back().parts[0]->file_size = {file_size_in_bytes(file) / SECTOR_SIZE - toc.levels.back().parts[0]->file_lba.sectors};
-	}
 	return toc;
 }
 
-table_of_contents read_table_of_contents(FILE* file) {
-	std::vector<u8> bytes = read_file(file, RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE, TOC_MAX_SIZE);
+static SectorRange sub_sector_range(SectorRange range, Sector32 lsn) {
+	return {{range.offset.sectors - lsn.sectors}, range.size};
+}
+
+static SectorByteRange sub_sector_byte_range(SectorByteRange range, Sector32 lsn) {
+	return {{range.offset.sectors - lsn.sectors}, range.size_bytes};
+}
+
+static toc_level_part adapt_rac1_level_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header) {
+	// Determine where the file begins and ends on disc.
+	Sector32 low = {INT32_MAX};
+	low = {std::min(low.sectors, header.primary.offset.sectors)};
+	low = {std::min(low.sectors, header.gameplay_ntsc.offset.sectors)};
+	low = {std::min(low.sectors, header.gameplay_pal.offset.sectors)};
+	low = {std::min(low.sectors, header.occlusion.offset.sectors)};
+	
+	Sector32 high = {0};
+	high = {std::max(high.sectors, header.primary.end().sectors)};
+	high = {std::max(high.sectors, header.gameplay_ntsc.end().sectors)};
+	high = {std::max(high.sectors, header.gameplay_pal.end().sectors)};
+	high = {std::max(high.sectors, header.occlusion.end().sectors)};
+	
+	// Rewrite header, convert absolute sector numbers to relative sector offsets.
+	s32 header_size_sectors = Sector32::size_from_bytes(sizeof(Rac1LevelWadHeader)).sectors;
+	Sector32 adjust = {low.sectors - header_size_sectors};
+	Rac1LevelWadHeader level_header = {0};
+	level_header.header_size = sizeof(Rac1LevelWadHeader);
+	level_header.level_number = header.level_number;
+	level_header.primary = sub_sector_range(header.primary, adjust);
+	level_header.gameplay_ntsc = sub_sector_range(header.gameplay_ntsc, adjust);
+	level_header.gameplay_pal = sub_sector_range(header.gameplay_pal, adjust);
+	level_header.occlusion = sub_sector_range(header.occlusion, adjust);
+	
+	toc_level_part level_part;
+	level_part.header_lba = {0};
+	level_part.magic = sizeof(Rac1LevelWadHeader);
+	level_part.file_lba = {low.sectors};
+	level_part.file_size = {high.sectors - low.sectors};
+	level_part.info = {level_file_type::LEVEL, "level",  GAME_RAC1};
+	level_part.header.resize(sizeof(Rac1LevelWadHeader));
+	memcpy(level_part.header.data(), &level_header, sizeof(Rac1LevelWadHeader));
+	level_part.prepend_header = true;
+	
+	verify(level_part.file_size.bytes() < 1024 * 1024 * 1024, "Level WAD too big!");
+	
+	return level_part;
+}
+
+static Opt<toc_level_part> adapt_rac1_audio_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header) {
+	// Determine where the file begins and ends on disc.
+	Sector32 low = {INT32_MAX};
+	Sector32 high = {0};
+	for(s32 i = 0; i < sizeof(header.bindata) / sizeof(header.bindata[0]); i++) {
+		if(header.bindata[i].offset.sectors > 0) {
+			low = {std::min(low.sectors, header.bindata[i].offset.sectors)};
+			high = {std::max(high.sectors, header.bindata[i].end().sectors)};
+		}
+	}
+	for(s32 i = 0; i < sizeof(header.music) / sizeof(header.music[0]); i++) {
+		if(header.music[i].sectors > 0) {
+			low = {std::min(low.sectors, header.music[i].sectors)};
+			high = {std::max(high.sectors, header.music[i].sectors + get_vag_size(iso, header.music[i].sectors).sectors)};
+		}
+	}
+	if(low.sectors == INT32_MAX || high.sectors == 0) {
+		return {};
+	}
+	
+	s32 header_size_sectors = Sector32::size_from_bytes(sizeof(Rac1AudioWadHeader)).sectors;
+	Sector32 adjust = {low.sectors - header_size_sectors};
+	
+	// Rewrite header, convert absolute sector numbers to relative sector offsets.
+	Rac1AudioWadHeader audio_header = {0};
+	audio_header.header_size = sizeof(Rac1AudioWadHeader);
+	for(s32 i = 0; i < sizeof(header.bindata) / sizeof(header.bindata[0]); i++) {
+		if(header.bindata[i].offset.sectors > 0) {
+			audio_header.bindata[i] = sub_sector_byte_range(header.bindata[i], adjust);
+		}
+	}
+	for(s32 i = 0; i < sizeof(header.music) / sizeof(header.music[0]); i++) {
+		if(header.music[i].sectors > 0) {
+			audio_header.music[i] = {header.music[i].sectors - adjust.sectors};
+		}
+	}
+	
+	toc_level_part audio_part;
+	audio_part.header_lba = {0};
+	audio_part.magic = sizeof(Rac1AudioWadHeader);
+	audio_part.file_lba = low;
+	audio_part.file_size = {high.sectors - low.sectors};
+	audio_part.info = {level_file_type::AUDIO, "audio",  GAME_RAC1};
+	audio_part.header.resize(sizeof(Rac1AudioWadHeader));
+	memcpy(audio_part.header.data(), &audio_header, sizeof(Rac1AudioWadHeader));
+	audio_part.prepend_header = true;
+	
+	verify(audio_part.file_size.bytes() < (1024 * 1024 * 1024), "Level audio WAD too big!");
+	
+	return audio_part;
+}
+
+static Opt<toc_level_part> adapt_rac1_scene_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header) {
+	// Determine where the file begins and ends on disc.
+	Sector32 low = {INT32_MAX};
+	Sector32 high = {0};
+	for(s32 i = 0; i < sizeof(header.scenes) / sizeof(header.scenes[0]); i++) {
+		const Rac1SceneHeader& scene = header.scenes[i];
+		for(s32 j = 0; j < sizeof(scene.sounds) / sizeof(scene.sounds[0]); j++) {
+			if(scene.sounds[j].sectors > 0) {
+				low = {std::min(low.sectors, scene.sounds[j].sectors)};
+				high = {std::max(high.sectors, scene.sounds[j].sectors + get_vag_size(iso, scene.sounds[j].sectors).sectors)};
+			}
+		}
+		for(s32 j = 0; j < sizeof(scene.wads) / sizeof(scene.wads[0]); j++) {
+			if(scene.wads[j].sectors > 0) {
+				low = {std::min(low.sectors, scene.wads[j].sectors)};
+				high = {std::max(high.sectors, scene.wads[j].sectors + get_lz_size(iso, scene.wads[j].sectors).sectors)};
+			}
+		}
+	}
+	if(low.sectors == INT32_MAX || high.sectors == 0) {
+		return {};
+	}
+	
+	s32 header_size_sectors = Sector32::size_from_bytes(sizeof(Rac1SceneWadHeader)).sectors;
+	Sector32 adjust = {low.sectors - header_size_sectors};
+	
+	// Rewrite header, convert absolute sector numbers to relative sector offsets.
+	Rac1SceneWadHeader scene_header = {0};
+	scene_header.header_size = sizeof(Rac1SceneWadHeader);
+	for(s32 i = 0; i < sizeof(header.scenes) / sizeof(header.scenes[0]); i++) {
+		Rac1SceneHeader& dest = scene_header.scenes[i];
+		Rac1SceneHeader& src = header.scenes[i];
+		for(s32 j = 0; j < sizeof(dest.sounds)/ sizeof(dest.sounds[0]); j++) {
+			if(src.sounds[j].sectors > 0) {
+				dest.sounds[j] = {src.sounds[j].sectors - adjust.sectors};
+			}
+		}
+		for(s32 j = 0; j < sizeof(dest.wads) / sizeof(dest.wads[0]); j++) {
+			if(src.wads[j].sectors) {
+				dest.wads[j] = {src.wads[j].sectors - adjust.sectors};
+			}
+		}
+	}
+	
+	toc_level_part scene_part;
+	scene_part.header_lba = {0};
+	scene_part.magic = sizeof(Rac1SceneWadHeader);
+	scene_part.file_lba = low;
+	scene_part.file_size = {high.sectors - low.sectors};
+	scene_part.info = {level_file_type::SCENE, "scene",  GAME_RAC1};
+	scene_part.header.resize(sizeof(Rac1SceneWadHeader));
+	memcpy(scene_part.header.data(), &scene_header, sizeof(Rac1SceneWadHeader));
+	scene_part.prepend_header = true;
+	
+	verify(scene_part.file_size.bytes() < 1024 * 1024 * 1024, "Level scene WAD too big!");
+	
+	return scene_part;
+}
+
+static Sector32 get_vag_size(FILE* iso, Sector32 sector) {
+	std::vector<u8> header_bytes = read_file(iso, sector.bytes(), sizeof(VagHeader));
+	VagHeader header = Buffer(header_bytes).read<VagHeader>(0, "vag header");
+	if(memcmp(header.magic, "VAGp", 4) != 0) {
+		return {1};
+	}
+	return Sector32::size_from_bytes(sizeof(VagHeader) + byte_swap_32(header.data_size));
+}
+
+static Sector32 get_lz_size(FILE* iso, Sector32 sector) {
+	std::vector<u8> header_bytes = read_file(iso, sector.bytes(), sizeof(LzHeader));
+	LzHeader header = Buffer(header_bytes).read<LzHeader>(0, "WAD LZ header");
+	if(memcmp(header.magic, "WAD", 3) != 0) {
+		return {1};
+	}
+	return Sector32::size_from_bytes(header.compressed_size);
+}
+
+table_of_contents read_table_of_contents_rac234(FILE* iso) {
+	std::vector<u8> bytes = read_file(iso, RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE, TOC_MAX_SIZE);
 	Buffer buffer(bytes);
 	
 	table_of_contents toc;

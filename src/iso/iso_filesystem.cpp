@@ -20,19 +20,6 @@
 
 #include "../editor/util.h"
 
-uint16_t byte_swap_16(uint16_t val) {
-	return (val >> 8) | (val << 8);
-}
-
-uint32_t byte_swap_32(uint32_t val) {
-	uint32_t swapped = 0;
-	swapped |= (val >> 24) & 0xff;
-	swapped |= (val << 8) & 0xff0000;
-	swapped |= (val >> 8) & 0xff00;
-	swapped |= (val << 24) & 0xff000000;
-	return swapped;
-}
-
 packed_struct(iso9660_i16_lsb_msb,
 	int16_t lsb;
 	int16_t msb;
