@@ -199,7 +199,7 @@ static Opt<toc_level_part> adapt_rac1_scene_wad_header(FILE* iso, Rac1Amalgamate
 			}
 		}
 		for(s32 j = 0; j < sizeof(dest.wads) / sizeof(dest.wads[0]); j++) {
-			if(src.wads[j].sectors) {
+			if(src.wads[j].sectors > 0) {
 				dest.wads[j] = {src.wads[j].sectors - adjust.sectors};
 			}
 		}
