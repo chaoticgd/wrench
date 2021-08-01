@@ -117,7 +117,7 @@ The level header:
 	<tr><td></td><td>0x0</td><td>0x04</td><td>0x8</td><td>0xc</td></tr>
 	<tr><td>0x00</td><td>0x30</td><td>0</td><td>level_number</td><td>0</td></tr>
 	<tr><td>0x10</td><td colspan=2>primary</td><td colspan=2>gameplay_ntsc</td></tr>
-	<tr><td>0x10</td><td colspan=2>gameplay_pal</td><td colspan=2>occlusion</td></tr>
+	<tr><td>0x20</td><td colspan=2>gameplay_pal</td><td colspan=2>occlusion</td></tr>
 </tbody></table>
 
 ### R&C2
@@ -128,10 +128,10 @@ Level header:
 	<tr><td></td><td>0x0</td><td>0x04</td><td>0x8</td><td>0xc</td></tr>
 	<tr><td>0x00</td><td>0x60</td><td>sector</td><td>level_number</td><td>reverb</td></tr>
 	<tr><td>0x10</td><td colspan=2>primary</td><td colspan=2>core_bank</td></tr>
-	<tr><td>0x10</td><td colspan=2>gameplay</td><td colspan=2>occlusion</td></tr>
-	<tr><td>0x10</td><td colspan=2>chunk[0]</td><td colspan=2>chunk[1]</td></tr>
-	<tr><td>0x10</td><td colspan=2>chunk[2]</td><td colspan=2>chunk_sound_banks[0]</td></tr>
-	<tr><td>0x10</td><td colspan=2>chunk_sound_banks[1]</td><td colspan=2>chunk_sound_banks[2]</td></tr>
+	<tr><td>0x20</td><td colspan=2>gameplay</td><td colspan=2>occlusion</td></tr>
+	<tr><td>0x30</td><td colspan=2>chunk[0]</td><td colspan=2>chunk[1]</td></tr>
+	<tr><td>0x40</td><td colspan=2>chunk[2]</td><td colspan=2>chunk_sound_banks[0]</td></tr>
+	<tr><td>0x50</td><td colspan=2>chunk_sound_banks[1]</td><td colspan=2>chunk_sound_banks[2]</td></tr>
 </tbody></table>
 
 ### R&C3
