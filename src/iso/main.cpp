@@ -104,7 +104,24 @@ void ls(std::string iso_path) {
 	verify(iso, "Failed to open ISO file.");
 	defer([&]() { fclose(iso); });
 	
-	table_of_contents toc = read_table_of_contents_rac234(iso);
+	std::vector<u8> filesystem_buf = read_file(iso, 0, MAX_FILESYSTEM_SIZE_BYTES);
+	iso_directory root_dir;
+	std::string volume_id;
+	if(!read_iso_filesystem(root_dir, volume_id, Buffer(filesystem_buf))) {
+		fprintf(stderr, "error: Missing or invalid ISO filesystem!\n");
+		exit(1);
+	}
+	
+	table_of_contents toc;
+	if(volume_id == RAC1_VOLUME_ID) {
+		toc = read_table_of_contents_rac1(iso);
+	} else {
+		toc = read_table_of_contents_rac234(iso);
+		if(toc.levels.size() == 0) {
+			fprintf(stderr, "error: Unable to locate level table!\n");
+			exit(1);
+		}
+	}
 	
 	printf("+-[Non-level Sections]--+-------------+-------------+\n");
 	printf("| Index | Offset in ToC | Size in ToC | Data Offset |\n");
