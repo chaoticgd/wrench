@@ -70,27 +70,9 @@ packed_struct(file_ptr,
 	}
 )
 
-packed_struct(sector32,
-	uint32_t sectors = 0;
-	
-	std::size_t bytes() const {
-		return sectors * SECTOR_SIZE;
-	}
-	
-	static sector32 size_from_bytes(size_t size_in_bytes) {
-		if(size_in_bytes % SECTOR_SIZE != 0) {
-			size_in_bytes += SECTOR_SIZE - (size_in_bytes % SECTOR_SIZE);
-		}
-		uint32_t size_in_sectors = (uint32_t) (size_in_bytes / SECTOR_SIZE);
-		// If this ever asserts then hello from the distant past.
-		assert(size_in_sectors == size_in_bytes / SECTOR_SIZE);
-		return { size_in_sectors };
-	}
-)
-
 packed_struct(sector_range,
-	sector32 offset;
-	sector32 size;
+	Sector32 offset;
+	Sector32 size;
 )
 
 packed_struct(byte_range,

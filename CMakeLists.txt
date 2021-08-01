@@ -22,6 +22,7 @@ add_executable(wrench
 	src/json.cpp
 	src/instance.cpp
 	src/level.cpp
+	src/util.cpp
 	src/editor/app.cpp
 	src/editor/command_line.cpp
 	src/editor/stream.cpp
@@ -95,6 +96,8 @@ add_executable(iso
 	src/editor/stacktrace.cpp
 	src/editor/util.cpp
 	src/editor/command_line.cpp
+	src/buffer.cpp
+	src/util.cpp
 )
 
 add_executable(memmap
@@ -107,6 +110,7 @@ add_executable(wad
 	src/json.cpp
 	src/instance.cpp
 	src/level.cpp
+	src/util.cpp
 	src/wad/wad_file.cpp
 	src/wad/gameplay.cpp
 	src/wad/tests.cpp

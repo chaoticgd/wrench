@@ -21,12 +21,13 @@
 
 #include <map>
 
+#include "../buffer.h"
 #include "../editor/stream.h"
 #include "../editor/fs_includes.h"
 
 struct iso_file_record {
 	std::string name;
-	sector32 lba;
+	Sector32 lba;
 	uint32_t size;
 };
 
@@ -39,13 +40,13 @@ struct iso_directory {
 	iso_directory* parent = nullptr;
 	size_t index = 0;
 	size_t parent_index = 0;
-	sector32 lba = {0};
+	Sector32 lba = {0};
 	uint32_t size = 0;
 };
 
 // Read an ISO filesystem and output a map (dest) of the files in the root
 // directory. Return true on success, false on failure.
-bool read_iso_filesystem(iso_directory& dest, stream& iso);
+bool read_iso_filesystem(iso_directory& dest, std::string& volume_id, Buffer src);
 
 // Given a list of files including their LBA and size, write out an ISO
 // filesystem. This function is "dumb" in that it doesn't work out any positions

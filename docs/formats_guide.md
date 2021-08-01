@@ -27,7 +27,7 @@ This document is not required reading for someone who just wants to use Wrench t
 
 Each game disc has a standard ISO filesystem which is used to access the `SYSTEM.CNF` file required for booting the game, the main executable, and some other files.
 
-Once this executable is loaded all other assets are accessed by LBA, via raw disk I/O. In the case of R&C2 retail builds these assets are also included on the filesystem, however for retail builds of R&C1, R&C3 and Deadlocked they are not. The LBAs of these assets are stored in a file that is unofficially called the table of contents, which is itself located at a hardcoded LBA.
+Once this executable is loaded all other assets are accessed by their sector number, via raw disk I/O. In the case of R&C2 retail builds these assets are also included on the filesystem, however for retail builds of R&C1, R&C3 and Deadlocked they are not. The sector numbers of these assets are stored in a file that is unofficially called the table of contents, which is itself located at a hardcoded sector number.
 
 ## Basic Types
 
@@ -55,7 +55,7 @@ A single sector is `0x800` bytes in size.
 
 ### R&C2, R&C3 and Deadlocked
 
-The table of contents begins at LBA `1001` (`0x1f4800` in bytes) and in the case of R&C2 is referenced on the filesystem as `RC2.HDR`. It starts with a few sections corresponding to non-level/global files. For example `ARMOR.WAD` and `MISC.WAD`. These start out like so:
+The table of contents begins at sector number `1001` (`0x1f4800` in bytes) and in the case of R&C2 is referenced on the filesystem as `RC2.HDR`. It starts with a few sections corresponding to non-level/global files. For example `ARMOR.WAD` and `MISC.WAD`. These start out like so:
 
 | Offset | Name        | Type | Description                     |
 | ------ | ----        | ---- | -----------                     |
@@ -97,26 +97,46 @@ Each header pointed to has the following fields:
 
 ## Levels
 
+Levels are split into level files, audio files and scene files.
+
 See `src/formats/level_types.h` for structure definitions.
 
 ### File Header
 
-The file header identifies the level ID, the LBA of the file on disc, and the offsets/sizes of each part of the file in sectors. Unofficially, I call these sections lumps.
+For more headers, see [src/wad/wad_file.h](../src/wad/wad_file.h).
 
-The first `u32` field in the level files is the magic identifier. Known values for this field are listed below:
+#### R&C1
 
-| Value  | File Type | Header Size (sectors) | Game              |
-| -----  | --------- | --------------------- | ----              |
-| 0x0060 | Level     | 1                     | R&C2 or R&C3      |
-| 0x1018 | Audio     | 3                     | R&C2              |
-| 0x137c | Scene     | 3                     | R&C2              |
-| 0x1818 | Audio     | 4                     | R&C3              |
-| 0x26f0 | Scene     | 5                     | R&C3 or Dadlocked |
-| 0x0c68 | Level     | 2                     | Deadlocked        |
-| 0x02a0 | Audio     | 1                     | Deadlocked        |
-| 0x0068 | Level     | 1                     | R&C2 (non-retail) |
-| 0x1000 | Audio     | 2                     | R&C2 (non-retail) |
-| 0x2420 | Scene     | 5                     | R&C2 (non-retail) |
+The header stored on the disc is located at the beginning of the main level file, uses absolute sector numbers, and references sectors before itself on the disc.
+
+Because this header would be useless if directly extracted from the disc, the Wrench ISO utility rewrites the header into 3 seperate headers for the 3 different files that make up a level, using relative sector numbers. These headers were designed to be similar those of R&C2/R&C3/Deadlocked.
+
+The level header:
+
+<table><tbody>
+	<tr><td></td><td>0x0</td><td>0x04</td><td>0x8</td><td>0xc</td></tr>
+	<tr><td>0x00</td><td>0x30</td><td>0</td><td>level_number</td><td>0</td></tr>
+	<tr><td>0x10</td><td colspan=2>primary</td><td colspan=2>gameplay_ntsc</td></tr>
+	<tr><td>0x10</td><td colspan=2>gameplay_pal</td><td colspan=2>occlusion</td></tr>
+</tbody></table>
+
+### R&C2
+
+Level header:
+
+<table><tbody>
+	<tr><td></td><td>0x0</td><td>0x04</td><td>0x8</td><td>0xc</td></tr>
+	<tr><td>0x00</td><td>0x60</td><td>sector</td><td>level_number</td><td>reverb</td></tr>
+	<tr><td>0x10</td><td colspan=2>primary</td><td colspan=2>core_bank</td></tr>
+	<tr><td>0x10</td><td colspan=2>gameplay</td><td colspan=2>occlusion</td></tr>
+	<tr><td>0x10</td><td colspan=2>chunk[0]</td><td colspan=2>chunk[1]</td></tr>
+	<tr><td>0x10</td><td colspan=2>chunk[2]</td><td colspan=2>chunk_sound_banks[0]</td></tr>
+	<tr><td>0x10</td><td colspan=2>chunk_sound_banks[1]</td><td colspan=2>chunk_sound_banks[2]</td></tr>
+</tbody></table>
+
+### R&C3
+
+The level header is the same as for R&C2.
 
 ### Primary
 
@@ -124,7 +144,9 @@ This lump contains game code and assets.
 
 ### Gameplay
 
-This lump contains all the entities that appear in the game world. Wrench refers to it as the "world segment".
+This lump contains all the entity instances that appear in the game world.
+
+The code Wrench uses for reading/writing it is in [src/wad/gameplay.cpp](../src/wad/gameplay.cpp).
 
 ### Sound Banks
 

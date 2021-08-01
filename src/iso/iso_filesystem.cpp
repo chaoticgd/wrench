@@ -20,19 +20,6 @@
 
 #include "../editor/util.h"
 
-uint16_t byte_swap_16(uint16_t val) {
-	return (val >> 8) | (val << 8);
-}
-
-uint32_t byte_swap_32(uint32_t val) {
-	uint32_t swapped = 0;
-	swapped |= (val >> 24) & 0xff;
-	swapped |= (val << 8) & 0xff0000;
-	swapped |= (val >> 8) & 0xff00;
-	swapped |= (val << 24) & 0xff000000;
-	return swapped;
-}
-
 packed_struct(iso9660_i16_lsb_msb,
 	int16_t lsb;
 	int16_t msb;
@@ -123,10 +110,10 @@ packed_struct(iso9660_path_table_entry,
 	uint16_t parent;
 )
 
-void read_directory_record(iso_directory& dest, stream& iso, size_t pos, size_t size, size_t depth);
+void read_directory_record(iso_directory& dest, Buffer src, s64 ofs, size_t size, size_t depth);
 
-bool read_iso_filesystem(iso_directory& dest, stream& iso) {
-	auto pvd = iso.read<iso9660_primary_volume_desc>(0x10 * SECTOR_SIZE);
+bool read_iso_filesystem(iso_directory& dest, std::string& volume_id, Buffer src) {
+	auto& pvd = src.read<iso9660_primary_volume_desc>(0x10 * SECTOR_SIZE, "primary volume descriptor");
 	if(pvd.type_code != 0x01) {
 		return false;
 	}
@@ -137,54 +124,57 @@ bool read_iso_filesystem(iso_directory& dest, stream& iso) {
 		return false;
 	}
 	
-	size_t root_dir_pos = pvd.root_directory.lba.lsb * SECTOR_SIZE;
+	size_t root_dir_ofs = pvd.root_directory.lba.lsb * SECTOR_SIZE;
 	size_t root_dir_size = pvd.root_directory.data_length.lsb;
-	read_directory_record(dest, iso, root_dir_pos, root_dir_size, 0);
-	
+	read_directory_record(dest, src, root_dir_ofs, root_dir_size, 0);
+	volume_id.resize(32);
+	memcpy(volume_id.data(), pvd.volume_identifier, 32);
 	return true;
 }
 
-void read_directory_record(iso_directory& dest, stream& iso, size_t pos, size_t size, size_t depth) {
+void read_directory_record(iso_directory& dest, Buffer src, s64 ofs, size_t size, size_t depth) {
 	if(depth > 8) {
 		fprintf(stderr, "error: Depth limit (8 levels) reached!\n");
 		exit(1);
 	}
 	
-	iso.seek(pos);
+	s64 end = ofs + size;
+	
 	size_t i;
-	for(i = 0; i < 1000 && iso.tell() < pos + size; i++) {
-		size_t record_pos = iso.tell();
-		auto record = iso.read<iso9660_directory_record>();
+	for(i = 0; i < 1000 && ofs < end; i++) {
+		s64 record_ofs = ofs;
+		auto& record = src.read<iso9660_directory_record>(ofs, "directory record");
+		ofs += sizeof(iso9660_directory_record);
 		if(record.record_length < 1) {
-			iso.seek(record_pos + 1);
+			ofs = record_ofs + 1;
 			continue;
 		}
 		if(record.file_flags & 2) {
 			if(i < 2) {
 				// Skip dot and dot dot.
-				iso.seek(record_pos + record.record_length);
+				ofs = record_ofs + record.record_length;
 				continue;
 			}
 			iso_directory subdir;
-			subdir.name.resize(record.identifier_length);
-			iso.read_n(subdir.name.data(), subdir.name.size());
+			subdir.name = src.read_fixed_string(ofs, record.identifier_length);
+			ofs += record.identifier_length;
 			for(char& c : subdir.name) {
 				c = tolower(c);
 			}
-			read_directory_record(subdir, iso, record.lba.lsb * SECTOR_SIZE, record.data_length.lsb, depth + 1);
+			read_directory_record(subdir, src, record.lba.lsb * SECTOR_SIZE, record.data_length.lsb, depth + 1);
 			dest.subdirs.push_back(subdir);
 		} else if(record.identifier_length >= 2) {
 			iso_file_record file;
-			file.name.resize(record.identifier_length);
-			iso.read_n(file.name.data(), file.name.size());
+			file.name = src.read_fixed_string(ofs, record.identifier_length);
+			ofs += record.identifier_length;
 			for(char& c : file.name) {
 				c = tolower(c);
 			}
-			file.lba = {(uint32_t) record.lba.lsb};
+			file.lba = {(s32) record.lba.lsb};
 			file.size = record.data_length.lsb;
 			dest.files.push_back(file);
 		}
-		iso.seek(record_pos + record.record_length);
+		ofs = record_ofs + record.record_length;
 	}
 	if(i == 1000) {
 		fprintf(stderr, "error: Iteration limit exceeded while reading directory!\n");
@@ -302,19 +292,19 @@ void write_iso_filesystem(stream& dest, iso_directory* root_dir) {
 	
 	// Determine directory record LBAs and sizes.
 	size_t next_dir_lba = pvd.root_directory.lba.lsb;
-	root_dir->lba = {(uint32_t) pvd.root_directory.lba.lsb};
+	root_dir->lba = {(s32) pvd.root_directory.lba.lsb};
 	array_stream root_dummy;
 	write_directory_records(root_dummy, *root_dir);
 	root_dir->size = root_dummy.size();
 	pvd.root_directory.data_length = iso9660_i32_lsb_msb::from_scalar(root_dir->size);
-	next_dir_lba += sector32::size_from_bytes(root_dir->size).sectors;
+	next_dir_lba += Sector32::size_from_bytes(root_dir->size).sectors;
 	for(size_t i = 0; i < flat_dirs.size(); i++) {
 		iso_directory* dir = flat_dirs[i];
-		dir->lba = {(uint32_t) next_dir_lba};
+		dir->lba = {(s32) next_dir_lba};
 		array_stream dummy;
 		write_directory_records(dummy, *dir);
 		dir->size = dummy.size();
-		next_dir_lba += sector32::size_from_bytes(dir->size).sectors;
+		next_dir_lba += Sector32::size_from_bytes(dir->size).sectors;
 	}
 	
 	// Write out little endian path table.

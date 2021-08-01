@@ -25,11 +25,13 @@
 
 // This is true for R&C2, R&C3 and Deadlocked.
 static const uint32_t SYSTEM_CNF_LBA = 1000;
-static const uint32_t TABLE_OF_CONTENTS_LBA = 1001;
+static const s64 MAX_FILESYSTEM_SIZE_BYTES = RAC1_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
+static const std::string RAC1_VOLUME_ID =
+	"RATCHETANDCLANK                 ";
 
 void ls(std::string iso_path);
 void extract(std::string iso_path, fs::path output_dir);
-void extract_non_wads_recursive(stream& iso, fs::path out, iso_directory& in);
+void extract_non_wads_recursive(FILE* iso, fs::path out, iso_directory& in);
 void build(std::string input_dir, fs::path iso_path, int single_level_index, bool no_mpegs);
 void enumerate_wads_recursive(std::vector<fs::path>& wads, fs::path dir, int depth);
 void enumerate_non_wads_recursive(stream& iso, iso_directory& out, fs::path dir, int depth);
@@ -98,17 +100,37 @@ int main(int argc, char** argv) {
 // Fun fact: This used to be its own command line tool called "toc". Now, it's
 // been reduced to a humble subcommand within a greater tool. Pity it.
 void ls(std::string iso_path) {
-	file_stream iso(iso_path);
-	table_of_contents toc = read_table_of_contents(iso, TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
+	FILE* iso = fopen(iso_path.c_str(), "rb");
+	verify(iso, "Failed to open ISO file.");
+	defer([&]() { fclose(iso); });
+	
+	std::vector<u8> filesystem_buf = read_file(iso, 0, MAX_FILESYSTEM_SIZE_BYTES);
+	iso_directory root_dir;
+	std::string volume_id;
+	if(!read_iso_filesystem(root_dir, volume_id, Buffer(filesystem_buf))) {
+		fprintf(stderr, "error: Missing or invalid ISO filesystem!\n");
+		exit(1);
+	}
+	
+	table_of_contents toc;
+	if(volume_id == RAC1_VOLUME_ID) {
+		toc = read_table_of_contents_rac1(iso);
+	} else {
+		toc = read_table_of_contents_rac234(iso);
+		if(toc.levels.size() == 0) {
+			fprintf(stderr, "error: Unable to locate level table!\n");
+			exit(1);
+		}
+	}
 	
 	printf("+-[Non-level Sections]--+-------------+-------------+\n");
 	printf("| Index | Offset in ToC | Size in ToC | Data Offset |\n");
 	printf("| ----- | ------------- | ----------- | ----------- |\n");
 	for(size_t i = 0; i < toc.tables.size(); i++) {
 		toc_table& table = toc.tables[i];
-		size_t base_offset = table.header.base_offset.bytes();
+		size_t base_offset = table.sector.bytes();
 	printf("| %02ld    | %08x      | %08x    | %08lx    |\n",
-		i, table.offset_in_toc, table.header.header_size, base_offset);
+		i, table.offset_in_toc, table.header.size(), base_offset);
 	}
 	printf("+-------+---------------+-------------+-------------+\n");
 	
@@ -184,55 +206,64 @@ void extract(std::string iso_path, fs::path output_dir) {
 		}
 	}
 	
-	file_stream iso(iso_path);
+	FILE* iso = fopen(iso_path.c_str(), "rb");
+	verify(iso, "Failed to open ISO file.");
+	defer([&]() { fclose(iso); });
 	
 	printf("LBA             Size (bytes)    Filename\n");
 	printf("---             ------------    --------\n");
 	
 	// Extract SYSTEM.CNF, the boot ELF, etc.
+	std::vector<u8> filesystem_buf = read_file(iso, 0, MAX_FILESYSTEM_SIZE_BYTES);
 	iso_directory root_dir;
-	if(!read_iso_filesystem(root_dir, iso)) {
+	std::string volume_id;
+	if(!read_iso_filesystem(root_dir, volume_id, Buffer(filesystem_buf))) {
 		fprintf(stderr, "error: Missing or invalid ISO filesystem!\n");
 		exit(1);
 	}
 	extract_non_wads_recursive(iso, output_dir, root_dir);
 	
 	// Extract levels and other asset files.
-	table_of_contents toc = read_table_of_contents(iso, TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
-	if(toc.levels.size() == 0) {
-		fprintf(stderr, "error: Unable to locate level table!\n");
-		exit(1);
+	table_of_contents toc;
+	if(volume_id == RAC1_VOLUME_ID) {
+		toc = read_table_of_contents_rac1(iso);
+	} else {
+		toc = read_table_of_contents_rac234(iso);
+		if(toc.levels.size() == 0) {
+			fprintf(stderr, "error: Unable to locate level table!\n");
+			exit(1);
+		}
 	}
 	for(toc_table& table : toc.tables) {
 		auto name = std::to_string(table.index) + ".wad";
 		auto path = global_dir/name;
 		
-		size_t start_of_file = table.header.base_offset.bytes();
+		size_t start_of_file = table.sector.bytes();
 		size_t end_of_file = SIZE_MAX;
 		// Assume the beginning of the next file after this one is also the end
 		// of this file.
 		for(toc_table& other_table : toc.tables) {
-			sector32 lba = other_table.header.base_offset;
+			Sector32 lba = other_table.sector;
 			if(lba.bytes() > start_of_file) {
-				end_of_file = std::min(end_of_file, lba.bytes());
+				end_of_file = std::min(end_of_file, (size_t) lba.bytes());
 			}
 		}
 		for(toc_level& other_level : toc.levels) {
 			for(std::optional<toc_level_part>& part : other_level.parts) {
 				if(part && part->file_lba.bytes() > start_of_file) {
-					end_of_file = std::min(end_of_file, part->file_lba.bytes());
+					end_of_file = std::min(end_of_file, (size_t) part->file_lba.bytes());
 				}
 			}
 		}
 		assert(end_of_file != SIZE_MAX);
 		assert(end_of_file >= start_of_file);
 		size_t file_size = end_of_file - start_of_file;
+		printf(row_format, (size_t) table.sector.sectors, (size_t) file_size, name.c_str());
 		
-		printf(row_format, (size_t) table.header.base_offset.sectors, (size_t) file_size, name.c_str());
-		
-		file_stream output_file(path.string(), std::ios::out);
-		iso.seek(table.header.base_offset.bytes());
-		stream::copy_n(output_file, iso, file_size);
+		FILE* dest_file = fopen(path.string().c_str(), "wb");
+		verify(dest_file, "Failed to open '%s' for writing.", path.string().c_str());
+		extract_file(path, dest_file, iso, table.sector.bytes(), file_size);
+		fclose(dest_file);
 	}
 	for(toc_level& level : toc.levels) {
 		for(std::optional<toc_level_part>& part : level.parts) {
@@ -244,24 +275,32 @@ void extract(std::string iso_path, fs::path output_dir) {
 			if(num.size() == 1) num = "0" + num;
 			auto name = part->info.prefix + num + ".wad";
 			auto path = level_dirs.at(part->info.type)/name;
-			file_stream output_file(path.string(), std::ios::out);
-			
 			printf(row_format, (size_t) part->file_lba.sectors, part->file_size.bytes(), name.c_str());
 			
-			iso.seek(part->file_lba.bytes());
-			stream::copy_n(output_file, iso, part->file_size.bytes());
+			FILE* dest_file = fopen(path.string().c_str(), "wb");
+			verify(dest_file, "Failed to open '%s' for writing.", path.string().c_str());
+			if(part->prepend_header) {
+				std::vector<u8> padded_header;
+				OutBuffer(padded_header).write_multiple<u8>(part->header);
+				OutBuffer(padded_header).pad(SECTOR_SIZE, 0);
+				verify(fwrite(padded_header.data(), padded_header.size(), 1, dest_file) == 1,
+					"Failed to write header to '%s'.", path.string().c_str());
+			}
+			extract_file(path, dest_file, iso, part->file_lba.bytes(), part->file_size.bytes());
+			fclose(dest_file);
 		}
 	}
 }
 
-void extract_non_wads_recursive(stream& iso, fs::path out, iso_directory& in) {
+void extract_non_wads_recursive(FILE* iso, fs::path out, iso_directory& in) {
 	for(iso_file_record& file : in.files) {
 		fs::path file_path = out/file.name.substr(0, file.name.size() - 2);
 		if(file_path.string().find(".wad") == std::string::npos) {
 			print_file_record(file);
-			file_stream output_file(file_path.string(), std::ios::out);
-			iso.seek(file.lba.bytes());
-			stream::copy_n(output_file, iso, file.size);
+			FILE* dest_file = fopen(file_path.string().c_str(), "wb");
+			verify(dest_file, "Failed to open '%s' for writing.", file_path.string().c_str());
+			extract_file(file_path, dest_file, iso, file.lba.bytes(), file.size);
+			fclose(dest_file);
 		}
 	}
 	for(iso_directory& subdir : in.subdirs) {
@@ -273,7 +312,7 @@ void extract_non_wads_recursive(stream& iso, fs::path out, iso_directory& in) {
 
 struct global_file {
 	fs::path path;
-	sector32 lba;
+	Sector32 lba;
 	bool operator<(global_file& rhs) { return path < rhs.path; }
 };
 
@@ -374,7 +413,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 				fprintf(stderr, "error: File '%s' has invalid header!\n", level.parts[i]->filename().c_str());
 				exit(1);
 			}
-			level.header_sizes_in_sectors[i] = info->second.header_size_sectors;
+			level.header_sizes_in_sectors[i] = Sector32::size_from_bytes(magic).sectors;
 			game &= info->second.game;
 		}
 	}
@@ -412,8 +451,8 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		global_toc_size_bytes += size;
 	}
 	global_toc_size_bytes += level_files.size() * sizeof(sector_range) * 3;
-	sector32 global_toc_size = sector32::size_from_bytes(global_toc_size_bytes);
-	sector32 total_toc_size = global_toc_size;
+	Sector32 global_toc_size = Sector32::size_from_bytes(global_toc_size_bytes);
+	Sector32 total_toc_size = global_toc_size;
 	if(single_level_index > -1) {
 		if(single_level_index >= (int) level_files.size()) {
 			fprintf(stderr, "error: Single level index greater than maximum level index!\n");
@@ -447,7 +486,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 	defer([&]() {
 		iso.seek(0);
 		write_iso_filesystem(iso, &root_dir);
-		assert(iso.tell() <= TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
+		assert(iso.tell() <= RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
 		
 		iso.write<uint32_t>(0x8050, volume_size);
 	});
@@ -457,10 +496,11 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 	std::vector<toc_table> toc_tables;
 	std::vector<toc_level> toc_levels;
 	defer([&]() {
-		iso.seek(TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
+		iso.seek(RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
 		for(toc_table& table : toc_tables) {
-			iso.write(table.header);
-			iso.write_v(table.lumps);
+			*(Sector32*) &table.header[4] = table.sector;
+			iso.write_v(table.header);
+			*(Sector32*) &table.header[4] = {0};
 		}
 		
 		size_t level_table_pos = iso.tell();
@@ -471,8 +511,8 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		});
 		iso.seek(iso.tell() + level_table.size() * sizeof(sector_range));
 		
-		size_t toc_start_size_bytes = iso.tell() - TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
-		sector32 toc_start_size = sector32::size_from_bytes(toc_start_size_bytes);
+		size_t toc_start_size_bytes = iso.tell() - RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
+		Sector32 toc_start_size = Sector32::size_from_bytes(toc_start_size_bytes);
 		
 		// Size limits hardcoded in the boot ELF.
 		switch(game) {
@@ -490,9 +530,9 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 				
 				iso.pad(SECTOR_SIZE, 0);
 				uint32_t header_lba = iso.tell() / SECTOR_SIZE;
-				iso.write(part->magic);
-				iso.write(part->file_lba);
-				iso.write_v(part->lumps);
+				*(Sector32*) &part->header[4] = part->file_lba;
+				iso.write_v(part->header);
+				*(Sector32*) &part->header[4] = {0};
 				iso.pad(SECTOR_SIZE, 0);
 				
 				// The order of fields in the level table entries is different
@@ -510,7 +550,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 			}
 		}
 		
-		assert(iso.tell() <= TABLE_OF_CONTENTS_LBA * SECTOR_SIZE + total_toc_size.bytes());
+		assert(iso.tell() <= RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE + total_toc_size.bytes());
 	});
 	
 	// Write out blank sectors that are to be filled in later.
@@ -542,7 +582,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		
 		iso_file_record record;
 		record.name = "system.cnf;1";
-		record.lba = {(uint32_t) (iso.tell() / SECTOR_SIZE)};
+		record.lba = {(s32) (iso.tell() / SECTOR_SIZE)};
 		record.size = system_cnf_size;
 		root_dir.files.push_back(record);
 		
@@ -561,15 +601,15 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 			case GAME_RAC4: toc_record.name = "rc4.hdr;1"; break;
 			case GAME_RAC2_OTHER: toc_record.name = "rc2.hdr;1"; break;
 		}
-		toc_record.lba = {TABLE_OF_CONTENTS_LBA};
+		toc_record.lba = {RAC234_TABLE_OF_CONTENTS_LBA};
 		toc_record.size = total_toc_size.bytes();
 		root_dir.files.push_back(toc_record);
 		print_file_record(toc_record);
 	}
 	// Write out blank sectors that are to be filled in by the table of contents later.
 	iso.pad(SECTOR_SIZE, 0);
-	assert(iso.tell() == TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
-	while(iso.tell() < TABLE_OF_CONTENTS_LBA * SECTOR_SIZE + total_toc_size.bytes()) {
+	assert(iso.tell() == RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
+	while(iso.tell() < RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE + total_toc_size.bytes()) {
 		iso.write_n((char*) zeroed_sector, SECTOR_SIZE);
 	}
 	// Then various other files e.g. the boot ELF, etc.
@@ -583,11 +623,11 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		toc_table table;
 		table.index = 0; // Don't care.
 		table.offset_in_toc = 0; // Don't care.
-		table.header.header_size = file.read<uint32_t>(0);
-		table.header.base_offset = {(uint32_t) (iso.tell() / SECTOR_SIZE)};
-		table.lumps.resize((table.header.header_size - 8) / sizeof(sector_range));
-		file.seek(0x8);
-		file.read_v(table.lumps);
+		s64 header_size = file.read<s32>(0);
+		table.sector = {(s32) (iso.tell() / SECTOR_SIZE)};
+		table.header.resize(header_size);
+		file.seek(0);
+		file.read_v(table.header);
 		
 		bool skipped = false;
 		if(no_mpegs) {
@@ -598,16 +638,18 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 			// know that it's probably in bytes intead of sectors and hence this
 			// file must be the MPEG file.
 			size_t lump_sizes_probably_in_bytes = 0;
-			for(sector_range& range : table.lumps) {
+			size_t lump_count = (table.header.size() - 8) / 8;
+			Buffer header_buf(table.header);
+			auto lumps = header_buf.read_multiple<sector_range>(8, lump_count, "global header");
+			for(sector_range range : lumps) {
 				if(range.size.sectors > 0xffff) {
 					lump_sizes_probably_in_bytes++;
 				}
 			}
 			// Arbitrary threshold.
 			if(lump_sizes_probably_in_bytes > 10) {
-				for(sector_range& range : table.lumps) {
-					range.offset.sectors = 0;
-					range.size.sectors = 0;
+				for(size_t i = 8; i < table.header.size(); i++) {
+					table.header[i] = 0;
 				}
 				skipped = true;
 			}
@@ -618,7 +660,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		if(!skipped) {
 			iso_file_record record;
 			record.name = global.path.filename().string() + ";1";
-			record.lba = table.header.base_offset;
+			record.lba = table.sector;
 			record.size = file.size();
 			global_dir.files.push_back(record);
 			
@@ -638,19 +680,19 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		
 		toc_level_part part;
 		part.header_lba = {0}; // Don't care.
-		part.file_size = sector32::size_from_bytes(file_size);
+		part.file_size = Sector32::size_from_bytes(file_size);
 		part.magic = file.read<uint32_t>(0);
-		part.file_lba = {(uint32_t) (iso.tell() / SECTOR_SIZE)};
+		part.file_lba = {(s32) (iso.tell() / SECTOR_SIZE)};
 		auto info = LEVEL_FILE_TYPES.find(part.magic);
 		if(info == LEVEL_FILE_TYPES.end()) {
 			fprintf(stderr, "error: Level '%s' has an invalid header!\n", path.filename().c_str());
 			exit(1);
 		}
 		part.info = info->second;
-		size_t header_size = part.info.header_size_sectors * SECTOR_SIZE;
-		part.lumps.resize((std::min(file_size, header_size) - 8) / sizeof(sector_range));
-		file.seek(0x8);
-		file.read_v(part.lumps);
+		size_t header_size = Sector32::size_from_bytes(part.magic).bytes();
+		part.header.resize(header_size);
+		file.seek(0);
+		file.read_v(part.header);
 		
 		iso_file_record record;
 		record.name = path.filename().string() + ";1";
@@ -773,7 +815,7 @@ void enumerate_non_wads_recursive(stream& iso, iso_directory& out, fs::path dir,
 			
 			iso_file_record record;
 			record.name = name + ";1";
-			record.lba = {(uint32_t) (iso.tell() / SECTOR_SIZE)};
+			record.lba = {(s32) (iso.tell() / SECTOR_SIZE)};
 			record.size = file_size;
 			out.files.push_back(record);
 			print_file_record(record);
@@ -807,14 +849,18 @@ std::string str_to_lower(std::string str) {
 }
 
 void parse_pcsx2_stdout(std::string iso_path) {
-	file_stream iso(iso_path);
+	FILE* iso = fopen(iso_path.c_str(), "rb");
+	verify(iso, "Failed to open ISO file for reading.");
+	std::vector<u8> filesystem_buf = read_file(iso, 0, MAX_FILESYSTEM_SIZE_BYTES);
+	fclose(iso);
 	
 	// First we enumerate where all the files on the ISO are. Note that this
 	// command only works for stuff referenced by the filesystem.
 	std::vector<iso_file_record> files;
 	iso_directory root_dir;
 	root_dir.files.push_back({"primary volume descriptor", 0x10, SECTOR_SIZE});
-	if(!read_iso_filesystem(root_dir, iso)) {
+	std::string dummy_volume_id;
+	if(!read_iso_filesystem(root_dir, dummy_volume_id, filesystem_buf)) {
 		fprintf(stderr, "error: Failed to read ISO filesystem!\n");
 		exit(1);
 	}
@@ -830,7 +876,7 @@ void parse_pcsx2_stdout(std::string iso_path) {
 	
 	auto file_from_lba = [&](size_t lba) -> iso_file_record* {
 		for(iso_file_record& file : files) {
-			size_t end_lba = file.lba.sectors + sector32::size_from_bytes(file.size).sectors;
+			size_t end_lba = file.lba.sectors + Sector32::size_from_bytes(file.size).sectors;
 			if(lba >= file.lba.sectors && lba < end_lba) {
 				return &file;
 			}
