@@ -130,89 +130,36 @@ packed_struct(Rgb96,
 	}
 )
 
-packed_struct(PropertiesFirstPart,
-	/* 0x00 */ Rgb96 background_colour;
-	/* 0x0c */ Rgb96 fog_colour;
-	/* 0x18 */ f32 fog_near_distance;
-	/* 0x1c */ f32 fog_far_distance;
-	/* 0x20 */ f32 fog_near_intensity;
-	/* 0x24 */ f32 fog_far_intensity;
-	/* 0x28 */ f32 death_height;
-	/* 0x2c */ s32 is_spherical_world;
-	/* 0x30 */ Vec3f sphere_centre;
-	/* 0x3c */ Vec3f ship_position;
-	/* 0x48 */ f32 ship_rotation_z;
-	/* 0x4c */ s32 unknown_4c;
-	/* 0x50 */ s32 unknown_50;
-	/* 0x54 */ s32 unknown_54;
-	/* 0x58 */ s32 unknown_58;
+struct PropertiesFirstPart {
+	Rgb96 background_colour;
+	Rgb96 fog_colour;
+	f32 fog_near_distance;
+	f32 fog_far_distance;
+	f32 fog_near_intensity;
+	f32 fog_far_intensity;
+	f32 death_height;
+	Opt<s32> is_spherical_world;
+	Opt<glm::vec3> sphere_centre;
+	glm::vec3 ship_position;
+	f32 ship_rotation_z;
+	Rgb96 ship_colour;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD(background_colour);
-		DEF_PACKED_FIELD(fog_colour);
-		DEF_PACKED_FIELD(fog_near_distance);
-		DEF_PACKED_FIELD(fog_far_distance);
-		DEF_PACKED_FIELD(fog_near_intensity);
-		DEF_PACKED_FIELD(fog_far_intensity);
-		DEF_PACKED_FIELD(death_height);
-		DEF_PACKED_FIELD(is_spherical_world);
-		DEF_PACKED_FIELD(sphere_centre);
-		DEF_PACKED_FIELD(ship_position);
-		DEF_PACKED_FIELD(ship_rotation_z);
-		DEF_PACKED_FIELD(unknown_4c);
-		DEF_PACKED_FIELD(unknown_50);
-		DEF_PACKED_FIELD(unknown_54);
-		DEF_PACKED_FIELD(unknown_58);
+		DEF_FIELD(background_colour);
+		DEF_FIELD(fog_colour);
+		DEF_FIELD(fog_near_distance);
+		DEF_FIELD(fog_far_distance);
+		DEF_FIELD(fog_near_intensity);
+		DEF_FIELD(fog_far_intensity);
+		DEF_FIELD(death_height);
+		DEF_FIELD(is_spherical_world);
+		DEF_FIELD(sphere_centre);
+		DEF_FIELD(ship_position);
+		DEF_FIELD(ship_rotation_z);
+		DEF_FIELD(ship_colour);
 	}
-)
-
-packed_struct(PropertiesFirstPartRAC1,
-	u32 unknown_0;
-	u32 unknown_4;
-	u32 unknown_8;
-	u32 unknown_c;
-	u32 unknown_10;
-	u32 unknown_14;
-	u32 unknown_18;
-	u32 unknown_1c;
-	u32 unknown_20;
-	u32 unknown_24;
-	u32 unknown_28;
-	u32 unknown_2c;
-	u32 unknown_30;
-	u32 unknown_34;
-	u32 unknown_38;
-	u32 unknown_3c;
-	u32 unknown_40;
-	u32 unknown_44;
-	u32 unknown_48;
-	u32 unknown_4c;
-	
-	template <typename T>
-	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD(unknown_0);
-		DEF_PACKED_FIELD(unknown_4);
-		DEF_PACKED_FIELD(unknown_8);
-		DEF_PACKED_FIELD(unknown_c);
-		DEF_PACKED_FIELD(unknown_10);
-		DEF_PACKED_FIELD(unknown_14);
-		DEF_PACKED_FIELD(unknown_18);
-		DEF_PACKED_FIELD(unknown_1c);
-		DEF_PACKED_FIELD(unknown_20);
-		DEF_PACKED_FIELD(unknown_24);
-		DEF_PACKED_FIELD(unknown_28);
-		DEF_PACKED_FIELD(unknown_2c);
-		DEF_PACKED_FIELD(unknown_30);
-		DEF_PACKED_FIELD(unknown_34);
-		DEF_PACKED_FIELD(unknown_38);
-		DEF_PACKED_FIELD(unknown_3c);
-		DEF_PACKED_FIELD(unknown_40);
-		DEF_PACKED_FIELD(unknown_44);
-		DEF_PACKED_FIELD(unknown_48);
-		DEF_PACKED_FIELD(unknown_4c);
-	}
-)
+};
 
 packed_struct(PropertiesSecondPart,
 	s32 unknown_0;
@@ -294,9 +241,8 @@ packed_struct(PropertiesFifthPart,
 
 struct Properties {
 	PropertiesFirstPart first_part;
-	PropertiesFirstPartRAC1 first_part_rac1;
-	std::vector<PropertiesSecondPart> second_part;
-	s32 core_sounds_count;
+	Opt<std::vector<PropertiesSecondPart>> second_part;
+	Opt<s32> core_sounds_count;
 	Opt<s32> rac3_third_part;
 	Opt<std::vector<PropertiesThirdPart>> third_part;
 	Opt<PropertiesFourthPart> fourth_part;
@@ -306,7 +252,6 @@ struct Properties {
 	template <typename T>
 	void enumerate_fields(T& t) {
 		DEF_FIELD(first_part);
-		DEF_FIELD(first_part_rac1);
 		DEF_FIELD(second_part);
 		DEF_FIELD(core_sounds_count);
 		DEF_FIELD(rac3_third_part);

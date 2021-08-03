@@ -139,14 +139,48 @@ struct TableBlock {
 	}
 };
 
+packed_struct(PropertiesFirstPartRAC1,
+	/* 0x00 */ Rgb96 background_colour;
+	/* 0x0c */ Rgb96 fog_colour;
+	/* 0x18 */ f32 fog_near_distance;
+	/* 0x1c */ f32 fog_far_distance;
+	/* 0x20 */ f32 fog_near_intensity;
+	/* 0x24 */ f32 fog_far_intensity;
+	/* 0x28 */ f32 death_height;
+	/* 0x2c */ Vec3f ship_position;
+	/* 0x38 */ f32 ship_rotation_z;
+	/* 0x3c */ Rgb96 ship_colour;
+	/* 0x48 */ u32 pad[2];
+)
+static_assert(sizeof(PropertiesFirstPartRAC1) == 0x50);
+
+packed_struct(PropertiesFirstPartRAC234,
+	/* 0x00 */ Rgb96 background_colour;
+	/* 0x0c */ Rgb96 fog_colour;
+	/* 0x18 */ f32 fog_near_distance;
+	/* 0x1c */ f32 fog_far_distance;
+	/* 0x20 */ f32 fog_near_intensity;
+	/* 0x24 */ f32 fog_far_intensity;
+	/* 0x28 */ f32 death_height;
+	/* 0x2c */ s32 is_spherical_world;
+	/* 0x30 */ Vec3f sphere_centre;
+	/* 0x3c */ Vec3f ship_position;
+	/* 0x48 */ f32 ship_rotation_z;
+	/* 0x4c */ Rgb96 ship_colour;
+	/* 0x58 */ u32 pad;
+)
+static_assert(sizeof(PropertiesFirstPartRAC234) == 0x5c);
+
 struct PropertiesBlock {
 	static void read(Properties& dest, Buffer src, Game game) {
 		s32 ofs = 0;
 		if(game == Game::RAC1) {
-			dest.first_part_rac1 = src.read<PropertiesFirstPartRAC1>(ofs, "gameplay properties R&C1");
+			PropertiesFirstPartRAC1 first_part = src.read<PropertiesFirstPartRAC1>(ofs, "gameplay properties R&C1");
+			swap_first_part_rac1(dest.first_part, first_part);
 		} else {
-			dest.first_part = src.read<PropertiesFirstPart>(ofs, "gameplay properties");
-			ofs += sizeof(PropertiesFirstPart);
+			PropertiesFirstPartRAC234 first_part = src.read<PropertiesFirstPartRAC234>(ofs, "gameplay properties");
+			swap_first_part_rac234(dest.first_part, first_part);
+			ofs += sizeof(PropertiesFirstPartRAC234);
 			s32 second_part_count = src.read<s32>(ofs + 0xc, "second part count");
 			if(second_part_count > 0) {
 				dest.second_part = src.read_multiple<PropertiesSecondPart>(ofs, second_part_count, "second part").copy();
@@ -177,37 +211,97 @@ struct PropertiesBlock {
 	}
 	
 	static void write(OutBuffer dest, const Properties& src, Game game) {
-		static const char* ERROR_MESSAGE = "Invalid properties block.";
+		PropertiesFirstPart first_part = src.first_part;
 		if(game == Game::RAC1) {
-			dest.write(src.first_part_rac1);
+			PropertiesFirstPartRAC1 first_part_packed;
+			swap_first_part_rac1(first_part, first_part_packed);
+			dest.write(first_part_packed);
 		} else {
-			dest.write(src.first_part);
-			if(src.second_part.size() > 0) {
-				dest.write_multiple(src.second_part);
+			PropertiesFirstPartRAC234 first_part_packed;
+			swap_first_part_rac234(first_part, first_part_packed);
+			dest.write(first_part_packed);
+			if(src.second_part.has_value() && src.second_part->size() > 0) {
+				dest.write_multiple(*src.second_part);
 			} else {
 				PropertiesSecondPart terminator = {0};
 				dest.write(terminator);
 			}
-			dest.write(src.core_sounds_count);
+			verify(src.core_sounds_count.has_value(), "Missing core_sounds_count in properties block.");
+			dest.write(*src.core_sounds_count);
 			if(game == Game::RAC3) {
-				verify(src.rac3_third_part.has_value(), ERROR_MESSAGE);
+				verify(src.rac3_third_part.has_value(), "Missing rac3_third_part in properties block.");
 				dest.write(*src.rac3_third_part);
 			} else if(game == Game::DL) {
-				verify(src.third_part.has_value(), ERROR_MESSAGE);
+				verify(src.third_part.has_value(), "Missing third_part in properties block.");
 				dest.write((s32) src.third_part->size());
 				if(src.third_part->size() > 0) {
 					dest.write_multiple(*src.third_part);
-					verify(src.fourth_part.has_value(), ERROR_MESSAGE);
+					verify(src.fourth_part.has_value(), "Missing fourth_part in properties block.");
 					dest.write(*src.fourth_part);
 				} else {
 					dest.vec.resize(dest.tell() + 0x18, 0);
 				}
-				verify(src.fifth_part.has_value(), ERROR_MESSAGE);
+				verify(src.fifth_part.has_value(), "Missing fifth in properties block.");
 				dest.write(*src.fifth_part);
-				verify(src.sixth_part.has_value(), ERROR_MESSAGE);
+				verify(src.sixth_part.has_value(), "Missing sixth_part in properties block.");
 				dest.write_multiple(*src.sixth_part);
 			}
 		}
+	}
+	
+	static void swap_first_part_rac1(PropertiesFirstPart& l, PropertiesFirstPartRAC1& r) {
+		SWAP_PACKED(l.background_colour.r, r.background_colour.r);
+		SWAP_PACKED(l.background_colour.g, r.background_colour.g);
+		SWAP_PACKED(l.background_colour.b, r.background_colour.b);
+		SWAP_PACKED(l.fog_colour.r, r.fog_colour.r);
+		SWAP_PACKED(l.fog_colour.g, r.fog_colour.g);
+		SWAP_PACKED(l.fog_colour.b, r.fog_colour.b);
+		SWAP_PACKED(l.fog_near_distance, r.fog_near_distance);
+		SWAP_PACKED(l.fog_far_distance, r.fog_far_distance);
+		SWAP_PACKED(l.fog_near_intensity, r.fog_near_intensity);
+		SWAP_PACKED(l.fog_far_intensity, r.fog_far_intensity);
+		SWAP_PACKED(l.death_height, r.death_height);
+		SWAP_PACKED(l.ship_position.x, r.ship_position.x);
+		SWAP_PACKED(l.ship_position.y, r.ship_position.y);
+		SWAP_PACKED(l.ship_position.z, r.ship_position.z);
+		SWAP_PACKED(l.ship_rotation_z, r.ship_rotation_z);
+		SWAP_PACKED(l.ship_colour.r, r.ship_colour.r);
+		SWAP_PACKED(l.ship_colour.g, r.ship_colour.g);
+		SWAP_PACKED(l.ship_colour.b, r.ship_colour.b);
+		r.pad[0] = 0;
+		r.pad[1] = 0;
+	}
+	
+	static void swap_first_part_rac234(PropertiesFirstPart& l, PropertiesFirstPartRAC234& r) {
+		SWAP_PACKED(l.background_colour.r, r.background_colour.r);
+		SWAP_PACKED(l.background_colour.g, r.background_colour.g);
+		SWAP_PACKED(l.background_colour.b, r.background_colour.b);
+		SWAP_PACKED(l.fog_colour.r, r.fog_colour.r);
+		SWAP_PACKED(l.fog_colour.g, r.fog_colour.g);
+		SWAP_PACKED(l.fog_colour.b, r.fog_colour.b);
+		SWAP_PACKED(l.fog_near_distance, r.fog_near_distance);
+		SWAP_PACKED(l.fog_far_distance, r.fog_far_distance);
+		SWAP_PACKED(l.fog_near_intensity, r.fog_near_intensity);
+		SWAP_PACKED(l.fog_far_intensity, r.fog_far_intensity);
+		SWAP_PACKED(l.death_height, r.death_height);
+		if(!l.is_spherical_world.has_value()) {
+			l.is_spherical_world = false;
+		}
+		SWAP_PACKED(*l.is_spherical_world, r.is_spherical_world);
+		if(!l.sphere_centre.has_value()) {
+			l.sphere_centre = glm::vec3();
+		}
+		SWAP_PACKED(l.sphere_centre->x, r.sphere_centre.x);
+		SWAP_PACKED(l.sphere_centre->y, r.sphere_centre.y);
+		SWAP_PACKED(l.sphere_centre->z, r.sphere_centre.z);
+		SWAP_PACKED(l.ship_position.x, r.ship_position.x);
+		SWAP_PACKED(l.ship_position.y, r.ship_position.y);
+		SWAP_PACKED(l.ship_position.z, r.ship_position.z);
+		SWAP_PACKED(l.ship_rotation_z, r.ship_rotation_z);
+		SWAP_PACKED(l.ship_colour.r, r.ship_colour.r);
+		SWAP_PACKED(l.ship_colour.g, r.ship_colour.g);
+		SWAP_PACKED(l.ship_colour.b, r.ship_colour.b);
+		r.pad = 0;
 	}
 };
 
