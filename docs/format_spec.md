@@ -1,6 +1,6 @@
 # Format Specification
 
-The source level format created for Wrench. Version 4 and up is currently supported.
+The source level format created for Wrench. Version 6 and up is currently supported.
 
 ## Changelog
 
