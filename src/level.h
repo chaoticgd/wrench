@@ -393,8 +393,6 @@ struct MobyInstance : Instance {
 	s32 rac1_unknown_28;
 	s32 rac1_unknown_2c;
 	s32 rac1_unknown_48;
-	s32 rac1_unknown_4c;
-	s32 rac1_unknown_50;
 	s32 rac1_unknown_54;
 	s32 rac1_unknown_5c;
 	s32 rac1_unknown_60;
@@ -440,8 +438,6 @@ struct MobyInstance : Instance {
 		DEF_FIELD(rac1_unknown_28);
 		DEF_FIELD(rac1_unknown_2c);
 		DEF_FIELD(rac1_unknown_48);
-		DEF_FIELD(rac1_unknown_4c);
-		DEF_FIELD(rac1_unknown_50);
 		DEF_FIELD(rac1_unknown_54);
 		DEF_FIELD(rac1_unknown_5c);
 		DEF_FIELD(rac1_unknown_60);

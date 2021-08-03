@@ -39,7 +39,7 @@ The source level format created for Wrench. Version 6 and up is currently suppor
 	- Added rac1_78 as a top-level JSON hex buffer in the gameplay file.
 	- Added RAC1_7c instance type.
 	- Added RAC1_88 instance type.
-	- Addded moby fields: rac1_unknown_4, rac1_unknown_8, rac1_unknown_c, rac1_unknown_10, rac1_unknown_14, rac1_unknown_18, rac1_unknown_1c, rac1_unknown_20, rac1_unknown_24, rac1_unknown_28, rac1_unknown_2c, rac1_unknown_48, rac1_unknown_4c, rac1_unknown_50, rac1_unknown_54, rac1_unknown_5c, rac1_unknown_60, rac1_unknown_64, rac1_unknown_68, rac1_unknown_6c, rac1_unknown_70, rac1_unknown_74.
+	- Addded moby fields: rac1_unknown_4, rac1_unknown_8, rac1_unknown_c, rac1_unknown_10, rac1_unknown_14, rac1_unknown_18, rac1_unknown_1c, rac1_unknown_20, rac1_unknown_24, rac1_unknown_28, rac1_unknown_2c, rac1_unknown_48, rac1_unknown_54, rac1_unknown_5c, rac1_unknown_60, rac1_unknown_64, rac1_unknown_68, rac1_unknown_6c, rac1_unknown_70, rac1_unknown_74.
 - Improved how the first part of the properties gameplay block is stored:
 	- unknown_4c, unknown_50 and unknown_54 are now "ship_colour".
 	- unknown_58 was removed (it is now treated as padding).

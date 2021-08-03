@@ -518,8 +518,8 @@ packed_struct(MobyInstanceRAC1,
 	/* 0x30 */ Vec3f position;
 	/* 0x3c */ Vec3f rotation;
 	/* 0x48 */ s32 unknown_48;
-	/* 0x4c */ s32 unknown_4c;
-	/* 0x50 */ s32 unknown_50;
+	/* 0x4c */ s32 is_rooted;
+	/* 0x50 */ f32 rooted_distance;
 	/* 0x54 */ s32 unknown_54;
 	/* 0x58 */ s32 pvar_index;
 	/* 0x5c */ s32 unknown_5c;
@@ -577,8 +577,8 @@ struct RAC1MobyBlock {
 		SWAP_PACKED(l.rac1_unknown_28, r.unknown_28);
 		SWAP_PACKED(l.rac1_unknown_2c, r.unknown_2c);
 		SWAP_PACKED(l.rac1_unknown_48, r.unknown_48);
-		SWAP_PACKED(l.rac1_unknown_4c, r.unknown_4c);
-		SWAP_PACKED(l.rac1_unknown_50, r.unknown_50);
+		SWAP_PACKED(l.is_rooted, r.is_rooted);
+		SWAP_PACKED(l.rooted_distance, r.rooted_distance);
 		SWAP_PACKED(l.rac1_unknown_54, r.unknown_54);
 		SWAP_PACKED(l.rac1_unknown_5c, r.unknown_5c);
 		SWAP_PACKED(l.rac1_unknown_60, r.unknown_60);
