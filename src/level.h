@@ -559,6 +559,7 @@ struct DirectionalLight : Instance {
 	glm::vec4 direction_a;
 	glm::vec4 colour_b;
 	glm::vec4 direction_b;
+	
 	template <typename T>
 	void enumerate_fields(T& t) {
 		Instance::enumerate_fields(t);
@@ -576,6 +577,7 @@ struct TieInstance : Instance {
 	s32 directional_lights;
 	s32 uid;
 	std::vector<u8> ambient_rgbas;
+	
 	template <typename T>
 	void enumerate_fields(T& t) {
 		Instance::enumerate_fields(t);
@@ -584,17 +586,6 @@ struct TieInstance : Instance {
 		DEF_FIELD(directional_lights);
 		DEF_FIELD(uid);
 		DEF_HEXDUMP(ambient_rgbas);
-	}
-};
-
-struct TieAmbientRgbas {
-	s16 id;
-	std::vector<u8> data;
-	
-	template <typename T>
-	void enumerate_fields(T& t) {
-		DEF_FIELD(id);
-		DEF_HEXDUMP(data);
 	}
 };
 
@@ -608,6 +599,7 @@ struct ShrubInstance : Instance {
 	s32 unknown_64;
 	s32 unknown_68;
 	s32 unknown_6c;
+	
 	template <typename T>
 	void enumerate_fields(T& t) {
 		Instance::enumerate_fields(t);
@@ -671,7 +663,6 @@ struct Gameplay {
 	
 	Opt<std::vector<DirectionalLight>> lights;
 	Opt<std::vector<TieInstance>> tie_instances;
-	Opt<std::vector<TieAmbientRgbas>> tie_ambient_rgbas;
 	Opt<std::vector<Group>> tie_groups;
 	Opt<std::vector<ShrubInstance>> shrub_instances;
 	Opt<std::vector<Group>> shrub_groups;
@@ -735,7 +726,6 @@ struct Gameplay {
 		DEF_FIELD(areas);
 		DEF_FIELD(lights);
 		DEF_FIELD(tie_instances);
-		DEF_FIELD(tie_ambient_rgbas);
 		DEF_FIELD(tie_groups);
 		DEF_FIELD(shrub_instances);
 		DEF_FIELD(shrub_groups);

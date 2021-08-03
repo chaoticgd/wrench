@@ -1257,31 +1257,38 @@ struct AreasBlock {
 };
 
 struct TieAmbientRgbaBlock {
-	static void read(std::vector<TieAmbientRgbas>& dest, Buffer src, Game game) {
+	static void read(LevelWad& wad, Gameplay& dest, Buffer src, Game game) {
+		if(!dest.tie_instances.has_value()) {
+			return;
+		}
 		s64 ofs = 0;
 		for(;;) {
-			TieAmbientRgbas part;
-			part.id = src.read<s16>(ofs, "id");
+			s16 index = src.read<s16>(ofs, "tie ambient RGBA index");
 			ofs += 2;
-			if(part.id == -1) {
+			if(index == -1) {
 				break;
 			}
-			s64 size = ((s64) src.read<s16>(ofs, "size")) * 2;
+			TieInstance& inst = dest.tie_instances->at(index);
+			s64 size = ((s64) src.read<s16>(ofs, "tie ambient RGBA size")) * 2;
 			ofs += 2;
-			part.data = src.read_multiple<u8>(ofs, size, "tie rgba data").copy();
-			dest.emplace_back(std::move(part));
+			inst.ambient_rgbas = src.read_multiple<u8>(ofs, size, "tie ambient RGBA data").copy();
 			ofs += size;
 		}
 	}
 	
-	static void write(OutBuffer dest, const std::vector<TieAmbientRgbas>& src, Game game) {
-		for(const TieAmbientRgbas& part : src) {
-			dest.write(part.id);
-			assert(part.data.size() % 2 == 0);
-			dest.write<s16>(part.data.size() / 2);
-			dest.write_multiple(part.data);
+	static bool write(OutBuffer dest, const LevelWad& wad, const Gameplay& src, Game game) {
+		s16 index = 0;
+		for(const TieInstance& inst : opt_iterator(src.tie_instances)) {
+			if(inst.ambient_rgbas.size() > 0) {
+				dest.write(index);
+				assert(inst.ambient_rgbas.size() % 2 == 0);
+				dest.write<s16>(inst.ambient_rgbas.size() / 2);
+				dest.write_multiple(inst.ambient_rgbas);
+			}
+			index++;
 		}
 		dest.write<s16>(-1);
+		return true;
 	}
 };
 
@@ -1690,7 +1697,7 @@ const std::vector<GameplayBlockDescription> RAC23_GAMEPLAY_BLOCKS = {
 	{0x54, {GlobalPvarBlock::read, GlobalPvarBlock::write}, "global pvar"},
 	{0x30, {TieClassBlock::read, TieClassBlock::write}, "tie classes"},
 	{0x34, bf<InstanceBlock<TieInstance, TieInstancePacked>>(&Gameplay::tie_instances), "tie instances"},
-	{0x94, bf<TieAmbientRgbaBlock>(&Gameplay::tie_ambient_rgbas), "tie ambient rgbas"},
+	{0x94, {TieAmbientRgbaBlock::read, TieAmbientRgbaBlock::write}, "tie ambient rgbas"},
 	{0x38, bf<GroupBlock>(&Gameplay::tie_groups), "tie groups"},
 	{0x3c, {ShrubClassBlock::read, ShrubClassBlock::write}, "shrub classes"},
 	{0x40, bf<InstanceBlock<ShrubInstance, ShrubInstancePacked>>(&Gameplay::shrub_instances), "shrub instances"},
@@ -1744,7 +1751,7 @@ const std::vector<GameplayBlockDescription> DL_ART_INSTANCE_BLOCKS = {
 	{0x00, bf<InstanceBlock<DirectionalLight, DirectionalLightPacked>>(&Gameplay::lights), "directional lights"},
 	{0x04, {TieClassBlock::read, TieClassBlock::write}, "tie classes"},
 	{0x08, bf<InstanceBlock<TieInstance, TieInstancePacked>>(&Gameplay::tie_instances), "tie instances"},
-	{0x20, bf<TieAmbientRgbaBlock>(&Gameplay::tie_ambient_rgbas), "tie ambient rgbas"},
+	{0x20, {TieAmbientRgbaBlock::read, TieAmbientRgbaBlock::write}, "tie ambient rgbas"},
 	{0x0c, bf<GroupBlock>(&Gameplay::tie_groups), "tie groups"},
 	{0x10, {ShrubClassBlock::read, ShrubClassBlock::write}, "shrub classes"},
 	{0x14, bf<InstanceBlock<ShrubInstance, ShrubInstancePacked>>(&Gameplay::shrub_instances), "shrub instances"},

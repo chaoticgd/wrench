@@ -43,3 +43,4 @@ The source level format created for Wrench. Version 6 and up is currently suppor
 - Improved how the first part of the properties gameplay block is stored:
 	- unknown_4c, unknown_50 and unknown_54 are now "ship_colour".
 	- unknown_58 was removed (it is now treated as padding).
+- The tie_ambient_rgbas array has been removed. Tie ambient RGBA buffers are now stored in the "ambient_rgbas" field of tie instances.
