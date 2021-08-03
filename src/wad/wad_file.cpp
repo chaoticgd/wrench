@@ -26,6 +26,17 @@ std::unique_ptr<Wad> read_wad(FILE* file) {
 	s32 header_size;
 	verify(fread(&header_size, 4, 1, file) == 1, "Failed to read WAD header.");
 	switch(header_size) {
+		case sizeof(Rac1LevelWadHeader): {
+			auto header = read_header<Rac1LevelWadHeader>(file);
+			LevelWad wad;
+			wad.game = Game::RAC1;
+			wad.type = WadType::LEVEL;
+			wad.level_number = header.level_number;
+			wad.primary = read_lump(file, header.primary, "primary");
+			std::vector<u8> gameplay_lump = read_compressed_lump(file, header.gameplay_ntsc, "gameplay NTSC");
+			read_gameplay(wad, wad.gameplay, gameplay_lump, wad.game, RAC1_GAMEPLAY_BLOCKS);
+			return std::make_unique<LevelWad>(std::move(wad));
+		}
 		case sizeof(Rac23LevelWadHeader): {
 			auto header = read_header<Rac23LevelWadHeader>(file);
 			LevelWad wad;

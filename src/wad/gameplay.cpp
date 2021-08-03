@@ -142,63 +142,71 @@ struct TableBlock {
 struct PropertiesBlock {
 	static void read(Properties& dest, Buffer src, Game game) {
 		s32 ofs = 0;
-		dest.first_part = src.read<PropertiesFirstPart>(ofs, "gameplay properties");
-		ofs += sizeof(PropertiesFirstPart);
-		s32 second_part_count = src.read<s32>(ofs + 0xc, "second part count");
-		if(second_part_count > 0) {
-			dest.second_part = src.read_multiple<PropertiesSecondPart>(ofs, second_part_count, "second part").copy();
-			ofs += second_part_count * sizeof(PropertiesSecondPart);
+		if(game == Game::RAC1) {
+			dest.first_part_rac1 = src.read<PropertiesFirstPartRAC1>(ofs, "gameplay properties R&C1");
 		} else {
-			ofs += sizeof(PropertiesSecondPart);
-		}
-		dest.core_sounds_count = src.read<s32>(ofs, "core sounds count");
-		ofs += 4;
-		if(game == Game::RAC3) {
-			dest.rac3_third_part = src.read<s32>(ofs, "R&C3 third part");
-		} else if(game == Game::DL) {
-			s64 third_part_count = src.read<s32>(ofs, "third part count");
-			ofs += 4;
-			if(third_part_count >= 0) {
-				dest.third_part = src.read_multiple<PropertiesThirdPart>(ofs, third_part_count, "third part").copy();
-				ofs += third_part_count * sizeof(PropertiesThirdPart);
-				dest.fourth_part = src.read<PropertiesFourthPart>(ofs, "fourth part");
-				ofs += sizeof(PropertiesFourthPart);
+			dest.first_part = src.read<PropertiesFirstPart>(ofs, "gameplay properties");
+			ofs += sizeof(PropertiesFirstPart);
+			s32 second_part_count = src.read<s32>(ofs + 0xc, "second part count");
+			if(second_part_count > 0) {
+				dest.second_part = src.read_multiple<PropertiesSecondPart>(ofs, second_part_count, "second part").copy();
+				ofs += second_part_count * sizeof(PropertiesSecondPart);
 			} else {
-				ofs += sizeof(PropertiesThirdPart);
+				ofs += sizeof(PropertiesSecondPart);
 			}
-			dest.fifth_part = src.read<PropertiesFifthPart>(ofs, "fifth part");
-			ofs += sizeof(PropertiesFifthPart);
-			dest.sixth_part = src.read_multiple<s8>(ofs, dest.fifth_part->sixth_part_count, "sixth part").copy();
+			dest.core_sounds_count = src.read<s32>(ofs, "core sounds count");
+			ofs += 4;
+			if(game == Game::RAC3) {
+				dest.rac3_third_part = src.read<s32>(ofs, "R&C3 third part");
+			} else if(game == Game::DL) {
+				s64 third_part_count = src.read<s32>(ofs, "third part count");
+				ofs += 4;
+				if(third_part_count >= 0) {
+					dest.third_part = src.read_multiple<PropertiesThirdPart>(ofs, third_part_count, "third part").copy();
+					ofs += third_part_count * sizeof(PropertiesThirdPart);
+					dest.fourth_part = src.read<PropertiesFourthPart>(ofs, "fourth part");
+					ofs += sizeof(PropertiesFourthPart);
+				} else {
+					ofs += sizeof(PropertiesThirdPart);
+				}
+				dest.fifth_part = src.read<PropertiesFifthPart>(ofs, "fifth part");
+				ofs += sizeof(PropertiesFifthPart);
+				dest.sixth_part = src.read_multiple<s8>(ofs, dest.fifth_part->sixth_part_count, "sixth part").copy();
+			}
 		}
 	}
 	
 	static void write(OutBuffer dest, const Properties& src, Game game) {
 		static const char* ERROR_MESSAGE = "Invalid properties block.";
-		dest.write(src.first_part);
-		if(src.second_part.size() > 0) {
-			dest.write_multiple(src.second_part);
+		if(game == Game::RAC1) {
+			dest.write(src.first_part_rac1);
 		} else {
-			PropertiesSecondPart terminator = {0};
-			dest.write(terminator);
-		}
-		dest.write(src.core_sounds_count);
-		if(game == Game::RAC3) {
-			verify(src.rac3_third_part.has_value(), ERROR_MESSAGE);
-			dest.write(*src.rac3_third_part);
-		} else if(game == Game::DL) {
-			verify(src.third_part.has_value(), ERROR_MESSAGE);
-			dest.write((s32) src.third_part->size());
-			if(src.third_part->size() > 0) {
-				dest.write_multiple(*src.third_part);
-				verify(src.fourth_part.has_value(), ERROR_MESSAGE);
-				dest.write(*src.fourth_part);
+			dest.write(src.first_part);
+			if(src.second_part.size() > 0) {
+				dest.write_multiple(src.second_part);
 			} else {
-				dest.vec.resize(dest.tell() + 0x18, 0);
+				PropertiesSecondPart terminator = {0};
+				dest.write(terminator);
 			}
-			verify(src.fifth_part.has_value(), ERROR_MESSAGE);
-			dest.write(*src.fifth_part);
-			verify(src.sixth_part.has_value(), ERROR_MESSAGE);
-			dest.write_multiple(*src.sixth_part);
+			dest.write(src.core_sounds_count);
+			if(game == Game::RAC3) {
+				verify(src.rac3_third_part.has_value(), ERROR_MESSAGE);
+				dest.write(*src.rac3_third_part);
+			} else if(game == Game::DL) {
+				verify(src.third_part.has_value(), ERROR_MESSAGE);
+				dest.write((s32) src.third_part->size());
+				if(src.third_part->size() > 0) {
+					dest.write_multiple(*src.third_part);
+					verify(src.fourth_part.has_value(), ERROR_MESSAGE);
+					dest.write(*src.fourth_part);
+				} else {
+					dest.vec.resize(dest.tell() + 0x18, 0);
+				}
+				verify(src.fifth_part.has_value(), ERROR_MESSAGE);
+				dest.write(*src.fifth_part);
+				verify(src.sixth_part.has_value(), ERROR_MESSAGE);
+				dest.write_multiple(*src.sixth_part);
+			}
 		}
 	}
 };
@@ -399,6 +407,94 @@ packed_struct(MobyBlockHeader,
 	s32 dynamic_count;
 	s32 pad[2];
 )
+
+packed_struct(MobyInstanceRAC1,
+	/* 0x00 */ s32 size; // Always 0x78.
+	/* 0x04 */ s32 unknown_4;
+	/* 0x08 */ s32 unknown_8;
+	/* 0x0c */ s32 unknown_c;
+	/* 0x10 */ s32 unknown_10;
+	/* 0x14 */ s32 unknown_14;
+	/* 0x18 */ s32 o_class;
+	/* 0x1c */ f32 scale;
+	/* 0x20 */ f32 draw_distance;
+	/* 0x24 */ s32 update_distance;
+	/* 0x28 */ s32 unknown_28;
+	/* 0x2c */ s32 unknown_2c;
+	/* 0x30 */ Vec3f position;
+	/* 0x3c */ Vec3f rotation;
+	/* 0x48 */ s32 unknown_48;
+	/* 0x4c */ s32 unknown_4c;
+	/* 0x50 */ s32 unknown_50;
+	/* 0x54 */ s32 unknown_54;
+	/* 0x58 */ s32 pvar_index;
+	/* 0x5c */ s32 unknown_5c;
+	/* 0x60 */ s32 unknown_60;
+	/* 0x64 */ s32 unknown_64;
+	/* 0x68 */ s32 unknown_68;
+	/* 0x6c */ s32 unknown_6c;
+	/* 0x70 */ s32 unknown_70;
+	/* 0x74 */ s32 unknown_74;
+)
+
+struct RAC1MobyBlock {
+	static void read(LevelWad& wad, Gameplay& gameplay, Buffer src, Game game) {
+		auto& header = src.read<MobyBlockHeader>(0, "moby block header");
+		gameplay.dynamic_moby_count = header.dynamic_count;
+		s32 index = 0;
+		gameplay.moby_instances = std::vector<MobyInstance>();
+		gameplay.moby_instances->reserve(header.static_count);
+		for(MobyInstanceRAC1 entry : src.read_multiple<MobyInstanceRAC1>(0x10, header.static_count, "moby instances")) {
+			verify(entry.size == 0x78, "Moby size field has invalid value.");
+			MobyInstance instance;
+			instance.set_id_value(index++);
+			swap_moby(instance, entry);
+			gameplay.moby_instances->push_back(instance);
+		}
+	}
+	
+	static bool write(OutBuffer dest, const LevelWad& wad, const Gameplay& gameplay, Game game) {
+		verify(gameplay.dynamic_moby_count.has_value(), "Missing dynamic moby count field.");
+		verify(gameplay.moby_instances.has_value(), "Missing moby instances array.");
+		MobyBlockHeader header = {0};
+		header.static_count = gameplay.moby_instances->size();
+		header.dynamic_count = *gameplay.dynamic_moby_count;
+		dest.write(header);
+		for(MobyInstance instance : *gameplay.moby_instances) {
+			MobyInstanceRAC1 entry;
+			swap_moby(instance, entry);
+			dest.write(entry);
+		}
+		return true;
+	}
+	
+	static void swap_moby(MobyInstance& l, MobyInstanceRAC1& r) {
+		r.size = 0x78;
+		swap_position_rotation_scale(l, r);
+		SWAP_PACKED(l.temp_pvar_index(), r.pvar_index);
+		SWAP_PACKED(l.draw_distance(), r.draw_distance);
+		SWAP_PACKED(l.rac1_unknown_4, r.unknown_4);
+		SWAP_PACKED(l.rac1_unknown_8, r.unknown_8);
+		SWAP_PACKED(l.rac1_unknown_c, r.unknown_c);
+		SWAP_PACKED(l.rac1_unknown_10, r.unknown_10);
+		SWAP_PACKED(l.rac1_unknown_14, r.unknown_14);
+		SWAP_PACKED(l.o_class, r.o_class);
+		SWAP_PACKED(l.update_distance, r.update_distance);
+		SWAP_PACKED(l.rac1_unknown_28, r.unknown_28);
+		SWAP_PACKED(l.rac1_unknown_2c, r.unknown_2c);
+		SWAP_PACKED(l.rac1_unknown_48, r.unknown_48);
+		SWAP_PACKED(l.rac1_unknown_4c, r.unknown_4c);
+		SWAP_PACKED(l.rac1_unknown_50, r.unknown_50);
+		SWAP_PACKED(l.rac1_unknown_54, r.unknown_54);
+		SWAP_PACKED(l.rac1_unknown_5c, r.unknown_5c);
+		SWAP_PACKED(l.rac1_unknown_60, r.unknown_60);
+		SWAP_PACKED(l.rac1_unknown_64, r.unknown_64);
+		SWAP_PACKED(l.rac1_unknown_68, r.unknown_68);
+		SWAP_PACKED(l.rac1_unknown_6c, r.unknown_6c);
+		SWAP_PACKED(l.rac1_unknown_70, r.unknown_70);
+		SWAP_PACKED(l.rac1_unknown_74, r.unknown_74);
+	}
+};
 
 packed_struct(MobyInstanceRAC23,
 	/* 0x00 */ s32 size; // Always 0x88.
@@ -615,7 +711,6 @@ struct PvarDataBlock {
 				inst.pvars() = src.read_multiple<u8>(entry.offset, entry.size, "pvar data").copy();
 			}
 		});
-		
 		dest.pvars_temp = {};
 	}
 	
@@ -967,7 +1062,7 @@ struct GrindPathBlock {
 	}
 	
 	static void write(OutBuffer dest, const std::vector<GrindPath>& src, Game game) {
-		s64 header_pos = dest.alloc<PathBlockHeader>();
+		s64 header_ofs = dest.alloc<PathBlockHeader>();
 		std::vector<std::vector<glm::vec4>> splines;
 		for(const GrindPath& inst : src) {
 			GrindPathData packed;
@@ -980,10 +1075,10 @@ struct GrindPathBlock {
 		}
 		PathBlockHeader header = {0};
 		header.spline_count = src.size();
-		header.data_offset = write_splines(dest, splines);
-		header.data_size = dest.tell() - header.data_offset;
-		header.data_offset -= header_pos;
-		dest.write(header_pos, header);
+		s32 abs_data_offset = write_splines(dest, splines);
+		header.data_offset = abs_data_offset - header_ofs;
+		header.data_size = dest.tell() - abs_data_offset;
+		dest.write(header_ofs, header);
 	}
 };
 
@@ -1128,6 +1223,18 @@ struct ShrubClassBlock {
 	}
 };
 
+struct RAC1_78_Block {
+	static void read(std::vector<u8>& dest, Buffer src, Game game) {
+		s32 size = src.read<s32>(0, "RAC 78 size");
+		dest = src.read_multiple<u8>(4, size, "RAC 78 data").copy();
+	}
+	
+	static void write(OutBuffer dest, const std::vector<u8>& src, Game game) {
+		dest.write((s32) src.size());
+		dest.write_multiple(src);
+	}
+};
+
 packed_struct(OcclusionHeader,
 	s32 count_1;
 	s32 count_2;
@@ -1165,6 +1272,58 @@ std::vector<u8> write_occlusion(const Gameplay& gameplay, Game game) {
 		OcclusionBlock::write(dest, *gameplay.occlusion, game);
 	}
 	return dest;
+}
+
+packed_struct(RAC1_88_Packed,
+	u32 unknown_0;
+	u32 unknown_4;
+	u32 unknown_8;
+	u32 unknown_c;
+	u32 unknown_10;
+	u32 unknown_14;
+	u32 unknown_18;
+	u32 unknown_1c;
+	u32 unknown_20;
+	u32 unknown_24;
+	u32 unknown_28;
+	u32 unknown_2c;
+)
+
+static void swap_instance(RAC1_88& l, RAC1_88_Packed& r) {
+	SWAP_PACKED(l.unknown_0, r.unknown_0);
+	SWAP_PACKED(l.unknown_4, r.unknown_4);
+	SWAP_PACKED(l.unknown_8, r.unknown_8);
+	SWAP_PACKED(l.unknown_c, r.unknown_c);
+	SWAP_PACKED(l.unknown_10, r.unknown_10);
+	SWAP_PACKED(l.unknown_14, r.unknown_14);
+	SWAP_PACKED(l.unknown_18, r.unknown_18);
+	SWAP_PACKED(l.unknown_1c, r.unknown_1c);
+	SWAP_PACKED(l.unknown_20, r.unknown_20);
+	SWAP_PACKED(l.unknown_24, r.unknown_24);
+	SWAP_PACKED(l.unknown_28, r.unknown_28);
+	SWAP_PACKED(l.unknown_2c, r.unknown_2c);
+}
+
+packed_struct(RAC1_7c_Packed,
+	u32 unknown_0;
+	u32 unknown_4;
+	u32 unknown_8;
+	u32 unknown_c;
+	u32 unknown_10;
+	u32 unknown_14;
+	u32 unknown_18;
+	u32 unknown_1c;
+)
+
+static void swap_instance(RAC1_7c& l, RAC1_7c_Packed& r) {
+	SWAP_PACKED(l.unknown_0, r.unknown_0);
+	SWAP_PACKED(l.unknown_4, r.unknown_4);
+	SWAP_PACKED(l.unknown_8, r.unknown_8);
+	SWAP_PACKED(l.unknown_c, r.unknown_c);
+	SWAP_PACKED(l.unknown_10, r.unknown_10);
+	SWAP_PACKED(l.unknown_14, r.unknown_14);
+	SWAP_PACKED(l.unknown_18, r.unknown_18);
+	SWAP_PACKED(l.unknown_1c, r.unknown_1c);
 }
 
 packed_struct(CameraPacked,
@@ -1236,6 +1395,41 @@ static void swap_instance(DirectionalLight& l, DirectionalLightPacked& r) {
 	r.direction_a.swap(l.direction_a);
 	r.colour_b.swap(l.colour_b);
 	r.direction_b.swap(l.direction_b);
+}
+
+packed_struct(TieInstanceRAC1,
+	/* 0x00 */ s32 o_class;
+	/* 0x04 */ s32 draw_distance;
+	/* 0x08 */ s32 pad_8;
+	/* 0x0c */ s32 occlusion_index;
+	/* 0x10 */ Mat4 matrix;
+	/* 0x50 */ u8 ambient_rgbas[0x80];
+	/* 0x50 */ s32 directional_lights;
+	/* 0x54 */ s32 uid;
+	/* 0x58 */ s32 pad_58;
+	/* 0x5c */ s32 pad_5c;
+)
+static_assert(sizeof(TieInstanceRAC1) == 0xe0);
+
+static void swap_instance(TieInstance& l, TieInstanceRAC1& r) {
+	swap_matrix(l, r);
+	SWAP_PACKED(l.draw_distance(), r.draw_distance);
+	SWAP_PACKED(l.o_class, r.o_class);
+	r.pad_8 = 0;
+	SWAP_PACKED(l.occlusion_index, r.occlusion_index);
+	SWAP_PACKED(l.directional_lights, r.directional_lights);
+	SWAP_PACKED(l.uid, r.uid);
+	r.pad_58 = 0;
+	r.pad_5c = 0;
+	u8 temp_rgbas[0x80];
+	if(l.ambient_rgbas.size() == 0x80) {
+		memcpy(temp_rgbas, l.ambient_rgbas.data(), 0x80);
+	} else {
+		memset(temp_rgbas, 0, 0x80);
+	}
+	l.ambient_rgbas.resize(0x80);
+	memcpy(l.ambient_rgbas.data(), r.ambient_rgbas, 0x80);
+	memcpy(r.ambient_rgbas, temp_rgbas, 0x80);
 }
 
 packed_struct(TieInstancePacked,
@@ -1336,6 +1530,46 @@ static GameplayBlockFuncs bf(Field field) {
 	};
 	return funcs;
 }
+
+const std::vector<GameplayBlockDescription> RAC1_GAMEPLAY_BLOCKS = {
+	{0x88, bf<InstanceBlock<RAC1_88, RAC1_88_Packed>>(&Gameplay::rac1_88), "RAC1 88"},
+	{0x00, bf<PropertiesBlock>(&Gameplay::properties), "properties"},
+	{0x10, bf<HelpMessageBlock<false>>(&Gameplay::us_english_help_messages), "us english help messages"},
+	{0x14, bf<HelpMessageBlock<false>>(&Gameplay::uk_english_help_messages), "uk english help messages"},
+	{0x18, bf<HelpMessageBlock<false>>(&Gameplay::french_help_messages), "french help messages"},
+	{0x1c, bf<HelpMessageBlock<false>>(&Gameplay::german_help_messages), "german help messages"},
+	{0x20, bf<HelpMessageBlock<false>>(&Gameplay::spanish_help_messages), "spanish help messages"},
+	{0x24, bf<HelpMessageBlock<false>>(&Gameplay::italian_help_messages), "italian help messages"},
+	{0x28, bf<HelpMessageBlock<false>>(&Gameplay::japanese_help_messages), "japanese help messages"},
+	{0x2c, bf<HelpMessageBlock<true>>(&Gameplay::korean_help_messages), "korean help messages"},
+	{0x04, bf<InstanceBlock<DirectionalLight, DirectionalLightPacked>>(&Gameplay::lights), "directional lights"},
+	{0x80, bf<LightTriggerBlock>(&Gameplay::light_triggers), "light triggers"},
+	{0x08, bf<InstanceBlock<Camera, CameraPacked>>(&Gameplay::cameras), "cameras"},
+	{0x0c, bf<InstanceBlock<SoundInstance, SoundInstancePacked>>(&Gameplay::sound_instances), "sound instances"},
+	{0x40, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},
+	{0x44, {RAC1MobyBlock::read, RAC1MobyBlock::write}, "moby instances"},
+	{0x54, {PvarTableBlock::read, PvarTableBlock::write}, "pvar table"},
+	{0x58, {PvarDataBlock::read, PvarDataBlock::write}, "pvar data"},
+	{0x50, {PvarScratchpadBlock::read, PvarScratchpadBlock::write}, "pvar pointer scratchpad table"},
+	{0x5c, {PvarPointerRewireBlock::read, PvarPointerRewireBlock::write}, "pvar pointer rewire table"},
+	{0x48, bf<GroupBlock>(&Gameplay::moby_groups), "moby groups"},
+	{0x4c, {GlobalPvarBlock::read, GlobalPvarBlock::write}, "global pvar"},
+	{0x30, {TieClassBlock::read, TieClassBlock::write}, "tie classes"},
+	{0x34, bf<InstanceBlock<TieInstance, TieInstanceRAC1>>(&Gameplay::tie_instances), "tie instances"},
+	{0x38, {ShrubClassBlock::read, ShrubClassBlock::write}, "shrub classes"},
+	{0x3c, bf<InstanceBlock<ShrubInstance, ShrubInstancePacked>>(&Gameplay::shrub_instances), "shrub instances"},
+	{0x70, bf<PathBlock>(&Gameplay::paths), "paths"},
+	{0x60, bf<InstanceBlock<Cuboid, ShapePacked>>(&Gameplay::cuboids), "cuboids"},
+	{0x64, bf<InstanceBlock<Sphere, ShapePacked>>(&Gameplay::spheres), "spheres"},
+	{0x68, bf<InstanceBlock<Cylinder, ShapePacked>>(&Gameplay::cylinders), "cylinders"},
+	{0x6c, bf<TableBlock<s32>>(&Gameplay::gc_74_dl_58), "GC 74 DL 58"},
+	{0x84, bf<GC_88_DL_6c_Block>(&Gameplay::gc_88_dl_6c), "GC 88 DL 6c"},
+	{0x7c, bf<InstanceBlock<RAC1_7c, RAC1_7c_Packed>>(&Gameplay::rac1_7c), "RAC1 7c"},
+	{0x78, bf<RAC1_78_Block>(&Gameplay::rac1_78), "RAC1 78"},
+	{0x74, bf<GrindPathBlock>(&Gameplay::grind_paths), "grindpaths"},
+	{0x8c, bf<OcclusionBlock>(&Gameplay::occlusion), "occlusion"},
+	{0x90, {nullptr, nullptr}, "pad"}
+};
 
 const std::vector<GameplayBlockDescription> RAC23_GAMEPLAY_BLOCKS = {
 	{0x8c, bf<TableBlock<GC_8c_DL_70>>(&Gameplay::gc_8c_dl_70), "GC 8c DL 70"},

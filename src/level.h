@@ -24,6 +24,64 @@
 #include "buffer.h"
 #include "instance.h"
 
+struct RAC1_88 : Instance {
+	RAC1_88() : Instance(INST_RAC1_88, COM_NONE, TransformMode::NONE) {}
+	
+	u32 unknown_0;
+	u32 unknown_4;
+	u32 unknown_8;
+	u32 unknown_c;
+	u32 unknown_10;
+	u32 unknown_14;
+	u32 unknown_18;
+	u32 unknown_1c;
+	u32 unknown_20;
+	u32 unknown_24;
+	u32 unknown_28;
+	u32 unknown_2c;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD(unknown_0);
+		DEF_FIELD(unknown_4);
+		DEF_FIELD(unknown_8);
+		DEF_FIELD(unknown_c);
+		DEF_FIELD(unknown_10);
+		DEF_FIELD(unknown_14);
+		DEF_FIELD(unknown_18);
+		DEF_FIELD(unknown_1c);
+		DEF_FIELD(unknown_20);
+		DEF_FIELD(unknown_24);
+		DEF_FIELD(unknown_28);
+		DEF_FIELD(unknown_2c);
+	}
+};
+
+struct RAC1_7c : Instance {
+	RAC1_7c() : Instance(INST_RAC1_7c, COM_NONE, TransformMode::NONE) {}
+	
+	u32 unknown_0;
+	u32 unknown_4;
+	u32 unknown_8;
+	u32 unknown_c;
+	u32 unknown_10;
+	u32 unknown_14;
+	u32 unknown_18;
+	u32 unknown_1c;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD(unknown_0);
+		DEF_FIELD(unknown_4);
+		DEF_FIELD(unknown_8);
+		DEF_FIELD(unknown_c);
+		DEF_FIELD(unknown_10);
+		DEF_FIELD(unknown_14);
+		DEF_FIELD(unknown_18);
+		DEF_FIELD(unknown_1c);
+	}
+};
+
 packed_struct(GC_8c_DL_70,
 	s16 unknown_0;
 	s16 unknown_2;
@@ -109,6 +167,53 @@ packed_struct(PropertiesFirstPart,
 	}
 )
 
+packed_struct(PropertiesFirstPartRAC1,
+	u32 unknown_0;
+	u32 unknown_4;
+	u32 unknown_8;
+	u32 unknown_c;
+	u32 unknown_10;
+	u32 unknown_14;
+	u32 unknown_18;
+	u32 unknown_1c;
+	u32 unknown_20;
+	u32 unknown_24;
+	u32 unknown_28;
+	u32 unknown_2c;
+	u32 unknown_30;
+	u32 unknown_34;
+	u32 unknown_38;
+	u32 unknown_3c;
+	u32 unknown_40;
+	u32 unknown_44;
+	u32 unknown_48;
+	u32 unknown_4c;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_PACKED_FIELD(unknown_0);
+		DEF_PACKED_FIELD(unknown_4);
+		DEF_PACKED_FIELD(unknown_8);
+		DEF_PACKED_FIELD(unknown_c);
+		DEF_PACKED_FIELD(unknown_10);
+		DEF_PACKED_FIELD(unknown_14);
+		DEF_PACKED_FIELD(unknown_18);
+		DEF_PACKED_FIELD(unknown_1c);
+		DEF_PACKED_FIELD(unknown_20);
+		DEF_PACKED_FIELD(unknown_24);
+		DEF_PACKED_FIELD(unknown_28);
+		DEF_PACKED_FIELD(unknown_2c);
+		DEF_PACKED_FIELD(unknown_30);
+		DEF_PACKED_FIELD(unknown_34);
+		DEF_PACKED_FIELD(unknown_38);
+		DEF_PACKED_FIELD(unknown_3c);
+		DEF_PACKED_FIELD(unknown_40);
+		DEF_PACKED_FIELD(unknown_44);
+		DEF_PACKED_FIELD(unknown_48);
+		DEF_PACKED_FIELD(unknown_4c);
+	}
+)
+
 packed_struct(PropertiesSecondPart,
 	s32 unknown_0;
 	s32 unknown_4;
@@ -189,6 +294,7 @@ packed_struct(PropertiesFifthPart,
 
 struct Properties {
 	PropertiesFirstPart first_part;
+	PropertiesFirstPartRAC1 first_part_rac1;
 	std::vector<PropertiesSecondPart> second_part;
 	s32 core_sounds_count;
 	Opt<s32> rac3_third_part;
@@ -200,6 +306,7 @@ struct Properties {
 	template <typename T>
 	void enumerate_fields(T& t) {
 		DEF_FIELD(first_part);
+		DEF_FIELD(first_part_rac1);
 		DEF_FIELD(second_part);
 		DEF_FIELD(core_sounds_count);
 		DEF_FIELD(rac3_third_part);
@@ -329,6 +436,28 @@ struct MobyInstance : Instance {
 	s32 occlusion;
 	s32 mode_bits;
 	s32 light;
+	s32 rac1_unknown_4;
+	s32 rac1_unknown_8;
+	s32 rac1_unknown_c;
+	s32 rac1_unknown_10;
+	s32 rac1_unknown_14;
+	s32 rac1_unknown_18;
+	s32 rac1_unknown_1c;
+	s32 rac1_unknown_20;
+	s32 rac1_unknown_24;
+	s32 rac1_unknown_28;
+	s32 rac1_unknown_2c;
+	s32 rac1_unknown_48;
+	s32 rac1_unknown_4c;
+	s32 rac1_unknown_50;
+	s32 rac1_unknown_54;
+	s32 rac1_unknown_5c;
+	s32 rac1_unknown_60;
+	s32 rac1_unknown_64;
+	s32 rac1_unknown_68;
+	s32 rac1_unknown_6c;
+	s32 rac1_unknown_70;
+	s32 rac1_unknown_74;
 	s32 rac23_unknown_8;
 	s32 rac23_unknown_c;
 	s32 rac23_unknown_18;
@@ -354,6 +483,28 @@ struct MobyInstance : Instance {
 		DEF_FIELD(occlusion);
 		DEF_FIELD(mode_bits);
 		DEF_FIELD(light);
+		DEF_FIELD(rac1_unknown_4);
+		DEF_FIELD(rac1_unknown_8);
+		DEF_FIELD(rac1_unknown_c);
+		DEF_FIELD(rac1_unknown_10);
+		DEF_FIELD(rac1_unknown_14);
+		DEF_FIELD(rac1_unknown_18);
+		DEF_FIELD(rac1_unknown_1c);
+		DEF_FIELD(rac1_unknown_20);
+		DEF_FIELD(rac1_unknown_24);
+		DEF_FIELD(rac1_unknown_28);
+		DEF_FIELD(rac1_unknown_2c);
+		DEF_FIELD(rac1_unknown_48);
+		DEF_FIELD(rac1_unknown_4c);
+		DEF_FIELD(rac1_unknown_50);
+		DEF_FIELD(rac1_unknown_54);
+		DEF_FIELD(rac1_unknown_5c);
+		DEF_FIELD(rac1_unknown_60);
+		DEF_FIELD(rac1_unknown_64);
+		DEF_FIELD(rac1_unknown_68);
+		DEF_FIELD(rac1_unknown_6c);
+		DEF_FIELD(rac1_unknown_70);
+		DEF_FIELD(rac1_unknown_74);
 		DEF_FIELD(rac23_unknown_8);
 		DEF_FIELD(rac23_unknown_c);
 		DEF_FIELD(rac23_unknown_18);
@@ -479,6 +630,7 @@ struct TieInstance : Instance {
 	s32 occlusion_index;
 	s32 directional_lights;
 	s32 uid;
+	std::vector<u8> ambient_rgbas;
 	template <typename T>
 	void enumerate_fields(T& t) {
 		Instance::enumerate_fields(t);
@@ -486,6 +638,7 @@ struct TieInstance : Instance {
 		DEF_FIELD(occlusion_index);
 		DEF_FIELD(directional_lights);
 		DEF_FIELD(uid);
+		DEF_HEXDUMP(ambient_rgbas);
 	}
 };
 
@@ -540,6 +693,9 @@ struct Occlusion {
 struct LevelWad;
 
 struct Gameplay {
+	Opt<std::vector<RAC1_88>> rac1_88;
+	Opt<std::vector<u8>> rac1_78;
+	Opt<std::vector<RAC1_7c>> rac1_7c;
 	Opt<std::vector<GC_8c_DL_70>> gc_8c_dl_70;
 	Opt<Properties> properties;
 	Opt<std::vector<HelpMessage>> us_english_help_messages;
@@ -610,6 +766,9 @@ struct Gameplay {
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
+		DEF_FIELD(rac1_88);
+		DEF_HEXDUMP(rac1_78);
+		DEF_FIELD(rac1_7c);
 		DEF_FIELD(gc_8c_dl_70);
 		DEF_FIELD(properties);
 		DEF_FIELD(light_triggers);
