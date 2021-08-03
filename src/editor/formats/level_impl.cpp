@@ -52,6 +52,7 @@ void level::read_primary(fs::path bin_path, Game game) {
 	_primary.emplace(bin_path.string());
 	
 	switch(game) {
+		case Game::RAC1:
 		case Game::RAC2:
 		case Game::RAC3: {
 			auto header = _primary->read<level_primary_header_rac23>(0);
@@ -74,13 +75,15 @@ void level::read_primary(fs::path bin_path, Game game) {
 	_asset_segment.emplace(&(*_primary), asset_wad_offset);
 	_asset_segment->name = "Asset Segment";
 	
-	uint32_t asset_offset = _primary_header.asset_header.offset;
-	auto asset_header = _primary->read<level_asset_header>(_primary_header.asset_header.offset);
-	read_moby_models(asset_offset, asset_header);
-	read_shrub_models(asset_offset, asset_header);
-	read_textures(asset_offset, asset_header, game == Game::DL);
-	read_tfrags();
-	read_tcol(asset_offset, asset_header);
+	if(game != Game::RAC1) {
+		uint32_t asset_offset = _primary_header.asset_header.offset;
+		auto asset_header = _primary->read<level_asset_header>(_primary_header.asset_header.offset);
+		read_moby_models(asset_offset, asset_header);
+		read_shrub_models(asset_offset, asset_header);
+		read_textures(asset_offset, asset_header, game == Game::DL);
+		read_tfrags();
+		read_tcol(asset_offset, asset_header);
+	}
 }
 
 void level::read_moby_models(std::size_t asset_offset, level_asset_header asset_header) {
