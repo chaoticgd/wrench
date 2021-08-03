@@ -289,13 +289,12 @@ table_of_contents read_table_of_contents_rac234(FILE* iso) {
 			part.file_size = entry.parts[j].size;
 			
 			Sector32 sector = {part.header_lba.sectors - (s32) RAC234_TABLE_OF_CONTENTS_LBA};
-			if(part.header_lba.sectors == 0) {
+			if(sector.sectors <= 0) {
 				continue;
 			}
 			if(sector.bytes() > buffer.size()) {
 				break;
 			}
-			
 			part.magic = buffer.read<uint32_t>(sector.bytes(), "level header size");
 			part.file_lba = buffer.read<Sector32>(sector.bytes() + 4, "level sector number");
 			
