@@ -167,7 +167,7 @@ void app::save_level() {
 		return;
 	}
 	fs::path level_name = lvl.path.parent_path().filename();
-	std::vector<std::string> wad_args = {"build", lvl.path.string(), (directory/"built"/level_name).string()};
+	std::vector<std::string> wad_args = {"build", lvl.path.string(), (directory/"built"/"levels"/level_name).string()};
 	execute_command(WAD_UTILITY_PATH, wad_args);
 }
 
