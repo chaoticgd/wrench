@@ -517,16 +517,14 @@ packed_struct(MobyInstanceRAC1,
 	/* 0x2c */ s32 unknown_2c;
 	/* 0x30 */ Vec3f position;
 	/* 0x3c */ Vec3f rotation;
-	/* 0x48 */ s32 unknown_48;
+	/* 0x48 */ s32 group;
 	/* 0x4c */ s32 is_rooted;
 	/* 0x50 */ f32 rooted_distance;
 	/* 0x54 */ s32 unknown_54;
 	/* 0x58 */ s32 pvar_index;
 	/* 0x5c */ s32 unknown_5c;
 	/* 0x60 */ s32 unknown_60;
-	/* 0x64 */ s32 unknown_64;
-	/* 0x68 */ s32 unknown_68;
-	/* 0x6c */ s32 unknown_6c;
+	/* 0x64 */ Rgb96 colour;
 	/* 0x70 */ s32 unknown_70;
 	/* 0x74 */ s32 unknown_74;
 )
@@ -576,15 +574,15 @@ struct RAC1MobyBlock {
 		SWAP_PACKED(l.update_distance, r.update_distance);
 		SWAP_PACKED(l.rac1_unknown_28, r.unknown_28);
 		SWAP_PACKED(l.rac1_unknown_2c, r.unknown_2c);
-		SWAP_PACKED(l.rac1_unknown_48, r.unknown_48);
+		SWAP_PACKED(l.group, r.group);
 		SWAP_PACKED(l.is_rooted, r.is_rooted);
 		SWAP_PACKED(l.rooted_distance, r.rooted_distance);
 		SWAP_PACKED(l.rac1_unknown_54, r.unknown_54);
 		SWAP_PACKED(l.rac1_unknown_5c, r.unknown_5c);
 		SWAP_PACKED(l.rac1_unknown_60, r.unknown_60);
-		SWAP_PACKED(l.rac1_unknown_64, r.unknown_64);
-		SWAP_PACKED(l.rac1_unknown_68, r.unknown_68);
-		SWAP_PACKED(l.rac1_unknown_6c, r.unknown_6c);
+		SWAP_PACKED(l.colour().r, r.colour.r);
+		SWAP_PACKED(l.colour().g, r.colour.g);
+		SWAP_PACKED(l.colour().b, r.colour.b);
 		SWAP_PACKED(l.rac1_unknown_70, r.unknown_70);
 		SWAP_PACKED(l.rac1_unknown_74, r.unknown_74);
 	}
