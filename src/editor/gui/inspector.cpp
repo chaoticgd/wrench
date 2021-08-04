@@ -42,6 +42,8 @@ struct InspectorField {
 	InspectorFieldFuncs funcs;
 };
 
+static void draw_fields(level& lvl, const std::vector<InspectorField>& fields);
+
 template <typename Value>
 struct InspectorGetterSetter {
 	std::function<Value(Instance& inst)> get;
@@ -112,16 +114,6 @@ void Inspector::render(app& a) {
 		{COM_NONE           , INST_MOBY      , "Occlusion", scalar_funcs(adapt_member_pointer(&MobyInstance::occlusion))},
 		{COM_NONE           , INST_MOBY      , "Mode Bits", scalar_funcs(adapt_member_pointer(&MobyInstance::mode_bits))},
 		{COM_NONE           , INST_MOBY      , "Light    ", foreign_id_funcs(INST_LIGHT, &MobyInstance::light)},
-		{COM_NONE           , INST_MOBY      , "Unk 8    ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_8))},
-		{COM_NONE           , INST_MOBY      , "Unk c    ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_c))},
-		{COM_NONE           , INST_MOBY      , "Unk 18   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_18))},
-		{COM_NONE           , INST_MOBY      , "Unk 1c   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_1c))},
-		{COM_NONE           , INST_MOBY      , "Unk 20   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_20))},
-		{COM_NONE           , INST_MOBY      , "Unk 24   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_24))},
-		{COM_NONE           , INST_MOBY      , "Unk 38   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_38))},
-		{COM_NONE           , INST_MOBY      , "Unk 3c   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_3c))},
-		{COM_NONE           , INST_MOBY      , "Unk 4c   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_4c))},
-		{COM_NONE           , INST_MOBY      , "Unk 84   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_84))},
 		// GrindPath
 		{COM_NONE           , INST_GRIND_PATH, "Wrap     ", scalar_funcs(adapt_member_pointer(&GrindPath::wrap))},
 		{COM_NONE           , INST_GRIND_PATH, "Inactive ", scalar_funcs(adapt_member_pointer(&GrindPath::inactive))},
@@ -147,6 +139,49 @@ void Inspector::render(app& a) {
 		{COM_NONE           , INST_SHRUB     , "Unk 6c   ", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_6c))},
 	};
 	
+	const std::vector<InspectorField> rac1_fields = {
+		{COM_NONE           , INST_MOBY      , "Unk 4    ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_4))},
+		{COM_NONE           , INST_MOBY      , "Unk 8    ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_8))},
+		{COM_NONE           , INST_MOBY      , "Unk c    ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_c))},
+		{COM_NONE           , INST_MOBY      , "Unk 10   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_10))},
+		{COM_NONE           , INST_MOBY      , "Unk 14   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_14))},
+		{COM_NONE           , INST_MOBY      , "Unk 18   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_18))},
+		{COM_NONE           , INST_MOBY      , "Unk 1c   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_1c))},
+		{COM_NONE           , INST_MOBY      , "Unk 20   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_20))},
+		{COM_NONE           , INST_MOBY      , "Unk 24   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_24))},
+		{COM_NONE           , INST_MOBY      , "Unk 28   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_28))},
+		{COM_NONE           , INST_MOBY      , "Unk 2c   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_2c))},
+		{COM_NONE           , INST_MOBY      , "Unk 54   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_54))},
+		{COM_NONE           , INST_MOBY      , "Unk 5c   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_5c))},
+		{COM_NONE           , INST_MOBY      , "Unk 60   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_60))},
+		{COM_NONE           , INST_MOBY      , "Unk 70   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_70))},
+		{COM_NONE           , INST_MOBY      , "Unk 74   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_74))}
+	};
+	
+	const std::vector<InspectorField> rac23_fields = {
+		{COM_NONE           , INST_MOBY      , "Unk 8    ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_8))},
+		{COM_NONE           , INST_MOBY      , "Unk c    ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_c))},
+		{COM_NONE           , INST_MOBY      , "Unk 18   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_18))},
+		{COM_NONE           , INST_MOBY      , "Unk 1c   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_1c))},
+		{COM_NONE           , INST_MOBY      , "Unk 20   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_20))},
+		{COM_NONE           , INST_MOBY      , "Unk 24   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_24))},
+		{COM_NONE           , INST_MOBY      , "Unk 38   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_38))},
+		{COM_NONE           , INST_MOBY      , "Unk 3c   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_3c))},
+		{COM_NONE           , INST_MOBY      , "Unk 4c   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_4c))},
+		{COM_NONE           , INST_MOBY      , "Unk 84   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_84))}
+	};
+	
+	draw_fields(lvl, fields);
+	if(lvl.game == Game::RAC1) {
+		draw_fields(lvl, rac1_fields);
+	}
+	if(lvl.game == Game::RAC2 || lvl.game == Game::RAC3) {
+		draw_fields(lvl, rac1_fields);
+	}
+}
+
+
+static void draw_fields(level& lvl, const std::vector<InspectorField>& fields) {
 	for(const InspectorField& field : fields) {
 		assert(field.funcs.lane_count <= MAX_LANES);
 		if(should_draw_field(lvl, field)) {
