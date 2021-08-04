@@ -208,7 +208,17 @@ static std::vector<u8> build_level_wad(LevelWad& wad) {
 	OutBuffer dest(dest_vec);
 	switch(wad.game) {
 		case Game::RAC1: {
-			verify_not_reached("R&C1 not supported.");
+			Rac1LevelWadHeader header = {0};
+			header.header_size = sizeof(Rac1LevelWadHeader);
+			header.level_number = wad.level_number;
+			dest.alloc<Rac23LevelWadHeader>();
+			header.primary = write_lump(dest, wad.primary);
+			wad.help_messages.swap(wad.gameplay); // help_messages -> gameplay
+			std::vector<u8> gameplay = write_gameplay(wad, wad.gameplay, wad.game, RAC23_GAMEPLAY_BLOCKS);
+			wad.help_messages.swap(wad.gameplay); // gameplay -> help_messages
+			header.gameplay_ntsc = write_compressed_lump(dest, gameplay);
+			header.occlusion = write_lump(dest, write_occlusion(wad.gameplay, wad.game));
+			dest.write(0, header);
 			break;
 		}
 		case Game::RAC2:

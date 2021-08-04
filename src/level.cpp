@@ -177,9 +177,13 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			wad.game = *game;
 			wad.type = type;
 			wad.level_number = json["level_number"];
-			wad.reverb = json["reverb"];
+			if(wad.game != Game::RAC1) {
+				wad.reverb = json["reverb"];
+			}
 			wad.primary = read_file(src_dir/std::string(json["primary"]));
-			wad.core_bank = read_file(src_dir/std::string(json["core_sound_bank"]));
+			if(wad.game != Game::RAC1) {
+				wad.core_bank = read_file(src_dir/std::string(json["core_sound_bank"]));
+			}
 			read_json_file_into_map(wad.camera_classes, src_dir, json, "camera_classes", "class");
 			read_json_file_into_map(wad.sound_classes, src_dir, json, "sound_classes", "class");
 			read_json_file_into_map(wad.moby_classes, src_dir, json, "moby_classes", "class");
