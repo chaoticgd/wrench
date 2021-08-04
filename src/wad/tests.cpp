@@ -57,6 +57,11 @@ static void run_gameplay_tests(fs::path input_path) {
 		verify(fread(&header_size, 4, 1, file) == 1, "Failed to read WAD header.");
 		
 		switch(header_size) {
+			case sizeof(Rac1LevelWadHeader): {
+				auto header = read_header<Rac1LevelWadHeader>(file);
+				run_gameplay_lump_test(build_args(header.gameplay_ntsc, "gameplay NTSC", RAC1_GAMEPLAY_BLOCKS, true, Game::RAC1));
+				break;
+			}
 			case sizeof(Rac23LevelWadHeader): {
 				auto header = read_header<Rac23LevelWadHeader>(file);
 				std::vector<u8> primary = read_lump(file, header.primary, "primary");

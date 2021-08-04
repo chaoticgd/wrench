@@ -23,15 +23,16 @@
 #include "../app.h"
 
 void level::open(fs::path json_path, Json& json) {
-	Opt<Game> game = game_from_string(json["game"]);
-	if(!game.has_value()) {
+	Opt<Game> game_opt = game_from_string(json["game"]);
+	if(!game_opt.has_value()) {
 		return;
 	}
+	game = *game_opt;
 	fs::path level_dir = json_path.parent_path();
 	path = json_path;
 	from_json(_gameplay, Json::parse(read_file(level_dir/std::string(json["gameplay"]))));
 	fs::path primary_path = level_dir/std::string(json["primary"]);
-	read_primary(primary_path, *game);
+	read_primary(primary_path);
 }
 
 void level::save() {
@@ -48,10 +49,11 @@ void level::save() {
 	write_file(dest_dir, fs::path(gameplay_path), gameplay_json.dump(1, '\t'));
 }
 
-void level::read_primary(fs::path bin_path, Game game) {
+void level::read_primary(fs::path bin_path) {
 	_primary.emplace(bin_path.string());
 	
 	switch(game) {
+		case Game::RAC1:
 		case Game::RAC2:
 		case Game::RAC3: {
 			auto header = _primary->read<level_primary_header_rac23>(0);
@@ -74,13 +76,15 @@ void level::read_primary(fs::path bin_path, Game game) {
 	_asset_segment.emplace(&(*_primary), asset_wad_offset);
 	_asset_segment->name = "Asset Segment";
 	
-	uint32_t asset_offset = _primary_header.asset_header.offset;
-	auto asset_header = _primary->read<level_asset_header>(_primary_header.asset_header.offset);
-	read_moby_models(asset_offset, asset_header);
-	read_shrub_models(asset_offset, asset_header);
-	read_textures(asset_offset, asset_header, game == Game::DL);
-	read_tfrags();
-	read_tcol(asset_offset, asset_header);
+	if(game != Game::RAC1) {
+		uint32_t asset_offset = _primary_header.asset_header.offset;
+		auto asset_header = _primary->read<level_asset_header>(_primary_header.asset_header.offset);
+		read_moby_models(asset_offset, asset_header);
+		read_shrub_models(asset_offset, asset_header);
+		read_textures(asset_offset, asset_header, game == Game::DL);
+		read_tfrags();
+		read_tcol(asset_offset, asset_header);
+	}
 }
 
 void level::read_moby_models(std::size_t asset_offset, level_asset_header asset_header) {

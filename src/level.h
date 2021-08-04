@@ -24,6 +24,64 @@
 #include "buffer.h"
 #include "instance.h"
 
+struct RAC1_88 : Instance {
+	RAC1_88() : Instance(INST_RAC1_88, COM_NONE, TransformMode::NONE) {}
+	
+	u32 unknown_0;
+	u32 unknown_4;
+	u32 unknown_8;
+	u32 unknown_c;
+	u32 unknown_10;
+	u32 unknown_14;
+	u32 unknown_18;
+	u32 unknown_1c;
+	u32 unknown_20;
+	u32 unknown_24;
+	u32 unknown_28;
+	u32 unknown_2c;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD(unknown_0);
+		DEF_FIELD(unknown_4);
+		DEF_FIELD(unknown_8);
+		DEF_FIELD(unknown_c);
+		DEF_FIELD(unknown_10);
+		DEF_FIELD(unknown_14);
+		DEF_FIELD(unknown_18);
+		DEF_FIELD(unknown_1c);
+		DEF_FIELD(unknown_20);
+		DEF_FIELD(unknown_24);
+		DEF_FIELD(unknown_28);
+		DEF_FIELD(unknown_2c);
+	}
+};
+
+struct RAC1_7c : Instance {
+	RAC1_7c() : Instance(INST_RAC1_7c, COM_NONE, TransformMode::NONE) {}
+	
+	u32 unknown_0;
+	u32 unknown_4;
+	u32 unknown_8;
+	u32 unknown_c;
+	u32 unknown_10;
+	u32 unknown_14;
+	u32 unknown_18;
+	u32 unknown_1c;
+	
+	template <typename T>
+	void enumerate_fields(T& t) {
+		DEF_FIELD(unknown_0);
+		DEF_FIELD(unknown_4);
+		DEF_FIELD(unknown_8);
+		DEF_FIELD(unknown_c);
+		DEF_FIELD(unknown_10);
+		DEF_FIELD(unknown_14);
+		DEF_FIELD(unknown_18);
+		DEF_FIELD(unknown_1c);
+	}
+};
+
 packed_struct(GC_8c_DL_70,
 	s16 unknown_0;
 	s16 unknown_2;
@@ -72,42 +130,36 @@ packed_struct(Rgb96,
 	}
 )
 
-packed_struct(PropertiesFirstPart,
-	/* 0x00 */ Rgb96 background_colour;
-	/* 0x0c */ Rgb96 fog_colour;
-	/* 0x18 */ f32 fog_near_distance;
-	/* 0x1c */ f32 fog_far_distance;
-	/* 0x20 */ f32 fog_near_intensity;
-	/* 0x24 */ f32 fog_far_intensity;
-	/* 0x28 */ f32 death_height;
-	/* 0x2c */ s32 is_spherical_world;
-	/* 0x30 */ Vec3f sphere_centre;
-	/* 0x3c */ Vec3f ship_position;
-	/* 0x48 */ f32 ship_rotation_z;
-	/* 0x4c */ s32 unknown_4c;
-	/* 0x50 */ s32 unknown_50;
-	/* 0x54 */ s32 unknown_54;
-	/* 0x58 */ s32 unknown_58;
+struct PropertiesFirstPart {
+	Rgb96 background_colour;
+	Rgb96 fog_colour;
+	f32 fog_near_distance;
+	f32 fog_far_distance;
+	f32 fog_near_intensity;
+	f32 fog_far_intensity;
+	f32 death_height;
+	Opt<s32> is_spherical_world;
+	Opt<glm::vec3> sphere_centre;
+	glm::vec3 ship_position;
+	f32 ship_rotation_z;
+	Rgb96 unknown_colour;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD(background_colour);
-		DEF_PACKED_FIELD(fog_colour);
-		DEF_PACKED_FIELD(fog_near_distance);
-		DEF_PACKED_FIELD(fog_far_distance);
-		DEF_PACKED_FIELD(fog_near_intensity);
-		DEF_PACKED_FIELD(fog_far_intensity);
-		DEF_PACKED_FIELD(death_height);
-		DEF_PACKED_FIELD(is_spherical_world);
-		DEF_PACKED_FIELD(sphere_centre);
-		DEF_PACKED_FIELD(ship_position);
-		DEF_PACKED_FIELD(ship_rotation_z);
-		DEF_PACKED_FIELD(unknown_4c);
-		DEF_PACKED_FIELD(unknown_50);
-		DEF_PACKED_FIELD(unknown_54);
-		DEF_PACKED_FIELD(unknown_58);
+		DEF_FIELD(background_colour);
+		DEF_FIELD(fog_colour);
+		DEF_FIELD(fog_near_distance);
+		DEF_FIELD(fog_far_distance);
+		DEF_FIELD(fog_near_intensity);
+		DEF_FIELD(fog_far_intensity);
+		DEF_FIELD(death_height);
+		DEF_FIELD(is_spherical_world);
+		DEF_FIELD(sphere_centre);
+		DEF_FIELD(ship_position);
+		DEF_FIELD(ship_rotation_z);
+		DEF_FIELD(unknown_colour);
 	}
-)
+};
 
 packed_struct(PropertiesSecondPart,
 	s32 unknown_0;
@@ -189,8 +241,8 @@ packed_struct(PropertiesFifthPart,
 
 struct Properties {
 	PropertiesFirstPart first_part;
-	std::vector<PropertiesSecondPart> second_part;
-	s32 core_sounds_count;
+	Opt<std::vector<PropertiesSecondPart>> second_part;
+	Opt<s32> core_sounds_count;
 	Opt<s32> rac3_third_part;
 	Opt<std::vector<PropertiesThirdPart>> third_part;
 	Opt<PropertiesFourthPart> fourth_part;
@@ -329,6 +381,22 @@ struct MobyInstance : Instance {
 	s32 occlusion;
 	s32 mode_bits;
 	s32 light;
+	s32 rac1_unknown_4;
+	s32 rac1_unknown_8;
+	s32 rac1_unknown_c;
+	s32 rac1_unknown_10;
+	s32 rac1_unknown_14;
+	s32 rac1_unknown_18;
+	s32 rac1_unknown_1c;
+	s32 rac1_unknown_20;
+	s32 rac1_unknown_24;
+	s32 rac1_unknown_28;
+	s32 rac1_unknown_2c;
+	s32 rac1_unknown_54;
+	s32 rac1_unknown_5c;
+	s32 rac1_unknown_60;
+	s32 rac1_unknown_70;
+	s32 rac1_unknown_74;
 	s32 rac23_unknown_8;
 	s32 rac23_unknown_c;
 	s32 rac23_unknown_18;
@@ -354,6 +422,22 @@ struct MobyInstance : Instance {
 		DEF_FIELD(occlusion);
 		DEF_FIELD(mode_bits);
 		DEF_FIELD(light);
+		DEF_FIELD(rac1_unknown_4);
+		DEF_FIELD(rac1_unknown_8);
+		DEF_FIELD(rac1_unknown_c);
+		DEF_FIELD(rac1_unknown_10);
+		DEF_FIELD(rac1_unknown_14);
+		DEF_FIELD(rac1_unknown_18);
+		DEF_FIELD(rac1_unknown_1c);
+		DEF_FIELD(rac1_unknown_20);
+		DEF_FIELD(rac1_unknown_24);
+		DEF_FIELD(rac1_unknown_28);
+		DEF_FIELD(rac1_unknown_2c);
+		DEF_FIELD(rac1_unknown_54);
+		DEF_FIELD(rac1_unknown_5c);
+		DEF_FIELD(rac1_unknown_60);
+		DEF_FIELD(rac1_unknown_70);
+		DEF_FIELD(rac1_unknown_74);
 		DEF_FIELD(rac23_unknown_8);
 		DEF_FIELD(rac23_unknown_c);
 		DEF_FIELD(rac23_unknown_18);
@@ -463,6 +547,7 @@ struct DirectionalLight : Instance {
 	glm::vec4 direction_a;
 	glm::vec4 colour_b;
 	glm::vec4 direction_b;
+	
 	template <typename T>
 	void enumerate_fields(T& t) {
 		Instance::enumerate_fields(t);
@@ -479,6 +564,8 @@ struct TieInstance : Instance {
 	s32 occlusion_index;
 	s32 directional_lights;
 	s32 uid;
+	std::vector<u8> ambient_rgbas;
+	
 	template <typename T>
 	void enumerate_fields(T& t) {
 		Instance::enumerate_fields(t);
@@ -486,17 +573,7 @@ struct TieInstance : Instance {
 		DEF_FIELD(occlusion_index);
 		DEF_FIELD(directional_lights);
 		DEF_FIELD(uid);
-	}
-};
-
-struct TieAmbientRgbas {
-	s16 id;
-	std::vector<u8> data;
-	
-	template <typename T>
-	void enumerate_fields(T& t) {
-		DEF_FIELD(id);
-		DEF_HEXDUMP(data);
+		DEF_HEXDUMP(ambient_rgbas);
 	}
 };
 
@@ -510,6 +587,7 @@ struct ShrubInstance : Instance {
 	s32 unknown_64;
 	s32 unknown_68;
 	s32 unknown_6c;
+	
 	template <typename T>
 	void enumerate_fields(T& t) {
 		Instance::enumerate_fields(t);
@@ -540,6 +618,9 @@ struct Occlusion {
 struct LevelWad;
 
 struct Gameplay {
+	Opt<std::vector<RAC1_88>> rac1_88;
+	Opt<std::vector<u8>> rac1_78;
+	Opt<std::vector<RAC1_7c>> rac1_7c;
 	Opt<std::vector<GC_8c_DL_70>> gc_8c_dl_70;
 	Opt<Properties> properties;
 	Opt<std::vector<HelpMessage>> us_english_help_messages;
@@ -570,7 +651,6 @@ struct Gameplay {
 	
 	Opt<std::vector<DirectionalLight>> lights;
 	Opt<std::vector<TieInstance>> tie_instances;
-	Opt<std::vector<TieAmbientRgbas>> tie_ambient_rgbas;
 	Opt<std::vector<Group>> tie_groups;
 	Opt<std::vector<ShrubInstance>> shrub_instances;
 	Opt<std::vector<Group>> shrub_groups;
@@ -610,6 +690,9 @@ struct Gameplay {
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
+		DEF_FIELD(rac1_88);
+		DEF_HEXDUMP(rac1_78);
+		DEF_FIELD(rac1_7c);
 		DEF_FIELD(gc_8c_dl_70);
 		DEF_FIELD(properties);
 		DEF_FIELD(light_triggers);
@@ -631,7 +714,6 @@ struct Gameplay {
 		DEF_FIELD(areas);
 		DEF_FIELD(lights);
 		DEF_FIELD(tie_instances);
-		DEF_FIELD(tie_ambient_rgbas);
 		DEF_FIELD(tie_groups);
 		DEF_FIELD(shrub_instances);
 		DEF_FIELD(shrub_groups);

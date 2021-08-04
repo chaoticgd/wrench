@@ -72,11 +72,12 @@ public:
 	void save();
 	
 	fs::path path;
+	Game game;
 	
 	Gameplay& gameplay() { return _gameplay; }
 	
 private:
-	void read_primary(fs::path bin_path, Game game);
+	void read_primary(fs::path bin_path);
 
 	void read_moby_models(std::size_t asset_offset, level_asset_header asset_header);
 	void read_shrub_models(std::size_t asset_offset, level_asset_header asset_header);

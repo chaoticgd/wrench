@@ -863,7 +863,7 @@ void gl_renderer::reset_camera(app* a) {
 		if(opt_size(lvl->gameplay().moby_instances) > 0) {
 			camera_position = (*lvl->gameplay().moby_instances)[0].position();
 		} else if(lvl->gameplay().properties.has_value()) {
-			camera_position = lvl->gameplay().properties->first_part.ship_position.unpack();
+			camera_position = lvl->gameplay().properties->first_part.ship_position;
 		} else {
 			camera_position = glm::vec3(0, 0, 0);
 		}

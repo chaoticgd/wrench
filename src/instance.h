@@ -25,6 +25,8 @@
 
 enum InstanceType : u32 {
 	INST_NONE = 0,
+	INST_RAC1_88 = 14,
+	INST_RAC1_7c = 15,
 	INST_GC_8c_DL_70 = 1,
 	INST_LIGHT_TRIGGER = 2,
 	INST_CAMERA = 3,

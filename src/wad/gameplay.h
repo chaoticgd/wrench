@@ -36,6 +36,7 @@ struct GameplayBlockDescription {
 	const char* name;
 };
 
+extern const std::vector<GameplayBlockDescription> RAC1_GAMEPLAY_BLOCKS;
 extern const std::vector<GameplayBlockDescription> RAC23_GAMEPLAY_BLOCKS;
 extern const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS;
 extern const std::vector<GameplayBlockDescription> DL_ART_INSTANCE_BLOCKS;

@@ -1,6 +1,6 @@
 # Format Specification
 
-The source level format created for Wrench. Version 4 and up is currently supported.
+The source level format created for Wrench. Version 6 and up is currently supported.
 
 ## Changelog
 
@@ -29,6 +29,18 @@ The source level format created for Wrench. Version 4 and up is currently suppor
 - Renamed moby instance fields that were in the form "rac23.unknown_%d" to "rac23_unknown_%d".
 - Renamed light trigger field "light_index" to just "light" (since it's an ID).
 
-## Version 5
+### Version 5
 
 - Store the global pvar, gc_88_dl_6c and the parts of gc_80_dl_64 as a JSON array of strings storing hex-encoded data, instead of as a JSON array of 8-bit unsigned integers.
+
+### Version 6
+
+- Added support for the first Ratchet & Clank game.
+	- Added rac1_78 as a top-level JSON hex buffer in the gameplay file.
+	- Added RAC1_7c instance type.
+	- Added RAC1_88 instance type.
+	- Addded moby fields: rac1_unknown_4, rac1_unknown_8, rac1_unknown_c, rac1_unknown_10, rac1_unknown_14, rac1_unknown_18, rac1_unknown_1c, rac1_unknown_20, rac1_unknown_24, rac1_unknown_28, rac1_unknown_2c, rac1_unknown_54, rac1_unknown_5c, rac1_unknown_60, rac1_unknown_70, rac1_unknown_74.
+- Improved how the first part of the properties gameplay block is stored:
+	- unknown_4c, unknown_50 and unknown_54 are now "ship_colour".
+	- unknown_58 was removed (it is now treated as padding).
+- The tie_ambient_rgbas array has been removed. Tie ambient RGBA buffers are now stored in the "ambient_rgbas" field of tie instances.
