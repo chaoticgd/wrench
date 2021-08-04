@@ -149,7 +149,7 @@ packed_struct(PropertiesFirstPartRAC1,
 	/* 0x28 */ f32 death_height;
 	/* 0x2c */ Vec3f ship_position;
 	/* 0x38 */ f32 ship_rotation_z;
-	/* 0x3c */ Rgb96 ship_colour;
+	/* 0x3c */ Rgb96 unknown_colour;
 	/* 0x48 */ u32 pad[2];
 )
 static_assert(sizeof(PropertiesFirstPartRAC1) == 0x50);
@@ -166,7 +166,7 @@ packed_struct(PropertiesFirstPartRAC234,
 	/* 0x30 */ Vec3f sphere_centre;
 	/* 0x3c */ Vec3f ship_position;
 	/* 0x48 */ f32 ship_rotation_z;
-	/* 0x4c */ Rgb96 ship_colour;
+	/* 0x4c */ Rgb96 unknown_colour;
 	/* 0x58 */ u32 pad;
 )
 static_assert(sizeof(PropertiesFirstPartRAC234) == 0x5c);
@@ -265,9 +265,9 @@ struct PropertiesBlock {
 		SWAP_PACKED(l.ship_position.y, r.ship_position.y);
 		SWAP_PACKED(l.ship_position.z, r.ship_position.z);
 		SWAP_PACKED(l.ship_rotation_z, r.ship_rotation_z);
-		SWAP_PACKED(l.ship_colour.r, r.ship_colour.r);
-		SWAP_PACKED(l.ship_colour.g, r.ship_colour.g);
-		SWAP_PACKED(l.ship_colour.b, r.ship_colour.b);
+		SWAP_PACKED(l.unknown_colour.r, r.unknown_colour.r);
+		SWAP_PACKED(l.unknown_colour.g, r.unknown_colour.g);
+		SWAP_PACKED(l.unknown_colour.b, r.unknown_colour.b);
 		r.pad[0] = 0;
 		r.pad[1] = 0;
 	}
@@ -298,9 +298,9 @@ struct PropertiesBlock {
 		SWAP_PACKED(l.ship_position.y, r.ship_position.y);
 		SWAP_PACKED(l.ship_position.z, r.ship_position.z);
 		SWAP_PACKED(l.ship_rotation_z, r.ship_rotation_z);
-		SWAP_PACKED(l.ship_colour.r, r.ship_colour.r);
-		SWAP_PACKED(l.ship_colour.g, r.ship_colour.g);
-		SWAP_PACKED(l.ship_colour.b, r.ship_colour.b);
+		SWAP_PACKED(l.unknown_colour.r, r.unknown_colour.r);
+		SWAP_PACKED(l.unknown_colour.g, r.unknown_colour.g);
+		SWAP_PACKED(l.unknown_colour.b, r.unknown_colour.b);
 		r.pad = 0;
 	}
 };

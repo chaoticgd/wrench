@@ -142,7 +142,7 @@ struct PropertiesFirstPart {
 	Opt<glm::vec3> sphere_centre;
 	glm::vec3 ship_position;
 	f32 ship_rotation_z;
-	Rgb96 ship_colour;
+	Rgb96 unknown_colour;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
@@ -157,7 +157,7 @@ struct PropertiesFirstPart {
 		DEF_FIELD(sphere_centre);
 		DEF_FIELD(ship_position);
 		DEF_FIELD(ship_rotation_z);
-		DEF_FIELD(ship_colour);
+		DEF_FIELD(unknown_colour);
 	}
 };
 
