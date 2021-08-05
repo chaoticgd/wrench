@@ -180,7 +180,7 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			if(wad.game != Game::RAC1) {
 				wad.reverb = json["reverb"];
 			}
-			wad.primary = read_file(src_dir/std::string(json["primary"]));
+			//wad.primary = read_file(src_dir/std::string(json["primary"]));
 			if(wad.game != Game::RAC1) {
 				wad.core_bank = read_file(src_dir/std::string(json["core_sound_bank"]));
 			}
@@ -270,7 +270,28 @@ void write_wad_json(fs::path dest_dir, Wad* base) {
 			if(wad.reverb.has_value()) {
 				json["reverb"] = *wad.reverb;
 			}
-			json["primary"] = write_file(dest_dir, "primary.bin", wad.primary);
+			json["code"] = write_file(dest_dir, "code.bin", wad.code);
+			json["asset_header"] = write_file(dest_dir, "asset_header.bin", wad.asset_header);
+			json["small_textures"] = write_file(dest_dir, "small_textures.bin", wad.small_textures);
+			json["hud_header"] = write_file(dest_dir, "hud_header.bin", wad.hud_header);
+			json["hud_bank_0"] = write_file(dest_dir, "hud_bank_0.bin", wad.hud_banks[0]);
+			json["hud_bank_1"] = write_file(dest_dir, "hud_bank_1.bin", wad.hud_banks[1]);
+			json["hud_bank_2"] = write_file(dest_dir, "hud_bank_2.bin", wad.hud_banks[2]);
+			json["hud_bank_3"] = write_file(dest_dir, "hud_bank_3.bin", wad.hud_banks[3]);
+			json["hud_bank_4"] = write_file(dest_dir, "hud_bank_4.bin", wad.hud_banks[4]);
+			json["assets"] = write_file(dest_dir, "assets.bin", wad.assets);
+			if(wad.moby_8355_pvars.has_value()) {
+				json["moby_8355_pvars"] = write_file(dest_dir, "moby_8355_pvars.bin", *wad.moby_8355_pvars);
+			}
+			if(wad.art_instances.has_value()) {
+				json["art_instances"] = write_file(dest_dir, "art_instances.bin", *wad.art_instances);
+			}
+			if(wad.gameplay_core.has_value()) {
+				json["gameplay_core"] = write_file(dest_dir, "gameplay_core.bin", *wad.gameplay_core);
+			}
+			if(wad.global_nav_data.has_value()) {
+				json["global_nav_data"] = write_file(dest_dir, "global_nav_data.bin", *wad.global_nav_data);
+			}
 			json["core_sound_bank"] = write_file(dest_dir, "core_bank.bin", wad.core_bank);
 			json["camera_classes"] = write_json_array_file(dest_dir, "camera_classes", map_to_json(wad.camera_classes, "class"));
 			json["sound_classes"] = write_json_array_file(dest_dir, "sound_classes", map_to_json(wad.sound_classes, "class"));

@@ -849,7 +849,18 @@ struct PvarType {
 struct LevelWad : Wad {
 	s32 level_number;
 	std::optional<s32> reverb;
-	std::vector<u8> primary;
+	// Primary lump
+	std::vector<u8> code;
+	std::vector<u8> asset_header;
+	std::vector<u8> small_textures;
+	std::vector<u8> hud_header;
+	std::vector<u8> hud_banks[5];
+	std::vector<u8> assets;
+	Opt<std::vector<u8>> moby_8355_pvars;
+	Opt<std::vector<u8>> art_instances;
+	Opt<std::vector<u8>> gameplay_core;
+	Opt<std::vector<u8>> global_nav_data;
+	
 	std::vector<u8> core_bank;
 	std::map<s32, CameraClass> camera_classes;
 	std::map<s32, SoundClass> sound_classes;

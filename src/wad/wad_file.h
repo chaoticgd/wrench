@@ -90,6 +90,88 @@ packed_struct(DeadlockedLevelWadHeader,
 )
 static_assert(sizeof(DeadlockedLevelWadHeader) == 0xc68);
 
+packed_struct(Rac123PrimaryHeader,
+	/* 0x00 */ ByteRange code;
+	/* 0x08 */ ByteRange asset_header;
+	/* 0x10 */ ByteRange small_textures;
+	/* 0x18 */ ByteRange hud_header;
+	/* 0x20 */ ByteRange hud_banks[5];
+	/* 0x48 */ ByteRange assets;
+	/* 0x50 */ ByteRange loading_screen_textures;
+)
+
+packed_struct(DeadlockedPrimaryHeader,
+	/* 0x00 */ ByteRange moby8355_pvars;
+	/* 0x08 */ ByteRange code;
+	/* 0x10 */ ByteRange asset_header;
+	/* 0x18 */ ByteRange small_textures;
+	/* 0x20 */ ByteRange hud_header;
+	/* 0x28 */ ByteRange hud_banks[5];
+	/* 0x50 */ ByteRange assets;
+	/* 0x58 */ ByteRange art_instances;
+	/* 0x60 */ ByteRange gameplay_core;
+	/* 0x68 */ ByteRange global_nav_data;
+)
+
+struct PrimaryHeader {
+	ByteRange code;
+	ByteRange asset_header;
+	ByteRange small_textures;
+	ByteRange hud_header;
+	ByteRange hud_banks[5];
+	ByteRange assets;
+	Opt<ByteRange> moby_8355_pvars;
+	Opt<ByteRange> art_instances;
+	Opt<ByteRange> gameplay_core;
+	Opt<ByteRange> global_nav_data;
+};
+
+packed_struct(ArrayRange,
+	s32 count;
+	s32 offset;
+)
+
+packed_struct(DeadlockedAssetHeader,
+	/* 0x00 */ ArrayRange gs_ram;
+	/* 0x08 */ s32 tfrags;
+	/* 0x0c */ s32 occlusion;
+	/* 0x10 */ s32 sky;
+	/* 0x14 */ s32 collision;
+	/* 0x18 */ ArrayRange moby_classes;
+	/* 0x20 */ ArrayRange tie_classes;
+	/* 0x28 */ ArrayRange shrub_classes;
+	/* 0x30 */ ArrayRange tfrag_textures;
+	/* 0x38 */ ArrayRange moby_textures;
+	/* 0x40 */ ArrayRange tie_textures;
+	/* 0x48 */ ArrayRange shrub_textures;
+	/* 0x50 */ ArrayRange part_textures;
+	/* 0x58 */ ArrayRange fx_textures;
+	/* 0x60 */ s32 textures_base_offset;
+	/* 0x64 */ uint32_t ptr_into_asset_wad_64;
+	/* 0x68 */ uint32_t ptr_into_asset_wad_68;
+	/* 0x6c */ uint32_t rel_to_asset_header_6c;
+	/* 0x70 */ uint32_t rel_to_asset_header_70;
+	/* 0x74 */ uint32_t assets_base_address;
+	/* 0x78 */ uint32_t rel_to_asset_header_78;
+	/* 0x7c */ uint32_t unknown_7c;
+	/* 0x80 */ uint32_t index_into_some1_texs;
+	/* 0x84 */ uint32_t unknown_84;
+	/* 0x88 */ s32 assets_compressed_size;
+	/* 0x8c */ s32 assets_decompressed_size;
+	/* 0x90 */ uint32_t unknown_90;
+	/* 0x94 */ uint32_t unknown_94;
+	/* 0x98 */ uint32_t unknown_98;
+	/* 0x9c */ uint32_t unknown_9c;
+	/* 0xa0 */ uint32_t unknown_a0;
+	/* 0xa4 */ uint32_t ptr_into_asset_wad_a4;
+	/* 0xa8 */ uint32_t unknown_a8;
+	/* 0xac */ uint32_t unknown_ac;
+	/* 0xb0 */ uint32_t ptr_into_asset_wad_b0;
+	/* 0xb4 */ uint32_t unknown_b4;
+	/* 0xb8 */ uint32_t unknown_b8;
+)
+static_assert(sizeof(DeadlockedAssetHeader) == 0xbc);
+
 packed_struct(ChunkHeader,
 	/* 0x0 */ s32 tfrags;
 	/* 0x4 */ s32 collision;
