@@ -41,12 +41,6 @@ struct PrimaryLump {
 		if(header.moby_8355_pvars.has_value()) {
 			wad.moby_8355_pvars = src.read_multiple<u8>(header.moby_8355_pvars->offset, header.moby_8355_pvars->size, "moby_8355_pvars").copy();
 		}
-		if(header.art_instances.has_value()) {
-			wad.art_instances = src.read_multiple<u8>(header.art_instances->offset, header.art_instances->size, "art_instances").copy();
-		}
-		if(header.gameplay_core.has_value()) {
-			wad.gameplay_core = src.read_multiple<u8>(header.gameplay_core->offset, header.gameplay_core->size, "gameplay_core").copy();
-		}
 		if(header.global_nav_data.has_value()) {
 			wad.global_nav_data = src.read_multiple<u8>(header.global_nav_data->offset, header.global_nav_data->size, "global_nav_data").copy();
 		}

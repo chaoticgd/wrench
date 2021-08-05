@@ -283,12 +283,6 @@ void write_wad_json(fs::path dest_dir, Wad* base) {
 			if(wad.moby_8355_pvars.has_value()) {
 				json["moby_8355_pvars"] = write_file(dest_dir, "moby_8355_pvars.bin", *wad.moby_8355_pvars);
 			}
-			if(wad.art_instances.has_value()) {
-				json["art_instances"] = write_file(dest_dir, "art_instances.bin", *wad.art_instances);
-			}
-			if(wad.gameplay_core.has_value()) {
-				json["gameplay_core"] = write_file(dest_dir, "gameplay_core.bin", *wad.gameplay_core);
-			}
 			if(wad.global_nav_data.has_value()) {
 				json["global_nav_data"] = write_file(dest_dir, "global_nav_data.bin", *wad.global_nav_data);
 			}

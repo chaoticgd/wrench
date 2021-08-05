@@ -857,8 +857,6 @@ struct LevelWad : Wad {
 	std::vector<u8> hud_banks[5];
 	std::vector<u8> assets;
 	Opt<std::vector<u8>> moby_8355_pvars;
-	Opt<std::vector<u8>> art_instances;
-	Opt<std::vector<u8>> gameplay_core;
 	Opt<std::vector<u8>> global_nav_data;
 	
 	std::vector<u8> core_bank;
