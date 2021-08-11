@@ -83,24 +83,24 @@ struct OutBuffer {
 	
 	template <typename T>
 	s64 alloc() {
-		s64 write_pos = vec.size();
+		s64 write_ofs = vec.size();
 		vec.resize(vec.size() + sizeof(T));
-		return write_pos;
+		return write_ofs;
 	}
 	
 	template <typename T>
 	s64 alloc_multiple(s64 count) {
-		size_t write_pos = vec.size();
+		size_t write_ofs = vec.size();
 		vec.resize(vec.size() + count * sizeof(T));
-		return write_pos;
+		return write_ofs;
 	}
 	
 	template <typename T>
 	s64 write(const T& thing) {
-		size_t write_pos = vec.size();
+		size_t write_ofs = vec.size();
 		vec.resize(vec.size() + sizeof(T));
-		*(T*) &vec[write_pos] = thing;
-		return write_pos;
+		*(T*) &vec[write_ofs] = thing;
+		return write_ofs;
 	}
 	
 	template <typename T>
@@ -113,10 +113,10 @@ struct OutBuffer {
 	
 	template <typename T>
 	s64 write_multiple(const std::vector<T>& things) {
-		size_t write_pos = vec.size();
+		size_t write_ofs = vec.size();
 		vec.resize(vec.size() + things.size() * sizeof(T));
-		memcpy(&vec[write_pos], things.data(), things.size() * sizeof(T));
-		return write_pos;
+		memcpy(&vec[write_ofs], things.data(), things.size() * sizeof(T));
+		return write_ofs;
 	}
 	
 	template <typename T>
@@ -127,12 +127,9 @@ struct OutBuffer {
 		return offset;
 	}
 	
-	void pad(s64 align, u8 padding = 0) {
-		if(vec.size() % align != 0) {
-			s64 pad_size = align - (vec.size() % align);
-			vec.resize(vec.size() + pad_size, padding);
-		}
-	}
+	void pad(s64 align, u8 padding = 0);
+	void writef(const char* format, ...);
+	void writelf(const char* format, ...);
 };
 
 // These functions all call exit on error.

@@ -18,6 +18,8 @@
 
 #include "buffer.h"
 
+#include "stdarg.h"
+
 Buffer Buffer::subbuf(s64 offset) const {
 	verify(offset >= 0, "Failed to create buffer: Offset cannot be negative.");
 	verify(lo + offset <= hi, "Failed to create buffer: Out of bounds.");
@@ -125,6 +127,42 @@ bool diff_buffers(Buffer lhs, Buffer rhs, s64 offset, const char* subject) {
 		printf("\n");
 	}
 	return false;
+}
+
+void OutBuffer::pad(s64 align, u8 padding) {
+	if(vec.size() % align != 0) {
+		s64 pad_size = align - (vec.size() % align);
+		vec.resize(vec.size() + pad_size, padding);
+	}
+}
+
+void OutBuffer::writef(const char* format, ...) {
+	static char temp[16 * 1024];
+	
+	va_list args;
+	va_start(args, format);
+	int count = vsnprintf(temp, 16 * 1024, format, args);
+	assert(count >= 0);
+	va_end(args);
+	
+	size_t write_ofs = vec.size();
+	vec.resize(vec.size() + count);
+	memcpy(&vec[write_ofs], temp, count);
+}
+
+void OutBuffer::writelf(const char* format, ...) {
+	static char temp[16 * 1024];
+	
+	va_list args;
+	va_start(args, format);
+	int count = vsnprintf(temp, 16 * 1024, format, args);
+	assert(count >= 0);
+	va_end(args);
+	
+	size_t write_ofs = vec.size();
+	vec.resize(write_ofs + count + 1);
+	memcpy(&vec[write_ofs], temp, count);
+	vec[write_ofs + count] = '\n';
 }
 
 s64 file_size_in_bytes(FILE* file) {

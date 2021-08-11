@@ -21,6 +21,7 @@
 
 #include "json.h"
 #include "util.h"
+#include "collada.h"
 #include "buffer.h"
 #include "instance.h"
 
@@ -855,7 +856,17 @@ struct LevelWad : Wad {
 	std::vector<u8> small_textures;
 	std::vector<u8> hud_header;
 	std::vector<u8> hud_banks[5];
-	std::vector<u8> assets;
+	std::vector<u8> tfrags;
+	std::vector<u8> occlusion;
+	std::vector<u8> sky;
+	Mesh collision;
+	std::vector<u8> shared_textures;
+	std::vector<u8> particle_textures;
+	std::vector<u8> fx_textures;
+	std::vector<u8> mobies;
+	std::vector<u8> ties;
+	std::vector<u8> shrubs;
+	std::vector<u8> ratchet_seqs;
 	Opt<std::vector<u8>> moby_8355_pvars;
 	Opt<std::vector<u8>> global_nav_data;
 	

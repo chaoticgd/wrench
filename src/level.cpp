@@ -279,7 +279,17 @@ void write_wad_json(fs::path dest_dir, Wad* base) {
 			json["hud_bank_2"] = write_file(dest_dir, "hud_bank_2.bin", wad.hud_banks[2]);
 			json["hud_bank_3"] = write_file(dest_dir, "hud_bank_3.bin", wad.hud_banks[3]);
 			json["hud_bank_4"] = write_file(dest_dir, "hud_bank_4.bin", wad.hud_banks[4]);
-			json["assets"] = write_file(dest_dir, "assets.bin", wad.assets);
+			json["tfrags"] = write_file(dest_dir, "tfrags.bin", wad.tfrags);
+			json["occlusion"] = write_file(dest_dir, "occlusion.bin", wad.occlusion);
+			json["sky"] = write_file(dest_dir, "sky.bin", wad.sky);
+			json["collision"] = write_file(dest_dir, "collision.dae", write_dae(mesh_to_dae(wad.collision)));
+			json["shared_textures"] = write_file(dest_dir, "shared_textures.bin", wad.shared_textures);
+			json["particle_textures"] = write_file(dest_dir, "particle_textures.bin", wad.particle_textures);
+			json["fx_textures"] = write_file(dest_dir, "fx_textures.bin", wad.fx_textures);
+			json["mobies"] = write_file(dest_dir, "mobies.bin", wad.mobies);
+			json["ties"] = write_file(dest_dir, "ties.bin", wad.ties);
+			json["shrubs"] = write_file(dest_dir, "shrubs.bin", wad.shrubs);
+			json["ratchet_seqs"] = write_file(dest_dir, "ratchet_seqs.bin", wad.ratchet_seqs);
 			if(wad.moby_8355_pvars.has_value()) {
 				json["moby_8355_pvars"] = write_file(dest_dir, "moby_8355_pvars.bin", *wad.moby_8355_pvars);
 			}

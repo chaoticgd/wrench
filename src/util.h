@@ -385,6 +385,18 @@ struct IsVector<std::vector<Element>> : std::true_type {};
 	return version;
 }
 
+// Implements a way to delay the execution of a block of code until the
+// enclosing scope ends. This lets us write statements in a more logical order.
+template <typename F>
+struct _deferer {
+	F callback;
+	_deferer(F cb) : callback(cb) {}
+	~_deferer() { callback(); }
+};
+#define CONCAT_TOKEN_IMPL(x, y) x##y
+#define CONCAT_TOKEN(x, y) CONCAT_TOKEN_IMPL(x, y)
+#define defer(...) _deferer CONCAT_TOKEN(_deferer_object_, __COUNTER__)(__VA_ARGS__);
+
 enum class Game {
 	RAC1, RAC2, RAC3, DL
 };

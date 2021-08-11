@@ -18,9 +18,22 @@
 
 #include "wad_file.h"
 
+#include "collision.h"
+
 static WadBuffer wad_buffer(Buffer buf) {
 	return {buf.lo, buf.hi};
 }
+
+struct Assets {
+	static void read(LevelWad& wad, Buffer asset_header, Buffer assets) {
+		auto header = asset_header.read<DeadlockedAssetHeader>(0, "asset header");
+		wad.tfrags = assets.read_multiple<u8>(header.tfrags, header.occlusion - header.tfrags, "tfrags").copy();
+		wad.occlusion = assets.read_multiple<u8>(header.occlusion, header.sky - header.occlusion, "occlusion").copy();
+		wad.sky = assets.read_multiple<u8>(header.sky, header.collision - header.sky, "sky").copy();
+		std::vector<u8> collision = assets.read_multiple<u8>(header.collision, header.textures_base_offset - header.collision, "collision").copy();
+		wad.collision = read_collision(Buffer(collision));
+	}
+};
 
 struct PrimaryLump {
 	static void read(LevelWad& wad, Buffer src) {
@@ -37,7 +50,10 @@ struct PrimaryLump {
 				wad.hud_banks[i] = src.read_multiple<u8>(header.hud_banks[i].offset, header.hud_banks[i].size, "hud_banks").copy();
 			}
 		}
-		verify(decompress_wad(wad.assets, wad_buffer(src.subbuf(header.assets.offset))), "Failed to decompress assets.");
+		std::vector<u8> assets_vec;
+		verify(decompress_wad(assets_vec, wad_buffer(src.subbuf(header.assets.offset))), "Failed to decompress assets.");
+		Buffer assets(assets_vec);
+		Assets::read(wad, wad.asset_header, assets);
 		if(header.moby_8355_pvars.has_value()) {
 			wad.moby_8355_pvars = src.read_multiple<u8>(header.moby_8355_pvars->offset, header.moby_8355_pvars->size, "moby_8355_pvars").copy();
 		}
@@ -46,8 +62,8 @@ struct PrimaryLump {
 		}
 	}
 	
-	static void write(OutBuffer& dest, const LevelWad& wad) {
-		
+	static SectorRange write(OutBuffer& dest, const LevelWad& wad) {
+		return {0, 0};
 	}
 	
 	static void swap_header(PrimaryHeader& l, std::vector<u8>& r, Game game) {
@@ -260,7 +276,6 @@ static std::map<s32, Mission> read_missions(FILE* file, SectorRange mission_rang
 }
 
 static std::vector<u8> build_level_wad(LevelWad& wad);
-static SectorRange write_primary(OutBuffer dest, const LevelWad wad);
 static SectorRange write_lump(OutBuffer dest, const std::vector<u8>& buffer);
 static SectorRange write_compressed_lump(OutBuffer dest, const std::vector<u8>& buffer);
 template <typename Header>
@@ -283,7 +298,7 @@ static std::vector<u8> build_level_wad(LevelWad& wad) {
 			header.header_size = sizeof(Rac1LevelWadHeader);
 			header.level_number = wad.level_number;
 			dest.alloc<Rac23LevelWadHeader>();
-			header.primary = write_primary(dest, wad);
+			header.primary = PrimaryLump::write(dest, wad);
 			wad.help_messages.swap(wad.gameplay); // help_messages -> gameplay
 			std::vector<u8> gameplay = write_gameplay(wad, wad.gameplay, wad.game, RAC23_GAMEPLAY_BLOCKS);
 			wad.help_messages.swap(wad.gameplay); // gameplay -> help_messages
@@ -300,7 +315,7 @@ static std::vector<u8> build_level_wad(LevelWad& wad) {
 			header.reverb = *wad.reverb;
 			dest.alloc<Rac23LevelWadHeader>();
 			header.core_bank = write_lump(dest, wad.core_bank);
-			header.primary = write_primary(dest, wad);
+			header.primary = PrimaryLump::write(dest, wad);
 			wad.help_messages.swap(wad.gameplay); // help_messages -> gameplay
 			std::vector<u8> gameplay = write_gameplay(wad, wad.gameplay, wad.game, RAC23_GAMEPLAY_BLOCKS);
 			wad.help_messages.swap(wad.gameplay); // gameplay -> help_messages
@@ -325,7 +340,7 @@ static std::vector<u8> build_level_wad(LevelWad& wad) {
 			}
 			dest.alloc<DeadlockedLevelWadHeader>();
 			header.core_bank = write_lump(dest, wad.core_bank);
-			header.primary = write_primary(dest, wad);
+			header.primary = PrimaryLump::write(dest, wad);
 			write_chunks(dest, header, wad.chunks);
 			wad.help_messages.swap(wad.gameplay); // help_messages -> gameplay
 			std::vector<u8> gameplay = write_gameplay(wad, wad.gameplay, wad.game, DL_GAMEPLAY_CORE_BLOCKS);
