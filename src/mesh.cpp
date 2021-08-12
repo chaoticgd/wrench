@@ -44,20 +44,18 @@ Mesh sort_vertices(Mesh mesh) {
 	for(size_t i = 0; i < mesh.positions.size(); i++) {
 		new_mesh.positions.push_back(mesh.positions[vertex_mapping[i]]);
 	}
-	new_mesh.tris.reserve(mesh.tris.size());
-	for(TriFace face : mesh.tris) {
+	new_mesh.tris = std::move(mesh.tris);
+	for(TriFace& face : new_mesh.tris) {
 		face.v0 = inverse_mapping.at(face.v0);
 		face.v1 = inverse_mapping.at(face.v1);
 		face.v2 = inverse_mapping.at(face.v2);
-		new_mesh.tris.push_back(face);
 	}
-	new_mesh.quads.reserve(mesh.quads.size());
-	for(QuadFace face : mesh.quads) {
+	new_mesh.quads = std::move(mesh.quads);
+	for(QuadFace& face : new_mesh.quads) {
 		face.v0 = inverse_mapping.at(face.v0);
 		face.v1 = inverse_mapping.at(face.v1);
 		face.v2 = inverse_mapping.at(face.v2);
 		face.v3 = inverse_mapping.at(face.v3);
-		new_mesh.quads.push_back(face);
 	}
 	return new_mesh;
 }
