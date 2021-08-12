@@ -19,31 +19,9 @@
 #ifndef COLLADA_H
 #define COLLADA_H
 
+#include "mesh.h"
 #include "util.h"
 #include "buffer.h"
-
-struct TriFace {
-	s32 v0;
-	s32 v1;
-	s32 v2;
-	s32 collision_type;
-};
-
-struct QuadFace {
-	s32 v0;
-	s32 v1;
-	s32 v2;
-	s32 v3;
-	s32 collision_type;
-};
-
-struct Mesh {
-	std::vector<glm::vec3> positions;
-	Opt<std::vector<glm::vec2>> texture_coords;
-	std::vector<TriFace> tris;
-	std::vector<QuadFace> quads;
-	bool is_collision_mesh;
-};
 
 struct DaeNode {
 	std::string name;

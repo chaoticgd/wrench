@@ -23,6 +23,7 @@ add_executable(wrench
 	src/instance.cpp
 	src/level.cpp
 	src/util.cpp
+	src/mesh.cpp
 	src/collada.cpp
 	src/editor/app.cpp
 	src/editor/command_line.cpp
@@ -112,6 +113,7 @@ add_executable(wad
 	src/instance.cpp
 	src/level.cpp
 	src/util.cpp
+	src/mesh.cpp
 	src/collada.cpp
 	src/wad/wad_file.cpp
 	src/wad/gameplay.cpp

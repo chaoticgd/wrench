@@ -64,10 +64,10 @@ Mesh read_collision(Buffer src) {
 	CollisionHeader header = src.read<CollisionHeader>(0, "collision header");
 	Buffer mesh = src.subbuf(header.mesh, header.second_part - header.mesh);
 	CollisionSectors sectors = parse_collision_mesh(mesh);
-	std::vector<u8> newvec;
-	write_collision_mesh(OutBuffer(newvec), sectors);
-	write_file("/tmp/", "newcoll.bin", Buffer(newvec));
-	return collision_sectors_to_mesh(sectors);
+	Mesh raw_mesh = collision_sectors_to_mesh(sectors);
+	// The vertices and faces stored in the games files are duplicated such that
+	// only one sector must be accessed to do collision detection.
+	return deduplicate_faces(deduplicate_vertices(std::move(raw_mesh)));
 }
 
 static CollisionSectors parse_collision_mesh(Buffer mesh) {
@@ -85,7 +85,7 @@ static CollisionSectors parse_collision_mesh(Buffer mesh) {
 			continue;
 		}
 		s32 y_coord = mesh.read<s16>(z_offset, "y coord");
-		u16 y_count = mesh.read<u16>(z_offset + 2, "y count");printf("z=%x ycoord=%x ycount=%x ofs=%x\n", z, y_coord, y_count, z_offset);
+		u16 y_count = mesh.read<u16>(z_offset + 2, "y count");
 		
 		auto& y_partitions = sectors.list[z];
 		y_partitions.coord = y_coord;
