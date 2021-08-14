@@ -108,7 +108,7 @@ tcol::tcol(stream *backing, std::size_t base_offset)
 							for (int v = 0; v < vertex_count; ++v)
 							{
 								auto vertex_data = _backing.read<uint32_t>();
-								coldata.vertices[v] = unpack_vertex(vertex_data);printf("v %f\n", coldata.vertices[v].x);static int k = 0; if(k++ > 20) exit(1);
+								coldata.vertices[v] = unpack_vertex(vertex_data);
 							}
 
 							for (int f = 0; f < face_count; ++f)
