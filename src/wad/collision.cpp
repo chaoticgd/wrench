@@ -64,6 +64,9 @@ Mesh read_collision(Buffer src) {
 	CollisionHeader header = src.read<CollisionHeader>(0, "collision header");
 	Buffer mesh = src.subbuf(header.mesh, header.second_part - header.mesh);
 	CollisionSectors sectors = parse_collision_mesh(mesh);
+	std::vector<u8> outbuf;
+	write_collision_mesh(OutBuffer(outbuf), sectors);
+	write_file("/tmp", "newcoll2.bin", Buffer(outbuf));
 	Mesh raw_mesh = collision_sectors_to_mesh(sectors);
 	// The vertices and faces stored in the games files are duplicated such that
 	// only one sector must be accessed to do collision detection.
@@ -123,11 +126,23 @@ static CollisionSectors parse_collision_mesh(Buffer mesh) {
 				s32 ofs = sector_offset + 4;
 				for(s32 vertex = 0; vertex < vertex_count; vertex++) {
 					u32 value = mesh.read<u32>(ofs, "vertex");
+					// value = 0bzzzzzzzzzzzzyyyyyyyyyyxxxxxxxxxx
+					//  where z, y and x are signed.
 					f32 x = ((s32) (value << 22) >> 22) / 16.f;
 					f32 y = ((s32) (value << 12) >> 22) / 16.f;
 					f32 z = ((s32) (value << 0) >> 20) / 64.f;
 					sector.vertices[vertex] = {x, y, z};
 					ofs += 4;
+					
+					//glm::vec3& vtx = sector.vertices[vertex];
+					//u32 newval = 0;
+					//newval |= ((u32) (s32) (((u32) (vtx.x * 16.f)) << 22)) >> 22;
+					//s32 yval = ((s32) (vtx.y * 16.f) << 22);
+					//newval |= (
+					//	((u32) yval) >> 12
+					//);
+					//newval |= (s32) (((u32) (vtx.z * 64.f)) << 20);
+					//printf("newval %x oldvalue %x\n", newval, value);
 				}
 				for(s32 quad = 0; quad < quad_count; quad++) {
 					u8 v0 = mesh.read<u8>(ofs, "quad v0");
@@ -222,16 +237,28 @@ static void write_collision_mesh(OutBuffer dest, CollisionSectors& sectors) {
 				dest.write<u8>(sector.quads.size());
 				
 				for(const glm::vec3& vertex : sector.vertices) {
-					dest.write<u32>(0x0df0adde);
+					u32 value = 0;
+					// value = 0bzzzzzzzzzzzzyyyyyyyyyyxxxxxxxxxx
+					//  where z, y and x are signed.
+					value |= ((((s32) (vertex.x * 16.f)) << 22) >> 22) & 0b00000000000000000000001111111111;
+					value |= (((s32) (vertex.y * 16.f) << 22) >> 12) & 0b00000000000011111111110000000000;
+					value |= (((s32) (vertex.z * 64.f)) << 20) & 0b11111111111100000000000000000000;
+					dest.write(value);
 				}
 				for(const CollisionQuad& quad : sector.quads) {
-					dest.write<u32>(0x0df0adde);
+					dest.write<u8>(quad.v0);
+					dest.write<u8>(quad.v1);
+					dest.write<u8>(quad.v2);
+					dest.write<u8>(quad.type);
 				}
-				for(const CollisionTri& tris : sector.tris) {
-					dest.write<u32>(0xdeadf00d);
+				for(const CollisionTri& tri : sector.tris) {
+					dest.write<u8>(tri.v0);
+					dest.write<u8>(tri.v1);
+					dest.write<u8>(tri.v2);
+					dest.write<u8>(tri.type);
 				}
 				for(const CollisionQuad& quad : sector.quads) {
-					dest.write<u8>(0x42);
+					dest.write<u8>(quad.v3);
 				}
 			}
 		}

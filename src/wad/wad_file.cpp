@@ -33,6 +33,10 @@ struct Assets {
 		std::vector<u8> collision = assets.read_multiple<u8>(header.collision, header.textures_base_offset - header.collision, "collision").copy();
 		wad.collision = read_collision(Buffer(collision));
 	}
+	
+	static SectorRange write(OutBuffer& dest, const LevelWad& wad) {
+		
+	}
 };
 
 struct PrimaryLump {
@@ -354,10 +358,6 @@ static std::vector<u8> build_level_wad(LevelWad& wad) {
 		}
 	}
 	return dest_vec;
-}
-
-static SectorRange write_primary(OutBuffer dest, const LevelWad wad) {
-	
 }
 
 static SectorRange write_lump(OutBuffer dest, const std::vector<u8>& buffer) {

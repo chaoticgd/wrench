@@ -180,7 +180,36 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			if(wad.game != Game::RAC1) {
 				wad.reverb = json["reverb"];
 			}
-			//wad.primary = read_file(src_dir/std::string(json["primary"]));
+			wad.code = read_file(src_dir/std::string(json["code"]));
+			wad.asset_header = read_file(src_dir/std::string(json["asset_header"]));
+			wad.small_textures = read_file(src_dir/std::string(json["small_textures"]));
+			wad.hud_header = read_file(src_dir/std::string(json["hud_header"]));
+			wad.hud_banks[0] = read_file(src_dir/std::string(json["hud_bank_0"]));
+			wad.hud_banks[1] = read_file(src_dir/std::string(json["hud_bank_1"]));
+			wad.hud_banks[2] = read_file(src_dir/std::string(json["hud_bank_2"]));
+			wad.hud_banks[3] = read_file(src_dir/std::string(json["hud_bank_3"]));
+			wad.hud_banks[4] = read_file(src_dir/std::string(json["hud_bank_4"]));
+			wad.tfrags = read_file(src_dir/std::string(json["tfrags"]));
+			wad.occlusion = read_file(src_dir/std::string(json["occlusion"]));
+			wad.sky = read_file(src_dir/std::string(json["sky"]));
+			wad.collision = import_dae(read_file(src_dir/std::string(json["collision"]))).meshes.at(0);
+			wad.shared_textures = read_file(src_dir/std::string(json["shared_textures"]));
+			wad.particle_textures = read_file(src_dir/std::string(json["particle_textures"]));
+			wad.fx_textures = read_file(src_dir/std::string(json["fx_textures"]));
+			wad.mobies = read_file(src_dir/std::string(json["mobies"]));
+			wad.ties = read_file(src_dir/std::string(json["ties"]));
+			wad.shrubs = read_file(src_dir/std::string(json["shrubs"]));
+			wad.ratchet_seqs = read_file(src_dir/std::string(json["ratchet_seqs"]));
+			verify(json.contains("moby_8355_pvars") == (wad.game == Game::DL),
+				(wad.game == Game::DL) ? "Missing moby_8355_pvars file." : "moby_8355_pvars present but not required.");
+			if(wad.game == Game::DL) {
+				wad.moby_8355_pvars = read_file(src_dir/std::string(json["moby_8355_pvars"]));
+			}
+			verify(json.contains("global_nav_data") == (wad.game == Game::DL),
+				(wad.game == Game::DL) ? "Missing global_nav_data file." : "global_nav_data present but not required.");
+			if(wad.global_nav_data.has_value()) {
+				wad.global_nav_data = read_file(src_dir/std::string(json["global_nav_data"]));
+			}
 			if(wad.game != Game::RAC1) {
 				wad.core_bank = read_file(src_dir/std::string(json["core_sound_bank"]));
 			}
