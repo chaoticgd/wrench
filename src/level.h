@@ -867,7 +867,7 @@ struct LevelWad : Wad {
 	std::vector<u8> ties;
 	std::vector<u8> shrubs;
 	std::vector<u8> ratchet_seqs;
-	Opt<std::vector<u8>> moby_8355_pvars;
+	Opt<std::vector<u8>> moby8355_pvars;
 	Opt<std::vector<u8>> global_nav_data;
 	
 	std::vector<u8> core_bank;

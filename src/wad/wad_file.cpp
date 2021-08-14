@@ -58,8 +58,8 @@ struct PrimaryLump {
 		verify(decompress_wad(assets_vec, wad_buffer(src.subbuf(header.assets.offset))), "Failed to decompress assets.");
 		Buffer assets(assets_vec);
 		Assets::read(wad, wad.asset_header, assets);
-		if(header.moby_8355_pvars.has_value()) {
-			wad.moby_8355_pvars = src.read_multiple<u8>(header.moby_8355_pvars->offset, header.moby_8355_pvars->size, "moby_8355_pvars").copy();
+		if(header.moby8355_pvars.has_value()) {
+			wad.moby8355_pvars = src.read_multiple<u8>(header.moby8355_pvars->offset, header.moby8355_pvars->size, "moby8355_pvars").copy();
 		}
 		if(header.global_nav_data.has_value()) {
 			wad.global_nav_data = src.read_multiple<u8>(header.global_nav_data->offset, header.global_nav_data->size, "global_nav_data").copy();
@@ -79,6 +79,7 @@ struct PrimaryLump {
 				if(r.size() >= sizeof(Rac123PrimaryHeader)) {
 					packed_header = Buffer(r).read<Rac123PrimaryHeader>(0, "primary header");
 				}
+				l.moby8355_pvars = {};
 				SWAP_PACKED(l.code, packed_header.code);
 				SWAP_PACKED(l.asset_header, packed_header.asset_header);
 				SWAP_PACKED(l.small_textures, packed_header.small_textures);
@@ -87,7 +88,6 @@ struct PrimaryLump {
 					SWAP_PACKED(l.hud_banks[i], packed_header.hud_banks[i]);
 				}
 				SWAP_PACKED(l.assets, packed_header.assets);
-				l.moby_8355_pvars = {};
 				l.art_instances = {};
 				l.gameplay_core = {};
 				l.global_nav_data = {};
@@ -97,7 +97,30 @@ struct PrimaryLump {
 				break;
 			}
 			case Game::DL: {
-				verify_not_reached("Not yet implemented.");
+				DeadlockedPrimaryHeader packed_header = {0};
+				if(r.size() >= sizeof(DeadlockedPrimaryHeader)) {
+					packed_header = Buffer(r).read<DeadlockedPrimaryHeader>(0, "primary header");
+					l.moby8355_pvars = ByteRange {0, 0};
+					l.art_instances = ByteRange {0, 0};
+					l.gameplay_core = ByteRange {0, 0};
+					l.global_nav_data = ByteRange {0, 0};
+				}
+				SWAP_PACKED(*l.moby8355_pvars, packed_header.moby8355_pvars);
+				SWAP_PACKED(l.code, packed_header.code);
+				SWAP_PACKED(l.asset_header, packed_header.asset_header);
+				SWAP_PACKED(l.small_textures, packed_header.small_textures);
+				SWAP_PACKED(l.hud_header, packed_header.hud_header);
+				for(s32 i = 0; i < 5; i++) {
+					SWAP_PACKED(l.hud_banks[i], packed_header.hud_banks[i]);
+				}
+				SWAP_PACKED(l.assets, packed_header.assets);
+				SWAP_PACKED(*l.moby8355_pvars, packed_header.moby8355_pvars);
+				SWAP_PACKED(*l.art_instances, packed_header.art_instances);
+				SWAP_PACKED(*l.gameplay_core, packed_header.gameplay_core);
+				SWAP_PACKED(*l.global_nav_data, packed_header.global_nav_data);
+				if(r.size() == 0) {
+					OutBuffer(r).write(packed_header);
+				}
 				break;
 			}
 		}

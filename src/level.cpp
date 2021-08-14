@@ -200,10 +200,10 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			wad.ties = read_file(src_dir/std::string(json["ties"]));
 			wad.shrubs = read_file(src_dir/std::string(json["shrubs"]));
 			wad.ratchet_seqs = read_file(src_dir/std::string(json["ratchet_seqs"]));
-			verify(json.contains("moby_8355_pvars") == (wad.game == Game::DL),
-				(wad.game == Game::DL) ? "Missing moby_8355_pvars file." : "moby_8355_pvars present but not required.");
+			verify(json.contains("moby8355_pvars") == (wad.game == Game::DL),
+				(wad.game == Game::DL) ? "Missing moby8355_pvars file." : "moby8355_pvars present but not required.");
 			if(wad.game == Game::DL) {
-				wad.moby_8355_pvars = read_file(src_dir/std::string(json["moby_8355_pvars"]));
+				wad.moby8355_pvars = read_file(src_dir/std::string(json["moby8355_pvars"]));
 			}
 			verify(json.contains("global_nav_data") == (wad.game == Game::DL),
 				(wad.game == Game::DL) ? "Missing global_nav_data file." : "global_nav_data present but not required.");
@@ -319,8 +319,8 @@ void write_wad_json(fs::path dest_dir, Wad* base) {
 			json["ties"] = write_file(dest_dir, "ties.bin", wad.ties);
 			json["shrubs"] = write_file(dest_dir, "shrubs.bin", wad.shrubs);
 			json["ratchet_seqs"] = write_file(dest_dir, "ratchet_seqs.bin", wad.ratchet_seqs);
-			if(wad.moby_8355_pvars.has_value()) {
-				json["moby_8355_pvars"] = write_file(dest_dir, "moby_8355_pvars.bin", *wad.moby_8355_pvars);
+			if(wad.moby8355_pvars.has_value()) {
+				json["moby8355_pvars"] = write_file(dest_dir, "moby8355_pvars.bin", *wad.moby8355_pvars);
 			}
 			if(wad.global_nav_data.has_value()) {
 				json["global_nav_data"] = write_file(dest_dir, "global_nav_data.bin", *wad.global_nav_data);

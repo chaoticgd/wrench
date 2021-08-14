@@ -120,7 +120,7 @@ struct PrimaryHeader {
 	ByteRange hud_header;
 	ByteRange hud_banks[5];
 	ByteRange assets;
-	Opt<ByteRange> moby_8355_pvars;
+	Opt<ByteRange> moby8355_pvars;
 	Opt<ByteRange> art_instances;
 	Opt<ByteRange> gameplay_core;
 	Opt<ByteRange> global_nav_data;
