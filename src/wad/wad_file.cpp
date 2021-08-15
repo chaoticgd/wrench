@@ -27,15 +27,47 @@ static WadBuffer wad_buffer(Buffer buf) {
 struct Assets {
 	static void read(LevelWad& wad, Buffer asset_header, Buffer assets) {
 		auto header = asset_header.read<DeadlockedAssetHeader>(0, "asset header");
-		wad.tfrags = assets.read_multiple<u8>(header.tfrags, header.occlusion - header.tfrags, "tfrags").copy();
-		wad.occlusion = assets.read_multiple<u8>(header.occlusion, header.sky - header.occlusion, "occlusion").copy();
-		wad.sky = assets.read_multiple<u8>(header.sky, header.collision - header.sky, "sky").copy();
-		std::vector<u8> collision = assets.read_multiple<u8>(header.collision, header.textures_base_offset - header.collision, "collision").copy();
+		
+		s32 tfrags_size = next_block(header.tfrags, header) - header.tfrags;
+		wad.tfrags = assets.read_multiple<u8>(header.tfrags, tfrags_size, "tfrags").copy();
+		s32 occlusion_size = next_block(header.occlusion, header) - header.occlusion;
+		wad.occlusion = assets.read_multiple<u8>(header.occlusion, occlusion_size, "occlusion").copy();
+		s32 sky_size = next_block(header.sky, header) - header.sky;
+		wad.sky = assets.read_multiple<u8>(header.sky, sky_size, "sky").copy();
+		s32 collision_size = next_block(header.collision, header) - header.collision;
+		std::vector<u8> collision = assets.read_multiple<u8>(header.collision, collision_size, "collision").copy();
 		wad.collision = read_collision(Buffer(collision));
+		
+		s32 textures_size = next_block(header.textures_base_offset, header) - header.textures_base_offset;
+		wad.shared_textures = assets.read_multiple<u8>(header.textures_base_offset, textures_size, "textures").copy();
 	}
 	
 	static SectorRange write(OutBuffer& dest, const LevelWad& wad) {
 		
+	}
+	
+	static s32 next_block(s32 ofs, const DeadlockedAssetHeader& header) {
+		if(ofs == 0) {
+			return 0;
+		}
+		
+		s32 offsets[] = {
+			header.tfrags,
+			header.occlusion,
+			header.sky,
+			header.collision,
+			header.textures_base_offset,
+			header.part_bank_offset,
+			header.fx_bank_offset,
+			header.light_cuboids_offset
+		};
+		s32 value = -1;
+		for(s32 compare : offsets) {
+			if((value == -1 || compare < value) && compare > ofs) {
+				value = compare;
+			}
+		}
+		return value;
 	}
 };
 
