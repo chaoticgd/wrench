@@ -225,6 +225,10 @@ std::vector<vif_packet> parse_vif_chain(const stream* src, std::size_t base_addr
 		vif_packet vpkt;
 		vpkt.address = base_address + offset + 4;
 		
+		if(base_address + offset + 4 > src->size()) {
+			vpkt.error = "packet overruns buffer";
+			break;
+		}
 		uint32_t val = src->peek<uint32_t>(base_address + offset);
 		std::optional<vif_code> code = vif_code::parse(val);
 		if(!code) {
@@ -238,6 +242,12 @@ std::vector<vif_packet> parse_vif_chain(const stream* src, std::size_t base_addr
 		std::size_t packet_size = vpkt.code.packet_size();
 		if(packet_size > 0x10000) {
 			vpkt.error = "packet_size > 0x10000";
+			chain.push_back(vpkt);
+			break;
+		}
+		
+		if(packet_size > src->size() - (base_address + offset)) {
+			vpkt.error = "packet overruns buffer";
 			chain.push_back(vpkt);
 			break;
 		}
