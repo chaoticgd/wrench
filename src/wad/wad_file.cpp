@@ -24,22 +24,73 @@ static WadBuffer wad_buffer(Buffer buf) {
 	return {buf.lo, buf.hi};
 }
 
+packed_struct(MobyClassEntry,
+	s32 offset_in_asset_wad;
+	s32 o_class;
+	s32 unknown_8;
+	s32 unknown_c;
+	u8 textures[16];
+)
+
+packed_struct(TieClassEntry,
+	s32 offset_in_asset_wad;
+	s32 o_class;
+	s32 unknown_8;
+	s32 unknown_c;
+	u8 textures[16];
+)
+
+packed_struct(ShrubClassEntry,
+	uint32_t offset_in_asset_wad;
+	uint32_t o_class;
+	uint32_t unknown_8;
+	uint32_t unknown_c;
+	uint8_t textures[16];
+	uint8_t unknown_20[16];
+)
+
 struct Assets {
 	static void read(LevelWad& wad, Buffer asset_header, Buffer assets) {
 		auto header = asset_header.read<DeadlockedAssetHeader>(0, "asset header");
 		
-		s32 tfrags_size = next_block(header.tfrags, header) - header.tfrags;
-		wad.tfrags = assets.read_multiple<u8>(header.tfrags, tfrags_size, "tfrags").copy();
+		s32 tfrags_size;
+		if(header.occlusion != 0) {
+			tfrags_size = header.occlusion;
+		} else if(header.sky != 0) {
+			tfrags_size = header.sky;
+		} else if(header.collision != 0) {
+			tfrags_size = header.collision;
+		} else {
+			verify_not_reached("Unable to determine size of tfrag block.");
+		}
+		wad.tfrags = assets.read_bytes(header.tfrags, tfrags_size, "tfrags");
 		s32 occlusion_size = next_block(header.occlusion, header) - header.occlusion;
-		wad.occlusion = assets.read_multiple<u8>(header.occlusion, occlusion_size, "occlusion").copy();
+		wad.occlusion = assets.read_bytes(header.occlusion, occlusion_size, "occlusion");
 		s32 sky_size = next_block(header.sky, header) - header.sky;
-		wad.sky = assets.read_multiple<u8>(header.sky, sky_size, "sky").copy();
+		wad.sky = assets.read_bytes(header.sky, sky_size, "sky");
 		s32 collision_size = next_block(header.collision, header) - header.collision;
-		std::vector<u8> collision = assets.read_multiple<u8>(header.collision, collision_size, "collision").copy();
+		std::vector<u8> collision = assets.read_bytes(header.collision, collision_size, "collision");
 		wad.collision = read_collision(Buffer(collision));
 		
-		s32 textures_size = next_block(header.textures_base_offset, header) - header.textures_base_offset;
-		wad.shared_textures = assets.read_multiple<u8>(header.textures_base_offset, textures_size, "textures").copy();
+		verify(header.moby_classes.count >= 1, "Level has no moby classes.");
+		verify(header.tie_classes.count >= 1, "Level has no tie classes.");
+		verify(header.shrub_classes.count >= 1, "Level has no shrub classes.");
+		
+		auto moby_classes = asset_header.read_multiple<MobyClassEntry>(header.moby_classes.offset, header.moby_classes.count, "moby class table");
+		auto tie_classes = asset_header.read_multiple<TieClassEntry>(header.tie_classes.offset, header.tie_classes.count, "tie class table");
+		auto shrub_classes = asset_header.read_multiple<ShrubClassEntry>(header.shrub_classes.offset, header.shrub_classes.count, "shrub class table");
+		
+		s32 textures_size = moby_classes[0].offset_in_asset_wad - header.textures_base_offset;
+		wad.shared_textures = assets.read_bytes(header.textures_base_offset, textures_size, "textures");
+		
+		s32 mobies_size = tie_classes[0].offset_in_asset_wad - moby_classes[0].offset_in_asset_wad;
+		wad.mobies = assets.read_bytes(moby_classes[0].offset_in_asset_wad, mobies_size, "moby classes");
+		
+		s32 ties_size = shrub_classes[0].offset_in_asset_wad - tie_classes[0].offset_in_asset_wad;
+		wad.ties = assets.read_bytes(tie_classes[0].offset_in_asset_wad, ties_size, "tie classes");
+		
+		s32 shrubs_size = header.assets_decompressed_size - shrub_classes[0].offset_in_asset_wad;
+		wad.shrubs = assets.read_bytes(shrub_classes[0].offset_in_asset_wad, shrubs_size, "shrub classes");
 	}
 	
 	static SectorRange write(OutBuffer& dest, const LevelWad& wad) {
@@ -56,10 +107,7 @@ struct Assets {
 			header.occlusion,
 			header.sky,
 			header.collision,
-			header.textures_base_offset,
-			header.part_bank_offset,
-			header.fx_bank_offset,
-			header.light_cuboids_offset
+			header.textures_base_offset
 		};
 		s32 value = -1;
 		for(s32 compare : offsets) {
@@ -73,17 +121,17 @@ struct Assets {
 
 struct PrimaryLump {
 	static void read(LevelWad& wad, Buffer src) {
-		std::vector<u8> header_bytes = src.read_multiple<u8>(0, max_header_size(), "primary header").copy();
+		std::vector<u8> header_bytes = src.read_bytes(0, max_header_size(), "primary header");
 		PrimaryHeader header = {0};
 		swap_header(header, header_bytes, wad.game);
 		
-		wad.code = src.read_multiple<u8>(header.code.offset, header.code.size, "code").copy();
-		wad.asset_header = src.read_multiple<u8>(header.asset_header.offset, header.asset_header.size, "asset_header").copy();
-		wad.small_textures = src.read_multiple<u8>(header.small_textures.offset, header.small_textures.size, "small_textures").copy();
-		wad.hud_header = src.read_multiple<u8>(header.hud_header.offset, header.hud_header.size, "hud_header").copy();
+		wad.code = src.read_bytes(header.code.offset, header.code.size, "code");
+		wad.asset_header = src.read_bytes(header.asset_header.offset, header.asset_header.size, "asset_header");
+		wad.small_textures = src.read_bytes(header.small_textures.offset, header.small_textures.size, "small_textures");
+		wad.hud_header = src.read_bytes(header.hud_header.offset, header.hud_header.size, "hud_header");
 		for(s32 i = 0; i < 5; i++) {
 			if(header.hud_banks[i].offset > 0) {
-				wad.hud_banks[i] = src.read_multiple<u8>(header.hud_banks[i].offset, header.hud_banks[i].size, "hud_banks").copy();
+				wad.hud_banks[i] = src.read_bytes(header.hud_banks[i].offset, header.hud_banks[i].size, "hud_banks");
 			}
 		}
 		std::vector<u8> assets_vec;
@@ -91,10 +139,10 @@ struct PrimaryLump {
 		Buffer assets(assets_vec);
 		Assets::read(wad, wad.asset_header, assets);
 		if(header.moby8355_pvars.has_value()) {
-			wad.moby8355_pvars = src.read_multiple<u8>(header.moby8355_pvars->offset, header.moby8355_pvars->size, "moby8355_pvars").copy();
+			wad.moby8355_pvars = src.read_bytes(header.moby8355_pvars->offset, header.moby8355_pvars->size, "moby8355_pvars");
 		}
 		if(header.global_nav_data.has_value()) {
-			wad.global_nav_data = src.read_multiple<u8>(header.global_nav_data->offset, header.global_nav_data->size, "global_nav_data").copy();
+			wad.global_nav_data = src.read_bytes(header.global_nav_data->offset, header.global_nav_data->size, "global_nav_data");
 		}
 	}
 	

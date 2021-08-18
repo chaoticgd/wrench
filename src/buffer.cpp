@@ -32,6 +32,10 @@ Buffer Buffer::subbuf(s64 offset, s64 new_size) const {
 	return Buffer(lo + offset, lo + offset + new_size);
 }
 
+std::vector<u8> Buffer::read_bytes(s64 offset, s64 size, const char* subject) const {
+	return read_multiple<u8>(offset, size, subject).copy();
+}
+
 std::string Buffer::read_string(s64 offset, bool is_korean) const {
 	verify(offset > 0, "Failed to read string: Offset cannot be negative.");
 	verify(lo + offset <= hi, "Failed to read string: Attempted to read past end of buffer.");
