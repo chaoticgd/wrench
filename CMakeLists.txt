@@ -117,6 +117,7 @@ add_executable(wad
 	src/collada.cpp
 	src/wad/wad_file.cpp
 	src/wad/gameplay.cpp
+	src/wad/primary.cpp
 	src/wad/collision.cpp
 	src/wad/tests.cpp
 	src/lz/compression.cpp
