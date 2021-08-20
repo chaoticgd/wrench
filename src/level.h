@@ -860,9 +860,8 @@ struct LevelWad : Wad {
 	std::vector<u8> occlusion;
 	std::vector<u8> sky;
 	Mesh collision;
-	std::vector<u8> shared_textures;
-	std::vector<u8> particle_textures;
-	std::vector<u8> fx_textures;
+	std::vector<u8> collision_bin;
+	std::vector<u8> textures;
 	std::vector<u8> mobies;
 	std::vector<u8> ties;
 	std::vector<u8> shrubs;

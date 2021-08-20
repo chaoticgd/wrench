@@ -76,34 +76,30 @@ packed_struct(DeadlockedAssetHeader,
 	/* 0x84 */ s32 moby_gs_stash_count;
 	/* 0x88 */ s32 assets_compressed_size;
 	/* 0x8c */ s32 assets_decompressed_size;
-	/* 0x90 */ uint32_t unknown_90;
-	/* 0x94 */ uint32_t unknown_94;
-	/* 0x98 */ uint32_t unknown_98;
-	/* 0x9c */ uint32_t unknown_9c;
-	/* 0xa0 */ uint32_t unknown_a0;
-	/* 0xa4 */ uint32_t ptr_into_asset_wad_a4;
-	/* 0xa8 */ uint32_t unknown_a8;
-	/* 0xac */ uint32_t unknown_ac;
-	/* 0xb0 */ uint32_t ptr_into_asset_wad_b0;
-	/* 0xb4 */ uint32_t unknown_b4;
-	/* 0xb8 */ uint32_t unknown_b8;
+	/* 0x90 */ s32 chrome_map_texture;
+	/* 0x94 */ s32 chrome_map_palette;
+	/* 0x98 */ s32 glass_map_texture;
+	/* 0x9c */ s32 glass_map_palette;
+	/* 0xa0 */ s32 unknown_a0;
+	/* 0xa4 */ s32 heightmap_offset;
+	/* 0xa8 */ s32 occlusion_oct_offset;
+	/* 0xac */ s32 moby_gs_stash_list;
+	/* 0xb0 */ s32 occlusion_rad_offset;
+	/* 0xb4 */ s32 moby_sound_remap_offset;
+	/* 0xb8 */ s32 occlusion_rad2_offset;
 )
 static_assert(sizeof(DeadlockedAssetHeader) == 0xbc);
 
 static void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets);
-static SectorRange write_assets(OutBuffer& dest, const LevelWad& wad);
+static SectorRange write_assets(OutBuffer header_dest, OutBuffer data_dest, const LevelWad& wad);
 static s32 next_asset_block(s32 ofs, const DeadlockedAssetHeader& header);
 
 static WadBuffer wad_buffer(Buffer buf) {
 	return {buf.lo, buf.hi};
 }
 
-static s64 max_header_size() {
-	return std::max(sizeof(Rac123PrimaryHeader), sizeof(DeadlockedPrimaryHeader));
-}
-
 void read_primary(LevelWad& wad, Buffer src) {
-	std::vector<u8> header_bytes = src.read_bytes(0, max_header_size(), "primary header");
+	std::vector<u8> header_bytes = src.read_bytes(0, sizeof(DeadlockedPrimaryHeader), "primary header");
 	PrimaryHeader header = {0};
 	swap_primary_header(header, header_bytes, wad.game);
 	
@@ -128,8 +124,52 @@ void read_primary(LevelWad& wad, Buffer src) {
 	}
 }
 
+static ByteRange write_primary_block(OutBuffer& dest, const std::vector<u8>& bytes, s64 primary_ofs) {
+	dest.pad(0x40);
+	s64 block_ofs = dest.tell();
+	dest.write_multiple(bytes);
+	return {(s32) (block_ofs - primary_ofs), (s32) (dest.tell() - block_ofs)};
+}
+
 SectorRange write_primary(OutBuffer& dest, const LevelWad& wad) {
-	return {0, 0};
+	dest.pad(SECTOR_SIZE, 0);
+	
+	PrimaryHeader header = {0};
+	s64 header_ofs;
+	if(wad.game == Game::DL) {
+		header_ofs = dest.alloc<DeadlockedPrimaryHeader>();
+	} else {
+		header_ofs = dest.alloc<Rac123PrimaryHeader>();
+	}
+	
+	if(wad.moby8355_pvars.has_value()) {
+		header.moby8355_pvars = write_primary_block(dest, *wad.moby8355_pvars, header_ofs);
+	}
+	header.code = write_primary_block(dest, wad.code, header_ofs);
+	std::vector<u8> asset_header;
+	std::vector<u8> asset_data;
+	write_assets(OutBuffer(asset_header), OutBuffer(asset_data), wad);
+	header.asset_header = write_primary_block(dest, asset_header, header_ofs);
+	std::vector<u8> compressed_asset_data;
+	compress_wad(compressed_asset_data, asset_data, 8);
+	header.asset_header = write_primary_block(dest, compressed_asset_data, header_ofs);
+	
+	header.small_textures = write_primary_block(dest, wad.small_textures, header_ofs);
+	header.hud_header = write_primary_block(dest, wad.hud_header, header_ofs);
+	for(s32 i = 0; i < 5; i++) {
+		if(wad.hud_banks[i].size() > 0) {
+			header.hud_banks[i] = write_primary_block(dest, wad.hud_banks[i], header_ofs);
+		}
+	}
+	
+	std::vector<u8> header_bytes;
+	swap_primary_header(header, header_bytes, wad.game);
+	dest.write_multiple(header_ofs, header_bytes);
+	
+	return {
+		(s32) (header_ofs / SECTOR_SIZE),
+		Sector32::size_from_bytes(dest.tell() - header_ofs)
+	};
 }
 
 void swap_primary_header(PrimaryHeader& l, std::vector<u8>& r, Game game) {
@@ -233,6 +273,7 @@ static void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets) {
 	wad.sky = assets.read_bytes(header.sky, sky_size, "sky");
 	s32 collision_size = next_asset_block(header.collision, header) - header.collision;
 	std::vector<u8> collision = assets.read_bytes(header.collision, collision_size, "collision");
+	wad.collision_bin = collision;
 	wad.collision = read_collision(Buffer(collision));
 	
 	verify(header.moby_classes.count >= 1, "Level has no moby classes.");
@@ -244,7 +285,7 @@ static void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets) {
 	auto shrub_classes = asset_header.read_multiple<ShrubClassEntry>(header.shrub_classes.offset, header.shrub_classes.count, "shrub class table");
 	
 	s32 textures_size = moby_classes[0].offset_in_asset_wad - header.textures_base_offset;
-	wad.shared_textures = assets.read_bytes(header.textures_base_offset, textures_size, "textures");
+	wad.textures = assets.read_bytes(header.textures_base_offset, textures_size, "textures");
 	
 	s32 mobies_size = tie_classes[0].offset_in_asset_wad - moby_classes[0].offset_in_asset_wad;
 	wad.mobies = assets.read_bytes(moby_classes[0].offset_in_asset_wad, mobies_size, "moby classes");
@@ -256,8 +297,27 @@ static void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets) {
 	wad.shrubs = assets.read_bytes(shrub_classes[0].offset_in_asset_wad, shrubs_size, "shrub classes");
 }
 
-static SectorRange write_assets(OutBuffer& dest, const LevelWad& wad) {
+static SectorRange write_assets(OutBuffer header_dest, OutBuffer data_dest, const LevelWad& wad) {
+	DeadlockedAssetHeader header;
 	
+	data_dest.pad(0x40);
+	header.tfrags = data_dest.write_multiple(wad.tfrags);
+	data_dest.pad(0x40);
+	header.occlusion = data_dest.write_multiple(wad.occlusion);
+	data_dest.pad(0x40);
+	header.sky = data_dest.write_multiple(wad.sky);
+	data_dest.pad(0x40);
+	header.collision = data_dest.write_multiple(wad.collision_bin);//dest.write_multiple(write_dae(mesh_to_dae(wad.collision)));
+	data_dest.pad(0x40);
+	header.textures_base_offset = data_dest.write_multiple(wad.textures);
+	data_dest.pad(0x40);
+	data_dest.write_multiple(wad.mobies);
+	data_dest.pad(0x40);
+	data_dest.write_multiple(wad.ties);
+	data_dest.pad(0x40);
+	data_dest.write_multiple(wad.shrubs);
+	
+	return {0, 0};
 }
 
 static s32 next_asset_block(s32 ofs, const DeadlockedAssetHeader& header) {

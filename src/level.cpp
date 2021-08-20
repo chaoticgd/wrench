@@ -192,10 +192,9 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			wad.tfrags = read_file(src_dir/std::string(json["tfrags"]));
 			wad.occlusion = read_file(src_dir/std::string(json["occlusion"]));
 			wad.sky = read_file(src_dir/std::string(json["sky"]));
-			wad.collision = import_dae(read_file(src_dir/std::string(json["collision"]))).meshes.at(0);
-			wad.shared_textures = read_file(src_dir/std::string(json["shared_textures"]));
-			wad.particle_textures = read_file(src_dir/std::string(json["particle_textures"]));
-			wad.fx_textures = read_file(src_dir/std::string(json["fx_textures"]));
+			//wad.collision = import_dae(read_file(src_dir/std::string(json["collision"]))).meshes.at(0);
+			wad.collision_bin = read_file(src_dir/std::string(json["collision_bin"]));
+			wad.textures = read_file(src_dir/std::string(json["textures"]));
 			wad.mobies = read_file(src_dir/std::string(json["mobies"]));
 			wad.ties = read_file(src_dir/std::string(json["ties"]));
 			wad.shrubs = read_file(src_dir/std::string(json["shrubs"]));
@@ -312,9 +311,8 @@ void write_wad_json(fs::path dest_dir, Wad* base) {
 			json["occlusion"] = write_file(dest_dir, "occlusion.bin", wad.occlusion);
 			json["sky"] = write_file(dest_dir, "sky.bin", wad.sky);
 			json["collision"] = write_file(dest_dir, "collision.dae", write_dae(mesh_to_dae(wad.collision)));
-			json["shared_textures"] = write_file(dest_dir, "shared_textures.bin", wad.shared_textures);
-			json["particle_textures"] = write_file(dest_dir, "particle_textures.bin", wad.particle_textures);
-			json["fx_textures"] = write_file(dest_dir, "fx_textures.bin", wad.fx_textures);
+			json["collision_bin"] = write_file(dest_dir, "collision.bin", wad.collision_bin);
+			json["textures"] = write_file(dest_dir, "textures.bin", wad.textures);
 			json["mobies"] = write_file(dest_dir, "mobies.bin", wad.mobies);
 			json["ties"] = write_file(dest_dir, "ties.bin", wad.ties);
 			json["shrubs"] = write_file(dest_dir, "shrubs.bin", wad.shrubs);
