@@ -49,7 +49,7 @@ packed_struct(ArrayRange,
 	s32 offset;
 )
 
-packed_struct(DeadlockedAssetHeader,
+packed_struct(AssetHeader,
 	/* 0x00 */ ArrayRange gs_ram;
 	/* 0x08 */ s32 tfrags;
 	/* 0x0c */ s32 occlusion;
@@ -88,11 +88,13 @@ packed_struct(DeadlockedAssetHeader,
 	/* 0xb4 */ s32 moby_sound_remap_offset;
 	/* 0xb8 */ s32 occlusion_rad2_offset;
 )
-static_assert(sizeof(DeadlockedAssetHeader) == 0xbc);
+static_assert(sizeof(AssetHeader) == 0xbc);
 
 static void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets);
-static SectorRange write_assets(OutBuffer header_dest, OutBuffer data_dest, const LevelWad& wad);
-static s32 next_asset_block(s32 ofs, const DeadlockedAssetHeader& header);
+static void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, const LevelWad& wad);
+static std::vector<s64> enumerate_asset_block_boundaries(Buffer src, const AssetHeader& header); // Used to determining the size of certain blocks.
+static s64 next_asset_block_size(s32 ofs, const std::vector<s64>& block_bounds);
+static void print_asset_header(const AssetHeader& header);
 
 static WadBuffer wad_buffer(Buffer buf) {
 	return {buf.lo, buf.hi};
@@ -148,11 +150,9 @@ SectorRange write_primary(OutBuffer& dest, const LevelWad& wad) {
 	header.code = write_primary_block(dest, wad.code, header_ofs);
 	std::vector<u8> asset_header;
 	std::vector<u8> asset_data;
-	write_assets(OutBuffer(asset_header), OutBuffer(asset_data), wad);
+	write_assets(OutBuffer(asset_header), asset_data, wad);
 	header.asset_header = write_primary_block(dest, asset_header, header_ofs);
-	std::vector<u8> compressed_asset_data;
-	compress_wad(compressed_asset_data, asset_data, 8);
-	header.asset_header = write_primary_block(dest, compressed_asset_data, header_ofs);
+	header.assets = write_primary_block(dest, asset_data, header_ofs);
 	
 	header.small_textures = write_primary_block(dest, wad.small_textures, header_ofs);
 	header.hud_header = write_primary_block(dest, wad.hud_header, header_ofs);
@@ -254,7 +254,8 @@ packed_struct(ShrubClassEntry,
 )
 
 static void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets) {
-	auto header = asset_header.read<DeadlockedAssetHeader>(0, "asset header");
+	auto header = asset_header.read<AssetHeader>(0, "asset header");
+	std::vector<s64> block_bounds = enumerate_asset_block_boundaries(asset_header, header);
 	
 	s32 tfrags_size;
 	if(header.occlusion != 0) {
@@ -267,11 +268,11 @@ static void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets) {
 		verify_not_reached("Unable to determine size of tfrag block.");
 	}
 	wad.tfrags = assets.read_bytes(header.tfrags, tfrags_size, "tfrags");
-	s32 occlusion_size = next_asset_block(header.occlusion, header) - header.occlusion;
+	s32 occlusion_size = next_asset_block_size(header.occlusion, block_bounds);
 	wad.occlusion = assets.read_bytes(header.occlusion, occlusion_size, "occlusion");
-	s32 sky_size = next_asset_block(header.sky, header) - header.sky;
+	s32 sky_size = next_asset_block_size(header.sky, block_bounds);
 	wad.sky = assets.read_bytes(header.sky, sky_size, "sky");
-	s32 collision_size = next_asset_block(header.collision, header) - header.collision;
+	s32 collision_size = next_asset_block_size(header.collision, block_bounds);
 	std::vector<u8> collision = assets.read_bytes(header.collision, collision_size, "collision");
 	wad.collision_bin = collision;
 	wad.collision = read_collision(Buffer(collision));
@@ -285,20 +286,39 @@ static void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets) {
 	auto shrub_classes = asset_header.read_multiple<ShrubClassEntry>(header.shrub_classes.offset, header.shrub_classes.count, "shrub class table");
 	
 	s32 textures_size = moby_classes[0].offset_in_asset_wad - header.textures_base_offset;
-	wad.textures = assets.read_bytes(header.textures_base_offset, textures_size, "textures");
 	
-	s32 mobies_size = tie_classes[0].offset_in_asset_wad - moby_classes[0].offset_in_asset_wad;
-	wad.mobies = assets.read_bytes(moby_classes[0].offset_in_asset_wad, mobies_size, "moby classes");
+	for(size_t i = 0; i < moby_classes.size(); i++) {
+		MobyClass& moby = wad.lookup_moby_class(moby_classes[i].o_class);
+		if(moby_classes[i].offset_in_asset_wad != 0) {
+			s64 model_size = next_asset_block_size(moby_classes[i].offset_in_asset_wad, block_bounds);
+			moby.model = assets.read_bytes(moby_classes[i].offset_in_asset_wad, model_size, "moby model");
+		}
+	}
 	
-	s32 ties_size = shrub_classes[0].offset_in_asset_wad - tie_classes[0].offset_in_asset_wad;
-	wad.ties = assets.read_bytes(tie_classes[0].offset_in_asset_wad, ties_size, "tie classes");
+	for(size_t i = 0; i < tie_classes.size(); i++) {
+		verify(tie_classes[i].offset_in_asset_wad != 0, "Tie class %d has no model.", i);
+		TieClass tie;
+		s64 model_size = next_asset_block_size(tie_classes[i].offset_in_asset_wad, block_bounds);
+		tie.model = assets.read_bytes(tie_classes[i].offset_in_asset_wad, model_size, "tie model");
+		wad.tie_classes.emplace(tie_classes[i].o_class, tie);
+	}
 	
-	s32 shrubs_size = header.assets_decompressed_size - shrub_classes[0].offset_in_asset_wad;
-	wad.shrubs = assets.read_bytes(shrub_classes[0].offset_in_asset_wad, shrubs_size, "shrub classes");
+	for(size_t i = 0; i < shrub_classes.size(); i++) {
+		verify(shrub_classes[i].offset_in_asset_wad != 0, "Shrub class %d has no model.", i);
+		ShrubClass shrub;
+		s64 model_size = next_asset_block_size(shrub_classes[i].offset_in_asset_wad, block_bounds);
+		shrub.model = assets.read_bytes(shrub_classes[i].offset_in_asset_wad, model_size, "shrub model");
+		wad.shrub_classes.emplace(shrub_classes[i].o_class, shrub);
+	}
+	
+	print_asset_header(header);
 }
 
-static SectorRange write_assets(OutBuffer header_dest, OutBuffer data_dest, const LevelWad& wad) {
-	DeadlockedAssetHeader header;
+static void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, const LevelWad& wad) {
+	std::vector<u8> data_vec;
+	OutBuffer data_dest(data_vec);
+	
+	AssetHeader header = {0};
 	
 	data_dest.pad(0x40);
 	header.tfrags = data_dest.write_multiple(wad.tfrags);
@@ -310,33 +330,108 @@ static SectorRange write_assets(OutBuffer header_dest, OutBuffer data_dest, cons
 	header.collision = data_dest.write_multiple(wad.collision_bin);//dest.write_multiple(write_dae(mesh_to_dae(wad.collision)));
 	data_dest.pad(0x40);
 	header.textures_base_offset = data_dest.write_multiple(wad.textures);
-	data_dest.pad(0x40);
-	data_dest.write_multiple(wad.mobies);
-	data_dest.pad(0x40);
-	data_dest.write_multiple(wad.ties);
-	data_dest.pad(0x40);
-	data_dest.write_multiple(wad.shrubs);
+	//data_dest.pad(0x40);
+	//data_dest.write_multiple(wad.mobies);
+	//data_dest.pad(0x40);
+	//data_dest.write_multiple(wad.ties);
+	//data_dest.pad(0x40);
+	//data_dest.write_multiple(wad.shrubs);
 	
-	return {0, 0};
+	print_asset_header(header);
+	
+	compress_wad(compressed_data_dest, data_vec, 8);
+	header.assets_decompressed_size = data_vec.size();
+	header.assets_compressed_size = compressed_data_dest.size();
 }
 
-static s32 next_asset_block(s32 ofs, const DeadlockedAssetHeader& header) {
-	if(ofs == 0) {
-		return 0;
-	}
-	
-	s32 offsets[] = {
+static std::vector<s64> enumerate_asset_block_boundaries(Buffer src, const AssetHeader& header) {
+	std::vector<s64> blocks {
 		header.tfrags,
 		header.occlusion,
 		header.sky,
 		header.collision,
 		header.textures_base_offset
 	};
-	s32 value = -1;
-	for(s32 compare : offsets) {
-		if((value == -1 || compare < value) && compare > ofs) {
-			value = compare;
+	
+	auto moby_classes = src.read_multiple<MobyClassEntry>(header.moby_classes.offset, header.moby_classes.count, "moby class table");
+	for(const MobyClassEntry& entry : moby_classes) {
+		blocks.push_back(entry.offset_in_asset_wad);
+	}
+	
+	auto tie_classes = src.read_multiple<TieClassEntry>(header.tie_classes.offset, header.tie_classes.count, "tie class table");
+	for(const TieClassEntry& entry : tie_classes) {
+		blocks.push_back(entry.offset_in_asset_wad);
+	}
+	
+	auto shrub_classes = src.read_multiple<ShrubClassEntry>(header.shrub_classes.offset, header.shrub_classes.count, "shrub class table");
+	for(const ShrubClassEntry& entry : shrub_classes) {
+		blocks.push_back(entry.offset_in_asset_wad);
+	}
+	
+	blocks.push_back(header.assets_decompressed_size);
+	return blocks;
+}
+
+static s64 next_asset_block_size(s32 ofs, const std::vector<s64>& block_bounds) {
+	if(ofs == 0) {
+		// e.g. if there is no sky.
+		return 0;
+	}
+	s32 next_ofs = -1;
+	for(s64 bound : block_bounds) {
+		if(bound > ofs && (next_ofs == -1 || next_ofs < bound)) {
+			next_ofs = bound;
 		}
 	}
-	return value;
+	verify(next_ofs != -1, "Failed to determine size of asset block.");
+	return next_ofs - ofs;
+}
+
+static void print_asset_header(const AssetHeader& header) {
+	printf("%32s %8x", "gs_ram", header.gs_ram);
+	printf("%32s %8x", "tfrags", header.tfrags);
+	printf("%32s %8x", "occlusion", header.occlusion);
+	printf("%32s %8x\n", "sky", header.sky);
+	printf("%32s %8x", "collision", header.collision);
+	printf("%32s %8x", "moby_classes_count", header.moby_classes.count);
+	printf("%32s %8x", "moby_classes_offset", header.moby_classes.offset);
+	printf("%32s %8x\n", "tie_classes_count", header.tie_classes.count);
+	printf("%32s %8x", "tie_classes_offset", header.tie_classes.offset);
+	printf("%32s %8x", "shrub_classes_count", header.shrub_classes.count);
+	printf("%32s %8x", "shrub_classes_offset", header.shrub_classes.offset);
+	printf("%32s %8x\n", "tfrag_textures_count", header.tfrag_textures.count);
+	printf("%32s %8x", "tfrag_textures_offset", header.tfrag_textures.offset);
+	printf("%32s %8x", "moby_textures_count", header.moby_textures.count);
+	printf("%32s %8x", "moby_textures_offset", header.moby_textures.offset);
+	printf("%32s %8x\n", "tie_textures_count", header.tie_textures.count);
+	printf("%32s %8x", "tie_textures_offset", header.tie_textures.offset);
+	printf("%32s %8x", "shrub_textures_count", header.shrub_textures.count);
+	printf("%32s %8x", "shrub_textures_offset", header.shrub_textures.offset);
+	printf("%32s %8x\n", "part_textures_count", header.part_textures.count);
+	printf("%32s %8x", "part_textures_offset", header.part_textures.offset);
+	printf("%32s %8x", "fx_textures_count", header.fx_textures.count);
+	printf("%32s %8x", "fx_textures_offset", header.fx_textures.offset);
+	printf("%32s %8x\n", "textures_base_offset", header.textures_base_offset);
+	printf("%32s %8x", "part_bank_offset", header.part_bank_offset);
+	printf("%32s %8x", "fx_bank_offset", header.fx_bank_offset);
+	printf("%32s %8x", "part_defs_offset", header.part_defs_offset);
+	printf("%32s %8x\n", "sound_remap_offset", header.sound_remap_offset);
+	printf("%32s %8x", "assets_base_address", header.assets_base_address);
+	printf("%32s %8x", "light_cuboids_offset", header.light_cuboids_offset);
+	printf("%32s %8x", "scene_view_size", header.scene_view_size);
+	printf("%32s %8x\n", "index_into_some1_texs", header.index_into_some1_texs);
+	printf("%32s %8x", "moby_gs_stash_count", header.moby_gs_stash_count);
+	printf("%32s %8x", "assets_compressed_size", header.assets_compressed_size);
+	printf("%32s %8x", "assets_decompressed_size", header.assets_decompressed_size);
+	printf("%32s %8x\n", "chrome_map_texture", header.chrome_map_texture);
+	printf("%32s %8x", "chrome_map_palette", header.chrome_map_palette);
+	printf("%32s %8x", "glass_map_texture", header.glass_map_texture);
+	printf("%32s %8x", "glass_map_palette", header.glass_map_palette);
+	printf("%32s %8x\n", "unknown_a0", header.unknown_a0);
+	printf("%32s %8x", "heightmap_offset", header.heightmap_offset);
+	printf("%32s %8x", "occlusion_oct_offset", header.occlusion_oct_offset);
+	printf("%32s %8x", "moby_gs_stash_list", header.moby_gs_stash_list);
+	printf("%32s %8x\n", "occlusion_rad_offset", header.occlusion_rad_offset);
+	printf("%32s %8x", "moby_sound_remap_offset", header.moby_sound_remap_offset);
+	printf("%32s %8x\n", "occlusion_rad2_offset", header.occlusion_rad2_offset);
 }

@@ -195,9 +195,10 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			//wad.collision = import_dae(read_file(src_dir/std::string(json["collision"]))).meshes.at(0);
 			wad.collision_bin = read_file(src_dir/std::string(json["collision_bin"]));
 			wad.textures = read_file(src_dir/std::string(json["textures"]));
-			wad.mobies = read_file(src_dir/std::string(json["mobies"]));
-			wad.ties = read_file(src_dir/std::string(json["ties"]));
-			wad.shrubs = read_file(src_dir/std::string(json["shrubs"]));
+			
+			//wad.mobies = read_file(src_dir/std::string(json["mobies"]));
+			//wad.ties = read_file(src_dir/std::string(json["ties"]));
+			//wad.shrubs = read_file(src_dir/std::string(json["shrubs"]));
 			wad.ratchet_seqs = read_file(src_dir/std::string(json["ratchet_seqs"]));
 			verify(json.contains("moby8355_pvars") == (wad.game == Game::DL),
 				(wad.game == Game::DL) ? "Missing moby8355_pvars file." : "moby8355_pvars present but not required.");
@@ -313,9 +314,45 @@ void write_wad_json(fs::path dest_dir, Wad* base) {
 			json["collision"] = write_file(dest_dir, "collision.dae", write_dae(mesh_to_dae(wad.collision)));
 			json["collision_bin"] = write_file(dest_dir, "collision.bin", wad.collision_bin);
 			json["textures"] = write_file(dest_dir, "textures.bin", wad.textures);
-			json["mobies"] = write_file(dest_dir, "mobies.bin", wad.mobies);
-			json["ties"] = write_file(dest_dir, "ties.bin", wad.ties);
-			json["shrubs"] = write_file(dest_dir, "shrubs.bin", wad.shrubs);
+			
+			fs::create_directory(dest_dir/std::string("mobies"));
+			json["mobies"] = std::vector<std::string>{"mobies"};
+			for(auto& [number, moby] : wad.moby_classes) {
+				fs::path moby_dir = dest_dir/std::string("mobies")/std::to_string(number);
+				fs::create_directories(moby_dir);
+				Json moby_json;
+				moby_json["class"] = number;
+				moby_json["model"] = "model.bin";
+				moby_json["pvar_type"] = moby.pvar_type;
+				write_file(moby_dir, "model.bin", moby.model);
+				write_file(moby_dir, "moby.json", moby_json.dump(1, '\t'));
+				
+			}
+			
+			fs::create_directory(dest_dir/std::string("ties"));
+			json["ties"] = std::vector<std::string>{"ties"};
+			for(auto& [number, tie] : wad.tie_classes) {
+				fs::path tie_dir = dest_dir/std::string("ties")/std::to_string(number);
+				fs::create_directories(tie_dir);
+				Json tie_json;
+				tie_json["class"] = number;
+				tie_json["model"] = "model.bin";
+				write_file(tie_dir, "model.bin", tie.model);
+				write_file(tie_dir, "tie.json", tie_json.dump(1, '\t'));
+			}
+			
+			fs::create_directory(dest_dir/std::string("shrubs"));
+			json["shrubs"] = std::vector<std::string>{"shrubs"};
+			for(auto& [number, shrub] : wad.shrub_classes) {
+				fs::path shrub_dir = dest_dir/std::string("shrubs")/std::to_string(number);
+				fs::create_directories(shrub_dir);
+				Json shrub_json;
+				shrub_json["class"] = number;
+				shrub_json["model"] = "model.bin";
+				write_file(shrub_dir, "model.bin", shrub.model);
+				write_file(shrub_dir, "shrub.json", shrub_json.dump(1, '\t'));
+			}
+			
 			json["ratchet_seqs"] = write_file(dest_dir, "ratchet_seqs.bin", wad.ratchet_seqs);
 			if(wad.moby8355_pvars.has_value()) {
 				json["moby8355_pvars"] = write_file(dest_dir, "moby8355_pvars.bin", *wad.moby8355_pvars);

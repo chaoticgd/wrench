@@ -787,12 +787,21 @@ struct SoundClass {
 };
 
 struct MobyClass {
+	std::vector<u8> model;
 	std::string pvar_type;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
 		DEF_FIELD(pvar_type);
 	}
+};
+
+struct TieClass {
+	std::vector<u8> model;
+};
+
+struct ShrubClass {
+	std::vector<u8> model;
 };
 
 Json get_file_metadata(const char* format, const char* application);
@@ -862,9 +871,9 @@ struct LevelWad : Wad {
 	Mesh collision;
 	std::vector<u8> collision_bin;
 	std::vector<u8> textures;
-	std::vector<u8> mobies;
-	std::vector<u8> ties;
-	std::vector<u8> shrubs;
+	std::unordered_map<s32, MobyClass> moby_classes;
+	std::unordered_map<s32, TieClass> tie_classes;
+	std::unordered_map<s32, ShrubClass> shrub_classes;
 	std::vector<u8> ratchet_seqs;
 	Opt<std::vector<u8>> moby8355_pvars;
 	Opt<std::vector<u8>> global_nav_data;
@@ -872,7 +881,6 @@ struct LevelWad : Wad {
 	std::vector<u8> core_bank;
 	std::map<s32, CameraClass> camera_classes;
 	std::map<s32, SoundClass> sound_classes;
-	std::map<s32, MobyClass> moby_classes;
 	std::map<std::string, PvarType> pvar_types;
 	HelpMessages help_messages;
 	Gameplay gameplay;
