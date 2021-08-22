@@ -146,6 +146,8 @@ Opt<Game> game_from_string(std::string str) {
 	}
 }
 
+static void read_classes(LevelWad& wad, fs::path src_dir, const Json& json);
+
 std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 	fs::path src_dir = src_path.parent_path();
 	Json json = Json::parse(read_file(src_path));
@@ -195,7 +197,7 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			//wad.collision = import_dae(read_file(src_dir/std::string(json["collision"]))).meshes.at(0);
 			wad.collision_bin = read_file(src_dir/std::string(json["collision_bin"]));
 			wad.textures = read_file(src_dir/std::string(json["textures"]));
-			
+			read_classes(wad, src_dir, json);
 			//wad.mobies = read_file(src_dir/std::string(json["mobies"]));
 			//wad.ties = read_file(src_dir/std::string(json["ties"]));
 			//wad.shrubs = read_file(src_dir/std::string(json["shrubs"]));
@@ -260,6 +262,36 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 	return nullptr;
 }
 
+static void read_classes(LevelWad& wad, fs::path src_dir, const Json& json) {
+	for(std::string mobies_dir : json["mobies"]) {
+		for(auto& moby_dir : fs::directory_iterator(src_dir/mobies_dir)) {
+			Json moby_json = Json::parse(read_file(moby_dir.path()/std::string("moby.json")));
+			MobyClass moby;
+			moby.model = read_file(moby_dir.path()/std::string(moby_json["model"]));
+			moby.pvar_type = moby_json["pvar_type"];
+			wad.moby_classes.emplace(moby_json["class"].get<s32>(), moby);
+		}
+	}
+	
+	for(std::string ties_dir : json["ties"]) {
+		for(auto& tie_dir : fs::directory_iterator(src_dir/ties_dir)) {
+			Json tie_json = Json::parse(read_file(tie_dir.path()/std::string("tie.json")));
+			TieClass tie;
+			tie.model = read_file(tie_dir.path()/std::string(tie_json["model"]));
+			wad.tie_classes.emplace(tie_json["class"].get<s32>(), tie);
+		}
+	}
+	
+	for(std::string shrubs_dir : json["shrubs"]) {
+		for(auto& shrub_dir : fs::directory_iterator(src_dir/shrubs_dir)) {
+			Json shrub_json = Json::parse(read_file(shrub_dir.path()/std::string("shrub.json")));
+			ShrubClass shrub;
+			shrub.model = read_file(shrub_dir.path()/std::string(shrub_json["model"]));
+			wad.shrub_classes.emplace(shrub_json["class"].get<s32>(), shrub);
+		}
+	}
+}
+
 static std::string write_json_array_file(fs::path dest_dir, const char* file_name, Json data_json) {
 	Json json;
 	json["metadata"] = get_file_metadata(file_name, APPLICATION_NAME);
@@ -275,6 +307,8 @@ static std::string write_json_object_file(fs::path dest_dir, const char* file_na
 	}
 	return write_file(dest_dir, std::string(file_name) + ".json", json.dump(1, '\t'));
 }
+
+static void write_classes(Json& json, fs::path dest_dir, const LevelWad& wad);
 
 void write_wad_json(fs::path dest_dir, Wad* base) {
 	const char* json_file_name = nullptr;
@@ -314,45 +348,7 @@ void write_wad_json(fs::path dest_dir, Wad* base) {
 			json["collision"] = write_file(dest_dir, "collision.dae", write_dae(mesh_to_dae(wad.collision)));
 			json["collision_bin"] = write_file(dest_dir, "collision.bin", wad.collision_bin);
 			json["textures"] = write_file(dest_dir, "textures.bin", wad.textures);
-			
-			fs::create_directory(dest_dir/std::string("mobies"));
-			json["mobies"] = std::vector<std::string>{"mobies"};
-			for(auto& [number, moby] : wad.moby_classes) {
-				fs::path moby_dir = dest_dir/std::string("mobies")/std::to_string(number);
-				fs::create_directories(moby_dir);
-				Json moby_json;
-				moby_json["class"] = number;
-				moby_json["model"] = "model.bin";
-				moby_json["pvar_type"] = moby.pvar_type;
-				write_file(moby_dir, "model.bin", moby.model);
-				write_file(moby_dir, "moby.json", moby_json.dump(1, '\t'));
-				
-			}
-			
-			fs::create_directory(dest_dir/std::string("ties"));
-			json["ties"] = std::vector<std::string>{"ties"};
-			for(auto& [number, tie] : wad.tie_classes) {
-				fs::path tie_dir = dest_dir/std::string("ties")/std::to_string(number);
-				fs::create_directories(tie_dir);
-				Json tie_json;
-				tie_json["class"] = number;
-				tie_json["model"] = "model.bin";
-				write_file(tie_dir, "model.bin", tie.model);
-				write_file(tie_dir, "tie.json", tie_json.dump(1, '\t'));
-			}
-			
-			fs::create_directory(dest_dir/std::string("shrubs"));
-			json["shrubs"] = std::vector<std::string>{"shrubs"};
-			for(auto& [number, shrub] : wad.shrub_classes) {
-				fs::path shrub_dir = dest_dir/std::string("shrubs")/std::to_string(number);
-				fs::create_directories(shrub_dir);
-				Json shrub_json;
-				shrub_json["class"] = number;
-				shrub_json["model"] = "model.bin";
-				write_file(shrub_dir, "model.bin", shrub.model);
-				write_file(shrub_dir, "shrub.json", shrub_json.dump(1, '\t'));
-			}
-			
+			write_classes(json, dest_dir, wad);
 			json["ratchet_seqs"] = write_file(dest_dir, "ratchet_seqs.bin", wad.ratchet_seqs);
 			if(wad.moby8355_pvars.has_value()) {
 				json["moby8355_pvars"] = write_file(dest_dir, "moby8355_pvars.bin", *wad.moby8355_pvars);
@@ -417,6 +413,46 @@ void write_wad_json(fs::path dest_dir, Wad* base) {
 	
 	assert(json_file_name);
 	write_file(dest_dir, json_file_name, json.dump(1, '\t'));
+}
+
+static void write_classes(Json& json, fs::path dest_dir, const LevelWad& wad) {
+	fs::create_directory(dest_dir/std::string("mobies"));
+	json["mobies"] = std::vector<std::string>{"mobies"};
+	for(auto& [number, moby] : wad.moby_classes) {
+		fs::path moby_dir = dest_dir/std::string("mobies")/std::to_string(number);
+		fs::create_directories(moby_dir);
+		Json moby_json;
+		moby_json["class"] = number;
+		moby_json["model"] = "model.bin";
+		moby_json["pvar_type"] = moby.pvar_type;
+		write_file(moby_dir, "model.bin", moby.model);
+		write_file(moby_dir, "moby.json", moby_json.dump(1, '\t'));
+		
+	}
+	
+	fs::create_directory(dest_dir/std::string("ties"));
+	json["ties"] = std::vector<std::string>{"ties"};
+	for(auto& [number, tie] : wad.tie_classes) {
+		fs::path tie_dir = dest_dir/std::string("ties")/std::to_string(number);
+		fs::create_directories(tie_dir);
+		Json tie_json;
+		tie_json["class"] = number;
+		tie_json["model"] = "model.bin";
+		write_file(tie_dir, "model.bin", tie.model);
+		write_file(tie_dir, "tie.json", tie_json.dump(1, '\t'));
+	}
+	
+	fs::create_directory(dest_dir/std::string("shrubs"));
+	json["shrubs"] = std::vector<std::string>{"shrubs"};
+	for(auto& [number, shrub] : wad.shrub_classes) {
+		fs::path shrub_dir = dest_dir/std::string("shrubs")/std::to_string(number);
+		fs::create_directories(shrub_dir);
+		Json shrub_json;
+		shrub_json["class"] = number;
+		shrub_json["model"] = "model.bin";
+		write_file(shrub_dir, "model.bin", shrub.model);
+		write_file(shrub_dir, "shrub.json", shrub_json.dump(1, '\t'));
+	}
 }
 
 std::string pvar_descriptor_to_string(PvarFieldDescriptor descriptor) {

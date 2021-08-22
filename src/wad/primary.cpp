@@ -319,6 +319,7 @@ static void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data
 	OutBuffer data_dest(data_vec);
 	
 	AssetHeader header = {0};
+	header_dest.alloc<AssetHeader>();
 	
 	data_dest.pad(0x40);
 	header.tfrags = data_dest.write_multiple(wad.tfrags);
@@ -330,18 +331,58 @@ static void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data
 	header.collision = data_dest.write_multiple(wad.collision_bin);//dest.write_multiple(write_dae(mesh_to_dae(wad.collision)));
 	data_dest.pad(0x40);
 	header.textures_base_offset = data_dest.write_multiple(wad.textures);
-	//data_dest.pad(0x40);
-	//data_dest.write_multiple(wad.mobies);
-	//data_dest.pad(0x40);
-	//data_dest.write_multiple(wad.ties);
-	//data_dest.pad(0x40);
-	//data_dest.write_multiple(wad.shrubs);
+	
+	header_dest.pad(0x40);
+	header.moby_classes.count = wad.moby_classes.size();
+	header.moby_classes.offset = header_dest.tell();
+	for(const auto& [number, moby] : wad.moby_classes) {
+		MobyClassEntry entry = {0};
+		entry.o_class = number;
+		data_dest.pad(0x40);
+		entry.offset_in_asset_wad = data_dest.tell();
+		for(s32 i = 0; i < 16; i++) {
+			entry.textures[i] = 0xff;
+		}
+		header_dest.write(entry);
+		data_dest.write_multiple(moby.model);
+	}
+	
+	header.tie_classes.count = wad.tie_classes.size();
+	header.tie_classes.offset = header_dest.tell();
+	for(const auto& [number, tie] : wad.tie_classes) {
+		TieClassEntry entry = {0};
+		entry.o_class = number;
+		data_dest.pad(0x40);
+		entry.offset_in_asset_wad = data_dest.tell();
+		for(s32 i = 0; i < 16; i++) {
+			entry.textures[i] = 0xff;
+		}
+		header_dest.write(entry);
+		data_dest.write_multiple(tie.model);
+	}
+	
+	header.shrub_classes.count = wad.shrub_classes.size();
+	header.shrub_classes.offset = header_dest.tell();
+	for(const auto& [number, shrub] : wad.shrub_classes) {
+		ShrubClassEntry entry = {0};
+		entry.o_class = number;
+		data_dest.pad(0x40);
+		entry.offset_in_asset_wad = data_dest.tell();
+		for(s32 i = 0; i < 16; i++) {
+			entry.textures[i] = 0xff;
+		}
+		header_dest.write(entry);
+		data_dest.write_multiple(shrub.model);
+	}
 	
 	print_asset_header(header);
 	
 	compress_wad(compressed_data_dest, data_vec, 8);
 	header.assets_decompressed_size = data_vec.size();
 	header.assets_compressed_size = compressed_data_dest.size();
+	
+	header_dest.write(0, header);
+	write_file("/tmp", "newheader.bin", Buffer(header_dest.vec));
 }
 
 static std::vector<s64> enumerate_asset_block_boundaries(Buffer src, const AssetHeader& header) {
