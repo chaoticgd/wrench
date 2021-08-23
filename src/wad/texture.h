@@ -16,26 +16,28 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WAD_PRIMARY_H
-#define WAD_PRIMARY_H
+#ifndef WAD_TEXTURE_H
+#define WAD_TEXTURE_H
 
 #include "../level.h"
 
-struct PrimaryHeader {
-	ByteRange code;
-	ByteRange asset_header;
-	ByteRange gs_ram;
-	ByteRange hud_header;
-	ByteRange hud_banks[5];
-	ByteRange assets;
-	Opt<ByteRange> moby8355_pvars;
-	Opt<ByteRange> art_instances;
-	Opt<ByteRange> gameplay_core;
-	Opt<ByteRange> global_nav_data;
-};
+packed_struct(GsRamEntry,
+	s32 unknown_0; // Type?
+	s16 width;
+	s16 height;
+	s32 offset_1;
+	s32 offset_2; // Duplicate of offset_1?
+)
 
-void read_primary(LevelWad& wad, Buffer src);
-SectorRange write_primary(OutBuffer& dest, const LevelWad& wad);
-void swap_primary_header(PrimaryHeader& l, std::vector<u8>& r, Game game);
+packed_struct(TextureEntry,
+	s32 data_offset;
+	s16 width;
+	s16 height;
+	s16 unknown_8;
+	s16 palette;
+	s32 unknown_c;
+)
+
+std::vector<Texture> read_textures(BufferArray<TextureEntry> texture_table, const u8 indices[16], Buffer data, Buffer palettes);
 
 #endif

@@ -756,6 +756,19 @@ struct HelpMessages {
 	}
 };
 
+struct Colour32 {
+	u8 r;
+	u8 g;
+	u8 b;
+	u8 a;
+};
+
+struct Texture {
+	s32 width;
+	s32 height;
+	std::vector<Colour32> data;
+};
+
 struct Chunk {
 	Opt<std::vector<u8>> tfrags;
 	Opt<std::vector<u8>> collision;
@@ -788,6 +801,7 @@ struct SoundClass {
 
 struct MobyClass {
 	std::vector<u8> model;
+	std::vector<Texture> textures;
 	std::string pvar_type;
 	
 	template <typename T>
@@ -798,10 +812,12 @@ struct MobyClass {
 
 struct TieClass {
 	std::vector<u8> model;
+	std::vector<Texture> textures;
 };
 
 struct ShrubClass {
 	std::vector<u8> model;
+	std::vector<Texture> textures;
 };
 
 Json get_file_metadata(const char* format, const char* application);
@@ -862,7 +878,6 @@ struct LevelWad : Wad {
 	// Primary lump
 	std::vector<u8> code;
 	std::vector<u8> asset_header;
-	std::vector<u8> small_textures;
 	std::vector<u8> hud_header;
 	std::vector<u8> hud_banks[5];
 	std::vector<u8> tfrags;

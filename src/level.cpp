@@ -18,6 +18,9 @@
 
 #include "level.h"
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb/stb_image_write.h>
+
 Json get_file_metadata(const char* format, const char* application) {
 	return Json {
 		{"format", format},
@@ -184,7 +187,6 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			}
 			wad.code = read_file(src_dir/std::string(json["code"]));
 			wad.asset_header = read_file(src_dir/std::string(json["asset_header"]));
-			wad.small_textures = read_file(src_dir/std::string(json["small_textures"]));
 			wad.hud_header = read_file(src_dir/std::string(json["hud_header"]));
 			wad.hud_banks[0] = read_file(src_dir/std::string(json["hud_bank_0"]));
 			wad.hud_banks[1] = read_file(src_dir/std::string(json["hud_bank_1"]));
@@ -335,7 +337,6 @@ void write_wad_json(fs::path dest_dir, Wad* base) {
 			}
 			json["code"] = write_file(dest_dir, "code.bin", wad.code);
 			json["asset_header"] = write_file(dest_dir, "asset_header.bin", wad.asset_header);
-			json["small_textures"] = write_file(dest_dir, "small_textures.bin", wad.small_textures);
 			json["hud_header"] = write_file(dest_dir, "hud_header.bin", wad.hud_header);
 			json["hud_bank_0"] = write_file(dest_dir, "hud_bank_0.bin", wad.hud_banks[0]);
 			json["hud_bank_1"] = write_file(dest_dir, "hud_bank_1.bin", wad.hud_banks[1]);
@@ -426,8 +427,14 @@ static void write_classes(Json& json, fs::path dest_dir, const LevelWad& wad) {
 		moby_json["model"] = "model.bin";
 		moby_json["pvar_type"] = moby.pvar_type;
 		write_file(moby_dir, "model.bin", moby.model);
+		moby_json["textures"] = Json::array();
+		for(size_t i = 0; i < moby.textures.size(); i++) {
+			const Texture& texture = moby.textures[i];
+			std::string path = (moby_dir/(std::to_string(i) + ".png")).string();
+			stbi_write_png(path.c_str(), texture.width, texture.height, 4, texture.data.data(), texture.width * 4);
+			moby_json["textures"].push_back(std::to_string(i) + ".png");
+		}
 		write_file(moby_dir, "moby.json", moby_json.dump(1, '\t'));
-		
 	}
 	
 	fs::create_directory(dest_dir/std::string("ties"));
