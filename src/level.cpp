@@ -446,6 +446,13 @@ static void write_classes(Json& json, fs::path dest_dir, const LevelWad& wad) {
 		tie_json["class"] = number;
 		tie_json["model"] = "model.bin";
 		write_file(tie_dir, "model.bin", tie.model);
+		tie_json["textures"] = Json::array();
+		for(size_t i = 0; i < tie.textures.size(); i++) {
+			const Texture& texture = tie.textures[i];
+			std::string path = (tie_dir/(std::to_string(i) + ".png")).string();
+			stbi_write_png(path.c_str(), texture.width, texture.height, 4, texture.data.data(), texture.width * 4);
+			tie_json["textures"].push_back(std::to_string(i) + ".png");
+		}
 		write_file(tie_dir, "tie.json", tie_json.dump(1, '\t'));
 	}
 	
@@ -458,6 +465,13 @@ static void write_classes(Json& json, fs::path dest_dir, const LevelWad& wad) {
 		shrub_json["class"] = number;
 		shrub_json["model"] = "model.bin";
 		write_file(shrub_dir, "model.bin", shrub.model);
+		shrub_json["textures"] = Json::array();
+		for(size_t i = 0; i < shrub.textures.size(); i++) {
+			const Texture& texture = shrub.textures[i];
+			std::string path = (shrub_dir/(std::to_string(i) + ".png")).string();
+			stbi_write_png(path.c_str(), texture.width, texture.height, 4, texture.data.data(), texture.width * 4);
+			shrub_json["textures"].push_back(std::to_string(i) + ".png");
+		}
 		write_file(shrub_dir, "shrub.json", shrub_json.dump(1, '\t'));
 	}
 }
