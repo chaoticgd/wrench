@@ -432,7 +432,7 @@ static s64 next_asset_block_size(s32 ofs, const std::vector<s64>& block_bounds) 
 	}
 	s32 next_ofs = -1;
 	for(s64 bound : block_bounds) {
-		if(bound > ofs && (next_ofs == -1 || next_ofs < bound)) {
+		if(bound > ofs && (next_ofs == -1 || bound < next_ofs)) {
 			next_ofs = bound;
 		}
 	}
