@@ -297,7 +297,7 @@ static void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffe
 	
 	for(s64 i = 0; i < moby_classes.size(); i++) {
 		const MobyClassEntry& entry = moby_classes[i];
-		MobyClass& moby = wad.lookup_moby_class(entry.o_class);
+		MobyClass& moby = wad.moby_classes[entry.o_class];
 		if(entry.offset_in_asset_wad != 0) {
 			s64 model_size = next_asset_block_size(entry.offset_in_asset_wad, block_bounds);
 			moby.model = assets.read_bytes(entry.offset_in_asset_wad, model_size, "moby model");

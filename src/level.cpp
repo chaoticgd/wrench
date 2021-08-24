@@ -18,6 +18,8 @@
 
 #include "level.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb/stb_image_write.h>
 
@@ -31,6 +33,18 @@ Json get_file_metadata(const char* format, const char* application) {
 }
 
 static const char* APPLICATION_NAME = "Wrench WAD Utility";
+
+std::string CameraClass::get_pvar_type(s32 o_class) {
+	return "Camera" + std::to_string(o_class) + "Vars";
+}
+
+std::string SoundClass::get_pvar_type(s32 o_class) {
+	return "Sound" + std::to_string(o_class) + "Vars";
+}
+
+std::string MobyClass::get_pvar_type(s32 o_class) {
+	return "Moby" + std::to_string(o_class) + "Vars";
+}
 
 s32 PvarField::size() const {
 	switch(descriptor) {
@@ -95,39 +109,6 @@ bool PvarType::insert_field(PvarField to_insert, bool sort) {
 			{ return lhs.offset < rhs.offset; });
 	}
 	return true;
-}
-
-CameraClass& LevelWad::lookup_camera_class(s32 class_number) {
-	auto iter = camera_classes.find(class_number);
-	if(iter != camera_classes.end()) {
-		return iter->second;
-	} else {
-		CameraClass& class_object = camera_classes[class_number];
-		class_object.pvar_type = "Camera" + std::to_string(class_number) + "Vars";
-		return class_object;
-	}
-}
-
-SoundClass& LevelWad::lookup_sound_class(s32 class_number) {
-	auto iter = sound_classes.find(class_number);
-	if(iter != sound_classes.end()) {
-		return iter->second;
-	} else {
-		SoundClass& class_object = sound_classes[class_number];
-		class_object.pvar_type = "Sound" + std::to_string(class_number) + "Vars";
-		return class_object;
-	}
-}
-
-MobyClass& LevelWad::lookup_moby_class(s32 class_number) {
-	auto iter = moby_classes.find(class_number);
-	if(iter != moby_classes.end()) {
-		return iter->second;
-	} else {
-		MobyClass& class_object = moby_classes[class_number];
-		class_object.pvar_type = "Moby" + std::to_string(class_number) + "Vars";
-		return class_object;
-	}
 }
 
 template <typename Map>
@@ -219,7 +200,6 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			}
 			read_json_file_into_map(wad.camera_classes, src_dir, json, "camera_classes", "class");
 			read_json_file_into_map(wad.sound_classes, src_dir, json, "sound_classes", "class");
-			read_json_file_into_map(wad.moby_classes, src_dir, json, "moby_classes", "class");
 			read_json_file_into_map(wad.pvar_types, src_dir, json, "pvar_types", "name");
 			from_json(wad.help_messages, Json::parse(read_file(src_dir/std::string(json["help_messages"]))));
 			from_json(wad.gameplay, Json::parse(read_file(src_dir/std::string(json["gameplay"]))));
@@ -264,13 +244,31 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 	return nullptr;
 }
 
+static std::vector<Texture> read_textures_json(fs::path dir, Json& paths) {
+	std::vector<Texture> textures;
+	for(Json& rel_path : paths) {
+		Texture texture;
+		std::string path = (dir/std::string(rel_path)).string();
+		int component_count;
+		u8* data = stbi_load(path.c_str(), &texture.width, &texture.height, &component_count, 4);
+		texture.data.resize(texture.width * texture.height);
+		for(size_t i = 0; i < texture.data.size(); i++) {
+			texture.data[i] = {
+				data[i * 4], data[i * 4 + 1], data[i * 4 + 2], data[i * 4 + 3]
+			};
+		}
+		textures.emplace_back(std::move(texture));
+	}
+	return textures;
+}
+
 static void read_classes(LevelWad& wad, fs::path src_dir, const Json& json) {
 	for(std::string mobies_dir : json["mobies"]) {
 		for(auto& moby_dir : fs::directory_iterator(src_dir/mobies_dir)) {
 			Json moby_json = Json::parse(read_file(moby_dir.path()/std::string("moby.json")));
 			MobyClass moby;
 			moby.model = read_file(moby_dir.path()/std::string(moby_json["model"]));
-			moby.pvar_type = moby_json["pvar_type"];
+			moby.textures = read_textures_json(moby_dir.path(), moby_json["textures"]);
 			wad.moby_classes.emplace(moby_json["class"].get<s32>(), moby);
 		}
 	}
@@ -280,6 +278,7 @@ static void read_classes(LevelWad& wad, fs::path src_dir, const Json& json) {
 			Json tie_json = Json::parse(read_file(tie_dir.path()/std::string("tie.json")));
 			TieClass tie;
 			tie.model = read_file(tie_dir.path()/std::string(tie_json["model"]));
+			tie.textures = read_textures_json(tie_dir.path(), tie_json["textures"]);
 			wad.tie_classes.emplace(tie_json["class"].get<s32>(), tie);
 		}
 	}
@@ -289,6 +288,7 @@ static void read_classes(LevelWad& wad, fs::path src_dir, const Json& json) {
 			Json shrub_json = Json::parse(read_file(shrub_dir.path()/std::string("shrub.json")));
 			ShrubClass shrub;
 			shrub.model = read_file(shrub_dir.path()/std::string(shrub_json["model"]));
+			shrub.textures = read_textures_json(shrub_dir.path(), shrub_json["textures"]);
 			wad.shrub_classes.emplace(shrub_json["class"].get<s32>(), shrub);
 		}
 	}
@@ -360,7 +360,7 @@ void write_wad_json(fs::path dest_dir, Wad* base) {
 			json["core_sound_bank"] = write_file(dest_dir, "core_bank.bin", wad.core_bank);
 			json["camera_classes"] = write_json_array_file(dest_dir, "camera_classes", map_to_json(wad.camera_classes, "class"));
 			json["sound_classes"] = write_json_array_file(dest_dir, "sound_classes", map_to_json(wad.sound_classes, "class"));
-			json["moby_classes"] = write_json_array_file(dest_dir, "moby_classes", map_to_json(wad.moby_classes, "class"));
+
 			json["pvar_types"] = write_json_array_file(dest_dir, "pvar_types", map_to_json(wad.pvar_types, "name"));
 			json["help_messages"] = write_json_object_file(dest_dir, "help_messages", to_json(wad.help_messages));
 			json["gameplay"] = write_json_object_file(dest_dir, "gameplay", to_json(wad.gameplay));
@@ -425,7 +425,6 @@ static void write_classes(Json& json, fs::path dest_dir, const LevelWad& wad) {
 		Json moby_json;
 		moby_json["class"] = number;
 		moby_json["model"] = "model.bin";
-		moby_json["pvar_type"] = moby.pvar_type;
 		write_file(moby_dir, "model.bin", moby.model);
 		moby_json["textures"] = Json::array();
 		for(size_t i = 0; i < moby.textures.size(); i++) {

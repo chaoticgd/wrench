@@ -823,20 +823,26 @@ static PvarType& get_pvar_type(s32 pvar_index, LevelWad& wad, Gameplay& dest) {
 	Opt<std::string> pvar_type_name;
 	for(Camera& inst : opt_iterator(dest.cameras)) {
 		if(inst.temp_pvar_index() == pvar_index) {
-			CameraClass& cls = wad.lookup_camera_class(inst.type);
-			return wad.pvar_types[cls.pvar_type];
+			if(wad.camera_classes.find(inst.type) == wad.camera_classes.end()) {
+				wad.camera_classes[inst.type] = {};
+			}
+			return wad.pvar_types[CameraClass::get_pvar_type(inst.type)];
 		}
 	}
 	for(SoundInstance& inst : opt_iterator(dest.sound_instances)) {
 		if(inst.temp_pvar_index() == pvar_index) {
-			SoundClass& cls = wad.lookup_sound_class(inst.o_class);
-			return wad.pvar_types[cls.pvar_type];
+			if(wad.sound_classes.find(inst.o_class) == wad.sound_classes.end()) {
+				wad.sound_classes[inst.o_class] = {};
+			}
+			return wad.pvar_types[SoundClass::get_pvar_type(inst.o_class)];
 		}
 	}
 	for(MobyInstance& inst : opt_iterator(dest.moby_instances)) {
 		if(inst.temp_pvar_index() == pvar_index) {
-			MobyClass& cls = wad.lookup_moby_class(inst.o_class);
-			return wad.pvar_types[cls.pvar_type];
+			if(wad.moby_classes.find(inst.o_class) == wad.moby_classes.end()) {
+				wad.moby_classes[inst.o_class] = {};
+			}
+			return wad.pvar_types[MobyClass::get_pvar_type(inst.o_class)];
 		}
 	}
 	verify_not_reached("Invalid pvar index.");
