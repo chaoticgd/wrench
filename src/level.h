@@ -679,8 +679,7 @@ struct Gameplay {
 	void for_each_pvar_instance_const(Callback callback) const;
 	template <typename Callback>
 	void for_each_pvar_instance(Callback callback);
-	// And these skip over instances that don't have an associated class in the
-	// relevant JSON file.
+	// And these skip over instances that don't have an associated pvar type.
 	template <typename Callback>
 	void for_each_pvar_instance_const(const LevelWad& wad, Callback callback) const;
 	template <typename Callback>
@@ -955,32 +954,26 @@ void Gameplay::for_each_pvar_instance(Callback callback) {
 template <typename Callback>
 void Gameplay::for_each_pvar_instance_const(const LevelWad& wad, Callback callback) const {
 	for(const Camera& inst : opt_iterator(cameras)) {
-		auto iter = wad.camera_classes.find(inst.type);
-		if(iter != wad.camera_classes.end()) {
-			std::string type_name = CameraClass::get_pvar_type(inst.type);
-			auto type_iter = wad.pvar_types.find(type_name);
-			verify(type_iter != wad.pvar_types.end(), "Camera pvar type '%s' does not exist.", type_name.c_str());
-			const PvarType& type = type_iter->second;
+		std::string type_name = CameraClass::get_pvar_type(inst.type);
+		auto iter = wad.pvar_types.find(type_name);
+		if(iter != wad.pvar_types.end()) {
+			const PvarType& type = iter->second;
 			callback(inst, type);
 		}
 	}
 	for(const SoundInstance& inst : opt_iterator(sound_instances)) {
-		auto iter = wad.sound_classes.find(inst.o_class);
-		if(iter != wad.sound_classes.end()) {
-			std::string type_name = SoundClass::get_pvar_type(inst.o_class);
-			auto type_iter = wad.pvar_types.find(type_name);
-			verify(type_iter != wad.pvar_types.end(), "Sound pvar type '%s' does not exist.", type_name.c_str());
-			const PvarType& type = type_iter->second;
+		std::string type_name = SoundClass::get_pvar_type(inst.o_class);
+		auto iter = wad.pvar_types.find(type_name);
+		if(iter != wad.pvar_types.end()) {
+			const PvarType& type = iter->second;
 			callback(inst, type);
 		}
 	}
 	for(const MobyInstance& inst : opt_iterator(moby_instances)) {
-		auto iter = wad.moby_classes.find(inst.o_class);
-		if(iter != wad.moby_classes.end()) {
-			std::string type_name = MobyClass::get_pvar_type(inst.o_class);
-			auto type_iter = wad.pvar_types.find(type_name);
-			verify(type_iter != wad.pvar_types.end(), "Moby pvar type '%s' does not exist.", type_name.c_str());
-			const PvarType& type = type_iter->second;
+		std::string type_name = MobyClass::get_pvar_type(inst.o_class);
+		auto iter = wad.pvar_types.find(type_name);
+		if(iter != wad.pvar_types.end()) {
+			const PvarType& type = iter->second;
 			callback(inst, type);
 		}
 	}
