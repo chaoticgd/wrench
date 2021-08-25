@@ -348,6 +348,10 @@ static void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data
 	header.moby_classes.count = wad.moby_classes.size();
 	header.moby_classes.offset = header_dest.tell();
 	for(const auto& [number, moby] : wad.moby_classes) {
+		if(!moby.model.has_value()) {
+			continue;
+		}
+		
 		MobyClassEntry entry = {0};
 		entry.o_class = number;
 		data_dest.pad(0x40);
@@ -356,7 +360,7 @@ static void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data
 			entry.textures[i] = 0xff;
 		}
 		header_dest.write(entry);
-		data_dest.write_multiple(moby.model);
+		data_dest.write_multiple(*moby.model);
 	}
 	
 	header.tie_classes.count = wad.tie_classes.size();

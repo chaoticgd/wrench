@@ -795,7 +795,7 @@ struct SoundClass {
 };
 
 struct MobyClass {
-	std::vector<u8> model;
+	Opt<std::vector<u8>> model;
 	std::vector<Texture> textures;
 	
 	static std::string get_pvar_type(s32 o_class);

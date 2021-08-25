@@ -30,6 +30,10 @@ void read_gameplay(LevelWad& wad, Gameplay& gameplay, Buffer src, Game game, con
 			block.funcs.read(wad, gameplay, src.subbuf(block_offset), game);
 		}
 	}
+	
+	for(s32 o_class : opt_iterator(gameplay.moby_classes)) {
+		wad.moby_classes[o_class];
+	}
 }
 
 std::vector<u8> write_gameplay(const LevelWad& wad, const Gameplay& gameplay_arg, Game game, const std::vector<GameplayBlockDescription>& blocks) {

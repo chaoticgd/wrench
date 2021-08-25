@@ -130,7 +130,7 @@ Opt<Game> game_from_string(std::string str) {
 	}
 }
 
-static void read_classes(LevelWad& wad, fs::path src_dir, const Json& json);
+static void read_classes(LevelWad& wad, fs::path project_dir);
 
 std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 	fs::path src_dir = src_path.parent_path();
@@ -166,6 +166,9 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			if(wad.game != Game::RAC1) {
 				wad.reverb = json["reverb"];
 			}
+			read_json_file_into_map(wad.pvar_types, src_dir, json, "pvar_types", "name");
+			from_json(wad.help_messages, Json::parse(read_file(src_dir/std::string(json["help_messages"]))));
+			from_json(wad.gameplay, Json::parse(read_file(src_dir/std::string(json["gameplay"]))));
 			wad.code = read_file(src_dir/std::string(json["code"]));
 			wad.asset_header = read_file(src_dir/std::string(json["asset_header"]));
 			wad.hud_header = read_file(src_dir/std::string(json["hud_header"]));
@@ -180,7 +183,7 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			//wad.collision = import_dae(read_file(src_dir/std::string(json["collision"]))).meshes.at(0);
 			wad.collision_bin = read_file(src_dir/std::string(json["collision_bin"]));
 			wad.textures = read_file(src_dir/std::string(json["textures"]));
-			read_classes(wad, src_dir, json);
+			read_classes(wad, src_dir);
 			//wad.mobies = read_file(src_dir/std::string(json["mobies"]));
 			//wad.ties = read_file(src_dir/std::string(json["ties"]));
 			//wad.shrubs = read_file(src_dir/std::string(json["shrubs"]));
@@ -200,9 +203,6 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			}
 			read_json_file_into_map(wad.camera_classes, src_dir, json, "camera_classes", "class");
 			read_json_file_into_map(wad.sound_classes, src_dir, json, "sound_classes", "class");
-			read_json_file_into_map(wad.pvar_types, src_dir, json, "pvar_types", "name");
-			from_json(wad.help_messages, Json::parse(read_file(src_dir/std::string(json["help_messages"]))));
-			from_json(wad.gameplay, Json::parse(read_file(src_dir/std::string(json["gameplay"]))));
 			if(json.contains("chunks")) {
 				for(Json& chunk_json : json["chunks"]) {
 					Chunk chunk;
@@ -262,35 +262,48 @@ static std::vector<Texture> read_textures_json(fs::path dir, Json& paths) {
 	return textures;
 }
 
-static void read_classes(LevelWad& wad, fs::path src_dir, const Json& json) {
-	for(std::string mobies_dir : json["mobies"]) {
-		for(auto& moby_dir : fs::directory_iterator(src_dir/mobies_dir)) {
-			Json moby_json = Json::parse(read_file(moby_dir.path()/std::string("moby.json")));
-			MobyClass moby;
-			moby.model = read_file(moby_dir.path()/std::string(moby_json["model"]));
-			moby.textures = read_textures_json(moby_dir.path(), moby_json["textures"]);
-			wad.moby_classes.emplace(moby_json["class"].get<s32>(), moby);
+static void read_classes(LevelWad& wad, fs::path project_dir) {
+	for(s32 o_class : opt_iterator(wad.gameplay.moby_classes)) {
+		fs::path moby_dir = project_dir/std::string("mobies")/std::to_string(o_class);
+		Json moby_json = Json::parse(read_file(moby_dir/std::string("moby.json")));
+		MobyClass moby;
+		if(moby_json.contains("model")) {
+			moby.model = read_file(moby_dir/std::string(moby_json["model"]));
+			moby.textures = read_textures_json(moby_dir, moby_json["textures"]);
+		}
+		wad.moby_classes.emplace(moby_json["class"].get<s32>(), moby);
+	}
+	
+	std::vector<s32> tie_classes;
+	for(const TieInstance& inst : opt_iterator(wad.gameplay.tie_instances)) {
+		if(std::find(BEGIN_END(tie_classes), inst.o_class) == tie_classes.end()) {
+			tie_classes.push_back(inst.o_class);
 		}
 	}
 	
-	for(std::string ties_dir : json["ties"]) {
-		for(auto& tie_dir : fs::directory_iterator(src_dir/ties_dir)) {
-			Json tie_json = Json::parse(read_file(tie_dir.path()/std::string("tie.json")));
-			TieClass tie;
-			tie.model = read_file(tie_dir.path()/std::string(tie_json["model"]));
-			tie.textures = read_textures_json(tie_dir.path(), tie_json["textures"]);
-			wad.tie_classes.emplace(tie_json["class"].get<s32>(), tie);
+	for(s32 o_class : tie_classes) {
+		fs::path tie_dir = project_dir/std::string("ties")/std::to_string(o_class);
+		Json tie_json = Json::parse(read_file(tie_dir/std::string("tie.json")));
+		TieClass tie;
+		tie.model = read_file(tie_dir/std::string(tie_json["model"]));
+		tie.textures = read_textures_json(tie_dir, tie_json["textures"]);
+		wad.tie_classes.emplace(tie_json["class"].get<s32>(), tie);
+	}
+	
+	std::vector<s32> shrub_classes;
+	for(const ShrubInstance& inst : opt_iterator(wad.gameplay.shrub_instances)) {
+		if(std::find(BEGIN_END(shrub_classes), inst.o_class) == shrub_classes.end()) {
+			shrub_classes.push_back(inst.o_class);
 		}
 	}
 	
-	for(std::string shrubs_dir : json["shrubs"]) {
-		for(auto& shrub_dir : fs::directory_iterator(src_dir/shrubs_dir)) {
-			Json shrub_json = Json::parse(read_file(shrub_dir.path()/std::string("shrub.json")));
-			ShrubClass shrub;
-			shrub.model = read_file(shrub_dir.path()/std::string(shrub_json["model"]));
-			shrub.textures = read_textures_json(shrub_dir.path(), shrub_json["textures"]);
-			wad.shrub_classes.emplace(shrub_json["class"].get<s32>(), shrub);
-		}
+	for(s32 o_class : shrub_classes) {
+		fs::path shrub_dir = project_dir/std::string("shrubs")/std::to_string(o_class);
+		Json shrub_json = Json::parse(read_file(shrub_dir/std::string("shrub.json")));
+		ShrubClass shrub;
+		shrub.model = read_file(shrub_dir/std::string(shrub_json["model"]));
+		shrub.textures = read_textures_json(shrub_dir, shrub_json["textures"]);
+		wad.shrub_classes.emplace(shrub_json["class"].get<s32>(), shrub);
 	}
 }
 
@@ -424,8 +437,9 @@ static void write_classes(Json& json, fs::path dest_dir, const LevelWad& wad) {
 		fs::create_directories(moby_dir);
 		Json moby_json;
 		moby_json["class"] = number;
-		moby_json["model"] = "model.bin";
-		write_file(moby_dir, "model.bin", moby.model);
+		if(moby.model.has_value()) {
+			moby_json["model"] = write_file(moby_dir, "model.bin", *moby.model);
+		}
 		moby_json["textures"] = Json::array();
 		for(size_t i = 0; i < moby.textures.size(); i++) {
 			const Texture& texture = moby.textures[i];
