@@ -303,6 +303,7 @@ static void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffe
 			moby.model = assets.read_bytes(entry.offset_in_asset_wad, model_size, "moby model");
 		}
 		moby.textures = read_textures(moby_textures, entry.textures, texture_data, gs_ram);
+		moby.has_asset_table_entry = true;
 	}
 	
 	for(s64 i = 0; i < tie_classes.size(); i++) {
@@ -345,22 +346,26 @@ static void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data
 	header.textures_base_offset = data_dest.write_multiple(wad.textures);
 	
 	header_dest.pad(0x40);
-	header.moby_classes.count = wad.moby_classes.size();
+	header.moby_classes.count = 0;
 	header.moby_classes.offset = header_dest.tell();
 	for(const auto& [number, moby] : wad.moby_classes) {
-		if(!moby.model.has_value()) {
+		if(!moby.has_asset_table_entry) {
 			continue;
 		}
 		
 		MobyClassEntry entry = {0};
 		entry.o_class = number;
-		data_dest.pad(0x40);
-		entry.offset_in_asset_wad = data_dest.tell();
-		for(s32 i = 0; i < 16; i++) {
-			entry.textures[i] = 0xff;
+		if(moby.model.has_value()) {
+			data_dest.pad(0x40);
+			entry.offset_in_asset_wad = data_dest.tell();
+			for(s32 i = 0; i < 16; i++) {
+				entry.textures[i] = 0xff;
+			}
+			data_dest.write_multiple(*moby.model);
 		}
 		header_dest.write(entry);
-		data_dest.write_multiple(*moby.model);
+		
+		header.moby_classes.count++;
 	}
 	
 	header.tie_classes.count = wad.tie_classes.size();

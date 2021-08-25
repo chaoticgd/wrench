@@ -797,6 +797,7 @@ struct SoundClass {
 struct MobyClass {
 	Opt<std::vector<u8>> model;
 	std::vector<Texture> textures;
+	bool has_asset_table_entry = false;
 	
 	static std::string get_pvar_type(s32 o_class);
 };

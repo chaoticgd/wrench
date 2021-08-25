@@ -271,6 +271,7 @@ static void read_classes(LevelWad& wad, fs::path project_dir) {
 			moby.model = read_file(moby_dir/std::string(moby_json["model"]));
 			moby.textures = read_textures_json(moby_dir, moby_json["textures"]);
 		}
+		moby.has_asset_table_entry = moby_json["has_asset_table_entry"];
 		wad.moby_classes.emplace(moby_json["class"].get<s32>(), moby);
 	}
 	
@@ -447,6 +448,7 @@ static void write_classes(Json& json, fs::path dest_dir, const LevelWad& wad) {
 			stbi_write_png(path.c_str(), texture.width, texture.height, 4, texture.data.data(), texture.width * 4);
 			moby_json["textures"].push_back(std::to_string(i) + ".png");
 		}
+		moby_json["has_asset_table_entry"] = moby.has_asset_table_entry;
 		write_file(moby_dir, "moby.json", moby_json.dump(1, '\t'));
 	}
 	
