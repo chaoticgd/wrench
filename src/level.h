@@ -877,14 +877,13 @@ struct LevelWad : Wad {
 	std::vector<u8> sky;
 	Mesh collision;
 	std::vector<u8> collision_bin;
-	std::vector<u8> textures;
+	std::vector<Texture> tfrag_textures;
 	std::unordered_map<s32, MobyClass> moby_classes;
 	std::unordered_map<s32, TieClass> tie_classes;
 	std::unordered_map<s32, ShrubClass> shrub_classes;
 	std::vector<u8> ratchet_seqs;
 	Opt<std::vector<u8>> moby8355_pvars;
 	Opt<std::vector<u8>> global_nav_data;
-	
 	std::vector<u8> core_bank;
 	std::map<s32, CameraClass> camera_classes;
 	std::map<s32, SoundClass> sound_classes;

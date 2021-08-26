@@ -30,14 +30,16 @@ packed_struct(GsRamEntry,
 )
 
 packed_struct(TextureEntry,
-	s32 data_offset;
-	s16 width;
-	s16 height;
-	s16 unknown_8;
-	s16 palette;
-	s32 unknown_c;
+	/* 0x0 */ s32 data_offset;
+	/* 0x4 */ s16 width;
+	/* 0x6 */ s16 height;
+	/* 0x8 */ s16 unknown_8;
+	/* 0xa */ s16 palette;
+	/* 0xc */ s16 mipmap;
+	/* 0xe */ s16 pad = 0xffff;
 )
 
-std::vector<Texture> read_textures(BufferArray<TextureEntry> texture_table, const u8 indices[16], Buffer data, Buffer palettes);
+std::vector<Texture> read_tfrag_textures(BufferArray<TextureEntry> texture_table, Buffer data, Buffer gs_ram);
+std::vector<Texture> read_instance_textures(BufferArray<TextureEntry> texture_table, const u8 indices[16], Buffer data, Buffer gs_ram);
 
 #endif

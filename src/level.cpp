@@ -182,7 +182,7 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			wad.sky = read_file(src_dir/std::string(json["sky"]));
 			//wad.collision = import_dae(read_file(src_dir/std::string(json["collision"]))).meshes.at(0);
 			wad.collision_bin = read_file(src_dir/std::string(json["collision_bin"]));
-			wad.textures = read_file(src_dir/std::string(json["textures"]));
+			//wad.textures = read_file(src_dir/std::string(json["textures"]));
 			read_classes(wad, src_dir);
 			//wad.mobies = read_file(src_dir/std::string(json["mobies"]));
 			//wad.ties = read_file(src_dir/std::string(json["ties"]));
@@ -362,7 +362,12 @@ void write_wad_json(fs::path dest_dir, Wad* base) {
 			json["sky"] = write_file(dest_dir, "sky.bin", wad.sky);
 			json["collision"] = write_file(dest_dir, "collision.dae", write_dae(mesh_to_dae(wad.collision)));
 			json["collision_bin"] = write_file(dest_dir, "collision.bin", wad.collision_bin);
-			json["textures"] = write_file(dest_dir, "textures.bin", wad.textures);
+			fs::create_directory(dest_dir/std::string("tfrag_textures"));
+			for(size_t i = 0; i < wad.tfrag_textures.size(); i++) {
+				std::string path = (dest_dir/std::string("tfrag_textures")/(std::to_string(i) + ".png")).string();
+				Texture& texture = wad.tfrag_textures[i];
+				stbi_write_png(path.c_str(), texture.width, texture.height, 4, texture.data.data(), texture.width * 4);
+			}
 			write_classes(json, dest_dir, wad);
 			json["ratchet_seqs"] = write_file(dest_dir, "ratchet_seqs.bin", wad.ratchet_seqs);
 			if(wad.moby8355_pvars.has_value()) {

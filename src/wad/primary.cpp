@@ -226,6 +226,8 @@ static void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffe
 	
 	Buffer texture_data = assets.subbuf(header.textures_base_offset);
 	
+	wad.tfrag_textures = read_tfrag_textures(tfrag_textures, texture_data, gs_ram);
+	
 	for(s64 i = 0; i < moby_classes.size(); i++) {
 		const MobyClassEntry& entry = moby_classes[i];
 		MobyClass& moby = wad.moby_classes[entry.o_class];
@@ -233,7 +235,7 @@ static void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffe
 			s64 model_size = next_asset_block_size(entry.offset_in_asset_wad, block_bounds);
 			moby.model = assets.read_bytes(entry.offset_in_asset_wad, model_size, "moby model");
 		}
-		moby.textures = read_textures(moby_textures, entry.textures, texture_data, gs_ram);
+		moby.textures = read_instance_textures(moby_textures, entry.textures, texture_data, gs_ram);
 		moby.has_asset_table_entry = true;
 	}
 	
@@ -242,7 +244,7 @@ static void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffe
 		TieClass tie;
 		s64 model_size = next_asset_block_size(tie_classes[i].offset_in_asset_wad, block_bounds);
 		tie.model = assets.read_bytes(tie_classes[i].offset_in_asset_wad, model_size, "tie model");
-		tie.textures = read_textures(tie_textures, tie_classes[i].textures, texture_data, gs_ram);
+		tie.textures = read_instance_textures(tie_textures, tie_classes[i].textures, texture_data, gs_ram);
 		wad.tie_classes.emplace(tie_classes[i].o_class, tie);
 	}
 	
@@ -251,7 +253,7 @@ static void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffe
 		ShrubClass shrub;
 		s64 model_size = next_asset_block_size(shrub_classes[i].offset_in_asset_wad, block_bounds);
 		shrub.model = assets.read_bytes(shrub_classes[i].offset_in_asset_wad, model_size, "shrub model");
-		shrub.textures = read_textures(shrub_textures, shrub_classes[i].textures, texture_data, gs_ram);
+		shrub.textures = read_instance_textures(shrub_textures, shrub_classes[i].textures, texture_data, gs_ram);
 		wad.shrub_classes.emplace(shrub_classes[i].o_class, shrub);
 	}
 	
@@ -273,8 +275,8 @@ static void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data
 	header.sky = data_dest.write_multiple(wad.sky);
 	data_dest.pad(0x40);
 	header.collision = data_dest.write_multiple(wad.collision_bin);//dest.write_multiple(write_dae(mesh_to_dae(wad.collision)));
-	data_dest.pad(0x40);
-	header.textures_base_offset = data_dest.write_multiple(wad.textures);
+	//data_dest.pad(0x40);
+	//header.textures_base_offset = data_dest.write_multiple(wad.textures);
 	
 	header_dest.pad(0x40);
 	header.moby_classes.count = 0;

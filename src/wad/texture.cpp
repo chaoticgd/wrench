@@ -21,7 +21,17 @@
 static Texture paletted_texture_to_full_colour(Buffer data, Buffer palette, s32 width, s32 height);
 static u8 decode_palette_index(u8 index);
 
-std::vector<Texture> read_textures(BufferArray<TextureEntry> texture_table, const u8 indices[16], Buffer data, Buffer palettes) {
+std::vector<Texture> read_tfrag_textures(BufferArray<TextureEntry> texture_table, Buffer data, Buffer gs_ram) {
+	std::vector<Texture> textures;
+	for(const TextureEntry& entry : texture_table) {
+		Buffer texture = data.subbuf(entry.data_offset);
+		Buffer palette = gs_ram.subbuf(entry.palette * 0x100);
+		textures.emplace_back(paletted_texture_to_full_colour(texture, palette, entry.width, entry.height));
+	}
+	return textures;
+}
+
+std::vector<Texture> read_instance_textures(BufferArray<TextureEntry> texture_table, const u8 indices[16], Buffer data, Buffer gs_ram) {
 	std::vector<Texture> textures;
 	for(s32 i = 0; i < 16; i++) {
 		if(indices[i] == 0xff) {
@@ -29,7 +39,7 @@ std::vector<Texture> read_textures(BufferArray<TextureEntry> texture_table, cons
 		}
 		const TextureEntry& entry = texture_table[indices[i]];
 		Buffer texture = data.subbuf(entry.data_offset);
-		Buffer palette = palettes.subbuf(entry.palette * 0x100);
+		Buffer palette = gs_ram.subbuf(entry.palette * 0x100);
 		textures.emplace_back(paletted_texture_to_full_colour(texture, palette, entry.width, entry.height));
 	}
 	return textures;
