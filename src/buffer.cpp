@@ -207,9 +207,9 @@ std::string write_file(fs::path dest_dir, fs::path rel_path, Buffer buffer) {
 	}
 	fclose(file);
 	if(buffer.size() < 1024) {
-		printf("Wrote %s (%ld bytes)\n", dest_path.string().c_str(), buffer.size());
+		//printf("Wrote %s (%ld bytes)\n", dest_path.string().c_str(), buffer.size());
 	} else {
-		printf("Wrote %s (%ld KiB)\n", dest_path.string().c_str(), buffer.size() / 1024);
+		//printf("Wrote %s (%ld KiB)\n", dest_path.string().c_str(), buffer.size() / 1024);
 	}
 	return rel_path.string();
 }

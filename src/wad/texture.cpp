@@ -45,6 +45,112 @@ std::vector<Texture> read_instance_textures(BufferArray<TextureEntry> texture_ta
 	return textures;
 }
 
+std::pair<std::vector<const Texture*>, FlattenedTextureLayout> flatten_textures(const LevelWad& wad) {
+	std::vector<const Texture*> pointers;
+	pointers.reserve(wad.tfrag_textures.size());
+	FlattenedTextureLayout layout;
+	layout.tfrags_begin = pointers.size();
+	for(const Texture& texture : wad.tfrag_textures) {
+		pointers.push_back(&texture);
+	}
+	layout.mobies_begin = pointers.size();
+	for(const auto& [number, moby_class] : wad.moby_classes) {
+		for(const Texture& texture : moby_class.textures) {
+			pointers.push_back(&texture);
+		}
+	}
+	layout.ties_begin = pointers.size();
+	for(const auto& [number, tie_class] : wad.tie_classes) {
+		for(const Texture& texture : tie_class.textures) {
+			pointers.push_back(&texture);
+		}
+	}
+	layout.shrubs_begin = pointers.size();
+	for(const auto& [number, shrub_class] : wad.shrub_classes) {
+		for(const Texture& texture : shrub_class.textures) {
+			pointers.push_back(&texture);
+		}
+	}
+	return {pointers, layout};
+}
+
+PalettedTexture find_suboptimal_palette(const Texture& src) {
+	PalettedTexture texture = {0};
+	texture.width = src.width;
+	texture.height = src.height;
+	texture.data.resize(texture.width * texture.height);
+	s32 palette_top = 0;
+	for(s32 i = 0; i < texture.width * texture.height; i++) {
+		s32 match = -1;
+		for(s32 j = 0; j < 256; j++) {
+			if(texture.palette[j] == src.data[i]) {
+				match = j;
+				break;
+			}
+		}
+		if(match >= 0) {
+			texture.data[i] = (u8) match;
+		} else if(palette_top < 256) {
+			texture.palette[palette_top] = src.data[i];
+			texture.data[i] = palette_top;
+			palette_top++;
+		} else {
+			texture.data[i] = 0;
+		}
+	}
+	return texture;
+}
+
+std::vector<PalettedTexture*> deduplicate_textures(std::vector<PalettedTexture>& src) {
+	std::vector<size_t> mapping(src.size());
+	for(size_t i = 0; i < src.size(); i++) {
+		mapping[i] = i;
+	}
+	
+	std::sort(BEGIN_END(mapping), [&](size_t lhs, size_t rhs) {
+		return src[lhs].data < src[rhs].data;
+	});
+	
+	std::vector<PalettedTexture*> pointers(src.size());
+	pointers[0] = &src[mapping[0]];
+	for(size_t i = 1; i < src.size(); i++) {
+		PalettedTexture& last = src[mapping[i - 1]];
+		PalettedTexture& cur = src[mapping[i]];
+		if(last.data == cur.data) {
+			pointers[i] = pointers[i - 1];
+		} else {
+			cur.duplicate_data = false;
+			pointers[i] = &cur;
+		}
+	}
+	return pointers;
+}
+
+std::vector<PalettedTexture*> deduplicate_palettes(std::vector<PalettedTexture>& src) {
+	std::vector<size_t> mapping(src.size());
+	for(size_t i = 0; i < src.size(); i++) {
+		mapping[i] = i;
+	}
+	
+	std::sort(BEGIN_END(mapping), [&](size_t lhs, size_t rhs) {
+		return src[lhs].palette < src[rhs].palette;
+	});
+	
+	std::vector<PalettedTexture*> pointers(src.size());
+	pointers[0] = &src[mapping[0]];
+	for(size_t i = 1; i < src.size(); i++) {
+		PalettedTexture& last = src[mapping[i - 1]];
+		PalettedTexture& cur = src[mapping[i]];
+		if(last.palette == cur.palette) {
+			pointers[i] = pointers[i - 1];
+		} else {
+			cur.duplicate_palette = false;
+			pointers[i] = &cur;
+		}
+	}
+	return pointers;
+}
+
 static Texture paletted_texture_to_full_colour(Buffer data, Buffer palette, s32 width, s32 height) {
 	Texture texture;
 	texture.width = width;

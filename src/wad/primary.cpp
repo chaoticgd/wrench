@@ -275,12 +275,69 @@ static void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data
 	header.sky = data_dest.write_multiple(wad.sky);
 	data_dest.pad(0x40);
 	header.collision = data_dest.write_multiple(wad.collision_bin);//dest.write_multiple(write_dae(mesh_to_dae(wad.collision)));
-	//data_dest.pad(0x40);
-	//header.textures_base_offset = data_dest.write_multiple(wad.textures);
 	
+	// Allocate class tables.
 	header_dest.pad(0x40);
 	header.moby_classes.count = 0;
-	header.moby_classes.offset = header_dest.tell();
+	for(const auto& [number, moby] : wad.moby_classes) {
+		if(!moby.has_asset_table_entry) {
+			continue;
+		}
+		header.moby_classes.count++;
+	}
+	header.tie_classes.count = wad.tie_classes.size();
+	header.shrub_classes.count = wad.shrub_classes.size();
+	header.moby_classes.offset = header_dest.alloc_multiple<MobyClassEntry>(header.moby_classes.count);
+	header.tie_classes.offset = header_dest.alloc_multiple<TieClassEntry>(header.tie_classes.count);
+	header.shrub_classes.offset = header_dest.alloc_multiple<ShrubClassEntry>(header.shrub_classes.count);
+	
+	// Deduplicate textures.
+	auto [texture_pointers, layout] = flatten_textures(wad);
+	std::vector<PalettedTexture> paletted_textures;
+	paletted_textures.reserve(texture_pointers.size());
+	for(const Texture* texture : texture_pointers) {
+		// TODO: Find optimal palette instead.
+		paletted_textures.emplace_back(find_suboptimal_palette(*texture));
+	}
+	std::vector<PalettedTexture*> dedup_textures = deduplicate_textures(paletted_textures);
+	std::vector<PalettedTexture*> dedup_palettes = deduplicate_palettes(paletted_textures);
+	assert(texture_pointers.size() == paletted_textures.size());
+	assert(texture_pointers.size() == dedup_textures.size());
+	assert(texture_pointers.size() == dedup_palettes.size());
+	
+	// Write texture data.
+	std::vector<u8> gs_ram_vec;
+	OutBuffer gs_ram(gs_ram_vec);
+	
+	data_dest.pad(0x40);
+	header.textures_base_offset = data_dest.tell();
+	
+	for(PalettedTexture& texture : paletted_textures) {
+		if(!texture.duplicate_palette) {
+			texture.palette_offset = gs_ram.write_multiple(texture.palette);
+		}
+		if(!texture.duplicate_data) {
+			texture.data_offset = data_dest.write_multiple(texture.data) - header.textures_base_offset;
+			texture.mipmap_offset = 0;
+		}
+	}
+	
+	// Write texture tables.
+	header.tfrag_textures.count = wad.tfrag_textures.size();
+	header.tfrag_textures.offset = header_dest.tell();
+	for(size_t i = 0; i < wad.tfrag_textures.size(); i++) {
+		TextureEntry entry;
+		entry.data_offset = dedup_textures[i]->data_offset;
+		entry.width = dedup_textures[i]->width;
+		entry.height = dedup_textures[i]->height;
+		entry.unknown_8 = 3;
+		entry.palette = dedup_palettes[i]->palette_offset / 0x100;
+		entry.mipmap = 0;
+		header_dest.write(entry);
+	}
+	
+	// Write classes.
+	size_t i = 0;
 	for(const auto& [number, moby] : wad.moby_classes) {
 		if(!moby.has_asset_table_entry) {
 			continue;
@@ -291,41 +348,37 @@ static void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data
 		if(moby.model.has_value()) {
 			data_dest.pad(0x40);
 			entry.offset_in_asset_wad = data_dest.tell();
-			for(s32 i = 0; i < 16; i++) {
-				entry.textures[i] = 0xff;
+			for(s32 j = 0; j < 16; j++) {
+				entry.textures[j] = 0xff;
 			}
 			data_dest.write_multiple(*moby.model);
 		}
-		header_dest.write(entry);
-		
-		header.moby_classes.count++;
+		header_dest.write(header.moby_classes.offset + (i++) * sizeof(MobyClassEntry), entry);
 	}
 	
-	header.tie_classes.count = wad.tie_classes.size();
-	header.tie_classes.offset = header_dest.tell();
+	i = 0;
 	for(const auto& [number, tie] : wad.tie_classes) {
 		TieClassEntry entry = {0};
 		entry.o_class = number;
 		data_dest.pad(0x40);
 		entry.offset_in_asset_wad = data_dest.tell();
-		for(s32 i = 0; i < 16; i++) {
-			entry.textures[i] = 0xff;
+		for(s32 j = 0; j < 16; j++) {
+			entry.textures[j] = 0xff;
 		}
-		header_dest.write(entry);
+		header_dest.write(header.tie_classes.offset + (i++) * sizeof(TieClassEntry), entry);
 		data_dest.write_multiple(tie.model);
 	}
 	
-	header.shrub_classes.count = wad.shrub_classes.size();
-	header.shrub_classes.offset = header_dest.tell();
+	i = 0;
 	for(const auto& [number, shrub] : wad.shrub_classes) {
 		ShrubClassEntry entry = {0};
 		entry.o_class = number;
 		data_dest.pad(0x40);
 		entry.offset_in_asset_wad = data_dest.tell();
-		for(s32 i = 0; i < 16; i++) {
-			entry.textures[i] = 0xff;
+		for(s32 j = 0; j < 16; j++) {
+			entry.textures[j] = 0xff;
 		}
-		header_dest.write(entry);
+		header_dest.write(header.shrub_classes.offset + (i++) * sizeof(ShrubClassEntry), entry);
 		data_dest.write_multiple(shrub.model);
 	}
 	

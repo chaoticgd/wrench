@@ -113,18 +113,18 @@ struct OutBuffer {
 	}
 	
 	template <typename T>
-	s64 write_multiple(const std::vector<T>& things) {
+	s64 write_multiple(const T& things) {
 		size_t write_ofs = vec.size();
-		vec.resize(vec.size() + things.size() * sizeof(T));
-		memcpy(&vec[write_ofs], things.data(), things.size() * sizeof(T));
+		vec.resize(vec.size() + things.size() * sizeof(typename T::value_type));
+		memcpy(&vec[write_ofs], things.data(), things.size() * sizeof(typename T::value_type));
 		return write_ofs;
 	}
 	
 	template <typename T>
-	s64 write_multiple(s64 offset, const std::vector<T>& things) {
+	s64 write_multiple(s64 offset, const T& things) {
 		assert(offset >= 0);
-		assert(offset + things.size() * sizeof(T) <= vec.size());
-		memcpy(&vec[offset], things.data(), things.size() * sizeof(T));
+		assert(offset + things.size() * sizeof(typename T::value_type) <= vec.size());
+		memcpy(&vec[offset], things.data(), things.size() * sizeof(typename T::value_type));
 		return offset;
 	}
 	

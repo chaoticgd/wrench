@@ -281,7 +281,7 @@ void extract(std::string iso_path, fs::path output_dir) {
 			verify(dest_file, "Failed to open '%s' for writing.", path.string().c_str());
 			if(part->prepend_header) {
 				std::vector<u8> padded_header;
-				OutBuffer(padded_header).write_multiple<u8>(part->header);
+				OutBuffer(padded_header).write_multiple(part->header);
 				OutBuffer(padded_header).pad(SECTOR_SIZE, 0);
 				verify(fwrite(padded_header.data(), padded_header.size(), 1, dest_file) == 1,
 					"Failed to write header to '%s'.", path.string().c_str());
