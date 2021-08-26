@@ -131,6 +131,7 @@ Opt<Game> game_from_string(std::string str) {
 }
 
 static void read_classes(LevelWad& wad, fs::path project_dir);
+static std::vector<Texture> read_textures_json(fs::path dir, Json& paths);
 
 std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 	fs::path src_dir = src_path.parent_path();
@@ -182,11 +183,9 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			wad.sky = read_file(src_dir/std::string(json["sky"]));
 			//wad.collision = import_dae(read_file(src_dir/std::string(json["collision"]))).meshes.at(0);
 			wad.collision_bin = read_file(src_dir/std::string(json["collision_bin"]));
-			//wad.textures = read_file(src_dir/std::string(json["textures"]));
 			read_classes(wad, src_dir);
-			//wad.mobies = read_file(src_dir/std::string(json["mobies"]));
-			//wad.ties = read_file(src_dir/std::string(json["ties"]));
-			//wad.shrubs = read_file(src_dir/std::string(json["shrubs"]));
+			Json tfrag_textures_json = Json::parse(read_file(src_dir/std::string(json["tfrag_textures"])));
+			wad.tfrag_textures = read_textures_json(src_dir, tfrag_textures_json["textures"]);
 			wad.ratchet_seqs = read_file(src_dir/std::string(json["ratchet_seqs"]));
 			verify(json.contains("moby8355_pvars") == (wad.game == Game::DL),
 				(wad.game == Game::DL) ? "Missing moby8355_pvars file." : "moby8355_pvars present but not required.");
@@ -244,24 +243,6 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 	return nullptr;
 }
 
-static std::vector<Texture> read_textures_json(fs::path dir, Json& paths) {
-	std::vector<Texture> textures;
-	for(Json& rel_path : paths) {
-		Texture texture;
-		std::string path = (dir/std::string(rel_path)).string();
-		int component_count;
-		u8* data = stbi_load(path.c_str(), &texture.width, &texture.height, &component_count, 4);
-		texture.data.resize(texture.width * texture.height);
-		for(size_t i = 0; i < texture.data.size(); i++) {
-			texture.data[i] = {
-				data[i * 4], data[i * 4 + 1], data[i * 4 + 2], data[i * 4 + 3]
-			};
-		}
-		textures.emplace_back(std::move(texture));
-	}
-	return textures;
-}
-
 static void read_classes(LevelWad& wad, fs::path project_dir) {
 	for(s32 o_class : opt_iterator(wad.gameplay.moby_classes)) {
 		fs::path moby_dir = project_dir/std::string("mobies")/std::to_string(o_class);
@@ -306,6 +287,24 @@ static void read_classes(LevelWad& wad, fs::path project_dir) {
 		shrub.textures = read_textures_json(shrub_dir, shrub_json["textures"]);
 		wad.shrub_classes.emplace(shrub_json["class"].get<s32>(), shrub);
 	}
+}
+
+static std::vector<Texture> read_textures_json(fs::path dir, Json& paths) {
+	std::vector<Texture> textures;
+	for(Json& rel_path : paths) {
+		Texture texture;
+		std::string path = (dir/std::string(rel_path)).string();
+		int component_count;
+		u8* data = stbi_load(path.c_str(), &texture.width, &texture.height, &component_count, 4);
+		texture.data.resize(texture.width * texture.height);
+		for(size_t i = 0; i < texture.data.size(); i++) {
+			texture.data[i] = {
+				data[i * 4], data[i * 4 + 1], data[i * 4 + 2], data[i * 4 + 3]
+			};
+		}
+		textures.emplace_back(std::move(texture));
+	}
+	return textures;
 }
 
 static std::string write_json_array_file(fs::path dest_dir, const char* file_name, Json data_json) {
@@ -363,11 +362,16 @@ void write_wad_json(fs::path dest_dir, Wad* base) {
 			json["collision"] = write_file(dest_dir, "collision.dae", write_dae(mesh_to_dae(wad.collision)));
 			json["collision_bin"] = write_file(dest_dir, "collision.bin", wad.collision_bin);
 			fs::create_directory(dest_dir/std::string("tfrag_textures"));
+			Json tfrag_textures_json;
+			tfrag_textures_json["textures"] = Json::array();
 			for(size_t i = 0; i < wad.tfrag_textures.size(); i++) {
-				std::string path = (dest_dir/std::string("tfrag_textures")/(std::to_string(i) + ".png")).string();
+				fs::path rel_path = fs::path("tfrag_textures")/(std::to_string(i) + ".png");
+				std::string path = (dest_dir/rel_path).string();
 				Texture& texture = wad.tfrag_textures[i];
 				stbi_write_png(path.c_str(), texture.width, texture.height, 4, texture.data.data(), texture.width * 4);
+				tfrag_textures_json["textures"].push_back(rel_path);
 			}
+			json["tfrag_textures"] = write_file(dest_dir, "tfrag_textures.json", tfrag_textures_json.dump(1, '\t'));
 			write_classes(json, dest_dir, wad);
 			json["ratchet_seqs"] = write_file(dest_dir, "ratchet_seqs.bin", wad.ratchet_seqs);
 			if(wad.moby8355_pvars.has_value()) {
@@ -379,7 +383,6 @@ void write_wad_json(fs::path dest_dir, Wad* base) {
 			json["core_sound_bank"] = write_file(dest_dir, "core_bank.bin", wad.core_bank);
 			json["camera_classes"] = write_json_array_file(dest_dir, "camera_classes", map_to_json(wad.camera_classes, "class"));
 			json["sound_classes"] = write_json_array_file(dest_dir, "sound_classes", map_to_json(wad.sound_classes, "class"));
-
 			json["pvar_types"] = write_json_array_file(dest_dir, "pvar_types", map_to_json(wad.pvar_types, "name"));
 			json["help_messages"] = write_json_object_file(dest_dir, "help_messages", to_json(wad.help_messages));
 			json["gameplay"] = write_json_object_file(dest_dir, "gameplay", to_json(wad.gameplay));
