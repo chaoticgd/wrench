@@ -323,7 +323,12 @@ static void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data
 		s32 table_count = 0;
 		for(size_t i = low; i < high; i++) {
 			PalettedTexture& texture = paletted_textures[i];
-			if(texture.is_first_occurence) {
+			if(texture.texture_out_edge > -1) {
+				texture = paletted_textures[texture.texture_out_edge];
+			}
+			if(!texture.indices[table].has_value()) {
+				assert(texture.is_first_occurence);
+				assert(texture.texture_out_edge == -1);
 				TextureEntry entry;
 				entry.data_offset = texture.texture_offset;
 				entry.width = texture.width;
@@ -342,10 +347,10 @@ static void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data
 		}
 		return ArrayRange {table_count, table_offset};
 	};
-	header.tfrag_textures = write_texture_table(0, layout.tfrags_begin, layout.mobies_begin);
-	header.moby_textures = write_texture_table(1, layout.mobies_begin, layout.ties_begin);
-	header.tie_textures = write_texture_table(2, layout.ties_begin, layout.shrubs_begin);
-	header.shrub_textures = write_texture_table(3, layout.shrubs_begin, paletted_textures.size());
+	header.tfrag_textures = write_texture_table(TFRAG_TEXTURE_INDEX, layout.tfrags_begin, layout.mobies_begin);
+	header.moby_textures = write_texture_table(MOBY_TEXTURE_INDEX, layout.mobies_begin, layout.ties_begin);
+	header.tie_textures = write_texture_table(TIE_TEXTURE_INDEX, layout.ties_begin, layout.shrubs_begin);
+	header.shrub_textures = write_texture_table(SHRUB_TEXTURE_INDEX, layout.shrubs_begin, paletted_textures.size());
 	
 	// Write classes.
 	size_t i = 0, class_index = 0;
@@ -361,12 +366,18 @@ static void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data
 			entry.offset_in_asset_wad = data_dest.tell();
 			verify(moby.textures.size() < 16, "error: Moby %d has too many textures.\n", number);
 			for(s32 j = 0; j < moby.textures.size(); j++) {
-				PalettedTexture& texture = paletted_textures[layout.mobies_begin + class_index + j];
+				PalettedTexture& texture = paletted_textures.at(layout.mobies_begin + class_index + j);
 				if(texture.texture_out_edge > -1) {
 					texture = paletted_textures[texture.texture_out_edge];
 				}
 				assert(texture.is_first_occurence);
-				entry.textures[j] = texture.indices[0];
+				assert(texture.texture_out_edge == -1);
+				assert(texture.indices[MOBY_TEXTURE_INDEX].has_value());
+				//verify(*texture.indices[MOBY_TEXTURE_INDEX] < 0xff,
+				//	"Too many moby textures (%d, should be at most 254).\n",
+				//	texture.indices[MOBY_TEXTURE_INDEX]);
+				if(texture.indices[MOBY_TEXTURE_INDEX]>=255)entry.textures[j]=0;else
+				entry.textures[j] = *texture.indices[MOBY_TEXTURE_INDEX];
 			}
 			for(s32 j = moby.textures.size(); j < 16; j++) {
 				entry.textures[j] = 0xff;

@@ -59,7 +59,11 @@ struct PalettedTexture {
 	s32 palette_out_edge = -1;
 	s32 texture_offset;
 	s32 palette_offset;
-	s32 indices[4]; // = {tfrag index, moby index, tie index, shrub index}
+#define TFRAG_TEXTURE_INDEX 0
+#define MOBY_TEXTURE_INDEX 1
+#define TIE_TEXTURE_INDEX 2
+#define SHRUB_TEXTURE_INDEX 3
+	std::optional<s32> indices[4]; // = {tfrag index, moby index, tie index, shrub index}
 	fs::path path;
 };
 

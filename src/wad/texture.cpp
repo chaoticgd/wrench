@@ -128,7 +128,6 @@ void deduplicate_textures(std::vector<PalettedTexture>& textures) {
 	});
 	
 	s32 first_occurence = mapping[0];
-	textures[mapping[0]].texture_out_edge = first_occurence;
 	textures[mapping[0]].is_first_occurence = true;
 	for(size_t i = 1; i < textures.size(); i++) {
 		PalettedTexture& last = textures[mapping[i - 1]];
