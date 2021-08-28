@@ -18,6 +18,8 @@
 
 #include "tests.h"
 
+#include "texture.h"
+
 static void run_gameplay_tests(fs::path input_path);
 struct GameplayTestArgs {
 	std::string wad_file_path;

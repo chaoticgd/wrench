@@ -298,10 +298,9 @@ static std::vector<Texture> read_textures_json(fs::path dir, Json& paths) {
 		u8* data = stbi_load(path.c_str(), &texture.width, &texture.height, &component_count, 4);
 		texture.data.resize(texture.width * texture.height);
 		for(size_t i = 0; i < texture.data.size(); i++) {
-			texture.data[i] = {
-				data[i * 4], data[i * 4 + 1], data[i * 4 + 2], data[i * 4 + 3]
-			};
+			texture.data[i] = data[i];
 		}
+		texture.path = path;
 		textures.emplace_back(std::move(texture));
 	}
 	return textures;

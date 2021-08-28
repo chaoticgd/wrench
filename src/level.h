@@ -755,25 +755,11 @@ struct HelpMessages {
 	}
 };
 
-packed_struct(Colour32,
-	u8 r;
-	u8 g;
-	u8 b;
-	u8 a;
-	
-	bool operator<(const Colour32& rhs) const {
-		return *(u32*) this < *(u32*) &rhs;
-	}
-	
-	bool operator==(const Colour32& rhs) const {
-		return *(u32*) this == *(u32*) &rhs;
-	}
-)
-
 struct Texture {
 	s32 width;
 	s32 height;
-	std::vector<Colour32> data;
+	std::vector<u32> data;
+	fs::path path; // Only populated for textures read from loose files.
 };
 
 struct Chunk {

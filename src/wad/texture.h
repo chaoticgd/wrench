@@ -39,17 +39,28 @@ packed_struct(TextureEntry,
 	/* 0xe */ s16 pad = 0xffff;
 )
 
+struct Palette {
+	std::array<u32, 256> colours;
+	s32 top;
+	
+	bool operator==(const Palette& rhs) const {
+		return colours == rhs.colours && top == rhs.top;
+	}
+};
+
 // This is more of a work struct for the texture deduplicator/writer.
 struct PalettedTexture {
 	s32 width;
 	s32 height;
-	std::array<Colour32, 256> palette;
+	Palette palette;
 	std::vector<u8> data;
-	bool duplicate_data = true;
-	bool duplicate_palette = true;
-	s64 data_offset;
-	s64 palette_offset;
-	s64 mipmap_offset;
+	s32 texture_out_edge = -1;
+	bool is_first_occurence;
+	s32 palette_out_edge = -1;
+	s32 texture_offset;
+	s32 palette_offset;
+	s32 indices[4]; // = {tfrag index, moby index, tie index, shrub index}
+	fs::path path;
 };
 
 struct FlattenedTextureLayout {
@@ -64,7 +75,7 @@ std::vector<Texture> read_tfrag_textures(BufferArray<TextureEntry> texture_table
 std::vector<Texture> read_instance_textures(BufferArray<TextureEntry> texture_table, const u8 indices[16], Buffer data, Buffer gs_ram);
 std::pair<std::vector<const Texture*>, FlattenedTextureLayout> flatten_textures(const LevelWad& wad);
 PalettedTexture find_suboptimal_palette(const Texture& src);
-std::vector<PalettedTexture*> deduplicate_textures(std::vector<PalettedTexture>& src);
-std::vector<PalettedTexture*> deduplicate_palettes(std::vector<PalettedTexture>& src);
+void deduplicate_textures(std::vector<PalettedTexture>& textures);
+void deduplicate_palettes(std::vector<PalettedTexture>& textures);
 
 #endif

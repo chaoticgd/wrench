@@ -299,11 +299,8 @@ static void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data
 		// TODO: Find optimal palette instead.
 		paletted_textures.emplace_back(find_suboptimal_palette(*texture));
 	}
-	std::vector<PalettedTexture*> dedup_textures = deduplicate_textures(paletted_textures);
-	std::vector<PalettedTexture*> dedup_palettes = deduplicate_palettes(paletted_textures);
-	assert(texture_pointers.size() == paletted_textures.size());
-	assert(texture_pointers.size() == dedup_textures.size());
-	assert(texture_pointers.size() == dedup_palettes.size());
+	deduplicate_textures(paletted_textures);
+	deduplicate_palettes(paletted_textures);
 	
 	// Write texture data.
 	std::vector<u8> gs_ram_vec;
@@ -311,33 +308,47 @@ static void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data
 	
 	data_dest.pad(0x40);
 	header.textures_base_offset = data_dest.tell();
-	
 	for(PalettedTexture& texture : paletted_textures) {
-		if(!texture.duplicate_palette) {
-			texture.palette_offset = gs_ram.write_multiple(texture.palette);
+		if(texture.texture_out_edge == -1) {
+			texture.texture_offset = data_dest.write_multiple(texture.data);
 		}
-		if(!texture.duplicate_data) {
-			texture.data_offset = data_dest.write_multiple(texture.data) - header.textures_base_offset;
-			texture.mipmap_offset = 0;
+		if(texture.palette_out_edge == -1) {
+			texture.palette_offset = gs_ram.write_multiple(texture.palette.colours);
 		}
 	}
 	
 	// Write texture tables.
-	header.tfrag_textures.count = wad.tfrag_textures.size();
-	header.tfrag_textures.offset = header_dest.tell();
-	for(size_t i = 0; i < wad.tfrag_textures.size(); i++) {
-		TextureEntry entry;
-		entry.data_offset = dedup_textures[i]->data_offset;
-		entry.width = dedup_textures[i]->width;
-		entry.height = dedup_textures[i]->height;
-		entry.unknown_8 = 3;
-		entry.palette = dedup_palettes[i]->palette_offset / 0x100;
-		entry.mipmap = 0;
-		header_dest.write(entry);
-	}
+	auto write_texture_table = [&](s32 table, s32 low, s32 high) {
+		s32 table_offset = header_dest.tell();
+		s32 table_count = 0;
+		for(size_t i = low; i < high; i++) {
+			PalettedTexture& texture = paletted_textures[i];
+			if(texture.is_first_occurence) {
+				TextureEntry entry;
+				entry.data_offset = texture.texture_offset;
+				entry.width = texture.width;
+				entry.height = texture.height;
+				entry.unknown_8 = 3;
+				if(texture.palette_out_edge > -1) {
+					entry.palette = paletted_textures[texture.palette_out_edge].palette_offset;
+				} else {
+					entry.palette = texture.palette_offset;
+				}
+				entry.mipmap = 0;
+				header_dest.write(entry);
+				texture.indices[table] = table_count;
+				table_count++;
+			}
+		}
+		return ArrayRange {table_count, table_offset};
+	};
+	header.tfrag_textures = write_texture_table(0, layout.tfrags_begin, layout.mobies_begin);
+	header.moby_textures = write_texture_table(1, layout.mobies_begin, layout.ties_begin);
+	header.tie_textures = write_texture_table(2, layout.ties_begin, layout.shrubs_begin);
+	header.shrub_textures = write_texture_table(3, layout.shrubs_begin, paletted_textures.size());
 	
 	// Write classes.
-	size_t i = 0;
+	size_t i = 0, class_index = 0;
 	for(const auto& [number, moby] : wad.moby_classes) {
 		if(!moby.has_asset_table_entry) {
 			continue;
@@ -348,10 +359,24 @@ static void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data
 		if(moby.model.has_value()) {
 			data_dest.pad(0x40);
 			entry.offset_in_asset_wad = data_dest.tell();
+			verify(moby.textures.size() < 16, "error: Moby %d has too many textures.\n", number);
+			for(s32 j = 0; j < moby.textures.size(); j++) {
+				PalettedTexture& texture = paletted_textures[layout.mobies_begin + class_index + j];
+				if(texture.texture_out_edge > -1) {
+					texture = paletted_textures[texture.texture_out_edge];
+				}
+				assert(texture.is_first_occurence);
+				entry.textures[j] = texture.indices[0];
+			}
+			for(s32 j = moby.textures.size(); j < 16; j++) {
+				entry.textures[j] = 0xff;
+			}
+			class_index += moby.textures.size();
+			data_dest.write_multiple(*moby.model);
+		} else {
 			for(s32 j = 0; j < 16; j++) {
 				entry.textures[j] = 0xff;
 			}
-			data_dest.write_multiple(*moby.model);
 		}
 		header_dest.write(header.moby_classes.offset + (i++) * sizeof(MobyClassEntry), entry);
 	}
