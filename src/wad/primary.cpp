@@ -23,7 +23,7 @@
 #include "texture.h"
 
 static void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ram);
-static void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, const LevelWad& wad);
+static void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, OutBuffer gs_ram, const LevelWad& wad);
 static std::vector<s64> enumerate_asset_block_boundaries(Buffer src, const AssetHeader& header); // Used to determining the size of certain blocks.
 static s64 next_asset_block_size(s32 ofs, const std::vector<s64>& block_bounds);
 static void print_asset_header(const AssetHeader& header);
@@ -81,8 +81,10 @@ SectorRange write_primary(OutBuffer& dest, const LevelWad& wad) {
 	header.code = write_primary_block(dest, wad.code, header_ofs);
 	std::vector<u8> asset_header;
 	std::vector<u8> asset_data;
-	write_assets(OutBuffer(asset_header), asset_data, wad);
+	std::vector<u8> gs_ram;
+	write_assets(OutBuffer(asset_header), asset_data, gs_ram, wad);
 	header.asset_header = write_primary_block(dest, asset_header, header_ofs);
+	header.gs_ram = write_primary_block(dest, gs_ram, header_ofs);
 	header.assets = write_primary_block(dest, asset_data, header_ofs);
 	
 	//header.gs_ram = write_primary_block(dest, wad.small_textures, header_ofs);
@@ -260,7 +262,7 @@ static void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffe
 	print_asset_header(header);
 }
 
-static void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, const LevelWad& wad) {
+static void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, OutBuffer gs_ram, const LevelWad& wad) {
 	std::vector<u8> data_vec;
 	OutBuffer data_dest(data_vec);
 	
@@ -302,18 +304,21 @@ static void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data
 	deduplicate_textures(paletted_textures);
 	deduplicate_palettes(paletted_textures);
 	
-	// Write texture data.
-	std::vector<u8> gs_ram_vec;
-	OutBuffer gs_ram(gs_ram_vec);
+	for(PalettedTexture& texture : paletted_textures) {
+		assert(texture.texture_out_edge == -1 || paletted_textures[texture.texture_out_edge].texture_out_edge == -1);
+	}
+	
+	encode_palette_indices(paletted_textures);
 	
 	data_dest.pad(0x40);
 	header.textures_base_offset = data_dest.tell();
 	for(PalettedTexture& texture : paletted_textures) {
 		if(texture.texture_out_edge == -1) {
 			texture.texture_offset = data_dest.write_multiple(texture.data);
-		}
-		if(texture.palette_out_edge == -1) {
-			texture.palette_offset = gs_ram.write_multiple(texture.palette.colours);
+			if(texture.palette_out_edge == -1) {
+				gs_ram.pad(0x100, 0);
+				texture.palette_offset = gs_ram.write_multiple(texture.palette.colours);
+			}
 		}
 	}
 	
@@ -329,16 +334,18 @@ static void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data
 			if(!texture.indices[table].has_value()) {
 				assert(texture.is_first_occurence);
 				assert(texture.texture_out_edge == -1);
+				assert(texture.texture_offset != -1);
 				TextureEntry entry;
-				entry.data_offset = texture.texture_offset;
+				entry.data_offset = texture.texture_offset - header.textures_base_offset;
 				entry.width = texture.width;
 				entry.height = texture.height;
 				entry.unknown_8 = 3;
-				if(texture.palette_out_edge > -1) {
-					entry.palette = paletted_textures[texture.palette_out_edge].palette_offset;
-				} else {
-					entry.palette = texture.palette_offset;
+				PalettedTexture& palette_texture = texture;
+				while(palette_texture.palette_out_edge > -1) {
+					palette_texture = paletted_textures[palette_texture.palette_out_edge];
 				}
+				entry.palette = palette_texture.palette_offset / 0x100;
+				assert(entry.palette != -1);
 				entry.mipmap = 0;
 				header_dest.write(entry);
 				texture.indices[table] = table_count;
@@ -418,14 +425,19 @@ static void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data
 		data_dest.write_multiple(shrub.model);
 	}
 	
-	print_asset_header(header);
+	
+	header.scene_view_size = 0x1321540;
 	
 	compress_wad(compressed_data_dest, data_vec, 8);
 	header.assets_decompressed_size = data_vec.size();
 	header.assets_compressed_size = compressed_data_dest.size();
 	
+	print_asset_header(header);
+	
 	header_dest.write(0, header);
 	write_file("/tmp", "newheader.bin", Buffer(header_dest.vec));
+	write_file("/tmp", "gsram.bin", Buffer(gs_ram.vec));
+	write_file("/tmp", "assets.bin", Buffer(data_dest.vec));
 }
 
 static std::vector<s64> enumerate_asset_block_boundaries(Buffer src, const AssetHeader& header) {

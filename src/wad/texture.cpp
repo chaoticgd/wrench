@@ -90,6 +90,8 @@ std::pair<std::vector<const Texture*>, FlattenedTextureLayout> flatten_textures(
 }
 
 PalettedTexture find_suboptimal_palette(const Texture& src) {
+	assert(src.data.size() == src.width * src.height);
+	
 	PalettedTexture texture = {0};
 	texture.width = src.width;
 	texture.height = src.height;
@@ -97,7 +99,7 @@ PalettedTexture find_suboptimal_palette(const Texture& src) {
 	texture.path = src.path;
 	for(s32 i = 0; i < texture.width * texture.height; i++) {
 		s32 match = -1;
-		for(s32 j = 0; j < 256; j++) {
+		for(s32 j = 0; j < texture.palette.top; j++) {
 			if(texture.palette.colours[j] == src.data[i]) {
 				match = j;
 				break;
@@ -146,16 +148,29 @@ void deduplicate_textures(std::vector<PalettedTexture>& textures) {
 }
 
 void deduplicate_palettes(std::vector<PalettedTexture>& textures) {
-	for(size_t subset = 1; subset < textures.size(); subset++) {
-		if(!textures[subset].is_first_occurence) {
+	for(size_t subset = 0; subset < textures.size(); subset++) {
+		PalettedTexture& subtex = textures[subset];
+		if(!subtex.is_first_occurence) {
 			continue;
 		}
-		for(size_t superset = 0; superset < subset; superset++) {
-			if(!textures[superset].is_first_occurence) {
+		for(size_t superset = 0; superset < textures.size(); superset++) {
+			if(subset == superset) {
 				continue;
 			}
-			PalettedTexture& subtex = textures[subset];
-			if(subtex.palette.top > textures[superset].palette.top) {
+			PalettedTexture& supertex = textures[superset];
+			if(!supertex.is_first_occurence) {
+				continue;
+			}
+			// If a palette A has more colours than a palette B, then A cannot
+			// contain a subset of the colours in B.
+			if(subtex.palette.top > supertex.palette.top) {
+				continue;
+			}
+			// If two palettes have the same number of colours, the only way one
+			// can be a subset of another is if they are permutations of each
+			// other, hence they we should discard half of these subsets to
+			// avoid cycles.
+			if(subtex.palette.top >= supertex.palette.top && subset < superset) {
 				continue;
 			}
 			auto mapping = palette_subset_of(subtex.palette, textures[superset].palette);
@@ -185,6 +200,16 @@ static std::optional<std::array<u8, 256>> palette_subset_of(Palette& subset, Pal
 		}
 	}
 	return mapping;
+}
+
+void encode_palette_indices(std::vector<PalettedTexture>& textures) {
+	for(PalettedTexture& texture : textures) {
+		if(texture.is_first_occurence) {
+			for(u8& pixel : texture.data) {
+				pixel = decode_palette_index(pixel);
+			}
+		}
+	}
 }
 
 static u8 decode_palette_index(u8 index) {

@@ -57,8 +57,8 @@ struct PalettedTexture {
 	s32 texture_out_edge = -1;
 	bool is_first_occurence;
 	s32 palette_out_edge = -1;
-	s32 texture_offset;
-	s32 palette_offset;
+	s32 texture_offset = -1;
+	s32 palette_offset = -1;
 #define TFRAG_TEXTURE_INDEX 0
 #define MOBY_TEXTURE_INDEX 1
 #define TIE_TEXTURE_INDEX 2
@@ -81,5 +81,6 @@ std::pair<std::vector<const Texture*>, FlattenedTextureLayout> flatten_textures(
 PalettedTexture find_suboptimal_palette(const Texture& src);
 void deduplicate_textures(std::vector<PalettedTexture>& textures);
 void deduplicate_palettes(std::vector<PalettedTexture>& textures);
+void encode_palette_indices(std::vector<PalettedTexture>& textures);
 
 #endif
