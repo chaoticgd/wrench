@@ -28,6 +28,7 @@ struct PrimaryHeader {
 	ByteRange hud_header;
 	ByteRange hud_banks[5];
 	ByteRange assets;
+	Opt<ByteRange> transition_textures;
 	Opt<ByteRange> moby8355_pvars;
 	Opt<ByteRange> art_instances;
 	Opt<ByteRange> gameplay_core;
@@ -41,7 +42,7 @@ packed_struct(Rac123PrimaryHeader,
 	/* 0x18 */ ByteRange hud_header;
 	/* 0x20 */ ByteRange hud_banks[5];
 	/* 0x48 */ ByteRange assets;
-	/* 0x50 */ ByteRange loading_screen_textures;
+	/* 0x50 */ ByteRange transition_textures;
 )
 
 packed_struct(DeadlockedPrimaryHeader,

@@ -187,6 +187,9 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			Json tfrag_textures_json = Json::parse(read_file(src_dir/std::string(json["tfrag_textures"])));
 			wad.tfrag_textures = read_textures_json(src_dir, tfrag_textures_json["textures"]);
 			wad.ratchet_seqs = read_file(src_dir/std::string(json["ratchet_seqs"]));
+			if(game != Game::DL) {
+				wad.transition_textures = read_file(src_dir/std::string(json["transition_textures"]));
+			}
 			verify(json.contains("moby8355_pvars") == (wad.game == Game::DL),
 				(wad.game == Game::DL) ? "Missing moby8355_pvars file." : "moby8355_pvars present but not required.");
 			if(wad.game == Game::DL) {
@@ -374,6 +377,9 @@ void write_wad_json(fs::path dest_dir, Wad* base) {
 			json["tfrag_textures"] = write_file(dest_dir, "tfrag_textures.json", tfrag_textures_json.dump(1, '\t'));
 			write_classes(json, dest_dir, wad);
 			json["ratchet_seqs"] = write_file(dest_dir, "ratchet_seqs.bin", wad.ratchet_seqs);
+			if(wad.transition_textures.has_value()) {
+				json["transition_textures"] = write_file(dest_dir, "transition_textures.bin", *wad.transition_textures);
+			}
 			if(wad.moby8355_pvars.has_value()) {
 				json["moby8355_pvars"] = write_file(dest_dir, "moby8355_pvars.bin", *wad.moby8355_pvars);
 			}

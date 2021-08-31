@@ -38,22 +38,25 @@ void read_primary(LevelWad& wad, Buffer src) {
 	swap_primary_header(header, header_bytes, wad.game);
 	
 	wad.code = src.read_bytes(header.code.offset, header.code.size, "code");
-	wad.asset_header = src.read_bytes(header.asset_header.offset, header.asset_header.size, "asset_header");
-	wad.hud_header = src.read_bytes(header.hud_header.offset, header.hud_header.size, "hud_header");
+	wad.asset_header = src.read_bytes(header.asset_header.offset, header.asset_header.size, "asset header");
+	wad.hud_header = src.read_bytes(header.hud_header.offset, header.hud_header.size, "hud header");
 	for(s32 i = 0; i < 5; i++) {
 		if(header.hud_banks[i].offset > 0) {
-			wad.hud_banks[i] = src.read_bytes(header.hud_banks[i].offset, header.hud_banks[i].size, "hud_banks");
+			wad.hud_banks[i] = src.read_bytes(header.hud_banks[i].offset, header.hud_banks[i].size, "hud bank");
 		}
 	}
 	std::vector<u8> assets_vec;
 	verify(decompress_wad(assets_vec, wad_buffer(src.subbuf(header.assets.offset))), "Failed to decompress assets.");
 	Buffer assets(assets_vec);
 	read_assets(wad, wad.asset_header, assets, src.subbuf(header.gs_ram.offset));
+	if(header.transition_textures.has_value()) {
+		wad.transition_textures = src.read_bytes(header.transition_textures->offset, header.transition_textures->size, "transition textures");
+	}
 	if(header.moby8355_pvars.has_value()) {
-		wad.moby8355_pvars = src.read_bytes(header.moby8355_pvars->offset, header.moby8355_pvars->size, "moby8355_pvars");
+		wad.moby8355_pvars = src.read_bytes(header.moby8355_pvars->offset, header.moby8355_pvars->size, "moby 8355 pvars");
 	}
 	if(header.global_nav_data.has_value()) {
-		wad.global_nav_data = src.read_bytes(header.global_nav_data->offset, header.global_nav_data->size, "global_nav_data");
+		wad.global_nav_data = src.read_bytes(header.global_nav_data->offset, header.global_nav_data->size, "global nav data");
 	}
 }
 
@@ -85,14 +88,16 @@ SectorRange write_primary(OutBuffer& dest, const LevelWad& wad) {
 	write_assets(OutBuffer(asset_header), asset_data, gs_ram, wad);
 	header.asset_header = write_primary_block(dest, asset_header, header_ofs);
 	header.gs_ram = write_primary_block(dest, gs_ram, header_ofs);
-	header.assets = write_primary_block(dest, asset_data, header_ofs);
-	
-	//header.gs_ram = write_primary_block(dest, wad.small_textures, header_ofs);
 	header.hud_header = write_primary_block(dest, wad.hud_header, header_ofs);
 	for(s32 i = 0; i < 5; i++) {
 		if(wad.hud_banks[i].size() > 0) {
 			header.hud_banks[i] = write_primary_block(dest, wad.hud_banks[i], header_ofs);
 		}
+	}
+	
+	header.assets = write_primary_block(dest, asset_data, header_ofs);
+	if(wad.transition_textures.has_value()) {
+		header.transition_textures = write_primary_block(dest, *wad.transition_textures, header_ofs);
 	}
 	
 	std::vector<u8> header_bytes;
@@ -113,6 +118,7 @@ void swap_primary_header(PrimaryHeader& l, std::vector<u8>& r, Game game) {
 			Rac123PrimaryHeader packed_header = {0};
 			if(r.size() >= sizeof(Rac123PrimaryHeader)) {
 				packed_header = Buffer(r).read<Rac123PrimaryHeader>(0, "primary header");
+				l.transition_textures = ByteRange {0, 0};
 			}
 			l.moby8355_pvars = {};
 			SWAP_PACKED(l.code, packed_header.code);
@@ -123,6 +129,7 @@ void swap_primary_header(PrimaryHeader& l, std::vector<u8>& r, Game game) {
 				SWAP_PACKED(l.hud_banks[i], packed_header.hud_banks[i]);
 			}
 			SWAP_PACKED(l.assets, packed_header.assets);
+			SWAP_PACKED(*l.transition_textures, packed_header.transition_textures);
 			l.art_instances = {};
 			l.gameplay_core = {};
 			l.global_nav_data = {};
@@ -310,6 +317,8 @@ static void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data
 	
 	encode_palette_indices(paletted_textures);
 	
+	std::vector<GsRamEntry> gs_ram_table;
+	
 	data_dest.pad(0x40);
 	header.textures_base_offset = data_dest.tell();
 	for(PalettedTexture& texture : paletted_textures) {
@@ -318,6 +327,7 @@ static void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data
 			if(texture.palette_out_edge == -1) {
 				gs_ram.pad(0x100, 0);
 				texture.palette_offset = gs_ram.write_multiple(texture.palette.colours);
+				gs_ram_table.push_back({0, 0, 0, texture.palette_offset / 0x100, texture.palette_offset / 0x100});
 			}
 		}
 	}
@@ -358,6 +368,10 @@ static void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data
 	header.moby_textures = write_texture_table(MOBY_TEXTURE_INDEX, layout.mobies_begin, layout.ties_begin);
 	header.tie_textures = write_texture_table(TIE_TEXTURE_INDEX, layout.ties_begin, layout.shrubs_begin);
 	header.shrub_textures = write_texture_table(SHRUB_TEXTURE_INDEX, layout.shrubs_begin, paletted_textures.size());
+	
+	header.gs_ram.count = gs_ram_table.size();
+	header.gs_ram.offset = header_dest.tell();
+	header_dest.write_multiple(gs_ram_table);
 	
 	// Write classes.
 	size_t i = 0, class_index = 0;
