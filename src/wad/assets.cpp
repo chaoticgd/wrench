@@ -124,6 +124,10 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 		wad.shrub_classes.emplace(shrub_classes[i].o_class, shrub);
 	}
 	
+	if(header.light_cuboids_offset != 0) {
+		wad.light_cuboids = asset_header.read_bytes(header.light_cuboids_offset, 1024, "light cuboids");
+	}
+	
 	print_asset_header(header);
 }
 
@@ -212,12 +216,16 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 				while(palette_texture.palette_out_edge > -1) {
 					palette_texture = paletted_textures[palette_texture.palette_out_edge];
 				}
+				assert(palette_texture.palette_offset != -1);
 				entry.palette = palette_texture.palette_offset / 0x100;
-				assert(entry.palette != -1);
 				entry.mipmap = 0;
-				header_dest.write(entry);
-				texture.indices[table] = table_count;
-				table_count++;
+				if(i % 4 == 0) { // HACK: Gets around textures not being deduped properly.
+					header_dest.write(entry);
+					texture.indices[table] = table_count;
+					table_count++;
+				} else {
+					texture.indices[table] = table_count - 1;
+				}
 			}
 		}
 		return ArrayRange {table_count, table_offset};
@@ -297,8 +305,24 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 		data_dest.write_multiple(shrub.model);
 	}
 	
+	header_dest.pad(0x10, 0);
+	header.moby_gs_stash_list = header_dest.tell();
+	header_dest.write<s16>(0x259);
+	header_dest.write<s16>(0x25f);
+	header_dest.write<s16>(0x260);
+	header_dest.write<s16>(0x261);
+	header_dest.write<s16>(0x50a);
+	header_dest.write<s16>(0xa73);
+	header_dest.write<s16>(0xb08);
+	header_dest.write<s16>(-1);
+	
+	// This comes last.
+	header_dest.pad(0x10, 0);
+	header.light_cuboids_offset = header_dest.tell();
+	header_dest.write_multiple(wad.light_cuboids);
 	
 	header.scene_view_size = 0x1321540;
+	header.moby_gs_stash_count = 8;
 	
 	compress_wad(compressed_data_dest, data_vec, 8);
 	header.assets_decompressed_size = data_vec.size();

@@ -186,7 +186,7 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			read_classes(wad, src_dir);
 			Json tfrag_textures_json = Json::parse(read_file(src_dir/std::string(json["tfrag_textures"])));
 			wad.tfrag_textures = read_textures_json(src_dir, tfrag_textures_json["textures"]);
-			wad.ratchet_seqs = read_file(src_dir/std::string(json["ratchet_seqs"]));
+			wad.light_cuboids = read_file(src_dir/std::string(json["light_cuboids"]));
 			if(game != Game::DL) {
 				wad.transition_textures = read_file(src_dir/std::string(json["transition_textures"]));
 			}
@@ -376,7 +376,7 @@ void write_wad_json(fs::path dest_dir, Wad* base) {
 			}
 			json["tfrag_textures"] = write_file(dest_dir, "tfrag_textures.json", tfrag_textures_json.dump(1, '\t'));
 			write_classes(json, dest_dir, wad);
-			json["ratchet_seqs"] = write_file(dest_dir, "ratchet_seqs.bin", wad.ratchet_seqs);
+			json["light_cuboids"] = write_file(dest_dir, "light_cuboids.bin", wad.light_cuboids);
 			if(wad.transition_textures.has_value()) {
 				json["transition_textures"] = write_file(dest_dir, "transition_textures.bin", *wad.transition_textures);
 			}

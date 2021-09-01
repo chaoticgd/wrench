@@ -875,7 +875,7 @@ struct LevelWad : Wad {
 	std::unordered_map<s32, MobyClass> moby_classes;
 	std::unordered_map<s32, TieClass> tie_classes;
 	std::unordered_map<s32, ShrubClass> shrub_classes;
-	std::vector<u8> ratchet_seqs;
+	std::vector<u8> light_cuboids;
 	Opt<std::vector<u8>> transition_textures;
 	Opt<std::vector<u8>> moby8355_pvars;
 	Opt<std::vector<u8>> global_nav_data;
