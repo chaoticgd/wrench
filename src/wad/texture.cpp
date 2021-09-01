@@ -21,7 +21,7 @@
 std::vector<PalettedTexture> write_nonshared_textures(OutBuffer data, const std::vector<Texture>& src);
 static Texture paletted_texture_to_full_colour(Buffer data, Buffer palette, s32 width, s32 height);
 static u8 decode_palette_index(u8 index);
-static std::optional<std::array<u8, 256>> palette_subset_of(Palette& subset, Palette& superset);
+static std::optional<std::array<u8, 256>> attempt_merge_palettes(Palette& subset, Palette& superset);
 
 std::vector<Texture> read_tfrag_textures(BufferArray<TextureEntry> texture_table, Buffer data, Buffer gs_ram) {
 	std::vector<Texture> textures;
@@ -89,7 +89,7 @@ std::vector<Texture> read_fx_textures(BufferArray<FXTextureEntry> texture_table,
 	return textures;
 }
 
-ArrayRange write_fx_textures(OutBuffer header, OutBuffer data, const std::vector<Texture>& src) {
+ArrayRange write_fx_textures(OutBuffer header, OutBuffer data, const std::vector<Texture>& src) {return {};
 	s64 fx_base = data.tell();
 	std::vector<PalettedTexture> textures = write_nonshared_textures(data, src);
 	ArrayRange range;
@@ -261,7 +261,7 @@ void deduplicate_palettes(std::vector<PalettedTexture>& textures) {
 			if(subtex.palette.top >= supertex.palette.top && subset < superset) {
 				continue;
 			}
-			auto mapping = palette_subset_of(subtex.palette, textures[superset].palette);
+			auto mapping = attempt_merge_palettes(subtex.palette, textures[superset].palette);
 			if(mapping.has_value()) {
 				subtex.palette_out_edge = superset;
 				for(u8& pixel : subtex.data) {
@@ -272,8 +272,10 @@ void deduplicate_palettes(std::vector<PalettedTexture>& textures) {
 	}
 }
 
-static std::optional<std::array<u8, 256>> palette_subset_of(Palette& subset, Palette& superset) {
+static std::optional<std::array<u8, 256>> attempt_merge_palettes(Palette& subset, Palette& superset) {
 	std::array<u8, 256> mapping = {0};
+	static std::vector<u32> missing_colours(256);
+	missing_colours.clear();
 	for(s32 i = 0; i < subset.top; i++) {
 		bool found_colour = false;
 		for(s32 j = 0; j < 256; j++) {
@@ -284,10 +286,17 @@ static std::optional<std::array<u8, 256>> palette_subset_of(Palette& subset, Pal
 			}
 		}
 		if(!found_colour) {
-			return {};
+			mapping[i] = superset.top + missing_colours.size();
+			missing_colours.push_back(subset.colours[i]);
 		}
 	}
-	return mapping;
+	if(missing_colours.size() < 256 - superset.top) {
+		memcpy(&superset.colours[superset.top], missing_colours.data(), missing_colours.size() * 4);
+		superset.top += missing_colours.size();
+		return mapping;
+	} else {
+		return {};
+	}
 }
 
 void encode_palette_indices(std::vector<PalettedTexture>& textures) {
