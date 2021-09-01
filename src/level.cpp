@@ -186,6 +186,10 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			read_classes(wad, src_dir);
 			Json tfrag_textures_json = Json::parse(read_file(src_dir/std::string(json["tfrag_textures"])));
 			wad.tfrag_textures = read_textures_json(src_dir, tfrag_textures_json["textures"]);
+			Json particle_textures_json = Json::parse(read_file(src_dir/std::string(json["particle_textures"])));
+			wad.particle_textures = read_textures_json(src_dir, particle_textures_json["textures"]);
+			Json fx_textures_json = Json::parse(read_file(src_dir/std::string(json["fx_textures"])));
+			wad.fx_textures = read_textures_json(src_dir, fx_textures_json["textures"]);
 			wad.light_cuboids = read_file(src_dir/std::string(json["light_cuboids"]));
 			if(game != Game::DL) {
 				wad.transition_textures = read_file(src_dir/std::string(json["transition_textures"]));

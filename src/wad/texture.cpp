@@ -18,6 +18,7 @@
 
 #include "texture.h"
 
+std::vector<PalettedTexture> write_nonshared_textures(OutBuffer data, const std::vector<Texture>& src);
 static Texture paletted_texture_to_full_colour(Buffer data, Buffer palette, s32 width, s32 height);
 static u8 decode_palette_index(u8 index);
 static std::optional<std::array<u8, 256>> palette_subset_of(Palette& subset, Palette& superset);
@@ -56,12 +57,79 @@ std::vector<Texture> read_particle_textures(BufferArray<ParticleTextureEntry> te
 	return textures;
 }
 
+ArrayRange write_particle_textures(OutBuffer header, OutBuffer data, const std::vector<Texture>& src) {
+	s64 particle_base = data.tell();
+	std::vector<PalettedTexture> textures = write_nonshared_textures(data, src);
+	ArrayRange range;
+	range.count = textures.size();
+	range.offset = header.tell();
+	for(PalettedTexture& texture : textures) {
+		PalettedTexture& palette_texture = texture;
+		while(palette_texture.palette_out_edge > -1) {
+			palette_texture = textures[palette_texture.palette_out_edge];
+		}
+		
+		ParticleTextureEntry entry;
+		entry.palette = palette_texture.palette_offset - particle_base;
+		entry.unknown_4 = 0;
+		entry.texture = texture.texture_offset - particle_base;
+		entry.side = texture.width;
+		header.write(entry);
+	}
+	return range;
+}
+
 std::vector<Texture> read_fx_textures(BufferArray<FXTextureEntry> texture_table, Buffer data) {
 	std::vector<Texture> textures;
 	for(const FXTextureEntry& entry : texture_table) {
 		Buffer palette = data.subbuf(entry.palette);
 		Buffer texture = data.subbuf(entry.texture);
 		textures.emplace_back(paletted_texture_to_full_colour(texture, palette, entry.width, entry.height));
+	}
+	return textures;
+}
+
+ArrayRange write_fx_textures(OutBuffer header, OutBuffer data, const std::vector<Texture>& src) {
+	s64 fx_base = data.tell();
+	std::vector<PalettedTexture> textures = write_nonshared_textures(data, src);
+	ArrayRange range;
+	range.count = textures.size();
+	range.offset = header.tell();
+	for(PalettedTexture& texture : textures) {
+		PalettedTexture& palette_texture = texture;
+		while(palette_texture.palette_out_edge > -1) {
+			palette_texture = textures[palette_texture.palette_out_edge];
+		}
+		
+		FXTextureEntry entry;
+		entry.palette = palette_texture.palette_offset - fx_base;
+		entry.texture = texture.texture_offset - fx_base;
+		entry.width = texture.width;
+		entry.height = texture.height;
+		header.write(entry);
+	}
+	return range;
+}
+
+std::vector<PalettedTexture> write_nonshared_textures(OutBuffer data, const std::vector<Texture>& src) {
+	std::vector<PalettedTexture> textures;
+	textures.reserve(src.size());
+	for(const Texture& texture : src) {
+		textures.emplace_back(find_suboptimal_palette(texture));
+	}
+	deduplicate_palettes(textures);
+	for(PalettedTexture& texture : textures) {
+		assert(texture.texture_out_edge == -1 || textures[texture.texture_out_edge].texture_out_edge == -1);
+	}
+	encode_palette_indices(textures);
+	
+	int palettecount = 0;
+	for(PalettedTexture& texture : textures) {
+		if(texture.palette_out_edge == -1) {
+			palettecount++;
+			texture.palette_offset = data.write_multiple(texture.palette.colours);
+		}
+		texture.texture_offset = data.write_multiple(texture.data);
 	}
 	return textures;
 }

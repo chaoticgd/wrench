@@ -178,11 +178,9 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 	}
 	deduplicate_textures(paletted_textures);
 	deduplicate_palettes(paletted_textures);
-	
 	for(PalettedTexture& texture : paletted_textures) {
 		assert(texture.texture_out_edge == -1 || paletted_textures[texture.texture_out_edge].texture_out_edge == -1);
 	}
-	
 	encode_palette_indices(paletted_textures);
 	
 	std::vector<GsRamEntry> gs_ram_table;
@@ -240,6 +238,20 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 	header.moby_textures = write_texture_table(MOBY_TEXTURE_INDEX, layout.mobies_begin, layout.ties_begin);
 	header.tie_textures = write_texture_table(TIE_TEXTURE_INDEX, layout.ties_begin, layout.shrubs_begin);
 	header.shrub_textures = write_texture_table(SHRUB_TEXTURE_INDEX, layout.shrubs_begin, paletted_textures.size());
+	
+	while(header_dest.vec.size() < 0x51d0) {
+		header_dest.write<u8>(0);
+	}
+	while(data_dest.vec.size() < 0xaea100) {
+		data_dest.write<u8>(0);
+	}
+	data_dest.pad(0x100, 0);
+	header.part_bank_offset = data_dest.tell();
+	header.part_textures = write_particle_textures(header_dest, data_dest, wad.particle_textures);
+	data_dest.pad(0x100, 0);
+	header.fx_bank_offset = data_dest.tell();
+	header.fx_textures = write_fx_textures(header_dest, data_dest, wad.fx_textures);
+	
 	
 	header.gs_ram.count = gs_ram_table.size();
 	header.gs_ram.offset = header_dest.tell();

@@ -104,6 +104,11 @@ packed_struct(ByteRange,
 	s32 size;
 )
 
+packed_struct(ArrayRange,
+	s32 count;
+	s32 offset;
+)
+
 packed_struct(Sector32,
 	s32 sectors;
 	Sector32() : sectors(0) {}

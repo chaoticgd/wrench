@@ -21,11 +21,6 @@
 
 #include "../level.h"
 
-packed_struct(ArrayRange,
-	s32 count;
-	s32 offset;
-)
-
 packed_struct(AssetHeader,
 	/* 0x00 */ ArrayRange gs_ram;
 	/* 0x08 */ s32 tfrags;
