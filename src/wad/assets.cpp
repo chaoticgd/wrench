@@ -88,8 +88,8 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 	auto moby_textures = asset_header.read_multiple<TextureEntry>(header.moby_textures.offset, header.moby_textures.count, "moby texture table");
 	auto tie_textures = asset_header.read_multiple<TextureEntry>(header.tie_textures.offset, header.tie_textures.count, "tie texture table");
 	auto shrub_textures = asset_header.read_multiple<TextureEntry>(header.shrub_textures.offset, header.shrub_textures.count, "shrub texture table");
-	auto part_textures = asset_header.read_multiple<TextureEntry>(header.part_textures.offset, header.part_textures.count, "part texture table");
-	auto fx_textures = asset_header.read_multiple<TextureEntry>(header.fx_textures.offset, header.fx_textures.count, "fx texture table");
+	auto particle_textures = asset_header.read_multiple<ParticleTextureEntry>(header.part_textures.offset, header.part_textures.count, "particle texture table");
+	auto fx_textures = asset_header.read_multiple<FXTextureEntry>(header.fx_textures.offset, header.fx_textures.count, "fx texture table");
 	
 	Buffer texture_data = assets.subbuf(header.textures_base_offset);
 	
@@ -123,6 +123,12 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 		shrub.textures = read_instance_textures(shrub_textures, shrub_classes[i].textures, texture_data, gs_ram);
 		wad.shrub_classes.emplace(shrub_classes[i].o_class, shrub);
 	}
+	
+	Buffer particle_data = assets.subbuf(header.part_bank_offset);
+	wad.particle_textures = read_particle_textures(particle_textures, particle_data, gs_ram);
+	
+	Buffer fx_data = assets.subbuf(header.fx_bank_offset);
+	wad.fx_textures = read_fx_textures(fx_textures, fx_data);
 	
 	if(header.light_cuboids_offset != 0) {
 		wad.light_cuboids = asset_header.read_bytes(header.light_cuboids_offset, 1024, "light cuboids");

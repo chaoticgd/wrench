@@ -327,6 +327,7 @@ static std::string write_json_object_file(fs::path dest_dir, const char* file_na
 }
 
 static void write_classes(Json& json, fs::path dest_dir, const LevelWad& wad);
+static Json write_textures_json(fs::path dest_dir, fs::path sub_dir, const std::vector<Texture>& textures);
 
 void write_wad_json(fs::path dest_dir, Wad* base) {
 	const char* json_file_name = nullptr;
@@ -364,17 +365,12 @@ void write_wad_json(fs::path dest_dir, Wad* base) {
 			json["sky"] = write_file(dest_dir, "sky.bin", wad.sky);
 			json["collision"] = write_file(dest_dir, "collision.dae", write_dae(mesh_to_dae(wad.collision)));
 			json["collision_bin"] = write_file(dest_dir, "collision.bin", wad.collision_bin);
-			fs::create_directory(dest_dir/std::string("tfrag_textures"));
-			Json tfrag_textures_json;
-			tfrag_textures_json["textures"] = Json::array();
-			for(size_t i = 0; i < wad.tfrag_textures.size(); i++) {
-				fs::path rel_path = fs::path("tfrag_textures")/(std::to_string(i) + ".png");
-				std::string path = (dest_dir/rel_path).string();
-				Texture& texture = wad.tfrag_textures[i];
-				stbi_write_png(path.c_str(), texture.width, texture.height, 4, texture.data.data(), texture.width * 4);
-				tfrag_textures_json["textures"].push_back(rel_path);
-			}
+			Json tfrag_textures_json = write_textures_json(dest_dir, "tfrag_textures", wad.tfrag_textures);
 			json["tfrag_textures"] = write_file(dest_dir, "tfrag_textures.json", tfrag_textures_json.dump(1, '\t'));
+			Json particle_textures_json = write_textures_json(dest_dir, "particle_textures", wad.particle_textures);
+			json["particle_textures"] = write_file(dest_dir, "particle_textures.json", particle_textures_json.dump(1, '\t'));
+			Json fs_textures_json = write_textures_json(dest_dir, "fx_textures", wad.fx_textures);
+			json["fx_textures"] = write_file(dest_dir, "fx_textures.json", fs_textures_json.dump(1, '\t'));
 			write_classes(json, dest_dir, wad);
 			json["light_cuboids"] = write_file(dest_dir, "light_cuboids.bin", wad.light_cuboids);
 			if(wad.transition_textures.has_value()) {
@@ -503,6 +499,20 @@ static void write_classes(Json& json, fs::path dest_dir, const LevelWad& wad) {
 		}
 		write_file(shrub_dir, "shrub.json", shrub_json.dump(1, '\t'));
 	}
+}
+
+static Json write_textures_json(fs::path dest_dir, fs::path sub_dir, const std::vector<Texture>& textures) {
+	fs::create_directory(dest_dir/sub_dir);
+	Json json;
+	json["textures"] = Json::array();
+	for(size_t i = 0; i < textures.size(); i++) {
+		fs::path rel_path = sub_dir/(std::to_string(i) + ".png");
+		std::string path = (dest_dir/rel_path).string();
+		const Texture& texture = textures[i];
+		stbi_write_png(path.c_str(), texture.width, texture.height, 4, texture.data.data(), texture.width * 4);
+		json["textures"].push_back(rel_path);
+	}
+	return json;
 }
 
 std::string pvar_descriptor_to_string(PvarFieldDescriptor descriptor) {

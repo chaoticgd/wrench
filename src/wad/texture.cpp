@@ -19,6 +19,7 @@
 #include "texture.h"
 
 static Texture paletted_texture_to_full_colour(Buffer data, Buffer palette, s32 width, s32 height);
+static Texture read_full_colour_texture(Buffer data, s32 width, s32 height);
 static u8 decode_palette_index(u8 index);
 static std::optional<std::array<u8, 256>> palette_subset_of(Palette& subset, Palette& superset);
 
@@ -46,6 +47,26 @@ std::vector<Texture> read_instance_textures(BufferArray<TextureEntry> texture_ta
 	return textures;
 }
 
+std::vector<Texture> read_particle_textures(BufferArray<ParticleTextureEntry> texture_table, Buffer data, Buffer gs_ram) {
+	std::vector<Texture> textures;
+	for(const ParticleTextureEntry& entry : texture_table) {
+		Buffer texture = data.subbuf(entry.data);
+		Buffer palette = gs_ram.subbuf(entry.palette);
+		textures.emplace_back(read_full_colour_texture(texture, entry.side, entry.side));
+	}
+	return textures;
+}
+
+std::vector<Texture> read_fx_textures(BufferArray<FXTextureEntry> texture_table, Buffer data) {
+	std::vector<Texture> textures;
+	for(const FXTextureEntry& entry : texture_table) {
+		Buffer palette = data.subbuf(entry.palette);
+		Buffer texture = data.subbuf(entry.texture);
+		textures.emplace_back(paletted_texture_to_full_colour(texture, palette, entry.width, entry.height));
+	}
+	return textures;
+}
+
 static Texture paletted_texture_to_full_colour(Buffer data, Buffer palette, s32 width, s32 height) {
 	Texture texture;
 	texture.width = width;
@@ -57,6 +78,14 @@ static Texture paletted_texture_to_full_colour(Buffer data, Buffer palette, s32 
 		alpha = std::min(alpha * 2, 0xffu);
 		texture.data[i] = (texture.data[i] & 0x00ffffff) | (alpha << 24);
 	}
+	return texture;
+}
+
+static Texture read_full_colour_texture(Buffer data, s32 width, s32 height) {
+	Texture texture;
+	texture.width = width;
+	texture.height = height;
+	texture.data = data.read_multiple<u32>(0, width * height, "texture").copy();
 	return texture;
 }
 

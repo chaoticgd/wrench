@@ -872,6 +872,8 @@ struct LevelWad : Wad {
 	Mesh collision;
 	std::vector<u8> collision_bin;
 	std::vector<Texture> tfrag_textures;
+	std::vector<Texture> particle_textures;
+	std::vector<Texture> fx_textures;
 	std::unordered_map<s32, MobyClass> moby_classes;
 	std::unordered_map<s32, TieClass> tie_classes;
 	std::unordered_map<s32, ShrubClass> shrub_classes;
