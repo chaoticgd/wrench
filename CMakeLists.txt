@@ -118,6 +118,7 @@ add_executable(wad
 	src/wad/wad_file.cpp
 	src/wad/gameplay.cpp
 	src/wad/primary.cpp
+	src/wad/assets.cpp
 	src/wad/collision.cpp
 	src/wad/texture.cpp
 	src/wad/tests.cpp
