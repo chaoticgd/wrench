@@ -40,9 +40,9 @@ packed_struct(TextureEntry,
 )
 
 packed_struct(ParticleTextureEntry,
-	/* 0x0 */ s32 data;
+	/* 0x0 */ s32 palette;
 	/* 0x4 */ s32 unknown_4;
-	/* 0x8 */ s32 palette;
+	/* 0x8 */ s32 texture;
 	/* 0xc */ s32 side;
 )
 
@@ -91,7 +91,7 @@ struct FlattenedTextureLayout {
 // See write_assets in primary.cpp for usage.
 std::vector<Texture> read_tfrag_textures(BufferArray<TextureEntry> texture_table, Buffer data, Buffer gs_ram);
 std::vector<Texture> read_instance_textures(BufferArray<TextureEntry> texture_table, const u8 indices[16], Buffer data, Buffer gs_ram);
-std::vector<Texture> read_particle_textures(BufferArray<ParticleTextureEntry> texture_table, Buffer data, Buffer gs_ram);
+std::vector<Texture> read_particle_textures(BufferArray<ParticleTextureEntry> texture_table, Buffer data);
 std::vector<Texture> read_fx_textures(BufferArray<FXTextureEntry> texture_table, Buffer data);
 std::pair<std::vector<const Texture*>, FlattenedTextureLayout> flatten_textures(const LevelWad& wad);
 PalettedTexture find_suboptimal_palette(const Texture& src);

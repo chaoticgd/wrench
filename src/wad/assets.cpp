@@ -125,7 +125,7 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 	}
 	
 	Buffer particle_data = assets.subbuf(header.part_bank_offset);
-	wad.particle_textures = read_particle_textures(particle_textures, particle_data, gs_ram);
+	wad.particle_textures = read_particle_textures(particle_textures, particle_data);
 	
 	Buffer fx_data = assets.subbuf(header.fx_bank_offset);
 	wad.fx_textures = read_fx_textures(fx_textures, fx_data);
