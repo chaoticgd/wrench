@@ -254,7 +254,6 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 	header.fx_bank_offset = data_dest.tell();
 	header.fx_textures = write_fx_textures(header_dest, data_dest, wad.fx_textures);
 	
-	
 	header.gs_ram.count = gs_ram_table.size();
 	header.gs_ram.offset = header_dest.tell();
 	header_dest.write_multiple(gs_ram_table);
@@ -353,6 +352,9 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 	
 	header.scene_view_size = 0x1321540;
 	header.moby_gs_stash_count = 8;
+	
+	header.glass_map_texture = 0x4000;
+	header.glass_map_palette = 0x400;
 	
 	compress_wad(compressed_data_dest, data_vec, 8);
 	header.assets_decompressed_size = data_vec.size();

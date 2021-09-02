@@ -89,7 +89,7 @@ std::vector<Texture> read_fx_textures(BufferArray<FXTextureEntry> texture_table,
 	return textures;
 }
 
-ArrayRange write_fx_textures(OutBuffer header, OutBuffer data, const std::vector<Texture>& src) {return {};
+ArrayRange write_fx_textures(OutBuffer header, OutBuffer data, const std::vector<Texture>& src) {
 	s64 fx_base = data.tell();
 	std::vector<PalettedTexture> textures = write_nonshared_textures(data, src);
 	ArrayRange range;
@@ -246,7 +246,7 @@ void deduplicate_palettes(std::vector<PalettedTexture>& textures) {
 				continue;
 			}
 			PalettedTexture& supertex = textures[superset];
-			if(!supertex.is_first_occurence) {
+			if(!supertex.is_first_occurence || subtex.palette_out_edge != -1) {
 				continue;
 			}
 			// If a palette A has more colours than a palette B, then A cannot
