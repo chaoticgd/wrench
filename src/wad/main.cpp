@@ -19,6 +19,7 @@
 #include <fstream>
 
 #include "../util.h"
+#include "../timer.h"
 #include "tests.h"
 #include "wad_file.h"
 
@@ -51,17 +52,23 @@ int main(int argc, char** argv) {
 }
 
 static void extract(fs::path input_path, fs::path output_path) {
+	start_timer("Extract WAD");
 	FILE* wad_file = fopen(input_path.string().c_str(), "rb");
 	verify(wad_file, "Failed to open input file.");
 	std::unique_ptr<Wad> wad = read_wad(wad_file);
 	write_wad_json(output_path, wad.get());
 	fclose(wad_file);
+	stop_timer();
 }
 
 static void build(fs::path input_path, fs::path output_path) {
+	start_timer("Building WAD");
+	start_timer("Collecting files");
 	std::unique_ptr<Wad> wad = read_wad_json(input_path);
+	stop_timer();
 	FILE* wad_file = fopen(output_path.string().c_str(), "wb");
 	verify(wad_file, "Failed to open output file for writing.");
 	write_wad(wad_file, wad.get());
 	fclose(wad_file);
+	stop_timer();
 }

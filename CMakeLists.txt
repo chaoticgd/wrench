@@ -115,6 +115,7 @@ add_executable(wad
 	src/util.cpp
 	src/mesh.cpp
 	src/collada.cpp
+	src/timer.cpp
 	src/wad/wad_file.cpp
 	src/wad/gameplay.cpp
 	src/wad/primary.cpp

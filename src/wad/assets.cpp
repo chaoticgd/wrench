@@ -21,6 +21,7 @@
 #include "collision.h"
 #include "texture.h"
 #include "../lz/compression.h"
+#include "../timer.h"
 
 packed_struct(MobyClassEntry,
 	s32 offset_in_asset_wad;
@@ -170,6 +171,8 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 	header.tie_classes.offset = header_dest.alloc_multiple<TieClassEntry>(header.tie_classes.count);
 	header.shrub_classes.offset = header_dest.alloc_multiple<ShrubClassEntry>(header.shrub_classes.count);
 	
+	start_timer("Deduplicating textures");
+	
 	// Deduplicate textures.
 	auto [texture_pointers, layout] = flatten_textures(wad);
 	std::vector<PalettedTexture> paletted_textures;
@@ -253,6 +256,8 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 	data_dest.pad(0x100, 0);
 	header.fx_bank_offset = data_dest.tell();
 	header.fx_textures = write_fx_textures(header_dest, data_dest, wad.fx_textures);
+	
+	stop_timer();
 	
 	header.gs_ram.count = gs_ram_table.size();
 	header.gs_ram.offset = header_dest.tell();
