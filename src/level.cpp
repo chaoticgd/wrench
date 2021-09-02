@@ -190,6 +190,8 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			wad.particle_textures = read_textures_json(src_dir, particle_textures_json["textures"]);
 			Json fx_textures_json = Json::parse(read_file(src_dir/std::string(json["fx_textures"])));
 			wad.fx_textures = read_textures_json(src_dir, fx_textures_json["textures"]);
+			wad.particle_defs = read_file(src_dir/std::string(json["particle_defs"]));
+			wad.sound_remap = read_file(src_dir/std::string(json["sound_remap"]));
 			wad.light_cuboids = read_file(src_dir/std::string(json["light_cuboids"]));
 			if(game != Game::DL) {
 				wad.transition_textures = read_file(src_dir/std::string(json["transition_textures"]));
@@ -376,6 +378,8 @@ void write_wad_json(fs::path dest_dir, Wad* base) {
 			Json fs_textures_json = write_textures_json(dest_dir, "fx_textures", wad.fx_textures);
 			json["fx_textures"] = write_file(dest_dir, "fx_textures.json", fs_textures_json.dump(1, '\t'));
 			write_classes(json, dest_dir, wad);
+			json["particle_defs"] = write_file(dest_dir, "particle_defs.bin", wad.particle_defs);
+			json["sound_remap"] = write_file(dest_dir, "sound_remap.bin", wad.sound_remap);
 			json["light_cuboids"] = write_file(dest_dir, "light_cuboids.bin", wad.light_cuboids);
 			if(wad.transition_textures.has_value()) {
 				json["transition_textures"] = write_file(dest_dir, "transition_textures.bin", *wad.transition_textures);

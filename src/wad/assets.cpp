@@ -130,6 +130,8 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 	Buffer fx_data = assets.subbuf(header.fx_bank_offset);
 	wad.fx_textures = read_fx_textures(fx_textures, fx_data);
 	
+	wad.particle_defs = asset_header.read_bytes(header.part_defs_offset, header.sound_remap_offset - header.part_defs_offset, "particle defs");
+	wad.sound_remap = asset_header.read_bytes(header.sound_remap_offset, header.moby_gs_stash_list - header.sound_remap_offset, "sound remap");
 	if(header.light_cuboids_offset != 0) {
 		wad.light_cuboids = asset_header.read_bytes(header.light_cuboids_offset, 1024, "light cuboids");
 	}
@@ -323,6 +325,17 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 		data_dest.write_multiple(shrub.model);
 	}
 	
+	while(header_dest.vec.size() < 0x7b90) {
+		header_dest.write<u8>(0);
+	}
+	header_dest.pad(0x10, 0);
+	header.part_defs_offset = header_dest.tell();
+	header_dest.write_multiple(wad.particle_defs);
+	
+	header_dest.pad(0x10, 0);
+	header.sound_remap_offset = header_dest.tell();
+	header_dest.write_multiple(wad.sound_remap);
+	
 	header_dest.pad(0x10, 0);
 	header.moby_gs_stash_list = header_dest.tell();
 	header_dest.write<s16>(0x259);
@@ -334,7 +347,6 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 	header_dest.write<s16>(0xb08);
 	header_dest.write<s16>(-1);
 	
-	// This comes last.
 	header_dest.pad(0x10, 0);
 	header.light_cuboids_offset = header_dest.tell();
 	header_dest.write_multiple(wad.light_cuboids);
