@@ -336,6 +336,8 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 	header.part_defs_offset = header_dest.tell();
 	header_dest.write_multiple(wad.particle_defs);
 	
+	header.assets_base_address = 0x8a3700;
+	
 	header_dest.pad(0x10, 0);
 	header.sound_remap_offset = header_dest.tell();
 	header_dest.write_multiple(wad.sound_remap);
