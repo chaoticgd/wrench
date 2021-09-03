@@ -263,8 +263,29 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 	header.gs_ram.offset = header_dest.tell();
 	header_dest.write_multiple(gs_ram_table);
 	
+	auto write_texture_list = [&](u8 dest[16], const std::vector<Texture>& textures, s32 o_class, s32 table, size_t first_index) {
+		verify(textures.size() < 16, "error: Class %d has too many textures.\n", o_class);
+		for(s32 j = 0; j < textures.size(); j++) {
+			PalettedTexture& texture = paletted_textures.at(first_index + j);
+			if(texture.texture_out_edge > -1) {
+				texture = paletted_textures[texture.texture_out_edge];
+			}
+			assert(texture.is_first_occurence);
+			assert(texture.texture_out_edge == -1);
+			assert(texture.indices[table].has_value());
+			verify(*texture.indices[table] < 0xff,
+				"Too many textures (%d, should be at most 254).\n",
+				texture.indices[table]);
+			dest[j] = *texture.indices[table];
+		}
+		for(s32 j = textures.size(); j < 16; j++) {
+			dest[j] = 0xff;
+		}
+	};
+	
 	// Write classes.
-	size_t i = 0, class_index = 0;
+	size_t i = 0;
+	size_t class_index = 0;
 	for(const auto& [number, moby] : wad.moby_classes) {
 		if(!moby.has_asset_table_entry) {
 			continue;
@@ -275,24 +296,7 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 		if(moby.model.has_value()) {
 			data_dest.pad(0x40);
 			entry.offset_in_asset_wad = data_dest.tell();
-			verify(moby.textures.size() < 16, "error: Moby %d has too many textures.\n", number);
-			for(s32 j = 0; j < moby.textures.size(); j++) {
-				PalettedTexture& texture = paletted_textures.at(layout.mobies_begin + class_index + j);
-				if(texture.texture_out_edge > -1) {
-					texture = paletted_textures[texture.texture_out_edge];
-				}
-				assert(texture.is_first_occurence);
-				assert(texture.texture_out_edge == -1);
-				assert(texture.indices[MOBY_TEXTURE_INDEX].has_value());
-				//verify(*texture.indices[MOBY_TEXTURE_INDEX] < 0xff,
-				//	"Too many moby textures (%d, should be at most 254).\n",
-				//	texture.indices[MOBY_TEXTURE_INDEX]);
-				if(texture.indices[MOBY_TEXTURE_INDEX]>=255)entry.textures[j]=0;else
-				entry.textures[j] = *texture.indices[MOBY_TEXTURE_INDEX];
-			}
-			for(s32 j = moby.textures.size(); j < 16; j++) {
-				entry.textures[j] = 0xff;
-			}
+			write_texture_list(entry.textures, moby.textures, number, MOBY_TEXTURE_INDEX, layout.mobies_begin + class_index);
 			class_index += moby.textures.size();
 			data_dest.write_multiple(*moby.model);
 		} else {
@@ -304,27 +308,27 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 	}
 	
 	i = 0;
+	class_index = 0;
 	for(const auto& [number, tie] : wad.tie_classes) {
 		TieClassEntry entry = {0};
 		entry.o_class = number;
 		data_dest.pad(0x40);
 		entry.offset_in_asset_wad = data_dest.tell();
-		for(s32 j = 0; j < 16; j++) {
-			entry.textures[j] = 0xff;
-		}
+		write_texture_list(entry.textures, tie.textures, number, TIE_TEXTURE_INDEX, layout.ties_begin + class_index);
+		class_index += tie.textures.size();
 		header_dest.write(header.tie_classes.offset + (i++) * sizeof(TieClassEntry), entry);
 		data_dest.write_multiple(tie.model);
 	}
 	
 	i = 0;
+	class_index = 0;
 	for(const auto& [number, shrub] : wad.shrub_classes) {
 		ShrubClassEntry entry = {0};
 		entry.o_class = number;
 		data_dest.pad(0x40);
 		entry.offset_in_asset_wad = data_dest.tell();
-		for(s32 j = 0; j < 16; j++) {
-			entry.textures[j] = 0xff;
-		}
+		write_texture_list(entry.textures, shrub.textures, number, SHRUB_TEXTURE_INDEX, layout.shrubs_begin + class_index);
+		class_index += shrub.textures.size();
 		header_dest.write(header.shrub_classes.offset + (i++) * sizeof(ShrubClassEntry), entry);
 		data_dest.write_multiple(shrub.model);
 	}
