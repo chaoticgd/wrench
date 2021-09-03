@@ -274,7 +274,7 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 			assert(texture.texture_out_edge == -1);
 			assert(texture.indices[table].has_value());
 			verify(*texture.indices[table] < 0xff,
-				"Too many textures (%d, should be at most 254).\n",
+				"Too many textures (%d, should be at most 255).\n",
 				texture.indices[table]);
 			dest[j] = *texture.indices[table];
 		}
