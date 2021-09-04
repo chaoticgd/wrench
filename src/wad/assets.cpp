@@ -204,6 +204,10 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 	
 	std::vector<GsRamEntry> gs_ram_table;
 	
+	std::vector<u8> mipmap(256*4);
+	gs_ram.write_multiple(mipmap);
+	gs_ram_table.push_back({0x13, 0x20, 0x20, 0, 0});
+	
 	data_dest.pad(0x40);
 	header.textures_base_offset = data_dest.tell();
 	for(PalettedTexture& texture : paletted_textures) {
@@ -212,7 +216,7 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 			if(texture.palette_out_edge == -1) {
 				gs_ram.pad(0x100, 0);
 				texture.palette_offset = gs_ram.write_multiple(texture.palette.colours);
-				gs_ram_table.push_back({0, 0, 0, texture.palette_offset / 0x100, texture.palette_offset / 0x100});
+				gs_ram_table.push_back({0, 0, 0, texture.palette_offset, texture.palette_offset});
 			}
 		}
 	}
@@ -298,6 +302,9 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 	// Write classes.
 	size_t i = 0;
 	size_t class_index = 0;
+	while(data_dest.tell() < 0xb98a40) {
+		data_dest.write<u8>(0);
+	}
 	for(const MobyClass& cls : wad.moby_classes) {
 		if(!cls.has_asset_table_entry) {
 			continue;
@@ -345,12 +352,12 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 		data_dest.write_multiple(cls.model);
 	}
 	
-	//while(header_dest.vec.size() < 0x7b90) {
-	//	header_dest.write<u8>(0);
-	//}
-	//header_dest.pad(0x10, 0);
-	//header.part_defs_offset = header_dest.tell();
-	//header_dest.write_multiple(wad.particle_defs);
+	while(header_dest.vec.size() < 0x7b90) {
+		header_dest.write<u8>(0);
+	}
+	header_dest.pad(0x10, 0);
+	header.part_defs_offset = header_dest.tell();
+	header_dest.write_multiple(wad.particle_defs);
 	
 	header.assets_base_address = 0x8a3700;
 	
