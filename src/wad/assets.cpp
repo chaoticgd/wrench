@@ -98,31 +98,45 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 	
 	for(s64 i = 0; i < moby_classes.size(); i++) {
 		const MobyClassEntry& entry = moby_classes[i];
-		MobyClass& moby = wad.moby_classes[entry.o_class];
+		MobyClass* moby = nullptr;
+		for(MobyClass& cur : wad.moby_classes) {
+			if(cur.o_class == entry.o_class) {
+				moby = &cur;
+			}
+		}
+		if(moby == nullptr) {
+			MobyClass new_class;
+			new_class.o_class = entry.o_class;
+			wad.moby_classes.emplace_back(std::move(new_class));
+			moby = &wad.moby_classes.back();
+		}
+		
 		if(entry.offset_in_asset_wad != 0) {
 			s64 model_size = next_asset_block_size(entry.offset_in_asset_wad, block_bounds);
-			moby.model = assets.read_bytes(entry.offset_in_asset_wad, model_size, "moby model");
+			moby->model = assets.read_bytes(entry.offset_in_asset_wad, model_size, "moby model");
 		}
-		moby.textures = read_instance_textures(moby_textures, entry.textures, texture_data, gs_ram);
-		moby.has_asset_table_entry = true;
+		moby->textures = read_instance_textures(moby_textures, entry.textures, texture_data, gs_ram);
+		moby->has_asset_table_entry = true;
 	}
 	
 	for(s64 i = 0; i < tie_classes.size(); i++) {
 		verify(tie_classes[i].offset_in_asset_wad != 0, "Tie class %d has no model.", i);
 		TieClass tie;
+		tie.o_class = tie_classes[i].o_class;
 		s64 model_size = next_asset_block_size(tie_classes[i].offset_in_asset_wad, block_bounds);
 		tie.model = assets.read_bytes(tie_classes[i].offset_in_asset_wad, model_size, "tie model");
 		tie.textures = read_instance_textures(tie_textures, tie_classes[i].textures, texture_data, gs_ram);
-		wad.tie_classes.emplace(tie_classes[i].o_class, tie);
+		wad.tie_classes.emplace_back(std::move(tie));
 	}
 	
 	for(s64 i = 0; i < shrub_classes.size(); i++) {
 		verify(shrub_classes[i].offset_in_asset_wad != 0, "Shrub class %d has no model.", i);
 		ShrubClass shrub;
+		shrub.o_class = shrub_classes[i].o_class;
 		s64 model_size = next_asset_block_size(shrub_classes[i].offset_in_asset_wad, block_bounds);
 		shrub.model = assets.read_bytes(shrub_classes[i].offset_in_asset_wad, model_size, "shrub model");
 		shrub.textures = read_instance_textures(shrub_textures, shrub_classes[i].textures, texture_data, gs_ram);
-		wad.shrub_classes.emplace(shrub_classes[i].o_class, shrub);
+		wad.shrub_classes.emplace_back(std::move(shrub));
 	}
 	
 	Buffer particle_data = assets.subbuf(header.part_bank_offset);
@@ -159,7 +173,7 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 	// Allocate class tables.
 	header_dest.pad(0x40);
 	header.moby_classes.count = 0;
-	for(const auto& [number, moby] : wad.moby_classes) {
+	for(const MobyClass& moby : wad.moby_classes) {
 		if(!moby.has_asset_table_entry) {
 			continue;
 		}
@@ -284,19 +298,19 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 	// Write classes.
 	size_t i = 0;
 	size_t class_index = 0;
-	for(const auto& [number, moby] : wad.moby_classes) {
-		if(!moby.has_asset_table_entry) {
+	for(const MobyClass& cls : wad.moby_classes) {
+		if(!cls.has_asset_table_entry) {
 			continue;
 		}
 		
 		MobyClassEntry entry = {0};
-		entry.o_class = number;
-		if(moby.model.has_value()) {
+		entry.o_class = cls.o_class;
+		if(cls.model.has_value()) {
 			data_dest.pad(0x40);
 			entry.offset_in_asset_wad = data_dest.tell();
-			write_texture_list(entry.textures, moby.textures, number, MOBY_TEXTURE_INDEX, layout.mobies_begin + class_index);
-			class_index += moby.textures.size();
-			data_dest.write_multiple(*moby.model);
+			write_texture_list(entry.textures, cls.textures, cls.o_class, MOBY_TEXTURE_INDEX, layout.mobies_begin + class_index);
+			class_index += cls.textures.size();
+			data_dest.write_multiple(*cls.model);
 		} else {
 			for(s32 j = 0; j < 16; j++) {
 				entry.textures[j] = 0xff;
@@ -307,36 +321,36 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 	
 	i = 0;
 	class_index = 0;
-	for(const auto& [number, tie] : wad.tie_classes) {
+	for(const TieClass& cls : wad.tie_classes) {
 		TieClassEntry entry = {0};
-		entry.o_class = number;
+		entry.o_class = cls.o_class;
 		data_dest.pad(0x40);
 		entry.offset_in_asset_wad = data_dest.tell();
-		write_texture_list(entry.textures, tie.textures, number, TIE_TEXTURE_INDEX, layout.ties_begin + class_index);
-		class_index += tie.textures.size();
+		write_texture_list(entry.textures, cls.textures, cls.o_class, TIE_TEXTURE_INDEX, layout.ties_begin + class_index);
+		class_index += cls.textures.size();
 		header_dest.write(header.tie_classes.offset + (i++) * sizeof(TieClassEntry), entry);
-		data_dest.write_multiple(tie.model);
+		data_dest.write_multiple(cls.model);
 	}
 	
 	i = 0;
 	class_index = 0;
-	for(const auto& [number, shrub] : wad.shrub_classes) {
+	for(const ShrubClass& cls : wad.shrub_classes) {
 		ShrubClassEntry entry = {0};
-		entry.o_class = number;
+		entry.o_class = cls.o_class;
 		data_dest.pad(0x40);
 		entry.offset_in_asset_wad = data_dest.tell();
-		write_texture_list(entry.textures, shrub.textures, number, SHRUB_TEXTURE_INDEX, layout.shrubs_begin + class_index);
-		class_index += shrub.textures.size();
+		write_texture_list(entry.textures, cls.textures, cls.o_class, SHRUB_TEXTURE_INDEX, layout.shrubs_begin + class_index);
+		class_index += cls.textures.size();
 		header_dest.write(header.shrub_classes.offset + (i++) * sizeof(ShrubClassEntry), entry);
-		data_dest.write_multiple(shrub.model);
+		data_dest.write_multiple(cls.model);
 	}
 	
-	while(header_dest.vec.size() < 0x7b90) {
-		header_dest.write<u8>(0);
-	}
-	header_dest.pad(0x10, 0);
-	header.part_defs_offset = header_dest.tell();
-	header_dest.write_multiple(wad.particle_defs);
+	//while(header_dest.vec.size() < 0x7b90) {
+	//	header_dest.write<u8>(0);
+	//}
+	//header_dest.pad(0x10, 0);
+	//header.part_defs_offset = header_dest.tell();
+	//header_dest.write_multiple(wad.particle_defs);
 	
 	header.assets_base_address = 0x8a3700;
 	

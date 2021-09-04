@@ -843,8 +843,16 @@ static PvarType& get_pvar_type(s32 pvar_index, LevelWad& wad, Gameplay& dest) {
 	}
 	for(MobyInstance& inst : opt_iterator(dest.moby_instances)) {
 		if(inst.temp_pvar_index() == pvar_index) {
-			if(wad.moby_classes.find(inst.o_class) == wad.moby_classes.end()) {
-				wad.moby_classes[inst.o_class] = {};
+			bool class_exists = false;
+			for(MobyClass& cur : wad.moby_classes) {
+				if(cur.o_class == inst.o_class) {
+					class_exists = true;
+				}
+			}
+			if(!class_exists) {
+				MobyClass moby_class;
+				moby_class.o_class = inst.o_class;
+				wad.moby_classes.emplace_back(std::move(moby_class));
 			}
 			return wad.pvar_types[MobyClass::get_pvar_type(inst.o_class)];
 		}

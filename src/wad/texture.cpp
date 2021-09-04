@@ -157,20 +157,20 @@ std::pair<std::vector<const Texture*>, FlattenedTextureLayout> flatten_textures(
 		pointers.push_back(&texture);
 	}
 	layout.mobies_begin = pointers.size();
-	for(const auto& [number, moby_class] : wad.moby_classes) {
-		for(const Texture& texture : moby_class.textures) {
+	for(const MobyClass& cls : wad.moby_classes) {
+		for(const Texture& texture : cls.textures) {
 			pointers.push_back(&texture);
 		}
 	}
 	layout.ties_begin = pointers.size();
-	for(const auto& [number, tie_class] : wad.tie_classes) {
-		for(const Texture& texture : tie_class.textures) {
+	for(const TieClass& cls : wad.tie_classes) {
+		for(const Texture& texture : cls.textures) {
 			pointers.push_back(&texture);
 		}
 	}
 	layout.shrubs_begin = pointers.size();
-	for(const auto& [number, shrub_class] : wad.shrub_classes) {
-		for(const Texture& texture : shrub_class.textures) {
+	for(const ShrubClass& cls : wad.shrub_classes) {
+		for(const Texture& texture : cls.textures) {
 			pointers.push_back(&texture);
 		}
 	}

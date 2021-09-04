@@ -788,7 +788,11 @@ struct SoundClass {
 	void enumerate_fields(T& t) {}
 };
 
-struct MobyClass {
+struct Class {
+	s32 o_class;
+};
+
+struct MobyClass : Class {
 	Opt<std::vector<u8>> model;
 	std::vector<Texture> textures;
 	bool has_asset_table_entry = false;
@@ -796,12 +800,12 @@ struct MobyClass {
 	static std::string get_pvar_type(s32 o_class);
 };
 
-struct TieClass {
+struct TieClass : Class {
 	std::vector<u8> model;
 	std::vector<Texture> textures;
 };
 
-struct ShrubClass {
+struct ShrubClass : Class {
 	std::vector<u8> model;
 	std::vector<Texture> textures;
 };
@@ -874,9 +878,9 @@ struct LevelWad : Wad {
 	std::vector<Texture> tfrag_textures;
 	std::vector<Texture> particle_textures;
 	std::vector<Texture> fx_textures;
-	std::unordered_map<s32, MobyClass> moby_classes;
-	std::unordered_map<s32, TieClass> tie_classes;
-	std::unordered_map<s32, ShrubClass> shrub_classes;
+	std::vector<MobyClass> moby_classes;
+	std::vector<TieClass> tie_classes;
+	std::vector<ShrubClass> shrub_classes;
 	std::vector<u8> particle_defs;
 	std::vector<u8> sound_remap;
 	std::vector<u8> light_cuboids;

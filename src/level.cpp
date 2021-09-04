@@ -257,12 +257,13 @@ static void read_classes(LevelWad& wad, fs::path project_dir) {
 		fs::path moby_dir = project_dir/std::string("mobies")/std::to_string(o_class);
 		Json moby_json = Json::parse(read_file(moby_dir/std::string("moby.json")));
 		MobyClass moby;
+		moby.o_class = moby_json["class"].get<s32>();
 		if(moby_json.contains("model")) {
 			moby.model = read_file(moby_dir/std::string(moby_json["model"]));
 			moby.textures = read_textures_json(moby_dir, moby_json["textures"]);
 		}
 		moby.has_asset_table_entry = moby_json["has_asset_table_entry"];
-		wad.moby_classes.emplace(moby_json["class"].get<s32>(), moby);
+		wad.moby_classes.emplace_back(std::move(moby));
 	}
 	
 	std::vector<s32> tie_classes;
@@ -276,9 +277,10 @@ static void read_classes(LevelWad& wad, fs::path project_dir) {
 		fs::path tie_dir = project_dir/std::string("ties")/std::to_string(o_class);
 		Json tie_json = Json::parse(read_file(tie_dir/std::string("tie.json")));
 		TieClass tie;
+		tie.o_class = tie_json["class"].get<s32>();
 		tie.model = read_file(tie_dir/std::string(tie_json["model"]));
 		tie.textures = read_textures_json(tie_dir, tie_json["textures"]);
-		wad.tie_classes.emplace(tie_json["class"].get<s32>(), tie);
+		wad.tie_classes.emplace_back(std::move(tie));
 	}
 	
 	std::vector<s32> shrub_classes;
@@ -292,9 +294,10 @@ static void read_classes(LevelWad& wad, fs::path project_dir) {
 		fs::path shrub_dir = project_dir/std::string("shrubs")/std::to_string(o_class);
 		Json shrub_json = Json::parse(read_file(shrub_dir/std::string("shrub.json")));
 		ShrubClass shrub;
+		shrub.o_class = shrub_json["class"].get<s32>();
 		shrub.model = read_file(shrub_dir/std::string(shrub_json["model"]));
 		shrub.textures = read_textures_json(shrub_dir, shrub_json["textures"]);
-		wad.shrub_classes.emplace(shrub_json["class"].get<s32>(), shrub);
+		wad.shrub_classes.emplace_back(std::move(shrub));
 	}
 }
 
@@ -451,11 +454,11 @@ void write_wad_json(fs::path dest_dir, Wad* base) {
 static void write_classes(Json& json, fs::path dest_dir, const LevelWad& wad) {
 	fs::create_directory(dest_dir/std::string("mobies"));
 	json["mobies"] = std::vector<std::string>{"mobies"};
-	for(auto& [number, moby] : wad.moby_classes) {
-		fs::path moby_dir = dest_dir/std::string("mobies")/std::to_string(number);
+	for(const MobyClass& moby : wad.moby_classes) {
+		fs::path moby_dir = dest_dir/std::string("mobies")/std::to_string(moby.o_class);
 		fs::create_directories(moby_dir);
 		Json moby_json;
-		moby_json["class"] = number;
+		moby_json["class"] = moby.o_class;
 		if(moby.model.has_value()) {
 			moby_json["model"] = write_file(moby_dir, "model.bin", *moby.model);
 		}
@@ -472,11 +475,11 @@ static void write_classes(Json& json, fs::path dest_dir, const LevelWad& wad) {
 	
 	fs::create_directory(dest_dir/std::string("ties"));
 	json["ties"] = std::vector<std::string>{"ties"};
-	for(auto& [number, tie] : wad.tie_classes) {
-		fs::path tie_dir = dest_dir/std::string("ties")/std::to_string(number);
+	for(const TieClass& tie : wad.tie_classes) {
+		fs::path tie_dir = dest_dir/std::string("ties")/std::to_string(tie.o_class);
 		fs::create_directories(tie_dir);
 		Json tie_json;
-		tie_json["class"] = number;
+		tie_json["class"] = tie.o_class;
 		tie_json["model"] = "model.bin";
 		write_file(tie_dir, "model.bin", tie.model);
 		tie_json["textures"] = Json::array();
@@ -491,11 +494,11 @@ static void write_classes(Json& json, fs::path dest_dir, const LevelWad& wad) {
 	
 	fs::create_directory(dest_dir/std::string("shrubs"));
 	json["shrubs"] = std::vector<std::string>{"shrubs"};
-	for(auto& [number, shrub] : wad.shrub_classes) {
-		fs::path shrub_dir = dest_dir/std::string("shrubs")/std::to_string(number);
+	for(const ShrubClass& shrub : wad.shrub_classes) {
+		fs::path shrub_dir = dest_dir/std::string("shrubs")/std::to_string(shrub.o_class);
 		fs::create_directories(shrub_dir);
 		Json shrub_json;
-		shrub_json["class"] = number;
+		shrub_json["class"] = shrub.o_class;
 		shrub_json["model"] = "model.bin";
 		write_file(shrub_dir, "model.bin", shrub.model);
 		shrub_json["textures"] = Json::array();
