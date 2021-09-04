@@ -264,7 +264,7 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 	header_dest.write_multiple(gs_ram_table);
 	
 	auto write_texture_list = [&](u8 dest[16], const std::vector<Texture>& textures, s32 o_class, s32 table, size_t first_index) {
-		verify(textures.size() < 16, "error: Class %d has too many textures.\n", o_class);
+		verify(textures.size() < 16, "Class %d has too many textures.\n", o_class);
 		for(s32 i = 0; i < textures.size(); i++) {
 			PalettedTexture& texture = paletted_textures.at(first_index + i);
 			if(texture.texture_out_edge > -1) {
