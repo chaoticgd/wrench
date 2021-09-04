@@ -235,12 +235,12 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 				entry.width = texture.width;
 				entry.height = texture.height;
 				entry.unknown_8 = 3;
-				PalettedTexture& palette_texture = texture;
-				while(palette_texture.palette_out_edge > -1) {
-					palette_texture = paletted_textures[palette_texture.palette_out_edge];
+				PalettedTexture* palette_texture = &texture;
+				while(palette_texture->palette_out_edge > -1) {
+					palette_texture = &paletted_textures[palette_texture->palette_out_edge];
 				}
-				assert(palette_texture.palette_offset != -1);
-				entry.palette = palette_texture.palette_offset / 0x100;
+				assert(palette_texture->palette_offset != -1);
+				entry.palette = palette_texture->palette_offset / 0x100;
 				entry.mipmap = 0;
 				if(i % 4 == 0) { // HACK: Gets around textures not being deduped properly.
 					header_dest.write(entry);
@@ -280,15 +280,15 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 	auto write_texture_list = [&](u8 dest[16], const std::vector<Texture>& textures, s32 o_class, s32 table, size_t first_index) {
 		verify(textures.size() < 16, "Class %d has too many textures.\n", o_class);
 		for(s32 i = 0; i < textures.size(); i++) {
-			PalettedTexture& texture = paletted_textures.at(first_index + i);
-			if(texture.texture_out_edge > -1) {
-				texture = paletted_textures[texture.texture_out_edge];
+			PalettedTexture* texture = &paletted_textures.at(first_index + i);
+			if(texture->texture_out_edge > -1) {
+				texture = &paletted_textures[texture->texture_out_edge];
 			}
-			assert(texture.is_first_occurence);
-			assert(texture.texture_out_edge == -1);
-			assert(texture.indices[table].has_value());
-			verify(*texture.indices[table] < 0xff, "Too many textures.\n");
-			dest[i] = *texture.indices[table];
+			assert(texture->is_first_occurence);
+			assert(texture->texture_out_edge == -1);
+			assert(texture->indices[table].has_value());
+			verify(*texture->indices[table] < 0xff, "Too many textures.\n");
+			dest[i] = *texture->indices[table];
 		}
 		for(s32 i = textures.size(); i < 16; i++) {
 			dest[i] = 0xff;

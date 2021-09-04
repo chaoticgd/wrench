@@ -64,13 +64,13 @@ ArrayRange write_particle_textures(OutBuffer header, OutBuffer data, const std::
 	range.count = textures.size();
 	range.offset = header.tell();
 	for(PalettedTexture& texture : textures) {
-		PalettedTexture& palette_texture = texture;
-		while(palette_texture.palette_out_edge > -1) {
-			palette_texture = textures[palette_texture.palette_out_edge];
+		PalettedTexture* palette_texture = &texture;
+		while(palette_texture->palette_out_edge > -1) {
+			palette_texture = &textures[palette_texture->palette_out_edge];
 		}
 		
 		ParticleTextureEntry entry;
-		entry.palette = palette_texture.palette_offset - particle_base;
+		entry.palette = palette_texture->palette_offset - particle_base;
 		entry.unknown_4 = 0;
 		entry.texture = texture.texture_offset - particle_base;
 		entry.side = texture.width;
@@ -96,14 +96,15 @@ ArrayRange write_fx_textures(OutBuffer header, OutBuffer data, const std::vector
 	range.count = textures.size();
 	range.offset = header.tell();
 	for(PalettedTexture& texture : textures) {
-		PalettedTexture& palette_texture = texture;
-		while(palette_texture.palette_out_edge > -1) {
-			palette_texture = textures[palette_texture.palette_out_edge];
+		PalettedTexture* tex = &texture;
+		PalettedTexture* palette_texture = &texture;
+		while(palette_texture->palette_out_edge > -1) {
+			palette_texture = &textures[palette_texture->palette_out_edge];
 		}
 		
 		FXTextureEntry entry;
-		entry.palette = palette_texture.palette_offset - fx_base;
-		entry.texture = texture.texture_offset - fx_base;
+		entry.palette = palette_texture->palette_offset - fx_base;
+		entry.texture = tex->texture_offset - fx_base;
 		entry.width = texture.width;
 		entry.height = texture.height;
 		header.write(entry);
@@ -123,10 +124,8 @@ std::vector<PalettedTexture> write_nonshared_textures(OutBuffer data, const std:
 	}
 	encode_palette_indices(textures);
 	
-	int palettecount = 0;
 	for(PalettedTexture& texture : textures) {
 		if(texture.palette_out_edge == -1) {
-			palettecount++;
 			texture.palette_offset = data.write_multiple(texture.palette.colours);
 		}
 		texture.texture_offset = data.write_multiple(texture.data);
