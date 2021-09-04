@@ -273,9 +273,7 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 			assert(texture.is_first_occurence);
 			assert(texture.texture_out_edge == -1);
 			assert(texture.indices[table].has_value());
-			verify(*texture.indices[table] < 0xff,
-				"Too many textures (%d, should be at most 255).\n",
-				texture.indices[table]);
+			verify(*texture.indices[table] < 0xff, "Too many textures.\n");
 			dest[i] = *texture.indices[table];
 		}
 		for(s32 i = textures.size(); i < 16; i++) {
