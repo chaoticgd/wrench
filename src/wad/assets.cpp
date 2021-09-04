@@ -265,8 +265,8 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 	
 	auto write_texture_list = [&](u8 dest[16], const std::vector<Texture>& textures, s32 o_class, s32 table, size_t first_index) {
 		verify(textures.size() < 16, "error: Class %d has too many textures.\n", o_class);
-		for(s32 j = 0; j < textures.size(); j++) {
-			PalettedTexture& texture = paletted_textures.at(first_index + j);
+		for(s32 i = 0; i < textures.size(); i++) {
+			PalettedTexture& texture = paletted_textures.at(first_index + i);
 			if(texture.texture_out_edge > -1) {
 				texture = paletted_textures[texture.texture_out_edge];
 			}
@@ -276,10 +276,10 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 			verify(*texture.indices[table] < 0xff,
 				"Too many textures (%d, should be at most 255).\n",
 				texture.indices[table]);
-			dest[j] = *texture.indices[table];
+			dest[i] = *texture.indices[table];
 		}
-		for(s32 j = textures.size(); j < 16; j++) {
-			dest[j] = 0xff;
+		for(s32 i = textures.size(); i < 16; i++) {
+			dest[i] = 0xff;
 		}
 	};
 	
