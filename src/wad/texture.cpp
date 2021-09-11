@@ -21,7 +21,7 @@
 std::vector<PalettedTexture> write_nonshared_textures(OutBuffer data, const std::vector<Texture>& src);
 static Texture paletted_texture_to_full_colour(Buffer data, Buffer palette, s32 width, s32 height);
 static u8 decode_palette_index(u8 index);
-static std::optional<std::array<u8, 256>> attempt_merge_palettes(Palette& subset, Palette& superset);
+static std::optional<std::array<u8, 256>> attempt_merge_palettes(Palette& dest, const Palette& src);
 
 std::vector<Texture> read_tfrag_textures(BufferArray<TextureEntry> texture_table, Buffer data, Buffer gs_ram) {
 	std::vector<Texture> textures;
@@ -213,7 +213,11 @@ void deduplicate_textures(std::vector<PalettedTexture>& textures) {
 	}
 	
 	std::sort(BEGIN_END(mapping), [&](size_t lhs, size_t rhs) {
-		return textures[lhs].data < textures[rhs].data;
+		if(textures[lhs].data == textures[rhs].data) {
+			return textures[lhs].palette.colours < textures[rhs].palette.colours;
+		} else {
+			return textures[lhs].data < textures[rhs].data;
+		}
 	});
 	
 	s32 first_occurence = mapping[0];
@@ -234,64 +238,103 @@ void deduplicate_textures(std::vector<PalettedTexture>& textures) {
 	}
 }
 
-void deduplicate_palettes(std::vector<PalettedTexture>& textures) {
-	for(size_t subset = 0; subset < textures.size(); subset++) {
-		PalettedTexture& subtex = textures[subset];
-		if(!subtex.is_first_occurence) {
-			continue;
+struct PossiblePaletteMerge {
+	s32 score; // A lower number means merging palette src into dest is more useful.
+	s32 dest;
+	s32 src;
+};
+
+static Opt<s32> score_possible_merge(const Palette& dest, const Palette& src) {
+	s32 colours_needed = 0;
+	for(s32 i = 0; i < src.top; i++) {
+		bool found_colour = false;
+		for(s32 j = 0; j < dest.top; j++) {
+			if(src.colours[i] == dest.colours[j]) {
+				found_colour = true;
+			}
 		}
-		for(size_t superset = 0; superset < textures.size(); superset++) {
-			if(subset == superset) {
+		if(!found_colour) {
+			colours_needed++;
+		}
+	}
+	if(colours_needed < 256 - dest.top) {
+		return colours_needed + (256 - dest.top);
+	} else {
+		return {};
+	}
+}
+
+void deduplicate_palettes(std::vector<PalettedTexture>& textures) {
+	std::vector<PossiblePaletteMerge> merges;
+	
+	for(s32 lhs = 0; lhs < textures.size(); lhs++) {
+		for(s32 rhs = lhs + 1; rhs < textures.size(); rhs++) {
+			if(textures[lhs].texture_out_edge != -1) {
 				continue;
 			}
-			PalettedTexture& supertex = textures[superset];
-			if(!supertex.is_first_occurence || subtex.palette_out_edge != -1) {
+			if(textures[rhs].texture_out_edge != -1) {
 				continue;
 			}
-			// If a palette A has more colours than a palette B, then A cannot
-			// contain a subset of the colours in B.
-			if(subtex.palette.top > supertex.palette.top) {
+			auto backward_score = score_possible_merge(textures[lhs].palette, textures[rhs].palette);
+			if(backward_score.has_value()) {
+				merges.emplace_back(PossiblePaletteMerge{*backward_score, lhs, rhs});
+			}
+			auto forward_score = score_possible_merge(textures[rhs].palette, textures[lhs].palette);
+			if(forward_score.has_value()) {
+				merges.emplace_back(PossiblePaletteMerge{*forward_score, rhs, lhs});
+			}
+		}
+	}
+	
+	for(s32 score = 0; score < 512; score++) {
+		for(PossiblePaletteMerge& merge : merges) {
+			bool should_skip = false;
+			should_skip |= merge.score != score;
+			should_skip |= textures[merge.dest].palette_out_edge != -1;
+			should_skip |= textures[merge.src].palette_out_edge != -1;
+			if(should_skip) {
 				continue;
 			}
-			// If two palettes have the same number of colours, the only way one
-			// can be a subset of another is if they are permutations of each
-			// other, hence they we should discard half of these subsets to
-			// avoid cycles.
-			if(subtex.palette.top >= supertex.palette.top && subset < superset) {
-				continue;
-			}
-			auto mapping = attempt_merge_palettes(subtex.palette, textures[superset].palette);
+			auto mapping = attempt_merge_palettes(textures[merge.dest].palette, textures[merge.src].palette);
 			if(mapping.has_value()) {
-				subtex.palette_out_edge = superset;
-				for(u8& pixel : subtex.data) {
+				textures[merge.src].palette_out_edge = merge.dest;
+				for(u8& pixel : textures[merge.src].data) {
 					pixel = (*mapping)[pixel];
+				}
+				for(PalettedTexture& texture : textures) {
+					if(texture.palette_out_edge == merge.src) {
+						texture.palette_out_edge = merge.dest;
+						for(u8& pixel : texture.data) {
+							pixel = (*mapping)[pixel];
+						}
+					}
 				}
 			}
 		}
 	}
 }
 
-static std::optional<std::array<u8, 256>> attempt_merge_palettes(Palette& subset, Palette& superset) {
+static std::optional<std::array<u8, 256>> attempt_merge_palettes(Palette& dest, const Palette& src) {
 	std::array<u8, 256> mapping = {0};
 	static std::vector<u32> missing_colours(256);
 	missing_colours.clear();
-	for(s32 i = 0; i < subset.top; i++) {
+	for(s32 i = 0; i < src.top; i++) {
 		bool found_colour = false;
-		for(s32 j = 0; j < 256; j++) {
-			if(subset.colours[i] == superset.colours[j]) {
+		for(s32 j = 0; j < dest.top; j++) {
+			if(src.colours[i] == dest.colours[j]) {
 				found_colour = true;
 				mapping[i] = j;
 				break;
 			}
 		}
 		if(!found_colour) {
-			mapping[i] = superset.top + missing_colours.size();
-			missing_colours.push_back(subset.colours[i]);
+			mapping[i] = dest.top + missing_colours.size();
+			missing_colours.push_back(src.colours[i]);
 		}
 	}
-	if(missing_colours.size() < 256 - superset.top) {
-		memcpy(&superset.colours[superset.top], missing_colours.data(), missing_colours.size() * 4);
-		superset.top += missing_colours.size();
+	if(missing_colours.size() <= 256 - dest.top) {
+		memcpy(&dest.colours[dest.top], missing_colours.data(), missing_colours.size() * 4);
+		dest.top += missing_colours.size();
 		return mapping;
 	} else {
 		return {};

@@ -199,19 +199,32 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 	deduplicate_palettes(paletted_textures);
 	for(PalettedTexture& texture : paletted_textures) {
 		assert(texture.texture_out_edge == -1 || paletted_textures[texture.texture_out_edge].texture_out_edge == -1);
+		assert(texture.palette_out_edge == -1 || paletted_textures[texture.palette_out_edge].palette_out_edge == -1);
 	}
 	encode_palette_indices(paletted_textures);
 	
 	std::vector<GsRamEntry> gs_ram_table;
 	
-	std::vector<u8> mipmap(256*4);
-	gs_ram.write_multiple(mipmap);
-	gs_ram_table.push_back({0x13, 0x20, 0x20, 0, 0});
+	std::vector<u8> mipmap_data;
 	
 	data_dest.pad(0x40);
 	header.textures_base_offset = data_dest.tell();
 	for(PalettedTexture& texture : paletted_textures) {
 		if(texture.texture_out_edge == -1) {
+			mipmap_data.resize((texture.width * texture.height) / 16);
+			for(s32 y = 0; y < texture.height / 4; y++) {
+				for(s32 x = 0; x < texture.width / 4; x++) {
+					mipmap_data[y * (texture.width / 4) + x] = texture.data[y * 4 * texture.width + x * 4];
+				}
+			}
+			texture.mipmap_offset = gs_ram.write_multiple(mipmap_data);
+			GsRamEntry mipmap_entry;
+			mipmap_entry.unknown_0 = 0x13;
+			mipmap_entry.width = texture.width / 4;
+			mipmap_entry.height = texture.height / 4;
+			mipmap_entry.offset_1 = texture.mipmap_offset;
+			mipmap_entry.offset_2 = texture.mipmap_offset;
+			gs_ram_table.push_back(mipmap_entry);
 			texture.texture_offset = data_dest.write_multiple(texture.data);
 			if(texture.palette_out_edge == -1) {
 				gs_ram.pad(0x100, 0);
@@ -224,12 +237,13 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 	// Write texture tables.
 	auto write_texture_table = [&](s32 table, s32 low, s32 high) {
 		s32 table_offset = header_dest.tell();
-		s32 table_count = 0;
+		std::vector<TextureEntry> entries;
 		for(size_t i = low; i < high; i++) {
-			PalettedTexture& texture = paletted_textures[i];
-			if(texture.texture_out_edge > -1) {
-				texture = paletted_textures[texture.texture_out_edge];
+			PalettedTexture* texture_ptr = &paletted_textures[i];
+			if(texture_ptr->texture_out_edge > -1) {
+				texture_ptr = &paletted_textures[texture_ptr->texture_out_edge];
 			}
+			PalettedTexture& texture = *texture_ptr;
 			if(!texture.indices[table].has_value()) {
 				assert(texture.is_first_occurence);
 				assert(texture.texture_out_edge == -1);
@@ -240,40 +254,32 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 				entry.height = texture.height;
 				entry.unknown_8 = 3;
 				PalettedTexture* palette_texture = &texture;
-				while(palette_texture->palette_out_edge > -1) {
+				if(palette_texture->palette_out_edge > -1) {
 					palette_texture = &paletted_textures[palette_texture->palette_out_edge];
 				}
 				assert(palette_texture->palette_offset != -1);
 				entry.palette = palette_texture->palette_offset / 0x100;
-				entry.mipmap = 0;
-				if(i % 4 == 0) { // HACK: Gets around textures not being deduped properly.
-					header_dest.write(entry);
-					texture.indices[table] = table_count;
-					table_count++;
-				} else {
-					texture.indices[table] = table_count - 1;
-				}
+				entry.mipmap = texture.mipmap_offset;
+				texture.indices[table] = entries.size();
+				entries.push_back(entry);
 			}
 		}
-		return ArrayRange {table_count, table_offset};
+		header_dest.write_multiple(entries);
+		
+		return ArrayRange {(s32) entries.size(), table_offset};
 	};
 	header.tfrag_textures = write_texture_table(TFRAG_TEXTURE_INDEX, layout.tfrags_begin, layout.mobies_begin);
 	header.moby_textures = write_texture_table(MOBY_TEXTURE_INDEX, layout.mobies_begin, layout.ties_begin);
 	header.tie_textures = write_texture_table(TIE_TEXTURE_INDEX, layout.ties_begin, layout.shrubs_begin);
 	header.shrub_textures = write_texture_table(SHRUB_TEXTURE_INDEX, layout.shrubs_begin, paletted_textures.size());
 	
-	while(header_dest.vec.size() < 0x51d0) {
-		header_dest.write<u8>(0);
-	}
-	while(data_dest.vec.size() < 0xaea100) {
-		data_dest.write<u8>(0);
-	}
 	data_dest.pad(0x100, 0);
 	header.part_bank_offset = data_dest.tell();
 	header.part_textures = write_particle_textures(header_dest, data_dest, wad.particle_textures);
 	data_dest.pad(0x100, 0);
 	header.fx_bank_offset = data_dest.tell();
 	header.fx_textures = write_fx_textures(header_dest, data_dest, wad.fx_textures);
+	printf("Shared texture memory: 0x%x bytes\n", header.part_bank_offset - header.textures_base_offset);
 	
 	stop_timer();
 	
