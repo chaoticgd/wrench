@@ -62,7 +62,6 @@ add_executable(wrench
 	src/editor/formats/model_utils.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
 	thirdparty/imgui/backends/imgui_impl_opengl3.cpp
-	src/editor/md5.cpp
 	src/lz/compression.cpp
 )
 
@@ -230,6 +229,12 @@ set(PNG_STATIC ON)
 add_subdirectory(thirdparty/libpng)
 target_link_libraries(wrench png_static zlibstatic)
 target_link_libraries(wad png_static zlibstatic)
+
+# MD5
+add_library(md5 STATIC
+	thirdparty/md5.cpp
+)
+target_link_libraries(wrench md5)
 
 add_subdirectory(src/version_check)
 target_link_libraries(wrench version_check)
