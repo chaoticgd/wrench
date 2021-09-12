@@ -67,7 +67,7 @@ add_executable(wrench
 )
 
 add_executable(fip
-	src/cli/fipcli.cpp
+	src/fipcli.cpp
 	src/editor/command_line.cpp
 	src/editor/util.cpp
 	src/editor/stream.cpp
@@ -87,7 +87,7 @@ add_executable(lz
 )
 
 add_executable(vif
-	src/cli/vifcli.cpp
+	src/vifcli.cpp
 	src/editor/stream.cpp
 	src/editor/stacktrace.cpp
 	src/editor/util.cpp
@@ -106,7 +106,7 @@ add_executable(iso
 )
 
 add_executable(memmap
-	src/cli/memmap.c
+	src/memmap.c
 )
 
 add_executable(wad

@@ -1,7 +1,7 @@
 /*
 	BSD 2-Clause License
 
-	Copyright (c) 2020-2021 chaoticgd
+	Copyright (c) 2019-2021 chaoticgd
 	All rights reserved.
 
 	Redistribution and use in source and binary forms, with or without

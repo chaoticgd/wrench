@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2020 chaoticgd
+	Copyright (C) 2019-2021 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,9 +22,9 @@
 
 #include <iostream>
 
-#include "../editor/util.h"
-#include "../editor/command_line.h"
-#include "../editor/formats/vif.h"
+#include "editor/util.h"
+#include "editor/command_line.h"
+#include "editor/formats/vif.h"
 
 int main(int argc, char** argv) {
 	cxxopts::Options options("vif", "Parse PS2 VIF chains until an invalid VIF code is encountered.");

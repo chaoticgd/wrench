@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019 chaoticgd
+	Copyright (C) 2019-2021 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,8 +18,8 @@
 
 #include <sstream>
 
-#include "../editor/command_line.h"
-#include "../editor/formats/fip.h"
+#include "editor/command_line.h"
+#include "editor/formats/fip.h"
 
 # /*
 #	CLI tool to convert 2FIP textures to BMP files and vice versa.
