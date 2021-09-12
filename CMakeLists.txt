@@ -26,6 +26,8 @@ add_library(wrenchcore STATIC
 	src/core/collada.cpp
 	src/core/timer.cpp
 	src/core/png.cpp
+	src/core/texture.cpp
+	thirdparty/md5.cpp
 )
 
 add_executable(wrench
@@ -120,9 +122,14 @@ add_executable(wad
 	src/lz/compression.cpp
 )
 
+add_executable(hashtex
+	src/hashtex.cpp
+)
+
 target_link_libraries(wrench wrenchcore)
 target_link_libraries(iso wrenchcore)
 target_link_libraries(wad wrenchcore)
+target_link_libraries(hashtex wrenchcore)
 
 # This lets us avoid linking stuff for most of the CLI tools.
 target_compile_definitions(wrench PRIVATE WRENCH_EDITOR=1)
@@ -227,16 +234,7 @@ set(PNG_BUILD_ZLIB ON)
 set(PNG_SHARED OFF)
 set(PNG_STATIC ON)
 add_subdirectory(thirdparty/libpng)
-target_link_libraries(wrench png_static zlibstatic)
-target_link_libraries(wad png_static zlibstatic)
-
-# MD5
-add_library(md5 STATIC
-	thirdparty/md5.cpp
-)
-target_link_libraries(wrench md5)
+target_link_libraries(wrenchcore png_static zlibstatic)
 
 add_subdirectory(src/version_check)
-target_link_libraries(wrench version_check)
-target_link_libraries(iso version_check)
-target_link_libraries(wad version_check)
+target_link_libraries(wrenchcore version_check)

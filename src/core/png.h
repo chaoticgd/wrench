@@ -20,7 +20,7 @@
 #define WRENCH_PNG_H
 
 #include "util.h"
-#include "texture_struct.h"
+#include "texture.h"
 
 Opt<Texture> read_png(const char* file_name);
 void write_png(const char* file_name, const Texture& texture);

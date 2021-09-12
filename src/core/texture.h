@@ -16,13 +16,13 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef TEXTURE_STRUCT_H
-#define TEXTURE_STRUCT_H
+#ifndef TEXTURE_H
+#define TEXTURE_H
 
 #include "util.h"
 
 enum class PixelFormat {
-	IDTEX8
+	IDTEX8 = 0
 };
 
 struct Palette {
@@ -41,5 +41,7 @@ struct Texture {
 	Palette palette;
 	std::vector<u8> pixels;
 };
+
+std::string hash_texture(const Texture& texture);
 
 #endif

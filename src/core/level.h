@@ -24,7 +24,7 @@
 #include "collada.h"
 #include "buffer.h"
 #include "instance.h"
-#include "texture_struct.h"
+#include "texture.h"
 
 struct RAC1_88 : Instance {
 	RAC1_88() : Instance(INST_RAC1_88, COM_NONE, TransformMode::NONE) {}

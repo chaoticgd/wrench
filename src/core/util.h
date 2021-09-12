@@ -403,6 +403,8 @@ struct _deferer {
 #define CONCAT_TOKEN(x, y) CONCAT_TOKEN_IMPL(x, y)
 #define defer(...) _deferer CONCAT_TOKEN(_deferer_object_, __COUNTER__)(__VA_ARGS__);
 
+std::string md5_to_printable_string(uint8_t in[16]);
+
 enum class Game {
 	RAC1, RAC2, RAC3, DL
 };
