@@ -20,6 +20,9 @@
 [submodule "thirdparty/nativefiledialog"]
 	path = thirdparty/nativefiledialog
 	url = https://github.com/mlabbe/nativefiledialog
-[submodule "thirdparty/stb"]
-	path = thirdparty/stb
-	url = https://github.com/nothings/stb
+[submodule "thirdparty/zlib"]
+	path = thirdparty/zlib
+	url = https://github.com/madler/zlib
+[submodule "thirdparty/libpng"]
+	path = thirdparty/libpng
+	url = https://git.code.sf.net/p/libpng/code

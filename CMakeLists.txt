@@ -25,6 +25,7 @@ add_executable(wrench
 	src/util.cpp
 	src/mesh.cpp
 	src/collada.cpp
+	src/png.cpp
 	src/editor/app.cpp
 	src/editor/command_line.cpp
 	src/editor/stream.cpp
@@ -116,6 +117,7 @@ add_executable(wad
 	src/mesh.cpp
 	src/collada.cpp
 	src/timer.cpp
+	src/png.cpp
 	src/wad/wad_file.cpp
 	src/wad/gameplay.cpp
 	src/wad/primary.cpp
@@ -221,6 +223,16 @@ else()
 endif()
 target_link_libraries(wrench nativefiledialog)
 include_directories(thirdparty/nativefiledialog/src/include)
+
+# libpng
+include_directories(wrench thirdparty/zlib thirdparty/libpng)
+add_subdirectory(thirdparty/zlib)
+set(PNG_BUILD_ZLIB ON)
+set(PNG_SHARED OFF)
+set(PNG_STATIC ON)
+add_subdirectory(thirdparty/libpng)
+target_link_libraries(wrench png_static zlibstatic)
+target_link_libraries(wad png_static zlibstatic)
 
 add_subdirectory(src/version_check)
 target_link_libraries(wrench version_check)

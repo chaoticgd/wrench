@@ -24,6 +24,7 @@
 #include "collada.h"
 #include "buffer.h"
 #include "instance.h"
+#include "texture_struct.h"
 
 struct RAC1_88 : Instance {
 	RAC1_88() : Instance(INST_RAC1_88, COM_NONE, TransformMode::NONE) {}
@@ -753,13 +754,6 @@ struct HelpMessages {
 		DEF_FIELD(japanese);
 		DEF_FIELD(korean);
 	}
-};
-
-struct Texture {
-	s32 width;
-	s32 height;
-	std::vector<u32> data;
-	fs::path path; // Only populated for textures read from loose files.
 };
 
 struct Chunk {

@@ -32,7 +32,18 @@ void read_gameplay(LevelWad& wad, Gameplay& gameplay, Buffer src, Game game, con
 	}
 	
 	for(s32 o_class : opt_iterator(gameplay.moby_classes)) {
-		wad.moby_classes[o_class];
+		bool class_found = false;
+		for(MobyClass& moby : wad.moby_classes) {
+			if(moby.o_class == o_class) {
+				class_found = true;
+			}
+		}
+		
+		if(!class_found) {
+			MobyClass moby;
+			moby.o_class = o_class;
+			wad.moby_classes.emplace_back(std::move(moby));
+		}
 	}
 }
 

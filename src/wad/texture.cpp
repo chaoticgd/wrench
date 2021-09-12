@@ -19,7 +19,7 @@
 #include "texture.h"
 
 std::vector<PalettedTexture> write_nonshared_textures(OutBuffer data, const std::vector<Texture>& src);
-static Texture paletted_texture_to_full_colour(Buffer data, Buffer palette, s32 width, s32 height);
+static Texture read_paletted_texture(Buffer data, Buffer palette, s32 width, s32 height);
 static u8 decode_palette_index(u8 index);
 static std::optional<std::array<u8, 256>> attempt_merge_palettes(Palette& dest, const Palette& src);
 
@@ -28,7 +28,7 @@ std::vector<Texture> read_tfrag_textures(BufferArray<TextureEntry> texture_table
 	for(const TextureEntry& entry : texture_table) {
 		Buffer texture = data.subbuf(entry.data_offset);
 		Buffer palette = gs_ram.subbuf(entry.palette * 0x100);
-		textures.emplace_back(paletted_texture_to_full_colour(texture, palette, entry.width, entry.height));
+		textures.emplace_back(read_paletted_texture(texture, palette, entry.width, entry.height));
 	}
 	return textures;
 }
@@ -42,7 +42,7 @@ std::vector<Texture> read_instance_textures(BufferArray<TextureEntry> texture_ta
 		const TextureEntry& entry = texture_table[indices[i]];
 		Buffer texture = data.subbuf(entry.data_offset);
 		Buffer palette = gs_ram.subbuf(entry.palette * 0x100);
-		textures.emplace_back(paletted_texture_to_full_colour(texture, palette, entry.width, entry.height));
+		textures.emplace_back(read_paletted_texture(texture, palette, entry.width, entry.height));
 	}
 	return textures;
 }
@@ -52,7 +52,7 @@ std::vector<Texture> read_particle_textures(BufferArray<ParticleTextureEntry> te
 	for(const ParticleTextureEntry& entry : texture_table) {
 		Buffer palette = data.subbuf(entry.palette);
 		Buffer texture = data.subbuf(entry.texture);
-		textures.emplace_back(paletted_texture_to_full_colour(texture, palette, entry.side, entry.side));
+		textures.emplace_back(read_paletted_texture(texture, palette, entry.side, entry.side));
 	}
 	return textures;
 }
@@ -84,7 +84,7 @@ std::vector<Texture> read_fx_textures(BufferArray<FXTextureEntry> texture_table,
 	for(const FXTextureEntry& entry : texture_table) {
 		Buffer palette = data.subbuf(entry.palette);
 		Buffer texture = data.subbuf(entry.texture);
-		textures.emplace_back(paletted_texture_to_full_colour(texture, palette, entry.width, entry.height));
+		textures.emplace_back(read_paletted_texture(texture, palette, entry.width, entry.height));
 	}
 	return textures;
 }
@@ -133,17 +133,18 @@ std::vector<PalettedTexture> write_nonshared_textures(OutBuffer data, const std:
 	return textures;
 }
 
-static Texture paletted_texture_to_full_colour(Buffer data, Buffer palette, s32 width, s32 height) {
+static Texture read_paletted_texture(Buffer data, Buffer palette, s32 width, s32 height) {
 	Texture texture;
 	texture.width = width;
 	texture.height = height;
-	texture.data.resize(width * height);
-	for(s32 i = 0; i < width * height; i++) {
-		texture.data[i] = palette.read<u32>(decode_palette_index(data.read<u8>(i, "texture")) * 4, "palette");
-		u32 alpha = (texture.data[i] & 0xff000000) >> 24;
+	texture.palette.top = 256;
+	for(s32 i = 0; i < 256; i++) {
+		texture.palette.colours[i] = palette.read<u32>(decode_palette_index(i) * 4, "palette");
+		u32 alpha = (texture.palette.colours[i] & 0xff000000) >> 24;
 		alpha = std::min(alpha * 2, 0xffu);
-		texture.data[i] = (texture.data[i] & 0x00ffffff) | (alpha << 24);
+		texture.palette.colours[i] = (texture.palette.colours[i] & 0x00ffffff) | (alpha << 24);
 	}
+	texture.pixels = data.read_multiple<u8>(0, width * height, "texture").copy();
 	return texture;
 }
 
@@ -177,32 +178,13 @@ std::pair<std::vector<const Texture*>, FlattenedTextureLayout> flatten_textures(
 }
 
 PalettedTexture find_suboptimal_palette(const Texture& src) {
-	assert(src.data.size() == src.width * src.height);
+	assert(src.pixels.size() == src.width * src.height);
 	
 	PalettedTexture texture = {0};
 	texture.width = src.width;
 	texture.height = src.height;
-	texture.data.resize(texture.width * texture.height);
-	texture.path = src.path;
-	for(s32 i = 0; i < texture.width * texture.height; i++) {
-		s32 match = -1;
-		for(s32 j = 0; j < texture.palette.top; j++) {
-			if(texture.palette.colours[j] == src.data[i]) {
-				match = j;
-				break;
-			}
-		}
-		if(match >= 0) {
-			texture.data[i] = (u8) match;
-		} else if(texture.palette.top < 256) {
-			texture.palette.colours[texture.palette.top] = src.data[i];
-			texture.data[i] = texture.palette.top;
-			texture.palette.top++;
-		} else {
-			texture.data[i] = 0;
-		}
-	}
-	
+	texture.palette = src.palette;
+	texture.data = src.pixels;
 	return texture;
 }
 

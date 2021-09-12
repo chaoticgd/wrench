@@ -53,15 +53,6 @@ packed_struct(FXTextureEntry,
 	s32 height;
 )
 
-struct Palette {
-	std::array<u32, 256> colours;
-	s32 top;
-	
-	bool operator==(const Palette& rhs) const {
-		return colours == rhs.colours && top == rhs.top;
-	}
-};
-
 // This is more of a work struct for the texture deduplicator/writer.
 struct PalettedTexture {
 	s32 width;

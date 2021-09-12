@@ -18,10 +18,7 @@
 
 #include "level.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb/stb_image.h>
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb/stb_image_write.h>
+#include "png.h"
 
 Json get_file_metadata(const char* format, const char* application) {
 	return Json {
@@ -304,17 +301,13 @@ static void read_classes(LevelWad& wad, fs::path project_dir) {
 static std::vector<Texture> read_textures_json(fs::path dir, Json& paths) {
 	std::vector<Texture> textures;
 	for(Json& rel_path : paths) {
-		Texture texture;
 		std::string path = (dir/std::string(rel_path)).string();
-		int component_count;
-		u32* data = (u32*) stbi_load(path.c_str(), &texture.width, &texture.height, &component_count, 4);
-		texture.data.resize(texture.width * texture.height);
-		for(size_t i = 0; i < texture.data.size(); i++) {
-			texture.data[i] = data[i];
+		Opt<Texture> texture = read_png(path.c_str());
+		if(texture.has_value()) {
+			textures.emplace_back(std::move(*texture));
+		} else {
+			printf("warning: Failed to read texture '%s'.", path.c_str());
 		}
-		
-		texture.path = path;
-		textures.emplace_back(std::move(texture));
 	}
 	return textures;
 }
@@ -457,17 +450,10 @@ static void write_classes(Json& json, fs::path dest_dir, const LevelWad& wad) {
 	for(const MobyClass& moby : wad.moby_classes) {
 		fs::path moby_dir = dest_dir/std::string("mobies")/std::to_string(moby.o_class);
 		fs::create_directories(moby_dir);
-		Json moby_json;
+		Json moby_json = write_textures_json(moby_dir, "", moby.textures);
 		moby_json["class"] = moby.o_class;
 		if(moby.model.has_value()) {
 			moby_json["model"] = write_file(moby_dir, "model.bin", *moby.model);
-		}
-		moby_json["textures"] = Json::array();
-		for(size_t i = 0; i < moby.textures.size(); i++) {
-			const Texture& texture = moby.textures[i];
-			std::string path = (moby_dir/(std::to_string(i) + ".png")).string();
-			stbi_write_png(path.c_str(), texture.width, texture.height, 4, texture.data.data(), texture.width * 4);
-			moby_json["textures"].push_back(std::to_string(i) + ".png");
 		}
 		moby_json["has_asset_table_entry"] = moby.has_asset_table_entry;
 		write_file(moby_dir, "moby.json", moby_json.dump(1, '\t'));
@@ -478,17 +464,11 @@ static void write_classes(Json& json, fs::path dest_dir, const LevelWad& wad) {
 	for(const TieClass& tie : wad.tie_classes) {
 		fs::path tie_dir = dest_dir/std::string("ties")/std::to_string(tie.o_class);
 		fs::create_directories(tie_dir);
-		Json tie_json;
+		Json tie_json = write_textures_json(tie_dir, "", tie.textures);
 		tie_json["class"] = tie.o_class;
 		tie_json["model"] = "model.bin";
 		write_file(tie_dir, "model.bin", tie.model);
 		tie_json["textures"] = Json::array();
-		for(size_t i = 0; i < tie.textures.size(); i++) {
-			const Texture& texture = tie.textures[i];
-			std::string path = (tie_dir/(std::to_string(i) + ".png")).string();
-			stbi_write_png(path.c_str(), texture.width, texture.height, 4, texture.data.data(), texture.width * 4);
-			tie_json["textures"].push_back(std::to_string(i) + ".png");
-		}
 		write_file(tie_dir, "tie.json", tie_json.dump(1, '\t'));
 	}
 	
@@ -497,17 +477,10 @@ static void write_classes(Json& json, fs::path dest_dir, const LevelWad& wad) {
 	for(const ShrubClass& shrub : wad.shrub_classes) {
 		fs::path shrub_dir = dest_dir/std::string("shrubs")/std::to_string(shrub.o_class);
 		fs::create_directories(shrub_dir);
-		Json shrub_json;
+		Json shrub_json = write_textures_json(shrub_dir, "", shrub.textures);
 		shrub_json["class"] = shrub.o_class;
 		shrub_json["model"] = "model.bin";
 		write_file(shrub_dir, "model.bin", shrub.model);
-		shrub_json["textures"] = Json::array();
-		for(size_t i = 0; i < shrub.textures.size(); i++) {
-			const Texture& texture = shrub.textures[i];
-			std::string path = (shrub_dir/(std::to_string(i) + ".png")).string();
-			stbi_write_png(path.c_str(), texture.width, texture.height, 4, texture.data.data(), texture.width * 4);
-			shrub_json["textures"].push_back(std::to_string(i) + ".png");
-		}
 		write_file(shrub_dir, "shrub.json", shrub_json.dump(1, '\t'));
 	}
 }
@@ -519,8 +492,7 @@ static Json write_textures_json(fs::path dest_dir, fs::path sub_dir, const std::
 	for(size_t i = 0; i < textures.size(); i++) {
 		fs::path rel_path = sub_dir/(std::to_string(i) + ".png");
 		std::string path = (dest_dir/rel_path).string();
-		const Texture& texture = textures[i];
-		stbi_write_png(path.c_str(), texture.width, texture.height, 4, texture.data.data(), texture.width * 4);
+		write_png(path.c_str(), textures[i]);
 		json["textures"].push_back(rel_path);
 	}
 	return json;
