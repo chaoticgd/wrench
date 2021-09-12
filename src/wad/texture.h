@@ -87,7 +87,7 @@ ArrayRange write_particle_textures(OutBuffer header, OutBuffer data, const std::
 std::vector<Texture> read_fx_textures(BufferArray<FXTextureEntry> texture_table, Buffer data);
 ArrayRange write_fx_textures(OutBuffer header, OutBuffer data, const std::vector<Texture>& src);
 std::pair<std::vector<const Texture*>, FlattenedTextureLayout> flatten_textures(const LevelWad& wad);
-PalettedTexture find_suboptimal_palette(const Texture& src);
+PalettedTexture adapt_texture(const Texture& src);
 void deduplicate_textures(std::vector<PalettedTexture>& textures);
 void deduplicate_palettes(std::vector<PalettedTexture>& textures);
 void encode_palette_indices(std::vector<PalettedTexture>& textures);

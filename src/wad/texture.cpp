@@ -21,7 +21,6 @@
 std::vector<PalettedTexture> write_nonshared_textures(OutBuffer data, const std::vector<Texture>& src);
 static Texture read_paletted_texture(Buffer data, Buffer palette, s32 width, s32 height);
 static u8 decode_palette_index(u8 index);
-static std::optional<std::array<u8, 256>> attempt_merge_palettes(Palette& dest, const Palette& src);
 
 std::vector<Texture> read_tfrag_textures(BufferArray<TextureEntry> texture_table, Buffer data, Buffer gs_ram) {
 	std::vector<Texture> textures;
@@ -116,7 +115,7 @@ std::vector<PalettedTexture> write_nonshared_textures(OutBuffer data, const std:
 	std::vector<PalettedTexture> textures;
 	textures.reserve(src.size());
 	for(const Texture& texture : src) {
-		textures.emplace_back(find_suboptimal_palette(texture));
+		textures.emplace_back(adapt_texture(texture));
 	}
 	deduplicate_palettes(textures);
 	for(PalettedTexture& texture : textures) {
@@ -177,7 +176,7 @@ std::pair<std::vector<const Texture*>, FlattenedTextureLayout> flatten_textures(
 	return {pointers, layout};
 }
 
-PalettedTexture find_suboptimal_palette(const Texture& src) {
+PalettedTexture adapt_texture(const Texture& src) {
 	assert(src.pixels.size() == src.width * src.height);
 	
 	PalettedTexture texture = {0};
@@ -220,106 +219,28 @@ void deduplicate_textures(std::vector<PalettedTexture>& textures) {
 	}
 }
 
-struct PossiblePaletteMerge {
-	s32 score; // A lower number means merging palette src into dest is more useful.
-	s32 dest;
-	s32 src;
-};
-
-static Opt<s32> score_possible_merge(const Palette& dest, const Palette& src) {
-	s32 colours_needed = 0;
-	for(s32 i = 0; i < src.top; i++) {
-		bool found_colour = false;
-		for(s32 j = 0; j < dest.top; j++) {
-			if(src.colours[i] == dest.colours[j]) {
-				found_colour = true;
-			}
-		}
-		if(!found_colour) {
-			colours_needed++;
-		}
-	}
-	if(colours_needed < 256 - dest.top) {
-		return colours_needed + (256 - dest.top);
-	} else {
-		return {};
-	}
-}
-
 void deduplicate_palettes(std::vector<PalettedTexture>& textures) {
-	std::vector<PossiblePaletteMerge> merges;
-	
-	for(s32 lhs = 0; lhs < textures.size(); lhs++) {
-		for(s32 rhs = lhs + 1; rhs < textures.size(); rhs++) {
-			if(textures[lhs].texture_out_edge != -1) {
-				continue;
-			}
-			if(textures[rhs].texture_out_edge != -1) {
-				continue;
-			}
-			auto backward_score = score_possible_merge(textures[lhs].palette, textures[rhs].palette);
-			if(backward_score.has_value()) {
-				merges.emplace_back(PossiblePaletteMerge{*backward_score, lhs, rhs});
-			}
-			auto forward_score = score_possible_merge(textures[rhs].palette, textures[lhs].palette);
-			if(forward_score.has_value()) {
-				merges.emplace_back(PossiblePaletteMerge{*forward_score, rhs, lhs});
-			}
-		}
+	std::vector<size_t> mapping(textures.size());
+	for(size_t i = 0; i < textures.size(); i++) {
+		mapping[i] = i;
 	}
 	
-	for(s32 score = 0; score < 512; score++) {
-		for(PossiblePaletteMerge& merge : merges) {
-			bool should_skip = false;
-			should_skip |= merge.score != score;
-			should_skip |= textures[merge.dest].palette_out_edge != -1;
-			should_skip |= textures[merge.src].palette_out_edge != -1;
-			if(should_skip) {
-				continue;
-			}
-			auto mapping = attempt_merge_palettes(textures[merge.dest].palette, textures[merge.src].palette);
-			if(mapping.has_value()) {
-				textures[merge.src].palette_out_edge = merge.dest;
-				for(u8& pixel : textures[merge.src].data) {
-					pixel = (*mapping)[pixel];
-				}
-				for(PalettedTexture& texture : textures) {
-					if(texture.palette_out_edge == merge.src) {
-						texture.palette_out_edge = merge.dest;
-						for(u8& pixel : texture.data) {
-							pixel = (*mapping)[pixel];
-						}
-					}
-				}
-			}
+	std::sort(BEGIN_END(mapping), [&](size_t lhs, size_t rhs) {
+		return textures[lhs].palette.colours < textures[rhs].palette.colours;
+	});
+	
+	s32 first_occurence = mapping[0];
+	for(size_t i = 1; i < textures.size(); i++) {
+		if(textures[mapping[i]].texture_out_edge != -1) {
+			continue;
 		}
-	}
-}
-
-static std::optional<std::array<u8, 256>> attempt_merge_palettes(Palette& dest, const Palette& src) {
-	std::array<u8, 256> mapping = {0};
-	static std::vector<u32> missing_colours(256);
-	missing_colours.clear();
-	for(s32 i = 0; i < src.top; i++) {
-		bool found_colour = false;
-		for(s32 j = 0; j < dest.top; j++) {
-			if(src.colours[i] == dest.colours[j]) {
-				found_colour = true;
-				mapping[i] = j;
-				break;
-			}
+		PalettedTexture& last = textures[mapping[i - 1]];
+		PalettedTexture& cur = textures[mapping[i]];
+		if(last.palette == cur.palette) {
+			cur.palette_out_edge = first_occurence;
+		} else {
+			first_occurence = mapping[i];
 		}
-		if(!found_colour) {
-			mapping[i] = dest.top + missing_colours.size();
-			missing_colours.push_back(src.colours[i]);
-		}
-	}
-	if(missing_colours.size() <= 256 - dest.top) {
-		memcpy(&dest.colours[dest.top], missing_colours.data(), missing_colours.size() * 4);
-		dest.top += missing_colours.size();
-		return mapping;
-	} else {
-		return {};
 	}
 }
 

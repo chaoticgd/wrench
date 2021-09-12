@@ -192,8 +192,7 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 	std::vector<PalettedTexture> paletted_textures;
 	paletted_textures.reserve(texture_pointers.size());
 	for(const Texture* texture : texture_pointers) {
-		// TODO: Find optimal palette instead.
-		paletted_textures.emplace_back(find_suboptimal_palette(*texture));
+		paletted_textures.emplace_back(adapt_texture(*texture));
 	}
 	deduplicate_textures(paletted_textures);
 	deduplicate_palettes(paletted_textures);
