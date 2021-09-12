@@ -19,7 +19,7 @@
 #ifndef WAD_ASSETS_H
 #define WAD_ASSETS_H
 
-#include "../level.h"
+#include "../core/level.h"
 
 packed_struct(AssetHeader,
 	/* 0x00 */ ArrayRange gs_ram;

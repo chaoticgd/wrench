@@ -33,7 +33,7 @@
 
 #include <glm/glm.hpp>
 
-#include "version_check/version_check.h"
+#include "../version_check/version_check.h"
 
 using u8 = uint8_t;
 using u16 = uint16_t;

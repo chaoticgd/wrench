@@ -21,7 +21,7 @@
 
 #include <map>
 
-#include "../buffer.h"
+#include "../core/buffer.h"
 #include "../editor/stream.h"
 #include "../editor/fs_includes.h"
 

@@ -16,16 +16,20 @@ endif()
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $<1:${CMAKE_SOURCE_DIR}/bin>)
 
+add_library(wrenchcore STATIC
+	src/core/buffer.cpp
+	src/core/json.cpp
+	src/core/instance.cpp
+	src/core/level.cpp
+	src/core/util.cpp
+	src/core/mesh.cpp
+	src/core/collada.cpp
+	src/core/timer.cpp
+	src/core/png.cpp
+)
+
 add_executable(wrench
 	src/editor/main.cpp
-	src/buffer.cpp
-	src/json.cpp
-	src/instance.cpp
-	src/level.cpp
-	src/util.cpp
-	src/mesh.cpp
-	src/collada.cpp
-	src/png.cpp
 	src/editor/app.cpp
 	src/editor/command_line.cpp
 	src/editor/stream.cpp
@@ -99,8 +103,6 @@ add_executable(iso
 	src/editor/stacktrace.cpp
 	src/editor/util.cpp
 	src/editor/command_line.cpp
-	src/buffer.cpp
-	src/util.cpp
 )
 
 add_executable(memmap
@@ -109,15 +111,6 @@ add_executable(memmap
 
 add_executable(wad
 	src/wad/main.cpp
-	src/buffer.cpp
-	src/json.cpp
-	src/instance.cpp
-	src/level.cpp
-	src/util.cpp
-	src/mesh.cpp
-	src/collada.cpp
-	src/timer.cpp
-	src/png.cpp
 	src/wad/wad_file.cpp
 	src/wad/gameplay.cpp
 	src/wad/primary.cpp
@@ -127,6 +120,10 @@ add_executable(wad
 	src/wad/tests.cpp
 	src/lz/compression.cpp
 )
+
+target_link_libraries(wrench wrenchcore)
+target_link_libraries(iso wrenchcore)
+target_link_libraries(wad wrenchcore)
 
 # This lets us avoid linking stuff for most of the CLI tools.
 target_compile_definitions(wrench PRIVATE WRENCH_EDITOR=1)
@@ -236,4 +233,5 @@ target_link_libraries(wad png_static zlibstatic)
 
 add_subdirectory(src/version_check)
 target_link_libraries(wrench version_check)
+target_link_libraries(iso version_check)
 target_link_libraries(wad version_check)

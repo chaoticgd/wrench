@@ -21,7 +21,7 @@
 #include "collision.h"
 #include "texture.h"
 #include "../lz/compression.h"
-#include "../timer.h"
+#include "../core/timer.h"
 
 packed_struct(MobyClassEntry,
 	s32 offset_in_asset_wad;

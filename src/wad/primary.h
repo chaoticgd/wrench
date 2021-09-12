@@ -19,7 +19,7 @@
 #ifndef WAD_PRIMARY_H
 #define WAD_PRIMARY_H
 
-#include "../level.h"
+#include "../core/level.h"
 
 struct PrimaryHeader {
 	ByteRange code;

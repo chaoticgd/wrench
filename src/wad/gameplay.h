@@ -19,8 +19,8 @@
 #ifndef WAD_GAMEPLAY_H
 #define WAD_GAMEPLAY_H
 
-#include "../util.h"
-#include "../level.h"
+#include "../core/util.h"
+#include "../core/level.h"
 
 using GameplayBlockReadFunc = std::function<void(LevelWad& wad, Gameplay& gameplay, Buffer src, Game game)>;
 using GameplayBlockWriteFunc = std::function<bool(OutBuffer dest, const LevelWad& wad, const Gameplay& gameplay, Game game)>;

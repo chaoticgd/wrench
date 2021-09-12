@@ -18,8 +18,8 @@
 
 #include <fstream>
 
-#include "../util.h"
-#include "../timer.h"
+#include "../core/util.h"
+#include "../core/timer.h"
 #include "tests.h"
 #include "wad_file.h"
 

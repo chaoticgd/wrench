@@ -23,7 +23,7 @@
 #include <optional>
 #include <stdint.h>
 
-#include "../../level.h"
+#include "../../core/level.h"
 #include "../util.h"
 #include "../stream.h"
 #include "../iso_stream.h"

@@ -19,7 +19,7 @@
 #ifndef WAD_TEXTURE_H
 #define WAD_TEXTURE_H
 
-#include "../level.h"
+#include "../core/level.h"
 
 packed_struct(GsRamEntry,
 	s32 unknown_0; // Type?

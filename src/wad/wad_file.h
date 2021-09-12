@@ -21,9 +21,9 @@
 
 #include <vector>
 
-#include "../util.h"
-#include "../level.h"
-#include "../buffer.h"
+#include "../core/util.h"
+#include "../core/level.h"
+#include "../core/buffer.h"
 #include "gameplay.h"
 #include "../lz/compression.h"
 
