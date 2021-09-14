@@ -21,7 +21,7 @@
 
 #include "util.h"
 
-enum class PixelFormat {
+enum class PixelFormat : u32 {
 	IDTEX8 = 0
 };
 
