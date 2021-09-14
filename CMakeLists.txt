@@ -135,6 +135,7 @@ target_link_libraries(hashtex wrenchcore)
 target_compile_definitions(wrench PRIVATE WRENCH_EDITOR=1)
 
 if(UNIX)
+	target_compile_options(wrenchcore PRIVATE -Wall -O3)
 	target_compile_options(wrench PRIVATE -Wall -O3)
 	target_compile_options(fip PRIVATE -Wall -O3)
 	target_compile_options(lz PRIVATE -Wall -O3)
@@ -147,21 +148,24 @@ if (MSVC)
 	# /W4 - enable all non-default-disabled warnings (-Wall equivalent)
 	# /Zi - emit debugging informations to PDB
 	# /EHsc - needed for proper C++ exception handling
-	target_compile_options(wrench	PRIVATE /W4 /Zi /EHsc)	
-	target_compile_options(fip		PRIVATE /W4 /Zi /EHsc)
-	target_compile_options(lz		PRIVATE /W4 /Zi /EHsc)
-	target_compile_options(vif		PRIVATE /W4 /Zi /EHsc)
-	target_compile_options(iso		PRIVATE /W4 /Zi /EHsc)
-	target_compile_options(wad		PRIVATE /W4 /Zi /EHsc)
+	target_compile_options(wrenchcore PRIVATE /W4 /Zi /EHsc)
+	target_compile_options(wrench PRIVATE /W4 /Zi /EHsc)
+	target_compile_options(fip PRIVATE /W4 /Zi /EHsc)
+	target_compile_options(lz PRIVATE /W4 /Zi /EHsc)
+	target_compile_options(vif PRIVATE /W4 /Zi /EHsc)
+	target_compile_options(iso PRIVATE /W4 /Zi /EHsc)
+	target_compile_options(wad PRIVATE /W4 /Zi /EHsc)
 endif()
 
 # std::filesystem
 if(UNIX)
+	target_link_libraries(wrenchcore stdc++fs)
 	target_link_libraries(wrench stdc++fs)
 	target_link_libraries(fip stdc++fs)
 	target_link_libraries(lz stdc++fs)
 	target_link_libraries(vif stdc++fs)
 	target_link_libraries(iso stdc++fs)
+	target_link_libraries(wad stdc++fs)
 endif()
 
 # cxxopts

@@ -40,6 +40,18 @@ struct Texture {
 	PixelFormat format;
 	Palette palette;
 	std::vector<u8> pixels;
+	fs::path path;
+	
+	s32 palette_out_edge = -1;
+	s32 texture_offset = -1;
+	s32 palette_offset = -1;
+	s32 mipmap_offset = -1;
+#define TFRAG_TEXTURE_INDEX 0
+#define MOBY_TEXTURE_INDEX 1
+#define TIE_TEXTURE_INDEX 2
+#define SHRUB_TEXTURE_INDEX 3
+	Opt<s32> indices[4];
+	bool used_by[4] = {false, false, false, false};
 };
 
 std::string hash_texture(const Texture& texture);

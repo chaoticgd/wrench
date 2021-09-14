@@ -788,7 +788,7 @@ struct Class {
 
 struct MobyClass : Class {
 	Opt<std::vector<u8>> model;
-	std::vector<Texture> textures;
+	std::vector<size_t> textures;
 	bool has_asset_table_entry = false;
 	
 	static std::string get_pvar_type(s32 o_class);
@@ -796,12 +796,12 @@ struct MobyClass : Class {
 
 struct TieClass : Class {
 	std::vector<u8> model;
-	std::vector<Texture> textures;
+	std::vector<size_t> textures;
 };
 
 struct ShrubClass : Class {
 	std::vector<u8> model;
-	std::vector<Texture> textures;
+	std::vector<size_t> textures;
 };
 
 Json get_file_metadata(const char* format, const char* application);
@@ -869,7 +869,8 @@ struct LevelWad : Wad {
 	std::vector<u8> sky;
 	Mesh collision;
 	std::vector<u8> collision_bin;
-	std::vector<Texture> tfrag_textures;
+	std::vector<Texture> textures;
+	std::vector<size_t> tfrag_texture_indices;
 	std::vector<Texture> particle_textures;
 	std::vector<Texture> fx_textures;
 	std::vector<MobyClass> moby_classes;

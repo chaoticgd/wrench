@@ -22,7 +22,7 @@
 #include "util.h"
 #include "texture.h"
 
-Opt<Texture> read_png(const char* file_name);
+Opt<Texture> read_png(const fs::path& path);
 void write_png(const char* file_name, const Texture& texture);
 
 #endif

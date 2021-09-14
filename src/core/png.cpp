@@ -20,31 +20,32 @@
 
 #include <png.h>
 
-Opt<Texture> read_png(const char* file_name) {
-	FILE* file = fopen(file_name, "rb");
+Opt<Texture> read_png(const fs::path& path) {
+	std::string path_str = path.string();
+	FILE* file = fopen(path_str.c_str(), "rb");
 	if(!file) {
-		printf("warning: Failed to open %s for reading.\n", file_name);
+		printf("warning: Failed to open %s for reading.\n", path_str.c_str());
 		return {};
 	}
 	
 	png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING,
 		nullptr, nullptr, nullptr);
 	if(!png_ptr) {
-		printf("warning: png_create_read_struct failed (%s).\n", file_name);
+		printf("warning: png_create_read_struct failed (%s).\n", path_str.c_str());
 		fclose(file);
 		return {};
 	}
 	
 	png_infop info_ptr = png_create_info_struct(png_ptr);
 	if(!info_ptr) {
-		printf("warning: png_create_info_struct failed (%s).\n", file_name);
+		printf("warning: png_create_info_struct failed (%s).\n", path_str.c_str());
 		png_destroy_read_struct(&png_ptr, nullptr, nullptr);
 		fclose(file);
 		return {};
 	}
 	
 	if(setjmp(png_jmpbuf(png_ptr))) {
-		printf("warning: Error handler invoked when reading PNG (%s).\n", file_name);
+		printf("warning: Error handler invoked when reading PNG (%s).\n", path_str.c_str());
 		png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
 		fclose(file);
 		return {};
@@ -76,6 +77,7 @@ Opt<Texture> read_png(const char* file_name) {
 	texture.width = width;
 	texture.height = height;
 	texture.format = PixelFormat::IDTEX8;
+	texture.path = path;
 	for(s32 i = 0; i < num_palette; i++) {
 		u32& dest = texture.palette.colours[i];
 		dest |= palette[i].red << 0;

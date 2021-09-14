@@ -63,6 +63,6 @@ packed_struct(AssetHeader,
 static_assert(sizeof(AssetHeader) == 0xbc);
 
 void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ram);
-void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, OutBuffer gs_ram, const LevelWad& wad);
+void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, OutBuffer gs_ram, LevelWad& wad);
 
 #endif

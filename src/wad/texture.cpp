@@ -18,32 +18,16 @@
 
 #include "texture.h"
 
-std::vector<PalettedTexture> write_nonshared_textures(OutBuffer data, const std::vector<Texture>& src);
+void write_nonshared_texture_data(OutBuffer data, std::vector<Texture>& stexturesc);
 static Texture read_paletted_texture(Buffer data, Buffer palette, s32 width, s32 height);
-static u8 decode_palette_index(u8 index);
+static u8 map_palette_index(u8 index);
 
-std::vector<Texture> read_tfrag_textures(BufferArray<TextureEntry> texture_table, Buffer data, Buffer gs_ram) {
-	std::vector<Texture> textures;
+void read_texture_table(std::vector<Texture>& dest, BufferArray<TextureEntry> texture_table, Buffer data, Buffer gs_ram) {
 	for(const TextureEntry& entry : texture_table) {
 		Buffer texture = data.subbuf(entry.data_offset);
 		Buffer palette = gs_ram.subbuf(entry.palette * 0x100);
-		textures.emplace_back(read_paletted_texture(texture, palette, entry.width, entry.height));
+		dest.emplace_back(read_paletted_texture(texture, palette, entry.width, entry.height));
 	}
-	return textures;
-}
-
-std::vector<Texture> read_instance_textures(BufferArray<TextureEntry> texture_table, const u8 indices[16], Buffer data, Buffer gs_ram) {
-	std::vector<Texture> textures;
-	for(s32 i = 0; i < 16; i++) {
-		if(indices[i] == 0xff) {
-			break;
-		}
-		const TextureEntry& entry = texture_table[indices[i]];
-		Buffer texture = data.subbuf(entry.data_offset);
-		Buffer palette = gs_ram.subbuf(entry.palette * 0x100);
-		textures.emplace_back(read_paletted_texture(texture, palette, entry.width, entry.height));
-	}
-	return textures;
 }
 
 std::vector<Texture> read_particle_textures(BufferArray<ParticleTextureEntry> texture_table, Buffer data) {
@@ -56,15 +40,15 @@ std::vector<Texture> read_particle_textures(BufferArray<ParticleTextureEntry> te
 	return textures;
 }
 
-ArrayRange write_particle_textures(OutBuffer header, OutBuffer data, const std::vector<Texture>& src) {
+ArrayRange write_particle_textures(OutBuffer header, OutBuffer data, std::vector<Texture>& textures) {
 	s64 particle_base = data.tell();
-	std::vector<PalettedTexture> textures = write_nonshared_textures(data, src);
+	write_nonshared_texture_data(data, textures);
 	ArrayRange range;
 	range.count = textures.size();
 	range.offset = header.tell();
-	for(PalettedTexture& texture : textures) {
-		PalettedTexture* palette_texture = &texture;
-		while(palette_texture->palette_out_edge > -1) {
+	for(Texture& texture : textures) {
+		Texture* palette_texture = &texture;
+		if(palette_texture->palette_out_edge > -1) {
 			palette_texture = &textures[palette_texture->palette_out_edge];
 		}
 		
@@ -88,22 +72,21 @@ std::vector<Texture> read_fx_textures(BufferArray<FXTextureEntry> texture_table,
 	return textures;
 }
 
-ArrayRange write_fx_textures(OutBuffer header, OutBuffer data, const std::vector<Texture>& src) {
+ArrayRange write_fx_textures(OutBuffer header, OutBuffer data, std::vector<Texture>& textures) {
 	s64 fx_base = data.tell();
-	std::vector<PalettedTexture> textures = write_nonshared_textures(data, src);
+	write_nonshared_texture_data(data, textures);
 	ArrayRange range;
 	range.count = textures.size();
 	range.offset = header.tell();
-	for(PalettedTexture& texture : textures) {
-		PalettedTexture* tex = &texture;
-		PalettedTexture* palette_texture = &texture;
-		while(palette_texture->palette_out_edge > -1) {
+	for(Texture& texture : textures) {
+		Texture* palette_texture = &texture;
+		if(palette_texture->palette_out_edge > -1) {
 			palette_texture = &textures[palette_texture->palette_out_edge];
 		}
 		
 		FXTextureEntry entry;
 		entry.palette = palette_texture->palette_offset - fx_base;
-		entry.texture = tex->texture_offset - fx_base;
+		entry.texture = texture.texture_offset - fx_base;
 		entry.width = texture.width;
 		entry.height = texture.height;
 		header.write(entry);
@@ -111,25 +94,18 @@ ArrayRange write_fx_textures(OutBuffer header, OutBuffer data, const std::vector
 	return range;
 }
 
-std::vector<PalettedTexture> write_nonshared_textures(OutBuffer data, const std::vector<Texture>& src) {
-	std::vector<PalettedTexture> textures;
-	textures.reserve(src.size());
-	for(const Texture& texture : src) {
-		textures.emplace_back(adapt_texture(texture));
-	}
+void write_nonshared_texture_data(OutBuffer data, std::vector<Texture>& textures) {
 	deduplicate_palettes(textures);
-	for(PalettedTexture& texture : textures) {
-		assert(texture.texture_out_edge == -1 || textures[texture.texture_out_edge].texture_out_edge == -1);
+	for(Texture& texture : textures) {
+		assert(texture.palette_out_edge == -1 || textures[texture.palette_out_edge].palette_out_edge == -1);
 	}
-	encode_palette_indices(textures);
 	
-	for(PalettedTexture& texture : textures) {
+	for(Texture& texture : textures) {
 		if(texture.palette_out_edge == -1) {
-			texture.palette_offset = data.write_multiple(texture.palette.colours);
+			texture.palette_offset = write_palette(data, texture.palette);
 		}
-		texture.texture_offset = data.write_multiple(texture.data);
+		texture.texture_offset = data.write_multiple(texture.pixels);
 	}
-	return textures;
 }
 
 static Texture read_paletted_texture(Buffer data, Buffer palette, s32 width, s32 height) {
@@ -138,7 +114,7 @@ static Texture read_paletted_texture(Buffer data, Buffer palette, s32 width, s32
 	texture.height = height;
 	texture.palette.top = 256;
 	for(s32 i = 0; i < 256; i++) {
-		texture.palette.colours[i] = palette.read<u32>(decode_palette_index(i) * 4, "palette");
+		texture.palette.colours[i] = palette.read<u32>(map_palette_index(i) * 4, "palette");
 		u32 alpha = (texture.palette.colours[i] & 0xff000000) >> 24;
 		alpha = std::min(alpha * 2, 0xffu);
 		texture.palette.colours[i] = (texture.palette.colours[i] & 0x00ffffff) | (alpha << 24);
@@ -147,79 +123,7 @@ static Texture read_paletted_texture(Buffer data, Buffer palette, s32 width, s32
 	return texture;
 }
 
-std::pair<std::vector<const Texture*>, FlattenedTextureLayout> flatten_textures(const LevelWad& wad) {
-	std::vector<const Texture*> pointers;
-	pointers.reserve(wad.tfrag_textures.size());
-	FlattenedTextureLayout layout;
-	layout.tfrags_begin = pointers.size();
-	for(const Texture& texture : wad.tfrag_textures) {
-		pointers.push_back(&texture);
-	}
-	layout.mobies_begin = pointers.size();
-	for(const MobyClass& cls : wad.moby_classes) {
-		for(const Texture& texture : cls.textures) {
-			pointers.push_back(&texture);
-		}
-	}
-	layout.ties_begin = pointers.size();
-	for(const TieClass& cls : wad.tie_classes) {
-		for(const Texture& texture : cls.textures) {
-			pointers.push_back(&texture);
-		}
-	}
-	layout.shrubs_begin = pointers.size();
-	for(const ShrubClass& cls : wad.shrub_classes) {
-		for(const Texture& texture : cls.textures) {
-			pointers.push_back(&texture);
-		}
-	}
-	return {pointers, layout};
-}
-
-PalettedTexture adapt_texture(const Texture& src) {
-	assert(src.pixels.size() == src.width * src.height);
-	
-	PalettedTexture texture = {0};
-	texture.width = src.width;
-	texture.height = src.height;
-	texture.palette = src.palette;
-	texture.data = src.pixels;
-	return texture;
-}
-
-void deduplicate_textures(std::vector<PalettedTexture>& textures) {
-	std::vector<size_t> mapping(textures.size());
-	for(size_t i = 0; i < textures.size(); i++) {
-		mapping[i] = i;
-	}
-	
-	std::sort(BEGIN_END(mapping), [&](size_t lhs, size_t rhs) {
-		if(textures[lhs].data == textures[rhs].data) {
-			return textures[lhs].palette.colours < textures[rhs].palette.colours;
-		} else {
-			return textures[lhs].data < textures[rhs].data;
-		}
-	});
-	
-	s32 first_occurence = mapping[0];
-	textures[mapping[0]].is_first_occurence = true;
-	for(size_t i = 1; i < textures.size(); i++) {
-		PalettedTexture& last = textures[mapping[i - 1]];
-		PalettedTexture& cur = textures[mapping[i]];
-		// Maybe in the future we could do something clever here to find cases
-		// where the pixel data is duplicated but the palette isn't. That may
-		// save EE memory in some cases, but may complicate mipmap generation.
-		if(last.data == cur.data && last.palette == cur.palette) {
-			cur.texture_out_edge = first_occurence;
-			cur.is_first_occurence = false;
-		} else {
-			first_occurence = mapping[i];
-			cur.is_first_occurence = true;
-		}
-	}
-}
-
-void deduplicate_palettes(std::vector<PalettedTexture>& textures) {
+void deduplicate_palettes(std::vector<Texture>& textures) {
 	std::vector<size_t> mapping(textures.size());
 	for(size_t i = 0; i < textures.size(); i++) {
 		mapping[i] = i;
@@ -229,32 +133,50 @@ void deduplicate_palettes(std::vector<PalettedTexture>& textures) {
 		return textures[lhs].palette.colours < textures[rhs].palette.colours;
 	});
 	
-	s32 first_occurence = mapping[0];
-	for(size_t i = 1; i < textures.size(); i++) {
-		if(textures[mapping[i]].texture_out_edge != -1) {
-			continue;
+	std::vector<size_t> group{mapping[0]};
+	auto merge_group = [&]() {
+		size_t lowest = SIZE_MAX;
+		for(size_t index : group) {
+			lowest = std::min(lowest, index);
 		}
-		PalettedTexture& last = textures[mapping[i - 1]];
-		PalettedTexture& cur = textures[mapping[i]];
-		if(last.palette == cur.palette) {
-			cur.palette_out_edge = first_occurence;
-		} else {
-			first_occurence = mapping[i];
-		}
-	}
-}
-
-void encode_palette_indices(std::vector<PalettedTexture>& textures) {
-	for(PalettedTexture& texture : textures) {
-		if(texture.is_first_occurence) {
-			for(u8& pixel : texture.data) {
-				pixel = decode_palette_index(pixel);
+		assert(lowest != SIZE_MAX);
+		for(size_t index : group) {
+			if(index != lowest) {
+				textures[index].palette_out_edge = lowest;
 			}
 		}
+	};
+	
+	for(size_t i = 1; i < textures.size(); i++) {
+		Texture& last = textures[mapping[i - 1]];
+		Texture& cur = textures[mapping[i]];
+		if(!(last.palette == cur.palette)) {
+			merge_group();
+			group.clear();
+		}
+		group.push_back(mapping[i]);
+	}
+	if(group.size() > 0) {
+		merge_group();
 	}
 }
 
-static u8 decode_palette_index(u8 index) {
+s64 write_palette(OutBuffer dest, Palette& palette) {
+	s64 ofs = dest.tell();
+	for(s32 i = 0; i < 256; i++) {
+		u32 colour = palette.colours[map_palette_index(i)];
+		u32 alpha = (colour & 0xff000000) >> 24;
+		if(alpha != 0xff) {
+			alpha = alpha / 2;
+		} else {
+			alpha = 0x80;
+		}
+		dest.write((colour & 0x00ffffff) | (alpha << 24));
+	}
+	return ofs;
+}
+
+static u8 map_palette_index(u8 index) {
 	// Swap middle two bits
 	//  e.g. 00010000 becomes 00001000.
 	return (((index & 16) >> 1) != (index & 8)) ? (index ^ 0b00011000) : index;

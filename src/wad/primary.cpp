@@ -60,7 +60,7 @@ static ByteRange write_primary_block(OutBuffer& dest, const std::vector<u8>& byt
 	return {(s32) (block_ofs - primary_ofs), (s32) (dest.tell() - block_ofs)};
 }
 
-SectorRange write_primary(OutBuffer& dest, const LevelWad& wad) {
+SectorRange write_primary(OutBuffer& dest, LevelWad& wad) {
 	dest.pad(SECTOR_SIZE, 0);
 	
 	PrimaryHeader header = {0};

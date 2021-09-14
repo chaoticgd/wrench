@@ -59,7 +59,7 @@ packed_struct(DeadlockedPrimaryHeader,
 )
 
 void read_primary(LevelWad& wad, Buffer src);
-SectorRange write_primary(OutBuffer& dest, const LevelWad& wad);
+SectorRange write_primary(OutBuffer& dest, LevelWad& wad);
 void swap_primary_header(PrimaryHeader& l, std::vector<u8>& r, Game game);
 
 #endif

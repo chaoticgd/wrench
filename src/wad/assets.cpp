@@ -94,7 +94,17 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 	
 	Buffer texture_data = assets.subbuf(header.textures_base_offset);
 	
-	wad.tfrag_textures = read_tfrag_textures(tfrag_textures, texture_data, gs_ram);
+	size_t tfrags_begin = wad.textures.size();
+	read_texture_table(wad.textures, tfrag_textures, texture_data, gs_ram);
+	for(size_t i = tfrags_begin; i < wad.textures.size(); i++) {
+		wad.tfrag_texture_indices.push_back(i);
+	}
+	size_t mobies_begin = wad.textures.size();
+	read_texture_table(wad.textures, moby_textures, texture_data, gs_ram);
+	size_t ties_begin = wad.textures.size();
+	read_texture_table(wad.textures, tie_textures, texture_data, gs_ram);
+	size_t shrubs_begin = wad.textures.size();
+	read_texture_table(wad.textures, shrub_textures, texture_data, gs_ram);
 	
 	for(s64 i = 0; i < moby_classes.size(); i++) {
 		const MobyClassEntry& entry = moby_classes[i];
@@ -115,7 +125,13 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 			s64 model_size = next_asset_block_size(entry.offset_in_asset_wad, block_bounds);
 			moby->model = assets.read_bytes(entry.offset_in_asset_wad, model_size, "moby model");
 		}
-		moby->textures = read_instance_textures(moby_textures, entry.textures, texture_data, gs_ram);
+		for(s32 j = 0; j < 16; j++) {
+			if(entry.textures[j] != 0xff) {
+				moby->textures.push_back(mobies_begin + entry.textures[j]);
+			} else {
+				break;
+			}
+		}
 		moby->has_asset_table_entry = true;
 	}
 	
@@ -125,7 +141,13 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 		tie.o_class = tie_classes[i].o_class;
 		s64 model_size = next_asset_block_size(tie_classes[i].offset_in_asset_wad, block_bounds);
 		tie.model = assets.read_bytes(tie_classes[i].offset_in_asset_wad, model_size, "tie model");
-		tie.textures = read_instance_textures(tie_textures, tie_classes[i].textures, texture_data, gs_ram);
+		for(s32 j = 0; j < 16; j++) {
+			if(tie_classes[i].textures[j] != 0xff) {
+				tie.textures.push_back(ties_begin + tie_classes[i].textures[j]);
+			} else {
+				break;
+			}
+		}
 		wad.tie_classes.emplace_back(std::move(tie));
 	}
 	
@@ -135,7 +157,13 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 		shrub.o_class = shrub_classes[i].o_class;
 		s64 model_size = next_asset_block_size(shrub_classes[i].offset_in_asset_wad, block_bounds);
 		shrub.model = assets.read_bytes(shrub_classes[i].offset_in_asset_wad, model_size, "shrub model");
-		shrub.textures = read_instance_textures(shrub_textures, shrub_classes[i].textures, texture_data, gs_ram);
+		for(s32 j = 0; j < 16; j++) {
+			if(shrub_classes[i].textures[j] != 0xff) {
+				shrub.textures.push_back(shrubs_begin + shrub_classes[i].textures[j]);
+			} else {
+				break;
+			}
+		}
 		wad.shrub_classes.emplace_back(std::move(shrub));
 	}
 	
@@ -154,7 +182,7 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 	print_asset_header(header);
 }
 
-void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, OutBuffer gs_ram, const LevelWad& wad) {
+void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, OutBuffer gs_ram, LevelWad& wad) {
 	std::vector<u8> data_vec;
 	OutBuffer data_dest(data_vec);
 	
@@ -185,92 +213,82 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 	header.tie_classes.offset = header_dest.alloc_multiple<TieClassEntry>(header.tie_classes.count);
 	header.shrub_classes.offset = header_dest.alloc_multiple<ShrubClassEntry>(header.shrub_classes.count);
 	
-	start_timer("Deduplicating textures");
-	
-	// Deduplicate textures.
-	auto [texture_pointers, layout] = flatten_textures(wad);
-	std::vector<PalettedTexture> paletted_textures;
-	paletted_textures.reserve(texture_pointers.size());
-	for(const Texture* texture : texture_pointers) {
-		paletted_textures.emplace_back(adapt_texture(*texture));
+	deduplicate_palettes(wad.textures);
+	for(Texture& texture : wad.textures) {
+		assert(texture.palette_out_edge == -1 || wad.textures[texture.palette_out_edge].palette_out_edge == -1);
 	}
-	deduplicate_textures(paletted_textures);
-	deduplicate_palettes(paletted_textures);
-	for(PalettedTexture& texture : paletted_textures) {
-		assert(texture.texture_out_edge == -1 || paletted_textures[texture.texture_out_edge].texture_out_edge == -1);
-		assert(texture.palette_out_edge == -1 || paletted_textures[texture.palette_out_edge].palette_out_edge == -1);
-	}
-	encode_palette_indices(paletted_textures);
 	
 	std::vector<GsRamEntry> gs_ram_table;
 	
 	std::vector<u8> mipmap_data;
-	
 	data_dest.pad(0x40);
 	header.textures_base_offset = data_dest.tell();
-	for(PalettedTexture& texture : paletted_textures) {
-		if(texture.texture_out_edge == -1) {
-			mipmap_data.resize((texture.width * texture.height) / 16);
-			for(s32 y = 0; y < texture.height / 4; y++) {
-				for(s32 x = 0; x < texture.width / 4; x++) {
-					mipmap_data[y * (texture.width / 4) + x] = texture.data[y * 4 * texture.width + x * 4];
-				}
-			}
-			texture.mipmap_offset = gs_ram.write_multiple(mipmap_data);
-			GsRamEntry mipmap_entry;
-			mipmap_entry.unknown_0 = 0x13;
-			mipmap_entry.width = texture.width / 4;
-			mipmap_entry.height = texture.height / 4;
-			mipmap_entry.offset_1 = texture.mipmap_offset;
-			mipmap_entry.offset_2 = texture.mipmap_offset;
-			gs_ram_table.push_back(mipmap_entry);
-			texture.texture_offset = data_dest.write_multiple(texture.data);
-			if(texture.palette_out_edge == -1) {
-				gs_ram.pad(0x100, 0);
-				texture.palette_offset = gs_ram.write_multiple(texture.palette.colours);
-				gs_ram_table.push_back({0, 0, 0, texture.palette_offset, texture.palette_offset});
+	for(Texture& texture : wad.textures) {
+		if(texture.palette_out_edge == -1) {
+			gs_ram.pad(0x100, 0);
+			texture.palette_offset = write_palette(gs_ram, texture.palette);
+			gs_ram_table.push_back({0, 0, 0, texture.palette_offset, texture.palette_offset});
+		}
+		mipmap_data.resize((texture.width * texture.height) / 16);
+		for(s32 y = 0; y < texture.height / 4; y++) {
+			for(s32 x = 0; x < texture.width / 4; x++) {
+				mipmap_data[y * (texture.width / 4) + x] = 0;//texture.pixels[y * 4 * texture.width + x * 4];
 			}
 		}
+		texture.mipmap_offset = gs_ram.write_multiple(mipmap_data);
+		GsRamEntry mipmap_entry;
+		mipmap_entry.unknown_0 = 0x13;
+		mipmap_entry.width = texture.width / 4;
+		mipmap_entry.height = texture.height / 4;
+		mipmap_entry.offset_1 = texture.mipmap_offset;
+		mipmap_entry.offset_2 = texture.mipmap_offset;
+		gs_ram_table.push_back(mipmap_entry);
+		texture.texture_offset = data_dest.write_multiple(texture.pixels);
 	}
 	
 	// Write texture tables.
-	auto write_texture_table = [&](s32 table, s32 low, s32 high) {
+	auto write_texture_table = [&](s32 table, const std::vector<size_t>& indices) {
 		s32 table_offset = header_dest.tell();
-		std::vector<TextureEntry> entries;
-		for(size_t i = low; i < high; i++) {
-			PalettedTexture* texture_ptr = &paletted_textures[i];
-			if(texture_ptr->texture_out_edge > -1) {
-				texture_ptr = &paletted_textures[texture_ptr->texture_out_edge];
-			}
-			PalettedTexture& texture = *texture_ptr;
+		s32 table_count = 0;
+		for(size_t index : indices) {
+			Texture& texture = wad.textures[index];
 			if(!texture.indices[table].has_value()) {
-				assert(texture.is_first_occurence);
-				assert(texture.texture_out_edge == -1);
 				assert(texture.texture_offset != -1);
 				TextureEntry entry;
 				entry.data_offset = texture.texture_offset - header.textures_base_offset;
 				entry.width = texture.width;
 				entry.height = texture.height;
 				entry.unknown_8 = 3;
-				PalettedTexture* palette_texture = &texture;
+				Texture* palette_texture = &texture;
 				if(palette_texture->palette_out_edge > -1) {
-					palette_texture = &paletted_textures[palette_texture->palette_out_edge];
+					palette_texture = &wad.textures[palette_texture->palette_out_edge];
 				}
 				assert(palette_texture->palette_offset != -1);
 				entry.palette = palette_texture->palette_offset / 0x100;
 				entry.mipmap = texture.mipmap_offset;
-				texture.indices[table] = entries.size();
-				entries.push_back(entry);
+				texture.indices[table] = table_count;
+				header_dest.write(entry);
+				table_count++;
 			}
 		}
-		header_dest.write_multiple(entries);
-		
-		return ArrayRange {(s32) entries.size(), table_offset};
+		return ArrayRange {table_count, table_offset};
 	};
-	header.tfrag_textures = write_texture_table(TFRAG_TEXTURE_INDEX, layout.tfrags_begin, layout.mobies_begin);
-	header.moby_textures = write_texture_table(MOBY_TEXTURE_INDEX, layout.mobies_begin, layout.ties_begin);
-	header.tie_textures = write_texture_table(TIE_TEXTURE_INDEX, layout.ties_begin, layout.shrubs_begin);
-	header.shrub_textures = write_texture_table(SHRUB_TEXTURE_INDEX, layout.shrubs_begin, paletted_textures.size());
+	header.tfrag_textures = write_texture_table(TFRAG_TEXTURE_INDEX, wad.tfrag_texture_indices);
+	std::vector<size_t> moby_indices;
+	for(const MobyClass& cls : wad.moby_classes) {
+		moby_indices.insert(moby_indices.end(), BEGIN_END(cls.textures));
+	}
+	header.moby_textures = write_texture_table(MOBY_TEXTURE_INDEX, moby_indices);
+	std::vector<size_t> tie_indices;
+	for(const TieClass& cls : wad.tie_classes) {
+		tie_indices.insert(tie_indices.end(), BEGIN_END(cls.textures));
+	}
+	header.tie_textures = write_texture_table(TIE_TEXTURE_INDEX, tie_indices);
+	std::vector<size_t> shrub_indices;
+	for(const ShrubClass& cls : wad.shrub_classes) {
+		shrub_indices.insert(shrub_indices.end(), BEGIN_END(cls.textures));
+	}
+	header.shrub_textures = write_texture_table(SHRUB_TEXTURE_INDEX, shrub_indices);
 	
 	data_dest.pad(0x100, 0);
 	header.part_bank_offset = data_dest.tell();
@@ -280,33 +298,25 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 	header.fx_textures = write_fx_textures(header_dest, data_dest, wad.fx_textures);
 	printf("Shared texture memory: 0x%x bytes\n", header.part_bank_offset - header.textures_base_offset);
 	
-	stop_timer();
-	
 	header.gs_ram.count = gs_ram_table.size();
 	header.gs_ram.offset = header_dest.tell();
 	header_dest.write_multiple(gs_ram_table);
 	
-	auto write_texture_list = [&](u8 dest[16], const std::vector<Texture>& textures, s32 o_class, s32 table, size_t first_index) {
-		verify(textures.size() < 16, "Class %d has too many textures.\n", o_class);
-		for(s32 i = 0; i < textures.size(); i++) {
-			PalettedTexture* texture = &paletted_textures.at(first_index + i);
-			if(texture->texture_out_edge > -1) {
-				texture = &paletted_textures[texture->texture_out_edge];
-			}
-			assert(texture->is_first_occurence);
-			assert(texture->texture_out_edge == -1);
-			assert(texture->indices[table].has_value());
-			verify(*texture->indices[table] < 0xff, "Too many textures.\n");
-			dest[i] = *texture->indices[table];
+	auto write_texture_list = [&](u8 dest[16], const std::vector<size_t>& indices, s32 o_class, s32 table) {
+		verify(indices.size() < 16, "Class %d has too many textures.\n", o_class);
+		for(s32 i = 0; i < indices.size(); i++) {
+			Texture& texture = wad.textures[indices[i]];
+			assert(texture.indices[table].has_value());
+			verify(*texture.indices[table] < 0xff, "Too many textures.\n");
+			dest[i] = *texture.indices[table];
 		}
-		for(s32 i = textures.size(); i < 16; i++) {
+		for(s32 i = indices.size(); i < 16; i++) {
 			dest[i] = 0xff;
 		}
 	};
 	
 	// Write classes.
 	size_t i = 0;
-	size_t class_index = 0;
 	while(data_dest.tell() < 0xb98a40) {
 		data_dest.write<u8>(0);
 	}
@@ -320,39 +330,30 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 		if(cls.model.has_value()) {
 			data_dest.pad(0x40);
 			entry.offset_in_asset_wad = data_dest.tell();
-			write_texture_list(entry.textures, cls.textures, cls.o_class, MOBY_TEXTURE_INDEX, layout.mobies_begin + class_index);
-			class_index += cls.textures.size();
 			data_dest.write_multiple(*cls.model);
-		} else {
-			for(s32 j = 0; j < 16; j++) {
-				entry.textures[j] = 0xff;
-			}
 		}
+		write_texture_list(entry.textures, cls.textures, cls.o_class, MOBY_TEXTURE_INDEX);
 		header_dest.write(header.moby_classes.offset + (i++) * sizeof(MobyClassEntry), entry);
 	}
 	
 	i = 0;
-	class_index = 0;
 	for(const TieClass& cls : wad.tie_classes) {
 		TieClassEntry entry = {0};
 		entry.o_class = cls.o_class;
 		data_dest.pad(0x40);
 		entry.offset_in_asset_wad = data_dest.tell();
-		write_texture_list(entry.textures, cls.textures, cls.o_class, TIE_TEXTURE_INDEX, layout.ties_begin + class_index);
-		class_index += cls.textures.size();
+		write_texture_list(entry.textures, cls.textures, cls.o_class, TIE_TEXTURE_INDEX);
 		header_dest.write(header.tie_classes.offset + (i++) * sizeof(TieClassEntry), entry);
 		data_dest.write_multiple(cls.model);
 	}
 	
 	i = 0;
-	class_index = 0;
 	for(const ShrubClass& cls : wad.shrub_classes) {
 		ShrubClassEntry entry = {0};
 		entry.o_class = cls.o_class;
 		data_dest.pad(0x40);
 		entry.offset_in_asset_wad = data_dest.tell();
-		write_texture_list(entry.textures, cls.textures, cls.o_class, SHRUB_TEXTURE_INDEX, layout.shrubs_begin + class_index);
-		class_index += cls.textures.size();
+		write_texture_list(entry.textures, cls.textures, cls.o_class, SHRUB_TEXTURE_INDEX);
 		header_dest.write(header.shrub_classes.offset + (i++) * sizeof(ShrubClassEntry), entry);
 		data_dest.write_multiple(cls.model);
 	}
