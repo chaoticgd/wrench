@@ -51,7 +51,6 @@ struct Texture {
 #define TIE_TEXTURE_INDEX 2
 #define SHRUB_TEXTURE_INDEX 3
 	Opt<s32> indices[4];
-	bool used_by[4] = {false, false, false, false};
 };
 
 std::string hash_texture(const Texture& texture);

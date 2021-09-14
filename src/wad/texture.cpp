@@ -109,9 +109,10 @@ void write_nonshared_texture_data(OutBuffer data, std::vector<Texture>& textures
 }
 
 static Texture read_paletted_texture(Buffer data, Buffer palette, s32 width, s32 height) {
-	Texture texture;
+	Texture texture = {0};
 	texture.width = width;
 	texture.height = height;
+	texture.format = PixelFormat::IDTEX8;
 	texture.palette.top = 256;
 	for(s32 i = 0; i < 256; i++) {
 		texture.palette.colours[i] = palette.read<u32>(map_palette_index(i) * 4, "palette");
