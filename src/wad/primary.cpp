@@ -42,7 +42,7 @@ void read_primary(LevelWad& wad, Buffer src) {
 	verify(decompress_wad(assets_vec, wad_buffer(src.subbuf(header.assets.offset))), "Failed to decompress assets.");
 	Buffer assets(assets_vec);
 	read_assets(wad, wad.asset_header, assets, src.subbuf(header.gs_ram.offset));
-	if(header.transition_textures.has_value()) {
+	if(header.transition_textures.has_value() && header.transition_textures->offset > -1) {
 		wad.transition_textures = src.read_bytes(header.transition_textures->offset, header.transition_textures->size, "transition textures");
 	}
 	if(header.moby8355_pvars.has_value()) {
