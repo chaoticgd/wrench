@@ -62,7 +62,12 @@ static Mesh collision_sectors_to_mesh(const CollisionSectors& sectors);
 
 Mesh read_collision(Buffer src) {
 	CollisionHeader header = src.read<CollisionHeader>(0, "collision header");
-	Buffer mesh = src.subbuf(header.mesh, header.second_part - header.mesh);
+	Buffer mesh;
+	if(header.second_part != 0) {
+		mesh = src.subbuf(header.mesh, header.second_part - header.mesh);
+	} else {
+		mesh = src.subbuf(header.mesh);
+	}
 	CollisionSectors sectors = parse_collision_mesh(mesh);
 	std::vector<u8> outbuf;
 	write_collision_mesh(OutBuffer(outbuf), sectors);
