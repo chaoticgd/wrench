@@ -421,7 +421,7 @@ struct Camera : Instance {
 };
 
 struct Cuboid : Instance {
-	Cuboid() : Instance(INST_SPHERE, COM_TRANSFORM, TransformMode::MATRIX_INVERSE_ROTATION) {}
+	Cuboid() : Instance(INST_CUBOID, COM_TRANSFORM, TransformMode::MATRIX_INVERSE_ROTATION) {}
 };
 
 struct Sphere : Instance {
@@ -429,7 +429,7 @@ struct Sphere : Instance {
 };
 
 struct Cylinder : Instance {
-	Cylinder() : Instance(INST_SPHERE, COM_TRANSFORM, TransformMode::MATRIX_INVERSE_ROTATION) {}
+	Cylinder() : Instance(INST_CYLINDER, COM_TRANSFORM, TransformMode::MATRIX_INVERSE_ROTATION) {}
 };
 
 struct SoundInstance : Instance {
