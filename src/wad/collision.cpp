@@ -21,7 +21,6 @@
 packed_struct(CollisionHeader,
 	s32 mesh;
 	s32 second_part;
-	s32 pad[2];
 )
 
 template <typename T>
@@ -52,6 +51,7 @@ struct CollisionSector {
 	std::vector<CollisionTri> tris;
 	std::vector<CollisionQuad> quads;
 	glm::vec3 displacement = {0, 0, 0};
+	u8 unknown_byte;
 };
 
 using CollisionSectors = CollisionList<CollisionList<CollisionList<CollisionSector>>>;
@@ -69,13 +69,27 @@ Mesh read_collision(Buffer src) {
 		mesh = src.subbuf(header.mesh);
 	}
 	CollisionSectors sectors = parse_collision_mesh(mesh);
-	std::vector<u8> outbuf;
-	write_collision_mesh(OutBuffer(outbuf), sectors);
-	write_file("/tmp", "newcoll2.bin", Buffer(outbuf));
 	Mesh raw_mesh = collision_sectors_to_mesh(sectors);
 	// The vertices and faces stored in the games files are duplicated such that
 	// only one sector must be accessed to do collision detection.
 	return deduplicate_faces(deduplicate_vertices(std::move(raw_mesh)));
+}
+
+
+void roundtrip_collision(OutBuffer dest, Buffer src) {
+	CollisionHeader header = src.read<CollisionHeader>(0, "collision header");
+	Buffer mesh;
+	if(header.second_part != 0) {
+		mesh = src.subbuf(header.mesh, header.second_part - header.mesh);
+	} else {
+		mesh = src.subbuf(header.mesh);
+	}
+	CollisionSectors sectors = parse_collision_mesh(mesh);
+	header.mesh = 0x40;
+	header.second_part = 0;
+	dest.write(header);
+	dest.pad(0x40);
+	write_collision_mesh(dest, sectors);
 }
 
 static CollisionSectors parse_collision_mesh(Buffer mesh) {
@@ -127,6 +141,7 @@ static CollisionSectors parse_collision_mesh(Buffer mesh) {
 				sector.vertices.resize(vertex_count);
 				sector.tris.resize(face_count - quad_count);
 				sector.quads.resize(quad_count);
+				sector.unknown_byte = x_offsets[x] & 0xff;
 				
 				s32 ofs = sector_offset + 4;
 				for(s32 vertex = 0; vertex < vertex_count; vertex++) {
@@ -138,16 +153,6 @@ static CollisionSectors parse_collision_mesh(Buffer mesh) {
 					f32 z = ((s32) (value << 0) >> 20) / 64.f;
 					sector.vertices[vertex] = {x, y, z};
 					ofs += 4;
-					
-					//glm::vec3& vtx = sector.vertices[vertex];
-					//u32 newval = 0;
-					//newval |= ((u32) (s32) (((u32) (vtx.x * 16.f)) << 22)) >> 22;
-					//s32 yval = ((s32) (vtx.y * 16.f) << 22);
-					//newval |= (
-					//	((u32) yval) >> 12
-					//);
-					//newval |= (s32) (((u32) (vtx.z * 64.f)) << 20);
-					//printf("newval %x oldvalue %x\n", newval, value);
 				}
 				for(s32 quad = 0; quad < quad_count; quad++) {
 					u8 v0 = mesh.read<u8>(ofs, "quad v0");
@@ -198,8 +203,7 @@ static void write_collision_mesh(OutBuffer dest, CollisionSectors& sectors) {
 	dest.write<s16>(sectors.coord);
 	verify(sectors.list.size() < 65536, "Collision has too many Z partitions (count too high).");
 	dest.write<u16>(sectors.list.size());
-	sectors.temp_offset = dest.tell() - base_ofs;
-	s64 z_offsets_ofs = dest.alloc_multiple<u16>(sectors.list.size());
+	sectors.temp_offset = dest.alloc_multiple<u16>(sectors.list.size());
 	
 	for(s32 z = 0; z < sectors.list.size(); z++) {
 		dest.pad(4);
@@ -231,13 +235,13 @@ static void write_collision_mesh(OutBuffer dest, CollisionSectors& sectors) {
 		for(s32 y = 0; y < y_partitions.list.size(); y++) {
 			const auto& x_partitions = y_partitions.list[y];
 			for(s32 x = 0; x < x_partitions.list.size(); x++) {
-				dest.pad(4);
-				dest.write<u32>(x_partitions.temp_offset + x * sizeof(u32), (dest.tell() - base_ofs) << 8);
+				dest.pad(0x10);
+				dest.write<u32>(x_partitions.temp_offset + x * sizeof(u32), (dest.tell() - base_ofs) << 8 | x_partitions.list[x].unknown_byte);
 				const CollisionSector& sector = x_partitions.list[x];
-				verify(sector.vertices.size() < 256, "Too many vertices in collision sector.");
-				dest.write<u8>(sector.vertices.size());
 				verify(sector.tris.size() + sector.quads.size() < 65536, "Too many faces in collision sector.");
 				dest.write<u16>(sector.tris.size() + sector.quads.size());
+				verify(sector.vertices.size() < 256, "Too many vertices in collision sector.");
+				dest.write<u8>(sector.vertices.size());
 				verify(sector.quads.size() < 256, "Too many quads in collision sector.");
 				dest.write<u8>(sector.quads.size());
 				

@@ -20,3 +20,4 @@
 #include "../core/collada.h"
 
 Mesh read_collision(Buffer src);
+void roundtrip_collision(OutBuffer dest, Buffer src);
