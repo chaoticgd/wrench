@@ -23,33 +23,6 @@
 #include "../lz/compression.h"
 #include "../core/timer.h"
 
-packed_struct(MobyClassEntry,
-	s32 offset_in_asset_wad;
-	s32 o_class;
-	s32 unknown_8;
-	s32 unknown_c;
-	u8 textures[16];
-)
-
-packed_struct(TieClassEntry,
-	s32 offset_in_asset_wad;
-	s32 o_class;
-	s32 unknown_8;
-	s32 unknown_c;
-	u8 textures[16];
-)
-
-packed_struct(ShrubClassEntry,
-	s32 offset_in_asset_wad;
-	s32 o_class;
-	s32 unknown_8;
-	s32 unknown_c;
-	u8 textures[16];
-	u8 unknown_20[16];
-)
-
-static std::vector<s64> enumerate_asset_block_boundaries(Buffer src, const AssetHeader& header); // Used to determining the size of certain blocks.
-static s64 next_asset_block_size(s32 ofs, const std::vector<s64>& block_bounds);
 static void print_asset_header(const AssetHeader& header);
 
 void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ram) {
@@ -80,17 +53,17 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 	verify(header.tie_classes.count >= 1, "Level has no tie classes.");
 	verify(header.shrub_classes.count >= 1, "Level has no shrub classes.");
 	
-	auto moby_classes = asset_header.read_multiple<MobyClassEntry>(header.moby_classes.offset, header.moby_classes.count, "moby class table");
-	auto tie_classes = asset_header.read_multiple<TieClassEntry>(header.tie_classes.offset, header.tie_classes.count, "tie class table");
-	auto shrub_classes = asset_header.read_multiple<ShrubClassEntry>(header.shrub_classes.offset, header.shrub_classes.count, "shrub class table");
+	auto moby_classes = asset_header.read_multiple<MobyClassEntry>(header.moby_classes, "moby class table");
+	auto tie_classes = asset_header.read_multiple<TieClassEntry>(header.tie_classes, "tie class table");
+	auto shrub_classes = asset_header.read_multiple<ShrubClassEntry>(header.shrub_classes, "shrub class table");
 	
-	auto gs_ram_table = asset_header.read_multiple<GsRamEntry>(header.gs_ram.offset, header.gs_ram.count, "gs ram table");
-	auto tfrag_textures = asset_header.read_multiple<TextureEntry>(header.tfrag_textures.offset, header.tfrag_textures.count, "tfrag texture table");
-	auto moby_textures = asset_header.read_multiple<TextureEntry>(header.moby_textures.offset, header.moby_textures.count, "moby texture table");
-	auto tie_textures = asset_header.read_multiple<TextureEntry>(header.tie_textures.offset, header.tie_textures.count, "tie texture table");
-	auto shrub_textures = asset_header.read_multiple<TextureEntry>(header.shrub_textures.offset, header.shrub_textures.count, "shrub texture table");
-	auto particle_textures = asset_header.read_multiple<ParticleTextureEntry>(header.part_textures.offset, header.part_textures.count, "particle texture table");
-	auto fx_textures = asset_header.read_multiple<FXTextureEntry>(header.fx_textures.offset, header.fx_textures.count, "fx texture table");
+	auto gs_ram_table = asset_header.read_multiple<GsRamEntry>(header.gs_ram, "gs ram table");
+	auto tfrag_textures = asset_header.read_multiple<TextureEntry>(header.tfrag_textures, "tfrag texture table");
+	auto moby_textures = asset_header.read_multiple<TextureEntry>(header.moby_textures, "moby texture table");
+	auto tie_textures = asset_header.read_multiple<TextureEntry>(header.tie_textures, "tie texture table");
+	auto shrub_textures = asset_header.read_multiple<TextureEntry>(header.shrub_textures, "shrub texture table");
+	auto particle_textures = asset_header.read_multiple<ParticleTextureEntry>(header.part_textures, "particle texture table");
+	auto fx_textures = asset_header.read_multiple<FXTextureEntry>(header.fx_textures, "fx texture table");
 	
 	Buffer texture_data = assets.subbuf(header.textures_base_offset);
 	
@@ -407,7 +380,7 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 	write_file("/tmp", "assets.bin", Buffer(data_dest.vec));
 }
 
-static std::vector<s64> enumerate_asset_block_boundaries(Buffer src, const AssetHeader& header) {
+std::vector<s64> enumerate_asset_block_boundaries(Buffer src, const AssetHeader& header) {
 	std::vector<s64> blocks {
 		header.tfrags,
 		header.occlusion,
@@ -435,7 +408,7 @@ static std::vector<s64> enumerate_asset_block_boundaries(Buffer src, const Asset
 	return blocks;
 }
 
-static s64 next_asset_block_size(s32 ofs, const std::vector<s64>& block_bounds) {
+s64 next_asset_block_size(s32 ofs, const std::vector<s64>& block_bounds) {
 	if(ofs == 0) {
 		// e.g. if there is no sky.
 		return 0;

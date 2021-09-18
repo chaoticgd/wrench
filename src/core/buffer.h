@@ -68,13 +68,18 @@ struct Buffer {
 		return {iter_lo, iter_lo + count};
 	}
 	
+	template <typename T>
+	BufferArray<T> read_multiple(ArrayRange range, const char* subject) const {
+		return read_multiple<T>(range.offset, range.count, subject);
+	}
+	
 	std::vector<u8> read_bytes(s64 offset, s64 size, const char* subject) const;
 	std::string read_string(s64 offset, bool is_korean = false) const;
 	std::string read_fixed_string(s64 offset, s64 size) const;
 	void hexdump(FILE* file, s64 column, const char* ansi_colour_code = "0") const;
 };
 
-bool diff_buffers(Buffer lhs, Buffer rhs, s64 offset, const char* subject);
+bool diff_buffers(Buffer lhs, Buffer rhs, s64 offset, const char* subject, s64 zero);
 
 struct OutBuffer {
 	std::vector<u8>& vec;

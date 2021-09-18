@@ -406,7 +406,7 @@ struct _deferer {
 std::string md5_to_printable_string(uint8_t in[16]);
 
 enum class Game {
-	RAC1, RAC2, RAC3, DL
+	RAC1 = 1, RAC2 = 2, RAC3 = 3, DL = 4
 };
 
 enum class WadType {

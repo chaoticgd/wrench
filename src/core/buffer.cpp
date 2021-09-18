@@ -80,7 +80,7 @@ void Buffer::hexdump(FILE* file, s64 column, const char* ansi_colour_code) const
 	fprintf(file, "\033[0m");
 }
 
-bool diff_buffers(Buffer lhs, Buffer rhs, s64 offset, const char* subject) {
+bool diff_buffers(Buffer lhs, Buffer rhs, s64 offset, const char* subject, s64 zero) {
 	s64 min_size = std::min(lhs.size(), rhs.size());
 	s64 max_size = std::max(lhs.size(), rhs.size());
 	s64 diff_pos = -1;
@@ -103,7 +103,7 @@ bool diff_buffers(Buffer lhs, Buffer rhs, s64 offset, const char* subject) {
 	s64 hexdump_begin = std::max((s64) 0, row_start - 0x50);
 	s64 hexdump_end = max_size;//std::min(max_size, row_start + 0xa0);
 	for(s64 i = hexdump_begin; i < hexdump_end; i += 0x10) {
-		printf("%08x: ", (s32) (offset + i));
+		printf("%08x: ", (s32) (zero + offset + i));
 		for(Buffer current : {lhs, rhs}) {
 			for(s64 j = 0; j < 0x10; j++) {
 				s64 pos = i + j;

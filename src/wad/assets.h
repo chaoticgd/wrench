@@ -62,7 +62,34 @@ packed_struct(AssetHeader,
 )
 static_assert(sizeof(AssetHeader) == 0xbc);
 
+packed_struct(MobyClassEntry,
+	s32 offset_in_asset_wad;
+	s32 o_class;
+	s32 unknown_8;
+	s32 unknown_c;
+	u8 textures[16];
+)
+
+packed_struct(TieClassEntry,
+	s32 offset_in_asset_wad;
+	s32 o_class;
+	s32 unknown_8;
+	s32 unknown_c;
+	u8 textures[16];
+)
+
+packed_struct(ShrubClassEntry,
+	s32 offset_in_asset_wad;
+	s32 o_class;
+	s32 unknown_8;
+	s32 unknown_c;
+	u8 textures[16];
+	u8 unknown_20[16];
+)
+
 void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ram);
 void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, OutBuffer gs_ram, LevelWad& wad);
+std::vector<s64> enumerate_asset_block_boundaries(Buffer src, const AssetHeader& header);
+s64 next_asset_block_size(s32 ofs, const std::vector<s64>& block_bounds);
 
 #endif
