@@ -35,10 +35,10 @@ struct MobyFrame {
 };
 
 packed_struct(MobyTriggerData,
-	/* 0x0 */ u32 unknown_0;
-	/* 0x4 */ u32 unknown_4;
-	/* 0x8 */ u32 unknown_8;
-	/* 0xc */ u32 unknown_c;
+	/* 0x00 */ u32 unknown_0;
+	/* 0x04 */ u32 unknown_4;
+	/* 0x08 */ u32 unknown_8;
+	/* 0x0c */ u32 unknown_c;
 	/* 0x10 */ u32 unknown_10;
 	/* 0x14 */ u32 unknown_14;
 	/* 0x18 */ u32 unknown_18;
@@ -52,22 +52,49 @@ struct MobySequence {
 	Opt<MobyTriggerData> trigger_data;
 };
 
+packed_struct(MobySubMeshEntry,
+	u32 vif_list_offset;
+	u16 vif_list_size; // In 16 byte units.
+	u16 vif_list_texture_unpack_offset; // No third UNPACK if zero.
+	u32 vertex_offset;
+	u8 vertex_data_size; // Includes header, in 16 byte units.
+	u8 unknown_d; // unknown_d == (0xf + transfer_vertex_count * 6) / 0x10
+	u8 unknown_e; // unknown_e == (3 + transfer_vertex_count) / 4
+	u8 transfer_vertex_count; // Number of vertices sent to VU1.
+)
+
+struct MobyCollision {
+	u16 unknown_0;
+	u16 unknown_2;
+	std::vector<u8> first_part;
+	std::vector<u8> second_part;
+	std::vector<u8> third_part;
+};
+
 struct MobyClassData {
 	glm::vec4 bounding_sphere;
 	std::vector<MobySequence> sequences;
-	std::vector<MobySubMesh> submeshes;
+	std::vector<MobySubMeshEntry> submesh_entries; // Temporary.
+	Opt<MobyCollision> collision;
+	std::vector<glm::mat4> skeleton;
 };
 
 packed_struct(MobyClassHeader,
-	/* 0x00 */ s32 unknown_0;
-	/* 0x04 */ s32 unknown_4;
-	/* 0x08 */ s32 unknown_8;
+	/* 0x00 */ s32 submesh_table_offset;
+	/* 0x04 */ u8 submesh_count_0;
+	/* 0x05 */ u8 submesh_count_1;
+	/* 0x06 */ u8 unknown_6;
+	/* 0x07 */ u8 unknown_7;
+	/* 0x08 */ u8 joint_count;
+	/* 0x09 */ u8 unknown_9;
+	/* 0x0a */ u8 unknown_a;
+	/* 0x0b */ u8 unknown_b;
 	/* 0x0c */ u8 sequence_count;
 	/* 0x0d */ u8 unknown_d;
 	/* 0x0e */ u8 unknown_e;
 	/* 0x0f */ u8 unknown_f;
-	/* 0x00 */ s32 unknown_10;
-	/* 0x04 */ s32 unknown_14;
+	/* 0x00 */ s32 collision;
+	/* 0x04 */ s32 skeleton;
 	/* 0x08 */ s32 unknown_18;
 	/* 0x0c */ s32 unknown_1c;
 	/* 0x00 */ s32 unknown_20;
@@ -97,6 +124,14 @@ packed_struct(MobyFrameHeader,
 	/* 0x8 */ u32 unknown_8;
 	/* 0xc */ u16 unknown_c;
 	/* 0xd */ u16 unknown_d;
+)
+
+packed_struct(MobyCollisionHeader,
+	/* 0x0 */ s16 unknown_0;
+	/* 0x2 */ s16 unknown_2;
+	/* 0x4 */ s32 first_part_count;
+	/* 0x8 */ s32 third_part_size;
+	/* 0xc */ s32 second_part_size;
 )
 
 MobyClassData read_moby_class(Buffer src);
