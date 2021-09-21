@@ -28,7 +28,20 @@ static void write_moby_submeshes(OutBuffer dest, std::vector<MobyGifUsageTableEn
 MobyClassData read_moby_class(Buffer src) {
 	auto header = src.read<MobyClassHeader>(0, "moby class header");
 	MobyClassData moby;
+	moby.unknown_6 = header.unknown_6;
+	moby.unknown_7 = header.unknown_7;
+	moby.unknown_9 = header.unknown_9;
+	moby.lod_trans = header.lod_trans;
+	moby.shadow = header.shadow;
+	moby.scale = header.scale;
+	moby.bangles = header.bangles;
+	moby.mip_dist = header.mip_dist;
+	moby.corncob = header.corncob;
 	moby.bounding_sphere = header.bounding_sphere.unpack();
+	moby.glow_rgba = header.glow_rgba;
+	moby.mode_bits = header.mode_bits;
+	moby.type = header.type;
+	moby.mode_bits2 = header.mode_bits2;
 	moby.sequences = read_moby_sequences(src, header.sequence_count);
 	if(header.collision != 0) {
  		moby.collision = read_moby_collision(src.subbuf(header.collision));
@@ -49,33 +62,57 @@ static s64 class_header_ofs;
 void write_moby_class(OutBuffer dest, const MobyClassData& moby) {
 	MobyClassHeader header = {0};
 	class_header_ofs = dest.alloc<MobyClassHeader>();
+	
+	verify(moby.submeshes_1.size() < 256, "Moby class has too many submeshes.");
+	header.submesh_count_1 = moby.submeshes_1.size();
+	verify(moby.submeshes_2.size() < 256, "Moby class has too many submeshes.");
+	header.submesh_count_2 = moby.submeshes_2.size();
+	header.unknown_6 = moby.unknown_6;
+	header.unknown_7 = moby.unknown_7;
+	header.unknown_9 = moby.unknown_9;
+	header.lod_trans = moby.lod_trans;
+	header.shadow = moby.shadow;
+	header.scale = moby.scale;
+	verify(moby.sound_defs.size() < 256, "Moby class has too many sounds.");
+	header.sound_count = moby.sound_defs.size();
+	header.bangles = moby.bangles;
+	header.mip_dist = moby.mip_dist;
+	header.corncob = moby.corncob;
+	header.bounding_sphere = Vec4f::pack(moby.bounding_sphere);
+	header.glow_rgba = moby.glow_rgba;
+	header.mode_bits = moby.mode_bits;
+	header.type = moby.type;
+	header.mode_bits2 = moby.mode_bits2;
+	
 	verify(moby.sequences.size() < 256, "Moby class has too many sequences (max is 255).");
 	header.sequence_count = moby.sequences.size();
 	write_moby_sequences(dest, moby.sequences);
 	dest.pad(0x10);
 	s64 submesh_table_1_ofs = dest.alloc_multiple<MobySubMeshEntry>(moby.submeshes_1.size());
 	s64 submesh_table_2_ofs = dest.alloc_multiple<MobySubMeshEntry>(moby.submeshes_2.size());
+	header.submesh_table_offset = submesh_table_1_ofs - class_header_ofs;
 	if(moby.collision.has_value()) {
-		header.collision = write_moby_collision(dest, *moby.collision);
+		header.collision = write_moby_collision(dest, *moby.collision) - class_header_ofs;
 	}
 	dest.pad(0x10);
-	header.skeleton = dest.tell();
+	header.skeleton = dest.tell() - class_header_ofs;
 	verify(moby.skeleton.size() < 255, "Moby class has too many joints.");
 	header.joint_count = moby.skeleton.size();
 	for(const glm::mat4& matrix : moby.skeleton) {
 		dest.write(Mat4::pack(matrix));
 	}
 	dest.pad(0x10);
-	header.common_trans = dest.write_multiple(moby.common_trans);
+	header.common_trans = dest.write_multiple(moby.common_trans) - class_header_ofs;
 	dest.pad(0x10);
-	header.anim_joints = dest.write_multiple(moby.anim_joints);
+	header.anim_joints = dest.write_multiple(moby.anim_joints) - class_header_ofs;
 	dest.pad(0x10);
-	header.sound_defs = dest.write_multiple(moby.sound_defs);
+	header.sound_defs = dest.write_multiple(moby.sound_defs) - class_header_ofs;
 	std::vector<MobyGifUsageTableEntry> gif_usage;
 	write_moby_submeshes(dest, gif_usage, submesh_table_1_ofs, moby.submeshes_1);
 	write_moby_submeshes(dest, gif_usage, submesh_table_2_ofs, moby.submeshes_2);
+	assert(gif_usage.size() > 0);
 	gif_usage.back().offset_and_terminator |= 0x80000000;
-	dest.write_multiple(gif_usage);
+	header.gif_usage = dest.write_multiple(gif_usage) - class_header_ofs;
 	dest.write(class_header_ofs, header);
 }
 

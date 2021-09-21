@@ -105,7 +105,6 @@ packed_struct(MobySoundDef,
 )
 
 struct MobyClassData {
-	glm::vec4 bounding_sphere;
 	std::vector<MobySubMesh> submeshes_1;
 	std::vector<MobySubMesh> submeshes_2;
 	std::vector<MobySequence> sequences;
@@ -114,6 +113,20 @@ struct MobyClassData {
 	std::vector<u8> common_trans;
 	std::vector<u8> anim_joints;
 	std::vector<MobySoundDef> sound_defs;
+	u8 unknown_6;
+	u8 unknown_7;
+	u8 unknown_9;
+	u8 lod_trans;
+	u8 shadow;
+	f32 scale;
+	u8 bangles;
+	u8 mip_dist;
+	s16 corncob;
+	glm::vec4 bounding_sphere;
+	s32 glow_rgba;
+	s16 mode_bits;
+	u8 type;
+	u8 mode_bits2;
 };
 
 packed_struct(MobyClassHeader,
@@ -128,19 +141,23 @@ packed_struct(MobyClassHeader,
 	/* 0x0b */ u8 unknown_b;
 	/* 0x0c */ u8 sequence_count;
 	/* 0x0d */ u8 sound_count;
-	/* 0x0e */ u8 unknown_e;
-	/* 0x0f */ u8 unknown_f;
+	/* 0x0e */ u8 lod_trans;
+	/* 0x0f */ u8 shadow;
 	/* 0x10 */ s32 collision;
 	/* 0x14 */ s32 skeleton;
 	/* 0x18 */ s32 common_trans;
 	/* 0x1c */ s32 anim_joints;
-	/* 0x20 */ s32 unknown_20;
-	/* 0x24 */ s32 unknown_24;
+	/* 0x20 */ s32 gif_usage;
+	/* 0x24 */ f32 scale;
 	/* 0x28 */ s32 sound_defs;
-	/* 0x2c */ s32 unknown_2c;
+	/* 0x2c */ u8 bangles;
+	/* 0x2d */ u8 mip_dist;
+	/* 0x2e */ s16 corncob;
 	/* 0x30 */ Vec4f bounding_sphere;
-	/* 0x40 */ s32 unknown_40;
-	/* 0x44 */ s32 unknown_44;
+	/* 0x40 */ s32 glow_rgba;
+	/* 0x44 */ s16 mode_bits;
+	/* 0x46 */ u8 type;
+	/* 0x47 */ u8 mode_bits2;
 )
 static_assert(sizeof(MobyClassHeader) == 0x48);
 
