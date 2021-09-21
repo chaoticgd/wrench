@@ -20,9 +20,40 @@
 #define WAD_MOBY_H
 
 #include "../core/buffer.h"
+#include "vif.h"
+
+packed_struct(MobyTexCoord,
+	s16 s;
+	s16 t;
+)
+
+packed_struct(MobyVertex,
+	/* 0x0 */ u8 unknown_0;
+	/* 0x1 */ u8 unknown_1;
+	/* 0x2 */ u8 unknown_2;
+	/* 0x3 */ u8 unknown_3;
+	/* 0x4 */ u8 unknown_4;
+	/* 0x5 */ u8 unknown_5;
+	/* 0x6 */ u8 unknown_6;
+	/* 0x7 */ u8 unknown_7;
+	/* 0x8 */ u8 unknown_8;
+	/* 0x9 */ u8 unknown_9;
+	/* 0xa */ s16 x;
+	/* 0xc */ s16 y;
+	/* 0xe */ s16 z;
+)
 
 struct MobySubMesh {
-	
+	std::vector<MobyTexCoord> sts;
+	std::vector<u8> indices;
+	std::vector<s32> texture_indices;
+	std::vector<u16> unknowns;
+	std::vector<u16> vertices_8;
+	std::vector<MobyVertex> vertices_2;
+	std::vector<MobyVertex> vertices_4;
+	std::vector<MobyVertex> main_vertices;
+	std::vector<MobyVertex> trailing_vertices;
+	u16 unknown_e;
 };
 
 struct MobyFrame {
@@ -52,17 +83,6 @@ struct MobySequence {
 	Opt<MobyTriggerData> trigger_data;
 };
 
-packed_struct(MobySubMeshEntry,
-	u32 vif_list_offset;
-	u16 vif_list_size; // In 16 byte units.
-	u16 vif_list_texture_unpack_offset; // No third UNPACK if zero.
-	u32 vertex_offset;
-	u8 vertex_data_size; // Includes header, in 16 byte units.
-	u8 unknown_d; // unknown_d == (0xf + transfer_vertex_count * 6) / 0x10
-	u8 unknown_e; // unknown_e == (3 + transfer_vertex_count) / 4
-	u8 transfer_vertex_count; // Number of vertices sent to VU1.
-)
-
 struct MobyCollision {
 	u16 unknown_0;
 	u16 unknown_2;
@@ -71,18 +91,35 @@ struct MobyCollision {
 	std::vector<u8> third_part;
 };
 
+packed_struct(MobySoundDef,
+	/* 0x00 */ f32 min_range;
+	/* 0x04 */ f32 max_range;
+	/* 0x08 */ s32 min_volume;
+	/* 0x0c */ s32 max_volume;
+	/* 0x10 */ s32 min_pitch;
+	/* 0x14 */ s32 max_pitch;
+	/* 0x18 */ u8 loop;
+	/* 0x19 */ u8 flags;
+	/* 0x1a */ s16 index;
+	/* 0x1c */ s32 bank_index;
+)
+
 struct MobyClassData {
 	glm::vec4 bounding_sphere;
+	std::vector<MobySubMesh> submeshes_1;
+	std::vector<MobySubMesh> submeshes_2;
 	std::vector<MobySequence> sequences;
-	std::vector<MobySubMeshEntry> submesh_entries; // Temporary.
 	Opt<MobyCollision> collision;
 	std::vector<glm::mat4> skeleton;
+	std::vector<u8> common_trans;
+	std::vector<u8> anim_joints;
+	std::vector<MobySoundDef> sound_defs;
 };
 
 packed_struct(MobyClassHeader,
 	/* 0x00 */ s32 submesh_table_offset;
-	/* 0x04 */ u8 submesh_count_0;
-	/* 0x05 */ u8 submesh_count_1;
+	/* 0x04 */ u8 submesh_count_1;
+	/* 0x05 */ u8 submesh_count_2;
 	/* 0x06 */ u8 unknown_6;
 	/* 0x07 */ u8 unknown_7;
 	/* 0x08 */ u8 joint_count;
@@ -90,22 +127,44 @@ packed_struct(MobyClassHeader,
 	/* 0x0a */ u8 unknown_a;
 	/* 0x0b */ u8 unknown_b;
 	/* 0x0c */ u8 sequence_count;
-	/* 0x0d */ u8 unknown_d;
+	/* 0x0d */ u8 sound_count;
 	/* 0x0e */ u8 unknown_e;
 	/* 0x0f */ u8 unknown_f;
-	/* 0x00 */ s32 collision;
-	/* 0x04 */ s32 skeleton;
-	/* 0x08 */ s32 unknown_18;
-	/* 0x0c */ s32 unknown_1c;
-	/* 0x00 */ s32 unknown_20;
+	/* 0x10 */ s32 collision;
+	/* 0x14 */ s32 skeleton;
+	/* 0x18 */ s32 common_trans;
+	/* 0x1c */ s32 anim_joints;
+	/* 0x20 */ s32 unknown_20;
 	/* 0x24 */ s32 unknown_24;
-	/* 0x28 */ s32 unknown_28;
+	/* 0x28 */ s32 sound_defs;
 	/* 0x2c */ s32 unknown_2c;
 	/* 0x30 */ Vec4f bounding_sphere;
 	/* 0x40 */ s32 unknown_40;
 	/* 0x44 */ s32 unknown_44;
 )
 static_assert(sizeof(MobyClassHeader) == 0x48);
+
+packed_struct(MobySubMeshEntry,
+	/* 0x0 */ u32 vif_list_offset;
+	/* 0x4 */ u16 vif_list_size; // In 16 byte units.
+	/* 0x6 */ u16 vif_list_texture_unpack_offset; // No third UNPACK if zero.
+	/* 0x8 */ u32 vertex_offset;
+	/* 0xc */ u8 vertex_data_size; // Includes header, in 16 byte units.
+	/* 0xd */ u8 unknown_d; // unknown_d == (0xf + transfer_vertex_count * 6) / 0x10
+	/* 0xe */ u8 unknown_e; // unknown_e == (3 + transfer_vertex_count) / 4
+	/* 0xf */ u8 transfer_vertex_count; // Number of vertices sent to VU1.
+)
+
+packed_struct(MobyVertexTableHeader,
+	/* 0x0 */ u16 unknown_count_0;
+	/* 0x2 */ u16 vertex_count_2;
+	/* 0x4 */ u16 vertex_count_4;
+	/* 0x6 */ u16 main_vertex_count;
+	/* 0x8 */ u16 vertex_count_8;
+	/* 0xa */ u16 transfer_vertex_count; // transfer_vertex_count == vertex_count_2 + vertex_count_4 + main_vertex_count + vertex_count_8
+	/* 0xc */ u16 vertex_table_offset;
+	/* 0xe */ u16 unknown_e;
+)
 
 packed_struct(MobySequenceHeader,
 	/* 0x00 */ Vec4f bounding_sphere;
@@ -132,6 +191,11 @@ packed_struct(MobyCollisionHeader,
 	/* 0x4 */ s32 first_part_count;
 	/* 0x8 */ s32 third_part_size;
 	/* 0xc */ s32 second_part_size;
+)
+
+packed_struct(MobyGifUsageTableEntry,
+	u8 texture_indices[12];
+	u32 offset_and_terminator; // High byte is 0x80 => Last entry in the table.
 )
 
 MobyClassData read_moby_class(Buffer src);

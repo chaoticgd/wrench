@@ -186,6 +186,8 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 static void run_moby_class_test(s32 o_class, Buffer src, const char* file_path) {
 	MobyClassData moby = read_moby_class(src);
 	std::vector<u8> dest_vec;
+	OutBuffer(dest_vec).write<s64>(0);
+	OutBuffer(dest_vec).write<s64>(0);
 	write_moby_class(dest_vec, moby);
 	Buffer dest(dest_vec);
 	
@@ -196,8 +198,8 @@ static void run_moby_class_test(s32 o_class, Buffer src, const char* file_path) 
 	std::string data_str = prefix_str + " data";
 	
 	bool good = true;
-	good &= diff_buffers(src.subbuf(0, header_size), dest.subbuf(0, header_size), 0, header_str.c_str(), 0);
-	good &= diff_buffers(src.subbuf(header_size), dest.subbuf(header_size), 0, data_str.c_str(), header_size);
+	good &= diff_buffers(src.subbuf(0, header_size), dest.subbuf(0x10, header_size), 0, header_str.c_str(), 0);
+	good &= diff_buffers(src.subbuf(header_size), dest.subbuf(0x10 + header_size), 0, data_str.c_str(), header_size);
 	
 	if(!good) {
 		FILE* file = fopen("/tmp/moby.bin", "wb");
