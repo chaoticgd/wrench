@@ -46,7 +46,7 @@ packed_struct(MobyVertex,
 struct MobySubMesh {
 	std::vector<MobyTexCoord> sts;
 	std::vector<u8> indices;
-	std::vector<s32> texture_indices;
+	std::vector<s32> textures;
 	std::vector<u16> unknowns;
 	std::vector<u16> vertices_8;
 	std::vector<MobyVertex> vertices_2;
@@ -54,6 +54,31 @@ struct MobySubMesh {
 	std::vector<MobyVertex> main_vertices;
 	std::vector<MobyVertex> trailing_vertices;
 	u16 unknown_e;
+};
+
+packed_struct(MobyMetalVertex,
+	/* 0x0 */ s16 x;
+	/* 0x2 */ s16 y;
+	/* 0x4 */ s16 z;
+	/* 0x6 */ u8 unknown_6;
+	/* 0x7 */ u8 unknown_7;
+	/* 0x8 */ u8 unknown_8;
+	/* 0x9 */ u8 unknown_9;
+	/* 0xa */ u8 unknown_a;
+	/* 0xb */ u8 unknown_b;
+	/* 0xc */ u8 unknown_c;
+	/* 0xd */ u8 unknown_d;
+	/* 0xe */ u8 unknown_e;
+	/* 0xf */ u8 unknown_f;
+)
+
+struct MobyMetalSubMesh {
+	std::vector<u8> indices;
+	std::vector<s32> textures;
+	std::vector<MobyMetalVertex> vertices;
+	u32 unknown_4;
+	u32 unknown_8;
+	u32 unknown_c;
 };
 
 struct MobyFrame {
@@ -107,14 +132,13 @@ packed_struct(MobySoundDef,
 struct MobyClassData {
 	std::vector<MobySubMesh> submeshes_1;
 	std::vector<MobySubMesh> submeshes_2;
+	std::vector<MobyMetalSubMesh> metal_submeshes;
 	std::vector<MobySequence> sequences;
 	Opt<MobyCollision> collision;
 	std::vector<glm::mat4> skeleton;
 	std::vector<u8> common_trans;
 	std::vector<u8> anim_joints;
 	std::vector<MobySoundDef> sound_defs;
-	u8 unknown_6;
-	u8 unknown_7;
 	u8 unknown_9;
 	u8 lod_trans;
 	u8 shadow;
@@ -133,8 +157,8 @@ packed_struct(MobyClassHeader,
 	/* 0x00 */ s32 submesh_table_offset;
 	/* 0x04 */ u8 submesh_count_1;
 	/* 0x05 */ u8 submesh_count_2;
-	/* 0x06 */ u8 unknown_6;
-	/* 0x07 */ u8 unknown_7;
+	/* 0x06 */ u8 metal_submesh_count;
+	/* 0x07 */ u8 metal_submesh_begin;
 	/* 0x08 */ u8 joint_count;
 	/* 0x09 */ u8 unknown_9;
 	/* 0x0a */ u8 unknown_a;
@@ -181,6 +205,13 @@ packed_struct(MobyVertexTableHeader,
 	/* 0xa */ u16 transfer_vertex_count; // transfer_vertex_count == vertex_count_2 + vertex_count_4 + main_vertex_count + vertex_count_8
 	/* 0xc */ u16 vertex_table_offset;
 	/* 0xe */ u16 unknown_e;
+)
+
+packed_struct(MobyMetalVertexTableHeader,
+	/* 0x0 */ s32 vertex_count;
+	/* 0x4 */ s32 unknown_4;
+	/* 0x8 */ s32 unknown_8;
+	/* 0xc */ s32 unknown_c;
 )
 
 packed_struct(MobySequenceHeader,

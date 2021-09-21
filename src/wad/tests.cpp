@@ -110,7 +110,7 @@ static void run_level_tests(fs::path input_path) {
 		auto block_bounds = enumerate_asset_block_boundaries(asset_header_buf, asset_header);
 		auto moby_classes = asset_header_buf.read_multiple<MobyClassEntry>(asset_header.moby_classes, "moby class table");
 		for(const MobyClassEntry& entry : moby_classes) {
-			if(entry.offset_in_asset_wad != 0 && entry.o_class > 10 && entry.o_class == 4022) {
+			if(entry.offset_in_asset_wad != 0 && entry.o_class > 10) {
 				s64 size = next_asset_block_size(entry.offset_in_asset_wad, block_bounds);
 				run_moby_class_test(entry.o_class, Buffer(assets).subbuf(entry.offset_in_asset_wad, size), file_path.c_str());
 			}
@@ -186,9 +186,12 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 static void run_moby_class_test(s32 o_class, Buffer src, const char* file_path) {
 	MobyClassData moby = read_moby_class(src);
 	std::vector<u8> dest_vec;
-	OutBuffer(dest_vec).write<s64>(0);
-	OutBuffer(dest_vec).write<s64>(0);
+	// Test that relative pointers are set correctly.
+	for(s32 i = 0; i < 0x40; i++) {
+		OutBuffer(dest_vec).write<u8>(0);
+	}
 	write_moby_class(dest_vec, moby);
+	OutBuffer(dest_vec).pad(0x40);
 	Buffer dest(dest_vec);
 	
 	const s32 header_size = 0x80; // This is wrong but makes the hex printout better.
@@ -198,8 +201,8 @@ static void run_moby_class_test(s32 o_class, Buffer src, const char* file_path) 
 	std::string data_str = prefix_str + " data";
 	
 	bool good = true;
-	good &= diff_buffers(src.subbuf(0, header_size), dest.subbuf(0x10, header_size), 0, header_str.c_str(), 0);
-	good &= diff_buffers(src.subbuf(header_size), dest.subbuf(0x10 + header_size), 0, data_str.c_str(), header_size);
+	good &= diff_buffers(src.subbuf(0, header_size), dest.subbuf(0x40, header_size), 0, header_str.c_str(), 0);
+	good &= diff_buffers(src.subbuf(header_size), dest.subbuf(0x40 + header_size), 0, data_str.c_str(), header_size);
 	
 	if(!good) {
 		FILE* file = fopen("/tmp/moby.bin", "wb");
