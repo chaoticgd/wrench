@@ -123,6 +123,7 @@ struct MobySequence {
 	std::vector<u32> triggers;
 	Opt<MobyTriggerData> trigger_data;
 	s32 animation_info;
+	s8 sound_count;
 };
 
 struct MobyCollision {
@@ -160,6 +161,7 @@ struct MobyClassData {
 	std::vector<MobyMetalSubMesh> metal_submeshes;
 	MobyBangles bangles;
 	std::vector<MobySequence> sequences;
+	std::vector<u8> mystery_data;
 	Opt<MobyCollision> collision_struct;
 	std::vector<u8> collision;
 	std::vector<glm::mat4> skeleton;
@@ -178,6 +180,8 @@ struct MobyClassData {
 	s16 mode_bits;
 	u8 type;
 	u8 mode_bits2;
+	s64 first_sequence_offset;
+	s64 bangles_offset;
 };
 
 packed_struct(MobyClassHeader,
@@ -189,7 +193,10 @@ packed_struct(MobyClassHeader,
 	/* 0x08 */ u8 joint_count;
 	/* 0x09 */ u8 unknown_9;
 	/* 0x0a */ u8 unknown_a;
-	/* 0x0b */ u8 pad_b;
+	union {
+		/* 0x0b */ u8 rac12_format_byte; // 0xff => R&C1 format, 0x00 => R&C2 format.
+		/* 0x0b */ u8 rac3dl_team_textures;
+	};
 	/* 0x0c */ u8 sequence_count;
 	/* 0x0d */ u8 sound_count;
 	/* 0x0e */ u8 lod_trans;

@@ -31,6 +31,9 @@ static std::vector<MobyMetalSubMesh> read_moby_metal_submeshes(Buffer src, s64 t
 static void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalSubMesh>& submeshes);
 static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const std::vector<u8>& ind, const std::vector<MobyTexturePrimitive>& texs);
 
+// FIXME: Figure out what points to the mystery data instead of doing this.
+static s64 mystery_data_ofs;
+
 MobyClassData read_moby_class(Buffer src) {
 	auto header = src.read<MobyClassHeader>(0, "moby class header");
 	MobyClassData moby;
@@ -46,6 +49,8 @@ MobyClassData read_moby_class(Buffer src) {
 	moby.mode_bits = header.mode_bits;
 	moby.type = header.type;
 	moby.mode_bits2 = header.mode_bits2;
+	moby.first_sequence_offset = src.read<s32>(0x48, "moby sequences");
+	mystery_data_ofs = moby.first_sequence_offset;
 	moby.sequences = read_moby_sequences(src, header.sequence_count);
 	s32 bangles_submesh_count = 0;
 	if(header.bangles != 0) {
@@ -55,12 +60,13 @@ MobyClassData read_moby_class(Buffer src) {
 		moby.bangles.unknown_3 = bangles_header.unknown_3;
 		bangles_submesh_count = bangles_header.submesh_count;
 		
-		s64 first_sequence_ofs = src.read<s32>(0x48, "moby sequences");
-		moby.bangles.data = src.read_bytes(header.bangles * 0x10, first_sequence_ofs - header.bangles * 0x10, "moby bangles data");
+		moby.bangles.data = src.read_bytes(header.bangles * 0x10, moby.first_sequence_offset - header.bangles * 0x10, "moby bangles data");
+		moby.bangles_offset = header.bangles * 0x10;
 	}
 	verify(header.sequence_count >= 1, "Moby class has no sequences.");
 	if(header.collision != 0) {
 		moby.collision = src.read_bytes(header.collision, header.skeleton - header.collision, "moby collision");
+		mystery_data_ofs = 0xffffffff;
 	}
 	for(const Mat4& matrix : src.read_multiple<Mat4>(header.skeleton, header.joint_count, "skeleton")) {
 		moby.skeleton.push_back(matrix.unpack());
@@ -74,6 +80,10 @@ MobyClassData read_moby_class(Buffer src) {
 		moby.metal_submeshes = read_moby_metal_submeshes(src, header.submesh_table_offset + header.metal_submesh_begin * 0x10, header.metal_submesh_count);
 		s64 bangles_submesh_table_ofs = header.submesh_table_offset + (header.metal_submesh_begin + header.metal_submesh_count) * 0x10;
 		moby.bangles.submeshes = read_moby_submeshes(src, bangles_submesh_table_ofs, bangles_submesh_count);
+		mystery_data_ofs = std::max(mystery_data_ofs, bangles_submesh_table_ofs + bangles_submesh_count * 0x10);
+	}
+	if(mystery_data_ofs != 0xffffffff) {
+		moby.mystery_data = src.read_bytes(mystery_data_ofs, header.skeleton - mystery_data_ofs, "moby mystery data");
 	}
 	return moby;
 }
@@ -111,7 +121,13 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby) {
 	s64 sequence_list_ofs = dest.alloc_multiple<s32>(moby.sequences.size());
 	dest.pad(0x10);
 	if(moby.bangles.submeshes.size() > 0) {
+		while(dest.tell() - class_header_ofs < moby.bangles_offset) {
+			dest.write<u8>(0);
+		}
 		header.bangles = (dest.write_multiple(moby.bangles.data) - class_header_ofs) / 0x10;
+	}
+	while(dest.tell() - class_header_ofs < moby.first_sequence_offset) {
+		dest.write<u8>(0);
 	}
 	write_moby_sequences(dest, moby.sequences, sequence_list_ofs);
 	dest.pad(0x10);
@@ -124,10 +140,8 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby) {
 	}
 	if(moby.collision.size() > 0) {
 		header.collision = dest.write_multiple(moby.collision) - class_header_ofs;
-	} else {
-		dest.write<s32>(0);
 	}
-	dest.pad(0x10);
+	dest.write_multiple(moby.mystery_data);
 	header.skeleton = dest.tell() - class_header_ofs;
 	verify(moby.skeleton.size() < 255, "Moby class has too many joints.");
 	header.joint_count = moby.skeleton.size();
@@ -163,6 +177,7 @@ static std::vector<MobySequence> read_moby_sequences(Buffer src, s64 sequence_co
 		MobySequence sequence;
 		sequence.bounding_sphere = seq_header.bounding_sphere.unpack();
 		sequence.animation_info = seq_header.animation_info;
+		sequence.sound_count = seq_header.sound_count;
 		
 		auto frame_table = src.read_multiple<s32>(seq_offset + 0x1c, seq_header.frame_count, "moby sequence table");
 		for(s32 frame_offset : frame_table) {
@@ -175,6 +190,8 @@ static std::vector<MobySequence> read_moby_sequences(Buffer src, s64 sequence_co
 			frame.unknown_d = frame_header.unknown_d;
 			frame.data = src.read_bytes(frame_offset + 0x10, frame_header.count * 0x10, "frame data");
 			sequence.frames.emplace_back(std::move(frame));
+			
+			mystery_data_ofs = std::max(mystery_data_ofs, (s64) frame_offset + 0x10 + frame_header.count * 0x10);
 		}
 		s64 trigger_list_ofs = seq_offset + 0x1c + seq_header.frame_count * 4;
 		sequence.triggers = src.read_multiple<u32>(trigger_list_ofs, seq_header.trigger_count, "moby sequence trigger list").copy();
@@ -198,7 +215,7 @@ static void write_moby_sequences(OutBuffer dest, const std::vector<MobySequence>
 		MobySequenceHeader seq_header = {0};
 		seq_header.bounding_sphere = Vec4f::pack(sequence.bounding_sphere);
 		seq_header.frame_count = sequence.frames.size();
-		seq_header.sound_count = -1;
+		seq_header.sound_count = sequence.sound_count;
 		seq_header.trigger_count = sequence.triggers.size();
 		seq_header.pad = -1;
 		
@@ -314,7 +331,6 @@ static std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s
 		}
 		if(entry.transfer_vertex_count != vertex_header.transfer_vertex_count) {
 			printf("warning: Conflicting vertex counts.\n");
-			continue;
 		}
 		if(entry.unknown_d != (0xf + entry.transfer_vertex_count * 6) / 0x10) {
 			printf("warning: Weird value in submodel table entry at field 0xd.\n");
