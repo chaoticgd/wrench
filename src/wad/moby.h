@@ -43,10 +43,26 @@ packed_struct(MobyVertex,
 	/* 0xe */ s16 z;
 )
 
+packed_struct(GsAdData,
+	/* 0x0 */ s32 data_lo;
+	/* 0x4 */ s32 data_hi;
+	/* 0x8 */ u8 address;
+	/* 0x9 */ u8 pad_9;
+	/* 0xa */ u16 pad_a;
+	/* 0xc */ u32 pad_c;
+)
+
+packed_struct(MobyTexturePrimitive,
+	/* 0x00 */ GsAdData d1_xyzf2;
+	/* 0x10 */ GsAdData d2_clamp;
+	/* 0x20 */ GsAdData d3_tex0;
+	/* 0x30 */ GsAdData d4_xyzf2;
+)
+
 struct MobySubMesh {
 	std::vector<MobyTexCoord> sts;
 	std::vector<u8> indices;
-	std::vector<s32> textures;
+	std::vector<MobyTexturePrimitive> textures;
 	std::vector<u16> unknowns;
 	std::vector<u16> vertices_8;
 	std::vector<MobyVertex> vertices_2;
@@ -74,7 +90,7 @@ packed_struct(MobyMetalVertex,
 
 struct MobyMetalSubMesh {
 	std::vector<u8> indices;
-	std::vector<s32> textures;
+	std::vector<MobyTexturePrimitive> textures;
 	std::vector<MobyMetalVertex> vertices;
 	u32 unknown_4;
 	u32 unknown_8;
@@ -106,6 +122,7 @@ struct MobySequence {
 	std::vector<MobyFrame> frames;
 	std::vector<u32> triggers;
 	Opt<MobyTriggerData> trigger_data;
+	s32 animation_info;
 };
 
 struct MobyCollision {
@@ -129,21 +146,31 @@ packed_struct(MobySoundDef,
 	/* 0x1c */ s32 bank_index;
 )
 
+struct MobyBangles {
+	u8 unknown_0;
+	u8 unknown_2;
+	u8 unknown_3;
+	std::vector<MobySubMesh> submeshes;
+	std::vector<u8> data;
+};
+
 struct MobyClassData {
 	std::vector<MobySubMesh> submeshes_1;
 	std::vector<MobySubMesh> submeshes_2;
 	std::vector<MobyMetalSubMesh> metal_submeshes;
+	MobyBangles bangles;
 	std::vector<MobySequence> sequences;
-	Opt<MobyCollision> collision;
+	Opt<MobyCollision> collision_struct;
+	std::vector<u8> collision;
 	std::vector<glm::mat4> skeleton;
 	std::vector<u8> common_trans;
-	std::vector<u8> anim_joints;
+	std::vector<std::vector<u8>> joints;
 	std::vector<MobySoundDef> sound_defs;
+	u32 byte_4; // HACK!
 	u8 unknown_9;
 	u8 lod_trans;
 	u8 shadow;
 	f32 scale;
-	u8 bangles;
 	u8 mip_dist;
 	s16 corncob;
 	glm::vec4 bounding_sphere;
@@ -162,7 +189,7 @@ packed_struct(MobyClassHeader,
 	/* 0x08 */ u8 joint_count;
 	/* 0x09 */ u8 unknown_9;
 	/* 0x0a */ u8 unknown_a;
-	/* 0x0b */ u8 unknown_b;
+	/* 0x0b */ u8 pad_b;
 	/* 0x0c */ u8 sequence_count;
 	/* 0x0d */ u8 sound_count;
 	/* 0x0e */ u8 lod_trans;
@@ -170,7 +197,7 @@ packed_struct(MobyClassHeader,
 	/* 0x10 */ s32 collision;
 	/* 0x14 */ s32 skeleton;
 	/* 0x18 */ s32 common_trans;
-	/* 0x1c */ s32 anim_joints;
+	/* 0x1c */ s32 joints;
 	/* 0x20 */ s32 gif_usage;
 	/* 0x24 */ f32 scale;
 	/* 0x28 */ s32 sound_defs;
@@ -244,6 +271,13 @@ packed_struct(MobyCollisionHeader,
 packed_struct(MobyGifUsageTableEntry,
 	u8 texture_indices[12];
 	u32 offset_and_terminator; // High byte is 0x80 => Last entry in the table.
+)
+
+packed_struct(MobyBanglesHeader,
+	u8 unknown_0;
+	u8 submesh_count;
+	u8 unknown_2;
+	u8 unknown_3;
 )
 
 MobyClassData read_moby_class(Buffer src);
