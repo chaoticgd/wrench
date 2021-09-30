@@ -279,25 +279,25 @@ static Mesh collision_sectors_to_mesh(const CollisionSectors& sectors) {
 	for(const auto& y_partitions : sectors.list) {
 		for(const auto& x_partitions : y_partitions.list) {
 			for(const CollisionSector& sector : x_partitions.list) {
-				mesh.positions.reserve(mesh.positions.size() + sector.vertices.size());
-				s32 vertex_index = mesh.positions.size();
+				mesh.vertices.reserve(mesh.vertices.size() + sector.vertices.size());
+				s32 vertex_index = mesh.vertices.size();
 				for(const glm::vec3& vertex : sector.vertices) {
-					mesh.positions.push_back(sector.displacement + vertex);
+					mesh.vertices.push_back(Vertex(sector.displacement + vertex));
 				}
 				for(const CollisionTri& tri : sector.tris) {
-					mesh.tris.push_back({
-						vertex_index + tri.v0,
-						vertex_index + tri.v1,
-						vertex_index + tri.v2
-					});
+					TriFace face;
+					face.v0 = vertex_index + tri.v0;
+					face.v1 = vertex_index + tri.v1;
+					face.v2 = vertex_index + tri.v2;
+					mesh.tris.push_back(face);
 				}
 				for(const CollisionQuad& quad : sector.quads) {
-					mesh.quads.push_back({
-						vertex_index + quad.v0,
-						vertex_index + quad.v1,
-						vertex_index + quad.v2,
-						vertex_index + quad.v3
-					});
+					QuadFace face;
+					face.v0 = vertex_index + quad.v0;
+					face.v1 = vertex_index + quad.v1;
+					face.v2 = vertex_index + quad.v2;
+					face.v3 = vertex_index + quad.v3;
+					mesh.quads.push_back(face);
 				}
 				mesh.is_collision_mesh = true;
 			}

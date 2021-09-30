@@ -23,20 +23,20 @@
 #include "util.h"
 #include "buffer.h"
 
-struct DaeNode {
+struct ColladaNode {
 	std::string name;
 	s32 mesh;
 	Opt<glm::vec3> translate;
-	std::vector<DaeNode> children;
+	std::vector<ColladaNode> children;
 };
 
-struct DaeScene {
-	std::vector<DaeNode> nodes;
+struct ColladaScene {
+	std::vector<ColladaNode> nodes;
 	std::vector<Mesh> meshes;
 };
 
-DaeScene mesh_to_dae(Mesh mesh);
-DaeScene import_dae(std::vector<u8> src);
-std::vector<u8> write_dae(const DaeScene& scene);
+ColladaScene mesh_to_dae(Mesh mesh);
+ColladaScene import_dae(std::vector<u8> src);
+std::vector<u8> write_collada(const ColladaScene& scene);
 
 #endif

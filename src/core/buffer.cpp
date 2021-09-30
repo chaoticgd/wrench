@@ -140,7 +140,7 @@ void OutBuffer::pad(s64 align, u8 padding) {
 	}
 }
 
-void OutBuffer::writef(const char* format, ...) {
+void OutBuffer::writesf(const char* format, ...) {
 	static char temp[16 * 1024];
 	
 	va_list args;

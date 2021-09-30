@@ -350,6 +350,7 @@ struct Class {
 
 struct MobyClass : Class {
 	Opt<std::vector<u8>> model;
+	Opt<ColladaScene> high_model;
 	std::vector<size_t> textures;
 	bool has_asset_table_entry = false;
 	

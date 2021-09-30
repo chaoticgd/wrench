@@ -18,10 +18,11 @@
 
 #include "assets.h"
 
-#include "collision.h"
+#include "moby.h"
 #include "texture.h"
-#include "../lz/compression.h"
+#include "collision.h"
 #include "../core/timer.h"
+#include "../lz/compression.h"
 
 static void print_asset_header(const AssetHeader& header);
 
@@ -97,6 +98,9 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 		if(entry.offset_in_asset_wad != 0) {
 			s64 model_size = next_asset_block_size(entry.offset_in_asset_wad, block_bounds);
 			moby->model = assets.read_bytes(entry.offset_in_asset_wad, model_size, "moby model");
+			if(entry.o_class >= 10) {
+				moby->high_model = lift_moby_model(read_moby_class(*moby->model));
+			}
 		}
 		for(s32 j = 0; j < 16; j++) {
 			if(entry.textures[j] != 0xff) {

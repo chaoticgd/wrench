@@ -19,30 +19,24 @@
 #include "mesh.h"
 
 Mesh sort_vertices(Mesh mesh) {
-	std::vector<s32> vertex_mapping(mesh.positions.size());
-	for(size_t i = 0; i < mesh.positions.size(); i++) {
+	std::vector<s32> vertex_mapping(mesh.vertices.size());
+	for(size_t i = 0; i < mesh.vertices.size(); i++) {
 		vertex_mapping[i] = i;
 	}
 	
 	std::sort(BEGIN_END(vertex_mapping), [&](s32 lhs, s32 rhs) {
-		if(mesh.positions[lhs].z != mesh.positions[rhs].z) {
-			return mesh.positions[lhs].z < mesh.positions[rhs].z;
-		} else if(mesh.positions[lhs].y != mesh.positions[rhs].y) {
-			return mesh.positions[lhs].y < mesh.positions[rhs].y;
-		} else {
-			return mesh.positions[lhs].x < mesh.positions[rhs].x;
-		}
+		return mesh.vertices[lhs] < mesh.vertices[rhs];
 	});
 	
-	std::vector<s32> inverse_mapping(mesh.positions.size());
-	for(size_t i = 0; i < mesh.positions.size(); i++) {
+	std::vector<s32> inverse_mapping(mesh.vertices.size());
+	for(size_t i = 0; i < mesh.vertices.size(); i++) {
 		inverse_mapping[vertex_mapping[i]] = i;
 	}
 	
 	Mesh new_mesh;
-	new_mesh.positions.reserve(mesh.positions.size());
-	for(size_t i = 0; i < mesh.positions.size(); i++) {
-		new_mesh.positions.push_back(mesh.positions[vertex_mapping[i]]);
+	new_mesh.vertices.reserve(mesh.vertices.size());
+	for(size_t i = 0; i < mesh.vertices.size(); i++) {
+		new_mesh.vertices.push_back(mesh.vertices[vertex_mapping[i]]);
 	}
 	new_mesh.tris = std::move(mesh.tris);
 	for(TriFace& face : new_mesh.tris) {
@@ -64,18 +58,18 @@ Mesh deduplicate_vertices(Mesh old_mesh) {
 	old_mesh = sort_vertices(std::move(old_mesh));
 	
 	Mesh new_mesh;
-	std::vector<s32> index_mapping(old_mesh.positions.size());
-	if(old_mesh.positions.size() > 0) {
-		new_mesh.positions.push_back(old_mesh.positions[0]);
+	std::vector<s32> index_mapping(old_mesh.vertices.size());
+	if(old_mesh.vertices.size() > 0) {
+		new_mesh.vertices.push_back(old_mesh.vertices[0]);
 		index_mapping[0] = 0;
 	}
-	for(size_t i = 1; i < old_mesh.positions.size(); i++) {
-		glm::vec3& prev = old_mesh.positions[i - 1];
-		glm::vec3& cur = old_mesh.positions[i];
-		if(prev != cur) {
-			new_mesh.positions.push_back(old_mesh.positions[i]);
+	for(size_t i = 1; i < old_mesh.vertices.size(); i++) {
+		Vertex& prev = old_mesh.vertices[i - 1];
+		Vertex& cur = old_mesh.vertices[i];
+		if(!(prev == cur)) {
+			new_mesh.vertices.push_back(old_mesh.vertices[i]);
 		}
-		index_mapping[i] = new_mesh.positions.size() - 1;
+		index_mapping[i] = new_mesh.vertices.size() - 1;
 	}
 	for(const TriFace& old_tri : old_mesh.tris) {
 		TriFace new_tri;
@@ -103,7 +97,7 @@ Mesh deduplicate_faces(Mesh old_mesh) {
 	std::sort(BEGIN_END(old_mesh.quads));
 	
 	Mesh new_mesh;
-	new_mesh.positions = std::move(old_mesh.positions);
+	new_mesh.vertices = std::move(old_mesh.vertices);
 	if(old_mesh.tris.size() > 0) {
 		new_mesh.tris.push_back(old_mesh.tris[0]);
 	}

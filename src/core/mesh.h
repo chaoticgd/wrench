@@ -22,60 +22,41 @@
 #include "util.h"
 
 struct TriFace {
+	TriFace() { memset(this, 0, sizeof(TriFace)); }
+	bool operator==(const TriFace& rhs) { return memcmp(this, &rhs, sizeof(TriFace)) == 0; }
+	bool operator<(const TriFace& rhs) { return memcmp(this, &rhs, sizeof(TriFace)) < 0; }
 	s32 v0;
 	s32 v1;
 	s32 v2;
 	s32 collision_type;
-	
-	bool operator==(const TriFace& rhs) const {
-		return v0 == rhs.v0 && v1 == rhs.v1 && v2 == rhs.v2 && collision_type == rhs.collision_type;
-	}
-	
-	bool operator<(const TriFace& rhs) {
-		if(v0 != rhs.v0) {
-			return v0 < rhs.v0;
-		} else if(v1 != rhs.v1) {
-			return v2 < rhs.v2;
-		} else if(v2 != rhs.v2) {
-			return v2 < rhs.v2;
-		} else {
-			return collision_type < rhs.collision_type;
-		}
-	}
 };
 
 struct QuadFace {
+	QuadFace() { memset(this, 0, sizeof(QuadFace)); }
+	bool operator==(const QuadFace& rhs) { return memcmp(this, &rhs, sizeof(QuadFace)) == 0; }
+	bool operator<(const QuadFace& rhs) { return memcmp(this, &rhs, sizeof(QuadFace)) < 0; }
 	s32 v0;
 	s32 v1;
 	s32 v2;
 	s32 v3;
 	s32 collision_type;
-	
-	bool operator==(const QuadFace& rhs) const {
-		return v0 == rhs.v0 && v1 == rhs.v1 && v2 == rhs.v2 && v3 == rhs.v3 && collision_type == rhs.collision_type;
-	}
-	
-	bool operator<(const QuadFace& rhs) {
-		if(v0 != rhs.v0) {
-			return v0 < rhs.v0;
-		} else if(v1 != rhs.v1) {
-			return v2 < rhs.v2;
-		} else if(v2 != rhs.v2) {
-			return v2 < rhs.v2;
-		} else if(v3 != rhs.v3) {
-			return v3 < rhs.v3;
-		} else {
-			return collision_type < rhs.collision_type;
-		}
-	}
+};
+
+struct Vertex {
+	Vertex() { memset(this, 0, sizeof(Vertex)); }
+	Vertex(const glm::vec3& p) : Vertex() { pos = p; }
+	bool operator==(const Vertex& rhs) { return memcmp(this, &rhs, sizeof(Vertex)) == 0; }
+	bool operator<(const Vertex& rhs) { return memcmp(this, &rhs, sizeof(Vertex)) < 0; }
+	glm::vec3 pos;
+	glm::vec2 uv;
 };
 
 struct Mesh {
-	std::vector<glm::vec3> positions;
-	Opt<std::vector<glm::vec2>> texture_coords;
+	std::vector<Vertex> vertices;
 	std::vector<TriFace> tris;
 	std::vector<QuadFace> quads;
-	bool is_collision_mesh;
+	bool has_uvs = false;
+	bool is_collision_mesh = false;
 };
 
 Mesh sort_vertices(Mesh mesh);

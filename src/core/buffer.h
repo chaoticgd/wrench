@@ -134,7 +134,7 @@ struct OutBuffer {
 	}
 	
 	void pad(s64 align, u8 padding = 0);
-	void writef(const char* format, ...);
+	void writesf(const char* format, ...);
 	void writelf(const char* format, ...);
 };
 

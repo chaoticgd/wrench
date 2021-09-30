@@ -20,6 +20,7 @@
 #define WAD_MOBY_H
 
 #include "../core/buffer.h"
+#include "../core/collada.h"
 #include "vif.h"
 
 packed_struct(MobyTexCoord,
@@ -43,6 +44,14 @@ packed_struct(MobyVertex,
 	/* 0xe */ s16 z;
 )
 
+packed_struct(MobyIndexHeader, // Second UNPACK header.
+	/* 0x0 */ u8 unknown_0;
+	/* 0x1 */ u8 texture_unpack_offset_quadwords; // Offset of texture data relative to decompressed index buffer in VU mem.
+	/* 0x2 */ u8 unknown_2;
+	/* 0x3 */ u8 unknown_3;
+	// Indices directly follow.
+)
+
 packed_struct(GsAdData,
 	/* 0x0 */ s32 data_lo;
 	/* 0x4 */ s32 data_hi;
@@ -61,7 +70,8 @@ packed_struct(MobyTexturePrimitive,
 
 struct MobySubMesh {
 	std::vector<MobyTexCoord> sts;
-	std::vector<u8> indices;
+	MobyIndexHeader index_header;
+	std::vector<s8> indices;
 	std::vector<MobyTexturePrimitive> textures;
 	std::vector<u16> unknowns;
 	std::vector<u16> vertices_8;
@@ -89,7 +99,8 @@ packed_struct(MobyMetalVertex,
 )
 
 struct MobyMetalSubMesh {
-	std::vector<u8> indices;
+	MobyIndexHeader index_header;
+	std::vector<s8> indices;
 	std::vector<MobyTexturePrimitive> textures;
 	std::vector<MobyMetalVertex> vertices;
 	u32 unknown_4;
@@ -289,5 +300,6 @@ packed_struct(MobyBanglesHeader,
 
 MobyClassData read_moby_class(Buffer src);
 void write_moby_class(OutBuffer dest, const MobyClassData& moby);
+ColladaScene lift_moby_model(const MobyClassData& moby);
 
 #endif

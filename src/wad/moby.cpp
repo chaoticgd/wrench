@@ -29,7 +29,7 @@ using GifUsageTable = std::vector<MobyGifUsageTableEntry>;
 static void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_ofs, const std::vector<MobySubMesh>& submeshes);
 static std::vector<MobyMetalSubMesh> read_moby_metal_submeshes(Buffer src, s64 table_ofs, s64 count);
 static void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalSubMesh>& submeshes);
-static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const std::vector<u8>& ind, const std::vector<MobyTexturePrimitive>& texs);
+static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const std::vector<s8>& ind, const std::vector<MobyTexturePrimitive>& texs, u8 ihdr0, u8 ihdr2);
 
 // FIXME: Figure out what points to the mystery data instead of doing this.
 static s64 mystery_data_ofs;
@@ -315,7 +315,9 @@ static std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s
 		auto unpacks = filter_vif_unpacks(command_list);
 		Buffer st_data(unpacks.at(0).data);
 		submesh.sts = st_data.read_multiple<MobyTexCoord>(0, st_data.size() / 4, "moby st unpack").copy();
-		submesh.indices = unpacks.at(1).data;
+		Buffer index_data(unpacks.at(1).data);
+		submesh.index_header = index_data.read<MobyIndexHeader>(0, "moby index unpack header");
+		submesh.indices = index_data.read_multiple<s8>(4, index_data.size() - 4, "moby index unpack data").copy();
 		if(unpacks.size() >= 3) {
 			Buffer texture_data(unpacks.at(2).data);
 			for(s64 i = 0; i < texture_data.size(); i+= 0x40) {
@@ -394,7 +396,7 @@ static void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 t
 		memcpy(st_unpack.data.data(), submesh.sts.data(), submesh.sts.size() * 4);
 		write_vif_packet(dest, st_unpack);
 		
-		s64 tex_unpack = write_shared_moby_vif_packets(dest, &gif_usage, submesh.indices, submesh.textures);
+		s64 tex_unpack = write_shared_moby_vif_packets(dest, &gif_usage, submesh.indices, submesh.textures, submesh.index_header.unknown_0, submesh.index_header.unknown_2);
 		
 		entry.vif_list_texture_unpack_offset = tex_unpack;
 		dest.pad(0x10);
@@ -449,7 +451,9 @@ static std::vector<MobyMetalSubMesh> read_moby_metal_submeshes(Buffer src, s64 t
 		Buffer command_buffer = src.subbuf(entry.vif_list_offset, entry.vif_list_size * 0x10);
 		auto command_list = read_vif_command_list(command_buffer);
 		auto unpacks = filter_vif_unpacks(command_list);
-		submesh.indices = unpacks.at(0).data;
+		Buffer index_data(unpacks.at(0).data);
+		submesh.index_header = index_data.read<MobyIndexHeader>(0, "moby index unpack header");
+		submesh.indices = index_data.read_multiple<s8>(4, index_data.size() - 4, "moby index unpack data").copy();
 		if(unpacks.size() >= 2) {
 			Buffer texture_data(unpacks.at(1).data);
 			for(s64 i = 0; i < texture_data.size(); i+= 0x40) {
@@ -476,7 +480,7 @@ static void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std:
 		dest.pad(0x10);
 		s64 vif_list_ofs = dest.tell();
 		entry.vif_list_offset = vif_list_ofs - class_header_ofs;
-		s64 tex_unpack = write_shared_moby_vif_packets(dest, nullptr, submesh.indices, submesh.textures);
+		s64 tex_unpack = write_shared_moby_vif_packets(dest, nullptr, submesh.indices, submesh.textures, submesh.index_header.unknown_0, submesh.index_header.unknown_2);
 		entry.vif_list_texture_unpack_offset = tex_unpack;
 		dest.pad(0x10);
 		entry.vif_list_size = (dest.tell() - vif_list_ofs) / 0x10;
@@ -501,18 +505,30 @@ static void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std:
 	}
 }
 
-static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const std::vector<u8>& ind, const std::vector<MobyTexturePrimitive>& texs) {
+static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const std::vector<s8>& ind, const std::vector<MobyTexturePrimitive>& texs, u8 ihdr0, u8 ihdr2) {
 	static const s32 INDEX_UNPACK_ADDR_QUADWORDS = 0x12d;
+	
+	MobyIndexHeader index_header = {0};
+	index_header.unknown_0 = ihdr0;
+	assert(ind.size() % 4 == 0);
+	if(texs.size() > 0) {
+		index_header.texture_unpack_offset_quadwords = ind.size() / 4 + 1;
+	}
+	index_header.unknown_2 = ihdr2;
 	
 	VifPacket index_unpack;
 	index_unpack.code.interrupt = 0;
 	index_unpack.code.cmd = (VifCmd) 0b1100000; // UNPACK
-	index_unpack.code.num = ind.size() / 4;
+	index_unpack.code.num = 1 + ind.size() / 4;
 	index_unpack.code.unpack.vnvl = VifVnVl::V4_8;
 	index_unpack.code.unpack.flg = VifFlg::USE_VIF1_TOPS;
 	index_unpack.code.unpack.usn = VifUsn::SIGNED;
 	index_unpack.code.unpack.addr = INDEX_UNPACK_ADDR_QUADWORDS;
-	index_unpack.data = ind;
+	std::vector<u8> indices;
+	OutBuffer index_buffer(indices);
+	index_buffer.write(index_header);
+	index_buffer.write_multiple(ind);
+	index_unpack.data = indices;
 	write_vif_packet(dest, index_unpack);
 	
 	s64 rel_texture_unpack_ofs = 0;
@@ -528,7 +544,7 @@ static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usag
 		texture_unpack.code.unpack.vnvl = VifVnVl::V4_32;
 		texture_unpack.code.unpack.flg = VifFlg::USE_VIF1_TOPS;
 		texture_unpack.code.unpack.usn = VifUsn::SIGNED;
-		texture_unpack.code.unpack.addr = INDEX_UNPACK_ADDR_QUADWORDS + ind.size() / 4;
+		texture_unpack.code.unpack.addr = INDEX_UNPACK_ADDR_QUADWORDS + (4 + ind.size()) / 4;
 		for(s32 i = 0 ; i < texs.size(); i++) {
 			OutBuffer(texture_unpack.data).write(texs[i]);
 		}
@@ -554,4 +570,52 @@ static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usag
 	}
 	
 	return rel_texture_unpack_ofs;
+}
+
+ColladaScene lift_moby_model(const MobyClassData& moby) {
+	ColladaScene scene;
+	
+	ColladaNode node_1;
+	node_1.name = "mesh_1";
+	node_1.mesh = 0;
+	scene.nodes.emplace_back(std::move(node_1));
+	
+	Mesh mesh_1;
+	for(const MobySubMesh& submesh : moby.submeshes_1) {
+		s32 vertex_base = mesh_1.vertices.size();
+		for(const MobyVertex& mv : submesh.vertices_2) {
+			Vertex v;
+			v.pos = glm::vec3(mv.x / 16384.f, mv.y / 16384.f, mv.z / 16384.f);
+			mesh_1.vertices.push_back(v);
+		}
+		for(const MobyVertex& mv : submesh.vertices_4) {
+			Vertex v;
+			v.pos = glm::vec3(mv.x / 16384.f, mv.y / 16384.f, mv.z / 16384.f);
+			mesh_1.vertices.push_back(v);
+		}
+		for(const MobyVertex& mv : submesh.main_vertices) {
+			Vertex v;
+			v.pos = glm::vec3(mv.x / 16384.f, mv.y / 16384.f, mv.z / 16384.f);
+			mesh_1.vertices.push_back(v);
+		}
+		u8 index_queue[3] = {0};
+		s32 index_pos = 0;
+		for(s8 index : submesh.indices) {
+			if(index != 0) {
+				if(index > 0) {
+					index_queue[index_pos] = vertex_base + index - 1;
+					TriFace face;
+					face.v0 = index_queue[(index_pos + 1) % 3];
+					face.v1 = index_queue[(index_pos + 2) % 3];
+					face.v2 = index_queue[(index_pos + 3) % 3];
+					mesh_1.tris.push_back(face);
+				} else {
+					index_queue[index_pos] = vertex_base + index + 127;
+				}
+				index_pos = (index_pos + 1) % 3;
+			}
+		}
+	}
+	scene.meshes.emplace_back(std::move(mesh_1));
+	return scene;
 }

@@ -114,7 +114,7 @@ static void run_level_tests(fs::path input_path) {
 		auto block_bounds = enumerate_asset_block_boundaries(asset_header_buf, asset_header);
 		auto moby_classes = asset_header_buf.read_multiple<MobyClassEntry>(asset_header.moby_classes, "moby class table");
 		for(const MobyClassEntry& entry : moby_classes) {
-			if(entry.offset_in_asset_wad != 0 && entry.o_class > 10) {
+			if(entry.offset_in_asset_wad != 0 && entry.o_class >= 10) {
 				s64 size = next_asset_block_size(entry.offset_in_asset_wad, block_bounds);
 				run_moby_class_test(entry.o_class, Buffer(assets).subbuf(entry.offset_in_asset_wad, size), file_path.c_str());
 			}
