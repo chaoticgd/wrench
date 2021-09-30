@@ -167,8 +167,8 @@ struct MobyBangles {
 };
 
 struct MobyClassData {
-	std::vector<MobySubMesh> submeshes_1;
-	std::vector<MobySubMesh> submeshes_2;
+	std::vector<MobySubMesh> submeshes;
+	std::vector<MobySubMesh> low_detail_submeshes;
 	std::vector<MobyMetalSubMesh> metal_submeshes;
 	MobyBangles bangles;
 	std::vector<MobySequence> sequences;
@@ -197,8 +197,8 @@ struct MobyClassData {
 
 packed_struct(MobyClassHeader,
 	/* 0x00 */ s32 submesh_table_offset;
-	/* 0x04 */ u8 submesh_count_1;
-	/* 0x05 */ u8 submesh_count_2;
+	/* 0x04 */ u8 submesh_count;
+	/* 0x05 */ u8 low_detail_submesh_count;
 	/* 0x06 */ u8 metal_submesh_count;
 	/* 0x07 */ u8 metal_submesh_begin;
 	/* 0x08 */ u8 joint_count;

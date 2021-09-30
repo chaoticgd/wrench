@@ -30,6 +30,7 @@ static void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 t
 static std::vector<MobyMetalSubMesh> read_moby_metal_submeshes(Buffer src, s64 table_ofs, s64 count);
 static void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalSubMesh>& submeshes);
 static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const std::vector<s8>& ind, const std::vector<MobyTexturePrimitive>& texs, u8 ihdr0, u8 ihdr2);
+static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes);
 
 // FIXME: Figure out what points to the mystery data instead of doing this.
 static s64 mystery_data_ofs;
@@ -75,8 +76,8 @@ MobyClassData read_moby_class(Buffer src) {
 	moby.joints = read_moby_joints(src, header.joints);
 	moby.sound_defs = src.read_multiple<MobySoundDef>(header.sound_defs, header.sound_count, "moby sound defs").copy();
 	if(header.submesh_table_offset != 0) {
-		moby.submeshes_1 = read_moby_submeshes(src, header.submesh_table_offset, header.submesh_count_1);
-		moby.submeshes_2 = read_moby_submeshes(src, header.submesh_table_offset + header.submesh_count_1 * 0x10, header.submesh_count_2);
+		moby.submeshes = read_moby_submeshes(src, header.submesh_table_offset, header.submesh_count);
+		moby.low_detail_submeshes = read_moby_submeshes(src, header.submesh_table_offset + header.submesh_count * 0x10, header.low_detail_submesh_count);
 		moby.metal_submeshes = read_moby_metal_submeshes(src, header.submesh_table_offset + header.metal_submesh_begin * 0x10, header.metal_submesh_count);
 		s64 bangles_submesh_table_ofs = header.submesh_table_offset + (header.metal_submesh_begin + header.metal_submesh_count) * 0x10;
 		moby.bangles.submeshes = read_moby_submeshes(src, bangles_submesh_table_ofs, bangles_submesh_count);
@@ -95,13 +96,13 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby) {
 	class_header_ofs = dest.alloc<MobyClassHeader>();
 	assert(class_header_ofs % 0x40 == 0);
 	
-	verify(moby.submeshes_1.size() < 256, "Moby class has too many submeshes.");
-	header.submesh_count_1 = moby.submeshes_1.size();
-	verify(moby.submeshes_2.size() < 256, "Moby class has too many submeshes.");
-	header.submesh_count_2 = moby.submeshes_2.size();
+	verify(moby.submeshes.size() < 256, "Moby class has too many submeshes.");
+	header.submesh_count = moby.submeshes.size();
+	verify(moby.low_detail_submeshes.size() < 256, "Moby class has too many low detail submeshes.");
+	header.low_detail_submesh_count = moby.low_detail_submeshes.size();
 	verify(moby.metal_submeshes.size() < 256, "Moby class has too many metal submeshes.");
 	header.metal_submesh_count = moby.metal_submeshes.size();
-	header.metal_submesh_begin = moby.submeshes_1.size() + moby.submeshes_2.size();
+	header.metal_submesh_begin = moby.submeshes.size() + moby.low_detail_submeshes.size();
 	header.unknown_9 = moby.unknown_9;
 	header.lod_trans = moby.lod_trans;
 	header.shadow = moby.shadow;
@@ -131,11 +132,11 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby) {
 	}
 	write_moby_sequences(dest, moby.sequences, sequence_list_ofs);
 	dest.pad(0x10);
-	s64 submesh_table_1_ofs = dest.alloc_multiple<MobySubMeshEntry>(moby.submeshes_1.size());
-	s64 submesh_table_2_ofs = dest.alloc_multiple<MobySubMeshEntry>(moby.submeshes_2.size());
+	s64 submesh_table_1_ofs = dest.alloc_multiple<MobySubMeshEntry>(moby.submeshes.size());
+	s64 submesh_table_2_ofs = dest.alloc_multiple<MobySubMeshEntry>(moby.low_detail_submeshes.size());
 	s64 metal_submesh_table_ofs = dest.alloc_multiple<MobySubMeshEntry>(moby.metal_submeshes.size());
 	s64 bangles_submesh_table_ofs = dest.alloc_multiple<MobySubMeshEntry>(moby.bangles.submeshes.size());
-	if(moby.submeshes_1.size() > 0 || moby.submeshes_2.size() > 0 || moby.metal_submeshes.size() > 0) {
+	if(moby.submeshes.size() > 0 || moby.low_detail_submeshes.size() > 0 || moby.metal_submeshes.size() > 0) {
 		header.submesh_table_offset = submesh_table_1_ofs - class_header_ofs;
 	}
 	if(moby.collision.size() > 0) {
@@ -155,10 +156,10 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby) {
 	if(moby.sound_defs.size() > 0) {
 		header.sound_defs = dest.write_multiple(moby.sound_defs) - class_header_ofs;
 	}
-	if(moby.submeshes_1.size() > 0 || moby.submeshes_2.size() > 0 || moby.metal_submeshes.size() > 0) {
+	if(moby.submeshes.size() > 0 || moby.low_detail_submeshes.size() > 0 || moby.metal_submeshes.size() > 0) {
 		std::vector<MobyGifUsageTableEntry> gif_usage;
-		write_moby_submeshes(dest, gif_usage, submesh_table_1_ofs, moby.submeshes_1);
-		write_moby_submeshes(dest, gif_usage, submesh_table_2_ofs, moby.submeshes_2);
+		write_moby_submeshes(dest, gif_usage, submesh_table_1_ofs, moby.submeshes);
+		write_moby_submeshes(dest, gif_usage, submesh_table_2_ofs, moby.low_detail_submeshes);
 		write_moby_metal_submeshes(dest, metal_submesh_table_ofs, moby.metal_submeshes);
 		write_moby_submeshes(dest, gif_usage, bangles_submesh_table_ofs, moby.bangles.submeshes);
 		assert(gif_usage.size() > 0);
@@ -576,27 +577,38 @@ ColladaScene lift_moby_model(const MobyClassData& moby) {
 	ColladaScene scene;
 	
 	ColladaNode node_1;
-	node_1.name = "mesh_1";
-	node_1.mesh = 0;
+	node_1.name = "mesh";
+	node_1.mesh = scene.meshes.size();
 	scene.nodes.emplace_back(std::move(node_1));
+	scene.meshes.emplace_back(lift_moby_mesh(moby.submeshes));
 	
-	Mesh mesh_1;
-	for(const MobySubMesh& submesh : moby.submeshes_1) {
-		s32 vertex_base = mesh_1.vertices.size();
+	ColladaNode low_detail_node;
+	low_detail_node.name = "low_detail";
+	low_detail_node.mesh = scene.meshes.size();
+	scene.nodes.emplace_back(std::move(low_detail_node));
+	scene.meshes.emplace_back(lift_moby_mesh(moby.low_detail_submeshes));
+	
+	return scene;
+}
+
+static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes) {
+	Mesh mesh;
+	for(const MobySubMesh& submesh : submeshes) {
+		s32 vertex_base = mesh.vertices.size();
 		for(const MobyVertex& mv : submesh.vertices_2) {
 			Vertex v;
 			v.pos = glm::vec3(mv.x / 16384.f, mv.y / 16384.f, mv.z / 16384.f);
-			mesh_1.vertices.push_back(v);
+			mesh.vertices.push_back(v);
 		}
 		for(const MobyVertex& mv : submesh.vertices_4) {
 			Vertex v;
 			v.pos = glm::vec3(mv.x / 16384.f, mv.y / 16384.f, mv.z / 16384.f);
-			mesh_1.vertices.push_back(v);
+			mesh.vertices.push_back(v);
 		}
 		for(const MobyVertex& mv : submesh.main_vertices) {
 			Vertex v;
 			v.pos = glm::vec3(mv.x / 16384.f, mv.y / 16384.f, mv.z / 16384.f);
-			mesh_1.vertices.push_back(v);
+			mesh.vertices.push_back(v);
 		}
 		u8 index_queue[3] = {0};
 		s32 index_pos = 0;
@@ -608,7 +620,7 @@ ColladaScene lift_moby_model(const MobyClassData& moby) {
 					face.v0 = index_queue[(index_pos + 1) % 3];
 					face.v1 = index_queue[(index_pos + 2) % 3];
 					face.v2 = index_queue[(index_pos + 3) % 3];
-					mesh_1.tris.push_back(face);
+					mesh.tris.push_back(face);
 				} else {
 					index_queue[index_pos] = vertex_base + index + 127;
 				}
@@ -616,6 +628,5 @@ ColladaScene lift_moby_model(const MobyClassData& moby) {
 			}
 		}
 	}
-	scene.meshes.emplace_back(std::move(mesh_1));
-	return scene;
+	return mesh;
 }
