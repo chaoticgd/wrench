@@ -63,5 +63,6 @@ Mesh sort_vertices(Mesh mesh);
 
 Mesh deduplicate_vertices(Mesh old_mesh);
 Mesh deduplicate_faces(Mesh old_mesh);
+Mesh reverse_winding_order(Mesh mesh);
 
 #endif

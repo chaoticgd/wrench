@@ -71,7 +71,7 @@ packed_struct(MobyTexturePrimitive,
 struct MobySubMesh {
 	std::vector<MobyTexCoord> sts;
 	MobyIndexHeader index_header;
-	std::vector<s8> indices;
+	std::vector<u8> indices;
 	std::vector<MobyTexturePrimitive> textures;
 	std::vector<u16> unknowns;
 	std::vector<u16> vertices_8;
@@ -100,7 +100,7 @@ packed_struct(MobyMetalVertex,
 
 struct MobyMetalSubMesh {
 	MobyIndexHeader index_header;
-	std::vector<s8> indices;
+	std::vector<u8> indices;
 	std::vector<MobyTexturePrimitive> textures;
 	std::vector<MobyMetalVertex> vertices;
 	u32 unknown_4;

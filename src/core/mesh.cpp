@@ -121,3 +121,14 @@ Mesh deduplicate_faces(Mesh old_mesh) {
 	new_mesh.is_collision_mesh = old_mesh.is_collision_mesh;
 	return new_mesh;
 }
+
+Mesh reverse_winding_order(Mesh mesh) {
+	for(TriFace& face : mesh.tris) {
+		std::swap(face.v0, face.v2);
+	}
+	for(QuadFace& face : mesh.quads) {
+		std::swap(face.v0, face.v3);
+		std::swap(face.v1, face.v2);
+	}
+	return mesh;
+}

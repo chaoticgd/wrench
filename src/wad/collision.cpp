@@ -62,17 +62,20 @@ static Mesh collision_sectors_to_mesh(const CollisionSectors& sectors);
 
 Mesh read_collision(Buffer src) {
 	CollisionHeader header = src.read<CollisionHeader>(0, "collision header");
-	Buffer mesh;
+	Buffer mesh_buffer;
 	if(header.second_part != 0) {
-		mesh = src.subbuf(header.mesh, header.second_part - header.mesh);
+		mesh_buffer = src.subbuf(header.mesh, header.second_part - header.mesh);
 	} else {
-		mesh = src.subbuf(header.mesh);
+		mesh_buffer = src.subbuf(header.mesh);
 	}
-	CollisionSectors sectors = parse_collision_mesh(mesh);
-	Mesh raw_mesh = collision_sectors_to_mesh(sectors);
+	CollisionSectors sectors = parse_collision_mesh(mesh_buffer);
+	Mesh mesh = collision_sectors_to_mesh(sectors);
 	// The vertices and faces stored in the games files are duplicated such that
 	// only one sector must be accessed to do collision detection.
-	return deduplicate_faces(deduplicate_vertices(std::move(raw_mesh)));
+	mesh = deduplicate_vertices(std::move(mesh));
+	mesh = deduplicate_faces(std::move(mesh));
+	mesh = reverse_winding_order(std::move(mesh));
+	return mesh;
 }
 
 
