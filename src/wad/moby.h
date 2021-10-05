@@ -146,7 +146,7 @@ struct MobyCollision {
 	u16 unknown_0;
 	u16 unknown_2;
 	std::vector<u8> first_part;
-	std::vector<u8> second_part;
+	std::vector<Vec3f> second_part;
 	std::vector<u8> third_part;
 };
 
