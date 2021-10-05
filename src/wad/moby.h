@@ -178,8 +178,7 @@ struct MobyClassData {
 	MobyBangles bangles;
 	std::vector<MobySequence> sequences;
 	std::vector<u8> mystery_data;
-	Opt<MobyCollision> collision_struct;
-	std::vector<u8> collision;
+	Opt<MobyCollision> collision;
 	std::vector<glm::mat4> skeleton;
 	std::vector<u8> common_trans;
 	std::vector<std::vector<u8>> joints;
@@ -284,9 +283,9 @@ packed_struct(MobyFrameHeader,
 )
 
 packed_struct(MobyCollisionHeader,
-	/* 0x0 */ s16 unknown_0;
-	/* 0x2 */ s16 unknown_2;
-	/* 0x4 */ s32 first_part_count;
+	/* 0x0 */ u16 unknown_0;
+	/* 0x2 */ u16 unknown_2;
+	/* 0x4 */ s32 first_part_size;
 	/* 0x8 */ s32 third_part_size;
 	/* 0xc */ s32 second_part_size;
 )

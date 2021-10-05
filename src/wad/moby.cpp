@@ -66,8 +66,9 @@ MobyClassData read_moby_class(Buffer src) {
 	}
 	verify(header.sequence_count >= 1, "Moby class has no sequences.");
 	if(header.collision != 0) {
-		moby.collision = src.read_bytes(header.collision, header.skeleton - header.collision, "moby collision");
-		mystery_data_ofs = 0xffffffff;
+		moby.collision = read_moby_collision(src.subbuf(header.collision));
+		s64 coll_size = 0x10 + moby.collision->first_part.size() + moby.collision->second_part.size() + moby.collision->third_part.size();
+		mystery_data_ofs = std::max(mystery_data_ofs, header.collision + coll_size);
 	}
 	for(const Mat4& matrix : src.read_multiple<Mat4>(header.skeleton, header.joint_count, "skeleton")) {
 		moby.skeleton.push_back(matrix.unpack());
@@ -139,8 +140,8 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby) {
 	if(moby.submeshes.size() > 0 || moby.low_detail_submeshes.size() > 0 || moby.metal_submeshes.size() > 0) {
 		header.submesh_table_offset = submesh_table_1_ofs - class_header_ofs;
 	}
-	if(moby.collision.size() > 0) {
-		header.collision = dest.write_multiple(moby.collision) - class_header_ofs;
+	if(moby.collision.has_value()) {
+		header.collision = write_moby_collision(dest, *moby.collision) - class_header_ofs;
 	}
 	dest.write_multiple(moby.mystery_data);
 	header.skeleton = dest.tell() - class_header_ofs;
@@ -246,11 +247,11 @@ static void write_moby_sequences(OutBuffer dest, const std::vector<MobySequence>
 static MobyCollision read_moby_collision(Buffer src) {
 	auto header = src.read<MobyCollisionHeader>(0, "moby collision header");
 	MobyCollision collision;
+	collision.unknown_0 = header.unknown_0;
+	collision.unknown_2 = header.unknown_2;
 	s64 ofs = 0x10;
-	if(header.first_part_count != 0) {
-		collision.first_part = src.read_bytes(ofs, 0x50, "moby collision data");
-		ofs += 0x50;
-	}
+	collision.first_part = src.read_bytes(ofs, header.first_part_size, "moby collision data");
+	ofs += header.first_part_size;
 	collision.second_part = src.read_bytes(ofs, header.second_part_size, "moby collision second part");
 	ofs += header.second_part_size;
 	collision.third_part = src.read_bytes(ofs, header.third_part_size, "moby collision third part");
@@ -261,7 +262,7 @@ static s64 write_moby_collision(OutBuffer dest, const MobyCollision& collision) 
 	MobyCollisionHeader header;
 	header.unknown_0 = collision.unknown_0;
 	header.unknown_2 = collision.unknown_2;
-	header.first_part_count = 0x20;
+	header.first_part_size = collision.first_part.size();
 	header.third_part_size = collision.third_part.size();
 	header.second_part_size = collision.second_part.size();
 	dest.pad(0x10);
