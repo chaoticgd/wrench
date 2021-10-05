@@ -99,7 +99,7 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 			s64 model_size = next_asset_block_size(entry.offset_in_asset_wad, block_bounds);
 			moby->model = assets.read_bytes(entry.offset_in_asset_wad, model_size, "moby model");
 			if(entry.o_class >= 10) {
-				moby->high_model = lift_moby_model(read_moby_class(*moby->model));
+				moby->high_model = lift_moby_model(read_moby_class(*moby->model), entry.o_class);
 			}
 		}
 		for(s32 j = 0; j < 16; j++) {

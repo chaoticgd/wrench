@@ -29,8 +29,8 @@ using GifUsageTable = std::vector<MobyGifUsageTableEntry>;
 static void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_ofs, const std::vector<MobySubMesh>& submeshes);
 static std::vector<MobyMetalSubMesh> read_moby_metal_submeshes(Buffer src, s64 table_ofs, s64 count);
 static void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalSubMesh>& submeshes);
-static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const std::vector<u8>& ind, const std::vector<MobyTexturePrimitive>& texs, u8 ihdr0, u8 ihdr2);
-static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes);
+static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const std::vector<u8>& ind, const std::vector<MobyTexturePrimitive>& texs, u8 ihdr0, u8 secret_index);
+static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, s32 o_class);
 
 // FIXME: Figure out what points to the mystery data instead of doing this.
 static s64 mystery_data_ofs;
@@ -352,7 +352,7 @@ static std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s
 		if(array_ofs % 8 != 0) {
 			array_ofs += 4;
 		}
-		submesh.vertices_8 = src.read_multiple<u16>(array_ofs, vertex_header.vertex_count_8, "vertex table").copy();
+		submesh.vertices_8 = src.read_multiple<MobyVertex8>(array_ofs, vertex_header.vertex_count_8, "vertex table").copy();
 		s64 vertices_ofs = entry.vertex_offset + vertex_header.vertex_table_offset;
 		submesh.vertices_2 = src.read_multiple<MobyVertex>(vertices_ofs, vertex_header.vertex_count_2, "vertex table").copy();
 		vertices_ofs += vertex_header.vertex_count_2 * 0x10;
@@ -397,7 +397,7 @@ static void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 t
 		memcpy(st_unpack.data.data(), submesh.sts.data(), submesh.sts.size() * 4);
 		write_vif_packet(dest, st_unpack);
 		
-		s64 tex_unpack = write_shared_moby_vif_packets(dest, &gif_usage, submesh.indices, submesh.textures, submesh.index_header.unknown_0, submesh.index_header.unknown_2);
+		s64 tex_unpack = write_shared_moby_vif_packets(dest, &gif_usage, submesh.indices, submesh.textures, submesh.index_header.unknown_0, submesh.index_header.secret_index);
 		
 		entry.vif_list_texture_unpack_offset = tex_unpack;
 		dest.pad(0x10);
@@ -481,7 +481,7 @@ static void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std:
 		dest.pad(0x10);
 		s64 vif_list_ofs = dest.tell();
 		entry.vif_list_offset = vif_list_ofs - class_header_ofs;
-		s64 tex_unpack = write_shared_moby_vif_packets(dest, nullptr, submesh.indices, submesh.textures, submesh.index_header.unknown_0, submesh.index_header.unknown_2);
+		s64 tex_unpack = write_shared_moby_vif_packets(dest, nullptr, submesh.indices, submesh.textures, submesh.index_header.unknown_0, submesh.index_header.secret_index);
 		entry.vif_list_texture_unpack_offset = tex_unpack;
 		dest.pad(0x10);
 		entry.vif_list_size = (dest.tell() - vif_list_ofs) / 0x10;
@@ -506,7 +506,7 @@ static void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std:
 	}
 }
 
-static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const std::vector<u8>& ind, const std::vector<MobyTexturePrimitive>& texs, u8 ihdr0, u8 ihdr2) {
+static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const std::vector<u8>& ind, const std::vector<MobyTexturePrimitive>& texs, u8 ihdr0, u8 secret_index) {
 	static const s32 INDEX_UNPACK_ADDR_QUADWORDS = 0x12d;
 	
 	MobyIndexHeader index_header = {0};
@@ -515,7 +515,7 @@ static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usag
 	if(texs.size() > 0) {
 		index_header.texture_unpack_offset_quadwords = ind.size() / 4 + 1;
 	}
-	index_header.unknown_2 = ihdr2;
+	index_header.secret_index = secret_index;
 	
 	VifPacket index_unpack;
 	index_unpack.code.interrupt = 0;
@@ -529,7 +529,7 @@ static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usag
 	OutBuffer index_buffer(indices);
 	index_buffer.write(index_header);
 	index_buffer.write_multiple(ind);
-	index_unpack.data = indices;
+	index_unpack.data = std::move(indices);
 	write_vif_packet(dest, index_unpack);
 	
 	s64 rel_texture_unpack_ofs = 0;
@@ -573,44 +573,49 @@ static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usag
 	return rel_texture_unpack_ofs;
 }
 
-ColladaScene lift_moby_model(const MobyClassData& moby) {
+ColladaScene lift_moby_model(const MobyClassData& moby, s32 o_class) {
 	ColladaScene scene;
 	
 	ColladaNode mesh_node;
 	mesh_node.name = "mesh";
 	mesh_node.mesh = scene.meshes.size();
 	scene.nodes.emplace_back(std::move(mesh_node));
-	scene.meshes.emplace_back(lift_moby_mesh(moby.submeshes));
+	scene.meshes.emplace_back(lift_moby_mesh(moby.submeshes, o_class));
 	
 	ColladaNode low_detail_node;
 	low_detail_node.name = "low_detail";
 	low_detail_node.mesh = scene.meshes.size();
 	scene.nodes.emplace_back(std::move(low_detail_node));
-	scene.meshes.emplace_back(lift_moby_mesh(moby.low_detail_submeshes));
+	scene.meshes.emplace_back(lift_moby_mesh(moby.low_detail_submeshes, o_class));
 	
 	return scene;
 }
 
-static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes) {
+static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, s32 o_class) {
 	Mesh mesh;
 	for(const MobySubMesh& submesh : submeshes) {
 		s32 vertex_base = mesh.vertices.size();
+		std::vector<MobyVertex> lowverts;
 		for(const MobyVertex& mv : submesh.vertices_2) {
 			Vertex v;
 			v.pos = glm::vec3(mv.x / 16384.f, mv.y / 16384.f, mv.z / 16384.f);
 			mesh.vertices.push_back(v);
+			lowverts.push_back(mv);
 		}
 		for(const MobyVertex& mv : submesh.vertices_4) {
 			Vertex v;
 			v.pos = glm::vec3(mv.x / 16384.f, mv.y / 16384.f, mv.z / 16384.f);
 			mesh.vertices.push_back(v);
+			lowverts.push_back(mv);
 		}
 		for(const MobyVertex& mv : submesh.main_vertices) {
 			Vertex v;
 			v.pos = glm::vec3(mv.x / 16384.f, mv.y / 16384.f, mv.z / 16384.f);
 			mesh.vertices.push_back(v);
+			lowverts.push_back(mv);
 		}
-		for(u16 idx : submesh.vertices_8) {
+		for(s64 i = 0; i < submesh.vertices_8.size(); i++) {
+			MobyVertex8 v8 = submesh.vertices_8[i];
 			Vertex v;
 			mesh.vertices.push_back(v);
 		}
@@ -619,28 +624,30 @@ static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes) {
 		s32 max_index = 0;
 		bool reverse_winding_order = true;
 		for(u8 index : submesh.indices) {
-			if(index != 0) {
-				if(index < 0x80) {
-					index_queue[index_pos] = vertex_base + index - 1;
-					TriFace face;
-					if(reverse_winding_order) {
-						face.v0 = index_queue[(index_pos + 3) % 3];
-						face.v1 = index_queue[(index_pos + 2) % 3];
-						face.v2 = index_queue[(index_pos + 1) % 3];
-					} else {
-						face.v0 = index_queue[(index_pos + 1) % 3];
-						face.v1 = index_queue[(index_pos + 2) % 3];
-						face.v2 = index_queue[(index_pos + 3) % 3];
-					}
-					mesh.tris.push_back(face);
-				} else {
-					index_queue[index_pos] = vertex_base + index - 0x81;
-				}
-				max_index = std::max(max_index, index_queue[index_pos]);
-				verify(index_queue[index_pos] < mesh.vertices.size(), "Bad moby index buffer.");
-				index_pos = (index_pos + 1) % 3;
-				reverse_winding_order = !reverse_winding_order;
+			if(index == 0) {
+				// TODO: Handle textures.
+				index = submesh.index_header.secret_index;
 			}
+			if(index < 0x80) {
+				index_queue[index_pos] = vertex_base + index - 1;
+				TriFace face;
+				if(reverse_winding_order) {
+					face.v0 = index_queue[(index_pos + 3) % 3];
+					face.v1 = index_queue[(index_pos + 2) % 3];
+					face.v2 = index_queue[(index_pos + 1) % 3];
+				} else {
+					face.v0 = index_queue[(index_pos + 1) % 3];
+					face.v1 = index_queue[(index_pos + 2) % 3];
+					face.v2 = index_queue[(index_pos + 3) % 3];
+				}
+				mesh.tris.push_back(face);
+			} else {
+				index_queue[index_pos] = vertex_base + index - 0x81;
+			}
+			max_index = std::max(max_index, index_queue[index_pos]);
+			verify(index_queue[index_pos] < mesh.vertices.size(), "Bad moby index buffer.");
+			index_pos = (index_pos + 1) % 3;
+			reverse_winding_order = !reverse_winding_order;
 		}
 	}
 	return mesh;

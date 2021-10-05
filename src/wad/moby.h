@@ -47,8 +47,8 @@ packed_struct(MobyVertex,
 packed_struct(MobyIndexHeader, // Second UNPACK header.
 	/* 0x0 */ u8 unknown_0;
 	/* 0x1 */ u8 texture_unpack_offset_quadwords; // Offset of texture data relative to decompressed index buffer in VU mem.
-	/* 0x2 */ u8 unknown_2;
-	/* 0x3 */ u8 unknown_3;
+	/* 0x2 */ u8 secret_index; // If the first index is zero, VU1 writes this over the first index but still switches the texture.
+	/* 0x3 */ u8 pad;
 	// Indices directly follow.
 )
 
@@ -68,13 +68,18 @@ packed_struct(MobyTexturePrimitive,
 	/* 0x30 */ GsAdData d4_xyzf2;
 )
 
+packed_struct(MobyVertex8,
+	u8 unknown_0;
+	u8 unknown_1;
+)
+
 struct MobySubMesh {
 	std::vector<MobyTexCoord> sts;
 	MobyIndexHeader index_header;
 	std::vector<u8> indices;
 	std::vector<MobyTexturePrimitive> textures;
 	std::vector<u16> unknowns;
-	std::vector<u16> vertices_8;
+	std::vector<MobyVertex8> vertices_8;
 	std::vector<MobyVertex> vertices_2;
 	std::vector<MobyVertex> vertices_4;
 	std::vector<MobyVertex> main_vertices;
@@ -300,6 +305,6 @@ packed_struct(MobyBanglesHeader,
 
 MobyClassData read_moby_class(Buffer src);
 void write_moby_class(OutBuffer dest, const MobyClassData& moby);
-ColladaScene lift_moby_model(const MobyClassData& moby);
+ColladaScene lift_moby_model(const MobyClassData& moby, s32 o_class);
 
 #endif
