@@ -282,7 +282,6 @@ static Mesh collision_sectors_to_mesh(const CollisionSectors& sectors) {
 	for(const auto& y_partitions : sectors.list) {
 		for(const auto& x_partitions : y_partitions.list) {
 			for(const CollisionSector& sector : x_partitions.list) {
-				mesh.vertices.reserve(mesh.vertices.size() + sector.vertices.size());
 				s32 vertex_index = mesh.vertices.size();
 				for(const glm::vec3& vertex : sector.vertices) {
 					mesh.vertices.push_back(Vertex(sector.displacement + vertex));
