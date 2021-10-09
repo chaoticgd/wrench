@@ -50,6 +50,10 @@ using f64 = double;
 
 namespace fs = std::filesystem;
 
+#ifdef _MSC_VER
+	#define fseek _fseeki64
+#endif
+
 #define BEGIN_END(container) container.begin(), container.end()
 
 #pragma GCC diagnostic push
