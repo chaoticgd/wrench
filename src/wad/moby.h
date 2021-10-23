@@ -24,30 +24,32 @@
 #include "vif.h"
 
 packed_struct(MobyTexCoord,
-	s16 s;
-	s16 t;
+	/* 0x0 */ s16 s;
+	/* 0x2 */ s16 t;
 )
 
 packed_struct(MobyVertex,
-	/* 0x0 */ u8 unknown_0;
-	/* 0x1 */ u8 unknown_1;
-	/* 0x2 */ u8 unknown_2;
-	/* 0x3 */ u8 unknown_3;
-	/* 0x4 */ u8 unknown_4;
-	/* 0x5 */ u8 unknown_5;
-	/* 0x6 */ u8 unknown_6;
-	/* 0x7 */ u8 unknown_7;
-	/* 0x8 */ u8 unknown_8;
-	/* 0x9 */ u8 unknown_9;
-	/* 0xa */ s16 x;
-	/* 0xc */ s16 y;
-	/* 0xe */ s16 z;
+	/* 0x0 */ u32 low_word;
+	union {
+		struct {
+			/* 0x4 */ u8 unknown_4;
+			/* 0x5 */ u8 unknown_5;
+			/* 0x6 */ u8 unknown_6;
+			/* 0x7 */ u8 unknown_7;
+			/* 0x8 */ u8 unknown_8;
+			/* 0x9 */ u8 unknown_9;
+			/* 0xa */ s16 x;
+			/* 0xc */ s16 y;
+			/* 0xe */ s16 z;
+		} regular;
+		/* 0x4 */ u16 trailing_vertex_indices[6];
+	};
 )
 
 packed_struct(MobyIndexHeader, // Second UNPACK header.
 	/* 0x0 */ u8 unknown_0;
 	/* 0x1 */ u8 texture_unpack_offset_quadwords; // Offset of texture data relative to decompressed index buffer in VU mem.
-	/* 0x2 */ u8 secret_index; // If the first index is zero, VU1 writes this over the first index but still switches the texture.
+	/* 0x2 */ u8 secret_index;
 	/* 0x3 */ u8 pad;
 	// Indices directly follow.
 )
@@ -58,7 +60,7 @@ packed_struct(GsAdData,
 	/* 0x8 */ u8 address;
 	/* 0x9 */ u8 pad_9;
 	/* 0xa */ u16 pad_a;
-	/* 0xc */ u32 pad_c;
+	/* 0xc */ u32 extra_index; // The VU1 microcode reads extra indices here.
 )
 
 packed_struct(MobyTexturePrimitive,
@@ -68,22 +70,16 @@ packed_struct(MobyTexturePrimitive,
 	/* 0x30 */ GsAdData d4_xyzf2;
 )
 
-packed_struct(MobyVertex8,
-	u8 unknown_0;
-	u8 unknown_1;
-)
-
 struct MobySubMesh {
 	std::vector<MobyTexCoord> sts;
 	MobyIndexHeader index_header;
 	std::vector<u8> indices;
 	std::vector<MobyTexturePrimitive> textures;
 	std::vector<u16> unknowns;
-	std::vector<MobyVertex8> vertices_8;
-	std::vector<MobyVertex> vertices_2;
-	std::vector<MobyVertex> vertices_4;
-	std::vector<MobyVertex> main_vertices;
-	std::vector<MobyVertex> trailing_vertices;
+	std::vector<MobyVertex> vertices;
+	u16 vertex_count_2;
+	u16 vertex_count_4;
+	std::vector<u16> duplicate_vertices;
 	u16 unknown_e;
 };
 
@@ -250,7 +246,7 @@ packed_struct(MobyVertexTableHeader,
 	/* 0x2 */ u16 vertex_count_2;
 	/* 0x4 */ u16 vertex_count_4;
 	/* 0x6 */ u16 main_vertex_count;
-	/* 0x8 */ u16 vertex_count_8;
+	/* 0x8 */ u16 duplicate_vertex_count;
 	/* 0xa */ u16 transfer_vertex_count; // transfer_vertex_count == vertex_count_2 + vertex_count_4 + main_vertex_count + vertex_count_8
 	/* 0xc */ u16 vertex_table_offset;
 	/* 0xe */ u16 unknown_e;

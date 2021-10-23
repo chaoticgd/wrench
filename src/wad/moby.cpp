@@ -328,8 +328,11 @@ static std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s
 		auto unpacks = filter_vif_unpacks(command_list);
 		Buffer st_data(unpacks.at(0).data);
 		submesh.sts = st_data.read_multiple<MobyTexCoord>(0, st_data.size() / 4, "moby st unpack").copy();
+		
 		Buffer index_data(unpacks.at(1).data);
 		submesh.index_header = index_data.read<MobyIndexHeader>(0, "moby index unpack header");
+		verify(submesh.index_header.unknown_0 == 0xfe, "Moby has bad index buffer.");
+		verify(submesh.index_header.pad == 0, "Moby has bad index buffer.");
 		submesh.indices = index_data.read_bytes(4, index_data.size() - 4, "moby index unpack data");
 		if(unpacks.size() >= 3) {
 			Buffer texture_data(unpacks.at(2).data);
@@ -364,21 +367,34 @@ static std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s
 		if(array_ofs % 8 != 0) {
 			array_ofs += 4;
 		}
-		submesh.vertices_8 = src.read_multiple<MobyVertex8>(array_ofs, vertex_header.vertex_count_8, "vertex table").copy();
-		s64 vertices_ofs = entry.vertex_offset + vertex_header.vertex_table_offset;
-		submesh.vertices_2 = src.read_multiple<MobyVertex>(vertices_ofs, vertex_header.vertex_count_2, "vertex table").copy();
-		vertices_ofs += vertex_header.vertex_count_2 * 0x10;
-		submesh.vertices_4 = src.read_multiple<MobyVertex>(vertices_ofs, vertex_header.vertex_count_4, "vertex table").copy();
-		vertices_ofs += vertex_header.vertex_count_4 * 0x10;
-		submesh.main_vertices = src.read_multiple<MobyVertex>(vertices_ofs, vertex_header.main_vertex_count, "vertex table").copy();
-		vertices_ofs += vertex_header.main_vertex_count * 0x10;
+		submesh.duplicate_vertices = src.read_multiple<u16>(array_ofs, vertex_header.duplicate_vertex_count, "vertex table").copy();
+		s64 vertex_ofs = entry.vertex_offset + vertex_header.vertex_table_offset;
+		s32 in_file_vertex_count = vertex_header.vertex_count_2 + vertex_header.vertex_count_4 + vertex_header.main_vertex_count;
+		submesh.vertices = src.read_multiple<MobyVertex>(vertex_ofs, in_file_vertex_count, "vertex table").copy();
+		vertex_ofs += in_file_vertex_count * 0x10;
+		submesh.vertex_count_2 = vertex_header.vertex_count_2;
+		submesh.vertex_count_4 = vertex_header.vertex_count_4;
 		submesh.unknown_e = vertex_header.unknown_e;
-		for(;;) {
-			MobyVertex vertex = src.read<MobyVertex>(vertices_ofs, "vertex table");
-			submesh.trailing_vertices.emplace_back(vertex);
-			vertices_ofs += 0x10;
-			if(vertex.unknown_4 != 0 || vertex.unknown_6 != 0) {
-				break;
+		
+		// Fix vertex indices (see comment in write_moby_submeshes).
+		for(size_t i = 7; i < submesh.vertices.size(); i++) {
+			submesh.vertices[i - 7].low_word = (submesh.vertices[i - 7].low_word & ~0x1ff) | (submesh.vertices[i].low_word & 0x1ff);
+		}
+		s32 trailing_vertex_count = entry.vertex_data_size - vertex_header.vertex_table_offset / 0x10 - in_file_vertex_count;
+		verify(trailing_vertex_count < 7, "error: Bad moby vertex table.");
+		s64 trailing;
+		vertex_ofs += std::max(7 - in_file_vertex_count, 0) * 0x10;
+		for(s64 i = std::max(7 - in_file_vertex_count, 0); i < trailing_vertex_count; i++) {
+			MobyVertex vertex = src.read<MobyVertex>(vertex_ofs, "vertex table");
+			vertex_ofs += 0x10;
+			s64 dest_index = in_file_vertex_count + i - 7;
+			submesh.vertices.at(dest_index).low_word = (submesh.vertices[dest_index].low_word & ~0x1ff) | (vertex.low_word & 0x1ff);
+		}
+		MobyVertex last_vertex = src.read<MobyVertex>(vertex_ofs - 0x10, "vertex table");
+		for(s32 i = std::max(7 - in_file_vertex_count - trailing_vertex_count, 0); i < 6; i++) {
+			s64 dest_index = in_file_vertex_count + trailing_vertex_count + i - 7;
+			if(dest_index < submesh.vertices.size()) {
+				submesh.vertices[dest_index].low_word = (submesh.vertices[dest_index].low_word & ~0x1ff) | (last_vertex.trailing_vertex_indices[i] & 0x1ff);
 			}
 		}
 		
@@ -415,30 +431,69 @@ static void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 t
 		dest.pad(0x10);
 		entry.vif_list_size = (dest.tell() - vif_list_ofs) / 0x10;
 		
+		// Umm.. "adjust" vertex indices (see comment below).
+		std::vector<MobyVertex> vertices = submesh.vertices;
+		std::vector<u16> trailing_vertex_indices(std::max(7 - (s32) vertices.size(), 0), 0);
+		for(s32 i = std::max((s32) vertices.size() - 7, 0); i < vertices.size(); i++) {
+			trailing_vertex_indices.push_back(vertices[i].low_word & 0x1ff);
+		}
+		for(s32 i = vertices.size() - 1; i >= 7; i--) {
+			vertices[i].low_word = (vertices[i].low_word & ~0x1ff) | (vertices[i - 7].low_word & 0xff);
+		}
+		for(s32 i = 0; i < std::min(7, (s32) vertices.size()); i++) {
+			vertices[i].low_word = vertices[i].low_word & ~0x1ff;
+		}
+		
 		// Write vertex table.
 		s64 vertex_header_ofs = dest.alloc<MobyVertexTableHeader>();
 		MobyVertexTableHeader vertex_header;
 		vertex_header.unknown_count_0 = submesh.unknowns.size();
-		vertex_header.vertex_count_2 = submesh.vertices_2.size();
-		vertex_header.vertex_count_4 = submesh.vertices_4.size();
-		vertex_header.main_vertex_count = submesh.main_vertices.size();
-		vertex_header.vertex_count_8 = submesh.vertices_8.size();
+		vertex_header.vertex_count_2 = submesh.vertex_count_2;
+		vertex_header.vertex_count_4 = submesh.vertex_count_4;
+		vertex_header.main_vertex_count =
+			submesh.vertices.size() -
+			submesh.vertex_count_2 -
+			submesh.vertex_count_4;
+		vertex_header.duplicate_vertex_count = submesh.duplicate_vertices.size();
 		vertex_header.transfer_vertex_count =
 			vertex_header.vertex_count_2 +
 			vertex_header.vertex_count_4 +
 			vertex_header.main_vertex_count +
-			vertex_header.vertex_count_8;
+			vertex_header.duplicate_vertex_count;
 		vertex_header.unknown_e = submesh.unknown_e;
 		dest.write_multiple(submesh.unknowns);
 		dest.pad(0x8);
-		dest.write_multiple(submesh.vertices_8);
+		dest.write_multiple(submesh.duplicate_vertices);
 		dest.pad(0x10);
 		vertex_header.vertex_table_offset = dest.tell() - vertex_header_ofs;
 		
-		dest.write_multiple(submesh.vertices_2);
-		dest.write_multiple(submesh.vertices_4);
-		dest.write_multiple(submesh.main_vertices);
-		dest.write_multiple(submesh.trailing_vertices);
+		// Write out the remaining vertex indices after the rest of the proper
+		// vertices (since the vertex index stored in each vertex corresponds to
+		// the vertex 7 vertices prior for some reason). The remaining indices
+		// are written out into the padding vertices and then when that space
+		// runs out they're written into the second part of the last padding
+		// vertex (hence there is at least one padding vertex). Now I see why
+		// they call it Insomniac Games.
+		s32 trailing = 0;
+		for(; vertices.size() % 4 != 2 && trailing < trailing_vertex_indices.size(); trailing++) {
+			MobyVertex vertex = {0};
+			if(submesh.vertices.size() + trailing >= 7) {
+				vertex.low_word = trailing_vertex_indices[trailing];
+			}
+			vertices.push_back(vertex);
+		}
+		assert(trailing < trailing_vertex_indices.size());
+		MobyVertex last_vertex = {0};
+		if(submesh.vertices.size() + trailing >= 7) {
+			last_vertex.low_word = trailing_vertex_indices[trailing];
+		}
+		for(s32 i = trailing + 1; i < trailing_vertex_indices.size(); i++) {
+			if(submesh.vertices.size() + i >= 7) {
+				last_vertex.trailing_vertex_indices[i - trailing - 1] = trailing_vertex_indices[i];
+			}
+		}
+		vertices.push_back(last_vertex);
+		dest.write_multiple(vertices);
 		
 		dest.write(vertex_header_ofs, vertex_header);
 		entry.vertex_offset = vertex_header_ofs - class_header_ofs;
@@ -469,7 +524,7 @@ static std::vector<MobyMetalSubMesh> read_moby_metal_submeshes(Buffer src, s64 t
 		submesh.indices = index_data.read_bytes(4, index_data.size() - 4, "moby index unpack data");
 		if(unpacks.size() >= 2) {
 			Buffer texture_data(unpacks.at(1).data);
-			for(s64 i = 0; i < texture_data.size(); i+= 0x40) {
+			for(s64 i = 0; i < texture_data.size(); i += 0x40) {
 				submesh.textures.push_back(texture_data.read<MobyTexturePrimitive>(i, "moby texture unpack"));
 			}
 		}
@@ -521,26 +576,27 @@ static void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std:
 static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const std::vector<u8>& ind, const std::vector<MobyTexturePrimitive>& texs, u8 ihdr0, u8 secret_index) {
 	static const s32 INDEX_UNPACK_ADDR_QUADWORDS = 0x12d;
 	
+	std::vector<u8> indices;
+	OutBuffer index_buffer(indices);
+	s64 index_header_ofs = index_buffer.alloc<MobyIndexHeader>();
+	index_buffer.write_multiple(ind);
+	
 	MobyIndexHeader index_header = {0};
 	index_header.unknown_0 = ihdr0;
-	assert(ind.size() % 4 == 0);
 	if(texs.size() > 0) {
-		index_header.texture_unpack_offset_quadwords = ind.size() / 4 + 1;
+		index_header.texture_unpack_offset_quadwords = indices.size() / 4;
 	}
 	index_header.secret_index = secret_index;
+	index_buffer.write(index_header_ofs, index_header);
 	
 	VifPacket index_unpack;
 	index_unpack.code.interrupt = 0;
 	index_unpack.code.cmd = (VifCmd) 0b1100000; // UNPACK
-	index_unpack.code.num = 1 + ind.size() / 4;
+	index_unpack.code.num = indices.size() / 4;
 	index_unpack.code.unpack.vnvl = VifVnVl::V4_8;
 	index_unpack.code.unpack.flg = VifFlg::USE_VIF1_TOPS;
 	index_unpack.code.unpack.usn = VifUsn::SIGNED;
 	index_unpack.code.unpack.addr = INDEX_UNPACK_ADDR_QUADWORDS;
-	std::vector<u8> indices;
-	OutBuffer index_buffer(indices);
-	index_buffer.write(index_header);
-	index_buffer.write_multiple(ind);
 	index_unpack.data = std::move(indices);
 	write_vif_packet(dest, index_unpack);
 	
@@ -557,7 +613,7 @@ static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usag
 		texture_unpack.code.unpack.vnvl = VifVnVl::V4_32;
 		texture_unpack.code.unpack.flg = VifFlg::USE_VIF1_TOPS;
 		texture_unpack.code.unpack.usn = VifUsn::SIGNED;
-		texture_unpack.code.unpack.addr = INDEX_UNPACK_ADDR_QUADWORDS + (4 + ind.size()) / 4;
+		texture_unpack.code.unpack.addr = INDEX_UNPACK_ADDR_QUADWORDS + index_unpack.code.num;
 		for(s32 i = 0 ; i < texs.size(); i++) {
 			OutBuffer(texture_unpack.data).write(texs[i]);
 		}
@@ -599,48 +655,65 @@ ColladaScene lift_moby_model(const MobyClassData& moby, s32 o_class) {
 	low_detail_node.mesh = scene.meshes.size();
 	scene.nodes.emplace_back(std::move(low_detail_node));
 	scene.meshes.emplace_back(lift_moby_mesh(moby.low_detail_submeshes, o_class));
-	
 	return scene;
 }
 
+#define VERIFY_SUBMESH(cond, message) verify(cond, "Moby class %d, submesh %d has bad " message ".", o_class, i);
+
 static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, s32 o_class) {
 	Mesh mesh;
-	for(const MobySubMesh& submesh : submeshes) {
+	// The game stores this on the end of the VU chain.
+	Opt<MobyVertex> intermediate_buffer[512];
+	memset(intermediate_buffer, 0, sizeof(intermediate_buffer));
+	for(s32 i = 0; i < submeshes.size(); i++) {
+		const MobySubMesh submesh = submeshes[i];
 		s32 vertex_base = mesh.vertices.size();
-		std::vector<MobyVertex> lowverts;
-		for(const MobyVertex& mv : submesh.vertices_2) {
+		for(const MobyVertex& mv : submesh.vertices) {
 			Vertex v;
-			v.pos = glm::vec3(mv.x / 16384.f, mv.y / 16384.f, mv.z / 16384.f);
+			v.pos = glm::vec3(mv.regular.x / 16384.f, mv.regular.y / 16384.f, mv.regular.z / 16384.f);
 			mesh.vertices.push_back(v);
-			lowverts.push_back(mv);
+			intermediate_buffer[mv.low_word & 0x1ff] = mv;
 		}
-		for(const MobyVertex& mv : submesh.vertices_4) {
+		for(u16 v8 : submesh.duplicate_vertices) {
 			Vertex v;
-			v.pos = glm::vec3(mv.x / 16384.f, mv.y / 16384.f, mv.z / 16384.f);
-			mesh.vertices.push_back(v);
-			lowverts.push_back(mv);
-		}
-		for(const MobyVertex& mv : submesh.main_vertices) {
-			Vertex v;
-			v.pos = glm::vec3(mv.x / 16384.f, mv.y / 16384.f, mv.z / 16384.f);
-			mesh.vertices.push_back(v);
-			lowverts.push_back(mv);
-		}
-		for(s64 i = 0; i < submesh.vertices_8.size(); i++) {
-			MobyVertex8 v8 = submesh.vertices_8[i];
-			Vertex v;
+			VERIFY_SUBMESH((v8 & 0b1111111) == 0, "vertex table");
+			auto mv = intermediate_buffer[v8 >> 7];
+			VERIFY_SUBMESH(mv.has_value(), "vertex table");
+			v.pos = glm::vec3(mv->regular.x / 16384.f, mv->regular.y / 16384.f, mv->regular.z / 16384.f);
 			mesh.vertices.push_back(v);
 		}
 		s32 index_queue[3] = {0};
 		s32 index_pos = 0;
 		s32 max_index = 0;
 		bool reverse_winding_order = true;
-		for(u8 index : submesh.indices) {
+		// There's an extra index stored in the index header, in addition to an
+		// index stored in each 0x40 byte texture unpack block. When a texture
+		// is applied, the next index from this list is used as the next vertex
+		// in the queue, but the triangle with it as its last index is not
+		// actually drawn.
+		u32 extra_index = submesh.index_header.secret_index;
+		s32 texture_index = 0;
+		for(size_t j = 0; j < submesh.indices.size(); j++) {
+			u8 index = submesh.indices[j];
+			VERIFY_SUBMESH(index != 0x80, "index buffer");
 			if(index == 0) {
-				// TODO: Handle textures.
-				index = submesh.index_header.secret_index;
+				if(extra_index == 0) {
+					VERIFY_SUBMESH(mesh.tris.size() >= 3, "index buffer");
+					// The VU1 microprogram has multiple vertices in flight at
+					// a time, so we need to remove the ones that wouldn't have
+					// been written to the GS packet.
+					mesh.tris.pop_back();
+					mesh.tris.pop_back();
+					mesh.tris.pop_back();
+					break;
+				} else {
+					index = extra_index + 0x80;
+					extra_index = submesh.textures.at(texture_index).d1_xyzf2.extra_index;
+					texture_index++;
+				}
 			}
 			if(index < 0x80) {
+				VERIFY_SUBMESH(vertex_base + index - 1 < mesh.vertices.size(), "index buffer");
 				index_queue[index_pos] = vertex_base + index - 1;
 				TriFace face;
 				if(reverse_winding_order) {
@@ -657,12 +730,11 @@ static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, s32 o_clas
 				index_queue[index_pos] = vertex_base + index - 0x81;
 			}
 			max_index = std::max(max_index, index_queue[index_pos]);
-			verify(index_queue[index_pos] < mesh.vertices.size(), "Bad moby index buffer.");
+			VERIFY_SUBMESH(index_queue[index_pos] < mesh.vertices.size(), "index buffer");
 			index_pos = (index_pos + 1) % 3;
 			reverse_winding_order = !reverse_winding_order;
 		}
 	}
 	mesh = deduplicate_vertices(std::move(mesh));
-	mesh = deduplicate_faces(std::move(mesh));
 	return mesh;
 }
