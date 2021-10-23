@@ -23,6 +23,7 @@
 #include <vector>
 #include <cstring>
 #include <utility>
+#include <cstdint>
 
 // Decompress and recompress WAD segments used by the games to store various
 // assets. Not to be confused with WAD archives.
