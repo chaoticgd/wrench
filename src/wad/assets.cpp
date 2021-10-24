@@ -300,6 +300,7 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 	while(data_dest.tell() < 0xb98a40) {
 		data_dest.write<u8>(0);
 	}
+	
 	for(const MobyClass& cls : wad.moby_classes) {
 		if(!cls.has_asset_table_entry) {
 			continue;

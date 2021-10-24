@@ -128,7 +128,13 @@ Opt<Game> game_from_string(std::string str) {
 }
 
 static void read_classes(LevelWad& wad, fs::path project_dir);
+static void write_classes(Json& json, fs::path dest_dir, const LevelWad& wad);
 static std::vector<size_t> read_textures_json(s32 table, std::vector<Texture>& dest, fs::path dir, Json& paths);
+static void write_texture_pngs(fs::path project_dir, fs::path rel_dir, std::vector<Texture>& textures);
+static Json get_texture_paths(const std::vector<Texture>& textures, const std::vector<size_t>& indices);
+static Json get_all_texture_paths(const std::vector<Texture>& textures);
+static std::string write_json_array_file(fs::path dest_dir, const char* file_name, Json data_json);
+static std::string write_json_object_file(fs::path dest_dir, const char* file_name, Json data_json);
 
 std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 	fs::path src_dir = src_path.parent_path();
@@ -249,102 +255,6 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 	return nullptr;
 }
 
-static void read_classes(LevelWad& wad, fs::path project_dir) {
-	for(s32 o_class : opt_iterator(wad.gameplay.moby_classes)) {
-		fs::path moby_dir = project_dir/std::string("mobies")/std::to_string(o_class);
-		Json moby_json = Json::parse(read_file(moby_dir/std::string("moby.json")));
-		MobyClass moby;
-		moby.o_class = moby_json["class"].get<s32>();
-		if(moby_json.contains("model")) {
-			moby.model = read_file(moby_dir/std::string(moby_json["model"]));
-		}
-		moby.textures = read_textures_json(MOBY_TEXTURE_INDEX, wad.textures, project_dir, moby_json["textures"]);
-		moby.has_asset_table_entry = moby_json["has_asset_table_entry"];
-		wad.moby_classes.emplace_back(std::move(moby));
-	}
-	
-	std::vector<s32> tie_classes;
-	for(const TieInstance& inst : opt_iterator(wad.gameplay.tie_instances)) {
-		if(std::find(BEGIN_END(tie_classes), inst.o_class) == tie_classes.end()) {
-			tie_classes.push_back(inst.o_class);
-		}
-	}
-	
-	for(s32 o_class : tie_classes) {
-		fs::path tie_dir = project_dir/std::string("ties")/std::to_string(o_class);
-		Json tie_json = Json::parse(read_file(tie_dir/std::string("tie.json")));
-		TieClass tie;
-		tie.o_class = tie_json["class"].get<s32>();
-		tie.model = read_file(tie_dir/std::string(tie_json["model"]));
-		tie.textures = read_textures_json(TIE_TEXTURE_INDEX, wad.textures, project_dir, tie_json["textures"]);
-		wad.tie_classes.emplace_back(std::move(tie));
-	}
-	
-	std::vector<s32> shrub_classes;
-	for(const ShrubInstance& inst : opt_iterator(wad.gameplay.shrub_instances)) {
-		if(std::find(BEGIN_END(shrub_classes), inst.o_class) == shrub_classes.end()) {
-			shrub_classes.push_back(inst.o_class);
-		}
-	}
-	
-	for(s32 o_class : shrub_classes) {
-		fs::path shrub_dir = project_dir/std::string("shrubs")/std::to_string(o_class);
-		Json shrub_json = Json::parse(read_file(shrub_dir/std::string("shrub.json")));
-		ShrubClass shrub;
-		shrub.o_class = shrub_json["class"].get<s32>();
-		shrub.model = read_file(shrub_dir/std::string(shrub_json["model"]));
-		shrub.textures = read_textures_json(SHRUB_TEXTURE_INDEX, wad.textures, project_dir, shrub_json["textures"]);
-		wad.shrub_classes.emplace_back(std::move(shrub));
-	}
-}
-
-static std::vector<size_t> read_textures_json(s32 table, std::vector<Texture>& dest, fs::path dir, Json& paths) {
-	std::vector<size_t> textures;
-	for(Json& rel_path : paths) {
-		fs::path path = dir/std::string(rel_path);
-		bool is_unique = true;
-		for(size_t i = 0; i < dest.size(); i++) {
-			if(dest[i].path == path) {
-				textures.push_back(i);
-				is_unique = false;
-				break;
-			}
-		}
-		if(is_unique) {
-			Opt<Texture> texture = read_png(path);
-			if(texture.has_value()) {
-				textures.push_back(dest.size());
-				dest.emplace_back(std::move(*texture));
-			} else {
-				std::string path_str = path.string();
-				printf("warning: Failed to read texture '%s'.", path.c_str());
-			}
-		}
-	}
-	return textures;
-}
-
-static std::string write_json_array_file(fs::path dest_dir, const char* file_name, Json data_json) {
-	Json json;
-	json["metadata"] = get_file_metadata(file_name, APPLICATION_NAME);
-	json[file_name] = std::move(data_json);
-	return write_file(dest_dir, std::string(file_name) + ".json", json.dump(1, '\t'));
-}
-
-static std::string write_json_object_file(fs::path dest_dir, const char* file_name, Json data_json) {
-	Json json;
-	json["metadata"] = get_file_metadata(file_name, APPLICATION_NAME);
-	for(auto& item : data_json.items()) {
-		json[item.key()] = std::move(item.value());
-	}
-	return write_file(dest_dir, std::string(file_name) + ".json", json.dump(1, '\t'));
-}
-
-static void write_classes(Json& json, fs::path dest_dir, const LevelWad& wad);
-static void write_texture_pngs(fs::path project_dir, fs::path rel_dir, std::vector<Texture>& textures);
-static Json get_texture_paths(const std::vector<Texture>& textures, const std::vector<size_t>& indices);
-static Json get_all_texture_paths(const std::vector<Texture>& textures);
-
 void write_wad_json(fs::path dest_dir, Wad* base) {
 	const char* json_file_name = nullptr;
 	Json json;
@@ -464,6 +374,55 @@ void write_wad_json(fs::path dest_dir, Wad* base) {
 	write_file(dest_dir, json_file_name, json.dump(1, '\t'));
 }
 
+static void read_classes(LevelWad& wad, fs::path project_dir) {
+	for(s32 o_class : opt_iterator(wad.gameplay.moby_classes)) {
+		fs::path moby_dir = project_dir/std::string("mobies")/std::to_string(o_class);
+		Json moby_json = Json::parse(read_file(moby_dir/std::string("moby.json")));
+		MobyClass moby;
+		moby.o_class = moby_json["class"].get<s32>();
+		if(moby_json.contains("model")) {
+			moby.model = read_file(moby_dir/std::string(moby_json["model"]));
+		}
+		moby.textures = read_textures_json(MOBY_TEXTURE_INDEX, wad.textures, project_dir, moby_json["textures"]);
+		moby.has_asset_table_entry = moby_json["has_asset_table_entry"];
+		wad.moby_classes.emplace_back(std::move(moby));
+	}
+	
+	std::vector<s32> tie_classes;
+	for(const TieInstance& inst : opt_iterator(wad.gameplay.tie_instances)) {
+		if(std::find(BEGIN_END(tie_classes), inst.o_class) == tie_classes.end()) {
+			tie_classes.push_back(inst.o_class);
+		}
+	}
+	
+	for(s32 o_class : tie_classes) {
+		fs::path tie_dir = project_dir/std::string("ties")/std::to_string(o_class);
+		Json tie_json = Json::parse(read_file(tie_dir/std::string("tie.json")));
+		TieClass tie;
+		tie.o_class = tie_json["class"].get<s32>();
+		tie.model = read_file(tie_dir/std::string(tie_json["model"]));
+		tie.textures = read_textures_json(TIE_TEXTURE_INDEX, wad.textures, project_dir, tie_json["textures"]);
+		wad.tie_classes.emplace_back(std::move(tie));
+	}
+	
+	std::vector<s32> shrub_classes;
+	for(const ShrubInstance& inst : opt_iterator(wad.gameplay.shrub_instances)) {
+		if(std::find(BEGIN_END(shrub_classes), inst.o_class) == shrub_classes.end()) {
+			shrub_classes.push_back(inst.o_class);
+		}
+	}
+	
+	for(s32 o_class : shrub_classes) {
+		fs::path shrub_dir = project_dir/std::string("shrubs")/std::to_string(o_class);
+		Json shrub_json = Json::parse(read_file(shrub_dir/std::string("shrub.json")));
+		ShrubClass shrub;
+		shrub.o_class = shrub_json["class"].get<s32>();
+		shrub.model = read_file(shrub_dir/std::string(shrub_json["model"]));
+		shrub.textures = read_textures_json(SHRUB_TEXTURE_INDEX, wad.textures, project_dir, shrub_json["textures"]);
+		wad.shrub_classes.emplace_back(std::move(shrub));
+	}
+}
+
 static void write_classes(Json& json, fs::path dest_dir, const LevelWad& wad) {
 	fs::create_directory(dest_dir/std::string("mobies"));
 	json["mobies"] = std::vector<std::string>{"mobies"};
@@ -510,6 +469,32 @@ static void write_classes(Json& json, fs::path dest_dir, const LevelWad& wad) {
 	}
 }
 
+static std::vector<size_t> read_textures_json(s32 table, std::vector<Texture>& dest, fs::path dir, Json& paths) {
+	std::vector<size_t> textures;
+	for(Json& rel_path : paths) {
+		fs::path path = dir/std::string(rel_path);
+		bool is_unique = true;
+		for(size_t i = 0; i < dest.size(); i++) {
+			if(dest[i].path == path) {
+				textures.push_back(i);
+				is_unique = false;
+				break;
+			}
+		}
+		if(is_unique) {
+			Opt<Texture> texture = read_png(path);
+			if(texture.has_value()) {
+				textures.push_back(dest.size());
+				dest.emplace_back(std::move(*texture));
+			} else {
+				std::string path_str = path.string();
+				printf("warning: Failed to read texture '%s'.", path.c_str());
+			}
+		}
+	}
+	return textures;
+}
+
 static void write_texture_pngs(fs::path project_dir, fs::path rel_dir, std::vector<Texture>& textures) {
 	fs::create_directories(project_dir/rel_dir);
 	for(Texture& texture : textures) {
@@ -533,6 +518,22 @@ static Json get_all_texture_paths(const std::vector<Texture>& textures) {
 		json.emplace_back(texture.path.string());
 	}
 	return json;
+}
+
+static std::string write_json_array_file(fs::path dest_dir, const char* file_name, Json data_json) {
+	Json json;
+	json["metadata"] = get_file_metadata(file_name, APPLICATION_NAME);
+	json[file_name] = std::move(data_json);
+	return write_file(dest_dir, std::string(file_name) + ".json", json.dump(1, '\t'));
+}
+
+static std::string write_json_object_file(fs::path dest_dir, const char* file_name, Json data_json) {
+	Json json;
+	json["metadata"] = get_file_metadata(file_name, APPLICATION_NAME);
+	for(auto& item : data_json.items()) {
+		json[item.key()] = std::move(item.value());
+	}
+	return write_file(dest_dir, std::string(file_name) + ".json", json.dump(1, '\t'));
 }
 
 std::string pvar_descriptor_to_string(PvarFieldDescriptor descriptor) {
