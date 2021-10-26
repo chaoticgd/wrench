@@ -662,25 +662,35 @@ ColladaScene lift_moby_model(const MobyClassData& moby, s32 o_class) {
 
 static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, s32 o_class) {
 	Mesh mesh;
+	mesh.flags |= MESH_HAS_TEX_COORDS;
 	// The game stores this on the end of the VU chain.
 	Opt<MobyVertex> intermediate_buffer[512];
 	memset(intermediate_buffer, 0, sizeof(intermediate_buffer));
+	SubMesh dest;
 	for(s32 i = 0; i < submeshes.size(); i++) {
-		const MobySubMesh submesh = submeshes[i];
+		const MobySubMesh src = submeshes[i];
 		s32 vertex_base = mesh.vertices.size();
-		for(const MobyVertex& mv : submesh.vertices) {
-			Vertex v;
-			v.pos = glm::vec3(mv.regular.x / 16384.f, mv.regular.y / 16384.f, mv.regular.z / 16384.f);
-			mesh.vertices.push_back(v);
+		for(const MobyVertex& mv : src.vertices) {
+			auto& st = src.sts.at(mesh.vertices.size() - vertex_base);
+			auto pos = glm::vec3(mv.regular.x / 16384.f, mv.regular.y / 16384.f, mv.regular.z / 16384.f);
+			auto tex_coord = glm::vec2(st.s / (INT16_MAX / 8.f), -st.t / (INT16_MAX / 8.f));
+			while(tex_coord.s < 0) tex_coord.s += 1;
+			while(tex_coord.t < 0) tex_coord.t += 1;
+			mesh.vertices.emplace_back(pos, tex_coord);
+			
 			intermediate_buffer[mv.low_word & 0x1ff] = mv;
 		}
-		for(u16 v8 : submesh.duplicate_vertices) {
-			Vertex v;
+		for(u16 v8 : src.duplicate_vertices) {
 			VERIFY_SUBMESH((v8 & 0b1111111) == 0, "vertex table");
 			auto mv = intermediate_buffer[v8 >> 7];
 			VERIFY_SUBMESH(mv.has_value(), "vertex table");
-			v.pos = glm::vec3(mv->regular.x / 16384.f, mv->regular.y / 16384.f, mv->regular.z / 16384.f);
-			mesh.vertices.push_back(v);
+			
+			auto& st = src.sts.at(mesh.vertices.size() - vertex_base);
+			auto pos = glm::vec3(mv->regular.x / 16384.f, mv->regular.y / 16384.f, mv->regular.z / 16384.f);
+			auto tex_coord = glm::vec2(st.s / (INT16_MAX / 8.f), -st.t / (INT16_MAX / 8.f));
+			while(tex_coord.s < 0) tex_coord.s += 1;
+			while(tex_coord.t < 0) tex_coord.t += 1;
+			mesh.vertices.emplace_back(pos, tex_coord);
 		}
 		s32 index_queue[3] = {0};
 		s32 index_pos = 0;
@@ -691,41 +701,47 @@ static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, s32 o_clas
 		// is applied, the next index from this list is used as the next vertex
 		// in the queue, but the triangle with it as its last index is not
 		// actually drawn.
-		u32 extra_index = submesh.index_header.secret_index;
+		u32 extra_index = src.index_header.secret_index;
 		s32 texture_index = 0;
-		for(size_t j = 0; j < submesh.indices.size(); j++) {
-			u8 index = submesh.indices[j];
+		for(u8 index : src.indices) {
 			VERIFY_SUBMESH(index != 0x80, "index buffer");
 			if(index == 0) {
 				if(extra_index == 0) {
-					VERIFY_SUBMESH(mesh.tris.size() >= 3, "index buffer");
+					VERIFY_SUBMESH(dest.faces.size() >= 3, "index buffer");
 					// The VU1 microprogram has multiple vertices in flight at
 					// a time, so we need to remove the ones that wouldn't have
 					// been written to the GS packet.
-					mesh.tris.pop_back();
-					mesh.tris.pop_back();
-					mesh.tris.pop_back();
+					dest.faces.pop_back();
+					dest.faces.pop_back();
+					dest.faces.pop_back();
 					break;
 				} else {
 					index = extra_index + 0x80;
-					extra_index = submesh.textures.at(texture_index).d1_xyzf2.extra_index;
+					auto& texture = src.textures.at(texture_index);
+					extra_index = texture.d1_xyzf2.super_secret_index;
 					texture_index++;
+					
+					if(dest.faces.size() > 0) {
+						mesh.submeshes.emplace_back(std::move(dest));
+					}
+					dest = SubMesh();
+					dest.texture = texture.d3_tex0.data_lo;
 				}
 			}
 			if(index < 0x80) {
 				VERIFY_SUBMESH(vertex_base + index - 1 < mesh.vertices.size(), "index buffer");
 				index_queue[index_pos] = vertex_base + index - 1;
-				TriFace face;
 				if(reverse_winding_order) {
-					face.v0 = index_queue[(index_pos + 3) % 3];
-					face.v1 = index_queue[(index_pos + 2) % 3];
-					face.v2 = index_queue[(index_pos + 1) % 3];
+					s32 v0 = index_queue[(index_pos + 3) % 3];
+					s32 v1 = index_queue[(index_pos + 2) % 3];
+					s32 v2 = index_queue[(index_pos + 1) % 3];
+					dest.faces.emplace_back(v0, v1, v2);
 				} else {
-					face.v0 = index_queue[(index_pos + 1) % 3];
-					face.v1 = index_queue[(index_pos + 2) % 3];
-					face.v2 = index_queue[(index_pos + 3) % 3];
+					s32 v0 = index_queue[(index_pos + 1) % 3];
+					s32 v1 = index_queue[(index_pos + 2) % 3];
+					s32 v2 = index_queue[(index_pos + 3) % 3];
+					dest.faces.emplace_back(v0, v1, v2);
 				}
-				mesh.tris.push_back(face);
 			} else {
 				index_queue[index_pos] = vertex_base + index - 0x81;
 			}
@@ -734,6 +750,9 @@ static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, s32 o_clas
 			index_pos = (index_pos + 1) % 3;
 			reverse_winding_order = !reverse_winding_order;
 		}
+	}
+	if(dest.faces.size() > 0) {
+		mesh.submeshes.emplace_back(std::move(dest));
 	}
 	mesh = deduplicate_vertices(std::move(mesh));
 	return mesh;

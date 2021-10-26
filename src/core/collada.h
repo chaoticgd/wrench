@@ -37,6 +37,6 @@ struct ColladaScene {
 
 ColladaScene mesh_to_dae(Mesh mesh);
 ColladaScene import_dae(std::vector<u8> src);
-std::vector<u8> write_collada(const ColladaScene& scene);
+std::vector<u8> write_collada(const ColladaScene& scene, const std::vector<std::string>& texture_paths);
 
 #endif

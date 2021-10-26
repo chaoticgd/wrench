@@ -134,6 +134,10 @@ struct OutBuffer {
 	}
 	
 	void pad(s64 align, u8 padding = 0);
+	void writesf(s32 indent_level, const char* format, va_list args);
+	void writelf(s32 indent_level, const char* format, va_list args);
+	void writesf(s32 indent_level, const char* format, ...);
+	void writelf(s32 indent_level, const char* format, ...);
 	void writesf(const char* format, ...);
 	void writelf(const char* format, ...);
 };

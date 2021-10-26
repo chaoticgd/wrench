@@ -21,42 +21,62 @@
 
 #include "util.h"
 
-struct TriFace {
-	TriFace() { memset(this, 0, sizeof(TriFace)); }
-	bool operator==(const TriFace& rhs) { return memcmp(this, &rhs, sizeof(TriFace)) == 0; }
-	bool operator<(const TriFace& rhs) { return memcmp(this, &rhs, sizeof(TriFace)) < 0; }
+struct Face {
 	s32 v0;
 	s32 v1;
 	s32 v2;
+	s32 v3; // -1 for tris.
 	s32 collision_type;
-};
-
-struct QuadFace {
-	QuadFace() { memset(this, 0, sizeof(QuadFace)); }
-	bool operator==(const QuadFace& rhs) { return memcmp(this, &rhs, sizeof(QuadFace)) == 0; }
-	bool operator<(const QuadFace& rhs) { return memcmp(this, &rhs, sizeof(QuadFace)) < 0; }
-	s32 v0;
-	s32 v1;
-	s32 v2;
-	s32 v3;
-	s32 collision_type;
+	Face(s32 a0, s32 a1, s32 a2, s32 a3 = -1, s32 ct = -1)
+		: v0(a0), v1(a1), v2(a2), v3(a3), collision_type(ct) {}
+	bool operator==(const Face& rhs) const {
+		return v0 == rhs.v0 && v1 == rhs.v1 && v2 == rhs.v2 && v3 == rhs.v3 && collision_type == rhs.collision_type;
+	}
+	bool operator<(const Face& rhs) const {
+		// Test v3 first to seperate out tris and quads.
+		if(v3 != rhs.v3) return v3 < rhs.v3;
+		if(v2 != rhs.v2) return v2 < rhs.v2;
+		if(v1 != rhs.v1) return v1 < rhs.v1;
+		if(v0 != rhs.v0) return v0 < rhs.v0;
+		return collision_type < rhs.collision_type;
+	}
+	bool is_quad() const {
+		return v3 > -1;
+	}
 };
 
 struct Vertex {
-	Vertex() { memset(this, 0, sizeof(Vertex)); }
-	Vertex(const glm::vec3& p) : Vertex() { pos = p; }
-	bool operator==(const Vertex& rhs) { return memcmp(this, &rhs, sizeof(Vertex)) == 0; }
-	bool operator<(const Vertex& rhs) { return memcmp(this, &rhs, sizeof(Vertex)) < 0; }
 	glm::vec3 pos;
-	glm::vec2 uv;
+	glm::vec2 tex_coord;
+	Vertex(const glm::vec3& p) : pos(p) {}
+	Vertex(const glm::vec3& p, const glm::vec2& t) : pos(p), tex_coord(t) {}
+	bool operator==(const Vertex& rhs) const {
+		return pos == rhs.pos && tex_coord == rhs.tex_coord;
+	}
+	bool operator<(const Vertex& rhs) const {
+		if(pos.z != rhs.pos.z) return pos.z < rhs.pos.z;
+		if(pos.y != rhs.pos.y) return pos.y < rhs.pos.y;
+		if(pos.x != rhs.pos.x) return pos.x < rhs.pos.x;
+		if(tex_coord.y != rhs.tex_coord.y) return tex_coord.y < rhs.tex_coord.y;
+		return tex_coord.x < rhs.tex_coord.x;
+	}
+};
+
+enum MeshFlags {
+	MESH_HAS_QUADS = 1 << 0,
+	MESH_HAS_TEX_COORDS = 1 << 1,
+	MESH_HAS_COLLISION_TYPES = 1 << 2
+};
+
+struct SubMesh {
+	s32 texture = -1;
+	std::vector<Face> faces;
 };
 
 struct Mesh {
+	u32 flags = 0;
 	std::vector<Vertex> vertices;
-	std::vector<TriFace> tris;
-	std::vector<QuadFace> quads;
-	bool has_uvs = false;
-	bool is_collision_mesh = false;
+	std::vector<SubMesh> submeshes;
 };
 
 Mesh sort_vertices(Mesh mesh);

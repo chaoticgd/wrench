@@ -60,7 +60,7 @@ packed_struct(GsAdData,
 	/* 0x8 */ u8 address;
 	/* 0x9 */ u8 pad_9;
 	/* 0xa */ u16 pad_a;
-	/* 0xc */ u32 extra_index; // The VU1 microcode reads extra indices here.
+	/* 0xc */ u32 super_secret_index; // The VU1 microcode reads extra indices from here.
 )
 
 packed_struct(MobyTexturePrimitive,

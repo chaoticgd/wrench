@@ -279,29 +279,21 @@ static void write_collision_mesh(OutBuffer dest, CollisionSectors& sectors) {
 
 static Mesh collision_sectors_to_mesh(const CollisionSectors& sectors) {
 	Mesh mesh;
+	mesh.flags = MESH_HAS_QUADS | MESH_HAS_COLLISION_TYPES;
+	mesh.submeshes.emplace_back();
 	for(const auto& y_partitions : sectors.list) {
 		for(const auto& x_partitions : y_partitions.list) {
 			for(const CollisionSector& sector : x_partitions.list) {
-				s32 vertex_index = mesh.vertices.size();
+				s32 base = mesh.vertices.size();
 				for(const glm::vec3& vertex : sector.vertices) {
-					mesh.vertices.push_back(Vertex(sector.displacement + vertex));
+					mesh.vertices.emplace_back(sector.displacement + vertex);
 				}
 				for(const CollisionTri& tri : sector.tris) {
-					TriFace face;
-					face.v0 = vertex_index + tri.v0;
-					face.v1 = vertex_index + tri.v1;
-					face.v2 = vertex_index + tri.v2;
-					mesh.tris.push_back(face);
+					mesh.submeshes[0].faces.emplace_back(base + tri.v0, base + tri.v1, base + tri.v2, -1, tri.type);
 				}
 				for(const CollisionQuad& quad : sector.quads) {
-					QuadFace face;
-					face.v0 = vertex_index + quad.v0;
-					face.v1 = vertex_index + quad.v1;
-					face.v2 = vertex_index + quad.v2;
-					face.v3 = vertex_index + quad.v3;
-					mesh.quads.push_back(face);
+					mesh.submeshes[0].faces.emplace_back(base + quad.v0, base + quad.v1, base + quad.v2, base + quad.v3, quad.type);
 				}
-				mesh.is_collision_mesh = true;
 			}
 		}
 	}

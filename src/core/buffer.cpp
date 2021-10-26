@@ -140,34 +140,67 @@ void OutBuffer::pad(s64 align, u8 padding) {
 	}
 }
 
-void OutBuffer::writesf(const char* format, ...) {
+void OutBuffer::writesf(s32 indent_level, const char* format, va_list args) {
 	static char temp[16 * 1024];
 	
-	va_list args;
-	va_start(args, format);
-	int count = vsnprintf(temp, 16 * 1024, format, args);
+	for(s32 i = 0; i < indent_level; i++) {
+		temp[i] = '\t';
+	}
+	
+	s32 count = vsnprintf(temp + indent_level, 16 * 1024 - indent_level, format, args);
 	assert(count >= 0);
-	va_end(args);
+	count += indent_level;
 	
 	size_t write_ofs = vec.size();
 	vec.resize(vec.size() + count);
 	memcpy(&vec[write_ofs], temp, count);
 }
 
-void OutBuffer::writelf(const char* format, ...) {
+void OutBuffer::writelf(s32 indent_level, const char* format, va_list args) {
 	static char temp[16 * 1024];
 	
-	va_list args;
-	va_start(args, format);
-	int count = vsnprintf(temp, 16 * 1024, format, args);
+	for(s32 i = 0; i < indent_level; i++) {
+		temp[i] = '\t';
+	}
+	
+	s32 count = vsnprintf(temp + indent_level, 16 * 1024 - indent_level, format, args);
 	assert(count >= 0);
-	va_end(args);
+	count += indent_level;
 	
 	size_t write_ofs = vec.size();
 	vec.resize(write_ofs + count + 1);
 	memcpy(&vec[write_ofs], temp, count);
 	vec[write_ofs + count] = '\n';
 }
+
+void OutBuffer::writesf(s32 indent_level, const char* format, ...) {
+	va_list args;
+	va_start(args, format);
+	writesf(indent_level, format, args);
+	va_end(args);
+}
+
+void OutBuffer::writelf(s32 indent_level, const char* format, ...) {
+	va_list args;
+	va_start(args, format);
+	writelf(indent_level, format, args);
+	va_end(args);
+}
+
+void OutBuffer::writesf(const char* format, ...) {
+	va_list args;
+	va_start(args, format);
+	writesf(0, format, args);
+	va_end(args);
+}
+
+void OutBuffer::writelf(const char* format, ...) {
+	va_list args;
+	va_start(args, format);
+	writelf(0, format, args);
+	va_end(args);
+}
+
 
 s64 file_size_in_bytes(FILE* file) {
 	long whence_you_came = ftell(file);
