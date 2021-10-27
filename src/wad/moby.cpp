@@ -29,7 +29,7 @@ using GifUsageTable = std::vector<MobyGifUsageTableEntry>;
 static void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_ofs, const std::vector<MobySubMesh>& submeshes);
 static std::vector<MobyMetalSubMesh> read_moby_metal_submeshes(Buffer src, s64 table_ofs, s64 count);
 static void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalSubMesh>& submeshes);
-static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const std::vector<u8>& ind, const std::vector<MobyTexturePrimitive>& texs, u8 ihdr0, u8 secret_index);
+static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const std::vector<u8>& ind, const std::vector<GsAdData>& texs, u8 ihdr0, u8 secret_index);
 static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, s32 o_class);
 
 // FIXME: Figure out what points to the mystery data instead of doing this.
@@ -335,10 +335,8 @@ static std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s
 		verify(submesh.index_header.pad == 0, "Moby has bad index buffer.");
 		submesh.indices = index_data.read_bytes(4, index_data.size() - 4, "moby index unpack data");
 		if(unpacks.size() >= 3) {
-			Buffer texture_data(unpacks.at(2).data);
-			for(s64 i = 0; i < texture_data.size(); i+= 0x40) {
-				submesh.textures.push_back(texture_data.read<MobyTexturePrimitive>(i, "moby texture unpack"));
-			}
+			Buffer texture_buffer(unpacks.at(2).data);
+			submesh.texture_data = texture_buffer.read_multiple<GsAdData>(0, texture_buffer.size() / 0x10, "moby texture data").copy();
 		}
 		
 		// Read vertex table.
@@ -425,7 +423,7 @@ static void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 t
 		memcpy(st_unpack.data.data(), submesh.sts.data(), submesh.sts.size() * 4);
 		write_vif_packet(dest, st_unpack);
 		
-		s64 tex_unpack = write_shared_moby_vif_packets(dest, &gif_usage, submesh.indices, submesh.textures, submesh.index_header.unknown_0, submesh.index_header.secret_index);
+		s64 tex_unpack = write_shared_moby_vif_packets(dest, &gif_usage, submesh.indices, submesh.texture_data, submesh.index_header.unknown_0, submesh.index_header.secret_index);
 		
 		entry.vif_list_texture_unpack_offset = tex_unpack;
 		dest.pad(0x10);
@@ -523,10 +521,8 @@ static std::vector<MobyMetalSubMesh> read_moby_metal_submeshes(Buffer src, s64 t
 		submesh.index_header = index_data.read<MobyIndexHeader>(0, "moby index unpack header");
 		submesh.indices = index_data.read_bytes(4, index_data.size() - 4, "moby index unpack data");
 		if(unpacks.size() >= 2) {
-			Buffer texture_data(unpacks.at(1).data);
-			for(s64 i = 0; i < texture_data.size(); i += 0x40) {
-				submesh.textures.push_back(texture_data.read<MobyTexturePrimitive>(i, "moby texture unpack"));
-			}
+			Buffer texture_buffer(unpacks.at(1).data);
+			submesh.texture_data = texture_buffer.read_multiple<GsAdData>(0, texture_buffer.size() / 0x10, "moby texture data").copy();
 		}
 		
 		// Read vertex table.
@@ -548,7 +544,7 @@ static void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std:
 		dest.pad(0x10);
 		s64 vif_list_ofs = dest.tell();
 		entry.vif_list_offset = vif_list_ofs - class_header_ofs;
-		s64 tex_unpack = write_shared_moby_vif_packets(dest, nullptr, submesh.indices, submesh.textures, submesh.index_header.unknown_0, submesh.index_header.secret_index);
+		s64 tex_unpack = write_shared_moby_vif_packets(dest, nullptr, submesh.indices, submesh.texture_data, submesh.index_header.unknown_0, submesh.index_header.secret_index);
 		entry.vif_list_texture_unpack_offset = tex_unpack;
 		dest.pad(0x10);
 		entry.vif_list_size = (dest.tell() - vif_list_ofs) / 0x10;
@@ -573,7 +569,7 @@ static void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std:
 	}
 }
 
-static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const std::vector<u8>& ind, const std::vector<MobyTexturePrimitive>& texs, u8 ihdr0, u8 secret_index) {
+static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const std::vector<u8>& ind, const std::vector<GsAdData>& texs, u8 ihdr0, u8 secret_index) {
 	static const s32 INDEX_UNPACK_ADDR_QUADWORDS = 0x12d;
 	
 	std::vector<u8> indices;
@@ -609,14 +605,12 @@ static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usag
 		VifPacket texture_unpack;
 		texture_unpack.code.interrupt = 0;
 		texture_unpack.code.cmd = (VifCmd) 0b1100000; // UNPACK
-		texture_unpack.code.num = texs.size() * 4;
+		texture_unpack.code.num = texs.size();
 		texture_unpack.code.unpack.vnvl = VifVnVl::V4_32;
 		texture_unpack.code.unpack.flg = VifFlg::USE_VIF1_TOPS;
 		texture_unpack.code.unpack.usn = VifUsn::SIGNED;
 		texture_unpack.code.unpack.addr = INDEX_UNPACK_ADDR_QUADWORDS + index_unpack.code.num;
-		for(s32 i = 0 ; i < texs.size(); i++) {
-			OutBuffer(texture_unpack.data).write(texs[i]);
-		}
+		OutBuffer(texture_unpack.data).write_multiple(texs);
 		s32 abs_texture_unpack_ofs = dest.tell();
 		write_vif_packet(dest, texture_unpack);
 		
@@ -624,9 +618,10 @@ static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usag
 			MobyGifUsageTableEntry gif_entry;
 			gif_entry.offset_and_terminator = abs_texture_unpack_ofs - 0xc - class_header_ofs;
 			s32 gif_index = 0;
-			for(const MobyTexturePrimitive& texture : texs) {
+			assert(texs.size() % 4 == 0);
+			for(size_t i = 0; i < texs.size(); i += 4) {
 				assert(gif_index < 12);
-				gif_entry.texture_indices[gif_index++] = texture.d3_tex0.data_lo;
+				gif_entry.texture_indices[gif_index++] = texs[i + 2].data_lo;
 			}
 			for(s32 i = gif_index; i < 12; i++) {
 				gif_entry.texture_indices[i] = 0xff;
@@ -717,15 +712,15 @@ static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, s32 o_clas
 					break;
 				} else {
 					index = extra_index + 0x80;
-					auto& texture = src.textures.at(texture_index);
-					extra_index = texture.d1_xyzf2.super_secret_index;
-					texture_index++;
+					extra_index = src.texture_data.at(texture_index).super_secret_index;
 					
 					if(dest.faces.size() > 0) {
 						mesh.submeshes.emplace_back(std::move(dest));
 					}
 					dest = SubMesh();
-					dest.texture = texture.d3_tex0.data_lo;
+					dest.texture = src.texture_data.at(texture_index * 4 + 2).data_lo;
+					
+					texture_index++;
 				}
 			}
 			if(index < 0x80) {

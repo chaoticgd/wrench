@@ -63,18 +63,11 @@ packed_struct(GsAdData,
 	/* 0xc */ u32 super_secret_index; // The VU1 microcode reads extra indices from here.
 )
 
-packed_struct(MobyTexturePrimitive,
-	/* 0x00 */ GsAdData d1_xyzf2;
-	/* 0x10 */ GsAdData d2_clamp;
-	/* 0x20 */ GsAdData d3_tex0;
-	/* 0x30 */ GsAdData d4_xyzf2;
-)
-
 struct MobySubMesh {
 	std::vector<MobyTexCoord> sts;
 	MobyIndexHeader index_header;
 	std::vector<u8> indices;
-	std::vector<MobyTexturePrimitive> textures;
+	std::vector<GsAdData> texture_data;
 	std::vector<u16> unknowns;
 	std::vector<MobyVertex> vertices;
 	u16 vertex_count_2;
@@ -102,7 +95,7 @@ packed_struct(MobyMetalVertex,
 struct MobyMetalSubMesh {
 	MobyIndexHeader index_header;
 	std::vector<u8> indices;
-	std::vector<MobyTexturePrimitive> textures;
+	std::vector<GsAdData> texture_data;
 	std::vector<MobyMetalVertex> vertices;
 	u32 unknown_4;
 	u32 unknown_8;
