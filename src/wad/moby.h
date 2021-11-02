@@ -63,11 +63,29 @@ packed_struct(GsAdData,
 	/* 0xc */ u32 super_secret_index; // The VU1 microcode reads extra indices from here.
 )
 
-struct MobySubMesh {
-	std::vector<MobyTexCoord> sts;
-	MobyIndexHeader index_header;
+packed_struct(MobyTexturePrimitive,
+	/* 0x00 */ GsAdData d1_xyzf2;
+	/* 0x10 */ GsAdData d2_clamp;
+	/* 0x20 */ GsAdData d3_tex0;
+	/* 0x30 */ GsAdData d4_xyzf2;
+)
+
+enum MobySpecialTextureIndex {
+	MOBY_TEX_NONE = -1,
+	MOBY_TEX_CHROME = -2,
+	MOBY_TEX_GLASS = -3
+};
+
+struct MobySubMeshBase {
 	std::vector<u8> indices;
-	std::vector<GsAdData> texture_data;
+	std::vector<u8> secret_indices;
+	std::vector<s32> textures;
+	std::vector<s32> texture_xyzf2s;
+	u8 index_header_first_byte;
+};
+
+struct MobySubMesh : MobySubMeshBase {
+	std::vector<MobyTexCoord> sts;
 	std::vector<u16> unknowns;
 	std::vector<MobyVertex> vertices;
 	u16 vertex_count_2;
@@ -92,10 +110,7 @@ packed_struct(MobyMetalVertex,
 	/* 0xf */ u8 unknown_f;
 )
 
-struct MobyMetalSubMesh {
-	MobyIndexHeader index_header;
-	std::vector<u8> indices;
-	std::vector<GsAdData> texture_data;
+struct MobyMetalSubMesh : MobySubMeshBase {
 	std::vector<MobyMetalVertex> vertices;
 	u32 unknown_4;
 	u32 unknown_8;
@@ -240,7 +255,7 @@ packed_struct(MobyVertexTableHeader,
 	/* 0x4 */ u16 vertex_count_4;
 	/* 0x6 */ u16 main_vertex_count;
 	/* 0x8 */ u16 duplicate_vertex_count;
-	/* 0xa */ u16 transfer_vertex_count; // transfer_vertex_count == vertex_count_2 + vertex_count_4 + main_vertex_count + vertex_count_8
+	/* 0xa */ u16 transfer_vertex_count; // transfer_vertex_count == vertex_count_2 + vertex_count_4 + main_vertex_count + duplicate_vertex_count
 	/* 0xc */ u16 vertex_table_offset;
 	/* 0xe */ u16 unknown_e;
 )
