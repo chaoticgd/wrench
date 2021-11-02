@@ -700,7 +700,6 @@ static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, s32 o_clas
 	mesh.flags = MESH_HAS_TEX_COORDS;
 	// The game stores this on the end of the VU chain.
 	Opt<MobyVertex> intermediate_buffer[512];
-	memset(intermediate_buffer, 0, sizeof(intermediate_buffer));
 	SubMesh dest;
 	for(s32 i = 0; i < submeshes.size(); i++) {
 		const MobySubMesh src = submeshes[i];
