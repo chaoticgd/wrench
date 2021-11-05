@@ -26,7 +26,9 @@
 #include <stdio.h>
 #include <assert.h>
 #include <optional>
+#include <stdarg.h>
 #include <stdint.h>
+#include <exception>
 #include <filesystem>
 #include <functional>
 #include <type_traits>
@@ -93,6 +95,21 @@ template <typename... Args>
 	verify_not_reached_impl(__FILE__, __LINE__, __VA_ARGS__)
 	
 #pragma GCC diagnostic pop
+
+std::string string_format(const char* format, va_list args);
+
+struct ParseError : std::exception {
+	ParseError(const char* format, ...) {
+		va_list args;
+		va_start(args, format);
+		message = string_format(format, args);
+		va_end(args);
+	}
+	virtual const char* what() const noexcept {
+		return message.c_str();
+	}
+	std::string message;
+};
 
 #ifdef _MSC_VER
 	#define packed_struct(name, ...) \

@@ -30,7 +30,7 @@ static void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 t
 static std::vector<MobyMetalSubMesh> read_moby_metal_submeshes(Buffer src, s64 table_ofs, s64 count);
 static void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalSubMesh>& submeshes);
 static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const MobySubMeshBase& submesh);
-static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, s32 o_class);
+static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char*name, s32 o_class);
 
 // FIXME: Figure out what points to the mystery data instead of doing this.
 static s64 mystery_data_ofs;
@@ -678,25 +678,21 @@ static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usag
 ColladaScene lift_moby_model(const MobyClassData& moby, s32 o_class) {
 	ColladaScene scene;
 	
-	ColladaNode mesh_node;
-	mesh_node.name = "mesh";
-	mesh_node.mesh = scene.meshes.size();
-	scene.nodes.emplace_back(std::move(mesh_node));
-	scene.meshes.emplace_back(lift_moby_mesh(moby.submeshes, o_class));
+	Material& none = scene.materials.emplace_back();
+	none.name = "none";
+	none.colour = ColourF{1, 1, 1, 1};
 	
-	ColladaNode low_detail_node;
-	low_detail_node.name = "low_detail";
-	low_detail_node.mesh = scene.meshes.size();
-	scene.nodes.emplace_back(std::move(low_detail_node));
-	scene.meshes.emplace_back(lift_moby_mesh(moby.low_detail_submeshes, o_class));
+	scene.meshes.emplace_back(lift_moby_mesh(moby.submeshes, "high_lod", o_class));
+	scene.meshes.emplace_back(lift_moby_mesh(moby.low_detail_submeshes, "low_lod", o_class));
 	
 	return scene;
 }
 
 #define VERIFY_SUBMESH(cond, message) verify(cond, "Moby class %d, submesh %d has bad " message ".", o_class, i);
 
-static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, s32 o_class) {
+static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* name, s32 o_class) {
 	Mesh mesh;
+	mesh.name = name;
 	mesh.flags = MESH_HAS_TEX_COORDS;
 	// The game stores this on the end of the VU chain.
 	Opt<MobyVertex> intermediate_buffer[512];
@@ -755,7 +751,7 @@ static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, s32 o_clas
 						mesh.submeshes.emplace_back(std::move(dest));
 					}
 					dest = SubMesh();
-					dest.texture = src.textures.at(texture_index);
+					dest.material = 0;//src.textures.at(texture_index);
 					texture_index++;
 				}
 			}

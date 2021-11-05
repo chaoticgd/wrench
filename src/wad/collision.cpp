@@ -58,9 +58,9 @@ using CollisionSectors = CollisionList<CollisionList<CollisionList<CollisionSect
 
 static CollisionSectors parse_collision_mesh(Buffer mesh);
 static void write_collision_mesh(OutBuffer dest, CollisionSectors& sectors);
-static Mesh collision_sectors_to_mesh(const CollisionSectors& sectors);
+static ColladaScene collision_sectors_to_mesh(const CollisionSectors& sectors);
 
-Mesh read_collision(Buffer src) {
+ColladaScene read_collision(Buffer src) {
 	CollisionHeader header = src.read<CollisionHeader>(0, "collision header");
 	Buffer mesh_buffer;
 	if(header.second_part != 0) {
@@ -69,13 +69,7 @@ Mesh read_collision(Buffer src) {
 		mesh_buffer = src.subbuf(header.mesh);
 	}
 	CollisionSectors sectors = parse_collision_mesh(mesh_buffer);
-	Mesh mesh = collision_sectors_to_mesh(sectors);
-	// The vertices and faces stored in the games files are duplicated such that
-	// only one sector must be accessed to do collision detection.
-	mesh = deduplicate_vertices(std::move(mesh));
-	mesh = deduplicate_faces(std::move(mesh));
-	mesh = reverse_winding_order(std::move(mesh));
-	return mesh;
+	return collision_sectors_to_mesh(sectors);
 }
 
 
@@ -277,10 +271,18 @@ static void write_collision_mesh(OutBuffer dest, CollisionSectors& sectors) {
 	}
 }
 
-static Mesh collision_sectors_to_mesh(const CollisionSectors& sectors) {
-	Mesh mesh;
+static ColladaScene collision_sectors_to_mesh(const CollisionSectors& sectors) {
+	ColladaScene scene;
+	scene.materials.emplace_back();
+	scene.materials[0].name = "default";
+	scene.materials[0].colour = ColourF{1, 1, 1, 1};
+	
+	Mesh& mesh = scene.meshes.emplace_back();
+	mesh.name = "collision";
 	mesh.flags = MESH_HAS_QUADS | MESH_HAS_COLLISION_TYPES;
-	mesh.submeshes.emplace_back();
+	
+	SubMesh& submesh = mesh.submeshes.emplace_back();
+	submesh.material = 0;
 	for(const auto& y_partitions : sectors.list) {
 		for(const auto& x_partitions : y_partitions.list) {
 			for(const CollisionSector& sector : x_partitions.list) {
@@ -289,13 +291,20 @@ static Mesh collision_sectors_to_mesh(const CollisionSectors& sectors) {
 					mesh.vertices.emplace_back(sector.displacement + vertex);
 				}
 				for(const CollisionTri& tri : sector.tris) {
-					mesh.submeshes[0].faces.emplace_back(base + tri.v0, base + tri.v1, base + tri.v2, -1, tri.type);
+					submesh.faces.emplace_back(base + tri.v0, base + tri.v1, base + tri.v2, -1, tri.type);
 				}
 				for(const CollisionQuad& quad : sector.quads) {
-					mesh.submeshes[0].faces.emplace_back(base + quad.v0, base + quad.v1, base + quad.v2, base + quad.v3, quad.type);
+					submesh.faces.emplace_back(base + quad.v0, base + quad.v1, base + quad.v2, base + quad.v3, quad.type);
 				}
 			}
 		}
 	}
-	return mesh;
+	
+	// The vertices and faces stored in the games files are duplicated such that
+	// only one sector must be accessed to do collision detection.
+	scene.meshes[0] = deduplicate_vertices(std::move(scene.meshes[0]));
+	scene.meshes[0] = deduplicate_faces(std::move(scene.meshes[0]));
+	scene.meshes[0] = reverse_winding_order(std::move(scene.meshes[0]));
+	
+	return scene;
 }

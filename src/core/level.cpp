@@ -289,7 +289,7 @@ void write_wad_json(fs::path dest_dir, Wad* base) {
 			json["tfrags"] = write_file(dest_dir, "tfrags.bin", wad.tfrags);
 			json["occlusion"] = write_file(dest_dir, "occlusion.bin", wad.occlusion);
 			json["sky"] = write_file(dest_dir, "sky.bin", wad.sky);
-			json["collision"] = write_file(dest_dir, "collision.dae", write_collada(mesh_to_dae(wad.collision), {}));
+			json["collision"] = write_file(dest_dir, "collision.dae", write_collada(wad.collision));
 			json["collision_bin"] = write_file(dest_dir, "collision.bin", wad.collision_bin);
 			write_texture_pngs(dest_dir, "textures", wad.textures);
 			Json tfrag_textures_json;
@@ -440,7 +440,8 @@ static void write_classes(Json& json, fs::path dest_dir, const LevelWad& wad) {
 			for(size_t texture : moby.textures) {
 				texture_paths.push_back(std::string("../../") + wad.textures[texture].path.string());
 			}
-			write_file(moby_dir, "model.dae", write_collada(*moby.high_model, texture_paths));
+			moby.high_model->texture_paths = texture_paths;
+			write_file(moby_dir, "model.dae", write_collada(*moby.high_model));
 		}
 		moby_json["textures"] = get_texture_paths(wad.textures, moby.textures);
 		moby_json["has_asset_table_entry"] = moby.has_asset_table_entry;

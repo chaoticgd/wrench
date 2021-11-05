@@ -19,5 +19,5 @@
 #include "../core/buffer.h"
 #include "../core/collada.h"
 
-Mesh read_collision(Buffer src);
+ColladaScene read_collision(Buffer src);
 void roundtrip_collision(OutBuffer dest, Buffer src);

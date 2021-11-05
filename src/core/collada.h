@@ -23,20 +23,31 @@
 #include "util.h"
 #include "buffer.h"
 
-struct ColladaNode {
+struct ColourF {
+	f32 r;
+	f32 g;
+	f32 b;
+	f32 a;
+	
+	bool operator==(const ColourF& rhs) const {
+		return r == rhs.r && g == rhs.g && b == rhs.b && a == rhs.a;
+	}
+};
+
+struct Material {
 	std::string name;
-	s32 mesh;
-	Opt<glm::vec3> translate;
-	std::vector<ColladaNode> children;
+	std::optional<ColourF> colour;
+	std::optional<s32> texture;
 };
 
 struct ColladaScene {
-	std::vector<ColladaNode> nodes;
+	mutable std::vector<std::string> texture_paths;
+	std::vector<Material> materials;
 	std::vector<Mesh> meshes;
 };
 
 ColladaScene mesh_to_dae(Mesh mesh);
-ColladaScene import_dae(std::vector<u8> src);
-std::vector<u8> write_collada(const ColladaScene& scene, const std::vector<std::string>& texture_paths);
+ColladaScene read_collada(std::vector<u8> src); // Throws ParseError.
+std::vector<u8> write_collada(const ColladaScene& scene);
 
 #endif

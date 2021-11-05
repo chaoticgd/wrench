@@ -34,6 +34,7 @@ Mesh sort_vertices(Mesh src) {
 	}
 	
 	Mesh dest;
+	dest.name = std::move(src.name);
 	dest.flags = src.flags;
 	dest.vertices.reserve(src.vertices.size());
 	for(size_t i = 0; i < src.vertices.size(); i++) {
@@ -54,6 +55,7 @@ Mesh deduplicate_vertices(Mesh src) {
 	src = sort_vertices(std::move(src));
 	
 	Mesh dest;
+	dest.name = std::move(src.name);
 	dest.flags = src.flags;
 	std::vector<s32> index_mapping(src.vertices.size());
 	if(src.vertices.size() > 0) {

@@ -35,6 +35,7 @@ struct GameplayTestArgs {
 };
 static void run_gameplay_lump_test(GameplayTestArgs args);
 static void run_moby_class_test(s32 o_class, Buffer src, const char* file_path);
+static void assert_collada_scenes_equal(const ColladaScene& lhs, const ColladaScene& rhs);
 
 void run_tests(fs::path input_path) {
 	run_level_tests(input_path);
@@ -188,9 +189,10 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 }
 
 static void run_moby_class_test(s32 o_class, Buffer src, const char* file_path) {
+	// Test the binary reading/writing functions.
 	MobyClassData moby = read_moby_class(src);
 	std::vector<u8> dest_vec;
-	// Test that relative pointers are set correctly.
+	// Make sure relative pointers are set correctly.
 	for(s32 i = 0; i < 0x40; i++) {
 		OutBuffer(dest_vec).write<u8>(0);
 	}
@@ -214,5 +216,41 @@ static void run_moby_class_test(s32 o_class, Buffer src, const char* file_path) 
 		fwrite(src.lo, src.hi - src.lo, 1, file);
 		fclose(file);
 		exit(1);
+	}
+	
+	// Test the COLLADA importer/exporter.
+	ColladaScene src_scene = lift_moby_model(moby, o_class);
+	std::vector<u8> collada_xml = write_collada(src_scene);
+	ColladaScene dest_scene = read_collada(std::move(collada_xml));
+	assert_collada_scenes_equal(src_scene, dest_scene);
+}
+
+static void assert_collada_scenes_equal(const ColladaScene& lhs, const ColladaScene& rhs) {
+	assert(lhs.texture_paths.size() == rhs.texture_paths.size());
+	assert(lhs.texture_paths == rhs.texture_paths);
+	assert(lhs.materials.size() == rhs.materials.size());
+	for(size_t i = 0; i < lhs.materials.size(); i++) {
+		const Material& lmat = lhs.materials[i];
+		const Material& rmat = rhs.materials[i];
+		assert(lmat.name == rmat.name);
+		assert(lmat.colour == rmat.colour);
+		assert(lmat.texture == rmat.texture);
+	}
+	assert(lhs.meshes.size() == rhs.meshes.size());
+	for(size_t i = 0; i < lhs.meshes.size(); i++) {
+		const Mesh& lmesh = lhs.meshes[i];
+		const Mesh& rmesh = rhs.meshes[i];
+		assert(lmesh.name == rmesh.name);
+		// If there are no submeshes, we can't recover the flags.
+		assert(lmesh.flags == rmesh.flags || lmesh.submeshes.size() == 0);
+		assert(lmesh.vertices.size() == rmesh.vertices.size());
+		assert(lmesh.vertices == rmesh.vertices);
+		assert(lmesh.submeshes.size() == rmesh.submeshes.size());
+		for(size_t j = 0; j < lmesh.submeshes.size(); j++) {
+			const SubMesh& lsub = lmesh.submeshes[j];
+			const SubMesh& rsub = rmesh.submeshes[j];
+			assert(lsub.faces == rsub.faces);
+			assert(lsub.material == rsub.material);
+		}
 	}
 }

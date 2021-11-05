@@ -18,6 +18,12 @@
 
 #include "util.h"
 
+std::string string_format(const char* format, va_list args) {
+	static char buffer[16 * 1024];
+	vsnprintf(buffer, 16 * 1024, format, args);
+	return std::string(buffer);
+}
+
 u16 byte_swap_16(u16 val) {
 	return (val >> 8) | (val << 8);
 }

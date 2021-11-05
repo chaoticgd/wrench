@@ -430,7 +430,7 @@ struct LevelWad : Wad {
 	std::vector<u8> tfrags;
 	std::vector<u8> occlusion;
 	std::vector<u8> sky;
-	Mesh collision;
+	ColladaScene collision;
 	std::vector<u8> collision_bin;
 	std::vector<Texture> textures;
 	std::vector<size_t> tfrag_texture_indices;

@@ -48,6 +48,7 @@ struct Face {
 struct Vertex {
 	glm::vec3 pos;
 	glm::vec2 tex_coord;
+	Vertex() {}
 	Vertex(const glm::vec3& p) : pos(p) {}
 	Vertex(const glm::vec3& p, const glm::vec2& t) : pos(p), tex_coord(t) {}
 	bool operator==(const Vertex& rhs) const {
@@ -69,11 +70,12 @@ enum MeshFlags {
 };
 
 struct SubMesh {
-	s32 texture = -1;
+	s32 material = -1;
 	std::vector<Face> faces;
 };
 
 struct Mesh {
+	std::string name;
 	u32 flags = 0;
 	std::vector<Vertex> vertices;
 	std::vector<SubMesh> submeshes;
