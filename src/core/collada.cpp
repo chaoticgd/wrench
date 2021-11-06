@@ -146,23 +146,24 @@ static Material read_material(const XmlNode* material_node, const IdMap& ids, co
 		const char* r_ptr = colour->value();
 		char* g_ptr;
 		value.r = strtof(r_ptr, &g_ptr);
-		if(!g_ptr) {
+		if(g_ptr == r_ptr) {
 			throw ParseError("<color> node has invalid body.");
 		}
-		while(*g_ptr == ' ') g_ptr++;
 		char* b_ptr;
 		value.g = strtof(g_ptr, &b_ptr);
-		if(!b_ptr) {
+		if(b_ptr == g_ptr) {
 			throw ParseError("<color> node has invalid body.");
 		}
-		while(*b_ptr == ' ') b_ptr++;
 		char* a_ptr;
 		value.b = strtof(b_ptr, &a_ptr);
-		if(!a_ptr) {
+		if(a_ptr == b_ptr) {
 			throw ParseError("<color> node has invalid body.");
 		}
-		while(*a_ptr == ' ') a_ptr++;
-		value.a = strtof(a_ptr, nullptr);
+		char* end_ptr;
+		value.a = strtof(a_ptr, &end_ptr);
+		if(end_ptr == a_ptr) {
+			throw ParseError("<color> node has invalid body.");
+		}
 		Material material;
 		material.name = xml_attrib(material_node, "id")->value();
 		material.colour = value;
@@ -240,15 +241,12 @@ static std::vector<f32> read_vertex_source(const XmlNode* source, const IdMap& i
 	data.resize(atoi(xml_attrib(array, "count")->value()));
 	const char* ptr = array->value();
 	for(f32& value : data) {
-		char* end;
-		value = strtof(ptr, &end);
-		ptr = end;
-		while(*ptr == ' ') {
-			ptr++;
+		char* next;
+		value = strtof(ptr, &next);
+		if(next == ptr) {
+			throw ParseError("Failed to read <float_array>.");
 		}
-		if(*ptr == '\0') {
-			break;
-		}
+		ptr = next;
 	}
 	return data;
 }
@@ -278,12 +276,19 @@ static void read_submeshes(Mesh& mesh, const XmlNode* instance_geometry, const X
 			for(s32 i = 0; i < triangle_count; i++) {
 				char* v1_ptr;
 				s32 v0 = strtol(ptr, &v1_ptr, 10);
-				while(*v1_ptr == ' ') v1_ptr++;
+				if(v1_ptr == ptr) {
+					throw ParseError("Failed to read <p> body.");
+				}
 				char* v2_ptr;
 				s32 v1 = strtol(v1_ptr, &v2_ptr, 10);
-				while(*v2_ptr == ' ') v2_ptr++;
+				if(v2_ptr == v1_ptr) {
+					throw ParseError("Failed to read <p> body.");
+				}
 				char* next_ptr;
 				s32 v2 = strtol(v2_ptr, &next_ptr, 10);
+				if(next_ptr == v2_ptr) {
+					throw ParseError("Failed to read <p> body.");
+				}
 				ptr = next_ptr;
 				submesh.faces.emplace_back(v0, v1, v2);
 			}
