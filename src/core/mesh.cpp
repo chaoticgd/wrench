@@ -46,6 +46,9 @@ Mesh sort_vertices(Mesh src) {
 			face.v0 = inverse_mapping.at(face.v0);
 			face.v1 = inverse_mapping.at(face.v1);
 			face.v2 = inverse_mapping.at(face.v2);
+			if(face.v3 > -1) {
+				face.v3 = inverse_mapping.at(face.v3);
+			}
 		}
 	}
 	return dest;
