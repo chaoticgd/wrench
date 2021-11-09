@@ -343,8 +343,8 @@ std::vector<u8> write_collada(const ColladaScene& scene) {
 	if(scene.texture_paths.size() > 0) {
 		write_images(dest, scene.texture_paths);
 	}
-	write_materials(dest, scene.materials);
 	write_effects(dest, scene.materials);
+	write_materials(dest, scene.materials);
 	write_geometries(dest, scene.meshes);
 	write_visual_scenes(dest, scene);
 	dest.writelf("</COLLADA>");
