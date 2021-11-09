@@ -26,19 +26,17 @@ struct Face {
 	s32 v1;
 	s32 v2;
 	s32 v3; // -1 for tris.
-	s32 collision_type;
-	Face(s32 a0, s32 a1, s32 a2, s32 a3 = -1, s32 ct = -1)
-		: v0(a0), v1(a1), v2(a2), v3(a3), collision_type(ct) {}
+	Face(s32 a0, s32 a1, s32 a2, s32 a3 = -1)
+		: v0(a0), v1(a1), v2(a2), v3(a3) {}
 	bool operator==(const Face& rhs) const {
-		return v0 == rhs.v0 && v1 == rhs.v1 && v2 == rhs.v2 && v3 == rhs.v3 && collision_type == rhs.collision_type;
+		return v0 == rhs.v0 && v1 == rhs.v1 && v2 == rhs.v2 && v3 == rhs.v3;
 	}
 	bool operator<(const Face& rhs) const {
 		// Test v3 first to seperate out tris and quads.
 		if(v3 != rhs.v3) return v3 < rhs.v3;
 		if(v2 != rhs.v2) return v2 < rhs.v2;
 		if(v1 != rhs.v1) return v1 < rhs.v1;
-		if(v0 != rhs.v0) return v0 < rhs.v0;
-		return collision_type < rhs.collision_type;
+		return v0 < rhs.v0;
 	}
 	bool is_quad() const {
 		return v3 > -1;

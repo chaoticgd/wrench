@@ -273,16 +273,25 @@ static void write_collision_mesh(OutBuffer dest, CollisionSectors& sectors) {
 
 static ColladaScene collision_sectors_to_mesh(const CollisionSectors& sectors) {
 	ColladaScene scene;
-	scene.materials.emplace_back();
-	scene.materials[0].name = "default";
-	scene.materials[0].colour = ColourF{1, 1, 1, 1};
 	
 	Mesh& mesh = scene.meshes.emplace_back();
 	mesh.name = "collision";
 	mesh.flags = MESH_HAS_QUADS | MESH_HAS_COLLISION_TYPES;
 	
-	SubMesh& submesh = mesh.submeshes.emplace_back();
-	submesh.material = 0;
+	for(s32 i = 0; i < 256; i++) {
+		Material material;
+		material.name = "col_" + std::to_string(i);
+		material.colour = ColourF{};
+		// From https://github.com/RatchetModding/replanetizer/blob/ada7ca73418d7b01cc70eec58a41238986b84112/LibReplanetizer/Models/Collision.cs#L26
+		// Colour different types of collision without knowing what they are.
+		material.colour->r = ((i & 0x3) << 6) / 255.0;
+		material.colour->g = ((i & 0xc) << 4) / 255.0;
+		material.colour->b = (i & 0xf0) / 255.0;
+		material.colour->a = 1.f;
+		scene.materials.emplace_back(std::move(material));
+	}
+	
+	Opt<size_t> submeshes[256];
 	for(const auto& y_partitions : sectors.list) {
 		for(const auto& x_partitions : y_partitions.list) {
 			for(const CollisionSector& sector : x_partitions.list) {
@@ -291,10 +300,20 @@ static ColladaScene collision_sectors_to_mesh(const CollisionSectors& sectors) {
 					mesh.vertices.emplace_back(sector.displacement + vertex);
 				}
 				for(const CollisionTri& tri : sector.tris) {
-					submesh.faces.emplace_back(base + tri.v0, base + tri.v1, base + tri.v2, -1, tri.type);
+					if(!submeshes[tri.type].has_value()) {
+						submeshes[tri.type] = mesh.submeshes.size();
+						mesh.submeshes.emplace_back().material = tri.type;
+					}
+					auto& face_list = mesh.submeshes[*submeshes[tri.type]].faces;
+					face_list.emplace_back(base + tri.v0, base + tri.v1, base + tri.v2, -1);
 				}
 				for(const CollisionQuad& quad : sector.quads) {
-					submesh.faces.emplace_back(base + quad.v0, base + quad.v1, base + quad.v2, base + quad.v3, quad.type);
+					if(!submeshes[quad.type].has_value()) {
+						submeshes[quad.type] = mesh.submeshes.size();
+						mesh.submeshes.emplace_back().material = quad.type;
+					}
+					auto& face_list = mesh.submeshes[*submeshes[quad.type]].faces;
+					face_list.emplace_back(base + quad.v0, base + quad.v1, base + quad.v2, base + quad.v3);
 				}
 			}
 		}
