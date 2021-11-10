@@ -682,6 +682,34 @@ ColladaScene lift_moby_model(const MobyClassData& moby, s32 o_class) {
 	none.name = "none";
 	none.colour = ColourF{1, 1, 1, 1};
 	
+	s32 texture_count = 0;
+	for(const MobySubMesh& submesh : moby.submeshes) {
+		for(s32 texture : submesh.textures) {
+			texture_count = std::max(texture_count, texture + 1);
+		}
+	}
+	for(const MobySubMesh& submesh : moby.low_detail_submeshes) {
+		for(s32 texture : submesh.textures) {
+			texture_count = std::max(texture_count, texture + 1);
+		}
+	}
+	
+	for(s32 texture = 0; texture < texture_count; texture++) {
+		Material& mat = scene.materials.emplace_back();
+		mat.name = "mat_" + std::to_string(texture);
+		mat.texture = texture;
+	}
+	for(s32 texture = 0; texture < texture_count; texture++) {
+		Material& chrome = scene.materials.emplace_back();
+		chrome.name = "chrome_" + std::to_string(texture);
+		chrome.texture = texture;
+	}
+	for(s32 texture = 0; texture < texture_count; texture++) {
+		Material& glass = scene.materials.emplace_back();
+		glass.name = "glass_" + std::to_string(texture);
+		glass.texture = texture;
+	}
+	
 	scene.meshes.emplace_back(lift_moby_mesh(moby.submeshes, "high_lod", o_class));
 	scene.meshes.emplace_back(lift_moby_mesh(moby.low_detail_submeshes, "low_lod", o_class));
 	
@@ -697,6 +725,7 @@ static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char
 	// The game stores this on the end of the VU chain.
 	Opt<MobyVertex> intermediate_buffer[512];
 	SubMesh dest;
+	dest.material = 0;
 	for(s32 i = 0; i < submeshes.size(); i++) {
 		const MobySubMesh src = submeshes[i];
 		s32 vertex_base = mesh.vertices.size();
@@ -751,7 +780,13 @@ static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char
 						mesh.submeshes.emplace_back(std::move(dest));
 					}
 					dest = SubMesh();
-					dest.material = 0;//src.textures.at(texture_index);
+					s32 texture = src.textures.at(texture_index);
+					assert(texture >= -1);
+					if(texture == -1) {
+						dest.material = 0;
+					} else {
+						dest.material = 1 + texture;
+					}
 					texture_index++;
 				}
 			}

@@ -475,9 +475,9 @@ static void write_geometries(OutBuffer dest, const std::vector<Mesh>& meshes) {
 		dest.writelf(4, "\t<input semantic=\"POSITION\" source=\"#mesh_%d_positions\"/>", i);
 		dest.writelf(4, "</vertices>");
 		if(mesh.flags & MESH_HAS_QUADS) {
-			for(s32 i = 0; i < (s32) mesh.submeshes.size(); i++) {
-				const SubMesh& submesh = mesh.submeshes[i];
-				dest.writelf(4, "<polylist count=\"%d\" material=\"material_symbol_%d\">", submesh.faces.size(), i);
+			for(s32 j = 0; j < (s32) mesh.submeshes.size(); j++) {
+				const SubMesh& submesh = mesh.submeshes[j];
+				dest.writelf(4, "<polylist count=\"%d\" material=\"material_symbol_%d\">", submesh.faces.size(), j);
 				dest.writelf(4, "\t<input offset=\"0\" semantic=\"VERTEX\" source=\"#mesh_%d_vertices\"/>", i);
 				if(mesh.flags & MESH_HAS_TEX_COORDS) {
 					dest.writelf(4, "\t<input offset=\"0\" semantic=\"TEXCOORD\" source=\"#mesh_%d_texcoords\" set=\"0\"/>", i);
@@ -509,8 +509,9 @@ static void write_geometries(OutBuffer dest, const std::vector<Mesh>& meshes) {
 				dest.writelf(4, "</polylist>");
 			}
 		} else {
-			for(const SubMesh& submesh : mesh.submeshes) {
-				dest.writelf(4, "<triangles count=\"%d\" material=\"material_symbol_%d\">", submesh.faces.size(), submesh.material);
+			for(s32 j = 0; j < (s32) mesh.submeshes.size(); j++) {
+				const SubMesh& submesh = mesh.submeshes[j];
+				dest.writelf(4, "<triangles count=\"%d\" material=\"material_symbol_%d\">", submesh.faces.size(), j);
 				dest.writelf(4, "\t<input semantic=\"VERTEX\" source=\"#mesh_%d_vertices\" offset=\"0\"/>", i);
 				if(mesh.flags & MESH_HAS_TEX_COORDS) {
 					dest.writelf(4, "\t<input semantic=\"TEXCOORD\" source=\"#mesh_%d_texcoords\" offset=\"0\" set=\"0\"/>", i);
