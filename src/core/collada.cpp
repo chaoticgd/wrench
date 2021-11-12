@@ -38,7 +38,7 @@ static const XmlNode* node_from_id(const IdMap& map, const char* id);
 
 static void write_asset_metadata(OutBuffer dest);
 static void write_images(OutBuffer dest, const std::vector<std::string>& texture_paths);
-static void write_effects(OutBuffer dest, const std::vector<Material>& materials);
+static void write_effects(OutBuffer dest, const std::vector<Material>& materials, size_t texture_count);
 static void write_materials(OutBuffer dest, const std::vector<Material>& materials);
 static void write_geometries(OutBuffer dest, const std::vector<Mesh>& meshes);
 static void write_visual_scenes(OutBuffer dest, const ColladaScene& scene);
@@ -343,7 +343,7 @@ std::vector<u8> write_collada(const ColladaScene& scene) {
 	if(scene.texture_paths.size() > 0) {
 		write_images(dest, scene.texture_paths);
 	}
-	write_effects(dest, scene.materials);
+	write_effects(dest, scene.materials, scene.texture_paths.size());
 	write_materials(dest, scene.materials);
 	write_geometries(dest, scene.meshes);
 	write_visual_scenes(dest, scene);
@@ -376,7 +376,7 @@ static void write_images(OutBuffer dest, const std::vector<std::string>& texture
 	dest.writelf("\t</library_images>");
 }
 
-static void write_effects(OutBuffer dest, const std::vector<Material>& materials) {
+static void write_effects(OutBuffer dest, const std::vector<Material>& materials, size_t texture_count) {
 	dest.writelf("\t<library_effects>");
 	for(const Material& material : materials) {
 		dest.writelf("\t\t<effect id=\"%s_effect\">", material.name.c_str());
@@ -384,6 +384,7 @@ static void write_effects(OutBuffer dest, const std::vector<Material>& materials
 		if(material.texture.has_value()) {
 			dest.writelf(4, "<newparam sid=\"%s_surface\">", material.name.c_str());
 			dest.writelf(4, "\t<surface type=\"2D\">");
+			assert(material.texture < texture_count);
 			dest.writelf(4, "\t\t<init_from>texture_%d</init_from>", material.texture);
 			dest.writelf(4, "\t\t<format>A8R8G8B8</format>");
 			dest.writelf(4, "\t</surface>");
