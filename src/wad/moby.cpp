@@ -30,7 +30,7 @@ static void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 t
 static std::vector<MobyMetalSubMesh> read_moby_metal_submeshes(Buffer src, s64 table_ofs, s64 count);
 static void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalSubMesh>& submeshes);
 static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const MobySubMeshBase& submesh);
-static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char*name, s32 o_class);
+static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char*name, s32 o_class, s32 texture_count);
 
 // FIXME: Figure out what points to the mystery data instead of doing this.
 static s64 mystery_data_ofs;
@@ -675,24 +675,18 @@ static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usag
 	return rel_texture_unpack_ofs;
 }
 
-ColladaScene lift_moby_model(const MobyClassData& moby, s32 o_class) {
+ColladaScene lift_moby_model(const MobyClassData& moby, s32 o_class, s32 texture_count) {
 	ColladaScene scene;
 	
 	Material& none = scene.materials.emplace_back();
 	none.name = "none";
 	none.colour = ColourF{1, 1, 1, 1};
 	
-	s32 texture_count = 0;
-	for(const MobySubMesh& submesh : moby.submeshes) {
-		for(s32 texture : submesh.textures) {
-			texture_count = std::max(texture_count, texture + 1);
-		}
-	}
-	for(const MobySubMesh& submesh : moby.low_detail_submeshes) {
-		for(s32 texture : submesh.textures) {
-			texture_count = std::max(texture_count, texture + 1);
-		}
-	}
+	// Used for when there're more textures referenced than are listed in the
+	// moby class table. This happens for R&C2 ship parts.
+	Material& dummy = scene.materials.emplace_back();
+	dummy.name = "dummy";
+	dummy.colour = ColourF{0.5, 0.5, 0.5, 1};
 	
 	for(s32 texture = 0; texture < texture_count; texture++) {
 		Material& mat = scene.materials.emplace_back();
@@ -710,15 +704,15 @@ ColladaScene lift_moby_model(const MobyClassData& moby, s32 o_class) {
 		glass.texture = texture;
 	}
 	
-	scene.meshes.emplace_back(lift_moby_mesh(moby.submeshes, "high_lod", o_class));
-	scene.meshes.emplace_back(lift_moby_mesh(moby.low_detail_submeshes, "low_lod", o_class));
+	scene.meshes.emplace_back(lift_moby_mesh(moby.submeshes, "high_lod", o_class, texture_count));
+	scene.meshes.emplace_back(lift_moby_mesh(moby.low_detail_submeshes, "low_lod", o_class, texture_count));
 	
 	return scene;
 }
 
 #define VERIFY_SUBMESH(cond, message) verify(cond, "Moby class %d, submesh %d has bad " message ".", o_class, i);
 
-static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* name, s32 o_class) {
+static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* name, s32 o_class, s32 texture_count) {
 	Mesh mesh;
 	mesh.name = name;
 	mesh.flags = MESH_HAS_TEX_COORDS;
@@ -783,9 +777,11 @@ static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char
 					s32 texture = src.textures.at(texture_index);
 					assert(texture >= -1);
 					if(texture == -1) {
-						dest.material = 0;
+						dest.material = 0; // none
+					} else if(texture >= texture_count) {
+						dest.material = 1; // dummy
 					} else {
-						dest.material = 1 + texture;
+						dest.material = 2 + texture; // mat[texture]
 					}
 					texture_index++;
 				}

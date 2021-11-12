@@ -94,19 +94,18 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 			wad.moby_classes.emplace_back(std::move(new_class));
 			moby = &wad.moby_classes.back();
 		}
-		
-		if(entry.offset_in_asset_wad != 0) {
-			s64 model_size = next_asset_block_size(entry.offset_in_asset_wad, block_bounds);
-			moby->model = assets.read_bytes(entry.offset_in_asset_wad, model_size, "moby model");
-			if(entry.o_class >= 10) {
-				moby->high_model = lift_moby_model(read_moby_class(*moby->model), entry.o_class);
-			}
-		}
 		for(s32 j = 0; j < 16; j++) {
 			if(entry.textures[j] != 0xff) {
 				moby->textures.push_back(mobies_begin + entry.textures[j]);
 			} else {
 				break;
+			}
+		}
+		if(entry.offset_in_asset_wad != 0) {
+			s64 model_size = next_asset_block_size(entry.offset_in_asset_wad, block_bounds);
+			moby->model = assets.read_bytes(entry.offset_in_asset_wad, model_size, "moby model");
+			if(entry.o_class >= 10) {
+				moby->high_model = lift_moby_model(read_moby_class(*moby->model), entry.o_class, moby->textures.size());
 			}
 		}
 		moby->has_asset_table_entry = true;

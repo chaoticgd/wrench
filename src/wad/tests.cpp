@@ -219,10 +219,7 @@ static void run_moby_class_test(s32 o_class, Buffer src, const char* file_path) 
 	}
 	
 	// Test the COLLADA importer/exporter.
-	ColladaScene src_scene = lift_moby_model(moby, o_class);
-	for(size_t i = 0; i < src_scene.materials.size(); i++) {
-		src_scene.texture_paths.push_back("");
-	}
+	ColladaScene src_scene = lift_moby_model(moby, o_class, 0);
 	std::vector<u8> collada_xml = write_collada(src_scene);
 	ColladaScene dest_scene = read_collada(std::move(collada_xml));
 	assert_collada_scenes_equal(src_scene, dest_scene);

@@ -308,6 +308,6 @@ packed_struct(MobyBanglesHeader,
 
 MobyClassData read_moby_class(Buffer src);
 void write_moby_class(OutBuffer dest, const MobyClassData& moby);
-ColladaScene lift_moby_model(const MobyClassData& moby, s32 o_class);
+ColladaScene lift_moby_model(const MobyClassData& moby, s32 o_class, s32 texture_count);
 
 #endif
