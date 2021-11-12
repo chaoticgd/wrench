@@ -102,9 +102,7 @@ static void run_level_tests(fs::path input_path) {
 				verify_not_reached("Unable to identify '%s'.", file_path.c_str());
 		}
 		
-		PrimaryHeader primary_header;
-		std::vector<u8> primary_temp = Buffer(primary).read_bytes(0, sizeof(DeadlockedPrimaryHeader), "primary header");
-		swap_primary_header(primary_header, primary_temp, game);
+		PrimaryHeader primary_header = read_primary_header(Buffer(primary), game);
 		Buffer asset_header_buf = Buffer(primary).subbuf(primary_header.asset_header.offset, primary_header.asset_header.size);
 		
 		Buffer assets_compressed = Buffer(primary).subbuf(primary_header.assets.offset, primary_header.assets.size);

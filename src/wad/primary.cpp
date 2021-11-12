@@ -26,11 +26,12 @@ static WadBuffer wad_buffer(Buffer buf) {
 }
 
 void read_primary(LevelWad& wad, Buffer src) {
-	std::vector<u8> header_bytes = src.read_bytes(0, sizeof(DeadlockedPrimaryHeader), "primary header");
-	PrimaryHeader header = {0};
-	swap_primary_header(header, header_bytes, wad.game);
+	PrimaryHeader header = read_primary_header(src, wad.game);
 	
 	wad.code = src.read_bytes(header.code.offset, header.code.size, "code");
+	if(header.core_bank.has_value()) {
+		wad.core_bank = src.read_bytes(header.core_bank->offset, header.core_bank->size, "core bank");
+	}
 	wad.asset_header = src.read_bytes(header.asset_header.offset, header.asset_header.size, "asset header");
 	wad.hud_header = src.read_bytes(header.hud_header.offset, header.hud_header.size, "hud header");
 	for(s32 i = 0; i < 5; i++) {
@@ -53,22 +54,29 @@ void read_primary(LevelWad& wad, Buffer src) {
 	}
 }
 
-static ByteRange write_primary_block(OutBuffer& dest, const std::vector<u8>& bytes, s64 primary_ofs) {
+static ByteRange write_primary_block(OutBuffer dest, const std::vector<u8>& bytes, s64 primary_ofs) {
 	dest.pad(0x40);
 	s64 block_ofs = dest.tell();
 	dest.write_multiple(bytes);
 	return {(s32) (block_ofs - primary_ofs), (s32) (dest.tell() - block_ofs)};
 }
 
-SectorRange write_primary(OutBuffer& dest, LevelWad& wad) {
+SectorRange write_primary(OutBuffer dest, LevelWad& wad) {
 	dest.pad(SECTOR_SIZE, 0);
 	
 	PrimaryHeader header = {0};
-	s64 header_ofs;
-	if(wad.game == Game::DL) {
-		header_ofs = dest.alloc<DeadlockedPrimaryHeader>();
-	} else {
-		header_ofs = dest.alloc<Rac123PrimaryHeader>();
+	s64 header_ofs = 0;
+	switch(wad.game) {
+		case Game::RAC1:
+			header_ofs = dest.alloc<Rac1PrimaryHeader>();
+			break;
+		case Game::RAC2:
+		case Game::RAC3:
+			header_ofs = dest.alloc<Rac23PrimaryHeader>();
+			break;
+		case Game::DL:
+			header_ofs = dest.alloc<DeadlockedPrimaryHeader>();
+			break;
 	}
 	
 	if(wad.moby8355_pvars.has_value()) {
@@ -93,9 +101,7 @@ SectorRange write_primary(OutBuffer& dest, LevelWad& wad) {
 		header.transition_textures = write_primary_block(dest, *wad.transition_textures, header_ofs);
 	}
 	
-	std::vector<u8> header_bytes;
-	swap_primary_header(header, header_bytes, wad.game);
-	dest.write_multiple(header_ofs, header_bytes);
+	write_primary_header(dest, header_ofs, header, wad.game);
 	
 	return {
 		(s32) (header_ofs / SECTOR_SIZE),
@@ -103,59 +109,120 @@ SectorRange write_primary(OutBuffer& dest, LevelWad& wad) {
 	};
 }
 
-void swap_primary_header(PrimaryHeader& l, std::vector<u8>& r, Game game) {
+PrimaryHeader read_primary_header(Buffer src, Game game) {
+	PrimaryHeader dest;
 	switch(game) {
-		case Game::RAC1:
+		case Game::RAC1: {
+			auto header = src.read<Rac1PrimaryHeader>(0, "R&C1 primary header");
+			dest.code = header.code;
+			dest.core_bank = header.core_bank;
+			dest.asset_header = header.asset_header;
+			dest.gs_ram = header.gs_ram;
+			dest.hud_header = header.hud_header;
+			dest.hud_banks[0] = header.hud_banks[0];
+			dest.hud_banks[1] = header.hud_banks[1];
+			dest.hud_banks[2] = header.hud_banks[2];
+			dest.hud_banks[3] = header.hud_banks[3];
+			dest.hud_banks[4] = header.hud_banks[4];
+			dest.assets = header.assets;
+			break;
+		}
 		case Game::RAC2:
 		case Game::RAC3: {
-			Rac123PrimaryHeader packed_header = {0};
-			if(r.size() >= sizeof(Rac123PrimaryHeader)) {
-				packed_header = Buffer(r).read<Rac123PrimaryHeader>(0, "primary header");
-				l.transition_textures = ByteRange {0, 0};
-			}
-			l.moby8355_pvars = {};
-			SWAP_PACKED(l.code, packed_header.code);
-			SWAP_PACKED(l.asset_header, packed_header.asset_header);
-			SWAP_PACKED(l.gs_ram, packed_header.gs_ram);
-			SWAP_PACKED(l.hud_header, packed_header.hud_header);
-			for(s32 i = 0; i < 5; i++) {
-				SWAP_PACKED(l.hud_banks[i], packed_header.hud_banks[i]);
-			}
-			SWAP_PACKED(l.assets, packed_header.assets);
-			SWAP_PACKED(*l.transition_textures, packed_header.transition_textures);
-			l.art_instances = {};
-			l.gameplay_core = {};
-			l.global_nav_data = {};
-			if(r.size() == 0) {
-				OutBuffer(r).write(packed_header);
-			}
+			auto header = src.read<Rac23PrimaryHeader>(0, "R&C2/3 primary header");
+			dest.code = header.code;
+			dest.asset_header = header.asset_header;
+			dest.gs_ram = header.gs_ram;
+			dest.hud_header = header.hud_header;
+			dest.hud_banks[0] = header.hud_banks[0];
+			dest.hud_banks[1] = header.hud_banks[1];
+			dest.hud_banks[2] = header.hud_banks[2];
+			dest.hud_banks[3] = header.hud_banks[3];
+			dest.hud_banks[4] = header.hud_banks[4];
+			dest.assets = header.assets;
+			dest.transition_textures = header.transition_textures;
 			break;
 		}
 		case Game::DL: {
-			DeadlockedPrimaryHeader packed_header = {0};
-			if(r.size() >= sizeof(DeadlockedPrimaryHeader)) {
-				packed_header = Buffer(r).read<DeadlockedPrimaryHeader>(0, "primary header");
-				l.moby8355_pvars = ByteRange {0, 0};
-				l.art_instances = ByteRange {0, 0};
-				l.gameplay_core = ByteRange {0, 0};
-				l.global_nav_data = ByteRange {0, 0};
-			}
-			SWAP_PACKED(*l.moby8355_pvars, packed_header.moby8355_pvars);
-			SWAP_PACKED(l.code, packed_header.code);
-			SWAP_PACKED(l.asset_header, packed_header.asset_header);
-			SWAP_PACKED(l.gs_ram, packed_header.gs_ram);
-			SWAP_PACKED(l.hud_header, packed_header.hud_header);
-			for(s32 i = 0; i < 5; i++) {
-				SWAP_PACKED(l.hud_banks[i], packed_header.hud_banks[i]);
-			}
-			SWAP_PACKED(l.assets, packed_header.assets);
-			SWAP_PACKED(*l.moby8355_pvars, packed_header.moby8355_pvars);
-			SWAP_PACKED(*l.art_instances, packed_header.art_instances);
-			SWAP_PACKED(*l.gameplay_core, packed_header.gameplay_core);
-			SWAP_PACKED(*l.global_nav_data, packed_header.global_nav_data);
-			if(r.size() == 0) {
-				OutBuffer(r).write(packed_header);
-			}
+			auto header = src.read<DeadlockedPrimaryHeader>(0, "DL primary header");
+			dest.moby8355_pvars = header.moby8355_pvars;
+			dest.code = header.code;
+			dest.asset_header = header.asset_header;
+			dest.gs_ram = header.gs_ram;
+			dest.hud_header = header.hud_header;
+			dest.hud_banks[0] = header.hud_banks[0];
+			dest.hud_banks[1] = header.hud_banks[1];
+			dest.hud_banks[2] = header.hud_banks[2];
+			dest.hud_banks[3] = header.hud_banks[3];
+			dest.hud_banks[4] = header.hud_banks[4];
+			dest.assets = header.assets;
+			dest.art_instances = header.art_instances;
+			dest.gameplay_core = header.gameplay_core;
+			dest.global_nav_data = header.global_nav_data;
+			break;
+		}
+	}
+	return dest;
+}
+
+void write_primary_header(OutBuffer dest, s64 header_ofs, const PrimaryHeader& src, Game game) {
+	switch(game) {
+		case Game::RAC1: {
+			Rac1PrimaryHeader header;
+			header.code = src.code;
+			assert(src.core_bank.has_value());
+			header.core_bank = *src.core_bank;
+			header.asset_header = src.asset_header;
+			header.gs_ram = src.gs_ram;
+			header.hud_header = src.hud_header;
+			header.hud_banks[0] = src.hud_banks[0];
+			header.hud_banks[1] = src.hud_banks[1];
+			header.hud_banks[2] = src.hud_banks[2];
+			header.hud_banks[3] = src.hud_banks[3];
+			header.hud_banks[4] = src.hud_banks[4];
+			header.assets = src.assets;
+			dest.write(header_ofs, header);
+			break;
+		}
+		case Game::RAC2:
+		case Game::RAC3: {
+			Rac23PrimaryHeader header;
+			header.code = src.code;
+			header.asset_header = src.asset_header;
+			header.gs_ram = src.gs_ram;
+			header.hud_header = src.hud_header;
+			header.hud_banks[0] = src.hud_banks[0];
+			header.hud_banks[1] = src.hud_banks[1];
+			header.hud_banks[2] = src.hud_banks[2];
+			header.hud_banks[3] = src.hud_banks[3];
+			header.hud_banks[4] = src.hud_banks[4];
+			header.assets = src.assets;
+			assert(src.transition_textures.has_value());
+			header.transition_textures = *src.transition_textures;
+			dest.write(header_ofs, header);
+			break;
+		}
+		case Game::DL: {
+			DeadlockedPrimaryHeader header;
+			assert(src.moby8355_pvars.has_value());
+			header.moby8355_pvars = *src.moby8355_pvars;
+			header.code = src.code;
+			header.asset_header = src.asset_header;
+			header.gs_ram = src.gs_ram;
+			header.hud_header = src.hud_header;
+			header.hud_banks[0] = src.hud_banks[0];
+			header.hud_banks[1] = src.hud_banks[1];
+			header.hud_banks[2] = src.hud_banks[2];
+			header.hud_banks[3] = src.hud_banks[3];
+			header.hud_banks[4] = src.hud_banks[4];
+			header.assets = src.assets;
+			assert(src.art_instances.has_value());
+			header.art_instances = *src.art_instances;
+			assert(src.gameplay_core.has_value());
+			header.gameplay_core = *src.gameplay_core;
+			assert(src.global_nav_data.has_value());
+			header.global_nav_data = *src.global_nav_data;
+			dest.write(header_ofs, header);
 			break;
 		}
 	}

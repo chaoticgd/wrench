@@ -28,6 +28,7 @@ struct PrimaryHeader {
 	ByteRange hud_header;
 	ByteRange hud_banks[5];
 	ByteRange assets;
+	Opt<ByteRange> core_bank;
 	Opt<ByteRange> transition_textures;
 	Opt<ByteRange> moby8355_pvars;
 	Opt<ByteRange> art_instances;
@@ -35,7 +36,17 @@ struct PrimaryHeader {
 	Opt<ByteRange> global_nav_data;
 };
 
-packed_struct(Rac123PrimaryHeader,
+packed_struct(Rac1PrimaryHeader,
+	/* 0x00 */ ByteRange code;
+	/* 0x08 */ ByteRange core_bank;
+	/* 0x10 */ ByteRange asset_header;
+	/* 0x18 */ ByteRange gs_ram;
+	/* 0x20 */ ByteRange hud_header;
+	/* 0x28 */ ByteRange hud_banks[5];
+	/* 0x50 */ ByteRange assets;
+)
+
+packed_struct(Rac23PrimaryHeader,
 	/* 0x00 */ ByteRange code;
 	/* 0x08 */ ByteRange asset_header;
 	/* 0x10 */ ByteRange gs_ram;
@@ -59,7 +70,8 @@ packed_struct(DeadlockedPrimaryHeader,
 )
 
 void read_primary(LevelWad& wad, Buffer src);
-SectorRange write_primary(OutBuffer& dest, LevelWad& wad);
-void swap_primary_header(PrimaryHeader& l, std::vector<u8>& r, Game game);
+SectorRange write_primary(OutBuffer dest, LevelWad& wad);
+PrimaryHeader read_primary_header(Buffer src, Game game);
+void write_primary_header(OutBuffer dest, s64 header_ofs, const PrimaryHeader& src, Game game);
 
 #endif
