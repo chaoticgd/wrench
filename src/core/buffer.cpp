@@ -92,7 +92,6 @@ bool diff_buffers(Buffer lhs, Buffer rhs, s64 offset, const char* subject, s64 z
 	}
 	if(diff_pos == -1) {
 		if(lhs.size() == rhs.size()) {
-			printf("%s buffers equal.\n", subject);
 			return true;
 		} else {
 			diff_pos = min_size;

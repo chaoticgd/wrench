@@ -124,6 +124,8 @@ static void run_level_tests(fs::path input_path) {
 }
 
 static void run_gameplay_lump_test(GameplayTestArgs args) {
+	printf("%s %s\n", args.wad_file_path.c_str(), args.name);
+	
 	if(args.lump.offset.sectors == 0) {
 		return;
 	}
@@ -178,9 +180,7 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 	help_messages.swap(test_gameplay); // help_messages -> test_gameplay
 	std::vector<u8> test_dest = write_gameplay(wad, test_gameplay, args.game, *args.blocks);
 	OutBuffer(test_dest).pad(SECTOR_SIZE, 0);
-	if(test_dest == dest) {
-		fprintf(stderr, "%s JSON matches.\n", prefix_str.c_str());
-	} else {
+	if(test_dest != dest) {
 		fprintf(stderr, "File read from JSON doesn't match original.\n");
 		write_file("/tmp/", "gameplay_orig.bin", dest);
 		write_file("/tmp/", "gameplay_test.bin", test_dest);
@@ -189,6 +189,8 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 }
 
 static void run_moby_class_test(s32 o_class, Buffer src, const char* file_path) {
+	printf("%s moby class %d\n", file_path, o_class);
+	
 	// Test the binary reading/writing functions.
 	MobyClassData moby = read_moby_class(src);
 	std::vector<u8> dest_vec;
