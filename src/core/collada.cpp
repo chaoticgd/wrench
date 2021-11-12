@@ -135,7 +135,7 @@ static Material read_material(const XmlNode* material_node, const IdMap& ids, co
 		const XmlNode* image = node_from_id(ids, image_id.c_str());
 		auto texture_index = images.find(image);
 		if(texture_index == images.end()) {
-			throw ParseError("An <image> node was referenced cannot be found.");
+			throw ParseError("An <image> node that was referenced cannot be found.");
 		}
 		Material material;
 		material.name = xml_attrib(material_node, "id")->value();
