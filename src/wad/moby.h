@@ -81,6 +81,7 @@ struct MobySubMeshBase {
 	std::vector<u8> secret_indices;
 	std::vector<s32> textures;
 	std::vector<s32> texture_xyzf2s;
+	std::vector<s32> texture_clamp_hi;
 	u8 index_header_first_byte;
 };
 
@@ -92,6 +93,7 @@ struct MobySubMesh : MobySubMeshBase {
 	u16 vertex_count_4;
 	std::vector<u16> duplicate_vertices;
 	u16 unknown_e;
+	std::vector<u8> unknown_e_data;
 };
 
 packed_struct(MobyMetalVertex,
@@ -167,19 +169,41 @@ packed_struct(MobySoundDef,
 	/* 0x1c */ s32 bank_index;
 )
 
-struct MobyBangles {
-	u8 unknown_0;
+packed_struct(MobyBangle,
+	u8 submesh_begin;
+	u8 submesh_count;
 	u8 unknown_2;
 	u8 unknown_3;
+)
+
+packed_struct(MobyVertexPosition,
+	s16 x;
+	s16 y;
+	s16 z;
+	s16 w;
+)
+
+struct MobyBangles {
+	std::vector<MobyBangle> bangles;
+	std::vector<MobyVertexPosition> vertices;
 	std::vector<MobySubMesh> submeshes;
-	std::vector<u8> data;
+};
+
+struct MobyCornKernel {
+	Vec4f vec;
+	std::vector<MobyVertexPosition> vertices;
+};
+
+struct MobyCornCob {
+	Opt<MobyCornKernel> kernels[16];
 };
 
 struct MobyClassData {
 	std::vector<MobySubMesh> submeshes;
 	std::vector<MobySubMesh> low_detail_submeshes;
 	std::vector<MobyMetalSubMesh> metal_submeshes;
-	MobyBangles bangles;
+	Opt<MobyBangles> bangles;
+	Opt<MobyCornCob> corncob;
 	std::vector<MobySequence> sequences;
 	std::vector<u8> mystery_data;
 	Opt<MobyCollision> collision;
@@ -193,14 +217,14 @@ struct MobyClassData {
 	u8 shadow;
 	f32 scale;
 	u8 mip_dist;
-	s16 corncob;
 	glm::vec4 bounding_sphere;
 	s32 glow_rgba;
 	s16 mode_bits;
 	u8 type;
 	u8 mode_bits2;
-	s64 first_sequence_offset;
-	s64 bangles_offset;
+	s32 header_end_offset;
+	bool force_rac1_format = false; // Used for some mobies in the R&C2 Insomniac Museum.
+	bool has_submesh_table = false;
 };
 
 packed_struct(MobyClassHeader,
@@ -249,7 +273,18 @@ packed_struct(MobySubMeshEntry,
 	/* 0xf */ u8 transfer_vertex_count; // Number of vertices sent to VU1.
 )
 
-packed_struct(MobyVertexTableHeader,
+packed_struct(MobyVertexTableHeaderRac1,
+	/* 0x00 */ u32 unknown_count_0;
+	/* 0x04 */ u32 vertex_count_2;
+	/* 0x08 */ u32 vertex_count_4;
+	/* 0x0c */ u32 main_vertex_count;
+	/* 0x10 */ u32 duplicate_vertex_count;
+	/* 0x14 */ u32 transfer_vertex_count; // transfer_vertex_count == vertex_count_2 + vertex_count_4 + main_vertex_count + duplicate_vertex_count
+	/* 0x18 */ u32 vertex_table_offset;
+	/* 0x1c */ u32 unknown_e;
+)
+
+packed_struct(MobyVertexTableHeaderRac23DL,
 	/* 0x0 */ u16 unknown_count_0;
 	/* 0x2 */ u16 vertex_count_2;
 	/* 0x4 */ u16 vertex_count_4;
@@ -299,15 +334,17 @@ packed_struct(MobyGifUsageTableEntry,
 	u32 offset_and_terminator; // High byte is 0x80 => Last entry in the table.
 )
 
-packed_struct(MobyBanglesHeader,
-	u8 unknown_0;
-	u8 submesh_count;
-	u8 unknown_2;
-	u8 unknown_3;
+packed_struct(MobyCornCobHeader,
+	u8 kernels[16];
 )
 
-MobyClassData read_moby_class(Buffer src);
-void write_moby_class(OutBuffer dest, const MobyClassData& moby);
+// Note: R&C2 has some R&C1-format mobies.
+enum class MobyFormat {
+	RAC1, RAC2, RAC3DL
+};
+
+MobyClassData read_moby_class(Buffer src, Game game);
+void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game);
 ColladaScene lift_moby_model(const MobyClassData& moby, s32 o_class, s32 texture_count);
 
 #endif

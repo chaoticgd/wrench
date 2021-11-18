@@ -34,7 +34,7 @@ struct GameplayTestArgs {
 	Game game;
 };
 static void run_gameplay_lump_test(GameplayTestArgs args);
-static void run_moby_class_test(s32 o_class, Buffer src, const char* file_path);
+static void run_moby_class_test(s32 o_class, Buffer src, const char* file_path, Game game);
 static void assert_collada_scenes_equal(const ColladaScene& lhs, const ColladaScene& rhs);
 
 void run_tests(fs::path input_path) {
@@ -80,10 +80,6 @@ static void run_level_tests(fs::path input_path) {
 				primary = read_lump(file, header.primary, "primary");
 				game = detect_game_rac23(primary);
 				run_gameplay_lump_test(build_args(header.gameplay, "gameplay", RAC23_GAMEPLAY_BLOCKS, true, game));
-				// The Insomniac Museum has some R&C1 format mobies. Skip this for now.
-				if(header.level_number == 30) {
-					return;
-				}
 				break;
 			}
 			case sizeof(DeadlockedLevelWadHeader): {
@@ -115,7 +111,7 @@ static void run_level_tests(fs::path input_path) {
 		for(const MobyClassEntry& entry : moby_classes) {
 			if(entry.offset_in_asset_wad != 0 && entry.o_class >= 10) {
 				s64 size = next_asset_block_size(entry.offset_in_asset_wad, block_bounds);
-				run_moby_class_test(entry.o_class, Buffer(assets).subbuf(entry.offset_in_asset_wad, size), file_path.c_str());
+				run_moby_class_test(entry.o_class, Buffer(assets).subbuf(entry.offset_in_asset_wad, size), file_path.c_str(), game);
 			}
 		}
 	}
@@ -186,17 +182,17 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 	}
 }
 
-static void run_moby_class_test(s32 o_class, Buffer src, const char* file_path) {
+static void run_moby_class_test(s32 o_class, Buffer src, const char* file_path, Game game) {
 	printf("%s moby class %d\n", file_path, o_class);
 	
 	// Test the binary reading/writing functions.
-	MobyClassData moby = read_moby_class(src);
+	MobyClassData moby = read_moby_class(src, game);
 	std::vector<u8> dest_vec;
 	// Make sure relative pointers are set correctly.
 	for(s32 i = 0; i < 0x40; i++) {
 		OutBuffer(dest_vec).write<u8>(0);
 	}
-	write_moby_class(dest_vec, moby);
+	write_moby_class(dest_vec, moby, game);
 	OutBuffer(dest_vec).pad(0x40);
 	Buffer dest(dest_vec);
 	
