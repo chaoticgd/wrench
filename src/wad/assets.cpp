@@ -150,7 +150,9 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 	wad.fx_textures = read_fx_textures(fx_textures, fx_data);
 	
 	wad.particle_defs = asset_header.read_bytes(header.part_defs_offset, header.sound_remap_offset - header.part_defs_offset, "particle defs");
-	wad.sound_remap = asset_header.read_bytes(header.sound_remap_offset, header.moby_gs_stash_list - header.sound_remap_offset, "sound remap");
+	if(wad.game != Game::RAC1) {
+		wad.sound_remap = asset_header.read_bytes(header.sound_remap_offset, header.moby_gs_stash_list - header.sound_remap_offset, "sound remap");
+	}
 	if(header.light_cuboids_offset != 0) {
 		wad.light_cuboids = asset_header.read_bytes(header.light_cuboids_offset, 1024, "light cuboids");
 	}

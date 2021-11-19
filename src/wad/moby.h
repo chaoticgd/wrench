@@ -79,9 +79,7 @@ enum MobySpecialTextureIndex {
 struct MobySubMeshBase {
 	std::vector<u8> indices;
 	std::vector<u8> secret_indices;
-	std::vector<s32> textures;
-	std::vector<s32> texture_xyzf2s;
-	std::vector<s32> texture_clamp_hi;
+	std::vector<MobyTexturePrimitive> textures;
 	u8 index_header_first_byte;
 };
 
@@ -204,7 +202,7 @@ struct MobyClassData {
 	std::vector<MobyMetalSubMesh> metal_submeshes;
 	Opt<MobyBangles> bangles;
 	Opt<MobyCornCob> corncob;
-	std::vector<MobySequence> sequences;
+	std::vector<Opt<MobySequence>> sequences;
 	std::vector<u8> mystery_data;
 	Opt<MobyCollision> collision;
 	std::vector<glm::mat4> skeleton;
@@ -223,6 +221,10 @@ struct MobyClassData {
 	u8 type;
 	u8 mode_bits2;
 	s32 header_end_offset;
+	s32 submesh_table_offset;
+	u8 rac1_byte_a;
+	u8 rac1_byte_b;
+	u16  rac1_short_2e;
 	bool force_rac1_format = false; // Used for some mobies in the R&C2 Insomniac Museum.
 	bool has_submesh_table = false;
 };
@@ -235,9 +237,9 @@ packed_struct(MobyClassHeader,
 	/* 0x07 */ u8 metal_submesh_begin;
 	/* 0x08 */ u8 joint_count;
 	/* 0x09 */ u8 unknown_9;
-	/* 0x0a */ u8 unknown_a;
+	/* 0x0a */ u8 rac1_byte_a;
 	union {
-		/* 0x0b */ u8 rac12_format_byte; // 0xff => R&C1 format, 0x00 => R&C2 format.
+		/* 0x0b */ u8 rac12_byte_b; // 0x00 => R&C2 format.
 		/* 0x0b */ u8 rac3dl_team_textures;
 	};
 	/* 0x0c */ u8 sequence_count;
