@@ -295,6 +295,7 @@ static std::vector<MobySequence> read_moby_sequences(Buffer src, s64 sequence_co
 		
 		auto frame_table = src.read_multiple<s32>(seq_offset + 0x1c, seq_header.frame_count, "moby sequence table");
 		for(s32 frame_offset : frame_table) {
+			frame_offset &= 0xfffffff; // Hack for some mobies on R&C2 Oozla.
 			auto frame_header = src.read<MobyFrameHeader>(frame_offset, "moby frame header");
 			MobyFrame frame;
 			frame.unknown_0 = frame_header.unknown_0;

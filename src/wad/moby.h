@@ -305,9 +305,9 @@ packed_struct(MobyMetalVertexTableHeader,
 packed_struct(MobySequenceHeader,
 	/* 0x00 */ Vec4f bounding_sphere;
 	/* 0x10 */ u8 frame_count;
-	/* 0x11 */ s8 sound_count;
+	/* 0x11 */ u8 sound_count;
 	/* 0x12 */ u8 trigger_count;
-	/* 0x13 */ s8 pad;
+	/* 0x13 */ u8 pad;
 	/* 0x14 */ u32 triggers;
 	/* 0x18 */ u32 animation_info;
 )
@@ -315,7 +315,7 @@ packed_struct(MobySequenceHeader,
 packed_struct(MobyFrameHeader,
 	/* 0x0 */ f32 unknown_0;
 	/* 0x4 */ u16 unknown_4;
-	/* 0x4 */ u16 count;
+	/* 0x6 */ u16 count;
 	/* 0x8 */ u32 unknown_8;
 	/* 0xc */ u16 unknown_c;
 	/* 0xd */ u16 unknown_d;
