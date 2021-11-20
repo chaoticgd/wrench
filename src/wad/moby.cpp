@@ -18,6 +18,9 @@
 
 #include "moby.h"
 
+// Debug settings.
+#define MOBY_EXPORT_SUBMESHES_SEPERATELY false
+
 static MobyBangles read_moby_bangles(Buffer src);
 static s64 write_moby_bangles(OutBuffer dest, const MobyBangles& bangles);
 static MobyCornCob read_moby_corncob(Buffer src);
@@ -34,7 +37,8 @@ static void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 t
 static std::vector<MobyMetalSubMesh> read_moby_metal_submeshes(Buffer src, s64 table_ofs, s64 count);
 static void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalSubMesh>& submeshes);
 static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const MobySubMeshBase& submesh);
-static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char*name, s32 o_class, s32 texture_count);
+#define NO_SUBMESH_FILTER -1
+static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* name, s32 o_class, s32 texture_count, s32 submesh_filter);
 
 // FIXME: Figure out what points to the mystery data instead of doing this.
 static s64 mystery_data_ofs;
@@ -890,10 +894,27 @@ ColladaScene lift_moby_model(const MobyClassData& moby, s32 o_class, s32 texture
 		glass.texture = texture;
 	}
 	
-	scene.meshes.emplace_back(lift_moby_mesh(moby.submeshes, "high_lod", o_class, texture_count));
-	scene.meshes.emplace_back(lift_moby_mesh(moby.low_detail_submeshes, "low_lod", o_class, texture_count));
-	if(moby.bangles.has_value()) {
-		scene.meshes.emplace_back(lift_moby_mesh(moby.bangles->submeshes, "bangles", o_class, texture_count));
+	if(MOBY_EXPORT_SUBMESHES_SEPERATELY) {
+		for(s32 i = 0; i < (s32) moby.submeshes.size(); i++) {
+			std::string name = "high_lod_" + std::to_string(i);
+			scene.meshes.emplace_back(lift_moby_mesh(moby.submeshes, name.c_str(), o_class, texture_count, i));
+		}
+		for(s32 i = 0; i < (s32) moby.low_detail_submeshes.size(); i++) {
+			std::string name = "low_lod_" + std::to_string(i);
+			scene.meshes.emplace_back(lift_moby_mesh(moby.low_detail_submeshes, name.c_str(), o_class, texture_count, i));
+		}
+		if(moby.bangles.has_value()) {
+			for(s32 i = 0; i < (s32) moby.bangles->submeshes.size(); i++) {
+				std::string name = "bangles_" + std::to_string(i);
+				scene.meshes.emplace_back(lift_moby_mesh(moby.bangles->submeshes, name.c_str(), o_class, texture_count, i));
+			}
+		}
+	} else {
+		scene.meshes.emplace_back(lift_moby_mesh(moby.submeshes, "high_lod", o_class, texture_count, NO_SUBMESH_FILTER));
+		scene.meshes.emplace_back(lift_moby_mesh(moby.low_detail_submeshes, "low_lod", o_class, texture_count, NO_SUBMESH_FILTER));
+		if(moby.bangles.has_value()) {
+			scene.meshes.emplace_back(lift_moby_mesh(moby.bangles->submeshes, "bangles", o_class, texture_count, NO_SUBMESH_FILTER));
+		}
 	}
 	
 	return scene;
@@ -901,7 +922,7 @@ ColladaScene lift_moby_model(const MobyClassData& moby, s32 o_class, s32 texture
 
 #define VERIFY_SUBMESH(cond, message) verify(cond, "Moby class %d, submesh %d has bad " message ".", o_class, i);
 
-static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* name, s32 o_class, s32 texture_count) {
+static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* name, s32 o_class, s32 texture_count, s32 submesh_filter) {
 	Mesh mesh;
 	mesh.name = name;
 	mesh.flags = MESH_HAS_TEX_COORDS;
@@ -911,14 +932,16 @@ static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char
 	dest.material = 0;
 	for(s32 i = 0; i < submeshes.size(); i++) {
 		const MobySubMesh src = submeshes[i];
+		bool lift_submesh = !MOBY_EXPORT_SUBMESHES_SEPERATELY || submesh_filter == -1 || i == submesh_filter; // This is just for debugging.
 		s32 vertex_base = mesh.vertices.size();
 		for(const MobyVertex& mv : src.vertices) {
 			auto& st = src.sts.at(mesh.vertices.size() - vertex_base);
 			auto pos = glm::vec3(mv.regular.x / 16384.f, mv.regular.y / 16384.f, mv.regular.z / 16384.f);
+			auto normal = glm::vec3(0, 0, 0);
 			auto tex_coord = glm::vec2(st.s / (INT16_MAX / 8.f), -st.t / (INT16_MAX / 8.f));
 			while(tex_coord.s < 0) tex_coord.s += 1;
 			while(tex_coord.t < 0) tex_coord.t += 1;
-			mesh.vertices.emplace_back(pos, tex_coord);
+			mesh.vertices.emplace_back(pos, normal, tex_coord);
 			
 			intermediate_buffer[mv.low_word & 0x1ff] = mv;
 		}
@@ -929,16 +952,17 @@ static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char
 			
 			auto& st = src.sts.at(mesh.vertices.size() - vertex_base);
 			auto pos = glm::vec3(mv->regular.x / 16384.f, mv->regular.y / 16384.f, mv->regular.z / 16384.f);
+			auto normal = glm::vec3(0, 0, 0);
 			auto tex_coord = glm::vec2(st.s / (INT16_MAX / 8.f), -st.t / (INT16_MAX / 8.f));
 			while(tex_coord.s < 0) tex_coord.s += 1;
 			while(tex_coord.t < 0) tex_coord.t += 1;
-			mesh.vertices.emplace_back(pos, tex_coord);
+			mesh.vertices.emplace_back(pos, normal, tex_coord);
 		}
 		s32 index_queue[3] = {0};
 		s32 index_pos = 0;
 		s32 max_index = 0;
-		bool reverse_winding_order = true;
 		s32 texture_index = 0;
+		bool reverse_winding_order = true;
 		for(u8 index : src.indices) {
 			VERIFY_SUBMESH(index != 0x80, "index buffer");
 			if(index == 0) {
@@ -949,13 +973,15 @@ static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char
 				// triangle with it as its last index is not actually drawn.
 				u8 secret_index = src.secret_indices.at(texture_index);
 				if(secret_index == 0) {
-					VERIFY_SUBMESH(dest.faces.size() >= 3, "index buffer");
-					// The VU1 microprogram has multiple vertices in flight at
-					// a time, so we need to remove the ones that wouldn't have
-					// been written to the GS packet.
-					dest.faces.pop_back();
-					dest.faces.pop_back();
-					dest.faces.pop_back();
+					if(lift_submesh) {
+						VERIFY_SUBMESH(dest.faces.size() >= 3, "index buffer");
+						// The VU1 microprogram has multiple vertices in flight
+						// at a time, so we need to remove the ones that
+						// wouldn't have been written to the GS packet.
+						dest.faces.pop_back();
+						dest.faces.pop_back();
+						dest.faces.pop_back();
+					}
 					break;
 				} else {
 					index = secret_index + 0x80;
@@ -978,16 +1004,18 @@ static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char
 			if(index < 0x80) {
 				VERIFY_SUBMESH(vertex_base + index - 1 < mesh.vertices.size(), "index buffer");
 				index_queue[index_pos] = vertex_base + index - 1;
-				if(reverse_winding_order) {
-					s32 v0 = index_queue[(index_pos + 3) % 3];
-					s32 v1 = index_queue[(index_pos + 2) % 3];
-					s32 v2 = index_queue[(index_pos + 1) % 3];
-					dest.faces.emplace_back(v0, v1, v2);
-				} else {
-					s32 v0 = index_queue[(index_pos + 1) % 3];
-					s32 v1 = index_queue[(index_pos + 2) % 3];
-					s32 v2 = index_queue[(index_pos + 3) % 3];
-					dest.faces.emplace_back(v0, v1, v2);
+				if(lift_submesh) {
+					if(reverse_winding_order) {
+						s32 v0 = index_queue[(index_pos + 3) % 3];
+						s32 v1 = index_queue[(index_pos + 2) % 3];
+						s32 v2 = index_queue[(index_pos + 1) % 3];
+						dest.faces.emplace_back(v0, v1, v2);
+					} else {
+						s32 v0 = index_queue[(index_pos + 1) % 3];
+						s32 v1 = index_queue[(index_pos + 2) % 3];
+						s32 v2 = index_queue[(index_pos + 3) % 3];
+						dest.faces.emplace_back(v0, v1, v2);
+					}
 				}
 			} else {
 				index_queue[index_pos] = vertex_base + index - 0x81;

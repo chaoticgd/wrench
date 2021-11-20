@@ -182,11 +182,15 @@ static void read_vertices(Mesh& mesh, const XmlNode* geometry, const IdMap& ids)
 	}
 	
 	const XmlNode* vertices = nullptr;
+	const XmlNode* normals_source = nullptr;
 	const XmlNode* tex_coords_source = nullptr;
 	xml_for_each_child_of_type(input, indices, "input") {
 		const XmlAttrib* semantic = xml_attrib(input, "semantic");
 		if(strcmp(semantic->value(), "VERTEX") == 0) {
 			vertices = node_from_id(ids, xml_attrib(input, "source")->value());
+		}
+		if(strcmp(semantic->value(), "NORMAL") == 0) {
+			normals_source = node_from_id(ids, xml_attrib(input, "source")->value());
 		}
 		if(strcmp(semantic->value(), "TEXCOORD") == 0) {
 			tex_coords_source = node_from_id(ids, xml_attrib(input, "source")->value());
@@ -210,9 +214,23 @@ static void read_vertices(Mesh& mesh, const XmlNode* geometry, const IdMap& ids)
 	if(positions.size() % 3 != 0) {
 		throw ParseError("Vertex positions array for mesh '%s' has a bad size (not divisible by 3).", xml_attrib(geometry, "id"));
 	}
-	mesh.vertices.resize(positions.size() / 3);
+	mesh.vertices.resize(positions.size() / 3, Vertex(glm::vec3(0, 0, 0)));
 	for(size_t i = 0; i < mesh.vertices.size(); i++) {
 		mesh.vertices[i].pos = glm::vec3(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
+	}
+	
+	if(normals_source) {
+		mesh.flags |= MESH_HAS_NORMALS;
+		auto normals = read_vertex_source(normals_source, ids);
+		if(normals.size() % 3 != 0) {
+			throw ParseError("Normals array for mesh '%s' has a bad size (not divisible by 3).", xml_attrib(geometry, "id"));
+		}
+		if(normals.size() / 3 != mesh.vertices.size()) {
+			throw ParseError("Normals array for mesh '%s' has a bad size (conflicting vertex count).", xml_attrib(geometry, "id"));
+		}
+		for(size_t i = 0; i < mesh.vertices.size(); i++) {
+			mesh.vertices[i].normal = glm::vec3(normals[i * 3], normals[i * 3 + 1], normals[i * 3 + 2]);
+		}
 	}
 	
 	if(tex_coords_source) {
@@ -347,6 +365,9 @@ std::vector<u8> write_collada(const ColladaScene& scene) {
 	write_materials(dest, scene.materials);
 	write_geometries(dest, scene.meshes);
 	write_visual_scenes(dest, scene);
+	dest.writelf("\t<scene>");
+	dest.writelf("\t\t<instance_visual_scene url=\"#scene\"/>");
+	dest.writelf("\t</scene>");
 	dest.writelf("</COLLADA>");
 	return vec;
 }
@@ -454,6 +475,25 @@ static void write_geometries(OutBuffer dest, const std::vector<Mesh>& meshes) {
 		dest.writelf(4, "\t\t</accessor>");
 		dest.writelf(4, "\t</technique_common>");
 		dest.writelf(4, "</source>");
+		if(mesh.flags & MESH_HAS_NORMALS) {
+			dest.writelf(4, "<source id=\"mesh_%d_normals\">", i);
+			dest.writesf(4, "\t<float_array id=\"mesh_%d_normals_array\" count=\"%d\">", i, 3 * mesh.vertices.size());
+			for(const Vertex& v : mesh.vertices) {
+				dest.writesf("%.9g %.9g %.9g ", v.normal.x, v.normal.y, v.normal.z);
+			}
+			if(mesh.vertices.size() > 0) {
+				dest.vec.resize(dest.vec.size() - 1);
+			}
+			dest.writelf("</float_array>");
+			dest.writelf(4, "\t<technique_common>");
+			dest.writelf(4, "\t\t<accessor count=\"%d\" offset=\"0\" source=\"#mesh_%d_normals_array\" stride=\"3\">", mesh.vertices.size(), i);
+			dest.writelf(4, "\t\t\t<param name=\"X\" type=\"float\"/>");
+			dest.writelf(4, "\t\t\t<param name=\"Y\" type=\"float\"/>");
+			dest.writelf(4, "\t\t\t<param name=\"Z\" type=\"float\"/>");
+			dest.writelf(4, "\t\t</accessor>");
+			dest.writelf(4, "\t</technique_common>");
+			dest.writelf(4, "</source>");
+		}
 		if(mesh.flags & MESH_HAS_TEX_COORDS) {
 			dest.writelf(4, "<source id=\"mesh_%d_texcoords\">", i);
 			dest.writesf(4, "\t<float_array id=\"mesh_%d_texcoords_array\" count=\"%d\">", i, 2 * mesh.vertices.size());
@@ -479,9 +519,13 @@ static void write_geometries(OutBuffer dest, const std::vector<Mesh>& meshes) {
 			for(s32 j = 0; j < (s32) mesh.submeshes.size(); j++) {
 				const SubMesh& submesh = mesh.submeshes[j];
 				dest.writelf(4, "<polylist count=\"%d\" material=\"material_symbol_%d\">", submesh.faces.size(), j);
-				dest.writelf(4, "\t<input offset=\"0\" semantic=\"VERTEX\" source=\"#mesh_%d_vertices\"/>", i);
+				s32 offset = 0;
+				dest.writelf(4, "\t<input semantic=\"VERTEX\" source=\"#mesh_%d_vertices\" offset=\"%d\"/>", i, offset);
+				if(mesh.flags & MESH_HAS_NORMALS) {
+					dest.writelf(4, "\t<input semantic=\"NORMAL\" source=\"#mesh_%d_normals\" offset=\"%d\"/>", i, offset);
+				}
 				if(mesh.flags & MESH_HAS_TEX_COORDS) {
-					dest.writelf(4, "\t<input offset=\"0\" semantic=\"TEXCOORD\" source=\"#mesh_%d_texcoords\" set=\"0\"/>", i);
+					dest.writelf(4, "\t<input semantic=\"TEXCOORD\" source=\"#mesh_%d_texcoords\" offset=\"%d\" set=\"0\"/>", i, offset);
 				}
 				dest.writesf(4, "\t<vcount>");
 				for(const Face& face : submesh.faces) {
@@ -513,9 +557,13 @@ static void write_geometries(OutBuffer dest, const std::vector<Mesh>& meshes) {
 			for(s32 j = 0; j < (s32) mesh.submeshes.size(); j++) {
 				const SubMesh& submesh = mesh.submeshes[j];
 				dest.writelf(4, "<triangles count=\"%d\" material=\"material_symbol_%d\">", submesh.faces.size(), j);
-				dest.writelf(4, "\t<input semantic=\"VERTEX\" source=\"#mesh_%d_vertices\" offset=\"0\"/>", i);
+				s32 offset = 0;
+				dest.writelf(4, "\t<input semantic=\"VERTEX\" source=\"#mesh_%d_vertices\" offset=\"%d\"/>", i, offset);
+				if(mesh.flags & MESH_HAS_NORMALS) {
+					dest.writelf(4, "\t<input semantic=\"NORMAL\" source=\"#mesh_%d_normals\" offset=\"%d\"/>", i, offset);
+				}
 				if(mesh.flags & MESH_HAS_TEX_COORDS) {
-					dest.writelf(4, "\t<input semantic=\"TEXCOORD\" source=\"#mesh_%d_texcoords\" offset=\"0\" set=\"0\"/>", i);
+					dest.writelf(4, "\t<input semantic=\"TEXCOORD\" source=\"#mesh_%d_texcoords\" offset=\"%d\" set=\"0\"/>", i, offset);
 				}
 				dest.writesf(4, "\t<p>");
 				for(const Face& face : submesh.faces) {

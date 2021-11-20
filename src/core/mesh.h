@@ -45,17 +45,20 @@ struct Face {
 
 struct Vertex {
 	glm::vec3 pos;
+	glm::vec3 normal;
 	glm::vec2 tex_coord;
-	Vertex() {}
-	Vertex(const glm::vec3& p) : pos(p) {}
-	Vertex(const glm::vec3& p, const glm::vec2& t) : pos(p), tex_coord(t) {}
+	Vertex(const glm::vec3& p) : pos(p), normal(0, 0, 0), tex_coord(0, 0) {}
+	Vertex(const glm::vec3& p, const glm::vec3& n, const glm::vec2& t) : pos(p), normal(n), tex_coord(t) {}
 	bool operator==(const Vertex& rhs) const {
-		return pos == rhs.pos && tex_coord == rhs.tex_coord;
+		return pos == rhs.pos && normal == rhs.normal && tex_coord == rhs.tex_coord;
 	}
 	bool operator<(const Vertex& rhs) const {
 		if(pos.z != rhs.pos.z) return pos.z < rhs.pos.z;
 		if(pos.y != rhs.pos.y) return pos.y < rhs.pos.y;
 		if(pos.x != rhs.pos.x) return pos.x < rhs.pos.x;
+		if(normal.z != rhs.normal.z) return normal.z < rhs.normal.z;
+		if(normal.y != rhs.normal.y) return normal.y < rhs.normal.y;
+		if(normal.x != rhs.normal.x) return normal.x < rhs.normal.x;
 		if(tex_coord.y != rhs.tex_coord.y) return tex_coord.y < rhs.tex_coord.y;
 		return tex_coord.x < rhs.tex_coord.x;
 	}
@@ -63,8 +66,8 @@ struct Vertex {
 
 enum MeshFlags {
 	MESH_HAS_QUADS = 1 << 0,
-	MESH_HAS_TEX_COORDS = 1 << 1,
-	MESH_HAS_COLLISION_TYPES = 1 << 2
+	MESH_HAS_NORMALS = 1 << 1,
+	MESH_HAS_TEX_COORDS = 1 << 2
 };
 
 struct SubMesh {

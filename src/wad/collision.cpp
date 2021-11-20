@@ -276,7 +276,7 @@ static ColladaScene collision_sectors_to_mesh(const CollisionSectors& sectors) {
 	
 	Mesh& mesh = scene.meshes.emplace_back();
 	mesh.name = "collision";
-	mesh.flags = MESH_HAS_QUADS | MESH_HAS_COLLISION_TYPES;
+	mesh.flags = MESH_HAS_QUADS;
 	
 	for(s32 i = 0; i < 256; i++) {
 		Material material;
