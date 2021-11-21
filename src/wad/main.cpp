@@ -20,11 +20,13 @@
 
 #include "../core/util.h"
 #include "../core/timer.h"
+#include "moby.h"
 #include "tests.h"
 #include "wad_file.h"
 
 static void extract(fs::path input_path, fs::path output_path);
 static void build(fs::path input_path, fs::path output_path);
+static void extract_moby(fs::path input_path, fs::path output_path, const char* game);
 
 int main(int argc, char** argv) {
 	if(argc == 3 || argc == 4) {
@@ -38,6 +40,12 @@ int main(int argc, char** argv) {
 			return 0;
 		} else if(mode == "test") {
 			run_tests(input_path);
+			return 0;
+		}
+	} else if(argc == 5) {
+		std::string mode = argv[1];
+		if(mode == "extract_moby_debug") {
+			extract_moby(argv[2], argv[3], argv[4]);
 			return 0;
 		}
 	}
@@ -71,4 +79,22 @@ static void build(fs::path input_path, fs::path output_path) {
 	write_wad(wad_file, wad.get());
 	fclose(wad_file);
 	stop_timer();
+}
+
+static void extract_moby(fs::path input_path, fs::path output_path, const char* game) {
+	auto moby_bin = read_file(input_path);
+	MobyClassData moby_class;
+	if(strcmp(game, "rac1") == 0) {
+		moby_class = read_moby_class(moby_bin, Game::RAC1);
+	} else if(strcmp(game, "rac2") == 0) {
+		moby_class = read_moby_class(moby_bin, Game::RAC2);
+	} else if(strcmp(game, "rac3") == 0) {
+		moby_class = read_moby_class(moby_bin, Game::RAC3);
+	} else if(strcmp(game, "dl") == 0) {
+		moby_class = read_moby_class(moby_bin, Game::DL);
+	} else {
+		fprintf(stderr, "error: Invalid game.\n");
+		exit(1);
+	}
+	write_file("/", output_path, write_collada(lift_moby_model(moby_class, -1, 0)));
 }
