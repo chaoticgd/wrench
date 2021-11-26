@@ -83,10 +83,15 @@ SectorRange write_primary(OutBuffer dest, LevelWad& wad) {
 		header.moby8355_pvars = write_primary_block(dest, *wad.moby8355_pvars, header_ofs);
 	}
 	header.code = write_primary_block(dest, wad.code, header_ofs);
+	
 	std::vector<u8> asset_header;
 	std::vector<u8> asset_data;
 	std::vector<u8> gs_ram;
-	write_assets(OutBuffer(asset_header), asset_data, gs_ram, wad);
+	write_assets(OutBuffer(asset_header), OutBuffer(asset_data), gs_ram, wad);
+	std::vector<u8> compressed_assets;
+	compress_wad(compressed_assets, asset_data, 8);
+	*(s32*) &asset_header[0x88] = compressed_assets.size();
+	
 	header.asset_header = write_primary_block(dest, asset_header, header_ofs);
 	header.gs_ram = write_primary_block(dest, gs_ram, header_ofs);
 	header.hud_header = write_primary_block(dest, wad.hud_header, header_ofs);
@@ -96,7 +101,7 @@ SectorRange write_primary(OutBuffer dest, LevelWad& wad) {
 		}
 	}
 	
-	header.assets = write_primary_block(dest, asset_data, header_ofs);
+	header.assets = write_primary_block(dest, compressed_assets, header_ofs);
 	if(wad.transition_textures.has_value()) {
 		header.transition_textures = write_primary_block(dest, *wad.transition_textures, header_ofs);
 	}

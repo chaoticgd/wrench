@@ -160,10 +160,7 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 	print_asset_header(header);
 }
 
-void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, OutBuffer gs_ram, LevelWad& wad) {
-	std::vector<u8> data_vec;
-	OutBuffer data_dest(data_vec);
-	
+void write_assets(OutBuffer header_dest, OutBuffer data_dest, OutBuffer gs_ram, LevelWad& wad) {
 	AssetHeader header = {0};
 	header_dest.alloc<AssetHeader>();
 	
@@ -374,9 +371,7 @@ void write_assets(OutBuffer header_dest, std::vector<u8>& compressed_data_dest, 
 	header.glass_map_texture = 0x4000;
 	header.glass_map_palette = 0x400;
 	
-	compress_wad(compressed_data_dest, data_vec, 8);
-	header.assets_decompressed_size = data_vec.size();
-	header.assets_compressed_size = compressed_data_dest.size();
+	header.assets_decompressed_size = data_dest.tell();
 	
 	print_asset_header(header);
 	
