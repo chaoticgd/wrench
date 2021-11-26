@@ -41,14 +41,14 @@ std::string Buffer::read_string(s64 offset, bool is_korean) const {
 	verify(lo + offset <= hi, "Failed to read string: Attempted to read past end of buffer.");
 	std::string result;
 	if(!is_korean) {
-		for(const uint8_t* ptr = lo + offset; ptr < hi && *ptr != '\0'; ptr++) {
+		for(const u8* ptr = lo + offset; ptr < hi && *ptr != '\0'; ptr++) {
 			result += *ptr;
 		}
 	} else {
 		// HACK: I'm not sure what this character encoding is, but I'm
 		// pretty sure this isn't the correct way to parse it. Have fun with
 		// data corruption down the road thanks to this!
-		for(const uint8_t* ptr = lo + offset; ptr < hi && *ptr != '\0'; ptr++) {
+		for(const u8* ptr = lo + offset; ptr < hi && *ptr != '\0'; ptr++) {
 			result += *ptr;
 			if((*ptr == 0x14 || *ptr == 0x38 || *ptr == 0x61)
 				&& ptr + 2 < hi && ptr[1] == '\0' && ptr[2] == '\0') {

@@ -37,16 +37,14 @@ struct BufferArray {
 };
 
 struct Buffer {
-	const uint8_t* lo = nullptr;
-	const uint8_t* hi = nullptr;
+	const u8* lo = nullptr;
+	const u8* hi = nullptr;
 	
 	Buffer() {}
-	Buffer(const uint8_t* l, const uint8_t* h) : lo(l), hi(h) {}
+	Buffer(const u8* l, const u8* h) : lo(l), hi(h) {}
 	Buffer(const std::vector<u8>& src) : lo(src.data()), hi(src.data() + src.size()) {}
-	Buffer(const std::string& src)
-		: lo((const uint8_t*) &(*src.begin()))
-		, hi((const uint8_t*) &(*src.end())) {}
-	const uint8_t& operator[](s64 i) const { return lo[i]; }
+	Buffer(const std::string& src) : lo((u8*) src.data()), hi((u8*) src.data() + src.size()) {}
+	const u8& operator[](s64 i) const { return lo[i]; }
 	s64 size() const { return hi - lo; }
 	bool in_bounds(s64 offset) { return offset >= 0 && lo + offset < hi; }
 	
