@@ -40,14 +40,24 @@ struct Material {
 	std::optional<s32> texture;
 };
 
+struct Joint {
+	s32 parent = -1;
+	s32 first_child = -1;
+	s32 left_sibling = -1;
+	s32 right_sibling = -1;
+	glm::mat4 matrix;
+};
+
 struct ColladaScene {
 	mutable std::vector<std::string> texture_paths;
 	std::vector<Material> materials;
 	std::vector<Mesh> meshes;
+	std::vector<Joint> joints;
 };
 
 ColladaScene mesh_to_dae(Mesh mesh);
 ColladaScene read_collada(std::vector<u8> src); // Throws ParseError.
 std::vector<u8> write_collada(const ColladaScene& scene);
+s32 add_joint(std::vector<Joint>& joints, Joint joint, s32 parent);
 
 #endif

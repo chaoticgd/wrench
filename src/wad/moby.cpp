@@ -29,8 +29,8 @@ static std::vector<Opt<MobySequence>> read_moby_sequences(Buffer src, s64 sequen
 static void write_moby_sequences(OutBuffer dest, const std::vector<Opt<MobySequence>>& sequences, s64 list_ofs, MobyFormat format);
 static MobyCollision read_moby_collision(Buffer src);
 static s64 write_moby_collision(OutBuffer dest, const MobyCollision& collision);
-static std::vector<std::vector<u8>> read_moby_joints(Buffer src, s64 joints_ofs);
-static s64 write_moby_joints(OutBuffer dest, const std::vector<std::vector<u8>>& joints);
+static std::vector<MobyJointEntry> read_moby_joints(Buffer src, s64 joints_ofs);
+static s64 write_moby_joints(OutBuffer dest, const std::vector<MobyJointEntry>& joints);
 static std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s64 count, MobyFormat format);
 using GifUsageTable = std::vector<MobyGifUsageTableEntry>;
 static void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_ofs, const std::vector<MobySubMesh>& submeshes, MobyFormat format);
@@ -38,7 +38,8 @@ static std::vector<MobyMetalSubMesh> read_moby_metal_submeshes(Buffer src, s64 t
 static void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalSubMesh>& submeshes);
 static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const MobySubMeshBase& submesh);
 #define NO_SUBMESH_FILTER -1
-static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* name, s32 o_class, s32 texture_count, s32 submesh_filter);
+static Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* name, s32 o_class, s32 texture_count, f32 scale, s32 submesh_filter);
+static std::vector<Joint> recover_moby_joints(const MobyClassData& moby);
 
 // FIXME: Figure out what points to the mystery data instead of doing this.
 static s64 mystery_data_ofs;
@@ -105,10 +106,8 @@ MobyClassData read_moby_class(Buffer src, Game game) {
 		s64 coll_size = 0x10 + moby.collision->first_part.size() + moby.collision->second_part.size() * 8 + moby.collision->third_part.size();
 		mystery_data_ofs = std::max(mystery_data_ofs, header.collision + coll_size);
 	}
-	for(const Mat4& matrix : src.read_multiple<Mat4>(header.skeleton, header.joint_count, "skeleton")) {
-		moby.skeleton.push_back(matrix.unpack());
-	}
-	moby.common_trans = src.read_bytes(header.common_trans, header.joint_count * 0x10, "moby common trans");
+	moby.skeleton = src.read_multiple<Mat4>(header.skeleton, header.joint_count, "skeleton").copy();
+	moby.common_trans = src.read_multiple<MobyTrans>(header.common_trans, header.joint_count, "skeleton trans").copy();
 	moby.joints = read_moby_joints(src, header.joints);
 	moby.sound_defs = src.read_multiple<MobySoundDef>(header.sound_defs, header.sound_count, "moby sound defs").copy();
 	if(header.submesh_table_offset != 0) {
@@ -217,9 +216,7 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 	header.skeleton = dest.tell() - class_header_ofs;
 	verify(moby.skeleton.size() < 255, "Moby class has too many joints.");
 	header.joint_count = moby.skeleton.size();
-	for(const glm::mat4& matrix : moby.skeleton) {
-		dest.write(Mat4::pack(matrix));
-	}
+	dest.write_multiple(moby.skeleton);
 	dest.pad(0x10);
 	header.common_trans = dest.write_multiple(moby.common_trans) - class_header_ofs;
 	header.joints = write_moby_joints(dest, moby.joints) - class_header_ofs;
@@ -432,35 +429,39 @@ static s64 write_moby_collision(OutBuffer dest, const MobyCollision& collision) 
 	return ofs;
 }
 
-static std::vector<std::vector<u8>> read_moby_joints(Buffer src, s64 joints_ofs) {
-	std::vector<std::vector<u8>> lists;
+static std::vector<MobyJointEntry> read_moby_joints(Buffer src, s64 joints_ofs) {
+	std::vector<MobyJointEntry> joints;
 	s32 list_count = src.read<s32>(joints_ofs, "joint list count");
 	for(s32 i = 0; i < list_count; i++) {
-		std::vector<u8> list;
+		MobyJointEntry joint;
 		s32 list_ofs = src.read<s32>(joints_ofs + (i + 1) * 4, "joint list");
-		for(;;) {
-			u8 value = src.read<u8>(list_ofs, "joint list data");
-			list_ofs++;
-			if(value == 0xff) {
-				break;
-			}
-			list.push_back(value);
-		}
-		lists.emplace_back(std::move(list));
+		s16 thing_one_count = src.read<s16>(list_ofs, "joint count 1");
+		list_ofs += 2;
+		s16 thing_two_count = src.read<s16>(list_ofs, "joint count 2");
+		list_ofs += 2;
+		joint.thing_one = src.read_multiple<u8>(list_ofs, thing_one_count, "joint thing ones").copy();
+		list_ofs += thing_one_count;
+		joint.thing_two = src.read_multiple<u8>(list_ofs, thing_two_count, "joint thing twos").copy();
+		list_ofs += thing_two_count;
+		verify(src.read<u8>(list_ofs, "joint list terminator") == 0xff, "Bad joint data.");
+		joints.emplace_back(std::move(joint));
 	}
-	return lists;
+	return joints;
 }
 
-static s64 write_moby_joints(OutBuffer dest, const std::vector<std::vector<u8>>& joints) {
+static s64 write_moby_joints(OutBuffer dest, const std::vector<MobyJointEntry>& joints) {
 	dest.pad(0x10);
 	s64 base_ofs = dest.tell();
 	dest.write<s32>(joints.size());
 	s64 outer_list_ofs = dest.alloc_multiple<s32>(joints.size());
-	for(const std::vector<u8>& joint_list : joints) {
+	for(const MobyJointEntry& joint : joints) {
 		dest.pad(0x4);
 		dest.write<s32>(outer_list_ofs, dest.tell() - class_header_ofs);
 		outer_list_ofs += 4;
-		dest.write_multiple(joint_list);
+		dest.write<s16>(joint.thing_one.size());
+		dest.write<s16>(joint.thing_two.size());
+		dest.write_multiple(joint.thing_one);
+		dest.write_multiple(joint.thing_two);
 		dest.write<u8>(0xff);
 	}
 	return base_ofs;
@@ -865,13 +866,13 @@ static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usag
 	return rel_texture_unpack_ofs;
 }
 
-ColladaScene lift_moby_model(const MobyClassData& moby, s32 o_class, s32 texture_count) {
+ColladaScene recover_moby_class(const MobyClassData& moby, s32 o_class, s32 texture_count) {
 	ColladaScene scene;
 	
+	// Used for when the texture index stored in a GS primitive is -1.
 	Material& none = scene.materials.emplace_back();
 	none.name = "none";
 	none.colour = ColourF{1, 1, 1, 1};
-	
 	// Used for when there're more textures referenced than are listed in the
 	// moby class table. This happens for R&C2 ship parts.
 	Material& dummy = scene.materials.emplace_back();
@@ -897,32 +898,34 @@ ColladaScene lift_moby_model(const MobyClassData& moby, s32 o_class, s32 texture
 	if(MOBY_EXPORT_SUBMESHES_SEPERATELY) {
 		for(s32 i = 0; i < (s32) moby.submeshes.size(); i++) {
 			std::string name = "high_lod_" + std::to_string(i);
-			scene.meshes.emplace_back(lift_moby_mesh(moby.submeshes, name.c_str(), o_class, texture_count, i));
+			scene.meshes.emplace_back(recover_moby_mesh(moby.submeshes, name.c_str(), o_class, texture_count, moby.scale, i));
 		}
 		for(s32 i = 0; i < (s32) moby.low_detail_submeshes.size(); i++) {
 			std::string name = "low_lod_" + std::to_string(i);
-			scene.meshes.emplace_back(lift_moby_mesh(moby.low_detail_submeshes, name.c_str(), o_class, texture_count, i));
+			scene.meshes.emplace_back(recover_moby_mesh(moby.low_detail_submeshes, name.c_str(), o_class, texture_count, moby.scale, i));
 		}
 		if(moby.bangles.has_value()) {
 			for(s32 i = 0; i < (s32) moby.bangles->submeshes.size(); i++) {
 				std::string name = "bangles_" + std::to_string(i);
-				scene.meshes.emplace_back(lift_moby_mesh(moby.bangles->submeshes, name.c_str(), o_class, texture_count, i));
+				scene.meshes.emplace_back(recover_moby_mesh(moby.bangles->submeshes, name.c_str(), o_class, texture_count, moby.scale, i));
 			}
 		}
 	} else {
-		scene.meshes.emplace_back(lift_moby_mesh(moby.submeshes, "high_lod", o_class, texture_count, NO_SUBMESH_FILTER));
-		scene.meshes.emplace_back(lift_moby_mesh(moby.low_detail_submeshes, "low_lod", o_class, texture_count, NO_SUBMESH_FILTER));
+		scene.meshes.emplace_back(recover_moby_mesh(moby.submeshes, "high_lod", o_class, texture_count, moby.scale, NO_SUBMESH_FILTER));
+		scene.meshes.emplace_back(recover_moby_mesh(moby.low_detail_submeshes, "low_lod", o_class, texture_count, moby.scale, NO_SUBMESH_FILTER));
 		if(moby.bangles.has_value()) {
-			scene.meshes.emplace_back(lift_moby_mesh(moby.bangles->submeshes, "bangles", o_class, texture_count, NO_SUBMESH_FILTER));
+			scene.meshes.emplace_back(recover_moby_mesh(moby.bangles->submeshes, "bangles", o_class, texture_count, moby.scale, NO_SUBMESH_FILTER));
 		}
 	}
+	
+	scene.joints = recover_moby_joints(moby);
 	
 	return scene;
 }
 
 #define VERIFY_SUBMESH(cond, message) verify(cond, "Moby class %d, submesh %d has bad " message ".", o_class, i);
 
-static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* name, s32 o_class, s32 texture_count, s32 submesh_filter) {
+static Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* name, s32 o_class, s32 texture_count, f32 scale, s32 submesh_filter) {
 	Mesh mesh;
 	mesh.name = name;
 	mesh.flags = MESH_HAS_TEX_COORDS;
@@ -936,7 +939,7 @@ static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char
 		s32 vertex_base = mesh.vertices.size();
 		for(const MobyVertex& mv : src.vertices) {
 			auto& st = src.sts.at(mesh.vertices.size() - vertex_base);
-			auto pos = glm::vec3(mv.regular.x / 16384.f, mv.regular.y / 16384.f, mv.regular.z / 16384.f);
+			auto pos = glm::vec3(mv.regular.x * scale / 1024.f, mv.regular.y * scale / 1024.f, mv.regular.z * scale / 1024.f);
 			auto normal = glm::vec3(0, 0, 0);
 			auto tex_coord = glm::vec2(st.s / (INT16_MAX / 8.f), -st.t / (INT16_MAX / 8.f));
 			while(tex_coord.s < 0) tex_coord.s += 1;
@@ -951,7 +954,7 @@ static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char
 			VERIFY_SUBMESH(mv.has_value(), "vertex table");
 			
 			auto& st = src.sts.at(mesh.vertices.size() - vertex_base);
-			auto pos = glm::vec3(mv->regular.x / 16384.f, mv->regular.y / 16384.f, mv->regular.z / 16384.f);
+			auto pos = glm::vec3(mv->regular.x * scale / 1024.f, mv->regular.y * scale / 1024.f, mv->regular.z * scale / 1024.f);
 			auto normal = glm::vec3(0, 0, 0);
 			auto tex_coord = glm::vec2(st.s / (INT16_MAX / 8.f), -st.t / (INT16_MAX / 8.f));
 			while(tex_coord.s < 0) tex_coord.s += 1;
@@ -1031,4 +1034,32 @@ static Mesh lift_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char
 	}
 	mesh = deduplicate_vertices(std::move(mesh));
 	return mesh;
+}
+
+static std::vector<Joint> recover_moby_joints(const MobyClassData& moby) {
+	assert(moby.skeleton.size() == moby.common_trans.size());
+	
+	std::vector<Joint> joints;
+	joints.reserve(1 + moby.skeleton.size());
+	
+	for(size_t i = 0; i < moby.skeleton.size(); i++) {
+		const Mat4& skeleton = moby.skeleton[i];
+		const MobyTrans& trans = moby.common_trans[i];
+		Joint j;
+		j.matrix = skeleton.unpack();
+		j.matrix[0][3] *= moby.scale / 1024.f;
+		j.matrix[1][3] *= moby.scale / 1024.f;
+		j.matrix[2][3] *= moby.scale / 1024.f;
+		j.matrix[3] = glm::vec4(0, 0, 0, 1);
+		s32 parent;
+		if(i > 0) {
+			parent = trans.parent_offset / 0x40;
+		} else {
+			parent = -1;
+		}
+		verify(parent < (s32) joints.size(), "Bad moby joints.");
+		add_joint(joints, j, parent);
+	}
+	
+	return joints;
 }

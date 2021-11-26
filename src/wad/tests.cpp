@@ -220,7 +220,7 @@ static void run_moby_class_test(s32 o_class, Buffer src, const char* file_path, 
 	}
 	
 	// Test the COLLADA importer/exporter.
-	ColladaScene src_scene = lift_moby_model(moby, o_class, 0);
+	ColladaScene src_scene = recover_moby_class(moby, o_class, 0);
 	std::vector<u8> collada_xml = write_collada(src_scene);
 	ColladaScene dest_scene = read_collada(std::move(collada_xml));
 	assert_collada_scenes_equal(src_scene, dest_scene);
@@ -254,4 +254,12 @@ static void assert_collada_scenes_equal(const ColladaScene& lhs, const ColladaSc
 			assert(lsub.material == rsub.material);
 		}
 	}
+	//assert(lhs.joints.size() == rhs.joints.size());
+	//for(size_t i = 0; i < lhs.joints.size(); i++) {
+	//	assert(lhs.joints[i].parent == rhs.joints[i].parent);
+	//	assert(lhs.joints[i].first_child == rhs.joints[i].first_child);
+	//	assert(lhs.joints[i].left_sibling == rhs.joints[i].left_sibling);
+	//	assert(lhs.joints[i].right_sibling == rhs.joints[i].right_sibling);
+	//	assert(lhs.joints[i].matrix == rhs.joints[i].matrix);
+	//}
 }

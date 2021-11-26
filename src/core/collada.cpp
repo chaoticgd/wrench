@@ -42,6 +42,7 @@ static void write_effects(OutBuffer dest, const std::vector<Material>& materials
 static void write_materials(OutBuffer dest, const std::vector<Material>& materials);
 static void write_geometries(OutBuffer dest, const std::vector<Mesh>& meshes);
 static void write_visual_scenes(OutBuffer dest, const ColladaScene& scene);
+static void write_joint_node(OutBuffer dest, const std::vector<Joint>& joints, s32 index, s32 indent);
 
 ColladaScene read_collada(std::vector<u8> src) {
 	src.push_back('\0');
@@ -79,7 +80,10 @@ ColladaScene read_collada(std::vector<u8> src) {
 	const XmlNode* library_visual_scenes = xml_child(root, "library_visual_scenes");
 	const XmlNode* visual_scene = xml_child(library_visual_scenes, "visual_scene");
 	xml_for_each_child_of_type(node, visual_scene, "node") {
-		const XmlNode* instance_geometry = xml_child(node, "instance_geometry");
+		const XmlNode* instance_geometry = node->first_node("instance_geometry");
+		if(!instance_geometry) {
+			continue;
+		}
 		const XmlNode* geometry = node_from_id(ids, xml_attrib(instance_geometry, "url")->value());
 		
 		Mesh mesh;
@@ -585,6 +589,9 @@ static void write_geometries(OutBuffer dest, const std::vector<Mesh>& meshes) {
 static void write_visual_scenes(OutBuffer dest, const ColladaScene& scene) {
 	dest.writelf("\t<library_visual_scenes>");
 	dest.writelf("\t\t<visual_scene id=\"scene\">");
+	if(scene.joints.size() > 0) {
+		write_joint_node(dest, scene.joints, 0, 3);
+	}
 	for(const Mesh& mesh : scene.meshes) {
 		assert(mesh.name.size() > 0);
 		dest.writelf("\t\t\t<node id=\"%s\">", mesh.name.c_str());
@@ -605,4 +612,34 @@ static void write_visual_scenes(OutBuffer dest, const ColladaScene& scene) {
 	}
 	dest.writelf("\t\t</visual_scene>");
 	dest.writelf("\t</library_visual_scenes>");
+}
+
+static void write_joint_node(OutBuffer dest, const std::vector<Joint>& joints, s32 index, s32 indent) {
+	const Joint& joint = joints[index];
+	dest.writelf(indent, "<node id=\"joint_%d\" type=\"JOINT\">", index);
+	dest.writesf(indent, "\t<matrix sid=\"transform\">");
+	dest.writesf("%.9g %.9g %.9g %.9g ", joint.matrix[0][0], joint.matrix[1][0], joint.matrix[2][0], joint.matrix[3][0]);
+	dest.writesf("%.9g %.9g %.9g %.9g ", joint.matrix[0][1], joint.matrix[1][1], joint.matrix[2][1], joint.matrix[3][1]);
+	dest.writesf("%.9g %.9g %.9g %.9g ", joint.matrix[0][2], joint.matrix[1][2], joint.matrix[2][2], joint.matrix[3][2]);
+	dest.writesf("%.9g %.9g %.9g %.9g", joint.matrix[0][3], joint.matrix[1][3], joint.matrix[2][3], joint.matrix[3][3]);
+	dest.writelf("</matrix>");
+	for(s32 child = joint.first_child; child != -1; child = joints[child].right_sibling) {
+		write_joint_node(dest, joints, child, indent + 1);
+	}
+	dest.writelf(indent, "</node>");
+}
+
+s32 add_joint(std::vector<Joint>& joints, Joint joint, s32 parent) {
+	s32 index = (s32) joints.size();
+	joint.parent = parent;
+	if(parent != -1) {
+		s32* next = &joints[parent].first_child;
+		while(*next != -1) {
+			joint.left_sibling = *next;
+			next = &joints[*next].right_sibling;
+		}
+		*next = index;
+	}
+	joints.push_back(joint);
+	return index;
 }

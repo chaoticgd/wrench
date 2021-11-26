@@ -154,6 +154,22 @@ struct MobyCollision {
 	std::vector<u8> third_part;
 };
 
+packed_struct(MobyTrans,
+	Vec3f vector;
+	u16 parent_offset;
+	u16 seventy;
+)
+
+packed_struct(MobyJoint,
+	Mat3 matrix;
+	MobyTrans trans;
+)
+
+struct MobyJointEntry {
+	std::vector<u8> thing_one;
+	std::vector<u8> thing_two;
+};
+
 packed_struct(MobySoundDef,
 	/* 0x00 */ f32 min_range;
 	/* 0x04 */ f32 max_range;
@@ -205,9 +221,9 @@ struct MobyClassData {
 	std::vector<Opt<MobySequence>> sequences;
 	std::vector<u8> mystery_data;
 	Opt<MobyCollision> collision;
-	std::vector<glm::mat4> skeleton;
-	std::vector<u8> common_trans;
-	std::vector<std::vector<u8>> joints;
+	std::vector<Mat4> skeleton;
+	std::vector<MobyTrans> common_trans;
+	std::vector<MobyJointEntry> joints;
 	std::vector<MobySoundDef> sound_defs;
 	u32 byte_4; // HACK!
 	u8 unknown_9;
@@ -347,6 +363,6 @@ enum class MobyFormat {
 
 MobyClassData read_moby_class(Buffer src, Game game);
 void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game);
-ColladaScene lift_moby_model(const MobyClassData& moby, s32 o_class, s32 texture_count);
+ColladaScene recover_moby_class(const MobyClassData& moby, s32 o_class, s32 texture_count);
 
 #endif

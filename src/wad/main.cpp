@@ -96,5 +96,5 @@ static void extract_moby(fs::path input_path, fs::path output_path, const char* 
 		fprintf(stderr, "error: Invalid game.\n");
 		exit(1);
 	}
-	write_file("/", output_path, write_collada(lift_moby_model(moby_class, -1, 0)));
+	write_file("/", output_path, write_collada(recover_moby_class(moby_class, -1, 0)));
 }
