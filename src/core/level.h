@@ -436,6 +436,7 @@ struct LevelWad : Wad {
 	std::vector<size_t> tfrag_texture_indices;
 	std::vector<Texture> particle_textures;
 	std::vector<Texture> fx_textures;
+	Opt<std::vector<u8>> unknown_a0;
 	std::vector<MobyClass> moby_classes;
 	std::vector<TieClass> tie_classes;
 	std::vector<ShrubClass> shrub_classes;

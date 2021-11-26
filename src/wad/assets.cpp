@@ -54,10 +54,6 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 	verify(header.tie_classes.count >= 1, "Level has no tie classes.");
 	verify(header.shrub_classes.count >= 1, "Level has no shrub classes.");
 	
-	auto moby_classes = asset_header.read_multiple<MobyClassEntry>(header.moby_classes, "moby class table");
-	auto tie_classes = asset_header.read_multiple<TieClassEntry>(header.tie_classes, "tie class table");
-	auto shrub_classes = asset_header.read_multiple<ShrubClassEntry>(header.shrub_classes, "shrub class table");
-	
 	auto gs_ram_table = asset_header.read_multiple<GsRamEntry>(header.gs_ram, "gs ram table");
 	auto tfrag_textures = asset_header.read_multiple<TextureEntry>(header.tfrag_textures, "tfrag texture table");
 	auto moby_textures = asset_header.read_multiple<TextureEntry>(header.moby_textures, "moby texture table");
@@ -80,6 +76,11 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 	size_t shrubs_begin = wad.textures.size();
 	read_texture_table(wad.textures, shrub_textures, texture_data, gs_ram);
 	
+	if(wad.game != Game::DL) {
+		wad.unknown_a0 = assets.read_bytes(header.unknown_a0, 0x40, "unknown a0");
+	}
+	
+	auto moby_classes = asset_header.read_multiple<MobyClassEntry>(header.moby_classes, "moby class table");
 	for(s64 i = 0; i < moby_classes.size(); i++) {
 		const MobyClassEntry& entry = moby_classes[i];
 		MobyClass* moby = nullptr;
@@ -111,6 +112,7 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 		moby->has_asset_table_entry = true;
 	}
 	
+	auto tie_classes = asset_header.read_multiple<TieClassEntry>(header.tie_classes, "tie class table");
 	for(s64 i = 0; i < tie_classes.size(); i++) {
 		verify(tie_classes[i].offset_in_asset_wad != 0, "Tie class %d has no model.", i);
 		TieClass tie;
@@ -127,6 +129,7 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 		wad.tie_classes.emplace_back(std::move(tie));
 	}
 	
+	auto shrub_classes = asset_header.read_multiple<ShrubClassEntry>(header.shrub_classes, "shrub class table");
 	for(s64 i = 0; i < shrub_classes.size(); i++) {
 		verify(shrub_classes[i].offset_in_asset_wad != 0, "Shrub class %d has no model.", i);
 		ShrubClass shrub;
@@ -280,6 +283,11 @@ void write_assets(OutBuffer header_dest, OutBuffer data_dest, OutBuffer gs_ram, 
 	header.gs_ram.offset = header_dest.tell();
 	header_dest.write_multiple(gs_ram_table);
 	
+	header_dest.pad(0x10, 0);
+	header.unknown_a0 = data_dest.tell();
+	data_dest.write(wad.unknown_a0);
+	
+	// Write classes.
 	auto write_texture_list = [&](u8 dest[16], const std::vector<size_t>& indices, s32 o_class, s32 table) {
 		verify(indices.size() < 16, "Class %d has too many textures.\n", o_class);
 		for(s32 i = 0; i < indices.size(); i++) {
@@ -293,7 +301,6 @@ void write_assets(OutBuffer header_dest, OutBuffer data_dest, OutBuffer gs_ram, 
 		}
 	};
 	
-	// Write classes.
 	size_t i = 0;
 	while(data_dest.tell() < 0xb98a40) {
 		data_dest.write<u8>(0);
