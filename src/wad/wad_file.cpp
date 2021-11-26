@@ -25,6 +25,8 @@ static std::map<s32, Chunk> read_chunks(FILE* file, SectorRange chunk_ranges[3],
 static std::map<s32, Mission> read_missions(FILE* file, SectorRange mission_ranges[128], SectorRange mission_bank_ranges[128]);
 
 std::unique_ptr<Wad> read_wad(FILE* file) {
+	ERROR_CONTEXT("reading");
+	
 	s32 header_size;
 	verify(fread(&header_size, 4, 1, file) == 1, "Failed to read WAD header.");
 	switch(header_size) {
@@ -210,6 +212,8 @@ void write_wad(FILE* file, Wad* wad) {
 }
 
 static std::vector<u8> build_level_wad(LevelWad& wad) {
+	ERROR_CONTEXT("building");
+	
 	std::vector<u8> dest_vec;
 	OutBuffer dest(dest_vec);
 	switch(wad.game) {

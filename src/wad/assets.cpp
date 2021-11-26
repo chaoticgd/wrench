@@ -83,6 +83,8 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 	auto moby_classes = asset_header.read_multiple<MobyClassEntry>(header.moby_classes, "moby class table");
 	for(s64 i = 0; i < moby_classes.size(); i++) {
 		const MobyClassEntry& entry = moby_classes[i];
+		ERROR_CONTEXT("moby %d", entry.o_class);
+		
 		MobyClass* moby = nullptr;
 		for(MobyClass& cur : wad.moby_classes) {
 			if(cur.o_class == entry.o_class) {
@@ -113,15 +115,16 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 	}
 	
 	auto tie_classes = asset_header.read_multiple<TieClassEntry>(header.tie_classes, "tie class table");
-	for(s64 i = 0; i < tie_classes.size(); i++) {
-		verify(tie_classes[i].offset_in_asset_wad != 0, "Tie class %d has no model.", i);
+	for(const TieClassEntry& entry : tie_classes) {
+		ERROR_CONTEXT("tie %d", entry.o_class);
+		verify(entry.offset_in_asset_wad != 0, "Pointer to header is null.");
 		TieClass tie;
-		tie.o_class = tie_classes[i].o_class;
-		s64 model_size = next_asset_block_size(tie_classes[i].offset_in_asset_wad, block_bounds);
-		tie.model = assets.read_bytes(tie_classes[i].offset_in_asset_wad, model_size, "tie model");
-		for(s32 j = 0; j < 16; j++) {
-			if(tie_classes[i].textures[j] != 0xff) {
-				tie.textures.push_back(ties_begin + tie_classes[i].textures[j]);
+		tie.o_class = entry.o_class;
+		s64 model_size = next_asset_block_size(entry.offset_in_asset_wad, block_bounds);
+		tie.model = assets.read_bytes(entry.offset_in_asset_wad, model_size, "tie model");
+		for(s32 i = 0; i < 16; i++) {
+			if(entry.textures[i] != 0xff) {
+				tie.textures.push_back(ties_begin + entry.textures[i]);
 			} else {
 				break;
 			}
@@ -130,15 +133,16 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 	}
 	
 	auto shrub_classes = asset_header.read_multiple<ShrubClassEntry>(header.shrub_classes, "shrub class table");
-	for(s64 i = 0; i < shrub_classes.size(); i++) {
-		verify(shrub_classes[i].offset_in_asset_wad != 0, "Shrub class %d has no model.", i);
+	for(const ShrubClassEntry& entry : shrub_classes) {
+		ERROR_CONTEXT("shrub %d", entry.o_class);
+		verify(entry.offset_in_asset_wad != 0, "Pointer to header is null.");
 		ShrubClass shrub;
-		shrub.o_class = shrub_classes[i].o_class;
-		s64 model_size = next_asset_block_size(shrub_classes[i].offset_in_asset_wad, block_bounds);
-		shrub.model = assets.read_bytes(shrub_classes[i].offset_in_asset_wad, model_size, "shrub model");
-		for(s32 j = 0; j < 16; j++) {
-			if(shrub_classes[i].textures[j] != 0xff) {
-				shrub.textures.push_back(shrubs_begin + shrub_classes[i].textures[j]);
+		shrub.o_class = entry.o_class;
+		s64 model_size = next_asset_block_size(entry.offset_in_asset_wad, block_bounds);
+		shrub.model = assets.read_bytes(entry.offset_in_asset_wad, model_size, "shrub model");
+		for(s32 i = 0; i < 16; i++) {
+			if(entry.textures[i] != 0xff) {
+				shrub.textures.push_back(shrubs_begin + entry.textures[i]);
 			} else {
 				break;
 			}
@@ -307,6 +311,8 @@ void write_assets(OutBuffer header_dest, OutBuffer data_dest, OutBuffer gs_ram, 
 	}
 	
 	for(const MobyClass& cls : wad.moby_classes) {
+		ERROR_CONTEXT("moby %d", cls.o_class);
+		
 		if(!cls.has_asset_table_entry) {
 			continue;
 		}
@@ -324,6 +330,7 @@ void write_assets(OutBuffer header_dest, OutBuffer data_dest, OutBuffer gs_ram, 
 	
 	i = 0;
 	for(const TieClass& cls : wad.tie_classes) {
+		ERROR_CONTEXT("tie %d", cls.o_class);
 		TieClassEntry entry = {0};
 		entry.o_class = cls.o_class;
 		data_dest.pad(0x40);
@@ -335,6 +342,7 @@ void write_assets(OutBuffer header_dest, OutBuffer data_dest, OutBuffer gs_ram, 
 	
 	i = 0;
 	for(const ShrubClass& cls : wad.shrub_classes) {
+		ERROR_CONTEXT("shrub %d", cls.o_class);
 		ShrubClassEntry entry = {0};
 		entry.o_class = cls.o_class;
 		data_dest.pad(0x40);

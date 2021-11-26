@@ -61,6 +61,8 @@ static void write_collision_mesh(OutBuffer dest, CollisionSectors& sectors);
 static ColladaScene collision_sectors_to_mesh(const CollisionSectors& sectors);
 
 ColladaScene read_collision(Buffer src) {
+	ERROR_CONTEXT("collision");
+	
 	CollisionHeader header = src.read<CollisionHeader>(0, "collision header");
 	Buffer mesh_buffer;
 	if(header.second_part != 0) {
@@ -74,6 +76,8 @@ ColladaScene read_collision(Buffer src) {
 
 
 void roundtrip_collision(OutBuffer dest, Buffer src) {
+	ERROR_CONTEXT("static collision");
+	
 	CollisionHeader header = src.read<CollisionHeader>(0, "collision header");
 	Buffer mesh;
 	if(header.second_part != 0) {
@@ -198,17 +202,17 @@ static void write_collision_mesh(OutBuffer dest, CollisionSectors& sectors) {
 	
 	// Allocate all the internal nodes and fill in pointers to internal nodes.
 	dest.write<s16>(sectors.coord);
-	verify(sectors.list.size() < 65536, "Collision has too many Z partitions (count too high).");
+	verify(sectors.list.size() < 65536, "Too many Z partitions (count too high).");
 	dest.write<u16>(sectors.list.size());
 	sectors.temp_offset = dest.alloc_multiple<u16>(sectors.list.size());
 	
 	for(s32 z = 0; z < sectors.list.size(); z++) {
 		dest.pad(4);
-		verify((dest.tell() - base_ofs) / 4 < 65536, "Collision has too many Z partitions (offset too high).");
+		verify((dest.tell() - base_ofs) / 4 < 65536, "Too many Z partitions (offset too high).");
 		dest.write<u16>(sectors.temp_offset + z * sizeof(u16), (dest.tell() - base_ofs) / 4);
 		auto& y_partitions = sectors.list[z];
 		dest.write<s16>(y_partitions.coord);
-		verify(y_partitions.list.size() < 65536, "Collision has too many Y partitions.");
+		verify(y_partitions.list.size() < 65536, "Too many Y partitions.");
 		dest.write<u16>(y_partitions.list.size());
 		y_partitions.temp_offset = dest.alloc_multiple<u32>(y_partitions.list.size());
 	}
@@ -235,11 +239,11 @@ static void write_collision_mesh(OutBuffer dest, CollisionSectors& sectors) {
 				dest.pad(0x10);
 				dest.write<u32>(x_partitions.temp_offset + x * sizeof(u32), (dest.tell() - base_ofs) << 8 | x_partitions.list[x].unknown_byte);
 				const CollisionSector& sector = x_partitions.list[x];
-				verify(sector.tris.size() + sector.quads.size() < 65536, "Too many faces in collision sector.");
+				verify(sector.tris.size() + sector.quads.size() < 65536, "Too many faces in sector.");
 				dest.write<u16>(sector.tris.size() + sector.quads.size());
-				verify(sector.vertices.size() < 256, "Too many vertices in collision sector.");
+				verify(sector.vertices.size() < 256, "Too many vertices in sector.");
 				dest.write<u8>(sector.vertices.size());
-				verify(sector.quads.size() < 256, "Too many quads in collision sector.");
+				verify(sector.quads.size() < 256, "Too many quads in sector.");
 				dest.write<u8>(sector.quads.size());
 				
 				for(const glm::vec3& vertex : sector.vertices) {

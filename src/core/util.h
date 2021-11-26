@@ -24,7 +24,6 @@
 #include <vector>
 #include <cstring>
 #include <stdio.h>
-#include <assert.h>
 #include <optional>
 #include <stdarg.h>
 #include <stdint.h>
@@ -58,45 +57,67 @@ namespace fs = std::filesystem;
 
 #define BEGIN_END(container) container.begin(), container.end()
 
+// *****************************************************************************
+// Error handling
+// *****************************************************************************
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-security"
 
-template <typename... Args>
-[[noreturn]] void assert_not_reached_impl(const char* file, int line, const char* error_message, Args... args) {
-	fprintf(stderr, "[%s:%d] assert: ", file, line);
-	fprintf(stderr, error_message, args...);
-	fprintf(stderr, "\n");
+// This should contain a string describing what the program is currently doing
+// so that it can be printed out if there's an error.
+extern const char* UTIL_ERROR_CONTEXT_STRING;
+
+void assert_impl(const char* file, int line, const char* arg_str, bool condition);
+#undef assert
+#define assert(condition) \
+	if(!(condition)) { \
+		fprintf(stderr, "[%s:%d] assert%s: %s\n", __FILE__, __LINE__, UTIL_ERROR_CONTEXT_STRING, #condition); \
+		exit(1); \
+	}
+#define assert_not_reached(error_message) \
+	fprintf(stderr, "[%s:%d] assert%s: ", __FILE__, __LINE__, UTIL_ERROR_CONTEXT_STRING); \
+	fprintf(stderr, "%s", error_message); \
+	fprintf(stderr, "\n"); \
 	exit(1);
-}
-#define assert_not_reached(...) \
-	assert_not_reached_impl(__FILE__, __LINE__, __VA_ARGS__)
 
-
-// Like assert, but for user errors.
+// All these ugly _impl function templates are necessary so we can pass zero
+// varargs without getting a syntax error because of the additional comma.
 template <typename... Args>
 void verify_impl(const char* file, int line, bool condition, const char* error_message, Args... args) {
 	if(!condition) {
-		fprintf(stderr, "[%s:%d] error: ", file, line);
+		fprintf(stderr, "[%s:%d] error%s: ", file, line, UTIL_ERROR_CONTEXT_STRING);
 		fprintf(stderr, error_message, args...);
 		fprintf(stderr, "\n");
 		exit(1);
 	}
 }
+// Like assert, but for things that could be user errors e.g. bad input files.
 #define verify(condition, ...) \
 	verify_impl(__FILE__, __LINE__, condition, __VA_ARGS__)
 template <typename... Args>
 [[noreturn]] void verify_not_reached_impl(const char* file, int line, const char* error_message, Args... args) {
-	fprintf(stderr, "[%s:%d] error: ", file, line);
+	fprintf(stderr, "[%s:%d] error%s: ", file, line, UTIL_ERROR_CONTEXT_STRING);
 	fprintf(stderr, error_message, args...);
 	fprintf(stderr, "\n");
 	exit(1);
 }
 #define verify_not_reached(...) \
 	verify_not_reached_impl(__FILE__, __LINE__, __VA_ARGS__)
-	
-#pragma GCC diagnostic pop
 
 std::string string_format(const char* format, va_list args);
+
+struct ErrorContext {
+	ErrorContext(const char* format, ...);
+	~ErrorContext();
+};
+
+// This will push a string onto the error context stack and pop it off again
+// when it goes out of scope. These strings are appended together and printed
+// out when there is an error.
+#define ERROR_CONTEXT(...) ErrorContext _error_context(__VA_ARGS__)
+
+#pragma GCC diagnostic pop
 
 struct ParseError : std::exception {
 	ParseError(const char* format, ...) {
@@ -110,6 +131,10 @@ struct ParseError : std::exception {
 	}
 	std::string message;
 };
+
+// *****************************************************************************
+// Binary file I/O
+// *****************************************************************************
 
 #ifdef _MSC_VER
 	#define packed_struct(name, ...) \
@@ -177,6 +202,9 @@ u32 byte_swap_32(u32 val);
 		inmem = p; \
 	}
 
+// *****************************************************************************
+// Other stuff
+// *****************************************************************************
 
 // Kludge since C++ still doesn't have proper reflection.
 #define DEF_FIELD(member) \

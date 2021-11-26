@@ -20,11 +20,8 @@
 #define STREAM_H
 
 #include <bitset>
-#include <vector>
-#include <cstring>
 #include <fstream>
 #include <sstream>
-#include <assert.h>
 #include <iostream>
 #include <stddef.h>
 #include <optional>
