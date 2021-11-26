@@ -51,7 +51,6 @@ struct CollisionSector {
 	std::vector<CollisionTri> tris;
 	std::vector<CollisionQuad> quads;
 	glm::vec3 displacement = {0, 0, 0};
-	u8 unknown_byte;
 };
 
 using CollisionSectors = CollisionList<CollisionList<CollisionList<CollisionSector>>>;
@@ -73,7 +72,6 @@ ColladaScene read_collision(Buffer src) {
 	CollisionSectors sectors = parse_collision_mesh(mesh_buffer);
 	return collision_sectors_to_mesh(sectors);
 }
-
 
 void roundtrip_collision(OutBuffer dest, Buffer src) {
 	ERROR_CONTEXT("static collision");
@@ -142,7 +140,6 @@ static CollisionSectors parse_collision_mesh(Buffer mesh) {
 				sector.vertices.resize(vertex_count);
 				sector.tris.resize(face_count - quad_count);
 				sector.quads.resize(quad_count);
-				sector.unknown_byte = x_offsets[x] & 0xff;
 				
 				s32 ofs = sector_offset + 4;
 				for(s32 vertex = 0; vertex < vertex_count; vertex++) {
@@ -237,7 +234,8 @@ static void write_collision_mesh(OutBuffer dest, CollisionSectors& sectors) {
 			const auto& x_partitions = y_partitions.list[y];
 			for(s32 x = 0; x < x_partitions.list.size(); x++) {
 				dest.pad(0x10);
-				dest.write<u32>(x_partitions.temp_offset + x * sizeof(u32), (dest.tell() - base_ofs) << 8 | x_partitions.list[x].unknown_byte);
+				s64 sector_ofs = dest.tell() - base_ofs;
+				
 				const CollisionSector& sector = x_partitions.list[x];
 				verify(sector.tris.size() + sector.quads.size() < 65536, "Too many faces in sector.");
 				dest.write<u16>(sector.tris.size() + sector.quads.size());
@@ -270,6 +268,14 @@ static void write_collision_mesh(OutBuffer dest, CollisionSectors& sectors) {
 				for(const CollisionQuad& quad : sector.quads) {
 					dest.write<u8>(quad.v3);
 				}
+				
+				size_t face_count = sector.tris.size() + sector.vertices.size();
+				size_t sector_size = 4 + sector.vertices.size() * 4 + face_count * 4 + sector.quads.size();
+				if(sector_size % 0x10 != 0) {
+					sector_size += 0x10 - (sector_size % 0x10);
+				}
+				verify(sector_size < 0x1000, "Sector too large.");
+				dest.write<u32>(x_partitions.temp_offset + x * sizeof(u32), sector_ofs << 8 | (sector_size / 0x10) & 0xff);
 			}
 		}
 	}
