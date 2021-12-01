@@ -57,7 +57,6 @@ struct CollisionSector {
 	std::vector<CollisionTri> tris;
 	std::vector<CollisionQuad> quads;
 	glm::vec3 displacement = {0, 0, 0};
-	u8 unknown_byte;
 };
 
 // The sectors are arranged into a tree such that a sector at position (x,y,z)
@@ -163,7 +162,6 @@ static CollisionSectors parse_collision_mesh(Buffer mesh) {
 				sector.vertices.resize(vertex_count);
 				sector.tris.resize(face_count - quad_count);
 				sector.quads.resize(quad_count);
-				sector.unknown_byte = x_offsets[x] & 0xff;
 				
 				s32 ofs = sector_offset + 4;
 				for(s32 vertex = 0; vertex < vertex_count; vertex++) {
