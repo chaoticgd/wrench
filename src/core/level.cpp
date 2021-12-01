@@ -184,8 +184,8 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			wad.tfrags = read_file(src_dir/std::string(json["tfrags"]));
 			wad.occlusion = read_file(src_dir/std::string(json["occlusion"]));
 			wad.sky = read_file(src_dir/std::string(json["sky"]));
-			//wad.collision = import_dae(read_file(src_dir/std::string(json["collision"]))).meshes.at(0);
-			wad.collision_bin = read_file(src_dir/std::string(json["collision_bin"]));
+			wad.collision = read_collada(read_file(src_dir/std::string(json["collision"])));
+			wad.collision_bin =read_file(src_dir/std::string(json["collision_bin"]));
 			Json tfrag_textures_json = Json::parse(read_file(src_dir/std::string(json["tfrag_textures"])));
 			wad.tfrag_texture_indices = read_textures_json(TFRAG_TEXTURE_INDEX, wad.textures, src_dir, tfrag_textures_json["textures"]);
 			Json particle_textures_json = Json::parse(read_file(src_dir/std::string(json["particle_textures"])));

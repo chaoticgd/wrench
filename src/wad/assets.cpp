@@ -179,7 +179,7 @@ void write_assets(OutBuffer header_dest, OutBuffer data_dest, OutBuffer gs_ram, 
 	header.sky = data_dest.write_multiple(wad.sky);
 	data_dest.pad(0x40);
 	header.collision = data_dest.tell();
-	roundtrip_collision(data_dest, wad.collision_bin);
+	write_collision(data_dest, wad.collision);assert(data_dest.tell() <= 0x61a000);
 	while(data_dest.tell() < 0x61a000) {
 		data_dest.write<u8>(0);
 	}

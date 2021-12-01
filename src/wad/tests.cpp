@@ -22,6 +22,7 @@
 #include "assets.h"
 #include "primary.h"
 #include "texture.h"
+#include "collision.h"
 
 static void run_level_tests(fs::path input_path);
 struct GameplayTestArgs {
@@ -102,16 +103,24 @@ static void run_level_tests(fs::path input_path) {
 		Buffer asset_header_buf = Buffer(primary).subbuf(primary_header.asset_header.offset, primary_header.asset_header.size);
 		
 		Buffer assets_compressed = Buffer(primary).subbuf(primary_header.assets.offset, primary_header.assets.size);
-		std::vector<u8> assets;
-		decompress_wad(assets, WadBuffer(assets_compressed.lo, assets_compressed.hi));
+		std::vector<u8> assets_vec;
+		decompress_wad(assets_vec, WadBuffer(assets_compressed.lo, assets_compressed.hi));
+		Buffer assets(assets_vec);
 		
 		AssetHeader asset_header = asset_header_buf.read<AssetHeader>(0, "asset header");
 		auto block_bounds = enumerate_asset_block_boundaries(asset_header_buf, asset_header);
+		
+		printf("%s collision\n", wad_file_path.string().c_str());
+		ColladaScene src_collision = read_collision(assets.subbuf(asset_header.collision));
+		auto src_collision_xml = write_collada(src_collision);
+		auto dest_collision = read_collada(src_collision_xml);
+		assert_collada_scenes_equal(src_collision, dest_collision);
+		
 		auto moby_classes = asset_header_buf.read_multiple<MobyClassEntry>(asset_header.moby_classes, "moby class table");
 		for(const MobyClassEntry& entry : moby_classes) {
 			if(entry.offset_in_asset_wad != 0 && entry.o_class >= 10) {
 				s64 size = next_asset_block_size(entry.offset_in_asset_wad, block_bounds);
-				run_moby_class_test(entry.o_class, Buffer(assets).subbuf(entry.offset_in_asset_wad, size), file_path.c_str(), game);
+				run_moby_class_test(entry.o_class, assets.subbuf(entry.offset_in_asset_wad, size), file_path.c_str(), game);
 			}
 		}
 	}
@@ -242,11 +251,17 @@ static void assert_collada_scenes_equal(const ColladaScene& lhs, const ColladaSc
 		const Mesh& lmesh = lhs.meshes[i];
 		const Mesh& rmesh = rhs.meshes[i];
 		assert(lmesh.name == rmesh.name);
+		assert(lmesh.submeshes.size() == rmesh.submeshes.size());
 		// If there are no submeshes, we can't recover the flags.
 		assert(lmesh.flags == rmesh.flags || lmesh.submeshes.size() == 0);
 		assert(lmesh.vertices.size() == rmesh.vertices.size());
-		assert(lmesh.vertices == rmesh.vertices);
-		assert(lmesh.submeshes.size() == rmesh.submeshes.size());
+		for(size_t j = 0; j < lmesh.vertices.size(); j++) {
+			const Vertex& lv = lmesh.vertices[j];
+			const Vertex& rv = rmesh.vertices[j];
+			assert(lv.pos == rv.pos);
+			assert(lv.normal == rv.normal);
+			assert(lv.tex_coord == rv.tex_coord);
+		}
 		for(size_t j = 0; j < lmesh.submeshes.size(); j++) {
 			const SubMesh& lsub = lmesh.submeshes[j];
 			const SubMesh& rsub = rmesh.submeshes[j];

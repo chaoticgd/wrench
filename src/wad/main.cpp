@@ -23,10 +23,12 @@
 #include "moby.h"
 #include "tests.h"
 #include "wad_file.h"
+#include "collision.h"
 
 static void extract(fs::path input_path, fs::path output_path);
 static void build(fs::path input_path, fs::path output_path);
 static void extract_moby(fs::path input_path, fs::path output_path, const char* game);
+static void extract_collision(fs::path input_path, fs::path output_path);
 
 int main(int argc, char** argv) {
 	if(argc == 3 || argc == 4) {
@@ -40,6 +42,9 @@ int main(int argc, char** argv) {
 			return 0;
 		} else if(mode == "test") {
 			run_tests(input_path);
+			return 0;
+		} else if(mode == "extract_collision") {
+			extract_collision(input_path, argc == 4 ? argv[3] : "collision.dae");
 			return 0;
 		}
 	} else if(argc == 5) {
@@ -97,4 +102,9 @@ static void extract_moby(fs::path input_path, fs::path output_path, const char* 
 		exit(1);
 	}
 	write_file("/", output_path, write_collada(recover_moby_class(moby_class, -1, 0)));
+}
+
+static void extract_collision(fs::path input_path, fs::path output_path) {
+	auto collision = read_file(input_path);
+	write_file("/", output_path, write_collada(read_collision(collision)));
 }

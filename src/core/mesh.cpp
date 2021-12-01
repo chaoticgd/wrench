@@ -68,7 +68,12 @@ Mesh deduplicate_vertices(Mesh src) {
 	for(size_t i = 1; i < src.vertices.size(); i++) {
 		Vertex& prev = src.vertices[i - 1];
 		Vertex& cur = src.vertices[i];
-		if(!(prev == cur)) {
+		float epsilon = 0.0001f;
+		bool accept = false;
+		accept |= glm::distance(prev.pos, cur.pos) > epsilon;
+		accept |= glm::distance(prev.normal, cur.normal) > epsilon;
+		accept |= glm::distance(prev.tex_coord, cur.tex_coord) > epsilon;
+		if(accept) {
 			dest.vertices.push_back(src.vertices[i]);
 		}
 		index_mapping[i] = dest.vertices.size() - 1;
@@ -87,7 +92,10 @@ Mesh deduplicate_vertices(Mesh src) {
 	return dest;
 }
 
+#include "timer.h"
+
 Mesh deduplicate_faces(Mesh mesh) {
+	start_timer("Deduplicating faces (remember to make this not N^2)");
 	for(SubMesh& submesh : mesh.submeshes) {
 		auto faces = std::move(submesh.faces);
 		std::sort(BEGIN_END(faces));
@@ -96,14 +104,34 @@ Mesh deduplicate_faces(Mesh mesh) {
 		if(faces.size() > 0) {
 			submesh.faces.push_back(faces[0]);
 		}
+		
+		std::vector<Face> unique_tris;
 		for(size_t i = 1; i < faces.size(); i++) {
 			Face& prev = faces[i - 1];
 			Face& cur = faces[i];
 			if(!(prev == cur)) {
-				submesh.faces.push_back(cur);
+				if(cur.is_quad()) {
+					submesh.faces.push_back(cur);
+				} else {
+					unique_tris.push_back(cur);
+				}
 			}
 		}
-	}
+		
+		size_t quad_count = submesh.faces.size();
+		for(const Face& tri : unique_tris) {
+			bool discard = false;
+			for(size_t i = 0; i < quad_count; i++) {
+				const Face& quad = submesh.faces[i];
+				discard |= tri.v0 == quad.v0 && tri.v1 == quad.v1 && tri.v2 == quad.v2;
+				discard |= tri.v0 == quad.v1 && tri.v1 == quad.v2 && tri.v2 == quad.v3;
+				discard |= tri.v0 == quad.v2 && tri.v1 == quad.v3 && tri.v2 == quad.v0;
+			}
+			if(!discard) {
+				submesh.faces.push_back(tri);
+			}
+		}
+	}stop_timer();
 	return mesh;
 }
 

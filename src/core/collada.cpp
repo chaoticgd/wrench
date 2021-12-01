@@ -31,6 +31,7 @@ static Material read_material(const XmlNode* material_node, const IdMap& ids, co
 static void read_vertices(Mesh& mesh, const XmlNode* geometry, const IdMap& ids);
 static std::vector<f32> read_vertex_source(const XmlNode* source, const IdMap& ids);
 static void read_submeshes(Mesh& mesh, const XmlNode* instance_geometry, const XmlNode* geometry, const IdMap& ids, const NodeToIndexMap& materials);
+static s32 read_s32(const char*& input, const char* context);
 static void enumerate_ids(std::map<std::string, const XmlNode*>& ids, const XmlNode* node);
 static const XmlNode* xml_child(const XmlNode* node, const char* name);
 static const XmlAttrib* xml_attrib(const XmlNode* node, const char* name);
@@ -278,8 +279,11 @@ static void read_submeshes(Mesh& mesh, const XmlNode* instance_geometry, const X
 	const XmlNode* technique_common = xml_child(bind_material, "technique_common");
 	const XmlNode* mesh_node = xml_child(geometry, "mesh");
 	for(const XmlNode* indices = mesh_node->first_node(); indices != nullptr; indices = indices->next_sibling()) {
-		if(strcmp(indices->name(), "triangles") == 0) {
-			s32 triangle_count = atoi(xml_attrib(indices, "count")->value());
+		bool is_triangles = strcmp(indices->name(), "triangles") == 0;
+		bool is_polylist = strcmp(indices->name(), "polylist") == 0;
+		
+		if(is_triangles || is_polylist) {
+			s32 face_count = atoi(xml_attrib(indices, "count")->value());
 			const char* material_symbol = xml_attrib(indices, "material")->value();
 			
 			s32 material = -1;
@@ -294,29 +298,47 @@ static void read_submeshes(Mesh& mesh, const XmlNode* instance_geometry, const X
 			
 			SubMesh submesh;
 			submesh.material = material;
-			const char* ptr = xml_child(indices, "p")->value();
-			for(s32 i = 0; i < triangle_count; i++) {
-				char* v1_ptr;
-				s32 v0 = strtol(ptr, &v1_ptr, 10);
-				if(v1_ptr == ptr) {
-					throw ParseError("Failed to read <p> body.");
+			const char* p = xml_child(indices, "p")->value();
+			if(is_triangles) {
+				for(s32 i = 0; i < face_count; i++) {
+					s32 v0 = read_s32(p, "<p> node");
+					s32 v1 = read_s32(p, "<p> node");
+					s32 v2 = read_s32(p, "<p> node");
+					submesh.faces.emplace_back(v0, v1, v2);
 				}
-				char* v2_ptr;
-				s32 v1 = strtol(v1_ptr, &v2_ptr, 10);
-				if(v2_ptr == v1_ptr) {
-					throw ParseError("Failed to read <p> body.");
+			} else {
+				mesh.flags |= MESH_HAS_QUADS;
+				const char* vcount = xml_child(indices, "vcount")->value();
+				for(s32 i = 0; i < face_count; i++) {
+					s32 count = read_s32(vcount, "<vcount> node");
+					verify(count == 3 || count == 4, "Mesh contain faces that aren't tris or quads.");
+					if(count == 3) {
+						s32 v0 = read_s32(p, "<p> node");
+						s32 v1 = read_s32(p, "<p> node");
+						s32 v2 = read_s32(p, "<p> node");
+						submesh.faces.emplace_back(v0, v1, v2);
+					} else {
+						s32 v0 = read_s32(p, "<p> node");
+						s32 v1 = read_s32(p, "<p> node");
+						s32 v2 = read_s32(p, "<p> node");
+						s32 v3 = read_s32(p, "<p> node");
+						submesh.faces.emplace_back(v0, v1, v2, v3);
+					}
 				}
-				char* next_ptr;
-				s32 v2 = strtol(v2_ptr, &next_ptr, 10);
-				if(next_ptr == v2_ptr) {
-					throw ParseError("Failed to read <p> body.");
-				}
-				ptr = next_ptr;
-				submesh.faces.emplace_back(v0, v1, v2);
 			}
 			mesh.submeshes.emplace_back(std::move(submesh));
 		}
 	}
+}
+
+static s32 read_s32(const char*& input, const char* context) {
+	char* next;
+	s32 value = strtol(input, &next, 10);
+	if(next == input) {
+		throw ParseError("Failed to read integers from %s.", context);
+	}
+	input = next;
+	return value;
 }
 
 static void enumerate_ids(std::map<std::string, const XmlNode*>& ids, const XmlNode* node) {
@@ -523,13 +545,12 @@ static void write_geometries(OutBuffer dest, const std::vector<Mesh>& meshes) {
 			for(s32 j = 0; j < (s32) mesh.submeshes.size(); j++) {
 				const SubMesh& submesh = mesh.submeshes[j];
 				dest.writelf(4, "<polylist count=\"%d\" material=\"material_symbol_%d\">", submesh.faces.size(), j);
-				s32 offset = 0;
-				dest.writelf(4, "\t<input semantic=\"VERTEX\" source=\"#mesh_%d_vertices\" offset=\"%d\"/>", i, offset);
+				dest.writelf(4, "\t<input semantic=\"VERTEX\" source=\"#mesh_%d_vertices\" offset=\"0\"/>", i);
 				if(mesh.flags & MESH_HAS_NORMALS) {
-					dest.writelf(4, "\t<input semantic=\"NORMAL\" source=\"#mesh_%d_normals\" offset=\"%d\"/>", i, offset);
+					dest.writelf(4, "\t<input semantic=\"NORMAL\" source=\"#mesh_%d_normals\" offset=\"0\"/>", i);
 				}
 				if(mesh.flags & MESH_HAS_TEX_COORDS) {
-					dest.writelf(4, "\t<input semantic=\"TEXCOORD\" source=\"#mesh_%d_texcoords\" offset=\"%d\" set=\"0\"/>", i, offset);
+					dest.writelf(4, "\t<input semantic=\"TEXCOORD\" source=\"#mesh_%d_texcoords\" offset=\"0\" set=\"0\"/>", i);
 				}
 				dest.writesf(4, "\t<vcount>");
 				for(const Face& face : submesh.faces) {
@@ -561,13 +582,12 @@ static void write_geometries(OutBuffer dest, const std::vector<Mesh>& meshes) {
 			for(s32 j = 0; j < (s32) mesh.submeshes.size(); j++) {
 				const SubMesh& submesh = mesh.submeshes[j];
 				dest.writelf(4, "<triangles count=\"%d\" material=\"material_symbol_%d\">", submesh.faces.size(), j);
-				s32 offset = 0;
-				dest.writelf(4, "\t<input semantic=\"VERTEX\" source=\"#mesh_%d_vertices\" offset=\"%d\"/>", i, offset);
+				dest.writelf(4, "\t<input semantic=\"VERTEX\" source=\"#mesh_%d_vertices\" offset=\"0\"/>", i);
 				if(mesh.flags & MESH_HAS_NORMALS) {
-					dest.writelf(4, "\t<input semantic=\"NORMAL\" source=\"#mesh_%d_normals\" offset=\"%d\"/>", i, offset);
+					dest.writelf(4, "\t<input semantic=\"NORMAL\" source=\"#mesh_%d_normals\" offset=\"0\"/>", i);
 				}
 				if(mesh.flags & MESH_HAS_TEX_COORDS) {
-					dest.writelf(4, "\t<input semantic=\"TEXCOORD\" source=\"#mesh_%d_texcoords\" offset=\"%d\" set=\"0\"/>", i, offset);
+					dest.writelf(4, "\t<input semantic=\"TEXCOORD\" source=\"#mesh_%d_texcoords\" offset=\"0\" set=\"0\"/>", i);
 				}
 				dest.writesf(4, "\t<p>");
 				for(const Face& face : submesh.faces) {

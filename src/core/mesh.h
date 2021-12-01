@@ -21,6 +21,8 @@
 
 #include "util.h"
 
+#include <glm/glm.hpp>
+
 struct Face {
 	s32 v0;
 	s32 v1;
@@ -49,9 +51,6 @@ struct Vertex {
 	glm::vec2 tex_coord;
 	Vertex(const glm::vec3& p) : pos(p), normal(0, 0, 0), tex_coord(0, 0) {}
 	Vertex(const glm::vec3& p, const glm::vec3& n, const glm::vec2& t) : pos(p), normal(n), tex_coord(t) {}
-	bool operator==(const Vertex& rhs) const {
-		return pos == rhs.pos && normal == rhs.normal && tex_coord == rhs.tex_coord;
-	}
 	bool operator<(const Vertex& rhs) const {
 		if(pos.z != rhs.pos.z) return pos.z < rhs.pos.z;
 		if(pos.y != rhs.pos.y) return pos.y < rhs.pos.y;
@@ -85,7 +84,7 @@ struct Mesh {
 Mesh sort_vertices(Mesh mesh);
 
 Mesh deduplicate_vertices(Mesh old_mesh);
-Mesh deduplicate_faces(Mesh old_mesh);
+Mesh deduplicate_faces(Mesh old_mesh); // Removes identical faces and tris that shadow quads.
 Mesh reverse_winding_order(Mesh mesh);
 
 #endif

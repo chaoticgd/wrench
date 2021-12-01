@@ -20,4 +20,4 @@
 #include "../core/collada.h"
 
 ColladaScene read_collision(Buffer src);
-void roundtrip_collision(OutBuffer dest, Buffer src);
+void write_collision(OutBuffer dest, ColladaScene scene);
