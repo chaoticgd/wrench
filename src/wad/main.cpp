@@ -47,15 +47,15 @@ int main(int argc, char** argv) {
 	} else if(mode == "build") {
 		require_args(4);
 		build(argv[2], argv[3]);
-	} else if(mode == "test") {
-		require_args(3);
-		run_tests(argv[2]);
 	} else if(mode == "extract_collision") {
 		require_args(4);
 		extract_collision(argv[2], argv[3]);
 	} else if(mode == "build_collision") {
 		require_args(4);
 		build_collision(argv[2], argv[3]);
+	} else if(mode == "test") {
+		require_args(3);
+		run_tests(argv[2]);
 	} else {
 		print_usage(argv[0]);
 		return 1;
@@ -107,5 +107,7 @@ static void print_usage(char* argv0) {
 	printf("usage: \n");
 	printf("  %s extract <input wad> <output dir>\n", argv0);
 	printf("  %s build <input level json> <output wad>\n", argv0);
+	printf("  %s extract_collision <collision bin> <collision dae>\n", argv0);
+	printf("  %s build_collision <collision dae> <collision bin>\n", argv0);
 	printf("  %s test <level wads dir>\n", argv0);
 }
