@@ -107,7 +107,7 @@ static void print_usage(char* argv0) {
 	printf("usage: \n");
 	printf("  %s extract <input wad> <output dir>\n", argv0);
 	printf("  %s build <input level json> <output wad>\n", argv0);
-	printf("  %s extract_collision <collision bin> <collision dae>\n", argv0);
-	printf("  %s build_collision <collision dae> <collision bin>\n", argv0);
+	printf("  %s extract_collision <input bin> <output dae>\n", argv0);
+	printf("  %s build_collision <input dae> <output bin>\n", argv0);
 	printf("  %s test <level wads dir>\n", argv0);
 }
