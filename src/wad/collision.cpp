@@ -77,6 +77,7 @@ static CollisionSectors parse_collision_mesh(Buffer mesh);
 static void write_collision_mesh(OutBuffer dest, CollisionSectors& sectors);
 static ColladaScene collision_sectors_to_scene(const CollisionSectors& sectors);
 static CollisionSectors build_collision_sectors(const ColladaScene& scene);
+static bool test_face_sector_intersection(std::array<s32, 4>& mesh_inds, const glm::vec3** verts, const glm::vec3& disp);
 static bool test_tri_sector_intersection(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2);
 static CollisionSector& lookup_sector(CollisionSectors& sectors, s32 x, s32 y, s32 z);
 
@@ -105,12 +106,6 @@ void write_collision(OutBuffer dest, ColladaScene scene) {
 	dest.write(header);
 	dest.pad(0x40);
 	write_collision_mesh(dest, sectors);
-	
-	std::vector<u8> buf;
-	OutBuffer(buf).write(header);
-	OutBuffer(buf).pad(0x40);
-	write_collision_mesh(buf, sectors);
-	write_file("/tmp", "colout.bin", buf);
 }
 
 static CollisionSectors parse_collision_mesh(Buffer mesh) {
@@ -438,42 +433,8 @@ static CollisionSectors build_collision_sectors(const ColladaScene& scene) {
 					for(s32 y = ymin; y < ymax; y++) {
 						for(s32 x = xmin; x < xmax; x++) {
 							std::array<s32, 4> mesh_inds = {face.v0, face.v1, face.v2, face.v3};
-							
-							bool accept;
 							auto disp = glm::vec3(x * 4 + 2, y * 4 + 2, z * 4 + 2);
-							
-							if(face.is_quad()) {
-								// Try to replace a quad with a single tri if
-								// only that half intersects the sector.
-								//
-								// Note: This was causing glitches so I've
-								// disabled it for now.
-								bool i0 = test_tri_sector_intersection(*verts[0] - disp, *verts[1] - disp, *verts[2] - disp);
-								bool i2 = test_tri_sector_intersection(*verts[2] - disp, *verts[3] - disp, *verts[0] - disp);
-								if(false && i0 && !i2) {
-									mesh_inds = {mesh_inds[0], mesh_inds[1], mesh_inds[2], -1};
-									accept = true;
-								} else if(false && i2 && !i0) {
-									mesh_inds = {mesh_inds[2], mesh_inds[3], mesh_inds[0], -1};
-									accept = true;
-								} else {
-									bool i1 = test_tri_sector_intersection(*verts[1] - disp, *verts[2] - disp, *verts[3] - disp);
-									bool i3 = test_tri_sector_intersection(*verts[3] - disp, *verts[0] - disp, *verts[1] - disp);
-									if(false && i1 && !i3) {
-										mesh_inds = {mesh_inds[1], mesh_inds[2], mesh_inds[3], -1};
-										accept = true;
-									} else if(false && i3 && !i1) {
-										mesh_inds = {mesh_inds[3], mesh_inds[0], mesh_inds[1], -1};
-										accept = true;
-									} else {
-										accept = i0 && i2;
-									}
-								}
-							} else {
-								accept = test_tri_sector_intersection(*verts[0] - disp, *verts[1] - disp, *verts[2] - disp);
-							}
-							
-							if(accept) {
+							if(test_face_sector_intersection(mesh_inds, verts, disp)) {
 								s32 sector_inds[4] = {-1, -1, -1, -1};
 								CollisionSector& sector = lookup_sector(sectors, x, y, z);
 								
@@ -492,7 +453,7 @@ static CollisionSectors build_collision_sectors(const ColladaScene& scene) {
 									}
 								}
 								
-								if(face.is_quad()) {
+								if(sector_inds[3] > -1) {
 									sector.quads.emplace_back(sector_inds[3], sector_inds[2], sector_inds[1], sector_inds[0], type);
 								} else {
 									sector.tris.emplace_back(sector_inds[2], sector_inds[1], sector_inds[0], type);
@@ -509,6 +470,39 @@ static CollisionSectors build_collision_sectors(const ColladaScene& scene) {
 	
 	stop_timer();
 	return sectors;
+}
+
+static bool test_face_sector_intersection(std::array<s32, 4>& mesh_inds, const glm::vec3** verts, const glm::vec3& disp) {
+	bool is_quad = mesh_inds[3] > -1;
+	bool accept;
+	if(is_quad) {
+		// Try to replace a quad with a single triangle if only that half of the
+		// face intersects the sector.
+		bool i0 = test_tri_sector_intersection(*verts[0] - disp, *verts[1] - disp, *verts[2] - disp);
+		bool i2 = test_tri_sector_intersection(*verts[2] - disp, *verts[3] - disp, *verts[0] - disp);
+		if(i0 && !i2) {
+			mesh_inds = {mesh_inds[0], mesh_inds[1], mesh_inds[2], -1};
+			accept = true;
+		} else if(i2 && !i0) {
+			mesh_inds = {mesh_inds[2], mesh_inds[3], mesh_inds[0], -1};
+			accept = true;
+		} else {
+			bool i1 = test_tri_sector_intersection(*verts[1] - disp, *verts[2] - disp, *verts[3] - disp);
+			bool i3 = test_tri_sector_intersection(*verts[3] - disp, *verts[0] - disp, *verts[1] - disp);
+			if(i1 && !i3) {
+				mesh_inds = {mesh_inds[1], mesh_inds[2], mesh_inds[3], -1};
+				accept = true;
+			} else if(i3 && !i1) {
+				mesh_inds = {mesh_inds[3], mesh_inds[0], mesh_inds[1], -1};
+				accept = true;
+			} else {
+				accept = i0 && i2;
+			}
+		}
+	} else {
+		accept = test_tri_sector_intersection(*verts[0] - disp, *verts[1] - disp, *verts[2] - disp);
+	}
+	return accept;
 }
 
 // https://gdbooks.gitbooks.io/3dcollisions/content/Chapter4/aabb-triangle.html
@@ -538,12 +532,9 @@ static bool test_tri_sector_intersection(const glm::vec3& v0, const glm::vec3& v
 		r += fabs(glm::dot(u2, axis));
 		r *= 2.f;
 		if(std::max(-std::max({p0, p1, p2}), std::min({p0, p1, p2})) > r) {
-			//#define TRI(v) v.x, v.y, v.z
-			//printf("reject (%f,%f,%f),(%f,%f,%f),(%f,%f,%f)\n", TRI(v0), TRI(v1), TRI(v2));
 			return false;
 		}
 	}
-	//printf("accept (%f,%f,%f),(%f,%f,%f),(%f,%f,%f)\n", TRI(v0), TRI(v1), TRI(v2));
 	return true;
 }
 
