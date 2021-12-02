@@ -95,7 +95,7 @@ ColladaScene read_collision(Buffer src) {
 	return collision_sectors_to_scene(sectors);
 }
 
-void write_collision(OutBuffer dest, ColladaScene scene) {
+void write_collision(OutBuffer dest, const ColladaScene& scene) {
 	ERROR_CONTEXT("collision");
 	
 	CollisionSectors sectors = build_collision_sectors(scene);
@@ -376,7 +376,6 @@ static ColladaScene collision_sectors_to_scene(const CollisionSectors& sectors) 
 
 static CollisionSectors build_collision_sectors(const ColladaScene& scene) {
 	start_timer("build collision");
-
 	
 	CollisionSectors sectors;
 	for(const Mesh& mesh : scene.meshes) {

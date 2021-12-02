@@ -254,18 +254,22 @@ static void assert_collada_scenes_equal(const ColladaScene& lhs, const ColladaSc
 		assert(lmesh.submeshes.size() == rmesh.submeshes.size());
 		// If there are no submeshes, we can't recover the flags.
 		assert(lmesh.flags == rmesh.flags || lmesh.submeshes.size() == 0);
-		assert(lmesh.vertices.size() == rmesh.vertices.size());
-		for(size_t j = 0; j < lmesh.vertices.size(); j++) {
-			const Vertex& lv = lmesh.vertices[j];
-			const Vertex& rv = rmesh.vertices[j];
-			assert(lv.pos == rv.pos);
-			assert(lv.normal == rv.normal);
-			assert(lv.tex_coord == rv.tex_coord);
-		}
+		// The COLLADA importer/exporter doesn't preserve the layout of the
+		// vertex buffer, so don't check that.
 		for(size_t j = 0; j < lmesh.submeshes.size(); j++) {
 			const SubMesh& lsub = lmesh.submeshes[j];
 			const SubMesh& rsub = rmesh.submeshes[j];
-			assert(lsub.faces == rsub.faces);
+			for(size_t k = 0; k < lsub.faces.size(); k++) {
+				const Face& lface = lsub.faces[k];
+				const Face& rface = rsub.faces[k];
+				assert(lmesh.vertices.at(lface.v0) == rmesh.vertices.at(rface.v0));
+				assert(lmesh.vertices.at(lface.v1) == rmesh.vertices.at(rface.v1));
+				assert(lmesh.vertices.at(lface.v2) == rmesh.vertices.at(rface.v2));
+				assert((lface.v3 > -1) == (rface.v3 > -1));
+				if(lface.v3 > -1) {
+					assert(lmesh.vertices.at(lface.v3) == rmesh.vertices.at(rface.v3));
+				}
+			}
 			assert(lsub.material == rsub.material);
 		}
 	}

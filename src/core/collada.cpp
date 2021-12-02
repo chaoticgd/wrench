@@ -28,9 +28,23 @@ using XmlAttrib = rapidxml::xml_attribute<>;
 using IdMap = std::map<std::string, const XmlNode*>;
 using NodeToIndexMap = std::map<const XmlNode*, s32>;
 static Material read_material(const XmlNode* material_node, const IdMap& ids, const NodeToIndexMap& images);
-static void read_vertices(Mesh& mesh, const XmlNode* geometry, const IdMap& ids);
+struct VertexData {
+	Opt<std::vector<f32>> positions;
+	Opt<std::vector<f32>> normals;
+	Opt<std::vector<f32>> tex_coords;
+};
+static VertexData read_vertices(const XmlNode* geometry, const IdMap& ids);
 static std::vector<f32> read_vertex_source(const XmlNode* source, const IdMap& ids);
-static void read_submeshes(Mesh& mesh, const XmlNode* instance_geometry, const XmlNode* geometry, const IdMap& ids, const NodeToIndexMap& materials);
+static void read_submeshes(Mesh& mesh, const XmlNode* instance_geometry, const XmlNode* geometry, const IdMap& ids, const NodeToIndexMap& materials, const VertexData& vertex_data);
+struct CreateVertexInput {
+	const std::vector<f32>* positions = nullptr;
+	const std::vector<f32>* normals = nullptr;
+	const std::vector<f32>* tex_coords = nullptr;
+	s32 position_offset = -1;
+	s32 normal_offset = -1;
+	s32 tex_coord_offset = -1;
+};
+static Vertex create_vertex(const std::vector<s32>& indices, s32 base, const CreateVertexInput& input);
 static s32 read_s32(const char*& input, const char* context);
 static void enumerate_ids(std::map<std::string, const XmlNode*>& ids, const XmlNode* node);
 static const XmlNode* xml_child(const XmlNode* node, const char* name);
@@ -89,8 +103,10 @@ ColladaScene read_collada(std::vector<u8> src) {
 		
 		Mesh mesh;
 		mesh.name = xml_attrib(node, "id")->value();
-		read_vertices(mesh, geometry, ids);
-		read_submeshes(mesh, instance_geometry, geometry, ids, materials);
+		auto vertex_data = read_vertices(geometry, ids);
+		if(vertex_data.positions.has_value()) {
+			read_submeshes(mesh, instance_geometry, geometry, ids, materials, vertex_data);
+		}
 		scene.meshes.emplace_back(std::move(mesh));
 	}
 	return scene;
@@ -177,13 +193,14 @@ static Material read_material(const XmlNode* material_node, const IdMap& ids, co
 	throw ParseError("<diffuse> node needs either a <texture> or <color> node as a child.");
 }
 
-static void read_vertices(Mesh& mesh, const XmlNode* geometry, const IdMap& ids) {
+static VertexData read_vertices(const XmlNode* geometry, const IdMap& ids) {
 	const XmlNode* mesh_node = xml_child(geometry, "mesh");
 	const XmlNode* triangles = mesh_node->first_node("triangles");
 	const XmlNode* polylist = mesh_node->first_node("polylist");
 	const XmlNode* indices = triangles != nullptr ? triangles : polylist;
+	const char* mesh_name = xml_attrib(geometry, "id")->value();
 	if(indices == nullptr) {
-		return;
+		return {};
 	}
 	
 	const XmlNode* vertices = nullptr;
@@ -217,40 +234,26 @@ static void read_vertices(Mesh& mesh, const XmlNode* geometry, const IdMap& ids)
 	}
 	auto positions = read_vertex_source(positions_source, ids);
 	if(positions.size() % 3 != 0) {
-		throw ParseError("Vertex positions array for mesh '%s' has a bad size (not divisible by 3).", xml_attrib(geometry, "id"));
-	}
-	mesh.vertices.resize(positions.size() / 3, Vertex(glm::vec3(0, 0, 0)));
-	for(size_t i = 0; i < mesh.vertices.size(); i++) {
-		mesh.vertices[i].pos = glm::vec3(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
+		throw ParseError("Vertex positions array for mesh '%s' has a bad size (not divisible by 3).", mesh_name);
 	}
 	
+	Opt<std::vector<f32>> normals;
 	if(normals_source) {
-		mesh.flags |= MESH_HAS_NORMALS;
-		auto normals = read_vertex_source(normals_source, ids);
-		if(normals.size() % 3 != 0) {
-			throw ParseError("Normals array for mesh '%s' has a bad size (not divisible by 3).", xml_attrib(geometry, "id"));
-		}
-		if(normals.size() / 3 != mesh.vertices.size()) {
-			throw ParseError("Normals array for mesh '%s' has a bad size (conflicting vertex count).", xml_attrib(geometry, "id"));
-		}
-		for(size_t i = 0; i < mesh.vertices.size(); i++) {
-			mesh.vertices[i].normal = glm::vec3(normals[i * 3], normals[i * 3 + 1], normals[i * 3 + 2]);
+		normals = read_vertex_source(normals_source, ids);
+		if(normals->size() % 3 != 0) {
+			throw ParseError("Normals array for mesh '%s' has a bad size (not divisible by 3).", mesh_name);
 		}
 	}
 	
+	Opt<std::vector<f32>> tex_coords;
 	if(tex_coords_source) {
-		mesh.flags |= MESH_HAS_TEX_COORDS;
-		auto tex_coords = read_vertex_source(tex_coords_source, ids);
-		if(tex_coords.size() % 2 != 0) {
-			throw ParseError("Texture coordinates array for mesh '%s' has a bad size (not divisible by 2).", xml_attrib(geometry, "id"));
-		}
-		if(tex_coords.size() / 2 != mesh.vertices.size()) {
-			throw ParseError("Texture coordinates array for mesh '%s' has a bad size (conflicting vertex count).", xml_attrib(geometry, "id"));
-		}
-		for(size_t i = 0; i < mesh.vertices.size(); i++) {
-			mesh.vertices[i].tex_coord = glm::vec2(tex_coords[i * 2], tex_coords[i * 2 + 1]);
+		tex_coords = read_vertex_source(tex_coords_source, ids);
+		if(tex_coords->size() % 2 != 0) {
+			throw ParseError("Texture coordinates array for mesh '%s' has a bad size (not divisible by 2).", mesh_name);
 		}
 	}
+	
+	return {positions, normals, tex_coords};
 }
 
 static std::vector<f32> read_vertex_source(const XmlNode* source, const IdMap& ids) {
@@ -274,7 +277,7 @@ static std::vector<f32> read_vertex_source(const XmlNode* source, const IdMap& i
 	return data;
 }
 
-static void read_submeshes(Mesh& mesh, const XmlNode* instance_geometry, const XmlNode* geometry, const IdMap& ids, const NodeToIndexMap& materials) {
+static void read_submeshes(Mesh& mesh, const XmlNode* instance_geometry, const XmlNode* geometry, const IdMap& ids, const NodeToIndexMap& materials, const VertexData& vertex_data) {
 	const XmlNode* bind_material = xml_child(instance_geometry, "bind_material");
 	const XmlNode* technique_common = xml_child(bind_material, "technique_common");
 	const XmlNode* mesh_node = xml_child(geometry, "mesh");
@@ -286,6 +289,7 @@ static void read_submeshes(Mesh& mesh, const XmlNode* instance_geometry, const X
 			s32 face_count = atoi(xml_attrib(indices, "count")->value());
 			const char* material_symbol = xml_attrib(indices, "material")->value();
 			
+			// Find the material.
 			s32 material = -1;
 			xml_for_each_child_of_type(instance_material, technique_common, "instance_material") {
 				if(strcmp(xml_attrib(instance_material, "symbol")->value(), material_symbol) == 0) {
@@ -296,39 +300,120 @@ static void read_submeshes(Mesh& mesh, const XmlNode* instance_geometry, const X
 				throw ParseError("Missing <instance_material> node.");
 			}
 			
+			// Find the offsets of each <input> and the overall stride.
+			s32 position_offset = -1;
+			s32 normal_offset = -1;
+			s32 tex_coord_offset = -1;
+			xml_for_each_child_of_type(input, indices, "input") {
+				if(strcmp(xml_attrib(input, "semantic")->value(), "VERTEX") == 0) {
+					position_offset = atoi(xml_attrib(input, "offset")->value());
+				}
+				if(strcmp(xml_attrib(input, "semantic")->value(), "NORMAL") == 0) {
+					normal_offset = atoi(xml_attrib(input, "offset")->value());
+				}
+				if(strcmp(xml_attrib(input, "semantic")->value(), "TEXCOORD") == 0) {
+					tex_coord_offset = atoi(xml_attrib(input, "offset")->value());
+				}
+			}
+			s32 vertex_stride = std::max({position_offset, normal_offset, tex_coord_offset}) + 1;
+			verify(position_offset > -1 && vertex_stride < 10, "Invalid or missing <input> node.");
+			
+			if(normal_offset > -1) {
+				mesh.flags |= MESH_HAS_NORMALS;
+			}
+			if(tex_coord_offset > -1) {
+				mesh.flags |= MESH_HAS_TEX_COORDS;
+			}
+			
+			CreateVertexInput args {
+				vertex_data.positions.has_value() ? &(*vertex_data.positions) : nullptr,
+				vertex_data.normals.has_value() ? &(*vertex_data.normals) : nullptr,
+				vertex_data.tex_coords.has_value() ? &(*vertex_data.tex_coords) : nullptr,
+				position_offset, normal_offset, tex_coord_offset
+			};
+			
+			// Because of the permissive nature of the COLLADA format, here we
+			// just add a new vertex for every index. We can deduplicate them
+			// later if necessary.
 			SubMesh submesh;
 			submesh.material = material;
-			const char* p = xml_child(indices, "p")->value();
 			if(is_triangles) {
-				for(s32 i = 0; i < face_count; i++) {
-					s32 v0 = read_s32(p, "<p> node");
-					s32 v1 = read_s32(p, "<p> node");
-					s32 v2 = read_s32(p, "<p> node");
-					submesh.faces.emplace_back(v0, v1, v2);
+				const char* p = xml_child(indices, "p")->value();
+				std::vector<s32> index_data;
+				for(s32 i = 0; i < face_count * 3 * vertex_stride; i++) {
+					index_data.push_back(read_s32(p, "<p> node"));
+				}
+				
+				s32 i = 0;
+				for(s32 face = 0; face < face_count; face++) {
+					s32 index = (s32) mesh.vertices.size();
+					mesh.vertices.emplace_back(create_vertex(index_data, i + vertex_stride * 0, args));
+					mesh.vertices.emplace_back(create_vertex(index_data, i + vertex_stride * 1, args));
+					mesh.vertices.emplace_back(create_vertex(index_data, i + vertex_stride * 2, args));
+					submesh.faces.emplace_back(index, index + 1, index + 2);
+					i += vertex_stride * 3;
 				}
 			} else {
-				mesh.flags |= MESH_HAS_QUADS;
 				const char* vcount = xml_child(indices, "vcount")->value();
+				std::vector<s32> vcount_data;
 				for(s32 i = 0; i < face_count; i++) {
-					s32 count = read_s32(vcount, "<vcount> node");
-					verify(count == 3 || count == 4, "Mesh contain faces that aren't tris or quads.");
-					if(count == 3) {
-						s32 v0 = read_s32(p, "<p> node");
-						s32 v1 = read_s32(p, "<p> node");
-						s32 v2 = read_s32(p, "<p> node");
-						submesh.faces.emplace_back(v0, v1, v2);
-					} else {
-						s32 v0 = read_s32(p, "<p> node");
-						s32 v1 = read_s32(p, "<p> node");
-						s32 v2 = read_s32(p, "<p> node");
-						s32 v3 = read_s32(p, "<p> node");
-						submesh.faces.emplace_back(v0, v1, v2, v3);
+					s32 vc = read_s32(vcount, "<vcount> node");
+					verify(vc == 3 || vc == 4, "Only tris and quads are supported.");
+					vcount_data.push_back(vc);
+				}
+				
+				const char* p = xml_child(indices, "p")->value();
+				std::vector<s32> index_data;
+				for(s32 i = 0; i < face_count; i++) {
+					for(s32 j = 0; j < vcount_data[i] * vertex_stride; j++) {
+						index_data.push_back(read_s32(p, "<p> node"));
 					}
+				}
+				
+				mesh.flags |= MESH_HAS_QUADS;
+				s32 i = 0;
+				for(s32 face = 0; face < face_count; face++) {
+					s32 index = (s32) mesh.vertices.size();
+					if(vcount_data[face] == 3) {
+						mesh.vertices.emplace_back(create_vertex(index_data, i + vertex_stride * 0, args));
+						mesh.vertices.emplace_back(create_vertex(index_data, i + vertex_stride * 1, args));
+						mesh.vertices.emplace_back(create_vertex(index_data, i + vertex_stride * 2, args));
+						submesh.faces.emplace_back(index, index + 1, index + 2);
+					} else {
+						mesh.vertices.emplace_back(create_vertex(index_data, i + vertex_stride * 0, args));
+						mesh.vertices.emplace_back(create_vertex(index_data, i + vertex_stride * 1, args));
+						mesh.vertices.emplace_back(create_vertex(index_data, i + vertex_stride * 2, args));
+						mesh.vertices.emplace_back(create_vertex(index_data, i + vertex_stride * 3, args));
+						submesh.faces.emplace_back(index, index + 1, index + 2, index + 3);
+					}
+					i += vertex_stride * vcount_data[face];
 				}
 			}
 			mesh.submeshes.emplace_back(std::move(submesh));
 		}
 	}
+}
+
+static Vertex create_vertex(const std::vector<s32>& indices, s32 base, const CreateVertexInput& input) {
+	Vertex vertex(glm::vec3(0.f, 0.f, 0.f));
+	if(input.position_offset > -1) {
+		s32 position_index = indices.at(base + input.position_offset);
+		vertex.pos.x = input.positions->at(position_index * 3 + 0);
+		vertex.pos.y = input.positions->at(position_index * 3 + 1);
+		vertex.pos.z = input.positions->at(position_index * 3 + 2);
+	}
+	if(input.normal_offset > -1) {
+		s32 normal_index = indices.at(base + input.normal_offset);
+		vertex.normal.x = input.normals->at(normal_index * 3 + 0);
+		vertex.normal.y = input.normals->at(normal_index * 3 + 1);
+		vertex.normal.z = input.normals->at(normal_index * 3 + 2);
+	}
+	if(input.tex_coord_offset > -1) {
+		s32 tex_coord_index = indices.at(base + input.tex_coord_offset);
+		vertex.tex_coord.x = input.tex_coords->at(tex_coord_index * 2 + 0);
+		vertex.tex_coord.y = input.tex_coords->at(tex_coord_index * 2 + 1);
+	}
+	return vertex;
 }
 
 static s32 read_s32(const char*& input, const char* context) {
