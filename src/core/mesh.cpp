@@ -126,12 +126,14 @@ Mesh deduplicate_faces(Mesh mesh) {
 				discard |= tri.v0 == quad.v0 && tri.v1 == quad.v1 && tri.v2 == quad.v2;
 				discard |= tri.v0 == quad.v1 && tri.v1 == quad.v2 && tri.v2 == quad.v3;
 				discard |= tri.v0 == quad.v2 && tri.v1 == quad.v3 && tri.v2 == quad.v0;
+				discard |= tri.v0 == quad.v3 && tri.v1 == quad.v0 && tri.v2 == quad.v1;
 			}
 			if(!discard) {
 				submesh.faces.push_back(tri);
 			}
 		}
-	}stop_timer();
+	}
+	stop_timer();
 	return mesh;
 }
 
