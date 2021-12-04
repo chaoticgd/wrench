@@ -136,17 +136,3 @@ Mesh deduplicate_faces(Mesh mesh) {
 	stop_timer();
 	return mesh;
 }
-
-Mesh reverse_winding_order(Mesh mesh) {
-	for(SubMesh& submesh : mesh.submeshes) {
-		for(Face& face : submesh.faces) {
-			if(face.v3 > -1) {
-				std::swap(face.v0, face.v3);
-				std::swap(face.v1, face.v2);
-			} else {
-				std::swap(face.v0, face.v2);
-			}
-		}
-	}
-	return mesh;
-}

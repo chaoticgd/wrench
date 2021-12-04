@@ -64,15 +64,6 @@ struct CollisionSector {
 // child of that node, and then the xth child of that last node.
 using CollisionSectors = CollisionList<CollisionList<CollisionList<CollisionSector>>>;
 
-enum OutCode {
-	OC_MINZ = 1 << 0,
-	OC_MINY = 1 << 1,
-	OC_MINX = 1 << 2,
-	OC_MAXZ = 1 << 3,
-	OC_MAXY = 1 << 4,
-	OC_MAXX = 1 << 5
-};
-
 static CollisionSectors parse_collision_mesh(Buffer mesh);
 static void write_collision_mesh(OutBuffer dest, CollisionSectors& sectors);
 static ColladaScene collision_sectors_to_scene(const CollisionSectors& sectors);
