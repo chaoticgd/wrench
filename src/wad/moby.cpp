@@ -40,6 +40,7 @@ static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usag
 #define NO_SUBMESH_FILTER -1
 static Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* name, s32 o_class, s32 texture_count, f32 scale, s32 submesh_filter);
 static std::vector<Joint> recover_moby_joints(const MobyClassData& moby);
+static std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vector<Material>& materials, f32 scale);
 
 // FIXME: Figure out what points to the mystery data instead of doing this.
 static s64 mystery_data_ofs;
@@ -47,7 +48,9 @@ static s64 mystery_data_ofs;
 MobyClassData read_moby_class(Buffer src, Game game) {
 	auto header = src.read<MobyClassHeader>(0, "moby class header");
 	MobyClassData moby;
-	moby.byte_4 = src.read<u32>(4, "moby class header");
+	moby.submesh_count = header.submesh_count;
+	moby.low_lod_submesh_count = header.low_lod_submesh_count;
+	moby.metal_submesh_count = header.metal_submesh_count;
 	moby.unknown_9 = header.unknown_9;
 	moby.rac1_byte_a = header.rac1_byte_a;
 	moby.rac1_byte_b = header.rac12_byte_b;
@@ -114,7 +117,7 @@ MobyClassData read_moby_class(Buffer src, Game game) {
 		moby.has_submesh_table = true;
 		moby.submesh_table_offset = header.submesh_table_offset;
 		moby.submeshes = read_moby_submeshes(src, header.submesh_table_offset, header.submesh_count, format);
-		moby.low_detail_submeshes = read_moby_submeshes(src, header.submesh_table_offset + header.submesh_count * 0x10, header.low_detail_submesh_count, format);
+		moby.low_lod_submeshes = read_moby_submeshes(src, header.submesh_table_offset + header.submesh_count * 0x10, header.low_lod_submesh_count, format);
 		s64 metal_table_ofs = header.submesh_table_offset + header.metal_submesh_begin * 0x10;
 		moby.metal_submeshes = read_moby_metal_submeshes(src, metal_table_ofs, header.metal_submesh_count);
 		if(header.bangles != 0) {
@@ -153,13 +156,16 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 			assert_not_reached("Bad game enum.");
 	}
 	
+	assert(!moby.has_submesh_table | moby.submeshes.size() == moby.submesh_count);
 	verify(moby.submeshes.size() < 256, "Moby class has too many submeshes.");
-	header.submesh_count = moby.submeshes.size();
-	verify(moby.low_detail_submeshes.size() < 256, "Moby class has too many low detail submeshes.");
-	header.low_detail_submesh_count = moby.low_detail_submeshes.size();
+	header.submesh_count = moby.submesh_count;
+	assert(!moby.has_submesh_table | moby.low_lod_submeshes.size() == moby.low_lod_submesh_count);
+	verify(moby.low_lod_submeshes.size() < 256, "Moby class has too many low detail submeshes.");
+	header.low_lod_submesh_count = moby.low_lod_submesh_count;
+	assert(!moby.has_submesh_table | moby.metal_submeshes.size() == moby.metal_submesh_count);
 	verify(moby.metal_submeshes.size() < 256, "Moby class has too many metal submeshes.");
-	header.metal_submesh_count = moby.metal_submeshes.size();
-	header.metal_submesh_begin = moby.submeshes.size() + moby.low_detail_submeshes.size();
+	header.metal_submesh_count = moby.metal_submesh_count;
+	header.metal_submesh_begin = moby.submesh_count + moby.low_lod_submesh_count;
 	if(format == MobyFormat::RAC1) {
 		header.rac1_byte_a = moby.rac1_byte_a;
 		header.rac12_byte_b = moby.rac1_byte_b;
@@ -200,7 +206,7 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 		dest.write<u8>(0);
 	}
 	s64 submesh_table_1_ofs = dest.alloc_multiple<MobySubMeshEntry>(moby.submeshes.size());
-	s64 submesh_table_2_ofs = dest.alloc_multiple<MobySubMeshEntry>(moby.low_detail_submeshes.size());
+	s64 submesh_table_2_ofs = dest.alloc_multiple<MobySubMeshEntry>(moby.low_lod_submeshes.size());
 	s64 metal_submesh_table_ofs = dest.alloc_multiple<MobySubMeshEntry>(moby.metal_submeshes.size());
 	s64 bangles_submesh_table_ofs = 0;
 	if(moby.bangles.has_value()) {
@@ -226,7 +232,7 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 	}
 	std::vector<MobyGifUsageTableEntry> gif_usage;
 	write_moby_submeshes(dest, gif_usage, submesh_table_1_ofs, moby.submeshes, format);
-	write_moby_submeshes(dest, gif_usage, submesh_table_2_ofs, moby.low_detail_submeshes, format);
+	write_moby_submeshes(dest, gif_usage, submesh_table_2_ofs, moby.low_lod_submeshes, format);
 	write_moby_metal_submeshes(dest, metal_submesh_table_ofs, moby.metal_submeshes);
 	if(moby.bangles.has_value()) {
 		write_moby_submeshes(dest, gif_usage, bangles_submesh_table_ofs, moby.bangles->submeshes, format);
@@ -236,7 +242,6 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 		header.gif_usage = dest.write_multiple(gif_usage) - class_header_ofs;
 	}
 	dest.write(class_header_ofs, header);
-	dest.write(class_header_ofs + 4, moby.byte_4);
 }
 
 static MobyBangles read_moby_bangles(Buffer src) {
@@ -795,8 +800,9 @@ static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usag
 	if(submesh.textures.size() > 0) {
 		index_header.texture_unpack_offset_quadwords = indices.size() / 4;
 	}
-	assert(submesh.secret_indices.size() > 0);
-	index_header.secret_index = submesh.secret_indices[0];
+	if(submesh.secret_indices.size() >= 1) {
+		index_header.secret_index = submesh.secret_indices[0];
+	}
 	index_buffer.write(index_header_ofs, index_header);
 	
 	VifPacket index_unpack;
@@ -825,18 +831,9 @@ static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usag
 		texture_unpack.code.unpack.usn = VifUsn::SIGNED;
 		texture_unpack.code.unpack.addr = INDEX_UNPACK_ADDR_QUADWORDS + index_unpack.code.num;
 		
-		assert(submesh.secret_indices.size() == submesh.textures.size() + 1);
+		assert(submesh.secret_indices.size() >= submesh.textures.size());
 		for(size_t i = 0; i < submesh.textures.size(); i++) {
 			MobyTexturePrimitive primitive = submesh.textures[i];
-			//primitive.d1_xyzf2.data_lo = submesh.texture_xyzf2s[i];
-			//primitive.d1_xyzf2.data_hi = 0x4;
-			//primitive.d1_xyzf2.address = 0x04;
-			//primitive.d1_xyzf2.pad_a = 0x41a0;
-			//primitive.d2_clamp.address = 0x08;
-			//primitive.d2_clamp.data_hi = submesh.texture_clamp_hi[i];
-			//primitive.d3_tex0.address = 0x06;
-			//primitive.d3_tex0.data_lo = submesh.textures[i];
-			//primitive.d4_xyzf2.address = 0x34;
 			OutBuffer(texture_unpack.data).write(primitive);
 		}
 		for(size_t i = 1; i < submesh.secret_indices.size(); i++) {
@@ -900,9 +897,9 @@ ColladaScene recover_moby_class(const MobyClassData& moby, s32 o_class, s32 text
 			std::string name = "high_lod_" + std::to_string(i);
 			scene.meshes.emplace_back(recover_moby_mesh(moby.submeshes, name.c_str(), o_class, texture_count, moby.scale, i));
 		}
-		for(s32 i = 0; i < (s32) moby.low_detail_submeshes.size(); i++) {
+		for(s32 i = 0; i < (s32) moby.low_lod_submeshes.size(); i++) {
 			std::string name = "low_lod_" + std::to_string(i);
-			scene.meshes.emplace_back(recover_moby_mesh(moby.low_detail_submeshes, name.c_str(), o_class, texture_count, moby.scale, i));
+			scene.meshes.emplace_back(recover_moby_mesh(moby.low_lod_submeshes, name.c_str(), o_class, texture_count, moby.scale, i));
 		}
 		if(moby.bangles.has_value()) {
 			for(s32 i = 0; i < (s32) moby.bangles->submeshes.size(); i++) {
@@ -912,7 +909,7 @@ ColladaScene recover_moby_class(const MobyClassData& moby, s32 o_class, s32 text
 		}
 	} else {
 		scene.meshes.emplace_back(recover_moby_mesh(moby.submeshes, "high_lod", o_class, texture_count, moby.scale, NO_SUBMESH_FILTER));
-		scene.meshes.emplace_back(recover_moby_mesh(moby.low_detail_submeshes, "low_lod", o_class, texture_count, moby.scale, NO_SUBMESH_FILTER));
+		scene.meshes.emplace_back(recover_moby_mesh(moby.low_lod_submeshes, "low_lod", o_class, texture_count, moby.scale, NO_SUBMESH_FILTER));
 		if(moby.bangles.has_value()) {
 			scene.meshes.emplace_back(recover_moby_mesh(moby.bangles->submeshes, "bangles", o_class, texture_count, moby.scale, NO_SUBMESH_FILTER));
 		}
@@ -1062,4 +1059,164 @@ static std::vector<Joint> recover_moby_joints(const MobyClassData& moby) {
 	}
 	
 	return joints;
+}
+
+MobyClassData build_moby_class(const ColladaScene& scene) {
+	const Mesh* high_lod_mesh = nullptr;
+	const Mesh* low_lod_mesh = nullptr;
+	for(const Mesh& mesh : scene.meshes) {
+		if(mesh.name == "high_lod") {
+			high_lod_mesh = &mesh;
+		}
+		if(mesh.name == "low_lod") {
+			low_lod_mesh = &mesh;
+		}
+	}
+	verify(high_lod_mesh, "Collada file doesn't contain a 'high_lod' node.");
+	
+	MobyClassData moby;
+	moby.submeshes = build_moby_submeshes(*high_lod_mesh, scene.materials, 0.25);
+	moby.submesh_count = moby.submeshes.size();
+	if(low_lod_mesh) {
+		moby.low_lod_submeshes = build_moby_submeshes(*low_lod_mesh, scene.materials, 0.25);
+		moby.low_lod_submesh_count = moby.low_lod_submeshes.size();
+	}
+	moby.unknown_9 = 0;
+	moby.lod_trans = 0x20;
+	moby.shadow = 0;
+	moby.scale = 0.25;
+	moby.mip_dist = 0x8;
+	moby.bounding_sphere = glm::vec4(0.f, 0.f, 0.f, 10.f); // Arbitrary for now.
+	moby.glow_rgba = 0;
+	moby.mode_bits = 0x5000;
+	moby.type = 0;
+	moby.mode_bits2 = 0;
+	moby.header_end_offset = 0;
+	moby.submesh_table_offset = 0;
+	moby.rac1_byte_a = 0;
+	moby.rac1_byte_b = 0;
+	moby.rac1_short_2e = 0;
+	moby.has_submesh_table = true;
+	
+	MobySequence dummy_seq;
+	dummy_seq.bounding_sphere = glm::vec4(0.f, 0.f, 0.f, 10.f); // Arbitrary for now.
+	dummy_seq.frames.emplace_back();
+	moby.sequences.emplace_back(std::move(dummy_seq));
+	
+	return moby;
+}
+
+struct TristrippedIndex {
+	s32 index : 31;
+	s32 restart : 1;
+};
+
+static std::vector<TristrippedIndex> fake_tristripper(const std::vector<Face>& faces) {
+	std::vector<TristrippedIndex> indices;
+	for(const Face& face : faces) {
+		indices.push_back({face.v0, 1});
+		indices.push_back({face.v1, 1});
+		indices.push_back({face.v2, 0});
+	}
+	return indices;
+}
+
+struct IndexMappingRecord {
+	s32 submesh = -1;
+	s32 index = -1; // The index of the vertex in the vertex table.
+	s32 id = -1; // The index of the vertex in the intermediate buffer.
+};
+
+static std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vector<Material>& materials, f32 scale) {
+	static const s32 MAX_SUBMESH_TEXTURE_COUNT = 4;
+	static const s32 MAX_SUBMESH_VERTEX_COUNT = 97;
+	static const s32 MAX_SUBMESH_INDEX_COUNT = 196;
+	
+	std::vector<IndexMappingRecord> index_mappings(mesh.vertices.size());
+	
+	f32 inverse_scale = 1024.f / scale;
+	
+	std::vector<MobySubMesh> moby_submeshes;
+	MobySubMesh low;
+	for(s32 i = 0; i < (s32) mesh.submeshes.size(); i++) {
+		const SubMesh& high = mesh.submeshes[i];
+		
+		auto indices = fake_tristripper(high.faces);
+		if(indices.size() < 1) {
+			continue;
+		}
+		
+		const Material& material = materials.at(high.material);
+		s32 texture = -1;
+		if(material.name.size() > 4 && memcmp(material.name.data(), "mat_", 4) == 0) {
+			texture = strtol(material.name.c_str() + 4, nullptr, 10);
+		} else {
+			fprintf(stderr, "Invalid material '%s'.", material.name.c_str());
+			continue;
+		}
+		
+		if(low.textures.size() >= MAX_SUBMESH_TEXTURE_COUNT || low.indices.size() >= MAX_SUBMESH_INDEX_COUNT) {
+			moby_submeshes.emplace_back(std::move(low));
+			low = MobySubMesh{};
+		}
+		
+		MobyTexturePrimitive primitive = {0};
+		primitive.d1_xyzf2.data_lo = 0xff92; // Not sure.
+		primitive.d1_xyzf2.data_hi = 0x4;
+		primitive.d1_xyzf2.address = 0x4;
+		primitive.d1_xyzf2.pad_a = 0x41a0;
+		primitive.d2_clamp.address = 0x08;
+		primitive.d3_tex0.address = 0x06;
+		primitive.d3_tex0.data_lo = texture;
+		primitive.d4_xyzf2.address = 0x34;
+		low.textures.push_back(primitive);
+		
+		for(size_t j = 0; j < indices.size(); j++) {
+			TristrippedIndex& t = indices[j];
+			IndexMappingRecord& mapping = index_mappings[t.index];
+			if(mapping.submesh != i) {
+				if(low.vertices.size() >= MAX_SUBMESH_VERTEX_COUNT) {
+					moby_submeshes.emplace_back(std::move(low));
+					low = MobySubMesh{};
+				}
+				
+				mapping.submesh = i;
+				mapping.index = low.vertices.size();
+				
+				const Vertex& high_vertex = mesh.vertices.at(t.index);
+				MobyVertex vertex = {0};
+				vertex.low_word = 0xff;
+				vertex.regular.x = high_vertex.pos.x * inverse_scale;
+				vertex.regular.y = high_vertex.pos.y * inverse_scale;
+				vertex.regular.z = high_vertex.pos.z * inverse_scale;
+				low.vertices.push_back(vertex);
+				
+				MobyTexCoord tex_coord;
+				tex_coord.s = high_vertex.tex_coord.x * (INT16_MAX / 8.f);
+				tex_coord.t = high_vertex.tex_coord.y * (INT16_MAX / 8.f);
+				low.sts.push_back(tex_coord);
+			}
+			
+			if(j == 0) {
+				assert(t.restart);
+				low.secret_indices.push_back(t.index + 1);
+			} else {
+				if(low.indices.size() >= MAX_SUBMESH_INDEX_COUNT - 4) {
+					moby_submeshes.emplace_back(std::move(low));
+					low = MobySubMesh{};
+				}
+				low.indices.push_back(mapping.index + (t.restart ? 0x81 : 0x01));
+			}
+		}
+	}
+	if(low.indices.size() > 0) {
+		moby_submeshes.emplace_back(std::move(low));
+	}
+	for(MobySubMesh& low : moby_submeshes) {
+		low.indices.push_back(1);
+		low.indices.push_back(1);
+		low.indices.push_back(1);
+		low.indices.push_back(0);
+	}
+	return moby_submeshes;
 }

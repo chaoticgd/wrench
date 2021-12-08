@@ -29,6 +29,8 @@ static void extract(fs::path input_path, fs::path output_path);
 static void build(fs::path input_path, fs::path output_path);
 static void extract_collision(fs::path input_path, fs::path output_path);
 static void build_collision(fs::path input_path, fs::path output_path);
+static void extract_moby(const char* input_path, const char* output_path);
+static void build_moby(const char* input_path, const char* output_path);
 static void print_usage(char* argv0);
 
 #define require_args(arg_count) verify(argc == arg_count, "Incorrect number of arguments.");
@@ -53,6 +55,12 @@ int main(int argc, char** argv) {
 	} else if(mode == "build_collision") {
 		require_args(4);
 		build_collision(argv[2], argv[3]);
+	} else if(mode == "extract_moby") {
+		require_args(4);
+		extract_moby(argv[2], argv[3]);
+	} else if(mode == "build_moby") {
+		require_args(4);
+		build_moby(argv[2], argv[3]);
 	} else if(mode == "test") {
 		require_args(3);
 		run_tests(argv[2]);
@@ -95,6 +103,23 @@ static void build_collision(fs::path input_path, fs::path output_path) {
 	std::vector<u8> bin;
 	write_collision(bin, read_collada(collision));
 	write_file("/", output_path, bin);
+}
+
+static void extract_moby(const char* input_path, const char* output_path) {
+	auto bin = read_file(input_path);
+	MobyClassData moby = read_moby_class(bin, Game::RAC2);
+	ColladaScene scene = recover_moby_class(moby, 0, 0);
+	auto xml = write_collada(scene);
+	write_file("/", output_path, xml);
+}
+
+static void build_moby(const char* input_path, const char* output_path) {
+	auto xml = read_file(input_path);
+	ColladaScene scene = read_collada(xml);
+	MobyClassData moby = build_moby_class(scene);
+	std::vector<u8> buffer;
+	write_moby_class(buffer, moby, Game::RAC2);
+	write_file("/", output_path, buffer);
 }
 
 static void print_usage(char* argv0) {

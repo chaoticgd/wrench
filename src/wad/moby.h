@@ -80,17 +80,17 @@ struct MobySubMeshBase {
 	std::vector<u8> indices;
 	std::vector<u8> secret_indices;
 	std::vector<MobyTexturePrimitive> textures;
-	u8 index_header_first_byte;
+	u8 index_header_first_byte = 0xff;
 };
 
 struct MobySubMesh : MobySubMeshBase {
 	std::vector<MobyTexCoord> sts;
 	std::vector<u16> unknowns;
 	std::vector<MobyVertex> vertices;
-	u16 vertex_count_2;
-	u16 vertex_count_4;
+	u16 vertex_count_2 = 0;
+	u16 vertex_count_4 = 0;
 	std::vector<u16> duplicate_vertices;
-	u16 unknown_e;
+	u16 unknown_e = 0;
 	std::vector<u8> unknown_e_data;
 };
 
@@ -142,8 +142,8 @@ struct MobySequence {
 	std::vector<MobyFrame> frames;
 	std::vector<u32> triggers;
 	Opt<MobyTriggerData> trigger_data;
-	s32 animation_info;
-	s8 sound_count;
+	s32 animation_info = 0;
+	s8 sound_count = 0xff;
 };
 
 struct MobyCollision {
@@ -214,8 +214,11 @@ struct MobyCornCob {
 
 struct MobyClassData {
 	std::vector<MobySubMesh> submeshes;
-	std::vector<MobySubMesh> low_detail_submeshes;
+	u8 submesh_count = 0;
+	std::vector<MobySubMesh> low_lod_submeshes;
+	u8 low_lod_submesh_count = 0;
 	std::vector<MobyMetalSubMesh> metal_submeshes;
+	u8 metal_submesh_count = 0;
 	Opt<MobyBangles> bangles;
 	Opt<MobyCornCob> corncob;
 	std::vector<Opt<MobySequence>> sequences;
@@ -225,7 +228,6 @@ struct MobyClassData {
 	std::vector<MobyTrans> common_trans;
 	std::vector<MobyJointEntry> joints;
 	std::vector<MobySoundDef> sound_defs;
-	u32 byte_4; // HACK!
 	u8 unknown_9;
 	u8 lod_trans;
 	u8 shadow;
@@ -240,7 +242,7 @@ struct MobyClassData {
 	s32 submesh_table_offset;
 	u8 rac1_byte_a;
 	u8 rac1_byte_b;
-	u16  rac1_short_2e;
+	u16 rac1_short_2e;
 	bool force_rac1_format = false; // Used for some mobies in the R&C2 Insomniac Museum.
 	bool has_submesh_table = false;
 };
@@ -248,7 +250,7 @@ struct MobyClassData {
 packed_struct(MobyClassHeader,
 	/* 0x00 */ s32 submesh_table_offset;
 	/* 0x04 */ u8 submesh_count;
-	/* 0x05 */ u8 low_detail_submesh_count;
+	/* 0x05 */ u8 low_lod_submesh_count;
 	/* 0x06 */ u8 metal_submesh_count;
 	/* 0x07 */ u8 metal_submesh_begin;
 	/* 0x08 */ u8 joint_count;
@@ -364,5 +366,6 @@ enum class MobyFormat {
 MobyClassData read_moby_class(Buffer src, Game game);
 void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game);
 ColladaScene recover_moby_class(const MobyClassData& moby, s32 o_class, s32 texture_count);
+MobyClassData build_moby_class(const ColladaScene& scene);
 
 #endif
