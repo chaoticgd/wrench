@@ -107,7 +107,7 @@ ColladaScene read_collada(std::vector<u8> src) {
 		if(vertex_data.positions.has_value()) {
 			read_submeshes(mesh, instance_geometry, geometry, ids, materials, vertex_data);
 		}
-		scene.meshes.emplace_back(std::move(mesh));
+		scene.meshes.emplace_back(deduplicate_vertices(std::move(mesh)));
 	}
 	return scene;
 }

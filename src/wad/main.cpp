@@ -119,6 +119,7 @@ static void build_moby(const char* input_path, const char* output_path) {
 	MobyClassData moby = build_moby_class(scene);
 	std::vector<u8> buffer;
 	write_moby_class(buffer, moby, Game::RAC2);
+	while(buffer.size()<0x4370)buffer.push_back(0); // REMEMBER TO DELETE THIS.
 	write_file("/", output_path, buffer);
 }
 

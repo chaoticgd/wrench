@@ -41,6 +41,13 @@ static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usag
 static Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* name, s32 o_class, s32 texture_count, f32 scale, s32 submesh_filter);
 static std::vector<Joint> recover_moby_joints(const MobyClassData& moby);
 static std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vector<Material>& materials, f32 scale);
+struct IndexMappingRecord {
+	s32 submesh = -1;
+	s32 index = -1; // The index of the vertex in the vertex table.
+	s32 id = -1; // The index of the vertex in the intermediate buffer.
+	s32 dedup_out_edge = -1; // If this vertex is a duplicate, this points to the canonical vertex.
+};
+static void find_duplicate_vertices(std::vector<IndexMappingRecord>& index_mapping, const std::vector<Vertex>& vertices);
 
 // FIXME: Figure out what points to the mystery data instead of doing this.
 static s64 mystery_data_ofs;
@@ -156,13 +163,13 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 			assert_not_reached("Bad game enum.");
 	}
 	
-	assert(!moby.has_submesh_table | moby.submeshes.size() == moby.submesh_count);
+	assert(!moby.has_submesh_table | (moby.submeshes.size() == moby.submesh_count));
 	verify(moby.submeshes.size() < 256, "Moby class has too many submeshes.");
 	header.submesh_count = moby.submesh_count;
-	assert(!moby.has_submesh_table | moby.low_lod_submeshes.size() == moby.low_lod_submesh_count);
+	assert(!moby.has_submesh_table | (moby.low_lod_submeshes.size() == moby.low_lod_submesh_count));
 	verify(moby.low_lod_submeshes.size() < 256, "Moby class has too many low detail submeshes.");
 	header.low_lod_submesh_count = moby.low_lod_submesh_count;
-	assert(!moby.has_submesh_table | moby.metal_submeshes.size() == moby.metal_submesh_count);
+	assert(!moby.has_submesh_table | (moby.metal_submeshes.size() == moby.metal_submesh_count));
 	verify(moby.metal_submeshes.size() < 256, "Moby class has too many metal submeshes.");
 	header.metal_submesh_count = moby.metal_submesh_count;
 	header.metal_submesh_begin = moby.submesh_count + moby.low_lod_submesh_count;
@@ -542,7 +549,9 @@ static std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s
 		if(array_ofs % 8 != 0) {
 			array_ofs += 4;
 		}
-		submesh.duplicate_vertices = src.read_multiple<u16>(array_ofs, vertex_header.duplicate_vertex_count, "vertex table").copy();
+		for(u16 dupe : src.read_multiple<u16>(array_ofs, vertex_header.duplicate_vertex_count, "vertex table")) {
+			submesh.duplicate_vertices.push_back(dupe >> 7);
+		}
 		s64 vertex_ofs = entry.vertex_offset + vertex_header.vertex_table_offset;
 		s32 in_file_vertex_count = vertex_header.vertex_count_2 + vertex_header.vertex_count_4 + vertex_header.main_vertex_count;
 		submesh.vertices = src.read_multiple<MobyVertex>(vertex_ofs, in_file_vertex_count, "vertex table").copy();
@@ -653,7 +662,9 @@ static void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 t
 		vertex_header.unknown_e = submesh.unknown_e;
 		dest.write_multiple(submesh.unknowns);
 		dest.pad(0x8);
-		dest.write_multiple(submesh.duplicate_vertices);
+		for(u16 dupe : submesh.duplicate_vertices) {
+			dest.write<u16>(dupe << 7);
+		}
 		dest.pad(0x10);
 		vertex_header.vertex_table_offset = dest.tell() - vertex_header_ofs;
 		
@@ -945,9 +956,8 @@ static Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const c
 			
 			intermediate_buffer[mv.low_word & 0x1ff] = mv;
 		}
-		for(u16 v8 : src.duplicate_vertices) {
-			VERIFY_SUBMESH((v8 & 0b1111111) == 0, "vertex table");
-			auto mv = intermediate_buffer[v8 >> 7];
+		for(u16 dupe : src.duplicate_vertices) {
+			auto mv = intermediate_buffer[dupe];
 			VERIFY_SUBMESH(mv.has_value(), "vertex table");
 			
 			auto& st = src.sts.at(mesh.vertices.size() - vertex_base);
@@ -1106,13 +1116,14 @@ MobyClassData build_moby_class(const ColladaScene& scene) {
 	return moby;
 }
 
-struct TristrippedIndex {
-	s32 index : 31;
+struct RichIndex {
+	s32 index : 30;
 	s32 restart : 1;
+	s32 is_dupe : 1 = 0;
 };
 
-static std::vector<TristrippedIndex> fake_tristripper(const std::vector<Face>& faces) {
-	std::vector<TristrippedIndex> indices;
+static std::vector<RichIndex> fake_tristripper(const std::vector<Face>& faces) {
+	std::vector<RichIndex> indices;
 	for(const Face& face : faces) {
 		indices.push_back({face.v0, 1});
 		indices.push_back({face.v1, 1});
@@ -1121,23 +1132,50 @@ static std::vector<TristrippedIndex> fake_tristripper(const std::vector<Face>& f
 	return indices;
 }
 
-struct IndexMappingRecord {
-	s32 submesh = -1;
-	s32 index = -1; // The index of the vertex in the vertex table.
-	s32 id = -1; // The index of the vertex in the intermediate buffer.
+
+struct MidLevelTexture {
+	s32 texture;
+	s32 starting_index;
+};
+
+struct MidLevelVertex {
+	s32 canonical;
+	s32 tex_coord;
+	s32 id = 0xff;
+};
+
+struct MidLevelDuplicateVertex {
+	s32 index;
+	s32 tex_coord;
+};
+
+// Intermediate data structure used so the submeshes can be built in two
+// seperate passes.
+struct MidLevelSubMesh {
+	std::vector<MidLevelVertex> vertices;
+	std::vector<RichIndex> indices;
+	std::vector<MidLevelTexture> textures;
+	std::vector<MidLevelDuplicateVertex> duplicate_vertices;
 };
 
 static std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vector<Material>& materials, f32 scale) {
 	static const s32 MAX_SUBMESH_TEXTURE_COUNT = 4;
-	static const s32 MAX_SUBMESH_VERTEX_COUNT = 97;
+	static const s32 MAX_SUBMESH_STORED_VERTEX_COUNT = 97;
+	static const s32 MAX_SUBMESH_TOTAL_VERTEX_COUNT = 0x7f;
 	static const s32 MAX_SUBMESH_INDEX_COUNT = 196;
 	
 	std::vector<IndexMappingRecord> index_mappings(mesh.vertices.size());
+	find_duplicate_vertices(index_mappings, mesh.vertices);
 	
 	f32 inverse_scale = 1024.f / scale;
 	
-	std::vector<MobySubMesh> moby_submeshes;
-	MobySubMesh low;
+	// *************************************************************************
+	// First pass
+	// *************************************************************************
+	
+	std::vector<MidLevelSubMesh> mid_submeshes;
+	MidLevelSubMesh mid;
+	s32 next_id = 0;
 	for(s32 i = 0; i < (s32) mesh.submeshes.size(); i++) {
 		const SubMesh& high = mesh.submeshes[i];
 		
@@ -1155,68 +1193,172 @@ static std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std
 			continue;
 		}
 		
-		if(low.textures.size() >= MAX_SUBMESH_TEXTURE_COUNT || low.indices.size() >= MAX_SUBMESH_INDEX_COUNT) {
-			moby_submeshes.emplace_back(std::move(low));
-			low = MobySubMesh{};
+		if(mid.textures.size() >= MAX_SUBMESH_TEXTURE_COUNT || mid.indices.size() >= MAX_SUBMESH_INDEX_COUNT) {
+			mid_submeshes.emplace_back(std::move(mid));
+			mid = MidLevelSubMesh{};
 		}
 		
-		MobyTexturePrimitive primitive = {0};
-		primitive.d1_xyzf2.data_lo = 0xff92; // Not sure.
-		primitive.d1_xyzf2.data_hi = 0x4;
-		primitive.d1_xyzf2.address = 0x4;
-		primitive.d1_xyzf2.pad_a = 0x41a0;
-		primitive.d2_clamp.address = 0x08;
-		primitive.d3_tex0.address = 0x06;
-		primitive.d3_tex0.data_lo = texture;
-		primitive.d4_xyzf2.address = 0x34;
-		low.textures.push_back(primitive);
+		mid.textures.push_back({texture, (s32) mid.indices.size()});
 		
 		for(size_t j = 0; j < indices.size(); j++) {
-			TristrippedIndex& t = indices[j];
-			IndexMappingRecord& mapping = index_mappings[t.index];
-			if(mapping.submesh != i) {
-				if(low.vertices.size() >= MAX_SUBMESH_VERTEX_COUNT) {
-					moby_submeshes.emplace_back(std::move(low));
-					low = MobySubMesh{};
+			auto new_submesh = [&]() {
+				mid_submeshes.emplace_back(std::move(mid));
+				mid = MidLevelSubMesh{};
+				// Handle splitting the strip up between moby submeshes.
+				if(j - 2 >= 0) {
+					if(!indices[j].restart) {
+						j -= 3;
+						indices[j + 1].restart = 1;
+						indices[j + 2].restart = 1;
+					} else if(!indices[j + 1].restart) {
+						j -= 2;
+						indices[j + 1].restart = 1;
+						indices[j + 2].restart = 1;
+					} else {
+						j -= 1;
+					}
+				} else {
+					// If we tried to start a tristrip at the end of the last
+					// submesh but didn't push any non-restarting indices, go
+					// back to the beginning of the strip.
+					j = -1;
+				}
+			};
+			
+			RichIndex& r = indices[j];
+			IndexMappingRecord& mapping = index_mappings[r.index];
+			size_t canonical_index = r.index;
+			//if(mapping.dedup_out_edge != -1) {
+			//	canonical_index = mapping.dedup_out_edge;
+			//}
+			IndexMappingRecord& canonical = index_mappings[canonical_index];
+			
+			if(canonical.submesh != mid_submeshes.size()) {
+				if(mid.vertices.size() >= MAX_SUBMESH_STORED_VERTEX_COUNT) {
+					new_submesh();
+					continue;
 				}
 				
-				mapping.submesh = i;
-				mapping.index = low.vertices.size();
+				canonical.submesh = mid_submeshes.size();
+				canonical.index = mid.vertices.size();
 				
-				const Vertex& high_vertex = mesh.vertices.at(t.index);
-				MobyVertex vertex = {0};
-				vertex.low_word = 0xff;
-				vertex.regular.x = high_vertex.pos.x * inverse_scale;
-				vertex.regular.y = high_vertex.pos.y * inverse_scale;
-				vertex.regular.z = high_vertex.pos.z * inverse_scale;
-				low.vertices.push_back(vertex);
-				
-				MobyTexCoord tex_coord;
-				tex_coord.s = high_vertex.tex_coord.x * (INT16_MAX / 8.f);
-				tex_coord.t = high_vertex.tex_coord.y * (INT16_MAX / 8.f);
-				low.sts.push_back(tex_coord);
+				mid.vertices.push_back({r.index, r.index});
+			} else if(mapping.submesh != mid_submeshes.size()) {
+				if(canonical.id == -1) {
+					canonical.id = next_id++;
+					mid.vertices.at(canonical.index).id = canonical.id;
+				}
+				mid.duplicate_vertices.push_back({canonical.id, r.index});
 			}
 			
-			if(j == 0) {
-				assert(t.restart);
-				low.secret_indices.push_back(t.index + 1);
-			} else {
-				if(low.indices.size() >= MAX_SUBMESH_INDEX_COUNT - 4) {
-					moby_submeshes.emplace_back(std::move(low));
-					low = MobySubMesh{};
-				}
-				low.indices.push_back(mapping.index + (t.restart ? 0x81 : 0x01));
+			if(mid.indices.size() >= MAX_SUBMESH_INDEX_COUNT - 4) {
+				new_submesh();
+				continue;
 			}
+			
+			mid.indices.push_back({canonical.index, r.restart, r.is_dupe});
 		}
 	}
-	if(low.indices.size() > 0) {
-		moby_submeshes.emplace_back(std::move(low));
+	if(mid.indices.size() > 0) {
+		mid_submeshes.emplace_back(std::move(mid));
 	}
-	for(MobySubMesh& low : moby_submeshes) {
+	
+	// *************************************************************************
+	// Second pass
+	// *************************************************************************
+	
+	std::vector<MobySubMesh> low_submeshes;
+	for(const MidLevelSubMesh& mid : mid_submeshes) {
+		MobySubMesh low;
+		
+		for(const MidLevelVertex& vertex : mid.vertices) {
+			const Vertex& high_vert = mesh.vertices[vertex.canonical];
+			
+			MobyVertex low_vert = {0};
+			low_vert.low_word = vertex.id;
+			low_vert.regular.x = high_vert.pos.x * inverse_scale;
+			low_vert.regular.y = high_vert.pos.y * inverse_scale;
+			low_vert.regular.z = high_vert.pos.z * inverse_scale;
+			low.vertices.push_back(low_vert);
+			
+			const glm::vec2& tex_coord = mesh.vertices[vertex.tex_coord].tex_coord;
+			s16 s = tex_coord.x * (INT16_MAX / 8.f);
+			s16 t = tex_coord.y * (INT16_MAX / 8.f);
+			low.sts.push_back({s, t});
+		}
+		
+		s32 texture_index = 0;
+		for(size_t i = 0; i < mid.indices.size(); i++) {
+			RichIndex cur = mid.indices[i];
+			u8 out;
+			if(cur.is_dupe) {
+				out = mid.vertices.size() + cur.index;
+			} else {
+				out = cur.index;
+			}
+			if(texture_index < mid.textures.size() && mid.textures.at(texture_index).starting_index >= i) {
+				assert(cur.restart);
+				low.indices.push_back(0);
+				low.secret_indices.push_back(out + 1);
+				texture_index++;
+			} else {
+				low.indices.push_back(cur.restart ? (out + 0x81) : (out + 1));
+			}
+		}
+		
+		// These fake indices are required to signal to the microprogram that it
+		// should terminate.
 		low.indices.push_back(1);
 		low.indices.push_back(1);
 		low.indices.push_back(1);
 		low.indices.push_back(0);
+		
+		for(const MidLevelTexture& tex : mid.textures) {
+			MobyTexturePrimitive primitive = {0};
+			primitive.d1_xyzf2.data_lo = 0xff92; // Not sure.
+			primitive.d1_xyzf2.data_hi = 0x4;
+			primitive.d1_xyzf2.address = 0x4;
+			primitive.d1_xyzf2.pad_a = 0x41a0;
+			primitive.d2_clamp.address = 0x08;
+			primitive.d3_tex0.address = 0x06;
+			primitive.d3_tex0.data_lo = tex.texture;
+			primitive.d4_xyzf2.address = 0x34;
+			low.textures.push_back(primitive);
+		}
+		
+		for(const MidLevelDuplicateVertex& dupe : mid.duplicate_vertices) {
+			low.duplicate_vertices.push_back(dupe.index);
+			
+			const glm::vec2& tex_coord = mesh.vertices[dupe.tex_coord].tex_coord;
+			s16 s = tex_coord.x * (INT16_MAX / 8.f);
+			s16 t = tex_coord.y * (INT16_MAX / 8.f);
+			low.sts.push_back({s, t});
+		}
+		
+		low_submeshes.emplace_back(std::move(low));
 	}
-	return moby_submeshes;
+	
+	return low_submeshes;
+}
+
+static void find_duplicate_vertices(std::vector<IndexMappingRecord>& index_mapping, const std::vector<Vertex>& vertices) {
+	std::vector<size_t> indices(vertices.size());
+	for(size_t i = 0; i < vertices.size(); i++) {
+		indices[i] = i;
+	}
+	std::sort(BEGIN_END(indices), [&](size_t l, size_t r) {
+		return vertices[l] < vertices[r];
+	});
+	
+	for(size_t i = 1; i < indices.size(); i++) {
+		const Vertex& prev = vertices[indices[i - 1]];
+		const Vertex& cur = vertices[indices[i]];
+		if(vec3_equal_eps(prev.pos, cur.pos) && vec3_equal_eps(prev.normal, cur.normal)) {
+			size_t vert = indices[i - 1];
+			if(index_mapping[vert].dedup_out_edge != -1) {
+				vert = index_mapping[vert].dedup_out_edge;
+			}
+			index_mapping[indices[i]].dedup_out_edge = vert;
+		}
+	}
 }

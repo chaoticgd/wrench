@@ -68,12 +68,11 @@ Mesh deduplicate_vertices(Mesh src) {
 	for(size_t i = 1; i < src.vertices.size(); i++) {
 		Vertex& prev = src.vertices[i - 1];
 		Vertex& cur = src.vertices[i];
-		float epsilon = 0.0001f;
-		bool accept = false;
-		accept |= glm::distance(prev.pos, cur.pos) > epsilon;
-		accept |= glm::distance(prev.normal, cur.normal) > epsilon;
-		accept |= glm::distance(prev.tex_coord, cur.tex_coord) > epsilon;
-		if(accept) {
+		bool discard = true;
+		discard &= vec3_equal_eps(prev.pos, cur.pos);
+		discard &= vec3_equal_eps(prev.normal, cur.normal);
+		discard &= vec2_equal_eps(prev.tex_coord, cur.tex_coord);
+		if(!discard) {
 			dest.vertices.push_back(src.vertices[i]);
 		}
 		index_mapping[i] = dest.vertices.size() - 1;
@@ -135,4 +134,12 @@ Mesh deduplicate_faces(Mesh mesh) {
 	}
 	stop_timer();
 	return mesh;
+}
+
+bool vec2_equal_eps(const glm::vec2& lhs, const glm::vec2& rhs, f32 eps) {
+	return fabs(lhs.x - rhs.x) < eps && fabs(lhs.y - rhs.y) < eps;
+}
+
+bool vec3_equal_eps(const glm::vec3& lhs, const glm::vec3& rhs, f32 eps) {
+	return fabs(lhs.x - rhs.x) < eps && fabs(lhs.y - rhs.y) < eps && fabs(lhs.z - rhs.z) < eps;
 }

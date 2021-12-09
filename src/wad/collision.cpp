@@ -432,8 +432,7 @@ static CollisionSectors build_collision_sectors(const ColladaScene& scene) {
 								for(s32 i = 0; i < ((mesh_inds[3] > -1) ? 4 : 3); i++) {
 									glm::vec3 pos = mesh.vertices[mesh_inds[i]].pos - disp;
 									for(size_t j = 0; j < sector.vertices.size(); j++) {
-										f32 epsilon = 0.0001f;
-										if(glm::distance(pos, sector.vertices[j]) < epsilon) {
+										if(vec3_equal_eps(pos, sector.vertices[j])) {
 											sector_inds[i] = j;
 										}
 									}

@@ -55,6 +55,7 @@ struct Vertex {
 		return pos == rhs.pos && normal == rhs.normal && tex_coord == rhs.tex_coord;
 	}
 	bool operator<(const Vertex& rhs) const {
+		// The moby code relies on the texture coordinate being checked last.
 		if(pos.z != rhs.pos.z) return pos.z < rhs.pos.z;
 		if(pos.y != rhs.pos.y) return pos.y < rhs.pos.y;
 		if(pos.x != rhs.pos.x) return pos.x < rhs.pos.x;
@@ -88,5 +89,8 @@ Mesh sort_vertices(Mesh mesh);
 
 Mesh deduplicate_vertices(Mesh old_mesh);
 Mesh deduplicate_faces(Mesh old_mesh); // Removes identical faces and tris that shadow quads.
+
+bool vec2_equal_eps(const glm::vec2& lhs, const glm::vec2& rhs, f32 eps = 0.00001f);
+bool vec3_equal_eps(const glm::vec3& lhs, const glm::vec3& rhs, f32 eps = 0.00001f);
 
 #endif
