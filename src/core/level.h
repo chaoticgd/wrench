@@ -440,9 +440,9 @@ struct LevelWad : Wad {
 	std::vector<MobyClass> moby_classes;
 	std::vector<TieClass> tie_classes;
 	std::vector<ShrubClass> shrub_classes;
+	std::vector<Opt<std::vector<u8>>> ratchet_seqs;
 	std::vector<u8> particle_defs;
 	std::vector<u8> sound_remap;
-	std::vector<u8> light_cuboids;
 	Opt<std::vector<u8>> transition_textures;
 	Opt<std::vector<u8>> moby8355_pvars;
 	Opt<std::vector<u8>> global_nav_data;

@@ -129,6 +129,8 @@ Opt<Game> game_from_string(std::string str) {
 
 static void read_classes(LevelWad& wad, fs::path project_dir);
 static void write_classes(Json& json, fs::path dest_dir, const LevelWad& wad);
+static std::vector<Opt<std::vector<u8>>> read_ratchet_seqs(fs::path project_dir);
+static void write_ratchet_seqs(fs::path project_dir, const std::vector<Opt<std::vector<u8>>>& ratchet_seqs);
 static std::vector<size_t> read_textures_json(s32 table, std::vector<Texture>& dest, fs::path dir, Json& paths);
 static void write_texture_pngs(fs::path project_dir, fs::path rel_dir, std::vector<Texture>& textures);
 static Json get_texture_paths(const std::vector<Texture>& textures, const std::vector<size_t>& indices);
@@ -196,9 +198,9 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 				wad.unknown_a0 = read_file(src_dir/std::string(json["unknown_a0"]));
 			}
 			read_classes(wad, src_dir);
+			wad.ratchet_seqs = read_ratchet_seqs(src_dir);
 			wad.particle_defs = read_file(src_dir/std::string(json["particle_defs"]));
 			wad.sound_remap = read_file(src_dir/std::string(json["sound_remap"]));
-			wad.light_cuboids = read_file(src_dir/std::string(json["light_cuboids"]));
 			if(game != Game::DL) {
 				wad.transition_textures = read_file(src_dir/std::string(json["transition_textures"]));
 			}
@@ -310,9 +312,9 @@ void write_wad_json(fs::path dest_dir, Wad* base) {
 				json["unknown_a0"] = write_file(dest_dir, "unknown_a0.bin", *wad.unknown_a0);
 			}
 			write_classes(json, dest_dir, wad);
+			write_ratchet_seqs(dest_dir, wad.ratchet_seqs);
 			json["particle_defs"] = write_file(dest_dir, "particle_defs.bin", wad.particle_defs);
 			json["sound_remap"] = write_file(dest_dir, "sound_remap.bin", wad.sound_remap);
-			json["light_cuboids"] = write_file(dest_dir, "light_cuboids.bin", wad.light_cuboids);
 			if(wad.transition_textures.has_value()) {
 				json["transition_textures"] = write_file(dest_dir, "transition_textures.bin", *wad.transition_textures);
 			}
@@ -478,6 +480,27 @@ static void write_classes(Json& json, fs::path dest_dir, const LevelWad& wad) {
 		shrub_json["textures"] = get_texture_paths(wad.textures, shrub.textures);
 		write_file(shrub_dir, "model.bin", shrub.model);
 		write_file(shrub_dir, "shrub.json", shrub_json.dump(1, '\t'));
+	}
+}
+
+static std::vector<Opt<std::vector<u8>>> read_ratchet_seqs(fs::path project_dir) {
+	std::vector<Opt<std::vector<u8>>> ratchet_seqs(256);
+	for(size_t i = 0; i < 256; i++) {
+		auto seq_path = project_dir/"ratchet_seqs"/(std::to_string(i)+".bin");
+		if(fs::exists(seq_path)) {
+			ratchet_seqs[i] = read_file(seq_path);
+		}
+	}
+	return ratchet_seqs;
+}
+
+static void write_ratchet_seqs(fs::path project_dir, const std::vector<Opt<std::vector<u8>>>& ratchet_seqs) {
+	fs::create_directory(project_dir/"ratchet_seqs");
+	for(size_t i = 0; i < ratchet_seqs.size(); i++) {
+		const Opt<std::vector<u8>>& seq = ratchet_seqs[i];
+		if(seq.has_value()) {
+			write_file(project_dir, fs::path("ratchet_seqs")/(std::to_string(i)+".bin"), *seq);
+		}
 	}
 }
 

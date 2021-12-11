@@ -42,7 +42,10 @@ packed_struct(AssetHeader,
 	/* 0x6c */ s32 part_defs_offset;
 	/* 0x70 */ s32 sound_remap_offset;
 	/* 0x74 */ s32 assets_base_address;
-	/* 0x78 */ s32 light_cuboids_offset;
+	union {
+		/* 0x78 */ s32 ratchet_seqs_rac123;
+		/* 0x78 */ s32 light_cuboids_offset_dl;
+	};
 	/* 0x7c */ s32 scene_view_size;
 	/* 0x80 */ s32 index_into_some1_texs;
 	/* 0x84 */ s32 moby_gs_stash_count;
