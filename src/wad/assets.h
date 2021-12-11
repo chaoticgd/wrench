@@ -41,7 +41,7 @@ packed_struct(AssetHeader,
 	/* 0x68 */ s32 fx_bank_offset;
 	/* 0x6c */ s32 part_defs_offset;
 	/* 0x70 */ s32 sound_remap_offset;
-	/* 0x74 */ s32 assets_base_address;
+	/* 0x74 */ s32 unknown_74;
 	union {
 		/* 0x78 */ s32 ratchet_seqs_rac123;
 		/* 0x78 */ s32 light_cuboids_offset_dl;

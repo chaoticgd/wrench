@@ -370,14 +370,9 @@ void write_assets(OutBuffer header_dest, OutBuffer data_dest, OutBuffer gs_ram, 
 	header_dest.pad(0x10);
 	header.ratchet_seqs_rac123 = header_dest.write_multiple(ratchet_seq_offsets);
 	
-	while(header_dest.vec.size() < 0x7b90) {
-		header_dest.write<u8>(0);
-	}
 	header_dest.pad(0x10);
 	header.part_defs_offset = header_dest.tell();
 	header_dest.write_multiple(wad.particle_defs);
-	
-	header.assets_base_address = 0x8a3700;
 	
 	header_dest.pad(0x10);
 	header.sound_remap_offset = header_dest.tell();
@@ -385,16 +380,9 @@ void write_assets(OutBuffer header_dest, OutBuffer data_dest, OutBuffer gs_ram, 
 	
 	header_dest.pad(0x10);
 	header.moby_gs_stash_list = header_dest.tell();
-	header_dest.write<s16>(0x259);
-	header_dest.write<s16>(0x25f);
-	header_dest.write<s16>(0x260);
-	header_dest.write<s16>(0x261);
-	header_dest.write<s16>(0x50a);
-	header_dest.write<s16>(0xa73);
-	header_dest.write<s16>(0xb08);
 	header_dest.write<s16>(-1);
 	
-	header.moby_gs_stash_count = 8;
+	header.moby_gs_stash_count = 1;
 	
 	header.glass_map_texture = 0x4000;
 	header.glass_map_palette = 0x400;
@@ -487,7 +475,7 @@ static void print_asset_header(const AssetHeader& header) {
 	printf("%32s %8x", "fx_bank_offset", header.fx_bank_offset);
 	printf("%32s %8x\n", "part_defs_offset", header.part_defs_offset);
 	printf("%32s %8x", "sound_remap_offset", header.sound_remap_offset);
-	printf("%32s %8x", "assets_base_address", header.assets_base_address);
+	printf("%32s %8x", "unknown_74", header.unknown_74);
 	printf("%32s %8x", "ratchet_seqs_rac123", header.ratchet_seqs_rac123);
 	printf("%32s %8x\n", "scene_view_size", header.scene_view_size);
 	printf("%32s %8x", "index_into_some1_texs", header.index_into_some1_texs);
