@@ -135,6 +135,7 @@ static std::vector<size_t> read_textures_json(s32 table, std::vector<Texture>& d
 static void write_texture_pngs(fs::path project_dir, fs::path rel_dir, std::vector<Texture>& textures);
 static Json get_texture_paths(const std::vector<Texture>& textures, const std::vector<size_t>& indices);
 static Json get_all_texture_paths(const std::vector<Texture>& textures);
+static std::vector<u8> read_file_json(fs::path path, const Json& object, const char* key);
 static std::string write_json_array_file(fs::path dest_dir, const char* file_name, Json data_json);
 static std::string write_json_object_file(fs::path dest_dir, const char* file_name, Json data_json);
 
@@ -173,49 +174,49 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 				wad.reverb = json["reverb"];
 			}
 			read_json_file_into_map(wad.pvar_types, src_dir, json, "pvar_types", "name");
-			from_json(wad.help_messages, Json::parse(read_file(src_dir/std::string(json["help_messages"]))));
-			from_json(wad.gameplay, Json::parse(read_file(src_dir/std::string(json["gameplay"]))));
-			wad.code = read_file(src_dir/std::string(json["code"]));
-			wad.asset_header = read_file(src_dir/std::string(json["asset_header"]));
-			wad.hud_header = read_file(src_dir/std::string(json["hud_header"]));
-			wad.hud_banks[0] = read_file(src_dir/std::string(json["hud_bank_0"]));
-			wad.hud_banks[1] = read_file(src_dir/std::string(json["hud_bank_1"]));
-			wad.hud_banks[2] = read_file(src_dir/std::string(json["hud_bank_2"]));
-			wad.hud_banks[3] = read_file(src_dir/std::string(json["hud_bank_3"]));
-			wad.hud_banks[4] = read_file(src_dir/std::string(json["hud_bank_4"]));
-			wad.tfrags = read_file(src_dir/std::string(json["tfrags"]));
-			wad.occlusion = read_file(src_dir/std::string(json["occlusion"]));
-			wad.sky = read_file(src_dir/std::string(json["sky"]));
-			wad.collision = read_collada(read_file(src_dir/std::string(json["collision"])));
-			wad.collision_bin =read_file(src_dir/std::string(json["collision_bin"]));
-			Json tfrag_textures_json = Json::parse(read_file(src_dir/std::string(json["tfrag_textures"])));
+			from_json(wad.help_messages, Json::parse(read_file_json(src_dir, json, "help_messages")));
+			from_json(wad.gameplay, Json::parse(read_file_json(src_dir, json, "gameplay")));
+			wad.code = read_file_json(src_dir, json, "code");
+			wad.asset_header = read_file_json(src_dir, json, "asset_header");
+			wad.hud_header = read_file_json(src_dir, json, "hud_header");
+			wad.hud_banks[0] = read_file_json(src_dir, json, "hud_bank_0");
+			wad.hud_banks[1] = read_file_json(src_dir, json, "hud_bank_1");
+			wad.hud_banks[2] = read_file_json(src_dir, json, "hud_bank_2");
+			wad.hud_banks[3] = read_file_json(src_dir, json, "hud_bank_3");
+			wad.hud_banks[4] = read_file_json(src_dir, json, "hud_bank_4");
+			wad.tfrags = read_file_json(src_dir, json, "tfrags");
+			wad.occlusion = read_file_json(src_dir, json, "occlusion");
+			wad.sky = read_file_json(src_dir, json, "sky");
+			wad.collision = read_collada(read_file_json(src_dir, json, "collision"));
+			wad.collision_bin =read_file_json(src_dir, json, "collision_bin");
+			Json tfrag_textures_json = Json::parse(read_file_json(src_dir, json, "tfrag_textures"));
 			wad.tfrag_texture_indices = read_textures_json(TFRAG_TEXTURE_INDEX, wad.textures, src_dir, tfrag_textures_json["textures"]);
-			Json particle_textures_json = Json::parse(read_file(src_dir/std::string(json["particle_textures"])));
+			Json particle_textures_json = Json::parse(read_file_json(src_dir, json, "particle_textures"));
 			read_textures_json(0, wad.particle_textures, src_dir, particle_textures_json["textures"]);
-			Json fx_textures_json = Json::parse(read_file(src_dir/std::string(json["fx_textures"])));
+			Json fx_textures_json = Json::parse(read_file_json(src_dir, json, "fx_textures"));
 			read_textures_json(0, wad.fx_textures, src_dir, fx_textures_json["textures"]);
 			if(wad.game != Game::DL) {
-				wad.unknown_a0 = read_file(src_dir/std::string(json["unknown_a0"]));
+				wad.unknown_a0 = read_file_json(src_dir, json, "unknown_a0");
 			}
 			read_classes(wad, src_dir);
 			wad.ratchet_seqs = read_ratchet_seqs(src_dir);
-			wad.particle_defs = read_file(src_dir/std::string(json["particle_defs"]));
-			wad.sound_remap = read_file(src_dir/std::string(json["sound_remap"]));
+			wad.particle_defs = read_file_json(src_dir, json, "particle_defs");
+			wad.sound_remap = read_file_json(src_dir, json, "sound_remap");
 			if(game != Game::DL) {
-				wad.transition_textures = read_file(src_dir/std::string(json["transition_textures"]));
+				wad.transition_textures = read_file_json(src_dir, json, "transition_textures");
 			}
 			verify(json.contains("moby8355_pvars") == (wad.game == Game::DL),
 				(wad.game == Game::DL) ? "Missing moby8355_pvars file." : "moby8355_pvars present but not required.");
 			if(wad.game == Game::DL) {
-				wad.moby8355_pvars = read_file(src_dir/std::string(json["moby8355_pvars"]));
+				wad.moby8355_pvars = read_file_json(src_dir, json, "moby8355_pvars");
 			}
 			verify(json.contains("global_nav_data") == (wad.game == Game::DL),
 				(wad.game == Game::DL) ? "Missing global_nav_data file." : "global_nav_data present but not required.");
 			if(wad.global_nav_data.has_value()) {
-				wad.global_nav_data = read_file(src_dir/std::string(json["global_nav_data"]));
+				wad.global_nav_data = read_file_json(src_dir, json, "global_nav_data");
 			}
 			if(wad.game != Game::RAC1) {
-				wad.core_bank = read_file(src_dir/std::string(json["core_sound_bank"]));
+				wad.core_bank = read_file_json(src_dir, json, "core_sound_bank");
 			}
 			read_json_file_into_map(wad.camera_classes, src_dir, json, "camera_classes", "class");
 			read_json_file_into_map(wad.sound_classes, src_dir, json, "sound_classes", "class");
@@ -223,13 +224,13 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 				for(Json& chunk_json : json["chunks"]) {
 					Chunk chunk;
 					if(chunk_json.contains("tfrags")) {
-						chunk.tfrags = read_file(src_dir/std::string(chunk_json["tfrags"]));
+						chunk.tfrags = read_file_json(src_dir, chunk_json, "tfrags");
 					}
 					if(chunk_json.contains("collision")) {
-						chunk.collision = read_file(src_dir/std::string(chunk_json["collision"]));
+						chunk.collision = read_file_json(src_dir, chunk_json, "collision");
 					}
 					if(chunk_json.contains("sound_bank")) {
-						chunk.sound_bank = read_file(src_dir/std::string(chunk_json["sound_bank"]));
+						chunk.sound_bank = read_file_json(src_dir, chunk_json, "sound_bank");
 					}
 					s32 index = chunk_json["index"];
 					wad.chunks.emplace(index, std::move(chunk));
@@ -239,13 +240,13 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 				for(Json& mission_json : json["missions"]) {
 					Mission mission;
 					if(mission_json.contains("instances")) {
-						mission.instances = read_file(src_dir/std::string(mission_json["instances"]));
+						mission.instances = read_file_json(src_dir, mission_json, "instances");
 					}
 					if(mission_json.contains("classes")) {
-						mission.classes = read_file(src_dir/std::string(mission_json["classes"]));
+						mission.classes = read_file_json(src_dir, mission_json, "classes");
 					}
 					if(mission_json.contains("sound_bank")) {
-						mission.sound_bank = read_file(src_dir/std::string(mission_json["sound_bank"]));
+						mission.sound_bank = read_file_json(src_dir, mission_json, "sound_bank");
 					}
 					s32 index = mission_json["index"];
 					verify(index >= 0 || index <= 127, "Mission index must be between 0 and 127.");
@@ -553,6 +554,12 @@ static Json get_all_texture_paths(const std::vector<Texture>& textures) {
 		json.emplace_back(texture.path.string());
 	}
 	return json;
+}
+
+static std::vector<u8> read_file_json(fs::path path, const Json& object, const char* key) {
+	verify(object.contains(key), "Missing '%s'.", key);
+	verify(object[key].is_string(), " '%s' isn't a string.", key);
+	return read_file(path/std::string(object[key]));
 }
 
 static std::string write_json_array_file(fs::path dest_dir, const char* file_name, Json data_json) {
