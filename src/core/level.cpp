@@ -202,7 +202,7 @@ std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 			wad.ratchet_seqs = read_ratchet_seqs(src_dir);
 			wad.particle_defs = read_file_json(src_dir, json, "particle_defs");
 			wad.sound_remap = read_file_json(src_dir, json, "sound_remap");
-			if(game != Game::DL) {
+			if(game != Game::DL && json.contains("transition_textures")) {
 				wad.transition_textures = read_file_json(src_dir, json, "transition_textures");
 			}
 			verify(json.contains("moby8355_pvars") == (wad.game == Game::DL),

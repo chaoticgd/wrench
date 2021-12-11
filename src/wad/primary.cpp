@@ -202,8 +202,11 @@ void write_primary_header(OutBuffer dest, s64 header_ofs, const PrimaryHeader& s
 			header.hud_banks[3] = src.hud_banks[3];
 			header.hud_banks[4] = src.hud_banks[4];
 			header.assets = src.assets;
-			assert(src.transition_textures.has_value());
-			header.transition_textures = *src.transition_textures;
+			if(src.transition_textures.has_value()) {
+				header.transition_textures = *src.transition_textures;
+			} else {
+				header.transition_textures = {-1, 0};
+			}
 			dest.write(header_ofs, header);
 			break;
 		}
