@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2020 chaoticgd
+	Copyright (C) 2019 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,22 +16,26 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef FORMATS_MODEL_UTILS_H
-#define FORMATS_MODEL_UTILS_H
+#ifndef EDITOR_MESH_H
+#define EDITOR_MESH_H
 
-#include <string>
 #include <vector>
-#include <glm/glm.hpp>
 
-struct ply_vertex {
-	float x, y, z, nx, ny, nz, s, t;
+#include <core/mesh.h>
+#include <editor/gl_includes.h>
+
+struct RenderSubMesh {
+	GLuint texture;
+	GlBuffer index_buffer;
+	s32 index_count = 0;
 };
 
-// This is far from a full-featured implementation of the PLY file format and
-// is mainly just useful for testing. I'll replace this at some point.
-//
-// It assumes that each vertex is laid out like the above ply_vertex struct, and
-// that the index buffer is equivalent to using GL_TRIANGLES without indices.
-std::vector<ply_vertex> read_ply_model(std::string path);
+struct RenderMesh {
+	GlBuffer vertex_buffer;
+	std::vector<RenderSubMesh> submeshes;
+};
+
+RenderMesh upload_mesh(const Mesh& mesh);
+void setup_vertex_attributes(GLuint pos, GLuint normal, GLuint tex_coord);
 
 #endif

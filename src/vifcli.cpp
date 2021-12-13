@@ -22,9 +22,8 @@
 
 #include <iostream>
 
-#include "editor/util.h"
-#include "editor/command_line.h"
-#include "editor/formats/vif.h"
+#include <editor/util.h>
+#include <editor/command_line.h>
 
 int main(int argc, char** argv) {
 	cxxopts::Options options("vif", "Parse PS2 VIF chains until an invalid VIF code is encountered.");
@@ -44,22 +43,23 @@ int main(int argc, char** argv) {
 	std::string src_path = cli_get(args, "src");
 	std::size_t offset = parse_number(cli_get_or(args, "offset", "0"));
 	std::size_t end_offset = parse_number(cli_get_or(args, "end", "0"));
-
-	file_stream src(src_path);
-	std::vector<vif_packet> chain = parse_vif_chain(&src, offset, SIZE_MAX);
-	while(chain.size() > 0) {
-		vif_packet& packet = chain.front();
-		if(packet.error == "") {
-			std::cout << std::hex << packet.address << " " << packet.code.to_string() << std::endl;
-			chain.erase(chain.begin());
-		} else {
-			std::cout << std::hex << packet.address << " " << packet.error << std::endl;
-			if(packet.address > end_offset) {
-				break;
-			} else {
-				chain = parse_vif_chain(&src, packet.address, SIZE_MAX);
-				continue;
-			}
-		}
-	}
+	
+	// TODO
+	//file_stream src(src_path);
+	//std::vector<vif_packet> chain = parse_vif_chain(&src, offset, SIZE_MAX);
+	//while(chain.size() > 0) {
+	//	vif_packet& packet = chain.front();
+	//	if(packet.error == "") {
+	//		std::cout << std::hex << packet.address << " " << packet.code.to_string() << std::endl;
+	//		chain.erase(chain.begin());
+	//	} else {
+	//		std::cout << std::hex << packet.address << " " << packet.error << std::endl;
+	//		if(packet.address > end_offset) {
+	//			break;
+	//		} else {
+	//			chain = parse_vif_chain(&src, packet.address, SIZE_MAX);
+	//			continue;
+	//		}
+	//	}
+	//}
 }

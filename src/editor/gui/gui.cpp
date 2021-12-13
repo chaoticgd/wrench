@@ -36,7 +36,6 @@
 #include "../renderer.h"
 #include "../unwindows.h"
 #include "../worker_thread.h"
-#include "../formats/bmp.h"
 #include "window.h"
 
 void gui::render(app& a) {
@@ -269,34 +268,6 @@ float gui::render_menu_bar(app& a) {
 		if(ImGui::MenuItem("Save and Build Level", nullptr, nullptr, a.get_level())) {
 			a.save_level();
 		}
-		if(ImGui::BeginMenu("Export")) {
-			if(level* lvl = a.get_level()) {
-				if(ImGui::MenuItem("Code segment")) {
-					std::stringstream name;
-					name << "codeseg";
-					name << "_" << std::hex << lvl->code_segment.header.base_address;
-					name << "_" << std::hex << lvl->code_segment.header.unknown_4;
-					name << "_" << std::hex << lvl->code_segment.header.unknown_8;
-					name << "_" << std::hex << lvl->code_segment.header.entry_offset;
-					name << ".bin";
-					
-					file_stream dump_file(name.str(), std::ios::out | std::ios::trunc);
-					dump_file.write_v(lvl->code_segment.bytes);
-					
-					std::stringstream message;
-					message << "The code segment for the current level has been written to\n\t\"";
-					message << name.str() << "\"\n";
-					message << "relative to the main Wrench directory.\n";
-					message << "\n";
-					message << "Base address: " << std::hex << lvl->code_segment.header.base_address << "\n";
-					message << "Unknown (0x4): " << std::hex << lvl->code_segment.header.unknown_4 << "\n";
-					message << "Unknown (0x8): " << std::hex << lvl->code_segment.header.unknown_8 << "\n";
-					message << "Entry point: " << std::hex << lvl->code_segment.header.entry_offset << "\n";
-					message_box.open(message.str());
-				}
-			}
-			ImGui::EndMenu();
-		}
 		ImGui::EndMenu();
 	}
 	
@@ -331,28 +302,19 @@ float gui::render_menu_bar(app& a) {
 	
 	if(ImGui::BeginMenu("View")) {
 		if(ImGui::MenuItem("Reset Camera")) {
-			a.renderer.reset_camera(&a);
-		}
-		if(ImGui::BeginMenu("View Mode")) {
-			if(ImGui::RadioButton("Wireframe", a.renderer.mode == view_mode::WIREFRAME)) {
-				a.renderer.mode = view_mode::WIREFRAME;
-			}
-			if(ImGui::RadioButton("Textured Polygons", a.renderer.mode == view_mode::TEXTURED_POLYGONS)) {
-				a.renderer.mode = view_mode::TEXTURED_POLYGONS;
-			}
-			ImGui::EndMenu();
+			reset_camera(&a);
 		}
 		if(ImGui::BeginMenu("Visibility")) {
-			ImGui::Checkbox("Ties", &a.renderer.draw_ties);
-			ImGui::Checkbox("Shrubs", &a.renderer.draw_shrubs);
-			ImGui::Checkbox("Mobies", &a.renderer.draw_mobies);
-			ImGui::Checkbox("Cuboids", &a.renderer.draw_cuboids);
-			ImGui::Checkbox("Spheres", &a.renderer.draw_spheres);
-			ImGui::Checkbox("Cylinders", &a.renderer.draw_cylinders);
-			ImGui::Checkbox("Paths", &a.renderer.draw_paths);
-			ImGui::Checkbox("Grind Paths", &a.renderer.draw_grind_paths);
-			ImGui::Checkbox("Tfrags", &a.renderer.draw_tfrags);
-			ImGui::Checkbox("Baked Collision", &a.renderer.draw_tcols);
+			ImGui::Checkbox("Ties", &a.render_settings.draw_ties);
+			ImGui::Checkbox("Shrubs", &a.render_settings.draw_shrubs);
+			ImGui::Checkbox("Mobies", &a.render_settings.draw_mobies);
+			ImGui::Checkbox("Cuboids", &a.render_settings.draw_cuboids);
+			ImGui::Checkbox("Spheres", &a.render_settings.draw_spheres);
+			ImGui::Checkbox("Cylinders", &a.render_settings.draw_cylinders);
+			ImGui::Checkbox("Paths", &a.render_settings.draw_paths);
+			ImGui::Checkbox("Grind Paths", &a.render_settings.draw_grind_paths);
+			ImGui::Checkbox("Tfrags", &a.render_settings.draw_tfrags);
+			ImGui::Checkbox("Collision", &a.render_settings.draw_collision);
 			ImGui::EndMenu();
 		}
 		ImGui::EndMenu();
@@ -372,8 +334,6 @@ float gui::render_menu_bar(app& a) {
 		render_menu_bar_window_toggle<moby_list>(a);
 		render_menu_bar_window_toggle<viewport_information>(a);
 		render_menu_bar_window_toggle<Inspector>(a);
-		render_menu_bar_window_toggle<texture_browser>(a);
-		render_menu_bar_window_toggle<model_browser>(a);
 		render_menu_bar_window_toggle<settings>(a);
 		ImGui::EndMenu();
 	}
@@ -631,9 +591,6 @@ bool gui::start_screen::button(const char* str, ImTextureID user_texture_id, con
 	return pressed;
 }
 
-using sysc = std::chrono::system_clock;
-bool syst = false;
-
 /*
 	moby_list
 */
@@ -670,8 +627,6 @@ void gui::moby_list::render(app& a) {
 				inst.selected = true;
 			}
 		}
-		auto t = sysc::to_time_t(sysc::now());
-		syst = gmtime(&t)->tm_hour == 2;
 		ImGui::ListBoxFooter();
 	}
 	ImGui::PopItemWidth();
@@ -691,549 +646,14 @@ ImVec2 gui::viewport_information::initial_size() const {
 
 void gui::viewport_information::render(app& a) {
 	ImGui::Text("Frame Time (ms):\n\t%.2f\n", a.delta_time / 1000.f);
-	glm::vec3 cam_pos = a.renderer.camera_position;
+	glm::vec3 cam_pos = a.render_settings.camera_position;
 	ImGui::Text("Camera Position:\n\t%.3f, %.3f, %.3f",
 		cam_pos.x, cam_pos.y, cam_pos.z);
-	glm::vec2 cam_rot = a.renderer.camera_rotation;
+	glm::vec2 cam_rot = a.render_settings.camera_rotation;
 	ImGui::Text("Camera Rotation:\n\tPitch=%.3f, Yaw=%.3f",
 		cam_rot.x, cam_rot.y);
 	ImGui::Text("Camera Control (Z to toggle):\n\t%s",
-		a.renderer.camera_control ? "On" : "Off");
-}
-
-/*
-	texture_browser
-*/
-
-gui::texture_browser::texture_browser() {}
-
-const char* gui::texture_browser::title_text() const {
-	return "Texture Browser";
-}
-
-ImVec2 gui::texture_browser::initial_size() const {
-	return ImVec2(800, 600);
-}
-
-void gui::texture_browser::render(app& a) {
-	auto tex_lists = a.texture_lists();
-	if(tex_lists.find(_list) == tex_lists.end()) {
-		if(tex_lists.size() > 0) {
-			_list = tex_lists.begin()->first;
-		} else {
-			ImGui::Text("<no texture lists>");
-			return;
-		}
-	}
-
-	std::vector<texture>& textures = *tex_lists.at(_list);
-	if(_selection >= textures.size()) {
-		_selection = 0;
-	}
-
-	ImGui::Columns(2);
-	ImGui::SetColumnWidth(0, 220 * config::get().gui_scale);
-
-	ImGui::BeginChild(1);
-		if(ImGui::TreeNodeEx("Sources", ImGuiTreeNodeFlags_DefaultOpen)) {
-			for(auto& tex_list : tex_lists) {
-				auto str = tex_list.first.c_str();
-				bool selected = _list == tex_list.first;
-				if(ImGui::Selectable(str, selected)) {
-					_list = tex_list.first;
-				}
-			}
-			ImGui::TreePop();
-		}
-		ImGui::NewLine();
-
-		if(ImGui::TreeNodeEx("Filters", ImGuiTreeNodeFlags_DefaultOpen)) {
-			ImGui::Text("Minimum Width:");
-			ImGui::PushItemWidth(-1);
-			ImGui::InputInt("##minwidth", &_filters.min_width);
-			ImGui::PopItemWidth();
-			ImGui::TreePop();
-		}
-		ImGui::NewLine();
-
-		if(ImGui::TreeNodeEx("Details", ImGuiTreeNodeFlags_DefaultOpen)) {
-			if(textures.size() > 0) {
-				vec2i size = textures[_selection].size;
-				ImGui::Text("Width:  %ld", size.x);
-				ImGui::Text("Height: %ld", size.y);
-			} else {
-				ImGui::Text("<no texture selected>");
-			}
-			ImGui::TreePop();
-		}
-		ImGui::NewLine();
-		
-		static alert_box error_box("Error");
-		error_box.render();
-		
-		if(ImGui::TreeNodeEx("Actions", ImGuiTreeNodeFlags_DefaultOpen)) {
-			if(textures.size() > 0) {
-				try {
-					texture* tex = &textures[_selection];
-					
-					static prompt_box importer("Replace Selected", "Enter Import Path");
-					if(auto path = importer.prompt()) {
-						file_stream bmp_file(*path);
-						bmp_to_texture(tex, bmp_file);
-						tex->upload_to_opengl();
-					}
-					
-					static prompt_box exporter("Export Selected", "Enter Export Path");
-					if(auto path = exporter.prompt()) {
-						file_stream bmp_file(*path, std::ios::in | std::ios::out | std::ios::trunc);
-						texture_to_bmp(bmp_file, tex);
-					}
-					
-					static prompt_box mega_exporter("Export All", "Enter Export Path");
-					if(auto path_str = mega_exporter.prompt()) {
-						fs::path path(*path_str);
-						if(!fs::exists(path)) {
-							fs::create_directory(path);
-						}
-						for(texture& tex : textures) {
-							fs::path bmp_file_path = path / (tex.name + ".bmp");
-							file_stream bmp_file(bmp_file_path.string(), std::ios::in | std::ios::out | std::ios::trunc);
-							texture_to_bmp(bmp_file, &tex);
-						}
-					}
-				} catch(stream_error& e) {
-					error_box.open(e.what());
-				}
-			}
-			ImGui::TreePop();
-		}
-	ImGui::EndChild();
-	ImGui::NextColumn();
-
-	ImGui::BeginChild(2);
-		ImGui::Columns(std::max(1.f, ImGui::GetWindowSize().x / (128 + ImGui::GetStyle().ItemSpacing.x)));
-		render_grid(a, textures);
-	ImGui::EndChild();
-	ImGui::NextColumn();
-}
-
-void gui::texture_browser::render_grid(app& a, std::vector<texture>& tex_list) {
-	int num_this_frame = 0;
-
-	for(std::size_t i = 0; i < tex_list.size(); i++) {
-		texture* tex = &tex_list[i];
-
-		if(tex->size.x < (size_t ) _filters.min_width) {
-			continue;
-		}
-		if(tex->opengl_texture.id == 0) {
-			// Only load 10 textures per frame.
-			if(num_this_frame >= 10) {
-				ImGui::NextColumn();
-				continue;
-			}
-
-			tex->upload_to_opengl();
-			num_this_frame++;
-		}
-
-		ImGui::SetCursorPosX(ImGui::GetColumnOffset() + (ImGui::GetColumnWidth()/2) - 64);
-		bool clicked = ImGui::ImageButton(
-			(void*) (intptr_t) tex->opengl_texture.id,
-			ImVec2(128, 128),
-			ImVec2(0, 0),
-			ImVec2(1, 1),
-			(_selection == i) ? 2 : 0,
-			ImVec4(0, 0, 0, 1),
-			ImVec4(1, 1, 1, 1)
-		);
-		if(clicked) {
-			_selection = i;
-		}
-
-		std::string display_name = std::to_string(i) + " " + tex->name;
-		ImGui::Text("%s", display_name.c_str());
-		ImGui::NextColumn();
-	}
-}
-
-/*
-	model_browser
-*/
-gui::model_browser::model_browser() {}
-	
-const char* gui::model_browser::title_text() const {
-	return "Model Browser";
-}
-
-ImVec2 gui::model_browser::initial_size() const {
-	return ImVec2(400, 300);
-}
-
-void gui::model_browser::render(app& a) {
-	ImGui::Columns(2);
-
-	_model_lists = a.model_lists();
-
-	if (!_fullscreen_preview) {
-		float min_grid_width = (4 * (128 + ImGui::GetStyle().ItemSpacing.x));
-		if (ImGui::GetColumnWidth(0) < min_grid_width)
-			ImGui::SetColumnWidth(0, min_grid_width);
-	}
-	
-	moby_model* model = render_selection_pane(a);
-	if(model == nullptr) {
-		return;
-	}
-	
-	ImGui::NextColumn();
-	
-	if(ImGui::Button(_fullscreen_preview ? " > " : " < ")) {
-		_fullscreen_preview = !_fullscreen_preview;
-
-		if (!_fullscreen_preview) {
-			ImGui::SetColumnWidth(0, _selection_pane_width);
-		} else {
-		 	_selection_pane_width = ImGui::GetColumnWidth(0);
-			ImGui::SetColumnWidth(0, 0);
-		}
-	}
-	
-	ImGui::SameLine();
-	ImGui::SliderFloat("Zoom", &_view_params.zoom, 0.0, 1.0, "%.1f");
-	
-	ImVec2 preview_size;
-	if(_fullscreen_preview) {
-		auto win_size = ImGui::GetWindowSize();
-		preview_size = { win_size.x, ImGui::GetColumnWidth() * 3.0f/4.0f};
-	} else {
-		preview_size = { ImGui::GetColumnWidth(), ImGui::GetColumnWidth() * 3.0f/4.0f };
-	}
-
-	static bool is_dragging = false;
-	static GLuint preview_texture = 0;
-	
-	ImGui::BeginChild("preview", preview_size);
-	{
-		ImGui::Image((void*) (intptr_t) preview_texture, preview_size);
-
-		render_preview(
-			a,
-			&preview_texture,
-			*model,
-			*_model_lists.at(_list).textures,
-			a.renderer,
-			preview_size,
-			_view_params);
-
-		ImGuiIO& io = ImGui::GetIO();
-		glm::vec2 mouse_delta = glm::vec2(io.MouseDelta.y, io.MouseDelta.x) * 0.01f;
-		bool image_hovered = ImGui::IsItemHovered();
-
-		if(image_hovered || is_dragging) {
-			if(ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
-				is_dragging = true;
-				_view_params.pitch_yaw += mouse_delta;
-			}
-	
-			_view_params.zoom *= io.MouseWheel * a.delta_time * 0.0001 + 1;
-			if(_view_params.zoom < 0.f) _view_params.zoom = 0.f;
-			if(_view_params.zoom > 1.f) _view_params.zoom = 1.f;
-		}
-
-		if(ImGui::IsMouseReleased(0)) {
-			is_dragging = false;
-		}
-	}
-	ImGui::EndChild();
-	
-	if(ImGui::BeginTabBar("tabs")) {
-		if(ImGui::BeginTabItem("Details")) {
-			std::string index = std::to_string(_model);
-			ImGui::InputText("Index", &index, ImGuiInputTextFlags_ReadOnly);
-			std::string res_path = model->resource_path();
-			ImGui::InputText("Resource Path", &res_path, ImGuiInputTextFlags_ReadOnly);
-			
-			static const std::map<view_mode, const char*> modes = {
-				{ view_mode::WIREFRAME, "Wireframe" },
-				{ view_mode::TEXTURED_POLYGONS, "Textured Polygons" }
-			};
-
-			if(ImGui::BeginCombo("View Mode", modes.at(_view_params.mode))) {
-				for(auto [mode, name] : modes) {
-					if(ImGui::Selectable(name, _view_params.mode == mode)) {
-						_view_params.mode = mode;
-					}
-				}
-				ImGui::EndCombo();
-			}
-			
-			ImGui::Checkbox("Show Vertex Indices", &_view_params.show_vertex_indices);
-			ImGui::Checkbox("Show Bounding Box", &_view_params.show_bounding_box);
-
-			static prompt_box importer("Import .ply");
-			static alert_box import_error("Import Error");
-			import_error.render();
-			if(auto path = importer.prompt()) {
-				try {
-					model->import_ply(*path);
-				} catch(stream_error& e) {
-					import_error.open(e.what());
-				}
-			}
-			
-			ImGui::EndTabItem();
-		}
-		if(ImGui::BeginTabItem("Submodels")) {
-			ImGui::BeginChild("submodels");
-			render_submodel_list(*model);
-			ImGui::EndChild();
-			ImGui::EndTabItem();
-		}
-		if(ImGui::BeginTabItem("VIF Lists (Debug)")) {
-			ImGui::BeginChild("vif_lists");
-			try {
-				render_dma_debug_info(*model);
-			} catch(stream_error& e) {
-				ImGui::Text("Error: Out of bounds read.");
-			}
-			ImGui::EndChild();
-			ImGui::EndTabItem();
-		}
-		ImGui::EndTabBar();
-	}
-}
-
-moby_model* gui::model_browser::render_selection_pane(app& a) {
-	moby_model* result = nullptr;
-	
-	if(ImGui::BeginTabBar("lists")) {
-		for(auto& list : _model_lists) {
-			if(ImGui::BeginTabItem(list.first.c_str())) {
-				result = render_selection_grid(a, list.first, list.second);
-				ImGui::EndTabItem();
-			}
-		}
-		ImGui::EndTabBar();
-	}
-	
-	return result;
-}
-
-moby_model* gui::model_browser::render_selection_grid(
-		app& a,
-		std::string list_name,
-		model_list& list) {
-	moby_model* result = nullptr;
-	std::size_t num_this_frame = 0;
-	
-	ImGui::BeginChild(1);
-	ImGui::Columns(std::max(1.f, ImGui::GetWindowSize().x / (128 + ImGui::GetStyle().ItemSpacing.x)));
-	
-	for(std::size_t i = 0; i < list.models->size(); i++) {
-		moby_model& model = (*list.models)[i];
-
-		if(model.thumbnail() == 0) {
-			// Only load 10 textures per frame.
-			if(num_this_frame >= 10) {
-				ImGui::NextColumn();
-				continue;
-			}
-			
-			render_preview(
-				a,
-				&model.thumbnail(),
-				model,
-				*list.textures,
-				a.renderer,
-				ImVec2(128, 128),
-				view_params {
-					view_mode::TEXTURED_POLYGONS,           // view_mode
-					list_name == "ARMOR.WAD" ? 0.8f : 0.5f, // zoom
-					glm::vec2(0, glm::radians(90.f)),       // pitch_yaw
-					false,                                  // show_vertex_indices
-					false									// show bounding box
-				});
-			num_this_frame++;
-		}
-		
-		bool selected = _list == list_name && _model == i;
-
-		ImGui::SetCursorPosX(ImGui::GetColumnOffset() + (ImGui::GetColumnWidth()/2) - 64);
-		ImGui::Text("%ld", i);
-
-		bool clicked = ImGui::ImageButton(
-			(void*) (intptr_t) model.thumbnail(),
-			ImVec2(128, 128),
-			ImVec2(0, 0),
-			ImVec2(1, 1),
-			selected,
-			ImVec4(0, 0, 0, 1),
-			ImVec4(1, 1, 1, 1)
-		);
-
-		ImVec2 text_width = ImGui::CalcTextSize(model.name().c_str());
-		ImGui::SetCursorPosX(ImGui::GetColumnOffset() + (ImGui::GetColumnWidth()/2) - text_width.x/2);
-
-		ImGui::Text("%s\n\n", model.name().c_str());
-		
-		if(clicked) {
-			_list = list_name;
-			_model = i;
-			
-			// Reset submodel visibility.
-			for(moby_submodel& submodel : model.submodels) {
-				submodel.visible_in_model_viewer = true;
-			}
-		}
-		if(selected) {
-			result = &model;
-		}
-		
-		ImGui::NextColumn();
-	}
-	ImGui::EndChild();
-	
-	return result;
-}
-
-void gui::model_browser::render_preview(
-		app& a,
-		GLuint* target,
-		moby_model& model,
-		std::vector<texture>& textures,
-		const gl_renderer& renderer,
-		ImVec2 preview_size,
-		view_params params) {
-	glm::mat4 local_to_clip;
-	
-	render_to_texture(target, preview_size.x, preview_size.y, [&]() {
-		local_to_clip = renderer.draw_single_moby(model, textures, params, preview_size.x, preview_size.y);
-	});
-
-	if(params.show_vertex_indices) {
-		auto draw_list = ImGui::GetWindowDrawList();
-		
-		static const auto apply_local_to_screen = [&](glm::vec4 pos) {
-			glm::vec4 homogeneous_pos = local_to_clip * pos;
-			glm::vec3 gl_pos {
-					homogeneous_pos.x / homogeneous_pos.w,
-					homogeneous_pos.y / homogeneous_pos.w,
-					homogeneous_pos.z / homogeneous_pos.w
-			};
-			ImVec2 window_pos = ImGui::GetWindowPos();
-			glm::vec3 screen_pos(
-					window_pos.x + (1 + gl_pos.x) * preview_size.x / 2.0,
-					window_pos.y + (1 + gl_pos.y) * preview_size.y / 2.0,
-					gl_pos.z
-			);
-			return screen_pos;
-		};
-
-		for(const moby_submodel& submodel : model.submodels) {
-			if(!submodel.visible_in_model_viewer) {
-				continue;
-			}
-			
-			for(std::size_t j = 0; j < submodel.vertices.size(); j++) {
-				const moby_model_vertex& vert = submodel.vertices[j];
-				glm::vec3 proj_pos = apply_local_to_screen(glm::vec4(
-					vert.x / (float) INT16_MAX,
-					vert.y / (float) INT16_MAX,
-					vert.z / (float) INT16_MAX, 1.f));
-				if(proj_pos.z > 0.f) {
-					draw_list->AddText(ImVec2(proj_pos.x, proj_pos.y), 0xffffffff, int_to_hex(j).c_str());
-				}
-			}
-		}
-	}
-}
-
-void gui::model_browser::render_submodel_list(moby_model& model) {
-	// We're only reading in the main submodels for now, but there seem to
-	// be more in some of the armour models.
-	static const std::size_t SUBMODEL_GROUPS = 1;
-	
-	std::size_t low = 0;
-	for(std::size_t i = 0; i < SUBMODEL_GROUPS; i++) {
-		ImGui::PushID(i);
-		
-		const std::size_t high = model.submodels.size();
-		
-		// If every submodel in a given group is visible, we should draw the
-		// box as being ticked.
-		bool group_ticked = true;
-		for(std::size_t j = low; j < high; j++) {
-			group_ticked &= model.submodels[j].visible_in_model_viewer;
-		}
-		const bool group_ticked_before = group_ticked;
-		
-		std::string label = "Group " + std::to_string(i);
-		
-		bool group_expanded = ImGui::TreeNode("group", "%s", "");
-		ImGui::SameLine();
-		ImGui::Checkbox(label.c_str(), &group_ticked);
-		if(group_expanded) {
-			for(std::size_t j = low; j < high; j++) {
-				ImGui::PushID(j);
-				moby_submodel& submodel = model.submodels[j];
-				
-				std::string submodel_label = "Submodel " + std::to_string(j);
-				bool submodel_expanded = ImGui::TreeNode("submodel", "%s", "");
-				ImGui::SameLine();
-				ImGui::Checkbox(submodel_label.c_str(), &submodel.visible_in_model_viewer);
-				if(submodel_expanded) {
-					for(const moby_model_vertex& vertex : submodel.vertices) {
-						ImGui::Text("%x %x %x", vertex.x & 0xffff, vertex.y & 0xffff, vertex.z & 0xffff);
-					}
-					ImGui::TreePop();
-				}
-				ImGui::PopID();
-			}
-			ImGui::TreePop();
-		}
-		
-		// If the user user ticked or unticked the box, apply said changes to
-		// all submodels in the current group.
-		if(group_ticked != group_ticked_before) {
-			for(std::size_t j = low; j < high; j++) {
-				model.submodels[j].visible_in_model_viewer = group_ticked;
-			}
-		}
-		
-		ImGui::PopID();
-	}
-}
-
-void gui::model_browser::render_dma_debug_info(moby_model& mdl) {
-	for(std::size_t i = 0; i < mdl.submodels.size(); i++) {
-		ImGui::PushID(i);
-		moby_submodel& submodel = mdl.submodels[i];
-		
-		if(ImGui::TreeNode("submodel", "Submodel %ld", i)) {
-			for(vif_packet& vpkt : submodel.vif_list) {
-				ImGui::PushID(vpkt.address);
-					
-				if(vpkt.error != "") {
-					ImGui::Text("   (error: %s)", vpkt.error.c_str());
-					ImGui::PopID();
-					continue;
-				}
-				
-				std::string label = vpkt.code.to_string();
-				if(ImGui::TreeNode("packet", "%lx %s", vpkt.address, label.c_str())) {
-					auto lines = to_hex_dump((uint32_t*) vpkt.data.data(), vpkt.address, vpkt.data.size() / sizeof(uint32_t));
-					for(std::string& line : lines) {
-						ImGui::Text("    %s", line.c_str());
-					}
-					ImGui::TreePop();
-				}
-				ImGui::PopID();
-			}
-			ImGui::TreePop();
-		}
-		ImGui::PopID();
-	}
+		a.render_settings.camera_control ? "On" : "Off");
 }
 
 /*
@@ -1308,9 +728,7 @@ void gui::settings::render_debug_page(app& a) {
 	if(ImGui::Checkbox("Stream Tracing", &config::get().debug.stream_tracing)) {
 		config::get().write();
 	}
-	if(syst) {
-		ImGui::Checkbox("???", &a.renderer.flag);
-	}
+	
 }
 
 /*

@@ -23,10 +23,6 @@
 #include <string>
 #include <vector>
 
-# /*
-# 	List of supported games loaded from gamedb.txt.
-# */
-
 struct gamedb_game {
 	std::string name;
 	std::map<std::size_t, std::string> tables;

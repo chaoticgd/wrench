@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef STREAM_H
-#define STREAM_H
+#ifndef ISO_LEGACY_STREAM_H
+#define ISO_LEGACY_STREAM_H
 
 #include <bitset>
 #include <fstream>
@@ -28,44 +28,13 @@
 #include <stdexcept>
 #include <type_traits>
 
-#include "../core/util.h"
-#include "stacktrace.h"
+#include <core/util.h>
 
-# /*
-#	A set of utility classes and macros for working with binary files.
-# */
-
-#ifdef _MSC_VER
-	#define packed_struct(name, ...) \
-		__pragma(pack(push, 1)) struct name { __VA_ARGS__ } __pragma(pack(pop));
-	
-	#define FORCE_INLINE __forceinline
-#else
-	#define packed_struct(name, ...) \
-		struct __attribute__((__packed__)) name { __VA_ARGS__ };
-	
-	#define FORCE_INLINE __attribute__((always_inline))
-#endif
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// !!!!!!!!!!!!!!!!!!!!!!!!!! DO NOT USE FOR NEW CODE !!!!!!!!!!!!!!!!!!!!!!!!!!
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 #define offsetof32(x, y) static_cast<uint32_t>(offsetof(x, y))
-
-template <typename T>
-packed_struct(file_ptr,
-	file_ptr()           : value(0) {}
-	file_ptr(uint32_t v) : value(v) {}
-
-	uint32_t value;
-
-	template <typename T_rhs>
-	friend file_ptr<T_rhs> operator+(file_ptr<T>& lhs, file_ptr<T_rhs>& rhs) {
-		return lhs.value + rhs.value;
-	}
-
-	template <typename T_result>
-	file_ptr<T_result> next() {
-		return value + sizeof(T);
-	}
-)
 
 packed_struct(sector_range,
 	Sector32 offset;
@@ -79,10 +48,7 @@ packed_struct(byte_range,
 
 struct stream_error : public std::runtime_error {
 	stream_error(const char* what)
-		: std::runtime_error(what) {
-		stack_trace = generate_stacktrace();
-	}
-
+		: std::runtime_error(what) {}
 	std::string stack_trace;
 };
 
@@ -232,54 +198,6 @@ public:
 		return false;
 	}
 
-	// Pretty print new data that has been written to the end of the buffer.
-	// Compare said data to an 'expected' data file.
-	void print_diff(std::optional<stream*> expected, bool use_binary = false) {
-
-		if(tell() < _last_printed) {
-			return;
-		}
-
-		bool is_bad = false;
-		std::cout << std::hex << (_last_printed | 0x1000000000000000) << " >>>> ";
-		for(std::size_t i = _last_printed; i < tell(); i++) {
-			auto val = peek<uint8_t>(i);
-			if(expected.has_value()) {
-				auto expected_val = (*expected)->peek<uint8_t>(i);
-				if(val == expected_val) {
-					std::cout << "\033[1;32m"; // Green.
-				} else {
-					std::cout << "\033[1;31m"; // Red.
-					is_bad = true;
-				}
-			} else {
-				std::cout << "\033[1;33m"; // Yellow.
-			}
-			if(use_binary) {
-				std::cout << std::bitset<8>(val);
-			} else {
-				if(val < 0x10) std::cout << "0";
-				std::cout << std::hex << static_cast<int>(val);
-			}
-			std::cout << "\033[0m"; // Reset colours.
-			if((i - _last_printed) % 32 == 31 || (use_binary && (i - _last_printed) % 16 == 15)) {
-				std::cout << "\n" << std::hex << ((i + 1) | 0x1000000000000000) << " >>>> ";
-			} else {
-				std::cout << " ";
-			}
-		}
-		if(is_bad) {
-			std::cout << "\nEXPECTED:\n";
-			(*expected)->_last_printed = _last_printed;
-			(*expected)->seek(tell());
-			(*expected)->print_diff({}, use_binary);
-			std::cout << std::endl;
-			throw stream_format_error("Data written to stream did not match expected stream.");
-		}
-		std::cout << "\n";
-		_last_printed = tell();
-	}
-
 protected:
 	stream()
 		: _last_printed(0) {}
@@ -321,76 +239,9 @@ public:
 	
 	char* data();
 	static bool compare_contents(array_stream& a, array_stream& b);
-	
-
-	// Non-virtual inlined functions for use in the WAD decompression loop.
-	// It's way too slow with virtual calls, and inlining these functions
-	// seems to provide a nice speedup too, at least on my machine. (;
-	
-	FORCE_INLINE uint8_t read8() {
-		if(pos >= buffer.size()) {
-			throw stream_io_error("Tried to read past end of array_stream!");
-		}
-		return buffer[pos++];
-	}
-
-	FORCE_INLINE uint8_t peek8() {
-		return peek8(pos);
-	}
-
-	FORCE_INLINE uint8_t peek8(std::size_t offset) {
-		return buffer.at(offset);
-	}
-
-	FORCE_INLINE void write8(uint8_t value) {
-		std::size_t required_size = pos + 1;
-		if(required_size > buffer.size()) {
-			buffer.resize(required_size);
-		}
-		buffer[pos++] = value;
-	}
 
 	std::vector<char> buffer;
 	std::size_t pos = 0;
-};
-
-// Point to a data segment within a larger stream. For example, you could create
-// a stream to allow for more convenient access a texture within a disk image.
-class proxy_stream : public stream {
-public:
-	proxy_stream() {}
-	proxy_stream(stream* parent_, std::size_t zero, std::size_t size);
-
-	std::size_t size() const;
-	void seek(std::size_t offset);
-	std::size_t tell() const;
-	void read_n(char* dest, std::size_t size);
-	void write_n(const char* data, std::size_t size);
-	std::string resource_path() const;
-
-private:
-	std::size_t _zero;
-	std::size_t _size;
-};
-
-struct trace_stream_range {
-	std::size_t offset;
-	std::size_t size;
-};
-
-// Records all the locations that have been read from using it.
-class trace_stream : public stream {
-public:
-	trace_stream(stream* parent);
-
-	std::size_t size() const override;
-	void seek(std::size_t offset) override;
-	std::size_t tell() const override;
-	void read_n(char* dest, std::size_t size_) override;
-	void write_n(const char* data, std::size_t size) override;
-	std::string resource_path() const override;
-
-	std::vector<bool> read_mask;
 };
 
 #endif

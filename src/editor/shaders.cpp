@@ -20,25 +20,25 @@
 
 #include <vector>
 
-shader_program::shader_program(const GLchar* vertex_src, const GLchar* fragment_src, shader_callback after)
+Shader::Shader(const GLchar* vertex_src, const GLchar* fragment_src, shader_callback after)
 	: _id(0), _vertex_src(vertex_src), _fragment_src(fragment_src), _after(after) {}
 	
-shader_program::~shader_program() {
+Shader::~Shader() {
 	glDeleteProgram(_id);
 }
 
-void shader_program::init() {
+void Shader::init() {
 	_id = link(
 		compile(_vertex_src,   GL_VERTEX_SHADER),
 		compile(_fragment_src, GL_FRAGMENT_SHADER));
 	_after(_id);
 }
 
-GLuint shader_program::id() const {
+GLuint Shader::id() const {
 	return _id;
 }
 
-GLuint shader_program::link(GLuint vertex, GLuint fragment) {
+GLuint Shader::link(GLuint vertex, GLuint fragment) {
 	GLuint id = glCreateProgram();
 	glAttachShader(id, vertex);
 	glAttachShader(id, fragment);
@@ -64,7 +64,7 @@ GLuint shader_program::link(GLuint vertex, GLuint fragment) {
 	return id;
 }
 
-GLuint shader_program::compile(const GLchar* src, GLuint type) {
+GLuint Shader::compile(const GLchar* src, GLuint type) {
 	GLuint id = glCreateShader(type);
 
 	GLint result;
@@ -89,36 +89,11 @@ shader_programs::shader_programs() :
 		R"(
 			#version 120
 
-			uniform mat4 transform;
-			attribute vec3 position_model_space;
-
-			void main() {
-				gl_Position = transform * vec4(position_model_space, 1);
-			}
-		)",
-		R"(
-			#version 120
-
-			uniform vec4 rgb;
-
-			void main() {
-				gl_FragColor = rgb;
-			}
-		)",
-		[&](GLuint id) {
-			solid_colour_transform = glGetUniformLocation(id, "transform");
-			solid_colour_rgb       = glGetUniformLocation(id, "rgb");
-		}
-	),
-	solid_colour_batch(
-		R"(
-			#version 120
-
 			attribute mat4 local_to_clip;
-			attribute vec3 position_model_space;
+			attribute vec3 position;
 
 			void main() {
-				gl_Position = local_to_clip * vec4(position_model_space, 1);
+				gl_Position = local_to_clip * vec4(position, 1);
 			}
 		)",
 		R"(
@@ -131,9 +106,10 @@ shader_programs::shader_programs() :
 			}
 		)",
 		[&](GLuint id) {
-			solid_colour_batch_rgb = glGetUniformLocation(id, "rgb");
+			solid_colour_rgb = glGetUniformLocation(id, "rgb");
 			
 			glBindAttribLocation(id, 0, "local_to_clip");
+			glBindAttribLocation(id, 1, "position");
 		}
 	),
 	textured(
@@ -141,13 +117,14 @@ shader_programs::shader_programs() :
 			#version 120
 
 			attribute mat4 local_to_clip;
-			attribute vec3 position_model_space;
-			attribute vec2 uv;
+			attribute vec3 position;
+			attribute vec3 normal;
+			attribute vec2 tex_coord;
 			varying vec2 uv_frag;
 
 			void main() {
-				gl_Position = local_to_clip * vec4(position_model_space, 1);
-				uv_frag = uv * vec2(8.f, 8.f);
+				gl_Position = local_to_clip * vec4(position, 1);
+				uv_frag = tex_coord;
 			}
 		)",
 		R"(
@@ -157,52 +134,21 @@ shader_programs::shader_programs() :
 			varying vec2 uv_frag;
 
 			void main() {
-				gl_FragColor = texture2D(sampler, uv_frag);
+				gl_FragColor = vec4(1,0,0,1);texture2D(sampler, uv_frag);
 			}
 		)",
 		[&](GLuint id) {
 			textured_sampler = glGetUniformLocation(id, "sampler");
 			
 			glBindAttribLocation(id, 0, "local_to_clip");
-			glBindAttribLocation(id, 4, "position_model_space");
-			glBindAttribLocation(id, 5, "uv");
-		}
-	),
-	vertex_color(
-		R"(
-			#version 120
-
-			uniform mat4 transform;
-			attribute vec3 position_model_space;
-			attribute vec3 color;
-			varying vec4 color_frag;
-
-			void main() {
-				gl_Position = transform * vec4(position_model_space, 1);
-				color_frag = vec4(color, 1);
-			}
-		)",
-		R"(
-			#version 120
-
-			varying vec4 color_frag;
-
-			void main() {
-				gl_FragColor = color_frag;
-			}
-		)",
-		[&](GLuint id) {
-			vertex_color_transform = glGetUniformLocation(id, "transform");
-
-			glBindAttribLocation(id, 0, "position_model_space");
-			glBindAttribLocation(id, 1, "color");
+			glBindAttribLocation(id, 4, "position");
+			glBindAttribLocation(id, 5, "normal");
+			glBindAttribLocation(id, 6, "tex_coord");
 		}
 	)
 {}
 
 void shader_programs::init() {
 	solid_colour.init();
-	solid_colour_batch.init();
 	textured.init();
-	vertex_color.init();
 }

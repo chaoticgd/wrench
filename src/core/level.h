@@ -431,7 +431,6 @@ struct LevelWad : Wad {
 	std::vector<u8> occlusion;
 	std::vector<u8> sky;
 	ColladaScene collision;
-	std::vector<u8> collision_bin;
 	std::vector<Texture> textures;
 	std::vector<size_t> tfrag_texture_indices;
 	std::vector<Texture> particle_textures;
@@ -458,7 +457,9 @@ struct LevelWad : Wad {
 
 Opt<Game> game_from_string(std::string str);
 std::unique_ptr<Wad> read_wad_json(fs::path src_path);
-void write_wad_json(fs::path dest_path, Wad* base);
+void write_wad_json(fs::path dest_dir, Wad* base);
+LevelWad read_level_wad_json(const Json& json, const fs::path& src_dir, Game game);
+const char* write_level_wad_json(Json& json, const fs::path& dest_dir, LevelWad& wad);
 
 template <typename Callback, typename InstanceVec>
 static void for_each_instance_of_type_with(u32 required_components_mask, const InstanceVec& instances, Callback callback) {

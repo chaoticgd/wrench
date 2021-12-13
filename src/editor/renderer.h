@@ -26,26 +26,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "util.h"
-#include "shaders.h"
-#include "gui/imgui_includes.h"
-#include "formats/texture.h"
-#include "formats/game_model.h"
-#include "formats/level_impl.h"
+#include <editor/gui/imgui_includes.h>
+#include <editor/formats/level_impl.h>
 
 class app;
-
-enum class view_mode {
-	WIREFRAME = 0,
-	TEXTURED_POLYGONS = 1
-};
-
-struct view_params {
-	view_mode mode = view_mode::TEXTURED_POLYGONS;
-	float zoom = 0.5f;
-	glm::vec2 pitch_yaw = { 0.f, 0.f };
-	bool show_vertex_indices = false;
-	bool show_bounding_box = false;
-};
 
 // The games use a Z-up coordinate system, OpenGL uses a Y-up coordinate system.
 const glm::mat4 RATCHET_TO_OPENGL_MATRIX = {
@@ -55,70 +39,11 @@ const glm::mat4 RATCHET_TO_OPENGL_MATRIX = {
 	0,  0, 0, 1
 };;
 
-struct gl_renderer {
-	void prepare_frame(level& lvl, glm::mat4 world_to_clip); // Compute local to world matrices for the moby batch renderer.
-	void draw_level(level& lvl, glm::mat4 world_to_clip) const;
-	void draw_pickframe(level& lvl, glm::mat4 world_to_clip) const;
-	
-	void draw_spline(const std::vector<glm::vec4>& spline, const glm::mat4& world_to_clip, const glm::vec4& colour) const;
-	void draw_tris  (const std::vector<float>& vertex_data, const glm::mat4& mvp, const glm::vec4& colour) const;
-	void draw_model (const model& mdl, const glm::mat4& mvp, const glm::vec4& colour) const;
-	void draw_model_vcolor (const model& mdl, const glm::mat4& mvp) const;
-	void draw_cube  (const glm::mat4& mvp, const glm::vec4& colour) const;
-	
-	// Only call this with vertex data that's completely static e.g. a const global.
-	void draw_static_mesh(
-		const float* vertex_data,
-		size_t vertex_data_size, const
-		glm::mat4 local_to_clip,
-		glm::vec4 colour);
-		
-	void draw_moby_models(
-		moby_model& model,
-		std::vector<texture>& textures,
-		view_mode mode,
-		bool show_all_submodels,
-		bool show_bounding_box,
-		GLuint local_to_world_buffer,
-		std::size_t instance_offset, 
-		std::size_t count) const;
-	
-	glm::mat4 draw_single_moby(
-		moby_model& model,
-		std::vector<texture>& textures,
-		view_params params,
-		int width,
-		int height) const;
-	
-	void draw_shrub_models(
-		shrub_model& model,
-		std::vector<texture>& textures,
-		view_mode mode,
-		bool show_all_submodels,
-		GLuint local_to_world_buffer,
-		std::size_t instance_offset,
-		std::size_t count) const;
-	
-	static glm::vec4 colour_coded_submodel_index(std::size_t index, std::size_t submodel_count);
-	
-	ImVec2 viewport_pos;
-	ImVec2 viewport_size;
-	
-	glm::mat4 get_world_to_clip() const;
-	glm::mat4 get_local_to_clip(glm::mat4 world_to_clip, glm::vec3 position, glm::vec3 rotation) const;
-	glm::vec3 apply_local_to_screen(glm::mat4 world_to_clip, glm::mat4 local_to_world) const;
-	
-	glm::vec3 create_ray(glm::mat4 world_to_clip, ImVec2 screen_pos);
-	
-	shader_programs shaders;
-	
-	void reset_camera(app* a);
-	
+struct RenderSettings {
 	bool camera_control { false };
 	glm::vec3 camera_position { 0, 0, 0 };
 	glm::vec2 camera_rotation { 0, 0 };
 	
-	view_mode mode = view_mode::TEXTURED_POLYGONS;
 	bool draw_ties = true;
 	bool draw_shrubs = true;
 	bool draw_mobies = true;
@@ -128,15 +53,27 @@ struct gl_renderer {
 	bool draw_paths = true;
 	bool draw_grind_paths = true;
 	bool draw_tfrags = true;
-	bool draw_tcols = true;
+	bool draw_collision = true;
 	
 	bool flag = false;
-	std::vector<glm::mat4> moby_matrices;
-	std::vector<glm::mat4> shrub_matrices;
+	
+	ImVec2 view_pos;
+	ImVec2 view_size;
 };
 
+void init_renderer();
+void prepare_frame(level& lvl, const glm::mat4& world_to_clip); // Compute local to world matrices for the instanced renderer.
+void draw_level(level& lvl, const glm::mat4& world_to_clip, const RenderSettings& settings);
+void draw_pickframe(level& lvl, const glm::mat4& world_to_clip, const RenderSettings& settings);
+
+glm::mat4 compose_world_to_clip(const ImVec2& view_size, const glm::vec3& cam_pos, const glm::vec2& cam_rot);
+glm::vec3 apply_local_to_screen(const glm::mat4& world_to_clip, const glm::mat4& local_to_world, const ImVec2& view_size);
+glm::vec3 create_ray(const glm::mat4& world_to_clip, const ImVec2& screen_pos, const ImVec2& view_pos, const ImVec2& view_size);
+
+void reset_camera(app* a);
+
 template <typename T>
-void render_to_texture(GLuint* target, int width, int height, T draw_callback) {
+void render_to_texture(GLuint* target, GLsizei width, GLsizei height, T draw_callback) {
 	glDeleteTextures(1, target);
 	
 	glGenTextures(1, target);

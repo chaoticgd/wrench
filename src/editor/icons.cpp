@@ -21,17 +21,72 @@
 #include <vector>
 #include <glm/glm.hpp>
 
-gl_texture upload_icon(uint32_t* pixels, int side) {
-	gl_texture texture;
-	glGenTextures(1, &texture.id);
-	glBindTexture(GL_TEXTURE_2D, texture.id);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, side, side, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	return texture;
+static void path(uint32_t image[START_SCREEN_ICON_SIDE][START_SCREEN_ICON_SIDE], std::vector<glm::vec2> points);
+static void line(uint32_t image[START_SCREEN_ICON_SIDE][START_SCREEN_ICON_SIDE], float x0, float y0, float x1, float y1);
+static GlTexture upload_icon(uint32_t* pixels, int side);
+
+GlTexture create_dvd_icon() {
+	const int outer_radius = 45;
+	const int inner_radius = 10;
+	const int shine_max_radius = 41;
+	const int shine_min_radius = 14;
+	const float shine_min_angle = M_PI * 0.125;
+	const float shine_max_angle = M_PI * 0.5 - M_PI * 0.125;
+	const glm::vec2 dvd_centre = { START_SCREEN_ICON_SIDE / 2, START_SCREEN_ICON_SIDE / 2 };
+	uint32_t icon[START_SCREEN_ICON_SIDE][START_SCREEN_ICON_SIDE];
+	for(int y = 0; y < START_SCREEN_ICON_SIDE; y++) {
+		for(int x = 0; x < START_SCREEN_ICON_SIDE; x++) {
+			glm::vec2 point = glm::vec2(x, y) - dvd_centre;
+			int radius = glm::distance(point, glm::vec2(0, 0));
+			float angle = atan(-point.y / point.x);
+			bool cond = false;
+			cond |= radius == outer_radius;
+			cond |= radius == inner_radius;
+			cond |=
+				radius >= shine_min_radius &&
+				radius <= shine_max_radius &&
+				angle >= shine_min_angle &&
+				angle <= shine_max_angle;
+			icon[y][x] = cond ? 0xffffffff : 0;
+		}
+	}
+	return upload_icon((uint32_t*) icon, START_SCREEN_ICON_SIDE);
 }
 
-void line(uint32_t image[START_SCREEN_ICON_SIDE][START_SCREEN_ICON_SIDE], float x0, float y0, float x1, float y1) {
+GlTexture create_folder_icon() {
+	int top = 10;
+	int uppermid = 20;
+	int lowermid = 30;
+	int baseline = 85;
+	uint32_t icon[START_SCREEN_ICON_SIDE][START_SCREEN_ICON_SIDE] = {0};
+	path(icon, {{0, top}, {0, baseline}});
+	path(icon, {{0, top}, {35, top}, {45, uppermid}, {80, uppermid}, {80, lowermid}});
+	path(icon, {{0, baseline}, {20, lowermid}, {95, lowermid}});
+	path(icon, {{0, baseline}, {75, baseline}, {95, lowermid}});
+	return upload_icon((uint32_t*) icon, START_SCREEN_ICON_SIDE);
+}
+
+GlTexture create_floppy_icon() {
+	int left = 5;
+	int right = 90;
+	int corner = 15;
+	uint32_t icon[START_SCREEN_ICON_SIDE][START_SCREEN_ICON_SIDE] = {0};
+	path(icon, {{left, 5}, {left, 90}, {right, 90}});
+	path(icon, {{left, 5}, {right - corner, 5}, {right, 5 + corner}, {right, 90}});
+	path(icon, {{left + 20, 5}, {left + 20, 30}, {right - 20, 30}});
+	path(icon, {{right - 20, 5}, {right - 20, 30}});
+	path(icon, {{left + 15, 50}, {left + 15, 90}});
+	path(icon, {{left + 15, 90}, {left + 15, 50}, {right - 15, 50}, {right - 15, 90}});
+	return upload_icon((uint32_t*) icon, START_SCREEN_ICON_SIDE);
+}
+
+static void path(uint32_t image[START_SCREEN_ICON_SIDE][START_SCREEN_ICON_SIDE], std::vector<glm::vec2> points) {
+	for(size_t i = 0; i < points.size() - 1; i++) {
+		line(image, points[i].x, points[i].y, points[i + 1].x, points[i + 1].y);
+	}
+}
+
+static void line(uint32_t image[START_SCREEN_ICON_SIDE][START_SCREEN_ICON_SIDE], float x0, float y0, float x1, float y1) {
 	auto inbounds = [&](int coord) {
 		int max = START_SCREEN_ICON_SIDE - 1;
 		if(coord > max) coord = max;
@@ -63,63 +118,12 @@ void line(uint32_t image[START_SCREEN_ICON_SIDE][START_SCREEN_ICON_SIDE], float 
 	}
 }
 
-void path(uint32_t image[START_SCREEN_ICON_SIDE][START_SCREEN_ICON_SIDE], std::vector<glm::vec2> points) {
-	for(size_t i = 0; i < points.size() - 1; i++) {
-		line(image, points[i].x, points[i].y, points[i + 1].x, points[i + 1].y);
-	}
-}
-
-gl_texture create_dvd_icon() {
-	const int outer_radius = 45;
-	const int inner_radius = 10;
-	const int shine_max_radius = 41;
-	const int shine_min_radius = 14;
-	const float shine_min_angle = M_PI * 0.125;
-	const float shine_max_angle = M_PI * 0.5 - M_PI * 0.125;
-	const glm::vec2 dvd_centre = { START_SCREEN_ICON_SIDE / 2, START_SCREEN_ICON_SIDE / 2 };
-	uint32_t icon[START_SCREEN_ICON_SIDE][START_SCREEN_ICON_SIDE];
-	for(int y = 0; y < START_SCREEN_ICON_SIDE; y++) {
-		for(int x = 0; x < START_SCREEN_ICON_SIDE; x++) {
-			glm::vec2 point = glm::vec2(x, y) - dvd_centre;
-			int radius = glm::distance(point, glm::vec2(0, 0));
-			float angle = atan(-point.y / point.x);
-			bool cond = false;
-			cond |= radius == outer_radius;
-			cond |= radius == inner_radius;
-			cond |=
-				radius >= shine_min_radius &&
-				radius <= shine_max_radius &&
-				angle >= shine_min_angle &&
-				angle <= shine_max_angle;
-			icon[y][x] = cond ? 0xffffffff : 0;
-		}
-	}
-	return upload_icon((uint32_t*) icon, START_SCREEN_ICON_SIDE);
-}
-
-gl_texture create_folder_icon() {
-	int top = 10;
-	int uppermid = 20;
-	int lowermid = 30;
-	int baseline = 85;
-	uint32_t icon[START_SCREEN_ICON_SIDE][START_SCREEN_ICON_SIDE] = {0};
-	path(icon, {{0, top}, {0, baseline}});
-	path(icon, {{0, top}, {35, top}, {45, uppermid}, {80, uppermid}, {80, lowermid}});
-	path(icon, {{0, baseline}, {20, lowermid}, {95, lowermid}});
-	path(icon, {{0, baseline}, {75, baseline}, {95, lowermid}});
-	return upload_icon((uint32_t*) icon, START_SCREEN_ICON_SIDE);
-}
-
-gl_texture create_floppy_icon() {
-	int left = 5;
-	int right = 90;
-	int corner = 15;
-	uint32_t icon[START_SCREEN_ICON_SIDE][START_SCREEN_ICON_SIDE] = {0};
-	path(icon, {{left, 5}, {left, 90}, {right, 90}});
-	path(icon, {{left, 5}, {right - corner, 5}, {right, 5 + corner}, {right, 90}});
-	path(icon, {{left + 20, 5}, {left + 20, 30}, {right - 20, 30}});
-	path(icon, {{right - 20, 5}, {right - 20, 30}});
-	path(icon, {{left + 15, 50}, {left + 15, 90}});
-	path(icon, {{left + 15, 90}, {left + 15, 50}, {right - 15, 50}, {right - 15, 90}});
-	return upload_icon((uint32_t*) icon, START_SCREEN_ICON_SIDE);
+static GlTexture upload_icon(uint32_t* pixels, int side) {
+	GlTexture texture;
+	glGenTextures(1, &texture.id);
+	glBindTexture(GL_TEXTURE_2D, texture.id);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, side, side, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	return texture;
 }

@@ -27,10 +27,6 @@
 #include "gui/window.h"
 #include "worker_logger.h"
 
-# /*
-#	 A background thread and associated GUI that displays its state via worker_logger.
-# */
-
 // Must not throw.
 template <typename T_out, typename T_in>
 using job_function = std::function<std::optional<T_out>(T_in in, worker_logger& log)>;

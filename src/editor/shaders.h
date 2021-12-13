@@ -24,17 +24,12 @@
 
 #include "gl_includes.h"
 
-# /*
-#	A class that can compile OpenGL shaders along with a number of shaders used
-#	by the 3D view.
-# */
-
-class shader_program {
+class Shader {
 public:
 	using shader_callback = std::function<void(GLuint id)>;
 
-	shader_program(const GLchar* vertex_src, const GLchar* fragment_src, shader_callback after);
-	~shader_program();
+	Shader(const GLchar* vertex_src, const GLchar* fragment_src, shader_callback after);
+	~Shader();
 
 	void init(); // Called after a valid OpenGL context is setup.
 
@@ -54,18 +49,11 @@ struct shader_programs {
 	shader_programs();
 
 	void init(); // Called after a valid OpenGL context is setup.
-
-	shader_program solid_colour;
-	GLint solid_colour_transform;
+	
+	Shader solid_colour;
 	GLint solid_colour_rgb;
-
-	shader_program vertex_color;
-	GLint vertex_color_transform;
 	
-	shader_program solid_colour_batch;
-	GLint solid_colour_batch_rgb;
-	
-	shader_program textured;
+	Shader textured;
 	GLint textured_sampler;
 };
 

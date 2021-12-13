@@ -55,7 +55,7 @@ struct Vertex {
 		return pos == rhs.pos && normal == rhs.normal && tex_coord == rhs.tex_coord;
 	}
 	bool operator<(const Vertex& rhs) const {
-		// The moby code relies on the texture coordinate being checked last.
+		// The moby code relies on the texture coordinates being compared last.
 		if(pos.z != rhs.pos.z) return pos.z < rhs.pos.z;
 		if(pos.y != rhs.pos.y) return pos.y < rhs.pos.y;
 		if(pos.x != rhs.pos.x) return pos.x < rhs.pos.x;

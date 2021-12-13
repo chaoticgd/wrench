@@ -17,6 +17,7 @@
 */
 
 #include "mesh.h"
+#include "timer.h"
 
 Mesh sort_vertices(Mesh src) {
 	std::vector<s32> vertex_mapping(src.vertices.size());
@@ -90,8 +91,6 @@ Mesh deduplicate_vertices(Mesh src) {
 	}
 	return dest;
 }
-
-#include "timer.h"
 
 Mesh deduplicate_faces(Mesh mesh) {
 	start_timer("Deduplicating faces (remember to make this not N^2)");

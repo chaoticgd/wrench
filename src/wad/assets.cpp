@@ -46,9 +46,7 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 	s32 sky_size = next_asset_block_size(header.sky, block_bounds);
 	wad.sky = assets.read_bytes(header.sky, sky_size, "sky");
 	s32 collision_size = next_asset_block_size(header.collision, block_bounds);
-	std::vector<u8> collision = assets.read_bytes(header.collision, collision_size, "collision");
-	wad.collision_bin = collision;
-	wad.collision = read_collision(Buffer(collision));
+	wad.collision = read_collision(assets.read_bytes(header.collision, collision_size, "collision"));
 	
 	verify(header.moby_classes.count >= 1, "Level has no moby classes.");
 	verify(header.tie_classes.count >= 1, "Level has no tie classes.");

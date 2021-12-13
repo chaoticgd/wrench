@@ -24,16 +24,11 @@
 #include "../app.h"
 #include "../fs_includes.h"
 #include "../gl_includes.h"
-#include "../formats/game_model.h"
 #include "../formats/level_impl.h"
 #include "window.h"
 #include "view_3d.h"
 #include "inspector.h"
 #include "imgui_includes.h"
-
-# /*
-#	Implements most of the GUI.
-# */
 
 namespace gui {
 	void render(app& a);
@@ -59,7 +54,7 @@ namespace gui {
 	private:
 		bool button(const char* str, ImTextureID user_texture_id, const ImVec2& icon_size) const;
 	
-		gl_texture dvd, folder, floppy;
+		GlTexture dvd, folder, floppy;
 	};
 
 	class moby_list : public window {
@@ -76,62 +71,6 @@ namespace gui {
 		void render(app& a) override;
 	};
 	
-	class texture_browser : public window {
-	public:
-		texture_browser();
-
-		const char* title_text() const override;
-		ImVec2 initial_size() const override;
-		void render(app& a) override;
-		
-	private:
-		struct filter_parameters {
-			int min_width;
-		};
-
-		void render_grid(app& a, std::vector<texture>& tex_list);
-		
-		std::string _list;
-		std::size_t _selection = 0;
-		filter_parameters _filters = { 0 };
-	};
-	
-	class model_browser : public window {
-	public:
-		model_browser();
-	
-		const char* title_text() const override;
-		ImVec2 initial_size() const override;
-		void render(app& a) override;
-		
-		moby_model* render_selection_pane(app& a);
-		moby_model* render_selection_grid(
-			app& a,
-			std::string list_name,
-			model_list& list);
-		
-		static void render_preview(
-			app& a,
-			GLuint* target,
-			moby_model& model,
-			std::vector<texture>& textures,
-			const gl_renderer& renderer,
-			ImVec2 preview_size,
-			view_params params);
-		glm::vec2 get_drag_delta() const;
-		
-		static void render_submodel_list(moby_model& model);
-		static void render_dma_debug_info(moby_model& mdl);
-	
-	private:
-		std::map<std::string, model_list> _model_lists;
-		std::string _list;
-		std::size_t _model;
-		bool _fullscreen_preview = false;
-		float _selection_pane_width;
-		view_params _view_params;
-	};
-
 	class settings : public window {
 	public:
 		const char* title_text() const override;

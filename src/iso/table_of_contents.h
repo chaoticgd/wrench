@@ -19,8 +19,8 @@
 #ifndef ISO_TABLE_OF_CONTENTS_H
 #define ISO_TABLE_OF_CONTENTS_H
 
-#include "../editor/stream.h"
 #include "../editor/level_file_types.h"
+#include "legacy_stream.h"
 
 struct toc_table {
 	std::size_t index;

@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 2.8.11)
 project(wrench)
+
+include_directories(src)
 include_directories(thirdparty)
-include_directories(thirdparty/imgui)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -34,13 +35,10 @@ add_executable(wrench
 	src/editor/main.cpp
 	src/editor/app.cpp
 	src/editor/command_line.cpp
-	src/editor/stream.cpp
-	src/editor/stacktrace.cpp
 	src/editor/renderer.cpp
 	src/editor/shaders.cpp
 	src/editor/worker_logger.cpp
-	src/editor/iso_stream.cpp
-	src/editor/model.cpp
+	src/editor/mesh.cpp
 	src/editor/util.cpp
 	src/editor/game_db.cpp
 	src/editor/tools.cpp
@@ -51,31 +49,9 @@ add_executable(wrench
 	src/editor/gui/inspector.cpp
 	src/editor/gui/imgui_impl_glfw.cpp
 	src/editor/formats/level_impl.cpp
-	src/editor/formats/texture.cpp
-	src/editor/formats/fip.cpp
-	src/editor/formats/bmp.cpp
-	src/editor/formats/armor_archive.cpp
-	src/editor/formats/game_model.cpp
-	src/editor/formats/vif.cpp
-	src/editor/formats/tfrag.cpp
-	src/editor/formats/tcol.cpp
-	src/editor/formats/shrub.cpp
-	src/editor/formats/texture_archive.cpp
-	src/editor/formats/model_utils.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
 	thirdparty/imgui/backends/imgui_impl_opengl3.cpp
 	src/lz/compression.cpp
-)
-
-add_executable(fip
-	src/fipcli.cpp
-	src/editor/command_line.cpp
-	src/editor/util.cpp
-	src/editor/stream.cpp
-	src/editor/stacktrace.cpp
-	src/editor/formats/texture.cpp
-	src/editor/formats/fip.cpp
-	src/editor/formats/bmp.cpp
 )
 
 add_executable(lz
@@ -83,25 +59,19 @@ add_executable(lz
 	src/lz/compression.cpp
 	src/editor/util.cpp
 	src/editor/command_line.cpp
-	src/editor/stream.cpp
-	src/editor/stacktrace.cpp
 )
 
 add_executable(vif
 	src/vifcli.cpp
-	src/editor/stream.cpp
-	src/editor/stacktrace.cpp
 	src/editor/util.cpp
 	src/editor/command_line.cpp
-	src/editor/formats/vif.cpp
 )
 
 add_executable(iso
 	src/iso/main.cpp
 	src/iso/iso_filesystem.cpp
 	src/iso/table_of_contents.cpp
-	src/editor/stream.cpp
-	src/editor/stacktrace.cpp
+	src/iso/legacy_stream.cpp
 	src/editor/util.cpp
 	src/editor/command_line.cpp
 )
@@ -139,7 +109,6 @@ target_compile_definitions(wrench PRIVATE WRENCH_EDITOR=1)
 if(UNIX)
 	target_compile_options(wrenchcore PRIVATE -Wall -O3)
 	target_compile_options(wrench PRIVATE -Wall -O3)
-	target_compile_options(fip PRIVATE -Wall -O3)
 	target_compile_options(lz PRIVATE -Wall -O3)
 	target_compile_options(vif PRIVATE -Wall -O3)
 	target_compile_options(iso PRIVATE -Wall -O3)
@@ -152,7 +121,6 @@ if (MSVC)
 	# /EHsc - needed for proper C++ exception handling
 	target_compile_options(wrenchcore PRIVATE /W4 /Zi /EHsc)
 	target_compile_options(wrench PRIVATE /W4 /Zi /EHsc)
-	target_compile_options(fip PRIVATE /W4 /Zi /EHsc)
 	target_compile_options(lz PRIVATE /W4 /Zi /EHsc)
 	target_compile_options(vif PRIVATE /W4 /Zi /EHsc)
 	target_compile_options(iso PRIVATE /W4 /Zi /EHsc)
@@ -163,7 +131,6 @@ endif()
 if(UNIX)
 	target_link_libraries(wrenchcore stdc++fs)
 	target_link_libraries(wrench stdc++fs)
-	target_link_libraries(fip stdc++fs)
 	target_link_libraries(lz stdc++fs)
 	target_link_libraries(vif stdc++fs)
 	target_link_libraries(iso stdc++fs)
@@ -173,7 +140,6 @@ endif()
 # cxxopts
 add_subdirectory(thirdparty/cxxopts)
 target_link_libraries(wrench cxxopts)
-target_link_libraries(fip cxxopts)
 target_link_libraries(lz cxxopts)
 target_link_libraries(vif cxxopts)
 target_link_libraries(iso cxxopts)
@@ -199,7 +165,7 @@ target_link_libraries(wrench glm)
 include_directories(thirdparty/glm)
 
 # Dear ImGui
-include_directories(thidparty/imgui)
+include_directories(thirdparty/imgui)
 add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_GLAD=1)
 add_library(imgui STATIC
 	thirdparty/imgui/imconfig.h

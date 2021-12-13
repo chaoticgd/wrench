@@ -30,7 +30,7 @@ class tool {
 public:
 	virtual ~tool() {}
 
-	gl_texture icon;
+	GlTexture icon;
 	
 	virtual void draw(app& a, glm::mat4 world_to_clip) = 0;
 };
