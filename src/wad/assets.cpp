@@ -215,7 +215,7 @@ void write_assets(OutBuffer header_dest, OutBuffer data_dest, OutBuffer gs_ram, 
 		for(size_t i = 0; i < count; i++) {
 			TextureDedupeRecord* record = &dedupe_output.records.at(begin + i);
 			if(record->texture_out_edge > -1) {
-				record= &dedupe_output.records[record->texture_out_edge];
+				record = &dedupe_output.records[record->texture_out_edge];
 			}
 			if(record->texture != nullptr && !record->indices[table].has_value()) {
 				const Texture& texture = *record->texture;
@@ -231,7 +231,7 @@ void write_assets(OutBuffer header_dest, OutBuffer data_dest, OutBuffer gs_ram, 
 				}
 				assert(palette_record->palette_offset != -1);
 				entry.palette = palette_record->palette_offset / 0x100;
-				entry.mipmap = record->mipmap_offset;
+				entry.mipmap = record->mipmap_offset / 0x100;
 				record->indices[table] = table_count;
 				header_dest.write(entry);
 				table_count++;

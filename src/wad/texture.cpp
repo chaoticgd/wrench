@@ -41,9 +41,10 @@ s64 write_shared_texture_data(OutBuffer ee, OutBuffer gs, std::vector<GsRamEntry
 			mipmap_data.resize((texture.width * texture.height) / 16);
 			for(s32 y = 0; y < texture.height / 4; y++) {
 				for(s32 x = 0; x < texture.width / 4; x++) {
-					mipmap_data[y * (texture.width / 4) + x] = 0;//texture.pixels[y * 4 * texture.width + x * 4];
+					mipmap_data[y * (texture.width / 4) + x] = texture.pixels[y * 4 * texture.width + x * 4];
 				}
 			}
+			gs.pad(0x100, 0);
 			record.mipmap_offset = gs.write_multiple(mipmap_data);
 			GsRamEntry mipmap_entry;
 			mipmap_entry.unknown_0 = 0x13;
@@ -52,6 +53,7 @@ s64 write_shared_texture_data(OutBuffer ee, OutBuffer gs, std::vector<GsRamEntry
 			mipmap_entry.offset_1 = record.mipmap_offset;
 			mipmap_entry.offset_2 = record.mipmap_offset;
 			table.push_back(mipmap_entry);
+			ee.pad(0x100, 0);
 			record.texture_offset = ee.write_multiple(texture.pixels);
 		}
 	}
