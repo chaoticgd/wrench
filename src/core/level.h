@@ -351,7 +351,7 @@ struct Class {
 struct MobyClass : Class {
 	Opt<std::vector<u8>> model;
 	Opt<ColladaScene> high_model;
-	std::vector<size_t> textures;
+	std::vector<Texture> textures;
 	bool has_asset_table_entry = false;
 	
 	static std::string get_pvar_type(s32 o_class);
@@ -359,12 +359,12 @@ struct MobyClass : Class {
 
 struct TieClass : Class {
 	std::vector<u8> model;
-	std::vector<size_t> textures;
+	std::vector<Texture> textures;
 };
 
 struct ShrubClass : Class {
 	std::vector<u8> model;
-	std::vector<size_t> textures;
+	std::vector<Texture> textures;
 };
 
 Json get_file_metadata(const char* format, const char* application);
@@ -431,8 +431,7 @@ struct LevelWad : Wad {
 	std::vector<u8> occlusion;
 	std::vector<u8> sky;
 	ColladaScene collision;
-	std::vector<Texture> textures;
-	std::vector<size_t> tfrag_texture_indices;
+	std::vector<Texture> tfrag_textures;
 	std::vector<Texture> particle_textures;
 	std::vector<Texture> fx_textures;
 	Opt<std::vector<u8>> unknown_a0;

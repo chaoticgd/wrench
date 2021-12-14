@@ -91,7 +91,7 @@ packed_struct(ShrubClassEntry,
 )
 
 void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ram);
-void write_assets(OutBuffer header_dest, OutBuffer data_dest, OutBuffer gs_ram, LevelWad& wad);
+void write_assets(OutBuffer header_dest, OutBuffer data_dest, OutBuffer gs_ram, const LevelWad& wad);
 std::vector<s64> enumerate_asset_block_boundaries(Buffer src, const AssetHeader& header);
 s64 next_asset_block_size(s32 ofs, const std::vector<s64>& block_bounds);
 

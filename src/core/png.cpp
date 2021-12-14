@@ -77,7 +77,6 @@ Opt<Texture> read_png(const fs::path& path) {
 	texture.width = width;
 	texture.height = height;
 	texture.format = PixelFormat::IDTEX8;
-	texture.path = path;
 	for(s32 i = 0; i < num_palette; i++) {
 		u32& dest = texture.palette.colours[i];
 		dest |= palette[i].red << 0;

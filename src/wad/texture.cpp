@@ -18,16 +18,44 @@
 
 #include "texture.h"
 
-void write_nonshared_texture_data(OutBuffer data, std::vector<Texture>& stexturesc);
+static std::vector<TextureDedupeRecord> write_nonshared_texture_data(OutBuffer data, const std::vector<Texture>& textures);
 static Texture read_paletted_texture(Buffer data, Buffer palette, s32 width, s32 height);
 static u8 map_palette_index(u8 index);
 
-void read_texture_table(std::vector<Texture>& dest, BufferArray<TextureEntry> texture_table, Buffer data, Buffer gs_ram) {
-	for(const TextureEntry& entry : texture_table) {
-		Buffer texture = data.subbuf(entry.data_offset);
-		Buffer palette = gs_ram.subbuf(entry.palette * 0x100);
-		dest.emplace_back(read_paletted_texture(texture, palette, entry.width, entry.height));
+Texture read_shared_texture(Buffer texture, Buffer palette, TextureEntry entry) {
+	return read_paletted_texture(texture.subbuf(entry.data_offset), palette.subbuf(entry.palette * 0x100), entry.width, entry.height);
+}
+
+s64 write_shared_texture_data(OutBuffer ee, OutBuffer gs, std::vector<GsRamEntry>& table, std::vector<TextureDedupeRecord>& records) {
+	ee.pad(0x40);
+	s64 ofs = ee.tell();
+	std::vector<u8> mipmap_data;
+	for(TextureDedupeRecord& record : records) {
+		if(record.texture != nullptr && record.texture_out_edge == -1) {
+			const Texture& texture = *record.texture;
+			if(record.palette_out_edge == -1) {
+				gs.pad(0x100, 0);
+				record.palette_offset = write_palette(gs, texture.palette);
+				table.push_back({0, 0, 0, record.palette_offset, record.palette_offset});
+			}
+			mipmap_data.resize((texture.width * texture.height) / 16);
+			for(s32 y = 0; y < texture.height / 4; y++) {
+				for(s32 x = 0; x < texture.width / 4; x++) {
+					mipmap_data[y * (texture.width / 4) + x] = 0;//texture.pixels[y * 4 * texture.width + x * 4];
+				}
+			}
+			record.mipmap_offset = gs.write_multiple(mipmap_data);
+			GsRamEntry mipmap_entry;
+			mipmap_entry.unknown_0 = 0x13;
+			mipmap_entry.width = texture.width / 4;
+			mipmap_entry.height = texture.height / 4;
+			mipmap_entry.offset_1 = record.mipmap_offset;
+			mipmap_entry.offset_2 = record.mipmap_offset;
+			table.push_back(mipmap_entry);
+			record.texture_offset = ee.write_multiple(texture.pixels);
+		}
 	}
+	return ofs;
 }
 
 std::vector<Texture> read_particle_textures(BufferArray<ParticleTextureEntry> texture_table, Buffer data) {
@@ -40,23 +68,23 @@ std::vector<Texture> read_particle_textures(BufferArray<ParticleTextureEntry> te
 	return textures;
 }
 
-ArrayRange write_particle_textures(OutBuffer header, OutBuffer data, std::vector<Texture>& textures) {
+ArrayRange write_particle_textures(OutBuffer header, OutBuffer data, const std::vector<Texture>& textures) {
 	s64 particle_base = data.tell();
-	write_nonshared_texture_data(data, textures);
+	auto records = write_nonshared_texture_data(data, textures);
 	ArrayRange range;
 	range.count = textures.size();
 	range.offset = header.tell();
-	for(Texture& texture : textures) {
-		Texture* palette_texture = &texture;
-		if(palette_texture->palette_out_edge > -1) {
-			palette_texture = &textures[palette_texture->palette_out_edge];
+	for(TextureDedupeRecord& record : records) {
+		TextureDedupeRecord* palette_record = &record;
+		if(palette_record->palette_out_edge > -1) {
+			palette_record = &records[palette_record->palette_out_edge];
 		}
 		
 		ParticleTextureEntry entry;
-		entry.palette = palette_texture->palette_offset - particle_base;
+		entry.palette = palette_record->palette_offset - particle_base;
 		entry.unknown_4 = 0;
-		entry.texture = texture.texture_offset - particle_base;
-		entry.side = texture.width;
+		entry.texture = record.texture_offset - particle_base;
+		entry.side = record.texture->width;
 		header.write(entry);
 	}
 	return range;
@@ -72,43 +100,47 @@ std::vector<Texture> read_fx_textures(BufferArray<FXTextureEntry> texture_table,
 	return textures;
 }
 
-ArrayRange write_fx_textures(OutBuffer header, OutBuffer data, std::vector<Texture>& textures) {
+ArrayRange write_fx_textures(OutBuffer header, OutBuffer data, const std::vector<Texture>& textures) {
 	s64 fx_base = data.tell();
-	write_nonshared_texture_data(data, textures);
+	auto records = write_nonshared_texture_data(data, textures);
 	ArrayRange range;
 	range.count = textures.size();
 	range.offset = header.tell();
-	for(Texture& texture : textures) {
-		Texture* palette_texture = &texture;
-		if(palette_texture->palette_out_edge > -1) {
-			palette_texture = &textures[palette_texture->palette_out_edge];
+	for(TextureDedupeRecord& record : records) {
+		TextureDedupeRecord* palette_record = &record;
+		if(palette_record->palette_out_edge > -1) {
+			palette_record = &records[palette_record->palette_out_edge];
 		}
 		
 		FXTextureEntry entry;
-		entry.palette = palette_texture->palette_offset - fx_base;
-		entry.texture = texture.texture_offset - fx_base;
-		entry.width = texture.width;
-		entry.height = texture.height;
+		entry.palette = palette_record->palette_offset - fx_base;
+		entry.texture = record.texture_offset - fx_base;
+		entry.width = record.texture->width;
+		entry.height = record.texture->height;
 		header.write(entry);
 	}
 	return range;
 }
 
-void write_nonshared_texture_data(OutBuffer data, std::vector<Texture>& textures) {
-	deduplicate_palettes(textures);
-	for(Texture& texture : textures) {
-		assert(texture.palette_out_edge == -1 || textures[texture.palette_out_edge].palette_out_edge == -1);
+static std::vector<TextureDedupeRecord> write_nonshared_texture_data(OutBuffer data, const std::vector<Texture>& textures) {
+	std::vector<TextureDedupeRecord> records;
+	for(const Texture& texture : textures) {
+		records.emplace_back(TextureDedupeRecord {&texture});
 	}
 	
-	for(Texture& texture : textures) {
-		if(texture.palette_out_edge == -1) {
-			texture.palette_offset = write_palette(data, texture.palette);
+	deduplicate_palettes(records);
+	
+	for(TextureDedupeRecord& record : records) {
+		if(record.palette_out_edge == -1) {
+			record.palette_offset = write_palette(data, record.texture->palette);
 		}
-		texture.texture_offset = data.write_multiple(texture.pixels);
+		record.texture_offset = data.write_multiple(record.texture->pixels);
 	}
+	
+	return records;
 }
 
-static Texture read_paletted_texture(Buffer data, Buffer palette, s32 width, s32 height) {
+Texture read_paletted_texture(Buffer data, Buffer palette, s32 width, s32 height) {
 	Texture texture = {0};
 	texture.width = width;
 	texture.height = height;
@@ -124,14 +156,61 @@ static Texture read_paletted_texture(Buffer data, Buffer palette, s32 width, s32
 	return texture;
 }
 
-void deduplicate_palettes(std::vector<Texture>& textures) {
-	std::vector<size_t> mapping(textures.size());
-	for(size_t i = 0; i < textures.size(); i++) {
-		mapping[i] = i;
+TextureDedupeOutput prepare_texture_dedupe_records(TextureDedupeInput& input) {
+	std::vector<TextureDedupeRecord> records;
+	
+	s32 tfrags_begin = (s32) records.size();
+	for(const Texture& texture : input.tfrag_textures) {
+		records.emplace_back(TextureDedupeRecord{&texture});
+	}
+	
+	s32 mobies_begin = (s32) records.size();
+	for(const MobyClass& cls : input.moby_classes) {
+		verify(cls.textures.size() < 16, "Moby class %d has too many textures.", cls.o_class);
+		for(const Texture& texture : cls.textures) {
+			records.emplace_back(TextureDedupeRecord{&texture});
+		}
+		for(size_t i = cls.textures.size(); i < 16; i++) {
+			records.emplace_back(TextureDedupeRecord{nullptr});
+		}
+	}
+	
+	s32 ties_begin = (s32) records.size();
+	for(const TieClass& cls : input.tie_classes) {
+		verify(cls.textures.size() < 16, "Tie class %d has too many textures.", cls.o_class);
+		for(const Texture& texture : cls.textures) {
+			records.emplace_back(TextureDedupeRecord{&texture});
+		}
+		for(size_t i = cls.textures.size(); i < 16; i++) {
+			records.emplace_back(TextureDedupeRecord{nullptr});
+		}
+	}
+	
+	s32 shrubs_begin = (s32) records.size();
+	for(const ShrubClass& cls : input.shrub_classes) {
+		verify(cls.textures.size() < 16, "Shrub class %d has too many textures.", cls.o_class);
+		for(const Texture& texture : cls.textures) {
+			records.emplace_back(TextureDedupeRecord{&texture});
+		}
+		for(size_t i = cls.textures.size(); i < 16; i++) {
+			records.emplace_back(TextureDedupeRecord{nullptr});
+		}
+	}
+	
+	return {records, tfrags_begin, mobies_begin, ties_begin, shrubs_begin};
+}
+
+void deduplicate_textures(std::vector<TextureDedupeRecord>& records) {
+	std::vector<size_t> mapping;
+	for(size_t i = 0; i < records.size(); i++) {
+		if(records[i].texture != nullptr) {
+			mapping.push_back(i);
+		}
 	}
 	
 	std::sort(BEGIN_END(mapping), [&](size_t lhs, size_t rhs) {
-		return textures[lhs].palette.colours < textures[rhs].palette.colours;
+		if(!(*records[lhs].texture == *records[rhs].texture)) return *records[lhs].texture < *records[rhs].texture;
+		return records[lhs].texture->palette.colours < records[rhs].texture->palette.colours;
 	});
 	
 	std::vector<size_t> group{mapping[0]};
@@ -143,15 +222,15 @@ void deduplicate_palettes(std::vector<Texture>& textures) {
 		assert(lowest != SIZE_MAX);
 		for(size_t index : group) {
 			if(index != lowest) {
-				textures[index].palette_out_edge = lowest;
+				records[index].texture_out_edge = lowest;
 			}
 		}
 	};
 	
-	for(size_t i = 1; i < textures.size(); i++) {
-		Texture& last = textures[mapping[i - 1]];
-		Texture& cur = textures[mapping[i]];
-		if(!(last.palette == cur.palette)) {
+	for(size_t i = 1; i < mapping.size(); i++) {
+		TextureDedupeRecord& last = records[mapping[i - 1]];
+		TextureDedupeRecord& cur = records[mapping[i]];
+		if(!(*last.texture == *cur.texture)) {
 			merge_group();
 			group.clear();
 		}
@@ -162,7 +241,47 @@ void deduplicate_palettes(std::vector<Texture>& textures) {
 	}
 }
 
-s64 write_palette(OutBuffer dest, Palette& palette) {
+void deduplicate_palettes(std::vector<TextureDedupeRecord>& records) {
+	std::vector<size_t> mapping;
+	for(size_t i = 0; i < records.size(); i++) {
+		if(records[i].texture != nullptr && records[i].texture_out_edge == -1) {
+			mapping.push_back(i);
+		}
+	}
+	
+	std::sort(BEGIN_END(mapping), [&](size_t lhs, size_t rhs) {
+		return records[lhs].texture->palette.colours < records[rhs].texture->palette.colours;
+	});
+	
+	std::vector<size_t> group{mapping[0]};
+	auto merge_group = [&]() {
+		size_t lowest = SIZE_MAX;
+		for(size_t index : group) {
+			lowest = std::min(lowest, index);
+		}
+		assert(lowest != SIZE_MAX);
+		for(size_t index : group) {
+			if(index != lowest) {
+				records[index].palette_out_edge = lowest;
+			}
+		}
+	};
+	
+	for(size_t i = 1; i < mapping.size(); i++) {
+		TextureDedupeRecord& last = records[mapping[i - 1]];
+		TextureDedupeRecord& cur = records[mapping[i]];
+		if(!(last.texture->palette == cur.texture->palette)) {
+			merge_group();
+			group.clear();
+		}
+		group.push_back(mapping[i]);
+	}
+	if(group.size() > 0) {
+		merge_group();
+	}
+}
+
+s64 write_palette(OutBuffer dest, const Palette& palette) {
 	s64 ofs = dest.tell();
 	for(s32 i = 0; i < 256; i++) {
 		u32 colour = palette.colours[map_palette_index(i)];

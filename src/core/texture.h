@@ -32,6 +32,10 @@ struct Palette {
 	bool operator==(const Palette& rhs) const {
 		return colours == rhs.colours && top == rhs.top;
 	}
+	bool operator<(const Palette& rhs) const {
+		if(top != rhs.top) return top < rhs.top;
+		return colours < rhs.colours;
+	}
 };
 
 struct Texture {
@@ -40,17 +44,20 @@ struct Texture {
 	PixelFormat format;
 	Palette palette;
 	std::vector<u8> pixels;
-	fs::path path;
-	
-	s32 palette_out_edge = -1;
-	s32 texture_offset = -1;
-	s32 palette_offset = -1;
-	s32 mipmap_offset = -1;
-#define TFRAG_TEXTURE_INDEX 0
-#define MOBY_TEXTURE_INDEX 1
-#define TIE_TEXTURE_INDEX 2
-#define SHRUB_TEXTURE_INDEX 3
-	Opt<s32> indices[4];
+	bool operator==(const Texture& rhs) const {
+		return width == rhs.width &&
+			height == rhs.height &&
+			format == rhs.format &&
+			palette == rhs.palette &&
+			pixels == rhs.pixels;
+	}
+	bool operator<(const Texture& rhs) const {
+		if(width != rhs.width) return width < rhs.width;
+		if(height != rhs.height) return height < rhs.height;
+		if(format != rhs.format) return format < rhs.format;
+		if(!(palette == rhs.palette)) return palette < rhs.palette;
+		return pixels < rhs.pixels;
+	}
 };
 
 std::string hash_texture(const Texture& texture);

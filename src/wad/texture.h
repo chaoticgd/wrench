@@ -53,19 +53,42 @@ packed_struct(FXTextureEntry,
 	s32 height;
 )
 
-struct FlattenedTextureLayout {
-	size_t tfrags_begin;
-	size_t mobies_begin;
-	size_t ties_begin;
-	size_t shrubs_begin;
+struct TextureDedupeRecord {
+	const Texture* texture;
+	s32 texture_out_edge = -1;
+	s32 palette_out_edge = -1;
+	s32 texture_offset = -1;
+	s32 palette_offset = -1;
+	s32 mipmap_offset = -1;
+#define TFRAG_TEXTURE_INDEX 0
+#define MOBY_TEXTURE_INDEX 1
+#define TIE_TEXTURE_INDEX 2
+#define SHRUB_TEXTURE_INDEX 3
+	Opt<s32> indices[4];
 };
 
-void read_texture_table(std::vector<Texture>& dest, BufferArray<TextureEntry> texture_table, Buffer data, Buffer gs_ram);
+Texture read_shared_texture(Buffer texture, Buffer palette, TextureEntry entry);
+s64 write_shared_texture_data(OutBuffer ee, OutBuffer gs, std::vector<GsRamEntry>& table, std::vector<TextureDedupeRecord>& records);
 std::vector<Texture> read_particle_textures(BufferArray<ParticleTextureEntry> texture_table, Buffer src);
-ArrayRange write_particle_textures(OutBuffer header, OutBuffer data, std::vector<Texture>& textures);
+ArrayRange write_particle_textures(OutBuffer header, OutBuffer data, const std::vector<Texture>& textures);
 std::vector<Texture> read_fx_textures(BufferArray<FXTextureEntry> texture_table, Buffer data);
-ArrayRange write_fx_textures(OutBuffer header, OutBuffer data, std::vector<Texture>& textures);
-void deduplicate_palettes(std::vector<Texture>& textures);
-s64 write_palette(OutBuffer dest, Palette& palette);
+ArrayRange write_fx_textures(OutBuffer header, OutBuffer data, const std::vector<Texture>& textures);
+struct TextureDedupeOutput {
+	std::vector<TextureDedupeRecord> records;
+	s32 tfrags_begin;
+	s32 mobies_begin;
+	s32 ties_begin;
+	s32 shrubs_begin;
+};
+struct TextureDedupeInput {
+	const std::vector<Texture>& tfrag_textures;
+	const std::vector<MobyClass>& moby_classes;
+	const std::vector<TieClass>& tie_classes;
+	const std::vector<ShrubClass>& shrub_classes;
+};
+TextureDedupeOutput prepare_texture_dedupe_records(TextureDedupeInput& input);
+void deduplicate_textures(std::vector<TextureDedupeRecord>& records);
+void deduplicate_palettes(std::vector<TextureDedupeRecord>& records);
+s64 write_palette(OutBuffer dest, const Palette& palette);
 
 #endif
