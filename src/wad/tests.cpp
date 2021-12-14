@@ -18,6 +18,8 @@
 
 #include "tests.h"
 
+#include <md5.h>
+
 #include "moby.h"
 #include "assets.h"
 #include "primary.h"
@@ -191,6 +193,8 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 	}
 }
 
+static std::map<s32, std::array<u8, MD5_DIGEST_LENGTH>> moby_md5s;
+
 static void run_moby_class_test(s32 o_class, Buffer src, const char* file_path, Game game) {
 	// These mobies from R&C2 Oozla have some weird animation data, skip these for now.
 	if(o_class == 3603 || o_class == 3802 || o_class == 3812) {
@@ -226,6 +230,19 @@ static void run_moby_class_test(s32 o_class, Buffer src, const char* file_path, 
 		fwrite(src.lo, src.hi - src.lo, 1, file);
 		fclose(file);
 		exit(1);
+	}
+	
+	// Test that mobies of the same class from different levels are equal.
+	std::array<u8, MD5_DIGEST_LENGTH> md5;
+	MD5_CTX ctx;
+	MD5Init(&ctx);
+	MD5Update(&ctx, dest_vec.data(), dest_vec.size());
+	MD5Final(md5.data(), &ctx);
+	auto md5_iter = moby_md5s.find(o_class);
+	if(md5_iter != moby_md5s.end()) {
+		verify(md5 == md5_iter->second, "Moby %d differs between levels.", o_class);
+	} else {
+		moby_md5s.emplace(o_class, md5);
 	}
 	
 	// Test the COLLADA importer/exporter.
