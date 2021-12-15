@@ -17,7 +17,9 @@
 */
 
 #include "collision.h"
-#include "../core/timer.h"
+
+#include <core/timer.h>
+
 packed_struct(CollisionHeader,
 	s32 mesh;
 	s32 second_part;
@@ -60,8 +62,8 @@ struct CollisionSector {
 };
 
 // The sectors are arranged into a tree such that a sector at position (x,y,z)
-// in the grid can be accessed by taking the zth child of the root, the yth
-// child of that node, and then the xth child of that last node.
+// in the grid can be accessed by taking the (z-coord)th child of the root, the
+// (y-coord)th child of that node, and then the (x-coord)th child of that node.
 using CollisionSectors = CollisionList<CollisionList<CollisionList<CollisionSector>>>;
 
 static CollisionSectors parse_collision_mesh(Buffer mesh);
