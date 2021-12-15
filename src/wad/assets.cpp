@@ -48,10 +48,6 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 	s32 collision_size = next_asset_block_size(header.collision, block_bounds);
 	wad.collision = read_collision(assets.read_bytes(header.collision, collision_size, "collision"));
 	
-	verify(header.moby_classes.count >= 1, "Level has no moby classes.");
-	verify(header.tie_classes.count >= 1, "Level has no tie classes.");
-	verify(header.shrub_classes.count >= 1, "Level has no shrub classes.");
-	
 	auto gs_ram_table = asset_header.read_multiple<GsRamEntry>(header.gs_ram, "gs ram table");
 	auto tfrag_textures = asset_header.read_multiple<TextureEntry>(header.tfrag_textures, "tfrag texture table");
 	auto moby_textures = asset_header.read_multiple<TextureEntry>(header.moby_textures, "moby texture table");
@@ -97,7 +93,7 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 		if(entry.offset_in_asset_wad != 0) {
 			s64 model_size = next_asset_block_size(entry.offset_in_asset_wad, block_bounds);
 			moby->model = assets.read_bytes(entry.offset_in_asset_wad, model_size, "moby model");
-			if(entry.o_class >= 10) {
+			if(entry.o_class >= 10 && !(entry.o_class == 3603 || entry.o_class == 3802 || entry.o_class == 3812)) {
 				moby->high_model = recover_moby_class(read_moby_class(*moby->model, wad.game), entry.o_class, moby->textures.size());
 			}
 		}
@@ -362,12 +358,12 @@ void write_assets(OutBuffer header_dest, OutBuffer data_dest, OutBuffer gs_ram, 
 	
 	header.assets_decompressed_size = data_dest.tell();
 	
-	print_asset_header(header);
+	//print_asset_header(header);
 	
 	header_dest.write(0, header);
-	write_file("/tmp", "newheader.bin", Buffer(header_dest.vec));
-	write_file("/tmp", "gsram.bin", Buffer(gs_ram.vec));
-	write_file("/tmp", "assets.bin", Buffer(data_dest.vec));
+	//write_file("/tmp", "newheader.bin", Buffer(header_dest.vec));
+	//write_file("/tmp", "gsram.bin", Buffer(gs_ram.vec));
+	//write_file("/tmp", "assets.bin", Buffer(data_dest.vec));
 }
 
 std::vector<s64> enumerate_asset_block_boundaries(Buffer src, const AssetHeader& header, Game game) {
