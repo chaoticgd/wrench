@@ -44,3 +44,12 @@ The source level format created for Wrench. Version 6 and up is currently suppor
 	- unknown_4c, unknown_50 and unknown_54 are now "unknown_colour".
 	- unknown_58 was removed (it is now treated as padding).
 - The tie_ambient_rgbas array has been removed. Tie ambient RGBA buffers are now stored in the "ambient_rgbas" field of tie instances.
+
+### Version 7
+
+- The primary.bin file has been removed. Its data has been split up into multiple different files.
+- Tfrags, occlusion data, sky data, mobies, ties, shrubs, particle definitions, sound remapping data, transition textures, and ratchet animation sequences are now stored as binary data in their own files.
+- Collision is now stored in a high-level COLLADA file.
+- Mobies are written out as COLLADA files.
+- Textures are written out as paletted PNG files.
+- Probably a ton of stuff I forgot.
