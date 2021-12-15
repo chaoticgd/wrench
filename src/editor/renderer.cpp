@@ -227,6 +227,10 @@ static void draw_paths(const std::vector<ThisPath>& paths, const RenderMaterial&
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	
 	for(const ThisPath& path : paths) {
+		if(path.spline().size() < 1) {
+			continue;
+		}
+		
 		RenderMesh mesh;
 		RenderSubMesh& submesh = mesh.submeshes.emplace_back();
 		submesh.material = 0;
