@@ -19,9 +19,9 @@
 #ifndef WAD_MOBY_H
 #define WAD_MOBY_H
 
-#include "../core/buffer.h"
-#include "../core/collada.h"
-#include "vif.h"
+#include <core/vif.h>
+#include <core/buffer.h>
+#include <core/collada.h>
 
 packed_struct(MobyTexCoord,
 	/* 0x0 */ s16 s;

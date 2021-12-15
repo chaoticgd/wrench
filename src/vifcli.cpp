@@ -16,12 +16,11 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-# /*
-# 	CLI tool to parse VIF chains.
-# */
+// Tool to read VIF command lists.
 
 #include <iostream>
 
+#include <core/vif.h>
 #include <editor/util.h>
 #include <editor/command_line.h>
 
@@ -44,22 +43,21 @@ int main(int argc, char** argv) {
 	std::size_t offset = parse_number(cli_get_or(args, "offset", "0"));
 	std::size_t end_offset = parse_number(cli_get_or(args, "end", "0"));
 	
-	// TODO
-	//file_stream src(src_path);
-	//std::vector<vif_packet> chain = parse_vif_chain(&src, offset, SIZE_MAX);
-	//while(chain.size() > 0) {
-	//	vif_packet& packet = chain.front();
-	//	if(packet.error == "") {
-	//		std::cout << std::hex << packet.address << " " << packet.code.to_string() << std::endl;
-	//		chain.erase(chain.begin());
-	//	} else {
-	//		std::cout << std::hex << packet.address << " " << packet.error << std::endl;
-	//		if(packet.address > end_offset) {
-	//			break;
-	//		} else {
-	//			chain = parse_vif_chain(&src, packet.address, SIZE_MAX);
-	//			continue;
-	//		}
-	//	}
-	//}
+	std::vector<u8> data = read_file(src_path);
+	std::vector<VifPacket> command_list = read_vif_command_list(Buffer(data).subbuf(offset));
+	while(command_list.size() > 0) {
+		VifPacket& packet = command_list.front();
+		if(packet.error == "") {
+			std::string code_string = packet.code.to_string();
+			printf("%08x %s\n", (s32) offset + packet.offset, code_string.c_str());
+			command_list.erase(command_list.begin());
+		} else {
+			printf("%08x %s\n", (s32) offset + packet.offset, packet.error.c_str());
+			if(offset + packet.offset > end_offset) {
+				break;
+			} else {
+				command_list = read_vif_command_list(Buffer(data).subbuf(offset + packet.offset + 4, SIZE_MAX));
+			}
+		}
+	}
 }

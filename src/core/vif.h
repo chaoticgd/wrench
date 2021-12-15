@@ -19,7 +19,7 @@
 #ifndef WAD_VIF_H
 #define WAD_VIF_H
 
-#include "../core/buffer.h"
+#include "buffer.h"
 
 enum class VifCmd {
 	NOP      = 0b0000000,

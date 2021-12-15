@@ -28,6 +28,7 @@ add_library(wrenchcore STATIC
 	src/core/timer.cpp
 	src/core/png.cpp
 	src/core/texture.cpp
+	src/core/vif.cpp
 	thirdparty/md5.cpp
 )
 
@@ -89,7 +90,6 @@ add_executable(wad
 	src/wad/collision.cpp
 	src/wad/texture.cpp
 	src/wad/moby.cpp
-	src/wad/vif.cpp
 	src/wad/tests.cpp
 	src/lz/compression.cpp
 )
@@ -99,6 +99,7 @@ add_executable(hashtex
 )
 
 target_link_libraries(wrench wrenchcore)
+target_link_libraries(vif wrenchcore)
 target_link_libraries(iso wrenchcore)
 target_link_libraries(wad wrenchcore)
 target_link_libraries(hashtex wrenchcore)
