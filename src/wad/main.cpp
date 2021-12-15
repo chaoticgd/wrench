@@ -125,9 +125,7 @@ static void build_moby(const char* input_path, const char* output_path) {
 static void print_usage(char* argv0) {
 	printf("~* The Wrench WAD Utility *~\n");
 	printf("\n");
-	printf("A bidirectional asset pipeline for the Ratchet & Clank PS2 games\n");
-	printf("intended for modding. This tool converts between R&C-format level\n");
-	printf("WAD files and more standard formats.\n");
+	printf("An asset packer/unpacker for the Ratchet & Clank PS2 games intended for modding.\n");
 	printf("\n");
 	printf("usage: \n");
 	printf("  %s extract <input wad> <output dir>\n", argv0);
