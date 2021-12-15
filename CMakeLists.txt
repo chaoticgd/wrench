@@ -206,6 +206,8 @@ add_subdirectory(thirdparty/zlib)
 set(PNG_BUILD_ZLIB ON)
 set(PNG_SHARED OFF)
 set(PNG_STATIC ON)
+set(ZLIB_LIBRARY zlibstatic)
+set(ZLIB_INCLUDE_DIR thirdparty/zlib)
 add_subdirectory(thirdparty/libpng)
 target_link_libraries(wrenchcore png_static zlibstatic)
 
