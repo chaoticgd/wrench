@@ -26,35 +26,38 @@
 
 class Shader {
 public:
-	using shader_callback = std::function<void(GLuint id)>;
+	using ShaderCallback = std::function<void(GLuint id)>;
 
-	Shader(const GLchar* vertex_src, const GLchar* fragment_src, shader_callback after);
+	Shader(const GLchar* vertex_src, const GLchar* fragment_src, ShaderCallback before, ShaderCallback after);
 	~Shader();
 
-	void init(); // Called after a valid OpenGL context is setup.
-
+	void init();
+	
 	GLuint id() const;
 
 private:
-	static GLuint link(GLuint vertex, GLuint fragment);
-	static GLuint compile(const GLchar* src, GLuint type);
+	GLuint link(GLuint vertex, GLuint fragment);
+	GLuint compile(const GLchar* src, GLuint type);
 
 	GLuint _id;
 	const GLchar* _vertex_src;
 	const GLchar* _fragment_src;
-	shader_callback _after;
+	ShaderCallback _before;
+	ShaderCallback _after;
 };
 
-struct shader_programs {
-	shader_programs();
+struct Shaders {
+	Shaders();
 
-	void init(); // Called after a valid OpenGL context is setup.
-	
-	Shader solid_colour;
-	GLint solid_colour_rgb;
+	void init();
 	
 	Shader textured;
+	GLint textured_colour;
 	GLint textured_sampler;
+	
+	Shader selection;
+	
+	Shader pickframe;
 };
 
 #endif

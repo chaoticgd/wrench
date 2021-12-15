@@ -30,6 +30,11 @@
 #include "../level_file_types.h"
 #include "../mesh.h"
 
+struct EditorMobyClass {
+	RenderMesh high_lod;
+	std::vector<RenderMaterial> materials;
+};
+
 class level {
 public:
 	level() {}
@@ -42,8 +47,9 @@ public:
 	fs::path path;
 	Game game;
 	
-	std::map<s32, RenderMesh> mobies;
+	std::map<s32, EditorMobyClass> mobies;
 	std::vector<RenderMesh> collision;
+	std::vector<RenderMaterial> collision_materials;
 	
 	Gameplay& gameplay() { return _gameplay; }
 	

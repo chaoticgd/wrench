@@ -880,12 +880,12 @@ ColladaScene recover_moby_class(const MobyClassData& moby, s32 o_class, s32 text
 	// Used for when the texture index stored in a GS primitive is -1.
 	Material& none = scene.materials.emplace_back();
 	none.name = "none";
-	none.colour = ColourF{1, 1, 1, 1};
+	none.colour = glm::vec4(1, 1, 1, 1);
 	// Used for when there're more textures referenced than are listed in the
 	// moby class table. This happens for R&C2 ship parts.
 	Material& dummy = scene.materials.emplace_back();
 	dummy.name = "dummy";
-	dummy.colour = ColourF{0.5, 0.5, 0.5, 1};
+	dummy.colour = glm::vec4(0.5, 0.5, 0.5, 1);
 	
 	for(s32 texture = 0; texture < texture_count; texture++) {
 		Material& mat = scene.materials.emplace_back();

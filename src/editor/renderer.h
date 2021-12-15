@@ -37,7 +37,7 @@ const glm::mat4 RATCHET_TO_OPENGL_MATRIX = {
 	1,  0, 0, 0,
 	0, -1, 0, 0,
 	0,  0, 0, 1
-};;
+};
 
 struct RenderSettings {
 	bool camera_control { false };
@@ -45,7 +45,7 @@ struct RenderSettings {
 	glm::vec2 camera_rotation { 0, 0 };
 	
 	bool draw_ties = true;
-	bool draw_shrubs = true;
+	bool draw_shrubs = false;
 	bool draw_mobies = true;
 	bool draw_cuboids = false;
 	bool draw_spheres = false;
@@ -62,7 +62,8 @@ struct RenderSettings {
 };
 
 void init_renderer();
-void prepare_frame(level& lvl, const glm::mat4& world_to_clip); // Compute local to world matrices for the instanced renderer.
+void shutdown_renderer();
+void prepare_frame(level& lvl, const glm::mat4& world_to_clip);
 void draw_level(level& lvl, const glm::mat4& world_to_clip, const RenderSettings& settings);
 void draw_pickframe(level& lvl, const glm::mat4& world_to_clip, const RenderSettings& settings);
 

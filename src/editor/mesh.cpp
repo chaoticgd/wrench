@@ -18,35 +18,45 @@
 
 #include "mesh.h"
 
-RenderMesh upload_mesh(const Mesh& mesh) {
+static u32* depalletise_texture(const Texture& texture);
+
+RenderMesh upload_mesh(const Mesh& mesh, bool generate_normals) {
 	RenderMesh render_mesh;
-	
-	glGenBuffers(1, &render_mesh.vertex_buffer.id);
-	glBindBuffer(GL_ARRAY_BUFFER, render_mesh.vertex_buffer.id);
-	glBufferData(GL_ARRAY_BUFFER,
-		mesh.vertices.size() * sizeof(Vertex),
-		mesh.vertices.data(), GL_STATIC_DRAW);
 	
 	for(const SubMesh& submesh : mesh.submeshes) {
 		RenderSubMesh render_submesh;
 		
-		std::vector<s32> indices;
+		render_submesh.material = submesh.material;
+		
+		std::vector<Vertex> vertices;
 		for(const Face& face : submesh.faces) {
-			indices.push_back(face.v0);
-			indices.push_back(face.v1);
-			indices.push_back(face.v2);
-			render_submesh.index_count += 3;
+			Vertex v0 = mesh.vertices[face.v0];
+			Vertex v1 = mesh.vertices[face.v1];
+			Vertex v2 = mesh.vertices[face.v2];
+			Vertex v3 = mesh.vertices[face.v3];
+			
+			if(generate_normals) {
+				glm::vec3 normal = glm::normalize(glm::cross(v2.pos - v0.pos, v1.pos - v0.pos));
+				v0.normal = normal;
+				v1.normal = normal;
+				v2.normal = normal;
+				v3.normal = normal;
+			}
+			
+			vertices.push_back(v0);
+			vertices.push_back(v1);
+			vertices.push_back(v2);
 			if(face.is_quad()) {
-				indices.push_back(face.v1);
-				indices.push_back(face.v2);
-				indices.push_back(face.v3);
-				render_submesh.index_count += 3;
+				vertices.push_back(v2);
+				vertices.push_back(v3);
+				vertices.push_back(v0);
 			}
 		}
 		
-		glGenBuffers(1, &render_submesh.index_buffer.id);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, render_submesh.index_buffer.id);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(s32), indices.data(), GL_STATIC_DRAW);
+		glGenBuffers(1, &render_submesh.vertex_buffer.id);
+		glBindBuffer(GL_ARRAY_BUFFER, render_submesh.vertex_buffer.id);
+		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+		render_submesh.vertex_count = vertices.size();
 		
 		render_mesh.submeshes.emplace_back(std::move(render_submesh));
 	}
@@ -54,11 +64,41 @@ RenderMesh upload_mesh(const Mesh& mesh) {
 	return render_mesh;
 }
 
-void setup_vertex_attributes(GLuint pos, GLuint normal, GLuint tex_coord) {
-	glEnableVertexAttribArray(pos);
-	glVertexAttribPointer(pos, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*) offsetof(Vertex, pos));
-	glEnableVertexAttribArray(normal);
-	glVertexAttribPointer(normal, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*) offsetof(Vertex, normal));
-	glEnableVertexAttribArray(tex_coord);
-	glVertexAttribPointer(tex_coord, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*) offsetof(Vertex, tex_coord));
+RenderMaterial upload_material(const Material& material, const std::vector<Texture>& textures) {
+	RenderMaterial rm;
+	if(material.colour.has_value()) {
+		rm.colour = *material.colour;
+	}
+	if(material.texture) {
+		const Texture& texture = textures.at(*material.texture);
+		u32* data = depalletise_texture(texture);
+		glGenTextures(1, &rm.texture.id);
+		glBindTexture(GL_TEXTURE_2D, rm.texture.id);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, texture.width, texture.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	}
+	return rm;
+}
+
+std::vector<RenderMaterial> upload_materials(const std::vector<Material>& materials, const std::vector<Texture>& textures) {
+	std::vector<RenderMaterial> rms;
+	for(const Material& material : materials) {
+		rms.emplace_back(upload_material(material, textures));
+	}
+	return rms;
+}
+
+static u32* depalletise_texture(const Texture& texture) {
+	static std::vector<u32> image;
+	image.resize(texture.width * texture.height);
+	for(s32 y = 0; y < texture.height; y++) {
+		for(s32 x = 0; x < texture.width; x++) {
+			u8 index = texture.pixels[y * texture.width + x];
+			image[(y * texture.width + x)] = texture.palette.colours[index];
+		}
+	}
+	return image.data();
 }

@@ -22,20 +22,27 @@
 #include <vector>
 
 #include <core/mesh.h>
+#include <core/collada.h>
+#include <core/texture.h>
 #include <editor/gl_includes.h>
 
 struct RenderSubMesh {
-	GLuint texture;
-	GlBuffer index_buffer;
-	s32 index_count = 0;
+	GLuint material;
+	GlBuffer vertex_buffer;
+	s32 vertex_count = 0;
+};
+
+struct RenderMaterial {
+	glm::vec4 colour{1.f, 1.f, 1.f, 1.f};
+	GlTexture texture;
 };
 
 struct RenderMesh {
-	GlBuffer vertex_buffer;
 	std::vector<RenderSubMesh> submeshes;
 };
 
-RenderMesh upload_mesh(const Mesh& mesh);
-void setup_vertex_attributes(GLuint pos, GLuint normal, GLuint tex_coord);
+RenderMesh upload_mesh(const Mesh& mesh, bool generate_normals);
+RenderMaterial upload_material(const Material& material, const std::vector<Texture>& textures);
+std::vector<RenderMaterial> upload_materials(const std::vector<Material>& materials, const std::vector<Texture>& textures);
 
 #endif

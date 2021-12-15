@@ -163,7 +163,7 @@ static Material read_material(const XmlNode* material_node, const IdMap& ids, co
 		material.texture = texture_index->second;
 		return material;
 	} else if(const XmlNode* colour = diffuse->first_node("color")) {
-		ColourF value;
+		glm::vec4 value;
 		const char* r_ptr = colour->value();
 		char* g_ptr;
 		value.r = strtof(r_ptr, &g_ptr);

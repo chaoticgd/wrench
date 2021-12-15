@@ -118,6 +118,8 @@ static void run_wrench(GLFWwindow** window, cxxopts::ParseResult& args, fs::path
 			(frame_time - last_frame_time).count();
 		last_frame_time = frame_time;
 	}
+	
+	shutdown_renderer();
 }
 
 static void init_gui(app& a, GLFWwindow** window) {

@@ -32,12 +32,16 @@ void level::open(fs::path json_path, Json& json) {
 	Json level_json = Json::parse(read_file(json_path));
 	LevelWad wad = read_level_wad_json(level_json, level_dir, game);
 	_gameplay = std::move(wad.gameplay);
-	for(const Mesh& collision_mesh : wad.collision.meshes) {
-		collision.emplace_back(upload_mesh(collision_mesh));
+	for(Mesh& collision_mesh : wad.collision.meshes) {
+		collision.emplace_back(upload_mesh(collision_mesh, true));
 	}
+	collision_materials = upload_materials(wad.collision.materials, {});
 	for(MobyClass& cls : wad.moby_classes) {
 		if(cls.high_model.has_value() && cls.high_model->meshes.size() >= 1) {
-			mobies.emplace(cls.o_class, upload_mesh(cls.high_model->meshes[0]));
+			EditorMobyClass ec;
+			ec.high_lod = upload_mesh(cls.high_model->meshes[0], true);
+			ec.materials = upload_materials(cls.high_model->materials, cls.textures);
+			mobies.emplace(cls.o_class, std::move(ec));
 		}
 	}
 }

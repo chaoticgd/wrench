@@ -23,21 +23,10 @@
 #include "util.h"
 #include "buffer.h"
 
-struct ColourF {
-	f32 r;
-	f32 g;
-	f32 b;
-	f32 a;
-	
-	bool operator==(const ColourF& rhs) const {
-		return r == rhs.r && g == rhs.g && b == rhs.b && a == rhs.a;
-	}
-};
-
 struct Material {
 	std::string name;
-	std::optional<ColourF> colour;
-	std::optional<s32> texture;
+	Opt<glm::vec4> colour;
+	Opt<s32> texture;
 };
 
 struct Joint {

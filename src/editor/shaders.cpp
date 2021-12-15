@@ -20,8 +20,8 @@
 
 #include <vector>
 
-Shader::Shader(const GLchar* vertex_src, const GLchar* fragment_src, shader_callback after)
-	: _id(0), _vertex_src(vertex_src), _fragment_src(fragment_src), _after(after) {}
+Shader::Shader(const GLchar* vertex_src, const GLchar* fragment_src, ShaderCallback before, ShaderCallback after)
+	: _id(0), _vertex_src(vertex_src), _fragment_src(fragment_src), _before(before), _after(after) {}
 	
 Shader::~Shader() {
 	glDeleteProgram(_id);
@@ -31,7 +31,6 @@ void Shader::init() {
 	_id = link(
 		compile(_vertex_src,   GL_VERTEX_SHADER),
 		compile(_fragment_src, GL_FRAGMENT_SHADER));
-	_after(_id);
 }
 
 GLuint Shader::id() const {
@@ -42,7 +41,10 @@ GLuint Shader::link(GLuint vertex, GLuint fragment) {
 	GLuint id = glCreateProgram();
 	glAttachShader(id, vertex);
 	glAttachShader(id, fragment);
+	
+	_before(id);
 	glLinkProgram(id);
+	_after(id);
 
 	GLint result;
 	int log_length;
@@ -84,71 +86,127 @@ GLuint Shader::compile(const GLchar* src, GLuint type) {
 	return id;
 }
 
-shader_programs::shader_programs() :
-	solid_colour(
-		R"(
-			#version 120
-
-			attribute mat4 local_to_clip;
-			attribute vec3 position;
-
-			void main() {
-				gl_Position = local_to_clip * vec4(position, 1);
-			}
-		)",
-		R"(
-			#version 120
-
-			uniform vec4 rgb;
-
-			void main() {
-				gl_FragColor = rgb;
-			}
-		)",
-		[&](GLuint id) {
-			solid_colour_rgb = glGetUniformLocation(id, "rgb");
-			
-			glBindAttribLocation(id, 0, "local_to_clip");
-			glBindAttribLocation(id, 1, "position");
-		}
-	),
+Shaders::Shaders() :
 	textured(
 		R"(
 			#version 120
 
-			attribute mat4 local_to_clip;
+			attribute mat4 inst_matrix;
+			attribute vec4 inst_colour;
+			attribute vec4 inst_id;
 			attribute vec3 position;
 			attribute vec3 normal;
 			attribute vec2 tex_coord;
-			varying vec2 uv_frag;
+			varying vec2 uv;
+			varying vec4 shading;
 
 			void main() {
-				gl_Position = local_to_clip * vec4(position, 1);
-				uv_frag = tex_coord;
+				gl_Position = inst_matrix * vec4(position, 1);
+				uv = vec2(tex_coord.x, -tex_coord.y);
+				shading = vec4(vec3(abs(normal.x + normal.y + normal.z) / 10.f), 0.f);
 			}
 		)",
 		R"(
 			#version 120
 
+			uniform vec4 colour;
 			uniform sampler2D sampler;
-			varying vec2 uv_frag;
+			varying vec2 uv;
+			varying vec4 shading;
 
 			void main() {
-				gl_FragColor = vec4(1,0,0,1);texture2D(sampler, uv_frag);
+				gl_FragColor = texture2D(sampler, uv) * colour - shading;
 			}
 		)",
 		[&](GLuint id) {
+			glBindAttribLocation(id, 0, "inst_matrix");
+			glBindAttribLocation(id, 4, "inst_colour");
+			glBindAttribLocation(id, 5, "inst_id");
+			glBindAttribLocation(id, 6, "position");
+			glBindAttribLocation(id, 7, "normal");
+			glBindAttribLocation(id, 8, "tex_coord");
+		},
+		[&](GLuint id) {
+			textured_colour = glGetUniformLocation(id, "colour");
 			textured_sampler = glGetUniformLocation(id, "sampler");
-			
-			glBindAttribLocation(id, 0, "local_to_clip");
-			glBindAttribLocation(id, 4, "position");
-			glBindAttribLocation(id, 5, "normal");
-			glBindAttribLocation(id, 6, "tex_coord");
 		}
+	),
+	selection(
+		R"(
+			#version 120
+
+			attribute mat4 inst_matrix;
+			attribute vec4 inst_colour;
+			attribute vec4 inst_id;
+			attribute vec3 position;
+			attribute vec3 normal;
+			attribute vec2 tex_coord;
+			varying vec4 inst_colour_frag;
+
+			void main() {
+				gl_Position = inst_matrix * vec4(position, 1) - vec4(0, 0, 0.0001, 0);
+				inst_colour_frag = inst_colour;
+			}
+		)",
+		R"(
+			#version 120
+
+			varying vec4 inst_colour_frag;
+
+			void main() {
+				gl_FragColor = inst_colour_frag;
+			}
+		)",
+		[&](GLuint id) {
+			glBindAttribLocation(id, 0, "inst_matrix");
+			glBindAttribLocation(id, 4, "inst_colour");
+			glBindAttribLocation(id, 5, "inst_id");
+			glBindAttribLocation(id, 6, "position");
+			glBindAttribLocation(id, 7, "normal");
+			glBindAttribLocation(id, 8, "tex_coord");
+		},
+		[&](GLuint id) {}
+	),
+	pickframe(
+		R"(
+			#version 120
+
+			attribute mat4 inst_matrix;
+			attribute vec4 inst_colour;
+			attribute vec4 inst_id;
+			attribute vec3 position;
+			attribute vec3 normal;
+			attribute vec2 tex_coord;
+			varying vec4 inst_id_frag;
+
+			void main() {
+				gl_Position = inst_matrix * vec4(position, 1);
+				inst_id_frag = inst_id;
+			}
+		)",
+		R"(
+			#version 120
+			
+			varying vec4 inst_id_frag;
+			
+			void main() {
+				gl_FragColor = inst_id_frag;
+			}
+		)",
+		[&](GLuint id) {
+			glBindAttribLocation(id, 0, "inst_matrix");
+			glBindAttribLocation(id, 4, "inst_colour");
+			glBindAttribLocation(id, 5, "inst_id");
+			glBindAttribLocation(id, 6, "position");
+			glBindAttribLocation(id, 7, "normal");
+			glBindAttribLocation(id, 8, "tex_coord");
+		},
+		[&](GLuint id) {}
 	)
 {}
 
-void shader_programs::init() {
-	solid_colour.init();
+void Shaders::init() {
 	textured.init();
+	selection.init();
+	pickframe.init();
 }

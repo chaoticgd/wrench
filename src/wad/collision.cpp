@@ -321,7 +321,7 @@ static ColladaScene collision_sectors_to_scene(const CollisionSectors& sectors) 
 	for(s32 i = 0; i < 256; i++) {
 		Material material;
 		material.name = "col_" + std::to_string(i);
-		material.colour = ColourF{};
+		material.colour = glm::vec4{};
 		// From https://github.com/RatchetModding/replanetizer/blob/ada7ca73418d7b01cc70eec58a41238986b84112/LibReplanetizer/Models/Collision.cs#L26
 		// Colour different types of collision without knowing what they are.
 		material.colour->r = ((i & 0x3) << 6) / 255.0;
