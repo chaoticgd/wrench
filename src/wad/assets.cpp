@@ -28,7 +28,7 @@ static void print_asset_header(const AssetHeader& header);
 
 void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ram) {
 	auto header = asset_header.read<AssetHeader>(0, "asset header");
-	std::vector<s64> block_bounds = enumerate_asset_block_boundaries(asset_header, header);
+	std::vector<s64> block_bounds = enumerate_asset_block_boundaries(asset_header, header, wad.game);
 	
 	s32 tfrags_size;
 	if(header.occlusion != 0) {
@@ -142,14 +142,16 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 		wad.shrub_classes.emplace_back(std::move(shrub));
 	}
 	
-	auto ratchet_seqs = asset_header.read_multiple<s32>(header.ratchet_seqs_rac123, 256, "ratchet seqs");
-	wad.ratchet_seqs.clear();
-	for(s32 ratchet_seq_ofs : ratchet_seqs) {
-		if(ratchet_seq_ofs != 0) {
-			s64 seq_size = next_asset_block_size(ratchet_seq_ofs, block_bounds);
-			wad.ratchet_seqs.emplace_back(assets.read_bytes(ratchet_seq_ofs, seq_size, "ratchet seq"));
-		} else {
-			wad.ratchet_seqs.push_back({});
+	if(wad.game != Game::DL) {
+		auto ratchet_seqs = asset_header.read_multiple<s32>(header.ratchet_seqs_rac123, 256, "ratchet seqs");
+		wad.ratchet_seqs.clear();
+		for(s32 ratchet_seq_ofs : ratchet_seqs) {
+			if(ratchet_seq_ofs != 0) {
+				s64 seq_size = next_asset_block_size(ratchet_seq_ofs, block_bounds);
+				wad.ratchet_seqs.emplace_back(assets.read_bytes(ratchet_seq_ofs, seq_size, "ratchet seq"));
+			} else {
+				wad.ratchet_seqs.push_back({});
+			}
 		}
 	}
 	
@@ -326,18 +328,20 @@ void write_assets(OutBuffer header_dest, OutBuffer data_dest, OutBuffer gs_ram, 
 	data_dest.pad(0x10);
 	header.scene_view_size = data_dest.tell();
 	
-	assert(wad.ratchet_seqs.size() == 256);
-	std::vector<s32> ratchet_seq_offsets;
-	for(const Opt<std::vector<u8>>& ratchet_seq : wad.ratchet_seqs) {
-		if(ratchet_seq.has_value()) {
-			data_dest.pad(0x10);
-			ratchet_seq_offsets.push_back(data_dest.write_multiple(*ratchet_seq));
-		} else {
-			ratchet_seq_offsets.push_back(0);
+	if(wad.game != Game::DL) {
+		assert(wad.ratchet_seqs.size() == 256);
+		std::vector<s32> ratchet_seq_offsets;
+		for(const Opt<std::vector<u8>>& ratchet_seq : wad.ratchet_seqs) {
+			if(ratchet_seq.has_value()) {
+				data_dest.pad(0x10);
+				ratchet_seq_offsets.push_back(data_dest.write_multiple(*ratchet_seq));
+			} else {
+				ratchet_seq_offsets.push_back(0);
+			}
 		}
+		header_dest.pad(0x10);
+		header.ratchet_seqs_rac123 = header_dest.write_multiple(ratchet_seq_offsets);
 	}
-	header_dest.pad(0x10);
-	header.ratchet_seqs_rac123 = header_dest.write_multiple(ratchet_seq_offsets);
 	
 	header_dest.pad(0x10);
 	header.part_defs_offset = header_dest.tell();
@@ -366,7 +370,7 @@ void write_assets(OutBuffer header_dest, OutBuffer data_dest, OutBuffer gs_ram, 
 	write_file("/tmp", "assets.bin", Buffer(data_dest.vec));
 }
 
-std::vector<s64> enumerate_asset_block_boundaries(Buffer src, const AssetHeader& header) {
+std::vector<s64> enumerate_asset_block_boundaries(Buffer src, const AssetHeader& header, Game game) {
 	std::vector<s64> blocks {
 		header.tfrags,
 		header.occlusion,
@@ -390,10 +394,12 @@ std::vector<s64> enumerate_asset_block_boundaries(Buffer src, const AssetHeader&
 	for(const ShrubClassEntry& entry : shrub_classes) {
 		blocks.push_back(entry.offset_in_asset_wad);
 	}
-	auto ratchet_seqs = src.read_multiple<s32>(header.ratchet_seqs_rac123, 256, "ratchet sequence offsets");
-	for(s32 ratchet_seq_ofs : ratchet_seqs) {
-		if(ratchet_seq_ofs != 0) {
-			blocks.push_back(ratchet_seq_ofs);
+	if(game != Game::DL) {
+		auto ratchet_seqs = src.read_multiple<s32>(header.ratchet_seqs_rac123, 256, "ratchet sequence offsets");
+		for(s32 ratchet_seq_ofs : ratchet_seqs) {
+			if(ratchet_seq_ofs != 0) {
+				blocks.push_back(ratchet_seq_ofs);
+			}
 		}
 	}
 	return blocks;

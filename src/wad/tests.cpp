@@ -110,7 +110,7 @@ static void run_level_tests(fs::path input_path) {
 		Buffer assets(assets_vec);
 		
 		AssetHeader asset_header = asset_header_buf.read<AssetHeader>(0, "asset header");
-		auto block_bounds = enumerate_asset_block_boundaries(asset_header_buf, asset_header);
+		auto block_bounds = enumerate_asset_block_boundaries(asset_header_buf, asset_header, game);
 		
 		printf("%s collision\n", wad_file_path.string().c_str());
 		ColladaScene src_collision = read_collision(assets.subbuf(asset_header.collision));

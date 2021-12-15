@@ -109,7 +109,9 @@ MobyClassData read_moby_class(Buffer src, Game game) {
 		moby.corncob = read_moby_corncob(src.subbuf(header.corncob * 0x10));
 		moby.header_end_offset = std::min(moby.header_end_offset, header.corncob * 0x10);
 	}
-	moby.sequences = read_moby_sequences(src, header.sequence_count);
+	if(game != Game::DL) { // TODO: Get this working.
+		moby.sequences = read_moby_sequences(src, header.sequence_count);
+	}
 	verify(header.sequence_count >= 1, "Moby class has no sequences.");
 	if(header.collision != 0) {
 		moby.collision = read_moby_collision(src.subbuf(header.collision));
@@ -118,7 +120,9 @@ MobyClassData read_moby_class(Buffer src, Game game) {
 	}
 	moby.skeleton = src.read_multiple<Mat4>(header.skeleton, header.joint_count, "skeleton").copy();
 	moby.common_trans = src.read_multiple<MobyTrans>(header.common_trans, header.joint_count, "skeleton trans").copy();
-	moby.joints = read_moby_joints(src, header.joints);
+	if(game != Game::DL) { // TODO: Get this working.
+		moby.joints = read_moby_joints(src, header.joints);
+	}
 	moby.sound_defs = src.read_multiple<MobySoundDef>(header.sound_defs, header.sound_count, "moby sound defs").copy();
 	if(header.submesh_table_offset != 0) {
 		moby.has_submesh_table = true;
@@ -926,7 +930,9 @@ ColladaScene recover_moby_class(const MobyClassData& moby, s32 o_class, s32 text
 		}
 	}
 	
-	scene.joints = recover_moby_joints(moby);
+	if(moby.joints.size() != 0) {
+		scene.joints = recover_moby_joints(moby);
+	}
 	
 	return scene;
 }
