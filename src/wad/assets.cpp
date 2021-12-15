@@ -63,7 +63,7 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 	Buffer texture_data = assets.subbuf(header.textures_base_offset);
 	
 	for(const TextureEntry& tfrag_texture : tfrag_textures) {
-		wad.tfrag_textures.emplace_back(read_shared_texture(texture_data, gs_ram, tfrag_texture));
+		wad.tfrag_textures.emplace_back(read_shared_texture(texture_data, gs_ram, tfrag_texture, wad.game));
 	}
 	
 	if(wad.game != Game::DL) {
@@ -89,7 +89,7 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 		for(s32 i = 0; i < 16; i++) {
 			if(entry.textures[i] != 0xff) {
 				const TextureEntry& texture = moby_textures[entry.textures[i]];
-				moby->textures.emplace_back(read_shared_texture(texture_data, gs_ram, texture));
+				moby->textures.emplace_back(read_shared_texture(texture_data, gs_ram, texture, wad.game));
 			} else {
 				break;
 			}
@@ -115,7 +115,7 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 		for(s32 i = 0; i < 16; i++) {
 			if(entry.textures[i] != 0xff) {
 				const TextureEntry& texture = tie_textures[entry.textures[i]];
-				tie.textures.emplace_back(read_shared_texture(texture_data, gs_ram, texture));
+				tie.textures.emplace_back(read_shared_texture(texture_data, gs_ram, texture, wad.game));
 			} else {
 				break;
 			}
@@ -134,7 +134,7 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 		for(s32 i = 0; i < 16; i++) {
 			if(entry.textures[i] != 0xff) {
 				const TextureEntry& texture = shrub_textures[entry.textures[i]];
-				shrub.textures.emplace_back(read_shared_texture(texture_data, gs_ram, texture));
+				shrub.textures.emplace_back(read_shared_texture(texture_data, gs_ram, texture, wad.game));
 			} else {
 				break;
 			}
@@ -156,10 +156,10 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 	}
 	
 	Buffer particle_data = assets.subbuf(header.part_bank_offset);
-	wad.particle_textures = read_particle_textures(particle_textures, particle_data);
+	wad.particle_textures = read_particle_textures(particle_textures, particle_data, wad.game);
 	
 	Buffer fx_data = assets.subbuf(header.fx_bank_offset);
-	wad.fx_textures = read_fx_textures(fx_textures, fx_data);
+	wad.fx_textures = read_fx_textures(fx_textures, fx_data, wad.game);
 	
 	wad.particle_defs = asset_header.read_bytes(header.part_defs_offset, header.sound_remap_offset - header.part_defs_offset, "particle defs");
 	if(wad.game != Game::RAC1) {

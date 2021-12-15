@@ -19,11 +19,12 @@
 #include "texture.h"
 
 static std::vector<TextureDedupeRecord> write_nonshared_texture_data(OutBuffer data, const std::vector<Texture>& textures);
-static Texture read_paletted_texture(Buffer data, Buffer palette, s32 width, s32 height);
+static Texture read_paletted_texture(Buffer data, Buffer palette, s32 width, s32 height, Game game);
 static u8 map_palette_index(u8 index);
+static s32 remap_pixel_index_rac4(s32 i, s32 width);
 
-Texture read_shared_texture(Buffer texture, Buffer palette, TextureEntry entry) {
-	return read_paletted_texture(texture.subbuf(entry.data_offset), palette.subbuf(entry.palette * 0x100), entry.width, entry.height);
+Texture read_shared_texture(Buffer texture, Buffer palette, TextureEntry entry, Game game) {
+	return read_paletted_texture(texture.subbuf(entry.data_offset), palette.subbuf(entry.palette * 0x100), entry.width, entry.height, game);
 }
 
 s64 write_shared_texture_data(OutBuffer ee, OutBuffer gs, std::vector<GsRamEntry>& table, std::vector<TextureDedupeRecord>& records) {
@@ -60,12 +61,12 @@ s64 write_shared_texture_data(OutBuffer ee, OutBuffer gs, std::vector<GsRamEntry
 	return ofs;
 }
 
-std::vector<Texture> read_particle_textures(BufferArray<ParticleTextureEntry> texture_table, Buffer data) {
+std::vector<Texture> read_particle_textures(BufferArray<ParticleTextureEntry> texture_table, Buffer data, Game game) {
 	std::vector<Texture> textures;
 	for(const ParticleTextureEntry& entry : texture_table) {
 		Buffer palette = data.subbuf(entry.palette);
 		Buffer texture = data.subbuf(entry.texture);
-		textures.emplace_back(read_paletted_texture(texture, palette, entry.side, entry.side));
+		textures.emplace_back(read_paletted_texture(texture, palette, entry.side, entry.side, game));
 	}
 	return textures;
 }
@@ -92,12 +93,12 @@ ArrayRange write_particle_textures(OutBuffer header, OutBuffer data, const std::
 	return range;
 }
 
-std::vector<Texture> read_fx_textures(BufferArray<FXTextureEntry> texture_table, Buffer data) {
+std::vector<Texture> read_fx_textures(BufferArray<FXTextureEntry> texture_table, Buffer data, Game game) {
 	std::vector<Texture> textures;
 	for(const FXTextureEntry& entry : texture_table) {
 		Buffer palette = data.subbuf(entry.palette);
 		Buffer texture = data.subbuf(entry.texture);
-		textures.emplace_back(read_paletted_texture(texture, palette, entry.width, entry.height));
+		textures.emplace_back(read_paletted_texture(texture, palette, entry.width, entry.height, game));
 	}
 	return textures;
 }
@@ -142,7 +143,7 @@ static std::vector<TextureDedupeRecord> write_nonshared_texture_data(OutBuffer d
 	return records;
 }
 
-Texture read_paletted_texture(Buffer data, Buffer palette, s32 width, s32 height) {
+Texture read_paletted_texture(Buffer data, Buffer palette, s32 width, s32 height, Game game) {
 	Texture texture = {0};
 	texture.width = width;
 	texture.height = height;
@@ -154,7 +155,20 @@ Texture read_paletted_texture(Buffer data, Buffer palette, s32 width, s32 height
 		alpha = std::min(alpha * 2, 0xffu);
 		texture.palette.colours[i] = (texture.palette.colours[i] & 0x00ffffff) | (alpha << 24);
 	}
-	texture.pixels = data.read_multiple<u8>(0, width * height, "texture").copy();
+	auto pixels = data.read_multiple<u8>(0, width * height, "texture").copy();
+	if(game == Game::DL && width >= 32 && height >= 4) {
+		s32 buffer_size = width * height;
+		texture.pixels.resize(buffer_size);
+		for(size_t i = 0; i < buffer_size; i++) {
+			s32 map = remap_pixel_index_rac4(i, width);
+			if(map >= buffer_size) {
+				map = buffer_size - 1;
+			}
+			texture.pixels[map] = pixels[i];
+		}
+	} else {
+		texture.pixels = std::move(pixels);
+	}
 	return texture;
 }
 
@@ -302,4 +316,34 @@ static u8 map_palette_index(u8 index) {
 	// Swap middle two bits
 	//  e.g. 00010000 becomes 00001000.
 	return (((index & 16) >> 1) != (index & 8)) ? (index ^ 0b00011000) : index;
+}
+
+static s32 remap_pixel_index_rac4(s32 i, s32 width) {
+	s32 s = i / (width * 2);
+	s32 r = 0;
+	if (s % 2 == 0)
+		r = s * 2;
+	else
+		r = (s - 1) * 2 + 1;
+
+	s32 q = ((i % (width * 2)) / 32);
+
+	s32 m = i % 4;
+	s32 n = (i / 4) % 4;
+	s32 o = i % 2;
+	s32 p = (i / 16) % 2;
+
+	if ((s / 2) % 2 == 1)
+		p = 1 - p;
+
+	if (o == 0)
+		m = (m + p) % 4;
+	else
+		m = ((m - p) + 4) % 4;
+
+
+	s32 x = n + ((m + q * 4) * 4);
+	s32 y = r + (o * 2);
+
+	return (x % width) + (y * width);
 }

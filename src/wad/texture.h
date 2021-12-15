@@ -67,11 +67,11 @@ struct TextureDedupeRecord {
 	Opt<s32> indices[4];
 };
 
-Texture read_shared_texture(Buffer texture, Buffer palette, TextureEntry entry);
+Texture read_shared_texture(Buffer texture, Buffer palette, TextureEntry entry, Game game);
 s64 write_shared_texture_data(OutBuffer ee, OutBuffer gs, std::vector<GsRamEntry>& table, std::vector<TextureDedupeRecord>& records);
-std::vector<Texture> read_particle_textures(BufferArray<ParticleTextureEntry> texture_table, Buffer src);
+std::vector<Texture> read_particle_textures(BufferArray<ParticleTextureEntry> texture_table, Buffer src, Game game);
 ArrayRange write_particle_textures(OutBuffer header, OutBuffer data, const std::vector<Texture>& textures);
-std::vector<Texture> read_fx_textures(BufferArray<FXTextureEntry> texture_table, Buffer data);
+std::vector<Texture> read_fx_textures(BufferArray<FXTextureEntry> texture_table, Buffer data, Game game);
 ArrayRange write_fx_textures(OutBuffer header, OutBuffer data, const std::vector<Texture>& textures);
 struct TextureDedupeOutput {
 	std::vector<TextureDedupeRecord> records;
