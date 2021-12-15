@@ -95,11 +95,11 @@ static void build(fs::path input_path, fs::path output_path) {
 
 static void extract_collision(fs::path input_path, fs::path output_path) {
 	auto collision = read_file(input_path);
-	write_file("/", output_path, write_collada(read_collision(collision)));
+	write_file("/", output_path, write_collada(read_collision(collision)), "w");
 }
 
 static void build_collision(fs::path input_path, fs::path output_path) {
-	auto collision = read_file(input_path);
+	auto collision = read_file(input_path, "r");
 	std::vector<u8> bin;
 	write_collision(bin, read_collada(collision));
 	write_file("/", output_path, bin);
@@ -110,11 +110,11 @@ static void extract_moby(const char* input_path, const char* output_path) {
 	MobyClassData moby = read_moby_class(bin, Game::RAC2);
 	ColladaScene scene = recover_moby_class(moby, 0, 0);
 	auto xml = write_collada(scene);
-	write_file("/", output_path, xml);
+	write_file("/", output_path, xml, "w");
 }
 
 static void build_moby(const char* input_path, const char* output_path) {
-	auto xml = read_file(input_path);
+	auto xml = read_file(input_path, "r");
 	ColladaScene scene = read_collada(xml);
 	MobyClassData moby = build_moby_class(scene);
 	std::vector<u8> buffer;

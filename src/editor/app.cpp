@@ -142,7 +142,7 @@ void app::build_iso(build_settings settings) {
 
 void app::open_file(fs::path path) {
 	try {
-		Json json = Json::parse(read_file(path));
+		Json json = Json::parse(read_file(path, "r"));
 		if(json.contains("metadata") && json["metadata"].contains("format") && json["metadata"]["format"] == "wad") {
 			level new_lvl;
 			new_lvl.open(path, json);

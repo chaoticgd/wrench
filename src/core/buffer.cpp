@@ -218,9 +218,9 @@ std::vector<u8> read_file(FILE* file, s64 offset, s64 size) {
 	return buffer;
 }
 
-std::vector<u8> read_file(fs::path path) {
+std::vector<u8> read_file(fs::path path, const char* open_mode) {
 	verify(!fs::is_directory(path), "Tried to open directory '%s' as regular file.", path.string().c_str());
-	FILE* file = fopen(path.string().c_str(), "rb");
+	FILE* file = fopen(path.string().c_str(), open_mode);
 	verify(file, "Failed to open file '%s' for reading.", path.string().c_str());
 	std::vector<u8> buffer(file_size_in_bytes(file));
 	if(buffer.size() > 0) {
@@ -230,9 +230,9 @@ std::vector<u8> read_file(fs::path path) {
 	return buffer;
 }
 
-std::string write_file(fs::path dest_dir, fs::path rel_path, Buffer buffer) {
+std::string write_file(fs::path dest_dir, fs::path rel_path, Buffer buffer, const char* open_mode) {
 	fs::path dest_path = dest_dir/rel_path;
-	FILE* file = fopen(dest_path.string().c_str(), "wb");
+	FILE* file = fopen(dest_path.string().c_str(), open_mode);
 	verify(file, "Failed to open file '%s' for writing.", dest_path.string().c_str());
 	if(buffer.size() > 0) {
 		verify(fwrite(buffer.lo, buffer.size(), 1, file) == 1, "Failed to write output file '%s'.", dest_path.string().c_str());

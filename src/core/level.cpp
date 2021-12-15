@@ -139,7 +139,7 @@ static std::string write_json_object_file(fs::path dest_dir, const char* file_na
 
 std::unique_ptr<Wad> read_wad_json(fs::path src_path) {
 	fs::path src_dir = src_path.parent_path();
-	Json json = Json::parse(read_file(src_path));
+	Json json = Json::parse(read_file(src_path, "r"));
 	
 	if(!json.contains("game") || !json["game"].is_string()) {
 		return nullptr;
@@ -193,7 +193,7 @@ void write_wad_json(fs::path dest_dir, Wad* base) {
 	}
 	
 	assert(json_file_name);
-	write_file(dest_dir, json_file_name, json.dump(1, '\t'));
+	write_file(dest_dir, json_file_name, json.dump(1, '\t'), "w");
 }
 
 LevelWad read_level_wad_json(const Json& json, const fs::path& src_dir, Game game) {
@@ -303,16 +303,16 @@ const char* write_level_wad_json(Json& json, const fs::path& dest_dir, LevelWad&
 	json["tfrags"] = write_file(dest_dir, "tfrags.bin", wad.tfrags);
 	json["occlusion"] = write_file(dest_dir, "occlusion.bin", wad.occlusion);
 	json["sky"] = write_file(dest_dir, "sky.bin", wad.sky);
-	json["collision"] = write_file(dest_dir, "collision.dae", write_collada(wad.collision));
+	json["collision"] = write_file(dest_dir, "collision.dae", write_collada(wad.collision), "w");
 	Json tfrag_textures_json;
 	tfrag_textures_json["textures"] = write_texture_pngs(dest_dir, "tfrag_textures", wad.tfrag_textures);
-	json["tfrag_textures"] = write_file(dest_dir, "tfrag_textures.json", tfrag_textures_json.dump(1, '\t'));
+	json["tfrag_textures"] = write_file(dest_dir, "tfrag_textures.json", tfrag_textures_json.dump(1, '\t'), "w");
 	Json particle_textures_json;
 	particle_textures_json["textures"] = write_texture_pngs(dest_dir, "particle_textures", wad.particle_textures);
-	json["particle_textures"] = write_file(dest_dir, "particle_textures.json", particle_textures_json.dump(1, '\t'));
+	json["particle_textures"] = write_file(dest_dir, "particle_textures.json", particle_textures_json.dump(1, '\t'), "w");
 	Json fx_textures_json;
 	fx_textures_json["textures"] = write_texture_pngs(dest_dir, "fx_textures", wad.fx_textures);
-	json["fx_textures"] = write_file(dest_dir, "fx_textures.json", fx_textures_json.dump(1, '\t'));
+	json["fx_textures"] = write_file(dest_dir, "fx_textures.json", fx_textures_json.dump(1, '\t'), "w");
 	if(wad.unknown_a0.has_value()) {
 		json["unknown_a0"] = write_file(dest_dir, "unknown_a0.bin", *wad.unknown_a0);
 	}
@@ -383,14 +383,14 @@ const char* write_level_wad_json(Json& json, const fs::path& dest_dir, LevelWad&
 static void read_classes(LevelWad& wad, fs::path project_dir) {
 	for(s32 o_class : opt_iterator(wad.gameplay.moby_classes)) {
 		fs::path moby_dir = project_dir/std::string("mobies")/std::to_string(o_class);
-		Json moby_json = Json::parse(read_file(moby_dir/std::string("moby.json")));
+		Json moby_json = Json::parse(read_file(moby_dir/std::string("moby.json"), "r"));
 		MobyClass moby;
 		moby.o_class = moby_json["class"].get<s32>();
 		if(moby_json.contains("bin")) {
 			moby.model = read_file(moby_dir/std::string(moby_json["bin"]));
 		}
 		if(moby_json.contains("model")) {
-			moby.high_model = read_collada(read_file(moby_dir/std::string(moby_json["model"])));
+			moby.high_model = read_collada(read_file(moby_dir/std::string(moby_json["model"]), "r"));
 		}
 		moby.textures = read_texture_pngs(moby_dir, moby_json["textures"]);
 		moby.has_asset_table_entry = moby_json["has_asset_table_entry"];
@@ -406,7 +406,7 @@ static void read_classes(LevelWad& wad, fs::path project_dir) {
 	
 	for(s32 o_class : tie_classes) {
 		fs::path tie_dir = project_dir/std::string("ties")/std::to_string(o_class);
-		Json tie_json = Json::parse(read_file(tie_dir/std::string("tie.json")));
+		Json tie_json = Json::parse(read_file(tie_dir/std::string("tie.json"), "r"));
 		TieClass tie;
 		tie.o_class = tie_json["class"].get<s32>();
 		tie.model = read_file(tie_dir/std::string(tie_json["model"]));
@@ -423,7 +423,7 @@ static void read_classes(LevelWad& wad, fs::path project_dir) {
 	
 	for(s32 o_class : shrub_classes) {
 		fs::path shrub_dir = project_dir/std::string("shrubs")/std::to_string(o_class);
-		Json shrub_json = Json::parse(read_file(shrub_dir/std::string("shrub.json")));
+		Json shrub_json = Json::parse(read_file(shrub_dir/std::string("shrub.json"), "r"));
 		ShrubClass shrub;
 		shrub.o_class = shrub_json["class"].get<s32>();
 		shrub.model = read_file(shrub_dir/std::string(shrub_json["model"]));
@@ -465,7 +465,7 @@ static void write_classes(Json& json, fs::path dest_dir, const LevelWad& wad) {
 		tie_json["model"] = "model.bin";
 		tie_json["textures"] = write_texture_pngs(tie_dir, nullptr, tie.textures);
 		write_file(tie_dir, "model.bin", tie.model);
-		write_file(tie_dir, "tie.json", tie_json.dump(1, '\t'));
+		write_file(tie_dir, "tie.json", tie_json.dump(1, '\t'), "w");
 	}
 	
 	fs::create_directory(dest_dir/std::string("shrubs"));
@@ -478,7 +478,7 @@ static void write_classes(Json& json, fs::path dest_dir, const LevelWad& wad) {
 		shrub_json["model"] = "model.bin";
 		shrub_json["textures"] = write_texture_pngs(shrub_dir, nullptr, shrub.textures);
 		write_file(shrub_dir, "model.bin", shrub.model);
-		write_file(shrub_dir, "shrub.json", shrub_json.dump(1, '\t'));
+		write_file(shrub_dir, "shrub.json", shrub_json.dump(1, '\t'), "w");
 	}
 }
 
@@ -537,7 +537,7 @@ static Json write_texture_pngs(const fs::path& dest_dir, const char* sub_dir, co
 static std::vector<u8> read_file_json(fs::path path, const Json& object, const char* key) {
 	verify(object.contains(key), "Missing '%s'.", key);
 	verify(object[key].is_string(), " '%s' isn't a string.", key);
-	return read_file(path/std::string(object[key]));
+	return read_file(path/std::string(object[key]), "r");
 }
 
 static std::string write_json_array_file(fs::path dest_dir, const char* file_name, Json data_json) {

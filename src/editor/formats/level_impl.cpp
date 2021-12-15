@@ -29,7 +29,7 @@ void level::open(fs::path json_path, Json& json) {
 	game = *game_opt;
 	fs::path level_dir = json_path.parent_path();
 	path = json_path;
-	Json level_json = Json::parse(read_file(json_path));
+	Json level_json = Json::parse(read_file(json_path, "r"));
 	LevelWad wad = read_level_wad_json(level_json, level_dir, game);
 	_gameplay = std::move(wad.gameplay);
 	for(Mesh& collision_mesh : wad.collision.meshes) {
@@ -55,7 +55,7 @@ void level::save() {
 		gameplay_json[item.key()] = std::move(item.value());
 	}
 	fs::path dest_dir = path.parent_path();
-	Json level_json = Json::parse(read_file(path));
+	Json level_json = Json::parse(read_file(path, "r"));
 	std::string gameplay_path = level_json["gameplay"];
 	write_file(dest_dir, fs::path(gameplay_path), gameplay_json.dump(1, '\t'));
 }
