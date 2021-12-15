@@ -355,7 +355,7 @@ glm::mat4 compose_world_to_clip(const ImVec2& view_size, const glm::vec3& cam_po
 }
 
 glm::vec3 apply_local_to_screen(const glm::mat4& world_to_clip, const glm::mat4& local_to_world, const ImVec2& view_size) {
-	glm::mat4 local_to_clip = world_to_clip * local_to_clip;
+	glm::mat4 local_to_clip = world_to_clip * glm::translate(glm::mat4(1.f), glm::vec3(1.f));
 	glm::vec4 homogeneous_pos = local_to_clip * glm::vec4(glm::vec3(local_to_world[3]), 1);
 	glm::vec3 gl_pos {
 			homogeneous_pos.x / homogeneous_pos.w,
