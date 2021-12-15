@@ -6,6 +6,7 @@ Features currently include:
 - WAD Utility
   - Pack/unpack levels.
   - Export moby meshes as COLLADA files.
+  - Import/export instances/entities as JSON.
   - Import/export textures are PNG files.
   - Import/export collision meshes as COLLADA files.
   - Import/export everything else as binary files.
