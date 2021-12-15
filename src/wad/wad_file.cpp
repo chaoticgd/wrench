@@ -18,11 +18,15 @@
 
 #include "wad_file.h"
 
+#include "primary.h"
+
 static std::vector<u8> read_compressed_lump(FILE* file, SectorRange range, const char* name);
 static std::map<s32, Chunk> read_chunks(FILE* file, SectorRange chunk_ranges[3], SectorRange chunk_bank_ranges[3]);
 static std::map<s32, Mission> read_missions(FILE* file, SectorRange mission_ranges[128], SectorRange mission_bank_ranges[128]);
 
 std::unique_ptr<Wad> read_wad(FILE* file) {
+	ERROR_CONTEXT("reading");
+	
 	s32 header_size;
 	verify(fread(&header_size, 4, 1, file) == 1, "Failed to read WAD header.");
 	switch(header_size) {
@@ -32,7 +36,8 @@ std::unique_ptr<Wad> read_wad(FILE* file) {
 			wad.game = Game::RAC1;
 			wad.type = WadType::LEVEL;
 			wad.level_number = header.level_number;
-			wad.primary = read_lump(file, header.primary, "primary");
+			std::vector<u8> primary_lump = read_lump(file, header.primary, "primary");
+			read_primary(wad, Buffer(primary_lump));
 			std::vector<u8> gameplay_lump = read_compressed_lump(file, header.gameplay_ntsc, "gameplay NTSC");
 			read_gameplay(wad, wad.gameplay, gameplay_lump, wad.game, RAC1_GAMEPLAY_BLOCKS);
 			return std::make_unique<LevelWad>(std::move(wad));
@@ -44,8 +49,9 @@ std::unique_ptr<Wad> read_wad(FILE* file) {
 			wad.level_number = header.level_number;
 			s32 reverb = header.reverb;
 			wad.reverb = reverb;
-			wad.primary = read_lump(file, header.primary, "primary");
-			wad.game = detect_game_rac23(wad.primary);
+			std::vector<u8> primary_lump = read_lump(file, header.primary, "primary");
+			wad.game = detect_game_rac23(primary_lump);
+			read_primary(wad, Buffer(primary_lump));
 			wad.core_bank = read_lump(file, header.core_bank, "core bank");
 			std::vector<u8> gameplay_lump = read_compressed_lump(file, header.gameplay, "gameplay");
 			read_gameplay(wad, wad.gameplay, gameplay_lump, wad.game, RAC23_GAMEPLAY_BLOCKS);
@@ -61,7 +67,8 @@ std::unique_ptr<Wad> read_wad(FILE* file) {
 			wad.level_number = header.level_number;
 			s32 reverb = header.reverb;
 			wad.reverb = reverb;
-			wad.primary = read_lump(file, header.primary, "primary");
+			std::vector<u8> primary_lump = read_lump(file, header.primary, "primary");
+			read_primary(wad, Buffer(primary_lump));
 			wad.core_bank = read_lump(file, header.core_bank, "core bank");
 			std::vector<u8> gameplay_lump = read_compressed_lump(file, header.gameplay_1, "gameplay");
 			read_gameplay(wad, wad.gameplay, gameplay_lump, wad.game, RAC23_GAMEPLAY_BLOCKS);
@@ -77,7 +84,8 @@ std::unique_ptr<Wad> read_wad(FILE* file) {
 			wad.level_number = header.level_number;
 			s32 reverb = header.reverb;
 			wad.reverb = reverb;
-			wad.primary = read_lump(file, header.primary, "primary");
+			std::vector<u8> primary_lump = read_lump(file, header.primary, "primary");
+			read_primary(wad, Buffer(primary_lump));
 			wad.core_bank = read_lump(file, header.core_bank, "core bank");
 			wad.chunks = read_chunks(file, header.chunks, header.chunk_banks);
 			std::vector<u8> gameplay_lump = read_compressed_lump(file, header.gameplay_core, "gameplay core");
@@ -204,6 +212,8 @@ void write_wad(FILE* file, Wad* wad) {
 }
 
 static std::vector<u8> build_level_wad(LevelWad& wad) {
+	ERROR_CONTEXT("building");
+	
 	std::vector<u8> dest_vec;
 	OutBuffer dest(dest_vec);
 	switch(wad.game) {
@@ -211,10 +221,10 @@ static std::vector<u8> build_level_wad(LevelWad& wad) {
 			Rac1LevelWadHeader header = {0};
 			header.header_size = sizeof(Rac1LevelWadHeader);
 			header.level_number = wad.level_number;
-			dest.alloc<Rac23LevelWadHeader>();
-			header.primary = write_lump(dest, wad.primary);
+			dest.alloc<Rac1LevelWadHeader>();
+			header.primary = write_primary(dest, wad);
 			wad.help_messages.swap(wad.gameplay); // help_messages -> gameplay
-			std::vector<u8> gameplay = write_gameplay(wad, wad.gameplay, wad.game, RAC23_GAMEPLAY_BLOCKS);
+			std::vector<u8> gameplay = write_gameplay(wad, wad.gameplay, wad.game, RAC1_GAMEPLAY_BLOCKS);
 			wad.help_messages.swap(wad.gameplay); // gameplay -> help_messages
 			header.gameplay_ntsc = write_compressed_lump(dest, gameplay);
 			header.occlusion = write_lump(dest, write_occlusion(wad.gameplay, wad.game));
@@ -229,7 +239,7 @@ static std::vector<u8> build_level_wad(LevelWad& wad) {
 			header.reverb = *wad.reverb;
 			dest.alloc<Rac23LevelWadHeader>();
 			header.core_bank = write_lump(dest, wad.core_bank);
-			header.primary = write_lump(dest, wad.primary);
+			header.primary = write_primary(dest, wad);
 			wad.help_messages.swap(wad.gameplay); // help_messages -> gameplay
 			std::vector<u8> gameplay = write_gameplay(wad, wad.gameplay, wad.game, RAC23_GAMEPLAY_BLOCKS);
 			wad.help_messages.swap(wad.gameplay); // gameplay -> help_messages
@@ -254,7 +264,7 @@ static std::vector<u8> build_level_wad(LevelWad& wad) {
 			}
 			dest.alloc<DeadlockedLevelWadHeader>();
 			header.core_bank = write_lump(dest, wad.core_bank);
-			header.primary = write_lump(dest, wad.primary);
+			header.primary = write_primary(dest, wad);
 			write_chunks(dest, header, wad.chunks);
 			wad.help_messages.swap(wad.gameplay); // help_messages -> gameplay
 			std::vector<u8> gameplay = write_gameplay(wad, wad.gameplay, wad.game, DL_GAMEPLAY_CORE_BLOCKS);

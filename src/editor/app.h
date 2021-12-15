@@ -28,22 +28,13 @@
 #include <functional>
 #include <glm/glm.hpp>
 
-#include "tools.h"
-#include "stream.h"
-#include "game_db.h"
-#include "renderer.h"
-#include "fs_includes.h"
-#include "worker_logger.h"
-#include "gui/window.h"
-#include "formats/texture.h"
-#include "formats/game_model.h"
-#include "formats/level_impl.h"
-#include "formats/armor_archive.h"
-
-# /*
-#	Represents the current state of the program including the currently open
-#	project, configuration and more.
-# */
+#include <editor/tools.h>
+#include <editor/game_db.h>
+#include <editor/renderer.h>
+#include <editor/fs_includes.h>
+#include <editor/worker_logger.h>
+#include <editor/gui/window.h>
+#include <editor/formats/level_impl.h>
 
 struct GLFWwindow;
 
@@ -54,11 +45,6 @@ struct build_settings {
 	bool single_level = false; // Write out just a single level?
 	int single_level_index = -1; // If so, which one?
 	bool no_mpegs = false;
-};
-
-struct model_list {
-	std::vector<moby_model>* models;
-	std::vector<texture>* textures;
 };
 
 class app {
@@ -79,7 +65,7 @@ public:
 	GLFWwindow* glfw_window;
 	int window_width, window_height;
 	
-	gl_renderer renderer;
+	RenderSettings render_settings;
 	
 	int64_t delta_time = 0;
 	
@@ -94,12 +80,8 @@ public:
 	level* get_level();
 	const level* get_level() const;
 	
-	std::map<std::string, std::vector<texture>*> texture_lists();
-	std::map<std::string, model_list> model_lists();
-	
 private:
 	std::optional<level> _lvl;
-	std::optional<armor_archive> _armor;
 
 public:
 
@@ -132,7 +114,7 @@ struct config {
 	void write();
 };
 
-gl_texture load_icon(std::string path);
+GlTexture load_icon(std::string path);
 
 template <typename T, typename... T_constructor_args>
 T* app::emplace_window(T_constructor_args... args) {

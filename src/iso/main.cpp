@@ -16,10 +16,10 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "../editor/util.h"
-#include "../editor/stream.h"
-#include "../editor/fs_includes.h"
-#include "../editor/command_line.h"
+#include <editor/util.h>
+#include <editor/fs_includes.h>
+#include <editor/command_line.h>
+#include "legacy_stream.h"
 #include "iso_filesystem.h"
 #include "table_of_contents.h"
 
@@ -281,7 +281,7 @@ void extract(std::string iso_path, fs::path output_dir) {
 			verify(dest_file, "Failed to open '%s' for writing.", path.string().c_str());
 			if(part->prepend_header) {
 				std::vector<u8> padded_header;
-				OutBuffer(padded_header).write_multiple<u8>(part->header);
+				OutBuffer(padded_header).write_multiple(part->header);
 				OutBuffer(padded_header).pad(SECTOR_SIZE, 0);
 				verify(fwrite(padded_header.data(), padded_header.size(), 1, dest_file) == 1,
 					"Failed to write header to '%s'.", path.string().c_str());

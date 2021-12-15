@@ -23,11 +23,6 @@
 #include <mutex>
 #include <sstream>
 
-
-# /*
-#	Thread-safe stringstream.
-# */
-
 class worker_logger {
 public:
 	worker_logger();

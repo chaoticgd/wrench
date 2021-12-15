@@ -23,7 +23,6 @@
 #include <toml11/toml.hpp>
 
 #include "gui/gui.h"
-#include "stream.h"
 #include "renderer.h"
 #include "fs_includes.h"
 #include "worker_thread.h"
@@ -95,7 +94,7 @@ void app::extract_iso(fs::path iso_path, fs::path dir) {
 			}
 			directory = dir;
 			_lock_project = false;
-			renderer.reset_camera(this);
+			reset_camera(this);
 			auto title = std::string("Wrench Editor - [") + dir.string() + "]";
 			glfwSetWindowTitle(glfw_window, title.c_str());
 			after_directory_loaded(*this);
@@ -142,19 +141,16 @@ void app::build_iso(build_settings settings) {
 }
 
 void app::open_file(fs::path path) {
-	file_stream file(path.string());
-	
-	Json json = Json::parse(read_file(path));
-	if(json.contains("metadata") && json["metadata"].contains("format") && json["metadata"]["format"] == "wad") {
-		level new_lvl;
-		try {
+	try {
+		Json json = Json::parse(read_file(path, "r"));
+		if(json.contains("metadata") && json["metadata"].contains("format") && json["metadata"]["format"] == "wad") {
+			level new_lvl;
 			new_lvl.open(path, json);
-		} catch(stream_error& e) {
-			printf("error: Failed to load level! %s\n", e.what());
-			return;
+			_lvl.emplace(std::move(new_lvl));
+			reset_camera(this);
 		}
-		_lvl.emplace(std::move(new_lvl));
-		renderer.reset_camera(this);
+	} catch(Json::parse_error& e) {
+		printf("Failed to open file: %s\n", e.what());
 	}
 }
 
@@ -180,37 +176,7 @@ const level* app::get_level() const {
 }
 
 bool app::has_camera_control() {
-	return renderer.camera_control;
-}
-
-std::map<std::string, std::vector<texture>*> app::texture_lists() {
-	std::map<std::string, std::vector<texture>*> result;
-	if(auto* lvl = get_level()) {
-		auto name = lvl->path.filename().string();
-		result[name + "/Mipmaps"] = &lvl->mipmap_textures;
-		result[name + "/Tfrags"] = &lvl->tfrag_textures;
-		result[name + (renderer.flag ? "/Mobys" : "/Mobies")] = &lvl->moby_textures;
-		result[name + "/Ties"] = &lvl->tie_textures;
-		result[name + "/Shrubs"] = &lvl->shrub_textures;
-		result[name + "/Sprites"] = &lvl->sprite_textures;
-		result[name + "/Loading Screen"] = &lvl->loading_screen_textures;
-	}
-	if(_armor) {
-		result["Armour"] = &_armor->textures;
-	}
-	return result;
-}
-
-std::map<std::string, model_list> app::model_lists() {
-	std::map<std::string, model_list> result;
-	if(auto* lvl = get_level()) {
-		auto name = lvl->path.filename().string();
-		result[name + (renderer.flag ? "/Mobys" : "/Mobies")] = { &lvl->moby_models, &lvl->moby_textures };
-	}
-	if(_armor) {
-		result["Armour"] = { &_armor->models, &_armor->textures };
-	}
-	return result;
+	return render_settings.camera_control;
 }
 
 std::vector<float*> get_imgui_scale_parameters() {
@@ -309,7 +275,7 @@ void config::write() {
 	settings << toml::format(toml::value(file));
 }
 
-gl_texture load_icon(std::string path) {
+GlTexture load_icon(std::string path) {
 	std::ifstream image_file(path);
 	
 	uint32_t image_buffer[32][32];
@@ -327,7 +293,7 @@ gl_texture load_icon(std::string path) {
 		}
 	}
 	
-	gl_texture texture;
+	GlTexture texture;
 	glGenTextures(1, &texture());
 	glBindTexture(GL_TEXTURE_2D, texture());
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 32, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_buffer);

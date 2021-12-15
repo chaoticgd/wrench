@@ -22,21 +22,10 @@
 #include <functional>
 #include <cxxopts.hpp>
 
-#include "stream.h"
-
-# /*
-#	Utility functions to parse command line arguments.
-# */
+// Utility functions to parse command line arguments.
 
 // Will not return if "--help", "--version", "-h" or "-v" is passed.
 cxxopts::ParseResult parse_command_line_args(int argc, char** argv, cxxopts::Options options);
-
-using stream_op = std::function<void(stream& dest, stream& src)>;
-
-int run_cli_converter(
-	int argc, char** argv,
-	const char* help_text,
-	std::map<std::string, stream_op> commands);
 
 // Get the value of an argument from a ParseResult
 // object, or call std::exit(1).

@@ -52,7 +52,7 @@ void picker_tool::pick_object(app& a, glm::mat4 world_to_clip, ImVec2 position) 
 	glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &last_framebuffer);
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	a.renderer.draw_pickframe(lvl, world_to_clip);
+	draw_pickframe(lvl, world_to_clip, a.render_settings);
 	
 	glFlush();
 	glFinish();
@@ -137,7 +137,7 @@ void selection_tool::draw(app& a, glm::mat4 world_to_clip) {
 		
 		level& lvl = *a.get_level();
 		lvl.gameplay().for_each_instance_with(COM_TRANSFORM, [&](Instance& inst) {
-			glm::vec3 screen_pos = a.renderer.apply_local_to_screen(world_to_clip, inst.matrix());
+			glm::vec3 screen_pos = apply_local_to_screen(world_to_clip, inst.matrix(), a.render_settings.view_size);
 			inst.selected = in_bounds(screen_pos);
 		});
 	}

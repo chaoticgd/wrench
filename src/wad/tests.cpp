@@ -18,7 +18,15 @@
 
 #include "tests.h"
 
-static void run_gameplay_tests(fs::path input_path);
+#include <md5.h>
+
+#include "moby.h"
+#include "assets.h"
+#include "primary.h"
+#include "texture.h"
+#include "collision.h"
+
+static void run_level_tests(fs::path input_path);
 struct GameplayTestArgs {
 	std::string wad_file_path;
 	FILE* file;
@@ -29,14 +37,16 @@ struct GameplayTestArgs {
 	Game game;
 };
 static void run_gameplay_lump_test(GameplayTestArgs args);
+static void run_moby_class_test(s32 o_class, Buffer src, const char* file_path, Game game);
+static void assert_collada_scenes_equal(const ColladaScene& lhs, const ColladaScene& rhs);
 
 void run_tests(fs::path input_path) {
-	run_gameplay_tests(input_path);
+	run_level_tests(input_path);
 	
 	printf("\nALL TESTS HAPPY\n");
 }
 
-static void run_gameplay_tests(fs::path input_path) {
+static void run_level_tests(fs::path input_path) {
 	for(fs::path wad_file_path : fs::directory_iterator(input_path)) {
 		FILE* file = fopen(wad_file_path.string().c_str(), "rb");
 		verify(file, "Failed to open input file.");
@@ -56,26 +66,31 @@ static void run_gameplay_tests(fs::path input_path) {
 		s32 header_size;
 		verify(fread(&header_size, 4, 1, file) == 1, "Failed to read WAD header.");
 		
+		std::string file_path = wad_file_path.string().c_str();
+		
+		Game game;
+		std::vector<u8> primary;
 		switch(header_size) {
 			case sizeof(Rac1LevelWadHeader): {
 				auto header = read_header<Rac1LevelWadHeader>(file);
+				primary = read_lump(file, header.primary, "primary");
+				game = Game::RAC1;
 				run_gameplay_lump_test(build_args(header.gameplay_ntsc, "gameplay NTSC", RAC1_GAMEPLAY_BLOCKS, true, Game::RAC1));
 				break;
 			}
 			case sizeof(Rac23LevelWadHeader): {
 				auto header = read_header<Rac23LevelWadHeader>(file);
-				std::vector<u8> primary = read_lump(file, header.primary, "primary");
-				Game game = detect_game_rac23(primary);
+				primary = read_lump(file, header.primary, "primary");
+				game = detect_game_rac23(primary);
 				run_gameplay_lump_test(build_args(header.gameplay, "gameplay", RAC23_GAMEPLAY_BLOCKS, true, game));
 				break;
 			}
 			case sizeof(DeadlockedLevelWadHeader): {
 				auto header = read_header<DeadlockedLevelWadHeader>(file);
-				std::vector<u8> primary = read_lump(file, header.primary, "primary");
-				
+				primary = read_lump(file, header.primary, "primary");
+				game = Game::DL;
 				run_gameplay_lump_test(build_args(header.gameplay_core, "gameplay core", DL_GAMEPLAY_CORE_BLOCKS, true, Game::DL));
 				run_gameplay_lump_test(build_args(header.art_instances, "art instances", DL_ART_INSTANCE_BLOCKS, true, Game::DL));
-				
 				for(s32 i = 0; i < 128; i++) {
 					std::string name = "mission instances " + std::to_string(i);
 					run_gameplay_lump_test(build_args(header.gameplay_mission_instances[i], name.c_str(), DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS, false, Game::DL));
@@ -83,12 +98,39 @@ static void run_gameplay_tests(fs::path input_path) {
 				break;
 			}
 			default:
-				verify_not_reached("Unable to identify '%s'.", wad_file_path.string().c_str());
+				verify_not_reached("Unable to identify '%s'.", file_path.c_str());
+		}
+		
+		PrimaryHeader primary_header = read_primary_header(Buffer(primary), game);
+		Buffer asset_header_buf = Buffer(primary).subbuf(primary_header.asset_header.offset, primary_header.asset_header.size);
+		
+		Buffer assets_compressed = Buffer(primary).subbuf(primary_header.assets.offset, primary_header.assets.size);
+		std::vector<u8> assets_vec;
+		decompress_wad(assets_vec, WadBuffer(assets_compressed.lo, assets_compressed.hi));
+		Buffer assets(assets_vec);
+		
+		AssetHeader asset_header = asset_header_buf.read<AssetHeader>(0, "asset header");
+		auto block_bounds = enumerate_asset_block_boundaries(asset_header_buf, asset_header, game);
+		
+		printf("%s collision\n", wad_file_path.string().c_str());
+		ColladaScene src_collision = read_collision(assets.subbuf(asset_header.collision));
+		auto src_collision_xml = write_collada(src_collision);
+		auto dest_collision = read_collada(src_collision_xml);
+		assert_collada_scenes_equal(src_collision, dest_collision);
+		
+		auto moby_classes = asset_header_buf.read_multiple<MobyClassEntry>(asset_header.moby_classes, "moby class table");
+		for(const MobyClassEntry& entry : moby_classes) {
+			if(entry.offset_in_asset_wad != 0 && entry.o_class >= 10) {
+				s64 size = next_asset_block_size(entry.offset_in_asset_wad, block_bounds);
+				run_moby_class_test(entry.o_class, assets.subbuf(entry.offset_in_asset_wad, size), file_path.c_str(), game);
+			}
 		}
 	}
 }
 
 static void run_gameplay_lump_test(GameplayTestArgs args) {
+	printf("%s %s\n", args.wad_file_path.c_str(), args.name);
+	
 	if(args.lump.offset.sectors == 0) {
 		return;
 	}
@@ -122,8 +164,8 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 	std::string prefix_str = args.wad_file_path + " " + args.name;
 	std::string gameplay_header_str = prefix_str + " header";
 	std::string gameplay_data_str = prefix_str + " data";
-	good &= diff_buffers(src_buf.subbuf(0, 0xa0), dest_buf.subbuf(0, 0xa0), 0, gameplay_header_str.c_str());
-	good &= diff_buffers(src_buf.subbuf(0xa0), dest_buf.subbuf(0xa0), 0xa0, gameplay_data_str.c_str());
+	good &= diff_buffers(src_buf.subbuf(0, 0xa0), dest_buf.subbuf(0, 0xa0), 0, gameplay_header_str.c_str(), 0);
+	good &= diff_buffers(src_buf.subbuf(0xa0), dest_buf.subbuf(0xa0), 0xa0, gameplay_data_str.c_str(), 0xa0);
 	
 	if(!good) {
 		FILE* gameplay_file = fopen("/tmp/gameplay.bin", "wb");
@@ -143,12 +185,117 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 	help_messages.swap(test_gameplay); // help_messages -> test_gameplay
 	std::vector<u8> test_dest = write_gameplay(wad, test_gameplay, args.game, *args.blocks);
 	OutBuffer(test_dest).pad(SECTOR_SIZE, 0);
-	if(test_dest == dest) {
-		fprintf(stderr, "%s JSON matches.\n", prefix_str.c_str());
-	} else {
+	if(test_dest != dest) {
 		fprintf(stderr, "File read from JSON doesn't match original.\n");
 		write_file("/tmp/", "gameplay_orig.bin", dest);
 		write_file("/tmp/", "gameplay_test.bin", test_dest);
 		exit(1);
 	}
+}
+
+static std::map<s32, std::array<u8, MD5_DIGEST_LENGTH>> moby_md5s;
+
+static void run_moby_class_test(s32 o_class, Buffer src, const char* file_path, Game game) {
+	// These mobies from R&C2 Oozla have some weird animation data, skip these for now.
+	if(o_class == 3603 || o_class == 3802 || o_class == 3812) {
+		return;
+	}
+	
+	printf("%s moby class %d\n", file_path, o_class);
+	
+	// Test the binary reading/writing functions.
+	MobyClassData moby = read_moby_class(src, game);
+	std::vector<u8> dest_vec;
+	// Make sure relative pointers are set correctly.
+	for(s32 i = 0; i < 0x40; i++) {
+		OutBuffer(dest_vec).write<u8>(0);
+	}
+	write_moby_class(dest_vec, moby, game);
+	OutBuffer(dest_vec).pad(0x40);
+	Buffer dest(dest_vec);
+	
+	const s32 header_size = 0x80; // This is wrong but makes the hex printout better.
+	
+	std::string prefix_str = std::string(file_path) + " moby class " + std::to_string(o_class);
+	std::string header_str = prefix_str + " header";
+	std::string data_str = prefix_str + " data";
+	
+	bool good = true;
+	good &= diff_buffers(src.subbuf(0, header_size), dest.subbuf(0x40, header_size), 0, header_str.c_str(), 0);
+	good &= diff_buffers(src.subbuf(header_size), dest.subbuf(0x40 + header_size), 0, data_str.c_str(), header_size);
+	
+	if(!good) {
+		FILE* file = fopen("/tmp/moby.bin", "wb");
+		verify(file, "Failed to open /tmp/moby.bin for writing.");
+		fwrite(src.lo, src.hi - src.lo, 1, file);
+		fclose(file);
+		exit(1);
+	}
+	
+	// Test that mobies of the same class from different levels are equal.
+	std::array<u8, MD5_DIGEST_LENGTH> md5;
+	MD5_CTX ctx;
+	MD5Init(&ctx);
+	MD5Update(&ctx, dest_vec.data(), dest_vec.size());
+	MD5Final(md5.data(), &ctx);
+	auto md5_iter = moby_md5s.find(o_class);
+	if(md5_iter != moby_md5s.end()) {
+		verify(md5 == md5_iter->second, "Moby %d differs between levels.", o_class);
+	} else {
+		moby_md5s.emplace(o_class, md5);
+	}
+	
+	// Test the COLLADA importer/exporter.
+	ColladaScene src_scene = recover_moby_class(moby, o_class, 0);
+	std::vector<u8> collada_xml = write_collada(src_scene);
+	ColladaScene dest_scene = read_collada(std::move(collada_xml));
+	assert_collada_scenes_equal(src_scene, dest_scene);
+}
+
+static void assert_collada_scenes_equal(const ColladaScene& lhs, const ColladaScene& rhs) {
+	assert(lhs.texture_paths.size() == rhs.texture_paths.size());
+	assert(lhs.texture_paths == rhs.texture_paths);
+	assert(lhs.materials.size() == rhs.materials.size());
+	for(size_t i = 0; i < lhs.materials.size(); i++) {
+		const Material& lmat = lhs.materials[i];
+		const Material& rmat = rhs.materials[i];
+		assert(lmat.name == rmat.name);
+		assert(lmat.colour == rmat.colour);
+		assert(lmat.texture == rmat.texture);
+	}
+	assert(lhs.meshes.size() == rhs.meshes.size());
+	for(size_t i = 0; i < lhs.meshes.size(); i++) {
+		const Mesh& lmesh = lhs.meshes[i];
+		const Mesh& rmesh = rhs.meshes[i];
+		assert(lmesh.name == rmesh.name);
+		assert(lmesh.submeshes.size() == rmesh.submeshes.size());
+		// If there are no submeshes, we can't recover the flags.
+		assert(lmesh.flags == rmesh.flags || lmesh.submeshes.size() == 0);
+		// The COLLADA importer/exporter doesn't preserve the layout of the
+		// vertex buffer, so don't check that.
+		for(size_t j = 0; j < lmesh.submeshes.size(); j++) {
+			const SubMesh& lsub = lmesh.submeshes[j];
+			const SubMesh& rsub = rmesh.submeshes[j];
+			for(size_t k = 0; k < lsub.faces.size(); k++) {
+				const Face& lface = lsub.faces[k];
+				const Face& rface = rsub.faces[k];
+				assert(lmesh.vertices.at(lface.v0) == rmesh.vertices.at(rface.v0));
+				assert(lmesh.vertices.at(lface.v1) == rmesh.vertices.at(rface.v1));
+				assert(lmesh.vertices.at(lface.v2) == rmesh.vertices.at(rface.v2));
+				assert((lface.v3 > -1) == (rface.v3 > -1));
+				if(lface.v3 > -1) {
+					assert(lmesh.vertices.at(lface.v3) == rmesh.vertices.at(rface.v3));
+				}
+			}
+			assert(lsub.material == rsub.material);
+		}
+	}
+	//assert(lhs.joints.size() == rhs.joints.size());
+	//for(size_t i = 0; i < lhs.joints.size(); i++) {
+	//	assert(lhs.joints[i].parent == rhs.joints[i].parent);
+	//	assert(lhs.joints[i].first_child == rhs.joints[i].first_child);
+	//	assert(lhs.joints[i].left_sibling == rhs.joints[i].left_sibling);
+	//	assert(lhs.joints[i].right_sibling == rhs.joints[i].right_sibling);
+	//	assert(lhs.joints[i].matrix == rhs.joints[i].matrix);
+	//}
 }

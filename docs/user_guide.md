@@ -22,12 +22,6 @@ To build an ISO file, use the File->Build ISO menu. The following settings are a
 
 These tools are used for development.
 
-### fip
-
-Convert PIF images to and from indexed BMP files. Sample usage:
-
-	$ ./bin/fip export texture.pif texture.bmp
-
 ### iso
 
 This let you extract/build Ratchet & Clank ISO files. The games use raw disk I/O for loading assets, so a custom tool like this is required for extracting assets and making valid images. Sample usage:
@@ -86,6 +80,6 @@ Disassembles VIF command lists. This is useful for inspecting model data. Sample
 
 ### wad
 
-Extracts the contents of WAD files.
+Extract and build WAD files. Sample usage:
 
 	$ ./bin/wad extract level.wad outdir/

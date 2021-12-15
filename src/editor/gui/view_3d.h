@@ -23,7 +23,6 @@
 #define GLM_ENABLE_EXPERIMENTAL
 
 #include "../app.h"
-#include "../model.h"
 #include "window.h"
 
 class view_3d : public window {
@@ -34,9 +33,7 @@ public:
 	ImVec2 initial_size() const;
 	void render(app& a);
 	
-	[[nodiscard]] bool has_padding() const override;
-	
-	void draw_overlay_text(app& a, glm::mat4 world_to_clip) const;
+	bool has_padding() const override;
 	
 private:
 	GLuint _frame_buffer_texture = 0;

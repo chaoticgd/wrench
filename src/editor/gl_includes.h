@@ -24,25 +24,26 @@
 
 #include <glad/include/glad/glad.h>
 
-struct gl_buffer {
+struct GlBuffer {
 	GLuint id = 0;
-	gl_buffer() {}
-	gl_buffer(const gl_buffer&) = delete;
-	gl_buffer(gl_buffer&& rhs) : id(rhs.id) { rhs.id = 0; }
-	~gl_buffer() { if(id != 0) glDeleteBuffers(1, &id); }
+	GlBuffer() {}
+	GlBuffer(const GlBuffer&) = delete;
+	GlBuffer(GlBuffer&& rhs) : id(rhs.id) { rhs.id = 0; }
+	~GlBuffer() { if(id != 0) glDeleteBuffers(1, &id); }
 	GLuint& operator()() { return id; }
 	const GLuint& operator()() const { return id; }
+	GlBuffer& operator=(GlBuffer&& rhs) { id = rhs.id; rhs.id = 0; return *this; }
 };
 
-struct gl_texture {
+struct GlTexture {
 	GLuint id = 0;
-	gl_texture() {}
-	gl_texture(const gl_texture&) = delete;
-	gl_texture(gl_texture&& rhs) : id(rhs.id) { rhs.id = 0; }
-	~gl_texture() { if(id != 0) glDeleteTextures(1, &id); }
+	GlTexture() {}
+	GlTexture(const GlTexture&) = delete;
+	GlTexture(GlTexture&& rhs) : id(rhs.id) { rhs.id = 0; }
+	~GlTexture() { if(id != 0) glDeleteTextures(1, &id); }
 	GLuint& operator()() { return id; }
 	const GLuint& operator()() const { return id; }
-	gl_texture& operator=(gl_texture&& rhs) { id = rhs.id; rhs.id = 0; return *this; }
+	GlTexture& operator=(GlTexture&& rhs) { id = rhs.id; rhs.id = 0; return *this; }
 };
 
 #define M_PI 3.14159265358979323846

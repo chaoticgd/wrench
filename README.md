@@ -1,16 +1,26 @@
 # Wrench Editor
 
-A set of modding tools for the Ratchet & Clank PS2 games.
+A set of modding tools for the Ratchet & Clank PS2 games. Work in progress.
 
-Current features include an ISO extractor/builder, a level editor, facilities for extracting textures, and a number of command line tools for development.
+Features currently include:
+- WAD Utility
+  - Pack/unpack levels.
+  - Export moby meshes as COLLADA files.
+  - Import/export textures are PNG files.
+  - Import/export collision meshes as COLLADA files.
+  - Import/export everything else as binary files.
+- Level Editor
+  - View unpacked levels.
+  - Move objects and modify their properties.
+- ISO Utility
+  - Extract files from R&C1, R&C2, R&C3 and Deadlocked.
+  - Build modded ISO files for R&C2, R&C3 and Deadlocked.
 
-For build instructions, see the Build section below. For usage instructions, see the [User Guide](docs/user_guide.md). To find out which games are compatible, see the [Compatibility Matrix](docs/compatibility_matrix.md). For information on the game's file formats, see the [Formats Guide](docs/formats_guide.md).
+For build instructions, see the Building section below. For usage instructions, see the [User Guide](docs/user_guide.md). For information on the game's file formats, see the [Formats Guide](docs/formats_guide.md).
 
-## Screenshots
+## Screenshot
 
 ![Level Editor](docs/screenshots/editor.png)
-![Texture Browser](docs/screenshots/texture-browser.png)
-![Model Browser](docs/screenshots/model-browser.png)
 
 ## Building
 

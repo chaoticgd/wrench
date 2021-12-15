@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 2.8.11)
 project(wrench)
+
+include_directories(src)
 include_directories(thirdparty)
-include_directories(thirdparty/imgui)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -16,22 +17,29 @@ endif()
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $<1:${CMAKE_SOURCE_DIR}/bin>)
 
+add_library(wrenchcore STATIC
+	src/core/buffer.cpp
+	src/core/json.cpp
+	src/core/instance.cpp
+	src/core/level.cpp
+	src/core/util.cpp
+	src/core/mesh.cpp
+	src/core/collada.cpp
+	src/core/timer.cpp
+	src/core/png.cpp
+	src/core/texture.cpp
+	src/core/vif.cpp
+	thirdparty/md5.cpp
+)
+
 add_executable(wrench
 	src/editor/main.cpp
-	src/buffer.cpp
-	src/json.cpp
-	src/instance.cpp
-	src/level.cpp
-	src/util.cpp
 	src/editor/app.cpp
 	src/editor/command_line.cpp
-	src/editor/stream.cpp
-	src/editor/stacktrace.cpp
 	src/editor/renderer.cpp
 	src/editor/shaders.cpp
 	src/editor/worker_logger.cpp
-	src/editor/iso_stream.cpp
-	src/editor/model.cpp
+	src/editor/mesh.cpp
 	src/editor/util.cpp
 	src/editor/game_db.cpp
 	src/editor/tools.cpp
@@ -42,32 +50,9 @@ add_executable(wrench
 	src/editor/gui/inspector.cpp
 	src/editor/gui/imgui_impl_glfw.cpp
 	src/editor/formats/level_impl.cpp
-	src/editor/formats/texture.cpp
-	src/editor/formats/fip.cpp
-	src/editor/formats/bmp.cpp
-	src/editor/formats/armor_archive.cpp
-	src/editor/formats/game_model.cpp
-	src/editor/formats/vif.cpp
-	src/editor/formats/tfrag.cpp
-	src/editor/formats/tcol.cpp
-	src/editor/formats/shrub.cpp
-	src/editor/formats/texture_archive.cpp
-	src/editor/formats/model_utils.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
 	thirdparty/imgui/backends/imgui_impl_opengl3.cpp
-	src/editor/md5.cpp
 	src/lz/compression.cpp
-)
-
-add_executable(fip
-	src/cli/fipcli.cpp
-	src/editor/command_line.cpp
-	src/editor/util.cpp
-	src/editor/stream.cpp
-	src/editor/stacktrace.cpp
-	src/editor/formats/texture.cpp
-	src/editor/formats/fip.cpp
-	src/editor/formats/bmp.cpp
 )
 
 add_executable(lz
@@ -75,54 +60,56 @@ add_executable(lz
 	src/lz/compression.cpp
 	src/editor/util.cpp
 	src/editor/command_line.cpp
-	src/editor/stream.cpp
-	src/editor/stacktrace.cpp
 )
 
 add_executable(vif
-	src/cli/vifcli.cpp
-	src/editor/stream.cpp
-	src/editor/stacktrace.cpp
+	src/vifcli.cpp
 	src/editor/util.cpp
 	src/editor/command_line.cpp
-	src/editor/formats/vif.cpp
 )
 
 add_executable(iso
 	src/iso/main.cpp
 	src/iso/iso_filesystem.cpp
 	src/iso/table_of_contents.cpp
-	src/editor/stream.cpp
-	src/editor/stacktrace.cpp
+	src/iso/legacy_stream.cpp
 	src/editor/util.cpp
 	src/editor/command_line.cpp
-	src/buffer.cpp
-	src/util.cpp
 )
 
 add_executable(memmap
-	src/cli/memmap.c
+	src/memmap.c
 )
 
 add_executable(wad
 	src/wad/main.cpp
-	src/buffer.cpp
-	src/json.cpp
-	src/instance.cpp
-	src/level.cpp
-	src/util.cpp
 	src/wad/wad_file.cpp
 	src/wad/gameplay.cpp
+	src/wad/primary.cpp
+	src/wad/assets.cpp
+	src/wad/collision.cpp
+	src/wad/texture.cpp
+	src/wad/moby.cpp
 	src/wad/tests.cpp
 	src/lz/compression.cpp
 )
+
+add_executable(hashtex
+	src/hashtex.cpp
+)
+
+target_link_libraries(wrench wrenchcore)
+target_link_libraries(vif wrenchcore)
+target_link_libraries(iso wrenchcore)
+target_link_libraries(wad wrenchcore)
+target_link_libraries(hashtex wrenchcore)
 
 # This lets us avoid linking stuff for most of the CLI tools.
 target_compile_definitions(wrench PRIVATE WRENCH_EDITOR=1)
 
 if(UNIX)
+	target_compile_options(wrenchcore PRIVATE -Wall -O3)
 	target_compile_options(wrench PRIVATE -Wall -O3)
-	target_compile_options(fip PRIVATE -Wall -O3)
 	target_compile_options(lz PRIVATE -Wall -O3)
 	target_compile_options(vif PRIVATE -Wall -O3)
 	target_compile_options(iso PRIVATE -Wall -O3)
@@ -133,27 +120,27 @@ if (MSVC)
 	# /W4 - enable all non-default-disabled warnings (-Wall equivalent)
 	# /Zi - emit debugging informations to PDB
 	# /EHsc - needed for proper C++ exception handling
-	target_compile_options(wrench	PRIVATE /W4 /Zi /EHsc)	
-	target_compile_options(fip		PRIVATE /W4 /Zi /EHsc)
-	target_compile_options(lz		PRIVATE /W4 /Zi /EHsc)
-	target_compile_options(vif		PRIVATE /W4 /Zi /EHsc)
-	target_compile_options(iso		PRIVATE /W4 /Zi /EHsc)
-	target_compile_options(wad		PRIVATE /W4 /Zi /EHsc)
+	target_compile_options(wrenchcore PRIVATE /W4 /Zi /EHsc)
+	target_compile_options(wrench PRIVATE /W4 /Zi /EHsc)
+	target_compile_options(lz PRIVATE /W4 /Zi /EHsc)
+	target_compile_options(vif PRIVATE /W4 /Zi /EHsc)
+	target_compile_options(iso PRIVATE /W4 /Zi /EHsc)
+	target_compile_options(wad PRIVATE /W4 /Zi /EHsc)
 endif()
 
 # std::filesystem
 if(UNIX)
+	target_link_libraries(wrenchcore stdc++fs)
 	target_link_libraries(wrench stdc++fs)
-	target_link_libraries(fip stdc++fs)
 	target_link_libraries(lz stdc++fs)
 	target_link_libraries(vif stdc++fs)
 	target_link_libraries(iso stdc++fs)
+	target_link_libraries(wad stdc++fs)
 endif()
 
 # cxxopts
 add_subdirectory(thirdparty/cxxopts)
 target_link_libraries(wrench cxxopts)
-target_link_libraries(fip cxxopts)
 target_link_libraries(lz cxxopts)
 target_link_libraries(vif cxxopts)
 target_link_libraries(iso cxxopts)
@@ -179,7 +166,7 @@ target_link_libraries(wrench glm)
 include_directories(thirdparty/glm)
 
 # Dear ImGui
-include_directories(thidparty/imgui)
+include_directories(thirdparty/imgui)
 add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_GLAD=1)
 add_library(imgui STATIC
 	thirdparty/imgui/imconfig.h
@@ -213,6 +200,17 @@ endif()
 target_link_libraries(wrench nativefiledialog)
 include_directories(thirdparty/nativefiledialog/src/include)
 
+# libpng
+include_directories(wrench thirdparty/zlib thirdparty/libpng)
+add_subdirectory(thirdparty/zlib)
+set(PNG_BUILD_ZLIB ON)
+set(PNG_SHARED OFF)
+set(PNG_STATIC ON)
+set(PNG_EXECUTABLES OFF)
+set(ZLIB_LIBRARY zlibstatic)
+set(ZLIB_INCLUDE_DIR thirdparty/zlib)
+add_subdirectory(thirdparty/libpng)
+target_link_libraries(wrenchcore png_static zlibstatic)
+
 add_subdirectory(src/version_check)
-target_link_libraries(wrench version_check)
-target_link_libraries(wad version_check)
+target_link_libraries(wrenchcore version_check)

@@ -68,24 +68,25 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 	
-	file_stream src_file(src_path);
-	file_stream dest_file(dest_path, std::ios::out | std::ios::trunc);
-	
-	std::vector<uint8_t> dest, src;
-	if(decompress) {
-		uint32_t compressed_size = src_file.read<uint32_t>(offset + 0x3);
-		src.resize(compressed_size);
-		src_file.seek(offset);
-		src_file.read_v(src);
-		decompress_wad(dest, src);
-		
-	} else {
-		src.resize(src_file.size());
-		src_file.read_v(src);
-		compress_wad(dest, src, thread_count);
-	}
-	
-	dest_file.write_v(dest);
+	// TODO
+	//file_stream src_file(src_path);
+	//file_stream dest_file(dest_path, std::ios::out | std::ios::trunc);
+	//
+	//std::vector<uint8_t> dest, src;
+	//if(decompress) {
+	//	uint32_t compressed_size = src_file.read<uint32_t>(offset + 0x3);
+	//	src.resize(compressed_size);
+	//	src_file.seek(offset);
+	//	src_file.read_v(src);
+	//	decompress_wad(dest, src);
+	//	
+	//} else {
+	//	src.resize(src_file.size());
+	//	src_file.read_v(src);
+	//	compress_wad(dest, src, thread_count);
+	//}
+	//
+	//dest_file.write_v(dest);
 
 	return 0;
 }
@@ -114,8 +115,9 @@ static int run_test() {
 		auto write_sad_file = [&]() {
 			sad++;
 			std::string sad_file_path = "/tmp/wad_is_sad_" + std::to_string(sad) + ".bin";
-			file_stream sad_file(sad_file_path, std::ios::out);
-			sad_file.write_v(plaintext);
+			//file_stream sad_file(sad_file_path, std::ios::out);
+			//sad_file.write_v(plaintext);
+			abort();
 			printf("Written sad file to %s\n", sad_file_path.c_str());
 		};
 		

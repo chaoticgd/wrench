@@ -22,8 +22,8 @@
 #include "gl_includes.h"
 
 const int START_SCREEN_ICON_SIDE = 96;
-gl_texture create_dvd_icon();
-gl_texture create_folder_icon();
-gl_texture create_floppy_icon();
+GlTexture create_dvd_icon();
+GlTexture create_folder_icon();
+GlTexture create_floppy_icon();
 
 #endif

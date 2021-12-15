@@ -69,16 +69,6 @@ std::vector<std::string> to_hex_dump(uint32_t* data, std::size_t align, std::siz
 	return result;
 }
 
-std::string md5_to_printable_string(uint8_t in[MD5_DIGEST_LENGTH]) {
-	const char* HEX_DIGITS = "0123456789abcdef";
-	std::string result;
-	for(int i = 0; i < MD5_DIGEST_LENGTH; i++) {
-		result += HEX_DIGITS[(in[i] >> 4) & 0xf];
-		result += HEX_DIGITS[in[i] & 0xf];
-	}
-	return result;
-}
-
 int execute_command(std::string executable, std::vector<std::string> arguments) {
 #ifdef DECENT_OS
 	//
