@@ -1,24 +1,32 @@
 # Format Specification
 
-The source level format created for Wrench. Version 6 and up is currently supported.
+The source level format created for Wrench. Version 7 and up is currently supported.
 
 ## Changelog
 
 ### Version 1
 
-- Initial release.
+Commit Hash: 2fd86909bab354c398206600394888efbf52dd29
+
+- Initial version.
 
 ### Version 2
+
+Commit Hash: fb5352dc9589f946266e5b854cf0fef5f4c909df
 
 - Changed "index" to "id" for instances.
 - Changed the existing "id" from the help messages to "string_id" and the existing id for the tie ambient RGBA values to "number".
 
 ### Version 3
 
+Commit Hash: 5d9985037a431da5fee979ee586129e7da111720
+
 - Moved from storing each type of instance seperately to storing them all in a single gameplay.json file.
 - Include format version and application version metadata in more files (the class files, the pvar type file).
 
 ### Version 4
+
+Commit Hash: e525e74cba56b98caf9b548dddee6d73dd9ae8af
 
 - For instances with matrices, the position is now stored in the 4th column of the matrix instead of under a seperate position key.
 - The transformation information of sound instances is no longer nested under a "cuboid" key.
@@ -31,9 +39,13 @@ The source level format created for Wrench. Version 6 and up is currently suppor
 
 ### Version 5
 
+Commit Hash: c925a3fcda4a094d203a4fb4d6ac8780a175c8a7
+
 - Store the global pvar, gc_88_dl_6c and the parts of gc_80_dl_64 as a JSON array of strings storing hex-encoded data, instead of as a JSON array of 8-bit unsigned integers.
 
 ### Version 6
+
+Commit Hash: 0992c56ad5415398b2faee2a358577125f1e08eb
 
 - Added support for the first Ratchet & Clank game.
 	- Added rac1_78 as a top-level JSON hex buffer in the gameplay file.
@@ -46,6 +58,8 @@ The source level format created for Wrench. Version 6 and up is currently suppor
 - The tie_ambient_rgbas array has been removed. Tie ambient RGBA buffers are now stored in the "ambient_rgbas" field of tie instances.
 
 ### Version 7
+
+Commit Hash: e525e74cba56b98caf9b548dddee6d73dd9ae8af
 
 - The primary.bin file has been removed. Its data has been split up into multiple different files.
 - Tfrags, occlusion data, sky data, mobies, ties, shrubs, particle definitions, sound remapping data, transition textures, and ratchet animation sequences are now stored as binary data in their own files.
