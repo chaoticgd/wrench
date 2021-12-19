@@ -25,8 +25,8 @@ static MobyBangles read_moby_bangles(Buffer src);
 static s64 write_moby_bangles(OutBuffer dest, const MobyBangles& bangles);
 static MobyCornCob read_moby_corncob(Buffer src);
 static s64 write_moby_corncob(OutBuffer dest, const MobyCornCob& corncob);
-static std::vector<Opt<MobySequence>> read_moby_sequences(Buffer src, s64 sequence_count, s32 joint_count);
-static void write_moby_sequences(OutBuffer dest, const std::vector<Opt<MobySequence>>& sequences, s64 list_ofs, s32 joint_count);
+static std::vector<Opt<MobySequence>> read_moby_sequences(Buffer src, s64 sequence_count, s32 joint_count, Game game);
+static void write_moby_sequences(OutBuffer dest, const std::vector<Opt<MobySequence>>& sequences, s64 list_ofs, s32 joint_count, Game game);
 static MobyCollision read_moby_collision(Buffer src);
 static s64 write_moby_collision(OutBuffer dest, const MobyCollision& collision);
 static std::vector<MobyJointEntry> read_moby_joints(Buffer src, s64 joints_ofs);
@@ -111,7 +111,7 @@ MobyClassData read_moby_class(Buffer src, Game game) {
 		moby.header_end_offset = std::min(moby.header_end_offset, header.corncob * 0x10);
 	}
 	if(game != Game::DL) { // TODO: Get this working.
-		moby.sequences = read_moby_sequences(src, header.sequence_count, header.joint_count);
+		moby.sequences = read_moby_sequences(src, header.sequence_count, header.joint_count, game);
 	}
 	verify(header.sequence_count >= 1, "Moby class has no sequences.");
 	if(header.collision != 0) {
@@ -229,7 +229,7 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 		header.corncob = (write_moby_corncob(dest, *moby.corncob) - class_header_ofs) / 0x10;
 	}
 	dest.pad(0x10);
-	write_moby_sequences(dest, moby.sequences, sequence_list_ofs, moby.joint_count);
+	write_moby_sequences(dest, moby.sequences, sequence_list_ofs, moby.joint_count, game);
 	dest.pad(0x10);
 	while(dest.tell() < class_header_ofs + moby.submesh_table_offset) {
 		dest.write<u8>(0);
@@ -352,8 +352,8 @@ static s64 write_moby_corncob(OutBuffer dest, const MobyCornCob& corncob) {
 	return header_ofs;
 }
 
-static std::vector<Opt<MobySequence>> read_moby_sequences(Buffer src, s64 sequence_count, s32 joint_count) {
-	std::vector<Opt<MobySequence>> sequences;static int i; i=0;
+static std::vector<Opt<MobySequence>> read_moby_sequences(Buffer src, s64 sequence_count, s32 joint_count, Game game) {
+	std::vector<Opt<MobySequence>> sequences;
 	auto sequence_offsets = src.read_multiple<s32>(sizeof(MobyClassHeader), sequence_count, "moby sequences");
 	for(s32 seq_offset : sequence_offsets) {
 		if(seq_offset == 0) {
@@ -361,12 +361,12 @@ static std::vector<Opt<MobySequence>> read_moby_sequences(Buffer src, s64 sequen
 			continue;
 		}
 		
-		sequences.emplace_back(read_moby_sequence(src, seq_offset, joint_count));
+		sequences.emplace_back(read_moby_sequence(src, seq_offset, joint_count, game));
 	}
 	return sequences;
 }
 
-static void write_moby_sequences(OutBuffer dest, const std::vector<Opt<MobySequence>>& sequences, s64 list_ofs, s32 joint_count) {
+static void write_moby_sequences(OutBuffer dest, const std::vector<Opt<MobySequence>>& sequences, s64 list_ofs, s32 joint_count, Game game) {
 	for(const Opt<MobySequence>& sequence_opt : sequences) {
 		if(!sequence_opt.has_value()) {
 			dest.write<s32>(list_ofs, 0);
@@ -375,13 +375,13 @@ static void write_moby_sequences(OutBuffer dest, const std::vector<Opt<MobySeque
 		}
 		
 		const MobySequence& sequence = *sequence_opt;
-		s64 seq_ofs = write_moby_sequence(dest, sequence, class_header_ofs, joint_count);
+		s64 seq_ofs = write_moby_sequence(dest, sequence, class_header_ofs, joint_count, game);
 		dest.write<u32>(list_ofs, seq_ofs - class_header_ofs);
 		list_ofs += 4;
 	}
 }
 
-MobySequence read_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count) {
+MobySequence read_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count, Game game) {
 	auto seq_header = src.read<MobySequenceHeader>(seq_ofs, "moby sequence header");
 	MobySequence sequence;
 	sequence.bounding_sphere = seq_header.bounding_sphere.unpack();
@@ -490,14 +490,19 @@ MobySequence read_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count) {
 	}
 	
 	if(seq_header.triggers != 0) {
-		s64 abs_trigger_ofs = seq_ofs + seq_header.triggers;
-		sequence.trigger_data = src.read<MobyTriggerData>(abs_trigger_ofs, "moby sequence trigger data");
+		s64 trigger_data_ofs = seq_ofs + seq_header.triggers;
+		if(game == Game::RAC1) {
+			trigger_data_ofs = seq_header.triggers;
+		} else {
+			trigger_data_ofs = seq_ofs + seq_header.triggers;
+		}
+		sequence.trigger_data = src.read<MobyTriggerData>(trigger_data_ofs, "moby sequence trigger data");
 	}
 	
 	return sequence;
 }
 
-s64 write_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64 header_ofs, s32 joint_count) {
+s64 write_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64 header_ofs, s32 joint_count, Game game) {
 	dest.pad(0x10);
 	s64 seq_header_ofs = dest.alloc<MobySequenceHeader>();
 	
@@ -543,7 +548,15 @@ s64 write_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64 header
 	}
 	
 	if(sequence.trigger_data.has_value()) {
-		seq_header.triggers = dest.write(*sequence.trigger_data) - seq_header_ofs;
+		if(game == Game::RAC1) {
+			dest.pad(0x10);
+		}
+		s64 trigger_data_ofs = dest.write(*sequence.trigger_data);
+		if(game == Game::RAC1) {
+			seq_header.triggers = trigger_data_ofs - header_ofs;
+		} else {
+			seq_header.triggers = trigger_data_ofs - seq_header_ofs;
+		}
 	}
 	seq_header.animation_info = sequence.animation_info;
 	

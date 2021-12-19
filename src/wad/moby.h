@@ -388,8 +388,8 @@ enum class MobyFormat {
 
 MobyClassData read_moby_class(Buffer src, Game game);
 void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game);
-MobySequence read_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count);
-s64 write_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64 header_ofs, s32 joint_count);
+MobySequence read_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count, Game game);
+s64 write_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64 header_ofs, s32 joint_count, Game game);
 ColladaScene recover_moby_class(const MobyClassData& moby, s32 o_class, s32 texture_count);
 MobyClassData build_moby_class(const ColladaScene& scene);
 
