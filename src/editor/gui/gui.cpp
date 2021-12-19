@@ -315,6 +315,8 @@ float gui::render_menu_bar(app& a) {
 			ImGui::Checkbox("Grind Paths", &a.render_settings.draw_grind_paths);
 			ImGui::Checkbox("Tfrags", &a.render_settings.draw_tfrags);
 			ImGui::Checkbox("Collision", &a.render_settings.draw_collision);
+			ImGui::Separator();
+			ImGui::Checkbox("Selected Moby Normals", &a.render_settings.draw_selected_moby_normals);
 			ImGui::EndMenu();
 		}
 		ImGui::EndMenu();

@@ -31,6 +31,7 @@
 #include "../mesh.h"
 
 struct EditorMobyClass {
+	Mesh mesh;
 	RenderMesh high_lod;
 	std::vector<RenderMaterial> materials;
 };
