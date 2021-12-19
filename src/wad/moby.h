@@ -243,8 +243,9 @@ struct MobyClassData {
 	std::vector<Opt<MobySequence>> sequences;
 	std::vector<u8> mystery_data;
 	Opt<MobyCollision> collision;
-	std::vector<Mat4> skeleton;
-	std::vector<MobyTrans> common_trans;
+	Opt<std::vector<Mat4>> skeleton;
+	Opt<std::vector<MobyTrans>> common_trans;
+	u8 joint_count;
 	std::vector<MobyJointEntry> joints;
 	std::vector<MobySoundDef> sound_defs;
 	u8 unknown_9;
@@ -257,11 +258,13 @@ struct MobyClassData {
 	s16 mode_bits;
 	u8 type;
 	u8 mode_bits2;
-	s32 header_end_offset;
-	s32 submesh_table_offset;
+	s32 header_end_offset = 0;
+	s32 submesh_table_offset = 0;
 	u8 rac1_byte_a;
 	u8 rac1_byte_b;
 	u16 rac1_short_2e;
+	std::vector<std::array<u32, 256>> team_palettes;
+	s32 palettes_per_texture = 0;
 	bool force_rac1_format = false; // Used for some mobies in the R&C2 Insomniac Museum.
 	bool has_submesh_table = false;
 };

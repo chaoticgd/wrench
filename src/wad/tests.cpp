@@ -127,7 +127,7 @@ static void run_level_tests(fs::path input_path) {
 			}
 		}
 		
-		if(game != Game::DL) {
+		if(asset_header.ratchet_seqs_rac123 != 0 && game != Game::DL) {
 			run_ratchet_seqs_test(asset_header_buf.subbuf(asset_header.ratchet_seqs_rac123), assets, file_path.c_str(), game, block_bounds);
 		}
 	}
@@ -203,6 +203,11 @@ static std::map<s32, std::array<u8, MD5_DIGEST_LENGTH>> moby_md5s;
 static void run_moby_class_test(s32 o_class, Buffer src, const char* file_path, Game game) {
 	ERROR_CONTEXT("running moby class %d test", o_class);
 	printf("%s moby class %d\n", file_path, o_class);
+	
+	// These have weird joint data.
+	if(game == Game::RAC3 && (o_class == 5952 || o_class == 5953)) {
+		return;
+	}
 	
 	// Test the binary reading/writing functions.
 	MobyClassData moby = read_moby_class(src, game);
