@@ -58,6 +58,7 @@ MobyClassData read_moby_class(Buffer src, Game game) {
 	moby.submesh_count = header.submesh_count;
 	moby.low_lod_submesh_count = header.low_lod_submesh_count;
 	moby.metal_submesh_count = header.metal_submesh_count;
+	moby.joint_count = header.joint_count;
 	moby.unknown_9 = header.unknown_9;
 	moby.rac1_byte_a = header.rac1_byte_a;
 	moby.rac1_byte_b = header.rac12_byte_b;
@@ -118,8 +119,12 @@ MobyClassData read_moby_class(Buffer src, Game game) {
 		s64 coll_size = 0x10 + moby.collision->first_part.size() + moby.collision->second_part.size() * 8 + moby.collision->third_part.size();
 		mystery_data_ofs = std::max(mystery_data_ofs, header.collision + coll_size);
 	}
-	moby.skeleton = src.read_multiple<Mat4>(header.skeleton, header.joint_count, "skeleton").copy();
-	moby.common_trans = src.read_multiple<MobyTrans>(header.common_trans, header.joint_count, "skeleton trans").copy();
+	if(header.skeleton != 0) {
+		moby.skeleton = src.read_multiple<Mat4>(header.skeleton, header.joint_count, "skeleton").copy();
+	}
+	if(header.common_trans != 0) {
+		moby.common_trans = src.read_multiple<MobyTrans>(header.common_trans, header.joint_count, "skeleton trans").copy();
+	}
 	if(game != Game::DL) { // TODO: Get this working.
 		moby.joints = read_moby_joints(src, header.joints);
 	}
@@ -193,6 +198,7 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 		header.rac1_byte_a = moby.rac1_byte_a;
 		header.rac12_byte_b = moby.rac1_byte_b;
 	}
+	header.joint_count = moby.joint_count;
 	header.unknown_9 = moby.unknown_9;
 	header.lod_trans = moby.lod_trans;
 	header.shadow = moby.shadow;
@@ -223,7 +229,7 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 		header.corncob = (write_moby_corncob(dest, *moby.corncob) - class_header_ofs) / 0x10;
 	}
 	dest.pad(0x10);
-	write_moby_sequences(dest, moby.sequences, sequence_list_ofs, (s32) moby.skeleton.size());
+	write_moby_sequences(dest, moby.sequences, sequence_list_ofs, moby.joint_count);
 	dest.pad(0x10);
 	while(dest.tell() < class_header_ofs + moby.submesh_table_offset) {
 		dest.write<u8>(0);
@@ -242,12 +248,15 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 		header.collision = write_moby_collision(dest, *moby.collision) - class_header_ofs;
 	}
 	dest.write_multiple(moby.mystery_data);
-	header.skeleton = dest.tell() - class_header_ofs;
-	verify(moby.skeleton.size() < 255, "Moby class has too many joints.");
-	header.joint_count = moby.skeleton.size();
-	dest.write_multiple(moby.skeleton);
+	if(moby.skeleton.has_value()) {
+		header.skeleton = dest.tell() - class_header_ofs;
+		verify(moby.skeleton->size() < 255, "Moby class has too many joints.");
+		dest.write_multiple(*moby.skeleton);
+	}
 	dest.pad(0x10);
-	header.common_trans = dest.write_multiple(moby.common_trans) - class_header_ofs;
+	if(moby.common_trans.has_value()) {
+		header.common_trans = dest.write_multiple(*moby.common_trans) - class_header_ofs;
+	}
 	header.joints = write_moby_joints(dest, moby.joints) - class_header_ofs;
 	dest.pad(0x10);
 	if(moby.sound_defs.size() > 0) {
@@ -1226,14 +1235,14 @@ static Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const c
 }
 
 static std::vector<Joint> recover_moby_joints(const MobyClassData& moby) {
-	assert(moby.skeleton.size() == moby.common_trans.size());
+	assert(opt_size(moby.skeleton) == opt_size(moby.common_trans));
 	
 	std::vector<Joint> joints;
-	joints.reserve(1 + moby.skeleton.size());
+	joints.reserve(1 + opt_size(moby.skeleton));
 	
-	for(size_t i = 0; i < moby.skeleton.size(); i++) {
-		const Mat4& skeleton = moby.skeleton[i];
-		const MobyTrans& trans = moby.common_trans[i];
+	for(size_t i = 0; i < opt_size(moby.skeleton); i++) {
+		const Mat4& skeleton = (*moby.skeleton)[i];
+		const MobyTrans& trans = (*moby.common_trans)[i];
 		Joint j;
 		j.matrix = skeleton.unpack();
 		j.matrix[0][3] *= moby.scale / 1024.f;
