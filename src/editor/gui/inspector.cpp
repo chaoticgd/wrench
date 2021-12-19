@@ -176,7 +176,7 @@ void Inspector::render(app& a) {
 		draw_fields(lvl, rac1_fields);
 	}
 	if(lvl.game == Game::RAC2 || lvl.game == Game::RAC3) {
-		draw_fields(lvl, rac1_fields);
+		draw_fields(lvl, rac23_fields);
 	}
 }
 
