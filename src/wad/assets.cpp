@@ -142,7 +142,9 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 		auto ratchet_seqs = asset_header.read_multiple<s32>(header.ratchet_seqs_rac123, 256, "ratchet seqs");
 		wad.ratchet_seqs.clear();
 		for(s32 ratchet_seq_ofs : ratchet_seqs) {
-			if(ratchet_seq_ofs != 0) {
+			// R&C3 has some odd negative values being stored here e.g. level 51.
+			// TODO: Figure out what they are.
+			if(ratchet_seq_ofs > 0) {
 				s64 seq_size = next_asset_block_size(ratchet_seq_ofs, block_bounds);
 				wad.ratchet_seqs.emplace_back(assets.read_bytes(ratchet_seq_ofs, seq_size, "ratchet seq"));
 			} else {
@@ -393,7 +395,7 @@ std::vector<s64> enumerate_asset_block_boundaries(Buffer src, const AssetHeader&
 	if(game != Game::DL) {
 		auto ratchet_seqs = src.read_multiple<s32>(header.ratchet_seqs_rac123, 256, "ratchet sequence offsets");
 		for(s32 ratchet_seq_ofs : ratchet_seqs) {
-			if(ratchet_seq_ofs != 0) {
+			if(ratchet_seq_ofs > 0) {
 				blocks.push_back(ratchet_seq_ofs);
 			}
 		}
@@ -412,8 +414,11 @@ s64 next_asset_block_size(s32 ofs, const std::vector<s64>& block_bounds) {
 			next_ofs = bound;
 		}
 	}
-	verify(next_ofs != -1, "Failed to determine size of asset block.");
-	return next_ofs - ofs;
+	if(next_ofs != -1) {
+		return next_ofs - ofs;
+	} else {
+		return 0;
+	}
 }
 
 static void print_asset_header(const AssetHeader& header) {
