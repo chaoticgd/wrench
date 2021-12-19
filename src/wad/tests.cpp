@@ -38,6 +38,7 @@ struct GameplayTestArgs {
 };
 static void run_gameplay_lump_test(GameplayTestArgs args);
 static void run_moby_class_test(s32 o_class, Buffer src, const char* file_path, Game game);
+static void run_ratchet_seqs_test(Buffer table, Buffer assets, const char* file_path, Game game, const std::vector<s64>& block_bounds);
 static void assert_collada_scenes_equal(const ColladaScene& lhs, const ColladaScene& rhs);
 
 void run_tests(fs::path input_path) {
@@ -125,6 +126,10 @@ static void run_level_tests(fs::path input_path) {
 				run_moby_class_test(entry.o_class, assets.subbuf(entry.offset_in_asset_wad, size), file_path.c_str(), game);
 			}
 		}
+		
+		if(game != Game::DL) {
+			run_ratchet_seqs_test(asset_header_buf.subbuf(asset_header.ratchet_seqs_rac123), assets, file_path.c_str(), game, block_bounds);
+		}
 	}
 }
 
@@ -196,11 +201,7 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 static std::map<s32, std::array<u8, MD5_DIGEST_LENGTH>> moby_md5s;
 
 static void run_moby_class_test(s32 o_class, Buffer src, const char* file_path, Game game) {
-	// These mobies from R&C2 Oozla have some weird animation data, skip these for now.
-	if(o_class == 3603 || o_class == 3802 || o_class == 3812) {
-		return;
-	}
-	
+	ERROR_CONTEXT("running moby class %d test", o_class);
 	printf("%s moby class %d\n", file_path, o_class);
 	
 	// Test the binary reading/writing functions.
@@ -250,6 +251,31 @@ static void run_moby_class_test(s32 o_class, Buffer src, const char* file_path, 
 	std::vector<u8> collada_xml = write_collada(src_scene);
 	ColladaScene dest_scene = read_collada(std::move(collada_xml));
 	assert_collada_scenes_equal(src_scene, dest_scene);
+}
+
+static void run_ratchet_seqs_test(Buffer table, Buffer assets, const char* file_path, Game game, const std::vector<s64>& block_bounds) {
+	ERROR_CONTEXT("running ratchet sequences");
+	printf("%s ratchet sequences\n", file_path);
+	
+	s32 ratchet_joint_count = 0x6f;
+	
+	auto ratchet_seqs = table.read_multiple<s32>(0, 256, "ratchet seqs");
+	for(s32 i = 0; i < (s32) ratchet_seqs.size(); i++) {
+		s32 ratchet_seq_ofs = ratchet_seqs[i];
+		if(ratchet_seq_ofs == 0) {
+			continue;
+		}
+		
+		s64 seq_size = next_asset_block_size(ratchet_seq_ofs, block_bounds);
+		Buffer src = assets.subbuf(ratchet_seq_ofs, seq_size);
+		MobySequence seq = read_moby_sequence(src, 0, ratchet_joint_count);
+		std::vector<u8> dest;
+		write_moby_sequence(dest, seq, 0, ratchet_joint_count);
+		OutBuffer(dest).pad(0x10);
+		if(!diff_buffers(src, Buffer(dest), 0, "ratchet sequence", 0)) {
+			exit(1);
+		}
+	}
 }
 
 static void assert_collada_scenes_equal(const ColladaScene& lhs, const ColladaScene& rhs) {

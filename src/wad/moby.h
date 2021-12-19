@@ -118,12 +118,24 @@ struct MobyMetalSubMesh : MobySubMeshBase {
 };
 
 struct MobyFrame {
-	f32 unknown_0;
-	u16 unknown_4;
-	u32 unknown_8;
-	u16 unknown_c;
-	u16 unknown_d;
-	std::vector<u8> data;
+	struct {
+		f32 unknown_0;
+		u16 unknown_4;
+		u16 unknown_c;
+		std::vector<u64> joint_data;
+		std::vector<u64> thing_1;
+		std::vector<u64> thing_2;
+	} regular;
+	struct {
+		u16 inverse_unknown_0;
+		u16 unknown_4;
+		std::vector<u8> first_part;
+		std::vector<u8> second_part;
+		std::vector<u8> third_part;
+		std::vector<u8> fourth_part;
+		std::vector<u8> fifth_part_1;
+		std::vector<u8> fifth_part_2;
+	} special;
 };
 
 packed_struct(MobyTriggerData,
@@ -143,7 +155,14 @@ struct MobySequence {
 	std::vector<u32> triggers;
 	Opt<MobyTriggerData> trigger_data;
 	s32 animation_info = 0;
-	s8 sound_count = 0xff;
+	u8 sound_count = 0xff;
+	u8 unknown_13 = 0;
+	bool has_special_data = false;
+	struct {
+		std::vector<u16> joint_data;
+		std::vector<u64> thing_1;
+		std::vector<u64> thing_2;
+	} special;
 };
 
 struct MobyCollision {
@@ -327,7 +346,7 @@ packed_struct(MobySequenceHeader,
 	/* 0x10 */ u8 frame_count;
 	/* 0x11 */ u8 sound_count;
 	/* 0x12 */ u8 trigger_count;
-	/* 0x13 */ u8 pad;
+	/* 0x13 */ u8 unknown_13;
 	/* 0x14 */ u32 triggers;
 	/* 0x18 */ u32 animation_info;
 )
@@ -335,10 +354,11 @@ packed_struct(MobySequenceHeader,
 packed_struct(MobyFrameHeader,
 	/* 0x0 */ f32 unknown_0;
 	/* 0x4 */ u16 unknown_4;
-	/* 0x6 */ u16 count;
-	/* 0x8 */ u32 unknown_8;
+	/* 0x6 */ u16 data_size_qwords;
+	/* 0x8 */ u16 joint_data_size;
+	/* 0xa */ u16 thing_1_count;
 	/* 0xc */ u16 unknown_c;
-	/* 0xd */ u16 unknown_d;
+	/* 0xe */ u16 thing_2_count;
 )
 
 packed_struct(MobyCollisionHeader,
@@ -365,6 +385,8 @@ enum class MobyFormat {
 
 MobyClassData read_moby_class(Buffer src, Game game);
 void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game);
+MobySequence read_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count);
+s64 write_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64 header_ofs, s32 joint_count);
 ColladaScene recover_moby_class(const MobyClassData& moby, s32 o_class, s32 texture_count);
 MobyClassData build_moby_class(const ColladaScene& scene);
 
