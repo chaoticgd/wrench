@@ -47,8 +47,14 @@ packed_struct(AssetHeader,
 		/* 0x78 */ s32 light_cuboids_offset_dl;
 	};
 	/* 0x7c */ s32 scene_view_size;
-	/* 0x80 */ s32 index_into_some1_texs;
-	/* 0x84 */ s32 moby_gs_stash_count;
+	union {
+		/* 0x80 */ s32 thing_table_count_rac1;
+		/* 0x80 */ s32 index_into_some1_texs_rac2_maybe3;
+	};
+	union {
+		/* 0x84 */ s32 thing_table_offset_rac1;
+		/* 0x84 */ s32 moby_gs_stash_count_rac23dl;
+	};
 	/* 0x88 */ s32 assets_compressed_size;
 	/* 0x8c */ s32 assets_decompressed_size;
 	/* 0x90 */ s32 chrome_map_texture;
@@ -88,6 +94,13 @@ packed_struct(ShrubClassEntry,
 	s32 unknown_c;
 	u8 textures[16];
 	u8 unknown_20[16];
+)
+
+packed_struct(ThingEntry,
+	/* 0x0 */ s32 offset_in_asset_wad;
+	/* 0x4 */ s32 unknown_4;
+	/* 0x8 */ s32 unknown_8;
+	/* 0xc */ s32 unknown_c;
 )
 
 void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ram);
