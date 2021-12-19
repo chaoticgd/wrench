@@ -93,7 +93,7 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 		if(entry.offset_in_asset_wad != 0) {
 			s64 model_size = next_asset_block_size(entry.offset_in_asset_wad, block_bounds);
 			moby->model = assets.read_bytes(entry.offset_in_asset_wad, model_size, "moby model");
-			if(entry.o_class >= 10 && !(entry.o_class == 3603 || entry.o_class == 3802 || entry.o_class == 3812)) {
+			if(entry.o_class >= 10) {printf("oc %d\n", entry.o_class);
 				moby->high_model = recover_moby_class(read_moby_class(*moby->model, wad.game), entry.o_class, moby->textures.size());
 			}
 		}
