@@ -141,6 +141,16 @@ MobyClassData read_moby_class(Buffer src, Game game) {
 		}
 	}
 	moby.mystery_data = src.read_bytes(mystery_data_ofs, header.skeleton - mystery_data_ofs, "moby mystery data");
+	if(header.rac3dl_team_textures != 0) {
+		verify(header.gif_usage != 0, "Moby with team palettes but no gif table.");
+		moby.palettes_per_texture = header.rac3dl_team_textures & 0xf;
+		s32 texture_count = (header.rac3dl_team_textures & 0xf0) >> 4;
+		for(s32 i = moby.palettes_per_texture * texture_count; i > 0; i--) {
+			std::array<u32, 256>& dest = moby.team_palettes.emplace_back();
+			auto palette = src.read_multiple<u8>(header.gif_usage - i * 1024, 1024, "team palette");
+			memcpy(dest.data(), palette.lo, 1024);
+		}
+	}
 	return moby;
 }
 
@@ -247,6 +257,21 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 	write_moby_metal_submeshes(dest, metal_submesh_table_ofs, moby.metal_submeshes);
 	if(moby.bangles.has_value()) {
 		write_moby_submeshes(dest, gif_usage, bangles_submesh_table_ofs, moby.bangles->submeshes, format);
+	}
+	if(moby.team_palettes.size() > 0 && (game == Game::RAC3 || game == Game::DL)) {
+		dest.pad(0x10);
+		s64 team_palettes_ofs = dest.tell();
+		dest.write<u64>(0);
+		dest.write<u64>(0);
+		for(const std::array<u32, 256>& palette : moby.team_palettes) {
+			dest.write_multiple(palette);
+		}
+		verify(moby.palettes_per_texture < 16, "Too many team palettes per texture (max is 15).");
+		verify(moby.palettes_per_texture != 0, "Palettes per texture is zero.");
+		s32 texture_count = moby.team_palettes.size() / moby.palettes_per_texture;
+		verify(texture_count < 16, "Too many team textures (max is 15).");
+		header.rac3dl_team_textures = moby.palettes_per_texture | (texture_count << 4);
+		verify(gif_usage.size() > 0, "Team textures on a moby without a gif table.");
 	}
 	if(gif_usage.size() > 0) {
 		gif_usage.back().offset_and_terminator |= 0x80000000;

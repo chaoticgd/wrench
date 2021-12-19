@@ -262,6 +262,8 @@ struct MobyClassData {
 	u8 rac1_byte_a;
 	u8 rac1_byte_b;
 	u16 rac1_short_2e;
+	std::vector<std::array<u32, 256>> team_palettes;
+	s32 palettes_per_texture= 0;
 	bool force_rac1_format = false; // Used for some mobies in the R&C2 Insomniac Museum.
 	bool has_submesh_table = false;
 };
