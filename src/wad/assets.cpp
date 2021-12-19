@@ -351,7 +351,9 @@ void write_assets(OutBuffer header_dest, OutBuffer data_dest, OutBuffer gs_ram, 
 	header.moby_gs_stash_list = header_dest.tell();
 	header_dest.write<s16>(-1);
 	
-	header.moby_gs_stash_count = 1;
+	if(wad.game != Game::RAC1) {
+		header.moby_gs_stash_count_rac23dl = 1;
+	}
 	
 	header.glass_map_texture = 0x4000;
 	header.glass_map_palette = 0x400;
@@ -390,6 +392,7 @@ std::vector<s64> enumerate_asset_block_boundaries(Buffer src, const AssetHeader&
 	for(const ShrubClassEntry& entry : shrub_classes) {
 		blocks.push_back(entry.offset_in_asset_wad);
 	}
+	
 	if(header.ratchet_seqs_rac123 != 0 && game != Game::DL) {
 		auto ratchet_seqs = src.read_multiple<s32>(header.ratchet_seqs_rac123, 256, "ratchet sequence offsets");
 		for(s32 ratchet_seq_ofs : ratchet_seqs) {
@@ -398,6 +401,14 @@ std::vector<s64> enumerate_asset_block_boundaries(Buffer src, const AssetHeader&
 			}
 		}
 	}
+	
+	if(header.thing_table_offset_rac1 != 0 && game == Game::RAC1) {
+		auto things = src.read_multiple<ThingEntry>(header.thing_table_offset_rac1, header.thing_table_count_rac1, "ratchet sequence offsets");
+		for(const ThingEntry& entry : things) {
+			blocks.push_back(entry.offset_in_asset_wad);
+		}
+	}
+	
 	return blocks;
 }
 
@@ -452,8 +463,8 @@ static void print_asset_header(const AssetHeader& header) {
 	printf("%32s %8x", "unknown_74", header.unknown_74);
 	printf("%32s %8x", "ratchet_seqs_rac123", header.ratchet_seqs_rac123);
 	printf("%32s %8x\n", "scene_view_size", header.scene_view_size);
-	printf("%32s %8x", "index_into_some1_texs", header.index_into_some1_texs);
-	printf("%32s %8x", "moby_gs_stash_count", header.moby_gs_stash_count);
+	printf("%32s %8x", "index_into_some1_texs", header.index_into_some1_texs_rac2_maybe3);
+	printf("%32s %8x", "moby_gs_stash_count_rac23dl", header.moby_gs_stash_count_rac23dl);
 	printf("%32s %8x", "assets_compressed_size", header.assets_compressed_size);
 	printf("%32s %8x\n", "assets_decompressed_size", header.assets_decompressed_size);
 	printf("%32s %8x", "chrome_map_texture", header.chrome_map_texture);

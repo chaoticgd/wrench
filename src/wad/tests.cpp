@@ -273,9 +273,9 @@ static void run_ratchet_seqs_test(Buffer table, Buffer assets, const char* file_
 		
 		s64 seq_size = next_asset_block_size(ratchet_seq_ofs, block_bounds);
 		Buffer src = assets.subbuf(ratchet_seq_ofs, seq_size);
-		MobySequence seq = read_moby_sequence(src, 0, ratchet_joint_count);
+		MobySequence seq = read_moby_sequence(src, 0, ratchet_joint_count, game);
 		std::vector<u8> dest;
-		write_moby_sequence(dest, seq, 0, ratchet_joint_count);
+		write_moby_sequence(dest, seq, 0, ratchet_joint_count, game);
 		OutBuffer(dest).pad(0x10);
 		if(!diff_buffers(src, Buffer(dest), 0, "ratchet sequence", 0)) {
 			exit(1);
