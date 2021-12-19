@@ -353,7 +353,7 @@ static s64 write_moby_corncob(OutBuffer dest, const MobyCornCob& corncob) {
 }
 
 static std::vector<Opt<MobySequence>> read_moby_sequences(Buffer src, s64 sequence_count, s32 joint_count) {
-	std::vector<Opt<MobySequence>> sequences;
+	std::vector<Opt<MobySequence>> sequences;static int i; i=0;
 	auto sequence_offsets = src.read_multiple<s32>(sizeof(MobyClassHeader), sequence_count, "moby sequences");
 	for(s32 seq_offset : sequence_offsets) {
 		if(seq_offset == 0) {

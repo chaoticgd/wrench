@@ -93,7 +93,7 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 		if(entry.offset_in_asset_wad != 0) {
 			s64 model_size = next_asset_block_size(entry.offset_in_asset_wad, block_bounds);
 			moby->model = assets.read_bytes(entry.offset_in_asset_wad, model_size, "moby model");
-			if(entry.o_class >= 10) {
+			if(entry.o_class >= 10 && !(wad.game == Game::RAC3 && (entry.o_class == 5952 || entry.o_class == 5953))) {
 				moby->high_model = recover_moby_class(read_moby_class(*moby->model, wad.game), entry.o_class, moby->textures.size());
 			}
 		}
@@ -138,13 +138,11 @@ void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ra
 		wad.shrub_classes.emplace_back(std::move(shrub));
 	}
 	
-	if(wad.game != Game::DL) {
+	if(header.ratchet_seqs_rac123 != 0 && wad.game != Game::DL) {
 		auto ratchet_seqs = asset_header.read_multiple<s32>(header.ratchet_seqs_rac123, 256, "ratchet seqs");
 		wad.ratchet_seqs.clear();
 		for(s32 ratchet_seq_ofs : ratchet_seqs) {
-			// R&C3 has some odd negative values being stored here e.g. level 51.
-			// TODO: Figure out what they are.
-			if(ratchet_seq_ofs > 0) {
+			if(ratchet_seq_ofs != 0) {
 				s64 seq_size = next_asset_block_size(ratchet_seq_ofs, block_bounds);
 				wad.ratchet_seqs.emplace_back(assets.read_bytes(ratchet_seq_ofs, seq_size, "ratchet seq"));
 			} else {
@@ -392,7 +390,7 @@ std::vector<s64> enumerate_asset_block_boundaries(Buffer src, const AssetHeader&
 	for(const ShrubClassEntry& entry : shrub_classes) {
 		blocks.push_back(entry.offset_in_asset_wad);
 	}
-	if(game != Game::DL) {
+	if(header.ratchet_seqs_rac123 != 0 && game != Game::DL) {
 		auto ratchet_seqs = src.read_multiple<s32>(header.ratchet_seqs_rac123, 256, "ratchet sequence offsets");
 		for(s32 ratchet_seq_ofs : ratchet_seqs) {
 			if(ratchet_seq_ofs > 0) {

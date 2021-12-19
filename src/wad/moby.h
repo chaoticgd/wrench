@@ -258,8 +258,8 @@ struct MobyClassData {
 	s16 mode_bits;
 	u8 type;
 	u8 mode_bits2;
-	s32 header_end_offset;
-	s32 submesh_table_offset;
+	s32 header_end_offset = 0;
+	s32 submesh_table_offset = 0;
 	u8 rac1_byte_a;
 	u8 rac1_byte_b;
 	u16 rac1_short_2e;
