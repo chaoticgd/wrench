@@ -26,7 +26,7 @@ static s64 write_moby_bangles(OutBuffer dest, const MobyBangles& bangles);
 static MobyCornCob read_moby_corncob(Buffer src);
 static s64 write_moby_corncob(OutBuffer dest, const MobyCornCob& corncob);
 static std::vector<Opt<MobySequence>> read_moby_sequences(Buffer src, s64 sequence_count, s32 joint_count);
-static void write_moby_sequences(OutBuffer dest, const std::vector<Opt<MobySequence>>& sequences, s64 list_ofs);
+static void write_moby_sequences(OutBuffer dest, const std::vector<Opt<MobySequence>>& sequences, s64 list_ofs, s32 joint_count);
 static MobyCollision read_moby_collision(Buffer src);
 static s64 write_moby_collision(OutBuffer dest, const MobyCollision& collision);
 static std::vector<MobyJointEntry> read_moby_joints(Buffer src, s64 joints_ofs);
@@ -211,7 +211,7 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 		header.corncob = (write_moby_corncob(dest, *moby.corncob) - class_header_ofs) / 0x10;
 	}
 	dest.pad(0x10);
-	write_moby_sequences(dest, moby.sequences, sequence_list_ofs);
+	write_moby_sequences(dest, moby.sequences, sequence_list_ofs, (s32) moby.skeleton.size());
 	dest.pad(0x10);
 	while(dest.tell() < class_header_ofs + moby.submesh_table_offset) {
 		dest.write<u8>(0);
@@ -330,7 +330,7 @@ static std::vector<Opt<MobySequence>> read_moby_sequences(Buffer src, s64 sequen
 	return sequences;
 }
 
-static void write_moby_sequences(OutBuffer dest, const std::vector<Opt<MobySequence>>& sequences, s64 list_ofs) {
+static void write_moby_sequences(OutBuffer dest, const std::vector<Opt<MobySequence>>& sequences, s64 list_ofs, s32 joint_count) {
 	for(const Opt<MobySequence>& sequence_opt : sequences) {
 		if(!sequence_opt.has_value()) {
 			dest.write<s32>(list_ofs, 0);
@@ -339,7 +339,7 @@ static void write_moby_sequences(OutBuffer dest, const std::vector<Opt<MobySeque
 		}
 		
 		const MobySequence& sequence = *sequence_opt;
-		s64 seq_ofs = write_moby_sequence(dest, sequence, class_header_ofs);
+		s64 seq_ofs = write_moby_sequence(dest, sequence, class_header_ofs, joint_count);
 		dest.write<u32>(list_ofs, seq_ofs - class_header_ofs);
 		list_ofs += 4;
 	}
@@ -373,9 +373,9 @@ MobySequence read_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count) {
 			auto frame_header = src.read<MobyFrameHeader>(frame_ofs, "moby frame header");
 			frame.regular.unknown_0 = frame_header.unknown_0;
 			frame.regular.unknown_4 = frame_header.unknown_4;
-			frame.regular.unknown_8 = frame_header.unknown_8;
+			frame.regular.thing_1_size = frame_header.thing_1_size;
 			frame.regular.unknown_c = frame_header.unknown_c;
-			frame.regular.unknown_d = frame_header.unknown_d;
+			frame.regular.thing_2_size = frame_header.thing_2_size;
 			frame.regular.data = src.read_bytes(frame_ofs + 0x10, frame_header.count * 0x10, "frame data");
 			
 			s64 end_of_frame = frame_ofs + 0x10 + frame_header.count * 0x10;
@@ -404,8 +404,8 @@ MobySequence read_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count) {
 			
 			MobyFrame frame;
 			
-			frame.special.unknown_0 = src.read<u16>(frame_ofs, "special anim data unknown 0");
-			frame.special.unknown_2 = src.read<u16>(frame_ofs + 2, "special anim data unknown 1");
+			frame.special.inverse_unknown_0 = src.read<u16>(frame_ofs, "special anim data unknown 0");
+			frame.special.unknown_4 = src.read<u16>(frame_ofs + 2, "special anim data unknown 1");
 			frame.special.first_part = src.read_multiple<u8>(frame_ofs + 4, second_part_ofs - 4, "special anim data first part").copy();
 			s64 second_part_size = third_part_ofs - second_part_ofs;
 			frame.special.second_part = src.read_multiple<u8>(frame_ofs + second_part_ofs, second_part_size, "special anim data second part").copy();
@@ -458,7 +458,7 @@ MobySequence read_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count) {
 	return sequence;
 }
 
-s64 write_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64 header_ofs) {
+s64 write_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64 header_ofs, s32 joint_count) {
 	dest.pad(0x10);
 	s64 seq_header_ofs = dest.alloc<MobySequenceHeader>();
 	
@@ -514,9 +514,10 @@ s64 write_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64 header
 			frame_header.unknown_0 = frame.regular.unknown_0;
 			frame_header.unknown_4 = frame.regular.unknown_4;
 			frame_header.count = frame.regular.data.size() / 0x10;
-			frame_header.unknown_8 = frame.regular.unknown_8;
+			frame_header.joint_data_size = joint_count * 8;
+			frame_header.thing_1_size = frame.regular.thing_1_size;
 			frame_header.unknown_c = frame.regular.unknown_c;
-			frame_header.unknown_d = frame.regular.unknown_d;
+			frame_header.thing_2_size = frame.regular.thing_2_size;
 			dest.pad(0x10);
 			dest.write<u32>(frame_pointer_ofs, (dest.write(frame_header) - header_ofs));
 			dest.write_multiple(frame.regular.data);
@@ -524,8 +525,8 @@ s64 write_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64 header
 			dest.pad(0x4);
 			dest.write<u32>(frame_pointer_ofs, (dest.tell() - header_ofs) | 0xf0000000);
 			
-			dest.write<u16>(frame.special.unknown_0);
-			dest.write<u16>(frame.special.unknown_2);
+			dest.write<u16>(frame.special.inverse_unknown_0);
+			dest.write<u16>(frame.special.unknown_4);
 			dest.write_multiple(frame.special.first_part);
 			dest.write_multiple(frame.special.second_part);
 			dest.write_multiple(frame.special.third_part);

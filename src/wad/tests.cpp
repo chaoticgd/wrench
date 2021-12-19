@@ -270,7 +270,7 @@ static void run_ratchet_seqs_test(Buffer table, Buffer assets, const char* file_
 		Buffer src = assets.subbuf(ratchet_seq_ofs, seq_size);
 		MobySequence seq = read_moby_sequence(src, 0, ratchet_joint_count);
 		std::vector<u8> dest;
-		write_moby_sequence(dest, seq, 0);
+		write_moby_sequence(dest, seq, 0, ratchet_joint_count);
 		OutBuffer(dest).pad(0x10);
 		if(!diff_buffers(src, Buffer(dest), 0, "ratchet sequence", 0)) {
 			exit(1);

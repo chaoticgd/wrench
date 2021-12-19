@@ -121,14 +121,14 @@ struct MobyFrame {
 	struct {
 		f32 unknown_0;
 		u16 unknown_4;
-		u32 unknown_8;
+		u16 thing_1_size;
 		u16 unknown_c;
-		u16 unknown_d;
+		u16 thing_2_size;
 		std::vector<u8> data;
 	} regular;
 	struct {
-		u16 unknown_0;
-		u16 unknown_2;
+		u16 inverse_unknown_0;
+		u16 unknown_4;
 		std::vector<u8> first_part;
 		std::vector<u8> second_part;
 		std::vector<u8> third_part;
@@ -355,9 +355,10 @@ packed_struct(MobyFrameHeader,
 	/* 0x0 */ f32 unknown_0;
 	/* 0x4 */ u16 unknown_4;
 	/* 0x6 */ u16 count;
-	/* 0x8 */ u32 unknown_8;
+	/* 0x8 */ u16 joint_data_size;
+	/* 0xa */ u16 thing_1_size;
 	/* 0xc */ u16 unknown_c;
-	/* 0xd */ u16 unknown_d;
+	/* 0xe */ u16 thing_2_size;
 )
 
 packed_struct(MobyCollisionHeader,
@@ -385,7 +386,7 @@ enum class MobyFormat {
 MobyClassData read_moby_class(Buffer src, Game game);
 void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game);
 MobySequence read_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count);
-s64 write_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64 header_ofs);
+s64 write_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64 header_ofs, s32 joint_count);
 ColladaScene recover_moby_class(const MobyClassData& moby, s32 o_class, s32 texture_count);
 MobyClassData build_moby_class(const ColladaScene& scene);
 
