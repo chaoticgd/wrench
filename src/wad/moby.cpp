@@ -148,7 +148,7 @@ MobyClassData read_moby_class(Buffer src, Game game) {
 	if(header.skeleton != 0) {
 		moby.mystery_data = src.read_bytes(mystery_data_ofs, header.skeleton - mystery_data_ofs, "moby mystery data");
 	}
-	if(header.rac3dl_team_textures != 0) {
+	if(header.rac3dl_team_textures != 0 && (game == Game::RAC3 || game == Game::DL)) {
 		verify(header.gif_usage != 0, "Moby with team palettes but no gif table.");
 		moby.palettes_per_texture = header.rac3dl_team_textures & 0xf;
 		s32 texture_count = (header.rac3dl_team_textures & 0xf0) >> 4;
