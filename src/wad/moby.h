@@ -121,10 +121,10 @@ struct MobyFrame {
 	struct {
 		f32 unknown_0;
 		u16 unknown_4;
-		u16 thing_1_size;
 		u16 unknown_c;
-		u16 thing_2_size;
-		std::vector<u8> data;
+		std::vector<u64> joint_data;
+		std::vector<u64> thing_1;
+		std::vector<u64> thing_2;
 	} regular;
 	struct {
 		u16 inverse_unknown_0;
@@ -354,11 +354,11 @@ packed_struct(MobySequenceHeader,
 packed_struct(MobyFrameHeader,
 	/* 0x0 */ f32 unknown_0;
 	/* 0x4 */ u16 unknown_4;
-	/* 0x6 */ u16 count;
+	/* 0x6 */ u16 data_size_qwords;
 	/* 0x8 */ u16 joint_data_size;
-	/* 0xa */ u16 thing_1_size;
+	/* 0xa */ u16 thing_1_count;
 	/* 0xc */ u16 unknown_c;
-	/* 0xe */ u16 thing_2_size;
+	/* 0xe */ u16 thing_2_count;
 )
 
 packed_struct(MobyCollisionHeader,

@@ -373,12 +373,15 @@ MobySequence read_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count) {
 			auto frame_header = src.read<MobyFrameHeader>(frame_ofs, "moby frame header");
 			frame.regular.unknown_0 = frame_header.unknown_0;
 			frame.regular.unknown_4 = frame_header.unknown_4;
-			frame.regular.thing_1_size = frame_header.thing_1_size;
 			frame.regular.unknown_c = frame_header.unknown_c;
-			frame.regular.thing_2_size = frame_header.thing_2_size;
-			frame.regular.data = src.read_bytes(frame_ofs + 0x10, frame_header.count * 0x10, "frame data");
+			s32 data_ofs = frame_ofs + 0x10;
+			frame.regular.joint_data = src.read_multiple<u64>(data_ofs, joint_count, "frame thing 1").copy();
+			data_ofs += joint_count * 8;
+			frame.regular.thing_1 = src.read_multiple<u64>(data_ofs, frame_header.thing_1_count, "frame thing 1").copy();
+			data_ofs += frame_header.thing_1_count * 8;
+			frame.regular.thing_2 = src.read_multiple<u64>(data_ofs, frame_header.thing_2_count, "frame thing 2").copy();
 			
-			s64 end_of_frame = frame_ofs + 0x10 + frame_header.count * 0x10;
+			s64 end_of_frame = frame_ofs + 0x10 + frame_header.data_size_qwords * 0x10;
 			mystery_data_ofs = std::max(mystery_data_ofs, end_of_frame);
 			sequence.frames.emplace_back(std::move(frame));
 		}
@@ -510,17 +513,25 @@ s64 write_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64 header
 	
 	for(const MobyFrame& frame : sequence.frames) {
 		if(!sequence.has_special_data) {
+			s32 data_size_bytes = (joint_count + frame.regular.thing_1.size() + frame.regular.thing_2.size()) * 8;
+			while(data_size_bytes % 0x10 != 0) data_size_bytes++;
+			
 			MobyFrameHeader frame_header = {0};
 			frame_header.unknown_0 = frame.regular.unknown_0;
 			frame_header.unknown_4 = frame.regular.unknown_4;
-			frame_header.count = frame.regular.data.size() / 0x10;
+			verify(data_size_bytes / 0x10 < 65536, "Frame data too big.");
+			frame_header.data_size_qwords = data_size_bytes / 0x10;
 			frame_header.joint_data_size = joint_count * 8;
-			frame_header.thing_1_size = frame.regular.thing_1_size;
+			verify(frame.regular.thing_1.size() < 65536, "Frame data too big.");
+			frame_header.thing_1_count = (u16) frame.regular.thing_1.size();
 			frame_header.unknown_c = frame.regular.unknown_c;
-			frame_header.thing_2_size = frame.regular.thing_2_size;
+			verify(frame.regular.thing_2.size() < 65536, "Frame data too big.");
+			frame_header.thing_2_count = (u16) frame.regular.thing_2.size();
 			dest.pad(0x10);
 			dest.write<u32>(frame_pointer_ofs, (dest.write(frame_header) - header_ofs));
-			dest.write_multiple(frame.regular.data);
+			dest.write_multiple(frame.regular.joint_data);
+			dest.write_multiple(frame.regular.thing_1);
+			dest.write_multiple(frame.regular.thing_2);
 		} else {
 			dest.pad(0x4);
 			dest.write<u32>(frame_pointer_ofs, (dest.tell() - header_ofs) | 0xf0000000);
