@@ -1340,9 +1340,9 @@ struct RichIndex {
 static std::vector<RichIndex> fake_tristripper(const std::vector<Face>& faces) {
 	std::vector<RichIndex> indices;
 	for(const Face& face : faces) {
-		indices.push_back({face.v0, 1});
-		indices.push_back({face.v1, 1});
-		indices.push_back({face.v2, 0});
+		indices.push_back({(u32) face.v0, 1u});
+		indices.push_back({(u32) face.v1, 1u});
+		indices.push_back({(u32) face.v2, 0u});
 	}
 	return indices;
 }
