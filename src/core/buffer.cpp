@@ -18,7 +18,8 @@
 
 #include "buffer.h"
 
-#include "stdarg.h"
+#include <fstream>
+#include <stdarg.h>
 
 Buffer Buffer::subbuf(s64 offset) const {
 	verify(offset >= 0, "Failed to create buffer: Offset cannot be negative.");
@@ -211,13 +212,18 @@ std::vector<u8> read_file(FILE* file, s64 offset, s64 size) {
 
 std::vector<u8> read_file(fs::path path, const char* open_mode) {
 	verify(!fs::is_directory(path), "Tried to open directory '%s' as regular file.", path.string().c_str());
-	FILE* file = fopen(path.string().c_str(), open_mode);
-	verify(file, "Failed to open file '%s' for reading.", path.string().c_str());
-	std::vector<u8> buffer(fs::file_size(path));
-	if(buffer.size() > 0) {
-		verify(fread(buffer.data(), buffer.size(), 1, file) == 1, "Failed to read file '%s'.", path.string().c_str());
+	std::vector<u8> buffer;
+	std::ios::openmode mode = (std::ios::openmode) 0;
+	if(strcmp(open_mode, "rb") == 0) {
+		mode = std::ios::binary;
 	}
-	fclose(file);
+	std::ifstream stream(path.string(), mode);
+	verify(stream.good(), "Failed to open file '%s' for reading.", path.string().c_str());
+	stream.seekg(0, std::ios::end);
+	buffer.resize(stream.tellg());
+	stream.seekg(0, std::ios::beg);
+	stream.read((char*) buffer.data(), buffer.size());
+	verify(stream.good(), "Failed to read file '%s'.", path.string().c_str());
 	return buffer;
 }
 
