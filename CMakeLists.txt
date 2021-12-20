@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.13)
 project(wrench)
 
+cmake_policy(SET CMP0077 NEW)
+
 include_directories(src)
 include_directories(thirdparty)
 
