@@ -1332,9 +1332,9 @@ MobyClassData build_moby_class(const ColladaScene& scene) {
 }
 
 struct RichIndex {
-	s32 index : 30;
-	s32 restart : 1;
-	s32 is_dupe : 1 = 0;
+	u32 index : 30;
+	u32 restart : 1;
+	u32 is_dupe : 1 = 0;
 };
 
 static std::vector<RichIndex> fake_tristripper(const std::vector<Face>& faces) {
