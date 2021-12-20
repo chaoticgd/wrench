@@ -1242,8 +1242,8 @@ static Vertex recover_vertex(const MobyVertex& vertex, const MobyTexCoord& tex_c
 	f32 px = vertex.regular.x * (scale / 1024.f);
 	f32 py = vertex.regular.y * (scale / 1024.f);
 	f32 pz = vertex.regular.z * (scale / 1024.f);
-	f32 normal_alpha_radians = vertex.regular.normal_angle_alpha * (M_PI / 128.f);
-	f32 normal_beta_radians = vertex.regular.normal_angle_beta * (M_PI / 128.f);
+	f32 normal_alpha_radians = vertex.regular.normal_angle_alpha * (PI / 128.f);
+	f32 normal_beta_radians = vertex.regular.normal_angle_beta * (PI / 128.f);
 	f32 cos_alpha = cosf(normal_alpha_radians);
 	f32 sin_alpha = sinf(normal_alpha_radians);
 	f32 cos_beta = cosf(normal_beta_radians);
