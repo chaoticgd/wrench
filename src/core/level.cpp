@@ -133,7 +133,7 @@ static std::vector<Opt<std::vector<u8>>> read_ratchet_seqs(fs::path project_dir)
 static void write_ratchet_seqs(fs::path project_dir, const std::vector<Opt<std::vector<u8>>>& ratchet_seqs);
 static std::vector<Texture> read_texture_pngs(const fs::path& src_dir, const Json& paths);
 static Json write_texture_pngs(const fs::path& dest_dir, const char* sub_dir, const std::vector<Texture>& textures);
-static std::vector<u8> read_file_json(fs::path path, const Json& object, const char* key);
+static std::vector<u8> read_file_json(fs::path path, const Json& object, const char* key, const char* open_mode = "rb");
 static std::string write_json_array_file(fs::path dest_dir, const char* file_name, Json data_json);
 static std::string write_json_object_file(fs::path dest_dir, const char* file_name, Json data_json);
 
@@ -205,8 +205,8 @@ LevelWad read_level_wad_json(const Json& json, const fs::path& src_dir, Game gam
 		wad.reverb = json["reverb"];
 	}
 	read_json_file_into_map(wad.pvar_types, src_dir, json, "pvar_types", "name");
-	from_json(wad.help_messages, Json::parse(read_file_json(src_dir, json, "help_messages")));
-	from_json(wad.gameplay, Json::parse(read_file_json(src_dir, json, "gameplay")));
+	from_json(wad.help_messages, Json::parse(read_file_json(src_dir, json, "help_messages", "r")));
+	from_json(wad.gameplay, Json::parse(read_file_json(src_dir, json, "gameplay", "r")));
 	wad.code = read_file_json(src_dir, json, "code");
 	wad.asset_header = read_file_json(src_dir, json, "asset_header");
 	wad.hud_header = read_file_json(src_dir, json, "hud_header");
@@ -218,12 +218,12 @@ LevelWad read_level_wad_json(const Json& json, const fs::path& src_dir, Game gam
 	wad.tfrags = read_file_json(src_dir, json, "tfrags");
 	wad.occlusion = read_file_json(src_dir, json, "occlusion");
 	wad.sky = read_file_json(src_dir, json, "sky");
-	wad.collision = read_collada(read_file_json(src_dir, json, "collision"));
-	Json tfrag_textures_json = Json::parse(read_file_json(src_dir, json, "tfrag_textures"));
+	wad.collision = read_collada(read_file_json(src_dir, json, "collision", "r"));
+	Json tfrag_textures_json = Json::parse(read_file_json(src_dir, json, "tfrag_textures", "r"));
 	wad.tfrag_textures = read_texture_pngs(src_dir, tfrag_textures_json["textures"]);
-	Json particle_textures_json = Json::parse(read_file_json(src_dir, json, "particle_textures"));
+	Json particle_textures_json = Json::parse(read_file_json(src_dir, json, "particle_textures", "r"));
 	wad.particle_textures = read_texture_pngs(src_dir, particle_textures_json["textures"]);
-	Json fx_textures_json = Json::parse(read_file_json(src_dir, json, "fx_textures"));
+	Json fx_textures_json = Json::parse(read_file_json(src_dir, json, "fx_textures", "r"));
 	wad.fx_textures = read_texture_pngs(src_dir, fx_textures_json["textures"]);
 	if(wad.game != Game::DL) {
 		wad.unknown_a0 = read_file_json(src_dir, json, "unknown_a0");
@@ -534,10 +534,10 @@ static Json write_texture_pngs(const fs::path& dest_dir, const char* sub_dir, co
 	return list;
 }
 
-static std::vector<u8> read_file_json(fs::path path, const Json& object, const char* key) {
+static std::vector<u8> read_file_json(fs::path path, const Json& object, const char* key, const char* open_mode) {
 	verify(object.contains(key), "Missing '%s'.", key);
 	verify(object[key].is_string(), " '%s' isn't a string.", key);
-	return read_file(path/std::string(object[key]), "r");
+	return read_file(path/std::string(object[key]), open_mode);
 }
 
 static std::string write_json_array_file(fs::path dest_dir, const char* file_name, Json data_json) {
