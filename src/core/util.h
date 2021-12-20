@@ -20,6 +20,7 @@
 #define UTIL_H
 
 #include <map>
+#include <array>
 #include <cmath>
 #include <vector>
 #include <cstring>
