@@ -39,6 +39,7 @@ static void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std:
 static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const MobySubMeshBase& submesh);
 #define NO_SUBMESH_FILTER -1
 static Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* name, s32 o_class, s32 texture_count, f32 scale, s32 submesh_filter);
+static Vertex recover_vertex(const MobyVertex& vertex, const MobyTexCoord& tex_coord, f32 scale);
 static std::vector<Joint> recover_moby_joints(const MobyClassData& moby);
 static std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vector<Material>& materials, f32 scale);
 struct IndexMappingRecord {
@@ -1140,7 +1141,7 @@ ColladaScene recover_moby_class(const MobyClassData& moby, s32 o_class, s32 text
 static Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* name, s32 o_class, s32 texture_count, f32 scale, s32 submesh_filter) {
 	Mesh mesh;
 	mesh.name = name;
-	mesh.flags = MESH_HAS_TEX_COORDS;
+	mesh.flags = MESH_HAS_NORMALS | MESH_HAS_TEX_COORDS;
 	// The game stores this on the end of the VU chain.
 	Opt<MobyVertex> intermediate_buffer[512];
 	SubMesh dest;
@@ -1151,12 +1152,7 @@ static Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const c
 		s32 vertex_base = mesh.vertices.size();
 		for(const MobyVertex& mv : src.vertices) {
 			auto& st = src.sts.at(mesh.vertices.size() - vertex_base);
-			auto pos = glm::vec3(mv.regular.x * scale / 1024.f, mv.regular.y * scale / 1024.f, mv.regular.z * scale / 1024.f);
-			auto normal = glm::vec3(0, 0, 0);
-			auto tex_coord = glm::vec2(st.s / (INT16_MAX / 8.f), -st.t / (INT16_MAX / 8.f));
-			while(tex_coord.s < 0) tex_coord.s += 1;
-			while(tex_coord.t < 0) tex_coord.t += 1;
-			mesh.vertices.emplace_back(pos, normal, tex_coord);
+			mesh.vertices.emplace_back(recover_vertex(mv, st, scale));
 			
 			intermediate_buffer[mv.low_word & 0x1ff] = mv;
 		}
@@ -1165,12 +1161,7 @@ static Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const c
 			VERIFY_SUBMESH(mv.has_value(), "vertex table");
 			
 			auto& st = src.sts.at(mesh.vertices.size() - vertex_base);
-			auto pos = glm::vec3(mv->regular.x * scale / 1024.f, mv->regular.y * scale / 1024.f, mv->regular.z * scale / 1024.f);
-			auto normal = glm::vec3(0, 0, 0);
-			auto tex_coord = glm::vec2(st.s / (INT16_MAX / 8.f), -st.t / (INT16_MAX / 8.f));
-			while(tex_coord.s < 0) tex_coord.s += 1;
-			while(tex_coord.t < 0) tex_coord.t += 1;
-			mesh.vertices.emplace_back(pos, normal, tex_coord);
+			mesh.vertices.emplace_back(recover_vertex(*mv, st, scale));
 		}
 		s32 index_queue[3] = {0};
 		s32 index_pos = 0;
@@ -1245,6 +1236,26 @@ static Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const c
 	}
 	mesh = deduplicate_vertices(std::move(mesh));
 	return mesh;
+}
+
+static Vertex recover_vertex(const MobyVertex& vertex, const MobyTexCoord& tex_coord, f32 scale) {
+	f32 px = vertex.regular.x * (scale / 1024.f);
+	f32 py = vertex.regular.y * (scale / 1024.f);
+	f32 pz = vertex.regular.z * (scale / 1024.f);
+	f32 normal_alpha_radians = vertex.regular.normal_angle_alpha * (M_PI / 128.f);
+	f32 normal_beta_radians = vertex.regular.normal_angle_beta * (M_PI / 128.f);
+	f32 cos_alpha = cosf(normal_alpha_radians);
+	f32 sin_alpha = sinf(normal_alpha_radians);
+	f32 cos_beta = cosf(normal_beta_radians);
+	f32 sin_beta = sinf(normal_beta_radians);
+	f32 nx = cos_beta * sin_alpha;
+	f32 ny = cos_beta * cos_alpha;
+	f32 nz = sin_beta;
+	f32 s = tex_coord.s / (INT16_MAX / 8.f);
+	f32 t = -tex_coord.t / (INT16_MAX / 8.f);
+	while(s < 0) s += 1;
+	while(t < 0) t += 1;
+	return Vertex(glm::vec3(px, py, pz), glm::vec3(nx, ny, nz), glm::vec2(s, t));
 }
 
 static std::vector<Joint> recover_moby_joints(const MobyClassData& moby) {

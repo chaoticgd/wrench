@@ -39,6 +39,7 @@ void level::open(fs::path json_path, Json& json) {
 	for(MobyClass& cls : wad.moby_classes) {
 		if(cls.high_model.has_value() && cls.high_model->meshes.size() >= 1) {
 			EditorMobyClass ec;
+			ec.mesh = cls.high_model->meshes[0];
 			ec.high_lod = upload_mesh(cls.high_model->meshes[0], true);
 			ec.materials = upload_materials(cls.high_model->materials, cls.textures);
 			mobies.emplace(cls.o_class, std::move(ec));
