@@ -30,26 +30,41 @@ RenderMesh upload_mesh(const Mesh& mesh, bool generate_normals) {
 		
 		std::vector<Vertex> vertices;
 		for(const Face& face : submesh.faces) {
-			Vertex v0 = mesh.vertices[face.v0];
-			Vertex v1 = mesh.vertices[face.v1];
-			Vertex v2 = mesh.vertices[face.v2];
-			Vertex v3 = mesh.vertices[face.v3];
-			
-			if(generate_normals) {
-				glm::vec3 normal = glm::normalize(glm::cross(v2.pos - v0.pos, v1.pos - v0.pos));
-				v0.normal = normal;
-				v1.normal = normal;
-				v2.normal = normal;
-				v3.normal = normal;
-			}
-			
-			vertices.push_back(v0);
-			vertices.push_back(v1);
-			vertices.push_back(v2);
 			if(face.is_quad()) {
+				Vertex v0 = mesh.vertices[face.v0];
+				Vertex v1 = mesh.vertices[face.v1];
+				Vertex v2 = mesh.vertices[face.v2];
+				Vertex v3 = mesh.vertices[face.v3];
+				
+				if(generate_normals) {
+					glm::vec3 normal = glm::normalize(glm::cross(v2.pos - v0.pos, v1.pos - v0.pos));
+					v0.normal = normal;
+					v1.normal = normal;
+					v2.normal = normal;
+					v3.normal = normal;
+				}
+				
+				vertices.push_back(v0);
+				vertices.push_back(v1);
+				vertices.push_back(v2);
 				vertices.push_back(v2);
 				vertices.push_back(v3);
 				vertices.push_back(v0);
+			} else {
+				Vertex v0 = mesh.vertices[face.v0];
+				Vertex v1 = mesh.vertices[face.v1];
+				Vertex v2 = mesh.vertices[face.v2];
+				
+				if(generate_normals) {
+					glm::vec3 normal = glm::normalize(glm::cross(v2.pos - v0.pos, v1.pos - v0.pos));
+					v0.normal = normal;
+					v1.normal = normal;
+					v2.normal = normal;
+				}
+				
+				vertices.push_back(v0);
+				vertices.push_back(v1);
+				vertices.push_back(v2);
 			}
 		}
 		

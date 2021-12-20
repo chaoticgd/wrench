@@ -21,6 +21,8 @@
 // Debug settings.
 #define MOBY_EXPORT_SUBMESHES_SEPERATELY false
 
+#define WRENCH_PI 3.14159265358979323846
+
 static MobyBangles read_moby_bangles(Buffer src);
 static s64 write_moby_bangles(OutBuffer dest, const MobyBangles& bangles);
 static MobyCornCob read_moby_corncob(Buffer src);
@@ -1242,8 +1244,8 @@ static Vertex recover_vertex(const MobyVertex& vertex, const MobyTexCoord& tex_c
 	f32 px = vertex.regular.x * (scale / 1024.f);
 	f32 py = vertex.regular.y * (scale / 1024.f);
 	f32 pz = vertex.regular.z * (scale / 1024.f);
-	f32 normal_alpha_radians = vertex.regular.normal_angle_alpha * (M_PI / 128.f);
-	f32 normal_beta_radians = vertex.regular.normal_angle_beta * (M_PI / 128.f);
+	f32 normal_alpha_radians = vertex.regular.normal_angle_alpha * (WRENCH_PI / 128.f);
+	f32 normal_beta_radians = vertex.regular.normal_angle_beta * (WRENCH_PI / 128.f);
 	f32 cos_alpha = cosf(normal_alpha_radians);
 	f32 sin_alpha = sinf(normal_alpha_radians);
 	f32 cos_beta = cosf(normal_beta_radians);
@@ -1332,17 +1334,17 @@ MobyClassData build_moby_class(const ColladaScene& scene) {
 }
 
 struct RichIndex {
-	s32 index : 30;
-	s32 restart : 1;
-	s32 is_dupe : 1 = 0;
+	u32 index : 30;
+	u32 restart : 1;
+	u32 is_dupe : 1 = 0;
 };
 
 static std::vector<RichIndex> fake_tristripper(const std::vector<Face>& faces) {
 	std::vector<RichIndex> indices;
 	for(const Face& face : faces) {
-		indices.push_back({face.v0, 1});
-		indices.push_back({face.v1, 1});
-		indices.push_back({face.v2, 0});
+		indices.push_back({(u32) face.v0, 1u});
+		indices.push_back({(u32) face.v1, 1u});
+		indices.push_back({(u32) face.v2, 0u});
 	}
 	return indices;
 }
@@ -1457,13 +1459,13 @@ static std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std
 				canonical.submesh = mid_submeshes.size();
 				canonical.index = mid.vertices.size();
 				
-				mid.vertices.push_back({r.index, r.index});
+				mid.vertices.push_back({(s32) r.index, (s32) r.index});
 			} else if(mapping.submesh != mid_submeshes.size()) {
 				if(canonical.id == -1) {
 					canonical.id = next_id++;
 					mid.vertices.at(canonical.index).id = canonical.id;
 				}
-				mid.duplicate_vertices.push_back({canonical.id, r.index});
+				mid.duplicate_vertices.push_back({canonical.id, (s32) r.index});
 			}
 			
 			if(mid.indices.size() >= MAX_SUBMESH_INDEX_COUNT - 4) {
@@ -1471,7 +1473,7 @@ static std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std
 				continue;
 			}
 			
-			mid.indices.push_back({canonical.index, r.restart, r.is_dupe});
+			mid.indices.push_back({(u32) canonical.index, r.restart, r.is_dupe});
 		}
 	}
 	if(mid.indices.size() > 0) {

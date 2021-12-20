@@ -20,6 +20,7 @@
 #define UTIL_H
 
 #include <map>
+#include <array>
 #include <cmath>
 #include <vector>
 #include <cstring>
@@ -73,13 +74,13 @@ void assert_impl(const char* file, int line, const char* arg_str, bool condition
 #define assert(condition) \
 	if(!(condition)) { \
 		fprintf(stderr, "[%s:%d] assert%s: %s\n", __FILE__, __LINE__, UTIL_ERROR_CONTEXT_STRING, #condition); \
-		exit(1); \
+		abort(); \
 	}
 #define assert_not_reached(error_message) \
 	fprintf(stderr, "[%s:%d] assert%s: ", __FILE__, __LINE__, UTIL_ERROR_CONTEXT_STRING); \
 	fprintf(stderr, "%s", error_message); \
 	fprintf(stderr, "\n"); \
-	exit(1);
+	abort();
 
 // All these ugly _impl function templates are necessary so we can pass zero
 // varargs without getting a syntax error because of the additional comma.
@@ -89,7 +90,7 @@ void verify_impl(const char* file, int line, bool condition, const char* error_m
 		fprintf(stderr, "[%s:%d] error%s: ", file, line, UTIL_ERROR_CONTEXT_STRING);
 		fprintf(stderr, error_message, args...);
 		fprintf(stderr, "\n");
-		exit(1);
+		abort();
 	}
 }
 // Like assert, but for things that could be user errors e.g. bad input files.
@@ -100,7 +101,7 @@ template <typename... Args>
 	fprintf(stderr, "[%s:%d] error%s: ", file, line, UTIL_ERROR_CONTEXT_STRING);
 	fprintf(stderr, error_message, args...);
 	fprintf(stderr, "\n");
-	exit(1);
+	abort();
 }
 #define verify_not_reached(...) \
 	verify_not_reached_impl(__FILE__, __LINE__, __VA_ARGS__)
