@@ -200,15 +200,6 @@ void OutBuffer::writelf(const char* format, ...) {
 	va_end(args);
 }
 
-
-s64 file_size_in_bytes(FILE* file) {
-	long whence_you_came = ftell(file);
-	fseek(file, 0, SEEK_END);
-	s64 ofs = ftell(file);
-	fseek(file, whence_you_came, SEEK_SET);
-	return ofs;
-}
-
 std::vector<u8> read_file(FILE* file, s64 offset, s64 size) {
 	std::vector<u8> buffer(size);
 	verify(fseek(file, offset, SEEK_SET) == 0, "Failed to seek.");
@@ -222,7 +213,7 @@ std::vector<u8> read_file(fs::path path, const char* open_mode) {
 	verify(!fs::is_directory(path), "Tried to open directory '%s' as regular file.", path.string().c_str());
 	FILE* file = fopen(path.string().c_str(), open_mode);
 	verify(file, "Failed to open file '%s' for reading.", path.string().c_str());
-	std::vector<u8> buffer(file_size_in_bytes(file));
+	std::vector<u8> buffer(fs::file_size(path));
 	if(buffer.size() > 0) {
 		verify(fread(buffer.data(), buffer.size(), 1, file) == 1, "Failed to read file '%s'.", path.string().c_str());
 	}
