@@ -207,8 +207,6 @@ u32 byte_swap_32(u32 val);
 // Other stuff
 // *****************************************************************************
 
-#define PI 3.14159265358979323846264338327950288
-
 // Kludge since C++ still doesn't have proper reflection.
 #define DEF_FIELD(member) \
 	{ \
