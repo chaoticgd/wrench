@@ -36,8 +36,8 @@ packed_struct(MobyVertex,
 			/* 0x5 */ u8 unknown_5;
 			/* 0x6 */ u8 unknown_6;
 			/* 0x7 */ u8 unknown_7;
-			/* 0x8 */ u8 unknown_8;
-			/* 0x9 */ u8 unknown_9;
+			/* 0x8 */ u8 normal_angle_alpha;
+			/* 0x9 */ u8 normal_angle_beta;
 			/* 0xa */ s16 x;
 			/* 0xc */ s16 y;
 			/* 0xe */ s16 z;
