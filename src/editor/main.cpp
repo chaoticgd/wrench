@@ -154,6 +154,8 @@ static void init_gui(app& a, GLFWwindow** window) {
 
 	a.init_gui_scale();
 	a.update_gui_scale();
+	
+	gui::init();
 }
 
 static void update_camera(app* a) {
