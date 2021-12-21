@@ -24,6 +24,7 @@
 #include <cmath>
 #include <vector>
 #include <cstring>
+#include <ctype.h>
 #include <stdio.h>
 #include <optional>
 #include <stdarg.h>
