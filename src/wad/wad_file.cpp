@@ -101,12 +101,7 @@ std::unique_ptr<Wad> read_wad(FILE* file) {
 }
 
 std::vector<u8> read_lump(FILE* file, SectorRange range, const char* name) {
-	std::vector<u8> buffer(range.size.bytes());
-	verify(fseek(file, range.offset.bytes(), SEEK_SET) == 0, "Failed to seek to %s lump.", name);
-	if(buffer.size() > 0) {
-		verify(fread(buffer.data(), buffer.size(), 1, file) == 1, "Failed to read %s lump.", name);
-	}
-	return buffer;
+	return read_file(file, range.offset.bytes(), range.size.bytes());
 }
 
 Game detect_game_rac23(std::vector<u8>& src) {
