@@ -201,9 +201,22 @@ void OutBuffer::writelf(const char* format, ...) {
 	va_end(args);
 }
 
+static s64 file_size_in_bytes(FILE* file) {
+	s64 last_ofs = ftell(file);
+	fseek(file, 0, SEEK_END);
+	s64 ofs = ftell(file);
+	fseek(file, last_ofs, SEEK_SET);
+	return ofs;
+}
+
 std::vector<u8> read_file(FILE* file, s64 offset, s64 size) {
 	std::vector<u8> buffer(size);
 	verify(fseek(file, offset, SEEK_SET) == 0, "Failed to seek.");
+	s64 file_size = file_size_in_bytes(file);
+	if(file_size < offset + size && file_size + SECTOR_SIZE > offset + size) {
+		// This happens if the last block in a file isn't padded to the sector size.
+		size = file_size - offset;
+	}
 	if(buffer.size() > 0) {
 		verify(fread(buffer.data(), buffer.size(), 1, file) == 1, "Failed to read file.");
 	}
