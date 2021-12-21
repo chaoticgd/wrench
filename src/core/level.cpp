@@ -507,8 +507,9 @@ static std::vector<Texture> read_texture_pngs(const fs::path& src_dir, const Jso
 	std::vector<Texture> textures;
 	for(const Json& rel_path : paths) {
 		fs::path path = src_dir/std::string(rel_path);
-		Opt<Texture> texture = read_png(path.c_str());
-		verify(texture.has_value(), "Failed to read texture '%s'.", path.c_str());
+		std::string path_str = path.string();
+		Opt<Texture> texture = read_png(path_str.c_str());
+		verify(texture.has_value(), "Failed to read texture '%s'.", path_str.c_str());
 		textures.push_back(*texture);
 	}
 	return textures;
@@ -529,7 +530,8 @@ static Json write_texture_pngs(const fs::path& dest_dir, const char* sub_dir, co
 		}
 		list.push_back(rel_path.string());
 		fs::path path = dest_dir/rel_path;
-		write_png(path.c_str(), textures[i]);
+		std::string path_str = path.string();
+		write_png(path_str.c_str(), textures[i]);
 	}
 	return list;
 }

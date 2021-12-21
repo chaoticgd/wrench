@@ -18,6 +18,8 @@
 
 #include "collada.h"
 
+#include <ctype.h>
+
 #include "rapidxml/rapidxml.hpp"
 using XmlDocument = rapidxml::xml_document<>;
 using XmlNode = rapidxml::xml_node<>;
