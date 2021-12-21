@@ -445,8 +445,8 @@ void gui::render_tree_menu(app& a) {
 		}
 	};
 	
-	using reload_fun = std::function<void(int&, project_tree_node&, fs::path, int)>;
-	reload_fun reload = [&](int& files, auto& dest, auto path, int depth) {
+	using reload_fun = std::function<void(project_tree_node&, fs::path, int)>;
+	reload_fun reload = [&](auto& dest, auto path, int depth) {
 		dest.path = path;
 		if(depth > 8) {
 			fprintf(stderr, "warning: Directory depth exceeds 8!\n");
@@ -455,13 +455,9 @@ void gui::render_tree_menu(app& a) {
 		for(auto& file : fs::directory_iterator(path)) {
 			if(file.is_directory()) {
 				project_tree_node node;
-				reload(files, node, file, depth + 1);
+				reload(node, file, depth + 1);
 				dest.dirs.push_back(node);
 			} else if(file.is_regular_file()) {
-				if(files > 10000) {
-					fprintf(stderr, "warning: More than 10000 files in directory!\n");
-				}
-				files++;
 				dest.files.push_back(file);
 			}
 		}
@@ -473,9 +469,8 @@ void gui::render_tree_menu(app& a) {
 	static project_tree_node project_dir;
 	if(!a.directory.empty()) {
 		if((a.directory != project_dir.path) | ImGui::MenuItem("Reload")) {
-			int files = 0;
 			project_tree_node new_project_dir;
-			reload(files, new_project_dir, a.directory, 0);
+			reload(new_project_dir, a.directory, 0);
 			project_dir = new_project_dir;
 		}
 		ImGui::Separator();
