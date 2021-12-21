@@ -69,7 +69,7 @@ For build instructions, see the Building section below. For usage instructions, 
 	> cmake .
 
 	This should generate `wrench.sln` along with a few `.vcxproj` files. 
-	In case no such files are generated, you can explicitely specify usage of the Visual Studio generator by running the following command:
+	In case no such files are generated, you can explicitly specify usage of the Visual Studio generator by running the following command:
 	> cmake . -G "Visual Studio X YYYY"
 	where `X` is the Visual Studio version and `YYYY` is the Visual Studio year (example: `Visual Studio 16 2019`)
 	A complete list can be obtained by running `cmake --help`.
