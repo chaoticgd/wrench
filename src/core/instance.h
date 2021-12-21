@@ -364,9 +364,9 @@ packed_struct(Rgb96,
 
 struct LightTriggerInstance {
 	s32 id;
-	Vec4f point;
-	Mat3 matrix;
-	Vec4f point_2;
+	glm::vec4 point;
+	glm::mat3x4 matrix;
+	glm::vec4 point_2;
 	s32 unknown_40;
 	s32 unknown_44;
 	s32 light;
