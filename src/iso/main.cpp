@@ -16,6 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <core/filesystem.h>
 #include <editor/util.h>
 #include <editor/fs_includes.h>
 #include <editor/command_line.h>

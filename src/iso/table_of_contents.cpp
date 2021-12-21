@@ -18,8 +18,9 @@
 
 #include "table_of_contents.h"
 
-#include "../core/buffer.h"
-#include "../editor/util.h"
+#include <core/buffer.h>
+#include <core/filesystem.h>
+#include <editor/util.h>
 
 static toc_level_part adapt_rac1_level_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header);
 static Opt<toc_level_part> adapt_rac1_audio_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header);

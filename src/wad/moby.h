@@ -22,6 +22,7 @@
 #include <core/vif.h>
 #include <core/buffer.h>
 #include <core/collada.h>
+#include "basic_types.h"
 
 packed_struct(MobyTexCoord,
 	/* 0x0 */ s16 s;

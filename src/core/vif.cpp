@@ -18,6 +18,9 @@
 
 #include "vif.h"
 
+#include <iomanip>
+#include <sstream>
+
 const char* VIF_VN_STRINGS[4] = {
 	"ONE", "TWO", "THREE", "FOUR"
 };

@@ -140,10 +140,4 @@ struct OutBuffer {
 	void writelf(const char* format, ...);
 };
 
-// These functions all call exit on error.
-std::vector<u8> read_file(FILE* file, s64 offset, s64 size);
-std::vector<u8> read_file(fs::path path, const char* open_mode = "rb");
-std::string write_file(fs::path dest_dir, fs::path rel_path, Buffer buffer, const char* open_mode = "wb");
-void extract_file(fs::path dest_path, FILE* dest, FILE* src, s64 offset, s64 size);
-
 #endif

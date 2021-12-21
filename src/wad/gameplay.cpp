@@ -18,6 +18,8 @@
 
 #include "gameplay.h"
 
+#include "basic_types.h"
+
 const s32 NONE = -1;
 
 static void rewire_pvar_indices(Gameplay& gameplay);
@@ -432,9 +434,11 @@ struct LightTriggerBlock {
 		ofs += header.count_1 * sizeof(Vec4f);
 		auto data = src.read_multiple<LightTriggerPacked>(ofs, header.count_1, "GC 84 data");
 		for(s64 i = 0; i < header.count_1; i++) {
-			dest[i].id = i;
-			dest[i].point = points[i];
 			LightTriggerPacked packed = data[i];
+			dest[i].id = i;
+			dest[i].point = points[i].unpack();
+			dest[i].matrix = packed.matrix.unpack();
+			dest[i].point_2 = packed.point_2.unpack();
 			swap_gc_84(dest[i], packed);
 		}
 	}
@@ -447,14 +451,14 @@ struct LightTriggerBlock {
 		}
 		for(LightTriggerInstance inst : src) {
 			LightTriggerPacked packed;
+			packed.matrix = Mat3::pack(inst.matrix);
+			packed.point_2 = Vec4f::pack(inst.point_2);
 			swap_gc_84(inst, packed);
 			dest.write(packed);
 		}
 	}
 	
 	static void swap_gc_84(LightTriggerInstance& l, LightTriggerPacked& r) {
-		SWAP_PACKED(l.matrix, r.matrix);
-		SWAP_PACKED(l.point_2, r.point_2);
 		SWAP_PACKED(l.unknown_40, r.unknown_40);
 		SWAP_PACKED(l.unknown_44, r.unknown_44);
 		SWAP_PACKED(l.light, r.light);

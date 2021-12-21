@@ -33,6 +33,7 @@ add_library(wrenchcore STATIC
 	src/core/png.cpp
 	src/core/texture.cpp
 	src/core/vif.cpp
+	src/core/filesystem.cpp
 	thirdparty/md5.cpp
 )
 
@@ -112,12 +113,13 @@ target_link_libraries(hashtex wrenchcore)
 target_compile_definitions(wrench PRIVATE WRENCH_EDITOR=1)
 
 if(UNIX)
-	target_compile_options(wrenchcore PRIVATE -Wall -O3)
-	target_compile_options(wrench PRIVATE -Wall -O3)
-	target_compile_options(lz PRIVATE -Wall -O3)
-	target_compile_options(vif PRIVATE -Wall -O3)
-	target_compile_options(iso PRIVATE -Wall -O3)
-	target_compile_options(wad PRIVATE -Wall -O3)
+	set(GCC_FLAGS -Wall -Wno-sign-compare)
+	target_compile_options(wrenchcore PRIVATE ${GCC_FLAGS} -O3)
+	target_compile_options(wrench PRIVATE ${GCC_FLAGS})
+	target_compile_options(lz PRIVATE ${GCC_FLAGS} -O3)
+	target_compile_options(vif PRIVATE ${GCC_FLAGS})
+	target_compile_options(iso PRIVATE ${GCC_FLAGS})
+	target_compile_options(wad PRIVATE ${GCC_FLAGS} -O3)
 endif()
 
 if (MSVC)

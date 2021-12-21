@@ -95,19 +95,29 @@ Json to_json(Object& src) {
 		return json;
 	} else if constexpr(std::is_same_v<Object, glm::vec3>) {
 		ToJsonVisitor visitor;
-		Vec3f::pack(src).enumerate_fields(visitor);
+		visitor.field("x", src.x);
+		visitor.field("y", src.y);
+		visitor.field("z", src.z);
 		return visitor.json;
 	} else if constexpr(std::is_same_v<Object, glm::vec4>) {
 		ToJsonVisitor visitor;
-		Vec4f::pack(src).enumerate_fields(visitor);
+		visitor.field("x", src.x);
+		visitor.field("y", src.y);
+		visitor.field("z", src.z);
+		visitor.field("w", src.w);
 		return visitor.json;
 	} else if constexpr(std::is_same_v<Object, glm::mat3x4>) {
 		ToJsonVisitor visitor;
-		Mat3::pack(src).enumerate_fields(visitor);
+		visitor.field("0", src[0]);
+		visitor.field("1", src[1]);
+		visitor.field("2", src[2]);
 		return visitor.json;
 	} else if constexpr(std::is_same_v<Object, glm::mat4>) {
 		ToJsonVisitor visitor;
-		Mat4::pack(src).enumerate_fields(visitor);
+		visitor.field("0", src[0]);
+		visitor.field("1", src[1]);
+		visitor.field("2", src[2]);
+		visitor.field("3", src[3]);
 		return visitor.json;
 	} else if constexpr(std::is_compound_v<Object> && !std::is_same_v<Object, std::string>) {
 		ToJsonVisitor visitor;
@@ -186,24 +196,26 @@ void from_json(Object& dest, Json src) {
 		}
 	} else if constexpr(std::is_same_v<Object, glm::vec3>) {
 		FromJsonVisitor visitor{src};
-		Vec3f packed;
-		packed.enumerate_fields(visitor);
-		dest = packed.unpack();
+		visitor.field("x", dest.x);
+		visitor.field("y", dest.y);
+		visitor.field("z", dest.z);
 	} else if constexpr(std::is_same_v<Object, glm::vec4>) {
 		FromJsonVisitor visitor{src};
-		Vec4f packed;
-		packed.enumerate_fields(visitor);
-		dest = packed.unpack();
+		visitor.field("x", dest.x);
+		visitor.field("y", dest.y);
+		visitor.field("z", dest.z);
+		visitor.field("w", dest.w);
 	} else if constexpr(std::is_same_v<Object, glm::mat3x4>) {
 		FromJsonVisitor visitor{src};
-		Mat3 packed;
-		packed.enumerate_fields(visitor);
-		dest = packed.unpack();
+		visitor.field("0", dest[0]);
+		visitor.field("1", dest[1]);
+		visitor.field("2", dest[2]);
 	} else if constexpr(std::is_same_v<Object, glm::mat4>) {
 		FromJsonVisitor visitor{src};
-		Mat4 packed;
-		packed.enumerate_fields(visitor);
-		dest = packed.unpack();
+		visitor.field("0", dest[0]);
+		visitor.field("1", dest[1]);
+		visitor.field("2", dest[2]);
+		visitor.field("3", dest[3]);
 	} else if constexpr(std::is_compound_v<Object> && !std::is_same_v<Object, std::string>) {
 		FromJsonVisitor visitor{src};
 		dest.enumerate_fields(visitor);
