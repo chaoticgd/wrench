@@ -25,6 +25,7 @@
 #include "buffer.h"
 #include "instance.h"
 #include "texture.h"
+#include "filesystem.h"
 
 struct PropertiesFirstPart {
 	Rgb96 background_colour;

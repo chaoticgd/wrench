@@ -16,13 +16,18 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WRENCH_PNG_H
-#define WRENCH_PNG_H
+#ifndef CORE_FILESYSTEM_H
+#define CORE_FILESYSTEM_H
 
-#include "util.h"
-#include "texture.h"
+#include <filesystem>
+namespace fs = std::filesystem;
 
-Opt<Texture> read_png(const char* path);
-void write_png(const char* path, const Texture& texture);
+#include "buffer.h"
+
+// These functions all call exit on error.
+std::vector<u8> read_file(FILE* file, s64 offset, s64 size);
+std::vector<u8> read_file(fs::path path, const char* open_mode = "rb");
+std::string write_file(fs::path dest_dir, fs::path rel_path, Buffer buffer, const char* open_mode = "wb");
+void extract_file(fs::path dest_path, FILE* dest, FILE* src, s64 offset, s64 size);
 
 #endif

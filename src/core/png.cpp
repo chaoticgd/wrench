@@ -20,32 +20,31 @@
 
 #include <png.h>
 
-Opt<Texture> read_png(const fs::path& path) {
-	std::string path_str = path.string();
-	FILE* file = fopen(path_str.c_str(), "rb");
+Opt<Texture> read_png(const char* path) {
+	FILE* file = fopen(path, "rb");
 	if(!file) {
-		printf("warning: Failed to open %s for reading.\n", path_str.c_str());
+		printf("warning: Failed to open %s for reading.\n", path);
 		return {};
 	}
 	
 	png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING,
 		nullptr, nullptr, nullptr);
 	if(!png_ptr) {
-		printf("warning: png_create_read_struct failed (%s).\n", path_str.c_str());
+		printf("warning: png_create_read_struct failed (%s).\n", path);
 		fclose(file);
 		return {};
 	}
 	
 	png_infop info_ptr = png_create_info_struct(png_ptr);
 	if(!info_ptr) {
-		printf("warning: png_create_info_struct failed (%s).\n", path_str.c_str());
+		printf("warning: png_create_info_struct failed (%s).\n", path);
 		png_destroy_read_struct(&png_ptr, nullptr, nullptr);
 		fclose(file);
 		return {};
 	}
 	
 	if(setjmp(png_jmpbuf(png_ptr))) {
-		printf("warning: Error handler invoked when reading PNG (%s).\n", path_str.c_str());
+		printf("warning: Error handler invoked when reading PNG (%s).\n", path);
 		png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
 		fclose(file);
 		return {};
@@ -105,9 +104,9 @@ Opt<Texture> read_png(const fs::path& path) {
 	return texture;
 }
 
-void write_png(const char* file_name, const Texture& texture) {
-	FILE* file = fopen(file_name, "wb");
-	verify(file, "Failed to open %s for writing.", file_name);
+void write_png(const char* path, const Texture& texture) {
+	FILE* file = fopen(path, "wb");
+	verify(file, "Failed to open %s for writing.", path);
 	
 	png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
 	verify(png_ptr, "png_create_write_struct failed.");
@@ -116,7 +115,7 @@ void write_png(const char* file_name, const Texture& texture) {
 	verify(info_ptr, "png_create_info_struct failed.");
 	
 	if(setjmp(png_jmpbuf(png_ptr))) {
-		verify_not_reached("Failed to encode PNG file (%s).", file_name);
+		verify_not_reached("Failed to encode PNG file (%s).", path);
 	}
 	
 	png_init_io(png_ptr, file);

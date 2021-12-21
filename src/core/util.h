@@ -29,7 +29,6 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <exception>
-#include <filesystem>
 #include <functional>
 #include <type_traits>
 
@@ -47,8 +46,6 @@ using s64 = int64_t;
 
 using f32 = float;
 using f64 = double;
-
-namespace fs = std::filesystem;
 
 #ifdef _MSC_VER
 	#define fseek _fseeki64

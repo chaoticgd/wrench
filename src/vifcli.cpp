@@ -21,6 +21,7 @@
 #include <iostream>
 
 #include <core/vif.h>
+#include <core/filesystem.h>
 #include <editor/util.h>
 #include <editor/command_line.h>
 

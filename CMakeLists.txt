@@ -33,6 +33,7 @@ add_library(wrenchcore STATIC
 	src/core/png.cpp
 	src/core/texture.cpp
 	src/core/vif.cpp
+	src/core/filesystem.cpp
 	thirdparty/md5.cpp
 )
 
