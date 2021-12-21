@@ -12,6 +12,10 @@ if(MSVC)
 	# __cplusplus macro. See:
 	#  https://devblogs.microsoft.com/cppblog/msvc-now-correctly-reports-__cplusplus/
 	set(CMAKE_CXX_FLAGS "/Zc:__cplusplus")
+	
+	# Disables MSVC warnings for usage of insecure stdlib functions
+	# like fopen instead of fopen_s.
+	add_definitions(/D "_CRT_SECURE_NO_WARNINGS")
 endif()
 
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
@@ -118,16 +122,17 @@ endif()
 
 if (MSVC)
 	# /W4 - enable all non-default-disabled warnings (-Wall equivalent)
-	# /Zi - emit debugging informations to PDB
 	# /EHsc - needed for proper C++ exception handling
-	set(__MSVCBOPT /W4 /Zi /EHsc /D_CRT_SECURE_NO_WARNINGS)
+	# /MP - enables multi-process builds
+	set(__MSVC_BUILD_OPTIONS__ /W4 /EHsc /MP)
 
-	target_compile_options(wrenchcore PRIVATE ${__MSVCBOPT})
-	target_compile_options(wrench PRIVATE ${__MSVCBOPT})
-	target_compile_options(lz PRIVATE ${__MSVCBOPT})
-	target_compile_options(vif PRIVATE ${__MSVCBOPT})
-	target_compile_options(iso PRIVATE ${__MSVCBOPT})
-	target_compile_options(wad PRIVATE ${__MSVCBOPT})
+	target_compile_options(wrenchcore PRIVATE ${__MSVC_BUILD_OPTIONS__})
+	target_compile_options(wrench PRIVATE ${__MSVC_BUILD_OPTIONS__})
+	target_compile_options(lz PRIVATE ${__MSVC_BUILD_OPTIONS__})
+	target_compile_options(vif PRIVATE ${__MSVC_BUILD_OPTIONS__})
+	target_compile_options(iso PRIVATE ${__MSVC_BUILD_OPTIONS__})
+	target_compile_options(wad PRIVATE ${__MSVC_BUILD_OPTIONS__})
+	unset(__MSVC_BUILD_OPTIONS__)
 endif()
 
 # std::filesystem
