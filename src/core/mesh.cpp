@@ -19,8 +19,6 @@
 #include "mesh.h"
 #include "timer.h"
 
-#include <algorithm>
-
 Mesh sort_vertices(Mesh src) {
 	std::vector<s32> vertex_mapping(src.vertices.size());
 	for(size_t i = 0; i < src.vertices.size(); i++) {
