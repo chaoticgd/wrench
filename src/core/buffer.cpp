@@ -18,7 +18,6 @@
 
 #include "buffer.h"
 
-#include <fstream>
 #include <stdarg.h>
 
 Buffer Buffer::subbuf(s64 offset) const {
@@ -201,29 +200,50 @@ void OutBuffer::writelf(const char* format, ...) {
 	va_end(args);
 }
 
+static s64 file_size_in_bytes(FILE* file) {
+	s64 last_ofs = ftell(file);
+	fseek(file, 0, SEEK_END);
+	s64 ofs = ftell(file);
+	fseek(file, last_ofs, SEEK_SET);
+	return ofs;
+}
+
 std::vector<u8> read_file(FILE* file, s64 offset, s64 size) {
-	std::vector<u8> buffer(size);
+	s64 file_size = file_size_in_bytes(file);
 	verify(fseek(file, offset, SEEK_SET) == 0, "Failed to seek.");
+	if(offset + size > file_size && offset + size < file_size + SECTOR_SIZE) {
+		// This happens if the last block in a file isn't padded to the sector size.
+		size = file_size - offset;
+	}
+	std::vector<u8> buffer(size);
 	if(buffer.size() > 0) {
 		verify(fread(buffer.data(), buffer.size(), 1, file) == 1, "Failed to read file.");
 	}
 	return buffer;
 }
 
+static void strip_carriage_returns(std::vector<u8>& file) {
+	size_t new_size = 0;
+	for(size_t i = 0; i < file.size(); i++) {
+		if(file[i] != 0xd) {
+			file[new_size++] = file[i];
+		}
+	}
+	file.resize(new_size);
+}
+
 std::vector<u8> read_file(fs::path path, const char* open_mode) {
 	verify(!fs::is_directory(path), "Tried to open directory '%s' as regular file.", path.string().c_str());
-	std::vector<u8> buffer;
-	std::ios::openmode mode = (std::ios::openmode) 0;
-	if(strcmp(open_mode, "rb") == 0) {
-		mode = std::ios::binary;
+	FILE* file = fopen(path.string().c_str(), "rb");
+	verify(file, "Failed to open file '%s' for reading.", path.string().c_str());
+	std::vector<u8> buffer(fs::file_size(path));
+	if(buffer.size() > 0) {
+		verify(fread(buffer.data(), buffer.size(), 1, file) == 1, "Failed to read file '%s'.", path.string().c_str());
 	}
-	std::ifstream stream(path.string(), mode);
-	verify(stream.good(), "Failed to open file '%s' for reading.", path.string().c_str());
-	stream.seekg(0, std::ios::end);
-	buffer.resize(stream.tellg());
-	stream.seekg(0, std::ios::beg);
-	stream.read((char*) buffer.data(), buffer.size());
-	verify(stream.good(), "Failed to read file '%s'.", path.string().c_str());
+	fclose(file);
+	if(strcmp(open_mode, "r") == 0) {
+		strip_carriage_returns(buffer);
+	}
 	return buffer;
 }
 
