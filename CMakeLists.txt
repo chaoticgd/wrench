@@ -112,6 +112,16 @@ target_link_libraries(hashtex wrenchcore)
 # This lets us avoid linking stuff for most of the CLI tools.
 target_compile_definitions(wrench PRIVATE WRENCH_EDITOR=1)
 
+if(UNIX)
+	set(GCC_FLAGS -Wall -Wno-sign-compare)
+	target_compile_options(wrenchcore PRIVATE ${GCC_FLAGS} -O3)
+	target_compile_options(wrench PRIVATE ${GCC_FLAGS})
+	target_compile_options(lz PRIVATE ${GCC_FLAGS} -O3)
+	target_compile_options(vif PRIVATE ${GCC_FLAGS})
+	target_compile_options(iso PRIVATE ${GCC_FLAGS})
+	target_compile_options(wad PRIVATE ${GCC_FLAGS} -O3)
+endif()
+
 if (MSVC)
 	# /W4 - enable all non-default-disabled warnings (-Wall equivalent)
 	# /EHsc - needed for proper C++ exception handling
