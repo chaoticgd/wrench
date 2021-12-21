@@ -31,6 +31,8 @@
 #include "imgui_includes.h"
 
 namespace gui {
+	void init();
+	
 	void render(app& a);
 	float render_menu_bar(app& a);
 	void render_tools(app& a, float menu_bar_height);
