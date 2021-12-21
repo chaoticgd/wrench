@@ -65,8 +65,23 @@ For build instructions, see the Building section below. For usage instructions, 
 5.	cd into the newly created directory:
 	> cd wrench
 
-6.	Build it with cmake:
-	> cmake . && cmake --build . --config Release
+6.	Generate cmake files:
+	> cmake .
+
+	This should generate `wrench.sln` along with a few `.vcxproj` files. 
+	In case no such files are generated, you can explicitely specify usage of the Visual Studio generator by running the following command:
+	> cmake . -G "Visual Studio X YYYY"
+	where `X` is the Visual Studio version and `YYYY` is the Visual Studio year (example: `Visual Studio 16 2019`)
+	A complete list can be obtained by running `cmake --help`.
+
+7.	Build the project
+	* From the command line
+
+	> cmake --build . --config BUILD_TYPE
+
+	where `BUILD_TYPE` is one of `Debug` (very slow - not recommended), `Release` (no symbols - not recommended), `RelWithDebInfo` (recommended) or `MinSizeRel`.
+
+	* From Visual Studio
 	
-	Omitting `--config Release` will build the project in Debug configuration, *which disables optimizations*.
-	Note that PDBs will be generated into each target's `[...].dir` subfolder as `vc[...].pdb` instead of the `bin` directory when building in Release configuration.
+	Open the newly generated `wrench.sln` in Visual Studio. In the Solution Explorer, right-click on `wrench` and click `Set as Startup Project`.
+	You should now be able to build and debug wrench using the toolbar controls and all Visual Studio features.
