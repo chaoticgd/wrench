@@ -41,9 +41,10 @@ static void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std:
 static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const MobySubMeshBase& submesh);
 #define NO_SUBMESH_FILTER -1
 static Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* name, s32 o_class, s32 texture_count, f32 scale, s32 submesh_filter);
-static Vertex recover_vertex(const MobyVertex& vertex, const MobyTexCoord& tex_coord, f32 scale);
 static std::vector<Joint> recover_moby_joints(const MobyClassData& moby);
 static std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vector<Material>& materials, f32 scale);
+static Vertex recover_vertex(const MobyVertex& vertex, const MobyTexCoord& tex_coord, f32 scale);
+static MobyVertex build_vertex(const Vertex& v, s32 id, f32 inverse_scale);
 struct IndexMappingRecord {
 	s32 submesh = -1;
 	s32 index = -1; // The index of the vertex in the vertex table.
@@ -51,6 +52,7 @@ struct IndexMappingRecord {
 	s32 dedup_out_edge = -1; // If this vertex is a duplicate, this points to the canonical vertex.
 };
 static void find_duplicate_vertices(std::vector<IndexMappingRecord>& index_mapping, const std::vector<Vertex>& vertices);
+static f32 acotf(f32 x);
 
 // FIXME: Figure out what points to the mystery data instead of doing this.
 static s64 mystery_data_ofs;
@@ -1240,26 +1242,6 @@ static Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const c
 	return mesh;
 }
 
-static Vertex recover_vertex(const MobyVertex& vertex, const MobyTexCoord& tex_coord, f32 scale) {
-	f32 px = vertex.regular.x * (scale / 1024.f);
-	f32 py = vertex.regular.y * (scale / 1024.f);
-	f32 pz = vertex.regular.z * (scale / 1024.f);
-	f32 normal_alpha_radians = vertex.regular.normal_angle_alpha * (WRENCH_PI / 128.f);
-	f32 normal_beta_radians = vertex.regular.normal_angle_beta * (WRENCH_PI / 128.f);
-	f32 cos_alpha = cosf(normal_alpha_radians);
-	f32 sin_alpha = sinf(normal_alpha_radians);
-	f32 cos_beta = cosf(normal_beta_radians);
-	f32 sin_beta = sinf(normal_beta_radians);
-	f32 nx = cos_beta * sin_alpha;
-	f32 ny = cos_beta * cos_alpha;
-	f32 nz = sin_beta;
-	f32 s = tex_coord.s / (INT16_MAX / 8.f);
-	f32 t = -tex_coord.t / (INT16_MAX / 8.f);
-	while(s < 0) s += 1;
-	while(t < 0) t += 1;
-	return Vertex(glm::vec3(px, py, pz), glm::vec3(nx, ny, nz), glm::vec2(s, t));
-}
-
 static std::vector<Joint> recover_moby_joints(const MobyClassData& moby) {
 	assert(opt_size(moby.skeleton) == opt_size(moby.common_trans));
 	
@@ -1308,6 +1290,8 @@ MobyClassData build_moby_class(const ColladaScene& scene) {
 		moby.low_lod_submeshes = build_moby_submeshes(*low_lod_mesh, scene.materials, 0.25);
 		moby.low_lod_submesh_count = moby.low_lod_submeshes.size();
 	}
+	moby.skeleton = {};
+	moby.common_trans = {};
 	moby.unknown_9 = 0;
 	moby.lod_trans = 0x20;
 	moby.shadow = 0;
@@ -1490,13 +1474,7 @@ static std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std
 		
 		for(const MidLevelVertex& vertex : mid.vertices) {
 			const Vertex& high_vert = mesh.vertices[vertex.canonical];
-			
-			MobyVertex low_vert = {0};
-			low_vert.low_word = vertex.id;
-			low_vert.regular.x = high_vert.pos.x * inverse_scale;
-			low_vert.regular.y = high_vert.pos.y * inverse_scale;
-			low_vert.regular.z = high_vert.pos.z * inverse_scale;
-			low.vertices.push_back(low_vert);
+			low.vertices.emplace_back(build_vertex(high_vert, vertex.id, inverse_scale));
 			
 			const glm::vec2& tex_coord = mesh.vertices[vertex.tex_coord].tex_coord;
 			s16 s = tex_coord.x * (INT16_MAX / 8.f);
@@ -1558,6 +1536,50 @@ static std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std
 	return low_submeshes;
 }
 
+static Vertex recover_vertex(const MobyVertex& vertex, const MobyTexCoord& tex_coord, f32 scale) {
+	f32 px = vertex.regular.x * (scale / 1024.f);
+	f32 py = vertex.regular.y * (scale / 1024.f);
+	f32 pz = vertex.regular.z * (scale / 1024.f);
+	f32 normal_azimuth_radians = vertex.regular.normal_angle_azimuth * (WRENCH_PI / 128.f);
+	f32 normal_elevation_radians = vertex.regular.normal_angle_elevation * (WRENCH_PI / 128.f);
+	// There's a cosine/sine lookup table at the top of the scratchpad, this is
+	// done on the EE core.
+	f32 cos_azimuth = cosf(normal_azimuth_radians);
+	f32 sin_azimuth = sinf(normal_azimuth_radians);
+	f32 cos_elevation = cosf(normal_elevation_radians);
+	f32 sin_elevation = sinf(normal_elevation_radians);
+	// This bit is done on VU0.
+	f32 nx = sin_azimuth * cos_elevation;
+	f32 ny = cos_azimuth * cos_elevation;
+	f32 nz = sin_elevation;
+	f32 s = tex_coord.s / (INT16_MAX / 8.f);
+	f32 t = -tex_coord.t / (INT16_MAX / 8.f);
+	while(s < 0) s += 1;
+	while(t < 0) t += 1;
+	return Vertex(glm::vec3(px, py, pz), glm::vec3(nx, ny, nz), glm::vec2(s, t));
+}
+
+static MobyVertex build_vertex(const Vertex& src, s32 id, f32 inverse_scale) {
+	MobyVertex dest = {0};
+	dest.low_word = id;
+	dest.regular.x = src.pos.x * inverse_scale;
+	dest.regular.y = src.pos.y * inverse_scale;
+	dest.regular.z = src.pos.z * inverse_scale;
+	f32 normal_angle_azimuth_radians;
+	if(src.normal.x != 0) {
+		normal_angle_azimuth_radians = acotf(src.normal.y / src.normal.x);
+		if(src.normal.x < 0) {
+			normal_angle_azimuth_radians += WRENCH_PI;
+		}
+	} else {
+		normal_angle_azimuth_radians = WRENCH_PI / 2;
+	}
+	f32 normal_angle_elevation_radians = asinf(src.normal.z);
+	dest.regular.normal_angle_azimuth = normal_angle_azimuth_radians * (128.f / WRENCH_PI);
+	dest.regular.normal_angle_elevation = normal_angle_elevation_radians * (128.f / WRENCH_PI);
+	return dest;
+}
+
 static void find_duplicate_vertices(std::vector<IndexMappingRecord>& index_mapping, const std::vector<Vertex>& vertices) {
 	std::vector<size_t> indices(vertices.size());
 	for(size_t i = 0; i < vertices.size(); i++) {
@@ -1578,4 +1600,8 @@ static void find_duplicate_vertices(std::vector<IndexMappingRecord>& index_mappi
 			index_mapping[indices[i]].dedup_out_edge = vert;
 		}
 	}
+}
+
+static f32 acotf(f32 x) {
+	return WRENCH_PI / 2 - atanf(x);
 }
