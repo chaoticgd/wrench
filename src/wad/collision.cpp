@@ -156,7 +156,7 @@ static CollisionSectors parse_collision_mesh(Buffer mesh) {
 					f32 x = ((s32) (value << 22) >> 22) / 16.f;
 					f32 y = ((s32) (value << 12) >> 22) / 16.f;
 					f32 z = ((s32) (value << 0) >> 20) / 64.f;
-					sector.vertices.emplace_back(vertex);
+					sector.vertices.emplace_back(x, y, z);
 					ofs += 4;
 				}
 				for(s32 face = 0; face < face_count; face++) {
