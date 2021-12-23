@@ -49,6 +49,7 @@ struct CollisionQuad {
 	u8 v2;
 	u8 v3;
 	u8 type;
+	bool alive = true;
 };
 
 // A single collision sector is 4x4x4 in metres/game units and is aligned to a
@@ -70,9 +71,12 @@ static CollisionSectors parse_collision_mesh(Buffer mesh);
 static void write_collision_mesh(OutBuffer dest, CollisionSectors& sectors);
 static ColladaScene collision_sectors_to_scene(const CollisionSectors& sectors);
 static CollisionSectors build_collision_sectors(const ColladaScene& scene);
-static bool test_face_sector_intersection(std::array<s32, 4>& mesh_inds, const glm::vec3** verts, const glm::vec3& disp);
 static bool test_tri_sector_intersection(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2);
 static CollisionSector& lookup_sector(CollisionSectors& sectors, s32 x, s32 y, s32 z);
+static void optimise_collision(CollisionSectors& sectors);
+static void reduce_quads_to_tris(CollisionSector& sector);
+static void remove_killed_faces(CollisionSector& sector);
+static void remove_unreferenced_vertices(CollisionSector& sector);
 
 ColladaScene read_collision(Buffer src) {
 	ERROR_CONTEXT("collision");
@@ -92,6 +96,7 @@ void write_collision(OutBuffer dest, const ColladaScene& scene) {
 	ERROR_CONTEXT("collision");
 	
 	CollisionSectors sectors = build_collision_sectors(scene);
+	optimise_collision(sectors);
 	CollisionHeader header;
 	header.mesh = 0x40;
 	header.second_part = 0;
@@ -270,9 +275,7 @@ static void write_collision_mesh(OutBuffer dest, CollisionSectors& sectors) {
 				
 				verify(sector.tris.size() + sector.quads.size() < 65536, "Too many faces in sector.");
 				dest.write<u16>(sector.tris.size() + sector.quads.size());
-				verify(sector.vertices.size() < 256, "Too many vertices in sector.");
 				dest.write<u8>(sector.vertices.size());
-				verify(sector.quads.size() < 256, "Too many quads in sector.");
 				dest.write<u8>(sector.quads.size());
 				
 				for(const glm::vec3& vertex : sector.vertices) {
@@ -424,15 +427,19 @@ static CollisionSectors build_collision_sectors(const ColladaScene& scene) {
 				for(s32 z = zmin; z < zmax; z++) {
 					for(s32 y = ymin; y < ymax; y++) {
 						for(s32 x = xmin; x < xmax; x++) {
-							std::array<s32, 4> mesh_inds = {face.v0, face.v1, face.v2, face.v3};
 							auto disp = glm::vec3(x * 4 + 2, y * 4 + 2, z * 4 + 2);
-							if(test_face_sector_intersection(mesh_inds, verts, disp)) {
+							bool accept = false;
+							accept |= test_tri_sector_intersection(*verts[0] - disp, *verts[1] - disp, *verts[2] - disp);
+							if(face.is_quad()) {
+								accept |= test_tri_sector_intersection(*verts[2] - disp, *verts[3] - disp, *verts[0] - disp);
+							}
+							if(accept) {
 								s32 sector_inds[4] = {-1, -1, -1, -1};
 								CollisionSector& sector = lookup_sector(sectors, x, y, z);
 								
 								// Merge vertices.
-								for(s32 i = 0; i < ((mesh_inds[3] > -1) ? 4 : 3); i++) {
-									glm::vec3 pos = mesh.vertices[mesh_inds[i]].pos - disp;
+								for(s32 i = 0; i < (face.is_quad() ? 4 : 3); i++) {
+									glm::vec3 pos = *verts[i] - disp;
 									for(size_t j = 0; j < sector.vertices.size(); j++) {
 										if(vec3_equal_eps(pos, sector.vertices[j])) {
 											sector_inds[i] = j;
@@ -461,39 +468,6 @@ static CollisionSectors build_collision_sectors(const ColladaScene& scene) {
 	
 	stop_timer();
 	return sectors;
-}
-
-static bool test_face_sector_intersection(std::array<s32, 4>& mesh_inds, const glm::vec3** verts, const glm::vec3& disp) {
-	bool is_quad = mesh_inds[3] > -1;
-	bool accept;
-	if(is_quad) {
-		// Try to replace a quad with a single triangle if only that half of the
-		// face intersects the sector.
-		bool i0 = test_tri_sector_intersection(*verts[0] - disp, *verts[1] - disp, *verts[2] - disp);
-		bool i2 = test_tri_sector_intersection(*verts[2] - disp, *verts[3] - disp, *verts[0] - disp);
-		if(i0 && !i2) {
-			mesh_inds = {mesh_inds[0], mesh_inds[1], mesh_inds[2], -1};
-			accept = true;
-		} else if(i2 && !i0) {
-			mesh_inds = {mesh_inds[2], mesh_inds[3], mesh_inds[0], -1};
-			accept = true;
-		} else {
-			bool i1 = test_tri_sector_intersection(*verts[1] - disp, *verts[2] - disp, *verts[3] - disp);
-			bool i3 = test_tri_sector_intersection(*verts[3] - disp, *verts[0] - disp, *verts[1] - disp);
-			if(i1 && !i3) {
-				mesh_inds = {mesh_inds[1], mesh_inds[2], mesh_inds[3], -1};
-				accept = true;
-			} else if(i3 && !i1) {
-				mesh_inds = {mesh_inds[3], mesh_inds[0], mesh_inds[1], -1};
-				accept = true;
-			} else {
-				accept = i0 && i2;
-			}
-		}
-	} else {
-		accept = test_tri_sector_intersection(*verts[0] - disp, *verts[1] - disp, *verts[2] - disp);
-	}
-	return accept;
 }
 
 // https://gdbooks.gitbooks.io/3dcollisions/content/Chapter4/aabb-triangle.html
@@ -526,6 +500,7 @@ static bool test_tri_sector_intersection(const glm::vec3& v0, const glm::vec3& v
 			return false;
 		}
 	}
+	
 	return true;
 }
 
@@ -560,4 +535,84 @@ static CollisionSector& lookup_sector(CollisionSectors& sectors, s32 x, s32 y, s
 		y_node.list.resize(x - y_node.coord + 1);
 	}
 	return y_node.list[x - y_node.coord];
+}
+
+static void optimise_collision(CollisionSectors& sectors) {
+	start_timer("Optimising collision tree");
+	
+	for(auto& y_partitions : sectors.list) {
+		for(auto& x_partitions : y_partitions.list) {
+			for(CollisionSector& sector : x_partitions.list) {
+				reduce_quads_to_tris(sector);
+				remove_killed_faces(sector);
+				remove_unreferenced_vertices(sector);
+			}
+		}
+	}
+	
+	stop_timer();
+}
+
+static void reduce_quads_to_tris(CollisionSector& sector) {
+	for(CollisionQuad& quad : sector.quads) {
+		if(quad.alive) {
+			glm::vec3& v0 = sector.vertices[quad.v0];
+			glm::vec3& v1 = sector.vertices[quad.v1];
+			glm::vec3& v2 = sector.vertices[quad.v2];
+			glm::vec3& v3 = sector.vertices[quad.v3];
+			bool i0 = test_tri_sector_intersection(v0, v1, v2);
+			bool i2 = test_tri_sector_intersection(v2, v3, v0);
+			if(i0 && !i2) {
+				sector.tris.emplace_back(quad.v0, quad.v1, quad.v2, quad.type);
+				quad.alive = false;
+			} else if(i2 && !i0) {
+				sector.tris.emplace_back(quad.v2, quad.v3, quad.v0, quad.type);
+				quad.alive = false;
+			} else {
+				bool i1 = test_tri_sector_intersection(v1, v2, v3);
+				bool i3 = test_tri_sector_intersection(v3, v0, v1);
+				if(i1 && !i3) {
+					sector.tris.emplace_back(quad.v1, quad.v2, quad.v3, quad.type);
+					quad.alive = false;
+				} else if(i3 && !i1) {
+					sector.tris.emplace_back(quad.v3, quad.v0, quad.v1, quad.type);
+					quad.alive = false;
+				}
+			}
+		}
+	}
+}
+
+static void remove_killed_faces(CollisionSector& sector) {
+	std::vector<CollisionQuad> new_quads;
+	for(CollisionQuad& quad : sector.quads) {
+		if(quad.alive) {
+			new_quads.push_back(quad);
+		}
+	}
+	sector.quads = std::move(new_quads);
+}
+
+static void remove_unreferenced_vertices(CollisionSector& sector) {
+	std::vector<glm::vec3> new_vertices;
+	std::vector<size_t> new_indices(sector.vertices.size(), SIZE_MAX);
+	for(auto& tri : sector.tris) {
+		for(u8* index : {&tri.v0, &tri.v1, &tri.v2}) {
+			if(new_indices[*index] == SIZE_MAX) {
+				new_indices[*index] = new_vertices.size();
+				new_vertices.push_back(sector.vertices[*index]);
+			}
+			*index = new_indices[*index];
+		}
+	}
+	for(auto& quad : sector.quads) {
+		for(u8* index : {&quad.v0, &quad.v1, &quad.v2, &quad.v3}) {
+			if(new_indices[*index] == SIZE_MAX) {
+				new_indices[*index] = new_vertices.size();
+				new_vertices.push_back(sector.vertices[*index]);
+			}
+			*index = new_indices[*index];
+		}
+	}
+	sector.vertices = std::move(new_vertices);
 }
