@@ -32,23 +32,17 @@ struct CollisionList {
 	std::vector<T> list;
 };
 
-struct CollisionTri {
-	CollisionTri() {}
-	CollisionTri(u8 a0, u8 a1, u8 a2, u8 t) : v0(a0), v1(a1), v2(a2), type(t) {}
-	u8 v0;
-	u8 v1;
-	u8 v2;
-	u8 type;
-};
-
-struct CollisionQuad {
-	CollisionQuad() {}
-	CollisionQuad(u8 a0, u8 a1, u8 a2, u8 a3, u8 t) : v0(a0), v1(a1), v2(a2), v3(a3), type(t) {}
+struct CollFace {
+	CollFace() {}
+	CollFace(u8 a0, u8 a1, u8 a2, u8 t) : v0(a0), v1(a1), v2(a2), v3(0), type(t), is_quad(false) {}
+	CollFace(u8 a0, u8 a1, u8 a2, u8 a3, u8 t) : v0(a0), v1(a1), v2(a2), v3(a3), type(t), is_quad(true) {}
 	u8 v0;
 	u8 v1;
 	u8 v2;
 	u8 v3;
 	u8 type;
+	bool is_quad;
+	bool alive = true;
 };
 
 // A single collision sector is 4x4x4 in metres/game units and is aligned to a
@@ -56,8 +50,7 @@ struct CollisionQuad {
 struct CollisionSector {
 	s32 offset = 0;
 	std::vector<glm::vec3> vertices;
-	std::vector<CollisionTri> tris;
-	std::vector<CollisionQuad> quads;
+	std::vector<CollFace> faces;
 	glm::vec3 displacement = {0, 0, 0};
 };
 
@@ -70,9 +63,12 @@ static CollisionSectors parse_collision_mesh(Buffer mesh);
 static void write_collision_mesh(OutBuffer dest, CollisionSectors& sectors);
 static ColladaScene collision_sectors_to_scene(const CollisionSectors& sectors);
 static CollisionSectors build_collision_sectors(const ColladaScene& scene);
-static bool test_face_sector_intersection(std::array<s32, 4>& mesh_inds, const glm::vec3** verts, const glm::vec3& disp);
 static bool test_tri_sector_intersection(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2);
 static CollisionSector& lookup_sector(CollisionSectors& sectors, s32 x, s32 y, s32 z);
+static void optimise_collision(CollisionSectors& sectors);
+static void reduce_quads_to_tris(CollisionSector& sector);
+static void remove_killed_faces(CollisionSector& sector);
+static void remove_unreferenced_vertices(CollisionSector& sector);
 
 ColladaScene read_collision(Buffer src) {
 	ERROR_CONTEXT("collision");
@@ -92,6 +88,7 @@ void write_collision(OutBuffer dest, const ColladaScene& scene) {
 	ERROR_CONTEXT("collision");
 	
 	CollisionSectors sectors = build_collision_sectors(scene);
+	optimise_collision(sectors);
 	CollisionHeader header;
 	header.mesh = 0x40;
 	header.second_part = 0;
@@ -144,12 +141,12 @@ static CollisionSectors parse_collision_mesh(Buffer mesh) {
 				u16 vertex_count = mesh.read<u8>(sector_offset + 2, "tri count");
 				u16 face_count = mesh.read<u16>(sector_offset, "tri count");
 				u16 quad_count = mesh.read<u8>(sector_offset + 3, "tri count");
+				verify(face_count >= quad_count, "Face count less than quad count.");
 				
 				CollisionSector& sector = x_partitions.list[x];
 				sector.offset = sector_offset;
-				sector.vertices.resize(vertex_count);
-				sector.tris.resize(face_count - quad_count);
-				sector.quads.resize(quad_count);
+				sector.vertices.reserve(vertex_count);
+				sector.faces.reserve(face_count);
 				
 				s32 ofs = sector_offset + 4;
 				for(s32 vertex = 0; vertex < vertex_count; vertex++) {
@@ -159,28 +156,21 @@ static CollisionSectors parse_collision_mesh(Buffer mesh) {
 					f32 x = ((s32) (value << 22) >> 22) / 16.f;
 					f32 y = ((s32) (value << 12) >> 22) / 16.f;
 					f32 z = ((s32) (value << 0) >> 20) / 64.f;
-					sector.vertices[vertex] = {x, y, z};
+					sector.vertices.emplace_back(x, y, z);
+					ofs += 4;
+				}
+				for(s32 face = 0; face < face_count; face++) {
+					u8 v0 = mesh.read<u8>(ofs, "face v0");
+					u8 v1 = mesh.read<u8>(ofs + 1, "face v1");
+					u8 v2 = mesh.read<u8>(ofs + 2, "face v2");
+					u8 type = mesh.read<u8>(ofs + 3, "face type");
+					sector.faces.emplace_back(v0, v1, v2, type);
 					ofs += 4;
 				}
 				for(s32 quad = 0; quad < quad_count; quad++) {
-					u8 v0 = mesh.read<u8>(ofs, "quad v0");
-					u8 v1 = mesh.read<u8>(ofs + 1, "quad v1");
-					u8 v2 = mesh.read<u8>(ofs + 2, "quad v2");
-					u8 type = mesh.read<u8>(ofs + 3, "quad type");
-					sector.quads[quad] = {v0, v1, v2, 0, type};
-					ofs += 4;
-				}
-				for(s32 tri = 0; tri < face_count - quad_count; tri++) {
-					u8 v0 = mesh.read<u8>(ofs, "tri v0");
-					u8 v1 = mesh.read<u8>(ofs + 1, "tri v1");
-					u8 v2 = mesh.read<u8>(ofs + 2, "tri v2");
-					u8 type = mesh.read<u8>(ofs + 3, "tri type");
-					sector.tris[tri] = {v0, v1, v2, type};
-					ofs += 4;
-				}
-				for(s32 quad = 0; quad < quad_count; quad++) {
-					u8 v3 = mesh.read<u8>(ofs, "quad x");
-					sector.quads[quad].v3 = v3;
+					u8 v3 = mesh.read<u8>(ofs, "quad v3");
+					sector.faces[quad].v3 = v3;
+					sector.faces[quad].is_quad = true;
 					ofs += 1;
 				}
 			}
@@ -249,9 +239,16 @@ static void write_collision_mesh(OutBuffer dest, CollisionSectors& sectors) {
 			const auto& x_partitions = y_partitions.list[y];
 			for(s32 x = 0; x < x_partitions.list.size(); x++) {
 				const CollisionSector& sector = x_partitions.list[x];
-				if(sector.tris.empty() && sector.quads.empty()) {
+				if(sector.faces.empty()) {
 					dest.write<u32>(x_partitions.temp_offset + x * 4, 0);
 					continue;
+				}
+				
+				s32 quad_count = 0;
+				for(const CollFace& face : sector.faces) {
+					if(face.is_quad) {
+						quad_count++;
+					}
 				}
 				
 				dest.pad(0x10);
@@ -262,18 +259,16 @@ static void write_collision_mesh(OutBuffer dest, CollisionSectors& sectors) {
 					dest.write<u32>(x_partitions.temp_offset + x * 4, 0);
 					continue;
 				}
-				if(sector.quads.size() >= 256) {
+				if(quad_count >= 256) {
 					printf("warning: Collision sector %d %d %d dropped: Too many quads.\n", sectors.coord + x, y_partitions.coord + y, x_partitions.coord + x);
 					dest.write<u32>(x_partitions.temp_offset + x * 4, 0);
 					continue;
 				}
 				
-				verify(sector.tris.size() + sector.quads.size() < 65536, "Too many faces in sector.");
-				dest.write<u16>(sector.tris.size() + sector.quads.size());
-				verify(sector.vertices.size() < 256, "Too many vertices in sector.");
+				verify(sector.faces.size() < 65536, "Too many faces in sector.");
+				dest.write<u16>(sector.faces.size());
 				dest.write<u8>(sector.vertices.size());
-				verify(sector.quads.size() < 256, "Too many quads in sector.");
-				dest.write<u8>(sector.quads.size());
+				dest.write<u8>(quad_count);
 				
 				for(const glm::vec3& vertex : sector.vertices) {
 					u32 value = 0;
@@ -284,29 +279,34 @@ static void write_collision_mesh(OutBuffer dest, CollisionSectors& sectors) {
 					value |= (((s32) (vertex.z * 64.f)) << 20) & 0b11111111111100000000000000000000;
 					dest.write(value);
 				}
-				for(const CollisionQuad& quad : sector.quads) {
-					dest.write<u8>(quad.v0);
-					dest.write<u8>(quad.v1);
-					dest.write<u8>(quad.v2);
-					dest.write<u8>(quad.type);
+				for(const CollFace& face : sector.faces) {
+					if(face.is_quad) {
+						dest.write<u8>(face.v0);
+						dest.write<u8>(face.v1);
+						dest.write<u8>(face.v2);
+						dest.write<u8>(face.type);
+					}
 				}
-				for(const CollisionTri& tri : sector.tris) {
-					dest.write<u8>(tri.v0);
-					dest.write<u8>(tri.v1);
-					dest.write<u8>(tri.v2);
-					dest.write<u8>(tri.type);
+				for(const CollFace& face : sector.faces) {
+					if(!face.is_quad) {
+						dest.write<u8>(face.v0);
+						dest.write<u8>(face.v1);
+						dest.write<u8>(face.v2);
+						dest.write<u8>(face.type);
+					}
 				}
-				for(const CollisionQuad& quad : sector.quads) {
-					dest.write<u8>(quad.v3);
+				for(const CollFace& face : sector.faces) {
+					if(face.is_quad) {
+						dest.write<u8>(face.v3);
+					}
 				}
 				
-				size_t face_count = sector.tris.size() + sector.quads.size();
-				size_t sector_size = 4 + sector.vertices.size() * 4 + face_count * 4 + sector.quads.size();
+				size_t sector_size = 4 + sector.vertices.size() * 4 + sector.faces.size() * 4 + quad_count;
 				if(sector_size % 0x10 != 0) {
 					sector_size += 0x10 - (sector_size % 0x10);
 				}
 				verify(sector_size < 0x1000, "Sector too large.");
-				dest.write<u32>(x_partitions.temp_offset + x * 4, (sector_ofs << 8) | ((sector_size / 0x10) & 0xff));
+				dest.write<u32>(x_partitions.temp_offset + x * 4, (sector_size / 0x10) | (sector_ofs << 8));
 			}
 		}
 	}
@@ -339,21 +339,17 @@ static ColladaScene collision_sectors_to_scene(const CollisionSectors& sectors) 
 				for(const glm::vec3& vertex : sector.vertices) {
 					mesh.vertices.emplace_back(sector.displacement + vertex);
 				}
-				for(const CollisionTri& tri : sector.tris) {
-					if(!submeshes[tri.type].has_value()) {
-						submeshes[tri.type] = mesh.submeshes.size();
-						mesh.submeshes.emplace_back().material = tri.type;
+				for(const CollFace& face : sector.faces) {
+					if(!submeshes[face.type].has_value()) {
+						submeshes[face.type] = mesh.submeshes.size();
+						mesh.submeshes.emplace_back().material = face.type;
 					}
-					auto& face_list = mesh.submeshes[*submeshes[tri.type]].faces;
-					face_list.emplace_back(base + tri.v2, base + tri.v1, base + tri.v0, -1);
-				}
-				for(const CollisionQuad& quad : sector.quads) {
-					if(!submeshes[quad.type].has_value()) {
-						submeshes[quad.type] = mesh.submeshes.size();
-						mesh.submeshes.emplace_back().material = quad.type;
+					auto& face_list = mesh.submeshes[*submeshes[face.type]].faces;
+					if(face.is_quad) {
+						face_list.emplace_back(base + face.v3, base + face.v2, base + face.v1, base + face.v0);
+					} else {
+						face_list.emplace_back(base + face.v2, base + face.v1, base + face.v0, -1);
 					}
-					auto& face_list = mesh.submeshes[*submeshes[quad.type]].faces;
-					face_list.emplace_back(base + quad.v3, base + quad.v2, base + quad.v1, base + quad.v0);
 				}
 			}
 		}
@@ -424,15 +420,19 @@ static CollisionSectors build_collision_sectors(const ColladaScene& scene) {
 				for(s32 z = zmin; z < zmax; z++) {
 					for(s32 y = ymin; y < ymax; y++) {
 						for(s32 x = xmin; x < xmax; x++) {
-							std::array<s32, 4> mesh_inds = {face.v0, face.v1, face.v2, face.v3};
 							auto disp = glm::vec3(x * 4 + 2, y * 4 + 2, z * 4 + 2);
-							if(test_face_sector_intersection(mesh_inds, verts, disp)) {
+							bool accept = false;
+							accept |= test_tri_sector_intersection(*verts[0] - disp, *verts[1] - disp, *verts[2] - disp);
+							if(face.is_quad()) {
+								accept |= test_tri_sector_intersection(*verts[2] - disp, *verts[3] - disp, *verts[0] - disp);
+							}
+							if(accept) {
 								s32 sector_inds[4] = {-1, -1, -1, -1};
 								CollisionSector& sector = lookup_sector(sectors, x, y, z);
 								
 								// Merge vertices.
-								for(s32 i = 0; i < ((mesh_inds[3] > -1) ? 4 : 3); i++) {
-									glm::vec3 pos = mesh.vertices[mesh_inds[i]].pos - disp;
+								for(s32 i = 0; i < (face.is_quad() ? 4 : 3); i++) {
+									glm::vec3 pos = *verts[i] - disp;
 									for(size_t j = 0; j < sector.vertices.size(); j++) {
 										if(vec3_equal_eps(pos, sector.vertices[j])) {
 											sector_inds[i] = j;
@@ -445,9 +445,9 @@ static CollisionSectors build_collision_sectors(const ColladaScene& scene) {
 								}
 								
 								if(sector_inds[3] > -1) {
-									sector.quads.emplace_back(sector_inds[3], sector_inds[2], sector_inds[1], sector_inds[0], type);
+									sector.faces.emplace_back(sector_inds[3], sector_inds[2], sector_inds[1], sector_inds[0], type);
 								} else {
-									sector.tris.emplace_back(sector_inds[2], sector_inds[1], sector_inds[0], type);
+									sector.faces.emplace_back(sector_inds[2], sector_inds[1], sector_inds[0], type);
 								}
 								inserts++;
 							}
@@ -461,39 +461,6 @@ static CollisionSectors build_collision_sectors(const ColladaScene& scene) {
 	
 	stop_timer();
 	return sectors;
-}
-
-static bool test_face_sector_intersection(std::array<s32, 4>& mesh_inds, const glm::vec3** verts, const glm::vec3& disp) {
-	bool is_quad = mesh_inds[3] > -1;
-	bool accept;
-	if(is_quad) {
-		// Try to replace a quad with a single triangle if only that half of the
-		// face intersects the sector.
-		bool i0 = test_tri_sector_intersection(*verts[0] - disp, *verts[1] - disp, *verts[2] - disp);
-		bool i2 = test_tri_sector_intersection(*verts[2] - disp, *verts[3] - disp, *verts[0] - disp);
-		if(i0 && !i2) {
-			mesh_inds = {mesh_inds[0], mesh_inds[1], mesh_inds[2], -1};
-			accept = true;
-		} else if(i2 && !i0) {
-			mesh_inds = {mesh_inds[2], mesh_inds[3], mesh_inds[0], -1};
-			accept = true;
-		} else {
-			bool i1 = test_tri_sector_intersection(*verts[1] - disp, *verts[2] - disp, *verts[3] - disp);
-			bool i3 = test_tri_sector_intersection(*verts[3] - disp, *verts[0] - disp, *verts[1] - disp);
-			if(i1 && !i3) {
-				mesh_inds = {mesh_inds[1], mesh_inds[2], mesh_inds[3], -1};
-				accept = true;
-			} else if(i3 && !i1) {
-				mesh_inds = {mesh_inds[3], mesh_inds[0], mesh_inds[1], -1};
-				accept = true;
-			} else {
-				accept = i0 && i2;
-			}
-		}
-	} else {
-		accept = test_tri_sector_intersection(*verts[0] - disp, *verts[1] - disp, *verts[2] - disp);
-	}
-	return accept;
 }
 
 // https://gdbooks.gitbooks.io/3dcollisions/content/Chapter4/aabb-triangle.html
@@ -526,6 +493,7 @@ static bool test_tri_sector_intersection(const glm::vec3& v0, const glm::vec3& v
 			return false;
 		}
 	}
+	
 	return true;
 }
 
@@ -560,4 +528,78 @@ static CollisionSector& lookup_sector(CollisionSectors& sectors, s32 x, s32 y, s
 		y_node.list.resize(x - y_node.coord + 1);
 	}
 	return y_node.list[x - y_node.coord];
+}
+
+static void optimise_collision(CollisionSectors& sectors) {
+	start_timer("Optimising collision tree");
+	
+	for(auto& y_partitions : sectors.list) {
+		for(auto& x_partitions : y_partitions.list) {
+			for(CollisionSector& sector : x_partitions.list) {
+				reduce_quads_to_tris(sector);
+				remove_killed_faces(sector);
+				remove_unreferenced_vertices(sector);
+			}
+		}
+	}
+	
+	stop_timer();
+}
+
+static void reduce_quads_to_tris(CollisionSector& sector) {
+	size_t face_count = sector.faces.size();
+	for(size_t i = 0; i < face_count; i++) {
+		CollFace& face = sector.faces[i];
+		if(face.is_quad && face.alive) {
+			glm::vec3& v0 = sector.vertices[face.v0];
+			glm::vec3& v1 = sector.vertices[face.v1];
+			glm::vec3& v2 = sector.vertices[face.v2];
+			glm::vec3& v3 = sector.vertices[face.v3];
+			bool i0 = test_tri_sector_intersection(v0, v1, v2);
+			bool i2 = test_tri_sector_intersection(v2, v3, v0);
+			if(i0 && !i2) {
+				face.alive = false;
+				sector.faces.emplace_back(face.v0, face.v1, face.v2, face.type);
+			} else if(i2 && !i0) {
+				face.alive = false;
+				sector.faces.emplace_back(face.v2, face.v3, face.v0, face.type);
+			} else {
+				bool i1 = test_tri_sector_intersection(v1, v2, v3);
+				bool i3 = test_tri_sector_intersection(v3, v0, v1);
+				if(i1 && !i3) {
+					face.alive = false;
+					sector.faces.emplace_back(face.v1, face.v2, face.v3, face.type);
+				} else if(i3 && !i1) {
+					face.alive = false;
+					sector.faces.emplace_back(face.v3, face.v0, face.v1, face.type);
+				}
+			}
+		}
+	}
+}
+
+static void remove_killed_faces(CollisionSector& sector) {
+	std::vector<CollFace> new_faces;
+	for(CollFace& face : sector.faces) {
+		if(face.alive) {
+			new_faces.push_back(face);
+		}
+	}
+	sector.faces = std::move(new_faces);
+}
+
+static void remove_unreferenced_vertices(CollisionSector& sector) {
+	std::vector<glm::vec3> new_vertices;
+	std::vector<size_t> new_indices(sector.vertices.size(), SIZE_MAX);
+	for(CollFace& face : sector.faces) {
+		u8* inds[4] = {&face.v0, &face.v1, &face.v2, &face.v3};
+		for(s32 i = 0; i < (face.is_quad ? 4 : 3); i++) {
+			if(new_indices[*inds[i]] == SIZE_MAX) {
+				new_indices[*inds[i]] = new_vertices.size();
+				new_vertices.push_back(sector.vertices[*inds[i]]);
+			}
+			*inds[i] = new_indices[*inds[i]];
+		}
+	}
+	sector.vertices = std::move(new_vertices);
 }
