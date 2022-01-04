@@ -723,7 +723,7 @@ static std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s
 			array_ofs += sizeof(MobyVertexTableHeaderRac1);
 		} else {
 			auto compact_vertex_header = src.read<MobyVertexTableHeaderRac23DL>(entry.vertex_offset, "moby vertex header");
-			vertex_header.unknown_count_0 = compact_vertex_header.unknown_count_0;
+			vertex_header.matrix_transfer_count = compact_vertex_header.matrix_transfer_count;
 			vertex_header.vertex_count_2 = compact_vertex_header.vertex_count_2;
 			vertex_header.vertex_count_4 = compact_vertex_header.vertex_count_4;
 			vertex_header.main_vertex_count = compact_vertex_header.main_vertex_count;
@@ -748,8 +748,8 @@ static std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s
 			printf("warning: Weird value in submodel table entry at field 0xe.\n");
 			continue;
 		}
-		submesh.unknowns = src.read_multiple<u16>(array_ofs, vertex_header.unknown_count_0, "vertex table").copy();
-		array_ofs += vertex_header.unknown_count_0 * 2;
+		submesh.matrix_transfers = src.read_multiple<MobyMatrixTransfer>(array_ofs, vertex_header.matrix_transfer_count, "vertex table").copy();
+		array_ofs += vertex_header.matrix_transfer_count * 2;
 		if(array_ofs % 4 != 0) {
 			array_ofs += 2;
 		}
@@ -853,7 +853,7 @@ static void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 t
 			vertex_header_ofs = dest.alloc<MobyVertexTableHeaderRac23DL>();
 		}
 		MobyVertexTableHeaderRac1 vertex_header;
-		vertex_header.unknown_count_0 = submesh.unknowns.size();
+		vertex_header.matrix_transfer_count = submesh.matrix_transfers.size();
 		vertex_header.vertex_count_2 = submesh.vertex_count_2;
 		vertex_header.vertex_count_4 = submesh.vertex_count_4;
 		vertex_header.main_vertex_count =
@@ -867,7 +867,7 @@ static void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 t
 			vertex_header.main_vertex_count +
 			vertex_header.duplicate_vertex_count;
 		vertex_header.unknown_e = submesh.unknown_e;
-		dest.write_multiple(submesh.unknowns);
+		dest.write_multiple(submesh.matrix_transfers);
 		dest.pad(0x8);
 		for(u16 dupe : submesh.duplicate_vertices) {
 			dest.write<u16>(dupe << 7);
@@ -909,7 +909,7 @@ static void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 t
 			dest.write(vertex_header_ofs, vertex_header);
 		} else {
 			MobyVertexTableHeaderRac23DL compact_vertex_header;
-			compact_vertex_header.unknown_count_0 = vertex_header.unknown_count_0;
+			compact_vertex_header.matrix_transfer_count = vertex_header.matrix_transfer_count;
 			compact_vertex_header.vertex_count_2 = vertex_header.vertex_count_2;
 			compact_vertex_header.vertex_count_4 = vertex_header.vertex_count_4;
 			compact_vertex_header.main_vertex_count = vertex_header.main_vertex_count;

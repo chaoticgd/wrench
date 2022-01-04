@@ -84,9 +84,14 @@ struct MobySubMeshBase {
 	u8 index_header_first_byte = 0xff;
 };
 
+packed_struct(MobyMatrixTransfer,
+	u8 spr_matrix_index;
+	u8 vu0_dest_addr;
+)
+
 struct MobySubMesh : MobySubMeshBase {
 	std::vector<MobyTexCoord> sts;
-	std::vector<u16> unknowns;
+	std::vector<MobyMatrixTransfer> matrix_transfers;
 	std::vector<MobyVertex> vertices;
 	u16 vertex_count_2 = 0;
 	u16 vertex_count_4 = 0;
@@ -317,7 +322,7 @@ packed_struct(MobySubMeshEntry,
 )
 
 packed_struct(MobyVertexTableHeaderRac1,
-	/* 0x00 */ u32 unknown_count_0;
+	/* 0x00 */ u32 matrix_transfer_count;
 	/* 0x04 */ u32 vertex_count_2;
 	/* 0x08 */ u32 vertex_count_4;
 	/* 0x0c */ u32 main_vertex_count;
@@ -328,7 +333,7 @@ packed_struct(MobyVertexTableHeaderRac1,
 )
 
 packed_struct(MobyVertexTableHeaderRac23DL,
-	/* 0x0 */ u16 unknown_count_0;
+	/* 0x0 */ u16 matrix_transfer_count;
 	/* 0x2 */ u16 vertex_count_2;
 	/* 0x4 */ u16 vertex_count_4;
 	/* 0x6 */ u16 main_vertex_count;
