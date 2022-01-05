@@ -773,7 +773,7 @@ static std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s
 		
 		// Fix vertex indices (see comment in write_moby_submeshes).
 		for(size_t i = 7; i < submesh.vertices.size(); i++) {
-			submesh.vertices[i - 7].low_word = (submesh.vertices[i - 7].low_word & ~0x1ff) | (submesh.vertices[i].low_word & 0x1ff);
+			submesh.vertices[i - 7].v.i.low_halfword = (submesh.vertices[i - 7].v.i.low_halfword & ~0x1ff) | (submesh.vertices[i].v.i.low_halfword & 0x1ff);
 		}
 		s32 trailing_vertex_count = 0;
 		if(format == MobyFormat::RAC1) {
@@ -788,13 +788,15 @@ static std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s
 			MobyVertex vertex = src.read<MobyVertex>(vertex_ofs, "vertex table");
 			vertex_ofs += 0x10;
 			s64 dest_index = in_file_vertex_count + i - 7;
-			submesh.vertices.at(dest_index).low_word = (submesh.vertices[dest_index].low_word & ~0x1ff) | (vertex.low_word & 0x1ff);
+			u16 other_field = submesh.vertices[dest_index].v.i.low_halfword & ~0x1ff;
+			submesh.vertices.at(dest_index).v.i.low_halfword = other_field | (vertex.v.i.low_halfword & 0x1ff);
 		}
 		MobyVertex last_vertex = src.read<MobyVertex>(vertex_ofs - 0x10, "vertex table");
 		for(s32 i = std::max(7 - in_file_vertex_count - trailing_vertex_count, 0); i < 6; i++) {
 			s64 dest_index = in_file_vertex_count + trailing_vertex_count + i - 7;
 			if(dest_index < submesh.vertices.size()) {
-				submesh.vertices[dest_index].low_word = (submesh.vertices[dest_index].low_word & ~0x1ff) | (last_vertex.trailing_vertex_indices[i] & 0x1ff);
+				u16 other_field = submesh.vertices[dest_index].v.i.low_halfword & ~0x1ff;
+				submesh.vertices[dest_index].v.i.low_halfword = other_field | (last_vertex.trailing.vertex_indices[i] & 0x1ff);
 			}
 		}
 		
@@ -836,13 +838,13 @@ static void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 t
 		std::vector<MobyVertex> vertices = submesh.vertices;
 		std::vector<u16> trailing_vertex_indices(std::max(7 - (s32) vertices.size(), 0), 0);
 		for(s32 i = std::max((s32) vertices.size() - 7, 0); i < vertices.size(); i++) {
-			trailing_vertex_indices.push_back(vertices[i].low_word & 0x1ff);
+			trailing_vertex_indices.push_back(vertices[i].v.i.low_halfword & 0x1ff);
 		}
 		for(s32 i = vertices.size() - 1; i >= 7; i--) {
-			vertices[i].low_word = (vertices[i].low_word & ~0x1ff) | (vertices[i - 7].low_word & 0xff);
+			vertices[i].v.i.low_halfword = (vertices[i].v.i.low_halfword & ~0x1ff) | (vertices[i - 7].v.i.low_halfword & 0xff);
 		}
 		for(s32 i = 0; i < std::min(7, (s32) vertices.size()); i++) {
-			vertices[i].low_word = vertices[i].low_word & ~0x1ff;
+			vertices[i].v.i.low_halfword = vertices[i].v.i.low_halfword & ~0x1ff;
 		}
 		
 		// Write vertex table.
@@ -886,18 +888,18 @@ static void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 t
 		for(; vertices.size() % 4 != 2 && trailing < trailing_vertex_indices.size(); trailing++) {
 			MobyVertex vertex = {0};
 			if(submesh.vertices.size() + trailing >= 7) {
-				vertex.low_word = trailing_vertex_indices[trailing];
+				vertex.v.i.low_halfword = trailing_vertex_indices[trailing];
 			}
 			vertices.push_back(vertex);
 		}
 		assert(trailing < trailing_vertex_indices.size());
 		MobyVertex last_vertex = {0};
 		if(submesh.vertices.size() + trailing >= 7) {
-			last_vertex.low_word = trailing_vertex_indices[trailing];
+			last_vertex.v.i.low_halfword = trailing_vertex_indices[trailing];
 		}
 		for(s32 i = trailing + 1; i < trailing_vertex_indices.size(); i++) {
 			if(submesh.vertices.size() + i >= 7) {
-				last_vertex.trailing_vertex_indices[i - trailing - 1] = trailing_vertex_indices[i];
+				last_vertex.trailing.vertex_indices[i - trailing - 1] = trailing_vertex_indices[i];
 			}
 		}
 		vertices.push_back(last_vertex);
@@ -1146,19 +1148,54 @@ static Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const c
 	Mesh mesh;
 	mesh.name = name;
 	mesh.flags = MESH_HAS_NORMALS | MESH_HAS_TEX_COORDS;
-	// The game stores this on the end of the VU chain.
-	Opt<MobyVertex> intermediate_buffer[512];
+	
+	Opt<u8> joint_buffer[256]; // The game stores this in VU0 memory.
+	Opt<MobyVertex> intermediate_buffer[512]; // The game stores this on the end of the VU1 chain.
+	
 	SubMesh dest;
 	dest.material = 0;
+	
 	for(s32 i = 0; i < submeshes.size(); i++) {
-		const MobySubMesh src = submeshes[i];
 		bool lift_submesh = !MOBY_EXPORT_SUBMESHES_SEPERATELY || submesh_filter == -1 || i == submesh_filter; // This is just for debugging.
+		
+		const MobySubMesh& src = submeshes[i];
+		
+		for(const MobyMatrixTransfer& transfer : src.matrix_transfers) {
+			verify(transfer.vu0_dest_addr % 4 == 0, "Unaligned pre-loop joint address 0x%llx.", transfer.vu0_dest_addr);
+			joint_buffer[transfer.vu0_dest_addr] = transfer.scratchpad_matrix_index;
+		}
+		
 		s32 vertex_base = mesh.vertices.size();
-		for(const MobyVertex& mv : src.vertices) {
+		
+		for(size_t j = 0; j < src.vertices.size(); j++) {
+			const MobyVertex& mv = src.vertices[j];
+			
+			if(j < src.vertex_count_2) {
+				verify(mv.v.type2.vu0_store_before_addr % 4 == 0, "Unaligned joint address 0x%llx.", mv.v.type2.vu0_store_before_addr);
+				joint_buffer[mv.v.type2.vu0_store_before_addr] = mv.v.type2.vu0_store_before_addr;
+				
+				// Load joint matrix here.
+				
+				verify(mv.v.type2.vu0_store_after_addr % 4 == 0, "Unaligned joint address 0x%llx.", mv.v.type2.vu0_store_after_addr);
+				joint_buffer[mv.v.type2.vu0_store_after_addr] = mv.v.type2.vu0_store_after_addr;
+			} else if(j < src.vertex_count_2 + src.vertex_count_4) {
+				// Load joint matrix here.
+				
+				verify(mv.v.type2.vu0_store_after_addr % 4 == 0, "Unaligned joint address 0x%llx.", mv.v.type2.vu0_store_after_addr);
+				joint_buffer[mv.v.type2.vu0_store_after_addr] = mv.v.type2.vu0_store_after_addr;
+			} else {
+				verify(mv.v.regular.vu0_matrix_store_addr % 4 == 0, "Unaligned joint address 0x%llx.", mv.v.regular.vu0_matrix_store_addr);
+				s32 scratchpad_matrix_index = (mv.v.regular.low_halfword & 0b1111111000000000) >> 9;
+				joint_buffer[mv.v.regular.vu0_matrix_store_addr] = scratchpad_matrix_index;
+				
+				verify(joint_buffer[mv.v.regular.vu0_matrix_load_addr].has_value(),
+					"Matrix load from uninitialised VU0 address 0x%llx.", mv.v.regular.vu0_matrix_load_addr);
+			}
+			
 			auto& st = src.sts.at(mesh.vertices.size() - vertex_base);
 			mesh.vertices.emplace_back(recover_vertex(mv, st, scale));
 			
-			intermediate_buffer[mv.low_word & 0x1ff] = mv;
+			intermediate_buffer[mv.v.i.low_halfword & 0x1ff] = mv;
 		}
 		for(u16 dupe : src.duplicate_vertices) {
 			auto mv = intermediate_buffer[dupe];
@@ -1537,11 +1574,11 @@ static std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std
 }
 
 static Vertex recover_vertex(const MobyVertex& vertex, const MobyTexCoord& tex_coord, f32 scale) {
-	f32 px = vertex.regular.x * (scale / 1024.f);
-	f32 py = vertex.regular.y * (scale / 1024.f);
-	f32 pz = vertex.regular.z * (scale / 1024.f);
-	f32 normal_azimuth_radians = vertex.regular.normal_angle_azimuth * (WRENCH_PI / 128.f);
-	f32 normal_elevation_radians = vertex.regular.normal_angle_elevation * (WRENCH_PI / 128.f);
+	f32 px = vertex.v.x * (scale / 1024.f);
+	f32 py = vertex.v.y * (scale / 1024.f);
+	f32 pz = vertex.v.z * (scale / 1024.f);
+	f32 normal_azimuth_radians = vertex.v.normal_angle_azimuth * (WRENCH_PI / 128.f);
+	f32 normal_elevation_radians = vertex.v.normal_angle_elevation * (WRENCH_PI / 128.f);
 	// There's a cosine/sine lookup table at the top of the scratchpad, this is
 	// done on the EE core.
 	f32 cos_azimuth = cosf(normal_azimuth_radians);
@@ -1561,10 +1598,10 @@ static Vertex recover_vertex(const MobyVertex& vertex, const MobyTexCoord& tex_c
 
 static MobyVertex build_vertex(const Vertex& src, s32 id, f32 inverse_scale) {
 	MobyVertex dest = {0};
-	dest.low_word = id;
-	dest.regular.x = src.pos.x * inverse_scale;
-	dest.regular.y = src.pos.y * inverse_scale;
-	dest.regular.z = src.pos.z * inverse_scale;
+	dest.v.i.low_halfword = id;
+	dest.v.x = src.pos.x * inverse_scale;
+	dest.v.y = src.pos.y * inverse_scale;
+	dest.v.z = src.pos.z * inverse_scale;
 	f32 normal_angle_azimuth_radians;
 	if(src.normal.x != 0) {
 		normal_angle_azimuth_radians = acotf(src.normal.y / src.normal.x);
@@ -1575,8 +1612,8 @@ static MobyVertex build_vertex(const Vertex& src, s32 id, f32 inverse_scale) {
 		normal_angle_azimuth_radians = WRENCH_PI / 2;
 	}
 	f32 normal_angle_elevation_radians = asinf(src.normal.z);
-	dest.regular.normal_angle_azimuth = normal_angle_azimuth_radians * (128.f / WRENCH_PI);
-	dest.regular.normal_angle_elevation = normal_angle_elevation_radians * (128.f / WRENCH_PI);
+	dest.v.normal_angle_azimuth = normal_angle_azimuth_radians * (128.f / WRENCH_PI);
+	dest.v.normal_angle_elevation = normal_angle_elevation_radians * (128.f / WRENCH_PI);
 	return dest;
 }
 

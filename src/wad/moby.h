@@ -30,22 +30,45 @@ packed_struct(MobyTexCoord,
 )
 
 packed_struct(MobyVertex,
-	/* 0x0 */ u32 low_word;
 	union {
 		struct {
-			/* 0x4 */ u8 unknown_4;
-			/* 0x5 */ u8 unknown_5;
-			/* 0x6 */ u8 unknown_6;
-			/* 0x7 */ u8 unknown_7;
+			union {
+				struct {
+					/* 0x0 */ u16 low_halfword; // [0..8] = index, [9..15] = vu0_load_addr
+					/* 0x2 */ u8 unknown_2[4];
+					/* 0x6 */ u8 vu0_store_before_addr;
+					/* 0x7 */ u8 vu0_store_after_addr;
+				} type2;
+				struct {
+					/* 0x0 */ u16 low_halfword; // [0..8] = index, [9..15] = ???
+					/* 0x2 */ u8 unknown_2[4];
+					/* 0x6 */ u8 unknown;
+					/* 0x7 */ u8 vu0_store_after_addr;
+				} type4;
+				struct {
+					/* 0x0 */ u16 low_halfword; // [0..8] = index, [9..15] = scratchpad_matrix_index
+					/* 0x2 */ u8 vu0_matrix_load_addr; // The load is done after the store.
+					/* 0x3 */ u8 vu0_matrix_store_addr;
+					/* 0x4 */ u8 pad_4[4];
+				} regular;
+				struct { // This is just to fish out the index.
+					u16 low_halfword; // [0..8] = index
+				} i;
+			};
 			/* 0x8 */ u8 normal_angle_azimuth;
 			/* 0x9 */ u8 normal_angle_elevation;
 			/* 0xa */ s16 x;
 			/* 0xc */ s16 y;
 			/* 0xe */ s16 z;
-		} regular;
-		/* 0x4 */ u16 trailing_vertex_indices[6];
+		} v;
+		struct {
+			/* 0x0 */ u16 low_halfword; // [0..8] = index, [9..15] = 0
+			/* 0x2 */ u8 pad_0[2];
+			/* 0x4 */ u16 vertex_indices[6]; // Only populated for the final vertex.
+		} trailing;
 	};
 )
+static_assert(sizeof(MobyVertex) == 0x10);
 
 packed_struct(MobyIndexHeader, // Second UNPACK header.
 	/* 0x0 */ u8 unknown_0;
@@ -85,7 +108,7 @@ struct MobySubMeshBase {
 };
 
 packed_struct(MobyMatrixTransfer,
-	u8 spr_matrix_index;
+	u8 scratchpad_matrix_index;
 	u8 vu0_dest_addr;
 )
 
