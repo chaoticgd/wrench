@@ -45,6 +45,12 @@ static std::vector<Joint> recover_moby_joints(const MobyClassData& moby);
 static std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vector<Material>& materials, f32 scale);
 static Vertex recover_vertex(const MobyVertex& vertex, const MobyTexCoord& tex_coord, f32 scale);
 static MobyVertex build_vertex(const Vertex& v, s32 id, f32 inverse_scale);
+struct BlendAttributes {
+	s32 count;
+	u8 joints[4];
+	f32 weights[4];
+};
+static BlendAttributes recover_blend_attributes(Opt<BlendAttributes> blend_buffer[64], const MobyVertex& mv, s32 ind, s32 two_way_count, s32 three_way_count);
 struct IndexMappingRecord {
 	s32 submesh = -1;
 	s32 index = -1; // The index of the vertex in the vertex table.
@@ -724,8 +730,8 @@ static std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s
 		} else {
 			auto compact_vertex_header = src.read<MobyVertexTableHeaderRac23DL>(entry.vertex_offset, "moby vertex header");
 			vertex_header.matrix_transfer_count = compact_vertex_header.matrix_transfer_count;
-			vertex_header.vertex_count_2 = compact_vertex_header.vertex_count_2;
-			vertex_header.vertex_count_4 = compact_vertex_header.vertex_count_4;
+			vertex_header.two_way_blend_vertex_count = compact_vertex_header.two_way_blend_vertex_count;
+			vertex_header.three_way_blend_vertex_count = compact_vertex_header.three_way_blend_vertex_count;
 			vertex_header.main_vertex_count = compact_vertex_header.main_vertex_count;
 			vertex_header.duplicate_vertex_count = compact_vertex_header.duplicate_vertex_count;
 			vertex_header.transfer_vertex_count = compact_vertex_header.transfer_vertex_count;
@@ -748,7 +754,7 @@ static std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s
 			printf("warning: Weird value in submodel table entry at field 0xe.\n");
 			continue;
 		}
-		submesh.matrix_transfers = src.read_multiple<MobyMatrixTransfer>(array_ofs, vertex_header.matrix_transfer_count, "vertex table").copy();
+		submesh.preloop_matrix_transfers = src.read_multiple<MobyMatrixTransfer>(array_ofs, vertex_header.matrix_transfer_count, "vertex table").copy();
 		array_ofs += vertex_header.matrix_transfer_count * 2;
 		if(array_ofs % 4 != 0) {
 			array_ofs += 2;
@@ -760,11 +766,11 @@ static std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s
 			submesh.duplicate_vertices.push_back(dupe >> 7);
 		}
 		s64 vertex_ofs = entry.vertex_offset + vertex_header.vertex_table_offset;
-		s32 in_file_vertex_count = vertex_header.vertex_count_2 + vertex_header.vertex_count_4 + vertex_header.main_vertex_count;
+		s32 in_file_vertex_count = vertex_header.two_way_blend_vertex_count + vertex_header.three_way_blend_vertex_count + vertex_header.main_vertex_count;
 		submesh.vertices = src.read_multiple<MobyVertex>(vertex_ofs, in_file_vertex_count, "vertex table").copy();
 		vertex_ofs += in_file_vertex_count * 0x10;
-		submesh.vertex_count_2 = vertex_header.vertex_count_2;
-		submesh.vertex_count_4 = vertex_header.vertex_count_4;
+		submesh.two_way_blend_vertex_count = vertex_header.two_way_blend_vertex_count;
+		submesh.three_way_blend_vertex_count = vertex_header.three_way_blend_vertex_count;
 		submesh.unknown_e = vertex_header.unknown_e;
 		if(format == MobyFormat::RAC1) {
 			s32 unknown_e_size = entry.vertex_data_size * 0x10 - vertex_header.unknown_e;
@@ -853,21 +859,21 @@ static void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 t
 			vertex_header_ofs = dest.alloc<MobyVertexTableHeaderRac23DL>();
 		}
 		MobyVertexTableHeaderRac1 vertex_header;
-		vertex_header.matrix_transfer_count = submesh.matrix_transfers.size();
-		vertex_header.vertex_count_2 = submesh.vertex_count_2;
-		vertex_header.vertex_count_4 = submesh.vertex_count_4;
+		vertex_header.matrix_transfer_count = submesh.preloop_matrix_transfers.size();
+		vertex_header.two_way_blend_vertex_count = submesh.two_way_blend_vertex_count;
+		vertex_header.three_way_blend_vertex_count = submesh.three_way_blend_vertex_count;
 		vertex_header.main_vertex_count =
 			submesh.vertices.size() -
-			submesh.vertex_count_2 -
-			submesh.vertex_count_4;
+			submesh.two_way_blend_vertex_count -
+			submesh.three_way_blend_vertex_count;
 		vertex_header.duplicate_vertex_count = submesh.duplicate_vertices.size();
 		vertex_header.transfer_vertex_count =
-			vertex_header.vertex_count_2 +
-			vertex_header.vertex_count_4 +
+			vertex_header.two_way_blend_vertex_count +
+			vertex_header.three_way_blend_vertex_count +
 			vertex_header.main_vertex_count +
 			vertex_header.duplicate_vertex_count;
 		vertex_header.unknown_e = submesh.unknown_e;
-		dest.write_multiple(submesh.matrix_transfers);
+		dest.write_multiple(submesh.preloop_matrix_transfers);
 		dest.pad(0x8);
 		for(u16 dupe : submesh.duplicate_vertices) {
 			dest.write<u16>(dupe << 7);
@@ -910,8 +916,8 @@ static void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 t
 		} else {
 			MobyVertexTableHeaderRac23DL compact_vertex_header;
 			compact_vertex_header.matrix_transfer_count = vertex_header.matrix_transfer_count;
-			compact_vertex_header.vertex_count_2 = vertex_header.vertex_count_2;
-			compact_vertex_header.vertex_count_4 = vertex_header.vertex_count_4;
+			compact_vertex_header.two_way_blend_vertex_count = vertex_header.two_way_blend_vertex_count;
+			compact_vertex_header.three_way_blend_vertex_count = vertex_header.three_way_blend_vertex_count;
 			compact_vertex_header.main_vertex_count = vertex_header.main_vertex_count;
 			compact_vertex_header.duplicate_vertex_count = vertex_header.duplicate_vertex_count;
 			compact_vertex_header.transfer_vertex_count = vertex_header.transfer_vertex_count;
@@ -1147,7 +1153,7 @@ static Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const c
 	mesh.name = name;
 	mesh.flags = MESH_HAS_NORMALS | MESH_HAS_TEX_COORDS;
 	
-	Opt<u8> joint_buffer[256]; // The game stores this in VU0 memory.
+	Opt<BlendAttributes> blend_buffer[64]; // The game stores this in VU0 memory.
 	Opt<MobyVertex> intermediate_buffer[512]; // The game stores this on the end of the VU1 chain.
 	
 	SubMesh dest;
@@ -1158,9 +1164,9 @@ static Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const c
 		
 		const MobySubMesh& src = submeshes[i];
 		
-		for(const MobyMatrixTransfer& transfer : src.matrix_transfers) {
+		for(const MobyMatrixTransfer& transfer : src.preloop_matrix_transfers) {
 			verify(transfer.vu0_dest_addr % 4 == 0, "Unaligned pre-loop joint address 0x%llx.", transfer.vu0_dest_addr);
-			joint_buffer[transfer.vu0_dest_addr] = transfer.scratchpad_matrix_index;
+			blend_buffer[transfer.vu0_dest_addr / 4] = BlendAttributes{1, {transfer.scratchpad_matrix_index}, {1.f}};
 		}
 		
 		s32 vertex_base = mesh.vertices.size();
@@ -1168,31 +1174,7 @@ static Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const c
 		for(size_t j = 0; j < src.vertices.size(); j++) {
 			const MobyVertex& mv = src.vertices[j];
 			
-			if(j < src.vertex_count_2) {
-				verify(mv.v.type2.vu0_transferred_matrix_store_addr % 4 == 0, "Unaligned joint address 0x%llx.", mv.v.type2.vu0_transferred_matrix_store_addr);
-				joint_buffer[mv.v.type2.vu0_transferred_matrix_store_addr] = mv.v.type2.vu0_transferred_matrix_store_addr;
-				
-				// Load joint matrix here.
-				
-				// TODO: This should actually store the result of a transformation.
-				verify(mv.v.type2.vu0_blended_matrix_store_addr % 4 == 0, "Unaligned joint address 0x%llx.", mv.v.type2.vu0_blended_matrix_store_addr);
-				joint_buffer[mv.v.type2.vu0_blended_matrix_store_addr] = mv.v.type2.vu0_blended_matrix_store_addr;
-			} else if(j < src.vertex_count_2 + src.vertex_count_4) {
-				// Load joint matrix here.
-				
-				// TODO: This should actually store the result of a transformation.
-				verify(mv.v.type2.vu0_blended_matrix_store_addr % 4 == 0, "Unaligned joint address 0x%llx.", mv.v.type2.vu0_blended_matrix_store_addr);
-				joint_buffer[mv.v.type2.vu0_blended_matrix_store_addr] = mv.v.type2.vu0_blended_matrix_store_addr;
-			} else {
-				verify(mv.v.regular.vu0_transferred_matrix_store_addr % 4 == 0, "Unaligned joint address 0x%llx.", mv.v.regular.vu0_transferred_matrix_store_addr);
-				s32 scratchpad_matrix_index = (mv.low_halfword & 0b1111111000000000) >> 9;
-				joint_buffer[mv.v.regular.vu0_transferred_matrix_store_addr] = scratchpad_matrix_index;
-				
-				verify(joint_buffer[mv.v.regular.vu0_matrix_load_addr].has_value(),
-					"Matrix load from uninitialised VU0 address 0x%llx.", mv.v.regular.vu0_matrix_load_addr);
-				
-				// Load joint matrix here.
-			}
+			BlendAttributes blend = recover_blend_attributes(blend_buffer, mv, j, src.two_way_blend_vertex_count, src.three_way_blend_vertex_count);
 			
 			auto& st = src.sts.at(mesh.vertices.size() - vertex_base);
 			mesh.vertices.emplace_back(recover_vertex(mv, st, scale));
@@ -1619,6 +1601,49 @@ static MobyVertex build_vertex(const Vertex& src, s32 id, f32 inverse_scale) {
 	dest.v.normal_angle_azimuth = normal_angle_azimuth_radians * (128.f / WRENCH_PI);
 	dest.v.normal_angle_elevation = normal_angle_elevation_radians * (128.f / WRENCH_PI);
 	return dest;
+}
+
+static BlendAttributes recover_blend_attributes(Opt<BlendAttributes> blend_buffer[64], const MobyVertex& mv, s32 ind, s32 two_way_count, s32 three_way_count) {
+	BlendAttributes attribs;
+	
+	u8 joint = (mv.low_halfword & 0b1111111000000000) >> 9;
+	
+	auto load_blend_attribs = [&](s32 addr) {
+		verify(blend_buffer[addr / 4].has_value(), "Matrix load from uninitialised VU0 address 0x%llx.", addr);
+		return *blend_buffer[addr / 4];
+	};
+	
+	if(ind < two_way_count) {
+		u8 transfer_addr = mv.v.two_way_blend.vu0_transferred_matrix_store_addr;
+		verify(transfer_addr % 4 == 0, "Unaligned joint address 0x%llx.", transfer_addr);
+		blend_buffer[transfer_addr / 4] = BlendAttributes{1, {joint}, {1.f}};
+		
+		BlendAttributes src_1 = load_blend_attribs(mv.v.two_way_blend.vu0_matrix_load_addr_1);
+		BlendAttributes src_2 = load_blend_attribs(mv.v.two_way_blend.vu0_matrix_load_addr_2);
+		verify(src_1.count == 1 && src_2.count == 1, "Input to two-way matrix blend operation has already been blended.");
+		
+		u8 blend_addr = mv.v.two_way_blend.vu0_blended_matrix_store_addr;
+		verify(blend_addr % 4 == 0, "Unaligned joint address 0x%llx.", blend_addr);
+		attribs = src_1; // TODO: Handle blending correctly.
+		blend_buffer[blend_addr / 4] = attribs;
+	} else if(ind < two_way_count + three_way_count) {
+		BlendAttributes src_0 = {1, {joint}, 1.f};
+		BlendAttributes src_1 = load_blend_attribs(mv.v.two_way_blend.vu0_matrix_load_addr_1);
+		BlendAttributes src_2 = load_blend_attribs(mv.v.two_way_blend.vu0_matrix_load_addr_2);
+		verify(src_1.count == 1 && src_2.count == 1, "Input to three-way matrix blend operation has already been blended.");
+		u8 blend_addr = mv.v.three_way_blend.vu0_blended_matrix_store_addr;
+		verify(blend_addr % 4 == 0, "Unaligned joint address 0x%llx.", blend_addr);
+		attribs = src_0; // TODO: Handle blending correctly.
+		blend_buffer[blend_addr / 4] = attribs;
+	} else {
+		u8 transfer_addr = mv.v.regular.vu0_transferred_matrix_store_addr;
+		verify(transfer_addr % 4 == 0, "Unaligned joint address 0x%llx.", transfer_addr);
+		blend_buffer[transfer_addr / 4] = BlendAttributes{1, {joint}, {1.f}};
+		
+		attribs = load_blend_attribs(mv.v.regular.vu0_matrix_load_addr);
+	}
+	
+	return attribs;
 }
 
 static void find_duplicate_vertices(std::vector<IndexMappingRecord>& index_mapping, const std::vector<Vertex>& vertices) {

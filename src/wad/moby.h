@@ -30,7 +30,7 @@ packed_struct(MobyTexCoord,
 )
 
 packed_struct(MobyVertex,
-	/* 0x0 */ u16 low_halfword; // [0..8] = intermediate_buffer_index, [9..15] = scratchpad_matrix_index
+	/* 0x0 */ u16 low_halfword; // [0..8] = intermediate_buffer_index, [9..15] = joint
 	union {
 		struct {
 			union {
@@ -40,13 +40,13 @@ packed_struct(MobyVertex,
 					/* 0x4 */ u8 weights[2];
 					/* 0x6 */ u8 vu0_transferred_matrix_store_addr;
 					/* 0x7 */ u8 vu0_blended_matrix_store_addr;
-				} type2;
+				} two_way_blend; // type2
 				struct {
 					/* 0x2 */ u8 vu0_matrix_load_addr_1;
 					/* 0x3 */ u8 vu0_matrix_load_addr_2;
 					/* 0x4 */ u8 weight[3];
 					/* 0x7 */ u8 vu0_blended_matrix_store_addr; // Loaded in vf4w.
-				} type4;
+				} three_way_blend; // type3
 				struct {
 					/* 0x2 */ u8 vu0_matrix_load_addr; // The load is done after the store.
 					/* 0x3 */ u8 vu0_transferred_matrix_store_addr;
@@ -119,10 +119,10 @@ packed_struct(MobyMatrixTransfer,
 
 struct MobySubMesh : MobySubMeshBase {
 	std::vector<MobyTexCoord> sts;
-	std::vector<MobyMatrixTransfer> matrix_transfers;
+	std::vector<MobyMatrixTransfer> preloop_matrix_transfers;
 	std::vector<MobyVertex> vertices;
-	u16 vertex_count_2 = 0;
-	u16 vertex_count_4 = 0;
+	u16 two_way_blend_vertex_count = 0;
+	u16 three_way_blend_vertex_count = 0;
 	std::vector<u16> duplicate_vertices;
 	u16 unknown_e = 0;
 	std::vector<u8> unknown_e_data;
@@ -351,22 +351,22 @@ packed_struct(MobySubMeshEntry,
 
 packed_struct(MobyVertexTableHeaderRac1,
 	/* 0x00 */ u32 matrix_transfer_count;
-	/* 0x04 */ u32 vertex_count_2;
-	/* 0x08 */ u32 vertex_count_4;
+	/* 0x04 */ u32 two_way_blend_vertex_count;
+	/* 0x08 */ u32 three_way_blend_vertex_count;
 	/* 0x0c */ u32 main_vertex_count;
 	/* 0x10 */ u32 duplicate_vertex_count;
-	/* 0x14 */ u32 transfer_vertex_count; // transfer_vertex_count == vertex_count_2 + vertex_count_4 + main_vertex_count + duplicate_vertex_count
+	/* 0x14 */ u32 transfer_vertex_count; // transfer_vertex_count == two_way_blend_vertex_count + three_way_blend_vertex_count + main_vertex_count + duplicate_vertex_count
 	/* 0x18 */ u32 vertex_table_offset;
 	/* 0x1c */ u32 unknown_e;
 )
 
 packed_struct(MobyVertexTableHeaderRac23DL,
 	/* 0x0 */ u16 matrix_transfer_count;
-	/* 0x2 */ u16 vertex_count_2;
-	/* 0x4 */ u16 vertex_count_4;
+	/* 0x2 */ u16 two_way_blend_vertex_count;
+	/* 0x4 */ u16 three_way_blend_vertex_count;
 	/* 0x6 */ u16 main_vertex_count;
 	/* 0x8 */ u16 duplicate_vertex_count;
-	/* 0xa */ u16 transfer_vertex_count; // transfer_vertex_count == vertex_count_2 + vertex_count_4 + main_vertex_count + duplicate_vertex_count
+	/* 0xa */ u16 transfer_vertex_count; // transfer_vertex_count == two_way_blend_vertex_count + three_way_blend_vertex_count + main_vertex_count + duplicate_vertex_count
 	/* 0xc */ u16 vertex_table_offset;
 	/* 0xe */ u16 unknown_e;
 )
