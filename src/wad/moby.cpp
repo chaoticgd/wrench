@@ -773,7 +773,7 @@ static std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s
 		
 		// Fix vertex indices (see comment in write_moby_submeshes).
 		for(size_t i = 7; i < submesh.vertices.size(); i++) {
-			submesh.vertices[i - 7].v.i.low_halfword = (submesh.vertices[i - 7].v.i.low_halfword & ~0x1ff) | (submesh.vertices[i].v.i.low_halfword & 0x1ff);
+			submesh.vertices[i - 7].low_halfword = (submesh.vertices[i - 7].low_halfword & ~0x1ff) | (submesh.vertices[i].low_halfword & 0x1ff);
 		}
 		s32 trailing_vertex_count = 0;
 		if(format == MobyFormat::RAC1) {
@@ -788,15 +788,13 @@ static std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s
 			MobyVertex vertex = src.read<MobyVertex>(vertex_ofs, "vertex table");
 			vertex_ofs += 0x10;
 			s64 dest_index = in_file_vertex_count + i - 7;
-			u16 other_field = submesh.vertices[dest_index].v.i.low_halfword & ~0x1ff;
-			submesh.vertices.at(dest_index).v.i.low_halfword = other_field | (vertex.v.i.low_halfword & 0x1ff);
+			submesh.vertices.at(dest_index).low_halfword = (submesh.vertices[dest_index].low_halfword & ~0x1ff) | (vertex.low_halfword & 0x1ff);
 		}
 		MobyVertex last_vertex = src.read<MobyVertex>(vertex_ofs - 0x10, "vertex table");
 		for(s32 i = std::max(7 - in_file_vertex_count - trailing_vertex_count, 0); i < 6; i++) {
 			s64 dest_index = in_file_vertex_count + trailing_vertex_count + i - 7;
 			if(dest_index < submesh.vertices.size()) {
-				u16 other_field = submesh.vertices[dest_index].v.i.low_halfword & ~0x1ff;
-				submesh.vertices[dest_index].v.i.low_halfword = other_field | (last_vertex.trailing.vertex_indices[i] & 0x1ff);
+				submesh.vertices[dest_index].low_halfword = (submesh.vertices[dest_index].low_halfword & ~0x1ff) | (last_vertex.trailing.vertex_indices[i] & 0x1ff);
 			}
 		}
 		
@@ -838,13 +836,13 @@ static void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 t
 		std::vector<MobyVertex> vertices = submesh.vertices;
 		std::vector<u16> trailing_vertex_indices(std::max(7 - (s32) vertices.size(), 0), 0);
 		for(s32 i = std::max((s32) vertices.size() - 7, 0); i < vertices.size(); i++) {
-			trailing_vertex_indices.push_back(vertices[i].v.i.low_halfword & 0x1ff);
+			trailing_vertex_indices.push_back(vertices[i].low_halfword & 0x1ff);
 		}
 		for(s32 i = vertices.size() - 1; i >= 7; i--) {
-			vertices[i].v.i.low_halfword = (vertices[i].v.i.low_halfword & ~0x1ff) | (vertices[i - 7].v.i.low_halfword & 0xff);
+			vertices[i].low_halfword = (vertices[i].low_halfword & ~0x1ff) | (vertices[i - 7].low_halfword & 0xff);
 		}
 		for(s32 i = 0; i < std::min(7, (s32) vertices.size()); i++) {
-			vertices[i].v.i.low_halfword = vertices[i].v.i.low_halfword & ~0x1ff;
+			vertices[i].low_halfword = vertices[i].low_halfword & ~0x1ff;
 		}
 		
 		// Write vertex table.
@@ -888,14 +886,14 @@ static void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 t
 		for(; vertices.size() % 4 != 2 && trailing < trailing_vertex_indices.size(); trailing++) {
 			MobyVertex vertex = {0};
 			if(submesh.vertices.size() + trailing >= 7) {
-				vertex.v.i.low_halfword = trailing_vertex_indices[trailing];
+				vertex.low_halfword = trailing_vertex_indices[trailing];
 			}
 			vertices.push_back(vertex);
 		}
 		assert(trailing < trailing_vertex_indices.size());
 		MobyVertex last_vertex = {0};
 		if(submesh.vertices.size() + trailing >= 7) {
-			last_vertex.v.i.low_halfword = trailing_vertex_indices[trailing];
+			last_vertex.low_halfword = trailing_vertex_indices[trailing];
 		}
 		for(s32 i = trailing + 1; i < trailing_vertex_indices.size(); i++) {
 			if(submesh.vertices.size() + i >= 7) {
@@ -1171,32 +1169,37 @@ static Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const c
 			const MobyVertex& mv = src.vertices[j];
 			
 			if(j < src.vertex_count_2) {
-				verify(mv.v.type2.vu0_store_before_addr % 4 == 0, "Unaligned joint address 0x%llx.", mv.v.type2.vu0_store_before_addr);
-				joint_buffer[mv.v.type2.vu0_store_before_addr] = mv.v.type2.vu0_store_before_addr;
+				verify(mv.v.type2.vu0_transferred_matrix_store_addr % 4 == 0, "Unaligned joint address 0x%llx.", mv.v.type2.vu0_transferred_matrix_store_addr);
+				joint_buffer[mv.v.type2.vu0_transferred_matrix_store_addr] = mv.v.type2.vu0_transferred_matrix_store_addr;
 				
 				// Load joint matrix here.
 				
-				verify(mv.v.type2.vu0_store_after_addr % 4 == 0, "Unaligned joint address 0x%llx.", mv.v.type2.vu0_store_after_addr);
-				joint_buffer[mv.v.type2.vu0_store_after_addr] = mv.v.type2.vu0_store_after_addr;
+				// TODO: This should actually store the result of a transformation.
+				verify(mv.v.type2.vu0_blended_matrix_store_addr % 4 == 0, "Unaligned joint address 0x%llx.", mv.v.type2.vu0_blended_matrix_store_addr);
+				joint_buffer[mv.v.type2.vu0_blended_matrix_store_addr] = mv.v.type2.vu0_blended_matrix_store_addr;
 			} else if(j < src.vertex_count_2 + src.vertex_count_4) {
 				// Load joint matrix here.
 				
-				verify(mv.v.type2.vu0_store_after_addr % 4 == 0, "Unaligned joint address 0x%llx.", mv.v.type2.vu0_store_after_addr);
-				joint_buffer[mv.v.type2.vu0_store_after_addr] = mv.v.type2.vu0_store_after_addr;
+				// TODO: This should actually store the result of a transformation.
+				verify(mv.v.type2.vu0_blended_matrix_store_addr % 4 == 0, "Unaligned joint address 0x%llx.", mv.v.type2.vu0_blended_matrix_store_addr);
+				joint_buffer[mv.v.type2.vu0_blended_matrix_store_addr] = mv.v.type2.vu0_blended_matrix_store_addr;
 			} else {
-				verify(mv.v.regular.vu0_matrix_store_addr % 4 == 0, "Unaligned joint address 0x%llx.", mv.v.regular.vu0_matrix_store_addr);
-				s32 scratchpad_matrix_index = (mv.v.regular.low_halfword & 0b1111111000000000) >> 9;
-				joint_buffer[mv.v.regular.vu0_matrix_store_addr] = scratchpad_matrix_index;
+				verify(mv.v.regular.vu0_transferred_matrix_store_addr % 4 == 0, "Unaligned joint address 0x%llx.", mv.v.regular.vu0_transferred_matrix_store_addr);
+				s32 scratchpad_matrix_index = (mv.low_halfword & 0b1111111000000000) >> 9;
+				joint_buffer[mv.v.regular.vu0_transferred_matrix_store_addr] = scratchpad_matrix_index;
 				
 				verify(joint_buffer[mv.v.regular.vu0_matrix_load_addr].has_value(),
 					"Matrix load from uninitialised VU0 address 0x%llx.", mv.v.regular.vu0_matrix_load_addr);
+				
+				// Load joint matrix here.
 			}
 			
 			auto& st = src.sts.at(mesh.vertices.size() - vertex_base);
 			mesh.vertices.emplace_back(recover_vertex(mv, st, scale));
 			
-			intermediate_buffer[mv.v.i.low_halfword & 0x1ff] = mv;
+			intermediate_buffer[mv.low_halfword & 0x1ff] = mv;
 		}
+		
 		for(u16 dupe : src.duplicate_vertices) {
 			auto mv = intermediate_buffer[dupe];
 			VERIFY_SUBMESH(mv.has_value(), "vertex table");
@@ -1204,6 +1207,7 @@ static Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const c
 			auto& st = src.sts.at(mesh.vertices.size() - vertex_base);
 			mesh.vertices.emplace_back(recover_vertex(*mv, st, scale));
 		}
+		
 		s32 index_queue[3] = {0};
 		s32 index_pos = 0;
 		s32 max_index = 0;
@@ -1598,7 +1602,7 @@ static Vertex recover_vertex(const MobyVertex& vertex, const MobyTexCoord& tex_c
 
 static MobyVertex build_vertex(const Vertex& src, s32 id, f32 inverse_scale) {
 	MobyVertex dest = {0};
-	dest.v.i.low_halfword = id;
+	dest.low_halfword = id;
 	dest.v.x = src.pos.x * inverse_scale;
 	dest.v.y = src.pos.y * inverse_scale;
 	dest.v.z = src.pos.z * inverse_scale;

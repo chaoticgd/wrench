@@ -30,30 +30,36 @@ packed_struct(MobyTexCoord,
 )
 
 packed_struct(MobyVertex,
+	/* 0x0 */ u16 low_halfword; // [0..8] = intermediate_buffer_index, [9..15] = scratchpad_matrix_index
 	union {
 		struct {
 			union {
 				struct {
-					/* 0x0 */ u16 low_halfword; // [0..8] = index, [9..15] = vu0_load_addr
-					/* 0x2 */ u8 unknown_2[4];
-					/* 0x6 */ u8 vu0_store_before_addr;
-					/* 0x7 */ u8 vu0_store_after_addr;
+					/* 0x2 */ u8 vu0_matrix_load_addr_1;
+					/* 0x3 */ u8 vu0_matrix_load_addr_2;
+					/* 0x4 */ u8 weights[2];
+					/* 0x6 */ u8 vu0_transferred_matrix_store_addr;
+					/* 0x7 */ u8 vu0_blended_matrix_store_addr;
 				} type2;
 				struct {
-					/* 0x0 */ u16 low_halfword; // [0..8] = index, [9..15] = ???
-					/* 0x2 */ u8 unknown_2[4];
-					/* 0x6 */ u8 unknown;
-					/* 0x7 */ u8 vu0_store_after_addr;
+					/* 0x2 */ u8 vu0_matrix_load_addr_1;
+					/* 0x3 */ u8 vu0_matrix_load_addr_2;
+					/* 0x4 */ u8 weight[3];
+					/* 0x7 */ u8 vu0_blended_matrix_store_addr; // Loaded in vf4w.
 				} type4;
 				struct {
-					/* 0x0 */ u16 low_halfword; // [0..8] = index, [9..15] = scratchpad_matrix_index
 					/* 0x2 */ u8 vu0_matrix_load_addr; // The load is done after the store.
-					/* 0x3 */ u8 vu0_matrix_store_addr;
+					/* 0x3 */ u8 vu0_transferred_matrix_store_addr;
 					/* 0x4 */ u8 pad_4[4];
-				} regular;
-				struct { // This is just to fish out the index.
-					u16 low_halfword; // [0..8] = index
-				} i;
+				} regular; // type6
+				struct {
+					/* 0x2 */ u8 vf3z;
+					/* 0x3 */ u8 vf3w;
+					/* 0x4 */ u8 vf4x;
+					/* 0x5 */ u8 vf4y;
+					/* 0x6 */ u8 vf4z;
+					/* 0x7 */ u8 vf4w;
+				} register_names;
 			};
 			/* 0x8 */ u8 normal_angle_azimuth;
 			/* 0x9 */ u8 normal_angle_elevation;
@@ -62,8 +68,7 @@ packed_struct(MobyVertex,
 			/* 0xe */ s16 z;
 		} v;
 		struct {
-			/* 0x0 */ u16 low_halfword; // [0..8] = index, [9..15] = 0
-			/* 0x2 */ u8 pad_0[2];
+			/* 0x2 */ u8 pad_2[2];
 			/* 0x4 */ u16 vertex_indices[6]; // Only populated for the final vertex.
 		} trailing;
 	};
