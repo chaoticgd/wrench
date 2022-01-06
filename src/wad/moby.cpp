@@ -40,7 +40,7 @@ static std::vector<MobyMetalSubMesh> read_moby_metal_submeshes(Buffer src, s64 t
 static void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalSubMesh>& submeshes);
 static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const MobySubMeshBase& submesh);
 #define NO_SUBMESH_FILTER -1
-static Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* name, s32 o_class, s32 texture_count, f32 scale, s32 submesh_filter);
+static Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* name, s32 o_class, s32 texture_count, s32 joint_count, f32 scale, s32 submesh_filter);
 static std::vector<Joint> recover_moby_joints(const MobyClassData& moby);
 static std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vector<Material>& materials, f32 scale);
 static Vertex recover_vertex(const MobyVertex& vertex, const BlendAttributes& blend, const glm::vec2& tex_coord, f32 scale);
@@ -1114,23 +1114,23 @@ ColladaScene recover_moby_class(const MobyClassData& moby, s32 o_class, s32 text
 	if(MOBY_EXPORT_SUBMESHES_SEPERATELY) {
 		for(s32 i = 0; i < (s32) moby.submeshes.size(); i++) {
 			std::string name = "high_lod_" + std::to_string(i);
-			scene.meshes.emplace_back(recover_moby_mesh(moby.submeshes, name.c_str(), o_class, texture_count, moby.scale, i));
+			scene.meshes.emplace_back(recover_moby_mesh(moby.submeshes, name.c_str(), o_class, texture_count, moby.joint_count, moby.scale, i));
 		}
 		for(s32 i = 0; i < (s32) moby.low_lod_submeshes.size(); i++) {
 			std::string name = "low_lod_" + std::to_string(i);
-			scene.meshes.emplace_back(recover_moby_mesh(moby.low_lod_submeshes, name.c_str(), o_class, texture_count, moby.scale, i));
+			scene.meshes.emplace_back(recover_moby_mesh(moby.low_lod_submeshes, name.c_str(), o_class, texture_count, moby.joint_count, moby.scale, i));
 		}
 		if(moby.bangles.has_value()) {
 			for(s32 i = 0; i < (s32) moby.bangles->submeshes.size(); i++) {
 				std::string name = "bangles_" + std::to_string(i);
-				scene.meshes.emplace_back(recover_moby_mesh(moby.bangles->submeshes, name.c_str(), o_class, texture_count, moby.scale, i));
+				scene.meshes.emplace_back(recover_moby_mesh(moby.bangles->submeshes, name.c_str(), o_class, texture_count, moby.joint_count, moby.scale, i));
 			}
 		}
 	} else {
-		scene.meshes.emplace_back(recover_moby_mesh(moby.submeshes, "high_lod", o_class, texture_count, moby.scale, NO_SUBMESH_FILTER));
-		scene.meshes.emplace_back(recover_moby_mesh(moby.low_lod_submeshes, "low_lod", o_class, texture_count, moby.scale, NO_SUBMESH_FILTER));
+		scene.meshes.emplace_back(recover_moby_mesh(moby.submeshes, "high_lod", o_class, texture_count, moby.joint_count, moby.scale, NO_SUBMESH_FILTER));
+		scene.meshes.emplace_back(recover_moby_mesh(moby.low_lod_submeshes, "low_lod", o_class, texture_count, moby.joint_count, moby.scale, NO_SUBMESH_FILTER));
 		if(moby.bangles.has_value()) {
-			scene.meshes.emplace_back(recover_moby_mesh(moby.bangles->submeshes, "bangles", o_class, texture_count, moby.scale, NO_SUBMESH_FILTER));
+			scene.meshes.emplace_back(recover_moby_mesh(moby.bangles->submeshes, "bangles", o_class, texture_count, moby.joint_count, moby.scale, NO_SUBMESH_FILTER));
 		}
 	}
 	
@@ -1143,7 +1143,7 @@ ColladaScene recover_moby_class(const MobyClassData& moby, s32 o_class, s32 text
 
 #define VERIFY_SUBMESH(cond, message) verify(cond, "Moby class %d, submesh %d has bad " message ".", o_class, i);
 
-static Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* name, s32 o_class, s32 texture_count, f32 scale, s32 submesh_filter) {
+static Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* name, s32 o_class, s32 texture_count, s32 joint_count, f32 scale, s32 submesh_filter) {
 	Mesh mesh;
 	mesh.name = name;
 	mesh.flags = MESH_HAS_NORMALS | MESH_HAS_TEX_COORDS;
@@ -1169,7 +1169,10 @@ static Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const c
 		for(size_t j = 0; j < src.vertices.size(); j++) {
 			const MobyVertex& mv = src.vertices[j];
 			
-			BlendAttributes blend = recover_blend_attributes(blend_buffer, mv, j, src.two_way_blend_vertex_count, src.three_way_blend_vertex_count);
+			BlendAttributes blend;
+			if(joint_count > 0) {
+				recover_blend_attributes(blend_buffer, mv, j, src.two_way_blend_vertex_count, src.three_way_blend_vertex_count);
+			}
 			const MobyTexCoord& tex_coord = src.sts.at(mesh.vertices.size() - vertex_base);
 			f32 s = tex_coord.s / (INT16_MAX / 8.f);
 			f32 t = -tex_coord.t / (INT16_MAX / 8.f);

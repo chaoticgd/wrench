@@ -30,6 +30,7 @@ using XmlAttrib = rapidxml::xml_attribute<>;
 using IdMap = std::map<std::string, const XmlNode*>;
 using NodeToIndexMap = std::map<const XmlNode*, s32>;
 static Material read_material(const XmlNode* material_node, const IdMap& ids, const NodeToIndexMap& images);
+using JointSidsMap = std::map<std::tuple<const XmlNode*, std::string>, s32>; // (skeleton, joint name) -> joint id
 struct VertexData {
 	Opt<std::vector<f32>> positions;
 	Opt<std::vector<f32>> normals;
@@ -37,18 +38,22 @@ struct VertexData {
 };
 static VertexData read_vertices(const XmlNode* geometry, const IdMap& ids);
 static std::vector<f32> read_vertex_source(const XmlNode* source, const IdMap& ids);
-static void read_submeshes(Mesh& mesh, const XmlNode* instance_geometry, const XmlNode* geometry, const IdMap& ids, const NodeToIndexMap& materials, const VertexData& vertex_data);
+static std::vector<BlendAttributes> read_skin(Mesh& mesh, const XmlNode* controller, const XmlNode* skeleton, const IdMap& ids, const JointSidsMap& joint_sids);
+static void read_submeshes(Mesh& mesh, const XmlNode* instance, const XmlNode* geometry, const XmlNode* controller, const IdMap& ids, const NodeToIndexMap& materials, const VertexData& vertex_data, const std::vector<BlendAttributes>& skin_data);
 struct CreateVertexInput {
 	const std::vector<f32>* positions = nullptr;
 	const std::vector<f32>* normals = nullptr;
 	const std::vector<f32>* tex_coords = nullptr;
+	const std::vector<BlendAttributes>* skin_data = nullptr;
 	s32 position_offset = -1;
 	s32 normal_offset = -1;
 	s32 tex_coord_offset = -1;
 };
 static Vertex create_vertex(const std::vector<s32>& indices, s32 base, const CreateVertexInput& input);
+static std::vector<f32> read_float_array(const XmlNode* float_array);
 static s32 read_s32(const char*& input, const char* context);
 static void enumerate_ids(std::map<std::string, const XmlNode*>& ids, const XmlNode* node);
+static void enumerate_joint_names(JointSidsMap& joint_sids, s32& next_joint, const XmlNode* skeleton, const XmlNode* node);
 static const XmlNode* xml_child(const XmlNode* node, const char* name);
 static const XmlAttrib* xml_attrib(const XmlNode* node, const char* name);
 static const XmlNode* node_from_id(const IdMap& map, const char* id);
@@ -75,7 +80,7 @@ ColladaScene read_collada(std::vector<u8> src) {
 	
 	const XmlNode* root = xml_child(&doc, "COLLADA");
 	
-	std::map<std::string, const XmlNode*> ids;
+	IdMap ids;
 	enumerate_ids(ids, root);
 	
 	ColladaScene scene;
@@ -98,18 +103,50 @@ ColladaScene read_collada(std::vector<u8> src) {
 	
 	const XmlNode* library_visual_scenes = xml_child(root, "library_visual_scenes");
 	const XmlNode* visual_scene = xml_child(library_visual_scenes, "visual_scene");
+	
+	JointSidsMap joint_sids;
+	s32 next_joint = 0;
 	xml_for_each_child_of_type(node, visual_scene, "node") {
-		const XmlNode* instance_geometry = node->first_node("instance_geometry");
-		if(!instance_geometry) {
-			continue;
+		const XmlAttrib* type = node->first_attribute("type");
+		if(type != nullptr && strcmp(type->value(), "JOINT") == 0) {
+			enumerate_joint_names(joint_sids, next_joint, node, node);
 		}
-		const XmlNode* geometry = node_from_id(ids, xml_attrib(instance_geometry, "url")->value());
+	}
+	
+	xml_for_each_child_of_type(node, visual_scene, "node") {
+		const XmlNode* instance = node->first_node("instance_controller");
+		const XmlNode* controller;
+		const XmlNode* geometry;
+		const XmlNode* skeleton;
+		if(instance) {
+			controller = node_from_id(ids, xml_attrib(instance, "url")->value());
+			const XmlNode* skin = xml_child(controller, "skin");
+			geometry = node_from_id(ids, xml_attrib(skin, "source")->value());
+			const char* skeleton_id = xml_child(instance, "skeleton")->value();
+			auto skeleton_iter = ids.find(skeleton_id);
+			if(skeleton_iter == ids.end()) {
+				throw ParseError("Bad skeleton ID '%s'.", skeleton_id);
+			}
+			skeleton = skeleton_iter->second;
+		} else {
+			instance = node->first_node("instance_geometry");
+			if(!instance) {
+				continue;
+			}
+			controller = nullptr;
+			geometry = node_from_id(ids, xml_attrib(instance, "url")->value());
+			skeleton = nullptr;
+		}
 		
 		Mesh mesh;
 		mesh.name = xml_attrib(node, "id")->value();
 		auto vertex_data = read_vertices(geometry, ids);
+		std::vector<BlendAttributes> skin_data;
+		if(controller) {
+			skin_data = read_skin(mesh, controller, skeleton, ids, joint_sids);
+		}
 		if(vertex_data.positions.has_value()) {
-			read_submeshes(mesh, instance_geometry, geometry, ids, materials, vertex_data);
+			read_submeshes(mesh, instance, geometry, controller, ids, materials, vertex_data, skin_data);
 		}
 		scene.meshes.emplace_back(deduplicate_vertices(std::move(mesh)));
 	}
@@ -236,6 +273,7 @@ static VertexData read_vertices(const XmlNode* geometry, const IdMap& ids) {
 	if(!positions_source) {
 		throw ParseError("<vertices> node missing POSITIONS input.");
 	}
+	
 	auto positions = read_vertex_source(positions_source, ids);
 	if(positions.size() % 3 != 0) {
 		throw ParseError("Vertex positions array for mesh '%s' has a bad size (not divisible by 3).", mesh_name);
@@ -263,26 +301,107 @@ static VertexData read_vertices(const XmlNode* geometry, const IdMap& ids) {
 static std::vector<f32> read_vertex_source(const XmlNode* source, const IdMap& ids) {
 	const XmlNode* technique_common = xml_child(source, "technique_common");
 	const XmlNode* accessor = xml_child(technique_common, "accessor");
-	const XmlNode* array = node_from_id(ids, xml_attrib(accessor, "source")->value());
-	if(strcmp(array->name(), "float_array") != 0) {
+	const XmlNode* float_array = node_from_id(ids, xml_attrib(accessor, "source")->value());
+	if(strcmp(float_array->name(), "float_array") != 0) {
 		throw ParseError("Only <float_array> nodes are supported for storing vertex attributes.");
 	}
-	std::vector<f32> data;
-	data.resize(atoi(xml_attrib(array, "count")->value()));
-	const char* ptr = array->value();
-	for(f32& value : data) {
-		char* next;
-		value = strtof(ptr, &next);
-		if(next == ptr) {
-			throw ParseError("Failed to read <float_array>.");
-		}
-		ptr = next;
-	}
-	return data;
+	return read_float_array(float_array);
 }
 
-static void read_submeshes(Mesh& mesh, const XmlNode* instance_geometry, const XmlNode* geometry, const IdMap& ids, const NodeToIndexMap& materials, const VertexData& vertex_data) {
-	const XmlNode* bind_material = xml_child(instance_geometry, "bind_material");
+static std::vector<BlendAttributes> read_skin(Mesh& mesh, const XmlNode* controller, const XmlNode* skeleton, const IdMap& ids, const JointSidsMap& joint_sids) {
+	const XmlNode* skin = xml_child(controller, "skin");
+	const XmlNode* vertex_weights = xml_child(skin, "vertex_weights");
+	
+	s32 vertex_weight_count = atoi(xml_attrib(vertex_weights, "count")->value());
+	
+	const XmlNode* joints_source = nullptr;
+	const XmlNode* weights_source = nullptr;
+	s32 joint_offset = 0;
+	s32 weight_offset = 0;
+	xml_for_each_child_of_type(input, vertex_weights, "input") {
+		const XmlAttrib* semantic = xml_attrib(input, "semantic");
+		if(strcmp(semantic->value(), "JOINT") == 0) {
+			joints_source = node_from_id(ids, xml_attrib(input, "source")->value());
+			joint_offset = atoi(xml_attrib(input, "offset")->value());
+		}
+		if(strcmp(semantic->value(), "WEIGHT") == 0) {
+			weights_source = node_from_id(ids, xml_attrib(input, "source")->value());
+			weight_offset = atoi(xml_attrib(input, "offset")->value());
+		}
+	}
+	if(!joints_source) {
+		throw ParseError("<vertex_weights> node missing JOINT input.");
+	}
+	if(!weights_source) {
+		throw ParseError("<vertex_weights> node missing WEIGHT input.");
+	}
+	
+	s32 stride = std::max(joint_offset, weight_offset) + 1;
+	
+	const XmlNode* joints_name_array = xml_child(joints_source, "Name_array");
+	std::vector<s32> joints;
+	joints.resize(atoi(xml_attrib(joints_name_array, "count")->value()));
+	const char* joint_ptr = joints_name_array->value();
+	for(s32& joint_index : joints) {
+		std::string joint_name;
+		while(*joint_ptr != ' ' && *joint_ptr != '\0') {
+			joint_name += *joint_ptr;
+			joint_ptr++;
+		}
+		auto joint_iter = joint_sids.find({skeleton, joint_name});
+		if(joint_iter == joint_sids.end()) {
+			throw ParseError("Bad joint name or skeleton.");
+		}
+		if(joint_iter->second > 255) {
+			throw ParseError("Too many joints.");
+		}
+		joint_index = joint_iter->second;
+		while(*joint_ptr == ' ') {
+			joint_ptr++;
+		}
+	}
+	
+	const XmlNode* weights_float_array = xml_child(weights_source, "float_array");
+	auto weights = read_float_array(weights_float_array);
+	
+	std::vector<s32> vcount_data;
+	const char* vcount = xml_child(vertex_weights, "vcount")->value();
+	for(s32 i = 0; i < vertex_weight_count; i++) {
+		s32 vc = read_s32(vcount, "<vcount> node");
+		if(vc < 0 || vc > 3) {
+			throw ParseError("Only between 0 and 3 joints weights are supported for each vertex.");
+		}
+		vcount_data.push_back(vc);
+	}
+	
+	std::vector<BlendAttributes> skin_data(vertex_weight_count);
+	
+	s32 vcount_index = 0;
+	const char* v = xml_child(vertex_weights, "v")->value();
+	std::vector<s32> v_data;
+	for(s32 i = 0; i < vertex_weight_count; i++) {
+		BlendAttributes& attribs = skin_data[i];
+		attribs.count = (u8) vcount_data.at(vcount_index++);
+		for(u8 i = 0; i < attribs.count * stride; i++) {
+			v_data.push_back(read_s32(v, "<v> data"));
+		}
+	}
+	
+	size_t v_index = 0;
+	for(s32 i = 0; i < vertex_weight_count; i++) {
+		BlendAttributes& attribs = skin_data[i];
+		for(u8 j = 0; j < attribs.count; j++) {
+			attribs.joints[j] = (u8) joints.at(v_data[v_index + joint_offset]);
+			attribs.weights[j] = (u8) (weights.at(v_data[v_index + weight_offset]) * 255.f);
+			v_index += stride;
+		}
+	}
+	
+	return skin_data;
+}
+
+static void read_submeshes(Mesh& mesh, const XmlNode* instance, const XmlNode* geometry, const XmlNode* controller, const IdMap& ids, const NodeToIndexMap& materials, const VertexData& vertex_data, const std::vector<BlendAttributes>& skin_data) {
+	const XmlNode* bind_material = xml_child(instance, "bind_material");
 	const XmlNode* technique_common = xml_child(bind_material, "technique_common");
 	const XmlNode* mesh_node = xml_child(geometry, "mesh");
 	for(const XmlNode* indices = mesh_node->first_node(); indices != nullptr; indices = indices->next_sibling()) {
@@ -333,6 +452,7 @@ static void read_submeshes(Mesh& mesh, const XmlNode* instance_geometry, const X
 				vertex_data.positions.has_value() ? &(*vertex_data.positions) : nullptr,
 				vertex_data.normals.has_value() ? &(*vertex_data.normals) : nullptr,
 				vertex_data.tex_coords.has_value() ? &(*vertex_data.tex_coords) : nullptr,
+				skin_data.size() > 0 ? &skin_data : nullptr,
 				position_offset, normal_offset, tex_coord_offset
 			};
 			
@@ -405,6 +525,9 @@ static Vertex create_vertex(const std::vector<s32>& indices, s32 base, const Cre
 		vertex.pos.x = input.positions->at(position_index * 3 + 0);
 		vertex.pos.y = input.positions->at(position_index * 3 + 1);
 		vertex.pos.z = input.positions->at(position_index * 3 + 2);
+		if(input.skin_data != nullptr) {
+			vertex.blend = input.skin_data->at(position_index);
+		}
 	}
 	if(input.normal_offset > -1) {
 		s32 normal_index = indices.at(base + input.normal_offset);
@@ -418,6 +541,21 @@ static Vertex create_vertex(const std::vector<s32>& indices, s32 base, const Cre
 		vertex.tex_coord.y = input.tex_coords->at(tex_coord_index * 2 + 1);
 	}
 	return vertex;
+}
+
+static std::vector<f32> read_float_array(const XmlNode* float_array) {
+	std::vector<f32> data;
+	data.resize(atoi(xml_attrib(float_array, "count")->value()));
+	const char* ptr = float_array->value();
+	for(f32& value : data) {
+		char* next;
+		value = strtof(ptr, &next);
+		if(next == ptr) {
+			throw ParseError("Failed to read <float_array>.");
+		}
+		ptr = next;
+	}
+	return data;
 }
 
 static s32 read_s32(const char*& input, const char* context) {
@@ -440,6 +578,14 @@ static void enumerate_ids(std::map<std::string, const XmlNode*>& ids, const XmlN
 	}
 }
 
+static void enumerate_joint_names(JointSidsMap& joint_sids, s32& next_joint, const XmlNode* skeleton, const XmlNode* node) {
+	const char* sid = xml_attrib(node, "sid")->value();
+	joint_sids[{skeleton, std::string(sid)}] = next_joint++;
+	xml_for_each_child_of_type(child, node, "node") {
+		enumerate_joint_names(joint_sids, next_joint, skeleton, child);
+	}
+}
+
 static const XmlNode* xml_child(const XmlNode* node, const char* name) {
 	XmlNode* child = node->first_node(name);
 	if(!child) {
@@ -458,7 +604,7 @@ static const XmlAttrib* xml_attrib(const XmlNode* node, const char* name) {
 
 static const XmlNode* node_from_id(const IdMap& map, const char* id) {
 	if(*id != '#') {
-		throw ParseError("Only ids starting with # are supported.");
+		throw ParseError("Only ids starting with # are supported ('%s' passed).", id);
 	}
 	auto iter = map.find(id);
 	if(iter == map.end()) {
@@ -742,12 +888,12 @@ static void write_controllers(OutBuffer dest, const std::vector<Mesh>& meshes, c
 		dest.writelf("</float_array>");
 		dest.writelf(4, "</source>");
 		dest.writelf(4, "<joints>");
-		dest.writelf(4, "\t<input semantic=\"JOINT\" source=\"%s_joints\"/>", mesh.name.c_str());
-		dest.writelf(4, "\t<input semantic=\"INV_BIND_MATRIX\" source=\"%s_inv_bind_mats\"/>", mesh.name.c_str());
+		dest.writelf(4, "\t<input semantic=\"JOINT\" source=\"#%s_joints\"/>", mesh.name.c_str());
+		dest.writelf(4, "\t<input semantic=\"INV_BIND_MATRIX\" source=\"#%s_inv_bind_mats\"/>", mesh.name.c_str());
 		dest.writelf(4, "</joints>");
 		dest.writelf(4, "<vertex_weights count=\"%d\">", mesh.vertices.size());
-		dest.writelf(4, "\t<input semantic=\"JOINT\" source=\"%s_joints\" offset=\"0\"/>", mesh.name.c_str());
-		dest.writelf(4, "\t<input semantic=\"WEIGHT\" source=\"%s_weights\" offset=\"1\"/>", mesh.name.c_str());
+		dest.writelf(4, "\t<input semantic=\"JOINT\" source=\"#%s_joints\" offset=\"0\"/>", mesh.name.c_str());
+		dest.writelf(4, "\t<input semantic=\"WEIGHT\" source=\"#%s_weights\" offset=\"1\"/>", mesh.name.c_str());
 		dest.writesf(4, "\t<vcount>");
 		for(const Vertex& vertex : mesh.vertices) {
 			dest.writesf("%lld ", vertex.blend.count);
@@ -787,7 +933,7 @@ static void write_visual_scenes(OutBuffer dest, const ColladaScene& scene) {
 		dest.writelf("\t\t\t<node id=\"%s\">", mesh.name.c_str());
 		if(scene.joints.size() > 0) {
 			dest.writelf(4, "<instance_controller url=\"#%s_skin\">", mesh.name.c_str());
-			dest.writelf(4, "\t<skeleton>joint_0</skeleton>");
+			dest.writelf(4, "\t<skeleton>#joint_0</skeleton>");
 		} else {
 			dest.writelf(4, "<instance_geometry url=\"#%s_mesh\">", mesh.name.c_str());
 		}
