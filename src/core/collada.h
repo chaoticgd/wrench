@@ -34,7 +34,7 @@ struct Joint {
 	s32 first_child = -1;
 	s32 left_sibling = -1;
 	s32 right_sibling = -1;
-	glm::mat4 matrix;
+	glm::mat4 inverse_bind_matrix;
 };
 
 struct ColladaScene {
@@ -44,7 +44,6 @@ struct ColladaScene {
 	std::vector<Joint> joints;
 };
 
-ColladaScene mesh_to_dae(Mesh mesh);
 ColladaScene read_collada(std::vector<u8> src); // Throws ParseError.
 std::vector<u8> write_collada(const ColladaScene& scene);
 s32 add_joint(std::vector<Joint>& joints, Joint joint, s32 parent);

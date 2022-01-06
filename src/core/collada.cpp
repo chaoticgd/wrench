@@ -58,8 +58,10 @@ static void write_images(OutBuffer dest, const std::vector<std::string>& texture
 static void write_effects(OutBuffer dest, const std::vector<Material>& materials, size_t texture_count);
 static void write_materials(OutBuffer dest, const std::vector<Material>& materials);
 static void write_geometries(OutBuffer dest, const std::vector<Mesh>& meshes);
+static void write_controllers(OutBuffer dest, const std::vector<Mesh>& meshes, const std::vector<Joint>& joints);
 static void write_visual_scenes(OutBuffer dest, const ColladaScene& scene);
 static void write_joint_node(OutBuffer dest, const std::vector<Joint>& joints, s32 index, s32 indent);
+static void write_matrix4x4(OutBuffer dest, const glm::mat4& matrix);
 
 ColladaScene read_collada(std::vector<u8> src) {
 	src.push_back('\0');
@@ -477,6 +479,9 @@ std::vector<u8> write_collada(const ColladaScene& scene) {
 	write_effects(dest, scene.materials, scene.texture_paths.size());
 	write_materials(dest, scene.materials);
 	write_geometries(dest, scene.meshes);
+	if(scene.joints.size() > 0) {
+		write_controllers(dest, scene.meshes, scene.joints);
+	}
 	write_visual_scenes(dest, scene);
 	dest.writelf("\t<scene>");
 	dest.writelf("\t\t<instance_visual_scene url=\"#scene\"/>");
@@ -693,6 +698,84 @@ static void write_geometries(OutBuffer dest, const std::vector<Mesh>& meshes) {
 	dest.writelf("\t</library_geometries>");
 }
 
+static void write_controllers(OutBuffer dest, const std::vector<Mesh>& meshes, const std::vector<Joint>& joints) {
+	dest.writelf("\t<library_controllers>");
+	for(const Mesh& mesh : meshes) {
+		dest.writelf("\t\t<controller id=\"%s_skin\">", mesh.name.c_str());
+		dest.writelf("\t\t\t<skin source=\"#%s_mesh\">", mesh.name.c_str());
+		dest.writelf(4, "<source id=\"%s_joints\">", mesh.name.c_str());
+		dest.writesf(4, "\t<Name_array count=\"%d\">", (s32) joints.size());
+		for(s32 i = 0; i < (s32) joints.size(); i++) {
+			dest.writesf("joint_%d ", i);
+		}
+		if(joints.size() > 0) {
+			dest.vec.resize(dest.vec.size() - 1);
+		}
+		dest.writelf("</Name_array>");
+		dest.writelf(4, "</source>");
+		dest.writelf(4, "<source id=\"%s_weights\">", mesh.name.c_str());
+		s32 weight_count = 0;
+		for(const Vertex& vertex : mesh.vertices) {
+			weight_count += vertex.blend.count;
+		}
+		dest.writesf(4, "\t<float_array count=\"%d\">", weight_count);
+		bool weight_written = false;
+		for(const Vertex& vertex : mesh.vertices) {
+			for(s32 i = 0; i < vertex.blend.count; i++) {
+				dest.writesf("%.9g ", vertex.blend.weights[i] / 255.f);
+			}
+			weight_written |= vertex.blend.count > 0;
+		}
+		if(weight_written) {
+			dest.vec.resize(dest.vec.size() - 1);
+		}
+		dest.writelf("</float_array>");
+		dest.writelf(4, "</source>");
+		dest.writelf(4, "<source id=\"%s_inv_bind_mats\">", mesh.name.c_str());
+		dest.writesf(4, "\t<float_array count=\"%d\">", (s32) joints.size());
+		for(const Joint& joint : joints) {
+			write_matrix4x4(dest, joint.inverse_bind_matrix);
+		}
+		if(joints.size() > 0) {
+			dest.vec.resize(dest.vec.size() - 1);
+		}
+		dest.writelf("</float_array>");
+		dest.writelf(4, "</source>");
+		dest.writelf(4, "<joints>");
+		dest.writelf(4, "\t<input semantic=\"JOINT\" source=\"%s_joints\"/>", mesh.name.c_str());
+		dest.writelf(4, "\t<input semantic=\"INV_BIND_MATRIX\" source=\"%s_inv_bind_mats\"/>", mesh.name.c_str());
+		dest.writelf(4, "</joints>");
+		dest.writelf(4, "<vertex_weights count=\"%d\">", mesh.vertices.size());
+		dest.writelf(4, "\t<input semantic=\"JOINT\" source=\"%s_joints\" offset=\"0\"/>", mesh.name.c_str());
+		dest.writelf(4, "\t<input semantic=\"WEIGHT\" source=\"%s_weights\" offset=\"1\"/>", mesh.name.c_str());
+		dest.writesf(4, "\t<vcount>");
+		for(const Vertex& vertex : mesh.vertices) {
+			dest.writesf("%lld ", vertex.blend.count);
+		}
+		if(mesh.vertices.size() > 0) {
+			dest.vec.resize(dest.vec.size() - 1);
+		}
+		dest.writelf("</vcount>");
+		dest.writesf(4, "\t<v>");
+		s32 weight_index = 0;
+		bool index_written = false;
+		for(const Vertex& vertex : mesh.vertices) {
+			for(s32 i = 0; i < vertex.blend.count; i++) {
+				dest.writesf("%lld %d ", vertex.blend.joints[i], weight_index++);
+			}
+			index_written |= vertex.blend.count > 0;
+		}
+		if(index_written) {
+			dest.vec.resize(dest.vec.size() - 1);
+		}
+		dest.writelf("</v>");
+		dest.writelf(4, "</vertex_weights>");
+		dest.writelf("\t\t\t</skin>");
+		dest.writelf("\t\t</controller>");
+	}
+	dest.writelf("\t</library_controllers>");
+}
+
 static void write_visual_scenes(OutBuffer dest, const ColladaScene& scene) {
 	dest.writelf("\t<library_visual_scenes>");
 	dest.writelf("\t\t<visual_scene id=\"scene\">");
@@ -702,7 +785,12 @@ static void write_visual_scenes(OutBuffer dest, const ColladaScene& scene) {
 	for(const Mesh& mesh : scene.meshes) {
 		assert(mesh.name.size() > 0);
 		dest.writelf("\t\t\t<node id=\"%s\">", mesh.name.c_str());
-		dest.writelf(4, "<instance_geometry url=\"#%s_mesh\">", mesh.name.c_str());
+		if(scene.joints.size() > 0) {
+			dest.writelf(4, "<instance_controller url=\"#%s_skin\">", mesh.name.c_str());
+			dest.writelf(4, "\t<skeleton>joint_0</skeleton>");
+		} else {
+			dest.writelf(4, "<instance_geometry url=\"#%s_mesh\">", mesh.name.c_str());
+		}
 		dest.writelf(4, "\t<bind_material>");
 		dest.writelf(4, "\t\t<technique_common>");
 		for(s32 i = 0; i < (s32) mesh.submeshes.size(); i++) {
@@ -714,7 +802,11 @@ static void write_visual_scenes(OutBuffer dest, const ColladaScene& scene) {
 		}
 		dest.writelf(4, "\t\t</technique_common>");
 		dest.writelf(4, "\t</bind_material>");
-		dest.writelf(4, "</instance_geometry>");
+		if(scene.joints.size() > 0) {
+			dest.writelf(4, "</instance_controller>");
+		} else {
+			dest.writelf(4, "</instance_geometry>");
+		}
 		dest.writelf("\t\t\t</node>");
 	}
 	dest.writelf("\t\t</visual_scene>");
@@ -723,17 +815,22 @@ static void write_visual_scenes(OutBuffer dest, const ColladaScene& scene) {
 
 static void write_joint_node(OutBuffer dest, const std::vector<Joint>& joints, s32 index, s32 indent) {
 	const Joint& joint = joints[index];
-	dest.writelf(indent, "<node id=\"joint_%d\" type=\"JOINT\">", index);
+	dest.writelf(indent, "<node id=\"joint_%d\" sid=\"joint_%d\" type=\"JOINT\">", index, index);
 	dest.writesf(indent, "\t<matrix sid=\"transform\">");
-	dest.writesf("%.9g %.9g %.9g %.9g ", joint.matrix[0][0], joint.matrix[1][0], joint.matrix[2][0], joint.matrix[3][0]);
-	dest.writesf("%.9g %.9g %.9g %.9g ", joint.matrix[0][1], joint.matrix[1][1], joint.matrix[2][1], joint.matrix[3][1]);
-	dest.writesf("%.9g %.9g %.9g %.9g ", joint.matrix[0][2], joint.matrix[1][2], joint.matrix[2][2], joint.matrix[3][2]);
-	dest.writesf("%.9g %.9g %.9g %.9g", joint.matrix[0][3], joint.matrix[1][3], joint.matrix[2][3], joint.matrix[3][3]);
+	write_matrix4x4(dest, glm::mat4(1.f));
+	dest.vec.resize(dest.vec.size() - 1);
 	dest.writelf("</matrix>");
 	for(s32 child = joint.first_child; child != -1; child = joints[child].right_sibling) {
 		write_joint_node(dest, joints, child, indent + 1);
 	}
 	dest.writelf(indent, "</node>");
+}
+
+static void write_matrix4x4(OutBuffer dest, const glm::mat4& matrix) {
+	dest.writesf("%.9g %.9g %.9g %.9g ", matrix[0][0], matrix[1][0], matrix[2][0], matrix[3][0]);
+	dest.writesf("%.9g %.9g %.9g %.9g ", matrix[0][1], matrix[1][1], matrix[2][1], matrix[3][1]);
+	dest.writesf("%.9g %.9g %.9g %.9g ", matrix[0][2], matrix[1][2], matrix[2][2], matrix[3][2]);
+	dest.writesf("%.9g %.9g %.9g %.9g ", matrix[0][3], matrix[1][3], matrix[2][3], matrix[3][3]);
 }
 
 s32 add_joint(std::vector<Joint>& joints, Joint joint, s32 parent) {

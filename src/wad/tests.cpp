@@ -310,12 +310,28 @@ static void assert_collada_scenes_equal(const ColladaScene& lhs, const ColladaSc
 			for(size_t k = 0; k < lsub.faces.size(); k++) {
 				const Face& lface = lsub.faces[k];
 				const Face& rface = rsub.faces[k];
-				assert(lmesh.vertices.at(lface.v0) == rmesh.vertices.at(rface.v0));
-				assert(lmesh.vertices.at(lface.v1) == rmesh.vertices.at(rface.v1));
-				assert(lmesh.vertices.at(lface.v2) == rmesh.vertices.at(rface.v2));
+				Vertex lverts[4] = {
+					lmesh.vertices.at(lface.v0),
+					lmesh.vertices.at(lface.v1),
+					lmesh.vertices.at(lface.v2),
+					Vertex(glm::vec3(0, 0, 0))
+				};
+				Vertex rverts[4] = {
+					rmesh.vertices.at(rface.v0),
+					rmesh.vertices.at(rface.v1),
+					rmesh.vertices.at(rface.v2),
+					Vertex(glm::vec3(0, 0, 0))
+				};
 				assert((lface.v3 > -1) == (rface.v3 > -1));
 				if(lface.v3 > -1) {
-					assert(lmesh.vertices.at(lface.v3) == rmesh.vertices.at(rface.v3));
+					lverts[3] = lmesh.vertices.at(lface.v3);
+					rverts[3] = rmesh.vertices.at(rface.v3);
+				}
+				for(s32 k = 0; k < 4; k++) {
+					assert(lverts[k].pos == rverts[k].pos);
+					assert(lverts[k].normal == rverts[k].normal);
+					assert(lverts[k].blend == rverts[k].blend);
+					assert(lverts[k].tex_coord == rverts[k].tex_coord);
 				}
 			}
 			assert(lsub.material == rsub.material);
