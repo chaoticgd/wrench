@@ -122,7 +122,7 @@ std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s64 coun
 		
 		// Fix vertex indices (see comment in write_moby_submeshes).
 		for(size_t i = 7; i < submesh.vertices.size(); i++) {
-			submesh.vertices[i - 7].vertex_index = submesh.vertices[i].vertex_index;
+			submesh.vertices[i - 7].v.i.low_halfword = (submesh.vertices[i - 7].v.i.low_halfword & ~0x1ff) | (submesh.vertices[i].v.i.low_halfword & 0x1ff);
 		}
 		s32 trailing_vertex_count = 0;
 		if(format == MobyFormat::RAC1) {
@@ -136,13 +136,13 @@ std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s64 coun
 			MobyVertex vertex = src.read<MobyVertex>(vertex_ofs, "vertex table");
 			vertex_ofs += 0x10;
 			s64 dest_index = in_file_vertex_count + i - 7;
-			submesh.vertices.at(dest_index).vertex_index = vertex.vertex_index;
+			submesh.vertices.at(dest_index).v.i.low_halfword = (submesh.vertices[dest_index].v.i.low_halfword & ~0x1ff) | (vertex.v.i.low_halfword & 0x1ff);
 		}
 		MobyVertex last_vertex = src.read<MobyVertex>(vertex_ofs - 0x10, "vertex table");
 		for(s32 i = std::max(7 - in_file_vertex_count - trailing_vertex_count, 0); i < 6; i++) {
 			s64 dest_index = in_file_vertex_count + trailing_vertex_count + i - 7;
 			if(dest_index < submesh.vertices.size()) {
-				submesh.vertices[dest_index].vertex_index = last_vertex.trailing.vertex_indices[i];
+				submesh.vertices[dest_index].v.i.low_halfword = (submesh.vertices[dest_index].v.i.low_halfword & ~0x1ff) | (last_vertex.trailing.vertex_indices[i] & 0x1ff);
 			}
 		}
 		
@@ -184,13 +184,13 @@ void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_of
 		std::vector<MobyVertex> vertices = submesh.vertices;
 		std::vector<u16> trailing_vertex_indices(std::max(7 - (s32) vertices.size(), 0), 0);
 		for(s32 i = std::max((s32) vertices.size() - 7, 0); i < vertices.size(); i++) {
-			trailing_vertex_indices.push_back(vertices[i].vertex_index);
+			trailing_vertex_indices.push_back(vertices[i].v.i.low_halfword & 0x1ff);
 		}
 		for(s32 i = vertices.size() - 1; i >= 7; i--) {
-			vertices[i].vertex_index = vertices[i - 7].vertex_index;
+			vertices[i].v.i.low_halfword = (vertices[i].v.i.low_halfword & ~0x1ff) | (vertices[i - 7].v.i.low_halfword & 0xff);
 		}
 		for(s32 i = 0; i < std::min(7, (s32) vertices.size()); i++) {
-			vertices[i].vertex_index = 0;
+			vertices[i].v.i.low_halfword = vertices[i].v.i.low_halfword & ~0x1ff;
 		}
 		
 		// Write vertex table.
@@ -234,14 +234,14 @@ void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_of
 		for(; vertices.size() % 4 != 2 && trailing < trailing_vertex_indices.size(); trailing++) {
 			MobyVertex vertex = {0};
 			if(submesh.vertices.size() + trailing >= 7) {
-				vertex.vertex_index = trailing_vertex_indices[trailing];
+				vertex.v.i.low_halfword = trailing_vertex_indices[trailing];
 			}
 			vertices.push_back(vertex);
 		}
 		assert(trailing < trailing_vertex_indices.size());
 		MobyVertex last_vertex = {0};
 		if(submesh.vertices.size() + trailing >= 7) {
-			last_vertex.vertex_index = trailing_vertex_indices[trailing];
+			last_vertex.v.i.low_halfword = trailing_vertex_indices[trailing];
 		}
 		for(s32 i = trailing + 1; i < trailing_vertex_indices.size(); i++) {
 			if(submesh.vertices.size() + i >= 7) {
@@ -437,7 +437,7 @@ Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* na
 	mesh.flags = MESH_HAS_NORMALS | MESH_HAS_TEX_COORDS;
 	
 	Opt<SkinAttributes> blend_buffer[64]; // The game stores this in VU0 memory.
-	Opt<Vertex> intermediate_buffer[256]; // The game stores this on the end of the VU1 chain.
+	Opt<Vertex> intermediate_buffer[512]; // The game stores this on the end of the VU1 chain.
 	
 	SubMesh dest;
 	dest.material = 0;
@@ -476,7 +476,7 @@ Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* na
 			while(t < 0) t += 1;
 			Vertex v = recover_vertex(mv, skin, glm::vec2(s, t), scale);
 			
-			intermediate_buffer[mv.vertex_index] = v;
+			intermediate_buffer[mv.v.i.low_halfword & 0x1ff] = v;
 			mesh.vertices.emplace_back(v);
 		}
 		
@@ -809,7 +809,7 @@ static Vertex recover_vertex(const MobyVertex& vertex, const SkinAttributes& ski
 
 static MobyVertex build_vertex(const Vertex& src, s32 id, f32 inverse_scale) {
 	MobyVertex dest = {0};
-	dest.vertex_index = id;
+	dest.v.i.low_halfword = id;
 	dest.v.x = src.pos.x * inverse_scale;
 	dest.v.y = src.pos.y * inverse_scale;
 	dest.v.z = src.pos.z * inverse_scale;
@@ -836,10 +836,13 @@ static SkinAttributes recover_blend_attributes(Opt<SkinAttributes> blend_buffer[
 		return *blend_buffer[addr / 4];
 	};
 	
+	s8 bits_9_15 = (mv.v.i.low_halfword & 0b1111111000000000) >> 9;
+	
 	if(ind < two_way_count) {
 		u8 transfer_addr = mv.v.two_way_blend.vu0_transferred_matrix_store_addr;
 		verify(transfer_addr % 4 == 0, "Unaligned joint address 0x%llx.", transfer_addr);
-		blend_buffer[transfer_addr / 4] = SkinAttributes{1, {(s8) (mv.v.two_way_blend.spr_joint_index_mul_2 / 2), 0, 0}, {255, 0, 0}};
+		s8 spr_joint_index = bits_9_15;
+		blend_buffer[transfer_addr / 4] = SkinAttributes{1, {spr_joint_index, 0, 0}, {255, 0, 0}};
 		
 		SkinAttributes src_1 = load_blend_attribs(mv.v.two_way_blend.vu0_matrix_load_addr_1);
 		SkinAttributes src_2 = load_blend_attribs(mv.v.two_way_blend.vu0_matrix_load_addr_2);
@@ -854,9 +857,10 @@ static SkinAttributes recover_blend_attributes(Opt<SkinAttributes> blend_buffer[
 		verify(blend_addr % 4 == 0, "Unaligned joint address 0x%llx.", blend_addr);
 		blend_buffer[blend_addr / 4] = attribs;
 	} else if(ind < two_way_count + three_way_count) {
+		s8 vu0_matrix_load_addr_3 = bits_9_15;
 		SkinAttributes src_1 = load_blend_attribs(mv.v.three_way_blend.vu0_matrix_load_addr_1);
 		SkinAttributes src_2 = load_blend_attribs(mv.v.three_way_blend.vu0_matrix_load_addr_2);
-		SkinAttributes src_3 = load_blend_attribs(mv.v.three_way_blend.vu0_matrix_load_addr_3);
+		SkinAttributes src_3 = load_blend_attribs(vu0_matrix_load_addr_3);
 		verify(src_1.count == 1 && src_2.count == 1 && src_3.count == 1,
 			"Input to three-way matrix blend operation has already been blended.");
 		
@@ -872,7 +876,8 @@ static SkinAttributes recover_blend_attributes(Opt<SkinAttributes> blend_buffer[
 	} else {
 		u8 transfer_addr = mv.v.regular.vu0_transferred_matrix_store_addr;
 		verify(transfer_addr % 4 == 0, "Unaligned joint address 0x%llx.", transfer_addr);
-		blend_buffer[transfer_addr / 4] = SkinAttributes{1, {(s8) (mv.v.regular.spr_joint_index_mul_2 / 2), 0, 0}, {255, 0, 0}};
+		s8 spr_joint_index = bits_9_15;
+		blend_buffer[transfer_addr / 4] = SkinAttributes{1, {spr_joint_index, 0, 0}, {255, 0, 0}};
 		
 		attribs = load_blend_attribs(mv.v.regular.vu0_matrix_load_addr);
 	}

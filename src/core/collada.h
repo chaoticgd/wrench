@@ -35,6 +35,7 @@ struct Joint {
 	s32 left_sibling = -1;
 	s32 right_sibling = -1;
 	glm::mat4 inverse_bind_matrix;
+	glm::vec3 tip;
 };
 
 struct ColladaScene {

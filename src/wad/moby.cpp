@@ -28,7 +28,7 @@ static MobyCollision read_moby_collision(Buffer src);
 static s64 write_moby_collision(OutBuffer dest, const MobyCollision& collision);
 static std::vector<MobyJointEntry> read_moby_joints(Buffer src, s64 joints_ofs);
 static s64 write_moby_joints(OutBuffer dest, const std::vector<MobyJointEntry>& joints);
-static std::vector<Joint> recover_moby_joints(const MobyClassData& moby);
+static std::vector<Joint> recover_moby_joints(const MobyClassData& moby, f32 scale);
 
 // FIXME: Figure out what points to the mystery data instead of doing this.
 static s64 mystery_data_ofs;
@@ -716,7 +716,7 @@ ColladaScene recover_moby_class(const MobyClassData& moby, s32 o_class, s32 text
 	}
 	
 	if(moby.joint_count != 0) {
-		scene.joints = recover_moby_joints(moby);
+		scene.joints = recover_moby_joints(moby, moby.scale);
 	}
 	
 	return scene;
@@ -769,7 +769,7 @@ MobyClassData build_moby_class(const ColladaScene& scene) {
 	return moby;
 }
 
-static std::vector<Joint> recover_moby_joints(const MobyClassData& moby) {
+static std::vector<Joint> recover_moby_joints(const MobyClassData& moby, f32 scale) {
 	assert(opt_size(moby.skeleton) == opt_size(moby.common_trans));
 	
 	std::vector<Joint> joints;
@@ -778,8 +778,28 @@ static std::vector<Joint> recover_moby_joints(const MobyClassData& moby) {
 	for(size_t i = 0; i < opt_size(moby.common_trans); i++) {
 		const MobyTrans& trans = (*moby.common_trans)[i];
 		
+		auto matrix = (*moby.skeleton)[i].unpack();
+		auto mat3 = glm::mat3(matrix);
+		mat3 = glm::inverse(mat3);
+		glm::mat4 inv_bind_mat {
+			{mat3[0], 0.f},
+			{mat3[1], 0.f},
+			{mat3[2], 0.f},
+			{glm::vec3(matrix[3] * (scale / 1024.f)), 1.f}
+		};
+		
+		glm::vec3 tip = matrix[3];
+		tip *= (scale / 1024.f);
+		tip = -tip * mat3;
+		
+		f32 tip_length = glm::length(tip);
+		if(tip_length * tip_length < 0.000001f) {
+			tip = glm::vec3(0, 0, 0.001f);
+		}
+		
 		Joint j;
-		j.inverse_bind_matrix = glm::mat4(1.f);
+		j.inverse_bind_matrix = inv_bind_mat;
+		j.tip = tip;
 		s32 parent;
 		if(i > 0) {
 			parent = trans.parent_offset / 0x40;

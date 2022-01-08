@@ -877,7 +877,7 @@ static void write_controllers(OutBuffer dest, const std::vector<Mesh>& meshes, c
 		dest.writelf("</float_array>");
 		dest.writelf(4, "</source>");
 		dest.writelf(4, "<source id=\"%s_inv_bind_mats\">", mesh.name.c_str());
-		dest.writesf(4, "\t<float_array count=\"%d\">", (s32) joints.size());
+		dest.writesf(4, "\t<float_array id=\"%s_inv_bind_mats_array\" count=\"%d\">", mesh.name.c_str(), (s32) joints.size());
 		for(const Joint& joint : joints) {
 			write_matrix4x4(dest, joint.inverse_bind_matrix);
 		}
@@ -885,6 +885,11 @@ static void write_controllers(OutBuffer dest, const std::vector<Mesh>& meshes, c
 			dest.vec.resize(dest.vec.size() - 1);
 		}
 		dest.writelf("</float_array>");
+		dest.writelf(4, "\t<technique_common>");
+		dest.writelf(4, "\t\t<accessor source=\"#%s_inv_bind_mats_array\" count=\"%d\" stride=\"16\">", mesh.name.c_str(), joints.size());
+		dest.writelf(4, "\t\t\t<param name=\"TRANSFORM\" type=\"float4x4\"/>");
+		dest.writelf(4, "\t\t</accessor>");
+		dest.writelf(4, "\t</technique_common>");
 		dest.writelf(4, "</source>");
 		dest.writelf(4, "<joints>");
 		dest.writelf(4, "\t<input semantic=\"JOINT\" source=\"#%s_joints\"/>", mesh.name.c_str());
@@ -964,6 +969,16 @@ static void write_joint_node(OutBuffer dest, const std::vector<Joint>& joints, s
 	write_matrix4x4(dest, glm::mat4(1.f));
 	dest.vec.resize(dest.vec.size() - 1);
 	dest.writelf("</matrix>");
+	dest.writelf(indent, "\t<extra>");
+	dest.writelf(indent, "\t\t<technique profile=\"blender\">");
+	dest.writelf(indent, "\t\t\t<connect>1</connect>");
+	dest.writelf(indent, "\t\t\t<layer>0</layer>");
+	dest.writelf(indent, "\t\t\t<roll>0</roll>");
+	dest.writelf(indent, "\t\t\t<tip_x>%.9g</tip_x>", joint.tip.x);
+	dest.writelf(indent, "\t\t\t<tip_y>%.9g</tip_y>", joint.tip.y);
+	dest.writelf(indent, "\t\t\t<tip_z>%.9g</tip_z>", joint.tip.z);
+	dest.writelf(indent, "\t\t</technique>");
+	dest.writelf(indent, "\t</extra>");
 	for(s32 child = joint.first_child; child != -1; child = joints[child].right_sibling) {
 		write_joint_node(dest, joints, child, indent + 1);
 	}
