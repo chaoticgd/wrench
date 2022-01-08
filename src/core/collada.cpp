@@ -38,13 +38,13 @@ struct VertexData {
 };
 static VertexData read_vertices(const XmlNode* geometry, const IdMap& ids);
 static std::vector<f32> read_vertex_source(const XmlNode* source, const IdMap& ids);
-static std::vector<BlendAttributes> read_skin(Mesh& mesh, const XmlNode* controller, const XmlNode* skeleton, const IdMap& ids, const JointSidsMap& joint_sids);
-static void read_submeshes(Mesh& mesh, const XmlNode* instance, const XmlNode* geometry, const XmlNode* controller, const IdMap& ids, const NodeToIndexMap& materials, const VertexData& vertex_data, const std::vector<BlendAttributes>& skin_data);
+static std::vector<SkinAttributes> read_skin(Mesh& mesh, const XmlNode* controller, const XmlNode* skeleton, const IdMap& ids, const JointSidsMap& joint_sids);
+static void read_submeshes(Mesh& mesh, const XmlNode* instance, const XmlNode* geometry, const XmlNode* controller, const IdMap& ids, const NodeToIndexMap& materials, const VertexData& vertex_data, const std::vector<SkinAttributes>& skin_data);
 struct CreateVertexInput {
 	const std::vector<f32>* positions = nullptr;
 	const std::vector<f32>* normals = nullptr;
 	const std::vector<f32>* tex_coords = nullptr;
-	const std::vector<BlendAttributes>* skin_data = nullptr;
+	const std::vector<SkinAttributes>* skin_data = nullptr;
 	s32 position_offset = -1;
 	s32 normal_offset = -1;
 	s32 tex_coord_offset = -1;
@@ -141,7 +141,7 @@ ColladaScene read_collada(std::vector<u8> src) {
 		Mesh mesh;
 		mesh.name = xml_attrib(node, "id")->value();
 		auto vertex_data = read_vertices(geometry, ids);
-		std::vector<BlendAttributes> skin_data;
+		std::vector<SkinAttributes> skin_data;
 		if(controller) {
 			skin_data = read_skin(mesh, controller, skeleton, ids, joint_sids);
 		}
@@ -308,7 +308,7 @@ static std::vector<f32> read_vertex_source(const XmlNode* source, const IdMap& i
 	return read_float_array(float_array);
 }
 
-static std::vector<BlendAttributes> read_skin(Mesh& mesh, const XmlNode* controller, const XmlNode* skeleton, const IdMap& ids, const JointSidsMap& joint_sids) {
+static std::vector<SkinAttributes> read_skin(Mesh& mesh, const XmlNode* controller, const XmlNode* skeleton, const IdMap& ids, const JointSidsMap& joint_sids) {
 	const XmlNode* skin = xml_child(controller, "skin");
 	const XmlNode* vertex_weights = xml_child(skin, "vertex_weights");
 	
@@ -374,12 +374,12 @@ static std::vector<BlendAttributes> read_skin(Mesh& mesh, const XmlNode* control
 		vcount_data.push_back(vc);
 	}
 	
-	std::vector<BlendAttributes> skin_data(vertex_weight_count);
+	std::vector<SkinAttributes> skin_data(vertex_weight_count);
 	
 	const char* v = xml_child(vertex_weights, "v")->value();
 	std::vector<s32> v_data;
 	for(s32 i = 0; i < vertex_weight_count; i++) {
-		BlendAttributes& attribs = skin_data[i];
+		SkinAttributes& attribs = skin_data[i];
 		attribs.count = (u8) vcount_data[i];
 		for(u8 j = 0; j < attribs.count * stride; j++) {
 			v_data.push_back(read_s32(v, "<v> data"));
@@ -388,10 +388,10 @@ static std::vector<BlendAttributes> read_skin(Mesh& mesh, const XmlNode* control
 	
 	size_t v_index = 0;
 	for(s32 i = 0; i < vertex_weight_count; i++) {
-		BlendAttributes& attribs = skin_data[i];
+		SkinAttributes& attribs = skin_data[i];
 		for(u8 j = 0; j < attribs.count; j++) {
-			attribs.weights[j] = (u8) (weights.at(v_data.at(v_index + weight_offset)) * 255.f);
 			attribs.joints[j] = (u8) joints.at(v_data.at(v_index + joint_offset));
+			attribs.weights[j] = (u8) (weights.at(v_data.at(v_index + weight_offset)) * 255.f);
 			v_index += stride;
 		}
 	}
@@ -399,7 +399,7 @@ static std::vector<BlendAttributes> read_skin(Mesh& mesh, const XmlNode* control
 	return skin_data;
 }
 
-static void read_submeshes(Mesh& mesh, const XmlNode* instance, const XmlNode* geometry, const XmlNode* controller, const IdMap& ids, const NodeToIndexMap& materials, const VertexData& vertex_data, const std::vector<BlendAttributes>& skin_data) {
+static void read_submeshes(Mesh& mesh, const XmlNode* instance, const XmlNode* geometry, const XmlNode* controller, const IdMap& ids, const NodeToIndexMap& materials, const VertexData& vertex_data, const std::vector<SkinAttributes>& skin_data) {
 	const XmlNode* bind_material = xml_child(instance, "bind_material");
 	const XmlNode* technique_common = xml_child(bind_material, "technique_common");
 	const XmlNode* mesh_node = xml_child(geometry, "mesh");
@@ -525,7 +525,7 @@ static Vertex create_vertex(const std::vector<s32>& indices, s32 base, const Cre
 		vertex.pos.y = input.positions->at(position_index * 3 + 1);
 		vertex.pos.z = input.positions->at(position_index * 3 + 2);
 		if(input.skin_data != nullptr) {
-			vertex.blend = input.skin_data->at(position_index);
+			vertex.skin = input.skin_data->at(position_index);
 		}
 	}
 	if(input.normal_offset > -1) {
@@ -862,13 +862,13 @@ static void write_controllers(OutBuffer dest, const std::vector<Mesh>& meshes, c
 		dest.writelf(4, "<source id=\"%s_weights\">", mesh.name.c_str());
 		s32 weight_count = 0;
 		for(const Vertex& vertex : mesh.vertices) {
-			weight_count += vertex.blend.count;
+			weight_count += vertex.skin.count;
 		}
 		dest.writesf(4, "\t<float_array count=\"%d\">", weight_count);
 		for(const Vertex& vertex : mesh.vertices) {
-			assert(vertex.blend.count > 0);
-			for(s32 i = 0; i < vertex.blend.count; i++) {
-				dest.writesf("%.9g ", vertex.blend.weights[i] / 255.f);
+			assert(vertex.skin.count > 0);
+			for(s32 i = 0; i < vertex.skin.count; i++) {
+				dest.writesf("%.9g ", vertex.skin.weights[i] / 255.f);
 			}
 		}
 		if(mesh.vertices.size() > 0) {
@@ -895,7 +895,7 @@ static void write_controllers(OutBuffer dest, const std::vector<Mesh>& meshes, c
 		dest.writelf(4, "\t<input semantic=\"WEIGHT\" source=\"#%s_weights\" offset=\"1\"/>", mesh.name.c_str());
 		dest.writesf(4, "\t<vcount>");
 		for(const Vertex& vertex : mesh.vertices) {
-			dest.writesf("%hhu ", vertex.blend.count);
+			dest.writesf("%hhu ", vertex.skin.count);
 		}
 		if(mesh.vertices.size() > 0) {
 			dest.vec.resize(dest.vec.size() - 1);
@@ -904,9 +904,9 @@ static void write_controllers(OutBuffer dest, const std::vector<Mesh>& meshes, c
 		dest.writesf(4, "\t<v>");
 		s32 weight_index = 0;
 		for(const Vertex& vertex : mesh.vertices) {
-			assert(vertex.blend.count > 0);
-			for(s32 i = 0; i < vertex.blend.count; i++) {
-				dest.writesf("%hd %d ", vertex.blend.joints[i], weight_index++);
+			assert(vertex.skin.count > 0);
+			for(s32 i = 0; i < vertex.skin.count; i++) {
+				dest.writesf("%hhd %d ", vertex.skin.joints[i], weight_index++);
 			}
 		}
 		if(mesh.vertices.size() > 0) {

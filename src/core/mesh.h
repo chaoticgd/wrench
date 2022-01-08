@@ -45,16 +45,16 @@ struct Face {
 	}
 };
 
-struct BlendAttributes {
+struct SkinAttributes {
 	u8 count = 1;
+	s8 joints[3] = {-1, 0, 0};
 	u8 weights[3] = {255, 0, 0};
-	s16 joints[3] = {-1, 0, 0};
-	bool operator==(const BlendAttributes& rhs) const {
+	bool operator==(const SkinAttributes& rhs) const {
 		return count == rhs.count &&
-			weights[0] == rhs.weights[0] && weights[1] == rhs.weights[1] && weights[2] == rhs.weights[2] && 
-			joints[0] == rhs.joints[0] && joints[1] == rhs.joints[1] && joints[2] == rhs.joints[2];
+			joints[0] == rhs.joints[0] && joints[1] == rhs.joints[1] && joints[2] == rhs.joints[2] &&
+			weights[0] == rhs.weights[0] && weights[1] == rhs.weights[1] && weights[2] == rhs.weights[2];
 	}
-	bool operator<(const BlendAttributes& rhs) const {
+	bool operator<(const SkinAttributes& rhs) const {
 		if(count != rhs.count) return count < rhs.count;
 		if(joints[0] != rhs.joints[0]) return joints[0] < rhs.joints[0];
 		if(joints[1] != rhs.joints[1]) return joints[1] < rhs.joints[1];
@@ -68,13 +68,13 @@ struct BlendAttributes {
 struct Vertex {
 	glm::vec3 pos;
 	glm::vec3 normal;
-	BlendAttributes blend;
+	SkinAttributes skin;
 	glm::vec2 tex_coord;
 	Vertex(const glm::vec3& p) : pos(p), normal(0, 0, 0), tex_coord(0, 0) {}
-	Vertex(const glm::vec3& p, const glm::vec3& n, const BlendAttributes& b, const glm::vec2& t)
-		: pos(p), normal(n), blend(b), tex_coord(t) {}
+	Vertex(const glm::vec3& p, const glm::vec3& n, const SkinAttributes& s, const glm::vec2& t)
+		: pos(p), normal(n), skin(s), tex_coord(t) {}
 	bool operator==(const Vertex& rhs) const {
-		return pos == rhs.pos && normal == rhs.normal && blend == rhs.blend && tex_coord == rhs.tex_coord;
+		return pos == rhs.pos && normal == rhs.normal && skin == rhs.skin && tex_coord == rhs.tex_coord;
 	}
 	bool operator<(const Vertex& rhs) const {
 		// The moby code relies on the texture coordinates being compared last.
@@ -84,7 +84,7 @@ struct Vertex {
 		if(normal.z != rhs.normal.z) return normal.z < rhs.normal.z;
 		if(normal.y != rhs.normal.y) return normal.y < rhs.normal.y;
 		if(normal.x != rhs.normal.x) return normal.x < rhs.normal.x;
-		if(!(blend == rhs.blend)) return blend < rhs.blend;
+		if(!(skin == rhs.skin)) return skin < rhs.skin;
 		if(tex_coord.y != rhs.tex_coord.y) return tex_coord.y < rhs.tex_coord.y;
 		return tex_coord.x < rhs.tex_coord.x;
 	}

@@ -333,10 +333,10 @@ static void assert_collada_scenes_equal(const ColladaScene& lhs, const ColladaSc
 					// We don't currently preserve joint indices, so we don't
 					// check them here.
 					for(s32 l = 0; l < 3; l++) {
-						lverts[k].blend.joints[l] = 0;
-						rverts[k].blend.joints[l] = 0;
+						lverts[k].skin.joints[l] = 0;
+						rverts[k].skin.joints[l] = 0;
 					}
-					assert(lverts[k].blend == rverts[k].blend);
+					assert(lverts[k].skin == rverts[k].skin);
 					assert(lverts[k].tex_coord == rverts[k].tex_coord);
 				}
 			}
