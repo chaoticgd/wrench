@@ -53,7 +53,7 @@ static Vertex create_vertex(const std::vector<s32>& indices, s32 base, const Cre
 static std::vector<f32> read_float_array(const XmlNode* float_array);
 static s32 read_s32(const char*& input, const char* context);
 static void enumerate_ids(std::map<std::string, const XmlNode*>& ids, const XmlNode* node);
-static void enumerate_joint_names(JointSidsMap& joint_sids, s32& next_joint, const XmlNode* skeleton, const XmlNode* node);
+static void enumerate_joint_sids(JointSidsMap& joint_sids, s32& next_joint, const XmlNode* skeleton, const XmlNode* node);
 static const XmlNode* xml_child(const XmlNode* node, const char* name);
 static const XmlAttrib* xml_attrib(const XmlNode* node, const char* name);
 static const XmlNode* node_from_id(const IdMap& map, const char* id);
@@ -109,7 +109,7 @@ ColladaScene read_collada(std::vector<u8> src) {
 	xml_for_each_child_of_type(node, visual_scene, "node") {
 		const XmlAttrib* type = node->first_attribute("type");
 		if(type != nullptr && strcmp(type->value(), "JOINT") == 0) {
-			enumerate_joint_names(joint_sids, next_joint, node, node);
+			enumerate_joint_sids(joint_sids, next_joint, node, node);
 		}
 	}
 	
@@ -376,13 +376,12 @@ static std::vector<BlendAttributes> read_skin(Mesh& mesh, const XmlNode* control
 	
 	std::vector<BlendAttributes> skin_data(vertex_weight_count);
 	
-	s32 vcount_index = 0;
 	const char* v = xml_child(vertex_weights, "v")->value();
 	std::vector<s32> v_data;
 	for(s32 i = 0; i < vertex_weight_count; i++) {
 		BlendAttributes& attribs = skin_data[i];
-		attribs.count = (u8) vcount_data.at(vcount_index++);
-		for(u8 i = 0; i < attribs.count * stride; i++) {
+		attribs.count = (u8) vcount_data[i];
+		for(u8 j = 0; j < attribs.count * stride; j++) {
 			v_data.push_back(read_s32(v, "<v> data"));
 		}
 	}
@@ -391,8 +390,8 @@ static std::vector<BlendAttributes> read_skin(Mesh& mesh, const XmlNode* control
 	for(s32 i = 0; i < vertex_weight_count; i++) {
 		BlendAttributes& attribs = skin_data[i];
 		for(u8 j = 0; j < attribs.count; j++) {
-			attribs.joints[j] = (u8) joints.at(v_data[v_index + joint_offset]);
-			attribs.weights[j] = (u8) (weights.at(v_data[v_index + weight_offset]) * 255.f);
+			attribs.weights[j] = (u8) (weights.at(v_data.at(v_index + weight_offset)) * 255.f);
+			attribs.joints[j] = (u8) joints.at(v_data.at(v_index + joint_offset));
 			v_index += stride;
 		}
 	}
@@ -578,11 +577,12 @@ static void enumerate_ids(std::map<std::string, const XmlNode*>& ids, const XmlN
 	}
 }
 
-static void enumerate_joint_names(JointSidsMap& joint_sids, s32& next_joint, const XmlNode* skeleton, const XmlNode* node) {
+static void enumerate_joint_sids(JointSidsMap& joint_sids, s32& next_joint, const XmlNode* skeleton, const XmlNode* node) {
 	const char* sid = xml_attrib(node, "sid")->value();
 	joint_sids[{skeleton, std::string(sid)}] = next_joint++;
+	
 	xml_for_each_child_of_type(child, node, "node") {
-		enumerate_joint_names(joint_sids, next_joint, skeleton, child);
+		enumerate_joint_sids(joint_sids, next_joint, skeleton, child);
 	}
 }
 
@@ -865,14 +865,13 @@ static void write_controllers(OutBuffer dest, const std::vector<Mesh>& meshes, c
 			weight_count += vertex.blend.count;
 		}
 		dest.writesf(4, "\t<float_array count=\"%d\">", weight_count);
-		bool weight_written = false;
 		for(const Vertex& vertex : mesh.vertices) {
+			assert(vertex.blend.count > 0);
 			for(s32 i = 0; i < vertex.blend.count; i++) {
 				dest.writesf("%.9g ", vertex.blend.weights[i] / 255.f);
 			}
-			weight_written |= vertex.blend.count > 0;
 		}
-		if(weight_written) {
+		if(mesh.vertices.size() > 0) {
 			dest.vec.resize(dest.vec.size() - 1);
 		}
 		dest.writelf("</float_array>");
@@ -896,7 +895,7 @@ static void write_controllers(OutBuffer dest, const std::vector<Mesh>& meshes, c
 		dest.writelf(4, "\t<input semantic=\"WEIGHT\" source=\"#%s_weights\" offset=\"1\"/>", mesh.name.c_str());
 		dest.writesf(4, "\t<vcount>");
 		for(const Vertex& vertex : mesh.vertices) {
-			dest.writesf("%lld ", vertex.blend.count);
+			dest.writesf("%hhu ", vertex.blend.count);
 		}
 		if(mesh.vertices.size() > 0) {
 			dest.vec.resize(dest.vec.size() - 1);
@@ -904,14 +903,13 @@ static void write_controllers(OutBuffer dest, const std::vector<Mesh>& meshes, c
 		dest.writelf("</vcount>");
 		dest.writesf(4, "\t<v>");
 		s32 weight_index = 0;
-		bool index_written = false;
 		for(const Vertex& vertex : mesh.vertices) {
+			assert(vertex.blend.count > 0);
 			for(s32 i = 0; i < vertex.blend.count; i++) {
-				dest.writesf("%lld %d ", vertex.blend.joints[i], weight_index++);
+				dest.writesf("%hd %d ", vertex.blend.joints[i], weight_index++);
 			}
-			index_written |= vertex.blend.count > 0;
 		}
-		if(index_written) {
+		if(mesh.vertices.size() > 0) {
 			dest.vec.resize(dest.vec.size() - 1);
 		}
 		dest.writelf("</v>");

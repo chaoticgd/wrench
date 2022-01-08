@@ -330,6 +330,12 @@ static void assert_collada_scenes_equal(const ColladaScene& lhs, const ColladaSc
 				for(s32 k = 0; k < 4; k++) {
 					assert(lverts[k].pos == rverts[k].pos);
 					assert(lverts[k].normal == rverts[k].normal);
+					// We don't currently preserve joint indices, so we don't
+					// check them here.
+					for(s32 l = 0; l < 3; l++) {
+						lverts[k].blend.joints[l] = 0;
+						rverts[k].blend.joints[l] = 0;
+					}
 					assert(lverts[k].blend == rverts[k].blend);
 					assert(lverts[k].tex_coord == rverts[k].tex_coord);
 				}
@@ -337,12 +343,4 @@ static void assert_collada_scenes_equal(const ColladaScene& lhs, const ColladaSc
 			assert(lsub.material == rsub.material);
 		}
 	}
-	//assert(lhs.joints.size() == rhs.joints.size());
-	//for(size_t i = 0; i < lhs.joints.size(); i++) {
-	//	assert(lhs.joints[i].parent == rhs.joints[i].parent);
-	//	assert(lhs.joints[i].first_child == rhs.joints[i].first_child);
-	//	assert(lhs.joints[i].left_sibling == rhs.joints[i].left_sibling);
-	//	assert(lhs.joints[i].right_sibling == rhs.joints[i].right_sibling);
-	//	assert(lhs.joints[i].matrix == rhs.joints[i].matrix);
-	//}
 }

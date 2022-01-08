@@ -46,13 +46,13 @@ struct Face {
 };
 
 struct BlendAttributes {
-	u8 count = 0;
-	u8 joints[3] = {0, 0, 0};
-	u8 weights[3] = {0, 0, 0};
+	u8 count = 1;
+	u8 weights[3] = {255, 0, 0};
+	s16 joints[3] = {-1, 0, 0};
 	bool operator==(const BlendAttributes& rhs) const {
 		return count == rhs.count &&
-			joints[0] == rhs.joints[0] && joints[1] == rhs.joints[1] && joints[2] == rhs.joints[2] &&
-			weights[0] == rhs.weights[0] && weights[1] == rhs.weights[1] && weights[2] == rhs.weights[2];
+			weights[0] == rhs.weights[0] && weights[1] == rhs.weights[1] && weights[2] == rhs.weights[2] && 
+			joints[0] == rhs.joints[0] && joints[1] == rhs.joints[1] && joints[2] == rhs.joints[2];
 	}
 	bool operator<(const BlendAttributes& rhs) const {
 		if(count != rhs.count) return count < rhs.count;

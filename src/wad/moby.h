@@ -30,48 +30,60 @@ packed_struct(MobyTexCoord,
 )
 
 packed_struct(MobyVertex,
-	/* 0x0 */ u16 low_halfword; // [0..8] = intermediate_buffer_index, [9..15] = joint
-	union {
-		struct {
-			union {
-				struct {
+	/* 0x0 */ u8 vertex_index; // The game reads this as 9 bits so make sure the LSB of the next byte is zero.
+	packed_nested_anon_union(
+		packed_nested_struct(v,
+			packed_nested_anon_union(
+				packed_nested_struct(two_way_blend,
+					/* 0x1 */ u8 spr_joint_index_mul_2;
 					/* 0x2 */ u8 vu0_matrix_load_addr_1;
 					/* 0x3 */ u8 vu0_matrix_load_addr_2;
-					/* 0x4 */ u8 weights[2];
+					/* 0x4 */ u8 weight_1;
+					/* 0x5 */ u8 weight_2;
 					/* 0x6 */ u8 vu0_transferred_matrix_store_addr;
 					/* 0x7 */ u8 vu0_blended_matrix_store_addr;
-				} two_way_blend; // type2
-				struct {
-					/* 0x2 */ u8 vu0_matrix_load_addr_1;
-					/* 0x3 */ u8 vu0_matrix_load_addr_2;
-					/* 0x4 */ u8 weight[3];
+				)
+				packed_nested_struct(three_way_blend,
+					/* 0x1 */ u8 vu0_matrix_load_addr_1;
+					/* 0x2 */ u8 vu0_matrix_load_addr_2;
+					/* 0x3 */ u8 vu0_matrix_load_addr_3;
+					/* 0x4 */ u8 weight_1;
+					/* 0x5 */ u8 weight_2;
+					/* 0x6 */ u8 weight_3;
 					/* 0x7 */ u8 vu0_blended_matrix_store_addr; // Loaded in vf4w.
-				} three_way_blend; // type3
-				struct {
+				)
+				packed_nested_struct(regular,
+					/* 0x1 */ u8 spr_joint_index_mul_2;
 					/* 0x2 */ u8 vu0_matrix_load_addr; // The load is done after the store.
 					/* 0x3 */ u8 vu0_transferred_matrix_store_addr;
-					/* 0x4 */ u8 pad_4[4];
-				} regular; // type6
-				struct {
+					/* 0x4 */ u8 unused_4;
+					/* 0x5 */ u8 unused_5;
+					/* 0x6 */ u8 unused_6;
+					/* 0x7 */ u8 unused_7;
+				)
+				packed_nested_struct(register_names,
+					/* 0x1 */ u8 vf3y;
 					/* 0x2 */ u8 vf3z;
 					/* 0x3 */ u8 vf3w;
 					/* 0x4 */ u8 vf4x;
 					/* 0x5 */ u8 vf4y;
 					/* 0x6 */ u8 vf4z;
 					/* 0x7 */ u8 vf4w;
-				} register_names;
-			};
+				)
+			)
 			/* 0x8 */ u8 normal_angle_azimuth;
 			/* 0x9 */ u8 normal_angle_elevation;
 			/* 0xa */ s16 x;
 			/* 0xc */ s16 y;
 			/* 0xe */ s16 z;
-		} v;
-		struct {
-			/* 0x2 */ u8 pad_2[2];
+		)
+		packed_nested_struct(trailing,
+			/* 0x1 */ u8 unused_1;
+			/* 0x2 */ u8 unused_2;
+			/* 0x3 */ u8 unused_3;
 			/* 0x4 */ u16 vertex_indices[6]; // Only populated for the final vertex.
-		} trailing;
-	};
+		)
+	)
 )
 static_assert(sizeof(MobyVertex) == 0x10);
 
@@ -113,7 +125,7 @@ struct MobySubMeshBase {
 };
 
 packed_struct(MobyMatrixTransfer,
-	u8 scratchpad_matrix_index;
+	u8 spr_joint_index;
 	u8 vu0_dest_addr;
 )
 
