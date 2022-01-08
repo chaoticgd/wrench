@@ -95,6 +95,7 @@ add_executable(wad
 	src/wad/collision.cpp
 	src/wad/texture.cpp
 	src/wad/moby.cpp
+	src/wad/moby_mesh.cpp
 	src/wad/tests.cpp
 	src/lz/compression.cpp
 )
