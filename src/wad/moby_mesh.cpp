@@ -857,7 +857,8 @@ static SkinAttributes recover_blend_attributes(Opt<SkinAttributes> blend_buffer[
 		SkinAttributes src_1 = load_blend_attribs(mv.v.three_way_blend.vu0_matrix_load_addr_1);
 		SkinAttributes src_2 = load_blend_attribs(mv.v.three_way_blend.vu0_matrix_load_addr_2);
 		SkinAttributes src_3 = load_blend_attribs(mv.v.three_way_blend.vu0_matrix_load_addr_3);
-		verify(src_1.count == 1 && src_2.count == 1, "Input to three-way matrix blend operation has already been blended.");
+		verify(src_1.count == 1 && src_2.count == 1 && src_3.count == 1,
+			"Input to three-way matrix blend operation has already been blended.");
 		
 		u8 weight_1 = mv.v.three_way_blend.weight_1;
 		u8 weight_2 = mv.v.three_way_blend.weight_2;
