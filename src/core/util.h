@@ -22,6 +22,7 @@
 #include <map>
 #include <array>
 #include <cmath>
+#include <string>
 #include <vector>
 #include <cstring>
 #include <ctype.h>
