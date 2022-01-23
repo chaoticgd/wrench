@@ -80,7 +80,7 @@ static void run_level_tests(fs::path input_path) {
 				break;
 			}
 			case sizeof(Rac23LevelWadHeader): {
-				auto header = read_header<Rac23LevelWadHeader>(file);
+				auto header = read_header<Rac23LevelWadHeader>(file);if(header.level_number != 4) continue;
 				primary = read_lump(file, header.primary, "primary");
 				game = detect_game_rac23(primary);
 				run_gameplay_lump_test(build_args(header.gameplay, "gameplay", RAC23_GAMEPLAY_BLOCKS, true, game));
@@ -201,6 +201,8 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 static std::map<s32, std::array<u8, MD5_DIGEST_LENGTH>> moby_md5s;
 
 static void run_moby_class_test(s32 o_class, Buffer src, const char* file_path, Game game) {
+	if(o_class != 3128) return;
+	
 	ERROR_CONTEXT("running moby class %d test", o_class);
 	printf("%s moby class %d\n", file_path, o_class);
 	

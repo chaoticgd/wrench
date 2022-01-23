@@ -129,20 +129,27 @@ struct MobySubMeshBase {
 	u8 index_header_first_byte = 0xff;
 };
 
+struct MobySubMesh : MobySubMeshBase {
+	std::vector<MobyTexCoord> sts;
+	std::vector<Vertex> vertices;
+	std::vector<u16> duplicate_vertices;
+	u16 unknown_e = 0;
+	std::vector<u8> unknown_e_data;
+};
+
 packed_struct(MobyMatrixTransfer,
 	u8 spr_joint_index;
 	u8 vu0_dest_addr;
 )
 
-struct MobySubMesh : MobySubMeshBase {
-	std::vector<MobyTexCoord> sts;
+struct MobySubMeshLowLevel {
+	const MobySubMesh& high_level;
 	std::vector<MobyMatrixTransfer> preloop_matrix_transfers;
+	s32 two_way_blend_vertex_count = 0;
+	s32 three_way_blend_vertex_count = 0;
+	s32 main_vertex_count = 0;
 	std::vector<MobyVertex> vertices;
-	u16 two_way_blend_vertex_count = 0;
-	u16 three_way_blend_vertex_count = 0;
-	std::vector<u16> duplicate_vertices;
-	u16 unknown_e = 0;
-	std::vector<u8> unknown_e_data;
+	std::vector<size_t> index_mapping;
 };
 
 packed_struct(MobyMetalVertex,
@@ -218,12 +225,12 @@ enum class MobyFormat {
 	RAC1, RAC2, RAC3DL
 };
 
-std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s64 count, MobyFormat format);
+std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s64 count, f32 scale, s32 joint_count, MobyFormat format);
 using GifUsageTable = std::vector<MobyGifUsageTableEntry>;
-void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_ofs, const std::vector<MobySubMesh>& submeshes, MobyFormat format, s64 class_header_ofs);
+void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_ofs, const std::vector<MobySubMesh>& submeshes_in, f32 scale, MobyFormat format, s64 class_header_ofs);
 std::vector<MobyMetalSubMesh> read_moby_metal_submeshes(Buffer src, s64 table_ofs, s64 count);
 void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalSubMesh>& submeshes, s64 class_header_ofs);
-Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* name, s32 o_class, s32 texture_count, s32 joint_count, f32 scale, s32 submesh_filter);
-std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vector<Material>& materials, f32 scale);
+Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* name, s32 o_class, s32 texture_count, s32 submesh_filter);
+std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vector<Material>& materials);
 
 #endif

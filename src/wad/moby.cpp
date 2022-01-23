@@ -113,14 +113,15 @@ MobyClassData read_moby_class(Buffer src, Game game) {
 	if(header.submesh_table_offset != 0) {
 		moby.has_submesh_table = true;
 		moby.submesh_table_offset = header.submesh_table_offset;
-		moby.submeshes = read_moby_submeshes(src, header.submesh_table_offset, header.submesh_count, format);
-		moby.low_lod_submeshes = read_moby_submeshes(src, header.submesh_table_offset + header.submesh_count * 0x10, header.low_lod_submesh_count, format);
+		moby.submeshes = read_moby_submeshes(src, header.submesh_table_offset, header.submesh_count, moby.scale, moby.joint_count, format);
+		s64 low_lod_table_ofs = header.submesh_table_offset + header.submesh_count * 0x10;
+		moby.low_lod_submeshes = read_moby_submeshes(src, low_lod_table_ofs, header.low_lod_submesh_count, moby.scale, moby.joint_count, format);
 		s64 metal_table_ofs = header.submesh_table_offset + header.metal_submesh_begin * 0x10;
 		moby.metal_submeshes = read_moby_metal_submeshes(src, metal_table_ofs, header.metal_submesh_count);
 		if(header.bangles != 0) {
 			MobyBangle& first_bangle = moby.bangles->bangles.at(0);
 			s64 bangles_submesh_table_ofs = header.submesh_table_offset + first_bangle.submesh_begin * 0x10;
-			moby.bangles->submeshes = read_moby_submeshes(src, bangles_submesh_table_ofs, first_bangle.submesh_count, format);
+			moby.bangles->submeshes = read_moby_submeshes(src, bangles_submesh_table_ofs, first_bangle.submesh_count, moby.scale, moby.joint_count, format);
 			mystery_data_ofs = std::max(mystery_data_ofs, bangles_submesh_table_ofs + first_bangle.submesh_count * 0x10);
 		} else {
 			mystery_data_ofs = std::max(mystery_data_ofs, metal_table_ofs + header.metal_submesh_count * 0x10);
@@ -245,11 +246,11 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 		header.sound_defs = dest.write_multiple(moby.sound_defs) - class_header_ofs;
 	}
 	std::vector<MobyGifUsageTableEntry> gif_usage;
-	write_moby_submeshes(dest, gif_usage, submesh_table_1_ofs, moby.submeshes, format, class_header_ofs);
-	write_moby_submeshes(dest, gif_usage, submesh_table_2_ofs, moby.low_lod_submeshes, format, class_header_ofs);
+	write_moby_submeshes(dest, gif_usage, submesh_table_1_ofs, moby.submeshes, moby.scale, format, class_header_ofs);
+	write_moby_submeshes(dest, gif_usage, submesh_table_2_ofs, moby.low_lod_submeshes, moby.scale, format, class_header_ofs);
 	write_moby_metal_submeshes(dest, metal_submesh_table_ofs, moby.metal_submeshes, class_header_ofs);
 	if(moby.bangles.has_value()) {
-		write_moby_submeshes(dest, gif_usage, bangles_submesh_table_ofs, moby.bangles->submeshes, format, class_header_ofs);
+		write_moby_submeshes(dest, gif_usage, bangles_submesh_table_ofs, moby.bangles->submeshes, moby.scale, format, class_header_ofs);
 	}
 	if(moby.team_palettes.size() > 0 && (game == Game::RAC3 || game == Game::DL)) {
 		dest.pad(0x10);
@@ -695,23 +696,23 @@ ColladaScene recover_moby_class(const MobyClassData& moby, s32 o_class, s32 text
 	if(MOBY_EXPORT_SUBMESHES_SEPERATELY) {
 		for(s32 i = 0; i < (s32) moby.submeshes.size(); i++) {
 			std::string name = "high_lod_" + std::to_string(i);
-			scene.meshes.emplace_back(recover_moby_mesh(moby.submeshes, name.c_str(), o_class, texture_count, moby.joint_count, moby.scale, i));
+			scene.meshes.emplace_back(recover_moby_mesh(moby.submeshes, name.c_str(), o_class, texture_count, i));
 		}
 		for(s32 i = 0; i < (s32) moby.low_lod_submeshes.size(); i++) {
 			std::string name = "low_lod_" + std::to_string(i);
-			scene.meshes.emplace_back(recover_moby_mesh(moby.low_lod_submeshes, name.c_str(), o_class, texture_count, moby.joint_count, moby.scale, i));
+			scene.meshes.emplace_back(recover_moby_mesh(moby.low_lod_submeshes, name.c_str(), o_class, texture_count, i));
 		}
 		if(moby.bangles.has_value()) {
 			for(s32 i = 0; i < (s32) moby.bangles->submeshes.size(); i++) {
 				std::string name = "bangles_" + std::to_string(i);
-				scene.meshes.emplace_back(recover_moby_mesh(moby.bangles->submeshes, name.c_str(), o_class, texture_count, moby.joint_count, moby.scale, i));
+				scene.meshes.emplace_back(recover_moby_mesh(moby.bangles->submeshes, name.c_str(), o_class, texture_count, i));
 			}
 		}
 	} else {
-		scene.meshes.emplace_back(recover_moby_mesh(moby.submeshes, "high_lod", o_class, texture_count, moby.joint_count, moby.scale, NO_SUBMESH_FILTER));
-		scene.meshes.emplace_back(recover_moby_mesh(moby.low_lod_submeshes, "low_lod", o_class, texture_count, moby.joint_count, moby.scale, NO_SUBMESH_FILTER));
+		scene.meshes.emplace_back(recover_moby_mesh(moby.submeshes, "high_lod", o_class, texture_count, NO_SUBMESH_FILTER));
+		scene.meshes.emplace_back(recover_moby_mesh(moby.low_lod_submeshes, "low_lod", o_class, texture_count, NO_SUBMESH_FILTER));
 		if(moby.bangles.has_value()) {
-			scene.meshes.emplace_back(recover_moby_mesh(moby.bangles->submeshes, "bangles", o_class, texture_count, moby.joint_count, moby.scale, NO_SUBMESH_FILTER));
+			scene.meshes.emplace_back(recover_moby_mesh(moby.bangles->submeshes, "bangles", o_class, texture_count, NO_SUBMESH_FILTER));
 		}
 	}
 	
@@ -736,10 +737,10 @@ MobyClassData build_moby_class(const ColladaScene& scene) {
 	verify(high_lod_mesh, "Collada file doesn't contain a 'high_lod' node.");
 	
 	MobyClassData moby;
-	moby.submeshes = build_moby_submeshes(*high_lod_mesh, scene.materials, 0.25);
+	moby.submeshes = build_moby_submeshes(*high_lod_mesh, scene.materials);
 	moby.submesh_count = moby.submeshes.size();
 	if(low_lod_mesh) {
-		moby.low_lod_submeshes = build_moby_submeshes(*low_lod_mesh, scene.materials, 0.25);
+		moby.low_lod_submeshes = build_moby_submeshes(*low_lod_mesh, scene.materials);
 		moby.low_lod_submesh_count = moby.low_lod_submeshes.size();
 	}
 	moby.skeleton = {};

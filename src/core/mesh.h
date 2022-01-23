@@ -70,9 +70,11 @@ struct Vertex {
 	glm::vec3 normal;
 	SkinAttributes skin;
 	glm::vec2 tex_coord;
+	u16 vertex_index = 0xff; // Only used by the moby code.
+	Vertex() {}
 	Vertex(const glm::vec3& p) : pos(p), normal(0, 0, 0), tex_coord(0, 0) {}
-	Vertex(const glm::vec3& p, const glm::vec3& n, const SkinAttributes& s, const glm::vec2& t)
-		: pos(p), normal(n), skin(s), tex_coord(t) {}
+	Vertex(const glm::vec3& p, const glm::vec3& n, const SkinAttributes& s)
+		: pos(p), normal(n), skin(s), tex_coord{0, 0} {}
 	bool operator==(const Vertex& rhs) const {
 		return pos == rhs.pos && normal == rhs.normal && skin == rhs.skin && tex_coord == rhs.tex_coord;
 	}
