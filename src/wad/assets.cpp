@@ -289,6 +289,10 @@ void write_assets(OutBuffer header_dest, OutBuffer data_dest, OutBuffer gs_ram, 
 		if(cls.model.has_value()) {
 			data_dest.pad(0x40);
 			entry.offset_in_asset_wad = data_dest.tell();
+			if(entry.o_class > 10) {
+				auto cd = read_moby_class(*cls.model, Game::RAC2);
+				write_moby_class(data_dest, cd, Game::RAC2);
+			} else
 			data_dest.write_multiple(*cls.model);
 		}
 		write_texture_list(entry.textures, dedupe_output.mobies_begin + i * 16, MOBY_TEXTURE_INDEX);
