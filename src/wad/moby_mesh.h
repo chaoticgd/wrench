@@ -26,6 +26,8 @@
 #define MOBY_EXPORT_SUBMESHES_SEPERATELY false
 #define NO_SUBMESH_FILTER -1
 
+#define WRENCH_PI 3.14159265358979323846
+
 packed_struct(MobyTexCoord,
 	/* 0x0 */ s16 s;
 	/* 0x2 */ s16 t;
@@ -232,5 +234,6 @@ std::vector<MobyMetalSubMesh> read_moby_metal_submeshes(Buffer src, s64 table_of
 void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalSubMesh>& submeshes, s64 class_header_ofs);
 Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* name, s32 o_class, s32 texture_count, s32 submesh_filter);
 std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vector<Material>& materials);
+void map_indices(MobySubMesh& submesh, const std::vector<size_t>& index_mapping);
 
 #endif
