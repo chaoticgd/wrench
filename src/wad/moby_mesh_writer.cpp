@@ -87,6 +87,17 @@ void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_of
 	
 	std::vector<MobySubMesh> submeshes = submeshes_in;
 	
+	// Fixup joint indices.
+	for(MobySubMesh& submesh : submeshes) {
+		for(Vertex& vertex : submesh.vertices) {
+			for(s32 i = 0; i < vertex.skin.count; i++) {
+				if(vertex.skin.joints[i] == -1) {
+					vertex.skin.joints[i] = 0;
+				}
+			}
+		}
+	}
+	
 	std::vector<std::vector<VertexLivenessInfo>> liveness = compute_matrix_liveness(submeshes);
 	assert(liveness.size() == submeshes.size());
 	
