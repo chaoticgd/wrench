@@ -82,10 +82,14 @@ static void find_duplicate_vertices(std::vector<IndexMappingRecord>& index_mappi
 static f32 acotf(f32 x);
 
 
-void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_ofs, const std::vector<MobySubMesh>& submeshes_in, f32 scale, MobyFormat format, s64 class_header_ofs) {
+void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_ofs, const MobySubMesh* submeshes_in, size_t submesh_count, f32 scale, MobyFormat format, s64 class_header_ofs) {
 	static const s32 ST_UNPACK_ADDR_QUADWORDS = 0xc2;
 	
-	std::vector<MobySubMesh> submeshes = submeshes_in;
+	// TODO: Make it so we don't have to copy the submeshes here.
+	std::vector<MobySubMesh> submeshes;
+	for(size_t i = 0; i < submesh_count; i++) {
+		submeshes.push_back(submeshes_in[i]);
+	}
 	
 	// Fixup joint indices.
 	for(MobySubMesh& submesh : submeshes) {
@@ -211,6 +215,39 @@ void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std::vector
 		dest.write(table_ofs, entry);
 		table_ofs += 0x10;
 	}
+}
+
+void write_moby_bangle_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_ofs, const MobyBangles& bangles, f32 scale, MobyFormat format, s64 class_header_ofs) {
+	assert(bangles.bangles.size() >= 1);
+	u8 submesh_begin = bangles.bangles[0].submesh_begin;
+	u8 submesh_count = bangles.bangles[0].submesh_count;
+	
+	// Since submeshes are usually written out such that they rely on data
+	// stored in previous submeshes, and different bangles can use the same
+	// submeshes, we must ensure that for each submesh that is written out, all
+	// bangles that include said submesh also include all dependent submeshes.
+	// Thus whenever a submesh is the first submesh of a bangle, we introduce a
+	// 'cut' such that data from before the cut cannot be used.
+	std::vector<bool> cuts(submesh_count, false);
+	for(size_t i = 0; i < bangles.bangles.size(); i++) {
+		const MobyBangle& bangle = bangles.bangles[i];
+		
+		assert(bangle.submesh_begin == 0 || bangle.submesh_begin >= submesh_begin);
+		if(bangle.submesh_begin > submesh_begin) {
+			cuts[bangle.submesh_begin - submesh_begin] = true;
+		}
+	}
+	
+	size_t begin = 0;
+	for(size_t i = 0; i < bangles.submeshes.size(); i++) {
+		const MobySubMesh& submesh = bangles.submeshes[i];
+		if(cuts[i]) {
+			write_moby_submeshes(dest, gif_usage, table_ofs, &bangles.submeshes[begin], i - begin, scale, format, class_header_ofs);
+			table_ofs += (i - begin) * 0x10;
+			begin = i;
+		}
+	}
+	write_moby_submeshes(dest, gif_usage, table_ofs, &bangles.submeshes[begin], bangles.submeshes.size() - begin, scale, format, class_header_ofs);
 }
 
 static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const MobySubMeshBase& submesh, s64 class_header_ofs) {

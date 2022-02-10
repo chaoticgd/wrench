@@ -201,7 +201,7 @@ static void run_gameplay_lump_test(GameplayTestArgs args) {
 static std::map<s32, std::array<u8, MD5_DIGEST_LENGTH>> moby_md5s;
 
 static void run_moby_class_test(s32 o_class, Buffer src, const char* file_path, Game game) {
-	if(o_class != /*3128 3390 2234*/2497) return;
+	if(o_class != /*3128 3390 2234 2497*/500) return;
 	
 	ERROR_CONTEXT("running moby class %d test", o_class);
 	printf("%s moby class %d\n", file_path, o_class);

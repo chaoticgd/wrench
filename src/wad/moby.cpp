@@ -246,11 +246,13 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 		header.sound_defs = dest.write_multiple(moby.sound_defs) - class_header_ofs;
 	}
 	std::vector<MobyGifUsageTableEntry> gif_usage;
-	write_moby_submeshes(dest, gif_usage, submesh_table_1_ofs, moby.submeshes, moby.scale, format, class_header_ofs);
-	write_moby_submeshes(dest, gif_usage, submesh_table_2_ofs, moby.low_lod_submeshes, moby.scale, format, class_header_ofs);
+#define DATA_SIZE(vec) vec.data(), vec.size()
+	write_moby_submeshes(dest, gif_usage, submesh_table_1_ofs, DATA_SIZE(moby.submeshes), moby.scale, format, class_header_ofs);
+	write_moby_submeshes(dest, gif_usage, submesh_table_2_ofs, DATA_SIZE(moby.low_lod_submeshes), moby.scale, format, class_header_ofs);
 	write_moby_metal_submeshes(dest, metal_submesh_table_ofs, moby.metal_submeshes, class_header_ofs);
+#undef DATA_SIZE
 	if(moby.bangles.has_value()) {
-		write_moby_submeshes(dest, gif_usage, bangles_submesh_table_ofs, moby.bangles->submeshes, moby.scale, format, class_header_ofs);
+		write_moby_bangle_submeshes(dest, gif_usage, bangles_submesh_table_ofs, *moby.bangles, moby.scale, format, class_header_ofs);
 	}
 	if(moby.team_palettes.size() > 0 && (game == Game::RAC3 || game == Game::DL)) {
 		dest.pad(0x10);

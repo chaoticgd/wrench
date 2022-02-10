@@ -110,26 +110,6 @@ packed_struct(MobySoundDef,
 	/* 0x1c */ s32 bank_index;
 )
 
-packed_struct(MobyBangle,
-	u8 submesh_begin;
-	u8 submesh_count;
-	u8 unknown_2;
-	u8 unknown_3;
-)
-
-packed_struct(MobyVertexPosition,
-	s16 x;
-	s16 y;
-	s16 z;
-	s16 w;
-)
-
-struct MobyBangles {
-	std::vector<MobyBangle> bangles;
-	std::vector<MobyVertexPosition> vertices;
-	std::vector<MobySubMesh> submeshes;
-};
-
 struct MobyCornKernel {
 	Vec4f vec;
 	std::vector<MobyVertexPosition> vertices;
