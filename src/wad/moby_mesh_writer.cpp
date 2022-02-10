@@ -79,8 +79,6 @@ struct IndexMappingRecord {
 	s32 dedup_out_edge = -1; // If this vertex is a duplicate, this points to the canonical vertex.
 };
 static void find_duplicate_vertices(std::vector<IndexMappingRecord>& index_mapping, const std::vector<Vertex>& vertices);
-static f32 acotf(f32 x);
-
 
 void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_ofs, const MobySubMesh* submeshes_in, size_t submesh_count, f32 scale, MobyFormat format, s64 class_header_ofs) {
 	static const s32 ST_UNPACK_ADDR_QUADWORDS = 0xc2;
@@ -702,18 +700,16 @@ static void pack_common_attributes(MobyVertex& dest, const Vertex& src, f32 inve
 	dest.v.x = roundf(src.pos.x * inverse_scale);
 	dest.v.y = roundf(src.pos.y * inverse_scale);
 	dest.v.z = roundf(src.pos.z * inverse_scale);
-	f32 normal_angle_azimuth_radians;
-	if(fabs(src.normal.x)) {
-		normal_angle_azimuth_radians = acotf(src.normal.y / src.normal.x);
-		if(src.normal.x < 0) {
-			normal_angle_azimuth_radians += WRENCH_PI;
-		}
-	} else {
-		normal_angle_azimuth_radians = WRENCH_PI / 2;
-	}
-	f32 normal_angle_elevation_radians = asinf(src.normal.z);
+	glm::vec3 normal = glm::normalize(src.normal);
+	f32 normal_angle_azimuth_radians = atan2f(normal.x, normal.y);
+	f32 normal_angle_elevation_radians = asinf(normal.z);
 	dest.v.normal_angle_azimuth = roundf(normal_angle_azimuth_radians * (128.f / WRENCH_PI));
 	dest.v.normal_angle_elevation = roundf(normal_angle_elevation_radians * (128.f / WRENCH_PI));
+	// If the normal vector is pointing vertically upwards, the azimuth doesn't
+	// matter so we set it to match the behaviour of Insomniac's exporter.
+	if(dest.v.normal_angle_elevation == 0x40) {
+		dest.v.normal_angle_azimuth += 0x80;
+	}
 }
 
 struct VertexLocation {
@@ -1111,8 +1107,4 @@ static void find_duplicate_vertices(std::vector<IndexMappingRecord>& index_mappi
 			index_mapping[indices[i]].dedup_out_edge = vert;
 		}
 	}
-}
-
-static f32 acotf(f32 x) {
-	return WRENCH_PI / 2 - atanf(x);
 }

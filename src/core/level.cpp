@@ -390,7 +390,7 @@ static void read_classes(LevelWad& wad, fs::path project_dir) {
 			moby.model = read_file(moby_dir/std::string(moby_json["bin"]));
 		}
 		if(moby_json.contains("model")) {
-			//moby.high_model = read_collada(read_file(moby_dir/std::string(moby_json["model"]), "r"));
+			moby.high_model = read_collada(read_file(moby_dir/std::string(moby_json["model"]), "r"));
 		}
 		moby.textures = read_texture_pngs(moby_dir, moby_json["textures"]);
 		moby.has_asset_table_entry = moby_json["has_asset_table_entry"];
