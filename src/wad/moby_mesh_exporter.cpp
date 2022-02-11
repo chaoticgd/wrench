@@ -217,8 +217,9 @@ void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std::vector
 
 void write_moby_bangle_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_ofs, const MobyBangles& bangles, f32 scale, MobyFormat format, s64 class_header_ofs) {
 	assert(bangles.bangles.size() >= 1);
-	u8 submesh_begin = bangles.bangles[0].submesh_begin;
-	u8 submesh_count = bangles.bangles[0].submesh_count;
+	u8 bangles_submesh_begin = bangles.bangles[0].submesh_begin;
+	u8 bangles_submesh_count = bangles.bangles[0].submesh_count;
+	u8 bangles_submesh_end = bangles_submesh_begin + bangles_submesh_count;
 	
 	// Since submeshes are usually written out such that they rely on data
 	// stored in previous submeshes, and different bangles can use the same
@@ -226,13 +227,18 @@ void write_moby_bangle_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 t
 	// bangles that include said submesh also include all dependent submeshes.
 	// Thus whenever a submesh is the first submesh of a bangle, we introduce a
 	// 'cut' such that data from before the cut cannot be used.
-	std::vector<bool> cuts(submesh_count, false);
+	std::vector<bool> cuts(bangles_submesh_count, false);
 	for(size_t i = 0; i < bangles.bangles.size(); i++) {
 		const MobyBangle& bangle = bangles.bangles[i];
 		
-		assert(bangle.submesh_begin == 0 || bangle.submesh_begin >= submesh_begin);
-		if(bangle.submesh_begin > submesh_begin) {
-			cuts[bangle.submesh_begin - submesh_begin] = true;
+		assert(bangle.submesh_begin == 0 || bangle.submesh_begin >= bangles_submesh_begin);
+		if(bangle.submesh_begin > bangles_submesh_begin) {
+			cuts[bangle.submesh_begin - bangles_submesh_begin] = true;
+		}
+		
+		u16 submesh_end = bangle.submesh_begin + bangle.submesh_count;
+		if(submesh_end >= bangles_submesh_begin && submesh_end < bangles_submesh_end) {
+			cuts[submesh_end - bangles_submesh_begin] = true;
 		}
 	}
 	
@@ -353,21 +359,29 @@ static MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const MobySubMe
 		}
 	}
 	
-	// Allocate space for most of the newly transferred matrices.
+	//
 	std::vector<u8> two_way_joints;
-	std::vector<MobyMatrixTransfer> maybe_conflicting_matrix_transfers;
-	std::vector<MobyMatrixTransfer> independent_matrix_transfers;
-	for(u8 joint : used_joints) {
+	std::set<u8> other_joints;
+	for(auto iter = used_joints.rbegin(); iter != used_joints.rend(); iter++) {
+		u8 joint = *iter;
 		if(!joint_used_by_two_way_blends[joint]) {
 			two_way_joints.push_back(joint);
 		} else {
-			Opt<u8> addr = mat_alloc.allocate_transferred(joint, "not two-way");
-			if(addr.has_value()) {
-				if(slots_in_use[*addr / 0x4]) {
-					maybe_conflicting_matrix_transfers.push_back(MobyMatrixTransfer{joint, *addr});
-				} else {
-					independent_matrix_transfers.push_back(MobyMatrixTransfer{joint, *addr});
-				}
+			other_joints.emplace(joint);
+		}
+	}
+	std::reverse(BEGIN_END(two_way_joints));
+	
+	// Allocate space for most of the newly transferred matrices.
+	std::vector<MobyMatrixTransfer> maybe_conflicting_matrix_transfers;
+	std::vector<MobyMatrixTransfer> independent_matrix_transfers;
+	for(u8 joint : other_joints) {
+		Opt<u8> addr = mat_alloc.allocate_transferred(joint, "not two-way");
+		if(addr.has_value()) {
+			if(slots_in_use[*addr / 0x4]) {
+				maybe_conflicting_matrix_transfers.push_back(MobyMatrixTransfer{joint, *addr});
+			} else {
+				independent_matrix_transfers.push_back(MobyMatrixTransfer{joint, *addr});
 			}
 		}
 	}
@@ -557,6 +571,7 @@ static MobySubMeshLowLevel pack_vertices(s32 smi, const MobySubMesh& submesh, VU
 			pack_common_attributes(mv, vertex, inverse_scale);
 			mv.v.regular.vu0_matrix_load_addr = mat_alloc.get_allocation(vertex.skin, smi).address;
 			mv.v.regular.vu0_transferred_matrix_store_addr = 0xf4;
+			//mv.v.regular.unused_5 = smi;
 			
 			dest.vertices.emplace_back(mv);
 		}
@@ -574,6 +589,7 @@ static MobySubMeshLowLevel pack_vertices(s32 smi, const MobySubMesh& submesh, VU
 			pack_common_attributes(mv, vertex, inverse_scale);
 			mv.v.regular.vu0_matrix_load_addr = mat_alloc.get_allocation(vertex.skin, smi).address;
 			mv.v.regular.vu0_transferred_matrix_store_addr = 0xf4;
+			//mv.v.regular.unused_5 = smi;
 			
 			dest.vertices.emplace_back(mv);
 		}
@@ -590,8 +606,7 @@ VU0MatrixAllocator::VU0MatrixAllocator(const std::vector<MobySubMesh>& submeshes
 		std::set<u8> joints;
 		for(size_t j = 0; j < submesh.vertices.size(); j++) {
 			const Vertex& vertex = submesh.vertices[j];
-			bool already_blended = vertex.skin.count > 1 && liveness[i][j].population_count == 0;
-			if(!already_blended) {
+			if(vertex.skin.count == 1 || (vertex.skin.count > 1 && liveness[i][j].population_count > 0)) {
 				for(s32 k = 0; k < vertex.skin.count; k++) {
 					joints.emplace(vertex.skin.joints[k]);
 				}
@@ -601,7 +616,7 @@ VU0MatrixAllocator::VU0MatrixAllocator(const std::vector<MobySubMesh>& submeshes
 		max_joints_per_submesh = std::max(max_joints_per_submesh, (s32) joints.size());
 	}
 	
-	first_blend_store_addr = (max_joints_per_submesh + 2) * 0x4;
+	first_blend_store_addr = (max_joints_per_submesh + 1) * 0x4;
 	next_blend_store_addr = first_blend_store_addr;
 	verify(first_blend_store_addr < 0xf4, "Failed to allocate transfer matrices in VU0 memory. Try simplifying your joint weights.");
 }
@@ -649,9 +664,9 @@ void VU0MatrixAllocator::allocate_blended(SkinAttributes attribs, s32 current_su
 			if(next_blend_store_addr == first_addr) {
 				break;
 			}
-			//verify(next_blend_store_addr != first_addr,
-			//	"Failed to allocate blended matrices in VU0 memory. Nasty edge case! "
-			//	"Please file a bug report with the relevant model file attached.");
+			verify(next_blend_store_addr != first_addr,
+				"Failed to allocate blended matrices in VU0 memory. Nasty edge case! "
+				"Please file a bug report with the relevant model file attached.");
 		}
 		
 		VERBOSE_MATRIX_ALLOCATION(printf("Alloc blended matrix {%hhu,{%hhd,%hhd,%hhd},{%hhu,%hhu,%hhu}} -> %hhx (%d)\n",
@@ -675,14 +690,14 @@ MatrixAllocation VU0MatrixAllocator::get_allocation(SkinAttributes attribs, s32 
 	assert(iter != allocations.end());
 	MatrixAllocation& allocation = iter->second;
 	MatrixSlot& slot = slots[allocation.address / 0x4];
-	//verify(allocation.generation == slot.generation,
-	//	"Failed to get address for matrix with joint weights {%hhu,{%hhd,%hhd,%hhd},{%hhu,%hhu,%hhu}}. Generations are %d and %d.",
-	//		attribs.count, attribs.joints[0], attribs.joints[1], attribs.joints[2],
-	//		attribs.weights[0], attribs.weights[1], attribs.weights[2],
-	//		allocation.generation, slot.generation);
-	//verify(attribs.count == 1 || slot.liveness >= current_submesh,
-	//	"Bad liveness analysis (current submesh is %d, max is %d).",
-	//	current_submesh, slot.liveness);
+	verify(allocation.generation == slot.generation,
+		"Failed to get address for matrix with joint weights {%hhu,{%hhd,%hhd,%hhd},{%hhu,%hhu,%hhu}}. Generations are %d and %d.",
+			attribs.count, attribs.joints[0], attribs.joints[1], attribs.joints[2],
+			attribs.weights[0], attribs.weights[1], attribs.weights[2],
+			allocation.generation, slot.generation);
+	verify(attribs.count == 1 || slot.liveness >= current_submesh,
+		"Bad liveness analysis (current submesh is %d, max is %d).",
+		current_submesh, slot.liveness);
 	MatrixAllocation copy = allocation;
 	allocation.first_use = false;
 	return copy;

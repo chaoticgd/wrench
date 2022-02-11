@@ -286,6 +286,11 @@ static SkinAttributes read_skin_attributes(Opt<SkinAttributes> blend_buffer[64],
 		s8 spr_joint_index = bits_9_15;
 		store_skin_attribs(transfer_addr, SkinAttributes{1, {spr_joint_index, 0, 0}, {255, 0, 0}});
 		
+		verify(mv.v.two_way_blend.vu0_matrix_load_addr_1 != transfer_addr &&
+			mv.v.two_way_blend.vu0_matrix_load_addr_2 != transfer_addr,
+			"Loading from and storing to the same VU0 address (%02hhx) in the same loop iteration. "
+			"Insomniac's exporter never does this.", transfer_addr);
+		
 		SkinAttributes src_1 = load_skin_attribs(mv.v.two_way_blend.vu0_matrix_load_addr_1);
 		SkinAttributes src_2 = load_skin_attribs(mv.v.two_way_blend.vu0_matrix_load_addr_2);
 		verify(src_1.count == 1 && src_2.count == 1, "Input to two-way matrix blend operation has already been blended.");
@@ -366,6 +371,10 @@ static SkinAttributes read_skin_attributes(Opt<SkinAttributes> blend_buffer[64],
 		s8 spr_joint_index = bits_9_15;
 		store_skin_attribs(transfer_addr, SkinAttributes{1, {spr_joint_index, 0, 0}, {255, 0, 0}});
 		
+		verify(mv.v.regular.vu0_matrix_load_addr != transfer_addr,
+			"Loading from and storing to the same VU0 address (%02hhx) in the same loop iteration. "
+			"Insomniac's exporter never does this.", transfer_addr);
+		
 		attribs = load_skin_attribs(mv.v.regular.vu0_matrix_load_addr);
 		
 		if(transfer_addr != 0xf4) {
@@ -388,8 +397,6 @@ static std::vector<MobyVertex> read_vertices(Buffer src, const MobySubMeshEntry&
 	s32 in_file_vertex_count = header.two_way_blend_vertex_count + header.three_way_blend_vertex_count + header.main_vertex_count;
 	std::vector<MobyVertex> vertices = src.read_multiple<MobyVertex>(vertex_ofs, in_file_vertex_count, "vertex table").copy();
 	vertex_ofs += in_file_vertex_count * 0x10;
-	s64 two_way_blend_vertex_count = header.two_way_blend_vertex_count;
-	s64 three_way_blend_vertex_count = header.three_way_blend_vertex_count;
 	
 	// Fix vertex indices (see comment in write_vertices).
 	for(size_t i = 7; i < vertices.size(); i++) {
