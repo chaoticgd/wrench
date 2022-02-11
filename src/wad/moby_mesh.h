@@ -247,13 +247,13 @@ struct MobyBangles {
 	std::vector<MobySubMesh> submeshes;
 };
 
-// moby_mesh_reader.cpp
+// moby_mesh_importer.cpp
 std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s64 count, f32 scale, s32 joint_count, MobyFormat format);
 std::vector<MobyMetalSubMesh> read_moby_metal_submeshes(Buffer src, s64 table_ofs, s64 count);
 Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* name, s32 o_class, s32 texture_count, s32 submesh_filter);
 void map_indices(MobySubMesh& submesh, const std::vector<size_t>& index_mapping);
 
-// moby_mesh_writer.cpp
+// moby_mesh_exporter.cpp
 using GifUsageTable = std::vector<MobyGifUsageTableEntry>;
 void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_ofs, const MobySubMesh* submeshes_in, size_t submesh_count, f32 scale, MobyFormat format, s64 class_header_ofs);
 void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalSubMesh>& submeshes, s64 class_header_ofs);
