@@ -227,11 +227,18 @@ enum class MobyFormat {
 	RAC1, RAC2, RAC3DL
 };
 
-packed_struct(MobyBangle,
+packed_struct(MobyBangleHeader,
 	u8 submesh_begin;
 	u8 submesh_count;
 	u8 unknown_2;
 	u8 unknown_3;
+)
+
+packed_struct(MobyBangle,
+	u8 high_lod_submesh_begin;
+	u8 high_lod_submesh_count;
+	u8 low_lod_submesh_begin;
+	u8 low_lod_submesh_count;
 )
 
 packed_struct(MobyVertexPosition,
@@ -242,6 +249,7 @@ packed_struct(MobyVertexPosition,
 )
 
 struct MobyBangles {
+	MobyBangleHeader header;
 	std::vector<MobyBangle> bangles;
 	std::vector<MobyVertexPosition> vertices;
 	std::vector<MobySubMesh> submeshes;

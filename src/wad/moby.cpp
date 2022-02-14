@@ -119,10 +119,9 @@ MobyClassData read_moby_class(Buffer src, Game game) {
 		s64 metal_table_ofs = header.submesh_table_offset + header.metal_submesh_begin * 0x10;
 		moby.metal_submeshes = read_moby_metal_submeshes(src, metal_table_ofs, header.metal_submesh_count);
 		if(header.bangles != 0) {
-			MobyBangle& first_bangle = moby.bangles->bangles.at(0);
-			s64 bangles_submesh_table_ofs = header.submesh_table_offset + first_bangle.submesh_begin * 0x10;
-			moby.bangles->submeshes = read_moby_submeshes(src, bangles_submesh_table_ofs, first_bangle.submesh_count, moby.scale, moby.joint_count, format);
-			mystery_data_ofs = std::max(mystery_data_ofs, bangles_submesh_table_ofs + first_bangle.submesh_count * 0x10);
+			s64 bangles_submesh_table_ofs = header.submesh_table_offset + moby.bangles->header.submesh_begin * 0x10;
+			moby.bangles->submeshes = read_moby_submeshes(src, bangles_submesh_table_ofs, moby.bangles->header.submesh_count, moby.scale, moby.joint_count, format);
+			mystery_data_ofs = std::max(mystery_data_ofs, bangles_submesh_table_ofs + moby.bangles->header.submesh_count * 0x10);
 		} else {
 			mystery_data_ofs = std::max(mystery_data_ofs, metal_table_ofs + header.metal_submesh_count * 0x10);
 		}
@@ -278,19 +277,21 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 
 static MobyBangles read_moby_bangles(Buffer src) {
 	MobyBangles bangles;
-	bangles.bangles = src.read_multiple<MobyBangle>(0, 16, "moby bangles").copy();
+	bangles.header = src.read<MobyBangleHeader>(0, "moby bangle header");
+	bangles.bangles = src.read_multiple<MobyBangle>(4, 15, "moby bangles").copy();
 	s32 bangle_count = 0;
 	for(MobyBangle& bangle : bangles.bangles) {
-		if(bangle.submesh_begin != 0 || bangle.submesh_begin != 0) {
+		if(bangle.high_lod_submesh_begin != 0 || bangle.high_lod_submesh_begin != 0) {
 			bangle_count++;
 		}
 	}
-	bangles.vertices = src.read_multiple<MobyVertexPosition>(0x40, 2 * (bangle_count - 1), "moby bangle vertices").copy();
+	bangles.vertices = src.read_multiple<MobyVertexPosition>(0x40, 2 * bangle_count, "moby bangle vertices").copy();
 	return bangles;
 }
 
 static s64 write_moby_bangles(OutBuffer dest, const MobyBangles& bangles) {
 	s64 ofs = dest.tell();
+	dest.write(bangles.header);
 	dest.write_multiple(bangles.bangles);
 	dest.write_multiple(bangles.vertices);
 	return ofs;

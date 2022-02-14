@@ -216,29 +216,24 @@ void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std::vector
 }
 
 void write_moby_bangle_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_ofs, const MobyBangles& bangles, f32 scale, MobyFormat format, s64 class_header_ofs) {
-	assert(bangles.bangles.size() >= 1);
-	u8 bangles_submesh_begin = bangles.bangles[0].submesh_begin;
-	u8 bangles_submesh_count = bangles.bangles[0].submesh_count;
-	u8 bangles_submesh_end = bangles_submesh_begin + bangles_submesh_count;
-	
 	// Since submeshes are usually written out such that they rely on data
 	// stored in previous submeshes, and different bangles can use the same
 	// submeshes, we must ensure that for each submesh that is written out, all
 	// bangles that include said submesh also include all dependent submeshes.
 	// Thus whenever a submesh is the first submesh of a bangle, we introduce a
 	// 'cut' such that data from before the cut cannot be used.
-	std::vector<bool> cuts(bangles_submesh_count, false);
+	std::vector<bool> cuts(bangles.header.submesh_count, false);
 	for(size_t i = 0; i < bangles.bangles.size(); i++) {
 		const MobyBangle& bangle = bangles.bangles[i];
 		
-		assert(bangle.submesh_begin == 0 || bangle.submesh_begin >= bangles_submesh_begin);
-		if(bangle.submesh_begin > bangles_submesh_begin) {
-			cuts[bangle.submesh_begin - bangles_submesh_begin] = true;
+		assert(bangle.high_lod_submesh_begin == 0 || bangle.high_lod_submesh_begin >= bangles.header.submesh_begin);
+		if(bangle.high_lod_submesh_begin > bangles.header.submesh_begin) {
+			cuts[bangle.high_lod_submesh_begin - bangles.header.submesh_begin] = true;
 		}
 		
-		u16 submesh_end = bangle.submesh_begin + bangle.submesh_count;
-		if(submesh_end >= bangles_submesh_begin && submesh_end < bangles_submesh_end) {
-			cuts[submesh_end - bangles_submesh_begin] = true;
+		assert(bangle.low_lod_submesh_begin == 0 || bangle.low_lod_submesh_begin >= bangles.header.submesh_begin);
+		if(bangle.low_lod_submesh_begin > bangles.header.submesh_begin) {
+			cuts[bangle.low_lod_submesh_begin - bangles.header.submesh_begin] = true;
 		}
 	}
 	
