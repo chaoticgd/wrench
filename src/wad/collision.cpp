@@ -488,7 +488,7 @@ static bool test_tri_sector_intersection(const glm::vec3& v0, const glm::vec3& v
 		r += fabs(glm::dot(u0, axis));
 		r += fabs(glm::dot(u1, axis));
 		r += fabs(glm::dot(u2, axis));
-		r *= 2.01f;
+		r *= 2.f;
 		if(std::max(-std::max({p0, p1, p2}), std::min({p0, p1, p2})) > r) {
 			return false;
 		}
