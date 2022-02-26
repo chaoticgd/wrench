@@ -136,7 +136,7 @@ void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_of
 			mv.v.regular.low_halfword |= transfer.spr_joint_index << 9;
 			mv.v.regular.vu0_transferred_matrix_store_addr = transfer.vu0_dest_addr;
 		}
-		/* HACK */if(i!=4)low.preloop_matrix_transfers = std::move(schedule.preloop_transfers);
+		low.preloop_matrix_transfers = std::move(schedule.preloop_transfers);
 		assert(schedule.two_way_transfers.size() <= low.two_way_blend_vertex_count);
 		for(size_t i = 0; i < schedule.two_way_transfers.size(); i++) {
 			MobyVertex& mv = low.vertices.at(i);
