@@ -45,14 +45,38 @@ struct Face {
 	}
 };
 
+struct SkinAttributes {
+	u8 count = 1;
+	s8 joints[3] = {-1, 0, 0};
+	u8 weights[3] = {255, 0, 0};
+	bool operator==(const SkinAttributes& rhs) const {
+		return count == rhs.count &&
+			joints[0] == rhs.joints[0] && joints[1] == rhs.joints[1] && joints[2] == rhs.joints[2] &&
+			weights[0] == rhs.weights[0] && weights[1] == rhs.weights[1] && weights[2] == rhs.weights[2];
+	}
+	bool operator<(const SkinAttributes& rhs) const {
+		if(count != rhs.count) return count < rhs.count;
+		if(joints[0] != rhs.joints[0]) return joints[0] < rhs.joints[0];
+		if(joints[1] != rhs.joints[1]) return joints[1] < rhs.joints[1];
+		if(joints[2] != rhs.joints[2]) return joints[2] < rhs.joints[2];
+		if(weights[0] != rhs.weights[0]) return weights[0] < rhs.weights[0];
+		if(weights[1] != rhs.weights[1]) return weights[1] < rhs.weights[1];
+		return weights[2] < rhs.weights[2];
+	}
+};
+
 struct Vertex {
 	glm::vec3 pos;
 	glm::vec3 normal;
+	SkinAttributes skin;
 	glm::vec2 tex_coord;
+	u16 vertex_index = 0xff; // Only used by the moby code.
+	Vertex() {}
 	Vertex(const glm::vec3& p) : pos(p), normal(0, 0, 0), tex_coord(0, 0) {}
-	Vertex(const glm::vec3& p, const glm::vec3& n, const glm::vec2& t) : pos(p), normal(n), tex_coord(t) {}
+	Vertex(const glm::vec3& p, const glm::vec3& n, const SkinAttributes& s)
+		: pos(p), normal(n), skin(s), tex_coord{0, 0} {}
 	bool operator==(const Vertex& rhs) const {
-		return pos == rhs.pos && normal == rhs.normal && tex_coord == rhs.tex_coord;
+		return pos == rhs.pos && normal == rhs.normal && skin == rhs.skin && tex_coord == rhs.tex_coord;
 	}
 	bool operator<(const Vertex& rhs) const {
 		// The moby code relies on the texture coordinates being compared last.
@@ -62,6 +86,7 @@ struct Vertex {
 		if(normal.z != rhs.normal.z) return normal.z < rhs.normal.z;
 		if(normal.y != rhs.normal.y) return normal.y < rhs.normal.y;
 		if(normal.x != rhs.normal.x) return normal.x < rhs.normal.x;
+		if(!(skin == rhs.skin)) return skin < rhs.skin;
 		if(tex_coord.y != rhs.tex_coord.y) return tex_coord.y < rhs.tex_coord.y;
 		return tex_coord.x < rhs.tex_coord.x;
 	}

@@ -42,19 +42,19 @@ packed_struct(AssetHeader,
 	/* 0x6c */ s32 part_defs_offset;
 	/* 0x70 */ s32 sound_remap_offset;
 	/* 0x74 */ s32 unknown_74;
-	union {
+	packed_nested_anon_union(
 		/* 0x78 */ s32 ratchet_seqs_rac123;
 		/* 0x78 */ s32 light_cuboids_offset_dl;
-	};
+	)
 	/* 0x7c */ s32 scene_view_size;
-	union {
+	packed_nested_anon_union(
 		/* 0x80 */ s32 thing_table_count_rac1;
 		/* 0x80 */ s32 index_into_some1_texs_rac2_maybe3;
-	};
-	union {
+	)
+	packed_nested_anon_union(
 		/* 0x84 */ s32 thing_table_offset_rac1;
 		/* 0x84 */ s32 moby_gs_stash_count_rac23dl;
-	};
+	)
 	/* 0x88 */ s32 assets_compressed_size;
 	/* 0x8c */ s32 assets_decompressed_size;
 	/* 0x90 */ s32 chrome_map_texture;

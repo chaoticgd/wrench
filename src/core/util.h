@@ -139,9 +139,21 @@ struct ParseError : std::exception {
 #ifdef _MSC_VER
 	#define packed_struct(name, ...) \
 		__pragma(pack(push, 1)) struct name { __VA_ARGS__ } __pragma(pack(pop));
+		
+	#define packed_nested_struct(name, ...) \
+		struct { __VA_ARGS__ } name;
+	
+	#define packed_nested_anon_union(...) \
+		union { __VA_ARGS__ };
 #else
 	#define packed_struct(name, ...) \
 		struct __attribute__((__packed__)) name { __VA_ARGS__ };
+	
+	#define packed_nested_struct(name, ...) \
+		struct __attribute__((__packed__)) { __VA_ARGS__ } name;
+	
+	#define packed_nested_anon_union(...) \
+		union __attribute__((__packed__)) { __VA_ARGS__ };
 #endif
 
 static const s64 SECTOR_SIZE = 0x800;
