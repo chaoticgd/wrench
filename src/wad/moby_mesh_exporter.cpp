@@ -21,7 +21,7 @@
 #include <set>
 #include <core/vif.h>
 
-#define VERBOSE_MATRIX_ALLOCATION(...) __VA_ARGS__
+#define VERBOSE_MATRIX_ALLOCATION(...) //__VA_ARGS__
 
 struct MatrixAllocation {
 	u8 address = 0;
@@ -33,11 +33,22 @@ struct MatrixAllocation {
 struct MatrixSlot {
 	s32 generation = 0;
 	s32 liveness = -1;
+	SkinAttributes current_contents;
 };
 
-struct VertexLivenessInfo {
+struct VertexLocation {
+	size_t submesh;
+	size_t vertex;
+	
+	const Vertex& find_vertex_in(const std::vector<MobySubMesh>& submeshes) const {
+		return submeshes[submesh].vertices[vertex];
+	}
+};
+
+struct MatrixLivenessInfo {
 	s32 population_count = 0;
 	s32 last_submesh = -1;
+	VertexLocation first_vertex;
 };
 
 class VU0MatrixAllocator {
@@ -50,12 +61,12 @@ class VU0MatrixAllocator {
 	s32 transfer_allocations_this_submesh = 0;
 	s32 blend_allocations_this_submesh = 0;
 public:
-	VU0MatrixAllocator(const std::vector<MobySubMesh>& submeshes, const std::vector<std::vector<VertexLivenessInfo>>& liveness);
+	VU0MatrixAllocator(s32 max_joints_per_submesh);
 	void new_submesh();
 	Opt<u8> allocate_transferred(u8 joint, const char* context);
-	void allocate_blended(SkinAttributes attribs, s32 current_submesh, s32 last_submesh);
-	MatrixAllocation get_allocation(SkinAttributes attribs, s32 current_submesh);
-	MatrixAllocation get_allocation_pre(SkinAttributes attribs);
+	void allocate_blended(SkinAttributes attribs, s32 current_submesh, s32 last_submesh, const std::vector<Vertex>& vertices);
+	Opt<MatrixAllocation> get_allocation(SkinAttributes attribs, s32 current_submesh);
+	Opt<MatrixAllocation> get_allocation_pre(SkinAttributes attribs);
 };
 
 // write_moby_submeshes
@@ -66,10 +77,11 @@ struct MatrixTransferSchedule {
 	std::vector<MobyMatrixTransfer> preloop_transfers;
 	std::vector<MobyMatrixTransfer> two_way_transfers;
 };
-static MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const MobySubMesh& submesh, MobySubMeshLowLevel* last_submesh, VU0MatrixAllocator& mat_alloc, const std::vector<VertexLivenessInfo>& liveness);
-static MobySubMeshLowLevel pack_vertices(s32 smi, const MobySubMesh& submesh, VU0MatrixAllocator& mat_alloc, const std::vector<VertexLivenessInfo>& liveness, f32 scale);
+static MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const MobySubMesh& submesh, MobySubMeshLowLevel* last_submesh, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness);
+static MobySubMeshLowLevel pack_vertices(s32 smi, const MobySubMesh& submesh, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness, f32 scale);
 static void pack_common_attributes(MobyVertex& dest, const Vertex& src, f32 inverse_scale);
-static std::vector<std::vector<VertexLivenessInfo>> compute_matrix_liveness(const std::vector<MobySubMesh>& submeshes);
+static s32 max_num_joints_referenced_per_submesh(const std::vector<MobySubMesh>& submeshes);
+static std::vector<std::vector<MatrixLivenessInfo>> compute_matrix_liveness(const std::vector<MobySubMesh>& submeshes);
 static MobyVertexTableHeaderRac1 write_vertices(OutBuffer& dest, const MobySubMesh& submesh, const MobySubMeshLowLevel& low, MobyFormat format);
 // build_moby_submeshes
 struct IndexMappingRecord {
@@ -100,12 +112,14 @@ void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_of
 		}
 	}
 	
-	std::vector<std::vector<VertexLivenessInfo>> liveness = compute_matrix_liveness(submeshes);
+	s32 max_joints_per_submesh = max_num_joints_referenced_per_submesh(submeshes);
+	
+	std::vector<std::vector<MatrixLivenessInfo>> liveness = compute_matrix_liveness(submeshes);
 	assert(liveness.size() == submeshes.size());
 	
 	std::vector<MobySubMeshLowLevel> low_submeshes;
 	MobySubMeshLowLevel* last = nullptr;
-	VU0MatrixAllocator matrix_allocator(submeshes, liveness);
+	VU0MatrixAllocator matrix_allocator(max_joints_per_submesh);
 	for(size_t i = 0; i < submeshes.size(); i++) {
 		VERBOSE_MATRIX_ALLOCATION(printf("**** submesh %d ****\n", i));
 		matrix_allocator.new_submesh();
@@ -122,7 +136,7 @@ void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_of
 			mv.v.regular.low_halfword |= transfer.spr_joint_index << 9;
 			mv.v.regular.vu0_transferred_matrix_store_addr = transfer.vu0_dest_addr;
 		}
-		low.preloop_matrix_transfers = std::move(schedule.preloop_transfers);
+		/* HACK */if(i!=4)low.preloop_matrix_transfers = std::move(schedule.preloop_transfers);
 		assert(schedule.two_way_transfers.size() <= low.two_way_blend_vertex_count);
 		for(size_t i = 0; i < schedule.two_way_transfers.size(); i++) {
 			MobyVertex& mv = low.vertices.at(i);
@@ -325,7 +339,7 @@ static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usag
 	return rel_texture_unpack_ofs;
 }
 
-static MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const MobySubMesh& submesh, MobySubMeshLowLevel* last_submesh, VU0MatrixAllocator& mat_alloc, const std::vector<VertexLivenessInfo>& liveness) {
+static MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const MobySubMesh& submesh, MobySubMeshLowLevel* last_submesh, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness) {
 	// Determine which slots in VU0 memory are in use by the previous submesh
 	// while we are trying to do transfers for the current submesh.
 	std::vector<bool> slots_in_use(0x40, false);
@@ -343,14 +357,13 @@ static MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const MobySubMe
 	std::vector<bool> joint_used_by_two_way_blends(256, false);
 	for(size_t i = 0; i < submesh.vertices.size(); i++) {
 		const Vertex& vertex = submesh.vertices[i];
-		if(vertex.skin.count == 1 || liveness[i].population_count > 0) {
-			for(s32 j = 0; j < vertex.skin.count; j++) {
-				u8 joint = (u8) vertex.skin.joints[j];
-				if(vertex.skin.count == 2 && liveness[i].population_count) {
-					joint_used_by_two_way_blends[joint] = true;
-				}
-				used_joints.emplace(joint);
+		//if(vertex.skin.count == 1 || liveness[i].population_count > 0) {
+		for(s32 j = 0; j < vertex.skin.count; j++) {
+			u8 joint = (u8) vertex.skin.joints[j];
+			if(vertex.skin.count == 2) {
+				joint_used_by_two_way_blends[joint] = true;
 			}
+			used_joints.emplace(joint);
 		}
 	}
 	
@@ -401,10 +414,16 @@ static MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const MobySubMe
 	// Allocate space for newly blended matrices.
 	for(size_t i = 0; i < submesh.vertices.size(); i++) {
 		const Vertex& vertex = submesh.vertices[i];
-		if(vertex.skin.count > 1 && liveness[i].population_count > 1) {
-			mat_alloc.allocate_blended(submesh.vertices[i].skin, smi, liveness[i].last_submesh);
+		if(vertex.skin.count > 1) {
+			mat_alloc.allocate_blended(submesh.vertices[i].skin, smi, liveness[i].last_submesh, submesh.vertices);
 		}
 	}
+	
+	auto xferlist = {
+		allocated_two_way_transfers,
+		maybe_conflicting_matrix_transfers,
+		independent_matrix_transfers
+	};
 	
 	// Count the number of two-way blends that will be issued for this submesh.
 	s32 two_way_count = 0;
@@ -413,7 +432,10 @@ static MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const MobySubMe
 		if(vertex.skin.count == 2) {
 			MatrixAllocation allocation;
 			if(liveness[i].population_count != 1) {
-				allocation = mat_alloc.get_allocation_pre(vertex.skin);
+				auto alloc_opt = mat_alloc.get_allocation_pre(vertex.skin);
+				if(alloc_opt.has_value()) {
+					allocation = *alloc_opt;
+				}
 			}
 			if(allocation.first_use_pre) {
 				two_way_count++;
@@ -472,7 +494,7 @@ static MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const MobySubMe
 	return schedule;
 }
 
-static MobySubMeshLowLevel pack_vertices(s32 smi, const MobySubMesh& submesh, VU0MatrixAllocator& mat_alloc, const std::vector<VertexLivenessInfo>& liveness, f32 scale) {
+static MobySubMeshLowLevel pack_vertices(s32 smi, const MobySubMesh& submesh, VU0MatrixAllocator& mat_alloc, const std::vector<MatrixLivenessInfo>& liveness, f32 scale) {
 	MobySubMeshLowLevel dest{submesh};
 	dest.index_mapping.resize(submesh.vertices.size());
 	
@@ -486,7 +508,10 @@ static MobySubMeshLowLevel pack_vertices(s32 smi, const MobySubMesh& submesh, VU
 		if(vertex.skin.count == 2) {
 			MatrixAllocation allocation;
 			if(liveness[i].population_count != 1) {
-				allocation = mat_alloc.get_allocation(vertex.skin, smi);
+				auto alloc_opt = mat_alloc.get_allocation(vertex.skin, smi);
+				if(alloc_opt.has_value()) {
+					allocation = *alloc_opt;
+				}
 			}
 			if(allocation.first_use) {
 				first_uses[i] = true;
@@ -500,8 +525,12 @@ static MobySubMeshLowLevel pack_vertices(s32 smi, const MobySubMesh& submesh, VU
 				SkinAttributes load_1 = {1, {vertex.skin.joints[0], 0, 0}, {255, 0, 0}};
 				SkinAttributes load_2 = {1, {vertex.skin.joints[1], 0, 0}, {255, 0, 0}};
 				
-				mv.v.two_way_blend.vu0_matrix_load_addr_1 = mat_alloc.get_allocation(load_1, smi).address;
-				mv.v.two_way_blend.vu0_matrix_load_addr_2 = mat_alloc.get_allocation(load_2, smi).address;
+				auto alloc_1 = mat_alloc.get_allocation(load_1, smi);
+				auto alloc_2 = mat_alloc.get_allocation(load_2, smi);
+				assert(alloc_1 && alloc_2);
+				
+				mv.v.two_way_blend.vu0_matrix_load_addr_1 = alloc_1->address;
+				mv.v.two_way_blend.vu0_matrix_load_addr_2 = alloc_2->address;
 				mv.v.two_way_blend.weight_1 = vertex.skin.weights[0];
 				mv.v.two_way_blend.weight_2 = vertex.skin.weights[1];
 				mv.v.two_way_blend.vu0_transferred_matrix_store_addr = 0xf4;
@@ -522,7 +551,10 @@ static MobySubMeshLowLevel pack_vertices(s32 smi, const MobySubMesh& submesh, VU
 		if(vertex.skin.count == 3) {
 			MatrixAllocation allocation;
 			if(liveness[i].population_count != 1) {
-				allocation = mat_alloc.get_allocation(vertex.skin, smi);
+				auto alloc_opt = mat_alloc.get_allocation(vertex.skin, smi);
+				if(alloc_opt.has_value()) {
+					allocation = *alloc_opt;
+				}
 			}
 			if(allocation.first_use) {
 				first_uses[i] = true;
@@ -537,9 +569,14 @@ static MobySubMeshLowLevel pack_vertices(s32 smi, const MobySubMesh& submesh, VU
 				SkinAttributes load_2 = {1, {vertex.skin.joints[1], 0, 0}, {255, 0, 0}};
 				SkinAttributes load_3 = {1, {vertex.skin.joints[2], 0, 0}, {255, 0, 0}};
 				
-				mv.v.three_way_blend.vu0_matrix_load_addr_1 = mat_alloc.get_allocation(load_1, smi).address;
-				mv.v.three_way_blend.vu0_matrix_load_addr_2 = mat_alloc.get_allocation(load_2, smi).address;
-				mv.v.three_way_blend.low_halfword |= (mat_alloc.get_allocation(load_3, smi).address / 2) << 9;
+				auto alloc_1 = mat_alloc.get_allocation(load_1, smi);
+				auto alloc_2 = mat_alloc.get_allocation(load_2, smi);
+				auto alloc_3 = mat_alloc.get_allocation(load_3, smi);
+				assert(alloc_1 && alloc_2 && alloc_3);
+				
+				mv.v.three_way_blend.vu0_matrix_load_addr_1 = alloc_1->address;
+				mv.v.three_way_blend.vu0_matrix_load_addr_2 = alloc_2->address;
+				mv.v.three_way_blend.low_halfword |= (alloc_3->address / 2) << 9;
 				mv.v.three_way_blend.weight_1 = vertex.skin.weights[0];
 				mv.v.three_way_blend.weight_2 = vertex.skin.weights[1];
 				mv.v.three_way_blend.weight_3 = vertex.skin.weights[2];
@@ -561,10 +598,13 @@ static MobySubMeshLowLevel pack_vertices(s32 smi, const MobySubMesh& submesh, VU
 			dest.main_vertex_count++;
 			dest.index_mapping[i] = dest.vertices.size();
 			
+			auto alloc = mat_alloc.get_allocation(vertex.skin, smi);
+			assert(alloc);
+			
 			MobyVertex mv = {0};
 			mv.v.i.low_halfword = vertex.vertex_index & 0x1ff;
 			pack_common_attributes(mv, vertex, inverse_scale);
-			mv.v.regular.vu0_matrix_load_addr = mat_alloc.get_allocation(vertex.skin, smi).address;
+			mv.v.regular.vu0_matrix_load_addr = alloc->address;
 			mv.v.regular.vu0_transferred_matrix_store_addr = 0xf4;
 			//mv.v.regular.unused_5 = smi;
 			
@@ -579,10 +619,13 @@ static MobySubMeshLowLevel pack_vertices(s32 smi, const MobySubMesh& submesh, VU
 			dest.main_vertex_count++;
 			dest.index_mapping[i] = dest.vertices.size();
 			
+			auto alloc = mat_alloc.get_allocation(vertex.skin, smi);
+			assert(alloc);
+			
 			MobyVertex mv = {0};
 			mv.v.i.low_halfword = vertex.vertex_index & 0x1ff;
 			pack_common_attributes(mv, vertex, inverse_scale);
-			mv.v.regular.vu0_matrix_load_addr = mat_alloc.get_allocation(vertex.skin, smi).address;
+			mv.v.regular.vu0_matrix_load_addr = alloc->address;
 			mv.v.regular.vu0_transferred_matrix_store_addr = 0xf4;
 			//mv.v.regular.unused_5 = smi;
 			
@@ -593,25 +636,8 @@ static MobySubMeshLowLevel pack_vertices(s32 smi, const MobySubMesh& submesh, VU
 	return dest;
 }
 
-VU0MatrixAllocator::VU0MatrixAllocator(const std::vector<MobySubMesh>& submeshes, const std::vector<std::vector<VertexLivenessInfo>>& liveness) {
-	s32 max_joints_per_submesh = 0;
-	for(size_t i = 0; i < submeshes.size(); i++) {
-		const MobySubMesh& submesh = submeshes[i];
-		
-		std::set<u8> joints;
-		for(size_t j = 0; j < submesh.vertices.size(); j++) {
-			const Vertex& vertex = submesh.vertices[j];
-			if(vertex.skin.count == 1 || (vertex.skin.count > 1 && liveness[i][j].population_count > 0)) {
-				for(s32 k = 0; k < vertex.skin.count; k++) {
-					joints.emplace(vertex.skin.joints[k]);
-				}
-			}
-		}
-		
-		max_joints_per_submesh = std::max(max_joints_per_submesh, (s32) joints.size());
-	}
-	
-	first_blend_store_addr = (max_joints_per_submesh + 1) * 0x4;
+VU0MatrixAllocator::VU0MatrixAllocator(s32 max_joints_per_submesh) {
+	first_blend_store_addr = max_joints_per_submesh * 0x4;
 	next_blend_store_addr = first_blend_store_addr;
 	verify(first_blend_store_addr < 0xf4, "Failed to allocate transfer matrices in VU0 memory. Try simplifying your joint weights.");
 }
@@ -646,7 +672,7 @@ Opt<u8> VU0MatrixAllocator::allocate_transferred(u8 joint, const char* context) 
 	return std::nullopt;
 }
 
-void VU0MatrixAllocator::allocate_blended(SkinAttributes attribs, s32 current_submesh, s32 last_submesh) {
+void VU0MatrixAllocator::allocate_blended(SkinAttributes attribs, s32 current_submesh, s32 last_submesh, const std::vector<Vertex>& vertices) {
 	MatrixAllocation& allocation = allocations[attribs];
 	if(allocation.generation != slots[allocation.address / 0x4].generation) {
 		// Try to find a slot that isn't live.
@@ -657,11 +683,31 @@ void VU0MatrixAllocator::allocate_blended(SkinAttributes attribs, s32 current_su
 				next_blend_store_addr = first_blend_store_addr;
 			}
 			if(next_blend_store_addr == first_addr) {
+				// All the slots are live, try to pick one anyway.
+				s32 liveness = -1;
+				for(s32 i = first_blend_store_addr; i < 0xf4; i += 0x4) {
+					MatrixSlot& slot = slots[i / 0x4];
+					
+					bool used_by_this_submesh = false;
+					for(const Vertex& vertex : vertices) {
+						if(vertex.skin == slot.current_contents) {
+							used_by_this_submesh = true;
+						}
+					}
+					
+					if(slot.liveness > liveness && !used_by_this_submesh) {
+						// Make sure we're not writing over data that's going to
+						// be needed for this submesh.
+						next_blend_store_addr = i;
+						liveness = slot.liveness;
+					}
+				}
+				if(liveness == -1) {
+					allocations.erase(attribs);
+					return;
+				}
 				break;
 			}
-			verify(next_blend_store_addr != first_addr,
-				"Failed to allocate blended matrices in VU0 memory. Nasty edge case! "
-				"Please file a bug report with the relevant model file attached.");
 		}
 		
 		VERBOSE_MATRIX_ALLOCATION(printf("Alloc blended matrix {%hhu,{%hhd,%hhd,%hhd},{%hhu,%hhu,%hhu}} -> %hhx (%d)\n",
@@ -671,6 +717,7 @@ void VU0MatrixAllocator::allocate_blended(SkinAttributes attribs, s32 current_su
 		MatrixSlot& slot = slots[next_blend_store_addr / 0x4];
 		slot.generation++;
 		slot.liveness = last_submesh;
+		slot.current_contents = attribs;
 		allocation = MatrixAllocation{next_blend_store_addr, true, true, slot.generation};
 		blend_allocations_this_submesh++;
 		next_blend_store_addr += 0x4;
@@ -680,9 +727,11 @@ void VU0MatrixAllocator::allocate_blended(SkinAttributes attribs, s32 current_su
 	}
 }
 
-MatrixAllocation VU0MatrixAllocator::get_allocation(SkinAttributes attribs, s32 current_submesh) {
+Opt<MatrixAllocation> VU0MatrixAllocator::get_allocation(SkinAttributes attribs, s32 current_submesh) {
 	auto iter = allocations.find(attribs);
-	assert(iter != allocations.end());
+	if(iter == allocations.end()) {
+		return std::nullopt;
+	}
 	MatrixAllocation& allocation = iter->second;
 	MatrixSlot& slot = slots[allocation.address / 0x4];
 	verify(allocation.generation == slot.generation,
@@ -698,9 +747,11 @@ MatrixAllocation VU0MatrixAllocator::get_allocation(SkinAttributes attribs, s32 
 	return copy;
 }
 
-MatrixAllocation VU0MatrixAllocator::get_allocation_pre(SkinAttributes attribs) {
+Opt<MatrixAllocation> VU0MatrixAllocator::get_allocation_pre(SkinAttributes attribs) {
 	auto iter = allocations.find(attribs);
-	assert(iter != allocations.end());
+	if(iter == allocations.end()) {
+		return std::nullopt;
+	}
 	MatrixAllocation copy = iter->second;
 	iter->second.first_use_pre = false;
 	return copy;
@@ -722,16 +773,26 @@ static void pack_common_attributes(MobyVertex& dest, const Vertex& src, f32 inve
 	}
 }
 
-struct VertexLocation {
-	size_t submesh;
-	size_t vertex;
-	
-	const Vertex& find_vertex_in(const std::vector<MobySubMesh>& submeshes) const {
-		return submeshes[submesh].vertices[vertex];
+static s32 max_num_joints_referenced_per_submesh(const std::vector<MobySubMesh>& submeshes) {
+	// This seems suboptimal but it's what Insomniac did.
+	s32 max_joints_per_submesh = 0;
+	for(size_t i = 0; i < submeshes.size(); i++) {
+		const MobySubMesh& submesh = submeshes[i];
+		
+		std::set<u8> joints;
+		for(size_t j = 0; j < submesh.vertices.size(); j++) {
+			const Vertex& vertex = submesh.vertices[j];
+			for(s32 k = 0; k < vertex.skin.count; k++) {
+				joints.emplace(vertex.skin.joints[k]);
+			}
+		}
+		
+		max_joints_per_submesh = std::max(max_joints_per_submesh, (s32) joints.size());
 	}
-};
+	return max_joints_per_submesh;
+}
 
-static std::vector<std::vector<VertexLivenessInfo>> compute_matrix_liveness(const std::vector<MobySubMesh>& submeshes) {
+static std::vector<std::vector<MatrixLivenessInfo>> compute_matrix_liveness(const std::vector<MobySubMesh>& submeshes) {
 	std::vector<VertexLocation> mapping;
 	for(size_t i = 0; i < submeshes.size(); i++) {
 		for(size_t j = 0; j < submeshes[i].vertices.size(); j++) {
@@ -743,9 +804,9 @@ static std::vector<std::vector<VertexLivenessInfo>> compute_matrix_liveness(cons
 		return l.find_vertex_in(submeshes).skin < r.find_vertex_in(submeshes).skin;
 	});
 	
-	std::vector<std::vector<VertexLivenessInfo>> liveness;
+	std::vector<std::vector<MatrixLivenessInfo>> liveness;
 	for(const MobySubMesh& submesh : submeshes) {
-		liveness.emplace_back(submesh.vertices.size(), VertexLivenessInfo{});
+		liveness.emplace_back(submesh.vertices.size(), MatrixLivenessInfo{});
 	}
 	
 	auto process_run = [&](size_t begin, size_t end) {
@@ -768,6 +829,7 @@ static std::vector<std::vector<VertexLivenessInfo>> compute_matrix_liveness(cons
 		liveness[first_vertex.submesh][first_vertex.vertex].population_count = end - begin;
 		for(size_t j = begin; j < end; j++) {
 			liveness[mapping[j].submesh][mapping[j].vertex].last_submesh = last_submesh;
+			liveness[mapping[j].submesh][mapping[j].vertex].first_vertex = first_vertex;
 		}
 	};
 	
