@@ -34,6 +34,7 @@ add_library(wrenchcore STATIC
 	src/core/texture.cpp
 	src/core/vif.cpp
 	src/core/filesystem.cpp
+	src/core/wtf.c
 	thirdparty/md5.cpp
 )
 
@@ -105,11 +106,16 @@ add_executable(hashtex
 	src/hashtex.cpp
 )
 
+add_executable(asset2json
+	src/asset2json.cpp
+)
+
 target_link_libraries(wrench wrenchcore)
 target_link_libraries(vif wrenchcore)
 target_link_libraries(iso wrenchcore)
 target_link_libraries(wad wrenchcore)
 target_link_libraries(hashtex wrenchcore)
+target_link_libraries(asset2json wrenchcore)
 
 # This lets us avoid linking stuff for most of the CLI tools.
 target_compile_definitions(wrench PRIVATE WRENCH_EDITOR=1)
