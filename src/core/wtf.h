@@ -49,45 +49,44 @@
 
 // *****************************************************************************
 
-typedef struct {
-	int32_t prev_sibling;
-	int32_t next_sibling;
-	int32_t first_child;
-	int32_t first_attribute;
+typedef struct WtfNode WtfNode;
+typedef struct WtfAttribute WtfAttribute;
+
+typedef struct WtfNode {
+	WtfNode* prev_sibling;
+	WtfNode* next_sibling;
+	WtfNode* first_child;
+	WtfAttribute* first_attribute;
 	char* type_name;
 	char* tag;
 } WtfNode;
 
 typedef enum {
-	WTF_FLOAT,
+	WTF_NUMBER,
 	WTF_STRING,
 	WTF_ARRAY
 } WtfAttributeType;
 
-typedef struct {
-	int32_t prev;
-	int32_t next;
+typedef struct WtfAttribute {
+	WtfAttribute* prev;
+	WtfAttribute* next;
 	char* key;
 	WtfAttributeType type;
 	union {
-		float f;
-		char* s;
-		int32_t first_array_element;
+		struct {
+			int32_t i;
+			float f;
+		} number;
+		char* string;
+		WtfAttribute* first_array_element;
 	};
 } WtfAttribute;
-
-typedef struct {
-	WtfNode* nodes;
-	WtfAttribute* attributes;
-	int32_t node_count;
-	int32_t attribute_count;
-} WtfFile;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-WtfFile* wtf_parse(char* buffer, char** error_dest);
+WtfNode* wtf_parse(char* buffer, char** error_dest);
 
 // *****************************************************************************
 

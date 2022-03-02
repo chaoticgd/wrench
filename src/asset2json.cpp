@@ -22,8 +22,8 @@
 #include <nlohmann/json.hpp>
 using Json = nlohmann::ordered_json;
 
-static Json node_to_json(WtfFile* file, s32 index);
-static Json attribute_to_json(WtfFile* file, WtfAttribute* attrib);
+static Json node_to_json(WtfNode* node);
+static Json attribute_to_json(WtfAttribute* attribute);
 
 int main(int argc, char** argv) {
 	if(argc != 3) {
@@ -35,46 +35,44 @@ int main(int argc, char** argv) {
 	input.push_back(0); // Null terminator.
 	
 	char* error = nullptr;
-	WtfFile* file = wtf_parse((char*) input.data(), &error);
+	WtfNode* root = wtf_parse((char*) input.data(), &error);
 	if(error) {
 		fprintf(stderr, "error: %s\n", error);
 		return 1;
 	}
 	
-	Json json = node_to_json(file, 0);
+	Json json = node_to_json(root);
 	
 	std::string output = json.dump(1, '\t');
 	write_file("/", argv[2], Buffer(output), "w");
 }
 
-static Json node_to_json(WtfFile* file, s32 index) {
+static Json node_to_json(WtfNode* node) {
 	Json json = Json::object();
-	WtfNode* node = &file->nodes[index];
 	json["type_name"] = node->type_name ? node->type_name : Json();
 	json["tag"] = node->tag ? node->tag : Json();
-	for(s32 attrib = node->first_attribute; attrib != -1; attrib = file->attributes[attrib].next) {
-		WtfAttribute* attribute = &file->attributes[attrib];
-		json[attribute->key] = attribute_to_json(file, attribute);
+	for(WtfAttribute* attribute = node->first_attribute; attribute != nullptr; attribute = attribute->next) {
+		json[attribute->key] = attribute_to_json(attribute);
 	}
-	if(node->first_child != -1) {
+	if(node->first_child != NULL) {
 		Json children = Json::array();
-		for(s32 child = node->first_child; child != -1; child = file->nodes[child].next_sibling) {
-			children.emplace_back(node_to_json(file, child));
+		for(WtfNode* child = node->first_child; child != NULL; child = child->next_sibling) {
+			children.emplace_back(node_to_json(child));
 		}
 		json["children"] = children;
 	}
 	return json;
 }
 
-static Json attribute_to_json(WtfFile* file, WtfAttribute* attrib) {
-	if(attrib->type == WTF_FLOAT) {
-		return attrib->f;
-	} else if(attrib->type == WTF_STRING) {
-		return attrib->s;
-	} else if(attrib->type == WTF_ARRAY) {
+static Json attribute_to_json(WtfAttribute* attribute) {
+	if(attribute->type == WTF_NUMBER) {
+		return attribute->number.f;
+	} else if(attribute->type == WTF_STRING) {
+		return attribute->string;
+	} else if(attribute->type == WTF_ARRAY) {
 		Json array = Json::array();
-		for(s32 element = attrib->first_array_element; element != -1; element = file->attributes[element].next) {
-			array.emplace_back(attribute_to_json(file, &file->attributes[element]));
+		for(WtfAttribute* element = attribute->first_array_element; element != NULL; element = attribute->next) {
+			array.emplace_back(attribute_to_json(element));
 		}
 		return array;
 	}

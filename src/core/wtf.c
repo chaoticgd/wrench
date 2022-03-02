@@ -40,17 +40,19 @@ typedef struct {
 	int32_t line;
 	int32_t node_count;
 	int32_t attribute_count;
-	int32_t next_node;
-	int32_t next_attribute;
+	WtfNode* next_node;
+	WtfAttribute* next_attribute;
+	WtfNode* nodes;
+	WtfAttribute* attributes;
 } WtfReader;
 
 typedef char* ErrorStr;
 
 static ErrorStr count_nodes_and_attributes(WtfReader* ctx);
-static void read_nodes_and_attributes(WtfFile* file, int32_t parent, WtfReader* ctx);
-static ErrorStr parse_value(int32_t* attribute_dest, WtfFile* file, WtfReader* ctx);
-static ErrorStr parse_float(float* dest, WtfReader* ctx);
-static ErrorStr parse_string(char** dest, WtfReader* ctx, int destructive);
+static void read_nodes_and_attributes(WtfReader* ctx, WtfNode* parent);
+static ErrorStr parse_value(WtfReader* ctx, WtfAttribute** attribute_dest);
+static ErrorStr parse_float(WtfReader* ctx, float* dest);
+static ErrorStr parse_string(WtfReader* ctx, char** dest);
 static char* parse_identifier(WtfReader* ctx);
 static char peek_char(WtfReader* ctx);
 static void advance(WtfReader* ctx);
@@ -60,12 +62,14 @@ static void fixup_string(char* buffer);
 
 static char ERROR_STR[128];
 
-WtfFile* wtf_parse(char* buffer, char** error_dest) {
+WtfNode* wtf_parse(char* buffer, char** error_dest) {
 	WtfReader ctx;
 	ctx.input = buffer;
 	ctx.line = 1;
 	ctx.node_count = 1; // Include the root.
 	ctx.attribute_count = 0;
+	ctx.nodes = NULL;
+	ctx.attributes = NULL;
 	
 	// Count the number of nodes and attributes that need to be allocated and
 	// do error checking.
@@ -83,46 +87,40 @@ WtfFile* wtf_parse(char* buffer, char** error_dest) {
 	
 	// Allocate memory for the nodes and attributes.
 	size_t allocation_size = 0;
-	allocation_size += sizeof(WtfFile);
 	allocation_size += ctx.node_count * sizeof(WtfNode);
 	allocation_size += ctx.attribute_count * sizeof(WtfAttribute);
-	WtfFile* file = malloc(allocation_size);
-	file->nodes = (WtfNode*) ((char*) file + sizeof(WtfFile));
-	file->attributes = (WtfAttribute*) ((char*) file + sizeof(WtfFile) + ctx.node_count * sizeof(WtfNode));
-	file->node_count = ctx.node_count;
-	file->attribute_count = ctx.attribute_count;
+	char* allocation = malloc(allocation_size);
+	ctx.nodes = (WtfNode*) allocation;
+	ctx.attributes = (WtfAttribute*) (allocation + ctx.node_count * sizeof(WtfNode));
+	
+	// Write out the root.
+	WtfNode* root = &ctx.nodes[0];
+	memset(root, 0, sizeof(WtfNode));
 	
 	// Go back to the beginning of the input file.
 	ctx.input = buffer;
 	ctx.line = 1;
-	ctx.next_node = 1;
-	ctx.next_attribute = 0;
-	
-	// Write out the root.
-	file->nodes[0].prev_sibling = -1;
-	file->nodes[0].next_sibling = -1;
-	file->nodes[0].first_child = 1;
-	file->nodes[0].first_attribute = -1;
-	file->nodes[0].type_name = NULL;
-	file->nodes[0].tag = NULL;
+	ctx.next_node = &ctx.nodes[1];
+	ctx.next_attribute = &ctx.attributes[0];
 	
 	// Write out the rest of the nodes and the attributes.
-	read_nodes_and_attributes(file, 0, &ctx);
-	assert(ctx.node_count == ctx.next_node && ctx.attribute_count == ctx.next_attribute);
+	read_nodes_and_attributes(&ctx, root);
+	assert(ctx.next_node == &ctx.nodes[ctx.node_count]
+		&& ctx.next_attribute == &ctx.attributes[ctx.attribute_count]);
 	
 	// Decode escape characters and add null terminators to strings.
-	for(int32_t i = 0; i < file->node_count; i++) {
-		fixup_identifier(file->nodes[i].type_name);
-		fixup_identifier(file->nodes[i].tag);
+	for(int32_t i = 0; i < ctx.node_count; i++) {
+		fixup_identifier(ctx.nodes[i].type_name);
+		fixup_identifier(ctx.nodes[i].tag);
 	}
-	for(int32_t i = 0; i < file->attribute_count; i++) {
-		fixup_identifier(file->attributes[i].key);
-		if(file->attributes[i].type == WTF_STRING) {
-			fixup_string(file->attributes[i].s);
+	for(int32_t i = 0; i < ctx.attribute_count; i++) {
+		fixup_identifier(ctx.attributes[i].key);
+		if(ctx.attributes[i].type == WTF_STRING) {
+			fixup_string(ctx.attributes[i].string);
 		}
 	}
 	
-	return file;
+	return root;
 }
 
 static ErrorStr count_nodes_and_attributes(WtfReader* ctx) {
@@ -137,7 +135,7 @@ static ErrorStr count_nodes_and_attributes(WtfReader* ctx) {
 		if(peek_char(ctx) == ':') {
 			advance(ctx); // ':'
 			
-			ErrorStr error = parse_value(NULL, NULL, ctx);
+			ErrorStr error = parse_value(ctx, NULL);
 			if(error) {
 				return error;
 			}
@@ -174,12 +172,12 @@ static ErrorStr count_nodes_and_attributes(WtfReader* ctx) {
 	return NULL;
 }
 
-static void read_nodes_and_attributes(WtfFile* file, int32_t parent, WtfReader* ctx) {
-	int32_t prev_attribute = -1;
-	int32_t* prev_attribute_pointer = &file->nodes[parent].first_attribute;
+static void read_nodes_and_attributes(WtfReader* ctx, WtfNode* parent) {
+	WtfAttribute* prev_attribute = NULL;
+	WtfAttribute** prev_attribute_pointer = &parent->first_attribute;
 	
-	int32_t prev_sibling = -1;
-	int32_t* prev_node_pointer = &file->nodes[parent].first_child;
+	WtfNode* prev_sibling = NULL;
+	WtfNode** prev_node_pointer = &parent->first_child;
 	
 	char next;
 	while(next = peek_char(ctx), (next != '}' && next != '\0')) {
@@ -189,15 +187,14 @@ static void read_nodes_and_attributes(WtfFile* file, int32_t parent, WtfReader* 
 		if(peek_char(ctx) == ':') {
 			advance(ctx); // ':'
 			
-			int32_t attribute_index = -1;
-			assert(parse_value(&attribute_index, file, ctx) == NULL);
+			WtfAttribute* attribute = NULL;
+			assert(parse_value(ctx, &attribute) == NULL);
 			
-			WtfAttribute* attribute = &file->attributes[attribute_index];
 			attribute->prev = prev_attribute;
-			attribute->next = -1;
-			prev_attribute = attribute_index;
+			attribute->next = NULL;
+			prev_attribute = attribute;
 			
-			*prev_attribute_pointer = attribute_index;
+			*prev_attribute_pointer = attribute;
 			prev_attribute_pointer = &attribute->next;
 			
 			attribute->key = name;
@@ -207,21 +204,20 @@ static void read_nodes_and_attributes(WtfFile* file, int32_t parent, WtfReader* 
 			
 			advance(ctx); // '{'
 			
-			int32_t child_index = ctx->next_node++;
-			WtfNode* child = &file->nodes[child_index];
+			WtfNode* child = ctx->next_node++;
 			child->prev_sibling = prev_sibling;
-			child->next_sibling = -1;
-			prev_sibling = child_index;
+			child->next_sibling = NULL;
+			prev_sibling = child;
 			
-			*prev_node_pointer = child_index;
+			*prev_node_pointer = child;
 			prev_node_pointer = &child->next_sibling;
 			
-			child->first_child = -1;
-			child->first_attribute = -1;
+			child->first_child = NULL;
+			child->first_attribute = NULL;
 			child->type_name = name;
 			child->tag = tag;
 			
-			read_nodes_and_attributes(file, child_index, ctx);
+			read_nodes_and_attributes(ctx, child);
 			assert(peek_char(ctx) == '}');
 			
 			advance(ctx); // '}'
@@ -229,37 +225,36 @@ static void read_nodes_and_attributes(WtfFile* file, int32_t parent, WtfReader* 
 	}
 }
 
-static ErrorStr parse_value(int32_t* attribute_dest, WtfFile* file, WtfReader* ctx) {
-	int32_t attribute_index = ctx->next_attribute++;
+static ErrorStr parse_value(WtfReader* ctx, WtfAttribute** attribute_dest) {
 	WtfAttribute* attribute = NULL;
 	
-	if(file) {
-		attribute = &file->attributes[attribute_index];
+	if(ctx->attributes) {
+		attribute = ctx->next_attribute++;
 		memset(attribute, 0, sizeof(WtfAttribute));
 	}
 	
 	if(attribute_dest) {
-		*attribute_dest = attribute_index;
+		*attribute_dest = attribute;
 	}
 	
 	switch(peek_char(ctx)) {
 		case '\'': {
 			char* string;
-			ErrorStr error = parse_string(&string, ctx, 0);
+			ErrorStr error = parse_string(ctx, &string);
 			if(error) {
 				return error;
 			}
-			if(file) {
+			if(ctx->attributes) {
 				attribute->type = WTF_STRING;
-				attribute->s = string;
+				attribute->string = string;
 			}
 			break;
 		}
 		case '[': {
-			int32_t prev_attribute = -1;
-			int32_t* prev_next_pointer = NULL;
+			WtfAttribute* prev_attribute = NULL;
+			WtfAttribute** prev_next_pointer = NULL;
 			
-			if(file) {
+			if(ctx->attributes) {
 				attribute->type = WTF_ARRAY;
 				
 				prev_next_pointer = &attribute->first_array_element;
@@ -268,18 +263,18 @@ static ErrorStr parse_value(int32_t* attribute_dest, WtfFile* file, WtfReader* c
 			advance(ctx); // '['
 			
 			while(peek_char(ctx) != ']') {
-				int32_t new_attribute = -1;
-				ErrorStr error = parse_value(&new_attribute, file, ctx);
+				WtfAttribute* new_attribute = NULL;
+				ErrorStr error = parse_value(ctx, &new_attribute);
 				if(error) {
 					return error;
 				}
 				
-				if(file) {
-					file->attributes[new_attribute].prev = prev_attribute;
-					file->attributes[new_attribute].next = -1;
+				if(ctx->attributes) {
+					new_attribute->prev = prev_attribute;
+					new_attribute->next = NULL;
 					prev_attribute = new_attribute;
 					*prev_next_pointer = new_attribute;
-					prev_next_pointer = &file->attributes[new_attribute].next;
+					prev_next_pointer = &new_attribute->next;
 				}
 			}
 			
@@ -289,25 +284,26 @@ static ErrorStr parse_value(int32_t* attribute_dest, WtfFile* file, WtfReader* c
 		}
 		default: {
 			float number;
-			ErrorStr error = parse_float(&number, ctx);
+			ErrorStr error = parse_float(ctx, &number);
 			if(error) {
 				return error;
 			}
-			if(file) {
-				attribute->type = WTF_FLOAT;
-				attribute->f = number;
+			if(ctx->attributes) {
+				attribute->type = WTF_NUMBER;
+				attribute->number.i = (int32_t) number;
+				attribute->number.f = number;
 			}
 		}
 	}
 	
-	if(!file) {
+	if(!ctx->attributes) {
 		ctx->attribute_count++;
 	}
 	
 	return NULL;
 }
 
-static ErrorStr parse_float(float* dest, WtfReader* ctx) {
+static ErrorStr parse_float(WtfReader* ctx, float* dest) {
 	char* next;
 	float value = strtof(ctx->input, &next);
 	
@@ -321,7 +317,7 @@ static ErrorStr parse_float(float* dest, WtfReader* ctx) {
 	return NULL;
 }
 
-static ErrorStr parse_string(char** dest, WtfReader* ctx, int destructive) {
+static ErrorStr parse_string(WtfReader* ctx, char** dest) {
 	advance(ctx); // '\''
 	
 	char* begin = ctx->input;
