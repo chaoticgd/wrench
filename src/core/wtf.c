@@ -361,11 +361,18 @@ static void advance(WtfReader* ctx) {
 }
 
 static void skip_whitespace(WtfReader* ctx) {
-	while(*ctx->input == ' ' || *ctx->input == '\t' || *ctx->input == '\n') {
-		if(*ctx->input == '\n') {
-			ctx->line++;
+	while(*ctx->input == ' ' || *ctx->input == '\t' || *ctx->input == '\n'
+		|| (*ctx->input == '/' && ctx->input[1] == '/')) {
+		if(*ctx->input == '/' && ctx->input[1] == '/') {
+			while(*ctx->input != '\n' && ctx->input[1] != '\0') {
+				ctx->input++;
+			}
+		} else {
+			if(*ctx->input == '\n') {
+				ctx->line++;
+			}
+			ctx->input++;
 		}
-		ctx->input++;
 	}
 }
 
