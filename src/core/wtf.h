@@ -37,15 +37,16 @@
 // This parser itself is an in-situ recursive descent parser, so the input
 // buffer will be clobbered, and must not be free'd until all string values that
 // are needed have been extracted from the tree.
-//
-// To cleanup the memory allocated during parsing it's sufficient to call free
-// on the pointer returned by wtf_parse.
 
 #ifndef CORE_WTF_H
 #define CORE_WTF_H
 
 #include <stdio.h>
 #include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // *****************************************************************************
 
@@ -82,30 +83,32 @@ typedef struct WtfAttribute {
 	};
 } WtfAttribute;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 WtfNode* wtf_parse(char* buffer, char** error_dest);
+void wtf_free(WtfNode* root);
+
+const WtfNode* wtf_first_child(const WtfNode* parent, const char* type_name);
+const WtfNode* wtf_next_sibling(const WtfNode* node, const char* type_name);
+const WtfNode* wtf_child(const WtfNode* parent, const char* type_name, const char* tag);
+
+const WtfAttribute* wtf_attribute(const WtfNode* node, const char* key);
 
 // *****************************************************************************
 
-typedef struct {
-	FILE* file;
-	int32_t indent;
-} WtfWriter;
+typedef struct WtfWriter WtfWriter;
 
-WtfWriter wtf_begin_file(FILE* file);
+WtfWriter* wtf_begin_file(FILE* file);
 void wtf_end_file(WtfWriter* ctx);
 
 void wtf_begin_node(WtfWriter* ctx, const char* type_name, const char* tag);
 void wtf_end_node(WtfWriter* ctx);
 
-void wtf_attribute(WtfWriter* ctx, const char* key);
-void wtf_float(WtfWriter* ctx, float f);
-void wtf_string(WtfWriter* ctx, const char* s);
+void wtf_begin_attribute(WtfWriter* ctx, const char* key);
+void wtf_end_attribute(WtfWriter* ctx);
+void wtf_write_integer(WtfWriter* ctx, int32_t i);
+void wtf_write_float(WtfWriter* ctx, float f);
+void wtf_write_string(WtfWriter* ctx, const char* string);
 
-void wtf_begin_array(WtfWriter* ctx, const char* name);
+void wtf_begin_array(WtfWriter* ctx);
 void wtf_end_array(WtfWriter* ctx);
 
 #ifdef __cplusplus

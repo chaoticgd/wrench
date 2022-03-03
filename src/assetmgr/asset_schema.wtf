@@ -1,0 +1,458 @@
+Metadata metadata {
+	format_version: 8
+}
+
+// *****************************************************************************
+
+AssetType Root {}
+
+AssetType Collection {
+	desc: 'A collection of assets.'
+}
+
+AssetType Binary {
+	desc: 'A raw binary file.'
+	
+	FileReferenceAttribute src {}
+}
+
+AssetType Build {
+	desc: 'A build of the game.'
+	
+	ArrayAttribute globals {
+		AssetReferenceAttribute element {
+			allowed_asset_types: [
+				'MpegWad'
+				'MiscWad'
+				'BonusWad'
+				'SpaceWad'
+				'ArmorWad'
+				'AudioWad'
+				'HudWad'
+				'OnlineWad'
+				'Binary'
+			]
+		}
+	}
+	
+	ArrayAttribute levels {
+		AssetReferenceAttribute element {
+			allowed_asset_types: [
+				'Level'
+				'LevelAudio'
+				'LevelScene'
+			]
+		}
+	}
+}
+
+// *****************************************************************************
+
+AssetType Mesh {
+	FileReferenceAttribute src {
+		desc: 'The file path of the COLLADA (.dae) file to use.'
+	}
+	
+	StringAttribute node {
+		desc: 'The name of the COLLADA node to use. This is the same as the Blender node name.'
+	}
+}
+
+AssetType Texture {
+	desc: 'A reference to an image file. Only PNG images are currently supported.'
+	
+	FileReferenceAttribute src {}
+	
+	Example 0 {
+		Texture my_texture {
+			src: 'my_texture.png'
+		}
+	}
+}
+
+AssetType Video {
+	desc: 'A video file.'
+	
+	FileReferenceAttribute src {}
+}
+
+// *****************************************************************************
+
+AssetType Level {}
+
+// *****************************************************************************
+
+AssetType MpegWad {
+	desc: 'The file containing all of the MPEG cutscenes.'
+	
+	ArrayAttribute story {
+		desc: 'A list of all the MPEG cutscenes.'
+		
+		AssetReferenceAttribute element {
+			allowed_asset_types: [
+				'Video'
+			]
+		}
+	}
+}
+
+AssetType MiscWad {
+	AssetReferenceAttribute debug_font {
+		allowed_asset_types: ['Texture' 'Binary']
+	}
+	
+	ArrayAttribute irx {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	AssetReferenceAttribute savegame {
+		allowed_asset_types: ['Binary']
+	}
+	
+	AssetReferenceAttribute frontbin {
+		allowed_asset_types: ['Binary']
+	}
+	
+	AssetReferenceAttribute frontbin_net {
+		allowed_asset_types: ['Binary']
+	}
+	
+	AssetReferenceAttribute frontend {
+		allowed_asset_types: ['Binary']
+	}
+	
+	AssetReferenceAttribute exit {
+		allowed_asset_types: ['Binary']
+	}
+	
+	AssetReferenceAttribute boot {
+		allowed_asset_types: ['Binary']
+	}
+	
+	AssetReferenceAttribute gadget {
+		allowed_asset_types: ['Binary']
+	}
+}
+
+AssetType BonusWad {
+	ArrayAttribute credits_text {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	ArrayAttribute credits_images {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Texture' 'Binary']
+		}
+	}
+	ArrayAttribute demomenu {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	ArrayAttribute demoexit {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	ArrayAttribute cheat_images {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Texture' 'Binary']
+		}
+	}
+	
+	ArrayAttribute skill_images {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Texture' 'Binary']
+		}
+	}
+	
+	AssetReferenceAttribute trophy_image {
+		allowed_asset_types: ['Texture' 'Binary']
+	}
+	
+	AssetReferenceAttribute dige {
+		allowed_asset_types: ['Binary']
+	}
+}
+
+AssetType SpaceWad {
+	ArrayAttribute transitions {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+}
+
+AssetType ArmorWad {
+	ArrayAttribute armors {
+		desc: 'A list of all the armors/skins.'
+		
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Armor']
+		}
+	}
+	
+	ArrayAttribute bot_textures {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Texture' 'Binary']
+		}
+	}
+	
+	ArrayAttribute landstalker_textures {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Texture' 'Binary']
+		}
+	}
+	
+	ArrayAttribute dropship_textures {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Texture' 'Binary']
+		}
+	}
+}
+
+AssetType Armor {
+	AssetReferenceAttribute mesh {
+		allowed_asset_types: ['Mesh' 'Binary']
+	}
+	
+	ArrayAttribute textures {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Texture' 'Binary']
+		}
+	}
+}
+
+AssetType AudioWad {
+	ArrayAttribute vendor {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Sound' 'Binary']
+		}
+	}
+	
+	ArrayAttribute global_sfx {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Sound' 'Binary']
+		}
+	}
+	
+	ArrayAttribute help {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Sound' 'Binary']
+		}
+	}
+}
+
+AssetType HudWad {
+	ArrayAttribute online_images {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Texture' 'Binary']
+		}
+	}
+	
+	ArrayAttribute ratchet_seqs {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	ArrayAttribute hud_seqs {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	AssetReferenceAttribute vendor {
+		allowed_asset_types: ['Binary']
+	}
+	
+	ArrayAttribute all_text {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	AssetReferenceAttribute hudw3d {
+		allowed_asset_types: ['Binary']
+	}
+	
+	ArrayAttribute e3_level_ss {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	AssetReferenceAttribute nw_dnas_image {
+		allowed_asset_types: ['Binary']
+	}
+	
+	AssetReferenceAttribute split_screen_texture {
+		allowed_asset_types: ['Binary']
+	}
+	
+	ArrayAttribute radar_maps {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	ArrayAttribute weapon_plates_large {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	ArrayAttribute mission_plates_large {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	ArrayAttribute gui_plates {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	ArrayAttribute vendor_plates {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	AssetReferenceAttribute loading_screen {
+		allowed_asset_types: ['Binary']
+	}
+	
+	ArrayAttribute planets {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	ArrayAttribute cinematics {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	ArrayAttribute equip_large {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	ArrayAttribute equip_small {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	ArrayAttribute moves {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	ArrayAttribute save_level {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	ArrayAttribute save_empty {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	ArrayAttribute skills {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	AssetReferenceAttribute reward_back {
+		allowed_asset_types: ['Binary']
+	}
+	
+	AssetReferenceAttribute complete_back {
+		allowed_asset_types: ['Binary']
+	}
+	
+	AssetReferenceAttribute complete_back_coop {
+		allowed_asset_types: ['Binary']
+	}
+	
+	ArrayAttribute rewards {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	AssetReferenceAttribute leaderboard {
+		allowed_asset_types: ['Binary']
+	}
+	
+	ArrayAttribute cutaways {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	ArrayAttribute sketchbook {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	ArrayAttribute character_epilogues {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	ArrayAttribute character_cards {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	AssetReferenceAttribute equip_plate {
+		allowed_asset_types: ['Binary']
+	}
+	
+	AssetReferenceAttribute hud_flythru {
+		allowed_asset_types: ['Binary']
+	}
+	
+	ArrayAttribute mp_maps {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	ArrayAttribute tourney_plates_large {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+}
+
+AssetType OnlineWad {
+	AssetReferenceAttribute data {
+		allowed_asset_types: ['Binary']
+	}
+	
+	ArrayAttribute transition_bgs {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+}

@@ -45,6 +45,8 @@ int main(int argc, char** argv) {
 	
 	std::string output = json.dump(1, '\t');
 	write_file("/", argv[2], Buffer(output), "w");
+	
+	wtf_free(root);
 }
 
 static Json node_to_json(WtfNode* node) {

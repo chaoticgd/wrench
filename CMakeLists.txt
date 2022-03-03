@@ -110,12 +110,17 @@ add_executable(asset2json
 	src/asset2json.cpp
 )
 
+add_executable(asset_codegen
+	src/asset_codegen.cpp
+)
+
 target_link_libraries(wrench wrenchcore)
 target_link_libraries(vif wrenchcore)
 target_link_libraries(iso wrenchcore)
 target_link_libraries(wad wrenchcore)
 target_link_libraries(hashtex wrenchcore)
 target_link_libraries(asset2json wrenchcore)
+target_link_libraries(asset_codegen wrenchcore)
 
 # This lets us avoid linking stuff for most of the CLI tools.
 target_compile_definitions(wrench PRIVATE WRENCH_EDITOR=1)

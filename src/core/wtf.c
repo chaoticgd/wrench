@@ -123,6 +123,10 @@ WtfNode* wtf_parse(char* buffer, char** error_dest) {
 	return root;
 }
 
+void wtf_free(WtfNode* root) {
+	free(root);
+}
+
 static ErrorStr count_nodes_and_attributes(WtfReader* ctx) {
 	char next;
 	while(next = peek_char(ctx), (next != '}' && next != '\0')) {
@@ -408,21 +412,69 @@ static void fixup_string(char* buffer) {
 			*(dest++) = *(src++);
 		}
 	}
+	
 	*dest = '\0';
+}
+
+const WtfNode* wtf_first_child(const WtfNode* parent, const char* type_name) {
+	const WtfNode* child = parent->first_child;
+	if(type_name != NULL) {
+		while(child != NULL && strcmp(child->type_name, type_name) != 0) {
+			child = child->next_sibling;
+		}
+	}
+	return child;
+}
+
+const WtfNode* wtf_next_sibling(const WtfNode* node, const char* type_name) {
+	const WtfNode* sibling = node->next_sibling;
+	if(type_name != NULL) {
+		while(sibling != NULL && strcmp(sibling->type_name, type_name) != 0) {
+			sibling = sibling->next_sibling;
+		}
+	}
+	return sibling;
+}
+
+const WtfNode* wtf_child(const WtfNode* parent, const char* type_name, const char* tag) {
+	for(const WtfNode* child = parent->first_child; child != NULL; child = child->next_sibling) {
+		if((!type_name || strcmp(child->type_name, type_name) == 0)
+			&& (!tag || strcmp(child->tag, tag) == 0)) {
+			return child;
+		}
+	}
+	return NULL;
+}
+
+const WtfAttribute* wtf_attribute(const WtfNode* node, const char* key) {
+	for(const WtfAttribute* attribute = node->first_attribute; attribute != NULL; attribute = attribute->next) {
+		if(!key || strcmp(attribute->key, key) == 0) {
+			return attribute;
+		}
+	}
+	return NULL;
 }
 
 // *****************************************************************************
 
-WtfWriter wtf_begin_file(FILE* file) {
-	WtfWriter ctx;
-	ctx.file = file;
-	ctx.indent = 0;
+typedef struct WtfWriter {
+	FILE* file;
+	int32_t indent;
+	int32_t array_depth;
+	char add_blank_line;
+} WtfWriter;
+
+WtfWriter* wtf_begin_file(FILE* file) {
+	WtfWriter* ctx = (WtfWriter*) malloc(sizeof(WtfWriter));
+	ctx->file = file;
+	ctx->indent = 0;
+	ctx->array_depth = 0;
+	ctx->add_blank_line = 0;
 	return ctx;
 }
 
 void wtf_end_file(WtfWriter* ctx) {
-	ctx->file = NULL;
-	ctx->indent = 0;
+	free(ctx);
 }
 
 static void indent(WtfWriter* ctx) {
@@ -432,15 +484,80 @@ static void indent(WtfWriter* ctx) {
 }
 
 void wtf_begin_node(WtfWriter* ctx, const char* type_name, const char* tag) {
+	if(ctx->add_blank_line) {
+		indent(ctx);
+		fprintf(ctx->file, "\n");
+	}
 	indent(ctx);
 	fprintf(ctx->file, "%s %s {\n", type_name, tag);
+	ctx->indent++;
+	ctx->add_blank_line = 0;
 }
 
-void wtf_end_node(WtfWriter* ctx);
+void wtf_end_node(WtfWriter* ctx) {
+	indent(ctx);
+	fprintf(ctx->file, "}\n");
+	ctx->add_blank_line = 1;
+}
 
-void wtf_attribute(WtfWriter* ctx, const char* key);
-void wtf_float(WtfWriter* ctx, float f);
-void wtf_string(WtfWriter* ctx, const char* s);
+void wtf_begin_attribute(WtfWriter* ctx, const char* key) {
+	indent(ctx);
+	fprintf(ctx->file, "%s: ", key);
+}
 
-void wtf_begin_array(WtfWriter* ctx, const char* name);
-void wtf_end_array(WtfWriter* ctx);
+void wtf_end_attribute(WtfWriter* ctx) {
+	ctx->add_blank_line = 1;
+}
+
+void wtf_write_integer(WtfWriter* ctx, int32_t i) {
+	if(ctx->array_depth > 0) {
+		indent(ctx);
+	}
+	fprintf(ctx->file, "%d\n", i);
+}
+
+void wtf_write_float(WtfWriter* ctx, float f) {
+	if(ctx->array_depth > 0) {
+		indent(ctx);
+	}
+	fprintf(ctx->file, "%.9g\n", f);
+}
+
+void wtf_write_string(WtfWriter* ctx, const char* string) {
+	if(ctx->array_depth > 0) {
+		indent(ctx);
+	}
+	fprintf(ctx->file, "%c", '\'');
+	for(; *string != '\0'; string++) {
+		if(*string == '\t') {
+			fputc('\\', ctx->file);
+			fputc('\t', ctx->file);
+		} else if(*string == '\n') {
+			fputc('\\', ctx->file);
+			fputc('\n', ctx->file);
+		} else if(*string == '\'') {
+			fputc('\\', ctx->file);
+			fputc('\'', ctx->file);
+		} else {
+			fputc(*string, ctx->file);
+		}
+	}
+	fprintf(ctx->file, "%c", '\'');
+}
+
+void wtf_begin_array(WtfWriter* ctx) {
+	if(ctx->array_depth > 0) {
+		indent(ctx);
+	}
+	fprintf(ctx->file, "[\n");
+	ctx->indent++;
+	indent(ctx);
+	ctx->array_depth++;
+}
+
+void wtf_end_array(WtfWriter* ctx) {
+	ctx->indent--;
+	indent(ctx);
+	fprintf(ctx->file, "]\n");
+	ctx->array_depth--;
+}
