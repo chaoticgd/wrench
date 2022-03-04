@@ -38,6 +38,27 @@ add_library(wrenchcore STATIC
 	thirdparty/md5.cpp
 )
 
+add_executable(asset_codegen
+	src/asset_codegen.cpp
+)
+
+add_custom_command(
+	OUTPUT src/assetmgr/_generated_asset_types.inl
+	COMMAND ${CMAKE_BINARY_DIR}/asset_codegen src/assetmgr/asset_schema.wtf ${CMAKE_SOURCE_DIR}/src/assetmgr/_generated_asset_types.inl
+	DEPENDS ${CMAKE_BINARY_DIR}/asset_codegen src/assetmgr/asset_schema.wtf
+	COMMENT "Generating asset types..."
+)
+
+add_library(wrench_assetmgr
+	src/assetmgr/asset.cpp
+	src/assetmgr/asset_types.cpp
+)
+
+add_custom_target(wrench_assetmgr_generated
+	DEPENDS src/assetmgr/_generated_asset_types.inl
+)
+add_dependencies(wrench_assetmgr wrench_assetmgr_generated)
+
 add_executable(wrench
 	src/editor/main.cpp
 	src/editor/app.cpp
@@ -108,10 +129,6 @@ add_executable(hashtex
 
 add_executable(asset2json
 	src/asset2json.cpp
-)
-
-add_executable(asset_codegen
-	src/asset_codegen.cpp
 )
 
 target_link_libraries(wrench wrenchcore)
