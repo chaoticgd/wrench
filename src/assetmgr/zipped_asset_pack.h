@@ -23,7 +23,7 @@
 
 class ZippedAssetPack : public AssetPack {
 private:
-	ZippedAssetPack(AssetManager& manager, fs::path path_to_zip);
+	ZippedAssetPack(AssetForest& forest, fs::path path_to_zip);
 	
 	std::string read_text_file(const fs::path& path) const override;
 	std::vector<u8> read_binary_file(const fs::path& path) const override;

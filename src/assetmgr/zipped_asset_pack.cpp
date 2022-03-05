@@ -18,8 +18,8 @@
 
 #include "zipped_asset_pack.h"
 
-ZippedAssetPack::ZippedAssetPack(AssetManager& manager, fs::path path_to_zip)
-	: AssetPack(manager, false)
+ZippedAssetPack::ZippedAssetPack(AssetForest& forest, fs::path path_to_zip)
+	: AssetPack(forest, false)
 	, _path_to_zip(path_to_zip) {}
 	
 std::string ZippedAssetPack::read_text_file(const fs::path& path) const {

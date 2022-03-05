@@ -66,24 +66,16 @@ std::string asset_reference_to_string(const AssetReference& reference) {
 
 // *****************************************************************************
 
+AssetForest& Asset::forest() { return _forest; }
+const AssetForest& Asset::forest() const { return _forest; }
 AssetPack& Asset::pack() { return _pack; }
 const AssetPack& Asset::pack() const { return _pack; }
+AssetFile& Asset::file() { return _file; }
+const AssetFile& Asset::file() const { return _file; }
 Asset* Asset::parent() { return _parent; }
 const Asset* Asset::parent() const { return _parent; }
 AssetType Asset::type() const { return _type; }
 const std::string& Asset::tag() const { return _tag; }
-
-const fs::path Asset::file_path() const {
-	return directory_path()/_file_name;
-}
-
-const fs::path& Asset::directory_path() const {
-	if(_dir.empty()) {
-		assert(parent());
-		return parent()->directory_path();
-	}
-	return _dir;
-}
 
 static std::vector<AssetReferenceFragment> append_fragments(std::vector<AssetReferenceFragment> fragments, AssetReferenceFragment fragment) {
 	fragments.emplace_back(std::move(fragment));
@@ -100,51 +92,23 @@ AssetReference Asset::absolute_reference() const {
 	}
 }
 
+Asset& Asset::add_child(std::unique_ptr<Asset> child) {
+	return *_children.emplace_back(std::move(child)).get();
+}
+
 void Asset::read(WtfNode* node) {
 	read_attributes(node);
-	
-}
-
-static void begin_enclosing_nodes(WtfWriter* ctx, const Asset& child) {
-	const Asset* parent = child.parent();
-	if(parent) {
-		begin_enclosing_nodes(ctx, *parent);
-		const char* tag = parent->tag().c_str();
-		wtf_begin_node(ctx, parent->type().string, tag);
-	}
-}
-
-static void end_enclosing_nodes(WtfWriter* ctx, const Asset& child) {
-	const Asset* parent = child.parent();
-	if(parent) {
-		wtf_end_node(ctx);
-		end_enclosing_nodes(ctx, *parent);
+	for(WtfNode* child = node->first_child; child != nullptr; child = child->next_sibling) {
+		Asset& asset = add_child(create_asset(node->type_name, forest(), pack(), file(), this));
+		asset.read(child);
 	}
 }
 
 void Asset::write(WtfWriter* ctx) const {
-	if(!_file_name.empty() || ctx == nullptr) {
-		// This asset is the root of a new file.
-		assert(!(!_file_name.empty() && ctx == nullptr));
-		FILE* file = pack().open_asset_write_handle(file_path());
-		WtfWriter* child_ctx = wtf_begin_file(file);
-		defer([&]() {
-			wtf_end_file(child_ctx);
-			fclose(file);
-		});
-		begin_enclosing_nodes(child_ctx, *this);
-		write_attributes(child_ctx);
-		for_each_child([&](Asset& child) {
-			child.write(child_ctx);
-		});
-		end_enclosing_nodes(child_ctx, *this);
-	} else {
-		// This asset is being written to the already open file.
-		write_attributes(ctx);
-		for_each_child([&](Asset& child) {
-			child.write(ctx);
-		});
-	}
+	write_attributes(ctx);
+	for_each_child([&](Asset& child) {
+		child.write(ctx);
+	});
 }
 
 void Asset::validate() const {
@@ -160,25 +124,22 @@ Asset* Asset::lookup_asset(AssetReference reference) {
 		auto begin = std::make_move_iterator(reference.fragments.begin());
 		auto end = std::make_move_iterator(reference.fragments.end());
 		absolute.fragments.insert(absolute.fragments.end(), begin, end);
-		return _manager.lookup_asset(std::move(absolute));
+		return _forest.lookup_asset(std::move(absolute));
 	} else {
-		return _manager.lookup_asset(std::move(reference));
+		return _forest.lookup_asset(std::move(reference));
 	}
 }
-	
-std::string Asset::read_text_file(const FileReference& file) const {
-	return _pack.read_text_file(_dir/file.path);
-}
 
-std::vector<u8> Asset::read_binary_file(const FileReference& file) const {
-	return _pack.read_binary_file(_dir/file.path);
-}
+Asset::Asset(AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent, AssetType type)
+	: _forest(forest), _pack(pack), _file(file), _parent(parent), _type(type) {}
 
 Asset* Asset::lookup_local_asset(const AssetReferenceFragment* begin, const AssetReferenceFragment* end) {
-	if(begin < end) {
-		for(const std::unique_ptr<Asset>& child : _children) {
-			if(child->type() == begin->type && child->tag() == begin->tag) {
+	for(const std::unique_ptr<Asset>& child : _children) {
+		if(child->type() == begin->type && child->tag() == begin->tag) {
+			if(begin + 1 < end) {
 				return child->lookup_local_asset(begin + 1, end);
+			} else {
+				return child.get();
 			}
 		}
 	}
@@ -187,22 +148,76 @@ Asset* Asset::lookup_local_asset(const AssetReferenceFragment* begin, const Asse
 
 // *****************************************************************************
 
-AssetPack::AssetPack(AssetManager& manager, bool is_writeable)
-	: _root(std::make_unique<RootAsset>(manager, *this, nullptr))
-	, _is_writeable(is_writeable) {}
+AssetFile::AssetFile(AssetForest& forest, AssetPack& pack, const fs::path& relative_path)
+	: _pack(pack)
+	, _relative_directory(relative_path.parent_path())
+	, _file_name(relative_path.filename())
+	, _root(std::make_unique<RootAsset>(forest, pack, *this, nullptr)) {}
 
-Asset* AssetPack::root() {
-	return _root.get();
+Asset& AssetFile::root() {
+	return *_root.get();
 }
+
+void AssetFile::write() {
+	FILE* fh = _pack.open_asset_write_handle(_relative_directory/_file_name);
+	WtfWriter* ctx = wtf_begin_file(fh);
+	defer([&]() {
+		wtf_end_file(ctx);
+		fclose(fh);
+	});
+	_root->write(ctx);
+}
+
+std::string AssetFile::read_relative_text_file(const FileReference& file) const {
+	return _pack.read_text_file(_relative_directory/file.path);
+}
+
+std::vector<u8> AssetFile::read_relative_binary_file(const FileReference& file) const {
+	return _pack.read_binary_file(_relative_directory/file.path);
+}
+
+// *****************************************************************************
+
+AssetPack::AssetPack(AssetForest& forest, bool is_writeable)
+	: _forest(forest)
+	, _is_writeable(is_writeable) {}
 
 bool AssetPack::is_writeable() const {
 	return _is_writeable;
 }
 
+AssetFile& AssetPack::create_asset_file(const fs::path& relative_path) {
+	return *_asset_files.emplace_back(std::make_unique<AssetFile>(_forest, *this, relative_path)).get();
+}
+
+Asset* AssetPack::lookup_local_asset(const AssetReference& absolute_reference) {
+	const AssetReferenceFragment* first_fragment = absolute_reference.fragments.data();
+	const AssetReferenceFragment* fragment_past_end = first_fragment + absolute_reference.fragments.size();
+	for(auto file = _asset_files.rbegin(); file != _asset_files.rend(); file++) {
+		Asset* asset = (*file)->root().lookup_local_asset(first_fragment, fragment_past_end);
+		if(asset) {
+			return asset;
+		}
+	}
+	return nullptr;
+}
+
 // *****************************************************************************
 
-LooseAssetPack::LooseAssetPack(AssetManager& manager, fs::path directory)
-	: AssetPack(manager, true)
+Asset* AssetForest::lookup_asset(const AssetReference& absolute_reference) {
+	for(auto pack = _packs.rbegin(); pack != _packs.rend(); pack++) {
+		Asset* asset = (*pack)->lookup_local_asset(absolute_reference);
+		if(asset) {
+			return asset;
+		}
+	}
+	return nullptr;
+}
+
+// *****************************************************************************
+
+LooseAssetPack::LooseAssetPack(AssetForest& forest, fs::path directory)
+	: AssetPack(forest, true)
 	, _directory(directory) {}
 	
 std::string LooseAssetPack::read_text_file(const fs::path& path) const {
@@ -218,18 +233,4 @@ FILE* LooseAssetPack::open_asset_write_handle(const fs::path& path) const {
 	assert(is_writeable());
 	std::string string = (_directory/path).string();
 	return fopen(string.c_str(), "w");
-}
-
-// *****************************************************************************
-
-Asset* AssetManager::lookup_asset(AssetReference absolute_reference) {
-	for(auto pack = _packs.rbegin(); pack != _packs.rend(); pack++) {
-		AssetReferenceFragment* first_fragment = absolute_reference.fragments.data();
-		AssetReferenceFragment* fragment_past_end = first_fragment + absolute_reference.fragments.size();
-		Asset* asset = (*pack)->root()->lookup_local_asset(first_fragment, fragment_past_end);
-		if(asset) {
-			return asset;
-		}
-	}
-	return nullptr;
 }
