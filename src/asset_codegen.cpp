@@ -131,6 +131,9 @@ static void generate_asset_type(const WtfNode* asset_type, s32 id) {
 			out("\t\n");
 			out("\t%s %s();\n", cpp_type.c_str(), node->tag);
 			out("\tvoid set_%s(%s src_0);\n", node->tag, cpp_type.c_str());
+			if(strcmp(node->type_name, "AssetReferenceAttribute") == 0) {
+				out("\tvoid set_%s(Asset& src_0);\n", node->tag);
+			}
 		}
 	}
 	out("\t\n");
@@ -293,11 +296,17 @@ static void generate_getter_and_setter_functions(const WtfNode* asset_type) {
 			out("\treturn dest_0;\n");
 			out("}\n\n");
 			
-			out("void %sAsset::set_%s(%s src_0) {\n", asset_type->tag, node->tag, interface_type.c_str(), node->tag);
+			out("void %sAsset::set_%s(%s src_0) {\n", asset_type->tag, node->tag, interface_type.c_str());
 			out("\t%s dest_0;\n", internal_type.c_str());
 			generate_setter_code(node, 0);
 			out("\t_attribute_%s = std::move(dest_0);\n", node->tag);
 			out("}\n\n");
+			
+			if(strcmp(node->type_name, "AssetReferenceAttribute") == 0) {
+				out("void %sAsset::set_%s(Asset& src_0) {\n", asset_type->tag, node->tag);
+				out("\tset_%s(&src_0);\n", node->tag);
+				out("}\n\n");
+			}
 		}
 	}
 }

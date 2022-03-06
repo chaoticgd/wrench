@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
 		AssetPack& pack = forest.mount<LooseAssetPack>(argv[3]);
 		FILE* src = fopen(argv[2], "rb");
 		std::vector<u8> header_bytes = read_file(src, 0, 0x800);
-		read_misc_wad(pack, src, header_bytes);
+		unpack_misc_wad(pack, src, header_bytes);
 		pack.write();
 	} if(mode == "extract") {
 		require_args(4);

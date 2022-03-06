@@ -21,6 +21,6 @@
 
 #include <assetmgr/asset.h>
 
-void read_misc_wad(AssetPack& pack, FILE* src, Buffer header_bytes);
+void unpack_misc_wad(AssetPack& pack, FILE* src, Buffer header_bytes);
 
 #endif

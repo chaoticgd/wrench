@@ -34,18 +34,18 @@ packed_struct(MiscWadHeaderDL,
 	SectorRange gadget;
 )
 
-static Asset* write_binary_lump(Asset& parent, FILE* src, SectorRange range, const char* child, fs::path path) {
+static Asset& unpack_binary_lump(Asset& parent, FILE* src, SectorRange range, const char* child, fs::path path) {
 	std::vector<u8> bytes = read_file(src, range.offset.bytes(), range.size.bytes());
 	BinaryAsset& binary = parent.child<BinaryAsset>(child);
 	binary.set_src(parent.file().write_binary_file(path, bytes));
-	return &binary;
+	return binary;
 }
 
-void read_misc_wad(AssetPack& pack, FILE* src, Buffer header_bytes) {
+void unpack_misc_wad(AssetPack& pack, FILE* src, Buffer header_bytes) {
 	MiscWadHeaderDL header = header_bytes.read<MiscWadHeaderDL>(0, "file header");
 	
 	AssetFile& asset_file = pack.asset_file("misc/misc.asset");
 	MiscWadAsset& misc_wad = asset_file.root().child<MiscWadAsset>("misc");
 	
-	misc_wad.set_debug_font(write_binary_lump(misc_wad, src, header.debug_font, "debug_font", "debug_font.bin"));
+	misc_wad.set_debug_font(unpack_binary_lump(misc_wad, src, header.debug_font, "debug_font", "debug_font.bin"));
 }
