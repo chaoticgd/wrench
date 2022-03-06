@@ -34,11 +34,11 @@ packed_struct(MiscWadHeaderDL,
 	SectorRange gadget;
 )
 
-static AssetReference write_binary_lump(Asset& parent, FILE* src, SectorRange range, const char* child, fs::path path) {
+static Asset* write_binary_lump(Asset& parent, FILE* src, SectorRange range, const char* child, fs::path path) {
 	std::vector<u8> bytes = read_file(src, range.offset.bytes(), range.size.bytes());
 	BinaryAsset& binary = parent.child<BinaryAsset>(child);
 	binary.set_src(parent.file().write_binary_file(path, bytes));
-	return binary.reference_relative_to(parent);
+	return &binary;
 }
 
 void read_misc_wad(AssetPack& pack, FILE* src, Buffer header_bytes) {
