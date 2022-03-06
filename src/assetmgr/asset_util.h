@@ -24,18 +24,11 @@
 #include <core/util.h>
 #include <core/filesystem.h>
 
-class AssetType {
-	friend AssetType asset_string_to_type(const char* type_name);
-	friend const char* asset_type_to_string(AssetType type);
+struct AssetType {
+	s32 id = -1;
 	
-public:
-	AssetType() = default;
-	constexpr AssetType(s32 id_) : id(id_) {}
 	bool operator==(const AssetType& rhs) const { return id == rhs.id; }
 	bool operator!=(const AssetType& rhs) const { return id != rhs.id; }
-	
-private:
-	s32 id = -1;
 };
 
 #define NULL_ASSET_TYPE AssetType()

@@ -79,6 +79,10 @@ public:
 		return add_child<ChildAsset>(std::move(tag));
 	}
 	
+	template <typename ChildAsset>
+	ChildAsset& child(std::string tag, fs::path path);
+	
+	Asset& child(AssetType type, const std::string& tag);
 	Asset* find_child(AssetType type, const std::string& tag);
 	
 	bool remove_child(Asset& asset);
@@ -143,6 +147,7 @@ public:
 	AssetFile* higher_precedence();
 	
 private:
+	friend Asset;
 	friend AssetPack;
 	
 	void read();
@@ -239,5 +244,15 @@ private:
 	
 	fs::path _directory;
 };
+
+template <typename ChildAsset>
+ChildAsset& Asset::child(std::string tag, fs::path path) {
+	AssetReference reference = absolute_reference();
+	Asset* asset = &pack().asset_file(file()._relative_directory/path).root();
+	for(AssetReferenceFragment& fragment : reference.fragments) {
+		asset = &asset->child(fragment.type, fragment.tag);
+	}
+	return asset->child<ChildAsset>(tag);
+}
 
 #endif

@@ -119,21 +119,15 @@ AssetType MiscWad {
 		allowed_asset_types: ['Texture' 'Binary']
 	}
 	
-	ArrayAttribute irx {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
+	AssetReferenceAttribute irx {
+		allowed_asset_types: ['IrxModules' 'Binary']
 	}
 	
-	AssetReferenceAttribute savegame {
+	AssetReferenceAttribute save_game {
 		allowed_asset_types: ['Binary']
 	}
 	
-	AssetReferenceAttribute frontbin {
-		allowed_asset_types: ['Binary']
-	}
-	
-	AssetReferenceAttribute frontbin_net {
+	AssetReferenceAttribute frontend_code {
 		allowed_asset_types: ['Binary']
 	}
 	
@@ -152,6 +146,33 @@ AssetType MiscWad {
 	AssetReferenceAttribute gadget {
 		allowed_asset_types: ['Binary']
 	}
+}
+
+AssetType IrxModules {
+	AssetReferenceAttribute sio2man  { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute mcman    { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute mcserv   { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute padman   { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute mtapman  { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute libsd    { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute 989snd   { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute stash    { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute inet     { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute netcnf   { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute inetctl  { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute msifrpc  { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute dev9     { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute smap     { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute libnetb  { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute ppp      { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute pppoe    { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute usbd     { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute lgaud    { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute eznetcnf { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute eznetctl { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute lgkbm    { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute streamer { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute astrm    { allowed_asset_types: ['Binary'] }
 }
 
 AssetType BonusWad {

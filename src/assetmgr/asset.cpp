@@ -68,6 +68,15 @@ AssetReference Asset::reference_relative_to(Asset& asset) const {
 	}
 }
 
+Asset& Asset::child(AssetType type, const std::string& tag) {
+	for(std::unique_ptr<Asset>& child : _children) {
+		if(child->type() == type && child->tag() == tag) {
+			return *child.get();
+		}
+	}
+	return add_child(create_asset(type, forest(), pack(), file(), this, std::move(tag)));
+}
+
 Asset* Asset::find_child(AssetType type, const std::string& tag) {
 	for(std::unique_ptr<Asset>& child : _children) {
 		if(child->type() == type && child->tag() == tag) {
@@ -90,7 +99,7 @@ bool Asset::remove_child(Asset& asset) {
 void Asset::read(WtfNode* node) {
 	read_attributes(node);
 	for(WtfNode* child = node->first_child; child != nullptr; child = child->next_sibling) {
-		Asset& asset = add_child(create_asset(child->type_name, forest(), pack(), file(), this, child->tag));
+		Asset& asset = add_child(create_asset(asset_string_to_type(child->type_name), forest(), pack(), file(), this, child->tag));
 		asset.read(child);
 	}
 }

@@ -67,9 +67,9 @@ int main(int argc, char** argv) {
 	for(const WtfNode* node = wtf_first_child(root, "AssetType"); node != NULL; node = wtf_next_sibling(node, "AssetType")) {
 		out("class %sAsset;\n", node->tag);
 	}
+	out("std::unique_ptr<Asset> create_asset(AssetType type, AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent, std::string tag);\n");
 	out("AssetType asset_string_to_type(const char* type_name);\n");
 	out("const char* asset_type_to_string(AssetType type);\n");
-	out("std::unique_ptr<Asset> create_asset(const char* type_name, AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent, std::string tag);\n");
 	s32 id = 0;
 	for(const WtfNode* node = wtf_first_child(root, "AssetType"); node != NULL; node = wtf_next_sibling(node, "AssetType")) {
 		generate_asset_type(node, id++);
@@ -124,12 +124,18 @@ static void generate_asset_type(const WtfNode* asset_type, s32 id) {
 	for(WtfNode* node = asset_type->first_child; node != NULL; node = node->next_sibling) {
 		std::string cpp_type = node_to_cpp_type(node, false);
 		if(!cpp_type.empty()) {
+			std::string getter_name = node->tag;
+			assert(getter_name.size() >= 1);
+			if(getter_name[0] >= '0' && getter_name[0] <= '9') {
+				getter_name = '_' + getter_name;
+			}
+			
 			if(first) {
 				out("\t\n");
 				first = false;
 			}
 			out("\t\n");
-			out("\t%s %s();\n", cpp_type.c_str(), node->tag);
+			out("\t%s %s();\n", cpp_type.c_str(), getter_name.c_str());
 			out("\tvoid set_%s(%s src_0);\n", node->tag, cpp_type.c_str());
 			if(strcmp(node->type_name, "AssetReferenceAttribute") == 0) {
 				out("\tvoid set_%s(Asset& src_0);\n", node->tag);
@@ -137,14 +143,15 @@ static void generate_asset_type(const WtfNode* asset_type, s32 id) {
 		}
 	}
 	out("\t\n");
-	out("\tstatic const constexpr AssetType ASSET_TYPE = AssetType(%d);\n", id);
+	out("\tstatic const constexpr AssetType ASSET_TYPE = AssetType{%d};\n", id);
 	out("};\n\n");
 }
 
 static void generate_create_asset_function(const WtfNode* root) {
-	out("std::unique_ptr<Asset> create_asset(const char* type_name, AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent, std::string tag) {\n");
+	out("std::unique_ptr<Asset> create_asset(AssetType type, AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent, std::string tag) {\n");
+	s32 id = 0;
 	for(const WtfNode* node = wtf_first_child(root, "AssetType"); node != NULL; node = wtf_next_sibling(node, "AssetType")) {
-		out("\tif(strcmp(type_name, \"%s\") == 0) return std::make_unique<%sAsset>(forest, pack, file, parent, std::move(tag));\n", node->tag, node->tag);
+		out("\tif(type.id == %d) return std::make_unique<%sAsset>(forest, pack, file, parent, std::move(tag));\n", id++, node->tag);
 	}
 	out("\treturn nullptr;\n");
 	out("}\n\n");
@@ -154,7 +161,7 @@ static void generate_asset_string_to_type_function(const WtfNode* root) {
 	out("AssetType asset_string_to_type(const char* type_name) {\n");
 	s32 id = 0;
 	for(const WtfNode* node = wtf_first_child(root, "AssetType"); node != NULL; node = wtf_next_sibling(node, "AssetType")) {
-		out("\tif(strcmp(type_name, \"%s\") == 0) return AssetType(%d);\n", node->tag, id++);
+		out("\tif(strcmp(type_name, \"%s\") == 0) return AssetType{%d};\n", node->tag, id++);
 	}
 	out("\treturn NULL_ASSET_TYPE;\n");
 	out("}\n\n");
@@ -288,8 +295,14 @@ static void generate_getter_and_setter_functions(const WtfNode* asset_type) {
 	for(WtfNode* node = asset_type->first_child; node != NULL; node = node->next_sibling) {
 		std::string interface_type = node_to_cpp_type(node, false);
 		if(!interface_type.empty()) {
+			std::string getter_name = node->tag;
+			assert(getter_name.size() >= 1);
+			if(getter_name[0] >= '0' && getter_name[0] <= '9') {
+				getter_name = '_' + getter_name;
+			}
+			
 			std::string internal_type = node_to_cpp_type(node, true);
-			out("%s %sAsset::%s() {\n", interface_type.c_str(), asset_type->tag, node->tag);
+			out("%s %sAsset::%s() {\n", interface_type.c_str(), asset_type->tag, getter_name.c_str());
 			out("\t%s dest_0;\n", interface_type.c_str());
 			out("\tconst %s& src_0 = _attribute_%s;\n", internal_type.c_str(), node->tag);
 			generate_getter_code(node, 0);
