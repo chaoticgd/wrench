@@ -31,10 +31,12 @@
 #include <assetmgr/asset_util.h>
 
 class Asset {
+protected:
+	Asset(AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent, AssetType type, std::string tag);
 public:
-	virtual ~Asset() {}
 	Asset(const Asset&) = delete;
 	Asset(Asset&&) = delete;
+	virtual ~Asset();
 	Asset& operator=(const Asset&) = delete;
 	Asset& operator=(Asset&&) = delete;
 	
@@ -48,6 +50,8 @@ public:
 	const Asset* parent() const;
 	AssetType type() const;
 	const std::string& tag() const;
+	Asset* lower_precedence();
+	Asset* higher_precedence();
 	AssetReference absolute_reference() const;
 	AssetReference reference_relative_to(Asset& asset) const;
 	
@@ -72,13 +76,12 @@ public:
 				return static_cast<ChildAsset&>(*child.get());
 			}
 		}
-		std::unique_ptr<ChildAsset> pointer = std::make_unique<ChildAsset>(forest(), pack(), file(), this, std::move(tag));
-		ChildAsset* asset = pointer.get();
-		_children.emplace_back(std::move(pointer));
-		return *asset;
+		return add_child<ChildAsset>(std::move(tag));
 	}
 	
-	Asset& add_child(std::unique_ptr<Asset> child);
+	Asset* find_child(AssetType type, const std::string& tag);
+	
+	bool remove_child(Asset& asset);
 	
 	void read(WtfNode* node);
 	void write(WtfWriter* ctx) const;
@@ -92,13 +95,23 @@ public:
 	virtual void write_attributes(WtfWriter* ctx) const = 0;
 	virtual void validate_attributes() const = 0;
 	
-protected:
-	Asset(AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent, AssetType type, std::string tag);
-	
 private:
 	friend AssetPack;
 	
+	template <typename ChildAsset>
+	ChildAsset& add_child(std::string tag) {
+		std::unique_ptr<ChildAsset> pointer = std::make_unique<ChildAsset>(forest(), pack(), file(), this, std::move(tag));
+		ChildAsset* asset = pointer.get();
+		_children.emplace_back(std::move(pointer));
+		return *asset;
+	}
+	
+	Asset& add_child(std::unique_ptr<Asset> child);
+	
 	Asset* lookup_local_asset(const AssetReferenceFragment* begin, const AssetReferenceFragment* end);
+	
+	void connect_precedence_pointers();
+	void disconnect_precedence_pointers();
 	
 	AssetForest& _forest;
 	AssetFile& _file;
@@ -107,6 +120,8 @@ private:
 	AssetType _type;
 	std::string _tag;
 	std::vector<std::unique_ptr<Asset>> _children;
+	Asset* _lower_precedence = nullptr;
+	Asset* _higher_precedence = nullptr;
 };
 
 class AssetFile {
@@ -123,6 +138,9 @@ public:
 	
 	FileReference write_text_file(const fs::path& path, const char* contents) const;
 	FileReference write_binary_file(const fs::path& path, Buffer contents) const;
+	
+	AssetFile* lower_precedence();
+	AssetFile* higher_precedence();
 	
 private:
 	friend AssetPack;
@@ -144,6 +162,9 @@ public:
 	AssetFile& asset_file(fs::path relative_path);
 	
 	void write() const;
+	
+	AssetPack* lower_precedence();
+	AssetPack* higher_precedence();
 	
 protected:
 	AssetPack(AssetForest& forest, bool is_writeable);
@@ -174,6 +195,8 @@ private:
 	AssetForest& _forest;
 	std::vector<std::unique_ptr<AssetFile>> _asset_files;
 	bool _is_writeable;
+	AssetPack* _lower_precedence = nullptr;
+	AssetPack* _higher_precedence = nullptr;
 };
 
 class AssetForest {
@@ -186,9 +209,14 @@ public:
 	
 	template <typename Pack, typename... ConstructorArgs>
 	AssetPack& mount(ConstructorArgs... args) {
-		AssetPack& pack = *_packs.emplace_back(std::make_unique<Pack>(*this, args...)).get();
-		pack.read_asset_files();
-		return pack;
+		AssetPack* pack = _packs.emplace_back(std::make_unique<Pack>(*this, args...)).get();
+		if(_packs.size() >= 2) {
+			AssetPack* lower_pack = _packs[_packs.size() - 2].get();
+			lower_pack->_higher_precedence = pack;
+			pack->_lower_precedence = lower_pack;
+		}
+		pack->read_asset_files();
+		return *pack;
 	}
 	
 	Asset* lookup_asset(const AssetReference& absolute_reference);

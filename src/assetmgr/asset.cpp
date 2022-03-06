@@ -20,6 +20,20 @@
 
 #include "asset_types.h"
 
+Asset::Asset(AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent, AssetType type, std::string tag)
+	: _forest(forest)
+	, _pack(pack)
+	, _file(file)
+	, _parent(parent)
+	, _type(type)
+	, _tag(tag) {
+	connect_precedence_pointers();
+}
+
+Asset::~Asset() {
+	disconnect_precedence_pointers();
+}
+
 AssetForest& Asset::forest() { return _forest; }
 const AssetForest& Asset::forest() const { return _forest; }
 AssetPack& Asset::pack() { return _pack; }
@@ -30,6 +44,8 @@ Asset* Asset::parent() { return _parent; }
 const Asset* Asset::parent() const { return _parent; }
 AssetType Asset::type() const { return _type; }
 const std::string& Asset::tag() const { return _tag; }
+Asset* Asset::lower_precedence() { return _lower_precedence; }
+Asset* Asset::higher_precedence() { return _higher_precedence; }
 
 AssetReference Asset::absolute_reference() const {
 	if(parent()) {
@@ -52,8 +68,23 @@ AssetReference Asset::reference_relative_to(Asset& asset) const {
 	}
 }
 
-Asset& Asset::add_child(std::unique_ptr<Asset> child) {
-	return *_children.emplace_back(std::move(child)).get();
+Asset* Asset::find_child(AssetType type, const std::string& tag) {
+	for(std::unique_ptr<Asset>& child : _children) {
+		if(child->type() == type && child->tag() == tag) {
+			return child.get();
+		}
+	}
+	return nullptr;
+}
+
+bool Asset::remove_child(Asset& asset) {
+	for(auto child = _children.begin(); child != _children.end(); child++) {
+		if(child->get() == &asset) {
+			_children.erase(child);
+			return true;
+		}
+	}
+	return false;
 }
 
 void Asset::read(WtfNode* node) {
@@ -92,13 +123,9 @@ Asset* Asset::lookup_asset(AssetReference reference) {
 	}
 }
 
-Asset::Asset(AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent, AssetType type, std::string tag)
-	: _forest(forest)
-	, _pack(pack)
-	, _file(file)
-	, _parent(parent)
-	, _type(type)
-	, _tag(tag) {}
+Asset& Asset::add_child(std::unique_ptr<Asset> child) {
+	return *_children.emplace_back(std::move(child)).get();
+}
 
 Asset* Asset::lookup_local_asset(const AssetReferenceFragment* begin, const AssetReferenceFragment* end) {
 	for(const std::unique_ptr<Asset>& child : _children) {
@@ -111,6 +138,57 @@ Asset* Asset::lookup_local_asset(const AssetReferenceFragment* begin, const Asse
 		}
 	}
 	return nullptr;
+}
+
+void Asset::connect_precedence_pointers() {
+	// Connect asset nodes from adjacent trees so that if a given node doesn't
+	// contain a given attribute we can check lower precedence nodes.
+	if(parent()) {
+		// Check for a lower precedence node first. This should be the more
+		// common case while editing.
+		for(Asset* lower_parent = parent()->lower_precedence(); lower_parent != nullptr; lower_parent = lower_parent->lower_precedence()) {
+			if(Asset* lower = lower_parent->find_child(type(), tag())) {
+				Asset* higher = lower->higher_precedence();
+				_lower_precedence = lower;
+				_higher_precedence = higher;
+				lower->_higher_precedence = this;
+				if(higher) {
+					higher->_lower_precedence = this;
+				}
+				return;
+			}
+		}
+		// There was no lower precedence node, so now check if there's is a
+		// higher precedence node.
+		for(Asset* higher_parent = parent()->higher_precedence(); higher_parent != nullptr; higher_parent = higher_parent->higher_precedence()) {
+			if(Asset* higher = higher_parent->find_child(type(), tag())) {
+				Asset* lower = higher->lower_precedence();
+				_lower_precedence = lower;
+				_higher_precedence = higher;
+				if(lower) {
+					lower->_higher_precedence = this;
+				}
+				higher->_lower_precedence = this;
+				return;
+			}
+		}
+	} else {
+		if(file().lower_precedence()) {
+			_lower_precedence = &file().lower_precedence()->root();
+		}
+		if(file().higher_precedence()) {
+			_higher_precedence = &file().higher_precedence()->root();
+		}
+	}
+}
+
+void Asset::disconnect_precedence_pointers() {
+	if(lower_precedence()) {
+		_lower_precedence->_higher_precedence = higher_precedence();
+	}
+	if(higher_precedence()) {
+		_higher_precedence->_lower_precedence = lower_precedence();
+	}
 }
 
 // *****************************************************************************
@@ -143,6 +221,42 @@ FileReference AssetFile::write_text_file(const fs::path& path, const char* conte
 FileReference AssetFile::write_binary_file(const fs::path& path, Buffer contents) const {
 	_pack.write_binary_file(_relative_directory/path, contents);
 	return FileReference(*this, path);
+}
+
+AssetFile* AssetFile::lower_precedence() {
+	for(size_t i = 0; i < _pack._asset_files.size(); i++) {
+		if(_pack._asset_files[i].get() == this) {
+			if(i - 1 >= 0) {
+				return _pack._asset_files[i - 1].get();
+			} else {
+				break;
+			}
+		}
+	}
+	for(AssetPack* lower = _pack.lower_precedence(); lower != nullptr; lower = lower->lower_precedence()) {
+		if(lower->_asset_files.size() >= 1) {
+			return lower->_asset_files.back().get();
+		}
+	}
+	return nullptr;
+}
+
+AssetFile* AssetFile::higher_precedence() {
+	for(size_t i = 0; i < _pack._asset_files.size(); i++) {
+		if(_pack._asset_files[i].get() == this) {
+			if(i + 1 < _pack._asset_files.size()) {
+				return _pack._asset_files[i + 1].get();
+			} else {
+				break;
+			}
+		}
+	}
+	for(AssetPack* higher = _pack.higher_precedence(); higher != nullptr; higher = higher->higher_precedence()) {
+		if(higher->_asset_files.size() >= 1) {
+			return higher->_asset_files.front().get();
+		}
+	}
+	return nullptr;
 }
 
 void AssetFile::read() {
@@ -198,8 +312,12 @@ void AssetPack::write() const {
 	}
 }
 
+AssetPack* AssetPack::lower_precedence() { return _lower_precedence; }
+AssetPack* AssetPack::higher_precedence() { return _higher_precedence; }
+
 void AssetPack::read_asset_files() {
 	std::vector<fs::path> asset_file_paths = enumerate_asset_files();
+	std::sort(BEGIN_END(asset_file_paths));
 	for(const fs::path& relative_path : asset_file_paths) {
 		AssetFile& file = *_asset_files.emplace_back(std::make_unique<AssetFile>(_forest, *this, relative_path)).get();
 		file.read();
