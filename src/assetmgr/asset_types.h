@@ -27,10 +27,6 @@ struct InvalidAssetAttributeType {
 	InvalidAssetAttributeType(const WtfNode* node, const WtfAttribute* attribute) {}
 };
 
-struct MissingAssetAttribute {
-	MissingAssetAttribute(const WtfNode* node, const char* key) {}
-};
-
 #define GENERATED_ASSET_HEADER
 #include "_generated_asset_types.inl"
 #undef GENERATED_ASSET_HEADER
