@@ -24,56 +24,15 @@
 // packs, which contain .asset files, which contain a tree of assets. Each mod
 // as well as each base game here would be represented by an asset pack.
 
-#include <any>
 #include <memory>
 #include <functional>
 
 #include <core/wtf.h>
-#include <core/util.h>
-#include <core/filesystem.h>
-
-class AssetType {
-	template <typename T>
-	friend AssetType asset_type();
-public:
-	AssetType() = default;
-	bool operator==(const AssetType& rhs) const { return string == rhs.string; }
-	bool operator!=(const AssetType& rhs) const { return string != rhs.string; }
-
-	const char* string = nullptr;
-private:
-	AssetType(const char* string_) : string(string_) {}
-};
-
-#define NULL_ASSET_TYPE AssetType()
-
-using AssetVisitorCallback = std::function<void(const char* key, std::any value, std::function<void(std::any)> setter)>;
-using ConstAssetVisitorCallback = std::function<void(const char* key, std::any value)>;
-
-struct AssetReferenceFragment {
-	AssetType type;
-	std::string tag;
-};
-
-struct AssetReference {
-	bool is_relative;
-	std::vector<AssetReferenceFragment> fragments;
-};
-
-AssetReference parse_asset_reference(const char* ptr);
-std::string asset_reference_to_string(const AssetReference& reference);
-
-struct FileReference {
-	fs::path path;
-};
-
-class AssetForest;
-class AssetPack;
-class AssetFile;
+#include <assetmgr/asset_util.h>
 
 class Asset {
 public:
-	virtual ~Asset() = default;
+	virtual ~Asset() {}
 	Asset(const Asset&) = delete;
 	Asset(Asset&&) = delete;
 	Asset& operator=(const Asset&) = delete;
@@ -90,6 +49,7 @@ public:
 	AssetType type() const;
 	const std::string& tag() const;
 	AssetReference absolute_reference() const;
+	AssetReference reference_relative_to(Asset& asset) const;
 	
 	template <typename Callback>
 	void for_each_child(Callback callback) {
@@ -105,9 +65,17 @@ public:
 		}
 	}
 	
-	template <typename ChildAsset, typename... ConstructorArgs>
-	ChildAsset& create_child(ConstructorArgs... args) {
-		return _children.emplace_back(std::make_unique<ChildAsset>(args...));
+	template <typename ChildAsset>
+	ChildAsset& child(std::string tag) {
+		for(std::unique_ptr<Asset>& child : _children) {
+			if(child->type() == ChildAsset::ASSET_TYPE && child->tag() == tag) {
+				return static_cast<ChildAsset&>(*child.get());
+			}
+		}
+		std::unique_ptr<ChildAsset> pointer = std::make_unique<ChildAsset>(forest(), pack(), file(), this, std::move(tag));
+		ChildAsset* asset = pointer.get();
+		_children.emplace_back(std::move(pointer));
+		return *asset;
 	}
 	
 	Asset& add_child(std::unique_ptr<Asset> child);
@@ -118,14 +86,14 @@ public:
 	
 	Asset* lookup_asset(AssetReference reference);
 	
-	virtual void for_each_attribute(AssetVisitorCallback callback);
-	virtual void for_each_attribute(ConstAssetVisitorCallback callback) const;
-	virtual void read_attributes(const WtfNode* node);
-	virtual void write_attributes(WtfWriter* ctx) const;
-	virtual void validate_attributes() const;
+	virtual void for_each_attribute(AssetVisitorCallback callback) = 0;
+	virtual void for_each_attribute(ConstAssetVisitorCallback callback) const = 0;
+	virtual void read_attributes(const WtfNode* node) = 0;
+	virtual void write_attributes(WtfWriter* ctx) const = 0;
+	virtual void validate_attributes() const = 0;
 	
 protected:
-	Asset(AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent, AssetType type);
+	Asset(AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent, AssetType type, std::string tag);
 	
 private:
 	friend AssetPack;
@@ -151,12 +119,16 @@ public:
 	
 	Asset& root();
 	
-	void write();
+	void write() const;
 	
-	std::string read_relative_text_file(const FileReference& file) const;
-	std::vector<u8> read_relative_binary_file(const FileReference& file) const;
+	FileReference write_text_file(const fs::path& path, const char* contents) const;
+	FileReference write_binary_file(const fs::path& path, Buffer contents) const;
 	
 private:
+	friend AssetPack;
+	
+	void read();
+	
 	AssetPack& _pack;
 	fs::path _relative_directory;
 	std::string _file_name;
@@ -165,11 +137,13 @@ private:
 
 class AssetPack {
 public:
-	virtual ~AssetPack();
+	virtual ~AssetPack() {}
 	
 	bool is_writeable() const;
 	
-	AssetFile& create_asset_file(const fs::path& relative_path);
+	AssetFile& asset_file(fs::path relative_path);
+	
+	void write() const;
 	
 protected:
 	AssetPack(AssetForest& forest, bool is_writeable);
@@ -178,17 +152,24 @@ protected:
 	AssetPack& operator=(const AssetPack&) = delete;
 	AssetPack& operator=(AssetPack&&) = delete;
 	
+	std::string read_text_file(const FileReference& reference) const;
+	std::vector<u8> read_binary_file(const FileReference& reference) const;
+	
 private:
 	friend AssetForest;
 	friend AssetFile;
 	friend Asset;
 	
+	void read_asset_files();
+	
 	Asset* lookup_local_asset(const AssetReference& absolute_reference);
 	
-	virtual std::vector<fs::path> enumerate_asset_files() const;
-	virtual std::string read_text_file(const fs::path& path) const;
-	virtual std::vector<u8> read_binary_file(const fs::path& path) const;
-	virtual FILE* open_asset_write_handle(const fs::path& path) const;
+	virtual std::string read_text_file(const fs::path& path) const = 0;
+	virtual std::vector<u8> read_binary_file(const fs::path& path) const = 0;
+	virtual void write_text_file(const fs::path& path, const char* contents) const = 0;
+	virtual void write_binary_file(const fs::path& path, Buffer contents) const = 0;
+	virtual std::vector<fs::path> enumerate_asset_files() const = 0;
+	virtual FILE* open_asset_write_handle(const fs::path& path) const = 0;
 	
 	AssetForest& _forest;
 	std::vector<std::unique_ptr<AssetFile>> _asset_files;
@@ -197,15 +178,17 @@ private:
 
 class AssetForest {
 public:
-	AssetForest();
+	AssetForest() {}
 	AssetForest(const AssetForest&) = delete;
 	AssetForest(AssetForest&&) = delete;
 	AssetForest& operator=(const AssetForest&) = delete;
 	AssetForest& operator=(AssetForest&&) = delete;
 	
 	template <typename Pack, typename... ConstructorArgs>
-	Pack& mount(ConstructorArgs... args) {
-		return _packs.emplace_back(std::make_unique<Pack>(*this, args...));
+	AssetPack& mount(ConstructorArgs... args) {
+		AssetPack& pack = *_packs.emplace_back(std::make_unique<Pack>(*this, args...)).get();
+		pack.read_asset_files();
+		return pack;
 	}
 	
 	Asset* lookup_asset(const AssetReference& absolute_reference);
@@ -217,10 +200,13 @@ private:
 class LooseAssetPack : public AssetPack {
 public:
 	LooseAssetPack(AssetForest& forest, fs::path directory);
-private:
 	
+private:
 	std::string read_text_file(const fs::path& path) const override;
 	std::vector<u8> read_binary_file(const fs::path& path) const override;
+	void write_text_file(const fs::path& path, const char* contents) const override;
+	void write_binary_file(const fs::path& path, Buffer contents) const override;
+	std::vector<fs::path> enumerate_asset_files() const override;
 	FILE* open_asset_write_handle(const fs::path& path) const override;
 	
 	fs::path _directory;

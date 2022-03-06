@@ -16,24 +16,22 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef ASSETMGR_ZIPPED_ASSET_PACK_H
-#define ASSETMGR_ZIPPED_ASSET_PACK_H
+#ifndef WAD_WAD_IDENTIFIER_H
+#define WAD_WAD_IDENTIFIER_H
 
-#include "asset.h"
+#include <core/util.h>
 
-class ZippedAssetPack : public AssetPack {
-public:
-	ZippedAssetPack(AssetForest& forest, fs::path path_to_zip);
-
-private:
-	std::string read_text_file(const fs::path& path) const override;
-	std::vector<u8> read_binary_file(const fs::path& path) const override;
-	void write_text_file(const fs::path& path, const char* contents) const override;
-	void write_binary_file(const fs::path& path, Buffer contents) const override;
-	std::vector<fs::path> enumerate_asset_files() const override;
-	FILE* open_asset_write_handle(const fs::path& write_path) const override;
-	
-	fs::path _path_to_zip;
+enum class WadType {
+	MPEG,
+	MISC,
+	HUD,
+	BONUS,
+	AUDIO,
+	SPACE,
+	SCENE,
+	GADGET,
+	ARMOR,
+	ONLINE
 };
 
 #endif

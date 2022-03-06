@@ -22,14 +22,16 @@
 #include <core/wtf.h>
 #include <core/filesystem.h>
 
-static void generate_asset_type(const WtfNode* asset_type);
+static void generate_asset_type(const WtfNode* asset_type, s32 id);
 static void generate_asset_type_function(const WtfNode* root);
 static void generate_create_asset_function(const WtfNode* root);
-static void generate_asset_type_name_to_type_function(const WtfNode* root);
+static void generate_asset_string_to_type_function(const WtfNode* root);
+static void generate_asset_type_to_string_function(const WtfNode* root);
 static void generate_asset_read_function(const WtfNode* asset_type);
 static void generate_read_attribute_code(const WtfNode* node, const char* result, const char* attrib, s32 depth);
 static void generate_attribute_type_check_code(const std::string& attribute, const char* expected, s32 ind);
 static void generate_asset_write_function(const WtfNode* asset_type);
+static void generate_asset_attribute_getter_setters(const WtfNode* asset_type);
 static void generate_asset_write_code(const WtfNode* node, const char* expr, s32 depth);
 static std::string node_to_cpp_type(const WtfNode* node);
 static void indent(s32 ind);
@@ -59,12 +61,16 @@ int main(int argc, char** argv) {
 	out("// *****************************************************************************\n\n");
 	
 	out("#ifdef GENERATED_ASSET_HEADER\n\n");
-	out("AssetType asset_type_name_to_type(const char* type_name);\n");
-	out("std::unique_ptr<Asset> create_asset(const char* type_name, AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent);\n");
 	for(const WtfNode* node = wtf_first_child(root, "AssetType"); node != NULL; node = wtf_next_sibling(node, "AssetType")) {
-		generate_asset_type(node);
+		out("class %sAsset;\n", node->tag);
 	}
-	generate_asset_type_function(root);
+	out("AssetType asset_string_to_type(const char* type_name);\n");
+	out("const char* asset_type_to_string(AssetType type);\n");
+	out("std::unique_ptr<Asset> create_asset(const char* type_name, AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent, std::string tag);\n");
+	s32 id = 0;
+	for(const WtfNode* node = wtf_first_child(root, "AssetType"); node != NULL; node = wtf_next_sibling(node, "AssetType")) {
+		generate_asset_type(node, id++);
+	}
 	out("#endif\n\n");
 	
 	out("// *****************************************************************************\n");
@@ -73,7 +79,8 @@ int main(int argc, char** argv) {
 	
 	out("#ifdef GENERATED_ASSET_IMPLEMENTATION\n");
 	generate_create_asset_function(root);
-	generate_asset_type_name_to_type_function(root);
+	generate_asset_string_to_type_function(root);
+	generate_asset_type_to_string_function(root);
 	const WtfNode* first_asset_type = wtf_first_child(root, "AssetType");
 	for(const WtfNode* node = first_asset_type; node != NULL; node = wtf_next_sibling(node, "AssetType")) {
 		if(node != first_asset_type) {
@@ -82,18 +89,19 @@ int main(int argc, char** argv) {
 		}
 		
 		out("\n");
-		out("%sAsset::%sAsset(AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent)\n", node->tag, node->tag);
-		out("\t: Asset(forest, pack, file, parent, asset_type<%sAsset>()) {}\n\n", node->tag);
+		out("%sAsset::%sAsset(AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent, std::string tag)\n", node->tag, node->tag);
+		out("\t: Asset(forest, pack, file, parent, ASSET_TYPE, std::move(tag)) {}\n\n");
 		
 		generate_asset_read_function(node);
 		generate_asset_write_function(node);
+		generate_asset_attribute_getter_setters(node);
 	}
 	out("#endif\n");
 	
 	wtf_free(root);
 }
 
-static void generate_asset_type(const WtfNode* asset_type) {
+static void generate_asset_type(const WtfNode* asset_type, s32 id) {
 	out("class %sAsset : public Asset {\n", asset_type->tag);
 	for(WtfNode* node = asset_type->first_child; node != NULL; node = node->next_sibling) {
 		std::string cpp_type = node_to_cpp_type(node);
@@ -102,7 +110,7 @@ static void generate_asset_type(const WtfNode* asset_type) {
 		}
 	}
 	out("public:\n");
-	out("\t%sAsset(AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent);\n", asset_type->tag);
+	out("\t%sAsset(AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent, std::string tag);\n", asset_type->tag);
 	out("\t\n");
 	out("\tvoid for_each_attribute(AssetVisitorCallback callback) override {}\n");
 	out("\tvoid for_each_attribute(ConstAssetVisitorCallback callback) const override {}\n");
@@ -119,37 +127,40 @@ static void generate_asset_type(const WtfNode* asset_type) {
 			}
 			out("\t\n");
 			out("\tconst %s& %s() const;\n", cpp_type.c_str(), node->tag);
-			out("\tvoid set_%s(%s new_%s);\n", node->tag, cpp_type.c_str(), node->tag);
+			out("\tvoid set_%s(%s %s_);\n", node->tag, cpp_type.c_str(), node->tag);
 		}
 	}
+	out("\t\n");
+	out("\tstatic const constexpr AssetType ASSET_TYPE = AssetType(%d);\n", id);
 	out("};\n\n");
 }
 
-static void generate_asset_type_function(const WtfNode* root) {
-	out("template <typename T>\n");
-	out("AssetType asset_type() {\n");
-	for(const WtfNode* node = wtf_first_child(root, "AssetType"); node != NULL; node = wtf_next_sibling(node, "AssetType")) {
-		out("\tif constexpr(std::is_same_v<T, %sAsset>) return AssetType(\"%s\");\n", node->tag, node->tag);
-	}
-	out("\treturn NULL_ASSET_TYPE;\n");
-	out("}\n\n");
-}
-
 static void generate_create_asset_function(const WtfNode* root) {
-	out("std::unique_ptr<Asset> create_asset(const char* type_name, AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent) {\n");
+	out("std::unique_ptr<Asset> create_asset(const char* type_name, AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent, std::string tag) {\n");
 	for(const WtfNode* node = wtf_first_child(root, "AssetType"); node != NULL; node = wtf_next_sibling(node, "AssetType")) {
-		out("\tif(strcmp(type_name, \"%s\") == 0) return std::make_unique<%sAsset>(forest, pack, file, parent);\n", node->tag, node->tag);
+		out("\tif(strcmp(type_name, \"%s\") == 0) return std::make_unique<%sAsset>(forest, pack, file, parent, std::move(tag));\n", node->tag, node->tag);
 	}
 	out("\treturn nullptr;\n");
 	out("}\n\n");
 }
 
-static void generate_asset_type_name_to_type_function(const WtfNode* root) {
-	out("AssetType asset_type_name_to_type(const char* type_name) {\n");
+static void generate_asset_string_to_type_function(const WtfNode* root) {
+	out("AssetType asset_string_to_type(const char* type_name) {\n");
+	s32 id = 0;
 	for(const WtfNode* node = wtf_first_child(root, "AssetType"); node != NULL; node = wtf_next_sibling(node, "AssetType")) {
-		out("\tif(strcmp(type_name, \"%s\") == 0) return asset_type<%sAsset>();\n", node->tag, node->tag);
+		out("\tif(strcmp(type_name, \"%s\") == 0) return AssetType(%d);\n", node->tag, id++);
 	}
 	out("\treturn NULL_ASSET_TYPE;\n");
+	out("}\n\n");
+}
+
+static void generate_asset_type_to_string_function(const WtfNode* root) {
+	out("const char* asset_type_to_string(AssetType type) {\n");
+	s32 id = 0;
+	for(const WtfNode* node = wtf_first_child(root, "AssetType"); node != NULL; node = wtf_next_sibling(node, "AssetType")) {
+		out("\tif(type.id == %d) return \"%s\";\n", id++, node->tag);
+	}
+	out("\treturn nullptr;\n");
 	out("}\n\n");
 }
 
@@ -212,7 +223,7 @@ static void generate_read_attribute_code(const WtfNode* node, const char* result
 	
 	if(strcmp(node->type_name, "FileReferenceAttribute") == 0) {
 		generate_attribute_type_check_code(attrib, "WTF_STRING", ind);
-		indent(ind); out("%s = FileReference{%s->string};\n", result, attrib);
+		indent(ind); out("%s = FileReference(file(), %s->string);\n", result, attrib);
 	}
 }
 
@@ -225,8 +236,8 @@ static void generate_attribute_type_check_code(const std::string& attribute, con
 static void generate_asset_write_function(const WtfNode* asset_type) {
 	out("void %sAsset::write_attributes(WtfWriter* ctx) const {\n", asset_type->tag);
 	for(WtfNode* node = asset_type->first_child; node != NULL; node = node->next_sibling) {
-		std::string type = node_to_cpp_type(node);
-		if(!type.empty()) {
+		std::string cpp_type = node_to_cpp_type(node);
+		if(!cpp_type.empty()) {
 			out("\t{\n");
 			out("\t\twtf_begin_attribute(ctx, \"%s\");\n", node->tag);
 			std::string expr = std::string("_attribute_") + node->tag;
@@ -236,6 +247,20 @@ static void generate_asset_write_function(const WtfNode* asset_type) {
 		}
 	}
 	out("}\n\n");
+}
+
+static void generate_asset_attribute_getter_setters(const WtfNode* asset_type) {
+	for(WtfNode* node = asset_type->first_child; node != NULL; node = node->next_sibling) {
+		std::string cpp_type = node_to_cpp_type(node);
+		if(!cpp_type.empty()) {
+			out("const %s& %sAsset::%s() const {\n", cpp_type.c_str(), asset_type->tag, node->tag);
+			out("\treturn _attribute_%s;\n", node->tag);
+			out("}\n\n");
+			out("void %sAsset::set_%s(%s %s_) {\n", asset_type->tag, node->tag, cpp_type.c_str(), node->tag);
+			out("\t_attribute_%s = %s_;\n", node->tag, node->tag);
+			out("}\n\n");
+		}
+	}
 }
 
 static void generate_asset_write_code(const WtfNode* node, const char* expr, s32 depth) {
@@ -289,17 +314,6 @@ static std::string node_to_cpp_type(const WtfNode* node) {
 	}
 	
 	return "";
-}
-
-static std::string PascalCase_to_SCREAMING_SNAKE_CASE(const char* input) {
-	std::string output;
-	for(const char* src = input; *src != '\0'; src++) {
-		if(src != input && isupper(*src)) {
-			output += '_';
-		}
-		output += toupper(*src);
-	}
-	return output;
 }
 
 static void indent(s32 ind) {

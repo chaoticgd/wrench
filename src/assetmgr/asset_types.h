@@ -16,24 +16,23 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef ASSETMGR_ZIPPED_ASSET_PACK_H
-#define ASSETMGR_ZIPPED_ASSET_PACK_H
+#ifndef ASSETMGR_ASSET_TYPES_H
+#define ASSETMGR_ASSET_TYPES_H
 
-#include "asset.h"
+#include <core/wtf.h>
+#include <core/util.h>
+#include <assetmgr/asset.h>
 
-class ZippedAssetPack : public AssetPack {
-public:
-	ZippedAssetPack(AssetForest& forest, fs::path path_to_zip);
-
-private:
-	std::string read_text_file(const fs::path& path) const override;
-	std::vector<u8> read_binary_file(const fs::path& path) const override;
-	void write_text_file(const fs::path& path, const char* contents) const override;
-	void write_binary_file(const fs::path& path, Buffer contents) const override;
-	std::vector<fs::path> enumerate_asset_files() const override;
-	FILE* open_asset_write_handle(const fs::path& write_path) const override;
-	
-	fs::path _path_to_zip;
+struct InvalidAssetAttributeType {
+	InvalidAssetAttributeType(const WtfNode* node, const WtfAttribute* attribute) {}
 };
+
+struct MissingAssetAttribute {
+	MissingAssetAttribute(const WtfNode* node, const char* key) {}
+};
+
+#define GENERATED_ASSET_HEADER
+#include "_generated_asset_types.inl"
+#undef GENERATED_ASSET_HEADER
 
 #endif

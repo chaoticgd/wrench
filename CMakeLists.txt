@@ -51,7 +51,9 @@ add_custom_command(
 
 add_library(wrench_assetmgr
 	src/assetmgr/asset.cpp
+	src/assetmgr/asset_util.cpp
 	src/assetmgr/asset_types.cpp
+	src/assetmgr/zipped_asset_pack.cpp
 )
 
 add_custom_target(wrench_assetmgr_generated
@@ -110,6 +112,7 @@ add_executable(memmap
 
 add_executable(wad
 	src/wad/main.cpp
+	src/wad/global_wads.cpp
 	src/wad/wad_file.cpp
 	src/wad/gameplay.cpp
 	src/wad/primary.cpp
@@ -138,6 +141,9 @@ target_link_libraries(wad wrenchcore)
 target_link_libraries(hashtex wrenchcore)
 target_link_libraries(asset2json wrenchcore)
 target_link_libraries(asset_codegen wrenchcore)
+target_link_libraries(wrench_assetmgr wrenchcore)
+
+target_link_libraries(wad wrench_assetmgr)
 
 # This lets us avoid linking stuff for most of the CLI tools.
 target_compile_definitions(wrench PRIVATE WRENCH_EDITOR=1)

@@ -30,6 +30,18 @@ std::vector<u8> ZippedAssetPack::read_binary_file(const fs::path& path) const {
 	assert(0);
 }
 
+void ZippedAssetPack::write_text_file(const fs::path& path, const char* contents) const {
+	assert(0);
+}
+
+void ZippedAssetPack::write_binary_file(const fs::path& path, Buffer contents) const {
+	assert(0);
+}
+
+std::vector<fs::path> ZippedAssetPack::enumerate_asset_files() const {
+	assert(0);
+}
+
 FILE* ZippedAssetPack::open_asset_write_handle(const fs::path& write_path) const {
 	std::string path_to_zip = _path_to_zip.string();
 	std::string write_path_str = write_path.string();

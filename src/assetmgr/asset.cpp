@@ -20,52 +20,6 @@
 
 #include "asset_types.h"
 
-AssetReference parse_asset_reference(const char* ptr) {
-	std::string string(ptr);
-	std::vector<AssetReferenceFragment> fragments;
-	
-	size_t begin = string[0] == '/' ? 1 : 0;
-	size_t type_name_begin = begin;
-	size_t tag_begin = begin;
-	
-	for(size_t i = begin; i < string.size(); i++) {
-		if(string[i] == ':') {
-			tag_begin = i + 1;
-		}
-		if(string[i] == '/') {
-			std::string type_name = string.substr(type_name_begin, tag_begin - 1);
-			AssetType type = asset_type_name_to_type(type_name.c_str());
-			std::string tag = string.substr(tag_begin, i);
-			fragments.push_back(AssetReferenceFragment{type, std::move(tag)});
-			type_name_begin = i + 1;
-		}
-	}
-	
-	std::string type_name = string.substr(type_name_begin, tag_begin - 1);
-	AssetType type = asset_type_name_to_type(type_name.c_str());
-	std::string tag = string.substr(tag_begin, string.size());
-	fragments.push_back(AssetReferenceFragment{type, std::move(tag)});
-	
-	return {string[0] != '/', fragments};
-}
-
-std::string asset_reference_to_string(const AssetReference& reference) {
-	std::string string;
-	bool first = true;
-	for(const AssetReferenceFragment& fragment : reference.fragments) {
-		if(!first || !reference.is_relative) {
-			string += '/';
-		}
-		string += fragment.type.string;
-		string += ':';
-		string += fragment.tag;
-		first = false;
-	}
-	return string;
-}
-
-// *****************************************************************************
-
 AssetForest& Asset::forest() { return _forest; }
 const AssetForest& Asset::forest() const { return _forest; }
 AssetPack& Asset::pack() { return _pack; }
@@ -77,18 +31,24 @@ const Asset* Asset::parent() const { return _parent; }
 AssetType Asset::type() const { return _type; }
 const std::string& Asset::tag() const { return _tag; }
 
-static std::vector<AssetReferenceFragment> append_fragments(std::vector<AssetReferenceFragment> fragments, AssetReferenceFragment fragment) {
-	fragments.emplace_back(std::move(fragment));
-	return fragments;
-}
-
 AssetReference Asset::absolute_reference() const {
 	if(parent()) {
 		AssetReference reference = parent()->absolute_reference();
 		reference.fragments.push_back(AssetReferenceFragment{type(), tag()});
 		return reference;
 	} else {
-		return AssetReference();
+		return AssetReference{false};
+	}
+}
+
+AssetReference Asset::reference_relative_to(Asset& asset) const {
+	AssetReferenceFragment fragment{type(), tag()};
+	if(parent() == &asset || parent() == nullptr) {
+		return AssetReference{parent() == &asset, {std::move(fragment)}};
+	} else {
+		AssetReference reference = parent()->reference_relative_to(asset);
+		reference.fragments.emplace_back(std::move(fragment));
+		return reference;
 	}
 }
 
@@ -99,7 +59,7 @@ Asset& Asset::add_child(std::unique_ptr<Asset> child) {
 void Asset::read(WtfNode* node) {
 	read_attributes(node);
 	for(WtfNode* child = node->first_child; child != nullptr; child = child->next_sibling) {
-		Asset& asset = add_child(create_asset(node->type_name, forest(), pack(), file(), this));
+		Asset& asset = add_child(create_asset(child->type_name, forest(), pack(), file(), this, child->tag));
 		asset.read(child);
 	}
 }
@@ -107,7 +67,9 @@ void Asset::read(WtfNode* node) {
 void Asset::write(WtfWriter* ctx) const {
 	write_attributes(ctx);
 	for_each_child([&](Asset& child) {
+		wtf_begin_node(ctx, asset_type_to_string(child.type()), child.tag().c_str());
 		child.write(ctx);
+		wtf_end_node(ctx);
 	});
 }
 
@@ -130,8 +92,13 @@ Asset* Asset::lookup_asset(AssetReference reference) {
 	}
 }
 
-Asset::Asset(AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent, AssetType type)
-	: _forest(forest), _pack(pack), _file(file), _parent(parent), _type(type) {}
+Asset::Asset(AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent, AssetType type, std::string tag)
+	: _forest(forest)
+	, _pack(pack)
+	, _file(file)
+	, _parent(parent)
+	, _type(type)
+	, _tag(tag) {}
 
 Asset* Asset::lookup_local_asset(const AssetReferenceFragment* begin, const AssetReferenceFragment* end) {
 	for(const std::unique_ptr<Asset>& child : _children) {
@@ -152,13 +119,13 @@ AssetFile::AssetFile(AssetForest& forest, AssetPack& pack, const fs::path& relat
 	: _pack(pack)
 	, _relative_directory(relative_path.parent_path())
 	, _file_name(relative_path.filename())
-	, _root(std::make_unique<RootAsset>(forest, pack, *this, nullptr)) {}
+	, _root(std::make_unique<RootAsset>(forest, pack, *this, nullptr, "")) {}
 
 Asset& AssetFile::root() {
 	return *_root.get();
 }
 
-void AssetFile::write() {
+void AssetFile::write() const {
 	FILE* fh = _pack.open_asset_write_handle(_relative_directory/_file_name);
 	WtfWriter* ctx = wtf_begin_file(fh);
 	defer([&]() {
@@ -168,12 +135,31 @@ void AssetFile::write() {
 	_root->write(ctx);
 }
 
-std::string AssetFile::read_relative_text_file(const FileReference& file) const {
-	return _pack.read_text_file(_relative_directory/file.path);
+FileReference AssetFile::write_text_file(const fs::path& path, const char* contents) const {
+	_pack.write_text_file(_relative_directory/path, contents);
+	return FileReference(*this, path);
 }
 
-std::vector<u8> AssetFile::read_relative_binary_file(const FileReference& file) const {
-	return _pack.read_binary_file(_relative_directory/file.path);
+FileReference AssetFile::write_binary_file(const fs::path& path, Buffer contents) const {
+	_pack.write_binary_file(_relative_directory/path, contents);
+	return FileReference(*this, path);
+}
+
+void AssetFile::read() {
+	fs::path path = _relative_directory/_file_name;
+	std::string path_str = path.string();
+	std::string text = _pack.read_text_file(path);
+	char* mutable_text = new char[text.size() + 1];
+	memcpy(mutable_text, text.c_str(), text.size() + 1);
+	text.clear();
+	char* error_dest = nullptr;
+	WtfNode* root_node = wtf_parse(mutable_text, &error_dest);
+	verify(!error_dest, "syntax error in %s: %s", path_str.c_str(), error_dest);
+	defer([&]() {
+		wtf_free(root_node);
+		delete[] mutable_text;
+	});
+	root().read(root_node);
 }
 
 // *****************************************************************************
@@ -182,12 +168,42 @@ AssetPack::AssetPack(AssetForest& forest, bool is_writeable)
 	: _forest(forest)
 	, _is_writeable(is_writeable) {}
 
+std::string AssetPack::read_text_file(const FileReference& reference) const {
+	return read_text_file(reference.owner->_relative_directory/reference.path);
+}
+
+std::vector<u8> AssetPack::read_binary_file(const FileReference& reference) const {
+	return read_binary_file(reference.owner->_relative_directory/reference.path);
+}
+
 bool AssetPack::is_writeable() const {
 	return _is_writeable;
 }
 
-AssetFile& AssetPack::create_asset_file(const fs::path& relative_path) {
+AssetFile& AssetPack::asset_file(fs::path relative_path) {
+	relative_path.replace_extension("asset");
+	fs::path relative_directory = relative_path.parent_path();
+	fs::path file_name = relative_path.filename();
+	for(std::unique_ptr<AssetFile>& file : _asset_files) {
+		if(file->_relative_directory == relative_directory && file->_file_name == file_name) {
+			return *file.get();
+		}
+	}
 	return *_asset_files.emplace_back(std::make_unique<AssetFile>(_forest, *this, relative_path)).get();
+}
+
+void AssetPack::write() const {
+	for(const std::unique_ptr<AssetFile>& file : _asset_files) {
+		file->write();
+	}
+}
+
+void AssetPack::read_asset_files() {
+	std::vector<fs::path> asset_file_paths = enumerate_asset_files();
+	for(const fs::path& relative_path : asset_file_paths) {
+		AssetFile& file = *_asset_files.emplace_back(std::make_unique<AssetFile>(_forest, *this, relative_path)).get();
+		file.read();
+	}
 }
 
 Asset* AssetPack::lookup_local_asset(const AssetReference& absolute_reference) {
@@ -219,18 +235,38 @@ Asset* AssetForest::lookup_asset(const AssetReference& absolute_reference) {
 LooseAssetPack::LooseAssetPack(AssetForest& forest, fs::path directory)
 	: AssetPack(forest, true)
 	, _directory(directory) {}
-	
+
 std::string LooseAssetPack::read_text_file(const fs::path& path) const {
 	auto bytes = read_file(_directory/path, "r");
-	return std::string(BEGIN_END(bytes));
+	return std::string((char*) bytes.data(), bytes.size());
 }
 
 std::vector<u8> LooseAssetPack::read_binary_file(const fs::path& path) const {
 	return read_file(_directory/path, "rb");
 }
 
+void LooseAssetPack::write_text_file(const fs::path& path, const char* contents) const {
+	fs::create_directories((_directory/path).parent_path());
+	write_file(_directory/path, Buffer((u8*) contents, (u8*) contents + strlen(contents)), "w");
+}
+
+void LooseAssetPack::write_binary_file(const fs::path& path, Buffer contents) const {
+	fs::create_directories((_directory/path).parent_path());
+	write_file(_directory/path, contents, "wb");
+}
+
+std::vector<fs::path> LooseAssetPack::enumerate_asset_files() const {
+	std::vector<fs::path> asset_files;
+	for(auto& entry : fs::recursive_directory_iterator(_directory)) {
+		if(entry.path().extension() == ".asset") {
+			asset_files.emplace_back(fs::relative(entry.path(), _directory));
+		}
+	}
+	return asset_files;
+}
+
 FILE* LooseAssetPack::open_asset_write_handle(const fs::path& path) const {
-	assert(is_writeable());
+	fs::create_directories((_directory/path).parent_path());
 	std::string string = (_directory/path).string();
 	return fopen(string.c_str(), "w");
 }

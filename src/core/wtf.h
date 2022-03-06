@@ -26,6 +26,9 @@
 	OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#ifndef CORE_WTF_H
+#define CORE_WTF_H
+
 // The Wrench Text Format
 // ~~~~~~~~~~~~~~~~~~~~~~
 //
@@ -37,9 +40,6 @@
 // This parser itself is an in-situ recursive descent parser, so the input
 // buffer will be clobbered, and must not be free'd until all string values that
 // are needed have been extracted from the tree.
-
-#ifndef CORE_WTF_H
-#define CORE_WTF_H
 
 #include <stdio.h>
 #include <stdint.h>

@@ -502,6 +502,7 @@ void wtf_begin_node(WtfWriter* ctx, const char* type_name, const char* tag) {
 }
 
 void wtf_end_node(WtfWriter* ctx) {
+	ctx->indent--;
 	indent(ctx);
 	fprintf(ctx->file, "}\n");
 	ctx->add_blank_line = 1;
@@ -534,7 +535,7 @@ void wtf_write_string(WtfWriter* ctx, const char* string) {
 	if(ctx->array_depth > 0) {
 		indent(ctx);
 	}
-	fprintf(ctx->file, "%c", '\'');
+	fputc('\'', ctx->file);
 	for(; *string != '\0'; string++) {
 		if(*string == '\t') {
 			fputc('\\', ctx->file);
@@ -549,7 +550,8 @@ void wtf_write_string(WtfWriter* ctx, const char* string) {
 			fputc(*string, ctx->file);
 		}
 	}
-	fprintf(ctx->file, "%c", '\'');
+	fputc('\'', ctx->file);
+	fputc('\n', ctx->file);
 }
 
 void wtf_begin_array(WtfWriter* ctx) {

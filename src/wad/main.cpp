@@ -18,12 +18,14 @@
 
 #include <fstream>
 
-#include "../core/util.h"
-#include "../core/timer.h"
+#include <core/util.h>
+#include <core/timer.h>
+#include <assetmgr/asset.h>
 #include "moby.h"
 #include "tests.h"
 #include "wad_file.h"
 #include "collision.h"
+#include "global_wads.h"
 
 static void extract(fs::path input_path, fs::path output_path);
 static void build(fs::path input_path, fs::path output_path);
@@ -43,7 +45,15 @@ int main(int argc, char** argv) {
 	
 	std::string mode = argv[1];
 	
-	if(mode == "extract") {
+	if(mode == "unpack") {
+		require_args(4);
+		AssetForest forest;
+		AssetPack& pack = forest.mount<LooseAssetPack>(argv[3]);
+		FILE* src = fopen(argv[2], "rb");
+		std::vector<u8> header_bytes = read_file(src, 0, 0x800);
+		read_misc_wad(pack, src, header_bytes);
+		pack.write();
+	} if(mode == "extract") {
 		require_args(4);
 		extract(argv[2], argv[3]);
 	} else if(mode == "build") {

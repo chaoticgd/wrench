@@ -65,6 +65,15 @@ std::vector<u8> read_file(fs::path path, const char* open_mode) {
 	return buffer;
 }
 
+void write_file(const fs::path& path, Buffer buffer, const char* open_mode) {
+	FILE* file = fopen(path.string().c_str(), open_mode);
+	verify(file, "Failed to open file '%s' for writing.", path.string().c_str());
+	if(buffer.size() > 0) {
+		verify(fwrite(buffer.lo, buffer.size(), 1, file) == 1, "Failed to write output file '%s'.", path.string().c_str());
+	}
+	fclose(file);
+}
+
 std::string write_file(fs::path dest_dir, fs::path rel_path, Buffer buffer, const char* open_mode) {
 	fs::path dest_path = dest_dir/rel_path;
 	FILE* file = fopen(dest_path.string().c_str(), open_mode);
@@ -73,11 +82,6 @@ std::string write_file(fs::path dest_dir, fs::path rel_path, Buffer buffer, cons
 		verify(fwrite(buffer.lo, buffer.size(), 1, file) == 1, "Failed to write output file '%s'.", dest_path.string().c_str());
 	}
 	fclose(file);
-	if(buffer.size() < 1024) {
-		//printf("Wrote %s (%ld bytes)\n", dest_path.string().c_str(), buffer.size());
-	} else {
-		//printf("Wrote %s (%ld KiB)\n", dest_path.string().c_str(), buffer.size() / 1024);
-	}
 	return rel_path.string();
 }
 

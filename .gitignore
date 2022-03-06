@@ -1,5 +1,3 @@
-.directory
-
 # cmake
 CMakeCache.txt
 CMakeFiles
@@ -18,9 +16,11 @@ _generated_*
 # tools
 /.vscode
 __pycache__
+.directory
 
 # config
 *.ini
 
 # misc
 *.dump
+/dumps
