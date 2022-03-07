@@ -148,7 +148,7 @@ AssetType MiscWad {
 	}
 }
 
-AssetType IrxModules {
+AssetType IrxWad {
 	AssetReferenceAttribute sio2man  { allowed_asset_types: ['Binary'] }
 	AssetReferenceAttribute mcman    { allowed_asset_types: ['Binary'] }
 	AssetReferenceAttribute mcserv   { allowed_asset_types: ['Binary'] }
@@ -173,6 +173,21 @@ AssetType IrxModules {
 	AssetReferenceAttribute lgkbm    { allowed_asset_types: ['Binary'] }
 	AssetReferenceAttribute streamer { allowed_asset_types: ['Binary'] }
 	AssetReferenceAttribute astrm    { allowed_asset_types: ['Binary'] }
+}
+
+AssetType BootWad {
+	AssetReferenceAttribute english { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute french  { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute german  { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute spanish { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute italian { allowed_asset_types: ['Binary'] }
+	ArrayAttribute hud {
+		AssetReferenceAttribute element { allowed_asset_types: ['Binary'] }
+	}
+	ArrayAttribute boot_plates {
+		AssetReferenceAttribute element { allowed_asset_types: ['Binary'] }
+	}
+	AssetReferenceAttribute sram    { allowed_asset_types: ['Binary'] }
 }
 
 AssetType BonusWad {
