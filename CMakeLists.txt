@@ -99,6 +99,7 @@ add_executable(vif
 
 add_executable(iso
 	src/iso/main.cpp
+	src/iso/extract_iso.cpp
 	src/iso/iso_filesystem.cpp
 	src/iso/table_of_contents.cpp
 	src/iso/legacy_stream.cpp

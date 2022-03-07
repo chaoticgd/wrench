@@ -53,4 +53,6 @@ bool read_iso_filesystem(iso_directory& dest, std::string& volume_id, Buffer src
 // by itself.
 void write_iso_filesystem(stream& dest, iso_directory* root_dir);
 
+void print_file_record(iso_file_record& record, const char* row_format);
+
 #endif

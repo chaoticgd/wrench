@@ -416,3 +416,9 @@ void write_directory_records(stream& dest, const iso_directory& dir) {
 		write_directory_record(record, 2);
 	}
 }
+
+void print_file_record(iso_file_record& record, const char* row_format) {
+	assert(record.name.size() >= 2);
+	auto display_name = record.name.substr(0, record.name.size() - 2);
+	printf(row_format, (size_t) record.lba.sectors, (size_t) record.size, display_name.c_str());
+}

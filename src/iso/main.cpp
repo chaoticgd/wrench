@@ -23,20 +23,12 @@
 #include "legacy_stream.h"
 #include "iso_filesystem.h"
 #include "table_of_contents.h"
-
-// This is true for R&C2, R&C3 and Deadlocked.
-static const uint32_t SYSTEM_CNF_LBA = 1000;
-static const s64 MAX_FILESYSTEM_SIZE_BYTES = RAC1_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
-static const std::string RAC1_VOLUME_ID =
-	"RATCHETANDCLANK                 ";
+#include "extract_iso.h"
 
 void ls(std::string iso_path);
-void extract(std::string iso_path, fs::path output_dir);
-void extract_non_wads_recursive(FILE* iso, fs::path out, iso_directory& in);
 void build(std::string input_dir, fs::path iso_path, int single_level_index, bool no_mpegs);
 void enumerate_wads_recursive(std::vector<fs::path>& wads, fs::path dir, int depth);
 void enumerate_non_wads_recursive(stream& iso, iso_directory& out, fs::path dir, int depth);
-void print_file_record(iso_file_record& record);
 std::string str_to_lower(std::string str);
 void parse_pcsx2_stdout(std::string iso_path);
 
@@ -86,7 +78,7 @@ int main(int argc, char** argv) {
 	if(command == "ls") {
 		ls(input_path);
 	} else if(command == "extract") {
-		extract(input_path, output_path);
+		extract_iso(input_path, output_path, row_format);
 	} else if(command == "build") {
 		build(input_path, output_path, single_level_index, no_mpegs);
 	} else if(command == "parse_pcsx2_stdout") {
@@ -173,142 +165,6 @@ void ls(std::string iso_path) {
 		printf("\n");
 	}
 	printf("+-------+------------------------+------------------------+------------------------+\n");
-}
-
-void extract(std::string iso_path, fs::path output_dir) {
-	fs::path global_dir = output_dir/"global";
-	std::map<level_file_type, fs::path> level_dirs = {
-		{level_file_type::LEVEL, output_dir/"levels"},
-		{level_file_type::AUDIO, output_dir/"audio"},
-		{level_file_type::SCENE, output_dir/"scenes"}
-	};
-	if(fs::is_directory(iso_path)) {
-		fprintf(stderr, "error: Input path is a directory!\n");
-		exit(1);
-	}
-	if(!fs::is_directory(output_dir)) {
-		fprintf(stderr, "error: The output directory does not exist!\n");
-		exit(1);
-	}
-	if(fs::exists(global_dir) && !fs::is_directory(global_dir)) {
-		fprintf(stderr, "error: Existing files are cluttering up the output directory!\n");
-		exit(1);
-	}
-	if(!fs::exists(global_dir)) {
-		fs::create_directory(global_dir);
-	}
-	for(auto& [_, dir] : level_dirs) {
-		if(fs::exists(dir) && !fs::is_directory(dir)) {
-			fprintf(stderr, "error: Existing files are cluttering up the output directory!\n");
-			exit(1);
-		}
-		if(!fs::exists(dir)) {
-			fs::create_directory(dir);
-		}
-	}
-	
-	FILE* iso = fopen(iso_path.c_str(), "rb");
-	verify(iso, "Failed to open ISO file.");
-	defer([&]() { fclose(iso); });
-	
-	printf("LBA             Size (bytes)    Filename\n");
-	printf("---             ------------    --------\n");
-	
-	// Extract SYSTEM.CNF, the boot ELF, etc.
-	std::vector<u8> filesystem_buf = read_file(iso, 0, MAX_FILESYSTEM_SIZE_BYTES);
-	iso_directory root_dir;
-	std::string volume_id;
-	if(!read_iso_filesystem(root_dir, volume_id, Buffer(filesystem_buf))) {
-		fprintf(stderr, "error: Missing or invalid ISO filesystem!\n");
-		exit(1);
-	}
-	extract_non_wads_recursive(iso, output_dir, root_dir);
-	
-	// Extract levels and other asset files.
-	table_of_contents toc;
-	if(volume_id == RAC1_VOLUME_ID) {
-		toc = read_table_of_contents_rac1(iso);
-	} else {
-		toc = read_table_of_contents_rac234(iso);
-		if(toc.levels.size() == 0) {
-			fprintf(stderr, "error: Unable to locate level table!\n");
-			exit(1);
-		}
-	}
-	for(toc_table& table : toc.tables) {
-		auto name = std::to_string(table.index) + ".wad";
-		auto path = global_dir/name;
-		
-		size_t start_of_file = table.sector.bytes();
-		size_t end_of_file = SIZE_MAX;
-		// Assume the beginning of the next file after this one is also the end
-		// of this file.
-		for(toc_table& other_table : toc.tables) {
-			Sector32 lba = other_table.sector;
-			if(lba.bytes() > start_of_file) {
-				end_of_file = std::min(end_of_file, (size_t) lba.bytes());
-			}
-		}
-		for(toc_level& other_level : toc.levels) {
-			for(std::optional<toc_level_part>& part : other_level.parts) {
-				if(part && part->file_lba.bytes() > start_of_file) {
-					end_of_file = std::min(end_of_file, (size_t) part->file_lba.bytes());
-				}
-			}
-		}
-		assert(end_of_file != SIZE_MAX);
-		assert(end_of_file >= start_of_file);
-		size_t file_size = end_of_file - start_of_file;
-		printf(row_format, (size_t) table.sector.sectors, (size_t) file_size, name.c_str());
-		
-		FILE* dest_file = fopen(path.string().c_str(), "wb");
-		verify(dest_file, "Failed to open '%s' for writing.", path.string().c_str());
-		extract_file(path, dest_file, iso, table.sector.bytes(), file_size);
-		fclose(dest_file);
-	}
-	for(toc_level& level : toc.levels) {
-		for(std::optional<toc_level_part>& part : level.parts) {
-			if(!part) {
-				continue;
-			}
-			
-			auto num = std::to_string(level.level_table_index);
-			if(num.size() == 1) num = "0" + num;
-			auto name = part->info.prefix + num + ".wad";
-			auto path = level_dirs.at(part->info.type)/name;
-			printf(row_format, (size_t) part->file_lba.sectors, part->file_size.bytes(), name.c_str());
-			
-			FILE* dest_file = fopen(path.string().c_str(), "wb");
-			verify(dest_file, "Failed to open '%s' for writing.", path.string().c_str());
-			if(part->prepend_header) {
-				std::vector<u8> padded_header;
-				OutBuffer(padded_header).write_multiple(part->header);
-				OutBuffer(padded_header).pad(SECTOR_SIZE, 0);
-				verify(fwrite(padded_header.data(), padded_header.size(), 1, dest_file) == 1,
-					"Failed to write header to '%s'.", path.string().c_str());
-			}
-			extract_file(path, dest_file, iso, part->file_lba.bytes(), part->file_size.bytes());
-			fclose(dest_file);
-		}
-	}
-}
-
-void extract_non_wads_recursive(FILE* iso, fs::path out, iso_directory& in) {
-	for(iso_file_record& file : in.files) {
-		fs::path file_path = out/file.name.substr(0, file.name.size() - 2);
-		if(file_path.string().find(".wad") == std::string::npos) {
-			print_file_record(file);
-			FILE* dest_file = fopen(file_path.string().c_str(), "wb");
-			verify(dest_file, "Failed to open '%s' for writing.", file_path.string().c_str());
-			extract_file(file_path, dest_file, iso, file.lba.bytes(), file.size);
-			fclose(dest_file);
-		}
-	}
-	for(iso_directory& subdir : in.subdirs) {
-		auto dir_path = out/subdir.name;
-		fs::create_directory(dir_path);
-		extract_non_wads_recursive(iso, out/subdir.name, subdir);
-	}
 }
 
 struct global_file {
@@ -587,7 +443,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		record.size = system_cnf_size;
 		root_dir.files.push_back(record);
 		
-		print_file_record(record);
+		print_file_record(record, row_format);
 		
 		stream::copy_n(iso, system_cnf, system_cnf_size);
 	}
@@ -605,7 +461,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		toc_record.lba = {RAC234_TABLE_OF_CONTENTS_LBA};
 		toc_record.size = total_toc_size.bytes();
 		root_dir.files.push_back(toc_record);
-		print_file_record(toc_record);
+		print_file_record(toc_record, row_format);
 	}
 	// Write out blank sectors that are to be filled in by the table of contents later.
 	iso.pad(SECTOR_SIZE, 0);
@@ -665,7 +521,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 			record.size = file.size();
 			global_dir.files.push_back(record);
 			
-			print_file_record(record);
+			print_file_record(record, row_format);
 			
 			file.seek(0);
 			stream::copy_n(iso, file, record.size);
@@ -701,7 +557,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		record.size = file_size;
 		parent.files.push_back(record);
 		
-		print_file_record(record);
+		print_file_record(record, row_format);
 		
 		iso.pad(SECTOR_SIZE, 0);
 		file.seek(0);
@@ -819,7 +675,7 @@ void enumerate_non_wads_recursive(stream& iso, iso_directory& out, fs::path dir,
 			record.lba = {(s32) (iso.tell() / SECTOR_SIZE)};
 			record.size = file_size;
 			out.files.push_back(record);
-			print_file_record(record);
+			print_file_record(record, row_format);
 			
 			stream::copy_n(iso, file, file_size);
 		} else if(entry.is_directory()) {
@@ -834,12 +690,6 @@ void enumerate_non_wads_recursive(stream& iso, iso_directory& out, fs::path dir,
 			}
 		}
 	}
-}
-
-void print_file_record(iso_file_record& record) {
-	assert(record.name.size() >= 2);
-	auto display_name = record.name.substr(0, record.name.size() - 2);
-	printf(row_format, (size_t) record.lba.sectors, (size_t) record.size, display_name.c_str());
 }
 
 std::string str_to_lower(std::string str) {
