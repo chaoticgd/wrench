@@ -93,6 +93,8 @@ public:
 	
 	Asset* lookup_asset(AssetReference reference);
 	
+	bool weakly_equal(const Asset& rhs) const;
+	
 	virtual void for_each_attribute(AssetVisitorCallback callback) = 0;
 	virtual void for_each_attribute(ConstAssetVisitorCallback callback) const = 0;
 	virtual void read_attributes(const WtfNode* node) = 0;
@@ -101,12 +103,14 @@ public:
 	
 private:
 	friend AssetPack;
+	friend AssetFile;
 	
 	template <typename ChildAsset>
 	ChildAsset& add_child(std::string tag) {
 		std::unique_ptr<ChildAsset> pointer = std::make_unique<ChildAsset>(forest(), pack(), file(), this, std::move(tag));
 		ChildAsset* asset = pointer.get();
 		_children.emplace_back(std::move(pointer));
+		asset->connect_precedence_pointers();
 		return *asset;
 	}
 	
@@ -118,8 +122,8 @@ private:
 	void disconnect_precedence_pointers();
 	
 	AssetForest& _forest;
-	AssetFile& _file;
 	AssetPack& _pack;
+	AssetFile& _file;
 	Asset* _parent;
 	AssetType _type;
 	std::string _tag;
@@ -152,6 +156,7 @@ private:
 	
 	void read();
 	
+	AssetForest& _forest;
 	AssetPack& _pack;
 	fs::path _relative_directory;
 	std::string _file_name;
