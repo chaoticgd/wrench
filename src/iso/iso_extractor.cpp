@@ -237,7 +237,7 @@ static std::tuple<Game, Region, const char*> identify_game(const IsoDirectory& r
 			fprintf(stderr,
 				"warning: Failed to identify game. For R&C1 this is a fatal error. "
 				"For the other games this will mean you need to manually change "
-				"the game tag from Game error_unknown in build.asset "
+				"the game tag from Game error_unknown in all .asset files "
 				"(to Game 1 for R&C1, Game 4 for Deadlocked/Gladiator, etc).\n");
 		}
 	}
