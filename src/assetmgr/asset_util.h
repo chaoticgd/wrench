@@ -64,7 +64,7 @@ struct FileReference {
 };
 
 enum AssetPackType {
-	EXTRACTED, // Build files extracted from a base game ISO.
+	EXTRACTED, // Built files extracted from a base game ISO.
 	UNPACKED, // Source assets unpacked from files extracted from a base game ISO.
 	LIBRARY, // Additional assets to be used by mods.
 	MOD // A mod.
