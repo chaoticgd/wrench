@@ -48,11 +48,11 @@ int main(int argc, char** argv) {
 	if(mode == "unpack") {
 		require_args(4);
 		AssetForest forest;
-		AssetPack& pack = forest.mount<LooseAssetPack>(argv[3]);
+		AssetPack& pack = forest.mount<LooseAssetPack>("unpack", argv[3]);
 		FILE* src = fopen(argv[2], "rb");
 		std::vector<u8> header_bytes = read_file(src, 0, 0x800);
 		unpack_misc_wad(pack, src, header_bytes);
-		pack.write();
+		pack.write_asset_files();
 	} if(mode == "extract") {
 		require_args(4);
 		extract(argv[2], argv[3]);

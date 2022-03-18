@@ -49,7 +49,7 @@ static Asset& unpack_compressed_binary(Asset& parent, Buffer src, ByteRange rang
 
 static std::vector<Asset*> unpack_compressed_binaries(Asset& parent, Buffer src, ByteRange* ranges, s32 count, const char* child) {
 	fs::path path = fs::path(child)/child;
-	CollectionAsset& collection = parent.child<CollectionAsset>(child, path);
+	CollectionAsset& collection = parent.asset_file(path).child<CollectionAsset>(child);
 	
 	std::vector<Asset*> assets;
 	for(s32 i = 0; i < count; i++) {
@@ -124,7 +124,7 @@ static Asset& unpack_irx_modules(Asset& parent, FILE* src, SectorRange range) {
 	decompress_wad(bytes, compressed_bytes);
 	IrxHeader header = Buffer(bytes).read<IrxHeader>(0, "irx header");
 	
-	IrxWadAsset& irx = parent.child<IrxWadAsset>("irx", "irx/irx.asset");
+	IrxWadAsset& irx = parent.asset_file("irx/irx.asset").child<IrxWadAsset>("irx");
 	auto unpack_irx = [&](ByteRange range, const char* child) -> Asset& {
 		return unpack_binary(irx, bytes, range, child, ".irx");
 	};
@@ -172,7 +172,7 @@ static Asset& unpack_boot_wad(Asset& parent, FILE* src, SectorRange range) {
 	std::vector<u8> bytes = read_file(src, range.offset.bytes(), range.size.bytes());
 	BootHeader header = Buffer(bytes).read<BootHeader>(0, "boot header");
 	
-	BootWadAsset& boot = parent.child<BootWadAsset>("boot", "boot/boot.asset");
+	BootWadAsset& boot = parent.asset_file("boot/boot.asset").child<BootWadAsset>("boot");
 	boot.set_english(unpack_compressed_binary(boot, bytes, header.english, "english"));
 	boot.set_french(unpack_compressed_binary(boot, bytes, header.french, "french"));
 	boot.set_german(unpack_compressed_binary(boot, bytes, header.german, "german"));

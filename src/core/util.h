@@ -106,6 +106,7 @@ template <typename... Args>
 	verify_not_reached_impl(__FILE__, __LINE__, __VA_ARGS__)
 
 std::string string_format(const char* format, va_list args);
+std::string stringf(const char* format, ...);
 
 struct ErrorContext {
 	ErrorContext(const char* format, ...);
@@ -322,11 +323,24 @@ struct _deferer {
 std::string md5_to_printable_string(uint8_t in[16]);
 
 enum class Game {
-	RAC1 = 1, RAC2 = 2, RAC3 = 3, DL = 4
+	UNKNOWN = 0, RAC1 = 1, RAC2 = 2, RAC3 = 3, DL = 4
 };
 
 enum class WadType {
-	UNKNOWN, LEVEL
+	UNKNOWN = 0,
+	ARMOR,
+	AUDIO,
+	BONUS,
+	GADGET,
+	HUD,
+	MISC,
+	MPEG,
+	ONLINE,
+	SCENE,
+	SPACE,
+	LEVEL,
+	LEVEL_AUDIO,
+	LEVEL_SCENE
 };
 
 struct Wad {

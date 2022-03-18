@@ -18,8 +18,8 @@
 
 #include "zipped_asset_pack.h"
 
-ZippedAssetPack::ZippedAssetPack(AssetForest& forest, fs::path path_to_zip)
-	: AssetPack(forest, false)
+ZippedAssetPack::ZippedAssetPack(AssetForest& forest, std::string name, fs::path path_to_zip)
+	: AssetPack(forest, std::move(name), false)
 	, _path_to_zip(path_to_zip) {}
 	
 std::string ZippedAssetPack::read_text_file(const fs::path& path) const {
@@ -35,6 +35,10 @@ void ZippedAssetPack::write_text_file(const fs::path& path, const char* contents
 }
 
 void ZippedAssetPack::write_binary_file(const fs::path& path, Buffer contents) const {
+	assert(0);
+}
+
+void ZippedAssetPack::extract_binary_file(const fs::path& relative_dest, Buffer prepend, FILE* src, s64 offset, s64 size) const {
 	assert(0);
 }
 

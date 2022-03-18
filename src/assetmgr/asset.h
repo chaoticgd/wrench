@@ -79,13 +79,11 @@ public:
 		return add_child<ChildAsset>(std::move(tag));
 	}
 	
-	template <typename ChildAsset>
-	ChildAsset& child(std::string tag, fs::path path);
-	
 	Asset& child(AssetType type, const std::string& tag);
 	Asset* find_child(AssetType type, const std::string& tag);
-	
 	bool remove_child(Asset& asset);
+	
+	Asset& asset_file(const fs::path& path);
 	
 	void read(WtfNode* node);
 	void write(WtfWriter* ctx) const;
@@ -146,6 +144,7 @@ public:
 	
 	FileReference write_text_file(const fs::path& path, const char* contents) const;
 	FileReference write_binary_file(const fs::path& path, Buffer contents) const;
+	FileReference extract_binary_file(const fs::path& path, Buffer prepend, FILE* src, s64 offset, s64 size) const;
 	
 	AssetFile* lower_precedence();
 	AssetFile* higher_precedence();
@@ -167,17 +166,18 @@ class AssetPack {
 public:
 	virtual ~AssetPack() {}
 	
+	const char* name() const;
 	bool is_writeable() const;
 	
 	AssetFile& asset_file(fs::path relative_path);
 	
-	void write() const;
+	void write_asset_files() const;
 	
 	AssetPack* lower_precedence();
 	AssetPack* higher_precedence();
 	
 protected:
-	AssetPack(AssetForest& forest, bool is_writeable);
+	AssetPack(AssetForest& forest, std::string name, bool is_writeable);
 	AssetPack(const AssetPack&) = delete;
 	AssetPack(AssetPack&&) = delete;
 	AssetPack& operator=(const AssetPack&) = delete;
@@ -199,11 +199,13 @@ private:
 	virtual std::vector<u8> read_binary_file(const fs::path& path) const = 0;
 	virtual void write_text_file(const fs::path& path, const char* contents) const = 0;
 	virtual void write_binary_file(const fs::path& path, Buffer contents) const = 0;
+	virtual void extract_binary_file(const fs::path& relative_dest, Buffer prepend, FILE* src, s64 offset, s64 size) const = 0;
 	virtual std::vector<fs::path> enumerate_asset_files() const = 0;
 	virtual FILE* open_asset_write_handle(const fs::path& path) const = 0;
 	
 	AssetForest& _forest;
 	std::vector<std::unique_ptr<AssetFile>> _asset_files;
+	std::string _name;
 	bool _is_writeable;
 	AssetPack* _lower_precedence = nullptr;
 	AssetPack* _higher_precedence = nullptr;
@@ -237,27 +239,18 @@ private:
 
 class LooseAssetPack : public AssetPack {
 public:
-	LooseAssetPack(AssetForest& forest, fs::path directory);
+	LooseAssetPack(AssetForest& forest, std::string name, fs::path directory);
 	
 private:
 	std::string read_text_file(const fs::path& path) const override;
 	std::vector<u8> read_binary_file(const fs::path& path) const override;
 	void write_text_file(const fs::path& path, const char* contents) const override;
 	void write_binary_file(const fs::path& path, Buffer contents) const override;
+	void extract_binary_file(const fs::path& relative_dest, Buffer prepend, FILE* src, s64 offset, s64 size) const override;
 	std::vector<fs::path> enumerate_asset_files() const override;
 	FILE* open_asset_write_handle(const fs::path& path) const override;
 	
 	fs::path _directory;
 };
-
-template <typename ChildAsset>
-ChildAsset& Asset::child(std::string tag, fs::path path) {
-	AssetReference reference = absolute_reference();
-	Asset* asset = &pack().asset_file(file()._relative_directory/path).root();
-	for(AssetReferenceFragment& fragment : reference.fragments) {
-		asset = &asset->child(fragment.type, fragment.tag);
-	}
-	return asset->child<ChildAsset>(tag);
-}
 
 #endif

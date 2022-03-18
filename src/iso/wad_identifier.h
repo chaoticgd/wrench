@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2022 chaoticgd
+	Copyright (C) 2019-2022 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,22 +16,12 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WAD_WAD_IDENTIFIER_H
-#define WAD_WAD_IDENTIFIER_H
+#ifndef ISO_WAD_IDENTIFIER_H
+#define ISO_WAD_IDENTIFIER_H
 
 #include <core/util.h>
+#include <core/buffer.h>
 
-enum class WadType {
-	MPEG,
-	MISC,
-	HUD,
-	BONUS,
-	AUDIO,
-	SPACE,
-	SCENE,
-	GADGET,
-	ARMOR,
-	ONLINE
-};
+std::tuple<Game, WadType, const char*> identify_wad(Buffer header);
 
 #endif

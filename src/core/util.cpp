@@ -35,6 +35,14 @@ std::string string_format(const char* format, va_list args) {
 	return std::string(buffer);
 }
 
+std::string stringf(const char* format, ...) {
+	va_list args;
+	va_start(args, format);
+	std::string string = string_format(format, args);
+	va_end(args);
+	return string;
+}
+
 static std::vector<std::string> error_context_stack;
 static std::string error_context_alloc;
 

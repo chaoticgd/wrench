@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2022 chaoticgd
+	Copyright (C) 2019-2022 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,4 +16,16 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "wad_identifier.h"
+#ifndef ISO_ISO_EXTRACTOR_H
+#define ISO_ISO_EXTRACTOR_H
+
+#include <core/util.h>
+#include <core/filesystem.h>
+#include <iso/table_of_contents.h>
+
+// This is true for R&C2, R&C3 and Deadlocked.
+static const uint32_t SYSTEM_CNF_LBA = 1000;
+
+void extract_iso(const fs::path& output_dir, const std::string& iso_path, const char* row_format);
+
+#endif

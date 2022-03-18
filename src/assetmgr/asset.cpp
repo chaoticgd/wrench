@@ -95,6 +95,15 @@ bool Asset::remove_child(Asset& asset) {
 	return false;
 }
 
+Asset& Asset::asset_file(const fs::path& path) {
+	AssetReference reference = absolute_reference();
+	Asset* asset = &pack().asset_file(file()._relative_directory/path).root();
+	for(AssetReferenceFragment& fragment : reference.fragments) {
+		asset = &asset->child(fragment.type, fragment.tag);
+	}
+	return *asset;
+}
+
 void Asset::read(WtfNode* node) {
 	read_attributes(node);
 	for(WtfNode* child = node->first_child; child != nullptr; child = child->next_sibling) {
@@ -268,6 +277,11 @@ FileReference AssetFile::write_binary_file(const fs::path& path, Buffer contents
 	return FileReference(*this, path);
 }
 
+FileReference AssetFile::extract_binary_file(const fs::path& path, Buffer prepend, FILE* src, s64 offset, s64 size) const {
+	_pack.extract_binary_file(_relative_directory/path, prepend, src, offset, size);
+	return FileReference(*this, path);
+}
+
 AssetFile* AssetFile::lower_precedence() {
 	assert(_pack._asset_files.size() > 0);
 	for(size_t i = 1; i < _pack._asset_files.size(); i++) {
@@ -318,8 +332,9 @@ void AssetFile::read() {
 
 // *****************************************************************************
 
-AssetPack::AssetPack(AssetForest& forest, bool is_writeable)
+AssetPack::AssetPack(AssetForest& forest, std::string name, bool is_writeable)
 	: _forest(forest)
+	, _name(std::move(name))
 	, _is_writeable(is_writeable) {}
 
 std::string AssetPack::read_text_file(const FileReference& reference) const {
@@ -328,6 +343,10 @@ std::string AssetPack::read_text_file(const FileReference& reference) const {
 
 std::vector<u8> AssetPack::read_binary_file(const FileReference& reference) const {
 	return read_binary_file(reference.owner->_relative_directory/reference.path);
+}
+
+const char* AssetPack::name() const {
+	return _name.c_str();
 }
 
 bool AssetPack::is_writeable() const {
@@ -346,7 +365,7 @@ AssetFile& AssetPack::asset_file(fs::path relative_path) {
 	return *_asset_files.emplace_back(std::make_unique<AssetFile>(_forest, *this, relative_path)).get();
 }
 
-void AssetPack::write() const {
+void AssetPack::write_asset_files() const {
 	for(const std::unique_ptr<AssetFile>& file : _asset_files) {
 		file->write();
 	}
@@ -390,8 +409,8 @@ Asset* AssetForest::lookup_asset(const AssetReference& absolute_reference) {
 
 // *****************************************************************************
 
-LooseAssetPack::LooseAssetPack(AssetForest& forest, fs::path directory)
-	: AssetPack(forest, true)
+LooseAssetPack::LooseAssetPack(AssetForest& forest, std::string name, fs::path directory)
+	: AssetPack(forest, std::move(name), true)
 	, _directory(directory) {}
 
 std::string LooseAssetPack::read_text_file(const fs::path& path) const {
@@ -411,6 +430,18 @@ void LooseAssetPack::write_text_file(const fs::path& path, const char* contents)
 void LooseAssetPack::write_binary_file(const fs::path& path, Buffer contents) const {
 	fs::create_directories((_directory/path).parent_path());
 	write_file(_directory/path, contents, "wb");
+}
+
+void LooseAssetPack::extract_binary_file(const fs::path& relative_dest, Buffer prepend, FILE* src, s64 offset, s64 size) const {
+	fs::create_directories((_directory/relative_dest).parent_path());
+	std::string path = (_directory/relative_dest).string();
+	FILE* file = fopen(path.c_str(), "wb");
+	verify(file, "Failed to open '%s' for writing.", path.c_str());
+	if(prepend.size() > 0) {
+		verify(fwrite(prepend.lo, prepend.size(), 1, file) == 1, "Failed to prepend header to '%s'.", path.c_str());
+	}
+	extract_file(path, file, src, offset, size);
+	fclose(file);
 }
 
 std::vector<fs::path> LooseAssetPack::enumerate_asset_files() const {

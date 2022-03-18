@@ -23,16 +23,16 @@
 #include "legacy_stream.h"
 #include "iso_filesystem.h"
 #include "table_of_contents.h"
-#include "extract_iso.h"
+#include "iso_extractor.h"
 
 void ls(std::string iso_path);
 void build(std::string input_dir, fs::path iso_path, int single_level_index, bool no_mpegs);
 void enumerate_wads_recursive(std::vector<fs::path>& wads, fs::path dir, int depth);
-void enumerate_non_wads_recursive(stream& iso, iso_directory& out, fs::path dir, int depth);
+void enumerate_non_wads_recursive(stream& iso, IsoDirectory& out, fs::path dir, int depth);
 std::string str_to_lower(std::string str);
 void parse_pcsx2_stdout(std::string iso_path);
 
-// C format string for printing out LBA, size, filename lines.
+// C format string for printing out the sector number, size, and filename.
 const char* row_format;
 
 int main(int argc, char** argv) {
@@ -78,7 +78,7 @@ int main(int argc, char** argv) {
 	if(command == "ls") {
 		ls(input_path);
 	} else if(command == "extract") {
-		extract_iso(input_path, output_path, row_format);
+		extract_iso(output_path, input_path, row_format);
 	} else if(command == "build") {
 		build(input_path, output_path, single_level_index, no_mpegs);
 	} else if(command == "parse_pcsx2_stdout") {
@@ -98,12 +98,14 @@ void ls(std::string iso_path) {
 	defer([&]() { fclose(iso); });
 	
 	std::vector<u8> filesystem_buf = read_file(iso, 0, MAX_FILESYSTEM_SIZE_BYTES);
-	iso_directory root_dir;
+	IsoDirectory root_dir;
 	std::string volume_id;
 	if(!read_iso_filesystem(root_dir, volume_id, Buffer(filesystem_buf))) {
 		fprintf(stderr, "error: Missing or invalid ISO filesystem!\n");
 		exit(1);
 	}
+	
+	static const std::string RAC1_VOLUME_ID = "RATCHETANDCLANK                 ";
 	
 	table_of_contents toc;
 	if(volume_id == RAC1_VOLUME_ID) {
@@ -116,14 +118,14 @@ void ls(std::string iso_path) {
 		}
 	}
 	
-	printf("+-[Non-level Sections]--+-------------+-------------+\n");
+	printf("+-[Global WADs]---------+-------------+-------------+\n");
 	printf("| Index | Offset in ToC | Size in ToC | Data Offset |\n");
 	printf("| ----- | ------------- | ----------- | ----------- |\n");
-	for(size_t i = 0; i < toc.tables.size(); i++) {
-		toc_table& table = toc.tables[i];
-		size_t base_offset = table.sector.bytes();
+	for(size_t i = 0; i < toc.globals.size(); i++) {
+		GlobalWadInfo& global = toc.globals[i];
+		size_t base_offset = global.sector.bytes();
 	printf("| %02ld    | %08x      | %08x    | %08lx    |\n",
-		i, table.offset_in_toc, table.header.size(), base_offset);
+		i, global.offset_in_toc, global.header.size(), base_offset);
 	}
 	printf("+-------+---------------+-------------+-------------+\n");
 	
@@ -132,11 +134,11 @@ void ls(std::string iso_path) {
 	printf("|       | ----------             | ----------             | ----------             |\n");
 	printf("| Index | Offset      Size       | Offset      Size       | Offset      Size       |\n");
 	printf("| ----- | ------      ----       | ------      ----       | ------      ----       |\n");
-	for(toc_level& level : toc.levels) {
+	for(LevelInfo& level : toc.levels) {
 		size_t offsets[3] = {0, 0, 0};
 		size_t sizes[3] = {0, 0, 0};
 		
-		for(std::optional<toc_level_part>& part : level.parts) {
+		for(std::optional<LevelWadInfo>& part : level.parts) {
 			if(!part) {
 				continue;
 			}
@@ -338,7 +340,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 	// After all the other files have been written out, write out an ISO
 	// filesystem at the beginning of the image.
 	file_stream iso(iso_path.string(), std::ios::out);
-	iso_directory root_dir;
+	IsoDirectory root_dir;
 	uint32_t volume_size = 0;
 	defer([&]() {
 		iso.seek(0);
@@ -350,14 +352,14 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 	
 	// After all the other files have been written out, write out the table of
 	// contents file at its hardcoded position.
-	std::vector<toc_table> toc_tables;
-	std::vector<toc_level> toc_levels;
+	std::vector<GlobalWadInfo> toc_globals;
+	std::vector<LevelInfo> toc_levels;
 	defer([&]() {
 		iso.seek(RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
-		for(toc_table& table : toc_tables) {
-			*(Sector32*) &table.header[4] = table.sector;
-			iso.write_v(table.header);
-			*(Sector32*) &table.header[4] = {0};
+		for(GlobalWadInfo& global : toc_globals) {
+			*(Sector32*) &global.header[4] = global.sector;
+			iso.write_v(global.header);
+			*(Sector32*) &global.header[4] = {0};
 		}
 		
 		size_t level_table_pos = iso.tell();
@@ -379,8 +381,8 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		}
 		
 		for(size_t i = 0; i < toc_levels.size(); i++) {
-			toc_level& level = toc_levels[i]; 
-			for(std::optional<toc_level_part>& part : level.parts) {
+			LevelInfo& level = toc_levels[i]; 
+			for(std::optional<LevelWadInfo>& part : level.parts) {
 				if(!part) {
 					continue;
 				}
@@ -417,8 +419,8 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		iso.write_n((char*) zeroed_sector, SECTOR_SIZE);
 	}
 	
-	printf("LBA             Size (bytes)    Filename\n");
-	printf("---             ------------    --------\n");
+	printf("Sector          Size (bytes)    Filename\n");
+	printf("------          ------------    --------\n");
 	
 	// SYSTEM.CNF must come first at LBA 1000.
 	{
@@ -437,7 +439,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		file_stream system_cnf(system_cnf_path.string());
 		size_t system_cnf_size = system_cnf.size();
 		
-		iso_file_record record;
+		IsoFileRecord record;
 		record.name = "system.cnf;1";
 		record.lba = {(s32) (iso.tell() / SECTOR_SIZE)};
 		record.size = system_cnf_size;
@@ -450,7 +452,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 	// Then the table of contents at LBA 1001.
 	{
 		iso.pad(SECTOR_SIZE, 0);
-		iso_file_record toc_record;
+		IsoFileRecord toc_record;
 		switch(game) {
 			case GAME_RAC1: toc_record.name = "rc1.hdr;1"; break;
 			case GAME_RAC2: toc_record.name = "rc2.hdr;1"; break;
@@ -472,19 +474,19 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 	// Then various other files e.g. the boot ELF, etc.
 	enumerate_non_wads_recursive(iso, root_dir, input_dir, 0);
 	// Then the global files e.g. MISC.WAD, MPEG.WAD, ARMOR.WAD, etc.
-	iso_directory global_dir {"global"};
+	IsoDirectory global_dir {"global"};
 	for(global_file& global : global_files) {
 		file_stream file(global.path.string());
 		iso.pad(SECTOR_SIZE, 0);
 		
-		toc_table table;
-		table.index = 0; // Don't care.
-		table.offset_in_toc = 0; // Don't care.
+		GlobalWadInfo global_info;
+		global_info.index = 0; // Don't care.
+		global_info.offset_in_toc = 0; // Don't care.
 		s64 header_size = file.read<s32>(0);
-		table.sector = {(s32) (iso.tell() / SECTOR_SIZE)};
-		table.header.resize(header_size);
+		global_info.sector = {(s32) (iso.tell() / SECTOR_SIZE)};
+		global_info.header.resize(header_size);
 		file.seek(0);
-		file.read_v(table.header);
+		file.read_v(global_info.header);
 		
 		bool skipped = false;
 		if(no_mpegs) {
@@ -495,8 +497,8 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 			// know that it's probably in bytes intead of sectors and hence this
 			// file must be the MPEG file.
 			size_t lump_sizes_probably_in_bytes = 0;
-			size_t lump_count = (table.header.size() - 8) / 8;
-			Buffer header_buf(table.header);
+			size_t lump_count = (global_info.header.size() - 8) / 8;
+			Buffer header_buf(global_info.header);
 			auto lumps = header_buf.read_multiple<sector_range>(8, lump_count, "global header");
 			for(sector_range range : lumps) {
 				if(range.size.sectors > 0xffff) {
@@ -505,19 +507,19 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 			}
 			// Arbitrary threshold.
 			if(lump_sizes_probably_in_bytes > 10) {
-				for(size_t i = 8; i < table.header.size(); i++) {
-					table.header[i] = 0;
+				for(size_t i = 8; i < global_info.header.size(); i++) {
+					global_info.header[i] = 0;
 				}
 				skipped = true;
 			}
 		}
 		
-		toc_tables.push_back(table);
+		toc_globals.push_back(global_info);
 		
 		if(!skipped) {
-			iso_file_record record;
+			IsoFileRecord record;
 			record.name = global.path.filename().string() + ";1";
-			record.lba = table.sector;
+			record.lba = global_info.sector;
 			record.size = file.size();
 			global_dir.files.push_back(record);
 			
@@ -529,13 +531,13 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 	}
 	// Then the level files.
 	root_dir.subdirs.push_back(global_dir);
-	auto write_level_part = [&](iso_directory& parent, fs::path& path) {
+	auto write_level_part = [&](IsoDirectory& parent, fs::path& path) {
 		file_stream file(path.string());
 		iso.pad(SECTOR_SIZE, 0);
 		
 		size_t file_size = file.size();
 		
-		toc_level_part part;
+		LevelWadInfo part;
 		part.header_lba = {0}; // Don't care.
 		part.file_size = Sector32::size_from_bytes(file_size);
 		part.magic = file.read<uint32_t>(0);
@@ -551,7 +553,7 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		file.seek(0);
 		file.read_v(part.header);
 		
-		iso_file_record record;
+		IsoFileRecord record;
 		record.name = path.filename().string() + ";1";
 		record.lba = part.file_lba;
 		record.size = file_size;
@@ -566,14 +568,14 @@ void build(std::string input_dir, fs::path iso_path, int single_level_index, boo
 		return part;
 	};
 	// Create directories for the level files.
-	iso_directory levels_dir {"levels"};
-	iso_directory audio_dir {"audio"};
-	iso_directory scenes_dir {"scenes"};
+	IsoDirectory levels_dir {"levels"};
+	IsoDirectory audio_dir {"audio"};
+	IsoDirectory scenes_dir {"scenes"};
 	toc_levels.resize(level_files.size());
 	if(single_level_index > -1) {
 		// Only write out a single level, and point every level at it.
 		auto& p = level_files[single_level_index].parts;
-		toc_level_part level_part, audio_part, scene_part;
+		LevelWadInfo level_part, audio_part, scene_part;
 		assert(p[LEVEL_PART]);
 		level_part = write_level_part(levels_dir, *p[LEVEL_PART]);
 		if(p[AUDIO_PART]) audio_part = write_level_part(audio_dir, *p[AUDIO_PART]);
@@ -640,7 +642,7 @@ void enumerate_wads_recursive(std::vector<fs::path>& wads, fs::path dir, int dep
 	}
 }
 
-void enumerate_non_wads_recursive(stream& iso, iso_directory& out, fs::path dir, int depth) {
+void enumerate_non_wads_recursive(stream& iso, IsoDirectory& out, fs::path dir, int depth) {
 	for(const fs::directory_entry& entry : fs::directory_iterator(dir)) {
 		auto name = str_to_lower(entry.path().filename().string());
 		if(entry.is_regular_file()) {
@@ -670,7 +672,7 @@ void enumerate_non_wads_recursive(stream& iso, iso_directory& out, fs::path dir,
 			
 			size_t file_size = file.size();
 			
-			iso_file_record record;
+			IsoFileRecord record;
 			record.name = name + ";1";
 			record.lba = {(s32) (iso.tell() / SECTOR_SIZE)};
 			record.size = file_size;
@@ -679,7 +681,7 @@ void enumerate_non_wads_recursive(stream& iso, iso_directory& out, fs::path dir,
 			
 			stream::copy_n(iso, file, file_size);
 		} else if(entry.is_directory()) {
-			iso_directory subdir {name};
+			IsoDirectory subdir {name};
 			// Prevent name collisions with the auto-generated directories.
 			if(depth == 0 && (name == "global" || name == "levels" || name == "audio" || name == "scenes")) {
 				continue;
@@ -707,16 +709,16 @@ void parse_pcsx2_stdout(std::string iso_path) {
 	
 	// First we enumerate where all the files on the ISO are. Note that this
 	// command only works for stuff referenced by the filesystem.
-	std::vector<iso_file_record> files;
-	iso_directory root_dir;
+	std::vector<IsoFileRecord> files;
+	IsoDirectory root_dir;
 	root_dir.files.push_back({"primary volume descriptor", 0x10, SECTOR_SIZE});
 	std::string dummy_volume_id;
 	if(!read_iso_filesystem(root_dir, dummy_volume_id, filesystem_buf)) {
 		fprintf(stderr, "error: Failed to read ISO filesystem!\n");
 		exit(1);
 	}
-	std::function<void(iso_directory&)> enumerate_dir = [&](iso_directory& dir) {
-		for(iso_directory& subdir : dir.subdirs) {
+	std::function<void(IsoDirectory&)> enumerate_dir = [&](IsoDirectory& dir) {
+		for(IsoDirectory& subdir : dir.subdirs) {
 			enumerate_dir(subdir);
 		}
 		files.insert(files.end(), dir.files.begin(), dir.files.end());
@@ -725,8 +727,8 @@ void parse_pcsx2_stdout(std::string iso_path) {
 	
 	const char* before_text = "DvdRead: Reading Sector ";
 	
-	auto file_from_lba = [&](size_t lba) -> iso_file_record* {
-		for(iso_file_record& file : files) {
+	auto file_from_lba = [&](size_t lba) -> IsoFileRecord* {
+		for(IsoFileRecord& file : files) {
 			size_t end_lba = file.lba.sectors + Sector32::size_from_bytes(file.size).sectors;
 			if(lba >= file.lba.sectors && lba < end_lba) {
 				return &file;
@@ -737,7 +739,7 @@ void parse_pcsx2_stdout(std::string iso_path) {
 	
 	// If we get a line reporting a sector read from PCSX2, determine which file
 	// is being read and print out its name.
-	iso_file_record* last_file = nullptr;
+	IsoFileRecord* last_file = nullptr;
 	size_t last_lba = SIZE_MAX;
 	std::string line;
 	while(std::getline(std::cin, line)) {
@@ -754,7 +756,7 @@ void parse_pcsx2_stdout(std::string iso_path) {
 			} catch(std::logic_error& e) {
 				continue;
 			}
-			iso_file_record* file = file_from_lba(lba);
+			IsoFileRecord* file = file_from_lba(lba);
 			if(lba > last_lba && lba <= last_lba + 0x10 && file == last_file) {
 				// Don't spam stdout with every new sector that needs to be read
 				// in. Only print when it's reading a different file, or it

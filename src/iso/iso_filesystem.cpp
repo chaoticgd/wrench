@@ -18,7 +18,8 @@
 
 #include "iso_filesystem.h"
 
-#include "../editor/util.h"
+#include <core/filesystem.h>
+#include <editor/util.h>
 
 packed_struct(iso9660_i16_lsb_msb,
 	int16_t lsb;
@@ -110,9 +111,20 @@ packed_struct(iso9660_path_table_entry,
 	uint16_t parent;
 )
 
-void read_directory_record(iso_directory& dest, Buffer src, s64 ofs, size_t size, size_t depth);
+void read_directory_record(IsoDirectory& dest, Buffer src, s64 ofs, size_t size, size_t depth);
 
-bool read_iso_filesystem(iso_directory& dest, std::string& volume_id, Buffer src) {
+IsoDirectory read_iso_filesystem(FILE* iso) {
+	std::vector<u8> filesystem_buf = read_file(iso, 0, MAX_FILESYSTEM_SIZE_BYTES);
+	IsoDirectory root_dir;
+	std::string volume_id;
+	if(!read_iso_filesystem(root_dir, volume_id, Buffer(filesystem_buf))) {
+		fprintf(stderr, "error: Missing or invalid ISO filesystem!\n");
+		exit(1);
+	}
+	return root_dir;
+}
+
+bool read_iso_filesystem(IsoDirectory& dest, std::string& volume_id, Buffer src) {
 	auto& pvd = src.read<iso9660_primary_volume_desc>(0x10 * SECTOR_SIZE, "primary volume descriptor");
 	if(pvd.type_code != 0x01) {
 		return false;
@@ -132,11 +144,8 @@ bool read_iso_filesystem(iso_directory& dest, std::string& volume_id, Buffer src
 	return true;
 }
 
-void read_directory_record(iso_directory& dest, Buffer src, s64 ofs, size_t size, size_t depth) {
-	if(depth > 8) {
-		fprintf(stderr, "error: Depth limit (8 levels) reached!\n");
-		exit(1);
-	}
+void read_directory_record(IsoDirectory& dest, Buffer src, s64 ofs, size_t size, size_t depth) {
+	verify(depth <= 8, "Depth limit (8 levels) reached!");
 	
 	s64 end = ofs + size;
 	
@@ -155,7 +164,7 @@ void read_directory_record(iso_directory& dest, Buffer src, s64 ofs, size_t size
 				ofs = record_ofs + record.record_length;
 				continue;
 			}
-			iso_directory subdir;
+			IsoDirectory subdir;
 			subdir.name = src.read_fixed_string(ofs, record.identifier_length);
 			ofs += record.identifier_length;
 			for(char& c : subdir.name) {
@@ -164,11 +173,14 @@ void read_directory_record(iso_directory& dest, Buffer src, s64 ofs, size_t size
 			read_directory_record(subdir, src, record.lba.lsb * SECTOR_SIZE, record.data_length.lsb, depth + 1);
 			dest.subdirs.push_back(subdir);
 		} else if(record.identifier_length >= 2) {
-			iso_file_record file;
+			IsoFileRecord file;
 			file.name = src.read_fixed_string(ofs, record.identifier_length);
 			ofs += record.identifier_length;
 			for(char& c : file.name) {
 				c = tolower(c);
+			}
+			if(file.name.size() >= 2 && file.name[file.name.size() - 2] == ';' && file.name[file.name.size() - 1] == '1') {
+				file.name = file.name.substr(0, file.name.size() - 2);
 			}
 			file.lba = {(s32) record.lba.lsb};
 			file.size = record.data_length.lsb;
@@ -176,10 +188,7 @@ void read_directory_record(iso_directory& dest, Buffer src, s64 ofs, size_t size
 		}
 		ofs = record_ofs + record.record_length;
 	}
-	if(i == 1000) {
-		fprintf(stderr, "error: Iteration limit exceeded while reading directory!\n");
-		exit(1);
-	}
+	verify(i != 1000, "Iteration limit exceeded while reading directory!");
 }
 
 void copy_and_pad(char* dest, const char* src, size_t size) {
@@ -192,9 +201,9 @@ void copy_and_pad(char* dest, const char* src, size_t size) {
 	}
 }
 
-void flatten_subdirs(std::vector<iso_directory*>* flat_dirs, iso_directory* dir) {
+void flatten_subdirs(std::vector<IsoDirectory*>* flat_dirs, IsoDirectory* dir) {
 	for(size_t i = 0; i < dir->subdirs.size(); i++) {
-		iso_directory* subdir = &dir->subdirs[i];
+		IsoDirectory* subdir = &dir->subdirs[i];
 		subdir->parent = dir;
 		subdir->index = flat_dirs->size();
 		subdir->parent_index = dir->index;
@@ -203,9 +212,9 @@ void flatten_subdirs(std::vector<iso_directory*>* flat_dirs, iso_directory* dir)
 	}
 }
 
-void write_directory_records(stream& dest, const iso_directory& dir);
+void write_directory_records(stream& dest, const IsoDirectory& dir);
 
-void write_iso_filesystem(stream& dest, iso_directory* root_dir) {
+void write_iso_filesystem(stream& dest, IsoDirectory* root_dir) {
 	// Write out system area.
 	static const uint8_t zeroed_sector[SECTOR_SIZE] = {0};
 	for(int i = 0; i < 0x10; i++) {
@@ -279,7 +288,7 @@ void write_iso_filesystem(stream& dest, iso_directory* root_dir) {
 	
 	// Get a linear list of all the directories. This also sets the parent
 	// pointers and indices.
-	std::vector<iso_directory*> flat_dirs;
+	std::vector<IsoDirectory*> flat_dirs;
 	flatten_subdirs(&flat_dirs, root_dir);
 	
 	// Determine the LBAs of the path table and the root directory.
@@ -299,7 +308,7 @@ void write_iso_filesystem(stream& dest, iso_directory* root_dir) {
 	pvd.root_directory.data_length = iso9660_i32_lsb_msb::from_scalar(root_dir->size);
 	next_dir_lba += Sector32::size_from_bytes(root_dir->size).sectors;
 	for(size_t i = 0; i < flat_dirs.size(); i++) {
-		iso_directory* dir = flat_dirs[i];
+		IsoDirectory* dir = flat_dirs[i];
 		dir->lba = {(s32) next_dir_lba};
 		array_stream dummy;
 		write_directory_records(dummy, *dir);
@@ -317,7 +326,7 @@ void write_iso_filesystem(stream& dest, iso_directory* root_dir) {
 	dest.write(root_pte_lsb);
 	dest.write<uint8_t>(0); // identifier
 	dest.write<uint8_t>(0); // pad
-	for(iso_directory* dir : flat_dirs) {
+	for(IsoDirectory* dir : flat_dirs) {
 		iso9660_path_table_entry root_pte;
 		root_pte.identifier_length = dir->name.size();
 		root_pte.record_length = 0;
@@ -343,7 +352,7 @@ void write_iso_filesystem(stream& dest, iso_directory* root_dir) {
 	dest.write(root_pte_msb);
 	dest.write<uint8_t>(0); // identifier
 	dest.write<uint8_t>(0); // pad
-	for(iso_directory* dir : flat_dirs) {
+	for(IsoDirectory* dir : flat_dirs) {
 		iso9660_path_table_entry root_pte;
 		root_pte.identifier_length = dir->name.size();
 		root_pte.record_length = 0;
@@ -360,18 +369,18 @@ void write_iso_filesystem(stream& dest, iso_directory* root_dir) {
 	dest.pad(SECTOR_SIZE, 0);
 	assert(dest.tell() == pvd.root_directory.lba.lsb * SECTOR_SIZE);
 	write_directory_records(dest, *root_dir);
-	for(iso_directory* dir : flat_dirs) {
+	for(IsoDirectory* dir : flat_dirs) {
 		dest.pad(SECTOR_SIZE, 0);
 		write_directory_records(dest, *dir);
 	}
 }
 
-void write_directory_records(stream& dest, const iso_directory& dir) {
+void write_directory_records(stream& dest, const IsoDirectory& dir) {
 	// Either this is being written out to a dummy stream to calculate the space
 	// required for the directory record, or this should be being written out at
 	// the correct LBA.
 	assert(dest.tell() == 0 || dest.tell() == dir.lba.bytes());
-	auto write_directory_record = [&](const iso_file_record& file, uint8_t flags) {
+	auto write_directory_record = [&](const IsoFileRecord& file, uint8_t flags) {
 		iso9660_directory_record record;
 		record.record_length =
 			sizeof(iso9660_directory_record) +
@@ -400,25 +409,23 @@ void write_directory_records(stream& dest, const iso_directory& dir) {
 			dest.write<uint8_t>(0);
 		}
 	};
-	iso_file_record dot = {"", dir.lba, dir.size};
+	IsoFileRecord dot = {"", dir.lba, dir.size};
 	write_directory_record(dot, 2);
-	iso_file_record dot_dot = {"\x01", dir.lba, dir.size};
+	IsoFileRecord dot_dot = {"\x01", dir.lba, dir.size};
 	if(dir.parent != nullptr) {
 		dot_dot.lba = dir.parent->lba;
 		dot_dot.size = dir.parent->size;
 	}
 	write_directory_record(dot_dot, 2);
-	for(const iso_file_record& file : dir.files) {
+	for(const IsoFileRecord& file : dir.files) {
 		write_directory_record(file, 0);
 	}
-	for(const iso_directory& dir : dir.subdirs) {
-		iso_file_record record = {dir.name, dir.lba, dir.size};
+	for(const IsoDirectory& dir : dir.subdirs) {
+		IsoFileRecord record = {dir.name, dir.lba, dir.size};
 		write_directory_record(record, 2);
 	}
 }
 
-void print_file_record(iso_file_record& record, const char* row_format) {
-	assert(record.name.size() >= 2);
-	auto display_name = record.name.substr(0, record.name.size() - 2);
-	printf(row_format, (size_t) record.lba.sectors, (size_t) record.size, display_name.c_str());
+void print_file_record(const IsoFileRecord& record, const char* row_format) {
+	printf(row_format, (size_t) record.lba.sectors, (size_t) record.size, record.name.c_str());
 }

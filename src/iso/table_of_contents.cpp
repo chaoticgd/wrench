@@ -22,13 +22,27 @@
 #include <core/filesystem.h>
 #include <editor/util.h>
 
-static toc_level_part adapt_rac1_level_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header);
-static Opt<toc_level_part> adapt_rac1_audio_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header);
-static Opt<toc_level_part> adapt_rac1_scene_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header);
+static LevelWadInfo adapt_rac1_level_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header);
+static Opt<LevelWadInfo> adapt_rac1_audio_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header);
+static Opt<LevelWadInfo> adapt_rac1_scene_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header);
 static Sector32 get_vag_size(FILE* iso, Sector32 sector);
 static Sector32 get_lz_size(FILE* iso, Sector32 sector);
 
 static std::size_t get_rac234_level_table_offset(Buffer src);
+
+table_of_contents read_table_of_contents(FILE* iso, Game game) {
+	table_of_contents toc;
+	if(game == Game::RAC1) {
+		toc = read_table_of_contents_rac1(iso);
+	} else {
+		toc = read_table_of_contents_rac234(iso);
+		if(toc.levels.size() == 0) {
+			fprintf(stderr, "error: Unable to locate level table!\n");
+			exit(1);
+		}
+	}
+	return toc;
+}
 
 table_of_contents read_table_of_contents_rac1(FILE* iso) {
 	s32 magic, toc_size;
@@ -50,7 +64,7 @@ table_of_contents read_table_of_contents_rac1(FILE* iso) {
 			if(header_buffer.read<s32>(4, "file header") == 0x2434) {
 				Rac1AmalgamatedWadHeader header = header_buffer.read<Rac1AmalgamatedWadHeader>(0, "level header");
 				
-				toc_level level;
+				LevelInfo level;
 				level.level_table_index = header.level_number;
 				level.parts[0] = adapt_rac1_level_wad_header(iso, header);
 				level.parts[1] = adapt_rac1_audio_wad_header(iso, header);
@@ -70,7 +84,7 @@ static SectorByteRange sub_sector_byte_range(SectorByteRange range, Sector32 lsn
 	return {{range.offset.sectors - lsn.sectors}, range.size_bytes};
 }
 
-static toc_level_part adapt_rac1_level_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header) {
+static LevelWadInfo adapt_rac1_level_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header) {
 	// Determine where the file begins and ends on disc.
 	Sector32 low = {INT32_MAX};
 	low = {std::min(low.sectors, header.primary.offset.sectors)};
@@ -95,7 +109,7 @@ static toc_level_part adapt_rac1_level_wad_header(FILE* iso, Rac1AmalgamatedWadH
 	level_header.gameplay_pal = sub_sector_range(header.gameplay_pal, adjust);
 	level_header.occlusion = sub_sector_range(header.occlusion, adjust);
 	
-	toc_level_part level_part;
+	LevelWadInfo level_part;
 	level_part.header_lba = {0};
 	level_part.magic = sizeof(Rac1LevelWadHeader);
 	level_part.file_lba = {low.sectors};
@@ -110,7 +124,7 @@ static toc_level_part adapt_rac1_level_wad_header(FILE* iso, Rac1AmalgamatedWadH
 	return level_part;
 }
 
-static Opt<toc_level_part> adapt_rac1_audio_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header) {
+static Opt<LevelWadInfo> adapt_rac1_audio_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header) {
 	// Determine where the file begins and ends on disc.
 	Sector32 low = {INT32_MAX};
 	Sector32 high = {0};
@@ -147,7 +161,7 @@ static Opt<toc_level_part> adapt_rac1_audio_wad_header(FILE* iso, Rac1Amalgamate
 		}
 	}
 	
-	toc_level_part audio_part;
+	LevelWadInfo audio_part;
 	audio_part.header_lba = {0};
 	audio_part.magic = sizeof(Rac1AudioWadHeader);
 	audio_part.file_lba = low;
@@ -162,7 +176,7 @@ static Opt<toc_level_part> adapt_rac1_audio_wad_header(FILE* iso, Rac1Amalgamate
 	return audio_part;
 }
 
-static Opt<toc_level_part> adapt_rac1_scene_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header) {
+static Opt<LevelWadInfo> adapt_rac1_scene_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header) {
 	// Determine where the file begins and ends on disc.
 	Sector32 low = {INT32_MAX};
 	Sector32 high = {0};
@@ -206,7 +220,7 @@ static Opt<toc_level_part> adapt_rac1_scene_wad_header(FILE* iso, Rac1Amalgamate
 		}
 	}
 	
-	toc_level_part scene_part;
+	LevelWadInfo scene_part;
 	scene_part.header_lba = {0};
 	scene_part.magic = sizeof(Rac1SceneWadHeader);
 	scene_part.file_lba = low;
@@ -251,19 +265,19 @@ table_of_contents read_table_of_contents_rac234(FILE* iso) {
 		level_table_offset = 0xffff;
 	}
 	
-	std::size_t table_index = 0;
+	std::size_t global_index = 0;
 	s64 ofs = 0;
 	while(ofs + 4 * 6 < level_table_offset) {
-		toc_table table;
-		table.index = table_index++;
-		table.offset_in_toc = ofs;
+		GlobalWadInfo global;
+		global.index = global_index++;
+		global.offset_in_toc = ofs;
 		s32 header_size = buffer.read<s32>(ofs, "global header");
 		if(header_size < 8 || header_size > 0xffff) {
 			break;
 		}
-		table.sector = buffer.read<Sector32>(ofs + 4, "global header");
-		table.header = buffer.read_multiple<u8>(ofs, header_size, "global header").copy();
-		toc.tables.emplace_back(std::move(table));
+		global.sector = buffer.read<Sector32>(ofs + 4, "global header");
+		global.header = buffer.read_multiple<u8>(ofs, header_size, "global header").copy();
+		toc.globals.emplace_back(std::move(global));
 		ofs += header_size;
 	}
 	
@@ -278,14 +292,14 @@ table_of_contents read_table_of_contents_rac234(FILE* iso) {
 	for(size_t i = 0; i < TOC_MAX_LEVELS; i++) {
 		toc_level_table_entry entry = level_table[i];
 		
-		toc_level level;
+		LevelInfo level;
 		level.level_table_index = i;
 		bool has_level_part = false;
 		
 		// The games have the fields in different orders, so we check the type
 		// of what each field points to so we can support them all.
 		for(size_t j = 0; j < 3; j++) {
-			toc_level_part part;
+			LevelWadInfo part;
 			part.header_lba = entry.parts[j].offset;
 			part.file_size = entry.parts[j].size;
 			

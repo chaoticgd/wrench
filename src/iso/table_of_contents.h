@@ -19,23 +19,23 @@
 #ifndef ISO_TABLE_OF_CONTENTS_H
 #define ISO_TABLE_OF_CONTENTS_H
 
-#include "../editor/level_file_types.h"
+#include <editor/level_file_types.h>
 #include "legacy_stream.h"
 
-struct toc_table {
-	std::size_t index;
-	uint32_t offset_in_toc;
+struct GlobalWadInfo {
+	size_t index;
+	u32 offset_in_toc;
 	Sector32 sector;
 	std::vector<u8> header;
 };
 
 packed_struct(toc_level_table_entry,
-	sector_range parts[3];
+	SectorRange parts[3];
 )
 
-struct toc_level_part {
+struct LevelWadInfo {
 	Sector32 header_lba;
-	uint32_t magic;
+	u32 magic;
 	Sector32 file_lba;
 	Sector32 file_size;
 	level_file_info info;
@@ -43,14 +43,14 @@ struct toc_level_part {
 	bool prepend_header = false;
 };
 
-struct toc_level {
+struct LevelInfo {
 	size_t level_table_index;
-	std::optional<toc_level_part> parts[3];
+	Opt<LevelWadInfo> parts[3];
 };
 
 struct table_of_contents {
-	std::vector<toc_table> tables;
-	std::vector<toc_level> levels;
+	std::vector<GlobalWadInfo> globals;
+	std::vector<LevelInfo> levels;
 };
 
 packed_struct(Rac1SceneHeader,
@@ -125,6 +125,7 @@ static const std::size_t TOC_MAX_SIZE       = 0x200000;
 static const std::size_t TOC_MAX_INDEX_SIZE = 0x10000;
 static const std::size_t TOC_MAX_LEVELS     = 100;
 
+table_of_contents read_table_of_contents(FILE* iso, Game game);
 table_of_contents read_table_of_contents_rac1(FILE* iso);
 table_of_contents read_table_of_contents_rac234(FILE* iso);
 

@@ -99,9 +99,10 @@ add_executable(vif
 
 add_executable(iso
 	src/iso/main.cpp
-	src/iso/extract_iso.cpp
+	src/iso/iso_extractor.cpp
 	src/iso/iso_filesystem.cpp
 	src/iso/table_of_contents.cpp
+	src/iso/wad_identifier.cpp
 	src/iso/legacy_stream.cpp
 	src/editor/util.cpp
 	src/editor/command_line.cpp
@@ -144,6 +145,7 @@ target_link_libraries(asset2json wrenchcore)
 target_link_libraries(asset_codegen wrenchcore)
 target_link_libraries(wrench_assetmgr wrenchcore)
 
+target_link_libraries(iso wrench_assetmgr)
 target_link_libraries(wad wrench_assetmgr)
 
 # This lets us avoid linking stuff for most of the CLI tools.

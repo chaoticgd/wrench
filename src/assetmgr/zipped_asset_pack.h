@@ -23,13 +23,14 @@
 
 class ZippedAssetPack : public AssetPack {
 public:
-	ZippedAssetPack(AssetForest& forest, fs::path path_to_zip);
+	ZippedAssetPack(AssetForest& forest, std::string name, fs::path path_to_zip);
 
 private:
 	std::string read_text_file(const fs::path& path) const override;
 	std::vector<u8> read_binary_file(const fs::path& path) const override;
 	void write_text_file(const fs::path& path, const char* contents) const override;
 	void write_binary_file(const fs::path& path, Buffer contents) const override;
+	void extract_binary_file(const fs::path& relative_dest, Buffer prepend, FILE* src, s64 offset, s64 size) const override;
 	std::vector<fs::path> enumerate_asset_files() const override;
 	FILE* open_asset_write_handle(const fs::path& write_path) const override;
 	

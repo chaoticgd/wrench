@@ -25,7 +25,7 @@ Metadata metadata {
 AssetType Root {}
 
 AssetType Collection {
-	desc: 'A collection of assets.'
+	desc: 'A generic container for other assets.'
 }
 
 AssetType Binary {
@@ -34,34 +34,46 @@ AssetType Binary {
 	FileReferenceAttribute src {}
 }
 
-AssetType Build {
-	desc: 'A build of the game.'
+AssetType Game {
+	desc: 'A game e.g. Game:1 for R&C1, Game:4 for Deadlocked, or Game:my_mod for my_mod.'
 	
-	ArrayAttribute globals {
+	ArrayAttribute builds {
+		desc: 'A list of available builds of the game.'
+		
 		AssetReferenceAttribute element {
 			allowed_asset_types: [
-				'MpegWad'
-				'MiscWad'
-				'BonusWad'
-				'SpaceWad'
-				'ArmorWad'
-				'AudioWad'
-				'HudWad'
-				'OnlineWad'
-				'Binary'
+				'Build'
 			]
 		}
 	}
+}
+
+AssetType Build {
+	desc: 'A build of the game.'
+	
+	AssetReferenceAttribute armor  { allowed_asset_types: ['ArmorWad' 'Binary'] }
+	AssetReferenceAttribute audio  { allowed_asset_types: ['AudioWad' 'Binary'] }
+	AssetReferenceAttribute bonus  { allowed_asset_types: ['BonusWad' 'Binary'] }
+	AssetReferenceAttribute gadget { allowed_asset_types: ['GadgetWad' 'Binary'] }
+	AssetReferenceAttribute hud    { allowed_asset_types: ['HudWad' 'Binary'] }
+	AssetReferenceAttribute misc   { allowed_asset_types: ['MiscWad' 'Binary'] }
+	AssetReferenceAttribute mpeg   { allowed_asset_types: ['MpegWad' 'Binary'] }
+	AssetReferenceAttribute online { allowed_asset_types: ['OnlineWad' 'Binary'] }
+	AssetReferenceAttribute scene  { allowed_asset_types: ['SceneWad' 'Binary'] }
+	AssetReferenceAttribute space  { allowed_asset_types: ['SpaceWad' 'Binary'] }
 	
 	ArrayAttribute levels {
 		AssetReferenceAttribute element {
 			allowed_asset_types: [
 				'Level'
-				'LevelAudio'
-				'LevelScene'
 			]
 		}
 	}
+}
+
+AssetType File {
+	FileReferenceAttribute src {}
+	StringAttribute path {}
 }
 
 // *****************************************************************************
@@ -88,160 +100,32 @@ AssetType Texture {
 	}
 }
 
-AssetType Video {
-	desc: 'A video file.'
+// *****************************************************************************
+
+AssetType Level {
+	AssetReferenceAttribute level {
+		allowed_asset_types: [
+			'LevelWad'
+			'Binary'
+		]
+	}
 	
-	FileReferenceAttribute src {}
+	AssetReferenceAttribute audio {
+		allowed_asset_types: [
+			'LevelAudioWad'
+			'Binary'
+		]
+	}
+	
+	AssetReferenceAttribute scene {
+		allowed_asset_types: [
+			'LevelSceneWad'
+			'Binary'
+		]
+	}
 }
 
 // *****************************************************************************
-
-AssetType Level {}
-
-// *****************************************************************************
-
-AssetType MpegWad {
-	desc: 'The file containing all of the MPEG cutscenes.'
-	
-	ArrayAttribute story {
-		desc: 'A list of all the MPEG cutscenes.'
-		
-		AssetReferenceAttribute element {
-			allowed_asset_types: [
-				'Video'
-			]
-		}
-	}
-}
-
-AssetType MiscWad {
-	AssetReferenceAttribute debug_font {
-		allowed_asset_types: ['Texture' 'Binary']
-	}
-	
-	AssetReferenceAttribute irx {
-		allowed_asset_types: ['IrxModules' 'Binary']
-	}
-	
-	AssetReferenceAttribute save_game {
-		allowed_asset_types: ['Binary']
-	}
-	
-	AssetReferenceAttribute frontend_code {
-		allowed_asset_types: ['Binary']
-	}
-	
-	AssetReferenceAttribute frontend {
-		allowed_asset_types: ['Binary']
-	}
-	
-	AssetReferenceAttribute exit {
-		allowed_asset_types: ['Binary']
-	}
-	
-	AssetReferenceAttribute boot {
-		allowed_asset_types: ['Binary']
-	}
-	
-	AssetReferenceAttribute gadget {
-		allowed_asset_types: ['Binary']
-	}
-}
-
-AssetType IrxWad {
-	AssetReferenceAttribute sio2man  { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute mcman    { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute mcserv   { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute padman   { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute mtapman  { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute libsd    { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute 989snd   { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute stash    { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute inet     { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute netcnf   { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute inetctl  { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute msifrpc  { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute dev9     { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute smap     { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute libnetb  { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute ppp      { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute pppoe    { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute usbd     { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute lgaud    { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute eznetcnf { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute eznetctl { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute lgkbm    { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute streamer { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute astrm    { allowed_asset_types: ['Binary'] }
-}
-
-AssetType BootWad {
-	AssetReferenceAttribute english { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute french  { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute german  { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute spanish { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute italian { allowed_asset_types: ['Binary'] }
-	ArrayAttribute hud {
-		AssetReferenceAttribute element { allowed_asset_types: ['Binary'] }
-	}
-	ArrayAttribute boot_plates {
-		AssetReferenceAttribute element { allowed_asset_types: ['Binary'] }
-	}
-	AssetReferenceAttribute sram    { allowed_asset_types: ['Binary'] }
-}
-
-AssetType BonusWad {
-	ArrayAttribute credits_text {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	ArrayAttribute credits_images {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Texture' 'Binary']
-		}
-	}
-	ArrayAttribute demomenu {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	ArrayAttribute demoexit {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	ArrayAttribute cheat_images {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Texture' 'Binary']
-		}
-	}
-	
-	ArrayAttribute skill_images {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Texture' 'Binary']
-		}
-	}
-	
-	AssetReferenceAttribute trophy_image {
-		allowed_asset_types: ['Texture' 'Binary']
-	}
-	
-	AssetReferenceAttribute dige {
-		allowed_asset_types: ['Binary']
-	}
-}
-
-AssetType SpaceWad {
-	ArrayAttribute transitions {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-}
 
 AssetType ArmorWad {
 	ArrayAttribute armors {
@@ -302,6 +186,53 @@ AssetType AudioWad {
 		}
 	}
 }
+
+AssetType BonusWad {
+	ArrayAttribute credits_text {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	ArrayAttribute credits_images {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Texture' 'Binary']
+		}
+	}
+	ArrayAttribute demomenu {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	ArrayAttribute demoexit {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+	
+	ArrayAttribute cheat_images {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Texture' 'Binary']
+		}
+	}
+	
+	ArrayAttribute skill_images {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Texture' 'Binary']
+		}
+	}
+	
+	AssetReferenceAttribute trophy_image {
+		allowed_asset_types: ['Texture' 'Binary']
+	}
+	
+	AssetReferenceAttribute dige {
+		allowed_asset_types: ['Binary']
+	}
+}
+
+AssetType GadgetWad {}
 
 AssetType HudWad {
 	ArrayAttribute online_images {
@@ -499,12 +430,119 @@ AssetType HudWad {
 	}
 }
 
+AssetType MiscWad {
+	AssetReferenceAttribute debug_font {
+		allowed_asset_types: ['Texture' 'Binary']
+	}
+	
+	AssetReferenceAttribute irx {
+		allowed_asset_types: ['IrxModules' 'Binary']
+	}
+	
+	AssetReferenceAttribute save_game {
+		allowed_asset_types: ['Binary']
+	}
+	
+	AssetReferenceAttribute frontend_code {
+		allowed_asset_types: ['Binary']
+	}
+	
+	AssetReferenceAttribute frontend {
+		allowed_asset_types: ['Binary']
+	}
+	
+	AssetReferenceAttribute exit {
+		allowed_asset_types: ['Binary']
+	}
+	
+	AssetReferenceAttribute boot {
+		allowed_asset_types: ['Binary']
+	}
+	
+	AssetReferenceAttribute gadget {
+		allowed_asset_types: ['Binary']
+	}
+}
+
+AssetType IrxWad {
+	AssetReferenceAttribute sio2man  { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute mcman    { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute mcserv   { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute padman   { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute mtapman  { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute libsd    { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute 989snd   { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute stash    { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute inet     { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute netcnf   { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute inetctl  { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute msifrpc  { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute dev9     { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute smap     { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute libnetb  { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute ppp      { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute pppoe    { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute usbd     { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute lgaud    { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute eznetcnf { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute eznetctl { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute lgkbm    { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute streamer { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute astrm    { allowed_asset_types: ['Binary'] }
+}
+
+AssetType BootWad {
+	AssetReferenceAttribute english { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute french  { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute german  { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute spanish { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute italian { allowed_asset_types: ['Binary'] }
+	ArrayAttribute hud {
+		AssetReferenceAttribute element { allowed_asset_types: ['Binary'] }
+	}
+	ArrayAttribute boot_plates {
+		AssetReferenceAttribute element { allowed_asset_types: ['Binary'] }
+	}
+	AssetReferenceAttribute sram    { allowed_asset_types: ['Binary'] }
+}
+
+AssetType MpegWad {
+	desc: 'The file containing all of the MPEG cutscenes.'
+	
+	ArrayAttribute story {
+		desc: 'A list of all the MPEG cutscenes.'
+		
+		AssetReferenceAttribute element {
+			allowed_asset_types: [
+				'Mpeg'
+				'Binary'
+			]
+		}
+	}
+}
+
+AssetType Mpeg {
+	desc: 'A video file.'
+	
+	FileReferenceAttribute src {}
+}
+
 AssetType OnlineWad {
 	AssetReferenceAttribute data {
 		allowed_asset_types: ['Binary']
 	}
 	
 	ArrayAttribute transition_bgs {
+		AssetReferenceAttribute element {
+			allowed_asset_types: ['Binary']
+		}
+	}
+}
+
+ArrayType OnlineWad {}
+
+AssetType SpaceWad {
+	ArrayAttribute transitions {
 		AssetReferenceAttribute element {
 			allowed_asset_types: ['Binary']
 		}

@@ -25,34 +25,39 @@
 #include "../editor/fs_includes.h"
 #include "legacy_stream.h"
 
-struct iso_file_record {
+struct IsoFileRecord {
 	std::string name;
 	Sector32 lba;
 	uint32_t size;
 };
 
-struct iso_directory {
+struct IsoDirectory {
 	std::string name;
-	std::vector<iso_file_record> files;
-	std::vector<iso_directory> subdirs;
+	std::vector<IsoFileRecord> files;
+	std::vector<IsoDirectory> subdirs;
 	
 	// Fields below used internally by write_iso_filesystem.
-	iso_directory* parent = nullptr;
+	IsoDirectory* parent = nullptr;
 	size_t index = 0;
 	size_t parent_index = 0;
 	Sector32 lba = {0};
 	uint32_t size = 0;
 };
 
+static const s64 MAX_FILESYSTEM_SIZE_BYTES = 1500 * SECTOR_SIZE;
+
+// Read an ISO filesystem and output the root dir. Call exit(1) on failure.
+IsoDirectory read_iso_filesystem(FILE* iso);
+
 // Read an ISO filesystem and output a map (dest) of the files in the root
 // directory. Return true on success, false on failure.
-bool read_iso_filesystem(iso_directory& dest, std::string& volume_id, Buffer src);
+bool read_iso_filesystem(IsoDirectory& dest, std::string& volume_id, Buffer src);
 
 // Given a list of files including their LBA and size, write out an ISO
 // filesystem. This function is "dumb" in that it doesn't work out any positions
 // by itself.
-void write_iso_filesystem(stream& dest, iso_directory* root_dir);
+void write_iso_filesystem(stream& dest, IsoDirectory* root_dir);
 
-void print_file_record(iso_file_record& record, const char* row_format);
+void print_file_record(const IsoFileRecord& record, const char* row_format);
 
 #endif
