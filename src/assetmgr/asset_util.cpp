@@ -66,3 +66,79 @@ std::string asset_reference_to_string(const AssetReference& reference) {
 	}
 	return string;
 }
+
+GameInfo read_game_info(char* input) {
+	char* error_dest = nullptr;
+	WtfNode* root = wtf_parse(input, &error_dest);
+	if(error_dest) {
+		fprintf(stderr, "warning: Failed to read gameinfo.txt!\n");
+		return {};
+	}
+	
+	GameInfo info;
+	
+	const WtfAttribute* game = wtf_attribute(root, "game");
+	if(game && game->type == WTF_STRING) {
+		info.game = game->string;
+	} else {
+		fprintf(stderr, "warning: No game attribute in gameinfo.txt file.\n");
+	}
+	
+	const WtfAttribute* type = wtf_attribute(root, "type");
+	if(type && type->type == WTF_STRING) {
+		if(strcmp(game->string, "extracted") == 0) {
+			info.type = AssetPackType::EXTRACTED;
+		} else if(strcmp(game->string, "unpacked") == 0) {
+			info.type = AssetPackType::UNPACKED;
+		} else if(strcmp(game->string, "library") == 0) {
+			info.type = AssetPackType::LIBRARY;
+		} else {
+			info.type = AssetPackType::MOD;
+		}
+	} else {
+		fprintf(stderr, "warning: No type attribute in gameinfo.txt file.\n");
+	}
+	
+	const WtfAttribute* deps = wtf_attribute(root, "dependencies");
+	if(deps && deps->type == WTF_ARRAY) {
+		for(const WtfAttribute* element = deps->first_array_element; element != nullptr; element = element->next) {
+			if(element->type == WTF_STRING) {
+				info.dependencies.emplace_back(element->string);
+			}
+		}
+	}
+	
+	return info;
+}
+
+void write_game_info(FILE* file, const GameInfo& info) {
+	WtfWriter* ctx = wtf_begin_file(file);
+	
+	wtf_begin_attribute(ctx, "game");
+	wtf_write_string(ctx, info.game.c_str());
+	wtf_end_attribute(ctx);
+	
+	wtf_begin_attribute(ctx, "type");
+	if(info.type == AssetPackType::EXTRACTED) {
+		wtf_write_string(ctx, "extracted");
+	} else if(info.type == AssetPackType::UNPACKED) {
+		wtf_write_string(ctx, "unpacked");
+	} else if(info.type == AssetPackType::LIBRARY) {
+		wtf_write_string(ctx, "library");
+	} else {
+		wtf_write_string(ctx, "mod");
+	}
+	wtf_end_attribute(ctx);
+	
+	if(info.dependencies.size() > 0) {
+		wtf_begin_attribute(ctx, "dependencies");
+		wtf_begin_array(ctx);
+		for(const std::string& dep : info.dependencies) {
+			wtf_write_string(ctx, dep.c_str());
+		}
+		wtf_end_array(ctx);
+		wtf_end_attribute(ctx);
+	}
+	
+	wtf_end_file(ctx);
+}

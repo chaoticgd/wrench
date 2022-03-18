@@ -172,10 +172,12 @@ public:
 	
 	AssetFile& asset_file(fs::path relative_path);
 	
-	void write_asset_files() const;
+	void write() const;
 	
 	AssetPack* lower_precedence();
 	AssetPack* higher_precedence();
+	
+	GameInfo game_info;
 	
 protected:
 	AssetPack(AssetForest& forest, std::string name, bool is_writeable);
@@ -192,7 +194,7 @@ private:
 	friend AssetFile;
 	friend Asset;
 	
-	void read_asset_files();
+	void read();
 	
 	Asset* lookup_local_asset(const AssetReference& absolute_reference);
 	
@@ -228,7 +230,7 @@ public:
 			lower_pack->_higher_precedence = pack;
 			pack->_lower_precedence = lower_pack;
 		}
-		pack->read_asset_files();
+		pack->read();
 		return *pack;
 	}
 	

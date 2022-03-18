@@ -373,7 +373,11 @@ AssetFile& AssetPack::asset_file(fs::path relative_path) {
 	return *_asset_files.emplace_back(std::make_unique<AssetFile>(_forest, *this, relative_path)).get();
 }
 
-void AssetPack::write_asset_files() const {
+void AssetPack::write() const {
+	FILE* game_info_file = open_asset_write_handle("gameinfo.txt");
+	defer([&]() { fclose(game_info_file); });
+	write_game_info(game_info_file, game_info);
+	
 	for(const std::unique_ptr<AssetFile>& file : _asset_files) {
 		file->write();
 	}
@@ -382,7 +386,15 @@ void AssetPack::write_asset_files() const {
 AssetPack* AssetPack::lower_precedence() { return _lower_precedence; }
 AssetPack* AssetPack::higher_precedence() { return _higher_precedence; }
 
-void AssetPack::read_asset_files() {
+void AssetPack::read() {
+	std::string game_info_txt = read_text_file("gameinfo.txt");
+	if(!game_info_txt.empty()) {
+		char* game_info_txt_mutable = new char[game_info_txt.size() + 1]; 
+		defer([&]() { delete[] game_info_txt_mutable; });
+		memcpy(game_info_txt_mutable, game_info_txt.c_str(), game_info_txt.size() + 1);
+		game_info = read_game_info(game_info_txt_mutable);
+	}
+	
 	std::vector<fs::path> asset_file_paths = enumerate_asset_files();
 	std::sort(BEGIN_END(asset_file_paths));
 	for(const fs::path& relative_path : asset_file_paths) {
@@ -422,6 +434,9 @@ LooseAssetPack::LooseAssetPack(AssetForest& forest, std::string name, fs::path d
 	, _directory(directory) {}
 
 std::string LooseAssetPack::read_text_file(const fs::path& path) const {
+	if(!fs::exists(_directory/path)) {
+		return "";
+	}
 	auto bytes = read_file(_directory/path, "r");
 	return std::string((char*) bytes.data(), bytes.size());
 }

@@ -52,6 +52,9 @@ void extract_iso(const fs::path& output_dir, const std::string& iso_path, const 
 	GameAsset& game_asset = file.root().child<GameAsset>(game_tag);
 	BuildAsset& build = game_asset.child<BuildAsset>("base_game");
 	
+	pack.game_info.game = game_tag;
+	pack.game_info.type = AssetPackType::EXTRACTED;
+	
 	BuildAsset& global_wads = static_cast<BuildAsset&>(build.asset_file("globals/globals.asset"));
 	BuildAsset& files = static_cast<BuildAsset&>(build.asset_file("files/files.asset"));
 	
@@ -66,7 +69,7 @@ void extract_iso(const fs::path& output_dir, const std::string& iso_path, const 
 	extract_non_wads(files, file_assets, "", filesystem.root, iso, row_format);
 	files.set_files(file_assets);
 	
-	pack.write_asset_files();
+	pack.write();
 }
 
 static void unpack_ps2_logo(BuildAsset& build, FILE* iso, Region region) {
