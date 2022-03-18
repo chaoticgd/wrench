@@ -97,18 +97,12 @@ void ls(std::string iso_path) {
 	verify(iso, "Failed to open ISO file.");
 	defer([&]() { fclose(iso); });
 	
-	std::vector<u8> filesystem_buf = read_file(iso, 0, MAX_FILESYSTEM_SIZE_BYTES);
-	IsoDirectory root_dir;
-	std::string volume_id;
-	if(!read_iso_filesystem(root_dir, volume_id, Buffer(filesystem_buf))) {
-		fprintf(stderr, "error: Missing or invalid ISO filesystem!\n");
-		exit(1);
-	}
+	IsoFilesystem filesystem = read_iso_filesystem(iso);
 	
-	static const std::string RAC1_VOLUME_ID = "RATCHETANDCLANK                 ";
+	static const char* RAC1_VOLUME_ID = "RATCHETANDCLANK                 ";
 	
 	table_of_contents toc;
-	if(volume_id == RAC1_VOLUME_ID) {
+	if(memcmp(filesystem.pvd.volume_identifier, RAC1_VOLUME_ID, 32) == 0) {
 		toc = read_table_of_contents_rac1(iso);
 	} else {
 		toc = read_table_of_contents_rac234(iso);
@@ -710,20 +704,15 @@ void parse_pcsx2_stdout(std::string iso_path) {
 	// First we enumerate where all the files on the ISO are. Note that this
 	// command only works for stuff referenced by the filesystem.
 	std::vector<IsoFileRecord> files;
-	IsoDirectory root_dir;
-	root_dir.files.push_back({"primary volume descriptor", 0x10, SECTOR_SIZE});
-	std::string dummy_volume_id;
-	if(!read_iso_filesystem(root_dir, dummy_volume_id, filesystem_buf)) {
-		fprintf(stderr, "error: Failed to read ISO filesystem!\n");
-		exit(1);
-	}
+	files.push_back({"primary volume descriptor", 0x10, SECTOR_SIZE});
+	IsoFilesystem filesystem = read_iso_filesystem(iso);
 	std::function<void(IsoDirectory&)> enumerate_dir = [&](IsoDirectory& dir) {
 		for(IsoDirectory& subdir : dir.subdirs) {
 			enumerate_dir(subdir);
 		}
 		files.insert(files.end(), dir.files.begin(), dir.files.end());
 	};
-	enumerate_dir(root_dir);
+	enumerate_dir(filesystem.root);
 	
 	const char* before_text = "DvdRead: Reading Sector ";
 	

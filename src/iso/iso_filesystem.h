@@ -21,14 +21,95 @@
 
 #include <map>
 
-#include "../core/buffer.h"
-#include "../editor/fs_includes.h"
+#include <core/buffer.h>
+#include <core/filesystem.h>
 #include "legacy_stream.h"
+
+packed_struct(IsoLsbMsb16,
+	s16 lsb;
+	s16 msb;
+	
+	static IsoLsbMsb16 from_scalar(s16 lsb) {
+		IsoLsbMsb16 result;
+		result.lsb = lsb;
+		result.msb = byte_swap_16(lsb);
+		return result;
+	}
+)
+
+packed_struct(IsoLsbMsb32,
+	s32 lsb;
+	s32 msb;
+	
+	static IsoLsbMsb32 from_scalar(s32 lsb) {
+		IsoLsbMsb32 result;
+		result.lsb = lsb;
+		result.msb = byte_swap_32(lsb);
+		return result;
+	}
+)
+
+packed_struct(IsoDateTime,
+	u8 dont_care[17];
+)
+
+packed_struct(IsoDirectoryRecord,
+	u8 record_length;
+	u8 extended_attribute_record_length;
+	IsoLsbMsb32 lba;
+	IsoLsbMsb32 data_length;
+	u8 recording_date_time[7];
+	u8 file_flags;
+	u8 file_unit_size;
+	u8 interleave_gap_size;
+	IsoLsbMsb16 volume_sequence_number;
+	u8 identifier_length;
+	// Identifier follows.
+)
+static_assert(sizeof(IsoDirectoryRecord) == 0x21);
+
+packed_struct(IsoPrimaryVolumeDescriptor,
+	u8 volume_descriptor_type;
+	char standard_identifier[5];
+	u8 volume_descriptor_version;
+	u8 unused_7;
+	char system_identifier[32];
+	char volume_identifier[32];
+	u8 unused_48[8];
+	IsoLsbMsb32 volume_space_size;
+	u8 unused_58[32];
+	IsoLsbMsb16 volume_set_size;
+	IsoLsbMsb16 volume_sequence_number;
+	IsoLsbMsb16 logical_block_size;
+	IsoLsbMsb32 path_table_size;
+	s32 l_path_table;
+	s32 optional_l_path_table;
+	s32 m_path_table;
+	s32 optional_m_path_table;
+	IsoDirectoryRecord root_directory;
+	u8 root_directory_pad;
+	char volume_set_identifier[128];
+	char publisher_identifier[128];
+	char data_preparer_identifier[128];
+	char application_identifier[128];
+	char copyright_file_identifier[38];
+	char abstract_file_identifier[36];
+	char bibliographic_file_identifier[37];
+	IsoDateTime volume_creation_date_time;
+	IsoDateTime volume_modification_date_time;
+	IsoDateTime volume_expiration_date_time;
+	IsoDateTime volume_effective_date_time;
+	s8 file_structure_version;
+	u8 unused_372;
+	u8 application_use[512];
+	u8 reserved[653];
+)
+static_assert(sizeof(IsoPrimaryVolumeDescriptor) == 0x800);
 
 struct IsoFileRecord {
 	std::string name;
 	Sector32 lba;
-	uint32_t size;
+	u32 size;
 };
 
 struct IsoDirectory {
@@ -41,17 +122,22 @@ struct IsoDirectory {
 	size_t index = 0;
 	size_t parent_index = 0;
 	Sector32 lba = {0};
-	uint32_t size = 0;
+	u32 size = 0;
+};
+
+struct IsoFilesystem {
+	IsoPrimaryVolumeDescriptor pvd;
+	IsoDirectory root;
 };
 
 static const s64 MAX_FILESYSTEM_SIZE_BYTES = 1500 * SECTOR_SIZE;
 
 // Read an ISO filesystem and output the root dir. Call exit(1) on failure.
-IsoDirectory read_iso_filesystem(FILE* iso);
+IsoFilesystem read_iso_filesystem(FILE* iso);
 
 // Read an ISO filesystem and output a map (dest) of the files in the root
 // directory. Return true on success, false on failure.
-bool read_iso_filesystem(IsoDirectory& dest, std::string& volume_id, Buffer src);
+bool read_iso_filesystem(IsoFilesystem& dest, Buffer src);
 
 // Given a list of files including their LBA and size, write out an ISO
 // filesystem. This function is "dumb" in that it doesn't work out any positions

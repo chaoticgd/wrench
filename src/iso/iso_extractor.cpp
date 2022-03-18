@@ -27,7 +27,8 @@ enum class Region {
 	NTSC, PAL
 };
 
-static void unpack_ps2_logo(BuildAsset& parent, FILE* iso, Region region);
+static void unpack_ps2_logo(BuildAsset& build, FILE* iso, Region region);
+static void unpack_primary_volume_descriptor(BuildAsset& build, const IsoPrimaryVolumeDescriptor& pvd);
 static void extract_global_wads(BuildAsset& parent, const table_of_contents& toc, FILE* iso, const char* row_format);
 static void extract_level_wads(BuildAsset& parent, const table_of_contents& toc, FILE* iso, const char* row_format);
 static void extract_non_wads(Asset& parent, fs::path out, const IsoDirectory& dir, FILE* iso, const char* row_format);
@@ -41,8 +42,8 @@ void extract_iso(const fs::path& output_dir, const std::string& iso_path, const 
 	verify(iso, "Failed to open ISO file.");
 	defer([&]() { fclose(iso); });
 	
-	IsoDirectory root_dir = read_iso_filesystem(iso);
-	auto [game, region, game_tag] = identify_game(root_dir);
+	IsoFilesystem filesystem = read_iso_filesystem(iso);
+	auto [game, region, game_tag] = identify_game(filesystem.root);
 	table_of_contents toc = read_table_of_contents(iso, game);
 	
 	AssetForest forest;
@@ -58,14 +59,15 @@ void extract_iso(const fs::path& output_dir, const std::string& iso_path, const 
 	printf("------          ------------    --------\n");
 	
 	unpack_ps2_logo(build, iso, region);
+	unpack_primary_volume_descriptor(build, filesystem.pvd);
 	extract_global_wads(global_wads, toc, iso, row_format);
 	extract_level_wads(build, toc, iso, row_format);
-	extract_non_wads(files, "", root_dir, iso, row_format);
+	extract_non_wads(files, "", filesystem.root, iso, row_format);
 	
 	pack.write_asset_files();
 }
 
-static void unpack_ps2_logo(BuildAsset& parent, FILE* iso, Region region) {
+static void unpack_ps2_logo(BuildAsset& build, FILE* iso, Region region) {
 	std::vector<u8> logo = read_file(iso, 0, 12 * SECTOR_SIZE);
 	
 	u8 key = logo[0];
@@ -85,15 +87,31 @@ static void unpack_ps2_logo(BuildAsset& parent, FILE* iso, Region region) {
 	
 	logo.resize(width * height);
 	
-	FileReference ref = parent.file().write_binary_file("ps2_logo.png", [&](FILE* file) {
+	FileReference ref = build.file().write_binary_file("ps2_logo.png", [&](FILE* file) {
 		write_grayscale_png(file, "PS2 logo", logo, width, height);
 	});
 	
-	TextureAsset& texture = parent.child<TextureAsset>("ps2_logo");
+	TextureAsset& texture = build.child<TextureAsset>("ps2_logo");
 	texture.set_src(ref);
 	
-	parent.set_ps2_logo(texture);
-	parent.set_ps2_logo_key(key);
+	build.set_ps2_logo(texture);
+	build.set_ps2_logo_key(key);
+}
+
+static void unpack_primary_volume_descriptor(BuildAsset& build, const IsoPrimaryVolumeDescriptor& pvd) {
+	std::string vid(pvd.volume_identifier, sizeof(pvd.volume_identifier));
+	Asset& file = build.asset_file("primary_volume_descriptor");
+	PrimaryVolumeDescriptorAsset& asset = file.child<PrimaryVolumeDescriptorAsset>("primary_volume_descriptor");
+	asset.set_system_identifier(std::string(pvd.system_identifier, sizeof(pvd.system_identifier)));
+	asset.set_volume_identifier(std::string(pvd.volume_identifier, sizeof(pvd.volume_identifier)));
+	asset.set_volume_set_identifier(std::string(pvd.volume_set_identifier, sizeof(pvd.volume_set_identifier)));
+	asset.set_publisher_identifier(std::string(pvd.publisher_identifier, sizeof(pvd.publisher_identifier)));
+	asset.set_data_preparer_identifier(std::string(pvd.data_preparer_identifier, sizeof(pvd.data_preparer_identifier)));
+	asset.set_application_identifier(std::string(pvd.application_identifier, sizeof(pvd.application_identifier)));
+	asset.set_copyright_file_identifier(std::string(pvd.copyright_file_identifier, sizeof(pvd.copyright_file_identifier)));
+	asset.set_abstract_file_identifier(std::string(pvd.abstract_file_identifier, sizeof(pvd.abstract_file_identifier)));
+	asset.set_bibliographic_file_identifier(std::string(pvd.bibliographic_file_identifier, sizeof(pvd.bibliographic_file_identifier)));
+	build.set_primary_volume_descriptor(asset);
 }
 
 static void extract_global_wads(BuildAsset& parent, const table_of_contents& toc, FILE* iso, const char* row_format) {

@@ -55,6 +55,7 @@ AssetType Build {
 	
 	AssetReferenceAttribute ps2_logo     { allowed_asset_types: ['Texture'] }
 	IntegerAttribute        ps2_logo_key { min: 0 max: 255 }
+	AssetReferenceAttribute primary_volume_descriptor { allowed_asset_types: ['PrimaryVolumeDescriptor'] }
 	
 	AssetReferenceAttribute armor  { allowed_asset_types: ['ArmorWad' 'Binary'] }
 	AssetReferenceAttribute audio  { allowed_asset_types: ['AudioWad' 'Binary'] }
@@ -74,6 +75,18 @@ AssetType Build {
 			]
 		}
 	}
+}
+
+AssetType PrimaryVolumeDescriptor {
+	StringAttribute system_identifier {}
+	StringAttribute volume_identifier {}
+	StringAttribute volume_set_identifier {}
+	StringAttribute publisher_identifier {}
+	StringAttribute data_preparer_identifier {}
+	StringAttribute application_identifier {}
+	StringAttribute copyright_file_identifier {}
+	StringAttribute abstract_file_identifier {}
+	StringAttribute bibliographic_file_identifier {}
 }
 
 AssetType File {
