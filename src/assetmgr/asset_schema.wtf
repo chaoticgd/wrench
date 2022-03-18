@@ -75,6 +75,14 @@ AssetType Build {
 			]
 		}
 	}
+	
+	ArrayAttribute files {
+		AssetReferenceAttribute element {
+			allowed_asset_types: [
+				'File'
+			]
+		}
+	}
 }
 
 AssetType PrimaryVolumeDescriptor {
