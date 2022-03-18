@@ -27,7 +27,7 @@ enum class Region {
 	NTSC, PAL
 };
 
-static void extract_ps2_logo(BuildAsset& parent, FILE* iso, Region region);
+static void unpack_ps2_logo(BuildAsset& parent, FILE* iso, Region region);
 static void extract_global_wads(BuildAsset& parent, const table_of_contents& toc, FILE* iso, const char* row_format);
 static void extract_level_wads(BuildAsset& parent, const table_of_contents& toc, FILE* iso, const char* row_format);
 static void extract_non_wads(Asset& parent, fs::path out, const IsoDirectory& dir, FILE* iso, const char* row_format);
@@ -57,7 +57,7 @@ void extract_iso(const fs::path& output_dir, const std::string& iso_path, const 
 	printf("Sector          Size (bytes)    Filename\n");
 	printf("------          ------------    --------\n");
 	
-	extract_ps2_logo(build, iso, region);
+	unpack_ps2_logo(build, iso, region);
 	extract_global_wads(global_wads, toc, iso, row_format);
 	extract_level_wads(build, toc, iso, row_format);
 	extract_non_wads(files, "", root_dir, iso, row_format);
@@ -65,12 +65,12 @@ void extract_iso(const fs::path& output_dir, const std::string& iso_path, const 
 	pack.write_asset_files();
 }
 
-static void extract_ps2_logo(BuildAsset& parent, FILE* iso, Region region) {
+static void unpack_ps2_logo(BuildAsset& parent, FILE* iso, Region region) {
 	std::vector<u8> logo = read_file(iso, 0, 12 * SECTOR_SIZE);
 	
-	u8 k = logo[0];
+	u8 key = logo[0];
 	for(u8& pixel : logo) {
-		pixel ^= k;
+		pixel ^= key;
 		pixel = (pixel << 3) | (pixel >> 5);
 	}
 	
@@ -91,7 +91,9 @@ static void extract_ps2_logo(BuildAsset& parent, FILE* iso, Region region) {
 	
 	TextureAsset& texture = parent.child<TextureAsset>("ps2_logo");
 	texture.set_src(ref);
+	
 	parent.set_ps2_logo(texture);
+	parent.set_ps2_logo_key(key);
 }
 
 static void extract_global_wads(BuildAsset& parent, const table_of_contents& toc, FILE* iso, const char* row_format) {
