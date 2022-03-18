@@ -18,15 +18,20 @@
 
 #include "iso_extractor.h"
 
+#include <core/png.h>
 #include <assetmgr/asset_types.h>
-#include <editor/level_file_types.h>
 #include <iso/iso_filesystem.h>
 #include <iso/wad_identifier.h>
 
-void extract_global_wads(BuildAsset& parent, const table_of_contents& toc, FILE* iso, const char* row_format);
-void extract_level_wads(BuildAsset& parent, const table_of_contents& toc, FILE* iso, const char* row_format);
+enum class Region {
+	NTSC, PAL
+};
+
+static void extract_ps2_logo(BuildAsset& parent, FILE* iso, Region region);
+static void extract_global_wads(BuildAsset& parent, const table_of_contents& toc, FILE* iso, const char* row_format);
+static void extract_level_wads(BuildAsset& parent, const table_of_contents& toc, FILE* iso, const char* row_format);
 static void extract_non_wads(Asset& parent, fs::path out, const IsoDirectory& dir, FILE* iso, const char* row_format);
-static std::pair<Game, const char*> identify_game(const IsoDirectory& root);
+static std::tuple<Game, Region, const char*> identify_game(const IsoDirectory& root);
 static size_t get_global_wad_file_size(const GlobalWadInfo& global, const table_of_contents& toc);
 
 void extract_iso(const fs::path& output_dir, const std::string& iso_path, const char* row_format) {
@@ -37,14 +42,14 @@ void extract_iso(const fs::path& output_dir, const std::string& iso_path, const 
 	defer([&]() { fclose(iso); });
 	
 	IsoDirectory root_dir = read_iso_filesystem(iso);
-	auto [game, game_tag] = identify_game(root_dir);
+	auto [game, region, game_tag] = identify_game(root_dir);
 	table_of_contents toc = read_table_of_contents(iso, game);
 	
 	AssetForest forest;
 	AssetPack& pack = forest.mount<LooseAssetPack>(game_tag, output_dir);
 	AssetFile& file = pack.asset_file("build.asset");
 	GameAsset& game_asset = file.root().child<GameAsset>(game_tag);
-	BuildAsset& build = game_asset.child<BuildAsset>("base_game_packed");
+	BuildAsset& build = game_asset.child<BuildAsset>("base_game");
 	
 	BuildAsset& global_wads = static_cast<BuildAsset&>(build.asset_file("globals/globals.asset"));
 	Asset& files = build.asset_file("files/files.asset");
@@ -52,6 +57,7 @@ void extract_iso(const fs::path& output_dir, const std::string& iso_path, const 
 	printf("Sector          Size (bytes)    Filename\n");
 	printf("------          ------------    --------\n");
 	
+	extract_ps2_logo(build, iso, region);
 	extract_global_wads(global_wads, toc, iso, row_format);
 	extract_level_wads(build, toc, iso, row_format);
 	extract_non_wads(files, "", root_dir, iso, row_format);
@@ -59,7 +65,36 @@ void extract_iso(const fs::path& output_dir, const std::string& iso_path, const 
 	pack.write_asset_files();
 }
 
-void extract_global_wads(BuildAsset& parent, const table_of_contents& toc, FILE* iso, const char* row_format) {
+static void extract_ps2_logo(BuildAsset& parent, FILE* iso, Region region) {
+	std::vector<u8> logo = read_file(iso, 0, 12 * SECTOR_SIZE);
+	
+	u8 k = logo[0];
+	for(u8& pixel : logo) {
+		pixel ^= k;
+		pixel = (pixel << 3) | (pixel >> 5);
+	}
+	
+	s32 width, height;
+	if(region == Region::PAL) {
+		width = 344;
+		height = 71;
+	} else {
+		width = 384;
+		height = 64;
+	}
+	
+	logo.resize(width * height);
+	
+	FileReference ref = parent.file().write_binary_file("ps2_logo.png", [&](FILE* file) {
+		write_grayscale_png(file, "PS2 logo", logo, width, height);
+	});
+	
+	TextureAsset& texture = parent.child<TextureAsset>("ps2_logo");
+	texture.set_src(ref);
+	parent.set_ps2_logo(texture);
+}
+
+static void extract_global_wads(BuildAsset& parent, const table_of_contents& toc, FILE* iso, const char* row_format) {
 	for(const GlobalWadInfo& global : toc.globals) {
 		auto [wad_game, wad_type, name] = identify_wad(global.header);
 		std::string file_name = std::string(name) + ".wad";
@@ -87,7 +122,7 @@ void extract_global_wads(BuildAsset& parent, const table_of_contents& toc, FILE*
 	}
 }
 
-void extract_level_wads(BuildAsset& parent, const table_of_contents& toc, FILE* iso, const char* row_format) {
+static void extract_level_wads(BuildAsset& parent, const table_of_contents& toc, FILE* iso, const char* row_format) {
 	for(const LevelInfo& level : toc.levels) {
 		std::string asset_path = stringf("levels/%02d/level.asset", level.level_table_index);
 		LevelAsset& level_asset = parent.asset_file(asset_path).child<LevelAsset>(std::to_string(level.level_table_index));
@@ -147,45 +182,47 @@ static void extract_non_wads(Asset& parent, fs::path out, const IsoDirectory& di
 	}
 }
 
-static const std::map<std::string, Game> ELF_FILE_NAMES = {
-	{"pbpx_955.16", Game::RAC1}, // japan original
-	{"sced_510.75", Game::RAC1}, // eu demo
-	{"sces_509.16", Game::RAC1}, // eu black label/plantinum
-	{"scus_971.99", Game::RAC1}, // us original/greatest hits
-	{"scus_972.09", Game::RAC1}, // us demo 1
-	{"scus_972.40", Game::RAC1}, // us demo 2
-	{"scaj_200.52", Game::RAC2}, // japan original
-	{"sces_516.07", Game::RAC2}, // eu original/platinum
-	{"scus_972.68", Game::RAC2}, // us greatest hits
-	{"scus_972.68", Game::RAC2}, // us original
-	{"scus_973.22", Game::RAC2}, // us demo
-	{"scus_973.23", Game::RAC2}, // us retail employees demo
-	{"scus_973.74", Game::RAC2}, // us rac2 + jak demo
-	{"pcpx_966.53", Game::RAC3}, // japan promotional
-	{"sced_528.47", Game::RAC3}, // eu demo
-	{"sced_528.48", Game::RAC3}, // r&c3 + sly 2 demo
-	{"sces_524.56", Game::RAC3}, // eu original/plantinum
-	{"scps_150.84", Game::RAC3}, // japan original
-	{"scus_973.53", Game::RAC3}, // us original
-	{"scus_974.11", Game::RAC3}, // us demo
-	{"scus_974.13", Game::RAC3}, // us beta
-	{"tces_524.56", Game::RAC3}, // eu beta trial code
-	{"pcpx_980.17", Game::DL}, // japan demo
-	{"sced_536.60", Game::DL}, // jak x glaiator demo
-	{"sces_532.85", Game::DL}, // eu original/platinum
-	{"scps_150.99", Game::DL}, // japan special gift package
-	{"scps_193.28", Game::DL}, // japan reprint
-	{"scus_974.65", Game::DL}, // us original
-	{"scus_974.85", Game::DL}, // us demo
-	{"scus_974.87", Game::DL} // us public beta
+static const std::map<std::string, std::pair<Game, Region>> ELF_FILE_NAMES = {
+	{"pbpx_955.16", {Game::RAC1, Region::NTSC}}, // japan original
+	{"sced_510.75", {Game::RAC1, Region::PAL}}, // eu demo
+	{"sces_509.16", {Game::RAC1, Region::PAL}}, // eu black label/plantinum
+	{"scus_971.99", {Game::RAC1, Region::NTSC}}, // us original/greatest hits
+	{"scus_972.09", {Game::RAC1, Region::NTSC}}, // us demo 1
+	{"scus_972.40", {Game::RAC1, Region::NTSC}}, // us demo 2
+	{"scaj_200.52", {Game::RAC2, Region::NTSC}}, // japan original
+	{"sces_516.07", {Game::RAC2, Region::PAL}}, // eu original/platinum
+	{"scus_972.68", {Game::RAC2, Region::NTSC}}, // us greatest hits
+	{"scus_972.68", {Game::RAC2, Region::NTSC}}, // us original
+	{"scus_973.22", {Game::RAC2, Region::NTSC}}, // us demo
+	{"scus_973.23", {Game::RAC2, Region::NTSC}}, // us retail employees demo
+	{"scus_973.74", {Game::RAC2, Region::NTSC}}, // us rac2 + jak demo
+	{"pcpx_966.53", {Game::RAC3, Region::NTSC}}, // japan promotional
+	{"sced_528.47", {Game::RAC3, Region::PAL}}, // eu demo
+	{"sced_528.48", {Game::RAC3, Region::PAL}}, // r&c3 + sly 2 demo
+	{"sces_524.56", {Game::RAC3, Region::PAL}}, // eu original/plantinum
+	{"scps_150.84", {Game::RAC3, Region::NTSC}}, // japan original
+	{"scus_973.53", {Game::RAC3, Region::NTSC}}, // us original
+	{"scus_974.11", {Game::RAC3, Region::NTSC}}, // us demo
+	{"scus_974.13", {Game::RAC3, Region::NTSC}}, // us beta
+	{"tces_524.56", {Game::RAC3, Region::PAL}}, // eu beta trial code
+	{"pcpx_980.17", {Game::DL, Region::NTSC}}, // japan demo
+	{"sced_536.60", {Game::DL, Region::PAL}}, // jak x glaiator demo
+	{"sces_532.85", {Game::DL, Region::PAL}}, // eu original/platinum
+	{"scps_150.99", {Game::DL, Region::NTSC}}, // japan special gift package
+	{"scps_193.28", {Game::DL, Region::NTSC}}, // japan reprint
+	{"scus_974.65", {Game::DL, Region::NTSC}}, // us original
+	{"scus_974.85", {Game::DL, Region::NTSC}}, // us demo
+	{"scus_974.87", {Game::DL, Region::NTSC}} // us public beta
 };
 
-static std::pair<Game, const char*> identify_game(const IsoDirectory& root) {
-	Game game;
+static std::tuple<Game, Region, const char*> identify_game(const IsoDirectory& root) {
+	Game game = Game::UNKNOWN;
+	Region region = Region::NTSC;
 	for(const IsoFileRecord& file : root.files) {
 		auto iter = ELF_FILE_NAMES.find(file.name);
 		if(iter != ELF_FILE_NAMES.end()) {
-			game = iter->second;
+			game = iter->second.first;
+			region = iter->second.second;
 			break;
 		}
 	}
@@ -204,7 +241,7 @@ static std::pair<Game, const char*> identify_game(const IsoDirectory& root) {
 				"(to Game 1 for R&C1, Game 4 for Deadlocked/Gladiator, etc).\n");
 		}
 	}
-	return {game, tag};
+	return {game, region, tag};
 }
 
 static size_t get_global_wad_file_size(const GlobalWadInfo& global, const table_of_contents& toc) {

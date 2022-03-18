@@ -48,19 +48,23 @@ AssetType Game {
 	}
 }
 
+// *****************************************************************************
+
 AssetType Build {
 	desc: 'A build of the game.'
 	
-	AssetReferenceAttribute armor  { allowed_asset_types: ['ArmorWad' 'Binary'] }
-	AssetReferenceAttribute audio  { allowed_asset_types: ['AudioWad' 'Binary'] }
-	AssetReferenceAttribute bonus  { allowed_asset_types: ['BonusWad' 'Binary'] }
-	AssetReferenceAttribute gadget { allowed_asset_types: ['GadgetWad' 'Binary'] }
-	AssetReferenceAttribute hud    { allowed_asset_types: ['HudWad' 'Binary'] }
-	AssetReferenceAttribute misc   { allowed_asset_types: ['MiscWad' 'Binary'] }
-	AssetReferenceAttribute mpeg   { allowed_asset_types: ['MpegWad' 'Binary'] }
-	AssetReferenceAttribute online { allowed_asset_types: ['OnlineWad' 'Binary'] }
-	AssetReferenceAttribute scene  { allowed_asset_types: ['SceneWad' 'Binary'] }
-	AssetReferenceAttribute space  { allowed_asset_types: ['SpaceWad' 'Binary'] }
+	AssetReferenceAttribute ps2_logo { allowed_asset_types: ['Texture'] }
+	
+	AssetReferenceAttribute armor    { allowed_asset_types: ['ArmorWad' 'Binary'] }
+	AssetReferenceAttribute audio    { allowed_asset_types: ['AudioWad' 'Binary'] }
+	AssetReferenceAttribute bonus    { allowed_asset_types: ['BonusWad' 'Binary'] }
+	AssetReferenceAttribute gadget   { allowed_asset_types: ['GadgetWad' 'Binary'] }
+	AssetReferenceAttribute hud      { allowed_asset_types: ['HudWad' 'Binary'] }
+	AssetReferenceAttribute misc     { allowed_asset_types: ['MiscWad' 'Binary'] }
+	AssetReferenceAttribute mpeg     { allowed_asset_types: ['MpegWad' 'Binary'] }
+	AssetReferenceAttribute online   { allowed_asset_types: ['OnlineWad' 'Binary'] }
+	AssetReferenceAttribute scene    { allowed_asset_types: ['SceneWad' 'Binary'] }
+	AssetReferenceAttribute space    { allowed_asset_types: ['SpaceWad' 'Binary'] }
 	
 	ArrayAttribute levels {
 		AssetReferenceAttribute element {

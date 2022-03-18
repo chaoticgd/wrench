@@ -34,7 +34,7 @@ void ZippedAssetPack::write_text_file(const fs::path& path, const char* contents
 	assert(0);
 }
 
-void ZippedAssetPack::write_binary_file(const fs::path& path, Buffer contents) const {
+void ZippedAssetPack::write_binary_file(const fs::path& path, std::function<void(FILE*)> callback) const {
 	assert(0);
 }
 

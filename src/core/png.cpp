@@ -122,7 +122,7 @@ void write_png(const char* path, const Texture& texture) {
 	
 	png_set_IHDR(png_ptr, info_ptr,
 		texture.width, texture.height, 8,
-		PNG_COLOR_TYPE_PALETTE, PNG_INTERLACE_NONE, 
+		PNG_COLOR_TYPE_PALETTE, PNG_INTERLACE_NONE,
 		PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
 	
 	assert(texture.palette.top <= 256);
@@ -154,4 +154,90 @@ void write_png(const char* path, const Texture& texture) {
 	
 	png_destroy_write_struct(&png_ptr, &info_ptr);
 	fclose(file);
+}
+
+std::tuple<std::vector<u8>, s32, s32> read_grayscale_png(FILE* file, const char* context) {
+	png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING,
+		nullptr, nullptr, nullptr);
+	if(!png_ptr) {
+		printf("warning: png_create_read_struct failed (%s).\n", context);
+		fclose(file);
+		return {};
+	}
+	
+	png_infop info_ptr = png_create_info_struct(png_ptr);
+	if(!info_ptr) {
+		printf("warning: png_create_info_struct failed (%s).\n", context);
+		png_destroy_read_struct(&png_ptr, nullptr, nullptr);
+		fclose(file);
+		return {};
+	}
+	
+	if(setjmp(png_jmpbuf(png_ptr))) {
+		printf("warning: Error handler invoked when reading PNG (%s).\n", context);
+		png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
+		fclose(file);
+		return {};
+	}
+	
+	png_init_io(png_ptr, file);
+	png_read_info(png_ptr, info_ptr);
+	
+	u32 width;
+	u32 height;
+	s32 bit_depth;
+	s32 colour_type;
+	s32 interlace_type;
+	assert(png_get_IHDR(png_ptr, info_ptr,
+		&width, &height,
+		&bit_depth, &colour_type,
+		&interlace_type, nullptr, nullptr) != 0);
+	
+	verify(colour_type == PNG_COLOR_TYPE_GRAY && bit_depth == 8,
+		"%s must be a grayscale 8bpc PNG.", context);
+	
+	assert(png_get_rowbytes(png_ptr, info_ptr) == width);
+	std::vector<u8> data(width * height);
+	std::vector<png_bytep> row_pointers(height);
+	for(u32 y = 0; y < height; y++) {
+		row_pointers[y] = &data[y * width];
+	}
+	png_read_image(png_ptr, row_pointers.data());
+	png_read_end(png_ptr, info_ptr);
+	
+	png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
+	
+	return {data, width, height};
+}
+
+void write_grayscale_png(FILE* file, const char* context, std::vector<u8> data, s32 width, s32 height) {
+	assert(data.size() == width * height);
+	
+	png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+	verify(png_ptr, "png_create_write_struct failed.");
+	
+	png_infop info_ptr = png_create_info_struct(png_ptr);
+	verify(info_ptr, "png_create_info_struct failed.");
+	
+	verify(!setjmp(png_jmpbuf(png_ptr)), "Failed to encode PNG file (%s).", context);
+	
+	png_init_io(png_ptr, file);
+	
+	png_set_IHDR(png_ptr, info_ptr,
+		width, height, 8,
+		PNG_COLOR_TYPE_GRAY, PNG_INTERLACE_NONE,
+		PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
+	
+	png_write_info(png_ptr, info_ptr);
+	
+	std::vector<png_bytep> row_pointers(height);
+	for(s32 y = 0; y < height; y++) {
+		s32 row_offset = y * width;
+		row_pointers[y] = &data[y * width];
+	}
+	
+	png_write_image(png_ptr, row_pointers.data());
+	png_write_end(png_ptr, info_ptr);
+	
+	png_destroy_write_struct(&png_ptr, &info_ptr);
 }

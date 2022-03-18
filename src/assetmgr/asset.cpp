@@ -273,7 +273,15 @@ FileReference AssetFile::write_text_file(const fs::path& path, const char* conte
 }
 
 FileReference AssetFile::write_binary_file(const fs::path& path, Buffer contents) const {
-	_pack.write_binary_file(_relative_directory/path, contents);
+	_pack.write_binary_file(_relative_directory/path, [&](FILE* file) {
+		verify(fwrite(contents.lo, contents.size(), 1, file) == 1,
+			"Failed to write to file '%s'.", path.string().c_str());
+	});
+	return FileReference(*this, path);
+}
+
+FileReference AssetFile::write_binary_file(const fs::path& path, std::function<void(FILE*)> callback) const {
+	_pack.write_binary_file(_relative_directory/path, callback);
 	return FileReference(*this, path);
 }
 
@@ -427,9 +435,13 @@ void LooseAssetPack::write_text_file(const fs::path& path, const char* contents)
 	write_file(_directory/path, Buffer((u8*) contents, (u8*) contents + strlen(contents)), "w");
 }
 
-void LooseAssetPack::write_binary_file(const fs::path& path, Buffer contents) const {
-	fs::create_directories((_directory/path).parent_path());
-	write_file(_directory/path, contents, "wb");
+void LooseAssetPack::write_binary_file(const fs::path& path, std::function<void(FILE*)> callback) const {
+	fs::path full_path = _directory/path;
+	fs::create_directories(full_path.parent_path());
+	FILE* file = fopen(full_path.string().c_str(), "wb");
+	verify(file, "Failed to open file '%s' for writing.", full_path.string().c_str());
+	callback(file);
+	fclose(file);
 }
 
 void LooseAssetPack::extract_binary_file(const fs::path& relative_dest, Buffer prepend, FILE* src, s64 offset, s64 size) const {

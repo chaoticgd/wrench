@@ -25,4 +25,7 @@
 Opt<Texture> read_png(const char* path);
 void write_png(const char* path, const Texture& texture);
 
+std::tuple<std::vector<u8>, s32, s32> read_grayscale_png(FILE* file, const char* context);
+void write_grayscale_png(FILE* file, const char* context, std::vector<u8> data, s32 width, s32 height);
+
 #endif
