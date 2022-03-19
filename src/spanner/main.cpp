@@ -28,6 +28,7 @@
 #include <spanner/wad_file.h>
 #include <spanner/globals/mpeg_wad.h>
 #include <spanner/globals/misc_wad.h>
+#include <spanner/globals/bonus_wad.h>
 
 static void unpack(const char* input_path, const char* output_path);
 static void extract(fs::path input_path, fs::path output_path);
@@ -107,6 +108,10 @@ static void unpack(const char* input_path, const char* output_path) {
 	BinaryAsset* misc_wad = dynamic_cast<BinaryAsset*>(build->misc());
 	verify(misc_wad, "Invalid misc.wad asset.");
 	unpack_misc_wad(dest_pack, *misc_wad);
+	
+	BinaryAsset* bonus_wad = dynamic_cast<BinaryAsset*>(build->bonus());
+	verify(bonus_wad, "Invalid bonus.wad asset.");
+	unpack_bonus_wad(dest_pack, *bonus_wad);
 	
 	dest_pack.write();
 }

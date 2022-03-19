@@ -41,14 +41,14 @@ void unpack_misc_wad(AssetPack& dest, BinaryAsset& src) {
 	auto [file, header] = open_wad_file<MiscWadHeaderDL>(src);
 	AssetFile& asset_file = dest.asset_file("misc/misc.asset");
 	
-	MiscWadAsset& misc_wad = asset_file.root().child<MiscWadAsset>("misc");
-	misc_wad.set_debug_font(unpack_binary(misc_wad, file, header.debug_font, "debug_font", "debug_font.bin"));
-	misc_wad.set_irx(unpack_irx_modules(misc_wad, file, header.irx));
-	misc_wad.set_save_game(unpack_binary(misc_wad, file, header.save_game, "save_game", "save_game.bin"));
-	misc_wad.set_frontend_code(unpack_binary(misc_wad, file, header.frontend_code, "frontend_code", "frontend_code.bin"));
-	misc_wad.set_exit(unpack_binary(misc_wad, file, header.exit, "exit", "exit.bin"));
-	misc_wad.set_boot(unpack_boot_wad(misc_wad, file, header.bootwad));
-	misc_wad.set_gadget(unpack_binary(misc_wad, file, header.gadget, "gadget", "gadget.bin"));
+	MiscWadAsset& wad = asset_file.root().child<MiscWadAsset>("misc");
+	wad.set_debug_font(unpack_binary(wad, file, header.debug_font, "debug_font", "debug_font.bin"));
+	wad.set_irx(unpack_irx_modules(wad, file, header.irx));
+	wad.set_save_game(unpack_binary(wad, file, header.save_game, "save_game", "save_game.bin"));
+	wad.set_frontend_code(unpack_binary(wad, file, header.frontend_code, "frontend_code", "frontend_code.bin"));
+	wad.set_exit(unpack_binary(wad, file, header.exit, "exit", "exit.bin"));
+	wad.set_boot(unpack_boot_wad(wad, file, header.bootwad));
+	wad.set_gadget(unpack_binary(wad, file, header.gadget, "gadget", "gadget.bin"));
 }
 
 packed_struct(IrxHeader,
@@ -140,8 +140,8 @@ static Asset& unpack_boot_wad(Asset& parent, const FileHandle& src, SectorRange 
 	boot.set_german(unpack_compressed_binary(boot, bytes, header.german, "german"));
 	boot.set_spanish(unpack_compressed_binary(boot, bytes, header.spanish, "spanish"));
 	boot.set_italian(unpack_compressed_binary(boot, bytes, header.italian, "italian"));
-	boot.set_hud(unpack_compressed_binaries(boot, bytes, header.hudwad, 6, "hud"));
-	boot.set_boot_plates(unpack_compressed_binaries(boot, bytes, header.boot_plates, 4, "boot_plates"));
+	boot.set_hud(unpack_compressed_binaries(boot, bytes, ARRAY_PAIR(header.hudwad), "hud"));
+	boot.set_boot_plates(unpack_compressed_binaries(boot, bytes, ARRAY_PAIR(header.boot_plates), "boot_plates"));
 	boot.set_sram(unpack_compressed_binary(boot, bytes, header.sram, "sram"));
 	
 	return boot;
