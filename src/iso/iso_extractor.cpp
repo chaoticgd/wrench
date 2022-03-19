@@ -47,7 +47,7 @@ void extract_iso(const fs::path& output_dir, const std::string& iso_path, const 
 	table_of_contents toc = read_table_of_contents(iso, game);
 	
 	AssetForest forest;
-	AssetPack& pack = forest.mount<LooseAssetPack>(game_tag, output_dir);
+	AssetPack& pack = forest.mount<LooseAssetPack>(game_tag, output_dir, true);
 	AssetFile& file = pack.asset_file("build.asset");
 	GameAsset& game_asset = file.root().child<GameAsset>(game_tag);
 	BuildAsset& build = game_asset.child<BuildAsset>("base_game");

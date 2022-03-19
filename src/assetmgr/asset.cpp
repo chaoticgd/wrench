@@ -436,8 +436,8 @@ Asset* AssetForest::lookup_asset(const AssetReference& absolute_reference) {
 
 // *****************************************************************************
 
-LooseAssetPack::LooseAssetPack(AssetForest& forest, std::string name, fs::path directory)
-	: AssetPack(forest, std::move(name), true)
+LooseAssetPack::LooseAssetPack(AssetForest& forest, std::string name, fs::path directory, bool is_writeable)
+	: AssetPack(forest, std::move(name), is_writeable)
 	, _directory(directory) {}
 
 std::vector<u8> LooseAssetPack::read_binary(const FileHandle& file, ByteRange64 range) const {
@@ -462,11 +462,13 @@ std::vector<u8> LooseAssetPack::read_binary_file(const fs::path& path) const {
 }
 
 void LooseAssetPack::write_text_file(const fs::path& path, const char* contents) const {
+	assert(is_writeable());
 	fs::create_directories((_directory/path).parent_path());
 	write_file(_directory/path, Buffer((u8*) contents, (u8*) contents + strlen(contents)), "w");
 }
 
 void LooseAssetPack::write_binary_file(const fs::path& path, std::function<void(FILE*)> callback) const {
+	assert(is_writeable());
 	fs::path full_path = _directory/path;
 	fs::create_directories(full_path.parent_path());
 	FILE* file = fopen(full_path.string().c_str(), "wb");
@@ -476,6 +478,7 @@ void LooseAssetPack::write_binary_file(const fs::path& path, std::function<void(
 }
 
 void LooseAssetPack::extract_binary_file(const fs::path& relative_dest, Buffer prepend, FILE* src, s64 offset, s64 size) const {
+	assert(is_writeable());
 	fs::create_directories((_directory/relative_dest).parent_path());
 	std::string path = (_directory/relative_dest).string();
 	FILE* file = fopen(path.c_str(), "wb");

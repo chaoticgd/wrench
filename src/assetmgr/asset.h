@@ -247,7 +247,7 @@ private:
 
 class LooseAssetPack : public AssetPack {
 public:
-	LooseAssetPack(AssetForest& forest, std::string name, fs::path directory);
+	LooseAssetPack(AssetForest& forest, std::string name, fs::path directory, bool is_writeable);
 	
 	std::vector<u8> read_binary(const FileHandle& file, ByteRange64 range) const override;
 	

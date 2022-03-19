@@ -81,11 +81,11 @@ int main(int argc, char** argv) {
 static void unpack(const char* input_path, const char* output_path) {
 	AssetForest forest;
 	
-	AssetPack& src_pack = forest.mount<LooseAssetPack>("extracted", input_path);
+	AssetPack& src_pack = forest.mount<LooseAssetPack>("extracted", input_path, false);
 	verify(src_pack.game_info.type == AssetPackType::EXTRACTED,
 		"Unpacking can only be done on an extracted asset pack.");
 	
-	AssetPack& dest_pack = forest.mount<LooseAssetPack>("unpacked", output_path);
+	AssetPack& dest_pack = forest.mount<LooseAssetPack>("unpacked", output_path, true);
 	dest_pack.game_info.game = src_pack.game_info.game;
 	dest_pack.game_info.type = AssetPackType::UNPACKED;
 	
