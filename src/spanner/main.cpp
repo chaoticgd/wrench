@@ -26,6 +26,7 @@
 #include <engine/collision.h>
 #include <spanner/tests.h>
 #include <spanner/wad_file.h>
+#include <spanner/mpeg_wad.h>
 #include <spanner/misc_wad.h>
 
 static void unpack(const char* input_path, const char* output_path);
@@ -82,6 +83,8 @@ static void unpack(const char* input_path, const char* output_path) {
 	AssetForest forest;
 	
 	AssetPack& src_pack = forest.mount<LooseAssetPack>("extracted", input_path, false);
+	verify(!src_pack.game_info.game.empty(),
+		"Source asset pack has invalid 'game' attribute in gameinfo.txt.");
 	verify(src_pack.game_info.type == AssetPackType::EXTRACTED,
 		"Unpacking can only be done on an extracted asset pack.");
 	
@@ -89,21 +92,21 @@ static void unpack(const char* input_path, const char* output_path) {
 	dest_pack.game_info.game = src_pack.game_info.game;
 	dest_pack.game_info.type = AssetPackType::UNPACKED;
 	
-	std::string game_ref = stringf("/Game:%s", dest_pack.game_info.game.c_str());
+	std::string game_ref = stringf("/Game:%s", src_pack.game_info.game.c_str());
 	GameAsset* game = dynamic_cast<GameAsset*>(forest.lookup_asset(parse_asset_reference(game_ref.c_str())));
-	verify(game, "Invalid Game asset.");
+	verify(game, "Invalid Game asset '%s'.", game_ref.c_str());
 	std::vector<Asset*> builds = game->builds();
 	verify(builds.size() == 1, "Extracted asset pack must have exactly one build.");
 	BuildAsset* build = dynamic_cast<BuildAsset*>(builds[0]);
 	verify(build, "Invalid Build asset.");
 	
-	BinaryAsset* misc_wad_asset = dynamic_cast<BinaryAsset*>(build->misc());
-	verify(misc_wad_asset, "Invalid MiscWad asset.");
+	BinaryAsset* mpeg_wad = dynamic_cast<BinaryAsset*>(build->mpeg());
+	verify(mpeg_wad, "Invalid mpeg.wad asset.");
+	unpack_mpeg_wad(dest_pack, *mpeg_wad);
 	
-	FileHandle misc_wad = misc_wad_asset->file().open_binary_file_for_reading(misc_wad_asset->src());
-	s32 header_size = Buffer(misc_wad.read_binary(ByteRange64{0, 4})).read<s32>(0, "header");
-	std::vector<u8> header_bytes = misc_wad.read_binary(ByteRange64{0, header_size});
-	unpack_misc_wad(dest_pack, misc_wad, header_bytes);
+	BinaryAsset* misc_wad = dynamic_cast<BinaryAsset*>(build->misc());
+	verify(misc_wad, "Invalid misc.wad asset.");
+	unpack_misc_wad(dest_pack, *misc_wad);
 	
 	dest_pack.write();
 }

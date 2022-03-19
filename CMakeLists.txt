@@ -119,12 +119,14 @@ target_link_libraries(wrenchengine wrenchcore)
 
 add_executable(spanner
 	src/spanner/main.cpp
+	src/spanner/mpeg_wad.cpp
 	src/spanner/misc_wad.cpp
 	src/spanner/wad_file.cpp
 	src/spanner/gameplay.cpp
 	src/spanner/primary.cpp
 	src/spanner/assets.cpp
 	src/spanner/tests.cpp
+	src/spanner/spanner_util.cpp
 )
 target_link_libraries(spanner wrenchcore wrench_assetmgr wrenchengine)
 

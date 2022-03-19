@@ -247,6 +247,7 @@ public:
 			lower_pack->_higher_precedence = pack;
 			pack->_lower_precedence = lower_pack;
 		}
+		pack->read();
 		return *pack;
 	}
 	

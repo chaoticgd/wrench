@@ -159,9 +159,18 @@ struct ParseError : std::exception {
 
 static const s64 SECTOR_SIZE = 0x800;
 
+struct ByteRange64 {
+	s64 offset;
+	s64 size;
+};
+
 packed_struct(ByteRange,
 	s32 offset;
 	s32 size;
+	
+	ByteRange64 bytes() {
+		return {offset, size};
+	}
 )
 
 packed_struct(ArrayRange,
@@ -185,11 +194,6 @@ packed_struct(Sector32,
 	}
 )
 
-struct ByteRange64 {
-	s64 offset;
-	s64 size;
-};
-
 packed_struct(SectorRange,
 	Sector32 offset;
 	Sector32 size;
@@ -209,6 +213,10 @@ packed_struct(SectorByteRange,
 	
 	Sector32 end() const {
 		return {offset.sectors + Sector32::size_from_bytes(size_bytes).sectors};
+	}
+	
+	ByteRange64 bytes() {
+		return {offset.bytes(), size_bytes};
 	}
 )
 

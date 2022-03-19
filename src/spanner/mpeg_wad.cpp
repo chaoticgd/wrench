@@ -16,11 +16,18 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef SPANNER_MISC_WAD_H
-#define SPANNER_MISC_WAD_H
+#include "mpeg_wad.h"
 
-#include <spanner/spanner_util.h>
+struct MpegWadHeaderDL {
+	/* 0x0 */ s32 header_size;
+	/* 0x4 */ Sector32 sector;
+	/* 0x8 */ SectorByteRange story[200];
+};
 
-void unpack_misc_wad(AssetPack& dest, BinaryAsset& src);
-
-#endif
+void unpack_mpeg_wad(AssetPack& dest, BinaryAsset& src) {
+	auto [file, header] = open_wad_file<MpegWadHeaderDL>(src);
+	AssetFile& asset_file = dest.asset_file("mpegs/mpegs.asset");
+	
+	MpegWadAsset& mpeg_wad = asset_file.root().child<MpegWadAsset>("mpegs");
+	mpeg_wad.set_story(unpack_binaries(mpeg_wad, file, header.story, 200, "story", ".pss"));
+}

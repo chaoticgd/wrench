@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2022 chaoticgd
+	Copyright (C) 2019-2022 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,47 +18,10 @@
 
 #include "misc_wad.h"
 
-#include <assetmgr/asset_types.h>
 #include <engine/compression.h>
 
 static Asset& unpack_irx_modules(Asset& parent, const FileHandle& src, SectorRange range);
 static Asset& unpack_boot_wad(Asset& parent, const FileHandle& src, SectorRange range);
-
-static Asset& unpack_binary_lump(Asset& parent, const FileHandle& src, SectorRange range, const char* child, fs::path path) {
-	std::vector<u8> bytes = src.read_binary(range.bytes());
-	BinaryAsset& binary = parent.child<BinaryAsset>(child);
-	binary.set_src(parent.file().write_binary_file(path, bytes));
-	return binary;
-}
-
-static Asset& unpack_binary(Asset& parent, Buffer src, ByteRange range, const char* child, const char* extension = ".bin") {
-	BinaryAsset& binary = parent.child<BinaryAsset>(child);
-	binary.set_src(parent.file().write_binary_file(std::string(child) + extension, src.subbuf(range.offset, range.size)));
-	return binary;
-}
-
-static Asset& unpack_compressed_binary(Asset& parent, Buffer src, ByteRange range, const char* child, const char* extension = ".bin") {
-	std::vector<u8> bytes;
-	Buffer compressed_bytes = src.subbuf(range.offset, range.size);
-	decompress_wad(bytes, WadBuffer{compressed_bytes.lo, compressed_bytes.hi});
-	
-	BinaryAsset& binary = parent.child<BinaryAsset>(child);
-	binary.set_src(parent.file().write_binary_file(std::string(child) + extension, bytes));
-	return binary;
-}
-
-static std::vector<Asset*> unpack_compressed_binaries(Asset& parent, Buffer src, ByteRange* ranges, s32 count, const char* child) {
-	fs::path path = fs::path(child)/child;
-	CollectionAsset& collection = parent.asset_file(path).child<CollectionAsset>(child);
-	
-	std::vector<Asset*> assets;
-	for(s32 i = 0; i < count; i++) {
-		std::string name = std::to_string(i);
-		assets.emplace_back(&unpack_compressed_binary(collection, src, ranges[i], name.c_str()));
-	}
-	
-	return assets;
-}
 
 packed_struct(MiscWadHeaderDL,
 	/* 0x00 */ s32 header_size;
@@ -74,19 +37,18 @@ packed_struct(MiscWadHeaderDL,
 	/* 0x48 */ SectorRange gadget;
 )
 
-void unpack_misc_wad(AssetPack& pack, const FileHandle& src, Buffer header_bytes) {
-	MiscWadHeaderDL header = header_bytes.read<MiscWadHeaderDL>(0, "file header");
-	
-	AssetFile& asset_file = pack.asset_file("misc/misc.asset");
+void unpack_misc_wad(AssetPack& dest, BinaryAsset& src) {
+	auto [file, header] = open_wad_file<MiscWadHeaderDL>(src);
+	AssetFile& asset_file = dest.asset_file("misc/misc.asset");
 	
 	MiscWadAsset& misc_wad = asset_file.root().child<MiscWadAsset>("misc");
-	misc_wad.set_debug_font(unpack_binary_lump(misc_wad, src, header.debug_font, "debug_font", "debug_font.bin"));
-	misc_wad.set_irx(unpack_irx_modules(misc_wad, src, header.irx));
-	misc_wad.set_save_game(unpack_binary_lump(misc_wad, src, header.save_game, "save_game", "save_game.bin"));
-	misc_wad.set_frontend_code(unpack_binary_lump(misc_wad, src, header.frontend_code, "frontend_code", "frontend_code.bin"));
-	misc_wad.set_exit(unpack_binary_lump(misc_wad, src, header.exit, "exit", "exit.bin"));
-	misc_wad.set_boot(unpack_boot_wad(misc_wad, src, header.bootwad));
-	misc_wad.set_gadget(unpack_binary_lump(misc_wad, src, header.gadget, "gadget", "gadget.bin"));
+	misc_wad.set_debug_font(unpack_binary(misc_wad, file, header.debug_font, "debug_font", "debug_font.bin"));
+	misc_wad.set_irx(unpack_irx_modules(misc_wad, file, header.irx));
+	misc_wad.set_save_game(unpack_binary(misc_wad, file, header.save_game, "save_game", "save_game.bin"));
+	misc_wad.set_frontend_code(unpack_binary(misc_wad, file, header.frontend_code, "frontend_code", "frontend_code.bin"));
+	misc_wad.set_exit(unpack_binary(misc_wad, file, header.exit, "exit", "exit.bin"));
+	misc_wad.set_boot(unpack_boot_wad(misc_wad, file, header.bootwad));
+	misc_wad.set_gadget(unpack_binary(misc_wad, file, header.gadget, "gadget", "gadget.bin"));
 }
 
 packed_struct(IrxHeader,
@@ -126,7 +88,7 @@ static Asset& unpack_irx_modules(Asset& parent, const FileHandle& src, SectorRan
 	
 	IrxWadAsset& irx = parent.asset_file("irx/irx.asset").child<IrxWadAsset>("irx");
 	auto unpack_irx = [&](ByteRange range, const char* child) -> Asset& {
-		return unpack_binary(irx, bytes, range, child, ".irx");
+		return unpack_binary_from_memory(irx, bytes, range, child, ".irx");
 	};
 	
 	irx.set_sio2man(unpack_irx(header.sio2man, "sio2man"));

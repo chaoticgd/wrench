@@ -16,11 +16,11 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef SPANNER_MISC_WAD_H
-#define SPANNER_MISC_WAD_H
+#ifndef SPANNER_MPEG_WAD_H
+#define SPANNER_MPEG_WAD_H
 
 #include <spanner/spanner_util.h>
 
-void unpack_misc_wad(AssetPack& dest, BinaryAsset& src);
+void unpack_mpeg_wad(AssetPack& dest, BinaryAsset& src);
 
 #endif
