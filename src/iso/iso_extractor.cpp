@@ -51,6 +51,7 @@ void extract_iso(const fs::path& output_dir, const std::string& iso_path, const 
 	AssetFile& file = pack.asset_file("build.asset");
 	GameAsset& game_asset = file.root().child<GameAsset>(game_tag);
 	BuildAsset& build = game_asset.child<BuildAsset>("base_game");
+	game_asset.set_builds({&build});
 	
 	pack.game_info.game = game_tag;
 	pack.game_info.type = AssetPackType::EXTRACTED;

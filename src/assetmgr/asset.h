@@ -142,6 +142,7 @@ public:
 	
 	void write() const;
 	
+	FileHandle open_binary_file_for_reading(const FileReference& reference) const;
 	FileReference write_text_file(const fs::path& path, const char* contents) const;
 	FileReference write_binary_file(const fs::path& path, Buffer contents) const;
 	FileReference write_binary_file(const fs::path& path, std::function<void(FILE*)> callback) const;
@@ -151,6 +152,7 @@ public:
 	AssetFile* higher_precedence();
 	
 private:
+	friend FileHandle;
 	friend Asset;
 	friend AssetPack;
 	
@@ -179,6 +181,8 @@ public:
 	
 	GameInfo game_info;
 	
+	virtual std::vector<u8> read_binary(const FileHandle& file, ByteRange64 range) const = 0;
+	
 protected:
 	AssetPack(AssetForest& forest, std::string name, bool is_writeable);
 	AssetPack(const AssetPack&) = delete;
@@ -198,6 +202,7 @@ private:
 	
 	Asset* lookup_local_asset(const AssetReference& absolute_reference);
 	
+	virtual FileHandle open_binary_file_for_reading(const fs::path& path) const = 0;
 	virtual std::string read_text_file(const fs::path& path) const = 0;
 	virtual std::vector<u8> read_binary_file(const fs::path& path) const = 0;
 	virtual void write_text_file(const fs::path& path, const char* contents) const = 0;
@@ -244,7 +249,10 @@ class LooseAssetPack : public AssetPack {
 public:
 	LooseAssetPack(AssetForest& forest, std::string name, fs::path directory);
 	
+	std::vector<u8> read_binary(const FileHandle& file, ByteRange64 range) const override;
+	
 private:
+	FileHandle open_binary_file_for_reading(const fs::path& path) const override;
 	std::string read_text_file(const fs::path& path) const override;
 	std::vector<u8> read_binary_file(const fs::path& path) const override;
 	void write_text_file(const fs::path& path, const char* contents) const override;

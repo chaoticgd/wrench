@@ -21,11 +21,11 @@
 #include <lz/compression.h>
 #include <assetmgr/asset_types.h>
 
-static Asset& unpack_irx_modules(Asset& parent, FILE* src, SectorRange range);
-static Asset& unpack_boot_wad(Asset& parent, FILE* src, SectorRange range);
+static Asset& unpack_irx_modules(Asset& parent, const FileHandle& src, SectorRange range);
+static Asset& unpack_boot_wad(Asset& parent, const FileHandle& src, SectorRange range);
 
-static Asset& unpack_binary_lump(Asset& parent, FILE* src, SectorRange range, const char* child, fs::path path) {
-	std::vector<u8> bytes = read_file(src, range.offset.bytes(), range.size.bytes());
+static Asset& unpack_binary_lump(Asset& parent, const FileHandle& src, SectorRange range, const char* child, fs::path path) {
+	std::vector<u8> bytes = src.read_binary(range.bytes());
 	BinaryAsset& binary = parent.child<BinaryAsset>(child);
 	binary.set_src(parent.file().write_binary_file(path, bytes));
 	return binary;
@@ -74,7 +74,7 @@ packed_struct(MiscWadHeaderDL,
 	/* 0x48 */ SectorRange gadget;
 )
 
-void unpack_misc_wad(AssetPack& pack, FILE* src, Buffer header_bytes) {
+void unpack_misc_wad(AssetPack& pack, const FileHandle& src, Buffer header_bytes) {
 	MiscWadHeaderDL header = header_bytes.read<MiscWadHeaderDL>(0, "file header");
 	
 	AssetFile& asset_file = pack.asset_file("misc/misc.asset");
@@ -118,8 +118,8 @@ packed_struct(IrxHeader,
 	/* 0xc0 */ ByteRange astrm;
 )
 
-static Asset& unpack_irx_modules(Asset& parent, FILE* src, SectorRange range) {
-	std::vector<u8> compressed_bytes = read_file(src, range.offset.bytes(), range.size.bytes());
+static Asset& unpack_irx_modules(Asset& parent, const FileHandle& src, SectorRange range) {
+	std::vector<u8> compressed_bytes = src.read_binary(range.bytes());
 	std::vector<u8> bytes;
 	decompress_wad(bytes, compressed_bytes);
 	IrxHeader header = Buffer(bytes).read<IrxHeader>(0, "irx header");
@@ -168,8 +168,8 @@ packed_struct(BootHeader,
 	/* 0x78 */ ByteRange sram;
 )
 
-static Asset& unpack_boot_wad(Asset& parent, FILE* src, SectorRange range) {
-	std::vector<u8> bytes = read_file(src, range.offset.bytes(), range.size.bytes());
+static Asset& unpack_boot_wad(Asset& parent, const FileHandle& src, SectorRange range) {
+	std::vector<u8> bytes = src.read_binary(range.bytes());
 	BootHeader header = Buffer(bytes).read<BootHeader>(0, "boot header");
 	
 	BootWadAsset& boot = parent.asset_file("boot/boot.asset").child<BootWadAsset>("boot");

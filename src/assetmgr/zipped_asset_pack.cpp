@@ -21,7 +21,11 @@
 ZippedAssetPack::ZippedAssetPack(AssetForest& forest, std::string name, fs::path path_to_zip)
 	: AssetPack(forest, std::move(name), false)
 	, _path_to_zip(path_to_zip) {}
-	
+
+std::vector<u8> ZippedAssetPack::read_binary(const FileHandle& file, ByteRange64 range) const {
+	assert(0);
+}
+
 std::string ZippedAssetPack::read_text_file(const fs::path& path) const {
 	assert(0);
 }

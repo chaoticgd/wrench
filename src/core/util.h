@@ -185,12 +185,21 @@ packed_struct(Sector32,
 	}
 )
 
+struct ByteRange64 {
+	s64 offset;
+	s64 size;
+};
+
 packed_struct(SectorRange,
 	Sector32 offset;
 	Sector32 size;
 	
 	Sector32 end() const {
 		return {offset.sectors + size.sectors};
+	}
+	
+	ByteRange64 bytes() const {
+		return {offset.bytes(), size.bytes()};
 	}
 )
 

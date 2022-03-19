@@ -24,7 +24,9 @@
 class ZippedAssetPack : public AssetPack {
 public:
 	ZippedAssetPack(AssetForest& forest, std::string name, fs::path path_to_zip);
-
+	
+	std::vector<u8> read_binary(const FileHandle& file, ByteRange64 range) const override;
+	
 private:
 	std::string read_text_file(const fs::path& path) const override;
 	std::vector<u8> read_binary_file(const fs::path& path) const override;

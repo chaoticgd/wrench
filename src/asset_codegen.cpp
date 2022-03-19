@@ -356,7 +356,7 @@ static void generate_getter_code(const WtfNode* attribute, s32 depth) {
 	}
 	
 	if(strcmp(attribute->type_name, "AssetReferenceAttribute") == 0) {
-		indent(ind); out("dest_%d = forest().lookup_asset(src_%d);\n", depth, depth);
+		indent(ind); out("dest_%d = lookup_asset(src_%d);\n", depth, depth);
 	}
 	
 	if(strcmp(attribute->type_name, "FileReferenceAttribute") == 0) {

@@ -67,6 +67,26 @@ std::string asset_reference_to_string(const AssetReference& reference) {
 	return string;
 }
 
+FileHandle::FileHandle(const AssetPack& p, FILE* h)
+	: pack(p)
+	, handle(h) {}
+
+FileHandle::FileHandle(FileHandle&& rhs)
+	: pack(rhs.pack)
+	, handle(rhs.handle) {
+	rhs.handle = nullptr;
+}
+
+FileHandle::~FileHandle() {
+	if(handle) {
+		fclose(handle);
+	}
+}
+
+std::vector<u8> FileHandle::read_binary(ByteRange64 range) const {
+	return pack.read_binary(*this, range);
+}
+
 GameInfo read_game_info(char* input) {
 	char* error_dest = nullptr;
 	WtfNode* root = wtf_parse(input, &error_dest);
@@ -86,11 +106,11 @@ GameInfo read_game_info(char* input) {
 	
 	const WtfAttribute* type = wtf_attribute(root, "type");
 	if(type && type->type == WTF_STRING) {
-		if(strcmp(game->string, "extracted") == 0) {
+		if(strcmp(type->string, "extracted") == 0) {
 			info.type = AssetPackType::EXTRACTED;
-		} else if(strcmp(game->string, "unpacked") == 0) {
+		} else if(strcmp(type->string, "unpacked") == 0) {
 			info.type = AssetPackType::UNPACKED;
-		} else if(strcmp(game->string, "library") == 0) {
+		} else if(strcmp(type->string, "library") == 0) {
 			info.type = AssetPackType::LIBRARY;
 		} else {
 			info.type = AssetPackType::MOD;

@@ -21,12 +21,14 @@
 #include <core/util.h>
 #include <core/timer.h>
 #include <assetmgr/asset.h>
+#include <assetmgr/asset_types.h>
 #include "moby.h"
 #include "tests.h"
 #include "wad_file.h"
 #include "collision.h"
 #include "global_wads.h"
 
+static void unpack(const char* input_path, const char* output_path);
 static void extract(fs::path input_path, fs::path output_path);
 static void build(fs::path input_path, fs::path output_path);
 static void extract_collision(fs::path input_path, fs::path output_path);
@@ -47,13 +49,8 @@ int main(int argc, char** argv) {
 	
 	if(mode == "unpack") {
 		require_args(4);
-		AssetForest forest;
-		AssetPack& pack = forest.mount<LooseAssetPack>("unpack", argv[3]);
-		FILE* src = fopen(argv[2], "rb");
-		std::vector<u8> header_bytes = read_file(src, 0, 0x800);
-		unpack_misc_wad(pack, src, header_bytes);
-		pack.write();
-	} if(mode == "extract") {
+		unpack(argv[2], argv[3]);
+	} else if(mode == "extract") {
 		require_args(4);
 		extract(argv[2], argv[3]);
 	} else if(mode == "build") {
@@ -79,6 +76,36 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 	return 0;
+}
+
+static void unpack(const char* input_path, const char* output_path) {
+	AssetForest forest;
+	
+	AssetPack& src_pack = forest.mount<LooseAssetPack>("extracted", input_path);
+	verify(src_pack.game_info.type == AssetPackType::EXTRACTED,
+		"Unpacking can only be done on an extracted asset pack.");
+	
+	AssetPack& dest_pack = forest.mount<LooseAssetPack>("unpacked", output_path);
+	dest_pack.game_info.game = src_pack.game_info.game;
+	dest_pack.game_info.type = AssetPackType::UNPACKED;
+	
+	std::string game_ref = stringf("/Game:%s", dest_pack.game_info.game.c_str());
+	GameAsset* game = dynamic_cast<GameAsset*>(forest.lookup_asset(parse_asset_reference(game_ref.c_str())));
+	verify(game, "Invalid Game asset.");
+	std::vector<Asset*> builds = game->builds();
+	verify(builds.size() == 1, "Extracted asset pack must have exactly one build.");
+	BuildAsset* build = dynamic_cast<BuildAsset*>(builds[0]);
+	verify(build, "Invalid Build asset.");
+	
+	BinaryAsset* misc_wad_asset = dynamic_cast<BinaryAsset*>(build->misc());
+	verify(misc_wad_asset, "Invalid MiscWad asset.");
+	
+	FileHandle misc_wad = misc_wad_asset->file().open_binary_file_for_reading(misc_wad_asset->src());
+	s32 header_size = Buffer(misc_wad.read_binary(ByteRange64{0, 4})).read<s32>(0, "header");
+	std::vector<u8> header_bytes = misc_wad.read_binary(ByteRange64{0, header_size});
+	unpack_misc_wad(dest_pack, misc_wad, header_bytes);
+	
+	dest_pack.write();
 }
 
 static void extract(fs::path input_path, fs::path output_path) {

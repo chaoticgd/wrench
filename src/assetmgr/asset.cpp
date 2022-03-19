@@ -267,6 +267,11 @@ void AssetFile::write() const {
 	_root->write(ctx);
 }
 
+FileHandle AssetFile::open_binary_file_for_reading(const FileReference& reference) const {
+	assert(reference.owner == this);
+	return _pack.open_binary_file_for_reading(_relative_directory/reference.path);
+}
+
 FileReference AssetFile::write_text_file(const fs::path& path, const char* contents) const {
 	_pack.write_text_file(_relative_directory/path, contents);
 	return FileReference(*this, path);
@@ -274,8 +279,10 @@ FileReference AssetFile::write_text_file(const fs::path& path, const char* conte
 
 FileReference AssetFile::write_binary_file(const fs::path& path, Buffer contents) const {
 	_pack.write_binary_file(_relative_directory/path, [&](FILE* file) {
-		verify(fwrite(contents.lo, contents.size(), 1, file) == 1,
-			"Failed to write to file '%s'.", path.string().c_str());
+		if(contents.size() > 0) {
+			verify(fwrite(contents.lo, contents.size(), 1, file) == 1,
+				"Failed to write to file '%s'.", path.string().c_str());
+		}
 	});
 	return FileReference(*this, path);
 }
@@ -432,6 +439,15 @@ Asset* AssetForest::lookup_asset(const AssetReference& absolute_reference) {
 LooseAssetPack::LooseAssetPack(AssetForest& forest, std::string name, fs::path directory)
 	: AssetPack(forest, std::move(name), true)
 	, _directory(directory) {}
+
+std::vector<u8> LooseAssetPack::read_binary(const FileHandle& file, ByteRange64 range) const {
+	return read_file(file.handle, range.offset, range.size);
+}
+
+FileHandle LooseAssetPack::open_binary_file_for_reading(const fs::path& path) const {
+	std::string full_path = (_directory/path).string();
+	return FileHandle(*this, fopen(full_path.c_str(), "rb"));
+}
 
 std::string LooseAssetPack::read_text_file(const fs::path& path) const {
 	if(!fs::exists(_directory/path)) {
