@@ -20,6 +20,10 @@
 
 #include "asset_types.h"
 
+#ifndef _MSC_VER
+#include <unistd.h> // getpid
+#endif
+
 Asset::Asset(AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent, AssetType type, std::string tag)
 	: _forest(forest)
 	, _pack(pack)
@@ -352,6 +356,12 @@ AssetPack::AssetPack(AssetForest& forest, std::string name, bool is_writeable)
 	, _name(std::move(name))
 	, _is_writeable(is_writeable) {}
 
+AssetPack::~AssetPack() {
+	if(_unlocker) {
+		_unlocker();
+	}
+}
+
 std::string AssetPack::read_text_file(const FileReference& reference) const {
 	return read_text_file(reference.owner->_relative_directory/reference.path);
 }
@@ -421,6 +431,9 @@ Asset* AssetPack::lookup_local_asset(const AssetReference& absolute_reference) {
 	}
 	return nullptr;
 }
+
+s32 AssetPack::check_lock() const { assert(0); }
+void AssetPack::lock() { assert(0); }
 
 // *****************************************************************************
 
@@ -504,4 +517,22 @@ FILE* LooseAssetPack::open_asset_write_handle(const fs::path& path) const {
 	fs::create_directories((_directory/path).parent_path());
 	std::string string = (_directory/path).string();
 	return fopen(string.c_str(), "w");
+}
+
+s32 LooseAssetPack::check_lock() const {
+	if(fs::exists(_directory/"lock")) {
+		std::string pid = read_text_file("lock");
+		return atoi(pid.c_str());
+	}
+	return 0;
+}
+
+void LooseAssetPack::lock() {
+	s32 pid = getpid();
+	std::string pid_str = std::to_string(pid);
+	write_text_file("lock", pid_str.c_str());
+	fs::path dir = _directory;
+	_unlocker = [dir]() {
+		fs::remove(dir/"lock");
+	};
 }

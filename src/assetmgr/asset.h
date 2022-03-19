@@ -167,7 +167,7 @@ private:
 
 class AssetPack {
 public:
-	virtual ~AssetPack() {}
+	virtual ~AssetPack();
 	
 	const char* name() const;
 	bool is_writeable() const;
@@ -193,6 +193,8 @@ protected:
 	std::string read_text_file(const FileReference& reference) const;
 	std::vector<u8> read_binary_file(const FileReference& reference) const;
 	
+	std::function<void()> _unlocker; // We can't call virtual functions from the destructor so we use a lambda.
+	
 private:
 	friend AssetForest;
 	friend AssetFile;
@@ -210,6 +212,8 @@ private:
 	virtual void extract_binary_file(const fs::path& relative_dest, Buffer prepend, FILE* src, s64 offset, s64 size) const = 0;
 	virtual std::vector<fs::path> enumerate_asset_files() const = 0;
 	virtual FILE* open_asset_write_handle(const fs::path& path) const = 0;
+	virtual s32 check_lock() const;
+	virtual void lock();
 	
 	AssetForest& _forest;
 	std::vector<std::unique_ptr<AssetFile>> _asset_files;
@@ -230,12 +234,19 @@ public:
 	template <typename Pack, typename... ConstructorArgs>
 	AssetPack& mount(ConstructorArgs... args) {
 		AssetPack* pack = _packs.emplace_back(std::make_unique<Pack>(*this, args...)).get();
+		if(pack->is_writeable()) {
+			if(s32 pid = pack->check_lock()) {
+				fprintf(stderr, "error: Another process (with PID %d) has locked this asset pack. This implies the process is still alive or has previously crashed. To bypass this error, delete the lock file in the asset pack directory.\n", pid);
+				throw std::logic_error("asset pack locked");
+			} else {
+				pack->lock();
+			}
+		}
 		if(_packs.size() >= 2) {
 			AssetPack* lower_pack = _packs[_packs.size() - 2].get();
 			lower_pack->_higher_precedence = pack;
 			pack->_lower_precedence = lower_pack;
 		}
-		pack->read();
 		return *pack;
 	}
 	
@@ -260,6 +271,8 @@ private:
 	void extract_binary_file(const fs::path& relative_dest, Buffer prepend, FILE* src, s64 offset, s64 size) const override;
 	std::vector<fs::path> enumerate_asset_files() const override;
 	FILE* open_asset_write_handle(const fs::path& path) const override;
+	s32 check_lock() const override;
+	void lock() override;
 	
 	fs::path _directory;
 };
