@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2021 chaoticgd
+	Copyright (C) 2019-2022 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,11 +16,11 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WAD_GAMEPLAY_H
-#define WAD_GAMEPLAY_H
+#ifndef SPANNER_GAMEPLAY_H
+#define SPANNER_GAMEPLAY_H
 
-#include "../core/util.h"
-#include "../core/level.h"
+#include <core/util.h>
+#include <core/level.h>
 
 using GameplayBlockReadFunc = std::function<void(LevelWad& wad, Gameplay& gameplay, Buffer src, Game game)>;
 using GameplayBlockWriteFunc = std::function<bool(OutBuffer dest, const LevelWad& wad, const Gameplay& gameplay, Game game)>;

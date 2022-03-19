@@ -117,16 +117,16 @@ add_library(wrenchengine
 )
 target_link_libraries(wrenchengine wrenchcore)
 
-add_executable(wad
-	src/wad/main.cpp
-	src/wad/global_wads.cpp
-	src/wad/wad_file.cpp
-	src/wad/gameplay.cpp
-	src/wad/primary.cpp
-	src/wad/assets.cpp
-	src/wad/tests.cpp
+add_executable(spanner
+	src/spanner/main.cpp
+	src/spanner/global_wads.cpp
+	src/spanner/wad_file.cpp
+	src/spanner/gameplay.cpp
+	src/spanner/primary.cpp
+	src/spanner/assets.cpp
+	src/spanner/tests.cpp
 )
-target_link_libraries(wad wrenchcore wrench_assetmgr wrenchengine)
+target_link_libraries(spanner wrenchcore wrench_assetmgr wrenchengine)
 
 add_executable(hashtex
 	src/hashtex.cpp
@@ -152,7 +152,7 @@ if(UNIX)
 	target_compile_options(vif PRIVATE ${GCC_FLAGS})
 	target_compile_options(iso PRIVATE ${GCC_FLAGS})
 	target_compile_options(wrenchengine PRIVATE ${GCC_FLAGS} -O3)
-	target_compile_options(wad PRIVATE ${GCC_FLAGS} -O3)
+	target_compile_options(spanner PRIVATE ${GCC_FLAGS} -O3)
 	target_compile_options(asset2json PRIVATE ${GCC_FLAGS})
 endif()
 
@@ -168,7 +168,7 @@ if (MSVC)
 	target_compile_options(vif PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(iso PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(wrenchengine PRIVATE ${__MSVC_BUILD_OPTIONS__})
-	target_compile_options(wad PRIVATE ${__MSVC_BUILD_OPTIONS__})
+	target_compile_options(spanner PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(asset2json PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	unset(__MSVC_BUILD_OPTIONS__)
 endif()
@@ -180,7 +180,7 @@ if(UNIX)
 	target_link_libraries(vif stdc++fs)
 	target_link_libraries(iso stdc++fs)
 	target_link_libraries(wrenchengine stdc++fs)
-	target_link_libraries(wad stdc++fs)
+	target_link_libraries(spanner stdc++fs)
 endif()
 
 # cxxopts
@@ -193,7 +193,7 @@ target_link_libraries(iso cxxopts)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 target_link_libraries(wrench Threads::Threads)
-target_link_libraries(wad Threads::Threads)
+target_link_libraries(spanner Threads::Threads)
 
 # GLAD
 add_subdirectory(thirdparty/glad)

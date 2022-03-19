@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WAD_WAD_FILE_H
-#define WAD_WAD_FILE_H
+#ifndef SPANNER_WAD_FILE_H
+#define SPANNER_WAD_FILE_H
 
 #include <vector>
 
@@ -25,7 +25,7 @@
 #include <core/level.h>
 #include <core/buffer.h>
 #include <engine/compression.h>
-#include <wad/gameplay.h>
+#include <spanner/gameplay.h>
 
 // Note: This header is specific to files emitted by the Wrench ISO utility and
 // the Wrench WAD utility. The header stored on the disc is different and is not

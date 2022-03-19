@@ -18,7 +18,7 @@
 
 #include "wad_file.h"
 
-#include "primary.h"
+#include <spanner/primary.h>
 
 static std::vector<u8> read_compressed_lump(FILE* file, SectorRange range, const char* name);
 static std::map<s32, Chunk> read_chunks(FILE* file, SectorRange chunk_ranges[3], SectorRange chunk_bank_ranges[3]);
