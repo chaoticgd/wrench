@@ -18,7 +18,7 @@
 
 #include "gameplay.h"
 
-#include "basic_types.h"
+#include <engine/basic_types.h>
 
 const s32 NONE = -1;
 

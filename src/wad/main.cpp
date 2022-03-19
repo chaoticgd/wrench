@@ -22,10 +22,10 @@
 #include <core/timer.h>
 #include <assetmgr/asset.h>
 #include <assetmgr/asset_types.h>
-#include "moby.h"
+#include <engine/moby.h>
+#include <engine/collision.h>
 #include "tests.h"
 #include "wad_file.h"
-#include "collision.h"
 #include "global_wads.h"
 
 static void unpack(const char* input_path, const char* output_path);

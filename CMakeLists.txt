@@ -81,21 +81,15 @@ add_executable(wrench
 	src/editor/formats/level_impl.cpp
 	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
 	thirdparty/imgui/backends/imgui_impl_opengl3.cpp
-	src/lz/compression.cpp
 )
-
-add_executable(lz
-	src/lz/main.cpp
-	src/lz/compression.cpp
-	src/editor/util.cpp
-	src/editor/command_line.cpp
-)
+target_link_libraries(wrench wrenchcore)
 
 add_executable(vif
 	src/vifcli.cpp
 	src/editor/util.cpp
 	src/editor/command_line.cpp
 )
+target_link_libraries(vif wrenchcore)
 
 add_executable(iso
 	src/iso/main.cpp
@@ -107,10 +101,21 @@ add_executable(iso
 	src/editor/util.cpp
 	src/editor/command_line.cpp
 )
+target_link_libraries(iso wrenchcore wrench_assetmgr)
 
 add_executable(memmap
 	src/memmap.c
 )
+
+add_library(wrenchengine
+	src/engine/collision.cpp
+	src/engine/compression.cpp
+	src/engine/moby.cpp
+	src/engine/moby_mesh_exporter.cpp
+	src/engine/moby_mesh_importer.cpp
+	src/engine/texture.cpp
+)
+target_link_libraries(wrenchengine wrenchcore)
 
 add_executable(wad
 	src/wad/main.cpp
@@ -119,34 +124,22 @@ add_executable(wad
 	src/wad/gameplay.cpp
 	src/wad/primary.cpp
 	src/wad/assets.cpp
-	src/wad/collision.cpp
-	src/wad/texture.cpp
-	src/wad/moby.cpp
-	src/wad/moby_mesh_importer.cpp
-	src/wad/moby_mesh_exporter.cpp
 	src/wad/tests.cpp
-	src/lz/compression.cpp
 )
+target_link_libraries(wad wrenchcore wrench_assetmgr wrenchengine)
 
 add_executable(hashtex
 	src/hashtex.cpp
 )
+target_link_libraries(hashtex wrenchcore)
 
 add_executable(asset2json
 	src/asset2json.cpp
 )
-
-target_link_libraries(wrench wrenchcore)
-target_link_libraries(vif wrenchcore)
-target_link_libraries(iso wrenchcore)
-target_link_libraries(wad wrenchcore)
-target_link_libraries(hashtex wrenchcore)
 target_link_libraries(asset2json wrenchcore)
+
 target_link_libraries(asset_codegen wrenchcore)
 target_link_libraries(wrench_assetmgr wrenchcore)
-
-target_link_libraries(iso wrench_assetmgr)
-target_link_libraries(wad wrench_assetmgr)
 
 # This lets us avoid linking stuff for most of the CLI tools.
 target_compile_definitions(wrench PRIVATE WRENCH_EDITOR=1)
@@ -156,9 +149,9 @@ if(UNIX)
 	target_compile_options(wrenchcore PRIVATE ${GCC_FLAGS} -O3)
 	target_compile_options(wrench_assetmgr PRIVATE ${GCC_FLAGS})
 	target_compile_options(wrench PRIVATE ${GCC_FLAGS})
-	target_compile_options(lz PRIVATE ${GCC_FLAGS} -O3)
 	target_compile_options(vif PRIVATE ${GCC_FLAGS})
 	target_compile_options(iso PRIVATE ${GCC_FLAGS})
+	target_compile_options(wrenchengine PRIVATE ${GCC_FLAGS} -O3)
 	target_compile_options(wad PRIVATE ${GCC_FLAGS} -O3)
 	target_compile_options(asset2json PRIVATE ${GCC_FLAGS})
 endif()
@@ -172,9 +165,9 @@ if (MSVC)
 	target_compile_options(wrenchcore PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(wrench_assetmgr PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(wrench PRIVATE ${__MSVC_BUILD_OPTIONS__})
-	target_compile_options(lz PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(vif PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(iso PRIVATE ${__MSVC_BUILD_OPTIONS__})
+	target_compile_options(wrenchengine PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(wad PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(asset2json PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	unset(__MSVC_BUILD_OPTIONS__)
@@ -184,16 +177,15 @@ endif()
 if(UNIX)
 	target_link_libraries(wrenchcore stdc++fs)
 	target_link_libraries(wrench stdc++fs)
-	target_link_libraries(lz stdc++fs)
 	target_link_libraries(vif stdc++fs)
 	target_link_libraries(iso stdc++fs)
+	target_link_libraries(wrenchengine stdc++fs)
 	target_link_libraries(wad stdc++fs)
 endif()
 
 # cxxopts
 add_subdirectory(thirdparty/cxxopts)
 target_link_libraries(wrench cxxopts)
-target_link_libraries(lz cxxopts)
 target_link_libraries(vif cxxopts)
 target_link_libraries(iso cxxopts)
 
@@ -201,7 +193,6 @@ target_link_libraries(iso cxxopts)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 target_link_libraries(wrench Threads::Threads)
-target_link_libraries(lz Threads::Threads)
 target_link_libraries(wad Threads::Threads)
 
 # GLAD

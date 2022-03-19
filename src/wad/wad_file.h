@@ -21,11 +21,11 @@
 
 #include <vector>
 
-#include "../core/util.h"
-#include "../core/level.h"
-#include "../core/buffer.h"
-#include "gameplay.h"
-#include "../lz/compression.h"
+#include <core/util.h>
+#include <core/level.h>
+#include <core/buffer.h>
+#include <engine/compression.h>
+#include <wad/gameplay.h>
 
 // Note: This header is specific to files emitted by the Wrench ISO utility and
 // the Wrench WAD utility. The header stored on the disc is different and is not

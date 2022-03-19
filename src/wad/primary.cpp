@@ -18,8 +18,8 @@
 
 #include "primary.h"
 
-#include "../lz/compression.h"
-#include "assets.h"
+#include <engine/compression.h>
+#include <wad/assets.h>
 
 static WadBuffer wad_buffer(Buffer buf) {
 	return {buf.lo, buf.hi};

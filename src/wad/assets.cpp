@@ -18,11 +18,11 @@
 
 #include "assets.h"
 
-#include "moby.h"
-#include "texture.h"
-#include "collision.h"
-#include "../core/timer.h"
-#include "../lz/compression.h"
+#include <core/timer.h>
+#include <engine/moby.h>
+#include <engine/texture.h>
+#include <engine/collision.h>
+#include <engine/compression.h>
 
 static void print_asset_header(const AssetHeader& header);
 

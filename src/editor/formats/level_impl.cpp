@@ -17,7 +17,6 @@
 */
 
 #include "level_impl.h"
-#include "../../lz/compression.h"
 
 #include <editor/app.h>
 

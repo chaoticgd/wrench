@@ -20,11 +20,11 @@
 
 #include <md5.h>
 
-#include "moby.h"
-#include "assets.h"
-#include "primary.h"
-#include "texture.h"
-#include "collision.h"
+#include <engine/moby.h>
+#include <engine/texture.h>
+#include <engine/collision.h>
+#include <wad/assets.h>
+#include <wad/primary.h>
 
 static void run_level_tests(fs::path input_path);
 struct GameplayTestArgs {

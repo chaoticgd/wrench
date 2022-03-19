@@ -18,8 +18,8 @@
 
 #include "global_wads.h"
 
-#include <lz/compression.h>
 #include <assetmgr/asset_types.h>
+#include <engine/compression.h>
 
 static Asset& unpack_irx_modules(Asset& parent, const FileHandle& src, SectorRange range);
 static Asset& unpack_boot_wad(Asset& parent, const FileHandle& src, SectorRange range);
