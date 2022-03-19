@@ -135,14 +135,14 @@ static Asset& unpack_boot_wad(Asset& parent, const FileHandle& src, SectorRange 
 	BootHeader header = Buffer(bytes).read<BootHeader>(0, "boot header");
 	
 	BootWadAsset& boot = parent.asset_file("boot/boot.asset").child<BootWadAsset>("boot");
-	boot.set_english(unpack_compressed_binary(boot, bytes, header.english, "english"));
-	boot.set_french(unpack_compressed_binary(boot, bytes, header.french, "french"));
-	boot.set_german(unpack_compressed_binary(boot, bytes, header.german, "german"));
-	boot.set_spanish(unpack_compressed_binary(boot, bytes, header.spanish, "spanish"));
-	boot.set_italian(unpack_compressed_binary(boot, bytes, header.italian, "italian"));
-	boot.set_hud(unpack_compressed_binaries(boot, bytes, ARRAY_PAIR(header.hudwad), "hud"));
-	boot.set_boot_plates(unpack_compressed_binaries(boot, bytes, ARRAY_PAIR(header.boot_plates), "boot_plates"));
-	boot.set_sram(unpack_compressed_binary(boot, bytes, header.sram, "sram"));
+	boot.set_english(unpack_compressed_binary_from_memory(boot, bytes, header.english, "english"));
+	boot.set_french(unpack_compressed_binary_from_memory(boot, bytes, header.french, "french"));
+	boot.set_german(unpack_compressed_binary_from_memory(boot, bytes, header.german, "german"));
+	boot.set_spanish(unpack_compressed_binary_from_memory(boot, bytes, header.spanish, "spanish"));
+	boot.set_italian(unpack_compressed_binary_from_memory(boot, bytes, header.italian, "italian"));
+	boot.set_hud(unpack_compressed_binaries_from_memory(boot, bytes, ARRAY_PAIR(header.hudwad), "hud"));
+	boot.set_boot_plates(unpack_compressed_binaries_from_memory(boot, bytes, ARRAY_PAIR(header.boot_plates), "boot_plates"));
+	boot.set_sram(unpack_compressed_binary_from_memory(boot, bytes, header.sram, "sram"));
 	
 	return boot;
 }
