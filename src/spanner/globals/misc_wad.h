@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef SPANNER_MISC_WAD_H
-#define SPANNER_MISC_WAD_H
+#ifndef SPANNER_GLOBALS_MISC_WAD_H
+#define SPANNER_GLOBALS_MISC_WAD_H
 
 #include <spanner/spanner_util.h>
 

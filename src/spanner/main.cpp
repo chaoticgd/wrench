@@ -26,8 +26,8 @@
 #include <engine/collision.h>
 #include <spanner/tests.h>
 #include <spanner/wad_file.h>
-#include <spanner/mpeg_wad.h>
-#include <spanner/misc_wad.h>
+#include <spanner/globals/mpeg_wad.h>
+#include <spanner/globals/misc_wad.h>
 
 static void unpack(const char* input_path, const char* output_path);
 static void extract(fs::path input_path, fs::path output_path);

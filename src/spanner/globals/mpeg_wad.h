@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef SPANNER_MPEG_WAD_H
-#define SPANNER_MPEG_WAD_H
+#ifndef SPANNER_GLOBALS_MPEG_WAD_H
+#define SPANNER_GLOBALS_MPEG_WAD_H
 
 #include <spanner/spanner_util.h>
 
