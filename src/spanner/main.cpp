@@ -26,7 +26,7 @@
 #include <engine/collision.h>
 #include <spanner/tests.h>
 #include <spanner/wad_file.h>
-#include <spanner/global_wads.h>
+#include <spanner/misc_wad.h>
 
 static void unpack(const char* input_path, const char* output_path);
 static void extract(fs::path input_path, fs::path output_path);

@@ -119,7 +119,7 @@ target_link_libraries(wrenchengine wrenchcore)
 
 add_executable(spanner
 	src/spanner/main.cpp
-	src/spanner/global_wads.cpp
+	src/spanner/misc_wad.cpp
 	src/spanner/wad_file.cpp
 	src/spanner/gameplay.cpp
 	src/spanner/primary.cpp

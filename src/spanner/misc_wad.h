@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef SPANNER_GLOBAL_WADS_H
-#define SPANNER_GLOBAL_WADS_H
+#ifndef SPANNER_MISC_WAD_H
+#define SPANNER_MISC_WAD_H
 
 #include <assetmgr/asset.h>
 

@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "global_wads.h"
+#include "misc_wad.h"
 
 #include <assetmgr/asset_types.h>
 #include <engine/compression.h>
