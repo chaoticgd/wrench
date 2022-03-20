@@ -26,14 +26,7 @@
 #include <engine/collision.h>
 #include <spanner/tests.h>
 #include <spanner/wad_file.h>
-#include <spanner/globals/armor_wad.h>
-#include <spanner/globals/audio_wad.h>
-#include <spanner/globals/bonus_wad.h>
-#include <spanner/globals/hud_wad.h>
-#include <spanner/globals/misc_wad.h>
-#include <spanner/globals/mpeg_wad.h>
-#include <spanner/globals/online_wad.h>
-#include <spanner/globals/space_wad.h>
+#include <spanner/global_wads.h>
 
 static void unpack(const char* input_path, const char* output_path);
 static void extract(fs::path input_path, fs::path output_path);
@@ -106,37 +99,7 @@ static void unpack(const char* input_path, const char* output_path) {
 	BuildAsset* build = dynamic_cast<BuildAsset*>(builds[0]);
 	verify(build, "Invalid Build asset.");
 	
-	BinaryAsset* armor_wad = dynamic_cast<BinaryAsset*>(build->armor());
-	verify(armor_wad, "Invalid armor.wad asset.");
-	unpack_armor_wad(dest_pack, *armor_wad);
-	
-	BinaryAsset* audio_wad = dynamic_cast<BinaryAsset*>(build->audio());
-	verify(audio_wad, "Invalid audio.wad asset.");
-	unpack_audio_wad(dest_pack, *audio_wad);
-	
-	BinaryAsset* bonus_wad = dynamic_cast<BinaryAsset*>(build->bonus());
-	verify(bonus_wad, "Invalid bonus.wad asset.");
-	unpack_bonus_wad(dest_pack, *bonus_wad);
-	
-	BinaryAsset* hud_wad = dynamic_cast<BinaryAsset*>(build->hud());
-	verify(hud_wad, "Invalid hud.wad asset.");
-	unpack_hud_wad(dest_pack, *hud_wad);
-	
-	BinaryAsset* misc_wad = dynamic_cast<BinaryAsset*>(build->misc());
-	verify(misc_wad, "Invalid misc.wad asset.");
-	unpack_misc_wad(dest_pack, *misc_wad);
-	
-	BinaryAsset* mpeg_wad = dynamic_cast<BinaryAsset*>(build->mpeg());
-	verify(mpeg_wad, "Invalid mpeg.wad asset.");
-	unpack_mpeg_wad(dest_pack, *mpeg_wad);
-	
-	BinaryAsset* online_wad = dynamic_cast<BinaryAsset*>(build->online());
-	verify(online_wad, "Invalid online.wad asset.");
-	unpack_online_wad(dest_pack, *online_wad);
-	
-	BinaryAsset* space_wad = dynamic_cast<BinaryAsset*>(build->space());
-	verify(space_wad, "Invalid space.wad asset.");
-	unpack_space_wad(dest_pack, *space_wad);
+	unpack_global_wads(dest_pack, *build);
 	
 	dest_pack.write();
 }
