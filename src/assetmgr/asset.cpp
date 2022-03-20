@@ -457,6 +457,11 @@ std::vector<u8> LooseAssetPack::read_binary(const FileHandle& file, ByteRange64 
 	return read_file(file.handle, range.offset, range.size);
 }
 
+s64 LooseAssetPack::file_size(const FileHandle& file) const {
+	fseek(file.handle, 0, SEEK_END);
+	return ftell(file.handle);
+}
+
 FileHandle LooseAssetPack::open_binary_file_for_reading(const fs::path& path) const {
 	std::string full_path = (_directory/path).string();
 	return FileHandle(*this, fopen(full_path.c_str(), "rb"));

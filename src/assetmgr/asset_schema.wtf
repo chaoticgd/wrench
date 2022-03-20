@@ -208,9 +208,17 @@ AssetType AudioWad {
 	
 	ArrayAttribute help {
 		AssetReferenceAttribute element {
-			allowed_asset_types: ['Sound' 'Binary']
+			allowed_asset_types: ['HelpAudio']
 		}
 	}
+}
+
+AssetType HelpAudio {
+	AssetReferenceAttribute english { allowed_asset_types: ['Sound' 'Binary'] }
+	AssetReferenceAttribute french  { allowed_asset_types: ['Sound' 'Binary'] }
+	AssetReferenceAttribute german  { allowed_asset_types: ['Sound' 'Binary'] }
+	AssetReferenceAttribute spanish { allowed_asset_types: ['Sound' 'Binary'] }
+	AssetReferenceAttribute italian { allowed_asset_types: ['Sound' 'Binary'] }
 }
 
 AssetType BonusWad {

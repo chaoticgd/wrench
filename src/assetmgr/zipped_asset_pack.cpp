@@ -26,6 +26,10 @@ std::vector<u8> ZippedAssetPack::read_binary(const FileHandle& file, ByteRange64
 	assert(0);
 }
 
+s64 ZippedAssetPack::file_size(const FileHandle& file) const {
+	assert(0);
+}
+
 std::string ZippedAssetPack::read_text_file(const fs::path& path) const {
 	assert(0);
 }

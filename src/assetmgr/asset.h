@@ -182,6 +182,7 @@ public:
 	GameInfo game_info;
 	
 	virtual std::vector<u8> read_binary(const FileHandle& file, ByteRange64 range) const = 0;
+	virtual s64 file_size(const FileHandle& file) const = 0;
 	
 protected:
 	AssetPack(AssetForest& forest, std::string name, bool is_writeable);
@@ -262,6 +263,7 @@ public:
 	LooseAssetPack(AssetForest& forest, std::string name, fs::path directory, bool is_writeable);
 	
 	std::vector<u8> read_binary(const FileHandle& file, ByteRange64 range) const override;
+	s64 file_size(const FileHandle& file) const override;
 	
 private:
 	FileHandle open_binary_file_for_reading(const fs::path& path) const override;

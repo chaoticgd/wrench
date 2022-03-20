@@ -74,6 +74,7 @@ public:
 	~FileHandle();
 	
 	std::vector<u8> read_binary(ByteRange64 range) const;
+	s64 size() const;
 	
 private:
 	friend LooseAssetPack;

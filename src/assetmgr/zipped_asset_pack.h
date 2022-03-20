@@ -26,6 +26,7 @@ public:
 	ZippedAssetPack(AssetForest& forest, std::string name, fs::path path_to_zip);
 	
 	std::vector<u8> read_binary(const FileHandle& file, ByteRange64 range) const override;
+	s64 file_size(const FileHandle& file) const override;
 	
 private:
 	std::string read_text_file(const fs::path& path) const override;

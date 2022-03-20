@@ -87,6 +87,10 @@ std::vector<u8> FileHandle::read_binary(ByteRange64 range) const {
 	return pack.read_binary(*this, range);
 }
 
+s64 FileHandle::size() const {
+	return pack.file_size(*this);
+}
+
 GameInfo read_game_info(char* input) {
 	char* error_dest = nullptr;
 	WtfNode* root = wtf_parse(input, &error_dest);
