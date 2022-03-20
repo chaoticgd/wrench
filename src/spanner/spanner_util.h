@@ -39,6 +39,11 @@ Asset& unpack_binary(Asset& parent, const FileHandle& src, Range range, const ch
 }
 
 template <typename Range>
+Asset& unpack_compressed_binary(Asset& parent, const FileHandle& src, Range range, const char* child, fs::path path) {
+	return unpack_binary(parent, src, range, child, path, true);
+}
+
+template <typename Range>
 std::vector<Asset*> unpack_binaries_impl(Asset& parent, const FileHandle& src, Range* ranges, s32 count, const char* child, bool compressed = false, const char* extension = ".bin") {
 	fs::path path = fs::path(child)/child;
 	CollectionAsset& collection = parent.asset_file(path).child<CollectionAsset>(child);

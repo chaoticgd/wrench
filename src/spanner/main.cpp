@@ -29,6 +29,7 @@
 #include <spanner/globals/armor_wad.h>
 #include <spanner/globals/audio_wad.h>
 #include <spanner/globals/bonus_wad.h>
+#include <spanner/globals/hud_wad.h>
 #include <spanner/globals/misc_wad.h>
 #include <spanner/globals/mpeg_wad.h>
 #include <spanner/globals/space_wad.h>
@@ -115,6 +116,10 @@ static void unpack(const char* input_path, const char* output_path) {
 	BinaryAsset* bonus_wad = dynamic_cast<BinaryAsset*>(build->bonus());
 	verify(bonus_wad, "Invalid bonus.wad asset.");
 	unpack_bonus_wad(dest_pack, *bonus_wad);
+	
+	BinaryAsset* hud_wad = dynamic_cast<BinaryAsset*>(build->hud());
+	verify(hud_wad, "Invalid hud.wad asset.");
+	unpack_hud_wad(dest_pack, *hud_wad);
 	
 	BinaryAsset* misc_wad = dynamic_cast<BinaryAsset*>(build->misc());
 	verify(misc_wad, "Invalid misc.wad asset.");
