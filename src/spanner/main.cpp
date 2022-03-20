@@ -32,6 +32,7 @@
 #include <spanner/globals/hud_wad.h>
 #include <spanner/globals/misc_wad.h>
 #include <spanner/globals/mpeg_wad.h>
+#include <spanner/globals/online_wad.h>
 #include <spanner/globals/space_wad.h>
 
 static void unpack(const char* input_path, const char* output_path);
@@ -128,6 +129,10 @@ static void unpack(const char* input_path, const char* output_path) {
 	BinaryAsset* mpeg_wad = dynamic_cast<BinaryAsset*>(build->mpeg());
 	verify(mpeg_wad, "Invalid mpeg.wad asset.");
 	unpack_mpeg_wad(dest_pack, *mpeg_wad);
+	
+	BinaryAsset* online_wad = dynamic_cast<BinaryAsset*>(build->online());
+	verify(online_wad, "Invalid online.wad asset.");
+	unpack_online_wad(dest_pack, *online_wad);
 	
 	BinaryAsset* space_wad = dynamic_cast<BinaryAsset*>(build->space());
 	verify(space_wad, "Invalid space.wad asset.");

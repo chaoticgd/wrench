@@ -566,14 +566,12 @@ AssetType OnlineWad {
 		allowed_asset_types: ['Binary']
 	}
 	
-	ArrayAttribute transition_bgs {
+	ArrayAttribute transition_backgrounds {
 		AssetReferenceAttribute element {
 			allowed_asset_types: ['Binary']
 		}
 	}
 }
-
-ArrayType OnlineWad {}
 
 AssetType SpaceWad {
 	ArrayAttribute transitions {
