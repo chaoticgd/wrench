@@ -26,9 +26,10 @@
 #include <engine/collision.h>
 #include <spanner/tests.h>
 #include <spanner/wad_file.h>
-#include <spanner/globals/mpeg_wad.h>
-#include <spanner/globals/misc_wad.h>
+#include <spanner/globals/armor_wad.h>
 #include <spanner/globals/bonus_wad.h>
+#include <spanner/globals/misc_wad.h>
+#include <spanner/globals/mpeg_wad.h>
 #include <spanner/globals/space_wad.h>
 
 static void unpack(const char* input_path, const char* output_path);
@@ -102,17 +103,21 @@ static void unpack(const char* input_path, const char* output_path) {
 	BuildAsset* build = dynamic_cast<BuildAsset*>(builds[0]);
 	verify(build, "Invalid Build asset.");
 	
-	BinaryAsset* mpeg_wad = dynamic_cast<BinaryAsset*>(build->mpeg());
-	verify(mpeg_wad, "Invalid mpeg.wad asset.");
-	unpack_mpeg_wad(dest_pack, *mpeg_wad);
+	BinaryAsset* armor_wad = dynamic_cast<BinaryAsset*>(build->armor());
+	verify(armor_wad, "Invalid armor.wad asset.");
+	unpack_armor_wad(dest_pack, *armor_wad);
+	
+	BinaryAsset* bonus_wad = dynamic_cast<BinaryAsset*>(build->bonus());
+	verify(bonus_wad, "Invalid bonus.wad asset.");
+	unpack_bonus_wad(dest_pack, *bonus_wad);
 	
 	BinaryAsset* misc_wad = dynamic_cast<BinaryAsset*>(build->misc());
 	verify(misc_wad, "Invalid misc.wad asset.");
 	unpack_misc_wad(dest_pack, *misc_wad);
 	
-	BinaryAsset* bonus_wad = dynamic_cast<BinaryAsset*>(build->bonus());
-	verify(bonus_wad, "Invalid bonus.wad asset.");
-	unpack_bonus_wad(dest_pack, *bonus_wad);
+	BinaryAsset* mpeg_wad = dynamic_cast<BinaryAsset*>(build->mpeg());
+	verify(mpeg_wad, "Invalid mpeg.wad asset.");
+	unpack_mpeg_wad(dest_pack, *mpeg_wad);
 	
 	BinaryAsset* space_wad = dynamic_cast<BinaryAsset*>(build->space());
 	verify(space_wad, "Invalid space.wad asset.");

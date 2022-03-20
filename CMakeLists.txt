@@ -125,9 +125,10 @@ add_executable(spanner
 	src/spanner/assets.cpp
 	src/spanner/tests.cpp
 	src/spanner/spanner_util.cpp
-	src/spanner/globals/mpeg_wad.cpp
-	src/spanner/globals/misc_wad.cpp
+	src/spanner/globals/armor_wad.cpp
 	src/spanner/globals/bonus_wad.cpp
+	src/spanner/globals/misc_wad.cpp
+	src/spanner/globals/mpeg_wad.cpp
 	src/spanner/globals/space_wad.cpp
 )
 target_link_libraries(spanner wrenchcore wrench_assetmgr wrenchengine)
