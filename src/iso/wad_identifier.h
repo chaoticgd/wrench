@@ -19,9 +19,12 @@
 #ifndef ISO_WAD_IDENTIFIER_H
 #define ISO_WAD_IDENTIFIER_H
 
+#include <tuple>
+
 #include <core/util.h>
 #include <core/buffer.h>
 
 std::tuple<Game, WadType, const char*> identify_wad(Buffer header);
+s32 header_size_of_wad(Game game, WadType type);
 
 #endif

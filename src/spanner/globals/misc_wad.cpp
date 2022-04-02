@@ -20,8 +20,8 @@
 
 #include <engine/compression.h>
 
-static Asset& unpack_irx_modules(Asset& parent, const FileHandle& src, SectorRange range);
-static Asset& unpack_boot_wad(Asset& parent, const FileHandle& src, SectorRange range);
+static Asset& unpack_irx_modules(Asset& parent, InputStream& src, SectorRange range);
+static Asset& unpack_boot_wad(Asset& parent, InputStream& src, SectorRange range);
 
 packed_struct(MiscWadHeaderDL,
 	/* 0x00 */ s32 header_size;
@@ -42,13 +42,13 @@ void unpack_misc_wad(AssetPack& dest, BinaryAsset& src) {
 	AssetFile& asset_file = dest.asset_file("misc/misc.asset");
 	
 	MiscWadAsset& wad = asset_file.root().child<MiscWadAsset>("misc");
-	wad.set_debug_font(unpack_binary(wad, file, header.debug_font, "debug_font", "debug_font.bin"));
-	wad.set_irx(unpack_irx_modules(wad, file, header.irx));
-	wad.set_save_game(unpack_binary(wad, file, header.save_game, "save_game", "save_game.bin"));
-	wad.set_frontend_code(unpack_binary(wad, file, header.frontend_code, "frontend_code", "frontend_code.bin"));
-	wad.set_exit(unpack_binary(wad, file, header.exit, "exit", "exit.bin"));
-	wad.set_boot(unpack_boot_wad(wad, file, header.bootwad));
-	wad.set_gadget(unpack_binary(wad, file, header.gadget, "gadget", "gadget.bin"));
+	wad.set_debug_font(unpack_binary(wad, *file, header.debug_font, "debug_font", "debug_font.bin"));
+	wad.set_irx(unpack_irx_modules(wad, *file, header.irx));
+	wad.set_save_game(unpack_binary(wad, *file, header.save_game, "save_game", "save_game.bin"));
+	wad.set_frontend_code(unpack_binary(wad, *file, header.frontend_code, "frontend_code", "frontend_code.bin"));
+	wad.set_exit(unpack_binary(wad, *file, header.exit, "exit", "exit.bin"));
+	wad.set_boot(unpack_boot_wad(wad, *file, header.bootwad));
+	wad.set_gadget(unpack_binary(wad, *file, header.gadget, "gadget", "gadget.bin"));
 }
 
 packed_struct(IrxHeader,
@@ -80,8 +80,9 @@ packed_struct(IrxHeader,
 	/* 0xc0 */ ByteRange astrm;
 )
 
-static Asset& unpack_irx_modules(Asset& parent, const FileHandle& src, SectorRange range) {
-	std::vector<u8> compressed_bytes = src.read_binary(range.bytes());
+static Asset& unpack_irx_modules(Asset& parent, InputStream& src, SectorRange range) {
+	src.seek(range.offset.bytes());
+	std::vector<u8> compressed_bytes = src.read_multiple<u8>(range.size.bytes());
 	std::vector<u8> bytes;
 	decompress_wad(bytes, compressed_bytes);
 	IrxHeader header = Buffer(bytes).read<IrxHeader>(0, "irx header");
@@ -130,8 +131,9 @@ packed_struct(BootHeader,
 	/* 0x78 */ ByteRange sram;
 )
 
-static Asset& unpack_boot_wad(Asset& parent, const FileHandle& src, SectorRange range) {
-	std::vector<u8> bytes = src.read_binary(range.bytes());
+static Asset& unpack_boot_wad(Asset& parent, InputStream& src, SectorRange range) {
+	src.seek(range.offset.bytes());
+	std::vector<u8> bytes = src.read_multiple<u8>(range.size.bytes());
 	BootHeader header = Buffer(bytes).read<BootHeader>(0, "boot header");
 	
 	BootWadAsset& boot = parent.asset_file("boot/boot.asset").child<BootWadAsset>("boot");

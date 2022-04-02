@@ -24,8 +24,9 @@
 #include <engine/compression.h>
 
 template <typename Range>
-Asset& unpack_binary(Asset& parent, const FileHandle& src, Range range, const char* child, fs::path path, bool compressed = false) {
-	std::vector<u8> bytes = src.read_binary(range.bytes());
+Asset& unpack_binary(Asset& parent, InputStream& src, Range range, const char* child, fs::path path, bool compressed = false) {
+	src.seek(range.bytes().offset);
+	std::vector<u8> bytes = src.read_multiple<u8>(range.bytes().size);
 	if(compressed) {
 		std::vector<u8> compressed_bytes = std::move(bytes);
 		bytes = std::vector<u8>();
@@ -39,12 +40,12 @@ Asset& unpack_binary(Asset& parent, const FileHandle& src, Range range, const ch
 }
 
 template <typename Range>
-Asset& unpack_compressed_binary(Asset& parent, const FileHandle& src, Range range, const char* child, fs::path path) {
+Asset& unpack_compressed_binary(Asset& parent, InputStream& src, Range range, const char* child, fs::path path) {
 	return unpack_binary(parent, src, range, child, path, true);
 }
 
 template <typename Range>
-std::vector<Asset*> unpack_binaries_impl(Asset& parent, const FileHandle& src, Range* ranges, s32 count, const char* child, bool compressed = false, const char* extension = ".bin") {
+std::vector<Asset*> unpack_binaries_impl(Asset& parent, InputStream& src, Range* ranges, s32 count, const char* child, bool compressed = false, const char* extension = ".bin") {
 	fs::path path = fs::path(child)/child;
 	CollectionAsset& collection = parent.asset_file(path).child<CollectionAsset>(child);
 	
@@ -58,12 +59,12 @@ std::vector<Asset*> unpack_binaries_impl(Asset& parent, const FileHandle& src, R
 }
 
 template <typename Range>
-std::vector<Asset*> unpack_binaries(Asset& parent, const FileHandle& src, Range* ranges, s32 count, const char* child, const char* extension = ".bin") {
+std::vector<Asset*> unpack_binaries(Asset& parent, InputStream& src, Range* ranges, s32 count, const char* child, const char* extension = ".bin") {
 	return unpack_binaries_impl(parent, src, ranges, count, child, false, extension);
 }
 
 template <typename Range>
-std::vector<Asset*> unpack_compressed_binaries(Asset& parent, const FileHandle& src, Range* ranges, s32 count, const char* child, const char* extension = ".bin") {
+std::vector<Asset*> unpack_compressed_binaries(Asset& parent, InputStream& src, Range* ranges, s32 count, const char* child, const char* extension = ".bin") {
 	return unpack_binaries_impl(parent, src, ranges, count, child, true, extension);
 }
 
@@ -72,11 +73,11 @@ Asset& unpack_compressed_binary_from_memory(Asset& parent, Buffer src, ByteRange
 std::vector<Asset*> unpack_compressed_binaries_from_memory(Asset& parent, Buffer src, ByteRange* ranges, s32 count, const char* child);
 
 template <typename Header>
-std::pair<FileHandle, Header> open_wad_file(BinaryAsset& asset) {
-	FileHandle file = asset.file().open_binary_file_for_reading(asset.src());
-	s32 header_size = Buffer(file.read_binary(ByteRange64{0, 4})).read<s32>(0, "header");
-	std::vector<u8> header_bytes = file.read_binary(ByteRange64{0, header_size});
-	Header header = Buffer(header_bytes).read<Header>(0, "file header");
+std::pair<std::unique_ptr<InputStream>, Header> open_wad_file(BinaryAsset& asset) {
+	std::unique_ptr<InputStream> file = asset.file().open_binary_file_for_reading(asset.src());
+	s32 header_size = file->read<s32>(0);
+	file->seek(0);
+	Header header = file->read<Header>();
 	return {std::move(file), header};
 }
 

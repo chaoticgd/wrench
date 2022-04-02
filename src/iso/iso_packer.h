@@ -16,16 +16,20 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef ISO_ISO_EXTRACTOR_H
-#define ISO_ISO_EXTRACTOR_H
+#ifndef ISO_PACKER_H
+#define ISO_PACKER_H
 
-#include <core/util.h>
-#include <core/filesystem.h>
+#include <core/stream.h>
+#include <editor/util.h>
+#include <editor/fs_includes.h>
+#include <editor/command_line.h>
+#include <assetmgr/asset.h>
+#include <assetmgr/asset_types.h>
+#include <iso/iso_filesystem.h>
 #include <iso/table_of_contents.h>
 
-// This is true for R&C2, R&C3 and Deadlocked.
-static const uint32_t SYSTEM_CNF_LBA = 1000;
+using AssetPackerFunc = std::function<void(OutputStream& dest, std::vector<u8>* wad_header_dest, Asset& asset)>;
 
-void extract_iso(const fs::path& output_dir, const std::string& iso_path, const char* row_format);
+void pack_iso(OutputStream& dest, BuildAsset& build, Game game, const AssetPackerFunc& pack_asset);
 
 #endif

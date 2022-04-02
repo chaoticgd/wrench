@@ -22,14 +22,6 @@ ZippedAssetPack::ZippedAssetPack(AssetForest& forest, std::string name, fs::path
 	: AssetPack(forest, std::move(name), false)
 	, _path_to_zip(path_to_zip) {}
 
-std::vector<u8> ZippedAssetPack::read_binary(const FileHandle& file, ByteRange64 range) const {
-	assert(0);
-}
-
-s64 ZippedAssetPack::file_size(const FileHandle& file) const {
-	assert(0);
-}
-
 std::string ZippedAssetPack::read_text_file(const fs::path& path) const {
 	assert(0);
 }
@@ -42,7 +34,7 @@ void ZippedAssetPack::write_text_file(const fs::path& path, const char* contents
 	assert(0);
 }
 
-void ZippedAssetPack::write_binary_file(const fs::path& path, std::function<void(FILE*)> callback) const {
+void ZippedAssetPack::write_binary_file(const fs::path& path, std::function<void(OutputStream&)> callback) const {
 	assert(0);
 }
 
@@ -52,12 +44,4 @@ void ZippedAssetPack::extract_binary_file(const fs::path& relative_dest, Buffer 
 
 std::vector<fs::path> ZippedAssetPack::enumerate_asset_files() const {
 	assert(0);
-}
-
-FILE* ZippedAssetPack::open_asset_write_handle(const fs::path& write_path) const {
-	std::string path_to_zip = _path_to_zip.string();
-	std::string write_path_str = write_path.string();
-	fprintf(stderr, "Tried to write to zipped asset pack! This should never happen!\n");
-	fprintf(stderr, "\tpath_to_zip=%s, write_path=%s\n", path_to_zip.c_str(), write_path_str.c_str());
-	abort();
 }

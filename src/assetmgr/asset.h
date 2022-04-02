@@ -28,6 +28,8 @@
 #include <functional>
 
 #include <core/wtf.h>
+#include <core/stream.h>
+#include <core/wtf_writer.h>
 #include <assetmgr/asset_util.h>
 
 class Asset {
@@ -142,17 +144,16 @@ public:
 	
 	void write() const;
 	
-	FileHandle open_binary_file_for_reading(const FileReference& reference) const;
+	std::unique_ptr<InputStream> open_binary_file_for_reading(const FileReference& reference) const;
 	FileReference write_text_file(const fs::path& path, const char* contents) const;
 	FileReference write_binary_file(const fs::path& path, Buffer contents) const;
-	FileReference write_binary_file(const fs::path& path, std::function<void(FILE*)> callback) const;
+	FileReference write_binary_file(const fs::path& path, std::function<void(OutputStream&)> callback) const;
 	FileReference extract_binary_file(const fs::path& path, Buffer prepend, FILE* src, s64 offset, s64 size) const;
 	
 	AssetFile* lower_precedence();
 	AssetFile* higher_precedence();
 	
 private:
-	friend FileHandle;
 	friend Asset;
 	friend AssetPack;
 	
@@ -181,9 +182,6 @@ public:
 	
 	GameInfo game_info;
 	
-	virtual std::vector<u8> read_binary(const FileHandle& file, ByteRange64 range) const = 0;
-	virtual s64 file_size(const FileHandle& file) const = 0;
-	
 protected:
 	AssetPack(AssetForest& forest, std::string name, bool is_writeable);
 	AssetPack(const AssetPack&) = delete;
@@ -205,14 +203,13 @@ private:
 	
 	Asset* lookup_local_asset(const AssetReference& absolute_reference);
 	
-	virtual FileHandle open_binary_file_for_reading(const fs::path& path) const = 0;
+	virtual std::unique_ptr<InputStream> open_binary_file_for_reading(const fs::path& path) const = 0;
 	virtual std::string read_text_file(const fs::path& path) const = 0;
 	virtual std::vector<u8> read_binary_file(const fs::path& path) const = 0;
 	virtual void write_text_file(const fs::path& path, const char* contents) const = 0;
-	virtual void write_binary_file(const fs::path& path, std::function<void(FILE*)> callback) const = 0;
+	virtual void write_binary_file(const fs::path& path, std::function<void(OutputStream&)> callback) const = 0;
 	virtual void extract_binary_file(const fs::path& relative_dest, Buffer prepend, FILE* src, s64 offset, s64 size) const = 0;
 	virtual std::vector<fs::path> enumerate_asset_files() const = 0;
-	virtual FILE* open_asset_write_handle(const fs::path& path) const = 0;
 	virtual s32 check_lock() const;
 	virtual void lock();
 	
@@ -262,18 +259,14 @@ class LooseAssetPack : public AssetPack {
 public:
 	LooseAssetPack(AssetForest& forest, std::string name, fs::path directory, bool is_writeable);
 	
-	std::vector<u8> read_binary(const FileHandle& file, ByteRange64 range) const override;
-	s64 file_size(const FileHandle& file) const override;
-	
 private:
-	FileHandle open_binary_file_for_reading(const fs::path& path) const override;
+	std::unique_ptr<InputStream> open_binary_file_for_reading(const fs::path& path) const override;
 	std::string read_text_file(const fs::path& path) const override;
 	std::vector<u8> read_binary_file(const fs::path& path) const override;
 	void write_text_file(const fs::path& path, const char* contents) const override;
-	void write_binary_file(const fs::path& path, std::function<void(FILE*)> callback) const override;
+	void write_binary_file(const fs::path& path, std::function<void(OutputStream&)> callback) const override;
 	void extract_binary_file(const fs::path& relative_dest, Buffer prepend, FILE* src, s64 offset, s64 size) const override;
 	std::vector<fs::path> enumerate_asset_files() const override;
-	FILE* open_asset_write_handle(const fs::path& path) const override;
 	s32 check_lock() const override;
 	void lock() override;
 	

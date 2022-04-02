@@ -68,6 +68,10 @@ AssetType Build {
 	AssetReferenceAttribute scene  { allowed_asset_types: ['SceneWad' 'Binary'] }
 	AssetReferenceAttribute space  { allowed_asset_types: ['SpaceWad' 'Binary'] }
 	
+	IntegerAttribute single_level {
+		default: -1
+	}
+	
 	ArrayAttribute levels {
 		AssetReferenceAttribute element {
 			allowed_asset_types: [

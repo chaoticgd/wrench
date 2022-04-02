@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2022 chaoticgd
+	Copyright (C) 2019-2022 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,24 +16,26 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef ASSETMGR_ASSET_TYPES_H
-#define ASSETMGR_ASSET_TYPES_H
+#ifndef CORE_WTF_WRITER_H
+#define CORE_WTF_WRITER_H
 
-#include <core/wtf.h>
-#include <core/wtf_writer.h>
 #include <core/util.h>
-#include <assetmgr/asset.h>
 
-struct InvalidAssetAttributeType {
-	InvalidAssetAttributeType(const WtfNode* node, const WtfAttribute* attribute) {}
-};
+struct WtfWriter;
 
-struct MissingAssetAttribute {
-	MissingAssetAttribute() {}
-};
+WtfWriter* wtf_begin_file(std::string& dest);
+void wtf_end_file(WtfWriter* ctx);
 
-#define GENERATED_ASSET_HEADER
-#include "_generated_asset_types.inl"
-#undef GENERATED_ASSET_HEADER
+void wtf_begin_node(WtfWriter* ctx, const char* type_name, const char* tag);
+void wtf_end_node(WtfWriter* ctx);
+
+void wtf_begin_attribute(WtfWriter* ctx, const char* key);
+void wtf_end_attribute(WtfWriter* ctx);
+void wtf_write_integer(WtfWriter* ctx, int32_t i);
+void wtf_write_float(WtfWriter* ctx, float f);
+void wtf_write_string(WtfWriter* ctx, const char* string);
+
+void wtf_begin_array(WtfWriter* ctx);
+void wtf_end_array(WtfWriter* ctx);
 
 #endif

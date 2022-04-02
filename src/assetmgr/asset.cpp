@@ -262,16 +262,16 @@ Asset& AssetFile::root() {
 }
 
 void AssetFile::write() const {
-	FILE* fh = _pack.open_asset_write_handle(_relative_directory/_file_name);
-	WtfWriter* ctx = wtf_begin_file(fh);
+	std::string dest;
+	WtfWriter* ctx = wtf_begin_file(dest);
 	defer([&]() {
 		wtf_end_file(ctx);
-		fclose(fh);
 	});
 	_root->write(ctx);
+	_pack.write_text_file(_relative_directory/_file_name, dest.c_str());
 }
 
-FileHandle AssetFile::open_binary_file_for_reading(const FileReference& reference) const {
+std::unique_ptr<InputStream> AssetFile::open_binary_file_for_reading(const FileReference& reference) const {
 	assert(reference.owner == this);
 	return _pack.open_binary_file_for_reading(_relative_directory/reference.path);
 }
@@ -282,16 +282,16 @@ FileReference AssetFile::write_text_file(const fs::path& path, const char* conte
 }
 
 FileReference AssetFile::write_binary_file(const fs::path& path, Buffer contents) const {
-	_pack.write_binary_file(_relative_directory/path, [&](FILE* file) {
+	_pack.write_binary_file(_relative_directory/path, [&](OutputStream& file) {
 		if(contents.size() > 0) {
-			verify(fwrite(contents.lo, contents.size(), 1, file) == 1,
+			verify(file.write(contents.lo, contents.size()),
 				"Failed to write to file '%s'.", path.string().c_str());
 		}
 	});
 	return FileReference(*this, path);
 }
 
-FileReference AssetFile::write_binary_file(const fs::path& path, std::function<void(FILE*)> callback) const {
+FileReference AssetFile::write_binary_file(const fs::path& path, std::function<void(OutputStream&)> callback) const {
 	_pack.write_binary_file(_relative_directory/path, callback);
 	return FileReference(*this, path);
 }
@@ -391,9 +391,9 @@ AssetFile& AssetPack::asset_file(fs::path relative_path) {
 }
 
 void AssetPack::write() const {
-	FILE* game_info_file = open_asset_write_handle("gameinfo.txt");
-	defer([&]() { fclose(game_info_file); });
-	write_game_info(game_info_file, game_info);
+	std::string game_info_str;
+	write_game_info(game_info_str, game_info);
+	write_text_file("gameinfo.txt", game_info_str.c_str());
 	
 	for(const std::unique_ptr<AssetFile>& file : _asset_files) {
 		file->write();
@@ -453,18 +453,14 @@ LooseAssetPack::LooseAssetPack(AssetForest& forest, std::string name, fs::path d
 	: AssetPack(forest, std::move(name), is_writeable)
 	, _directory(directory) {}
 
-std::vector<u8> LooseAssetPack::read_binary(const FileHandle& file, ByteRange64 range) const {
-	return read_file(file.handle, range.offset, range.size);
-}
-
-s64 LooseAssetPack::file_size(const FileHandle& file) const {
-	fseek(file.handle, 0, SEEK_END);
-	return ftell(file.handle);
-}
-
-FileHandle LooseAssetPack::open_binary_file_for_reading(const fs::path& path) const {
+std::unique_ptr<InputStream> LooseAssetPack::open_binary_file_for_reading(const fs::path& path) const {
 	std::string full_path = (_directory/path).string();
-	return FileHandle(*this, fopen(full_path.c_str(), "rb"));
+	auto stream = std::make_unique<FileInputStream>();
+	if(stream->open(full_path)) {
+		return stream;
+	} else {
+		return nullptr;
+	}
 }
 
 std::string LooseAssetPack::read_text_file(const fs::path& path) const {
@@ -485,14 +481,13 @@ void LooseAssetPack::write_text_file(const fs::path& path, const char* contents)
 	write_file(_directory/path, Buffer((u8*) contents, (u8*) contents + strlen(contents)), "w");
 }
 
-void LooseAssetPack::write_binary_file(const fs::path& path, std::function<void(FILE*)> callback) const {
+void LooseAssetPack::write_binary_file(const fs::path& path, std::function<void(OutputStream&)> callback) const {
 	assert(is_writeable());
 	fs::path full_path = _directory/path;
 	fs::create_directories(full_path.parent_path());
-	FILE* file = fopen(full_path.string().c_str(), "wb");
-	verify(file, "Failed to open file '%s' for writing.", full_path.string().c_str());
-	callback(file);
-	fclose(file);
+	FileOutputStream stream;
+	verify(stream.open(full_path), "Failed to open file '%s' for writing.", full_path.string().c_str());
+	callback(stream);
 }
 
 void LooseAssetPack::extract_binary_file(const fs::path& relative_dest, Buffer prepend, FILE* src, s64 offset, s64 size) const {
@@ -516,12 +511,6 @@ std::vector<fs::path> LooseAssetPack::enumerate_asset_files() const {
 		}
 	}
 	return asset_files;
-}
-
-FILE* LooseAssetPack::open_asset_write_handle(const fs::path& path) const {
-	fs::create_directories((_directory/path).parent_path());
-	std::string string = (_directory/path).string();
-	return fopen(string.c_str(), "w");
 }
 
 s32 LooseAssetPack::check_lock() const {

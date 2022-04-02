@@ -67,30 +67,6 @@ std::string asset_reference_to_string(const AssetReference& reference) {
 	return string;
 }
 
-FileHandle::FileHandle(const AssetPack& p, FILE* h)
-	: pack(p)
-	, handle(h) {}
-
-FileHandle::FileHandle(FileHandle&& rhs)
-	: pack(rhs.pack)
-	, handle(rhs.handle) {
-	rhs.handle = nullptr;
-}
-
-FileHandle::~FileHandle() {
-	if(handle) {
-		fclose(handle);
-	}
-}
-
-std::vector<u8> FileHandle::read_binary(ByteRange64 range) const {
-	return pack.read_binary(*this, range);
-}
-
-s64 FileHandle::size() const {
-	return pack.file_size(*this);
-}
-
 GameInfo read_game_info(char* input) {
 	char* error_dest = nullptr;
 	WtfNode* root = wtf_parse(input, &error_dest);
@@ -135,8 +111,8 @@ GameInfo read_game_info(char* input) {
 	return info;
 }
 
-void write_game_info(FILE* file, const GameInfo& info) {
-	WtfWriter* ctx = wtf_begin_file(file);
+void write_game_info(std::string& dest, const GameInfo& info) {
+	WtfWriter* ctx = wtf_begin_file(dest);
 	
 	wtf_begin_attribute(ctx, "game");
 	wtf_write_string(ctx, info.game.c_str());

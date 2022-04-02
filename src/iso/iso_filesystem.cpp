@@ -19,7 +19,6 @@
 #include "iso_filesystem.h"
 
 #include <core/filesystem.h>
-#include <editor/util.h>
 
 packed_struct(IsoPathTableEntry,
 	u8 identifier_length;
@@ -110,7 +109,7 @@ void read_directory_record(IsoDirectory& dest, Buffer src, s64 ofs, size_t size,
 	verify(i != 1000, "Iteration limit exceeded while reading directory!");
 }
 
-void copy_and_pad(char* dest, const char* src, size_t size) {
+static void copy_and_pad(char* dest, const char* src, size_t size) {
 	size_t i;
 	for(i = 0; i < strlen(src); i++) {
 		dest[i] = src[i];
@@ -120,24 +119,24 @@ void copy_and_pad(char* dest, const char* src, size_t size) {
 	}
 }
 
-void flatten_subdirs(std::vector<IsoDirectory*>* flat_dirs, IsoDirectory* dir) {
-	for(size_t i = 0; i < dir->subdirs.size(); i++) {
-		IsoDirectory* subdir = &dir->subdirs[i];
-		subdir->parent = dir;
-		subdir->index = flat_dirs->size();
-		subdir->parent_index = dir->index;
-		flat_dirs->push_back(subdir);
-		flatten_subdirs(flat_dirs, subdir);
+static void flatten_subdirs(std::vector<IsoDirectory*>* flat_dirs, IsoDirectory* dir) {
+	for(IsoDirectory& subdir : dir->subdirs) {
+		subdir.parent = dir;
+		subdir.index = flat_dirs->size();
+		subdir.parent_index = dir->index;
+		flat_dirs->push_back(&subdir);
+		flatten_subdirs(flat_dirs, &subdir);
 	}
 }
 
-void write_directory_records(stream& dest, const IsoDirectory& dir);
+static void write_directory_records(OutputStream& dest, const IsoDirectory& dir);
+static void write_directory_record(OutputStream& dest, const IsoFileRecord& file, u8 flags);
 
-void write_iso_filesystem(stream& dest, IsoDirectory* root_dir) {
+void write_iso_filesystem(OutputStream& dest, IsoDirectory* root_dir) {
 	// Write out system area.
 	static const u8 zeroed_sector[SECTOR_SIZE] = {0};
-	for(int i = 0; i < 0x10; i++) {
-		dest.write_n((char*) zeroed_sector, sizeof(zeroed_sector));
+	for(s32 i = 0; i < 0x10; i++) {
+		dest.write(zeroed_sector, sizeof(zeroed_sector));
 	}
 	
 	IsoDateTime zeroed_datetime = {{0}};
@@ -196,19 +195,41 @@ void write_iso_filesystem(stream& dest, IsoDirectory* root_dir) {
 	
 	dest.pad(SECTOR_SIZE, 0);
 	static const u8 volume_desc_set_terminator[] = {0xff, 'C', 'D', '0', '0', '1', 0x01};
-	dest.write_n((char*) volume_desc_set_terminator, sizeof(volume_desc_set_terminator));
+	dest.write(volume_desc_set_terminator, sizeof(volume_desc_set_terminator));
 	
 	// It seems like the path table is always expected to be at this LBA even if
 	// we write a different one into the PVD. Maybe it's hardcoded?
 	dest.pad(SECTOR_SIZE, 0);
 	while(dest.tell() < 0x101 * SECTOR_SIZE) {
-		dest.write_n((char*) zeroed_sector, sizeof(zeroed_sector));
+		dest.write(zeroed_sector, sizeof(zeroed_sector));
 	}
 	
 	// Get a linear list of all the directories. This also sets the parent
 	// pointers and indices.
 	std::vector<IsoDirectory*> flat_dirs;
 	flatten_subdirs(&flat_dirs, root_dir);
+	
+	// Fixup the file names.
+	for(char& c : root_dir->name) {
+		c = toupper(c);
+	}
+	for(IsoFileRecord& file : root_dir->files) {
+		for(char& c : file.name) {
+			c = toupper(c);
+		}
+		file.name += ";1";
+	}
+	for(IsoDirectory* dir : flat_dirs) {
+		for(char& c : dir->name) {
+			c = toupper(c);
+		}
+		for(IsoFileRecord& file : dir->files) {
+			for(char& c : file.name) {
+				c = toupper(c);
+			}
+			file.name += ";1";
+		}
+	}
 	
 	// Determine the LBAs of the path table and the root directory.
 	dest.pad(SECTOR_SIZE, 0);
@@ -221,7 +242,8 @@ void write_iso_filesystem(stream& dest, IsoDirectory* root_dir) {
 	// Determine directory record LBAs and sizes.
 	size_t next_dir_lba = pvd.root_directory.lba.lsb;
 	root_dir->lba = {(s32) pvd.root_directory.lba.lsb};
-	array_stream root_dummy;
+	std::vector<u8> root_dummy_vec;
+	MemoryOutputStream root_dummy(root_dummy_vec);
 	write_directory_records(root_dummy, *root_dir);
 	root_dir->size = root_dummy.size();
 	pvd.root_directory.data_length = IsoLsbMsb32::from_scalar(root_dir->size);
@@ -229,7 +251,8 @@ void write_iso_filesystem(stream& dest, IsoDirectory* root_dir) {
 	for(size_t i = 0; i < flat_dirs.size(); i++) {
 		IsoDirectory* dir = flat_dirs[i];
 		dir->lba = {(s32) next_dir_lba};
-		array_stream dummy;
+		std::vector<u8> dummy_vec;
+		MemoryOutputStream dummy(dummy_vec);
 		write_directory_records(dummy, *dir);
 		dir->size = dummy.size();
 		next_dir_lba += Sector32::size_from_bytes(dir->size).sectors;
@@ -252,7 +275,7 @@ void write_iso_filesystem(stream& dest, IsoDirectory* root_dir) {
 		root_pte.lba = dir->lba.sectors;
 		root_pte.parent = dir->parent_index;
 		dest.write(root_pte);
-		dest.write_n(dir->name.data(), dir->name.size());
+		dest.write((u8*) dir->name.data(), dir->name.size());
 		if(root_pte.identifier_length % 2 == 1) {
 			dest.write<u8>(0); // pad
 		}
@@ -278,7 +301,7 @@ void write_iso_filesystem(stream& dest, IsoDirectory* root_dir) {
 		root_pte.lba = byte_swap_32(dir->lba.sectors);
 		root_pte.parent = dir->parent_index;
 		dest.write(root_pte);
-		dest.write_n(dir->name.data(), dir->name.size());
+		dest.write((u8*) dir->name.data(), dir->name.size());
 		if(root_pte.identifier_length % 2 == 1) {
 			dest.write<u8>(0); // pad
 		}
@@ -294,57 +317,54 @@ void write_iso_filesystem(stream& dest, IsoDirectory* root_dir) {
 	}
 }
 
-void write_directory_records(stream& dest, const IsoDirectory& dir) {
+static void write_directory_records(OutputStream& dest, const IsoDirectory& dir) {
 	// Either this is being written out to a dummy stream to calculate the space
 	// required for the directory record, or this should be being written out at
 	// the correct LBA.
 	assert(dest.tell() == 0 || dest.tell() == dir.lba.bytes());
-	auto write_directory_record = [&](const IsoFileRecord& file, u8 flags) {
-		IsoDirectoryRecord record;
-		record.record_length =
-			sizeof(IsoDirectoryRecord) +
-			file.name.size() +
-			(file.name.size() % 2 == 0);
-		record.extended_attribute_record_length = 0;
-		record.lba = IsoLsbMsb32::from_scalar(file.lba.sectors);
-		record.data_length = IsoLsbMsb32::from_scalar(file.size);
-		memset(record.recording_date_time, 0, sizeof(record.recording_date_time));
-		record.file_flags = flags;
-		record.file_unit_size = 0;
-		record.interleave_gap_size = 0;
-		record.volume_sequence_number = IsoLsbMsb16::from_scalar(1);
-		record.identifier_length = file.name.size() + (file.name.size() == 0);
-		if((dest.tell() % SECTOR_SIZE) + record.record_length > 0x800) {
-			// Directory records cannot cross sector boundaries.
-			dest.pad(SECTOR_SIZE, 0);
-		}
-		dest.write(record);
-		std::string upper_name = file.name;
-		for(char& c : upper_name) {
-			c = toupper(c);
-		}
-		dest.write_n(upper_name.data(), upper_name.size());
-		if(file.name.size() % 2 == 0) {
-			dest.write<u8>(0);
-		}
-	};
 	IsoFileRecord dot = {"", dir.lba, dir.size};
-	write_directory_record(dot, 2);
+	write_directory_record(dest, dot, 2);
 	IsoFileRecord dot_dot = {"\x01", dir.lba, dir.size};
 	if(dir.parent != nullptr) {
 		dot_dot.lba = dir.parent->lba;
 		dot_dot.size = dir.parent->size;
 	}
-	write_directory_record(dot_dot, 2);
+	write_directory_record(dest, dot_dot, 2);
 	for(const IsoFileRecord& file : dir.files) {
-		write_directory_record(file, 0);
+		write_directory_record(dest, file, 0);
 	}
 	for(const IsoDirectory& dir : dir.subdirs) {
 		IsoFileRecord record = {dir.name, dir.lba, dir.size};
-		write_directory_record(record, 2);
+		write_directory_record(dest, record, 2);
 	}
 }
 
-void print_file_record(const IsoFileRecord& record, const char* row_format) {
-	printf(row_format, (size_t) record.lba.sectors, (size_t) record.size, record.name.c_str());
+static void write_directory_record(OutputStream& dest, const IsoFileRecord& file, u8 flags) {
+	IsoDirectoryRecord record;
+	record.record_length =
+		sizeof(IsoDirectoryRecord) +
+		file.name.size() +
+		(file.name.size() % 2 == 0);
+	record.extended_attribute_record_length = 0;
+	record.lba = IsoLsbMsb32::from_scalar(file.lba.sectors);
+	record.data_length = IsoLsbMsb32::from_scalar(file.size);
+	memset(record.recording_date_time, 0, sizeof(record.recording_date_time));
+	record.file_flags = flags;
+	record.file_unit_size = 0;
+	record.interleave_gap_size = 0;
+	record.volume_sequence_number = IsoLsbMsb16::from_scalar(1);
+	record.identifier_length = file.name.size() + (file.name.size() == 0);
+	if((dest.tell() % SECTOR_SIZE) + record.record_length > SECTOR_SIZE) {
+		// Directory records cannot cross sector boundaries.
+		dest.pad(SECTOR_SIZE, 0);
+	}
+	dest.write(record);
+	dest.write((u8*) file.name.data(), file.name.size());
+	if(file.name.size() % 2 == 0) {
+		dest.write<u8>(0);
+	}
+}
+
+void print_file_record(const IsoFileRecord& record) {
+	printf("%-16ld%-16ld%s\n", (size_t) record.lba.sectors, (size_t) record.size, record.name.c_str());
 }

@@ -25,22 +25,8 @@
 #include <core/level.h>
 #include <core/buffer.h>
 #include <engine/compression.h>
+#include <iso/table_of_contents.h> // Rac1LevelWadHeader
 #include <spanner/gameplay.h>
-
-// Note: This header is specific to files emitted by the Wrench ISO utility and
-// the Wrench WAD utility. The header stored on the disc is different and is not
-// usable as a regular file header as-is.
-packed_struct(Rac1LevelWadHeader,
-	/* 0x000 */ s32 header_size;
-	/* 0x004 */ s32 pad_4;
-	/* 0x008 */ s32 level_number;
-	/* 0x00c */ s32 pad_c;
-	/* 0x010 */ SectorRange primary;
-	/* 0x018 */ SectorRange gameplay_ntsc;
-	/* 0x020 */ SectorRange gameplay_pal;
-	/* 0x028 */ SectorRange occlusion;
-)
-static_assert(sizeof(Rac1LevelWadHeader) == 0x30);
 
 packed_struct(Rac23LevelWadHeader,
 	/* 0x00 */ s32 header_size;

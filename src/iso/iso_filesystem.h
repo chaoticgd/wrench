@@ -23,7 +23,8 @@
 
 #include <core/buffer.h>
 #include <core/filesystem.h>
-#include "legacy_stream.h"
+#include <core/stream.h>
+#include <assetmgr/asset_types.h>
 
 packed_struct(IsoLsbMsb16,
 	s16 lsb;
@@ -110,6 +111,7 @@ struct IsoFileRecord {
 	std::string name;
 	Sector32 lba;
 	u32 size;
+	FileAsset* asset = nullptr;
 };
 
 struct IsoDirectory {
@@ -142,8 +144,8 @@ bool read_iso_filesystem(IsoFilesystem& dest, Buffer src);
 // Given a list of files including their LBA and size, write out an ISO
 // filesystem. This function is "dumb" in that it doesn't work out any positions
 // by itself.
-void write_iso_filesystem(stream& dest, IsoDirectory* root_dir);
+void write_iso_filesystem(OutputStream& dest, IsoDirectory* root_dir);
 
-void print_file_record(const IsoFileRecord& record, const char* row_format);
+void print_file_record(const IsoFileRecord& record);
 
 #endif

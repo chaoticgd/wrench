@@ -29,5 +29,5 @@ void unpack_space_wad(AssetPack& dest, BinaryAsset& src) {
 	AssetFile& asset_file = dest.asset_file("space/space.asset");
 	
 	SpaceWadAsset& wad = asset_file.root().child<SpaceWadAsset>("space");
-	wad.set_transitions(unpack_compressed_binaries(wad, file, ARRAY_PAIR(header.transition_wads), "transitions"));
+	wad.set_transitions(unpack_compressed_binaries(wad, *file, ARRAY_PAIR(header.transition_wads), "transitions"));
 }

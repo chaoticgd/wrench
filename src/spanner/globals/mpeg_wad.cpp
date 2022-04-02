@@ -29,5 +29,5 @@ void unpack_mpeg_wad(AssetPack& dest, BinaryAsset& src) {
 	AssetFile& asset_file = dest.asset_file("mpegs/mpegs.asset");
 	
 	MpegWadAsset& wad = asset_file.root().child<MpegWadAsset>("mpegs");
-	wad.set_story(unpack_binaries(wad, file, ARRAY_PAIR(header.story), "story", ".pss"));
+	wad.set_story(unpack_binaries(wad, *file, ARRAY_PAIR(header.story), "story", ".pss"));
 }

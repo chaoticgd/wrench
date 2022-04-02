@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2021 chaoticgd
+	Copyright (C) 2019-2022 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,14 +19,16 @@
 #ifndef ISO_TABLE_OF_CONTENTS_H
 #define ISO_TABLE_OF_CONTENTS_H
 
-#include <editor/level_file_types.h>
-#include "legacy_stream.h"
+#include <core/stream.h>
+#include <assetmgr/asset.h>
 
 struct GlobalWadInfo {
 	size_t index;
 	u32 offset_in_toc;
 	Sector32 sector;
 	std::vector<u8> header;
+	Asset* asset;
+	std::string name;
 };
 
 packed_struct(toc_level_table_entry,
@@ -35,17 +37,19 @@ packed_struct(toc_level_table_entry,
 
 struct LevelWadInfo {
 	Sector32 header_lba;
-	u32 magic;
 	Sector32 file_lba;
 	Sector32 file_size;
-	level_file_info info;
 	std::vector<u8> header;
 	bool prepend_header = false;
+	Asset* asset;
 };
 
 struct LevelInfo {
-	size_t level_table_index;
-	Opt<LevelWadInfo> parts[3];
+	Opt<LevelWadInfo> level;
+	Opt<LevelWadInfo> audio;
+	Opt<LevelWadInfo> scene;
+	s32 level_table_index;
+	s64 level_table_entry_offset = 0;
 };
 
 struct table_of_contents {
@@ -75,7 +79,7 @@ packed_struct(Rac1AmalgamatedWadHeader,
 static_assert(sizeof(Rac1AmalgamatedWadHeader) == 0x2434);
 
 // These are the files that get dumped out by the Wrench ISO utility. Sector
-// numbers are relative the the start of the file. This is specific to Wrench.
+// numbers are relative to the start of the file. This is specific to Wrench.
 packed_struct(Rac1LevelWadHeader,
 	/* 0x000 */ s32 header_size;
 	/* 0x004 */ s32 pad_4;
@@ -109,7 +113,7 @@ packed_struct(VagHeader,
 	/* 0x14 */ u8 reserved_14[10];
 	/* 0x1e */ u8 channel_count;
 	/* 0x1f */ u8 reserved_1f;
-	/* 0x20 */ u8 name[16];
+	/* 0x20 */ char name[16];
 )
 static_assert(sizeof(VagHeader) == 0x30);
 
@@ -118,6 +122,7 @@ packed_struct(LzHeader,
 	s32 compressed_size;
 )
 
+static const uint32_t SYSTEM_CNF_LBA = 1000;
 static const uint32_t RAC1_TABLE_OF_CONTENTS_LBA = 1500;
 static const uint32_t RAC234_TABLE_OF_CONTENTS_LBA = 1001;
 
@@ -128,5 +133,8 @@ static const std::size_t TOC_MAX_LEVELS     = 100;
 table_of_contents read_table_of_contents(FILE* iso, Game game);
 table_of_contents read_table_of_contents_rac1(FILE* iso);
 table_of_contents read_table_of_contents_rac234(FILE* iso);
+
+s64 write_table_of_contents_rac234(OutputStream& iso, const table_of_contents& toc, Game game);
+Sector32 calculate_table_of_contents_size(const table_of_contents& toc, s32 single_level_index);
 
 #endif

@@ -30,6 +30,6 @@ void unpack_online_wad(AssetPack& dest, BinaryAsset& src) {
 	AssetFile& asset_file = dest.asset_file("online/online.asset");
 	
 	OnlineWadAsset& wad = asset_file.root().child<OnlineWadAsset>("online");
-	wad.set_data(unpack_binary(wad, file, header.data, "data", "data.bin"));
-	wad.set_transition_backgrounds(unpack_binaries(wad, file, ARRAY_PAIR(header.transition_backgrounds), "transition_backgrounds", ".bin"));
+	wad.set_data(unpack_binary(wad, *file, header.data, "data", "data.bin"));
+	wad.set_transition_backgrounds(unpack_binaries(wad, *file, ARRAY_PAIR(header.transition_backgrounds), "transition_backgrounds", ".bin"));
 }

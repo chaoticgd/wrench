@@ -135,7 +135,9 @@ static void generate_asset_type(const WtfNode* asset_type, s32 id) {
 				first = false;
 			}
 			out("\t\n");
+			out("\tbool has_%s();\n", getter_name.c_str());
 			out("\t%s %s();\n", cpp_type.c_str(), getter_name.c_str());
+			out("\t%s %s(%s& def);\n", cpp_type.c_str(), getter_name.c_str(), cpp_type.c_str());
 			out("\tvoid set_%s(%s src_0);\n", node->tag, cpp_type.c_str());
 			if(strcmp(node->type_name, "AssetReferenceAttribute") == 0) {
 				out("\tvoid set_%s(Asset& src_0);\n", node->tag);
@@ -304,27 +306,56 @@ static void generate_getter_and_setter_functions(const WtfNode* asset_type) {
 				getter_name = '_' + getter_name;
 			}
 			
-			std::string internal_type = node_to_cpp_type(node, true);
-			out("%s %sAsset::%s() {\n", interface_type.c_str(), asset_type->tag, getter_name.c_str());
-			out("\t%s dest_0;\n", interface_type.c_str());
+			out("bool %sAsset::has_%s() {\n", asset_type->tag, getter_name.c_str());
 			out("\tif(!_attribute_%s.has_value()) {\n", node->tag);
 			out("\t\tif(lower_precedence()) {\n");
-			out("\t\t\tdest_0 = static_cast<%sAsset*>(lower_precedence())->%s();\n", asset_type->tag, getter_name.c_str());
+			out("\t\t\treturn static_cast<%sAsset*>(lower_precedence())->has_%s();\n", asset_type->tag, getter_name.c_str());
 			out("\t\t} else {\n");
-			out("\t\t\tassert(0); // TODO\n");
+			out("\t\t\treturn false;\n");
 			out("\t\t}\n");
 			out("\t} else {\n");
-			out("\t\tconst %s& src_0 = *_attribute_%s;\n\n", internal_type.c_str(), node->tag);
-			generate_getter_code(node, 0);
+			out("\t\treturn true;\n");
 			out("\t}\n");
-			out("\treturn dest_0;\n");
-			out("}\n\n");
+			out("}\n");
+			out("\n");
+			
+			std::string internal_type = node_to_cpp_type(node, true);
+			for(s32 getter_type = 0; getter_type < 2; getter_type++) {
+				if(getter_type == 0) {
+					out("%s %sAsset::%s() {\n", interface_type.c_str(), asset_type->tag, getter_name.c_str());
+				} else {
+					out("%s %sAsset::%s(%s& def) {\n", interface_type.c_str(), asset_type->tag, getter_name.c_str(), interface_type.c_str());
+				}
+				out("\t%s dest_0;\n", interface_type.c_str());
+				out("\tif(!_attribute_%s.has_value()) {\n", node->tag);
+				out("\t\tif(lower_precedence()) {\n");
+				if(getter_type == 0) {
+					out("\t\t\tdest_0 = static_cast<%sAsset*>(lower_precedence())->%s();\n", asset_type->tag, getter_name.c_str());
+				} else {
+					out("\t\t\tdest_0 = static_cast<%sAsset*>(lower_precedence())->%s(def);\n", asset_type->tag, getter_name.c_str());
+				}
+				out("\t\t} else {\n");
+				if(getter_type == 0) {
+					out("\t\tthrow MissingAssetAttribute();\n");
+				} else {
+					out("\t\treturn def;\n");
+				}
+				out("\t\t}\n");
+				out("\t} else {\n");
+				out("\t\tconst %s& src_0 = *_attribute_%s;\n\n", internal_type.c_str(), node->tag);
+				generate_getter_code(node, 0);
+				out("\t}\n");
+				out("\treturn dest_0;\n");
+				out("}\n");
+				out("\n");
+			}
 			
 			out("void %sAsset::set_%s(%s src_0) {\n", asset_type->tag, node->tag, interface_type.c_str());
 			out("\t%s dest_0;\n", internal_type.c_str());
 			generate_setter_code(node, 0);
 			out("\t_attribute_%s = std::move(dest_0);\n", node->tag);
-			out("}\n\n");
+			out("}\n");
+			out("\n");
 			
 			if(strcmp(node->type_name, "AssetReferenceAttribute") == 0) {
 				out("void %sAsset::set_%s(Asset& src_0) {\n", asset_type->tag, node->tag);

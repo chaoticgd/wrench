@@ -42,13 +42,13 @@ void unpack_armor_wad(AssetPack& dest, BinaryAsset& src) {
 		if(header.armors[i].mesh.size.sectors > 0) {
 			Asset& armor_wad = wad.asset_file(stringf("%02d/armor.asset", i));
 			ArmorAsset& armor = armor_wad.child<ArmorAsset>(std::to_string(i));
-			armor.set_mesh(unpack_binary(armor, file, header.armors[i].mesh, "mesh", "mesh.bin"));
-			armor.set_mesh(unpack_binary(armor, file, header.armors[i].textures, "textures", "textures.bin"));
+			armor.set_mesh(unpack_binary(armor, *file, header.armors[i].mesh, "mesh", "mesh.bin"));
+			armor.set_mesh(unpack_binary(armor, *file, header.armors[i].textures, "textures", "textures.bin"));
 			armors.push_back(&armor);
 		}
 	}
 	wad.set_armors(armors);
-	wad.set_bot_textures(unpack_binaries(wad, file, ARRAY_PAIR(header.bot_textures), "bot_textures"));
-	wad.set_landstalker_textures(unpack_binaries(wad, file, ARRAY_PAIR(header.landstalker_textures), "landstalker_textures"));
-	wad.set_dropship_textures(unpack_binaries(wad, file, ARRAY_PAIR(header.dropship_textures), "dropship_textures"));
+	wad.set_bot_textures(unpack_binaries(wad, *file, ARRAY_PAIR(header.bot_textures), "bot_textures"));
+	wad.set_landstalker_textures(unpack_binaries(wad, *file, ARRAY_PAIR(header.landstalker_textures), "landstalker_textures"));
+	wad.set_dropship_textures(unpack_binaries(wad, *file, ARRAY_PAIR(header.dropship_textures), "dropship_textures"));
 }

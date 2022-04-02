@@ -32,7 +32,7 @@ packed_struct(AudioWadHeaderDL,
 	/* 0x87a0 */ struct Sector32 help_italian[2100];
 )
 
-static Asset* unpack_help_audio(HelpAudioAsset& help, FileHandle& file, Sector32 sector, std::string name, const std::set<s64>& end_sectors);
+static Asset* unpack_help_audio(HelpAudioAsset& help, InputStream& file, Sector32 sector, std::string name, const std::set<s64>& end_sectors);
 
 void unpack_audio_wad(AssetPack& dest, BinaryAsset& src) {
 	auto [file, header] = open_wad_file<AudioWadHeaderDL>(src);
@@ -46,7 +46,7 @@ void unpack_audio_wad(AssetPack& dest, BinaryAsset& src) {
 	for(Sector32 sector : header.help_german) end_sectors.insert(sector.sectors);
 	for(Sector32 sector : header.help_spanish) end_sectors.insert(sector.sectors);
 	for(Sector32 sector : header.help_italian) end_sectors.insert(sector.sectors);
-	end_sectors.insert(Sector32::size_from_bytes(file.size()).sectors);
+	end_sectors.insert(Sector32::size_from_bytes(file->size()).sectors);
 	
 	AudioWadAsset& wad = asset_file.root().child<AudioWadAsset>("audio");
 	std::vector<Asset*> vendor;
@@ -57,7 +57,8 @@ void unpack_audio_wad(AssetPack& dest, BinaryAsset& src) {
 		if(sector > 0) {
 			auto end_sector = end_sectors.upper_bound(sector);
 			verify(end_sector != end_sectors.end(), "Header references audio beyond end of file. The WAD file may be truncated.");
-			std::vector<u8> bytes = file.read_binary(ByteRange64{sector * SECTOR_SIZE, (*end_sector - sector) * SECTOR_SIZE});
+			file->seek(sector * SECTOR_SIZE);
+			std::vector<u8> bytes = file->read_multiple<u8>((*end_sector - sector) * SECTOR_SIZE);
 			FileReference ref = vendor_file.file().write_binary_file(std::to_string(i) + ".vag", bytes);
 			BinaryAsset& binary = vendor_collection.child<BinaryAsset>(std::to_string(i));
 			binary.set_src(ref);
@@ -65,7 +66,7 @@ void unpack_audio_wad(AssetPack& dest, BinaryAsset& src) {
 		}
 	}
 	wad.set_vendor(vendor);
-	wad.set_global_sfx(unpack_binaries(wad, file, ARRAY_PAIR(header.global_sfx), "global_sfx", ".vag"));
+	wad.set_global_sfx(unpack_binaries(wad, *file, ARRAY_PAIR(header.global_sfx), "global_sfx", ".vag"));
 	std::vector<Asset*> help_assets;
 	Asset& help_file = wad.asset_file("help/help.asset");
 	for(s32 i = 0; i < ARRAY_SIZE(header.help_english); i++) {
@@ -81,23 +82,23 @@ void unpack_audio_wad(AssetPack& dest, BinaryAsset& src) {
 			Asset& help_audio_file = help_file.asset_file(stringf("%d/audio.asset", i));
 			HelpAudioAsset& help = help_audio_file.child<HelpAudioAsset>(std::to_string(i));
 			
-			if(Asset* asset = unpack_help_audio(help, file, header.help_english[i], "english", end_sectors)) {
+			if(Asset* asset = unpack_help_audio(help, *file, header.help_english[i], "english", end_sectors)) {
 				help.set_english(asset);
 			}
 			
-			if(Asset* asset = unpack_help_audio(help, file, header.help_french[i], "french", end_sectors)) {
+			if(Asset* asset = unpack_help_audio(help, *file, header.help_french[i], "french", end_sectors)) {
 				help.set_french(asset);
 			}
 			
-			if(Asset* asset = unpack_help_audio(help, file, header.help_german[i], "german", end_sectors)) {
+			if(Asset* asset = unpack_help_audio(help, *file, header.help_german[i], "german", end_sectors)) {
 				help.set_german(asset);
 			}
 			
-			if(Asset* asset = unpack_help_audio(help, file, header.help_spanish[i], "spanish", end_sectors)) {
+			if(Asset* asset = unpack_help_audio(help, *file, header.help_spanish[i], "spanish", end_sectors)) {
 				help.set_spanish(asset);
 			}
 			
-			if(Asset* asset = unpack_help_audio(help, file, header.help_italian[i], "italian", end_sectors)) {
+			if(Asset* asset = unpack_help_audio(help, *file, header.help_italian[i], "italian", end_sectors)) {
 				help.set_italian(asset);
 			}
 			
@@ -107,11 +108,12 @@ void unpack_audio_wad(AssetPack& dest, BinaryAsset& src) {
 	wad.set_help(help_assets);
 }
 
-static Asset* unpack_help_audio(HelpAudioAsset& help, FileHandle& file, Sector32 sector, std::string name, const std::set<s64>& end_sectors) {
+static Asset* unpack_help_audio(HelpAudioAsset& help, InputStream& file, Sector32 sector, std::string name, const std::set<s64>& end_sectors) {
 	if(sector.sectors > 0) {
 		auto end_sector = end_sectors.upper_bound(sector.sectors);
 		verify(end_sector != end_sectors.end(), "Header references audio beyond end of file (%x). The WAD file may be truncated.", sector.sectors);
-		std::vector<u8> bytes = file.read_binary(ByteRange64{sector.sectors * SECTOR_SIZE, (*end_sector - sector.sectors) * SECTOR_SIZE});
+		file.seek(sector.sectors * SECTOR_SIZE);
+		std::vector<u8> bytes = file.read_multiple<u8>((*end_sector - sector.sectors) * SECTOR_SIZE);
 		FileReference ref = help.file().write_binary_file(name + ".vag", bytes);
 		BinaryAsset& binary = help.child<BinaryAsset>(name);
 		binary.set_src(ref);

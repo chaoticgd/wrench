@@ -18,57 +18,80 @@
 
 #include "wad_identifier.h"
 
+struct WadFileDescription {
+	const char* name;
+	Game game;
+	WadType type;
+	s32 header_size;
+	s32 secondary_offset = -1; // Secondary offset to check if multiple types of files have the same header size.
+	s32 secondary_value = -1;
+};
+
+static WadFileDescription WAD_FILE_TYPES[] = {
+	{"mpeg"  , Game::RAC2   , WadType::MPEG       , 0x0328},
+	{"misc"  , Game::RAC2   , WadType::MISC       , 0x0040},
+	{"hud"   , Game::RAC2   , WadType::HUD        , 0x1870},
+	{"bonus" , Game::RAC2   , WadType::BONUS      , 0x0a48},
+	{"audio" , Game::RAC2   , WadType::AUDIO      , 0x1800},
+	{"space" , Game::RAC2   , WadType::SPACE      , 0x0ba8},
+	{"scene" , Game::RAC2   , WadType::SCENE      , 0x0170},
+	{"gadget", Game::RAC2   , WadType::GADGET     , 0x03c8, 0x8, 0x00b1},
+	{"gadget", Game::RAC3   , WadType::GADGET     , 0x03c8, 0x8, 0x0a5d},
+	{"gadget", Game::UNKNOWN, WadType::GADGET     , 0x03c8},
+	{"armor" , Game::RAC2   , WadType::ARMOR      , 0x00f8},
+	{"level" , Game::UNKNOWN, WadType::LEVEL      , 0x0060},
+	{"audio" , Game::RAC2   , WadType::LEVEL_AUDIO, 0x1018},
+	{"scene" , Game::RAC2   , WadType::LEVEL_SCENE, 0x137c},
+	{"mpeg"  , Game::RAC3   , WadType::MPEG       , 0x0648, 0xc, 0x0038},
+	{"mpeg"  , Game::DL     , WadType::MPEG       , 0x0648, 0xc, 0x0040},
+	{"mpeg"  , Game::UNKNOWN, WadType::MPEG       , 0x0648},
+	{"misc"  , Game::RAC3   , WadType::MISC       , 0x0048},
+	{"bonus" , Game::RAC3   , WadType::BONUS      , 0x0bf0},
+	{"space" , Game::RAC3   , WadType::SPACE      , 0x0c30},
+	{"armor" , Game::RAC3   , WadType::ARMOR      , 0x0398},
+	{"audio" , Game::RAC3   , WadType::AUDIO      , 0x2340},
+	{"2ab0"  , Game::RAC3   , WadType::UNKNOWN    , 0x2ab0},
+	{"audio" , Game::RAC3   , WadType::LEVEL_AUDIO, 0x1818},
+	{"scene" , Game::UNKNOWN, WadType::LEVEL_SCENE, 0x26f0},
+	{"misc"  , Game::DL     , WadType::MISC       , 0x0050},
+	{"bonus" , Game::DL     , WadType::BONUS      , 0x02a8},
+	{"space" , Game::DL     , WadType::SPACE      , 0x0068, 0xc, 0x0252},
+	{"online", Game::DL     , WadType::ONLINE     , 0x0068, 0xc, 0x0c6a},
+	{"level" , Game::UNKNOWN, WadType::LEVEL      , 0x0068},
+	{"armor" , Game::DL     , WadType::ARMOR      , 0x0228},
+	{"audio" , Game::DL     , WadType::AUDIO      , 0xa870},
+	{"hud"   , Game::DL     , WadType::HUD        , 0x0f88},
+	{"level" , Game::DL     , WadType::LEVEL      , 0x0c68},
+	{"audio" , Game::DL     , WadType::LEVEL_AUDIO, 0x02a0},
+	{"audio" , Game::UNKNOWN, WadType::LEVEL_AUDIO, 0x1000},
+	{"scene" , Game::UNKNOWN, WadType::LEVEL_SCENE, 0x2420}
+};
+
 std::tuple<Game, WadType, const char*> identify_wad(Buffer header) {
-	s32 _0x8 = 0;
-	s32 _0xc = 0;
-	if(header.size() >= 0x10) {
-		_0x8 = header.read<s32>(0x8, "header");
-		_0xc = header.read<s32>(0xc, "header");
+	for(WadFileDescription& desc : WAD_FILE_TYPES) {
+		if(desc.header_size != header.size()) {
+			continue;
+		}
+		
+		if(desc.secondary_offset > -1 && header.read<s32>(desc.secondary_offset, "header") != desc.secondary_value) {
+			continue;
+		}
+		
+		return {desc.game, desc.type, desc.name};
 	}
-	switch(header.size()) {
-		case 0x0328: return {Game::RAC2, WadType::MPEG, "mpeg"};
-		case 0x0040: return {Game::RAC2, WadType::MISC, "misc"};
-		case 0x1870: return {Game::RAC2, WadType::HUD, "hud"};
-		case 0x0a48: return {Game::RAC2, WadType::BONUS, "bonus"};
-		case 0x1800: return {Game::RAC2, WadType::AUDIO, "audio"};
-		case 0x0ba8: return {Game::RAC2, WadType::SPACE, "space"};
-		case 0x0170: return {Game::RAC2, WadType::SCENE, "scene"};
-		case 0x03c8: switch(_0x8) {
-			case 0x00b1: return {Game::RAC2, WadType::GADGET, "gadget"};
-			case 0x0a5d: return {Game::RAC3, WadType::GADGET, "gadget"};
-			default: return {Game::UNKNOWN, WadType::GADGET, "gadget"};
+	return {Game::UNKNOWN, WadType::UNKNOWN, "unknown"};
+}
+
+s32 header_size_of_wad(Game game, WadType type) {
+	for(WadFileDescription& desc : WAD_FILE_TYPES) {
+		if(desc.game == game && desc.type == type) {
+			return desc.header_size;
 		}
-		case 0x00f8: return {Game::RAC2, WadType::ARMOR, "armor"};
-		case 0x0060: return {Game::UNKNOWN, WadType::LEVEL, "level"};
-		case 0x1018: return {Game::RAC2, WadType::LEVEL_AUDIO, "audio"};
-		case 0x137c: return {Game::RAC2, WadType::LEVEL_SCENE, "scene"};
-		case 0x0648: switch(_0xc) {
-			case 0x0038: return {Game::RAC3, WadType::MPEG, "mpeg"};
-			case 0x0040: return {Game::DL, WadType::MPEG, "mpeg"};
-			default: return {Game::UNKNOWN, WadType::MPEG, "mpeg"};
-		}
-		case 0x0048: return {Game::RAC3, WadType::MISC, "misc"};
-		case 0x0bf0: return {Game::RAC3, WadType::BONUS, "bonus"};
-		case 0x0c30: return {Game::RAC3, WadType::SPACE, "space"};
-		case 0x0398: return {Game::RAC3, WadType::ARMOR, "armor"};
-		case 0x2340: return {Game::RAC3, WadType::AUDIO, "audio"};
-		case 0x2ab0: return {Game::RAC3, WadType::UNKNOWN, "2ab0"};
-		case 0x1818: return {Game::RAC3, WadType::LEVEL_AUDIO, "audio"};
-		case 0x26f0: return {Game::UNKNOWN, WadType::LEVEL_SCENE, "scene"};
-		case 0x0050: return {Game::DL, WadType::MISC, "misc"};
-		case 0x02a8: return {Game::DL, WadType::BONUS, "bonus"};
-		case 0x0068: switch(_0xc) {
-			case 0x0252: return {Game::DL, WadType::SPACE, "space"};
-			case 0x0c6a: return {Game::DL, WadType::ONLINE, "online"};
-			default: return {Game::UNKNOWN, WadType::LEVEL, "level"};
-		}
-		case 0x0228: return {Game::DL, WadType::ARMOR, "armor"};
-		case 0xa870: return {Game::DL, WadType::AUDIO, "audio"};
-		case 0x0f88: return {Game::DL, WadType::HUD, "hud"};
-		case 0x0c68: return {Game::DL, WadType::LEVEL, "level"};
-		case 0x02a0: return {Game::DL, WadType::LEVEL_AUDIO, "audio"};
-		case 0x1000: return {Game::UNKNOWN, WadType::LEVEL_AUDIO, "audio"};
-		case 0x2420: return {Game::UNKNOWN, WadType::LEVEL_SCENE, "scene"};
-		default: return {Game::UNKNOWN, WadType::UNKNOWN, "unknown"};
 	}
+	for(WadFileDescription& desc : WAD_FILE_TYPES) {
+		if(desc.game == Game::UNKNOWN && desc.type == type) {
+			return desc.header_size;
+		}
+	}
+	verify_not_reached("Failed to identify WAD header.");
 }

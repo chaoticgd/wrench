@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2022 chaoticgd
+	Copyright (C) 2019-2022 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,24 +16,13 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef ASSETMGR_ASSET_TYPES_H
-#define ASSETMGR_ASSET_TYPES_H
+#ifndef ISO_UNPACKER_H
+#define ISO_UNPACKER_H
 
-#include <core/wtf.h>
-#include <core/wtf_writer.h>
 #include <core/util.h>
-#include <assetmgr/asset.h>
+#include <core/filesystem.h>
+#include <iso/table_of_contents.h>
 
-struct InvalidAssetAttributeType {
-	InvalidAssetAttributeType(const WtfNode* node, const WtfAttribute* attribute) {}
-};
-
-struct MissingAssetAttribute {
-	MissingAssetAttribute() {}
-};
-
-#define GENERATED_ASSET_HEADER
-#include "_generated_asset_types.inl"
-#undef GENERATED_ASSET_HEADER
+void unpack_iso(const fs::path& iso_path, const fs::path& output_dir);
 
 #endif

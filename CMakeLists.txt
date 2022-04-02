@@ -34,7 +34,9 @@ add_library(wrenchcore STATIC
 	src/core/texture.cpp
 	src/core/vif.cpp
 	src/core/filesystem.cpp
+	src/core/stream.cpp
 	src/core/wtf.c
+	src/core/wtf_writer.cpp
 	thirdparty/md5.cpp
 )
 
@@ -91,17 +93,15 @@ add_executable(vif
 )
 target_link_libraries(vif wrenchcore)
 
-add_executable(iso
-	src/iso/main.cpp
-	src/iso/iso_extractor.cpp
+add_library(wrenchiso
+	src/iso/iso_unpacker.cpp
+	src/iso/iso_packer.cpp
+	src/iso/iso_tools.cpp
 	src/iso/iso_filesystem.cpp
 	src/iso/table_of_contents.cpp
 	src/iso/wad_identifier.cpp
-	src/iso/legacy_stream.cpp
-	src/editor/util.cpp
-	src/editor/command_line.cpp
 )
-target_link_libraries(iso wrenchcore wrench_assetmgr)
+target_link_libraries(wrenchiso wrenchcore wrench_assetmgr)
 
 add_executable(memmap
 	src/memmap.c
@@ -135,7 +135,7 @@ add_executable(spanner
 	src/spanner/globals/online_wad.cpp
 	src/spanner/globals/space_wad.cpp
 )
-target_link_libraries(spanner wrenchcore wrench_assetmgr wrenchengine)
+target_link_libraries(spanner wrenchcore wrench_assetmgr wrenchiso wrenchengine)
 
 add_executable(hashtex
 	src/hashtex.cpp
@@ -159,7 +159,7 @@ if(UNIX)
 	target_compile_options(wrench_assetmgr PRIVATE ${GCC_FLAGS})
 	target_compile_options(wrench PRIVATE ${GCC_FLAGS})
 	target_compile_options(vif PRIVATE ${GCC_FLAGS})
-	target_compile_options(iso PRIVATE ${GCC_FLAGS})
+	target_compile_options(wrenchiso PRIVATE ${GCC_FLAGS})
 	target_compile_options(wrenchengine PRIVATE ${GCC_FLAGS} -O3)
 	target_compile_options(spanner PRIVATE ${GCC_FLAGS} -O3)
 	target_compile_options(asset2json PRIVATE ${GCC_FLAGS})
@@ -175,7 +175,7 @@ if (MSVC)
 	target_compile_options(wrench_assetmgr PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(wrench PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(vif PRIVATE ${__MSVC_BUILD_OPTIONS__})
-	target_compile_options(iso PRIVATE ${__MSVC_BUILD_OPTIONS__})
+	target_compile_options(wrenchiso PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(wrenchengine PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(spanner PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(asset2json PRIVATE ${__MSVC_BUILD_OPTIONS__})
@@ -187,7 +187,7 @@ if(UNIX)
 	target_link_libraries(wrenchcore stdc++fs)
 	target_link_libraries(wrench stdc++fs)
 	target_link_libraries(vif stdc++fs)
-	target_link_libraries(iso stdc++fs)
+	target_link_libraries(wrenchiso stdc++fs)
 	target_link_libraries(wrenchengine stdc++fs)
 	target_link_libraries(spanner stdc++fs)
 endif()
@@ -196,7 +196,7 @@ endif()
 add_subdirectory(thirdparty/cxxopts)
 target_link_libraries(wrench cxxopts)
 target_link_libraries(vif cxxopts)
-target_link_libraries(iso cxxopts)
+target_link_libraries(wrenchiso cxxopts)
 
 # pthreads
 set(THREADS_PREFER_PTHREAD_FLAG ON)

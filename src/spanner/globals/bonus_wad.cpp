@@ -36,12 +36,12 @@ void unpack_bonus_wad(AssetPack& dest, BinaryAsset& src) {
 	AssetFile& asset_file = dest.asset_file("bonus/bonus.asset");
 	
 	BonusWadAsset& wad = asset_file.root().child<BonusWadAsset>("bonus");
-	wad.set_credits_text(unpack_binaries(wad, file, ARRAY_PAIR(header.credits_text), "credits_text"));
-	wad.set_credits_images(unpack_binaries(wad, file, ARRAY_PAIR(header.credits_images), "credits_images"));
-	wad.set_demomenu(unpack_binaries(wad, file, ARRAY_PAIR(header.demomenu), "demomenu"));
-	wad.set_demoexit(unpack_binaries(wad, file, ARRAY_PAIR(header.demoexit), "demoexit"));
-	wad.set_cheat_images(unpack_binaries(wad, file, ARRAY_PAIR(header.cheat_images), "cheat_images"));
-	wad.set_skill_images(unpack_binaries(wad, file, ARRAY_PAIR(header.skill_images), "skill_images"));
-	wad.set_trophy_image(unpack_binary(wad, file, header.trophy_image, "trophy_image", "trophy_image.bin"));
-	wad.set_dige(unpack_binary(wad, file, header.dige, "dige", "dige.bin"));
+	wad.set_credits_text(unpack_binaries(wad, *file, ARRAY_PAIR(header.credits_text), "credits_text"));
+	wad.set_credits_images(unpack_binaries(wad, *file, ARRAY_PAIR(header.credits_images), "credits_images"));
+	wad.set_demomenu(unpack_binaries(wad, *file, ARRAY_PAIR(header.demomenu), "demomenu"));
+	wad.set_demoexit(unpack_binaries(wad, *file, ARRAY_PAIR(header.demoexit), "demoexit"));
+	wad.set_cheat_images(unpack_binaries(wad, *file, ARRAY_PAIR(header.cheat_images), "cheat_images"));
+	wad.set_skill_images(unpack_binaries(wad, *file, ARRAY_PAIR(header.skill_images), "skill_images"));
+	wad.set_trophy_image(unpack_binary(wad, *file, header.trophy_image, "trophy_image", "trophy_image.bin"));
+	wad.set_dige(unpack_binary(wad, *file, header.dige, "dige", "dige.bin"));
 }

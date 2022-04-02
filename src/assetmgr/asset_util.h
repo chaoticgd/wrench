@@ -63,27 +63,6 @@ struct FileReference {
 	fs::path path;
 };
 
-class LooseAssetPack;
-class ZippedAssetPack;
-
-class FileHandle {
-public:
-	FileHandle(const AssetPack& p, FILE* h);
-	FileHandle(const FileHandle&) = delete;
-	FileHandle(FileHandle&& rhs);
-	~FileHandle();
-	
-	std::vector<u8> read_binary(ByteRange64 range) const;
-	s64 size() const;
-	
-private:
-	friend LooseAssetPack;
-	friend ZippedAssetPack;
-	
-	const AssetPack& pack;
-	FILE* handle;
-};
-
 enum AssetPackType {
 	EXTRACTED, // Built files extracted from a base game ISO.
 	UNPACKED, // Source assets unpacked from files extracted from a base game ISO.
@@ -98,6 +77,6 @@ struct GameInfo {
 };
 
 GameInfo read_game_info(char* input);
-void write_game_info(FILE* file, const GameInfo& info);
+void write_game_info(std::string& dest, const GameInfo& info);
 
 #endif

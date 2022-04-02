@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2021 chaoticgd
+	Copyright (C) 2019-2022 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 
 #include <core/buffer.h>
 #include <core/filesystem.h>
-#include <editor/util.h>
+#include <iso/wad_identifier.h>
 
 static LevelWadInfo adapt_rac1_level_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header);
 static Opt<LevelWadInfo> adapt_rac1_audio_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header);
@@ -28,7 +28,7 @@ static Opt<LevelWadInfo> adapt_rac1_scene_wad_header(FILE* iso, Rac1AmalgamatedW
 static Sector32 get_vag_size(FILE* iso, Sector32 sector);
 static Sector32 get_lz_size(FILE* iso, Sector32 sector);
 
-static std::size_t get_rac234_level_table_offset(Buffer src);
+static s64 get_rac234_level_table_offset(Buffer src);
 
 table_of_contents read_table_of_contents(FILE* iso, Game game) {
 	table_of_contents toc;
@@ -66,9 +66,9 @@ table_of_contents read_table_of_contents_rac1(FILE* iso) {
 				
 				LevelInfo level;
 				level.level_table_index = header.level_number;
-				level.parts[0] = adapt_rac1_level_wad_header(iso, header);
-				level.parts[1] = adapt_rac1_audio_wad_header(iso, header);
-				level.parts[2] = adapt_rac1_scene_wad_header(iso, header);
+				level.level = adapt_rac1_level_wad_header(iso, header);
+				level.audio = adapt_rac1_audio_wad_header(iso, header);
+				level.scene = adapt_rac1_scene_wad_header(iso, header);
 				toc.levels.emplace_back(std::move(level));
 			}
 		}
@@ -111,10 +111,8 @@ static LevelWadInfo adapt_rac1_level_wad_header(FILE* iso, Rac1AmalgamatedWadHea
 	
 	LevelWadInfo level_part;
 	level_part.header_lba = {0};
-	level_part.magic = sizeof(Rac1LevelWadHeader);
 	level_part.file_lba = {low.sectors};
 	level_part.file_size = {high.sectors - low.sectors};
-	level_part.info = {level_file_type::LEVEL, "level",  GAME_RAC1};
 	level_part.header.resize(sizeof(Rac1LevelWadHeader));
 	memcpy(level_part.header.data(), &level_header, sizeof(Rac1LevelWadHeader));
 	level_part.prepend_header = true;
@@ -163,10 +161,8 @@ static Opt<LevelWadInfo> adapt_rac1_audio_wad_header(FILE* iso, Rac1AmalgamatedW
 	
 	LevelWadInfo audio_part;
 	audio_part.header_lba = {0};
-	audio_part.magic = sizeof(Rac1AudioWadHeader);
 	audio_part.file_lba = low;
 	audio_part.file_size = {high.sectors - low.sectors};
-	audio_part.info = {level_file_type::AUDIO, "audio",  GAME_RAC1};
 	audio_part.header.resize(sizeof(Rac1AudioWadHeader));
 	memcpy(audio_part.header.data(), &audio_header, sizeof(Rac1AudioWadHeader));
 	audio_part.prepend_header = true;
@@ -208,7 +204,7 @@ static Opt<LevelWadInfo> adapt_rac1_scene_wad_header(FILE* iso, Rac1AmalgamatedW
 	for(s32 i = 0; i < sizeof(header.scenes) / sizeof(header.scenes[0]); i++) {
 		Rac1SceneHeader& dest = scene_header.scenes[i];
 		Rac1SceneHeader& src = header.scenes[i];
-		for(s32 j = 0; j < sizeof(dest.sounds)/ sizeof(dest.sounds[0]); j++) {
+		for(s32 j = 0; j < sizeof(dest.sounds) / sizeof(dest.sounds[0]); j++) {
 			if(src.sounds[j].sectors > 0) {
 				dest.sounds[j] = {src.sounds[j].sectors - adjust.sectors};
 			}
@@ -222,10 +218,8 @@ static Opt<LevelWadInfo> adapt_rac1_scene_wad_header(FILE* iso, Rac1AmalgamatedW
 	
 	LevelWadInfo scene_part;
 	scene_part.header_lba = {0};
-	scene_part.magic = sizeof(Rac1SceneWadHeader);
 	scene_part.file_lba = low;
 	scene_part.file_size = {high.sectors - low.sectors};
-	scene_part.info = {level_file_type::SCENE, "scene",  GAME_RAC1};
 	scene_part.header.resize(sizeof(Rac1SceneWadHeader));
 	memcpy(scene_part.header.data(), &scene_header, sizeof(Rac1SceneWadHeader));
 	scene_part.prepend_header = true;
@@ -259,13 +253,13 @@ table_of_contents read_table_of_contents_rac234(FILE* iso) {
 	
 	table_of_contents toc;
 	
-	std::size_t level_table_offset = get_rac234_level_table_offset(buffer);
+	s64 level_table_offset = get_rac234_level_table_offset(buffer);
 	if(level_table_offset == 0x0) {
 		// We've failed to find the level table, at least try to find some of the other tables.
 		level_table_offset = 0xffff;
 	}
 	
-	std::size_t global_index = 0;
+	s64 global_index = 0;
 	s64 ofs = 0;
 	while(ofs + 4 * 6 < level_table_offset) {
 		GlobalWadInfo global;
@@ -289,16 +283,17 @@ table_of_contents read_table_of_contents_rac234(FILE* iso) {
 	}
 	
 	auto level_table = buffer.read_multiple<toc_level_table_entry>(level_table_offset, TOC_MAX_LEVELS, "level table");
-	for(size_t i = 0; i < TOC_MAX_LEVELS; i++) {
+	for(s32 i = 0; i < TOC_MAX_LEVELS; i++) {
 		toc_level_table_entry entry = level_table[i];
 		
 		LevelInfo level;
 		level.level_table_index = i;
+		level.level_table_entry_offset = level_table_offset + i * sizeof(toc_level_table_entry);
 		bool has_level_part = false;
 		
 		// The games have the fields in different orders, so we check the type
 		// of what each field points to so we can support them all.
-		for(size_t j = 0; j < 3; j++) {
+		for(s32 j = 0; j < 3; j++) {
 			LevelWadInfo part;
 			part.header_lba = entry.parts[j].offset;
 			part.file_size = entry.parts[j].size;
@@ -310,19 +305,21 @@ table_of_contents read_table_of_contents_rac234(FILE* iso) {
 			if(sector.bytes() > buffer.size()) {
 				break;
 			}
-			part.magic = buffer.read<uint32_t>(sector.bytes(), "level header size");
+			s32 header_size = buffer.read<s32>(sector.bytes(), "level header size");
 			part.file_lba = buffer.read<Sector32>(sector.bytes() + 4, "level sector number");
 			
-			auto info = LEVEL_FILE_TYPES.find(part.magic);
-			if(info == LEVEL_FILE_TYPES.end()) {
-				continue;
+			part.header = buffer.read_multiple<u8>(sector.bytes(), header_size, "level header").copy();
+			
+			const auto& [game, type, name] = identify_wad(part.header);
+			
+			switch(type) {
+				case WadType::LEVEL: level.level = std::move(part); break;
+				case WadType::LEVEL_AUDIO: level.audio = std::move(part); break;
+				case WadType::LEVEL_SCENE: level.scene = std::move(part); break;
+				default: verify_not_reached("Level table references WAD of unknown type.");
 			}
-			part.info = info->second;
 			
-			part.header = buffer.read_multiple<u8>(sector.bytes(), part.magic, "level header").copy();
-			
-			has_level_part |= part.info.type == level_file_type::LEVEL;
-			level.parts[j] = part;
+			has_level_part |= type == WadType::LEVEL;
 		}
 		
 		if(has_level_part) {
@@ -333,20 +330,24 @@ table_of_contents read_table_of_contents_rac234(FILE* iso) {
 	return toc;
 }
 
-static std::size_t get_rac234_level_table_offset(Buffer src) {
+static s64 get_rac234_level_table_offset(Buffer src) {
 	// Check that the two next entries are valid. This is necessary to
 	// get past a false positive in Deadlocked.
-	for(size_t i = 0; i < src.size() / 4 - 12; i++) {
+	for(s64 i = 0; i < src.size() / 4 - 12; i++) {
 		int parts = 0;
 		for(int j = 0; j < 6; j++) {
 			Sector32 lsn = src.read<Sector32>((i + j * 2) * 4, "table of contents");
-			size_t header_offset = lsn.bytes() - RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
+			s64 header_offset = lsn.bytes() - RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
 			if(lsn.sectors == 0 || header_offset > TOC_MAX_SIZE - 4) {
 				break;
 			}
-			uint32_t header_size = src.read<uint32_t>(header_offset, "level header size");
-			if(LEVEL_FILE_TYPES.find(header_size) != LEVEL_FILE_TYPES.end()) {
-				parts++;
+			s32 header_size = src.read<s32>(header_offset, "level header");
+			if(header_offset + header_size <= src.size()) {
+				Buffer header = src.subbuf(header_offset, header_size);
+				const auto& [game, type, name] = identify_wad(header);
+				if(game != Game::UNKNOWN || type != WadType::UNKNOWN) {
+					parts++;
+				}
 			}
 		}
 		if(parts == 6) {
@@ -354,4 +355,100 @@ static std::size_t get_rac234_level_table_offset(Buffer src) {
 		}
 	}
 	return 0;
+}
+
+s64 write_table_of_contents_rac234(OutputStream& iso, const table_of_contents& toc, Game game) {
+	iso.seek(RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
+	
+	for(const GlobalWadInfo& global : toc.globals) {
+		assert(global.header.size() > 8);
+		iso.write<s32>(Buffer(global.header).read<s32>(0, "global header"));
+		iso.write<s32>(global.sector.sectors);
+		iso.write(global.header.data() + 8, global.header.size() - 8);
+	}
+	
+	s64 level_table_ofs = iso.tell();
+	std::vector<SectorRange> level_table(toc.levels.size() * 3, {{0}, {0}});
+	iso.write_v(level_table);
+	
+	s64 toc_start_size_bytes = iso.tell() - RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
+	Sector32 toc_start_size = Sector32::size_from_bytes(toc_start_size_bytes);
+	
+	// Size limits hardcoded in the boot ELF.
+	s32 max_sectors;
+	switch(game) {
+		case Game::RAC2: max_sectors = 0xb;  break;
+		case Game::RAC3: max_sectors = 0x10; break;
+		case Game::DL:   max_sectors = 0x1a; break;
+	}
+	verify(toc_start_size.sectors <= max_sectors,
+		"Table of contents too big. This could be because there are too many levels, or due to a bug.");
+	
+	for(size_t i = 0; i < toc.levels.size(); i++) {
+		const LevelInfo& level = toc.levels[i];
+		s32 j = 0;
+		for(const Opt<LevelWadInfo>& wad : {level.level, level.audio, level.scene}) {
+			if(!wad) {
+				continue;
+			}
+			
+			iso.pad(SECTOR_SIZE, 0);
+			s64 header_lba = iso.tell() / SECTOR_SIZE;
+			*(Sector32*) &wad->header[4] = wad->file_lba;
+			iso.write_v(wad->header);
+			
+			// The order of fields in the level table entries is different
+			// for R&C2 versus R&C3 and Deadlocked.
+			s32 field = 0;
+			bool is_rac2 = game == Game::RAC2 || game == Game::UNKNOWN;
+			switch(j++) {
+				case 0: field = !is_rac2; break;
+				case 1: field = is_rac2; break;
+				case 2: field = 2; break;
+			}
+			s32 index = i * 3 + field;
+			level_table[index].offset.sectors = header_lba;
+			level_table[index].size = wad->file_size;
+		}
+	}
+	
+	s64 toc_end = iso.tell();
+	
+	iso.seek(level_table_ofs);
+	iso.write_v(level_table);
+	
+	return toc_end;
+}
+
+Sector32 calculate_table_of_contents_size(const table_of_contents& toc, s32 single_level_index) {
+	s64 resident_toc_size_bytes = 0;
+	for(const GlobalWadInfo& global : toc.globals) {
+		assert(global.header.size() > 0);
+		resident_toc_size_bytes += global.header.size();
+	}
+	resident_toc_size_bytes += toc.levels.size() * sizeof(SectorRange) * 3;
+	Sector32 toc_size = Sector32::size_from_bytes(resident_toc_size_bytes);
+	if(single_level_index > -1) {
+		if(single_level_index >= (int) toc.levels.size()) {
+			fprintf(stderr, "error: Single level index greater than maximum level index!\n");
+			exit(1);
+		}
+		auto& level = toc.levels[single_level_index];
+		for(const Opt<LevelWadInfo>& wad : {level.level, level.audio, level.scene}) {
+			if(wad) {
+				assert(wad->header.size() > 0);
+				toc_size.sectors += Sector32::size_from_bytes(wad->header.size()).sectors * toc.levels.size();
+			}
+		}
+	} else {
+		for(auto& level : toc.levels) {
+			for(const Opt<LevelWadInfo>& wad : {level.level, level.audio, level.scene}) {
+				if(wad) {
+					assert(wad->header.size() > 0);
+					toc_size.sectors += Sector32::size_from_bytes(wad->header.size()).sectors;
+				}
+			}
+		}
+	}
+	return toc_size;
 }
