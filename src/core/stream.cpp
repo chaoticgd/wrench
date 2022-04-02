@@ -80,6 +80,12 @@ bool MemoryOutputStream::write(const u8* src, s64 size) {
 
 FileInputStream::FileInputStream() {}
 
+FileInputStream::~FileInputStream() {
+	if(file != nullptr) {
+		fclose(file);
+	}
+}
+
 bool FileInputStream::open(const fs::path& path) {
 	if(file != nullptr) {
 		fclose(file);
@@ -111,6 +117,12 @@ bool FileInputStream::read(u8* dest, s64 size) {
 // *****************************************************************************
 
 FileOutputStream::FileOutputStream() {}
+
+FileOutputStream::~FileOutputStream() {
+	if(file != nullptr) {
+		fclose(file);
+	}
+}
 
 bool FileOutputStream::open(const fs::path& path) {
 	if(file != nullptr) {

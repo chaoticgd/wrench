@@ -34,7 +34,7 @@ protected:
 public:
 	Stream(const Stream&) = delete;
 	Stream(Stream&&) = delete;
-	virtual ~Stream();
+	virtual ~Stream() = 0;
 	
 	static void copy(OutputStream& dest, InputStream& src, s64 size);
 	
@@ -124,6 +124,7 @@ public:
 class FileInputStream : public InputStream {
 public:
 	FileInputStream();
+	~FileInputStream() override;
 	
 	bool open(const fs::path& path);
 	
@@ -139,6 +140,7 @@ public:
 class FileOutputStream : public OutputStream {
 public:
 	FileOutputStream();
+	~FileOutputStream() override;
 	
 	bool open(const fs::path& path);
 	
