@@ -256,6 +256,8 @@ u32 byte_swap_32(u32 val);
 // Other stuff
 // *****************************************************************************
 
+std::size_t parse_number(std::string x);
+
 // Kludge since C++ still doesn't have proper reflection.
 #define DEF_FIELD(member) \
 	{ \

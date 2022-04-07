@@ -28,7 +28,6 @@
 
 std::string int_to_hex(std::size_t x);
 std::size_t hex_to_int(std::string x);
-std::size_t parse_number(std::string x);
 
 std::vector<std::string> to_hex_dump(uint32_t* data, std::size_t align, std::size_t size_in_u32s);
 

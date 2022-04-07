@@ -35,13 +35,15 @@
 enum ArgFlags {
 	ARG_INPUT_PATH = 1 << 0,
 	ARG_ASSET = 1 << 1,
-	ARG_OUTPUT_PATH = 1 << 2
+	ARG_OUTPUT_PATH = 1 << 2,
+	ARG_OFFSET = 1 << 3
 };
 
 struct ParsedArgs {
 	fs::path input_path;
 	std::string asset;
 	fs::path output_path;
+	s64 offset;
 };
 
 static ParsedArgs parse_args(int argc, char** argv, u32 flags);
@@ -50,6 +52,8 @@ static void unpack_bins(const fs::path& input_path, const fs::path& output_path)
 static void pack(const fs::path& input_path, const fs::path& output_path);
 static void pack_wad(const fs::path& input_path, const std::string& asset, const fs::path& output_path);
 static void pack_wad_asset(OutputStream& dest, std::vector<u8>* wad_header_dest, fs::file_time_type* modified_time_dest, Asset& asset);
+static void decompress(const fs::path& input_path, const fs::path& output_path, s64 offset);
+static void compress(const fs::path& input_path, const fs::path& output_path);
 static void extract(fs::path input_path, fs::path output_path);
 static void build(fs::path input_path, fs::path output_path);
 static void extract_collision(fs::path input_path, fs::path output_path);
@@ -108,6 +112,18 @@ int main(int argc, char** argv) {
 		}
 	}
 	
+	if(mode == "decompress") {
+		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH | ARG_OFFSET);
+		decompress(args.input_path, args.output_path, args.offset);
+		return 0;
+	}
+	
+	if(mode == "compress") {
+		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
+		compress(args.input_path, args.output_path);
+		return 0;
+	}
+	
 	if(mode == "inspect_iso") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH);
 		inspect_iso(args.input_path);
@@ -141,6 +157,7 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 	required_count += (flags & ARG_INPUT_PATH) ? 1 : 0;
 	required_count += (flags & ARG_ASSET) ? 1 : 0;
 	required_count += (flags & ARG_OUTPUT_PATH) ? 1 : 0;
+	required_count += (flags & ARG_OFFSET) ? 1 : 0;
 	verify(argc == required_count, "Wrong number of arguments.");
 	
 	s32 index = 2;
@@ -154,6 +171,9 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 	}
 	if(flags & ARG_OUTPUT_PATH) {
 		args.output_path = argv[index++];
+	}
+	if(flags & ARG_OFFSET) {
+		args.offset = parse_number(argv[index++]);
 	}
 	
 	return args;
@@ -263,6 +283,31 @@ static void pack_wad_asset(OutputStream& dest, std::vector<u8>* wad_header_dest,
 	}
 }
 
+static void decompress(const fs::path& input_path, const fs::path& output_path, s64 offset) {
+	FILE* file = fopen(input_path.string().c_str(), "rb");
+	verify(file, "Failed to open file for reading.");
+	
+	std::vector<u8> header = read_file(file, offset, 0x10);
+	verify(header[0] == 'W' && header[1] == 'A' && header[2] == 'D',
+		"Invalid WAD header (magic bytes aren't correct).");
+	s32 compressed_size = Buffer(header).read<s32>(3, "compressed size");
+	std::vector<u8> compressed_bytes = read_file(file, offset, compressed_size);
+	
+	std::vector<u8> decompressed_bytes;
+	decompress_wad(decompressed_bytes, compressed_bytes);
+	
+	write_file(output_path, decompressed_bytes);
+}
+
+static void compress(const fs::path& input_path, const fs::path& output_path) {
+	std::vector<u8> bytes = read_file(input_path);
+	
+	std::vector<u8> compressed_bytes;
+	compress_wad(compressed_bytes, bytes, 8);
+	
+	write_file(output_path, compressed_bytes);
+}
+
 static void extract_collision(fs::path input_path, fs::path output_path) {
 	auto collision = read_file(input_path);
 	write_file("/", output_path, write_collada(read_collision(collision)), "w");
@@ -330,7 +375,7 @@ static void print_usage() {
 	puts("       Pack a COLLADA mesh into a collision file.");
 	puts("");
 	puts("");
-	puts(" decompress <input file> <output file>");
+	puts(" decompress <input file> <output file> <offset>");
 	puts("   Decompress a file stored using the game's custom LZ compression scheme.");
 	puts("");
 	puts(" compress <input file> <output file>");

@@ -18,6 +18,8 @@
 
 #include "util.h"
 
+#include <sstream>
+
 const char* UTIL_ERROR_CONTEXT_STRING = "";
 
 void assert_impl(const char* file, int line, const char* arg_str, bool condition) {
@@ -78,6 +80,18 @@ u32 byte_swap_32(u32 val) {
 	swapped |= (val >> 8) & 0xff00;
 	swapped |= (val << 24) & 0xff000000;
 	return swapped;
+}
+
+std::size_t parse_number(std::string x) {
+	std::stringstream ss;
+	if(x.size() >= 2 && x[0] == '0' && x[1] == 'x') {
+		ss << std::hex << x.substr(2);
+	} else {
+		ss << x;
+	}
+	std::size_t result;
+	ss >> result;
+	return result;
 }
 
 std::string md5_to_printable_string(uint8_t in[16]) {
