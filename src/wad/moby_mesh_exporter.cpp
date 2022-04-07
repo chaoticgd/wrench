@@ -943,9 +943,9 @@ static MobyVertexTableHeaderRac1 write_vertices(OutBuffer& dest, const MobySubMe
 }
 
 struct RichIndex {
-	u32 index : 30;
-	u32 restart : 1;
-	u32 is_dupe : 1 = 0;
+	u32 index;
+	bool restart;
+	bool is_dupe;
 };
 
 static std::vector<RichIndex> fake_tristripper(const std::vector<Face>& faces) {
