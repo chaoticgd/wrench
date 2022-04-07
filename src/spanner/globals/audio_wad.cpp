@@ -19,6 +19,7 @@
 #include "audio_wad.h"
 
 #include <set>
+#include <spanner/asset_packer.h>
 
 packed_struct(AudioWadHeaderDL,
 	/* 0x0000 */ s32 header_size;
@@ -34,7 +35,7 @@ packed_struct(AudioWadHeaderDL,
 
 static Asset* unpack_help_audio(HelpAudioAsset& help, InputStream& file, Sector32 sector, std::string name, const std::set<s64>& end_sectors);
 
-void unpack_audio_wad(AssetPack& dest, BinaryAsset& src) {
+AudioWadAsset& unpack_audio_wad(AssetPack& dest, BinaryAsset& src) {
 	auto [file, header] = open_wad_file<AudioWadHeaderDL>(src);
 	AssetFile& asset_file = dest.asset_file("audio/audio.asset");
 	
@@ -106,6 +107,8 @@ void unpack_audio_wad(AssetPack& dest, BinaryAsset& src) {
 		}
 	}
 	wad.set_help(help_assets);
+	
+	return wad;
 }
 
 static Asset* unpack_help_audio(HelpAudioAsset& help, InputStream& file, Sector32 sector, std::string name, const std::set<s64>& end_sectors) {
@@ -121,4 +124,21 @@ static Asset* unpack_help_audio(HelpAudioAsset& help, InputStream& file, Sector3
 	} else {
 		return nullptr;
 	}
+}
+
+void pack_audio_wad(OutputStream& dest, AudioWadAsset& wad, Game game) {
+	s64 base = dest.tell();
+	
+	AudioWadHeaderDL header = {0};
+	header.header_size = sizeof(AudioWadHeaderDL);
+	dest.write(header);
+	dest.pad(SECTOR_SIZE, 0);
+	
+	std::vector<Asset*> vendor = wad.vendor();
+	verify(vendor.size() <= ARRAY_SIZE(header.vendor), "Too many vendor audio files.");
+	for(size_t i = 0; i < vendor.size(); i++) {
+		header.vendor[i] = pack_asset<Sector32>(dest, *vendor[i], game, base);
+	}
+	
+	dest.write(base, header);
 }

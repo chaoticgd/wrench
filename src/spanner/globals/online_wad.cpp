@@ -25,11 +25,26 @@ packed_struct(OnlineWadHeaderDL,
 	/* 0x10 */ SectorRange transition_backgrounds[11];
 )
 
-void unpack_online_wad(AssetPack& dest, BinaryAsset& src) {
+OnlineWadAsset& unpack_online_wad(AssetPack& dest, BinaryAsset& src) {
 	auto [file, header] = open_wad_file<OnlineWadHeaderDL>(src);
 	AssetFile& asset_file = dest.asset_file("online/online.asset");
 	
 	OnlineWadAsset& wad = asset_file.root().child<OnlineWadAsset>("online");
 	wad.set_data(unpack_binary(wad, *file, header.data, "data", "data.bin"));
 	wad.set_transition_backgrounds(unpack_binaries(wad, *file, ARRAY_PAIR(header.transition_backgrounds), "transition_backgrounds", ".bin"));
+	
+	return wad;
+}
+
+void pack_online_wad(OutputStream& dest, OnlineWadAsset& wad, Game game) {
+	s64 base = dest.tell();
+	
+	OnlineWadHeaderDL header = {0};
+	header.header_size = sizeof(OnlineWadHeaderDL);
+	dest.write(header);
+	dest.pad(SECTOR_SIZE, 0);
+	
+	// ...
+	
+	dest.write(base, header);
 }

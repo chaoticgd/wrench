@@ -49,12 +49,10 @@ void unpack_iso(const fs::path& iso_path, const fs::path& output_dir) {
 	AssetForest forest;
 	AssetPack& pack = forest.mount<LooseAssetPack>(game_tag, output_dir, true);
 	AssetFile& file = pack.asset_file("build.asset");
-	GameAsset& game_asset = file.root().child<GameAsset>(game_tag);
-	BuildAsset& build = game_asset.child<BuildAsset>("base_game");
-	game_asset.set_builds({&build});
+	BuildAsset& build = file.root().child<BuildAsset>("base_game");
 	
-	pack.game_info.game = game_tag;
-	pack.game_info.type = AssetPackType::EXTRACTED;
+	pack.game_info.type = AssetPackType::WADS;
+	pack.game_info.builds = {build.absolute_reference()};
 	
 	BuildAsset& global_wads = static_cast<BuildAsset&>(build.asset_file("globals/globals.asset"));
 	BuildAsset& files = static_cast<BuildAsset&>(build.asset_file("files/files.asset"));

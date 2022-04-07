@@ -183,9 +183,14 @@ packed_struct(ArrayRange,
 
 packed_struct(Sector32,
 	s32 sectors;
+	
 	Sector32() : sectors(0) {}
 	Sector32(s32 s) : sectors(s) {}
-	s64 bytes() const { return sectors * SECTOR_SIZE; }
+	
+	s64 bytes() const {
+		return sectors * SECTOR_SIZE;
+	}
+	
 	static Sector32 size_from_bytes(s64 size_in_bytes) {
 		if(size_in_bytes % SECTOR_SIZE != 0) {
 			size_in_bytes += SECTOR_SIZE - (size_in_bytes % SECTOR_SIZE);
@@ -194,6 +199,10 @@ packed_struct(Sector32,
 		// If this ever asserts then hello from the distant past.
 		assert(size_in_sectors == (s64) size_in_bytes / SECTOR_SIZE);
 		return { size_in_sectors };
+	}
+	
+	static Sector32 from_bytes(s64 offset, s64) {
+		return size_from_bytes(offset);
 	}
 )
 
@@ -208,6 +217,10 @@ packed_struct(SectorRange,
 	ByteRange64 bytes() const {
 		return {offset.bytes(), size.bytes()};
 	}
+	
+	static SectorRange from_bytes(s64 offset, s64 size) {
+		return SectorRange{Sector32::size_from_bytes(offset), Sector32::size_from_bytes(size)};
+	}
 )
 
 packed_struct(SectorByteRange,
@@ -220,6 +233,10 @@ packed_struct(SectorByteRange,
 	
 	ByteRange64 bytes() {
 		return {offset.bytes(), size_bytes};
+	}
+	
+	static SectorByteRange from_bytes(s64 offset, s64 size) {
+		return SectorByteRange{Sector32::size_from_bytes(offset), (s32) size};
 	}
 )
 

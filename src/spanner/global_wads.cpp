@@ -27,36 +27,50 @@
 #include <spanner/globals/online_wad.h>
 #include <spanner/globals/space_wad.h>
 
-void unpack_global_wads(AssetPack& dest_pack, BuildAsset& build) {
-	BinaryAsset* armor_wad = dynamic_cast<BinaryAsset*>(build.armor());
+void unpack_global_wads(AssetPack& dest_pack, BuildAsset& dest_build, BuildAsset& src_build) {
+	BinaryAsset* armor_wad = dynamic_cast<BinaryAsset*>(src_build.armor());
 	verify(armor_wad, "Invalid armor.wad asset.");
-	unpack_armor_wad(dest_pack, *armor_wad);
+	dest_build.set_armor(unpack_armor_wad(dest_pack, *armor_wad));
 	
-	BinaryAsset* audio_wad = dynamic_cast<BinaryAsset*>(build.audio());
+	BinaryAsset* audio_wad = dynamic_cast<BinaryAsset*>(src_build.audio());
 	verify(audio_wad, "Invalid audio.wad asset.");
-	unpack_audio_wad(dest_pack, *audio_wad);
+	dest_build.set_audio(unpack_audio_wad(dest_pack, *audio_wad));
 	
-	BinaryAsset* bonus_wad = dynamic_cast<BinaryAsset*>(build.bonus());
+	BinaryAsset* bonus_wad = dynamic_cast<BinaryAsset*>(src_build.bonus());
 	verify(bonus_wad, "Invalid bonus.wad asset.");
-	unpack_bonus_wad(dest_pack, *bonus_wad);
+	dest_build.set_bonus(unpack_bonus_wad(dest_pack, *bonus_wad));
 	
-	BinaryAsset* hud_wad = dynamic_cast<BinaryAsset*>(build.hud());
+	BinaryAsset* hud_wad = dynamic_cast<BinaryAsset*>(src_build.hud());
 	verify(hud_wad, "Invalid hud.wad asset.");
-	unpack_hud_wad(dest_pack, *hud_wad);
+	dest_build.set_hud(unpack_hud_wad(dest_pack, *hud_wad));
 	
-	BinaryAsset* misc_wad = dynamic_cast<BinaryAsset*>(build.misc());
+	BinaryAsset* misc_wad = dynamic_cast<BinaryAsset*>(src_build.misc());
 	verify(misc_wad, "Invalid misc.wad asset.");
-	unpack_misc_wad(dest_pack, *misc_wad);
+	dest_build.set_misc(unpack_misc_wad(dest_pack, *misc_wad));
 	
-	BinaryAsset* mpeg_wad = dynamic_cast<BinaryAsset*>(build.mpeg());
+	BinaryAsset* mpeg_wad = dynamic_cast<BinaryAsset*>(src_build.mpeg());
 	verify(mpeg_wad, "Invalid mpeg.wad asset.");
-	unpack_mpeg_wad(dest_pack, *mpeg_wad);
+	dest_build.set_mpeg(unpack_mpeg_wad(dest_pack, *mpeg_wad));
 	
-	BinaryAsset* online_wad = dynamic_cast<BinaryAsset*>(build.online());
+	BinaryAsset* online_wad = dynamic_cast<BinaryAsset*>(src_build.online());
 	verify(online_wad, "Invalid online.wad asset.");
-	unpack_online_wad(dest_pack, *online_wad);
+	dest_build.set_online(unpack_online_wad(dest_pack, *online_wad));
 	
-	BinaryAsset* space_wad = dynamic_cast<BinaryAsset*>(build.space());
+	BinaryAsset* space_wad = dynamic_cast<BinaryAsset*>(src_build.space());
 	verify(space_wad, "Invalid space.wad asset.");
-	unpack_space_wad(dest_pack, *space_wad);
+	dest_build.set_space(unpack_space_wad(dest_pack, *space_wad));
+}
+
+void pack_global_wad(OutputStream& dest, Asset& wad, Game game) {
+	switch(wad.type().id) {
+		case ArmorWadAsset::ASSET_TYPE.id: pack_armor_wad(dest, static_cast<ArmorWadAsset&>(wad), game); break;
+		case AudioWadAsset::ASSET_TYPE.id: pack_audio_wad(dest, static_cast<AudioWadAsset&>(wad), game); break;
+		case BonusWadAsset::ASSET_TYPE.id: pack_bonus_wad(dest, static_cast<BonusWadAsset&>(wad), game); break;
+		case HudWadAsset::ASSET_TYPE.id: pack_hud_wad(dest, static_cast<HudWadAsset&>(wad), game); break;
+		case MiscWadAsset::ASSET_TYPE.id: pack_misc_wad(dest, static_cast<MiscWadAsset&>(wad), game); break;
+		case MpegWadAsset::ASSET_TYPE.id: pack_mpeg_wad(dest, static_cast<MpegWadAsset&>(wad), game); break;
+		case OnlineWadAsset::ASSET_TYPE.id: pack_online_wad(dest, static_cast<OnlineWadAsset&>(wad), game); break;
+		case SpaceWadAsset::ASSET_TYPE.id: pack_space_wad(dest, static_cast<SpaceWadAsset&>(wad), game); break;
+		default: verify_not_reached("Failed to identify WAD asset.");
+	}
 }

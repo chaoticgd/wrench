@@ -31,7 +31,7 @@ packed_struct(BonusWadHeaderDL,
 	/* 0x2a0 */ SectorRange dige;
 )
 
-void unpack_bonus_wad(AssetPack& dest, BinaryAsset& src) {
+BonusWadAsset& unpack_bonus_wad(AssetPack& dest, BinaryAsset& src) {
 	auto [file, header] = open_wad_file<BonusWadHeaderDL>(src);
 	AssetFile& asset_file = dest.asset_file("bonus/bonus.asset");
 	
@@ -44,4 +44,19 @@ void unpack_bonus_wad(AssetPack& dest, BinaryAsset& src) {
 	wad.set_skill_images(unpack_binaries(wad, *file, ARRAY_PAIR(header.skill_images), "skill_images"));
 	wad.set_trophy_image(unpack_binary(wad, *file, header.trophy_image, "trophy_image", "trophy_image.bin"));
 	wad.set_dige(unpack_binary(wad, *file, header.dige, "dige", "dige.bin"));
+	
+	return wad;
+}
+
+void pack_bonus_wad(OutputStream& dest, BonusWadAsset& wad, Game game) {
+	s64 base = dest.tell();
+	
+	BonusWadHeaderDL header = {0};
+	header.header_size = sizeof(BonusWadHeaderDL);
+	dest.write(header);
+	dest.pad(SECTOR_SIZE, 0);
+	
+	// ...
+	
+	dest.write(base, header);
 }

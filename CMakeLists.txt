@@ -125,6 +125,7 @@ add_executable(spanner
 	src/spanner/assets.cpp
 	src/spanner/tests.cpp
 	src/spanner/spanner_util.cpp
+	src/spanner/asset_packer.cpp
 	src/spanner/global_wads.cpp
 	src/spanner/globals/armor_wad.cpp
 	src/spanner/globals/audio_wad.cpp

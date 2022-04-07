@@ -21,6 +21,7 @@
 
 #include <spanner/spanner_util.h>
 
-void unpack_misc_wad(AssetPack& dest, BinaryAsset& src);
+MiscWadAsset& unpack_misc_wad(AssetPack& dest, BinaryAsset& src);
+void pack_misc_wad(OutputStream& dest, MiscWadAsset& wad, Game game);
 
 #endif

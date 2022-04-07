@@ -16,13 +16,28 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef SPANNER_GLOBAL_WADS_H
-#define SPANNER_GLOBAL_WADS_H
+#ifndef SPANNER_ASSET_PACKER_H
+#define SPANNER_ASSET_PACKER_H
 
 #include <assetmgr/asset.h>
 #include <assetmgr/asset_types.h>
 
-void unpack_global_wads(AssetPack& dest_pack, BuildAsset& dest_build, BuildAsset& build);
-void pack_global_wad(OutputStream& dest, Asset& wad, Game game);
+enum class AssetFormatHint {
+	NO_HINT,
+	TEXTURE_PIF_IDTEX8,
+	TEXTURE_RGBA
+};
+
+// Packs asset into a binary and writes it out to dest, using hint to determine
+// details of the expected output format if necessary.
+void pack_asset_impl(OutputStream& dest, Asset& asset, Game game, AssetFormatHint hint = AssetFormatHint::NO_HINT);
+
+template <typename Range>
+Range pack_asset(OutputStream& dest, Asset& wad, Game game, s64 base, AssetFormatHint hint = AssetFormatHint::NO_HINT) {
+	s64 begin = dest.tell();
+	pack_asset_impl(dest, wad, game, hint);
+	s64 end = dest.tell();
+	return Range::from_bytes(begin - base, end - begin);
+}
 
 #endif

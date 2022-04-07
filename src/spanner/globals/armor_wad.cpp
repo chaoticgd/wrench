@@ -18,9 +18,11 @@
 
 #include "armor_wad.h"
 
+#include <spanner/asset_packer.h>
+
 packed_struct(ArmorHeader,
-	SectorRange mesh;
-	SectorRange textures;
+	/* 0x0 */ SectorRange mesh;
+	/* 0x8 */ SectorRange textures;
 )
 
 packed_struct(ArmorWadHeaderDL,
@@ -32,7 +34,7 @@ packed_struct(ArmorWadHeaderDL,
 	/* 0x1e8 */ SectorRange dropship_textures[8];
 )
 
-void unpack_armor_wad(AssetPack& dest, BinaryAsset& src) {
+ArmorWadAsset& unpack_armor_wad(AssetPack& dest, BinaryAsset& src) {
 	auto [file, header] = open_wad_file<ArmorWadHeaderDL>(src);
 	AssetFile& asset_file = dest.asset_file("armors/armors.asset");
 	
@@ -51,4 +53,29 @@ void unpack_armor_wad(AssetPack& dest, BinaryAsset& src) {
 	wad.set_bot_textures(unpack_binaries(wad, *file, ARRAY_PAIR(header.bot_textures), "bot_textures"));
 	wad.set_landstalker_textures(unpack_binaries(wad, *file, ARRAY_PAIR(header.landstalker_textures), "landstalker_textures"));
 	wad.set_dropship_textures(unpack_binaries(wad, *file, ARRAY_PAIR(header.dropship_textures), "dropship_textures"));
+	
+	return wad;
+}
+
+void pack_armor_wad(OutputStream& dest, ArmorWadAsset& wad, Game game) {
+	s64 base = dest.tell();
+	
+	ArmorWadHeaderDL header = {0};
+	header.header_size = sizeof(ArmorWadHeaderDL);
+	dest.write(header);
+	dest.pad(SECTOR_SIZE, 0);
+	
+	std::vector<Asset*> armors = wad.armors();
+	verify(armors.size() < ARRAY_SIZE(header.armors), "Too many armors.");
+	for(size_t i = 0; i < armors.size(); i++) {
+		ArmorAsset* armor = static_cast<ArmorAsset*>(armors[i]);
+		verify(armor, "Armor assets must be of type ArmorAsset.");
+		header.armors[i].mesh = pack_asset<SectorRange>(dest, *armor->mesh(), game, base);
+		// textures
+	}
+	//pack_binaries(dest, ARRAY_PAIR(header.bot_textures), wad.bot_textures(), base);
+	//pack_binaries(dest, ARRAY_PAIR(header.landstalker_textures), wad.landstalker_textures(), base);
+	//pack_binaries(dest, ARRAY_PAIR(header.dropship_textures), wad.dropship_textures(), base);
+	
+	dest.write(base, header);
 }

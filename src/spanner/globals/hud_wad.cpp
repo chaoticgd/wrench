@@ -18,6 +18,8 @@
 
 #include "hud_wad.h"
 
+#include <spanner/asset_packer.h>
+
 packed_struct(HudWadHeaderDL,
 	/* 0x000 */ s32 header_size;
 	/* 0x004 */ Sector32 sector;
@@ -59,7 +61,7 @@ packed_struct(HudWadHeaderDL,
 	/* 0xf68 */ SectorRange tourney_plates_large[4];
 )
 
-void unpack_hud_wad(AssetPack& dest, BinaryAsset& src) {
+HudWadAsset& unpack_hud_wad(AssetPack& dest, BinaryAsset& src) {
 	auto [file, header] = open_wad_file<HudWadHeaderDL>(src);
 	AssetFile& asset_file = dest.asset_file("hud/hud.asset");
 	
@@ -100,4 +102,19 @@ void unpack_hud_wad(AssetPack& dest, BinaryAsset& src) {
 	wad.set_hud_flythru(unpack_binary(wad, *file, header.hud_flythru, "hud_flythru", "hud_flythru.pif"));
 	wad.set_mp_maps(unpack_binaries(wad, *file, ARRAY_PAIR(header.mp_maps), "mp_maps", ".pif"));
 	wad.set_tourney_plates_large(unpack_binaries(wad, *file, ARRAY_PAIR(header.tourney_plates_large), "tourney_plates_large", ".pif"));
+	
+	return wad;
+}
+
+void pack_hud_wad(OutputStream& dest, HudWadAsset& wad, Game game) {
+	s64 base = dest.tell();
+	
+	HudWadHeaderDL header = {0};
+	header.header_size = sizeof(HudWadHeaderDL);
+	dest.write(header);
+	dest.pad(SECTOR_SIZE, 0);
+	
+	// ...
+	
+	dest.write(base, header);
 }

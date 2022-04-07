@@ -64,15 +64,16 @@ struct FileReference {
 };
 
 enum AssetPackType {
-	EXTRACTED, // Built files extracted from a base game ISO.
-	UNPACKED, // Source assets unpacked from files extracted from a base game ISO.
+	WADS, // Built WAD files extracted from a base game ISO.
+	BINS, // Built loose files extracted from a base game ISO.
+	SOURCE, // Source assets unpacked from files extracted from a base game ISO.
 	LIBRARY, // Additional assets to be used by mods.
 	MOD // A mod.
 };
 
 struct GameInfo {
-	std::string game; // The tag used to lookup the Game asset.
 	AssetPackType type;
+	std::vector<AssetReference> builds; // List of builds included with this asset pack.
 	std::vector<std::string> dependencies; // Library packs to be mounted before the mod but after the base game.
 };
 

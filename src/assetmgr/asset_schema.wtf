@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2022 chaoticgd
+	Copyright (C) 2019-2022 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -32,20 +32,6 @@ AssetType Binary {
 	desc: 'A raw binary file.'
 	
 	FileReferenceAttribute src {}
-}
-
-AssetType Game {
-	desc: 'A game e.g. Game:1 for R&C1, Game:4 for Deadlocked, or Game:my_mod for my_mod.'
-	
-	ArrayAttribute builds {
-		desc: 'A list of available builds of the game.'
-		
-		AssetReferenceAttribute element {
-			allowed_asset_types: [
-				'Build'
-			]
-		}
-	}
 }
 
 // *****************************************************************************

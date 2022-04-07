@@ -24,10 +24,25 @@ struct MpegWadHeaderDL {
 	/* 0x8 */ SectorByteRange story[200];
 };
 
-void unpack_mpeg_wad(AssetPack& dest, BinaryAsset& src) {
+MpegWadAsset& unpack_mpeg_wad(AssetPack& dest, BinaryAsset& src) {
 	auto [file, header] = open_wad_file<MpegWadHeaderDL>(src);
 	AssetFile& asset_file = dest.asset_file("mpegs/mpegs.asset");
 	
 	MpegWadAsset& wad = asset_file.root().child<MpegWadAsset>("mpegs");
 	wad.set_story(unpack_binaries(wad, *file, ARRAY_PAIR(header.story), "story", ".pss"));
+	
+	return wad;
+}
+
+void pack_mpeg_wad(OutputStream& dest, MpegWadAsset& wad, Game game) {
+	s64 base = dest.tell();
+	
+	MpegWadHeaderDL header = {0};
+	header.header_size = sizeof(MpegWadHeaderDL);
+	dest.write(header);
+	dest.pad(SECTOR_SIZE, 0);
+	
+	// ...
+	
+	dest.write(base, header);
 }

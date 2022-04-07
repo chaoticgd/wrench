@@ -77,19 +77,14 @@ GameInfo read_game_info(char* input) {
 	
 	GameInfo info;
 	
-	const WtfAttribute* game = wtf_attribute(root, "game");
-	if(game && game->type == WTF_STRING) {
-		info.game = game->string;
-	} else {
-		fprintf(stderr, "warning: No game attribute in gameinfo.txt file.\n");
-	}
-	
 	const WtfAttribute* type = wtf_attribute(root, "type");
 	if(type && type->type == WTF_STRING) {
-		if(strcmp(type->string, "extracted") == 0) {
-			info.type = AssetPackType::EXTRACTED;
-		} else if(strcmp(type->string, "unpacked") == 0) {
-			info.type = AssetPackType::UNPACKED;
+		if(strcmp(type->string, "wads") == 0) {
+			info.type = AssetPackType::WADS;
+		} else if(strcmp(type->string, "bins") == 0) {
+			info.type = AssetPackType::BINS;
+		} else if(strcmp(type->string, "source") == 0) {
+			info.type = AssetPackType::SOURCE;
 		} else if(strcmp(type->string, "library") == 0) {
 			info.type = AssetPackType::LIBRARY;
 		} else {
@@ -97,6 +92,15 @@ GameInfo read_game_info(char* input) {
 		}
 	} else {
 		fprintf(stderr, "warning: No type attribute in gameinfo.txt file.\n");
+	}
+	
+	const WtfAttribute* builds = wtf_attribute(root, "builds");
+	if(builds && builds->type == WTF_ARRAY) {
+		for(const WtfAttribute* element = builds->first_array_element; element != nullptr; element = element->next) {
+			if(element->type == WTF_STRING) {
+				info.builds.emplace_back(parse_asset_reference(element->string));
+			}
+		}
 	}
 	
 	const WtfAttribute* deps = wtf_attribute(root, "dependencies");
@@ -114,20 +118,27 @@ GameInfo read_game_info(char* input) {
 void write_game_info(std::string& dest, const GameInfo& info) {
 	WtfWriter* ctx = wtf_begin_file(dest);
 	
-	wtf_begin_attribute(ctx, "game");
-	wtf_write_string(ctx, info.game.c_str());
-	wtf_end_attribute(ctx);
-	
 	wtf_begin_attribute(ctx, "type");
-	if(info.type == AssetPackType::EXTRACTED) {
-		wtf_write_string(ctx, "extracted");
-	} else if(info.type == AssetPackType::UNPACKED) {
-		wtf_write_string(ctx, "unpacked");
+	if(info.type == AssetPackType::WADS) {
+		wtf_write_string(ctx, "wads");
+	} else if(info.type == AssetPackType::BINS) {
+		wtf_write_string(ctx, "bins");
+	} else if(info.type == AssetPackType::SOURCE) {
+		wtf_write_string(ctx, "source");
 	} else if(info.type == AssetPackType::LIBRARY) {
 		wtf_write_string(ctx, "library");
 	} else {
 		wtf_write_string(ctx, "mod");
 	}
+	wtf_end_attribute(ctx);
+	
+	wtf_begin_attribute(ctx, "builds");
+	wtf_begin_array(ctx);
+	for(const AssetReference& reference : info.builds) {
+		std::string str = asset_reference_to_string(reference);
+		wtf_write_string(ctx, str.c_str());
+	}
+	wtf_end_array(ctx);
 	wtf_end_attribute(ctx);
 	
 	if(info.dependencies.size() > 0) {

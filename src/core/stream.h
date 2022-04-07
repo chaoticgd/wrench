@@ -79,8 +79,10 @@ public:
 
 	template <typename T>
 	void write(s64 offset, const T& value) {
+		s64 pos = tell();
 		seek(offset);
 		write(value);
+		seek(pos);
 	}
 	
 	template <typename T>

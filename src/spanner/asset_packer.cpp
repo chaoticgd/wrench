@@ -16,12 +16,15 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef SPANNER_GLOBALS_ONLINE_WAD_H
-#define SPANNER_GLOBALS_ONLINE_WAD_H
+#include "asset_packer.h"
 
-#include <spanner/spanner_util.h>
-
-OnlineWadAsset& unpack_online_wad(AssetPack& dest, BinaryAsset& src);
-void pack_online_wad(OutputStream& dest, OnlineWadAsset& wad, Game game);
-
-#endif
+void pack_asset_impl(OutputStream& dest, Asset& asset, Game game, AssetFormatHint hint) {
+	switch(asset.type().id) {
+		case BinaryAsset::ASSET_TYPE.id: {
+			BinaryAsset& binary = static_cast<BinaryAsset&>(asset);
+			auto src = binary.file().open_binary_file_for_reading(binary.src());
+			Stream::copy(dest, *src, src->size());
+			break;
+		}
+	}
+}

@@ -21,6 +21,7 @@
 
 #include <spanner/spanner_util.h>
 
-void unpack_armor_wad(AssetPack& dest, BinaryAsset& src);
+ArmorWadAsset& unpack_armor_wad(AssetPack& dest, BinaryAsset& src);
+void pack_armor_wad(OutputStream& dest, ArmorWadAsset& wad, Game game);
 
 #endif

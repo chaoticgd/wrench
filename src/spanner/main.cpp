@@ -34,11 +34,13 @@
 
 enum ArgFlags {
 	ARG_INPUT_PATH = 1 << 0,
-	ARG_OUTPUT_PATH = 1 << 1
+	ARG_ASSET = 1 << 1,
+	ARG_OUTPUT_PATH = 1 << 2
 };
 
 struct ParsedArgs {
 	fs::path input_path;
+	std::string asset;
 	fs::path output_path;
 };
 
@@ -46,6 +48,8 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags);
 static void unpack_wads(const fs::path& input_path, const fs::path& output_path);
 static void unpack_bins(const fs::path& input_path, const fs::path& output_path);
 static void pack(const fs::path& input_path, const fs::path& output_path);
+static void pack_wad(const fs::path& input_path, const std::string& asset, const fs::path& output_path);
+static void pack_wad_asset(OutputStream& dest, std::vector<u8>* wad_header_dest, Asset& asset);
 static void extract(fs::path input_path, fs::path output_path);
 static void build(fs::path input_path, fs::path output_path);
 static void extract_collision(fs::path input_path, fs::path output_path);
@@ -94,8 +98,8 @@ int main(int argc, char** argv) {
 			pack(args.input_path, args.output_path);
 			return 0;
 		} else if(continuation == "_wad") {
-			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
-			//pack_iso(args.input_path, args.output_path, "0x%-14lx0x%-14lx%s\n");
+			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_ASSET | ARG_OUTPUT_PATH);
+			pack_wad(args.input_path, args.asset, args.output_path);
 			return 0;
 		} else if(continuation == "_bins") {
 			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
@@ -135,6 +139,7 @@ int main(int argc, char** argv) {
 static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 	s32 required_count = 2;
 	required_count += (flags & ARG_INPUT_PATH) ? 1 : 0;
+	required_count += (flags & ARG_ASSET) ? 1 : 0;
 	required_count += (flags & ARG_OUTPUT_PATH) ? 1 : 0;
 	verify(argc == required_count, "Wrong number of arguments.");
 	
@@ -143,6 +148,9 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 	ParsedArgs args;
 	if(flags & ARG_INPUT_PATH) {
 		args.input_path = argv[index++];
+	}
+	if(flags & ARG_ASSET) {
+		args.asset = argv[index++];
 	}
 	if(flags & ARG_OUTPUT_PATH) {
 		args.output_path = argv[index++];
@@ -154,25 +162,22 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 static void unpack_wads(const fs::path& input_path, const fs::path& output_path) {
 	AssetForest forest;
 	
-	AssetPack& src_pack = forest.mount<LooseAssetPack>("extracted", input_path, false);
-	verify(!src_pack.game_info.game.empty(),
-		"Source asset pack has invalid 'game' attribute in gameinfo.txt.");
-	verify(src_pack.game_info.type == AssetPackType::EXTRACTED,
-		"Unpacking can only be done on an extracted asset pack.");
+	AssetPack& src_pack = forest.mount<LooseAssetPack>("wads", input_path, false);
+	verify(src_pack.game_info.type == AssetPackType::WADS,
+		"unpack_wads can only be run on an WAD asset pack.");
 	
-	AssetPack& dest_pack = forest.mount<LooseAssetPack>("unpacked", output_path, true);
-	dest_pack.game_info.game = src_pack.game_info.game;
-	dest_pack.game_info.type = AssetPackType::UNPACKED;
+	AssetPack& dest_pack = forest.mount<LooseAssetPack>("bins", output_path, true);
+	dest_pack.game_info.type = AssetPackType::BINS;
 	
-	std::string game_ref = stringf("/Game:%s", src_pack.game_info.game.c_str());
-	GameAsset* game = dynamic_cast<GameAsset*>(forest.lookup_asset(parse_asset_reference(game_ref.c_str())));
-	verify(game, "Invalid Game asset '%s'.", game_ref.c_str());
-	std::vector<Asset*> builds = game->builds();
-	verify(builds.size() == 1, "Extracted asset pack must have exactly one build.");
-	BuildAsset* build = dynamic_cast<BuildAsset*>(builds[0]);
-	verify(build, "Invalid Build asset.");
+	BuildAsset& dest_build = dest_pack.asset_file("build.asset").root().child<BuildAsset>("build");
+	dest_pack.game_info.builds = {dest_build.absolute_reference()};
 	
-	unpack_global_wads(dest_pack, *build);
+	auto& builds = src_pack.game_info.builds;
+	verify(builds.size() == 1, "WAD asset pack must have exactly one build.");
+	BuildAsset* src_build = dynamic_cast<BuildAsset*>(forest.lookup_asset(builds[0]));
+	verify(build, "Invalid build asset.");
+	
+	unpack_global_wads(dest_pack, dest_build, *src_build);
 	
 	dest_pack.write();
 }
@@ -188,18 +193,31 @@ static void pack(const fs::path& input_path, const fs::path& output_path) {
 	AssetForest forest;
 	AssetPack& src_pack = forest.mount<LooseAssetPack>("src", input_path, false);
 	
-	std::string game_ref = stringf("/Game:%s", src_pack.game_info.game.c_str());
-	GameAsset* game = dynamic_cast<GameAsset*>(forest.lookup_asset(parse_asset_reference(game_ref.c_str())));
-	verify(game, "Invalid Game asset '%s'.", game_ref.c_str());
-	std::vector<Asset*> builds = game->builds();
+	auto& builds = src_pack.game_info.builds;
 	verify(builds.size() == 1, "Extracted asset pack must have exactly one build.");
-	BuildAsset* build = dynamic_cast<BuildAsset*>(builds[0]);
-	verify(build, "Invalid Build asset.");
+	BuildAsset* build = dynamic_cast<BuildAsset*>(forest.lookup_asset(builds[0]));
+	verify(build, "Invalid build asset.");
 	
-	pack_iso(iso, *build, Game::DL, [](OutputStream& dest, std::vector<u8>* wad_header_dest, Asset& asset) {
-		assert(asset.type() == BinaryAsset::ASSET_TYPE);
-		if(BinaryAsset* binary = dynamic_cast<BinaryAsset*>(&asset)) {
-			auto src = binary->file().open_binary_file_for_reading(binary->src());
+	pack_iso(iso, *build, Game::DL, pack_wad_asset);
+}
+
+static void pack_wad(const fs::path& input_path, const std::string& asset, const fs::path& output_path) {
+	FileOutputStream iso;
+	verify(iso.open(output_path), "Failed to open '%s' for writing.\n", output_path.string().c_str());
+	
+	AssetForest forest;
+	AssetPack& src_pack = forest.mount<LooseAssetPack>("src", input_path, false);
+	
+	Asset* wad = forest.lookup_asset(parse_asset_reference(asset.c_str()));
+	verify(wad, "Invalid asset path.");
+	pack_wad_asset(iso, nullptr, *wad);
+}
+
+static void pack_wad_asset(OutputStream& dest, std::vector<u8>* wad_header_dest, Asset& asset) {
+	switch(asset.type().id) {
+		case BinaryAsset::ASSET_TYPE.id: {
+			BinaryAsset& binary = static_cast<BinaryAsset&>(asset);
+			auto src = binary.file().open_binary_file_for_reading(binary.src());
 			if(wad_header_dest) {
 				// This is a WAD file.
 				s32 header_size = src->read<s32>();
@@ -225,8 +243,23 @@ static void pack(const fs::path& input_path, const fs::path& output_path) {
 			} else {
 				Stream::copy(dest, *src, src->size());
 			}
+			break;
 		}
-	});
+		case ArmorWadAsset::ASSET_TYPE.id:
+		case AudioWadAsset::ASSET_TYPE.id:
+		case BonusWadAsset::ASSET_TYPE.id:
+		case HudWadAsset::ASSET_TYPE.id:
+		case MiscWadAsset::ASSET_TYPE.id:
+		case MpegWadAsset::ASSET_TYPE.id:
+		case OnlineWadAsset::ASSET_TYPE.id:
+		case SpaceWadAsset::ASSET_TYPE.id: {
+			pack_global_wad(dest, asset, Game::DL);
+			break;
+		}
+		default: {
+			verify_not_reached("Invalid asset type.");
+		}
+	}
 }
 
 static void extract_collision(fs::path input_path, fs::path output_path) {

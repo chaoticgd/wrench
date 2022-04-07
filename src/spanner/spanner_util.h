@@ -40,6 +40,21 @@ Asset& unpack_binary(Asset& parent, InputStream& src, Range range, const char* c
 }
 
 template <typename Range>
+Range pack_binary(OutputStream& dest, Asset* asset, s64 base) {
+	BinaryAsset* binary = static_cast<BinaryAsset*>(asset);
+	verify(binary, "Asset must be a binary.");
+	if(!binary->has_src()) {
+		return Range::from_bytes(0, 0);
+	}
+	FileReference ref = binary->src();
+	auto stream = binary->file().open_binary_file_for_reading(ref);
+	s64 begin = dest.tell();
+	Stream::copy(dest, *stream, stream->size());
+	s64 end = dest.tell();
+	return Range::from_bytes(begin - base, end - begin);
+}
+
+template <typename Range>
 Asset& unpack_compressed_binary(Asset& parent, InputStream& src, Range range, const char* child, fs::path path) {
 	return unpack_binary(parent, src, range, child, path, true);
 }
@@ -61,6 +76,14 @@ std::vector<Asset*> unpack_binaries_impl(Asset& parent, InputStream& src, Range*
 template <typename Range>
 std::vector<Asset*> unpack_binaries(Asset& parent, InputStream& src, Range* ranges, s32 count, const char* child, const char* extension = ".bin") {
 	return unpack_binaries_impl(parent, src, ranges, count, child, false, extension);
+}
+
+template <typename Range>
+Range pack_binaries(OutputStream& dest, Range* ranges, s64 count, const std::vector<Asset*>& assets, s64 base) {
+	verify(assets.size() <= count, "Too many assets in list.");
+	for(size_t i = 0; i < assets.size(); i++) {
+		ranges[i] = pack_binary<Range>(dest, assets[i], base);
+	}
 }
 
 template <typename Range>

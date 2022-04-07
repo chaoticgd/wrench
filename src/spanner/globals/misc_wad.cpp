@@ -37,7 +37,7 @@ packed_struct(MiscWadHeaderDL,
 	/* 0x48 */ SectorRange gadget;
 )
 
-void unpack_misc_wad(AssetPack& dest, BinaryAsset& src) {
+MiscWadAsset& unpack_misc_wad(AssetPack& dest, BinaryAsset& src) {
 	auto [file, header] = open_wad_file<MiscWadHeaderDL>(src);
 	AssetFile& asset_file = dest.asset_file("misc/misc.asset");
 	
@@ -49,6 +49,8 @@ void unpack_misc_wad(AssetPack& dest, BinaryAsset& src) {
 	wad.set_exit(unpack_binary(wad, *file, header.exit, "exit", "exit.bin"));
 	wad.set_boot(unpack_boot_wad(wad, *file, header.bootwad));
 	wad.set_gadget(unpack_binary(wad, *file, header.gadget, "gadget", "gadget.bin"));
+	
+	return wad;
 }
 
 packed_struct(IrxHeader,
@@ -147,4 +149,17 @@ static Asset& unpack_boot_wad(Asset& parent, InputStream& src, SectorRange range
 	boot.set_sram(unpack_compressed_binary_from_memory(boot, bytes, header.sram, "sram"));
 	
 	return boot;
+}
+
+void pack_misc_wad(OutputStream& dest, MiscWadAsset& wad, Game game) {
+	s64 base = dest.tell();
+	
+	MiscWadHeaderDL header = {0};
+	header.header_size = sizeof(MiscWadHeaderDL);
+	dest.write(header);
+	dest.pad(SECTOR_SIZE, 0);
+	
+	// ...
+	
+	dest.write(base, header);
 }

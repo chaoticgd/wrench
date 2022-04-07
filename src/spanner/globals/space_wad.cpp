@@ -24,10 +24,25 @@ packed_struct(SpaceWadHeaderDL,
 	/* 0x8 */ SectorRange transition_wads[12];
 )
 
-void unpack_space_wad(AssetPack& dest, BinaryAsset& src) {
+SpaceWadAsset& unpack_space_wad(AssetPack& dest, BinaryAsset& src) {
 	auto [file, header] = open_wad_file<SpaceWadHeaderDL>(src);
 	AssetFile& asset_file = dest.asset_file("space/space.asset");
 	
 	SpaceWadAsset& wad = asset_file.root().child<SpaceWadAsset>("space");
 	wad.set_transitions(unpack_compressed_binaries(wad, *file, ARRAY_PAIR(header.transition_wads), "transitions"));
+	
+	return wad;
+}
+
+void pack_space_wad(OutputStream& dest, SpaceWadAsset& wad, Game game) {
+	s64 base = dest.tell();
+	
+	SpaceWadHeaderDL header = {0};
+	header.header_size = sizeof(SpaceWadHeaderDL);
+	dest.write(header);
+	dest.pad(SECTOR_SIZE, 0);
+	
+	// ...
+	
+	dest.write(base, header);
 }
