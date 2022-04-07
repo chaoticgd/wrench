@@ -271,9 +271,9 @@ void AssetFile::write() const {
 	_pack.write_text_file(_relative_directory/_file_name, dest.c_str());
 }
 
-std::unique_ptr<InputStream> AssetFile::open_binary_file_for_reading(const FileReference& reference) const {
+std::unique_ptr<InputStream> AssetFile::open_binary_file_for_reading(const FileReference& reference, fs::file_time_type* modified_time_dest) const {
 	assert(reference.owner == this);
-	return _pack.open_binary_file_for_reading(_relative_directory/reference.path);
+	return _pack.open_binary_file_for_reading(_relative_directory/reference.path, modified_time_dest);
 }
 
 FileReference AssetFile::write_text_file(const fs::path& path, const char* contents) const {
@@ -453,8 +453,11 @@ LooseAssetPack::LooseAssetPack(AssetForest& forest, std::string name, fs::path d
 	: AssetPack(forest, std::move(name), is_writeable)
 	, _directory(directory) {}
 
-std::unique_ptr<InputStream> LooseAssetPack::open_binary_file_for_reading(const fs::path& path) const {
-	std::string full_path = (_directory/path).string();
+std::unique_ptr<InputStream> LooseAssetPack::open_binary_file_for_reading(const fs::path& path, fs::file_time_type* modified_time_dest) const {
+	fs::path full_path = _directory/path;
+	if(modified_time_dest) {
+		*modified_time_dest = fs::last_write_time(full_path);
+	}
 	auto stream = std::make_unique<FileInputStream>();
 	if(stream->open(full_path)) {
 		return stream;

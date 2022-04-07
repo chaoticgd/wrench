@@ -144,7 +144,7 @@ public:
 	
 	void write() const;
 	
-	std::unique_ptr<InputStream> open_binary_file_for_reading(const FileReference& reference) const;
+	std::unique_ptr<InputStream> open_binary_file_for_reading(const FileReference& reference, fs::file_time_type* modified_time_dest = nullptr) const;
 	FileReference write_text_file(const fs::path& path, const char* contents) const;
 	FileReference write_binary_file(const fs::path& path, Buffer contents) const;
 	FileReference write_binary_file(const fs::path& path, std::function<void(OutputStream&)> callback) const;
@@ -203,7 +203,7 @@ private:
 	
 	Asset* lookup_local_asset(const AssetReference& absolute_reference);
 	
-	virtual std::unique_ptr<InputStream> open_binary_file_for_reading(const fs::path& path) const = 0;
+	virtual std::unique_ptr<InputStream> open_binary_file_for_reading(const fs::path& path, fs::file_time_type* modified_time_dest) const = 0;
 	virtual std::string read_text_file(const fs::path& path) const = 0;
 	virtual std::vector<u8> read_binary_file(const fs::path& path) const = 0;
 	virtual void write_text_file(const fs::path& path, const char* contents) const = 0;
@@ -260,7 +260,7 @@ public:
 	LooseAssetPack(AssetForest& forest, std::string name, fs::path directory, bool is_writeable);
 	
 private:
-	std::unique_ptr<InputStream> open_binary_file_for_reading(const fs::path& path) const override;
+	std::unique_ptr<InputStream> open_binary_file_for_reading(const fs::path& path, fs::file_time_type* modified_time_dest) const override;
 	std::string read_text_file(const fs::path& path) const override;
 	std::vector<u8> read_binary_file(const fs::path& path) const override;
 	void write_text_file(const fs::path& path, const char* contents) const override;

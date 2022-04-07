@@ -49,7 +49,7 @@ static void unpack_wads(const fs::path& input_path, const fs::path& output_path)
 static void unpack_bins(const fs::path& input_path, const fs::path& output_path);
 static void pack(const fs::path& input_path, const fs::path& output_path);
 static void pack_wad(const fs::path& input_path, const std::string& asset, const fs::path& output_path);
-static void pack_wad_asset(OutputStream& dest, std::vector<u8>* wad_header_dest, Asset& asset);
+static void pack_wad_asset(OutputStream& dest, std::vector<u8>* wad_header_dest, fs::file_time_type* modified_time_dest, Asset& asset);
 static void extract(fs::path input_path, fs::path output_path);
 static void build(fs::path input_path, fs::path output_path);
 static void extract_collision(fs::path input_path, fs::path output_path);
@@ -210,14 +210,14 @@ static void pack_wad(const fs::path& input_path, const std::string& asset, const
 	
 	Asset* wad = forest.lookup_asset(parse_asset_reference(asset.c_str()));
 	verify(wad, "Invalid asset path.");
-	pack_wad_asset(iso, nullptr, *wad);
+	pack_wad_asset(iso, nullptr, nullptr, *wad);
 }
 
-static void pack_wad_asset(OutputStream& dest, std::vector<u8>* wad_header_dest, Asset& asset) {
+static void pack_wad_asset(OutputStream& dest, std::vector<u8>* wad_header_dest, fs::file_time_type* modified_time_dest, Asset& asset) {
 	switch(asset.type().id) {
 		case BinaryAsset::ASSET_TYPE.id: {
 			BinaryAsset& binary = static_cast<BinaryAsset&>(asset);
-			auto src = binary.file().open_binary_file_for_reading(binary.src());
+			auto src = binary.file().open_binary_file_for_reading(binary.src(), modified_time_dest);
 			if(wad_header_dest) {
 				// This is a WAD file.
 				s32 header_size = src->read<s32>();
@@ -254,6 +254,7 @@ static void pack_wad_asset(OutputStream& dest, std::vector<u8>* wad_header_dest,
 		case OnlineWadAsset::ASSET_TYPE.id:
 		case SpaceWadAsset::ASSET_TYPE.id: {
 			pack_global_wad(dest, asset, Game::DL);
+			*modified_time_dest = fs::file_time_type::clock::now();
 			break;
 		}
 		default: {

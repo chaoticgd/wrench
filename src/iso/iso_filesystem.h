@@ -50,8 +50,25 @@ packed_struct(IsoLsbMsb32,
 	}
 )
 
-packed_struct(IsoDateTime,
-	u8 dont_care[17];
+packed_struct(IsoPvdDateTime,
+	char year[4];
+	char month[2];
+	char day[2];
+	char hour[2];
+	char minute[2];
+	char second[2];
+	char hundredths_of_a_second[2];
+	s8 time_zone;
+)
+
+packed_struct(IsoDirectoryDateTime,
+	u8 years_since_1900;
+	u8 month;
+	u8 day;
+	u8 hour;
+	u8 minute;
+	u8 second;
+	u8 time_zone;
 )
 
 packed_struct(IsoDirectoryRecord,
@@ -59,7 +76,7 @@ packed_struct(IsoDirectoryRecord,
 	u8 extended_attribute_record_length;
 	IsoLsbMsb32 lba;
 	IsoLsbMsb32 data_length;
-	u8 recording_date_time[7];
+	IsoDirectoryDateTime recording_date_time;
 	u8 file_flags;
 	u8 file_unit_size;
 	u8 interleave_gap_size;
@@ -96,10 +113,10 @@ packed_struct(IsoPrimaryVolumeDescriptor,
 	char copyright_file_identifier[38];
 	char abstract_file_identifier[36];
 	char bibliographic_file_identifier[37];
-	IsoDateTime volume_creation_date_time;
-	IsoDateTime volume_modification_date_time;
-	IsoDateTime volume_expiration_date_time;
-	IsoDateTime volume_effective_date_time;
+	IsoPvdDateTime volume_creation_date_time;
+	IsoPvdDateTime volume_modification_date_time;
+	IsoPvdDateTime volume_expiration_date_time;
+	IsoPvdDateTime volume_effective_date_time;
 	s8 file_structure_version;
 	u8 unused_372;
 	u8 application_use[512];
@@ -112,6 +129,7 @@ struct IsoFileRecord {
 	Sector32 lba;
 	u32 size;
 	FileAsset* asset = nullptr;
+	fs::file_time_type modified_time;
 };
 
 struct IsoDirectory {

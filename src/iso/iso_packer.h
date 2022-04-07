@@ -28,7 +28,7 @@
 #include <iso/iso_filesystem.h>
 #include <iso/table_of_contents.h>
 
-using WadAssetPackerFunc = std::function<void(OutputStream& dest, std::vector<u8>* wad_header_dest, Asset& asset)>;
+using WadAssetPackerFunc = std::function<void(OutputStream& dest, std::vector<u8>* wad_header_dest, fs::file_time_type* modified_time_dest, Asset& asset)>;
 
 void pack_iso(OutputStream& dest, BuildAsset& build, Game game, const WadAssetPackerFunc& pack_wad_asset);
 

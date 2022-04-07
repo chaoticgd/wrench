@@ -71,6 +71,7 @@ void pack_iso(OutputStream& iso, BuildAsset& build, Game game, const WadAssetPac
 		}
 		toc_record.lba = {RAC234_TABLE_OF_CONTENTS_LBA};
 		toc_record.size = toc_size.bytes();
+		toc_record.modified_time = fs::file_time_type::clock::now();
 		print_file_record(toc_record);
 	}
 	
@@ -273,6 +274,7 @@ static IsoFileRecord write_system_cnf(OutputStream& iso, IsoDirectory& root_dir,
 	record.name = "system.cnf";
 	record.lba = {(s32) (iso.tell() / SECTOR_SIZE)};
 	record.size = system_cnf_size;
+	record.modified_time = fs::file_time_type::clock::now();
 	
 	print_file_record(record);
 	
@@ -296,7 +298,7 @@ static void write_files(OutputStream& iso, std::vector<IsoFileRecord*>& files) {
 		}
 		
 		FileReference ref = file->asset->src();
-		std::unique_ptr<InputStream> src = file->asset->file().open_binary_file_for_reading(ref);
+		std::unique_ptr<InputStream> src = file->asset->file().open_binary_file_for_reading(ref, &file->modified_time);
 		verify(src.get(), "Failed to open file '%s' for reading.", file->name.c_str());
 		
 		iso.pad(SECTOR_SIZE, 0);
@@ -319,7 +321,8 @@ static IsoDirectory pack_globals(OutputStream& iso, std::vector<GlobalWadInfo>& 
 		printf("%-16ld                %s\n", (size_t) sector.sectors, global.name.c_str());
 		
 		assert(global.asset);
-		pack_wad_asset(iso, &global.header, *global.asset);
+		fs::file_time_type modified_time;
+		pack_wad_asset(iso, &global.header, &modified_time, *global.asset);
 		
 		s64 end_of_file = iso.tell();
 		s64 file_size = end_of_file - sector.bytes();
@@ -333,6 +336,7 @@ static IsoDirectory pack_globals(OutputStream& iso, std::vector<GlobalWadInfo>& 
 		record.lba = sector;
 		assert(file_size < UINT32_MAX);
 		record.size = file_size;
+		record.modified_time = std::move(modified_time);
 		globals_dir.files.push_back(record);
 	}
 	return globals_dir;
@@ -391,7 +395,8 @@ static void pack_level_wad(OutputStream& iso, IsoDirectory& directory, LevelWadI
 	printf("%-16d                %s\n", (size_t) sector.sectors, file_name.c_str());
 	
 	assert(wad.asset);
-	pack_wad_asset(iso, &wad.header, *wad.asset);
+	fs::file_time_type modified_time;
+	pack_wad_asset(iso, &wad.header, &modified_time, *wad.asset);
 	
 	s64 end_of_file = iso.tell();
 	s64 file_size = end_of_file - sector.bytes();
@@ -405,5 +410,6 @@ static void pack_level_wad(OutputStream& iso, IsoDirectory& directory, LevelWadI
 	record.lba = sector;
 	assert(file_size < UINT32_MAX);
 	record.size = file_size;
+	record.modified_time = std::move(modified_time);
 	directory.files.push_back(record);
 }

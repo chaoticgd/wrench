@@ -139,7 +139,7 @@ void write_iso_filesystem(OutputStream& dest, IsoDirectory* root_dir) {
 		dest.write(zeroed_sector, sizeof(zeroed_sector));
 	}
 	
-	IsoDateTime zeroed_datetime = {{0}};
+	IsoPvdDateTime zeroed_datetime = {{0}};
 	
 	// Write out primary volume descriptor.
 	size_t pvd_pos = dest.tell();
@@ -170,7 +170,7 @@ void write_iso_filesystem(OutputStream& dest, IsoDirectory* root_dir) {
 	pvd.optional_m_path_table = 0;
 	pvd.root_directory.record_length = 0x22;
 	pvd.root_directory.extended_attribute_record_length = 0;
-	memset(pvd.root_directory.recording_date_time, 0, sizeof(pvd.root_directory.recording_date_time));
+	memset(&pvd.root_directory.recording_date_time, 0, sizeof(pvd.root_directory.recording_date_time));
 	pvd.root_directory.file_flags = 2;
 	pvd.root_directory.file_unit_size = 0;
 	pvd.root_directory.interleave_gap_size = 0;
@@ -335,12 +335,13 @@ static void write_directory_records(OutputStream& dest, const IsoDirectory& dir)
 	}
 	for(const IsoDirectory& dir : dir.subdirs) {
 		IsoFileRecord record = {dir.name, dir.lba, dir.size};
+		record.modified_time = fs::file_time_type::clock::now();
 		write_directory_record(dest, record, 2);
 	}
 }
 
 static void write_directory_record(OutputStream& dest, const IsoFileRecord& file, u8 flags) {
-	IsoDirectoryRecord record;
+	IsoDirectoryRecord record = {0};
 	record.record_length =
 		sizeof(IsoDirectoryRecord) +
 		file.name.size() +
@@ -348,7 +349,21 @@ static void write_directory_record(OutputStream& dest, const IsoFileRecord& file
 	record.extended_attribute_record_length = 0;
 	record.lba = IsoLsbMsb32::from_scalar(file.lba.sectors);
 	record.data_length = IsoLsbMsb32::from_scalar(file.size);
-	memset(record.recording_date_time, 0, sizeof(record.recording_date_time));
+	
+	// Curse this library.
+	auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>
+		(file.modified_time - fs::file_time_type::clock::now() + std::chrono::system_clock::now());
+	time_t cftime = std::chrono::system_clock::to_time_t(sctp);
+	tm* t = std::localtime(&cftime);
+	IsoDirectoryDateTime& dt = record.recording_date_time;
+	dt.years_since_1900 = t->tm_year;
+	dt.month = t->tm_mon + 1;
+	dt.day = t->tm_mday;
+	dt.hour = t->tm_hour - 1;
+	dt.minute = t->tm_min;
+	dt.second = t->tm_sec;
+	dt.time_zone = 0;
+	
 	record.file_flags = flags;
 	record.file_unit_size = 0;
 	record.interleave_gap_size = 0;
