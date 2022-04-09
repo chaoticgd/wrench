@@ -211,6 +211,8 @@ static void pack(const fs::path& input_path, const fs::path& output_path) {
 	FileOutputStream iso;
 	verify(iso.open(output_path), "Failed to open '%s' for writing.\n", output_path.string().c_str());
 	
+	printf("[  ?%] \033[32mMounting asset directories\033[0m\n");
+	
 	AssetForest forest;
 	AssetPack& src_pack = forest.mount<LooseAssetPack>("src", input_path, false);
 	
@@ -219,12 +221,14 @@ static void pack(const fs::path& input_path, const fs::path& output_path) {
 	BuildAsset* build = dynamic_cast<BuildAsset*>(forest.lookup_asset(builds[0]));
 	verify(build, "Invalid build asset.");
 	
-	pack_iso(iso, *build, Game::DL, pack_asset_impl);
+	pack_asset_impl(iso, nullptr, nullptr, *build, Game::DL);
 }
 
 static void pack_wad(const fs::path& input_path, const std::string& asset, const fs::path& output_path) {
 	FileOutputStream iso;
 	verify(iso.open(output_path), "Failed to open '%s' for writing.\n", output_path.string().c_str());
+	
+	printf("[  ?%] \033[32mMounting asset directories\033[0m\n");
 	
 	AssetForest forest;
 	AssetPack& src_pack = forest.mount<LooseAssetPack>("src", input_path, false);

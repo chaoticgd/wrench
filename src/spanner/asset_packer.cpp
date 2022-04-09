@@ -18,9 +18,15 @@
 
 #include "asset_packer.h"
 
-#include "global_wads.h"
+#include <iso/iso_packer.h>
+#include <spanner/global_wads.h>
 
 void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& asset, Game game, u32 hint) {
+	std::string type = asset_type_to_string(asset.type());
+	for(char& c : type) c = tolower(c);
+	std::string reference = asset_reference_to_string(asset.absolute_reference());
+	printf("[  ?%] \033[32mPacking %s asset %s\033[0m\n", type.c_str(), reference.c_str());
+	
 	switch(asset.type().id) {
 		case BinaryAsset::ASSET_TYPE.id: {
 			BinaryAsset& binary = static_cast<BinaryAsset&>(asset);
@@ -49,6 +55,10 @@ void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_
 			} else {
 				Stream::copy(dest, *src, src->size());
 			}
+			break;
+		}
+		case BuildAsset::ASSET_TYPE.id: {
+			pack_iso(dest, static_cast<BuildAsset&>(asset), Game::DL, pack_asset_impl);
 			break;
 		}
 		case ArmorWadAsset::ASSET_TYPE.id:

@@ -52,9 +52,6 @@ void pack_iso(OutputStream& iso, BuildAsset& build, Game game, const AssetPacker
 		iso.write(null_sector, SECTOR_SIZE);
 	}
 	
-	printf("Sector          Size (bytes)    Filename\n");
-	printf("------          ------------    --------\n");
-	
 	// SYSTEM.CNF must be written out at sector 1000 (the game hardcodes this).
 	IsoFileRecord system_cnf_record = write_system_cnf(iso, root_dir, build);
 	
@@ -318,8 +315,6 @@ static IsoDirectory pack_globals(OutputStream& iso, std::vector<GlobalWadInfo>& 
 		iso.pad(SECTOR_SIZE, 0);
 		Sector32 sector = Sector32::size_from_bytes(iso.tell());
 		
-		printf("%-16ld                %s\n", (size_t) sector.sectors, global.name.c_str());
-		
 		assert(global.asset);
 		fs::file_time_type modified_time;
 		pack_asset(iso, &global.header, &modified_time, *global.asset, game, 0);
@@ -391,8 +386,6 @@ static void pack_level_wad(OutputStream& iso, IsoDirectory& directory, LevelWadI
 	
 	iso.pad(SECTOR_SIZE, 0);
 	Sector32 sector = Sector32::size_from_bytes(iso.tell());
-	
-	printf("%-16d                %s\n", (size_t) sector.sectors, file_name.c_str());
 	
 	assert(wad.asset);
 	fs::file_time_type modified_time;
