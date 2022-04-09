@@ -18,12 +18,51 @@
 
 #include "asset_packer.h"
 
-void pack_asset_impl(OutputStream& dest, Asset& asset, Game game, AssetFormatHint hint) {
+#include "global_wads.h"
+
+void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& asset, Game game, u32 hint) {
 	switch(asset.type().id) {
 		case BinaryAsset::ASSET_TYPE.id: {
 			BinaryAsset& binary = static_cast<BinaryAsset&>(asset);
-			auto src = binary.file().open_binary_file_for_reading(binary.src());
-			Stream::copy(dest, *src, src->size());
+			auto src = binary.file().open_binary_file_for_reading(binary.src(), time_dest);
+			if(header_dest) {
+				s32 header_size = src->read<s32>();
+				assert(header_size == header_dest->size());
+				s64 padded_header_size = Sector32::size_from_bytes(header_size).bytes();
+				
+				// Extract the header.
+				assert(padded_header_size != 0);
+				header_dest->resize(padded_header_size);
+				*(s32*) header_dest->data() = header_size;
+				src->read(header_dest->data() + 4, padded_header_size - 4);
+				
+				// Write the header.
+				dest.write(header_dest->data(), padded_header_size);
+				
+				// The calling code needs the unpadded header.
+				header_dest->resize(header_size);
+				
+				assert(dest.tell() % SECTOR_SIZE == 0);
+				
+				// Copy the rest of the file.
+				Stream::copy(dest, *src, src->size() - padded_header_size);
+			} else {
+				Stream::copy(dest, *src, src->size());
+			}
+			break;
+		}
+		case ArmorWadAsset::ASSET_TYPE.id:
+		case AudioWadAsset::ASSET_TYPE.id:
+		case BonusWadAsset::ASSET_TYPE.id:
+		case HudWadAsset::ASSET_TYPE.id:
+		case MiscWadAsset::ASSET_TYPE.id:
+		case MpegWadAsset::ASSET_TYPE.id:
+		case OnlineWadAsset::ASSET_TYPE.id:
+		case SpaceWadAsset::ASSET_TYPE.id: {
+			pack_global_wad(dest, asset, Game::DL);
+			if(time_dest) {
+				*time_dest = fs::file_time_type::clock::now();
+			}
 			break;
 		}
 	}

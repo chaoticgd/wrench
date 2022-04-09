@@ -24,14 +24,14 @@
 #include <engine/compression.h>
 
 enum AssetFormatHint {
-	FMT_NO_HINT,
+	FMT_NO_HINT = 0,
 	FMT_TEXTURE_PIF_IDTEX8,
 	FMT_TEXTURE_RGBA
 };
 
 // Packs asset into a binary and writes it out to dest, using hint to determine
 // details of the expected output format if necessary.
-void pack_asset_impl(OutputStream& dest, Asset& asset, Game game, AssetFormatHint hint = FMT_NO_HINT);
+void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& asset, Game game, u32 hint = FMT_NO_HINT);
 
 template <typename Range>
 Range pack_asset(OutputStream& dest, Asset& asset, Game game, s64 base, AssetFormatHint hint = FMT_NO_HINT) {
@@ -39,7 +39,7 @@ Range pack_asset(OutputStream& dest, Asset& asset, Game game, s64 base, AssetFor
 		return Range::from_bytes(0, 0);
 	}
 	s64 begin = dest.tell();
-	pack_asset_impl(dest, asset, game, hint);
+	pack_asset_impl(dest, nullptr, nullptr, asset, game, hint);
 	s64 end = dest.tell();
 	return Range::from_bytes(begin - base, end - begin);
 }

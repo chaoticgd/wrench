@@ -31,6 +31,7 @@
 #include <spanner/tests.h>
 #include <spanner/wad_file.h>
 #include <spanner/global_wads.h>
+#include <spanner/asset_packer.h>
 
 enum ArgFlags {
 	ARG_INPUT_PATH = 1 << 0,
@@ -218,7 +219,7 @@ static void pack(const fs::path& input_path, const fs::path& output_path) {
 	BuildAsset* build = dynamic_cast<BuildAsset*>(forest.lookup_asset(builds[0]));
 	verify(build, "Invalid build asset.");
 	
-	pack_iso(iso, *build, Game::DL, pack_wad_asset);
+	pack_iso(iso, *build, Game::DL, pack_asset_impl);
 }
 
 static void pack_wad(const fs::path& input_path, const std::string& asset, const fs::path& output_path) {
@@ -230,58 +231,7 @@ static void pack_wad(const fs::path& input_path, const std::string& asset, const
 	
 	Asset* wad = forest.lookup_asset(parse_asset_reference(asset.c_str()));
 	verify(wad, "Invalid asset path.");
-	pack_wad_asset(iso, nullptr, nullptr, *wad);
-}
-
-static void pack_wad_asset(OutputStream& dest, std::vector<u8>* wad_header_dest, fs::file_time_type* modified_time_dest, Asset& asset) {
-	switch(asset.type().id) {
-		case BinaryAsset::ASSET_TYPE.id: {
-			BinaryAsset& binary = static_cast<BinaryAsset&>(asset);
-			auto src = binary.file().open_binary_file_for_reading(binary.src(), modified_time_dest);
-			if(wad_header_dest) {
-				s32 header_size = src->read<s32>();
-				assert(header_size == wad_header_dest->size());
-				s64 padded_header_size = Sector32::size_from_bytes(header_size).bytes();
-				
-				// Extract the header.
-				assert(padded_header_size != 0);
-				wad_header_dest->resize(padded_header_size);
-				*(s32*) wad_header_dest->data() = header_size;
-				src->read(wad_header_dest->data() + 4, padded_header_size - 4);
-				
-				// Write the header.
-				dest.write(wad_header_dest->data(), padded_header_size);
-				
-				// The calling code needs the unpadded header.
-				wad_header_dest->resize(header_size);
-				
-				assert(dest.tell() % SECTOR_SIZE == 0);
-				
-				// Copy the rest of the file.
-				Stream::copy(dest, *src, src->size() - padded_header_size);
-			} else {
-				Stream::copy(dest, *src, src->size());
-			}
-			break;
-		}
-		case ArmorWadAsset::ASSET_TYPE.id:
-		case AudioWadAsset::ASSET_TYPE.id:
-		case BonusWadAsset::ASSET_TYPE.id:
-		case HudWadAsset::ASSET_TYPE.id:
-		case MiscWadAsset::ASSET_TYPE.id:
-		case MpegWadAsset::ASSET_TYPE.id:
-		case OnlineWadAsset::ASSET_TYPE.id:
-		case SpaceWadAsset::ASSET_TYPE.id: {
-			pack_global_wad(dest, asset, Game::DL);
-			if(modified_time_dest) {
-				*modified_time_dest = fs::file_time_type::clock::now();
-			}
-			break;
-		}
-		default: {
-			verify_not_reached("Invalid asset type.");
-		}
-	}
+	pack_asset_impl(iso, nullptr, nullptr, *wad, Game::DL);
 }
 
 static void decompress(const fs::path& input_path, const fs::path& output_path, s64 offset) {
