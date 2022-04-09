@@ -18,6 +18,8 @@
 
 #include "online_wad.h"
 
+#include <spanner/asset_packer.h>
+
 packed_struct(OnlineWadHeaderDL,
 	/* 0x00 */ s32 header_size;
 	/* 0x04 */ Sector32 sector;
@@ -44,7 +46,8 @@ void pack_online_wad(OutputStream& dest, OnlineWadAsset& wad, Game game) {
 	dest.write(header);
 	dest.pad(SECTOR_SIZE, 0);
 	
-	// ...
+	header.data = pack_asset_sa<SectorRange>(dest, wad.data(), game, base);
+	pack_assets_sa(dest, ARRAY_PAIR(header.transition_backgrounds), wad.transition_backgrounds(), game, base, "transition_backgrounds");
 	
 	dest.write(base, header);
 }

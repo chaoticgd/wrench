@@ -18,6 +18,8 @@
 
 #include "bonus_wad.h"
 
+#include <spanner/asset_packer.h>
+
 packed_struct(BonusWadHeaderDL,
 	/* 0x000 */ s32 header_size;
 	/* 0x004 */ Sector32 sector;
@@ -56,7 +58,14 @@ void pack_bonus_wad(OutputStream& dest, BonusWadAsset& wad, Game game) {
 	dest.write(header);
 	dest.pad(SECTOR_SIZE, 0);
 	
-	// ...
+	pack_assets_sa(dest, ARRAY_PAIR(header.credits_text), wad.credits_text(), game, base, "credits_text");
+	pack_assets_sa(dest, ARRAY_PAIR(header.credits_images), wad.credits_images(), game, base, "credits_images");
+	pack_assets_sa(dest, ARRAY_PAIR(header.demomenu), wad.demomenu(), game, base, "demomenu");
+	pack_assets_sa(dest, ARRAY_PAIR(header.demoexit), wad.demoexit(), game, base, "demoexit");
+	pack_assets_sa(dest, ARRAY_PAIR(header.cheat_images), wad.cheat_images(), game, base, "cheat_images");
+	pack_assets_sa(dest, ARRAY_PAIR(header.skill_images), wad.skill_images(), game, base, "skill_images");
+	header.trophy_image = pack_asset_sa<SectorRange>(dest, wad.trophy_image(), game, base);
+	header.dige = pack_asset_sa<SectorRange>(dest, wad.dige(), game, base);
 	
 	dest.write(base, header);
 }

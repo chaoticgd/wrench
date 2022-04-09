@@ -18,11 +18,13 @@
 
 #include "mpeg_wad.h"
 
-struct MpegWadHeaderDL {
+#include <spanner/asset_packer.h>
+
+packed_struct(MpegWadHeaderDL,
 	/* 0x0 */ s32 header_size;
 	/* 0x4 */ Sector32 sector;
 	/* 0x8 */ SectorByteRange story[200];
-};
+)
 
 MpegWadAsset& unpack_mpeg_wad(AssetPack& dest, BinaryAsset& src) {
 	auto [file, header] = open_wad_file<MpegWadHeaderDL>(src);
@@ -42,7 +44,7 @@ void pack_mpeg_wad(OutputStream& dest, MpegWadAsset& wad, Game game) {
 	dest.write(header);
 	dest.pad(SECTOR_SIZE, 0);
 	
-	// ...
+	pack_assets_sa(dest, ARRAY_PAIR(header.story), wad.story(), game, base, "story");
 	
 	dest.write(base, header);
 }

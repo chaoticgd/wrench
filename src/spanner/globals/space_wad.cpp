@@ -18,6 +18,8 @@
 
 #include "space_wad.h"
 
+#include <spanner/asset_packer.h>
+
 packed_struct(SpaceWadHeaderDL,
 	/* 0x0 */ s32 header_size;
 	/* 0x4 */ Sector32 sector;
@@ -42,7 +44,7 @@ void pack_space_wad(OutputStream& dest, SpaceWadAsset& wad, Game game) {
 	dest.write(header);
 	dest.pad(SECTOR_SIZE, 0);
 	
-	// ...
+	compress_assets_sa(dest, ARRAY_PAIR(header.transition_wads), wad.transitions(), game, base, "transitions");
 	
 	dest.write(base, header);
 }

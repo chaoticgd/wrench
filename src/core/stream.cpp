@@ -70,7 +70,9 @@ s64 MemoryOutputStream::size() const {
 }
 
 bool MemoryOutputStream::write(const u8* src, s64 size) {
-	backing.resize(ofs + size);
+	if(ofs + size > backing.size()) {
+		backing.resize(ofs + size);
+	}
 	memcpy(&backing[ofs], src, size);
 	ofs += size;
 	return true;

@@ -34,6 +34,8 @@ packed_struct(AudioWadHeaderDL,
 )
 
 static Asset* unpack_help_audio(HelpAudioAsset& help, InputStream& file, Sector32 sector, std::string name, const std::set<s64>& end_sectors);
+template <typename Getter>
+static void pack_help_audio(OutputStream& dest, Sector32* sectors_dest, const std::vector<Asset*>& help_messages, Game game, s64 base, Getter getter);
 
 AudioWadAsset& unpack_audio_wad(AssetPack& dest, BinaryAsset& src) {
 	auto [file, header] = open_wad_file<AudioWadHeaderDL>(src);
@@ -111,6 +113,28 @@ AudioWadAsset& unpack_audio_wad(AssetPack& dest, BinaryAsset& src) {
 	return wad;
 }
 
+void pack_audio_wad(OutputStream& dest, AudioWadAsset& wad, Game game) {
+	s64 base = dest.tell();
+	
+	AudioWadHeaderDL header = {0};
+	header.header_size = sizeof(AudioWadHeaderDL);
+	dest.write(header);
+	dest.pad(SECTOR_SIZE, 0);
+	
+	pack_assets_sa(dest, ARRAY_PAIR(header.vendor), wad.vendor(), game, base, "vendor");
+	pack_assets_sa(dest, ARRAY_PAIR(header.global_sfx), wad.global_sfx(), game, base, "global_sfx");
+	
+	std::vector<Asset*> help_messages = wad.help();
+	verify(wad.help().size() <= ARRAY_SIZE(header.help_english), "Too many assets in %s help messages list.");
+	pack_help_audio(dest, header.help_english, help_messages, game, base, [](HelpAudioAsset& asset) { return asset.english(); });
+	pack_help_audio(dest, header.help_french, help_messages, game, base, [](HelpAudioAsset& asset) { return asset.french(); });
+	pack_help_audio(dest, header.help_german, help_messages, game, base, [](HelpAudioAsset& asset) { return asset.german(); });
+	pack_help_audio(dest, header.help_spanish, help_messages, game, base, [](HelpAudioAsset& asset) { return asset.spanish(); });
+	pack_help_audio(dest, header.help_italian, help_messages, game, base, [](HelpAudioAsset& asset) { return asset.italian(); });
+	
+	dest.write(base, header);
+}
+
 static Asset* unpack_help_audio(HelpAudioAsset& help, InputStream& file, Sector32 sector, std::string name, const std::set<s64>& end_sectors) {
 	if(sector.sectors > 0) {
 		auto end_sector = end_sectors.upper_bound(sector.sectors);
@@ -126,19 +150,10 @@ static Asset* unpack_help_audio(HelpAudioAsset& help, InputStream& file, Sector3
 	}
 }
 
-void pack_audio_wad(OutputStream& dest, AudioWadAsset& wad, Game game) {
-	s64 base = dest.tell();
-	
-	AudioWadHeaderDL header = {0};
-	header.header_size = sizeof(AudioWadHeaderDL);
-	dest.write(header);
-	dest.pad(SECTOR_SIZE, 0);
-	
-	std::vector<Asset*> vendor = wad.vendor();
-	verify(vendor.size() <= ARRAY_SIZE(header.vendor), "Too many vendor audio files.");
-	for(size_t i = 0; i < vendor.size(); i++) {
-		header.vendor[i] = pack_asset<Sector32>(dest, *vendor[i], game, base);
+template <typename Getter>
+static void pack_help_audio(OutputStream& dest, Sector32* sectors_dest, const std::vector<Asset*>& help_messages, Game game, s64 base, Getter getter) {
+	for(size_t i = 0; i < help_messages.size(); i++) {
+		Asset* asset = getter(static_cast<HelpAudioAsset&>(*help_messages[i]));
+		sectors_dest[i] = pack_asset_sa<Sector32>(dest, asset, game, base);
 	}
-	
-	dest.write(base, header);
 }

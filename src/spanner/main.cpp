@@ -239,7 +239,6 @@ static void pack_wad_asset(OutputStream& dest, std::vector<u8>* wad_header_dest,
 			BinaryAsset& binary = static_cast<BinaryAsset&>(asset);
 			auto src = binary.file().open_binary_file_for_reading(binary.src(), modified_time_dest);
 			if(wad_header_dest) {
-				// This is a WAD file.
 				s32 header_size = src->read<s32>();
 				assert(header_size == wad_header_dest->size());
 				s64 padded_header_size = Sector32::size_from_bytes(header_size).bytes();
@@ -274,7 +273,9 @@ static void pack_wad_asset(OutputStream& dest, std::vector<u8>* wad_header_dest,
 		case OnlineWadAsset::ASSET_TYPE.id:
 		case SpaceWadAsset::ASSET_TYPE.id: {
 			pack_global_wad(dest, asset, Game::DL);
-			*modified_time_dest = fs::file_time_type::clock::now();
+			if(modified_time_dest) {
+				*modified_time_dest = fs::file_time_type::clock::now();
+			}
 			break;
 		}
 		default: {

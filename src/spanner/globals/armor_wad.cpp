@@ -45,7 +45,7 @@ ArmorWadAsset& unpack_armor_wad(AssetPack& dest, BinaryAsset& src) {
 			Asset& armor_wad = wad.asset_file(stringf("%02d/armor.asset", i));
 			ArmorAsset& armor = armor_wad.child<ArmorAsset>(std::to_string(i));
 			armor.set_mesh(unpack_binary(armor, *file, header.armors[i].mesh, "mesh", "mesh.bin"));
-			armor.set_mesh(unpack_binary(armor, *file, header.armors[i].textures, "textures", "textures.bin"));
+			armor.set_textures(unpack_binary(armor, *file, header.armors[i].textures, "textures", "textures.bin"));
 			armors.push_back(&armor);
 		}
 	}
@@ -71,11 +71,11 @@ void pack_armor_wad(OutputStream& dest, ArmorWadAsset& wad, Game game) {
 		ArmorAsset* armor = static_cast<ArmorAsset*>(armors[i]);
 		verify(armor, "Armor assets must be of type ArmorAsset.");
 		header.armors[i].mesh = pack_asset<SectorRange>(dest, *armor->mesh(), game, base);
-		// textures
+		header.armors[i].textures = pack_asset<SectorRange>(dest, *armor->textures(), game, base);
 	}
-	//pack_binaries(dest, ARRAY_PAIR(header.bot_textures), wad.bot_textures(), base);
-	//pack_binaries(dest, ARRAY_PAIR(header.landstalker_textures), wad.landstalker_textures(), base);
-	//pack_binaries(dest, ARRAY_PAIR(header.dropship_textures), wad.dropship_textures(), base);
+	pack_assets_sa(dest, ARRAY_PAIR(header.bot_textures), wad.bot_textures(), game, base, "bot_textures");
+	pack_assets_sa(dest, ARRAY_PAIR(header.landstalker_textures), wad.landstalker_textures(), game, base, "landstalker_textures");
+	pack_assets_sa(dest, ARRAY_PAIR(header.dropship_textures), wad.dropship_textures(), game, base, "dropship_textures");
 	
 	dest.write(base, header);
 }

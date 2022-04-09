@@ -21,23 +21,90 @@
 
 #include <assetmgr/asset.h>
 #include <assetmgr/asset_types.h>
+#include <engine/compression.h>
 
-enum class AssetFormatHint {
-	NO_HINT,
-	TEXTURE_PIF_IDTEX8,
-	TEXTURE_RGBA
+enum AssetFormatHint {
+	FMT_NO_HINT,
+	FMT_TEXTURE_PIF_IDTEX8,
+	FMT_TEXTURE_RGBA
 };
 
 // Packs asset into a binary and writes it out to dest, using hint to determine
 // details of the expected output format if necessary.
-void pack_asset_impl(OutputStream& dest, Asset& asset, Game game, AssetFormatHint hint = AssetFormatHint::NO_HINT);
+void pack_asset_impl(OutputStream& dest, Asset& asset, Game game, AssetFormatHint hint = FMT_NO_HINT);
 
 template <typename Range>
-Range pack_asset(OutputStream& dest, Asset& wad, Game game, s64 base, AssetFormatHint hint = AssetFormatHint::NO_HINT) {
+Range pack_asset(OutputStream& dest, Asset& asset, Game game, s64 base, AssetFormatHint hint = FMT_NO_HINT) {
+	if(asset.type() == BinaryAsset::ASSET_TYPE && !static_cast<BinaryAsset&>(asset).has_src()) {
+		return Range::from_bytes(0, 0);
+	}
 	s64 begin = dest.tell();
-	pack_asset_impl(dest, wad, game, hint);
+	pack_asset_impl(dest, asset, game, hint);
 	s64 end = dest.tell();
 	return Range::from_bytes(begin - base, end - begin);
+}
+
+// Quadword aligned version.
+template <typename Range>
+Range pack_asset_qa(OutputStream& dest, Asset* asset, Game game, s64 base, AssetFormatHint hint = FMT_NO_HINT) {
+	dest.pad(0x10, 0);
+	return pack_asset<Range>(dest, *asset, game, base, hint);
+}
+
+// Sector aligned version.
+template <typename Range>
+Range pack_asset_sa(OutputStream& dest, Asset* asset, Game game, s64 base, AssetFormatHint hint = FMT_NO_HINT) {
+	dest.pad(SECTOR_SIZE, 0);
+	return pack_asset<Range>(dest, *asset, game, base, hint);
+}
+
+template <typename Range>
+void pack_assets_sa(OutputStream& dest, Range* ranges_dest, s32 count, std::vector<Asset*> assets, Game game, s64 base, const char* name, AssetFormatHint hint = FMT_NO_HINT) {
+	verify(assets.size() <= count, "Too many assets in %s list.");
+	for(size_t i = 0; i < assets.size(); i++) {
+		ranges_dest[i] = pack_asset_sa<Range>(dest, assets[i], game, base, hint);
+	}
+}
+
+template <typename Range>
+Range compress_asset(OutputStream& dest, Asset& asset, Game game, s64 base, AssetFormatHint hint = FMT_NO_HINT) {
+	std::vector<u8> bytes;
+	MemoryOutputStream stream(bytes);
+	pack_asset<Range>(stream, asset, game, base, hint);
+	std::vector<u8> compressed_bytes;
+	compress_wad(compressed_bytes, bytes, 8);
+	s64 begin = dest.tell();
+	dest.write(compressed_bytes.data(), compressed_bytes.size());
+	s64 end = dest.tell();
+	return Range::from_bytes(begin - base, end - begin);
+}
+
+template <typename Range>
+Range compress_asset_qa(OutputStream& dest, Asset& asset, Game game, s64 base, AssetFormatHint hint = FMT_NO_HINT) {
+	dest.pad(0x10, 0);
+	return compress_asset<Range>(dest, asset, game, base, hint);
+}
+
+template <typename Range>
+void compress_assets_qa(OutputStream& dest, Range* ranges_dest, s32 count, std::vector<Asset*> assets, Game game, s64 base, const char* name, AssetFormatHint hint = FMT_NO_HINT) {
+	verify(assets.size() <= count, "Too many assets in %s list.");
+	for(size_t i = 0; i < assets.size(); i++) {
+		ranges_dest[i] = compress_asset_qa<Range>(dest, *assets[i], game, base, hint);
+	}
+}
+
+template <typename Range>
+Range compress_asset_sa(OutputStream& dest, Asset& asset, Game game, s64 base, AssetFormatHint hint = FMT_NO_HINT) {
+	dest.pad(SECTOR_SIZE, 0);
+	return compress_asset<Range>(dest, asset, game, base, hint);
+}
+
+template <typename Range>
+void compress_assets_sa(OutputStream& dest, Range* ranges_dest, s32 count, std::vector<Asset*> assets, Game game, s64 base, const char* name, AssetFormatHint hint = FMT_NO_HINT) {
+	verify(assets.size() <= count, "Too many assets in %s list.");
+	for(size_t i = 0; i < assets.size(); i++) {
+		ranges_dest[i] = compress_asset_sa<Range>(dest, *assets[i], game, base, hint);
+	}
 }
 
 #endif

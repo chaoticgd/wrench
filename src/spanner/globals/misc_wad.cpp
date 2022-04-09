@@ -19,9 +19,12 @@
 #include "misc_wad.h"
 
 #include <engine/compression.h>
+#include <spanner/asset_packer.h>
 
 static Asset& unpack_irx_modules(Asset& parent, InputStream& src, SectorRange range);
+static SectorRange pack_irx_wad(OutputStream& dest, IrxWadAsset& wad, Game game, s64 base);
 static Asset& unpack_boot_wad(Asset& parent, InputStream& src, SectorRange range);
+static SectorRange pack_boot_wad(OutputStream& dest, BootWadAsset& wad, Game game, s64 base);
 
 packed_struct(MiscWadHeaderDL,
 	/* 0x00 */ s32 header_size;
@@ -51,6 +54,25 @@ MiscWadAsset& unpack_misc_wad(AssetPack& dest, BinaryAsset& src) {
 	wad.set_gadget(unpack_binary(wad, *file, header.gadget, "gadget", "gadget.bin"));
 	
 	return wad;
+}
+
+void pack_misc_wad(OutputStream& dest, MiscWadAsset& wad, Game game) {
+	s64 base = dest.tell();
+	
+	MiscWadHeaderDL header = {0};
+	header.header_size = sizeof(MiscWadHeaderDL);
+	dest.write(header);
+	dest.pad(SECTOR_SIZE, 0);
+	
+	header.debug_font = pack_asset_sa<SectorRange>(dest, wad.debug_font(), game, base);
+	header.irx = pack_irx_wad(dest, static_cast<IrxWadAsset&>(*wad.irx()), game, base);
+	header.save_game = pack_asset_sa<SectorRange>(dest, wad.save_game(), game, base);
+	header.frontend_code = pack_asset_sa<SectorRange>(dest, wad.frontend_code(), game, base);
+	header.exit = pack_asset_sa<SectorRange>(dest, wad.exit(), game, base);
+	header.bootwad = pack_boot_wad(dest, static_cast<BootWadAsset&>(*wad.boot()), game, base);
+	header.gadget = pack_asset_sa<SectorRange>(dest, wad.gadget(), game, base);
+	
+	dest.write(base, header);
 }
 
 packed_struct(IrxHeader,
@@ -122,6 +144,47 @@ static Asset& unpack_irx_modules(Asset& parent, InputStream& src, SectorRange ra
 	return irx;
 }
 
+static SectorRange pack_irx_wad(OutputStream& dest, IrxWadAsset& wad, Game game, s64 base) {
+	std::vector<u8> bytes;
+	MemoryOutputStream irxs(bytes);
+	IrxHeader header;
+	static_cast<OutputStream&>(irxs).write(header);
+	header.sio2man = pack_asset_qa<ByteRange>(irxs, wad.sio2man(), game, base);
+	header.mcman = pack_asset_qa<ByteRange>(irxs, wad.mcman(), game, base);
+	header.mcserv = pack_asset_qa<ByteRange>(irxs, wad.mcserv(), game, base);
+	header.padman = pack_asset_qa<ByteRange>(irxs, wad.padman(), game, base);
+	header.mtapman = pack_asset_qa<ByteRange>(irxs, wad.mtapman(), game, base);
+	header.libsd = pack_asset_qa<ByteRange>(irxs, wad.libsd(), game, base);
+	header._989snd = pack_asset_qa<ByteRange>(irxs, wad._989snd(), game, base);
+	header.stash = pack_asset_qa<ByteRange>(irxs, wad.stash(), game, base);
+	header.inet = pack_asset_qa<ByteRange>(irxs, wad.inet(), game, base);
+	header.netcnf = pack_asset_qa<ByteRange>(irxs, wad.netcnf(), game, base);
+	header.inetctl = pack_asset_qa<ByteRange>(irxs, wad.inetctl(), game, base);
+	header.msifrpc = pack_asset_qa<ByteRange>(irxs, wad.msifrpc(), game, base);
+	header.dev9 = pack_asset_qa<ByteRange>(irxs, wad.dev9(), game, base);
+	header.smap = pack_asset_qa<ByteRange>(irxs, wad.smap(), game, base);
+	header.libnetb = pack_asset_qa<ByteRange>(irxs, wad.libnetb(), game, base);
+	header.ppp = pack_asset_qa<ByteRange>(irxs, wad.ppp(), game, base);
+	header.pppoe = pack_asset_qa<ByteRange>(irxs, wad.pppoe(), game, base);
+	header.usbd = pack_asset_qa<ByteRange>(irxs, wad.usbd(), game, base);
+	header.lgaud = pack_asset_qa<ByteRange>(irxs, wad.lgaud(), game, base);
+	header.eznetcnf = pack_asset_qa<ByteRange>(irxs, wad.eznetcnf(), game, base);
+	header.eznetctl = pack_asset_qa<ByteRange>(irxs, wad.eznetctl(), game, base);
+	header.lgkbm = pack_asset_qa<ByteRange>(irxs, wad.lgkbm(), game, base);
+	header.streamer = pack_asset_qa<ByteRange>(irxs, wad.streamer(), game, base);
+	header.astrm = pack_asset_qa<ByteRange>(irxs, wad.astrm(), game, base);
+	static_cast<OutputStream&>(irxs).write(0, header);
+	
+	std::vector<u8> compressed_bytes;
+	compress_wad(compressed_bytes, bytes, 8);
+	
+	dest.pad(SECTOR_SIZE, 0);
+	s64 begin = dest.tell();
+	dest.write(compressed_bytes.data(), compressed_bytes.size());
+	s64 end = dest.tell();
+	return SectorRange::from_bytes(begin - base, end - begin);
+}
+
 packed_struct(BootHeader,
 	/* 0x00 */ ByteRange english;
 	/* 0x08 */ ByteRange french;
@@ -151,15 +214,20 @@ static Asset& unpack_boot_wad(Asset& parent, InputStream& src, SectorRange range
 	return boot;
 }
 
-void pack_misc_wad(OutputStream& dest, MiscWadAsset& wad, Game game) {
-	s64 base = dest.tell();
-	
-	MiscWadHeaderDL header = {0};
-	header.header_size = sizeof(MiscWadHeaderDL);
-	dest.write(header);
+static SectorRange pack_boot_wad(OutputStream& dest, BootWadAsset& wad, Game game, s64 base) {
 	dest.pad(SECTOR_SIZE, 0);
-	
-	// ...
-	
-	dest.write(base, header);
+	s64 begin = dest.tell();
+	BootHeader header;
+	dest.write(header);
+	header.english = compress_asset_qa<ByteRange>(dest, *wad.english(), game, base);
+	header.french = compress_asset_qa<ByteRange>(dest, *wad.french(), game, base);
+	header.german = compress_asset_qa<ByteRange>(dest, *wad.german(), game, base);
+	header.spanish = compress_asset_qa<ByteRange>(dest, *wad.spanish(), game, base);
+	header.italian = compress_asset_qa<ByteRange>(dest, *wad.italian(), game, base);
+	compress_assets_qa(dest, ARRAY_PAIR(header.hudwad), wad.hud(), game, base, "hud");
+	compress_assets_qa(dest, ARRAY_PAIR(header.boot_plates), wad.boot_plates(), game, base, "boot_plates");
+	header.sram = compress_asset_qa<ByteRange>(dest, *wad.sram(), game, base);
+	dest.write(begin, header);
+	s64 end = dest.tell();
+	return SectorRange::from_bytes(begin - base, end - begin);
 }

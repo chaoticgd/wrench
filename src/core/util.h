@@ -174,6 +174,10 @@ packed_struct(ByteRange,
 	ByteRange64 bytes() {
 		return {offset, size};
 	}
+	
+	static ByteRange from_bytes(s64 offset, s64 size) {
+		return {offset, size};
+	}
 )
 
 packed_struct(ArrayRange,

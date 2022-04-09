@@ -176,10 +176,8 @@ AssetType Armor {
 		allowed_asset_types: ['Mesh' 'Binary']
 	}
 	
-	ArrayAttribute textures {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Texture' 'Binary']
-		}
+	AssetReferenceAttribute textures {
+		allowed_asset_types: ['Texture' 'Binary']
 	}
 }
 
@@ -460,7 +458,7 @@ AssetType MiscWad {
 	}
 	
 	AssetReferenceAttribute irx {
-		allowed_asset_types: ['IrxModules' 'Binary']
+		allowed_asset_types: ['IrxWad']
 	}
 	
 	AssetReferenceAttribute save_game {
@@ -480,7 +478,7 @@ AssetType MiscWad {
 	}
 	
 	AssetReferenceAttribute boot {
-		allowed_asset_types: ['Binary']
+		allowed_asset_types: ['BootWad']
 	}
 	
 	AssetReferenceAttribute gadget {
@@ -527,7 +525,7 @@ AssetType BootWad {
 	ArrayAttribute boot_plates {
 		AssetReferenceAttribute element { allowed_asset_types: ['Binary'] }
 	}
-	AssetReferenceAttribute sram    { allowed_asset_types: ['Binary'] }
+	AssetReferenceAttribute sram { allowed_asset_types: ['Binary'] }
 }
 
 AssetType MpegWad {

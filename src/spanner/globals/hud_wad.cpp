@@ -114,7 +114,42 @@ void pack_hud_wad(OutputStream& dest, HudWadAsset& wad, Game game) {
 	dest.write(header);
 	dest.pad(SECTOR_SIZE, 0);
 	
-	// ...
+	pack_assets_sa(dest, ARRAY_PAIR(header.online_images), wad.online_images(), game, base, "online_images", FMT_TEXTURE_PIF_IDTEX8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.ratchet_seqs), wad.ratchet_seqs(), game, base, "ratchet_seqs");
+	pack_assets_sa(dest, ARRAY_PAIR(header.hud_seqs), wad.hud_seqs(), game, base, "hud_seqs");
+	header.vendor = pack_asset_sa<SectorRange>(dest, wad.vendor(), game, base);
+	pack_assets_sa(dest, ARRAY_PAIR(header.all_text), wad.all_text(), game, base, "all_text");
+	header.hudw3d = pack_asset_sa<SectorRange>(dest, wad.hudw3d(), game, base);
+	compress_assets_sa(dest, ARRAY_PAIR(header.e3_level_ss), wad.e3_level_ss(), game, base, "e3_level_ss", FMT_TEXTURE_PIF_IDTEX8);
+	header.nw_dnas_image = compress_asset_sa<SectorRange>(dest, *wad.nw_dnas_image(), game, base, FMT_TEXTURE_PIF_IDTEX8);
+	header.split_screen_texture = pack_asset_sa<SectorRange>(dest, wad.split_screen_texture(), game, base, FMT_TEXTURE_PIF_IDTEX8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.radar_maps), wad.radar_maps(), game, base, "radar_maps", FMT_TEXTURE_PIF_IDTEX8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.weapon_plates_large), wad.weapon_plates_large(), game, base, "weapon_plates_large", FMT_TEXTURE_PIF_IDTEX8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.mission_plates_large), wad.mission_plates_large(), game, base, "mission_plates_large", FMT_TEXTURE_PIF_IDTEX8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.gui_plates), wad.gui_plates(), game, base, "gui_plates", FMT_TEXTURE_PIF_IDTEX8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.vendor_plates), wad.vendor_plates(), game, base, "vendor_plates", FMT_TEXTURE_PIF_IDTEX8);
+	header.loading_screen = pack_asset_sa<SectorRange>(dest, wad.loading_screen(), game, base, FMT_TEXTURE_PIF_IDTEX8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.planets), wad.planets(), game, base, "planets", FMT_TEXTURE_PIF_IDTEX8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.cinematics), wad.cinematics(), game, base, "cinematics", FMT_TEXTURE_PIF_IDTEX8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.equip_large), wad.equip_large(), game, base, "equip_large", FMT_TEXTURE_PIF_IDTEX8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.equip_small), wad.equip_small(), game, base, "equip_small", FMT_TEXTURE_PIF_IDTEX8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.moves), wad.moves(), game, base, "moves", FMT_TEXTURE_PIF_IDTEX8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.save_level), wad.save_level(), game, base, "save_level", FMT_TEXTURE_PIF_IDTEX8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.save_empty), wad.save_empty(), game, base, "save_empty", FMT_TEXTURE_PIF_IDTEX8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.skills), wad.skills(), game, base, "skills", FMT_TEXTURE_PIF_IDTEX8);
+	header.reward_back = pack_asset_sa<SectorRange>(dest, wad.reward_back(), game, base, FMT_TEXTURE_PIF_IDTEX8);
+	header.complete_back = pack_asset_sa<SectorRange>(dest, wad.complete_back(), game, base, FMT_TEXTURE_PIF_IDTEX8);
+	header.complete_back_coop = pack_asset_sa<SectorRange>(dest, wad.complete_back_coop(), game, base, FMT_TEXTURE_PIF_IDTEX8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.rewards), wad.rewards(), game, base, "rewards", FMT_TEXTURE_PIF_IDTEX8);
+	header.leaderboard = pack_asset_sa<SectorRange>(dest, wad.leaderboard(), game, base, FMT_TEXTURE_PIF_IDTEX8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.cutaways), wad.cutaways(), game, base, "cutaways", FMT_TEXTURE_PIF_IDTEX8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.sketchbook), wad.sketchbook(), game, base, "sketchbook", FMT_TEXTURE_PIF_IDTEX8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.character_epilogues), wad.character_epilogues(), game, base, "character_epilogues", FMT_TEXTURE_PIF_IDTEX8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.character_cards), wad.character_cards(), game, base, "character_cards", FMT_TEXTURE_PIF_IDTEX8);
+	header.equip_plate = pack_asset_sa<SectorRange>(dest, wad.equip_plate(), game, base, FMT_TEXTURE_PIF_IDTEX8);
+	header.hud_flythru = pack_asset_sa<SectorRange>(dest, wad.hud_flythru(), game, base, FMT_TEXTURE_PIF_IDTEX8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.mp_maps), wad.mp_maps(), game, base, "mp_maps", FMT_TEXTURE_PIF_IDTEX8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.tourney_plates_large), wad.tourney_plates_large(), game, base, "tourney_plates_large", FMT_TEXTURE_PIF_IDTEX8);
 	
 	dest.write(base, header);
 }
