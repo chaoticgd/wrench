@@ -44,10 +44,9 @@ Range pack_asset(OutputStream& dest, Asset& asset, Game game, s64 base, AssetFor
 	return Range::from_bytes(begin - base, end - begin);
 }
 
-// Quadword aligned version.
 template <typename Range>
-Range pack_asset_qa(OutputStream& dest, Asset* asset, Game game, s64 base, AssetFormatHint hint = FMT_NO_HINT) {
-	dest.pad(0x10, 0);
+Range pack_asset_aligned(OutputStream& dest, Asset* asset, Game game, s64 base, s64 alignment, AssetFormatHint hint = FMT_NO_HINT) {
+	dest.pad(alignment, 0);
 	return pack_asset<Range>(dest, *asset, game, base, hint);
 }
 
@@ -80,16 +79,16 @@ Range compress_asset(OutputStream& dest, Asset& asset, Game game, s64 base, Asse
 }
 
 template <typename Range>
-Range compress_asset_qa(OutputStream& dest, Asset& asset, Game game, s64 base, AssetFormatHint hint = FMT_NO_HINT) {
-	dest.pad(0x10, 0);
+Range compress_asset_aligned(OutputStream& dest, Asset& asset, Game game, s64 base, s64 alignment, AssetFormatHint hint = FMT_NO_HINT) {
+	dest.pad(alignment, 0);
 	return compress_asset<Range>(dest, asset, game, base, hint);
 }
 
 template <typename Range>
-void compress_assets_qa(OutputStream& dest, Range* ranges_dest, s32 count, std::vector<Asset*> assets, Game game, s64 base, const char* name, AssetFormatHint hint = FMT_NO_HINT) {
+void compress_assets_aligned(OutputStream& dest, Range* ranges_dest, s32 count, std::vector<Asset*> assets, Game game, s64 base, const char* name, s64 alignment, AssetFormatHint hint = FMT_NO_HINT) {
 	verify(assets.size() <= count, "Too many assets in %s list.");
 	for(size_t i = 0; i < assets.size(); i++) {
-		ranges_dest[i] = compress_asset_qa<Range>(dest, *assets[i], game, base, hint);
+		ranges_dest[i] = compress_asset_aligned<Range>(dest, *assets[i], game, base, alignment, hint);
 	}
 }
 

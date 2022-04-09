@@ -92,6 +92,7 @@ std::vector<Asset*> unpack_compressed_binaries(Asset& parent, InputStream& src, 
 }
 
 Asset& unpack_binary_from_memory(Asset& parent, Buffer src, ByteRange range, const char* child, const char* extension = ".bin");
+std::vector<Asset*> unpack_binaries_from_memory(Asset& parent, Buffer src, ByteRange* ranges, s32 count, const char* child);
 Asset& unpack_compressed_binary_from_memory(Asset& parent, Buffer src, ByteRange range, const char* child, const char* extension = ".bin");
 std::vector<Asset*> unpack_compressed_binaries_from_memory(Asset& parent, Buffer src, ByteRange* ranges, s32 count, const char* child);
 

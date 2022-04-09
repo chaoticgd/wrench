@@ -24,6 +24,19 @@ Asset& unpack_binary_from_memory(Asset& parent, Buffer src, ByteRange range, con
 	return binary;
 }
 
+std::vector<Asset*> unpack_binaries_from_memory(Asset& parent, Buffer src, ByteRange* ranges, s32 count, const char* child) {
+	fs::path path = fs::path(child)/child;
+	CollectionAsset& collection = parent.asset_file(path).child<CollectionAsset>(child);
+	
+	std::vector<Asset*> assets;
+	for(s32 i = 0; i < count; i++) {
+		std::string name = std::to_string(i);
+		assets.emplace_back(&unpack_binary_from_memory(collection, src, ranges[i], name.c_str()));
+	}
+	
+	return assets;
+}
+
 Asset& unpack_compressed_binary_from_memory(Asset& parent, Buffer src, ByteRange range, const char* child, const char* extension) {
 	std::vector<u8> bytes;
 	Buffer compressed_bytes = src.subbuf(range.offset, range.size);
