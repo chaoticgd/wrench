@@ -43,12 +43,13 @@ add_library(wrenchcore STATIC
 add_executable(asset_codegen
 	src/asset_codegen.cpp
 )
+target_link_libraries(asset_codegen wrenchcore)
 
 add_custom_command(
+	COMMAND asset_codegen src/assetmgr/asset_schema.wtf src/assetmgr/_generated_asset_types.inl
+	DEPENDS asset_codegen src/assetmgr/asset_schema.wtf
 	OUTPUT src/assetmgr/_generated_asset_types.inl
-	COMMAND ${CMAKE_BINARY_DIR}/asset_codegen src/assetmgr/asset_schema.wtf ${CMAKE_SOURCE_DIR}/src/assetmgr/_generated_asset_types.inl
-	DEPENDS ${CMAKE_BINARY_DIR}/asset_codegen src/assetmgr/asset_schema.wtf
-	COMMENT "Generating asset types..."
+	COMMENT "Generating asset types"
 )
 
 add_library(wrench_assetmgr
@@ -56,12 +57,9 @@ add_library(wrench_assetmgr
 	src/assetmgr/asset_util.cpp
 	src/assetmgr/asset_types.cpp
 	src/assetmgr/zipped_asset_pack.cpp
+	src/assetmgr/_generated_asset_types.inl
 )
-
-add_custom_target(wrench_assetmgr_generated
-	DEPENDS src/assetmgr/_generated_asset_types.inl
-)
-add_dependencies(wrench_assetmgr wrench_assetmgr_generated)
+target_link_libraries(wrench_assetmgr wrenchcore)
 
 add_executable(wrench
 	src/editor/main.cpp
@@ -147,9 +145,6 @@ add_executable(asset2json
 	src/asset2json.cpp
 )
 target_link_libraries(asset2json wrenchcore)
-
-target_link_libraries(asset_codegen wrenchcore)
-target_link_libraries(wrench_assetmgr wrenchcore)
 
 # This lets us avoid linking stuff for most of the CLI tools.
 target_compile_definitions(wrench PRIVATE WRENCH_EDITOR=1)
@@ -266,6 +261,3 @@ set(ZLIB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/thirdparty/zlib)
 set(SKIP_INSTALL_EXPORT ON FORCE)
 add_subdirectory(thirdparty/libpng)
 target_link_libraries(wrenchcore png_static zlibstatic)
-
-add_subdirectory(src/version_check)
-target_link_libraries(wrenchcore version_check)

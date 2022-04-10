@@ -35,8 +35,6 @@
 #include <functional>
 #include <type_traits>
 
-#include "../version_check/version_check.h"
-
 using u8 = uint8_t;
 using u16 = uint16_t;
 using u32 = uint32_t;
@@ -324,32 +322,6 @@ template <typename>
 struct IsVector : std::false_type {};
 template <typename Element>
 struct IsVector<std::vector<Element>> : std::true_type {};
-
-[[maybe_unused]] static std::string get_application_version_string() {
-	std::string raw_tag = get_git_tag();
-	std::string raw_commit = get_git_commit();
-	std::string tag, commit;
-	for(char c : raw_tag) {
-		if(isprint(c) && c != ' ') {
-			tag += c;
-		}
-	}
-	for(char c : raw_commit) {
-		if(isprint(c) && c != ' ') {
-			commit += c;
-		}
-	}
-	std::string version;
-	if(tag.size() > 0 && commit.size() > 0) {
-		version += tag + " " + commit;
-	} else if(commit.size() > 0) {
-		version += commit;
-	}
-	if(version == "") {
-		version = "error: No git in path during build or cmake problem.";
-	}
-	return version;
-}
 
 // Implements a way to delay the execution of a block of code until the
 // enclosing scope ends. This lets us write statements in a more logical order.
