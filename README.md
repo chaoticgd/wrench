@@ -52,8 +52,6 @@ For build instructions, see the Building section below. For usage instructions, 
 1.	Install the following tools:
 	- git
 	- Visual Studio (with desktop C++/cmake support)
-	
-	Note: Git should be in the PATH enviroment variable so that the version of Wrench being built can be identified. The Git installer has an option for this named "Git from the command line and also from 3rd-party software" under "Adjusting your PATH enviroment".
 
 2.	Open a Visual Studio developer command prompt.
 
