@@ -196,7 +196,7 @@ static void unpack_wads(const fs::path& input_path, const fs::path& output_path)
 	auto& builds = src_pack.game_info.builds;
 	verify(builds.size() == 1, "WAD asset pack must have exactly one build.");
 	BuildAsset* src_build = dynamic_cast<BuildAsset*>(forest.lookup_asset(builds[0]));
-	verify(build, "Invalid build asset.");
+	verify(src_build, "Invalid build asset.");
 	
 	unpack_global_wads(dest_pack, dest_build, *src_build);
 	

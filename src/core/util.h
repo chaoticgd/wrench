@@ -173,6 +173,10 @@ packed_struct(ByteRange,
 		return {offset, size};
 	}
 	
+	bool empty() const {
+		return size <= 0;
+	}
+	
 	static ByteRange from_bytes(s64 offset, s64 size) {
 		return {(s32) offset, (s32) size};
 	}
@@ -191,6 +195,10 @@ packed_struct(Sector32,
 	
 	s64 bytes() const {
 		return sectors * SECTOR_SIZE;
+	}
+	
+	bool empty() const {
+		return sectors <= 0;
 	}
 	
 	static Sector32 size_from_bytes(s64 size_in_bytes) {
@@ -220,6 +228,10 @@ packed_struct(SectorRange,
 		return {offset.bytes(), size.bytes()};
 	}
 	
+	bool empty() const {
+		return size.sectors <= 0;
+	}
+	
 	static SectorRange from_bytes(s64 offset, s64 size) {
 		return SectorRange{Sector32::size_from_bytes(offset), Sector32::size_from_bytes(size)};
 	}
@@ -233,8 +245,12 @@ packed_struct(SectorByteRange,
 		return {offset.sectors + Sector32::size_from_bytes(size_bytes).sectors};
 	}
 	
-	ByteRange64 bytes() {
+	ByteRange64 bytes() const {
 		return {offset.bytes(), size_bytes};
+	}
+	
+	bool empty() const {
+		return size_bytes <= 0;
 	}
 	
 	static SectorByteRange from_bytes(s64 offset, s64 size) {

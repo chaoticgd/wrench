@@ -49,10 +49,18 @@ const std::string& Asset::tag() const { return _tag; }
 Asset* Asset::lower_precedence() { return _lower_precedence; }
 Asset* Asset::higher_precedence() { return _higher_precedence; }
 
+Asset* Asset::highest_precedence() {
+	Asset* asset = this;
+	while(asset->higher_precedence() != nullptr) {
+		asset = asset->higher_precedence();
+	}
+	return asset;
+}
+
 AssetReference Asset::absolute_reference() const {
 	if(parent()) {
 		AssetReference reference = parent()->absolute_reference();
-		reference.fragments.push_back(AssetReferenceFragment{type(), tag()});
+		reference.fragments.emplace_back(AssetReferenceFragment{tag(), type()});
 		return reference;
 	} else {
 		return AssetReference{false};
@@ -64,32 +72,64 @@ AssetReference Asset::reference_relative_to(Asset& asset) const {
 	if(equal || parent() == nullptr) {
 		return AssetReference{equal, {}};
 	} else {
-		AssetReferenceFragment fragment{type(), tag()};
+		AssetReferenceFragment fragment{tag(), type()};
 		AssetReference reference = parent()->reference_relative_to(asset);
 		reference.fragments.emplace_back(std::move(fragment));
 		return reference;
 	}
 }
 
-Asset& Asset::child(AssetType type, const std::string& tag) {
+bool Asset::has_child(const char* tag) {
+	for(Asset* asset = highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
+		for(std::unique_ptr<Asset>& child : asset->_children) {
+			if(child->tag() == tag) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+bool Asset::has_child(s32 tag) {
+	std::string str = std::to_string(tag);
+	return has_child(str.c_str());
+}
+
+Asset& Asset::get_child(const char* tag) {
+	for(Asset* asset = highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
+		for(std::unique_ptr<Asset>& child : asset->_children) {
+			if(child->tag() == tag) {
+				return *child.get();
+			}
+		}
+	}
+	throw MissingChildAsset();
+}
+
+Asset& Asset::get_child(s32 tag) {
+	std::string str = std::to_string(tag);
+	return get_child(str.c_str());
+}
+
+Asset& Asset::physical_child(AssetType type, const char* tag) {
 	for(std::unique_ptr<Asset>& child : _children) {
 		if(child->type() == type && child->tag() == tag) {
 			return *child.get();
 		}
 	}
-	return add_child(create_asset(type, forest(), pack(), file(), this, std::move(tag)));
+	return add_child(create_asset(type, forest(), pack(), file(), this, tag));
 }
 
-Asset* Asset::find_child(AssetType type, const std::string& tag) {
+Asset* Asset::get_physical_child(const char* tag) {
 	for(std::unique_ptr<Asset>& child : _children) {
-		if(child->type() == type && child->tag() == tag) {
+		if(child->tag() == tag) {
 			return child.get();
 		}
 	}
 	return nullptr;
 }
 
-bool Asset::remove_child(Asset& asset) {
+bool Asset::remove_physical_child(Asset& asset) {
 	for(auto child = _children.begin(); child != _children.end(); child++) {
 		if(child->get() == &asset) {
 			_children.erase(child);
@@ -103,7 +143,7 @@ Asset& Asset::asset_file(const fs::path& path) {
 	AssetReference reference = absolute_reference();
 	Asset* asset = &pack().asset_file(file()._relative_directory/path).root();
 	for(AssetReferenceFragment& fragment : reference.fragments) {
-		asset = &asset->child(fragment.type, fragment.tag);
+		asset = &asset->physical_child(fragment.type, fragment.tag.c_str());
 	}
 	return *asset;
 }
@@ -118,7 +158,7 @@ void Asset::read(WtfNode* node) {
 
 void Asset::write(WtfWriter* ctx) const {
 	write_attributes(ctx);
-	for_each_child([&](Asset& child) {
+	for_each_physical_child([&](Asset& child) {
 		wtf_begin_node(ctx, asset_type_to_string(child.type()), child.tag().c_str());
 		child.write(ctx);
 		wtf_end_node(ctx);
@@ -127,7 +167,7 @@ void Asset::write(WtfWriter* ctx) const {
 
 void Asset::validate() const {
 	validate_attributes();
-	for_each_child([&](Asset& child) {
+	for_each_physical_child([&](Asset& child) {
 		child.validate();
 	});
 }
@@ -169,7 +209,7 @@ Asset& Asset::add_child(std::unique_ptr<Asset> child) {
 
 Asset* Asset::lookup_local_asset(const AssetReferenceFragment* begin, const AssetReferenceFragment* end) {
 	for(const std::unique_ptr<Asset>& child : _children) {
-		if(child->type() == begin->type && child->tag() == begin->tag) {
+		if(child->tag() == begin->tag) {
 			if(begin + 1 < end) {
 				return child->lookup_local_asset(begin + 1, end);
 			} else {
@@ -188,7 +228,7 @@ void Asset::connect_precedence_pointers() {
 		// common case while editing.
 		for(Asset* lower_parent = parent()->lower_precedence(); lower_parent != nullptr; lower_parent = lower_parent->lower_precedence()) {
 			assert(lower_parent != parent());
-			if(Asset* lower = lower_parent->find_child(type(), tag())) {
+			if(Asset* lower = lower_parent->get_physical_child(tag().c_str())) {
 				Asset* higher = lower->higher_precedence();
 				_lower_precedence = lower;
 				_higher_precedence = higher;
@@ -207,7 +247,7 @@ void Asset::connect_precedence_pointers() {
 		// higher precedence node.
 		for(Asset* higher_parent = parent()->higher_precedence(); higher_parent != nullptr; higher_parent = higher_parent->higher_precedence()) {
 			assert(higher_parent != parent());
-			if(Asset* higher = higher_parent->find_child(type(), tag())) {
+			if(Asset* higher = higher_parent->get_physical_child(tag().c_str())) {
 				Asset* lower = higher->lower_precedence();
 				_lower_precedence = lower;
 				_higher_precedence = higher;

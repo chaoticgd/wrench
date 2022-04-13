@@ -24,6 +24,10 @@ Metadata metadata {
 
 AssetType Root {}
 
+AssetType Reference {
+	StringAttribute asset {}
+}
+
 AssetType Collection {
 	desc: 'A generic container for other assets.'
 }
@@ -39,40 +43,24 @@ AssetType Binary {
 AssetType Build {
 	desc: 'A build of the game.'
 	
-	AssetReferenceAttribute ps2_logo     { allowed_asset_types: ['Texture'] }
 	IntegerAttribute        ps2_logo_key { min: 0 max: 255 }
-	AssetReferenceAttribute primary_volume_descriptor { allowed_asset_types: ['PrimaryVolumeDescriptor'] }
 	
-	AssetReferenceAttribute armor  { allowed_asset_types: ['ArmorWad' 'Binary'] }
-	AssetReferenceAttribute audio  { allowed_asset_types: ['AudioWad' 'Binary'] }
-	AssetReferenceAttribute bonus  { allowed_asset_types: ['BonusWad' 'Binary'] }
-	AssetReferenceAttribute gadget { allowed_asset_types: ['GadgetWad' 'Binary'] }
-	AssetReferenceAttribute hud    { allowed_asset_types: ['HudWad' 'Binary'] }
-	AssetReferenceAttribute misc   { allowed_asset_types: ['MiscWad' 'Binary'] }
-	AssetReferenceAttribute mpeg   { allowed_asset_types: ['MpegWad' 'Binary'] }
-	AssetReferenceAttribute online { allowed_asset_types: ['OnlineWad' 'Binary'] }
-	AssetReferenceAttribute scene  { allowed_asset_types: ['SceneWad' 'Binary'] }
-	AssetReferenceAttribute space  { allowed_asset_types: ['SpaceWad' 'Binary'] }
+	IntegerAttribute single_level { default: -1 }
 	
-	IntegerAttribute single_level {
-		default: -1
-	}
-	
-	ArrayAttribute levels {
-		AssetReferenceAttribute element {
-			allowed_asset_types: [
-				'Level'
-			]
-		}
-	}
-	
-	ArrayAttribute files {
-		AssetReferenceAttribute element {
-			allowed_asset_types: [
-				'File'
-			]
-		}
-	}
+	Child ps2_logo { allowed_types: ['Texture'] }
+	Child primary_volume_descriptor { allowed_types: ['PrimaryVolumeDescriptor'] }
+	Child armor    { allowed_types: ['ArmorWad' 'Binary'] }
+	Child audio    { allowed_types: ['AudioWad' 'Binary'] }
+	Child bonus    { allowed_types: ['BonusWad' 'Binary'] }
+	Child gadget   { allowed_types: ['GadgetWad' 'Binary'] }
+	Child hud      { allowed_types: ['HudWad' 'Binary'] }
+	Child misc     { allowed_types: ['MiscWad' 'Binary'] }
+	Child mpeg     { allowed_types: ['MpegWad' 'Binary'] }
+	Child online   { allowed_types: ['OnlineWad' 'Binary'] }
+	Child scene    { allowed_types: ['SceneWad' 'Binary'] }
+	Child space    { allowed_types: ['SpaceWad' 'Binary'] }
+	Child levels   { allowed_types: ['Collection'] }
+	Child files    { allowed_types: ['Collection'] }
 }
 
 AssetType PrimaryVolumeDescriptor {
@@ -119,427 +107,155 @@ AssetType Texture {
 // *****************************************************************************
 
 AssetType Level {
-	AssetReferenceAttribute level {
-		allowed_asset_types: [
-			'LevelWad'
-			'Binary'
-		]
-	}
-	
-	AssetReferenceAttribute audio {
-		allowed_asset_types: [
-			'LevelAudioWad'
-			'Binary'
-		]
-	}
-	
-	AssetReferenceAttribute scene {
-		allowed_asset_types: [
-			'LevelSceneWad'
-			'Binary'
-		]
-	}
+	Child level { allowed_types: ['LevelWad' 'Binary' ] }
+	Child audio { allowed_types: ['LevelAudioWad' 'Binary' ] }
+	Child scene { allowed_types: ['LevelSceneWad' 'Binary' ] }
 }
 
 // *****************************************************************************
 
 AssetType ArmorWad {
-	ArrayAttribute armors {
+	Child armors {
 		desc: 'A list of all the armors/skins.'
-		
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Armor']
-		}
+		allowed_types: ['Collection']
 	}
 	
-	ArrayAttribute bot_textures {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Texture' 'Binary']
-		}
-	}
-	
-	ArrayAttribute landstalker_textures {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Texture' 'Binary']
-		}
-	}
-	
-	ArrayAttribute dropship_textures {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Texture' 'Binary']
-		}
-	}
+	Child bot_textures         { allowed_types: ['Collection'] }
+	Child landstalker_textures { allowed_types: ['Collection'] }
+	Child dropship_textures    { allowed_types: ['Collection'] }
 }
 
 AssetType Armor {
-	AssetReferenceAttribute mesh {
-		allowed_asset_types: ['Mesh' 'Binary']
+	Child mesh {
+		allowed_types: ['Mesh' 'Binary']
 	}
 	
-	AssetReferenceAttribute textures {
-		allowed_asset_types: ['Texture' 'Binary']
+	Child textures {
+		allowed_types: ['Binary']
 	}
 }
 
 AssetType AudioWad {
-	ArrayAttribute vendor {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Sound' 'Binary']
-		}
-	}
-	
-	ArrayAttribute global_sfx {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Sound' 'Binary']
-		}
-	}
-	
-	ArrayAttribute help {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['HelpAudio']
-		}
-	}
+	Child vendor     { allowed_types: ['Collection'] }
+	Child global_sfx { allowed_types: ['Collection'] }
+	Child help       { allowed_types: ['Collection'] }
 }
 
 AssetType HelpAudio {
-	AssetReferenceAttribute english { allowed_asset_types: ['Sound' 'Binary'] }
-	AssetReferenceAttribute french  { allowed_asset_types: ['Sound' 'Binary'] }
-	AssetReferenceAttribute german  { allowed_asset_types: ['Sound' 'Binary'] }
-	AssetReferenceAttribute spanish { allowed_asset_types: ['Sound' 'Binary'] }
-	AssetReferenceAttribute italian { allowed_asset_types: ['Sound' 'Binary'] }
+	Child english { allowed_types: ['Sound' 'Binary'] }
+	Child french  { allowed_types: ['Sound' 'Binary'] }
+	Child german  { allowed_types: ['Sound' 'Binary'] }
+	Child spanish { allowed_types: ['Sound' 'Binary'] }
+	Child italian { allowed_types: ['Sound' 'Binary'] }
 }
 
 AssetType BonusWad {
-	ArrayAttribute credits_text {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	ArrayAttribute credits_images {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Texture' 'Binary']
-		}
-	}
-	ArrayAttribute demomenu {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	ArrayAttribute demoexit {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	ArrayAttribute cheat_images {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Texture' 'Binary']
-		}
-	}
-	
-	ArrayAttribute skill_images {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Texture' 'Binary']
-		}
-	}
-	
-	AssetReferenceAttribute trophy_image {
-		allowed_asset_types: ['Texture' 'Binary']
-	}
-	
-	AssetReferenceAttribute dige {
-		allowed_asset_types: ['Binary']
-	}
+	Child credits_text   { allowed_types: ['Collection'] }
+	Child credits_images { allowed_types: ['Collection'] }
+	Child demomenu       { allowed_types: ['Collection'] }
+	Child demoexit       { allowed_types: ['Collection'] }
+	Child cheat_images   { allowed_types: ['Collection'] }
+	Child skill_images   { allowed_types: ['Collection'] }
+	Child trophy_image   { allowed_types: ['Texture' 'Binary'] }
+	Child dige           { allowed_types: ['Binary'] }
 }
 
 AssetType GadgetWad {}
 
 AssetType HudWad {
-	ArrayAttribute online_images {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Texture' 'Binary']
-		}
-	}
-	
-	ArrayAttribute ratchet_seqs {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	ArrayAttribute hud_seqs {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	AssetReferenceAttribute vendor {
-		allowed_asset_types: ['Binary']
-	}
-	
-	ArrayAttribute all_text {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	AssetReferenceAttribute hudw3d {
-		allowed_asset_types: ['Binary']
-	}
-	
-	ArrayAttribute e3_level_ss {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	AssetReferenceAttribute nw_dnas_image {
-		allowed_asset_types: ['Binary']
-	}
-	
-	AssetReferenceAttribute split_screen_texture {
-		allowed_asset_types: ['Binary']
-	}
-	
-	ArrayAttribute radar_maps {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	ArrayAttribute weapon_plates_large {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	ArrayAttribute mission_plates_large {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	ArrayAttribute gui_plates {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	ArrayAttribute vendor_plates {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	AssetReferenceAttribute loading_screen {
-		allowed_asset_types: ['Binary']
-	}
-	
-	ArrayAttribute planets {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	ArrayAttribute cinematics {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	ArrayAttribute equip_large {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	ArrayAttribute equip_small {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	ArrayAttribute moves {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	ArrayAttribute save_level {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	ArrayAttribute save_empty {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	ArrayAttribute skills {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	AssetReferenceAttribute reward_back {
-		allowed_asset_types: ['Binary']
-	}
-	
-	AssetReferenceAttribute complete_back {
-		allowed_asset_types: ['Binary']
-	}
-	
-	AssetReferenceAttribute complete_back_coop {
-		allowed_asset_types: ['Binary']
-	}
-	
-	ArrayAttribute rewards {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	AssetReferenceAttribute leaderboard {
-		allowed_asset_types: ['Binary']
-	}
-	
-	ArrayAttribute cutaways {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	ArrayAttribute sketchbook {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	ArrayAttribute character_epilogues {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	ArrayAttribute character_cards {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	AssetReferenceAttribute equip_plate {
-		allowed_asset_types: ['Binary']
-	}
-	
-	AssetReferenceAttribute hud_flythru {
-		allowed_asset_types: ['Binary']
-	}
-	
-	ArrayAttribute mp_maps {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
-	
-	ArrayAttribute tourney_plates_large {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
+	Child online_images        { allowed_types: ['Collection'] }
+	Child ratchet_seqs         { allowed_types: ['Collection'] }
+	Child hud_seqs             { allowed_types: ['Collection'] }
+	Child vendor               { allowed_types: ['Binary'] }
+	Child all_text             { allowed_types: ['Collection'] }
+	Child hudw3d               { allowed_types: ['Binary'] }
+	Child e3_level_ss          { allowed_types: ['Collection'] }
+	Child nw_dnas_image        { allowed_types: ['Binary'] }
+	Child split_screen_texture { allowed_types: ['Binary'] }
+	Child radar_maps           { allowed_types: ['Collection'] }
+	Child weapon_plates_large  { allowed_types: ['Collection'] }
+	Child mission_plates_large { allowed_types: ['Collection'] }
+	Child gui_plates           { allowed_types: ['Collection'] }
+	Child vendor_plates        { allowed_types: ['Collection'] }
+	Child loading_screen       { allowed_types: ['Binary'] }
+	Child planets              { allowed_types: ['Collection'] }
+	Child cinematics           { allowed_types: ['Collection'] }
+	Child equip_large          { allowed_types: ['Collection'] }
+	Child equip_small          { allowed_types: ['Collection'] }
+	Child moves                { allowed_types: ['Collection'] }
+	Child save_level           { allowed_types: ['Collection'] }
+	Child save_empty           { allowed_types: ['Collection'] }
+	Child skills               { allowed_types: ['Collection'] }
+	Child reward_back          { allowed_types: ['Binary'] }
+	Child complete_back        { allowed_types: ['Binary'] }
+	Child complete_back_coop   { allowed_types: ['Binary'] }
+	Child rewards              { allowed_types: ['Collection'] }
+	Child leaderboard          { allowed_types: ['Binary'] }
+	Child cutaways             { allowed_types: ['Collection'] }
+	Child sketchbook           { allowed_types: ['Collection'] }
+	Child character_epilogues  { allowed_types: ['Collection'] }
+	Child character_cards      { allowed_types: ['Collection'] }
+	Child equip_plate          { allowed_types: ['Binary'] }
+	Child hud_flythru          { allowed_types: ['Binary'] }
+	Child mp_maps              { allowed_types: ['Collection'] }
+	Child tourney_plates_large { allowed_types: ['Collection'] }
 }
 
 AssetType MiscWad {
-	AssetReferenceAttribute debug_font {
-		allowed_asset_types: ['Texture' 'Binary']
-	}
-	
-	AssetReferenceAttribute irx {
-		allowed_asset_types: ['IrxWad']
-	}
-	
-	AssetReferenceAttribute save_game {
-		allowed_asset_types: ['Binary']
-	}
-	
-	AssetReferenceAttribute frontend_code {
-		allowed_asset_types: ['Binary']
-	}
-	
-	AssetReferenceAttribute frontend {
-		allowed_asset_types: ['Binary']
-	}
-	
-	AssetReferenceAttribute exit {
-		allowed_asset_types: ['Binary']
-	}
-	
-	AssetReferenceAttribute boot {
-		allowed_asset_types: ['BootWad']
-	}
-	
-	AssetReferenceAttribute gadget {
-		allowed_asset_types: ['Binary']
-	}
+	Child debug_font    { allowed_types: ['Texture' 'Binary'] }
+	Child irx           { allowed_types: ['IrxWad'] }
+	Child save_game     { allowed_types: ['Binary'] }
+	Child frontend_code { allowed_types: ['Binary'] }
+	Child frontend      { allowed_types: ['Binary'] }
+	Child exit          { allowed_types: ['Binary'] }
+	Child boot          { allowed_types: ['BootWad'] }
+	Child gadget        { allowed_types: ['Binary'] }
 }
 
 AssetType IrxWad {
-	AssetReferenceAttribute sio2man  { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute mcman    { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute mcserv   { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute padman   { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute mtapman  { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute libsd    { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute 989snd   { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute stash    { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute inet     { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute netcnf   { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute inetctl  { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute msifrpc  { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute dev9     { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute smap     { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute libnetb  { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute ppp      { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute pppoe    { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute usbd     { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute lgaud    { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute eznetcnf { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute eznetctl { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute lgkbm    { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute streamer { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute astrm    { allowed_asset_types: ['Binary'] }
+	Child sio2man  { allowed_types: ['Binary'] }
+	Child mcman    { allowed_types: ['Binary'] }
+	Child mcserv   { allowed_types: ['Binary'] }
+	Child padman   { allowed_types: ['Binary'] }
+	Child mtapman  { allowed_types: ['Binary'] }
+	Child libsd    { allowed_types: ['Binary'] }
+	Child 989snd   { allowed_types: ['Binary'] }
+	Child stash    { allowed_types: ['Binary'] }
+	Child inet     { allowed_types: ['Binary'] }
+	Child netcnf   { allowed_types: ['Binary'] }
+	Child inetctl  { allowed_types: ['Binary'] }
+	Child msifrpc  { allowed_types: ['Binary'] }
+	Child dev9     { allowed_types: ['Binary'] }
+	Child smap     { allowed_types: ['Binary'] }
+	Child libnetb  { allowed_types: ['Binary'] }
+	Child ppp      { allowed_types: ['Binary'] }
+	Child pppoe    { allowed_types: ['Binary'] }
+	Child usbd     { allowed_types: ['Binary'] }
+	Child lgaud    { allowed_types: ['Binary'] }
+	Child eznetcnf { allowed_types: ['Binary'] }
+	Child eznetctl { allowed_types: ['Binary'] }
+	Child lgkbm    { allowed_types: ['Binary'] }
+	Child streamer { allowed_types: ['Binary'] }
+	Child astrm    { allowed_types: ['Binary'] }
 }
 
 AssetType BootWad {
-	AssetReferenceAttribute english { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute french  { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute german  { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute spanish { allowed_asset_types: ['Binary'] }
-	AssetReferenceAttribute italian { allowed_asset_types: ['Binary'] }
-	ArrayAttribute hud {
-		AssetReferenceAttribute element { allowed_asset_types: ['Binary'] }
-	}
-	ArrayAttribute boot_plates {
-		AssetReferenceAttribute element { allowed_asset_types: ['Binary'] }
-	}
-	AssetReferenceAttribute sram { allowed_asset_types: ['Binary'] }
+	Child english     { allowed_types: ['Binary'] }
+	Child french      { allowed_types: ['Binary'] }
+	Child german      { allowed_types: ['Binary'] }
+	Child spanish     { allowed_types: ['Binary'] }
+	Child italian     { allowed_types: ['Binary'] }
+	Child hud         { allowed_types: ['Collection'] }
+	Child boot_plates { allowed_types: ['Collection'] }
+	Child sram        { allowed_types: ['Binary'] }
 }
 
 AssetType MpegWad {
 	desc: 'The file containing all of the MPEG cutscenes.'
 	
-	ArrayAttribute story {
+	Child story {
 		desc: 'A list of all the MPEG cutscenes.'
-		
-		AssetReferenceAttribute element {
-			allowed_asset_types: [
-				'Mpeg'
-				'Binary'
-			]
-		}
+		allowed_types: ['Collection']
 	}
 }
 
@@ -550,21 +266,10 @@ AssetType Mpeg {
 }
 
 AssetType OnlineWad {
-	AssetReferenceAttribute data {
-		allowed_asset_types: ['Binary']
-	}
-	
-	ArrayAttribute transition_backgrounds {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
+	Child data { allowed_types: ['Binary'] }
+	Child transition_backgrounds { allowed_types: ['Collection'] }
 }
 
 AssetType SpaceWad {
-	ArrayAttribute transitions {
-		AssetReferenceAttribute element {
-			allowed_asset_types: ['Binary']
-		}
-	}
+	Child transitions { allowed_types: ['Collection'] }
 }

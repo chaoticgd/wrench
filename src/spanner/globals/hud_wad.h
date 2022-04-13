@@ -21,7 +21,7 @@
 
 #include <spanner/spanner_util.h>
 
-HudWadAsset& unpack_hud_wad(AssetPack& dest, BinaryAsset& src);
-void pack_hud_wad(OutputStream& dest, HudWadAsset& wad, Game game);
+void unpack_hud_wad(HudWadAsset& dest, BinaryAsset& src);
+void pack_hud_wad(OutputStream& dest, HudWadAsset& src, Game game);
 
 #endif

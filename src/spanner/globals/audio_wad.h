@@ -21,7 +21,7 @@
 
 #include <spanner/spanner_util.h>
 
-AudioWadAsset& unpack_audio_wad(AssetPack& dest, BinaryAsset& src);
-void pack_audio_wad(OutputStream& dest, AudioWadAsset& wad, Game game);
+void unpack_audio_wad(AudioWadAsset& dest, BinaryAsset& src);
+void pack_audio_wad(OutputStream& dest, AudioWadAsset& src, Game game);
 
 #endif

@@ -96,6 +96,7 @@ public:
 class MemoryInputStream : public InputStream {
 public:
 	MemoryInputStream(const u8* begin_, const u8* end_);
+	MemoryInputStream(const std::vector<u8>& bytes);
 	
 	bool seek(s64 offset) override;
 	s64 tell() const override;

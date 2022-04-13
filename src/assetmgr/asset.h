@@ -54,36 +54,72 @@ public:
 	const std::string& tag() const;
 	Asset* lower_precedence();
 	Asset* higher_precedence();
+	Asset* highest_precedence();
 	AssetReference absolute_reference() const;
 	AssetReference reference_relative_to(Asset& asset) const;
 	
 	template <typename Callback>
-	void for_each_child(Callback callback) {
+	void for_each_physical_child(Callback callback) {
 		for(std::unique_ptr<Asset>& child : _children) {
 			callback(*child.get());
 		}
 	}
 	
 	template <typename Callback>
-	void for_each_child(Callback callback) const {
+	void for_each_physical_child(Callback callback) const {
 		for(const std::unique_ptr<Asset>& child : _children) {
 			callback(*child.get());
 		}
 	}
 	
-	template <typename ChildAsset>
-	ChildAsset& child(std::string tag) {
-		for(std::unique_ptr<Asset>& child : _children) {
-			if(child->type() == ChildAsset::ASSET_TYPE && child->tag() == tag) {
-				return static_cast<ChildAsset&>(*child.get());
+	template <typename Callback>
+	void for_each_logical_child(Callback callback) {
+		for(Asset* asset = this; asset != nullptr; asset = asset->lower_precedence()) {
+			for(const std::unique_ptr<Asset>& child : asset->_children) {
+				if(child->lower_precedence() == nullptr) {
+					callback(*child.get());
+				}
 			}
 		}
-		return add_child<ChildAsset>(std::move(tag));
 	}
 	
-	Asset& child(AssetType type, const std::string& tag);
-	Asset* find_child(AssetType type, const std::string& tag);
-	bool remove_child(Asset& asset);
+	template <typename ChildType, typename Callback>
+	void for_each_logical_child_of_type(Callback callback) {
+		for(Asset* asset = this; asset != nullptr; asset = asset->lower_precedence()) {
+			for(const std::unique_ptr<Asset>& child : asset->_children) {
+				if(child->lower_precedence() == nullptr && child->type() == ChildType::ASSET_TYPE) {
+					callback(static_cast<ChildType&>(*child.get()));
+				}
+			}
+		}
+	}
+	
+	template <typename ChildType>
+	ChildType& child(const char* tag) {
+		Asset& asset = physical_child(ChildType::ASSET_TYPE, tag);
+		return asset.as<ChildType>();
+	}
+	
+	template <typename ChildType>
+	ChildType& child(s32 tag) {
+		std::string str = std::to_string(tag);
+		Asset& asset = physical_child(ChildType::ASSET_TYPE, str.c_str());
+		return asset.as<ChildType>();
+	}
+	
+	template <typename AssetType>
+	AssetType& as() {
+		return dynamic_cast<AssetType&>(*this);
+	}
+	
+	bool has_child(const char* tag);
+	bool has_child(s32 tag);
+	Asset& get_child(const char* tag);
+	Asset& get_child(s32 tag);
+	
+	Asset& physical_child(AssetType type, const char* tag);
+	Asset* get_physical_child(const char* tag);
+	bool remove_physical_child(Asset& asset);
 	
 	Asset& asset_file(const fs::path& path);
 	
@@ -104,15 +140,6 @@ public:
 private:
 	friend AssetPack;
 	friend AssetFile;
-	
-	template <typename ChildAsset>
-	ChildAsset& add_child(std::string tag) {
-		std::unique_ptr<ChildAsset> pointer = std::make_unique<ChildAsset>(forest(), pack(), file(), this, std::move(tag));
-		ChildAsset* asset = pointer.get();
-		_children.emplace_back(std::move(pointer));
-		asset->connect_precedence_pointers();
-		return *asset;
-	}
 	
 	Asset& add_child(std::unique_ptr<Asset> child);
 	

@@ -22,7 +22,7 @@
 
 static std::vector<GlobalWadInfo> enumerate_globals(BuildAsset& build, Game game);
 static std::vector<LevelInfo> enumerate_levels(BuildAsset& build, Game game);
-static IsoDirectory enumerate_files(std::vector<Asset*> assets);
+static IsoDirectory enumerate_files(Asset& files);
 static void flatten_files(std::vector<IsoFileRecord*>& dest, IsoDirectory& root_dir);
 static IsoFileRecord write_system_cnf(OutputStream& iso, IsoDirectory& root_dir, BuildAsset& build);
 static void write_files(OutputStream& iso, std::vector<IsoFileRecord*>& files);
@@ -41,7 +41,7 @@ void pack_iso(OutputStream& iso, BuildAsset& build, Game game, const AssetPacker
 	
 	// Mustn't modify root_dir until after write_files is called, or the
 	// flattened file pointers will be invalidated.
-	IsoDirectory root_dir = enumerate_files(build.files());
+	IsoDirectory root_dir = enumerate_files(build.get_files());
 	std::vector<IsoFileRecord*> files;
 	flatten_files(files, root_dir);
 	
@@ -147,16 +147,16 @@ static std::vector<GlobalWadInfo> enumerate_globals(BuildAsset& build, Game game
 	for(WadType type : order) {
 		GlobalWadInfo global;
 		switch(type) {
-			case WadType::ARMOR:  global.asset = build.armor();  global.name = "armor.wad";  break;
-			case WadType::AUDIO:  global.asset = build.audio();  global.name = "audio.wad";  break;
-			case WadType::BONUS:  global.asset = build.bonus();  global.name = "bonus.wad";  break;
-			case WadType::GADGET: global.asset = build.gadget(); global.name = "gadget.wad"; break;
-			case WadType::HUD:    global.asset = build.hud();    global.name = "hud.wad";    break;
-			case WadType::MISC:   global.asset = build.misc();   global.name = "misc.wad";   break;
-			case WadType::MPEG:   global.asset = build.mpeg();   global.name = "mpeg.wad";   break;
-			case WadType::ONLINE: global.asset = build.online(); global.name = "online.wad"; break;
-			case WadType::SCENE:  global.asset = build.scene();  global.name = "scene.wad";  break;
-			case WadType::SPACE:  global.asset = build.space();  global.name = "space.wad";  break;
+			case WadType::ARMOR:  global.asset = &build.get_armor();  global.name = "armor.wad";  break;
+			case WadType::AUDIO:  global.asset = &build.get_audio();  global.name = "audio.wad";  break;
+			case WadType::BONUS:  global.asset = &build.get_bonus();  global.name = "bonus.wad";  break;
+			case WadType::GADGET: global.asset = &build.get_gadget(); global.name = "gadget.wad"; break;
+			case WadType::HUD:    global.asset = &build.get_hud();    global.name = "hud.wad";    break;
+			case WadType::MISC:   global.asset = &build.get_misc();   global.name = "misc.wad";   break;
+			case WadType::MPEG:   global.asset = &build.get_mpeg();   global.name = "mpeg.wad";   break;
+			case WadType::ONLINE: global.asset = &build.get_online(); global.name = "online.wad"; break;
+			case WadType::SCENE:  global.asset = &build.get_scene();  global.name = "scene.wad";  break;
+			case WadType::SPACE:  global.asset = &build.get_space();  global.name = "space.wad";  break;
 		}
 		global.header.resize(header_size_of_wad(game, type));
 		verify(global.asset, "Failed to build ISO, missing global WAD asset.");
@@ -168,73 +168,66 @@ static std::vector<GlobalWadInfo> enumerate_globals(BuildAsset& build, Game game
 static std::vector<LevelInfo> enumerate_levels(BuildAsset& build, Game game) {
 	std::vector<LevelInfo> levels;
 	
-	for(Asset* asset : build.levels()) {
-		if(asset && asset->type() == LevelAsset::ASSET_TYPE) {
-			LevelInfo level;
-			
-			Asset* null_asset = nullptr;
-			
-			LevelAsset& level_asset = static_cast<LevelAsset&>(*asset);
-			if(Asset* wad_asset = level_asset.level(null_asset)) {
-				LevelWadInfo& wad = level.level.emplace();
-				wad.header.resize(header_size_of_wad(game, WadType::LEVEL));
-				wad.asset = wad_asset;
-			}
-			if(Asset* wad_asset = level_asset.audio(null_asset)) {
-				LevelWadInfo& wad = level.audio.emplace();
-				wad.header.resize(header_size_of_wad(game, WadType::LEVEL_AUDIO));
-				wad.asset = wad_asset;
-			}
-			if(Asset* wad_asset = level_asset.scene(null_asset)) {
-				LevelWadInfo& wad = level.scene.emplace();
-				wad.header.resize(header_size_of_wad(game, WadType::LEVEL_SCENE));
-				wad.asset = wad_asset;
-			}
-			
-			levels.emplace_back(std::move(level));
+	build.get_levels().for_each_logical_child_of_type<LevelAsset>([&](LevelAsset& level) {
+		LevelInfo info;
+		
+		if(level.has_level()) {
+			LevelWadInfo& wad = info.level.emplace();
+			wad.header.resize(header_size_of_wad(game, WadType::LEVEL));
+			wad.asset = &level.get_level();
 		}
-	}
+		if(level.has_audio()) {
+			LevelWadInfo& wad = info.audio.emplace();
+			wad.header.resize(header_size_of_wad(game, WadType::LEVEL_AUDIO));
+			wad.asset = &level.get_audio();
+		}
+		if(level.has_scene()) {
+			LevelWadInfo& wad = info.scene.emplace();
+			wad.header.resize(header_size_of_wad(game, WadType::LEVEL_SCENE));
+			wad.asset = &level.get_scene();
+		}
+		
+		levels.emplace_back(std::move(info));
+	});
 	
 	return levels;
 }
 
-static IsoDirectory enumerate_files(std::vector<Asset*> assets) {
+static IsoDirectory enumerate_files(Asset& files) {
 	IsoDirectory root;
 	
-	for(Asset* asset : assets) {
-		if(FileAsset* file = dynamic_cast<FileAsset*>(asset)) {
-			IsoDirectory* current_dir = &root;
-			std::string dvd_path = file->path();
-			for(;;) {
-				size_t index = dvd_path.find_first_of('/');
-				if(index == std::string::npos) {
+	files.for_each_logical_child_of_type<FileAsset>([&](FileAsset& file) {
+		IsoDirectory* current_dir = &root;
+		std::string dvd_path = file.path();
+		for(;;) {
+			size_t index = dvd_path.find_first_of('/');
+			if(index == std::string::npos) {
+				break;
+			}
+			
+			std::string dir_name = dvd_path.substr(0, index);
+			dvd_path = dvd_path.substr(index + 1);
+			
+			bool found = false;
+			for(IsoDirectory& subdir : current_dir->subdirs) {
+				if(subdir.name == dir_name) {
+					current_dir = &subdir;
+					found = true;
 					break;
-				}
-				
-				std::string dir_name = dvd_path.substr(0, index);
-				dvd_path = dvd_path.substr(index + 1);
-				
-				bool found = false;
-				for(IsoDirectory& subdir : current_dir->subdirs) {
-					if(subdir.name == dir_name) {
-						current_dir = &subdir;
-						found = true;
-						break;
-					}
-				}
-				
-				if(!found) {
-					IsoDirectory& new_dir = current_dir->subdirs.emplace_back();
-					new_dir.name = dir_name;
-					current_dir = &new_dir;
 				}
 			}
 			
-			IsoFileRecord& record = current_dir->files.emplace_back();
-			record.name = dvd_path;
-			record.asset = file;
+			if(!found) {
+				IsoDirectory& new_dir = current_dir->subdirs.emplace_back();
+				new_dir.name = dir_name;
+				current_dir = &new_dir;
+			}
 		}
-	}
+		
+		IsoFileRecord& record = current_dir->files.emplace_back();
+		record.name = dvd_path;
+		record.asset = &file;
+	});
 	
 	return root;
 }
@@ -249,17 +242,9 @@ static void flatten_files(std::vector<IsoFileRecord*>& dest, IsoDirectory& root_
 }
 
 static IsoFileRecord write_system_cnf(OutputStream& iso, IsoDirectory& root_dir, BuildAsset& build) {
-	FileReference ref;
 	// TODO: Add a seperate attribute for the system.cnf file or generate it.
-	for(Asset* asset : build.files()) {
-		if(asset && asset->type() == FileAsset::ASSET_TYPE && asset->tag() == "system_cnf") {
-			ref = static_cast<FileAsset*>(asset)->src();
-		}
-	}
-	if(ref.path.empty()) {
-		fprintf(stderr, "error: No SYSTEM.CNF file referenced!\n");
-		exit(1);
-	}
+	FileAsset& file_asset = build.get_files().get_child("system_cnf").as<FileAsset>();
+	FileReference ref = file_asset.src();
 	
 	auto stream = ref.owner->open_binary_file_for_reading(ref);
 	verify(stream.get(), "Failed to open '%s' for reading.", ref.path.string().c_str());

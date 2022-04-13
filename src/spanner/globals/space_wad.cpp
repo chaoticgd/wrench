@@ -26,14 +26,10 @@ packed_struct(SpaceWadHeaderDL,
 	/* 0x8 */ SectorRange transition_wads[12];
 )
 
-SpaceWadAsset& unpack_space_wad(AssetPack& dest, BinaryAsset& src) {
+void unpack_space_wad(SpaceWadAsset& dest, BinaryAsset& src) {
 	auto [file, header] = open_wad_file<SpaceWadHeaderDL>(src);
-	AssetFile& asset_file = dest.asset_file("space/space.asset");
 	
-	SpaceWadAsset& wad = asset_file.root().child<SpaceWadAsset>("space");
-	wad.set_transitions(unpack_compressed_binaries(wad, *file, ARRAY_PAIR(header.transition_wads), "transitions"));
-	
-	return wad;
+	unpack_compressed_binaries(dest.transitions(), *file, ARRAY_PAIR(header.transition_wads));
 }
 
 void pack_space_wad(OutputStream& dest, SpaceWadAsset& wad, Game game) {
@@ -44,7 +40,7 @@ void pack_space_wad(OutputStream& dest, SpaceWadAsset& wad, Game game) {
 	dest.write(header);
 	dest.pad(SECTOR_SIZE, 0);
 	
-	compress_assets_sa(dest, ARRAY_PAIR(header.transition_wads), wad.transitions(), game, base, "transitions");
+	compress_assets_sa(dest, ARRAY_PAIR(header.transition_wads), wad.get_transitions(), game, base);
 	
 	dest.write(base, header);
 }

@@ -32,11 +32,12 @@ static void generate_read_attribute_code(const WtfNode* node, const char* result
 static void generate_attribute_type_check_code(const std::string& attribute, const char* expected, s32 ind);
 static void generate_write_function(const WtfNode* asset_type);
 static void generate_asset_write_code(const WtfNode* node, const char* expr, s32 depth);
-static void generate_getter_and_setter_functions(const WtfNode* asset_type);
-static void generate_getter_code(const WtfNode* attribute, s32 depth);
-static void generate_setter_code(const WtfNode* attribute, s32 depth);
+static void generate_attribute_getter_and_setter_functions(const WtfNode* asset_type);
+static void generate_attribute_getter_code(const WtfNode* attribute, s32 depth);
+static void generate_attribute_setter_code(const WtfNode* attribute, s32 depth);
+static void generate_child_functions(const WtfNode* asset_type);
 static void generate_setter_functions(const WtfNode* asset_type);
-static std::string node_to_cpp_type(const WtfNode* node, bool internal);
+static std::string node_to_cpp_type(const WtfNode* node);
 static void indent(s32 ind);
 static void out(const char* format, ...);
 
@@ -97,7 +98,16 @@ int main(int argc, char** argv) {
 		
 		generate_read_function(node);
 		generate_write_function(node);
-		generate_getter_and_setter_functions(node);
+		out("%sAsset& %sAsset::switch_files(const fs::path& name) {\n", node->tag, node->tag);
+		out("\tif(name.empty()) {\n");
+		out("\t\treturn static_cast<%sAsset&>(asset_file(fs::path(tag())/tag()));\n", node->tag);
+		out("\t} else {\n");
+		out("\t\treturn static_cast<%sAsset&>(asset_file(name));\n", node->tag);
+		out("\t}\n");
+		out("}\n");
+		out("\n");
+		generate_attribute_getter_and_setter_functions(node);
+		generate_child_functions(node);
 	}
 	out("#endif\n");
 	
@@ -107,7 +117,7 @@ int main(int argc, char** argv) {
 static void generate_asset_type(const WtfNode* asset_type, s32 id) {
 	out("class %sAsset : public Asset {\n", asset_type->tag);
 	for(WtfNode* node = asset_type->first_child; node != NULL; node = node->next_sibling) {
-		std::string cpp_type = node_to_cpp_type(node, true);
+		std::string cpp_type = node_to_cpp_type(node);
 		if(!cpp_type.empty()) {
 			out("\tOpt<%s> _attribute_%s;\n", cpp_type.c_str(), node->tag);
 		}
@@ -120,16 +130,17 @@ static void generate_asset_type(const WtfNode* asset_type, s32 id) {
 	out("\tvoid read_attributes(const WtfNode* node) override;\n");
 	out("\tvoid write_attributes(WtfWriter* ctx) const override;\n");
 	out("\tvoid validate_attributes() const override {}\n");
+	out("\t%sAsset& switch_files(const fs::path& name = \"\");\n", asset_type->tag);
 	bool first = true;
 	for(WtfNode* node = asset_type->first_child; node != NULL; node = node->next_sibling) {
-		std::string cpp_type = node_to_cpp_type(node, false);
+		std::string getter_name = node->tag;
+		assert(getter_name.size() >= 1);
+		if(getter_name[0] >= '0' && getter_name[0] <= '9') {
+			getter_name = '_' + getter_name;
+		}
+		
+		std::string cpp_type = node_to_cpp_type(node);
 		if(!cpp_type.empty()) {
-			std::string getter_name = node->tag;
-			assert(getter_name.size() >= 1);
-			if(getter_name[0] >= '0' && getter_name[0] <= '9') {
-				getter_name = '_' + getter_name;
-			}
-			
 			if(first) {
 				out("\t\n");
 				first = false;
@@ -139,8 +150,29 @@ static void generate_asset_type(const WtfNode* asset_type, s32 id) {
 			out("\t%s %s();\n", cpp_type.c_str(), getter_name.c_str());
 			out("\t%s %s(%s& def);\n", cpp_type.c_str(), getter_name.c_str(), cpp_type.c_str());
 			out("\tvoid set_%s(%s src_0);\n", node->tag, cpp_type.c_str());
-			if(strcmp(node->type_name, "AssetReferenceAttribute") == 0) {
-				out("\tvoid set_%s(Asset& src_0);\n", node->tag);
+		}
+		
+		if(strcmp(node->type_name, "Child") == 0) {
+			if(first) {
+				out("\t\n");
+				first = false;
+			}
+			
+			const WtfAttribute* allowed_types = wtf_attribute(node, "allowed_types");
+			assert(allowed_types);
+			assert(allowed_types->type == WTF_ARRAY);
+			assert(allowed_types->first_array_element);
+			assert(allowed_types->first_array_element->type == WTF_STRING);
+			if(allowed_types->first_array_element->next) {
+				out("\ttemplate <typename ChildType>\n");
+				out("\tChildType& %s() { return child<ChildType>(\"%s\"); }\n", getter_name.c_str(), node->tag);
+				out("\tbool has_%s();\n", node->tag);
+				out("\tAsset& get_%s();\n", node->tag);
+			} else {
+				const char* child_type = allowed_types->first_array_element->string;
+				out("%sAsset& %s();\n", child_type, getter_name.c_str());
+				out("\tbool has_%s();\n", node->tag);
+				out("\t%sAsset& get_%s();\n", child_type, node->tag);
 			}
 		}
 	}
@@ -183,7 +215,7 @@ static void generate_read_function(const WtfNode* asset_type) {
 	bool first = true;
 	out("void %sAsset::read_attributes(const WtfNode* node) {\n", asset_type->tag);
 	for(WtfNode* node = asset_type->first_child; node != NULL; node = node->next_sibling) {
-		std::string type = node_to_cpp_type(node, true);
+		std::string type = node_to_cpp_type(node);
 		if(!type.empty()) {
 			if(!first) {
 				out("\t\n");
@@ -219,7 +251,7 @@ static void generate_read_attribute_code(const WtfNode* node, const char* result
 		generate_attribute_type_check_code(attrib, "WTF_ARRAY", ind);
 		const WtfNode* element = wtf_child(node, NULL, "element");
 		assert(element);
-		std::string element_type = node_to_cpp_type(element, true);
+		std::string element_type = node_to_cpp_type(element);
 		std::string element_result = std::string("temp_") + std::to_string(depth);
 		std::string element_attrib = "element_" + std::to_string(depth);
 		indent(ind); out("for(const WtfAttribute* %s = %s->first_array_element; %s != NULL; %s = %s->next) {\n",
@@ -228,11 +260,6 @@ static void generate_read_attribute_code(const WtfNode* node, const char* result
 		generate_read_attribute_code(element, element_result.c_str(), element_attrib.c_str(), depth + 1);
 		indent(ind); out("\t%s.emplace_back(std::move(%s));\n", result, element_result.c_str());
 		indent(ind); out("}\n");
-	}
-	
-	if(strcmp(node->type_name, "AssetReferenceAttribute") == 0) {
-		generate_attribute_type_check_code(attrib, "WTF_STRING", ind);
-		indent(ind); out("%s = parse_asset_reference(%s->string);\n", result, attrib);
 	}
 	
 	if(strcmp(node->type_name, "FileReferenceAttribute") == 0) {
@@ -250,7 +277,7 @@ static void generate_attribute_type_check_code(const std::string& attribute, con
 static void generate_write_function(const WtfNode* asset_type) {
 	out("void %sAsset::write_attributes(WtfWriter* ctx) const {\n", asset_type->tag);
 	for(WtfNode* node = asset_type->first_child; node != NULL; node = node->next_sibling) {
-		std::string cpp_type = node_to_cpp_type(node, true);
+		std::string cpp_type = node_to_cpp_type(node);
 		if(!cpp_type.empty()) {
 			out("\tif(_attribute_%s.has_value()) {\n", node->tag);
 			out("\t\twtf_begin_attribute(ctx, \"%s\");\n", node->tag);
@@ -285,21 +312,16 @@ static void generate_asset_write_code(const WtfNode* node, const char* expr, s32
 		indent(ind); out("wtf_end_array(ctx);\n");
 	}
 	
-	if(strcmp(node->type_name, "AssetReferenceAttribute") == 0) {
-		indent(ind); out("std::string reference_%d = asset_reference_to_string(%s);\n", depth, expr);
-		indent(ind); out("wtf_write_string(ctx, reference_%d.c_str());\n", depth);
-	}
-	
 	if(strcmp(node->type_name, "FileReferenceAttribute") == 0) {
 		indent(ind); out("std::string path_%d = %s.path.string();\n", depth, expr);
 		indent(ind); out("wtf_write_string(ctx, path_%d.c_str());\n", depth);
 	}
 }
 
-static void generate_getter_and_setter_functions(const WtfNode* asset_type) {
+static void generate_attribute_getter_and_setter_functions(const WtfNode* asset_type) {
 	for(WtfNode* node = asset_type->first_child; node != NULL; node = node->next_sibling) {
-		std::string interface_type = node_to_cpp_type(node, false);
-		if(!interface_type.empty()) {
+		std::string cpp_type = node_to_cpp_type(node);
+		if(!cpp_type.empty()) {
 			std::string getter_name = node->tag;
 			assert(getter_name.size() >= 1);
 			if(getter_name[0] >= '0' && getter_name[0] <= '9') {
@@ -307,26 +329,23 @@ static void generate_getter_and_setter_functions(const WtfNode* asset_type) {
 			}
 			
 			out("bool %sAsset::has_%s() {\n", asset_type->tag, getter_name.c_str());
-			out("\tif(!_attribute_%s.has_value()) {\n", node->tag);
-			out("\t\tif(lower_precedence()) {\n");
-			out("\t\t\treturn static_cast<%sAsset*>(lower_precedence())->has_%s();\n", asset_type->tag, getter_name.c_str());
-			out("\t\t} else {\n");
-			out("\t\t\treturn false;\n");
+			out("\tfor(Asset* asset = this; asset != nullptr; asset = asset->lower_precedence()) {\n");
+			out("\t\tif(asset->type() == type() && _attribute_%s.has_value()) {\n", node->tag);
+			out("\t\t\treturn true;\n");
 			out("\t\t}\n");
-			out("\t} else {\n");
-			out("\t\treturn true;\n");
 			out("\t}\n");
+			out("\treturn false;\n");
 			out("}\n");
 			out("\n");
 			
-			std::string internal_type = node_to_cpp_type(node, true);
+			// TODO: Fix precedence behaviour.
 			for(s32 getter_type = 0; getter_type < 2; getter_type++) {
 				if(getter_type == 0) {
-					out("%s %sAsset::%s() {\n", interface_type.c_str(), asset_type->tag, getter_name.c_str());
+					out("%s %sAsset::%s() {\n", cpp_type.c_str(), asset_type->tag, getter_name.c_str());
 				} else {
-					out("%s %sAsset::%s(%s& def) {\n", interface_type.c_str(), asset_type->tag, getter_name.c_str(), interface_type.c_str());
+					out("%s %sAsset::%s(%s& def) {\n", cpp_type.c_str(), asset_type->tag, getter_name.c_str(), cpp_type.c_str());
 				}
-				out("\t%s dest_0;\n", interface_type.c_str());
+				out("\t%s dest_0;\n", cpp_type.c_str());
 				out("\tif(!_attribute_%s.has_value()) {\n", node->tag);
 				out("\t\tif(lower_precedence()) {\n");
 				if(getter_type == 0) {
@@ -342,31 +361,25 @@ static void generate_getter_and_setter_functions(const WtfNode* asset_type) {
 				}
 				out("\t\t}\n");
 				out("\t} else {\n");
-				out("\t\tconst %s& src_0 = *_attribute_%s;\n\n", internal_type.c_str(), node->tag);
-				generate_getter_code(node, 0);
+				out("\t\tconst %s& src_0 = *_attribute_%s;\n\n", cpp_type.c_str(), node->tag);
+				generate_attribute_getter_code(node, 0);
 				out("\t}\n");
 				out("\treturn dest_0;\n");
 				out("}\n");
 				out("\n");
 			}
 			
-			out("void %sAsset::set_%s(%s src_0) {\n", asset_type->tag, node->tag, interface_type.c_str());
-			out("\t%s dest_0;\n", internal_type.c_str());
-			generate_setter_code(node, 0);
+			out("void %sAsset::set_%s(%s src_0) {\n", asset_type->tag, node->tag, cpp_type.c_str());
+			out("\t%s dest_0;\n", cpp_type.c_str());
+			generate_attribute_setter_code(node, 0);
 			out("\t_attribute_%s = std::move(dest_0);\n", node->tag);
 			out("}\n");
 			out("\n");
-			
-			if(strcmp(node->type_name, "AssetReferenceAttribute") == 0) {
-				out("void %sAsset::set_%s(Asset& src_0) {\n", asset_type->tag, node->tag);
-				out("\tset_%s(&src_0);\n", node->tag);
-				out("}\n\n");
-			}
 		}
 	}
 }
 
-static void generate_getter_code(const WtfNode* attribute, s32 depth) {
+static void generate_attribute_getter_code(const WtfNode* attribute, s32 depth) {
 	s32 ind = depth + 2;
 	
 	if(strcmp(attribute->type_name, "IntegerAttribute") == 0) {
@@ -380,14 +393,10 @@ static void generate_getter_code(const WtfNode* attribute, s32 depth) {
 	if(strcmp(attribute->type_name, "ArrayAttribute") == 0) {
 		indent(ind); out("for(const auto& src_%d : src_%d) {\n", depth + 1, depth);
 		indent(ind); out("\tdecltype(dest_%d)::value_type dest_%d;\n", depth, depth + 1);
-		generate_getter_code(wtf_child(attribute, NULL, "element"), depth + 1);
+		generate_attribute_getter_code(wtf_child(attribute, NULL, "element"), depth + 1);
 		indent(ind); out("\tdest_%d.emplace_back(std::move(dest_%d));\n", depth, depth + 1);
 		indent(ind); out("}\n");
 		
-	}
-	
-	if(strcmp(attribute->type_name, "AssetReferenceAttribute") == 0) {
-		indent(ind); out("dest_%d = lookup_asset(src_%d);\n", depth, depth);
 	}
 	
 	if(strcmp(attribute->type_name, "FileReferenceAttribute") == 0) {
@@ -395,7 +404,7 @@ static void generate_getter_code(const WtfNode* attribute, s32 depth) {
 	}
 }
 
-static void generate_setter_code(const WtfNode* attribute, s32 depth) {
+static void generate_attribute_setter_code(const WtfNode* attribute, s32 depth) {
 	s32 ind = depth + 1;
 	
 	if(strcmp(attribute->type_name, "IntegerAttribute") == 0) {
@@ -409,14 +418,9 @@ static void generate_setter_code(const WtfNode* attribute, s32 depth) {
 	if(strcmp(attribute->type_name, "ArrayAttribute") == 0) {
 		indent(ind); out("for(const auto& src_%d : src_%d) {\n", depth + 1, depth);
 		indent(ind); out("\tdecltype(dest_%d)::value_type dest_%d;\n", depth, depth + 1);
-		generate_setter_code(wtf_child(attribute, NULL, "element"), depth + 1);
+		generate_attribute_setter_code(wtf_child(attribute, NULL, "element"), depth + 1);
 		indent(ind); out("\tdest_%d.emplace_back(std::move(dest_%d));\n", depth, depth + 1);
 		indent(ind); out("}\n");
-		
-	}
-	
-	if(strcmp(attribute->type_name, "AssetReferenceAttribute") == 0) {
-		indent(ind); out("dest_%d = src_%d ? src_%d->reference_relative_to(*this) : AssetReference{};\n", depth, depth, depth);
 	}
 	
 	if(strcmp(attribute->type_name, "FileReferenceAttribute") == 0) {
@@ -424,7 +428,48 @@ static void generate_setter_code(const WtfNode* attribute, s32 depth) {
 	}
 }
 
-static std::string node_to_cpp_type(const WtfNode* node, bool internal) {
+static void generate_child_functions(const WtfNode* asset_type) {
+	for(WtfNode* node = asset_type->first_child; node != NULL; node = node->next_sibling) {
+		if(strcmp(node->type_name, "Child") == 0) {
+			std::string getter_name = node->tag;
+			assert(getter_name.size() >= 1);
+			if(getter_name[0] >= '0' && getter_name[0] <= '9') {
+				getter_name = '_' + getter_name;
+			}
+			
+			const WtfAttribute* allowed_types = wtf_attribute(node, "allowed_types");
+			assert(allowed_types);
+			assert(allowed_types->type == WTF_ARRAY);
+			assert(allowed_types->first_array_element);
+			assert(allowed_types->first_array_element->type == WTF_STRING);
+			const char* child_type = allowed_types->first_array_element->string;
+			
+			if(!allowed_types->first_array_element->next) {
+				out("%sAsset& %sAsset::%s() {\n", child_type, asset_type->tag, getter_name.c_str());
+				out("\treturn child<%sAsset>(\"%s\");\n", child_type, node->tag);
+				out("}\n");
+				out("\n");
+			}
+			
+			out("bool %sAsset::has_%s() {\n", asset_type->tag, node->tag);
+			out("\treturn has_child(\"%s\");\n", node->tag);
+			out("}\n");
+			out("\n");
+			
+			if(allowed_types->first_array_element->next) {
+				out("Asset& %sAsset::get_%s() {\n", asset_type->tag, node->tag);
+				out("\treturn get_child(\"%s\");\n", node->tag);
+			} else {
+				out("%sAsset& %sAsset::get_%s() {\n", child_type, asset_type->tag, node->tag);
+				out("\treturn get_child(\"%s\").as<%sAsset>();\n", node->tag, child_type);
+			}
+			out("}\n");
+			out("\n");
+		}
+	}
+}
+
+static std::string node_to_cpp_type(const WtfNode* node) {
 	if(strcmp(node->type_name, "IntegerAttribute") == 0) {
 		return "s32";
 	}
@@ -436,17 +481,9 @@ static std::string node_to_cpp_type(const WtfNode* node, bool internal) {
 	if(strcmp(node->type_name, "ArrayAttribute") == 0) {
 		const WtfNode* element = wtf_child(node, NULL, "element");
 		assert(element);
-		std::string element_type = node_to_cpp_type(element, internal);
+		std::string element_type = node_to_cpp_type(element);
 		assert(!element_type.empty());
 		return "std::vector<" + element_type + ">";
-	}
-	
-	if(strcmp(node->type_name, "AssetReferenceAttribute") == 0) {
-		if(internal) {
-			return "AssetReference";
-		} else {
-			return "Asset*";
-		}
 	}
 	
 	if(strcmp(node->type_name, "FileReferenceAttribute") == 0) {

@@ -33,24 +33,20 @@ packed_struct(BonusWadHeaderDL,
 	/* 0x2a0 */ SectorRange dige;
 )
 
-BonusWadAsset& unpack_bonus_wad(AssetPack& dest, BinaryAsset& src) {
+void unpack_bonus_wad(BonusWadAsset& dest, BinaryAsset& src) {
 	auto [file, header] = open_wad_file<BonusWadHeaderDL>(src);
-	AssetFile& asset_file = dest.asset_file("bonus/bonus.asset");
 	
-	BonusWadAsset& wad = asset_file.root().child<BonusWadAsset>("bonus");
-	wad.set_credits_text(unpack_binaries(wad, *file, ARRAY_PAIR(header.credits_text), "credits_text"));
-	wad.set_credits_images(unpack_binaries(wad, *file, ARRAY_PAIR(header.credits_images), "credits_images"));
-	wad.set_demomenu(unpack_binaries(wad, *file, ARRAY_PAIR(header.demomenu), "demomenu"));
-	wad.set_demoexit(unpack_binaries(wad, *file, ARRAY_PAIR(header.demoexit), "demoexit"));
-	wad.set_cheat_images(unpack_binaries(wad, *file, ARRAY_PAIR(header.cheat_images), "cheat_images"));
-	wad.set_skill_images(unpack_binaries(wad, *file, ARRAY_PAIR(header.skill_images), "skill_images"));
-	wad.set_trophy_image(unpack_binary(wad, *file, header.trophy_image, "trophy_image", "trophy_image.bin"));
-	wad.set_dige(unpack_binary(wad, *file, header.dige, "dige", "dige.bin"));
-	
-	return wad;
+	unpack_binaries(dest.credits_text().switch_files(), *file, ARRAY_PAIR(header.credits_text));
+	unpack_binaries(dest.credits_images().switch_files(), *file, ARRAY_PAIR(header.credits_images));
+	unpack_binaries(dest.demomenu().switch_files(), *file, ARRAY_PAIR(header.demomenu));
+	unpack_binaries(dest.demoexit().switch_files(), *file, ARRAY_PAIR(header.demoexit));
+	unpack_binaries(dest.cheat_images().switch_files(), *file, ARRAY_PAIR(header.cheat_images));
+	unpack_binaries(dest.skill_images().switch_files(), *file, ARRAY_PAIR(header.skill_images));
+	unpack_binary(dest.trophy_image<BinaryAsset>(), *file, header.trophy_image, "trophy_image");
+	unpack_binary(dest.dige(), *file, header.dige, "dige");
 }
 
-void pack_bonus_wad(OutputStream& dest, BonusWadAsset& wad, Game game) {
+void pack_bonus_wad(OutputStream& dest, BonusWadAsset& src, Game game) {
 	s64 base = dest.tell();
 	
 	BonusWadHeaderDL header = {0};
@@ -58,14 +54,14 @@ void pack_bonus_wad(OutputStream& dest, BonusWadAsset& wad, Game game) {
 	dest.write(header);
 	dest.pad(SECTOR_SIZE, 0);
 	
-	pack_assets_sa(dest, ARRAY_PAIR(header.credits_text), wad.credits_text(), game, base, "credits_text");
-	pack_assets_sa(dest, ARRAY_PAIR(header.credits_images), wad.credits_images(), game, base, "credits_images");
-	pack_assets_sa(dest, ARRAY_PAIR(header.demomenu), wad.demomenu(), game, base, "demomenu");
-	pack_assets_sa(dest, ARRAY_PAIR(header.demoexit), wad.demoexit(), game, base, "demoexit");
-	pack_assets_sa(dest, ARRAY_PAIR(header.cheat_images), wad.cheat_images(), game, base, "cheat_images");
-	pack_assets_sa(dest, ARRAY_PAIR(header.skill_images), wad.skill_images(), game, base, "skill_images");
-	header.trophy_image = pack_asset_sa<SectorRange>(dest, wad.trophy_image(), game, base);
-	header.dige = pack_asset_sa<SectorRange>(dest, wad.dige(), game, base);
+	pack_assets_sa(dest, ARRAY_PAIR(header.credits_text), src.get_credits_text(), game, base);
+	pack_assets_sa(dest, ARRAY_PAIR(header.credits_images), src.get_credits_images(), game, base);
+	pack_assets_sa(dest, ARRAY_PAIR(header.demomenu), src.get_demomenu(), game, base);
+	pack_assets_sa(dest, ARRAY_PAIR(header.demoexit), src.get_demoexit(), game, base);
+	pack_assets_sa(dest, ARRAY_PAIR(header.cheat_images), src.get_cheat_images(), game, base);
+	pack_assets_sa(dest, ARRAY_PAIR(header.skill_images), src.get_skill_images(), game, base);
+	header.trophy_image = pack_asset_sa<SectorRange>(dest, src.get_trophy_image(), game, base);
+	header.dige = pack_asset_sa<SectorRange>(dest, src.get_dige(), game, base);
 	
 	dest.write(base, header);
 }

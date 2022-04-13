@@ -24,14 +24,6 @@
 #include <core/util.h>
 #include <assetmgr/asset.h>
 
-struct InvalidAssetAttributeType {
-	InvalidAssetAttributeType(const WtfNode* node, const WtfAttribute* attribute) {}
-};
-
-struct MissingAssetAttribute {
-	MissingAssetAttribute() {}
-};
-
 #define GENERATED_ASSET_HEADER
 #include "_generated_asset_types.inl"
 #undef GENERATED_ASSET_HEADER

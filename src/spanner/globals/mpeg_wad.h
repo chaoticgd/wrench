@@ -21,7 +21,7 @@
 
 #include <spanner/spanner_util.h>
 
-MpegWadAsset& unpack_mpeg_wad(AssetPack& dest, BinaryAsset& src);
+void unpack_mpeg_wad(MpegWadAsset& dest, BinaryAsset& src);
 void pack_mpeg_wad(OutputStream& dest, MpegWadAsset& wad, Game game);
 
 #endif

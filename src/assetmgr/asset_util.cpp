@@ -22,33 +22,30 @@
 
 AssetReference parse_asset_reference(const char* ptr) {
 	std::string string(ptr);
-	std::vector<AssetReferenceFragment> fragments;
 	
-	size_t begin = string[0] == '/' ? 1 : 0;
-	size_t type_name_begin = begin;
+	AssetReference reference;
+	reference.is_relative = string[0] != '/';
+	
+	size_t begin = reference.is_relative ? 0 : 1;
 	size_t tag_begin = begin;
 	
 	for(size_t i = begin; i < string.size(); i++) {
-		if(string[i] == ':') {
+		if(string[i] == '/') {
+			std::string tag = string.substr(tag_begin, i - tag_begin);
+			reference.fragments.push_back(AssetReferenceFragment{std::move(tag)});
 			tag_begin = i + 1;
 		}
-		if(string[i] == '/') {
-			std::string type_name = string.substr(type_name_begin, tag_begin - type_name_begin - 1);
-			AssetType type = asset_string_to_type(type_name.c_str());
+		if(string[i] == '@') {
 			std::string tag = string.substr(tag_begin, i - tag_begin);
-			fragments.push_back(AssetReferenceFragment{type, std::move(tag)});
-			type_name_begin = i + 1;
+			reference.fragments.push_back(AssetReferenceFragment{std::move(tag)});
+			reference.pack = string.substr(i + 1);
+			return reference;
 		}
 	}
 	
-	if(type_name_begin != tag_begin) {
-		std::string type_name = string.substr(type_name_begin, tag_begin - type_name_begin - 1);
-		AssetType type = asset_string_to_type(type_name.c_str());
-		std::string tag = string.substr(tag_begin, string.size() - tag_begin);
-		fragments.push_back(AssetReferenceFragment{type, std::move(tag)});
-	}
-	
-	return {string[0] != '/', fragments};
+	std::string tag = string.substr(tag_begin, string.size() - tag_begin);
+	reference.fragments.push_back(AssetReferenceFragment{std::move(tag)});
+	return reference;
 }
 
 std::string asset_reference_to_string(const AssetReference& reference) {
@@ -57,12 +54,13 @@ std::string asset_reference_to_string(const AssetReference& reference) {
 		string += '/';
 	}
 	for(auto fragment = reference.fragments.begin(); fragment != reference.fragments.end(); fragment++) {
-		string += asset_type_to_string(fragment->type);
-		string += ':';
 		string += fragment->tag;
 		if(fragment + 1 != reference.fragments.end()) {
 			string += '/';
 		}
+	}
+	if(!reference.pack.empty()) {
+		string += '@' + reference.pack;
 	}
 	return string;
 }

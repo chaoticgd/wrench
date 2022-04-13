@@ -31,7 +31,11 @@ void OutputStream::pad(s64 alignment, u8 padding) {
 MemoryInputStream::MemoryInputStream(const u8* begin_, const u8* end_)
 	: begin(begin_)
 	, end(end_) {}
-	
+
+MemoryInputStream::MemoryInputStream(const std::vector<u8>& bytes)
+	: begin(bytes.data())
+	, end(bytes.data() + bytes.size()) {}
+
 bool MemoryInputStream::seek(s64 offset) {
 	ofs = offset;
 	return true;

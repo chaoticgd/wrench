@@ -30,8 +30,8 @@ enum class Region {
 static void unpack_ps2_logo(BuildAsset& build, FILE* iso, Region region);
 static void unpack_primary_volume_descriptor(BuildAsset& build, const IsoPrimaryVolumeDescriptor& pvd);
 static void unpack_global_wads(BuildAsset& build, const table_of_contents& toc, FILE* iso);
-static void unpack_level_wads(BuildAsset& build, const table_of_contents& toc, FILE* iso);
-static void unpack_non_wads(Asset& build, std::vector<Asset*>& files, fs::path out, const IsoDirectory& dir, FILE* iso);
+static void unpack_level_wads(CollectionAsset& levels, const table_of_contents& toc, FILE* iso);
+static void unpack_non_wads(CollectionAsset& files, fs::path out, const IsoDirectory& dir, FILE* iso);
 static std::tuple<Game, Region, const char*> identify_game(const IsoDirectory& root);
 static size_t get_global_wad_file_size(const GlobalWadInfo& global, const table_of_contents& toc);
 
@@ -54,19 +54,14 @@ void unpack_iso(const fs::path& iso_path, const fs::path& output_dir) {
 	pack.game_info.type = AssetPackType::WADS;
 	pack.game_info.builds = {build.absolute_reference()};
 	
-	BuildAsset& global_wads = static_cast<BuildAsset&>(build.asset_file("globals/globals.asset"));
-	BuildAsset& files = static_cast<BuildAsset&>(build.asset_file("files/files.asset"));
-	
 	printf("Sector          Size (bytes)    Filename\n");
 	printf("------          ------------    --------\n");
 	
 	unpack_ps2_logo(build, iso, region);
 	unpack_primary_volume_descriptor(build, filesystem.pvd);
-	unpack_global_wads(global_wads, toc, iso);
-	unpack_level_wads(build, toc, iso);
-	std::vector<Asset*> file_assets;
-	unpack_non_wads(files, file_assets, "", filesystem.root, iso);
-	files.set_files(file_assets);
+	unpack_global_wads(build.switch_files("globals/globals.asset"), toc, iso);
+	unpack_level_wads(build.switch_files("levels/levels.asset").levels(), toc, iso);
+	unpack_non_wads(build.switch_files("files/files.asset").files(), "", filesystem.root, iso);
 	
 	pack.write();
 }
@@ -95,16 +90,15 @@ static void unpack_ps2_logo(BuildAsset& build, FILE* iso, Region region) {
 	//	write_grayscale_png(file, "PS2 logo", logo, width, height);
 	//});
 	
-	TextureAsset& texture = build.child<TextureAsset>("ps2_logo");
+	//TextureAsset& texture = build.physical_child<TextureAsset>("ps2_logo");
 	//texture.set_src(ref);
 	
-	build.set_ps2_logo(texture);
+	//build.set_ps2_logo(texture);
 	build.set_ps2_logo_key(key);
 }
 
 static void unpack_primary_volume_descriptor(BuildAsset& build, const IsoPrimaryVolumeDescriptor& pvd) {
-	Asset& file = build.asset_file("primary_volume_descriptor");
-	PrimaryVolumeDescriptorAsset& asset = file.child<PrimaryVolumeDescriptorAsset>("primary_volume_descriptor");
+	PrimaryVolumeDescriptorAsset& asset = build.switch_files("primary_volume_descriptor").primary_volume_descriptor();
 	asset.set_system_identifier(std::string(pvd.system_identifier, sizeof(pvd.system_identifier)));
 	asset.set_volume_identifier(std::string(pvd.volume_identifier, sizeof(pvd.volume_identifier)));
 	asset.set_volume_set_identifier(std::string(pvd.volume_set_identifier, sizeof(pvd.volume_set_identifier)));
@@ -114,7 +108,6 @@ static void unpack_primary_volume_descriptor(BuildAsset& build, const IsoPrimary
 	asset.set_copyright_file_identifier(std::string(pvd.copyright_file_identifier, sizeof(pvd.copyright_file_identifier)));
 	asset.set_abstract_file_identifier(std::string(pvd.abstract_file_identifier, sizeof(pvd.abstract_file_identifier)));
 	asset.set_bibliographic_file_identifier(std::string(pvd.bibliographic_file_identifier, sizeof(pvd.bibliographic_file_identifier)));
-	build.set_primary_volume_descriptor(asset);
 }
 
 static void unpack_global_wads(BuildAsset& build, const table_of_contents& toc, FILE* iso) {
@@ -126,32 +119,27 @@ static void unpack_global_wads(BuildAsset& build, const table_of_contents& toc, 
 		printf("%-16ld%-16ld%s\n", (size_t) global.sector.sectors, (size_t) file_size, file_name.c_str());
 		
 		FileReference file = build.file().extract_binary_file(file_name, Buffer(), iso, global.sector.bytes(), file_size);
-		BinaryAsset& wad = build.child<BinaryAsset>(name);
-		wad.set_src(file);
 		
 		switch(wad_type) {
-			case WadType::MPEG:   build.set_mpeg(wad);   break;
-			case WadType::MISC:   build.set_misc(wad);   break;
-			case WadType::HUD:    build.set_hud(wad);    break;
-			case WadType::BONUS:  build.set_bonus(wad);  break;
-			case WadType::AUDIO:  build.set_audio(wad);  break;
-			case WadType::SPACE:  build.set_space(wad);  break;
-			case WadType::SCENE:  build.set_scene(wad);  break;
-			case WadType::GADGET: build.set_gadget(wad); break;
-			case WadType::ARMOR:  build.set_armor(wad);  break;
-			case WadType::ONLINE: build.set_online(wad); break;
+			case WadType::MPEG:   build.mpeg<BinaryAsset>().set_src(file);   break;
+			case WadType::MISC:   build.misc<BinaryAsset>().set_src(file);   break;
+			case WadType::HUD:    build.hud<BinaryAsset>().set_src(file);    break;
+			case WadType::BONUS:  build.bonus<BinaryAsset>().set_src(file);  break;
+			case WadType::AUDIO:  build.audio<BinaryAsset>().set_src(file);  break;
+			case WadType::SPACE:  build.space<BinaryAsset>().set_src(file);  break;
+			case WadType::SCENE:  build.scene<BinaryAsset>().set_src(file);  break;
+			case WadType::GADGET: build.gadget<BinaryAsset>().set_src(file); break;
+			case WadType::ARMOR:  build.armor<BinaryAsset>().set_src(file);  break;
+			case WadType::ONLINE: build.online<BinaryAsset>().set_src(file); break;
 			default: fprintf(stderr, "warning: Extracted global WAD of unknown type to globals/%s.wad.\n", name);
 		}
 	}
 }
 
-static void unpack_level_wads(BuildAsset& build, const table_of_contents& toc, FILE* iso) {
-	BuildAsset& levels_file = static_cast<BuildAsset&>(build.asset_file("levels/levels.asset"));
-	
-	std::vector<Asset*> levels;
+static void unpack_level_wads(CollectionAsset& levels, const table_of_contents& toc, FILE* iso) {
 	for(const LevelInfo& level : toc.levels) {
 		std::string asset_path = stringf("%02d/level.asset", level.level_table_index);
-		LevelAsset& level_asset = levels_file.asset_file(asset_path).child<LevelAsset>(std::to_string(level.level_table_index));
+		LevelAsset& level_asset = levels.switch_files(asset_path).child<LevelAsset>(std::to_string(level.level_table_index).c_str());
 		
 		for(const Opt<LevelWadInfo>& part : {level.level, level.audio, level.scene}) {
 			if(!part) {
@@ -176,25 +164,21 @@ static void unpack_level_wads(BuildAsset& build, const table_of_contents& toc, F
 			wad.set_src(file);
 			
 			switch(wad_type) {
-				case WadType::LEVEL:       level_asset.set_level(wad); break;
-				case WadType::LEVEL_AUDIO: level_asset.set_audio(wad); break;
-				case WadType::LEVEL_SCENE: level_asset.set_scene(wad); break;
+				case WadType::LEVEL:       level_asset.level<BinaryAsset>().set_src(file); break;
+				case WadType::LEVEL_AUDIO: level_asset.audio<BinaryAsset>().set_src(file); break;
+				case WadType::LEVEL_SCENE: level_asset.scene<BinaryAsset>().set_src(file); break;
 				default: fprintf(stderr, "warning: Extracted level WAD of unknown type.\n");
 			}
 		}
-		
-		levels.push_back(&level_asset);
 	}
-	
-	levels_file.set_levels(levels);
 }
 
-static void unpack_non_wads(Asset& build, std::vector<Asset*>& files, fs::path out, const IsoDirectory& dir, FILE* iso) {
+static void unpack_non_wads(CollectionAsset& files, fs::path out, const IsoDirectory& dir, FILE* iso) {
 	for(const IsoFileRecord& file : dir.files) {
 		if(file.name.find(".wad") == std::string::npos) {
 			fs::path file_path = out/file.name;
 			print_file_record(file);
-			FileReference ref = build.file().extract_binary_file(file_path, Buffer(), iso, file.lba.bytes(), file.size);
+			FileReference ref = files.file().extract_binary_file(file_path, Buffer(), iso, file.lba.bytes(), file.size);
 			
 			std::string tag = file_path.string();
 			for(char& c : tag) {
@@ -203,15 +187,13 @@ static void unpack_non_wads(Asset& build, std::vector<Asset*>& files, fs::path o
 				}
 			}
 			
-			FileAsset& asset = build.child<FileAsset>(tag);
+			FileAsset& asset = files.child<FileAsset>(tag.c_str());
 			asset.set_src(ref);
 			asset.set_path(file_path.string());
-			
-			files.push_back(&asset);
 		}
 	}
 	for(const IsoDirectory& subdir : dir.subdirs) {
-		unpack_non_wads(build, files, out/subdir.name, subdir, iso);
+		unpack_non_wads(files, out/subdir.name, subdir, iso);
 	}
 }
 

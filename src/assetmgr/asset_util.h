@@ -23,6 +23,7 @@
 
 #include <core/util.h>
 #include <core/filesystem.h>
+#include <core/wtf.h>
 
 struct AssetType {
 	s32 id = -1;
@@ -37,13 +38,14 @@ using AssetVisitorCallback = std::function<void(const char* key, std::any value,
 using ConstAssetVisitorCallback = std::function<void(const char* key, std::any value)>;
 
 struct AssetReferenceFragment {
-	AssetType type;
 	std::string tag;
+	AssetType type = {-1}; // Not populated by the parser.
 };
 
 struct AssetReference {
 	bool is_relative = true;
 	std::vector<AssetReferenceFragment> fragments;
+	std::string pack;
 };
 
 AssetReference parse_asset_reference(const char* ptr);
@@ -79,5 +81,17 @@ struct GameInfo {
 
 GameInfo read_game_info(char* input);
 void write_game_info(std::string& dest, const GameInfo& info);
+
+struct InvalidAssetAttributeType {
+	InvalidAssetAttributeType(const WtfNode* node, const WtfAttribute* attribute) {}
+};
+
+struct MissingAssetAttribute {
+	MissingAssetAttribute() {}
+};
+
+struct MissingChildAsset {
+	MissingChildAsset() {}
+};
 
 #endif

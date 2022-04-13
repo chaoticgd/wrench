@@ -21,7 +21,7 @@
 
 #include <spanner/spanner_util.h>
 
-OnlineWadAsset& unpack_online_wad(AssetPack& dest, BinaryAsset& src);
+void unpack_online_wad(OnlineWadAsset& dest, BinaryAsset& src);
 void pack_online_wad(OutputStream& dest, OnlineWadAsset& wad, Game game);
 
 #endif

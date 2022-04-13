@@ -26,14 +26,10 @@ packed_struct(MpegWadHeaderDL,
 	/* 0x8 */ SectorByteRange story[200];
 )
 
-MpegWadAsset& unpack_mpeg_wad(AssetPack& dest, BinaryAsset& src) {
+void unpack_mpeg_wad(MpegWadAsset& dest, BinaryAsset& src) {
 	auto [file, header] = open_wad_file<MpegWadHeaderDL>(src);
-	AssetFile& asset_file = dest.asset_file("mpegs/mpegs.asset");
 	
-	MpegWadAsset& wad = asset_file.root().child<MpegWadAsset>("mpegs");
-	wad.set_story(unpack_binaries(wad, *file, ARRAY_PAIR(header.story), "story", ".pss"));
-	
-	return wad;
+	unpack_binaries(dest.story().switch_files(), *file, ARRAY_PAIR(header.story), ".pss");
 }
 
 void pack_mpeg_wad(OutputStream& dest, MpegWadAsset& wad, Game game) {
@@ -44,7 +40,7 @@ void pack_mpeg_wad(OutputStream& dest, MpegWadAsset& wad, Game game) {
 	dest.write(header);
 	dest.pad(SECTOR_SIZE, 0);
 	
-	pack_assets_sa(dest, ARRAY_PAIR(header.story), wad.story(), game, base, "story");
+	pack_assets_sa(dest, ARRAY_PAIR(header.story), wad.get_story(), game, base);
 	
 	dest.write(base, header);
 }

@@ -21,7 +21,7 @@
 
 #include <spanner/spanner_util.h>
 
-SpaceWadAsset& unpack_space_wad(AssetPack& dest, BinaryAsset& src);
+void unpack_space_wad(SpaceWadAsset& dest, BinaryAsset& src);
 void pack_space_wad(OutputStream& dest, SpaceWadAsset& wad, Game game);
 
 #endif

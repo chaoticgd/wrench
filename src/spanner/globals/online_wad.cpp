@@ -27,15 +27,11 @@ packed_struct(OnlineWadHeaderDL,
 	/* 0x10 */ SectorRange transition_backgrounds[11];
 )
 
-OnlineWadAsset& unpack_online_wad(AssetPack& dest, BinaryAsset& src) {
+void unpack_online_wad(OnlineWadAsset& dest, BinaryAsset& src) {
 	auto [file, header] = open_wad_file<OnlineWadHeaderDL>(src);
-	AssetFile& asset_file = dest.asset_file("online/online.asset");
 	
-	OnlineWadAsset& wad = asset_file.root().child<OnlineWadAsset>("online");
-	wad.set_data(unpack_binary(wad, *file, header.data, "data", "data.bin"));
-	wad.set_transition_backgrounds(unpack_binaries(wad, *file, ARRAY_PAIR(header.transition_backgrounds), "transition_backgrounds", ".bin"));
-	
-	return wad;
+	unpack_binary(dest.data(), *file, header.data, "data.bin");
+	unpack_binaries(dest.transition_backgrounds().switch_files(), *file, ARRAY_PAIR(header.transition_backgrounds), ".bin");
 }
 
 void pack_online_wad(OutputStream& dest, OnlineWadAsset& wad, Game game) {
@@ -47,7 +43,7 @@ void pack_online_wad(OutputStream& dest, OnlineWadAsset& wad, Game game) {
 	dest.pad(SECTOR_SIZE, 0);
 	
 	header.data = pack_asset_sa<SectorRange>(dest, wad.data(), game, base);
-	pack_assets_sa(dest, ARRAY_PAIR(header.transition_backgrounds), wad.transition_backgrounds(), game, base, "transition_backgrounds");
+	pack_assets_sa(dest, ARRAY_PAIR(header.transition_backgrounds), wad.get_transition_backgrounds(), game, base);
 	
 	dest.write(base, header);
 }
