@@ -33,25 +33,26 @@
 #include <spanner/global_wads.h>
 #include <spanner/asset_packer.h>
 
-enum ArgFlags {
+enum ArgFlags : u32 {
 	ARG_INPUT_PATH = 1 << 0,
-	ARG_ASSET = 1 << 1,
-	ARG_OUTPUT_PATH = 1 << 2,
-	ARG_OFFSET = 1 << 3
+	ARG_INPUT_PATHS = 1 << 1,
+	ARG_ASSET = 1 << 2,
+	ARG_OUTPUT_PATH = 1 << 3,
+	ARG_OFFSET = 1 << 4
 };
 
 struct ParsedArgs {
-	fs::path input_path;
+	std::vector<fs::path> input_paths;
 	std::string asset;
 	fs::path output_path;
-	s64 offset;
+	s64 offset = -1;
 };
 
 static ParsedArgs parse_args(int argc, char** argv, u32 flags);
 static void unpack_wads(const fs::path& input_path, const fs::path& output_path);
 static void unpack_bins(const fs::path& input_path, const fs::path& output_path);
-static void pack(const fs::path& input_path, const fs::path& output_path);
-static void pack_wad(const fs::path& input_path, const std::string& asset, const fs::path& output_path);
+static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path);
+static void pack_bin(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path);
 static void pack_wad_asset(OutputStream& dest, std::vector<u8>* wad_header_dest, fs::file_time_type* modified_time_dest, Asset& asset);
 static void decompress(const fs::path& input_path, const fs::path& output_path, s64 offset);
 static void compress(const fs::path& input_path, const fs::path& output_path);
@@ -77,21 +78,21 @@ int main(int argc, char** argv) {
 		std::string continuation = mode.substr(6);
 		if(continuation.empty()) {
 			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
-			unpack_iso(args.input_path, args.output_path/"wad");
+			unpack_iso(args.input_paths[0], args.output_path/"wad");
 			unpack_wads(args.output_path/"wad", args.output_path/"bin");
 			unpack_bins(args.output_path/"bin", args.output_path/"unpacked");
 			return 0;
 		} else if(continuation == "_iso") {
 			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
-			unpack_iso(args.input_path, args.output_path);
+			unpack_iso(args.input_paths[0], args.output_path);
 			return 0;
 		} else if(continuation == "_wads") {
 			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
-			unpack_wads(args.input_path, args.output_path);
+			unpack_wads(args.input_paths[0], args.output_path);
 			return 0;
-		} else if(continuation == "_bins") {
+		} else if(continuation == "_bin") {
 			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
-			unpack_bins(args.input_path, args.output_path);
+			unpack_bins(args.input_paths[0], args.output_path);
 			return 0;
 		}
 	}
@@ -99,35 +100,31 @@ int main(int argc, char** argv) {
 	if(mode.starts_with("pack")) {
 		std::string continuation = mode.substr(4);
 		if(continuation.empty()) {
-			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
-			pack(args.input_path, args.output_path);
+			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATHS | ARG_ASSET | ARG_OUTPUT_PATH);
+			pack(args.input_paths, args.asset, args.output_path);
 			return 0;
-		} else if(continuation == "_wad") {
-			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_ASSET | ARG_OUTPUT_PATH);
-			pack_wad(args.input_path, args.asset, args.output_path);
-			return 0;
-		} else if(continuation == "_bins") {
-			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
-			//pack_wad(args.input_path, args.output_path);
+		} else if(continuation == "_bin") {
+			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATHS | ARG_ASSET | ARG_OUTPUT_PATH);
+			pack_bin(args.input_paths, args.asset, args.output_path);
 			return 0;
 		}
 	}
 	
 	if(mode == "decompress") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH | ARG_OFFSET);
-		decompress(args.input_path, args.output_path, args.offset);
+		decompress(args.input_paths[0], args.output_path, args.offset);
 		return 0;
 	}
 	
 	if(mode == "compress") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
-		compress(args.input_path, args.output_path);
+		compress(args.input_paths[0], args.output_path);
 		return 0;
 	}
 	
 	if(mode == "inspect_iso") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH);
-		inspect_iso(args.input_path);
+		inspect_iso(args.input_paths[0]);
 		return 0;
 	}
 	
@@ -154,28 +151,43 @@ int main(int argc, char** argv) {
 }
 
 static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
-	s32 required_count = 2;
-	required_count += (flags & ARG_INPUT_PATH) ? 1 : 0;
-	required_count += (flags & ARG_ASSET) ? 1 : 0;
-	required_count += (flags & ARG_OUTPUT_PATH) ? 1 : 0;
-	required_count += (flags & ARG_OFFSET) ? 1 : 0;
-	verify(argc == required_count, "Wrong number of arguments.");
-	
-	s32 index = 2;
-	
 	ParsedArgs args;
+	
+	for(int i = 2; i < argc; i++) {
+		if((flags & ARG_ASSET) && strcmp(argv[i], "-a") == 0) {
+			verify(i + 1 < argc, "Expected asset reference argument.");
+			args.asset = argv[++i];
+			continue;
+		}
+		
+		if((flags & ARG_OUTPUT_PATH) && strcmp(argv[i], "-o") == 0) {
+			verify(i + 1 < argc, "Expected output path argument.");
+			args.output_path = argv[++i];
+			continue;
+		}
+		
+		if((flags & ARG_OFFSET) && strcmp(argv[i], "-x") == 0) {
+			verify(i + 1 < argc, "Expected offset argument.");
+			args.offset = parse_number(argv[++i]);
+			continue;
+		}
+		
+		if((flags & ARG_INPUT_PATH) || (flags & ARG_INPUT_PATHS)) {
+			args.input_paths.emplace_back(argv[i]);
+		}
+	}
+	
 	if(flags & ARG_INPUT_PATH) {
-		args.input_path = argv[index++];
+		verify(!args.input_paths.empty(), "Input path not specified.");
+		verify(args.input_paths.size() <= 1, "Multiple input paths specified.");
+	} else if(flags & ARG_INPUT_PATHS) {
+		verify(!args.input_paths.empty(), "Input paths not specified.");
+	} else {
+		verify(args.input_paths.empty(), "Unknown argument.");
 	}
-	if(flags & ARG_ASSET) {
-		args.asset = argv[index++];
-	}
-	if(flags & ARG_OUTPUT_PATH) {
-		args.output_path = argv[index++];
-	}
-	if(flags & ARG_OFFSET) {
-		args.offset = parse_number(argv[index++]);
-	}
+	verify(((flags & ARG_ASSET) == 0) || !args.asset.empty(), "Asset reference (-a) not specified.");
+	verify(((flags & ARG_OUTPUT_PATH) == 0) || !args.asset.empty(), "Output path (-o) not specified.");
+	verify(((flags & ARG_OFFSET) == 0) || (args.offset != -1), "Offset (-x) not specified.");
 	
 	return args;
 }
@@ -209,35 +221,25 @@ static void unpack_bins(const fs::path& input_path, const fs::path& output_path)
 	
 }
 
-static void pack(const fs::path& input_path, const fs::path& output_path) {
+static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path) {
 	FileOutputStream iso;
 	verify(iso.open(output_path), "Failed to open '%s' for writing.\n", output_path.string().c_str());
 	
 	printf("[  ?%] \033[32mMounting asset directories\033[0m\n");
 	
 	AssetForest forest;
-	AssetPack& src_pack = forest.mount<LooseAssetPack>("src", input_path, false);
 	
-	auto& builds = src_pack.game_info.builds;
-	verify(builds.size() == 1, "Extracted asset pack must have exactly one build.");
-	BuildAsset* build = dynamic_cast<BuildAsset*>(forest.lookup_asset(builds[0]));
-	verify(build, "Invalid build asset.");
-	
-	pack_asset_impl(iso, nullptr, nullptr, *build, Game::DL);
-}
-
-static void pack_wad(const fs::path& input_path, const std::string& asset, const fs::path& output_path) {
-	FileOutputStream iso;
-	verify(iso.open(output_path), "Failed to open '%s' for writing.\n", output_path.string().c_str());
-	
-	printf("[  ?%] \033[32mMounting asset directories\033[0m\n");
-	
-	AssetForest forest;
-	AssetPack& src_pack = forest.mount<LooseAssetPack>("src", input_path, false);
+	for(const fs::path& input_path : input_paths) {
+		AssetPack& src_pack = forest.mount<LooseAssetPack>("src", input_path, false);
+	}
 	
 	Asset* wad = forest.lookup_asset(parse_asset_reference(asset.c_str()));
 	verify(wad, "Invalid asset path.");
 	pack_asset_impl(iso, nullptr, nullptr, *wad, Game::DL);
+}
+
+static void pack_bin(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path) {
+	
 }
 
 static void decompress(const fs::path& input_path, const fs::path& output_path, s64 offset) {
@@ -301,41 +303,38 @@ static void print_usage() {
 	puts("");
 	puts("SUBCOMMANDS");
 	puts("");
-	puts(" unpack <input iso> <output dir>");
+	puts(" unpack <input iso> -o <output dir>");
 	puts("   Run unpack_iso, unpack_wads and unpack_bins in sequence.");
 	puts("");
-	puts("   unpack_iso <input iso> <output dir>");
+	puts("   unpack_iso <input iso> -o <output dir>");
 	puts("     Unpack the ISO file and produce an asset directory of WAD files.");
 	puts("");
-	puts("   unpack_wads <input dir> <output dir>");
+	puts("   unpack_wads <input dir> -o <output dir>");
 	puts("     Unpack an asset directory of WAD files to a new asset directory of loose");
 	puts("     binary files.");
 	puts("");
-	puts("   unpack_bins <input dir> <output dir>");
+	puts("   unpack_bin <input dir> -o <output dir>");
 	puts("     Unpack an asset directory of loose binary files to a new asset directory of"); // max line length
 	puts("     source assets.");
 	puts("");
-	puts("     unpack_collision <input bin> <output dae>");
+	puts("     unpack_collision <input bin> -o <output dae>");
 	puts("       Unpack a loose collision file and produce a COLLADA mesh.");
 	puts("");
 	puts("");
-	puts(" pack <input dir> <output iso>");
+	puts(" pack <input dirs> -a <asset> -o <output iso>");
 	puts("   Pack an asset directory to produce an ISO file.");
 	puts("");
-	puts("   pack_wad <input dir> <asset> <output dir>");
-	puts("     Pack an asset directory to produce a single WAD file.");
+	puts("   pack_bin <input dirs> -a <asset> -o <output iso>");
+	puts("     Pack an asset directory to produce an ISO file.");
 	puts("");
-	puts("   pack_bins <input dir> <output dir>");
-	puts("     Pack an asset directory to produce loose binary files.");
-	puts("");
-	puts("     pack_collision <input dae> <output bin>");
-	puts("       Pack a COLLADA mesh into a collision file.");
+	puts("   pack_collision <input dae> -o <output bin>");
+	puts("     Pack a COLLADA mesh into a collision file.");
 	puts("");
 	puts("");
-	puts(" decompress <input file> <output file> <offset>");
+	puts(" decompress <input file> -o <output file> -x <offset>");
 	puts("   Decompress a file stored using the game's custom LZ compression scheme.");
 	puts("");
-	puts(" compress <input file> <output file>");
+	puts(" compress <input file> -o <output file>");
 	puts("   Compress a file using the game's custom LZ compression scheme.");
 	puts("");
 	puts(" inspect_iso <input iso>");
