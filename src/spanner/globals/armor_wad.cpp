@@ -37,9 +37,10 @@ packed_struct(ArmorWadHeaderDL,
 void unpack_armor_wad(ArmorWadAsset& dest, BinaryAsset& src) {
 	auto [file, header] = open_wad_file<ArmorWadHeaderDL>(src);
 	
+	CollectionAsset& armors = dest.armors();
 	for(s32 i = 0; i < ARRAY_SIZE(header.armors); i++) {
 		if(header.armors[i].mesh.size.sectors > 0) {
-			Asset& armor_file = dest.switch_files(stringf("armors/%02d/armor%02d.asset", i, i));
+			Asset& armor_file = armors.switch_files(stringf("armors/%02d/armor%02d.asset", i, i));
 			ArmorAsset& armor = armor_file.child<ArmorAsset>(std::to_string(i).c_str());
 			unpack_binary(armor.mesh<BinaryAsset>(), *file, header.armors[i].mesh, "mesh.bin");
 			unpack_binary(armor.textures(), *file, header.armors[i].textures, "textures.bin");
@@ -59,13 +60,15 @@ void pack_armor_wad(OutputStream& dest, ArmorWadAsset& src, Game game) {
 	dest.pad(SECTOR_SIZE, 0);
 	
 	for(size_t i = 0; i < ARRAY_SIZE(header.armors); i++) {
-		ArmorAsset& armor = src.armors().get_child(i).as<ArmorAsset>();
-		header.armors[i].mesh = pack_asset<SectorRange>(dest, armor.get_mesh(), game, base);
-		header.armors[i].textures = pack_asset<SectorRange>(dest, armor.get_textures(), game, base);
+		if(src.get_armors().has_child(i)) {
+			ArmorAsset& armor = src.get_armors().get_child(i).as<ArmorAsset>();
+			header.armors[i].mesh = pack_asset<SectorRange>(dest, armor.get_mesh(), game, base);
+			header.armors[i].textures = pack_asset<SectorRange>(dest, armor.get_textures(), game, base);
+		}
 	}
-	pack_assets_sa(dest, ARRAY_PAIR(header.bot_textures), src.bot_textures(), game, base);
-	pack_assets_sa(dest, ARRAY_PAIR(header.landstalker_textures), src.landstalker_textures(), game, base);
-	pack_assets_sa(dest, ARRAY_PAIR(header.dropship_textures), src.dropship_textures(), game, base);
+	pack_assets_sa(dest, ARRAY_PAIR(header.bot_textures), src.get_bot_textures(), game, base);
+	pack_assets_sa(dest, ARRAY_PAIR(header.landstalker_textures), src.get_landstalker_textures(), game, base);
+	pack_assets_sa(dest, ARRAY_PAIR(header.dropship_textures), src.get_dropship_textures(), game, base);
 	
 	dest.write(base, header);
 }

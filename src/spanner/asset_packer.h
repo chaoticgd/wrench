@@ -60,7 +60,9 @@ Range pack_asset_sa(OutputStream& dest, Asset& asset, Game game, s64 base, Asset
 template <typename Range>
 void pack_assets_sa(OutputStream& dest, Range* ranges_dest, s32 count, CollectionAsset& src, Game game, s64 base, AssetFormatHint hint = FMT_NO_HINT) {
 	for(size_t i = 0; i < count; i++) {
-		ranges_dest[i] = pack_asset_sa<Range>(dest, src.get_child(i), game, base, hint);
+		if(src.has_child(i)) {
+			ranges_dest[i] = pack_asset_sa<Range>(dest, src.get_child(i), game, base, hint);
+		}
 	}
 }
 
