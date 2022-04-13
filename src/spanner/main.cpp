@@ -186,7 +186,7 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 		verify(args.input_paths.empty(), "Unknown argument.");
 	}
 	verify(((flags & ARG_ASSET) == 0) || !args.asset.empty(), "Asset reference (-a) not specified.");
-	verify(((flags & ARG_OUTPUT_PATH) == 0) || !args.asset.empty(), "Output path (-o) not specified.");
+	verify(((flags & ARG_OUTPUT_PATH) == 0) || !args.output_path.empty(), "Output path (-o) not specified.");
 	verify(((flags & ARG_OFFSET) == 0) || (args.offset != -1), "Offset (-x) not specified.");
 	
 	return args;
