@@ -97,9 +97,14 @@ bool Asset::has_child(s32 tag) {
 
 Asset& Asset::get_child(const char* tag) {
 	for(Asset* asset = highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
-		for(std::unique_ptr<Asset>& child : asset->_children) {
-			if(child->tag() == tag) {
-				return *child.get();
+		for(std::unique_ptr<Asset>& element : asset->_children) {
+			if(element->tag() == tag) {
+				Asset* child = element.get();
+				while(ReferenceAsset* reference = dynamic_cast<ReferenceAsset*>(child)) {
+					child = lookup_asset(parse_asset_reference(reference->asset().c_str()));
+					verify(child, "Failed to find asset '%s'.", reference->asset().c_str());
+				}
+				return *child;
 			}
 		}
 	}

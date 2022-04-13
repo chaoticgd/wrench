@@ -181,22 +181,24 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 }
 
 static void unpack_wads(const fs::path& input_path, const fs::path& output_path) {
-	AssetForest forest;
+	AssetForest src_forest;
 	
-	AssetPack& src_pack = forest.mount<LooseAssetPack>("wads", input_path, false);
+	AssetPack& src_pack = src_forest.mount<LooseAssetPack>("wads", input_path, false);
 	verify(src_pack.game_info.type == AssetPackType::WADS,
 		"unpack_wads can only be run on an WAD asset pack.");
 	
-	AssetPack& dest_pack = forest.mount<LooseAssetPack>("bins", output_path, true);
-	dest_pack.game_info.type = AssetPackType::BINS;
-	
-	BuildAsset& dest_build = dest_pack.asset_file("build.asset").root().child<BuildAsset>("build");
-	dest_pack.game_info.builds = {dest_build.absolute_reference()};
-	
 	auto& builds = src_pack.game_info.builds;
 	verify(builds.size() == 1, "WAD asset pack must have exactly one build.");
-	BuildAsset* src_build = dynamic_cast<BuildAsset*>(forest.lookup_asset(builds[0]));
+	BuildAsset* src_build = dynamic_cast<BuildAsset*>(src_forest.lookup_asset(builds[0]));
 	verify(src_build, "Invalid build asset.");
+	
+	AssetForest dest_forest;
+	
+	AssetPack& dest_pack = dest_forest.mount<LooseAssetPack>("bins", output_path, true);
+	dest_pack.game_info.type = AssetPackType::BINS;
+	
+	BuildAsset& dest_build = dest_pack.asset_file("build.asset").root().child<BuildAsset>("base_game");
+	dest_pack.game_info.builds = {dest_build.absolute_reference()};
 	
 	unpack_global_wads(dest_pack, dest_build, *src_build);
 	
