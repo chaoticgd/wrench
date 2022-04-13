@@ -65,7 +65,8 @@ void unpack_audio_wad(AudioWadAsset& dest, BinaryAsset& src) {
 		}
 	}
 	unpack_binaries(dest.global_sfx(), *file, ARRAY_PAIR(header.global_sfx), ".vag");
-	AudioWadAsset& help_file = dest.switch_files("help/help.asset");
+	CollectionAsset& help_collection = dest.help();
+	CollectionAsset& help_file = help_collection.switch_files("help/help.asset");
 	for(s32 i = 0; i < ARRAY_SIZE(header.help_english); i++) {
 		bool exists = false;
 		
@@ -76,7 +77,7 @@ void unpack_audio_wad(AudioWadAsset& dest, BinaryAsset& src) {
 		exists |= header.help_italian[i].sectors > 0;
 		
 		if(exists) {
-			AudioWadAsset& help_audio_file = help_file.switch_files(stringf("%d/audio.asset", i));
+			CollectionAsset& help_audio_file = help_file.switch_files(stringf("%d/audio.asset", i));
 			HelpAudioAsset& help = help_audio_file.child<HelpAudioAsset>(i);
 			
 			unpack_help_audio(help.english<BinaryAsset>(), *file, header.help_english[i], "english", end_sectors);
@@ -122,7 +123,9 @@ static void unpack_help_audio(BinaryAsset& dest, InputStream& file, Sector32 sec
 template <typename Getter>
 static void pack_help_audio(OutputStream& dest, Sector32* sectors_dest, s32 count, CollectionAsset& src, Game game, s64 base, Getter getter) {
 	for(size_t i = 0; i < ARRAY_SIZE(AudioWadHeaderDL::help_english); i++) {
-		Asset& asset = (src.get_child(i).as<HelpAudioAsset>().*getter)();
-		sectors_dest[i] = pack_asset_sa<Sector32>(dest, asset, game, base);
+		if(src.has_child(i)) {
+			Asset& asset = (src.get_child(i).as<HelpAudioAsset>().*getter)();
+			sectors_dest[i] = pack_asset_sa<Sector32>(dest, asset, game, base);
+		}
 	}
 }
