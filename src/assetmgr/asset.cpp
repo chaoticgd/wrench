@@ -117,6 +117,7 @@ Asset& Asset::get_child(s32 tag) {
 }
 
 Asset& Asset::physical_child(AssetType type, const char* tag) {
+	assert(pack().is_writeable());
 	for(std::unique_ptr<Asset>& child : _children) {
 		if(child->type() == type && child->tag() == tag) {
 			return *child.get();
