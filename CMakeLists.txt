@@ -133,6 +133,9 @@ add_executable(spanner
 	src/spanner/globals/mpeg_wad.cpp
 	src/spanner/globals/online_wad.cpp
 	src/spanner/globals/space_wad.cpp
+	src/spanner/level/level_wad.cpp
+	src/spanner/level/level_audio_wad.cpp
+	src/spanner/level/level_scene_wad.cpp
 )
 target_link_libraries(spanner wrenchcore wrench_assetmgr wrenchiso wrenchengine)
 

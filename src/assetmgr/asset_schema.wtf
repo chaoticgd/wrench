@@ -106,14 +106,6 @@ AssetType Texture {
 
 // *****************************************************************************
 
-AssetType Level {
-	Child level { allowed_types: ['LevelWad' 'Binary' ] }
-	Child audio { allowed_types: ['LevelAudioWad' 'Binary' ] }
-	Child scene { allowed_types: ['LevelSceneWad' 'Binary' ] }
-}
-
-// *****************************************************************************
-
 AssetType ArmorWad {
 	Child armors {
 		desc: 'A list of all the armors/skins.'
@@ -272,4 +264,24 @@ AssetType OnlineWad {
 
 AssetType SpaceWad {
 	Child transitions { allowed_types: ['Collection'] }
+}
+
+// *****************************************************************************
+
+AssetType Level {
+	Child level { allowed_types: ['LevelWad' 'Binary' ] }
+	Child audio { allowed_types: ['LevelAudioWad' 'Binary' ] }
+	Child scene { allowed_types: ['LevelSceneWad' 'Binary' ] }
+}
+
+AssetType LevelWad {
+	
+}
+
+AssetType LevelAudioWad {
+	
+}
+
+AssetType LevelSceneWad {
+	
 }

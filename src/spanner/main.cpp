@@ -31,6 +31,9 @@
 #include <spanner/tests.h>
 #include <spanner/wad_file.h>
 #include <spanner/global_wads.h>
+#include <spanner/level/level_wad.h>
+#include <spanner/level/level_audio_wad.h>
+#include <spanner/level/level_scene_wad.h>
 #include <spanner/asset_packer.h>
 
 enum ArgFlags : u32 {
@@ -50,6 +53,7 @@ struct ParsedArgs {
 
 static ParsedArgs parse_args(int argc, char** argv, u32 flags);
 static void unpack_wads(const fs::path& input_path, const fs::path& output_path);
+static void unpack_level_wads(AssetPack& dest_pack, BuildAsset& dest_build, BuildAsset& src_build);
 static void unpack_bins(const fs::path& input_path, const fs::path& output_path);
 static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path);
 static void pack_bin(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path);
@@ -213,8 +217,23 @@ static void unpack_wads(const fs::path& input_path, const fs::path& output_path)
 	dest_pack.game_info.builds = {dest_build.absolute_reference()};
 	
 	unpack_global_wads(dest_pack, dest_build, *src_build);
+	unpack_level_wads(dest_pack, dest_build, *src_build);
 	
 	dest_pack.write();
+}
+
+static void unpack_level_wads(AssetPack& dest_pack, BuildAsset& dest_build, BuildAsset& src_build) {
+	src_build.get_levels().for_each_logical_child_of_type<LevelAsset>([&](LevelAsset& src_level) {
+		AssetFile& dest_file = dest_pack.asset_file(stringf("level/%s/level%s.asset", src_level.tag(), src_level.tag()));
+		CollectionAsset& levels_collection = dest_file.root().child<CollectionAsset>("levels");
+		LevelAsset& dest_level = levels_collection.child<LevelAsset>(src_level.tag().c_str());
+		
+		unpack_level_wad(dest_level.level<LevelWadAsset>(), src_level.get_level().as<BinaryAsset>());
+		unpack_level_audio_wad(dest_level.audio<LevelAudioWadAsset>(), src_level.get_audio().as<BinaryAsset>());
+		unpack_level_scene_wad(dest_level.scene<LevelSceneWadAsset>(), src_level.get_scene().as<BinaryAsset>());
+		
+		dest_build.levels().child<ReferenceAsset>(src_level.tag().c_str()).set_asset(stringf("/levels/%s", src_level.tag()));
+	});
 }
 
 static void unpack_bins(const fs::path& input_path, const fs::path& output_path) {
