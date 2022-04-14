@@ -67,7 +67,7 @@ void pack_assets_sa(OutputStream& dest, Range* ranges_dest, s32 count, Collectio
 }
 
 template <typename Range>
-Range compress_asset(OutputStream& dest, Asset& src, Game game, s64 base, AssetFormatHint hint = FMT_NO_HINT) {
+Range pack_compressed_asset(OutputStream& dest, Asset& src, Game game, s64 base, AssetFormatHint hint = FMT_NO_HINT) {
 	std::vector<u8> bytes;
 	MemoryOutputStream stream(bytes);
 	pack_asset<Range>(stream, src, game, base, hint);
@@ -80,31 +80,31 @@ Range compress_asset(OutputStream& dest, Asset& src, Game game, s64 base, AssetF
 }
 
 template <typename Range>
-Range compress_asset_aligned(OutputStream& dest, Asset& asset, Game game, s64 base, s64 alignment, AssetFormatHint hint = FMT_NO_HINT) {
+Range pack_compressed_asset_aligned(OutputStream& dest, Asset& asset, Game game, s64 base, s64 alignment, AssetFormatHint hint = FMT_NO_HINT) {
 	dest.pad(alignment, 0);
-	return compress_asset<Range>(dest, asset, game, base, hint);
+	return pack_compressed_asset<Range>(dest, asset, game, base, hint);
 }
 
 template <typename Range>
-void compress_assets_aligned(OutputStream& dest, Range* ranges_dest, s32 count, CollectionAsset& src, Game game, s64 base, s64 alignment, AssetFormatHint hint = FMT_NO_HINT) {
+void pack_compressed_assets_aligned(OutputStream& dest, Range* ranges_dest, s32 count, CollectionAsset& src, Game game, s64 base, s64 alignment, AssetFormatHint hint = FMT_NO_HINT) {
 	for(size_t i = 0; i < count; i++) {
 		if(src.has_child(i)) {
-			ranges_dest[i] = compress_asset_aligned<Range>(dest, src.get_child(i), game, base, alignment, hint);
+			ranges_dest[i] = pack_compressed_asset_aligned<Range>(dest, src.get_child(i), game, base, alignment, hint);
 		}
 	}
 }
 
 template <typename Range>
-Range compress_asset_sa(OutputStream& dest, Asset& asset, Game game, s64 base, AssetFormatHint hint = FMT_NO_HINT) {
+Range pack_compressed_asset_sa(OutputStream& dest, Asset& asset, Game game, s64 base, AssetFormatHint hint = FMT_NO_HINT) {
 	dest.pad(SECTOR_SIZE, 0);
-	return compress_asset<Range>(dest, asset, game, base, hint);
+	return pack_compressed_asset<Range>(dest, asset, game, base, hint);
 }
 
 template <typename Range>
-void compress_assets_sa(OutputStream& dest, Range* ranges_dest, s32 count, CollectionAsset& src, Game game, s64 base, AssetFormatHint hint = FMT_NO_HINT) {
+void pack_compressed_assets_sa(OutputStream& dest, Range* ranges_dest, s32 count, CollectionAsset& src, Game game, s64 base, AssetFormatHint hint = FMT_NO_HINT) {
 	for(size_t i = 0; i < count; i++) {
 		if(src.has_child(i)) {
-			ranges_dest[i] = compress_asset_sa<Range>(dest, src.get_child(i), game, base, hint);
+			ranges_dest[i] = pack_compressed_asset_sa<Range>(dest, src.get_child(i), game, base, hint);
 		}
 	}
 }

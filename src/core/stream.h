@@ -156,4 +156,19 @@ public:
 	FILE* file = nullptr;
 };
 
+class SubInputStream : public InputStream {
+public:
+	SubInputStream(InputStream& stream_, s64 base_);
+	
+	bool seek(s64 offset) override;
+	s64 tell() const override;
+	s64 size() const override;
+	
+	bool read(u8* dest, s64 size) override;
+
+private:
+	InputStream& stream;
+	s64 base = 0;
+};
+
 #endif

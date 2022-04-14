@@ -46,7 +46,7 @@ void unpack_bonus_wad(BonusWadAsset& dest, BinaryAsset& src) {
 	unpack_binary(dest.dige(), *file, header.dige, "dige");
 }
 
-void pack_bonus_wad(OutputStream& dest, BonusWadAsset& src, Game game) {
+void pack_bonus_wad(OutputStream& dest, std::vector<u8>* header_dest, BonusWadAsset& src, Game game) {
 	s64 base = dest.tell();
 	
 	BonusWadHeaderDL header = {0};
@@ -64,4 +64,7 @@ void pack_bonus_wad(OutputStream& dest, BonusWadAsset& src, Game game) {
 	header.dige = pack_asset_sa<SectorRange>(dest, src.get_dige(), game, base);
 	
 	dest.write(base, header);
+	if(header_dest) {
+		OutBuffer(*header_dest).write(0, header);
+	}
 }

@@ -22,6 +22,6 @@
 #include <spanner/spanner_util.h>
 
 void unpack_mpeg_wad(MpegWadAsset& dest, BinaryAsset& src);
-void pack_mpeg_wad(OutputStream& dest, MpegWadAsset& wad, Game game);
+void pack_mpeg_wad(OutputStream& dest, std::vector<u8>* header_dest, MpegWadAsset& wad, Game game);
 
 #endif

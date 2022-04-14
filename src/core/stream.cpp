@@ -157,3 +157,25 @@ s64 FileOutputStream::size() const {
 bool FileOutputStream::write(const u8* src, s64 size) {
 	return fwrite(src, size, 1, file) == 1;
 }
+
+// *****************************************************************************
+
+SubInputStream::SubInputStream(InputStream& stream_, s64 base_)
+	: stream(stream_)
+	, base(base_) {}
+	
+bool SubInputStream::seek(s64 offset) {
+	return stream.seek(base + offset);
+}
+
+s64 SubInputStream::tell() const {
+	return stream.tell() - base;
+}
+
+s64 SubInputStream::size() const {
+	return stream.size() - base;
+}
+
+bool SubInputStream::read(u8* dest, s64 size) {
+	return stream.read(dest, size);
+}

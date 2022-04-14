@@ -22,6 +22,6 @@
 #include <spanner/spanner_util.h>
 
 void unpack_hud_wad(HudWadAsset& dest, BinaryAsset& src);
-void pack_hud_wad(OutputStream& dest, HudWadAsset& src, Game game);
+void pack_hud_wad(OutputStream& dest, std::vector<u8>* header_dest, HudWadAsset& src, Game game);
 
 #endif

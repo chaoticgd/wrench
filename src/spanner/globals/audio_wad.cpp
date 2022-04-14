@@ -89,7 +89,7 @@ void unpack_audio_wad(AudioWadAsset& dest, BinaryAsset& src) {
 	}
 }
 
-void pack_audio_wad(OutputStream& dest, AudioWadAsset& src, Game game) {
+void pack_audio_wad(OutputStream& dest, std::vector<u8>* header_dest, AudioWadAsset& src, Game game) {
 	s64 base = dest.tell();
 	
 	AudioWadHeaderDL header = {0};
@@ -107,6 +107,9 @@ void pack_audio_wad(OutputStream& dest, AudioWadAsset& src, Game game) {
 	pack_help_audio(dest, ARRAY_PAIR(header.help_italian), src.get_help(), game, base, &HelpAudioAsset::get_italian);
 	
 	dest.write(base, header);
+	if(header_dest) {
+		OutBuffer(*header_dest).write(0, header);
+	}
 }
 
 static void unpack_help_audio(BinaryAsset& dest, InputStream& file, Sector32 sector, std::string name, const std::set<s64>& end_sectors) {

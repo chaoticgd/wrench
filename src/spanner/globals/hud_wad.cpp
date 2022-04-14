@@ -102,7 +102,7 @@ void unpack_hud_wad(HudWadAsset& dest, BinaryAsset& src) {
 	unpack_binaries(dest.tourney_plates_large().switch_files(), *file, ARRAY_PAIR(header.tourney_plates_large), ".pif");
 }
 
-void pack_hud_wad(OutputStream& dest, HudWadAsset& src, Game game) {
+void pack_hud_wad(OutputStream& dest, std::vector<u8>* header_dest, HudWadAsset& src, Game game) {
 	s64 base = dest.tell();
 	
 	HudWadHeaderDL header = {0};
@@ -116,8 +116,8 @@ void pack_hud_wad(OutputStream& dest, HudWadAsset& src, Game game) {
 	header.vendor = pack_asset_sa<SectorRange>(dest, src.get_vendor(), game, base);
 	pack_assets_sa(dest, ARRAY_PAIR(header.all_text), src.get_all_text(), game, base);
 	header.hudw3d = pack_asset_sa<SectorRange>(dest, src.get_hudw3d(), game, base);
-	compress_assets_sa(dest, ARRAY_PAIR(header.e3_level_ss), src.get_e3_level_ss(), game, base,FMT_TEXTURE_PIF_IDTEX8);
-	header.nw_dnas_image = compress_asset_sa<SectorRange>(dest, src.get_nw_dnas_image(), game, base, FMT_TEXTURE_PIF_IDTEX8);
+	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.e3_level_ss), src.get_e3_level_ss(), game, base,FMT_TEXTURE_PIF_IDTEX8);
+	header.nw_dnas_image = pack_compressed_asset_sa<SectorRange>(dest, src.get_nw_dnas_image(), game, base, FMT_TEXTURE_PIF_IDTEX8);
 	header.split_screen_texture = pack_asset_sa<SectorRange>(dest, src.get_split_screen_texture(), game, base, FMT_TEXTURE_PIF_IDTEX8);
 	pack_assets_sa(dest, ARRAY_PAIR(header.radar_maps), src.get_radar_maps(), game, base, FMT_TEXTURE_PIF_IDTEX8);
 	pack_assets_sa(dest, ARRAY_PAIR(header.weapon_plates_large), src.get_weapon_plates_large(), game, base, FMT_TEXTURE_PIF_IDTEX8);
@@ -148,4 +148,7 @@ void pack_hud_wad(OutputStream& dest, HudWadAsset& src, Game game) {
 	pack_assets_sa(dest, ARRAY_PAIR(header.tourney_plates_large), src.get_tourney_plates_large(), game, base, FMT_TEXTURE_PIF_IDTEX8);
 	
 	dest.write(base, header);
+	if(header_dest) {
+		OutBuffer(*header_dest).write(0, header);
+	}
 }

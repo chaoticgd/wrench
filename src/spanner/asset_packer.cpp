@@ -69,7 +69,7 @@ void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_
 		case MpegWadAsset::ASSET_TYPE.id:
 		case OnlineWadAsset::ASSET_TYPE.id:
 		case SpaceWadAsset::ASSET_TYPE.id: {
-			pack_global_wad(dest, asset, Game::DL);
+			pack_global_wad(dest, header_dest, asset, Game::DL);
 			if(time_dest) {
 				*time_dest = fs::file_time_type::clock::now();
 			}

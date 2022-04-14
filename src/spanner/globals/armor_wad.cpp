@@ -51,7 +51,7 @@ void unpack_armor_wad(ArmorWadAsset& dest, BinaryAsset& src) {
 	unpack_binaries(dest.dropship_textures().switch_files(), *file, ARRAY_PAIR(header.dropship_textures));
 }
 
-void pack_armor_wad(OutputStream& dest, ArmorWadAsset& src, Game game) {
+void pack_armor_wad(OutputStream& dest, std::vector<u8>* header_dest, ArmorWadAsset& src, Game game) {
 	s64 base = dest.tell();
 	
 	ArmorWadHeaderDL header = {0};
@@ -71,4 +71,7 @@ void pack_armor_wad(OutputStream& dest, ArmorWadAsset& src, Game game) {
 	pack_assets_sa(dest, ARRAY_PAIR(header.dropship_textures), src.get_dropship_textures(), game, base);
 	
 	dest.write(base, header);
+	if(header_dest) {
+		OutBuffer(*header_dest).write(0, header);
+	}
 }

@@ -34,7 +34,7 @@ void unpack_online_wad(OnlineWadAsset& dest, BinaryAsset& src) {
 	unpack_binaries(dest.transition_backgrounds().switch_files(), *file, ARRAY_PAIR(header.transition_backgrounds), ".bin");
 }
 
-void pack_online_wad(OutputStream& dest, OnlineWadAsset& wad, Game game) {
+void pack_online_wad(OutputStream& dest, std::vector<u8>* header_dest, OnlineWadAsset& wad, Game game) {
 	s64 base = dest.tell();
 	
 	OnlineWadHeaderDL header = {0};
@@ -42,8 +42,11 @@ void pack_online_wad(OutputStream& dest, OnlineWadAsset& wad, Game game) {
 	dest.write(header);
 	dest.pad(SECTOR_SIZE, 0);
 	
-	header.data = pack_asset_sa<SectorRange>(dest, wad.data(), game, base);
+	header.data = pack_asset_sa<SectorRange>(dest, wad.get_data(), game, base);
 	pack_assets_sa(dest, ARRAY_PAIR(header.transition_backgrounds), wad.get_transition_backgrounds(), game, base);
 	
 	dest.write(base, header);
+	if(header_dest) {
+		OutBuffer(*header_dest).write(0, header);
+	}
 }

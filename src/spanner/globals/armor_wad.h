@@ -22,6 +22,6 @@
 #include <spanner/spanner_util.h>
 
 void unpack_armor_wad(ArmorWadAsset& dest, BinaryAsset& src);
-void pack_armor_wad(OutputStream& dest, ArmorWadAsset& src, Game game);
+void pack_armor_wad(OutputStream& dest, std::vector<u8>* header_dest, ArmorWadAsset& src, Game game);
 
 #endif

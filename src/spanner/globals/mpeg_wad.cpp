@@ -32,7 +32,7 @@ void unpack_mpeg_wad(MpegWadAsset& dest, BinaryAsset& src) {
 	unpack_binaries(dest.story().switch_files(), *file, ARRAY_PAIR(header.story), ".pss");
 }
 
-void pack_mpeg_wad(OutputStream& dest, MpegWadAsset& wad, Game game) {
+void pack_mpeg_wad(OutputStream& dest, std::vector<u8>* header_dest, MpegWadAsset& wad, Game game) {
 	s64 base = dest.tell();
 	
 	MpegWadHeaderDL header = {0};
@@ -43,4 +43,7 @@ void pack_mpeg_wad(OutputStream& dest, MpegWadAsset& wad, Game game) {
 	pack_assets_sa(dest, ARRAY_PAIR(header.story), wad.get_story(), game, base);
 	
 	dest.write(base, header);
+	if(header_dest) {
+		OutBuffer(*header_dest).write(0, header);
+	}
 }

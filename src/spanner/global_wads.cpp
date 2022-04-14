@@ -61,16 +61,16 @@ void unpack_global_wads(AssetPack& dest_pack, BuildAsset& dest_build, BuildAsset
 	dest_build.space<ReferenceAsset>().set_asset("/space");
 }
 
-void pack_global_wad(OutputStream& dest, Asset& wad, Game game) {
+void pack_global_wad(OutputStream& dest, std::vector<u8>* header_dest, Asset& wad, Game game) {
 	switch(wad.type().id) {
-		case ArmorWadAsset::ASSET_TYPE.id: pack_armor_wad(dest, static_cast<ArmorWadAsset&>(wad), game); break;
-		case AudioWadAsset::ASSET_TYPE.id: pack_audio_wad(dest, static_cast<AudioWadAsset&>(wad), game); break;
-		case BonusWadAsset::ASSET_TYPE.id: pack_bonus_wad(dest, static_cast<BonusWadAsset&>(wad), game); break;
-		case HudWadAsset::ASSET_TYPE.id: pack_hud_wad(dest, static_cast<HudWadAsset&>(wad), game); break;
-		case MiscWadAsset::ASSET_TYPE.id: pack_misc_wad(dest, static_cast<MiscWadAsset&>(wad), game); break;
-		case MpegWadAsset::ASSET_TYPE.id: pack_mpeg_wad(dest, static_cast<MpegWadAsset&>(wad), game); break;
-		case OnlineWadAsset::ASSET_TYPE.id: pack_online_wad(dest, static_cast<OnlineWadAsset&>(wad), game); break;
-		case SpaceWadAsset::ASSET_TYPE.id: pack_space_wad(dest, static_cast<SpaceWadAsset&>(wad), game); break;
+		case ArmorWadAsset::ASSET_TYPE.id: pack_armor_wad(dest, header_dest, static_cast<ArmorWadAsset&>(wad), game); break;
+		case AudioWadAsset::ASSET_TYPE.id: pack_audio_wad(dest, header_dest, static_cast<AudioWadAsset&>(wad), game); break;
+		case BonusWadAsset::ASSET_TYPE.id: pack_bonus_wad(dest, header_dest, static_cast<BonusWadAsset&>(wad), game); break;
+		case HudWadAsset::ASSET_TYPE.id: pack_hud_wad(dest, header_dest, static_cast<HudWadAsset&>(wad), game); break;
+		case MiscWadAsset::ASSET_TYPE.id: pack_misc_wad(dest, header_dest, static_cast<MiscWadAsset&>(wad), game); break;
+		case MpegWadAsset::ASSET_TYPE.id: pack_mpeg_wad(dest, header_dest, static_cast<MpegWadAsset&>(wad), game); break;
+		case OnlineWadAsset::ASSET_TYPE.id: pack_online_wad(dest, header_dest, static_cast<OnlineWadAsset&>(wad), game); break;
+		case SpaceWadAsset::ASSET_TYPE.id: pack_space_wad(dest, header_dest, static_cast<SpaceWadAsset&>(wad), game); break;
 		default: verify_not_reached("Failed to identify WAD asset.");
 	}
 }

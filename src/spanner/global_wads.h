@@ -23,6 +23,6 @@
 #include <assetmgr/asset_types.h>
 
 void unpack_global_wads(AssetPack& dest_pack, BuildAsset& dest_build, BuildAsset& build);
-void pack_global_wad(OutputStream& dest, Asset& wad, Game game);
+void pack_global_wad(OutputStream& dest, std::vector<u8>* header_dest, Asset& wad, Game game);
 
 #endif
