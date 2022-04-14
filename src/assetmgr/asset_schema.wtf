@@ -279,9 +279,28 @@ AssetType LevelWad {
 }
 
 AssetType LevelAudioWad {
-	
+	Child bin_data       { allowed_types: ['Collection'] }
+	Child upgrade_sample { allowed_types: ['Binary'] }
+	Child platinum_bolt  { allowed_types: ['Binary'] }
+	Child spare          { allowed_types: ['Binary'] }
 }
 
 AssetType LevelSceneWad {
-	
+	Child scenes { allowed_types: ['Collection'] }
+}
+
+AssetType Scene {
+	Child speech_english_left  { allowed_types: ['Binary'] }
+	Child speech_english_right { allowed_types: ['Binary'] }
+	Child subtitles            { allowed_types: ['Binary'] }
+	Child speech_french_left   { allowed_types: ['Binary'] }
+	Child speech_french_right  { allowed_types: ['Binary'] }
+	Child speech_german_left   { allowed_types: ['Binary'] }
+	Child speech_german_right  { allowed_types: ['Binary'] }
+	Child speech_spanish_left  { allowed_types: ['Binary'] }
+	Child speech_spanish_right { allowed_types: ['Binary'] }
+	Child speech_italian_left  { allowed_types: ['Binary'] }
+	Child speech_italian_right { allowed_types: ['Binary'] }
+	Child moby_load            { allowed_types: ['Binary'] }
+	Child chunks               { allowed_types: ['Collection'] }
 }

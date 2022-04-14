@@ -43,7 +43,7 @@ void unpack_level_wad(LevelWadAsset& dest, BinaryAsset& src) {
 	// ...
 }
 
-void pack_level_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelWadAsset& wad, Game game) {
+void pack_level_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelWadAsset& src, Game game) {
 	s64 base = dest.tell();
 	
 	LevelWadHeaderDL header = {0};

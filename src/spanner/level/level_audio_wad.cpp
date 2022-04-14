@@ -32,10 +32,13 @@ packed_struct(LevelAudioWadHeaderDL,
 void unpack_level_audio_wad(LevelAudioWadAsset& dest, BinaryAsset& src) {
 	auto [file, header] = open_wad_file<LevelAudioWadHeaderDL>(src);
 	
-	// ...
+	unpack_binaries(dest.bin_data().switch_files(), *file, ARRAY_PAIR(header.bin_data), ".vag");
+	unpack_binary(dest.upgrade_sample(), *file, header.upgrade_sample, "upgrade_sample.vag");
+	unpack_binary(dest.platinum_bolt(), *file, header.platinum_bolt, "platinum_bolt.vag");
+	unpack_binary(dest.spare(), *file, header.spare, "spare.vag");
 }
 
-void pack_level_audio_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelAudioWadAsset& wad, Game game) {
+void pack_level_audio_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelAudioWadAsset& src, Game game) {
 	s64 base = dest.tell();
 	
 	LevelAudioWadHeaderDL header = {0};
@@ -43,7 +46,10 @@ void pack_level_audio_wad(OutputStream& dest, std::vector<u8>* header_dest, Leve
 	dest.write(header);
 	dest.pad(SECTOR_SIZE, 0);
 	
-	// ...
+	pack_assets_sa(dest, ARRAY_PAIR(header.bin_data), src.bin_data(), game, base);
+	header.upgrade_sample = pack_asset_sa<SectorByteRange>(dest, src.upgrade_sample(), game, base);
+	header.platinum_bolt = pack_asset_sa<SectorByteRange>(dest, src.platinum_bolt(), game, base);
+	header.spare = pack_asset_sa<SectorByteRange>(dest, src.spare(), game, base);
 	
 	dest.write(base, header);
 	if(header_dest) {

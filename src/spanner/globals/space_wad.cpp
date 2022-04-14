@@ -32,7 +32,7 @@ void unpack_space_wad(SpaceWadAsset& dest, BinaryAsset& src) {
 	unpack_compressed_binaries(dest.transitions(), *file, ARRAY_PAIR(header.transition_wads));
 }
 
-void pack_space_wad(OutputStream& dest, std::vector<u8>* header_dest, SpaceWadAsset& wad, Game game) {
+void pack_space_wad(OutputStream& dest, std::vector<u8>* header_dest, SpaceWadAsset& src, Game game) {
 	s64 base = dest.tell();
 	
 	SpaceWadHeaderDL header = {0};
@@ -40,7 +40,7 @@ void pack_space_wad(OutputStream& dest, std::vector<u8>* header_dest, SpaceWadAs
 	dest.write(header);
 	dest.pad(SECTOR_SIZE, 0);
 	
-	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.transition_wads), wad.get_transitions(), game, base);
+	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.transition_wads), src.get_transitions(), game, base);
 	
 	dest.write(base, header);
 	if(header_dest) {

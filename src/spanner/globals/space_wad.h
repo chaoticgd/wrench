@@ -22,6 +22,6 @@
 #include <spanner/spanner_util.h>
 
 void unpack_space_wad(SpaceWadAsset& dest, BinaryAsset& src);
-void pack_space_wad(OutputStream& dest, std::vector<u8>* header_dest, SpaceWadAsset& wad, Game game);
+void pack_space_wad(OutputStream& dest, std::vector<u8>* header_dest, SpaceWadAsset& src, Game game);
 
 #endif

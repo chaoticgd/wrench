@@ -18,22 +18,23 @@
 
 #include "level_scene_wad.h"
 
+#include <set>
 #include <spanner/asset_packer.h>
 
 packed_struct(SceneHeaderDL,
-	/* 0x00 */ s32 speech_english_left;
-	/* 0x04 */ s32 speech_english_right;
+	/* 0x00 */ Sector32 speech_english_left;
+	/* 0x04 */ Sector32 speech_english_right;
 	/* 0x08 */ SectorRange subtitles;
-	/* 0x10 */ s32 speech_french_left;
-	/* 0x14 */ s32 speech_french_right;
-	/* 0x18 */ s32 speech_german_left;
-	/* 0x1c */ s32 speech_german_right;
-	/* 0x20 */ s32 speech_spanish_left;
-	/* 0x24 */ s32 speech_spanish_right;
-	/* 0x28 */ s32 speech_italian_left;
-	/* 0x2c */ s32 speech_italian_right;
+	/* 0x10 */ Sector32 speech_french_left;
+	/* 0x14 */ Sector32 speech_french_right;
+	/* 0x18 */ Sector32 speech_german_left;
+	/* 0x1c */ Sector32 speech_german_right;
+	/* 0x20 */ Sector32 speech_spanish_left;
+	/* 0x24 */ Sector32 speech_spanish_right;
+	/* 0x28 */ Sector32 speech_italian_left;
+	/* 0x2c */ Sector32 speech_italian_right;
 	/* 0x30 */ SectorRange moby_load;
-	/* 0x38 */ struct Sector32 chunks[69];
+	/* 0x38 */ Sector32 chunks[69];
 )
 
 packed_struct(LevelSceneWadHeaderDL,
@@ -42,13 +43,57 @@ packed_struct(LevelSceneWadHeaderDL,
 	/* 0x8 */ SceneHeaderDL scenes[30];
 )
 
+static SectorRange range(Sector32 offset, const std::set<s64>& end_sectors);
+
 void unpack_level_scene_wad(LevelSceneWadAsset& dest, BinaryAsset& src) {
 	auto [file, header] = open_wad_file<LevelSceneWadHeaderDL>(src);
 	
-	// ...
+	std::set<s64> end_sectors;
+	for(const SceneHeaderDL& scene : header.scenes) {
+		end_sectors.insert(scene.speech_english_left.sectors);
+		end_sectors.insert(scene.speech_english_right.sectors);
+		end_sectors.insert(scene.subtitles.offset.sectors);
+		end_sectors.insert(scene.speech_french_left.sectors);
+		end_sectors.insert(scene.speech_french_right.sectors);
+		end_sectors.insert(scene.speech_german_left.sectors);
+		end_sectors.insert(scene.speech_german_right.sectors);
+		end_sectors.insert(scene.speech_spanish_left.sectors);
+		end_sectors.insert(scene.speech_spanish_right.sectors);
+		end_sectors.insert(scene.speech_italian_left.sectors);
+		end_sectors.insert(scene.speech_italian_right.sectors);
+		end_sectors.insert(scene.moby_load.offset.sectors);
+		for(Sector32 chunk : scene.chunks) {
+			end_sectors.insert(chunk.sectors);
+		}
+	}
+	end_sectors.insert(Sector32::size_from_bytes(file->size()).sectors);
+	
+	CollectionAsset& scenes = dest.scenes();
+	for(s32 i = 0; i < ARRAY_SIZE(header.scenes); i++) {
+		SceneAsset& scene = scenes.child<SceneAsset>(i).switch_files();
+		const SceneHeaderDL& scene_header = header.scenes[i];
+		unpack_binary(scene.speech_english_left(), *file, range(scene_header.speech_english_left, end_sectors), "speech_english_left.vag");
+		unpack_binary(scene.speech_english_right(), *file, range(scene_header.speech_english_right, end_sectors), "speech_english_right.vag");
+		unpack_binary(scene.subtitles(), *file, scene_header.subtitles, "subtitles.vag");
+		unpack_binary(scene.speech_french_left(), *file, range(scene_header.speech_french_left, end_sectors), "speech_french_left.vag");
+		unpack_binary(scene.speech_french_right(), *file, range(scene_header.speech_french_right, end_sectors), "speech_french_right.vag");
+		unpack_binary(scene.speech_german_left(), *file, range(scene_header.speech_german_left, end_sectors), "speech_german_left.vag");
+		unpack_binary(scene.speech_german_right(), *file, range(scene_header.speech_german_right, end_sectors), "speech_german_right.vag");
+		unpack_binary(scene.speech_spanish_left(), *file, range(scene_header.speech_spanish_left, end_sectors), "speech_spanish_left.vag");
+		unpack_binary(scene.speech_spanish_right(), *file, range(scene_header.speech_spanish_right, end_sectors), "speech_spanish_right.vag");
+		unpack_binary(scene.speech_italian_left(), *file, range(scene_header.speech_italian_left, end_sectors), "speech_italian_left.vag");
+		unpack_binary(scene.speech_italian_right(), *file, range(scene_header.speech_italian_right, end_sectors), "speech_italian_right.vag");
+		unpack_binary(scene.moby_load(), *file, scene_header.moby_load, "moby_load.bin");
+	}
 }
 
-void pack_level_scene_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelSceneWadAsset& wad, Game game) {
+static SectorRange range(Sector32 offset, const std::set<s64>& end_sectors) {
+	auto end_sector = end_sectors.upper_bound(offset.sectors);
+	verify(end_sector != end_sectors.end(), "Header references audio beyond end of file. The WAD file may be truncated.");
+	return {offset, Sector32(*end_sector - offset.sectors)};
+}
+
+void pack_level_scene_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelSceneWadAsset& src, Game game) {
 	s64 base = dest.tell();
 	
 	LevelSceneWadHeaderDL header = {0};

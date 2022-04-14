@@ -52,7 +52,7 @@ struct ParsedArgs {
 };
 
 static ParsedArgs parse_args(int argc, char** argv, u32 flags);
-static void unpack_wads(const fs::path& input_path, const fs::path& output_path);
+static void unpack_wads(const fs::path& input_path, const fs::path& output_path, bool unpack_globals, bool unpack_levels);
 static void unpack_level_wads(AssetPack& dest_pack, BuildAsset& dest_build, BuildAsset& src_build);
 static void unpack_bins(const fs::path& input_path, const fs::path& output_path);
 static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path);
@@ -83,7 +83,7 @@ int main(int argc, char** argv) {
 		if(continuation.empty()) {
 			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
 			unpack_iso(args.input_paths[0], args.output_path/"wad");
-			unpack_wads(args.output_path/"wad", args.output_path/"bin");
+			unpack_wads(args.output_path/"wad", args.output_path/"bin", true, true);
 			unpack_bins(args.output_path/"bin", args.output_path/"unpacked");
 			return 0;
 		} else if(continuation == "_iso") {
@@ -92,7 +92,15 @@ int main(int argc, char** argv) {
 			return 0;
 		} else if(continuation == "_wads") {
 			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
-			unpack_wads(args.input_paths[0], args.output_path);
+			unpack_wads(args.input_paths[0], args.output_path, true, true);
+			return 0;
+		} else if(continuation == "_global_wads") {
+			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
+			unpack_wads(args.input_paths[0], args.output_path, true, false);
+			return 0;
+		} else if(continuation == "_level_wads") {
+			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
+			unpack_wads(args.input_paths[0], args.output_path, false, true);
 			return 0;
 		} else if(continuation == "_bin") {
 			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
@@ -196,7 +204,7 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 	return args;
 }
 
-static void unpack_wads(const fs::path& input_path, const fs::path& output_path) {
+static void unpack_wads(const fs::path& input_path, const fs::path& output_path, bool unpack_globals, bool unpack_levels) {
 	AssetForest src_forest;
 	
 	AssetPack& src_pack = src_forest.mount<LooseAssetPack>("wads", input_path, false);
@@ -216,23 +224,36 @@ static void unpack_wads(const fs::path& input_path, const fs::path& output_path)
 	BuildAsset& dest_build = dest_pack.asset_file("build.asset").root().child<BuildAsset>("base_game");
 	dest_pack.game_info.builds = {dest_build.absolute_reference()};
 	
-	unpack_global_wads(dest_pack, dest_build, *src_build);
-	unpack_level_wads(dest_pack, dest_build, *src_build);
+	if(unpack_globals) {
+		unpack_global_wads(dest_pack, dest_build, *src_build);
+	}
+	
+	if(unpack_levels) {
+		unpack_level_wads(dest_pack, dest_build, *src_build);
+	}
 	
 	dest_pack.write();
 }
 
 static void unpack_level_wads(AssetPack& dest_pack, BuildAsset& dest_build, BuildAsset& src_build) {
 	src_build.get_levels().for_each_logical_child_of_type<LevelAsset>([&](LevelAsset& src_level) {
-		AssetFile& dest_file = dest_pack.asset_file(stringf("level/%s/level%s.asset", src_level.tag(), src_level.tag()));
+		AssetFile& dest_file = dest_pack.asset_file(stringf("level/%s/level%s.asset", src_level.tag().c_str(), src_level.tag().c_str()));
 		CollectionAsset& levels_collection = dest_file.root().child<CollectionAsset>("levels");
 		LevelAsset& dest_level = levels_collection.child<LevelAsset>(src_level.tag().c_str());
 		
-		unpack_level_wad(dest_level.level<LevelWadAsset>(), src_level.get_level().as<BinaryAsset>());
-		unpack_level_audio_wad(dest_level.audio<LevelAudioWadAsset>(), src_level.get_audio().as<BinaryAsset>());
-		unpack_level_scene_wad(dest_level.scene<LevelSceneWadAsset>(), src_level.get_scene().as<BinaryAsset>());
+		if(src_level.has_level()) {
+			unpack_level_wad(dest_level.level<LevelWadAsset>().switch_files(), src_level.get_level().as<BinaryAsset>());
+		}
 		
-		dest_build.levels().child<ReferenceAsset>(src_level.tag().c_str()).set_asset(stringf("/levels/%s", src_level.tag()));
+		if(src_level.has_audio()) {
+			unpack_level_audio_wad(dest_level.audio<LevelAudioWadAsset>().switch_files(), src_level.get_audio().as<BinaryAsset>());
+		}
+		
+		if(src_level.has_scene()) {
+			unpack_level_scene_wad(dest_level.scene<LevelSceneWadAsset>().switch_files(), src_level.get_scene().as<BinaryAsset>());
+		}
+		
+		dest_build.levels().child<ReferenceAsset>(src_level.tag().c_str()).set_asset(stringf("/levels/%s", src_level.tag().c_str()));
 	});
 }
 
@@ -331,6 +352,12 @@ static void print_usage() {
 	puts("   unpack_wads <input dir> -o <output dir>");
 	puts("     Unpack an asset directory of WAD files to a new asset directory of loose");
 	puts("     binary files.");
+	puts("");
+	puts("     unpack_global_wads <input dir> -o <output dir>");
+	puts("       Unpack only global WAD files.");
+	puts("");
+	puts("     unpack_global_wads <input dir> -o <output dir>");
+	puts("       Unpack only level WAD files.");
 	puts("");
 	puts("   unpack_bin <input dir> -o <output dir>");
 	puts("     Unpack an asset directory of loose binary files to a new asset directory of"); // max line length
