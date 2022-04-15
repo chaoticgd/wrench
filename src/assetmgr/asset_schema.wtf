@@ -43,8 +43,7 @@ AssetType Binary {
 AssetType Build {
 	desc: 'A build of the game.'
 	
-	IntegerAttribute        ps2_logo_key { min: 0 max: 255 }
-	
+	IntegerAttribute ps2_logo_key { min: 0 max: 255 }
 	IntegerAttribute single_level { default: -1 }
 	
 	Child ps2_logo { allowed_types: ['Texture'] }
@@ -275,7 +274,26 @@ AssetType Level {
 }
 
 AssetType LevelWad {
+	IntegerAttribute id {}
+	IntegerAttribute reverb {}
 	
+	Child data            { allowed_types: ['Binary'] }
+	Child core_sound_bank { allowed_types: ['Binary'] }
+	Child chunks          { allowed_types: ['Collection'] }
+	Child gameplay_core   { allowed_types: ['Binary'] }
+	Child missions        { allowed_types: ['Collection'] }
+	Child art_instances   { allowed_types: ['Binary'] }
+}
+
+AssetType Chunk {
+	Child tfrags     { allowed_types: ['Binary'] }
+	Child collision  { allowed_types: ['Binary'] }
+	Child sound_bank { allowed_types: ['Binary'] }
+}
+
+AssetType Mission {
+	Child instances { allowed_types: ['Binary'] }
+	Child classes   { allowed_types: ['Binary'] }
 }
 
 AssetType LevelAudioWad {
