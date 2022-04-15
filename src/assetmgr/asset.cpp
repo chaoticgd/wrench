@@ -49,6 +49,14 @@ const std::string& Asset::tag() const { return _tag; }
 Asset* Asset::lower_precedence() { return _lower_precedence; }
 Asset* Asset::higher_precedence() { return _higher_precedence; }
 
+Asset* Asset::lowest_precedence() {
+	Asset* asset = this;
+	while(asset->lower_precedence() != nullptr) {
+		asset = asset->lower_precedence();
+	}
+	return asset;
+}
+
 Asset* Asset::highest_precedence() {
 	Asset* asset = this;
 	while(asset->higher_precedence() != nullptr) {

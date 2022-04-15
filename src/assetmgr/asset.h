@@ -54,6 +54,7 @@ public:
 	const std::string& tag() const;
 	Asset* lower_precedence();
 	Asset* higher_precedence();
+	Asset* lowest_precedence();
 	Asset* highest_precedence();
 	AssetReference absolute_reference() const;
 	AssetReference reference_relative_to(Asset& asset) const;
@@ -74,7 +75,7 @@ public:
 	
 	template <typename Callback>
 	void for_each_logical_child(Callback callback) {
-		for(Asset* asset = this; asset != nullptr; asset = asset->lower_precedence()) {
+		for(Asset* asset = lowest_precedence(); asset != nullptr; asset = asset->higher_precedence()) {
 			for(const std::unique_ptr<Asset>& child : asset->_children) {
 				if(child->lower_precedence() == nullptr) {
 					callback(*child.get());
@@ -85,7 +86,7 @@ public:
 	
 	template <typename ChildType, typename Callback>
 	void for_each_logical_child_of_type(Callback callback) {
-		for(Asset* asset = this; asset != nullptr; asset = asset->lower_precedence()) {
+		for(Asset* asset = lowest_precedence(); asset != nullptr; asset = asset->higher_precedence()) {
 			for(const std::unique_ptr<Asset>& child : asset->_children) {
 				if(child->lower_precedence() == nullptr && child->type() == ChildType::ASSET_TYPE) {
 					callback(static_cast<ChildType&>(*child.get()));
