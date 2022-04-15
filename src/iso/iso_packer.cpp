@@ -28,7 +28,7 @@ static IsoFileRecord write_system_cnf(OutputStream& iso, IsoDirectory& root_dir,
 static void write_files(OutputStream& iso, std::vector<IsoFileRecord*>& files);
 static IsoDirectory pack_globals(OutputStream& iso, std::vector<GlobalWadInfo>& globals, const AssetPackerFunc& pack_asset, Game game);
 static std::array<IsoDirectory, 3> pack_levels(OutputStream& iso, std::vector<LevelInfo>& levels, const AssetPackerFunc& pack_asset, Game game, s32 single_level_index);
-static void pack_level_wad(OutputStream& iso, IsoDirectory& directory, LevelWadInfo& wad, const AssetPackerFunc& pack_asset, const char* name, Game game, s32 index);
+static void pack_level_wad_outer(OutputStream& iso, IsoDirectory& directory, LevelWadInfo& wad, const AssetPackerFunc& pack_asset, const char* name, Game game, s32 index);
 
 void pack_iso(OutputStream& iso, BuildAsset& build, Game game, const AssetPackerFunc& pack_asset) {
 	s32 single_level_index = -1;
@@ -344,29 +344,29 @@ static std::array<IsoDirectory, 3> pack_levels(OutputStream& iso, std::vector<Le
 		// The level files are laid out AoS.
 		for(size_t i = 0; i < levels.size(); i++) {
 			LevelInfo& level = levels[i];
-			if(level.level) pack_level_wad(iso, levels_dir, *level.level, pack_asset, "level", game, i);
-			if(level.audio) pack_level_wad(iso, audio_dir, *level.audio, pack_asset, "audio", game, i);
-			if(level.scene) pack_level_wad(iso, scenes_dir, *level.scene, pack_asset, "scene", game, i);
+			if(level.level) pack_level_wad_outer(iso, levels_dir, *level.level, pack_asset, "level", game, i);
+			if(level.audio) pack_level_wad_outer(iso, audio_dir, *level.audio, pack_asset, "audio", game, i);
+			if(level.scene) pack_level_wad_outer(iso, scenes_dir, *level.scene, pack_asset, "scene", game, i);
 		}
 	} else {
 		// The level files are laid out SoA, audio files first.
 		for(size_t i = 0; i < levels.size(); i++) {
 			LevelInfo& level = levels[i];
-			if(level.audio) pack_level_wad(iso, audio_dir, *level.audio, pack_asset, "audio", game, i);
+			if(level.audio) pack_level_wad_outer(iso, audio_dir, *level.audio, pack_asset, "audio", game, i);
 		}
 		for(size_t i = 0; i < levels.size(); i++) {
 			LevelInfo& level = levels[i];
-			if(level.level) pack_level_wad(iso, levels_dir, *level.level, pack_asset, "level", game, i);
+			if(level.level) pack_level_wad_outer(iso, levels_dir, *level.level, pack_asset, "level", game, i);
 		}
 		for(size_t i = 0; i < levels.size(); i++) {
 			LevelInfo& level = levels[i];
-			if(level.scene) pack_level_wad(iso, scenes_dir, *level.scene, pack_asset, "scene", game, i);
+			if(level.scene) pack_level_wad_outer(iso, scenes_dir, *level.scene, pack_asset, "scene", game, i);
 		}
 	}
 	return {levels_dir, audio_dir, scenes_dir};
 }
 
-static void pack_level_wad(OutputStream& iso, IsoDirectory& directory, LevelWadInfo& wad, const AssetPackerFunc& pack_asset, const char* name, Game game, s32 index) {
+static void pack_level_wad_outer(OutputStream& iso, IsoDirectory& directory, LevelWadInfo& wad, const AssetPackerFunc& pack_asset, const char* name, Game game, s32 index) {
 	std::string file_name = stringf("%s%02d.wad", name, index);
 	
 	iso.pad(SECTOR_SIZE, 0);
