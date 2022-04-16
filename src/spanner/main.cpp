@@ -213,8 +213,7 @@ static void unpack_wads(const fs::path& input_path, const fs::path& output_path,
 	
 	auto& builds = src_pack.game_info.builds;
 	verify(builds.size() == 1, "WAD asset pack must have exactly one build.");
-	BuildAsset* src_build = dynamic_cast<BuildAsset*>(src_forest.lookup_asset(builds[0]));
-	verify(src_build, "Invalid build asset.");
+	BuildAsset& src_build = src_forest.lookup_asset(builds[0], nullptr).as<BuildAsset>();
 	
 	AssetForest dest_forest;
 	
@@ -225,11 +224,11 @@ static void unpack_wads(const fs::path& input_path, const fs::path& output_path,
 	dest_pack.game_info.builds = {dest_build.absolute_reference()};
 	
 	if(unpack_globals) {
-		unpack_global_wads(dest_pack, dest_build, *src_build);
+		unpack_global_wads(dest_pack, dest_build, src_build);
 	}
 	
 	if(unpack_levels) {
-		unpack_level_wads(dest_pack, dest_build, *src_build);
+		unpack_level_wads(dest_pack, dest_build, src_build);
 	}
 	
 	dest_pack.write();
@@ -273,9 +272,8 @@ static void pack(const std::vector<fs::path>& input_paths, const std::string& as
 		AssetPack& src_pack = forest.mount<LooseAssetPack>("src", input_path, false);
 	}
 	
-	Asset* wad = forest.lookup_asset(parse_asset_reference(asset.c_str()));
-	verify(wad, "Invalid asset path.");
-	pack_asset_impl(iso, nullptr, nullptr, *wad, Game::DL);
+	Asset& wad = forest.lookup_asset(parse_asset_reference(asset.c_str()), nullptr);
+	pack_asset_impl(iso, nullptr, nullptr, wad, Game::DL);
 }
 
 static void pack_bin(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path) {

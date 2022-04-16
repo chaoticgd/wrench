@@ -54,8 +54,8 @@ public:
 	const std::string& tag() const;
 	Asset* lower_precedence();
 	Asset* higher_precedence();
-	Asset* lowest_precedence();
-	Asset* highest_precedence();
+	Asset& lowest_precedence();
+	Asset& highest_precedence();
 	AssetReference absolute_reference() const;
 	AssetReference reference_relative_to(Asset& asset) const;
 	
@@ -75,10 +75,10 @@ public:
 	
 	template <typename Callback>
 	void for_each_logical_child(Callback callback) {
-		for(Asset* asset = lowest_precedence(); asset != nullptr; asset = asset->higher_precedence()) {
+		for(Asset* asset = &lowest_precedence(); asset != nullptr; asset = asset->higher_precedence()) {
 			for(const std::unique_ptr<Asset>& child : asset->_children) {
 				if(child->lower_precedence() == nullptr) {
-					callback(*child.get());
+					callback(child->resolve_references());
 				}
 			}
 		}
@@ -86,10 +86,13 @@ public:
 	
 	template <typename ChildType, typename Callback>
 	void for_each_logical_child_of_type(Callback callback) {
-		for(Asset* asset = lowest_precedence(); asset != nullptr; asset = asset->higher_precedence()) {
+		for(Asset* asset = &lowest_precedence(); asset != nullptr; asset = asset->higher_precedence()) {
 			for(const std::unique_ptr<Asset>& child : asset->_children) {
-				if(child->lower_precedence() == nullptr && child->type() == ChildType::ASSET_TYPE) {
-					callback(static_cast<ChildType&>(*child.get()));
+				if(child->lower_precedence() == nullptr) {
+					Asset& child_2 = child->resolve_references();
+					if(child_2.type() == ChildType::ASSET_TYPE) {
+						callback(static_cast<ChildType&>(child_2));
+					}
 				}
 			}
 		}
@@ -128,8 +131,6 @@ public:
 	void write(WtfWriter* ctx) const;
 	void validate() const;
 	
-	Asset* lookup_asset(AssetReference reference);
-	
 	bool weakly_equal(const Asset& rhs) const;
 	
 	virtual void for_each_attribute(AssetVisitorCallback callback) = 0;
@@ -144,7 +145,7 @@ private:
 	
 	Asset& add_child(std::unique_ptr<Asset> child);
 	
-	Asset* lookup_local_asset(const AssetReferenceFragment* begin, const AssetReferenceFragment* end);
+	Asset& resolve_references();
 	
 	void connect_precedence_pointers();
 	void disconnect_precedence_pointers();
@@ -229,8 +230,6 @@ private:
 	
 	void read();
 	
-	Asset* lookup_local_asset(const AssetReference& absolute_reference);
-	
 	virtual std::unique_ptr<InputStream> open_binary_file_for_reading(const fs::path& path, fs::file_time_type* modified_time_dest) const = 0;
 	virtual std::string read_text_file(const fs::path& path) const = 0;
 	virtual std::vector<u8> read_binary_file(const fs::path& path) const = 0;
@@ -257,6 +256,8 @@ public:
 	AssetForest& operator=(const AssetForest&) = delete;
 	AssetForest& operator=(AssetForest&&) = delete;
 	
+	Asset& lookup_asset(const AssetReference& reference, Asset* context);
+	
 	template <typename Pack, typename... ConstructorArgs>
 	AssetPack& mount(ConstructorArgs... args) {
 		AssetPack* pack = _packs.emplace_back(std::make_unique<Pack>(*this, args...)).get();
@@ -276,8 +277,6 @@ public:
 		pack->read();
 		return *pack;
 	}
-	
-	Asset* lookup_asset(const AssetReference& absolute_reference);
 
 private:
 	std::vector<std::unique_ptr<AssetPack>> _packs;

@@ -82,16 +82,24 @@ struct GameInfo {
 GameInfo read_game_info(char* input);
 void write_game_info(std::string& dest, const GameInfo& info);
 
-struct InvalidAssetAttributeType {
+struct AssetError : std::exception {};
+
+struct InvalidAssetAttributeType : AssetError {
 	InvalidAssetAttributeType(const WtfNode* node, const WtfAttribute* attribute) {}
 };
 
-struct MissingAssetAttribute {
+struct MissingAssetAttribute : AssetError {
 	MissingAssetAttribute() {}
 };
 
-struct MissingChildAsset {
+struct MissingChildAsset : AssetError {
 	MissingChildAsset() {}
+};
+
+struct AssetLookupFailed : AssetError {
+	AssetLookupFailed(std::string a) : asset(a) {}
+	const char* what() const noexcept override { return asset.c_str(); }
+	std::string asset;
 };
 
 #endif

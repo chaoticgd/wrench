@@ -49,20 +49,20 @@ const std::string& Asset::tag() const { return _tag; }
 Asset* Asset::lower_precedence() { return _lower_precedence; }
 Asset* Asset::higher_precedence() { return _higher_precedence; }
 
-Asset* Asset::lowest_precedence() {
+Asset& Asset::lowest_precedence() {
 	Asset* asset = this;
 	while(asset->lower_precedence() != nullptr) {
 		asset = asset->lower_precedence();
 	}
-	return asset;
+	return *asset;
 }
 
-Asset* Asset::highest_precedence() {
+Asset& Asset::highest_precedence() {
 	Asset* asset = this;
 	while(asset->higher_precedence() != nullptr) {
 		asset = asset->higher_precedence();
 	}
-	return asset;
+	return *asset;
 }
 
 AssetReference Asset::absolute_reference() const {
@@ -88,7 +88,7 @@ AssetReference Asset::reference_relative_to(Asset& asset) const {
 }
 
 bool Asset::has_child(const char* tag) {
-	for(Asset* asset = highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
+	for(Asset* asset = &highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
 		for(std::unique_ptr<Asset>& child : asset->_children) {
 			if(child->tag() == tag) {
 				return true;
@@ -104,15 +104,10 @@ bool Asset::has_child(s32 tag) {
 }
 
 Asset& Asset::get_child(const char* tag) {
-	for(Asset* asset = highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
-		for(std::unique_ptr<Asset>& element : asset->_children) {
-			if(element->tag() == tag) {
-				Asset* child = element.get();
-				while(ReferenceAsset* reference = dynamic_cast<ReferenceAsset*>(child)) {
-					child = lookup_asset(parse_asset_reference(reference->asset().c_str()));
-					verify(child, "Failed to find asset '%s'.", reference->asset().c_str());
-				}
-				return *child;
+	for(Asset* asset = &highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
+		for(std::unique_ptr<Asset>& child : asset->_children) {
+			if(child->tag() == tag) {
+				return child->resolve_references();
 			}
 		}
 	}
@@ -186,18 +181,6 @@ void Asset::validate() const {
 	});
 }
 
-Asset* Asset::lookup_asset(AssetReference reference) {
-	if(reference.is_relative) {
-		AssetReference absolute = absolute_reference();
-		auto begin = std::make_move_iterator(reference.fragments.begin());
-		auto end = std::make_move_iterator(reference.fragments.end());
-		absolute.fragments.insert(absolute.fragments.end(), begin, end);
-		return _forest.lookup_asset(std::move(absolute));
-	} else {
-		return _forest.lookup_asset(std::move(reference));
-	}
-}
-
 bool Asset::weakly_equal(const Asset& rhs) const {
 	if(this == &rhs) {
 		return true;
@@ -221,18 +204,15 @@ Asset& Asset::add_child(std::unique_ptr<Asset> child) {
 	return asset;
 }
 
-Asset* Asset::lookup_local_asset(const AssetReferenceFragment* begin, const AssetReferenceFragment* end) {
-	for(const std::unique_ptr<Asset>& child : _children) {
-		if(child->tag() == begin->tag) {
-			if(begin + 1 < end) {
-				return child->lookup_local_asset(begin + 1, end);
-			} else {
-				return child.get();
-			}
-		}
+Asset& Asset::resolve_references() {
+	Asset* asset = &highest_precedence();
+	while(ReferenceAsset* reference = dynamic_cast<ReferenceAsset*>(asset)) {
+		asset = &forest().lookup_asset(parse_asset_reference(reference->asset().c_str()), asset);
+		verify(asset, "Failed to find asset '%s'.", reference->asset().c_str());
 	}
-	return nullptr;
+	return *asset;
 }
+
 
 void Asset::connect_precedence_pointers() {
 	// Connect asset nodes from adjacent trees so that if a given node doesn't
@@ -266,7 +246,7 @@ void Asset::connect_precedence_pointers() {
 				_lower_precedence = lower;
 				_higher_precedence = higher;
 				assert(_lower_precedence != this);
-				assert(_lower_precedence != this);
+				assert(_higher_precedence != this);
 				if(lower) {
 					lower->_higher_precedence = this;
 					assert(lower->_higher_precedence != lower);
@@ -281,11 +261,13 @@ void Asset::connect_precedence_pointers() {
 		if(lower) {
 			_lower_precedence = &lower->root();
 			assert(_lower_precedence != &file().root());
+			lower->root()._higher_precedence = this;
 		}
 		AssetFile* higher = file().higher_precedence();
 		if(higher) {
 			_higher_precedence = &higher->root();
 			assert(_higher_precedence != &file().root());
+			higher->root()._lower_precedence = this;
 		}
 	}
 }
@@ -474,31 +456,32 @@ void AssetPack::read() {
 	}
 }
 
-Asset* AssetPack::lookup_local_asset(const AssetReference& absolute_reference) {
-	const AssetReferenceFragment* first_fragment = absolute_reference.fragments.data();
-	const AssetReferenceFragment* fragment_past_end = first_fragment + absolute_reference.fragments.size();
-	for(auto file = _asset_files.rbegin(); file != _asset_files.rend(); file++) {
-		Asset* asset = (*file)->root().lookup_local_asset(first_fragment, fragment_past_end);
-		if(asset) {
-			return asset;
-		}
-	}
-	return nullptr;
-}
-
 s32 AssetPack::check_lock() const { assert(0); }
 void AssetPack::lock() { assert(0); }
 
 // *****************************************************************************
 
-Asset* AssetForest::lookup_asset(const AssetReference& absolute_reference) {
-	for(auto pack = _packs.rbegin(); pack != _packs.rend(); pack++) {
-		Asset* asset = (*pack)->lookup_local_asset(absolute_reference);
-		if(asset) {
-			return asset;
+Asset& AssetForest::lookup_asset(const AssetReference& reference, Asset* context) {
+	Asset* asset;
+	if(reference.is_relative) {
+		asset = context;
+	} else {
+		if(_packs.size() < 1 || _packs[0]->_asset_files.size() < 1) {
+			throw AssetLookupFailed(asset_reference_to_string(reference));
 		}
+		asset = &_packs[0]->_asset_files[0]->root();
 	}
-	return nullptr;
+	if(asset == nullptr) {
+		throw AssetLookupFailed(asset_reference_to_string(reference));
+	}
+	try {
+		for(const AssetReferenceFragment& fragment : reference.fragments) {
+			asset = &asset->get_child(fragment.tag.c_str());
+		}
+	} catch(MissingChildAsset&) {
+		throw AssetLookupFailed(asset_reference_to_string(reference));
+	}
+	return *asset;
 }
 
 // *****************************************************************************
