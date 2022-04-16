@@ -23,7 +23,7 @@
 packed_struct(LevelWadHeaderDL,
 	/* 0x000 */ s32 header_size;
 	/* 0x004 */ Sector32 sector;
-	/* 0x008 */ s32 level;
+	/* 0x008 */ s32 id;
 	/* 0x00c */ s32 reverb;
 	/* 0x010 */ s32 max_mission_sizes[2];
 	/* 0x018 */ SectorRange data;
@@ -50,6 +50,9 @@ packed_struct(MissionHeader,
 
 void unpack_level_wad(LevelWadAsset& dest, BinaryAsset& src) {
 	auto [file, header] = open_wad_file<LevelWadHeaderDL>(src);
+	
+	dest.set_id(header.id);
+	dest.set_reverb(header.reverb);
 	
 	unpack_binary(dest.data(), *file, header.data, "data.bin");
 	unpack_binary(dest.core_sound_bank(), *file, header.core_sound_bank, "core_sound_bank.bin");
@@ -90,7 +93,7 @@ void pack_level_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelWadAs
 	dest.write(header);
 	dest.pad(SECTOR_SIZE, 0);
 	
-	header.level = src.id();
+	header.id = src.id();
 	header.reverb = src.reverb();
 	
 	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), game, base);
@@ -105,7 +108,7 @@ void pack_level_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelWadAs
 				s64 chunk_header_ofs = dest.tell();
 				dest.write(chunk_header);
 				chunk_header.tfrags = pack_compressed_asset_aligned<ByteRange>(dest, chunk.get_tfrags(), game, chunk_header_ofs, 0x10).offset;
-				chunk_header.collision = pack_compressed_asset_aligned<ByteRange>(dest, chunk.get_tfrags(), game, chunk_header_ofs, 0x10).offset;
+				chunk_header.collision = pack_compressed_asset_aligned<ByteRange>(dest, chunk.get_collision(), game, chunk_header_ofs, 0x10).offset;
 				dest.write(chunk_header_ofs, chunk_header);
 			}
 		}
@@ -121,24 +124,28 @@ void pack_level_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelWadAs
 	header.gameplay_core = pack_asset_sa<SectorRange>(dest, src.get_gameplay_core(), game, base);
 	CollectionAsset& missions = src.get_missions();
 	for(s32 i = 0; i < ARRAY_SIZE(header.mission_instances); i++) {
-		MissionAsset& mission = missions.get_child(i).as<MissionAsset>();
-		if(mission.has_instances()) {
-			header.mission_instances[i] = pack_asset_sa<SectorRange>(dest, mission.get_instances(), game, base);
+		if(missions.has_child(i)) {
+			MissionAsset& mission = missions.get_child(i).as<MissionAsset>();
+			if(mission.has_instances()) {
+				header.mission_instances[i] = pack_asset_sa<SectorRange>(dest, mission.get_instances(), game, base);
+			}
 		}
 	}
 	for(s32 i = 0; i < ARRAY_SIZE(header.mission_data); i++) {
-		MissionAsset& mission = missions.get_child(i).as<MissionAsset>();
-		MissionHeader mission_header = {0};
-		dest.pad(SECTOR_SIZE, 0);
-		s64 mission_header_ofs = dest.tell();
-		dest.write(mission_header);
-		if(mission.has_instances()) {
-			mission_header.instances = pack_compressed_asset_aligned<ByteRange>(dest, mission.get_instances(), game, base, 0x40);
+		if(missions.has_child(i)) {
+			MissionAsset& mission = missions.get_child(i).as<MissionAsset>();
+			MissionHeader mission_header = {0};
+			dest.pad(SECTOR_SIZE, 0);
+			s64 mission_header_ofs = dest.tell();
+			dest.write(mission_header);
+			if(mission.has_instances()) {
+				mission_header.instances = pack_compressed_asset_aligned<ByteRange>(dest, mission.get_instances(), game, base, 0x40);
+			}
+			if(mission.has_classes()) {
+				mission_header.classes = pack_compressed_asset_aligned<ByteRange>(dest, mission.get_classes(), game, base, 0x40);
+			}
+			dest.write(mission_header_ofs, mission_header);
 		}
-		if(mission.has_classes()) {
-			mission_header.classes = pack_compressed_asset_aligned<ByteRange>(dest, mission.get_classes(), game, base, 0x40);
-		}
-		dest.write(mission_header_ofs, mission_header);
 	}
 	header.art_instances = pack_asset_sa<SectorRange>(dest, src.get_art_instances(), game, base);
 	
