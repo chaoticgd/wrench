@@ -24,6 +24,10 @@
 #include <build/level/level_audio_wad.h>
 #include <build/level/level_scene_wad.h>
 
+s32 g_asset_packer_max_assets_processed = 0;
+s32 g_asset_packer_num_assets_processed = 0;
+bool g_asset_packer_dry_run = false;
+
 static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, BinaryAsset& asset);
 
 on_load([]() {
@@ -32,15 +36,24 @@ on_load([]() {
 })
 
 void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& asset, Game game, u32 hint) {
-	std::string type = asset_type_to_string(asset.type());
-	for(char& c : type) c = tolower(c);
-	std::string reference = asset_reference_to_string(asset.absolute_reference());
-	printf("[  ?%] \033[32mPacking %s asset %s\033[0m\n", type.c_str(), reference.c_str());
+	if(!g_asset_packer_dry_run) {
+		std::string type = asset_type_to_string(asset.type());
+		for(char& c : type) c = tolower(c);
+		std::string reference = asset_reference_to_string(asset.absolute_reference());
+		s32 completion_percentage = (s32) ((g_asset_packer_num_assets_processed * 100.f) / g_asset_packer_max_assets_processed);
+		printf("[%3d%%] \033[32mPacking %s asset %s\033[0m\n", completion_percentage, type.c_str(), reference.c_str());
+	}
 	
 	asset.pack(dest, header_dest, time_dest, game, hint);
+	
+	g_asset_packer_num_assets_processed++;
 }
 
 static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, BinaryAsset& asset) {
+	if(g_asset_packer_dry_run) {
+		return;
+	}
+	
 	auto src = asset.file().open_binary_file_for_reading(asset.src(), time_dest);
 	if(header_dest) {
 		s32 header_size = src->read<s32>();

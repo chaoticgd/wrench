@@ -93,6 +93,21 @@ public:
 	void pad(s64 alignment, u8 padding);
 };
 
+class BlackHoleOutputStream : public OutputStream {
+public:
+	BlackHoleOutputStream();
+	
+	bool seek(s64 offset) override;
+	s64 tell() const override;
+	s64 size() const override;
+	
+	bool write(const u8* src, s64 size) override;
+	
+private:
+	s64 ofs = 0;
+	s64 top = 0;
+};
+
 class MemoryInputStream : public InputStream {
 public:
 	MemoryInputStream(const u8* begin_, const u8* end_);
@@ -102,8 +117,8 @@ public:
 	s64 tell() const override;
 	s64 size() const override;
 	
-	bool read(u8* dest, s64 size) override;
-
+	bool read(u8*, s64 size) override;
+	
 private:
 	const u8* begin;
 	const u8* end;
@@ -119,7 +134,8 @@ public:
 	s64 size() const override;
 	
 	bool write(const u8* src, s64 size) override;
-
+	
+private:
 	std::vector<u8>& backing;
 	s64 ofs = 0;
 };

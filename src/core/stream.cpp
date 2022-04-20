@@ -28,6 +28,29 @@ void OutputStream::pad(s64 alignment, u8 padding) {
 
 // *****************************************************************************
 
+BlackHoleOutputStream::BlackHoleOutputStream() {}
+
+bool BlackHoleOutputStream::seek(s64 offset) {
+	ofs = offset;
+	return true;
+}
+
+s64 BlackHoleOutputStream::tell() const {
+	return ofs;
+}
+
+s64 BlackHoleOutputStream::size() const {
+	return top;
+}
+
+bool BlackHoleOutputStream::write(const u8*, s64 size) {
+	ofs += size;
+	top = std::max(top, ofs);
+	return true;
+}
+
+// *****************************************************************************
+
 MemoryInputStream::MemoryInputStream(const u8* begin_, const u8* end_)
 	: begin(begin_)
 	, end(end_) {}

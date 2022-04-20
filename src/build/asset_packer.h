@@ -23,6 +23,10 @@
 #include <assetmgr/asset_types.h>
 #include <engine/compression.h>
 
+extern s32 g_asset_packer_max_assets_processed;
+extern s32 g_asset_packer_num_assets_processed;
+extern bool g_asset_packer_dry_run;
+
 enum AssetFormatHint {
 	FMT_NO_HINT = 0,
 	FMT_TEXTURE_PIF_IDTEX8,

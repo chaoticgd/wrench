@@ -261,10 +261,7 @@ static void unpack_bins(const fs::path& input_path, const fs::path& output_path)
 }
 
 static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path) {
-	FileOutputStream iso;
-	verify(iso.open(output_path), "Failed to open '%s' for writing.\n", output_path.string().c_str());
-	
-	printf("[  ?%] \033[32mMounting asset directories\033[0m\n");
+	printf("[  0%%] Mounting asset directories\n");
 	
 	AssetForest forest;
 	
@@ -273,7 +270,26 @@ static void pack(const std::vector<fs::path>& input_paths, const std::string& as
 	}
 	
 	Asset& wad = forest.lookup_asset(parse_asset_reference(asset.c_str()), nullptr);
+	
+	printf("[  0%%] Scanning dependencies of %s\n", asset.c_str());
+	
+	// Find the number of assets we need to pack. This is used for estimating
+	// the completion percentage.
+	BlackHoleOutputStream dummy;
+	g_asset_packer_max_assets_processed = 0;
+	g_asset_packer_num_assets_processed = 0;
+	g_asset_packer_dry_run = true;
+	pack_asset_impl(dummy, nullptr, nullptr, wad, Game::DL);
+	g_asset_packer_max_assets_processed = g_asset_packer_num_assets_processed;
+	g_asset_packer_num_assets_processed = 0;
+	g_asset_packer_dry_run = false;
+	
+	FileOutputStream iso;
+	verify(iso.open(output_path), "Failed to open '%s' for writing.\n", output_path.string().c_str());
+	
 	pack_asset_impl(iso, nullptr, nullptr, wad, Game::DL);
+	
+	printf("[100%%] Done!\n");
 }
 
 static void pack_bin(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path) {
