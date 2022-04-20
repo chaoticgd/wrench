@@ -32,7 +32,7 @@ static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, 
 
 on_load([]() {
 	BinaryAsset::pack_func = wrap_bin_packer_func<BinaryAsset>(pack_binary_asset);
-	BuildAsset::pack_func = wrap_packer_func<BuildAsset>(pack_iso);
+	BuildAsset::pack_func = wrap_iso_packer_func<BuildAsset>(pack_iso, pack_asset_impl);
 })
 
 void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& asset, Game game, u32 hint) {

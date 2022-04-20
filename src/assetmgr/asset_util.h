@@ -118,6 +118,16 @@ AssetPackerFunc* wrap_bin_packer_func(PackerFunc func) {
 	});
 }
 
+template <typename ThisAsset, typename PackerFunc>
+AssetPackerFunc* wrap_iso_packer_func(PackerFunc func, AssetPackerFunc pack) {
+	return new AssetPackerFunc([func, pack](OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& src, Game game, u32 hint) {
+		func(dest, static_cast<ThisAsset&>(src), game, pack);
+		if(time_dest) {
+			*time_dest = fs::file_time_type::clock::now();
+		}
+	});
+}
+
 // *****************************************************************************
 
 struct AssetError : std::exception {};
