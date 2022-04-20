@@ -22,6 +22,5 @@
 #include <spanner/spanner_util.h>
 
 void unpack_audio_wad(AudioWadAsset& dest, BinaryAsset& src);
-void pack_audio_wad(OutputStream& dest, std::vector<u8>* header_dest, AudioWadAsset& src, Game game);
 
 #endif

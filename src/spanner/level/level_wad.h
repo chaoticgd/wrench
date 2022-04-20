@@ -22,6 +22,5 @@
 #include <spanner/spanner_util.h>
 
 void unpack_level_wad(LevelWadAsset& dest, BinaryAsset& src);
-void pack_level_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelWadAsset& src, Game game);
 
 #endif

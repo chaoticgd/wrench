@@ -20,6 +20,12 @@
 
 #include <spanner/asset_packer.h>
 
+static void pack_bonus_wad(OutputStream& dest, std::vector<u8>* header_dest, BonusWadAsset& src, Game game);
+
+on_load([]() {
+	BonusWadAsset::pack_func = wrap_wad_packer_func<BonusWadAsset>(pack_bonus_wad);
+})
+
 packed_struct(BonusWadHeaderDL,
 	/* 0x000 */ s32 header_size;
 	/* 0x004 */ Sector32 sector;
@@ -32,19 +38,6 @@ packed_struct(BonusWadHeaderDL,
 	/* 0x298 */ SectorRange trophy_image;
 	/* 0x2a0 */ SectorRange dige;
 )
-
-void unpack_bonus_wad(BonusWadAsset& dest, BinaryAsset& src) {
-	auto [file, header] = open_wad_file<BonusWadHeaderDL>(src);
-	
-	unpack_binaries(dest.credits_text().switch_files(), *file, ARRAY_PAIR(header.credits_text));
-	unpack_binaries(dest.credits_images().switch_files(), *file, ARRAY_PAIR(header.credits_images));
-	unpack_binaries(dest.demomenu().switch_files(), *file, ARRAY_PAIR(header.demomenu));
-	unpack_binaries(dest.demoexit().switch_files(), *file, ARRAY_PAIR(header.demoexit));
-	unpack_binaries(dest.cheat_images().switch_files(), *file, ARRAY_PAIR(header.cheat_images));
-	unpack_binaries(dest.skill_images().switch_files(), *file, ARRAY_PAIR(header.skill_images));
-	unpack_binary(dest.trophy_image<BinaryAsset>(), *file, header.trophy_image, "trophy_image");
-	unpack_binary(dest.dige(), *file, header.dige, "dige");
-}
 
 void pack_bonus_wad(OutputStream& dest, std::vector<u8>* header_dest, BonusWadAsset& src, Game game) {
 	s64 base = dest.tell();
@@ -67,4 +60,17 @@ void pack_bonus_wad(OutputStream& dest, std::vector<u8>* header_dest, BonusWadAs
 	if(header_dest) {
 		OutBuffer(*header_dest).write(0, header);
 	}
+}
+
+void unpack_bonus_wad(BonusWadAsset& dest, BinaryAsset& src) {
+	auto [file, header] = open_wad_file<BonusWadHeaderDL>(src);
+	
+	unpack_binaries(dest.credits_text().switch_files(), *file, ARRAY_PAIR(header.credits_text));
+	unpack_binaries(dest.credits_images().switch_files(), *file, ARRAY_PAIR(header.credits_images));
+	unpack_binaries(dest.demomenu().switch_files(), *file, ARRAY_PAIR(header.demomenu));
+	unpack_binaries(dest.demoexit().switch_files(), *file, ARRAY_PAIR(header.demoexit));
+	unpack_binaries(dest.cheat_images().switch_files(), *file, ARRAY_PAIR(header.cheat_images));
+	unpack_binaries(dest.skill_images().switch_files(), *file, ARRAY_PAIR(header.skill_images));
+	unpack_binary(dest.trophy_image<BinaryAsset>(), *file, header.trophy_image, "trophy_image");
+	unpack_binary(dest.dige(), *file, header.dige, "dige");
 }

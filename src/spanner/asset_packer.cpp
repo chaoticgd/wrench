@@ -26,51 +26,18 @@
 
 static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, BinaryAsset& asset);
 
+on_load([]() {
+	BinaryAsset::pack_func = wrap_bin_packer_func<BinaryAsset>(pack_binary_asset);
+	BuildAsset::pack_func = wrap_packer_func<BuildAsset>(pack_iso);
+})
+
 void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& asset, Game game, u32 hint) {
 	std::string type = asset_type_to_string(asset.type());
 	for(char& c : type) c = tolower(c);
 	std::string reference = asset_reference_to_string(asset.absolute_reference());
 	printf("[  ?%] \033[32mPacking %s asset %s\033[0m\n", type.c_str(), reference.c_str());
 	
-	switch(asset.type().id) {
-		case BinaryAsset::ASSET_TYPE.id: {
-			pack_binary_asset(dest, header_dest, time_dest, static_cast<BinaryAsset&>(asset));
-			return;
-		}
-		case BuildAsset::ASSET_TYPE.id: {
-			pack_iso(dest, static_cast<BuildAsset&>(asset), Game::DL, pack_asset_impl);
-			return;
-		}
-		case ArmorWadAsset::ASSET_TYPE.id:
-		case AudioWadAsset::ASSET_TYPE.id:
-		case BonusWadAsset::ASSET_TYPE.id:
-		case HudWadAsset::ASSET_TYPE.id:
-		case MiscWadAsset::ASSET_TYPE.id:
-		case MpegWadAsset::ASSET_TYPE.id:
-		case OnlineWadAsset::ASSET_TYPE.id:
-		case SpaceWadAsset::ASSET_TYPE.id: {
-			pack_global_wad(dest, header_dest, asset, Game::DL);
-			break;
-		}
-		case LevelWadAsset::ASSET_TYPE.id: {
-			pack_level_wad(dest, header_dest, static_cast<LevelWadAsset&>(asset), game);
-			break;
-		}
-		case LevelAudioWadAsset::ASSET_TYPE.id: {
-			pack_level_audio_wad(dest, header_dest, static_cast<LevelAudioWadAsset&>(asset), game);
-			break;
-		}
-		case LevelSceneWadAsset::ASSET_TYPE.id: {
-			pack_level_scene_wad(dest, header_dest, static_cast<LevelSceneWadAsset&>(asset), game);
-			break;
-		}
-		default: {
-			verify_not_reached("Tried to pack unpackable asset '%s'!", reference.c_str());
-		}
-	}
-	if(time_dest) {
-		*time_dest = fs::file_time_type::clock::now();
-	}
+	asset.pack(dest, header_dest, time_dest, game, hint);
 }
 
 static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, BinaryAsset& asset) {

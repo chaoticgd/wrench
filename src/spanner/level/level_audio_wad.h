@@ -22,6 +22,5 @@
 #include <spanner/spanner_util.h>
 
 void unpack_level_audio_wad(LevelAudioWadAsset& dest, BinaryAsset& src);
-void pack_level_audio_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelAudioWadAsset& src, Game game);
 
 #endif

@@ -20,6 +20,12 @@
 
 #include <spanner/asset_packer.h>
 
+static void pack_level_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelWadAsset& src, Game game);
+
+on_load([]() {
+	LevelWadAsset::pack_func = wrap_wad_packer_func<LevelWadAsset>(pack_level_wad);
+})
+
 packed_struct(LevelWadHeaderDL,
 	/* 0x000 */ s32 header_size;
 	/* 0x004 */ Sector32 sector;
@@ -48,44 +54,7 @@ packed_struct(MissionHeader,
 	/* 0x8 */ ByteRange classes;
 )
 
-void unpack_level_wad(LevelWadAsset& dest, BinaryAsset& src) {
-	auto [file, header] = open_wad_file<LevelWadHeaderDL>(src);
-	
-	dest.set_id(header.id);
-	dest.set_reverb(header.reverb);
-	
-	unpack_binary(dest.data(), *file, header.data, "data.bin");
-	unpack_binary(dest.core_sound_bank(), *file, header.core_sound_bank, "core_sound_bank.bin");
-	CollectionAsset& chunks = dest.chunks();
-	for(s32 i = 0; i < ARRAY_SIZE(header.chunks); i++) {
-		ChunkHeader chunk_header = file->read<ChunkHeader>(header.chunks[i].offset.bytes());
-		if(chunk_header.tfrags > 0 || chunk_header.collision > 0 || !header.chunk_sound_banks[i].empty()) {
-			ChunkAsset& chunk = chunks.switch_files(stringf("chunks/%d/chunk%d.asset", i, i)).child<ChunkAsset>(i);
-			if(chunk_header.tfrags > 0) {
-				ByteRange tfrags_range{chunk_header.tfrags, (s32) (header.chunks[i].size.bytes() - chunk_header.tfrags)};
-				unpack_compressed_binary(chunk.tfrags(), *file, tfrags_range, "tfrags.bin");
-			}
-			if(chunk_header.collision > 0) {
-				ByteRange collision_range{chunk_header.collision, (s32) (header.chunks[i].size.bytes() - chunk_header.collision)};
-				unpack_compressed_binary(chunk.collision(), *file, collision_range, "collision.bin");
-			}
-			unpack_binary(chunk.sound_bank(), *file, header.chunk_sound_banks[i], "sound_bank.bin");
-		}
-	}
-	unpack_binary(dest.gameplay_core(), *file, header.gameplay_core, "gameplay_core.bin");
-	CollectionAsset& missions = dest.missions();
-	for(s32 i = 0; i < ARRAY_SIZE(header.mission_data); i++) {
-		MissionHeader mission_header = file->read<MissionHeader>(header.mission_data[i].offset.bytes());
-		if(!mission_header.instances.empty() || !mission_header.classes.empty()) {
-			MissionAsset& mission = missions.switch_files(stringf("missions/%d/mission%d.asset", i, i)).child<MissionAsset>(i);
-			unpack_compressed_binary(mission.instances(), *file, mission_header.instances, "instances.bin");
-			unpack_compressed_binary(mission.classes(), *file, mission_header.classes, "classes.bin");
-		}
-	}
-	unpack_binary(dest.art_instances(), *file, header.art_instances, "art_instances.bin");
-}
-
-void pack_level_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelWadAsset& src, Game game) {
+static void pack_level_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelWadAsset& src, Game game) {
 	s64 base = dest.tell();
 	
 	LevelWadHeaderDL header = {0};
@@ -153,4 +122,41 @@ void pack_level_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelWadAs
 	if(header_dest) {
 		OutBuffer(*header_dest).write(0, header);
 	}
+}
+
+void unpack_level_wad(LevelWadAsset& dest, BinaryAsset& src) {
+	auto [file, header] = open_wad_file<LevelWadHeaderDL>(src);
+	
+	dest.set_id(header.id);
+	dest.set_reverb(header.reverb);
+	
+	unpack_binary(dest.data(), *file, header.data, "data.bin");
+	unpack_binary(dest.core_sound_bank(), *file, header.core_sound_bank, "core_sound_bank.bin");
+	CollectionAsset& chunks = dest.chunks();
+	for(s32 i = 0; i < ARRAY_SIZE(header.chunks); i++) {
+		ChunkHeader chunk_header = file->read<ChunkHeader>(header.chunks[i].offset.bytes());
+		if(chunk_header.tfrags > 0 || chunk_header.collision > 0 || !header.chunk_sound_banks[i].empty()) {
+			ChunkAsset& chunk = chunks.switch_files(stringf("chunks/%d/chunk%d.asset", i, i)).child<ChunkAsset>(i);
+			if(chunk_header.tfrags > 0) {
+				ByteRange tfrags_range{chunk_header.tfrags, (s32) (header.chunks[i].size.bytes() - chunk_header.tfrags)};
+				unpack_compressed_binary(chunk.tfrags(), *file, tfrags_range, "tfrags.bin");
+			}
+			if(chunk_header.collision > 0) {
+				ByteRange collision_range{chunk_header.collision, (s32) (header.chunks[i].size.bytes() - chunk_header.collision)};
+				unpack_compressed_binary(chunk.collision(), *file, collision_range, "collision.bin");
+			}
+			unpack_binary(chunk.sound_bank(), *file, header.chunk_sound_banks[i], "sound_bank.bin");
+		}
+	}
+	unpack_binary(dest.gameplay_core(), *file, header.gameplay_core, "gameplay_core.bin");
+	CollectionAsset& missions = dest.missions();
+	for(s32 i = 0; i < ARRAY_SIZE(header.mission_data); i++) {
+		MissionHeader mission_header = file->read<MissionHeader>(header.mission_data[i].offset.bytes());
+		if(!mission_header.instances.empty() || !mission_header.classes.empty()) {
+			MissionAsset& mission = missions.switch_files(stringf("missions/%d/mission%d.asset", i, i)).child<MissionAsset>(i);
+			unpack_compressed_binary(mission.instances(), *file, mission_header.instances, "instances.bin");
+			unpack_compressed_binary(mission.classes(), *file, mission_header.classes, "classes.bin");
+		}
+	}
+	unpack_binary(dest.art_instances(), *file, header.art_instances, "art_instances.bin");
 }

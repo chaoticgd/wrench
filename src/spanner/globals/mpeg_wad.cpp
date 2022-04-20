@@ -20,19 +20,19 @@
 
 #include <spanner/asset_packer.h>
 
+static void pack_mpeg_wad(OutputStream& dest, std::vector<u8>* header_dest, MpegWadAsset& src, Game game);
+
+on_load([]() {
+	MpegWadAsset::pack_func = wrap_wad_packer_func<MpegWadAsset>(pack_mpeg_wad);
+})
+
 packed_struct(MpegWadHeaderDL,
 	/* 0x0 */ s32 header_size;
 	/* 0x4 */ Sector32 sector;
 	/* 0x8 */ SectorByteRange story[200];
 )
 
-void unpack_mpeg_wad(MpegWadAsset& dest, BinaryAsset& src) {
-	auto [file, header] = open_wad_file<MpegWadHeaderDL>(src);
-	
-	unpack_binaries(dest.story().switch_files(), *file, ARRAY_PAIR(header.story), ".pss");
-}
-
-void pack_mpeg_wad(OutputStream& dest, std::vector<u8>* header_dest, MpegWadAsset& src, Game game) {
+static void pack_mpeg_wad(OutputStream& dest, std::vector<u8>* header_dest, MpegWadAsset& src, Game game) {
 	s64 base = dest.tell();
 	
 	MpegWadHeaderDL header = {0};
@@ -46,4 +46,10 @@ void pack_mpeg_wad(OutputStream& dest, std::vector<u8>* header_dest, MpegWadAsse
 	if(header_dest) {
 		OutBuffer(*header_dest).write(0, header);
 	}
+}
+
+void unpack_mpeg_wad(MpegWadAsset& dest, BinaryAsset& src) {
+	auto [file, header] = open_wad_file<MpegWadHeaderDL>(src);
+	
+	unpack_binaries(dest.story().switch_files(), *file, ARRAY_PAIR(header.story), ".pss");
 }

@@ -22,6 +22,5 @@
 #include <spanner/spanner_util.h>
 
 void unpack_misc_wad(MiscWadAsset& dest, BinaryAsset& src);
-void pack_misc_wad(OutputStream& dest, std::vector<u8>* header_dest, MiscWadAsset& src, Game game);
 
 #endif

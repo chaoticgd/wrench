@@ -20,19 +20,19 @@
 
 #include <spanner/asset_packer.h>
 
+static void pack_space_wad(OutputStream& dest, std::vector<u8>* header_dest, SpaceWadAsset& src, Game game);
+
+on_load([]() {
+	SpaceWadAsset::pack_func = wrap_wad_packer_func<SpaceWadAsset>(pack_space_wad);
+})
+
 packed_struct(SpaceWadHeaderDL,
 	/* 0x0 */ s32 header_size;
 	/* 0x4 */ Sector32 sector;
 	/* 0x8 */ SectorRange transition_wads[12];
 )
 
-void unpack_space_wad(SpaceWadAsset& dest, BinaryAsset& src) {
-	auto [file, header] = open_wad_file<SpaceWadHeaderDL>(src);
-	
-	unpack_compressed_binaries(dest.transitions(), *file, ARRAY_PAIR(header.transition_wads));
-}
-
-void pack_space_wad(OutputStream& dest, std::vector<u8>* header_dest, SpaceWadAsset& src, Game game) {
+static void pack_space_wad(OutputStream& dest, std::vector<u8>* header_dest, SpaceWadAsset& src, Game game) {
 	s64 base = dest.tell();
 	
 	SpaceWadHeaderDL header = {0};
@@ -46,4 +46,10 @@ void pack_space_wad(OutputStream& dest, std::vector<u8>* header_dest, SpaceWadAs
 	if(header_dest) {
 		OutBuffer(*header_dest).write(0, header);
 	}
+}
+
+void unpack_space_wad(SpaceWadAsset& dest, BinaryAsset& src) {
+	auto [file, header] = open_wad_file<SpaceWadHeaderDL>(src);
+	
+	unpack_compressed_binaries(dest.transitions(), *file, ARRAY_PAIR(header.transition_wads));
 }

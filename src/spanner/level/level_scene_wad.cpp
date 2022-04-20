@@ -21,6 +21,12 @@
 #include <set>
 #include <spanner/asset_packer.h>
 
+static void pack_level_scene_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelSceneWadAsset& src, Game game);
+
+on_load([]() {
+	LevelSceneWadAsset::pack_func = wrap_wad_packer_func<LevelSceneWadAsset>(pack_level_scene_wad);
+})
+
 packed_struct(SceneHeaderDL,
 	/* 0x00 */ Sector32 speech_english_left;
 	/* 0x04 */ Sector32 speech_english_right;
@@ -42,6 +48,22 @@ packed_struct(LevelSceneWadHeaderDL,
 	/* 0x4 */ Sector32 sector;
 	/* 0x8 */ SceneHeaderDL scenes[30];
 )
+
+static void pack_level_scene_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelSceneWadAsset& src, Game game) {
+	s64 base = dest.tell();
+	
+	LevelSceneWadHeaderDL header = {0};
+	header.header_size = sizeof(LevelSceneWadHeaderDL);
+	dest.write(header);
+	dest.pad(SECTOR_SIZE, 0);
+	
+	// ...
+	
+	dest.write(base, header);
+	if(header_dest) {
+		OutBuffer(*header_dest).write(0, header);
+	}
+}
 
 static SectorRange range(Sector32 offset, const std::set<s64>& end_sectors);
 
@@ -91,20 +113,4 @@ static SectorRange range(Sector32 offset, const std::set<s64>& end_sectors) {
 	auto end_sector = end_sectors.upper_bound(offset.sectors);
 	verify(end_sector != end_sectors.end(), "Header references audio beyond end of file. The WAD file may be truncated.");
 	return {offset, Sector32(*end_sector - offset.sectors)};
-}
-
-void pack_level_scene_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelSceneWadAsset& src, Game game) {
-	s64 base = dest.tell();
-	
-	LevelSceneWadHeaderDL header = {0};
-	header.header_size = sizeof(LevelSceneWadHeaderDL);
-	dest.write(header);
-	dest.pad(SECTOR_SIZE, 0);
-	
-	// ...
-	
-	dest.write(base, header);
-	if(header_dest) {
-		OutBuffer(*header_dest).write(0, header);
-	}
 }

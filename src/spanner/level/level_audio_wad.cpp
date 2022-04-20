@@ -20,6 +20,12 @@
 
 #include <spanner/asset_packer.h>
 
+static void pack_level_audio_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelAudioWadAsset& src, Game game);
+
+on_load([]() {
+	LevelAudioWadAsset::pack_func = wrap_wad_packer_func<LevelAudioWadAsset>(pack_level_audio_wad);
+})
+
 packed_struct(LevelAudioWadHeaderDL,
 	/* 0x000 */ s32 header_size;
 	/* 0x004 */ Sector32 sector;
@@ -29,16 +35,7 @@ packed_struct(LevelAudioWadHeaderDL,
 	/* 0x298 */ SectorByteRange spare;
 )
 
-void unpack_level_audio_wad(LevelAudioWadAsset& dest, BinaryAsset& src) {
-	auto [file, header] = open_wad_file<LevelAudioWadHeaderDL>(src);
-	
-	unpack_binaries(dest.bin_data().switch_files(), *file, ARRAY_PAIR(header.bin_data), ".vag");
-	unpack_binary(dest.upgrade_sample(), *file, header.upgrade_sample, "upgrade_sample.vag");
-	unpack_binary(dest.platinum_bolt(), *file, header.platinum_bolt, "platinum_bolt.vag");
-	unpack_binary(dest.spare(), *file, header.spare, "spare.vag");
-}
-
-void pack_level_audio_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelAudioWadAsset& src, Game game) {
+static void pack_level_audio_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelAudioWadAsset& src, Game game) {
 	s64 base = dest.tell();
 	
 	LevelAudioWadHeaderDL header = {0};
@@ -55,4 +52,13 @@ void pack_level_audio_wad(OutputStream& dest, std::vector<u8>* header_dest, Leve
 	if(header_dest) {
 		OutBuffer(*header_dest).write(0, header);
 	}
+}
+
+void unpack_level_audio_wad(LevelAudioWadAsset& dest, BinaryAsset& src) {
+	auto [file, header] = open_wad_file<LevelAudioWadHeaderDL>(src);
+	
+	unpack_binaries(dest.bin_data().switch_files(), *file, ARRAY_PAIR(header.bin_data), ".vag");
+	unpack_binary(dest.upgrade_sample(), *file, header.upgrade_sample, "upgrade_sample.vag");
+	unpack_binary(dest.platinum_bolt(), *file, header.platinum_bolt, "platinum_bolt.vag");
+	unpack_binary(dest.spare(), *file, header.spare, "spare.vag");
 }

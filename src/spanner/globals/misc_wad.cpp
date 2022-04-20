@@ -21,10 +21,15 @@
 #include <engine/compression.h>
 #include <spanner/asset_packer.h>
 
-static void unpack_irx_modules(IrxWadAsset& dest, InputStream& src, SectorRange range);
+static void pack_misc_wad(OutputStream& dest, std::vector<u8>* header_dest, MiscWadAsset& src, Game game);
 static SectorRange pack_irx_wad(OutputStream& dest, IrxWadAsset& src, Game game, s64 base);
-static void unpack_boot_wad(BootWadAsset& dest, InputStream& src);
+static void unpack_irx_modules(IrxWadAsset& dest, InputStream& src, SectorRange range);
 static SectorRange pack_boot_wad(OutputStream& dest, BootWadAsset& src, Game game, s64 base);
+static void unpack_boot_wad(BootWadAsset& dest, InputStream& src);
+
+on_load([]() {
+	MiscWadAsset::pack_func = wrap_wad_packer_func<MiscWadAsset>(pack_misc_wad);
+})
 
 packed_struct(MiscWadHeaderDL,
 	/* 0x00 */ s32 header_size;
@@ -40,20 +45,7 @@ packed_struct(MiscWadHeaderDL,
 	/* 0x48 */ SectorRange gadget;
 )
 
-void unpack_misc_wad(MiscWadAsset& dest, BinaryAsset& src) {
-	auto [file, header] = open_wad_file<MiscWadHeaderDL>(src);
-	
-	unpack_binary(dest.debug_font<BinaryAsset>(), *file, header.debug_font, "debug_font.bin");
-	unpack_irx_modules(dest.irx().switch_files(), *file, header.irx);
-	unpack_binary(dest.save_game(), *file, header.save_game, "save_game.bin");
-	unpack_binary(dest.frontend_code(), *file, header.frontend_code, "frontend_code.bin");
-	unpack_binary(dest.exit(), *file, header.exit, "exit.bin");
-	SubInputStream boot_stream(*file, header.boot.bytes().offset);
-	unpack_boot_wad(dest.boot().switch_files(), boot_stream);
-	unpack_binary(dest.gadget(), *file, header.gadget, "gadget.bin");
-}
-
-void pack_misc_wad(OutputStream& dest, std::vector<u8>* header_dest, MiscWadAsset& src, Game game) {
+static void pack_misc_wad(OutputStream& dest, std::vector<u8>* header_dest, MiscWadAsset& src, Game game) {
 	s64 base = dest.tell();
 	
 	MiscWadHeaderDL header = {0};
@@ -73,6 +65,19 @@ void pack_misc_wad(OutputStream& dest, std::vector<u8>* header_dest, MiscWadAsse
 	if(header_dest) {
 		OutBuffer(*header_dest).write(0, header);
 	}
+}
+
+void unpack_misc_wad(MiscWadAsset& dest, BinaryAsset& src) {
+	auto [file, header] = open_wad_file<MiscWadHeaderDL>(src);
+	
+	unpack_binary(dest.debug_font<BinaryAsset>(), *file, header.debug_font, "debug_font.bin");
+	unpack_irx_modules(dest.irx().switch_files(), *file, header.irx);
+	unpack_binary(dest.save_game(), *file, header.save_game, "save_game.bin");
+	unpack_binary(dest.frontend_code(), *file, header.frontend_code, "frontend_code.bin");
+	unpack_binary(dest.exit(), *file, header.exit, "exit.bin");
+	SubInputStream boot_stream(*file, header.boot.bytes().offset);
+	unpack_boot_wad(dest.boot().switch_files(), boot_stream);
+	unpack_binary(dest.gadget(), *file, header.gadget, "gadget.bin");
 }
 
 packed_struct(IrxHeader,
@@ -103,44 +108,6 @@ packed_struct(IrxHeader,
 	/* 0xb8 */ ByteRange streamer;
 	/* 0xc0 */ ByteRange astrm;
 )
-
-static void unpack_irx_modules(IrxWadAsset& dest, InputStream& src, SectorRange range) {
-	src.seek(range.offset.bytes());
-	std::vector<u8> compressed_bytes = src.read_multiple<u8>(range.size.bytes());
-	std::vector<u8> bytes;
-	decompress_wad(bytes, compressed_bytes);
-	IrxHeader header = Buffer(bytes).read<IrxHeader>(0, "irx header");
-	MemoryInputStream stream(bytes);
-	
-	auto unpack_irx = [&](BinaryAsset& irx, ByteRange range, const char* child) {
-		unpack_binary(irx, stream, range, std::string(child) + ".irx");
-	};
-	
-	unpack_irx(dest.sio2man(), header.sio2man, "sio2man");
-	unpack_irx(dest.mcman(), header.mcman, "mcman");
-	unpack_irx(dest.mcserv(), header.mcserv, "mcserv");
-	unpack_irx(dest.padman(), header.padman, "padman");
-	unpack_irx(dest.mtapman(), header.mtapman, "mtapman");
-	unpack_irx(dest.libsd(), header.libsd, "libsd");
-	unpack_irx(dest._989snd(), header._989snd, "989snd");
-	unpack_irx(dest.stash(), header.stash, "stash");
-	unpack_irx(dest.inet(), header.inet, "inet");
-	unpack_irx(dest.netcnf(), header.netcnf, "netcnf");
-	unpack_irx(dest.inetctl(), header.inetctl, "inetctl");
-	unpack_irx(dest.msifrpc(), header.msifrpc, "msifrpc");
-	unpack_irx(dest.dev9(), header.dev9, "dev9");
-	unpack_irx(dest.smap(), header.smap, "smap");
-	unpack_irx(dest.libnetb(), header.libnetb, "libnetb");
-	unpack_irx(dest.ppp(), header.ppp, "ppp");
-	unpack_irx(dest.pppoe(), header.pppoe, "pppoe");
-	unpack_irx(dest.usbd(), header.usbd, "usbd");
-	unpack_irx(dest.lgaud(), header.lgaud, "lgaud");
-	unpack_irx(dest.eznetcnf(), header.eznetcnf, "eznetcnf");
-	unpack_irx(dest.eznetctl(), header.eznetctl, "eznetctl");
-	unpack_irx(dest.lgkbm(), header.lgkbm, "lgkbm");
-	unpack_irx(dest.streamer(), header.streamer, "streamer");
-	unpack_irx(dest.astrm(), header.astrm, "astrm");
-}
 
 static SectorRange pack_irx_wad(OutputStream& dest, IrxWadAsset& src, Game game, s64 base) {
 	std::vector<u8> bytes;
@@ -183,6 +150,44 @@ static SectorRange pack_irx_wad(OutputStream& dest, IrxWadAsset& src, Game game,
 	return SectorRange::from_bytes(begin - base, end - begin);
 }
 
+static void unpack_irx_modules(IrxWadAsset& dest, InputStream& src, SectorRange range) {
+	src.seek(range.offset.bytes());
+	std::vector<u8> compressed_bytes = src.read_multiple<u8>(range.size.bytes());
+	std::vector<u8> bytes;
+	decompress_wad(bytes, compressed_bytes);
+	IrxHeader header = Buffer(bytes).read<IrxHeader>(0, "irx header");
+	MemoryInputStream stream(bytes);
+	
+	auto unpack_irx = [&](BinaryAsset& irx, ByteRange range, const char* child) {
+		unpack_binary(irx, stream, range, std::string(child) + ".irx");
+	};
+	
+	unpack_irx(dest.sio2man(), header.sio2man, "sio2man");
+	unpack_irx(dest.mcman(), header.mcman, "mcman");
+	unpack_irx(dest.mcserv(), header.mcserv, "mcserv");
+	unpack_irx(dest.padman(), header.padman, "padman");
+	unpack_irx(dest.mtapman(), header.mtapman, "mtapman");
+	unpack_irx(dest.libsd(), header.libsd, "libsd");
+	unpack_irx(dest._989snd(), header._989snd, "989snd");
+	unpack_irx(dest.stash(), header.stash, "stash");
+	unpack_irx(dest.inet(), header.inet, "inet");
+	unpack_irx(dest.netcnf(), header.netcnf, "netcnf");
+	unpack_irx(dest.inetctl(), header.inetctl, "inetctl");
+	unpack_irx(dest.msifrpc(), header.msifrpc, "msifrpc");
+	unpack_irx(dest.dev9(), header.dev9, "dev9");
+	unpack_irx(dest.smap(), header.smap, "smap");
+	unpack_irx(dest.libnetb(), header.libnetb, "libnetb");
+	unpack_irx(dest.ppp(), header.ppp, "ppp");
+	unpack_irx(dest.pppoe(), header.pppoe, "pppoe");
+	unpack_irx(dest.usbd(), header.usbd, "usbd");
+	unpack_irx(dest.lgaud(), header.lgaud, "lgaud");
+	unpack_irx(dest.eznetcnf(), header.eznetcnf, "eznetcnf");
+	unpack_irx(dest.eznetctl(), header.eznetctl, "eznetctl");
+	unpack_irx(dest.lgkbm(), header.lgkbm, "lgkbm");
+	unpack_irx(dest.streamer(), header.streamer, "streamer");
+	unpack_irx(dest.astrm(), header.astrm, "astrm");
+}
+
 packed_struct(BootHeader,
 	/* 0x00 */ ByteRange english;
 	/* 0x08 */ ByteRange french;
@@ -193,24 +198,6 @@ packed_struct(BootHeader,
 	/* 0x58 */ ByteRange boot_plates[4];
 	/* 0x78 */ ByteRange sram;
 )
-
-static void unpack_boot_wad(BootWadAsset& dest, InputStream& src) {
-	BootHeader header = src.read<BootHeader>(0);
-	
-	unpack_compressed_binary(dest.english(), src, header.english, "english.bin");
-	unpack_compressed_binary(dest.french(), src, header.french, "french.bin");
-	unpack_compressed_binary(dest.german(), src, header.german, "german.bin");
-	unpack_compressed_binary(dest.spanish(), src, header.spanish, "spanish.bin");
-	unpack_compressed_binary(dest.italian(), src, header.italian, "italian.bin");
-	unpack_binary(dest.hud().child<BinaryAsset>(0), src, header.hudwad[0], "hud/0.bin");
-	unpack_compressed_binary(dest.hud().child<BinaryAsset>(1), src, header.hudwad[1], "hud/1.bin");
-	unpack_compressed_binary(dest.hud().child<BinaryAsset>(2), src, header.hudwad[2], "hud/2.bin");
-	unpack_compressed_binary(dest.hud().child<BinaryAsset>(3), src, header.hudwad[3], "hud/3.bin");
-	unpack_compressed_binary(dest.hud().child<BinaryAsset>(4), src, header.hudwad[4], "hud/4.bin");
-	unpack_compressed_binary(dest.hud().child<BinaryAsset>(5), src, header.hudwad[5], "hud/5.bin");
-	unpack_compressed_binaries(dest.boot_plates().switch_files(), src, ARRAY_PAIR(header.boot_plates), ".bin");
-	unpack_compressed_binary(dest.sram(), src, header.sram, "sram.bin");
-}
 
 static SectorRange pack_boot_wad(OutputStream& dest, BootWadAsset& src, Game game, s64 base) {
 	dest.pad(SECTOR_SIZE, 0);
@@ -245,4 +232,22 @@ static SectorRange pack_boot_wad(OutputStream& dest, BootWadAsset& src, Game gam
 	dest.write(begin, header);
 	s64 end = dest.tell();
 	return SectorRange::from_bytes(begin - base, end - begin);
+}
+
+static void unpack_boot_wad(BootWadAsset& dest, InputStream& src) {
+	BootHeader header = src.read<BootHeader>(0);
+	
+	unpack_compressed_binary(dest.english(), src, header.english, "english.bin");
+	unpack_compressed_binary(dest.french(), src, header.french, "french.bin");
+	unpack_compressed_binary(dest.german(), src, header.german, "german.bin");
+	unpack_compressed_binary(dest.spanish(), src, header.spanish, "spanish.bin");
+	unpack_compressed_binary(dest.italian(), src, header.italian, "italian.bin");
+	unpack_binary(dest.hud().child<BinaryAsset>(0), src, header.hudwad[0], "hud/0.bin");
+	unpack_compressed_binary(dest.hud().child<BinaryAsset>(1), src, header.hudwad[1], "hud/1.bin");
+	unpack_compressed_binary(dest.hud().child<BinaryAsset>(2), src, header.hudwad[2], "hud/2.bin");
+	unpack_compressed_binary(dest.hud().child<BinaryAsset>(3), src, header.hudwad[3], "hud/3.bin");
+	unpack_compressed_binary(dest.hud().child<BinaryAsset>(4), src, header.hudwad[4], "hud/4.bin");
+	unpack_compressed_binary(dest.hud().child<BinaryAsset>(5), src, header.hudwad[5], "hud/5.bin");
+	unpack_compressed_binaries(dest.boot_plates().switch_files(), src, ARRAY_PAIR(header.boot_plates), ".bin");
+	unpack_compressed_binary(dest.sram(), src, header.sram, "sram.bin");
 }

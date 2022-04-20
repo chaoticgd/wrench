@@ -22,6 +22,5 @@
 #include <spanner/spanner_util.h>
 
 void unpack_bonus_wad(BonusWadAsset& dest, BinaryAsset& src);
-void pack_bonus_wad(OutputStream& dest, std::vector<u8>* header_dest, BonusWadAsset& src, Game game);
 
 #endif

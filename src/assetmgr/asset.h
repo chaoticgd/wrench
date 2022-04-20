@@ -139,6 +139,8 @@ public:
 	virtual void write_attributes(WtfWriter* ctx) const = 0;
 	virtual void validate_attributes() const = 0;
 	
+	virtual void pack(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Game game, u32 hint) = 0;
+	
 private:
 	friend AssetPack;
 	friend AssetFile;

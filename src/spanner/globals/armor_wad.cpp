@@ -20,6 +20,12 @@
 
 #include <spanner/asset_packer.h>
 
+static void pack_armor_wad(OutputStream& dest, std::vector<u8>* header_dest, ArmorWadAsset& src, Game game);
+
+on_load([]() {
+	ArmorWadAsset::pack_func = wrap_wad_packer_func<ArmorWadAsset>(pack_armor_wad);
+})
+
 packed_struct(ArmorHeader,
 	/* 0x0 */ SectorRange mesh;
 	/* 0x8 */ SectorRange textures;
@@ -33,23 +39,6 @@ packed_struct(ArmorWadHeaderDL,
 	/* 0x1a8 */ SectorRange landstalker_textures[8];
 	/* 0x1e8 */ SectorRange dropship_textures[8];
 )
-
-void unpack_armor_wad(ArmorWadAsset& dest, BinaryAsset& src) {
-	auto [file, header] = open_wad_file<ArmorWadHeaderDL>(src);
-	
-	CollectionAsset& armors = dest.armors();
-	for(s32 i = 0; i < ARRAY_SIZE(header.armors); i++) {
-		if(header.armors[i].mesh.size.sectors > 0) {
-			Asset& armor_file = armors.switch_files(stringf("armors/%02d/armor%02d.asset", i, i));
-			ArmorAsset& armor = armor_file.child<ArmorAsset>(std::to_string(i).c_str());
-			unpack_binary(armor.mesh<BinaryAsset>(), *file, header.armors[i].mesh, "mesh.bin");
-			unpack_binary(armor.textures(), *file, header.armors[i].textures, "textures.bin");
-		}
-	}
-	unpack_binaries(dest.bot_textures().switch_files(), *file, ARRAY_PAIR(header.bot_textures));
-	unpack_binaries(dest.landstalker_textures().switch_files(), *file, ARRAY_PAIR(header.landstalker_textures));
-	unpack_binaries(dest.dropship_textures().switch_files(), *file, ARRAY_PAIR(header.dropship_textures));
-}
 
 void pack_armor_wad(OutputStream& dest, std::vector<u8>* header_dest, ArmorWadAsset& src, Game game) {
 	s64 base = dest.tell();
@@ -74,4 +63,21 @@ void pack_armor_wad(OutputStream& dest, std::vector<u8>* header_dest, ArmorWadAs
 	if(header_dest) {
 		OutBuffer(*header_dest).write(0, header);
 	}
+}
+
+void unpack_armor_wad(ArmorWadAsset& dest, BinaryAsset& src) {
+	auto [file, header] = open_wad_file<ArmorWadHeaderDL>(src);
+	
+	CollectionAsset& armors = dest.armors();
+	for(s32 i = 0; i < ARRAY_SIZE(header.armors); i++) {
+		if(header.armors[i].mesh.size.sectors > 0) {
+			Asset& armor_file = armors.switch_files(stringf("armors/%02d/armor%02d.asset", i, i));
+			ArmorAsset& armor = armor_file.child<ArmorAsset>(std::to_string(i).c_str());
+			unpack_binary(armor.mesh<BinaryAsset>(), *file, header.armors[i].mesh, "mesh.bin");
+			unpack_binary(armor.textures(), *file, header.armors[i].textures, "textures.bin");
+		}
+	}
+	unpack_binaries(dest.bot_textures().switch_files(), *file, ARRAY_PAIR(header.bot_textures));
+	unpack_binaries(dest.landstalker_textures().switch_files(), *file, ARRAY_PAIR(header.landstalker_textures));
+	unpack_binaries(dest.dropship_textures().switch_files(), *file, ARRAY_PAIR(header.dropship_textures));
 }

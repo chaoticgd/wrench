@@ -28,10 +28,6 @@
 #include <iso/iso_filesystem.h>
 #include <iso/table_of_contents.h>
 
-using AssetPackerFunc = std::function<
-	void(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& asset, Game game, u32 hint)
->;
-
-void pack_iso(OutputStream& dest, BuildAsset& build, Game game, const AssetPackerFunc& pack_wad_asset);
+void pack_iso(OutputStream& dest, BuildAsset& build, Game game);
 
 #endif

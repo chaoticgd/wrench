@@ -21,9 +21,10 @@
 
 #include <any>
 
-#include <core/util.h>
-#include <core/filesystem.h>
 #include <core/wtf.h>
+#include <core/util.h>
+#include <core/stream.h>
+#include <core/filesystem.h>
 
 struct AssetType {
 	s32 id = -1;
@@ -65,6 +66,8 @@ struct FileReference {
 	fs::path path;
 };
 
+// *****************************************************************************
+
 enum AssetPackType {
 	WADS, // Built WAD files extracted from a base game ISO.
 	BINS, // Built loose files extracted from a base game ISO.
@@ -81,6 +84,41 @@ struct GameInfo {
 
 GameInfo read_game_info(char* input);
 void write_game_info(std::string& dest, const GameInfo& info);
+
+// *****************************************************************************
+
+class Asset;
+
+using AssetPackerFunc = std::function<void((OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& src, Game game, u32 hint))>;
+
+template <typename ThisAsset, typename PackerFunc>
+AssetPackerFunc* wrap_packer_func(PackerFunc func) {
+	return new AssetPackerFunc([func](OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& src, Game game, u32 hint) {
+		func(dest, static_cast<ThisAsset&>(src), game);
+		if(time_dest) {
+			*time_dest = fs::file_time_type::clock::now();
+		}
+	});
+}
+
+template <typename ThisAsset, typename PackerFunc>
+AssetPackerFunc* wrap_wad_packer_func(PackerFunc func) {
+	return new AssetPackerFunc([func](OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& src, Game game, u32 hint) {
+		func(dest, header_dest, static_cast<ThisAsset&>(src), game);
+		if(time_dest) {
+			*time_dest = fs::file_time_type::clock::now();
+		}
+	});
+}
+
+template <typename ThisAsset, typename PackerFunc>
+AssetPackerFunc* wrap_bin_packer_func(PackerFunc func) {
+	return new AssetPackerFunc([func](OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& src, Game game, u32 hint) {
+		func(dest, header_dest, time_dest, static_cast<ThisAsset&>(src));
+	});
+}
+
+// *****************************************************************************
 
 struct AssetError : std::exception {};
 

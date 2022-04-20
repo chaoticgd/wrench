@@ -20,6 +20,12 @@
 
 #include <spanner/asset_packer.h>
 
+static void pack_hud_wad(OutputStream& dest, std::vector<u8>* header_dest, HudWadAsset& src, Game game);
+
+on_load([]() {
+	HudWadAsset::pack_func = wrap_wad_packer_func<HudWadAsset>(pack_hud_wad);
+})
+
 packed_struct(HudWadHeaderDL,
 	/* 0x000 */ s32 header_size;
 	/* 0x004 */ Sector32 sector;
@@ -61,48 +67,7 @@ packed_struct(HudWadHeaderDL,
 	/* 0xf68 */ SectorRange tourney_plates_large[4];
 )
 
-void unpack_hud_wad(HudWadAsset& dest, BinaryAsset& src) {
-	auto [file, header] = open_wad_file<HudWadHeaderDL>(src);
-	
-	unpack_binaries(dest.online_images().switch_files(), *file, ARRAY_PAIR(header.online_images), ".pif");
-	unpack_binaries(dest.ratchet_seqs().switch_files(), *file, ARRAY_PAIR(header.ratchet_seqs));
-	unpack_binaries(dest.hud_seqs().switch_files(), *file, ARRAY_PAIR(header.hud_seqs));
-	unpack_binary(dest.vendor(), *file, header.vendor, "vendor.bin");
-	unpack_binaries(dest.all_text().switch_files(), *file, ARRAY_PAIR(header.all_text));
-	unpack_binary(dest.hudw3d(), *file, header.hudw3d, "hudw3d.bin");
-	unpack_compressed_binaries(dest.e3_level_ss().switch_files(), *file, ARRAY_PAIR(header.e3_level_ss), ".pif");
-	unpack_compressed_binary(dest.nw_dnas_image(), *file, header.nw_dnas_image, "nw_dnas_image.pif");
-	unpack_binary(dest.split_screen_texture(), *file, header.split_screen_texture, "split_screen_texture.pif");
-	unpack_binaries(dest.radar_maps().switch_files(), *file, ARRAY_PAIR(header.radar_maps), "radar_maps");
-	unpack_binaries(dest.weapon_plates_large().switch_files(), *file, ARRAY_PAIR(header.weapon_plates_large), ".pif");
-	unpack_binaries(dest.mission_plates_large().switch_files(), *file, ARRAY_PAIR(header.mission_plates_large), ".pif");
-	unpack_binaries(dest.gui_plates().switch_files(), *file, ARRAY_PAIR(header.gui_plates), ".pif");
-	unpack_binaries(dest.vendor_plates().switch_files(), *file, ARRAY_PAIR(header.vendor_plates), ".pif");
-	unpack_binary(dest.loading_screen(), *file, header.loading_screen, "loading_screen.pif");
-	unpack_binaries(dest.planets().switch_files(), *file, ARRAY_PAIR(header.planets), ".pif");
-	unpack_binaries(dest.cinematics().switch_files(), *file, ARRAY_PAIR(header.cinematics), ".pif");
-	unpack_binaries(dest.equip_large().switch_files(), *file, ARRAY_PAIR(header.equip_large), ".pif");
-	unpack_binaries(dest.equip_small().switch_files(), *file, ARRAY_PAIR(header.equip_small), ".pif");
-	unpack_binaries(dest.moves().switch_files(), *file, ARRAY_PAIR(header.moves), ".pif");
-	unpack_binaries(dest.save_level().switch_files(), *file, ARRAY_PAIR(header.save_level));
-	unpack_binaries(dest.save_empty().switch_files(), *file, ARRAY_PAIR(header.save_empty), ".pif");
-	unpack_binaries(dest.skills().switch_files(), *file, ARRAY_PAIR(header.skills), ".pif");
-	unpack_binary(dest.reward_back(), *file, header.reward_back, "reward_back.pif");
-	unpack_binary(dest.complete_back(), *file, header.complete_back, "complete_back.pif");
-	unpack_binary(dest.complete_back_coop(), *file, header.complete_back_coop, "complete_back_coop.pif");
-	unpack_binaries(dest.rewards().switch_files(), *file, ARRAY_PAIR(header.rewards), ".pif");
-	unpack_binary(dest.leaderboard().switch_files(), *file, header.leaderboard, "leaderboard.pif");
-	unpack_binaries(dest.cutaways().switch_files(), *file, ARRAY_PAIR(header.cutaways), ".pif");
-	unpack_binaries(dest.sketchbook().switch_files(), *file, ARRAY_PAIR(header.sketchbook), ".pif");
-	unpack_binaries(dest.character_epilogues().switch_files(), *file, ARRAY_PAIR(header.character_epilogues), ".pif");
-	unpack_binaries(dest.character_cards().switch_files(), *file, ARRAY_PAIR(header.character_cards), ".pif");
-	unpack_binary(dest.equip_plate(), *file, header.equip_plate, "equip_plate.pif");
-	unpack_binary(dest.hud_flythru(), *file, header.hud_flythru, "hud_flythru.pif");
-	unpack_binaries(dest.mp_maps().switch_files(), *file, ARRAY_PAIR(header.mp_maps), ".pif");
-	unpack_binaries(dest.tourney_plates_large().switch_files(), *file, ARRAY_PAIR(header.tourney_plates_large), ".pif");
-}
-
-void pack_hud_wad(OutputStream& dest, std::vector<u8>* header_dest, HudWadAsset& src, Game game) {
+static void pack_hud_wad(OutputStream& dest, std::vector<u8>* header_dest, HudWadAsset& src, Game game) {
 	s64 base = dest.tell();
 	
 	HudWadHeaderDL header = {0};
@@ -151,4 +116,45 @@ void pack_hud_wad(OutputStream& dest, std::vector<u8>* header_dest, HudWadAsset&
 	if(header_dest) {
 		OutBuffer(*header_dest).write(0, header);
 	}
+}
+
+void unpack_hud_wad(HudWadAsset& dest, BinaryAsset& src) {
+	auto [file, header] = open_wad_file<HudWadHeaderDL>(src);
+	
+	unpack_binaries(dest.online_images().switch_files(), *file, ARRAY_PAIR(header.online_images), ".pif");
+	unpack_binaries(dest.ratchet_seqs().switch_files(), *file, ARRAY_PAIR(header.ratchet_seqs));
+	unpack_binaries(dest.hud_seqs().switch_files(), *file, ARRAY_PAIR(header.hud_seqs));
+	unpack_binary(dest.vendor(), *file, header.vendor, "vendor.bin");
+	unpack_binaries(dest.all_text().switch_files(), *file, ARRAY_PAIR(header.all_text));
+	unpack_binary(dest.hudw3d(), *file, header.hudw3d, "hudw3d.bin");
+	unpack_compressed_binaries(dest.e3_level_ss().switch_files(), *file, ARRAY_PAIR(header.e3_level_ss), ".pif");
+	unpack_compressed_binary(dest.nw_dnas_image(), *file, header.nw_dnas_image, "nw_dnas_image.pif");
+	unpack_binary(dest.split_screen_texture(), *file, header.split_screen_texture, "split_screen_texture.pif");
+	unpack_binaries(dest.radar_maps().switch_files(), *file, ARRAY_PAIR(header.radar_maps), "radar_maps");
+	unpack_binaries(dest.weapon_plates_large().switch_files(), *file, ARRAY_PAIR(header.weapon_plates_large), ".pif");
+	unpack_binaries(dest.mission_plates_large().switch_files(), *file, ARRAY_PAIR(header.mission_plates_large), ".pif");
+	unpack_binaries(dest.gui_plates().switch_files(), *file, ARRAY_PAIR(header.gui_plates), ".pif");
+	unpack_binaries(dest.vendor_plates().switch_files(), *file, ARRAY_PAIR(header.vendor_plates), ".pif");
+	unpack_binary(dest.loading_screen(), *file, header.loading_screen, "loading_screen.pif");
+	unpack_binaries(dest.planets().switch_files(), *file, ARRAY_PAIR(header.planets), ".pif");
+	unpack_binaries(dest.cinematics().switch_files(), *file, ARRAY_PAIR(header.cinematics), ".pif");
+	unpack_binaries(dest.equip_large().switch_files(), *file, ARRAY_PAIR(header.equip_large), ".pif");
+	unpack_binaries(dest.equip_small().switch_files(), *file, ARRAY_PAIR(header.equip_small), ".pif");
+	unpack_binaries(dest.moves().switch_files(), *file, ARRAY_PAIR(header.moves), ".pif");
+	unpack_binaries(dest.save_level().switch_files(), *file, ARRAY_PAIR(header.save_level));
+	unpack_binaries(dest.save_empty().switch_files(), *file, ARRAY_PAIR(header.save_empty), ".pif");
+	unpack_binaries(dest.skills().switch_files(), *file, ARRAY_PAIR(header.skills), ".pif");
+	unpack_binary(dest.reward_back(), *file, header.reward_back, "reward_back.pif");
+	unpack_binary(dest.complete_back(), *file, header.complete_back, "complete_back.pif");
+	unpack_binary(dest.complete_back_coop(), *file, header.complete_back_coop, "complete_back_coop.pif");
+	unpack_binaries(dest.rewards().switch_files(), *file, ARRAY_PAIR(header.rewards), ".pif");
+	unpack_binary(dest.leaderboard().switch_files(), *file, header.leaderboard, "leaderboard.pif");
+	unpack_binaries(dest.cutaways().switch_files(), *file, ARRAY_PAIR(header.cutaways), ".pif");
+	unpack_binaries(dest.sketchbook().switch_files(), *file, ARRAY_PAIR(header.sketchbook), ".pif");
+	unpack_binaries(dest.character_epilogues().switch_files(), *file, ARRAY_PAIR(header.character_epilogues), ".pif");
+	unpack_binaries(dest.character_cards().switch_files(), *file, ARRAY_PAIR(header.character_cards), ".pif");
+	unpack_binary(dest.equip_plate(), *file, header.equip_plate, "equip_plate.pif");
+	unpack_binary(dest.hud_flythru(), *file, header.hud_flythru, "hud_flythru.pif");
+	unpack_binaries(dest.mp_maps().switch_files(), *file, ARRAY_PAIR(header.mp_maps), ".pif");
+	unpack_binaries(dest.tourney_plates_large().switch_files(), *file, ARRAY_PAIR(header.tourney_plates_large), ".pif");
 }

@@ -22,6 +22,5 @@
 #include <spanner/spanner_util.h>
 
 void unpack_online_wad(OnlineWadAsset& dest, BinaryAsset& src);
-void pack_online_wad(OutputStream& dest, std::vector<u8>* header_dest, OnlineWadAsset& src, Game game);
 
 #endif
