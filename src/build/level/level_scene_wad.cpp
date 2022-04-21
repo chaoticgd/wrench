@@ -57,7 +57,26 @@ static void pack_level_scene_wad(OutputStream& dest, std::vector<u8>* header_des
 	dest.write(header);
 	dest.pad(SECTOR_SIZE, 0);
 	
-	// ...
+	CollectionAsset& scenes = src.get_scenes();
+	for(s32 i = 0; i < ARRAY_SIZE(header.scenes); i++) {
+		if(scenes.has_child(i)) {
+			SceneHeaderDL& scene_header = header.scenes[i];
+			SceneAsset& scene = scenes.get_child(i).as<SceneAsset>();
+			scene_header.speech_english_left = pack_asset_sa<Sector32>(dest, scene.get_speech_english_left(), game, base);
+			scene_header.speech_english_right = pack_asset_sa<Sector32>(dest, scene.get_speech_english_right(), game, base);
+			scene_header.subtitles = pack_asset_sa<SectorRange>(dest, scene.get_subtitles(), game, base);
+			scene_header.speech_french_left = pack_asset_sa<Sector32>(dest, scene.get_speech_french_left(), game, base);
+			scene_header.speech_french_right = pack_asset_sa<Sector32>(dest, scene.get_speech_french_right(), game, base);
+			scene_header.speech_german_left = pack_asset_sa<Sector32>(dest, scene.get_speech_german_left(), game, base);
+			scene_header.speech_german_right = pack_asset_sa<Sector32>(dest, scene.get_speech_german_right(), game, base);
+			scene_header.speech_spanish_left = pack_asset_sa<Sector32>(dest, scene.get_speech_spanish_left(), game, base);
+			scene_header.speech_spanish_right = pack_asset_sa<Sector32>(dest, scene.get_speech_spanish_right(), game, base);
+			scene_header.speech_italian_left = pack_asset_sa<Sector32>(dest, scene.get_speech_italian_left(), game, base);
+			scene_header.speech_italian_right = pack_asset_sa<Sector32>(dest, scene.get_speech_italian_right(), game, base);
+			scene_header.moby_load = pack_compressed_asset_sa<SectorRange>(dest, scene.get_moby_load(), game, base);
+			pack_compressed_assets_sa(dest, ARRAY_PAIR(scene_header.chunks), scene.get_chunks(), game, base);
+		}
+	}
 	
 	dest.write(base, header);
 	if(header_dest) {
@@ -105,7 +124,13 @@ void unpack_level_scene_wad(LevelSceneWadAsset& dest, BinaryAsset& src) {
 		unpack_binary(scene.speech_spanish_right(), *file, range(scene_header.speech_spanish_right, end_sectors), "speech_spanish_right.vag");
 		unpack_binary(scene.speech_italian_left(), *file, range(scene_header.speech_italian_left, end_sectors), "speech_italian_left.vag");
 		unpack_binary(scene.speech_italian_right(), *file, range(scene_header.speech_italian_right, end_sectors), "speech_italian_right.vag");
-		unpack_binary(scene.moby_load(), *file, scene_header.moby_load, "moby_load.bin");
+		unpack_compressed_binary(scene.moby_load(), *file, scene_header.moby_load, "moby_load.bin");
+		CollectionAsset& chunks = scene.chunks().switch_files();
+		for(s32 j = 0; j < ARRAY_SIZE(scene_header.chunks); j++) {
+			if(scene_header.chunks[j].sectors > 0) {
+				unpack_compressed_binary(chunks.child<BinaryAsset>(i), *file, range(scene_header.chunks[j], end_sectors), stringf("%d.bin", j));
+			}
+		}
 	}
 }
 
