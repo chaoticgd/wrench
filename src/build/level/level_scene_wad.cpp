@@ -128,7 +128,7 @@ void unpack_level_scene_wad(LevelSceneWadAsset& dest, BinaryAsset& src) {
 		CollectionAsset& chunks = scene.chunks().switch_files();
 		for(s32 j = 0; j < ARRAY_SIZE(scene_header.chunks); j++) {
 			if(scene_header.chunks[j].sectors > 0) {
-				unpack_compressed_binary(chunks.child<BinaryAsset>(i), *file, range(scene_header.chunks[j], end_sectors), stringf("%d.bin", j));
+				unpack_compressed_binary(chunks.child<BinaryAsset>(j), *file, range(scene_header.chunks[j], end_sectors), stringf("%d.bin", j));
 			}
 		}
 	}
