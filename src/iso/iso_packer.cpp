@@ -92,7 +92,8 @@ void pack_iso(OutputStream& iso, BuildAsset& build, Game game, AssetPackerFunc p
 	root_dir.subdirs.emplace_back(std::move(audio_dir));
 	root_dir.subdirs.emplace_back(std::move(scenes_dir));
 	
-	s64 volume_size = iso.tell();
+	iso.pad(SECTOR_SIZE, 0);
+	s64 volume_size = iso.tell() / SECTOR_SIZE;
 	
 	iso.seek(0);
 	write_iso_filesystem(iso, &root_dir);
