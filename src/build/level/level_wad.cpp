@@ -31,7 +31,8 @@ packed_struct(LevelWadHeaderDL,
 	/* 0x004 */ Sector32 sector;
 	/* 0x008 */ s32 id;
 	/* 0x00c */ s32 reverb;
-	/* 0x010 */ s32 max_mission_sizes[2];
+	/* 0x010 */ s32 max_mission_instances_size;
+	/* 0x014 */ s32 max_mission_classes_size;
 	/* 0x018 */ SectorRange data;
 	/* 0x020 */ SectorRange core_sound_bank;
 	/* 0x028 */ SectorRange chunks[3];
@@ -65,8 +66,8 @@ static void pack_level_wad(OutputStream& dest, std::vector<u8>* header_dest, Lev
 	header.id = src.id();
 	header.reverb = src.reverb();
 	
-	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), game, base);
 	header.core_sound_bank = pack_asset_sa<SectorRange>(dest, src.get_core_sound_bank(), game, base);
+	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), game, base);
 	CollectionAsset& chunks = src.get_chunks();
 	for(s32 i = 0; i < ARRAY_SIZE(header.chunks); i++) {
 		if(chunks.has_child(i)) {
@@ -78,6 +79,7 @@ static void pack_level_wad(OutputStream& dest, std::vector<u8>* header_dest, Lev
 				dest.write(chunk_header);
 				chunk_header.tfrags = pack_compressed_asset_aligned<ByteRange>(dest, chunk.get_tfrags(), game, chunk_header_ofs, 0x10).offset;
 				chunk_header.collision = pack_compressed_asset_aligned<ByteRange>(dest, chunk.get_collision(), game, chunk_header_ofs, 0x10).offset;
+				header.chunks[i] = SectorRange::from_bytes(chunk_header_ofs, dest.tell() - chunk_header_ofs);
 				dest.write(chunk_header_ofs, chunk_header);
 			}
 		}
@@ -108,12 +110,53 @@ static void pack_level_wad(OutputStream& dest, std::vector<u8>* header_dest, Lev
 			s64 mission_header_ofs = dest.tell();
 			dest.write(mission_header);
 			if(mission.has_instances()) {
-				mission_header.instances = pack_compressed_asset_aligned<ByteRange>(dest, mission.get_instances(), game, base, 0x40);
+				std::vector<u8> bytes;
+				MemoryOutputStream stream(bytes);
+				pack_asset<ByteRange>(stream, mission.get_instances(), game, base);
+				
+				header.max_mission_instances_size = std::max(header.max_mission_instances_size, (s32) bytes.size());
+				
+				std::vector<u8> compressed_bytes;
+				compress_wad(compressed_bytes, bytes, 8);
+				
+				s64 begin = dest.tell();
+				dest.write(compressed_bytes.data(), compressed_bytes.size());
+				s64 end = dest.tell();
+				mission_header.instances = ByteRange::from_bytes(begin - base, end - begin);
 			}
 			if(mission.has_classes()) {
-				mission_header.classes = pack_compressed_asset_aligned<ByteRange>(dest, mission.get_classes(), game, base, 0x40);
+				std::vector<u8> bytes;
+				MemoryOutputStream stream(bytes);
+				pack_asset<ByteRange>(stream, mission.get_classes(), game, base);
+				
+				header.max_mission_classes_size = std::max(header.max_mission_classes_size, (s32) bytes.size());
+				
+				std::vector<u8> compressed_bytes;
+				compress_wad(compressed_bytes, bytes, 8);
+				
+				s64 begin = dest.tell();
+				dest.write(compressed_bytes.data(), compressed_bytes.size());
+				s64 end = dest.tell();
+				mission_header.classes = ByteRange::from_bytes(begin - base, end - begin);
 			}
+			header.mission_data[i] = SectorRange::from_bytes(mission_header_ofs, dest.tell() - mission_header_ofs);
 			dest.write(mission_header_ofs, mission_header);
+		} else {
+			dest.pad(SECTOR_SIZE, 0);
+			s64 mission_header_ofs = dest.tell();
+			MissionHeader mission_header = {0};
+			mission_header.instances.offset = -1;
+			mission_header.classes.offset = -1;
+			dest.write(mission_header);
+			header.mission_data[i] = SectorRange::from_bytes(mission_header_ofs, dest.tell() - mission_header_ofs);
+		}
+	}
+	for(s32 i = 0; i < ARRAY_SIZE(header.mission_sound_banks); i++) {
+		if(missions.has_child(i)) {
+			MissionAsset& mission = missions.get_child(i).as<MissionAsset>();
+			if(mission.has_sound_bank()) {
+				header.mission_sound_banks[i] = pack_asset_sa<SectorRange>(dest, mission.get_sound_bank(), game, base);
+			}
 		}
 	}
 	header.art_instances = pack_asset_sa<SectorRange>(dest, src.get_art_instances(), game, base);
@@ -130,19 +173,26 @@ void unpack_level_wad(LevelWadAsset& dest, BinaryAsset& src) {
 	dest.set_id(header.id);
 	dest.set_reverb(header.reverb);
 	
-	unpack_binary(dest.data(), *file, header.data, "data.bin");
 	unpack_binary(dest.core_sound_bank(), *file, header.core_sound_bank, "core_sound_bank.bin");
+	unpack_binary(dest.data(), *file, header.data, "data.bin");
 	CollectionAsset& chunks = dest.chunks();
 	for(s32 i = 0; i < ARRAY_SIZE(header.chunks); i++) {
-		ChunkHeader chunk_header = file->read<ChunkHeader>(header.chunks[i].offset.bytes());
+		ChunkHeader chunk_header = {0};
+		if(!header.chunks[i].empty()) {
+			chunk_header = file->read<ChunkHeader>(header.chunks[i].offset.bytes());
+		}
 		if(chunk_header.tfrags > 0 || chunk_header.collision > 0 || !header.chunk_sound_banks[i].empty()) {
 			ChunkAsset& chunk = chunks.switch_files(stringf("chunks/%d/chunk%d.asset", i, i)).child<ChunkAsset>(i);
 			if(chunk_header.tfrags > 0) {
-				ByteRange tfrags_range{chunk_header.tfrags, (s32) (header.chunks[i].size.bytes() - chunk_header.tfrags)};
+				s64 offset = header.chunks[i].offset.bytes() + chunk_header.tfrags;
+				s64 size = header.chunks[i].size.bytes() - chunk_header.tfrags;
+				ByteRange tfrags_range{(s32) offset, (s32) size};
 				unpack_compressed_binary(chunk.tfrags(), *file, tfrags_range, "tfrags.bin");
 			}
 			if(chunk_header.collision > 0) {
-				ByteRange collision_range{chunk_header.collision, (s32) (header.chunks[i].size.bytes() - chunk_header.collision)};
+				s64 offset = header.chunks[i].offset.bytes() + chunk_header.collision;
+				s64 size = header.chunks[i].size.bytes() - chunk_header.collision;
+				ByteRange collision_range{(s32) offset, (s32) size};
 				unpack_compressed_binary(chunk.collision(), *file, collision_range, "collision.bin");
 			}
 			unpack_binary(chunk.sound_bank(), *file, header.chunk_sound_banks[i], "sound_bank.bin");
@@ -156,6 +206,7 @@ void unpack_level_wad(LevelWadAsset& dest, BinaryAsset& src) {
 			MissionAsset& mission = missions.switch_files(stringf("missions/%d/mission%d.asset", i, i)).child<MissionAsset>(i);
 			unpack_compressed_binary(mission.instances(), *file, mission_header.instances, "instances.bin");
 			unpack_compressed_binary(mission.classes(), *file, mission_header.classes, "classes.bin");
+			unpack_binary(mission.sound_bank(), *file, header.mission_sound_banks[i], "sound_bank.bin");
 		}
 	}
 	unpack_binary(dest.art_instances(), *file, header.art_instances, "art_instances.bin");

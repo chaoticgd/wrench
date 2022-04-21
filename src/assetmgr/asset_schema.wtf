@@ -292,8 +292,9 @@ AssetType Chunk {
 }
 
 AssetType Mission {
-	Child instances { allowed_types: ['Binary'] }
-	Child classes   { allowed_types: ['Binary'] }
+	Child instances  { allowed_types: ['Binary'] }
+	Child classes    { allowed_types: ['Binary'] }
+	Child sound_bank { allowed_types: ['Binary'] }
 }
 
 AssetType LevelAudioWad {
