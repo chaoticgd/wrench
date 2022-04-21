@@ -29,10 +29,12 @@ s32 g_asset_packer_num_assets_processed = 0;
 bool g_asset_packer_dry_run = false;
 
 static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, BinaryAsset& asset);
+static void pack_file_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, FileAsset& asset);
 
 on_load([]() {
 	BinaryAsset::pack_func = wrap_bin_packer_func<BinaryAsset>(pack_binary_asset);
 	BuildAsset::pack_func = wrap_iso_packer_func<BuildAsset>(pack_iso, pack_asset_impl);
+	FileAsset::pack_func = wrap_bin_packer_func<FileAsset>(pack_file_asset);
 })
 
 void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& asset, Game game, u32 hint) {
@@ -79,4 +81,15 @@ static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, 
 	} else {
 		Stream::copy(dest, *src, src->size());
 	}
+}
+
+static void pack_file_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, FileAsset& asset) {
+	if(g_asset_packer_dry_run) {
+		return;
+	}
+	
+	FileReference ref = asset.src();
+	auto src = asset.file().open_binary_file_for_reading(asset.src(), time_dest);
+	verify(src.get(), "Failed to open file '%s' for reading.", ref.path.string().c_str());
+	Stream::copy(dest, *src, src->size());
 }

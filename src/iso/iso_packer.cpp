@@ -25,7 +25,7 @@ static std::vector<LevelInfo> enumerate_levels(BuildAsset& build, Game game);
 static IsoDirectory enumerate_files(Asset& files);
 static void flatten_files(std::vector<IsoFileRecord*>& dest, IsoDirectory& root_dir);
 static IsoFileRecord write_system_cnf(OutputStream& iso, IsoDirectory& root_dir, BuildAsset& build);
-static void pack_files(OutputStream& iso, std::vector<IsoFileRecord*>& files, AssetPackerFunc pack);
+static void pack_files(OutputStream& iso, std::vector<IsoFileRecord*>& files, Game game, AssetPackerFunc pack);
 static IsoDirectory pack_globals(OutputStream& iso, std::vector<GlobalWadInfo>& globals, Game game, AssetPackerFunc pack);
 static std::array<IsoDirectory, 3> pack_levels(OutputStream& iso, std::vector<LevelInfo>& levels, Game game, s32 single_level_index, AssetPackerFunc pack);
 static void pack_level_wad_outer(OutputStream& iso, IsoDirectory& directory, LevelWadInfo& wad, const char* name, Game game, s32 index, AssetPackerFunc pack);
@@ -69,7 +69,6 @@ void pack_iso(OutputStream& iso, BuildAsset& build, Game game, AssetPackerFunc p
 		toc_record.lba = {RAC234_TABLE_OF_CONTENTS_LBA};
 		toc_record.size = toc_size.bytes();
 		toc_record.modified_time = fs::file_time_type::clock::now();
-		print_file_record(toc_record);
 	}
 	
 	// Write out blank sectors that are to be filled in by the table of contents later.
@@ -81,7 +80,7 @@ void pack_iso(OutputStream& iso, BuildAsset& build, Game game, AssetPackerFunc p
 	
 	s64 files_begin = iso.tell();
 	
-	pack_files(iso, files, pack);
+	pack_files(iso, files, game, pack);
 	
 	root_dir.files.emplace(root_dir.files.begin(), std::move(system_cnf_record));
 	root_dir.files.emplace(root_dir.files.begin(), std::move(toc_record));
@@ -258,14 +257,12 @@ static IsoFileRecord write_system_cnf(OutputStream& iso, IsoDirectory& root_dir,
 	record.size = system_cnf_size;
 	record.modified_time = fs::file_time_type::clock::now();
 	
-	print_file_record(record);
-	
 	Stream::copy(iso, *stream, system_cnf_size);
 	
 	return record;
 }
 
-static void pack_files(OutputStream& iso, std::vector<IsoFileRecord*>& files, AssetPackerFunc pack) {
+static void pack_files(OutputStream& iso, std::vector<IsoFileRecord*>& files, Game game, AssetPackerFunc pack) {
 	for(IsoFileRecord* file : files) {
 		if(file->name.find(".hdr") != std::string::npos) {
 			// We're writing out a new table of contents, so if an old one
@@ -279,18 +276,12 @@ static void pack_files(OutputStream& iso, std::vector<IsoFileRecord*>& files, As
 			continue;
 		}
 		
-		FileReference ref = file->asset->src();
-		std::unique_ptr<InputStream> src = file->asset->file().open_binary_file_for_reading(ref, &file->modified_time);
-		verify(src.get(), "Failed to open file '%s' for reading.", file->name.c_str());
-		
 		iso.pad(SECTOR_SIZE, 0);
-		
-		s64 file_size = src->size();
 		file->lba = {(s32) (iso.tell() / SECTOR_SIZE)};
-		file->size = file_size;
-		print_file_record(*file);
+		pack(iso, nullptr, &file->modified_time, *file->asset, game, 0);
 		
-		Stream::copy(iso, *src, file_size);
+		s64 end_of_file = iso.tell();
+		file->size = (u32) (end_of_file - file->lba.bytes());
 	}
 }
 
