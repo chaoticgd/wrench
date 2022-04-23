@@ -16,27 +16,35 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "space_wad.h"
-
+#include <build/asset_unpacker.h>
 #include <build/asset_packer.h>
 
+void unpack_space_wad(SpaceWadAsset& dest, InputStream& src, Game game);
 static void pack_space_wad(OutputStream& dest, std::vector<u8>* header_dest, SpaceWadAsset& src, Game game);
 
-on_load([]() {
-	SpaceWadAsset::pack_func = wrap_wad_packer_func<SpaceWadAsset>(pack_space_wad);
+on_load(Space, []() {
+	SpaceWadAsset::funcs.unpack_dl = wrap_unpacker_func<SpaceWadAsset>(unpack_space_wad);
+	
+	SpaceWadAsset::funcs.pack_dl = wrap_wad_packer_func<SpaceWadAsset>(pack_space_wad);
 })
 
-packed_struct(SpaceWadHeaderDL,
+packed_struct(DeadlockedSpaceWadHeader,
 	/* 0x0 */ s32 header_size;
 	/* 0x4 */ Sector32 sector;
 	/* 0x8 */ SectorRange transition_wads[12];
 )
 
+void unpack_space_wad(SpaceWadAsset& dest, InputStream& src, Game game) {
+	auto header = src.read<DeadlockedSpaceWadHeader>(0);
+	
+	unpack_compressed_assets<BinaryAsset>(dest.transitions(), src, ARRAY_PAIR(header.transition_wads), game);
+}
+
 static void pack_space_wad(OutputStream& dest, std::vector<u8>* header_dest, SpaceWadAsset& src, Game game) {
 	s64 base = dest.tell();
 	
-	SpaceWadHeaderDL header = {0};
-	header.header_size = sizeof(SpaceWadHeaderDL);
+	DeadlockedSpaceWadHeader header = {0};
+	header.header_size = sizeof(DeadlockedSpaceWadHeader);
 	dest.write(header);
 	dest.pad(SECTOR_SIZE, 0);
 	
@@ -46,10 +54,4 @@ static void pack_space_wad(OutputStream& dest, std::vector<u8>* header_dest, Spa
 	if(header_dest) {
 		OutBuffer(*header_dest).write(0, header);
 	}
-}
-
-void unpack_space_wad(SpaceWadAsset& dest, BinaryAsset& src) {
-	auto [file, header] = open_wad_file<SpaceWadHeaderDL>(src);
-	
-	unpack_compressed_binaries(dest.transitions(), *file, ARRAY_PAIR(header.transition_wads));
 }

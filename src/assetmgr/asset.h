@@ -31,10 +31,11 @@
 #include <core/stream.h>
 #include <core/wtf_writer.h>
 #include <assetmgr/asset_util.h>
+#include <assetmgr/asset_dispatch.h>
 
 class Asset {
 protected:
-	Asset(AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent, AssetType type, std::string tag);
+	Asset(AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent, AssetType type, std::string tag, AssetDispatchTable& func_table);
 public:
 	Asset(const Asset&) = delete;
 	Asset(Asset&&) = delete;
@@ -139,7 +140,7 @@ public:
 	virtual void write_attributes(WtfWriter* ctx) const = 0;
 	virtual void validate_attributes() const = 0;
 	
-	virtual void pack(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Game game, u32 hint) = 0;
+	AssetDispatchTable& funcs;
 	
 private:
 	friend AssetPack;
@@ -176,9 +177,8 @@ public:
 	void write() const;
 	
 	std::unique_ptr<InputStream> open_binary_file_for_reading(const FileReference& reference, fs::file_time_type* modified_time_dest = nullptr) const;
+	std::pair<std::unique_ptr<OutputStream>, FileReference> open_binary_file_for_writing(const fs::path& path) const;
 	FileReference write_text_file(const fs::path& path, const char* contents) const;
-	FileReference write_binary_file(const fs::path& path, Buffer contents) const;
-	FileReference write_binary_file(const fs::path& path, std::function<void(OutputStream&)> callback) const;
 	FileReference extract_binary_file(const fs::path& path, Buffer prepend, FILE* src, s64 offset, s64 size) const;
 	
 	AssetFile* lower_precedence();
@@ -233,10 +233,9 @@ private:
 	void read();
 	
 	virtual std::unique_ptr<InputStream> open_binary_file_for_reading(const fs::path& path, fs::file_time_type* modified_time_dest) const = 0;
+	virtual std::unique_ptr<OutputStream> open_binary_file_for_writing(const fs::path& path) const = 0;
 	virtual std::string read_text_file(const fs::path& path) const = 0;
-	virtual std::vector<u8> read_binary_file(const fs::path& path) const = 0;
 	virtual void write_text_file(const fs::path& path, const char* contents) const = 0;
-	virtual void write_binary_file(const fs::path& path, std::function<void(OutputStream&)> callback) const = 0;
 	virtual void extract_binary_file(const fs::path& relative_dest, Buffer prepend, FILE* src, s64 offset, s64 size) const = 0;
 	virtual std::vector<fs::path> enumerate_asset_files() const = 0;
 	virtual s32 check_lock() const;
@@ -290,10 +289,9 @@ public:
 	
 private:
 	std::unique_ptr<InputStream> open_binary_file_for_reading(const fs::path& path, fs::file_time_type* modified_time_dest) const override;
+	std::unique_ptr<OutputStream> open_binary_file_for_writing(const fs::path& path) const override;
 	std::string read_text_file(const fs::path& path) const override;
-	std::vector<u8> read_binary_file(const fs::path& path) const override;
 	void write_text_file(const fs::path& path, const char* contents) const override;
-	void write_binary_file(const fs::path& path, std::function<void(OutputStream&)> callback) const override;
 	void extract_binary_file(const fs::path& relative_dest, Buffer prepend, FILE* src, s64 offset, s64 size) const override;
 	std::vector<fs::path> enumerate_asset_files() const override;
 	s32 check_lock() const override;

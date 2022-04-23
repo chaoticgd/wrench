@@ -50,7 +50,7 @@ static WadFileDescription WAD_FILE_TYPES[] = {
 	{"space" , Game::RAC3   , WadType::SPACE      , 0x0c30},
 	{"armor" , Game::RAC3   , WadType::ARMOR      , 0x0398},
 	{"audio" , Game::RAC3   , WadType::AUDIO      , 0x2340},
-	{"2ab0"  , Game::RAC3   , WadType::UNKNOWN    , 0x2ab0},
+	{"hud"   , Game::RAC3   , WadType::HUD        , 0x2ab0},
 	{"audio" , Game::RAC3   , WadType::LEVEL_AUDIO, 0x1818},
 	{"scene" , Game::UNKNOWN, WadType::LEVEL_SCENE, 0x26f0},
 	{"misc"  , Game::DL     , WadType::MISC       , 0x0050},

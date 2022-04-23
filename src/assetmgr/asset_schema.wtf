@@ -43,6 +43,9 @@ AssetType Binary {
 AssetType Build {
 	desc: 'A build of the game.'
 	
+	IntegerAttribute game {
+		desc: 'The game being built. 1 for R&C1, 2 for R&C2, 3 for R&C3, 4 for Deadlocked.'
+	}
 	IntegerAttribute ps2_logo_key { min: 0 max: 255 }
 	IntegerAttribute single_level { default: -1 }
 	

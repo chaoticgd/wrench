@@ -16,14 +16,16 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "armor_wad.h"
-
+#include <build/asset_unpacker.h>
 #include <build/asset_packer.h>
 
+static void unpack_armor_wad(ArmorWadAsset& dest, InputStream& src, Game game);
 static void pack_armor_wad(OutputStream& dest, std::vector<u8>* header_dest, ArmorWadAsset& src, Game game);
 
-on_load([]() {
-	ArmorWadAsset::pack_func = wrap_wad_packer_func<ArmorWadAsset>(pack_armor_wad);
+on_load(Armor, []() {
+	ArmorWadAsset::funcs.unpack_dl = wrap_unpacker_func<ArmorWadAsset>(unpack_armor_wad);
+	
+	ArmorWadAsset::funcs.pack_dl = wrap_wad_packer_func<ArmorWadAsset>(pack_armor_wad);
 })
 
 packed_struct(ArmorHeader,
@@ -31,7 +33,7 @@ packed_struct(ArmorHeader,
 	/* 0x8 */ SectorRange textures;
 )
 
-packed_struct(ArmorWadHeaderDL,
+packed_struct(DeadlockedArmorWadHeader,
 	/* 0x000 */ s32 header_size;
 	/* 0x004 */ Sector32 sector;
 	/* 0x008 */ ArmorHeader armors[20];
@@ -40,11 +42,28 @@ packed_struct(ArmorWadHeaderDL,
 	/* 0x1e8 */ SectorRange dropship_textures[8];
 )
 
-void pack_armor_wad(OutputStream& dest, std::vector<u8>* header_dest, ArmorWadAsset& src, Game game) {
+static void unpack_armor_wad(ArmorWadAsset& dest, InputStream& src, Game game) {
+	auto header = src.read<DeadlockedArmorWadHeader>(0);
+	
+	CollectionAsset& armors = dest.armors();
+	for(s32 i = 0; i < ARRAY_SIZE(header.armors); i++) {
+		if(header.armors[i].mesh.size.sectors > 0) {
+			Asset& armor_file = armors.switch_files(stringf("armors/%02d/armor%02d.asset", i, i));
+			ArmorAsset& armor = armor_file.child<ArmorAsset>(std::to_string(i).c_str());
+			unpack_asset(armor.mesh<BinaryAsset>(), src, header.armors[i].mesh, game);
+			unpack_asset(armor.textures(), src, header.armors[i].textures, game);
+		}
+	}
+	unpack_assets<BinaryAsset>(dest.bot_textures().switch_files(), src, ARRAY_PAIR(header.bot_textures), game);
+	unpack_assets<BinaryAsset>(dest.landstalker_textures().switch_files(), src, ARRAY_PAIR(header.landstalker_textures), game);
+	unpack_assets<BinaryAsset>(dest.dropship_textures().switch_files(), src, ARRAY_PAIR(header.dropship_textures), game);
+}
+
+static void pack_armor_wad(OutputStream& dest, std::vector<u8>* header_dest, ArmorWadAsset& src, Game game) {
 	s64 base = dest.tell();
 	
-	ArmorWadHeaderDL header = {0};
-	header.header_size = sizeof(ArmorWadHeaderDL);
+	DeadlockedArmorWadHeader header = {0};
+	header.header_size = sizeof(DeadlockedArmorWadHeader);
 	dest.write(header);
 	dest.pad(SECTOR_SIZE, 0);
 	
@@ -63,21 +82,4 @@ void pack_armor_wad(OutputStream& dest, std::vector<u8>* header_dest, ArmorWadAs
 	if(header_dest) {
 		OutBuffer(*header_dest).write(0, header);
 	}
-}
-
-void unpack_armor_wad(ArmorWadAsset& dest, BinaryAsset& src) {
-	auto [file, header] = open_wad_file<ArmorWadHeaderDL>(src);
-	
-	CollectionAsset& armors = dest.armors();
-	for(s32 i = 0; i < ARRAY_SIZE(header.armors); i++) {
-		if(header.armors[i].mesh.size.sectors > 0) {
-			Asset& armor_file = armors.switch_files(stringf("armors/%02d/armor%02d.asset", i, i));
-			ArmorAsset& armor = armor_file.child<ArmorAsset>(std::to_string(i).c_str());
-			unpack_binary(armor.mesh<BinaryAsset>(), *file, header.armors[i].mesh, "mesh.bin");
-			unpack_binary(armor.textures(), *file, header.armors[i].textures, "textures.bin");
-		}
-	}
-	unpack_binaries(dest.bot_textures().switch_files(), *file, ARRAY_PAIR(header.bot_textures));
-	unpack_binaries(dest.landstalker_textures().switch_files(), *file, ARRAY_PAIR(header.landstalker_textures));
-	unpack_binaries(dest.dropship_textures().switch_files(), *file, ARRAY_PAIR(header.dropship_textures));
 }

@@ -26,15 +26,7 @@ std::string ZippedAssetPack::read_text_file(const fs::path& path) const {
 	assert(0);
 }
 
-std::vector<u8> ZippedAssetPack::read_binary_file(const fs::path& path) const {
-	assert(0);
-}
-
 void ZippedAssetPack::write_text_file(const fs::path& path, const char* contents) const {
-	assert(0);
-}
-
-void ZippedAssetPack::write_binary_file(const fs::path& path, std::function<void(OutputStream&)> callback) const {
 	assert(0);
 }
 

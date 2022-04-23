@@ -183,22 +183,29 @@ bool FileOutputStream::write(const u8* src, s64 size) {
 
 // *****************************************************************************
 
-SubInputStream::SubInputStream(InputStream& stream_, s64 base_)
+SubInputStream::SubInputStream(InputStream& stream_, ByteRange64 range_)
 	: stream(stream_)
-	, base(base_) {}
+	, range(range_) {}
+
+SubInputStream::SubInputStream(InputStream& stream_, s64 base_, s64 bytes_)
+	: stream(stream_)
+	, range{base_, bytes_} {
+	verify(range.offset + range.size <= stream.size(), "Tried to create out of range substream.");
+}
 	
 bool SubInputStream::seek(s64 offset) {
-	return stream.seek(base + offset);
+	return stream.seek(range.offset + offset);
 }
 
 s64 SubInputStream::tell() const {
-	return stream.tell() - base;
+	return stream.tell() - range.offset;
 }
 
 s64 SubInputStream::size() const {
-	return stream.size() - base;
+	return range.size;
 }
 
 bool SubInputStream::read(u8* dest, s64 size) {
+	verify(stream.tell() + size <= range.offset + range.size, "Tried to read past end of substream.");
 	return stream.read(dest, size);
 }

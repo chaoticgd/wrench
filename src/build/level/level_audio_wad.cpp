@@ -16,17 +16,19 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "level_audio_wad.h"
-
+#include <build/asset_unpacker.h>
 #include <build/asset_packer.h>
 
-static void pack_level_audio_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelAudioWadAsset& src, Game game);
+static void unpack_dl_level_audio_wad(LevelAudioWadAsset& dest, InputStream& src, Game game);
+static void pack_dl_level_audio_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelAudioWadAsset& src, Game game);
 
-on_load([]() {
-	LevelAudioWadAsset::pack_func = wrap_wad_packer_func<LevelAudioWadAsset>(pack_level_audio_wad);
+on_load(LevelAudio, []() {
+	LevelAudioWadAsset::funcs.unpack_dl = wrap_unpacker_func<LevelAudioWadAsset>(unpack_dl_level_audio_wad);
+	
+	LevelAudioWadAsset::funcs.pack_dl = wrap_wad_packer_func<LevelAudioWadAsset>(pack_dl_level_audio_wad);
 })
 
-packed_struct(LevelAudioWadHeaderDL,
+packed_struct(DeadlockedLevelAudioWadHeader,
 	/* 0x000 */ s32 header_size;
 	/* 0x004 */ Sector32 sector;
 	/* 0x008 */ SectorByteRange bin_data[80];
@@ -35,11 +37,20 @@ packed_struct(LevelAudioWadHeaderDL,
 	/* 0x298 */ SectorByteRange spare;
 )
 
-static void pack_level_audio_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelAudioWadAsset& src, Game game) {
+static void unpack_dl_level_audio_wad(LevelAudioWadAsset& dest, InputStream& src, Game game) {
+	auto header = src.read<DeadlockedLevelAudioWadHeader>();
+	
+	unpack_assets<BinaryAsset>(dest.bin_data().switch_files(), src, ARRAY_PAIR(header.bin_data), game);
+	unpack_asset(dest.upgrade_sample(), src, header.upgrade_sample, game);
+	unpack_asset(dest.platinum_bolt(), src, header.platinum_bolt, game);
+	unpack_asset(dest.spare(), src, header.spare, game);
+}
+
+static void pack_dl_level_audio_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelAudioWadAsset& src, Game game) {
 	s64 base = dest.tell();
 	
-	LevelAudioWadHeaderDL header = {0};
-	header.header_size = sizeof(LevelAudioWadHeaderDL);
+	DeadlockedLevelAudioWadHeader header = {0};
+	header.header_size = sizeof(DeadlockedLevelAudioWadHeader);
 	dest.write(header);
 	dest.pad(SECTOR_SIZE, 0);
 	
@@ -52,13 +63,4 @@ static void pack_level_audio_wad(OutputStream& dest, std::vector<u8>* header_des
 	if(header_dest) {
 		OutBuffer(*header_dest).write(0, header);
 	}
-}
-
-void unpack_level_audio_wad(LevelAudioWadAsset& dest, BinaryAsset& src) {
-	auto [file, header] = open_wad_file<LevelAudioWadHeaderDL>(src);
-	
-	unpack_binaries(dest.bin_data().switch_files(), *file, ARRAY_PAIR(header.bin_data), ".vag");
-	unpack_binary(dest.upgrade_sample(), *file, header.upgrade_sample, "upgrade_sample.vag");
-	unpack_binary(dest.platinum_bolt(), *file, header.platinum_bolt, "platinum_bolt.vag");
-	unpack_binary(dest.spare(), *file, header.spare, "spare.vag");
 }

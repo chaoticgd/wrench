@@ -94,7 +94,7 @@ int main(int argc, char** argv) {
 		
 		out("\n");
 		out("%sAsset::%sAsset(AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent, std::string tag)\n", node->tag, node->tag);
-		out("\t: Asset(forest, pack, file, parent, ASSET_TYPE, std::move(tag)) {}\n\n");
+		out("\t: Asset(forest, pack, file, parent, ASSET_TYPE, std::move(tag), funcs) {}\n\n");
 		
 		generate_read_function(node);
 		generate_write_function(node);
@@ -106,15 +106,7 @@ int main(int argc, char** argv) {
 		out("\t}\n");
 		out("}\n");
 		out("\n");
-		out("AssetPackerFunc* %sAsset::pack_func;\n", node->tag);
-		out("\n");
-		out("void %sAsset::pack(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Game game, u32 hint) {\n", node->tag);
-		out("\tif(pack_func != nullptr) {\n");
-		out("\t\t(*pack_func)(dest, header_dest, time_dest, *this, game, hint);\n");
-		out("\t} else {\n");
-		out("\t\tthrow std::runtime_error(\"Tried to pack unpackable asset!\");\n");
-		out("\t}\n");
-		out("}\n");
+		out("AssetDispatchTable %sAsset::funcs;\n", node->tag);
 		generate_attribute_getter_and_setter_functions(node);
 		generate_child_functions(node);
 	}
@@ -140,8 +132,8 @@ static void generate_asset_type(const WtfNode* asset_type, s32 id) {
 	out("\tvoid write_attributes(WtfWriter* ctx) const override;\n");
 	out("\tvoid validate_attributes() const override {}\n");
 	out("\t%sAsset& switch_files(const fs::path& name = \"\");\n", asset_type->tag);
-	out("\tstatic AssetPackerFunc* pack_func;\n");
-	out("\tvoid pack(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Game game, u32 hint) override;\n");
+	out("\t\n");
+	out("\tstatic AssetDispatchTable funcs;\n");
 	bool first = true;
 	for(WtfNode* node = asset_type->first_child; node != NULL; node = node->next_sibling) {
 		std::string getter_name = node->tag;

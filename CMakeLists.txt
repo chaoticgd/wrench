@@ -53,8 +53,8 @@ add_custom_command(
 )
 
 add_library(wrench_assetmgr
-	src/assetmgr/asset.cpp
 	src/assetmgr/asset_util.cpp
+	src/assetmgr/asset.cpp
 	src/assetmgr/asset_types.cpp
 	src/assetmgr/zipped_asset_pack.cpp
 	src/assetmgr/_generated_asset_types.inl
@@ -122,13 +122,14 @@ add_executable(build
 	src/build/primary.cpp
 	src/build/assets.cpp
 	src/build/tests.cpp
-	src/build/build_util.cpp
+	src/build/asset_unpacker.cpp
 	src/build/asset_packer.cpp
-	src/build/global_wads.cpp
 	src/build/globals/armor_wad.cpp
 	src/build/globals/audio_wad.cpp
 	src/build/globals/bonus_wad.cpp
+	src/build/globals/boot_wad.cpp
 	src/build/globals/hud_wad.cpp
+	src/build/globals/irx_wad.cpp
 	src/build/globals/misc_wad.cpp
 	src/build/globals/mpeg_wad.cpp
 	src/build/globals/online_wad.cpp

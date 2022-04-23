@@ -174,7 +174,8 @@ public:
 
 class SubInputStream : public InputStream {
 public:
-	SubInputStream(InputStream& stream_, s64 base_);
+	SubInputStream(InputStream& stream_, ByteRange64 range_);
+	SubInputStream(InputStream& stream_, s64 base_, s64 bytes_);
 	
 	bool seek(s64 offset) override;
 	s64 tell() const override;
@@ -184,7 +185,7 @@ public:
 
 private:
 	InputStream& stream;
-	s64 base = 0;
+	ByteRange64 range;
 };
 
 #endif

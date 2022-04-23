@@ -16,17 +16,19 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "bonus_wad.h"
-
+#include <build/asset_unpacker.h>
 #include <build/asset_packer.h>
 
+static void unpack_bonus_wad(BonusWadAsset& dest, InputStream& src, Game game);
 static void pack_bonus_wad(OutputStream& dest, std::vector<u8>* header_dest, BonusWadAsset& src, Game game);
 
-on_load([]() {
-	BonusWadAsset::pack_func = wrap_wad_packer_func<BonusWadAsset>(pack_bonus_wad);
+on_load(Bonus, []() {
+	BonusWadAsset::funcs.unpack_dl = wrap_unpacker_func<BonusWadAsset>(unpack_bonus_wad);
+	
+	BonusWadAsset::funcs.pack_dl = wrap_wad_packer_func<BonusWadAsset>(pack_bonus_wad);
 })
 
-packed_struct(BonusWadHeaderDL,
+packed_struct(DeadlockedBonusWadHeader,
 	/* 0x000 */ s32 header_size;
 	/* 0x004 */ Sector32 sector;
 	/* 0x008 */ SectorRange credits_text[6];
@@ -39,11 +41,24 @@ packed_struct(BonusWadHeaderDL,
 	/* 0x2a0 */ SectorRange dige;
 )
 
+static void unpack_bonus_wad(BonusWadAsset& dest, InputStream& src, Game game) {
+	auto header = src.read<DeadlockedBonusWadHeader>(0);
+	
+	unpack_assets<BinaryAsset>(dest.credits_text().switch_files(), src, ARRAY_PAIR(header.credits_text), game);
+	unpack_assets<BinaryAsset>(dest.credits_images().switch_files(), src, ARRAY_PAIR(header.credits_images), game);
+	unpack_assets<BinaryAsset>(dest.demomenu().switch_files(), src, ARRAY_PAIR(header.demomenu), game);
+	unpack_assets<BinaryAsset>(dest.demoexit().switch_files(), src, ARRAY_PAIR(header.demoexit), game);
+	unpack_assets<BinaryAsset>(dest.cheat_images().switch_files(), src, ARRAY_PAIR(header.cheat_images), game);
+	unpack_assets<BinaryAsset>(dest.skill_images().switch_files(), src, ARRAY_PAIR(header.skill_images), game);
+	unpack_asset(dest.trophy_image<BinaryAsset>(), src, header.trophy_image, game);
+	unpack_asset(dest.dige(), src, header.dige, game);
+}
+
 void pack_bonus_wad(OutputStream& dest, std::vector<u8>* header_dest, BonusWadAsset& src, Game game) {
 	s64 base = dest.tell();
 	
-	BonusWadHeaderDL header = {0};
-	header.header_size = sizeof(BonusWadHeaderDL);
+	DeadlockedBonusWadHeader header = {0};
+	header.header_size = sizeof(DeadlockedBonusWadHeader);
 	dest.write(header);
 	dest.pad(SECTOR_SIZE, 0);
 	
@@ -60,17 +75,4 @@ void pack_bonus_wad(OutputStream& dest, std::vector<u8>* header_dest, BonusWadAs
 	if(header_dest) {
 		OutBuffer(*header_dest).write(0, header);
 	}
-}
-
-void unpack_bonus_wad(BonusWadAsset& dest, BinaryAsset& src) {
-	auto [file, header] = open_wad_file<BonusWadHeaderDL>(src);
-	
-	unpack_binaries(dest.credits_text().switch_files(), *file, ARRAY_PAIR(header.credits_text));
-	unpack_binaries(dest.credits_images().switch_files(), *file, ARRAY_PAIR(header.credits_images));
-	unpack_binaries(dest.demomenu().switch_files(), *file, ARRAY_PAIR(header.demomenu));
-	unpack_binaries(dest.demoexit().switch_files(), *file, ARRAY_PAIR(header.demoexit));
-	unpack_binaries(dest.cheat_images().switch_files(), *file, ARRAY_PAIR(header.cheat_images));
-	unpack_binaries(dest.skill_images().switch_files(), *file, ARRAY_PAIR(header.skill_images));
-	unpack_binary(dest.trophy_image<BinaryAsset>(), *file, header.trophy_image, "trophy_image");
-	unpack_binary(dest.dige(), *file, header.dige, "dige");
 }

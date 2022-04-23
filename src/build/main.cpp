@@ -30,10 +30,7 @@
 #include <iso/iso_tools.h>
 #include <build/tests.h>
 #include <build/wad_file.h>
-#include <build/global_wads.h>
-#include <build/level/level_wad.h>
-#include <build/level/level_audio_wad.h>
-#include <build/level/level_scene_wad.h>
+#include <build/asset_unpacker.h>
 #include <build/asset_packer.h>
 
 enum ArgFlags : u32 {
@@ -53,7 +50,8 @@ struct ParsedArgs {
 
 static ParsedArgs parse_args(int argc, char** argv, u32 flags);
 static void unpack_wads(const fs::path& input_path, const fs::path& output_path, bool unpack_globals, bool unpack_levels);
-static void unpack_level_wads(AssetPack& dest_pack, BuildAsset& dest_build, BuildAsset& src_build);
+void unpack_global_wads(AssetPack& dest_pack, BuildAsset& dest_build, BuildAsset& src_build, Game game);
+static void unpack_level_wads(AssetPack& dest_pack, BuildAsset& dest_build, BuildAsset& src_build, Game game);
 static void unpack_bins(const fs::path& input_path, const fs::path& output_path);
 static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path);
 static void pack_bin(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path);
@@ -223,33 +221,72 @@ static void unpack_wads(const fs::path& input_path, const fs::path& output_path,
 	BuildAsset& dest_build = dest_pack.asset_file("build.asset").root().child<BuildAsset>("base_game");
 	dest_pack.game_info.builds = {dest_build.absolute_reference()};
 	
+	dest_build.set_game(src_build.game());
+	
+	Game game;
+	switch(src_build.game()) {
+		case 1: game = Game::RAC1; break;
+		case 2: game = Game::RAC2; break;
+		case 3: game = Game::RAC3; break;
+		case 4: game = Game::DL; break;
+		default: {
+			verify_not_reached("Build asset '%s' has invalid game attribute. Should be 1, 2, 3 or 4.",
+				asset_reference_to_string(src_build.absolute_reference()).c_str());
+		}
+	}
+	
 	if(unpack_globals) {
-		unpack_global_wads(dest_pack, dest_build, src_build);
+		unpack_global_wads(dest_pack, dest_build, src_build, game);
 	}
 	
 	if(unpack_levels) {
-		unpack_level_wads(dest_pack, dest_build, src_build);
+		unpack_level_wads(dest_pack, dest_build, src_build, game);
 	}
 	
 	dest_pack.write();
 }
 
-static void unpack_level_wads(AssetPack& dest_pack, BuildAsset& dest_build, BuildAsset& src_build) {
+template <typename ThisAsset>
+void unpack_global_wad(AssetPack& dest_pack, ReferenceAsset& reference_asset, Asset& src_asset, Game game, const char* tag) {
+	ThisAsset& dest_asset = dest_pack.asset_file(std::string(tag) + "/" + tag + ".asset").root().child<ThisAsset>(tag);
+	auto armor_file = src_asset.file().open_binary_file_for_reading(src_asset.as<BinaryAsset>().src());
+	unpack_asset_impl(dest_asset, *armor_file, game, FMT_NO_HINT);
+	reference_asset.set_asset(std::string("/") + tag);
+}
+
+void unpack_global_wads(AssetPack& dest_pack, BuildAsset& dest_build, BuildAsset& src_build, Game game) {
+	unpack_global_wad<ArmorWadAsset>(dest_pack, dest_build.armor<ReferenceAsset>(), src_build.get_armor(), game, "armors");
+	unpack_global_wad<AudioWadAsset>(dest_pack, dest_build.audio<ReferenceAsset>(), src_build.get_audio(), game, "audio");
+	unpack_global_wad<BonusWadAsset>(dest_pack, dest_build.bonus<ReferenceAsset>(), src_build.get_bonus(), game, "bonus");
+	unpack_global_wad<HudWadAsset>(dest_pack, dest_build.hud<ReferenceAsset>(), src_build.get_hud(), game, "hud");
+	unpack_global_wad<MiscWadAsset>(dest_pack, dest_build.misc<ReferenceAsset>(), src_build.get_misc(), game, "misc");
+	unpack_global_wad<MpegWadAsset>(dest_pack, dest_build.mpeg<ReferenceAsset>(), src_build.get_mpeg(), game, "mpegs");
+	unpack_global_wad<OnlineWadAsset>(dest_pack, dest_build.online<ReferenceAsset>(), src_build.get_online(), game, "online");
+	unpack_global_wad<SpaceWadAsset>(dest_pack, dest_build.space<ReferenceAsset>(), src_build.get_space(), game, "space");
+}
+
+static void unpack_level_wads(AssetPack& dest_pack, BuildAsset& dest_build, BuildAsset& src_build, Game game) {
 	src_build.get_levels().for_each_logical_child_of_type<LevelAsset>([&](LevelAsset& src_level) {
-		AssetFile& dest_file = dest_pack.asset_file(stringf("level/%s/level%s.asset", src_level.tag().c_str(), src_level.tag().c_str()));
+		AssetFile& dest_file = dest_pack.asset_file(stringf("levels/%s/level%s.asset", src_level.tag().c_str(), src_level.tag().c_str()));
 		CollectionAsset& levels_collection = dest_file.root().child<CollectionAsset>("levels");
 		LevelAsset& dest_level = levels_collection.child<LevelAsset>(src_level.tag().c_str());
 		
 		if(src_level.has_level()) {
-			unpack_level_wad(dest_level.level<LevelWadAsset>().switch_files(), src_level.get_level().as<BinaryAsset>());
+			BinaryAsset& src_asset = src_level.get_level().as<BinaryAsset>();
+			auto file = src_asset.file().open_binary_file_for_reading(src_asset.as<BinaryAsset>().src());
+			unpack_asset_impl(dest_level.level<LevelWadAsset>().switch_files(), *file, game);
 		}
 		
 		if(src_level.has_audio()) {
-			unpack_level_audio_wad(dest_level.audio<LevelAudioWadAsset>().switch_files(), src_level.get_audio().as<BinaryAsset>());
+			BinaryAsset& src_asset = src_level.get_audio().as<BinaryAsset>();
+			auto file = src_asset.file().open_binary_file_for_reading(src_asset.as<BinaryAsset>().src());
+			unpack_asset_impl(dest_level.level<LevelAudioWadAsset>().switch_files(), *file, game);
 		}
 		
 		if(src_level.has_scene()) {
-			unpack_level_scene_wad(dest_level.scene<LevelSceneWadAsset>().switch_files(), src_level.get_scene().as<BinaryAsset>());
+			BinaryAsset& src_asset = src_level.get_scene().as<BinaryAsset>();
+			auto file = src_asset.file().open_binary_file_for_reading(src_asset.as<BinaryAsset>().src());
+			unpack_asset_impl(dest_level.level<LevelSceneWadAsset>().switch_files(), *file, game);
 		}
 		
 		dest_build.levels().child<ReferenceAsset>(src_level.tag().c_str()).set_asset(stringf("/levels/%s", src_level.tag().c_str()));

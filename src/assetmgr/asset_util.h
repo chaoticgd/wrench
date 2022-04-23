@@ -87,49 +87,6 @@ void write_game_info(std::string& dest, const GameInfo& info);
 
 // *****************************************************************************
 
-class Asset;
-
-using AssetPackerFunc = std::function<void((OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& src, Game game, u32 hint))>;
-
-template <typename ThisAsset, typename PackerFunc>
-AssetPackerFunc* wrap_packer_func(PackerFunc func) {
-	return new AssetPackerFunc([func](OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& src, Game game, u32 hint) {
-		func(dest, static_cast<ThisAsset&>(src), game);
-		if(time_dest) {
-			*time_dest = fs::file_time_type::clock::now();
-		}
-	});
-}
-
-template <typename ThisAsset, typename PackerFunc>
-AssetPackerFunc* wrap_wad_packer_func(PackerFunc func) {
-	return new AssetPackerFunc([func](OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& src, Game game, u32 hint) {
-		func(dest, header_dest, static_cast<ThisAsset&>(src), game);
-		if(time_dest) {
-			*time_dest = fs::file_time_type::clock::now();
-		}
-	});
-}
-
-template <typename ThisAsset, typename PackerFunc>
-AssetPackerFunc* wrap_bin_packer_func(PackerFunc func) {
-	return new AssetPackerFunc([func](OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& src, Game game, u32 hint) {
-		func(dest, header_dest, time_dest, static_cast<ThisAsset&>(src));
-	});
-}
-
-template <typename ThisAsset, typename PackerFunc>
-AssetPackerFunc* wrap_iso_packer_func(PackerFunc func, AssetPackerFunc pack) {
-	return new AssetPackerFunc([func, pack](OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& src, Game game, u32 hint) {
-		func(dest, static_cast<ThisAsset&>(src), game, pack);
-		if(time_dest) {
-			*time_dest = fs::file_time_type::clock::now();
-		}
-	});
-}
-
-// *****************************************************************************
-
 struct AssetError : std::exception {};
 
 struct InvalidAssetAttributeType : AssetError {

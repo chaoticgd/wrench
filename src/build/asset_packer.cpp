@@ -19,10 +19,6 @@
 #include "asset_packer.h"
 
 #include <iso/iso_packer.h>
-#include <build/global_wads.h>
-#include <build/level/level_wad.h>
-#include <build/level/level_audio_wad.h>
-#include <build/level/level_scene_wad.h>
 
 s32 g_asset_packer_max_assets_processed = 0;
 s32 g_asset_packer_num_assets_processed = 0;
@@ -31,22 +27,42 @@ bool g_asset_packer_dry_run = false;
 static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, BinaryAsset& asset);
 static void pack_file_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, FileAsset& asset);
 
-on_load([]() {
-	BinaryAsset::pack_func = wrap_bin_packer_func<BinaryAsset>(pack_binary_asset);
-	BuildAsset::pack_func = wrap_iso_packer_func<BuildAsset>(pack_iso, pack_asset_impl);
-	FileAsset::pack_func = wrap_bin_packer_func<FileAsset>(pack_file_asset);
+on_load(Packer, []() {
+	BinaryAsset::funcs.pack_rac1 = wrap_bin_packer_func<BinaryAsset>(pack_binary_asset);
+	BinaryAsset::funcs.pack_rac2 = wrap_bin_packer_func<BinaryAsset>(pack_binary_asset);
+	BinaryAsset::funcs.pack_rac3 = wrap_bin_packer_func<BinaryAsset>(pack_binary_asset);
+	BinaryAsset::funcs.pack_dl = wrap_bin_packer_func<BinaryAsset>(pack_binary_asset);
+	
+	BuildAsset::funcs.pack_rac1 = wrap_iso_packer_func<BuildAsset>(pack_iso, pack_asset_impl);
+	BuildAsset::funcs.pack_rac2 = wrap_iso_packer_func<BuildAsset>(pack_iso, pack_asset_impl);
+	BuildAsset::funcs.pack_rac3 = wrap_iso_packer_func<BuildAsset>(pack_iso, pack_asset_impl);
+	BuildAsset::funcs.pack_dl = wrap_iso_packer_func<BuildAsset>(pack_iso, pack_asset_impl);
+	
+	FileAsset::funcs.pack_rac1 = wrap_bin_packer_func<FileAsset>(pack_file_asset);
+	FileAsset::funcs.pack_rac2 = wrap_bin_packer_func<FileAsset>(pack_file_asset);
+	FileAsset::funcs.pack_rac3 = wrap_bin_packer_func<FileAsset>(pack_file_asset);
+	FileAsset::funcs.pack_dl = wrap_bin_packer_func<FileAsset>(pack_file_asset);
 })
 
-void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& asset, Game game, u32 hint) {
+void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& src, Game game, AssetFormatHint hint) {
+	std::string reference = asset_reference_to_string(src.absolute_reference());
+	
 	if(!g_asset_packer_dry_run) {
-		std::string type = asset_type_to_string(asset.type());
+		std::string type = asset_type_to_string(src.type());
 		for(char& c : type) c = tolower(c);
-		std::string reference = asset_reference_to_string(asset.absolute_reference());
 		s32 completion_percentage = (s32) ((g_asset_packer_num_assets_processed * 100.f) / g_asset_packer_max_assets_processed);
 		printf("[%3d%%] \033[32mPacking %s asset %s\033[0m\n", completion_percentage, type.c_str(), reference.c_str());
 	}
 	
-	asset.pack(dest, header_dest, time_dest, game, hint);
+	AssetPackerFunc* pack_func = nullptr;
+	switch(game) {
+		case Game::RAC1: pack_func = src.funcs.pack_rac1; break;
+		case Game::RAC2: pack_func = src.funcs.pack_rac2; break;
+		case Game::RAC3: pack_func = src.funcs.pack_rac3; break;
+		case Game::DL: pack_func = src.funcs.pack_dl; break;
+	}
+	verify(pack_func, "Tried to pack nonpackable asset '%s'.", reference.c_str());
+	(*pack_func)(dest, header_dest, time_dest, src, game, hint);
 	
 	g_asset_packer_num_assets_processed++;
 }

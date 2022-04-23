@@ -16,27 +16,35 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "mpeg_wad.h"
-
+#include <build/asset_unpacker.h>
 #include <build/asset_packer.h>
 
+static void unpack_mpeg_wad(MpegWadAsset& dest, InputStream& src, Game game);
 static void pack_mpeg_wad(OutputStream& dest, std::vector<u8>* header_dest, MpegWadAsset& src, Game game);
 
-on_load([]() {
-	MpegWadAsset::pack_func = wrap_wad_packer_func<MpegWadAsset>(pack_mpeg_wad);
+on_load(Mpeg, []() {
+	MpegWadAsset::funcs.unpack_dl = wrap_unpacker_func<MpegWadAsset>(unpack_mpeg_wad);
+	
+	MpegWadAsset::funcs.pack_dl = wrap_wad_packer_func<MpegWadAsset>(pack_mpeg_wad);
 })
 
-packed_struct(MpegWadHeaderDL,
+packed_struct(DeadlockedMpegWadHeader,
 	/* 0x0 */ s32 header_size;
 	/* 0x4 */ Sector32 sector;
 	/* 0x8 */ SectorByteRange story[200];
 )
 
+static void unpack_mpeg_wad(MpegWadAsset& dest, InputStream& src, Game game) {
+	auto header = src.read<DeadlockedMpegWadHeader>(0);
+	
+	unpack_assets<BinaryAsset>(dest.story().switch_files(), src, ARRAY_PAIR(header.story), game);
+}
+
 static void pack_mpeg_wad(OutputStream& dest, std::vector<u8>* header_dest, MpegWadAsset& src, Game game) {
 	s64 base = dest.tell();
 	
-	MpegWadHeaderDL header = {0};
-	header.header_size = sizeof(MpegWadHeaderDL);
+	DeadlockedMpegWadHeader header = {0};
+	header.header_size = sizeof(DeadlockedMpegWadHeader);
 	dest.write(header);
 	dest.pad(SECTOR_SIZE, 0);
 	
@@ -46,10 +54,4 @@ static void pack_mpeg_wad(OutputStream& dest, std::vector<u8>* header_dest, Mpeg
 	if(header_dest) {
 		OutBuffer(*header_dest).write(0, header);
 	}
-}
-
-void unpack_mpeg_wad(MpegWadAsset& dest, BinaryAsset& src) {
-	auto [file, header] = open_wad_file<MpegWadHeaderDL>(src);
-	
-	unpack_binaries(dest.story().switch_files(), *file, ARRAY_PAIR(header.story), ".pss");
 }

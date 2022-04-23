@@ -27,15 +27,9 @@ extern s32 g_asset_packer_max_assets_processed;
 extern s32 g_asset_packer_num_assets_processed;
 extern bool g_asset_packer_dry_run;
 
-enum AssetFormatHint {
-	FMT_NO_HINT = 0,
-	FMT_TEXTURE_PIF_IDTEX8,
-	FMT_TEXTURE_RGBA
-};
-
 // Packs asset into a binary and writes it out to dest, using hint to determine
 // details of the expected output format if necessary.
-void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& asset, Game game, u32 hint = FMT_NO_HINT);
+void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& src, Game game, AssetFormatHint hint = FMT_NO_HINT);
 
 template <typename Range>
 Range pack_asset(OutputStream& dest, Asset& src, Game game, s64 base, AssetFormatHint hint = FMT_NO_HINT) {

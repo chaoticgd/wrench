@@ -24,8 +24,9 @@
 #include <unistd.h> // getpid
 #endif
 
-Asset::Asset(AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent, AssetType type, std::string tag)
-	: _forest(forest)
+Asset::Asset(AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent, AssetType type, std::string tag, AssetDispatchTable& func_table)
+	: funcs(func_table)
+	, _forest(forest)
 	, _pack(pack)
 	, _file(file)
 	, _parent(parent)
@@ -312,23 +313,12 @@ std::unique_ptr<InputStream> AssetFile::open_binary_file_for_reading(const FileR
 	return _pack.open_binary_file_for_reading(_relative_directory/reference.path, modified_time_dest);
 }
 
+std::pair<std::unique_ptr<OutputStream>, FileReference> AssetFile::open_binary_file_for_writing(const fs::path& path) const {
+	return {_pack.open_binary_file_for_writing(_relative_directory/path), FileReference(*this, path)};
+}
+
 FileReference AssetFile::write_text_file(const fs::path& path, const char* contents) const {
 	_pack.write_text_file(_relative_directory/path, contents);
-	return FileReference(*this, path);
-}
-
-FileReference AssetFile::write_binary_file(const fs::path& path, Buffer contents) const {
-	_pack.write_binary_file(_relative_directory/path, [&](OutputStream& file) {
-		if(contents.size() > 0) {
-			verify(file.write(contents.lo, contents.size()),
-				"Failed to write to file '%s'.", path.string().c_str());
-		}
-	});
-	return FileReference(*this, path);
-}
-
-FileReference AssetFile::write_binary_file(const fs::path& path, std::function<void(OutputStream&)> callback) const {
-	_pack.write_binary_file(_relative_directory/path, callback);
 	return FileReference(*this, path);
 }
 
@@ -400,10 +390,6 @@ AssetPack::~AssetPack() {
 
 std::string AssetPack::read_text_file(const FileReference& reference) const {
 	return read_text_file(reference.owner->_relative_directory/reference.path);
-}
-
-std::vector<u8> AssetPack::read_binary_file(const FileReference& reference) const {
-	return read_binary_file(reference.owner->_relative_directory/reference.path);
 }
 
 const char* AssetPack::name() const {
@@ -503,6 +489,18 @@ std::unique_ptr<InputStream> LooseAssetPack::open_binary_file_for_reading(const 
 	}
 }
 
+std::unique_ptr<OutputStream> LooseAssetPack::open_binary_file_for_writing(const fs::path& path) const {
+	assert(is_writeable());
+	fs::path full_path = _directory/path;
+	fs::create_directories(full_path.parent_path());
+	auto stream = std::make_unique<FileOutputStream>();
+	if(stream->open(full_path)) {
+		return stream;
+	} else {
+		return nullptr;
+	}
+}
+
 std::string LooseAssetPack::read_text_file(const fs::path& path) const {
 	if(!fs::exists(_directory/path)) {
 		return "";
@@ -511,23 +509,10 @@ std::string LooseAssetPack::read_text_file(const fs::path& path) const {
 	return std::string((char*) bytes.data(), bytes.size());
 }
 
-std::vector<u8> LooseAssetPack::read_binary_file(const fs::path& path) const {
-	return read_file(_directory/path, "rb");
-}
-
 void LooseAssetPack::write_text_file(const fs::path& path, const char* contents) const {
 	assert(is_writeable());
 	fs::create_directories((_directory/path).parent_path());
 	write_file(_directory/path, Buffer((u8*) contents, (u8*) contents + strlen(contents)), "w");
-}
-
-void LooseAssetPack::write_binary_file(const fs::path& path, std::function<void(OutputStream&)> callback) const {
-	assert(is_writeable());
-	fs::path full_path = _directory/path;
-	fs::create_directories(full_path.parent_path());
-	FileOutputStream stream;
-	verify(stream.open(full_path), "Failed to open file '%s' for writing.", full_path.string().c_str());
-	callback(stream);
 }
 
 void LooseAssetPack::extract_binary_file(const fs::path& relative_dest, Buffer prepend, FILE* src, s64 offset, s64 size) const {

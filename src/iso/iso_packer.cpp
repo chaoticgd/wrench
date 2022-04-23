@@ -279,7 +279,7 @@ static void pack_files(OutputStream& iso, std::vector<IsoFileRecord*>& files, Ga
 		
 		iso.pad(SECTOR_SIZE, 0);
 		file->lba = {(s32) (iso.tell() / SECTOR_SIZE)};
-		pack(iso, nullptr, &file->modified_time, *file->asset, game, 0);
+		pack(iso, nullptr, &file->modified_time, *file->asset, game, FMT_NO_HINT);
 		
 		s64 end_of_file = iso.tell();
 		file->size = (u32) (end_of_file - file->lba.bytes());
@@ -294,7 +294,7 @@ static IsoDirectory pack_globals(OutputStream& iso, std::vector<GlobalWadInfo>& 
 		
 		assert(global.asset);
 		fs::file_time_type modified_time;
-		pack(iso, &global.header, &modified_time, *global.asset, game, 0);
+		pack(iso, &global.header, &modified_time, *global.asset, game, FMT_NO_HINT);
 		
 		s64 end_of_file = iso.tell();
 		s64 file_size = end_of_file - sector.bytes();
@@ -366,7 +366,7 @@ static void pack_level_wad_outer(OutputStream& iso, IsoDirectory& directory, Lev
 	
 	assert(wad.asset);
 	fs::file_time_type modified_time;
-	pack(iso, &wad.header, &modified_time, *wad.asset, game, 0);
+	pack(iso, &wad.header, &modified_time, *wad.asset, game, FMT_NO_HINT);
 	
 	s64 end_of_file = iso.tell();
 	s64 file_size = end_of_file - sector.bytes();

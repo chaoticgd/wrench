@@ -54,6 +54,8 @@ void unpack_iso(const fs::path& iso_path, const fs::path& output_dir) {
 	pack.game_info.type = AssetPackType::WADS;
 	pack.game_info.builds = {build.absolute_reference()};
 	
+	build.set_game(static_cast<s32>(game));
+	
 	printf("Sector          Size (bytes)    Filename\n");
 	printf("------          ------------    --------\n");
 	
