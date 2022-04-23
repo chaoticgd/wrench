@@ -65,11 +65,12 @@ static void pack_boot_wad(OutputStream& dest, BootWadAsset& src, Game game) {
 	header.german = pack_compressed_asset_aligned<ByteRange>(dest, src.get_german(), game, begin, 0x40);
 	header.spanish = pack_compressed_asset_aligned<ByteRange>(dest, src.get_spanish(), game, begin, 0x40);
 	header.italian = pack_compressed_asset_aligned<ByteRange>(dest, src.get_italian(), game, begin, 0x40);
-	if(src.hud().has_child(0)) {
+	CollectionAsset& hud = src.get_hud();
+	if(hud.has_child(0)) {
 		header.hudwad[0] = pack_asset_aligned<ByteRange>(dest, src.get_hud().get_child(0), game, begin, 0x40);
 	}
 	for(s32 i = 1; i < 6; i++) {
-		if(src.hud().has_child(i)) {
+		if(hud.has_child(i)) {
 			header.hudwad[i] = pack_compressed_asset_aligned<ByteRange>(dest, src.get_hud().get_child(i), game, begin, 0x40);
 		}
 	}
