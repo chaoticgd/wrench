@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WRENCH_BUILD_ASSETS_H
-#define WRENCH_BUILD_ASSETS_H
+#ifndef PAKRAC_ASSETS_H
+#define PAKRAC_ASSETS_H
 
 #include <core/level.h>
 

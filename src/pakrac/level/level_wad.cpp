@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <build/asset_unpacker.h>
-#include <build/asset_packer.h>
+#include <pakrac/asset_unpacker.h>
+#include <pakrac/asset_packer.h>
 
 packed_struct(Rac1LevelWadHeader,
 	/* 0x000 */ s32 header_size;

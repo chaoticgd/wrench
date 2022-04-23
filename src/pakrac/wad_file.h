@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WRENCH_BUILD_WAD_FILE_H
-#define WRENCH_BUILD_WAD_FILE_H
+#ifndef PAKRAC_WAD_FILE_H
+#define PAKRAC_WAD_FILE_H
 
 #include <vector>
 
@@ -26,7 +26,7 @@
 #include <core/buffer.h>
 #include <engine/compression.h>
 #include <iso/table_of_contents.h> // Rac1LevelWadHeader
-#include <build/gameplay.h>
+#include <pakrac/gameplay.h>
 
 packed_struct(Rac23LevelWadHeader,
 	/* 0x00 */ s32 header_size;

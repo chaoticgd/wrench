@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WRENCH_BUILD_PRIMARY_H
-#define WRENCH_BUILD_PRIMARY_H
+#ifndef PAKRAC_PRIMARY_H
+#define PAKRAC_PRIMARY_H
 
 #include <core/level.h>
 

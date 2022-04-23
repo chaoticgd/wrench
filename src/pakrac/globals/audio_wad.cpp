@@ -17,8 +17,8 @@
 */
 
 #include <set>
-#include <build/asset_unpacker.h>
-#include <build/asset_packer.h>
+#include <pakrac/asset_unpacker.h>
+#include <pakrac/asset_packer.h>
 
 static void unpack_audio_wad(AudioWadAsset& dest, InputStream& src, Game game);
 static void pack_audio_wad(OutputStream& dest, std::vector<u8>* header_dest, AudioWadAsset& src, Game game);

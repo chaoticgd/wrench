@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <build/asset_unpacker.h>
-#include <build/asset_packer.h>
+#include <pakrac/asset_unpacker.h>
+#include <pakrac/asset_packer.h>
 
 static void unpack_boot_wad(BootWadAsset& dest, InputStream& src, Game game);
 static void pack_boot_wad(OutputStream& dest, BootWadAsset& src, Game game);

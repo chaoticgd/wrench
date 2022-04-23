@@ -17,8 +17,8 @@
 */
 
 #include <set>
-#include <build/asset_unpacker.h>
-#include <build/asset_packer.h>
+#include <pakrac/asset_unpacker.h>
+#include <pakrac/asset_packer.h>
 
 static SectorRange range(Sector32 offset, const std::set<s64>& end_sectors);
 static void unpack_dl_level_scene_wad(LevelSceneWadAsset& dest, InputStream& src, Game game);

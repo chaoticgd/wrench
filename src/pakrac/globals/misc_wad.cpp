@@ -17,8 +17,8 @@
 */
 
 #include <engine/compression.h>
-#include <build/asset_unpacker.h>
-#include <build/asset_packer.h>
+#include <pakrac/asset_unpacker.h>
+#include <pakrac/asset_packer.h>
 
 void unpack_misc_wad(MiscWadAsset& dest, InputStream& src, Game game);
 static void pack_misc_wad(OutputStream& dest, std::vector<u8>* header_dest, MiscWadAsset& src, Game game);

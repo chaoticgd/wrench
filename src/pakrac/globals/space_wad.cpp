@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <build/asset_unpacker.h>
-#include <build/asset_packer.h>
+#include <pakrac/asset_unpacker.h>
+#include <pakrac/asset_packer.h>
 
 void unpack_space_wad(SpaceWadAsset& dest, InputStream& src, Game game);
 static void pack_space_wad(OutputStream& dest, std::vector<u8>* header_dest, SpaceWadAsset& src, Game game);

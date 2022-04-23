@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WRENCH_BUILD_ASSET_UNPACKER_H
-#define WRENCH_BUILD_ASSET_UNPACKER_H
+#ifndef PAKRAC_ASSET_UNPACKER_H
+#define PAKRAC_ASSET_UNPACKER_H
 
 #include <assetmgr/asset.h>
 #include <assetmgr/asset_types.h>

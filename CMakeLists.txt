@@ -115,30 +115,30 @@ add_library(wrenchengine
 )
 target_link_libraries(wrenchengine wrenchcore)
 
-add_executable(build
-	src/build/main.cpp
-	src/build/wad_file.cpp
-	src/build/gameplay.cpp
-	src/build/primary.cpp
-	src/build/assets.cpp
-	src/build/tests.cpp
-	src/build/asset_unpacker.cpp
-	src/build/asset_packer.cpp
-	src/build/globals/armor_wad.cpp
-	src/build/globals/audio_wad.cpp
-	src/build/globals/bonus_wad.cpp
-	src/build/globals/boot_wad.cpp
-	src/build/globals/hud_wad.cpp
-	src/build/globals/irx_wad.cpp
-	src/build/globals/misc_wad.cpp
-	src/build/globals/mpeg_wad.cpp
-	src/build/globals/online_wad.cpp
-	src/build/globals/space_wad.cpp
-	src/build/level/level_wad.cpp
-	src/build/level/level_audio_wad.cpp
-	src/build/level/level_scene_wad.cpp
+add_executable(pakrac
+	src/pakrac/main.cpp
+	src/pakrac/wad_file.cpp
+	src/pakrac/gameplay.cpp
+	src/pakrac/primary.cpp
+	src/pakrac/assets.cpp
+	src/pakrac/tests.cpp
+	src/pakrac/asset_unpacker.cpp
+	src/pakrac/asset_packer.cpp
+	src/pakrac/globals/armor_wad.cpp
+	src/pakrac/globals/audio_wad.cpp
+	src/pakrac/globals/bonus_wad.cpp
+	src/pakrac/globals/boot_wad.cpp
+	src/pakrac/globals/hud_wad.cpp
+	src/pakrac/globals/irx_wad.cpp
+	src/pakrac/globals/misc_wad.cpp
+	src/pakrac/globals/mpeg_wad.cpp
+	src/pakrac/globals/online_wad.cpp
+	src/pakrac/globals/space_wad.cpp
+	src/pakrac/level/level_wad.cpp
+	src/pakrac/level/level_audio_wad.cpp
+	src/pakrac/level/level_scene_wad.cpp
 )
-target_link_libraries(build wrenchcore wrench_assetmgr wrenchiso wrenchengine)
+target_link_libraries(pakrac wrenchcore wrench_assetmgr wrenchiso wrenchengine)
 
 add_executable(hashtex
 	src/hashtex.cpp
@@ -161,7 +161,7 @@ if(UNIX)
 	target_compile_options(vif PRIVATE ${GCC_FLAGS})
 	target_compile_options(wrenchiso PRIVATE ${GCC_FLAGS})
 	target_compile_options(wrenchengine PRIVATE ${GCC_FLAGS} -O3)
-	target_compile_options(build PRIVATE ${GCC_FLAGS} -O3)
+	target_compile_options(pakrac PRIVATE ${GCC_FLAGS} -O3)
 	target_compile_options(asset2json PRIVATE ${GCC_FLAGS})
 endif()
 
@@ -177,7 +177,7 @@ if (MSVC)
 	target_compile_options(vif PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(wrenchiso PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(wrenchengine PRIVATE ${__MSVC_BUILD_OPTIONS__})
-	target_compile_options(build PRIVATE ${__MSVC_BUILD_OPTIONS__})
+	target_compile_options(pakrac PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(asset2json PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	unset(__MSVC_BUILD_OPTIONS__)
 endif()
@@ -189,7 +189,7 @@ if(UNIX)
 	target_link_libraries(vif stdc++fs)
 	target_link_libraries(wrenchiso stdc++fs)
 	target_link_libraries(wrenchengine stdc++fs)
-	target_link_libraries(build stdc++fs)
+	target_link_libraries(pakrac stdc++fs)
 endif()
 
 # cxxopts
@@ -202,7 +202,7 @@ target_link_libraries(wrenchiso cxxopts)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 target_link_libraries(wrench Threads::Threads)
-target_link_libraries(build Threads::Threads)
+target_link_libraries(pakrac Threads::Threads)
 
 # GLAD
 add_subdirectory(thirdparty/glad)

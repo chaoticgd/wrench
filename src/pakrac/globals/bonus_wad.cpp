@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <build/asset_unpacker.h>
-#include <build/asset_packer.h>
+#include <pakrac/asset_unpacker.h>
+#include <pakrac/asset_packer.h>
 
 static void unpack_bonus_wad(BonusWadAsset& dest, InputStream& src, Game game);
 static void pack_bonus_wad(OutputStream& dest, std::vector<u8>* header_dest, BonusWadAsset& src, Game game);

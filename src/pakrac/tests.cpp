@@ -23,8 +23,8 @@
 #include <engine/moby.h>
 #include <engine/texture.h>
 #include <engine/collision.h>
-#include <build/assets.h>
-#include <build/primary.h>
+#include <pakrac/assets.h>
+#include <pakrac/primary.h>
 
 static void run_level_tests(fs::path input_path);
 struct GameplayTestArgs {

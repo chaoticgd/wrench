@@ -16,8 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-
-#include "../core/util.h"
-#include <build/wad_file.h>
+#include <core/util.h>
+#include <pakrac/wad_file.h>
 
 void run_tests(fs::path input_path);

@@ -28,10 +28,10 @@
 #include <iso/iso_packer.h>
 #include <iso/iso_unpacker.h>
 #include <iso/iso_tools.h>
-#include <build/tests.h>
-#include <build/wad_file.h>
-#include <build/asset_unpacker.h>
-#include <build/asset_packer.h>
+#include <pakrac/tests.h>
+#include <pakrac/wad_file.h>
+#include <pakrac/asset_unpacker.h>
+#include <pakrac/asset_packer.h>
 
 enum ArgFlags : u32 {
 	ARG_INPUT_PATH = 1 << 0,
@@ -388,7 +388,7 @@ static void build_moby(const char* input_path, const char* output_path) {
 }
 
 static void print_usage() {
-	puts("Wrench Build Tool -- https://github.com/chaoticgd/wrench");
+	puts("PakRac, part of Wrench -- https://github.com/chaoticgd/wrench");
 	puts("");
 	puts(" An asset packer/unpacker for the Ratchet & Clank PS2 games intended for modding.");
 	puts("");

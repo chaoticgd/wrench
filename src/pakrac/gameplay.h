@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WRENCH_BUILD_GAMEPLAY_H
-#define WRENCH_BUILD_GAMEPLAY_H
+#ifndef PAKRAC_GAMEPLAY_H
+#define PAKRAC_GAMEPLAY_H
 
 #include <core/util.h>
 #include <core/level.h>

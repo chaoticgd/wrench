@@ -19,7 +19,7 @@
 #include "primary.h"
 
 #include <engine/compression.h>
-#include <build/assets.h>
+#include <pakrac/assets.h>
 
 static WadBuffer wad_buffer(Buffer buf) {
 	return {buf.lo, buf.hi};
