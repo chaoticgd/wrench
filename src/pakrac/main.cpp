@@ -219,7 +219,7 @@ static void unpack_wads(const fs::path& input_path, const fs::path& output_path,
 	dest_pack.game_info.type = AssetPackType::BINS;
 	
 	BuildAsset& dest_build = dest_pack.asset_file("build.asset").root().child<BuildAsset>("base_game");
-	dest_pack.game_info.builds = {dest_build.absolute_reference()};
+	dest_pack.game_info.builds = {dest_build.reference()};
 	
 	dest_build.set_game(src_build.game());
 	
@@ -231,7 +231,7 @@ static void unpack_wads(const fs::path& input_path, const fs::path& output_path,
 		case 4: game = Game::DL; break;
 		default: {
 			verify_not_reached("Build asset '%s' has invalid game attribute. Should be 1, 2, 3 or 4.",
-				asset_reference_to_string(src_build.absolute_reference()).c_str());
+				asset_reference_to_string(src_build.reference()).c_str());
 		}
 	}
 	
@@ -251,7 +251,7 @@ void unpack_global_wad(AssetPack& dest_pack, ReferenceAsset& reference_asset, As
 	ThisAsset& dest_asset = dest_pack.asset_file(std::string(tag) + "/" + tag + ".asset").root().child<ThisAsset>(tag);
 	auto armor_file = src_asset.file().open_binary_file_for_reading(src_asset.as<BinaryAsset>().src());
 	unpack_asset_impl(dest_asset, *armor_file, game, FMT_NO_HINT);
-	reference_asset.set_asset(std::string("/") + tag);
+	reference_asset.set_asset(tag);
 }
 
 void unpack_global_wads(AssetPack& dest_pack, BuildAsset& dest_build, BuildAsset& src_build, Game game) {
@@ -289,7 +289,7 @@ static void unpack_level_wads(AssetPack& dest_pack, BuildAsset& dest_build, Buil
 			unpack_asset_impl(dest_level.level<LevelSceneWadAsset>().switch_files(), *file, game);
 		}
 		
-		dest_build.levels().child<ReferenceAsset>(src_level.tag().c_str()).set_asset(stringf("/levels/%s", src_level.tag().c_str()));
+		dest_build.levels().child<ReferenceAsset>(src_level.tag().c_str()).set_asset(stringf("levels.%s", src_level.tag().c_str()));
 	});
 }
 

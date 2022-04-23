@@ -44,7 +44,6 @@ struct AssetReferenceFragment {
 };
 
 struct AssetReference {
-	bool is_relative = true;
 	std::vector<AssetReferenceFragment> fragments;
 	std::string pack;
 };

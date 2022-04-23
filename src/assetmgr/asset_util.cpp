@@ -24,13 +24,10 @@ AssetReference parse_asset_reference(const char* ptr) {
 	std::string string(ptr);
 	
 	AssetReference reference;
-	reference.is_relative = string[0] != '/';
 	
-	size_t begin = reference.is_relative ? 0 : 1;
-	size_t tag_begin = begin;
-	
-	for(size_t i = begin; i < string.size(); i++) {
-		if(string[i] == '/') {
+	size_t tag_begin = 0;
+	for(size_t i = 0; i < string.size(); i++) {
+		if(string[i] == '.') {
 			std::string tag = string.substr(tag_begin, i - tag_begin);
 			reference.fragments.push_back(AssetReferenceFragment{std::move(tag)});
 			tag_begin = i + 1;
@@ -50,13 +47,10 @@ AssetReference parse_asset_reference(const char* ptr) {
 
 std::string asset_reference_to_string(const AssetReference& reference) {
 	std::string string;
-	if(!reference.is_relative) {
-		string += '/';
-	}
 	for(auto fragment = reference.fragments.begin(); fragment != reference.fragments.end(); fragment++) {
 		string += fragment->tag;
 		if(fragment + 1 != reference.fragments.end()) {
-			string += '/';
+			string += '.';
 		}
 	}
 	if(!reference.pack.empty()) {

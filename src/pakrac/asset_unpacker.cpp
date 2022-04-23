@@ -36,7 +36,7 @@ on_load(Unpacker, []() {
 })
 
 void unpack_asset_impl(Asset& dest, InputStream& src, Game game, AssetFormatHint hint) {
-	std::string reference = asset_reference_to_string(dest.absolute_reference());
+	std::string reference = asset_reference_to_string(dest.reference());
 	std::string type = asset_type_to_string(dest.type());
 	for(char& c : type) c = tolower(c);
 	printf("[%3d%%] \033[32mUnpacking %s asset %s\033[0m\n", -1, type.c_str(), reference.c_str());
@@ -58,7 +58,7 @@ static void unpack_binary_asset(BinaryAsset& dest, InputStream& src, Game game) 
 	auto [stream, ref] = dest.file().open_binary_file_for_writing(file_name);
 	verify(stream.get(), "Failed to open file '%s' for writing binary asset '%s'.",
 		file_name.c_str(),
-		asset_reference_to_string(dest.absolute_reference()).c_str());
+		asset_reference_to_string(dest.reference()).c_str());
 	src.seek(0);
 	Stream::copy(*stream, src, src.size());
 	dest.set_src(ref);
@@ -69,7 +69,7 @@ static void unpack_file_asset(FileAsset& dest, InputStream& src, Game game) {
 	auto [stream, ref] = dest.file().open_binary_file_for_writing(file_name);
 	verify(stream.get(), "Failed to open file '%s' for writing file asset '%s'.",
 		file_name.c_str(),
-		asset_reference_to_string(dest.absolute_reference()).c_str());
+		asset_reference_to_string(dest.reference()).c_str());
 	src.seek(0);
 	Stream::copy(*stream, src, src.size());
 	dest.set_src(ref);

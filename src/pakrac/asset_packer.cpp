@@ -45,7 +45,7 @@ on_load(Packer, []() {
 })
 
 void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& src, Game game, AssetFormatHint hint) {
-	std::string reference = asset_reference_to_string(src.absolute_reference());
+	std::string reference = asset_reference_to_string(src.reference());
 	
 	if(!g_asset_packer_dry_run) {
 		std::string type = asset_type_to_string(src.type());

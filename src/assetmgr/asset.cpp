@@ -66,25 +66,13 @@ Asset& Asset::highest_precedence() {
 	return *asset;
 }
 
-AssetReference Asset::absolute_reference() const {
+AssetReference Asset::reference() const {
 	if(parent()) {
-		AssetReference reference = parent()->absolute_reference();
+		AssetReference reference = parent()->reference();
 		reference.fragments.emplace_back(AssetReferenceFragment{tag(), type()});
 		return reference;
 	} else {
-		return AssetReference{false};
-	}
-}
-
-AssetReference Asset::reference_relative_to(Asset& asset) const {
-	bool equal = weakly_equal(asset);
-	if(equal || parent() == nullptr) {
-		return AssetReference{equal, {}};
-	} else {
-		AssetReferenceFragment fragment{tag(), type()};
-		AssetReference reference = parent()->reference_relative_to(asset);
-		reference.fragments.emplace_back(std::move(fragment));
-		return reference;
+		return AssetReference{};
 	}
 }
 
@@ -150,9 +138,9 @@ bool Asset::remove_physical_child(Asset& asset) {
 }
 
 Asset& Asset::asset_file(const fs::path& path) {
-	AssetReference reference = absolute_reference();
+	AssetReference ref = reference();
 	Asset* asset = &pack().asset_file(file()._relative_directory/path).root();
-	for(AssetReferenceFragment& fragment : reference.fragments) {
+	for(AssetReferenceFragment& fragment : ref.fragments) {
 		asset = &asset->physical_child(fragment.type, fragment.tag.c_str());
 	}
 	return *asset;
@@ -448,15 +436,10 @@ void AssetPack::lock() { assert(0); }
 // *****************************************************************************
 
 Asset& AssetForest::lookup_asset(const AssetReference& reference, Asset* context) {
-	Asset* asset;
-	if(reference.is_relative) {
-		asset = context;
-	} else {
-		if(_packs.size() < 1 || _packs[0]->_asset_files.size() < 1) {
-			throw AssetLookupFailed(asset_reference_to_string(reference));
-		}
-		asset = &_packs[0]->_asset_files[0]->root();
+	if(_packs.size() < 1 || _packs[0]->_asset_files.size() < 1) {
+		throw AssetLookupFailed(asset_reference_to_string(reference));
 	}
+	Asset* asset = &_packs[0]->_asset_files[0]->root();
 	if(asset == nullptr) {
 		throw AssetLookupFailed(asset_reference_to_string(reference));
 	}

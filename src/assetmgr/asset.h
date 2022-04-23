@@ -57,8 +57,7 @@ public:
 	Asset* higher_precedence();
 	Asset& lowest_precedence();
 	Asset& highest_precedence();
-	AssetReference absolute_reference() const;
-	AssetReference reference_relative_to(Asset& asset) const;
+	AssetReference reference() const;
 	
 	template <typename Callback>
 	void for_each_physical_child(Callback callback) {
