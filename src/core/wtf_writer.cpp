@@ -95,6 +95,21 @@ void wtf_write_float(WtfWriter* ctx, float f) {
 	*ctx->dest += stringf("%.9g\n", f);
 }
 
+void wtf_write_boolean(WtfWriter* ctx, bool b) {
+	if(ctx->array_empty) {
+		*ctx->dest += stringf("\n");
+		ctx->array_empty = 0;
+	}
+	if(ctx->array_depth > 0) {
+		indent(ctx);
+	}
+	if(b) {
+		*ctx->dest += true;
+	} else {
+		*ctx->dest += false;
+	}
+}
+
 void wtf_write_string(WtfWriter* ctx, const char* string) {
 	if(ctx->array_empty) {
 		*ctx->dest += stringf("\n");

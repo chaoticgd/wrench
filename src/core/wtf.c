@@ -287,15 +287,31 @@ static ErrorStr parse_value(WtfReader* ctx, WtfAttribute** attribute_dest) {
 			break;
 		}
 		default: {
-			float number;
-			ErrorStr error = parse_float(ctx, &number);
-			if(error) {
-				return error;
-			}
-			if(ctx->attributes) {
-				attribute->type = WTF_NUMBER;
-				attribute->number.i = (int32_t) number;
-				attribute->number.f = number;
+			if(strncmp(ctx->input, "false", 5) == 0) {
+				if(ctx->attributes) {
+					attribute->type = WTF_BOOLEAN;
+					attribute->boolean = 0;
+				}
+				
+				ctx->input += 5;
+			} else if(strncmp(ctx->input, "true", 4) == 0) {
+				if(ctx->attributes) {
+					attribute->type = WTF_BOOLEAN;
+					attribute->boolean = 1;
+				}
+				
+				ctx->input += 4;
+			} else {
+				float number;
+				ErrorStr error = parse_float(ctx, &number);
+				if(error) {
+					return error;
+				}
+				if(ctx->attributes) {
+					attribute->type = WTF_NUMBER;
+					attribute->number.i = (int32_t) number;
+					attribute->number.f = number;
+				}
 			}
 		}
 	}

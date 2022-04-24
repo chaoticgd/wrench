@@ -64,6 +64,7 @@ typedef struct WtfNode {
 
 typedef enum {
 	WTF_NUMBER,
+	WTF_BOOLEAN,
 	WTF_STRING,
 	WTF_ARRAY
 } WtfAttributeType;
@@ -78,6 +79,7 @@ typedef struct WtfAttribute {
 			int32_t i;
 			float f;
 		} number;
+		int32_t boolean;
 		char* string;
 		WtfAttribute* first_array_element;
 	};

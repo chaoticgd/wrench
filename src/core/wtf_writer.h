@@ -32,6 +32,7 @@ void wtf_end_node(WtfWriter* ctx);
 void wtf_begin_attribute(WtfWriter* ctx, const char* key);
 void wtf_end_attribute(WtfWriter* ctx);
 void wtf_write_integer(WtfWriter* ctx, int32_t i);
+void wtf_write_boolean(WtfWriter* ctx, bool b);
 void wtf_write_float(WtfWriter* ctx, float f);
 void wtf_write_string(WtfWriter* ctx, const char* string);
 
