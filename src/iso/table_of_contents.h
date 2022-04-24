@@ -130,9 +130,9 @@ static const std::size_t TOC_MAX_SIZE       = 0x200000;
 static const std::size_t TOC_MAX_INDEX_SIZE = 0x10000;
 static const std::size_t TOC_MAX_LEVELS     = 100;
 
-table_of_contents read_table_of_contents(FILE* iso, Game game);
-table_of_contents read_table_of_contents_rac1(FILE* iso);
-table_of_contents read_table_of_contents_rac234(FILE* iso);
+table_of_contents read_table_of_contents(InputStream& src, Game game);
+table_of_contents read_table_of_contents_rac1(InputStream& src);
+table_of_contents read_table_of_contents_rac234(InputStream& src);
 
 s64 write_table_of_contents_rac234(OutputStream& iso, const table_of_contents& toc, Game game);
 Sector32 calculate_table_of_contents_size(const table_of_contents& toc, s32 single_level_index);

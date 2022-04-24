@@ -27,7 +27,7 @@ template <typename Getter>
 static void pack_help_audio(OutputStream& dest, Sector32* sectors_dest, s32 count, CollectionAsset& src, Game game, s64 base, Getter getter);
 
 on_load(Audio, []() {
-	AudioWadAsset::funcs.unpack_dl = wrap_unpacker_func<AudioWadAsset>(unpack_audio_wad);
+	AudioWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<AudioWadAsset>(unpack_audio_wad);
 	
 	AudioWadAsset::funcs.pack_dl = wrap_wad_packer_func<AudioWadAsset>(pack_audio_wad);
 })

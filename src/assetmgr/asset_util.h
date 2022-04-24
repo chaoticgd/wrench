@@ -68,11 +68,9 @@ struct FileReference {
 // *****************************************************************************
 
 enum AssetPackType {
-	WADS, // Built WAD files extracted from a base game ISO.
-	BINS, // Built loose files extracted from a base game ISO.
-	SOURCE, // Source assets unpacked from files extracted from a base game ISO.
-	LIBRARY, // Additional assets to be used by mods.
-	MOD // A mod.
+	UNPACKED, // Assets unpacked from files extracted from a base game ISO.
+	MOD, // A mod.
+	LIBRARY // Additional assets to be used by mods.
 };
 
 struct GameInfo {

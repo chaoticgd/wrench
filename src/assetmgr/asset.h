@@ -116,6 +116,18 @@ public:
 		return dynamic_cast<AssetType&>(*this);
 	}
 	
+	template <typename ChildTargetType>
+	ChildTargetType& transmute_child(const char* tag) {
+		for(auto iter = _children.begin(); iter != _children.end(); iter++) {
+			if(iter->get()->tag() == tag) {
+				_children.erase(iter);
+				break;
+			}
+		}
+		Asset& asset = add_child(create_asset(ChildTargetType::ASSET_TYPE, forest(), pack(), file(), this, tag));
+		return asset.as<ChildTargetType>();
+	}
+	
 	bool has_child(const char* tag);
 	bool has_child(s32 tag);
 	Asset& get_child(const char* tag);
@@ -140,6 +152,10 @@ public:
 	virtual void validate_attributes() const = 0;
 	
 	AssetDispatchTable& funcs;
+	
+	bool is_wad = false;
+	bool is_level_wad = false;
+	bool is_bin_leaf = false;
 	
 private:
 	friend AssetPack;
@@ -178,7 +194,6 @@ public:
 	std::unique_ptr<InputStream> open_binary_file_for_reading(const FileReference& reference, fs::file_time_type* modified_time_dest = nullptr) const;
 	std::pair<std::unique_ptr<OutputStream>, FileReference> open_binary_file_for_writing(const fs::path& path) const;
 	FileReference write_text_file(const fs::path& path, const char* contents) const;
-	FileReference extract_binary_file(const fs::path& path, Buffer prepend, FILE* src, s64 offset, s64 size) const;
 	
 	AssetFile* lower_precedence();
 	AssetFile* higher_precedence();
@@ -235,7 +250,6 @@ private:
 	virtual std::unique_ptr<OutputStream> open_binary_file_for_writing(const fs::path& path) const = 0;
 	virtual std::string read_text_file(const fs::path& path) const = 0;
 	virtual void write_text_file(const fs::path& path, const char* contents) const = 0;
-	virtual void extract_binary_file(const fs::path& relative_dest, Buffer prepend, FILE* src, s64 offset, s64 size) const = 0;
 	virtual std::vector<fs::path> enumerate_asset_files() const = 0;
 	virtual s32 check_lock() const;
 	virtual void lock();
@@ -291,7 +305,6 @@ private:
 	std::unique_ptr<OutputStream> open_binary_file_for_writing(const fs::path& path) const override;
 	std::string read_text_file(const fs::path& path) const override;
 	void write_text_file(const fs::path& path, const char* contents) const override;
-	void extract_binary_file(const fs::path& relative_dest, Buffer prepend, FILE* src, s64 offset, s64 size) const override;
 	std::vector<fs::path> enumerate_asset_files() const override;
 	s32 check_lock() const override;
 	void lock() override;

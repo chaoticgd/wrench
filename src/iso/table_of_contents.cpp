@@ -22,20 +22,20 @@
 #include <core/filesystem.h>
 #include <iso/wad_identifier.h>
 
-static LevelWadInfo adapt_rac1_level_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header);
-static Opt<LevelWadInfo> adapt_rac1_audio_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header);
-static Opt<LevelWadInfo> adapt_rac1_scene_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header);
-static Sector32 get_vag_size(FILE* iso, Sector32 sector);
-static Sector32 get_lz_size(FILE* iso, Sector32 sector);
+static LevelWadInfo adapt_rac1_level_wad_header(InputStream& src, Rac1AmalgamatedWadHeader& header);
+static Opt<LevelWadInfo> adapt_rac1_audio_wad_header(InputStream& src, Rac1AmalgamatedWadHeader& header);
+static Opt<LevelWadInfo> adapt_rac1_scene_wad_header(InputStream& src, Rac1AmalgamatedWadHeader& header);
+static Sector32 get_vag_size(InputStream& src, Sector32 sector);
+static Sector32 get_lz_size(InputStream& src, Sector32 sector);
 
 static s64 get_rac234_level_table_offset(Buffer src);
 
-table_of_contents read_table_of_contents(FILE* iso, Game game) {
+table_of_contents read_table_of_contents(InputStream& src, Game game) {
 	table_of_contents toc;
 	if(game == Game::RAC1) {
-		toc = read_table_of_contents_rac1(iso);
+		toc = read_table_of_contents_rac1(src);
 	} else {
-		toc = read_table_of_contents_rac234(iso);
+		toc = read_table_of_contents_rac234(src);
 		if(toc.levels.size() == 0) {
 			fprintf(stderr, "error: Unable to locate level table!\n");
 			exit(1);
@@ -44,14 +44,15 @@ table_of_contents read_table_of_contents(FILE* iso, Game game) {
 	return toc;
 }
 
-table_of_contents read_table_of_contents_rac1(FILE* iso) {
+table_of_contents read_table_of_contents_rac1(InputStream& src) {
 	s32 magic, toc_size;
-	fseek(iso, RAC1_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE, SEEK_SET);
-	verify(fread(&magic, 4, 1, iso) == 1, "Failed to read R&C1 table of contents.");
-	verify(fread(&toc_size, 4, 1, iso) == 1, "Failed to read R&C1 table of contents.");
+	src.seek(RAC1_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
+	verify(src.read((u8*) &magic, 4) == 1, "Failed to read R&C1 table of contents.");
+	verify(src.read((u8*) &toc_size, 4) == 1, "Failed to read R&C1 table of contents.");
 	verify(toc_size > 0 && toc_size < 1024 * 1024 * 1024, "Invalid R&C1 table of contents.");
 	verify(magic == 1, "Invalid R&C1 table of contents.");
-	std::vector<u8> bytes = read_file(iso, RAC1_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE, toc_size);
+	src.seek(RAC1_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
+	std::vector<u8> bytes = src.read_multiple<u8>(toc_size);
 	Buffer buffer(bytes);
 	
 	table_of_contents toc;
@@ -59,16 +60,17 @@ table_of_contents read_table_of_contents_rac1(FILE* iso) {
 		Sector32 lsn = buffer.read<Sector32>(ofs, "sector");
 		Sector32 size = buffer.read<Sector32>(ofs + 4, "size");
 		if(lsn.sectors != 0) {
-			std::vector<u8> header_bytes = read_file(iso, lsn.bytes(), 0x2434);
+			src.seek(lsn.bytes());
+			std::vector<u8> header_bytes = src.read_multiple<u8>(0x2434);
 			Buffer header_buffer(header_bytes);
 			if(header_buffer.read<s32>(4, "file header") == 0x2434) {
 				Rac1AmalgamatedWadHeader header = header_buffer.read<Rac1AmalgamatedWadHeader>(0, "level header");
 				
 				LevelInfo level;
 				level.level_table_index = header.level_number;
-				level.level = adapt_rac1_level_wad_header(iso, header);
-				level.audio = adapt_rac1_audio_wad_header(iso, header);
-				level.scene = adapt_rac1_scene_wad_header(iso, header);
+				level.level = adapt_rac1_level_wad_header(src, header);
+				level.audio = adapt_rac1_audio_wad_header(src, header);
+				level.scene = adapt_rac1_scene_wad_header(src, header);
 				toc.levels.emplace_back(std::move(level));
 			}
 		}
@@ -84,7 +86,7 @@ static SectorByteRange sub_sector_byte_range(SectorByteRange range, Sector32 lsn
 	return {{range.offset.sectors - lsn.sectors}, range.size_bytes};
 }
 
-static LevelWadInfo adapt_rac1_level_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header) {
+static LevelWadInfo adapt_rac1_level_wad_header(InputStream& src, Rac1AmalgamatedWadHeader& header) {
 	// Determine where the file begins and ends on disc.
 	Sector32 low = {INT32_MAX};
 	low = {std::min(low.sectors, header.primary.offset.sectors)};
@@ -122,7 +124,7 @@ static LevelWadInfo adapt_rac1_level_wad_header(FILE* iso, Rac1AmalgamatedWadHea
 	return level_part;
 }
 
-static Opt<LevelWadInfo> adapt_rac1_audio_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header) {
+static Opt<LevelWadInfo> adapt_rac1_audio_wad_header(InputStream& src, Rac1AmalgamatedWadHeader& header) {
 	// Determine where the file begins and ends on disc.
 	Sector32 low = {INT32_MAX};
 	Sector32 high = {0};
@@ -135,7 +137,7 @@ static Opt<LevelWadInfo> adapt_rac1_audio_wad_header(FILE* iso, Rac1AmalgamatedW
 	for(s32 i = 0; i < sizeof(header.music) / sizeof(header.music[0]); i++) {
 		if(header.music[i].sectors > 0) {
 			low = {std::min(low.sectors, header.music[i].sectors)};
-			high = {std::max(high.sectors, header.music[i].sectors + get_vag_size(iso, header.music[i].sectors).sectors)};
+			high = {std::max(high.sectors, header.music[i].sectors + get_vag_size(src, header.music[i].sectors).sectors)};
 		}
 	}
 	if(low.sectors == INT32_MAX || high.sectors == 0) {
@@ -172,7 +174,7 @@ static Opt<LevelWadInfo> adapt_rac1_audio_wad_header(FILE* iso, Rac1AmalgamatedW
 	return audio_part;
 }
 
-static Opt<LevelWadInfo> adapt_rac1_scene_wad_header(FILE* iso, Rac1AmalgamatedWadHeader& header) {
+static Opt<LevelWadInfo> adapt_rac1_scene_wad_header(InputStream& src, Rac1AmalgamatedWadHeader& header) {
 	// Determine where the file begins and ends on disc.
 	Sector32 low = {INT32_MAX};
 	Sector32 high = {0};
@@ -181,13 +183,13 @@ static Opt<LevelWadInfo> adapt_rac1_scene_wad_header(FILE* iso, Rac1AmalgamatedW
 		for(s32 j = 0; j < sizeof(scene.sounds) / sizeof(scene.sounds[0]); j++) {
 			if(scene.sounds[j].sectors > 0) {
 				low = {std::min(low.sectors, scene.sounds[j].sectors)};
-				high = {std::max(high.sectors, scene.sounds[j].sectors + get_vag_size(iso, scene.sounds[j].sectors).sectors)};
+				high = {std::max(high.sectors, scene.sounds[j].sectors + get_vag_size(src, scene.sounds[j].sectors).sectors)};
 			}
 		}
 		for(s32 j = 0; j < sizeof(scene.wads) / sizeof(scene.wads[0]); j++) {
 			if(scene.wads[j].sectors > 0) {
 				low = {std::min(low.sectors, scene.wads[j].sectors)};
-				high = {std::max(high.sectors, scene.wads[j].sectors + get_lz_size(iso, scene.wads[j].sectors).sectors)};
+				high = {std::max(high.sectors, scene.wads[j].sectors + get_lz_size(src, scene.wads[j].sectors).sectors)};
 			}
 		}
 	}
@@ -229,26 +231,25 @@ static Opt<LevelWadInfo> adapt_rac1_scene_wad_header(FILE* iso, Rac1AmalgamatedW
 	return scene_part;
 }
 
-static Sector32 get_vag_size(FILE* iso, Sector32 sector) {
-	std::vector<u8> header_bytes = read_file(iso, sector.bytes(), sizeof(VagHeader));
-	VagHeader header = Buffer(header_bytes).read<VagHeader>(0, "vag header");
+static Sector32 get_vag_size(InputStream& src, Sector32 sector) {
+	VagHeader header = src.read<VagHeader>(sector.bytes());
 	if(memcmp(header.magic, "VAGp", 4) != 0) {
 		return {1};
 	}
 	return Sector32::size_from_bytes(sizeof(VagHeader) + byte_swap_32(header.data_size));
 }
 
-static Sector32 get_lz_size(FILE* iso, Sector32 sector) {
-	std::vector<u8> header_bytes = read_file(iso, sector.bytes(), sizeof(LzHeader));
-	LzHeader header = Buffer(header_bytes).read<LzHeader>(0, "WAD LZ header");
+static Sector32 get_lz_size(InputStream& src, Sector32 sector) {
+	LzHeader header = src.read<LzHeader>(sector.bytes());
 	if(memcmp(header.magic, "WAD", 3) != 0) {
 		return {1};
 	}
 	return Sector32::size_from_bytes(header.compressed_size);
 }
 
-table_of_contents read_table_of_contents_rac234(FILE* iso) {
-	std::vector<u8> bytes = read_file(iso, RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE, TOC_MAX_SIZE);
+table_of_contents read_table_of_contents_rac234(InputStream& src) {
+	src.seek(RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
+	std::vector<u8> bytes = src.read_multiple<u8>(TOC_MAX_SIZE);
 	Buffer buffer(bytes);
 	
 	table_of_contents toc;

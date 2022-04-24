@@ -114,6 +114,7 @@ Asset& Asset::physical_child(AssetType type, const char* tag) {
 		if(child->type() == type && child->tag() == tag) {
 			return *child.get();
 		}
+		assert(child->tag() != tag);
 	}
 	return add_child(create_asset(type, forest(), pack(), file(), this, tag));
 }
@@ -188,6 +189,7 @@ bool Asset::weakly_equal(const Asset& rhs) const {
 }
 
 Asset& Asset::add_child(std::unique_ptr<Asset> child) {
+	assert(child.get());
 	Asset& asset = *_children.emplace_back(std::move(child)).get();
 	asset.connect_precedence_pointers();
 	return asset;
@@ -307,11 +309,6 @@ std::pair<std::unique_ptr<OutputStream>, FileReference> AssetFile::open_binary_f
 
 FileReference AssetFile::write_text_file(const fs::path& path, const char* contents) const {
 	_pack.write_text_file(_relative_directory/path, contents);
-	return FileReference(*this, path);
-}
-
-FileReference AssetFile::extract_binary_file(const fs::path& path, Buffer prepend, FILE* src, s64 offset, s64 size) const {
-	_pack.extract_binary_file(_relative_directory/path, prepend, src, offset, size);
 	return FileReference(*this, path);
 }
 
@@ -496,19 +493,6 @@ void LooseAssetPack::write_text_file(const fs::path& path, const char* contents)
 	assert(is_writeable());
 	fs::create_directories((_directory/path).parent_path());
 	write_file(_directory/path, Buffer((u8*) contents, (u8*) contents + strlen(contents)), "w");
-}
-
-void LooseAssetPack::extract_binary_file(const fs::path& relative_dest, Buffer prepend, FILE* src, s64 offset, s64 size) const {
-	assert(is_writeable());
-	fs::create_directories((_directory/relative_dest).parent_path());
-	std::string path = (_directory/relative_dest).string();
-	FILE* file = fopen(path.c_str(), "wb");
-	verify(file, "Failed to open '%s' for writing.", path.c_str());
-	if(prepend.size() > 0) {
-		verify(fwrite(prepend.lo, prepend.size(), 1, file) == 1, "Failed to prepend header to '%s'.", path.c_str());
-	}
-	extract_file(path, file, src, offset, size);
-	fclose(file);
 }
 
 std::vector<fs::path> LooseAssetPack::enumerate_asset_files() const {

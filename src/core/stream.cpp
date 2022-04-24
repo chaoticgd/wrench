@@ -206,6 +206,8 @@ s64 SubInputStream::size() const {
 }
 
 bool SubInputStream::read(u8* dest, s64 size) {
-	verify(stream.tell() + size <= range.offset + range.size, "Tried to read past end of substream.");
+	verify(stream.tell() + size <= range.offset + range.size,
+		"Tried to read past end of substream of size %lx from suboffset %lx.",
+		range.size, tell());
 	return stream.read(dest, size);
 }

@@ -153,7 +153,7 @@ struct IsoFilesystem {
 static const s64 MAX_FILESYSTEM_SIZE_BYTES = 1500 * SECTOR_SIZE;
 
 // Read an ISO filesystem and output the root dir. Call exit(1) on failure.
-IsoFilesystem read_iso_filesystem(FILE* iso);
+IsoFilesystem read_iso_filesystem(InputStream& src);
 
 // Read an ISO filesystem and output a map (dest) of the files in the root
 // directory. Return true on success, false on failure.

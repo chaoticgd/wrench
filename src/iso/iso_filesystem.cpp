@@ -29,8 +29,9 @@ packed_struct(IsoPathTableEntry,
 
 void read_directory_record(IsoDirectory& dest, Buffer src, s64 ofs, size_t size, size_t depth);
 
-IsoFilesystem read_iso_filesystem(FILE* iso) {
-	std::vector<u8> filesystem_buf = read_file(iso, 0, MAX_FILESYSTEM_SIZE_BYTES);
+IsoFilesystem read_iso_filesystem(InputStream& src) {
+	src.seek(0);
+	std::vector<u8> filesystem_buf = src.read_multiple<u8>(MAX_FILESYSTEM_SIZE_BYTES);
 	IsoFilesystem filesystem;
 	if(!read_iso_filesystem(filesystem, Buffer(filesystem_buf))) {
 		fprintf(stderr, "error: Missing or invalid ISO filesystem!\n");

@@ -23,7 +23,7 @@ static void unpack_boot_wad(BootWadAsset& dest, InputStream& src, Game game);
 static void pack_boot_wad(OutputStream& dest, BootWadAsset& src, Game game);
 
 on_load(Boot, []() {
-	BootWadAsset::funcs.unpack_dl = wrap_unpacker_func<BootWadAsset>(unpack_boot_wad);
+	BootWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<BootWadAsset>(unpack_boot_wad);
 	
 	BootWadAsset::funcs.pack_dl = wrap_packer_func<BootWadAsset>(pack_boot_wad);
 })

@@ -23,7 +23,7 @@ static void unpack_armor_wad(ArmorWadAsset& dest, InputStream& src, Game game);
 static void pack_armor_wad(OutputStream& dest, std::vector<u8>* header_dest, ArmorWadAsset& src, Game game);
 
 on_load(Armor, []() {
-	ArmorWadAsset::funcs.unpack_dl = wrap_unpacker_func<ArmorWadAsset>(unpack_armor_wad);
+	ArmorWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<ArmorWadAsset>(unpack_armor_wad);
 	
 	ArmorWadAsset::funcs.pack_dl = wrap_wad_packer_func<ArmorWadAsset>(pack_armor_wad);
 })

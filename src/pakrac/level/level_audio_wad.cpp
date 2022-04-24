@@ -23,7 +23,7 @@ static void unpack_dl_level_audio_wad(LevelAudioWadAsset& dest, InputStream& src
 static void pack_dl_level_audio_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelAudioWadAsset& src, Game game);
 
 on_load(LevelAudio, []() {
-	LevelAudioWadAsset::funcs.unpack_dl = wrap_unpacker_func<LevelAudioWadAsset>(unpack_dl_level_audio_wad);
+	LevelAudioWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<LevelAudioWadAsset>(unpack_dl_level_audio_wad);
 	
 	LevelAudioWadAsset::funcs.pack_dl = wrap_wad_packer_func<LevelAudioWadAsset>(pack_dl_level_audio_wad);
 })
@@ -38,7 +38,7 @@ packed_struct(DeadlockedLevelAudioWadHeader,
 )
 
 static void unpack_dl_level_audio_wad(LevelAudioWadAsset& dest, InputStream& src, Game game) {
-	auto header = src.read<DeadlockedLevelAudioWadHeader>();
+	auto header = src.read<DeadlockedLevelAudioWadHeader>(0);
 	
 	unpack_assets<BinaryAsset>(dest.bin_data().switch_files(), src, ARRAY_PAIR(header.bin_data), game);
 	unpack_asset(dest.upgrade_sample(), src, header.upgrade_sample, game);

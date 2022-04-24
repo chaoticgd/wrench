@@ -23,7 +23,7 @@ void unpack_hud_wad(HudWadAsset& dest, InputStream& src, Game game);
 static void pack_hud_wad(OutputStream& dest, std::vector<u8>* header_dest, HudWadAsset& src, Game game);
 
 on_load(Hud, []() {
-	HudWadAsset::funcs.unpack_dl = wrap_unpacker_func<HudWadAsset>(unpack_hud_wad);
+	HudWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<HudWadAsset>(unpack_hud_wad);
 	
 	HudWadAsset::funcs.pack_dl = wrap_wad_packer_func<HudWadAsset>(pack_hud_wad);
 })

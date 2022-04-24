@@ -28,9 +28,9 @@ static void unpack_dl_misc_wad(MiscWadAsset& dest, InputStream& src, Game game);
 static void pack_dl_misc_wad(OutputStream& dest, std::vector<u8>* header_dest, MiscWadAsset& src, Game game);
 
 on_load(Misc, []() {
-	MiscWadAsset::funcs.unpack_rac2 = wrap_unpacker_func<MiscWadAsset>(unpack_rac2_misc_wad);
-	MiscWadAsset::funcs.unpack_rac2 = wrap_unpacker_func<MiscWadAsset>(unpack_rac3_misc_wad);
-	MiscWadAsset::funcs.unpack_dl = wrap_unpacker_func<MiscWadAsset>(unpack_dl_misc_wad);
+	MiscWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<MiscWadAsset>(unpack_rac2_misc_wad);
+	MiscWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<MiscWadAsset>(unpack_rac3_misc_wad);
+	MiscWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<MiscWadAsset>(unpack_dl_misc_wad);
 	
 	MiscWadAsset::funcs.pack_rac2 = wrap_wad_packer_func<MiscWadAsset>(pack_rac2_misc_wad);
 	MiscWadAsset::funcs.pack_rac3 = wrap_wad_packer_func<MiscWadAsset>(pack_rac3_misc_wad);

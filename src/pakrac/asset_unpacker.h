@@ -23,6 +23,11 @@
 #include <assetmgr/asset_types.h>
 #include <engine/compression.h>
 
+extern bool g_asset_unpacker_dump_wads;
+extern bool g_asset_unpacker_dump_global_wads;
+extern bool g_asset_unpacker_dump_level_wads;
+extern bool g_asset_unpacker_dump_binaries;
+
 void unpack_asset_impl(Asset& dest, InputStream& src, Game game, AssetFormatHint hint = FMT_NO_HINT);
 
 template <typename ThisAsset, typename Range>

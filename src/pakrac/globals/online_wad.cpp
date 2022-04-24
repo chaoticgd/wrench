@@ -23,7 +23,7 @@ void unpack_online_wad(OnlineWadAsset& dest, InputStream& src, Game game);
 static void pack_online_wad(OutputStream& dest, std::vector<u8>* header_dest, OnlineWadAsset& src, Game game);
 
 on_load(Online, []() {
-	OnlineWadAsset::funcs.unpack_dl = wrap_unpacker_func<OnlineWadAsset>(unpack_online_wad);
+	OnlineWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<OnlineWadAsset>(unpack_online_wad);
 	
 	OnlineWadAsset::funcs.pack_dl = wrap_wad_packer_func<OnlineWadAsset>(pack_online_wad);
 })

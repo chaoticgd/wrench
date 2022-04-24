@@ -84,31 +84,9 @@ AssetType File {
 
 // *****************************************************************************
 
-AssetType Mesh {
-	FileReferenceAttribute src {
-		desc: 'The file path of the COLLADA (.dae) file to use.'
-	}
-	
-	StringAttribute node {
-		desc: 'The name of the COLLADA node to use. This is the same as the Blender node name.'
-	}
-}
-
-AssetType Texture {
-	desc: 'A reference to an image file. Only PNG images are currently supported.'
-	
-	FileReferenceAttribute src {}
-	
-	Example 0 {
-		Texture my_texture {
-			src: 'my_texture.png'
-		}
-	}
-}
-
-// *****************************************************************************
-
 AssetType ArmorWad {
+	wad: true
+	
 	Child armors {
 		desc: 'A list of all the armors/skins.'
 		allowed_types: ['Collection']
@@ -130,12 +108,16 @@ AssetType Armor {
 }
 
 AssetType AudioWad {
+	wad: true
+	
 	Child vendor     { allowed_types: ['Collection'] }
 	Child global_sfx { allowed_types: ['Collection'] }
 	Child help       { allowed_types: ['Collection'] }
 }
 
 AssetType HelpAudio {
+	wad: true
+	
 	Child english { allowed_types: ['Sound' 'Binary'] }
 	Child french  { allowed_types: ['Sound' 'Binary'] }
 	Child german  { allowed_types: ['Sound' 'Binary'] }
@@ -144,6 +126,8 @@ AssetType HelpAudio {
 }
 
 AssetType BonusWad {
+	wad: true
+	
 	Child credits_text   { allowed_types: ['Collection'] }
 	Child credits_images { allowed_types: ['Collection'] }
 	Child demomenu       { allowed_types: ['Collection'] }
@@ -154,9 +138,13 @@ AssetType BonusWad {
 	Child dige           { allowed_types: ['Binary'] }
 }
 
-AssetType GadgetWad {}
+AssetType GadgetWad {
+	wad: true
+}
 
 AssetType HudWad {
+	wad: true
+	
 	Child online_images        { allowed_types: ['Collection'] }
 	Child ratchet_seqs         { allowed_types: ['Collection'] }
 	Child hud_seqs             { allowed_types: ['Collection'] }
@@ -196,6 +184,8 @@ AssetType HudWad {
 }
 
 AssetType MiscWad {
+	wad: true
+	
 	Child debug_font    { allowed_types: ['Texture' 'Binary'] }
 	Child irx           { allowed_types: ['IrxWad'] }
 	Child save_game     { allowed_types: ['Binary'] }
@@ -207,6 +197,8 @@ AssetType MiscWad {
 }
 
 AssetType IrxWad {
+	wad: true
+	
 	Child sio2man  { allowed_types: ['Binary'] }
 	Child mcman    { allowed_types: ['Binary'] }
 	Child mcserv   { allowed_types: ['Binary'] }
@@ -234,6 +226,8 @@ AssetType IrxWad {
 }
 
 AssetType BootWad {
+	wad: true
+	
 	Child english     { allowed_types: ['Binary'] }
 	Child french      { allowed_types: ['Binary'] }
 	Child german      { allowed_types: ['Binary'] }
@@ -246,6 +240,7 @@ AssetType BootWad {
 
 AssetType MpegWad {
 	desc: 'The file containing all of the MPEG cutscenes.'
+	wad: true
 	
 	Child story {
 		desc: 'A list of all the MPEG cutscenes.'
@@ -255,16 +250,23 @@ AssetType MpegWad {
 
 AssetType Mpeg {
 	desc: 'A video file.'
+	bin_leaf: true
 	
 	FileReferenceAttribute src {}
 }
 
 AssetType OnlineWad {
+	wad: true
+	
 	Child data { allowed_types: ['Binary'] }
 	Child transition_backgrounds { allowed_types: ['Collection'] }
 }
 
+AssetType SceneWad {}
+
 AssetType SpaceWad {
+	wad: true
+	
 	Child transitions { allowed_types: ['Collection'] }
 }
 
@@ -277,6 +279,9 @@ AssetType Level {
 }
 
 AssetType LevelWad {
+	wad: true
+	level_wad: true
+	
 	IntegerAttribute id {}
 	IntegerAttribute reverb {}
 	
@@ -301,6 +306,9 @@ AssetType Mission {
 }
 
 AssetType LevelAudioWad {
+	wad: true
+	level_wad: true
+	
 	Child bin_data       { allowed_types: ['Collection'] }
 	Child upgrade_sample { allowed_types: ['Binary'] }
 	Child platinum_bolt  { allowed_types: ['Binary'] }
@@ -308,6 +316,9 @@ AssetType LevelAudioWad {
 }
 
 AssetType LevelSceneWad {
+	wad: true
+	level_wad: true
+	
 	Child scenes { allowed_types: ['Collection'] }
 }
 
@@ -325,4 +336,31 @@ AssetType Scene {
 	Child speech_italian_right { allowed_types: ['Binary'] }
 	Child moby_load            { allowed_types: ['Binary'] }
 	Child chunks               { allowed_types: ['Collection'] }
+}
+
+// *****************************************************************************
+
+AssetType Mesh {
+	bin_leaf: true
+	
+	FileReferenceAttribute src {
+		desc: 'The file path of the COLLADA (.dae) file to use.'
+	}
+	
+	StringAttribute node {
+		desc: 'The name of the COLLADA node to use. This is the same as the Blender node name.'
+	}
+}
+
+AssetType Texture {
+	desc: 'A reference to an image file. Only PNG images are currently supported.'
+	bin_leaf: true
+	
+	FileReferenceAttribute src {}
+	
+	Example 0 {
+		Texture my_texture {
+			src: 'my_texture.png'
+		}
+	}
 }

@@ -71,12 +71,8 @@ GameInfo read_game_info(char* input) {
 	
 	const WtfAttribute* type = wtf_attribute(root, "type");
 	if(type && type->type == WTF_STRING) {
-		if(strcmp(type->string, "wads") == 0) {
-			info.type = AssetPackType::WADS;
-		} else if(strcmp(type->string, "bins") == 0) {
-			info.type = AssetPackType::BINS;
-		} else if(strcmp(type->string, "source") == 0) {
-			info.type = AssetPackType::SOURCE;
+		if(strcmp(type->string, "unpacked") == 0) {
+			info.type = AssetPackType::UNPACKED;
 		} else if(strcmp(type->string, "library") == 0) {
 			info.type = AssetPackType::LIBRARY;
 		} else {
@@ -111,12 +107,8 @@ void write_game_info(std::string& dest, const GameInfo& info) {
 	WtfWriter* ctx = wtf_begin_file(dest);
 	
 	wtf_begin_attribute(ctx, "type");
-	if(info.type == AssetPackType::WADS) {
-		wtf_write_string(ctx, "wads");
-	} else if(info.type == AssetPackType::BINS) {
-		wtf_write_string(ctx, "bins");
-	} else if(info.type == AssetPackType::SOURCE) {
-		wtf_write_string(ctx, "source");
+	if(info.type == AssetPackType::UNPACKED) {
+		wtf_write_string(ctx, "unpacked");
 	} else if(info.type == AssetPackType::LIBRARY) {
 		wtf_write_string(ctx, "library");
 	} else {

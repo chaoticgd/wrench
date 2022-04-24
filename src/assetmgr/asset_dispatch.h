@@ -25,6 +25,7 @@ class Asset;
 
 enum AssetFormatHint {
 	FMT_NO_HINT = 0,
+	FMT_BINARY_WAD,
 	FMT_TEXTURE_PIF_IDTEX8,
 	FMT_TEXTURE_RGBA
 };
@@ -40,9 +41,19 @@ AssetUnpackerFunc* wrap_unpacker_func(UnpackerFunc func) {
 	});
 }
 
-// *****************************************************************************
+template <typename ThisAsset, typename UnpackerFunc>
+AssetUnpackerFunc* wrap_wad_unpacker_func(UnpackerFunc func) {
+	return new AssetUnpackerFunc([func](Asset& dest, InputStream& src, Game game, AssetFormatHint hint) {
+		func(static_cast<ThisAsset&>(dest).switch_files(), src, game);
+	});
+}
 
-using AssetTransformerFunc = std::function<void(Asset& dest, Asset& src, Game game)>;
+template <typename ThisAsset, typename UnpackerFunc>
+AssetUnpackerFunc* wrap_iso_unpacker_func(UnpackerFunc func, AssetUnpackerFunc unpack) {
+	return new AssetUnpackerFunc([func, unpack](Asset& dest, InputStream& src, Game game, AssetFormatHint hint) {
+		func(static_cast<ThisAsset&>(dest), src, unpack);
+	});
+}
 
 // *****************************************************************************
 
@@ -92,11 +103,6 @@ struct AssetDispatchTable {
 	AssetUnpackerFunc* unpack_rac2;
 	AssetUnpackerFunc* unpack_rac3;
 	AssetUnpackerFunc* unpack_dl;
-	
-	AssetTransformerFunc* transform_rac1;
-	AssetTransformerFunc* transform_rac2;
-	AssetTransformerFunc* transform_rac3;
-	AssetTransformerFunc* transform_dl;
 	
 	AssetPackerFunc* pack_rac1;
 	AssetPackerFunc* pack_rac2;

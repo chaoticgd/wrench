@@ -61,6 +61,7 @@ void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_
 		case Game::RAC3: pack_func = src.funcs.pack_rac3; break;
 		case Game::DL: pack_func = src.funcs.pack_dl; break;
 	}
+	
 	verify(pack_func, "Tried to pack nonpackable asset '%s'.", reference.c_str());
 	(*pack_func)(dest, header_dest, time_dest, src, game, hint);
 	

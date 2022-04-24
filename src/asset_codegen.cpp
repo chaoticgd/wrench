@@ -94,7 +94,24 @@ int main(int argc, char** argv) {
 		
 		out("\n");
 		out("%sAsset::%sAsset(AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent, std::string tag)\n", node->tag, node->tag);
-		out("\t: Asset(forest, pack, file, parent, ASSET_TYPE, std::move(tag), funcs) {}\n\n");
+		out("\t: Asset(forest, pack, file, parent, ASSET_TYPE, std::move(tag), funcs) {\n");
+		
+		const WtfAttribute* wad = wtf_attribute(node, "wad");
+		if(wad && wad->type == WTF_BOOLEAN && wad->boolean) {
+			out("\tis_wad = true;\n");
+		}
+		
+		const WtfAttribute* level_wad = wtf_attribute(node, "level_wad");
+		if(level_wad && level_wad->type == WTF_BOOLEAN && level_wad->boolean) {
+			out("\tis_level_wad = true;\n");
+		}
+		
+		const WtfAttribute* bin_leaf = wtf_attribute(node, "bin_leaf");
+		if(bin_leaf && bin_leaf->type == WTF_BOOLEAN && bin_leaf->boolean) {
+			out("\tis_bin_leaf = true;\n");
+		}
+		
+		out("}\n\n");
 		
 		generate_read_function(node);
 		generate_write_function(node);
@@ -181,6 +198,7 @@ static void generate_asset_type(const WtfNode* asset_type, s32 id) {
 	}
 	out("\t\n");
 	out("\tstatic const constexpr AssetType ASSET_TYPE = AssetType{%d};\n", id);
+	if(wtf_attribute)
 	out("};\n\n");
 }
 

@@ -23,7 +23,7 @@ static void unpack_mpeg_wad(MpegWadAsset& dest, InputStream& src, Game game);
 static void pack_mpeg_wad(OutputStream& dest, std::vector<u8>* header_dest, MpegWadAsset& src, Game game);
 
 on_load(Mpeg, []() {
-	MpegWadAsset::funcs.unpack_dl = wrap_unpacker_func<MpegWadAsset>(unpack_mpeg_wad);
+	MpegWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<MpegWadAsset>(unpack_mpeg_wad);
 	
 	MpegWadAsset::funcs.pack_dl = wrap_wad_packer_func<MpegWadAsset>(pack_mpeg_wad);
 })

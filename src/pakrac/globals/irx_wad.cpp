@@ -68,10 +68,10 @@ static void unpack_dl_irx_modules(IrxWadAsset& dest, const DeadlockedIrxModules&
 static DeadlockedIrxModules pack_dl_irx_modules(OutputStream& dest, IrxWadAsset& src, Game game);
 
 on_load(Irx, []() {
-	IrxWadAsset::funcs.unpack_rac1 = wrap_unpacker_func<IrxWadAsset>(unpack_rac1_irx_wad);
-	IrxWadAsset::funcs.unpack_rac2 = wrap_unpacker_func<IrxWadAsset>(unpack_rac2_irx_wad);
-	IrxWadAsset::funcs.unpack_rac3 = wrap_unpacker_func<IrxWadAsset>(unpack_rac3_irx_wad);
-	IrxWadAsset::funcs.unpack_dl = wrap_unpacker_func<IrxWadAsset>(unpack_dl_irx_wad);
+	IrxWadAsset::funcs.unpack_rac1 = wrap_wad_unpacker_func<IrxWadAsset>(unpack_rac1_irx_wad);
+	IrxWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<IrxWadAsset>(unpack_rac2_irx_wad);
+	IrxWadAsset::funcs.unpack_rac3 = wrap_wad_unpacker_func<IrxWadAsset>(unpack_rac3_irx_wad);
+	IrxWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<IrxWadAsset>(unpack_dl_irx_wad);
 	
 	IrxWadAsset::funcs.pack_rac1 = wrap_packer_func<IrxWadAsset>(pack_rac1_irx_wad);
 	IrxWadAsset::funcs.pack_rac2 = wrap_packer_func<IrxWadAsset>(pack_rac2_irx_wad);

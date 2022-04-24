@@ -100,10 +100,10 @@ static void unpack_missions(CollectionAsset& dest, InputStream& file, const Miss
 static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& dest, CollectionAsset& missions, Game game, s64 base);
 
 on_load(Level, []() {
-	LevelWadAsset::funcs.unpack_rac1 = wrap_unpacker_func<LevelWadAsset>(unpack_rac1_level_wad);
-	LevelWadAsset::funcs.unpack_rac2 = wrap_unpacker_func<LevelWadAsset>(unpack_rac23_level_wad);
-	LevelWadAsset::funcs.unpack_rac3 = wrap_unpacker_func<LevelWadAsset>(unpack_rac23_level_wad);
-	LevelWadAsset::funcs.unpack_dl = wrap_unpacker_func<LevelWadAsset>(unpack_dl_level_wad);
+	LevelWadAsset::funcs.unpack_rac1 = wrap_wad_unpacker_func<LevelWadAsset>(unpack_rac1_level_wad);
+	LevelWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<LevelWadAsset>(unpack_rac23_level_wad);
+	LevelWadAsset::funcs.unpack_rac3 = wrap_wad_unpacker_func<LevelWadAsset>(unpack_rac23_level_wad);
+	LevelWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<LevelWadAsset>(unpack_dl_level_wad);
 	
 	LevelWadAsset::funcs.pack_rac1 = wrap_wad_packer_func<LevelWadAsset>(pack_rac1_level_wad);
 	LevelWadAsset::funcs.pack_rac2 = wrap_wad_packer_func<LevelWadAsset>(pack_rac23_level_wad);

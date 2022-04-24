@@ -30,10 +30,6 @@ void ZippedAssetPack::write_text_file(const fs::path& path, const char* contents
 	assert(0);
 }
 
-void ZippedAssetPack::extract_binary_file(const fs::path& relative_dest, Buffer prepend, FILE* src, s64 offset, s64 size) const {
-	assert(0);
-}
-
 std::vector<fs::path> ZippedAssetPack::enumerate_asset_files() const {
 	assert(0);
 }

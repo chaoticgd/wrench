@@ -25,7 +25,7 @@ static void unpack_dl_level_scene_wad(LevelSceneWadAsset& dest, InputStream& src
 static void pack_dl_level_scene_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelSceneWadAsset& src, Game game);
 
 on_load(LevelScene, []() {
-	LevelSceneWadAsset::funcs.unpack_dl = wrap_unpacker_func<LevelSceneWadAsset>(unpack_dl_level_scene_wad);
+	LevelSceneWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<LevelSceneWadAsset>(unpack_dl_level_scene_wad);
 	
 	LevelSceneWadAsset::funcs.pack_dl = wrap_wad_packer_func<LevelSceneWadAsset>(pack_dl_level_scene_wad);
 })

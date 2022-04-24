@@ -21,8 +21,10 @@
 
 #include <core/util.h>
 #include <core/filesystem.h>
+#include <assetmgr/asset.h>
+#include <assetmgr/asset_types.h>
 #include <iso/table_of_contents.h>
 
-void unpack_iso(const fs::path& iso_path, const fs::path& output_dir);
+void unpack_iso(BuildAsset& dest, InputStream& src, AssetUnpackerFunc unpack);
 
 #endif

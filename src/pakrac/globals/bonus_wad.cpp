@@ -23,7 +23,7 @@ static void unpack_bonus_wad(BonusWadAsset& dest, InputStream& src, Game game);
 static void pack_bonus_wad(OutputStream& dest, std::vector<u8>* header_dest, BonusWadAsset& src, Game game);
 
 on_load(Bonus, []() {
-	BonusWadAsset::funcs.unpack_dl = wrap_unpacker_func<BonusWadAsset>(unpack_bonus_wad);
+	BonusWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<BonusWadAsset>(unpack_bonus_wad);
 	
 	BonusWadAsset::funcs.pack_dl = wrap_wad_packer_func<BonusWadAsset>(pack_bonus_wad);
 })

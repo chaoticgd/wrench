@@ -31,9 +31,8 @@
 // Fun fact: This used to be its own command line tool called "toc". Now, it's
 // been reduced to a humble subcommand within a greater tool. Pity it.
 void inspect_iso(const std::string& iso_path) {
-	FILE* iso = fopen(iso_path.c_str(), "rb");
-	verify(iso, "Failed to open ISO file.");
-	defer([&]() { fclose(iso); });
+	FileInputStream iso;
+	verify(iso.open(iso_path), "Failed to open ISO file.");
 	
 	IsoFilesystem filesystem = read_iso_filesystem(iso);
 	
@@ -81,10 +80,8 @@ void inspect_iso(const std::string& iso_path) {
 }
 
 void parse_pcsx2_stdout(std::string iso_path) {
-	FILE* iso = fopen(iso_path.c_str(), "rb");
-	verify(iso, "Failed to open ISO file for reading.");
-	std::vector<u8> filesystem_buf = read_file(iso, 0, MAX_FILESYSTEM_SIZE_BYTES);
-	fclose(iso);
+	FileInputStream iso;
+	verify(iso.open(iso_path), "Failed to open ISO file.");
 	
 	// First we enumerate where all the files on the ISO are. Note that this
 	// command only works for stuff referenced by the filesystem.

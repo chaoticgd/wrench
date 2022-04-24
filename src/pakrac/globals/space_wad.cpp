@@ -23,7 +23,7 @@ void unpack_space_wad(SpaceWadAsset& dest, InputStream& src, Game game);
 static void pack_space_wad(OutputStream& dest, std::vector<u8>* header_dest, SpaceWadAsset& src, Game game);
 
 on_load(Space, []() {
-	SpaceWadAsset::funcs.unpack_dl = wrap_unpacker_func<SpaceWadAsset>(unpack_space_wad);
+	SpaceWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<SpaceWadAsset>(unpack_space_wad);
 	
 	SpaceWadAsset::funcs.pack_dl = wrap_wad_packer_func<SpaceWadAsset>(pack_space_wad);
 })

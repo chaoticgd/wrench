@@ -28,6 +28,7 @@
 #include <iso/iso_packer.h>
 #include <iso/iso_unpacker.h>
 #include <iso/iso_tools.h>
+#include <iso/wad_identifier.h>
 #include <pakrac/tests.h>
 #include <pakrac/wad_file.h>
 #include <pakrac/asset_unpacker.h>
@@ -49,13 +50,8 @@ struct ParsedArgs {
 };
 
 static ParsedArgs parse_args(int argc, char** argv, u32 flags);
-static void unpack_wads(const fs::path& input_path, const fs::path& output_path, bool unpack_globals, bool unpack_levels);
-void unpack_global_wads(AssetPack& dest_pack, BuildAsset& dest_build, BuildAsset& src_build, Game game);
-static void unpack_level_wads(AssetPack& dest_pack, BuildAsset& dest_build, BuildAsset& src_build, Game game);
-static void unpack_bins(const fs::path& input_path, const fs::path& output_path);
+static void unpack(const std::vector<fs::path>& input_paths, const fs::path& output_path);
 static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path);
-static void pack_bin(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path);
-static void pack_wad_asset(OutputStream& dest, std::vector<u8>* wad_header_dest, fs::file_time_type* modified_time_dest, Asset& asset);
 static void decompress(const fs::path& input_path, const fs::path& output_path, s64 offset);
 static void compress(const fs::path& input_path, const fs::path& output_path);
 static void extract(fs::path input_path, fs::path output_path);
@@ -79,30 +75,45 @@ int main(int argc, char** argv) {
 	if(mode.starts_with("unpack")) {
 		std::string continuation = mode.substr(6);
 		if(continuation.empty()) {
-			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
-			unpack_iso(args.input_paths[0], args.output_path/"wad");
-			unpack_wads(args.output_path/"wad", args.output_path/"bin", true, true);
-			unpack_bins(args.output_path/"bin", args.output_path/"unpacked");
-			return 0;
-		} else if(continuation == "_iso") {
-			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
-			unpack_iso(args.input_paths[0], args.output_path);
+			g_asset_unpacker_dump_wads = false;
+			g_asset_unpacker_dump_binaries = false;
+			
+			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATHS | ARG_OUTPUT_PATH);
+			unpack(args.input_paths, args.output_path);
 			return 0;
 		} else if(continuation == "_wads") {
-			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
-			unpack_wads(args.input_paths[0], args.output_path, true, true);
+			g_asset_unpacker_dump_wads = true;
+			g_asset_unpacker_dump_global_wads = true;
+			g_asset_unpacker_dump_level_wads = true;
+			g_asset_unpacker_dump_binaries = false;
+			
+			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATHS | ARG_OUTPUT_PATH);
+			unpack(args.input_paths, args.output_path);
 			return 0;
 		} else if(continuation == "_global_wads") {
-			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
-			unpack_wads(args.input_paths[0], args.output_path, true, false);
+			g_asset_unpacker_dump_wads = true;
+			g_asset_unpacker_dump_global_wads = true;
+			g_asset_unpacker_dump_level_wads = false;
+			g_asset_unpacker_dump_binaries = false;
+			
+			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATHS | ARG_OUTPUT_PATH);
+			unpack(args.input_paths, args.output_path);
 			return 0;
 		} else if(continuation == "_level_wads") {
-			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
-			unpack_wads(args.input_paths[0], args.output_path, false, true);
+			g_asset_unpacker_dump_wads = true;
+			g_asset_unpacker_dump_global_wads = false;
+			g_asset_unpacker_dump_level_wads = true;
+			g_asset_unpacker_dump_binaries = false;
+			
+			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATHS | ARG_OUTPUT_PATH);
+			unpack(args.input_paths, args.output_path);
 			return 0;
-		} else if(continuation == "_bin") {
-			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
-			unpack_bins(args.input_paths[0], args.output_path);
+		} else if(continuation == "_binaries") {
+			g_asset_unpacker_dump_wads = false;
+			g_asset_unpacker_dump_binaries = true;
+			
+			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATHS | ARG_OUTPUT_PATH);
+			unpack(args.input_paths, args.output_path);
 			return 0;
 		}
 	}
@@ -112,10 +123,6 @@ int main(int argc, char** argv) {
 		if(continuation.empty()) {
 			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATHS | ARG_ASSET | ARG_OUTPUT_PATH);
 			pack(args.input_paths, args.asset, args.output_path);
-			return 0;
-		} else if(continuation == "_bin") {
-			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATHS | ARG_ASSET | ARG_OUTPUT_PATH);
-			pack_bin(args.input_paths, args.asset, args.output_path);
 			return 0;
 		}
 	}
@@ -202,99 +209,65 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 	return args;
 }
 
-static void unpack_wads(const fs::path& input_path, const fs::path& output_path, bool unpack_globals, bool unpack_levels) {
-	AssetForest src_forest;
+static void unpack(const std::vector<fs::path>& input_paths, const fs::path& output_path) {
+	AssetForest forest;
 	
-	AssetPack& src_pack = src_forest.mount<LooseAssetPack>("wads", input_path, false);
-	verify(src_pack.game_info.type == AssetPackType::WADS,
-		"unpack_wads can only be run on an WAD asset pack.");
+	AssetPack& pack = forest.mount<LooseAssetPack>("unpacked", output_path, true);
+	pack.game_info.type = AssetPackType::UNPACKED;
 	
-	auto& builds = src_pack.game_info.builds;
-	verify(builds.size() == 1, "WAD asset pack must have exactly one build.");
-	BuildAsset& src_build = src_forest.lookup_asset(builds[0], nullptr).as<BuildAsset>();
-	
-	AssetForest dest_forest;
-	
-	AssetPack& dest_pack = dest_forest.mount<LooseAssetPack>("bins", output_path, true);
-	dest_pack.game_info.type = AssetPackType::BINS;
-	
-	BuildAsset& dest_build = dest_pack.asset_file("build.asset").root().child<BuildAsset>("base_game");
-	dest_pack.game_info.builds = {dest_build.reference()};
-	
-	dest_build.set_game(src_build.game());
-	
-	Game game;
-	switch(src_build.game()) {
-		case 1: game = Game::RAC1; break;
-		case 2: game = Game::RAC2; break;
-		case 3: game = Game::RAC3; break;
-		case 4: game = Game::DL; break;
-		default: {
-			verify_not_reached("Build asset '%s' has invalid game attribute. Should be 1, 2, 3 or 4.",
-				asset_reference_to_string(src_build.reference()).c_str());
+	for(const fs::path& input_path : input_paths) {
+		FileInputStream stream;
+		verify(stream.open(input_path), "Failed to open input file '%s' for reading.", input_path.string().c_str());
+		
+		// Check if it's an ISO file.
+		if(stream.size() > 16 * SECTOR_SIZE + 6) {
+			stream.seek(16 * SECTOR_SIZE + 1);
+			std::vector<char> identifier = stream.read_multiple<char>(5);
+			
+			if(memcmp(identifier.data(), "CD001", 5) == 0) {
+				BuildAsset& build = pack.asset_file("build.asset").root().child<BuildAsset>("base_game");
+				pack.game_info.builds = {build.reference()};
+				unpack_asset_impl(build, stream, Game::UNKNOWN);
+				continue;
+			}
 		}
+		
+		// Check if it's a WAD.
+		s32 header_size = static_cast<InputStream&>(stream).read<s32>(0);
+		if(header_size < 0x10000) {
+			stream.seek(0);
+			std::vector<u8> header = stream.read_multiple<u8>(header_size);
+			auto [game, type, name] = identify_wad(header);
+			
+			if(type != WadType::UNKNOWN) {
+				Asset& root = pack.asset_file("wad.asset").root();
+				
+				Asset* wad = nullptr;
+				switch(type) {
+					case WadType::ARMOR: wad = &root.child<ArmorWadAsset>("wad");
+					case WadType::AUDIO: wad = &root.child<AudioWadAsset>("wad");
+					case WadType::BONUS: wad = &root.child<BonusWadAsset>("wad");
+					case WadType::GADGET: wad = &root.child<GadgetWadAsset>("wad");
+					case WadType::HUD: wad = &root.child<HudWadAsset>("wad");
+					case WadType::MISC: wad = &root.child<MiscWadAsset>("wad");
+					case WadType::MPEG: wad = &root.child<MpegWadAsset>("wad");
+					case WadType::ONLINE: wad = &root.child<OnlineWadAsset>("wad");
+					case WadType::SCENE: wad = &root.child<SceneWadAsset>("wad");
+					case WadType::SPACE: wad = &root.child<SpaceWadAsset>("wad");
+					case WadType::LEVEL: wad = &root.child<LevelWadAsset>("wad");
+					case WadType::LEVEL_AUDIO: wad = &root.child<LevelAudioWadAsset>("wad");
+					case WadType::LEVEL_SCENE: wad = &root.child<LevelSceneWadAsset>("wad");
+				}
+				
+				unpack_asset_impl(*wad, stream, game);
+				continue;
+			}
+		}
+		
+		verify_not_reached("Unable to detect type of input file '%s'!", input_path.string().c_str());
 	}
 	
-	if(unpack_globals) {
-		unpack_global_wads(dest_pack, dest_build, src_build, game);
-	}
-	
-	if(unpack_levels) {
-		unpack_level_wads(dest_pack, dest_build, src_build, game);
-	}
-	
-	dest_pack.write();
-}
-
-template <typename ThisAsset>
-void unpack_global_wad(AssetPack& dest_pack, ReferenceAsset& reference_asset, Asset& src_asset, Game game, const char* tag) {
-	ThisAsset& dest_asset = dest_pack.asset_file(std::string(tag) + "/" + tag + ".asset").root().child<ThisAsset>(tag);
-	auto armor_file = src_asset.file().open_binary_file_for_reading(src_asset.as<BinaryAsset>().src());
-	unpack_asset_impl(dest_asset, *armor_file, game, FMT_NO_HINT);
-	reference_asset.set_asset(tag);
-}
-
-void unpack_global_wads(AssetPack& dest_pack, BuildAsset& dest_build, BuildAsset& src_build, Game game) {
-	unpack_global_wad<ArmorWadAsset>(dest_pack, dest_build.armor<ReferenceAsset>(), src_build.get_armor(), game, "armors");
-	unpack_global_wad<AudioWadAsset>(dest_pack, dest_build.audio<ReferenceAsset>(), src_build.get_audio(), game, "audio");
-	unpack_global_wad<BonusWadAsset>(dest_pack, dest_build.bonus<ReferenceAsset>(), src_build.get_bonus(), game, "bonus");
-	unpack_global_wad<HudWadAsset>(dest_pack, dest_build.hud<ReferenceAsset>(), src_build.get_hud(), game, "hud");
-	unpack_global_wad<MiscWadAsset>(dest_pack, dest_build.misc<ReferenceAsset>(), src_build.get_misc(), game, "misc");
-	unpack_global_wad<MpegWadAsset>(dest_pack, dest_build.mpeg<ReferenceAsset>(), src_build.get_mpeg(), game, "mpegs");
-	unpack_global_wad<OnlineWadAsset>(dest_pack, dest_build.online<ReferenceAsset>(), src_build.get_online(), game, "online");
-	unpack_global_wad<SpaceWadAsset>(dest_pack, dest_build.space<ReferenceAsset>(), src_build.get_space(), game, "space");
-}
-
-static void unpack_level_wads(AssetPack& dest_pack, BuildAsset& dest_build, BuildAsset& src_build, Game game) {
-	src_build.get_levels().for_each_logical_child_of_type<LevelAsset>([&](LevelAsset& src_level) {
-		AssetFile& dest_file = dest_pack.asset_file(stringf("levels/%s/level%s.asset", src_level.tag().c_str(), src_level.tag().c_str()));
-		CollectionAsset& levels_collection = dest_file.root().child<CollectionAsset>("levels");
-		LevelAsset& dest_level = levels_collection.child<LevelAsset>(src_level.tag().c_str());
-		
-		if(src_level.has_level()) {
-			BinaryAsset& src_asset = src_level.get_level().as<BinaryAsset>();
-			auto file = src_asset.file().open_binary_file_for_reading(src_asset.as<BinaryAsset>().src());
-			unpack_asset_impl(dest_level.level<LevelWadAsset>().switch_files(), *file, game);
-		}
-		
-		if(src_level.has_audio()) {
-			BinaryAsset& src_asset = src_level.get_audio().as<BinaryAsset>();
-			auto file = src_asset.file().open_binary_file_for_reading(src_asset.as<BinaryAsset>().src());
-			unpack_asset_impl(dest_level.level<LevelAudioWadAsset>().switch_files(), *file, game);
-		}
-		
-		if(src_level.has_scene()) {
-			BinaryAsset& src_asset = src_level.get_scene().as<BinaryAsset>();
-			auto file = src_asset.file().open_binary_file_for_reading(src_asset.as<BinaryAsset>().src());
-			unpack_asset_impl(dest_level.level<LevelSceneWadAsset>().switch_files(), *file, game);
-		}
-		
-		dest_build.levels().child<ReferenceAsset>(src_level.tag().c_str()).set_asset(stringf("levels.%s", src_level.tag().c_str()));
-	});
-}
-
-static void unpack_bins(const fs::path& input_path, const fs::path& output_path) {
-	
+	pack.write();
 }
 
 static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path) {
@@ -327,10 +300,6 @@ static void pack(const std::vector<fs::path>& input_paths, const std::string& as
 	pack_asset_impl(iso, nullptr, nullptr, wad, Game::DL);
 	
 	printf("[100%%] Done!\n");
-}
-
-static void pack_bin(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path) {
-	
 }
 
 static void decompress(const fs::path& input_path, const fs::path& output_path, s64 offset) {
@@ -392,41 +361,27 @@ static void print_usage() {
 	puts("");
 	puts(" An asset packer/unpacker for the Ratchet & Clank PS2 games intended for modding.");
 	puts("");
-	puts("SUBCOMMANDS");
+	puts("USER SUBCOMMANDS");
 	puts("");
-	puts(" unpack <input iso> -o <output dir>");
-	puts("   Run unpack_iso, unpack_wads and unpack_bins in sequence.");
-	puts("");
-	puts("   unpack_iso <input iso> -o <output dir>");
-	puts("     Unpack the ISO file and produce an asset directory of WAD files.");
-	puts("");
-	puts("   unpack_wads <input dir> -o <output dir>");
-	puts("     Unpack an asset directory of WAD files to a new asset directory of loose");
-	puts("     binary files.");
-	puts("");
-	puts("     unpack_global_wads <input dir> -o <output dir>");
-	puts("       Unpack only global WAD files.");
-	puts("");
-	puts("     unpack_global_wads <input dir> -o <output dir>");
-	puts("       Unpack only level WAD files.");
-	puts("");
-	puts("   unpack_bin <input dir> -o <output dir>");
-	puts("     Unpack an asset directory of loose binary files to a new asset directory of"); // max line length
-	puts("     source assets.");
-	puts("");
-	puts("     unpack_collision <input bin> -o <output dae>");
-	puts("       Unpack a loose collision file and produce a COLLADA mesh.");
-	puts("");
+	puts(" unpack <input files> -o <output dir>");
+	puts("   Unpack ISO or WAD files to produce an asset directory of source files.");
 	puts("");
 	puts(" pack <input dirs> -a <asset> -o <output iso>");
-	puts("   Pack an asset directory to produce an ISO file.");
+	puts("   Pack an asset (e.g. base_game) directory to produce an ISO file.");
 	puts("");
-	puts("   pack_bin <input dirs> -a <asset> -o <output iso>");
-	puts("     Pack an asset directory to produce an ISO file.");
+	puts("DEVELOPER SUBCOMMANDS");
 	puts("");
-	puts("   pack_collision <input dae> -o <output bin>");
-	puts("     Pack a COLLADA mesh into a collision file.");
+	puts(" unpack_wads <input files> -o <output dir>");
+	puts("   Unpack ISO or WAD files to produce an asset directory of WAD files.");
 	puts("");
+	puts(" unpack_global_wads <input files> -o <output dir>");
+	puts("   Unpack ISO or WAD files to produce an asset directory of global WAD files.");
+	puts("");
+	puts(" unpack_level_wads <input files> -o <output dir>");
+	puts("   Unpack ISO or WAD files to produce an asset directory of level WAD files.");
+	puts("");
+	puts(" unpack_binaries <input files> -o <output dir>");
+	puts("   Unpack ISO or WAD files to produce an asset directory of binaries.");
 	puts("");
 	puts(" decompress <input file> -o <output file> -x <offset>");
 	puts("   Decompress a file stored using the game's custom LZ compression scheme.");
