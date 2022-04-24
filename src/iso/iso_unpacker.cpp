@@ -26,11 +26,16 @@ enum class Region {
 	NTSC, PAL
 };
 
+struct UnpackInfo {
+	Asset* asset;
+	ByteRange64 range;
+};
+
 static void unpack_ps2_logo(BuildAsset& build, InputStream& src, Region region);
 static void unpack_primary_volume_descriptor(BuildAsset& build, const IsoPrimaryVolumeDescriptor& pvd);
-static void unpack_global_wads(BuildAsset& build, const table_of_contents& toc, InputStream& src, Game game, AssetUnpackerFunc unpack);
-static void unpack_level_wads(CollectionAsset& levels, const table_of_contents& toc, InputStream& src, Game game, AssetUnpackerFunc unpack);
-static void unpack_non_wads(CollectionAsset& files, fs::path out, const IsoDirectory& dir, InputStream& src, Game game, AssetUnpackerFunc unpack);
+static void enumerate_global_wads(std::vector<UnpackInfo>& dest, BuildAsset& build, const table_of_contents& toc, InputStream& src);
+static void enumerate_level_wads(std::vector<UnpackInfo>& dest, CollectionAsset& levels, const table_of_contents& toc, InputStream& src);
+static void enumerate_non_wads(std::vector<UnpackInfo>& dest, CollectionAsset& files, fs::path out, const IsoDirectory& dir, InputStream& src);
 static std::tuple<Game, Region, const char*> identify_game(const IsoDirectory& root);
 static size_t get_global_wad_file_size(const GlobalWadInfo& global, const table_of_contents& toc);
 
@@ -41,11 +46,22 @@ void unpack_iso(BuildAsset& dest, InputStream& src, AssetUnpackerFunc unpack) {
 	
 	dest.set_game(static_cast<s32>(game));
 	
+	std::vector<UnpackInfo> files;
+	
 	unpack_ps2_logo(dest, src, region);
 	unpack_primary_volume_descriptor(dest, filesystem.pvd);
-	unpack_global_wads(dest.switch_files("globals/globals.asset"), toc, src, game, unpack);
-	unpack_level_wads(dest.switch_files("levels/levels.asset").levels(), toc, src, game, unpack);
-	unpack_non_wads(dest.switch_files("files/files.asset").files(), "", filesystem.root, src, game, unpack);
+	
+	enumerate_global_wads(files, dest.switch_files("globals/globals.asset"), toc, src);
+	enumerate_level_wads(files, dest.switch_files("levels/levels.asset").levels(), toc, src);
+	enumerate_non_wads(files, dest.switch_files("files/files.asset").files(), "", filesystem.root, src);
+	
+	std::sort(BEGIN_END(files), [](auto& lhs, auto& rhs)
+		{ return lhs.range.offset < rhs.range.offset; });
+	
+	for(UnpackInfo& info : files) {
+		SubInputStream stream(src, info.range);
+		unpack(*info.asset, stream, game, FMT_NO_HINT);
+	}
 }
 
 static void unpack_ps2_logo(BuildAsset& build, InputStream& src, Region region) {
@@ -92,7 +108,7 @@ static void unpack_primary_volume_descriptor(BuildAsset& build, const IsoPrimary
 	asset.set_bibliographic_file_identifier(std::string(pvd.bibliographic_file_identifier, sizeof(pvd.bibliographic_file_identifier)));
 }
 
-static void unpack_global_wads(BuildAsset& build, const table_of_contents& toc, InputStream& src, Game game, AssetUnpackerFunc unpack) {
+static void enumerate_global_wads(std::vector<UnpackInfo>& dest, BuildAsset& build, const table_of_contents& toc, InputStream& src) {
 	for(const GlobalWadInfo& global : toc.globals) {
 		auto [wad_game, wad_type, name] = identify_wad(global.header);
 		std::string file_name = std::string(name) + ".wad";
@@ -113,12 +129,11 @@ static void unpack_global_wads(BuildAsset& build, const table_of_contents& toc, 
 			default: fprintf(stderr, "warning: Extracted global WAD of unknown type to globals/%s.wad.\n", name);
 		}
 		
-		SubInputStream stream(src, global.sector.bytes(), file_size);
-		unpack(*asset, stream, game, FMT_NO_HINT);
+		dest.emplace_back(UnpackInfo{asset, {global.sector.bytes(), (s64) file_size}});
 	}
 }
 
-static void unpack_level_wads(CollectionAsset& levels, const table_of_contents& toc, InputStream& src, Game game, AssetUnpackerFunc unpack) {
+static void enumerate_level_wads(std::vector<UnpackInfo>& dest, CollectionAsset& levels, const table_of_contents& toc, InputStream& src) {
 	for(const LevelInfo& level : toc.levels) {
 		std::string asset_path = stringf("%02d/level.asset", level.level_table_index);
 		LevelAsset& level_asset = levels.switch_files(asset_path).child<LevelAsset>(std::to_string(level.level_table_index).c_str());
@@ -145,13 +160,12 @@ static void unpack_level_wads(CollectionAsset& levels, const table_of_contents& 
 				default: fprintf(stderr, "warning: Extracted level WAD of unknown type.\n");
 			}
 			
-			SubInputStream stream(src, part->file_lba.bytes(), part->file_size.bytes());
-			unpack(*asset, stream, game, FMT_NO_HINT);
+			dest.emplace_back(UnpackInfo{asset, {part->file_lba.bytes(), part->file_size.bytes()}});
 		}
 	}
 }
 
-static void unpack_non_wads(CollectionAsset& files, fs::path out, const IsoDirectory& dir, InputStream& src, Game game, AssetUnpackerFunc unpack) {
+static void enumerate_non_wads(std::vector<UnpackInfo>& dest, CollectionAsset& files, fs::path out, const IsoDirectory& dir, InputStream& src) {
 	for(const IsoFileRecord& file : dir.files) {
 		if(file.name.find(".wad") == std::string::npos) {
 			fs::path file_path = out/file.name;
@@ -166,12 +180,11 @@ static void unpack_non_wads(CollectionAsset& files, fs::path out, const IsoDirec
 			FileAsset& asset = files.child<FileAsset>(tag.c_str());
 			asset.set_path(file_path.string());
 			
-			SubInputStream stream(src, file.lba.bytes(), file.size);
-			unpack(asset, stream, game, FMT_NO_HINT);
+			dest.emplace_back(UnpackInfo{&asset, {file.lba.bytes(), file.size}});
 		}
 	}
 	for(const IsoDirectory& subdir : dir.subdirs) {
-		unpack_non_wads(files, out/subdir.name, subdir, src, game, unpack);
+		enumerate_non_wads(dest, files, out/subdir.name, subdir, src);
 	}
 }
 
