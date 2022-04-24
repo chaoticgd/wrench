@@ -367,7 +367,7 @@ static void print_usage() {
 	puts("   Unpack ISO or WAD files to produce an asset directory of source files.");
 	puts("");
 	puts(" pack <input dirs> -a <asset> -o <output iso>");
-	puts("   Pack an asset (e.g. base_game) directory to produce an ISO file.");
+	puts("   Pack an asset (e.g. base_game) to produce a built file (e.g. an ISO file).");
 	puts("");
 	puts("DEVELOPER SUBCOMMANDS");
 	puts("");
