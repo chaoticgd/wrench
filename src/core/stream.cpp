@@ -211,3 +211,13 @@ bool SubInputStream::read(u8* dest, s64 size) {
 		range.size, tell());
 	return stream.read(dest, size);
 }
+
+s64 SubInputStream::offset_relative_to(InputStream* outer) const {
+	if(outer == &stream) {
+		return range.offset;
+	} else if(SubInputStream* sub_stream = dynamic_cast<SubInputStream*>(&stream)) {
+		return range.offset + sub_stream->offset_relative_to(outer);
+	} else {
+		return 0;
+	}
+}

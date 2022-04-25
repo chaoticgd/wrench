@@ -23,10 +23,18 @@
 #include <assetmgr/asset_types.h>
 #include <engine/compression.h>
 
-extern bool g_asset_unpacker_dump_wads;
-extern bool g_asset_unpacker_dump_global_wads;
-extern bool g_asset_unpacker_dump_level_wads;
-extern bool g_asset_unpacker_dump_binaries;
+struct AssetUnpackerGlobals {
+	bool dump_wads = false;
+	bool dump_global_wads = false;
+	bool dump_level_wads = false;
+	bool dump_binaries = false;
+	
+	InputStream* input_file = nullptr;
+	s64 current_file_offset;
+	s64 total_file_size;
+};
+
+extern AssetUnpackerGlobals g_asset_unpacker;
 
 void unpack_asset_impl(Asset& dest, InputStream& src, Game game, AssetFormatHint hint = FMT_NO_HINT);
 

@@ -22,7 +22,8 @@
 
 static void unpack_audio_wad(AudioWadAsset& dest, InputStream& src, Game game);
 static void pack_audio_wad(OutputStream& dest, std::vector<u8>* header_dest, AudioWadAsset& src, Game game);
-static void unpack_help_audio(BinaryAsset& dest, InputStream& src, Sector32 sector, Game game, const std::set<s64>& end_sectors);
+template <typename Getter>
+static void unpack_help_audio(CollectionAsset& dest, InputStream& src, Sector32* ranges, s32 count, Game game, const std::set<s64>& end_sectors, Getter getter);
 template <typename Getter>
 static void pack_help_audio(OutputStream& dest, Sector32* sectors_dest, s32 count, CollectionAsset& src, Game game, s64 base, Getter getter);
 
@@ -70,26 +71,12 @@ static void unpack_audio_wad(AudioWadAsset& dest, InputStream& src, Game game) {
 	unpack_assets<BinaryAsset>(dest.global_sfx(), src, ARRAY_PAIR(header.global_sfx), game);
 	CollectionAsset& help_collection = dest.help();
 	CollectionAsset& help_file = help_collection.switch_files("help/help.asset");
-	for(s32 i = 0; i < ARRAY_SIZE(header.help_english); i++) {
-		bool exists = false;
-		
-		exists |= header.help_english[i].sectors > 0;
-		exists |= header.help_french[i].sectors > 0;
-		exists |= header.help_german[i].sectors > 0;
-		exists |= header.help_spanish[i].sectors > 0;
-		exists |= header.help_italian[i].sectors > 0;
-		
-		if(exists) {
-			CollectionAsset& help_audio_file = help_file.switch_files(stringf("%d/audio.asset", i));
-			HelpAudioAsset& help = help_audio_file.child<HelpAudioAsset>(i);
-			
-			unpack_help_audio(help.english<BinaryAsset>(), src, header.help_english[i], game, end_sectors);
-			unpack_help_audio(help.french<BinaryAsset>(), src, header.help_french[i], game, end_sectors);
-			unpack_help_audio(help.german<BinaryAsset>(), src, header.help_german[i], game, end_sectors);
-			unpack_help_audio(help.spanish<BinaryAsset>(), src, header.help_spanish[i], game, end_sectors);
-			unpack_help_audio(help.italian<BinaryAsset>(), src, header.help_italian[i], game, end_sectors);
-		}
-	}
+	
+	unpack_help_audio(help_file, src, ARRAY_PAIR(header.help_english), game, end_sectors, &HelpAudioAsset::english<BinaryAsset>);
+	unpack_help_audio(help_file, src, ARRAY_PAIR(header.help_french), game, end_sectors, &HelpAudioAsset::french<BinaryAsset>);
+	unpack_help_audio(help_file, src, ARRAY_PAIR(header.help_german), game, end_sectors, &HelpAudioAsset::german<BinaryAsset>);
+	unpack_help_audio(help_file, src, ARRAY_PAIR(header.help_spanish), game, end_sectors, &HelpAudioAsset::spanish<BinaryAsset>);
+	unpack_help_audio(help_file, src, ARRAY_PAIR(header.help_italian), game, end_sectors, &HelpAudioAsset::italian<BinaryAsset>);
 }
 
 static void pack_audio_wad(OutputStream& dest, std::vector<u8>* header_dest, AudioWadAsset& src, Game game) {
@@ -115,11 +102,17 @@ static void pack_audio_wad(OutputStream& dest, std::vector<u8>* header_dest, Aud
 	}
 }
 
-static void unpack_help_audio(BinaryAsset& dest, InputStream& src, Sector32 sector, Game game, const std::set<s64>& end_sectors) {
-	if(sector.sectors > 0) {
-		auto end_sector = end_sectors.upper_bound(sector.sectors);
-		verify(end_sector != end_sectors.end(), "Header references audio beyond end of file (%x). The WAD file may be truncated.", sector.sectors);
-		unpack_asset(dest, src, SectorRange{sector.sectors, *end_sector - sector.sectors}, game);
+template <typename Getter>
+static void unpack_help_audio(CollectionAsset& dest, InputStream& src, Sector32* ranges, s32 count, Game game, const std::set<s64>& end_sectors, Getter getter) {
+	for(s32 i = 0; i < count; i++) {
+		if(ranges[i].sectors > 0) {
+			CollectionAsset& help_audio_file = dest.switch_files(stringf("%d/audio.asset", i));
+			Asset& asset = (help_audio_file.child<HelpAudioAsset>(i).*getter)();
+			
+			auto end_sector = end_sectors.upper_bound(ranges[i].sectors);
+			verify(end_sector != end_sectors.end(), "Header references audio beyond end of file (at 0x%lx). The WAD file may be truncated.", ranges[i].bytes());
+			unpack_asset(asset, src, SectorRange{ranges[i].sectors, *end_sector - ranges[i].sectors}, game);
+		}
 	}
 }
 

@@ -20,10 +20,7 @@
 
 #include <iso/iso_unpacker.h>
 
-bool g_asset_unpacker_dump_wads = false;
-bool g_asset_unpacker_dump_global_wads = false;
-bool g_asset_unpacker_dump_level_wads = false;
-bool g_asset_unpacker_dump_binaries = false;
+AssetUnpackerGlobals g_asset_unpacker = {};
 
 static void unpack_binary_asset(Asset& dest, InputStream& src, Game game, AssetFormatHint hint);
 static void unpack_file_asset(FileAsset& dest, InputStream& src, Game game);
@@ -46,14 +43,14 @@ on_load(Unpacker, []() {
 })
 
 void unpack_asset_impl(Asset& dest, InputStream& src, Game game, AssetFormatHint hint) {
-	if(g_asset_unpacker_dump_wads && dest.is_wad) {
-		if((!dest.is_level_wad && g_asset_unpacker_dump_global_wads) || (dest.is_level_wad && g_asset_unpacker_dump_level_wads)) {
+	if(g_asset_unpacker.dump_wads && dest.is_wad) {
+		if((!dest.is_level_wad && g_asset_unpacker.dump_global_wads) || (dest.is_level_wad && g_asset_unpacker.dump_level_wads)) {
 			unpack_asset_impl(dest.parent()->transmute_child<BinaryAsset>(dest.tag().c_str()), src, game, FMT_BINARY_WAD);
 		}
 		return;
 	}
 	
-	if(g_asset_unpacker_dump_binaries && dest.is_bin_leaf) {
+	if(g_asset_unpacker.dump_binaries && dest.is_bin_leaf) {
 		unpack_asset_impl(dest.parent()->transmute_child<BinaryAsset>(dest.tag().c_str()), src, game, FMT_NO_HINT);
 		return;
 	}
@@ -61,7 +58,8 @@ void unpack_asset_impl(Asset& dest, InputStream& src, Game game, AssetFormatHint
 	std::string reference = asset_reference_to_string(dest.reference());
 	std::string type = asset_type_to_string(dest.type());
 	for(char& c : type) c = tolower(c);
-	printf("[%3d%%] \033[32mUnpacking %s asset %s\033[0m\n", -1, type.c_str(), reference.c_str());
+	s32 percentage = (s32) ((g_asset_unpacker.current_file_offset * 100.f) / g_asset_unpacker.total_file_size);
+	printf("[%3d%%] \033[32mUnpacking %s asset %s\033[0m\n", percentage, type.c_str(), reference.c_str());
 	
 	AssetUnpackerFunc* unpack_func = nullptr;
 	if(dest.type() == BuildAsset::ASSET_TYPE) {
@@ -78,6 +76,15 @@ void unpack_asset_impl(Asset& dest, InputStream& src, Game game, AssetFormatHint
 	
 	verify(unpack_func, "Tried to unpack nonunpackable asset '%s'.", reference.c_str());
 	(*unpack_func)(dest, src, game, hint);
+	
+	// Update the completion percentage based on how far through the input file
+	// we are, ignoring streams that aren't the input file.
+	SubInputStream* sub_stream = dynamic_cast<SubInputStream*>(&src);
+	if(sub_stream) {
+		if(s64 offset = sub_stream->offset_relative_to(g_asset_unpacker.input_file)) {
+			g_asset_unpacker.current_file_offset = offset + sub_stream->size();
+		}
+	}
 }
 
 static void unpack_binary_asset(Asset& dest, InputStream& src, Game game, AssetFormatHint hint) {

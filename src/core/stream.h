@@ -34,7 +34,7 @@ protected:
 public:
 	Stream(const Stream&) = delete;
 	Stream(Stream&&) = delete;
-	virtual ~Stream() = 0;
+	virtual ~Stream();
 	
 	static void copy(OutputStream& dest, InputStream& src, s64 size);
 	
@@ -182,6 +182,8 @@ public:
 	s64 size() const override;
 	
 	bool read(u8* dest, s64 size) override;
+	
+	s64 offset_relative_to(InputStream* outer) const;
 
 private:
 	InputStream& stream;
