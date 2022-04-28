@@ -124,6 +124,8 @@ add_executable(pakrac
 	src/pakrac/tests.cpp
 	src/pakrac/asset_unpacker.cpp
 	src/pakrac/asset_packer.cpp
+	src/pakrac/common/binary_asset.cpp
+	src/pakrac/common/file_asset.cpp
 	src/pakrac/globals/armor_wad.cpp
 	src/pakrac/globals/audio_wad.cpp
 	src/pakrac/globals/bonus_wad.cpp

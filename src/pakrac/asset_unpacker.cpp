@@ -22,24 +22,11 @@
 
 AssetUnpackerGlobals g_asset_unpacker = {};
 
-static void unpack_binary_asset(Asset& dest, InputStream& src, Game game, AssetFormatHint hint);
-static void unpack_file_asset(FileAsset& dest, InputStream& src, Game game);
-
 on_load(Unpacker, []() {
-	BinaryAsset::funcs.unpack_rac1 = new AssetUnpackerFunc(unpack_binary_asset);
-	BinaryAsset::funcs.unpack_rac2 = new AssetUnpackerFunc(unpack_binary_asset);
-	BinaryAsset::funcs.unpack_rac3 = new AssetUnpackerFunc(unpack_binary_asset);
-	BinaryAsset::funcs.unpack_dl = new AssetUnpackerFunc(unpack_binary_asset);
-	
 	BuildAsset::funcs.unpack_rac1 = wrap_iso_unpacker_func<BuildAsset>(unpack_iso, unpack_asset_impl);
 	BuildAsset::funcs.unpack_rac2 = wrap_iso_unpacker_func<BuildAsset>(unpack_iso, unpack_asset_impl);
 	BuildAsset::funcs.unpack_rac3 = wrap_iso_unpacker_func<BuildAsset>(unpack_iso, unpack_asset_impl);
 	BuildAsset::funcs.unpack_dl = wrap_iso_unpacker_func<BuildAsset>(unpack_iso, unpack_asset_impl);
-	
-	FileAsset::funcs.unpack_rac1 = wrap_unpacker_func<FileAsset>(unpack_file_asset);
-	FileAsset::funcs.unpack_rac2 = wrap_unpacker_func<FileAsset>(unpack_file_asset);
-	FileAsset::funcs.unpack_rac3 = wrap_unpacker_func<FileAsset>(unpack_file_asset);
-	FileAsset::funcs.unpack_dl = wrap_unpacker_func<FileAsset>(unpack_file_asset);
 })
 
 void unpack_asset_impl(Asset& dest, InputStream& src, Game game, AssetFormatHint hint) {
@@ -88,26 +75,4 @@ void unpack_asset_impl(Asset& dest, InputStream& src, Game game, AssetFormatHint
 			}
 		}
 	}
-}
-
-static void unpack_binary_asset(Asset& dest, InputStream& src, Game game, AssetFormatHint hint) {
-	BinaryAsset& binary = dest.as<BinaryAsset>();
-	std::string file_name = binary.tag() + (hint == FMT_BINARY_WAD ? ".wad" : ".bin");
-	auto [stream, ref] = binary.file().open_binary_file_for_writing(file_name);
-	verify(stream.get(), "Failed to open file '%s' for writing binary asset '%s'.",
-		file_name.c_str(),
-		asset_reference_to_string(binary.reference()).c_str());
-	src.seek(0);
-	Stream::copy(*stream, src, src.size());
-	binary.set_src(ref);
-}
-
-static void unpack_file_asset(FileAsset& dest, InputStream& src, Game game) {
-	auto [stream, ref] = dest.file().open_binary_file_for_writing(fs::path(dest.path()));
-	verify(stream.get(), "Failed to open file '%s' for writing file asset '%s'.",
-		dest.path().c_str(),
-		asset_reference_to_string(dest.reference()).c_str());
-	src.seek(0);
-	Stream::copy(*stream, src, src.size());
-	dest.set_src(ref);
 }
