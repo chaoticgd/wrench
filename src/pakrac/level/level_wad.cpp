@@ -282,7 +282,7 @@ static void unpack_missions(CollectionAsset& dest, InputStream& file, const Miss
 	for(s32 i = 0; i < ARRAY_SIZE(ranges.data); i++) {
 		MissionHeader header = {0};
 		if(!ranges.data[i].empty()) {
-			file.read<MissionHeader>(ranges.data[i].offset.bytes());
+			header = file.read<MissionHeader>(ranges.data[i].offset.bytes());
 		}
 		if(!header.instances.empty() || !header.classes.empty() || !ranges.sound_banks[i].empty()) {
 			MissionAsset& mission = dest.switch_files(stringf("missions/%d/mission%d.asset", i, i)).child<MissionAsset>(i);
