@@ -252,19 +252,19 @@ static void unpack(const fs::path& input_path, const fs::path& output_path) {
 			
 			Asset* wad = nullptr;
 			switch(type) {
-				case WadType::ARMOR: wad = &root.child<ArmorWadAsset>("wad");
-				case WadType::AUDIO: wad = &root.child<AudioWadAsset>("wad");
-				case WadType::BONUS: wad = &root.child<BonusWadAsset>("wad");
-				case WadType::GADGET: wad = &root.child<GadgetWadAsset>("wad");
-				case WadType::HUD: wad = &root.child<HudWadAsset>("wad");
-				case WadType::MISC: wad = &root.child<MiscWadAsset>("wad");
-				case WadType::MPEG: wad = &root.child<MpegWadAsset>("wad");
-				case WadType::ONLINE: wad = &root.child<OnlineWadAsset>("wad");
-				case WadType::SCENE: wad = &root.child<SceneWadAsset>("wad");
-				case WadType::SPACE: wad = &root.child<SpaceWadAsset>("wad");
-				case WadType::LEVEL: wad = &root.child<LevelWadAsset>("wad");
-				case WadType::LEVEL_AUDIO: wad = &root.child<LevelAudioWadAsset>("wad");
-				case WadType::LEVEL_SCENE: wad = &root.child<LevelSceneWadAsset>("wad");
+				case WadType::ARMOR: wad = &root.child<ArmorWadAsset>("wad"); break;
+				case WadType::AUDIO: wad = &root.child<AudioWadAsset>("wad"); break;
+				case WadType::BONUS: wad = &root.child<BonusWadAsset>("wad"); break;
+				case WadType::GADGET: wad = &root.child<GadgetWadAsset>("wad"); break;
+				case WadType::HUD: wad = &root.child<HudWadAsset>("wad"); break;
+				case WadType::MISC: wad = &root.child<MiscWadAsset>("wad"); break;
+				case WadType::MPEG: wad = &root.child<MpegWadAsset>("wad"); break;
+				case WadType::ONLINE: wad = &root.child<OnlineWadAsset>("wad"); break;
+				case WadType::SCENE: wad = &root.child<SceneWadAsset>("wad"); break;
+				case WadType::SPACE: wad = &root.child<SpaceWadAsset>("wad"); break;
+				case WadType::LEVEL: wad = &root.child<LevelWadAsset>("wad"); break;
+				case WadType::LEVEL_AUDIO: wad = &root.child<LevelAudioWadAsset>("wad"); break;
+				case WadType::LEVEL_SCENE: wad = &root.child<LevelSceneWadAsset>("wad"); break;
 			}
 			
 			g_asset_unpacker.input_file = &stream;
