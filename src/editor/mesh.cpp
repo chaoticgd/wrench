@@ -18,8 +18,6 @@
 
 #include "mesh.h"
 
-static u32* depalletise_texture(const Texture& texture);
-
 RenderMesh upload_mesh(const Mesh& mesh, bool generate_normals) {
 	RenderMesh render_mesh;
 	
@@ -85,11 +83,11 @@ RenderMaterial upload_material(const Material& material, const std::vector<Textu
 		rm.colour = *material.colour;
 	}
 	if(material.texture) {
-		const Texture& texture = textures.at(*material.texture);
-		u32* data = depalletise_texture(texture);
+		Texture texture = textures.at(*material.texture);
+		texture.to_rgba();
 		glGenTextures(1, &rm.texture.id);
 		glBindTexture(GL_TEXTURE_2D, rm.texture.id);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, texture.width, texture.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, texture.width, texture.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture.data.data());
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -104,16 +102,4 @@ std::vector<RenderMaterial> upload_materials(const std::vector<Material>& materi
 		rms.emplace_back(upload_material(material, textures));
 	}
 	return rms;
-}
-
-static u32* depalletise_texture(const Texture& texture) {
-	static std::vector<u32> image;
-	image.resize(texture.width * texture.height);
-	for(s32 y = 0; y < texture.height; y++) {
-		for(s32 x = 0; x < texture.width; x++) {
-			u8 index = texture.pixels[y * texture.width + x];
-			image[(y * texture.width + x)] = texture.palette.colours[index];
-		}
-	}
-	return image.data();
 }

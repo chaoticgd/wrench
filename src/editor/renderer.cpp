@@ -497,11 +497,5 @@ static Mesh create_line_cube() {
 }
 
 static Texture create_white_texture() {
-	Texture texture;
-	texture.width = 1;
-	texture.height = 1;
-	texture.format = PixelFormat::IDTEX8;
-	texture.palette = {{0xffffffff}, 1};
-	texture.pixels = {0};
-	return texture;
+	return Texture::create_rgba(1, 1, {0xff, 0xff, 0xff, 0xff});
 }

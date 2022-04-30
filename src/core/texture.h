@@ -21,45 +21,44 @@
 
 #include "util.h"
 
-enum class PixelFormat : u32 {
-	IDTEX8 = 0
+enum class PixelFormat {
+	RGBA,
+	GRAYSCALE,
+	PALETTED_4,
+	PALETTED_8
 };
 
-struct Palette {
-	std::array<u32, 256> colours;
-	s32 top;
+class Texture {
+public:
+	Texture();
 	
-	bool operator==(const Palette& rhs) const {
-		return colours == rhs.colours && top == rhs.top;
-	}
-	bool operator<(const Palette& rhs) const {
-		if(top != rhs.top) return top < rhs.top;
-		return colours < rhs.colours;
-	}
-};
-
-struct Texture {
+	static Texture create_rgba(s32 width, s32 height, std::vector<u8> data);
+	static Texture create_grayscale(s32 width, s32 height, std::vector<u8> data);
+	static Texture create_4bit_paletted(s32 width, s32 height, std::vector<u8> data, std::vector<u32> palette);
+	static Texture create_8bit_paletted(s32 width, s32 height, std::vector<u8> data, std::vector<u32> palette);
+	
 	s32 width;
 	s32 height;
 	PixelFormat format;
-	Palette palette;
-	std::vector<u8> pixels;
-	bool operator==(const Texture& rhs) const {
-		return width == rhs.width &&
-			height == rhs.height &&
-			format == rhs.format &&
-			palette == rhs.palette &&
-			pixels == rhs.pixels;
-	}
-	bool operator<(const Texture& rhs) const {
-		if(width != rhs.width) return width < rhs.width;
-		if(height != rhs.height) return height < rhs.height;
-		if(format != rhs.format) return format < rhs.format;
-		if(!(palette == rhs.palette)) return palette < rhs.palette;
-		return pixels < rhs.pixels;
-	}
+	std::vector<u8> data;
+	
+	s32 bits_per_component() const;
+	s32 bits_per_pixel() const;
+	std::vector<u32>& palette();
+	const std::vector<u32>& palette() const;
+	
+	void to_rgba();
+	void to_grayscale();
+	void to_8bit_paletted();
+	void to_4bit_paletted();
+	
+	void swizzle_palette();
+	
+	void multiply_alphas(); // Maps [0,0x80] to [0,0xff].
+	void divide_alphas(); // Maps [0,0xff] to [0,0x80].
+	
+private:
+	std::vector<u32> _palette;
 };
-
-std::string hash_texture(const Texture& texture);
 
 #endif

@@ -42,6 +42,13 @@ AssetUnpackerFunc* wrap_unpacker_func(UnpackerFunc func) {
 }
 
 template <typename ThisAsset, typename UnpackerFunc>
+AssetUnpackerFunc* wrap_hint_unpacker_func(UnpackerFunc func) {
+	return new AssetUnpackerFunc([func](Asset& dest, InputStream& src, Game game, AssetFormatHint hint) {
+		func(static_cast<ThisAsset&>(dest), src, game, hint);
+	});
+}
+
+template <typename ThisAsset, typename UnpackerFunc>
 AssetUnpackerFunc* wrap_wad_unpacker_func(UnpackerFunc func) {
 	return new AssetUnpackerFunc([func](Asset& dest, InputStream& src, Game game, AssetFormatHint hint) {
 		func(static_cast<ThisAsset&>(dest).switch_files(), src, game);
@@ -63,6 +70,16 @@ template <typename ThisAsset, typename PackerFunc>
 AssetPackerFunc* wrap_packer_func(PackerFunc func) {
 	return new AssetPackerFunc([func](OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& src, Game game, AssetFormatHint hint) {
 		func(dest, static_cast<ThisAsset&>(src), game);
+		if(time_dest) {
+			*time_dest = fs::file_time_type::clock::now();
+		}
+	});
+}
+
+template <typename ThisAsset, typename PackerFunc>
+AssetPackerFunc* wrap_hint_packer_func(PackerFunc func) {
+	return new AssetPackerFunc([func](OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& src, Game game, AssetFormatHint hint) {
+		func(dest, static_cast<ThisAsset&>(src), game, hint);
 		if(time_dest) {
 			*time_dest = fs::file_time_type::clock::now();
 		}

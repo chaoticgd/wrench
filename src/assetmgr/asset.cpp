@@ -114,7 +114,7 @@ Asset& Asset::physical_child(AssetType type, const char* tag) {
 		if(child->type() == type && child->tag() == tag) {
 			return *child.get();
 		}
-		assert(child->tag() != tag);
+		verify(child->tag() != tag, "Attempting to overwrite an asset that already exists with one of a different type.");
 	}
 	return add_child(create_asset(type, forest(), pack(), file(), this, tag));
 }

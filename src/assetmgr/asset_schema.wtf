@@ -152,14 +152,14 @@ AssetType HudWad {
 	Child all_text             { allowed_types: ['Collection'] }
 	Child hudw3d               { allowed_types: ['Binary'] }
 	Child e3_level_ss          { allowed_types: ['Collection'] }
-	Child nw_dnas_image        { allowed_types: ['Binary'] }
-	Child split_screen_texture { allowed_types: ['Binary'] }
+	Child nw_dnas_image        { allowed_types: ['Texture' 'Binary'] }
+	Child split_screen_texture { allowed_types: ['Texture' 'Binary'] }
 	Child radar_maps           { allowed_types: ['Collection'] }
 	Child weapon_plates_large  { allowed_types: ['Collection'] }
 	Child mission_plates_large { allowed_types: ['Collection'] }
 	Child gui_plates           { allowed_types: ['Collection'] }
 	Child vendor_plates        { allowed_types: ['Collection'] }
-	Child loading_screen       { allowed_types: ['Binary'] }
+	Child loading_screen       { allowed_types: ['Texture' 'Binary'] }
 	Child planets              { allowed_types: ['Collection'] }
 	Child cinematics           { allowed_types: ['Collection'] }
 	Child equip_large          { allowed_types: ['Collection'] }
@@ -168,17 +168,17 @@ AssetType HudWad {
 	Child save_level           { allowed_types: ['Collection'] }
 	Child save_empty           { allowed_types: ['Collection'] }
 	Child skills               { allowed_types: ['Collection'] }
-	Child reward_back          { allowed_types: ['Binary'] }
-	Child complete_back        { allowed_types: ['Binary'] }
-	Child complete_back_coop   { allowed_types: ['Binary'] }
+	Child reward_back          { allowed_types: ['Texture' 'Binary'] }
+	Child complete_back        { allowed_types: ['Texture' 'Binary'] }
+	Child complete_back_coop   { allowed_types: ['Texture' 'Binary'] }
 	Child rewards              { allowed_types: ['Collection'] }
-	Child leaderboard          { allowed_types: ['Binary'] }
+	Child leaderboard          { allowed_types: ['Texture' 'Binary'] }
 	Child cutaways             { allowed_types: ['Collection'] }
 	Child sketchbook           { allowed_types: ['Collection'] }
 	Child character_epilogues  { allowed_types: ['Collection'] }
 	Child character_cards      { allowed_types: ['Collection'] }
-	Child equip_plate          { allowed_types: ['Binary'] }
-	Child hud_flythru          { allowed_types: ['Binary'] }
+	Child equip_plate          { allowed_types: ['Texture' 'Binary'] }
+	Child hud_flythru          { allowed_types: ['Texture' 'Binary'] }
 	Child mp_maps              { allowed_types: ['Collection'] }
 	Child tourney_plates_large { allowed_types: ['Collection'] }
 }

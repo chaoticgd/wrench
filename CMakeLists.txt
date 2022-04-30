@@ -126,6 +126,7 @@ add_executable(pakrac
 	src/pakrac/asset_packer.cpp
 	src/pakrac/common/binary_asset.cpp
 	src/pakrac/common/file_asset.cpp
+	src/pakrac/common/texture_asset.cpp
 	src/pakrac/globals/armor_wad.cpp
 	src/pakrac/globals/audio_wad.cpp
 	src/pakrac/globals/bonus_wad.cpp
@@ -141,11 +142,6 @@ add_executable(pakrac
 	src/pakrac/level/level_scene_wad.cpp
 )
 target_link_libraries(pakrac wrenchcore wrench_assetmgr wrenchiso wrenchengine)
-
-add_executable(hashtex
-	src/hashtex.cpp
-)
-target_link_libraries(hashtex wrenchcore)
 
 add_executable(asset2json
 	src/asset2json.cpp

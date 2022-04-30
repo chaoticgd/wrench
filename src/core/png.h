@@ -19,13 +19,10 @@
 #ifndef WRENCH_PNG_H
 #define WRENCH_PNG_H
 
-#include "util.h"
-#include "texture.h"
+#include <core/stream.h>
+#include <core/texture.h>
 
-Opt<Texture> read_png(const char* path);
-void write_png(const char* path, const Texture& texture);
-
-std::tuple<std::vector<u8>, s32, s32> read_grayscale_png(FILE* file, const char* context);
-void write_grayscale_png(FILE* file, const char* context, std::vector<u8> data, s32 width, s32 height);
+Opt<Texture> read_png(InputStream& src);
+void write_png(OutputStream& dest, const Texture& texture);
 
 #endif

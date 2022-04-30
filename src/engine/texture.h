@@ -89,6 +89,6 @@ struct TextureDedupeInput {
 TextureDedupeOutput prepare_texture_dedupe_records(TextureDedupeInput& input);
 void deduplicate_textures(std::vector<TextureDedupeRecord>& records);
 void deduplicate_palettes(std::vector<TextureDedupeRecord>& records);
-s64 write_palette(OutBuffer dest, const Palette& palette);
+s64 write_palette(OutBuffer dest, const std::vector<u32>& palette);
 
 #endif

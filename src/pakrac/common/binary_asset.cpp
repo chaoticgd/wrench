@@ -20,7 +20,7 @@
 #include <pakrac/asset_packer.h>
 
 static void unpack_binary_asset(Asset& dest, InputStream& src, Game game, AssetFormatHint hint);
-static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, BinaryAsset& asset);
+static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, BinaryAsset& src);
 
 on_load(Binary, []() {
 	BinaryAsset::funcs.unpack_rac1 = new AssetUnpackerFunc(unpack_binary_asset);
@@ -46,14 +46,14 @@ static void unpack_binary_asset(Asset& dest, InputStream& src, Game game, AssetF
 	binary.set_src(ref);
 }
 
-static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, BinaryAsset& asset) {
+static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, BinaryAsset& src) {
 	if(g_asset_packer_dry_run) {
 		return;
 	}
 	
-	auto src = asset.file().open_binary_file_for_reading(asset.src(), time_dest);
+	auto stream = src.file().open_binary_file_for_reading(src.src(), time_dest);
 	if(header_dest) {
-		s32 header_size = src->read<s32>();
+		s32 header_size = stream->read<s32>();
 		assert(header_size == header_dest->size());
 		s64 padded_header_size = Sector32::size_from_bytes(header_size).bytes();
 		
@@ -61,7 +61,7 @@ static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, 
 		assert(padded_header_size != 0);
 		header_dest->resize(padded_header_size);
 		*(s32*) header_dest->data() = header_size;
-		src->read(header_dest->data() + 4, padded_header_size - 4);
+		stream->read(header_dest->data() + 4, padded_header_size - 4);
 		
 		// Write the header.
 		dest.write(header_dest->data(), padded_header_size);
@@ -72,8 +72,8 @@ static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, 
 		assert(dest.tell() % SECTOR_SIZE == 0);
 		
 		// Copy the rest of the file.
-		Stream::copy(dest, *src, src->size() - padded_header_size);
+		Stream::copy(dest, *stream, stream->size() - padded_header_size);
 	} else {
-		Stream::copy(dest, *src, src->size());
+		Stream::copy(dest, *stream, stream->size());
 	}
 }
