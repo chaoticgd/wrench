@@ -111,7 +111,7 @@ Opt<Texture> read_png(InputStream& src) {
 				}
 			}
 			
-			assert(png_get_rowbytes(png_ptr, info_ptr) == width);
+			assert(png_get_rowbytes(png_ptr, info_ptr) == (width * bit_depth) / 8);
 			
 			std::vector<u8> data;
 			if(bit_depth == 4) {

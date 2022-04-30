@@ -26,8 +26,11 @@ class Asset;
 enum AssetFormatHint {
 	FMT_NO_HINT = 0,
 	FMT_BINARY_WAD,
-	FMT_TEXTURE_PIF_IDTEX8,
-	FMT_TEXTURE_RGBA
+	FMT_TEXTURE_RGBA,
+	FMT_TEXTURE_PIF4,
+	FMT_TEXTURE_PIF8,
+	FMT_TEXTURE_PIF4_SWIZZLED,
+	FMT_TEXTURE_PIF8_SWIZZLED
 };
 
 // *****************************************************************************
