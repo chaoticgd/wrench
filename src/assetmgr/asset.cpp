@@ -24,10 +24,10 @@
 #include <unistd.h> // getpid
 #endif
 
-Asset::Asset(AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent, AssetType type, std::string tag, AssetDispatchTable& func_table)
+Asset::Asset(AssetForest& forest, AssetBank& bank, AssetFile& file, Asset* parent, AssetType type, std::string tag, AssetDispatchTable& func_table)
 	: funcs(func_table)
 	, _forest(forest)
-	, _pack(pack)
+	, _bank(bank)
 	, _file(file)
 	, _parent(parent)
 	, _type(type)
@@ -39,8 +39,8 @@ Asset::~Asset() {
 
 AssetForest& Asset::forest() { return _forest; }
 const AssetForest& Asset::forest() const { return _forest; }
-AssetPack& Asset::pack() { return _pack; }
-const AssetPack& Asset::pack() const { return _pack; }
+AssetBank& Asset::bank() { return _bank; }
+const AssetBank& Asset::bank() const { return _bank; }
 AssetFile& Asset::file() { return _file; }
 const AssetFile& Asset::file() const { return _file; }
 Asset* Asset::parent() { return _parent; }
@@ -109,14 +109,14 @@ Asset& Asset::get_child(s32 tag) {
 }
 
 Asset& Asset::physical_child(AssetType type, const char* tag) {
-	assert(pack().is_writeable());
+	assert(bank().is_writeable());
 	for(std::unique_ptr<Asset>& child : _children) {
 		if(child->type() == type && child->tag() == tag) {
 			return *child.get();
 		}
 		verify(child->tag() != tag, "Attempting to overwrite an asset that already exists with one of a different type.");
 	}
-	return add_child(create_asset(type, forest(), pack(), file(), this, tag));
+	return add_child(create_asset(type, forest(), bank(), file(), this, tag));
 }
 
 Asset* Asset::get_physical_child(const char* tag) {
@@ -140,7 +140,7 @@ bool Asset::remove_physical_child(Asset& asset) {
 
 Asset& Asset::asset_file(const fs::path& path) {
 	AssetReference ref = reference();
-	Asset* asset = &pack().asset_file(file()._relative_directory/path).root();
+	Asset* asset = &bank().asset_file(file()._relative_directory/path).root();
 	for(AssetReferenceFragment& fragment : ref.fragments) {
 		asset = &asset->physical_child(fragment.type, fragment.tag.c_str());
 	}
@@ -150,7 +150,7 @@ Asset& Asset::asset_file(const fs::path& path) {
 void Asset::read(WtfNode* node) {
 	read_attributes(node);
 	for(WtfNode* child = node->first_child; child != nullptr; child = child->next_sibling) {
-		Asset& asset = add_child(create_asset(asset_string_to_type(child->type_name), forest(), pack(), file(), this, child->tag));
+		Asset& asset = add_child(create_asset(asset_string_to_type(child->type_name), forest(), bank(), file(), this, child->tag));
 		asset.read(child);
 	}
 }
@@ -276,7 +276,7 @@ void Asset::disconnect_precedence_pointers() {
 
 // *****************************************************************************
 
-AssetFile::AssetFile(AssetForest& forest, AssetPack& pack, const fs::path& relative_path)
+AssetFile::AssetFile(AssetForest& forest, AssetBank& pack, const fs::path& relative_path)
 	: _forest(forest)
 	, _pack(pack)
 	, _relative_directory(relative_path.parent_path())
@@ -319,7 +319,7 @@ AssetFile* AssetFile::lower_precedence() {
 			return _pack._asset_files[i - 1].get();
 		}
 	}
-	for(AssetPack* lower = _pack.lower_precedence(); lower != nullptr; lower = lower->lower_precedence()) {
+	for(AssetBank* lower = _pack.lower_precedence(); lower != nullptr; lower = lower->lower_precedence()) {
 		if(lower->_asset_files.size() >= 1) {
 			return lower->_asset_files.back().get();
 		}
@@ -334,7 +334,7 @@ AssetFile* AssetFile::higher_precedence() {
 			return _pack._asset_files[i + 1].get();
 		}
 	}
-	for(AssetPack* higher = _pack.higher_precedence(); higher != nullptr; higher = higher->higher_precedence()) {
+	for(AssetBank* higher = _pack.higher_precedence(); higher != nullptr; higher = higher->higher_precedence()) {
 		if(higher->_asset_files.size() >= 1) {
 			return higher->_asset_files.front().get();
 		}
@@ -362,30 +362,30 @@ void AssetFile::read() {
 
 // *****************************************************************************
 
-AssetPack::AssetPack(AssetForest& forest, std::string name, bool is_writeable)
+AssetBank::AssetBank(AssetForest& forest, std::string name, bool is_writeable)
 	: _forest(forest)
 	, _name(std::move(name))
 	, _is_writeable(is_writeable) {}
 
-AssetPack::~AssetPack() {
+AssetBank::~AssetBank() {
 	if(_unlocker) {
 		_unlocker();
 	}
 }
 
-std::string AssetPack::read_text_file(const FileReference& reference) const {
+std::string AssetBank::read_text_file(const FileReference& reference) const {
 	return read_text_file(reference.owner->_relative_directory/reference.path);
 }
 
-const char* AssetPack::name() const {
+const char* AssetBank::name() const {
 	return _name.c_str();
 }
 
-bool AssetPack::is_writeable() const {
+bool AssetBank::is_writeable() const {
 	return _is_writeable;
 }
 
-AssetFile& AssetPack::asset_file(fs::path relative_path) {
+AssetFile& AssetBank::asset_file(fs::path relative_path) {
 	relative_path.replace_extension("asset");
 	fs::path relative_directory = relative_path.parent_path();
 	fs::path file_name = relative_path.filename();
@@ -397,7 +397,7 @@ AssetFile& AssetPack::asset_file(fs::path relative_path) {
 	return *_asset_files.emplace_back(std::make_unique<AssetFile>(_forest, *this, relative_path)).get();
 }
 
-void AssetPack::write() const {
+void AssetBank::write() const {
 	std::string game_info_str;
 	write_game_info(game_info_str, game_info);
 	write_text_file("gameinfo.txt", game_info_str.c_str());
@@ -407,10 +407,10 @@ void AssetPack::write() const {
 	}
 }
 
-AssetPack* AssetPack::lower_precedence() { return _lower_precedence; }
-AssetPack* AssetPack::higher_precedence() { return _higher_precedence; }
+AssetBank* AssetBank::lower_precedence() { return _lower_precedence; }
+AssetBank* AssetBank::higher_precedence() { return _higher_precedence; }
 
-void AssetPack::read() {
+void AssetBank::read() {
 	std::string game_info_txt = read_text_file("gameinfo.txt");
 	if(!game_info_txt.empty()) {
 		char* game_info_txt_mutable = new char[game_info_txt.size() + 1]; 
@@ -427,8 +427,8 @@ void AssetPack::read() {
 	}
 }
 
-s32 AssetPack::check_lock() const { assert(0); }
-void AssetPack::lock() { assert(0); }
+s32 AssetBank::check_lock() const { assert(0); }
+void AssetBank::lock() { assert(0); }
 
 // *****************************************************************************
 
@@ -452,11 +452,11 @@ Asset& AssetForest::lookup_asset(const AssetReference& reference, Asset* context
 
 // *****************************************************************************
 
-LooseAssetPack::LooseAssetPack(AssetForest& forest, std::string name, fs::path directory, bool is_writeable)
-	: AssetPack(forest, std::move(name), is_writeable)
+LooseAssetBank::LooseAssetBank(AssetForest& forest, std::string name, fs::path directory, bool is_writeable)
+	: AssetBank(forest, std::move(name), is_writeable)
 	, _directory(directory) {}
 
-std::unique_ptr<InputStream> LooseAssetPack::open_binary_file_for_reading(const fs::path& path, fs::file_time_type* modified_time_dest) const {
+std::unique_ptr<InputStream> LooseAssetBank::open_binary_file_for_reading(const fs::path& path, fs::file_time_type* modified_time_dest) const {
 	fs::path full_path = _directory/path;
 	if(modified_time_dest) {
 		*modified_time_dest = fs::last_write_time(full_path);
@@ -469,7 +469,7 @@ std::unique_ptr<InputStream> LooseAssetPack::open_binary_file_for_reading(const 
 	}
 }
 
-std::unique_ptr<OutputStream> LooseAssetPack::open_binary_file_for_writing(const fs::path& path) const {
+std::unique_ptr<OutputStream> LooseAssetBank::open_binary_file_for_writing(const fs::path& path) const {
 	assert(is_writeable());
 	fs::path full_path = _directory/path;
 	fs::create_directories(full_path.parent_path());
@@ -481,7 +481,7 @@ std::unique_ptr<OutputStream> LooseAssetPack::open_binary_file_for_writing(const
 	}
 }
 
-std::string LooseAssetPack::read_text_file(const fs::path& path) const {
+std::string LooseAssetBank::read_text_file(const fs::path& path) const {
 	if(!fs::exists(_directory/path)) {
 		return "";
 	}
@@ -489,13 +489,13 @@ std::string LooseAssetPack::read_text_file(const fs::path& path) const {
 	return std::string((char*) bytes.data(), bytes.size());
 }
 
-void LooseAssetPack::write_text_file(const fs::path& path, const char* contents) const {
+void LooseAssetBank::write_text_file(const fs::path& path, const char* contents) const {
 	assert(is_writeable());
 	fs::create_directories((_directory/path).parent_path());
 	write_file(_directory/path, Buffer((u8*) contents, (u8*) contents + strlen(contents)), "w");
 }
 
-std::vector<fs::path> LooseAssetPack::enumerate_asset_files() const {
+std::vector<fs::path> LooseAssetBank::enumerate_asset_files() const {
 	std::vector<fs::path> asset_files;
 	for(auto& entry : fs::recursive_directory_iterator(_directory)) {
 		if(entry.path().extension() == ".asset") {
@@ -505,7 +505,7 @@ std::vector<fs::path> LooseAssetPack::enumerate_asset_files() const {
 	return asset_files;
 }
 
-s32 LooseAssetPack::check_lock() const {
+s32 LooseAssetBank::check_lock() const {
 	if(fs::exists(_directory/"lock")) {
 		std::string pid = read_text_file("lock");
 		return atoi(pid.c_str());
@@ -513,7 +513,7 @@ s32 LooseAssetPack::check_lock() const {
 	return 0;
 }
 
-void LooseAssetPack::lock() {
+void LooseAssetBank::lock() {
 	s32 pid = getpid();
 	std::string pid_str = std::to_string(pid);
 	write_text_file("lock", pid_str.c_str());

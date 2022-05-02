@@ -52,7 +52,7 @@ AssetReference parse_asset_reference(const char* ptr);
 std::string asset_reference_to_string(const AssetReference& reference);
 
 class AssetForest;
-class AssetPack;
+class AssetBank;
 class AssetFile;
 
 struct FileReference {

@@ -35,7 +35,7 @@
 
 class Asset {
 protected:
-	Asset(AssetForest& forest, AssetPack& pack, AssetFile& file, Asset* parent, AssetType type, std::string tag, AssetDispatchTable& func_table);
+	Asset(AssetForest& forest, AssetBank& pack, AssetFile& file, Asset* parent, AssetType type, std::string tag, AssetDispatchTable& func_table);
 public:
 	Asset(const Asset&) = delete;
 	Asset(Asset&&) = delete;
@@ -45,8 +45,8 @@ public:
 	
 	AssetForest& forest();
 	const AssetForest& forest() const;
-	AssetPack& pack();
-	const AssetPack& pack() const;
+	AssetBank& bank();
+	const AssetBank& bank() const;
 	AssetFile& file();
 	const AssetFile& file() const;
 	Asset* parent();
@@ -124,7 +124,7 @@ public:
 				break;
 			}
 		}
-		Asset& asset = add_child(create_asset(ChildTargetType::ASSET_TYPE, forest(), pack(), file(), this, tag));
+		Asset& asset = add_child(create_asset(ChildTargetType::ASSET_TYPE, forest(), bank(), file(), this, tag));
 		return asset.as<ChildTargetType>();
 	}
 	
@@ -158,7 +158,7 @@ public:
 	bool is_bin_leaf = false;
 	
 private:
-	friend AssetPack;
+	friend AssetBank;
 	friend AssetFile;
 	
 	Asset& add_child(std::unique_ptr<Asset> child);
@@ -169,7 +169,7 @@ private:
 	void disconnect_precedence_pointers();
 	
 	AssetForest& _forest;
-	AssetPack& _pack;
+	AssetBank& _bank;
 	AssetFile& _file;
 	Asset* _parent;
 	AssetType _type;
@@ -181,7 +181,7 @@ private:
 
 class AssetFile {
 public:
-	AssetFile(AssetForest& forest, AssetPack& pack, const fs::path& relative_path);
+	AssetFile(AssetForest& forest, AssetBank& pack, const fs::path& relative_path);
 	AssetFile(const AssetFile&) = delete;
 	AssetFile(AssetFile&&) = delete;
 	AssetFile& operator=(const AssetFile&) = delete;
@@ -200,20 +200,20 @@ public:
 	
 private:
 	friend Asset;
-	friend AssetPack;
+	friend AssetBank;
 	
 	void read();
 	
 	AssetForest& _forest;
-	AssetPack& _pack;
+	AssetBank& _pack;
 	fs::path _relative_directory;
 	std::string _file_name;
 	std::unique_ptr<Asset> _root;
 };
 
-class AssetPack {
+class AssetBank {
 public:
-	virtual ~AssetPack();
+	virtual ~AssetBank();
 	
 	const char* name() const;
 	bool is_writeable() const;
@@ -222,17 +222,17 @@ public:
 	
 	void write() const;
 	
-	AssetPack* lower_precedence();
-	AssetPack* higher_precedence();
+	AssetBank* lower_precedence();
+	AssetBank* higher_precedence();
 	
 	GameInfo game_info;
 	
 protected:
-	AssetPack(AssetForest& forest, std::string name, bool is_writeable);
-	AssetPack(const AssetPack&) = delete;
-	AssetPack(AssetPack&&) = delete;
-	AssetPack& operator=(const AssetPack&) = delete;
-	AssetPack& operator=(AssetPack&&) = delete;
+	AssetBank(AssetForest& forest, std::string name, bool is_writeable);
+	AssetBank(const AssetBank&) = delete;
+	AssetBank(AssetBank&&) = delete;
+	AssetBank& operator=(const AssetBank&) = delete;
+	AssetBank& operator=(AssetBank&&) = delete;
 	
 	std::string read_text_file(const FileReference& reference) const;
 	std::vector<u8> read_binary_file(const FileReference& reference) const;
@@ -258,8 +258,8 @@ private:
 	std::vector<std::unique_ptr<AssetFile>> _asset_files;
 	std::string _name;
 	bool _is_writeable;
-	AssetPack* _lower_precedence = nullptr;
-	AssetPack* _higher_precedence = nullptr;
+	AssetBank* _lower_precedence = nullptr;
+	AssetBank* _higher_precedence = nullptr;
 };
 
 class AssetForest {
@@ -273,8 +273,8 @@ public:
 	Asset& lookup_asset(const AssetReference& reference, Asset* context);
 	
 	template <typename Pack, typename... ConstructorArgs>
-	AssetPack& mount(ConstructorArgs... args) {
-		AssetPack* pack = _packs.emplace_back(std::make_unique<Pack>(*this, args...)).get();
+	AssetBank& mount(ConstructorArgs... args) {
+		AssetBank* pack = _packs.emplace_back(std::make_unique<Pack>(*this, args...)).get();
 		if(pack->is_writeable()) {
 			if(s32 pid = pack->check_lock()) {
 				fprintf(stderr, "error: Another process (with PID %d) has locked this asset pack. This implies the process is still alive or has previously crashed. To bypass this error, delete the lock file in the asset pack directory.\n", pid);
@@ -284,7 +284,7 @@ public:
 			}
 		}
 		if(_packs.size() >= 2) {
-			AssetPack* lower_pack = _packs[_packs.size() - 2].get();
+			AssetBank* lower_pack = _packs[_packs.size() - 2].get();
 			lower_pack->_higher_precedence = pack;
 			pack->_lower_precedence = lower_pack;
 		}
@@ -293,12 +293,12 @@ public:
 	}
 
 private:
-	std::vector<std::unique_ptr<AssetPack>> _packs;
+	std::vector<std::unique_ptr<AssetBank>> _packs;
 };
 
-class LooseAssetPack : public AssetPack {
+class LooseAssetBank : public AssetBank {
 public:
-	LooseAssetPack(AssetForest& forest, std::string name, fs::path directory, bool is_writeable);
+	LooseAssetBank(AssetForest& forest, std::string name, fs::path directory, bool is_writeable);
 	
 private:
 	std::unique_ptr<InputStream> open_binary_file_for_reading(const fs::path& path, fs::file_time_type* modified_time_dest) const override;

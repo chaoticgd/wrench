@@ -16,20 +16,20 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "zipped_asset_pack.h"
+#include "packed_asset_bank.h"
 
-ZippedAssetPack::ZippedAssetPack(AssetForest& forest, std::string name, fs::path path_to_zip)
-	: AssetPack(forest, std::move(name), false)
+PackedAssetBank::PackedAssetBank(AssetForest& forest, std::string name, fs::path path_to_zip)
+	: AssetBank(forest, std::move(name), false)
 	, _path_to_zip(path_to_zip) {}
 
-std::string ZippedAssetPack::read_text_file(const fs::path& path) const {
+std::string PackedAssetBank::read_text_file(const fs::path& path) const {
 	assert(0);
 }
 
-void ZippedAssetPack::write_text_file(const fs::path& path, const char* contents) const {
+void PackedAssetBank::write_text_file(const fs::path& path, const char* contents) const {
 	assert(0);
 }
 
-std::vector<fs::path> ZippedAssetPack::enumerate_asset_files() const {
+std::vector<fs::path> PackedAssetBank::enumerate_asset_files() const {
 	assert(0);
 }

@@ -56,7 +56,7 @@ add_library(wrench_assetmgr
 	src/assetmgr/asset_util.cpp
 	src/assetmgr/asset.cpp
 	src/assetmgr/asset_types.cpp
-	src/assetmgr/zipped_asset_pack.cpp
+	src/assetmgr/packed_asset_bank.cpp
 	src/assetmgr/_generated_asset_types.inl
 )
 target_link_libraries(wrench_assetmgr wrenchcore)

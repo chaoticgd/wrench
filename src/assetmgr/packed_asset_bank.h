@@ -21,9 +21,9 @@
 
 #include "asset.h"
 
-class ZippedAssetPack : public AssetPack {
+class PackedAssetBank : public AssetBank {
 public:
-	ZippedAssetPack(AssetForest& forest, std::string name, fs::path path_to_zip);
+	PackedAssetBank(AssetForest& forest, std::string name, fs::path path_to_zip);
 	
 private:
 	std::string read_text_file(const fs::path& path) const override;

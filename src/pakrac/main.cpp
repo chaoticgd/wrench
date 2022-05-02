@@ -212,7 +212,7 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 static void unpack(const fs::path& input_path, const fs::path& output_path) {
 	AssetForest forest;
 	
-	AssetPack& pack = forest.mount<LooseAssetPack>("unpacked", output_path, true);
+	AssetBank& pack = forest.mount<LooseAssetBank>("unpacked", output_path, true);
 	pack.game_info.type = AssetPackType::UNPACKED;
 	
 	FileInputStream stream;
@@ -284,12 +284,12 @@ static void unpack(const fs::path& input_path, const fs::path& output_path) {
 }
 
 static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path) {
-	printf("[  0%%] Mounting asset directories\n");
+	printf("[  0%%] Mounting asset bank\n");
 	
 	AssetForest forest;
 	
 	for(const fs::path& input_path : input_paths) {
-		AssetPack& src_pack = forest.mount<LooseAssetPack>("src", input_path, false);
+		forest.mount<LooseAssetBank>("src", input_path, false);
 	}
 	
 	Asset& wad = forest.lookup_asset(parse_asset_reference(asset.c_str()), nullptr);
@@ -377,7 +377,7 @@ static void print_usage() {
 	puts("USER SUBCOMMANDS");
 	puts("");
 	puts(" unpack <input file> -o <output dir>");
-	puts("   Unpack an ISO or WAD file to produce an asset directory of source files.");
+	puts("   Unpack an ISO or WAD file to produce an asset bank of source files.");
 	puts("");
 	puts(" pack <input dirs> -a <asset> -o <output iso>");
 	puts("   Pack an asset (e.g. base_game) to produce a built file (e.g. an ISO file).");
@@ -385,16 +385,16 @@ static void print_usage() {
 	puts("DEVELOPER SUBCOMMANDS");
 	puts("");
 	puts(" unpack_wad <input files> -o <output dir>");
-	puts("   Unpack an ISO or WAD file to produce an asset directory of WAD files.");
+	puts("   Unpack an ISO or WAD file to produce an asset bank of WAD files.");
 	puts("");
 	puts(" unpack_global_wad <input files> -o <output dir>");
-	puts("   Unpack an ISO or WAD file to produce an asset directory of global WAD files.");
+	puts("   Unpack an ISO or WAD file to produce an asset bank of global WAD files.");
 	puts("");
 	puts(" unpack_level_wad <input files> -o <output dir>");
-	puts("   Unpack an ISO or WAD file to produce an asset directory of level WAD files.");
+	puts("   Unpack an ISO or WAD file to produce an asset bank of level WAD files.");
 	puts("");
 	puts(" unpack_binaries <input files> -o <output dir>");
-	puts("   Unpack an ISO or WAD file to produce an asset directory of binaries.");
+	puts("   Unpack an ISO or WAD file to produce an asset bank of binaries.");
 	puts("");
 	puts(" decompress <input file> -o <output file> -x <offset>");
 	puts("   Decompress a file stored using the game's custom LZ compression scheme.");
