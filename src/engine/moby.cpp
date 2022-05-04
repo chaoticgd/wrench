@@ -775,7 +775,7 @@ MobyClassData build_moby_class(const ColladaScene& scene) {
 
 static std::vector<Joint> recover_moby_joints(const MobyClassData& moby, f32 scale) {
 	assert(opt_size(moby.skeleton) == opt_size(moby.common_trans));
-	
+	return {};
 	std::vector<Joint> joints;
 	joints.reserve(opt_size(moby.common_trans));
 	

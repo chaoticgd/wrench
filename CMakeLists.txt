@@ -124,6 +124,7 @@ add_executable(pakrac
 	src/pakrac/tests.cpp
 	src/pakrac/asset_unpacker.cpp
 	src/pakrac/asset_packer.cpp
+	src/pakrac/classes/moby_class.cpp
 	src/pakrac/common/binary_asset.cpp
 	src/pakrac/common/file_asset.cpp
 	src/pakrac/common/texture_asset.cpp

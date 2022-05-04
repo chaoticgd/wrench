@@ -97,16 +97,6 @@ AssetType ArmorWad {
 	Child dropship_textures    { allowed_types: ['Collection'] }
 }
 
-AssetType Armor {
-	Child mesh {
-		allowed_types: ['Mesh' 'Binary']
-	}
-	
-	Child textures {
-		allowed_types: ['Binary']
-	}
-}
-
 AssetType AudioWad {
 	wad: true
 	
@@ -336,6 +326,33 @@ AssetType Scene {
 	Child speech_italian_right { allowed_types: ['Binary'] }
 	Child moby_load            { allowed_types: ['Binary'] }
 	Child chunks               { allowed_types: ['Collection'] }
+}
+
+// *****************************************************************************
+
+AssetType MobyClass {
+	bin_leaf: true
+	
+	Child mesh { allowed_types: ['Mesh'] }
+	Child low_lod_mesh { allowed_types: ['Mesh'] }
+	
+	Child materials { allowed_types: ['Collection'] }
+}
+
+AssetType Material {
+	StringAttribute name {
+		desc: 'The name of the COLLADA material being referenced.'
+	}
+	
+	BooleanAttribute glass {
+		desc: 'Make the material shiny, like glass?'
+	}
+	
+	BooleanAttribute chrome {
+		desc: 'Make the material shiny, like chrome?'
+	}
+	
+	Child texture { allowed_types: ['Texture'] }
 }
 
 // *****************************************************************************
