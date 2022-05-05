@@ -103,3 +103,7 @@ std::string md5_to_printable_string(uint8_t in[16]) {
 	}
 	return result;
 }
+
+f32 lerp(f32 min, s32 max, f32 value) {
+	return min + (max - min) * value;
+}

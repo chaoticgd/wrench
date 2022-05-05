@@ -28,17 +28,17 @@
 #include <pakrac/asset_unpacker.h>
 #include <pakrac/asset_packer.h>
 
-static void run_round_trip_asset_packing_tests(const fs::path& input_path) ;
+static void run_round_trip_asset_packing_tests(const fs::path& input_path, s32 min_percentage, s32 max_percentage);
 static void enumerate_binaries(std::vector<BinaryAsset*>& dest, Asset& src);
-static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& binary, AssetType type, Game game);
+static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& binary, AssetType type, Game game, s32 percentage);
 
 void run_tests(fs::path input_path) {
-	run_round_trip_asset_packing_tests(input_path);
+	run_round_trip_asset_packing_tests(input_path, 0, 100);
 	
 	printf("\nALL TESTS HAPPY\n");
 }
 
-static void run_round_trip_asset_packing_tests(const fs::path& input_path) {
+static void run_round_trip_asset_packing_tests(const fs::path& input_path, s32 min_percentage, s32 max_percentage) {
 	AssetForest forest;
 	AssetBank& bank = forest.mount<LooseAssetBank>("test", input_path, false);
 	Asset* root = bank.root();
@@ -59,7 +59,8 @@ static void run_round_trip_asset_packing_tests(const fs::path& input_path) {
 		}
 		AssetType type = asset_string_to_type(asset_type.c_str());
 		if(type != NULL_ASSET_TYPE) {
-			run_round_trip_asset_packing_test(forest, binary, type, game);
+			f32 percentage = lerp(min_percentage, max_percentage, i / (f32) binaries.size());
+			run_round_trip_asset_packing_test(forest, binary, type, game, (s32) percentage);
 		}
 	}
 }
@@ -74,14 +75,14 @@ static void enumerate_binaries(std::vector<BinaryAsset*>& dest, Asset& src) {
 	});
 }
 
-static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& binary, AssetType type, Game game) {
+static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& binary, AssetType type, Game game, s32 percentage) {
 	auto src_file = binary.file().open_binary_file_for_reading(binary.src());
 	std::vector<u8> src = src_file->read_multiple<u8>(src_file->size());
 	MemoryInputStream src_stream(src);
 	
 	const char* type_name = asset_type_to_string(type);
 	std::string ref = asset_reference_to_string(binary.reference());
-	printf("[   %%] \033[34mRunning test with %s asset %s\033[0m\n", type_name, ref.c_str());
+	printf("[%3d%%] \033[34mRunning test with %s asset %s\033[0m\n", percentage, type_name, ref.c_str());
 	
 	AssetBank& temp = forest.mount<MemoryAssetBank>("test");
 	AssetFile& file = temp.asset_file("test.asset");

@@ -357,6 +357,8 @@ std::string md5_to_printable_string(uint8_t in[16]);
 	struct OnLoadType ##tag { OnLoadType ##tag() { __VA_ARGS__(); } }; \
 	static OnLoadType ##tag _on_load_ctor;
 
+f32 lerp(f32 min, s32 max, f32 value);
+
 enum class Game {
 	UNKNOWN = 0, RAC1 = 1, RAC2 = 2, RAC3 = 3, DL = 4
 };
