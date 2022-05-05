@@ -1006,3 +1006,65 @@ s32 add_joint(std::vector<Joint>& joints, Joint joint, s32 parent) {
 	joints.push_back(joint);
 	return index;
 }
+
+void assert_collada_scenes_equal(const ColladaScene& lhs, const ColladaScene& rhs) {
+	assert(lhs.texture_paths.size() == rhs.texture_paths.size());
+	assert(lhs.texture_paths == rhs.texture_paths);
+	assert(lhs.materials.size() == rhs.materials.size());
+	for(size_t i = 0; i < lhs.materials.size(); i++) {
+		const Material& lmat = lhs.materials[i];
+		const Material& rmat = rhs.materials[i];
+		assert(lmat.name == rmat.name);
+		assert(lmat.colour == rmat.colour);
+		assert(lmat.texture == rmat.texture);
+	}
+	assert(lhs.meshes.size() == rhs.meshes.size());
+	for(size_t i = 0; i < lhs.meshes.size(); i++) {
+		const Mesh& lmesh = lhs.meshes[i];
+		const Mesh& rmesh = rhs.meshes[i];
+		assert(lmesh.name == rmesh.name);
+		assert(lmesh.submeshes.size() == rmesh.submeshes.size());
+		// If there are no submeshes, we can't recover the flags.
+		assert(lmesh.flags == rmesh.flags || lmesh.submeshes.size() == 0);
+		// The COLLADA importer/exporter doesn't preserve the layout of the
+		// vertex buffer, so don't check that.
+		for(size_t j = 0; j < lmesh.submeshes.size(); j++) {
+			const SubMesh& lsub = lmesh.submeshes[j];
+			const SubMesh& rsub = rmesh.submeshes[j];
+			for(size_t k = 0; k < lsub.faces.size(); k++) {
+				const Face& lface = lsub.faces[k];
+				const Face& rface = rsub.faces[k];
+				Vertex lverts[4] = {
+					lmesh.vertices.at(lface.v0),
+					lmesh.vertices.at(lface.v1),
+					lmesh.vertices.at(lface.v2),
+					Vertex(glm::vec3(0, 0, 0))
+				};
+				Vertex rverts[4] = {
+					rmesh.vertices.at(rface.v0),
+					rmesh.vertices.at(rface.v1),
+					rmesh.vertices.at(rface.v2),
+					Vertex(glm::vec3(0, 0, 0))
+				};
+				assert((lface.v3 > -1) == (rface.v3 > -1));
+				if(lface.v3 > -1) {
+					lverts[3] = lmesh.vertices.at(lface.v3);
+					rverts[3] = rmesh.vertices.at(rface.v3);
+				}
+				for(s32 k = 0; k < 4; k++) {
+					assert(lverts[k].pos == rverts[k].pos);
+					assert(lverts[k].normal == rverts[k].normal);
+					// We don't currently preserve joint indices, so we don't
+					// check them here.
+					for(s32 l = 0; l < 3; l++) {
+						lverts[k].skin.joints[l] = 0;
+						rverts[k].skin.joints[l] = 0;
+					}
+					assert(lverts[k].skin == rverts[k].skin);
+					assert(lverts[k].tex_coord == rverts[k].tex_coord);
+				}
+			}
+			assert(lsub.material == rsub.material);
+		}
+	}
+}

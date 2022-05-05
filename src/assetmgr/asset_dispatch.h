@@ -121,6 +121,12 @@ AssetPackerFunc* wrap_iso_packer_func(PackerFunc func, AssetPackerFunc pack) {
 
 // *****************************************************************************
 
+using AssetTestFunc = std::function<void(std::vector<u8>& original, std::vector<u8>& packed)>;
+
+#define SKIP_TEST_FUNC new AssetTestFunc()
+
+// *****************************************************************************
+
 struct AssetDispatchTable {
 	AssetUnpackerFunc* unpack_rac1;
 	AssetUnpackerFunc* unpack_rac2;
@@ -131,6 +137,8 @@ struct AssetDispatchTable {
 	AssetPackerFunc* pack_rac2;
 	AssetPackerFunc* pack_rac3;
 	AssetPackerFunc* pack_dl;
+	
+	AssetTestFunc* test;
 };
 
 #endif

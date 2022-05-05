@@ -26,7 +26,7 @@ std::string PackedAssetBank::read_text_file(const fs::path& path) const {
 	assert(0);
 }
 
-void PackedAssetBank::write_text_file(const fs::path& path, const char* contents) const {
+void PackedAssetBank::write_text_file(const fs::path& path, const char* contents) {
 	assert(0);
 }
 

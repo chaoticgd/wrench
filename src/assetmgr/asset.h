@@ -220,10 +220,12 @@ public:
 	
 	AssetFile& asset_file(fs::path relative_path);
 	
-	void write() const;
+	void write();
 	
 	AssetBank* lower_precedence();
 	AssetBank* higher_precedence();
+	
+	Asset* root();
 	
 	GameInfo game_info;
 	
@@ -247,9 +249,9 @@ private:
 	void read();
 	
 	virtual std::unique_ptr<InputStream> open_binary_file_for_reading(const fs::path& path, fs::file_time_type* modified_time_dest) const = 0;
-	virtual std::unique_ptr<OutputStream> open_binary_file_for_writing(const fs::path& path) const = 0;
+	virtual std::unique_ptr<OutputStream> open_binary_file_for_writing(const fs::path& path) = 0;
 	virtual std::string read_text_file(const fs::path& path) const = 0;
-	virtual void write_text_file(const fs::path& path, const char* contents) const = 0;
+	virtual void write_text_file(const fs::path& path, const char* contents) = 0;
 	virtual std::vector<fs::path> enumerate_asset_files() const = 0;
 	virtual s32 check_lock() const;
 	virtual void lock();
@@ -274,26 +276,26 @@ public:
 	
 	template <typename Pack, typename... ConstructorArgs>
 	AssetBank& mount(ConstructorArgs... args) {
-		AssetBank* pack = _packs.emplace_back(std::make_unique<Pack>(*this, args...)).get();
-		if(pack->is_writeable()) {
-			if(s32 pid = pack->check_lock()) {
-				fprintf(stderr, "error: Another process (with PID %d) has locked this asset pack. This implies the process is still alive or has previously crashed. To bypass this error, delete the lock file in the asset pack directory.\n", pid);
-				throw std::logic_error("asset pack locked");
+		AssetBank* bank = _banks.emplace_back(std::make_unique<Pack>(*this, args...)).get();
+		if(bank->is_writeable()) {
+			if(s32 pid = bank->check_lock()) {
+				fprintf(stderr, "error: Another process (with PID %d) has locked this asset bank. This implies the process is still alive or has previously crashed. To bypass this error, delete the lock file in the asset bank directory.\n", pid);
+				throw std::logic_error("asset bank locked");
 			} else {
-				pack->lock();
+				bank->lock();
 			}
 		}
-		if(_packs.size() >= 2) {
-			AssetBank* lower_pack = _packs[_packs.size() - 2].get();
-			lower_pack->_higher_precedence = pack;
-			pack->_lower_precedence = lower_pack;
+		if(_banks.size() >= 2) {
+			AssetBank* lower_pack = _banks[_banks.size() - 2].get();
+			lower_pack->_higher_precedence = bank;
+			bank->_lower_precedence = lower_pack;
 		}
-		pack->read();
-		return *pack;
+		bank->read();
+		return *bank;
 	}
 
 private:
-	std::vector<std::unique_ptr<AssetBank>> _packs;
+	std::vector<std::unique_ptr<AssetBank>> _banks;
 };
 
 class LooseAssetBank : public AssetBank {
@@ -302,14 +304,30 @@ public:
 	
 private:
 	std::unique_ptr<InputStream> open_binary_file_for_reading(const fs::path& path, fs::file_time_type* modified_time_dest) const override;
-	std::unique_ptr<OutputStream> open_binary_file_for_writing(const fs::path& path) const override;
+	std::unique_ptr<OutputStream> open_binary_file_for_writing(const fs::path& path) override;
 	std::string read_text_file(const fs::path& path) const override;
-	void write_text_file(const fs::path& path, const char* contents) const override;
+	void write_text_file(const fs::path& path, const char* contents) override;
 	std::vector<fs::path> enumerate_asset_files() const override;
 	s32 check_lock() const override;
 	void lock() override;
 	
 	fs::path _directory;
+};
+
+class MemoryAssetBank : public AssetBank {
+public:
+	MemoryAssetBank(AssetForest& forest, std::string name);
+	
+private:
+	std::unique_ptr<InputStream> open_binary_file_for_reading(const fs::path& path, fs::file_time_type* modified_time_dest) const override;
+	std::unique_ptr<OutputStream> open_binary_file_for_writing(const fs::path& path) override;
+	std::string read_text_file(const fs::path& path) const override;
+	void write_text_file(const fs::path& path, const char* contents) override;
+	std::vector<fs::path> enumerate_asset_files() const override;
+	s32 check_lock() const override;
+	void lock() override;
+	
+	std::map<fs::path, std::vector<u8>> _files;
 };
 
 #endif

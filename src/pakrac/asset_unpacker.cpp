@@ -32,13 +32,21 @@ on_load(Unpacker, []() {
 void unpack_asset_impl(Asset& dest, InputStream& src, Game game, AssetFormatHint hint) {
 	if(g_asset_unpacker.dump_wads && dest.is_wad) {
 		if((!dest.is_level_wad && g_asset_unpacker.dump_global_wads) || (dest.is_level_wad && g_asset_unpacker.dump_level_wads)) {
-			unpack_asset_impl(dest.parent()->transmute_child<BinaryAsset>(dest.tag().c_str()), src, game, FMT_BINARY_WAD);
+			const char* type = asset_type_to_string(dest.type());
+			BinaryAsset& bin = dest.parent()->transmute_child<BinaryAsset>(dest.tag().c_str());
+			bin.set_asset_type(type);
+			bin.set_format_hint((s32) hint);
+			unpack_asset_impl(bin, src, game, FMT_BINARY_WAD);
 		}
 		return;
 	}
 	
 	if(g_asset_unpacker.dump_binaries && dest.is_bin_leaf) {
-		unpack_asset_impl(dest.parent()->transmute_child<BinaryAsset>(dest.tag().c_str()), src, game, FMT_NO_HINT);
+		const char* type = asset_type_to_string(dest.type());
+		BinaryAsset& bin = dest.parent()->transmute_child<BinaryAsset>(dest.tag().c_str());
+		bin.set_asset_type(type);
+		bin.set_format_hint((s32) hint);
+		unpack_asset_impl(bin, src, game, FMT_NO_HINT);
 		return;
 	}
 	

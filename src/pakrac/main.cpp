@@ -409,6 +409,6 @@ static void print_usage() {
 	puts("   Interpret the output of PCSX2's disc block access log (from stdin) and print");
 	puts("   out file accesses as they occur.");
 	puts("");
-	puts(" test <level wads dir>");
-	puts("   Run tests.");
+	puts(" test <asset bank>");
+	puts("   Unpack and repack asset banks.");
 }

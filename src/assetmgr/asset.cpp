@@ -397,7 +397,7 @@ AssetFile& AssetBank::asset_file(fs::path relative_path) {
 	return *_asset_files.emplace_back(std::make_unique<AssetFile>(_forest, *this, relative_path)).get();
 }
 
-void AssetBank::write() const {
+void AssetBank::write() {
 	std::string game_info_str;
 	write_game_info(game_info_str, game_info);
 	write_text_file("gameinfo.txt", game_info_str.c_str());
@@ -409,6 +409,14 @@ void AssetBank::write() const {
 
 AssetBank* AssetBank::lower_precedence() { return _lower_precedence; }
 AssetBank* AssetBank::higher_precedence() { return _higher_precedence; }
+
+Asset* AssetBank::root() {
+	if(_asset_files.size() >= 1) {
+		return &_asset_files[0]->root().highest_precedence();
+	} else {
+		return nullptr;
+	}
+}
 
 void AssetBank::read() {
 	std::string game_info_txt = read_text_file("gameinfo.txt");
@@ -433,10 +441,10 @@ void AssetBank::lock() { assert(0); }
 // *****************************************************************************
 
 Asset& AssetForest::lookup_asset(const AssetReference& reference, Asset* context) {
-	if(_packs.size() < 1 || _packs[0]->_asset_files.size() < 1) {
+	if(_banks.size() < 1 || _banks[0]->_asset_files.size() < 1) {
 		throw AssetLookupFailed(asset_reference_to_string(reference));
 	}
-	Asset* asset = &_packs[0]->_asset_files[0]->root();
+	Asset* asset = &_banks[0]->_asset_files[0]->root();
 	if(asset == nullptr) {
 		throw AssetLookupFailed(asset_reference_to_string(reference));
 	}
@@ -469,7 +477,7 @@ std::unique_ptr<InputStream> LooseAssetBank::open_binary_file_for_reading(const 
 	}
 }
 
-std::unique_ptr<OutputStream> LooseAssetBank::open_binary_file_for_writing(const fs::path& path) const {
+std::unique_ptr<OutputStream> LooseAssetBank::open_binary_file_for_writing(const fs::path& path) {
 	assert(is_writeable());
 	fs::path full_path = _directory/path;
 	fs::create_directories(full_path.parent_path());
@@ -489,7 +497,7 @@ std::string LooseAssetBank::read_text_file(const fs::path& path) const {
 	return std::string((char*) bytes.data(), bytes.size());
 }
 
-void LooseAssetBank::write_text_file(const fs::path& path, const char* contents) const {
+void LooseAssetBank::write_text_file(const fs::path& path, const char* contents) {
 	assert(is_writeable());
 	fs::create_directories((_directory/path).parent_path());
 	write_file(_directory/path, Buffer((u8*) contents, (u8*) contents + strlen(contents)), "w");
@@ -522,3 +530,45 @@ void LooseAssetBank::lock() {
 		fs::remove(dir/"lock");
 	};
 }
+
+// *****************************************************************************
+
+MemoryAssetBank::MemoryAssetBank(AssetForest& forest, std::string name)
+	: AssetBank(forest, name, true) {}
+
+std::unique_ptr<InputStream> MemoryAssetBank::open_binary_file_for_reading(const fs::path& path, fs::file_time_type* modified_time_dest) const {
+	return std::make_unique<MemoryInputStream>(_files.at(path));
+}
+
+std::unique_ptr<OutputStream> MemoryAssetBank::open_binary_file_for_writing(const fs::path& path) {
+	return std::make_unique<MemoryOutputStream>(_files[path]);
+}
+
+std::string MemoryAssetBank::read_text_file(const fs::path& path) const {
+	auto file = _files.find(path);
+	if(file == _files.end()) {
+		return "";
+	} else {
+		return std::string((char*) file->second.data(), file->second.size());
+	}
+}
+
+void MemoryAssetBank::write_text_file(const fs::path& path, const char* contents) {
+	_files[path] = std::vector<u8>(contents, contents + strlen(contents));
+}
+
+std::vector<fs::path> MemoryAssetBank::enumerate_asset_files() const {
+	std::vector<fs::path> asset_files;
+	for(auto& [path, contents] : _files) {
+		if(path.extension() == ".asset") {
+			asset_files.emplace_back(path);
+		}
+	}
+	return asset_files;
+}
+
+s32 MemoryAssetBank::check_lock() const {
+	return 0;
+}
+
+void MemoryAssetBank::lock() {}

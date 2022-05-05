@@ -27,7 +27,7 @@ public:
 	
 private:
 	std::string read_text_file(const fs::path& path) const override;
-	void write_text_file(const fs::path& path, const char* contents) const override;
+	void write_text_file(const fs::path& path, const char* contents) override;
 	std::vector<fs::path> enumerate_asset_files() const override;
 	
 	fs::path _path_to_zip;

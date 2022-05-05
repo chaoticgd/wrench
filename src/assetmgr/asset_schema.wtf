@@ -35,7 +35,17 @@ AssetType Collection {
 AssetType Binary {
 	desc: 'A raw binary file.'
 	
-	FileReferenceAttribute src {}
+	FileReferenceAttribute src {
+		desc: 'The file path of the binary file, relative to the .asset file.'
+	}
+	
+	StringAttribute asset_type {
+		desc: 'The asset type that this can be unpacked as. Only used for testing.'
+	}
+	
+	IntegerAttribute format_hint {
+		desc: 'The hint value passed to the packer function. Only used for testing.'
+	}
 }
 
 // *****************************************************************************
@@ -333,8 +343,8 @@ AssetType Scene {
 AssetType MobyClass {
 	bin_leaf: true
 	
-	Child mesh { allowed_types: ['Mesh'] }
-	Child low_lod_mesh { allowed_types: ['Mesh'] }
+	Child mesh { allowed_types: ['Mesh' 'Binary'] }
+	Child low_lod_mesh { allowed_types: ['Mesh' 'Binary'] }
 	
 	Child materials { allowed_types: ['Collection'] }
 }

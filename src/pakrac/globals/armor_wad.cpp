@@ -161,9 +161,16 @@ static void unpack_armors(CollectionAsset& dest, InputStream& src, ArmorHeader* 
 					(s32) headers[i].textures.bytes().offset + offset,
 					(s32) headers[i].textures.bytes().size - offset
 				};
-				unpack_asset(materials.child<TextureAsset>(j), src, range, game);
+				unpack_asset(materials.child<TextureAsset>(j), src, range, game, FMT_TEXTURE_PIF8);
 			}
-			unpack_asset(moby, src, headers[i].mesh, game);
+			if(g_asset_unpacker.dump_binaries) {
+				BinaryAsset& bin = moby.mesh<BinaryAsset>();
+				bin.set_asset_type("MobyClass");
+				bin.set_format_hint(0);
+				unpack_asset(bin, src, headers[i].mesh, game);
+			} else {
+				unpack_asset(moby, src, headers[i].mesh, game);
+			}
 		}
 	}
 }

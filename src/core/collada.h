@@ -48,5 +48,6 @@ struct ColladaScene {
 ColladaScene read_collada(std::vector<u8> src); // Throws ParseError.
 std::vector<u8> write_collada(const ColladaScene& scene);
 s32 add_joint(std::vector<Joint>& joints, Joint joint, s32 parent);
+void assert_collada_scenes_equal(const ColladaScene& lhs, const ColladaScene& rhs);
 
 #endif
