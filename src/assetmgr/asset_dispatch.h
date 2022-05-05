@@ -121,9 +121,7 @@ AssetPackerFunc* wrap_iso_packer_func(PackerFunc func, AssetPackerFunc pack) {
 
 // *****************************************************************************
 
-using AssetTestFunc = std::function<void(std::vector<u8>& original, std::vector<u8>& packed)>;
-
-#define SKIP_TEST_FUNC new AssetTestFunc()
+using AssetTestFunc = std::function<bool(std::vector<u8>& original, std::vector<u8>& repacked, Game game, AssetFormatHint hint)>;
 
 // *****************************************************************************
 

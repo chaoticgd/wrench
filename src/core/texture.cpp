@@ -278,7 +278,7 @@ void Texture::multiply_alphas() {
 		} else {
 			alpha = 255;
 		}
-		colour |= (alpha << 24);
+		colour = (colour & 0xffffff) | (alpha << 24);
 	}
 }
 
@@ -290,7 +290,7 @@ void Texture::divide_alphas() {
 		} else {
 			alpha /= 2;
 		}
-		colour |= (alpha << 24);
+		colour = (colour & 0xffffff) | (alpha << 24);
 	}
 }
 

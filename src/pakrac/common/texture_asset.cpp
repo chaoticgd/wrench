@@ -24,6 +24,7 @@ static void unpack_texture_asset(TextureAsset& dest, InputStream& src, Game game
 static void pack_texture_asset(OutputStream& dest, TextureAsset& src, Game game, AssetFormatHint hint);
 static Texture unpack_pif(InputStream& src);
 static void pack_pif(OutputStream& dest, TextureAsset& src, AssetFormatHint hint);
+static bool test_texture_asset(std::vector<u8>& original, std::vector<u8>& repacked, Game game, AssetFormatHint hint);
 
 on_load(Texture, []() {
 	TextureAsset::funcs.unpack_rac1 = wrap_hint_unpacker_func<TextureAsset>(unpack_texture_asset);
@@ -35,6 +36,8 @@ on_load(Texture, []() {
 	TextureAsset::funcs.pack_rac2 = wrap_hint_packer_func<TextureAsset>(pack_texture_asset);
 	TextureAsset::funcs.pack_rac3 = wrap_hint_packer_func<TextureAsset>(pack_texture_asset);
 	TextureAsset::funcs.pack_dl = wrap_hint_packer_func<TextureAsset>(pack_texture_asset);
+	
+	TextureAsset::funcs.test = new AssetTestFunc(test_texture_asset);
 })
 
 static void unpack_texture_asset(TextureAsset& dest, InputStream& src, Game game, AssetFormatHint hint) {
@@ -89,7 +92,6 @@ static Texture unpack_pif(InputStream& src) {
 			std::vector<u8> data((header.width * header.height) / 2);
 			src.read(data.data(), data.size());
 			Texture texture = Texture::create_4bit_paletted(header.width, header.height, data, palette);
-			//texture.swizzle_palette();
 			texture.multiply_alphas();
 			return texture;
 		}
@@ -143,4 +145,21 @@ static void pack_pif(OutputStream& dest, TextureAsset& src, AssetFormatHint hint
 	}
 	
 	dest.write(header_ofs, header);
+}
+
+static bool test_texture_asset(std::vector<u8>& original, std::vector<u8>& repacked, Game game, AssetFormatHint hint) {
+	switch(hint) {
+		case FMT_TEXTURE_PIF4:
+		case FMT_TEXTURE_PIF4_SWIZZLED:
+		case FMT_TEXTURE_PIF8:
+		case FMT_TEXTURE_PIF8_SWIZZLED:
+			assert(original.size() >= 8);
+			*(u32*) &original[4] = 0;
+			assert(repacked.size() >= 8);
+			*(u32*) &repacked[4] = 0;
+			original.resize(repacked.size());
+			break;
+		default: {} // Do nothing.
+	}
+	return false;
 }

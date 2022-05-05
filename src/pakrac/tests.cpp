@@ -93,9 +93,7 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 	MemoryOutputStream dest_stream(dest);
 	pack_asset_impl(dest_stream, nullptr, nullptr, asset, game, (AssetFormatHint) binary.format_hint());
 	
-	if(asset.funcs.test) {
-		(*asset.funcs.test)(src, dest);
-	} else {
+	if(!asset.funcs.test || !(*asset.funcs.test)(src, dest, game, (AssetFormatHint) binary.format_hint())) {
 		if(!diff_buffers(src, dest, 0, "", 0)) {
 			FILE* file = fopen("/tmp/failed_test.bin", "wb");
 			verify(file, "Failed to open /tmp/failed_test.bin for writing.");
