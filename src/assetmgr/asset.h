@@ -193,6 +193,7 @@ public:
 	
 	std::unique_ptr<InputStream> open_binary_file_for_reading(const FileReference& reference, fs::file_time_type* modified_time_dest = nullptr) const;
 	std::pair<std::unique_ptr<OutputStream>, FileReference> open_binary_file_for_writing(const fs::path& path) const;
+	std::string read_text_file(const fs::path& path) const;
 	FileReference write_text_file(const fs::path& path, const char* contents) const;
 	
 	AssetFile* lower_precedence();
@@ -205,7 +206,7 @@ private:
 	void read();
 	
 	AssetForest& _forest;
-	AssetBank& _pack;
+	AssetBank& _bank;
 	fs::path _relative_directory;
 	std::string _file_name;
 	std::unique_ptr<Asset> _root;
@@ -286,9 +287,9 @@ public:
 			}
 		}
 		if(_banks.size() >= 2) {
-			AssetBank* lower_pack = _banks[_banks.size() - 2].get();
-			lower_pack->_higher_precedence = bank;
-			bank->_lower_precedence = lower_pack;
+			AssetBank* lower_bank = _banks[_banks.size() - 2].get();
+			lower_bank->_higher_precedence = bank;
+			bank->_lower_precedence = lower_bank;
 		}
 		bank->read();
 		return *bank;

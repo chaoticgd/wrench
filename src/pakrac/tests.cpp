@@ -84,21 +84,28 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 	std::string ref = asset_reference_to_string(binary.reference());
 	printf("[%3d%%] \033[34mRunning test with %s asset %s\033[0m\n", percentage, type_name, ref.c_str());
 	
-	AssetBank& temp = forest.mount<MemoryAssetBank>("test");
-	AssetFile& file = temp.asset_file("test.asset");
-	Asset& asset = file.root().physical_child(type, "test");
-	unpack_asset_impl(file.root().physical_child(type, "test"), src_stream, game, (AssetFormatHint) binary.format_hint());
+	AssetDispatchTable* dispatch = nullptr;
 	
 	std::vector<u8> dest;
-	MemoryOutputStream dest_stream(dest);
-	pack_asset_impl(dest_stream, nullptr, nullptr, asset, game, (AssetFormatHint) binary.format_hint());
+	if(type == MobyClassAsset::ASSET_TYPE) {
+		MobyClassData moby = read_moby_class(src, game);
+		write_moby_class(dest, moby, game);
+		
+		dispatch = &MobyClassAsset::funcs;
+	} else {
+		AssetBank& temp = forest.mount<MemoryAssetBank>("test");
+		AssetFile& file = temp.asset_file("test.asset");
+		Asset& asset = file.root().physical_child(type, "test");
+		unpack_asset_impl(asset, src_stream, game, (AssetFormatHint) binary.format_hint());
+		
+		MemoryOutputStream dest_stream(dest);
+		pack_asset_impl(dest_stream, nullptr, nullptr, asset, game, (AssetFormatHint) binary.format_hint());
+		
+		dispatch = &asset.funcs;
+	}
 	
-	if(!asset.funcs.test || !(*asset.funcs.test)(src, dest, game, (AssetFormatHint) binary.format_hint())) {
+	if(!dispatch->test || !(*dispatch->test)(src, dest, game, (AssetFormatHint) binary.format_hint())) {
 		if(!diff_buffers(src, dest, 0, "", 0)) {
-			FILE* file = fopen("/tmp/failed_test.bin", "wb");
-			verify(file, "Failed to open /tmp/failed_test.bin for writing.");
-			fwrite(dest.data(), dest.size(), 1, file);
-			fclose(file);
 			exit(1);
 		}
 	}

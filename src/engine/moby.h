@@ -22,56 +22,9 @@
 #include <core/vif.h>
 #include <core/buffer.h>
 #include <core/collada.h>
-#include "basic_types.h"
-#include "moby_mesh.h"
-
-struct MobyFrame {
-	struct {
-		f32 unknown_0;
-		u16 unknown_4;
-		u16 unknown_c;
-		std::vector<u64> joint_data;
-		std::vector<u64> thing_1;
-		std::vector<u64> thing_2;
-	} regular;
-	struct {
-		u16 inverse_unknown_0;
-		u16 unknown_4;
-		std::vector<u8> first_part;
-		std::vector<u8> second_part;
-		std::vector<u8> third_part;
-		std::vector<u8> fourth_part;
-		std::vector<u8> fifth_part_1;
-		std::vector<u8> fifth_part_2;
-	} special;
-};
-
-packed_struct(MobyTriggerData,
-	/* 0x00 */ u32 unknown_0;
-	/* 0x04 */ u32 unknown_4;
-	/* 0x08 */ u32 unknown_8;
-	/* 0x0c */ u32 unknown_c;
-	/* 0x10 */ u32 unknown_10;
-	/* 0x14 */ u32 unknown_14;
-	/* 0x18 */ u32 unknown_18;
-	/* 0x1c */ u32 unknown_1c;
-)
-
-struct MobySequence {
-	glm::vec4 bounding_sphere;
-	std::vector<MobyFrame> frames;
-	std::vector<u32> triggers;
-	Opt<MobyTriggerData> trigger_data;
-	s32 animation_info = 0;
-	u8 sound_count = 0xff;
-	u8 unknown_13 = 0;
-	bool has_special_data = false;
-	struct {
-		std::vector<u16> joint_data;
-		std::vector<u64> thing_1;
-		std::vector<u64> thing_2;
-	} special;
-};
+#include <engine/basic_types.h>
+#include <engine/moby_mesh.h>
+#include <engine/moby_animation.h>
 
 struct MobyCollision {
 	u16 unknown_0;
@@ -192,26 +145,6 @@ packed_struct(MobyClassHeader,
 )
 static_assert(sizeof(MobyClassHeader) == 0x48);
 
-packed_struct(MobySequenceHeader,
-	/* 0x00 */ Vec4f bounding_sphere;
-	/* 0x10 */ u8 frame_count;
-	/* 0x11 */ u8 sound_count;
-	/* 0x12 */ u8 trigger_count;
-	/* 0x13 */ u8 unknown_13;
-	/* 0x14 */ u32 triggers;
-	/* 0x18 */ u32 animation_info;
-)
-
-packed_struct(MobyFrameHeader,
-	/* 0x0 */ f32 unknown_0;
-	/* 0x4 */ u16 unknown_4;
-	/* 0x6 */ u16 data_size_qwords;
-	/* 0x8 */ u16 joint_data_size;
-	/* 0xa */ u16 thing_1_count;
-	/* 0xc */ u16 unknown_c;
-	/* 0xe */ u16 thing_2_count;
-)
-
 packed_struct(MobyCollisionHeader,
 	/* 0x0 */ u16 unknown_0;
 	/* 0x2 */ u16 unknown_2;
@@ -226,8 +159,6 @@ packed_struct(MobyCornCobHeader,
 
 MobyClassData read_moby_class(Buffer src, Game game);
 void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game);
-MobySequence read_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count, Game game);
-s64 write_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64 header_ofs, s32 joint_count, Game game);
 ColladaScene recover_moby_class(const MobyClassData& moby, s32 o_class, s32 texture_count);
 MobyClassData build_moby_class(const ColladaScene& scene);
 

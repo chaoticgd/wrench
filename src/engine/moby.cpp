@@ -22,16 +22,11 @@ static MobyBangles read_moby_bangles(Buffer src);
 static s64 write_moby_bangles(OutBuffer dest, const MobyBangles& bangles);
 static MobyCornCob read_moby_corncob(Buffer src);
 static s64 write_moby_corncob(OutBuffer dest, const MobyCornCob& corncob);
-static std::vector<Opt<MobySequence>> read_moby_sequences(Buffer src, s64 sequence_count, s32 joint_count, Game game);
-static void write_moby_sequences(OutBuffer dest, const std::vector<Opt<MobySequence>>& sequences, s64 list_ofs, s32 joint_count, Game game);
 static MobyCollision read_moby_collision(Buffer src);
 static s64 write_moby_collision(OutBuffer dest, const MobyCollision& collision);
 static std::vector<MobyJointEntry> read_moby_joints(Buffer src, s64 joints_ofs);
 static s64 write_moby_joints(OutBuffer dest, const std::vector<MobyJointEntry>& joints);
 static std::vector<Joint> recover_moby_joints(const MobyClassData& moby, f32 scale);
-
-// FIXME: Figure out what points to the mystery data instead of doing this.
-static s64 mystery_data_ofs;
 
 MobyClassData read_moby_class(Buffer src, Game game) {
 	auto header = src.read<MobyClassHeader>(0, "moby class header");
@@ -52,7 +47,6 @@ MobyClassData read_moby_class(Buffer src, Game game) {
 	moby.mode_bits = header.mode_bits;
 	moby.type = header.type;
 	moby.mode_bits2 = header.mode_bits2;
-	mystery_data_ofs = src.read<s32>(0x48, "moby sequences");
 	
 	MobyFormat format;
 	switch(game) {
@@ -91,14 +85,11 @@ MobyClassData read_moby_class(Buffer src, Game game) {
 		moby.corncob = read_moby_corncob(src.subbuf(header.corncob * 0x10));
 		moby.header_end_offset = std::min(moby.header_end_offset, header.corncob * 0x10);
 	}
-	if(game != Game::DL) { // TODO: Get this working.
-		moby.sequences = read_moby_sequences(src, header.sequence_count, header.joint_count, game);
-	}
+	moby.sequences = read_moby_sequences(src, header.sequence_count, header.joint_count, game);
 	verify(header.sequence_count >= 1, "Moby class has no sequences.");
 	if(header.collision != 0) {
 		moby.collision = read_moby_collision(src.subbuf(header.collision));
 		s64 coll_size = 0x10 + moby.collision->first_part.size() + moby.collision->second_part.size() * 8 + moby.collision->third_part.size();
-		mystery_data_ofs = std::max(mystery_data_ofs, header.collision + coll_size);
 	}
 	if(header.skeleton != 0) {
 		moby.skeleton = src.read_multiple<Mat4>(header.skeleton, header.joint_count, "skeleton").copy();
@@ -121,13 +112,7 @@ MobyClassData read_moby_class(Buffer src, Game game) {
 		if(header.bangles != 0) {
 			s64 bangles_submesh_table_ofs = header.submesh_table_offset + moby.bangles->header.submesh_begin * 0x10;
 			moby.bangles->submeshes = read_moby_submeshes(src, bangles_submesh_table_ofs, moby.bangles->header.submesh_count, moby.scale, moby.joint_count, format);
-			mystery_data_ofs = std::max(mystery_data_ofs, bangles_submesh_table_ofs + moby.bangles->header.submesh_count * 0x10);
-		} else {
-			mystery_data_ofs = std::max(mystery_data_ofs, metal_table_ofs + header.metal_submesh_count * 0x10);
 		}
-	}
-	if(header.skeleton != 0) {
-		moby.mystery_data = src.read_bytes(mystery_data_ofs, header.skeleton - mystery_data_ofs, "moby mystery data");
 	}
 	if(header.rac3dl_team_textures != 0 && (game == Game::RAC3 || game == Game::DL)) {
 		verify(header.gif_usage != 0, "Moby with team palettes but no gif table.");
@@ -211,7 +196,7 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 		header.corncob = (write_moby_corncob(dest, *moby.corncob) - class_header_ofs) / 0x10;
 	}
 	dest.pad(0x10);
-	write_moby_sequences(dest, moby.sequences, sequence_list_ofs, moby.joint_count, game);
+	write_moby_sequences(dest, moby.sequences, class_header_ofs, sequence_list_ofs, moby.joint_count, game);
 	dest.pad(0x10);
 	while(dest.tell() < class_header_ofs + moby.submesh_table_offset) {
 		dest.write<u8>(0);
@@ -336,255 +321,6 @@ static s64 write_moby_corncob(OutBuffer dest, const MobyCornCob& corncob) {
 	}
 	dest.write(header_ofs, header);
 	return header_ofs;
-}
-
-static std::vector<Opt<MobySequence>> read_moby_sequences(Buffer src, s64 sequence_count, s32 joint_count, Game game) {
-	std::vector<Opt<MobySequence>> sequences;
-	auto sequence_offsets = src.read_multiple<s32>(sizeof(MobyClassHeader), sequence_count, "moby sequences");
-	for(s32 seq_offset : sequence_offsets) {
-		if(seq_offset == 0) {
-			sequences.emplace_back(std::nullopt);
-			continue;
-		}
-		
-		sequences.emplace_back(read_moby_sequence(src, seq_offset, joint_count, game));
-	}
-	return sequences;
-}
-
-static void write_moby_sequences(OutBuffer dest, const std::vector<Opt<MobySequence>>& sequences, s64 list_ofs, s32 joint_count, Game game) {
-	for(const Opt<MobySequence>& sequence_opt : sequences) {
-		if(!sequence_opt.has_value()) {
-			dest.write<s32>(list_ofs, 0);
-			list_ofs += 4;
-			continue;
-		}
-		
-		const MobySequence& sequence = *sequence_opt;
-		s64 seq_ofs = write_moby_sequence(dest, sequence, class_header_ofs, joint_count, game);
-		dest.write<u32>(list_ofs, seq_ofs - class_header_ofs);
-		list_ofs += 4;
-	}
-}
-
-MobySequence read_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count, Game game) {
-	auto seq_header = src.read<MobySequenceHeader>(seq_ofs, "moby sequence header");
-	MobySequence sequence;
-	sequence.bounding_sphere = seq_header.bounding_sphere.unpack();
-	sequence.animation_info = seq_header.animation_info;
-	sequence.sound_count = seq_header.sound_count;
-	sequence.unknown_13 = seq_header.unknown_13;
-	
-	auto frame_table = src.read_multiple<s32>(seq_ofs + 0x1c, seq_header.frame_count, "moby sequence table");
-	for(s32 frame_ofs_and_flag : frame_table) {
-		if((frame_ofs_and_flag & 0xf0000000) != 0) {
-			sequence.has_special_data = true;
-		}
-	}
-	
-	s64 after_frame_list = seq_ofs + 0x1c + seq_header.frame_count * 4;
-	sequence.triggers = src.read_multiple<u32>(after_frame_list, seq_header.trigger_count, "moby sequence trigger list").copy();
-	s64 after_trigger_list = after_frame_list + seq_header.trigger_count * 4;
-	
-	if(!sequence.has_special_data) { // Normal case.
-		for(s32 frame_ofs_and_flag : frame_table) {
-			MobyFrame frame;
-			s32 flag = frame_ofs_and_flag & 0xf0000000;
-			s32 frame_ofs = frame_ofs_and_flag & 0x0fffffff;
-			
-			auto frame_header = src.read<MobyFrameHeader>(frame_ofs, "moby frame header");
-			frame.regular.unknown_0 = frame_header.unknown_0;
-			frame.regular.unknown_4 = frame_header.unknown_4;
-			frame.regular.unknown_c = frame_header.unknown_c;
-			s32 data_ofs = frame_ofs + 0x10;
-			frame.regular.joint_data = src.read_multiple<u64>(data_ofs, joint_count, "frame thing 1").copy();
-			data_ofs += joint_count * 8;
-			frame.regular.thing_1 = src.read_multiple<u64>(data_ofs, frame_header.thing_1_count, "frame thing 1").copy();
-			data_ofs += frame_header.thing_1_count * 8;
-			frame.regular.thing_2 = src.read_multiple<u64>(data_ofs, frame_header.thing_2_count, "frame thing 2").copy();
-			
-			s64 end_of_frame = frame_ofs + 0x10 + frame_header.data_size_qwords * 0x10;
-			mystery_data_ofs = std::max(mystery_data_ofs, end_of_frame);
-			sequence.frames.emplace_back(std::move(frame));
-		}
-		
-		sequence.triggers = src.read_multiple<u32>(after_frame_list, seq_header.trigger_count, "moby sequence trigger list").copy();
-	} else { // For Ratchet and a handful of other mobies.
-		u32 packed_vals = src.read<u32>(after_trigger_list, "special anim data offsets");
-		u32 second_part_ofs = 4 + ((packed_vals & 0b00000000000000000000001111111111) >> 0);
-		u32 third_part_ofs = 4 + ((packed_vals & 0b00000000000111111111110000000000) >> 10);
-		u32 fourth_part_ofs = 4 + (((packed_vals & 0b11111111111000000000000000000000) >> 21));
-		
-		sequence.special.joint_data = src.read_multiple<u16>(after_trigger_list + 4, joint_count * 3, "").copy();
-		s64 thing_ofs = after_trigger_list + 4 + joint_count * 6;
-		
-		u8 thing_1_count = src.read<u8>(thing_ofs + 0, "special anim data thing 1 count");
-		u8 thing_2_count = src.read<u8>(thing_ofs + 1, "special anim data thing 2 count");
-		sequence.special.thing_1 = src.read_multiple<u64>(thing_ofs + 2, thing_1_count, "special anim data thing 1").copy();
-		s64 thing_2_ofs = thing_ofs + 2 + thing_1_count * 8;
-		sequence.special.thing_2 = src.read_multiple<u64>(thing_2_ofs, thing_2_count, "special anim data thing 2").copy();
-		
-		for(s32 frame_ofs_and_flag : frame_table) {
-			s32 frame_ofs = frame_ofs_and_flag & 0xfffffff;
-			
-			MobyFrame frame;
-			
-			frame.special.inverse_unknown_0 = src.read<u16>(frame_ofs, "special anim data unknown 0");
-			frame.special.unknown_4 = src.read<u16>(frame_ofs + 2, "special anim data unknown 1");
-			frame.special.first_part = src.read_multiple<u8>(frame_ofs + 4, second_part_ofs - 4, "special anim data first part").copy();
-			s64 second_part_size = third_part_ofs - second_part_ofs;
-			frame.special.second_part = src.read_multiple<u8>(frame_ofs + second_part_ofs, second_part_size, "special anim data second part").copy();
-			s64 third_part_size = fourth_part_ofs - third_part_ofs;
-			frame.special.third_part = src.read_multiple<u8>(frame_ofs + third_part_ofs, third_part_size, "special anim data third part").copy();
-			
-			s32 fourth_part_size = joint_count;
-			while(fourth_part_size % 8 != 0) fourth_part_size++;
-			fourth_part_size /= 8;
-			frame.special.fourth_part = src.read_multiple<u8>(frame_ofs + fourth_part_ofs, fourth_part_size, "special anim data fourth part").copy();
-			s64 ofs = frame_ofs + fourth_part_ofs + fourth_part_size;
-			
-			auto read_fifth_part = [&](s32 count) {
-				std::vector<u8> part;
-				for(s32 i = 0; i < count; i++) {
-					u8 packed_flag = src.read<u8>(ofs++, "special anim data flag");
-					part.push_back(packed_flag);
-					s32 flag_1 = ((packed_flag & 0b00000011) >> 0);
-					if(flag_1 == 3) flag_1 = 0;
-					for(s32 j = 0; j < flag_1; j++) {
-						part.push_back(src.read<u8>(ofs++, "special anim data fifth part"));
-					}
-					s32 flag_2 = ((packed_flag & 0b00001100) >> 2);
-					if(flag_2 == 3) flag_2 = 0;
-					for(s32 j = 0; j < flag_2; j++) {
-						part.push_back(src.read<u8>(ofs++, "special anim data fifth part"));
-					}
-					s32 flag_3 = ((packed_flag & 0b00110000) >> 4);
-					if(flag_3 == 3) flag_3 = 0;
-					for(s32 j = 0; j <flag_3; j++) {
-						part.push_back(src.read<u8>(ofs++, "special anim data fifth part"));
-					}
-				}
-				return part;
-			};
-			
-			frame.special.fifth_part_1 = read_fifth_part(thing_1_count);
-			frame.special.fifth_part_2 = read_fifth_part(thing_2_count);
-			
-			mystery_data_ofs = std::max(mystery_data_ofs, ofs);
-			sequence.frames.emplace_back(std::move(frame));
-		}
-	}
-	
-	if(seq_header.triggers != 0) {
-		s64 trigger_data_ofs = seq_ofs + seq_header.triggers;
-		if(game == Game::RAC1) {
-			trigger_data_ofs = seq_header.triggers;
-		} else {
-			trigger_data_ofs = seq_ofs + seq_header.triggers;
-		}
-		sequence.trigger_data = src.read<MobyTriggerData>(trigger_data_ofs, "moby sequence trigger data");
-	}
-	
-	return sequence;
-}
-
-s64 write_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64 header_ofs, s32 joint_count, Game game) {
-	dest.pad(0x10);
-	s64 seq_header_ofs = dest.alloc<MobySequenceHeader>();
-	
-	MobySequenceHeader seq_header = {0};
-	seq_header.bounding_sphere = Vec4f::pack(sequence.bounding_sphere);
-	seq_header.frame_count = sequence.frames.size();
-	seq_header.sound_count = sequence.sound_count;
-	seq_header.trigger_count = sequence.triggers.size();
-	seq_header.unknown_13 = sequence.unknown_13;
-	
-	s64 frame_pointer_ofs = dest.alloc_multiple<s32>(sequence.frames.size());
-	dest.write_multiple(sequence.triggers);
-	
-	if(sequence.has_special_data) {
-		s32 first_part_size = 0;
-		s32 second_part_size = 0;
-		s32 third_part_size = 0;
-		
-		if(sequence.frames.size() >= 1) {
-			const MobyFrame& frame = sequence.frames[0];
-			first_part_size = (s32) frame.special.first_part.size();
-			second_part_size = (s32) frame.special.second_part.size();
-			third_part_size = (s32) frame.special.third_part.size();
-		}
-		
-		u32 second_part_ofs = first_part_size;
-		u32 third_part_ofs = second_part_ofs + second_part_size;
-		u32 fourth_part_ofs = third_part_ofs + third_part_size;
-		verify(second_part_ofs <= 0b1111111111, "Animation frame too big.");
-		verify(third_part_ofs <= 0b11111111111, "Animation frame too big.");
-		verify(fourth_part_ofs <= 0b11111111111, "Animation frame too big.");
-		dest.write<u32>(second_part_ofs | (third_part_ofs << 10) | (fourth_part_ofs << 21));
-		
-		dest.pad(0x2);
-		dest.write_multiple(sequence.special.joint_data);
-		
-		verify(sequence.special.thing_1.size() < 256, "Animation frame too big.");
-		verify(sequence.special.thing_2.size() < 256, "Animation frame too big.");
-		dest.write<u8>(sequence.special.thing_1.size());
-		dest.write<u8>(sequence.special.thing_2.size());
-		dest.write_multiple(sequence.special.thing_1);
-		dest.write_multiple(sequence.special.thing_2);
-	}
-	
-	if(sequence.trigger_data.has_value()) {
-		if(game == Game::RAC1) {
-			dest.pad(0x10);
-		}
-		s64 trigger_data_ofs = dest.write(*sequence.trigger_data);
-		if(game == Game::RAC1) {
-			seq_header.triggers = trigger_data_ofs - header_ofs;
-		} else {
-			seq_header.triggers = trigger_data_ofs - seq_header_ofs;
-		}
-	}
-	seq_header.animation_info = sequence.animation_info;
-	
-	for(const MobyFrame& frame : sequence.frames) {
-		if(!sequence.has_special_data) {
-			s32 data_size_bytes = (joint_count + frame.regular.thing_1.size() + frame.regular.thing_2.size()) * 8;
-			while(data_size_bytes % 0x10 != 0) data_size_bytes++;
-			
-			MobyFrameHeader frame_header = {0};
-			frame_header.unknown_0 = frame.regular.unknown_0;
-			frame_header.unknown_4 = frame.regular.unknown_4;
-			verify(data_size_bytes / 0x10 < 65536, "Frame data too big.");
-			frame_header.data_size_qwords = data_size_bytes / 0x10;
-			frame_header.joint_data_size = joint_count * 8;
-			verify(frame.regular.thing_1.size() < 65536, "Frame data too big.");
-			frame_header.thing_1_count = (u16) frame.regular.thing_1.size();
-			frame_header.unknown_c = frame.regular.unknown_c;
-			verify(frame.regular.thing_2.size() < 65536, "Frame data too big.");
-			frame_header.thing_2_count = (u16) frame.regular.thing_2.size();
-			dest.pad(0x10);
-			dest.write<u32>(frame_pointer_ofs, (dest.write(frame_header) - header_ofs));
-			dest.write_multiple(frame.regular.joint_data);
-			dest.write_multiple(frame.regular.thing_1);
-			dest.write_multiple(frame.regular.thing_2);
-		} else {
-			dest.pad(0x4);
-			dest.write<u32>(frame_pointer_ofs, (dest.tell() - header_ofs) | 0xf0000000);
-			
-			dest.write<u16>(frame.special.inverse_unknown_0);
-			dest.write<u16>(frame.special.unknown_4);
-			dest.write_multiple(frame.special.first_part);
-			dest.write_multiple(frame.special.second_part);
-			dest.write_multiple(frame.special.third_part);
-			dest.write_multiple(frame.special.fourth_part);
-			dest.write_multiple(frame.special.fifth_part_1);
-			dest.write_multiple(frame.special.fifth_part_2);
-		}
-		frame_pointer_ofs += 4;
-	}
-	dest.write(seq_header_ofs, seq_header);
-	
-	return seq_header_ofs;
 }
 
 static MobyCollision read_moby_collision(Buffer src) {

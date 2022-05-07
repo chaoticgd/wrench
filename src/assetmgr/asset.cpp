@@ -278,10 +278,10 @@ void Asset::disconnect_precedence_pointers() {
 
 AssetFile::AssetFile(AssetForest& forest, AssetBank& pack, const fs::path& relative_path)
 	: _forest(forest)
-	, _pack(pack)
+	, _bank(pack)
 	, _relative_directory(relative_path.parent_path())
 	, _file_name(relative_path.filename())
-	, _root(std::make_unique<RootAsset>(_forest, _pack, *this, nullptr, "")) {}
+	, _root(std::make_unique<RootAsset>(_forest, _bank, *this, nullptr, "")) {}
 
 Asset& AssetFile::root() {
 	assert(_root.get());
@@ -295,31 +295,35 @@ void AssetFile::write() const {
 		wtf_end_file(ctx);
 	});
 	_root->write(ctx);
-	_pack.write_text_file(_relative_directory/_file_name, dest.c_str());
+	_bank.write_text_file(_relative_directory/_file_name, dest.c_str());
 }
 
 std::unique_ptr<InputStream> AssetFile::open_binary_file_for_reading(const FileReference& reference, fs::file_time_type* modified_time_dest) const {
 	assert(reference.owner == this);
-	return _pack.open_binary_file_for_reading(_relative_directory/reference.path, modified_time_dest);
+	return _bank.open_binary_file_for_reading(_relative_directory/reference.path, modified_time_dest);
 }
 
 std::pair<std::unique_ptr<OutputStream>, FileReference> AssetFile::open_binary_file_for_writing(const fs::path& path) const {
-	return {_pack.open_binary_file_for_writing(_relative_directory/path), FileReference(*this, path)};
+	return {_bank.open_binary_file_for_writing(_relative_directory/path), FileReference(*this, path)};
+}
+
+std::string AssetFile::read_text_file(const fs::path& path) const {
+	return _bank.read_text_file(_relative_directory/path);
 }
 
 FileReference AssetFile::write_text_file(const fs::path& path, const char* contents) const {
-	_pack.write_text_file(_relative_directory/path, contents);
+	_bank.write_text_file(_relative_directory/path, contents);
 	return FileReference(*this, path);
 }
 
 AssetFile* AssetFile::lower_precedence() {
-	assert(_pack._asset_files.size() > 0);
-	for(size_t i = 1; i < _pack._asset_files.size(); i++) {
-		if(_pack._asset_files[i].get() == this) {
-			return _pack._asset_files[i - 1].get();
+	assert(_bank._asset_files.size() > 0);
+	for(size_t i = 1; i < _bank._asset_files.size(); i++) {
+		if(_bank._asset_files[i].get() == this) {
+			return _bank._asset_files[i - 1].get();
 		}
 	}
-	for(AssetBank* lower = _pack.lower_precedence(); lower != nullptr; lower = lower->lower_precedence()) {
+	for(AssetBank* lower = _bank.lower_precedence(); lower != nullptr; lower = lower->lower_precedence()) {
 		if(lower->_asset_files.size() >= 1) {
 			return lower->_asset_files.back().get();
 		}
@@ -328,13 +332,13 @@ AssetFile* AssetFile::lower_precedence() {
 }
 
 AssetFile* AssetFile::higher_precedence() {
-	assert(_pack._asset_files.size() > 0);
-	for(size_t i = 0; i < _pack._asset_files.size() - 1; i++) {
-		if(_pack._asset_files[i].get() == this) {
-			return _pack._asset_files[i + 1].get();
+	assert(_bank._asset_files.size() > 0);
+	for(size_t i = 0; i < _bank._asset_files.size() - 1; i++) {
+		if(_bank._asset_files[i].get() == this) {
+			return _bank._asset_files[i + 1].get();
 		}
 	}
-	for(AssetBank* higher = _pack.higher_precedence(); higher != nullptr; higher = higher->higher_precedence()) {
+	for(AssetBank* higher = _bank.higher_precedence(); higher != nullptr; higher = higher->higher_precedence()) {
 		if(higher->_asset_files.size() >= 1) {
 			return higher->_asset_files.front().get();
 		}
@@ -345,7 +349,7 @@ AssetFile* AssetFile::higher_precedence() {
 void AssetFile::read() {
 	fs::path path = _relative_directory/_file_name;
 	std::string path_str = path.string();
-	std::string text = _pack.read_text_file(path);
+	std::string text = _bank.read_text_file(path);
 	char* mutable_text = new char[text.size() + 1];
 	memcpy(mutable_text, text.c_str(), text.size() + 1);
 	text.clear();

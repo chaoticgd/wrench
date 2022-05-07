@@ -111,6 +111,7 @@ add_library(wrenchengine
 	src/engine/moby.cpp
 	src/engine/moby_mesh_exporter.cpp
 	src/engine/moby_mesh_importer.cpp
+	src/engine/moby_animation.cpp
 	src/engine/texture.cpp
 )
 target_link_libraries(wrenchengine wrenchcore)

@@ -43,6 +43,8 @@ struct ColladaScene {
 	std::vector<Material> materials;
 	std::vector<Mesh> meshes;
 	std::vector<Joint> joints;
+	
+	Mesh* find_mesh(const std::string& name);
 };
 
 ColladaScene read_collada(std::vector<u8> src); // Throws ParseError.

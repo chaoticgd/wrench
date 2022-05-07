@@ -68,6 +68,15 @@ static void write_visual_scenes(OutBuffer dest, const ColladaScene& scene);
 static void write_joint_node(OutBuffer dest, const std::vector<Joint>& joints, s32 index, s32 indent);
 static void write_matrix4x4(OutBuffer dest, const glm::mat4& matrix);
 
+Mesh* ColladaScene::find_mesh(const std::string& name) {
+	for(Mesh& mesh : meshes) {
+		if(mesh.name == name) {
+			return &mesh;
+		}
+	}
+	return nullptr;
+}
+
 ColladaScene read_collada(std::vector<u8> src) {
 	src.push_back('\0');
 	
