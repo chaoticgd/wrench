@@ -76,9 +76,9 @@ void unpack_asset_impl(Asset& dest, InputStream& src, Game game, AssetFormatHint
 	SubInputStream* sub_stream = dynamic_cast<SubInputStream*>(&src);
 	if(sub_stream) {
 		if(s64 offset = sub_stream->offset_relative_to(g_asset_unpacker.input_file)) {
-			s64 new_file_offset = g_asset_unpacker.current_file_offset;
+			s64 new_file_offset = offset + sub_stream->size();
 			if(new_file_offset >= g_asset_unpacker.current_file_offset) {
-				g_asset_unpacker.current_file_offset = offset + sub_stream->size();
+				g_asset_unpacker.current_file_offset = new_file_offset;
 			}
 		}
 	}
