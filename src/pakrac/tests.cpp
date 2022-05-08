@@ -30,7 +30,7 @@
 
 static void run_round_trip_asset_packing_tests(const fs::path& input_path, s32 min_percentage, s32 max_percentage);
 static void enumerate_binaries(std::vector<BinaryAsset*>& dest, Asset& src);
-static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& binary, AssetType type, Game game, s32 percentage);
+static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& binary, AssetType type, s32 percentage);
 
 void run_tests(fs::path input_path) {
 	run_round_trip_asset_packing_tests(input_path, 0, 100);
@@ -47,8 +47,6 @@ static void run_round_trip_asset_packing_tests(const fs::path& input_path, s32 m
 	std::vector<BinaryAsset*> binaries;
 	enumerate_binaries(binaries, *root);
 	
-	Game game = Game::DL;
-	
 	for(size_t i = 0; i < binaries.size(); i++) {
 		BinaryAsset& binary = *binaries[i];
 		std::string asset_type;
@@ -60,7 +58,7 @@ static void run_round_trip_asset_packing_tests(const fs::path& input_path, s32 m
 		AssetType type = asset_string_to_type(asset_type.c_str());
 		if(type != NULL_ASSET_TYPE) {
 			f32 percentage = lerp(min_percentage, max_percentage, i / (f32) binaries.size());
-			run_round_trip_asset_packing_test(forest, binary, type, game, (s32) percentage);
+			run_round_trip_asset_packing_test(forest, binary, type, (s32) percentage);
 		}
 	}
 }
@@ -75,7 +73,7 @@ static void enumerate_binaries(std::vector<BinaryAsset*>& dest, Asset& src) {
 	});
 }
 
-static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& binary, AssetType type, Game game, s32 percentage) {
+static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& binary, AssetType type, s32 percentage) {
 	auto src_file = binary.file().open_binary_file_for_reading(binary.src());
 	std::vector<u8> src = src_file->read_multiple<u8>(src_file->size());
 	MemoryInputStream src_stream(src);
@@ -83,6 +81,9 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 	const char* type_name = asset_type_to_string(type);
 	std::string ref = asset_reference_to_string(binary.reference());
 	printf("[%3d%%] \033[34mRunning test with %s asset %s\033[0m\n", percentage, type_name, ref.c_str());
+	
+	AssetFormatHint hint = (AssetFormatHint) binary.format_hint();
+	Game game = (Game) binary.game();
 	
 	AssetDispatchTable* dispatch = nullptr;
 	
@@ -96,15 +97,15 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 		AssetBank& temp = forest.mount<MemoryAssetBank>("test");
 		AssetFile& file = temp.asset_file("test.asset");
 		Asset& asset = file.root().physical_child(type, "test");
-		unpack_asset_impl(asset, src_stream, game, (AssetFormatHint) binary.format_hint());
+		unpack_asset_impl(asset, src_stream, game, hint);
 		
 		MemoryOutputStream dest_stream(dest);
-		pack_asset_impl(dest_stream, nullptr, nullptr, asset, game, (AssetFormatHint) binary.format_hint());
+		pack_asset_impl(dest_stream, nullptr, nullptr, asset, game, hint);
 		
 		dispatch = &asset.funcs;
 	}
 	
-	if(!dispatch->test || !(*dispatch->test)(src, dest, game, (AssetFormatHint) binary.format_hint())) {
+	if(!dispatch->test || !(*dispatch->test)(src, dest, game, hint)) {
 		if(!diff_buffers(src, dest, 0, "", 0)) {
 			exit(1);
 		}

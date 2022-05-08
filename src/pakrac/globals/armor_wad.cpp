@@ -167,6 +167,7 @@ static void unpack_armors(CollectionAsset& dest, InputStream& src, ArmorHeader* 
 				BinaryAsset& bin = moby.mesh<BinaryAsset>();
 				bin.set_asset_type("MobyClass");
 				bin.set_format_hint(0);
+				bin.set_game((s32) game);
 				unpack_asset(bin, src, headers[i].mesh, game);
 			} else {
 				unpack_asset(moby, src, headers[i].mesh, game);

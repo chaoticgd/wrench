@@ -68,6 +68,7 @@ struct MobySequence {
 		std::vector<u64> thing_1;
 		std::vector<u64> thing_2;
 	} special;
+	std::vector<u8> deadlocked_data;
 };
 
 packed_struct(MobySequenceHeader,
@@ -90,8 +91,11 @@ packed_struct(Rac123MobyFrameHeader,
 	/* 0xe */ u16 thing_2_count;
 )
 
-packed_struct(DeadlockedFrameHeader,
-	/* 0x0 */ u32 unknown_0;
+packed_struct(DeadlockedMobySequenceDataHeader,
+	/* 0x0 */ u8 unknown_0;
+	/* 0x1 */ u8 spr_dma_qwc;
+	/* 0x2 */ u8 unknown_2;
+	/* 0x3 */ u8 unknown_3;
 	/* 0x4 */ u32 unknown_4;
 	/* 0x8 */ u32 unknown_8;
 	/* 0xc */ u32 unknown_c;

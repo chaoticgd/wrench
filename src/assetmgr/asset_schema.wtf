@@ -39,13 +39,10 @@ AssetType Binary {
 		desc: 'The file path of the binary file, relative to the .asset file.'
 	}
 	
-	StringAttribute asset_type {
-		desc: 'The asset type that this can be unpacked as. Only used for testing.'
-	}
-	
-	IntegerAttribute format_hint {
-		desc: 'The hint value passed to the packer function. Only used for testing.'
-	}
+	// These are only used for testing.
+	StringAttribute asset_type { hidden: true }
+	IntegerAttribute format_hint { hidden: true }
+	IntegerAttribute game { hidden: true }
 }
 
 // *****************************************************************************
