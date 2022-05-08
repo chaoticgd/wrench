@@ -92,7 +92,19 @@ MobyClassData read_moby_class(Buffer src, Game game) {
 	}
 	if(header.skeleton != 0) {
 		moby.shadow = src.read_bytes(header.skeleton - header.shadow * 16, header.shadow * 16, "shadow");
-		moby.skeleton = src.read_multiple<Mat4>(header.skeleton, header.joint_count, "skeleton").copy();
+		if(game == Game::DL) {
+			moby.skeleton.emplace();
+			for(const Mat3& src_mat : src.read_multiple<Mat3>(header.skeleton, header.joint_count, "skeleton")) {
+				Mat4 dest_mat;
+				dest_mat.m_0 = src_mat.m_0;
+				dest_mat.m_1 = src_mat.m_1;
+				dest_mat.m_2 = src_mat.m_2;
+				dest_mat.m_3 = {0, 0, 0, 0};
+				moby.skeleton->emplace_back(dest_mat);
+			}
+		} else {
+			moby.skeleton = src.read_multiple<Mat4>(header.skeleton, header.joint_count, "skeleton").copy();
+		}
 	}
 	if(header.common_trans != 0) {
 		moby.common_trans = src.read_multiple<MobyTrans>(header.common_trans, header.joint_count, "skeleton trans").copy();
@@ -220,7 +232,15 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 		dest.write_multiple(moby.shadow);
 		header.skeleton = dest.tell() - class_header_ofs;
 		verify(moby.skeleton->size() < 255, "Moby class has too many joints.");
-		dest.write_multiple(*moby.skeleton);
+		if(game == Game::DL) {
+			for(const Mat4& mat : *moby.skeleton) {
+				dest.write(mat.m_0);
+				dest.write(mat.m_1);
+				dest.write(mat.m_2);
+			}
+		} else {
+			dest.write_multiple(*moby.skeleton);
+		}
 	}
 	dest.pad(0x10);
 	if(moby.common_trans.has_value()) {
