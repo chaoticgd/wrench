@@ -284,7 +284,7 @@ static MobySequence read_dl_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_cou
 	s32 data_ofs = src.read<s32>(seq_ofs + 0x1c, "moby sequence data offset");
 	auto data_header = src.read<DeadlockedMobySequenceDataHeader>(seq_ofs + data_ofs, "moby sequence data header");
 	MobySequence seq;
-	seq.deadlocked_data = src.read_multiple<u8>(seq_ofs, data_ofs + data_header.spr_dma_qwc * 16, "moby sequence").copy();
+	seq.deadlocked_data = src.read_bytes(seq_ofs, data_ofs + data_header.spr_dma_qwc * 16, "moby sequence");
 	return seq;
 }
 

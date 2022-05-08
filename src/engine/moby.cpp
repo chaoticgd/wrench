@@ -39,7 +39,6 @@ MobyClassData read_moby_class(Buffer src, Game game) {
 	moby.rac1_byte_a = header.rac1_byte_a;
 	moby.rac1_byte_b = header.rac12_byte_b;
 	moby.lod_trans = header.lod_trans;
-	moby.shadow = header.shadow;
 	moby.scale = header.scale;
 	moby.mip_dist = header.mip_dist;
 	moby.bounding_sphere = header.bounding_sphere.unpack();
@@ -92,6 +91,7 @@ MobyClassData read_moby_class(Buffer src, Game game) {
 		s64 coll_size = 0x10 + moby.collision->first_part.size() + moby.collision->second_part.size() * 8 + moby.collision->third_part.size();
 	}
 	if(header.skeleton != 0) {
+		moby.shadow = src.read_bytes(header.skeleton - header.shadow * 16, header.shadow * 16, "shadow");
 		moby.skeleton = src.read_multiple<Mat4>(header.skeleton, header.joint_count, "skeleton").copy();
 	}
 	if(header.common_trans != 0) {
@@ -168,7 +168,7 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 	header.joint_count = moby.joint_count;
 	header.unknown_9 = moby.unknown_9;
 	header.lod_trans = moby.lod_trans;
-	header.shadow = moby.shadow;
+	header.shadow = moby.shadow.size() / 16;
 	header.scale = moby.scale;
 	verify(moby.sound_defs.size() < 256, "Moby class has too many sounds.");
 	header.sound_count = moby.sound_defs.size();
@@ -211,11 +211,13 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 	if(moby.has_submesh_table) {
 		header.submesh_table_offset = submesh_table_1_ofs - class_header_ofs;
 	}
+	dest.write<s32>(0);
 	if(moby.collision.has_value()) {
 		header.collision = write_moby_collision(dest, *moby.collision) - class_header_ofs;
 	}
-	dest.write_multiple(moby.mystery_data);
 	if(moby.skeleton.has_value()) {
+		dest.pad(0x10);
+		dest.write_multiple(moby.shadow);
 		header.skeleton = dest.tell() - class_header_ofs;
 		verify(moby.skeleton->size() < 255, "Moby class has too many joints.");
 		dest.write_multiple(*moby.skeleton);
@@ -486,7 +488,6 @@ MobyClassData build_moby_class(const ColladaScene& scene) {
 	moby.common_trans = {};
 	moby.unknown_9 = 0;
 	moby.lod_trans = 0x20;
-	moby.shadow = 0;
 	moby.scale = 0.25;
 	moby.mip_dist = 0x8;
 	moby.bounding_sphere = glm::vec4(0.f, 0.f, 0.f, 10.f); // Arbitrary for now.

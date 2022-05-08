@@ -101,7 +101,6 @@ static void pack_moby_class(OutputStream& dest, MobyClassAsset& src, Game game) 
 	moby.common_trans = {};
 	moby.unknown_9 = 0;
 	moby.lod_trans = 0x20;
-	moby.shadow = 0;
 	moby.scale = 0.25;
 	moby.mip_dist = 0x8;
 	moby.bounding_sphere = glm::vec4(0.f, 0.f, 0.f, 10.f); // Arbitrary for now.

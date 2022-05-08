@@ -82,7 +82,7 @@ struct MobyClassData {
 	Opt<MobyBangles> bangles;
 	Opt<MobyCornCob> corncob;
 	std::vector<Opt<MobySequence>> sequences;
-	std::vector<u8> mystery_data;
+	std::vector<u8> shadow;
 	Opt<MobyCollision> collision;
 	Opt<std::vector<Mat4>> skeleton;
 	Opt<std::vector<MobyTrans>> common_trans;
@@ -91,7 +91,6 @@ struct MobyClassData {
 	std::vector<MobySoundDef> sound_defs;
 	u8 unknown_9 = 0;
 	u8 lod_trans = 0;
-	u8 shadow = 0;
 	f32 scale = 0.f;
 	u8 mip_dist = 0;
 	glm::vec4 bounding_sphere = {0.f, 0.f, 0.f, 0.f};
