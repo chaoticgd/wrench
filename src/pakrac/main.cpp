@@ -213,7 +213,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path) {
 	AssetForest forest;
 	
 	AssetBank& pack = forest.mount<LooseAssetBank>("unpacked", output_path, true);
-	pack.game_info.type = AssetPackType::UNPACKED;
+	pack.game_info.type = AssetBankType::UNPACKED;
 	
 	FileInputStream stream;
 	verify(stream.open(input_path), "Failed to open input file '%s' for reading.", input_path.string().c_str());

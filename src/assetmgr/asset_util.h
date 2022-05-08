@@ -67,14 +67,14 @@ struct FileReference {
 
 // *****************************************************************************
 
-enum AssetPackType {
-	UNPACKED, // Assets unpacked from files extracted from a base game ISO.
+enum class AssetBankType {
+	UNPACKED, // Assets unpacked from a base game ISO.
 	MOD, // A mod.
-	LIBRARY // Additional assets to be used by mods.
+	TEST // A set of binary assets to be used for running tests on.
 };
 
 struct GameInfo {
-	AssetPackType type;
+	AssetBankType type;
 	std::vector<AssetReference> builds; // List of builds included with this asset pack.
 	std::vector<std::string> dependencies; // Library packs to be mounted before the mod but after the base game.
 };

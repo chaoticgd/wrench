@@ -72,11 +72,11 @@ GameInfo read_game_info(char* input) {
 	const WtfAttribute* type = wtf_attribute(root, "type");
 	if(type && type->type == WTF_STRING) {
 		if(strcmp(type->string, "unpacked") == 0) {
-			info.type = AssetPackType::UNPACKED;
-		} else if(strcmp(type->string, "library") == 0) {
-			info.type = AssetPackType::LIBRARY;
+			info.type = AssetBankType::UNPACKED;
+		} else if(strcmp(type->string, "test") == 0) {
+			info.type = AssetBankType::TEST;
 		} else {
-			info.type = AssetPackType::MOD;
+			info.type = AssetBankType::MOD;
 		}
 	} else {
 		fprintf(stderr, "warning: No type attribute in gameinfo.txt file.\n");
@@ -107,10 +107,10 @@ void write_game_info(std::string& dest, const GameInfo& info) {
 	WtfWriter* ctx = wtf_begin_file(dest);
 	
 	wtf_begin_attribute(ctx, "type");
-	if(info.type == AssetPackType::UNPACKED) {
+	if(info.type == AssetBankType::UNPACKED) {
 		wtf_write_string(ctx, "unpacked");
-	} else if(info.type == AssetPackType::LIBRARY) {
-		wtf_write_string(ctx, "library");
+	} else if(info.type == AssetBankType::TEST) {
+		wtf_write_string(ctx, "test");
 	} else {
 		wtf_write_string(ctx, "mod");
 	}
