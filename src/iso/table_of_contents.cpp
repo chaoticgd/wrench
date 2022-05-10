@@ -342,12 +342,14 @@ static s64 get_rac234_level_table_offset(Buffer src) {
 			if(lsn.sectors == 0 || header_offset > TOC_MAX_SIZE - 4) {
 				break;
 			}
-			s32 header_size = src.read<s32>(header_offset, "level header");
-			if(header_offset + header_size <= src.size()) {
-				Buffer header = src.subbuf(header_offset, header_size);
-				const auto& [game, type, name] = identify_wad(header);
-				if(game != Game::UNKNOWN || type != WadType::UNKNOWN) {
-					parts++;
+			if(header_offset > 0 && header_offset + 4 <= src.size()) {
+				s32 header_size = src.read<s32>(header_offset, "level header");
+				if(header_size > 0 && header_size < 0x10000 && header_offset + header_size <= src.size()) {
+					Buffer header = src.subbuf(header_offset, header_size);
+					const auto& [game, type, name] = identify_wad(header);
+					if(game != Game::UNKNOWN || type != WadType::UNKNOWN) {
+						parts++;
+					}
 				}
 			}
 		}
