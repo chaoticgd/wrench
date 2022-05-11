@@ -33,7 +33,8 @@ enum AssetFormatHint {
 	FMT_TEXTURE_PIF8_SWIZZLED,
 	FMT_MOBY_CLASS_LEVEL,
 	FMT_MOBY_CLASS_ARMOR,
-	FMT_MOBY_CLASS_ARMOR_MP
+	FMT_MOBY_CLASS_ARMOR_MP,
+	FMT_COLLECTION_PIF8
 };
 
 // *****************************************************************************

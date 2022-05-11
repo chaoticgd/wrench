@@ -127,6 +127,7 @@ add_executable(pakrac
 	src/pakrac/asset_packer.cpp
 	src/pakrac/classes/moby_class.cpp
 	src/pakrac/common/binary_asset.cpp
+	src/pakrac/common/collection_asset.cpp
 	src/pakrac/common/file_asset.cpp
 	src/pakrac/common/texture_asset.cpp
 	src/pakrac/globals/armor_wad.cpp

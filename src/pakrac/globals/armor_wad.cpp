@@ -152,17 +152,6 @@ static void unpack_armors(CollectionAsset& dest, InputStream& src, ArmorHeader* 
 		if(headers[i].mesh.size.sectors > 0) {
 			Asset& armor_file = dest.switch_files(stringf("armors/%02d/armor%02d.asset", i, i));
 			MobyClassAsset& moby = armor_file.child<MobyClassAsset>(std::to_string(i).c_str());
-			CollectionAsset& materials = moby.materials();
-			s32 texture_count = src.read<s32>(headers[i].textures.bytes().offset);
-			verify(texture_count < 0x10, "Armor has too many textures in PIF list.");
-			for(s32 j = 0; j < texture_count; j++) {
-				s32 offset = src.read<s32>(headers[i].textures.bytes().offset + (j + 1) * 4);
-				ByteRange range {
-					(s32) headers[i].textures.bytes().offset + offset,
-					(s32) headers[i].textures.bytes().size - offset
-				};
-				unpack_asset(materials.child<TextureAsset>(j), src, range, game, FMT_TEXTURE_PIF8);
-			}
 			if(g_asset_unpacker.dump_binaries) {
 				BinaryAsset& bin = moby.mesh<BinaryAsset>();
 				bin.set_asset_type("MobyClass");
@@ -170,8 +159,11 @@ static void unpack_armors(CollectionAsset& dest, InputStream& src, ArmorHeader* 
 				bin.set_game((s32) game);
 				unpack_asset(bin, src, headers[i].mesh, game);
 			} else {
-				unpack_asset(moby, src, headers[i].mesh, game);
+				BinaryAsset& bin = moby.mesh<BinaryAsset>();
+				unpack_asset(bin, src, headers[i].mesh, game);
+				//unpack_asset(moby, src, headers[i].mesh, game);
 			}
+			unpack_asset(moby.materials(), src, headers[i].textures, game, FMT_COLLECTION_PIF8);
 		}
 	}
 }
@@ -180,8 +172,8 @@ static void pack_armors(OutputStream& dest, ArmorHeader* headers, s32 count, Col
 	for(size_t i = 0; i < count; i++) {
 		if(src.has_child(i)) {
 			MobyClassAsset& moby = src.get_child(i).as<MobyClassAsset>();
-			headers[i].mesh = pack_asset<SectorRange>(dest, moby, game, base);
-			//headers[i].textures = pack_assets<SectorRange>(dest, moby.get_materials(), game, base);
+			headers[i].mesh = pack_asset_sa<SectorRange>(dest, moby.get_mesh(), game, base);
+			headers[i].textures = pack_asset_sa<SectorRange>(dest, moby.get_materials(), game, base, FMT_COLLECTION_PIF8);
 		}
 	}
 }
