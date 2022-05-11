@@ -134,11 +134,7 @@ static void write_directory_records(OutputStream& dest, const IsoDirectory& dir)
 static void write_directory_record(OutputStream& dest, const IsoFileRecord& file, u8 flags);
 
 void write_iso_filesystem(OutputStream& dest, IsoDirectory* root_dir) {
-	// Write out system area.
-	static const u8 zeroed_sector[SECTOR_SIZE] = {0};
-	for(s32 i = 0; i < 0x10; i++) {
-		dest.write(zeroed_sector, sizeof(zeroed_sector));
-	}
+	dest.seek(16 * SECTOR_SIZE);
 	
 	IsoPvdDateTime zeroed_datetime = {{0}};
 	
@@ -201,6 +197,7 @@ void write_iso_filesystem(OutputStream& dest, IsoDirectory* root_dir) {
 	// It seems like the path table is always expected to be at this LBA even if
 	// we write a different one into the PVD. Maybe it's hardcoded?
 	dest.pad(SECTOR_SIZE, 0);
+	static const u8 zeroed_sector[SECTOR_SIZE] = {0};
 	while(dest.tell() < 0x101 * SECTOR_SIZE) {
 		dest.write(zeroed_sector, sizeof(zeroed_sector));
 	}

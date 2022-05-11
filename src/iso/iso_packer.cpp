@@ -18,8 +18,10 @@
 
 #include "iso_packer.h"
 
+#include <core/png.h>
 #include <iso/wad_identifier.h>
 
+static void pack_ps2_logo(OutputStream& iso, BuildAsset& build, AssetPackerFunc pack);
 static std::vector<GlobalWadInfo> enumerate_globals(BuildAsset& build, Game game);
 static std::vector<LevelInfo> enumerate_levels(BuildAsset& build, Game game);
 static IsoDirectory enumerate_files(Asset& files);
@@ -32,6 +34,8 @@ static void pack_level_wad_outer(OutputStream& iso, IsoDirectory& directory, Lev
 
 void pack_iso(OutputStream& iso, BuildAsset& build, Game game, AssetPackerFunc pack) {
 	s32 single_level_index = -1;
+	
+	pack_ps2_logo(iso, build, pack);
 	
 	table_of_contents toc;
 	toc.globals = enumerate_globals(build, game);
@@ -102,6 +106,24 @@ void pack_iso(OutputStream& iso, BuildAsset& build, Game game, AssetPackerFunc p
 	
 	s64 toc_end = write_table_of_contents_rac234(iso, toc, game);
 	assert(toc_end <= files_begin);
+}
+
+static void pack_ps2_logo(OutputStream& iso, BuildAsset& build, AssetPackerFunc pack) {
+	TextureAsset& asset = build.get_ps2_logo();
+	auto png = asset.file().open_binary_file_for_reading(asset.src());
+	
+	Opt<Texture> texture = read_png(*png);
+	verify(texture.has_value(), "Build has bad ps2_logo.");
+	
+	texture->to_grayscale();
+	verify(texture->data.size() <= 12 * SECTOR_SIZE, "PS2 logo image too big.");
+	
+	u8 key = build.ps2_logo_key();
+	for(u8& pixel : texture->data) {
+		pixel = ((pixel >> 3) | (pixel << 5)) ^ key;
+	}
+	
+	iso.write_v(texture->data);
 }
 
 static std::vector<GlobalWadInfo> enumerate_globals(BuildAsset& build, Game game) {

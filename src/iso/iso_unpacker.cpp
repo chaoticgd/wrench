@@ -65,34 +65,34 @@ void unpack_iso(BuildAsset& dest, InputStream& src, AssetUnpackerFunc unpack) {
 }
 
 static void unpack_ps2_logo(BuildAsset& build, InputStream& src, Region region) {
-	//std::vector<u8> logo = read_file(iso, 0, 12 * SECTOR_SIZE);
-	//
-	//u8 key = logo[0];
-	//for(u8& pixel : logo) {
-	//	pixel ^= key;
-	//	pixel = (pixel << 3) | (pixel >> 5);
-	//}
-	//
-	//s32 width, height;
-	//if(region == Region::PAL) {
-	//	width = 344;
-	//	height = 71;
-	//} else {
-	//	width = 384;
-	//	height = 64;
-	//}
-	//
-	//logo.resize(width * height);
-	//
-	//FileReference ref = build.file().write_binary_file("ps2_logo.png", [&](FILE* file) {
-	//	write_grayscale_png(file, "PS2 logo", logo, width, height);
-	//});
-	//
-	//TextureAsset& texture = build.physical_child<TextureAsset>("ps2_logo");
-	//texture.set_src(ref);
-	//
-	//build.set_ps2_logo(texture);
-	//build.set_ps2_logo_key(key);
+	src.seek(0);
+	std::vector<u8> logo = src.read_multiple<u8>(12 * SECTOR_SIZE);
+	
+	u8 key = logo[0];
+	build.set_ps2_logo_key(key);
+	
+	for(u8& pixel : logo) {
+		pixel ^= key;
+		pixel = (pixel << 3) | (pixel >> 5);
+	}
+	
+	s32 width, height;
+	if(region == Region::PAL) {
+		width = 344;
+		height = 71;
+	} else {
+		width = 384;
+		height = 64;
+	}
+	
+	logo.resize(width * height);
+	
+	Texture texture = Texture::create_grayscale(width, height, logo);
+	auto [file, ref] = build.file().open_binary_file_for_writing("ps2_logo.png");
+	write_png(*file, texture);
+	
+	TextureAsset& asset = build.ps2_logo();
+	asset.set_src(ref);
 }
 
 static void unpack_primary_volume_descriptor(BuildAsset& build, const IsoPrimaryVolumeDescriptor& pvd) {
