@@ -289,7 +289,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path) {
 }
 
 static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path) {
-	printf("[  0%%] Mounting asset bank\n");
+	printf("[  0%%] Mounting asset banks\n");
 	
 	AssetForest forest;
 	
