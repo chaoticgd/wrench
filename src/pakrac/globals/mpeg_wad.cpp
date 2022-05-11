@@ -41,16 +41,14 @@ static void unpack_mpeg_wad(MpegWadAsset& dest, InputStream& src, Game game) {
 }
 
 static void pack_mpeg_wad(OutputStream& dest, std::vector<u8>* header_dest, MpegWadAsset& src, Game game) {
-	s64 base = dest.tell();
-	
 	DeadlockedMpegWadHeader header = {0};
 	header.header_size = sizeof(DeadlockedMpegWadHeader);
 	dest.write(header);
 	dest.pad(SECTOR_SIZE, 0);
 	
-	pack_assets_sa(dest, ARRAY_PAIR(header.story), src.get_story(), game, base);
+	pack_assets_sa(dest, ARRAY_PAIR(header.story), src.get_story(), game);
 	
-	dest.write(base, header);
+	dest.write(0, header);
 	if(header_dest) {
 		OutBuffer(*header_dest).write(0, header);
 	}

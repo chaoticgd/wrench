@@ -55,23 +55,20 @@ static void unpack_bonus_wad(BonusWadAsset& dest, InputStream& src, Game game) {
 }
 
 void pack_bonus_wad(OutputStream& dest, std::vector<u8>* header_dest, BonusWadAsset& src, Game game) {
-	s64 base = dest.tell();
-	
 	DeadlockedBonusWadHeader header = {0};
 	header.header_size = sizeof(DeadlockedBonusWadHeader);
 	dest.write(header);
-	dest.pad(SECTOR_SIZE, 0);
 	
-	pack_assets_sa(dest, ARRAY_PAIR(header.credits_text), src.get_credits_text(), game, base);
-	pack_assets_sa(dest, ARRAY_PAIR(header.credits_images), src.get_credits_images(), game, base);
-	pack_assets_sa(dest, ARRAY_PAIR(header.demomenu), src.get_demomenu(), game, base);
-	pack_assets_sa(dest, ARRAY_PAIR(header.demoexit), src.get_demoexit(), game, base);
-	pack_assets_sa(dest, ARRAY_PAIR(header.cheat_images), src.get_cheat_images(), game, base);
-	pack_assets_sa(dest, ARRAY_PAIR(header.skill_images), src.get_skill_images(), game, base);
-	header.trophy_image = pack_asset_sa<SectorRange>(dest, src.get_trophy_image(), game, base);
-	header.dige = pack_asset_sa<SectorRange>(dest, src.get_dige(), game, base);
+	pack_assets_sa(dest, ARRAY_PAIR(header.credits_text), src.get_credits_text(), game);
+	pack_assets_sa(dest, ARRAY_PAIR(header.credits_images), src.get_credits_images(), game);
+	pack_assets_sa(dest, ARRAY_PAIR(header.demomenu), src.get_demomenu(), game);
+	pack_assets_sa(dest, ARRAY_PAIR(header.demoexit), src.get_demoexit(), game);
+	pack_assets_sa(dest, ARRAY_PAIR(header.cheat_images), src.get_cheat_images(), game);
+	pack_assets_sa(dest, ARRAY_PAIR(header.skill_images), src.get_skill_images(), game);
+	header.trophy_image = pack_asset_sa<SectorRange>(dest, src.get_trophy_image(), game);
+	header.dige = pack_asset_sa<SectorRange>(dest, src.get_dige(), game);
 	
-	dest.write(base, header);
+	dest.write(0, header);
 	if(header_dest) {
 		OutBuffer(*header_dest).write(0, header);
 	}

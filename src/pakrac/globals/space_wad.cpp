@@ -41,16 +41,14 @@ void unpack_space_wad(SpaceWadAsset& dest, InputStream& src, Game game) {
 }
 
 static void pack_space_wad(OutputStream& dest, std::vector<u8>* header_dest, SpaceWadAsset& src, Game game) {
-	s64 base = dest.tell();
-	
 	DeadlockedSpaceWadHeader header = {0};
 	header.header_size = sizeof(DeadlockedSpaceWadHeader);
 	dest.write(header);
 	dest.pad(SECTOR_SIZE, 0);
 	
-	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.transition_wads), src.get_transitions(), game, base);
+	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.transition_wads), src.get_transitions(), game);
 	
-	dest.write(base, header);
+	dest.write(0, header);
 	if(header_dest) {
 		OutBuffer(*header_dest).write(0, header);
 	}

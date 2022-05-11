@@ -25,7 +25,7 @@ static void pack_audio_wad(OutputStream& dest, std::vector<u8>* header_dest, Aud
 template <typename Getter>
 static void unpack_help_audio(CollectionAsset& dest, InputStream& src, Sector32* ranges, s32 count, Game game, const std::set<s64>& end_sectors, Getter getter);
 template <typename Getter>
-static void pack_help_audio(OutputStream& dest, Sector32* sectors_dest, s32 count, CollectionAsset& src, Game game, s64 base, Getter getter);
+static void pack_help_audio(OutputStream& dest, Sector32* sectors_dest, s32 count, CollectionAsset& src, Game game, Getter getter);
 
 on_load(Audio, []() {
 	AudioWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<AudioWadAsset>(unpack_audio_wad);
@@ -80,23 +80,21 @@ static void unpack_audio_wad(AudioWadAsset& dest, InputStream& src, Game game) {
 }
 
 static void pack_audio_wad(OutputStream& dest, std::vector<u8>* header_dest, AudioWadAsset& src, Game game) {
-	s64 base = dest.tell();
-	
 	DeadlockedAudioWadHeader header = {0};
 	header.header_size = sizeof(DeadlockedAudioWadHeader);
 	dest.write(header);
 	dest.pad(SECTOR_SIZE, 0);
 	
-	pack_assets_sa(dest, ARRAY_PAIR(header.vendor), src.get_vendor(), game, base);
-	pack_assets_sa(dest, ARRAY_PAIR(header.global_sfx), src.get_global_sfx(), game, base);
+	pack_assets_sa(dest, ARRAY_PAIR(header.vendor), src.get_vendor(), game);
+	pack_assets_sa(dest, ARRAY_PAIR(header.global_sfx), src.get_global_sfx(), game);
 	
-	pack_help_audio(dest, ARRAY_PAIR(header.help_english), src.get_help(), game, base, &HelpAudioAsset::get_english);
-	pack_help_audio(dest, ARRAY_PAIR(header.help_french), src.get_help(), game, base, &HelpAudioAsset::get_french);
-	pack_help_audio(dest, ARRAY_PAIR(header.help_german), src.get_help(), game, base, &HelpAudioAsset::get_german);
-	pack_help_audio(dest, ARRAY_PAIR(header.help_spanish), src.get_help(), game, base, &HelpAudioAsset::get_spanish);
-	pack_help_audio(dest, ARRAY_PAIR(header.help_italian), src.get_help(), game, base, &HelpAudioAsset::get_italian);
+	pack_help_audio(dest, ARRAY_PAIR(header.help_english), src.get_help(), game, &HelpAudioAsset::get_english);
+	pack_help_audio(dest, ARRAY_PAIR(header.help_french), src.get_help(), game, &HelpAudioAsset::get_french);
+	pack_help_audio(dest, ARRAY_PAIR(header.help_german), src.get_help(), game, &HelpAudioAsset::get_german);
+	pack_help_audio(dest, ARRAY_PAIR(header.help_spanish), src.get_help(), game, &HelpAudioAsset::get_spanish);
+	pack_help_audio(dest, ARRAY_PAIR(header.help_italian), src.get_help(), game, &HelpAudioAsset::get_italian);
 	
-	dest.write(base, header);
+	dest.write(0, header);
 	if(header_dest) {
 		OutBuffer(*header_dest).write(0, header);
 	}
@@ -117,11 +115,11 @@ static void unpack_help_audio(CollectionAsset& dest, InputStream& src, Sector32*
 }
 
 template <typename Getter>
-static void pack_help_audio(OutputStream& dest, Sector32* sectors_dest, s32 count, CollectionAsset& src, Game game, s64 base, Getter getter) {
+static void pack_help_audio(OutputStream& dest, Sector32* sectors_dest, s32 count, CollectionAsset& src, Game game, Getter getter) {
 	for(size_t i = 0; i < count; i++) {
 		if(src.has_child(i)) {
 			Asset& asset = (src.get_child(i).as<HelpAudioAsset>().*getter)();
-			sectors_dest[i] = pack_asset_sa<Sector32>(dest, asset, game, base);
+			sectors_dest[i] = pack_asset_sa<Sector32>(dest, asset, game);
 		}
 	}
 }

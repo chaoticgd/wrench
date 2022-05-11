@@ -221,3 +221,24 @@ s64 SubInputStream::offset_relative_to(InputStream* outer) const {
 		return 0;
 	}
 }
+
+// *****************************************************************************
+
+SubOutputStream::SubOutputStream(OutputStream& stream_, s64 zero_)
+	: stream(stream_), zero(zero_) {}
+
+bool SubOutputStream::seek(s64 offset) {
+	return stream.seek(zero + offset);
+}
+
+s64 SubOutputStream::tell() const {
+	return stream.tell() - zero;
+}
+
+s64 SubOutputStream::size() const {
+	return stream.size() - zero;
+}
+
+bool SubOutputStream::write(const u8* src, s64 size) {
+	return stream.write(src, size);
+}

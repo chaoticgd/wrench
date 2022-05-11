@@ -190,4 +190,19 @@ private:
 	ByteRange64 range;
 };
 
+class SubOutputStream : public OutputStream {
+public:
+	SubOutputStream(OutputStream& stream_, s64 zero_);
+	
+	bool seek(s64 offset) override;
+	s64 tell() const override;
+	s64 size() const override;
+	
+	bool write(const u8* src, s64 size) override;
+	
+private:
+	OutputStream& stream;
+	s64 zero;
+};
+
 #endif

@@ -101,21 +101,19 @@ static void unpack_dl_misc_wad(MiscWadAsset& dest, InputStream& src, Game game) 
 }
 
 static void pack_dl_misc_wad(OutputStream& dest, std::vector<u8>* header_dest, MiscWadAsset& src, Game game) {
-	s64 base = dest.tell();
-	
 	DeadlockedMiscWadHeader header = {0};
 	header.header_size = sizeof(DeadlockedMiscWadHeader);
 	dest.write(header);
 	dest.pad(SECTOR_SIZE, 0);
 	
-	header.debug_font = pack_asset_sa<SectorRange>(dest, src.get_debug_font(), game, base);
-	header.irx = pack_compressed_asset_sa<SectorRange>(dest, src.get_irx(), game, base);
-	header.save_game = pack_asset_sa<SectorRange>(dest, src.get_save_game(), game, base);
-	header.frontend_code = pack_asset_sa<SectorRange>(dest, src.get_frontend_code(), game, base);
-	header.boot = pack_asset_sa<SectorRange>(dest, src.get_boot(), game, base);
-	header.gadget = pack_asset_sa<SectorRange>(dest, src.get_gadget(), game, base);
+	header.debug_font = pack_asset_sa<SectorRange>(dest, src.get_debug_font(), game);
+	header.irx = pack_compressed_asset_sa<SectorRange>(dest, src.get_irx(), game);
+	header.save_game = pack_asset_sa<SectorRange>(dest, src.get_save_game(), game);
+	header.frontend_code = pack_asset_sa<SectorRange>(dest, src.get_frontend_code(), game);
+	header.boot = pack_asset_sa<SectorRange>(dest, src.get_boot(), game);
+	header.gadget = pack_asset_sa<SectorRange>(dest, src.get_gadget(), game);
 	
-	dest.write(base, header);
+	dest.write(0, header);
 	if(header_dest) {
 		OutBuffer(*header_dest).write(0, header);
 	}

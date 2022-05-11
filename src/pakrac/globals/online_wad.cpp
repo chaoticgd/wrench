@@ -43,17 +43,15 @@ void unpack_online_wad(OnlineWadAsset& dest, InputStream& src, Game game) {
 }
 
 static void pack_online_wad(OutputStream& dest, std::vector<u8>* header_dest, OnlineWadAsset& src, Game game) {
-	s64 base = dest.tell();
-	
 	DeadlockedOnlineWadHeader header = {0};
 	header.header_size = sizeof(DeadlockedOnlineWadHeader);
 	dest.write(header);
 	dest.pad(SECTOR_SIZE, 0);
 	
-	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), game, base);
-	pack_assets_sa(dest, ARRAY_PAIR(header.transition_backgrounds), src.get_transition_backgrounds(), game, base);
+	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), game);
+	pack_assets_sa(dest, ARRAY_PAIR(header.transition_backgrounds), src.get_transition_backgrounds(), game);
 	
-	dest.write(base, header);
+	dest.write(0, header);
 	if(header_dest) {
 		OutBuffer(*header_dest).write(0, header);
 	}

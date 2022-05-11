@@ -111,51 +111,49 @@ void unpack_hud_wad(HudWadAsset& dest, InputStream& src, Game game) {
 }
 
 static void pack_hud_wad(OutputStream& dest, std::vector<u8>* header_dest, HudWadAsset& src, Game game) {
-	s64 base = dest.tell();
-	
 	DeadlockedHudWadHeader header = {0};
 	header.header_size = sizeof(DeadlockedHudWadHeader);
 	dest.write(header);
 	dest.pad(SECTOR_SIZE, 0);
 	
-	pack_assets_sa(dest, ARRAY_PAIR(header.online_images), src.get_online_images(), game, base, FMT_TEXTURE_PIF8);
-	pack_assets_sa(dest, ARRAY_PAIR(header.ratchet_seqs), src.get_ratchet_seqs(), game, base);
-	pack_assets_sa(dest, ARRAY_PAIR(header.hud_seqs), src.get_hud_seqs(), game, base);
-	header.vendor = pack_asset_sa<SectorRange>(dest, src.get_vendor(), game, base);
-	pack_assets_sa(dest, ARRAY_PAIR(header.all_text), src.get_all_text(), game, base);
-	header.hudw3d = pack_asset_sa<SectorRange>(dest, src.get_hudw3d(), game, base);
-	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.e3_level_ss), src.get_e3_level_ss(), game, base,FMT_TEXTURE_PIF8);
-	header.nw_dnas_image = pack_compressed_asset_sa<SectorRange>(dest, src.get_nw_dnas_image(), game, base, FMT_TEXTURE_PIF8);
-	header.split_screen_texture = pack_asset_sa<SectorRange>(dest, src.get_split_screen_texture(), game, base, FMT_TEXTURE_PIF8);
-	pack_assets_sa(dest, ARRAY_PAIR(header.radar_maps), src.get_radar_maps(), game, base, FMT_TEXTURE_PIF4_SWIZZLED);
-	pack_assets_sa(dest, ARRAY_PAIR(header.weapon_plates_large), src.get_weapon_plates_large(), game, base, FMT_TEXTURE_PIF8);
-	pack_assets_sa(dest, ARRAY_PAIR(header.mission_plates_large), src.get_mission_plates_large(), game, base, FMT_TEXTURE_PIF8);
-	pack_assets_sa(dest, ARRAY_PAIR(header.gui_plates), src.get_gui_plates(), game, base, FMT_TEXTURE_PIF8);
-	pack_assets_sa(dest, ARRAY_PAIR(header.vendor_plates), src.get_vendor_plates(), game, base, FMT_TEXTURE_PIF8);
-	header.loading_screen = pack_asset_sa<SectorRange>(dest, src.get_loading_screen(), game, base, FMT_TEXTURE_PIF8);
-	pack_assets_sa(dest, ARRAY_PAIR(header.planets), src.get_planets(), game, base, FMT_TEXTURE_PIF8);
-	pack_assets_sa(dest, ARRAY_PAIR(header.cinematics), src.get_cinematics(), game, base, FMT_TEXTURE_PIF8);
-	pack_assets_sa(dest, ARRAY_PAIR(header.equip_large), src.get_equip_large(), game, base, FMT_TEXTURE_PIF8);
-	pack_assets_sa(dest, ARRAY_PAIR(header.equip_small), src.get_equip_small(), game, base, FMT_TEXTURE_PIF8);
-	pack_assets_sa(dest, ARRAY_PAIR(header.moves), src.get_moves(), game, base, FMT_TEXTURE_PIF8);
-	pack_assets_sa(dest, ARRAY_PAIR(header.save_level), src.get_save_level(), game, base, FMT_TEXTURE_PIF8);
-	pack_assets_sa(dest, ARRAY_PAIR(header.save_empty), src.get_save_empty(), game, base, FMT_TEXTURE_PIF8);
-	pack_assets_sa(dest, ARRAY_PAIR(header.skills), src.get_skills(), game, base, FMT_TEXTURE_PIF8);
-	header.reward_back = pack_asset_sa<SectorRange>(dest, src.get_reward_back(), game, base, FMT_TEXTURE_PIF8);
-	header.complete_back = pack_asset_sa<SectorRange>(dest, src.get_complete_back(), game, base, FMT_TEXTURE_PIF8);
-	header.complete_back_coop = pack_asset_sa<SectorRange>(dest, src.get_complete_back_coop(), game, base, FMT_TEXTURE_PIF8);
-	pack_assets_sa(dest, ARRAY_PAIR(header.rewards), src.get_rewards(), game, base, FMT_TEXTURE_PIF8);
-	header.leaderboard = pack_asset_sa<SectorRange>(dest, src.get_leaderboard(), game, base, FMT_TEXTURE_PIF8);
-	pack_assets_sa(dest, ARRAY_PAIR(header.cutaways), src.get_cutaways(), game, base, FMT_TEXTURE_PIF8);
-	pack_assets_sa(dest, ARRAY_PAIR(header.sketchbook), src.get_sketchbook(), game, base, FMT_TEXTURE_PIF8);
-	pack_assets_sa(dest, ARRAY_PAIR(header.character_epilogues), src.get_character_epilogues(), game, base, FMT_TEXTURE_PIF8);
-	pack_assets_sa(dest, ARRAY_PAIR(header.character_cards), src.get_character_cards(), game, base, FMT_TEXTURE_PIF8);
-	header.equip_plate = pack_asset_sa<SectorRange>(dest, src.get_equip_plate(), game, base, FMT_TEXTURE_PIF8);
-	header.hud_flythru = pack_asset_sa<SectorRange>(dest, src.get_hud_flythru(), game, base, FMT_TEXTURE_PIF8);
-	pack_assets_sa(dest, ARRAY_PAIR(header.mp_maps), src.get_mp_maps(), game, base, FMT_TEXTURE_PIF4_SWIZZLED);
-	pack_assets_sa(dest, ARRAY_PAIR(header.tourney_plates_large), src.get_tourney_plates_large(), game, base, FMT_TEXTURE_PIF8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.online_images), src.get_online_images(), game, FMT_TEXTURE_PIF8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.ratchet_seqs), src.get_ratchet_seqs(), game);
+	pack_assets_sa(dest, ARRAY_PAIR(header.hud_seqs), src.get_hud_seqs(), game);
+	header.vendor = pack_asset_sa<SectorRange>(dest, src.get_vendor(), game);
+	pack_assets_sa(dest, ARRAY_PAIR(header.all_text), src.get_all_text(), game);
+	header.hudw3d = pack_asset_sa<SectorRange>(dest, src.get_hudw3d(), game);
+	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.e3_level_ss), src.get_e3_level_ss(), game,FMT_TEXTURE_PIF8);
+	header.nw_dnas_image = pack_compressed_asset_sa<SectorRange>(dest, src.get_nw_dnas_image(), game, FMT_TEXTURE_PIF8);
+	header.split_screen_texture = pack_asset_sa<SectorRange>(dest, src.get_split_screen_texture(), game, FMT_TEXTURE_PIF8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.radar_maps), src.get_radar_maps(), game, FMT_TEXTURE_PIF4_SWIZZLED);
+	pack_assets_sa(dest, ARRAY_PAIR(header.weapon_plates_large), src.get_weapon_plates_large(), game, FMT_TEXTURE_PIF8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.mission_plates_large), src.get_mission_plates_large(), game, FMT_TEXTURE_PIF8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.gui_plates), src.get_gui_plates(), game, FMT_TEXTURE_PIF8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.vendor_plates), src.get_vendor_plates(), game, FMT_TEXTURE_PIF8);
+	header.loading_screen = pack_asset_sa<SectorRange>(dest, src.get_loading_screen(), game, FMT_TEXTURE_PIF8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.planets), src.get_planets(), game, FMT_TEXTURE_PIF8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.cinematics), src.get_cinematics(), game, FMT_TEXTURE_PIF8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.equip_large), src.get_equip_large(), game, FMT_TEXTURE_PIF8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.equip_small), src.get_equip_small(), game, FMT_TEXTURE_PIF8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.moves), src.get_moves(), game, FMT_TEXTURE_PIF8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.save_level), src.get_save_level(), game, FMT_TEXTURE_PIF8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.save_empty), src.get_save_empty(), game, FMT_TEXTURE_PIF8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.skills), src.get_skills(), game, FMT_TEXTURE_PIF8);
+	header.reward_back = pack_asset_sa<SectorRange>(dest, src.get_reward_back(), game, FMT_TEXTURE_PIF8);
+	header.complete_back = pack_asset_sa<SectorRange>(dest, src.get_complete_back(), game, FMT_TEXTURE_PIF8);
+	header.complete_back_coop = pack_asset_sa<SectorRange>(dest, src.get_complete_back_coop(), game, FMT_TEXTURE_PIF8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.rewards), src.get_rewards(), game, FMT_TEXTURE_PIF8);
+	header.leaderboard = pack_asset_sa<SectorRange>(dest, src.get_leaderboard(), game, FMT_TEXTURE_PIF8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.cutaways), src.get_cutaways(), game, FMT_TEXTURE_PIF8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.sketchbook), src.get_sketchbook(), game, FMT_TEXTURE_PIF8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.character_epilogues), src.get_character_epilogues(), game, FMT_TEXTURE_PIF8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.character_cards), src.get_character_cards(), game, FMT_TEXTURE_PIF8);
+	header.equip_plate = pack_asset_sa<SectorRange>(dest, src.get_equip_plate(), game, FMT_TEXTURE_PIF8);
+	header.hud_flythru = pack_asset_sa<SectorRange>(dest, src.get_hud_flythru(), game, FMT_TEXTURE_PIF8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.mp_maps), src.get_mp_maps(), game, FMT_TEXTURE_PIF4_SWIZZLED);
+	pack_assets_sa(dest, ARRAY_PAIR(header.tourney_plates_large), src.get_tourney_plates_large(), game, FMT_TEXTURE_PIF8);
 	
-	dest.write(base, header);
+	dest.write(0, header);
 	if(header_dest) {
 		OutBuffer(*header_dest).write(0, header);
 	}

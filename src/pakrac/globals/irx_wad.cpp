@@ -160,13 +160,13 @@ static void unpack_rac2_irx_modules(IrxWadAsset& dest, const Rac2IrxModules& hea
 
 static Rac2IrxModules pack_rac2_irx_modules(OutputStream& dest, IrxWadAsset& src, Game game) {
 	Rac2IrxModules modules;
-	modules.sio2man = pack_asset_aligned<ByteRange>(dest, src.get_sio2man(), game, 0, 0x40);
-	modules.mcman = pack_asset_aligned<ByteRange>(dest, src.get_mcman(), game, 0, 0x40);
-	modules.mcserv = pack_asset_aligned<ByteRange>(dest, src.get_mcserv(), game, 0, 0x40);
-	modules.padman = pack_asset_aligned<ByteRange>(dest, src.get_padman(), game, 0, 0x40);
-	modules.mtapman = pack_asset_aligned<ByteRange>(dest, src.get_mtapman(), game, 0, 0x40);
-	modules.libsd = pack_asset_aligned<ByteRange>(dest, src.get_libsd(), game, 0, 0x40);
-	modules._989snd = pack_asset_aligned<ByteRange>(dest, src.get_989snd(), game, 0, 0x40);
+	modules.sio2man = pack_asset<ByteRange>(dest, src.get_sio2man(), game, 0x40);
+	modules.mcman = pack_asset<ByteRange>(dest, src.get_mcman(), game, 0x40);
+	modules.mcserv = pack_asset<ByteRange>(dest, src.get_mcserv(), game, 0x40);
+	modules.padman = pack_asset<ByteRange>(dest, src.get_padman(), game, 0x40);
+	modules.mtapman = pack_asset<ByteRange>(dest, src.get_mtapman(), game, 0x40);
+	modules.libsd = pack_asset<ByteRange>(dest, src.get_libsd(), game, 0x40);
+	modules._989snd = pack_asset<ByteRange>(dest, src.get_989snd(), game, 0x40);
 	return modules;
 }
 
@@ -190,21 +190,21 @@ static void unpack_rac3_irx_modules(IrxWadAsset& dest, const Rac3IrxModules& hea
 
 static Rac3IrxModules pack_rac3_irx_modules(OutputStream& dest, IrxWadAsset& src, Game game) {
 	Rac3IrxModules modules;
-	modules.stash = pack_asset_aligned<ByteRange>(dest, src.get_stash(), game, 0, 0x40);
-	modules.inet = pack_asset_aligned<ByteRange>(dest, src.get_inet(), game, 0, 0x40);
-	modules.netcnf = pack_asset_aligned<ByteRange>(dest, src.get_netcnf(), game, 0, 0x40);
-	modules.inetctl = pack_asset_aligned<ByteRange>(dest, src.get_inetctl(), game, 0, 0x40);
-	modules.msifrpc = pack_asset_aligned<ByteRange>(dest, src.get_msifrpc(), game, 0, 0x40);
-	modules.dev9 = pack_asset_aligned<ByteRange>(dest, src.get_dev9(), game, 0, 0x40);
-	modules.smap = pack_asset_aligned<ByteRange>(dest, src.get_smap(), game, 0, 0x40);
-	modules.libnetb = pack_asset_aligned<ByteRange>(dest, src.get_libnetb(), game, 0, 0x40);
-	modules.ppp = pack_asset_aligned<ByteRange>(dest, src.get_ppp(), game, 0, 0x40);
-	modules.pppoe = pack_asset_aligned<ByteRange>(dest, src.get_pppoe(), game, 0, 0x40);
-	modules.usbd = pack_asset_aligned<ByteRange>(dest, src.get_usbd(), game, 0, 0x40);
-	modules.lgaud = pack_asset_aligned<ByteRange>(dest, src.get_lgaud(), game, 0, 0x40);
-	modules.eznetcnf = pack_asset_aligned<ByteRange>(dest, src.get_eznetcnf(), game, 0, 0x40);
-	modules.eznetctl = pack_asset_aligned<ByteRange>(dest, src.get_eznetctl(), game, 0, 0x40);
-	modules.lgkbm = pack_asset_aligned<ByteRange>(dest, src.get_lgkbm(), game, 0, 0x40);
+	modules.stash = pack_asset<ByteRange>(dest, src.get_stash(), game, 0x40);
+	modules.inet = pack_asset<ByteRange>(dest, src.get_inet(), game, 0x40);
+	modules.netcnf = pack_asset<ByteRange>(dest, src.get_netcnf(), game, 0x40);
+	modules.inetctl = pack_asset<ByteRange>(dest, src.get_inetctl(), game, 0x40);
+	modules.msifrpc = pack_asset<ByteRange>(dest, src.get_msifrpc(), game, 0x40);
+	modules.dev9 = pack_asset<ByteRange>(dest, src.get_dev9(), game, 0x40);
+	modules.smap = pack_asset<ByteRange>(dest, src.get_smap(), game, 0x40);
+	modules.libnetb = pack_asset<ByteRange>(dest, src.get_libnetb(), game, 0x40);
+	modules.ppp = pack_asset<ByteRange>(dest, src.get_ppp(), game, 0x40);
+	modules.pppoe = pack_asset<ByteRange>(dest, src.get_pppoe(), game, 0x40);
+	modules.usbd = pack_asset<ByteRange>(dest, src.get_usbd(), game, 0x40);
+	modules.lgaud = pack_asset<ByteRange>(dest, src.get_lgaud(), game, 0x40);
+	modules.eznetcnf = pack_asset<ByteRange>(dest, src.get_eznetcnf(), game, 0x40);
+	modules.eznetctl = pack_asset<ByteRange>(dest, src.get_eznetctl(), game, 0x40);
+	modules.lgkbm = pack_asset<ByteRange>(dest, src.get_lgkbm(), game, 0x40);
 	return modules;
 }
 
@@ -215,7 +215,7 @@ static void unpack_dl_irx_modules(IrxWadAsset& dest, const DeadlockedIrxModules&
 
 static DeadlockedIrxModules pack_dl_irx_modules(OutputStream& dest, IrxWadAsset& src, Game game) {
 	DeadlockedIrxModules modules;
-	modules.streamer = pack_asset_aligned<ByteRange>(dest, src.get_streamer(), game, 0, 0x40);
-	modules.astrm = pack_asset_aligned<ByteRange>(dest, src.get_astrm(), game, 0, 0x40);
+	modules.streamer = pack_asset<ByteRange>(dest, src.get_streamer(), game, 0x40);
+	modules.astrm = pack_asset<ByteRange>(dest, src.get_astrm(), game, 0x40);
 	return modules;
 }

@@ -56,26 +56,26 @@ static void unpack_boot_wad(BootWadAsset& dest, InputStream& src, Game game) {
 }
 
 static void pack_boot_wad(OutputStream& dest, BootWadAsset& src, Game game) {
-	dest.pad(SECTOR_SIZE, 0);
-	s64 begin = dest.tell();
 	DeadlockedBootHeader header;
 	dest.write(header);
-	header.english = pack_compressed_asset_aligned<ByteRange>(dest, src.get_english(), game, begin, 0x40);
-	header.french = pack_compressed_asset_aligned<ByteRange>(dest, src.get_french(), game, begin, 0x40);
-	header.german = pack_compressed_asset_aligned<ByteRange>(dest, src.get_german(), game, begin, 0x40);
-	header.spanish = pack_compressed_asset_aligned<ByteRange>(dest, src.get_spanish(), game, begin, 0x40);
-	header.italian = pack_compressed_asset_aligned<ByteRange>(dest, src.get_italian(), game, begin, 0x40);
+	
+	header.english = pack_compressed_asset<ByteRange>(dest, src.get_english(), game, 0x40);
+	header.french = pack_compressed_asset<ByteRange>(dest, src.get_french(), game, 0x40);
+	header.german = pack_compressed_asset<ByteRange>(dest, src.get_german(), game, 0x40);
+	header.spanish = pack_compressed_asset<ByteRange>(dest, src.get_spanish(), game, 0x40);
+	header.italian = pack_compressed_asset<ByteRange>(dest, src.get_italian(), game, 0x40);
 	CollectionAsset& hud = src.get_hud();
 	if(hud.has_child(0)) {
-		header.hudwad[0] = pack_asset_aligned<ByteRange>(dest, src.get_hud().get_child(0), game, begin, 0x40);
+		header.hudwad[0] = pack_asset<ByteRange>(dest, src.get_hud().get_child(0), game, 0x40);
 	}
 	for(s32 i = 1; i < 6; i++) {
 		if(hud.has_child(i)) {
-			header.hudwad[i] = pack_compressed_asset_aligned<ByteRange>(dest, src.get_hud().get_child(i), game, begin, 0x40);
+			header.hudwad[i] = pack_compressed_asset<ByteRange>(dest, src.get_hud().get_child(i), game, 0x40);
 		}
 	}
-	pack_compressed_assets_aligned(dest, ARRAY_PAIR(header.boot_plates), src.get_boot_plates(), game, begin, 0x40);
-	header.sram = pack_compressed_asset_aligned<ByteRange>(dest, src.get_sram(), game, begin, 0x40);
-	dest.write(begin, header);
+	pack_compressed_assets(dest, ARRAY_PAIR(header.boot_plates), src.get_boot_plates(), game, 0x40);
+	header.sram = pack_compressed_asset<ByteRange>(dest, src.get_sram(), game, 0x40);
+	
+	dest.write(0, header);
 	s64 end = dest.tell();
 }

@@ -48,8 +48,13 @@ void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_
 		case Game::DL: pack_func = src.funcs.pack_dl; break;
 	}
 	
+	dest.seek(dest.size());
+	SubOutputStream sub_dest(dest, dest.tell());
+	
 	verify(pack_func, "Tried to pack nonpackable asset '%s'.", reference.c_str());
-	(*pack_func)(dest, header_dest, time_dest, src, game, hint);
+	(*pack_func)(sub_dest, header_dest, time_dest, src, game, hint);
+	
+	dest.seek(dest.size());
 	
 	g_asset_packer_num_assets_processed++;
 }
