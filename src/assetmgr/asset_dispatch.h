@@ -93,10 +93,18 @@ AssetPackerFunc* wrap_hint_packer_func(PackerFunc func) {
 	});
 }
 
-template <typename ThisAsset, typename PackerFunc>
+template <typename ThisAsset, typename WadHeader, typename PackerFunc>
 AssetPackerFunc* wrap_wad_packer_func(PackerFunc func) {
 	return new AssetPackerFunc([func](OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& src, Game game, AssetFormatHint hint) {
-		func(dest, header_dest, static_cast<ThisAsset&>(src), game);
+		WadHeader header = {0};
+		header.header_size = sizeof(WadHeader);
+		dest.write(header);
+		dest.pad(SECTOR_SIZE, 0);
+		func(dest, header, static_cast<ThisAsset&>(src), game);
+		dest.write(0, header);
+		if(header_dest) {
+			OutBuffer(*header_dest).write(0, header);
+		}
 		if(time_dest) {
 			*time_dest = fs::file_time_type::clock::now();
 		}

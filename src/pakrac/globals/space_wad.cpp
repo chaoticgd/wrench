@@ -19,20 +19,20 @@
 #include <pakrac/asset_unpacker.h>
 #include <pakrac/asset_packer.h>
 
-void unpack_space_wad(SpaceWadAsset& dest, InputStream& src, Game game);
-static void pack_space_wad(OutputStream& dest, std::vector<u8>* header_dest, SpaceWadAsset& src, Game game);
-
-on_load(Space, []() {
-	SpaceWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<SpaceWadAsset>(unpack_space_wad);
-	
-	SpaceWadAsset::funcs.pack_dl = wrap_wad_packer_func<SpaceWadAsset>(pack_space_wad);
-})
-
 packed_struct(DeadlockedSpaceWadHeader,
 	/* 0x0 */ s32 header_size;
 	/* 0x4 */ Sector32 sector;
 	/* 0x8 */ SectorRange transition_wads[12];
 )
+
+void unpack_space_wad(SpaceWadAsset& dest, InputStream& src, Game game);
+static void pack_space_wad(OutputStream& dest, DeadlockedSpaceWadHeader& header, SpaceWadAsset& src, Game game);
+
+on_load(Space, []() {
+	SpaceWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<SpaceWadAsset>(unpack_space_wad);
+	
+	SpaceWadAsset::funcs.pack_dl = wrap_wad_packer_func<SpaceWadAsset, DeadlockedSpaceWadHeader>(pack_space_wad);
+})
 
 void unpack_space_wad(SpaceWadAsset& dest, InputStream& src, Game game) {
 	auto header = src.read<DeadlockedSpaceWadHeader>(0);
@@ -40,16 +40,6 @@ void unpack_space_wad(SpaceWadAsset& dest, InputStream& src, Game game) {
 	unpack_compressed_assets<BinaryAsset>(dest.transitions(), src, ARRAY_PAIR(header.transition_wads), game);
 }
 
-static void pack_space_wad(OutputStream& dest, std::vector<u8>* header_dest, SpaceWadAsset& src, Game game) {
-	DeadlockedSpaceWadHeader header = {0};
-	header.header_size = sizeof(DeadlockedSpaceWadHeader);
-	dest.write(header);
-	dest.pad(SECTOR_SIZE, 0);
-	
+static void pack_space_wad(OutputStream& dest, DeadlockedSpaceWadHeader& header, SpaceWadAsset& src, Game game) {
 	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.transition_wads), src.get_transitions(), game, "trnsition");
-	
-	dest.write(0, header);
-	if(header_dest) {
-		OutBuffer(*header_dest).write(0, header);
-	}
 }

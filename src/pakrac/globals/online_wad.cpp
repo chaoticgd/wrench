@@ -19,21 +19,21 @@
 #include <pakrac/asset_unpacker.h>
 #include <pakrac/asset_packer.h>
 
-void unpack_online_wad(OnlineWadAsset& dest, InputStream& src, Game game);
-static void pack_online_wad(OutputStream& dest, std::vector<u8>* header_dest, OnlineWadAsset& src, Game game);
-
-on_load(Online, []() {
-	OnlineWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<OnlineWadAsset>(unpack_online_wad);
-	
-	OnlineWadAsset::funcs.pack_dl = wrap_wad_packer_func<OnlineWadAsset>(pack_online_wad);
-})
-
 packed_struct(DeadlockedOnlineWadHeader,
 	/* 0x00 */ s32 header_size;
 	/* 0x04 */ Sector32 sector;
 	/* 0x08 */ SectorRange data;
 	/* 0x10 */ SectorRange transition_backgrounds[11];
 )
+
+void unpack_online_wad(OnlineWadAsset& dest, InputStream& src, Game game);
+static void pack_online_wad(OutputStream& dest, DeadlockedOnlineWadHeader& header, OnlineWadAsset& src, Game game);
+
+on_load(Online, []() {
+	OnlineWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<OnlineWadAsset>(unpack_online_wad);
+	
+	OnlineWadAsset::funcs.pack_dl = wrap_wad_packer_func<OnlineWadAsset, DeadlockedOnlineWadHeader>(pack_online_wad);
+})
 
 void unpack_online_wad(OnlineWadAsset& dest, InputStream& src, Game game) {
 	auto header = src.read<DeadlockedOnlineWadHeader>();
@@ -42,17 +42,7 @@ void unpack_online_wad(OnlineWadAsset& dest, InputStream& src, Game game) {
 	unpack_assets<BinaryAsset>(dest.transition_backgrounds().switch_files(), src, ARRAY_PAIR(header.transition_backgrounds), game);
 }
 
-static void pack_online_wad(OutputStream& dest, std::vector<u8>* header_dest, OnlineWadAsset& src, Game game) {
-	DeadlockedOnlineWadHeader header = {0};
-	header.header_size = sizeof(DeadlockedOnlineWadHeader);
-	dest.write(header);
-	dest.pad(SECTOR_SIZE, 0);
-	
+static void pack_online_wad(OutputStream& dest, DeadlockedOnlineWadHeader& header, OnlineWadAsset& src, Game game) {
 	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), game);
 	pack_assets_sa(dest, ARRAY_PAIR(header.transition_backgrounds), src.get_transition_backgrounds(), game);
-	
-	dest.write(0, header);
-	if(header_dest) {
-		OutBuffer(*header_dest).write(0, header);
-	}
 }

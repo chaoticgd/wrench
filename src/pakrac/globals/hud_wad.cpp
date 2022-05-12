@@ -19,15 +19,6 @@
 #include <pakrac/asset_unpacker.h>
 #include <pakrac/asset_packer.h>
 
-void unpack_hud_wad(HudWadAsset& dest, InputStream& src, Game game);
-static void pack_hud_wad(OutputStream& dest, std::vector<u8>* header_dest, HudWadAsset& src, Game game);
-
-on_load(Hud, []() {
-	HudWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<HudWadAsset>(unpack_hud_wad);
-	
-	HudWadAsset::funcs.pack_dl = wrap_wad_packer_func<HudWadAsset>(pack_hud_wad);
-})
-
 packed_struct(DeadlockedHudWadHeader,
 	/* 0x000 */ s32 header_size;
 	/* 0x004 */ Sector32 sector;
@@ -68,6 +59,15 @@ packed_struct(DeadlockedHudWadHeader,
 	/* 0xef0 */ SectorRange mp_maps[15];
 	/* 0xf68 */ SectorRange tourney_plates_large[4];
 )
+
+void unpack_hud_wad(HudWadAsset& dest, InputStream& src, Game game);
+static void pack_hud_wad(OutputStream& dest, DeadlockedHudWadHeader& header, HudWadAsset& src, Game game);
+
+on_load(Hud, []() {
+	HudWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<HudWadAsset>(unpack_hud_wad);
+	
+	HudWadAsset::funcs.pack_dl = wrap_wad_packer_func<HudWadAsset, DeadlockedHudWadHeader>(pack_hud_wad);
+})
 
 void unpack_hud_wad(HudWadAsset& dest, InputStream& src, Game game) {
 	auto header = src.read<DeadlockedHudWadHeader>(0);
@@ -110,12 +110,7 @@ void unpack_hud_wad(HudWadAsset& dest, InputStream& src, Game game) {
 	unpack_assets<TextureAsset>(dest.tourney_plates_large().switch_files(), src, ARRAY_PAIR(header.tourney_plates_large), game);
 }
 
-static void pack_hud_wad(OutputStream& dest, std::vector<u8>* header_dest, HudWadAsset& src, Game game) {
-	DeadlockedHudWadHeader header = {0};
-	header.header_size = sizeof(DeadlockedHudWadHeader);
-	dest.write(header);
-	dest.pad(SECTOR_SIZE, 0);
-	
+static void pack_hud_wad(OutputStream& dest, DeadlockedHudWadHeader& header, HudWadAsset& src, Game game) {
 	pack_assets_sa(dest, ARRAY_PAIR(header.online_images), src.get_online_images(), game, FMT_TEXTURE_PIF8);
 	pack_assets_sa(dest, ARRAY_PAIR(header.ratchet_seqs), src.get_ratchet_seqs(), game);
 	pack_assets_sa(dest, ARRAY_PAIR(header.hud_seqs), src.get_hud_seqs(), game);
@@ -152,9 +147,4 @@ static void pack_hud_wad(OutputStream& dest, std::vector<u8>* header_dest, HudWa
 	header.hud_flythru = pack_asset_sa<SectorRange>(dest, src.get_hud_flythru(), game, FMT_TEXTURE_PIF8);
 	pack_assets_sa(dest, ARRAY_PAIR(header.mp_maps), src.get_mp_maps(), game, FMT_TEXTURE_PIF4_SWIZZLED);
 	pack_assets_sa(dest, ARRAY_PAIR(header.tourney_plates_large), src.get_tourney_plates_large(), game, FMT_TEXTURE_PIF8);
-	
-	dest.write(0, header);
-	if(header_dest) {
-		OutBuffer(*header_dest).write(0, header);
-	}
 }

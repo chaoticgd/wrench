@@ -52,6 +52,25 @@ packed_struct(DeadlockedIrxModules,
 	/* 0x8 */ ByteRange astrm;
 )
 
+packed_struct(Rac2IrxHeader,
+	/* 0x00 */ ByteRange texture;
+	/* 0x04 */ ByteRange unused[2];
+	/* 0x18 */ Rac2IrxModules rac2;
+)
+
+packed_struct(Rac3IrxHeader,
+	/* 0x00 */ s32 unused[2];
+	/* 0x08 */ Rac2IrxModules rac2;
+	/* 0x40 */ Rac3IrxModules rac3;
+)
+
+packed_struct(DeadlockedIrxHeader,
+	/* 0x00 */ s32 unused[2];
+	/* 0x08 */ Rac2IrxModules rac2;
+	/* 0x40 */ Rac3IrxModules rac3;
+	/* 0xb8 */ DeadlockedIrxModules dl;
+)
+
 static void unpack_rac1_irx_wad(IrxWadAsset& dest, InputStream& src, Game game);
 static void pack_rac1_irx_wad(OutputStream& dest, IrxWadAsset& src, Game game);
 static void unpack_rac2_irx_wad(IrxWadAsset& dest, InputStream& src, Game game);
@@ -78,25 +97,6 @@ on_load(Irx, []() {
 	IrxWadAsset::funcs.pack_rac3 = wrap_packer_func<IrxWadAsset>(pack_rac3_irx_wad);
 	IrxWadAsset::funcs.pack_dl = wrap_packer_func<IrxWadAsset>(pack_dl_irx_wad);
 })
-
-packed_struct(Rac2IrxHeader,
-	/* 0x00 */ ByteRange texture;
-	/* 0x04 */ ByteRange unused[2];
-	/* 0x18 */ Rac2IrxModules rac2;
-)
-
-packed_struct(Rac3IrxHeader,
-	/* 0x00 */ s32 unused[2];
-	/* 0x08 */ Rac2IrxModules rac2;
-	/* 0x40 */ Rac3IrxModules rac3;
-)
-
-packed_struct(DeadlockedIrxHeader,
-	/* 0x00 */ s32 unused[2];
-	/* 0x08 */ Rac2IrxModules rac2;
-	/* 0x40 */ Rac3IrxModules rac3;
-	/* 0xb8 */ DeadlockedIrxModules dl;
-)
 
 static void unpack_rac1_irx_wad(IrxWadAsset& dest, InputStream& src, Game game) {
 	verify_not_reached("R&C1 IRX unpacking not yet implemented.");

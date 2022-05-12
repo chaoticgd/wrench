@@ -48,11 +48,11 @@ packed_struct(DeadlockedArmorWadHeader,
 )
 
 static void unpack_rac2_armor_wad(ArmorWadAsset& dest, InputStream& src, Game game);
-static void pack_rac2_armor_wad(OutputStream& dest, std::vector<u8>* header_dest, ArmorWadAsset& src, Game game);
+static void pack_rac2_armor_wad(OutputStream& dest, Rac2ArmorWadHeader& header, ArmorWadAsset& src, Game game);
 static void unpack_rac3_armor_wad(ArmorWadAsset& dest, InputStream& src, Game game);
-static void pack_rac3_armor_wad(OutputStream& dest, std::vector<u8>* header_dest, ArmorWadAsset& src, Game game);
+static void pack_rac3_armor_wad(OutputStream& dest, Rac3ArmorWadHeader& header, ArmorWadAsset& src, Game game);
 static void unpack_dl_armor_wad(ArmorWadAsset& dest, InputStream& src, Game game);
-static void pack_dl_armor_wad(OutputStream& dest, std::vector<u8>* header_dest, ArmorWadAsset& src, Game game);
+static void pack_dl_armor_wad(OutputStream& dest, DeadlockedArmorWadHeader& header, ArmorWadAsset& src, Game game);
 static void unpack_armors(CollectionAsset& dest, InputStream& src, ArmorHeader* headers, s32 count, Game game);
 static void pack_armors(OutputStream& dest, ArmorHeader* headers, s32 count, CollectionAsset& src, Game game);
 
@@ -61,9 +61,9 @@ on_load(Armor, []() {
 	ArmorWadAsset::funcs.unpack_rac3 = wrap_wad_unpacker_func<ArmorWadAsset>(unpack_rac3_armor_wad);
 	ArmorWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<ArmorWadAsset>(unpack_dl_armor_wad);
 	
-	ArmorWadAsset::funcs.pack_rac2 = wrap_wad_packer_func<ArmorWadAsset>(pack_rac2_armor_wad);
-	ArmorWadAsset::funcs.pack_rac3 = wrap_wad_packer_func<ArmorWadAsset>(pack_rac3_armor_wad);
-	ArmorWadAsset::funcs.pack_dl = wrap_wad_packer_func<ArmorWadAsset>(pack_dl_armor_wad);
+	ArmorWadAsset::funcs.pack_rac2 = wrap_wad_packer_func<ArmorWadAsset, Rac2ArmorWadHeader>(pack_rac2_armor_wad);
+	ArmorWadAsset::funcs.pack_rac3 = wrap_wad_packer_func<ArmorWadAsset, Rac3ArmorWadHeader>(pack_rac3_armor_wad);
+	ArmorWadAsset::funcs.pack_dl = wrap_wad_packer_func<ArmorWadAsset, DeadlockedArmorWadHeader>(pack_dl_armor_wad);
 })
 
 static void unpack_rac2_armor_wad(ArmorWadAsset& dest, InputStream& src, Game game) {
@@ -72,20 +72,8 @@ static void unpack_rac2_armor_wad(ArmorWadAsset& dest, InputStream& src, Game ga
 	unpack_armors(dest.armors(), src, ARRAY_PAIR(header.armors), game);
 }
 
-static void pack_rac2_armor_wad(OutputStream& dest, std::vector<u8>* header_dest, ArmorWadAsset& src, Game game) {
-	s64 base = dest.tell();
-	
-	Rac2ArmorWadHeader header = {0};
-	header.header_size = sizeof(Rac2ArmorWadHeader);
-	dest.write(header);
-	dest.pad(SECTOR_SIZE, 0);
-	
+static void pack_rac2_armor_wad(OutputStream& dest, Rac2ArmorWadHeader& header, ArmorWadAsset& src, Game game) {
 	pack_armors(dest, ARRAY_PAIR(header.armors), src.get_armors(), game);
-	
-	dest.write(base, header);
-	if(header_dest) {
-		OutBuffer(*header_dest).write(0, header);
-	}
 }
 
 static void unpack_rac3_armor_wad(ArmorWadAsset& dest, InputStream& src, Game game) {
@@ -94,20 +82,8 @@ static void unpack_rac3_armor_wad(ArmorWadAsset& dest, InputStream& src, Game ga
 	unpack_armors(dest.armors(), src, ARRAY_PAIR(header.armors), game);
 }
 
-static void pack_rac3_armor_wad(OutputStream& dest, std::vector<u8>* header_dest, ArmorWadAsset& src, Game game) {
-	s64 base = dest.tell();
-	
-	Rac3ArmorWadHeader header = {0};
-	header.header_size = sizeof(Rac3ArmorWadHeader);
-	dest.write(header);
-	dest.pad(SECTOR_SIZE, 0);
-	
+static void pack_rac3_armor_wad(OutputStream& dest, Rac3ArmorWadHeader& header, ArmorWadAsset& src, Game game) {
 	pack_armors(dest, ARRAY_PAIR(header.armors), src.get_armors(), game);
-	
-	dest.write(base, header);
-	if(header_dest) {
-		OutBuffer(*header_dest).write(0, header);
-	}
 }
 
 static void unpack_dl_armor_wad(ArmorWadAsset& dest, InputStream& src, Game game) {
@@ -119,23 +95,11 @@ static void unpack_dl_armor_wad(ArmorWadAsset& dest, InputStream& src, Game game
 	unpack_assets<BinaryAsset>(dest.dropship_textures().switch_files(), src, ARRAY_PAIR(header.dropship_textures), game);
 }
 
-static void pack_dl_armor_wad(OutputStream& dest, std::vector<u8>* header_dest, ArmorWadAsset& src, Game game) {
-	s64 base = dest.tell();
-	
-	DeadlockedArmorWadHeader header = {0};
-	header.header_size = sizeof(DeadlockedArmorWadHeader);
-	dest.write(header);
-	dest.pad(SECTOR_SIZE, 0);
-	
+static void pack_dl_armor_wad(OutputStream& dest, DeadlockedArmorWadHeader& header, ArmorWadAsset& src, Game game) {
 	pack_armors(dest, ARRAY_PAIR(header.armors), src.get_armors(), game);
 	pack_assets_sa(dest, ARRAY_PAIR(header.bot_textures), src.get_bot_textures(), game);
 	pack_assets_sa(dest, ARRAY_PAIR(header.landstalker_textures), src.get_landstalker_textures(), game);
 	pack_assets_sa(dest, ARRAY_PAIR(header.dropship_textures), src.get_dropship_textures(), game);
-	
-	dest.write(base, header);
-	if(header_dest) {
-		OutBuffer(*header_dest).write(0, header);
-	}
 }
 
 packed_struct(ArmorMeshHeader,

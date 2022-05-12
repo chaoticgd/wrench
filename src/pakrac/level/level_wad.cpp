@@ -89,11 +89,11 @@ packed_struct(DeadlockedLevelWadHeader,
 )
 
 static void unpack_rac1_level_wad(LevelWadAsset& dest, InputStream& src, Game game);
-static void pack_rac1_level_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelWadAsset& src, Game game);
+static void pack_rac1_level_wad(OutputStream& dest, Rac1LevelWadHeader& header, LevelWadAsset& src, Game game);
 static void unpack_rac23_level_wad(LevelWadAsset& dest, InputStream& src, Game game);
-static void pack_rac23_level_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelWadAsset& src, Game game);
+static void pack_rac23_level_wad(OutputStream& dest, Rac23LevelWadHeader& header, LevelWadAsset& src, Game game);
 static void unpack_dl_level_wad(LevelWadAsset& dest, InputStream& src, Game game);
-static void pack_dl_level_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelWadAsset& src, Game game);
+static void pack_dl_level_wad(OutputStream& dest, DeadlockedLevelWadHeader& header, LevelWadAsset& src, Game game);
 static void unpack_chunks(CollectionAsset& dest, InputStream& file, const ChunkWadHeader& ranges, Game game);
 static ChunkWadHeader pack_chunks(OutputStream& dest, CollectionAsset& chunks, Game game);
 static void unpack_missions(CollectionAsset& dest, InputStream& file, const MissionWadHeader& ranges, Game game);
@@ -105,10 +105,10 @@ on_load(Level, []() {
 	LevelWadAsset::funcs.unpack_rac3 = wrap_wad_unpacker_func<LevelWadAsset>(unpack_rac23_level_wad);
 	LevelWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<LevelWadAsset>(unpack_dl_level_wad);
 	
-	LevelWadAsset::funcs.pack_rac1 = wrap_wad_packer_func<LevelWadAsset>(pack_rac1_level_wad);
-	LevelWadAsset::funcs.pack_rac2 = wrap_wad_packer_func<LevelWadAsset>(pack_rac23_level_wad);
-	LevelWadAsset::funcs.pack_rac3 = wrap_wad_packer_func<LevelWadAsset>(pack_rac23_level_wad);
-	LevelWadAsset::funcs.pack_dl = wrap_wad_packer_func<LevelWadAsset>(pack_dl_level_wad);
+	LevelWadAsset::funcs.pack_rac1 = wrap_wad_packer_func<LevelWadAsset, Rac1LevelWadHeader>(pack_rac1_level_wad);
+	LevelWadAsset::funcs.pack_rac2 = wrap_wad_packer_func<LevelWadAsset, Rac23LevelWadHeader>(pack_rac23_level_wad);
+	LevelWadAsset::funcs.pack_rac3 = wrap_wad_packer_func<LevelWadAsset, Rac23LevelWadHeader>(pack_rac23_level_wad);
+	LevelWadAsset::funcs.pack_dl = wrap_wad_packer_func<LevelWadAsset, DeadlockedLevelWadHeader>(pack_dl_level_wad);
 })
 
 void unpack_rac1_level_wad(LevelWadAsset& dest, InputStream& src, Game game) {
@@ -120,23 +120,13 @@ void unpack_rac1_level_wad(LevelWadAsset& dest, InputStream& src, Game game) {
 	unpack_asset(dest.gameplay_core(), src, header.gameplay_ntsc, game);
 }
 
-static void pack_rac1_level_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelWadAsset& src, Game game) {
-	Rac1LevelWadHeader header = {0};
-	header.header_size = sizeof(Rac1LevelWadHeader);
-	dest.write(header);
-	dest.pad(SECTOR_SIZE, 0);
-	
+static void pack_rac1_level_wad(OutputStream& dest, Rac1LevelWadHeader& header, LevelWadAsset& src, Game game) {
 	header.id = src.id();
 	
 	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), game);
 	header.gameplay_ntsc = pack_asset_sa<SectorRange>(dest, src.get_gameplay_core(), game);
 	header.gameplay_pal = pack_asset_sa<SectorRange>(dest, src.get_gameplay_core(), game);
 	// TODO: header.occlusion
-	
-	dest.write(0, header);
-	if(header_dest) {
-		OutBuffer(*header_dest).write(0, header);
-	}
 }
 
 void unpack_rac23_level_wad(LevelWadAsset& dest, InputStream& src, Game game) {
@@ -151,12 +141,7 @@ void unpack_rac23_level_wad(LevelWadAsset& dest, InputStream& src, Game game) {
 	unpack_chunks(dest.chunks(), src, header.chunks, game);
 }
 
-static void pack_rac23_level_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelWadAsset& src, Game game) {
-	Rac23LevelWadHeader header = {0};
-	header.header_size = sizeof(Rac23LevelWadHeader);
-	dest.write(header);
-	dest.pad(SECTOR_SIZE, 0);
-	
+static void pack_rac23_level_wad(OutputStream& dest, Rac23LevelWadHeader& header, LevelWadAsset& src, Game game) {
 	header.id = src.id();
 	header.reverb = src.reverb();
 	
@@ -165,11 +150,6 @@ static void pack_rac23_level_wad(OutputStream& dest, std::vector<u8>* header_des
 	header.gameplay = pack_asset_sa<SectorRange>(dest, src.get_gameplay_core(), game);
 	// TODO: header.occlusion
 	header.chunks = pack_chunks(dest, src.get_chunks(), game);
-	
-	dest.write(0, header);
-	if(header_dest) {
-		OutBuffer(*header_dest).write(0, header);
-	}
 }
 
 void unpack_dl_level_wad(LevelWadAsset& dest, InputStream& src, Game game) {
@@ -186,12 +166,7 @@ void unpack_dl_level_wad(LevelWadAsset& dest, InputStream& src, Game game) {
 	unpack_compressed_asset(dest.art_instances(), src, header.art_instances, game);
 }
 
-static void pack_dl_level_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelWadAsset& src, Game game) {
-	DeadlockedLevelWadHeader header = {0};
-	header.header_size = sizeof(DeadlockedLevelWadHeader);
-	dest.write(header);
-	dest.pad(SECTOR_SIZE, 0);
-	
+static void pack_dl_level_wad(OutputStream& dest, DeadlockedLevelWadHeader& header, LevelWadAsset& src, Game game) {
 	header.id = src.id();
 	header.reverb = src.reverb();
 	
@@ -201,11 +176,6 @@ static void pack_dl_level_wad(OutputStream& dest, std::vector<u8>* header_dest, 
 	header.gameplay_core = pack_asset_sa<SectorRange>(dest, src.get_gameplay_core(), game);
 	std::tie(header.missions, header.max_mission_sizes) = pack_missions(dest, src.get_missions(), game);
 	header.art_instances = pack_compressed_asset_sa<SectorRange>(dest, src.get_art_instances(), game, "art_insts");
-	
-	dest.write(0, header);
-	if(header_dest) {
-		OutBuffer(*header_dest).write(0, header);
-	}
 }
 
 packed_struct(ChunkHeader,

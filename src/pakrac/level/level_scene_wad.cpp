@@ -20,16 +20,6 @@
 #include <pakrac/asset_unpacker.h>
 #include <pakrac/asset_packer.h>
 
-static SectorRange range(Sector32 offset, const std::set<s64>& end_sectors);
-static void unpack_dl_level_scene_wad(LevelSceneWadAsset& dest, InputStream& src, Game game);
-static void pack_dl_level_scene_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelSceneWadAsset& src, Game game);
-
-on_load(LevelScene, []() {
-	LevelSceneWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<LevelSceneWadAsset>(unpack_dl_level_scene_wad);
-	
-	LevelSceneWadAsset::funcs.pack_dl = wrap_wad_packer_func<LevelSceneWadAsset>(pack_dl_level_scene_wad);
-})
-
 packed_struct(DeadlockedSceneHeader,
 	/* 0x00 */ Sector32 speech_english_left;
 	/* 0x04 */ Sector32 speech_english_right;
@@ -51,6 +41,16 @@ packed_struct(DeadlockedLevelSceneWadHeader,
 	/* 0x4 */ Sector32 sector;
 	/* 0x8 */ DeadlockedSceneHeader scenes[30];
 )
+
+static SectorRange range(Sector32 offset, const std::set<s64>& end_sectors);
+static void unpack_dl_level_scene_wad(LevelSceneWadAsset& dest, InputStream& src, Game game);
+static void pack_dl_level_scene_wad(OutputStream& dest, DeadlockedLevelSceneWadHeader& header, LevelSceneWadAsset& src, Game game);
+
+on_load(LevelScene, []() {
+	LevelSceneWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<LevelSceneWadAsset>(unpack_dl_level_scene_wad);
+	
+	LevelSceneWadAsset::funcs.pack_dl = wrap_wad_packer_func<LevelSceneWadAsset, DeadlockedLevelSceneWadHeader>(pack_dl_level_scene_wad);
+})
 
 static void unpack_dl_level_scene_wad(LevelSceneWadAsset& dest, InputStream& src, Game game) {
 	auto header = src.read<DeadlockedLevelSceneWadHeader>(0);
@@ -100,12 +100,7 @@ static void unpack_dl_level_scene_wad(LevelSceneWadAsset& dest, InputStream& src
 	}
 }
 
-static void pack_dl_level_scene_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelSceneWadAsset& src, Game game) {
-	DeadlockedLevelSceneWadHeader header = {0};
-	header.header_size = sizeof(DeadlockedLevelSceneWadHeader);
-	dest.write(header);
-	dest.pad(SECTOR_SIZE, 0);
-	
+static void pack_dl_level_scene_wad(OutputStream& dest, DeadlockedLevelSceneWadHeader& header, LevelSceneWadAsset& src, Game game) {
 	CollectionAsset& scenes = src.get_scenes();
 	for(s32 i = 0; i < ARRAY_SIZE(header.scenes); i++) {
 		if(scenes.has_child(i)) {
@@ -125,11 +120,6 @@ static void pack_dl_level_scene_wad(OutputStream& dest, std::vector<u8>* header_
 			scene_header.moby_load = pack_compressed_asset_sa<SectorRange>(dest, scene.get_moby_load(), game, "moby_load");
 			pack_compressed_assets_sa(dest, ARRAY_PAIR(scene_header.chunks), scene.get_chunks(), game, "chunks");
 		}
-	}
-	
-	dest.write(0, header);
-	if(header_dest) {
-		OutBuffer(*header_dest).write(0, header);
 	}
 }
 

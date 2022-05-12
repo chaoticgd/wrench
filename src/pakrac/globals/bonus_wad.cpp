@@ -19,15 +19,6 @@
 #include <pakrac/asset_unpacker.h>
 #include <pakrac/asset_packer.h>
 
-static void unpack_bonus_wad(BonusWadAsset& dest, InputStream& src, Game game);
-static void pack_bonus_wad(OutputStream& dest, std::vector<u8>* header_dest, BonusWadAsset& src, Game game);
-
-on_load(Bonus, []() {
-	BonusWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<BonusWadAsset>(unpack_bonus_wad);
-	
-	BonusWadAsset::funcs.pack_dl = wrap_wad_packer_func<BonusWadAsset>(pack_bonus_wad);
-})
-
 packed_struct(DeadlockedBonusWadHeader,
 	/* 0x000 */ s32 header_size;
 	/* 0x004 */ Sector32 sector;
@@ -40,6 +31,15 @@ packed_struct(DeadlockedBonusWadHeader,
 	/* 0x298 */ SectorRange trophy_image;
 	/* 0x2a0 */ SectorRange dige;
 )
+
+static void unpack_bonus_wad(BonusWadAsset& dest, InputStream& src, Game game);
+static void pack_bonus_wad(OutputStream& dest, DeadlockedBonusWadHeader& header, BonusWadAsset& src, Game game);
+
+on_load(Bonus, []() {
+	BonusWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<BonusWadAsset>(unpack_bonus_wad);
+	
+	BonusWadAsset::funcs.pack_dl = wrap_wad_packer_func<BonusWadAsset, DeadlockedBonusWadHeader>(pack_bonus_wad);
+})
 
 static void unpack_bonus_wad(BonusWadAsset& dest, InputStream& src, Game game) {
 	auto header = src.read<DeadlockedBonusWadHeader>(0);
@@ -54,11 +54,7 @@ static void unpack_bonus_wad(BonusWadAsset& dest, InputStream& src, Game game) {
 	unpack_asset(dest.dige(), src, header.dige, game);
 }
 
-void pack_bonus_wad(OutputStream& dest, std::vector<u8>* header_dest, BonusWadAsset& src, Game game) {
-	DeadlockedBonusWadHeader header = {0};
-	header.header_size = sizeof(DeadlockedBonusWadHeader);
-	dest.write(header);
-	
+void pack_bonus_wad(OutputStream& dest, DeadlockedBonusWadHeader& header, BonusWadAsset& src, Game game) {
 	pack_assets_sa(dest, ARRAY_PAIR(header.credits_text), src.get_credits_text(), game);
 	pack_assets_sa(dest, ARRAY_PAIR(header.credits_images), src.get_credits_images(), game);
 	pack_assets_sa(dest, ARRAY_PAIR(header.demomenu), src.get_demomenu(), game);
@@ -67,9 +63,4 @@ void pack_bonus_wad(OutputStream& dest, std::vector<u8>* header_dest, BonusWadAs
 	pack_assets_sa(dest, ARRAY_PAIR(header.skill_images), src.get_skill_images(), game);
 	header.trophy_image = pack_asset_sa<SectorRange>(dest, src.get_trophy_image(), game);
 	header.dige = pack_asset_sa<SectorRange>(dest, src.get_dige(), game);
-	
-	dest.write(0, header);
-	if(header_dest) {
-		OutBuffer(*header_dest).write(0, header);
-	}
 }

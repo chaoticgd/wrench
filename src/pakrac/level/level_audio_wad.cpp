@@ -19,15 +19,6 @@
 #include <pakrac/asset_unpacker.h>
 #include <pakrac/asset_packer.h>
 
-static void unpack_dl_level_audio_wad(LevelAudioWadAsset& dest, InputStream& src, Game game);
-static void pack_dl_level_audio_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelAudioWadAsset& src, Game game);
-
-on_load(LevelAudio, []() {
-	LevelAudioWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<LevelAudioWadAsset>(unpack_dl_level_audio_wad);
-	
-	LevelAudioWadAsset::funcs.pack_dl = wrap_wad_packer_func<LevelAudioWadAsset>(pack_dl_level_audio_wad);
-})
-
 packed_struct(DeadlockedLevelAudioWadHeader,
 	/* 0x000 */ s32 header_size;
 	/* 0x004 */ Sector32 sector;
@@ -36,6 +27,15 @@ packed_struct(DeadlockedLevelAudioWadHeader,
 	/* 0x290 */ SectorByteRange platinum_bolt;
 	/* 0x298 */ SectorByteRange spare;
 )
+
+static void unpack_dl_level_audio_wad(LevelAudioWadAsset& dest, InputStream& src, Game game);
+static void pack_dl_level_audio_wad(OutputStream& dest, DeadlockedLevelAudioWadHeader& header, LevelAudioWadAsset& src, Game game);
+
+on_load(LevelAudio, []() {
+	LevelAudioWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<LevelAudioWadAsset>(unpack_dl_level_audio_wad);
+	
+	LevelAudioWadAsset::funcs.pack_dl = wrap_wad_packer_func<LevelAudioWadAsset, DeadlockedLevelAudioWadHeader>(pack_dl_level_audio_wad);
+})
 
 static void unpack_dl_level_audio_wad(LevelAudioWadAsset& dest, InputStream& src, Game game) {
 	auto header = src.read<DeadlockedLevelAudioWadHeader>(0);
@@ -46,21 +46,9 @@ static void unpack_dl_level_audio_wad(LevelAudioWadAsset& dest, InputStream& src
 	unpack_asset(dest.spare(), src, header.spare, game);
 }
 
-static void pack_dl_level_audio_wad(OutputStream& dest, std::vector<u8>* header_dest, LevelAudioWadAsset& src, Game game) {
-	s64 base = dest.tell();
-	
-	DeadlockedLevelAudioWadHeader header = {0};
-	header.header_size = sizeof(DeadlockedLevelAudioWadHeader);
-	dest.write(header);
-	dest.pad(SECTOR_SIZE, 0);
-	
+static void pack_dl_level_audio_wad(OutputStream& dest, DeadlockedLevelAudioWadHeader& header, LevelAudioWadAsset& src, Game game) {
 	pack_assets_sa(dest, ARRAY_PAIR(header.bin_data), src.get_bin_data(), game);
 	header.upgrade_sample = pack_asset_sa<SectorByteRange>(dest, src.get_upgrade_sample(), game);
 	header.platinum_bolt = pack_asset_sa<SectorByteRange>(dest, src.get_platinum_bolt(), game);
 	header.spare = pack_asset_sa<SectorByteRange>(dest, src.get_spare(), game);
-	
-	dest.write(base, header);
-	if(header_dest) {
-		OutBuffer(*header_dest).write(0, header);
-	}
 }

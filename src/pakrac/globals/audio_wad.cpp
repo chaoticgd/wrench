@@ -20,19 +20,6 @@
 #include <pakrac/asset_unpacker.h>
 #include <pakrac/asset_packer.h>
 
-static void unpack_audio_wad(AudioWadAsset& dest, InputStream& src, Game game);
-static void pack_audio_wad(OutputStream& dest, std::vector<u8>* header_dest, AudioWadAsset& src, Game game);
-template <typename Getter>
-static void unpack_help_audio(CollectionAsset& dest, InputStream& src, Sector32* ranges, s32 count, Game game, const std::set<s64>& end_sectors, Getter getter);
-template <typename Getter>
-static void pack_help_audio(OutputStream& dest, Sector32* sectors_dest, s32 count, CollectionAsset& src, Game game, Getter getter);
-
-on_load(Audio, []() {
-	AudioWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<AudioWadAsset>(unpack_audio_wad);
-	
-	AudioWadAsset::funcs.pack_dl = wrap_wad_packer_func<AudioWadAsset>(pack_audio_wad);
-})
-
 packed_struct(DeadlockedAudioWadHeader,
 	/* 0x0000 */ s32 header_size;
 	/* 0x0004 */ Sector32 sector;
@@ -44,6 +31,19 @@ packed_struct(DeadlockedAudioWadHeader,
 	/* 0x66d0 */ Sector32 help_spanish[2100];
 	/* 0x87a0 */ Sector32 help_italian[2100];
 )
+
+static void unpack_audio_wad(AudioWadAsset& dest, InputStream& src, Game game);
+static void pack_audio_wad(OutputStream& dest, DeadlockedAudioWadHeader& header, AudioWadAsset& src, Game game);
+template <typename Getter>
+static void unpack_help_audio(CollectionAsset& dest, InputStream& src, Sector32* ranges, s32 count, Game game, const std::set<s64>& end_sectors, Getter getter);
+template <typename Getter>
+static void pack_help_audio(OutputStream& dest, Sector32* sectors_dest, s32 count, CollectionAsset& src, Game game, Getter getter);
+
+on_load(Audio, []() {
+	AudioWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<AudioWadAsset>(unpack_audio_wad);
+	
+	AudioWadAsset::funcs.pack_dl = wrap_wad_packer_func<AudioWadAsset, DeadlockedAudioWadHeader>(pack_audio_wad);
+})
 
 static void unpack_audio_wad(AudioWadAsset& dest, InputStream& src, Game game) {
 	auto header = src.read<DeadlockedAudioWadHeader>(0);
@@ -79,12 +79,7 @@ static void unpack_audio_wad(AudioWadAsset& dest, InputStream& src, Game game) {
 	unpack_help_audio(help_file, src, ARRAY_PAIR(header.help_italian), game, end_sectors, &HelpAudioAsset::italian<BinaryAsset>);
 }
 
-static void pack_audio_wad(OutputStream& dest, std::vector<u8>* header_dest, AudioWadAsset& src, Game game) {
-	DeadlockedAudioWadHeader header = {0};
-	header.header_size = sizeof(DeadlockedAudioWadHeader);
-	dest.write(header);
-	dest.pad(SECTOR_SIZE, 0);
-	
+static void pack_audio_wad(OutputStream& dest, DeadlockedAudioWadHeader& header, AudioWadAsset& src, Game game) {
 	pack_assets_sa(dest, ARRAY_PAIR(header.vendor), src.get_vendor(), game);
 	pack_assets_sa(dest, ARRAY_PAIR(header.global_sfx), src.get_global_sfx(), game);
 	
@@ -93,11 +88,6 @@ static void pack_audio_wad(OutputStream& dest, std::vector<u8>* header_dest, Aud
 	pack_help_audio(dest, ARRAY_PAIR(header.help_german), src.get_help(), game, &HelpAudioAsset::get_german);
 	pack_help_audio(dest, ARRAY_PAIR(header.help_spanish), src.get_help(), game, &HelpAudioAsset::get_spanish);
 	pack_help_audio(dest, ARRAY_PAIR(header.help_italian), src.get_help(), game, &HelpAudioAsset::get_italian);
-	
-	dest.write(0, header);
-	if(header_dest) {
-		OutBuffer(*header_dest).write(0, header);
-	}
 }
 
 template <typename Getter>

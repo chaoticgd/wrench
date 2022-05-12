@@ -20,23 +20,6 @@
 #include <pakrac/asset_unpacker.h>
 #include <pakrac/asset_packer.h>
 
-static void unpack_rac2_misc_wad(MiscWadAsset& dest, InputStream& src, Game game);
-static void pack_rac2_misc_wad(OutputStream& dest, std::vector<u8>* header_dest, MiscWadAsset& src, Game game);
-static void unpack_rac3_misc_wad(MiscWadAsset& dest, InputStream& src, Game game);
-static void pack_rac3_misc_wad(OutputStream& dest, std::vector<u8>* header_dest, MiscWadAsset& src, Game game);
-static void unpack_dl_misc_wad(MiscWadAsset& dest, InputStream& src, Game game);
-static void pack_dl_misc_wad(OutputStream& dest, std::vector<u8>* header_dest, MiscWadAsset& src, Game game);
-
-on_load(Misc, []() {
-	MiscWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<MiscWadAsset>(unpack_rac2_misc_wad);
-	MiscWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<MiscWadAsset>(unpack_rac3_misc_wad);
-	MiscWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<MiscWadAsset>(unpack_dl_misc_wad);
-	
-	MiscWadAsset::funcs.pack_rac2 = wrap_wad_packer_func<MiscWadAsset>(pack_rac2_misc_wad);
-	MiscWadAsset::funcs.pack_rac3 = wrap_wad_packer_func<MiscWadAsset>(pack_rac3_misc_wad);
-	MiscWadAsset::funcs.pack_dl = wrap_wad_packer_func<MiscWadAsset>(pack_dl_misc_wad);
-})
-
 packed_struct(Rac2MiscWadHeader,
 	/* 0x00 */ s32 header_size;
 	/* 0x04 */ Sector32 sector;
@@ -73,11 +56,28 @@ packed_struct(DeadlockedMiscWadHeader,
 	/* 0x48 */ SectorRange gadget;
 )
 
+static void unpack_rac2_misc_wad(MiscWadAsset& dest, InputStream& src, Game game);
+static void pack_rac2_misc_wad(OutputStream& dest, Rac2MiscWadHeader& header, MiscWadAsset& src, Game game);
+static void unpack_rac3_misc_wad(MiscWadAsset& dest, InputStream& src, Game game);
+static void pack_rac3_misc_wad(OutputStream& dest, Rac3MiscWadHeader& header, MiscWadAsset& src, Game game);
+static void unpack_dl_misc_wad(MiscWadAsset& dest, InputStream& src, Game game);
+static void pack_dl_misc_wad(OutputStream& dest, DeadlockedMiscWadHeader& header, MiscWadAsset& src, Game game);
+
+on_load(Misc, []() {
+	MiscWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<MiscWadAsset>(unpack_rac2_misc_wad);
+	MiscWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<MiscWadAsset>(unpack_rac3_misc_wad);
+	MiscWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<MiscWadAsset>(unpack_dl_misc_wad);
+	
+	MiscWadAsset::funcs.pack_rac2 = wrap_wad_packer_func<MiscWadAsset, Rac2MiscWadHeader>(pack_rac2_misc_wad);
+	MiscWadAsset::funcs.pack_rac3 = wrap_wad_packer_func<MiscWadAsset, Rac3MiscWadHeader>(pack_rac3_misc_wad);
+	MiscWadAsset::funcs.pack_dl = wrap_wad_packer_func<MiscWadAsset, DeadlockedMiscWadHeader>(pack_dl_misc_wad);
+})
+
 static void unpack_rac2_misc_wad(MiscWadAsset& dest, InputStream& src, Game game) {
 	
 }
 
-static void pack_rac2_misc_wad(OutputStream& dest, std::vector<u8>* header_dest, MiscWadAsset& src, Game game) {
+static void pack_rac2_misc_wad(OutputStream& dest, Rac2MiscWadHeader& header, MiscWadAsset& src, Game game) {
 	
 }
 
@@ -85,7 +85,7 @@ static void unpack_rac3_misc_wad(MiscWadAsset& dest, InputStream& src, Game game
 	
 }
 
-static void pack_rac3_misc_wad(OutputStream& dest, std::vector<u8>* header_dest, MiscWadAsset& src, Game game) {
+static void pack_rac3_misc_wad(OutputStream& dest, Rac3MiscWadHeader& header, MiscWadAsset& src, Game game) {
 	
 }
 
@@ -100,21 +100,11 @@ static void unpack_dl_misc_wad(MiscWadAsset& dest, InputStream& src, Game game) 
 	unpack_asset(dest.gadget(), src, header.gadget, game);
 }
 
-static void pack_dl_misc_wad(OutputStream& dest, std::vector<u8>* header_dest, MiscWadAsset& src, Game game) {
-	DeadlockedMiscWadHeader header = {0};
-	header.header_size = sizeof(DeadlockedMiscWadHeader);
-	dest.write(header);
-	dest.pad(SECTOR_SIZE, 0);
-	
+static void pack_dl_misc_wad(OutputStream& dest, DeadlockedMiscWadHeader& header, MiscWadAsset& src, Game game) {
 	header.debug_font = pack_asset_sa<SectorRange>(dest, src.get_debug_font(), game);
 	header.irx = pack_compressed_asset_sa<SectorRange>(dest, src.get_irx(), game, "irx");
 	header.save_game = pack_asset_sa<SectorRange>(dest, src.get_save_game(), game);
 	header.frontend_code = pack_asset_sa<SectorRange>(dest, src.get_frontend_code(), game);
 	header.boot = pack_asset_sa<SectorRange>(dest, src.get_boot(), game);
 	header.gadget = pack_asset_sa<SectorRange>(dest, src.get_gadget(), game);
-	
-	dest.write(0, header);
-	if(header_dest) {
-		OutBuffer(*header_dest).write(0, header);
-	}
 }
