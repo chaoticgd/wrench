@@ -40,6 +40,6 @@ struct WadBuffer {
 };
 
 bool decompress_wad(std::vector<uint8_t>& dest, WadBuffer src);
-void compress_wad(std::vector<uint8_t>& dest, const std::vector<uint8_t>& src, int thread_count);
+void compress_wad(std::vector<uint8_t>& dest, const std::vector<uint8_t>& src, const char* muffin, int thread_count);
 
 #endif

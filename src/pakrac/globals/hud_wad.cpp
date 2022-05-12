@@ -122,8 +122,8 @@ static void pack_hud_wad(OutputStream& dest, std::vector<u8>* header_dest, HudWa
 	header.vendor = pack_asset_sa<SectorRange>(dest, src.get_vendor(), game);
 	pack_assets_sa(dest, ARRAY_PAIR(header.all_text), src.get_all_text(), game);
 	header.hudw3d = pack_asset_sa<SectorRange>(dest, src.get_hudw3d(), game);
-	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.e3_level_ss), src.get_e3_level_ss(), game,FMT_TEXTURE_PIF8);
-	header.nw_dnas_image = pack_compressed_asset_sa<SectorRange>(dest, src.get_nw_dnas_image(), game, FMT_TEXTURE_PIF8);
+	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.e3_level_ss), src.get_e3_level_ss(), game, "e3_level", FMT_TEXTURE_PIF8);
+	header.nw_dnas_image = pack_compressed_asset_sa<SectorRange>(dest, src.get_nw_dnas_image(), game, "dnas", FMT_TEXTURE_PIF8);
 	header.split_screen_texture = pack_asset_sa<SectorRange>(dest, src.get_split_screen_texture(), game, FMT_TEXTURE_PIF8);
 	pack_assets_sa(dest, ARRAY_PAIR(header.radar_maps), src.get_radar_maps(), game, FMT_TEXTURE_PIF4_SWIZZLED);
 	pack_assets_sa(dest, ARRAY_PAIR(header.weapon_plates_large), src.get_weapon_plates_large(), game, FMT_TEXTURE_PIF8);

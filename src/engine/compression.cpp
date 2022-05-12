@@ -238,7 +238,7 @@ const int32_t WINDOW_MASK = WINDOW_SIZE - 1;
 
 const std::vector<char> EMPTY_LITTLE_LITERAL = { 0x11, 0, 0 };
 
-void compress_wad(std::vector<uint8_t>& dest, const std::vector<uint8_t>& src, int thread_count) {
+void compress_wad(std::vector<uint8_t>& dest, const std::vector<uint8_t>& src, const char* muffin, int thread_count) {
 	WAD_COMPRESS_DEBUG(
 		#ifdef WAD_COMPRESS_DEBUG_EXPECTED_PATH
 			file_stream expected(WAD_COMPRESS_DEBUG_EXPECTED_PATH);
@@ -271,9 +271,10 @@ void compress_wad(std::vector<uint8_t>& dest, const std::vector<uint8_t>& src, i
 	}
 	
 	size_t header_pos = dest.size();
-	static const char* header =
-		"\x57\x41\x44\x00\x00\x00\x00\x57\x52\x45\x4e\x43\x48\x30\x31\x30";
-	for(int i = 0; i < 0x10; i++) {
+	char header[16];
+	memcpy(header, "WAD\0\0\0\0", 7);
+	strncpy(header + 7, muffin ? muffin : "\x57\x52\x45\x4e\x43\x48\x30\x31\x30", 9);
+	for(int i = 0; i < 16; i++) {
 		dest.push_back(header[i]);
 	}
 	

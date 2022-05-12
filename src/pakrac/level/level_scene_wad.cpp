@@ -122,8 +122,8 @@ static void pack_dl_level_scene_wad(OutputStream& dest, std::vector<u8>* header_
 			scene_header.speech_spanish_right = pack_asset_sa<Sector32>(dest, scene.get_speech_spanish_right(), game);
 			scene_header.speech_italian_left = pack_asset_sa<Sector32>(dest, scene.get_speech_italian_left(), game);
 			scene_header.speech_italian_right = pack_asset_sa<Sector32>(dest, scene.get_speech_italian_right(), game);
-			scene_header.moby_load = pack_compressed_asset_sa<SectorRange>(dest, scene.get_moby_load(), game);
-			pack_compressed_assets_sa(dest, ARRAY_PAIR(scene_header.chunks), scene.get_chunks(), game);
+			scene_header.moby_load = pack_compressed_asset_sa<SectorRange>(dest, scene.get_moby_load(), game, "moby_load");
+			pack_compressed_assets_sa(dest, ARRAY_PAIR(scene_header.chunks), scene.get_chunks(), game, "chunks");
 		}
 	}
 	

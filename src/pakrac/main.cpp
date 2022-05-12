@@ -340,7 +340,7 @@ static void compress(const fs::path& input_path, const fs::path& output_path) {
 	std::vector<u8> bytes = read_file(input_path);
 	
 	std::vector<u8> compressed_bytes;
-	compress_wad(compressed_bytes, bytes, 8);
+	compress_wad(compressed_bytes, bytes, nullptr, 8);
 	
 	write_file(output_path, compressed_bytes);
 }

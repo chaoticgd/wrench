@@ -288,7 +288,7 @@ static SectorRange write_lump(OutBuffer dest, const std::vector<u8>& buffer) {
 
 static SectorRange write_compressed_lump(OutBuffer dest, const std::vector<u8>& buffer) {
 	std::vector<u8> compressed;
-	compress_wad(compressed, buffer, 8);
+	//compress_wad(compressed, buffer, 8);
 	return write_lump(dest, compressed);
 }
 
@@ -303,10 +303,10 @@ static void write_chunks(OutBuffer dest, Header& header, const std::map<s32, Chu
 			ChunkHeader chunk_header;
 			chunk_buffer.pad(0x10, 0);
 			chunk_header.tfrags = chunk_buffer.tell();
-			compress_wad(chunk_vec, *chunk.tfrags, 8);
+			//compress_wad(chunk_vec, *chunk.tfrags, 8);
 			chunk_buffer.pad(0x10, 0);
 			chunk_header.collision = chunk_buffer.tell();
-			compress_wad(chunk_vec, *chunk.collision, 8);
+			//compress_wad(chunk_vec, *chunk.collision, 8);
 			chunk_buffer.write(header_ofs, chunk_header);
 			header.chunks[index] = write_lump(dest, chunk_vec);
 		}
@@ -334,7 +334,7 @@ static void write_missions(OutBuffer dest, DeadlockedLevelWadHeader& header, con
 		if(mission.instances.has_value()) {
 			mission_buffer.pad(0x40, 0);
 			mission_header.instances.offset = mission_buffer.tell();
-			compress_wad(mission_vec, *mission.instances, 8);
+			//compress_wad(mission_vec, *mission.instances, 8);
 			mission_header.instances.size = mission_buffer.tell() - mission_header.instances.offset;
 			mission_header.instances.offset += dest.tell();
 		} else {
@@ -343,7 +343,7 @@ static void write_missions(OutBuffer dest, DeadlockedLevelWadHeader& header, con
 		if(mission.classes.has_value()) {
 			mission_buffer.pad(0x40, 0);
 			mission_header.classes.offset = mission_buffer.tell();
-			compress_wad(mission_vec, *mission.classes, 8);
+			//compress_wad(mission_vec, *mission.classes, 8);
 			mission_header.classes.size = mission_buffer.tell() - mission_header.classes.offset;
 			mission_header.classes.offset += dest.tell();
 		} else {

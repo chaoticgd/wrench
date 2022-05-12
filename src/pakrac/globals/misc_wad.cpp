@@ -107,7 +107,7 @@ static void pack_dl_misc_wad(OutputStream& dest, std::vector<u8>* header_dest, M
 	dest.pad(SECTOR_SIZE, 0);
 	
 	header.debug_font = pack_asset_sa<SectorRange>(dest, src.get_debug_font(), game);
-	header.irx = pack_compressed_asset_sa<SectorRange>(dest, src.get_irx(), game);
+	header.irx = pack_compressed_asset_sa<SectorRange>(dest, src.get_irx(), game, "irx");
 	header.save_game = pack_asset_sa<SectorRange>(dest, src.get_save_game(), game);
 	header.frontend_code = pack_asset_sa<SectorRange>(dest, src.get_frontend_code(), game);
 	header.boot = pack_asset_sa<SectorRange>(dest, src.get_boot(), game);

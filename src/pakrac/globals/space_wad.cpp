@@ -46,7 +46,7 @@ static void pack_space_wad(OutputStream& dest, std::vector<u8>* header_dest, Spa
 	dest.write(header);
 	dest.pad(SECTOR_SIZE, 0);
 	
-	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.transition_wads), src.get_transitions(), game);
+	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.transition_wads), src.get_transitions(), game, "trnsition");
 	
 	dest.write(0, header);
 	if(header_dest) {

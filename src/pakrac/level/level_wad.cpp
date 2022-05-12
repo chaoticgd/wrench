@@ -200,7 +200,7 @@ static void pack_dl_level_wad(OutputStream& dest, std::vector<u8>* header_dest, 
 	header.chunks = pack_chunks(dest, src.get_chunks(), game);
 	header.gameplay_core = pack_asset_sa<SectorRange>(dest, src.get_gameplay_core(), game);
 	std::tie(header.missions, header.max_mission_sizes) = pack_missions(dest, src.get_missions(), game);
-	header.art_instances = pack_compressed_asset_sa<SectorRange>(dest, src.get_art_instances(), game);
+	header.art_instances = pack_compressed_asset_sa<SectorRange>(dest, src.get_art_instances(), game, "art_insts");
 	
 	dest.write(0, header);
 	if(header_dest) {
@@ -250,10 +250,10 @@ static ChunkWadHeader pack_chunks(OutputStream& dest, CollectionAsset& chunks, G
 				ChunkHeader chunk_header = {-1, -1};
 				static_cast<OutputStream&>(chunk_dest).write(chunk_header);
 				if(chunk.has_tfrags()) {
-					chunk_header.tfrags = pack_compressed_asset<ByteRange>(dest, chunk.get_tfrags(), game, 0x10).offset;
+					chunk_header.tfrags = pack_compressed_asset<ByteRange>(dest, chunk.get_tfrags(), game, 0x10, "chnktfrag").offset;
 				}
 				if(chunk.has_collision()) {
-					chunk_header.collision = pack_compressed_asset<ByteRange>(dest, chunk.get_collision(), game, 0x10).offset;
+					chunk_header.collision = pack_compressed_asset<ByteRange>(dest, chunk.get_collision(), game, 0x10, "chunkcoll").offset;
 				}
 				dest.write(chunk_header_ofs, chunk_header);
 				header.chunks[i] = SectorRange::from_bytes(chunk_header_ofs, dest.tell() - chunk_header_ofs);
@@ -320,7 +320,7 @@ static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& 
 				max_sizes.max_instances_size = std::max(max_sizes.max_instances_size, (s32) bytes.size());
 				
 				std::vector<u8> compressed_bytes;
-				compress_wad(compressed_bytes, bytes, 8);
+				compress_wad(compressed_bytes, bytes, "msinstncs", 8);
 				
 				s64 begin = dest.tell();
 				dest.write(compressed_bytes.data(), compressed_bytes.size());
@@ -335,7 +335,7 @@ static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& 
 				max_sizes.max_classes_size = std::max(max_sizes.max_classes_size, (s32) bytes.size());
 				
 				std::vector<u8> compressed_bytes;
-				compress_wad(compressed_bytes, bytes, 8);
+				compress_wad(compressed_bytes, bytes, "msclasses", 8);
 				
 				s64 begin = dest.tell();
 				dest.write(compressed_bytes.data(), compressed_bytes.size());

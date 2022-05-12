@@ -89,7 +89,7 @@ SectorRange write_primary(OutBuffer dest, LevelWad& wad) {
 	std::vector<u8> gs_ram;
 	write_assets(OutBuffer(asset_header), OutBuffer(asset_data), gs_ram, wad);
 	std::vector<u8> compressed_assets;
-	compress_wad(compressed_assets, asset_data, 8);
+	//compress_wad(compressed_assets, asset_data, 8);
 	*(s32*) &asset_header[0x88] = compressed_assets.size();
 	
 	header.asset_header = write_primary_block(dest, asset_header, header_ofs);

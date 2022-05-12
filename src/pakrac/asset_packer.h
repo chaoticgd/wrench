@@ -59,13 +59,13 @@ void pack_assets_sa(OutputStream& dest, Range* ranges_dest, s32 count, Collectio
 }
 
 template <typename Range>
-Range pack_compressed_asset(OutputStream& dest, Asset& src, Game game, s64 alignment, AssetFormatHint hint = FMT_NO_HINT) {
+Range pack_compressed_asset(OutputStream& dest, Asset& src, Game game, s64 alignment, const char* muffin, AssetFormatHint hint = FMT_NO_HINT) {
 	dest.pad(alignment, 0);
 	std::vector<u8> bytes;
 	MemoryOutputStream stream(bytes);
 	pack_asset<Range>(stream, src, game, 0x10, hint);
 	std::vector<u8> compressed_bytes;
-	compress_wad(compressed_bytes, bytes, 8);
+	compress_wad(compressed_bytes, bytes, muffin, 8);
 	s64 begin = dest.tell();
 	dest.write(compressed_bytes.data(), compressed_bytes.size());
 	s64 end = dest.tell();
@@ -73,24 +73,24 @@ Range pack_compressed_asset(OutputStream& dest, Asset& src, Game game, s64 align
 }
 
 template <typename Range>
-void pack_compressed_assets(OutputStream& dest, Range* ranges_dest, s32 count, CollectionAsset& src, Game game, s64 alignment, AssetFormatHint hint = FMT_NO_HINT) {
+void pack_compressed_assets(OutputStream& dest, Range* ranges_dest, s32 count, CollectionAsset& src, Game game, s64 alignment, const char* muffin, AssetFormatHint hint = FMT_NO_HINT) {
 	for(size_t i = 0; i < count; i++) {
 		if(src.has_child(i)) {
-			ranges_dest[i] = pack_compressed_asset<Range>(dest, src.get_child(i), game, alignment, hint);
+			ranges_dest[i] = pack_compressed_asset<Range>(dest, src.get_child(i), game, alignment, muffin, hint);
 		}
 	}
 }
 
 template <typename Range>
-Range pack_compressed_asset_sa(OutputStream& dest, Asset& src, Game game, AssetFormatHint hint = FMT_NO_HINT) {
-	return pack_compressed_asset<Range>(dest, src, game, SECTOR_SIZE, hint);
+Range pack_compressed_asset_sa(OutputStream& dest, Asset& src, Game game, const char* muffin, AssetFormatHint hint = FMT_NO_HINT) {
+	return pack_compressed_asset<Range>(dest, src, game, SECTOR_SIZE, muffin, hint);
 }
 
 template <typename Range>
-void pack_compressed_assets_sa(OutputStream& dest, Range* ranges_dest, s32 count, CollectionAsset& src, Game game, AssetFormatHint hint = FMT_NO_HINT) {
+void pack_compressed_assets_sa(OutputStream& dest, Range* ranges_dest, s32 count, CollectionAsset& src, Game game, const char* muffin, AssetFormatHint hint = FMT_NO_HINT) {
 	for(size_t i = 0; i < count; i++) {
 		if(src.has_child(i)) {
-			ranges_dest[i] = pack_compressed_asset_sa<Range>(dest, src.get_child(i), game, hint);
+			ranges_dest[i] = pack_compressed_asset_sa<Range>(dest, src.get_child(i), game, muffin, hint);
 		}
 	}
 }
