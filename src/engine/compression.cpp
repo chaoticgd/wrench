@@ -271,8 +271,8 @@ void compress_wad(std::vector<uint8_t>& dest, const std::vector<uint8_t>& src, c
 	}
 	
 	size_t header_pos = dest.size();
-	char header[16];
-	memcpy(header, "WAD\0\0\0\0", 7);
+	char header[16] = {0};
+	memcpy(header, "WAD", 3);
 	strncpy(header + 7, muffin ? muffin : "\x57\x52\x45\x4e\x43\x48\x30\x31\x30", 9);
 	for(int i = 0; i < 16; i++) {
 		dest.push_back(header[i]);
