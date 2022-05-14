@@ -118,9 +118,7 @@ target_link_libraries(wrenchengine wrenchcore)
 
 add_executable(pakrac
 	src/pakrac/main.cpp
-	src/pakrac/wad_file.cpp
 	src/pakrac/gameplay.cpp
-	src/pakrac/primary.cpp
 	src/pakrac/assets.cpp
 	src/pakrac/tests.cpp
 	src/pakrac/asset_unpacker.cpp
@@ -141,6 +139,7 @@ add_executable(pakrac
 	src/pakrac/globals/online_wad.cpp
 	src/pakrac/globals/space_wad.cpp
 	src/pakrac/level/level_wad.cpp
+	src/pakrac/level/level_data_wad.cpp
 	src/pakrac/level/level_audio_wad.cpp
 	src/pakrac/level/level_scene_wad.cpp
 )

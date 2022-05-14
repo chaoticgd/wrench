@@ -116,16 +116,17 @@ void unpack_rac1_level_wad(LevelWadAsset& dest, InputStream& src, Game game) {
 	
 	dest.set_id(header.id);
 	
+	SubInputStream data(src, header.data.bytes());
 	unpack_asset(dest.data(), src, header.data, game);
-	unpack_asset(dest.gameplay_core(), src, header.gameplay_ntsc, game);
+	unpack_asset(dest.data().gameplay_core(), src, header.gameplay_ntsc, game);
 }
 
 static void pack_rac1_level_wad(OutputStream& dest, Rac1LevelWadHeader& header, LevelWadAsset& src, Game game) {
 	header.id = src.id();
 	
 	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), game);
-	header.gameplay_ntsc = pack_asset_sa<SectorRange>(dest, src.get_gameplay_core(), game);
-	header.gameplay_pal = pack_asset_sa<SectorRange>(dest, src.get_gameplay_core(), game);
+	header.gameplay_ntsc = pack_asset_sa<SectorRange>(dest, src.get_data().get_gameplay_core(), game);
+	header.gameplay_pal = pack_asset_sa<SectorRange>(dest, src.get_data().get_gameplay_core(), game);
 	// TODO: header.occlusion
 }
 
@@ -135,9 +136,8 @@ void unpack_rac23_level_wad(LevelWadAsset& dest, InputStream& src, Game game) {
 	dest.set_id(header.id);
 	dest.set_reverb(header.reverb);
 	
-	unpack_asset(dest.core_sound_bank(), src, header.core_sound_bank, game);
+	unpack_asset(dest.data().core_sound_bank(), src, header.core_sound_bank, game);
 	unpack_asset(dest.data(), src, header.data, game);
-	unpack_asset(dest.gameplay_core(), src, header.gameplay, game);
 	unpack_chunks(dest.chunks(), src, header.chunks, game);
 }
 
@@ -145,9 +145,9 @@ static void pack_rac23_level_wad(OutputStream& dest, Rac23LevelWadHeader& header
 	header.id = src.id();
 	header.reverb = src.reverb();
 	
-	header.core_sound_bank = pack_asset_sa<SectorRange>(dest, src.get_core_sound_bank(), game);
+	header.core_sound_bank = pack_asset_sa<SectorRange>(dest, src.get_data().get_core_sound_bank(), game);
 	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), game);
-	header.gameplay = pack_asset_sa<SectorRange>(dest, src.get_gameplay_core(), game);
+	header.gameplay = pack_asset_sa<SectorRange>(dest, src.get_data().get_gameplay_core(), game);
 	// TODO: header.occlusion
 	header.chunks = pack_chunks(dest, src.get_chunks(), game);
 }
@@ -158,24 +158,22 @@ void unpack_dl_level_wad(LevelWadAsset& dest, InputStream& src, Game game) {
 	dest.set_id(header.id);
 	dest.set_reverb(header.reverb);
 	
-	unpack_asset(dest.core_sound_bank(), src, header.core_sound_bank, game);
+	unpack_asset(dest.data().core_sound_bank(), src, header.core_sound_bank, game);
 	unpack_asset(dest.data(), src, header.data, game);
 	unpack_chunks(dest.chunks(), src, header.chunks, game);
-	unpack_asset(dest.gameplay_core(), src, header.gameplay_core, game);
 	unpack_missions(dest.missions(), src, header.missions, game);
-	unpack_compressed_asset(dest.art_instances(), src, header.art_instances, game);
 }
 
 static void pack_dl_level_wad(OutputStream& dest, DeadlockedLevelWadHeader& header, LevelWadAsset& src, Game game) {
 	header.id = src.id();
 	header.reverb = src.reverb();
 	
-	header.core_sound_bank = pack_asset_sa<SectorRange>(dest, src.get_core_sound_bank(), game);
+	header.core_sound_bank = pack_asset_sa<SectorRange>(dest, src.get_data().get_core_sound_bank(), game);
 	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), game);
 	header.chunks = pack_chunks(dest, src.get_chunks(), game);
-	header.gameplay_core = pack_asset_sa<SectorRange>(dest, src.get_gameplay_core(), game);
+	header.gameplay_core = pack_asset_sa<SectorRange>(dest, src.get_data().get_gameplay_core(), game);
 	std::tie(header.missions, header.max_mission_sizes) = pack_missions(dest, src.get_missions(), game);
-	header.art_instances = pack_compressed_asset_sa<SectorRange>(dest, src.get_art_instances(), game, "art_insts");
+	header.art_instances = pack_compressed_asset_sa<SectorRange>(dest, src.get_data().get_art_instances(), game, "art_insts");
 }
 
 packed_struct(ChunkHeader,

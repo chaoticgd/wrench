@@ -32,15 +32,26 @@ extern bool g_asset_packer_dry_run;
 void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& src, Game game, AssetFormatHint hint = FMT_NO_HINT);
 
 template <typename Range>
-Range pack_asset(OutputStream& dest, Asset& src, Game game, s64 alignment, AssetFormatHint hint = FMT_NO_HINT) {
+Range pack_asset(OutputStream& dest, Asset& src, Game game, s64 alignment, AssetFormatHint hint = FMT_NO_HINT, Range* empty_range = nullptr) {
 	if(src.type() == BinaryAsset::ASSET_TYPE && !static_cast<BinaryAsset&>(src).has_src()) {
-		return Range::from_bytes(0, 0);
+		return empty_range ? *empty_range : Range::from_bytes(0, 0);
 	}
 	dest.pad(alignment, 0);
 	s64 begin = dest.tell();
 	pack_asset_impl(dest, nullptr, nullptr, src, game, hint);
 	s64 end = dest.tell();
 	return Range::from_bytes(begin, end - begin);
+}
+
+template <typename Range>
+void pack_assets(OutputStream& dest, Range* ranges_dest, s32 count, CollectionAsset& src, Game game, s32 alignment, AssetFormatHint hint = FMT_NO_HINT, Range* empty_range = nullptr) {
+	for(size_t i = 0; i < count; i++) {
+		if(src.has_child(i)) {
+			ranges_dest[i] = pack_asset<Range>(dest, src.get_child(i), game, alignment, hint, empty_range);
+		} else {
+			ranges_dest[i] = empty_range ? *empty_range : Range::from_bytes(0, 0);
+		}
+	}
 }
 
 // Sector aligned version.

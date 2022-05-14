@@ -30,7 +30,6 @@
 #include <iso/iso_tools.h>
 #include <iso/wad_identifier.h>
 #include <pakrac/tests.h>
-#include <pakrac/wad_file.h>
 #include <pakrac/asset_unpacker.h>
 #include <pakrac/asset_packer.h>
 

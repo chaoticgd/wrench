@@ -282,12 +282,27 @@ AssetType LevelWad {
 	IntegerAttribute id {}
 	IntegerAttribute reverb {}
 	
-	Child data            { allowed_types: ['Binary'] }
-	Child core_sound_bank { allowed_types: ['Binary'] }
-	Child chunks          { allowed_types: ['Collection'] }
-	Child gameplay_core   { allowed_types: ['Binary'] }
-	Child missions        { allowed_types: ['Collection'] }
-	Child art_instances   { allowed_types: ['Binary'] }
+	Child data     { allowed_types: ['LevelDataWad'] }
+	Child chunks   { allowed_types: ['Collection'] }
+	Child missions { allowed_types: ['Collection'] }
+}
+
+AssetType LevelDataWad {
+	wad: true
+	level_wad: true
+	
+	Child moby8355_pvars      { allowed_types: ['Binary'] }
+	Child code                { allowed_types: ['Binary'] }
+	Child core_sound_bank     { allowed_types: ['Binary'] }
+	Child asset_header        { allowed_types: ['Binary'] }
+	Child gs_ram              { allowed_types: ['Binary'] }
+	Child hud_header          { allowed_types: ['Binary'] }
+	Child hud_banks           { allowed_types: ['Collection'] }
+	Child assets              { allowed_types: ['Binary'] }
+	Child transition_textures { allowed_types: ['Binary'] }
+	Child art_instances       { allowed_types: ['Binary'] }
+	Child gameplay_core       { allowed_types: ['Binary'] }
+	Child global_nav_data     { allowed_types: ['Binary'] }
 }
 
 AssetType Chunk {
