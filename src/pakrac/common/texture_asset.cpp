@@ -78,9 +78,9 @@ static Texture unpack_pif(InputStream& src) {
 	switch(header.format) {
 		case 0x13: {
 			std::vector<u32> palette(256);
-			src.read((u8*) palette.data(), palette.size() * 4);
+			src.read_n((u8*) palette.data(), palette.size() * 4);
 			std::vector<u8> data(header.width * header.height);
-			src.read(data.data(), data.size());
+			src.read_n(data.data(), data.size());
 			Texture texture = Texture::create_8bit_paletted(header.width, header.height, data, palette);
 			texture.swizzle_palette();
 			texture.multiply_alphas();
@@ -88,9 +88,9 @@ static Texture unpack_pif(InputStream& src) {
 		}
 		case 0x94: {
 			std::vector<u32> palette(16);
-			src.read((u8*) palette.data(), palette.size() * 4);
+			src.read_n((u8*) palette.data(), palette.size() * 4);
 			std::vector<u8> data((header.width * header.height) / 2);
-			src.read(data.data(), data.size());
+			src.read_n(data.data(), data.size());
 			Texture texture = Texture::create_4bit_paletted(header.width, header.height, data, palette);
 			texture.multiply_alphas();
 			return texture;
@@ -122,11 +122,11 @@ static void pack_pif(OutputStream& dest, TextureAsset& src, AssetFormatHint hint
 		case FMT_TEXTURE_PIF4:
 		case FMT_TEXTURE_PIF4_SWIZZLED: {
 			header.format = 0x94;
-			dest.write((u8*) texture->palette().data(), std::min(texture->palette().size(), (size_t) 16) * 4);
+			dest.write_n((u8*) texture->palette().data(), std::min(texture->palette().size(), (size_t) 16) * 4);
 			for(size_t i = texture->palette().size(); i < 16; i++) {
 				dest.write<u32>(0);
 			}
-			dest.write(texture->data.data(), texture->data.size());
+			dest.write_n(texture->data.data(), texture->data.size());
 			break;
 		}
 		case FMT_TEXTURE_PIF8:
@@ -134,11 +134,11 @@ static void pack_pif(OutputStream& dest, TextureAsset& src, AssetFormatHint hint
 			texture->swizzle_palette();
 			
 			header.format = 0x13;
-			dest.write((u8*) texture->palette().data(), std::min(texture->palette().size(), (size_t) 256) * 4);
+			dest.write_n((u8*) texture->palette().data(), std::min(texture->palette().size(), (size_t) 256) * 4);
 			for(size_t i = texture->palette().size(); i < 256; i++) {
 				dest.write<u32>(0);
 			}
-			dest.write(texture->data.data(), texture->data.size());
+			dest.write_n(texture->data.data(), texture->data.size());
 			break;
 		}
 		default: assert(0);

@@ -24,9 +24,10 @@
 #include <engine/compression.h>
 
 struct AssetUnpackerGlobals {
+	bool skip_globals = false;
+	bool skip_levels = false;
+	
 	bool dump_wads = false;
-	bool dump_global_wads = false;
-	bool dump_level_wads = false;
 	bool dump_binaries = false;
 	
 	InputStream* input_file = nullptr;

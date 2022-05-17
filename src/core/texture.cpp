@@ -18,6 +18,7 @@
 
 #include "texture.h"
 
+static s32 map_pixel_index_rac4(s32 i, s32 width);
 static u8 map_palette_index(u8 index);
 
 Texture::Texture() {}
@@ -263,6 +264,30 @@ void Texture::to_8bit_paletted() {
 	format = PixelFormat::PALETTED_8;
 }
 
+void Texture::swizzle() {
+	switch(format) {
+		case PixelFormat::PALETTED_4: {
+			verify_not_reached("Swizzling this type of texture not yet implemented.");
+			break;
+		}
+		case PixelFormat::PALETTED_8: {
+			std::vector<u8> swizzled(data.size());
+			for(s32 i = 0; i < data.size(); i++) {
+				s32 map = map_pixel_index_rac4(i, width);
+				if(map >= data.size()) {
+					map = data.size() - 1;
+				}
+				swizzled[map] = data[i];
+			}
+			data = std::move(swizzled);
+			break;
+		}
+		default: {
+			verify_not_reached("Can't swizzle this type of texture.");
+		}
+	}
+}
+
 void Texture::swizzle_palette() {
 	std::vector<u32> original = palette();
 	for(size_t i = 0; i < palette().size(); i++) {
@@ -292,6 +317,35 @@ void Texture::divide_alphas() {
 		}
 		colour = (colour & 0xffffff) | (alpha << 24);
 	}
+}
+
+static s32 map_pixel_index_rac4(s32 i, s32 width) {
+	s32 s = i / (width * 2);
+	s32 r = 0;
+	if (s % 2 == 0)
+		r = s * 2;
+	else
+		r = (s - 1) * 2 + 1;
+	
+	s32 q = ((i % (width * 2)) / 32);
+	
+	s32 m = i % 4;
+	s32 n = (i / 4) % 4;
+	s32 o = i % 2;
+	s32 p = (i / 16) % 2;
+	
+	if ((s / 2) % 2 == 1)
+		p = 1 - p;
+	
+	if (o == 0)
+		m = (m + p) % 4;
+	else
+		m = ((m - p) + 4) % 4;
+	
+	s32 x = n + ((m + q * 4) * 4);
+	s32 y = r + (o * 2);
+	
+	return (x % width) + (y * width);
 }
 
 static u8 map_palette_index(u8 index) {

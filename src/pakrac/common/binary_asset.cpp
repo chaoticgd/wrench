@@ -61,10 +61,10 @@ static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, 
 		assert(padded_header_size != 0);
 		header_dest->resize(padded_header_size);
 		*(s32*) header_dest->data() = header_size;
-		stream->read(header_dest->data() + 4, padded_header_size - 4);
+		stream->read_n(header_dest->data() + 4, padded_header_size - 4);
 		
 		// Write the header.
-		dest.write(header_dest->data(), padded_header_size);
+		dest.write_n(header_dest->data(), padded_header_size);
 		
 		// The calling code needs the unpadded header.
 		header_dest->resize(header_size);

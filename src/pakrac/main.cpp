@@ -73,57 +73,34 @@ int main(int argc, char** argv) {
 	
 	if(mode.starts_with("unpack")) {
 		std::string continuation = mode.substr(6);
-		if(continuation.empty()) {
-			g_asset_unpacker.dump_wads = false;
-			g_asset_unpacker.dump_binaries = false;
-			
-			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
-			unpack(args.input_paths[0], args.output_path);
-			return 0;
+		if(continuation == "_globals") {
+			g_asset_unpacker.skip_levels = true;
+		} else if(continuation == "_levels") {
+			g_asset_unpacker.skip_globals = true;
 		} else if(continuation == "_wads") {
 			g_asset_unpacker.dump_wads = true;
-			g_asset_unpacker.dump_global_wads = true;
-			g_asset_unpacker.dump_level_wads = true;
-			g_asset_unpacker.dump_binaries = false;
-			
-			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
-			unpack(args.input_paths[0], args.output_path);
-			return 0;
 		} else if(continuation == "_global_wads") {
+			g_asset_unpacker.skip_levels = true;
 			g_asset_unpacker.dump_wads = true;
-			g_asset_unpacker.dump_global_wads = true;
-			g_asset_unpacker.dump_level_wads = false;
-			g_asset_unpacker.dump_binaries = false;
-			
-			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
-			unpack(args.input_paths[0], args.output_path);
-			return 0;
 		} else if(continuation == "_level_wads") {
+			g_asset_unpacker.skip_globals = true;
 			g_asset_unpacker.dump_wads = true;
-			g_asset_unpacker.dump_global_wads = false;
-			g_asset_unpacker.dump_level_wads = true;
-			g_asset_unpacker.dump_binaries = false;
-			
-			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
-			unpack(args.input_paths[0], args.output_path);
-			return 0;
 		} else if(continuation == "_binaries") {
-			g_asset_unpacker.dump_wads = false;
 			g_asset_unpacker.dump_binaries = true;
-			
-			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
-			unpack(args.input_paths[0], args.output_path);
-			return 0;
+		} else if(!continuation.empty()) {
+			print_usage();
+			return 1;
 		}
+		
+		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
+		unpack(args.input_paths[0], args.output_path);
+		return 0;
 	}
 	
-	if(mode.starts_with("pack")) {
-		std::string continuation = mode.substr(4);
-		if(continuation.empty()) {
-			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATHS | ARG_ASSET | ARG_OUTPUT_PATH);
-			pack(args.input_paths, args.asset, args.output_path);
-			return 0;
-		}
+	if(mode == "pack") {
+		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATHS | ARG_ASSET | ARG_OUTPUT_PATH);
+		pack(args.input_paths, args.asset, args.output_path);
+		return 0;
 	}
 	
 	if(mode == "decompress") {
@@ -245,7 +222,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path) {
 	}
 	
 	// Check if it's a WAD.
-	s32 header_size = static_cast<InputStream&>(stream).read<s32>(0);
+	s32 header_size = stream.read<s32>(0);
 	if(header_size < 0x10000) {
 		stream.seek(0);
 		std::vector<u8> header = stream.read_multiple<u8>(header_size);
@@ -383,21 +360,27 @@ static void print_usage() {
 	puts(" unpack <input file> -o <output dir>");
 	puts("   Unpack an ISO or WAD file to produce an asset bank of source files.");
 	puts("");
-	puts(" pack <input dirs> -a <asset> -o <output iso>");
+	puts(" pack <input asset banks> -a <asset> -o <output iso>");
 	puts("   Pack an asset (e.g. base_game) to produce a built file (e.g. an ISO file).");
 	puts("");
 	puts("DEVELOPER SUBCOMMANDS");
 	puts("");
-	puts(" unpack_wad <input files> -o <output dir>");
+	puts(" unpack_globals <input file> -o <output dir>");
+	puts("   Unpack an ISO or WAD file to produce an asset bank of source global files.");
+	puts("");
+	puts(" unpack_levels <input file> -o <output dir>");
+	puts("   Unpack an ISO or WAD file to produce an asset bank of source level files.");
+	puts("");
+	puts(" unpack_wads <input files> -o <output dir>");
 	puts("   Unpack an ISO or WAD file to produce an asset bank of WAD files.");
 	puts("");
-	puts(" unpack_global_wad <input files> -o <output dir>");
+	puts(" unpack_global_wads <input file> -o <output dir>");
 	puts("   Unpack an ISO or WAD file to produce an asset bank of global WAD files.");
 	puts("");
-	puts(" unpack_level_wad <input files> -o <output dir>");
+	puts(" unpack_level_wads <input file> -o <output dir>");
 	puts("   Unpack an ISO or WAD file to produce an asset bank of level WAD files.");
 	puts("");
-	puts(" unpack_binaries <input files> -o <output dir>");
+	puts(" unpack_binaries <input file> -o <output dir>");
 	puts("   Unpack an ISO or WAD file to produce an asset bank of binaries.");
 	puts("");
 	puts(" decompress <input file> -o <output file> -x <offset>");
@@ -414,5 +397,5 @@ static void print_usage() {
 	puts("   out file accesses as they occur.");
 	puts("");
 	puts(" test <asset bank>");
-	puts("   Unpack and repack asset banks.");
+	puts("   Unpack and repack each binary in an asset bank, and diff against the original.");
 }

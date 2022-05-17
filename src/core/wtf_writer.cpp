@@ -104,9 +104,9 @@ void wtf_write_boolean(WtfWriter* ctx, bool b) {
 		indent(ctx);
 	}
 	if(b) {
-		*ctx->dest += true;
+		*ctx->dest += "true";
 	} else {
-		*ctx->dest += false;
+		*ctx->dest += "false";
 	}
 }
 

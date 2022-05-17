@@ -7,12 +7,12 @@ void Stream::copy(OutputStream& dest, InputStream& src, s64 size) {
 	static const s64 chunk_size = 64 * 1024;
 	static std::vector<u8> buffer(chunk_size);
 	for(s64 i = 0; i < size / chunk_size; i++) {
-		src.read(buffer.data(), chunk_size);
-		dest.write(buffer.data(), chunk_size);
+		src.read_n(buffer.data(), chunk_size);
+		dest.write_n(buffer.data(), chunk_size);
 	}
 	s64 last_chunk_size = size % chunk_size;
-	src.read(buffer.data(), last_chunk_size);
-	dest.write(buffer.data(), last_chunk_size);
+	src.read_n(buffer.data(), last_chunk_size);
+	dest.write_n(buffer.data(), last_chunk_size);
 }
 
 // *****************************************************************************
@@ -43,7 +43,7 @@ s64 BlackHoleOutputStream::size() const {
 	return top;
 }
 
-bool BlackHoleOutputStream::write(const u8*, s64 size) {
+bool BlackHoleOutputStream::write_n(const u8*, s64 size) {
 	ofs += size;
 	top = std::max(top, ofs);
 	return true;
@@ -71,7 +71,7 @@ s64 MemoryInputStream::size() const {
 	return end - begin;
 }
 
-bool MemoryInputStream::read(u8* dest, s64 size) {
+bool MemoryInputStream::read_n(u8* dest, s64 size) {
 	verify(ofs + size <= end - begin, "Tried to read past end of memory input stream.");
 	memcpy(dest, begin + ofs, size);
 	ofs += size;
@@ -96,7 +96,7 @@ s64 MemoryOutputStream::size() const {
 	return backing.size();
 }
 
-bool MemoryOutputStream::write(const u8* src, s64 size) {
+bool MemoryOutputStream::write_n(const u8* src, s64 size) {
 	if(ofs + size > backing.size()) {
 		backing.resize(ofs + size);
 	}
@@ -139,7 +139,7 @@ s64 FileInputStream::size() const {
 	return size_val;
 }
 
-bool FileInputStream::read(u8* dest, s64 size) {
+bool FileInputStream::read_n(u8* dest, s64 size) {
 	return fread(dest, size, 1, file) == 1;
 }
 
@@ -177,7 +177,7 @@ s64 FileOutputStream::size() const {
 	return size_val;
 }
 
-bool FileOutputStream::write(const u8* src, s64 size) {
+bool FileOutputStream::write_n(const u8* src, s64 size) {
 	return fwrite(src, size, 1, file) == 1;
 }
 
@@ -205,11 +205,11 @@ s64 SubInputStream::size() const {
 	return range.size;
 }
 
-bool SubInputStream::read(u8* dest, s64 size) {
+bool SubInputStream::read_n(u8* dest, s64 size) {
 	verify(stream.tell() + size <= range.offset + range.size,
 		"Tried to read past end of substream of size %lx from suboffset %lx.",
 		range.size, tell());
-	return stream.read(dest, size);
+	return stream.read_n(dest, size);
 }
 
 s64 SubInputStream::offset_relative_to(InputStream* outer) const {
@@ -239,6 +239,6 @@ s64 SubOutputStream::size() const {
 	return stream.size() - zero;
 }
 
-bool SubOutputStream::write(const u8* src, s64 size) {
-	return stream.write(src, size);
+bool SubOutputStream::write_n(const u8* src, s64 size) {
+	return stream.write_n(src, size);
 }

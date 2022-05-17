@@ -16,12 +16,12 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef PAKRAC_ASSETS_H
-#define PAKRAC_ASSETS_H
+#ifndef PAKRAC_LEVEL_CORE_H
+#define PAKRAC_LEVEL_CORE_H
 
-#include <core/level.h>
+#include <assetmgr/asset_types.h>
 
-packed_struct(AssetHeader,
+packed_struct(LevelCoreHeader,
 	/* 0x00 */ ArrayRange gs_ram;
 	/* 0x08 */ s32 tfrags;
 	/* 0x0c */ s32 occlusion;
@@ -69,7 +69,7 @@ packed_struct(AssetHeader,
 	/* 0xb4 */ s32 moby_sound_remap_offset;
 	/* 0xb8 */ s32 occlusion_rad2_offset;
 )
-static_assert(sizeof(AssetHeader) == 0xbc);
+static_assert(sizeof(LevelCoreHeader) == 0xbc);
 
 packed_struct(MobyClassEntry,
 	s32 offset_in_asset_wad;
@@ -103,9 +103,7 @@ packed_struct(ThingEntry,
 	/* 0xc */ s32 unknown_c;
 )
 
-void read_assets(LevelWad& wad, Buffer asset_header, Buffer assets, Buffer gs_ram);
-void write_assets(OutBuffer header_dest, OutBuffer data_dest, OutBuffer gs_ram, const LevelWad& wad);
-std::vector<s64> enumerate_asset_block_boundaries(Buffer src, const AssetHeader& header, Game game);
-s64 next_asset_block_size(s32 ofs, const std::vector<s64>& block_bounds);
+void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_range, ByteRange data_range, ByteRange gs_ram_range, Game game);
+void pack_level_core(std::vector<u8>& index, std::vector<u8>& compressed_data, std::vector<u8>& gs_ram, LevelCoreAsset& src, Game game);
 
 #endif

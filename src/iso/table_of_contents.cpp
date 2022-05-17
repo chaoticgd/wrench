@@ -47,8 +47,8 @@ table_of_contents read_table_of_contents(InputStream& src, Game game) {
 table_of_contents read_table_of_contents_rac1(InputStream& src) {
 	s32 magic, toc_size;
 	src.seek(RAC1_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
-	verify(src.read((u8*) &magic, 4) == 1, "Failed to read R&C1 table of contents.");
-	verify(src.read((u8*) &toc_size, 4) == 1, "Failed to read R&C1 table of contents.");
+	verify(src.read_n((u8*) &magic, 4) == 1, "Failed to read R&C1 table of contents.");
+	verify(src.read_n((u8*) &toc_size, 4) == 1, "Failed to read R&C1 table of contents.");
 	verify(toc_size > 0 && toc_size < 1024 * 1024 * 1024, "Invalid R&C1 table of contents.");
 	verify(magic == 1, "Invalid R&C1 table of contents.");
 	src.seek(RAC1_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
@@ -367,7 +367,7 @@ s64 write_table_of_contents_rac234(OutputStream& iso, const table_of_contents& t
 		assert(global.header.size() > 8);
 		iso.write<s32>(Buffer(global.header).read<s32>(0, "global header"));
 		iso.write<s32>(global.sector.sectors);
-		iso.write(global.header.data() + 8, global.header.size() - 8);
+		iso.write_n(global.header.data() + 8, global.header.size() - 8);
 	}
 	
 	s64 level_table_ofs = iso.tell();

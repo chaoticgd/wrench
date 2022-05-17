@@ -78,7 +78,7 @@ Range pack_compressed_asset(OutputStream& dest, Asset& src, Game game, s64 align
 	std::vector<u8> compressed_bytes;
 	compress_wad(compressed_bytes, bytes, muffin, 8);
 	s64 begin = dest.tell();
-	dest.write(compressed_bytes.data(), compressed_bytes.size());
+	dest.write_n(compressed_bytes.data(), compressed_bytes.size());
 	s64 end = dest.tell();
 	return Range::from_bytes(begin, end - begin);
 }

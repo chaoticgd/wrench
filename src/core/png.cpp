@@ -143,7 +143,7 @@ static void read_callback(png_structp png_ptr, png_bytep dest, size_t size) {
 	png_voidp io_ptr = png_get_io_ptr(png_ptr);
 	assert(io_ptr);
 	InputStream& src = *(InputStream*) io_ptr;
-	src.read(dest, size);
+	src.read_n(dest, size);
 }
 
 void write_png(OutputStream& dest, const Texture& texture) {
@@ -266,5 +266,5 @@ static void write_callback(png_structp png_ptr, png_bytep src, size_t size) {
 	png_voidp io_ptr = png_get_io_ptr(png_ptr);
 	assert(io_ptr);
 	OutputStream& dest = *(OutputStream*) io_ptr;
-	dest.write(src, size);
+	dest.write_n(src, size);
 }

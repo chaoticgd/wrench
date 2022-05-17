@@ -45,12 +45,12 @@ public:
 
 class InputStream : public Stream {
 public:
-	virtual bool read(u8* dest, s64 size) = 0;
+	virtual bool read_n(u8* dest, s64 size) = 0;
 	
 	template <typename T>
 	T read() {
 		T result;
-		read(reinterpret_cast<u8*>(&result), sizeof(T));
+		read_n(reinterpret_cast<u8*>(&result), sizeof(T));
 		return result;
 	}
 
@@ -63,18 +63,34 @@ public:
 	template <typename T>
 	std::vector<T> read_multiple(s64 count) {
 		std::vector<T> buffer(count);
-		read(reinterpret_cast<u8*>(buffer.data()), buffer.size() * sizeof(T));
+		read_n(reinterpret_cast<u8*>(buffer.data()), buffer.size() * sizeof(T));
+		return buffer;
+	}
+	
+	template <typename T>
+	std::vector<T> read_multiple(s64 offset, s64 count) {
+		seek(offset);
+		std::vector<T> buffer(count);
+		read_n(reinterpret_cast<u8*>(buffer.data()), buffer.size() * sizeof(T));
+		return buffer;
+	}
+	
+	template <typename T>
+	std::vector<T> read_multiple(ArrayRange range) {
+		seek(range.offset);
+		std::vector<T> buffer(range.count);
+		read_n(reinterpret_cast<u8*>(buffer.data()), buffer.size() * sizeof(T));
 		return buffer;
 	}
 };
 
 class OutputStream : public Stream {
 public:
-	virtual bool write(const u8* src, s64 size) = 0;
+	virtual bool write_n(const u8* src, s64 size) = 0;
 
 	template <typename T>
 	void write(const T& value) {
-		write(reinterpret_cast<const u8*>(&value), sizeof(T));
+		write_n(reinterpret_cast<const u8*>(&value), sizeof(T));
 	}
 
 	template <typename T>
@@ -87,7 +103,7 @@ public:
 	
 	template <typename T>
 	void write_v(const std::vector<T>& buffer) {
-		write(reinterpret_cast<const u8*>(buffer.data()), buffer.size() * sizeof(T));
+		write_n(reinterpret_cast<const u8*>(buffer.data()), buffer.size() * sizeof(T));
 	}
 	
 	void pad(s64 alignment, u8 padding);
@@ -101,7 +117,7 @@ public:
 	s64 tell() const override;
 	s64 size() const override;
 	
-	bool write(const u8* src, s64 size) override;
+	bool write_n(const u8* src, s64 size) override;
 	
 private:
 	s64 ofs = 0;
@@ -117,7 +133,7 @@ public:
 	s64 tell() const override;
 	s64 size() const override;
 	
-	bool read(u8*, s64 size) override;
+	bool read_n(u8*, s64 size) override;
 	
 private:
 	const u8* begin;
@@ -133,7 +149,7 @@ public:
 	s64 tell() const override;
 	s64 size() const override;
 	
-	bool write(const u8* src, s64 size) override;
+	bool write_n(const u8* src, s64 size) override;
 	
 private:
 	std::vector<u8>& backing;
@@ -151,7 +167,7 @@ public:
 	s64 tell() const override;
 	s64 size() const override;
 	
-	bool read(u8* dest, s64 size) override;
+	bool read_n(u8* dest, s64 size) override;
 
 	FILE* file = nullptr;
 };
@@ -167,7 +183,7 @@ public:
 	s64 tell() const override;
 	s64 size() const override;
 	
-	bool write(const u8* src, s64 size) override;
+	bool write_n(const u8* src, s64 size) override;
 	
 	FILE* file = nullptr;
 };
@@ -181,7 +197,7 @@ public:
 	s64 tell() const override;
 	s64 size() const override;
 	
-	bool read(u8* dest, s64 size) override;
+	bool read_n(u8* dest, s64 size) override;
 	
 	s64 offset_relative_to(InputStream* outer) const;
 
@@ -198,7 +214,7 @@ public:
 	s64 tell() const override;
 	s64 size() const override;
 	
-	bool write(const u8* src, s64 size) override;
+	bool write_n(const u8* src, s64 size) override;
 	
 private:
 	OutputStream& stream;

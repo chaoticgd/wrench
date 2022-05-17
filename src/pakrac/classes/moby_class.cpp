@@ -46,11 +46,11 @@ static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, Game game)
 	std::vector<u8> xml = write_collada(scene);
 	FileReference ref = dest.file().write_text_file("mesh.dae", (char*) xml.data());
 	
-	MeshAsset& mesh = dest.mesh<MeshAsset>();
+	MeshAsset& mesh = dest.mesh();
 	mesh.set_src(ref);
 	mesh.set_node("high_lod");
 	
-	MeshAsset& low_lod_mesh = dest.low_lod_mesh<MeshAsset>();
+	MeshAsset& low_lod_mesh = dest.low_lod_mesh();
 	low_lod_mesh.set_src(ref);
 	low_lod_mesh.set_node("low_lod");
 }
@@ -122,7 +122,7 @@ static void pack_moby_class(OutputStream& dest, MobyClassAsset& src, Game game) 
 	
 	std::vector<u8> dest_bytes;
 	write_moby_class(dest_bytes, moby, game);
-	dest.write(dest_bytes.data(), dest_bytes.size());
+	dest.write_n(dest_bytes.data(), dest_bytes.size());
 }
 
 static bool test_moby_class(std::vector<u8>& original, std::vector<u8>& repacked, Game game, AssetFormatHint hint) {

@@ -53,7 +53,7 @@ void pack_iso(OutputStream& iso, BuildAsset& build, Game game, AssetPackerFunc p
 	iso.pad(SECTOR_SIZE, 0);
 	static const u8 null_sector[SECTOR_SIZE] = {0};
 	while(iso.tell() < SYSTEM_CNF_LBA * SECTOR_SIZE) {
-		iso.write(null_sector, SECTOR_SIZE);
+		iso.write_n(null_sector, SECTOR_SIZE);
 	}
 	
 	// SYSTEM.CNF must be written out at sector 1000 (the game hardcodes this).
@@ -79,7 +79,7 @@ void pack_iso(OutputStream& iso, BuildAsset& build, Game game, AssetPackerFunc p
 	iso.pad(SECTOR_SIZE, 0);
 	assert(iso.tell() == RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
 	while(iso.tell() < RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE + toc_size.bytes()) {
-		iso.write(null_sector, SECTOR_SIZE);
+		iso.write_n(null_sector, SECTOR_SIZE);
 	}
 	
 	s64 files_begin = iso.tell();

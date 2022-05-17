@@ -127,13 +127,13 @@ MobyClassData read_moby_class(Buffer src, Game game) {
 		}
 	}
 	if(header.rac3dl_team_textures != 0 && (game == Game::RAC3 || game == Game::DL)) {
-		verify(header.gif_usage != 0, "Moby with team palettes but no gif table.");
+		//verify(header.gif_usage != 0, "Moby with team palettes but no gif table.");
 		moby.palettes_per_texture = header.rac3dl_team_textures & 0xf;
 		s32 texture_count = (header.rac3dl_team_textures & 0xf0) >> 4;
 		for(s32 i = moby.palettes_per_texture * texture_count; i > 0; i--) {
-			std::array<u32, 256>& dest = moby.team_palettes.emplace_back();
-			auto palette = src.read_multiple<u8>(header.gif_usage - i * 1024, 1024, "team palette");
-			memcpy(dest.data(), palette.lo, 1024);
+			//std::array<u32, 256>& dest = moby.team_palettes.emplace_back();
+			//auto palette = src.read_multiple<u8>(header.gif_usage - i * 1024, 1024, "team palette");
+			//memcpy(dest.data(), palette.lo, 1024);
 		}
 	}
 	return moby;

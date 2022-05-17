@@ -291,18 +291,39 @@ AssetType LevelDataWad {
 	wad: true
 	level_wad: true
 	
+	Child core                { allowed_types: ['LevelCore'] }
 	Child moby8355_pvars      { allowed_types: ['Binary'] }
 	Child code                { allowed_types: ['Binary'] }
-	Child core_sound_bank     { allowed_types: ['Binary'] }
-	Child asset_header        { allowed_types: ['Binary'] }
-	Child gs_ram              { allowed_types: ['Binary'] }
+	Child sound_bank          { allowed_types: ['Binary'] }
 	Child hud_header          { allowed_types: ['Binary'] }
 	Child hud_banks           { allowed_types: ['Collection'] }
-	Child assets              { allowed_types: ['Binary'] }
 	Child transition_textures { allowed_types: ['Binary'] }
 	Child art_instances       { allowed_types: ['Binary'] }
-	Child gameplay_core       { allowed_types: ['Binary'] }
+	Child gameplay            { allowed_types: ['Binary'] }
 	Child global_nav_data     { allowed_types: ['Binary'] }
+}
+
+AssetType LevelCore {
+	Child tfrags { allowed_types: ['Binary'] }
+	Child tfrag_textures { allowed_types: ['Collection'] }
+	Child occlusion { allowed_types: ['Binary'] }
+	Child sky { allowed_types: ['Binary'] }
+	Child collision { allowed_types: ['Binary'] }
+	Child moby_classes { allowed_types: ['Collection'] }
+	Child tie_classes { allowed_types: ['Collection'] }
+	Child shrub_classes { allowed_types: ['Collection'] }
+	Child part_bank { allowed_types: ['Binary'] }
+	Child fx_bank { allowed_types: ['Binary'] }
+	Child part_defs { allowed_types: ['Binary'] }
+	Child sound_remap { allowed_types: ['Binary'] }
+	Child ratchet_seqs {
+		allowed_types: ['Collection']
+		games: [1 2 3]
+	}
+	Child light_cuboids {
+		allowed_types: ['Collection']
+		games: [4]
+	}
 }
 
 AssetType Chunk {
@@ -355,8 +376,12 @@ AssetType Scene {
 AssetType MobyClass {
 	bin_leaf: true
 	
-	Child mesh { allowed_types: ['Mesh' 'Binary'] }
-	Child low_lod_mesh { allowed_types: ['Mesh' 'Binary'] }
+	BooleanAttribute has_moby_table_entry {}
+	
+	Child binary { allowed_types: ['Binary'] }
+	
+	Child mesh { allowed_types: ['Mesh'] }
+	Child low_lod_mesh { allowed_types: ['Mesh'] }
 	
 	Child materials { allowed_types: ['Collection'] }
 }
@@ -375,6 +400,20 @@ AssetType Material {
 	}
 	
 	Child texture { allowed_types: ['Texture'] }
+}
+
+AssetType TieClass {
+	bin_leaf: true
+	
+	Child binary { allowed_types: ['Binary'] }
+	Child textures { allowed_types: ['Collection'] }
+}
+
+AssetType ShrubClass {
+	bin_leaf: true
+	
+	Child binary { allowed_types: ['Binary'] }
+	Child textures { allowed_types: ['Collection'] }
 }
 
 // *****************************************************************************

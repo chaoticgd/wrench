@@ -30,12 +30,14 @@ on_load(Unpacker, []() {
 })
 
 void unpack_asset_impl(Asset& dest, InputStream& src, Game game, AssetFormatHint hint) {
+	if(dest.is_wad && ((!dest.is_level_wad && g_asset_unpacker.skip_globals) || (dest.is_level_wad && g_asset_unpacker.skip_levels))) {
+		return;
+	}
+	
 	if(g_asset_unpacker.dump_wads && dest.is_wad) {
-		if((!dest.is_level_wad && g_asset_unpacker.dump_global_wads) || (dest.is_level_wad && g_asset_unpacker.dump_level_wads)) {
-			const char* type = asset_type_to_string(dest.type());
-			BinaryAsset& bin = dest.parent()->transmute_child<BinaryAsset>(dest.tag().c_str());
-			unpack_asset_impl(bin, src, game, FMT_BINARY_WAD);
-		}
+		const char* type = asset_type_to_string(dest.type());
+		BinaryAsset& bin = dest.parent()->transmute_child<BinaryAsset>(dest.tag().c_str());
+		unpack_asset_impl(bin, src, game, FMT_BINARY_WAD);
 		return;
 	}
 	

@@ -52,6 +52,7 @@ public:
 	void to_8bit_paletted();
 	void to_4bit_paletted();
 	
+	void swizzle();
 	void swizzle_palette();
 	
 	void multiply_alphas(); // Maps [0,0x80] to [0,0xff].

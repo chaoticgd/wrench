@@ -192,14 +192,14 @@ void write_iso_filesystem(OutputStream& dest, IsoDirectory* root_dir) {
 	
 	dest.pad(SECTOR_SIZE, 0);
 	static const u8 volume_desc_set_terminator[] = {0xff, 'C', 'D', '0', '0', '1', 0x01};
-	dest.write(volume_desc_set_terminator, sizeof(volume_desc_set_terminator));
+	dest.write_n(volume_desc_set_terminator, sizeof(volume_desc_set_terminator));
 	
 	// It seems like the path table is always expected to be at this LBA even if
 	// we write a different one into the PVD. Maybe it's hardcoded?
 	dest.pad(SECTOR_SIZE, 0);
 	static const u8 zeroed_sector[SECTOR_SIZE] = {0};
 	while(dest.tell() < 0x101 * SECTOR_SIZE) {
-		dest.write(zeroed_sector, sizeof(zeroed_sector));
+		dest.write_n(zeroed_sector, sizeof(zeroed_sector));
 	}
 	
 	// Get a linear list of all the directories. This also sets the parent
@@ -273,7 +273,7 @@ void write_iso_filesystem(OutputStream& dest, IsoDirectory* root_dir) {
 		root_pte.lba = dir->lba.sectors;
 		root_pte.parent = dir->parent_index;
 		dest.write(root_pte);
-		dest.write((u8*) dir->name.data(), dir->name.size());
+		dest.write_n((u8*) dir->name.data(), dir->name.size());
 		if(root_pte.identifier_length % 2 == 1) {
 			dest.write<u8>(0); // pad
 		}
@@ -299,7 +299,7 @@ void write_iso_filesystem(OutputStream& dest, IsoDirectory* root_dir) {
 		root_pte.lba = byte_swap_32(dir->lba.sectors);
 		root_pte.parent = dir->parent_index;
 		dest.write(root_pte);
-		dest.write((u8*) dir->name.data(), dir->name.size());
+		dest.write_n((u8*) dir->name.data(), dir->name.size());
 		if(root_pte.identifier_length % 2 == 1) {
 			dest.write<u8>(0); // pad
 		}
@@ -372,7 +372,7 @@ static void write_directory_record(OutputStream& dest, const IsoFileRecord& file
 		dest.pad(SECTOR_SIZE, 0);
 	}
 	dest.write(record);
-	dest.write((u8*) file.name.data(), file.name.size());
+	dest.write_n((u8*) file.name.data(), file.name.size());
 	if(file.name.size() % 2 == 0) {
 		dest.write<u8>(0);
 	}
