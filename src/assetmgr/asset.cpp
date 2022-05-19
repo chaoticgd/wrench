@@ -140,7 +140,7 @@ bool Asset::remove_physical_child(Asset& asset) {
 
 Asset& Asset::asset_file(const fs::path& path) {
 	AssetReference ref = reference();
-	Asset* asset = &bank().asset_file(file()._relative_directory/path).root();
+	Asset* asset = &bank().asset_file(path.is_absolute() ? path.relative_path() : file()._relative_directory/path).root();
 	for(AssetReferenceFragment& fragment : ref.fragments) {
 		asset = &asset->physical_child(fragment.type, fragment.tag.c_str());
 	}
@@ -389,16 +389,16 @@ bool AssetBank::is_writeable() const {
 	return _is_writeable;
 }
 
-AssetFile& AssetBank::asset_file(fs::path relative_path) {
-	relative_path.replace_extension("asset");
-	fs::path relative_directory = relative_path.parent_path();
-	fs::path file_name = relative_path.filename();
+AssetFile& AssetBank::asset_file(fs::path path) {
+	path.replace_extension("asset");
+	fs::path relative_directory = path.parent_path();
+	fs::path file_name = path.filename();
 	for(std::unique_ptr<AssetFile>& file : _asset_files) {
 		if(file->_relative_directory == relative_directory && file->_file_name == file_name) {
 			return *file.get();
 		}
 	}
-	return *_asset_files.emplace_back(std::make_unique<AssetFile>(_forest, *this, relative_path)).get();
+	return *_asset_files.emplace_back(std::make_unique<AssetFile>(_forest, *this, path)).get();
 }
 
 void AssetBank::write() {

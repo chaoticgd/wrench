@@ -77,7 +77,7 @@ public:
 	void for_each_logical_child(Callback callback) {
 		for(Asset* asset = &lowest_precedence(); asset != nullptr; asset = asset->higher_precedence()) {
 			for(const std::unique_ptr<Asset>& child : asset->_children) {
-				if(child->lower_precedence() == nullptr) {
+				if(child->higher_precedence() == nullptr) {
 					callback(child->resolve_references());
 				}
 			}
@@ -88,7 +88,7 @@ public:
 	void for_each_logical_child_of_type(Callback callback) {
 		for(Asset* asset = &lowest_precedence(); asset != nullptr; asset = asset->higher_precedence()) {
 			for(const std::unique_ptr<Asset>& child : asset->_children) {
-				if(child->lower_precedence() == nullptr) {
+				if(child->higher_precedence() == nullptr) {
 					Asset& child_2 = child->resolve_references();
 					if(child_2.type() == ChildType::ASSET_TYPE) {
 						callback(static_cast<ChildType&>(child_2));
@@ -219,7 +219,7 @@ public:
 	const char* name() const;
 	bool is_writeable() const;
 	
-	AssetFile& asset_file(fs::path relative_path);
+	AssetFile& asset_file(fs::path path);
 	
 	void write();
 	

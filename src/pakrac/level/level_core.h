@@ -104,6 +104,8 @@ packed_struct(ThingEntry,
 )
 
 void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_range, ByteRange data_range, ByteRange gs_ram_range, Game game);
-void pack_level_core(std::vector<u8>& index, std::vector<u8>& compressed_data, std::vector<u8>& gs_ram, LevelCoreAsset& src, Game game);
+void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, std::vector<u8>& gs_ram_dest, LevelCoreAsset& src, Game game);
+BuildAsset& build_or_root_from_level_core_asset(LevelCoreAsset& core);
+ByteRange level_core_block_range(s32 ofs, const std::vector<s64>& block_bounds);
 
 #endif

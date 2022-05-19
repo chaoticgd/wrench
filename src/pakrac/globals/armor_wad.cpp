@@ -116,16 +116,7 @@ static void unpack_armors(CollectionAsset& dest, InputStream& src, ArmorHeader* 
 		if(headers[i].mesh.size.sectors > 0) {
 			Asset& armor_file = dest.switch_files(stringf("armors/%02d/armor%02d.asset", i, i));
 			MobyClassAsset& moby = armor_file.child<MobyClassAsset>(std::to_string(i).c_str());
-			if(g_asset_unpacker.dump_binaries) {
-				BinaryAsset& bin = moby.binary();
-				bin.set_asset_type("MobyClass");
-				bin.set_format_hint(0);
-				bin.set_game((s32) game);
-				unpack_asset(bin, src, headers[i].mesh, game);
-			} else {
-				unpack_asset(moby.binary(), src, headers[i].mesh, game);
-				//unpack_asset(moby, src, headers[i].mesh, game);
-			}
+			unpack_asset(moby.core<BinaryAsset>(), src, headers[i].mesh, game);
 			unpack_asset(moby.materials(), src, headers[i].textures, game, FMT_COLLECTION_PIF8);
 		}
 	}
@@ -135,7 +126,7 @@ static void pack_armors(OutputStream& dest, ArmorHeader* headers, s32 count, Col
 	for(size_t i = 0; i < count; i++) {
 		if(src.has_child(i)) {
 			MobyClassAsset& moby = src.get_child(i).as<MobyClassAsset>();
-			headers[i].mesh = pack_asset_sa<SectorRange>(dest, moby.get_binary(), game);
+			headers[i].mesh = pack_asset_sa<SectorRange>(dest, moby.get_core(), game);
 			headers[i].textures = pack_asset_sa<SectorRange>(dest, moby.get_materials(), game, FMT_COLLECTION_PIF8);
 		}
 	}

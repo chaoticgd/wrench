@@ -106,7 +106,28 @@ public:
 		write_n(reinterpret_cast<const u8*>(buffer.data()), buffer.size() * sizeof(T));
 	}
 	
+	template <typename T>
+	s64 alloc() {
+		static_assert(sizeof(T) <= sizeof(zeroes));
+		s64 ofs = tell();
+		write_n(zeroes, sizeof(T));
+		return ofs;
+	}
+	
+	template <typename T>
+	s64 alloc_multiple(s64 count) {
+		static_assert(sizeof(T) <= sizeof(zeroes));
+		s64 ofs = tell();
+		for(s64 i = 0; i < count; i++) {
+			write_n(zeroes, sizeof(T));
+		}
+		return ofs;
+	}
+	
 	void pad(s64 alignment, u8 padding);
+
+private:
+	static const constexpr u8 zeroes[4096] = {0};
 };
 
 class BlackHoleOutputStream : public OutputStream {

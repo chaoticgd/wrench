@@ -68,8 +68,16 @@ AssetType Build {
 	Child online   { allowed_types: ['OnlineWad' 'Binary'] }
 	Child scene    { allowed_types: ['SceneWad' 'Binary'] }
 	Child space    { allowed_types: ['SpaceWad' 'Binary'] }
+	
 	Child levels   { allowed_types: ['Collection'] }
 	Child files    { allowed_types: ['Collection'] }
+	
+	Child moby_classes { allowed_types: ['Collection'] }
+	Child tie_classes { allowed_types: ['Collection'] }
+	Child shrub_classes { allowed_types: ['Collection'] }
+	
+	Child particle_textures { allowed_types: ['Collection'] }
+	Child fx_textures { allowed_types: ['Collection'] }
 }
 
 AssetType PrimaryVolumeDescriptor {
@@ -312,9 +320,10 @@ AssetType LevelCore {
 	Child moby_classes { allowed_types: ['Collection'] }
 	Child tie_classes { allowed_types: ['Collection'] }
 	Child shrub_classes { allowed_types: ['Collection'] }
-	Child part_bank { allowed_types: ['Binary'] }
-	Child fx_bank { allowed_types: ['Binary'] }
+	Child particle_textures { allowed_types: ['Collection'] }
 	Child part_defs { allowed_types: ['Binary'] }
+	Child common_fx_textures { allowed_types: ['Collection'] }
+	Child local_fx_textures { allowed_types: ['Collection'] }
 	Child sound_remap { allowed_types: ['Binary'] }
 	Child ratchet_seqs {
 		allowed_types: ['Collection']
@@ -374,16 +383,18 @@ AssetType Scene {
 // *****************************************************************************
 
 AssetType MobyClass {
-	bin_leaf: true
-	
+	IntegerAttribute id {}
 	BooleanAttribute has_moby_table_entry {}
 	
-	Child binary { allowed_types: ['Binary'] }
+	Child core { allowed_types: ['MobyClassCore' 'Binary'] }
+	Child materials { allowed_types: ['Collection'] }
+}
+
+AssetType MobyClassCore {
+	bin_leaf: true
 	
 	Child mesh { allowed_types: ['Mesh'] }
 	Child low_lod_mesh { allowed_types: ['Mesh'] }
-	
-	Child materials { allowed_types: ['Collection'] }
 }
 
 AssetType Material {
@@ -405,14 +416,18 @@ AssetType Material {
 AssetType TieClass {
 	bin_leaf: true
 	
-	Child binary { allowed_types: ['Binary'] }
+	IntegerAttribute id {}
+	
+	Child core { allowed_types: ['Binary'] }
 	Child textures { allowed_types: ['Collection'] }
 }
 
 AssetType ShrubClass {
 	bin_leaf: true
 	
-	Child binary { allowed_types: ['Binary'] }
+	IntegerAttribute id {}
+	
+	Child core { allowed_types: ['Binary'] }
 	Child textures { allowed_types: ['Collection'] }
 }
 

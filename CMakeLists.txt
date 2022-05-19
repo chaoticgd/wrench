@@ -112,7 +112,6 @@ add_library(wrenchengine
 	src/engine/moby_mesh_exporter.cpp
 	src/engine/moby_mesh_importer.cpp
 	src/engine/moby_animation.cpp
-	src/engine/texture.cpp
 )
 target_link_libraries(wrenchengine wrenchcore)
 
@@ -140,6 +139,8 @@ add_executable(pakrac
 	src/pakrac/level/level_wad.cpp
 	src/pakrac/level/level_data_wad.cpp
 	src/pakrac/level/level_core.cpp
+	src/pakrac/level/level_classes.cpp
+	src/pakrac/level/level_textures.cpp
 	src/pakrac/level/level_audio_wad.cpp
 	src/pakrac/level/level_scene_wad.cpp
 )

@@ -20,25 +20,26 @@
 #include <pakrac/asset_packer.h>
 #include <engine/moby.h>
 
-static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, Game game);
-static void pack_moby_class(OutputStream& dest, MobyClassAsset& src, Game game);
-static bool test_moby_class(std::vector<u8>& original, std::vector<u8>& repacked, Game game, AssetFormatHint hint);
+static void unpack_moby_class_core(MobyClassCoreAsset& dest, InputStream& src, Game game);
+static void pack_moby_class_core(OutputStream& dest, MobyClassCoreAsset& src, Game game);
+static std::vector<ColladaScene*> read_collada_files(std::vector<std::unique_ptr<ColladaScene>>& owners, std::vector<FileReference> refs);
+static bool test_moby_class_core(std::vector<u8>& original, std::vector<u8>& repacked, Game game, AssetFormatHint hint);
 
 on_load(MobyClass, []() {
-	MobyClassAsset::funcs.unpack_rac1 = wrap_unpacker_func<MobyClassAsset>(unpack_moby_class);
-	MobyClassAsset::funcs.unpack_rac2 = wrap_unpacker_func<MobyClassAsset>(unpack_moby_class);
-	MobyClassAsset::funcs.unpack_rac3 = wrap_unpacker_func<MobyClassAsset>(unpack_moby_class);
-	MobyClassAsset::funcs.unpack_dl = wrap_unpacker_func<MobyClassAsset>(unpack_moby_class);
+	MobyClassCoreAsset::funcs.unpack_rac1 = wrap_unpacker_func<MobyClassCoreAsset>(unpack_moby_class_core);
+	MobyClassCoreAsset::funcs.unpack_rac2 = wrap_unpacker_func<MobyClassCoreAsset>(unpack_moby_class_core);
+	MobyClassCoreAsset::funcs.unpack_rac3 = wrap_unpacker_func<MobyClassCoreAsset>(unpack_moby_class_core);
+	MobyClassCoreAsset::funcs.unpack_dl = wrap_unpacker_func<MobyClassCoreAsset>(unpack_moby_class_core);
 	
-	MobyClassAsset::funcs.pack_rac1 = wrap_packer_func<MobyClassAsset>(pack_moby_class);
-	MobyClassAsset::funcs.pack_rac2 = wrap_packer_func<MobyClassAsset>(pack_moby_class);
-	MobyClassAsset::funcs.pack_rac3 = wrap_packer_func<MobyClassAsset>(pack_moby_class);
-	MobyClassAsset::funcs.pack_dl = wrap_packer_func<MobyClassAsset>(pack_moby_class);
+	MobyClassCoreAsset::funcs.pack_rac1 = wrap_packer_func<MobyClassCoreAsset>(pack_moby_class_core);
+	MobyClassCoreAsset::funcs.pack_rac2 = wrap_packer_func<MobyClassCoreAsset>(pack_moby_class_core);
+	MobyClassCoreAsset::funcs.pack_rac3 = wrap_packer_func<MobyClassCoreAsset>(pack_moby_class_core);
+	MobyClassCoreAsset::funcs.pack_dl = wrap_packer_func<MobyClassCoreAsset>(pack_moby_class_core);
 	
-	MobyClassAsset::funcs.test = new AssetTestFunc(test_moby_class);
+	MobyClassCoreAsset::funcs.test = new AssetTestFunc(test_moby_class_core);
 })
 
-static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, Game game) {
+static void unpack_moby_class_core(MobyClassCoreAsset& dest, InputStream& src, Game game) {
 	src.seek(0);
 	std::vector<u8> buffer = src.read_multiple<u8>(src.size());
 	MobyClassData data = read_moby_class(buffer, game);
@@ -55,32 +56,9 @@ static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, Game game)
 	low_lod_mesh.set_node("low_lod");
 }
 
-static std::vector<ColladaScene*> read_collada_files(std::vector<std::unique_ptr<ColladaScene>>& owners, std::vector<FileReference> refs) {
-	std::vector<ColladaScene*> scenes;
-	for(size_t i = 0; i < refs.size(); i++) {
-		bool unique = true;
-		size_t j;
-		for(j = 0; j < refs.size(); j++) {
-			if(i != j && i > j) {
-				unique = false;
-				break;
-			}
-		}
-		if(unique) {
-			std::string xml = refs[i].owner->read_text_file(refs[i].path);
-			std::vector<u8> copy(xml.begin(), xml.end());
-			std::unique_ptr<ColladaScene>& owner = owners.emplace_back(std::make_unique<ColladaScene>(read_collada(std::move(copy))));
-			scenes.emplace_back(owner.get());
-		} else {
-			scenes.emplace_back(scenes[j]);
-		}
-	}
-	return scenes;
-}
-
-static void pack_moby_class(OutputStream& dest, MobyClassAsset& src, Game game) {
-	MeshAsset& mesh_asset = src.get_mesh().as<MeshAsset>();
-	MeshAsset& low_lod_mesh_asset = src.get_low_lod_mesh().as<MeshAsset>();
+static void pack_moby_class_core(OutputStream& dest, MobyClassCoreAsset& src, Game game) {
+	MeshAsset& mesh_asset = src.get_mesh();
+	MeshAsset& low_lod_mesh_asset = src.get_low_lod_mesh();
 	
 	std::vector<std::unique_ptr<ColladaScene>> owners;
 	std::vector<ColladaScene*> scenes = read_collada_files(owners, {mesh_asset.src(), low_lod_mesh_asset.src()});
@@ -125,6 +103,29 @@ static void pack_moby_class(OutputStream& dest, MobyClassAsset& src, Game game) 
 	dest.write_n(dest_bytes.data(), dest_bytes.size());
 }
 
-static bool test_moby_class(std::vector<u8>& original, std::vector<u8>& repacked, Game game, AssetFormatHint hint) {
+static std::vector<ColladaScene*> read_collada_files(std::vector<std::unique_ptr<ColladaScene>>& owners, std::vector<FileReference> refs) {
+	std::vector<ColladaScene*> scenes;
+	for(size_t i = 0; i < refs.size(); i++) {
+		bool unique = true;
+		size_t j;
+		for(j = 0; j < refs.size(); j++) {
+			if(i != j && i > j) {
+				unique = false;
+				break;
+			}
+		}
+		if(unique) {
+			std::string xml = refs[i].owner->read_text_file(refs[i].path);
+			std::vector<u8> copy(xml.begin(), xml.end());
+			std::unique_ptr<ColladaScene>& owner = owners.emplace_back(std::make_unique<ColladaScene>(read_collada(std::move(copy))));
+			scenes.emplace_back(owner.get());
+		} else {
+			scenes.emplace_back(scenes[j]);
+		}
+	}
+	return scenes;
+}
+
+static bool test_moby_class_core(std::vector<u8>& original, std::vector<u8>& repacked, Game game, AssetFormatHint hint) {
 	return false;
 }

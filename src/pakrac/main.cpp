@@ -188,12 +188,12 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 static void unpack(const fs::path& input_path, const fs::path& output_path) {
 	AssetForest forest;
 	
-	AssetBank& pack = forest.mount<LooseAssetBank>("unpacked", output_path, true);
+	AssetBank& bank = forest.mount<LooseAssetBank>("unpacked", output_path, true);
 	
 	if(g_asset_unpacker.dump_binaries) {
-		pack.game_info.type = AssetBankType::TEST;
+		bank.game_info.type = AssetBankType::TEST;
 	} else {
-		pack.game_info.type = AssetBankType::UNPACKED;
+		bank.game_info.type = AssetBankType::UNPACKED;
 	}
 	
 	FileInputStream stream;
@@ -205,8 +205,8 @@ static void unpack(const fs::path& input_path, const fs::path& output_path) {
 		std::vector<char> identifier = stream.read_multiple<char>(5);
 		
 		if(memcmp(identifier.data(), "CD001", 5) == 0) {
-			BuildAsset& build = pack.asset_file("build.asset").root().child<BuildAsset>("base_game");
-			pack.game_info.builds = {build.reference()};
+			BuildAsset& build = bank.asset_file("build.asset").root().child<BuildAsset>("base_game");
+			bank.game_info.builds = {build.reference()};
 			
 			g_asset_unpacker.input_file = &stream;
 			g_asset_unpacker.current_file_offset = 0;
@@ -216,7 +216,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path) {
 			
 			printf("[100%%] Done!\n");
 			
-			pack.write();
+			bank.write();
 			return;
 		}
 	}
@@ -229,23 +229,26 @@ static void unpack(const fs::path& input_path, const fs::path& output_path) {
 		auto [game, type, name] = identify_wad(header);
 		
 		if(type != WadType::UNKNOWN) {
-			Asset& root = pack.asset_file("wad.asset").root();
+			Asset& root = bank.asset_file("wad.asset").root();
+			
+			BuildAsset& build = root.child<BuildAsset>("build");
+			bank.game_info.builds = {build.reference()};
 			
 			Asset* wad = nullptr;
 			switch(type) {
-				case WadType::ARMOR: wad = &root.child<ArmorWadAsset>("wad"); break;
-				case WadType::AUDIO: wad = &root.child<AudioWadAsset>("wad"); break;
-				case WadType::BONUS: wad = &root.child<BonusWadAsset>("wad"); break;
-				case WadType::GADGET: wad = &root.child<GadgetWadAsset>("wad"); break;
-				case WadType::HUD: wad = &root.child<HudWadAsset>("wad"); break;
-				case WadType::MISC: wad = &root.child<MiscWadAsset>("wad"); break;
-				case WadType::MPEG: wad = &root.child<MpegWadAsset>("wad"); break;
-				case WadType::ONLINE: wad = &root.child<OnlineWadAsset>("wad"); break;
-				case WadType::SCENE: wad = &root.child<SceneWadAsset>("wad"); break;
-				case WadType::SPACE: wad = &root.child<SpaceWadAsset>("wad"); break;
-				case WadType::LEVEL: wad = &root.child<LevelWadAsset>("wad"); break;
-				case WadType::LEVEL_AUDIO: wad = &root.child<LevelAudioWadAsset>("wad"); break;
-				case WadType::LEVEL_SCENE: wad = &root.child<LevelSceneWadAsset>("wad"); break;
+				case WadType::ARMOR: wad = &build.armor<ArmorWadAsset>(); break;
+				case WadType::AUDIO: wad = &build.audio<AudioWadAsset>(); break;
+				case WadType::BONUS: wad = &build.bonus<BonusWadAsset>(); break;
+				case WadType::GADGET: wad = &build.gadget<GadgetWadAsset>(); break;
+				case WadType::HUD: wad = &build.hud<HudWadAsset>(); break;
+				case WadType::MISC: wad = &build.misc<MiscWadAsset>(); break;
+				case WadType::MPEG: wad = &build.mpeg<MpegWadAsset>(); break;
+				case WadType::ONLINE: wad = &build.online<OnlineWadAsset>(); break;
+				case WadType::SCENE: wad = &build.scene<SceneWadAsset>(); break;
+				case WadType::SPACE: wad = &build.space<SpaceWadAsset>(); break;
+				case WadType::LEVEL: wad = &build.levels().child<LevelAsset>("level").level<LevelWadAsset>(); break;
+				case WadType::LEVEL_AUDIO: wad = &build.levels().child<LevelAsset>("level").audio<LevelWadAsset>(); break;
+				case WadType::LEVEL_SCENE: wad = &build.levels().child<LevelAsset>("level").scene<LevelWadAsset>(); break;
 			}
 			
 			g_asset_unpacker.input_file = &stream;
@@ -256,7 +259,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path) {
 			
 			printf("[100%%] Done!\n");
 			
-			pack.write();
+			bank.write();
 			return;
 		}
 	}

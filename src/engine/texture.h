@@ -21,38 +21,6 @@
 
 #include <core/level.h>
 
-packed_struct(GsRamEntry,
-	s32 unknown_0; // Type?
-	s16 width;
-	s16 height;
-	s32 offset_1;
-	s32 offset_2; // Duplicate of offset_1?
-)
-
-packed_struct(TextureEntry,
-	/* 0x0 */ s32 data_offset;
-	/* 0x4 */ s16 width;
-	/* 0x6 */ s16 height;
-	/* 0x8 */ s16 unknown_8;
-	/* 0xa */ s16 palette;
-	/* 0xc */ s16 mipmap;
-	/* 0xe */ s16 pad = 0xffff;
-)
-
-packed_struct(ParticleTextureEntry,
-	/* 0x0 */ s32 palette;
-	/* 0x4 */ s32 unknown_4;
-	/* 0x8 */ s32 texture;
-	/* 0xc */ s32 side;
-)
-
-packed_struct(FXTextureEntry,
-	s32 palette;
-	s32 texture;
-	s32 width;
-	s32 height;
-)
-
 struct TextureDedupeRecord {
 	const Texture* texture;
 	s32 texture_out_edge = -1;

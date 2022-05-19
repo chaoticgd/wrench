@@ -319,6 +319,22 @@ void Texture::divide_alphas() {
 	}
 }
 
+bool Texture::operator<(const Texture& rhs) {
+	if(width != rhs.width) return width < rhs.width;
+	if(height != rhs.height) return height < rhs.height;
+	if(format != rhs.format) return format < rhs.format;
+	if(data != rhs.data) return data < rhs.data;
+	return _palette < rhs._palette;
+}
+
+bool Texture::operator==(const Texture& rhs) {
+	return width == rhs.width
+		&& height == rhs.height
+		&& format == rhs.format
+		&& data == rhs.data
+		&& _palette == rhs._palette;
+}
+
 static s32 map_pixel_index_rac4(s32 i, s32 width) {
 	s32 s = i / (width * 2);
 	s32 r = 0;

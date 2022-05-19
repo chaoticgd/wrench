@@ -21,8 +21,6 @@
 #include <md5.h>
 
 #include <engine/moby.h>
-#include <engine/texture.h>
-#include <engine/collision.h>
 #include <pakrac/asset_unpacker.h>
 #include <pakrac/asset_packer.h>
 

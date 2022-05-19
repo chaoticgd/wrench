@@ -58,6 +58,9 @@ public:
 	void multiply_alphas(); // Maps [0,0x80] to [0,0xff].
 	void divide_alphas(); // Maps [0,0xff] to [0,0x80].
 	
+	bool operator<(const Texture& rhs);
+	bool operator==(const Texture& rhs);
+	
 private:
 	std::vector<u32> _palette;
 };
