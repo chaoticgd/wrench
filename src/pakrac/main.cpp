@@ -188,7 +188,7 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 static void unpack(const fs::path& input_path, const fs::path& output_path) {
 	AssetForest forest;
 	
-	AssetBank& bank = forest.mount<LooseAssetBank>("unpacked", output_path, true);
+	AssetBank& bank = forest.mount<LooseAssetBank>(output_path, true);
 	
 	if(g_asset_unpacker.dump_binaries) {
 		bank.game_info.type = AssetBankType::TEST;
@@ -275,7 +275,7 @@ static void pack(const std::vector<fs::path>& input_paths, const std::string& as
 	AssetForest forest;
 	
 	for(const fs::path& input_path : input_paths) {
-		forest.mount<LooseAssetBank>("src", input_path, false);
+		forest.mount<LooseAssetBank>(input_path, false);
 	}
 	
 	Asset& wad = forest.lookup_asset(parse_asset_reference(asset.c_str()), nullptr);

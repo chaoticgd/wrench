@@ -18,8 +18,8 @@
 
 #include "packed_asset_bank.h"
 
-PackedAssetBank::PackedAssetBank(AssetForest& forest, std::string name, fs::path path_to_zip)
-	: AssetBank(forest, std::move(name), false)
+PackedAssetBank::PackedAssetBank(AssetForest& forest, fs::path path_to_zip)
+	: AssetBank(forest, false)
 	, _path_to_zip(path_to_zip) {}
 
 std::string PackedAssetBank::read_text_file(const fs::path& path) const {

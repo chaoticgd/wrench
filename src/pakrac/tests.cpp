@@ -36,7 +36,7 @@ void run_tests(fs::path input_path) {
 
 static void run_round_trip_asset_packing_tests(const fs::path& input_path, s32 min_percentage, s32 max_percentage) {
 	AssetForest forest;
-	AssetBank& bank = forest.mount<LooseAssetBank>("test", input_path, false);
+	AssetBank& bank = forest.mount<LooseAssetBank>(input_path, false);
 	Asset* root = bank.root();
 	verify(root, "Tried to run test on directory with no asset files!");
 	
@@ -90,7 +90,7 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 		
 		dispatch = &MobyClassAsset::funcs;
 	} else {
-		AssetBank& temp = forest.mount<MemoryAssetBank>("test");
+		AssetBank& temp = forest.mount<MemoryAssetBank>();
 		AssetFile& file = temp.asset_file("test.asset");
 		Asset& asset = file.root().physical_child(type, "test");
 		unpack_asset_impl(asset, src_stream, game, hint);

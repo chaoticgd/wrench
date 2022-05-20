@@ -366,9 +366,8 @@ void AssetFile::read() {
 
 // *****************************************************************************
 
-AssetBank::AssetBank(AssetForest& forest, std::string name, bool is_writeable)
+AssetBank::AssetBank(AssetForest& forest, bool is_writeable)
 	: _forest(forest)
-	, _name(std::move(name))
 	, _is_writeable(is_writeable) {}
 
 AssetBank::~AssetBank() {
@@ -379,10 +378,6 @@ AssetBank::~AssetBank() {
 
 std::string AssetBank::read_text_file(const FileReference& reference) const {
 	return read_text_file(reference.owner->_relative_directory/reference.path);
-}
-
-const char* AssetBank::name() const {
-	return _name.c_str();
 }
 
 bool AssetBank::is_writeable() const {
@@ -464,8 +459,8 @@ Asset& AssetForest::lookup_asset(const AssetReference& reference, Asset* context
 
 // *****************************************************************************
 
-LooseAssetBank::LooseAssetBank(AssetForest& forest, std::string name, fs::path directory, bool is_writeable)
-	: AssetBank(forest, std::move(name), is_writeable)
+LooseAssetBank::LooseAssetBank(AssetForest& forest, fs::path directory, bool is_writeable)
+	: AssetBank(forest, is_writeable)
 	, _directory(directory) {}
 
 std::unique_ptr<InputStream> LooseAssetBank::open_binary_file_for_reading(const fs::path& path, fs::file_time_type* modified_time_dest) const {
@@ -537,8 +532,8 @@ void LooseAssetBank::lock() {
 
 // *****************************************************************************
 
-MemoryAssetBank::MemoryAssetBank(AssetForest& forest, std::string name)
-	: AssetBank(forest, name, true) {}
+MemoryAssetBank::MemoryAssetBank(AssetForest& forest)
+	: AssetBank(forest, true) {}
 
 std::unique_ptr<InputStream> MemoryAssetBank::open_binary_file_for_reading(const fs::path& path, fs::file_time_type* modified_time_dest) const {
 	return std::make_unique<MemoryInputStream>(_files.at(path));

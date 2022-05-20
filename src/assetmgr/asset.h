@@ -216,7 +216,6 @@ class AssetBank {
 public:
 	virtual ~AssetBank();
 	
-	const char* name() const;
 	bool is_writeable() const;
 	
 	AssetFile& asset_file(fs::path path);
@@ -231,7 +230,7 @@ public:
 	GameInfo game_info;
 	
 protected:
-	AssetBank(AssetForest& forest, std::string name, bool is_writeable);
+	AssetBank(AssetForest& forest, bool is_writeable);
 	AssetBank(const AssetBank&) = delete;
 	AssetBank(AssetBank&&) = delete;
 	AssetBank& operator=(const AssetBank&) = delete;
@@ -259,7 +258,6 @@ private:
 	
 	AssetForest& _forest;
 	std::vector<std::unique_ptr<AssetFile>> _asset_files;
-	std::string _name;
 	bool _is_writeable;
 	AssetBank* _lower_precedence = nullptr;
 	AssetBank* _higher_precedence = nullptr;
@@ -301,7 +299,7 @@ private:
 
 class LooseAssetBank : public AssetBank {
 public:
-	LooseAssetBank(AssetForest& forest, std::string name, fs::path directory, bool is_writeable);
+	LooseAssetBank(AssetForest& forest, fs::path directory, bool is_writeable);
 	
 private:
 	std::unique_ptr<InputStream> open_binary_file_for_reading(const fs::path& path, fs::file_time_type* modified_time_dest) const override;
@@ -317,7 +315,7 @@ private:
 
 class MemoryAssetBank : public AssetBank {
 public:
-	MemoryAssetBank(AssetForest& forest, std::string name);
+	MemoryAssetBank(AssetForest& forest);
 	
 private:
 	std::unique_ptr<InputStream> open_binary_file_for_reading(const fs::path& path, fs::file_time_type* modified_time_dest) const override;
