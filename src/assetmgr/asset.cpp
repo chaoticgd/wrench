@@ -198,8 +198,8 @@ Asset& Asset::add_child(std::unique_ptr<Asset> child) {
 Asset& Asset::resolve_references() {
 	Asset* asset = &highest_precedence();
 	while(ReferenceAsset* reference = dynamic_cast<ReferenceAsset*>(asset)) {
-		asset = &forest().lookup_asset(parse_asset_reference(reference->asset().c_str()), asset);
-		verify(asset, "Failed to find asset '%s'.", reference->asset().c_str());
+		asset = &forest().lookup_asset(reference->asset(), asset);
+		verify(asset, "Failed to find asset '%s'.", asset_reference_to_string(reference->asset()).c_str());
 	}
 	return *asset;
 }

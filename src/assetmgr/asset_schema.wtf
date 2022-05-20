@@ -25,7 +25,7 @@ Metadata metadata {
 AssetType Root {}
 
 AssetType Reference {
-	StringAttribute asset {}
+	AssetReferenceAttribute asset {}
 }
 
 AssetType Collection {

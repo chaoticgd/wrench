@@ -373,7 +373,7 @@ void unpack_fx_textures(LevelCoreAsset& core, const std::vector<FxTextureEntry>&
 	CollectionAsset& common_fx_textures = build_or_root_from_level_core_asset(core).switch_files("/fx_textures/fx_textures.asset").fx_textures();
 	
 	ReferenceAsset& common_fx_ref = core.child<ReferenceAsset>("common_fx_textures");
-	common_fx_ref.set_asset(asset_reference_to_string(common_fx_textures.reference()));
+	common_fx_ref.set_asset(common_fx_textures.reference());
 	
 	std::vector<Texture> textures;
 	for(size_t i = 0; i < entries.size(); i++) {

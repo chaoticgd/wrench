@@ -81,15 +81,15 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 	
 	CollectionAsset& moby_classes = build.moby_classes();
 	unpack_moby_classes(moby_classes, header, index, data, gs_ram, block_bounds, game);
-	dest.child<ReferenceAsset>("moby_classes").set_asset(asset_reference_to_string(moby_classes.reference()));
+	dest.child<ReferenceAsset>("moby_classes").set_asset(moby_classes.reference());
 	
 	CollectionAsset& tie_classes = build.tie_classes();
 	unpack_tie_classes(tie_classes, header, index, data, gs_ram, block_bounds, game);
-	dest.child<ReferenceAsset>("tie_classes").set_asset(asset_reference_to_string(tie_classes.reference()));
+	dest.child<ReferenceAsset>("tie_classes").set_asset(tie_classes.reference());
 	
 	CollectionAsset& shrub_classes = build.shrub_classes();
 	unpack_shrub_classes(shrub_classes, header, index, data, gs_ram, block_bounds, game);
-	dest.child<ReferenceAsset>("shrub_classes").set_asset(asset_reference_to_string(shrub_classes.reference()));
+	dest.child<ReferenceAsset>("shrub_classes").set_asset(shrub_classes.reference());
 	
 	if(game != Game::DL && header.ratchet_seqs_rac123 != 0) {
 		CollectionAsset& ratchet_seqs = dest.ratchet_seqs();
