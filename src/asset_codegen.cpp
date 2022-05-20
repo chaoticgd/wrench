@@ -375,26 +375,22 @@ static void generate_attribute_getter_and_setter_functions(const WtfNode* asset_
 				} else {
 					out("%s %sAsset::%s(%s& def) {\n", cpp_type.c_str(), asset_type->tag, getter_name.c_str(), cpp_type.c_str());
 				}
-				out("\t%s dest_0;\n", cpp_type.c_str());
-				out("\tif(!_attribute_%s.has_value()) {\n", node->tag);
-				out("\t\tif(lower_precedence()) {\n");
-				if(getter_type == 0) {
-					out("\t\t\tdest_0 = static_cast<%sAsset*>(lower_precedence())->%s();\n", asset_type->tag, getter_name.c_str());
-				} else {
-					out("\t\t\tdest_0 = static_cast<%sAsset*>(lower_precedence())->%s(def);\n", asset_type->tag, getter_name.c_str());
-				}
-				out("\t\t} else {\n");
-				if(getter_type == 0) {
-					out("\t\tthrow MissingAssetAttribute();\n");
-				} else {
-					out("\t\treturn def;\n");
-				}
-				out("\t\t}\n");
-				out("\t} else {\n");
-				out("\t\tconst %s& src_0 = *_attribute_%s;\n\n", cpp_type.c_str(), node->tag);
+				out("\tfor(Asset* asset = &highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {\n");
+				out("\t\tif(asset->type() == ASSET_TYPE) {\n");
+				out("\t\t\t%s dest_0;\n", cpp_type.c_str());
+				out("\t\t\tconst auto& opt = static_cast<%sAsset&>(*asset)._attribute_%s;\n", asset_type->tag, node->tag);
+				out("\t\t\tif(opt.has_value()) {\n");
+				out("\t\t\t\tconst %s& src_0 = *opt;\n", cpp_type.c_str());
 				generate_attribute_getter_code(node, 0);
+				out("\t\t\t\treturn dest_0;\n");
+				out("\t\t\t}\n");
+				out("\t\t}\n");
 				out("\t}\n");
-				out("\treturn dest_0;\n");
+				if(getter_type == 0) {
+					out("\tthrow MissingAssetAttribute();\n");
+				} else {
+					out("\treturn def;\n");
+				}
 				out("}\n");
 				out("\n");
 			}
@@ -410,7 +406,7 @@ static void generate_attribute_getter_and_setter_functions(const WtfNode* asset_
 }
 
 static void generate_attribute_getter_code(const WtfNode* attribute, s32 depth) {
-	s32 ind = depth + 2;
+	s32 ind = depth + 4;
 	
 	if(strcmp(attribute->type_name, "IntegerAttribute") == 0) {
 		indent(ind); out("dest_%d = src_%d;\n", depth, depth);
@@ -430,7 +426,6 @@ static void generate_attribute_getter_code(const WtfNode* attribute, s32 depth) 
 		generate_attribute_getter_code(wtf_child(attribute, NULL, "element"), depth + 1);
 		indent(ind); out("\tdest_%d.emplace_back(std::move(dest_%d));\n", depth, depth + 1);
 		indent(ind); out("}\n");
-		
 	}
 	
 	if(strcmp(attribute->type_name, "FileReferenceAttribute") == 0) {
