@@ -206,14 +206,19 @@ static void unpack(const fs::path& input_path, const fs::path& output_path) {
 		
 		if(memcmp(identifier.data(), "CD001", 5) == 0) {
 			BuildAsset& build = bank.asset_file("build.asset").root().child<BuildAsset>("base_game");
-			bank.game_info.format_version = ASSET_FORMAT_VERSION;
-			bank.game_info.builds = {build.reference()};
 			
 			g_asset_unpacker.input_file = &stream;
 			g_asset_unpacker.current_file_offset = 0;
 			g_asset_unpacker.total_file_size = stream.size();
 			
 			unpack_asset_impl(build, stream, Game::UNKNOWN);
+			
+			if(build.game() == (s32) Game::RAC1) bank.game_info.name = "rac";
+			if(build.game() == (s32) Game::RAC2) bank.game_info.name = "gc";
+			if(build.game() == (s32) Game::RAC3) bank.game_info.name = "uya";
+			if(build.game() == (s32) Game::DL)   bank.game_info.name = "dl";
+			bank.game_info.format_version = ASSET_FORMAT_VERSION;
+			bank.game_info.builds = {build.reference()};
 			
 			printf("[100%%] Done!\n");
 			
@@ -233,8 +238,6 @@ static void unpack(const fs::path& input_path, const fs::path& output_path) {
 			Asset& root = bank.asset_file("wad.asset").root();
 			
 			BuildAsset& build = root.child<BuildAsset>("build");
-			bank.game_info.format_version = ASSET_FORMAT_VERSION;
-			bank.game_info.builds = {build.reference()};
 			
 			Asset* wad = nullptr;
 			switch(type) {
@@ -258,6 +261,9 @@ static void unpack(const fs::path& input_path, const fs::path& output_path) {
 			g_asset_unpacker.total_file_size = stream.size();
 			
 			unpack_asset_impl(*wad, stream, game);
+			
+			bank.game_info.format_version = ASSET_FORMAT_VERSION;
+			bank.game_info.builds = {build.reference()};
 			
 			printf("[100%%] Done!\n");
 			

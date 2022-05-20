@@ -145,6 +145,8 @@ public:
 	
 	bool weakly_equal(const Asset& rhs) const;
 	
+	void rename(std::string new_tag);
+	
 	virtual void for_each_attribute(AssetVisitorCallback callback) = 0;
 	virtual void for_each_attribute(ConstAssetVisitorCallback callback) const = 0;
 	virtual void read_attributes(const WtfNode* node) = 0;

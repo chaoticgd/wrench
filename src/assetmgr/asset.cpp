@@ -188,6 +188,17 @@ bool Asset::weakly_equal(const Asset& rhs) const {
 	return false;
 }
 
+void Asset::rename(std::string new_tag) {
+	assert(parent());
+	assert(_children.size() == 0); // TODO: Do something *fancy* with the precedence pointers to handle this case.
+	disconnect_precedence_pointers();
+	parent()->for_each_logical_child([&](Asset& asset) {
+		verify(asset.tag() != new_tag || &asset == this, "Asset with new tag already exists.");
+	});
+	_tag = std::move(new_tag);
+	connect_precedence_pointers();
+}
+
 Asset& Asset::add_child(std::unique_ptr<Asset> child) {
 	assert(child.get());
 	Asset& asset = *_children.emplace_back(std::move(child)).get();
