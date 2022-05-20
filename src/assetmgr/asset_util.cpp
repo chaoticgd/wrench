@@ -69,6 +69,16 @@ GameInfo read_game_info(char* input) {
 	
 	GameInfo info;
 	
+	const WtfAttribute* name = wtf_attribute(root, "name");
+	if(name && name->type == WTF_STRING) {
+		info.name = name->string;
+	}
+	
+	const WtfAttribute* format_version = wtf_attribute(root, "format_version");
+	if(format_version && format_version->type == WTF_NUMBER) {
+		info.format_version = format_version->number.i;
+	}
+	
 	const WtfAttribute* type = wtf_attribute(root, "type");
 	if(type && type->type == WTF_STRING) {
 		if(strcmp(type->string, "unpacked") == 0) {
@@ -91,20 +101,19 @@ GameInfo read_game_info(char* input) {
 		}
 	}
 	
-	const WtfAttribute* deps = wtf_attribute(root, "dependencies");
-	if(deps && deps->type == WTF_ARRAY) {
-		for(const WtfAttribute* element = deps->first_array_element; element != nullptr; element = element->next) {
-			if(element->type == WTF_STRING) {
-				info.dependencies.emplace_back(element->string);
-			}
-		}
-	}
-	
 	return info;
 }
 
 void write_game_info(std::string& dest, const GameInfo& info) {
 	WtfWriter* ctx = wtf_begin_file(dest);
+	
+	wtf_begin_attribute(ctx, "name");
+	wtf_write_string(ctx, info.name.c_str());
+	wtf_end_attribute(ctx);
+	
+	wtf_begin_attribute(ctx, "format_version");
+	wtf_write_integer(ctx, info.format_version);
+	wtf_end_attribute(ctx);
 	
 	wtf_begin_attribute(ctx, "type");
 	if(info.type == AssetBankType::UNPACKED) {
@@ -124,16 +133,6 @@ void write_game_info(std::string& dest, const GameInfo& info) {
 	}
 	wtf_end_array(ctx);
 	wtf_end_attribute(ctx);
-	
-	if(info.dependencies.size() > 0) {
-		wtf_begin_attribute(ctx, "dependencies");
-		wtf_begin_array(ctx);
-		for(const std::string& dep : info.dependencies) {
-			wtf_write_string(ctx, dep.c_str());
-		}
-		wtf_end_array(ctx);
-		wtf_end_attribute(ctx);
-	}
 	
 	wtf_end_file(ctx);
 }

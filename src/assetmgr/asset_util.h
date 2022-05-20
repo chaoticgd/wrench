@@ -74,9 +74,10 @@ enum class AssetBankType {
 };
 
 struct GameInfo {
+	std::string name;
+	s32 format_version;
 	AssetBankType type;
 	std::vector<AssetReference> builds; // List of builds included with this asset pack.
-	std::vector<std::string> dependencies; // Library packs to be mounted before the mod but after the base game.
 };
 
 GameInfo read_game_info(char* input);

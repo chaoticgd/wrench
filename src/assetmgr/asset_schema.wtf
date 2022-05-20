@@ -16,9 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-Metadata metadata {
-	format_version: 8
-}
+format_version: 8
 
 // *****************************************************************************
 

@@ -206,6 +206,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path) {
 		
 		if(memcmp(identifier.data(), "CD001", 5) == 0) {
 			BuildAsset& build = bank.asset_file("build.asset").root().child<BuildAsset>("base_game");
+			bank.game_info.format_version = ASSET_FORMAT_VERSION;
 			bank.game_info.builds = {build.reference()};
 			
 			g_asset_unpacker.input_file = &stream;
@@ -232,6 +233,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path) {
 			Asset& root = bank.asset_file("wad.asset").root();
 			
 			BuildAsset& build = root.child<BuildAsset>("build");
+			bank.game_info.format_version = ASSET_FORMAT_VERSION;
 			bank.game_info.builds = {build.reference()};
 			
 			Asset* wad = nullptr;

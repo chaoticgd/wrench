@@ -65,6 +65,7 @@ int main(int argc, char** argv) {
 	out("// *****************************************************************************\n\n");
 	
 	out("#ifdef GENERATED_ASSET_HEADER\n\n");
+	out("extern s32 ASSET_FORMAT_VERSION;\n\n");
 	for(const WtfNode* node = wtf_first_child(root, "AssetType"); node != NULL; node = wtf_next_sibling(node, "AssetType")) {
 		out("class %sAsset;\n", node->tag);
 	}
@@ -82,6 +83,11 @@ int main(int argc, char** argv) {
 	out("// *****************************************************************************\n\n");
 	
 	out("#ifdef GENERATED_ASSET_IMPLEMENTATION\n");
+	
+	const WtfAttribute* format_version = wtf_attribute(root, "format_version");
+	assert(format_version && format_version->type == WTF_NUMBER);
+	out("s32 ASSET_FORMAT_VERSION = %d;\n\n", format_version->number.i);
+	
 	generate_create_asset_function(root);
 	generate_asset_string_to_type_function(root);
 	generate_asset_type_to_string_function(root);
