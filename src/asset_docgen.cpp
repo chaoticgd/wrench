@@ -24,6 +24,8 @@
 
 static void write_index(const WtfNode* root);
 static void write_contents(const WtfNode* root);
+static void write_attribute_table(const WtfNode* asset_type);
+static void write_child_table(const WtfNode* asset_type);
 static std::string to_link(const char* str);
 static void out(const char* format, ...);
 
@@ -46,7 +48,7 @@ int main(int argc, char** argv) {
 	
 	out("# Asset Reference\n");
 	out("\n");
-	out("This file was generated from %s.", argv[1]);
+	out("This file was generated from %s.\n", argv[1]);
 	
 	write_index(root);
 	write_contents(root);
@@ -102,72 +104,130 @@ static void write_contents(const WtfNode* root) {
 			out("\n");
 			out("*Attributes*\n");
 			
-			out("| Name | Description | Type |\n");
-			out("| - | - | - |\n");
-			for(const WtfNode* child = node->first_child; child != 	nullptr; child = child->next_sibling) {
-				const WtfAttribute* attrib_hidden = wtf_attribute(child, "hidden");
-				if(attrib_hidden && attrib_hidden->type == WTF_BOOLEAN && attrib_hidden->boolean) {
-					continue;
-				}
-				
-				const WtfAttribute* desc = wtf_attribute(child, "desc");
-				const char* desc_str = (desc && desc->type == WTF_STRING)
-					? desc->string : "*Not yet documented.*";
-				const char* type;
-				if(strcmp(child->type_name, "IntegerAttribute") == 0) {
-					type = "Integer";
-				} else if(strcmp(child->type_name, "BooleanAttribute") == 0) {
-					type = "Boolean";
-				} else if(strcmp(child->type_name, "StringAttribute") == 0) {
-					type = "String";
-				} else if(strcmp(child->type_name, "ArrayAttribute") == 0) {
-					type = "Array";
-				} else if(strcmp(child->type_name, "AssetReferenceAttribute") == 0) {
-					type = "Asset Reference";
-				} else if(strcmp(child->type_name, "FileReferenceAttribute") == 0) {
-					type = "File Path";
-				} else {
-					continue;
-				}
-				out("| %s | %s | %s |\n", child->tag, desc_str, type);
-			}
+			write_attribute_table(node);
 			
 			out("\n");
 			out("*Children*\n");
 			out("\n");
-			out("| Name | Description | Allowed Types |\n");
-			out("| - | - | - |\n");
-			for(const WtfNode* child = node->first_child; child != nullptr; child = child->next_sibling) {
-				if(strcmp(child->type_name, "Child") == 0) {
-					out("| %s ", child->tag);
-					const WtfAttribute* desc = wtf_attribute(child, "desc");
-					if(desc && desc->type == WTF_STRING) {
-						out("| %s ", desc->string);
-					} else {
-						out("| *Not yet documented.* ");
-					}
-					out("| ");
-					const WtfAttribute* types = wtf_attribute(child, "allowed_types");
-					if(types && types->type == WTF_ARRAY) {
-						for(const WtfAttribute* elem = types->first_array_element; elem != nullptr; elem = elem->next) {
-							if(elem->type == WTF_STRING) {
-								out("%s", elem->string);
-								if(elem->next != nullptr) {
-									out(", ");
-								}
-							} else {
-								abort();
-							}
-						}
-						out(" |\n");
-					} else {
-						out("*Not yet documented.* |\n");
-					}
-				}
-			}
-			out("\n");
+			
+			write_child_table(node);
 		}
 	}
+}
+
+static void write_attribute_table(const WtfNode* asset_type) {
+	out("| Name | Description | Type | Required | Games |\n");
+	out("| - | - | - | - | - |\n");
+	for(const WtfNode* child = asset_type->first_child; child != nullptr; child = child->next_sibling) {
+		const WtfAttribute* attrib_hidden = wtf_attribute(child, "hidden");
+		if(attrib_hidden && attrib_hidden->type == WTF_BOOLEAN && attrib_hidden->boolean) {
+			continue;
+		}
+		
+		const WtfAttribute* desc = wtf_attribute(child, "desc");
+		const char* desc_str = (desc && desc->type == WTF_STRING)
+			? desc->string : "*Not yet documented.*";
+		const char* type;
+		if(strcmp(child->type_name, "IntegerAttribute") == 0) {
+			type = "Integer";
+		} else if(strcmp(child->type_name, "BooleanAttribute") == 0) {
+			type = "Boolean";
+		} else if(strcmp(child->type_name, "StringAttribute") == 0) {
+			type = "String";
+		} else if(strcmp(child->type_name, "ArrayAttribute") == 0) {
+			type = "Array";
+		} else if(strcmp(child->type_name, "AssetReferenceAttribute") == 0) {
+			type = "Asset Reference";
+		} else if(strcmp(child->type_name, "FileReferenceAttribute") == 0) {
+			type = "File Path";
+		} else {
+			continue;
+		}
+		const WtfAttribute* required = wtf_attribute(child, "required");
+		const char* required_str = (required && required->type == WTF_BOOLEAN)
+			? (required->boolean ? "Yes" : "No") : "*Not yet documented.*";
+		std::string games_str;
+		const WtfAttribute* games = wtf_attribute(child, "games");
+		if(games && games->type == WTF_ARRAY) {
+			for(const WtfAttribute* elem = games->first_array_element; elem != nullptr; elem = elem->next) {
+				if(elem->type == WTF_NUMBER) {
+					switch(elem->number.i) {
+						case 1: games_str += "RC"; break;
+						case 2: games_str += "GC"; break;
+						case 3: games_str += "UYA"; break;
+						case 4: games_str += "DL"; break;
+					}
+				}
+				if(elem->next != nullptr) {
+					games_str += "/";
+				}
+			}
+		} else {
+			games_str += "*Not yet documented.* ";
+		}
+		out("| %s | %s | %s | %s | %s |\n", child->tag, desc_str, type, required_str, games_str.c_str());
+	}
+}
+
+static void write_child_table(const WtfNode* asset_type) {
+	out("| Name | Description | Allowed Types | Required | Games |\n");
+	out("| - | - | - | - | - |\n");
+	for(const WtfNode* child = asset_type->first_child; child != nullptr; child = child->next_sibling) {
+		if(strcmp(child->type_name, "Child") == 0) {
+			out("| %s ", child->tag);
+			const WtfAttribute* desc = wtf_attribute(child, "desc");
+			if(desc && desc->type == WTF_STRING) {
+				out("| %s", desc->string);
+			} else {
+				out("| *Not yet documented.*");
+			}
+			out(" | ");
+			const WtfAttribute* types = wtf_attribute(child, "allowed_types");
+			if(types && types->type == WTF_ARRAY) {
+				for(const WtfAttribute* elem = types->first_array_element; elem != nullptr; elem = elem->next) {
+					if(elem->type == WTF_STRING) {
+						out("%s", elem->string);
+						if(elem->next != nullptr) {
+							out(", ");
+						}
+					} else {
+						abort();
+					}
+				}
+				out("");
+			} else {
+				out("*Not yet documented.*");
+			}
+			out(" | ");
+			const WtfAttribute* required = wtf_attribute(child, "required");
+			if(required && required->type == WTF_BOOLEAN) {
+				out("%s", required->boolean ? "Yes" : "No");
+			} else {
+				out("*Not yet documented.*");
+			}
+			out(" | ");
+			const WtfAttribute* games = wtf_attribute(child, "games");
+			if(games && games->type == WTF_ARRAY) {
+				for(const WtfAttribute* elem = games->first_array_element; elem != nullptr; elem = elem->next) {
+					if(elem->type == WTF_NUMBER) {
+						switch(elem->number.i) {
+							case 1: out("RC"); break;
+							case 2: out("GC"); break;
+							case 3: out("UYA"); break;
+							case 4: out("DL"); break;
+						}
+					}
+					if(elem->next != nullptr) {
+						out("/");
+					}
+				}
+			} else {
+				out("*Not yet documented.* ");
+			}
+			out("|\n");
+		}
+	}
+	out("\n");
 }
 
 static std::string to_link(const char* str) {

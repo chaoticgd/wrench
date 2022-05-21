@@ -33,6 +33,8 @@ AssetType Reference {
 	
 	AssetReferenceAttribute asset {
 		desc: 'The asset being referenced.'
+		required: true
+		games: [1 2 3 4]
 	}
 }
 
@@ -45,6 +47,8 @@ AssetType Binary {
 	
 	FileReferenceAttribute src {
 		desc: 'The file path of the binary file, relative to the .asset file.'
+		required: false
+		games: [1 2 3 4]
 	}
 	
 	// These are only used for testing.
@@ -60,25 +64,96 @@ AssetType Build {
 	
 	IntegerAttribute game {
 		desc: 'The game being built. 1 for R&C1, 2 for R&C2, 3 for R&C3, 4 for Deadlocked.'
+		required: true
+		games: [1 2 3 4]
 	}
-	IntegerAttribute ps2_logo_key { min: 0 max: 255 }
-	IntegerAttribute single_level { default: -1 }
 	
-	Child ps2_logo { allowed_types: ['Texture'] desc: 'The key used to "encrpyt" the PS2 logo.' }
-	Child primary_volume_descriptor { allowed_types: ['PrimaryVolumeDescriptor'] }
-	Child armor    { allowed_types: ['ArmorWad' 'Binary'] }
-	Child audio    { allowed_types: ['AudioWad' 'Binary'] }
-	Child bonus    { allowed_types: ['BonusWad' 'Binary'] }
-	Child gadget   { allowed_types: ['GadgetWad' 'Binary'] }
-	Child hud      { allowed_types: ['HudWad' 'Binary'] }
-	Child misc     { allowed_types: ['MiscWad' 'Binary'] }
-	Child mpeg     { allowed_types: ['MpegWad' 'Binary'] }
-	Child online   { allowed_types: ['OnlineWad' 'Binary'] }
-	Child scene    { allowed_types: ['SceneWad' 'Binary'] }
-	Child space    { allowed_types: ['SpaceWad' 'Binary'] }
+	IntegerAttribute ps2_logo_key {
+		desc: 'The key used to "encrypt" the PS2 logo.'
+		min: 0
+		max: 255
+		required: true
+		games: [1 2 3 4]
+	}
 	
-	Child levels   { allowed_types: ['Collection'] desc: 'The list of levels to include in the build.' }
-	Child files    { allowed_types: ['Collection'] desc: 'Additional files to include in the build.' }
+	IntegerAttribute single_level {
+		default: -1
+		required: false
+		games: [1 2 3 4]
+	}
+	
+	Child ps2_logo {
+		desc: 'The PS2 logo stored on the first 12 sectors of the disc.'
+		allowed_types: ['Texture']
+		required: true
+		games: [1 2 3 4]
+	}
+	Child primary_volume_descriptor {
+		allowed_types: ['PrimaryVolumeDescriptor']
+		required: true
+		games: [1 2 3 4]
+	}
+	Child armor {
+		allowed_types: ['ArmorWad' 'Binary']
+		required: true
+		games: [2 3 4]
+	}
+	Child audio {
+		allowed_types: ['AudioWad' 'Binary']
+		required: true
+		games: [2 3 4]
+	}
+	Child bonus {
+		allowed_types: ['BonusWad' 'Binary']
+		required: true
+		games: [2 3 4]
+	}
+	Child gadget {
+		allowed_types: ['GadgetWad' 'Binary']
+		required: true
+		games: [2 3]
+	}
+	Child hud {
+		allowed_types: ['HudWad' 'Binary']
+		required: true
+		games: [2 3 4]
+	}
+	Child misc {
+		allowed_types: ['MiscWad' 'Binary']
+		required: true
+		games: [2 3 4]
+	}
+	Child mpeg {
+		allowed_types: ['MpegWad' 'Binary']
+		required: true
+		games: [2 3 4]
+	}
+	Child online {
+		allowed_types: ['OnlineWad' 'Binary']
+		required: true
+		games: [4]
+	}
+	Child scene {
+		allowed_types: ['SceneWad' 'Binary']
+		required: true
+		games: [2]
+	}
+	Child space {
+		allowed_types: ['SpaceWad' 'Binary']
+		required: true
+		games: [2 3 4]
+	}
+	
+	Child levels {
+		allowed_types: ['Collection'] desc: 'The list of levels to include in the build.'
+		required: true
+		games: [1 2 3 4]
+	}
+	Child files {
+		allowed_types: ['Collection'] desc: 'Additional files to include in the build.'
+		required: true
+		games: [1 2 3 4]
+	}
 	
 	Child moby_classes { allowed_types: ['Collection'] }
 	Child tie_classes { allowed_types: ['Collection'] }
@@ -146,11 +221,28 @@ AssetType ArmorWad {
 	Child armors {
 		desc: 'A list of all the armors/skins.'
 		allowed_types: ['Collection']
+		required: true
+		games: [2 3 4]
 	}
 	
-	Child bot_textures         { allowed_types: ['Collection'] }
-	Child landstalker_textures { allowed_types: ['Collection'] }
-	Child dropship_textures    { allowed_types: ['Collection'] }
+	Child bot_textures {
+		desc: 'Textures for Merc and Green.'
+		allowed_types: ['Collection']
+		required: true
+		games: [4]
+	}
+	Child landstalker_textures {
+		desc: 'Textures for the landstalker.'
+		allowed_types: ['Collection']
+		required: true
+		games: [4]
+	}
+	Child dropship_textures {
+		desc: 'Textures for the dropship.'
+		allowed_types: ['Collection']
+		required: true
+		games: [4]
+	}
 }
 
 AssetType AudioWad {
@@ -232,9 +324,21 @@ AssetType HudWad {
 AssetType MiscWad {
 	wad: true
 	
-	Child debug_font    { allowed_types: ['Texture' 'Binary'] }
-	Child irx           { allowed_types: ['IrxWad'] }
-	Child save_game     { allowed_types: ['Binary'] }
+	Child debug_font {
+		allowed_types: ['Texture' 'Binary']
+		required: true
+		games: [1 2 3 4]
+	}
+	Child irx {
+		allowed_types: ['IrxWad']
+		required: true
+		games: [1 2 3 4]
+	}
+	Child save_game {
+		allowed_types: ['Binary']
+		required: true
+		games: [1 2 3 4]
+	}
 	Child frontend_code { allowed_types: ['Binary'] }
 	Child frontend      { allowed_types: ['Binary'] }
 	Child exit          { allowed_types: ['Binary'] }
@@ -246,30 +350,141 @@ AssetType IrxWad {
 	desc: 'A container for IOP modules.'
 	wad: true
 	
-	Child sio2man  { allowed_types: ['Binary'] }
-	Child mcman    { allowed_types: ['Binary'] desc: 'Memory card manager.' }
-	Child mcserv   { allowed_types: ['Binary'] desc: 'Memory card server.' }
-	Child padman   { allowed_types: ['Binary'] desc: 'Gamepad manager.' }
-	Child mtapman  { allowed_types: ['Binary'] desc: 'Multitap manager.' }
-	Child libsd    { allowed_types: ['Binary'] desc: 'Sound library.' }
-	Child 989snd   { allowed_types: ['Binary'] desc: 'Sound library.' }
-	Child stash    { allowed_types: ['Binary'] }
-	Child inet     { allowed_types: ['Binary'] desc: 'Networking library.' }
-	Child netcnf   { allowed_types: ['Binary'] desc: 'Networking library.' }
-	Child inetctl  { allowed_types: ['Binary'] }
-	Child msifrpc  { allowed_types: ['Binary'] desc: 'RPC library.' }
-	Child dev9     { allowed_types: ['Binary'] desc: 'HDD/ethernet/modem adapter library.'}
-	Child smap     { allowed_types: ['Binary'] desc: 'Ethernet driver.' }
-	Child libnetb  { allowed_types: ['Binary'] desc: 'Networking library. '}
-	Child ppp      { allowed_types: ['Binary'] desc: 'Point to Point Protcol (PPP) library.' }
-	Child pppoe    { allowed_types: ['Binary'] desc: 'Point to Point Protcol over Ethernet (PPPoE) library.' }
-	Child usbd     { allowed_types: ['Binary'] desc: 'USB library.' }
-	Child lgaud    { allowed_types: ['Binary'] }
-	Child eznetcnf { allowed_types: ['Binary'] }
-	Child eznetctl { allowed_types: ['Binary'] }
-	Child lgkbm    { allowed_types: ['Binary'] }
-	Child streamer { allowed_types: ['Binary'] }
-	Child astrm    { allowed_types: ['Binary'] }
+	Child sio2man  {
+		allowed_types: ['Binary']
+		required: true
+		games: [2 3 4]
+	}
+	Child mcman    {
+		desc: 'Memory card manager.'
+		allowed_types: ['Binary']
+		required: true
+		games: [2 3 4]
+	}
+	Child mcserv   {
+		desc: 'Memory card server.'
+		allowed_types: ['Binary']
+		required: true
+		games: [2 3 4]
+	}
+	Child padman   {
+		desc: 'Gamepad manager.'
+		allowed_types: ['Binary']
+		required: true
+		games: [2 3 4]
+	}
+	Child mtapman  {
+		desc: 'Multitap manager.'
+		allowed_types: ['Binary']
+		required: true
+		games: [2 3 4]
+	}
+	Child libsd    {
+		desc: 'Sound library.'
+		allowed_types: ['Binary']
+		required: true
+		games: [2 3 4]
+	}
+	Child 989snd   {
+		desc: 'Sound library.'
+		allowed_types: ['Binary']
+		required: true
+		games: [2 3 4]
+	}
+	Child stash {
+		allowed_types: ['Binary']
+		required: true
+		games: [3 4]
+	}
+	Child inet {
+		desc: 'Networking library.'
+		allowed_types: ['Binary']
+		required: true
+		games: [3 4]
+	}
+	Child netcnf {
+		desc: 'Networking library.'
+		allowed_types: ['Binary']
+		required: true
+		games: [3 4]
+	}
+	Child inetctl  {
+		allowed_types: ['Binary']
+		required: true
+		games: [3 4]
+	}
+	Child msifrpc  {
+		desc: 'RPC library.'
+		allowed_types: ['Binary']
+		required: true
+		games: [3 4]
+	}
+	Child dev9 {
+		desc: 'HDD/ethernet/modem adapter library.'
+		allowed_types: ['Binary']
+		required: true
+		games: [3 4]
+	}
+	Child smap {
+		desc: 'Ethernet driver.'
+		allowed_types: ['Binary']
+		required: true
+		games: [3 4]
+	}
+	Child libnetb {
+		desc: 'Networking library.'
+		allowed_types: ['Binary']
+		required: true
+		games: [3 4]
+	}
+	Child ppp {
+		desc: 'Point to Point Protcol (PPP) library.'
+		allowed_types: ['Binary']
+		required: true
+		games: [3 4]
+	}
+	Child pppoe {
+		desc: 'Point to Point Protcol over Ethernet (PPPoE) library.'
+		allowed_types: ['Binary']
+		required: true
+		games: [3 4]
+	}
+	Child usbd {
+		desc: 'USB library.'
+		allowed_types: ['Binary']
+		required: true
+		games: [3 4]
+	}
+	Child lgaud {
+		allowed_types: ['Binary']
+		required: true
+		games: [3 4]
+	}
+	Child eznetcnf {
+		allowed_types: ['Binary']
+		required: true
+		games: [3 4]
+	}
+	Child eznetctl {
+		allowed_types: ['Binary']
+		required: true
+		games: [3 4]
+	}
+	Child lgkbm {
+		allowed_types: ['Binary']
+		required: true
+		games: [3 4]
+	}
+	Child streamer {
+		allowed_types: ['Binary']
+		required: true
+		games: [4]
+	}
+	Child astrm {
+		allowed_types: ['Binary']
+		required: true
+		games: [4]
+	}
 }
 
 AssetType BootWad {
