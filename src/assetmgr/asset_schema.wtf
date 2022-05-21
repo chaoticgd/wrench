@@ -55,6 +55,12 @@ AssetType Binary {
 	StringAttribute asset_type { hidden: true }
 	IntegerAttribute format_hint { hidden: true }
 	IntegerAttribute game { hidden: true }
+	
+	Examples examples {
+		Binary code {
+			src: 'code.bin'
+		}
+	}
 }
 
 // *****************************************************************************
@@ -182,6 +188,13 @@ AssetType File {
 	
 	FileReferenceAttribute src { desc: 'The path of the file, relative to the .asset file.' }
 	StringAttribute path { desc: 'Where to put the file on the filesystem of the built ISO.'}
+	
+	Examples examples {
+		File cnf_icon_en_sys {
+			src: 'cnf/icon_en.sys'
+			path: 'cnf/icon_en.sys'
+		}
+	}
 }
 
 AssetType Mesh {
@@ -189,10 +202,14 @@ AssetType Mesh {
 	
 	FileReferenceAttribute src {
 		desc: 'The file path of the model file to use.'
+		required: true
+		games: [1 2 3 4]
 	}
 	
 	StringAttribute node {
 		desc: 'The name of the node to use. This is the same as the Blender node name.'
+		required: true
+		games: [1 2 3 4]
 	}
 }
 
@@ -202,7 +219,7 @@ AssetType Texture {
 	
 	FileReferenceAttribute src {}
 	
-	Example 0 {
+	Examples examples {
 		Texture my_texture {
 			src: 'my_texture.png'
 		}
@@ -648,7 +665,11 @@ Category classes {
 }
 
 AssetType MobyClass {
-	IntegerAttribute id {}
+	IntegerAttribute id {
+		desc: 'The integer used to reference this moby class at runtime.'
+		required: true
+		games: [1 2 3 4]
+	}
 	BooleanAttribute has_moby_table_entry {}
 	
 	Child core { allowed_types: ['MobyClassCore' 'Binary'] }
@@ -681,7 +702,11 @@ AssetType Material {
 AssetType TieClass {
 	bin_leaf: true
 	
-	IntegerAttribute id {}
+	IntegerAttribute id {
+		desc: 'The integer used to reference this tie class at runtime.'
+		required: true
+		games: [1 2 3 4]
+	}
 	
 	Child core { allowed_types: ['Binary'] }
 	Child textures { allowed_types: ['Collection'] }
@@ -690,7 +715,11 @@ AssetType TieClass {
 AssetType ShrubClass {
 	bin_leaf: true
 	
-	IntegerAttribute id {}
+	IntegerAttribute id {
+		desc: 'The integer used to reference this shrub class at runtime.'
+		required: true
+		games: [1 2 3 4]
+	}
 	
 	Child core { allowed_types: ['Binary'] }
 	Child textures { allowed_types: ['Collection'] }

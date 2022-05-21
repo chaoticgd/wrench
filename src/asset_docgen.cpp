@@ -20,13 +20,17 @@
 
 #include <core/util.h>
 #include <core/wtf.h>
+#include <core/wtf_writer.h>
 #include <core/filesystem.h>
 
 static void write_index(const WtfNode* root);
 static void write_contents(const WtfNode* root);
 static void write_attribute_table(const WtfNode* asset_type);
 static void write_child_table(const WtfNode* asset_type);
+static void write_examples(const WtfNode* examples);
 static std::string to_link(const char* str);
+static void reify_node(WtfWriter* ctx, const WtfNode* node);
+static void reify_value(WtfWriter* ctx, const WtfAttribute* value);
 static void out(const char* format, ...);
 
 static FILE* out_file;
@@ -101,21 +105,22 @@ static void write_contents(const WtfNode* root) {
 				out("\n");
 				out("%s\n", desc->string);
 			}
-			out("\n");
-			out("*Attributes*\n");
 			
 			write_attribute_table(node);
-			
-			out("\n");
-			out("*Children*\n");
-			out("\n");
-			
 			write_child_table(node);
+			
+			const WtfNode* examples = wtf_child(node, "Examples", "examples");
+			if(examples) {
+				write_examples(examples);
+			}
 		}
 	}
 }
 
 static void write_attribute_table(const WtfNode* asset_type) {
+	out("\n");
+	out("*Attributes*\n");
+	
 	out("| Name | Description | Type | Required | Games |\n");
 	out("| - | - | - | - | - |\n");
 	for(const WtfNode* child = asset_type->first_child; child != nullptr; child = child->next_sibling) {
@@ -170,6 +175,10 @@ static void write_attribute_table(const WtfNode* asset_type) {
 }
 
 static void write_child_table(const WtfNode* asset_type) {
+	out("\n");
+	out("*Children*\n");
+	out("\n");
+	
 	out("| Name | Description | Allowed Types | Required | Games |\n");
 	out("| - | - | - | - | - |\n");
 	for(const WtfNode* child = asset_type->first_child; child != nullptr; child = child->next_sibling) {
@@ -222,12 +231,37 @@ static void write_child_table(const WtfNode* asset_type) {
 					}
 				}
 			} else {
-				out("*Not yet documented.* ");
+				out("*Not yet documented.*");
 			}
-			out("|\n");
+			out(" |\n");
 		}
 	}
 	out("\n");
+}
+
+static void write_examples(const WtfNode* examples) {
+	s32 example_count = 0;
+	for(const WtfNode* child = examples->first_child; child != nullptr; child = child->next_sibling) {
+		example_count++;
+	}
+	
+	out("\n");
+	if(example_count == 1) {
+		out("*Example*\n");
+	} else {
+		out("*Examples*\n");
+	}
+	out("\n");
+	
+	for(const WtfNode* example = examples->first_child; example != nullptr; example = example->next_sibling) {
+		std::string str;
+		WtfWriter* ctx = wtf_begin_file(str);
+		reify_node(ctx, example);
+		out("```\n");
+		out("%s", str.c_str());
+		out("```\n");
+		wtf_end_file(ctx);
+	}
 }
 
 static std::string to_link(const char* str) {
@@ -240,6 +274,48 @@ static std::string to_link(const char* str) {
 		}
 	}
 	return out;
+}
+
+static void reify_node(WtfWriter* ctx, const WtfNode* node) {
+	wtf_begin_node(ctx, node->type_name, node->tag);
+	for(WtfAttribute* attrib = node->first_attribute; attrib != nullptr; attrib = attrib->next) {
+		wtf_begin_attribute(ctx, attrib->key);
+		reify_value(ctx, attrib);
+		wtf_end_attribute(ctx);
+	}
+	for(WtfNode* child = node->first_child; child != nullptr; child = child->next_sibling) {
+		reify_node(ctx, child);
+	}
+	wtf_end_node(ctx);
+}
+
+static void reify_value(WtfWriter* ctx, const WtfAttribute* value) {
+	switch(value->type) {
+		case WTF_NUMBER: {
+			if(fabsf(floorf(value->number.f) - value->number.f) > 0.0001f) {
+				wtf_write_float(ctx, value->number.f);
+			} else {
+				wtf_write_integer(ctx, value->number.i);
+			}
+			break;
+		}
+		case WTF_BOOLEAN: {
+			wtf_write_boolean(ctx, value->boolean);
+			break;
+		}
+		case WTF_STRING: {
+			wtf_write_string(ctx, value->string);
+			break;
+		}
+		case WTF_ARRAY: {
+			wtf_begin_array(ctx);
+			for(WtfAttribute* elem = value->first_array_element; elem != nullptr; elem = elem->next) {
+				reify_value(ctx, elem);
+			}
+			wtf_end_array(ctx);
+			break;
+		}
+	}
 }
 
 static void out(const char* format, ...) {
