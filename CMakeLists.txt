@@ -45,11 +45,28 @@ add_executable(asset_codegen
 )
 target_link_libraries(asset_codegen wrenchcore)
 
+add_executable(asset_docgen
+	src/asset_docgen.cpp
+)
+target_link_libraries(asset_docgen wrenchcore)
+
 add_custom_command(
 	COMMAND asset_codegen src/assetmgr/asset_schema.wtf src/assetmgr/_generated_asset_types.inl
 	DEPENDS asset_codegen src/assetmgr/asset_schema.wtf
 	OUTPUT src/assetmgr/_generated_asset_types.inl
 	COMMENT "Generating asset types"
+)
+
+add_custom_command(
+	COMMAND asset_docgen src/assetmgr/asset_schema.wtf docs/asset_reference.md
+	DEPENDS asset_docgen src/assetmgr/asset_schema.wtf
+	OUTPUT docs/asset_reference.md
+	COMMENT "Generating asset reference"
+)
+
+add_custom_target(
+	asset_docgen_target ALL
+	DEPENDS docs/asset_reference.md
 )
 
 add_library(wrench_assetmgr

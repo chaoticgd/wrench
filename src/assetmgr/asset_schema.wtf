@@ -20,10 +20,20 @@ format_version: 8
 
 // *****************************************************************************
 
-AssetType Root {}
+Category general {
+	name: 'General'
+}
+
+AssetType Root {
+	hidden: true
+}
 
 AssetType Reference {
-	AssetReferenceAttribute asset {}
+	desc: 'A reference to an asset that can be put in place of any other asset.'
+	
+	AssetReferenceAttribute asset {
+		desc: 'The asset being referenced.'
+	}
 }
 
 AssetType Collection {
@@ -31,7 +41,7 @@ AssetType Collection {
 }
 
 AssetType Binary {
-	desc: 'A raw binary file.'
+	desc: 'A raw binary file. Used for assets that wrench cannot unpack.'
 	
 	FileReferenceAttribute src {
 		desc: 'The file path of the binary file, relative to the .asset file.'
@@ -54,7 +64,7 @@ AssetType Build {
 	IntegerAttribute ps2_logo_key { min: 0 max: 255 }
 	IntegerAttribute single_level { default: -1 }
 	
-	Child ps2_logo { allowed_types: ['Texture'] }
+	Child ps2_logo { allowed_types: ['Texture'] desc: 'The key used to "encrpyt" the PS2 logo.' }
 	Child primary_volume_descriptor { allowed_types: ['PrimaryVolumeDescriptor'] }
 	Child armor    { allowed_types: ['ArmorWad' 'Binary'] }
 	Child audio    { allowed_types: ['AudioWad' 'Binary'] }
@@ -67,8 +77,8 @@ AssetType Build {
 	Child scene    { allowed_types: ['SceneWad' 'Binary'] }
 	Child space    { allowed_types: ['SpaceWad' 'Binary'] }
 	
-	Child levels   { allowed_types: ['Collection'] }
-	Child files    { allowed_types: ['Collection'] }
+	Child levels   { allowed_types: ['Collection'] desc: 'The list of levels to include in the build.' }
+	Child files    { allowed_types: ['Collection'] desc: 'Additional files to include in the build.' }
 	
 	Child moby_classes { allowed_types: ['Collection'] }
 	Child tie_classes { allowed_types: ['Collection'] }
@@ -79,6 +89,8 @@ AssetType Build {
 }
 
 AssetType PrimaryVolumeDescriptor {
+	desc: 'A filesystem structure that contains metadata.'
+	
 	StringAttribute system_identifier {}
 	StringAttribute volume_identifier {}
 	StringAttribute volume_set_identifier {}
@@ -91,11 +103,42 @@ AssetType PrimaryVolumeDescriptor {
 }
 
 AssetType File {
+	desc: 'An additional file to be included in the built ISO.'
+	
+	FileReferenceAttribute src { desc: 'The path of the file, relative to the .asset file.' }
+	StringAttribute path { desc: 'Where to put the file on the filesystem of the built ISO.'}
+}
+
+AssetType Mesh {
+	bin_leaf: true
+	
+	FileReferenceAttribute src {
+		desc: 'The file path of the model file to use.'
+	}
+	
+	StringAttribute node {
+		desc: 'The name of the node to use. This is the same as the Blender node name.'
+	}
+}
+
+AssetType Texture {
+	desc: 'A reference to an image file. Only PNG images are currently supported.'
+	bin_leaf: true
+	
 	FileReferenceAttribute src {}
-	StringAttribute path {}
+	
+	Example 0 {
+		Texture my_texture {
+			src: 'my_texture.png'
+		}
+	}
 }
 
 // *****************************************************************************
+
+Category globals {
+	name: 'Globals'
+}
 
 AssetType ArmorWad {
 	wad: true
@@ -200,26 +243,27 @@ AssetType MiscWad {
 }
 
 AssetType IrxWad {
+	desc: 'A container for IOP modules.'
 	wad: true
 	
 	Child sio2man  { allowed_types: ['Binary'] }
-	Child mcman    { allowed_types: ['Binary'] }
-	Child mcserv   { allowed_types: ['Binary'] }
-	Child padman   { allowed_types: ['Binary'] }
-	Child mtapman  { allowed_types: ['Binary'] }
-	Child libsd    { allowed_types: ['Binary'] }
-	Child 989snd   { allowed_types: ['Binary'] }
+	Child mcman    { allowed_types: ['Binary'] desc: 'Memory card manager.' }
+	Child mcserv   { allowed_types: ['Binary'] desc: 'Memory card server.' }
+	Child padman   { allowed_types: ['Binary'] desc: 'Gamepad manager.' }
+	Child mtapman  { allowed_types: ['Binary'] desc: 'Multitap manager.' }
+	Child libsd    { allowed_types: ['Binary'] desc: 'Sound library.' }
+	Child 989snd   { allowed_types: ['Binary'] desc: 'Sound library.' }
 	Child stash    { allowed_types: ['Binary'] }
-	Child inet     { allowed_types: ['Binary'] }
-	Child netcnf   { allowed_types: ['Binary'] }
+	Child inet     { allowed_types: ['Binary'] desc: 'Networking library.' }
+	Child netcnf   { allowed_types: ['Binary'] desc: 'Networking library.' }
 	Child inetctl  { allowed_types: ['Binary'] }
-	Child msifrpc  { allowed_types: ['Binary'] }
-	Child dev9     { allowed_types: ['Binary'] }
-	Child smap     { allowed_types: ['Binary'] }
-	Child libnetb  { allowed_types: ['Binary'] }
-	Child ppp      { allowed_types: ['Binary'] }
-	Child pppoe    { allowed_types: ['Binary'] }
-	Child usbd     { allowed_types: ['Binary'] }
+	Child msifrpc  { allowed_types: ['Binary'] desc: 'RPC library.' }
+	Child dev9     { allowed_types: ['Binary'] desc: 'HDD/ethernet/modem adapter library.'}
+	Child smap     { allowed_types: ['Binary'] desc: 'Ethernet driver.' }
+	Child libnetb  { allowed_types: ['Binary'] desc: 'Networking library. '}
+	Child ppp      { allowed_types: ['Binary'] desc: 'Point to Point Protcol (PPP) library.' }
+	Child pppoe    { allowed_types: ['Binary'] desc: 'Point to Point Protcol over Ethernet (PPPoE) library.' }
+	Child usbd     { allowed_types: ['Binary'] desc: 'USB library.' }
 	Child lgaud    { allowed_types: ['Binary'] }
 	Child eznetcnf { allowed_types: ['Binary'] }
 	Child eznetctl { allowed_types: ['Binary'] }
@@ -274,6 +318,10 @@ AssetType SpaceWad {
 }
 
 // *****************************************************************************
+
+Category level {
+	name: 'Level'
+}
 
 AssetType Level {
 	Child level { allowed_types: ['LevelWad' 'Binary' ] }
@@ -380,6 +428,10 @@ AssetType Scene {
 
 // *****************************************************************************
 
+Category classes {
+	name: 'Classes'
+}
+
 AssetType MobyClass {
 	IntegerAttribute id {}
 	BooleanAttribute has_moby_table_entry {}
@@ -427,31 +479,4 @@ AssetType ShrubClass {
 	
 	Child core { allowed_types: ['Binary'] }
 	Child textures { allowed_types: ['Collection'] }
-}
-
-// *****************************************************************************
-
-AssetType Mesh {
-	bin_leaf: true
-	
-	FileReferenceAttribute src {
-		desc: 'The file path of the COLLADA (.dae) file to use.'
-	}
-	
-	StringAttribute node {
-		desc: 'The name of the COLLADA node to use. This is the same as the Blender node name.'
-	}
-}
-
-AssetType Texture {
-	desc: 'A reference to an image file. Only PNG images are currently supported.'
-	bin_leaf: true
-	
-	FileReferenceAttribute src {}
-	
-	Example 0 {
-		Texture my_texture {
-			src: 'my_texture.png'
-		}
-	}
 }
