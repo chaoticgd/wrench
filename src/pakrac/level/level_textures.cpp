@@ -203,8 +203,8 @@ s32 write_level_texture_indices(u8 dest[16], const std::vector<LevelTexture>& te
 			if(record->out_edge > -1) {
 				record = &textures[record->out_edge];
 			}
-			//assert(record->indices[table].has_value());
-			//verify(*record->indices[table] < 0xff, "Too many textures.\n");
+			assert(record->indices[table].has_value());
+			verify(*record->indices[table] < 0xff, "Too many textures.\n");
 			dest[i] = *record->indices[table];
 		} else {
 			for(s32 j = i; j < 16; j++) {
