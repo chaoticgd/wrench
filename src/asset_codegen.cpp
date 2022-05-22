@@ -475,7 +475,7 @@ static void generate_attribute_setter_code(const WtfNode* attribute, s32 depth) 
 		indent(ind); out("}\n");
 	}
 	
-	if(strcmp(attribute->type_name, "A") == 0) {
+	if(strcmp(attribute->type_name, "AssetReferenceAttribute") == 0) {
 		indent(ind); out("dest_%d = src_%d;\n", depth, depth);
 	}
 	
