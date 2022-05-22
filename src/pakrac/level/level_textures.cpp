@@ -41,10 +41,11 @@ void unpack_level_texture(TextureAsset& dest, const TextureEntry& entry, InputSt
 	std::vector<u32> palette = gs_ram.read_multiple<u32>(entry.palette * 0x100, 256);
 	Texture texture = Texture::create_8bit_paletted(entry.width, entry.height, pixels, palette);
 	
+	texture.multiply_alphas();
+	texture.swizzle_palette();
 	if(game == Game::DL) {
 		texture.swizzle();
 	}
-	texture.swizzle_palette();
 	
 	auto [stream, ref] = dest.file().open_binary_file_for_writing(stringf("%d.png", i));
 	write_png(*stream, texture);

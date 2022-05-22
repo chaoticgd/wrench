@@ -147,10 +147,19 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	if(!g_asset_packer_dry_run) {
 		shared = read_level_textures(tfrag_textures, mobies, ties, shrubs);
 		
+		for(LevelTexture& record : shared.textures) {
+			if(record.texture.has_value()) {
+				record.texture->to_8bit_paletted();
+				record.texture->divide_alphas();
+				record.texture->swizzle_palette();
+				if(game == Game::DL) {
+					record.texture->swizzle();
+				}
+			}
+		}
+		
 		deduplicate_level_textures(shared.textures);
 		deduplicate_level_palettes(shared.textures);
-		
-		std::vector<GsRamEntry> gs_table;
 		
 		header.textures_base_offset = write_shared_level_textures(data, gs_ram, gs_table, shared.textures);
 		
