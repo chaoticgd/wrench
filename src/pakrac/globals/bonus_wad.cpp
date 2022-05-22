@@ -19,7 +19,7 @@
 #include <pakrac/asset_unpacker.h>
 #include <pakrac/asset_packer.h>
 
-packed_struct(DeadlockedBonusWadHeader,
+packed_struct(DlBonusWadHeader,
 	/* 0x000 */ s32 header_size;
 	/* 0x004 */ Sector32 sector;
 	/* 0x008 */ SectorRange credits_text[6];
@@ -33,16 +33,16 @@ packed_struct(DeadlockedBonusWadHeader,
 )
 
 static void unpack_bonus_wad(BonusWadAsset& dest, InputStream& src, Game game);
-static void pack_bonus_wad(OutputStream& dest, DeadlockedBonusWadHeader& header, BonusWadAsset& src, Game game);
+static void pack_bonus_wad(OutputStream& dest, DlBonusWadHeader& header, BonusWadAsset& src, Game game);
 
 on_load(Bonus, []() {
 	BonusWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<BonusWadAsset>(unpack_bonus_wad);
 	
-	BonusWadAsset::funcs.pack_dl = wrap_wad_packer_func<BonusWadAsset, DeadlockedBonusWadHeader>(pack_bonus_wad);
+	BonusWadAsset::funcs.pack_dl = wrap_wad_packer_func<BonusWadAsset, DlBonusWadHeader>(pack_bonus_wad);
 })
 
 static void unpack_bonus_wad(BonusWadAsset& dest, InputStream& src, Game game) {
-	auto header = src.read<DeadlockedBonusWadHeader>(0);
+	auto header = src.read<DlBonusWadHeader>(0);
 	
 	unpack_assets<BinaryAsset>(dest.credits_text().switch_files(), src, ARRAY_PAIR(header.credits_text), game);
 	unpack_assets<BinaryAsset>(dest.credits_images().switch_files(), src, ARRAY_PAIR(header.credits_images), game);
@@ -54,7 +54,7 @@ static void unpack_bonus_wad(BonusWadAsset& dest, InputStream& src, Game game) {
 	unpack_asset(dest.dige(), src, header.dige, game);
 }
 
-void pack_bonus_wad(OutputStream& dest, DeadlockedBonusWadHeader& header, BonusWadAsset& src, Game game) {
+void pack_bonus_wad(OutputStream& dest, DlBonusWadHeader& header, BonusWadAsset& src, Game game) {
 	pack_assets_sa(dest, ARRAY_PAIR(header.credits_text), src.get_credits_text(), game);
 	pack_assets_sa(dest, ARRAY_PAIR(header.credits_images), src.get_credits_images(), game);
 	pack_assets_sa(dest, ARRAY_PAIR(header.demomenu), src.get_demomenu(), game);

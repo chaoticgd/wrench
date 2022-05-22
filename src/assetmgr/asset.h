@@ -158,6 +158,7 @@ public:
 	bool is_wad = false;
 	bool is_level_wad = false;
 	bool is_bin_leaf = false;
+	bool is_flattenable = false;
 	
 private:
 	friend AssetBank;

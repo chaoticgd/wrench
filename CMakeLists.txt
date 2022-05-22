@@ -143,6 +143,7 @@ add_executable(pakrac
 	src/pakrac/common/collection_asset.cpp
 	src/pakrac/common/file_asset.cpp
 	src/pakrac/common/texture_asset.cpp
+	src/pakrac/common/flat_wad.cpp
 	src/pakrac/globals/armor_wad.cpp
 	src/pakrac/globals/audio_wad.cpp
 	src/pakrac/globals/bonus_wad.cpp

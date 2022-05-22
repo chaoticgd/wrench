@@ -87,6 +87,8 @@ int main(int argc, char** argv) {
 			g_asset_unpacker.dump_wads = true;
 		} else if(continuation == "_binaries") {
 			g_asset_unpacker.dump_binaries = true;
+		} else if(continuation == "_flat") {
+			g_asset_unpacker.dump_flat = true;
 		} else if(!continuation.empty()) {
 			print_usage();
 			return 1;
@@ -393,6 +395,9 @@ static void print_usage() {
 	puts("");
 	puts(" unpack_binaries <input file> -o <output dir>");
 	puts("   Unpack an ISO or WAD file to produce an asset bank of binaries.");
+	puts("");
+	puts(" unpack_flat <input file> -o <output dir>");
+	puts("   Unpack an ISO or WAD file to produce an asset bank of FlatWad assets.");
 	puts("");
 	puts(" decompress <input file> -o <output file> -x <offset>");
 	puts("   Decompress a file stored using the game's custom LZ compression scheme.");

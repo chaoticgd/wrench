@@ -117,6 +117,11 @@ int main(int argc, char** argv) {
 			out("\tis_bin_leaf = true;\n");
 		}
 		
+		const WtfAttribute* flattenable = wtf_attribute(node, "flattenable");
+		if(flattenable && flattenable->type == WTF_BOOLEAN && flattenable->boolean) {
+			out("\tis_flattenable = true;\n");
+		}
+		
 		out("}\n\n");
 		
 		generate_read_function(node);
