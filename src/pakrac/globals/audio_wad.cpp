@@ -20,7 +20,29 @@
 #include <pakrac/asset_unpacker.h>
 #include <pakrac/asset_packer.h>
 
-packed_struct(DeadlockedAudioWadHeader,
+packed_struct(GcAudioWadHeader,
+	/* 0x0000 */ s32 header_size;
+	/* 0x0004 */ Sector32 sector;
+	/* 0x0008 */ Sector32 vendor[254];
+	/* 0x0400 */ Sector32 help_english[256];
+	/* 0x0800 */ Sector32 help_french[256];
+	/* 0x0c00 */ Sector32 help_german[256];
+	/* 0x1000 */ Sector32 help_spanish[256];
+	/* 0x1400 */ Sector32 help_italian[256];
+)
+
+packed_struct(UyaAudioWadHeader,
+	/* 0x0000 */ s32 header_size;
+	/* 0x0004 */ Sector32 sector;
+	/* 0x0008 */ Sector32 vendor[254];
+	/* 0x0400 */ Sector32 help_english[400];
+	/* 0x0a40 */ Sector32 help_french[400];
+	/* 0x1080 */ Sector32 help_german[400];
+	/* 0x16c0 */ Sector32 help_spanish[400];
+	/* 0x1d00 */ Sector32 help_italian[400];
+)
+
+packed_struct(DlAudioWadHeader,
 	/* 0x0000 */ s32 header_size;
 	/* 0x0004 */ Sector32 sector;
 	/* 0x0008 */ Sector32 vendor[254];
@@ -32,25 +54,34 @@ packed_struct(DeadlockedAudioWadHeader,
 	/* 0x87a0 */ Sector32 help_italian[2100];
 )
 
+template <typename Header>
 static void unpack_audio_wad(AudioWadAsset& dest, InputStream& src, Game game);
-static void pack_audio_wad(OutputStream& dest, DeadlockedAudioWadHeader& header, AudioWadAsset& src, Game game);
+template <typename Header>
+static void pack_audio_wad(OutputStream& dest, Header& header, AudioWadAsset& src, Game game);
 template <typename Getter>
 static void unpack_help_audio(CollectionAsset& dest, InputStream& src, Sector32* ranges, s32 count, Game game, const std::set<s64>& end_sectors, Getter getter);
 template <typename Getter>
 static void pack_help_audio(OutputStream& dest, Sector32* sectors_dest, s32 count, CollectionAsset& src, Game game, Getter getter);
 
 on_load(Audio, []() {
-	AudioWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<AudioWadAsset>(unpack_audio_wad);
+	AudioWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<AudioWadAsset>(unpack_audio_wad<GcAudioWadHeader>);
+	AudioWadAsset::funcs.unpack_rac3 = wrap_wad_unpacker_func<AudioWadAsset>(unpack_audio_wad<UyaAudioWadHeader>);
+	AudioWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<AudioWadAsset>(unpack_audio_wad<DlAudioWadHeader>);
 	
-	AudioWadAsset::funcs.pack_dl = wrap_wad_packer_func<AudioWadAsset, DeadlockedAudioWadHeader>(pack_audio_wad);
+	AudioWadAsset::funcs.pack_rac2 = wrap_wad_packer_func<AudioWadAsset, GcAudioWadHeader>(pack_audio_wad<GcAudioWadHeader>);
+	AudioWadAsset::funcs.pack_rac3 = wrap_wad_packer_func<AudioWadAsset, UyaAudioWadHeader>(pack_audio_wad<UyaAudioWadHeader>);
+	AudioWadAsset::funcs.pack_dl = wrap_wad_packer_func<AudioWadAsset, DlAudioWadHeader>(pack_audio_wad<DlAudioWadHeader>);
 })
 
+template <typename Header>
 static void unpack_audio_wad(AudioWadAsset& dest, InputStream& src, Game game) {
-	auto header = src.read<DeadlockedAudioWadHeader>(0);
+	auto header = src.read<Header>(0);
 	
 	std::set<s64> end_sectors;
 	for(Sector32 sector : header.vendor) end_sectors.insert(sector.sectors);
-	for(SectorByteRange range : header.global_sfx) end_sectors.insert(range.offset.sectors);
+	if constexpr(std::is_same_v<Header, DlAudioWadHeader>) {
+		for(SectorByteRange range : header.global_sfx) end_sectors.insert(range.offset.sectors);
+	}
 	for(Sector32 sector : header.help_english) end_sectors.insert(sector.sectors);
 	for(Sector32 sector : header.help_french) end_sectors.insert(sector.sectors);
 	for(Sector32 sector : header.help_german) end_sectors.insert(sector.sectors);
@@ -68,7 +99,11 @@ static void unpack_audio_wad(AudioWadAsset& dest, InputStream& src, Game game) {
 			unpack_asset(vendor.child<BinaryAsset>(i), src, SectorRange{sector, *end_sector - sector}, game);
 		}
 	}
-	unpack_assets<BinaryAsset>(dest.global_sfx(), src, ARRAY_PAIR(header.global_sfx), game);
+	
+	if constexpr(std::is_same_v<Header, DlAudioWadHeader>) {
+		unpack_assets<BinaryAsset>(dest.global_sfx(), src, ARRAY_PAIR(header.global_sfx), game);
+	}
+	
 	CollectionAsset& help_collection = dest.help();
 	CollectionAsset& help_file = help_collection.switch_files("help/help.asset");
 	
@@ -79,9 +114,13 @@ static void unpack_audio_wad(AudioWadAsset& dest, InputStream& src, Game game) {
 	unpack_help_audio(help_file, src, ARRAY_PAIR(header.help_italian), game, end_sectors, &HelpAudioAsset::italian<BinaryAsset>);
 }
 
-static void pack_audio_wad(OutputStream& dest, DeadlockedAudioWadHeader& header, AudioWadAsset& src, Game game) {
+template <typename Header>
+static void pack_audio_wad(OutputStream& dest, Header& header, AudioWadAsset& src, Game game) {
 	pack_assets_sa(dest, ARRAY_PAIR(header.vendor), src.get_vendor(), game);
-	pack_assets_sa(dest, ARRAY_PAIR(header.global_sfx), src.get_global_sfx(), game);
+	
+	if constexpr(std::is_same_v<Header, DlAudioWadHeader>) {
+		pack_assets_sa(dest, ARRAY_PAIR(header.global_sfx), src.get_global_sfx(), game);
+	}
 	
 	pack_help_audio(dest, ARRAY_PAIR(header.help_english), src.get_help(), game, &HelpAudioAsset::get_english);
 	pack_help_audio(dest, ARRAY_PAIR(header.help_french), src.get_help(), game, &HelpAudioAsset::get_french);
