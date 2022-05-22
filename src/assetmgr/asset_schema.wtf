@@ -602,6 +602,7 @@ AssetType LevelCore {
 	Child common_fx_textures { allowed_types: ['Collection'] }
 	Child local_fx_textures { allowed_types: ['Collection'] }
 	Child sound_remap { allowed_types: ['Binary'] }
+	Child moby_sound_remap { allowed_types: ['Binary'] }
 	Child ratchet_seqs {
 		allowed_types: ['Collection']
 		games: [1 2 3]

@@ -102,7 +102,8 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 	}
 	
 	if(game != Game::RAC1) {
-		unpack_asset(dest.sound_remap(), index, ByteRange{header.sound_remap_offset, header.moby_gs_stash_list - header.sound_remap_offset}, game);
+		unpack_asset(dest.sound_remap(), index, ByteRange{header.sound_remap_offset, header.moby_sound_remap_offset - header.sound_remap_offset}, game);
+		unpack_asset(dest.moby_sound_remap(), index, ByteRange{header.moby_sound_remap_offset, header.moby_gs_stash_list - header.moby_sound_remap_offset}, game);
 	}
 	
 	print_level_core_header(header);
@@ -197,7 +198,8 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 		index.write_v(ratchet_seq_offsets);
 	}
 	
-	header.moby_sound_remap_offset = pack_asset<ByteRange>(index, src.get_sound_remap(), game, 0x10).offset;
+	header.sound_remap_offset = pack_asset<ByteRange>(index, src.get_sound_remap(), game, 0x10).offset;
+	header.moby_sound_remap_offset = pack_asset<ByteRange>(index, src.get_moby_sound_remap(), game, 0x10).offset;
 	
 	index.pad(0x10, 0);
 	header.moby_gs_stash_list = index.tell();

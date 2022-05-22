@@ -154,7 +154,7 @@ s64 write_shared_level_textures(OutputStream& data, OutputStream& gs, std::vecto
 			
 			data.pad(0x100, 0);
 			record.texture_offset = data.tell();
-			//data.write_v(texture.data);
+			data.write_v(texture.data);
 		}
 	}
 	return ofs;
