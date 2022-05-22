@@ -79,17 +79,19 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 	
 	BuildAsset& build = build_or_root_from_level_core_asset(dest);
 	
-	CollectionAsset& moby_classes = build.moby_classes();
-	unpack_moby_classes(moby_classes, header, index, data, gs_ram, block_bounds, game);
-	dest.child<ReferenceAsset>("moby_classes").set_asset(moby_classes.reference());
+	// Unpack all the classes into the global directory and then create
+	// references to them for the current level.
+	CollectionAsset& moby_data = build.moby_classes();
+	CollectionAsset& moby_refs = dest.moby_classes();
+	unpack_moby_classes(moby_data, moby_refs, header, index, data, gs_ram, block_bounds, game);
 	
-	CollectionAsset& tie_classes = build.tie_classes();
-	unpack_tie_classes(tie_classes, header, index, data, gs_ram, block_bounds, game);
-	dest.child<ReferenceAsset>("tie_classes").set_asset(tie_classes.reference());
+	CollectionAsset& tie_data = build.tie_classes();
+	CollectionAsset& tie_refs = dest.tie_classes();
+	unpack_tie_classes(tie_data, tie_refs, header, index, data, gs_ram, block_bounds, game);
 	
-	CollectionAsset& shrub_classes = build.shrub_classes();
-	unpack_shrub_classes(shrub_classes, header, index, data, gs_ram, block_bounds, game);
-	dest.child<ReferenceAsset>("shrub_classes").set_asset(shrub_classes.reference());
+	CollectionAsset& shrub_data = build.shrub_classes();
+	CollectionAsset& shrub_refs = dest.shrub_classes();
+	unpack_shrub_classes(shrub_data, shrub_refs, header, index, data, gs_ram, block_bounds, game);
 	
 	if(game != Game::DL && header.ratchet_seqs_rac123 != 0) {
 		CollectionAsset& ratchet_seqs = dest.ratchet_seqs();
@@ -99,7 +101,6 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 		}
 	}
 	
-	//unpack_asset(dest.part_defs(), index, ByteRange{header.part_defs_offset, header.sound_remap_offset - header.part_defs_offset}, game);
 	if(game != Game::RAC1) {
 		unpack_asset(dest.sound_remap(), index, ByteRange{header.sound_remap_offset, header.moby_gs_stash_list - header.sound_remap_offset}, game);
 	}
@@ -108,10 +109,19 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 }
 
 void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, std::vector<u8>& gs_ram_dest, LevelCoreAsset& src, Game game) {
-	std::vector<u8> uncompressed_data;
 	MemoryOutputStream index(index_dest);
-	MemoryOutputStream data(uncompressed_data);
 	MemoryOutputStream gs_ram(gs_ram_dest);
+	
+	std::vector<u8> uncompressed_data;
+	BlackHoleOutputStream fake_data;
+	MemoryOutputStream real_data(uncompressed_data);
+	OutputStream* data_ptr;
+	if(g_asset_packer_dry_run) {
+		data_ptr = &fake_data;
+	} else {
+		data_ptr = &real_data;
+	}
+	OutputStream& data = *data_ptr;
 	
 	LevelCoreHeader header = {0};
 	index.alloc<LevelCoreHeader>();
@@ -131,29 +141,33 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	header.tie_classes = tie_tab;
 	header.shrub_classes = shrub_tab;
 	
-	SharedLevelTextures shared = read_level_textures(tfrag_textures, mobies, ties, shrubs);
-	
-	deduplicate_level_textures(shared.textures);
-	deduplicate_level_palettes(shared.textures);
-	
+	SharedLevelTextures shared;
 	std::vector<GsRamEntry> gs_table;
-	
-	header.textures_base_offset = write_shared_level_textures(data, gs_ram, gs_table, shared.textures);
-	
-	header.tfrag_textures = write_level_texture_table(index, shared.textures, shared.tfrag_range, header.textures_base_offset);
-	header.moby_textures = write_level_texture_table(index, shared.textures, shared.moby_range, header.textures_base_offset);
-	header.tie_textures = write_level_texture_table(index, shared.textures, shared.tie_range, header.textures_base_offset);
-	header.shrub_textures = write_level_texture_table(index, shared.textures, shared.shrub_range, header.textures_base_offset);
-	
-	auto part_info = pack_particle_textures(index, data, src.get_particle_textures(), game);
-	header.part_textures = std::get<0>(part_info);
-	header.part_defs_offset = std::get<1>(part_info);
-	header.part_bank_offset = std::get<2>(part_info);
-	auto [fx_textures, fx_bank_offset] = pack_fx_textures(index, data, src.get_common_fx_textures(), src.get_local_fx_textures(), game);
-	header.fx_textures = fx_textures;
-	header.fx_bank_offset = fx_bank_offset;
-	
-	printf("Shared texture memory: 0x%x bytes\n", header.part_bank_offset - header.textures_base_offset);
+	if(!g_asset_packer_dry_run) {
+		shared = read_level_textures(tfrag_textures, mobies, ties, shrubs);
+		
+		deduplicate_level_textures(shared.textures);
+		deduplicate_level_palettes(shared.textures);
+		
+		std::vector<GsRamEntry> gs_table;
+		
+		header.textures_base_offset = write_shared_level_textures(data, gs_ram, gs_table, shared.textures);
+		
+		header.tfrag_textures = write_level_texture_table(index, shared.textures, shared.tfrag_range, header.textures_base_offset);
+		header.moby_textures = write_level_texture_table(index, shared.textures, shared.moby_range, header.textures_base_offset);
+		header.tie_textures = write_level_texture_table(index, shared.textures, shared.tie_range, header.textures_base_offset);
+		header.shrub_textures = write_level_texture_table(index, shared.textures, shared.shrub_range, header.textures_base_offset);
+		
+		auto part_info = pack_particle_textures(index, data, src.get_particle_textures(), game);
+		header.part_textures = std::get<0>(part_info);
+		header.part_defs_offset = std::get<1>(part_info);
+		header.part_bank_offset = std::get<2>(part_info);
+		auto [fx_textures, fx_bank_offset] = pack_fx_textures(index, data, src.get_common_fx_textures(), src.get_local_fx_textures(), game);
+		header.fx_textures = fx_textures;
+		header.fx_bank_offset = fx_bank_offset;
+		
+		printf("Shared texture memory: 0x%x bytes\n", header.part_bank_offset - header.textures_base_offset);
+	}
 	
 	header.gs_ram.count = gs_table.size();
 	header.gs_ram.offset = index.tell();
@@ -183,12 +197,13 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 		index.write_v(ratchet_seq_offsets);
 	}
 	
-	//header.part_defs_offset = pack_asset<ByteRange>(data, src.get_part_defs(), game, 0x10).offset;
-	header.sound_remap_offset = pack_asset<ByteRange>(data, src.get_sound_remap(), game, 0x10).offset;
+	header.moby_sound_remap_offset = pack_asset<ByteRange>(index, src.get_sound_remap(), game, 0x10).offset;
 	
 	index.pad(0x10, 0);
 	header.moby_gs_stash_list = index.tell();
 	index.write<s16>(-1);
+	
+	index.pad(0x10, 0);
 	
 	if(game != Game::RAC1) {
 		header.moby_gs_stash_count_rac23dl = 1;
@@ -201,7 +216,9 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	header.assets_compressed_size = data_dest.size();
 	header.assets_decompressed_size = uncompressed_data.size();
 	
-	print_level_core_header(header);
+	if(!g_asset_packer_dry_run) {
+		print_level_core_header(header);
+	}
 	
 	index.write(0, header);
 	

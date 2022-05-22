@@ -171,7 +171,7 @@ static void pack_dl_level_wad(OutputStream& dest, DeadlockedLevelWadHeader& head
 	header.sound_bank = pack_asset_sa<SectorRange>(dest, src.get_data().get_sound_bank(), game);
 	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), game);
 	header.chunks = pack_chunks(dest, src.get_chunks(), game);
-	header.gameplay = pack_asset_sa<SectorRange>(dest, src.get_data().get_gameplay(), game);
+	header.gameplay = pack_compressed_asset_sa<SectorRange>(dest, src.get_data().get_gameplay(), game, "gameplay");
 	std::tie(header.missions, header.max_mission_sizes) = pack_missions(dest, src.get_missions(), game);
 	header.art_instances = pack_compressed_asset_sa<SectorRange>(dest, src.get_data().get_art_instances(), game, "art_insts");
 }

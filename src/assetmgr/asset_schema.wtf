@@ -599,7 +599,6 @@ AssetType LevelCore {
 	Child tie_classes { allowed_types: ['Collection'] }
 	Child shrub_classes { allowed_types: ['Collection'] }
 	Child particle_textures { allowed_types: ['Collection'] }
-	Child part_defs { allowed_types: ['Binary'] }
 	Child common_fx_textures { allowed_types: ['Collection'] }
 	Child local_fx_textures { allowed_types: ['Collection'] }
 	Child sound_remap { allowed_types: ['Binary'] }

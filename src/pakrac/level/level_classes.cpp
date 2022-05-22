@@ -22,7 +22,7 @@
 #include <pakrac/asset_packer.h>
 #include <pakrac/level/level_core.h> // LevelCoreHeader
 
-void unpack_moby_classes(CollectionAsset& dest, const LevelCoreHeader& header, InputStream& index, InputStream& data, InputStream& gs_ram, const std::vector<s64>& block_bounds, Game game) {
+void unpack_moby_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest, const LevelCoreHeader& header, InputStream& index, InputStream& data, InputStream& gs_ram, const std::vector<s64>& block_bounds, Game game) {
 	auto classes = index.read_multiple<MobyClassEntry>(header.moby_classes);
 	auto textures = index.read_multiple<TextureEntry>(header.moby_textures);
 	
@@ -30,7 +30,7 @@ void unpack_moby_classes(CollectionAsset& dest, const LevelCoreHeader& header, I
 	
 	for(const MobyClassEntry& entry : classes) {
 		std::string path = stringf("/mobies/%d/moby%d.asset", entry.o_class, entry.o_class);
-		MobyClassAsset& asset = dest.switch_files(path).child<MobyClassAsset>(entry.o_class);
+		MobyClassAsset& asset = data_dest.switch_files(path).child<MobyClassAsset>(entry.o_class);
 		asset.set_id(entry.o_class);
 		asset.set_has_moby_table_entry(true);
 		
@@ -42,10 +42,12 @@ void unpack_moby_classes(CollectionAsset& dest, const LevelCoreHeader& header, I
 			//	unpack_asset(asset, data, block_range(entry.offset_in_asset_wad, block_bounds), game);
 			//}
 		}
+		
+		refs_dest.child<ReferenceAsset>(entry.o_class).set_asset(asset.reference());
 	}
 }
 
-void unpack_tie_classes(CollectionAsset& dest, const LevelCoreHeader& header, InputStream& index, InputStream& data, InputStream& gs_ram, const std::vector<s64>& block_bounds, Game game) {
+void unpack_tie_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest, const LevelCoreHeader& header, InputStream& index, InputStream& data, InputStream& gs_ram, const std::vector<s64>& block_bounds, Game game) {
 	auto classes = index.read_multiple<MobyClassEntry>(header.tie_classes);
 	auto textures = index.read_multiple<TextureEntry>(header.tie_textures);
 	
@@ -53,7 +55,7 @@ void unpack_tie_classes(CollectionAsset& dest, const LevelCoreHeader& header, In
 	
 	for(const MobyClassEntry& entry : classes) {
 		std::string path = stringf("/ties/%d/tie%d.asset", entry.o_class, entry.o_class);
-		TieClassAsset& asset = dest.switch_files(path).child<TieClassAsset>(entry.o_class);
+		TieClassAsset& asset = data_dest.switch_files(path).child<TieClassAsset>(entry.o_class);
 		asset.set_id(entry.o_class);
 		
 		unpack_level_textures(asset.textures(), entry.textures, textures, texture_data, gs_ram, game);
@@ -61,10 +63,12 @@ void unpack_tie_classes(CollectionAsset& dest, const LevelCoreHeader& header, In
 		if(entry.offset_in_asset_wad != 0) {
 			unpack_asset(asset.core(), data, level_core_block_range(entry.offset_in_asset_wad, block_bounds), game);
 		}
+		
+		refs_dest.child<ReferenceAsset>(entry.o_class).set_asset(asset.reference());
 	}
 }
 
-void unpack_shrub_classes(CollectionAsset& dest, const LevelCoreHeader& header, InputStream& index, InputStream& data, InputStream& gs_ram, const std::vector<s64>& block_bounds, Game game) {
+void unpack_shrub_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest, const LevelCoreHeader& header, InputStream& index, InputStream& data, InputStream& gs_ram, const std::vector<s64>& block_bounds, Game game) {
 	auto classes = index.read_multiple<ShrubClassEntry>(header.shrub_classes);
 	auto textures = index.read_multiple<TextureEntry>(header.shrub_textures);
 	
@@ -72,7 +76,7 @@ void unpack_shrub_classes(CollectionAsset& dest, const LevelCoreHeader& header, 
 	
 	for(const ShrubClassEntry& entry : classes) {
 		std::string path = stringf("/shrubs/%d/shrub%d.asset", entry.o_class, entry.o_class);
-		ShrubClassAsset& asset = dest.switch_files(path).child<ShrubClassAsset>(entry.o_class);
+		ShrubClassAsset& asset = data_dest.switch_files(path).child<ShrubClassAsset>(entry.o_class);
 		asset.set_id(entry.o_class);
 		
 		unpack_level_textures(asset.textures(), entry.textures, textures, texture_data, gs_ram, game);
@@ -80,6 +84,8 @@ void unpack_shrub_classes(CollectionAsset& dest, const LevelCoreHeader& header, 
 		if(entry.offset_in_asset_wad != 0) {
 			unpack_asset(asset.core(), data, level_core_block_range(entry.offset_in_asset_wad, block_bounds), game);
 		}
+		
+		refs_dest.child<ReferenceAsset>(entry.o_class).set_asset(asset.reference());
 	}
 }
 
@@ -115,7 +121,9 @@ void pack_moby_classes(OutputStream& index, OutputStream& core, CollectionAsset&
 			if(child.has_core()) {
 				entry.offset_in_asset_wad = pack_asset<ByteRange>(core, child.get_core(), game, 0x40).offset;
 			}
-			texture_index += write_level_texture_indices(entry.textures, textures, texture_index, MOBY_TEXTURE_TABLE);
+			if(!g_asset_packer_dry_run) {
+				texture_index += write_level_texture_indices(entry.textures, textures, texture_index, MOBY_TEXTURE_TABLE);
+			}
 			index.write(table + (i++) * sizeof(MobyClassEntry), entry);
 		}
 	});
@@ -129,7 +137,9 @@ void pack_tie_classes(OutputStream& index, OutputStream& core, CollectionAsset& 
 		if(child.has_core()) {
 			entry.offset_in_asset_wad = pack_asset<ByteRange>(core, child.get_core(), game, 0x40).offset;
 		}
-		texture_index += write_level_texture_indices(entry.textures, textures, texture_index, TIE_TEXTURE_TABLE);
+		if(!g_asset_packer_dry_run) {
+			texture_index += write_level_texture_indices(entry.textures, textures, texture_index, TIE_TEXTURE_TABLE);
+		}
 		index.write(table + (i++) * sizeof(TieClassEntry), entry);
 	});
 }
@@ -142,7 +152,9 @@ void pack_shrub_classes(OutputStream& index, OutputStream& core, CollectionAsset
 		if(child.has_core()) {
 			entry.offset_in_asset_wad = pack_asset<ByteRange>(core, child.get_core(), game, 0x40).offset;
 		}
-		texture_index += write_level_texture_indices(entry.textures, textures, texture_index, SHRUB_TEXTURE_TABLE);
+		if(!g_asset_packer_dry_run) {
+			texture_index += write_level_texture_indices(entry.textures, textures, texture_index, SHRUB_TEXTURE_TABLE);
+		}
 		index.write(table + (i++) * sizeof(ShrubClassEntry), entry);
 	});
 }
