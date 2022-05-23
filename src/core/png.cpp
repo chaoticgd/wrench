@@ -67,15 +67,49 @@ Opt<Texture> read_png(InputStream& src) {
 	
 	switch(colour_type) {
 		case PNG_COLOR_TYPE_RGB: {
-			break;
+			verify(bit_depth == 8, "RGB PNG files must have a bit depth of 8.");
+			assert(png_get_rowbytes(png_ptr, info_ptr) == width * 3);
+			
+			std::vector<u8> rgb_data(width * height * 3);
+			std::vector<png_bytep> row_pointers(height);
+			for(u32 y = 0; y < height; y++) {
+				row_pointers[y] = &rgb_data[y * width * 3];
+			}
+			png_read_image(png_ptr, row_pointers.data());
+			png_read_end(png_ptr, info_ptr);
+			
+			png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
+			
+			std::vector<u8> data(width * height * 4);
+			for(u32 i = 0; i < width * height; i++) {
+				data[i * 4 + 0] = rgb_data[i * 3 + 0];
+				data[i * 4 + 1] = rgb_data[i * 3 + 1];
+				data[i * 4 + 2] = rgb_data[i * 3 + 2];
+				data[i * 4 + 3] = 0xff;
+			}
+			
+			return Texture::create_rgba(width, height, std::move(data));
 		}
 		case PNG_COLOR_TYPE_RGBA: {
-			break;
+			verify(bit_depth == 8, "RGBA PNG files must have a bit depth of 8.");
+			assert(png_get_rowbytes(png_ptr, info_ptr) == width * 4);
+			
+			std::vector<u8> data(width * height * 4);
+			std::vector<png_bytep> row_pointers(height);
+			for(u32 y = 0; y < height; y++) {
+				row_pointers[y] = &data[y * width * 4];
+			}
+			png_read_image(png_ptr, row_pointers.data());
+			png_read_end(png_ptr, info_ptr);
+			
+			png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
+			
+			return Texture::create_rgba(width, height, std::move(data));
 		}
 		case PNG_COLOR_TYPE_GRAY: {
 			verify(bit_depth == 8, "Grayscale PNG files must have a bit depth of 8.");
-			
 			assert(png_get_rowbytes(png_ptr, info_ptr) == width);
+			
 			std::vector<u8> data(width * height);
 			std::vector<png_bytep> row_pointers(height);
 			for(u32 y = 0; y < height; y++) {
@@ -161,7 +195,23 @@ void write_png(OutputStream& dest, const Texture& texture) {
 	
 	switch(texture.format) {
 		case PixelFormat::RGBA: {
-			verify_not_reached("Support for writing RGBA PNG files not yet implemented.");
+			assert(texture.data.size() == texture.width * texture.height * 4);
+			
+			png_set_IHDR(png_ptr, info_ptr,
+				texture.width, texture.height, 8,
+				PNG_COLOR_TYPE_RGBA, PNG_INTERLACE_NONE,
+				PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
+			
+			png_write_info(png_ptr, info_ptr);
+			
+			std::vector<png_bytep> row_pointers(texture.height);
+			for(s32 y = 0; y < texture.height; y++) {
+				s32 row_offset = y * texture.width;
+				row_pointers[y] = const_cast<u8*>(&texture.data[y * texture.width * 4]);
+			}
+			
+			png_write_image(png_ptr, row_pointers.data());
+			
 			break;
 		}
 		case PixelFormat::GRAYSCALE: {

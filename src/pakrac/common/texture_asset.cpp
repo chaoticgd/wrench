@@ -23,7 +23,7 @@
 static void unpack_texture_asset(TextureAsset& dest, InputStream& src, Game game, AssetFormatHint hint);
 static void pack_texture_asset(OutputStream& dest, TextureAsset& src, Game game, AssetFormatHint hint);
 static Texture unpack_pif(InputStream& src);
-static void pack_pif(OutputStream& dest, TextureAsset& src, AssetFormatHint hint);
+static void pack_pif(OutputStream& dest, Texture& texture, AssetFormatHint hint);
 static bool test_texture_asset(std::vector<u8>& original, std::vector<u8>& repacked, Game game, AssetFormatHint hint);
 
 on_load(Texture, []() {
@@ -40,21 +40,65 @@ on_load(Texture, []() {
 	TextureAsset::funcs.test = new AssetTestFunc(test_texture_asset);
 })
 
+packed_struct(RgbaTextureHeader,
+	s32 width;
+	s32 height;
+	u32 pad[2];
+)
+
 static void unpack_texture_asset(TextureAsset& dest, InputStream& src, Game game, AssetFormatHint hint) {
+	Texture texture;
 	switch(hint) {
+		case FMT_TEXTURE_RGBA: {
+			RgbaTextureHeader header = src.read<RgbaTextureHeader>(0);
+			std::vector<u8> data = src.read_multiple<u8>(0x10, header.width * header.height * 4);
+			texture = Texture::create_rgba(header.width, header.height, data);
+			texture.multiply_alphas();
+			break;
+		}
+		case FMT_TEXTURE_PIF4:
+		case FMT_TEXTURE_PIF4_SWIZZLED:
+		case FMT_TEXTURE_PIF8:
+		case FMT_TEXTURE_PIF8_SWIZZLED:
 		default: {
-			Texture texture = unpack_pif(src);
-			auto [file, ref] = dest.file().open_binary_file_for_writing(dest.tag() + ".png");
-			write_png(*file, texture);
-			dest.set_src(ref);
+			texture = unpack_pif(src);
 		}
 	}
+	auto [file, ref] = dest.file().open_binary_file_for_writing(dest.tag() + ".png");
+	write_png(*file, texture);
+	dest.set_src(ref);
 }
 
 static void pack_texture_asset(OutputStream& dest, TextureAsset& src, Game game, AssetFormatHint hint) {
+	auto stream = src.file().open_binary_file_for_reading(src.src());
+	verify(stream.get(), "Failed to open PNG file.");
+	Opt<Texture> texture = read_png(*stream);
+	verify(texture.has_value(), "Failed to read PNG file.");
+	
 	switch(hint) {
+		case FMT_TEXTURE_RGBA: {
+			texture->to_rgba();
+			texture->divide_alphas();
+			
+			RgbaTextureHeader header = {0};
+			header.width = texture->width;
+			header.height = texture->height;
+			dest.write(header);
+			dest.write_v(texture->data);
+			
+			break;
+		}
+		case FMT_TEXTURE_PIF4:
+		case FMT_TEXTURE_PIF4_SWIZZLED: {
+			texture->to_4bit_paletted();
+			pack_pif(dest, *texture, hint);
+			break;
+		}
+		case FMT_TEXTURE_PIF8:
+		case FMT_TEXTURE_PIF8_SWIZZLED:
 		default: {
-			pack_pif(dest, src, hint);
+			texture->to_8bit_paletted();
+			pack_pif(dest, *texture, hint);
 		}
 	}
 }
@@ -99,46 +143,40 @@ static Texture unpack_pif(InputStream& src) {
 			verify_not_reached("PIF has invalid format field.");
 		}
 	}
-
 }
 
-static void pack_pif(OutputStream& dest, TextureAsset& src, AssetFormatHint hint) {
-	auto stream = src.file().open_binary_file_for_reading(src.src());
-	verify(stream.get(), "Failed to open PNG file.");
-	Opt<Texture> texture = read_png(*stream);
-	verify(texture.has_value(), "Failed to read PNG file.");
-	
-	texture->divide_alphas();
+static void pack_pif(OutputStream& dest, Texture& texture, AssetFormatHint hint) {
+	texture.divide_alphas();
 	
 	s64 header_ofs = dest.tell();
 	PifHeader header = {0};
 	dest.write(header);
 	memcpy(header.magic, "2FIP", 4);
-	header.width = texture->width;
-	header.height = texture->height;
+	header.width = texture.width;
+	header.height = texture.height;
 	header.mip_levels = 1;
 	
 	switch(hint) {
 		case FMT_TEXTURE_PIF4:
 		case FMT_TEXTURE_PIF4_SWIZZLED: {
 			header.format = 0x94;
-			dest.write_n((u8*) texture->palette().data(), std::min(texture->palette().size(), (size_t) 16) * 4);
-			for(size_t i = texture->palette().size(); i < 16; i++) {
+			dest.write_n((u8*) texture.palette().data(), std::min(texture.palette().size(), (size_t) 16) * 4);
+			for(size_t i = texture.palette().size(); i < 16; i++) {
 				dest.write<u32>(0);
 			}
-			dest.write_n(texture->data.data(), texture->data.size());
+			dest.write_n(texture.data.data(), texture.data.size());
 			break;
 		}
 		case FMT_TEXTURE_PIF8:
 		case FMT_TEXTURE_PIF8_SWIZZLED: {
-			texture->swizzle_palette();
+			texture.swizzle_palette();
 			
 			header.format = 0x13;
-			dest.write_n((u8*) texture->palette().data(), std::min(texture->palette().size(), (size_t) 256) * 4);
-			for(size_t i = texture->palette().size(); i < 256; i++) {
+			dest.write_n((u8*) texture.palette().data(), std::min(texture.palette().size(), (size_t) 256) * 4);
+			for(size_t i = texture.palette().size(); i < 256; i++) {
 				dest.write<u32>(0);
 			}
-			dest.write_n(texture->data.data(), texture->data.size());
+			dest.write_n(texture.data.data(), texture.data.size());
 			break;
 		}
 		default: assert(0);

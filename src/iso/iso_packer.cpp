@@ -32,7 +32,9 @@ static IsoDirectory pack_globals(OutputStream& iso, std::vector<GlobalWadInfo>& 
 static std::array<IsoDirectory, 3> pack_levels(OutputStream& iso, std::vector<LevelInfo>& levels, Game game, s32 single_level_index, AssetPackerFunc pack);
 static void pack_level_wad_outer(OutputStream& iso, IsoDirectory& directory, LevelWadInfo& wad, const char* name, Game game, s32 index, AssetPackerFunc pack);
 
-void pack_iso(OutputStream& iso, BuildAsset& build, Game game, AssetPackerFunc pack) {
+void pack_iso(OutputStream& iso, BuildAsset& build, Game, AssetPackerFunc pack) {
+	Game game = (Game) build.game();
+	
 	s32 single_level_index = -1;
 	
 	pack_ps2_logo(iso, build, pack);

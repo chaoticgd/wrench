@@ -296,26 +296,52 @@ void Texture::swizzle_palette() {
 }
 
 void Texture::multiply_alphas() {
-	for(u32& colour : palette()) {
-		u32 alpha = (colour & 0xff000000) >> 24;
-		if(alpha < 0x80) {
-			alpha *= 2;
-		} else {
-			alpha = 255;
+	switch(format) {
+		case PixelFormat::RGBA:
+		case PixelFormat::GRAYSCALE: {
+			for(size_t i = 3; i < data.size(); i += 4) {
+				data[i] *= 2;
+			}
+			break;
 		}
-		colour = (colour & 0xffffff) | (alpha << 24);
+		case PixelFormat::PALETTED_4:
+		case PixelFormat::PALETTED_8: {
+			for(u32& colour : palette()) {
+				u32 alpha = (colour & 0xff000000) >> 24;
+				if(alpha < 0x80) {
+					alpha *= 2;
+				} else {
+					alpha = 255;
+				}
+				colour = (colour & 0xffffff) | (alpha << 24);
+			}
+			break;
+		}
 	}
 }
 
 void Texture::divide_alphas() {
-	for(u32& colour : palette()) {
-		u32 alpha = (colour & 0xff000000) >> 24;
-		if(alpha == 0xff) {
-			alpha = 0x80;
-		} else {
-			alpha /= 2;
+	switch(format) {
+		case PixelFormat::RGBA:
+		case PixelFormat::GRAYSCALE: {
+			for(size_t i = 3; i < data.size(); i += 4) {
+				data[i] /= 2;
+			}
+			break;
 		}
-		colour = (colour & 0xffffff) | (alpha << 24);
+		case PixelFormat::PALETTED_4:
+		case PixelFormat::PALETTED_8: {
+			for(u32& colour : palette()) {
+				u32 alpha = (colour & 0xff000000) >> 24;
+				if(alpha == 0xff) {
+					alpha = 0x80;
+				} else {
+					alpha /= 2;
+				}
+				colour = (colour & 0xffffff) | (alpha << 24);
+			}
+			break;
+		}
 	}
 }
 

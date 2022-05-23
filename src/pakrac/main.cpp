@@ -38,7 +38,8 @@ enum ArgFlags : u32 {
 	ARG_INPUT_PATHS = 1 << 1,
 	ARG_ASSET = 1 << 2,
 	ARG_OUTPUT_PATH = 1 << 3,
-	ARG_OFFSET = 1 << 4
+	ARG_OFFSET = 1 << 4,
+	ARG_GAME = 1 << 5
 };
 
 struct ParsedArgs {
@@ -46,11 +47,12 @@ struct ParsedArgs {
 	std::string asset;
 	fs::path output_path;
 	s64 offset = -1;
+	Game game = Game::RAC1;
 };
 
 static ParsedArgs parse_args(int argc, char** argv, u32 flags);
 static void unpack(const fs::path& input_path, const fs::path& output_path);
-static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path);
+static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path, Game game);
 static void decompress(const fs::path& input_path, const fs::path& output_path, s64 offset);
 static void compress(const fs::path& input_path, const fs::path& output_path);
 static void extract(fs::path input_path, fs::path output_path);
@@ -100,8 +102,8 @@ int main(int argc, char** argv) {
 	}
 	
 	if(mode == "pack") {
-		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATHS | ARG_ASSET | ARG_OUTPUT_PATH);
-		pack(args.input_paths, args.asset, args.output_path);
+		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATHS | ARG_ASSET | ARG_OUTPUT_PATH | ARG_GAME);
+		pack(args.input_paths, args.asset, args.output_path, args.game);
 		return 0;
 	}
 	
@@ -164,6 +166,23 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 		if((flags & ARG_OFFSET) && strcmp(argv[i], "-x") == 0) {
 			verify(i + 1 < argc, "Expected offset argument.");
 			args.offset = parse_number(argv[++i]);
+			continue;
+		}
+		
+		if((flags & ARG_GAME) && strcmp(argv[i], "-g") == 0) {
+			verify(i + 1 < argc, "Expected game argument.");
+			const char* game = argv[++i];
+			if(strcmp(game, "rac") == 0) {
+				args.game = Game::RAC1;
+			} else if(strcmp(game, "gc") == 0) {
+				args.game = Game::RAC2;
+			} else if (strcmp(game, "uya") == 0) {
+				args.game = Game::RAC3;
+			} else if(strcmp(game, "dl") == 0) {
+				args.game = Game::DL;
+			} else {
+				verify_not_reached("Invalid game argument. Options are: rac, gc, uya, dl.");
+			}
 			continue;
 		}
 		
@@ -277,7 +296,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path) {
 	verify_not_reached("Unable to detect type of input file '%s'!", input_path.string().c_str());
 }
 
-static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path) {
+static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path, Game game) {
 	printf("[  0%%] Mounting asset banks\n");
 	
 	AssetForest forest;
@@ -296,7 +315,7 @@ static void pack(const std::vector<fs::path>& input_paths, const std::string& as
 	g_asset_packer_max_assets_processed = 0;
 	g_asset_packer_num_assets_processed = 0;
 	g_asset_packer_dry_run = true;
-	pack_asset_impl(dummy, nullptr, nullptr, wad, Game::DL);
+	pack_asset_impl(dummy, nullptr, nullptr, wad, game);
 	g_asset_packer_max_assets_processed = g_asset_packer_num_assets_processed;
 	g_asset_packer_num_assets_processed = 0;
 	g_asset_packer_dry_run = false;
@@ -304,7 +323,7 @@ static void pack(const std::vector<fs::path>& input_paths, const std::string& as
 	FileOutputStream iso;
 	verify(iso.open(output_path), "Failed to open '%s' for writing.\n", output_path.string().c_str());
 	
-	pack_asset_impl(iso, nullptr, nullptr, wad, Game::DL);
+	pack_asset_impl(iso, nullptr, nullptr, wad, game);
 	
 	printf("[100%%] Done!\n");
 }
@@ -373,8 +392,9 @@ static void print_usage() {
 	puts(" unpack <input file> -o <output dir>");
 	puts("   Unpack an ISO or WAD file to produce an asset bank of source files.");
 	puts("");
-	puts(" pack <input asset banks> -a <asset> -o <output iso>");
+	puts(" pack <input asset banks> -a <asset> -o <output iso> -g <game>");
 	puts("   Pack an asset (e.g. base_game) to produce a built file (e.g. an ISO file).");
+	puts("   If <asset> is not a build, the game must be specified (rac, gc, uya or dl).");
 	puts("");
 	puts("DEVELOPER SUBCOMMANDS");
 	puts("");
