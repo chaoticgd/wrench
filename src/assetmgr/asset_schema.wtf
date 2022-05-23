@@ -312,34 +312,58 @@ AssetType BonusWad {
 		allowed_types: ['Collection']
 		required: true
 		games: [2 3 4]
+		Child child {
+			allowed_types: ['Binary']
+		}
 	}
 	Child credits_images {
 		desc: 'The background images used in the credits sequence.'
 		allowed_types: ['Collection']
 		required: true
 		games: [2 3 4]
+		Child child {
+			allowed_types: ['Texture']
+		}
 	}
 	Child demo_menu {
 		allowed_types: ['Collection']
 		required: true
 		games: [2 3 4]
+		Child child {
+			allowed_types: ['Collection']
+			Child child {
+				allowed_types: ['Texture']
+			}
+		}
 	}
 	Child demo_exit {
 		allowed_types: ['Collection']
 		required: true
 		games: [2 3 4]
+		Child child {
+			allowed_types: ['Collection']
+			Child child {
+				allowed_types: ['Texture']
+			}
+		}
 	}
 	Child cheat_images {
 		desc: 'The images used on the cheats screen.'
 		allowed_types: ['Collection']
 		required: true
 		games: [2 3 4]
+		Child child {
+			allowed_types: ['Texture']
+		}
 	}
 	Child skill_images {
 		desc: 'The images used on the skill points screen.'
 		allowed_types: ['Collection']
 		required: true
 		games: [2 3 4]
+		Child child {
+			allowed_types: ['Texture']
+		}
 	}
 	Child trophy_image {
 		allowed_types: ['Texture' 'Binary']

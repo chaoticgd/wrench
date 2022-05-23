@@ -27,6 +27,7 @@ static void write_index(const WtfNode* root);
 static void write_contents(const WtfNode* root);
 static void write_attribute_table(const WtfNode* asset_type);
 static void write_child_table(const WtfNode* asset_type);
+static void write_type_list(std::string& dest, const WtfNode* child, s32 depth);
 static void write_examples(const WtfNode* examples);
 static std::string to_link(const char* str);
 static void reify_node(WtfWriter* ctx, const WtfNode* node);
@@ -183,60 +184,65 @@ static void write_child_table(const WtfNode* asset_type) {
 	out("| - | - | - | - | - |\n");
 	for(const WtfNode* child = asset_type->first_child; child != nullptr; child = child->next_sibling) {
 		if(strcmp(child->type_name, "Child") == 0) {
-			out("| %s ", child->tag);
+			const char* name_str = child->tag;
 			const WtfAttribute* desc = wtf_attribute(child, "desc");
-			if(desc && desc->type == WTF_STRING) {
-				out("| %s", desc->string);
+			const char* desc_str = (desc && desc->type == WTF_STRING)
+				? desc->string : "*Not yet documented.*";
+			std::string types_str;
+			write_type_list(types_str, child, 0);
+			if(types_str.size() > 0) {
+				types_str = types_str.substr(0, types_str.size() - 2);
 			} else {
-				out("| *Not yet documented.*");
+				types_str = "*Not yet documented.*";
 			}
-			out(" | ");
-			const WtfAttribute* types = wtf_attribute(child, "allowed_types");
-			if(types && types->type == WTF_ARRAY) {
-				for(const WtfAttribute* elem = types->first_array_element; elem != nullptr; elem = elem->next) {
-					if(elem->type == WTF_STRING) {
-						out("%s", elem->string);
-						if(elem->next != nullptr) {
-							out(", ");
-						}
-					} else {
-						abort();
-					}
-				}
-				out("");
-			} else {
-				out("*Not yet documented.*");
-			}
-			out(" | ");
 			const WtfAttribute* required = wtf_attribute(child, "required");
-			if(required && required->type == WTF_BOOLEAN) {
-				out("%s", required->boolean ? "Yes" : "No");
-			} else {
-				out("*Not yet documented.*");
-			}
-			out(" | ");
+			const char* required_str = (required && required->type == WTF_BOOLEAN)
+				? (required->boolean ? "Yes" : "No") : "*Not yet documented.*";
 			const WtfAttribute* games = wtf_attribute(child, "games");
+			std::string games_str;
 			if(games && games->type == WTF_ARRAY) {
 				for(const WtfAttribute* elem = games->first_array_element; elem != nullptr; elem = elem->next) {
 					if(elem->type == WTF_NUMBER) {
 						switch(elem->number.i) {
-							case 1: out("RC"); break;
-							case 2: out("GC"); break;
-							case 3: out("UYA"); break;
-							case 4: out("DL"); break;
+							case 1: games_str += "RC"; break;
+							case 2: games_str += "GC"; break;
+							case 3: games_str += "UYA"; break;
+							case 4: games_str += "DL"; break;
 						}
 					}
 					if(elem->next != nullptr) {
-						out("/");
+						games_str += "/";
 					}
 				}
 			} else {
-				out("*Not yet documented.*");
+				games_str += "*Not yet documented.*";
 			}
-			out(" |\n");
+			out("| %s | %s | %s | %s | %s |\n", name_str, desc_str, types_str.c_str(), required_str, games_str.c_str());
 		}
 	}
 	out("\n");
+}
+
+static void write_type_list(std::string& dest, const WtfNode* child, s32 depth) {
+	const WtfAttribute* types = wtf_attribute(child, "allowed_types");
+	if(types && types->type == WTF_ARRAY) {
+		for(const WtfAttribute* elem = types->first_array_element; elem != nullptr; elem = elem->next) {
+			if(elem->type == WTF_STRING) {
+				const WtfNode* sub_child = wtf_child(child, "Child", "child");
+				if(strcmp(elem->string, "Collection") == 0 && sub_child) {
+					write_type_list(dest, sub_child, depth + 1);
+				} else {
+					dest += elem->string;
+					for(s32 i = 0; i < depth; i++) {
+						dest += "\\[\\]";
+					}
+					dest += ", ";
+				}
+			} else {
+				abort();
+			}
+		}
+	}
 }
 
 static void write_examples(const WtfNode* examples) {
