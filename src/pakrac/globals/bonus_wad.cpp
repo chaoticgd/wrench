@@ -22,10 +22,19 @@
 packed_struct(GcBonusWadHeader,
 	/* 0x000 */ s32 header_size;
 	/* 0x004 */ Sector32 sector;
-	/* 0x008 */ u64 pad_8[44];
-	/* 0x1a0 */ SectorRange skill_images[12];
-	/* 0x200 */ u64 pad_200[20];
-	/* 0x2a0 */ SectorRange epilogue_english[12];
+	/* 0x008 */ SectorRange goodies_menu[8];
+	/* 0x048 */ SectorRange thing_menu[2];
+	/* 0x060 */ SectorRange design_sketches[19];
+	/* 0x0f0 */ SectorRange design_renders[19];
+	/* 0x188 */ SectorRange skill_images[31];
+	/* 0x280 */ SectorRange epilogue_english[12];
+	/* 0x2e0 */ SectorRange epilogue_french[12];
+	/* 0x340 */ SectorRange epilogue_italian[12];
+	/* 0x3a0 */ SectorRange thing[25];
+	/* 0x460 */ SectorRange sketchbook[30];
+	/* 0x550 */ SectorRange commercials[3];
+	/* 0x578 */ SectorRange item_images[9];
+	/* 0x5c0 */ SectorRange all_text;
 	
 )
 

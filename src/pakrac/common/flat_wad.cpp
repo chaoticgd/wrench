@@ -55,7 +55,7 @@ static void unpack_image(FlatWadAsset& dest, InputStream& src, s32 offset, Game 
 	
 	char header[8];
 	src.seek(0);
-	src.read_n((u8*) header, 4);
+	src.read_n((u8*) header, sizeof(header));
 	if(memcmp(header, "WAD", 3) == 0) {
 		std::vector<u8> bytes;
 		std::vector<u8> compressed_bytes = src.read_multiple<u8>(0, src.size());
