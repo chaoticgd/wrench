@@ -307,14 +307,50 @@ AssetType BonusWad {
 	wad: true
 	flattenable: true
 	
-	Child credits_text   { allowed_types: ['Collection'] }
-	Child credits_images { allowed_types: ['Collection'] }
-	Child demomenu       { allowed_types: ['Collection'] }
-	Child demoexit       { allowed_types: ['Collection'] }
-	Child cheat_images   { allowed_types: ['Collection'] }
-	Child skill_images   { allowed_types: ['Collection'] }
-	Child trophy_image   { allowed_types: ['Texture' 'Binary'] }
-	Child dige           { allowed_types: ['Binary'] }
+	Child credits_text {
+		desc: 'The text used in the credits sequence.'
+		allowed_types: ['Collection']
+		required: true
+		games: [2 3 4]
+	}
+	Child credits_images {
+		desc: 'The background images used in the credits sequence.'
+		allowed_types: ['Collection']
+		required: true
+		games: [2 3 4]
+	}
+	Child demo_menu {
+		allowed_types: ['Collection']
+		required: true
+		games: [2 3 4]
+	}
+	Child demo_exit {
+		allowed_types: ['Collection']
+		required: true
+		games: [2 3 4]
+	}
+	Child cheat_images {
+		desc: 'The images used on the cheats screen.'
+		allowed_types: ['Collection']
+		required: true
+		games: [2 3 4]
+	}
+	Child skill_images {
+		desc: 'The images used on the skill points screen.'
+		allowed_types: ['Collection']
+		required: true
+		games: [2 3 4]
+	}
+	Child trophy_image {
+		allowed_types: ['Texture' 'Binary']
+		required: true
+		games: [2 3 4]
+	}
+	Child dige {
+		allowed_types: ['Binary']
+		required: true
+		games: [4]
+	}
 }
 
 AssetType GadgetWad {
@@ -393,42 +429,42 @@ AssetType IrxWad {
 	desc: 'A container for IOP modules.'
 	wad: true
 	
-	Child sio2man  {
+	Child sio2man {
 		allowed_types: ['Binary']
 		required: true
 		games: [2 3 4]
 	}
-	Child mcman    {
+	Child mcman {
 		desc: 'Memory card manager.'
 		allowed_types: ['Binary']
 		required: true
 		games: [2 3 4]
 	}
-	Child mcserv   {
+	Child mcserv {
 		desc: 'Memory card server.'
 		allowed_types: ['Binary']
 		required: true
 		games: [2 3 4]
 	}
-	Child padman   {
+	Child padman {
 		desc: 'Gamepad manager.'
 		allowed_types: ['Binary']
 		required: true
 		games: [2 3 4]
 	}
-	Child mtapman  {
+	Child mtapman{
 		desc: 'Multitap manager.'
 		allowed_types: ['Binary']
 		required: true
 		games: [2 3 4]
 	}
-	Child libsd    {
+	Child libsd {
 		desc: 'Sound library.'
 		allowed_types: ['Binary']
 		required: true
 		games: [2 3 4]
 	}
-	Child 989snd   {
+	Child 989snd {
 		desc: 'Sound library.'
 		allowed_types: ['Binary']
 		required: true
