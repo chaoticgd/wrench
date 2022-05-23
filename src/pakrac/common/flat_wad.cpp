@@ -21,7 +21,7 @@
 #include <pakrac/asset_packer.h>
 
 static void unpack_flat_wad_asset(FlatWadAsset& dest, InputStream& src, Game game);
-static void unpack_image(FlatWadAsset& dest, InputStream& src, s32 index, Game game);
+static void unpack_image(FlatWadAsset& dest, InputStream& src, s32 offset, Game game);
 static bool is_common_texture_size(s32 number);
 static void pack_flat_wad_asset(OutputStream& dest, FlatWadAsset& src, Game game);
 
@@ -41,13 +41,14 @@ static void unpack_flat_wad_asset(FlatWadAsset& dest, InputStream& src, Game gam
 	s32 header_size = src.read<s32>(0);
 	std::vector<SectorRange> ranges = src.read_multiple<SectorRange>(0x8, header_size / 0x8);
 	for(size_t i = 0; i < ranges.size(); i++) {
-		unpack_asset(dest.child<BinaryAsset>(stringf("0x%04x", 0x8 + i * 0x8).c_str()), src, ranges[i], game);
+		s32 offset = 0x8 + i * 0x8;
+		unpack_asset(dest.child<BinaryAsset>(stringf("%04d_%04x", offset, offset).c_str()), src, ranges[i], game);
 		SubInputStream stream(src, ranges[i].bytes());
-		unpack_image(dest, stream, i, game);
+		unpack_image(dest, stream, offset, game);
 	}
 }
 
-static void unpack_image(FlatWadAsset& dest, InputStream& src, s32 index, Game game) {
+static void unpack_image(FlatWadAsset& dest, InputStream& src, s32 offset, Game game) {
 	if(src.size() < 8) {
 		return;
 	}
@@ -60,12 +61,12 @@ static void unpack_image(FlatWadAsset& dest, InputStream& src, s32 index, Game g
 		std::vector<u8> compressed_bytes = src.read_multiple<u8>(0, src.size());
 		decompress_wad(bytes, compressed_bytes);
 		MemoryInputStream stream(bytes);
-		unpack_image(dest, stream, index, game);
+		unpack_image(dest, stream, offset, game);
 		return;
 	}
 	
 	if(memcmp(header, "2FIP", 4) == 0) {
-		unpack_asset(dest.child<TextureAsset>(stringf("%04x_pif", 0x8 + index * 0x8).c_str()), src, ByteRange{0, (s32) src.size()}, game);
+		unpack_asset(dest.child<TextureAsset>(stringf("%04d_%04x_pif", offset, offset).c_str()), src, ByteRange{0, (s32) src.size()}, game);
 		return;
 	}
 	
@@ -73,7 +74,7 @@ static void unpack_image(FlatWadAsset& dest, InputStream& src, s32 index, Game g
 	s32 height = *(s32*) &header[4];
 	bool common_size = is_common_texture_size(width) || is_common_texture_size(height);
 	if(width > 0 && height > 0 && common_size && src.size() >= 0x10 + width * height * 4) {
-		unpack_asset(dest.child<TextureAsset>(stringf("%04x_rgba", 0x8 + index * 0x8).c_str()), src, ByteRange{0, (s32) src.size()}, game, FMT_TEXTURE_RGBA);
+		unpack_asset(dest.child<TextureAsset>(stringf("%04d_%04x_rgba", offset, offset).c_str()), src, ByteRange{0, (s32) src.size()}, game, FMT_TEXTURE_RGBA);
 	}
 }
 

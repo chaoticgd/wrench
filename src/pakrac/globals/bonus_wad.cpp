@@ -19,13 +19,23 @@
 #include <pakrac/asset_unpacker.h>
 #include <pakrac/asset_packer.h>
 
+packed_struct(GcBonusWadHeader,
+	/* 0x000 */ s32 header_size;
+	/* 0x004 */ Sector32 sector;
+	/* 0x008 */ u64 pad_8[44];
+	/* 0x1a0 */ SectorRange skill_images[12];
+	/* 0x200 */ u64 pad_200[20];
+	/* 0x2a0 */ SectorRange epilogue_english[12];
+	
+)
+
 packed_struct(UyaBonusWadHeader,
 	/* 0x000 */ s32 header_size;
 	/* 0x004 */ Sector32 sector;
-	/* 0x008 */ u32 pad_8[366];
+	/* 0x008 */ u64 pad_8[183];
 	/* 0x5c0 */ SectorRange credits_text[6];
 	/* 0x5f0 */ SectorRange credits_images[13];
-	/* 0x658 */ u32 pad_658[230];
+	/* 0x658 */ u64 pad_658[115];
 	/* 0x9f0 */ SectorRange demo_menu[6];
 	/* 0xa20 */ SectorRange demo_exit[6];
 	/* 0xa50 */ SectorRange cheat_images[20];
