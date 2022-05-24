@@ -36,6 +36,7 @@ Range pack_asset(OutputStream& dest, Asset& src, Game game, s64 alignment, Asset
 	if(src.type() == BinaryAsset::ASSET_TYPE && !static_cast<BinaryAsset&>(src).has_src()) {
 		return empty_range ? *empty_range : Range::from_bytes(0, 0);
 	}
+	dest.seek(dest.size());
 	dest.pad(alignment, 0);
 	s64 begin = dest.tell();
 	pack_asset_impl(dest, nullptr, nullptr, src, game, hint);
@@ -71,6 +72,7 @@ void pack_assets_sa(OutputStream& dest, Range* ranges_dest, s32 count, Collectio
 
 template <typename Range>
 Range pack_compressed_asset(OutputStream& dest, Asset& src, Game game, s64 alignment, const char* muffin, AssetFormatHint hint = FMT_NO_HINT) {
+	dest.seek(dest.size());
 	dest.pad(alignment, 0);
 	std::vector<u8> bytes;
 	MemoryOutputStream stream(bytes);

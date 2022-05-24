@@ -307,6 +307,111 @@ AssetType BonusWad {
 	wad: true
 	flattenable: true
 	
+	Child goodies_images {
+		desc: 'Images that appear in the R&C1 goodies menu, also included in R&C2 for some reason.'
+		allowed_types: ['Collection']
+		required: true
+		games: [1 2]
+	}
+	Child character_sketches {
+		desc: 'Part of a cut R&C1 credits screen.'
+		allowed_types: ['Collection']
+		required: true
+		games: [1 2]
+	}
+	Child character_renders {
+		desc: 'Part of a cut R&C1 credits screen, also included in R&C2 for some reason.'
+		allowed_types: ['Collection']
+		required: true
+		games: [1 2]
+	}
+	Child old_skill_images {
+		desc: 'The skill point images from R&C1, also included in R&C2 for some reason.'
+		allowed_types: ['Collection']
+		required: true
+		games: [2]
+	}
+	Child epilogue_english {
+		desc: 'The english epilogue images from R&C1, also included in R&C2 for some reason.'
+		allowed_types: ['Collection']
+		required: true
+		games: [1 2]
+	}
+	Child epilogue_french {
+		desc: 'The french epilogue images from R&C1, also included in R&C2 for some reason.'
+		allowed_types: ['Collection']
+		required: true
+		games: [1 2]
+	}
+	Child epilogue_italian {
+		desc: 'The italian epilogue images from R&C1, also included in R&C2 for some reason.'
+		allowed_types: ['Collection']
+		required: true
+		games: [1 2]
+	}
+	Child epilogue_german {
+		desc: 'The german epilogue images from R&C1.'
+		allowed_types: ['Collection']
+		required: true
+		games: [1 2]
+	}
+	Child epilogue_spanish {
+		desc: 'The spanish epilogue images from R&C1.'
+		allowed_types: ['Collection']
+		required: true
+		games: [1 2]
+	}
+	Child sketchbook {
+		allowed_types: ['Collection']
+		required: true
+		games: [1 2]
+	}
+	Child commercials {
+		allowed_types: ['Collection']
+		required: true
+		games: [1 2]
+	}
+	Child item_images {
+		allowed_types: ['Collection']
+		required: true
+		games: [1 2]
+	}
+	Child random_stuff {
+		allowed_types: ['Collection']
+		required: true
+		games: [2]
+	}
+	Child movie_images {
+		allowed_types: ['Collection']
+		required: true
+		games: [2]
+	}
+	Child cinematic_images {
+		allowed_types: ['Collection']
+		required: true
+		games: [2]
+	}
+	Child clanks_day_at_insomniac {
+		allowed_types: ['Collection']
+		required: true
+		games: [2]
+	}
+	Child endorsement_deals {
+		allowed_types: ['Collection']
+		required: true
+		games: [2]
+	}
+	Child short_cuts {
+		allowed_types: ['Collection']
+		required: true
+		games: [2]
+	}
+	Child paintings {
+		allowed_types: ['Collection']
+		required: true
+		games: [2]
+	}
+	
 	Child credits_text {
 		desc: 'The text used in the credits sequence.'
 		allowed_types: ['Collection']
@@ -328,7 +433,7 @@ AssetType BonusWad {
 	Child demo_menu {
 		allowed_types: ['Collection']
 		required: true
-		games: [2 3 4]
+		games: [3 4]
 		Child child {
 			allowed_types: ['Collection']
 			Child child {
@@ -339,7 +444,7 @@ AssetType BonusWad {
 	Child demo_exit {
 		allowed_types: ['Collection']
 		required: true
-		games: [2 3 4]
+		games: [3 4]
 		Child child {
 			allowed_types: ['Collection']
 			Child child {
@@ -351,7 +456,7 @@ AssetType BonusWad {
 		desc: 'The images used on the cheats screen.'
 		allowed_types: ['Collection']
 		required: true
-		games: [2 3 4]
+		games: [3 4]
 		Child child {
 			allowed_types: ['Texture']
 		}
@@ -368,7 +473,7 @@ AssetType BonusWad {
 	Child trophy_image {
 		allowed_types: ['Texture' 'Binary']
 		required: true
-		games: [2 3 4]
+		games: [3 4]
 	}
 	Child dige {
 		allowed_types: ['Binary']
