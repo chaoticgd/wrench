@@ -16,18 +16,21 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <math.h>
+#include <string>
+#include <vector>
+#include <assert.h>
 #include <stdarg.h>
+#include <string.h>
 
-#include <core/util.h>
-#include <core/wtf.h>
-#include <core/wtf_writer.h>
-#include <core/filesystem.h>
+#include <wtf/wtf.h>
+#include <wtf/wtf_writer.h>
 
 static void write_index(const WtfNode* root);
 static void write_contents(const WtfNode* root);
 static void write_attribute_table(const WtfNode* asset_type);
 static void write_child_table(const WtfNode* asset_type);
-static void write_type_list(std::string& dest, const WtfNode* child, s32 depth);
+static void write_type_list(std::string& dest, const WtfNode* child, int depth);
 static void write_examples(const WtfNode* examples);
 static std::string to_link(const char* str);
 static void reify_node(WtfWriter* ctx, const WtfNode* node);
@@ -38,7 +41,13 @@ static FILE* out_file;
 
 int main(int argc, char** argv) {
 	assert(argc == 2 || argc == 3);
-	auto bytes = read_file(argv[1], "r");
+	FILE* file = fopen(argv[1], "r");
+	assert(file);
+	std::vector<char> bytes;
+	char c;
+	while(fread(&c, 1, 1, file) == 1) {
+		bytes.emplace_back(c);
+	}
 	bytes.push_back(0);
 	
 	if(argc == 3) {
@@ -49,7 +58,10 @@ int main(int argc, char** argv) {
 	
 	char* error = NULL;
 	WtfNode* root = wtf_parse((char*) bytes.data(), &error);
-	verify(!error, "Failed to parse asset schema. %s", error);
+	if(error) {
+		fprintf(stderr, "Failed to parse asset schema. %s", error);
+		return 1;
+	}
 	
 	out("# Asset Reference\n");
 	out("\n");
@@ -223,7 +235,7 @@ static void write_child_table(const WtfNode* asset_type) {
 	out("\n");
 }
 
-static void write_type_list(std::string& dest, const WtfNode* child, s32 depth) {
+static void write_type_list(std::string& dest, const WtfNode* child, int depth) {
 	const WtfAttribute* types = wtf_attribute(child, "allowed_types");
 	if(types && types->type == WTF_ARRAY) {
 		for(const WtfAttribute* elem = types->first_array_element; elem != nullptr; elem = elem->next) {
@@ -233,7 +245,7 @@ static void write_type_list(std::string& dest, const WtfNode* child, s32 depth) 
 					write_type_list(dest, sub_child, depth + 1);
 				} else {
 					dest += elem->string;
-					for(s32 i = 0; i < depth; i++) {
+					for(int i = 0; i < depth; i++) {
 						dest += "\\[\\]";
 					}
 					dest += ", ";
@@ -246,7 +258,7 @@ static void write_type_list(std::string& dest, const WtfNode* child, s32 depth) 
 }
 
 static void write_examples(const WtfNode* examples) {
-	s32 example_count = 0;
+	int example_count = 0;
 	for(const WtfNode* child = examples->first_child; child != nullptr; child = child->next_sibling) {
 		example_count++;
 	}
@@ -272,7 +284,7 @@ static void write_examples(const WtfNode* examples) {
 
 static std::string to_link(const char* str) {
 	std::string out;
-	for(s64 i = 0; i < strlen(str); i++) {
+	for(size_t i = 0; i < strlen(str); i++) {
 		if(str[i] == ' ') {
 			out += '-';
 		} else {

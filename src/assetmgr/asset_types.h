@@ -19,8 +19,8 @@
 #ifndef ASSETMGR_ASSET_TYPES_H
 #define ASSETMGR_ASSET_TYPES_H
 
-#include <core/wtf.h>
-#include <core/wtf_writer.h>
+#include <wtf/wtf.h>
+#include <wtf/wtf_writer.h>
 #include <core/util.h>
 #include <assetmgr/asset.h>
 

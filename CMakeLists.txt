@@ -21,6 +21,11 @@ endif()
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $<1:${CMAKE_SOURCE_DIR}/bin>)
 
+add_library(wrenchwtf STATIC
+	src/wtf/wtf.c
+	src/wtf/wtf_writer.cpp
+)
+
 add_library(wrenchcore STATIC
 	src/core/buffer.cpp
 	src/core/json.cpp
@@ -35,20 +40,19 @@ add_library(wrenchcore STATIC
 	src/core/vif.cpp
 	src/core/filesystem.cpp
 	src/core/stream.cpp
-	src/core/wtf.c
-	src/core/wtf_writer.cpp
 	thirdparty/md5.cpp
 )
+target_link_libraries(wrenchcore wrenchwtf)
 
 add_executable(asset_codegen
 	src/asset_codegen.cpp
 )
-target_link_libraries(asset_codegen wrenchcore)
+target_link_libraries(asset_codegen wrenchwtf)
 
 add_executable(asset_docgen
 	src/asset_docgen.cpp
 )
-target_link_libraries(asset_docgen wrenchcore)
+target_link_libraries(asset_docgen wrenchwtf)
 
 add_custom_command(
 	COMMAND asset_codegen src/assetmgr/asset_schema.wtf src/assetmgr/_generated_asset_types.inl

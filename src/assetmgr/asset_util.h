@@ -21,7 +21,7 @@
 
 #include <any>
 
-#include <core/wtf.h>
+#include <wtf/wtf.h>
 #include <core/util.h>
 #include <core/stream.h>
 #include <core/filesystem.h>

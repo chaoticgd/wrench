@@ -27,9 +27,9 @@
 #include <memory>
 #include <functional>
 
-#include <core/wtf.h>
+#include <wtf/wtf.h>
+#include <wtf/wtf_writer.h>
 #include <core/stream.h>
-#include <core/wtf_writer.h>
 #include <assetmgr/asset_util.h>
 #include <assetmgr/asset_dispatch.h>
 

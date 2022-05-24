@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <core/wtf.h>
+#include <wtf/wtf.h>
 #include <core/filesystem.h>
 
 #include <nlohmann/json.hpp>
