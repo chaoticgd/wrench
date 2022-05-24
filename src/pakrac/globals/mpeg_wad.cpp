@@ -19,27 +19,25 @@
 #include <pakrac/asset_unpacker.h>
 #include <pakrac/asset_packer.h>
 
-packed_struct(DeadlockedMpegWadHeader,
+packed_struct(DlMpegWadHeader,
 	/* 0x0 */ s32 header_size;
 	/* 0x4 */ Sector32 sector;
 	/* 0x8 */ SectorByteRange story[200];
 )
 
-static void unpack_mpeg_wad(MpegWadAsset& dest, InputStream& src, Game game);
-static void pack_mpeg_wad(OutputStream& dest, DeadlockedMpegWadHeader& header, MpegWadAsset& src, Game game);
+static void unpack_mpeg_wad(MpegWadAsset& dest, const DlMpegWadHeader& header, InputStream& src, Game game);
+static void pack_mpeg_wad(OutputStream& dest, DlMpegWadHeader& header, MpegWadAsset& src, Game game);
 
 on_load(Mpeg, []() {
-	MpegWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<MpegWadAsset>(unpack_mpeg_wad);
+	MpegWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<MpegWadAsset, DlMpegWadHeader>(unpack_mpeg_wad);
 	
-	MpegWadAsset::funcs.pack_dl = wrap_wad_packer_func<MpegWadAsset, DeadlockedMpegWadHeader>(pack_mpeg_wad);
+	MpegWadAsset::funcs.pack_dl = wrap_wad_packer_func<MpegWadAsset, DlMpegWadHeader>(pack_mpeg_wad);
 })
 
-static void unpack_mpeg_wad(MpegWadAsset& dest, InputStream& src, Game game) {
-	auto header = src.read<DeadlockedMpegWadHeader>(0);
-	
+static void unpack_mpeg_wad(MpegWadAsset& dest, const DlMpegWadHeader& header, InputStream& src, Game game) {
 	unpack_assets<BinaryAsset>(dest.story().switch_files(), src, ARRAY_PAIR(header.story), game);
 }
 
-static void pack_mpeg_wad(OutputStream& dest, DeadlockedMpegWadHeader& header, MpegWadAsset& src, Game game) {
+static void pack_mpeg_wad(OutputStream& dest, DlMpegWadHeader& header, MpegWadAsset& src, Game game) {
 	pack_assets_sa(dest, ARRAY_PAIR(header.story), src.get_story(), game);
 }

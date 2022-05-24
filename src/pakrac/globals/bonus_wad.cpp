@@ -74,22 +74,22 @@ packed_struct(DlBonusWadHeader,
 )
 
 template <typename Header>
-static void unpack_rac_gc_bonus_wad(BonusWadAsset& dest, InputStream& src, Game game);
+static void unpack_rac_gc_bonus_wad(BonusWadAsset& dest, const Header& header, InputStream& src, Game game);
 template <typename Header>
 static void pack_rac_gc_bonus_wad(OutputStream& dest, Header& header, BonusWadAsset& src, Game game);
 static void unpack_rac_gc_credits_text(CollectionAsset& dest, InputStream& src, SectorRange range, Game game);
 static SectorRange pack_rac_gc_credits_text(OutputStream& dest, CollectionAsset& src, Game game);
 template <typename Header>
-static void unpack_uya_dl_bonus_wad(BonusWadAsset& dest, InputStream& src, Game game);
+static void unpack_uya_dl_bonus_wad(BonusWadAsset& dest, const Header& header, InputStream& src, Game game);
 template <typename Header>
 static void pack_uya_dl_bonus_wad(OutputStream& dest, Header& header, BonusWadAsset& src, Game game);
-static void unpack_demo_images(CollectionAsset& dest, InputStream& src, SectorRange* ranges, s32 outer_count, s32 inner_count, Game game);
+static void unpack_demo_images(CollectionAsset& dest, InputStream& src, const SectorRange* ranges, s32 outer_count, s32 inner_count, Game game);
 static void pack_demo_images(OutputStream& dest, SectorRange* ranges, s32 outer_count, s32 inner_count, CollectionAsset& src, Game game, const char* muffin);
 
 on_load(Bonus, []() {
-	BonusWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<BonusWadAsset>(unpack_rac_gc_bonus_wad<GcBonusWadHeader>);
-	BonusWadAsset::funcs.unpack_rac3 = wrap_wad_unpacker_func<BonusWadAsset>(unpack_uya_dl_bonus_wad<UyaBonusWadHeader>);
-	BonusWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<BonusWadAsset>(unpack_uya_dl_bonus_wad<DlBonusWadHeader>);
+	BonusWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<BonusWadAsset, GcBonusWadHeader>(unpack_rac_gc_bonus_wad<GcBonusWadHeader>);
+	BonusWadAsset::funcs.unpack_rac3 = wrap_wad_unpacker_func<BonusWadAsset, UyaBonusWadHeader>(unpack_uya_dl_bonus_wad<UyaBonusWadHeader>);
+	BonusWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<BonusWadAsset, DlBonusWadHeader>(unpack_uya_dl_bonus_wad<DlBonusWadHeader>);
 	
 	BonusWadAsset::funcs.pack_rac2 = wrap_wad_packer_func<BonusWadAsset, GcBonusWadHeader>(pack_rac_gc_bonus_wad<GcBonusWadHeader>);
 	BonusWadAsset::funcs.pack_rac3 = wrap_wad_packer_func<BonusWadAsset, UyaBonusWadHeader>(pack_uya_dl_bonus_wad<UyaBonusWadHeader>);
@@ -97,9 +97,7 @@ on_load(Bonus, []() {
 })
 
 template <typename Header>
-static void unpack_rac_gc_bonus_wad(BonusWadAsset& dest, InputStream& src, Game game) {
-	auto header = src.read<Header>(0);
-	
+static void unpack_rac_gc_bonus_wad(BonusWadAsset& dest, const Header& header, InputStream& src, Game game) {
 	unpack_compressed_assets<TextureAsset>(dest.goodies_images().switch_files(), src, ARRAY_PAIR(header.goodies_images), game, FMT_TEXTURE_PIF8);
 	unpack_compressed_assets<TextureAsset>(dest.character_sketches().switch_files(), src, ARRAY_PAIR(header.character_sketches), game, FMT_TEXTURE_PIF8);
 	unpack_compressed_assets<TextureAsset>(dest.character_renders().switch_files(), src, ARRAY_PAIR(header.character_renders), game, FMT_TEXTURE_PIF8);
@@ -186,9 +184,7 @@ static SectorRange pack_rac_gc_credits_text(OutputStream& dest, CollectionAsset&
 }
 
 template <typename Header>
-static void unpack_uya_dl_bonus_wad(BonusWadAsset& dest, InputStream& src, Game game) {
-	auto header = src.read<Header>(0);
-	
+static void unpack_uya_dl_bonus_wad(BonusWadAsset& dest, const Header& header, InputStream& src, Game game) {
 	unpack_assets<BinaryAsset>(dest.credits_text().switch_files(), src, ARRAY_PAIR(header.credits_text), game);
 	unpack_assets<TextureAsset>(dest.credits_images().switch_files(), src, ARRAY_PAIR(header.credits_images), game, FMT_TEXTURE_RGBA);
 	unpack_demo_images(dest.demo_menu().switch_files(), src, ARRAY_PAIR(header.demo_menu), 30, game);
@@ -215,7 +211,7 @@ void pack_uya_dl_bonus_wad(OutputStream& dest, Header& header, BonusWadAsset& sr
 	}
 }
 
-static void unpack_demo_images(CollectionAsset& dest, InputStream& src, SectorRange* ranges, s32 outer_count, s32 inner_count, Game game) {
+static void unpack_demo_images(CollectionAsset& dest, InputStream& src, const SectorRange* ranges, s32 outer_count, s32 inner_count, Game game) {
 	for(s32 i = 0; i < outer_count; i++) {
 		CollectionAsset& inner = dest.child<CollectionAsset>(i).switch_files();
 		SubInputStream stream(src, ranges[i].bytes());

@@ -55,18 +55,18 @@ packed_struct(DlAudioWadHeader,
 )
 
 template <typename Header>
-static void unpack_audio_wad(AudioWadAsset& dest, InputStream& src, Game game);
+static void unpack_audio_wad(AudioWadAsset& dest, const Header& header, InputStream& src, Game game);
 template <typename Header>
 static void pack_audio_wad(OutputStream& dest, Header& header, AudioWadAsset& src, Game game);
 template <typename Getter>
-static void unpack_help_audio(CollectionAsset& dest, InputStream& src, Sector32* ranges, s32 count, Game game, const std::set<s64>& end_sectors, Getter getter);
+static void unpack_help_audio(CollectionAsset& dest, InputStream& src, const Sector32* ranges, s32 count, Game game, const std::set<s64>& end_sectors, Getter getter);
 template <typename Getter>
 static void pack_help_audio(OutputStream& dest, Sector32* sectors_dest, s32 count, CollectionAsset& src, Game game, Getter getter);
 
 on_load(Audio, []() {
-	AudioWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<AudioWadAsset>(unpack_audio_wad<GcAudioWadHeader>);
-	AudioWadAsset::funcs.unpack_rac3 = wrap_wad_unpacker_func<AudioWadAsset>(unpack_audio_wad<UyaAudioWadHeader>);
-	AudioWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<AudioWadAsset>(unpack_audio_wad<DlAudioWadHeader>);
+	AudioWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<AudioWadAsset, GcAudioWadHeader>(unpack_audio_wad<GcAudioWadHeader>);
+	AudioWadAsset::funcs.unpack_rac3 = wrap_wad_unpacker_func<AudioWadAsset, UyaAudioWadHeader>(unpack_audio_wad<UyaAudioWadHeader>);
+	AudioWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<AudioWadAsset, DlAudioWadHeader>(unpack_audio_wad<DlAudioWadHeader>);
 	
 	AudioWadAsset::funcs.pack_rac2 = wrap_wad_packer_func<AudioWadAsset, GcAudioWadHeader>(pack_audio_wad<GcAudioWadHeader>);
 	AudioWadAsset::funcs.pack_rac3 = wrap_wad_packer_func<AudioWadAsset, UyaAudioWadHeader>(pack_audio_wad<UyaAudioWadHeader>);
@@ -74,9 +74,7 @@ on_load(Audio, []() {
 })
 
 template <typename Header>
-static void unpack_audio_wad(AudioWadAsset& dest, InputStream& src, Game game) {
-	auto header = src.read<Header>(0);
-	
+static void unpack_audio_wad(AudioWadAsset& dest, const Header& header, InputStream& src, Game game) {
 	std::set<s64> end_sectors;
 	for(Sector32 sector : header.vendor) end_sectors.insert(sector.sectors);
 	if constexpr(std::is_same_v<Header, DlAudioWadHeader>) {
@@ -130,7 +128,7 @@ static void pack_audio_wad(OutputStream& dest, Header& header, AudioWadAsset& sr
 }
 
 template <typename Getter>
-static void unpack_help_audio(CollectionAsset& dest, InputStream& src, Sector32* ranges, s32 count, Game game, const std::set<s64>& end_sectors, Getter getter) {
+static void unpack_help_audio(CollectionAsset& dest, InputStream& src, const Sector32* ranges, s32 count, Game game, const std::set<s64>& end_sectors, Getter getter) {
 	for(s32 i = 0; i < count; i++) {
 		if(ranges[i].sectors > 0) {
 			CollectionAsset& help_audio_file = dest.switch_files(stringf("%d/audio.asset", i));

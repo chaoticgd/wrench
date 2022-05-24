@@ -55,10 +55,11 @@ AssetUnpackerFunc* wrap_hint_unpacker_func(UnpackerFunc func) {
 	});
 }
 
-template <typename ThisAsset, typename UnpackerFunc>
+template <typename ThisAsset, typename WadHeader, typename UnpackerFunc>
 AssetUnpackerFunc* wrap_wad_unpacker_func(UnpackerFunc func) {
 	return new AssetUnpackerFunc([func](Asset& dest, InputStream& src, Game game, AssetFormatHint hint) {
-		func(static_cast<ThisAsset&>(dest).switch_files(), src, game);
+		WadHeader header = src.read<WadHeader>(0);
+		func(static_cast<ThisAsset&>(dest).switch_files(), header, src, game);
 	});
 }
 

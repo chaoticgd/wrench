@@ -63,7 +63,7 @@ void unpack_compressed_asset(ThisAsset& dest, InputStream& src, Range range, Gam
 }
 
 template <typename ChildAsset, typename Range>
-void unpack_assets(CollectionAsset& dest, InputStream& src, Range* ranges, s32 count, Game game, AssetFormatHint hint = FMT_NO_HINT) {
+void unpack_assets(CollectionAsset& dest, InputStream& src, const Range* ranges, s32 count, Game game, AssetFormatHint hint = FMT_NO_HINT) {
 	for(s32 i = 0; i < count; i++) {
 		if(!ranges[i].empty()) {
 			unpack_asset(dest.child<ChildAsset>(i), src, ranges[i], game, hint);
@@ -72,7 +72,7 @@ void unpack_assets(CollectionAsset& dest, InputStream& src, Range* ranges, s32 c
 }
 
 template <typename ChildAsset, typename Range>
-void unpack_compressed_assets(CollectionAsset& dest, InputStream& src, Range* ranges, s32 count, Game game, AssetFormatHint hint = FMT_NO_HINT) {
+void unpack_compressed_assets(CollectionAsset& dest, InputStream& src, const Range* ranges, s32 count, Game game, AssetFormatHint hint = FMT_NO_HINT) {
 	for(s32 i = 0; i < count; i++) {
 		if(!ranges[i].empty()) {
 			unpack_compressed_asset(dest.child<ChildAsset>(i), src, ranges[i], game, hint);

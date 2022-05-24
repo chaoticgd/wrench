@@ -20,7 +20,7 @@
 #include <pakrac/asset_packer.h>
 #include <pakrac/level/level_core.h>
 
-packed_struct(Rac1LevelDataHeader,
+packed_struct(RacLevelDataHeader,
 	/* 0x00 */ ByteRange code;
 	/* 0x08 */ ByteRange sound_bank;
 	/* 0x10 */ ByteRange core_index;
@@ -30,7 +30,7 @@ packed_struct(Rac1LevelDataHeader,
 	/* 0x50 */ ByteRange core_data;
 )
 
-packed_struct(Rac23LevelDataWadHeader,
+packed_struct(GcUyaLevelDataHeader,
 	/* 0x00 */ ByteRange code;
 	/* 0x08 */ ByteRange core_index;
 	/* 0x10 */ ByteRange gs_ram;
@@ -40,7 +40,7 @@ packed_struct(Rac23LevelDataWadHeader,
 	/* 0x50 */ ByteRange transition_textures;
 )
 
-packed_struct(DeadlockedLevelDataHeader,
+packed_struct(DlLevelDataHeader,
 	/* 0x00 */ ByteRange moby8355_pvars;
 	/* 0x08 */ ByteRange code;
 	/* 0x10 */ ByteRange core_index;
@@ -53,28 +53,28 @@ packed_struct(DeadlockedLevelDataHeader,
 	/* 0x68 */ ByteRange global_nav_data;
 )
 
-static void unpack_rac1_level_data_wad(LevelDataWadAsset& dest, InputStream& src, Game game);
-static void pack_rac1_level_data_wad(OutputStream& dest, LevelDataWadAsset& src, Game game);
-static void unpack_rac23_level_data_wad(LevelDataWadAsset& dest, InputStream& src, Game game);
-static void pack_rac23_level_data_wad(OutputStream& dest, LevelDataWadAsset& src, Game game);
+static void unpack_rac_level_data_wad(LevelDataWadAsset& dest, InputStream& src, Game game);
+static void pack_rac_level_data_wad(OutputStream& dest, LevelDataWadAsset& src, Game game);
+static void unpack_gc_uya_level_data_wad(LevelDataWadAsset& dest, InputStream& src, Game game);
+static void pack_gc_uya_level_data_wad(OutputStream& dest, LevelDataWadAsset& src, Game game);
 static void unpack_dl_level_data_wad(LevelDataWadAsset& dest, InputStream& src, Game game);
 static void pack_dl_level_data_wad(OutputStream& dest, LevelDataWadAsset& src, Game game);
 static ByteRange write_vector_of_bytes(OutputStream& dest, std::vector<u8>& bytes);
 
 on_load(LevelData, []() {
-	LevelDataWadAsset::funcs.unpack_rac1 = wrap_wad_unpacker_func<LevelDataWadAsset>(unpack_rac1_level_data_wad);
-	LevelDataWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<LevelDataWadAsset>(unpack_rac23_level_data_wad);
-	LevelDataWadAsset::funcs.unpack_rac3 = wrap_wad_unpacker_func<LevelDataWadAsset>(unpack_rac23_level_data_wad);
-	LevelDataWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<LevelDataWadAsset>(unpack_dl_level_data_wad);
+	LevelDataWadAsset::funcs.unpack_rac1 = wrap_unpacker_func<LevelDataWadAsset>(unpack_rac_level_data_wad);
+	LevelDataWadAsset::funcs.unpack_rac2 = wrap_unpacker_func<LevelDataWadAsset>(unpack_gc_uya_level_data_wad);
+	LevelDataWadAsset::funcs.unpack_rac3 = wrap_unpacker_func<LevelDataWadAsset>(unpack_gc_uya_level_data_wad);
+	LevelDataWadAsset::funcs.unpack_dl = wrap_unpacker_func<LevelDataWadAsset>(unpack_dl_level_data_wad);
 	
-	LevelDataWadAsset::funcs.pack_rac1 = wrap_packer_func<LevelDataWadAsset>(pack_rac1_level_data_wad);
-	LevelDataWadAsset::funcs.pack_rac2 = wrap_packer_func<LevelDataWadAsset>(pack_rac23_level_data_wad);
-	LevelDataWadAsset::funcs.pack_rac3 = wrap_packer_func<LevelDataWadAsset>(pack_rac23_level_data_wad);
+	LevelDataWadAsset::funcs.pack_rac1 = wrap_packer_func<LevelDataWadAsset>(pack_rac_level_data_wad);
+	LevelDataWadAsset::funcs.pack_rac2 = wrap_packer_func<LevelDataWadAsset>(pack_gc_uya_level_data_wad);
+	LevelDataWadAsset::funcs.pack_rac3 = wrap_packer_func<LevelDataWadAsset>(pack_gc_uya_level_data_wad);
 	LevelDataWadAsset::funcs.pack_dl = wrap_packer_func<LevelDataWadAsset>(pack_dl_level_data_wad);
 })
 
-static void unpack_rac1_level_data_wad(LevelDataWadAsset& dest, InputStream& src, Game game) {
-	auto header = src.read<Rac1LevelDataHeader>(0);
+static void unpack_rac_level_data_wad(LevelDataWadAsset& dest, InputStream& src, Game game) {
+	auto header = src.read<RacLevelDataHeader>(0);
 	
 	unpack_level_core(dest.core(), src, header.core_index, header.core_data, header.gs_ram, game);
 	
@@ -84,8 +84,8 @@ static void unpack_rac1_level_data_wad(LevelDataWadAsset& dest, InputStream& src
 	unpack_assets<BinaryAsset>(dest.hud_banks().switch_files(), src, ARRAY_PAIR(header.hud_banks), game);
 }
 
-static void pack_rac1_level_data_wad(OutputStream& dest, LevelDataWadAsset& src, Game game) {
-	Rac1LevelDataHeader header = {0};
+static void pack_rac_level_data_wad(OutputStream& dest, LevelDataWadAsset& src, Game game) {
+	RacLevelDataHeader header = {0};
 	dest.write(header);
 	ByteRange empty = {-1, 0};
 	
@@ -105,8 +105,8 @@ static void pack_rac1_level_data_wad(OutputStream& dest, LevelDataWadAsset& src,
 	dest.write(0, header);
 }
 
-static void unpack_rac23_level_data_wad(LevelDataWadAsset& dest, InputStream& src, Game game) {
-	auto header = src.read<Rac23LevelDataWadHeader>(0);
+static void unpack_gc_uya_level_data_wad(LevelDataWadAsset& dest, InputStream& src, Game game) {
+	auto header = src.read<GcUyaLevelDataHeader>(0);
 	
 	unpack_level_core(dest.core(), src, header.core_index, header.core_data, header.gs_ram, game);
 	
@@ -116,8 +116,8 @@ static void unpack_rac23_level_data_wad(LevelDataWadAsset& dest, InputStream& sr
 	unpack_asset(dest.transition_textures(), src, header.transition_textures, game);
 }
 
-static void pack_rac23_level_data_wad(OutputStream& dest, LevelDataWadAsset& src, Game game) {
-	Rac23LevelDataWadHeader header = {0};
+static void pack_gc_uya_level_data_wad(OutputStream& dest, LevelDataWadAsset& src, Game game) {
+	GcUyaLevelDataHeader header = {0};
 	dest.write(header);
 	ByteRange empty = {-1, 0};
 	
@@ -138,7 +138,7 @@ static void pack_rac23_level_data_wad(OutputStream& dest, LevelDataWadAsset& src
 }
 
 static void unpack_dl_level_data_wad(LevelDataWadAsset& dest, InputStream& src, Game game) {
-	auto header = src.read<DeadlockedLevelDataHeader>(0);
+	auto header = src.read<DlLevelDataHeader>(0);
 	
 	unpack_level_core(dest.core(), src, header.core_index, header.core_data, header.gs_ram, game);
 	
@@ -152,7 +152,7 @@ static void unpack_dl_level_data_wad(LevelDataWadAsset& dest, InputStream& src, 
 }
 
 static void pack_dl_level_data_wad(OutputStream& dest, LevelDataWadAsset& src, Game game) {
-	DeadlockedLevelDataHeader header = {0};
+	DlLevelDataHeader header = {0};
 	dest.write(header);
 	ByteRange empty = {-1, 0};
 	

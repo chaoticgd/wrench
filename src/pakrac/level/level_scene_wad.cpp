@@ -20,7 +20,7 @@
 #include <pakrac/asset_unpacker.h>
 #include <pakrac/asset_packer.h>
 
-packed_struct(DeadlockedSceneHeader,
+packed_struct(DlSceneHeader,
 	/* 0x00 */ Sector32 speech_english_left;
 	/* 0x04 */ Sector32 speech_english_right;
 	/* 0x08 */ SectorRange subtitles;
@@ -36,27 +36,25 @@ packed_struct(DeadlockedSceneHeader,
 	/* 0x38 */ Sector32 chunks[69];
 )
 
-packed_struct(DeadlockedLevelSceneWadHeader,
+packed_struct(DlLevelSceneWadHeader,
 	/* 0x0 */ s32 header_size;
 	/* 0x4 */ Sector32 sector;
-	/* 0x8 */ DeadlockedSceneHeader scenes[30];
+	/* 0x8 */ DlSceneHeader scenes[30];
 )
 
 static SectorRange range(Sector32 offset, const std::set<s64>& end_sectors);
-static void unpack_dl_level_scene_wad(LevelSceneWadAsset& dest, InputStream& src, Game game);
-static void pack_dl_level_scene_wad(OutputStream& dest, DeadlockedLevelSceneWadHeader& header, LevelSceneWadAsset& src, Game game);
+static void unpack_dl_level_scene_wad(LevelSceneWadAsset& dest, const DlLevelSceneWadHeader& header, InputStream& src, Game game);
+static void pack_dl_level_scene_wad(OutputStream& dest, DlLevelSceneWadHeader& header, LevelSceneWadAsset& src, Game game);
 
 on_load(LevelScene, []() {
-	LevelSceneWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<LevelSceneWadAsset>(unpack_dl_level_scene_wad);
+	LevelSceneWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<LevelSceneWadAsset, DlLevelSceneWadHeader>(unpack_dl_level_scene_wad);
 	
-	LevelSceneWadAsset::funcs.pack_dl = wrap_wad_packer_func<LevelSceneWadAsset, DeadlockedLevelSceneWadHeader>(pack_dl_level_scene_wad);
+	LevelSceneWadAsset::funcs.pack_dl = wrap_wad_packer_func<LevelSceneWadAsset, DlLevelSceneWadHeader>(pack_dl_level_scene_wad);
 })
 
-static void unpack_dl_level_scene_wad(LevelSceneWadAsset& dest, InputStream& src, Game game) {
-	auto header = src.read<DeadlockedLevelSceneWadHeader>(0);
-	
+static void unpack_dl_level_scene_wad(LevelSceneWadAsset& dest, const DlLevelSceneWadHeader& header, InputStream& src, Game game) {
 	std::set<s64> end_sectors;
-	for(const DeadlockedSceneHeader& scene : header.scenes) {
+	for(const DlSceneHeader& scene : header.scenes) {
 		end_sectors.insert(scene.speech_english_left.sectors);
 		end_sectors.insert(scene.speech_english_right.sectors);
 		end_sectors.insert(scene.subtitles.offset.sectors);
@@ -78,7 +76,7 @@ static void unpack_dl_level_scene_wad(LevelSceneWadAsset& dest, InputStream& src
 	CollectionAsset& scenes = dest.scenes();
 	for(s32 i = 0; i < ARRAY_SIZE(header.scenes); i++) {
 		SceneAsset& scene = scenes.child<SceneAsset>(i).switch_files();
-		const DeadlockedSceneHeader& scene_header = header.scenes[i];
+		const DlSceneHeader& scene_header = header.scenes[i];
 		unpack_asset(scene.speech_english_left(), src, range(scene_header.speech_english_left, end_sectors), game);
 		unpack_asset(scene.speech_english_right(), src, range(scene_header.speech_english_right, end_sectors), game);
 		unpack_asset(scene.subtitles(), src, scene_header.subtitles, game);
@@ -100,11 +98,11 @@ static void unpack_dl_level_scene_wad(LevelSceneWadAsset& dest, InputStream& src
 	}
 }
 
-static void pack_dl_level_scene_wad(OutputStream& dest, DeadlockedLevelSceneWadHeader& header, LevelSceneWadAsset& src, Game game) {
+static void pack_dl_level_scene_wad(OutputStream& dest, DlLevelSceneWadHeader& header, LevelSceneWadAsset& src, Game game) {
 	CollectionAsset& scenes = src.get_scenes();
 	for(s32 i = 0; i < ARRAY_SIZE(header.scenes); i++) {
 		if(scenes.has_child(i)) {
-			DeadlockedSceneHeader& scene_header = header.scenes[i];
+			DlSceneHeader& scene_header = header.scenes[i];
 			SceneAsset& scene = scenes.get_child(i).as<SceneAsset>();
 			scene_header.speech_english_left = pack_asset_sa<Sector32>(dest, scene.get_speech_english_left(), game);
 			scene_header.speech_english_right = pack_asset_sa<Sector32>(dest, scene.get_speech_english_right(), game);

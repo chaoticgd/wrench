@@ -20,7 +20,7 @@
 #include <pakrac/asset_unpacker.h>
 #include <pakrac/asset_packer.h>
 
-packed_struct(Rac2MiscWadHeader,
+packed_struct(GcMiscWadHeader,
 	/* 0x00 */ s32 header_size;
 	/* 0x04 */ Sector32 sector;
 	/* 0x08 */ SectorRange debug_font;
@@ -32,7 +32,7 @@ packed_struct(Rac2MiscWadHeader,
 	/* 0x38 */ SectorRange exit;
 )
 
-packed_struct(Rac3MiscWadHeader,
+packed_struct(UyaMiscWadHeader,
 	/* 0x00 */ s32 header_size;
 	/* 0x04 */ Sector32 sector;
 	/* 0x08 */ SectorRange debug_font;
@@ -44,7 +44,7 @@ packed_struct(Rac3MiscWadHeader,
 	/* 0x40 */ SectorRange boot;
 )
 
-packed_struct(DeadlockedMiscWadHeader,
+packed_struct(DlMiscWadHeader,
 	/* 0x00 */ s32 header_size;
 	/* 0x04 */ Sector32 sector;
 	/* 0x08 */ SectorRange debug_font;
@@ -56,42 +56,40 @@ packed_struct(DeadlockedMiscWadHeader,
 	/* 0x48 */ SectorRange gadget;
 )
 
-static void unpack_rac2_misc_wad(MiscWadAsset& dest, InputStream& src, Game game);
-static void pack_rac2_misc_wad(OutputStream& dest, Rac2MiscWadHeader& header, MiscWadAsset& src, Game game);
-static void unpack_rac3_misc_wad(MiscWadAsset& dest, InputStream& src, Game game);
-static void pack_rac3_misc_wad(OutputStream& dest, Rac3MiscWadHeader& header, MiscWadAsset& src, Game game);
-static void unpack_dl_misc_wad(MiscWadAsset& dest, InputStream& src, Game game);
-static void pack_dl_misc_wad(OutputStream& dest, DeadlockedMiscWadHeader& header, MiscWadAsset& src, Game game);
+static void unpack_rac2_misc_wad(MiscWadAsset& dest, const GcMiscWadHeader& header, InputStream& src, Game game);
+static void pack_rac2_misc_wad(OutputStream& dest, GcMiscWadHeader& header, MiscWadAsset& src, Game game);
+static void unpack_rac3_misc_wad(MiscWadAsset& dest, const UyaMiscWadHeader& header, InputStream& src, Game game);
+static void pack_rac3_misc_wad(OutputStream& dest, UyaMiscWadHeader& header, MiscWadAsset& src, Game game);
+static void unpack_dl_misc_wad(MiscWadAsset& dest, const DlMiscWadHeader& header, InputStream& src, Game game);
+static void pack_dl_misc_wad(OutputStream& dest, DlMiscWadHeader& header, MiscWadAsset& src, Game game);
 
 on_load(Misc, []() {
-	MiscWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<MiscWadAsset>(unpack_rac2_misc_wad);
-	MiscWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<MiscWadAsset>(unpack_rac3_misc_wad);
-	MiscWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<MiscWadAsset>(unpack_dl_misc_wad);
+	MiscWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<MiscWadAsset, GcMiscWadHeader>(unpack_rac2_misc_wad);
+	MiscWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<MiscWadAsset, UyaMiscWadHeader>(unpack_rac3_misc_wad);
+	MiscWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<MiscWadAsset, DlMiscWadHeader>(unpack_dl_misc_wad);
 	
-	MiscWadAsset::funcs.pack_rac2 = wrap_wad_packer_func<MiscWadAsset, Rac2MiscWadHeader>(pack_rac2_misc_wad);
-	MiscWadAsset::funcs.pack_rac3 = wrap_wad_packer_func<MiscWadAsset, Rac3MiscWadHeader>(pack_rac3_misc_wad);
-	MiscWadAsset::funcs.pack_dl = wrap_wad_packer_func<MiscWadAsset, DeadlockedMiscWadHeader>(pack_dl_misc_wad);
+	MiscWadAsset::funcs.pack_rac2 = wrap_wad_packer_func<MiscWadAsset, GcMiscWadHeader>(pack_rac2_misc_wad);
+	MiscWadAsset::funcs.pack_rac3 = wrap_wad_packer_func<MiscWadAsset, UyaMiscWadHeader>(pack_rac3_misc_wad);
+	MiscWadAsset::funcs.pack_dl = wrap_wad_packer_func<MiscWadAsset, DlMiscWadHeader>(pack_dl_misc_wad);
 })
 
-static void unpack_rac2_misc_wad(MiscWadAsset& dest, InputStream& src, Game game) {
+static void unpack_rac2_misc_wad(MiscWadAsset& dest, const GcMiscWadHeader& header, InputStream& src, Game game) {
 	
 }
 
-static void pack_rac2_misc_wad(OutputStream& dest, Rac2MiscWadHeader& header, MiscWadAsset& src, Game game) {
+static void pack_rac2_misc_wad(OutputStream& dest, GcMiscWadHeader& header, MiscWadAsset& src, Game game) {
 	
 }
 
-static void unpack_rac3_misc_wad(MiscWadAsset& dest, InputStream& src, Game game) {
+static void unpack_rac3_misc_wad(MiscWadAsset& dest, const UyaMiscWadHeader& header, InputStream& src, Game game) {
 	
 }
 
-static void pack_rac3_misc_wad(OutputStream& dest, Rac3MiscWadHeader& header, MiscWadAsset& src, Game game) {
+static void pack_rac3_misc_wad(OutputStream& dest, UyaMiscWadHeader& header, MiscWadAsset& src, Game game) {
 	
 }
 
-static void unpack_dl_misc_wad(MiscWadAsset& dest, InputStream& src, Game game) {
-	auto header = src.read<DeadlockedMiscWadHeader>(0);
-	
+static void unpack_dl_misc_wad(MiscWadAsset& dest, const DlMiscWadHeader& header, InputStream& src, Game game) {
 	unpack_asset(dest.debug_font<BinaryAsset>(), src, header.debug_font, game);
 	unpack_compressed_asset(dest.irx().switch_files(), src, header.irx, game);
 	unpack_asset(dest.save_game(), src, header.save_game, game);
@@ -100,7 +98,7 @@ static void unpack_dl_misc_wad(MiscWadAsset& dest, InputStream& src, Game game) 
 	unpack_asset(dest.gadget(), src, header.gadget, game);
 }
 
-static void pack_dl_misc_wad(OutputStream& dest, DeadlockedMiscWadHeader& header, MiscWadAsset& src, Game game) {
+static void pack_dl_misc_wad(OutputStream& dest, DlMiscWadHeader& header, MiscWadAsset& src, Game game) {
 	header.debug_font = pack_asset_sa<SectorRange>(dest, src.get_debug_font(), game);
 	header.irx = pack_compressed_asset_sa<SectorRange>(dest, src.get_irx(), game, "irx");
 	header.save_game = pack_asset_sa<SectorRange>(dest, src.get_save_game(), game);

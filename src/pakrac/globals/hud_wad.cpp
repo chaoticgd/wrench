@@ -19,7 +19,7 @@
 #include <pakrac/asset_unpacker.h>
 #include <pakrac/asset_packer.h>
 
-packed_struct(DeadlockedHudWadHeader,
+packed_struct(DlHudWadHeader,
 	/* 0x000 */ s32 header_size;
 	/* 0x004 */ Sector32 sector;
 	/* 0x008 */ SectorRange online_images[74];
@@ -60,18 +60,16 @@ packed_struct(DeadlockedHudWadHeader,
 	/* 0xf68 */ SectorRange tourney_plates_large[4];
 )
 
-void unpack_hud_wad(HudWadAsset& dest, InputStream& src, Game game);
-static void pack_hud_wad(OutputStream& dest, DeadlockedHudWadHeader& header, HudWadAsset& src, Game game);
+static void unpack_hud_wad(HudWadAsset& dest, const DlHudWadHeader& header, InputStream& src, Game game);
+static void pack_hud_wad(OutputStream& dest, DlHudWadHeader& header, HudWadAsset& src, Game game);
 
 on_load(Hud, []() {
-	HudWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<HudWadAsset>(unpack_hud_wad);
+	HudWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<HudWadAsset, DlHudWadHeader>(unpack_hud_wad);
 	
-	HudWadAsset::funcs.pack_dl = wrap_wad_packer_func<HudWadAsset, DeadlockedHudWadHeader>(pack_hud_wad);
+	HudWadAsset::funcs.pack_dl = wrap_wad_packer_func<HudWadAsset, DlHudWadHeader>(pack_hud_wad);
 })
 
-void unpack_hud_wad(HudWadAsset& dest, InputStream& src, Game game) {
-	auto header = src.read<DeadlockedHudWadHeader>(0);
-	
+static void unpack_hud_wad(HudWadAsset& dest, const DlHudWadHeader& header, InputStream& src, Game game) {
 	unpack_assets<TextureAsset>(dest.online_images().switch_files(), src, ARRAY_PAIR(header.online_images), game);
 	unpack_assets<BinaryAsset>(dest.ratchet_seqs().switch_files(), src, ARRAY_PAIR(header.ratchet_seqs), game);
 	unpack_assets<BinaryAsset>(dest.hud_seqs().switch_files(), src, ARRAY_PAIR(header.hud_seqs), game);
@@ -110,7 +108,7 @@ void unpack_hud_wad(HudWadAsset& dest, InputStream& src, Game game) {
 	unpack_assets<TextureAsset>(dest.tourney_plates_large().switch_files(), src, ARRAY_PAIR(header.tourney_plates_large), game);
 }
 
-static void pack_hud_wad(OutputStream& dest, DeadlockedHudWadHeader& header, HudWadAsset& src, Game game) {
+static void pack_hud_wad(OutputStream& dest, DlHudWadHeader& header, HudWadAsset& src, Game game) {
 	pack_assets_sa(dest, ARRAY_PAIR(header.online_images), src.get_online_images(), game, FMT_TEXTURE_PIF8);
 	pack_assets_sa(dest, ARRAY_PAIR(header.ratchet_seqs), src.get_ratchet_seqs(), game);
 	pack_assets_sa(dest, ARRAY_PAIR(header.hud_seqs), src.get_hud_seqs(), game);

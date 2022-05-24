@@ -23,12 +23,12 @@ static void unpack_boot_wad(BootWadAsset& dest, InputStream& src, Game game);
 static void pack_boot_wad(OutputStream& dest, BootWadAsset& src, Game game);
 
 on_load(Boot, []() {
-	BootWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<BootWadAsset>(unpack_boot_wad);
+	BootWadAsset::funcs.unpack_dl = wrap_unpacker_func<BootWadAsset>(unpack_boot_wad);
 	
 	BootWadAsset::funcs.pack_dl = wrap_packer_func<BootWadAsset>(pack_boot_wad);
 })
 
-packed_struct(DeadlockedBootHeader,
+packed_struct(DlBootHeader,
 	/* 0x00 */ ByteRange english;
 	/* 0x08 */ ByteRange french;
 	/* 0x10 */ ByteRange german;
@@ -40,7 +40,7 @@ packed_struct(DeadlockedBootHeader,
 )
 
 static void unpack_boot_wad(BootWadAsset& dest, InputStream& src, Game game) {
-	auto header = src.read<DeadlockedBootHeader>(0);
+	auto header = src.read<DlBootHeader>(0);
 	
 	unpack_compressed_asset(dest.english(), src, header.english, game);
 	unpack_compressed_asset(dest.french(), src, header.french, game);
@@ -56,7 +56,7 @@ static void unpack_boot_wad(BootWadAsset& dest, InputStream& src, Game game) {
 }
 
 static void pack_boot_wad(OutputStream& dest, BootWadAsset& src, Game game) {
-	DeadlockedBootHeader header;
+	DlBootHeader header;
 	dest.write(header);
 	
 	header.english = pack_compressed_asset<ByteRange>(dest, src.get_english(), game, 0x40, "english");
