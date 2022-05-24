@@ -312,104 +312,161 @@ AssetType BonusWad {
 		allowed_types: ['Collection']
 		required: true
 		games: [1 2]
+		Child child {
+			allowed_types: ['Texture']
+		}
 	}
 	Child character_sketches {
 		desc: 'Part of a cut R&C1 credits screen.'
 		allowed_types: ['Collection']
 		required: true
 		games: [1 2]
+		Child child {
+			allowed_types: ['Texture']
+		}
 	}
 	Child character_renders {
 		desc: 'Part of a cut R&C1 credits screen, also included in R&C2 for some reason.'
 		allowed_types: ['Collection']
 		required: true
 		games: [1 2]
+		Child child {
+			allowed_types: ['Texture']
+		}
 	}
 	Child old_skill_images {
 		desc: 'The skill point images from R&C1, also included in R&C2 for some reason.'
 		allowed_types: ['Collection']
 		required: true
 		games: [2]
+		Child child {
+			allowed_types: ['Texture']
+		}
 	}
 	Child epilogue_english {
 		desc: 'The english epilogue images from R&C1, also included in R&C2 for some reason.'
 		allowed_types: ['Collection']
 		required: true
 		games: [1 2]
+		Child child {
+			allowed_types: ['Texture']
+		}
 	}
 	Child epilogue_french {
 		desc: 'The french epilogue images from R&C1, also included in R&C2 for some reason.'
 		allowed_types: ['Collection']
 		required: true
 		games: [1 2]
+		Child child {
+			allowed_types: ['Texture']
+		}
 	}
 	Child epilogue_italian {
 		desc: 'The italian epilogue images from R&C1, also included in R&C2 for some reason.'
 		allowed_types: ['Collection']
 		required: true
 		games: [1 2]
+		Child child {
+			allowed_types: ['Texture']
+		}
 	}
 	Child epilogue_german {
 		desc: 'The german epilogue images from R&C1.'
 		allowed_types: ['Collection']
 		required: true
 		games: [1 2]
+		Child child {
+			allowed_types: ['Texture']
+		}
 	}
 	Child epilogue_spanish {
 		desc: 'The spanish epilogue images from R&C1.'
 		allowed_types: ['Collection']
 		required: true
 		games: [1 2]
+		Child child {
+			allowed_types: ['Texture']
+		}
 	}
 	Child sketchbook {
 		allowed_types: ['Collection']
 		required: true
 		games: [1 2]
+		Child child {
+			allowed_types: ['Texture']
+		}
 	}
 	Child commercials {
 		allowed_types: ['Collection']
 		required: true
 		games: [1 2]
+		Child child {
+			allowed_types: ['Texture']
+		}
 	}
 	Child item_images {
 		allowed_types: ['Collection']
 		required: true
 		games: [1 2]
+		Child child {
+			allowed_types: ['Texture']
+		}
 	}
 	Child random_stuff {
 		allowed_types: ['Collection']
 		required: true
 		games: [2]
+		Child child {
+			allowed_types: ['Texture']
+		}
 	}
 	Child movie_images {
 		allowed_types: ['Collection']
 		required: true
 		games: [2]
+		Child child {
+			allowed_types: ['Texture']
+		}
 	}
 	Child cinematic_images {
 		allowed_types: ['Collection']
 		required: true
 		games: [2]
+		Child child {
+			allowed_types: ['Texture']
+		}
 	}
 	Child clanks_day_at_insomniac {
 		allowed_types: ['Collection']
 		required: true
 		games: [2]
+		Child child {
+			allowed_types: ['Texture']
+		}
 	}
 	Child endorsement_deals {
 		allowed_types: ['Collection']
 		required: true
 		games: [2]
+		Child child {
+			allowed_types: ['Texture']
+		}
 	}
 	Child short_cuts {
 		allowed_types: ['Collection']
 		required: true
 		games: [2]
+		Child child {
+			allowed_types: ['Texture']
+		}
 	}
 	Child paintings {
 		allowed_types: ['Collection']
 		required: true
 		games: [2]
+		Child child {
+			allowed_types: ['Texture']
+		}
 	}
 	
 	Child credits_text {
