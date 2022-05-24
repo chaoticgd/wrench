@@ -234,10 +234,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path) {
 			
 			unpack_asset_impl(build, stream, Game::UNKNOWN);
 			
-			if(build.game() == (s32) Game::RAC1) bank.game_info.name = "rac";
-			if(build.game() == (s32) Game::RAC2) bank.game_info.name = "gc";
-			if(build.game() == (s32) Game::RAC3) bank.game_info.name = "uya";
-			if(build.game() == (s32) Game::DL)   bank.game_info.name = "dl";
+			bank.game_info.name = build.game();
 			bank.game_info.format_version = ASSET_FORMAT_VERSION;
 			bank.game_info.builds = {build.reference()};
 			

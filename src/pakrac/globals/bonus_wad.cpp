@@ -19,6 +19,23 @@
 #include <pakrac/asset_unpacker.h>
 #include <pakrac/asset_packer.h>
 
+packed_struct(RacBonusWadHeader,
+	/* 0x000 */ s32 header_size;
+	/* 0x004 */ Sector32 sector;
+	/* 0x008 */ SectorRange goodies_images[10];
+	/* 0x060 */ SectorRange character_sketches[19];
+	/* 0x0f0 */ SectorRange character_renders[19];
+	/* 0x188 */ SectorRange skill_images[31];
+	/* 0x280 */ SectorRange epilogue_english[12];
+	/* 0x2e0 */ SectorRange epilogue_french[12];
+	/* 0x340 */ SectorRange epilogue_italian[12];
+	/* 0x3a0 */ SectorRange epilogue_german[12];
+	/* 0x400 */ SectorRange epilogue_spanish[12];
+	/* 0x460 */ SectorRange sketchbook[30];
+	/* 0x550 */ SectorRange commercials[4];
+	/* 0x578 */ SectorRange item_images[9];
+)
+
 packed_struct(GcBonusWadHeader,
 	/* 0x000 */ s32 header_size;
 	/* 0x004 */ Sector32 sector;

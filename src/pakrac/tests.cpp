@@ -78,7 +78,7 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 	std::string ref = asset_reference_to_string(binary.reference());
 	printf("[%3d%%] \033[34mRunning test with %s asset %s\033[0m\n", percentage, type_name, ref.c_str());
 	
-	AssetFormatHint hint = (AssetFormatHint) binary.format_hint();
+	s32 hint = binary.format_hint();
 	Game game = (Game) binary.game();
 	
 	AssetDispatchTable* dispatch = nullptr;

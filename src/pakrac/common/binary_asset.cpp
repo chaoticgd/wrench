@@ -19,7 +19,7 @@
 #include <pakrac/asset_unpacker.h>
 #include <pakrac/asset_packer.h>
 
-static void unpack_binary_asset(Asset& dest, InputStream& src, Game game, AssetFormatHint hint);
+static void unpack_binary_asset(Asset& dest, InputStream& src, Game game, s32 hint);
 static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, BinaryAsset& src);
 
 on_load(Binary, []() {
@@ -34,7 +34,7 @@ on_load(Binary, []() {
 	BinaryAsset::funcs.pack_dl = wrap_bin_packer_func<BinaryAsset>(pack_binary_asset);
 })
 
-static void unpack_binary_asset(Asset& dest, InputStream& src, Game game, AssetFormatHint hint) {
+static void unpack_binary_asset(Asset& dest, InputStream& src, Game game, s32 hint) {
 	BinaryAsset& binary = dest.as<BinaryAsset>();
 	std::string file_name = binary.tag() + (hint == FMT_BINARY_WAD ? ".wad" : ".bin");
 	auto [stream, ref] = binary.file().open_binary_file_for_writing(file_name);

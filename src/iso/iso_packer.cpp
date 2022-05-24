@@ -33,7 +33,17 @@ static std::array<IsoDirectory, 3> pack_levels(OutputStream& iso, std::vector<Le
 static void pack_level_wad_outer(OutputStream& iso, IsoDirectory& directory, LevelWadInfo& wad, const char* name, Game game, s32 index, AssetPackerFunc pack);
 
 void pack_iso(OutputStream& iso, BuildAsset& build, Game, AssetPackerFunc pack) {
-	Game game = (Game) build.game();
+	Game game = Game::UNKNOWN;
+	std::string game_str = build.game();
+	if(game_str == "rac") {
+		game = Game::RAC1;
+	} else if(game_str == "gc") {
+		game = Game::RAC2;
+	} else if(game_str == "uya") {
+		game = Game::RAC3;
+	} else if(game_str == "dl") {
+		game = Game::DL;
+	}
 	
 	s32 single_level_index = -1;
 	

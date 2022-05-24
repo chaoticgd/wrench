@@ -38,10 +38,10 @@ struct AssetUnpackerGlobals {
 
 extern AssetUnpackerGlobals g_asset_unpacker;
 
-void unpack_asset_impl(Asset& dest, InputStream& src, Game game, AssetFormatHint hint = FMT_NO_HINT);
+void unpack_asset_impl(Asset& dest, InputStream& src, Game game, s32 hint = FMT_NO_HINT);
 
 template <typename ThisAsset, typename Range>
-void unpack_asset(ThisAsset& dest, InputStream& src, Range range, Game game, AssetFormatHint hint = FMT_NO_HINT) {
+void unpack_asset(ThisAsset& dest, InputStream& src, Range range, Game game, s32 hint = FMT_NO_HINT) {
 	if(!range.empty()) {
 		SubInputStream stream(src, range.bytes());
 		unpack_asset_impl(dest, stream, game, hint);
@@ -49,7 +49,7 @@ void unpack_asset(ThisAsset& dest, InputStream& src, Range range, Game game, Ass
 }
 
 template <typename ThisAsset, typename Range>
-void unpack_compressed_asset(ThisAsset& dest, InputStream& src, Range range, Game game, AssetFormatHint hint = FMT_NO_HINT) {
+void unpack_compressed_asset(ThisAsset& dest, InputStream& src, Range range, Game game, s32 hint = FMT_NO_HINT) {
 	if(!range.empty()) {
 		src.seek(range.bytes().offset);
 		std::vector<u8> compressed_bytes = src.read_multiple<u8>(range.bytes().size);
@@ -63,7 +63,7 @@ void unpack_compressed_asset(ThisAsset& dest, InputStream& src, Range range, Gam
 }
 
 template <typename ChildAsset, typename Range>
-void unpack_assets(CollectionAsset& dest, InputStream& src, const Range* ranges, s32 count, Game game, AssetFormatHint hint = FMT_NO_HINT) {
+void unpack_assets(CollectionAsset& dest, InputStream& src, const Range* ranges, s32 count, Game game, s32 hint = FMT_NO_HINT) {
 	for(s32 i = 0; i < count; i++) {
 		if(!ranges[i].empty()) {
 			unpack_asset(dest.child<ChildAsset>(i), src, ranges[i], game, hint);
@@ -72,7 +72,7 @@ void unpack_assets(CollectionAsset& dest, InputStream& src, const Range* ranges,
 }
 
 template <typename ChildAsset, typename Range>
-void unpack_compressed_assets(CollectionAsset& dest, InputStream& src, const Range* ranges, s32 count, Game game, AssetFormatHint hint = FMT_NO_HINT) {
+void unpack_compressed_assets(CollectionAsset& dest, InputStream& src, const Range* ranges, s32 count, Game game, s32 hint = FMT_NO_HINT) {
 	for(s32 i = 0; i < count; i++) {
 		if(!ranges[i].empty()) {
 			unpack_compressed_asset(dest.child<ChildAsset>(i), src, ranges[i], game, hint);

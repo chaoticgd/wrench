@@ -20,8 +20,8 @@
 #include <pakrac/asset_unpacker.h>
 #include <pakrac/asset_packer.h>
 
-static void unpack_collection_asset(CollectionAsset& dest, InputStream& src, Game game, AssetFormatHint hint);
-static void pack_collection_asset(OutputStream& dest, CollectionAsset& src, Game game, AssetFormatHint hint);
+static void unpack_collection_asset(CollectionAsset& dest, InputStream& src, Game game, s32 hint);
+static void pack_collection_asset(OutputStream& dest, CollectionAsset& src, Game game, s32 hint);
 
 on_load(Collection, []() {
 	CollectionAsset::funcs.unpack_rac1 = wrap_hint_unpacker_func<CollectionAsset>(unpack_collection_asset);
@@ -35,7 +35,7 @@ on_load(Collection, []() {
 	CollectionAsset::funcs.pack_dl = wrap_hint_packer_func<CollectionAsset>(pack_collection_asset);
 })
 
-static void unpack_collection_asset(CollectionAsset& dest, InputStream& src, Game game, AssetFormatHint hint) {
+static void unpack_collection_asset(CollectionAsset& dest, InputStream& src, Game game, s32 hint) {
 	s32 count = src.read<s32>(0);
 	src.seek(4);
 	std::vector<s32> offsets = src.read_multiple<s32>(count);
@@ -57,7 +57,7 @@ static void unpack_collection_asset(CollectionAsset& dest, InputStream& src, Gam
 	}
 }
 
-static void pack_collection_asset(OutputStream& dest, CollectionAsset& src, Game game, AssetFormatHint hint) {
+static void pack_collection_asset(OutputStream& dest, CollectionAsset& src, Game game, s32 hint) {
 	s32 count;
 	for(count = 0; count < 256; count++) {
 		if(!src.has_child(count)) {

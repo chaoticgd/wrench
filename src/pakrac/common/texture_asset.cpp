@@ -20,11 +20,11 @@
 #include <pakrac/asset_unpacker.h>
 #include <pakrac/asset_packer.h>
 
-static void unpack_texture_asset(TextureAsset& dest, InputStream& src, Game game, AssetFormatHint hint);
-static void pack_texture_asset(OutputStream& dest, TextureAsset& src, Game game, AssetFormatHint hint);
+static void unpack_texture_asset(TextureAsset& dest, InputStream& src, Game game, s32 hint);
+static void pack_texture_asset(OutputStream& dest, TextureAsset& src, Game game, s32 hint);
 static Texture unpack_pif(InputStream& src);
-static void pack_pif(OutputStream& dest, Texture& texture, AssetFormatHint hint);
-static bool test_texture_asset(std::vector<u8>& original, std::vector<u8>& repacked, Game game, AssetFormatHint hint);
+static void pack_pif(OutputStream& dest, Texture& texture, s32 hint);
+static bool test_texture_asset(std::vector<u8>& original, std::vector<u8>& repacked, Game game, s32 hint);
 
 on_load(Texture, []() {
 	TextureAsset::funcs.unpack_rac1 = wrap_hint_unpacker_func<TextureAsset>(unpack_texture_asset);
@@ -46,7 +46,7 @@ packed_struct(RgbaTextureHeader,
 	u32 pad[2];
 )
 
-static void unpack_texture_asset(TextureAsset& dest, InputStream& src, Game game, AssetFormatHint hint) {
+static void unpack_texture_asset(TextureAsset& dest, InputStream& src, Game game, s32 hint) {
 	Texture texture;
 	switch(hint) {
 		case FMT_TEXTURE_RGBA: {
@@ -69,7 +69,7 @@ static void unpack_texture_asset(TextureAsset& dest, InputStream& src, Game game
 	dest.set_src(ref);
 }
 
-static void pack_texture_asset(OutputStream& dest, TextureAsset& src, Game game, AssetFormatHint hint) {
+static void pack_texture_asset(OutputStream& dest, TextureAsset& src, Game game, s32 hint) {
 	auto stream = src.file().open_binary_file_for_reading(src.src());
 	verify(stream.get(), "Failed to open PNG file.");
 	Opt<Texture> texture = read_png(*stream);
@@ -145,7 +145,7 @@ static Texture unpack_pif(InputStream& src) {
 	}
 }
 
-static void pack_pif(OutputStream& dest, Texture& texture, AssetFormatHint hint) {
+static void pack_pif(OutputStream& dest, Texture& texture, s32 hint) {
 	texture.divide_alphas();
 	
 	s64 header_ofs = dest.tell();
@@ -185,7 +185,7 @@ static void pack_pif(OutputStream& dest, Texture& texture, AssetFormatHint hint)
 	dest.write(header_ofs, header);
 }
 
-static bool test_texture_asset(std::vector<u8>& original, std::vector<u8>& repacked, Game game, AssetFormatHint hint) {
+static bool test_texture_asset(std::vector<u8>& original, std::vector<u8>& repacked, Game game, s32 hint) {
 	switch(hint) {
 		case FMT_TEXTURE_PIF4:
 		case FMT_TEXTURE_PIF4_SWIZZLED:

@@ -64,14 +64,8 @@ packed_struct(Rac1SceneHeader,
 static_assert(sizeof(Rac1SceneHeader) == 0x128);
 
 packed_struct(Rac1WadInfo,
-	union {
-		/* 0x0000 */ s32 version;
-		/* 0x0004 */ s32 header_size;
-	} on_disc;
-	union {
-		/* 0x0000 */ s32 header_size;
-		/* 0x0004 */ s32 pad;
-	} extracted;
+	/* 0x0000 */ s32 version;
+	/* 0x0004 */ s32 header_size;
 	/* 0x0008 */ SectorRange debug_font;
 	/* 0x0010 */ SectorRange save_game;
 	/* 0x0018 */ SectorRange ratchet_seqs[28];
@@ -88,21 +82,8 @@ packed_struct(Rac1WadInfo,
 	/* 0x0500 */ SectorRange stuff[81];
 	/* 0x0788 */ SectorRange planets[19];
 	/* 0x0820 */ SectorRange stuff2[38];
-	/* 0x0950 */ SectorRange goodies_menu[8];
-	/* 0x0990 */ SectorRange thing_menu[2];
-	/* 0x09a8 */ SectorRange design_sketches[19];
-	/* 0x0a38 */ SectorRange design_renders[19];
-	/* 0x0ad0 */ SectorRange skill_points[30];
-	/* 0x0bc0 */ SectorRange skill_point_locked;
-	/* 0x0bc8 */ SectorRange epilogue_english[12];
-	/* 0x0c28 */ SectorRange epilogue_french[12];
-	/* 0x0c88 */ SectorRange epilogue_italian[12];
-	/* 0x0ce8 */ SectorRange epilogue_german[12];
-	/* 0x0d48 */ SectorRange epilogue_spanish[12];
-	/* 0x0da8 */ SectorRange sketchbook[30];
-	/* 0x0e98 */ SectorRange unk_menu[13];
+	/* 0x0950 */ SectorRange bonus[182];
 	/* 0x0f00 */ Sector32 vags2[240];
-	
 	/* 0x12c0 */ SectorRange irx;
 	/* 0x12c8 */ SectorRange mobies[2];
 	/* 0x12d8 */ SectorRange anim_looking_thing[2];
@@ -120,7 +101,6 @@ packed_struct(Rac1WadInfo,
 	/* 0x1610 */ SectorRange anim_looking_thing_3;
 	/* 0x1618 */ SectorRange vags4[18];
 	/* 0x16a8 */ SectorRange images[40];
-	
 	/* 0x17e8 */ SectorRange mpegs[90];
 	/* 0x1ab8 */ Sector32 vags5[900];
 	/* 0x28c8 */ SectorRange levels[19];

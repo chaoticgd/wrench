@@ -68,8 +68,8 @@ AssetType Binary {
 AssetType Build {
 	desc: 'A build of the game.'
 	
-	IntegerAttribute game {
-		desc: 'The game being built. 1 for R&C1, 2 for R&C2, 3 for R&C3, 4 for Deadlocked.'
+	StringAttribute game {
+		desc: 'The game being built. Possible values: \'rac\', \'gc\', \'uya\', \'dl\'.'
 		required: true
 		games: [1 2 3 4]
 	}
@@ -233,17 +233,17 @@ AssetType FlatWad {
 	Examples examples {
 		FlatWad online {
 			Binary 0x8 { src: 'data.bin' }
-			Binary 0x10 { src: 'transition_bankgrounds/0.bin' }
-			Binary 0x18 { src: 'transition_bankgrounds/1.bin' }
-			Binary 0x20 { src: 'transition_bankgrounds/2.bin' }
-			Binary 0x28 { src: 'transition_bankgrounds/3.bin' }
-			Binary 0x30 { src: 'transition_bankgrounds/4.bin' }
-			Binary 0x38 { src: 'transition_bankgrounds/5.bin' }
-			Binary 0x40 { src: 'transition_bankgrounds/6.bin' }
-			Binary 0x48 { src: 'transition_bankgrounds/7.bin' }
-			Binary 0x50 { src: 'transition_bankgrounds/8.bin' }
-			Binary 0x58 { src: 'transition_bankgrounds/9.bin' }
-			Binary 0x60 { src: 'transition_bankgrounds/10.bin' }
+			Binary 0x10 { src: 'transition_backgrounds/0.bin' }
+			Binary 0x18 { src: 'transition_backgrounds/1.bin' }
+			Binary 0x20 { src: 'transition_backgrounds/2.bin' }
+			Binary 0x28 { src: 'transition_backgrounds/3.bin' }
+			Binary 0x30 { src: 'transition_backgrounds/4.bin' }
+			Binary 0x38 { src: 'transition_backgrounds/5.bin' }
+			Binary 0x40 { src: 'transition_backgrounds/6.bin' }
+			Binary 0x48 { src: 'transition_backgrounds/7.bin' }
+			Binary 0x50 { src: 'transition_backgrounds/8.bin' }
+			Binary 0x58 { src: 'transition_backgrounds/9.bin' }
+			Binary 0x60 { src: 'transition_backgrounds/10.bin' }
 		}
 	}
 }

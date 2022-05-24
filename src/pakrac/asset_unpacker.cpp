@@ -22,7 +22,7 @@
 
 AssetUnpackerGlobals g_asset_unpacker = {};
 
-static bool handle_special_debugging_cases(Asset& dest, InputStream& src, Game game, AssetFormatHint hint);
+static bool handle_special_debugging_cases(Asset& dest, InputStream& src, Game game, s32 hint);
 
 on_load(Unpacker, []() {
 	BuildAsset::funcs.unpack_rac1 = wrap_iso_unpacker_func<BuildAsset>(unpack_iso, unpack_asset_impl);
@@ -31,7 +31,7 @@ on_load(Unpacker, []() {
 	BuildAsset::funcs.unpack_dl = wrap_iso_unpacker_func<BuildAsset>(unpack_iso, unpack_asset_impl);
 })
 
-void unpack_asset_impl(Asset& dest, InputStream& src, Game game, AssetFormatHint hint) {
+void unpack_asset_impl(Asset& dest, InputStream& src, Game game, s32 hint) {
 	if(handle_special_debugging_cases(dest, src, game, hint)) {
 		return;
 	}
@@ -71,7 +71,7 @@ void unpack_asset_impl(Asset& dest, InputStream& src, Game game, AssetFormatHint
 	}
 }
 
-static bool handle_special_debugging_cases(Asset& dest, InputStream& src, Game game, AssetFormatHint hint) {
+static bool handle_special_debugging_cases(Asset& dest, InputStream& src, Game game, s32 hint) {
 	if(dest.is_wad && ((!dest.is_level_wad && g_asset_unpacker.skip_globals) || (dest.is_level_wad && g_asset_unpacker.skip_levels))) {
 		return true;
 	}

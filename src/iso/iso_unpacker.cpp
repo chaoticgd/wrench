@@ -44,14 +44,16 @@ void unpack_iso(BuildAsset& dest, InputStream& src, AssetUnpackerFunc unpack) {
 	auto [game, region, game_tag] = identify_game(filesystem.root);
 	table_of_contents toc = read_table_of_contents(src, game);
 	
+	const char* game_str = "unknown";
 	switch(game) {
-		case Game::RAC1: dest.rename("rac"); break;
-		case Game::RAC2: dest.rename("gc"); break;
-		case Game::RAC3: dest.rename("uya"); break;
-		case Game::DL: dest.rename("dl"); break;
+		case Game::RAC1: game_str ="rac"; break;
+		case Game::RAC2: game_str ="gc"; break;
+		case Game::RAC3: game_str ="uya"; break;
+		case Game::DL: game_str ="dl"; break;
 	}
 	
-	dest.set_game(static_cast<s32>(game));
+	dest.rename(game_str);
+	dest.set_game(game_str);
 	
 	std::vector<UnpackInfo> files;
 	
