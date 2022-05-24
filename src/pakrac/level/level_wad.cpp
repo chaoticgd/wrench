@@ -48,7 +48,7 @@ packed_struct(GcUyaLevelWadHeader,
 )
 static_assert(sizeof(GcUyaLevelWadHeader) == 0x60);
 
-packed_struct(GcUyaLevelWadHeader68,
+packed_struct(GcLevelWadHeader68,
 	/* 0x00 */ s32 header_size;
 	/* 0x04 */ Sector32 sector;
 	/* 0x08 */ s32 id;
@@ -61,7 +61,7 @@ packed_struct(GcUyaLevelWadHeader68,
 	/* 0x4c */ s32 reverb;
 	/* 0x50 */ SectorRange chunk_banks[3];
 )
-static_assert(sizeof(GcUyaLevelWadHeader68) == 0x68);
+static_assert(sizeof(GcLevelWadHeader68) == 0x68);
 
 packed_struct(MaxMissionSizes,
 	/* 0x0 */ s32 max_instances_size;
