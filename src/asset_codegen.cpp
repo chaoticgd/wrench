@@ -29,6 +29,7 @@ static void generate_asset_type_function(const WtfNode* root);
 static void generate_create_asset_function(const WtfNode* root);
 static void generate_asset_string_to_type_function(const WtfNode* root);
 static void generate_asset_type_to_string_function(const WtfNode* root);
+static void generate_asset_implementation(const WtfNode* asset_type);
 static void generate_read_function(const WtfNode* asset_type);
 static void generate_read_attribute_code(const WtfNode* node, const char* result, const char* attrib, int depth);
 static void generate_attribute_type_check_code(const std::string& attribute, const char* expected, int ind);
@@ -109,45 +110,7 @@ int main(int argc, char** argv) {
 			out("// *****************************************************************************\n");
 		}
 		
-		out("\n");
-		out("%sAsset::%sAsset(AssetFile& file, Asset* parent, std::string tag)\n", node->tag, node->tag);
-		out("\t: Asset(file, parent, ASSET_TYPE, std::move(tag), funcs) {\n");
-		
-		const WtfAttribute* wad = wtf_attribute(node, "wad");
-		if(wad && wad->type == WTF_BOOLEAN && wad->boolean) {
-			out("\tflags |= ASSET_IS_WAD;\n");
-		}
-		
-		const WtfAttribute* level_wad = wtf_attribute(node, "level_wad");
-		if(level_wad && level_wad->type == WTF_BOOLEAN && level_wad->boolean) {
-			out("\tflags |= ASSET_IS_LEVEL_WAD;\n");
-		}
-		
-		const WtfAttribute* bin_leaf = wtf_attribute(node, "bin_leaf");
-		if(bin_leaf && bin_leaf->type == WTF_BOOLEAN && bin_leaf->boolean) {
-			out("\tflags |= ASSET_IS_BIN_LEAF;\n");
-		}
-		
-		const WtfAttribute* flattenable = wtf_attribute(node, "flattenable");
-		if(flattenable && flattenable->type == WTF_BOOLEAN && flattenable->boolean) {
-			out("\tflags |= ASSET_IS_FLATTENABLE;\n");
-		}
-		
-		out("}\n\n");
-		
-		generate_read_function(node);
-		generate_write_function(node);
-		out("%sAsset& %sAsset::switch_files(const fs::path& name) {\n", node->tag, node->tag);
-		out("\tif(name.empty()) {\n");
-		out("\t\treturn static_cast<%sAsset&>(asset_file(fs::path(tag())/tag()));\n", node->tag);
-		out("\t} else {\n");
-		out("\t\treturn static_cast<%sAsset&>(asset_file(name));\n", node->tag);
-		out("\t}\n");
-		out("}\n");
-		out("\n");
-		out("AssetDispatchTable %sAsset::funcs;\n", node->tag);
-		generate_attribute_getter_and_setter_functions(node);
-		generate_child_functions(node);
+		generate_asset_implementation(node);
 	}
 	out("#endif\n");
 	
@@ -156,12 +119,41 @@ int main(int argc, char** argv) {
 
 static void generate_asset_type(const WtfNode* asset_type, int id) {
 	out("class %sAsset : public Asset {\n", asset_type->tag);
+	
+	out("\tenum {\n");
+	int attribute_count = 0;
 	for(WtfNode* node = asset_type->first_child; node != NULL; node = node->next_sibling) {
 		std::string cpp_type = node_to_cpp_type(node);
 		if(!cpp_type.empty()) {
-			out("\tOpt<%s> _attribute_%s;\n", cpp_type.c_str(), node->tag);
+			out("\t\tATTRIB_%s = (1 << %d),\n", node->tag, attribute_count);
+			attribute_count++;
 		}
 	}
+	out("\t};\n");
+	
+	// We use a bitfield to store whether each attribute exists instead of
+	// something like std::optional to save memory.
+	assert(attribute_count <= 64);
+	if(attribute_count > 0) {
+		if(attribute_count <= 8) {
+			out("\tu8 _attrib_exists = 0;\n");
+		} else if(attribute_count <= 16) {
+			out("\tu16 _attrib_exists = 0;\n");
+		} else if(attribute_count <= 32) {
+			out("\tu32 _attrib_exists = 0;\n");
+		} else {
+			out("\tu64 _attrib_exists = 0;\n");
+		}
+	}
+	
+	for(WtfNode* node = asset_type->first_child; node != NULL; node = node->next_sibling) {
+		std::string cpp_type = node_to_cpp_type(node);
+		if(!cpp_type.empty()) {
+			out("\t%s _attribute_%s;\n", cpp_type.c_str(), node->tag);
+			attribute_count++;
+		}
+	}
+	out("\n");
 	out("public:\n");
 	out("\t%sAsset(AssetFile& file, Asset* parent, std::string tag);\n", asset_type->tag);
 	out("\t\n");
@@ -254,6 +246,48 @@ static void generate_asset_type_to_string_function(const WtfNode* root) {
 	out("}\n\n");
 }
 
+static void generate_asset_implementation(const WtfNode* asset_type) {
+	out("\n");
+	out("%sAsset::%sAsset(AssetFile& file, Asset* parent, std::string tag)\n", asset_type->tag, asset_type->tag);
+	out("\t: Asset(file, parent, ASSET_TYPE, std::move(tag), funcs) {\n");
+	
+	const WtfAttribute* wad = wtf_attribute(asset_type, "wad");
+	if(wad && wad->type == WTF_BOOLEAN && wad->boolean) {
+		out("\tflags |= ASSET_IS_WAD;\n");
+	}
+	
+	const WtfAttribute* level_wad = wtf_attribute(asset_type, "level_wad");
+	if(level_wad && level_wad->type == WTF_BOOLEAN && level_wad->boolean) {
+		out("\tflags |= ASSET_IS_LEVEL_WAD;\n");
+	}
+	
+	const WtfAttribute* bin_leaf = wtf_attribute(asset_type, "bin_leaf");
+	if(bin_leaf && bin_leaf->type == WTF_BOOLEAN && bin_leaf->boolean) {
+		out("\tflags |= ASSET_IS_BIN_LEAF;\n");
+	}
+	
+	const WtfAttribute* flattenable = wtf_attribute(asset_type, "flattenable");
+	if(flattenable && flattenable->type == WTF_BOOLEAN && flattenable->boolean) {
+		out("\tflags |= ASSET_IS_FLATTENABLE;\n");
+	}
+	
+	out("}\n\n");
+	
+	generate_read_function(asset_type);
+	generate_write_function(asset_type);
+	out("%sAsset& %sAsset::switch_files(const fs::path& name) {\n", asset_type->tag, asset_type->tag);
+	out("\tif(name.empty()) {\n");
+	out("\t\treturn static_cast<%sAsset&>(asset_file(fs::path(tag())/tag()));\n", asset_type->tag);
+	out("\t} else {\n");
+	out("\t\treturn static_cast<%sAsset&>(asset_file(name));\n", asset_type->tag);
+	out("\t}\n");
+	out("}\n");
+	out("\n");
+	out("AssetDispatchTable %sAsset::funcs;\n", asset_type->tag);
+	generate_attribute_getter_and_setter_functions(asset_type);
+	generate_child_functions(asset_type);
+}
+
 static void generate_read_function(const WtfNode* asset_type) {
 	bool first = true;
 	out("void %sAsset::read_attributes(const WtfNode* node) {\n", asset_type->tag);
@@ -265,12 +299,12 @@ static void generate_read_function(const WtfNode* asset_type) {
 			} else {
 				first = false;
 			}
-			std::string result = std::string("(*_attribute_") + node->tag + ")";
+			std::string result = std::string("_attribute_") + node->tag;
 			std::string attrib = std::string("attribute_") + node->tag;
 			out("\tconst WtfAttribute* %s = wtf_attribute(node, \"%s\");\n", attrib.c_str(), node->tag);
 			out("\tif(%s) {\n", attrib.c_str());
-			out("\t_attribute_%s.emplace();\n", node->tag);
 			generate_read_attribute_code(node, result.c_str(), attrib.c_str(), 0);
+			out("\t_attrib_exists |= ATTRIB_%s;\n", node->tag);
 			out("\t}\n");
 		}
 	}
@@ -332,9 +366,9 @@ static void generate_write_function(const WtfNode* asset_type) {
 	for(WtfNode* node = asset_type->first_child; node != NULL; node = node->next_sibling) {
 		std::string cpp_type = node_to_cpp_type(node);
 		if(!cpp_type.empty()) {
-			out("\tif(_attribute_%s.has_value()) {\n", node->tag);
+			out("\tif(_attrib_exists & ATTRIB_%s) {\n", node->tag);
 			out("\t\twtf_begin_attribute(ctx, \"%s\");\n", node->tag);
-			std::string expr = std::string("(*_attribute_") + node->tag + ")";
+			std::string expr = std::string("_attribute_") + node->tag;
 			generate_asset_write_code(node, expr.c_str(), 0);
 			out("\t\twtf_end_attribute(ctx);\n");
 			out("\t}\n");
@@ -391,7 +425,7 @@ static void generate_attribute_getter_and_setter_functions(const WtfNode* asset_
 			
 			out("bool %sAsset::has_%s() {\n", asset_type->tag, getter_name.c_str());
 			out("\tfor(Asset* asset = this; asset != nullptr; asset = asset->lower_precedence()) {\n");
-			out("\t\tif(asset->type() == type() && _attribute_%s.has_value()) {\n", node->tag);
+			out("\t\tif(asset->type() == type() && (static_cast<%sAsset*>(asset)->_attrib_exists & ATTRIB_%s)) {\n", asset_type->tag, node->tag);
 			out("\t\t\treturn true;\n");
 			out("\t\t}\n");
 			out("\t}\n");
@@ -409,9 +443,9 @@ static void generate_attribute_getter_and_setter_functions(const WtfNode* asset_
 				out("\tfor(Asset* asset = &highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {\n");
 				out("\t\tif(asset->type() == ASSET_TYPE) {\n");
 				out("\t\t\t%s dest_0;\n", cpp_type.c_str());
-				out("\t\t\tconst auto& opt = static_cast<%sAsset&>(*asset)._attribute_%s;\n", asset_type->tag, node->tag);
-				out("\t\t\tif(opt.has_value()) {\n");
-				out("\t\t\t\tconst %s& src_0 = *opt;\n", cpp_type.c_str());
+				out("\t\t\tconst auto& sub = static_cast<%sAsset&>(*asset);\n", asset_type->tag);
+				out("\t\t\tif(sub._attrib_exists & ATTRIB_%s) {\n", node->tag);
+				out("\t\t\t\tconst %s& src_0 = sub._attribute_%s;\n", cpp_type.c_str(), node->tag);
 				generate_attribute_getter_code(node, 0);
 				out("\t\t\t\treturn dest_0;\n");
 				out("\t\t\t}\n");
@@ -430,6 +464,7 @@ static void generate_attribute_getter_and_setter_functions(const WtfNode* asset_
 			out("\t%s dest_0;\n", cpp_type.c_str());
 			generate_attribute_setter_code(node, 0);
 			out("\t_attribute_%s = std::move(dest_0);\n", node->tag);
+			out("\t_attrib_exists |= ATTRIB_%s;\n", node->tag);
 			out("}\n");
 			out("\n");
 		}
