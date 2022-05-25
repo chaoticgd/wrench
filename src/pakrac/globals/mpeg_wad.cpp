@@ -24,40 +24,97 @@ packed_struct(MpegHeader,
 	SectorByteRange video;
 )
 
+packed_struct(RacMpegWadHeader,
+	/* 0x0 */ s32 header_size;
+	/* 0x4 */ Sector32 sector;
+	/* 0x8 */ SectorByteRange mpegs[88];
+)
+
+packed_struct(GcMpegWadHeader,
+	/* 0x0 */ s32 header_size;
+	/* 0x4 */ Sector32 sector;
+	/* 0x8 */ MpegHeader mpegs[50];
+)
+
 packed_struct(UyaDlMpegWadHeader,
 	/* 0x0 */ s32 header_size;
 	/* 0x4 */ Sector32 sector;
 	/* 0x8 */ MpegHeader mpegs[100];
 )
 
-static void unpack_mpeg_wad(MpegWadAsset& dest, const UyaDlMpegWadHeader& header, InputStream& src, Game game);
-static void pack_mpeg_wad(OutputStream& dest, UyaDlMpegWadHeader& header, MpegWadAsset& src, Game game);
+static void unpack_rac_mpeg_wad(MpegWadAsset& dest, const RacMpegWadHeader& header, InputStream& src, Game game);
+static void pack_rac_mpeg_wad(OutputStream& dest, RacMpegWadHeader& header, MpegWadAsset& src, Game game);
+template <typename Header>
+static void unpack_gc_uya_dl_mpeg_wad(MpegWadAsset& dest, const Header& header, InputStream& src, Game game);
+template <typename Header>
+static void pack_gc_uya_dl_mpeg_wad(OutputStream& dest, Header& header, MpegWadAsset& src, Game game);
 
 on_load(Mpeg, []() {
-	MpegWadAsset::funcs.unpack_rac3 = wrap_wad_unpacker_func<MpegWadAsset, UyaDlMpegWadHeader>(unpack_mpeg_wad);
-	MpegWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<MpegWadAsset, UyaDlMpegWadHeader>(unpack_mpeg_wad);
+	MpegWadAsset::funcs.unpack_rac1 = wrap_wad_unpacker_func<MpegWadAsset, RacMpegWadHeader>(unpack_rac_mpeg_wad);
+	MpegWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<MpegWadAsset, GcMpegWadHeader>(unpack_gc_uya_dl_mpeg_wad<GcMpegWadHeader>);
+	MpegWadAsset::funcs.unpack_rac3 = wrap_wad_unpacker_func<MpegWadAsset, UyaDlMpegWadHeader>(unpack_gc_uya_dl_mpeg_wad<UyaDlMpegWadHeader>);
+	MpegWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<MpegWadAsset, UyaDlMpegWadHeader>(unpack_gc_uya_dl_mpeg_wad<UyaDlMpegWadHeader>);
 	
-	MpegWadAsset::funcs.pack_rac3 = wrap_wad_packer_func<MpegWadAsset, UyaDlMpegWadHeader>(pack_mpeg_wad);
-	MpegWadAsset::funcs.pack_dl = wrap_wad_packer_func<MpegWadAsset, UyaDlMpegWadHeader>(pack_mpeg_wad);
+	MpegWadAsset::funcs.pack_rac1 = wrap_wad_packer_func<MpegWadAsset, RacMpegWadHeader>(pack_rac_mpeg_wad);
+	MpegWadAsset::funcs.pack_rac2 = wrap_wad_packer_func<MpegWadAsset, GcMpegWadHeader>(pack_gc_uya_dl_mpeg_wad<GcMpegWadHeader>);
+	MpegWadAsset::funcs.pack_rac3 = wrap_wad_packer_func<MpegWadAsset, UyaDlMpegWadHeader>(pack_gc_uya_dl_mpeg_wad<UyaDlMpegWadHeader>);
+	MpegWadAsset::funcs.pack_dl = wrap_wad_packer_func<MpegWadAsset, UyaDlMpegWadHeader>(pack_gc_uya_dl_mpeg_wad<UyaDlMpegWadHeader>);
 })
 
-static void unpack_mpeg_wad(MpegWadAsset& dest, const UyaDlMpegWadHeader& header, InputStream& src, Game game) {
+static void unpack_rac_mpeg_wad(MpegWadAsset& dest, const RacMpegWadHeader& header, InputStream& src, Game game) {
 	for(s32 i = 0; i < ARRAY_SIZE(header.mpegs); i++) {
-		MpegAsset& mpeg = dest.mpegs().child<MpegAsset>(i).switch_files();
-		unpack_asset(mpeg.video(), src, header.mpegs[i].video, game, FMT_BINARY_PSS);
-		unpack_asset(mpeg.subtitles(), src, header.mpegs[i].subtitles, game);
+		if(!header.mpegs[i].empty()) {
+			BinaryAsset& video = dest.mpegs().child<BinaryAsset>(i);
+			unpack_asset(video, src, header.mpegs[i], game, FMT_BINARY_PSS);
+		}
 	}
 }
 
-static void pack_mpeg_wad(OutputStream& dest, UyaDlMpegWadHeader& header, MpegWadAsset& src, Game game) {
+static void pack_rac_mpeg_wad(OutputStream& dest, RacMpegWadHeader& header, MpegWadAsset& src, Game game) {
 	CollectionAsset& mpegs = src.get_mpegs();
 	for(s32 i = 0; i < ARRAY_SIZE(header.mpegs); i++) {
 		if(mpegs.has_child(i)) {
-			MpegAsset& mpeg = mpegs.get_child(i).as<MpegAsset>();
-			if(mpeg.has_video()) {
-				header.mpegs[i].subtitles = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video(), game);
+			Asset& child = mpegs.get_child(i);
+			if(child.type() == MpegAsset::ASSET_TYPE) {
+				MpegAsset& mpeg = child.as<MpegAsset>();
+				header.mpegs[i] = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video(), game);
+			} else {
+				header.mpegs[i] = pack_asset_sa<SectorByteRange>(dest, child, game);
 			}
-			header.mpegs[i].video = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video(), game);
+		}
+	}
+}
+
+template <typename Header>
+static void unpack_gc_uya_dl_mpeg_wad(MpegWadAsset& dest, const Header& header, InputStream& src, Game game) {
+	for(s32 i = 0; i < ARRAY_SIZE(header.mpegs); i++) {
+		if(!header.mpegs[i].subtitles.empty() || !header.mpegs[i].video.empty()) {
+			MpegAsset& mpeg = dest.mpegs().child<MpegAsset>(i);
+			BinaryAsset& video = mpeg.child<BinaryAsset>(i);
+			unpack_asset(video, src, header.mpegs[i].video, game, FMT_BINARY_PSS);
+			video.rename("video");
+			BinaryAsset& subtitles = mpeg.child<BinaryAsset>(i);
+			unpack_asset(subtitles, src, header.mpegs[i].subtitles, game);
+			subtitles.rename("subtitles");
+		}
+	}
+}
+
+template <typename Header>
+static void pack_gc_uya_dl_mpeg_wad(OutputStream& dest, Header& header, MpegWadAsset& src, Game game) {
+	CollectionAsset& mpegs = src.get_mpegs();
+	for(s32 i = 0; i < ARRAY_SIZE(header.mpegs); i++) {
+		if(mpegs.has_child(i)) {
+			Asset& child = mpegs.get_child(i);
+			if(child.type() == MpegAsset::ASSET_TYPE) {
+				MpegAsset& mpeg = child.as<MpegAsset>();
+				if(mpeg.has_video()) {
+					header.mpegs[i].subtitles = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video(), game);
+				}
+				header.mpegs[i].video = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video(), game);
+			} else {
+				header.mpegs[i].video = pack_asset_sa<SectorByteRange>(dest, child, game);
+			}
 		}
 	}
 }

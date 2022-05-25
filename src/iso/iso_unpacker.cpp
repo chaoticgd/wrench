@@ -124,6 +124,7 @@ static void enumerate_global_wads(std::vector<UnpackInfo>& dest, BuildAsset& bui
 	if(game == Game::RAC1) {
 		s64 toc_ofs = RAC1_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
 		dest.emplace_back(UnpackInfo{&build.bonus<BonusWadAsset>(), toc_ofs + offsetof(RacWadInfo, bonus), {0, src.size()}});
+		dest.emplace_back(UnpackInfo{&build.mpeg<MpegWadAsset>(), toc_ofs + offsetof(RacWadInfo, mpegs), {0, src.size()}});
 	} else {
 		for(const GlobalWadInfo& global : toc.globals) {
 			auto [wad_game, wad_type, name] = identify_wad(global.header);

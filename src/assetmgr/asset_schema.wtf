@@ -772,6 +772,9 @@ AssetType MpegWad {
 	Child mpegs {
 		desc: 'A list of all the MPEG cutscenes.'
 		allowed_types: ['Collection']
+		Child child {
+			allowed_types: ['Mpeg' 'Binary']
+		}
 	}
 }
 
@@ -790,7 +793,7 @@ AssetType Mpeg {
 		desc: 'The subtitles.'
 		allowed_types: ['Binary']
 		required: false
-		games: [1 2 3 4]
+		games: [2 3 4]
 	}
 }
 

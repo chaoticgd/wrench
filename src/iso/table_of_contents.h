@@ -101,7 +101,8 @@ packed_struct(RacWadInfo,
 	/* 0x1610 */ SectorRange anim_looking_thing_3;
 	/* 0x1618 */ SectorRange vags4[18];
 	/* 0x16a8 */ SectorRange images[40];
-	/* 0x17e8 */ SectorRange mpegs[90];
+	/* 0x17e8 */ SectorRange wad_things[2];
+	/* 0x17f8 */ SectorByteRange mpegs[88];
 	/* 0x1ab8 */ Sector32 vags5[900];
 	/* 0x28c8 */ SectorRange levels[19];
 )
