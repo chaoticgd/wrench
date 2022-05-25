@@ -26,9 +26,9 @@
 
 Asset::Asset(AssetFile& file, Asset* parent, AssetType type, std::string tag, AssetDispatchTable& func_table)
 	: funcs(func_table)
+	, _type(type)
 	, _file(file)
 	, _parent(parent)
-	, _type(type)
 	, _tag(tag) {}
 
 Asset::~Asset() {

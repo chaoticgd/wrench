@@ -27,7 +27,7 @@
 #include <core/filesystem.h>
 
 struct AssetType {
-	s32 id = -1;
+	s16 id = -1;
 	
 	bool operator==(const AssetType& rhs) const { return id == rhs.id; }
 	bool operator!=(const AssetType& rhs) const { return id != rhs.id; }

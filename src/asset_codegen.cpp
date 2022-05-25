@@ -115,22 +115,22 @@ int main(int argc, char** argv) {
 		
 		const WtfAttribute* wad = wtf_attribute(node, "wad");
 		if(wad && wad->type == WTF_BOOLEAN && wad->boolean) {
-			out("\tis_wad = true;\n");
+			out("\tflags |= ASSET_IS_WAD;\n");
 		}
 		
 		const WtfAttribute* level_wad = wtf_attribute(node, "level_wad");
 		if(level_wad && level_wad->type == WTF_BOOLEAN && level_wad->boolean) {
-			out("\tis_level_wad = true;\n");
+			out("\tflags |= ASSET_IS_LEVEL_WAD;\n");
 		}
 		
 		const WtfAttribute* bin_leaf = wtf_attribute(node, "bin_leaf");
 		if(bin_leaf && bin_leaf->type == WTF_BOOLEAN && bin_leaf->boolean) {
-			out("\tis_bin_leaf = true;\n");
+			out("\tflags |= ASSET_IS_BIN_LEAF;\n");
 		}
 		
 		const WtfAttribute* flattenable = wtf_attribute(node, "flattenable");
 		if(flattenable && flattenable->type == WTF_BOOLEAN && flattenable->boolean) {
-			out("\tis_flattenable = true;\n");
+			out("\tflags |= ASSET_IS_FLATTENABLE;\n");
 		}
 		
 		out("}\n\n");

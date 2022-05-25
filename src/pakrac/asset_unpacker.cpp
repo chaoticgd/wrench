@@ -72,17 +72,21 @@ void unpack_asset_impl(Asset& dest, InputStream& src, Game game, s32 hint, s64 h
 }
 
 static bool handle_special_debugging_cases(Asset& dest, InputStream& src, Game game, s32 hint) {
-	if(dest.is_wad && ((!dest.is_level_wad && g_asset_unpacker.skip_globals) || (dest.is_level_wad && g_asset_unpacker.skip_levels))) {
+	s32 is_wad = dest.flags & ASSET_IS_WAD;
+	s32 is_level_wad = dest.flags & ASSET_IS_LEVEL_WAD; 
+	s32 is_bin_leaf = dest.flags & ASSET_IS_BIN_LEAF;
+	s32 is_flattenable = dest.flags & ASSET_IS_FLATTENABLE;
+	if(is_wad && ((!is_level_wad && g_asset_unpacker.skip_globals) || (is_level_wad && g_asset_unpacker.skip_levels))) {
 		return true;
 	}
 	
-	if(g_asset_unpacker.dump_wads && dest.is_wad) {
+	if(g_asset_unpacker.dump_wads && is_wad) {
 		BinaryAsset& bin = dest.parent()->transmute_child<BinaryAsset>(dest.tag().c_str());
 		unpack_asset_impl(bin, src, game, FMT_BINARY_WAD);
 		return true;
 	}
 	
-	if(g_asset_unpacker.dump_binaries && dest.is_bin_leaf) {
+	if(g_asset_unpacker.dump_binaries && is_bin_leaf) {
 		const char* type = asset_type_to_string(dest.type());
 		BinaryAsset& bin = dest.parent()->transmute_child<BinaryAsset>(dest.tag().c_str());
 		bin.set_asset_type(type);
@@ -92,8 +96,8 @@ static bool handle_special_debugging_cases(Asset& dest, InputStream& src, Game g
 		return true;
 	}
 	
-	if(g_asset_unpacker.dump_flat && dest.is_wad && dest.type() != FlatWadAsset::ASSET_TYPE) {
-		if(dest.is_flattenable) {
+	if(g_asset_unpacker.dump_flat && is_wad && dest.type() != FlatWadAsset::ASSET_TYPE) {
+		if(is_flattenable) {
 			std::string tag = dest.tag();
 			FlatWadAsset& flat_wad = dest.parent()->transmute_child<FlatWadAsset>(tag.c_str());
 			unpack_asset_impl(flat_wad.switch_files(), src, game);

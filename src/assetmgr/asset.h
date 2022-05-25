@@ -34,6 +34,13 @@
 #include <assetmgr/asset_util.h>
 #include <assetmgr/asset_dispatch.h>
 
+enum AssetFlags {
+	ASSET_IS_WAD = (1 << 0),
+	ASSET_IS_LEVEL_WAD = (1 << 1),
+	ASSET_IS_BIN_LEAF = (1 << 2),
+	ASSET_IS_FLATTENABLE = (1 << 3)
+};
+
 class Asset {
 protected:
 	Asset(AssetFile& file, Asset* parent, AssetType type, std::string tag, AssetDispatchTable& func_table);
@@ -157,11 +164,7 @@ public:
 	virtual void validate_attributes() const = 0;
 	
 	AssetDispatchTable& funcs;
-	
-	bool is_wad = false;
-	bool is_level_wad = false;
-	bool is_bin_leaf = false;
-	bool is_flattenable = false;
+	u16 flags = 0;
 	
 private:
 	friend AssetBank;
@@ -174,9 +177,9 @@ private:
 	void connect_precedence_pointers();
 	void disconnect_precedence_pointers();
 	
+	AssetType _type;
 	AssetFile& _file;
 	Asset* _parent;
-	AssetType _type;
 	std::string _tag;
 	std::vector<std::unique_ptr<Asset>> _children;
 	Asset* _lower_precedence = nullptr;
