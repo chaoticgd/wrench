@@ -38,13 +38,13 @@ struct AssetUnpackerGlobals {
 
 extern AssetUnpackerGlobals g_asset_unpacker;
 
-void unpack_asset_impl(Asset& dest, InputStream& src, Game game, s32 hint = FMT_NO_HINT);
+void unpack_asset_impl(Asset& dest, InputStream& src, Game game, s32 hint = FMT_NO_HINT, s64 header_offset = 0);
 
 template <typename ThisAsset, typename Range>
 void unpack_asset(ThisAsset& dest, InputStream& src, Range range, Game game, s32 hint = FMT_NO_HINT) {
 	if(!range.empty()) {
 		SubInputStream stream(src, range.bytes());
-		unpack_asset_impl(dest, stream, game, hint);
+		unpack_asset_impl(dest, stream, game, hint, 0);
 	}
 }
 
@@ -58,7 +58,7 @@ void unpack_compressed_asset(ThisAsset& dest, InputStream& src, Range range, Gam
 		decompress_wad(bytes, compressed_bytes);
 		
 		MemoryInputStream stream(bytes);
-		unpack_asset_impl(dest, stream, game, hint);
+		unpack_asset_impl(dest, stream, game, hint, 0);
 	}
 }
 

@@ -28,12 +28,13 @@ enum class Region {
 
 struct UnpackInfo {
 	Asset* asset;
-	ByteRange64 range;
+	s64 header_offset;
+	ByteRange64 data_range;
 };
 
 static void unpack_ps2_logo(BuildAsset& build, InputStream& src, Region region);
 static void unpack_primary_volume_descriptor(BuildAsset& build, const IsoPrimaryVolumeDescriptor& pvd);
-static void enumerate_global_wads(std::vector<UnpackInfo>& dest, BuildAsset& build, const table_of_contents& toc, InputStream& src);
+static void enumerate_global_wads(std::vector<UnpackInfo>& dest, BuildAsset& build, const table_of_contents& toc, InputStream& src, Game game);
 static void enumerate_level_wads(std::vector<UnpackInfo>& dest, CollectionAsset& levels, const table_of_contents& toc, InputStream& src);
 static void enumerate_non_wads(std::vector<UnpackInfo>& dest, CollectionAsset& files, fs::path out, const IsoDirectory& dir, InputStream& src);
 static std::tuple<Game, Region, const char*> identify_game(const IsoDirectory& root);
@@ -46,10 +47,10 @@ void unpack_iso(BuildAsset& dest, InputStream& src, AssetUnpackerFunc unpack) {
 	
 	const char* game_str = "unknown";
 	switch(game) {
-		case Game::RAC1: game_str ="rac"; break;
-		case Game::RAC2: game_str ="gc"; break;
-		case Game::RAC3: game_str ="uya"; break;
-		case Game::DL: game_str ="dl"; break;
+		case Game::RAC1: game_str = "rac"; break;
+		case Game::RAC2: game_str = "gc"; break;
+		case Game::RAC3: game_str = "uya"; break;
+		case Game::DL: game_str = "dl"; break;
 	}
 	
 	dest.rename(game_str);
@@ -60,16 +61,18 @@ void unpack_iso(BuildAsset& dest, InputStream& src, AssetUnpackerFunc unpack) {
 	unpack_ps2_logo(dest, src, region);
 	unpack_primary_volume_descriptor(dest, filesystem.pvd);
 	
-	enumerate_global_wads(files, dest.switch_files("globals/globals.asset"), toc, src);
+	enumerate_global_wads(files, dest.switch_files("globals/globals.asset"), toc, src, game);
 	enumerate_level_wads(files, dest.switch_files("levels/levels.asset").levels(), toc, src);
 	enumerate_non_wads(files, dest.switch_files("files/files.asset").files(), "", filesystem.root, src);
 	
+	// The reported completion percentage is based on how far through the file
+	// we are, so it's important to unpack them in order.
 	std::sort(BEGIN_END(files), [](auto& lhs, auto& rhs)
-		{ return lhs.range.offset < rhs.range.offset; });
+		{ return lhs.data_range.offset < rhs.data_range.offset; });
 	
 	for(UnpackInfo& info : files) {
-		SubInputStream stream(src, info.range);
-		unpack(*info.asset, stream, game, FMT_NO_HINT);
+		SubInputStream stream(src, info.data_range);
+		unpack(*info.asset, stream, game, FMT_NO_HINT, info.header_offset);
 	}
 }
 
@@ -117,28 +120,33 @@ static void unpack_primary_volume_descriptor(BuildAsset& build, const IsoPrimary
 	asset.set_bibliographic_file_identifier(std::string(pvd.bibliographic_file_identifier, sizeof(pvd.bibliographic_file_identifier)));
 }
 
-static void enumerate_global_wads(std::vector<UnpackInfo>& dest, BuildAsset& build, const table_of_contents& toc, InputStream& src) {
-	for(const GlobalWadInfo& global : toc.globals) {
-		auto [wad_game, wad_type, name] = identify_wad(global.header);
-		std::string file_name = std::string(name) + ".wad";
-		size_t file_size = get_global_wad_file_size(global, toc);
-		
-		Asset* asset;
-		switch(wad_type) {
-			case WadType::MPEG:   asset = &build.mpeg<MpegWadAsset>();     break;
-			case WadType::MISC:   asset = &build.misc<MiscWadAsset>();     break;
-			case WadType::HUD:    asset = &build.hud<HudWadAsset>();       break;
-			case WadType::BONUS:  asset = &build.bonus<BonusWadAsset>();   break;
-			case WadType::AUDIO:  asset = &build.audio<AudioWadAsset>();   break;
-			case WadType::SPACE:  asset = &build.space<SpaceWadAsset>();   break;
-			case WadType::SCENE:  asset = &build.scene<SceneWadAsset>();   break;
-			case WadType::GADGET: asset = &build.gadget<GadgetWadAsset>(); break;
-			case WadType::ARMOR:  asset = &build.armor<ArmorWadAsset>();   break;
-			case WadType::ONLINE: asset = &build.online<OnlineWadAsset>(); break;
-			default: fprintf(stderr, "warning: Extracted global WAD of unknown type to globals/%s.wad.\n", name);
+static void enumerate_global_wads(std::vector<UnpackInfo>& dest, BuildAsset& build, const table_of_contents& toc, InputStream& src, Game game) {
+	if(game == Game::RAC1) {
+		s64 toc_ofs = RAC1_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
+		dest.emplace_back(UnpackInfo{&build.bonus<BonusWadAsset>(), toc_ofs + offsetof(RacWadInfo, bonus), {0, src.size()}});
+	} else {
+		for(const GlobalWadInfo& global : toc.globals) {
+			auto [wad_game, wad_type, name] = identify_wad(global.header);
+			std::string file_name = std::string(name) + ".wad";
+			size_t file_size = get_global_wad_file_size(global, toc);
+			
+			Asset* asset;
+			switch(wad_type) {
+				case WadType::MPEG:   asset = &build.mpeg<MpegWadAsset>();     break;
+				case WadType::MISC:   asset = &build.misc<MiscWadAsset>();     break;
+				case WadType::HUD:    asset = &build.hud<HudWadAsset>();       break;
+				case WadType::BONUS:  asset = &build.bonus<BonusWadAsset>();   break;
+				case WadType::AUDIO:  asset = &build.audio<AudioWadAsset>();   break;
+				case WadType::SPACE:  asset = &build.space<SpaceWadAsset>();   break;
+				case WadType::SCENE:  asset = &build.scene<SceneWadAsset>();   break;
+				case WadType::GADGET: asset = &build.gadget<GadgetWadAsset>(); break;
+				case WadType::ARMOR:  asset = &build.armor<ArmorWadAsset>();   break;
+				case WadType::ONLINE: asset = &build.online<OnlineWadAsset>(); break;
+				default: fprintf(stderr, "warning: Extracted global WAD of unknown type to globals/%s.wad.\n", name);
+			}
+			
+			dest.emplace_back(UnpackInfo{asset, 0, {global.sector.bytes(), (s64) file_size}});
 		}
-		
-		dest.emplace_back(UnpackInfo{asset, {global.sector.bytes(), (s64) file_size}});
 	}
 }
 
@@ -169,7 +177,7 @@ static void enumerate_level_wads(std::vector<UnpackInfo>& dest, CollectionAsset&
 				default: fprintf(stderr, "warning: Extracted level WAD of unknown type.\n");
 			}
 			
-			dest.emplace_back(UnpackInfo{asset, {part->file_lba.bytes(), part->file_size.bytes()}});
+			dest.emplace_back(UnpackInfo{asset, 0, {part->file_lba.bytes(), part->file_size.bytes()}});
 		}
 	}
 }
@@ -189,7 +197,7 @@ static void enumerate_non_wads(std::vector<UnpackInfo>& dest, CollectionAsset& f
 			FileAsset& asset = files.child<FileAsset>(tag.c_str());
 			asset.set_path(file_path.string());
 			
-			dest.emplace_back(UnpackInfo{&asset, {file.lba.bytes(), file.size}});
+			dest.emplace_back(UnpackInfo{&asset, 0, {file.lba.bytes(), file.size}});
 		}
 	}
 	for(const IsoDirectory& subdir : dir.subdirs) {

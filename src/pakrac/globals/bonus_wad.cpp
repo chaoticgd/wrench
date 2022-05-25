@@ -104,10 +104,12 @@ static void unpack_demo_images(CollectionAsset& dest, InputStream& src, const Se
 static void pack_demo_images(OutputStream& dest, SectorRange* ranges, s32 outer_count, s32 inner_count, CollectionAsset& src, Game game, const char* muffin);
 
 on_load(Bonus, []() {
+	BonusWadAsset::funcs.unpack_rac1 = wrap_wad_unpacker_func<BonusWadAsset, RacBonusWadHeader>(unpack_rac_gc_bonus_wad<RacBonusWadHeader>);
 	BonusWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<BonusWadAsset, GcBonusWadHeader>(unpack_rac_gc_bonus_wad<GcBonusWadHeader>);
 	BonusWadAsset::funcs.unpack_rac3 = wrap_wad_unpacker_func<BonusWadAsset, UyaBonusWadHeader>(unpack_uya_dl_bonus_wad<UyaBonusWadHeader>);
 	BonusWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<BonusWadAsset, DlBonusWadHeader>(unpack_uya_dl_bonus_wad<DlBonusWadHeader>);
 	
+	BonusWadAsset::funcs.pack_rac1 = wrap_wad_packer_func<BonusWadAsset, RacBonusWadHeader>(pack_rac_gc_bonus_wad<RacBonusWadHeader>);
 	BonusWadAsset::funcs.pack_rac2 = wrap_wad_packer_func<BonusWadAsset, GcBonusWadHeader>(pack_rac_gc_bonus_wad<GcBonusWadHeader>);
 	BonusWadAsset::funcs.pack_rac3 = wrap_wad_packer_func<BonusWadAsset, UyaBonusWadHeader>(pack_uya_dl_bonus_wad<UyaBonusWadHeader>);
 	BonusWadAsset::funcs.pack_dl = wrap_wad_packer_func<BonusWadAsset, DlBonusWadHeader>(pack_uya_dl_bonus_wad<DlBonusWadHeader>);
@@ -118,7 +120,11 @@ static void unpack_rac_gc_bonus_wad(BonusWadAsset& dest, const Header& header, I
 	unpack_compressed_assets<TextureAsset>(dest.goodies_images().switch_files(), src, ARRAY_PAIR(header.goodies_images), game, FMT_TEXTURE_PIF8);
 	unpack_compressed_assets<TextureAsset>(dest.character_sketches().switch_files(), src, ARRAY_PAIR(header.character_sketches), game, FMT_TEXTURE_PIF8);
 	unpack_compressed_assets<TextureAsset>(dest.character_renders().switch_files(), src, ARRAY_PAIR(header.character_renders), game, FMT_TEXTURE_PIF8);
-	unpack_compressed_assets<TextureAsset>(dest.old_skill_images().switch_files(), src, ARRAY_PAIR(header.old_skill_images), game, FMT_TEXTURE_PIF8);
+	if constexpr(std::is_same_v<Header, GcBonusWadHeader>) {
+		unpack_compressed_assets<TextureAsset>(dest.old_skill_images().switch_files(), src, ARRAY_PAIR(header.old_skill_images), game, FMT_TEXTURE_PIF8);
+	} else {
+		unpack_compressed_assets<TextureAsset>(dest.skill_images().switch_files(), src, ARRAY_PAIR(header.skill_images), game, FMT_TEXTURE_PIF8);
+	}
 	unpack_compressed_assets<TextureAsset>(dest.epilogue_english().switch_files(), src, ARRAY_PAIR(header.epilogue_english), game, FMT_TEXTURE_PIF8);
 	unpack_compressed_assets<TextureAsset>(dest.epilogue_french().switch_files(), src, ARRAY_PAIR(header.epilogue_french), game, FMT_TEXTURE_PIF8);
 	unpack_compressed_assets<TextureAsset>(dest.epilogue_italian().switch_files(), src, ARRAY_PAIR(header.epilogue_italian), game, FMT_TEXTURE_PIF8);
@@ -127,9 +133,9 @@ static void unpack_rac_gc_bonus_wad(BonusWadAsset& dest, const Header& header, I
 	unpack_compressed_assets<TextureAsset>(dest.sketchbook().switch_files(), src, ARRAY_PAIR(header.sketchbook), game, FMT_TEXTURE_PIF8);
 	unpack_compressed_assets<TextureAsset>(dest.commercials().switch_files(), src, ARRAY_PAIR(header.commercials), game, FMT_TEXTURE_PIF8);
 	unpack_compressed_assets<TextureAsset>(dest.item_images().switch_files(), src, ARRAY_PAIR(header.item_images), game, FMT_TEXTURE_PIF8);
-	unpack_rac_gc_credits_text(dest.credits_text().switch_files(), src, header.credits_text, game);
-	unpack_assets<TextureAsset>(dest.credits_images().switch_files(), src, ARRAY_PAIR(header.credits_images), game, FMT_TEXTURE_RGBA);
 	if constexpr(std::is_same_v<Header, GcBonusWadHeader>) {
+		unpack_rac_gc_credits_text(dest.credits_text().switch_files(), src, header.credits_text, game);
+		unpack_assets<TextureAsset>(dest.credits_images().switch_files(), src, ARRAY_PAIR(header.credits_images), game, FMT_TEXTURE_RGBA);
 		unpack_compressed_assets<TextureAsset>(dest.random_stuff().switch_files(), src, ARRAY_PAIR(header.random_stuff), game, FMT_TEXTURE_PIF8);
 		unpack_compressed_assets<TextureAsset>(dest.movie_images().switch_files(), src, ARRAY_PAIR(header.movie_images), game, FMT_TEXTURE_PIF8);
 		unpack_compressed_assets<TextureAsset>(dest.cinematic_images().switch_files(), src, ARRAY_PAIR(header.cinematic_images), game, FMT_TEXTURE_PIF8);
@@ -146,7 +152,11 @@ static void pack_rac_gc_bonus_wad(OutputStream& dest, Header& header, BonusWadAs
 	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.goodies_images), src.get_goodies_images(), game, "goodies_images", FMT_TEXTURE_PIF8);
 	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.character_sketches), src.get_character_sketches(), game, "character_sketches", FMT_TEXTURE_PIF8);
 	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.character_renders), src.get_character_renders(), game, "character_renders", FMT_TEXTURE_PIF8);
-	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.old_skill_images), src.get_old_skill_images(), game, "old_skill_images", FMT_TEXTURE_PIF8);
+	if constexpr(std::is_same_v<Header, GcBonusWadHeader>) {
+		pack_compressed_assets_sa(dest, ARRAY_PAIR(header.old_skill_images), src.get_old_skill_images(), game, "old_skill_images", FMT_TEXTURE_PIF8);
+	} else {
+		pack_compressed_assets_sa(dest, ARRAY_PAIR(header.skill_images), src.get_skill_images(), game, "skill_images", FMT_TEXTURE_PIF8);
+	}
 	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.epilogue_english), src.get_epilogue_english(), game, "epilogue_english", FMT_TEXTURE_PIF8);
 	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.epilogue_french), src.get_epilogue_french(), game, "epilogue_french", FMT_TEXTURE_PIF8);
 	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.epilogue_italian), src.get_epilogue_italian(), game, "epilogue_italian", FMT_TEXTURE_PIF8);
@@ -155,9 +165,9 @@ static void pack_rac_gc_bonus_wad(OutputStream& dest, Header& header, BonusWadAs
 	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.sketchbook), src.get_sketchbook(), game, "sketchbook", FMT_TEXTURE_PIF8);
 	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.commercials), src.get_commercials(), game, "commercials", FMT_TEXTURE_PIF8);
 	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.item_images), src.get_item_images(), game, "item_images", FMT_TEXTURE_PIF8);
-	header.credits_text = pack_rac_gc_credits_text(dest, src.get_credits_text(), game);
-	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.credits_images), src.get_credits_images(), game, "credits_images", FMT_TEXTURE_RGBA);
 	if constexpr(std::is_same_v<Header, GcBonusWadHeader>) {
+		header.credits_text = pack_rac_gc_credits_text(dest, src.get_credits_text(), game);
+		pack_compressed_assets_sa(dest, ARRAY_PAIR(header.credits_images), src.get_credits_images(), game, "credits_images", FMT_TEXTURE_RGBA);
 		pack_compressed_assets_sa(dest, ARRAY_PAIR(header.random_stuff), src.get_random_stuff(), game, "random_stuff", FMT_TEXTURE_PIF8);
 		pack_compressed_assets_sa(dest, ARRAY_PAIR(header.movie_images), src.get_movie_images(), game, "movie_images", FMT_TEXTURE_PIF8);
 		pack_compressed_assets_sa(dest, ARRAY_PAIR(header.cinematic_images), src.get_cinematic_images(), game, "cinematic_images", FMT_TEXTURE_PIF8);

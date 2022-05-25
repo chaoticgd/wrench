@@ -63,7 +63,7 @@ packed_struct(Rac1SceneHeader,
 )
 static_assert(sizeof(Rac1SceneHeader) == 0x128);
 
-packed_struct(Rac1WadInfo,
+packed_struct(RacWadInfo,
 	/* 0x0000 */ s32 version;
 	/* 0x0004 */ s32 header_size;
 	/* 0x0008 */ SectorRange debug_font;
@@ -105,7 +105,7 @@ packed_struct(Rac1WadInfo,
 	/* 0x1ab8 */ Sector32 vags5[900];
 	/* 0x28c8 */ SectorRange levels[19];
 )
-static_assert(sizeof(Rac1WadInfo) == 0x2960);
+static_assert(sizeof(RacWadInfo) == 0x2960);
 
 // This is what's actually stored on disc. The sector numbers are absolute and
 // in the case of the audio and scene data, point to sectors before the header.

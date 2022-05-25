@@ -31,7 +31,7 @@ on_load(Unpacker, []() {
 	BuildAsset::funcs.unpack_dl = wrap_iso_unpacker_func<BuildAsset>(unpack_iso, unpack_asset_impl);
 })
 
-void unpack_asset_impl(Asset& dest, InputStream& src, Game game, s32 hint) {
+void unpack_asset_impl(Asset& dest, InputStream& src, Game game, s32 hint, s64 header_offset) {
 	if(handle_special_debugging_cases(dest, src, game, hint)) {
 		return;
 	}
@@ -56,7 +56,7 @@ void unpack_asset_impl(Asset& dest, InputStream& src, Game game, s32 hint) {
 	}
 	
 	verify(unpack_func, "Tried to unpack nonunpackable asset '%s'.", reference.c_str());
-	(*unpack_func)(dest, src, game, hint);
+	(*unpack_func)(dest, src, game, hint, header_offset);
 	
 	// Update the completion percentage based on how far through the input file
 	// we are, ignoring streams that aren't the input file.

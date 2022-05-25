@@ -39,33 +39,42 @@ enum AssetFormatHint {
 
 // *****************************************************************************
 
-using AssetUnpackerFunc = std::function<void(Asset& dest, InputStream& src, Game game, s32 hint)>;
+using AssetUnpackerFunc = std::function<void(Asset& dest, InputStream& src, Game game, s32 hint, s64 header_offset)>;
 
 template <typename ThisAsset, typename UnpackerFunc>
 AssetUnpackerFunc* wrap_unpacker_func(UnpackerFunc func) {
-	return new AssetUnpackerFunc([func](Asset& dest, InputStream& src, Game game, s32 hint) {
+	return new AssetUnpackerFunc([func](Asset& dest, InputStream& src, Game game, s32 hint, s64 header_offset) {
 		func(static_cast<ThisAsset&>(dest), src, game);
 	});
 }
 
 template <typename ThisAsset, typename UnpackerFunc>
 AssetUnpackerFunc* wrap_hint_unpacker_func(UnpackerFunc func) {
-	return new AssetUnpackerFunc([func](Asset& dest, InputStream& src, Game game, s32 hint) {
+	return new AssetUnpackerFunc([func](Asset& dest, InputStream& src, Game game, s32 hint, s64 header_offset) {
 		func(static_cast<ThisAsset&>(dest), src, game, hint);
 	});
 }
 
 template <typename ThisAsset, typename WadHeader, typename UnpackerFunc>
 AssetUnpackerFunc* wrap_wad_unpacker_func(UnpackerFunc func) {
-	return new AssetUnpackerFunc([func](Asset& dest, InputStream& src, Game game, s32 hint) {
-		WadHeader header = src.read<WadHeader>(0);
+	return new AssetUnpackerFunc([func](Asset& dest, InputStream& src, Game game, s32 hint, s64 header_offset) {
+		WadHeader header;
+		if(game == Game::RAC1) {
+			// The packed R&C1 headers don't have a header_size and sector field
+			// but we want to read them using a version of the header that
+			// starts with those fields so we can write them out like that, so
+			// that all of the WAD files can be identified from their header.
+			header = src.read<WadHeader>(header_offset - 8);
+		} else {
+			header = src.read<WadHeader>(header_offset);
+		}
 		func(static_cast<ThisAsset&>(dest).switch_files(), header, src, game);
 	});
 }
 
 template <typename ThisAsset, typename UnpackerFunc>
 AssetUnpackerFunc* wrap_iso_unpacker_func(UnpackerFunc func, AssetUnpackerFunc unpack) {
-	return new AssetUnpackerFunc([func, unpack](Asset& dest, InputStream& src, Game game, s32 hint) {
+	return new AssetUnpackerFunc([func, unpack](Asset& dest, InputStream& src, Game game, s32 hint, s64 header_offset) {
 		func(static_cast<ThisAsset&>(dest), src, unpack);
 	});
 }
