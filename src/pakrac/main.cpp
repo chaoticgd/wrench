@@ -98,12 +98,14 @@ int main(int argc, char** argv) {
 		
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
 		unpack(args.input_paths[0], args.output_path);
+		report_memory_statistics();
 		return 0;
 	}
 	
 	if(mode == "pack") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATHS | ARG_ASSET | ARG_OUTPUT_PATH | ARG_GAME);
 		pack(args.input_paths, args.asset, args.output_path, args.game);
+		report_memory_statistics();
 		return 0;
 	}
 	
@@ -122,6 +124,18 @@ int main(int argc, char** argv) {
 	if(mode == "inspect_iso") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH);
 		inspect_iso(args.input_paths[0]);
+		return 0;
+	}
+	
+	if(mode == "profile_memory_usage") {
+		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH);
+		{
+			AssetForest forest;
+			for(const fs::path& input_path : args.input_paths) {
+				forest.mount<LooseAssetBank>(input_path, false);
+			}
+		}
+		report_memory_statistics();
 		return 0;
 	}
 	

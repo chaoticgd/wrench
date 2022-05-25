@@ -30,6 +30,7 @@
 #include <wtf/wtf.h>
 #include <wtf/wtf_writer.h>
 #include <core/stream.h>
+#include <core/memory_profiler.h>
 #include <assetmgr/asset_util.h>
 #include <assetmgr/asset_dispatch.h>
 
@@ -42,6 +43,8 @@ public:
 	virtual ~Asset();
 	Asset& operator=(const Asset&) = delete;
 	Asset& operator=(Asset&&) = delete;
+	
+	SETUP_MEMORY_ZONE(MEMORY_ZONE_ASSET_SYSTEM)
 	
 	AssetForest& forest();
 	const AssetForest& forest() const;
@@ -190,6 +193,8 @@ public:
 	AssetFile& operator=(const AssetFile&) = delete;
 	AssetFile& operator=(AssetFile&&) = delete;
 	
+	SETUP_MEMORY_ZONE(MEMORY_ZONE_ASSET_SYSTEM)
+	
 	Asset& root();
 	
 	void write() const;
@@ -218,6 +223,8 @@ private:
 class AssetBank {
 public:
 	virtual ~AssetBank();
+	
+	SETUP_MEMORY_ZONE(MEMORY_ZONE_ASSET_SYSTEM)
 	
 	bool is_writeable() const;
 	
@@ -273,6 +280,8 @@ public:
 	AssetForest(AssetForest&&) = delete;
 	AssetForest& operator=(const AssetForest&) = delete;
 	AssetForest& operator=(AssetForest&&) = delete;
+	
+	SETUP_MEMORY_ZONE(MEMORY_ZONE_ASSET_SYSTEM)
 	
 	Asset& lookup_asset(const AssetReference& reference, Asset* context);
 	
