@@ -21,7 +21,7 @@
 
 // This file and its associated .cpp file contains the core of Wrench's asset
 // system. The top-level object here is the asset forest, which contains asset
-// packs, which contain .asset files, which contain a tree of assets. Each mod
+// banks, which contain .asset files, which contain a tree of assets. Each mod
 // as well as each base game here would be represented by an asset pack.
 
 #include <memory>
