@@ -36,7 +36,10 @@ on_load(Binary, []() {
 
 static void unpack_binary_asset(Asset& dest, InputStream& src, Game game, s32 hint, s64 header_offset) {
 	BinaryAsset& binary = dest.as<BinaryAsset>();
-	std::string file_name = binary.tag() + (hint == FMT_BINARY_WAD ? ".wad" : ".bin");
+	const char* extension =
+		hint == FMT_BINARY_WAD ? ".wad" :
+		hint == FMT_BINARY_PSS ? ".pss" : ".bin";
+	std::string file_name = binary.tag() + extension;
 	auto [stream, ref] = binary.file().open_binary_file_for_writing(file_name);
 	verify(stream.get(), "Failed to open file '%s' for writing binary asset '%s'.",
 		file_name.c_str(),

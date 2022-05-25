@@ -769,17 +769,29 @@ AssetType MpegWad {
 	desc: 'The file containing all of the MPEG cutscenes.'
 	wad: true
 	
-	Child story {
+	Child mpegs {
 		desc: 'A list of all the MPEG cutscenes.'
 		allowed_types: ['Collection']
 	}
 }
 
 AssetType Mpeg {
-	desc: 'A video file.'
+	desc: 'An MPEG cutscene with subtitles.'
 	bin_leaf: true
 	
-	FileReferenceAttribute src {}
+	Child video {
+		desc: 'The video file itself.'
+		allowed_types: ['Binary']
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	Child subtitles {
+		desc: 'The subtitles.'
+		allowed_types: ['Binary']
+		required: false
+		games: [1 2 3 4]
+	}
 }
 
 AssetType OnlineWad {
