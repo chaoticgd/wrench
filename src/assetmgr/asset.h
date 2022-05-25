@@ -36,7 +36,7 @@
 
 class Asset {
 protected:
-	Asset(AssetForest& forest, AssetBank& pack, AssetFile& file, Asset* parent, AssetType type, std::string tag, AssetDispatchTable& func_table);
+	Asset(AssetFile& file, Asset* parent, AssetType type, std::string tag, AssetDispatchTable& func_table);
 public:
 	Asset(const Asset&) = delete;
 	Asset(Asset&&) = delete;
@@ -127,7 +127,7 @@ public:
 				break;
 			}
 		}
-		Asset& asset = add_child(create_asset(ChildTargetType::ASSET_TYPE, forest(), bank(), file(), this, tag));
+		Asset& asset = add_child(create_asset(ChildTargetType::ASSET_TYPE, file(), this, tag));
 		return asset.as<ChildTargetType>();
 	}
 	
@@ -174,8 +174,6 @@ private:
 	void connect_precedence_pointers();
 	void disconnect_precedence_pointers();
 	
-	AssetForest& _forest;
-	AssetBank& _bank;
 	AssetFile& _file;
 	Asset* _parent;
 	AssetType _type;

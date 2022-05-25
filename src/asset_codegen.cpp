@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
 	for(const WtfNode* node = wtf_first_child(root, "AssetType"); node != NULL; node = wtf_next_sibling(node, "AssetType")) {
 		out("class %sAsset;\n", node->tag);
 	}
-	out("std::unique_ptr<Asset> create_asset(AssetType type, AssetForest& forest, AssetBank& bank, AssetFile& file, Asset* parent, std::string tag);\n");
+	out("std::unique_ptr<Asset> create_asset(AssetType type, AssetFile& file, Asset* parent, std::string tag);\n");
 	out("AssetType asset_string_to_type(const char* type_name);\n");
 	out("const char* asset_type_to_string(AssetType type);\n");
 	int id = 0;
@@ -110,8 +110,8 @@ int main(int argc, char** argv) {
 		}
 		
 		out("\n");
-		out("%sAsset::%sAsset(AssetForest& forest, AssetBank& bank, AssetFile& file, Asset* parent, std::string tag)\n", node->tag, node->tag);
-		out("\t: Asset(forest, bank, file, parent, ASSET_TYPE, std::move(tag), funcs) {\n");
+		out("%sAsset::%sAsset(AssetFile& file, Asset* parent, std::string tag)\n", node->tag, node->tag);
+		out("\t: Asset(file, parent, ASSET_TYPE, std::move(tag), funcs) {\n");
 		
 		const WtfAttribute* wad = wtf_attribute(node, "wad");
 		if(wad && wad->type == WTF_BOOLEAN && wad->boolean) {
@@ -163,7 +163,7 @@ static void generate_asset_type(const WtfNode* asset_type, int id) {
 		}
 	}
 	out("public:\n");
-	out("\t%sAsset(AssetForest& forest, AssetBank& bank, AssetFile& file, Asset* parent, std::string tag);\n", asset_type->tag);
+	out("\t%sAsset(AssetFile& file, Asset* parent, std::string tag);\n", asset_type->tag);
 	out("\t\n");
 	out("\tvoid for_each_attribute(AssetVisitorCallback callback) override {}\n");
 	out("\tvoid for_each_attribute(ConstAssetVisitorCallback callback) const override {}\n");
@@ -225,10 +225,10 @@ static void generate_asset_type(const WtfNode* asset_type, int id) {
 }
 
 static void generate_create_asset_function(const WtfNode* root) {
-	out("std::unique_ptr<Asset> create_asset(AssetType type, AssetForest& forest, AssetBank& bank, AssetFile& file, Asset* parent, std::string tag) {\n");
+	out("std::unique_ptr<Asset> create_asset(AssetType type, AssetFile& file, Asset* parent, std::string tag) {\n");
 	int id = 0;
 	for(const WtfNode* node = wtf_first_child(root, "AssetType"); node != NULL; node = wtf_next_sibling(node, "AssetType")) {
-		out("\tif(type.id == %d) return std::make_unique<%sAsset>(forest, bank, file, parent, std::move(tag));\n", id++, node->tag);
+		out("\tif(type.id == %d) return std::make_unique<%sAsset>(file, parent, std::move(tag));\n", id++, node->tag);
 	}
 	out("\treturn nullptr;\n");
 	out("}\n\n");

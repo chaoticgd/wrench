@@ -24,10 +24,8 @@
 #include <unistd.h> // getpid
 #endif
 
-Asset::Asset(AssetForest& forest, AssetBank& bank, AssetFile& file, Asset* parent, AssetType type, std::string tag, AssetDispatchTable& func_table)
+Asset::Asset(AssetFile& file, Asset* parent, AssetType type, std::string tag, AssetDispatchTable& func_table)
 	: funcs(func_table)
-	, _forest(forest)
-	, _bank(bank)
 	, _file(file)
 	, _parent(parent)
 	, _type(type)
@@ -37,10 +35,10 @@ Asset::~Asset() {
 	disconnect_precedence_pointers();
 }
 
-AssetForest& Asset::forest() { return _forest; }
-const AssetForest& Asset::forest() const { return _forest; }
-AssetBank& Asset::bank() { return _bank; }
-const AssetBank& Asset::bank() const { return _bank; }
+AssetForest& Asset::forest() { return file()._forest; }
+const AssetForest& Asset::forest() const { return file()._forest; }
+AssetBank& Asset::bank() { return file()._bank; }
+const AssetBank& Asset::bank() const { return file()._bank; }
 AssetFile& Asset::file() { return _file; }
 const AssetFile& Asset::file() const { return _file; }
 Asset* Asset::parent() { return _parent; }
@@ -116,7 +114,7 @@ Asset& Asset::physical_child(AssetType type, const char* tag) {
 		}
 		verify(child->tag() != tag, "Attempting to overwrite an asset that already exists with one of a different type.");
 	}
-	return add_child(create_asset(type, forest(), bank(), file(), this, tag));
+	return add_child(create_asset(type, file(), this, tag));
 }
 
 Asset* Asset::get_physical_child(const char* tag) {
@@ -150,7 +148,7 @@ Asset& Asset::asset_file(const fs::path& path) {
 void Asset::read(WtfNode* node) {
 	read_attributes(node);
 	for(WtfNode* child = node->first_child; child != nullptr; child = child->next_sibling) {
-		Asset& asset = add_child(create_asset(asset_string_to_type(child->type_name), forest(), bank(), file(), this, child->tag));
+		Asset& asset = add_child(create_asset(asset_string_to_type(child->type_name), file(), this, child->tag));
 		asset.read(child);
 	}
 }
@@ -292,7 +290,7 @@ AssetFile::AssetFile(AssetForest& forest, AssetBank& pack, const fs::path& relat
 	, _bank(pack)
 	, _relative_directory(relative_path.parent_path())
 	, _file_name(relative_path.filename())
-	, _root(std::make_unique<RootAsset>(_forest, _bank, *this, nullptr, "")) {}
+	, _root(std::make_unique<RootAsset>(*this, nullptr, "")) {}
 
 Asset& AssetFile::root() {
 	assert(_root.get());
