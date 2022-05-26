@@ -82,7 +82,7 @@ packed_struct(RacWadInfo,
 	/* 0x0500 */ SectorRange stuff[81];
 	/* 0x0788 */ SectorRange planets[19];
 	/* 0x0820 */ SectorRange stuff2[38];
-	/* 0x0950 */ SectorRange bonus[182];
+	/* 0x0950 */ SectorRange bonus_1[182];
 	/* 0x0f00 */ Sector32 vags2[240];
 	/* 0x12c0 */ SectorRange irx;
 	/* 0x12c8 */ SectorRange mobies[2];
@@ -100,7 +100,7 @@ packed_struct(RacWadInfo,
 	/* 0x1530 */ SectorRange things[28];
 	/* 0x1610 */ SectorRange anim_looking_thing_3;
 	/* 0x1618 */ SectorRange vags4[18];
-	/* 0x16a8 */ SectorRange images[40];
+	/* 0x16a8 */ u64 bonus_2[40];
 	/* 0x17e8 */ SectorRange wad_things[2];
 	/* 0x17f8 */ SectorByteRange mpegs[88];
 	/* 0x1ab8 */ Sector32 vags5[900];

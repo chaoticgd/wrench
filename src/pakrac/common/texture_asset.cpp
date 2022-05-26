@@ -56,6 +56,18 @@ static void unpack_texture_asset(TextureAsset& dest, InputStream& src, Game game
 			texture.multiply_alphas();
 			break;
 		}
+		case FMT_TEXTURE_RGBA_512_416: {
+			std::vector<u8> data = src.read_multiple<u8>(0, 512 * 416 * 4);
+			texture = Texture::create_rgba(512, 416, data);
+			texture.multiply_alphas();
+			break;
+		}
+		case FMT_TEXTURE_RGBA_512_448: {
+			std::vector<u8> data = src.read_multiple<u8>(0, 512 * 448 * 4);
+			texture = Texture::create_rgba(512, 448, data);
+			texture.multiply_alphas();
+			break;
+		}
 		case FMT_TEXTURE_PIF4:
 		case FMT_TEXTURE_PIF4_SWIZZLED:
 		case FMT_TEXTURE_PIF8:
@@ -78,7 +90,7 @@ static void pack_texture_asset(OutputStream& dest, TextureAsset& src, Game game,
 	switch(hint) {
 		case FMT_TEXTURE_RGBA: {
 			texture->to_rgba();
-			texture->divide_alphas();
+			texture->divide_alphas(false);
 			
 			RgbaTextureHeader header = {0};
 			header.width = texture->width;
@@ -86,6 +98,22 @@ static void pack_texture_asset(OutputStream& dest, TextureAsset& src, Game game,
 			dest.write(header);
 			dest.write_v(texture->data);
 			
+			break;
+		}
+		case FMT_TEXTURE_RGBA_512_416: {
+			texture->to_rgba();
+			texture->divide_alphas();
+			verify(texture->width == 512 && texture->height == 416,
+				"RGBA image has wrong size, should be 512 by 416.");
+			dest.write_v(texture->data);
+			break;
+		}
+		case FMT_TEXTURE_RGBA_512_448: {
+			texture->to_rgba();
+			texture->divide_alphas();
+			verify(texture->width == 512 && texture->height == 448,
+				"RGBA image has wrong size, should be 512 by 448.");
+			dest.write_v(texture->data);
 			break;
 		}
 		case FMT_TEXTURE_PIF4:

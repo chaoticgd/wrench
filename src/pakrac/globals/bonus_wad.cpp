@@ -34,6 +34,9 @@ packed_struct(RacBonusWadHeader,
 	/* 0x460 */ SectorRange sketchbook[30];
 	/* 0x550 */ SectorRange commercials[4];
 	/* 0x578 */ SectorRange item_images[9];
+	/* 0x5c0 */ u64 dont_care[245];
+	/* 0xd68 */ SectorRange credits_images_ntsc[20];
+	/* 0xe08 */ SectorRange credits_images_pal[20];
 )
 
 packed_struct(GcBonusWadHeader,
@@ -144,6 +147,9 @@ static void unpack_rac_gc_bonus_wad(BonusWadAsset& dest, const Header& header, I
 		unpack_compressed_assets<TextureAsset>(dest.endorsement_deals().switch_files(), src, ARRAY_PAIR(header.endorsement_deals), game, FMT_TEXTURE_PIF8);
 		unpack_compressed_assets<TextureAsset>(dest.short_cuts().switch_files(), src, ARRAY_PAIR(header.short_cuts), game, FMT_TEXTURE_PIF8);
 		unpack_compressed_assets<TextureAsset>(dest.paintings().switch_files(), src, ARRAY_PAIR(header.paintings), game, FMT_TEXTURE_PIF8);
+	} else {
+		unpack_assets<TextureAsset>(dest.credits_images().switch_files(), src, ARRAY_PAIR(header.credits_images_ntsc), game, FMT_TEXTURE_RGBA_512_416);
+		unpack_assets<TextureAsset>(dest.short_cuts().switch_files(), src, ARRAY_PAIR(header.credits_images_pal), game, FMT_TEXTURE_RGBA_512_448);
 	}
 }
 
@@ -176,6 +182,9 @@ static void pack_rac_gc_bonus_wad(OutputStream& dest, Header& header, BonusWadAs
 		pack_compressed_assets_sa(dest, ARRAY_PAIR(header.endorsement_deals), src.get_endorsement_deals(), game, "endorsement_deals", FMT_TEXTURE_PIF8);
 		pack_compressed_assets_sa(dest, ARRAY_PAIR(header.short_cuts), src.get_short_cuts(), game, "short_cuts", FMT_TEXTURE_PIF8);
 		pack_compressed_assets_sa(dest, ARRAY_PAIR(header.paintings), src.get_paintings(), game, "paintings", FMT_TEXTURE_PIF8);
+	} else {
+		pack_compressed_assets_sa(dest, ARRAY_PAIR(header.credits_images_ntsc), src.get_credits_images(), game, "credits_images", FMT_TEXTURE_RGBA_512_416);
+		pack_compressed_assets_sa(dest, ARRAY_PAIR(header.credits_images_pal), src.get_credits_images_pal(), game, "credits_images", FMT_TEXTURE_RGBA_512_448);
 	}
 }
 

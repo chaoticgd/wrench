@@ -479,10 +479,19 @@ AssetType BonusWad {
 		}
 	}
 	Child credits_images {
-		desc: 'The background images used in the credits sequence.'
+		desc: 'The background images used in the credits sequence, each 512 by 416.'
 		allowed_types: ['Collection']
 		required: true
-		games: [2 3 4]
+		games: [1 2 3 4]
+		Child child {
+			allowed_types: ['Texture']
+		}
+	}
+	Child credits_images_pal {
+		desc: 'The background images used in the PAL R&C1 credits sequence, each 512 by 448.'
+		allowed_types: ['Collection']
+		required: true
+		games: [1]
 		Child child {
 			allowed_types: ['Texture']
 		}

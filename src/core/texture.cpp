@@ -300,7 +300,12 @@ void Texture::multiply_alphas() {
 		case PixelFormat::RGBA:
 		case PixelFormat::GRAYSCALE: {
 			for(size_t i = 3; i < data.size(); i += 4) {
-				data[i] *= 2;
+				u8& alpha = data[i];
+				if(alpha < 0x80) {
+					alpha *= 2;
+				} else {
+					alpha = 255;
+				}
 			}
 			break;
 		}
@@ -320,12 +325,17 @@ void Texture::multiply_alphas() {
 	}
 }
 
-void Texture::divide_alphas() {
+void Texture::divide_alphas(bool handle_80s) {
 	switch(format) {
 		case PixelFormat::RGBA:
 		case PixelFormat::GRAYSCALE: {
 			for(size_t i = 3; i < data.size(); i += 4) {
-				data[i] /= 2;
+				u8& alpha = data[i];
+				if(handle_80s && alpha == 0xff) {
+					alpha = 0x80;
+				} else {
+					alpha /= 2;
+				}
 			}
 			break;
 		}
@@ -333,7 +343,7 @@ void Texture::divide_alphas() {
 		case PixelFormat::PALETTED_8: {
 			for(u32& colour : palette()) {
 				u32 alpha = (colour & 0xff000000) >> 24;
-				if(alpha == 0xff) {
+				if(handle_80s && alpha == 0xff) {
 					alpha = 0x80;
 				} else {
 					alpha /= 2;

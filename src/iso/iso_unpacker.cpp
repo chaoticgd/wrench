@@ -123,7 +123,7 @@ static void unpack_primary_volume_descriptor(BuildAsset& build, const IsoPrimary
 static void enumerate_global_wads(std::vector<UnpackInfo>& dest, BuildAsset& build, const table_of_contents& toc, InputStream& src, Game game) {
 	if(game == Game::RAC1) {
 		s64 toc_ofs = RAC1_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
-		dest.emplace_back(UnpackInfo{&build.bonus<BonusWadAsset>(), toc_ofs + offsetof(RacWadInfo, bonus), {0, src.size()}});
+		dest.emplace_back(UnpackInfo{&build.bonus<BonusWadAsset>(), toc_ofs + offsetof(RacWadInfo, bonus_1), {0, src.size()}});
 		dest.emplace_back(UnpackInfo{&build.mpeg<MpegWadAsset>(), toc_ofs + offsetof(RacWadInfo, mpegs), {0, src.size()}});
 	} else {
 		for(const GlobalWadInfo& global : toc.globals) {
