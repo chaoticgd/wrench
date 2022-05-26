@@ -19,28 +19,28 @@
 #include <pakrac/asset_unpacker.h>
 #include <pakrac/asset_packer.h>
 
-packed_struct(DlOnlineWadHeader,
+packed_struct(OnlineWadHeader,
 	/* 0x00 */ s32 header_size;
 	/* 0x04 */ Sector32 sector;
 	/* 0x08 */ SectorRange data;
 	/* 0x10 */ SectorRange transition_backgrounds[11];
 )
 
-void unpack_online_wad(OnlineWadAsset& dest, const DlOnlineWadHeader& header, InputStream& src, Game game);
-static void pack_online_wad(OutputStream& dest, DlOnlineWadHeader& header, OnlineWadAsset& src, Game game);
+static void unpack_online_wad(OnlineWadAsset& dest, const OnlineWadHeader& header, InputStream& src, Game game);
+static void pack_online_wad(OutputStream& dest, OnlineWadHeader& header, OnlineWadAsset& src, Game game);
 
 on_load(Online, []() {
-	OnlineWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<OnlineWadAsset, DlOnlineWadHeader>(unpack_online_wad);
+	OnlineWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<OnlineWadAsset, OnlineWadHeader>(unpack_online_wad);
 	
-	OnlineWadAsset::funcs.pack_dl = wrap_wad_packer_func<OnlineWadAsset, DlOnlineWadHeader>(pack_online_wad);
+	OnlineWadAsset::funcs.pack_dl = wrap_wad_packer_func<OnlineWadAsset, OnlineWadHeader>(pack_online_wad);
 })
 
-void unpack_online_wad(OnlineWadAsset& dest, const DlOnlineWadHeader& header, InputStream& src, Game game) {
-	unpack_asset(dest.data(), src, header.data, game);
-	unpack_assets<BinaryAsset>(dest.transition_backgrounds().switch_files(), src, ARRAY_PAIR(header.transition_backgrounds), game);
+static void unpack_online_wad(OnlineWadAsset& dest, const OnlineWadHeader& header, InputStream& src, Game game) {
+	unpack_asset(dest.data<OnlineDataWadAsset>(), src, header.data, game);
+	unpack_assets<TextureAsset>(dest.transition_backgrounds().switch_files(), src, ARRAY_PAIR(header.transition_backgrounds), game, FMT_TEXTURE_RGBA);
 }
 
-static void pack_online_wad(OutputStream& dest, DlOnlineWadHeader& header, OnlineWadAsset& src, Game game) {
+static void pack_online_wad(OutputStream& dest, OnlineWadHeader& header, OnlineWadAsset& src, Game game) {
 	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), game);
-	pack_assets_sa(dest, ARRAY_PAIR(header.transition_backgrounds), src.get_transition_backgrounds(), game);
+	pack_assets_sa(dest, ARRAY_PAIR(header.transition_backgrounds), src.get_transition_backgrounds(), game, FMT_TEXTURE_RGBA);
 }

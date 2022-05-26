@@ -158,6 +158,7 @@ add_executable(pakrac
 	src/pakrac/globals/misc_wad.cpp
 	src/pakrac/globals/mpeg_wad.cpp
 	src/pakrac/globals/online_wad.cpp
+	src/pakrac/globals/online_data_wad.cpp
 	src/pakrac/globals/space_wad.cpp
 	src/pakrac/level/level_wad.cpp
 	src/pakrac/level/level_data_wad.cpp

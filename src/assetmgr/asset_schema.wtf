@@ -798,11 +798,117 @@ AssetType Mpeg {
 }
 
 AssetType OnlineWad {
+	desc: 'Container for assets used in the mutliplayer mode.'
 	wad: true
 	flattenable: true
 	
-	Child data { allowed_types: ['Binary'] }
-	Child transition_backgrounds { allowed_types: ['Collection'] }
+	Child data {
+		allowed_types: ['OnlineDataWad' 'Binary']
+		required: true
+		games: [4]
+	}
+	
+	Child transition_backgrounds {
+		desc: 'Background images used for the multiplayer loading screen.'
+		allowed_types: ['Collection']
+		required: true
+		games: [4]
+		Child child {
+			allowed_types: ['Texture' 'Binary']
+		}
+	}
+}
+
+AssetType OnlineDataWad {
+	Child onlinew3d {
+		allowed_types: ['Binary']
+		required: true
+		games: [4]
+	}
+	
+	Child eula_screen {
+		allowed_types: ['Collection']
+		required: true
+		games: [4]
+		Child child {
+			allowed_types: ['Texture' 'Binary']
+		}
+	}
+	
+	Child buddies_list {
+		allowed_types: ['Collection']
+		required: true
+		games: [4]
+		Child child {
+			allowed_types: ['Texture' 'Binary']
+		}
+	}
+	
+	Child maps {
+		allowed_types: ['Collection']
+		required: true
+		games: [4]
+		Child child {
+			allowed_types: ['Texture' 'Binary']
+		}
+	}
+	
+	Child staging {
+		allowed_types: ['Collection']
+		required: true
+		games: [4]
+		Child child {
+			allowed_types: ['Texture' 'Binary']
+		}
+	}
+	
+	Child save_level {
+		allowed_types: ['Collection']
+		required: true
+		games: [4]
+		Child child {
+			allowed_types: ['Texture' 'Binary']
+		}
+	}
+	
+	Child online_menu {
+		allowed_types: ['Collection']
+		required: true
+		games: [4]
+		Child child {
+			allowed_types: ['Texture' 'Binary']
+		}
+	}
+	
+	Child profile_screen {
+		allowed_types: ['Collection']
+		required: true
+		games: [4]
+		Child child {
+			allowed_types: ['Texture' 'Binary']
+		}
+	}
+	
+	Child hero_image {
+		allowed_types: ['Texture' 'Binary']
+		required: true
+		games: [4]
+	}
+	
+	Child staging_options {
+		allowed_types: ['Texture' 'Binary']
+		required: true
+		games: [4]
+	}
+	
+	Child moby_classes {
+		allowed_types: ['Collection']
+		required: true
+		games: [4]
+		Child child {
+			allowed_types: ['Texture' 'Binary']
+		}
+	}
 }
 
 AssetType SceneWad {

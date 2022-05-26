@@ -37,6 +37,7 @@ on_load(Collection, []() {
 
 static void unpack_collection_asset(CollectionAsset& dest, InputStream& src, Game game, s32 hint) {
 	s32 count = src.read<s32>(0);
+	verify(count < 0x1000, "Asset list has too many elements and is probably corrupted.");
 	src.seek(4);
 	std::vector<s32> offsets = src.read_multiple<s32>(count);
 	for(s32 i = 0; i < count; i++) {
