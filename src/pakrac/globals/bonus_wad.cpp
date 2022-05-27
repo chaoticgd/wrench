@@ -69,10 +69,10 @@ packed_struct(GcBonusWadHeader,
 packed_struct(UyaBonusWadHeader,
 	/* 0x000 */ s32 header_size;
 	/* 0x004 */ Sector32 sector;
-	/* 0x008 */ u64 pad_8[183];
+	/* 0x008 */ u64 unused_8[183];
 	/* 0x5c0 */ SectorRange credits_text[6];
 	/* 0x5f0 */ SectorRange credits_images[13];
-	/* 0x658 */ u64 pad_658[115];
+	/* 0x658 */ u64 unused_658[115];
 	/* 0x9f0 */ SectorRange demo_menu[6];
 	/* 0xa20 */ SectorRange demo_exit[6];
 	/* 0xa50 */ SectorRange cheat_images[20];

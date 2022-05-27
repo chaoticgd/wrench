@@ -19,6 +19,59 @@
 #include <pakrac/asset_unpacker.h>
 #include <pakrac/asset_packer.h>
 
+packed_struct(UyaHudWadHeader,
+	/* 0x0000 */ s32 header_size;
+	/* 0x0004 */ Sector32 sector;
+	/* 0x0008 */ SectorRange online_images[74];
+	/* 0x0258 */ SectorRange ratchet_seqs[28];
+	/* 0x0338 */ SectorRange hud_seqs[20];
+	/* 0x03d8 */ SectorRange vendor;
+	/* 0x03e0 */ u64 unused_3e0[287];
+	/* 0x0cd8 */ SectorRange moves[14];
+	/* 0x0d48 */ u64 unused_d48[45];
+	/* 0x0eb0 */ SectorRange gadget_screenshots[10];
+	/* 0x0f00 */ u64 unused_f00[18];
+	/* 0x0f90 */ SectorRange old_help_menu[5];
+	/* 0x0fb8 */ SectorRange unknown_images[2];
+	/* 0x0fc8 */ SectorRange old_options_menu[7];
+	/* 0x1000 */ SectorRange missions[73];
+	/* 0x1248 */ u64 unused_1248[10];
+	/* 0x1298 */ SectorRange old_save_level[27];
+	/* 0x1370 */ u64 unused_1370[34];
+	/* 0x1480 */ SectorRange stuff[119];
+	/* 0x1838 */ SectorRange all_text[8];
+	/* 0x1878 */ SectorRange hudw3d;
+	/* 0x1880 */ SectorRange unused_1880[85];
+	/* 0x1b28 */ SectorRange gadget_images[128];
+	/* 0x1f28 */ SectorRange unk_images[43];
+	/* 0x2080 */ SectorRange unk[2];
+	/* 0x2090 */ SectorRange online_maps[6];
+	/* 0x20c0 */ SectorRange nw_dnas_image;
+	/* 0x20c8 */ u64 unused_20c8[4];
+	/* 0x20e8 */ SectorRange vendor_images[70];
+	/* 0x2318 */ SectorRange galactic_map;
+	/* 0x2320 */ SectorRange quick_select_editor;
+	/* 0x2328 */ SectorRange planets[22];
+	/* 0x23d8 */ SectorRange sketchbook[25];
+	/* 0x24a0 */ SectorRange stuff2[26];
+	/* 0x2570 */ SectorRange options_menu[9];
+	/* 0x25b8 */ SectorRange special_menu[5];
+	/* 0x25e0 */ SectorRange av_menu[9];
+	/* 0x2628 */ SectorRange movies[28];
+	/* 0x2708 */ SectorRange cinematics_menu[3];
+	/* 0x2720 */ SectorRange help_menu[2];
+	/* 0x2730 */ SectorRange unknown_fluff;
+	/* 0x2738 */ SectorRange save_level[31];
+	/* 0x2818 */ u64 unused_2818[28];
+	/* 0x2910 */ SectorRange vr_training[9];
+	/* 0x2958 */ SectorRange annihilation_nation[31];
+	/* 0x2a50 */ SectorRange split_screen_texture;
+	/* 0x2a58 */ SectorRange vid_comics[5];
+	/* 0x2a80 */ u64 unused_2a80[5];
+	/* 0x2aa8 */ SectorRange main_menu;
+)
+static_assert(offsetof(UyaHudWadHeader, main_menu) == 0x2aa8);
+
 packed_struct(DlHudWadHeader,
 	/* 0x000 */ s32 header_size;
 	/* 0x004 */ Sector32 sector;
