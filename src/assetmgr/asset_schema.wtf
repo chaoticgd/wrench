@@ -82,12 +82,6 @@ AssetType Build {
 		games: [1 2 3 4]
 	}
 	
-	IntegerAttribute single_level {
-		default: -1
-		required: false
-		games: [1 2 3 4]
-	}
-	
 	Child ps2_logo {
 		desc: 'The PS2 logo stored on the first 12 sectors of the disc.'
 		allowed_types: ['Texture']
@@ -939,17 +933,30 @@ Category level {
 }
 
 AssetType Level {
-	Child level { allowed_types: ['LevelWad' 'Binary' ] }
-	Child audio { allowed_types: ['LevelAudioWad' 'Binary' ] }
-	Child scene { allowed_types: ['LevelSceneWad' 'Binary' ] }
+	IntegerAttribute index {
+		desc: 'The index of the level in the level table. Note that this is different to the id attribute of the associated LevelWad asset.'
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	Child level { allowed_types: ['LevelWad' 'Binary'] }
+	Child audio { allowed_types: ['LevelAudioWad' 'Binary'] }
+	Child scene { allowed_types: ['LevelSceneWad' 'Binary'] }
 }
 
 AssetType LevelWad {
 	wad: true
 	level_wad: true
 	
-	IntegerAttribute id {}
-	IntegerAttribute reverb {}
+	IntegerAttribute id {
+		desc: 'The ID number of the level, referenced frequently at runtime. Note that this is different to the index attribute of the associated Level asset.'
+		required: true
+		games: [1 2 3 4]
+	}
+	IntegerAttribute reverb {
+		required: true
+		games: [2 3 4]
+	}
 	
 	Child data     { allowed_types: ['LevelDataWad'] }
 	Child chunks   { allowed_types: ['Collection'] }

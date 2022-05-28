@@ -214,6 +214,7 @@ static std::vector<LevelInfo> enumerate_levels(const BuildAsset& build, Game gam
 	
 	build.get_levels().for_each_logical_child_of_type<LevelAsset>([&](const LevelAsset& level) {
 		LevelInfo info;
+		info.level_table_index = level.index();
 		
 		if(level.has_level()) {
 			LevelWadInfo& wad = info.level.emplace();
@@ -231,7 +232,10 @@ static std::vector<LevelInfo> enumerate_levels(const BuildAsset& build, Game gam
 			wad.asset = &level.get_scene();
 		}
 		
-		levels.emplace_back(std::move(info));
+		if(levels.size() <= info.level_table_index) {
+			levels.resize(info.level_table_index + 1);
+		}
+		levels[info.level_table_index] = std::move(info);
 	});
 	
 	return levels;
@@ -388,15 +392,21 @@ static std::array<IsoDirectory, 3> pack_levels(OutputStream& iso, std::vector<Le
 		// The level files are laid out SoA, audio files first.
 		for(size_t i = 0; i < levels.size(); i++) {
 			LevelInfo& level = levels[i];
-			if(level.audio) pack_level_wad_outer(iso, audio_dir, *level.audio, "audio", game, i, pack);
+			if(level.audio) {
+				pack_level_wad_outer(iso, audio_dir, *level.audio, "audio", game, i, pack);
+			}
 		}
 		for(size_t i = 0; i < levels.size(); i++) {
 			LevelInfo& level = levels[i];
-			if(level.level) pack_level_wad_outer(iso, levels_dir, *level.level, "level", game, i, pack);
+			if(level.level) {
+				pack_level_wad_outer(iso, levels_dir, *level.level, "level", game, i, pack);
+			}
 		}
 		for(size_t i = 0; i < levels.size(); i++) {
 			LevelInfo& level = levels[i];
-			if(level.scene) pack_level_wad_outer(iso, scenes_dir, *level.scene, "scene", game, i, pack);
+			if(level.scene) {
+				pack_level_wad_outer(iso, scenes_dir, *level.scene, "scene", game, i, pack);
+			}
 		}
 	}
 	return {levels_dir, audio_dir, scenes_dir};

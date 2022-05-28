@@ -323,9 +323,7 @@ table_of_contents read_table_of_contents_rac234(InputStream& src) {
 			has_level_part |= type == WadType::LEVEL;
 		}
 		
-		if(has_level_part) {
-			toc.levels.push_back(level);
-		}
+		toc.levels.push_back(level);
 	}
 	
 	return toc;
@@ -391,27 +389,27 @@ s64 write_table_of_contents_rac234(OutputStream& iso, const table_of_contents& t
 		const LevelInfo& level = toc.levels[i];
 		s32 j = 0;
 		for(const Opt<LevelWadInfo>& wad : {level.level, level.audio, level.scene}) {
-			if(!wad) {
-				continue;
+			if(wad) {
+				iso.pad(SECTOR_SIZE, 0);
+				s64 header_lba = iso.tell() / SECTOR_SIZE;
+				*(Sector32*) &wad->header[4] = wad->file_lba;
+				iso.write_v(wad->header);
+				
+				// The order of fields in the level table entries is different
+				// for R&C2 versus R&C3 and Deadlocked.
+				s32 field = 0;
+				bool is_rac2 = game == Game::RAC2 || game == Game::UNKNOWN;
+				switch(j++) {
+					case 0: field = !is_rac2; break;
+					case 1: field = is_rac2; break;
+					case 2: field = 2; break;
+				}
+				s32 index = i * 3 + field;
+				level_table[index].offset.sectors = header_lba;
+				level_table[index].size = wad->file_size;
+			} else {
+				j++;
 			}
-			
-			iso.pad(SECTOR_SIZE, 0);
-			s64 header_lba = iso.tell() / SECTOR_SIZE;
-			*(Sector32*) &wad->header[4] = wad->file_lba;
-			iso.write_v(wad->header);
-			
-			// The order of fields in the level table entries is different
-			// for R&C2 versus R&C3 and Deadlocked.
-			s32 field = 0;
-			bool is_rac2 = game == Game::RAC2 || game == Game::UNKNOWN;
-			switch(j++) {
-				case 0: field = !is_rac2; break;
-				case 1: field = is_rac2; break;
-				case 2: field = 2; break;
-			}
-			s32 index = i * 3 + field;
-			level_table[index].offset.sectors = header_lba;
-			level_table[index].size = wad->file_size;
 		}
 	}
 	

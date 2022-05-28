@@ -152,33 +152,52 @@ static void enumerate_global_wads(std::vector<UnpackInfo>& dest, BuildAsset& bui
 }
 
 static void enumerate_level_wads(std::vector<UnpackInfo>& dest, CollectionAsset& levels, const table_of_contents& toc, InputStream& src) {
-	for(const LevelInfo& level : toc.levels) {
-		std::string asset_path = stringf("%02d/level.asset", level.level_table_index);
-		LevelAsset& level_asset = levels.switch_files(asset_path).child<LevelAsset>(std::to_string(level.level_table_index).c_str());
+	for(s32 i = 0; i < (s32) toc.levels.size(); i++) {
+		const LevelInfo& level = toc.levels[i];
 		
-		for(const Opt<LevelWadInfo>& part : {level.level, level.audio, level.scene}) {
-			if(!part) {
-				continue;
+		if(level.level.has_value()) {
+			assert(level.level->header.size() >= 0xc);
+			s32 id = *(s32*) &level.level->header[8];
+			
+			std::string asset_path = stringf("%02d/level.asset", id);
+			LevelAsset& level_asset = levels.switch_files(asset_path).child<LevelAsset>(id);
+			level_asset.set_index(i);
+			
+			for(const Opt<LevelWadInfo>& part : {level.level, level.audio, level.scene}) {
+				if(!part) {
+					continue;
+				}
+				
+				auto [wad_game, wad_type, name] = identify_wad(part->header);
+				
+				std::vector<u8> header;
+				if(part->prepend_header) {
+					// For R&C1.
+					header = part->header;
+					OutBuffer(header).pad(SECTOR_SIZE, 0);
+				}
+				
+				Asset* asset;
+				switch(wad_type) {
+					case WadType::LEVEL: {
+						LevelWadAsset& level_wad = level_asset.level<LevelWadAsset>();
+						level_wad.set_id(id);
+						asset = &level_wad;
+						break;
+					}
+					case WadType::LEVEL_AUDIO: {
+						asset = &level_asset.audio<LevelAudioWadAsset>();
+						break;
+					}
+					case WadType::LEVEL_SCENE: {
+						asset = &level_asset.scene<LevelSceneWadAsset>();
+						break;
+					}
+					default: fprintf(stderr, "warning: Extracted level WAD of unknown type.\n");
+				}
+				
+				dest.emplace_back(UnpackInfo{asset, 0, {part->file_lba.bytes(), part->file_size.bytes()}});
 			}
-			
-			auto [wad_game, wad_type, name] = identify_wad(part->header);
-			
-			std::vector<u8> header;
-			if(part->prepend_header) {
-				// For R&C1.
-				header = part->header;
-				OutBuffer(header).pad(SECTOR_SIZE, 0);
-			}
-			
-			Asset* asset;
-			switch(wad_type) {
-				case WadType::LEVEL:       asset = &level_asset.level<LevelWadAsset>(); break;
-				case WadType::LEVEL_AUDIO: asset = &level_asset.audio<LevelAudioWadAsset>(); break;
-				case WadType::LEVEL_SCENE: asset = &level_asset.scene<LevelSceneWadAsset>(); break;
-				default: fprintf(stderr, "warning: Extracted level WAD of unknown type.\n");
-			}
-			
-			dest.emplace_back(UnpackInfo{asset, 0, {part->file_lba.bytes(), part->file_size.bytes()}});
 		}
 	}
 }
