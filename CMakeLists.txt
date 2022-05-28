@@ -250,6 +250,7 @@ add_library(imgui STATIC
 	thirdparty/imgui/imgui_demo.cpp
 	thirdparty/imgui/imgui_draw.cpp
 	thirdparty/imgui/imgui_internal.h
+	thirdparty/imgui/imgui_tables.cpp
 	thirdparty/imgui/imgui_widgets.cpp
 	thirdparty/imgui/imgui.cpp
 	thirdparty/imgui/imgui.h
