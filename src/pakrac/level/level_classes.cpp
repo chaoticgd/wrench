@@ -89,20 +89,20 @@ void unpack_shrub_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest
 	}
 }
 
-std::array<ArrayRange, 3> allocate_class_tables(OutputStream& index, CollectionAsset& mobies, CollectionAsset& ties, CollectionAsset& shrubs) {
+std::array<ArrayRange, 3> allocate_class_tables(OutputStream& index, const CollectionAsset& mobies, const CollectionAsset& ties, const CollectionAsset& shrubs) {
 	ArrayRange moby, tie, shrub;
 	moby.count = 0;
-	mobies.for_each_logical_child_of_type<MobyClassAsset>([&](MobyClassAsset& child) {
+	mobies.for_each_logical_child_of_type<MobyClassAsset>([&](const MobyClassAsset& child) {
 		if(!child.has_has_moby_table_entry() || child.has_moby_table_entry()) {
 			moby.count++;
 		}
 	});
 	tie.count = 0;
-	ties.for_each_logical_child_of_type<TieClassAsset>([&](TieClassAsset& child) {
+	ties.for_each_logical_child_of_type<TieClassAsset>([&](const TieClassAsset& child) {
 		tie.count++;
 	});
 	shrub.count = 0;
-	shrubs.for_each_logical_child_of_type<ShrubClassAsset>([&](ShrubClassAsset& child) {
+	shrubs.for_each_logical_child_of_type<ShrubClassAsset>([&](const ShrubClassAsset& child) {
 		shrub.count++;
 	});
 	index.pad(0x40, 0);
@@ -112,9 +112,9 @@ std::array<ArrayRange, 3> allocate_class_tables(OutputStream& index, CollectionA
 	return {moby, tie, shrub};
 }
 
-void pack_moby_classes(OutputStream& index, OutputStream& core, CollectionAsset& classes, const std::vector<LevelTexture>& textures, s32 table, s32 texture_index, Game game) {
+void pack_moby_classes(OutputStream& index, OutputStream& core, const CollectionAsset& classes, const std::vector<LevelTexture>& textures, s32 table, s32 texture_index, Game game) {
 	s32 i = 0;
-	classes.for_each_logical_child_of_type<MobyClassAsset>([&](MobyClassAsset& child) {
+	classes.for_each_logical_child_of_type<MobyClassAsset>([&](const MobyClassAsset& child) {
 		if(child.has_moby_table_entry()) {
 			MobyClassEntry entry = {0};
 			entry.o_class = child.id();
@@ -129,9 +129,9 @@ void pack_moby_classes(OutputStream& index, OutputStream& core, CollectionAsset&
 	});
 }
 
-void pack_tie_classes(OutputStream& index, OutputStream& core, CollectionAsset& classes, const std::vector<LevelTexture>& textures, s32 table, s32 texture_index, Game game) {
+void pack_tie_classes(OutputStream& index, OutputStream& core, const CollectionAsset& classes, const std::vector<LevelTexture>& textures, s32 table, s32 texture_index, Game game) {
 	s32 i = 0;
-	classes.for_each_logical_child_of_type<TieClassAsset>([&](TieClassAsset& child) {
+	classes.for_each_logical_child_of_type<TieClassAsset>([&](const TieClassAsset& child) {
 		TieClassEntry entry = {0};
 		entry.o_class = child.id();
 		if(child.has_core()) {
@@ -144,9 +144,9 @@ void pack_tie_classes(OutputStream& index, OutputStream& core, CollectionAsset& 
 	});
 }
 
-void pack_shrub_classes(OutputStream& index, OutputStream& core, CollectionAsset& classes, const std::vector<LevelTexture>& textures, s32 table, s32 texture_index, Game game) {
+void pack_shrub_classes(OutputStream& index, OutputStream& core, const CollectionAsset& classes, const std::vector<LevelTexture>& textures, s32 table, s32 texture_index, Game game) {
 	s32 i = 0;
-	classes.for_each_logical_child_of_type<ShrubClassAsset>([&](ShrubClassAsset& child) {
+	classes.for_each_logical_child_of_type<ShrubClassAsset>([&](const ShrubClassAsset& child) {
 		ShrubClassEntry entry = {0};
 		entry.o_class = child.id();
 		if(child.has_core()) {

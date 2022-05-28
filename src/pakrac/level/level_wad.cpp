@@ -89,15 +89,15 @@ packed_struct(DlLevelWadHeader,
 )
 
 static void unpack_rac_level_wad(LevelWadAsset& dest, const RacLevelWadHeader& header, InputStream& src, Game game);
-static void pack_rac_level_wad(OutputStream& dest, RacLevelWadHeader& header, LevelWadAsset& src, Game game);
+static void pack_rac_level_wad(OutputStream& dest, RacLevelWadHeader& header, const LevelWadAsset& src, Game game);
 static void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHeader& header, InputStream& src, Game game);
-static void pack_gc_uya_level_wad(OutputStream& dest, GcUyaLevelWadHeader& header, LevelWadAsset& src, Game game);
+static void pack_gc_uya_level_wad(OutputStream& dest, GcUyaLevelWadHeader& header, const LevelWadAsset& src, Game game);
 static void unpack_dl_level_wad(LevelWadAsset& dest, const DlLevelWadHeader& header, InputStream& src, Game game);
-static void pack_dl_level_wad(OutputStream& dest, DlLevelWadHeader& header, LevelWadAsset& src, Game game);
+static void pack_dl_level_wad(OutputStream& dest, DlLevelWadHeader& header, const LevelWadAsset& src, Game game);
 static void unpack_chunks(CollectionAsset& dest, InputStream& file, const ChunkWadHeader& ranges, Game game);
-static ChunkWadHeader pack_chunks(OutputStream& dest, CollectionAsset& chunks, Game game);
+static ChunkWadHeader pack_chunks(OutputStream& dest, const CollectionAsset& chunks, Game game);
 static void unpack_missions(CollectionAsset& dest, InputStream& file, const MissionWadHeader& ranges, Game game);
-static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& dest, CollectionAsset& missions, Game game);
+static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& dest, const CollectionAsset& missions, Game game);
 
 on_load(Level, []() {
 	LevelWadAsset::funcs.unpack_rac1 = wrap_wad_unpacker_func<LevelWadAsset, RacLevelWadHeader>(unpack_rac_level_wad);
@@ -119,7 +119,7 @@ void unpack_rac_level_wad(LevelWadAsset& dest, const RacLevelWadHeader& header, 
 	unpack_asset(dest.data().gameplay(), src, header.gameplay_ntsc, game);
 }
 
-static void pack_rac_level_wad(OutputStream& dest, RacLevelWadHeader& header, LevelWadAsset& src, Game game) {
+static void pack_rac_level_wad(OutputStream& dest, RacLevelWadHeader& header, const LevelWadAsset& src, Game game) {
 	header.id = src.id();
 	
 	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), game);
@@ -137,7 +137,7 @@ void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHeader& hea
 	unpack_chunks(dest.chunks(), src, header.chunks, game);
 }
 
-static void pack_gc_uya_level_wad(OutputStream& dest, GcUyaLevelWadHeader& header, LevelWadAsset& src, Game game) {
+static void pack_gc_uya_level_wad(OutputStream& dest, GcUyaLevelWadHeader& header, const LevelWadAsset& src, Game game) {
 	header.id = src.id();
 	header.reverb = src.reverb();
 	
@@ -158,7 +158,7 @@ void unpack_dl_level_wad(LevelWadAsset& dest, const DlLevelWadHeader& header, In
 	unpack_missions(dest.missions(), src, header.missions, game);
 }
 
-static void pack_dl_level_wad(OutputStream& dest, DlLevelWadHeader& header, LevelWadAsset& src, Game game) {
+static void pack_dl_level_wad(OutputStream& dest, DlLevelWadHeader& header, const LevelWadAsset& src, Game game) {
 	header.id = src.id();
 	header.reverb = src.reverb();
 	
@@ -200,11 +200,11 @@ static void unpack_chunks(CollectionAsset& dest, InputStream& file, const ChunkW
 	}
 }
 
-static ChunkWadHeader pack_chunks(OutputStream& dest, CollectionAsset& chunks, Game game) {
+static ChunkWadHeader pack_chunks(OutputStream& dest, const CollectionAsset& chunks, Game game) {
 	ChunkWadHeader header = {0};
 	for(s32 i = 0; i < ARRAY_SIZE(header.chunks); i++) {
 		if(chunks.has_child(i)) {
-			ChunkAsset& chunk = chunks.get_child(i).as<ChunkAsset>();
+			const ChunkAsset& chunk = chunks.get_child(i).as<ChunkAsset>();
 			if(chunk.has_tfrags() || chunk.has_collision()) {
 				dest.pad(SECTOR_SIZE, 0);
 				s64 chunk_header_ofs = dest.tell();
@@ -224,7 +224,7 @@ static ChunkWadHeader pack_chunks(OutputStream& dest, CollectionAsset& chunks, G
 	}
 	for(s32 i = 0; i < ARRAY_SIZE(header.chunks); i++) {
 		if(chunks.has_child(i)) {
-			ChunkAsset& chunk = chunks.get_child(i).as<ChunkAsset>();
+			const ChunkAsset& chunk = chunks.get_child(i).as<ChunkAsset>();
 			if(chunk.has_sound_bank()) {
 				header.sound_banks[i] = pack_asset_sa<SectorRange>(dest, chunk.get_sound_bank(), game);
 			}
@@ -254,14 +254,14 @@ static void unpack_missions(CollectionAsset& dest, InputStream& file, const Miss
 	}
 }
 
-static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& dest, CollectionAsset& missions, Game game) {
+static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& dest, const CollectionAsset& missions, Game game) {
 	MissionWadHeader header;
 	MaxMissionSizes max_sizes;
 	max_sizes.max_instances_size = 0;
 	max_sizes.max_classes_size = 0;
 	for(s32 i = 0; i < ARRAY_SIZE(header.instances); i++) {
 		if(missions.has_child(i)) {
-			MissionAsset& mission = missions.get_child(i).as<MissionAsset>();
+			const MissionAsset& mission = missions.get_child(i).as<MissionAsset>();
 			if(mission.has_instances()) {
 				header.instances[i] = pack_asset_sa<SectorRange>(dest, mission.get_instances(), game);
 			}
@@ -269,7 +269,7 @@ static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& 
 	}
 	for(s32 i = 0; i < ARRAY_SIZE(header.data); i++) {
 		if(missions.has_child(i)) {
-			MissionAsset& mission = missions.get_child(i).as<MissionAsset>();
+			const MissionAsset& mission = missions.get_child(i).as<MissionAsset>();
 			MissionHeader mission_header = {0};
 			dest.pad(SECTOR_SIZE, 0);
 			s64 mission_header_ofs = dest.tell();
@@ -320,7 +320,7 @@ static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& 
 	}
 	for(s32 i = 0; i < ARRAY_SIZE(header.sound_banks); i++) {
 		if(missions.has_child(i)) {
-			MissionAsset& mission = missions.get_child(i).as<MissionAsset>();
+			const MissionAsset& mission = missions.get_child(i).as<MissionAsset>();
 			if(mission.has_sound_bank()) {
 				header.sound_banks[i] = pack_asset_sa<SectorRange>(dest, mission.get_sound_bank(), game);
 			}

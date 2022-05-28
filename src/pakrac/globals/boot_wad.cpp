@@ -20,7 +20,7 @@
 #include <pakrac/asset_packer.h>
 
 static void unpack_boot_wad(BootWadAsset& dest, InputStream& src, Game game);
-static void pack_boot_wad(OutputStream& dest, BootWadAsset& src, Game game);
+static void pack_boot_wad(OutputStream& dest, const BootWadAsset& src, Game game);
 
 on_load(Boot, []() {
 	BootWadAsset::funcs.unpack_dl = wrap_unpacker_func<BootWadAsset>(unpack_boot_wad);
@@ -55,7 +55,7 @@ static void unpack_boot_wad(BootWadAsset& dest, InputStream& src, Game game) {
 	unpack_compressed_asset(dest.sram(), src, header.sram, game);
 }
 
-static void pack_boot_wad(OutputStream& dest, BootWadAsset& src, Game game) {
+static void pack_boot_wad(OutputStream& dest, const BootWadAsset& src, Game game) {
 	DlBootHeader header;
 	dest.write(header);
 	
@@ -64,7 +64,7 @@ static void pack_boot_wad(OutputStream& dest, BootWadAsset& src, Game game) {
 	header.german = pack_compressed_asset<ByteRange>(dest, src.get_german(), game, 0x40, "german");
 	header.spanish = pack_compressed_asset<ByteRange>(dest, src.get_spanish(), game, 0x40, "spanish");
 	header.italian = pack_compressed_asset<ByteRange>(dest, src.get_italian(), game, 0x40, "italian");
-	CollectionAsset& hud = src.get_hud();
+	const CollectionAsset& hud = src.get_hud();
 	if(hud.has_child(0)) {
 		header.hudwad[0] = pack_asset<ByteRange>(dest, src.get_hud().get_child(0), game, 0x40);
 	}

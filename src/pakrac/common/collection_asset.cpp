@@ -21,7 +21,7 @@
 #include <pakrac/asset_packer.h>
 
 static void unpack_collection_asset(CollectionAsset& dest, InputStream& src, Game game, s32 hint);
-static void pack_collection_asset(OutputStream& dest, CollectionAsset& src, Game game, s32 hint);
+static void pack_collection_asset(OutputStream& dest, const CollectionAsset& src, Game game, s32 hint);
 
 on_load(Collection, []() {
 	CollectionAsset::funcs.unpack_rac1 = wrap_hint_unpacker_func<CollectionAsset>(unpack_collection_asset);
@@ -58,7 +58,7 @@ static void unpack_collection_asset(CollectionAsset& dest, InputStream& src, Gam
 	}
 }
 
-static void pack_collection_asset(OutputStream& dest, CollectionAsset& src, Game game, s32 hint) {
+static void pack_collection_asset(OutputStream& dest, const CollectionAsset& src, Game game, s32 hint) {
 	s32 count;
 	for(count = 0; count < 256; count++) {
 		if(!src.has_child(count)) {

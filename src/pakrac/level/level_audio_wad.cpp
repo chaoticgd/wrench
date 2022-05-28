@@ -29,7 +29,7 @@ packed_struct(DlLevelAudioWadHeader,
 )
 
 static void unpack_dl_level_audio_wad(LevelAudioWadAsset& dest, const DlLevelAudioWadHeader& header, InputStream& src, Game game);
-static void pack_dl_level_audio_wad(OutputStream& dest, DlLevelAudioWadHeader& header, LevelAudioWadAsset& src, Game game);
+static void pack_dl_level_audio_wad(OutputStream& dest, DlLevelAudioWadHeader& header, const LevelAudioWadAsset& src, Game game);
 
 on_load(LevelAudio, []() {
 	LevelAudioWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<LevelAudioWadAsset, DlLevelAudioWadHeader>(unpack_dl_level_audio_wad);
@@ -44,7 +44,7 @@ static void unpack_dl_level_audio_wad(LevelAudioWadAsset& dest, const DlLevelAud
 	unpack_asset(dest.spare(), src, header.spare, game);
 }
 
-static void pack_dl_level_audio_wad(OutputStream& dest, DlLevelAudioWadHeader& header, LevelAudioWadAsset& src, Game game) {
+static void pack_dl_level_audio_wad(OutputStream& dest, DlLevelAudioWadHeader& header, const LevelAudioWadAsset& src, Game game) {
 	pack_assets_sa(dest, ARRAY_PAIR(header.bin_data), src.get_bin_data(), game);
 	header.upgrade_sample = pack_asset_sa<SectorByteRange>(dest, src.get_upgrade_sample(), game);
 	header.platinum_bolt = pack_asset_sa<SectorByteRange>(dest, src.get_platinum_bolt(), game);

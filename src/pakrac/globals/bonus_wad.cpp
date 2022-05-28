@@ -96,15 +96,15 @@ packed_struct(DlBonusWadHeader,
 template <typename Header>
 static void unpack_rac_gc_bonus_wad(BonusWadAsset& dest, const Header& header, InputStream& src, Game game);
 template <typename Header>
-static void pack_rac_gc_bonus_wad(OutputStream& dest, Header& header, BonusWadAsset& src, Game game);
+static void pack_rac_gc_bonus_wad(OutputStream& dest, Header& header, const BonusWadAsset& src, Game game);
 static void unpack_rac_gc_credits_text(CollectionAsset& dest, InputStream& src, SectorRange range, Game game);
-static SectorRange pack_rac_gc_credits_text(OutputStream& dest, CollectionAsset& src, Game game);
+static SectorRange pack_rac_gc_credits_text(OutputStream& dest, const CollectionAsset& src, Game game);
 template <typename Header>
 static void unpack_uya_dl_bonus_wad(BonusWadAsset& dest, const Header& header, InputStream& src, Game game);
 template <typename Header>
-static void pack_uya_dl_bonus_wad(OutputStream& dest, Header& header, BonusWadAsset& src, Game game);
+static void pack_uya_dl_bonus_wad(OutputStream& dest, Header& header, const BonusWadAsset& src, Game game);
 static void unpack_demo_images(CollectionAsset& dest, InputStream& src, const SectorRange* ranges, s32 outer_count, s32 inner_count, Game game);
-static void pack_demo_images(OutputStream& dest, SectorRange* ranges, s32 outer_count, s32 inner_count, CollectionAsset& src, Game game, const char* muffin);
+static void pack_demo_images(OutputStream& dest, SectorRange* ranges, s32 outer_count, s32 inner_count, const CollectionAsset& src, Game game, const char* muffin);
 
 on_load(Bonus, []() {
 	BonusWadAsset::funcs.unpack_rac1 = wrap_wad_unpacker_func<BonusWadAsset, RacBonusWadHeader>(unpack_rac_gc_bonus_wad<RacBonusWadHeader>);
@@ -154,7 +154,7 @@ static void unpack_rac_gc_bonus_wad(BonusWadAsset& dest, const Header& header, I
 }
 
 template <typename Header>
-static void pack_rac_gc_bonus_wad(OutputStream& dest, Header& header, BonusWadAsset& src, Game game) {
+static void pack_rac_gc_bonus_wad(OutputStream& dest, Header& header, const BonusWadAsset& src, Game game) {
 	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.goodies_images), src.get_goodies_images(), game, "goodies_images", FMT_TEXTURE_PIF8);
 	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.character_sketches), src.get_character_sketches(), game, "character_sketches", FMT_TEXTURE_PIF8);
 	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.character_renders), src.get_character_renders(), game, "character_renders", FMT_TEXTURE_PIF8);
@@ -202,7 +202,7 @@ static void unpack_rac_gc_credits_text(CollectionAsset& dest, InputStream& src, 
 	}
 }
 
-static SectorRange pack_rac_gc_credits_text(OutputStream& dest, CollectionAsset& src, Game game) {
+static SectorRange pack_rac_gc_credits_text(OutputStream& dest, const CollectionAsset& src, Game game) {
 	dest.pad(SECTOR_SIZE, 0);
 	s64 begin_ofs = dest.tell();
 	dest.alloc_multiple<s32>(8);
@@ -234,7 +234,7 @@ static void unpack_uya_dl_bonus_wad(BonusWadAsset& dest, const Header& header, I
 }
 
 template <typename Header>
-void pack_uya_dl_bonus_wad(OutputStream& dest, Header& header, BonusWadAsset& src, Game game) {
+void pack_uya_dl_bonus_wad(OutputStream& dest, Header& header, const BonusWadAsset& src, Game game) {
 	pack_assets_sa(dest, ARRAY_PAIR(header.credits_text), src.get_credits_text(), game);
 	pack_assets_sa(dest, ARRAY_PAIR(header.credits_images), src.get_credits_images(), game, FMT_TEXTURE_RGBA);
 	pack_demo_images(dest, ARRAY_PAIR(header.demo_menu), 30, src.get_demo_menu(), game, "demo_menu");
@@ -267,10 +267,10 @@ static void unpack_demo_images(CollectionAsset& dest, InputStream& src, const Se
 	}
 }
 
-static void pack_demo_images(OutputStream& dest, SectorRange* ranges, s32 outer_count, s32 inner_count, CollectionAsset& src, Game game, const char* muffin) {
+static void pack_demo_images(OutputStream& dest, SectorRange* ranges, s32 outer_count, s32 inner_count, const CollectionAsset& src, Game game, const char* muffin) {
 	for(s32 i = 0; i < outer_count; i++) {
 		if(src.has_child(i)) {
-			CollectionAsset& inner = src.get_child(i).as<CollectionAsset>();
+			const CollectionAsset& inner = src.get_child(i).as<CollectionAsset>();
 			dest.pad(SECTOR_SIZE, 0);
 			s64 begin_ofs = dest.tell();
 			ranges[i].offset = Sector32::size_from_bytes(begin_ofs);

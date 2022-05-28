@@ -109,7 +109,7 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 	print_level_core_header(header);
 }
 
-void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, std::vector<u8>& gs_ram_dest, LevelCoreAsset& src, Game game) {
+void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, std::vector<u8>& gs_ram_dest, const LevelCoreAsset& src, Game game) {
 	MemoryOutputStream index(index_dest);
 	MemoryOutputStream gs_ram(gs_ram_dest);
 	
@@ -132,10 +132,10 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	header.sky = pack_asset<ByteRange>(data, src.get_sky(), game, 0x40).offset;
 	header.collision = pack_asset<ByteRange>(data, src.get_collision(), game, 0x40).offset;
 	
-	CollectionAsset& tfrag_textures = src.get_tfrag_textures();
-	CollectionAsset& mobies = src.get_moby_classes();
-	CollectionAsset& ties = src.get_tie_classes();
-	CollectionAsset& shrubs = src.get_shrub_classes();
+	const CollectionAsset& tfrag_textures = src.get_tfrag_textures();
+	const CollectionAsset& mobies = src.get_moby_classes();
+	const CollectionAsset& ties = src.get_tie_classes();
+	const CollectionAsset& shrubs = src.get_shrub_classes();
 	
 	auto [moby_tab, tie_tab, shrub_tab] = allocate_class_tables(index, mobies, ties, shrubs);
 	header.moby_classes = moby_tab;
@@ -195,7 +195,7 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	header.scene_view_size = data.tell();
 	
 	if(game != Game::DL) {
-		CollectionAsset& ratchet_seqs = src.get_ratchet_seqs();
+		const CollectionAsset& ratchet_seqs = src.get_ratchet_seqs();
 		std::vector<s32> ratchet_seq_offsets(0, 256);
 		for(s32 i = 0; i < 256; i++) {
 			if(ratchet_seqs.has_child(i)) {

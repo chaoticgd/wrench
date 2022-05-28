@@ -52,14 +52,14 @@ void unpack_level_texture(TextureAsset& dest, const TextureEntry& entry, InputSt
 	dest.set_src(ref);
 }
 
-SharedLevelTextures read_level_textures(CollectionAsset& tfrag_textures, CollectionAsset& mobies, CollectionAsset& ties, CollectionAsset& shrubs) {
+SharedLevelTextures read_level_textures(const CollectionAsset& tfrag_textures, const CollectionAsset& mobies, const CollectionAsset& ties, const CollectionAsset& shrubs) {
 	SharedLevelTextures shared;
 	
 	shared.tfrag_range.table = TFRAG_TEXTURE_TABLE;
 	shared.tfrag_range.begin = shared.textures.size();
 	for(s32 i = 0; i < 1024; i++) {
 		if(tfrag_textures.has_child(i)) {
-			TextureAsset& asset = tfrag_textures.get_child(i).as<TextureAsset>();
+			const TextureAsset& asset = tfrag_textures.get_child(i).as<TextureAsset>();
 			auto stream = asset.file().open_binary_file_for_reading(asset.src());
 			shared.textures.emplace_back(LevelTexture{read_png(*stream)});
 		} else {
@@ -70,11 +70,11 @@ SharedLevelTextures read_level_textures(CollectionAsset& tfrag_textures, Collect
 	
 	shared.moby_range.table = MOBY_TEXTURE_TABLE;
 	shared.moby_range.begin = shared.textures.size();
-	mobies.for_each_logical_child_of_type<MobyClassAsset>([&](MobyClassAsset& cls) {
-		CollectionAsset& textures = cls.get_materials();
+	mobies.for_each_logical_child_of_type<MobyClassAsset>([&](const MobyClassAsset& cls) {
+		const CollectionAsset& textures = cls.get_materials();
 		for(s32 i = 0; i < 16; i++) {
 			if(textures.has_child(i)) {
-				TextureAsset& asset = textures.get_child(i).as<TextureAsset>();
+				const TextureAsset& asset = textures.get_child(i).as<TextureAsset>();
 				auto stream = asset.file().open_binary_file_for_reading(asset.src());
 				shared.textures.emplace_back(LevelTexture{read_png(*stream)});
 			} else {
@@ -86,11 +86,11 @@ SharedLevelTextures read_level_textures(CollectionAsset& tfrag_textures, Collect
 	
 	shared.tie_range.table = TIE_TEXTURE_TABLE;
 	shared.tie_range.begin = shared.textures.size();
-	ties.for_each_logical_child_of_type<TieClassAsset>([&](TieClassAsset& cls) {
-		CollectionAsset& textures = cls.get_textures();
+	ties.for_each_logical_child_of_type<TieClassAsset>([&](const TieClassAsset& cls) {
+		const CollectionAsset& textures = cls.get_textures();
 		for(s32 i = 0; i < 16; i++) {
 			if(textures.has_child(i)) {
-				TextureAsset& asset = textures.get_child(i).as<TextureAsset>();
+				const TextureAsset& asset = textures.get_child(i).as<TextureAsset>();
 				auto stream = asset.file().open_binary_file_for_reading(asset.src());
 				shared.textures.emplace_back(LevelTexture{read_png(*stream)});
 			} else {
@@ -102,11 +102,11 @@ SharedLevelTextures read_level_textures(CollectionAsset& tfrag_textures, Collect
 	
 	shared.shrub_range.table = SHRUB_TEXTURE_TABLE;
 	shared.shrub_range.begin = shared.textures.size();
-	shrubs.for_each_logical_child_of_type<ShrubClassAsset>([&](ShrubClassAsset& cls) {
-		CollectionAsset& textures = cls.get_textures();
+	shrubs.for_each_logical_child_of_type<ShrubClassAsset>([&](const ShrubClassAsset& cls) {
+		const CollectionAsset& textures = cls.get_textures();
 		for(s32 i = 0; i < 16; i++) {
 			if(textures.has_child(i)) {
-				TextureAsset& asset = textures.get_child(i).as<TextureAsset>();
+				const TextureAsset& asset = textures.get_child(i).as<TextureAsset>();
 				auto stream = asset.file().open_binary_file_for_reading(asset.src());
 				shared.textures.emplace_back(LevelTexture{read_png(*stream)});
 			} else {
@@ -267,7 +267,7 @@ void unpack_particle_textures(CollectionAsset& dest, InputStream& defs, std::vec
 	}
 }
 
-std::tuple<ArrayRange, s32, s32> pack_particle_textures(OutputStream& index, OutputStream& data, CollectionAsset& particles, Game game) {
+std::tuple<ArrayRange, s32, s32> pack_particle_textures(OutputStream& index, OutputStream& data, const CollectionAsset& particles, Game game) {
 	data.pad(0x100, 0);
 	s64 particles_base = data.tell();
 	
@@ -277,11 +277,11 @@ std::tuple<ArrayRange, s32, s32> pack_particle_textures(OutputStream& index, Out
 	std::map<s32, std::pair<s32, s32>> ranges;
 	for(s32 i = 0; i < 1024; i++) {
 		if(particles.has_child(i)) {
-			CollectionAsset& particle = particles.get_child(i).as<CollectionAsset>();
+			const CollectionAsset& particle = particles.get_child(i).as<CollectionAsset>();
 			s32 begin = (s32) textures.size();
 			for(s32 j = 0; j < 1024; j++) {
 				if(particle.has_child(j)) {
-					TextureAsset& asset = particle.get_child(j).as<TextureAsset>();
+					const TextureAsset& asset = particle.get_child(j).as<TextureAsset>();
 					auto stream = asset.file().open_binary_file_for_reading(asset.src());
 					Opt<Texture> texture = read_png(*stream);
 					if(texture.has_value()) {
@@ -414,13 +414,13 @@ void unpack_fx_textures(LevelCoreAsset& core, const std::vector<FxTextureEntry>&
 	}
 }
 
-std::tuple<ArrayRange, s32> pack_fx_textures(OutputStream& index, OutputStream& data, CollectionAsset& common_fx, CollectionAsset& local_fx, Game game) {
+std::tuple<ArrayRange, s32> pack_fx_textures(OutputStream& index, OutputStream& data, const CollectionAsset& common_fx, const CollectionAsset& local_fx, Game game) {
 	data.pad(0x100, 0);
 	s64 fx_base = data.tell();
 	
 	std::vector<LevelTexture> textures;
 	for(s32 i = 0; i < 1024; i++) {
-		TextureAsset* asset;
+		const TextureAsset* asset;
 		if(local_fx.has_child(i)) {
 			asset = &local_fx.get_child(i).as<TextureAsset>();
 		} else if(common_fx.has_child(i)) {

@@ -21,7 +21,7 @@
 #include <engine/moby.h>
 
 static void unpack_moby_class_core(MobyClassCoreAsset& dest, InputStream& src, Game game);
-static void pack_moby_class_core(OutputStream& dest, MobyClassCoreAsset& src, Game game);
+static void pack_moby_class_core(OutputStream& dest, const MobyClassCoreAsset& src, Game game);
 static std::vector<ColladaScene*> read_collada_files(std::vector<std::unique_ptr<ColladaScene>>& owners, std::vector<FileReference> refs);
 static bool test_moby_class_core(std::vector<u8>& original, std::vector<u8>& repacked, Game game, s32 hint);
 
@@ -56,9 +56,9 @@ static void unpack_moby_class_core(MobyClassCoreAsset& dest, InputStream& src, G
 	low_lod_mesh.set_node("low_lod");
 }
 
-static void pack_moby_class_core(OutputStream& dest, MobyClassCoreAsset& src, Game game) {
-	MeshAsset& mesh_asset = src.get_mesh();
-	MeshAsset& low_lod_mesh_asset = src.get_low_lod_mesh();
+static void pack_moby_class_core(OutputStream& dest, const MobyClassCoreAsset& src, Game game) {
+	const MeshAsset& mesh_asset = src.get_mesh();
+	const MeshAsset& low_lod_mesh_asset = src.get_low_lod_mesh();
 	
 	std::vector<std::unique_ptr<ColladaScene>> owners;
 	std::vector<ColladaScene*> scenes = read_collada_files(owners, {mesh_asset.src(), low_lod_mesh_asset.src()});

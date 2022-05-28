@@ -26,7 +26,7 @@ packed_struct(DlSpaceWadHeader,
 )
 
 void unpack_space_wad(SpaceWadAsset& dest, const DlSpaceWadHeader& header, InputStream& src, Game game);
-static void pack_space_wad(OutputStream& dest, DlSpaceWadHeader& header, SpaceWadAsset& src, Game game);
+static void pack_space_wad(OutputStream& dest, DlSpaceWadHeader& header, const SpaceWadAsset& src, Game game);
 
 on_load(Space, []() {
 	SpaceWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<SpaceWadAsset, DlSpaceWadHeader>(unpack_space_wad);
@@ -38,6 +38,6 @@ void unpack_space_wad(SpaceWadAsset& dest, const DlSpaceWadHeader& header, Input
 	unpack_compressed_assets<BinaryAsset>(dest.transitions(), src, ARRAY_PAIR(header.transition_wads), game);
 }
 
-static void pack_space_wad(OutputStream& dest, DlSpaceWadHeader& header, SpaceWadAsset& src, Game game) {
+static void pack_space_wad(OutputStream& dest, DlSpaceWadHeader& header, const SpaceWadAsset& src, Game game) {
 	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.transition_wads), src.get_transitions(), game, "trnsition");
 }

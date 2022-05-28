@@ -84,15 +84,15 @@ struct SharedLevelTextures {
 
 void unpack_level_textures(CollectionAsset& dest, const u8 indices[16], const std::vector<TextureEntry>& textures, InputStream& data, InputStream& gs_ram, Game game);
 void unpack_level_texture(TextureAsset& dest, const TextureEntry& entry, InputStream& data, InputStream& gs_ram, Game game, s32 i);
-SharedLevelTextures read_level_textures(CollectionAsset& tfrag_textures, CollectionAsset& mobies, CollectionAsset& ties, CollectionAsset& shrubs);
+SharedLevelTextures read_level_textures(const CollectionAsset& tfrag_textures, const CollectionAsset& mobies, const CollectionAsset& ties, const CollectionAsset& shrubs);
 s64 write_shared_level_textures(OutputStream& data, OutputStream& gs, std::vector<GsRamEntry>& gs_table, std::vector<LevelTexture>& textures);
 ArrayRange write_level_texture_table(OutputStream& dest, std::vector<LevelTexture>& textures, LevelTextureRange range, s32 textures_base_offset);
 s32 write_level_texture_indices(u8 dest[16], const std::vector<LevelTexture>& textures, s32 begin, s32 table);
 
 void unpack_particle_textures(CollectionAsset& dest, InputStream& defs, std::vector<ParticleTextureEntry>& entries, InputStream& bank, Game game);
-std::tuple<ArrayRange, s32, s32> pack_particle_textures(OutputStream& index, OutputStream& data, CollectionAsset& particles, Game game);
+std::tuple<ArrayRange, s32, s32> pack_particle_textures(OutputStream& index, OutputStream& data, const CollectionAsset& particles, Game game);
 void unpack_fx_textures(LevelCoreAsset& core, const std::vector<FxTextureEntry>& entries, InputStream& fx_bank, Game game);
-std::tuple<ArrayRange, s32> pack_fx_textures(OutputStream& index, OutputStream& data, CollectionAsset& common_fx, CollectionAsset& local_fx, Game game);
+std::tuple<ArrayRange, s32> pack_fx_textures(OutputStream& index, OutputStream& data, const CollectionAsset& common_fx, const CollectionAsset& local_fx, Game game);
 
 void deduplicate_level_textures(std::vector<LevelTexture>& textures);
 void deduplicate_level_palettes(std::vector<LevelTexture>& textures);

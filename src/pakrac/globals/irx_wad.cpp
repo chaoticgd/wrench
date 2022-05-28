@@ -72,19 +72,19 @@ packed_struct(DlIrxHeader,
 )
 
 static void unpack_rac1_irx_wad(IrxWadAsset& dest, InputStream& src, Game game);
-static void pack_rac1_irx_wad(OutputStream& dest, IrxWadAsset& src, Game game);
+static void pack_rac1_irx_wad(OutputStream& dest, const IrxWadAsset& src, Game game);
 static void unpack_rac2_irx_wad(IrxWadAsset& dest, InputStream& src, Game game);
-static void pack_rac2_irx_wad(OutputStream& dest, IrxWadAsset& src, Game game);
+static void pack_rac2_irx_wad(OutputStream& dest, const IrxWadAsset& src, Game game);
 static void unpack_rac3_irx_wad(IrxWadAsset& dest, InputStream& src, Game game);
-static void pack_rac3_irx_wad(OutputStream& dest, IrxWadAsset& src, Game game);
+static void pack_rac3_irx_wad(OutputStream& dest, const IrxWadAsset& src, Game game);
 static void unpack_dl_irx_wad(IrxWadAsset& dest, InputStream& src, Game game);
-static void pack_dl_irx_wad(OutputStream& dest, IrxWadAsset& src, Game game);
+static void pack_dl_irx_wad(OutputStream& dest, const IrxWadAsset& src, Game game);
 static void unpack_rac2_irx_modules(IrxWadAsset& dest, const GcIrxModules& header, InputStream& src, Game game);
-static GcIrxModules pack_rac2_irx_modules(OutputStream& dest, IrxWadAsset& src, Game game);
+static GcIrxModules pack_rac2_irx_modules(OutputStream& dest, const IrxWadAsset& src, Game game);
 static void unpack_rac3_irx_modules(IrxWadAsset& dest, const UyaIrxModules& header, InputStream& src, Game game);
-static UyaIrxModules pack_rac3_irx_modules(OutputStream& dest, IrxWadAsset& src, Game game);
+static UyaIrxModules pack_rac3_irx_modules(OutputStream& dest, const IrxWadAsset& src, Game game);
 static void unpack_dl_irx_modules(IrxWadAsset& dest, const DlIrxModules& header, InputStream& src, Game game);
-static DlIrxModules pack_dl_irx_modules(OutputStream& dest, IrxWadAsset& src, Game game);
+static DlIrxModules pack_dl_irx_modules(OutputStream& dest, const IrxWadAsset& src, Game game);
 
 on_load(Irx, []() {
 	IrxWadAsset::funcs.unpack_rac1 = wrap_unpacker_func<IrxWadAsset>(unpack_rac1_irx_wad);
@@ -102,7 +102,7 @@ static void unpack_rac1_irx_wad(IrxWadAsset& dest, InputStream& src, Game game) 
 	verify_not_reached("R&C1 IRX unpacking not yet implemented.");
 }
 
-static void pack_rac1_irx_wad(OutputStream& dest, IrxWadAsset& src, Game game) {
+static void pack_rac1_irx_wad(OutputStream& dest, const IrxWadAsset& src, Game game) {
 	verify_not_reached("R&C1 IRX packing not yet implemented.");
 }
 
@@ -111,7 +111,7 @@ static void unpack_rac2_irx_wad(IrxWadAsset& dest, InputStream& src, Game game) 
 	unpack_rac2_irx_modules(dest, header.rac2, src, game);
 }
 
-static void pack_rac2_irx_wad(OutputStream& dest, IrxWadAsset& src, Game game) {
+static void pack_rac2_irx_wad(OutputStream& dest, const IrxWadAsset& src, Game game) {
 	GcIrxHeader header = {0};
 	dest.write(header);
 	header.rac2 = pack_rac2_irx_modules(dest, src, game);
@@ -124,7 +124,7 @@ static void unpack_rac3_irx_wad(IrxWadAsset& dest, InputStream& src, Game game) 
 	unpack_rac3_irx_modules(dest, header.rac3, src, game);
 }
 
-static void pack_rac3_irx_wad(OutputStream& dest, IrxWadAsset& src, Game game) {
+static void pack_rac3_irx_wad(OutputStream& dest, const IrxWadAsset& src, Game game) {
 	UyaIrxHeader header = {0};
 	dest.write(header);
 	header.rac2 = pack_rac2_irx_modules(dest, src, game);
@@ -139,7 +139,7 @@ static void unpack_dl_irx_wad(IrxWadAsset& dest, InputStream& src, Game game) {
 	unpack_dl_irx_modules(dest, header.dl, src, game);
 }
 
-static void pack_dl_irx_wad(OutputStream& dest, IrxWadAsset& src, Game game) {
+static void pack_dl_irx_wad(OutputStream& dest, const IrxWadAsset& src, Game game) {
 	DlIrxHeader header = {0};
 	dest.write(header);
 	header.rac2 = pack_rac2_irx_modules(dest, src, game);
@@ -158,7 +158,7 @@ static void unpack_rac2_irx_modules(IrxWadAsset& dest, const GcIrxModules& heade
 	unpack_asset(dest._989snd(), src, header._989snd, game);
 }
 
-static GcIrxModules pack_rac2_irx_modules(OutputStream& dest, IrxWadAsset& src, Game game) {
+static GcIrxModules pack_rac2_irx_modules(OutputStream& dest, const IrxWadAsset& src, Game game) {
 	GcIrxModules modules;
 	modules.sio2man = pack_asset<ByteRange>(dest, src.get_sio2man(), game, 0x40);
 	modules.mcman = pack_asset<ByteRange>(dest, src.get_mcman(), game, 0x40);
@@ -188,7 +188,7 @@ static void unpack_rac3_irx_modules(IrxWadAsset& dest, const UyaIrxModules& head
 	unpack_asset(dest.lgkbm(), src, header.lgkbm, game);
 }
 
-static UyaIrxModules pack_rac3_irx_modules(OutputStream& dest, IrxWadAsset& src, Game game) {
+static UyaIrxModules pack_rac3_irx_modules(OutputStream& dest, const IrxWadAsset& src, Game game) {
 	UyaIrxModules modules;
 	modules.stash = pack_asset<ByteRange>(dest, src.get_stash(), game, 0x40);
 	modules.inet = pack_asset<ByteRange>(dest, src.get_inet(), game, 0x40);
@@ -213,7 +213,7 @@ static void unpack_dl_irx_modules(IrxWadAsset& dest, const DlIrxModules& header,
 	unpack_asset(dest.astrm(), src, header.astrm, game);
 }
 
-static DlIrxModules pack_dl_irx_modules(OutputStream& dest, IrxWadAsset& src, Game game) {
+static DlIrxModules pack_dl_irx_modules(OutputStream& dest, const IrxWadAsset& src, Game game) {
 	DlIrxModules modules;
 	modules.streamer = pack_asset<ByteRange>(dest, src.get_streamer(), game, 0x40);
 	modules.astrm = pack_asset<ByteRange>(dest, src.get_astrm(), game, 0x40);

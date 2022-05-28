@@ -30,7 +30,7 @@ on_load(Packer, []() {BuildAsset::funcs.pack_rac1 = wrap_iso_packer_func<BuildAs
 	BuildAsset::funcs.pack_dl = wrap_iso_packer_func<BuildAsset>(pack_iso, pack_asset_impl);
 })
 
-void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, Asset& src, Game game, s32 hint) {
+void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const Asset& src, Game game, s32 hint) {
 	std::string reference = asset_reference_to_string(src.reference());
 	
 	if(!g_asset_packer_dry_run) {

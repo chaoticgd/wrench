@@ -46,7 +46,9 @@ const Asset* Asset::parent() const { return _parent; }
 AssetType Asset::type() const { return _type; }
 const std::string& Asset::tag() const { return _tag; }
 Asset* Asset::lower_precedence() { return _lower_precedence; }
+const Asset* Asset::lower_precedence() const { return _lower_precedence; }
 Asset* Asset::higher_precedence() { return _higher_precedence; }
+const Asset* Asset::higher_precedence() const { return _higher_precedence; }
 
 Asset& Asset::lowest_precedence() {
 	Asset* asset = this;
@@ -56,12 +58,20 @@ Asset& Asset::lowest_precedence() {
 	return *asset;
 }
 
+const Asset& Asset::lowest_precedence() const {
+	return const_cast<Asset&>(*this).lowest_precedence();
+}
+
 Asset& Asset::highest_precedence() {
 	Asset* asset = this;
 	while(asset->higher_precedence() != nullptr) {
 		asset = asset->higher_precedence();
 	}
 	return *asset;
+}
+
+const Asset& Asset::highest_precedence() const {
+	return const_cast<Asset&>(*this).highest_precedence();
 }
 
 AssetReference Asset::reference() const {
@@ -74,9 +84,9 @@ AssetReference Asset::reference() const {
 	}
 }
 
-bool Asset::has_child(const char* tag) {
-	for(Asset* asset = &highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
-		for(std::unique_ptr<Asset>& child : asset->_children) {
+bool Asset::has_child(const char* tag) const {
+	for(const Asset* asset = &highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
+		for(const std::unique_ptr<Asset>& child : asset->_children) {
 			if(child->tag() == tag) {
 				return true;
 			}
@@ -85,7 +95,7 @@ bool Asset::has_child(const char* tag) {
 	return false;
 }
 
-bool Asset::has_child(s32 tag) {
+bool Asset::has_child(s32 tag) const {
 	std::string str = std::to_string(tag);
 	return has_child(str.c_str());
 }
@@ -101,9 +111,17 @@ Asset& Asset::get_child(const char* tag) {
 	throw MissingChildAsset();
 }
 
+const Asset& Asset::get_child(const char* tag) const {
+	return const_cast<Asset&>(*this).get_child(tag);
+}
+
 Asset& Asset::get_child(s32 tag) {
 	std::string str = std::to_string(tag);
 	return get_child(str.c_str());
+}
+
+const Asset& Asset::get_child(s32 tag) const {
+	return const_cast<Asset&>(*this).get_child(tag);
 }
 
 Asset& Asset::physical_child(AssetType type, const char* tag) {

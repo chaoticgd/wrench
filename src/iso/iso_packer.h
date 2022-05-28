@@ -28,6 +28,6 @@
 #include <iso/iso_filesystem.h>
 #include <iso/table_of_contents.h>
 
-void pack_iso(OutputStream& dest, BuildAsset& build, Game, AssetPackerFunc pack);
+void pack_iso(OutputStream& dest, const BuildAsset& build, Game, AssetPackerFunc pack);
 
 #endif

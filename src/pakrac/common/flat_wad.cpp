@@ -23,7 +23,7 @@
 static void unpack_flat_wad_asset(FlatWadAsset& dest, InputStream& src, Game game);
 static void unpack_image(FlatWadAsset& dest, InputStream& src, s32 offset, Game game);
 static bool is_common_texture_size(s32 number);
-static void pack_flat_wad_asset(OutputStream& dest, FlatWadAsset& src, Game game);
+static void pack_flat_wad_asset(OutputStream& dest, const FlatWadAsset& src, Game game);
 
 on_load(FlatWad, []() {
 	FlatWadAsset::funcs.unpack_rac1 = wrap_unpacker_func<FlatWadAsset>(unpack_flat_wad_asset);
@@ -87,16 +87,16 @@ static bool is_common_texture_size(s32 number) {
 	return false;
 }
 
-static void pack_flat_wad_asset(OutputStream& dest, FlatWadAsset& src, Game game) {
+static void pack_flat_wad_asset(OutputStream& dest, const FlatWadAsset& src, Game game) {
 	s32 header_size = 0;
-	src.for_each_logical_child([&](Asset& child) {
+	src.for_each_logical_child([&](const Asset& child) {
 		header_size = std::max(header_size, (s32) parse_number(child.tag()) + 0x8);
 	});
 	
 	dest.alloc_multiple<u8>(header_size);
 	
 	std::vector<u8> header(header_size);
-	src.for_each_logical_child([&](Asset& child) {
+	src.for_each_logical_child([&](const Asset& child) {
 		size_t offset = parse_number(child.tag());
 		*(SectorRange*) &header[offset] = pack_asset_sa<SectorRange>(dest, child, game);
 	});

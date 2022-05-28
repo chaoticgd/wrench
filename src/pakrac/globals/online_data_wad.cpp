@@ -20,7 +20,7 @@
 #include <pakrac/asset_packer.h>
 
 static void unpack_online_data_wad(OnlineDataWadAsset& dest, InputStream& src, Game game);
-static void pack_online_data_wad(OutputStream& dest, OnlineDataWadAsset& src, Game game);
+static void pack_online_data_wad(OutputStream& dest, const OnlineDataWadAsset& src, Game game);
 
 on_load(OnlineData, []() {
 	OnlineDataWadAsset::funcs.unpack_dl = wrap_unpacker_func<OnlineDataWadAsset>(unpack_online_data_wad);
@@ -75,7 +75,7 @@ static void unpack_online_data_wad(OnlineDataWadAsset& dest, InputStream& src, G
 	}
 }
 
-static void pack_online_data_wad(OutputStream& dest, OnlineDataWadAsset& src, Game game) {
+static void pack_online_data_wad(OutputStream& dest, const OnlineDataWadAsset& src, Game game) {
 	OnlineDataHeader header;
 	dest.alloc<OnlineDataHeader>();
 	
@@ -89,10 +89,10 @@ static void pack_online_data_wad(OutputStream& dest, OnlineDataWadAsset& src, Ga
 	pack_compressed_assets(dest, ARRAY_PAIR(header.profile_screen), src.get_profile_screen(), game, 0x10, "profile_screen", FMT_TEXTURE_PIF8);
 	header.hero_image = pack_compressed_asset<ByteRange>(dest, src.get_hero_image(), game, 0x10, "hero_image", FMT_TEXTURE_PIF8);
 	header.staging_options = pack_compressed_asset<ByteRange>(dest, src.get_staging_options(), game, 0x10, "staging_options", FMT_TEXTURE_PIF8);
-	CollectionAsset& moby_classes = src.get_moby_classes();
+	const CollectionAsset& moby_classes = src.get_moby_classes();
 	for(s32 i = 0; i < ARRAY_SIZE(header.moby_classes); i++) {
 		if(moby_classes.has_child(i)) {
-			MobyClassAsset& moby = moby_classes.get_child(i).as<MobyClassAsset>();
+			const MobyClassAsset& moby = moby_classes.get_child(i).as<MobyClassAsset>();
 			header.moby_classes[i].core = pack_compressed_asset<ByteRange>(dest, moby.get_core(), game, 0x10, "moby_core");
 			if(moby.has_materials()) {
 				header.moby_classes[i].textures = pack_compressed_asset<ByteRange>(dest, moby.get_materials(), game, 0x10, "textures", FMT_COLLECTION_PIF8);

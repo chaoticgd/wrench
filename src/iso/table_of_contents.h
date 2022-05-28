@@ -27,7 +27,7 @@ struct GlobalWadInfo {
 	u32 offset_in_toc;
 	Sector32 sector;
 	std::vector<u8> header;
-	Asset* asset;
+	const Asset* asset;
 	std::string name;
 };
 
@@ -41,7 +41,7 @@ struct LevelWadInfo {
 	Sector32 file_size;
 	std::vector<u8> header;
 	bool prepend_header = false;
-	Asset* asset;
+	const Asset* asset;
 };
 
 struct LevelInfo {

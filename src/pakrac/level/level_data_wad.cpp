@@ -54,11 +54,11 @@ packed_struct(DlLevelDataHeader,
 )
 
 static void unpack_rac_level_data_wad(LevelDataWadAsset& dest, InputStream& src, Game game);
-static void pack_rac_level_data_wad(OutputStream& dest, LevelDataWadAsset& src, Game game);
+static void pack_rac_level_data_wad(OutputStream& dest, const LevelDataWadAsset& src, Game game);
 static void unpack_gc_uya_level_data_wad(LevelDataWadAsset& dest, InputStream& src, Game game);
-static void pack_gc_uya_level_data_wad(OutputStream& dest, LevelDataWadAsset& src, Game game);
+static void pack_gc_uya_level_data_wad(OutputStream& dest, const LevelDataWadAsset& src, Game game);
 static void unpack_dl_level_data_wad(LevelDataWadAsset& dest, InputStream& src, Game game);
-static void pack_dl_level_data_wad(OutputStream& dest, LevelDataWadAsset& src, Game game);
+static void pack_dl_level_data_wad(OutputStream& dest, const LevelDataWadAsset& src, Game game);
 static ByteRange write_vector_of_bytes(OutputStream& dest, std::vector<u8>& bytes);
 
 on_load(LevelData, []() {
@@ -84,7 +84,7 @@ static void unpack_rac_level_data_wad(LevelDataWadAsset& dest, InputStream& src,
 	unpack_assets<BinaryAsset>(dest.hud_banks().switch_files(), src, ARRAY_PAIR(header.hud_banks), game);
 }
 
-static void pack_rac_level_data_wad(OutputStream& dest, LevelDataWadAsset& src, Game game) {
+static void pack_rac_level_data_wad(OutputStream& dest, const LevelDataWadAsset& src, Game game) {
 	RacLevelDataHeader header = {0};
 	dest.write(header);
 	ByteRange empty = {-1, 0};
@@ -116,7 +116,7 @@ static void unpack_gc_uya_level_data_wad(LevelDataWadAsset& dest, InputStream& s
 	unpack_asset(dest.transition_textures(), src, header.transition_textures, game);
 }
 
-static void pack_gc_uya_level_data_wad(OutputStream& dest, LevelDataWadAsset& src, Game game) {
+static void pack_gc_uya_level_data_wad(OutputStream& dest, const LevelDataWadAsset& src, Game game) {
 	GcUyaLevelDataHeader header = {0};
 	dest.write(header);
 	ByteRange empty = {-1, 0};
@@ -151,7 +151,7 @@ static void unpack_dl_level_data_wad(LevelDataWadAsset& dest, InputStream& src, 
 	unpack_compressed_asset(dest.global_nav_data(), src, header.global_nav_data, game);
 }
 
-static void pack_dl_level_data_wad(OutputStream& dest, LevelDataWadAsset& src, Game game) {
+static void pack_dl_level_data_wad(OutputStream& dest, const LevelDataWadAsset& src, Game game) {
 	DlLevelDataHeader header = {0};
 	dest.write(header);
 	ByteRange empty = {-1, 0};

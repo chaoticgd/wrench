@@ -44,7 +44,7 @@ packed_struct(DlLevelSceneWadHeader,
 
 static SectorRange range(Sector32 offset, const std::set<s64>& end_sectors);
 static void unpack_dl_level_scene_wad(LevelSceneWadAsset& dest, const DlLevelSceneWadHeader& header, InputStream& src, Game game);
-static void pack_dl_level_scene_wad(OutputStream& dest, DlLevelSceneWadHeader& header, LevelSceneWadAsset& src, Game game);
+static void pack_dl_level_scene_wad(OutputStream& dest, DlLevelSceneWadHeader& header, const LevelSceneWadAsset& src, Game game);
 
 on_load(LevelScene, []() {
 	LevelSceneWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<LevelSceneWadAsset, DlLevelSceneWadHeader>(unpack_dl_level_scene_wad);
@@ -98,12 +98,12 @@ static void unpack_dl_level_scene_wad(LevelSceneWadAsset& dest, const DlLevelSce
 	}
 }
 
-static void pack_dl_level_scene_wad(OutputStream& dest, DlLevelSceneWadHeader& header, LevelSceneWadAsset& src, Game game) {
-	CollectionAsset& scenes = src.get_scenes();
+static void pack_dl_level_scene_wad(OutputStream& dest, DlLevelSceneWadHeader& header, const LevelSceneWadAsset& src, Game game) {
+	const CollectionAsset& scenes = src.get_scenes();
 	for(s32 i = 0; i < ARRAY_SIZE(header.scenes); i++) {
 		if(scenes.has_child(i)) {
 			DlSceneHeader& scene_header = header.scenes[i];
-			SceneAsset& scene = scenes.get_child(i).as<SceneAsset>();
+			const SceneAsset& scene = scenes.get_child(i).as<SceneAsset>();
 			scene_header.speech_english_left = pack_asset_sa<Sector32>(dest, scene.get_speech_english_left(), game);
 			scene_header.speech_english_right = pack_asset_sa<Sector32>(dest, scene.get_speech_english_right(), game);
 			scene_header.subtitles = pack_asset_sa<SectorRange>(dest, scene.get_subtitles(), game);

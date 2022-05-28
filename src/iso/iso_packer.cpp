@@ -21,18 +21,18 @@
 #include <core/png.h>
 #include <iso/wad_identifier.h>
 
-static void pack_ps2_logo(OutputStream& iso, BuildAsset& build, AssetPackerFunc pack);
-static std::vector<GlobalWadInfo> enumerate_globals(BuildAsset& build, Game game);
-static std::vector<LevelInfo> enumerate_levels(BuildAsset& build, Game game);
-static IsoDirectory enumerate_files(Asset& files);
+static void pack_ps2_logo(OutputStream& iso, const BuildAsset& build, AssetPackerFunc pack);
+static std::vector<GlobalWadInfo> enumerate_globals(const BuildAsset& build, Game game);
+static std::vector<LevelInfo> enumerate_levels(const BuildAsset& build, Game game);
+static IsoDirectory enumerate_files(const Asset& files);
 static void flatten_files(std::vector<IsoFileRecord*>& dest, IsoDirectory& root_dir);
-static IsoFileRecord write_system_cnf(OutputStream& iso, IsoDirectory& root_dir, BuildAsset& build);
+static IsoFileRecord write_system_cnf(OutputStream& iso, IsoDirectory& root_dir, const BuildAsset& build);
 static void pack_files(OutputStream& iso, std::vector<IsoFileRecord*>& files, Game game, AssetPackerFunc pack);
 static IsoDirectory pack_globals(OutputStream& iso, std::vector<GlobalWadInfo>& globals, Game game, AssetPackerFunc pack);
 static std::array<IsoDirectory, 3> pack_levels(OutputStream& iso, std::vector<LevelInfo>& levels, Game game, s32 single_level_index, AssetPackerFunc pack);
 static void pack_level_wad_outer(OutputStream& iso, IsoDirectory& directory, LevelWadInfo& wad, const char* name, Game game, s32 index, AssetPackerFunc pack);
 
-void pack_iso(OutputStream& iso, BuildAsset& build, Game, AssetPackerFunc pack) {
+void pack_iso(OutputStream& iso, const BuildAsset& build, Game, AssetPackerFunc pack) {
 	Game game = Game::UNKNOWN;
 	std::string game_str = build.game();
 	if(game_str == "rac") {
@@ -120,8 +120,8 @@ void pack_iso(OutputStream& iso, BuildAsset& build, Game, AssetPackerFunc pack) 
 	assert(toc_end <= files_begin);
 }
 
-static void pack_ps2_logo(OutputStream& iso, BuildAsset& build, AssetPackerFunc pack) {
-	TextureAsset& asset = build.get_ps2_logo();
+static void pack_ps2_logo(OutputStream& iso, const BuildAsset& build, AssetPackerFunc pack) {
+	const TextureAsset& asset = build.get_ps2_logo();
 	auto png = asset.file().open_binary_file_for_reading(asset.src());
 	
 	Opt<Texture> texture = read_png(*png);
@@ -138,7 +138,7 @@ static void pack_ps2_logo(OutputStream& iso, BuildAsset& build, AssetPackerFunc 
 	iso.write_v(texture->data);
 }
 
-static std::vector<GlobalWadInfo> enumerate_globals(BuildAsset& build, Game game) {
+static std::vector<GlobalWadInfo> enumerate_globals(const BuildAsset& build, Game game) {
 	std::vector<WadType> order;
 	switch(game) {
 		case Game::RAC1: {
@@ -199,10 +199,10 @@ static std::vector<GlobalWadInfo> enumerate_globals(BuildAsset& build, Game game
 	return globals;
 }
 
-static std::vector<LevelInfo> enumerate_levels(BuildAsset& build, Game game) {
+static std::vector<LevelInfo> enumerate_levels(const BuildAsset& build, Game game) {
 	std::vector<LevelInfo> levels;
 	
-	build.get_levels().for_each_logical_child_of_type<LevelAsset>([&](LevelAsset& level) {
+	build.get_levels().for_each_logical_child_of_type<LevelAsset>([&](const LevelAsset& level) {
 		LevelInfo info;
 		
 		if(level.has_level()) {
@@ -227,10 +227,10 @@ static std::vector<LevelInfo> enumerate_levels(BuildAsset& build, Game game) {
 	return levels;
 }
 
-static IsoDirectory enumerate_files(Asset& files) {
+static IsoDirectory enumerate_files(const Asset& files) {
 	IsoDirectory root;
 	
-	files.for_each_logical_child_of_type<FileAsset>([&](FileAsset& file) {
+	files.for_each_logical_child_of_type<FileAsset>([&](const FileAsset& file) {
 		IsoDirectory* current_dir = &root;
 		std::string dvd_path = file.path();
 		for(;;) {
@@ -275,9 +275,9 @@ static void flatten_files(std::vector<IsoFileRecord*>& dest, IsoDirectory& root_
 	}
 }
 
-static IsoFileRecord write_system_cnf(OutputStream& iso, IsoDirectory& root_dir, BuildAsset& build) {
+static IsoFileRecord write_system_cnf(OutputStream& iso, IsoDirectory& root_dir, const BuildAsset& build) {
 	// TODO: Add a seperate attribute for the system.cnf file or generate it.
-	FileAsset& file_asset = build.get_files().get_child("system_cnf").as<FileAsset>();
+	const FileAsset& file_asset = build.get_files().get_child("system_cnf").as<FileAsset>();
 	FileReference ref = file_asset.src();
 	
 	auto stream = ref.owner->open_binary_file_for_reading(ref);

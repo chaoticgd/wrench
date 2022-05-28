@@ -21,7 +21,7 @@
 #include <pakrac/asset_packer.h>
 
 static void unpack_texture_asset(TextureAsset& dest, InputStream& src, Game game, s32 hint);
-static void pack_texture_asset(OutputStream& dest, TextureAsset& src, Game game, s32 hint);
+static void pack_texture_asset(OutputStream& dest, const TextureAsset& src, Game game, s32 hint);
 static Texture unpack_pif(InputStream& src);
 static void pack_pif(OutputStream& dest, Texture& texture, s32 hint);
 static bool test_texture_asset(std::vector<u8>& original, std::vector<u8>& repacked, Game game, s32 hint);
@@ -81,7 +81,7 @@ static void unpack_texture_asset(TextureAsset& dest, InputStream& src, Game game
 	dest.set_src(ref);
 }
 
-static void pack_texture_asset(OutputStream& dest, TextureAsset& src, Game game, s32 hint) {
+static void pack_texture_asset(OutputStream& dest, const TextureAsset& src, Game game, s32 hint) {
 	auto stream = src.file().open_binary_file_for_reading(src.src());
 	verify(stream.get(), "Failed to open PNG file.");
 	Opt<Texture> texture = read_png(*stream);

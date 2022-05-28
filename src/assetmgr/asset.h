@@ -64,9 +64,13 @@ public:
 	AssetType type() const;
 	const std::string& tag() const;
 	Asset* lower_precedence();
+	const Asset* lower_precedence() const;
 	Asset* higher_precedence();
+	const Asset* higher_precedence() const;
 	Asset& lowest_precedence();
+	const Asset& lowest_precedence() const;
 	Asset& highest_precedence();
+	const Asset& highest_precedence() const;
 	AssetReference reference() const;
 	
 	template <typename Callback>
@@ -94,6 +98,13 @@ public:
 		}
 	}
 	
+	template <typename Callback>
+	void for_each_logical_child(Callback callback) const {
+		const_cast<Asset&>(*this).for_each_logical_child([&](const Asset& child) {
+			callback(child);
+		});
+	}
+	
 	template <typename ChildType, typename Callback>
 	void for_each_logical_child_of_type(Callback callback) {
 		for(Asset* asset = &lowest_precedence(); asset != nullptr; asset = asset->higher_precedence()) {
@@ -106,6 +117,13 @@ public:
 				}
 			}
 		}
+	}
+	
+	template <typename ChildType, typename Callback>
+	void for_each_logical_child_of_type(Callback callback) const {
+		const_cast<Asset&>(*this).for_each_logical_child_of_type<ChildType>([&](const ChildType& child) {
+			callback(child);
+		});
 	}
 	
 	template <typename ChildType>
@@ -126,6 +144,11 @@ public:
 		return dynamic_cast<AssetType&>(*this);
 	}
 	
+	template <typename AssetType>
+	const AssetType& as() const {
+		return dynamic_cast<const AssetType&>(*this);
+	}
+	
 	template <typename ChildTargetType>
 	ChildTargetType& transmute_child(const char* tag) {
 		for(auto iter = _children.begin(); iter != _children.end(); iter++) {
@@ -138,10 +161,12 @@ public:
 		return asset.as<ChildTargetType>();
 	}
 	
-	bool has_child(const char* tag);
-	bool has_child(s32 tag);
+	bool has_child(const char* tag) const;
+	bool has_child(s32 tag) const;
 	Asset& get_child(const char* tag);
+	const Asset& get_child(const char* tag) const;
 	Asset& get_child(s32 tag);
+	const Asset& get_child(s32 tag) const;
 	
 	Asset& physical_child(AssetType type, const char* tag);
 	Asset* get_physical_child(const char* tag);

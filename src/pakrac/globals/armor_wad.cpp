@@ -48,13 +48,13 @@ packed_struct(DlArmorWadHeader,
 )
 
 static void unpack_rac2_armor_wad(ArmorWadAsset& dest, const GcArmorWadHeader& header, InputStream& src, Game game);
-static void pack_rac2_armor_wad(OutputStream& dest, GcArmorWadHeader& header, ArmorWadAsset& src, Game game);
+static void pack_rac2_armor_wad(OutputStream& dest, GcArmorWadHeader& header, const ArmorWadAsset& src, Game game);
 static void unpack_rac3_armor_wad(ArmorWadAsset& dest, const UyaArmorWadHeader& header, InputStream& src, Game game);
-static void pack_rac3_armor_wad(OutputStream& dest, UyaArmorWadHeader& header, ArmorWadAsset& src, Game game);
+static void pack_rac3_armor_wad(OutputStream& dest, UyaArmorWadHeader& header, const ArmorWadAsset& src, Game game);
 static void unpack_dl_armor_wad(ArmorWadAsset& dest, const DlArmorWadHeader& header, InputStream& src, Game game);
-static void pack_dl_armor_wad(OutputStream& dest, DlArmorWadHeader& header, ArmorWadAsset& src, Game game);
+static void pack_dl_armor_wad(OutputStream& dest, DlArmorWadHeader& header, const ArmorWadAsset& src, Game game);
 static void unpack_armors(CollectionAsset& dest, InputStream& src, const ArmorHeader* headers, s32 count, Game game);
-static void pack_armors(OutputStream& dest, ArmorHeader* headers, s32 count, CollectionAsset& src, Game game);
+static void pack_armors(OutputStream& dest, ArmorHeader* headers, s32 count, const CollectionAsset& src, Game game);
 
 on_load(Armor, []() {
 	ArmorWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<ArmorWadAsset, GcArmorWadHeader>(unpack_rac2_armor_wad);
@@ -70,7 +70,7 @@ static void unpack_rac2_armor_wad(ArmorWadAsset& dest, const GcArmorWadHeader& h
 	unpack_armors(dest.armors(), src, ARRAY_PAIR(header.armors), game);
 }
 
-static void pack_rac2_armor_wad(OutputStream& dest, GcArmorWadHeader& header, ArmorWadAsset& src, Game game) {
+static void pack_rac2_armor_wad(OutputStream& dest, GcArmorWadHeader& header, const ArmorWadAsset& src, Game game) {
 	pack_armors(dest, ARRAY_PAIR(header.armors), src.get_armors(), game);
 }
 
@@ -78,7 +78,7 @@ static void unpack_rac3_armor_wad(ArmorWadAsset& dest, const UyaArmorWadHeader& 
 	unpack_armors(dest.armors(), src, ARRAY_PAIR(header.armors), game);
 }
 
-static void pack_rac3_armor_wad(OutputStream& dest, UyaArmorWadHeader& header, ArmorWadAsset& src, Game game) {
+static void pack_rac3_armor_wad(OutputStream& dest, UyaArmorWadHeader& header, const ArmorWadAsset& src, Game game) {
 	pack_armors(dest, ARRAY_PAIR(header.armors), src.get_armors(), game);
 }
 
@@ -89,7 +89,7 @@ static void unpack_dl_armor_wad(ArmorWadAsset& dest, const DlArmorWadHeader& hea
 	unpack_assets<BinaryAsset>(dest.dropship_textures().switch_files(), src, ARRAY_PAIR(header.dropship_textures), game);
 }
 
-static void pack_dl_armor_wad(OutputStream& dest, DlArmorWadHeader& header, ArmorWadAsset& src, Game game) {
+static void pack_dl_armor_wad(OutputStream& dest, DlArmorWadHeader& header, const ArmorWadAsset& src, Game game) {
 	pack_armors(dest, ARRAY_PAIR(header.armors), src.get_armors(), game);
 	pack_assets_sa(dest, ARRAY_PAIR(header.bot_textures), src.get_bot_textures(), game);
 	pack_assets_sa(dest, ARRAY_PAIR(header.landstalker_textures), src.get_landstalker_textures(), game);
@@ -116,10 +116,10 @@ static void unpack_armors(CollectionAsset& dest, InputStream& src, const ArmorHe
 	}
 }
 
-static void pack_armors(OutputStream& dest, ArmorHeader* headers, s32 count, CollectionAsset& src, Game game) {
+static void pack_armors(OutputStream& dest, ArmorHeader* headers, s32 count, const CollectionAsset& src, Game game) {
 	for(size_t i = 0; i < count; i++) {
 		if(src.has_child(i)) {
-			MobyClassAsset& moby = src.get_child(i).as<MobyClassAsset>();
+			const MobyClassAsset& moby = src.get_child(i).as<MobyClassAsset>();
 			headers[i].mesh = pack_asset_sa<SectorRange>(dest, moby.get_core(), game);
 			headers[i].textures = pack_asset_sa<SectorRange>(dest, moby.get_materials(), game, FMT_COLLECTION_PIF8);
 		}

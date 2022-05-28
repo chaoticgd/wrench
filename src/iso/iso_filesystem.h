@@ -128,7 +128,7 @@ struct IsoFileRecord {
 	std::string name;
 	Sector32 lba;
 	u32 size;
-	FileAsset* asset = nullptr;
+	const FileAsset* asset = nullptr;
 	fs::file_time_type modified_time;
 };
 

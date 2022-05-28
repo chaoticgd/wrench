@@ -180,9 +180,9 @@ static void generate_asset_type(const WtfNode* asset_type, int id) {
 				first = false;
 			}
 			out("\t\n");
-			out("\tbool has_%s();\n", getter_name.c_str());
-			out("\t%s %s();\n", cpp_type.c_str(), getter_name.c_str());
-			out("\t%s %s(%s& def);\n", cpp_type.c_str(), getter_name.c_str(), cpp_type.c_str());
+			out("\tbool has_%s() const;\n", getter_name.c_str());
+			out("\t%s %s() const;\n", cpp_type.c_str(), getter_name.c_str());
+			out("\t%s %s(%s& def) const;\n", cpp_type.c_str(), getter_name.c_str(), cpp_type.c_str());
 			out("\tvoid set_%s(%s src_0);\n", node->tag, cpp_type.c_str());
 		}
 		
@@ -200,13 +200,15 @@ static void generate_asset_type(const WtfNode* asset_type, int id) {
 			if(allowed_types->first_array_element->next) {
 				out("\ttemplate <typename ChildType>\n");
 				out("\tChildType& %s() { return child<ChildType>(\"%s\"); }\n", getter_name.c_str(), node->tag);
-				out("\tbool has_%s();\n", node->tag);
+				out("\tbool has_%s() const;\n", node->tag);
 				out("\tAsset& get_%s();\n", node->tag);
+				out("\tconst Asset& get_%s() const;\n", node->tag);
 			} else {
 				const char* child_type = allowed_types->first_array_element->string;
-				out("%sAsset& %s();\n", child_type, getter_name.c_str());
-				out("\tbool has_%s();\n", node->tag);
+				out("\t%sAsset& %s();\n", child_type, getter_name.c_str());
+				out("\tbool has_%s() const;\n", node->tag);
 				out("\t%sAsset& get_%s();\n", child_type, node->tag);
+				out("\tconst %sAsset& get_%s() const;\n", child_type, node->tag);
 			}
 		}
 	}
@@ -423,9 +425,9 @@ static void generate_attribute_getter_and_setter_functions(const WtfNode* asset_
 				getter_name = '_' + getter_name;
 			}
 			
-			out("bool %sAsset::has_%s() {\n", asset_type->tag, getter_name.c_str());
-			out("\tfor(Asset* asset = this; asset != nullptr; asset = asset->lower_precedence()) {\n");
-			out("\t\tif(asset->type() == type() && (static_cast<%sAsset*>(asset)->_attrib_exists & ATTRIB_%s)) {\n", asset_type->tag, node->tag);
+			out("bool %sAsset::has_%s() const {\n", asset_type->tag, getter_name.c_str());
+			out("\tfor(const Asset* asset = this; asset != nullptr; asset = asset->lower_precedence()) {\n");
+			out("\t\tif(asset->type() == type() && (static_cast<const %sAsset*>(asset)->_attrib_exists & ATTRIB_%s)) {\n", asset_type->tag, node->tag);
 			out("\t\t\treturn true;\n");
 			out("\t\t}\n");
 			out("\t}\n");
@@ -433,17 +435,16 @@ static void generate_attribute_getter_and_setter_functions(const WtfNode* asset_
 			out("}\n");
 			out("\n");
 			
-			// TODO: Fix precedence behaviour.
 			for(int getter_type = 0; getter_type < 2; getter_type++) {
 				if(getter_type == 0) {
-					out("%s %sAsset::%s() {\n", cpp_type.c_str(), asset_type->tag, getter_name.c_str());
+					out("%s %sAsset::%s() const {\n", cpp_type.c_str(), asset_type->tag, getter_name.c_str());
 				} else {
-					out("%s %sAsset::%s(%s& def) {\n", cpp_type.c_str(), asset_type->tag, getter_name.c_str(), cpp_type.c_str());
+					out("%s %sAsset::%s(%s& def) const {\n", cpp_type.c_str(), asset_type->tag, getter_name.c_str(), cpp_type.c_str());
 				}
-				out("\tfor(Asset* asset = &highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {\n");
+				out("\tfor(const Asset* asset = &highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {\n");
 				out("\t\tif(asset->type() == ASSET_TYPE) {\n");
 				out("\t\t\t%s dest_0;\n", cpp_type.c_str());
-				out("\t\t\tconst auto& sub = static_cast<%sAsset&>(*asset);\n", asset_type->tag);
+				out("\t\t\tconst auto& sub = static_cast<const %sAsset&>(*asset);\n", asset_type->tag);
 				out("\t\t\tif(sub._attrib_exists & ATTRIB_%s) {\n", node->tag);
 				out("\t\t\t\tconst %s& src_0 = sub._attribute_%s;\n", cpp_type.c_str(), node->tag);
 				generate_attribute_getter_code(node, 0);
@@ -558,20 +559,23 @@ static void generate_child_functions(const WtfNode* asset_type) {
 				out("\n");
 			}
 			
-			out("bool %sAsset::has_%s() {\n", asset_type->tag, node->tag);
+			out("bool %sAsset::has_%s() const {\n", asset_type->tag, node->tag);
 			out("\treturn has_child(\"%s\");\n", node->tag);
 			out("}\n");
 			out("\n");
 			
-			if(allowed_types->first_array_element->next) {
-				out("Asset& %sAsset::get_%s() {\n", asset_type->tag, node->tag);
-				out("\treturn get_child(\"%s\");\n", node->tag);
-			} else {
-				out("%sAsset& %sAsset::get_%s() {\n", child_type, asset_type->tag, node->tag);
-				out("\treturn get_child(\"%s\").as<%sAsset>();\n", node->tag, child_type);
+			for(int is_const = 0; is_const < 2; is_const++) {
+				const char* qualifier = is_const ? "const " : "";
+				if(allowed_types->first_array_element->next) {
+					out("%s Asset& %sAsset::get_%s() %s{\n", qualifier, asset_type->tag, node->tag, qualifier);
+					out("\treturn get_child(\"%s\");\n", node->tag);
+				} else {
+					out("%s %sAsset& %sAsset::get_%s() %s{\n", qualifier, child_type, asset_type->tag, node->tag, qualifier);
+					out("\treturn get_child(\"%s\").as<%sAsset>();\n", node->tag, child_type);
+				}
+				out("}\n");
+				out("\n");
 			}
-			out("}\n");
-			out("\n");
 		}
 	}
 }

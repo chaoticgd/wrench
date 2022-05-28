@@ -114,7 +114,7 @@ packed_struct(DlHudWadHeader,
 )
 
 static void unpack_hud_wad(HudWadAsset& dest, const DlHudWadHeader& header, InputStream& src, Game game);
-static void pack_hud_wad(OutputStream& dest, DlHudWadHeader& header, HudWadAsset& src, Game game);
+static void pack_hud_wad(OutputStream& dest, DlHudWadHeader& header, const HudWadAsset& src, Game game);
 
 on_load(Hud, []() {
 	HudWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<HudWadAsset, DlHudWadHeader>(unpack_hud_wad);
@@ -161,7 +161,7 @@ static void unpack_hud_wad(HudWadAsset& dest, const DlHudWadHeader& header, Inpu
 	unpack_assets<TextureAsset>(dest.tourney_plates_large().switch_files(), src, ARRAY_PAIR(header.tourney_plates_large), game);
 }
 
-static void pack_hud_wad(OutputStream& dest, DlHudWadHeader& header, HudWadAsset& src, Game game) {
+static void pack_hud_wad(OutputStream& dest, DlHudWadHeader& header, const HudWadAsset& src, Game game) {
 	pack_assets_sa(dest, ARRAY_PAIR(header.online_images), src.get_online_images(), game, FMT_TEXTURE_PIF8);
 	pack_assets_sa(dest, ARRAY_PAIR(header.ratchet_seqs), src.get_ratchet_seqs(), game);
 	pack_assets_sa(dest, ARRAY_PAIR(header.hud_seqs), src.get_hud_seqs(), game);

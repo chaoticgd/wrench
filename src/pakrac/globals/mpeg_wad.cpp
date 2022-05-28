@@ -43,11 +43,11 @@ packed_struct(UyaDlMpegWadHeader,
 )
 
 static void unpack_rac_mpeg_wad(MpegWadAsset& dest, const RacMpegWadHeader& header, InputStream& src, Game game);
-static void pack_rac_mpeg_wad(OutputStream& dest, RacMpegWadHeader& header, MpegWadAsset& src, Game game);
+static void pack_rac_mpeg_wad(OutputStream& dest, RacMpegWadHeader& header, const MpegWadAsset& src, Game game);
 template <typename Header>
 static void unpack_gc_uya_dl_mpeg_wad(MpegWadAsset& dest, const Header& header, InputStream& src, Game game);
 template <typename Header>
-static void pack_gc_uya_dl_mpeg_wad(OutputStream& dest, Header& header, MpegWadAsset& src, Game game);
+static void pack_gc_uya_dl_mpeg_wad(OutputStream& dest, Header& header, const MpegWadAsset& src, Game game);
 
 on_load(Mpeg, []() {
 	MpegWadAsset::funcs.unpack_rac1 = wrap_wad_unpacker_func<MpegWadAsset, RacMpegWadHeader>(unpack_rac_mpeg_wad);
@@ -70,13 +70,13 @@ static void unpack_rac_mpeg_wad(MpegWadAsset& dest, const RacMpegWadHeader& head
 	}
 }
 
-static void pack_rac_mpeg_wad(OutputStream& dest, RacMpegWadHeader& header, MpegWadAsset& src, Game game) {
-	CollectionAsset& mpegs = src.get_mpegs();
+static void pack_rac_mpeg_wad(OutputStream& dest, RacMpegWadHeader& header, const MpegWadAsset& src, Game game) {
+	const CollectionAsset& mpegs = src.get_mpegs();
 	for(s32 i = 0; i < ARRAY_SIZE(header.mpegs); i++) {
 		if(mpegs.has_child(i)) {
-			Asset& child = mpegs.get_child(i);
+			const Asset& child = mpegs.get_child(i);
 			if(child.type() == MpegAsset::ASSET_TYPE) {
-				MpegAsset& mpeg = child.as<MpegAsset>();
+				const MpegAsset& mpeg = child.as<MpegAsset>();
 				header.mpegs[i] = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video(), game);
 			} else {
 				header.mpegs[i] = pack_asset_sa<SectorByteRange>(dest, child, game);
@@ -101,13 +101,13 @@ static void unpack_gc_uya_dl_mpeg_wad(MpegWadAsset& dest, const Header& header, 
 }
 
 template <typename Header>
-static void pack_gc_uya_dl_mpeg_wad(OutputStream& dest, Header& header, MpegWadAsset& src, Game game) {
-	CollectionAsset& mpegs = src.get_mpegs();
+static void pack_gc_uya_dl_mpeg_wad(OutputStream& dest, Header& header, const MpegWadAsset& src, Game game) {
+	const CollectionAsset& mpegs = src.get_mpegs();
 	for(s32 i = 0; i < ARRAY_SIZE(header.mpegs); i++) {
 		if(mpegs.has_child(i)) {
-			Asset& child = mpegs.get_child(i);
+			const Asset& child = mpegs.get_child(i);
 			if(child.type() == MpegAsset::ASSET_TYPE) {
-				MpegAsset& mpeg = child.as<MpegAsset>();
+				const MpegAsset& mpeg = child.as<MpegAsset>();
 				if(mpeg.has_video()) {
 					header.mpegs[i].subtitles = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video(), game);
 				}

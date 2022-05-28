@@ -20,7 +20,7 @@
 #include <pakrac/asset_packer.h>
 
 static void unpack_file_asset(FileAsset& dest, InputStream& src, Game game);
-static void pack_file_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, FileAsset& src);
+static void pack_file_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const FileAsset& src);
 
 on_load(File, []() {
 	FileAsset::funcs.unpack_rac1 = wrap_unpacker_func<FileAsset>(unpack_file_asset);
@@ -44,7 +44,7 @@ static void unpack_file_asset(FileAsset& dest, InputStream& src, Game game) {
 	dest.set_src(ref);
 }
 
-static void pack_file_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, FileAsset& src) {
+static void pack_file_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const FileAsset& src) {
 	if(g_asset_packer_dry_run) {
 		return;
 	}
