@@ -56,41 +56,63 @@ packed_struct(DlMiscWadHeader,
 	/* 0x48 */ SectorRange gadget;
 )
 
-static void unpack_rac2_misc_wad(MiscWadAsset& dest, const GcMiscWadHeader& header, InputStream& src, Game game);
-static void pack_rac2_misc_wad(OutputStream& dest, GcMiscWadHeader& header, const MiscWadAsset& src, Game game);
-static void unpack_rac3_misc_wad(MiscWadAsset& dest, const UyaMiscWadHeader& header, InputStream& src, Game game);
-static void pack_rac3_misc_wad(OutputStream& dest, UyaMiscWadHeader& header, const MiscWadAsset& src, Game game);
+static void unpack_gc_misc_wad(MiscWadAsset& dest, const GcMiscWadHeader& header, InputStream& src, Game game);
+static void pack_gc_misc_wad(OutputStream& dest, GcMiscWadHeader& header, const MiscWadAsset& src, Game game);
+static void unpack_uya_misc_wad(MiscWadAsset& dest, const UyaMiscWadHeader& header, InputStream& src, Game game);
+static void pack_uya_misc_wad(OutputStream& dest, UyaMiscWadHeader& header, const MiscWadAsset& src, Game game);
 static void unpack_dl_misc_wad(MiscWadAsset& dest, const DlMiscWadHeader& header, InputStream& src, Game game);
 static void pack_dl_misc_wad(OutputStream& dest, DlMiscWadHeader& header, const MiscWadAsset& src, Game game);
 
 on_load(Misc, []() {
-	MiscWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<MiscWadAsset, GcMiscWadHeader>(unpack_rac2_misc_wad);
-	MiscWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<MiscWadAsset, UyaMiscWadHeader>(unpack_rac3_misc_wad);
+	MiscWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<MiscWadAsset, GcMiscWadHeader>(unpack_gc_misc_wad);
+	MiscWadAsset::funcs.unpack_rac3 = wrap_wad_unpacker_func<MiscWadAsset, UyaMiscWadHeader>(unpack_uya_misc_wad);
 	MiscWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<MiscWadAsset, DlMiscWadHeader>(unpack_dl_misc_wad);
 	
-	MiscWadAsset::funcs.pack_rac2 = wrap_wad_packer_func<MiscWadAsset, GcMiscWadHeader>(pack_rac2_misc_wad);
-	MiscWadAsset::funcs.pack_rac3 = wrap_wad_packer_func<MiscWadAsset, UyaMiscWadHeader>(pack_rac3_misc_wad);
+	MiscWadAsset::funcs.pack_rac2 = wrap_wad_packer_func<MiscWadAsset, GcMiscWadHeader>(pack_gc_misc_wad);
+	MiscWadAsset::funcs.pack_rac3 = wrap_wad_packer_func<MiscWadAsset, UyaMiscWadHeader>(pack_uya_misc_wad);
 	MiscWadAsset::funcs.pack_dl = wrap_wad_packer_func<MiscWadAsset, DlMiscWadHeader>(pack_dl_misc_wad);
 })
 
-static void unpack_rac2_misc_wad(MiscWadAsset& dest, const GcMiscWadHeader& header, InputStream& src, Game game) {
-	
+static void unpack_gc_misc_wad(MiscWadAsset& dest, const GcMiscWadHeader& header, InputStream& src, Game game) {
+	unpack_asset(dest.debug_font<TextureAsset>(), src, header.debug_font, game, FMT_TEXTURE_PIF8);
+	unpack_compressed_asset(dest.irx().switch_files(), src, header.irx, game);
+	unpack_asset(dest.save_game(), src, header.save_game, game);
+	unpack_asset(dest.frontend_code(), src, header.frontend_code, game);
+	unpack_asset(dest.frontend_net_code(), src, header.frontend_net_code, game);
+	unpack_asset(dest.frontend(), src, header.frontend, game);
+	unpack_asset(dest.exit(), src, header.exit, game);
 }
 
-static void pack_rac2_misc_wad(OutputStream& dest, GcMiscWadHeader& header, const MiscWadAsset& src, Game game) {
-	
+static void pack_gc_misc_wad(OutputStream& dest, GcMiscWadHeader& header, const MiscWadAsset& src, Game game) {
+	header.debug_font = pack_asset_sa<SectorRange>(dest, src.get_debug_font(), game, FMT_TEXTURE_PIF8);
+	header.irx = pack_compressed_asset_sa<SectorRange>(dest, src.get_irx(), game, "irx");
+	header.save_game = pack_asset_sa<SectorRange>(dest, src.get_save_game(), game);
+	header.frontend_code = pack_asset_sa<SectorRange>(dest, src.get_frontend_code(), game);
+	header.frontend_net_code = pack_asset_sa<SectorRange>(dest, src.get_frontend_net_code(), game);
+	header.frontend = pack_asset_sa<SectorRange>(dest, src.get_frontend(), game);
+	header.exit = pack_asset_sa<SectorRange>(dest, src.get_exit(), game);
 }
 
-static void unpack_rac3_misc_wad(MiscWadAsset& dest, const UyaMiscWadHeader& header, InputStream& src, Game game) {
-	
+static void unpack_uya_misc_wad(MiscWadAsset& dest, const UyaMiscWadHeader& header, InputStream& src, Game game) {
+	unpack_asset(dest.debug_font<TextureAsset>(), src, header.debug_font, game, FMT_TEXTURE_PIF8);
+	unpack_compressed_asset(dest.irx().switch_files(), src, header.irx, game);
+	unpack_asset(dest.save_game(), src, header.save_game, game);
+	unpack_asset(dest.frontend_code(), src, header.frontend_code, game);
+	unpack_asset(dest.frontend_net_code(), src, header.frontend_net_code, game);
+	unpack_asset(dest.boot().switch_files(), src, header.boot, game);
 }
 
-static void pack_rac3_misc_wad(OutputStream& dest, UyaMiscWadHeader& header, const MiscWadAsset& src, Game game) {
-	
+static void pack_uya_misc_wad(OutputStream& dest, UyaMiscWadHeader& header, const MiscWadAsset& src, Game game) {
+	header.debug_font = pack_asset_sa<SectorRange>(dest, src.get_debug_font(), game, FMT_TEXTURE_PIF8);
+	header.irx = pack_compressed_asset_sa<SectorRange>(dest, src.get_irx(), game, "irx");
+	header.save_game = pack_asset_sa<SectorRange>(dest, src.get_save_game(), game);
+	header.frontend_code = pack_asset_sa<SectorRange>(dest, src.get_frontend_code(), game);
+	header.frontend_net_code = pack_asset_sa<SectorRange>(dest, src.get_frontend_net_code(), game);
+	header.boot = pack_asset_sa<SectorRange>(dest, src.get_boot(), game);
 }
 
 static void unpack_dl_misc_wad(MiscWadAsset& dest, const DlMiscWadHeader& header, InputStream& src, Game game) {
-	unpack_asset(dest.debug_font<BinaryAsset>(), src, header.debug_font, game);
+	unpack_asset(dest.debug_font<TextureAsset>(), src, header.debug_font, game, FMT_TEXTURE_PIF8);
 	unpack_compressed_asset(dest.irx().switch_files(), src, header.irx, game);
 	unpack_asset(dest.save_game(), src, header.save_game, game);
 	unpack_asset(dest.frontend_code(), src, header.frontend_code, game);
@@ -99,7 +121,7 @@ static void unpack_dl_misc_wad(MiscWadAsset& dest, const DlMiscWadHeader& header
 }
 
 static void pack_dl_misc_wad(OutputStream& dest, DlMiscWadHeader& header, const MiscWadAsset& src, Game game) {
-	header.debug_font = pack_asset_sa<SectorRange>(dest, src.get_debug_font(), game);
+	header.debug_font = pack_asset_sa<SectorRange>(dest, src.get_debug_font(), game, FMT_TEXTURE_PIF8);
 	header.irx = pack_compressed_asset_sa<SectorRange>(dest, src.get_irx(), game, "irx");
 	header.save_game = pack_asset_sa<SectorRange>(dest, src.get_save_game(), game);
 	header.frontend_code = pack_asset_sa<SectorRange>(dest, src.get_frontend_code(), game);

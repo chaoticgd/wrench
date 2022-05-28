@@ -614,6 +614,7 @@ AssetType MiscWad {
 		games: [1 2 3 4]
 	}
 	Child frontend_code { allowed_types: ['Binary'] }
+	Child frontend_net_code { allowed_types: ['Binary'] }
 	Child frontend      { allowed_types: ['Binary'] }
 	Child exit          { allowed_types: ['Binary'] }
 	Child boot          { allowed_types: ['BootWad'] }

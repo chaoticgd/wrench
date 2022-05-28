@@ -23,8 +23,10 @@ static void unpack_boot_wad(BootWadAsset& dest, InputStream& src, Game game);
 static void pack_boot_wad(OutputStream& dest, const BootWadAsset& src, Game game);
 
 on_load(Boot, []() {
+	BootWadAsset::funcs.unpack_rac3 = wrap_unpacker_func<BootWadAsset>(unpack_boot_wad);
 	BootWadAsset::funcs.unpack_dl = wrap_unpacker_func<BootWadAsset>(unpack_boot_wad);
 	
+	BootWadAsset::funcs.pack_rac3 = wrap_packer_func<BootWadAsset>(pack_boot_wad);
 	BootWadAsset::funcs.pack_dl = wrap_packer_func<BootWadAsset>(pack_boot_wad);
 })
 
@@ -51,7 +53,7 @@ static void unpack_boot_wad(BootWadAsset& dest, InputStream& src, Game game) {
 	for(s32 i = 1; i < 6; i++) {
 		unpack_compressed_asset(dest.hud().child<BinaryAsset>(i), src, header.hudwad[i], game);
 	}
-	unpack_compressed_assets<BinaryAsset>(dest.boot_plates().switch_files(), src, ARRAY_PAIR(header.boot_plates), game);
+	unpack_compressed_assets<TextureAsset>(dest.boot_plates().switch_files(), src, ARRAY_PAIR(header.boot_plates), game, FMT_TEXTURE_RGBA);
 	unpack_compressed_asset(dest.sram(), src, header.sram, game);
 }
 
@@ -73,7 +75,7 @@ static void pack_boot_wad(OutputStream& dest, const BootWadAsset& src, Game game
 			header.hudwad[i] = pack_compressed_asset<ByteRange>(dest, src.get_hud().get_child(i), game, 0x40, "hudwad");
 		}
 	}
-	pack_compressed_assets(dest, ARRAY_PAIR(header.boot_plates), src.get_boot_plates(), game, 0x40, "bootplate");
+	pack_compressed_assets(dest, ARRAY_PAIR(header.boot_plates), src.get_boot_plates(), game, 0x40, "bootplate", FMT_TEXTURE_RGBA);
 	header.sram = pack_compressed_asset<ByteRange>(dest, src.get_sram(), game, 0x40, "sram");
 	
 	dest.write(0, header);
