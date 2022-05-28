@@ -79,7 +79,7 @@ void inspect_iso(const std::string& iso_path) {
 	printf("+-----------------+------------------------+------------------------+------------------------+\n");
 }
 
-void parse_pcsx2_stdout(std::string iso_path) {
+void parse_pcsx2_cdvd_log(std::string iso_path) {
 	FileInputStream iso;
 	verify(iso.open(iso_path), "Failed to open ISO file.");
 	

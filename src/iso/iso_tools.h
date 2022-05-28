@@ -22,6 +22,6 @@
 #include <string>
 
 void inspect_iso(const std::string& iso_path);
-void parse_pcsx2_stdout(std::string iso_path);
+void parse_pcsx2_cdvd_log(std::string iso_path);
 
 #endif

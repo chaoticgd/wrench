@@ -127,6 +127,12 @@ int main(int argc, char** argv) {
 		return 0;
 	}
 	
+	if(mode == "parse_pcsx2_cdvd_log") {
+		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH);
+		parse_pcsx2_cdvd_log(args.input_paths[0]);
+		return 0;
+	}
+	
 	if(mode == "profile_memory_usage") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH);
 		{
@@ -442,6 +448,9 @@ static void print_usage() {
 	puts(" parse_pcsx2_cdvd_log <input iso>");
 	puts("   Interpret the output of PCSX2's disc block access log (from stdin) and print");
 	puts("   out file accesses as they occur.");
+	puts("");
+	puts(" profile_memory_usage <input asset banks>");
+	puts("   Record statistics about the memory used by mounting asset banks.");
 	puts("");
 	puts(" test <asset bank>");
 	puts("   Unpack and repack each binary in an asset bank, and diff against the original.");
