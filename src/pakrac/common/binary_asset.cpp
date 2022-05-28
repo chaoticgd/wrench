@@ -61,7 +61,7 @@ static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, 
 		s64 padded_header_size = Sector32::size_from_bytes(header_size).bytes();
 		
 		// Extract the header.
-		assert(padded_header_size != 0);
+		assert(padded_header_size >= 4);
 		header_dest->resize(padded_header_size);
 		*(s32*) header_dest->data() = header_size;
 		stream->read_n(header_dest->data() + 4, padded_header_size - 4);

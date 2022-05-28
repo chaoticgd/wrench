@@ -160,6 +160,16 @@ static std::vector<GlobalWadInfo> enumerate_globals(const BuildAsset& build, Gam
 			break;
 		}
 		case Game::RAC3: {
+			order = {
+				WadType::MPEG,
+				WadType::MISC,
+				WadType::BONUS,
+				WadType::SPACE,
+				WadType::ARMOR,
+				WadType::AUDIO,
+				WadType::GADGET,
+				WadType::HUD
+			};
 			break;
 		}
 		case Game::DL: {
