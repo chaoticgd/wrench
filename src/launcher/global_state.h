@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2020 chaoticgd
+	Copyright (C) 2019-2022 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,11 +16,25 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GL_INCLUDES_H
-#define GL_INCLUDES_H
+#ifndef LAUNCHER_GLOBAL_STATE_H
+#define LAUNCHER_GLOBAL_STATE_H
 
-#include <gui/gui.h>
+#include <string>
 
-#define M_PI 3.14159265358979323846
+enum class LauncherMode {
+	DRAWING_GUI,
+	RUNNING_EMULATOR,
+	EXIT
+};
+
+struct GLFWwindow;
+
+struct LauncherState {
+	LauncherMode mode;
+	GLFWwindow* window;
+	std::string emulator_command;
+};
+
+extern LauncherState g_launcher;
 
 #endif

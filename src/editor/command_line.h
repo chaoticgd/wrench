@@ -20,7 +20,7 @@
 #define COMMAND_LINE_H
 
 #include <functional>
-#include <cxxopts.hpp>
+#include <cxxopts/include/cxxopts.hpp>
 
 // Utility functions to parse command line arguments.
 

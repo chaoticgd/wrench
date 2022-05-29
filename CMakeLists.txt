@@ -74,6 +74,11 @@ add_custom_target(
 	DEPENDS docs/asset_reference.md
 )
 
+add_library(wrenchgui
+	src/gui/gui.cpp
+)
+target_link_libraries(wrenchgui wrenchcore)
+
 add_library(wrench_assetmgr
 	src/assetmgr/asset_util.cpp
 	src/assetmgr/asset.cpp
@@ -83,7 +88,15 @@ add_library(wrench_assetmgr
 )
 target_link_libraries(wrench_assetmgr wrenchcore)
 
-add_executable(wrench
+add_executable(wrenchlauncher
+	src/launcher/main.cpp
+	src/launcher/global_state.cpp
+	thirdparty/imgui/backends/imgui_impl_glfw.cpp
+	thirdparty/imgui/backends/imgui_impl_opengl3.cpp
+)
+target_link_libraries(wrenchlauncher wrenchgui wrench_assetmgr)
+
+add_executable(wrenchedit
 	src/editor/main.cpp
 	src/editor/app.cpp
 	src/editor/command_line.cpp
@@ -99,12 +112,9 @@ add_executable(wrench
 	src/editor/gui/window.cpp
 	src/editor/gui/view_3d.cpp
 	src/editor/gui/inspector.cpp
-	src/editor/gui/imgui_impl_glfw.cpp
 	src/editor/formats/level_impl.cpp
-	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
-	thirdparty/imgui/backends/imgui_impl_opengl3.cpp
 )
-target_link_libraries(wrench wrenchcore)
+target_link_libraries(wrenchedit wrenchcore)
 
 add_executable(vif
 	src/vifcli.cpp
@@ -175,14 +185,12 @@ add_executable(asset2json
 )
 target_link_libraries(asset2json wrenchcore)
 
-# This lets us avoid linking stuff for most of the CLI tools.
-target_compile_definitions(wrench PRIVATE WRENCH_EDITOR=1)
-
 if(UNIX)
 	set(GCC_FLAGS -Wall -Wno-sign-compare -g)
 	target_compile_options(wrenchcore PRIVATE ${GCC_FLAGS} -O3)
 	target_compile_options(wrench_assetmgr PRIVATE ${GCC_FLAGS})
-	target_compile_options(wrench PRIVATE ${GCC_FLAGS})
+	target_compile_options(wrenchlauncher PRIVATE ${GCC_FLAGS})
+	target_compile_options(wrenchedit PRIVATE ${GCC_FLAGS})
 	target_compile_options(vif PRIVATE ${GCC_FLAGS})
 	target_compile_options(wrenchiso PRIVATE ${GCC_FLAGS})
 	target_compile_options(wrenchengine PRIVATE ${GCC_FLAGS} -O3)
@@ -198,7 +206,8 @@ if (MSVC)
 
 	target_compile_options(wrenchcore PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(wrench_assetmgr PRIVATE ${__MSVC_BUILD_OPTIONS__})
-	target_compile_options(wrench PRIVATE ${__MSVC_BUILD_OPTIONS__})
+	target_compile_options(wrenchlauncher PRIVATE ${__MSVC_BUILD_OPTIONS__})
+	target_compile_options(wrenchedit PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(vif PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(wrenchiso PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(wrenchengine PRIVATE ${__MSVC_BUILD_OPTIONS__})
@@ -210,7 +219,8 @@ endif()
 # std::filesystem
 if(UNIX)
 	target_link_libraries(wrenchcore stdc++fs)
-	target_link_libraries(wrench stdc++fs)
+	target_link_libraries(wrenchlauncher stdc++fs)
+	target_link_libraries(wrenchedit stdc++fs)
 	target_link_libraries(vif stdc++fs)
 	target_link_libraries(wrenchiso stdc++fs)
 	target_link_libraries(wrenchengine stdc++fs)
@@ -219,27 +229,32 @@ endif()
 
 # cxxopts
 add_subdirectory(thirdparty/cxxopts)
-target_link_libraries(wrench cxxopts)
+target_link_libraries(wrenchlauncher cxxopts)
+target_link_libraries(wrenchedit cxxopts)
 target_link_libraries(vif cxxopts)
 target_link_libraries(wrenchiso cxxopts)
 
 # pthreads
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
-target_link_libraries(wrench Threads::Threads)
+target_link_libraries(wrenchlauncher Threads::Threads)
+target_link_libraries(wrenchedit Threads::Threads)
 target_link_libraries(pakrac Threads::Threads)
 
 # GLAD
 add_subdirectory(thirdparty/glad)
-target_link_libraries(wrench glad)
+target_link_libraries(wrenchlauncher glad)
+target_link_libraries(wrenchedit glad)
 
 # GLFW
 add_subdirectory(thirdparty/glfw)
-target_link_libraries(wrench glfw)
+target_link_libraries(wrenchlauncher glfw)
+target_link_libraries(wrenchedit glfw)
 
 # GLM
 add_subdirectory(thirdparty/glm)
-target_link_libraries(wrench glm)
+target_link_libraries(wrenchlauncher glm)
+target_link_libraries(wrenchedit glm)
 include_directories(thirdparty/glm)
 
 # Dear ImGui
@@ -257,8 +272,12 @@ add_library(imgui STATIC
 	thirdparty/imgui/imstb_rectpack.h
 	thirdparty/imgui/imstb_textedit.h
 	thirdparty/imgui/imstb_truetype.h
+	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
+	thirdparty/imgui/backends/imgui_impl_glfw.cpp
+	thirdparty/imgui/backends/imgui_impl_opengl3.cpp
 )
-target_link_libraries(wrench imgui)
+target_link_libraries(wrenchlauncher imgui)
+target_link_libraries(wrenchedit imgui)
 
 # JSON
 include_directories(thirdparty/json/single_include)
@@ -275,11 +294,12 @@ else()
 		thirdparty/nativefiledialog/src/nfd_zenity.c
 	)
 endif()
-target_link_libraries(wrench nativefiledialog)
+target_link_libraries(wrenchlauncher nativefiledialog)
+target_link_libraries(wrenchedit nativefiledialog)
 include_directories(thirdparty/nativefiledialog/src/include)
 
 # libpng
-include_directories(wrench thirdparty/zlib thirdparty/libpng)
+include_directories(wrenchcore thirdparty/zlib thirdparty/libpng)
 add_subdirectory(thirdparty/zlib)
 option(PNG_BUILD_ZLIB "" ON)
 option(PNG_SHARED "" OFF)
