@@ -74,11 +74,6 @@ add_custom_target(
 	DEPENDS docs/asset_reference.md
 )
 
-add_library(wrenchgui
-	src/gui/gui.cpp
-)
-target_link_libraries(wrenchgui wrenchcore)
-
 add_library(wrench_assetmgr
 	src/assetmgr/asset_util.cpp
 	src/assetmgr/asset.cpp
@@ -88,11 +83,16 @@ add_library(wrench_assetmgr
 )
 target_link_libraries(wrench_assetmgr wrenchcore)
 
+add_subdirectory(src/toolwads)
+
+add_library(wrenchgui
+	src/gui/gui.cpp
+)
+target_link_libraries(wrenchgui wrenchcore wrenchengine wadinfo)
+
 add_executable(wrenchlauncher
 	src/launcher/main.cpp
 	src/launcher/global_state.cpp
-	thirdparty/imgui/backends/imgui_impl_glfw.cpp
-	thirdparty/imgui/backends/imgui_impl_opengl3.cpp
 )
 target_link_libraries(wrenchlauncher wrenchgui wrench_assetmgr)
 
@@ -237,9 +237,7 @@ target_link_libraries(wrenchiso cxxopts)
 # pthreads
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
-target_link_libraries(wrenchlauncher Threads::Threads)
-target_link_libraries(wrenchedit Threads::Threads)
-target_link_libraries(pakrac Threads::Threads)
+target_link_libraries(wrenchcore Threads::Threads)
 
 # GLAD
 add_subdirectory(thirdparty/glad)

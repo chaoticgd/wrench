@@ -46,7 +46,6 @@ GLFWwindow* gui::startup(const char* window_title, s32 width, s32 height) {
 	ImGui::StyleColorsDark();
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init("#version 120");
-	io.Fonts->AddFontFromFileTTF("data/Barlow-Regular.ttf", 22);
 	
 	last_frame_time = std::chrono::steady_clock::now();
 	

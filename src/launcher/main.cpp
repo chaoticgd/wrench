@@ -17,6 +17,7 @@
 */
 
 #include <core/png.h>
+#include <engine/compression.h>
 #include <gui/gui.h>
 #include <launcher/global_state.h>
 
@@ -27,26 +28,21 @@ static void update_buttons_window(f32 buttons_window_height);
 static void create_dock_layout();
 void begin_docking(f32 buttons_window_height);
 
-static GlTexture modtex;
+static ImFont* load_font(SectorRange range);
+static GlTexture load_image(SectorRange range);
 
 int main(int argc, char** argv) {
 	g_launcher.mode = LauncherMode::DRAWING_GUI;
+	verify(g_launcher.wad.open("data/launcher.wad"), "Failed to open 'launcher.wad'.");
+	g_launcher.header = &((ToolWadInfo*) WAD_INFO)->launcher;
 	
 	for(;;) {
 		switch(g_launcher.mode) {
 			case LauncherMode::DRAWING_GUI: {
 				g_launcher.window = gui::startup("Wrench Launcher", 960, 600);
 				
-				FileInputStream stream;
-				stream.open("data/my_mod.png");
-				Opt<Texture> img = read_png(stream);
-				glGenTextures(1, &modtex.id);
-				glBindTexture(GL_TEXTURE_2D, modtex.id);
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, img->width, img->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img->data.data());
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+				load_font(g_launcher.header->font);
+				g_launcher.placeholder_image = load_image(g_launcher.header->placeholder_images[0]);
 				
 				while(g_launcher.mode == LauncherMode::DRAWING_GUI) {
 					gui::run_frame(g_launcher.window, update_gui);
@@ -166,7 +162,7 @@ static void update_information_window() {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 	ImGui::Begin("Information");
 	
-	ImGui::Image((void*) (intptr_t) modtex.id, ImVec2(512, 320));
+	ImGui::Image((void*) (intptr_t) g_launcher.placeholder_image.id, ImVec2(512, 320));
 	
 	ImGui::TextWrapped("This is a mod that enhances the gaming experience by introducing rich new ideas to create a new paradigm of synergistic gameplay.");
 	
@@ -263,4 +259,34 @@ void begin_docking(f32 buttons_window_height) {
 
 	ImGuiID dockspace_id = ImGui::GetID("dock_space");
 	ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_NoTabBar);
+}
+
+static ImFont* load_font(SectorRange range) {
+	std::vector<u8> compressed_font = g_launcher.wad.read_multiple<u8>(range.offset.bytes(), range.size.bytes());
+	
+	decompress_wad(g_launcher.font, compressed_font);
+	
+	ImFontConfig font_cfg;
+	font_cfg.FontDataOwnedByAtlas = false;
+	
+	ImGuiIO& io = ImGui::GetIO();
+	return io.Fonts->AddFontFromMemoryTTF(g_launcher.font.data(), g_launcher.font.size(), 22, &font_cfg);
+}
+
+static GlTexture load_image(SectorRange range) {
+	std::vector<u8> compressed_image = g_launcher.wad.read_multiple<u8>(range.offset.bytes(), range.size.bytes());
+	
+	std::vector<u8> image;
+	decompress_wad(image, compressed_image);
+	
+	GlTexture texture;
+	glGenTextures(1, &texture.id);
+	glBindTexture(GL_TEXTURE_2D, texture.id);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, *(s32*) &image[0], *(s32*) &image[4], 0, GL_RGBA, GL_UNSIGNED_BYTE, &image[16]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	
+	return texture;
 }

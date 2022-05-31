@@ -16,33 +16,22 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef LAUNCHER_GLOBAL_STATE_H
-#define LAUNCHER_GLOBAL_STATE_H
+#ifndef TOOLWADS_WADS_H
+#define TOOLWADS_WADS_H
 
-#include <string>
+#include <core/util.h>
 
-#include <core/stream.h>
-#include <toolwads/wads.h>
-#include <gui/gui.h>
+packed_struct(LauncherWadHeader,
+	/* 0x00 */ s32 header_size;
+	/* 0x04 */ Sector32 sector;
+	/* 0x08 */ SectorRange font;
+	/* 0x10 */ SectorRange placeholder_images[2];
+)
 
-enum class LauncherMode {
-	DRAWING_GUI,
-	RUNNING_EMULATOR,
-	EXIT
-};
+packed_struct(ToolWadInfo,
+	LauncherWadHeader launcher;
+)
 
-struct GLFWwindow;
-
-struct LauncherState {
-	LauncherMode mode;
-	FileInputStream wad;
-	LauncherWadHeader* header;
-	GLFWwindow* window;
-	std::vector<u8> font;
-	GlTexture placeholder_image;
-	std::string emulator_command;
-};
-
-extern LauncherState g_launcher;
+extern unsigned char WAD_INFO[];
 
 #endif
