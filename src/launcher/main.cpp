@@ -19,6 +19,7 @@
 #include <core/png.h>
 #include <engine/compression.h>
 #include <gui/gui.h>
+#include <gui/settings.h>
 #include <launcher/global_state.h>
 
 static void update_gui(f32 delta_time);
@@ -51,6 +52,8 @@ int main(int argc, char** argv) {
 						g_launcher.mode = LauncherMode::EXIT;
 					}
 				}
+				
+				g_launcher.placeholder_image.destroy();
 				
 				gui::shutdown(g_launcher.window);
 				break;
@@ -200,6 +203,40 @@ static void update_buttons_window(f32 buttons_window_height) {
 	}
 	
 	ImGui::SameLine();
+	if(ImGui::Button("···")) {
+		ImGui::OpenPopup("More Buttons");
+	}
+	
+	static bool open_modal = false;
+	static bool show_the_demo = false;
+	
+	if(ImGui::BeginPopup("More Buttons")) {
+		if(ImGui::Selectable("Settings##the_button")) {
+			open_modal = true;
+		}
+		if(g_config.ui.developer) {
+			if(ImGui::BeginMenu("Developer")) {
+				if(ImGui::Selectable("The Demo")) {
+					show_the_demo = !show_the_demo;
+				}
+				ImGui::EndMenu();
+			}
+		}
+		ImGui::EndPopup();
+	}
+	
+	if(open_modal) {
+		ImGui::OpenPopup("Settings##the_popup");
+		open_modal = false;
+	}
+	
+	update_settings_popup();
+	
+	if(show_the_demo) {
+		ImGui::ShowDemoWindow();
+	}
+	
+	ImGui::SameLine();
 	f32 build_run_text_width = ImGui::CalcTextSize("Build & Run").x;
 	ImGuiStyle& s = ImGui::GetStyle();
 	f32 build_run_button_width = s.FramePadding.x + build_run_text_width + s.FramePadding.x;
@@ -219,7 +256,6 @@ static void update_buttons_window(f32 buttons_window_height) {
 	
 	ImGui::End();
 }
-
 static void create_dock_layout() {
 	ImGuiID dockspace_id = ImGui::GetID("dock_space");
 	

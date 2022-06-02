@@ -87,6 +87,9 @@ add_subdirectory(src/toolwads)
 
 add_library(wrenchgui
 	src/gui/gui.cpp
+	src/gui/config.cpp
+	src/gui/settings.cpp
+	src/gui/book.cpp
 )
 target_link_libraries(wrenchgui wrenchcore wrenchengine wadinfo)
 

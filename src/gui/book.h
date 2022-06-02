@@ -16,34 +16,37 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef LAUNCHER_GLOBAL_STATE_H
-#define LAUNCHER_GLOBAL_STATE_H
+#ifndef WRENCHGUI_BOOK_H
+#define WRENCHGUI_BOOK_H
 
-#include <string>
-
-#include <core/stream.h>
-#include <toolwads/wads.h>
 #include <gui/gui.h>
-#include <gui/config.h>
 
-enum class LauncherMode {
-	DRAWING_GUI,
-	RUNNING_EMULATOR,
-	EXIT
+namespace gui {
+
+struct Page {
+	const char* name;
+	void (*function)();
 };
 
-struct GLFWwindow;
-
-struct LauncherState {
-	LauncherMode mode;
-	FileInputStream wad;
-	LauncherWadHeader* header;
-	GLFWwindow* window;
-	std::vector<u8> font;
-	GlTexture placeholder_image;
-	std::string emulator_command;
+struct Chapter {
+	const char* name;
+	const Page* pages;
+	s32 count;
 };
 
-extern LauncherState g_launcher;
+enum class BookButtons {
+	OKAY_CANCEL_APPLY
+};
+
+enum class BookResult {
+	NONE,
+	OKAY,
+	CANCEL,
+	APPLY
+};
+
+BookResult book(const Page** current_page, const char* id, const Chapter* chapters, s32 chapter_count, BookButtons buttons);
+
+}
 
 #endif

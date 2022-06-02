@@ -16,34 +16,34 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef LAUNCHER_GLOBAL_STATE_H
-#define LAUNCHER_GLOBAL_STATE_H
+#ifndef WRENCHGUI_CONFIG_H
+#define WRENCHGUI_CONFIG_H
 
-#include <string>
+#include <wtf/wtf.h>
+#include <wtf/wtf_writer.h>
+#include <core/util.h>
 
-#include <core/stream.h>
-#include <toolwads/wads.h>
-#include <gui/gui.h>
-#include <gui/config.h>
+namespace gui {
 
-enum class LauncherMode {
-	DRAWING_GUI,
-	RUNNING_EMULATOR,
-	EXIT
+struct FolderConfig {
+	std::string base_folder;
+	std::vector<std::string> mod_folders;
+	std::string cache_folder;
 };
 
-struct GLFWwindow;
-
-struct LauncherState {
-	LauncherMode mode;
-	FileInputStream wad;
-	LauncherWadHeader* header;
-	GLFWwindow* window;
-	std::vector<u8> font;
-	GlTexture placeholder_image;
-	std::string emulator_command;
+struct UiConfig {
+	bool custom_scale = false;
+	f32 scale = 1.f;
+	bool developer = true;
 };
 
-extern LauncherState g_launcher;
+struct Config {
+	FolderConfig folders;
+	UiConfig ui;
+};
+
+}
+
+extern gui::Config g_config;
 
 #endif

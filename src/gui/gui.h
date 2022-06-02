@@ -37,7 +37,7 @@ GLFWwindow* startup(const char* window_title, s32 width, s32 height);
 void run_frame(GLFWwindow* window, void (*update_func)(f32));
 void shutdown(GLFWwindow* window);
 
-};
+}
 
 struct GlBuffer {
 	GLuint id = 0;
@@ -59,6 +59,7 @@ struct GlTexture {
 	GLuint& operator()() { return id; }
 	const GLuint& operator()() const { return id; }
 	GlTexture& operator=(GlTexture&& rhs) { id = rhs.id; rhs.id = 0; return *this; }
+	void destroy() { if(id != 0) { glDeleteTextures(1, &id); id = 0; } }
 };
 
 #endif

@@ -43,9 +43,13 @@ GLFWwindow* gui::startup(const char* window_title, s32 width, s32 height) {
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	io.ConfigDockingWithShift = true;
+	io.IniFilename = nullptr; // Disable loading/saving ImGui layout.
 	ImGui::StyleColorsDark();
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init("#version 120");
+	
+	ImGuiStyle& style = ImGui::GetStyle();
+	style.WindowTitleAlign = ImVec2(0.5, 0.5);
 	
 	last_frame_time = std::chrono::steady_clock::now();
 	
