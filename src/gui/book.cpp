@@ -29,6 +29,12 @@ gui::BookResult gui::book(const Page** current_page, const char* id, const Chapt
 	ImGuiStyle& s = ImGui::GetStyle();
 	ImVec2 buttons_size(0, 0);
 	switch(buttons) {
+		case BookButtons::CLOSE: {
+			ImVec2 close_size = ImGui::CalcTextSize("Close");
+			buttons_size.x += close_size.x + s.FramePadding.x * 8;
+			buttons_size.y = close_size.y + s.FramePadding.y * 4 + 4;
+			break;
+		}
 		case BookButtons::OKAY_CANCEL_APPLY: {
 			ImVec2 okay_size = ImGui::CalcTextSize("Okay");
 			ImVec2 cancel_size = ImGui::CalcTextSize("Cancel");
@@ -60,6 +66,13 @@ gui::BookResult gui::book(const Page** current_page, const char* id, const Chapt
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImGui::GetStyle().FramePadding * ImVec2(4.f, 2.f));
 			ImGui::SetCursorPosX(ImGui::GetWindowSize().x - buttons_size.x - 16);
 			switch(buttons) {
+				case BookButtons::CLOSE: {
+					if(ImGui::Button("Close")) {
+						ImGui::CloseCurrentPopup();
+						result = BookResult::CLOSE;
+					}
+					break;
+				}
 				case BookButtons::OKAY_CANCEL_APPLY: {
 					if(ImGui::Button("Okay")) {
 						ImGui::CloseCurrentPopup();

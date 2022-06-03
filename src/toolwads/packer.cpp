@@ -40,6 +40,7 @@ static void pack_build_wad() {
 	
 	BuildWadHeader header = {};
 	header.header_size = sizeof(header);
+	wad.alloc<BuildWadHeader>();
 	
 	// Default values for if the tag isn't valid.
 	header.version_major = -1;
@@ -84,6 +85,8 @@ static void pack_build_wad() {
 			header.commit[i / 2] |= nibble;
 		}
 	}
+	
+	header.contributors = pack_file(wad, "CONTRIBUTORS");
 	
 	wad.write<BuildWadHeader>(0, header);
 }

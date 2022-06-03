@@ -33,6 +33,7 @@ endif()
 add_custom_command(
 	COMMAND toolwadpacker
 	DEPENDS toolwadpacker
+		"${CMAKE_SOURCE_DIR}/CONTRIBUTORS"
 		"${CMAKE_SOURCE_DIR}/data/git_tag.tmp"
 		"${CMAKE_SOURCE_DIR}/data/git_commit.tmp"
 		"${CMAKE_SOURCE_DIR}/data/Barlow-Regular.ttf"

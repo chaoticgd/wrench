@@ -19,6 +19,7 @@
 #include <core/png.h>
 #include <engine/compression.h>
 #include <gui/gui.h>
+#include <gui/about.h>
 #include <gui/settings.h>
 #include <launcher/oobe.h>
 #include <launcher/global_state.h>
@@ -216,12 +217,16 @@ static void update_buttons_window(f32 buttons_window_height) {
 		ImGui::OpenPopup("More Buttons");
 	}
 	
-	static bool open_modal = false;
+	static bool open_about = false;
+	static bool open_settings = false;
 	static bool show_the_demo = false;
 	
 	if(ImGui::BeginPopup("More Buttons")) {
+		if(ImGui::Selectable("About##the_button")) {
+			open_about = true;
+		}
 		if(ImGui::Selectable("Settings##the_button")) {
-			open_modal = true;
+			open_settings = true;
 		}
 		if(g_config.ui.developer) {
 			if(ImGui::BeginMenu("Developer")) {
@@ -234,9 +239,16 @@ static void update_buttons_window(f32 buttons_window_height) {
 		ImGui::EndPopup();
 	}
 	
-	if(open_modal) {
+	if(open_about) {
+		ImGui::OpenPopup("About##the_popup");
+		open_about = false;
+	}
+	
+	gui::about_screen();
+	
+	if(open_settings) {
 		ImGui::OpenPopup("Settings##the_popup");
-		open_modal = false;
+		open_settings = false;
 	}
 	
 	update_settings_popup();

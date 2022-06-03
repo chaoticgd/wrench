@@ -27,6 +27,7 @@ packed_struct(BuildWadHeader,
 	/* 0x08 */ s16 version_major;
 	/* 0x0a */ s16 version_minor;
 	/* 0x0c */ u8 commit[0x14];
+	/* 0x20 */ SectorRange contributors;
 )
 
 packed_struct(LauncherWadHeader,

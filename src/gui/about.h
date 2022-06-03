@@ -16,38 +16,14 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WRENCHGUI_BOOK_H
-#define WRENCHGUI_BOOK_H
+#ifndef WRENCHGUI_ABOUT_H
+#define WRENCHGUI_ABOUT_H
 
 #include <gui/gui.h>
 
 namespace gui {
 
-struct Page {
-	const char* name;
-	void (*function)();
-};
-
-struct Chapter {
-	const char* name;
-	const Page* pages;
-	s32 count;
-};
-
-enum class BookButtons {
-	CLOSE,
-	OKAY_CANCEL_APPLY
-};
-
-enum class BookResult {
-	NONE,
-	CLOSE,
-	OKAY,
-	CANCEL,
-	APPLY
-};
-
-BookResult book(const Page** current_page, const char* id, const Chapter* chapters, s32 chapter_count, BookButtons buttons);
+void about_screen();
 
 }
 
