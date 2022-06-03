@@ -1019,10 +1019,30 @@ AssetType LevelAudioWad {
 	wad: true
 	level_wad: true
 	
-	Child bin_data       { allowed_types: ['Collection'] }
-	Child upgrade_sample { allowed_types: ['Binary'] }
-	Child platinum_bolt  { allowed_types: ['Binary'] }
-	Child spare          { allowed_types: ['Binary'] }
+	Child bin_data {
+		allowed_types: ['Collection']
+		games: [1 2 3 4]
+	}
+	Child upgrade_sample {
+		allowed_types: ['Binary']
+		games: [2 3 4]
+	}
+	Child thermanator_freeze {
+		allowed_types: ['Binary']
+		games: [2]
+	}
+	Child thermanator_thaw {
+		allowed_types: ['Binary']
+		games: [2]
+	}
+	Child platinum_bolt  {
+		allowed_types: ['Binary']
+		games: [3 4]
+	}
+	Child spare {
+		allowed_types: ['Binary']
+		games: [3 4]
+	}
 }
 
 AssetType LevelSceneWad {
