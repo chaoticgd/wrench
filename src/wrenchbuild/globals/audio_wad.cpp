@@ -144,16 +144,18 @@ static void pack_help_audio(OutputStream& dest, Sector32* sectors_dest, s32 coun
 	for(size_t i = 0; i < count; i++) {
 		if(src.has_child(i)) {
 			const HelpAudioAsset& asset = src.get_child(i).as<HelpAudioAsset>();
-			const Asset* child;
+			const Asset* child = nullptr;
 			switch(language) {
-				case 0: child = &asset.get_english(); break;
-				case 1: child = &asset.get_french(); break;
-				case 2: child = &asset.get_german(); break;
-				case 3: child = &asset.get_spanish(); break;
-				case 4: child = &asset.get_italian(); break;
+				case 0: if(asset.has_english()) child = &asset.get_english(); break;
+				case 1: if(asset.has_french()) child = &asset.get_french(); break;
+				case 2: if(asset.has_german()) child = &asset.get_german(); break;
+				case 3: if(asset.has_spanish()) child = &asset.get_spanish(); break;
+				case 4: if(asset.has_italian()) child = &asset.get_italian(); break;
 				default: assert(0);
 			}
-			sectors_dest[i] = pack_asset_sa<Sector32>(dest, *child, game);
+			if(child) {
+				sectors_dest[i] = pack_asset_sa<Sector32>(dest, *child, game);
+			}
 		}
 	}
 }
