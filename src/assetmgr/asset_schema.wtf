@@ -607,12 +607,12 @@ AssetType MiscWad {
 		required: true
 		games: [1 2 3 4]
 	}
-	Child frontbin { allowed_types: ['Binary'] }
+	Child frontbin     { allowed_types: ['Binary'] }
 	Child frontbin_net { allowed_types: ['Binary'] }
-	Child frontend      { allowed_types: ['Binary'] }
-	Child exit          { allowed_types: ['Binary'] }
-	Child boot          { allowed_types: ['BootWad'] }
-	Child gadget        { allowed_types: ['Binary'] }
+	Child frontend     { allowed_types: ['Binary'] }
+	Child exit         { allowed_types: ['Binary'] }
+	Child boot         { allowed_types: ['BootWad'] }
+	Child gadget       { allowed_types: ['Binary'] }
 }
 
 AssetType IrxWad {
