@@ -182,7 +182,7 @@ add_executable(wrenchbuild
 	src/wrenchbuild/level/level_audio_wad.cpp
 	src/wrenchbuild/level/level_scene_wad.cpp
 )
-target_link_libraries(wrenchbuild wrenchcore wrench_assetmgr wrenchiso wrenchengine)
+target_link_libraries(wrenchbuild wrenchcore wrench_assetmgr wrenchiso wrenchengine wadinfo)
 
 add_executable(asset2json
 	src/asset2json.cpp

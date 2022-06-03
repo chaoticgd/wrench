@@ -21,6 +21,14 @@
 
 #include <core/util.h>
 
+packed_struct(BuildWadHeader,
+	/* 0x00 */ s32 header_size;
+	/* 0x04 */ Sector32 sector;
+	/* 0x08 */ s16 version_major;
+	/* 0x0a */ s16 version_minor;
+	/* 0x0c */ u8 commit[0x14];
+)
+
 packed_struct(LauncherWadHeader,
 	/* 0x00 */ s32 header_size;
 	/* 0x04 */ Sector32 sector;
@@ -30,6 +38,7 @@ packed_struct(LauncherWadHeader,
 )
 
 packed_struct(ToolWadInfo,
+	BuildWadHeader build;
 	LauncherWadHeader launcher;
 )
 

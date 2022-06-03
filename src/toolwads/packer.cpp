@@ -16,37 +16,89 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef TOOLWADS_PACKER_H
-#define TOOLWADS_PACKER_H
-
 #include <core/png.h>
 #include <engine/compression.h>
 #include <toolwads/wads.h>
 
+static void pack_build_wad();
 static void pack_launcher_wad();
 static SectorRange pack_oobe_wad(OutputStream& dest);
 static SectorRange pack_file(OutputStream& dest, const char* src_path);
 static SectorRange pack_compressed_image(OutputStream& dest, const char* src_path);
 static ByteRange pack_image(OutputStream& dest, const char* src_path);
+static s32 parse_positive_embedded_int(const char* str);
 
 int main() {
+	pack_build_wad();
 	pack_launcher_wad();
 	return 0;
 }
 
-static void pack_launcher_wad() {
-	FileOutputStream launcher_wad;
-	assert(launcher_wad.open("data/launcher.wad"));
+static void pack_build_wad() {
+	FileOutputStream wad;
+	assert(wad.open("data/build.wad"));
 	
-	LauncherWadHeader header = {0};
+	BuildWadHeader header = {};
 	header.header_size = sizeof(header);
-	launcher_wad.alloc<LauncherWadHeader>();
 	
-	header.font = pack_file(launcher_wad, "data/Barlow-Regular.ttf");
-	header.placeholder_images[0] = pack_compressed_image(launcher_wad, "data/launcher/my_mod.png");
-	header.oobe = pack_oobe_wad(launcher_wad);
+	// Default values for if the tag isn't valid.
+	header.version_major = -1;
+	header.version_minor = -1;
 	
-	launcher_wad.write<LauncherWadHeader>(0, header);
+	std::vector<u8> tag_str = read_file("data/git_tag.tmp");
+	tag_str.push_back(0);
+	const char* tag = (const char*) tag_str.data();
+	
+	// Parse the version number from the git tag.
+	if(tag[0] == 'v') {
+		const char* major_pos = tag + 1;
+		header.version_major = parse_positive_embedded_int(major_pos);
+		
+		const char* minor_pos = major_pos;
+		while(*minor_pos != '.' && *minor_pos != '\0') {
+			minor_pos++;
+		}
+		if(*minor_pos != '\0') {
+			minor_pos++;
+			header.version_minor = parse_positive_embedded_int(minor_pos);
+		}
+	}
+	
+	std::vector<u8> commit_str = read_file("data/git_commit.tmp");
+	commit_str.push_back(0);
+	const char* commit = (const char*) commit_str.data();
+	
+	// Parse the git commit hash.
+	for(size_t i = 0; i < strlen(commit); i++) {
+		u8 nibble = (u8) commit[i];
+		if(nibble >= '0' && nibble <= '9') {
+			nibble -= '0';
+		} else if(nibble >= 'a' && nibble <= 'f') {
+			nibble += 0xa - 'a';
+		}
+		if(i % 2 == 0) {
+			header.commit[i / 2] = nibble << 4;
+		} else {
+			header.commit[i / 2] |= nibble;
+		}
+	}
+	
+	wad.write<BuildWadHeader>(0, header);
+}
+
+static void pack_launcher_wad() {
+	FileOutputStream wad;
+	assert(wad.open("data/launcher.wad"));
+	
+	LauncherWadHeader header = {};
+	header.header_size = sizeof(header);
+	wad.alloc<LauncherWadHeader>();
+	
+	header.font = pack_file(wad, "data/Barlow-Regular.ttf");
+	header.placeholder_images[0] = pack_compressed_image(wad, "data/launcher/my_mod.png");
+	header.oobe = pack_oobe_wad(wad);
+	
+	wad.write<LauncherWadHeader>(0, header);
 }
 
 static SectorRange pack_oobe_wad(OutputStream& dest) {
@@ -134,4 +186,18 @@ static ByteRange pack_image(OutputStream& dest, const char* src_path) {
 	return {offset, (s32) (dest.tell() - offset)};
 }
 
-#endif
+
+static s32 parse_positive_embedded_int(const char* str) {
+	char copy[16] = {};
+	s32 size = strlen(str);
+	for(s32 i = 0; i < std::min(16, size); i++) {
+		if(str[i] >= '0' && str[i] <= '9') {
+			copy[i] = str[i];
+		} else if(i == 0) {
+			return -1;
+		} else {
+			break;
+		}
+	}
+	return atoi(copy);
+}
