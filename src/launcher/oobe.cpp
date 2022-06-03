@@ -65,13 +65,14 @@ static void oobe(f32 delta_time) {
 	
 	ImVec2 centre = ImGui::GetMainViewport()->GetCenter();
 	ImGui::SetNextWindowPos(centre, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-	ImGui::SetNextWindowSize(ImVec2(360, 250), ImGuiCond_Always);
+	ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_Always);
 	ImGui::Begin("Wrench Setup", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
 	
 	const char* home = getenv("HOME");
 	if(home) {
 		g_config.folders.base_folder = std::string(home) + "/wrench";
 		g_config.folders.mods_folders = {g_config.folders.base_folder + "/mods"};
+		g_config.folders.games_folder = g_config.folders.base_folder + "/games";
 		g_config.folders.cache_folder = g_config.folders.base_folder + "/cache";
 	} else {
 		g_config.folders.mods_folders = {""};
@@ -89,6 +90,7 @@ static void oobe(f32 delta_time) {
 	ImGui::TextWrapped("The following folders will be created if they do not already exist:");
 	ImGui::InputText("Base Folder", &g_config.folders.base_folder);
 	ImGui::InputText("Mods Folder", &g_config.folders.mods_folders[0]);
+	ImGui::InputText("Games Folder", &g_config.folders.games_folder);
 	ImGui::InputText("Cache Folder", &g_config.folders.cache_folder);
 	
 	ImGui::Separator();

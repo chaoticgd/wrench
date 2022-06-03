@@ -119,6 +119,7 @@ static void folders_page() {
 		g_config.folders.mods_folders.erase(g_config.folders.mods_folders.begin() + selection);
 	}
 	
+	ImGui::InputText("Games Folder", &g_config.folders.games_folder);
 	ImGui::InputText("Cache Folder", &g_config.folders.cache_folder);
 }
 
