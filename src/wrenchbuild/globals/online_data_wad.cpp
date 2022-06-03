@@ -36,20 +36,7 @@ packed_struct(OnlineMobyHeader,
 
 packed_struct(OnlineDataHeader,
 	/* 0x000 */ ByteRange onlinew3d;
-	/* 0x008 */ ByteRange eula_screen[2]; // 0,1
-	/* 0x018 */ ByteRange buddies_list[2]; // 2,3
-	/* 0x028 */ ByteRange unk1[6]; // 4,5,6,7,8,9
-	/* 0x058 */ ByteRange maps[22]; // 10..31
-	/* 0x108 */ ByteRange unk2[8]; // 32,33,34,35,36,37,38,39
-	/* 0x158 */ ByteRange staging[2]; // 42,43
-	/* 0x158 */ ByteRange unk3[2]; // 42,43
-	/* 0x168 */ ByteRange save_level[11]; // 44..54
-	/* 0x1c0 */ ByteRange online_menu[12]; // 55..66
-	/* 0x220 */ ByteRange profile_screen[2]; // 67,68
-	/* 0x230 */ ByteRange hero_image; // 69
-	/* 0x238 */ ByteRange unk4; // 70
-	/* 0x240 */ ByteRange unk5; // 71
-	/* 0x248 */ ByteRange staging_options; // 72
+	/* 0x008 */ ByteRange images[73];
 	/* 0x250 */ OnlineMobyHeader moby_classes[44];
 )
 static_assert(offsetof(OnlineDataHeader, moby_classes) == 0x250);
@@ -58,15 +45,7 @@ static void unpack_online_data_wad(OnlineDataWadAsset& dest, InputStream& src, G
 	auto header = src.read<OnlineDataHeader>(0);
 	
 	unpack_asset(dest.onlinew3d(), src, header.onlinew3d, game);
-	unpack_compressed_assets<TextureAsset>(dest.eula_screen().switch_files(), src, ARRAY_PAIR(header.eula_screen), game, FMT_TEXTURE_PIF8);
-	unpack_compressed_assets<TextureAsset>(dest.buddies_list().switch_files(), src, ARRAY_PAIR(header.buddies_list), game, FMT_TEXTURE_PIF8);
-	unpack_compressed_assets<TextureAsset>(dest.maps().switch_files(), src, ARRAY_PAIR(header.maps), game, FMT_TEXTURE_PIF8);
-	unpack_compressed_assets<TextureAsset>(dest.staging().switch_files(), src, ARRAY_PAIR(header.staging), game, FMT_TEXTURE_PIF8);
-	unpack_compressed_assets<TextureAsset>(dest.save_level().switch_files(), src, ARRAY_PAIR(header.save_level), game, FMT_TEXTURE_PIF8);
-	unpack_compressed_assets<TextureAsset>(dest.online_menu().switch_files(), src, ARRAY_PAIR(header.online_menu), game, FMT_TEXTURE_PIF8);
-	unpack_compressed_assets<TextureAsset>(dest.profile_screen().switch_files(), src, ARRAY_PAIR(header.profile_screen), game, FMT_TEXTURE_PIF8);
-	unpack_compressed_asset(dest.hero_image<TextureAsset>(), src, header.hero_image, game, FMT_TEXTURE_PIF8);
-	unpack_compressed_asset(dest.staging_options<TextureAsset>(), src, header.staging_options, game, FMT_TEXTURE_PIF8);
+	unpack_compressed_assets<TextureAsset>(dest.images().switch_files(), src, ARRAY_PAIR(header.images), game, FMT_TEXTURE_PIF8);
 	CollectionAsset& moby_classes = dest.moby_classes().switch_files();
 	for(s32 i = 0; i < ARRAY_SIZE(header.moby_classes); i++) {
 		MobyClassAsset& moby = moby_classes.child<MobyClassAsset>(i).switch_files();
@@ -80,15 +59,7 @@ static void pack_online_data_wad(OutputStream& dest, const OnlineDataWadAsset& s
 	dest.alloc<OnlineDataHeader>();
 	
 	header.onlinew3d = pack_asset_sa<ByteRange>(dest, src.get_onlinew3d(), game);
-	pack_compressed_assets(dest, ARRAY_PAIR(header.eula_screen), src.get_eula_screen(), game, 0x10, "eula_screen", FMT_TEXTURE_PIF8);
-	pack_compressed_assets(dest, ARRAY_PAIR(header.buddies_list), src.get_buddies_list(), game, 0x10, "buddies_list", FMT_TEXTURE_PIF8);
-	pack_compressed_assets(dest, ARRAY_PAIR(header.maps), src.get_maps(), game, 0x10, "maps", FMT_TEXTURE_PIF8);
-	pack_compressed_assets(dest, ARRAY_PAIR(header.staging), src.get_staging(), game, 0x10, "staging", FMT_TEXTURE_PIF8);
-	pack_compressed_assets(dest, ARRAY_PAIR(header.save_level), src.get_save_level(), game, 0x10, "save_level", FMT_TEXTURE_PIF8);
-	pack_compressed_assets(dest, ARRAY_PAIR(header.online_menu), src.get_online_menu(), game, 0x10, "online_menu", FMT_TEXTURE_PIF8);
-	pack_compressed_assets(dest, ARRAY_PAIR(header.profile_screen), src.get_profile_screen(), game, 0x10, "profile_screen", FMT_TEXTURE_PIF8);
-	header.hero_image = pack_compressed_asset<ByteRange>(dest, src.get_hero_image(), game, 0x10, "hero_image", FMT_TEXTURE_PIF8);
-	header.staging_options = pack_compressed_asset<ByteRange>(dest, src.get_staging_options(), game, 0x10, "staging_options", FMT_TEXTURE_PIF8);
+	pack_compressed_assets(dest, ARRAY_PAIR(header.images), src.get_images(), game, 0x10, "images", FMT_TEXTURE_PIF8);
 	const CollectionAsset& moby_classes = src.get_moby_classes();
 	for(s32 i = 0; i < ARRAY_SIZE(header.moby_classes); i++) {
 		if(moby_classes.has_child(i)) {
