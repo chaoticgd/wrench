@@ -26,8 +26,8 @@ packed_struct(GcMiscWadHeader,
 	/* 0x08 */ SectorRange debug_font;
 	/* 0x10 */ SectorRange irx;
 	/* 0x18 */ SectorRange save_game;
-	/* 0x20 */ SectorRange frontend_code;
-	/* 0x28 */ SectorRange frontend_net_code;
+	/* 0x20 */ SectorRange frontbin;
+	/* 0x28 */ SectorRange frontbin_net;
 	/* 0x30 */ SectorRange frontend;
 	/* 0x38 */ SectorRange exit;
 )
@@ -38,8 +38,8 @@ packed_struct(UyaMiscWadHeader,
 	/* 0x08 */ SectorRange debug_font;
 	/* 0x10 */ SectorRange irx;
 	/* 0x18 */ SectorRange save_game;
-	/* 0x20 */ SectorRange frontend_code;
-	/* 0x28 */ SectorRange frontend_net_code;
+	/* 0x20 */ SectorRange frontbin;
+	/* 0x28 */ SectorRange frontbin_net;
 	/* 0x30 */ SectorRange unused[2];
 	/* 0x40 */ SectorRange boot;
 )
@@ -50,7 +50,7 @@ packed_struct(DlMiscWadHeader,
 	/* 0x08 */ SectorRange debug_font;
 	/* 0x10 */ SectorRange irx;
 	/* 0x18 */ SectorRange save_game;
-	/* 0x20 */ SectorRange frontend_code;
+	/* 0x20 */ SectorRange frontbin;
 	/* 0x28 */ SectorRange unused[3];
 	/* 0x40 */ SectorRange boot;
 	/* 0x48 */ SectorRange gadget;
@@ -77,8 +77,8 @@ static void unpack_gc_misc_wad(MiscWadAsset& dest, const GcMiscWadHeader& header
 	unpack_asset(dest.debug_font<TextureAsset>(), src, header.debug_font, game, FMT_TEXTURE_PIF8);
 	unpack_compressed_asset(dest.irx().switch_files(), src, header.irx, game);
 	unpack_asset(dest.save_game(), src, header.save_game, game);
-	unpack_asset(dest.frontend_code(), src, header.frontend_code, game);
-	unpack_asset(dest.frontend_net_code(), src, header.frontend_net_code, game);
+	unpack_asset(dest.frontbin(), src, header.frontbin, game);
+	unpack_compressed_asset(dest.frontbin_net(), src, header.frontbin_net, game);
 	unpack_asset(dest.frontend(), src, header.frontend, game);
 	unpack_asset(dest.exit(), src, header.exit, game);
 }
@@ -87,8 +87,8 @@ static void pack_gc_misc_wad(OutputStream& dest, GcMiscWadHeader& header, const 
 	header.debug_font = pack_asset_sa<SectorRange>(dest, src.get_debug_font(), game, FMT_TEXTURE_PIF8);
 	header.irx = pack_compressed_asset_sa<SectorRange>(dest, src.get_irx(), game, "irx");
 	header.save_game = pack_asset_sa<SectorRange>(dest, src.get_save_game(), game);
-	header.frontend_code = pack_asset_sa<SectorRange>(dest, src.get_frontend_code(), game);
-	header.frontend_net_code = pack_asset_sa<SectorRange>(dest, src.get_frontend_net_code(), game);
+	header.frontbin = pack_asset_sa<SectorRange>(dest, src.get_frontbin(), game);
+	header.frontbin_net = pack_compressed_asset_sa<SectorRange>(dest, src.get_frontbin_net(), game, "frontbin_net");
 	header.frontend = pack_asset_sa<SectorRange>(dest, src.get_frontend(), game);
 	header.exit = pack_asset_sa<SectorRange>(dest, src.get_exit(), game);
 }
@@ -97,8 +97,8 @@ static void unpack_uya_misc_wad(MiscWadAsset& dest, const UyaMiscWadHeader& head
 	unpack_asset(dest.debug_font<TextureAsset>(), src, header.debug_font, game, FMT_TEXTURE_PIF8);
 	unpack_compressed_asset(dest.irx().switch_files(), src, header.irx, game);
 	unpack_asset(dest.save_game(), src, header.save_game, game);
-	unpack_asset(dest.frontend_code(), src, header.frontend_code, game);
-	unpack_asset(dest.frontend_net_code(), src, header.frontend_net_code, game);
+	unpack_asset(dest.frontbin(), src, header.frontbin, game);
+	unpack_compressed_asset(dest.frontbin_net(), src, header.frontbin_net, game);
 	unpack_asset(dest.boot().switch_files(), src, header.boot, game);
 }
 
@@ -106,8 +106,8 @@ static void pack_uya_misc_wad(OutputStream& dest, UyaMiscWadHeader& header, cons
 	header.debug_font = pack_asset_sa<SectorRange>(dest, src.get_debug_font(), game, FMT_TEXTURE_PIF8);
 	header.irx = pack_compressed_asset_sa<SectorRange>(dest, src.get_irx(), game, "irx");
 	header.save_game = pack_asset_sa<SectorRange>(dest, src.get_save_game(), game);
-	header.frontend_code = pack_asset_sa<SectorRange>(dest, src.get_frontend_code(), game);
-	header.frontend_net_code = pack_asset_sa<SectorRange>(dest, src.get_frontend_net_code(), game);
+	header.frontbin = pack_asset_sa<SectorRange>(dest, src.get_frontbin(), game);
+	header.frontbin_net = pack_compressed_asset_sa<SectorRange>(dest, src.get_frontbin_net(), game, "frontbin_net");
 	header.boot = pack_asset_sa<SectorRange>(dest, src.get_boot(), game);
 }
 
@@ -115,7 +115,7 @@ static void unpack_dl_misc_wad(MiscWadAsset& dest, const DlMiscWadHeader& header
 	unpack_asset(dest.debug_font<TextureAsset>(), src, header.debug_font, game, FMT_TEXTURE_PIF8);
 	unpack_compressed_asset(dest.irx().switch_files(), src, header.irx, game);
 	unpack_asset(dest.save_game(), src, header.save_game, game);
-	unpack_asset(dest.frontend_code(), src, header.frontend_code, game);
+	unpack_asset(dest.frontbin(), src, header.frontbin, game);
 	unpack_asset(dest.boot().switch_files(), src, header.boot, game);
 	unpack_asset(dest.gadget(), src, header.gadget, game);
 }
@@ -124,7 +124,7 @@ static void pack_dl_misc_wad(OutputStream& dest, DlMiscWadHeader& header, const 
 	header.debug_font = pack_asset_sa<SectorRange>(dest, src.get_debug_font(), game, FMT_TEXTURE_PIF8);
 	header.irx = pack_compressed_asset_sa<SectorRange>(dest, src.get_irx(), game, "irx");
 	header.save_game = pack_asset_sa<SectorRange>(dest, src.get_save_game(), game);
-	header.frontend_code = pack_asset_sa<SectorRange>(dest, src.get_frontend_code(), game);
+	header.frontbin = pack_asset_sa<SectorRange>(dest, src.get_frontbin(), game);
 	header.boot = pack_asset_sa<SectorRange>(dest, src.get_boot(), game);
 	header.gadget = pack_asset_sa<SectorRange>(dest, src.get_gadget(), game);
 }
