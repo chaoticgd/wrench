@@ -96,6 +96,7 @@ target_link_libraries(wrenchgui wrenchcore wrenchengine wadinfo)
 add_executable(wrenchlauncher
 	src/launcher/main.cpp
 	src/launcher/global_state.cpp
+	src/launcher/oobe.cpp
 )
 target_link_libraries(wrenchlauncher wrenchgui wrench_assetmgr)
 
@@ -150,38 +151,38 @@ add_library(wrenchengine
 )
 target_link_libraries(wrenchengine wrenchcore)
 
-add_executable(pakrac
-	src/pakrac/main.cpp
-	src/pakrac/gameplay.cpp
-	src/pakrac/tests.cpp
-	src/pakrac/asset_unpacker.cpp
-	src/pakrac/asset_packer.cpp
-	src/pakrac/classes/moby_class.cpp
-	src/pakrac/common/binary_asset.cpp
-	src/pakrac/common/collection_asset.cpp
-	src/pakrac/common/file_asset.cpp
-	src/pakrac/common/texture_asset.cpp
-	src/pakrac/common/flat_wad.cpp
-	src/pakrac/globals/armor_wad.cpp
-	src/pakrac/globals/audio_wad.cpp
-	src/pakrac/globals/bonus_wad.cpp
-	src/pakrac/globals/boot_wad.cpp
-	src/pakrac/globals/hud_wad.cpp
-	src/pakrac/globals/irx_wad.cpp
-	src/pakrac/globals/misc_wad.cpp
-	src/pakrac/globals/mpeg_wad.cpp
-	src/pakrac/globals/online_wad.cpp
-	src/pakrac/globals/online_data_wad.cpp
-	src/pakrac/globals/space_wad.cpp
-	src/pakrac/level/level_wad.cpp
-	src/pakrac/level/level_data_wad.cpp
-	src/pakrac/level/level_core.cpp
-	src/pakrac/level/level_classes.cpp
-	src/pakrac/level/level_textures.cpp
-	src/pakrac/level/level_audio_wad.cpp
-	src/pakrac/level/level_scene_wad.cpp
+add_executable(wrenchbuild
+	src/wrenchbuild/main.cpp
+	src/wrenchbuild/gameplay.cpp
+	src/wrenchbuild/tests.cpp
+	src/wrenchbuild/asset_unpacker.cpp
+	src/wrenchbuild/asset_packer.cpp
+	src/wrenchbuild/classes/moby_class.cpp
+	src/wrenchbuild/common/binary_asset.cpp
+	src/wrenchbuild/common/collection_asset.cpp
+	src/wrenchbuild/common/file_asset.cpp
+	src/wrenchbuild/common/texture_asset.cpp
+	src/wrenchbuild/common/flat_wad.cpp
+	src/wrenchbuild/globals/armor_wad.cpp
+	src/wrenchbuild/globals/audio_wad.cpp
+	src/wrenchbuild/globals/bonus_wad.cpp
+	src/wrenchbuild/globals/boot_wad.cpp
+	src/wrenchbuild/globals/hud_wad.cpp
+	src/wrenchbuild/globals/irx_wad.cpp
+	src/wrenchbuild/globals/misc_wad.cpp
+	src/wrenchbuild/globals/mpeg_wad.cpp
+	src/wrenchbuild/globals/online_wad.cpp
+	src/wrenchbuild/globals/online_data_wad.cpp
+	src/wrenchbuild/globals/space_wad.cpp
+	src/wrenchbuild/level/level_wad.cpp
+	src/wrenchbuild/level/level_data_wad.cpp
+	src/wrenchbuild/level/level_core.cpp
+	src/wrenchbuild/level/level_classes.cpp
+	src/wrenchbuild/level/level_textures.cpp
+	src/wrenchbuild/level/level_audio_wad.cpp
+	src/wrenchbuild/level/level_scene_wad.cpp
 )
-target_link_libraries(pakrac wrenchcore wrench_assetmgr wrenchiso wrenchengine)
+target_link_libraries(wrenchbuild wrenchcore wrench_assetmgr wrenchiso wrenchengine)
 
 add_executable(asset2json
 	src/asset2json.cpp
@@ -197,7 +198,7 @@ if(UNIX)
 	target_compile_options(vif PRIVATE ${GCC_FLAGS})
 	target_compile_options(wrenchiso PRIVATE ${GCC_FLAGS})
 	target_compile_options(wrenchengine PRIVATE ${GCC_FLAGS} -O3)
-	target_compile_options(pakrac PRIVATE ${GCC_FLAGS} -O3)
+	target_compile_options(wrenchbuild PRIVATE ${GCC_FLAGS} -O3)
 	target_compile_options(asset2json PRIVATE ${GCC_FLAGS})
 endif()
 
@@ -214,7 +215,7 @@ if (MSVC)
 	target_compile_options(vif PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(wrenchiso PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(wrenchengine PRIVATE ${__MSVC_BUILD_OPTIONS__})
-	target_compile_options(pakrac PRIVATE ${__MSVC_BUILD_OPTIONS__})
+	target_compile_options(wrenchbuild PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(asset2json PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	unset(__MSVC_BUILD_OPTIONS__)
 endif()
@@ -227,7 +228,7 @@ if(UNIX)
 	target_link_libraries(vif stdc++fs)
 	target_link_libraries(wrenchiso stdc++fs)
 	target_link_libraries(wrenchengine stdc++fs)
-	target_link_libraries(pakrac stdc++fs)
+	target_link_libraries(wrenchbuild stdc++fs)
 endif()
 
 # cxxopts

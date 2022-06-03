@@ -26,10 +26,15 @@ packed_struct(LauncherWadHeader,
 	/* 0x04 */ Sector32 sector;
 	/* 0x08 */ SectorRange font;
 	/* 0x10 */ SectorRange placeholder_images[2];
+	/* 0x20 */ SectorRange oobe;
 )
 
 packed_struct(ToolWadInfo,
 	LauncherWadHeader launcher;
+)
+
+packed_struct(OobeWadHeader,
+	/* 0x0 */ ByteRange greeting;
 )
 
 extern unsigned char WAD_INFO[];

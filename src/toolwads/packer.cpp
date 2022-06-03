@@ -24,8 +24,10 @@
 #include <toolwads/wads.h>
 
 static void pack_launcher_wad();
-static SectorRange pack_file(FileOutputStream& dest, const char* src_path);
-static SectorRange pack_image(FileOutputStream& dest, const char* src_path);
+static SectorRange pack_oobe_wad(OutputStream& dest);
+static SectorRange pack_file(OutputStream& dest, const char* src_path);
+static SectorRange pack_compressed_image(OutputStream& dest, const char* src_path);
+static ByteRange pack_image(OutputStream& dest, const char* src_path);
 
 int main() {
 	pack_launcher_wad();
@@ -41,14 +43,41 @@ static void pack_launcher_wad() {
 	launcher_wad.alloc<LauncherWadHeader>();
 	
 	header.font = pack_file(launcher_wad, "data/Barlow-Regular.ttf");
-	header.placeholder_images[0] = pack_image(launcher_wad, "data/my_mod.png");
+	header.placeholder_images[0] = pack_compressed_image(launcher_wad, "data/launcher/my_mod.png");
+	header.oobe = pack_oobe_wad(launcher_wad);
 	
 	launcher_wad.write<LauncherWadHeader>(0, header);
 }
 
-static SectorRange pack_file(FileOutputStream& dest, const char* src_path) {
+static SectorRange pack_oobe_wad(OutputStream& dest) {
 	dest.pad(SECTOR_SIZE, 0);
-	s32 offset = dest.tell();
+	s64 offset = dest.tell();
+	
+	std::vector<u8> bytes;
+	MemoryOutputStream stream(bytes);
+	
+	OobeWadHeader header;
+	stream.alloc<OobeWadHeader>();
+	
+	stream.pad(0x10, 0);
+	header.greeting = pack_image(stream, "data/launcher/oobe/wrench_setup.png");
+	
+	stream.write(0, header);
+	
+	std::vector<u8> compressed_bytes;
+	compress_wad(compressed_bytes, bytes, "", 8);
+	
+	dest.write_v(compressed_bytes);
+	
+	SectorRange range;
+	range.offset = Sector32::size_from_bytes(offset);
+	range.size = Sector32::size_from_bytes(dest.tell() - offset);
+	return range;
+}
+
+static SectorRange pack_file(OutputStream& dest, const char* src_path) {
+	dest.pad(SECTOR_SIZE, 0);
+	s64 offset = dest.tell();
 	
 	FileInputStream src;
 	assert(src.open(src_path));
@@ -66,22 +95,14 @@ static SectorRange pack_file(FileOutputStream& dest, const char* src_path) {
 	return range;
 }
 
-static SectorRange pack_image(FileOutputStream& dest, const char* src_path) {
+static SectorRange pack_compressed_image(OutputStream& dest, const char* src_path) {
 	dest.pad(SECTOR_SIZE, 0);
 	s32 offset = dest.tell();
 	
-	FileInputStream src;
-	assert(src.open(src_path));
-	
-	Opt<Texture> image = read_png(src);
-	image->to_rgba();
-	
 	std::vector<u8> bytes;
-	OutBuffer buffer(bytes);
-	buffer.write<s32>(image->width);
-	buffer.write<s32>(image->height);
-	buffer.pad(0x10);
-	buffer.write_multiple(image->data);
+	MemoryOutputStream stream(bytes);
+	
+	pack_image(stream, src_path);
 	
 	std::vector<u8> compressed_bytes;
 	compress_wad(compressed_bytes, bytes, "", 8);
@@ -92,6 +113,25 @@ static SectorRange pack_image(FileOutputStream& dest, const char* src_path) {
 	range.offset = Sector32::size_from_bytes(offset);
 	range.size = Sector32::size_from_bytes(dest.tell() - offset);
 	return range;
+}
+
+static ByteRange pack_image(OutputStream& dest, const char* src_path) {
+	s32 offset = (s32) dest.tell();
+	
+	FileInputStream src;
+	assert(src.open(src_path));
+	
+	Opt<Texture> image = read_png(src);
+	image->to_rgba();
+	
+	std::vector<u8> bytes;
+	OutBuffer buffer(bytes);
+	dest.write<s32>(image->width);
+	dest.write<s32>(image->height);
+	dest.pad(0x10, 0);
+	dest.write_v(image->data);
+	
+	return {offset, (s32) (dest.tell() - offset)};
 }
 
 #endif

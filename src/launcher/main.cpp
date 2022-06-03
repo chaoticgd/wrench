@@ -20,6 +20,7 @@
 #include <engine/compression.h>
 #include <gui/gui.h>
 #include <gui/settings.h>
+#include <launcher/oobe.h>
 #include <launcher/global_state.h>
 
 static void update_gui(f32 delta_time);
@@ -36,6 +37,14 @@ int main(int argc, char** argv) {
 	g_launcher.mode = LauncherMode::DRAWING_GUI;
 	verify(g_launcher.wad.open("data/launcher.wad"), "Failed to open 'launcher.wad'.");
 	g_launcher.header = &((ToolWadInfo*) WAD_INFO)->launcher;
+	
+	if(!gui::config_file_exists()) {
+		if(!run_oobe()) {
+			return 0;
+		}
+	} else {
+		g_config.read();
+	}
 	
 	for(;;) {
 		switch(g_launcher.mode) {

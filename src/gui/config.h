@@ -27,7 +27,7 @@ namespace gui {
 
 struct FolderConfig {
 	std::string base_folder;
-	std::vector<std::string> mod_folders;
+	std::vector<std::string> mods_folders;
 	std::string cache_folder;
 };
 
@@ -40,7 +40,13 @@ struct UiConfig {
 struct Config {
 	FolderConfig folders;
 	UiConfig ui;
+	
+	void read();
+	void write();
 };
+
+std::string get_config_file_path();
+bool config_file_exists();
 
 }
 

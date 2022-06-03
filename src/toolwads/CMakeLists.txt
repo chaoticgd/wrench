@@ -9,7 +9,10 @@ target_link_libraries(toolwadpacker wrenchcore wrenchengine)
 
 add_custom_command(
 	COMMAND toolwadpacker
-	DEPENDS toolwadpacker ${CMAKE_SOURCE_DIR}/data/Barlow-Regular.ttf ${CMAKE_SOURCE_DIR}/data/my_mod.png
+	DEPENDS toolwadpacker
+		${CMAKE_SOURCE_DIR}/data/Barlow-Regular.ttf
+		${CMAKE_SOURCE_DIR}/data/launcher/my_mod.png
+		${CMAKE_SOURCE_DIR}/data/launcher/oobe/wrench_setup.png
 	OUTPUT ${CMAKE_SOURCE_DIR}/data/launcher.wad
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 	COMMENT "Generating launcher.wad"

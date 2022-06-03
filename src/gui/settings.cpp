@@ -59,10 +59,10 @@ void update_settings_popup() {
 static void folders_page() {
 	ImGui::InputText("Base Folder", &g_config.folders.base_folder);
 	static size_t selection = 0;
-	if(ImGui::BeginListBox("Mod Folders")) {
-		for(size_t i = 0; i < g_config.folders.mod_folders.size(); i++) {
+	if(ImGui::BeginListBox("Mods Folders")) {
+		for(size_t i = 0; i < g_config.folders.mods_folders.size(); i++) {
 			ImGui::PushID(i);
-			std::string label = g_config.folders.mod_folders[i] + "##selectable";
+			std::string label = g_config.folders.mods_folders[i] + "##selectable";
 			if(ImGui::Selectable(label.c_str(), i == selection)) {
 				selection = i;
 			}
@@ -71,7 +71,7 @@ static void folders_page() {
 		ImGui::EndListBox();
 	}
 	
-	bool selection_is_valid = selection < g_config.folders.mod_folders.size();
+	bool selection_is_valid = selection < g_config.folders.mods_folders.size();
 	
 	static std::string add_path;
 	if(ImGui::Button("Add")) {
@@ -83,7 +83,7 @@ static void folders_page() {
 		ImGui::SetNextItemWidth(-1);
 		ImGui::InputText("##input", &add_path);
 		if(ImGui::Button("Okay")) {
-			g_config.folders.mod_folders.push_back(add_path);
+			g_config.folders.mods_folders.push_back(add_path);
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::SameLine();
@@ -96,7 +96,7 @@ static void folders_page() {
 	static std::string edit_path;
 	ImGui::SameLine();
 	if(ImGui::Button("Edit") && selection_is_valid) {
-		edit_path = "";
+		edit_path = g_config.folders.mods_folders[selection];
 		ImGui::OpenPopup("Edit Mod Folder");
 	}
 	ImGui::SetNextWindowSize(ImVec2(400, -1));
@@ -104,7 +104,7 @@ static void folders_page() {
 		ImGui::SetNextItemWidth(-1);
 		ImGui::InputText("##input", &edit_path);
 		if(ImGui::Button("Okay")) {
-			g_config.folders.mod_folders[selection] = edit_path;
+			g_config.folders.mods_folders[selection] = edit_path;
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::SameLine();
@@ -116,7 +116,7 @@ static void folders_page() {
 	
 	ImGui::SameLine();
 	if(ImGui::Button("Remove") && selection_is_valid) {
-		g_config.folders.mod_folders.erase(g_config.folders.mod_folders.begin() + selection);
+		g_config.folders.mods_folders.erase(g_config.folders.mods_folders.begin() + selection);
 	}
 	
 	ImGui::InputText("Cache Folder", &g_config.folders.cache_folder);

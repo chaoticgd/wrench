@@ -23,11 +23,14 @@
 static std::chrono::steady_clock::time_point last_frame_time;
 static f32 delta_time;
 
-GLFWwindow* gui::startup(const char* window_title, s32 width, s32 height) {
+GLFWwindow* gui::startup(const char* window_title, s32 width, s32 height, bool maximized) {
 	verify(glfwInit(), "Failed to load GLFW.");
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+	if(maximized) {
+		glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
+	}
 
 	GLFWwindow* window = glfwCreateWindow(width, height, window_title, NULL, NULL);
 	verify(window, "Failed to create GLFW window.");

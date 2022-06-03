@@ -33,7 +33,7 @@
 
 namespace gui {
 
-GLFWwindow* startup(const char* window_title, s32 width, s32 height);
+GLFWwindow* startup(const char* window_title, s32 width, s32 height, bool maximized = false);
 void run_frame(GLFWwindow* window, void (*update_func)(f32));
 void shutdown(GLFWwindow* window);
 

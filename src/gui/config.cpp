@@ -18,4 +18,25 @@
 
 #include "config.h"
 
+#include <core/filesystem.h>
+
+void gui::Config::read() {
+	
+}
+
+void gui::Config::write() {
+	
+}
+
+std::string gui::get_config_file_path() {
+	// TODO: Windows support
+	const char* home = getenv("HOME");
+	verify(home, "HOME enviroment variable not set!");
+	return std::string(home) + "/.config/wrench.cfg";
+}
+
+bool gui::config_file_exists() {
+	return fs::exists(get_config_file_path());
+}
+
 gui::Config g_config = {};
