@@ -41,6 +41,8 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 	auto header = index.read<LevelCoreHeader>(0);
 	std::vector<s64> block_bounds = enumerate_level_core_block_boundaries(index, header, game);
 	
+	print_level_core_header(header);
+	
 	s32 tfrags_size;
 	if(header.occlusion != 0) {
 		tfrags_size = header.occlusion;
@@ -103,12 +105,13 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 		}
 	}
 	
-	if(game != Game::RAC1) {
+	if(game == Game::RAC2 || game == Game::RAC3) {
+		unpack_asset(dest.sound_remap(), index, ByteRange{header.sound_remap_offset, header.moby_gs_stash_list - header.sound_remap_offset}, game);
+		unpack_asset(dest.moby_sound_remap(), data, level_core_block_range(header.moby_sound_remap_offset, block_bounds), game);
+	} else if(game == Game::DL) {
 		unpack_asset(dest.sound_remap(), index, ByteRange{header.sound_remap_offset, header.moby_sound_remap_offset - header.sound_remap_offset}, game);
 		unpack_asset(dest.moby_sound_remap(), index, ByteRange{header.moby_sound_remap_offset, header.moby_gs_stash_list - header.moby_sound_remap_offset}, game);
 	}
-	
-	print_level_core_header(header);
 }
 
 void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, std::vector<u8>& gs_ram_dest, const LevelCoreAsset& src, Game game) {
@@ -290,7 +293,7 @@ static std::vector<s64> enumerate_level_core_block_boundaries(InputStream& src, 
 		blocks.push_back(entry.offset_in_asset_wad);
 	}
 	
-	if(header.ratchet_seqs_rac123 != 0 && game != Game::DL) {
+	if(game != Game::DL && header.ratchet_seqs_rac123 != 0) {
 		auto ratchet_seqs = src.read_multiple<s32>(header.ratchet_seqs_rac123, 256);
 		for(s32 ratchet_seq_ofs : ratchet_seqs) {
 			if(ratchet_seq_ofs > 0) {
@@ -299,11 +302,15 @@ static std::vector<s64> enumerate_level_core_block_boundaries(InputStream& src, 
 		}
 	}
 	
-	if(header.thing_table_offset_rac1 != 0 && game == Game::RAC1) {
+	if(game == Game::RAC1 && header.thing_table_offset_rac1 != 0) {
 		auto things = src.read_multiple<ThingEntry>(header.thing_table_offset_rac1, header.thing_table_count_rac1);
 		for(const ThingEntry& entry : things) {
 			blocks.push_back(entry.offset_in_asset_wad);
 		}
+	}
+	
+	if((game == Game::RAC2 || game == Game::RAC3) && header.moby_sound_remap_offset != 0) {
+		blocks.push_back(header.moby_sound_remap_offset);
 	}
 	
 	return blocks;
