@@ -36,18 +36,20 @@ void unpack_asset_impl(Asset& dest, InputStream& src, Game game, s32 hint, s64 h
 		return;
 	}
 	
-	if(game == Game::RAC2) {
-		if(dest.type() == HudWadAsset::ASSET_TYPE
-			|| dest.type() == SpaceWadAsset::ASSET_TYPE
-			|| dest.type() == SceneWadAsset::ASSET_TYPE
-			|| dest.type() == GadgetWadAsset::ASSET_TYPE) {
-			std::string tag = dest.tag();
-			unpack_asset_impl(dest.parent()->transmute_child<BinaryAsset>(tag.c_str()), src, game, FMT_BINARY_WAD, header_offset);
-			return;
-		}
+	if(game == Game::RAC2
+		&& (dest.type() == HudWadAsset::ASSET_TYPE
+		|| dest.type() == SpaceWadAsset::ASSET_TYPE
+		|| dest.type() == SceneWadAsset::ASSET_TYPE
+		|| dest.type() == GadgetWadAsset::ASSET_TYPE)) {
+		std::string tag = dest.tag();
+		unpack_asset_impl(dest.parent()->transmute_child<BinaryAsset>(tag.c_str()), src, game, FMT_BINARY_WAD, header_offset);
+		return;
 	}
 	
-	if(game == Game::RAC3 && dest.type() == SpaceWadAsset::ASSET_TYPE) {
+	if(game == Game::RAC3
+		&& (dest.type() == HudWadAsset::ASSET_TYPE
+		|| dest.type() == SpaceWadAsset::ASSET_TYPE
+		|| dest.type() == GadgetWadAsset::ASSET_TYPE)) {
 		std::string tag = dest.tag();
 		unpack_asset_impl(dest.parent()->transmute_child<BinaryAsset>(tag.c_str()), src, game, FMT_BINARY_WAD, header_offset);
 		return;
