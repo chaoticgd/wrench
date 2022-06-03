@@ -29,6 +29,7 @@
 #include <iso/iso_unpacker.h>
 #include <iso/iso_tools.h>
 #include <iso/wad_identifier.h>
+#include <toolwads/wads.h>
 #include <wrenchbuild/tests.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
@@ -62,6 +63,7 @@ static void build_collision(fs::path input_path, fs::path output_path);
 static void extract_moby(const char* input_path, const char* output_path);
 static void build_moby(const char* input_path, const char* output_path);
 static void print_usage();
+static void print_version();
 
 #define require_args(arg_count) verify(argc == arg_count, "Incorrect number of arguments.");
 
@@ -106,6 +108,16 @@ int main(int argc, char** argv) {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATHS | ARG_ASSET | ARG_OUTPUT_PATH | ARG_GAME);
 		pack(args.input_paths, args.asset, args.output_path, args.game);
 		report_memory_statistics();
+		return 0;
+	}
+	
+	if(mode == "help" || mode == "-h" || mode == "--help") {
+		print_usage();
+		return 0;
+	}
+	
+	if(mode == "version" || mode == "-v" || mode == "--version") {
+		print_version();
 		return 0;
 	}
 	
@@ -413,6 +425,12 @@ static void print_usage() {
 	puts("   Pack an asset (e.g. base_game) to produce a built file (e.g. an ISO file).");
 	puts("   If <asset> is not a build, the game must be specified (rac, gc, uya or dl).");
 	puts("");
+	puts(" help | -h | --help");
+	puts("    Print out this usage text.");
+	puts("");
+	puts(" version | -v | --version");
+	puts("    Print out version information.");
+	puts("");
 	puts("DEVELOPER SUBCOMMANDS");
 	puts("");
 	puts(" unpack_globals <input file> -o <output dir>");
@@ -454,4 +472,20 @@ static void print_usage() {
 	puts("");
 	puts(" test <asset bank>");
 	puts("   Unpack and repack each binary in an asset bank, and diff against the original.");
+}
+
+extern unsigned char WAD_INFO[];
+
+static void print_version() {
+	BuildWadHeader* build = &((ToolWadInfo*) WAD_INFO)->build;
+	if(build->version_major > -1 && build->version_major > -1) {
+		printf("Wrench Build Tool v%hd.%hd\n", build->version_major, build->version_minor);
+	} else {
+		printf("Wrench Build Tool (Development Version)\n");
+	}
+	printf("Built from git commit ");
+	for(s32 i = 0; i < ARRAY_SIZE(build->commit); i++) {
+		printf("%hhx", build->commit[i]);
+	}
+	printf("\n");
 }
