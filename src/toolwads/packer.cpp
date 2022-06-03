@@ -69,12 +69,14 @@ static void pack_build_wad() {
 	const char* commit = (const char*) commit_str.data();
 	
 	// Parse the git commit hash.
-	for(size_t i = 0; i < strlen(commit); i++) {
+	for(size_t i = 0; i < std::min(strlen(commit), sizeof(header.commit) * 2); i++) {
 		u8 nibble = (u8) commit[i];
 		if(nibble >= '0' && nibble <= '9') {
 			nibble -= '0';
 		} else if(nibble >= 'a' && nibble <= 'f') {
 			nibble += 0xa - 'a';
+		} else {
+			break;
 		}
 		if(i % 2 == 0) {
 			header.commit[i / 2] = nibble << 4;
