@@ -36,6 +36,17 @@ void unpack_asset_impl(Asset& dest, InputStream& src, Game game, s32 hint, s64 h
 		return;
 	}
 	
+	if(game == Game::RAC2) {
+		if(dest.type() == HudWadAsset::ASSET_TYPE
+			|| dest.type() == SpaceWadAsset::ASSET_TYPE
+			|| dest.type() == SceneWadAsset::ASSET_TYPE
+			|| dest.type() == GadgetWadAsset::ASSET_TYPE) {
+			std::string tag = dest.tag();
+			unpack_asset_impl(dest.parent()->transmute_child<BinaryAsset>(tag.c_str()), src, game, FMT_BINARY_WAD, header_offset);
+			return;
+		}
+	}
+	
 	std::string reference = asset_reference_to_string(dest.reference());
 	std::string type = asset_type_to_string(dest.type());
 	for(char& c : type) c = tolower(c);
