@@ -94,10 +94,12 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 	unpack_shrub_classes(shrub_data, shrub_refs, header, index, data, gs_ram, block_bounds, game);
 	
 	if(game != Game::DL && header.ratchet_seqs_rac123 != 0) {
-		CollectionAsset& ratchet_seqs = dest.ratchet_seqs();
+		CollectionAsset& ratchet_seqs = dest.ratchet_seqs().switch_files();
 		auto ratchet_seq_offsets = index.read_multiple<s32>(header.ratchet_seqs_rac123, 256);
 		for(s32 i = 0; i < 256; i++) {
-			unpack_asset(ratchet_seqs.child<BinaryAsset>(i), src, level_core_block_range(ratchet_seq_offsets[i], block_bounds), game);
+			if(ratchet_seq_offsets[i] != 0) {
+				unpack_asset(ratchet_seqs.child<BinaryAsset>(i), data, level_core_block_range(ratchet_seq_offsets[i], block_bounds), game);
+			}
 		}
 	}
 	
