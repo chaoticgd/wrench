@@ -47,10 +47,8 @@ void unpack_dl_space_wad(SpaceWadAsset& dest, const DlSpaceWadHeader& header, In
 static void pack_dl_space_wad(OutputStream& dest, DlSpaceWadHeader& header, const SpaceWadAsset& src, Game game);
 
 on_load(Space, []() {
-	SpaceWadAsset::funcs.unpack_rac3 = wrap_wad_unpacker_func<SpaceWadAsset, UyaSpaceWadHeader>(unpack_uya_space_wad);
 	SpaceWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<SpaceWadAsset, DlSpaceWadHeader>(unpack_dl_space_wad);
 	
-	SpaceWadAsset::funcs.pack_rac3 = wrap_wad_packer_func<SpaceWadAsset, UyaSpaceWadHeader>(pack_uya_space_wad);
 	SpaceWadAsset::funcs.pack_dl = wrap_wad_packer_func<SpaceWadAsset, DlSpaceWadHeader>(pack_dl_space_wad);
 })
 
