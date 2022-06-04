@@ -201,7 +201,7 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	
 	if(game != Game::DL) {
 		const CollectionAsset& ratchet_seqs = src.get_ratchet_seqs();
-		std::vector<s32> ratchet_seq_offsets(0, 256);
+		std::vector<s32> ratchet_seq_offsets(256, 0);
 		for(s32 i = 0; i < 256; i++) {
 			if(ratchet_seqs.has_child(i)) {
 				ratchet_seq_offsets[i] = pack_asset<ByteRange>(data, ratchet_seqs.get_child(i), game, 0x10).offset;
@@ -237,7 +237,6 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	}
 	
 	index.write(0, header);
-	
 }
 
 // Only designed to work on assets that have just been unpacked.

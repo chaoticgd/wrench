@@ -134,6 +134,7 @@ void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHeader& hea
 	
 	unpack_asset(dest.data().sound_bank(), src, header.sound_bank, game);
 	unpack_asset(dest.data().switch_files(), src, header.data, game);
+	unpack_asset(dest.data().gameplay(), src, header.gameplay, game);
 	unpack_chunks(dest.chunks(), src, header.chunks, game);
 }
 
