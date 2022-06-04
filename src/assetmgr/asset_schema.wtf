@@ -642,17 +642,32 @@ AssetType IrxWad {
 		required: true
 		games: [2 3 4]
 	}
+	Child dbcman {
+		allowed_types: ['Binary']
+		required: true
+		games: [2]
+	}
+	Child sio2d {
+		allowed_types: ['Binary']
+		required: true
+		games: [2]
+	}
+	Child ds2u {
+		allowed_types: ['Binary']
+		required: true
+		games: [2]
+	}
 	Child padman {
 		desc: 'Gamepad manager.'
 		allowed_types: ['Binary']
 		required: true
-		games: [2 3 4]
+		games: [3 4]
 	}
-	Child mtapman{
+	Child mtapman {
 		desc: 'Multitap manager.'
 		allowed_types: ['Binary']
 		required: true
-		games: [2 3 4]
+		games: [3 4]
 	}
 	Child libsd {
 		desc: 'Sound library.'
