@@ -40,7 +40,8 @@ enum ArgFlags : u32 {
 	ARG_ASSET = 1 << 2,
 	ARG_OUTPUT_PATH = 1 << 3,
 	ARG_OFFSET = 1 << 4,
-	ARG_GAME = 1 << 5
+	ARG_GAME = 1 << 5,
+	ARG_HINT = 1 << 6
 };
 
 struct ParsedArgs {
@@ -49,15 +50,14 @@ struct ParsedArgs {
 	fs::path output_path;
 	s64 offset = -1;
 	Game game = Game::RAC1;
+	std::string hint;
 };
 
 static ParsedArgs parse_args(int argc, char** argv, u32 flags);
 static void unpack(const fs::path& input_path, const fs::path& output_path);
-static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path, Game game);
+static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path, Game game, const std::string& hint);
 static void decompress(const fs::path& input_path, const fs::path& output_path, s64 offset);
 static void compress(const fs::path& input_path, const fs::path& output_path);
-static void extract(fs::path input_path, fs::path output_path);
-static void build(fs::path input_path, fs::path output_path);
 static void extract_collision(fs::path input_path, fs::path output_path);
 static void build_collision(fs::path input_path, fs::path output_path);
 static void extract_moby(const char* input_path, const char* output_path);
@@ -105,8 +105,8 @@ int main(int argc, char** argv) {
 	}
 	
 	if(mode == "pack") {
-		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATHS | ARG_ASSET | ARG_OUTPUT_PATH | ARG_GAME);
-		pack(args.input_paths, args.asset, args.output_path, args.game);
+		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATHS | ARG_ASSET | ARG_OUTPUT_PATH | ARG_GAME | ARG_HINT);
+		pack(args.input_paths, args.asset, args.output_path, args.game, args.hint);
 		report_memory_statistics();
 		return 0;
 	}
@@ -218,6 +218,11 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 			continue;
 		}
 		
+		if((flags & ARG_HINT) && strcmp(argv[i], "-h") == 0) {
+			args.hint = argv[++i];
+			continue;
+		}
+		
 		if((flags & ARG_INPUT_PATH) || (flags & ARG_INPUT_PATHS)) {
 			args.input_paths.emplace_back(argv[i]);
 		}
@@ -325,7 +330,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path) {
 	verify_not_reached("Unable to detect type of input file '%s'!", input_path.string().c_str());
 }
 
-static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path, Game game) {
+static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path, Game game, const std::string& hint) {
 	printf("[  0%%] Mounting asset banks\n");
 	
 	AssetForest forest;
@@ -344,7 +349,7 @@ static void pack(const std::vector<fs::path>& input_paths, const std::string& as
 	g_asset_packer_max_assets_processed = 0;
 	g_asset_packer_num_assets_processed = 0;
 	g_asset_packer_dry_run = true;
-	pack_asset_impl(dummy, nullptr, nullptr, wad, game);
+	pack_asset_impl(dummy, nullptr, nullptr, wad, game, hint.c_str());
 	g_asset_packer_max_assets_processed = g_asset_packer_num_assets_processed;
 	g_asset_packer_num_assets_processed = 0;
 	g_asset_packer_dry_run = false;
@@ -352,7 +357,7 @@ static void pack(const std::vector<fs::path>& input_paths, const std::string& as
 	FileOutputStream iso;
 	verify(iso.open(output_path), "Failed to open '%s' for writing.\n", output_path.string().c_str());
 	
-	pack_asset_impl(iso, nullptr, nullptr, wad, game);
+	pack_asset_impl(iso, nullptr, nullptr, wad, game, hint.c_str());
 	
 	printf("[100%%] Done!\n");
 }
@@ -410,7 +415,6 @@ static void build_moby(const char* input_path, const char* output_path) {
 	write_moby_class(buffer, moby, Game::RAC2);
 	write_file("/", output_path, buffer);
 }
-
 static void print_usage() {
 	puts("Wrench Build Tool -- https://github.com/chaoticgd/wrench");
 	puts("");
@@ -421,9 +425,11 @@ static void print_usage() {
 	puts(" unpack <input file> -o <output dir>");
 	puts("   Unpack an ISO or WAD file to produce an asset bank of source files.");
 	puts("");
-	puts(" pack <input asset banks> -a <asset> -o <output iso> -g <game>");
+	puts(" pack <input asset banks> -a <asset> -o <output iso> -g <game> -h <hint>");
 	puts("   Pack an asset (e.g. base_game) to produce a built file (e.g. an ISO file).");
 	puts("   If <asset> is not a build, the game must be specified (rac, gc, uya or dl).");
+	puts("   Optionally, the hint string used to specify the format of the build asset can be");
+	puts("   specified by passing -h.");
 	puts("");
 	puts(" help | -h | --help");
 	puts("    Print out this usage text.");
