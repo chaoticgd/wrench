@@ -20,11 +20,11 @@
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 
-static void unpack_texture_asset(TextureAsset& dest, InputStream& src, Game game, s32 hint);
-static void pack_texture_asset(OutputStream& dest, const TextureAsset& src, Game game, s32 hint);
+static void unpack_texture_asset(TextureAsset& dest, InputStream& src, Game game, const char* hint);
+static void pack_texture_asset(OutputStream& dest, const TextureAsset& src, Game game, const char* hint);
 static Texture unpack_pif(InputStream& src);
-static void pack_pif(OutputStream& dest, Texture& texture, s32 hint);
-static bool test_texture_asset(std::vector<u8>& original, std::vector<u8>& repacked, Game game, s32 hint);
+static void pack_pif(OutputStream& dest, Texture& texture);
+static bool test_texture_asset(std::vector<u8>& original, std::vector<u8>& repacked, Game game, const char* hint);
 
 on_load(Texture, []() {
 	TextureAsset::funcs.unpack_rac1 = wrap_hint_unpacker_func<TextureAsset>(unpack_texture_asset);
@@ -46,88 +46,75 @@ packed_struct(RgbaTextureHeader,
 	u32 pad[2];
 )
 
-static void unpack_texture_asset(TextureAsset& dest, InputStream& src, Game game, s32 hint) {
+static void unpack_texture_asset(TextureAsset& dest, InputStream& src, Game game, const char* hint) {
 	Texture texture;
-	switch(hint) {
-		case FMT_TEXTURE_RGBA: {
-			RgbaTextureHeader header = src.read<RgbaTextureHeader>(0);
-			std::vector<u8> data = src.read_multiple<u8>(0x10, header.width * header.height * 4);
-			texture = Texture::create_rgba(header.width, header.height, data);
-			texture.multiply_alphas();
-			break;
-		}
-		case FMT_TEXTURE_RGBA_512_416: {
-			std::vector<u8> data = src.read_multiple<u8>(0, 512 * 416 * 4);
-			texture = Texture::create_rgba(512, 416, data);
-			texture.multiply_alphas();
-			break;
-		}
-		case FMT_TEXTURE_RGBA_512_448: {
-			std::vector<u8> data = src.read_multiple<u8>(0, 512 * 448 * 4);
-			texture = Texture::create_rgba(512, 448, data);
-			texture.multiply_alphas();
-			break;
-		}
-		case FMT_TEXTURE_PIF4:
-		case FMT_TEXTURE_PIF4_SWIZZLED:
-		case FMT_TEXTURE_PIF8:
-		case FMT_TEXTURE_PIF8_SWIZZLED:
-		default: {
-			texture = unpack_pif(src);
-		}
+	
+	const char* type = next_hint(&hint);
+	if(strcmp(type, "rgba") == 0) {
+		RgbaTextureHeader header = src.read<RgbaTextureHeader>(0);
+		std::vector<u8> data = src.read_multiple<u8>(0x10, header.width * header.height * 4);
+		texture = Texture::create_rgba(header.width, header.height, data);
+		texture.multiply_alphas();
+	} else if(strcmp(type, "fixedrgba") == 0) {
+		s32 width = atoi(next_hint(&hint));
+		s32 height = atoi(next_hint(&hint));
+		std::vector<u8> data = src.read_multiple<u8>(0, width * height * 4);
+		texture = Texture::create_rgba(width, height, data);
+		texture.multiply_alphas();
+	} else if(strcmp(type, "pif") == 0) {
+		texture = unpack_pif(src);
+	} else {
+		verify_not_reached("Tried to unpack a texture with an invalid hint.");
 	}
+	
 	auto [file, ref] = dest.file().open_binary_file_for_writing(dest.tag() + ".png");
 	write_png(*file, texture);
 	dest.set_src(ref);
 }
 
-static void pack_texture_asset(OutputStream& dest, const TextureAsset& src, Game game, s32 hint) {
+static void pack_texture_asset(OutputStream& dest, const TextureAsset& src, Game game, const char* hint) {
 	auto stream = src.file().open_binary_file_for_reading(src.src());
 	verify(stream.get(), "Failed to open PNG file.");
 	Opt<Texture> texture = read_png(*stream);
 	verify(texture.has_value(), "Failed to read PNG file.");
 	
-	switch(hint) {
-		case FMT_TEXTURE_RGBA: {
-			texture->to_rgba();
-			texture->divide_alphas(false);
-			
-			RgbaTextureHeader header = {0};
-			header.width = texture->width;
-			header.height = texture->height;
-			dest.write(header);
-			dest.write_v(texture->data);
-			
-			break;
-		}
-		case FMT_TEXTURE_RGBA_512_416: {
-			texture->to_rgba();
-			texture->divide_alphas();
-			verify(texture->width == 512 && texture->height == 416,
-				"RGBA image has wrong size, should be 512 by 416.");
-			dest.write_v(texture->data);
-			break;
-		}
-		case FMT_TEXTURE_RGBA_512_448: {
-			texture->to_rgba();
-			texture->divide_alphas();
-			verify(texture->width == 512 && texture->height == 448,
-				"RGBA image has wrong size, should be 512 by 448.");
-			dest.write_v(texture->data);
-			break;
-		}
-		case FMT_TEXTURE_PIF4:
-		case FMT_TEXTURE_PIF4_SWIZZLED: {
+	const char* type = next_hint(&hint);
+	if(strcmp(type, "rgba") == 0) {
+		texture->to_rgba();
+		texture->divide_alphas(false);
+		
+		RgbaTextureHeader header = {0};
+		header.width = texture->width;
+		header.height = texture->height;
+		dest.write(header);
+		dest.write_v(texture->data);
+	} else if(strcmp(type, "fixedrgba") == 0) {
+		s32 width = atoi(next_hint(&hint));
+		s32 height = atoi(next_hint(&hint));
+		texture->to_rgba();
+		texture->divide_alphas();
+		verify(texture->width == width && texture->height == height,
+			"RGBA image has wrong size, should be %d by %d.",
+			width, height);
+		dest.write_v(texture->data);
+	} else if(strcmp(type, "pif") == 0) {
+		s32 palette_size = atoi(next_hint(&hint));
+		if(palette_size == 4) {
 			texture->to_4bit_paletted();
-			pack_pif(dest, *texture, hint);
-			break;
-		}
-		case FMT_TEXTURE_PIF8:
-		case FMT_TEXTURE_PIF8_SWIZZLED:
-		default: {
+		} else if(palette_size == 8) {
 			texture->to_8bit_paletted();
-			pack_pif(dest, *texture, hint);
+		} else {
+			verify_not_reached("Tried to pack a texture with an invalid palette size specified in the hint.");
 		}
+		const char* swizzled = next_hint(&hint);
+		// TODO: Once we've figure out swizzling for where palette_size == 4
+		// make sure to enable that here.
+		if(strcmp(swizzled, "swizzled") == 0 && palette_size == 8) {
+			texture->swizzle();
+		}
+		pack_pif(dest, *texture);
+	} else {
+		verify_not_reached("Tried to pack a texture with an invalid hint.");
 	}
 }
 
@@ -173,7 +160,7 @@ static Texture unpack_pif(InputStream& src) {
 	}
 }
 
-static void pack_pif(OutputStream& dest, Texture& texture, s32 hint) {
+static void pack_pif(OutputStream& dest, Texture& texture) {
 	texture.divide_alphas();
 	
 	s64 header_ofs = dest.tell();
@@ -184,9 +171,8 @@ static void pack_pif(OutputStream& dest, Texture& texture, s32 hint) {
 	header.height = texture.height;
 	header.mip_levels = 1;
 	
-	switch(hint) {
-		case FMT_TEXTURE_PIF4:
-		case FMT_TEXTURE_PIF4_SWIZZLED: {
+	switch(texture.format) {
+		case PixelFormat::PALETTED_4: {
 			header.format = 0x94;
 			dest.write_n((u8*) texture.palette().data(), std::min(texture.palette().size(), (size_t) 16) * 4);
 			for(size_t i = texture.palette().size(); i < 16; i++) {
@@ -195,8 +181,7 @@ static void pack_pif(OutputStream& dest, Texture& texture, s32 hint) {
 			dest.write_n(texture.data.data(), texture.data.size());
 			break;
 		}
-		case FMT_TEXTURE_PIF8:
-		case FMT_TEXTURE_PIF8_SWIZZLED: {
+		case PixelFormat::PALETTED_8: {
 			texture.swizzle_palette();
 			
 			header.format = 0x13;
@@ -213,19 +198,16 @@ static void pack_pif(OutputStream& dest, Texture& texture, s32 hint) {
 	dest.write(header_ofs, header);
 }
 
-static bool test_texture_asset(std::vector<u8>& original, std::vector<u8>& repacked, Game game, s32 hint) {
-	switch(hint) {
-		case FMT_TEXTURE_PIF4:
-		case FMT_TEXTURE_PIF4_SWIZZLED:
-		case FMT_TEXTURE_PIF8:
-		case FMT_TEXTURE_PIF8_SWIZZLED:
-			assert(original.size() >= 8);
-			*(u32*) &original[4] = 0;
-			assert(repacked.size() >= 8);
-			*(u32*) &repacked[4] = 0;
-			original.resize(repacked.size());
-			break;
-		default: {} // Do nothing.
+static bool test_texture_asset(std::vector<u8>& original, std::vector<u8>& repacked, Game game, const char* hint) {
+	const char* type = next_hint(&hint);
+	if(strcmp(type, "pif") == 0) {
+		// We don't know what this field in the PIF header is and it doesn't
+		// seem to be used, so just zero it during tests.
+		assert(original.size() >= 8);
+		*(u32*) &original[4] = 0;
+		assert(repacked.size() >= 8);
+		*(u32*) &repacked[4] = 0;
+		original.resize(repacked.size());
 	}
 	return false;
 }

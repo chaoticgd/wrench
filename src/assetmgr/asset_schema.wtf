@@ -40,6 +40,12 @@ AssetType Reference {
 
 AssetType Collection {
 	desc: 'A generic container for other assets.'
+	
+	Hint texlist {
+		syntax: 'texlist,<texture hint>'
+		example: 'texlist,pif,8,unswizzled'
+		desc: 'A list of textures, where <texture hint> is the hint used by each Texture asset in the list.'
+	}
 }
 
 AssetType Binary {
@@ -53,13 +59,25 @@ AssetType Binary {
 	
 	// These are only used for testing.
 	StringAttribute asset_type { hidden: true }
-	IntegerAttribute format_hint { hidden: true }
+	StringAttribute format_hint { hidden: true }
 	IntegerAttribute game { hidden: true }
 	
 	Examples examples {
 		Binary code {
 			src: 'code.bin'
 		}
+	}
+	
+	Hint wad {
+		syntax: 'ext,<extension>'
+		example: 'ext,wad'
+		desc: 'A binary file with a custom <extension> (not .bin).'
+	}
+	
+	Hint pss {
+		syntax: 'pss'
+		example: 'pss'
+		desc: 'A binary file with a .pss extension.'
 	}
 }
 
@@ -217,6 +235,24 @@ AssetType Texture {
 		Texture my_texture {
 			src: 'my_texture.png'
 		}
+	}
+	
+	Hint pif {
+		syntax: 'pif,<palette size>,<swizzled>'
+		example: 'pif,8,unswizzled'
+		desc: 'A paletted PIF image with a <palette size> of \'4\' or \'8\' bits where the pixel data is either \'swizzled\' or \'unswizzled\'.'
+	}
+	
+	Hint rgba {
+		syntax: 'rgba'
+		example: 'rgba'
+		desc: 'An RGBA image with a header that encodes the width and height.'
+	}
+	
+	Hint fixedrgba {
+		syntax: 'fixedrgba,<width>,<height>'
+		example: 'fixedrgba,512,416'
+		desc: 'An headerless RGBA image of size <width> by <height>.'
 	}
 }
 
@@ -1046,6 +1082,18 @@ AssetType MobyClassCore {
 	
 	Child mesh { allowed_types: ['Mesh'] }
 	Child low_lod_mesh { allowed_types: ['Mesh'] }
+	
+	Hint normal {
+		syntax: 'normal'
+		example: 'normal'
+		desc: 'A moby class with a normal header, such as one those packed into levels.'
+	}
+	
+	Hint armor {
+		syntax: 'armor'
+		example: 'armor'
+		desc: 'A moby class with a minimal header, such as those packed into the armor.wad file in R&C2. Note that later games such as Deadlocked pack the armor files with the \'normal\' header rather than this one.'
+	}
 }
 
 AssetType Material {

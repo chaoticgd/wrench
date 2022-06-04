@@ -136,3 +136,20 @@ void write_game_info(std::string& dest, const GameInfo& info) {
 	
 	wtf_end_file(ctx);
 }
+
+const char* next_hint(const char** hint) {
+	static char temp[256];
+	for(s32 i = 0;; i++) {
+		if((*hint)[i] == ',' || (*hint)[i] == '\0' || i >= 255) {
+			strncpy(temp, *hint, i);
+			temp[i] = '\0';
+			if((*hint)[i] == ',') {
+				*hint += i + 1;
+			} else {
+				*hint += i;
+			}
+			break;
+		}
+	}
+	return temp;
+}

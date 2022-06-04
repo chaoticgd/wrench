@@ -32,6 +32,7 @@ static void write_attribute_table(const WtfNode* asset_type);
 static void write_child_table(const WtfNode* asset_type);
 static void write_type_list(std::string& dest, const WtfNode* child, int depth);
 static void write_examples(const WtfNode* examples);
+static void write_hints(const WtfNode* asset_type);
 static std::string to_link(const char* str);
 static void reify_node(WtfWriter* ctx, const WtfNode* node);
 static void reify_value(WtfWriter* ctx, const WtfAttribute* value);
@@ -126,6 +127,8 @@ static void write_contents(const WtfNode* root) {
 			if(examples) {
 				write_examples(examples);
 			}
+			
+			write_hints(node);
 		}
 	}
 }
@@ -279,6 +282,49 @@ static void write_examples(const WtfNode* examples) {
 		out("%s", str.c_str());
 		out("```\n");
 		wtf_end_file(ctx);
+	}
+}
+
+static void write_hints(const WtfNode* asset_type) {
+	int hint_count = 0;
+	for(const WtfNode* child = asset_type->first_child; child != nullptr; child = child->next_sibling) {
+		if(strcmp(child->type_name, "Hint") == 0) {
+			hint_count++;
+		}
+	}
+	
+	if(hint_count == 0) {
+		return;
+	}
+	
+	out("\n");
+	out("*Hints*\n");
+	out("\n");
+	
+	out("| Syntax | Example | Description |\n");
+	out("| - | - | - |\n");
+	for(const WtfNode* child = asset_type->first_child; child != nullptr; child = child->next_sibling) {
+		if(strcmp(child->type_name, "Hint") == 0) {
+			const WtfAttribute* syntax = wtf_attribute(child, "syntax");
+			assert(syntax && syntax->type == WTF_STRING);
+			const WtfAttribute* example = wtf_attribute(child, "example");
+			assert(example && example->type == WTF_STRING);
+			const WtfAttribute* desc = wtf_attribute(child, "desc");
+			assert(desc && desc->type == WTF_STRING);
+			
+			out("| `%s` | `%s` | ", syntax->string, example->string);
+			for(size_t i = 0; i < strlen(desc->string); i++) {
+				if(desc->string[i] == '<' || desc->string[i] == '>') {
+					out("\\");
+				}
+				if(desc->string[i] == '\'') {
+					out("`");
+				} else {
+					out("%c", desc->string[i]);
+				}
+			}
+			out(" |\n");
+		}
 	}
 }
 

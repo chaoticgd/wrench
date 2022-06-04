@@ -78,7 +78,7 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 	std::string ref = asset_reference_to_string(binary.reference());
 	printf("[%3d%%] \033[34mRunning test with %s asset %s\033[0m\n", percentage, type_name, ref.c_str());
 	
-	s32 hint = binary.format_hint();
+	std::string hint = binary.format_hint();
 	Game game = (Game) binary.game();
 	
 	AssetDispatchTable* dispatch = nullptr;
@@ -93,15 +93,15 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 		AssetBank& temp = forest.mount<MemoryAssetBank>();
 		AssetFile& file = temp.asset_file("test.asset");
 		Asset& asset = file.root().physical_child(type, "test");
-		unpack_asset_impl(asset, src_stream, game, hint);
+		unpack_asset_impl(asset, src_stream, game, hint.c_str());
 		
 		MemoryOutputStream dest_stream(dest);
-		pack_asset_impl(dest_stream, nullptr, nullptr, asset, game, hint);
+		pack_asset_impl(dest_stream, nullptr, nullptr, asset, game, hint.c_str());
 		
 		dispatch = &asset.funcs;
 	}
 	
-	if(!dispatch->test || !(*dispatch->test)(src, dest, game, hint)) {
+	if(!dispatch->test || !(*dispatch->test)(src, dest, game, hint.c_str())) {
 		if(!diff_buffers(src, dest, 0, "", 0)) {
 			exit(1);
 		}

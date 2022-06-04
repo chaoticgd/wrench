@@ -20,8 +20,8 @@
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 
-static void unpack_collection_asset(CollectionAsset& dest, InputStream& src, Game game, s32 hint);
-static void pack_collection_asset(OutputStream& dest, const CollectionAsset& src, Game game, s32 hint);
+static void unpack_collection_asset(CollectionAsset& dest, InputStream& src, Game game, const char* hint);
+static void pack_collection_asset(OutputStream& dest, const CollectionAsset& src, Game game, const char* hint);
 
 on_load(Collection, []() {
 	CollectionAsset::funcs.unpack_rac1 = wrap_hint_unpacker_func<CollectionAsset>(unpack_collection_asset);
@@ -35,9 +35,12 @@ on_load(Collection, []() {
 	CollectionAsset::funcs.pack_dl = wrap_hint_packer_func<CollectionAsset>(pack_collection_asset);
 })
 
-static void unpack_collection_asset(CollectionAsset& dest, InputStream& src, Game game, s32 hint) {
+static void unpack_collection_asset(CollectionAsset& dest, InputStream& src, Game game, const char* hint) {
+	const char* type = next_hint(&hint);
+	verify(strcmp(type, "texlist") == 0, "Tried to unpack a collection asset that wasn't a texlist.");
+	
 	s32 count = src.read<s32>(0);
-	verify(count < 0x1000, "Asset list has too many elements and is probably corrupted.");
+	verify(count < 0x1000, "texlist has too many elements and is probably corrupted.");
 	src.seek(4);
 	std::vector<s32> offsets = src.read_multiple<s32>(count);
 	for(s32 i = 0; i < count; i++) {
@@ -48,17 +51,14 @@ static void unpack_collection_asset(CollectionAsset& dest, InputStream& src, Gam
 		} else {
 			size = src.size() - offsets[i];
 		}
-		switch(hint) {
-			case FMT_COLLECTION_PIF8: {
-				unpack_asset(dest.child<TextureAsset>(i), src, ByteRange{offset, size}, game, FMT_TEXTURE_PIF8);
-				break;
-			}
-			default: verify_not_reached("Invalid hint value for collection asset.");
-		}
+		unpack_asset(dest.child<TextureAsset>(i), src, ByteRange{offset, size}, game, hint);
 	}
 }
 
-static void pack_collection_asset(OutputStream& dest, const CollectionAsset& src, Game game, s32 hint) {
+static void pack_collection_asset(OutputStream& dest, const CollectionAsset& src, Game game, const char* hint) {
+	const char* type = next_hint(&hint);
+	verify(strcmp(type, "texlist") == 0, "Tried to pack a collection asset that wasn't a texlist.");
+	
 	s32 count;
 	for(count = 0; count < 256; count++) {
 		if(!src.has_child(count)) {
@@ -72,13 +72,7 @@ static void pack_collection_asset(OutputStream& dest, const CollectionAsset& src
 	
 	for(s32 i = 0; i < 256; i++) {
 		if(src.has_child(i)) {
-			switch(hint) {
-				case FMT_COLLECTION_PIF8: {
-					offsets[i] = pack_asset<ByteRange>(dest, src.get_child(i), game, 0x10, FMT_TEXTURE_PIF8).offset;
-					break;
-				}
-				default: verify_not_reached("Invalid hint value for collection asset.");
-			}
+			offsets[i] = pack_asset<ByteRange>(dest, src.get_child(i), game, 0x10, hint).offset;
 		} else {
 			break;
 		}

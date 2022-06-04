@@ -22,7 +22,7 @@
 
 AssetUnpackerGlobals g_asset_unpacker = {};
 
-static bool handle_special_debugging_cases(Asset& dest, InputStream& src, Game game, s32 hint);
+static bool handle_special_debugging_cases(Asset& dest, InputStream& src, Game game, const char* hint);
 
 on_load(Unpacker, []() {
 	BuildAsset::funcs.unpack_rac1 = wrap_iso_unpacker_func<BuildAsset>(unpack_iso, unpack_asset_impl);
@@ -31,7 +31,7 @@ on_load(Unpacker, []() {
 	BuildAsset::funcs.unpack_dl = wrap_iso_unpacker_func<BuildAsset>(unpack_iso, unpack_asset_impl);
 })
 
-void unpack_asset_impl(Asset& dest, InputStream& src, Game game, s32 hint, s64 header_offset) {
+void unpack_asset_impl(Asset& dest, InputStream& src, Game game, const char* hint, s64 header_offset) {
 	if(handle_special_debugging_cases(dest, src, game, hint)) {
 		return;
 	}
@@ -66,7 +66,11 @@ void unpack_asset_impl(Asset& dest, InputStream& src, Game game, s32 hint, s64 h
 	std::string type = asset_type_to_string(dest.type());
 	for(char& c : type) c = tolower(c);
 	s32 percentage = (s32) ((g_asset_unpacker.current_file_offset * 100.f) / g_asset_unpacker.total_file_size);
-	printf("[%3d%%] \033[32mUnpacking %s asset %s\033[0m\n", percentage, type.c_str(), reference.c_str());
+	if(strlen(hint) > 0) {
+		printf("[%3d%%] \033[32mUnpacking %s asset %s (%s)\033[0m\n", percentage, type.c_str(), reference.c_str(), hint);
+	} else {
+		printf("[%3d%%] \033[32mUnpacking %s asset %s\033[0m\n", percentage, type.c_str(), reference.c_str());
+	}
 	
 	AssetUnpackerFunc* unpack_func = nullptr;
 	if(dest.type() == BuildAsset::ASSET_TYPE) {
@@ -97,7 +101,7 @@ void unpack_asset_impl(Asset& dest, InputStream& src, Game game, s32 hint, s64 h
 	}
 }
 
-static bool handle_special_debugging_cases(Asset& dest, InputStream& src, Game game, s32 hint) {
+static bool handle_special_debugging_cases(Asset& dest, InputStream& src, Game game, const char* hint) {
 	s32 is_wad = dest.flags & ASSET_IS_WAD;
 	s32 is_level_wad = dest.flags & ASSET_IS_LEVEL_WAD; 
 	s32 is_bin_leaf = dest.flags & ASSET_IS_BIN_LEAF;
@@ -116,7 +120,7 @@ static bool handle_special_debugging_cases(Asset& dest, InputStream& src, Game g
 		const char* type = asset_type_to_string(dest.type());
 		BinaryAsset& bin = dest.parent()->transmute_child<BinaryAsset>(dest.tag().c_str());
 		bin.set_asset_type(type);
-		bin.set_format_hint((s32) hint);
+		bin.set_format_hint(hint);
 		bin.set_game((s32) game);
 		unpack_asset_impl(bin, src, game, FMT_NO_HINT);
 		return true;

@@ -23,7 +23,7 @@
 static void unpack_moby_class_core(MobyClassCoreAsset& dest, InputStream& src, Game game);
 static void pack_moby_class_core(OutputStream& dest, const MobyClassCoreAsset& src, Game game);
 static std::vector<ColladaScene*> read_collada_files(std::vector<std::unique_ptr<ColladaScene>>& owners, std::vector<FileReference> refs);
-static bool test_moby_class_core(std::vector<u8>& original, std::vector<u8>& repacked, Game game, s32 hint);
+static bool test_moby_class_core(std::vector<u8>& original, std::vector<u8>& repacked, Game game, const char* hint);
 
 on_load(MobyClass, []() {
 	MobyClassCoreAsset::funcs.unpack_rac1 = wrap_unpacker_func<MobyClassCoreAsset>(unpack_moby_class_core);
@@ -126,6 +126,6 @@ static std::vector<ColladaScene*> read_collada_files(std::vector<std::unique_ptr
 	return scenes;
 }
 
-static bool test_moby_class_core(std::vector<u8>& original, std::vector<u8>& repacked, Game game, s32 hint) {
+static bool test_moby_class_core(std::vector<u8>& original, std::vector<u8>& repacked, Game game, const char* hint) {
 	return false;
 }

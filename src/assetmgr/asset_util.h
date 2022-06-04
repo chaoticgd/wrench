@@ -105,4 +105,12 @@ struct AssetLookupFailed : AssetError {
 	std::string asset;
 };
 
+// *****************************************************************************
+
+// Takes a string in the form of "firsttoken,secondtoken,etc", copies firsttoken
+// into a temporary static buffer, and sets the hint pointer to point to
+// secondtoken. This is used to consume hint strings passed to asset packers
+// and unpackers.
+const char* next_hint(const char** hint);
+
 #endif

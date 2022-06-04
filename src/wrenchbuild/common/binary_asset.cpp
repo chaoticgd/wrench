@@ -19,7 +19,7 @@
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 
-static void unpack_binary_asset(Asset& dest, InputStream& src, Game game, s32 hint, s64 header_offset);
+static void unpack_binary_asset(Asset& dest, InputStream& src, Game game, const char* hint, s64 header_offset);
 static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const BinaryAsset& src);
 
 on_load(Binary, []() {
@@ -34,12 +34,14 @@ on_load(Binary, []() {
 	BinaryAsset::funcs.pack_dl = wrap_bin_packer_func<BinaryAsset>(pack_binary_asset);
 })
 
-static void unpack_binary_asset(Asset& dest, InputStream& src, Game game, s32 hint, s64 header_offset) {
+static void unpack_binary_asset(Asset& dest, InputStream& src, Game game, const char* hint, s64 header_offset) {
 	BinaryAsset& binary = dest.as<BinaryAsset>();
-	const char* extension =
-		hint == FMT_BINARY_WAD ? ".wad" :
-		hint == FMT_BINARY_PSS ? ".pss" : ".bin";
-	std::string file_name = binary.tag() + extension;
+	const char* type = next_hint(&hint);
+	const char* extension = "bin";
+	if(strcmp(type, "ext") == 0) {
+		extension = next_hint(&hint);
+	}
+	std::string file_name = binary.tag() + "." + extension;
 	auto [stream, ref] = binary.file().open_binary_file_for_writing(file_name);
 	verify(stream.get(), "Failed to open file '%s' for writing binary asset '%s'.",
 		file_name.c_str(),
