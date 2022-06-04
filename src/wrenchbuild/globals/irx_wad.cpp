@@ -53,7 +53,7 @@ packed_struct(DlIrxModules,
 )
 
 packed_struct(GcIrxHeader,
-	/* 0x00 */ ByteRange texture;
+	/* 0x00 */ ByteRange image;
 	/* 0x04 */ ByteRange unused[2];
 	/* 0x18 */ GcIrxModules rac2;
 )
@@ -108,12 +108,14 @@ static void pack_rac1_irx_wad(OutputStream& dest, const IrxWadAsset& src, Game g
 
 static void unpack_rac2_irx_wad(IrxWadAsset& dest, InputStream& src, Game game) {
 	auto header = src.read<GcIrxHeader>(0);
+	unpack_asset(dest.image<TextureAsset>(), src, header.image, game, FMT_TEXTURE_RGBA);
 	unpack_rac2_irx_modules(dest, header.rac2, src, game);
 }
 
 static void pack_rac2_irx_wad(OutputStream& dest, const IrxWadAsset& src, Game game) {
 	GcIrxHeader header = {0};
 	dest.write(header);
+	header.image = pack_asset<ByteRange>(dest, src.get_image(), game, 0x40, FMT_TEXTURE_RGBA);
 	header.rac2 = pack_rac2_irx_modules(dest, src, game);
 	dest.write(0, header);
 }

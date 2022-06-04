@@ -619,6 +619,12 @@ AssetType IrxWad {
 	desc: 'A container for IOP modules.'
 	wad: true
 	
+	Child image {
+		allowed_types: ['Texture' 'Binary']
+		required: true
+		games: [2]
+	}
+	
 	Child sio2man {
 		allowed_types: ['Binary']
 		required: true
