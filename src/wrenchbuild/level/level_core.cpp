@@ -199,7 +199,7 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	data.pad(0x10, 0);
 	header.scene_view_size = data.tell();
 	
-	if(game != Game::DL) {
+	if(game != Game::DL && src.has_ratchet_seqs()) {
 		const CollectionAsset& ratchet_seqs = src.get_ratchet_seqs();
 		std::vector<s32> ratchet_seq_offsets(256, 0);
 		for(s32 i = 0; i < 256; i++) {
