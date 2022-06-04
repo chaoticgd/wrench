@@ -43,11 +43,11 @@ packed_struct(UyaDlMpegWadHeader,
 )
 
 static void unpack_rac_mpeg_wad(MpegWadAsset& dest, const RacMpegWadHeader& header, InputStream& src, Game game);
-static void pack_rac_mpeg_wad(OutputStream& dest, RacMpegWadHeader& header, const MpegWadAsset& src, Game game);
+static void pack_rac_mpeg_wad(OutputStream& dest, RacMpegWadHeader& header, const MpegWadAsset& src, Game game, const char* hint);
 template <typename Header>
 static void unpack_gc_uya_dl_mpeg_wad(MpegWadAsset& dest, const Header& header, InputStream& src, Game game);
 template <typename Header>
-static void pack_gc_uya_dl_mpeg_wad(OutputStream& dest, Header& header, const MpegWadAsset& src, Game game);
+static void pack_gc_uya_dl_mpeg_wad(OutputStream& dest, Header& header, const MpegWadAsset& src, Game game, const char* hint);
 
 on_load(Mpeg, []() {
 	MpegWadAsset::funcs.unpack_rac1 = wrap_wad_unpacker_func<MpegWadAsset, RacMpegWadHeader>(unpack_rac_mpeg_wad);
@@ -55,10 +55,10 @@ on_load(Mpeg, []() {
 	MpegWadAsset::funcs.unpack_rac3 = wrap_wad_unpacker_func<MpegWadAsset, UyaDlMpegWadHeader>(unpack_gc_uya_dl_mpeg_wad<UyaDlMpegWadHeader>);
 	MpegWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<MpegWadAsset, UyaDlMpegWadHeader>(unpack_gc_uya_dl_mpeg_wad<UyaDlMpegWadHeader>);
 	
-	MpegWadAsset::funcs.pack_rac1 = wrap_wad_packer_func<MpegWadAsset, RacMpegWadHeader>(pack_rac_mpeg_wad);
-	MpegWadAsset::funcs.pack_rac2 = wrap_wad_packer_func<MpegWadAsset, GcMpegWadHeader>(pack_gc_uya_dl_mpeg_wad<GcMpegWadHeader>);
-	MpegWadAsset::funcs.pack_rac3 = wrap_wad_packer_func<MpegWadAsset, UyaDlMpegWadHeader>(pack_gc_uya_dl_mpeg_wad<UyaDlMpegWadHeader>);
-	MpegWadAsset::funcs.pack_dl = wrap_wad_packer_func<MpegWadAsset, UyaDlMpegWadHeader>(pack_gc_uya_dl_mpeg_wad<UyaDlMpegWadHeader>);
+	MpegWadAsset::funcs.pack_rac1 = wrap_wad_hint_packer_func<MpegWadAsset, RacMpegWadHeader>(pack_rac_mpeg_wad);
+	MpegWadAsset::funcs.pack_rac2 = wrap_wad_hint_packer_func<MpegWadAsset, GcMpegWadHeader>(pack_gc_uya_dl_mpeg_wad<GcMpegWadHeader>);
+	MpegWadAsset::funcs.pack_rac3 = wrap_wad_hint_packer_func<MpegWadAsset, UyaDlMpegWadHeader>(pack_gc_uya_dl_mpeg_wad<UyaDlMpegWadHeader>);
+	MpegWadAsset::funcs.pack_dl = wrap_wad_hint_packer_func<MpegWadAsset, UyaDlMpegWadHeader>(pack_gc_uya_dl_mpeg_wad<UyaDlMpegWadHeader>);
 })
 
 static void unpack_rac_mpeg_wad(MpegWadAsset& dest, const RacMpegWadHeader& header, InputStream& src, Game game) {
@@ -70,7 +70,11 @@ static void unpack_rac_mpeg_wad(MpegWadAsset& dest, const RacMpegWadHeader& head
 	}
 }
 
-static void pack_rac_mpeg_wad(OutputStream& dest, RacMpegWadHeader& header, const MpegWadAsset& src, Game game) {
+static void pack_rac_mpeg_wad(OutputStream& dest, RacMpegWadHeader& header, const MpegWadAsset& src, Game game, const char* hint) {
+	if(strcmp(next_hint(&hint), "nompegs") == 0) {
+		return;
+	}
+	
 	const CollectionAsset& mpegs = src.get_mpegs();
 	for(s32 i = 0; i < ARRAY_SIZE(header.mpegs); i++) {
 		if(mpegs.has_child(i)) {
@@ -101,7 +105,11 @@ static void unpack_gc_uya_dl_mpeg_wad(MpegWadAsset& dest, const Header& header, 
 }
 
 template <typename Header>
-static void pack_gc_uya_dl_mpeg_wad(OutputStream& dest, Header& header, const MpegWadAsset& src, Game game) {
+static void pack_gc_uya_dl_mpeg_wad(OutputStream& dest, Header& header, const MpegWadAsset& src, Game game, const char* hint) {
+	if(strcmp(next_hint(&hint), "nompegs") == 0) {
+		return;
+	}
+	
 	const CollectionAsset& mpegs = src.get_mpegs();
 	for(s32 i = 0; i < ARRAY_SIZE(header.mpegs); i++) {
 		if(mpegs.has_child(i)) {

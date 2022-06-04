@@ -180,6 +180,6 @@ table_of_contents read_table_of_contents_rac1(InputStream& src);
 table_of_contents read_table_of_contents_rac234(InputStream& src);
 
 s64 write_table_of_contents_rac234(OutputStream& iso, const table_of_contents& toc, Game game);
-Sector32 calculate_table_of_contents_size(const table_of_contents& toc, s32 single_level_index);
+Sector32 calculate_table_of_contents_size(const table_of_contents& toc);
 
 #endif

@@ -41,11 +41,15 @@ using ConstAssetVisitorCallback = std::function<void(const char* key, std::any v
 struct AssetReferenceFragment {
 	std::string tag;
 	AssetType type = {-1}; // Not populated by the parser.
+	
+	bool operator==(const AssetReferenceFragment& rhs) const { return tag == rhs.tag; }
 };
 
 struct AssetReference {
 	std::vector<AssetReferenceFragment> fragments;
 	std::string pack;
+	
+	bool operator==(const AssetReference& rhs) const { return fragments == rhs.fragments && pack == rhs.pack; }
 };
 
 AssetReference parse_asset_reference(const char* ptr);

@@ -421,7 +421,7 @@ s64 write_table_of_contents_rac234(OutputStream& iso, const table_of_contents& t
 	return toc_end;
 }
 
-Sector32 calculate_table_of_contents_size(const table_of_contents& toc, s32 single_level_index) {
+Sector32 calculate_table_of_contents_size(const table_of_contents& toc) {
 	s64 resident_toc_size_bytes = 0;
 	for(const GlobalWadInfo& global : toc.globals) {
 		assert(global.header.size() > 0);
@@ -429,25 +429,11 @@ Sector32 calculate_table_of_contents_size(const table_of_contents& toc, s32 sing
 	}
 	resident_toc_size_bytes += toc.levels.size() * sizeof(SectorRange) * 3;
 	Sector32 toc_size = Sector32::size_from_bytes(resident_toc_size_bytes);
-	if(single_level_index > -1) {
-		if(single_level_index >= (int) toc.levels.size()) {
-			fprintf(stderr, "error: Single level index greater than maximum level index!\n");
-			exit(1);
-		}
-		auto& level = toc.levels[single_level_index];
+	for(auto& level : toc.levels) {
 		for(const Opt<LevelWadInfo>& wad : {level.level, level.audio, level.scene}) {
 			if(wad) {
 				assert(wad->header.size() > 0);
-				toc_size.sectors += Sector32::size_from_bytes(wad->header.size()).sectors * toc.levels.size();
-			}
-		}
-	} else {
-		for(auto& level : toc.levels) {
-			for(const Opt<LevelWadInfo>& wad : {level.level, level.audio, level.scene}) {
-				if(wad) {
-					assert(wad->header.size() > 0);
-					toc_size.sectors += Sector32::size_from_bytes(wad->header.size()).sectors;
-				}
+				toc_size.sectors += Sector32::size_from_bytes(wad->header.size()).sectors;
 			}
 		}
 	}

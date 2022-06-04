@@ -41,7 +41,10 @@ AssetReference parse_asset_reference(const char* ptr) {
 	}
 	
 	std::string tag = string.substr(tag_begin, string.size() - tag_begin);
-	reference.fragments.push_back(AssetReferenceFragment{std::move(tag)});
+	if(tag.size() > 0) {
+		reference.fragments.push_back(AssetReferenceFragment{std::move(tag)});
+	}
+	
 	return reference;
 }
 
@@ -139,17 +142,21 @@ void write_game_info(std::string& dest, const GameInfo& info) {
 
 const char* next_hint(const char** hint) {
 	static char temp[256];
-	for(s32 i = 0;; i++) {
-		if((*hint)[i] == ',' || (*hint)[i] == '\0' || i >= 255) {
-			strncpy(temp, *hint, i);
-			temp[i] = '\0';
-			if((*hint)[i] == ',') {
-				*hint += i + 1;
-			} else {
-				*hint += i;
+	if(hint) {
+		for(s32 i = 0;; i++) {
+			if((*hint)[i] == ',' || (*hint)[i] == '\0' || i >= 255) {
+				strncpy(temp, *hint, i);
+				temp[i] = '\0';
+				if((*hint)[i] == ',') {
+					*hint += i + 1;
+				} else {
+					*hint += i;
+				}
+				break;
 			}
-			break;
 		}
+	} else {
+		temp[0] = '\0';
 	}
 	return temp;
 }

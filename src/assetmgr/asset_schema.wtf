@@ -179,6 +179,18 @@ AssetType Build {
 	
 	Child particle_textures { allowed_types: ['Collection'] }
 	Child fx_textures { allowed_types: ['Collection'] }
+	
+	Hint release {
+		syntax: 'release'
+		example: 'release'
+		desc: 'A full build of the game.'
+	}
+	
+	Hint debuglm {
+		syntax: 'debuglm,<level>,<mpegs>'
+		example: 'debuglm,gc.levels.4,nompegs'
+		desc: 'A build of the game where only the level with asset path <level> is included (or leave it empty for normal level packing), and/or MPEG cutscenes could be omitted (\'nompegs\', or \'mpegs\' for normal MPEG packing). This option is included in the hope that it will aid development of mods by speeding up the packing process. Only levels referenced by the levels collection are allowed.'
+	}
 }
 
 AssetType PrimaryVolumeDescriptor {
@@ -836,6 +848,12 @@ AssetType MpegWad {
 		Child child {
 			allowed_types: ['Mpeg' 'Binary']
 		}
+	}
+	
+	Hint nompegs {
+		syntax: 'nompegs'
+		example: 'nompegs'
+		desc: 'This option skips writing out the mpegs to make packing faster (or provide no hint to write them out as normal).'
 	}
 }
 

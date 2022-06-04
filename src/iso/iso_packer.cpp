@@ -23,16 +23,18 @@
 
 static void pack_ps2_logo(OutputStream& iso, const BuildAsset& build, AssetPackerFunc pack);
 static std::vector<GlobalWadInfo> enumerate_globals(const BuildAsset& build, Game game);
-static std::vector<LevelInfo> enumerate_levels(const BuildAsset& build, Game game);
+static std::vector<LevelInfo> enumerate_levels(const BuildAsset& build, Game game, const LevelAsset* single_level);
+static LevelInfo enumerate_level(const LevelAsset& level, Game game);
 static IsoDirectory enumerate_files(const Asset& files);
 static void flatten_files(std::vector<IsoFileRecord*>& dest, IsoDirectory& root_dir);
 static IsoFileRecord write_system_cnf(OutputStream& iso, IsoDirectory& root_dir, const BuildAsset& build);
 static void pack_files(OutputStream& iso, std::vector<IsoFileRecord*>& files, Game game, AssetPackerFunc pack);
-static IsoDirectory pack_globals(OutputStream& iso, std::vector<GlobalWadInfo>& globals, Game game, AssetPackerFunc pack);
-static std::array<IsoDirectory, 3> pack_levels(OutputStream& iso, std::vector<LevelInfo>& levels, Game game, s32 single_level_index, AssetPackerFunc pack);
+static IsoDirectory pack_globals(OutputStream& iso, std::vector<GlobalWadInfo>& globals, Game game, AssetPackerFunc pack, bool no_mpegs);
+static std::array<IsoDirectory, 3> pack_levels(OutputStream& iso, std::vector<LevelInfo>& levels, Game game, const LevelAsset* single_level, AssetPackerFunc pack);
 static void pack_level_wad_outer(OutputStream& iso, IsoDirectory& directory, LevelWadInfo& wad, const char* name, Game game, s32 index, AssetPackerFunc pack);
 
-void pack_iso(OutputStream& iso, const BuildAsset& build, Game, AssetPackerFunc pack) {
+void pack_iso(OutputStream& iso, const BuildAsset& build, Game, const char* hint, AssetPackerFunc pack) {
+	// Determine the game being built.
 	Game game = Game::UNKNOWN;
 	std::string game_str = build.game();
 	if(game_str == "rac") {
@@ -45,15 +47,37 @@ void pack_iso(OutputStream& iso, const BuildAsset& build, Game, AssetPackerFunc 
 		game = Game::DL;
 	}
 	
-	s32 single_level_index = -1;
+	AssetReference single_level_ref;
+	bool no_mpegs;
+	
+	// Parse the hint to determine the build configuration.
+	const char* type = next_hint(&hint);
+	if(strcmp(type, "release") == 0) {
+		single_level_ref = {};
+		no_mpegs = false;
+	} else if(strcmp(type, "debuglm") == 0) {
+		const char* ref = next_hint(&hint);
+		single_level_ref = parse_asset_reference(ref);
+		no_mpegs = strcmp(next_hint(&hint), "nompegs") == 0;
+	}
+	
+	// If only a single level is being packed, find it.
+	const LevelAsset* single_level = nullptr;
+	if(!single_level_ref.fragments.empty()) {
+		build.get_levels().for_each_logical_child_of_type<LevelAsset>([&](const LevelAsset& level) {
+			if(level.reference() == single_level_ref) {
+				single_level = &level;
+			}
+		});
+	}
 	
 	pack_ps2_logo(iso, build, pack);
 	
 	table_of_contents toc;
 	toc.globals = enumerate_globals(build, game);
-	toc.levels = enumerate_levels(build, game);
+	toc.levels = enumerate_levels(build, game, single_level);
 	
-	Sector32 toc_size = calculate_table_of_contents_size(toc, single_level_index);
+	Sector32 toc_size = calculate_table_of_contents_size(toc);
 	
 	// Mustn't modify root_dir until after pack_files is called, or the
 	// flattened file pointers will be invalidated.
@@ -101,9 +125,9 @@ void pack_iso(OutputStream& iso, const BuildAsset& build, Game, AssetPackerFunc 
 	root_dir.files.emplace(root_dir.files.begin(), std::move(system_cnf_record));
 	root_dir.files.emplace(root_dir.files.begin(), std::move(toc_record));
 	
-	root_dir.subdirs.emplace_back(pack_globals(iso, toc.globals, game, pack));
+	root_dir.subdirs.emplace_back(pack_globals(iso, toc.globals, game, pack, no_mpegs));
 	auto [levels_dir, audio_dir, scenes_dir] =
-		pack_levels(iso, toc.levels, game, single_level_index, pack);
+		pack_levels(iso, toc.levels, game, single_level, pack);
 	root_dir.subdirs.emplace_back(std::move(levels_dir));
 	root_dir.subdirs.emplace_back(std::move(audio_dir));
 	root_dir.subdirs.emplace_back(std::move(scenes_dir));
@@ -209,36 +233,53 @@ static std::vector<GlobalWadInfo> enumerate_globals(const BuildAsset& build, Gam
 	return globals;
 }
 
-static std::vector<LevelInfo> enumerate_levels(const BuildAsset& build, Game game) {
+static std::vector<LevelInfo> enumerate_levels(const BuildAsset& build, Game game, const LevelAsset* single_level) {
 	std::vector<LevelInfo> levels;
 	
-	build.get_levels().for_each_logical_child_of_type<LevelAsset>([&](const LevelAsset& level) {
-		LevelInfo info;
-		info.level_table_index = level.index();
-		
-		if(level.has_level()) {
-			LevelWadInfo& wad = info.level.emplace();
-			wad.header.resize(header_size_of_wad(game, WadType::LEVEL));
-			wad.asset = &level.get_level();
-		}
-		if(level.has_audio()) {
-			LevelWadInfo& wad = info.audio.emplace();
-			wad.header.resize(header_size_of_wad(game, WadType::LEVEL_AUDIO));
-			wad.asset = &level.get_audio();
-		}
-		if(level.has_scene()) {
-			LevelWadInfo& wad = info.scene.emplace();
-			wad.header.resize(header_size_of_wad(game, WadType::LEVEL_SCENE));
-			wad.asset = &level.get_scene();
-		}
-		
-		if(levels.size() <= info.level_table_index) {
-			levels.resize(info.level_table_index + 1);
-		}
-		levels[info.level_table_index] = std::move(info);
-	});
+	if(single_level) {
+		LevelInfo info = enumerate_level(*single_level, game);
+		build.get_levels().for_each_logical_child_of_type<LevelAsset>([&](const LevelAsset& level) {
+			s32 level_table_index = level.index();
+			info.level_table_index = level_table_index;
+			if(levels.size() <= level_table_index) {
+				levels.resize(level_table_index + 1);
+			}
+			levels[level_table_index] = info;
+		});
+	} else {
+		build.get_levels().for_each_logical_child_of_type<LevelAsset>([&](const LevelAsset& level) {
+			s32 level_table_index = level.index();
+			if(levels.size() <= level_table_index) {
+				levels.resize(level_table_index + 1);
+			}
+			levels[level_table_index] = enumerate_level(level, game);
+		});
+	}
 	
 	return levels;
+}
+
+static LevelInfo enumerate_level(const LevelAsset& level, Game game) {
+	LevelInfo info;
+	info.level_table_index = level.index();
+	
+	if(level.has_level()) {
+		LevelWadInfo& wad = info.level.emplace();
+		wad.header.resize(header_size_of_wad(game, WadType::LEVEL));
+		wad.asset = &level.get_level();
+	}
+	if(level.has_audio()) {
+		LevelWadInfo& wad = info.audio.emplace();
+		wad.header.resize(header_size_of_wad(game, WadType::LEVEL_AUDIO));
+		wad.asset = &level.get_audio();
+	}
+	if(level.has_scene()) {
+		LevelWadInfo& wad = info.scene.emplace();
+		wad.header.resize(header_size_of_wad(game, WadType::LEVEL_SCENE));
+		wad.asset = &level.get_scene();
+	}
+	
+	return info;
 }
 
 static IsoDirectory enumerate_files(const Asset& files) {
@@ -334,15 +375,18 @@ static void pack_files(OutputStream& iso, std::vector<IsoFileRecord*>& files, Ga
 	}
 }
 
-static IsoDirectory pack_globals(OutputStream& iso, std::vector<GlobalWadInfo>& globals, Game game, AssetPackerFunc pack) {
+static IsoDirectory pack_globals(OutputStream& iso, std::vector<GlobalWadInfo>& globals, Game game, AssetPackerFunc pack, bool no_mpegs) {
 	IsoDirectory globals_dir {"globals"};
 	for(GlobalWadInfo& global : globals) {
 		iso.pad(SECTOR_SIZE, 0);
 		Sector32 sector = Sector32::size_from_bytes(iso.tell());
 		
+		const char* hint = (global.asset->type() == MpegWadAsset::ASSET_TYPE && no_mpegs)
+			? FMT_MPEGWAD_NOMPEGS : FMT_NO_HINT;
+		
 		assert(global.asset);
 		fs::file_time_type modified_time;
-		pack(iso, &global.header, &modified_time, *global.asset, game, FMT_NO_HINT);
+		pack(iso, &global.header, &modified_time, *global.asset, game, hint);
 		
 		s64 end_of_file = iso.tell();
 		s64 file_size = end_of_file - sector.bytes();
@@ -362,24 +406,23 @@ static IsoDirectory pack_globals(OutputStream& iso, std::vector<GlobalWadInfo>& 
 	return globals_dir;
 }
 
-static std::array<IsoDirectory, 3> pack_levels(OutputStream& iso, std::vector<LevelInfo>& levels, Game game, s32 single_level_index, AssetPackerFunc pack) {
+static std::array<IsoDirectory, 3> pack_levels(OutputStream& iso, std::vector<LevelInfo>& levels, Game game, const LevelAsset* single_level, AssetPackerFunc pack) {
 	// Create directories for the level files.
 	IsoDirectory levels_dir {"levels"};
 	IsoDirectory audio_dir {"audio"};
 	IsoDirectory scenes_dir {"scenes"};
-	if(single_level_index > -1) {
+	if(single_level) {
 		// Only write out a single level, and point every level at it.
-		//auto& p = level_files[single_level_index].parts;
-		//LevelWadInfo level_part, audio_part, scene_part;
-		//assert(p[LEVEL_PART]);
-		//level_part = write_level_part(levels_dir, *p[LEVEL_PART]);
-		//if(p[AUDIO_PART]) audio_part = write_level_part(audio_dir, *p[AUDIO_PART]);
-		//if(p[SCENE_PART]) scene_part = write_level_part(scenes_dir, *p[SCENE_PART]);
-		//for(size_t i = 0; i < level_files.size(); i++) {
-		//	toc_levels[i].parts[0] = level_part;
-		//	if(p[AUDIO_PART]) toc_levels[i].parts[1] = audio_part;
-		//	if(p[SCENE_PART]) toc_levels[i].parts[2] = scene_part;
-		//}
+		LevelInfo& level = levels.at(0);
+		if(level.level) pack_level_wad_outer(iso, levels_dir, *level.level, "level", game, 0, pack);
+		if(level.audio) pack_level_wad_outer(iso, audio_dir, *level.audio, "audio", game, 0, pack);
+		if(level.scene) pack_level_wad_outer(iso, scenes_dir, *level.scene, "scene", game, 0, pack);
+		
+		for(size_t i = 1; i < levels.size(); i++) {
+			levels[i].level = level.level;
+			levels[i].audio = level.audio;
+			levels[i].scene = level.scene;
+		}
 	} else if(game == Game::RAC2) {
 		// The level files are laid out AoS.
 		for(size_t i = 0; i < levels.size(); i++) {

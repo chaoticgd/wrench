@@ -27,6 +27,9 @@ class Asset;
 #define FMT_NO_HINT ""
 #define FMT_BINARY_WAD "ext,wad"
 #define FMT_BINARY_PSS "ext,pss"
+#define FMT_BUILD_RELEASE "release"
+#define FMT_DEBUGLM_ALL_LEVELS_MPEGS "debuglm,,mpegs"
+#define FMT_DEBUGLM_ALL_LEVELS_NOMPEGS "debuglm,,nompegs"
 #define FMT_TEXTURE_RGBA "rgba"
 #define FMT_TEXTURE_RGBA_512_416 "rgba,512,416"
 #define FMT_TEXTURE_RGBA_512_448 "rgba,512,448"
@@ -37,6 +40,7 @@ class Asset;
 #define FMT_MOBY_CLASS_NORMAL "normal"
 #define FMT_MOBY_CLASS_ARMOR "armor"
 #define FMT_COLLECTION_PIF8 "texlist,pif,8,unswizzled"
+#define FMT_MPEGWAD_NOMPEGS "nompegs"
 
 // *****************************************************************************
 
@@ -122,6 +126,24 @@ AssetPackerFunc* wrap_wad_packer_func(PackerFunc func) {
 	});
 }
 
+template <typename ThisAsset, typename WadHeader, typename PackerFunc>
+AssetPackerFunc* wrap_wad_hint_packer_func(PackerFunc func) {
+	return new AssetPackerFunc([func](OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const Asset& src, Game game, const char* hint) {
+		WadHeader header = {0};
+		header.header_size = sizeof(WadHeader);
+		dest.write(header);
+		dest.pad(SECTOR_SIZE, 0);
+		func(dest, header, static_cast<const ThisAsset&>(src), game, hint);
+		dest.write(0, header);
+		if(header_dest) {
+			OutBuffer(*header_dest).write(0, header);
+		}
+		if(time_dest) {
+			*time_dest = fs::file_time_type::clock::now();
+		}
+	});
+}
+
 template <typename ThisAsset, typename PackerFunc>
 AssetPackerFunc* wrap_bin_packer_func(PackerFunc func) {
 	return new AssetPackerFunc([func](OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const Asset& src, Game game, const char* hint) {
@@ -132,7 +154,7 @@ AssetPackerFunc* wrap_bin_packer_func(PackerFunc func) {
 template <typename ThisAsset, typename PackerFunc>
 AssetPackerFunc* wrap_iso_packer_func(PackerFunc func, AssetPackerFunc pack) {
 	return new AssetPackerFunc([func, pack](OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const Asset& src, Game game, const char* hint) {
-		func(dest, static_cast<const ThisAsset&>(src), game, pack);
+		func(dest, static_cast<const ThisAsset&>(src), game, hint, pack);
 		if(time_dest) {
 			*time_dest = fs::file_time_type::clock::now();
 		}
