@@ -108,8 +108,8 @@ static void pack_gc_uya_dl_mpeg_wad(OutputStream& dest, Header& header, const Mp
 			const Asset& child = mpegs.get_child(i);
 			if(child.type() == MpegAsset::ASSET_TYPE) {
 				const MpegAsset& mpeg = child.as<MpegAsset>();
-				if(mpeg.has_video()) {
-					header.mpegs[i].subtitles = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video(), game);
+				if(mpeg.has_subtitles()) {
+					header.mpegs[i].subtitles = pack_asset_sa<SectorByteRange>(dest, mpeg.get_subtitles(), game);
 				}
 				header.mpegs[i].video = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video(), game);
 			} else {
