@@ -970,6 +970,12 @@ AssetType LevelWad {
 	Child data     { allowed_types: ['LevelDataWad'] }
 	Child chunks   { allowed_types: ['Collection'] }
 	Child missions { allowed_types: ['Collection'] }
+	
+	Child occlusion {
+		allowed_types: ['Binary']
+		required: false
+		games: [1 2 3]
+	}
 }
 
 AssetType LevelDataWad {

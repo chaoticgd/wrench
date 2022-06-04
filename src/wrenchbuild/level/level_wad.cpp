@@ -117,6 +117,7 @@ void unpack_rac_level_wad(LevelWadAsset& dest, const RacLevelWadHeader& header, 
 	SubInputStream data(src, header.data.bytes());
 	unpack_asset(dest.data().switch_files(), src, header.data, game);
 	unpack_asset(dest.data().gameplay(), src, header.gameplay_ntsc, game);
+	unpack_compressed_asset(dest.occlusion(), src, header.occlusion, game);
 }
 
 static void pack_rac_level_wad(OutputStream& dest, RacLevelWadHeader& header, const LevelWadAsset& src, Game game) {
@@ -125,7 +126,7 @@ static void pack_rac_level_wad(OutputStream& dest, RacLevelWadHeader& header, co
 	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), game);
 	header.gameplay_ntsc = pack_asset_sa<SectorRange>(dest, src.get_data().get_gameplay(), game);
 	header.gameplay_pal = pack_asset_sa<SectorRange>(dest, src.get_data().get_gameplay(), game);
-	// TODO: header.occlusion
+	header.occlusion = pack_compressed_asset_sa<SectorRange>(dest, src.get_occlusion(), game, "occlusion");
 }
 
 void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHeader& header, InputStream& src, Game game) {
@@ -135,6 +136,7 @@ void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHeader& hea
 	unpack_asset(dest.data().sound_bank(), src, header.sound_bank, game);
 	unpack_asset(dest.data().switch_files(), src, header.data, game);
 	unpack_asset(dest.data().gameplay(), src, header.gameplay, game);
+	unpack_compressed_asset(dest.occlusion(), src, header.occlusion, game);
 	unpack_chunks(dest.chunks(), src, header.chunks, game);
 }
 
@@ -145,7 +147,7 @@ static void pack_gc_uya_level_wad(OutputStream& dest, GcUyaLevelWadHeader& heade
 	header.sound_bank = pack_asset_sa<SectorRange>(dest, src.get_data().get_sound_bank(), game);
 	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), game);
 	header.gameplay = pack_asset_sa<SectorRange>(dest, src.get_data().get_gameplay(), game);
-	// TODO: header.occlusion
+	header.occlusion = pack_compressed_asset_sa<SectorRange>(dest, src.get_occlusion(), game, "occlusion");
 	header.chunks = pack_chunks(dest, src.get_chunks(), game);
 }
 
