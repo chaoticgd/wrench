@@ -22,43 +22,34 @@
 #include <iso/iso_filesystem.h>
 #include <iso/wad_identifier.h>
 
-enum class Region {
-	NTSC, PAL
-};
-
 struct UnpackInfo {
 	Asset* asset;
 	s64 header_offset;
 	ByteRange64 data_range;
 };
 
-static void unpack_ps2_logo(BuildAsset& build, InputStream& src, Region region);
+static void unpack_ps2_logo(BuildAsset& build, InputStream& src, std::string region);
 static void unpack_primary_volume_descriptor(BuildAsset& build, const IsoPrimaryVolumeDescriptor& pvd);
 static void enumerate_global_wads(std::vector<UnpackInfo>& dest, BuildAsset& build, const table_of_contents& toc, InputStream& src, Game game);
 static void enumerate_level_wads(std::vector<UnpackInfo>& dest, CollectionAsset& levels, const table_of_contents& toc, InputStream& src);
 static void enumerate_non_wads(std::vector<UnpackInfo>& dest, CollectionAsset& files, fs::path out, const IsoDirectory& dir, InputStream& src);
-static std::tuple<Game, Region, const char*> identify_game(const IsoDirectory& root);
 static size_t get_global_wad_file_size(const GlobalWadInfo& global, const table_of_contents& toc);
 
 void unpack_iso(BuildAsset& dest, InputStream& src, AssetUnpackerFunc unpack) {
+	std::string game_str = dest.game();
+	
+	Game game = Game::UNKNOWN;
+	if(game_str == "rac") game = Game::RAC1;
+	if(game_str == "gc") game = Game::RAC2;
+	if(game_str == "uya") game = Game::RAC3;
+	if(game_str == "dl") game = Game::DL;
+	
 	IsoFilesystem filesystem = read_iso_filesystem(src);
-	auto [game, region, game_tag] = identify_game(filesystem.root);
 	table_of_contents toc = read_table_of_contents(src, game);
-	
-	const char* game_str = "unknown";
-	switch(game) {
-		case Game::RAC1: game_str = "rac"; break;
-		case Game::RAC2: game_str = "gc"; break;
-		case Game::RAC3: game_str = "uya"; break;
-		case Game::DL: game_str = "dl"; break;
-	}
-	
-	dest.rename(game_str);
-	dest.set_game(game_str);
 	
 	std::vector<UnpackInfo> files;
 	
-	unpack_ps2_logo(dest, src, region);
+	unpack_ps2_logo(dest, src, dest.region());
 	unpack_primary_volume_descriptor(dest, filesystem.pvd);
 	
 	enumerate_global_wads(files, dest.switch_files("globals/globals.asset"), toc, src, game);
@@ -76,7 +67,7 @@ void unpack_iso(BuildAsset& dest, InputStream& src, AssetUnpackerFunc unpack) {
 	}
 }
 
-static void unpack_ps2_logo(BuildAsset& build, InputStream& src, Region region) {
+static void unpack_ps2_logo(BuildAsset& build, InputStream& src, std::string region) {
 	src.seek(0);
 	std::vector<u8> logo = src.read_multiple<u8>(12 * SECTOR_SIZE);
 	
@@ -89,7 +80,7 @@ static void unpack_ps2_logo(BuildAsset& build, InputStream& src, Region region) 
 	}
 	
 	s32 width, height;
-	if(region == Region::PAL) {
+	if(region == "eu") {
 		width = 344;
 		height = 71;
 	} else {
@@ -223,68 +214,6 @@ static void enumerate_non_wads(std::vector<UnpackInfo>& dest, CollectionAsset& f
 	for(const IsoDirectory& subdir : dir.subdirs) {
 		enumerate_non_wads(dest, files, out/subdir.name, subdir, src);
 	}
-}
-
-static const std::map<std::string, std::pair<Game, Region>> ELF_FILE_NAMES = {
-	{"pbpx_955.16", {Game::RAC1, Region::NTSC}}, // japan original
-	{"sced_510.75", {Game::RAC1, Region::PAL}}, // eu demo
-	{"sces_509.16", {Game::RAC1, Region::PAL}}, // eu black label/plantinum
-	{"scus_971.99", {Game::RAC1, Region::NTSC}}, // us original/greatest hits
-	{"scus_972.09", {Game::RAC1, Region::NTSC}}, // us demo 1
-	{"scus_972.40", {Game::RAC1, Region::NTSC}}, // us demo 2
-	{"scaj_200.52", {Game::RAC2, Region::NTSC}}, // japan original
-	{"sces_516.07", {Game::RAC2, Region::PAL}}, // eu original/platinum
-	{"scus_972.68", {Game::RAC2, Region::NTSC}}, // us greatest hits
-	{"scus_972.68", {Game::RAC2, Region::NTSC}}, // us original
-	{"scus_973.22", {Game::RAC2, Region::NTSC}}, // us demo
-	{"scus_973.23", {Game::RAC2, Region::NTSC}}, // us retail employees demo
-	{"scus_973.74", {Game::RAC2, Region::NTSC}}, // us rac2 + jak demo
-	{"pcpx_966.53", {Game::RAC3, Region::NTSC}}, // japan promotional
-	{"sced_528.47", {Game::RAC3, Region::PAL}}, // eu demo
-	{"sced_528.48", {Game::RAC3, Region::PAL}}, // r&c3 + sly 2 demo
-	{"sces_524.56", {Game::RAC3, Region::PAL}}, // eu original/plantinum
-	{"scps_150.84", {Game::RAC3, Region::NTSC}}, // japan original
-	{"scus_973.53", {Game::RAC3, Region::NTSC}}, // us original
-	{"scus_974.11", {Game::RAC3, Region::NTSC}}, // us demo
-	{"scus_974.13", {Game::RAC3, Region::NTSC}}, // us beta
-	{"tces_524.56", {Game::RAC3, Region::PAL}}, // eu beta trial code
-	{"pcpx_980.17", {Game::DL, Region::NTSC}}, // japan demo
-	{"sced_536.60", {Game::DL, Region::PAL}}, // jak x glaiator demo
-	{"sces_532.85", {Game::DL, Region::PAL}}, // eu original/platinum
-	{"scps_150.99", {Game::DL, Region::NTSC}}, // japan special gift package
-	{"scps_193.28", {Game::DL, Region::NTSC}}, // japan reprint
-	{"scus_974.65", {Game::DL, Region::NTSC}}, // us original
-	{"scus_974.85", {Game::DL, Region::NTSC}}, // us demo
-	{"scus_974.87", {Game::DL, Region::NTSC}} // us public beta
-};
-
-static std::tuple<Game, Region, const char*> identify_game(const IsoDirectory& root) {
-	Game game = Game::UNKNOWN;
-	Region region = Region::NTSC;
-	for(const IsoFileRecord& file : root.files) {
-		auto iter = ELF_FILE_NAMES.find(file.name);
-		if(iter != ELF_FILE_NAMES.end()) {
-			game = iter->second.first;
-			region = iter->second.second;
-			break;
-		}
-	}
-	const char* tag;
-	switch(game) {
-		case Game::RAC1: tag = "1"; break;
-		case Game::RAC2: tag = "2"; break;
-		case Game::RAC3: tag = "3"; break;
-		case Game::DL:   tag = "4"; break;
-		case Game::UNKNOWN: {
-			tag = "error_unknown";
-			fprintf(stderr,
-				"warning: Failed to identify game. For R&C1 this is a fatal error. "
-				"For the other games this will mean you need to manually change "
-				"the game tag from Game error_unknown in all .asset files "
-				"(to Game 1 for R&C1, Game 4 for Deadlocked/Gladiator, etc).\n");
-		}
-	}
-	return {game, region, tag};
 }
 
 static size_t get_global_wad_file_size(const GlobalWadInfo& global, const table_of_contents& toc) {

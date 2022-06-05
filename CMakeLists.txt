@@ -158,6 +158,7 @@ add_executable(wrenchbuild
 	src/wrenchbuild/tests.cpp
 	src/wrenchbuild/asset_unpacker.cpp
 	src/wrenchbuild/asset_packer.cpp
+	src/wrenchbuild/release.cpp
 	src/wrenchbuild/classes/moby_class.cpp
 	src/wrenchbuild/common/binary_asset.cpp
 	src/wrenchbuild/common/collection_asset.cpp

@@ -92,6 +92,12 @@ AssetType Build {
 		games: [1 2 3 4]
 	}
 	
+	StringAttribute region {
+		desc: 'The region. Possible values: \'us\', \'eu\', \'japan\'.'
+		required: true
+		games: [1 2 3 4]
+	}
+	
 	IntegerAttribute ps2_logo_key {
 		desc: 'The key used to "encrypt" the PS2 logo.'
 		min: 0

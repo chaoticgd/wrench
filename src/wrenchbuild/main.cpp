@@ -28,11 +28,13 @@
 #include <iso/iso_packer.h>
 #include <iso/iso_unpacker.h>
 #include <iso/iso_tools.h>
+#include <iso/iso_filesystem.h>
 #include <iso/wad_identifier.h>
 #include <toolwads/wads.h>
 #include <wrenchbuild/tests.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
+#include <wrenchbuild/release.h>
 
 enum ArgFlags : u32 {
 	ARG_INPUT_PATH = 1 << 0,
@@ -41,7 +43,9 @@ enum ArgFlags : u32 {
 	ARG_OUTPUT_PATH = 1 << 3,
 	ARG_OFFSET = 1 << 4,
 	ARG_GAME = 1 << 5,
-	ARG_HINT = 1 << 6
+	ARG_HINT = 1 << 6,
+	ARG_NAME = 1 << 7,
+	ARG_DEVELOPER = 1 << 8
 };
 
 struct ParsedArgs {
@@ -51,10 +55,12 @@ struct ParsedArgs {
 	s64 offset = -1;
 	Game game = Game::RAC1;
 	std::string hint;
+	bool generate_output_subdirectory = false;
+	bool print_developer_output = false;
 };
 
 static ParsedArgs parse_args(int argc, char** argv, u32 flags);
-static void unpack(const fs::path& input_path, const fs::path& output_path);
+static void unpack(const fs::path& input_path, const fs::path& output_path, bool generate_output_subdirectory);
 static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path, Game game, const std::string& hint);
 static void decompress(const fs::path& input_path, const fs::path& output_path, s64 offset);
 static void compress(const fs::path& input_path, const fs::path& output_path);
@@ -62,14 +68,14 @@ static void extract_collision(fs::path input_path, fs::path output_path);
 static void build_collision(fs::path input_path, fs::path output_path);
 static void extract_moby(const char* input_path, const char* output_path);
 static void build_moby(const char* input_path, const char* output_path);
-static void print_usage();
+static void print_usage(bool developer_subcommands);
 static void print_version();
 
 #define require_args(arg_count) verify(argc == arg_count, "Incorrect number of arguments.");
 
 int main(int argc, char** argv) {
 	if(argc < 2) {
-		print_usage();
+		print_usage(false);
 		return 1;
 	}
 	
@@ -94,12 +100,12 @@ int main(int argc, char** argv) {
 		} else if(continuation == "_flat") {
 			g_asset_unpacker.dump_flat = true;
 		} else if(!continuation.empty()) {
-			print_usage();
+			print_usage(false);
 			return 1;
 		}
 		
-		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
-		unpack(args.input_paths[0], args.output_path);
+		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH | ARG_NAME);
+		unpack(args.input_paths[0], args.output_path, args.generate_output_subdirectory);
 		report_memory_statistics();
 		return 0;
 	}
@@ -112,7 +118,8 @@ int main(int argc, char** argv) {
 	}
 	
 	if(mode == "help" || mode == "-h" || mode == "--help") {
-		print_usage();
+		ParsedArgs args = parse_args(argc, argv, ARG_DEVELOPER);
+		print_usage(args.print_developer_output);
 		return 0;
 	}
 	
@@ -173,7 +180,7 @@ int main(int argc, char** argv) {
 		require_args(3);
 		run_tests(argv[2]);
 	} else {
-		print_usage();
+		print_usage(false);
 		return 1;
 	}
 	return 0;
@@ -223,6 +230,16 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 			continue;
 		}
 		
+		if((flags & ARG_NAME) && strcmp(argv[i], "-n") == 0) {
+			args.generate_output_subdirectory = true;
+			continue;
+		}
+		
+		if((flags & ARG_DEVELOPER) && strcmp(argv[i], "-d") == 0) {
+			args.print_developer_output = true;
+			continue;
+		}
+		
 		if((flags & ARG_INPUT_PATH) || (flags & ARG_INPUT_PATHS)) {
 			args.input_paths.emplace_back(argv[i]);
 		}
@@ -243,16 +260,8 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 	return args;
 }
 
-static void unpack(const fs::path& input_path, const fs::path& output_path) {
+static void unpack(const fs::path& input_path, const fs::path& output_path, bool generate_output_subdirectory) {
 	AssetForest forest;
-	
-	AssetBank& bank = forest.mount<LooseAssetBank>(output_path, true);
-	
-	if(g_asset_unpacker.dump_binaries) {
-		bank.game_info.type = AssetBankType::TEST;
-	} else {
-		bank.game_info.type = AssetBankType::UNPACKED;
-	}
 	
 	FileInputStream stream;
 	verify(stream.open(input_path), "Failed to open input file '%s' for reading.", input_path.string().c_str());
@@ -263,7 +272,44 @@ static void unpack(const fs::path& input_path, const fs::path& output_path) {
 		std::vector<char> identifier = stream.read_multiple<char>(5);
 		
 		if(memcmp(identifier.data(), "CD001", 5) == 0) {
-			BuildAsset& build = bank.asset_file("build.asset").root().child<BuildAsset>("base_game");
+			IsoFilesystem fs = read_iso_filesystem(stream);
+			Release release = identify_release(fs.root);
+			
+			std::string game_str;
+			switch(release.game) {
+				case Game::RAC1: game_str = "rac"; break;
+				case Game::RAC2: game_str = "gc"; break;
+				case Game::RAC3: game_str = "uya"; break;
+				case Game::DL: game_str = "dl"; break;
+				default: game_str = "unknown";
+			}
+			
+			std::string region_str;
+			switch(release.region) {
+				case Region::US: region_str = "us"; break;
+				case Region::EU: region_str = "eu"; break;
+				case Region::JAPAN: region_str = "japan"; break;
+			}
+			
+			// If -n is passed we create a new subdirectory based on the elf
+			// name for the output files.
+			fs::path new_output_path = output_path;
+			if(generate_output_subdirectory) {
+				std::string name = game_str + "_" + release.elf_name;
+				for(char& c : name) {
+					if(c == '.') {
+						c = '_';
+					}
+				}
+				new_output_path = new_output_path/fs::path(name);
+			}
+			
+			AssetBank& bank = forest.mount<LooseAssetBank>(new_output_path, true);
+			bank.game_info.type = g_asset_unpacker.dump_binaries ? AssetBankType::TEST : AssetBankType::UNPACKED;
+			
+			BuildAsset& build = bank.asset_file("build.asset").root().child<BuildAsset>(game_str.c_str());
+			build.set_game(game_str);
+			build.set_region(region_str);
 			
 			g_asset_unpacker.input_file = &stream;
 			g_asset_unpacker.current_file_offset = 0;
@@ -290,8 +336,10 @@ static void unpack(const fs::path& input_path, const fs::path& output_path) {
 		auto [game, type, name] = identify_wad(header);
 		
 		if(type != WadType::UNKNOWN) {
-			Asset& root = bank.asset_file("wad.asset").root();
+			AssetBank& bank = forest.mount<LooseAssetBank>(output_path, true);
+			bank.game_info.type = g_asset_unpacker.dump_binaries ? AssetBankType::TEST : AssetBankType::UNPACKED;
 			
+			Asset& root = bank.asset_file("wad.asset").root();
 			BuildAsset& build = root.child<BuildAsset>("build");
 			
 			Asset* wad = nullptr;
@@ -415,69 +463,74 @@ static void build_moby(const char* input_path, const char* output_path) {
 	write_moby_class(buffer, moby, Game::RAC2);
 	write_file("/", output_path, buffer);
 }
-static void print_usage() {
+
+static void print_usage(bool developer_subcommands) {
 	puts("Wrench Build Tool -- https://github.com/chaoticgd/wrench");
 	puts("");
 	puts(" An asset packer/unpacker for the Ratchet & Clank PS2 games intended for modding.");
 	puts("");
-	puts("USER SUBCOMMANDS");
+	puts("User Subcommands");
 	puts("");
-	puts(" unpack <input file> -o <output dir>");
+	puts(" unpack <input file> -o <output dir>[ -n]");
 	puts("   Unpack an ISO or WAD file to produce an asset bank of source files.");
+	puts("   Optionally, the output files can be placed in a subdirectory of <output dir>");
+	puts("   named based on the identified release of the file unpacked.");
 	puts("");
-	puts(" pack <input asset banks> -a <asset> -o <output iso> -g <game> -h <hint>");
+	puts(" pack <input asset banks> -a <asset> -o <output iso>[ -g <game>][ -h <hint>]");
 	puts("   Pack an asset (e.g. base_game) to produce a built file (e.g. an ISO file).");
 	puts("   If <asset> is not a build, the game must be specified (rac, gc, uya or dl).");
-	puts("   Optionally, the hint string used to specify the format of the build asset can be");
-	puts("   specified by passing -h.");
+	puts("   Optionally, the hint string used to specify the format of the build asset can");
+	puts("   be specified by passing -h.");
 	puts("");
-	puts(" help | -h | --help");
-	puts("    Print out this usage text.");
+	puts(" help | -h | --help[ -d]");
+	puts("   Print out this usage text. Pass -d to list developer subcommands.");
 	puts("");
 	puts(" version | -v | --version");
-	puts("    Print out version information.");
-	puts("");
-	puts("DEVELOPER SUBCOMMANDS");
-	puts("");
-	puts(" unpack_globals <input file> -o <output dir>");
-	puts("   Unpack an ISO or WAD file to produce an asset bank of source global files.");
-	puts("");
-	puts(" unpack_levels <input file> -o <output dir>");
-	puts("   Unpack an ISO or WAD file to produce an asset bank of source level files.");
-	puts("");
-	puts(" unpack_wads <input files> -o <output dir>");
-	puts("   Unpack an ISO or WAD file to produce an asset bank of WAD files.");
-	puts("");
-	puts(" unpack_global_wads <input file> -o <output dir>");
-	puts("   Unpack an ISO or WAD file to produce an asset bank of global WAD files.");
-	puts("");
-	puts(" unpack_level_wads <input file> -o <output dir>");
-	puts("   Unpack an ISO or WAD file to produce an asset bank of level WAD files.");
-	puts("");
-	puts(" unpack_binaries <input file> -o <output dir>");
-	puts("   Unpack an ISO or WAD file to produce an asset bank of binaries.");
-	puts("");
-	puts(" unpack_flat <input file> -o <output dir>");
-	puts("   Unpack an ISO or WAD file to produce an asset bank of FlatWad assets.");
-	puts("");
-	puts(" decompress <input file> -o <output file> -x <offset>");
-	puts("   Decompress a file stored using the game's custom LZ compression scheme.");
-	puts("");
-	puts(" compress <input file> -o <output file>");
-	puts("   Compress a file using the game's custom LZ compression scheme.");
-	puts("");
-	puts(" inspect_iso <input iso>");
-	puts("   Print out a summary of where assets are in the provided ISO file.");
-	puts("");
-	puts(" parse_pcsx2_cdvd_log <input iso>");
-	puts("   Interpret the output of PCSX2's disc block access log (from stdin) and print");
-	puts("   out file accesses as they occur.");
-	puts("");
-	puts(" profile_memory_usage <input asset banks>");
-	puts("   Record statistics about the memory used by mounting asset banks.");
-	puts("");
-	puts(" test <asset bank>");
-	puts("   Unpack and repack each binary in an asset bank, and diff against the original.");
+	puts("   Print out version information.");
+	if(developer_subcommands) {
+		puts("");
+		puts("Developer Subcommands");
+		puts("");
+		puts(" unpack_globals <input file> -o <output dir>");
+		puts("   Unpack an ISO or WAD file to produce an asset bank of source global files.");
+		puts("");
+		puts(" unpack_levels <input file> -o <output dir>");
+		puts("   Unpack an ISO or WAD file to produce an asset bank of source level files.");
+		puts("");
+		puts(" unpack_wads <input files> -o <output dir>");
+		puts("   Unpack an ISO or WAD file to produce an asset bank of WAD files.");
+		puts("");
+		puts(" unpack_global_wads <input file> -o <output dir>");
+		puts("   Unpack an ISO or WAD file to produce an asset bank of global WAD files.");
+		puts("");
+		puts(" unpack_level_wads <input file> -o <output dir>");
+		puts("   Unpack an ISO or WAD file to produce an asset bank of level WAD files.");
+		puts("");
+		puts(" unpack_binaries <input file> -o <output dir>");
+		puts("   Unpack an ISO or WAD file to produce an asset bank of binaries.");
+		puts("");
+		puts(" unpack_flat <input file> -o <output dir>");
+		puts("   Unpack an ISO or WAD file to produce an asset bank of FlatWad assets.");
+		puts("");
+		puts(" decompress <input file> -o <output file> -x <offset>");
+		puts("   Decompress a file stored using the game's custom LZ compression scheme.");
+		puts("");
+		puts(" compress <input file> -o <output file>");
+		puts("   Compress a file using the game's custom LZ compression scheme.");
+		puts("");
+		puts(" inspect_iso <input iso>");
+		puts("   Print out a summary of where assets are in the provided ISO file.");
+		puts("");
+		puts(" parse_pcsx2_cdvd_log <input iso>");
+		puts("   Interpret the output of PCSX2's disc block access log (from stdin) and print");
+		puts("   out file accesses as they occur.");
+		puts("");
+		puts(" profile_memory_usage <input asset banks>");
+		puts("   Record statistics about the memory used by mounting asset banks.");
+		puts("");
+		puts(" test <asset bank>");
+		puts("   Unpack and repack each binary in an asset bank, and diff against the original.");
+	}
 }
 
 extern unsigned char WAD_INFO[];
