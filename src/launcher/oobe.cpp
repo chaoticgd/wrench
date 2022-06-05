@@ -68,14 +68,18 @@ static void oobe(f32 delta_time) {
 	ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_Always);
 	ImGui::Begin("Wrench Setup", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
 	
-	const char* home = getenv("HOME");
-	if(home) {
-		g_config.folders.base_folder = std::string(home) + "/wrench";
-		g_config.folders.mods_folders = {g_config.folders.base_folder + "/mods"};
-		g_config.folders.games_folder = g_config.folders.base_folder + "/games";
-		g_config.folders.cache_folder = g_config.folders.base_folder + "/cache";
-	} else {
-		g_config.folders.mods_folders = {""};
+	static bool first_frame = true;
+		if(first_frame) {
+		const char* home = getenv("HOME");
+		if(home) {
+			g_config.folders.base_folder = std::string(home) + "/wrench";
+			g_config.folders.mods_folders = {g_config.folders.base_folder + "/mods"};
+			g_config.folders.games_folder = g_config.folders.base_folder + "/games";
+			g_config.folders.cache_folder = g_config.folders.base_folder + "/cache";
+		} else {
+			g_config.folders.mods_folders = {""};
+		}
+		first_frame = false;
 	}
 	
 	ImGui::TextWrapped("Welcome to the setup utility for the Wrench Modding Toolset!");
@@ -95,6 +99,11 @@ static void oobe(f32 delta_time) {
 	
 	ImGui::Separator();
 	if(ImGui::Button("Confirm")) {
+		fs::create_directories(g_config.folders.base_folder);
+		fs::create_directories(g_config.folders.mods_folders[0]);
+		fs::create_directories(g_config.folders.games_folder);
+		fs::create_directories(g_config.folders.cache_folder);
+		
 		done = true;
 	}
 	

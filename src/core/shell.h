@@ -16,44 +16,20 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef LAUNCHER_GLOBAL_STATE_H
-#define LAUNCHER_GLOBAL_STATE_H
+#ifndef CORE_SHELL_H
+#define CORE_SHELL_H
 
-#include <string>
+#include <mutex>
+#include <core/util.h>
 
-#include <core/stream.h>
-#include <toolwads/wads.h>
-#include <gui/gui.h>
-#include <gui/config.h>
-
-enum class LauncherMode {
-	DRAWING_GUI,
-	RUNNING_EMULATOR,
-	EXIT
+struct CommandOutput {
+	std::mutex mutex;
+	std::string string;
+	s32 exit_code;
+	bool finished = false;
 };
 
-struct GLFWwindow;
-
-struct BinPaths {
-	const char* wrenchbuild;
-};
-
-struct LaunchParams {
-	std::string emulator_executable;
-	std::string iso_path;
-};
-
-struct LauncherState {
-	LauncherMode mode;
-	FileInputStream wad;
-	LauncherWadHeader* header;
-	BinPaths bin_paths;
-	GLFWwindow* window;
-	std::vector<u8> font;
-	GlTexture placeholder_image;
-	LaunchParams launch_params;
-};
-
-extern LauncherState g_launcher;
+s32 execute_command(s32 argc, const char** argv, CommandOutput* output = nullptr);
+void open_in_file_manager(const char* path);
 
 #endif

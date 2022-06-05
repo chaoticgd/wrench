@@ -16,7 +16,9 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <nfd.h>
 #include <core/png.h>
+#include <core/shell.h>
 #include <engine/compression.h>
 #include <gui/gui.h>
 #include <gui/about.h>
@@ -38,6 +40,8 @@ int main(int argc, char** argv) {
 	g_launcher.mode = LauncherMode::DRAWING_GUI;
 	verify(g_launcher.wad.open("data/launcher.wad"), "Failed to open 'launcher.wad'.");
 	g_launcher.header = &((ToolWadInfo*) WAD_INFO)->launcher;
+	
+	g_launcher.bin_paths.wrenchbuild = "./bin/wrenchbuild";
 	
 	if(!gui::config_file_exists()) {
 		if(!run_oobe()) {
@@ -69,8 +73,11 @@ int main(int argc, char** argv) {
 				break;
 			}
 			case LauncherMode::RUNNING_EMULATOR: {
-				// TODO: Fix command injection.
-				system(g_launcher.emulator_command.c_str());
+				const char* args[] = {
+					g_launcher.launch_params.emulator_executable.c_str(),
+					g_launcher.launch_params.iso_path.c_str()
+				};
+				execute_command(ARRAY_SIZE(args), args, nullptr);
 				g_launcher.mode = LauncherMode::DRAWING_GUI;
 				break;
 			}
@@ -194,12 +201,38 @@ static void update_buttons_window(f32 buttons_window_height) {
 	ImGui::Begin("Buttons", &p_open, flags);
 	
 	if(ImGui::Button("Import ISO")) {
-		
+		nfdchar_t* path;
+		nfdresult_t result = NFD_OpenDialog("iso", nullptr, &path);
+		if(result == NFD_OKAY) {
+			const char* args[] = {
+				g_launcher.bin_paths.wrenchbuild,
+				"unpack",
+				path,
+				"-o",
+				g_config.folders.games_folder.c_str(),
+				"-n" // Unpack it into a subdirectory.
+			};
+			execute_command(ARRAY_SIZE(args), args, nullptr);
+			free(path);
+		}
 	}
 	
 	ImGui::SameLine();
-	if(ImGui::Button("Import Mod")) {
-		
+	if(ImGui::Button("Open Mods Folder")) {
+		if(g_config.folders.mods_folders.size() == 1) {
+			open_in_file_manager(fs::absolute(g_config.folders.mods_folders[0]).string().data());
+		} else {
+			ImGui::OpenPopup("Mods Folder Selector");
+		}
+	}
+	
+	if(ImGui::BeginPopup("Mods Folder Selector")) {
+		for(const std::string& mods_folder : g_config.folders.mods_folders) {
+			if(ImGui::Selectable(mods_folder.c_str())) {
+				open_in_file_manager(fs::absolute(mods_folder).string().data());
+			}
+		}
+		ImGui::EndPopup();
 	}
 	
 	ImGui::SameLine();
@@ -277,6 +310,7 @@ static void update_buttons_window(f32 buttons_window_height) {
 	
 	ImGui::End();
 }
+
 static void create_dock_layout() {
 	ImGuiID dockspace_id = ImGui::GetID("dock_space");
 	

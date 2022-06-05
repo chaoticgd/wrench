@@ -1,0 +1,80 @@
+/*
+	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
+	Copyright (C) 2019-2022 chaoticgd
+
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+#include "shell.h"
+
+#ifdef _WIN32
+	#include <shellapi.h>
+#else
+	#include <unistd.h>
+#endif
+
+s32 execute_command(s32 argc, const char** argv, CommandOutput* output) {
+	assert(argc >= 1);
+	
+	std::string command;
+	
+	// Pass arguments as enviroment variables.
+	for(s32 i = 0; i < argc; i++) {
+		std::string env_var = stringf("WRENCH_ARG_%d", i);
+		if(setenv(env_var.c_str(), argv[i], 1) == -1) {
+			return 1;
+		}
+		command += "\"$" + env_var + "\" ";
+	}
+	
+	if(output) {
+		// Redirect stderr to stdout so we can capture it.
+		command += "2>&1";
+		
+		FILE* pipe = popen(command.c_str(), "r");
+		if(!pipe) {
+			perror("popen() failed");
+			std::lock_guard<std::mutex> guard(output->mutex);
+			output->string += std::string("popen() failed: ") + strerror(errno) + "\n";
+		}
+		
+		char buffer[16];
+		while(fgets(buffer, sizeof(buffer), pipe) != NULL) {
+			if(output) {
+				std::lock_guard<std::mutex> guard(output->mutex);
+				output->string += buffer;
+			}
+		}
+		
+		s32 exit_code = pclose(pipe);
+		{
+			std::lock_guard<std::mutex> guard(output->mutex);
+			output->exit_code = exit_code;
+			output->finished = true;
+		}
+		return exit_code;
+	} else {
+		return system(command.c_str());
+	}
+}
+
+void open_in_file_manager(const char* path) {
+#ifdef _WIN32
+	ShellExecuteA(nullptr, "open", path, nullptr, nullptr, SW_SHOWDEFAULT);
+#else
+	setenv("WRENCH_ARG_0", "xdg-open", 1);
+	setenv("WRENCH_ARG_1", path, 1);
+	system("\"$WRENCH_ARG_0\" \"$WRENCH_ARG_1\"");
+#endif
+}
