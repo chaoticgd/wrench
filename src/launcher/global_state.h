@@ -47,6 +47,7 @@ struct LaunchParams {
 struct LauncherState {
 	LauncherMode mode;
 	FileInputStream wad;
+	FileInputStream buildwad;
 	LauncherWadHeader* header;
 	BinPaths bin_paths;
 	GLFWwindow* window;

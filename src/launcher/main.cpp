@@ -40,6 +40,7 @@ static GlTexture load_image(SectorRange range);
 int main(int argc, char** argv) {
 	g_launcher.mode = LauncherMode::DRAWING_GUI;
 	verify(g_launcher.wad.open("data/launcher.wad"), "Failed to open 'launcher.wad'.");
+	verify(g_launcher.buildwad.open("data/build.wad"), "Failed to open 'build.wad'.");
 	g_launcher.header = &((ToolWadInfo*) WAD_INFO)->launcher;
 	
 	g_launcher.bin_paths.wrenchbuild = "./bin/wrenchbuild";
@@ -284,7 +285,7 @@ static void update_buttons_window(f32 buttons_window_height) {
 		open_about = false;
 	}
 	
-	gui::about_screen();
+	gui::about_screen(g_launcher.buildwad, ((ToolWadInfo*) WAD_INFO)->build.license_text);
 	
 	if(open_settings) {
 		ImGui::OpenPopup("Settings##the_popup");

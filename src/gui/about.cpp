@@ -33,14 +33,59 @@ static const gui::Page ABOUT_PAGES[] = {
 	{"Libraries", about_libraries}
 };
 
+typedef void (*VoidFuncPtr)();
+
+static InputStream* wad;
+static SectorRange* ranges;
+static License loaded_license = MAX_LICENSE;
+static std::vector<u8> license_text;
+
+template <License license>
+static constexpr VoidFuncPtr gen_license_page() {
+	return []() {
+		if(license != loaded_license) {
+			license_text.clear();
+			SectorRange range = ranges[(s32) license];
+			std::vector<u8> compressed = wad->read_multiple<u8>(range.offset.bytes(), range.size.bytes());
+			decompress_wad(license_text, compressed);
+			license_text.push_back(0);
+			loaded_license = license;
+		}
+		
+		ImGui::SetNextItemWidth(-1);
+		ImVec2 size(0, ImGui::GetWindowHeight() - 128);
+		ImGui::InputTextMultiline("license", (char*) license_text.data(), license_text.size(), size,
+			ImGuiInputTextFlags_Multiline | ImGuiInputTextFlags_ReadOnly);
+	};
+}
+
+static const gui::Page LICENSE_PAGES[] = {
+	{"Wrench", gen_license_page<LICENSE_WRENCH>()},
+	{"Barlow", gen_license_page<LICENSE_BARLOW>()},
+	{"cxxopts", gen_license_page<LICENSE_CXXOPTS>()},
+	{"GLAD", gen_license_page<LICENSE_GLAD>()},
+	{"GLFW", gen_license_page<LICENSE_GLFW>()},
+	{"GLM", gen_license_page<LICENSE_GLM>()},
+	{"Dear ImGui", gen_license_page<LICENSE_IMGUI>()},
+	{"libpng", gen_license_page<LICENSE_LIBPNG>()},
+	{"nativefiledialog", gen_license_page<LICENSE_NATIVEFILEDIALOG>()},
+	{"nlohmanjson", gen_license_page<LICENSE_NLOHMANJSON>()},
+	{"RapidXML", gen_license_page<LICENSE_RAPIDXML>()},
+	{"Toml11", gen_license_page<LICENSE_TOML11>()},
+	{"zlib", gen_license_page<LICENSE_ZLIB>()}
+};
 
 static const gui::Chapter ABOUT_SCREEN[] = {
-	{"About", ARRAY_PAIR(ABOUT_PAGES)}
+	{"About", ARRAY_PAIR(ABOUT_PAGES)},
+	{"Licenses", ARRAY_PAIR(LICENSE_PAGES)}
 };
 
 static std::vector<u8> contributors_text;
 
-void gui::about_screen() {
+void gui::about_screen(InputStream& build_wad, SectorRange* license_text) {
+	wad = &build_wad;
+	ranges = license_text;
+	
 	static const Page* page = nullptr;
 	gui::book(&page, "About##the_popup", ARRAY_PAIR(ABOUT_SCREEN), BookButtons::CLOSE);
 }

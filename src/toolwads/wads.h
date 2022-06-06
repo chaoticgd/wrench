@@ -21,6 +21,23 @@
 
 #include <core/util.h>
 
+enum License {
+	LICENSE_WRENCH = 0,
+	LICENSE_BARLOW = 1,
+	LICENSE_CXXOPTS = 2,
+	LICENSE_GLAD = 3,
+	LICENSE_GLFW = 4,
+	LICENSE_GLM = 5,
+	LICENSE_IMGUI = 6,
+	LICENSE_LIBPNG = 7,
+	LICENSE_NATIVEFILEDIALOG = 8,
+	LICENSE_NLOHMANJSON = 9,
+	LICENSE_RAPIDXML = 10,
+	LICENSE_TOML11 = 11,
+	LICENSE_ZLIB = 12,
+	MAX_LICENSE = 13
+};
+
 packed_struct(BuildWadHeader,
 	/* 0x00 */ s32 header_size;
 	/* 0x04 */ Sector32 sector;
@@ -28,6 +45,7 @@ packed_struct(BuildWadHeader,
 	/* 0x0a */ s16 version_minor;
 	/* 0x0c */ u8 commit[0x14];
 	/* 0x20 */ SectorRange contributors;
+	/* 0x28 */ SectorRange license_text[MAX_LICENSE];
 )
 
 packed_struct(LauncherWadHeader,

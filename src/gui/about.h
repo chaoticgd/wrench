@@ -19,11 +19,12 @@
 #ifndef WRENCHGUI_ABOUT_H
 #define WRENCHGUI_ABOUT_H
 
+#include <core/stream.h>
 #include <gui/gui.h>
 
 namespace gui {
 
-void about_screen();
+void about_screen(InputStream& build_wad, SectorRange* license_text);
 
 }
 

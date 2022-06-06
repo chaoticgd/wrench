@@ -88,6 +88,20 @@ static void pack_build_wad() {
 	
 	header.contributors = pack_file(wad, "CONTRIBUTORS");
 	
+	header.license_text[LICENSE_WRENCH] = pack_file(wad, "data/licenses/wrench.txt");
+	header.license_text[LICENSE_BARLOW] = pack_file(wad, "data/licenses/barlowfont.txt");
+	header.license_text[LICENSE_CXXOPTS] = pack_file(wad, "data/licenses/cxxopts.txt");
+	header.license_text[LICENSE_GLAD] = pack_file(wad, "data/licenses/glad.txt");
+	header.license_text[LICENSE_GLFW] = pack_file(wad, "data/licenses/glfw.txt");
+	header.license_text[LICENSE_GLM] = pack_file(wad, "data/licenses/glm.txt");
+	header.license_text[LICENSE_IMGUI] = pack_file(wad, "data/licenses/imgui.txt");
+	header.license_text[LICENSE_LIBPNG] = pack_file(wad, "data/licenses/libpng.txt");
+	header.license_text[LICENSE_NATIVEFILEDIALOG] = pack_file(wad, "data/licenses/nativefiledialog.txt");
+	header.license_text[LICENSE_NLOHMANJSON] = pack_file(wad, "data/licenses/nlohmanjson.txt");
+	header.license_text[LICENSE_RAPIDXML] = pack_file(wad, "data/licenses/rapidxml.txt");
+	header.license_text[LICENSE_TOML11] = pack_file(wad, "data/licenses/toml11.txt");
+	header.license_text[LICENSE_ZLIB] = pack_file(wad, "data/licenses/zlib.txt");
+	
 	wad.write<BuildWadHeader>(0, header);
 }
 
