@@ -24,7 +24,17 @@
 	#include <unistd.h>
 #endif
 
-s32 execute_command(s32 argc, const char** argv, CommandOutput* output) {
+void spawn_command_thread(const std::vector<std::string>& args, CommandStatus* output) {
+	output->thread = std::thread([args, output]() {
+		std::vector<const char*> pointers(args.size());
+		for(size_t i = 0; i < args.size(); i++) {
+			pointers[i] = args[i].c_str();
+		}
+		execute_command(pointers.size(), pointers.data(), output);
+	});
+}
+
+s32 execute_command(s32 argc, const char** argv, CommandStatus* output) {
 	assert(argc >= 1);
 	
 	std::string command;
@@ -46,20 +56,25 @@ s32 execute_command(s32 argc, const char** argv, CommandOutput* output) {
 		if(!pipe) {
 			perror("popen() failed");
 			std::lock_guard<std::mutex> guard(output->mutex);
-			output->string += std::string("popen() failed: ") + strerror(errno) + "\n";
+			output->output += std::string("popen() failed: ") + strerror(errno) + "\n";
 		}
 		
 		char buffer[16];
 		while(fgets(buffer, sizeof(buffer), pipe) != NULL) {
 			if(output) {
 				std::lock_guard<std::mutex> guard(output->mutex);
-				output->string += buffer;
+				output->output += buffer;
 			}
 		}
 		
 		s32 exit_code = pclose(pipe);
 		{
 			std::lock_guard<std::mutex> guard(output->mutex);
+			if(exit_code == 0) {
+				output->output += "\nProcess exited normally.\n";
+			} else {
+				output->output += stringf("\nProcess exited with error code %d.\n", exit_code);
+			}
 			output->exit_code = exit_code;
 			output->finished = true;
 		}

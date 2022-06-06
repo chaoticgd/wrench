@@ -23,6 +23,7 @@
 #include <gui/gui.h>
 #include <gui/about.h>
 #include <gui/settings.h>
+#include <gui/command_output.h>
 #include <launcher/oobe.h>
 #include <launcher/global_state.h>
 
@@ -201,10 +202,10 @@ static void update_buttons_window(f32 buttons_window_height) {
 	ImGui::Begin("Buttons", &p_open, flags);
 	
 	if(ImGui::Button("Import ISO")) {
-		nfdchar_t* path;
+		nfdchar_t* path = nullptr;
 		nfdresult_t result = NFD_OpenDialog("iso", nullptr, &path);
 		if(result == NFD_OKAY) {
-			const char* args[] = {
+			std::vector<std::string> args = {
 				g_launcher.bin_paths.wrenchbuild,
 				"unpack",
 				path,
@@ -212,10 +213,16 @@ static void update_buttons_window(f32 buttons_window_height) {
 				g_config.folders.games_folder.c_str(),
 				"-n" // Unpack it into a subdirectory.
 			};
-			execute_command(ARRAY_SIZE(args), args, nullptr);
+			spawn_command_thread(args, &g_launcher.import_iso_command);
 			free(path);
+			
+			ImGui::OpenPopup("Import ISO");
+		} else if(result != NFD_CANCEL) {
+			printf("error: %s\n", NFD_GetError());
 		}
 	}
+	
+	gui::command_output_screen("Import ISO", g_launcher.import_iso_command);
 	
 	ImGui::SameLine();
 	if(ImGui::Button("Open Mods Folder")) {

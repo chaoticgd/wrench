@@ -21,11 +21,6 @@
 static void navigation(const gui::Page** current_page, const gui::Chapter* chapters, s32 chapter_count, f32 buttons_height);
 
 gui::BookResult gui::book(const Page** current_page, const char* id, const Chapter* chapters, s32 chapter_count, BookButtons buttons) {
-	ImVec2 centre = ImGui::GetMainViewport()->GetCenter();
-	ImGui::SetNextWindowPos(centre, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-	ImGui::SetNextWindowSize(ImVec2(640, 480), ImGuiCond_Appearing);
-	ImGui::SetNextWindowSizeConstraints(ImVec2(640, 480), ImGui::GetMainViewport()->Size);
-	
 	ImGuiStyle& s = ImGui::GetStyle();
 	ImVec2 buttons_size(0, 0);
 	switch(buttons) {
@@ -47,6 +42,11 @@ gui::BookResult gui::book(const Page** current_page, const char* id, const Chapt
 	}
 	
 	BookResult result = BookResult::NONE;
+	
+	ImVec2 centre = ImGui::GetMainViewport()->GetCenter();
+	ImGui::SetNextWindowPos(centre, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+	ImGui::SetNextWindowSize(ImVec2(640, 480), ImGuiCond_Appearing);
+	ImGui::SetNextWindowSizeConstraints(ImVec2(640, 480), ImGui::GetMainViewport()->Size);
 	
 	if(ImGui::BeginPopupModal(id)) {
 		if(ImGui::BeginTable("layout", 2, 0)) {

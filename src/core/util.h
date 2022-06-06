@@ -73,13 +73,19 @@ void assert_impl(const char* file, int line, const char* arg_str, bool condition
 #undef assert
 #define assert(condition) \
 	if(!(condition)) { \
+		fflush(stdout); \
+		fflush(stderr); \
 		fprintf(stderr, "[%s:%d] assert%s: %s\n", __FILE__, __LINE__, UTIL_ERROR_CONTEXT_STRING, #condition); \
+		fflush(stderr); \
 		abort(); \
 	}
 #define assert_not_reached(error_message) \
+	fflush(stdout); \
+	fflush(stderr); \
 	fprintf(stderr, "[%s:%d] assert%s: ", __FILE__, __LINE__, UTIL_ERROR_CONTEXT_STRING); \
 	fprintf(stderr, "%s", error_message); \
 	fprintf(stderr, "\n"); \
+	fflush(stderr); \
 	abort();
 
 // All these ugly _impl function templates are necessary so we can pass zero
@@ -87,9 +93,12 @@ void assert_impl(const char* file, int line, const char* arg_str, bool condition
 template <typename... Args>
 void verify_impl(const char* file, int line, bool condition, const char* error_message, Args... args) {
 	if(!condition) {
+		fflush(stdout);
+		fflush(stderr);
 		fprintf(stderr, "[%s:%d] error%s: ", file, line, UTIL_ERROR_CONTEXT_STRING);
 		fprintf(stderr, error_message, args...);
 		fprintf(stderr, "\n");
+		fflush(stderr);
 		abort();
 	}
 }
@@ -98,9 +107,12 @@ void verify_impl(const char* file, int line, bool condition, const char* error_m
 	verify_impl(__FILE__, __LINE__, condition, __VA_ARGS__)
 template <typename... Args>
 [[noreturn]] void verify_not_reached_impl(const char* file, int line, const char* error_message, Args... args) {
+	fflush(stdout);
+	fflush(stderr);
 	fprintf(stderr, "[%s:%d] error%s: ", file, line, UTIL_ERROR_CONTEXT_STRING);
 	fprintf(stderr, error_message, args...);
 	fprintf(stderr, "\n");
+	fflush(stderr);
 	abort();
 }
 #define verify_not_reached(...) \

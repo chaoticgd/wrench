@@ -20,16 +20,20 @@
 #define CORE_SHELL_H
 
 #include <mutex>
+#include <thread>
 #include <core/util.h>
 
-struct CommandOutput {
+struct CommandStatus {
+	std::thread thread;
 	std::mutex mutex;
-	std::string string;
+	// Shared data.
+	std::string output;
 	s32 exit_code;
 	bool finished = false;
 };
 
-s32 execute_command(s32 argc, const char** argv, CommandOutput* output = nullptr);
+void spawn_command_thread(const std::vector<std::string>& args, CommandStatus* output);
+s32 execute_command(s32 argc, const char** argv, CommandStatus* output = nullptr);
 void open_in_file_manager(const char* path);
 
 #endif
