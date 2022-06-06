@@ -307,10 +307,17 @@ AssetType ArmorWad {
 	flattenable: true
 	
 	Child armors {
-		desc: 'A list of all the armors/skins.'
+		desc: 'The armors/skins.'
 		allowed_types: ['Collection']
 		required: true
 		games: [2 3 4]
+	}
+	
+	Child wrenches {
+		desc: 'The different wrench upgrades.'
+		allowed_types: ['Collection']
+		required: true
+		games: [2]
 	}
 	
 	Child bot_textures {
