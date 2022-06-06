@@ -192,10 +192,10 @@ AssetType Build {
 		desc: 'A full build of the game.'
 	}
 	
-	Hint debuglm {
-		syntax: 'debuglm,<level>,<mpegs>'
-		example: 'debuglm,gc.levels.4,nompegs'
-		desc: 'A build of the game where only the level with asset path <level> is included (or leave it empty for normal level packing), and/or MPEG cutscenes could be omitted (\'nompegs\', or \'mpegs\' for normal MPEG packing). This option is included in the hope that it will aid development of mods by speeding up the packing process. Only levels referenced by the levels collection are allowed.'
+	Hint debuglf {
+		syntax: 'debuglf,<level>,<flags>'
+		example: 'debuglf,gc.levels.4,nompegs'
+		desc: 'Only the level with asset path <level> is included (or leave it empty for normal level packing), and various <flags> are set. Flags are seperated by a pipe (\\|) character. Available flags: \'nompegs\''
 	}
 }
 

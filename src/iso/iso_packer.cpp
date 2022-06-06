@@ -48,17 +48,24 @@ void pack_iso(OutputStream& iso, const BuildAsset& build, Game, const char* hint
 	}
 	
 	AssetReference single_level_ref;
-	bool no_mpegs;
+	bool no_mpegs = false;
 	
 	// Parse the hint to determine the build configuration.
 	const char* type = next_hint(&hint);
-	if(strcmp(type, "release") == 0) {
-		single_level_ref = {};
-		no_mpegs = false;
-	} else if(strcmp(type, "debuglm") == 0) {
+	if(strcmp(type, "debuglf") == 0) {
 		const char* ref = next_hint(&hint);
 		single_level_ref = parse_asset_reference(ref);
+		const char* flags = next_hint(&hint);
+		for(size_t i = 0; i < strlen(flags); i++) {
+			if(i == 0 || flags[i - 1] == '|') {
+				if(strcmp(flags + i, "nompegs") == 0) {
+					no_mpegs = true;
+				}
+			}
+		}
 		no_mpegs = strcmp(next_hint(&hint), "nompegs") == 0;
+	} else if(strcmp(type, "release") != 0) {
+		verify_not_reached("Invalid hint.");
 	}
 	
 	// If only a single level is being packed, find it.
