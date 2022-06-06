@@ -52,10 +52,10 @@ void gui::command_output_screen(const char* id, CommandStatus& status) {
 		for(; i < (s64) status.output.size(); i++) {
 			// \033[%sm%02x\033[0m
 			if(i + 5 < status.output.size() && memcmp(status.output.data() + i, "\033[", 2) == 0) {
-				if(status.output[i + 4] == 'm') {
-					i += 4;
-				} else {
+				if(status.output[i + 3] == 'm') {
 					i += 3;
+				} else {
+					i += 4;
 				}
 			} else {
 				result += status.output[i];
