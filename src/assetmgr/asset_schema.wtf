@@ -267,10 +267,10 @@ AssetType Texture {
 		desc: 'An RGBA image with a header that encodes the width and height.'
 	}
 	
-	Hint fixedrgba {
-		syntax: 'fixedrgba,<width>,<height>'
-		example: 'fixedrgba,512,416'
-		desc: 'An headerless RGBA image of size <width> by <height>.'
+	Hint rawrgba {
+		syntax: 'rawrgba,<width>,<height>'
+		example: 'rawrgba,512,416'
+		desc: 'A headerless RGBA image of size <width> by <height>.'
 	}
 }
 

@@ -55,7 +55,7 @@ static void unpack_texture_asset(TextureAsset& dest, InputStream& src, Game game
 		std::vector<u8> data = src.read_multiple<u8>(0x10, header.width * header.height * 4);
 		texture = Texture::create_rgba(header.width, header.height, data);
 		texture.multiply_alphas();
-	} else if(strcmp(type, "fixedrgba") == 0) {
+	} else if(strcmp(type, "rawrgba") == 0) {
 		s32 width = atoi(next_hint(&hint));
 		s32 height = atoi(next_hint(&hint));
 		std::vector<u8> data = src.read_multiple<u8>(0, width * height * 4);
@@ -88,7 +88,7 @@ static void pack_texture_asset(OutputStream& dest, const TextureAsset& src, Game
 		header.height = texture->height;
 		dest.write(header);
 		dest.write_v(texture->data);
-	} else if(strcmp(type, "fixedrgba") == 0) {
+	} else if(strcmp(type, "rawrgba") == 0) {
 		s32 width = atoi(next_hint(&hint));
 		s32 height = atoi(next_hint(&hint));
 		texture->to_rgba();
