@@ -212,7 +212,7 @@ static void update_buttons_window(f32 buttons_window_height) {
 				path,
 				"-o",
 				g_config.folders.games_folder.c_str(),
-				"-n" // Unpack it into a subdirectory.
+				"-s" // Unpack it into a subdirectory.
 			};
 			spawn_command_thread(args, &g_launcher.import_iso_command);
 			free(path);

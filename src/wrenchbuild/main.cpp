@@ -44,7 +44,7 @@ enum ArgFlags : u32 {
 	ARG_OFFSET = 1 << 4,
 	ARG_GAME = 1 << 5,
 	ARG_HINT = 1 << 6,
-	ARG_NAME = 1 << 7,
+	ARG_SUBDIRECTORY = 1 << 7,
 	ARG_DEVELOPER = 1 << 8
 };
 
@@ -104,7 +104,7 @@ int main(int argc, char** argv) {
 			return 1;
 		}
 		
-		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH | ARG_NAME);
+		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH | ARG_SUBDIRECTORY);
 		unpack(args.input_paths[0], args.output_path, args.generate_output_subdirectory);
 		report_memory_statistics();
 		return 0;
@@ -230,7 +230,7 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 			continue;
 		}
 		
-		if((flags & ARG_NAME) && strcmp(argv[i], "-n") == 0) {
+		if((flags & ARG_SUBDIRECTORY) && strcmp(argv[i], "-s") == 0) {
 			args.generate_output_subdirectory = true;
 			continue;
 		}
@@ -471,18 +471,18 @@ static void print_usage(bool developer_subcommands) {
 	puts("");
 	puts("User Subcommands");
 	puts("");
-	puts(" unpack <input file> -o <output dir>[ -n]");
+	puts(" unpack <input file> -o <output dir> [-s]");
 	puts("   Unpack an ISO or WAD file to produce an asset bank of source files.");
 	puts("   Optionally, the output files can be placed in a subdirectory of <output dir>");
-	puts("   named based on the identified release of the file unpacked.");
+	puts("   named based on the identified release of the file unpacked by passing -s.");
 	puts("");
-	puts(" pack <input asset banks> -a <asset> -o <output iso>[ -g <game>][ -h <hint>]");
+	puts(" pack <input asset banks> -a <asset> -o <output iso> [-g <game>] [-h <hint>]");
 	puts("   Pack an asset (e.g. base_game) to produce a built file (e.g. an ISO file).");
 	puts("   If <asset> is not a build, the game must be specified (rac, gc, uya or dl).");
 	puts("   Optionally, the hint string used to specify the format of the build asset can");
 	puts("   be specified by passing -h.");
 	puts("");
-	puts(" help | -h | --help[ -d]");
+	puts(" help | -h | --help [-d]");
 	puts("   Print out this usage text. Pass -d to list developer subcommands.");
 	puts("");
 	puts(" version | -v | --version");
