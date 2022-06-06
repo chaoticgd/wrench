@@ -19,6 +19,34 @@
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 
+packed_struct(GcHudWadHeader,
+	/* 0x0000 */ s32 header_size;
+	/* 0x0004 */ Sector32 sector;
+	/* 0x0008 */ SectorRange bank_header;
+	/* 0x0010 */ SectorRange banks[5];
+	/* 0x0038 */ SectorRange ratchet_seqs[28];
+	/* 0x0118 */ SectorRange hud_seqs[20];
+	/* 0x01b8 */ SectorRange vendor;
+	/* 0x01c0 */ SectorRange vendor_audio[277];
+	/* 0x0a68 */ SectorRange help_controls[11];
+	/* 0x0ac0 */ SectorRange help_moves[18];
+	/* 0x0b50 */ SectorRange help_weapons[45];
+	/* 0x0cb8 */ SectorRange help_gadgets[12];
+	/* 0x0d18 */ SectorRange help_items[17];
+	/* 0x0da0 */ SectorRange rac1_menus[14];
+	/* 0x0e10 */ SectorRange mission_ss[83];
+	/* 0x10a8 */ SectorRange gmap_ss[28];
+	/* 0x1188 */ SectorRange unknown2[56];
+	/* 0x1348 */ SectorRange all_text;
+	/* 0x1350 */ SectorRange hudw3d;
+	/* 0x1358 */ SectorRange unknown3[2];
+	/* 0x1368 */ SectorRange monsterpedia_shots[84];
+	/* 0x1608 */ SectorRange screen_gadgets[12];
+	/* 0x1668 */ SectorRange screen_weapons[45];
+	/* 0x17d0 */ SectorRange screen_items[20];
+)
+static_assert(sizeof(GcHudWadHeader) == 0x1870);
+
 packed_struct(UyaHudWadHeader,
 	/* 0x0000 */ s32 header_size;
 	/* 0x0004 */ Sector32 sector;
@@ -27,7 +55,7 @@ packed_struct(UyaHudWadHeader,
 	/* 0x0338 */ SectorRange hud_seqs[20];
 	/* 0x03d8 */ SectorRange vendor;
 	/* 0x03e0 */ u64 unused_3e0[287];
-	/* 0x0cd8 */ SectorRange moves[14];
+	/* 0x0cd8 */ SectorRange help_moves[14];
 	/* 0x0d48 */ u64 unused_d48[45];
 	/* 0x0eb0 */ SectorRange gadget_screenshots[10];
 	/* 0x0f00 */ u64 unused_f00[18];
