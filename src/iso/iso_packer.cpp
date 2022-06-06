@@ -426,9 +426,12 @@ static std::array<IsoDirectory, 3> pack_levels(OutputStream& iso, std::vector<Le
 		if(level.scene) pack_level_wad_outer(iso, scenes_dir, *level.scene, "scene", game, 0, pack);
 		
 		for(size_t i = 1; i < levels.size(); i++) {
-			levels[i].level = level.level;
-			levels[i].audio = level.audio;
-			levels[i].scene = level.scene;
+			// Preserve empty spaces in the level table.
+			if(levels[i].level.has_value() || levels[i].audio.has_value() || levels[i].scene.has_value()) {
+				levels[i].level = level.level;
+				levels[i].audio = level.audio;
+				levels[i].scene = level.scene;
+			}
 		}
 	} else if(game == Game::RAC2) {
 		// The level files are laid out AoS.
