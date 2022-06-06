@@ -66,7 +66,7 @@ static void unpack_image(FlatWadAsset& dest, InputStream& src, s32 offset, Game 
 	}
 	
 	if(memcmp(header, "2FIP", 4) == 0) {
-		unpack_asset(dest.child<TextureAsset>(stringf("%04d_%04x_pif", offset, offset).c_str()), src, ByteRange{0, (s32) src.size()}, game);
+		unpack_asset(dest.child<TextureAsset>(stringf("%04d_%04x_pif", offset, offset).c_str()), src, ByteRange{0, (s32) src.size()}, game, FMT_TEXTURE_PIF8);
 		return;
 	}
 	
