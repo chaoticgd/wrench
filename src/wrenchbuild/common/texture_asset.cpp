@@ -62,7 +62,12 @@ static void unpack_texture_asset(TextureAsset& dest, InputStream& src, Game game
 		texture = Texture::create_rgba(width, height, data);
 		texture.multiply_alphas();
 	} else if(strcmp(type, "pif") == 0) {
+		next_hint(&hint); // palette_size
+		bool swizzled = strcmp(next_hint(&hint), "swizzled") == 0;
 		texture = unpack_pif(src);
+		if(swizzled) {
+			texture.swizzle();
+		}
 	} else {
 		verify_not_reached("Tried to unpack a texture with an invalid hint.");
 	}
@@ -173,6 +178,8 @@ static void pack_pif(OutputStream& dest, Texture& texture) {
 	
 	switch(texture.format) {
 		case PixelFormat::PALETTED_4: {
+			assert(texture.data.size() == (texture.width * texture.height) / 2);
+			
 			header.format = 0x94;
 			dest.write_n((u8*) texture.palette().data(), std::min(texture.palette().size(), (size_t) 16) * 4);
 			for(size_t i = texture.palette().size(); i < 16; i++) {
@@ -183,6 +190,8 @@ static void pack_pif(OutputStream& dest, Texture& texture) {
 		}
 		case PixelFormat::PALETTED_8: {
 			texture.swizzle_palette();
+			
+			assert(texture.data.size() == texture.width * texture.height);
 			
 			header.format = 0x13;
 			dest.write_n((u8*) texture.palette().data(), std::min(texture.palette().size(), (size_t) 256) * 4);
