@@ -46,6 +46,12 @@ AssetType Collection {
 		example: 'texlist,pif,8,unswizzled'
 		desc: 'A list of textures, where <texture hint> is the hint used by each Texture asset in the list.'
 	}
+	
+	Hint subtitles {
+		syntax: 'subtitles'
+		example: 'subtitles'
+		desc: 'A collection of subtitles.'
+	}
 }
 
 AssetType Binary {
@@ -68,16 +74,10 @@ AssetType Binary {
 		}
 	}
 	
-	Hint wad {
+	Hint ext {
 		syntax: 'ext,<extension>'
 		example: 'ext,wad'
 		desc: 'A binary file with a custom <extension> (not .bin).'
-	}
-	
-	Hint pss {
-		syntax: 'pss'
-		example: 'pss'
-		desc: 'A binary file with a .pss extension.'
 	}
 }
 
@@ -294,6 +294,46 @@ AssetType FlatWad {
 			Binary 0x60 { src: 'transition_backgrounds/10.bin' }
 		}
 	}
+}
+
+AssetType Subtitle {
+	IntegerAttribute start_time {}
+	IntegerAttribute stop_time {}
+	
+	StringAttribute text_e {
+		desc: 'The English subtitle text.'
+		required: false
+		games: [1 2 3 4]
+	}
+	StringAttribute text_f {
+		desc: 'The French subtitle text.'
+		required: false
+		games: [1 2 3 4]
+	}
+	StringAttribute text_g {
+		desc: 'The German subtitle text.'
+		required: false
+		games: [1 2 3 4]
+	}
+	StringAttribute text_i {
+		desc: 'The Italian subtitle text.'
+		required: false
+		games: [1 2 3 4]
+	}
+	StringAttribute text_s {
+		desc: 'The Spanish subtitle text.'
+		required: false
+		games: [1 2 3 4]
+	}
+	StringAttribute encoding_e {
+		desc: '\'raw\' means the text is in the format accepted by the game, \'utf8\' means the text is in UTF-8 (which is not yet supported).'
+		required: false
+		games: [1 2 3 4]
+	}
+	StringAttribute encoding_f { desc: 'See encoding_e.' required: false games: [1 2 3 4] }
+	StringAttribute encoding_g { desc: 'See encoding_e.' required: false games: [1 2 3 4] }
+	StringAttribute encoding_i { desc: 'See encoding_e.' required: false games: [1 2 3 4] }
+	StringAttribute encoding_s { desc: 'See encoding_e.' required: false games: [1 2 3 4] }
 }
 
 // *****************************************************************************
@@ -902,9 +942,12 @@ AssetType Mpeg {
 	
 	Child subtitles {
 		desc: 'The subtitles.'
-		allowed_types: ['Binary']
+		allowed_types: ['Collection' 'Binary']
 		required: false
 		games: [2 3 4]
+		Child child {
+			allowed_types: ['Subtitle']
+		}
 	}
 }
 

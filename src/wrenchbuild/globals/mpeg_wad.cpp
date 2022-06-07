@@ -93,13 +93,11 @@ template <typename Header>
 static void unpack_gc_uya_dl_mpeg_wad(MpegWadAsset& dest, const Header& header, InputStream& src, Game game) {
 	for(s32 i = 0; i < ARRAY_SIZE(header.mpegs); i++) {
 		if(!header.mpegs[i].subtitles.empty() || !header.mpegs[i].video.empty()) {
-			MpegAsset& mpeg = dest.mpegs().child<MpegAsset>(i);
-			BinaryAsset& video = mpeg.child<BinaryAsset>(i);
+			MpegAsset& mpeg = dest.mpegs().child<MpegAsset>(i).switch_files();
+			BinaryAsset& video = mpeg.child<BinaryAsset>("video");
 			unpack_asset(video, src, header.mpegs[i].video, game, FMT_BINARY_PSS);
-			video.rename("video");
-			BinaryAsset& subtitles = mpeg.child<BinaryAsset>(i);
-			unpack_asset(subtitles, src, header.mpegs[i].subtitles, game);
-			subtitles.rename("subtitles");
+			CollectionAsset& subtitles = mpeg.child<CollectionAsset>("subtitles");
+			unpack_asset(subtitles, src, header.mpegs[i].subtitles, game, FMT_COLLECTION_SUBTITLES);
 		}
 	}
 }
