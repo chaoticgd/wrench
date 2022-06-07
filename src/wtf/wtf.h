@@ -80,7 +80,10 @@ typedef struct WtfAttribute {
 			float f;
 		} number;
 		int32_t boolean;
-		char* string;
+		struct {
+			char* begin;
+			char* end;
+		} string;
 		WtfAttribute* first_array_element;
 	};
 } WtfAttribute;

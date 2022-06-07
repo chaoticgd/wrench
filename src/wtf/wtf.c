@@ -58,7 +58,7 @@ static char peek_char(WtfReader* ctx);
 static void advance(WtfReader* ctx);
 static void skip_whitespace(WtfReader* ctx);
 static void fixup_identifier(char* buffer);
-static void fixup_string(char* buffer);
+static char* fixup_string(char* buffer);
 
 static char ERROR_STR[128];
 
@@ -116,7 +116,7 @@ WtfNode* wtf_parse(char* buffer, char** error_dest) {
 	for(int32_t i = 0; i < ctx.attribute_count; i++) {
 		fixup_identifier(ctx.attributes[i].key);
 		if(ctx.attributes[i].type == WTF_STRING) {
-			fixup_string(ctx.attributes[i].string);
+			ctx.attributes[i].string.end = fixup_string(ctx.attributes[i].string.begin);
 		}
 	}
 	
@@ -250,7 +250,7 @@ static ErrorStr parse_value(WtfReader* ctx, WtfAttribute** attribute_dest) {
 			}
 			if(ctx->attributes) {
 				attribute->type = WTF_STRING;
-				attribute->string = string;
+				attribute->string.begin = string;
 			}
 			break;
 		}
@@ -423,7 +423,7 @@ static void fixup_identifier(char* buffer) {
 	*buffer = '\0';
 }
 
-static void fixup_string(char* buffer) {
+static char* fixup_string(char* buffer) {
 	if(buffer == NULL) {
 		return;
 	}
@@ -434,12 +434,47 @@ static void fixup_string(char* buffer) {
 		if(*src == '\\') {
 			src++;
 			char c = *(src++);
-			if(c == 'n') {
+			if(c == 't') {
 				*(dest++) = '\n';
-			} else if(c == 't') {
+			} else if(c == 'n') {
 				*(dest++) = '\t';
-			} else {
-				*(dest++) = c;
+			} else if(c == '\''){
+				*(dest++) = '\'';
+			} else if(c == 'x') {
+				unsigned char hi_nibble = *(src++);
+				if(hi_nibble == 0) {
+					src -= 1;
+					break;
+				}
+				unsigned char lo_nibble = *(src++);
+				if(lo_nibble == 0) {
+					src -= 2;
+					break;
+				}
+				unsigned char decoded;
+				if(hi_nibble >= '0' && hi_nibble <= '9') {
+					decoded = (hi_nibble - '0') << 4;
+				} else if(hi_nibble >= 'A' && hi_nibble <= 'F') {
+					decoded = (hi_nibble - 'A' + 0xa) << 4;
+				} else if(hi_nibble >= 'a' && hi_nibble <= 'f') {
+					decoded = (hi_nibble - 'a' + 0xa) << 4;
+				} else {
+					src -= 2;
+					break;
+				}
+				if(lo_nibble >= '0' && lo_nibble <= '9') {
+					decoded |= lo_nibble - '0';
+				} else if(lo_nibble >= 'A' && lo_nibble <= 'F') {
+					decoded |= lo_nibble - 'A' + 0xa;
+				} else if(lo_nibble >= 'a' && lo_nibble <= 'f') {
+					decoded |= lo_nibble - 'a' + 0xa;
+				} else {
+					src -= 2;
+					break;
+				}
+				*(dest++) = decoded;
+			} else if(c == 0) {
+				break;
 			}
 		} else {
 			*(dest++) = *(src++);
@@ -447,6 +482,7 @@ static void fixup_string(char* buffer) {
 	}
 	
 	*dest = '\0';
+	return dest;
 }
 
 const WtfNode* wtf_first_child(const WtfNode* parent, const char* type_name) {

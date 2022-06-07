@@ -74,7 +74,7 @@ GameInfo read_game_info(char* input) {
 	
 	const WtfAttribute* name = wtf_attribute(root, "name");
 	if(name && name->type == WTF_STRING) {
-		info.name = name->string;
+		info.name = name->string.begin;
 	}
 	
 	const WtfAttribute* format_version = wtf_attribute(root, "format_version");
@@ -84,9 +84,9 @@ GameInfo read_game_info(char* input) {
 	
 	const WtfAttribute* type = wtf_attribute(root, "type");
 	if(type && type->type == WTF_STRING) {
-		if(strcmp(type->string, "unpacked") == 0) {
+		if(strcmp(type->string.begin, "unpacked") == 0) {
 			info.type = AssetBankType::UNPACKED;
-		} else if(strcmp(type->string, "test") == 0) {
+		} else if(strcmp(type->string.begin, "test") == 0) {
 			info.type = AssetBankType::TEST;
 		} else {
 			info.type = AssetBankType::MOD;
@@ -99,7 +99,7 @@ GameInfo read_game_info(char* input) {
 	if(builds && builds->type == WTF_ARRAY) {
 		for(const WtfAttribute* element = builds->first_array_element; element != nullptr; element = element->next) {
 			if(element->type == WTF_STRING) {
-				info.builds.emplace_back(parse_asset_reference(element->string));
+				info.builds.emplace_back(parse_asset_reference(element->string.begin));
 			}
 		}
 	}

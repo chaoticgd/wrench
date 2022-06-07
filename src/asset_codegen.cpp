@@ -204,7 +204,7 @@ static void generate_asset_type(const WtfNode* asset_type, int id) {
 				out("\tAsset& get_%s();\n", node->tag);
 				out("\tconst Asset& get_%s() const;\n", node->tag);
 			} else {
-				const char* child_type = allowed_types->first_array_element->string;
+				const char* child_type = allowed_types->first_array_element->string.begin;
 				out("\t%sAsset& %s();\n", child_type, getter_name.c_str());
 				out("\tbool has_%s() const;\n", node->tag);
 				out("\t%sAsset& get_%s();\n", child_type, node->tag);
@@ -328,7 +328,7 @@ static void generate_read_attribute_code(const WtfNode* node, const char* result
 	
 	if(strcmp(node->type_name, "StringAttribute") == 0) {
 		generate_attribute_type_check_code(attrib, "WTF_STRING", ind);
-		indent(ind); out("%s = %s->string;\n", result, attrib);
+		indent(ind); out("%s = std::string(%s->string.begin, (size_t) (%s->string.end - %s->string.begin));\n", result, attrib, attrib, attrib);
 	}
 	
 	if(strcmp(node->type_name, "ArrayAttribute") == 0) {
@@ -348,12 +348,12 @@ static void generate_read_attribute_code(const WtfNode* node, const char* result
 	
 	if(strcmp(node->type_name, "AssetReferenceAttribute") == 0) {
 		generate_attribute_type_check_code(attrib, "WTF_STRING", ind);
-		indent(ind); out("%s = parse_asset_reference(%s->string);\n", result, attrib);
+		indent(ind); out("%s = parse_asset_reference(%s->string.begin);\n", result, attrib);
 	}
 	
 	if(strcmp(node->type_name, "FileReferenceAttribute") == 0) {
 		generate_attribute_type_check_code(attrib, "WTF_STRING", ind);
-		indent(ind); out("%s = FileReference(file(), %s->string);\n", result, attrib);
+		indent(ind); out("%s = FileReference(file(), %s->string.begin);\n", result, attrib);
 	}
 }
 
@@ -391,7 +391,7 @@ static void generate_asset_write_code(const WtfNode* node, const char* expr, int
 	}
 	
 	if(strcmp(node->type_name, "StringAttribute") == 0) {
-		indent(ind); out("wtf_write_string(ctx, %s.c_str());\n", expr);
+		indent(ind); out("wtf_write_string(ctx, %s.c_str(), %s.c_str() + %s.size());\n", expr, expr, expr);
 	}
 	
 	if(strcmp(node->type_name, "ArrayAttribute") == 0) {
@@ -550,7 +550,7 @@ static void generate_child_functions(const WtfNode* asset_type) {
 			assert(allowed_types->type == WTF_ARRAY);
 			assert(allowed_types->first_array_element);
 			assert(allowed_types->first_array_element->type == WTF_STRING);
-			const char* child_type = allowed_types->first_array_element->string;
+			const char* child_type = allowed_types->first_array_element->string.begin;
 			
 			if(!allowed_types->first_array_element->next) {
 				out("%sAsset& %sAsset::%s() {\n", child_type, asset_type->tag, getter_name.c_str());

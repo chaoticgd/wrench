@@ -35,7 +35,7 @@ void wtf_end_attribute(WtfWriter* ctx);
 void wtf_write_integer(WtfWriter* ctx, int32_t i);
 void wtf_write_boolean(WtfWriter* ctx, bool b);
 void wtf_write_float(WtfWriter* ctx, float f);
-void wtf_write_string(WtfWriter* ctx, const char* string);
+void wtf_write_string(WtfWriter* ctx, const char* string, const char* string_end = NULL);
 
 void wtf_begin_array(WtfWriter* ctx);
 void wtf_end_array(WtfWriter* ctx);

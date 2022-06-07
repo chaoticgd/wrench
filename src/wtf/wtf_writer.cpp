@@ -18,6 +18,8 @@
 
 #include "wtf_writer.h"
 
+#include <string.h>
+
 struct WtfWriter {
 	std::string* dest;
 	int32_t indent;
@@ -117,7 +119,9 @@ void wtf_write_boolean(WtfWriter* ctx, bool b) {
 	}
 }
 
-void wtf_write_string(WtfWriter* ctx, const char* string) {
+static const char* HEX_DIGITS = "0123456789abcdef";
+
+void wtf_write_string(WtfWriter* ctx, const char* string, const char* string_end) {	
 	if(ctx->array_empty) {
 		*ctx->dest += "\n";
 		ctx->array_empty = 0;
@@ -125,16 +129,29 @@ void wtf_write_string(WtfWriter* ctx, const char* string) {
 	if(ctx->array_depth > 0) {
 		indent(ctx);
 	}
+	
+	if(string_end == NULL) {
+		string_end = string + strlen(string);
+	}
+	
 	*ctx->dest += '\'';
-	for(; *string != '\0'; string++) {
+	for(; string < string_end; string++) {
 		if(*string == '\t') {
 			*ctx->dest += "\\\t";
 		} else if(*string == '\n') {
 			*ctx->dest += "\\\n";
 		} else if(*string == '\'') {
 			*ctx->dest += "\\\'";
-		} else {
+		} else if(isprint(*string)) {
 			*ctx->dest += *string;
+		} else {
+			char escape_code[5] = {
+				'\\', 'x',
+				HEX_DIGITS[(*string >> 4) & 0xf],
+				HEX_DIGITS[*string & 0xf],
+				'\0'
+			};
+			*ctx->dest += escape_code;
 		}
 	}
 	*ctx->dest += "\'\n";

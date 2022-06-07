@@ -83,7 +83,7 @@ static void write_index(const WtfNode* root) {
 		if(strcmp(node->type_name, "Category") == 0) {
 			const WtfAttribute* name = wtf_attribute(node, "name");
 			assert(name && name->type == WTF_STRING);
-			out("- [%s](#%s)\n", name->string, to_link(name->string).c_str());
+			out("- [%s](#%s)\n", name->string.begin, to_link(name->string.begin).c_str());
 		}
 		
 		if(strcmp(node->type_name, "AssetType") == 0) {
@@ -103,7 +103,7 @@ static void write_contents(const WtfNode* root) {
 			const WtfAttribute* name = wtf_attribute(node, "name");
 			assert(name && name->type == WTF_STRING);
 			out("\n");
-			out("## %s\n", name->string);
+			out("## %s\n", name->string.begin);
 		}
 		
 		if(strcmp(node->type_name, "AssetType") == 0) {
@@ -117,7 +117,7 @@ static void write_contents(const WtfNode* root) {
 			const WtfAttribute* desc = wtf_attribute(node, "desc");
 			if(desc && desc->type == WTF_STRING) {
 				out("\n");
-				out("%s\n", desc->string);
+				out("%s\n", desc->string.begin);
 			}
 			
 			write_attribute_table(node);
@@ -147,7 +147,7 @@ static void write_attribute_table(const WtfNode* asset_type) {
 		
 		const WtfAttribute* desc = wtf_attribute(child, "desc");
 		const char* desc_str = (desc && desc->type == WTF_STRING)
-			? desc->string : "*Not yet documented.*";
+			? desc->string.begin : "*Not yet documented.*";
 		const char* type;
 		if(strcmp(child->type_name, "IntegerAttribute") == 0) {
 			type = "Integer";
@@ -202,7 +202,7 @@ static void write_child_table(const WtfNode* asset_type) {
 			const char* name_str = child->tag;
 			const WtfAttribute* desc = wtf_attribute(child, "desc");
 			const char* desc_str = (desc && desc->type == WTF_STRING)
-				? desc->string : "*Not yet documented.*";
+				? desc->string.begin : "*Not yet documented.*";
 			std::string types_str;
 			write_type_list(types_str, child, 0);
 			if(types_str.size() > 0) {
@@ -244,10 +244,10 @@ static void write_type_list(std::string& dest, const WtfNode* child, int depth) 
 		for(const WtfAttribute* elem = types->first_array_element; elem != nullptr; elem = elem->next) {
 			if(elem->type == WTF_STRING) {
 				const WtfNode* sub_child = wtf_child(child, "Child", "child");
-				if(strcmp(elem->string, "Collection") == 0 && sub_child) {
+				if(strcmp(elem->string.begin, "Collection") == 0 && sub_child) {
 					write_type_list(dest, sub_child, depth + 1);
 				} else {
-					dest += elem->string;
+					dest += elem->string.begin;
 					for(int i = 0; i < depth; i++) {
 						dest += "\\[\\]";
 					}
@@ -312,15 +312,15 @@ static void write_hints(const WtfNode* asset_type) {
 			const WtfAttribute* desc = wtf_attribute(child, "desc");
 			assert(desc && desc->type == WTF_STRING);
 			
-			out("| `%s` | `%s` | ", syntax->string, example->string);
-			for(size_t i = 0; i < strlen(desc->string); i++) {
-				if(desc->string[i] == '<' || desc->string[i] == '>') {
+			out("| `%s` | `%s` | ", syntax->string.begin, example->string.begin);
+			for(size_t i = 0; i < strlen(desc->string.begin); i++) {
+				if(desc->string.begin[i] == '<' || desc->string.begin[i] == '>') {
 					out("\\");
 				}
-				if(desc->string[i] == '\'') {
+				if(desc->string.begin[i] == '\'') {
 					out("`");
 				} else {
-					out("%c", desc->string[i]);
+					out("%c", desc->string.begin[i]);
 				}
 			}
 			out(" |\n");
@@ -368,7 +368,7 @@ static void reify_value(WtfWriter* ctx, const WtfAttribute* value) {
 			break;
 		}
 		case WTF_STRING: {
-			wtf_write_string(ctx, value->string);
+			wtf_write_string(ctx, value->string.begin);
 			break;
 		}
 		case WTF_ARRAY: {

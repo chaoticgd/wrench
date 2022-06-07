@@ -70,7 +70,7 @@ static Json attribute_to_json(WtfAttribute* attribute) {
 	if(attribute->type == WTF_NUMBER) {
 		return attribute->number.f;
 	} else if(attribute->type == WTF_STRING) {
-		return attribute->string;
+		return attribute->string.begin;
 	} else if(attribute->type == WTF_ARRAY) {
 		Json array = Json::array();
 		for(WtfAttribute* element = attribute->first_array_element; element != NULL; element = attribute->next) {
