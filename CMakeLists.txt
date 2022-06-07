@@ -167,6 +167,7 @@ add_executable(wrenchbuild
 	src/wrenchbuild/common/file_asset.cpp
 	src/wrenchbuild/common/texture_asset.cpp
 	src/wrenchbuild/common/flat_wad.cpp
+	src/wrenchbuild/common/subtitles.cpp
 	src/wrenchbuild/globals/armor_wad.cpp
 	src/wrenchbuild/globals/audio_wad.cpp
 	src/wrenchbuild/globals/bonus_wad.cpp
