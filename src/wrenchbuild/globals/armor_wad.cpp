@@ -36,7 +36,7 @@ packed_struct(UyaArmorWadHeader,
 	/* 0x004 */ Sector32 sector;
 	/* 0x008 */ ArmorHeader armors[14];
 	/* 0x0e8 */ ArmorHeader multiplayer_armors[41];
-	/* 0x378 */ SectorRange textures[2];
+	/* 0x378 */ SectorRange unused[2];
 )	
 
 packed_struct(DlArmorWadHeader,
@@ -79,24 +79,26 @@ static void pack_gc_armor_wad(OutputStream& dest, GcArmorWadHeader& header, cons
 
 static void unpack_uya_armor_wad(ArmorWadAsset& dest, const UyaArmorWadHeader& header, InputStream& src, Game game) {
 	unpack_armors(dest.armors().switch_files(), src, ARRAY_PAIR(header.armors), game);
+	unpack_armors(dest.multiplayer_armors().switch_files(), src, ARRAY_PAIR(header.multiplayer_armors), game);
 }
 
 static void pack_uya_armor_wad(OutputStream& dest, UyaArmorWadHeader& header, const ArmorWadAsset& src, Game game) {
 	pack_armors(dest, ARRAY_PAIR(header.armors), src.get_armors(), game);
+	pack_armors(dest, ARRAY_PAIR(header.multiplayer_armors), src.get_multiplayer_armors(), game);
 }
 
 static void unpack_dl_armor_wad(ArmorWadAsset& dest, const DlArmorWadHeader& header, InputStream& src, Game game) {
 	unpack_armors(dest.armors().switch_files(), src, ARRAY_PAIR(header.armors), game);
-	unpack_assets<BinaryAsset>(dest.bot_textures().switch_files(), src, ARRAY_PAIR(header.bot_textures), game);
-	unpack_assets<BinaryAsset>(dest.landstalker_textures().switch_files(), src, ARRAY_PAIR(header.landstalker_textures), game);
-	unpack_assets<BinaryAsset>(dest.dropship_textures().switch_files(), src, ARRAY_PAIR(header.dropship_textures), game);
+	unpack_assets<CollectionAsset>(dest.bot_textures().switch_files(), src, ARRAY_PAIR(header.bot_textures), game, FMT_COLLECTION_PIF8, true);
+	unpack_assets<CollectionAsset>(dest.landstalker_textures().switch_files(), src, ARRAY_PAIR(header.landstalker_textures), game, FMT_COLLECTION_PIF8, true);
+	unpack_assets<CollectionAsset>(dest.dropship_textures().switch_files(), src, ARRAY_PAIR(header.dropship_textures), game, FMT_COLLECTION_PIF8, true);
 }
 
 static void pack_dl_armor_wad(OutputStream& dest, DlArmorWadHeader& header, const ArmorWadAsset& src, Game game) {
 	pack_armors(dest, ARRAY_PAIR(header.armors), src.get_armors(), game);
-	pack_assets_sa(dest, ARRAY_PAIR(header.bot_textures), src.get_bot_textures(), game);
-	pack_assets_sa(dest, ARRAY_PAIR(header.landstalker_textures), src.get_landstalker_textures(), game);
-	pack_assets_sa(dest, ARRAY_PAIR(header.dropship_textures), src.get_dropship_textures(), game);
+	pack_assets_sa(dest, ARRAY_PAIR(header.bot_textures), src.get_bot_textures(), game, FMT_COLLECTION_PIF8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.landstalker_textures), src.get_landstalker_textures(), game, FMT_COLLECTION_PIF8);
+	pack_assets_sa(dest, ARRAY_PAIR(header.dropship_textures), src.get_dropship_textures(), game, FMT_COLLECTION_PIF8);
 }
 
 packed_struct(ArmorMeshHeader,

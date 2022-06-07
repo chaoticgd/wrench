@@ -311,6 +311,9 @@ AssetType ArmorWad {
 		allowed_types: ['Collection']
 		required: true
 		games: [2 3 4]
+		Child child {
+			allowed_types: ['MobyClass']
+		}
 	}
 	
 	Child wrenches {
@@ -318,6 +321,19 @@ AssetType ArmorWad {
 		allowed_types: ['Collection']
 		required: true
 		games: [2]
+		Child child {
+			allowed_types: ['MobyClass']
+		}
+	}
+	
+	Child multiplayer_armors {
+		desc: 'The multiplayer skins.'
+		allowed_types: ['Collection']
+		required: true
+		games: [3]
+		Child child {
+			allowed_types: ['MobyClass']
+		}
 	}
 	
 	Child bot_textures {
@@ -325,6 +341,9 @@ AssetType ArmorWad {
 		allowed_types: ['Collection']
 		required: true
 		games: [4]
+		Child child {
+			allowed_types: ['Texture']
+		}
 	}
 	Child landstalker_textures {
 		desc: 'Textures for the landstalker.'

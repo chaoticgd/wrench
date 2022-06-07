@@ -63,10 +63,14 @@ void unpack_compressed_asset(ThisAsset& dest, InputStream& src, Range range, Gam
 }
 
 template <typename ChildAsset, typename Range>
-void unpack_assets(CollectionAsset& dest, InputStream& src, const Range* ranges, s32 count, Game game, const char* hint = FMT_NO_HINT) {
+void unpack_assets(CollectionAsset& dest, InputStream& src, const Range* ranges, s32 count, Game game, const char* hint = FMT_NO_HINT, bool switch_files = false) {
 	for(s32 i = 0; i < count; i++) {
 		if(!ranges[i].empty()) {
-			unpack_asset(dest.child<ChildAsset>(i), src, ranges[i], game, hint);
+			ChildAsset* asset = &dest.child<ChildAsset>(i);
+			if(switch_files) {
+				asset = &asset->switch_files();
+			}
+			unpack_asset(*asset, src, ranges[i], game, hint);
 		}
 	}
 }
