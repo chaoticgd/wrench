@@ -34,8 +34,9 @@ packed_struct(GcArmorWadHeader,
 packed_struct(UyaArmorWadHeader,
 	/* 0x000 */ s32 header_size;
 	/* 0x004 */ Sector32 sector;
-	/* 0x008 */ ArmorHeader armors[14];
-	/* 0x0e8 */ ArmorHeader multiplayer_armors[41];
+	/* 0x008 */ ArmorHeader armors[29];
+	/* 001d8 */ ArmorHeader wrenches[6];
+	/* 0x238 */ ArmorHeader multiplayer_armors[20];
 	/* 0x378 */ SectorRange unused[2];
 )	
 
@@ -79,11 +80,13 @@ static void pack_gc_armor_wad(OutputStream& dest, GcArmorWadHeader& header, cons
 
 static void unpack_uya_armor_wad(ArmorWadAsset& dest, const UyaArmorWadHeader& header, InputStream& src, Game game) {
 	unpack_armors(dest.armors().switch_files(), src, ARRAY_PAIR(header.armors), game);
+	unpack_armors(dest.wrenches().switch_files(), src, ARRAY_PAIR(header.wrenches), game);
 	unpack_armors(dest.multiplayer_armors().switch_files(), src, ARRAY_PAIR(header.multiplayer_armors), game);
 }
 
 static void pack_uya_armor_wad(OutputStream& dest, UyaArmorWadHeader& header, const ArmorWadAsset& src, Game game) {
 	pack_armors(dest, ARRAY_PAIR(header.armors), src.get_armors(), game);
+	pack_armors(dest, ARRAY_PAIR(header.wrenches), src.get_wrenches(), game);
 	pack_armors(dest, ARRAY_PAIR(header.multiplayer_armors), src.get_multiplayer_armors(), game);
 }
 

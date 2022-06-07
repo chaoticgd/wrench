@@ -320,7 +320,7 @@ AssetType ArmorWad {
 		desc: 'The different wrench upgrades.'
 		allowed_types: ['Collection']
 		required: true
-		games: [2]
+		games: [2 3]
 		Child child {
 			allowed_types: ['MobyClass']
 		}
