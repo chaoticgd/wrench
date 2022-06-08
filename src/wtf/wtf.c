@@ -61,6 +61,7 @@ static void fixup_identifier(char* buffer);
 static char* fixup_string(char* buffer);
 
 static char ERROR_STR[128];
+static char EMPTY_STR[1] = {0};
 
 WtfNode* wtf_parse(char* buffer, char** error_dest) {
 	WtfReader ctx;
@@ -144,10 +145,12 @@ static ErrorStr count_nodes_and_attributes(WtfReader* ctx) {
 				return error;
 			}
 		} else {
-			char* tag = parse_identifier(ctx);
-			if(tag == NULL) {
-				snprintf(ERROR_STR, sizeof(ERROR_STR), "Expected tag on line %d.", ctx->line);
-				return ERROR_STR;
+			if(peek_char(ctx) != '{') {
+				char* tag = parse_identifier(ctx);
+				if(tag == NULL) {
+					snprintf(ERROR_STR, sizeof(ERROR_STR), "Expected tag on line %d.", ctx->line);
+					return ERROR_STR;
+				}
 			}
 			
 			if(peek_char(ctx) != '{') {
@@ -203,8 +206,14 @@ static void read_nodes_and_attributes(WtfReader* ctx, WtfNode* parent) {
 			
 			attribute->key = name;
 		} else {
-			char* tag = parse_identifier(ctx);
-			assert(tag != NULL);
+			char* tag;
+			if(peek_char(ctx) != '{') {
+				tag = parse_identifier(ctx);
+				assert(tag != NULL);
+			} else {
+				tag = name;
+				name = EMPTY_STR;
+			}
 			
 			advance(ctx); // '{'
 			

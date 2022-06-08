@@ -166,7 +166,13 @@ Asset& Asset::asset_file(const fs::path& path) {
 void Asset::read(WtfNode* node) {
 	read_attributes(node);
 	for(WtfNode* child = node->first_child; child != nullptr; child = child->next_sibling) {
-		Asset& asset = add_child(create_asset(asset_string_to_type(child->type_name), file(), this, child->tag));
+		AssetType type;
+		if(strlen(child->type_name) == 0) {
+			type = CollectionAsset::ASSET_TYPE;
+		} else {
+			type = asset_string_to_type(child->type_name);
+		}
+		Asset& asset = add_child(create_asset(type, file(), this, child->tag));
 		asset.read(child);
 	}
 }
@@ -174,7 +180,13 @@ void Asset::read(WtfNode* node) {
 void Asset::write(WtfWriter* ctx) const {
 	write_attributes(ctx);
 	for_each_physical_child([&](Asset& child) {
-		wtf_begin_node(ctx, asset_type_to_string(child.type()), child.tag().c_str());
+		const char* type;
+		if(child.type() == CollectionAsset::ASSET_TYPE) {
+			type = nullptr;
+		} else {
+			type = asset_type_to_string(child.type());
+		}
+		wtf_begin_node(ctx, type, child.tag().c_str());
 		child.write(ctx);
 		wtf_end_node(ctx);
 	});

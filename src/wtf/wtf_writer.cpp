@@ -54,8 +54,10 @@ void wtf_begin_node(WtfWriter* ctx, const char* type_name, const char* tag) {
 		*ctx->dest += '\n';
 	}
 	indent(ctx);
-	*ctx->dest += type_name;
-	*ctx->dest += " ";
+	if(type_name != NULL && strlen(type_name) > 0) {
+		*ctx->dest += type_name;
+		*ctx->dest += " ";
+	}
 	*ctx->dest += tag;
 	*ctx->dest += " {\n";
 	ctx->indent++;

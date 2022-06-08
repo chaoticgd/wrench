@@ -11,12 +11,12 @@ An example file is shown below:
 		boolean_attribute: true
 		string_attribute: 'This is a string.'
 		
-		ChildType the_child {
+		the_child {
 			array_attribute: ['This' 'is' 'an ' 'array.']
 		}
 	}
 
-Here, we define 3 nodes: the root, the_tag and the_child, where the_tag is a child of the root, and the_child is a child of the_tag. We additionally define 4 attributes: number_attribute, boolean_attribute, string_attribute and array_attribute. Number attributes can represent floating point numbers or integers, boolean attributes can be either 'true' or 'false', and array attributes can nest arbitrary other kinds of values (except nodes).
+Here, we define 3 nodes: the root, the_tag and the_child, where the_tag is a child of the root, and the_child is a child of the_tag. In the case of the_tag, the type name is explicitly specified, for the_child it is omitted. We additionally define 4 attributes: number_attribute, boolean_attribute, string_attribute and array_attribute. Number attributes can represent floating point numbers or integers, boolean attributes can be either 'true' or 'false', and array attributes can nest arbitrary other kinds of values (except nodes).
 
 ## String Escaping
 
