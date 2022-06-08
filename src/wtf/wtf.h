@@ -60,6 +60,7 @@ typedef struct WtfNode {
 	WtfAttribute* first_attribute;
 	char* type_name;
 	char* tag;
+	int32_t collapsed;
 } WtfNode;
 
 typedef enum {

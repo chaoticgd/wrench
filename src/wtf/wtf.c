@@ -286,6 +286,7 @@ static WtfNode* add_nodes(WtfReader* ctx, const char* type_name, const char* tag
 			child->first_attribute = NULL;
 			child->type_name = EMPTY_STR;
 			child->tag = tag + begin;
+			child->collapsed = 1;
 			begin = i + 1;
 			
 			if(current) {
@@ -299,6 +300,7 @@ static WtfNode* add_nodes(WtfReader* ctx, const char* type_name, const char* tag
 	
 	assert(current);
 	current->type_name = type_name;
+	current->collapsed = 0;
 	
 	read_nodes_and_attributes(ctx, current);
 	

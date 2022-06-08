@@ -180,7 +180,11 @@ void Asset::read(WtfNode* node) {
 	for(WtfNode* child = node->first_child; child != nullptr; child = child->next_sibling) {
 		AssetType type;
 		if(strlen(child->type_name) == 0) {
-			type = PlaceholderAsset::ASSET_TYPE;
+			if(child->collapsed) {
+				type = PlaceholderAsset::ASSET_TYPE;
+			} else {
+				type = CollectionAsset::ASSET_TYPE;
+			}
 		} else {
 			type = asset_string_to_type(child->type_name);
 		}
@@ -195,7 +199,7 @@ void Asset::write(WtfWriter* ctx, std::string prefix) const {
 		child.write(ctx, prefix + tag() + ".");
 	} else {
 		const char* type_name;
-		if(type() == PlaceholderAsset::ASSET_TYPE) {
+		if(type() == CollectionAsset::ASSET_TYPE) {
 			type_name = nullptr;
 		} else {
 			type_name = asset_type_to_string(type());
