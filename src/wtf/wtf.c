@@ -438,8 +438,10 @@ static char* fixup_string(char* buffer) {
 				*(dest++) = '\n';
 			} else if(c == 'n') {
 				*(dest++) = '\t';
-			} else if(c == '\''){
+			} else if(c == '\'') {
 				*(dest++) = '\'';
+			} else if(c == '\\') {
+				*(dest++) = '\\';
 			} else if(c == 'x') {
 				unsigned char hi_nibble = *(src++);
 				if(hi_nibble == 0) {
