@@ -79,7 +79,7 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 	//	wad.unknown_a0 = assets.read_bytes(header.unknown_a0, 0x40, "unknown a0");
 	//}
 	
-	BuildAsset& build = build_or_root_from_level_core_asset(dest);
+	BuildAsset& build = build_from_level_core_asset(dest);
 	
 	// Unpack all the classes into the global directory and then create
 	// references to them for the current level.
@@ -240,13 +240,19 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 }
 
 // Only designed to work on assets that have just been unpacked.
-BuildAsset& build_or_root_from_level_core_asset(LevelCoreAsset& core) {
+BuildAsset& build_from_level_core_asset(LevelCoreAsset& core) {
 	assert(core.parent()); // LevelDataWad
 	assert(core.parent()->parent()); // LevelWad
 	assert(core.parent()->parent()->parent()); // Level
 	assert(core.parent()->parent()->parent()->parent()); // Collection
 	assert(core.parent()->parent()->parent()->parent()->parent()); // Build
-	return core.parent()->parent()->parent()->parent()->parent()->as<BuildAsset>();
+	Asset& build = *core.parent()->parent()->parent()->parent()->parent();
+	for(Asset* asset = &build.highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
+		if(asset->type() == BuildAsset::ASSET_TYPE) {
+			return asset->as<BuildAsset>();
+		}
+	}
+	assert(0);
 }
 
 ByteRange level_core_block_range(s32 ofs, const std::vector<s64>& block_bounds) {

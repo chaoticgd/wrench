@@ -129,11 +129,11 @@ static void unpack_help_audio(CollectionAsset& dest, InputStream& src, const Sec
 			HelpAudioAsset& child = dest.foreign_child<HelpAudioAsset>(stringf("%d/audio.asset", i), i);
 			Asset* asset;
 			switch(language) {
-				case 0: asset = &child.english<BinaryAsset>();
-				case 1: asset = &child.french<BinaryAsset>();
-				case 2: asset = &child.german<BinaryAsset>();
-				case 3: asset = &child.spanish<BinaryAsset>();
-				case 4: asset = &child.italian<BinaryAsset>();
+				case 0: asset = &child.english<BinaryAsset>(); break;
+				case 1: asset = &child.french<BinaryAsset>(); break;
+				case 2: asset = &child.german<BinaryAsset>(); break;
+				case 3: asset = &child.spanish<BinaryAsset>(); break;
+				case 4: asset = &child.italian<BinaryAsset>(); break;
 				default: assert(0);
 			}
 			

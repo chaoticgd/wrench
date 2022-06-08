@@ -196,7 +196,7 @@ static void generate_asset_type(const WtfNode* asset_type, int id) {
 			}
 			out("\tChildType& %s(AssetAccessorMode mode = DO_NOT_SWITCH_FILES) {\n", getter_name.c_str());
 			out("\t\tif(mode == SWITCH_FILES) {\n");
-			out("\t\t\treturn foreign_child<ChildType>(fs::path(tag())/tag(), \"%s\");\n", node->tag);
+			out("\t\t\treturn foreign_child<ChildType>(\"%s/%s\", \"%s\");\n", node->tag, node->tag, node->tag);
 			out("\t\t} else {\n");
 			out("\t\t\treturn child<ChildType>(\"%s\");\n", node->tag);
 			out("\t\t}\n");

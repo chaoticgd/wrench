@@ -19,7 +19,7 @@
 #include "level_textures.h"
 
 #include <core/png.h>
-#include <wrenchbuild/level/level_core.h> // build_or_root_from_level_core_asset
+#include <wrenchbuild/level/level_core.h> // build_from_level_core_asset
 
 static void write_nonshared_texture_data(OutputStream& data, std::vector<LevelTexture>& textures, Game game);
 
@@ -371,7 +371,7 @@ std::tuple<ArrayRange, s32, s32> pack_particle_textures(OutputStream& index, Out
 
 void unpack_fx_textures(LevelCoreAsset& core, const std::vector<FxTextureEntry>& entries, InputStream& fx_bank, Game game) {
 	CollectionAsset& local_fx_textures = core.local_fx_textures("fx_textures/fx_textures.asset");
-	CollectionAsset& common_fx_textures = build_or_root_from_level_core_asset(core).fx_textures("/fx_textures/fx_textures.asset");
+	CollectionAsset& common_fx_textures = build_from_level_core_asset(core).fx_textures("/fx_textures/fx_textures.asset");
 	
 	ReferenceAsset& common_fx_ref = core.child<ReferenceAsset>("common_fx_textures");
 	common_fx_ref.set_asset(common_fx_textures.reference());

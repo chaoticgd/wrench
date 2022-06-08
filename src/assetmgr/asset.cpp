@@ -127,7 +127,7 @@ const Asset& Asset::get_child(s32 tag) const {
 Asset& Asset::physical_child(AssetType type, const char* tag) {
 	assert(bank().is_writeable());
 	for(std::unique_ptr<Asset>& child : _children) {
-		if(child->type() == type && child->tag() == tag) {
+		if(child->tag() == tag) {
 			return *child.get();
 		}
 		verify(child->tag() != tag, "Attempting to overwrite an asset that already exists with one of a different type.");
@@ -442,7 +442,9 @@ AssetFile& AssetBank::asset_file(fs::path path) {
 			return *file.get();
 		}
 	}
-	return *_asset_files.emplace_back(std::make_unique<AssetFile>(_forest, *this, path)).get();
+	AssetFile& file = *_asset_files.emplace_back(std::make_unique<AssetFile>(_forest, *this, path)).get();
+	file.root().connect_precedence_pointers();
+	return file;
 }
 
 void AssetBank::write() {
