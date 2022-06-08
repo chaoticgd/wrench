@@ -318,7 +318,7 @@ static ErrorStr parse_value(WtfReader* ctx, WtfAttribute** attribute_dest) {
 	}
 	
 	switch(peek_char(ctx)) {
-		case '\'': {
+		case '"': {
 			char* string;
 			ErrorStr error = parse_string(ctx, &string);
 			if(error) {
@@ -414,13 +414,13 @@ static ErrorStr parse_float(WtfReader* ctx, float* dest) {
 }
 
 static ErrorStr parse_string(WtfReader* ctx, char** dest) {
-	advance(ctx); // '\''
+	advance(ctx); // '"'
 	
 	char* begin = ctx->input;
 	
 	char next;
 	int escape = 0;
-	while(next = peek_char(ctx), ((escape || next != '\'') && next != '\0')) {
+	while(next = peek_char(ctx), ((escape || next != '"') && next != '\0')) {
 		if(!escape) {
 			if(next == '\\') {
 				escape = 1;
@@ -436,7 +436,7 @@ static ErrorStr parse_string(WtfReader* ctx, char** dest) {
 		return ERROR_STR;
 	}
 	
-	advance(ctx); // '\''
+	advance(ctx); // '"'
 	
 	*dest = begin;
 	return NULL;
@@ -513,7 +513,7 @@ static char* fixup_string(char* buffer) {
 	
 	char* dest = buffer;
 	char* src = buffer;
-	while(*src != '\'' && *src != '\0') {
+	while(*src != '"' && *src != '\0') {
 		if(*src == '\\') {
 			src++;
 			char c = *(src++);
@@ -521,8 +521,8 @@ static char* fixup_string(char* buffer) {
 				*(dest++) = '\n';
 			} else if(c == 'n') {
 				*(dest++) = '\t';
-			} else if(c == '\'') {
-				*(dest++) = '\'';
+			} else if(c == '"') {
+				*(dest++) = '"';
 			} else if(c == '\\') {
 				*(dest++) = '\\';
 			} else if(c == 'x') {

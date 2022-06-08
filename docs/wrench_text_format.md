@@ -11,11 +11,11 @@ An example file is shown below:
 		boolean_attribute: true
 		
 		the_child {
-			string_attribute: 'This is a string.'
+			string_attribute: "This is a string."
 		}
 		
 		Example nested.inner {
-			array_attribute: ['This' 'is' 'an ' 'array.']
+			array_attribute: ["This" "is" "an" "array."]
 		}
 	}
 
@@ -33,7 +33,7 @@ The following escape codes are supported for strings:
 
 	\t -> tab
 	\n -> line feed
-	\' -> '
+	\" -> "
 	\\ -> \
 
 Additionally, \\x followed by two hex characters can be used to represent an arbitrary byte. For example, \\x00 represents the null character, \\x41 represents the ASCII A character.

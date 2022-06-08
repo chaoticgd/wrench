@@ -136,14 +136,14 @@ void wtf_write_string(WtfWriter* ctx, const char* string, const char* string_end
 		string_end = string + strlen(string);
 	}
 	
-	*ctx->dest += '\'';
+	*ctx->dest += '"';
 	for(; string < string_end; string++) {
 		if(*string == '\t') {
 			*ctx->dest += "\\\t";
 		} else if(*string == '\n') {
 			*ctx->dest += "\\\n";
-		} else if(*string == '\'') {
-			*ctx->dest += "\\\'";
+		} else if(*string == '\"') {
+			*ctx->dest += "\\\"";
 		} else if(*string == '\\') {
 			*ctx->dest += "\\\\";
 		} else if(isprint(*string)) {
@@ -158,7 +158,7 @@ void wtf_write_string(WtfWriter* ctx, const char* string, const char* string_end
 			*ctx->dest += escape_code;
 		}
 	}
-	*ctx->dest += "\'\n";
+	*ctx->dest += "\"\n";
 }
 
 void wtf_begin_array(WtfWriter* ctx) {
