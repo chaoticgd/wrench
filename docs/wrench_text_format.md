@@ -28,3 +28,15 @@ The following escape codes are supported for strings:
 	\\ -> \
 
 Additionally, \\x followed by two hex characters can be used to represent an arbitrary byte. For example, \\x00 represents the null character, \\x41 represents the ASCII A character.
+
+## Grammar
+
+	<body> := <attrib_or_child> <body> | epsilon
+	<attrib_or_child> := <attrib> | <child>
+	<attrib> := identifier : <value>
+	<value> := number | boolean | string | <array>
+	<array> := [ <elements> ]
+	<elements> := <value> <elements> | epsilon
+	<child> := identifier identifier { <body> } | identifier { <body> }
+
+where \<body\> is the starting nonterminal and epsilon represents nothing.
