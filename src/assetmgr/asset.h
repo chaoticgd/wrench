@@ -61,7 +61,6 @@ public:
 	const AssetFile& file() const;
 	Asset* parent();
 	const Asset* parent() const;
-	AssetType type() const;
 	const std::string& tag() const;
 	Asset* lower_precedence();
 	const Asset* lower_precedence() const;
@@ -72,6 +71,11 @@ public:
 	Asset& highest_precedence();
 	const Asset& highest_precedence() const;
 	AssetReference reference() const;
+	
+	// This might return Plaholder instead of the actual type.
+	AssetType type() const;
+	// This skips over placeholder nodes to get the logical type.
+	AssetType logical_type() const;
 	
 	template <typename Callback>
 	void for_each_physical_child(Callback callback) {
@@ -141,12 +145,26 @@ public:
 	
 	template <typename AssetType>
 	AssetType& as() {
-		return dynamic_cast<AssetType&>(*this);
+		for(Asset* asset = &highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
+			if(asset->type() == AssetType::ASSET_TYPE) {
+				return *static_cast<AssetType*>(asset);
+			}
+		}
+		verify_not_reached("Failed to convert asset %s to type %s.",
+			asset_reference_to_string(reference()).c_str(),
+			asset_type_to_string(AssetType::ASSET_TYPE));
 	}
 	
 	template <typename AssetType>
 	const AssetType& as() const {
-		return dynamic_cast<const AssetType&>(*this);
+		for(const Asset* asset = &highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
+			if(asset->type() == AssetType::ASSET_TYPE) {
+				return *static_cast<const AssetType*>(asset);
+			}
+		}
+		verify_not_reached("Failed to convert asset %s to type %s.",
+			asset_reference_to_string(reference()).c_str(),
+			asset_type_to_string(AssetType::ASSET_TYPE));
 	}
 	
 	template <typename ChildTargetType>

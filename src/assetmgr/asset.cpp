@@ -43,7 +43,6 @@ AssetFile& Asset::file() { return _file; }
 const AssetFile& Asset::file() const { return _file; }
 Asset* Asset::parent() { return _parent; }
 const Asset* Asset::parent() const { return _parent; }
-AssetType Asset::type() const { return _type; }
 const std::string& Asset::tag() const { return _tag; }
 Asset* Asset::lower_precedence() { return _lower_precedence; }
 const Asset* Asset::lower_precedence() const { return _lower_precedence; }
@@ -82,6 +81,19 @@ AssetReference Asset::reference() const {
 	} else {
 		return AssetReference{};
 	}
+}
+
+AssetType Asset::type() const {
+	return _type;
+}
+
+AssetType Asset::logical_type() const {
+	for(const Asset* asset = &highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
+		if(asset->type() != PlaceholderAsset::ASSET_TYPE) {
+			return asset->type();
+		}
+	}
+	return type();
 }
 
 bool Asset::has_child(const char* tag) const {

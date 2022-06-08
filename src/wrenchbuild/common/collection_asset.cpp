@@ -45,7 +45,7 @@ static void unpack_collection_asset(CollectionAsset& dest, InputStream& src, Gam
 	} else if(strcmp(type, "subtitles") == 0) {
 		unpack_subtitles(dest, src, game);
 	} else {
-		verify_not_reached("Invalid hint passed to collection asset unpacker.");
+		verify_not_reached("Invalid hint \"%s\" passed to collection asset unpacker.", hint);
 	}
 }
 
@@ -56,7 +56,7 @@ static void pack_collection_asset(OutputStream& dest, const CollectionAsset& src
 	} else if(strcmp(type, "subtitles") == 0) {
 		pack_subtitles(dest, src, game);
 	} else {
-		verify_not_reached("Invalid hint passed to collection asset packer.");
+		verify_not_reached("Invalid hint \"%s\" passed to collection asset packer.", hint);
 	}
 }
 
