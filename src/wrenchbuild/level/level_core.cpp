@@ -105,7 +105,7 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 		}
 	}
 	
-	if(game == Game::RAC2 || game == Game::RAC3) {
+	if(game == Game::GC || game == Game::UYA) {
 		unpack_asset(dest.sound_remap(), index, ByteRange{header.sound_remap_offset, header.moby_gs_stash_list - header.sound_remap_offset}, game);
 		unpack_asset(dest.moby_sound_remap(), data, level_core_block_range(header.moby_sound_remap_offset, block_bounds), game);
 	} else if(game == Game::DL) {
@@ -221,7 +221,7 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	
 	index.pad(0x10, 0);
 	
-	if(game != Game::RAC1) {
+	if(game != Game::RAC) {
 		header.moby_gs_stash_count_rac23dl = 1;
 	}
 	
@@ -307,14 +307,14 @@ static std::vector<s64> enumerate_level_core_block_boundaries(InputStream& src, 
 		}
 	}
 	
-	if(game == Game::RAC1 && header.thing_table_offset_rac1 != 0) {
+	if(game == Game::RAC && header.thing_table_offset_rac1 != 0) {
 		auto things = src.read_multiple<ThingEntry>(header.thing_table_offset_rac1, header.thing_table_count_rac1);
 		for(const ThingEntry& entry : things) {
 			blocks.push_back(entry.offset_in_asset_wad);
 		}
 	}
 	
-	if((game == Game::RAC2 || game == Game::RAC3) && header.moby_sound_remap_offset != 0) {
+	if((game == Game::GC || game == Game::UYA) && header.moby_sound_remap_offset != 0) {
 		blocks.push_back(header.moby_sound_remap_offset);
 	}
 	

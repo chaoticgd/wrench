@@ -372,7 +372,7 @@ std::string md5_to_printable_string(uint8_t in[16]);
 f32 lerp(f32 min, s32 max, f32 value);
 
 enum class Game {
-	UNKNOWN = 0, RAC1 = 1, RAC2 = 2, RAC3 = 3, DL = 4
+	UNKNOWN = 0, RAC = 1, GC = 2, UYA = 3, DL = 4
 };
 
 enum class WadType {

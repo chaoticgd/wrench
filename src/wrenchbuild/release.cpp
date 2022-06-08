@@ -19,28 +19,28 @@
 #include "release.h"
 
 static const Release RELEASES[] = {
-	{"pbpx_955.16", Game::RAC1, Region::JAPAN}, // japan original
-	{"sced_510.75", Game::RAC1, Region::EU}, // eu demo
-	{"sces_509.16", Game::RAC1, Region::EU}, // eu black label/plantinum
-	{"scus_971.99", Game::RAC1, Region::US}, // us original/greatest hits
-	{"scus_972.09", Game::RAC1, Region::US}, // us demo 1
-	{"scus_972.40", Game::RAC1, Region::US}, // us demo 2
-	{"scaj_200.52", Game::RAC2, Region::JAPAN}, // japan original
-	{"sces_516.07", Game::RAC2, Region::EU}, // eu original/platinum
-	{"scus_972.68", Game::RAC2, Region::US}, // us greatest hits
-	{"scus_972.68", Game::RAC2, Region::US}, // us original
-	{"scus_973.22", Game::RAC2, Region::US}, // us demo
-	{"scus_973.23", Game::RAC2, Region::US}, // us retail employees demo
-	{"scus_973.74", Game::RAC2, Region::US}, // us rac2 + jak demo
-	{"pcpx_966.53", Game::RAC3, Region::JAPAN}, // japan promotional
-	{"sced_528.47", Game::RAC3, Region::EU}, // eu demo
-	{"sced_528.48", Game::RAC3, Region::EU}, // r&c3 + sly 2 demo
-	{"sces_524.56", Game::RAC3, Region::EU}, // eu original/plantinum
-	{"scps_150.84", Game::RAC3, Region::JAPAN}, // japan original
-	{"scus_973.53", Game::RAC3, Region::US}, // us original
-	{"scus_974.11", Game::RAC3, Region::US}, // us demo
-	{"scus_974.13", Game::RAC3, Region::US}, // us beta
-	{"tces_524.56", Game::RAC3, Region::EU}, // eu beta trial code
+	{"pbpx_955.16", Game::RAC, Region::JAPAN}, // japan original
+	{"sced_510.75", Game::RAC, Region::EU}, // eu demo
+	{"sces_509.16", Game::RAC, Region::EU}, // eu black label/plantinum
+	{"scus_971.99", Game::RAC, Region::US}, // us original/greatest hits
+	{"scus_972.09", Game::RAC, Region::US}, // us demo 1
+	{"scus_972.40", Game::RAC, Region::US}, // us demo 2
+	{"scaj_200.52", Game::GC, Region::JAPAN}, // japan original
+	{"sces_516.07", Game::GC, Region::EU}, // eu original/platinum
+	{"scus_972.68", Game::GC, Region::US}, // us greatest hits
+	{"scus_972.68", Game::GC, Region::US}, // us original
+	{"scus_973.22", Game::GC, Region::US}, // us demo
+	{"scus_973.23", Game::GC, Region::US}, // us retail employees demo
+	{"scus_973.74", Game::GC, Region::US}, // us rac2 + jak demo
+	{"pcpx_966.53", Game::UYA, Region::JAPAN}, // japan promotional
+	{"sced_528.47", Game::UYA, Region::EU}, // eu demo
+	{"sced_528.48", Game::UYA, Region::EU}, // r&c3 + sly 2 demo
+	{"sces_524.56", Game::UYA, Region::EU}, // eu original/plantinum
+	{"scps_150.84", Game::UYA, Region::JAPAN}, // japan original
+	{"scus_973.53", Game::UYA, Region::US}, // us original
+	{"scus_974.11", Game::UYA, Region::US}, // us demo
+	{"scus_974.13", Game::UYA, Region::US}, // us beta
+	{"tces_524.56", Game::UYA, Region::EU}, // eu beta trial code
 	{"pcpx_980.17", Game::DL, Region::JAPAN}, // japan demo
 	{"sced_536.60", Game::DL, Region::EU}, // jak x glaiator demo
 	{"sces_532.85", Game::DL, Region::EU}, // eu original/platinum

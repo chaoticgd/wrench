@@ -191,7 +191,7 @@ static_assert(sizeof(PropertiesFirstPartRAC234) == 0x5c);
 struct PropertiesBlock {
 	static void read(Properties& dest, Buffer src, Game game) {
 		s32 ofs = 0;
-		if(game == Game::RAC1) {
+		if(game == Game::RAC) {
 			PropertiesFirstPartRAC1 first_part = src.read<PropertiesFirstPartRAC1>(ofs, "gameplay properties R&C1");
 			swap_first_part_rac1(dest.first_part, first_part);
 		} else {
@@ -207,7 +207,7 @@ struct PropertiesBlock {
 			}
 			dest.core_sounds_count = src.read<s32>(ofs, "core sounds count");
 			ofs += 4;
-			if(game == Game::RAC3) {
+			if(game == Game::UYA) {
 				dest.rac3_third_part = src.read<s32>(ofs, "R&C3 third part");
 			} else if(game == Game::DL) {
 				s64 third_part_count = src.read<s32>(ofs, "third part count");
@@ -229,7 +229,7 @@ struct PropertiesBlock {
 	
 	static void write(OutBuffer dest, const Properties& src, Game game) {
 		PropertiesFirstPart first_part = src.first_part;
-		if(game == Game::RAC1) {
+		if(game == Game::RAC) {
 			PropertiesFirstPartRAC1 first_part_packed;
 			swap_first_part_rac1(first_part, first_part_packed);
 			dest.write(first_part_packed);
@@ -245,7 +245,7 @@ struct PropertiesBlock {
 			}
 			verify(src.core_sounds_count.has_value(), "Missing core_sounds_count in properties block.");
 			dest.write(*src.core_sounds_count);
-			if(game == Game::RAC3) {
+			if(game == Game::UYA) {
 				verify(src.rac3_third_part.has_value(), "Missing rac3_third_part in properties block.");
 				dest.write(*src.rac3_third_part);
 			} else if(game == Game::DL) {
@@ -343,7 +343,7 @@ struct HelpMessageBlock {
 		auto& header = src.read<HelpMessageHeader>(0, "string block header");
 		auto table = src.read_multiple<HelpMessageEntry>(8, header.count, "string table");
 		
-		if(game == Game::RAC3 || game == Game::DL) {
+		if(game == Game::UYA || game == Game::DL) {
 			src = src.subbuf(8);
 		}
 		
@@ -367,7 +367,7 @@ struct HelpMessageBlock {
 		s64 table_ofs = dest.alloc_multiple<HelpMessageEntry>(src.size());
 		
 		s64 base_ofs;
-		if(game == Game::RAC3 || game == Game::DL) {
+		if(game == Game::UYA || game == Game::DL) {
 			base_ofs = table_ofs;
 		} else {
 			base_ofs = header_ofs;
@@ -392,7 +392,7 @@ struct HelpMessageBlock {
 					dest.write(c);
 				}
 				dest.write('\0');
-				if(game == Game::RAC1 || game == Game::RAC2) {
+				if(game == Game::RAC || game == Game::GC) {
 					dest.pad(0x4, 0);
 				}
 			}

@@ -172,10 +172,10 @@ void Inspector::render(app& a) {
 	};
 	
 	draw_fields(lvl, fields);
-	if(lvl.game == Game::RAC1) {
+	if(lvl.game == Game::RAC) {
 		draw_fields(lvl, rac1_fields);
 	}
-	if(lvl.game == Game::RAC2 || lvl.game == Game::RAC3) {
+	if(lvl.game == Game::GC || lvl.game == Game::UYA) {
 		draw_fields(lvl, rac23_fields);
 	}
 }

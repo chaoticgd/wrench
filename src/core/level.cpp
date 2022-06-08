@@ -114,11 +114,11 @@ static void read_json_file_into_map(Map& map, const fs::path& src_dir, const Jso
 
 Opt<Game> game_from_string(std::string str) {
 	if(str == "R&C1") {
-		return Game::RAC1;
+		return Game::RAC;
 	} else if(str == "R&C2") {
-		return Game::RAC2;
+		return Game::GC;
 	} else if(str == "R&C3") {
-		return Game::RAC3;
+		return Game::UYA;
 	} else if(str == "Deadlocked") {
 		return Game::DL;
 	} else {
@@ -176,9 +176,9 @@ void write_wad_json(fs::path dest_dir, Wad* base) {
 	json["metadata"] = get_file_metadata("wad", APPLICATION_NAME);
 	
 	switch(base->game) {
-		case Game::RAC1: json["game"] = "R&C1"; break;
-		case Game::RAC2: json["game"] = "R&C2"; break;
-		case Game::RAC3: json["game"] = "R&C3"; break;
+		case Game::RAC: json["game"] = "R&C1"; break;
+		case Game::GC: json["game"] = "R&C2"; break;
+		case Game::UYA: json["game"] = "R&C3"; break;
 		case Game::DL: json["game"] = "Deadlocked"; break;
 		default: assert(false);
 	}
@@ -200,7 +200,7 @@ LevelWad read_level_wad_json(const Json& json, const fs::path& src_dir, Game gam
 	wad.game = game;
 	wad.type = WadType::LEVEL;
 	wad.level_number = json["level_number"];
-	if(wad.game != Game::RAC1) {
+	if(wad.game != Game::RAC) {
 		wad.reverb = json["reverb"];
 	}
 	read_json_file_into_map(wad.pvar_types, src_dir, json, "pvar_types", "name");
@@ -244,7 +244,7 @@ LevelWad read_level_wad_json(const Json& json, const fs::path& src_dir, Game gam
 	if(wad.global_nav_data.has_value()) {
 		wad.global_nav_data = read_file_json(src_dir, json, "global_nav_data");
 	}
-	if(wad.game != Game::RAC1) {
+	if(wad.game != Game::RAC) {
 		wad.core_bank = read_file_json(src_dir, json, "core_sound_bank");
 	}
 	read_json_file_into_map(wad.camera_classes, src_dir, json, "camera_classes", "class");

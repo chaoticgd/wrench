@@ -38,7 +38,7 @@ packed_struct(UyaDlSubtitleHeader,
 void unpack_subtitles(CollectionAsset& dest, InputStream& src, Game game) {
 	std::vector<u8> bytes = src.read_multiple<u8>(0, src.size());
 	Buffer buffer(bytes);
-	if(game == Game::RAC2) {
+	if(game == Game::GC) {
 		for(s32 i = 0;; i++) {
 			GcSubtitleHeader header = buffer.read<GcSubtitleHeader>(i * sizeof(GcSubtitleHeader), "subtitle");
 			if(header.start_frame > -1 && header.stop_frame > -1) {
@@ -60,7 +60,7 @@ void unpack_subtitles(CollectionAsset& dest, InputStream& src, Game game) {
 				break;
 			}
 		}
-	} else if(game == Game::RAC3 || game == Game::DL) {
+	} else if(game == Game::UYA || game == Game::DL) {
 		
 	} else {
 		assert(0);
@@ -68,7 +68,7 @@ void unpack_subtitles(CollectionAsset& dest, InputStream& src, Game game) {
 }
 
 void pack_subtitles(OutputStream& dest, const CollectionAsset& src, Game game) {
-	if(game == Game::RAC2) {
+	if(game == Game::GC) {
 		s32 subtitle_count = 0;
 		for(s32 i = 0; i < 1024; i++) {
 			if(src.has_child(i)) {
@@ -118,7 +118,7 @@ void pack_subtitles(OutputStream& dest, const CollectionAsset& src, Game game) {
 				break;
 			}
 		}
-	} else if(game == Game::RAC3 || game == Game::DL) {
+	} else if(game == Game::UYA || game == Game::DL) {
 		
 	} else {
 		assert(0);

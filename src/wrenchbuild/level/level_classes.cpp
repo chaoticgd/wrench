@@ -38,7 +38,7 @@ void unpack_moby_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest,
 		
 		if(entry.offset_in_asset_wad != 0) {
 			unpack_asset(asset.core<BinaryAsset>(), data, level_core_block_range(entry.offset_in_asset_wad, block_bounds), game);
-			//if(entry.o_class >= 10 && !(game == Game::RAC3 && (entry.o_class == 5952 || entry.o_class == 5953))) {
+			//if(entry.o_class >= 10 && !(game == Game::UYA && (entry.o_class == 5952 || entry.o_class == 5953))) {
 			//	unpack_asset(asset, data, block_range(entry.offset_in_asset_wad, block_bounds), game);
 			//}
 		}

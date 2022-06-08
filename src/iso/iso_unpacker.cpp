@@ -39,9 +39,9 @@ void unpack_iso(BuildAsset& dest, InputStream& src, AssetUnpackerFunc unpack) {
 	std::string game_str = dest.game();
 	
 	Game game = Game::UNKNOWN;
-	if(game_str == "rac") game = Game::RAC1;
-	if(game_str == "gc") game = Game::RAC2;
-	if(game_str == "uya") game = Game::RAC3;
+	if(game_str == "rac") game = Game::RAC;
+	if(game_str == "gc") game = Game::GC;
+	if(game_str == "uya") game = Game::UYA;
 	if(game_str == "dl") game = Game::DL;
 	
 	IsoFilesystem filesystem = read_iso_filesystem(src);
@@ -112,7 +112,7 @@ static void unpack_primary_volume_descriptor(BuildAsset& build, const IsoPrimary
 }
 
 static void enumerate_global_wads(std::vector<UnpackInfo>& dest, BuildAsset& build, const table_of_contents& toc, InputStream& src, Game game) {
-	if(game == Game::RAC1) {
+	if(game == Game::RAC) {
 		s64 toc_ofs = RAC1_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
 		dest.emplace_back(UnpackInfo{&build.bonus<BonusWadAsset>("globals/bonus/bonus.asset"), toc_ofs + offsetof(RacWadInfo, bonus_1), {0, src.size()}});
 		dest.emplace_back(UnpackInfo{&build.mpeg<MpegWadAsset>("globals/mpeg/mpeg.asset"), toc_ofs + offsetof(RacWadInfo, mpegs), {0, src.size()}});

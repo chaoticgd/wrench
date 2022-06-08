@@ -392,7 +392,7 @@ void unpack_fx_textures(LevelCoreAsset& core, const std::vector<FxTextureEntry>&
 		
 		std::string name;
 		switch(game) {
-			case Game::RAC2: {
+			case Game::GC: {
 				if(i < ARRAY_SIZE(GC_FX_TEXTURE_NAMES)) {
 					name = GC_FX_TEXTURE_NAMES[i];
 				}

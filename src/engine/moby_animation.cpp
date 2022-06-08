@@ -169,7 +169,7 @@ static MobySequence read_moby_sequence(Buffer src, s64 seq_ofs, s32 joint_count,
 	
 	if(seq_header.triggers != 0) {
 		s64 trigger_data_ofs = seq_ofs + seq_header.triggers;
-		if(game == Game::RAC1) {
+		if(game == Game::RAC) {
 			trigger_data_ofs = seq_header.triggers;
 		} else {
 			trigger_data_ofs = seq_ofs + seq_header.triggers;
@@ -226,11 +226,11 @@ static s64 write_moby_sequence(OutBuffer dest, const MobySequence& sequence, s64
 	}
 	
 	if(sequence.trigger_data.has_value()) {
-		if(game == Game::RAC1) {
+		if(game == Game::RAC) {
 			dest.pad(0x10);
 		}
 		s64 trigger_data_ofs = dest.write(*sequence.trigger_data);
-		if(game == Game::RAC1) {
+		if(game == Game::RAC) {
 			seq_header.triggers = trigger_data_ofs - header_ofs;
 		} else {
 			seq_header.triggers = trigger_data_ofs - seq_header_ofs;

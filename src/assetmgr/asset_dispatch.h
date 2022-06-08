@@ -65,7 +65,7 @@ template <typename ThisAsset, typename WadHeader, typename UnpackerFunc>
 AssetUnpackerFunc* wrap_wad_unpacker_func(UnpackerFunc func) {
 	return new AssetUnpackerFunc([func](Asset& dest, InputStream& src, Game game, const char* hint, s64 header_offset) {
 		WadHeader header;
-		if(game == Game::RAC1) {
+		if(game == Game::RAC) {
 			// The packed R&C1 headers don't have a header_size and sector field
 			// but we want to read them using a version of the header that
 			// starts with those fields so we can write them out like that, so

@@ -37,7 +37,7 @@ void unpack_asset_impl(Asset& dest, InputStream& src, Game game, const char* hin
 	}
 	
 	// Hacks to skip unpacking certain wads. These should be removed over time.
-	if(game == Game::RAC2
+	if(game == Game::GC
 		&& (dest.type() == HudWadAsset::ASSET_TYPE
 		|| dest.type() == SpaceWadAsset::ASSET_TYPE
 		|| dest.type() == SceneWadAsset::ASSET_TYPE
@@ -47,7 +47,7 @@ void unpack_asset_impl(Asset& dest, InputStream& src, Game game, const char* hin
 		return;
 	}
 	
-	if(game == Game::RAC3
+	if(game == Game::UYA
 		&& (dest.type() == HudWadAsset::ASSET_TYPE
 		|| dest.type() == SpaceWadAsset::ASSET_TYPE
 		|| dest.type() == GadgetWadAsset::ASSET_TYPE)) {
@@ -77,9 +77,9 @@ void unpack_asset_impl(Asset& dest, InputStream& src, Game game, const char* hin
 		unpack_func = dest.funcs.unpack_rac1;
 	} else {
 		switch(game) {
-			case Game::RAC1: unpack_func = dest.funcs.unpack_rac1; break;
-			case Game::RAC2: unpack_func = dest.funcs.unpack_rac2; break;
-			case Game::RAC3: unpack_func = dest.funcs.unpack_rac3; break;
+			case Game::RAC: unpack_func = dest.funcs.unpack_rac1; break;
+			case Game::GC: unpack_func = dest.funcs.unpack_rac2; break;
+			case Game::UYA: unpack_func = dest.funcs.unpack_rac3; break;
 			case Game::DL: unpack_func = dest.funcs.unpack_dl; break;
 			default: verify_not_reached("Invalid game.");
 		}

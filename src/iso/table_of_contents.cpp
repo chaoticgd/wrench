@@ -32,7 +32,7 @@ static s64 get_rac234_level_table_offset(Buffer src);
 
 table_of_contents read_table_of_contents(InputStream& src, Game game) {
 	table_of_contents toc;
-	if(game == Game::RAC1) {
+	if(game == Game::RAC) {
 		toc = read_table_of_contents_rac1(src);
 	} else {
 		toc = read_table_of_contents_rac234(src);
@@ -378,9 +378,9 @@ s64 write_table_of_contents_rac234(OutputStream& iso, const table_of_contents& t
 	// Size limits hardcoded in the boot ELF.
 	s32 max_sectors;
 	switch(game) {
-		case Game::RAC2: max_sectors = 0xb;  break;
-		case Game::RAC3: max_sectors = 0x10; break;
-		case Game::DL:   max_sectors = 0x1a; break;
+		case Game::GC:  max_sectors = 0xb;  break;
+		case Game::UYA: max_sectors = 0x10; break;
+		case Game::DL:  max_sectors = 0x1a; break;
 	}
 	verify(toc_start_size.sectors <= max_sectors,
 		"Table of contents too big. This could be because there are too many levels, or due to a bug.");
@@ -398,7 +398,7 @@ s64 write_table_of_contents_rac234(OutputStream& iso, const table_of_contents& t
 				// The order of fields in the level table entries is different
 				// for R&C2 versus R&C3 and Deadlocked.
 				s32 field = 0;
-				bool is_rac2 = game == Game::RAC2 || game == Game::UNKNOWN;
+				bool is_rac2 = game == Game::GC || game == Game::UNKNOWN;
 				switch(j++) {
 					case 0: field = !is_rac2; break;
 					case 1: field = is_rac2; break;

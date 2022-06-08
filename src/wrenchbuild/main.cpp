@@ -53,7 +53,7 @@ struct ParsedArgs {
 	std::string asset;
 	fs::path output_path;
 	s64 offset = -1;
-	Game game = Game::RAC1;
+	Game game = Game::RAC;
 	std::string hint;
 	bool generate_output_subdirectory = false;
 	bool print_developer_output = false;
@@ -212,11 +212,11 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 			verify(i + 1 < argc, "Expected game argument.");
 			const char* game = argv[++i];
 			if(strcmp(game, "rac") == 0) {
-				args.game = Game::RAC1;
+				args.game = Game::RAC;
 			} else if(strcmp(game, "gc") == 0) {
-				args.game = Game::RAC2;
+				args.game = Game::GC;
 			} else if (strcmp(game, "uya") == 0) {
-				args.game = Game::RAC3;
+				args.game = Game::UYA;
 			} else if(strcmp(game, "dl") == 0) {
 				args.game = Game::DL;
 			} else {
@@ -277,9 +277,9 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, bool
 			
 			std::string game_str;
 			switch(release.game) {
-				case Game::RAC1: game_str = "rac"; break;
-				case Game::RAC2: game_str = "gc"; break;
-				case Game::RAC3: game_str = "uya"; break;
+				case Game::RAC: game_str = "rac"; break;
+				case Game::GC: game_str = "gc"; break;
+				case Game::UYA: game_str = "uya"; break;
 				case Game::DL: game_str = "dl"; break;
 				default: game_str = "unknown";
 			}
@@ -449,7 +449,7 @@ static void build_collision(fs::path input_path, fs::path output_path) {
 
 static void extract_moby(const char* input_path, const char* output_path) {
 	auto bin = read_file(input_path);
-	MobyClassData moby = read_moby_class(bin, Game::RAC2);
+	MobyClassData moby = read_moby_class(bin, Game::GC);
 	ColladaScene scene = recover_moby_class(moby, 0, 0);
 	auto xml = write_collada(scene);
 	write_file("/", output_path, xml, "w");
@@ -460,7 +460,7 @@ static void build_moby(const char* input_path, const char* output_path) {
 	ColladaScene scene = read_collada(xml);
 	MobyClassData moby = build_moby_class(scene);
 	std::vector<u8> buffer;
-	write_moby_class(buffer, moby, Game::RAC2);
+	write_moby_class(buffer, moby, Game::GC);
 	write_file("/", output_path, buffer);
 }
 

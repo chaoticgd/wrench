@@ -29,30 +29,30 @@ struct WadFileDescription {
 };
 
 static WadFileDescription WAD_FILE_TYPES[] = {
-	{"mpeg"  , Game::RAC2   , WadType::MPEG       , 0x0328},
-	{"misc"  , Game::RAC2   , WadType::MISC       , 0x0040},
-	{"hud"   , Game::RAC2   , WadType::HUD        , 0x1870},
-	{"bonus" , Game::RAC2   , WadType::BONUS      , 0x0a48},
-	{"audio" , Game::RAC2   , WadType::AUDIO      , 0x1800},
-	{"space" , Game::RAC2   , WadType::SPACE      , 0x0ba8},
-	{"scene" , Game::RAC2   , WadType::SCENE      , 0x0170},
-	{"gadget", Game::RAC2   , WadType::GADGET     , 0x03c8, 0x8, 0, 0x586}, // 0xb1
-	{"gadget", Game::RAC3   , WadType::GADGET     , 0x03c8, 0x8, 0x587, 0x1000}, // 0xa5d
+	{"mpeg"  , Game::GC     , WadType::MPEG       , 0x0328},
+	{"misc"  , Game::GC     , WadType::MISC       , 0x0040},
+	{"hud"   , Game::GC     , WadType::HUD        , 0x1870},
+	{"bonus" , Game::GC     , WadType::BONUS      , 0x0a48},
+	{"audio" , Game::GC     , WadType::AUDIO      , 0x1800},
+	{"space" , Game::GC     , WadType::SPACE      , 0x0ba8},
+	{"scene" , Game::GC     , WadType::SCENE      , 0x0170},
+	{"gadget", Game::GC     , WadType::GADGET     , 0x03c8, 0x8, 0, 0x586}, // 0xb1
+	{"gadget", Game::UYA    , WadType::GADGET     , 0x03c8, 0x8, 0x587, 0x1000}, // 0xa5d
 	{"gadget", Game::UNKNOWN, WadType::GADGET     , 0x03c8},
-	{"armor" , Game::RAC2   , WadType::ARMOR      , 0x00f8},
+	{"armor" , Game::GC     , WadType::ARMOR      , 0x00f8},
 	{"level" , Game::UNKNOWN, WadType::LEVEL      , 0x0060},
-	{"audio" , Game::RAC2   , WadType::LEVEL_AUDIO, 0x1018},
-	{"scene" , Game::RAC2   , WadType::LEVEL_SCENE, 0x137c},
-	{"mpeg"  , Game::RAC3   , WadType::MPEG       , 0x0648, 0xc, 0, 0x3b}, // 0x38
+	{"audio" , Game::GC     , WadType::LEVEL_AUDIO, 0x1018},
+	{"scene" , Game::GC     , WadType::LEVEL_SCENE, 0x137c},
+	{"mpeg"  , Game::UYA    , WadType::MPEG       , 0x0648, 0xc, 0, 0x3b}, // 0x38
 	{"mpeg"  , Game::DL     , WadType::MPEG       , 0x0648, 0xc, 0x3c, 0x100}, // 0x40
 	{"mpeg"  , Game::UNKNOWN, WadType::MPEG       , 0x0648},
-	{"misc"  , Game::RAC3   , WadType::MISC       , 0x0048},
-	{"bonus" , Game::RAC3   , WadType::BONUS      , 0x0bf0},
-	{"space" , Game::RAC3   , WadType::SPACE      , 0x0c30},
-	{"armor" , Game::RAC3   , WadType::ARMOR      , 0x0398},
-	{"audio" , Game::RAC3   , WadType::AUDIO      , 0x2340},
-	{"hud"   , Game::RAC3   , WadType::HUD        , 0x2ab0},
-	{"audio" , Game::RAC3   , WadType::LEVEL_AUDIO, 0x1818},
+	{"misc"  , Game::UYA    , WadType::MISC       , 0x0048},
+	{"bonus" , Game::UYA    , WadType::BONUS      , 0x0bf0},
+	{"space" , Game::UYA    , WadType::SPACE      , 0x0c30},
+	{"armor" , Game::UYA    , WadType::ARMOR      , 0x0398},
+	{"audio" , Game::UYA    , WadType::AUDIO      , 0x2340},
+	{"hud"   , Game::UYA    , WadType::HUD        , 0x2ab0},
+	{"audio" , Game::UYA    , WadType::LEVEL_AUDIO, 0x1818},
 	{"scene" , Game::UNKNOWN, WadType::LEVEL_SCENE, 0x26f0},
 	{"misc"  , Game::DL     , WadType::MISC       , 0x0050},
 	{"bonus" , Game::DL     , WadType::BONUS      , 0x02a8},

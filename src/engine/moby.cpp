@@ -49,10 +49,10 @@ MobyClassData read_moby_class(Buffer src, Game game) {
 	
 	MobyFormat format;
 	switch(game) {
-		case Game::RAC1:
+		case Game::RAC:
 			format = MobyFormat::RAC1;
 			break;
-		case Game::RAC2:
+		case Game::GC:
 			if(header.rac12_byte_b == 0) {
 				format = MobyFormat::RAC2;
 			} else {
@@ -60,7 +60,7 @@ MobyClassData read_moby_class(Buffer src, Game game) {
 				moby.force_rac1_format = true;
 			}
 			break;
-		case Game::RAC3:
+		case Game::UYA:
 		case Game::DL:
 			format = MobyFormat::RAC3DL;
 			break;
@@ -78,7 +78,7 @@ MobyClassData read_moby_class(Buffer src, Game game) {
 		moby.bangles = read_moby_bangles(src.subbuf(header.bangles * 0x10));
 		moby.header_end_offset = std::min(moby.header_end_offset, header.bangles * 0x10);
 	}
-	if(game == Game::RAC1)  {
+	if(game == Game::RAC)  {
 		moby.rac1_short_2e = header.corncob;
 	} else if(header.corncob != 0) {
 		moby.corncob = read_moby_corncob(src.subbuf(header.corncob * 0x10));
@@ -126,7 +126,7 @@ MobyClassData read_moby_class(Buffer src, Game game) {
 			moby.bangles->submeshes = read_moby_submeshes(src, bangles_submesh_table_ofs, moby.bangles->header.submesh_count, moby.scale, moby.joint_count, format);
 		}
 	}
-	if(header.rac3dl_team_textures != 0 && (game == Game::RAC3 || game == Game::DL)) {
+	if(header.rac3dl_team_textures != 0 && (game == Game::UYA || game == Game::DL)) {
 		//verify(header.gif_usage != 0, "Moby with team palettes but no gif table.");
 		moby.palettes_per_texture = header.rac3dl_team_textures & 0xf;
 		s32 texture_count = (header.rac3dl_team_textures & 0xf0) >> 4;
@@ -148,13 +148,13 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 	
 	MobyFormat format;
 	switch(game) {
-		case Game::RAC1:
+		case Game::RAC:
 			format = MobyFormat::RAC1;
 			break;
-		case Game::RAC2:
+		case Game::GC:
 			format = moby.force_rac1_format > 0 ? MobyFormat::RAC1 : MobyFormat::RAC2;
 			break;
-		case Game::RAC3:
+		case Game::UYA:
 		case Game::DL:
 			format = MobyFormat::RAC3DL;
 			break;
@@ -201,7 +201,7 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 		dest.pad(0x10);
 		header.bangles = (write_moby_bangles(dest, *moby.bangles) - class_header_ofs) / 0x10;
 	}
-	if(game == Game::RAC1) {
+	if(game == Game::RAC) {
 		header.corncob = moby.rac1_short_2e;
 	} else if(moby.corncob.has_value()) {
 		dest.pad(0x10);
@@ -260,7 +260,7 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 	if(moby.bangles.has_value()) {
 		write_moby_bangle_submeshes(dest, gif_usage, bangles_submesh_table_ofs, *moby.bangles, moby.scale, format, class_header_ofs);
 	}
-	if(moby.team_palettes.size() > 0 && (game == Game::RAC3 || game == Game::DL)) {
+	if(moby.team_palettes.size() > 0 && (game == Game::UYA || game == Game::DL)) {
 		dest.pad(0x10);
 		s64 team_palettes_ofs = dest.tell();
 		dest.write<u64>(0);

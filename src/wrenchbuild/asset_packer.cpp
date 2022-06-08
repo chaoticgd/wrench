@@ -53,9 +53,9 @@ void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_
 	
 	AssetPackerFunc* pack_func = nullptr;
 	switch(game) {
-		case Game::RAC1: pack_func = asset->funcs.pack_rac1; break;
-		case Game::RAC2: pack_func = asset->funcs.pack_rac2; break;
-		case Game::RAC3: pack_func = asset->funcs.pack_rac3; break;
+		case Game::RAC: pack_func = asset->funcs.pack_rac1; break;
+		case Game::GC: pack_func = asset->funcs.pack_rac2; break;
+		case Game::UYA: pack_func = asset->funcs.pack_rac3; break;
 		case Game::DL: pack_func = asset->funcs.pack_dl; break;
 	}
 	

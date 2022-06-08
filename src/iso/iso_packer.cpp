@@ -38,11 +38,11 @@ void pack_iso(OutputStream& iso, const BuildAsset& build, Game, const char* hint
 	Game game = Game::UNKNOWN;
 	std::string game_str = build.game();
 	if(game_str == "rac") {
-		game = Game::RAC1;
+		game = Game::RAC;
 	} else if(game_str == "gc") {
-		game = Game::RAC2;
+		game = Game::GC;
 	} else if(game_str == "uya") {
-		game = Game::RAC3;
+		game = Game::UYA;
 	} else if(game_str == "dl") {
 		game = Game::DL;
 	}
@@ -107,9 +107,9 @@ void pack_iso(OutputStream& iso, const BuildAsset& build, Game, const char* hint
 	{
 		iso.pad(SECTOR_SIZE, 0);
 		switch(game) {
-			case Game::RAC1:    toc_record.name = "rc1.hdr";     break;
-			case Game::RAC2:    toc_record.name = "rc2.hdr";     break;
-			case Game::RAC3:    toc_record.name = "rc3.hdr";     break;
+			case Game::RAC:     toc_record.name = "rc1.hdr";     break;
+			case Game::GC:      toc_record.name = "rc2.hdr";     break;
+			case Game::UYA:     toc_record.name = "rc3.hdr";     break;
 			case Game::DL:      toc_record.name = "rc4.hdr";     break;
 			case Game::UNKNOWN: toc_record.name = "unknown.hdr"; break;
 		}
@@ -172,11 +172,11 @@ static void pack_ps2_logo(OutputStream& iso, const BuildAsset& build, AssetPacke
 static std::vector<GlobalWadInfo> enumerate_globals(const BuildAsset& build, Game game) {
 	std::vector<WadType> order;
 	switch(game) {
-		case Game::RAC1: {
+		case Game::RAC: {
 			order = {};
 			break;
 		}
-		case Game::RAC2: {
+		case Game::GC: {
 			order = {
 				WadType::MPEG,
 				WadType::MISC,
@@ -190,7 +190,7 @@ static std::vector<GlobalWadInfo> enumerate_globals(const BuildAsset& build, Gam
 			};
 			break;
 		}
-		case Game::RAC3: {
+		case Game::UYA: {
 			order = {
 				WadType::MPEG,
 				WadType::MISC,
@@ -433,7 +433,7 @@ static std::array<IsoDirectory, 3> pack_levels(OutputStream& iso, std::vector<Le
 				levels[i].scene = level.scene;
 			}
 		}
-	} else if(game == Game::RAC2) {
+	} else if(game == Game::GC) {
 		// The level files are laid out AoS.
 		for(size_t i = 0; i < levels.size(); i++) {
 			LevelInfo& level = levels[i];
