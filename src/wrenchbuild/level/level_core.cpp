@@ -248,7 +248,7 @@ BuildAsset& build_from_level_core_asset(LevelCoreAsset& core) {
 	assert(core.parent()->parent()->parent()->parent()->parent()); // Build
 	Asset& build = *core.parent()->parent()->parent()->parent()->parent();
 	for(Asset* asset = &build.highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
-		if(asset->type() == BuildAsset::ASSET_TYPE) {
+		if(asset->logical_type() == BuildAsset::ASSET_TYPE) {
 			return asset->as<BuildAsset>();
 		}
 	}

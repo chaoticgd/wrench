@@ -79,7 +79,7 @@ static void pack_rac_mpeg_wad(OutputStream& dest, RacMpegWadHeader& header, cons
 	for(s32 i = 0; i < ARRAY_SIZE(header.mpegs); i++) {
 		if(mpegs.has_child(i)) {
 			const Asset& child = mpegs.get_child(i);
-			if(child.type() == MpegAsset::ASSET_TYPE) {
+			if(child.logical_type() == MpegAsset::ASSET_TYPE) {
 				const MpegAsset& mpeg = child.as<MpegAsset>();
 				header.mpegs[i] = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video(), game);
 			} else {
@@ -112,7 +112,7 @@ static void pack_gc_uya_dl_mpeg_wad(OutputStream& dest, Header& header, const Mp
 	for(s32 i = 0; i < ARRAY_SIZE(header.mpegs); i++) {
 		if(mpegs.has_child(i)) {
 			const Asset& child = mpegs.get_child(i);
-			if(child.type() == MpegAsset::ASSET_TYPE) {
+			if(child.logical_type() == MpegAsset::ASSET_TYPE) {
 				const MpegAsset& mpeg = child.as<MpegAsset>();
 				if(mpeg.has_subtitles()) {
 					header.mpegs[i].subtitles = pack_asset_sa<SectorByteRange>(dest, mpeg.get_subtitles(), game, FMT_COLLECTION_SUBTITLES);
