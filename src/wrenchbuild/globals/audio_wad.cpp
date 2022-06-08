@@ -58,8 +58,7 @@ template <typename Header>
 static void unpack_audio_wad(AudioWadAsset& dest, const Header& header, InputStream& src, Game game);
 template <typename Header>
 static void pack_audio_wad(OutputStream& dest, Header& header, const AudioWadAsset& src, Game game);
-template <typename Getter>
-static void unpack_help_audio(CollectionAsset& dest, InputStream& src, const Sector32* ranges, s32 count, Game game, const std::set<s64>& end_sectors, Getter getter);
+static void unpack_help_audio(CollectionAsset& dest, InputStream& src, const Sector32* ranges, s32 count, Game game, const std::set<s64>& end_sectors, s32 language);
 static void pack_help_audio(OutputStream& dest, Sector32* sectors_dest, s32 count, const CollectionAsset& src, Game game, s32 language);
 
 on_load(Audio, []() {
@@ -86,8 +85,7 @@ static void unpack_audio_wad(AudioWadAsset& dest, const Header& header, InputStr
 	for(Sector32 sector : header.help_italian) end_sectors.insert(sector.sectors);
 	end_sectors.insert(Sector32::size_from_bytes(src.size()).sectors);
 	
-	AudioWadAsset& vendor_file = dest.switch_files("vendor/vendor.asset");
-	CollectionAsset& vendor = vendor_file.vendor();
+	CollectionAsset& vendor = dest.vendor("vendor/vendor.asset");
 	for(s32 i = 0; i < ARRAY_SIZE(header.vendor); i++) {
 		s32 sector = header.vendor[i].sectors;
 		if(sector > 0) {
@@ -101,14 +99,13 @@ static void unpack_audio_wad(AudioWadAsset& dest, const Header& header, InputStr
 		unpack_assets<BinaryAsset>(dest.global_sfx(), src, ARRAY_PAIR(header.global_sfx), game);
 	}
 	
-	CollectionAsset& help_collection = dest.help();
-	CollectionAsset& help_file = help_collection.switch_files("help/help.asset");
+	CollectionAsset& help_collection = dest.help("help/help.asset");
 	
-	unpack_help_audio(help_file, src, ARRAY_PAIR(header.help_english), game, end_sectors, &HelpAudioAsset::english<BinaryAsset>);
-	unpack_help_audio(help_file, src, ARRAY_PAIR(header.help_french), game, end_sectors, &HelpAudioAsset::french<BinaryAsset>);
-	unpack_help_audio(help_file, src, ARRAY_PAIR(header.help_german), game, end_sectors, &HelpAudioAsset::german<BinaryAsset>);
-	unpack_help_audio(help_file, src, ARRAY_PAIR(header.help_spanish), game, end_sectors, &HelpAudioAsset::spanish<BinaryAsset>);
-	unpack_help_audio(help_file, src, ARRAY_PAIR(header.help_italian), game, end_sectors, &HelpAudioAsset::italian<BinaryAsset>);
+	unpack_help_audio(help_collection, src, ARRAY_PAIR(header.help_english), game, end_sectors, 0);
+	unpack_help_audio(help_collection, src, ARRAY_PAIR(header.help_french), game, end_sectors, 1);
+	unpack_help_audio(help_collection, src, ARRAY_PAIR(header.help_german), game, end_sectors, 2);
+	unpack_help_audio(help_collection, src, ARRAY_PAIR(header.help_spanish), game, end_sectors, 3);
+	unpack_help_audio(help_collection, src, ARRAY_PAIR(header.help_italian), game, end_sectors, 4);
 }
 
 template <typename Header>
@@ -126,16 +123,23 @@ static void pack_audio_wad(OutputStream& dest, Header& header, const AudioWadAss
 	pack_help_audio(dest, ARRAY_PAIR(header.help_italian), src.get_help(), game, 4);
 }
 
-template <typename Getter>
-static void unpack_help_audio(CollectionAsset& dest, InputStream& src, const Sector32* ranges, s32 count, Game game, const std::set<s64>& end_sectors, Getter getter) {
+static void unpack_help_audio(CollectionAsset& dest, InputStream& src, const Sector32* ranges, s32 count, Game game, const std::set<s64>& end_sectors, s32 language) {
 	for(s32 i = 0; i < count; i++) {
 		if(ranges[i].sectors > 0) {
-			CollectionAsset& help_audio_file = dest.switch_files(stringf("%d/audio.asset", i));
-			Asset& asset = (help_audio_file.child<HelpAudioAsset>(i).*getter)();
+			HelpAudioAsset& child = dest.foreign_child<HelpAudioAsset>(stringf("%d/audio.asset", i), i);
+			Asset* asset;
+			switch(language) {
+				case 0: asset = &child.english<BinaryAsset>();
+				case 1: asset = &child.french<BinaryAsset>();
+				case 2: asset = &child.german<BinaryAsset>();
+				case 3: asset = &child.spanish<BinaryAsset>();
+				case 4: asset = &child.italian<BinaryAsset>();
+				default: assert(0);
+			}
 			
 			auto end_sector = end_sectors.upper_bound(ranges[i].sectors);
 			verify(end_sector != end_sectors.end(), "Header references audio beyond end of file (at 0x%lx). The WAD file may be truncated.", ranges[i].bytes());
-			unpack_asset(asset, src, SectorRange{ranges[i].sectors, *end_sector - ranges[i].sectors}, game);
+			unpack_asset(*asset, src, SectorRange{ranges[i].sectors, *end_sector - ranges[i].sectors}, game);
 		}
 	}
 }

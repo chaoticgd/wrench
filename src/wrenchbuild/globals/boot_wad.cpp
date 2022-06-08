@@ -53,7 +53,7 @@ static void unpack_boot_wad(BootWadAsset& dest, InputStream& src, Game game) {
 	for(s32 i = 1; i < 6; i++) {
 		unpack_compressed_asset(dest.hud().child<BinaryAsset>(i), src, header.hudwad[i], game);
 	}
-	unpack_compressed_assets<TextureAsset>(dest.boot_plates().switch_files(), src, ARRAY_PAIR(header.boot_plates), game, FMT_TEXTURE_RGBA);
+	unpack_compressed_assets<TextureAsset>(dest.boot_plates(SWITCH_FILES), src, ARRAY_PAIR(header.boot_plates), game, FMT_TEXTURE_RGBA);
 	unpack_compressed_asset(dest.sram(), src, header.sram, game);
 }
 

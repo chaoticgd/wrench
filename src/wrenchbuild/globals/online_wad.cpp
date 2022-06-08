@@ -37,7 +37,7 @@ on_load(Online, []() {
 
 static void unpack_online_wad(OnlineWadAsset& dest, const OnlineWadHeader& header, InputStream& src, Game game) {
 	unpack_asset(dest.data<OnlineDataWadAsset>(), src, header.data, game);
-	unpack_assets<TextureAsset>(dest.transition_backgrounds().switch_files(), src, ARRAY_PAIR(header.transition_backgrounds), game, FMT_TEXTURE_RGBA);
+	unpack_assets<TextureAsset>(dest.transition_backgrounds(SWITCH_FILES), src, ARRAY_PAIR(header.transition_backgrounds), game, FMT_TEXTURE_RGBA);
 }
 
 static void pack_online_wad(OutputStream& dest, OnlineWadHeader& header, const OnlineWadAsset& src, Game game) {

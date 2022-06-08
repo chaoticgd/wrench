@@ -75,7 +75,7 @@ static void unpack_dl_level_scene_wad(LevelSceneWadAsset& dest, const DlLevelSce
 	
 	CollectionAsset& scenes = dest.scenes();
 	for(s32 i = 0; i < ARRAY_SIZE(header.scenes); i++) {
-		SceneAsset& scene = scenes.child<SceneAsset>(i).switch_files();
+		SceneAsset& scene = scenes.foreign_child<SceneAsset>(stringf("scenes/%d/%d", i, i), i);
 		const DlSceneHeader& scene_header = header.scenes[i];
 		unpack_asset(scene.speech_english_left(), src, range(scene_header.speech_english_left, end_sectors), game);
 		unpack_asset(scene.speech_english_right(), src, range(scene_header.speech_english_right, end_sectors), game);
@@ -89,7 +89,7 @@ static void unpack_dl_level_scene_wad(LevelSceneWadAsset& dest, const DlLevelSce
 		unpack_asset(scene.speech_italian_left(), src, range(scene_header.speech_italian_left, end_sectors), game);
 		unpack_asset(scene.speech_italian_right(), src, range(scene_header.speech_italian_right, end_sectors), game);
 		unpack_compressed_asset(scene.moby_load(), src, scene_header.moby_load, game);
-		CollectionAsset& chunks = scene.chunks().switch_files();
+		CollectionAsset& chunks = scene.chunks(SWITCH_FILES);
 		for(s32 j = 0; j < ARRAY_SIZE(scene_header.chunks); j++) {
 			if(scene_header.chunks[j].sectors > 0) {
 				unpack_compressed_asset(chunks.child<BinaryAsset>(j), src, range(scene_header.chunks[j], end_sectors), game);

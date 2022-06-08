@@ -66,9 +66,11 @@ template <typename ChildAsset, typename Range>
 void unpack_assets(CollectionAsset& dest, InputStream& src, const Range* ranges, s32 count, Game game, const char* hint = FMT_NO_HINT, bool switch_files = false) {
 	for(s32 i = 0; i < count; i++) {
 		if(!ranges[i].empty()) {
-			ChildAsset* asset = &dest.child<ChildAsset>(i);
+			ChildAsset* asset;
 			if(switch_files) {
-				asset = &asset->switch_files();
+				asset = &dest.foreign_child<ChildAsset>(i);
+			} else {
+				asset = &dest.child<ChildAsset>(i);
 			}
 			unpack_asset(*asset, src, ranges[i], game, hint);
 		}

@@ -69,6 +69,11 @@ struct FileReference {
 	fs::path path;
 };
 
+enum AssetAccessorMode {
+	DO_NOT_SWITCH_FILES,
+	SWITCH_FILES
+};
+
 // *****************************************************************************
 
 enum class AssetBankType {

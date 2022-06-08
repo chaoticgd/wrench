@@ -45,10 +45,10 @@ static void unpack_online_data_wad(OnlineDataWadAsset& dest, InputStream& src, G
 	auto header = src.read<OnlineDataHeader>(0);
 	
 	unpack_asset(dest.onlinew3d(), src, header.onlinew3d, game);
-	unpack_compressed_assets<TextureAsset>(dest.images().switch_files(), src, ARRAY_PAIR(header.images), game, FMT_TEXTURE_PIF8);
-	CollectionAsset& moby_classes = dest.moby_classes().switch_files();
+	unpack_compressed_assets<TextureAsset>(dest.images(SWITCH_FILES), src, ARRAY_PAIR(header.images), game, FMT_TEXTURE_PIF8);
+	CollectionAsset& moby_classes = dest.moby_classes(SWITCH_FILES);
 	for(s32 i = 0; i < ARRAY_SIZE(header.moby_classes); i++) {
-		MobyClassAsset& moby = moby_classes.child<MobyClassAsset>(i).switch_files();
+		MobyClassAsset& moby = moby_classes.foreign_child<MobyClassAsset>(i);
 		unpack_compressed_asset(moby.core<BinaryAsset>(), src, header.moby_classes[i].core, game);
 		unpack_compressed_asset(moby.materials(), src, header.moby_classes[i].textures, game, FMT_COLLECTION_PIF8);
 	}

@@ -130,7 +130,7 @@ static bool handle_special_debugging_cases(Asset& dest, InputStream& src, Game g
 		if(is_flattenable) {
 			std::string tag = dest.tag();
 			FlatWadAsset& flat_wad = dest.parent()->transmute_child<FlatWadAsset>(tag.c_str());
-			unpack_asset_impl(flat_wad.switch_files(), src, game);
+			unpack_asset_impl(flat_wad, src, game);
 		}
 		return true;
 	}

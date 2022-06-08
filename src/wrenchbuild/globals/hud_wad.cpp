@@ -151,42 +151,42 @@ on_load(Hud, []() {
 })
 
 static void unpack_hud_wad(HudWadAsset& dest, const DlHudWadHeader& header, InputStream& src, Game game) {
-	unpack_assets<TextureAsset>(dest.online_images().switch_files(), src, ARRAY_PAIR(header.online_images), game, FMT_TEXTURE_PIF8);
-	unpack_assets<BinaryAsset>(dest.ratchet_seqs().switch_files(), src, ARRAY_PAIR(header.ratchet_seqs), game);
-	unpack_assets<BinaryAsset>(dest.hud_seqs().switch_files(), src, ARRAY_PAIR(header.hud_seqs), game);
+	unpack_assets<TextureAsset>(dest.online_images(SWITCH_FILES), src, ARRAY_PAIR(header.online_images), game, FMT_TEXTURE_PIF8);
+	unpack_assets<BinaryAsset>(dest.ratchet_seqs(SWITCH_FILES), src, ARRAY_PAIR(header.ratchet_seqs), game);
+	unpack_assets<BinaryAsset>(dest.hud_seqs(SWITCH_FILES), src, ARRAY_PAIR(header.hud_seqs), game);
 	unpack_asset(dest.vendor(), src, header.vendor, game);
-	unpack_assets<BinaryAsset>(dest.all_text().switch_files(), src, ARRAY_PAIR(header.all_text), game);
+	unpack_assets<BinaryAsset>(dest.all_text(SWITCH_FILES), src, ARRAY_PAIR(header.all_text), game);
 	unpack_asset(dest.hudw3d(), src, header.hudw3d, game);
-	unpack_compressed_assets<TextureAsset>(dest.e3_level_ss().switch_files(), src, ARRAY_PAIR(header.e3_level_ss), game, FMT_TEXTURE_PIF8);
+	unpack_compressed_assets<TextureAsset>(dest.e3_level_ss(SWITCH_FILES), src, ARRAY_PAIR(header.e3_level_ss), game, FMT_TEXTURE_PIF8);
 	unpack_compressed_asset(dest.nw_dnas_image<TextureAsset>(), src, header.nw_dnas_image, game, FMT_TEXTURE_PIF8);
 	unpack_asset(dest.split_screen_texture<TextureAsset>(), src, header.split_screen_texture, game, FMT_TEXTURE_PIF8);
-	unpack_assets<TextureAsset>(dest.radar_maps().switch_files(), src, ARRAY_PAIR(header.radar_maps), game, FMT_TEXTURE_PIF8);
-	unpack_assets<TextureAsset>(dest.weapon_plates_large().switch_files(), src, ARRAY_PAIR(header.weapon_plates_large), game, FMT_TEXTURE_PIF8);
-	unpack_assets<TextureAsset>(dest.mission_plates_large().switch_files(), src, ARRAY_PAIR(header.mission_plates_large), game, FMT_TEXTURE_PIF8);
-	unpack_assets<TextureAsset>(dest.gui_plates().switch_files(), src, ARRAY_PAIR(header.gui_plates), game, FMT_TEXTURE_PIF8);
-	unpack_assets<TextureAsset>(dest.vendor_plates().switch_files(), src, ARRAY_PAIR(header.vendor_plates), game, FMT_TEXTURE_PIF8);
+	unpack_assets<TextureAsset>(dest.radar_maps(SWITCH_FILES), src, ARRAY_PAIR(header.radar_maps), game, FMT_TEXTURE_PIF8);
+	unpack_assets<TextureAsset>(dest.weapon_plates_large(SWITCH_FILES), src, ARRAY_PAIR(header.weapon_plates_large), game, FMT_TEXTURE_PIF8);
+	unpack_assets<TextureAsset>(dest.mission_plates_large(SWITCH_FILES), src, ARRAY_PAIR(header.mission_plates_large), game, FMT_TEXTURE_PIF8);
+	unpack_assets<TextureAsset>(dest.gui_plates(SWITCH_FILES), src, ARRAY_PAIR(header.gui_plates), game, FMT_TEXTURE_PIF8);
+	unpack_assets<TextureAsset>(dest.vendor_plates(SWITCH_FILES), src, ARRAY_PAIR(header.vendor_plates), game, FMT_TEXTURE_PIF8);
 	unpack_asset(dest.loading_screen<TextureAsset>(), src, header.loading_screen, game, FMT_TEXTURE_PIF8);
-	unpack_assets<TextureAsset>(dest.planets().switch_files(), src, ARRAY_PAIR(header.planets), game, FMT_TEXTURE_PIF8);
-	unpack_assets<TextureAsset>(dest.cinematics().switch_files(), src, ARRAY_PAIR(header.cinematics), game, FMT_TEXTURE_PIF8);
-	unpack_assets<TextureAsset>(dest.equip_large().switch_files(), src, ARRAY_PAIR(header.equip_large), game, FMT_TEXTURE_PIF8);
-	unpack_assets<TextureAsset>(dest.equip_small().switch_files(), src, ARRAY_PAIR(header.equip_small), game, FMT_TEXTURE_PIF8);
-	unpack_assets<TextureAsset>(dest.moves().switch_files(), src, ARRAY_PAIR(header.moves), game, FMT_TEXTURE_PIF8);
-	unpack_assets<TextureAsset>(dest.save_level().switch_files(), src, ARRAY_PAIR(header.save_level), game, FMT_TEXTURE_PIF8);
-	unpack_assets<TextureAsset>(dest.save_empty().switch_files(), src, ARRAY_PAIR(header.save_empty), game, FMT_TEXTURE_PIF8);
-	unpack_assets<TextureAsset>(dest.skills().switch_files(), src, ARRAY_PAIR(header.skills), game, FMT_TEXTURE_PIF8);
+	unpack_assets<TextureAsset>(dest.planets(SWITCH_FILES), src, ARRAY_PAIR(header.planets), game, FMT_TEXTURE_PIF8);
+	unpack_assets<TextureAsset>(dest.cinematics(SWITCH_FILES), src, ARRAY_PAIR(header.cinematics), game, FMT_TEXTURE_PIF8);
+	unpack_assets<TextureAsset>(dest.equip_large(SWITCH_FILES), src, ARRAY_PAIR(header.equip_large), game, FMT_TEXTURE_PIF8);
+	unpack_assets<TextureAsset>(dest.equip_small(SWITCH_FILES), src, ARRAY_PAIR(header.equip_small), game, FMT_TEXTURE_PIF8);
+	unpack_assets<TextureAsset>(dest.moves(SWITCH_FILES), src, ARRAY_PAIR(header.moves), game, FMT_TEXTURE_PIF8);
+	unpack_assets<TextureAsset>(dest.save_level(SWITCH_FILES), src, ARRAY_PAIR(header.save_level), game, FMT_TEXTURE_PIF8);
+	unpack_assets<TextureAsset>(dest.save_empty(SWITCH_FILES), src, ARRAY_PAIR(header.save_empty), game, FMT_TEXTURE_PIF8);
+	unpack_assets<TextureAsset>(dest.skills(SWITCH_FILES), src, ARRAY_PAIR(header.skills), game, FMT_TEXTURE_PIF8);
 	unpack_asset(dest.reward_back<TextureAsset>(), src, header.reward_back, game, FMT_TEXTURE_PIF8);
 	unpack_asset(dest.complete_back<TextureAsset>(), src, header.complete_back, game, FMT_TEXTURE_PIF8);
 	unpack_asset(dest.complete_back_coop<TextureAsset>(), src, header.complete_back_coop, game, FMT_TEXTURE_PIF8);
-	unpack_assets<TextureAsset>(dest.rewards().switch_files(), src, ARRAY_PAIR(header.rewards), game, FMT_TEXTURE_PIF8);
+	unpack_assets<TextureAsset>(dest.rewards(SWITCH_FILES), src, ARRAY_PAIR(header.rewards), game, FMT_TEXTURE_PIF8);
 	unpack_asset(dest.leaderboard<TextureAsset>(), src, header.leaderboard, game, FMT_TEXTURE_PIF8);
-	unpack_assets<TextureAsset>(dest.cutaways().switch_files(), src, ARRAY_PAIR(header.cutaways), game, FMT_TEXTURE_PIF8);
-	unpack_assets<TextureAsset>(dest.sketchbook().switch_files(), src, ARRAY_PAIR(header.sketchbook), game, FMT_TEXTURE_PIF8);
-	unpack_assets<TextureAsset>(dest.character_epilogues().switch_files(), src, ARRAY_PAIR(header.character_epilogues), game, FMT_TEXTURE_PIF8);
-	unpack_assets<TextureAsset>(dest.character_cards().switch_files(), src, ARRAY_PAIR(header.character_cards), game, FMT_TEXTURE_PIF8);
+	unpack_assets<TextureAsset>(dest.cutaways(SWITCH_FILES), src, ARRAY_PAIR(header.cutaways), game, FMT_TEXTURE_PIF8);
+	unpack_assets<TextureAsset>(dest.sketchbook(SWITCH_FILES), src, ARRAY_PAIR(header.sketchbook), game, FMT_TEXTURE_PIF8);
+	unpack_assets<TextureAsset>(dest.character_epilogues(SWITCH_FILES), src, ARRAY_PAIR(header.character_epilogues), game, FMT_TEXTURE_PIF8);
+	unpack_assets<TextureAsset>(dest.character_cards(SWITCH_FILES), src, ARRAY_PAIR(header.character_cards), game, FMT_TEXTURE_PIF8);
 	unpack_asset(dest.equip_plate<TextureAsset>(), src, header.equip_plate, game, FMT_TEXTURE_PIF8);
 	unpack_asset(dest.hud_flythru<TextureAsset>(), src, header.hud_flythru, game, FMT_TEXTURE_PIF8);
-	unpack_assets<TextureAsset>(dest.mp_maps().switch_files(), src, ARRAY_PAIR(header.mp_maps), game, FMT_TEXTURE_PIF8);
-	unpack_assets<TextureAsset>(dest.tourney_plates_large().switch_files(), src, ARRAY_PAIR(header.tourney_plates_large), game, FMT_TEXTURE_PIF8);
+	unpack_assets<TextureAsset>(dest.mp_maps(SWITCH_FILES), src, ARRAY_PAIR(header.mp_maps), game, FMT_TEXTURE_PIF8);
+	unpack_assets<TextureAsset>(dest.tourney_plates_large(SWITCH_FILES), src, ARRAY_PAIR(header.tourney_plates_large), game, FMT_TEXTURE_PIF8);
 }
 
 static void pack_hud_wad(OutputStream& dest, DlHudWadHeader& header, const HudWadAsset& src, Game game) {

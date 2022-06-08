@@ -54,6 +54,10 @@ AssetType Collection {
 	}
 }
 
+AssetType Placeholder {
+	desc: 'The asset type generated when a dot is used in a tag.'
+}
+
 AssetType Binary {
 	desc: 'A raw binary file. Used for assets that wrench cannot unpack.'
 	

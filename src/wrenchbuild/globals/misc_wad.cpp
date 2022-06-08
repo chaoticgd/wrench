@@ -75,7 +75,7 @@ on_load(Misc, []() {
 
 static void unpack_gc_misc_wad(MiscWadAsset& dest, const GcMiscWadHeader& header, InputStream& src, Game game) {
 	unpack_asset(dest.debug_font<TextureAsset>(), src, header.debug_font, game, FMT_TEXTURE_PIF8);
-	unpack_compressed_asset(dest.irx().switch_files(), src, header.irx, game);
+	unpack_compressed_asset(dest.irx(SWITCH_FILES), src, header.irx, game);
 	unpack_asset(dest.save_game(), src, header.save_game, game);
 	unpack_asset(dest.frontbin(), src, header.frontbin, game);
 	unpack_compressed_asset(dest.frontbin_net(), src, header.frontbin_net, game);
@@ -95,11 +95,11 @@ static void pack_gc_misc_wad(OutputStream& dest, GcMiscWadHeader& header, const 
 
 static void unpack_uya_misc_wad(MiscWadAsset& dest, const UyaMiscWadHeader& header, InputStream& src, Game game) {
 	unpack_asset(dest.debug_font<TextureAsset>(), src, header.debug_font, game, FMT_TEXTURE_PIF8);
-	unpack_compressed_asset(dest.irx().switch_files(), src, header.irx, game);
+	unpack_compressed_asset(dest.irx(SWITCH_FILES), src, header.irx, game);
 	unpack_asset(dest.save_game(), src, header.save_game, game);
 	unpack_asset(dest.frontbin(), src, header.frontbin, game);
 	unpack_compressed_asset(dest.frontbin_net(), src, header.frontbin_net, game);
-	unpack_asset(dest.boot().switch_files(), src, header.boot, game);
+	unpack_asset(dest.boot(SWITCH_FILES), src, header.boot, game);
 }
 
 static void pack_uya_misc_wad(OutputStream& dest, UyaMiscWadHeader& header, const MiscWadAsset& src, Game game) {
@@ -113,10 +113,10 @@ static void pack_uya_misc_wad(OutputStream& dest, UyaMiscWadHeader& header, cons
 
 static void unpack_dl_misc_wad(MiscWadAsset& dest, const DlMiscWadHeader& header, InputStream& src, Game game) {
 	unpack_asset(dest.debug_font<TextureAsset>(), src, header.debug_font, game, FMT_TEXTURE_PIF8);
-	unpack_compressed_asset(dest.irx().switch_files(), src, header.irx, game);
+	unpack_compressed_asset(dest.irx(SWITCH_FILES), src, header.irx, game);
 	unpack_asset(dest.save_game(), src, header.save_game, game);
 	unpack_asset(dest.frontbin(), src, header.frontbin, game);
-	unpack_asset(dest.boot().switch_files(), src, header.boot, game);
+	unpack_asset(dest.boot(SWITCH_FILES), src, header.boot, game);
 	unpack_asset(dest.gadget(), src, header.gadget, game);
 }
 

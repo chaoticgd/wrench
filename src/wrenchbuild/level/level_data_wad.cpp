@@ -81,7 +81,7 @@ static void unpack_rac_level_data_wad(LevelDataWadAsset& dest, InputStream& src,
 	unpack_asset(dest.code(), src, header.code, game);
 	unpack_asset(dest.sound_bank(), src, header.sound_bank, game);
 	unpack_asset(dest.hud_header(), src, header.hud_header, game);
-	unpack_assets<BinaryAsset>(dest.hud_banks().switch_files(), src, ARRAY_PAIR(header.hud_banks), game);
+	unpack_assets<BinaryAsset>(dest.hud_banks(SWITCH_FILES), src, ARRAY_PAIR(header.hud_banks), game);
 }
 
 static void pack_rac_level_data_wad(OutputStream& dest, const LevelDataWadAsset& src, Game game) {
@@ -112,7 +112,7 @@ static void unpack_gc_uya_level_data_wad(LevelDataWadAsset& dest, InputStream& s
 	
 	unpack_asset(dest.code(), src, header.code, game);
 	unpack_asset(dest.hud_header(), src, header.hud_header, game);
-	unpack_assets<BinaryAsset>(dest.hud_banks().switch_files(), src, ARRAY_PAIR(header.hud_banks), game);
+	unpack_assets<BinaryAsset>(dest.hud_banks(SWITCH_FILES), src, ARRAY_PAIR(header.hud_banks), game);
 	unpack_asset(dest.transition_textures(), src, header.transition_textures, game);
 }
 
@@ -145,7 +145,7 @@ static void unpack_dl_level_data_wad(LevelDataWadAsset& dest, InputStream& src, 
 	unpack_asset(dest.moby8355_pvars(), src, header.moby8355_pvars, game);
 	unpack_asset(dest.code(), src, header.code, game);
 	unpack_asset(dest.hud_header(), src, header.hud_header, game);
-	unpack_compressed_assets<BinaryAsset>(dest.hud_banks().switch_files(), src, ARRAY_PAIR(header.hud_banks), game);
+	unpack_compressed_assets<BinaryAsset>(dest.hud_banks(SWITCH_FILES), src, ARRAY_PAIR(header.hud_banks), game);
 	unpack_compressed_asset(dest.art_instances(), src, header.art_instances, game);
 	unpack_compressed_asset(dest.gameplay(), src, header.gameplay, game);
 	unpack_compressed_asset(dest.global_nav_data(), src, header.global_nav_data, game);

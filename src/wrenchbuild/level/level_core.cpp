@@ -59,7 +59,7 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 	unpack_asset(dest.sky(), data, level_core_block_range(header.sky, block_bounds), game);
 	unpack_asset(dest.collision(), data, level_core_block_range(header.collision, block_bounds), game);
 	
-	CollectionAsset& tfrag_textures_collection = dest.tfrag_textures().switch_files();
+	CollectionAsset& tfrag_textures_collection = dest.tfrag_textures(SWITCH_FILES);
 	SubInputStream texture_data(data, header.textures_base_offset, data.size() - header.textures_base_offset);
 	auto tfrag_textures = index.read_multiple<TextureEntry>(header.tfrag_textures);
 	for(s32 i = 0; i < (s32) tfrag_textures.size(); i++) {
@@ -96,7 +96,7 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 	unpack_shrub_classes(shrub_data, shrub_refs, header, index, data, gs_ram, block_bounds, game);
 	
 	if(game != Game::DL && header.ratchet_seqs_rac123 != 0) {
-		CollectionAsset& ratchet_seqs = dest.ratchet_seqs().switch_files();
+		CollectionAsset& ratchet_seqs = dest.ratchet_seqs(SWITCH_FILES);
 		auto ratchet_seq_offsets = index.read_multiple<s32>(header.ratchet_seqs_rac123, 256);
 		for(s32 i = 0; i < 256; i++) {
 			if(ratchet_seq_offsets[i] != 0) {

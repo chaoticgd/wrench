@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
 	char* error = NULL;
 	WtfNode* root = wtf_parse((char*) bytes.data(), &error);
 	if(error) {
-		fprintf(stderr, "Failed to parse asset schema. %s", error);
+		fprintf(stderr, "Failed to parse asset schema. %s\n", error);
 		return 1;
 	}
 	

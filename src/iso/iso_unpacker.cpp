@@ -52,9 +52,9 @@ void unpack_iso(BuildAsset& dest, InputStream& src, AssetUnpackerFunc unpack) {
 	unpack_ps2_logo(dest, src, dest.region());
 	unpack_primary_volume_descriptor(dest, filesystem.pvd);
 	
-	enumerate_global_wads(files, dest.switch_files("globals/globals.asset"), toc, src, game);
-	enumerate_level_wads(files, dest.switch_files("levels/levels.asset").levels(), toc, src);
-	enumerate_non_wads(files, dest.switch_files("files/files.asset").files(), "", filesystem.root, src);
+	enumerate_global_wads(files, dest, toc, src, game);
+	enumerate_level_wads(files, dest.levels(SWITCH_FILES), toc, src);
+	enumerate_non_wads(files, dest.files(SWITCH_FILES), "", filesystem.root, src);
 	
 	// The reported completion percentage is based on how far through the file
 	// we are, so it's important to unpack them in order.
@@ -99,7 +99,7 @@ static void unpack_ps2_logo(BuildAsset& build, InputStream& src, std::string reg
 }
 
 static void unpack_primary_volume_descriptor(BuildAsset& build, const IsoPrimaryVolumeDescriptor& pvd) {
-	PrimaryVolumeDescriptorAsset& asset = build.switch_files("primary_volume_descriptor").primary_volume_descriptor();
+	PrimaryVolumeDescriptorAsset& asset = build.primary_volume_descriptor();
 	asset.set_system_identifier(std::string(pvd.system_identifier, sizeof(pvd.system_identifier)));
 	asset.set_volume_identifier(std::string(pvd.volume_identifier, sizeof(pvd.volume_identifier)));
 	asset.set_volume_set_identifier(std::string(pvd.volume_set_identifier, sizeof(pvd.volume_set_identifier)));
@@ -114,8 +114,8 @@ static void unpack_primary_volume_descriptor(BuildAsset& build, const IsoPrimary
 static void enumerate_global_wads(std::vector<UnpackInfo>& dest, BuildAsset& build, const table_of_contents& toc, InputStream& src, Game game) {
 	if(game == Game::RAC1) {
 		s64 toc_ofs = RAC1_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
-		dest.emplace_back(UnpackInfo{&build.bonus<BonusWadAsset>(), toc_ofs + offsetof(RacWadInfo, bonus_1), {0, src.size()}});
-		dest.emplace_back(UnpackInfo{&build.mpeg<MpegWadAsset>(), toc_ofs + offsetof(RacWadInfo, mpegs), {0, src.size()}});
+		dest.emplace_back(UnpackInfo{&build.bonus<BonusWadAsset>("globals/bonus/bonus.asset"), toc_ofs + offsetof(RacWadInfo, bonus_1), {0, src.size()}});
+		dest.emplace_back(UnpackInfo{&build.mpeg<MpegWadAsset>("globals/mpeg/mpeg.asset"), toc_ofs + offsetof(RacWadInfo, mpegs), {0, src.size()}});
 	} else {
 		for(const GlobalWadInfo& global : toc.globals) {
 			auto [wad_game, wad_type, name] = identify_wad(global.header);
@@ -124,16 +124,16 @@ static void enumerate_global_wads(std::vector<UnpackInfo>& dest, BuildAsset& bui
 			
 			Asset* asset;
 			switch(wad_type) {
-				case WadType::MPEG:   asset = &build.mpeg<MpegWadAsset>();     break;
-				case WadType::MISC:   asset = &build.misc<MiscWadAsset>();     break;
-				case WadType::HUD:    asset = &build.hud<HudWadAsset>();       break;
-				case WadType::BONUS:  asset = &build.bonus<BonusWadAsset>();   break;
-				case WadType::AUDIO:  asset = &build.audio<AudioWadAsset>();   break;
-				case WadType::SPACE:  asset = &build.space<SpaceWadAsset>();   break;
-				case WadType::SCENE:  asset = &build.scene<SceneWadAsset>();   break;
-				case WadType::GADGET: asset = &build.gadget<GadgetWadAsset>(); break;
-				case WadType::ARMOR:  asset = &build.armor<ArmorWadAsset>();   break;
-				case WadType::ONLINE: asset = &build.online<OnlineWadAsset>(); break;
+				case WadType::MPEG:   asset = &build.mpeg<MpegWadAsset>("global/mpeg/mpeg");         break;
+				case WadType::MISC:   asset = &build.misc<MiscWadAsset>("global/misc/misc");         break;
+				case WadType::HUD:    asset = &build.hud<HudWadAsset>("global/hud/hud");             break;
+				case WadType::BONUS:  asset = &build.bonus<BonusWadAsset>("global/bonus/bonus");     break;
+				case WadType::AUDIO:  asset = &build.audio<AudioWadAsset>("global/audio/audio");     break;
+				case WadType::SPACE:  asset = &build.space<SpaceWadAsset>("global/space/space");     break;
+				case WadType::SCENE:  asset = &build.scene<SceneWadAsset>("global/scene/scene");     break;
+				case WadType::GADGET: asset = &build.gadget<GadgetWadAsset>("global/gadget/gadget"); break;
+				case WadType::ARMOR:  asset = &build.armor<ArmorWadAsset>("global/armor/armor");     break;
+				case WadType::ONLINE: asset = &build.online<OnlineWadAsset>("global/online/online"); break;
 				default: fprintf(stderr, "warning: Extracted global WAD of unknown type to globals/%s.wad.\n", name);
 			}
 			
@@ -151,7 +151,7 @@ static void enumerate_level_wads(std::vector<UnpackInfo>& dest, CollectionAsset&
 			s32 id = *(s32*) &level.level->header[8];
 			
 			std::string asset_path = stringf("%02d/level.asset", id);
-			LevelAsset& level_asset = levels.switch_files(asset_path).child<LevelAsset>(id);
+			LevelAsset& level_asset = levels.foreign_child<LevelAsset>(asset_path, id);
 			level_asset.set_index(i);
 			
 			for(const Opt<LevelWadInfo>& part : {level.level, level.audio, level.scene}) {

@@ -154,13 +154,13 @@ bool Asset::remove_physical_child(Asset& asset) {
 	return false;
 }
 
-Asset& Asset::asset_file(const fs::path& path) {
+Asset& Asset::foreign_child_impl(const fs::path& path, AssetType type, const char* tag) {
 	AssetReference ref = reference();
 	Asset* asset = &bank().asset_file(path.is_absolute() ? path.relative_path() : file()._relative_directory/path).root();
 	for(AssetReferenceFragment& fragment : ref.fragments) {
-		asset = &asset->physical_child(fragment.type, fragment.tag.c_str());
+		asset = &asset->physical_child(PlaceholderAsset::ASSET_TYPE, fragment.tag.c_str());
 	}
-	return *asset;
+	return asset->physical_child(type, tag);
 }
 
 void Asset::read(WtfNode* node) {
@@ -168,7 +168,7 @@ void Asset::read(WtfNode* node) {
 	for(WtfNode* child = node->first_child; child != nullptr; child = child->next_sibling) {
 		AssetType type;
 		if(strlen(child->type_name) == 0) {
-			type = CollectionAsset::ASSET_TYPE;
+			type = PlaceholderAsset::ASSET_TYPE;
 		} else {
 			type = asset_string_to_type(child->type_name);
 		}
@@ -177,18 +177,28 @@ void Asset::read(WtfNode* node) {
 	}
 }
 
-void Asset::write(WtfWriter* ctx) const {
+void Asset::write(WtfWriter* ctx, std::string prefix) const {
+	if(_attrib_exists == 0 && _children.size() == 1 && type() == PlaceholderAsset::ASSET_TYPE) {
+		Asset& child = *_children[0].get();
+		child.write(ctx, prefix + tag() + ".");
+	} else {
+		const char* type_name;
+		if(type() == PlaceholderAsset::ASSET_TYPE) {
+			type_name = nullptr;
+		} else {
+			type_name = asset_type_to_string(type());
+		}
+		std::string qualified_tag = prefix + tag();
+		wtf_begin_node(ctx, type_name, qualified_tag.c_str());
+		write_body(ctx);
+		wtf_end_node(ctx);
+	}
+}
+
+void Asset::write_body(WtfWriter* ctx) const {
 	write_attributes(ctx);
 	for_each_physical_child([&](Asset& child) {
-		const char* type;
-		if(child.type() == CollectionAsset::ASSET_TYPE) {
-			type = nullptr;
-		} else {
-			type = asset_type_to_string(child.type());
-		}
-		wtf_begin_node(ctx, type, child.tag().c_str());
-		child.write(ctx);
-		wtf_end_node(ctx);
+		child.write(ctx, std::string());
 	});
 }
 
@@ -333,7 +343,7 @@ void AssetFile::write() const {
 	defer([&]() {
 		wtf_end_file(ctx);
 	});
-	_root->write(ctx);
+	_root->write_body(ctx);
 	_bank.write_text_file(_relative_directory/_file_name, dest.c_str());
 }
 

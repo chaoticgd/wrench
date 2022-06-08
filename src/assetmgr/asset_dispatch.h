@@ -74,7 +74,7 @@ AssetUnpackerFunc* wrap_wad_unpacker_func(UnpackerFunc func) {
 		} else {
 			header = src.read<WadHeader>(header_offset);
 		}
-		func(static_cast<ThisAsset&>(dest).switch_files(), header, src, game);
+		func(static_cast<ThisAsset&>(dest), header, src, game);
 	});
 }
 

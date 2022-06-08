@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
 	char* error = NULL;
 	WtfNode* root = wtf_parse((char*) bytes.data(), &error);
 	if(error) {
-		fprintf(stderr, "Failed to parse asset schema. %s", error);
+		fprintf(stderr, "Failed to parse asset schema. %s\n", error);
 		return 1;
 	}
 	
@@ -132,19 +132,9 @@ static void generate_asset_type(const WtfNode* asset_type, int id) {
 	out("\t};\n");
 	
 	// We use a bitfield to store whether each attribute exists instead of
-	// something like std::optional to save memory.
-	assert(attribute_count <= 64);
-	if(attribute_count > 0) {
-		if(attribute_count <= 8) {
-			out("\tu8 _attrib_exists = 0;\n");
-		} else if(attribute_count <= 16) {
-			out("\tu16 _attrib_exists = 0;\n");
-		} else if(attribute_count <= 32) {
-			out("\tu32 _attrib_exists = 0;\n");
-		} else {
-			out("\tu64 _attrib_exists = 0;\n");
-		}
-	}
+	// something like std::optional to save memory. If you need this to be
+	// higher turn the _attrib_exists in the Asset class into a u64.
+	assert(attribute_count <= 32);
 	
 	for(WtfNode* node = asset_type->first_child; node != NULL; node = node->next_sibling) {
 		std::string cpp_type = node_to_cpp_type(node);
@@ -162,7 +152,6 @@ static void generate_asset_type(const WtfNode* asset_type, int id) {
 	out("\tvoid read_attributes(const WtfNode* node) override;\n");
 	out("\tvoid write_attributes(WtfWriter* ctx) const override;\n");
 	out("\tvoid validate_attributes() const override {}\n");
-	out("\t%sAsset& switch_files(const fs::path& name = \"\");\n", asset_type->tag);
 	out("\t\n");
 	out("\tstatic AssetDispatchTable funcs;\n");
 	bool first = true;
@@ -197,16 +186,32 @@ static void generate_asset_type(const WtfNode* asset_type, int id) {
 			assert(allowed_types->type == WTF_ARRAY);
 			assert(allowed_types->first_array_element);
 			assert(allowed_types->first_array_element->type == WTF_STRING);
+			
+			const char* child_type  = allowed_types->first_array_element->string.begin;
+			
 			if(allowed_types->first_array_element->next) {
 				out("\ttemplate <typename ChildType>\n");
-				out("\tChildType& %s() { return child<ChildType>(\"%s\"); }\n", getter_name.c_str(), node->tag);
-				out("\tbool has_%s() const;\n", node->tag);
+			} else {
+				out("\ttemplate <typename ChildType = %sAsset>\n", child_type);
+			}
+			out("\tChildType& %s(AssetAccessorMode mode = DO_NOT_SWITCH_FILES) {\n", getter_name.c_str());
+			out("\t\tif(mode == SWITCH_FILES) {\n");
+			out("\t\t\treturn foreign_child<ChildType>(fs::path(tag())/tag(), \"%s\");\n", node->tag);
+			out("\t\t} else {\n");
+			out("\t\t\treturn child<ChildType>(\"%s\");\n", node->tag);
+			out("\t\t}\n");
+			out("\t}\n");
+			if(allowed_types->first_array_element->next) {
+				out("\ttemplate <typename ChildType>\n");
+			} else {
+				out("\ttemplate <typename ChildType = %sAsset>\n", child_type);
+			}
+			out("\tChildType& %s(std::string path) { return foreign_child<ChildType>(path, \"%s\"); }\n", getter_name.c_str(), node->tag);
+			out("\tbool has_%s() const;\n", node->tag);
+			if(allowed_types->first_array_element->next) {
 				out("\tAsset& get_%s();\n", node->tag);
 				out("\tconst Asset& get_%s() const;\n", node->tag);
 			} else {
-				const char* child_type = allowed_types->first_array_element->string.begin;
-				out("\t%sAsset& %s();\n", child_type, getter_name.c_str());
-				out("\tbool has_%s() const;\n", node->tag);
 				out("\t%sAsset& get_%s();\n", child_type, node->tag);
 				out("\tconst %sAsset& get_%s() const;\n", child_type, node->tag);
 			}
@@ -277,14 +282,6 @@ static void generate_asset_implementation(const WtfNode* asset_type) {
 	
 	generate_read_function(asset_type);
 	generate_write_function(asset_type);
-	out("%sAsset& %sAsset::switch_files(const fs::path& name) {\n", asset_type->tag, asset_type->tag);
-	out("\tif(name.empty()) {\n");
-	out("\t\treturn static_cast<%sAsset&>(asset_file(fs::path(tag())/tag()));\n", asset_type->tag);
-	out("\t} else {\n");
-	out("\t\treturn static_cast<%sAsset&>(asset_file(name));\n", asset_type->tag);
-	out("\t}\n");
-	out("}\n");
-	out("\n");
 	out("AssetDispatchTable %sAsset::funcs;\n", asset_type->tag);
 	generate_attribute_getter_and_setter_functions(asset_type);
 	generate_child_functions(asset_type);
@@ -551,13 +548,6 @@ static void generate_child_functions(const WtfNode* asset_type) {
 			assert(allowed_types->first_array_element);
 			assert(allowed_types->first_array_element->type == WTF_STRING);
 			const char* child_type = allowed_types->first_array_element->string.begin;
-			
-			if(!allowed_types->first_array_element->next) {
-				out("%sAsset& %sAsset::%s() {\n", child_type, asset_type->tag, getter_name.c_str());
-				out("\treturn child<%sAsset>(\"%s\");\n", child_type, node->tag);
-				out("}\n");
-				out("\n");
-			}
 			
 			out("bool %sAsset::has_%s() const {\n", asset_type->tag, node->tag);
 			out("\treturn has_child(\"%s\");\n", node->tag);

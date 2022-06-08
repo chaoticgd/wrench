@@ -115,7 +115,7 @@ void unpack_rac_level_wad(LevelWadAsset& dest, const RacLevelWadHeader& header, 
 	dest.set_id(header.id);
 	
 	SubInputStream data(src, header.data.bytes());
-	unpack_asset(dest.data().switch_files(), src, header.data, game);
+	unpack_asset(dest.data(SWITCH_FILES), src, header.data, game);
 	unpack_asset(dest.data().gameplay(), src, header.gameplay_ntsc, game);
 	unpack_compressed_asset(dest.occlusion(), src, header.occlusion, game);
 }
@@ -134,7 +134,7 @@ void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHeader& hea
 	dest.set_reverb(header.reverb);
 	
 	unpack_asset(dest.data().sound_bank(), src, header.sound_bank, game);
-	unpack_asset(dest.data().switch_files(), src, header.data, game);
+	unpack_asset(dest.data(SWITCH_FILES), src, header.data, game);
 	unpack_asset(dest.data().gameplay(), src, header.gameplay, game);
 	unpack_compressed_asset(dest.occlusion(), src, header.occlusion, game);
 	unpack_chunks(dest.chunks(), src, header.chunks, game);
@@ -156,7 +156,7 @@ void unpack_dl_level_wad(LevelWadAsset& dest, const DlLevelWadHeader& header, In
 	dest.set_reverb(header.reverb);
 	
 	unpack_asset(dest.data().sound_bank(), src, header.sound_bank, game);
-	unpack_asset(dest.data().switch_files(), src, header.data, game);
+	unpack_asset(dest.data(SWITCH_FILES), src, header.data, game);
 	unpack_chunks(dest.chunks(), src, header.chunks, game);
 	unpack_missions(dest.missions(), src, header.missions, game);
 }
@@ -185,7 +185,7 @@ static void unpack_chunks(CollectionAsset& dest, InputStream& file, const ChunkW
 			chunk_header = file.read<ChunkHeader>(ranges.chunks[i].offset.bytes());
 		}
 		if(chunk_header.tfrags > 0 || chunk_header.collision > 0 || !ranges.sound_banks[i].empty()) {
-			ChunkAsset& chunk = dest.switch_files(stringf("chunks/%d/chunk%d.asset", i, i)).child<ChunkAsset>(i);
+			ChunkAsset& chunk = dest.foreign_child<ChunkAsset>(stringf("chunks/%d/chunk%d.asset", i, i), i);
 			if(chunk_header.tfrags > 0) {
 				s64 offset = ranges.chunks[i].offset.bytes() + chunk_header.tfrags;
 				s64 size = ranges.chunks[i].size.bytes() - chunk_header.tfrags;
@@ -249,7 +249,8 @@ static void unpack_missions(CollectionAsset& dest, InputStream& file, const Miss
 			header = file.read<MissionHeader>(ranges.data[i].offset.bytes());
 		}
 		if(!header.instances.empty() || !header.classes.empty() || !ranges.sound_banks[i].empty()) {
-			MissionAsset& mission = dest.switch_files(stringf("missions/%d/mission%d.asset", i, i)).child<MissionAsset>(i);
+			std::string path = stringf("missions/%d/mission%d.asset", i, i);
+			MissionAsset& mission = dest.foreign_child<MissionAsset>(path, i);
 			unpack_compressed_asset(mission.instances(), file, header.instances, game);
 			unpack_compressed_asset(mission.classes(), file, header.classes, game);
 			unpack_asset(mission.sound_bank(), file, ranges.sound_banks[i], game);

@@ -71,7 +71,7 @@ on_load(LevelAudio, []() {
 })
 
 static void unpack_gc_level_audio_wad(LevelAudioWadAsset& dest, const GcLevelAudioWadHeader& header, InputStream& src, Game game) {
-	unpack_assets<BinaryAsset>(dest.bin_data().switch_files(), src, ARRAY_PAIR(header.bin_data), game);
+	unpack_assets<BinaryAsset>(dest.bin_data(SWITCH_FILES), src, ARRAY_PAIR(header.bin_data), game);
 	unpack_asset(dest.upgrade_sample(), src, header.upgrade_sample, game);
 	unpack_asset(dest.thermanator_freeze(), src, header.thermanator_freeze, game);
 	unpack_asset(dest.thermanator_thaw(), src, header.thermanator_thaw, game);
@@ -86,7 +86,7 @@ static void pack_gc_level_audio_wad(OutputStream& dest, GcLevelAudioWadHeader& h
 
 template <typename Header>
 static void unpack_uya_dl_level_audio_wad(LevelAudioWadAsset& dest, const Header& header, InputStream& src, Game game) {
-	unpack_assets<BinaryAsset>(dest.bin_data().switch_files(), src, ARRAY_PAIR(header.bin_data), game);
+	unpack_assets<BinaryAsset>(dest.bin_data(SWITCH_FILES), src, ARRAY_PAIR(header.bin_data), game);
 	unpack_asset(dest.upgrade_sample(), src, header.upgrade_sample, game);
 	unpack_asset(dest.platinum_bolt(), src, header.platinum_bolt, game);
 	unpack_asset(dest.spare(), src, header.spare, game);

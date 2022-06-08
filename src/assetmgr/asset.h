@@ -172,10 +172,31 @@ public:
 	Asset* get_physical_child(const char* tag);
 	bool remove_physical_child(Asset& asset);
 	
-	Asset& asset_file(const fs::path& path);
+	// Switch to another .asset file, and create a child of the node in the same
+	// place in the tree as the current node.
+	template <typename ChildType>
+	ChildType& foreign_child(std::string path, std::string tag) {
+		return foreign_child_impl(path, ChildType::ASSET_TYPE, tag.c_str()).template as<ChildType>();
+	}
+	
+	template <typename ChildType>
+	ChildType& foreign_child(std::string path, s32 index) {
+		std::string tag = std::to_string(index);
+		return foreign_child_impl(path, ChildType::ASSET_TYPE, tag.c_str()).template as<ChildType>();
+	}
+	
+	template <typename ChildType>
+	ChildType& foreign_child(s32 index) {
+		std::string tag = std::to_string(index);
+		fs::path path = fs::path(tag)/tag;
+		return foreign_child_impl(path, ChildType::ASSET_TYPE, tag.c_str()).template as<ChildType>();
+	}
+	
+	Asset& foreign_child_impl(const fs::path& path, AssetType type, const char* tag);
 	
 	void read(WtfNode* node);
-	void write(WtfWriter* ctx) const;
+	void write(WtfWriter* ctx, std::string prefix) const;
+	void write_body(WtfWriter* ctx) const;
 	void validate() const;
 	
 	bool weakly_equal(const Asset& rhs) const;
@@ -209,6 +230,9 @@ private:
 	std::vector<std::unique_ptr<Asset>> _children;
 	Asset* _lower_precedence = nullptr;
 	Asset* _higher_precedence = nullptr;
+
+protected:
+	u32 _attrib_exists = 0;
 };
 
 class AssetFile {

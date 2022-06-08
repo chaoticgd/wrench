@@ -69,8 +69,8 @@ on_load(Armor, []() {
 })
 
 static void unpack_gc_armor_wad(ArmorWadAsset& dest, const GcArmorWadHeader& header, InputStream& src, Game game) {
-	unpack_armors(dest.armors().switch_files(), src, ARRAY_PAIR(header.armors), game);
-	unpack_armors(dest.wrenches().switch_files(), src, ARRAY_PAIR(header.wrenches), game);
+	unpack_armors(dest.armors(SWITCH_FILES), src, ARRAY_PAIR(header.armors), game);
+	unpack_armors(dest.wrenches(SWITCH_FILES), src, ARRAY_PAIR(header.wrenches), game);
 }
 
 static void pack_gc_armor_wad(OutputStream& dest, GcArmorWadHeader& header, const ArmorWadAsset& src, Game game) {
@@ -79,9 +79,9 @@ static void pack_gc_armor_wad(OutputStream& dest, GcArmorWadHeader& header, cons
 }
 
 static void unpack_uya_armor_wad(ArmorWadAsset& dest, const UyaArmorWadHeader& header, InputStream& src, Game game) {
-	unpack_armors(dest.armors().switch_files(), src, ARRAY_PAIR(header.armors), game);
-	unpack_armors(dest.wrenches().switch_files(), src, ARRAY_PAIR(header.wrenches), game);
-	unpack_armors(dest.multiplayer_armors().switch_files(), src, ARRAY_PAIR(header.multiplayer_armors), game);
+	unpack_armors(dest.armors(SWITCH_FILES), src, ARRAY_PAIR(header.armors), game);
+	unpack_armors(dest.wrenches(SWITCH_FILES), src, ARRAY_PAIR(header.wrenches), game);
+	unpack_armors(dest.multiplayer_armors(SWITCH_FILES), src, ARRAY_PAIR(header.multiplayer_armors), game);
 }
 
 static void pack_uya_armor_wad(OutputStream& dest, UyaArmorWadHeader& header, const ArmorWadAsset& src, Game game) {
@@ -91,10 +91,10 @@ static void pack_uya_armor_wad(OutputStream& dest, UyaArmorWadHeader& header, co
 }
 
 static void unpack_dl_armor_wad(ArmorWadAsset& dest, const DlArmorWadHeader& header, InputStream& src, Game game) {
-	unpack_armors(dest.armors().switch_files(), src, ARRAY_PAIR(header.armors), game);
-	unpack_assets<CollectionAsset>(dest.bot_textures().switch_files(), src, ARRAY_PAIR(header.bot_textures), game, FMT_COLLECTION_PIF8, true);
-	unpack_assets<CollectionAsset>(dest.landstalker_textures().switch_files(), src, ARRAY_PAIR(header.landstalker_textures), game, FMT_COLLECTION_PIF8, true);
-	unpack_assets<CollectionAsset>(dest.dropship_textures().switch_files(), src, ARRAY_PAIR(header.dropship_textures), game, FMT_COLLECTION_PIF8, true);
+	unpack_armors(dest.armors(SWITCH_FILES), src, ARRAY_PAIR(header.armors), game);
+	unpack_assets<CollectionAsset>(dest.bot_textures(SWITCH_FILES), src, ARRAY_PAIR(header.bot_textures), game, FMT_COLLECTION_PIF8, true);
+	unpack_assets<CollectionAsset>(dest.landstalker_textures(SWITCH_FILES), src, ARRAY_PAIR(header.landstalker_textures), game, FMT_COLLECTION_PIF8, true);
+	unpack_assets<CollectionAsset>(dest.dropship_textures(SWITCH_FILES), src, ARRAY_PAIR(header.dropship_textures), game, FMT_COLLECTION_PIF8, true);
 }
 
 static void pack_dl_armor_wad(OutputStream& dest, DlArmorWadHeader& header, const ArmorWadAsset& src, Game game) {
@@ -116,7 +116,7 @@ packed_struct(ArmorMeshHeader,
 static void unpack_armors(CollectionAsset& dest, InputStream& src, const ArmorHeader* headers, s32 count, Game game) {
 	for(s32 i = 0; i < count; i++) {
 		if(headers[i].mesh.size.sectors > 0) {
-			MobyClassAsset& moby = dest.child<MobyClassAsset>(i).switch_files();
+			MobyClassAsset& moby = dest.foreign_child<MobyClassAsset>(i);
 			unpack_asset(moby.core<BinaryAsset>(), src, headers[i].mesh, game);
 			unpack_asset(moby.materials(), src, headers[i].textures, game, FMT_COLLECTION_PIF8);
 		}

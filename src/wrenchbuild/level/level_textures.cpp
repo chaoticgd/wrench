@@ -244,8 +244,8 @@ void unpack_particle_textures(CollectionAsset& dest, InputStream& defs, std::vec
 			}
 		}
 		assert(begin >= 0 && end >= begin);
-		CollectionAsset& file = dest.switch_files(stringf("particle_textures/%d/particle%d.asset", part, part));
-		CollectionAsset& part_asset = file.child<CollectionAsset>(part);
+		std::string path = stringf("particle_textures/%d/particle%d.asset", part, part);
+		CollectionAsset& part_asset = dest.foreign_child<CollectionAsset>(path, part);
 		for(s32 frame = begin; frame < end; frame++) {
 			u8 index = indices[frame];
 			ParticleTextureEntry entry = entries.at(index);
@@ -370,8 +370,8 @@ std::tuple<ArrayRange, s32, s32> pack_particle_textures(OutputStream& index, Out
 }
 
 void unpack_fx_textures(LevelCoreAsset& core, const std::vector<FxTextureEntry>& entries, InputStream& fx_bank, Game game) {
-	CollectionAsset& local_fx_textures = core.switch_files("fx_textures/fx_textures.asset").local_fx_textures();
-	CollectionAsset& common_fx_textures = build_or_root_from_level_core_asset(core).switch_files("/fx_textures/fx_textures.asset").fx_textures();
+	CollectionAsset& local_fx_textures = core.local_fx_textures("fx_textures/fx_textures.asset");
+	CollectionAsset& common_fx_textures = build_or_root_from_level_core_asset(core).fx_textures("/fx_textures/fx_textures.asset");
 	
 	ReferenceAsset& common_fx_ref = core.child<ReferenceAsset>("common_fx_textures");
 	common_fx_ref.set_asset(common_fx_textures.reference());

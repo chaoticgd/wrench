@@ -30,7 +30,7 @@ void unpack_moby_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest,
 	
 	for(const MobyClassEntry& entry : classes) {
 		std::string path = stringf("/mobies/%d/moby%d.asset", entry.o_class, entry.o_class);
-		MobyClassAsset& asset = data_dest.switch_files(path).child<MobyClassAsset>(entry.o_class);
+		MobyClassAsset& asset = data_dest.foreign_child<MobyClassAsset>(path, entry.o_class);
 		asset.set_id(entry.o_class);
 		asset.set_has_moby_table_entry(true);
 		
@@ -55,7 +55,7 @@ void unpack_tie_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest, 
 	
 	for(const MobyClassEntry& entry : classes) {
 		std::string path = stringf("/ties/%d/tie%d.asset", entry.o_class, entry.o_class);
-		TieClassAsset& asset = data_dest.switch_files(path).child<TieClassAsset>(entry.o_class);
+		TieClassAsset& asset = data_dest.foreign_child<TieClassAsset>(path, entry.o_class);
 		asset.set_id(entry.o_class);
 		
 		unpack_level_textures(asset.textures(), entry.textures, textures, texture_data, gs_ram, game);
@@ -76,7 +76,7 @@ void unpack_shrub_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest
 	
 	for(const ShrubClassEntry& entry : classes) {
 		std::string path = stringf("/shrubs/%d/shrub%d.asset", entry.o_class, entry.o_class);
-		ShrubClassAsset& asset = data_dest.switch_files(path).child<ShrubClassAsset>(entry.o_class);
+		ShrubClassAsset& asset = data_dest.foreign_child<ShrubClassAsset>(path, entry.o_class);
 		asset.set_id(entry.o_class);
 		
 		unpack_level_textures(asset.textures(), entry.textures, textures, texture_data, gs_ram, game);

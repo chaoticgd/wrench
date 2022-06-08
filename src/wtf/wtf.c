@@ -49,16 +49,22 @@ typedef struct {
 typedef char* ErrorStr;
 
 static ErrorStr count_nodes_and_attributes(WtfReader* ctx);
+static ErrorStr count_additional_nodes_generated_by_tag(WtfReader* ctx, const char* src);
 static void read_nodes_and_attributes(WtfReader* ctx, WtfNode* parent);
+static WtfNode* add_nodes(WtfReader* ctx, const char* type_name, const char* tag);
 static ErrorStr parse_value(WtfReader* ctx, WtfAttribute** attribute_dest);
 static ErrorStr parse_float(WtfReader* ctx, float* dest);
 static ErrorStr parse_string(WtfReader* ctx, char** dest);
 static char* parse_identifier(WtfReader* ctx);
+static int is_identifier_char(char c);
 static char peek_char(WtfReader* ctx);
 static void advance(WtfReader* ctx);
 static void skip_whitespace(WtfReader* ctx);
 static void fixup_identifier(char* buffer);
 static char* fixup_string(char* buffer);
+static int16_t decode_hex_byte(char hi, char lo);
+static WtfNode* alloc_node(WtfReader* ctx);
+static WtfAttribute* alloc_attribute(WtfReader* ctx);
 
 static char ERROR_STR[128];
 static char EMPTY_STR[1] = {0};
@@ -81,7 +87,7 @@ WtfNode* wtf_parse(char* buffer, char** error_dest) {
 	}
 	
 	if(ctx.input[0] != '\0') {
-		snprintf(ERROR_STR, sizeof(ERROR_STR), "Extra '}' at end of file.");
+		snprintf(ERROR_STR, sizeof(ERROR_STR), "Junk at the end of file.");
 		*error_dest = ERROR_STR;
 		return NULL;
 	}
@@ -145,12 +151,20 @@ static ErrorStr count_nodes_and_attributes(WtfReader* ctx) {
 				return error;
 			}
 		} else {
+			char* tag;
 			if(peek_char(ctx) != '{') {
-				char* tag = parse_identifier(ctx);
+				tag = parse_identifier(ctx);
 				if(tag == NULL) {
 					snprintf(ERROR_STR, sizeof(ERROR_STR), "Expected tag on line %d.", ctx->line);
 					return ERROR_STR;
 				}
+			} else {
+				tag = name;
+			}
+			
+			ErrorStr error = count_additional_nodes_generated_by_tag(ctx, tag);
+			if(error) {
+				return error;
 			}
 			
 			if(peek_char(ctx) != '{') {
@@ -160,7 +174,7 @@ static ErrorStr count_nodes_and_attributes(WtfReader* ctx) {
 			
 			advance(ctx); // '{'
 			
-			ErrorStr error = count_nodes_and_attributes(ctx);
+			error = count_nodes_and_attributes(ctx);
 			if(error) {
 				return error;
 			}
@@ -176,6 +190,27 @@ static ErrorStr count_nodes_and_attributes(WtfReader* ctx) {
 		}
 	}
 	
+	return NULL;
+}
+
+static ErrorStr count_additional_nodes_generated_by_tag(WtfReader* ctx, const char* src) {
+	if(src[0] == '.') {
+		snprintf(ERROR_STR, sizeof(ERROR_STR), "Tag begins with a dot on line %d.", ctx->line);
+		return ERROR_STR;
+	}
+	char dot_last_iter = 0;
+	for(int32_t i = 0; is_identifier_char(src[i]); i++) {
+		if(src[i] == '.') {
+			ctx->node_count++;
+			dot_last_iter = 1;
+		} else {
+			dot_last_iter = 0;
+		}
+	}
+	if(dot_last_iter) {
+		snprintf(ERROR_STR, sizeof(ERROR_STR), "Tag ends with a dot on line %d.", ctx->line);
+		return ERROR_STR;
+	}
 	return NULL;
 }
 
@@ -206,18 +241,21 @@ static void read_nodes_and_attributes(WtfReader* ctx, WtfNode* parent) {
 			
 			attribute->key = name;
 		} else {
+			char* type_name;
 			char* tag;
 			if(peek_char(ctx) != '{') {
+				type_name = name;
 				tag = parse_identifier(ctx);
 				assert(tag != NULL);
 			} else {
+				type_name = EMPTY_STR;
 				tag = name;
-				name = EMPTY_STR;
 			}
 			
 			advance(ctx); // '{'
 			
-			WtfNode* child = ctx->next_node++;
+			WtfNode* child = add_nodes(ctx, type_name, tag);
+			
 			child->prev_sibling = prev_sibling;
 			child->next_sibling = NULL;
 			prev_sibling = child;
@@ -225,12 +263,6 @@ static void read_nodes_and_attributes(WtfReader* ctx, WtfNode* parent) {
 			*prev_node_pointer = child;
 			prev_node_pointer = &child->next_sibling;
 			
-			child->first_child = NULL;
-			child->first_attribute = NULL;
-			child->type_name = name;
-			child->tag = tag;
-			
-			read_nodes_and_attributes(ctx, child);
 			assert(peek_char(ctx) == '}');
 			
 			advance(ctx); // '}'
@@ -238,11 +270,46 @@ static void read_nodes_and_attributes(WtfReader* ctx, WtfNode* parent) {
 	}
 }
 
+static WtfNode* add_nodes(WtfReader* ctx, const char* type_name, const char* tag) {
+	WtfNode* first = NULL;
+	WtfNode* current = NULL;
+	
+	// Create all the nodes associated with a given tag. For example, the tag
+	// foo.bar creates a node foo with a child node bar.
+	int32_t begin = 0;
+	for(int32_t i = 1; is_identifier_char(tag[i - 1]); i++) {
+		if(!(isalnum(tag[i]) || tag[i] == '_')) {
+			WtfNode* child = alloc_node(ctx);
+			child->prev_sibling = NULL;
+			child->next_sibling = NULL;
+			child->first_child = NULL;
+			child->first_attribute = NULL;
+			child->type_name = EMPTY_STR;
+			child->tag = tag + begin;
+			begin = i;
+			
+			if(current) {
+				current->first_child = child;
+			} else {
+				first = child;
+			}
+			current = child;
+		}
+	}
+	
+	assert(current);
+	current->type_name = type_name;
+	
+	read_nodes_and_attributes(ctx, current);
+	
+	return first;
+}
+
 static ErrorStr parse_value(WtfReader* ctx, WtfAttribute** attribute_dest) {
 	WtfAttribute* attribute = NULL;
 	
 	if(ctx->attributes) {
-		attribute = ctx->next_attribute++;
+		attribute = alloc_attribute(ctx);
 		memset(attribute, 0, sizeof(WtfAttribute));
 	}
 	
@@ -378,13 +445,17 @@ static ErrorStr parse_string(WtfReader* ctx, char** dest) {
 static char* parse_identifier(WtfReader* ctx) {
 	skip_whitespace(ctx);
 	char* begin = ctx->input;
-	while(isalnum(*ctx->input) || *ctx->input == '_') {
-		advance(ctx);
+	while(is_identifier_char(*ctx->input)) {
+		ctx->input++;
 	}
 	if(begin == ctx->input) {
 		return NULL;
 	}
 	return begin;
+}
+
+static int is_identifier_char(char c) {
+	return isalnum(c) || c == '_' || c == '.';
 }
 
 static char peek_char(WtfReader* ctx) {
@@ -406,6 +477,9 @@ static void skip_whitespace(WtfReader* ctx) {
 			}
 		} else if(*ctx->input == '/' && ctx->input[1] == '*') {
 			while(*ctx->input != '\0' && !(*ctx->input == '*' && ctx->input[1] == '/')) {
+				if(*ctx->input == '\n') {
+					ctx->line++;
+				}
 				ctx->input++;
 			}
 			if(*ctx->input != '\0') {
@@ -452,38 +526,22 @@ static char* fixup_string(char* buffer) {
 			} else if(c == '\\') {
 				*(dest++) = '\\';
 			} else if(c == 'x') {
-				unsigned char hi_nibble = *(src++);
-				if(hi_nibble == 0) {
+				char hi = *(src++);
+				if(hi == 0) {
 					src -= 1;
 					break;
 				}
-				unsigned char lo_nibble = *(src++);
-				if(lo_nibble == 0) {
+				char lo = *(src++);
+				if(lo == 0) {
 					src -= 2;
 					break;
 				}
-				unsigned char decoded;
-				if(hi_nibble >= '0' && hi_nibble <= '9') {
-					decoded = (hi_nibble - '0') << 4;
-				} else if(hi_nibble >= 'A' && hi_nibble <= 'F') {
-					decoded = (hi_nibble - 'A' + 0xa) << 4;
-				} else if(hi_nibble >= 'a' && hi_nibble <= 'f') {
-					decoded = (hi_nibble - 'a' + 0xa) << 4;
-				} else {
+				int16_t decoded = decode_hex_byte(hi, lo);
+				if(decoded == -1) {
 					src -= 2;
 					break;
 				}
-				if(lo_nibble >= '0' && lo_nibble <= '9') {
-					decoded |= lo_nibble - '0';
-				} else if(lo_nibble >= 'A' && lo_nibble <= 'F') {
-					decoded |= lo_nibble - 'A' + 0xa;
-				} else if(lo_nibble >= 'a' && lo_nibble <= 'f') {
-					decoded |= lo_nibble - 'a' + 0xa;
-				} else {
-					src -= 2;
-					break;
-				}
-				*(dest++) = decoded;
+				*(dest++) = (char) decoded;
 			} else if(c == 0) {
 				break;
 			}
@@ -494,6 +552,29 @@ static char* fixup_string(char* buffer) {
 	
 	*dest = '\0';
 	return dest;
+}
+
+static int16_t decode_hex_byte(char hi, char lo) {
+	unsigned char decoded;
+	if(hi >= '0' && hi <= '9') {
+		decoded = (hi - '0') << 4;
+	} else if(hi >= 'A' && hi <= 'F') {
+		decoded = (hi - 'A' + 0xa) << 4;
+	} else if(hi >= 'a' && hi <= 'f') {
+		decoded = (hi - 'a' + 0xa) << 4;
+	} else {
+		return -1;
+	}
+	if(lo >= '0' && lo <= '9') {
+		decoded |= lo - '0';
+	} else if(lo >= 'A' && lo <= 'F') {
+		decoded |= lo - 'A' + 0xa;
+	} else if(lo >= 'a' && lo <= 'f') {
+		decoded |= lo - 'a' + 0xa;
+	} else {
+		return -1;
+	}
+	return decoded;
 }
 
 const WtfNode* wtf_first_child(const WtfNode* parent, const char* type_name) {
@@ -533,4 +614,14 @@ const WtfAttribute* wtf_attribute(const WtfNode* node, const char* key) {
 		}
 	}
 	return NULL;
+}
+
+static WtfNode* alloc_node(WtfReader* ctx) {
+	assert(ctx->next_node < ctx->nodes + ctx->node_count);
+	return ctx->next_node++;
+}
+
+static WtfAttribute* alloc_attribute(WtfReader* ctx) {
+	assert(ctx->next_attribute < ctx->attributes + ctx->attribute_count);
+	return ctx->next_attribute++;
 }
