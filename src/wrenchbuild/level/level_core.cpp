@@ -84,15 +84,15 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 	// Unpack all the classes into the global directory and then create
 	// references to them for the current level.
 	CollectionAsset& moby_data = build.moby_classes();
-	CollectionAsset& moby_refs = dest.moby_classes();
+	CollectionAsset& moby_refs = dest.moby_classes(SWITCH_FILES);
 	unpack_moby_classes(moby_data, moby_refs, header, index, data, gs_ram, block_bounds, config);
 	
 	CollectionAsset& tie_data = build.tie_classes();
-	CollectionAsset& tie_refs = dest.tie_classes();
+	CollectionAsset& tie_refs = dest.tie_classes(SWITCH_FILES);
 	unpack_tie_classes(tie_data, tie_refs, header, index, data, gs_ram, block_bounds, config);
 	
 	CollectionAsset& shrub_data = build.shrub_classes();
-	CollectionAsset& shrub_refs = dest.shrub_classes();
+	CollectionAsset& shrub_refs = dest.shrub_classes(SWITCH_FILES);
 	unpack_shrub_classes(shrub_data, shrub_refs, header, index, data, gs_ram, block_bounds, config);
 	
 	if(config.game() != Game::DL && header.ratchet_seqs_rac123 != 0) {
