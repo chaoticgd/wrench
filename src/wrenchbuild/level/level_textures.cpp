@@ -24,6 +24,7 @@
 static void write_nonshared_texture_data(OutputStream& data, std::vector<LevelTexture>& textures, Game game);
 
 extern const char* GC_FX_TEXTURE_NAMES[63];
+extern const char* UYA_FX_TEXTURE_NAMES[100];
 extern const char* DL_FX_TEXTURE_NAMES[98];
 
 void unpack_level_textures(CollectionAsset& dest, const u8 indices[16], const std::vector<TextureEntry>& textures, InputStream& data, InputStream& gs_ram, Game game) {
@@ -398,12 +399,19 @@ void unpack_fx_textures(LevelCoreAsset& core, const std::vector<FxTextureEntry>&
 				}
 				break;
 			}
+			case Game::UYA: {
+				if(i < ARRAY_SIZE(UYA_FX_TEXTURE_NAMES)) {
+					name = UYA_FX_TEXTURE_NAMES[i];
+				}
+				break;
+			}
 			case Game::DL: {
 				if(i < ARRAY_SIZE(DL_FX_TEXTURE_NAMES)) {
 					name = DL_FX_TEXTURE_NAMES[i];
 				}
 				break;
 			}
+			default: {}
 		}
 		
 		CollectionAsset* collection;
@@ -617,7 +625,7 @@ const char* GC_FX_TEXTURE_NAMES[63] = {
 	/* 27 */ "halo",
 	/* 28 */ "tv_scanlines",
 	/* 29 */ "tv_shine",
-	/* 30 */ "30",
+	/* 30 */ "tv_noise",
 	/* 31 */ "31",
 	/* 32 */ "32",
 	/* 33 */ "33",
@@ -650,6 +658,109 @@ const char* GC_FX_TEXTURE_NAMES[63] = {
 	/* 60 */ "60",
 	/* 61 */ "61",
 	/* 62 */ "62"
+};
+
+const char* UYA_FX_TEXTURE_NAMES[100] = {
+	/* 00 */ "lame_shadow",
+	/* 01 */ "01",
+	/* 02 */ "02",
+	/* 03 */ "03",
+	/* 04 */ "gadgetron",
+	/* 05 */ "engine",
+	/* 06 */ "06",
+	/* 07 */ "07",
+	/* 08 */ "08",
+	/* 09 */ "ship_shadow",
+	/* 10 */ "jp_thrust_fire",
+	/* 11 */ "jp_thrust_glow",
+	/* 12 */ "jp_thrust_highlight",
+	/* 13 */ "target_reticule",
+	/* 14 */ "lightning1",
+	/* 15 */ "15",
+	/* 16 */ "glow_pill",
+	/* 17 */ "17",
+	/* 18 */ "18",
+	/* 19 */ "sparkle",
+	/* 20 */ "wrench_blur",
+	/* 21 */ "suck_tornado",
+	/* 22 */ "white",
+	/* 23 */ "alpha_spark",
+	/* 24 */ "hologram",
+	/* 25 */ "tv_highlight",
+	/* 26 */ "tv_smallscan",
+	/* 27 */ "halo",
+	/* 28 */ "tv_scanlines",
+	/* 29 */ "tv_shine",
+	/* 30 */ "tv_noise",
+	/* 31 */ "triangle_reticule",
+	/* 32 */ "32",
+	/* 33 */ "33",
+	/* 34 */ "34",
+	/* 35 */ "ryno_reticule",
+	/* 36 */ "swingshot_reticule",
+	/* 37 */ "static",
+	/* 38 */ "blaster_reticule",
+	/* 39 */ "devastator_reticule",
+	/* 40 */ "40",
+	/* 41 */ "plasma_ball_core",
+	/* 42 */ "plasma_ball_aura",
+	/* 43 */ "43",
+	/* 44 */ "plasma_ball_flare",
+	/* 45 */ "plasma_ball_glow_ring",
+	/* 46 */ "steam_smoke_gas",
+	/* 47 */ "fork_lightning",
+	/* 48 */ "fork_lightning_glow_core",
+	/* 49 */ "starry_flash",
+	/* 50 */ "lava_glob",
+	/* 51 */ "main_ret1",
+	/* 52 */ "main_ret2",
+	/* 53 */ "main_ret3",
+	/* 54 */ "smoke_ring",
+	/* 55 */ "explotype1",
+	/* 56 */ "shockwave",
+	/* 57 */ "explosion",
+	/* 58 */ "plasma_shot",
+	/* 59 */ "heatmask2",
+	/* 60 */ "60",
+	/* 61 */ "shockwave01_keith",
+	/* 62 */ "muzzleflash1",
+	/* 63 */ "muzzleflash2",
+	/* 64 */ "streamer_keith",
+	/* 65 */ "muzzle_flower",
+	/* 66 */ "radialblur_sniper",
+	/* 67 */ "holoshield_base",
+	/* 68 */ "68",
+	/* 69 */ "refractor_beam",
+	/* 70 */ "70",
+	/* 71 */ "starburst1_keith",
+	/* 72 */ "starburst2_keith",
+	/* 73 */ "firecircle02_keith",
+	/* 74 */ "halfring_keith",
+	/* 75 */ "whirlpool_keith",
+	/* 76 */ "corona_keith",
+	/* 77 */ "pinch_alpha_mask",
+	/* 78 */ "78",
+	/* 79 */ "duck_feather2",
+	/* 80 */ "80",
+	/* 81 */ "81",
+	/* 82 */ "82",
+	/* 83 */ "83",
+	/* 84 */ "84",
+	/* 85 */ "warpout_shockwave",
+	/* 86 */ "n60_reticule",
+	/* 87 */ "87",
+	/* 88 */ "ground2_reticule",
+	/* 89 */ "health_ball",
+	/* 90 */ "discblade_reticule",
+	/* 91 */ "shockblaster_reticule",
+	/* 92 */ "character_al",
+	/* 93 */ "character_helfa",
+	/* 94 */ "character_qwark",
+	/* 95 */ "character_skrunch",
+	/* 96 */ "character_skidd",
+	/* 97 */ "character_slim",
+	/* 98 */ "character_sasha",
+	/* 99 */ "character_president"
 };
 
 const char* DL_FX_TEXTURE_NAMES[98] = {
