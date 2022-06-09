@@ -4,7 +4,7 @@ The asset system is a set of software components designed to allow for the distr
 
 ## Overview
 
-An **asset bank** is a collection of source assets that represent either a mod or an unpacked version of the base game. Each asset bank contains a gameinfo.txt file containing metadata, and a set of asset files that reference in turn reference data files. The **asset files** are [Wrench Text Format](wrench_text_format.md) files that each define a physical tree of assets. For example:
+An **asset bank** is a collection of source assets that represent either a mod or an unpacked version of the base game. Each asset bank contains a gameinfo.txt file containing metadata, and a set of .asset files that in turn reference data files. The **asset files** are [Wrench Text Format](wrench_text_format.md) files that each define a physical tree of assets. For example:
 
 	thing.textures {
 		Texture 0 {
