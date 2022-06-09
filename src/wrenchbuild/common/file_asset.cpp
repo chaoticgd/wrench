@@ -19,7 +19,7 @@
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 
-static void unpack_file_asset(FileAsset& dest, InputStream& src, Game game);
+static void unpack_file_asset(FileAsset& dest, InputStream& src, BuildConfig config);
 static void pack_file_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const FileAsset& src);
 
 on_load(File, []() {
@@ -34,7 +34,7 @@ on_load(File, []() {
 	FileAsset::funcs.pack_dl = wrap_bin_packer_func<FileAsset>(pack_file_asset);
 })
 
-static void unpack_file_asset(FileAsset& dest, InputStream& src, Game game) {
+static void unpack_file_asset(FileAsset& dest, InputStream& src, BuildConfig config) {
 	auto [stream, ref] = dest.file().open_binary_file_for_writing(fs::path(dest.path()));
 	verify(stream.get(), "Failed to open file '%s' for writing file asset '%s'.",
 		dest.path().c_str(),

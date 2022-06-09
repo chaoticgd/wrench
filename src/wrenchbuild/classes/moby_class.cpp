@@ -20,10 +20,10 @@
 #include <wrenchbuild/asset_packer.h>
 #include <engine/moby.h>
 
-static void unpack_moby_class_core(MobyClassCoreAsset& dest, InputStream& src, Game game);
-static void pack_moby_class_core(OutputStream& dest, const MobyClassCoreAsset& src, Game game);
+static void unpack_moby_class_core(MobyClassCoreAsset& dest, InputStream& src, BuildConfig config);
+static void pack_moby_class_core(OutputStream& dest, const MobyClassCoreAsset& src, BuildConfig config);
 static std::vector<ColladaScene*> read_collada_files(std::vector<std::unique_ptr<ColladaScene>>& owners, std::vector<FileReference> refs);
-static bool test_moby_class_core(std::vector<u8>& original, std::vector<u8>& repacked, Game game, const char* hint);
+static bool test_moby_class_core(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint);
 
 on_load(MobyClass, []() {
 	MobyClassCoreAsset::funcs.unpack_rac1 = wrap_unpacker_func<MobyClassCoreAsset>(unpack_moby_class_core);
@@ -39,10 +39,10 @@ on_load(MobyClass, []() {
 	MobyClassCoreAsset::funcs.test = new AssetTestFunc(test_moby_class_core);
 })
 
-static void unpack_moby_class_core(MobyClassCoreAsset& dest, InputStream& src, Game game) {
+static void unpack_moby_class_core(MobyClassCoreAsset& dest, InputStream& src, BuildConfig config) {
 	src.seek(0);
 	std::vector<u8> buffer = src.read_multiple<u8>(src.size());
-	MobyClassData data = read_moby_class(buffer, game);
+	MobyClassData data = read_moby_class(buffer, config.game());
 	ColladaScene scene = recover_moby_class(data, -1, 0);
 	std::vector<u8> xml = write_collada(scene);
 	FileReference ref = dest.file().write_text_file("mesh.dae", (char*) xml.data());
@@ -56,7 +56,7 @@ static void unpack_moby_class_core(MobyClassCoreAsset& dest, InputStream& src, G
 	low_lod_mesh.set_node("low_lod");
 }
 
-static void pack_moby_class_core(OutputStream& dest, const MobyClassCoreAsset& src, Game game) {
+static void pack_moby_class_core(OutputStream& dest, const MobyClassCoreAsset& src, BuildConfig config) {
 	const MeshAsset& mesh_asset = src.get_mesh();
 	const MeshAsset& low_lod_mesh_asset = src.get_low_lod_mesh();
 	
@@ -99,7 +99,7 @@ static void pack_moby_class_core(OutputStream& dest, const MobyClassCoreAsset& s
 	moby.sequences.emplace_back(std::move(dummy_seq));
 	
 	std::vector<u8> dest_bytes;
-	write_moby_class(dest_bytes, moby, game);
+	write_moby_class(dest_bytes, moby, config.game());
 	dest.write_n(dest_bytes.data(), dest_bytes.size());
 }
 
@@ -126,6 +126,6 @@ static std::vector<ColladaScene*> read_collada_files(std::vector<std::unique_ptr
 	return scenes;
 }
 
-static bool test_moby_class_core(std::vector<u8>& original, std::vector<u8>& repacked, Game game, const char* hint) {
+static bool test_moby_class_core(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint) {
 	return false;
 }

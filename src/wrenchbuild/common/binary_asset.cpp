@@ -19,7 +19,7 @@
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 
-static void unpack_binary_asset(Asset& dest, InputStream& src, Game game, const char* hint, s64 header_offset);
+static void unpack_binary_asset(Asset& dest, InputStream& src, BuildConfig config, const char* hint, s64 header_offset);
 static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const BinaryAsset& src);
 
 on_load(Binary, []() {
@@ -34,7 +34,7 @@ on_load(Binary, []() {
 	BinaryAsset::funcs.pack_dl = wrap_bin_packer_func<BinaryAsset>(pack_binary_asset);
 })
 
-static void unpack_binary_asset(Asset& dest, InputStream& src, Game game, const char* hint, s64 header_offset) {
+static void unpack_binary_asset(Asset& dest, InputStream& src, BuildConfig config, const char* hint, s64 header_offset) {
 	BinaryAsset& binary = dest.as<BinaryAsset>();
 	const char* type = next_hint(&hint);
 	const char* extension = "bin";

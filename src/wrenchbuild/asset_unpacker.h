@@ -38,18 +38,18 @@ struct AssetUnpackerGlobals {
 
 extern AssetUnpackerGlobals g_asset_unpacker;
 
-void unpack_asset_impl(Asset& dest, InputStream& src, Game game, const char* hint = FMT_NO_HINT, s64 header_offset = 0);
+void unpack_asset_impl(Asset& dest, InputStream& src, BuildConfig config, const char* hint = FMT_NO_HINT, s64 header_offset = 0);
 
 template <typename ThisAsset, typename Range>
-void unpack_asset(ThisAsset& dest, InputStream& src, Range range, Game game, const char* hint = FMT_NO_HINT) {
+void unpack_asset(ThisAsset& dest, InputStream& src, Range range, BuildConfig config, const char* hint = FMT_NO_HINT) {
 	if(!range.empty()) {
 		SubInputStream stream(src, range.bytes());
-		unpack_asset_impl(dest, stream, game, hint, 0);
+		unpack_asset_impl(dest, stream, config, hint, 0);
 	}
 }
 
 template <typename ThisAsset, typename Range>
-void unpack_compressed_asset(ThisAsset& dest, InputStream& src, Range range, Game game, const char* hint = FMT_NO_HINT) {
+void unpack_compressed_asset(ThisAsset& dest, InputStream& src, Range range, BuildConfig config, const char* hint = FMT_NO_HINT) {
 	if(!range.empty()) {
 		src.seek(range.bytes().offset);
 		std::vector<u8> compressed_bytes = src.read_multiple<u8>(range.bytes().size);
@@ -58,12 +58,12 @@ void unpack_compressed_asset(ThisAsset& dest, InputStream& src, Range range, Gam
 		decompress_wad(bytes, compressed_bytes);
 		
 		MemoryInputStream stream(bytes);
-		unpack_asset_impl(dest, stream, game, hint, 0);
+		unpack_asset_impl(dest, stream, config, hint, 0);
 	}
 }
 
 template <typename ChildAsset, typename Range>
-void unpack_assets(CollectionAsset& dest, InputStream& src, const Range* ranges, s32 count, Game game, const char* hint = FMT_NO_HINT, bool switch_files = false) {
+void unpack_assets(CollectionAsset& dest, InputStream& src, const Range* ranges, s32 count, BuildConfig config, const char* hint = FMT_NO_HINT, bool switch_files = false) {
 	for(s32 i = 0; i < count; i++) {
 		if(!ranges[i].empty()) {
 			ChildAsset* asset;
@@ -72,16 +72,16 @@ void unpack_assets(CollectionAsset& dest, InputStream& src, const Range* ranges,
 			} else {
 				asset = &dest.child<ChildAsset>(i);
 			}
-			unpack_asset(*asset, src, ranges[i], game, hint);
+			unpack_asset(*asset, src, ranges[i], config, hint);
 		}
 	}
 }
 
 template <typename ChildAsset, typename Range>
-void unpack_compressed_assets(CollectionAsset& dest, InputStream& src, const Range* ranges, s32 count, Game game, const char* hint = FMT_NO_HINT) {
+void unpack_compressed_assets(CollectionAsset& dest, InputStream& src, const Range* ranges, s32 count, BuildConfig config, const char* hint = FMT_NO_HINT) {
 	for(s32 i = 0; i < count; i++) {
 		if(!ranges[i].empty()) {
-			unpack_compressed_asset(dest.child<ChildAsset>(i), src, ranges[i], game, hint);
+			unpack_compressed_asset(dest.child<ChildAsset>(i), src, ranges[i], config, hint);
 		}
 	}
 }

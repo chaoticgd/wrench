@@ -42,6 +42,7 @@ add_library(wrenchcore STATIC
 	src/core/stream.cpp
 	src/core/memory_profiler.cpp
 	src/core/shell.cpp
+	src/core/build_config.cpp
 	thirdparty/md5.cpp
 )
 target_link_libraries(wrenchcore wrenchwtf)

@@ -35,24 +35,19 @@ static void enumerate_level_wads(std::vector<UnpackInfo>& dest, CollectionAsset&
 static void enumerate_non_wads(std::vector<UnpackInfo>& dest, CollectionAsset& files, fs::path out, const IsoDirectory& dir, InputStream& src);
 static size_t get_global_wad_file_size(const GlobalWadInfo& global, const table_of_contents& toc);
 
-void unpack_iso(BuildAsset& dest, InputStream& src, AssetUnpackerFunc unpack) {
-	std::string game_str = dest.game();
-	
-	Game game = Game::UNKNOWN;
-	if(game_str == "rac") game = Game::RAC;
-	if(game_str == "gc") game = Game::GC;
-	if(game_str == "uya") game = Game::UYA;
-	if(game_str == "dl") game = Game::DL;
+void unpack_iso(BuildAsset& dest, InputStream& src, BuildConfig config, AssetUnpackerFunc unpack) {
+	dest.set_game(game_to_string(config.game()));
+	dest.set_region(region_to_string(config.region()));
 	
 	IsoFilesystem filesystem = read_iso_filesystem(src);
-	table_of_contents toc = read_table_of_contents(src, game);
+	table_of_contents toc = read_table_of_contents(src, config.game());
 	
 	std::vector<UnpackInfo> files;
 	
 	unpack_ps2_logo(dest, src, dest.region());
 	unpack_primary_volume_descriptor(dest, filesystem.pvd);
 	
-	enumerate_global_wads(files, dest, toc, src, game);
+	enumerate_global_wads(files, dest, toc, src, config.game());
 	enumerate_level_wads(files, dest.levels(SWITCH_FILES), toc, src);
 	enumerate_non_wads(files, dest.files(SWITCH_FILES), "", filesystem.root, src);
 	
@@ -63,7 +58,7 @@ void unpack_iso(BuildAsset& dest, InputStream& src, AssetUnpackerFunc unpack) {
 	
 	for(UnpackInfo& info : files) {
 		SubInputStream stream(src, info.data_range);
-		unpack(*info.asset, stream, game, FMT_NO_HINT, info.header_offset);
+		unpack(*info.asset, stream, config, FMT_NO_HINT, info.header_offset);
 	}
 }
 
@@ -114,8 +109,8 @@ static void unpack_primary_volume_descriptor(BuildAsset& build, const IsoPrimary
 static void enumerate_global_wads(std::vector<UnpackInfo>& dest, BuildAsset& build, const table_of_contents& toc, InputStream& src, Game game) {
 	if(game == Game::RAC) {
 		s64 toc_ofs = RAC1_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
-		dest.emplace_back(UnpackInfo{&build.bonus<BonusWadAsset>("globals/bonus/bonus.asset"), toc_ofs + offsetof(RacWadInfo, bonus_1), {0, src.size()}});
-		dest.emplace_back(UnpackInfo{&build.mpeg<MpegWadAsset>("globals/mpeg/mpeg.asset"), toc_ofs + offsetof(RacWadInfo, mpegs), {0, src.size()}});
+		dest.emplace_back(UnpackInfo{&build.bonus<BonusWadAsset>("globals/bonus/bonus.asset"), toc_ofs + (s64) offsetof(RacWadInfo, bonus_1), {0, src.size()}});
+		dest.emplace_back(UnpackInfo{&build.mpeg<MpegWadAsset>("globals/mpeg/mpeg.asset"), toc_ofs + (s64) offsetof(RacWadInfo, mpegs), {0, src.size()}});
 	} else {
 		for(const GlobalWadInfo& global : toc.globals) {
 			auto [wad_game, wad_type, name] = identify_wad(global.header);

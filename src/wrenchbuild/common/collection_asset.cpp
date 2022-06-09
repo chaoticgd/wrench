@@ -21,10 +21,10 @@
 #include <wrenchbuild/asset_packer.h>
 #include <wrenchbuild/common/subtitles.h>
 
-static void unpack_collection_asset(CollectionAsset& dest, InputStream& src, Game game, const char* hint);
-static void pack_collection_asset(OutputStream& dest, const CollectionAsset& src, Game game, const char* hint);
-static void unpack_texture_list(CollectionAsset& dest, InputStream& src, Game game, const char* hint);
-static void pack_texture_list(OutputStream& dest, const CollectionAsset& src, Game game, const char* hint);
+static void unpack_collection_asset(CollectionAsset& dest, InputStream& src, BuildConfig config, const char* hint);
+static void pack_collection_asset(OutputStream& dest, const CollectionAsset& src, BuildConfig config, const char* hint);
+static void unpack_texture_list(CollectionAsset& dest, InputStream& src, BuildConfig config, const char* hint);
+static void pack_texture_list(OutputStream& dest, const CollectionAsset& src, BuildConfig config, const char* hint);
 
 on_load(Collection, []() {
 	CollectionAsset::funcs.unpack_rac1 = wrap_hint_unpacker_func<CollectionAsset>(unpack_collection_asset);
@@ -38,29 +38,29 @@ on_load(Collection, []() {
 	CollectionAsset::funcs.pack_dl = wrap_hint_packer_func<CollectionAsset>(pack_collection_asset);
 })
 
-static void unpack_collection_asset(CollectionAsset& dest, InputStream& src, Game game, const char* hint) {
+static void unpack_collection_asset(CollectionAsset& dest, InputStream& src, BuildConfig config, const char* hint) {
 	const char* type = next_hint(&hint);
 	if(strcmp(type, "texlist") == 0) {
-		unpack_texture_list(dest, src, game, hint);
+		unpack_texture_list(dest, src, config, hint);
 	} else if(strcmp(type, "subtitles") == 0) {
-		unpack_subtitles(dest, src, game);
+		unpack_subtitles(dest, src, config);
 	} else {
 		verify_not_reached("Invalid hint \"%s\" passed to collection asset unpacker.", hint);
 	}
 }
 
-static void pack_collection_asset(OutputStream& dest, const CollectionAsset& src, Game game, const char* hint) {
+static void pack_collection_asset(OutputStream& dest, const CollectionAsset& src, BuildConfig config, const char* hint) {
 	const char* type = next_hint(&hint);
 	if(strcmp(type, "texlist") == 0) {
-		pack_texture_list(dest, src, game, hint);
+		pack_texture_list(dest, src, config, hint);
 	} else if(strcmp(type, "subtitles") == 0) {
-		pack_subtitles(dest, src, game);
+		pack_subtitles(dest, src, config);
 	} else {
 		verify_not_reached("Invalid hint \"%s\" passed to collection asset packer.", hint);
 	}
 }
 
-static void unpack_texture_list(CollectionAsset& dest, InputStream& src, Game game, const char* hint) {
+static void unpack_texture_list(CollectionAsset& dest, InputStream& src, BuildConfig config, const char* hint) {
 	s32 count = src.read<s32>(0);
 	verify(count < 0x1000, "texlist has too many elements and is probably corrupted.");
 	src.seek(4);
@@ -73,11 +73,11 @@ static void unpack_texture_list(CollectionAsset& dest, InputStream& src, Game ga
 		} else {
 			size = src.size() - offsets[i];
 		}
-		unpack_asset(dest.child<TextureAsset>(i), src, ByteRange{offset, size}, game, hint);
+		unpack_asset(dest.child<TextureAsset>(i), src, ByteRange{offset, size}, config, hint);
 	}
 }
 
-static void pack_texture_list(OutputStream& dest, const CollectionAsset& src, Game game, const char* hint) {
+static void pack_texture_list(OutputStream& dest, const CollectionAsset& src, BuildConfig config, const char* hint) {
 	s32 count;
 	for(count = 0; count < 256; count++) {
 		if(!src.has_child(count)) {
@@ -91,7 +91,7 @@ static void pack_texture_list(OutputStream& dest, const CollectionAsset& src, Ga
 	
 	for(s32 i = 0; i < 256; i++) {
 		if(src.has_child(i)) {
-			offsets[i] = pack_asset<ByteRange>(dest, src.get_child(i), game, 0x10, hint).offset;
+			offsets[i] = pack_asset<ByteRange>(dest, src.get_child(i), config, 0x10, hint).offset;
 		} else {
 			break;
 		}

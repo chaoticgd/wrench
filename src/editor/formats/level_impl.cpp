@@ -29,21 +29,21 @@ void level::open(fs::path json_path, Json& json) {
 	fs::path level_dir = json_path.parent_path();
 	path = json_path;
 	Json level_json = Json::parse(read_file(json_path, "r"));
-	LevelWad wad = read_level_wad_json(level_json, level_dir, game);
-	_gameplay = std::move(wad.gameplay);
-	for(Mesh& collision_mesh : wad.collision.meshes) {
-		collision.emplace_back(upload_mesh(collision_mesh, true));
-	}
-	collision_materials = upload_materials(wad.collision.materials, {});
-	for(MobyClass& cls : wad.moby_classes) {
-		if(cls.high_model.has_value() && cls.high_model->meshes.size() >= 1) {
-			EditorMobyClass ec;
-			ec.mesh = cls.high_model->meshes[0];
-			ec.high_lod = upload_mesh(cls.high_model->meshes[0], true);
-			ec.materials = upload_materials(cls.high_model->materials, cls.textures);
-			mobies.emplace(cls.o_class, std::move(ec));
-		}
-	}
+	//LevelWad wad = read_level_wad_json(level_json, level_dir, game);
+	//_gameplay = std::move(wad.gameplay);
+	//for(Mesh& collision_mesh : wad.collision.meshes) {
+	//	collision.emplace_back(upload_mesh(collision_mesh, true));
+	//}
+	//collision_materials = upload_materials(wad.collision.materials, {});
+	//for(MobyClass& cls : wad.moby_classes) {
+	//	if(cls.high_model.has_value() && cls.high_model->meshes.size() >= 1) {
+	//		EditorMobyClass ec;
+	//		ec.mesh = cls.high_model->meshes[0];
+	//		ec.high_lod = upload_mesh(cls.high_model->meshes[0], true);
+	//		ec.materials = upload_materials(cls.high_model->materials, cls.textures);
+	//		mobies.emplace(cls.o_class, std::move(ec));
+	//	}
+	//}
 }
 
 void level::save() {

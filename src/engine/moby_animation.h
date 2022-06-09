@@ -20,6 +20,7 @@
 #define ENGINE_MOBY_ANIMATION_H
 
 #include <core/buffer.h>
+#include <core/build_config.h>
 #include <engine/basic_types.h>
 
 struct MobyFrame {

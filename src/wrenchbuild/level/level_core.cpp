@@ -30,7 +30,7 @@
 static std::vector<s64> enumerate_level_core_block_boundaries(InputStream& src, const LevelCoreHeader& header, Game game);
 static void print_level_core_header(const LevelCoreHeader& header);
 
-void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_range, ByteRange data_range, ByteRange gs_ram_range, Game game) {
+void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_range, ByteRange data_range, ByteRange gs_ram_range, BuildConfig config) {
 	SubInputStream index(src, index_range.bytes());
 	std::vector<u8> decompressed_data;
 	std::vector<u8> compressed_data = src.read_multiple<u8>(data_range.offset, data_range.size);
@@ -39,7 +39,7 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 	SubInputStream gs_ram(src, gs_ram_range.bytes());
 	
 	auto header = index.read<LevelCoreHeader>(0);
-	std::vector<s64> block_bounds = enumerate_level_core_block_boundaries(index, header, game);
+	std::vector<s64> block_bounds = enumerate_level_core_block_boundaries(index, header, config.game());
 	
 	print_level_core_header(header);
 	
@@ -54,26 +54,26 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 		verify_not_reached("Unable to determine size of tfrag block.");
 	}
 	
-	unpack_asset(dest.tfrags(), data, ByteRange{header.tfrags, tfrags_size}, game);
-	unpack_asset(dest.occlusion(), data, level_core_block_range(header.occlusion, block_bounds), game);
-	unpack_asset(dest.sky(), data, level_core_block_range(header.sky, block_bounds), game);
-	unpack_asset(dest.collision(), data, level_core_block_range(header.collision, block_bounds), game);
+	unpack_asset(dest.tfrags(), data, ByteRange{header.tfrags, tfrags_size}, config);
+	unpack_asset(dest.occlusion(), data, level_core_block_range(header.occlusion, block_bounds), config);
+	unpack_asset(dest.sky(), data, level_core_block_range(header.sky, block_bounds), config);
+	unpack_asset(dest.collision(), data, level_core_block_range(header.collision, block_bounds), config);
 	
 	CollectionAsset& tfrag_textures_collection = dest.tfrag_textures(SWITCH_FILES);
 	SubInputStream texture_data(data, header.textures_base_offset, data.size() - header.textures_base_offset);
 	auto tfrag_textures = index.read_multiple<TextureEntry>(header.tfrag_textures);
 	for(s32 i = 0; i < (s32) tfrag_textures.size(); i++) {
-		unpack_level_texture(tfrag_textures_collection.child<TextureAsset>(i), tfrag_textures[i], texture_data, gs_ram, game, i);
+		unpack_level_texture(tfrag_textures_collection.child<TextureAsset>(i), tfrag_textures[i], texture_data, gs_ram, config.game(), i);
 	}
 	
 	SubInputStream part_defs(index, header.part_defs_offset, index.size() - header.part_defs_offset);
 	std::vector<ParticleTextureEntry> part_entries = index.read_multiple<ParticleTextureEntry>(header.part_textures);
 	SubInputStream part_bank(data, header.part_bank_offset, data.size() - header.part_bank_offset);
-	unpack_particle_textures(dest.particle_textures(), part_defs, part_entries, part_bank, game);
+	unpack_particle_textures(dest.particle_textures(), part_defs, part_entries, part_bank, config.game());
 	
 	SubInputStream fx_bank(data, header.fx_bank_offset, data.size() - header.fx_bank_offset);
 	auto fx_textures = index.read_multiple<FxTextureEntry>(header.fx_textures);
-	unpack_fx_textures(dest, fx_textures, fx_bank, game);
+	unpack_fx_textures(dest, fx_textures, fx_bank, config.game());
 	
 	//if(wad.game != Game::DL) {
 	//	wad.unknown_a0 = assets.read_bytes(header.unknown_a0, 0x40, "unknown a0");
@@ -85,36 +85,36 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 	// references to them for the current level.
 	CollectionAsset& moby_data = build.moby_classes();
 	CollectionAsset& moby_refs = dest.moby_classes();
-	unpack_moby_classes(moby_data, moby_refs, header, index, data, gs_ram, block_bounds, game);
+	unpack_moby_classes(moby_data, moby_refs, header, index, data, gs_ram, block_bounds, config);
 	
 	CollectionAsset& tie_data = build.tie_classes();
 	CollectionAsset& tie_refs = dest.tie_classes();
-	unpack_tie_classes(tie_data, tie_refs, header, index, data, gs_ram, block_bounds, game);
+	unpack_tie_classes(tie_data, tie_refs, header, index, data, gs_ram, block_bounds, config);
 	
 	CollectionAsset& shrub_data = build.shrub_classes();
 	CollectionAsset& shrub_refs = dest.shrub_classes();
-	unpack_shrub_classes(shrub_data, shrub_refs, header, index, data, gs_ram, block_bounds, game);
+	unpack_shrub_classes(shrub_data, shrub_refs, header, index, data, gs_ram, block_bounds, config);
 	
-	if(game != Game::DL && header.ratchet_seqs_rac123 != 0) {
+	if(config.game() != Game::DL && header.ratchet_seqs_rac123 != 0) {
 		CollectionAsset& ratchet_seqs = dest.ratchet_seqs(SWITCH_FILES);
 		auto ratchet_seq_offsets = index.read_multiple<s32>(header.ratchet_seqs_rac123, 256);
 		for(s32 i = 0; i < 256; i++) {
 			if(ratchet_seq_offsets[i] != 0) {
-				unpack_asset(ratchet_seqs.child<BinaryAsset>(i), data, level_core_block_range(ratchet_seq_offsets[i], block_bounds), game);
+				unpack_asset(ratchet_seqs.child<BinaryAsset>(i), data, level_core_block_range(ratchet_seq_offsets[i], block_bounds), config);
 			}
 		}
 	}
 	
-	if(game == Game::GC || game == Game::UYA) {
-		unpack_asset(dest.sound_remap(), index, ByteRange{header.sound_remap_offset, header.moby_gs_stash_list - header.sound_remap_offset}, game);
-		unpack_asset(dest.moby_sound_remap(), data, level_core_block_range(header.moby_sound_remap_offset, block_bounds), game);
-	} else if(game == Game::DL) {
-		unpack_asset(dest.sound_remap(), index, ByteRange{header.sound_remap_offset, header.moby_sound_remap_offset - header.sound_remap_offset}, game);
-		unpack_asset(dest.moby_sound_remap(), index, ByteRange{header.moby_sound_remap_offset, header.moby_gs_stash_list - header.moby_sound_remap_offset}, game);
+	if(config.game() == Game::GC || config.game() == Game::UYA) {
+		unpack_asset(dest.sound_remap(), index, ByteRange{header.sound_remap_offset, header.moby_gs_stash_list - header.sound_remap_offset}, config);
+		unpack_asset(dest.moby_sound_remap(), data, level_core_block_range(header.moby_sound_remap_offset, block_bounds), config);
+	} else if(config.game() == Game::DL) {
+		unpack_asset(dest.sound_remap(), index, ByteRange{header.sound_remap_offset, header.moby_sound_remap_offset - header.sound_remap_offset}, config);
+		unpack_asset(dest.moby_sound_remap(), index, ByteRange{header.moby_sound_remap_offset, header.moby_gs_stash_list - header.moby_sound_remap_offset}, config);
 	}
 }
 
-void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, std::vector<u8>& gs_ram_dest, const LevelCoreAsset& src, Game game) {
+void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, std::vector<u8>& gs_ram_dest, const LevelCoreAsset& src, BuildConfig config) {
 	MemoryOutputStream index(index_dest);
 	MemoryOutputStream gs_ram(gs_ram_dest);
 	
@@ -132,10 +132,10 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	LevelCoreHeader header = {0};
 	index.alloc<LevelCoreHeader>();
 	
-	header.tfrags = pack_asset<ByteRange>(data, src.get_tfrags(), game, 0x40).offset;
-	header.occlusion = pack_asset<ByteRange>(data, src.get_occlusion(), game, 0x40).offset;
-	header.sky = pack_asset<ByteRange>(data, src.get_sky(), game, 0x40).offset;
-	header.collision = pack_asset<ByteRange>(data, src.get_collision(), game, 0x40).offset;
+	header.tfrags = pack_asset<ByteRange>(data, src.get_tfrags(), config, 0x40).offset;
+	header.occlusion = pack_asset<ByteRange>(data, src.get_occlusion(), config, 0x40).offset;
+	header.sky = pack_asset<ByteRange>(data, src.get_sky(), config, 0x40).offset;
+	header.collision = pack_asset<ByteRange>(data, src.get_collision(), config, 0x40).offset;
 	
 	const CollectionAsset& tfrag_textures = src.get_tfrag_textures();
 	const CollectionAsset& mobies = src.get_moby_classes();
@@ -157,7 +157,7 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 				record.texture->to_8bit_paletted();
 				record.texture->divide_alphas();
 				record.texture->swizzle_palette();
-				if(game == Game::DL) {
+				if(config.game() == Game::DL) {
 					record.texture->swizzle();
 				}
 			}
@@ -173,11 +173,11 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 		header.tie_textures = write_level_texture_table(index, shared.textures, shared.tie_range, header.textures_base_offset);
 		header.shrub_textures = write_level_texture_table(index, shared.textures, shared.shrub_range, header.textures_base_offset);
 		
-		auto part_info = pack_particle_textures(index, data, src.get_particle_textures(), game);
+		auto part_info = pack_particle_textures(index, data, src.get_particle_textures(), config.game());
 		header.part_textures = std::get<0>(part_info);
 		header.part_defs_offset = std::get<1>(part_info);
 		header.part_bank_offset = std::get<2>(part_info);
-		auto [fx_textures, fx_bank_offset] = pack_fx_textures(index, data, src.get_common_fx_textures(), src.get_local_fx_textures(), game);
+		auto [fx_textures, fx_bank_offset] = pack_fx_textures(index, data, src.get_common_fx_textures(), src.get_local_fx_textures(), config.game());
 		header.fx_textures = fx_textures;
 		header.fx_bank_offset = fx_bank_offset;
 		
@@ -192,19 +192,19 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	//header.unknown_a0 = core.tell();
 	//core.write(wad.unknown_a0);
 	
-	pack_moby_classes(index, data, src.get_moby_classes(), shared.textures, moby_tab.offset, shared.moby_range.begin, game);
-	pack_tie_classes(index, data, src.get_tie_classes(), shared.textures, tie_tab.offset, shared.tie_range.begin, game);
-	pack_shrub_classes(index, data, src.get_shrub_classes(), shared.textures, shrub_tab.offset, shared.shrub_range.begin, game);
+	pack_moby_classes(index, data, src.get_moby_classes(), shared.textures, moby_tab.offset, shared.moby_range.begin, config);
+	pack_tie_classes(index, data, src.get_tie_classes(), shared.textures, tie_tab.offset, shared.tie_range.begin, config);
+	pack_shrub_classes(index, data, src.get_shrub_classes(), shared.textures, shrub_tab.offset, shared.shrub_range.begin, config);
 	
 	data.pad(0x10, 0);
 	header.scene_view_size = data.tell();
 	
-	if(game != Game::DL && src.has_ratchet_seqs()) {
+	if(config.game() != Game::DL && src.has_ratchet_seqs()) {
 		const CollectionAsset& ratchet_seqs = src.get_ratchet_seqs();
 		std::vector<s32> ratchet_seq_offsets(256, 0);
 		for(s32 i = 0; i < 256; i++) {
 			if(ratchet_seqs.has_child(i)) {
-				ratchet_seq_offsets[i] = pack_asset<ByteRange>(data, ratchet_seqs.get_child(i), game, 0x10).offset;
+				ratchet_seq_offsets[i] = pack_asset<ByteRange>(data, ratchet_seqs.get_child(i), config, 0x10).offset;
 			}
 		}
 		index.pad(0x10, 0);
@@ -212,8 +212,8 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 		index.write_v(ratchet_seq_offsets);
 	}
 	
-	header.sound_remap_offset = pack_asset<ByteRange>(index, src.get_sound_remap(), game, 0x10).offset;
-	header.moby_sound_remap_offset = pack_asset<ByteRange>(index, src.get_moby_sound_remap(), game, 0x10).offset;
+	header.sound_remap_offset = pack_asset<ByteRange>(index, src.get_sound_remap(), config, 0x10).offset;
+	header.moby_sound_remap_offset = pack_asset<ByteRange>(index, src.get_moby_sound_remap(), config, 0x10).offset;
 	
 	index.pad(0x10, 0);
 	header.moby_gs_stash_list = index.tell();
@@ -221,7 +221,7 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	
 	index.pad(0x10, 0);
 	
-	if(game != Game::RAC) {
+	if(config.game() != Game::RAC) {
 		header.moby_gs_stash_count_rac23dl = 1;
 	}
 	

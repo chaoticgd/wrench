@@ -22,43 +22,40 @@
 
 AssetUnpackerGlobals g_asset_unpacker = {};
 
-static bool handle_special_debugging_cases(Asset& dest, InputStream& src, Game game, const char* hint);
+static bool handle_special_debugging_cases(Asset& dest, InputStream& src, BuildConfig config, const char* hint);
 
 on_load(Unpacker, []() {
 	BuildAsset::funcs.unpack_rac1 = wrap_iso_unpacker_func<BuildAsset>(unpack_iso, unpack_asset_impl);
-	BuildAsset::funcs.unpack_rac2 = wrap_iso_unpacker_func<BuildAsset>(unpack_iso, unpack_asset_impl);
-	BuildAsset::funcs.unpack_rac3 = wrap_iso_unpacker_func<BuildAsset>(unpack_iso, unpack_asset_impl);
-	BuildAsset::funcs.unpack_dl = wrap_iso_unpacker_func<BuildAsset>(unpack_iso, unpack_asset_impl);
 })
 
-void unpack_asset_impl(Asset& dest, InputStream& src, Game game, const char* hint, s64 header_offset) {
-	if(handle_special_debugging_cases(dest, src, game, hint)) {
+void unpack_asset_impl(Asset& dest, InputStream& src, BuildConfig config, const char* hint, s64 header_offset) {
+	if(handle_special_debugging_cases(dest, src, config, hint)) {
 		return;
 	}
 	
 	// Hacks to skip unpacking certain wads. These should be removed over time.
-	if(game == Game::GC
+	if(config.game() == Game::GC
 		&& (dest.type() == HudWadAsset::ASSET_TYPE
 		|| dest.type() == SpaceWadAsset::ASSET_TYPE
 		|| dest.type() == SceneWadAsset::ASSET_TYPE
 		|| dest.type() == GadgetWadAsset::ASSET_TYPE)) {
 		std::string tag = dest.tag();
-		unpack_asset_impl(dest.parent()->transmute_child<BinaryAsset>(tag.c_str()), src, game, FMT_BINARY_WAD, header_offset);
+		unpack_asset_impl(dest.parent()->transmute_child<BinaryAsset>(tag.c_str()), src, config, FMT_BINARY_WAD, header_offset);
 		return;
 	}
 	
-	if(game == Game::UYA
+	if(config.game() == Game::UYA
 		&& (dest.type() == HudWadAsset::ASSET_TYPE
 		|| dest.type() == SpaceWadAsset::ASSET_TYPE
 		|| dest.type() == GadgetWadAsset::ASSET_TYPE)) {
 		std::string tag = dest.tag();
-		unpack_asset_impl(dest.parent()->transmute_child<BinaryAsset>(tag.c_str()), src, game, FMT_BINARY_WAD, header_offset);
+		unpack_asset_impl(dest.parent()->transmute_child<BinaryAsset>(tag.c_str()), src, config, FMT_BINARY_WAD, header_offset);
 		return;
 	}
 	
 	if(dest.type() == LevelSceneWadAsset::ASSET_TYPE) {
 		std::string tag = dest.tag();
-		unpack_asset_impl(dest.parent()->transmute_child<BinaryAsset>(tag.c_str()), src, game, FMT_BINARY_WAD, header_offset);
+		unpack_asset_impl(dest.parent()->transmute_child<BinaryAsset>(tag.c_str()), src, config, FMT_BINARY_WAD, header_offset);
 		return;
 	}
 	
@@ -76,7 +73,7 @@ void unpack_asset_impl(Asset& dest, InputStream& src, Game game, const char* hin
 	if(dest.type() == BuildAsset::ASSET_TYPE) {
 		unpack_func = dest.funcs.unpack_rac1;
 	} else {
-		switch(game) {
+		switch(config.game()) {
 			case Game::RAC: unpack_func = dest.funcs.unpack_rac1; break;
 			case Game::GC: unpack_func = dest.funcs.unpack_rac2; break;
 			case Game::UYA: unpack_func = dest.funcs.unpack_rac3; break;
@@ -86,7 +83,7 @@ void unpack_asset_impl(Asset& dest, InputStream& src, Game game, const char* hin
 	}
 	
 	verify(unpack_func, "Tried to unpack nonunpackable asset '%s'.", reference.c_str());
-	(*unpack_func)(dest, src, game, hint, header_offset);
+	(*unpack_func)(dest, src, config, hint, header_offset);
 	
 	// Update the completion percentage based on how far through the input file
 	// we are, ignoring streams that aren't the input file.
@@ -101,7 +98,7 @@ void unpack_asset_impl(Asset& dest, InputStream& src, Game game, const char* hin
 	}
 }
 
-static bool handle_special_debugging_cases(Asset& dest, InputStream& src, Game game, const char* hint) {
+static bool handle_special_debugging_cases(Asset& dest, InputStream& src, BuildConfig config, const char* hint) {
 	s32 is_wad = dest.flags & ASSET_IS_WAD;
 	s32 is_level_wad = dest.flags & ASSET_IS_LEVEL_WAD; 
 	s32 is_bin_leaf = dest.flags & ASSET_IS_BIN_LEAF;
@@ -112,7 +109,7 @@ static bool handle_special_debugging_cases(Asset& dest, InputStream& src, Game g
 	
 	if(g_asset_unpacker.dump_wads && is_wad) {
 		BinaryAsset& bin = dest.parent()->transmute_child<BinaryAsset>(dest.tag().c_str());
-		unpack_asset_impl(bin, src, game, FMT_BINARY_WAD);
+		unpack_asset_impl(bin, src, config, FMT_BINARY_WAD);
 		return true;
 	}
 	
@@ -121,8 +118,9 @@ static bool handle_special_debugging_cases(Asset& dest, InputStream& src, Game g
 		BinaryAsset& bin = dest.parent()->transmute_child<BinaryAsset>(dest.tag().c_str());
 		bin.set_asset_type(type);
 		bin.set_format_hint(hint);
-		bin.set_game((s32) game);
-		unpack_asset_impl(bin, src, game, FMT_NO_HINT);
+		bin.set_game(game_to_string(config.game()));
+		bin.set_region(region_to_string(config.region()));
+		unpack_asset_impl(bin, src, config, FMT_NO_HINT);
 		return true;
 	}
 	
@@ -130,7 +128,7 @@ static bool handle_special_debugging_cases(Asset& dest, InputStream& src, Game g
 		if(is_flattenable) {
 			std::string tag = dest.tag();
 			FlatWadAsset& flat_wad = dest.parent()->transmute_child<FlatWadAsset>(tag.c_str());
-			unpack_asset_impl(flat_wad, src, game);
+			unpack_asset_impl(flat_wad, src, config);
 		}
 		return true;
 	}

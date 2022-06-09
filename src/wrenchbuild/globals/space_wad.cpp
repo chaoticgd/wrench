@@ -41,10 +41,10 @@ packed_struct(DlSpaceWadHeader,
 	/* 0x8 */ SectorRange transition_wads[12];
 )
 
-void unpack_uya_space_wad(SpaceWadAsset& dest, const UyaSpaceWadHeader& header, InputStream& src, Game game);
-static void pack_uya_space_wad(OutputStream& dest, UyaSpaceWadHeader& header, const SpaceWadAsset& src, Game game);
-void unpack_dl_space_wad(SpaceWadAsset& dest, const DlSpaceWadHeader& header, InputStream& src, Game game);
-static void pack_dl_space_wad(OutputStream& dest, DlSpaceWadHeader& header, const SpaceWadAsset& src, Game game);
+void unpack_uya_space_wad(SpaceWadAsset& dest, const UyaSpaceWadHeader& header, InputStream& src, BuildConfig config);
+static void pack_uya_space_wad(OutputStream& dest, UyaSpaceWadHeader& header, const SpaceWadAsset& src, BuildConfig config);
+void unpack_dl_space_wad(SpaceWadAsset& dest, const DlSpaceWadHeader& header, InputStream& src, BuildConfig config);
+static void pack_dl_space_wad(OutputStream& dest, DlSpaceWadHeader& header, const SpaceWadAsset& src, BuildConfig config);
 
 on_load(Space, []() {
 	SpaceWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<SpaceWadAsset, DlSpaceWadHeader>(unpack_dl_space_wad);
@@ -52,18 +52,18 @@ on_load(Space, []() {
 	SpaceWadAsset::funcs.pack_dl = wrap_wad_packer_func<SpaceWadAsset, DlSpaceWadHeader>(pack_dl_space_wad);
 })
 
-void unpack_uya_space_wad(SpaceWadAsset& dest, const UyaSpaceWadHeader& header, InputStream& src, Game game) {
+void unpack_uya_space_wad(SpaceWadAsset& dest, const UyaSpaceWadHeader& header, InputStream& src, BuildConfig config) {
 	
 }
 
-static void pack_uya_space_wad(OutputStream& dest, UyaSpaceWadHeader& header, const SpaceWadAsset& src, Game game) {
+static void pack_uya_space_wad(OutputStream& dest, UyaSpaceWadHeader& header, const SpaceWadAsset& src, BuildConfig config) {
 	
 }
 
-void unpack_dl_space_wad(SpaceWadAsset& dest, const DlSpaceWadHeader& header, InputStream& src, Game game) {
-	unpack_compressed_assets<BinaryAsset>(dest.transitions(), src, ARRAY_PAIR(header.transition_wads), game);
+void unpack_dl_space_wad(SpaceWadAsset& dest, const DlSpaceWadHeader& header, InputStream& src, BuildConfig config) {
+	unpack_compressed_assets<BinaryAsset>(dest.transitions(), src, ARRAY_PAIR(header.transition_wads), config);
 }
 
-static void pack_dl_space_wad(OutputStream& dest, DlSpaceWadHeader& header, const SpaceWadAsset& src, Game game) {
-	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.transition_wads), src.get_transitions(), game, "trnsition");
+static void pack_dl_space_wad(OutputStream& dest, DlSpaceWadHeader& header, const SpaceWadAsset& src, BuildConfig config) {
+	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.transition_wads), src.get_transitions(), config, "trnsition");
 }

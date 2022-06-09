@@ -88,16 +88,16 @@ packed_struct(DlLevelWadHeader,
 	/* 0xc60 */ SectorRange art_instances;
 )
 
-static void unpack_rac_level_wad(LevelWadAsset& dest, const RacLevelWadHeader& header, InputStream& src, Game game);
-static void pack_rac_level_wad(OutputStream& dest, RacLevelWadHeader& header, const LevelWadAsset& src, Game game);
-static void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHeader& header, InputStream& src, Game game);
-static void pack_gc_uya_level_wad(OutputStream& dest, GcUyaLevelWadHeader& header, const LevelWadAsset& src, Game game);
-static void unpack_dl_level_wad(LevelWadAsset& dest, const DlLevelWadHeader& header, InputStream& src, Game game);
-static void pack_dl_level_wad(OutputStream& dest, DlLevelWadHeader& header, const LevelWadAsset& src, Game game);
-static void unpack_chunks(CollectionAsset& dest, InputStream& file, const ChunkWadHeader& ranges, Game game);
-static ChunkWadHeader pack_chunks(OutputStream& dest, const CollectionAsset& chunks, Game game);
-static void unpack_missions(CollectionAsset& dest, InputStream& file, const MissionWadHeader& ranges, Game game);
-static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& dest, const CollectionAsset& missions, Game game);
+static void unpack_rac_level_wad(LevelWadAsset& dest, const RacLevelWadHeader& header, InputStream& src, BuildConfig config);
+static void pack_rac_level_wad(OutputStream& dest, RacLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config);
+static void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHeader& header, InputStream& src, BuildConfig config);
+static void pack_gc_uya_level_wad(OutputStream& dest, GcUyaLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config);
+static void unpack_dl_level_wad(LevelWadAsset& dest, const DlLevelWadHeader& header, InputStream& src, BuildConfig config);
+static void pack_dl_level_wad(OutputStream& dest, DlLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config);
+static void unpack_chunks(CollectionAsset& dest, InputStream& file, const ChunkWadHeader& ranges, BuildConfig config);
+static ChunkWadHeader pack_chunks(OutputStream& dest, const CollectionAsset& chunks, BuildConfig config);
+static void unpack_missions(CollectionAsset& dest, InputStream& file, const MissionWadHeader& ranges, BuildConfig config);
+static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& dest, const CollectionAsset& missions, BuildConfig config);
 
 on_load(Level, []() {
 	LevelWadAsset::funcs.unpack_rac1 = wrap_wad_unpacker_func<LevelWadAsset, RacLevelWadHeader>(unpack_rac_level_wad);
@@ -111,66 +111,66 @@ on_load(Level, []() {
 	LevelWadAsset::funcs.pack_dl = wrap_wad_packer_func<LevelWadAsset, DlLevelWadHeader>(pack_dl_level_wad);
 })
 
-void unpack_rac_level_wad(LevelWadAsset& dest, const RacLevelWadHeader& header, InputStream& src, Game game) {
+void unpack_rac_level_wad(LevelWadAsset& dest, const RacLevelWadHeader& header, InputStream& src, BuildConfig config) {
 	dest.set_id(header.id);
 	
 	SubInputStream data(src, header.data.bytes());
-	unpack_asset(dest.data(SWITCH_FILES), src, header.data, game);
-	unpack_asset(dest.data().gameplay(), src, header.gameplay_ntsc, game);
-	unpack_compressed_asset(dest.occlusion(), src, header.occlusion, game);
+	unpack_asset(dest.data(SWITCH_FILES), src, header.data, config);
+	unpack_asset(dest.data().gameplay(), src, header.gameplay_ntsc, config);
+	unpack_compressed_asset(dest.occlusion(), src, header.occlusion, config);
 }
 
-static void pack_rac_level_wad(OutputStream& dest, RacLevelWadHeader& header, const LevelWadAsset& src, Game game) {
+static void pack_rac_level_wad(OutputStream& dest, RacLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config) {
 	header.id = src.id();
 	
-	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), game);
-	header.gameplay_ntsc = pack_asset_sa<SectorRange>(dest, src.get_data().get_gameplay(), game);
-	header.gameplay_pal = pack_asset_sa<SectorRange>(dest, src.get_data().get_gameplay(), game);
-	header.occlusion = pack_compressed_asset_sa<SectorRange>(dest, src.get_occlusion(), game, "occlusion");
+	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), config);
+	header.gameplay_ntsc = pack_asset_sa<SectorRange>(dest, src.get_data().get_gameplay(), config);
+	header.gameplay_pal = pack_asset_sa<SectorRange>(dest, src.get_data().get_gameplay(), config);
+	header.occlusion = pack_compressed_asset_sa<SectorRange>(dest, src.get_occlusion(), config, "occlusion");
 }
 
-void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHeader& header, InputStream& src, Game game) {
+void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHeader& header, InputStream& src, BuildConfig config) {
 	dest.set_id(header.id);
 	dest.set_reverb(header.reverb);
 	
-	unpack_asset(dest.data().sound_bank(), src, header.sound_bank, game);
-	unpack_asset(dest.data(SWITCH_FILES), src, header.data, game);
-	unpack_asset(dest.data().gameplay(), src, header.gameplay, game);
-	unpack_compressed_asset(dest.occlusion(), src, header.occlusion, game);
-	unpack_chunks(dest.chunks(), src, header.chunks, game);
+	unpack_asset(dest.data().sound_bank(), src, header.sound_bank, config);
+	unpack_asset(dest.data(SWITCH_FILES), src, header.data, config);
+	unpack_asset(dest.data().gameplay(), src, header.gameplay, config);
+	unpack_compressed_asset(dest.occlusion(), src, header.occlusion, config);
+	unpack_chunks(dest.chunks(), src, header.chunks, config);
 }
 
-static void pack_gc_uya_level_wad(OutputStream& dest, GcUyaLevelWadHeader& header, const LevelWadAsset& src, Game game) {
+static void pack_gc_uya_level_wad(OutputStream& dest, GcUyaLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config) {
 	header.id = src.id();
 	header.reverb = src.reverb();
 	
-	header.sound_bank = pack_asset_sa<SectorRange>(dest, src.get_data().get_sound_bank(), game);
-	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), game);
-	header.gameplay = pack_asset_sa<SectorRange>(dest, src.get_data().get_gameplay(), game);
-	header.occlusion = pack_compressed_asset_sa<SectorRange>(dest, src.get_occlusion(), game, "occlusion");
-	header.chunks = pack_chunks(dest, src.get_chunks(), game);
+	header.sound_bank = pack_asset_sa<SectorRange>(dest, src.get_data().get_sound_bank(), config);
+	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), config);
+	header.gameplay = pack_asset_sa<SectorRange>(dest, src.get_data().get_gameplay(), config);
+	header.occlusion = pack_compressed_asset_sa<SectorRange>(dest, src.get_occlusion(), config, "occlusion");
+	header.chunks = pack_chunks(dest, src.get_chunks(), config);
 }
 
-void unpack_dl_level_wad(LevelWadAsset& dest, const DlLevelWadHeader& header, InputStream& src, Game game) {
+void unpack_dl_level_wad(LevelWadAsset& dest, const DlLevelWadHeader& header, InputStream& src, BuildConfig config) {
 	dest.set_id(header.id);
 	dest.set_reverb(header.reverb);
 	
-	unpack_asset(dest.data().sound_bank(), src, header.sound_bank, game);
-	unpack_asset(dest.data(SWITCH_FILES), src, header.data, game);
-	unpack_chunks(dest.chunks(), src, header.chunks, game);
-	unpack_missions(dest.missions(), src, header.missions, game);
+	unpack_asset(dest.data().sound_bank(), src, header.sound_bank, config);
+	unpack_asset(dest.data(SWITCH_FILES), src, header.data, config);
+	unpack_chunks(dest.chunks(), src, header.chunks, config);
+	unpack_missions(dest.missions(), src, header.missions, config);
 }
 
-static void pack_dl_level_wad(OutputStream& dest, DlLevelWadHeader& header, const LevelWadAsset& src, Game game) {
+static void pack_dl_level_wad(OutputStream& dest, DlLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config) {
 	header.id = src.id();
 	header.reverb = src.reverb();
 	
-	header.sound_bank = pack_asset_sa<SectorRange>(dest, src.get_data().get_sound_bank(), game);
-	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), game);
-	header.chunks = pack_chunks(dest, src.get_chunks(), game);
-	header.gameplay = pack_compressed_asset_sa<SectorRange>(dest, src.get_data().get_gameplay(), game, "gameplay");
-	std::tie(header.missions, header.max_mission_sizes) = pack_missions(dest, src.get_missions(), game);
-	header.art_instances = pack_compressed_asset_sa<SectorRange>(dest, src.get_data().get_art_instances(), game, "art_insts");
+	header.sound_bank = pack_asset_sa<SectorRange>(dest, src.get_data().get_sound_bank(), config);
+	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), config);
+	header.chunks = pack_chunks(dest, src.get_chunks(), config);
+	header.gameplay = pack_compressed_asset_sa<SectorRange>(dest, src.get_data().get_gameplay(), config, "gameplay");
+	std::tie(header.missions, header.max_mission_sizes) = pack_missions(dest, src.get_missions(), config);
+	header.art_instances = pack_compressed_asset_sa<SectorRange>(dest, src.get_data().get_art_instances(), config, "art_insts");
 }
 
 packed_struct(ChunkHeader,
@@ -178,7 +178,7 @@ packed_struct(ChunkHeader,
 	/* 0x4 */ s32 collision;
 )
 
-static void unpack_chunks(CollectionAsset& dest, InputStream& file, const ChunkWadHeader& ranges, Game game) {
+static void unpack_chunks(CollectionAsset& dest, InputStream& file, const ChunkWadHeader& ranges, BuildConfig config) {
 	for(s32 i = 0; i < ARRAY_SIZE(ranges.chunks); i++) {
 		ChunkHeader chunk_header = {0};
 		if(!ranges.chunks[i].empty()) {
@@ -190,20 +190,20 @@ static void unpack_chunks(CollectionAsset& dest, InputStream& file, const ChunkW
 				s64 offset = ranges.chunks[i].offset.bytes() + chunk_header.tfrags;
 				s64 size = ranges.chunks[i].size.bytes() - chunk_header.tfrags;
 				ByteRange tfrags_range{(s32) offset, (s32) size};
-				unpack_compressed_asset(chunk.tfrags(), file, tfrags_range, game);
+				unpack_compressed_asset(chunk.tfrags(), file, tfrags_range, config);
 			}
 			if(chunk_header.collision > 0) {
 				s64 offset = ranges.chunks[i].offset.bytes() + chunk_header.collision;
 				s64 size = ranges.chunks[i].size.bytes() - chunk_header.collision;
 				ByteRange collision_range{(s32) offset, (s32) size};
-				unpack_compressed_asset(chunk.collision(), file, collision_range, game);
+				unpack_compressed_asset(chunk.collision(), file, collision_range, config);
 			}
-			unpack_asset(chunk.sound_bank(), file, ranges.sound_banks[i], game);
+			unpack_asset(chunk.sound_bank(), file, ranges.sound_banks[i], config);
 		}
 	}
 }
 
-static ChunkWadHeader pack_chunks(OutputStream& dest, const CollectionAsset& chunks, Game game) {
+static ChunkWadHeader pack_chunks(OutputStream& dest, const CollectionAsset& chunks, BuildConfig config) {
 	ChunkWadHeader header = {0};
 	for(s32 i = 0; i < ARRAY_SIZE(header.chunks); i++) {
 		if(chunks.has_child(i)) {
@@ -215,10 +215,10 @@ static ChunkWadHeader pack_chunks(OutputStream& dest, const CollectionAsset& chu
 				ChunkHeader chunk_header = {-1, -1};
 				static_cast<OutputStream&>(chunk_dest).write(chunk_header);
 				if(chunk.has_tfrags()) {
-					chunk_header.tfrags = pack_compressed_asset<ByteRange>(dest, chunk.get_tfrags(), game, 0x10, "chnktfrag").offset;
+					chunk_header.tfrags = pack_compressed_asset<ByteRange>(dest, chunk.get_tfrags(), config, 0x10, "chnktfrag").offset;
 				}
 				if(chunk.has_collision()) {
-					chunk_header.collision = pack_compressed_asset<ByteRange>(dest, chunk.get_collision(), game, 0x10, "chunkcoll").offset;
+					chunk_header.collision = pack_compressed_asset<ByteRange>(dest, chunk.get_collision(), config, 0x10, "chunkcoll").offset;
 				}
 				dest.write(chunk_header_ofs, chunk_header);
 				header.chunks[i] = SectorRange::from_bytes(chunk_header_ofs, dest.tell() - chunk_header_ofs);
@@ -229,7 +229,7 @@ static ChunkWadHeader pack_chunks(OutputStream& dest, const CollectionAsset& chu
 		if(chunks.has_child(i)) {
 			const ChunkAsset& chunk = chunks.get_child(i).as<ChunkAsset>();
 			if(chunk.has_sound_bank()) {
-				header.sound_banks[i] = pack_asset_sa<SectorRange>(dest, chunk.get_sound_bank(), game);
+				header.sound_banks[i] = pack_asset_sa<SectorRange>(dest, chunk.get_sound_bank(), config);
 			}
 		}
 	}
@@ -242,7 +242,7 @@ packed_struct(MissionHeader,
 	/* 0x8 */ ByteRange classes;
 )
 
-static void unpack_missions(CollectionAsset& dest, InputStream& file, const MissionWadHeader& ranges, Game game) {
+static void unpack_missions(CollectionAsset& dest, InputStream& file, const MissionWadHeader& ranges, BuildConfig config) {
 	for(s32 i = 0; i < ARRAY_SIZE(ranges.data); i++) {
 		MissionHeader header = {0};
 		if(!ranges.data[i].empty()) {
@@ -251,14 +251,14 @@ static void unpack_missions(CollectionAsset& dest, InputStream& file, const Miss
 		if(!header.instances.empty() || !header.classes.empty() || !ranges.sound_banks[i].empty()) {
 			std::string path = stringf("missions/%d/mission%d.asset", i, i);
 			MissionAsset& mission = dest.foreign_child<MissionAsset>(path, i);
-			unpack_compressed_asset(mission.instances(), file, header.instances, game);
-			unpack_compressed_asset(mission.classes(), file, header.classes, game);
-			unpack_asset(mission.sound_bank(), file, ranges.sound_banks[i], game);
+			unpack_compressed_asset(mission.instances(), file, header.instances, config);
+			unpack_compressed_asset(mission.classes(), file, header.classes, config);
+			unpack_asset(mission.sound_bank(), file, ranges.sound_banks[i], config);
 		}
 	}
 }
 
-static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& dest, const CollectionAsset& missions, Game game) {
+static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& dest, const CollectionAsset& missions, BuildConfig config) {
 	MissionWadHeader header;
 	MaxMissionSizes max_sizes;
 	max_sizes.max_instances_size = 0;
@@ -267,7 +267,7 @@ static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& 
 		if(missions.has_child(i)) {
 			const MissionAsset& mission = missions.get_child(i).as<MissionAsset>();
 			if(mission.has_instances()) {
-				header.instances[i] = pack_asset_sa<SectorRange>(dest, mission.get_instances(), game);
+				header.instances[i] = pack_asset_sa<SectorRange>(dest, mission.get_instances(), config);
 			}
 		}
 	}
@@ -281,7 +281,7 @@ static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& 
 			if(mission.has_instances()) {
 				std::vector<u8> bytes;
 				MemoryOutputStream stream(bytes);
-				pack_asset<ByteRange>(stream, mission.get_instances(), game, 0x10);
+				pack_asset<ByteRange>(stream, mission.get_instances(), config, 0x10);
 				
 				max_sizes.max_instances_size = std::max(max_sizes.max_instances_size, (s32) bytes.size());
 				
@@ -297,7 +297,7 @@ static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& 
 			if(mission.has_classes()) {
 				std::vector<u8> bytes;
 				MemoryOutputStream stream(bytes);
-				pack_asset<ByteRange>(stream, mission.get_classes(), game, 0x10);
+				pack_asset<ByteRange>(stream, mission.get_classes(), config, 0x10);
 				
 				max_sizes.max_classes_size = std::max(max_sizes.max_classes_size, (s32) bytes.size());
 				
@@ -326,7 +326,7 @@ static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& 
 		if(missions.has_child(i)) {
 			const MissionAsset& mission = missions.get_child(i).as<MissionAsset>();
 			if(mission.has_sound_bank()) {
-				header.sound_banks[i] = pack_asset_sa<SectorRange>(dest, mission.get_sound_bank(), game);
+				header.sound_banks[i] = pack_asset_sa<SectorRange>(dest, mission.get_sound_bank(), config);
 			}
 		}
 	}

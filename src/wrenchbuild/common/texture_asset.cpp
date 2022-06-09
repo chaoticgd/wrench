@@ -20,11 +20,11 @@
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 
-static void unpack_texture_asset(TextureAsset& dest, InputStream& src, Game game, const char* hint);
-static void pack_texture_asset(OutputStream& dest, const TextureAsset& src, Game game, const char* hint);
+static void unpack_texture_asset(TextureAsset& dest, InputStream& src, BuildConfig config, const char* hint);
+static void pack_texture_asset(OutputStream& dest, const TextureAsset& src, BuildConfig config, const char* hint);
 static Texture unpack_pif(InputStream& src);
 static void pack_pif(OutputStream& dest, Texture& texture);
-static bool test_texture_asset(std::vector<u8>& original, std::vector<u8>& repacked, Game game, const char* hint);
+static bool test_texture_asset(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint);
 
 on_load(Texture, []() {
 	TextureAsset::funcs.unpack_rac1 = wrap_hint_unpacker_func<TextureAsset>(unpack_texture_asset);
@@ -46,7 +46,7 @@ packed_struct(RgbaTextureHeader,
 	u32 pad[2];
 )
 
-static void unpack_texture_asset(TextureAsset& dest, InputStream& src, Game game, const char* hint) {
+static void unpack_texture_asset(TextureAsset& dest, InputStream& src, BuildConfig config, const char* hint) {
 	Texture texture;
 	
 	const char* type = next_hint(&hint);
@@ -77,7 +77,7 @@ static void unpack_texture_asset(TextureAsset& dest, InputStream& src, Game game
 	dest.set_src(ref);
 }
 
-static void pack_texture_asset(OutputStream& dest, const TextureAsset& src, Game game, const char* hint) {
+static void pack_texture_asset(OutputStream& dest, const TextureAsset& src, BuildConfig config, const char* hint) {
 	auto stream = src.file().open_binary_file_for_reading(src.src());
 	verify(stream.get(), "Failed to open PNG file.");
 	Opt<Texture> texture = read_png(*stream);
@@ -207,7 +207,7 @@ static void pack_pif(OutputStream& dest, Texture& texture) {
 	dest.write(header_ofs, header);
 }
 
-static bool test_texture_asset(std::vector<u8>& original, std::vector<u8>& repacked, Game game, const char* hint) {
+static bool test_texture_asset(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint) {
 	const char* type = next_hint(&hint);
 	if(strcmp(type, "pif") == 0) {
 		// We don't know what this field in the PIF header is and it doesn't

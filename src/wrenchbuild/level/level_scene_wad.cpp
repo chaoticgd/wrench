@@ -43,8 +43,8 @@ packed_struct(DlLevelSceneWadHeader,
 )
 
 static SectorRange range(Sector32 offset, const std::set<s64>& end_sectors);
-static void unpack_dl_level_scene_wad(LevelSceneWadAsset& dest, const DlLevelSceneWadHeader& header, InputStream& src, Game game);
-static void pack_dl_level_scene_wad(OutputStream& dest, DlLevelSceneWadHeader& header, const LevelSceneWadAsset& src, Game game);
+static void unpack_dl_level_scene_wad(LevelSceneWadAsset& dest, const DlLevelSceneWadHeader& header, InputStream& src, BuildConfig config);
+static void pack_dl_level_scene_wad(OutputStream& dest, DlLevelSceneWadHeader& header, const LevelSceneWadAsset& src, BuildConfig config);
 
 on_load(LevelScene, []() {
 	LevelSceneWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<LevelSceneWadAsset, DlLevelSceneWadHeader>(unpack_dl_level_scene_wad);
@@ -52,7 +52,7 @@ on_load(LevelScene, []() {
 	LevelSceneWadAsset::funcs.pack_dl = wrap_wad_packer_func<LevelSceneWadAsset, DlLevelSceneWadHeader>(pack_dl_level_scene_wad);
 })
 
-static void unpack_dl_level_scene_wad(LevelSceneWadAsset& dest, const DlLevelSceneWadHeader& header, InputStream& src, Game game) {
+static void unpack_dl_level_scene_wad(LevelSceneWadAsset& dest, const DlLevelSceneWadHeader& header, InputStream& src, BuildConfig config) {
 	std::set<s64> end_sectors;
 	for(const DlSceneHeader& scene : header.scenes) {
 		end_sectors.insert(scene.speech_english_left.sectors);
@@ -77,46 +77,46 @@ static void unpack_dl_level_scene_wad(LevelSceneWadAsset& dest, const DlLevelSce
 	for(s32 i = 0; i < ARRAY_SIZE(header.scenes); i++) {
 		SceneAsset& scene = scenes.foreign_child<SceneAsset>(stringf("scenes/%d/%d", i, i), i);
 		const DlSceneHeader& scene_header = header.scenes[i];
-		unpack_asset(scene.speech_english_left(), src, range(scene_header.speech_english_left, end_sectors), game);
-		unpack_asset(scene.speech_english_right(), src, range(scene_header.speech_english_right, end_sectors), game);
-		unpack_asset(scene.subtitles(), src, scene_header.subtitles, game);
-		unpack_asset(scene.speech_french_left(), src, range(scene_header.speech_french_left, end_sectors), game);
-		unpack_asset(scene.speech_french_right(), src, range(scene_header.speech_french_right, end_sectors), game);
-		unpack_asset(scene.speech_german_left(), src, range(scene_header.speech_german_left, end_sectors), game);
-		unpack_asset(scene.speech_german_right(), src, range(scene_header.speech_german_right, end_sectors), game);
-		unpack_asset(scene.speech_spanish_left(), src, range(scene_header.speech_spanish_left, end_sectors), game);
-		unpack_asset(scene.speech_spanish_right(), src, range(scene_header.speech_spanish_right, end_sectors), game);
-		unpack_asset(scene.speech_italian_left(), src, range(scene_header.speech_italian_left, end_sectors), game);
-		unpack_asset(scene.speech_italian_right(), src, range(scene_header.speech_italian_right, end_sectors), game);
-		unpack_compressed_asset(scene.moby_load(), src, scene_header.moby_load, game);
+		unpack_asset(scene.speech_english_left(), src, range(scene_header.speech_english_left, end_sectors), config);
+		unpack_asset(scene.speech_english_right(), src, range(scene_header.speech_english_right, end_sectors), config);
+		unpack_asset(scene.subtitles(), src, scene_header.subtitles, config);
+		unpack_asset(scene.speech_french_left(), src, range(scene_header.speech_french_left, end_sectors), config);
+		unpack_asset(scene.speech_french_right(), src, range(scene_header.speech_french_right, end_sectors), config);
+		unpack_asset(scene.speech_german_left(), src, range(scene_header.speech_german_left, end_sectors), config);
+		unpack_asset(scene.speech_german_right(), src, range(scene_header.speech_german_right, end_sectors), config);
+		unpack_asset(scene.speech_spanish_left(), src, range(scene_header.speech_spanish_left, end_sectors), config);
+		unpack_asset(scene.speech_spanish_right(), src, range(scene_header.speech_spanish_right, end_sectors), config);
+		unpack_asset(scene.speech_italian_left(), src, range(scene_header.speech_italian_left, end_sectors), config);
+		unpack_asset(scene.speech_italian_right(), src, range(scene_header.speech_italian_right, end_sectors), config);
+		unpack_compressed_asset(scene.moby_load(), src, scene_header.moby_load, config);
 		CollectionAsset& chunks = scene.chunks(SWITCH_FILES);
 		for(s32 j = 0; j < ARRAY_SIZE(scene_header.chunks); j++) {
 			if(scene_header.chunks[j].sectors > 0) {
-				unpack_compressed_asset(chunks.child<BinaryAsset>(j), src, range(scene_header.chunks[j], end_sectors), game);
+				unpack_compressed_asset(chunks.child<BinaryAsset>(j), src, range(scene_header.chunks[j], end_sectors), config);
 			}
 		}
 	}
 }
 
-static void pack_dl_level_scene_wad(OutputStream& dest, DlLevelSceneWadHeader& header, const LevelSceneWadAsset& src, Game game) {
+static void pack_dl_level_scene_wad(OutputStream& dest, DlLevelSceneWadHeader& header, const LevelSceneWadAsset& src, BuildConfig config) {
 	const CollectionAsset& scenes = src.get_scenes();
 	for(s32 i = 0; i < ARRAY_SIZE(header.scenes); i++) {
 		if(scenes.has_child(i)) {
 			DlSceneHeader& scene_header = header.scenes[i];
 			const SceneAsset& scene = scenes.get_child(i).as<SceneAsset>();
-			scene_header.speech_english_left = pack_asset_sa<Sector32>(dest, scene.get_speech_english_left(), game);
-			scene_header.speech_english_right = pack_asset_sa<Sector32>(dest, scene.get_speech_english_right(), game);
-			scene_header.subtitles = pack_asset_sa<SectorRange>(dest, scene.get_subtitles(), game);
-			scene_header.speech_french_left = pack_asset_sa<Sector32>(dest, scene.get_speech_french_left(), game);
-			scene_header.speech_french_right = pack_asset_sa<Sector32>(dest, scene.get_speech_french_right(), game);
-			scene_header.speech_german_left = pack_asset_sa<Sector32>(dest, scene.get_speech_german_left(), game);
-			scene_header.speech_german_right = pack_asset_sa<Sector32>(dest, scene.get_speech_german_right(), game);
-			scene_header.speech_spanish_left = pack_asset_sa<Sector32>(dest, scene.get_speech_spanish_left(), game);
-			scene_header.speech_spanish_right = pack_asset_sa<Sector32>(dest, scene.get_speech_spanish_right(), game);
-			scene_header.speech_italian_left = pack_asset_sa<Sector32>(dest, scene.get_speech_italian_left(), game);
-			scene_header.speech_italian_right = pack_asset_sa<Sector32>(dest, scene.get_speech_italian_right(), game);
-			scene_header.moby_load = pack_compressed_asset_sa<SectorRange>(dest, scene.get_moby_load(), game, "moby_load");
-			pack_compressed_assets_sa(dest, ARRAY_PAIR(scene_header.chunks), scene.get_chunks(), game, "chunks");
+			scene_header.speech_english_left = pack_asset_sa<Sector32>(dest, scene.get_speech_english_left(), config);
+			scene_header.speech_english_right = pack_asset_sa<Sector32>(dest, scene.get_speech_english_right(), config);
+			scene_header.subtitles = pack_asset_sa<SectorRange>(dest, scene.get_subtitles(), config);
+			scene_header.speech_french_left = pack_asset_sa<Sector32>(dest, scene.get_speech_french_left(), config);
+			scene_header.speech_french_right = pack_asset_sa<Sector32>(dest, scene.get_speech_french_right(), config);
+			scene_header.speech_german_left = pack_asset_sa<Sector32>(dest, scene.get_speech_german_left(), config);
+			scene_header.speech_german_right = pack_asset_sa<Sector32>(dest, scene.get_speech_german_right(), config);
+			scene_header.speech_spanish_left = pack_asset_sa<Sector32>(dest, scene.get_speech_spanish_left(), config);
+			scene_header.speech_spanish_right = pack_asset_sa<Sector32>(dest, scene.get_speech_spanish_right(), config);
+			scene_header.speech_italian_left = pack_asset_sa<Sector32>(dest, scene.get_speech_italian_left(), config);
+			scene_header.speech_italian_right = pack_asset_sa<Sector32>(dest, scene.get_speech_italian_right(), config);
+			scene_header.moby_load = pack_compressed_asset_sa<SectorRange>(dest, scene.get_moby_load(), config, "moby_load");
+			pack_compressed_assets_sa(dest, ARRAY_PAIR(scene_header.chunks), scene.get_chunks(), config, "chunks");
 		}
 	}
 }

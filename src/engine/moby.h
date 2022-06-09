@@ -22,6 +22,7 @@
 #include <core/vif.h>
 #include <core/buffer.h>
 #include <core/collada.h>
+#include <core/build_config.h>
 #include <engine/basic_types.h>
 #include <engine/moby_mesh.h>
 #include <engine/moby_animation.h>

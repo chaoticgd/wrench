@@ -26,6 +26,7 @@
 #include "instance.h"
 #include "texture.h"
 #include "filesystem.h"
+#include <core/build_config.h>
 
 struct PropertiesFirstPart {
 	Rgb96 background_colour;
@@ -420,7 +421,8 @@ struct PvarType {
 	}
 };
 
-struct LevelWad : Wad {
+struct LevelWad {
+	Game game;
 	s32 level_number;
 	std::optional<s32> reverb;
 	// Primary lump
@@ -454,12 +456,6 @@ struct LevelWad : Wad {
 	std::map<s32, Chunk> chunks;
 	std::map<s32, Mission> missions;
 };
-
-Opt<Game> game_from_string(std::string str);
-std::unique_ptr<Wad> read_wad_json(fs::path src_path);
-void write_wad_json(fs::path dest_dir, Wad* base);
-LevelWad read_level_wad_json(const Json& json, const fs::path& src_dir, Game game);
-const char* write_level_wad_json(Json& json, const fs::path& dest_dir, LevelWad& wad);
 
 template <typename Callback, typename InstanceVec>
 static void for_each_instance_of_type_with(u32 required_components_mask, const InstanceVec& instances, Callback callback) {

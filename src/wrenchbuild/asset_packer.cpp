@@ -25,12 +25,10 @@ s32 g_asset_packer_num_assets_processed = 0;
 bool g_asset_packer_dry_run = false;
 
 on_load(Packer, []() {BuildAsset::funcs.pack_rac1 = wrap_iso_packer_func<BuildAsset>(pack_iso, pack_asset_impl);
-	BuildAsset::funcs.pack_rac2 = wrap_iso_packer_func<BuildAsset>(pack_iso, pack_asset_impl);
-	BuildAsset::funcs.pack_rac3 = wrap_iso_packer_func<BuildAsset>(pack_iso, pack_asset_impl);
-	BuildAsset::funcs.pack_dl = wrap_iso_packer_func<BuildAsset>(pack_iso, pack_asset_impl);
+	BuildAsset::funcs.pack_rac1 = wrap_iso_packer_func<BuildAsset>(pack_iso, pack_asset_impl);
 })
 
-void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const Asset& src, Game game, const char* hint) {
+void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const Asset& src, BuildConfig config, const char* hint) {
 	// Placeholder assets come in place of that actual asset when its type isn't
 	// specified, and they're not packable so we need to skip them.
 	const Asset* asset = &src.highest_precedence();
@@ -38,11 +36,11 @@ void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_
 		asset = asset->lower_precedence();
 	}
 	
+	std::string type = asset_type_to_string(asset->type());
+	for(char& c : type) c = tolower(c);
 	std::string reference = asset_reference_to_string(asset->reference());
 	
 	if(!g_asset_packer_dry_run) {
-		std::string type = asset_type_to_string(asset->type());
-		for(char& c : type) c = tolower(c);
 		s32 completion_percentage = (s32) ((g_asset_packer_num_assets_processed * 100.f) / g_asset_packer_max_assets_processed);
 		if(strlen(hint) > 0) {
 			printf("[%3d%%] \033[32mPacking %s asset %s (%s)\033[0m\n", completion_percentage, type.c_str(), reference.c_str(), hint);
@@ -52,18 +50,22 @@ void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_
 	}
 	
 	AssetPackerFunc* pack_func = nullptr;
-	switch(game) {
-		case Game::RAC: pack_func = asset->funcs.pack_rac1; break;
-		case Game::GC: pack_func = asset->funcs.pack_rac2; break;
-		case Game::UYA: pack_func = asset->funcs.pack_rac3; break;
-		case Game::DL: pack_func = asset->funcs.pack_dl; break;
+	if(asset->type() == BuildAsset::ASSET_TYPE) {
+		pack_func = asset->funcs.pack_rac1;
+	} else {
+		switch(config.game()) {
+			case Game::RAC: pack_func = asset->funcs.pack_rac1; break;
+			case Game::GC: pack_func = asset->funcs.pack_rac2; break;
+			case Game::UYA: pack_func = asset->funcs.pack_rac3; break;
+			case Game::DL: pack_func = asset->funcs.pack_dl; break;
+		}
 	}
 	
 	dest.seek(dest.size());
 	SubOutputStream sub_dest(dest, dest.tell());
 	
-	verify(pack_func, "Tried to pack nonpackable asset '%s'.", reference.c_str());
-	(*pack_func)(sub_dest, header_dest, time_dest, *asset, game, hint);
+	verify(pack_func, "Tried to pack nonpackable %s asset '%s'.", type.c_str(), reference.c_str());
+	(*pack_func)(sub_dest, header_dest, time_dest, *asset, config, hint);
 	
 	dest.seek(dest.size());
 	

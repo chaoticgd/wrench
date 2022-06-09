@@ -19,6 +19,7 @@
 #ifndef ASSETMGR_ASSET_DISPATCH_H
 #define ASSETMGR_ASSET_DISPATCH_H
 
+#include <core/build_config.h>
 #include <assetmgr/asset_util.h>
 
 class Asset;
@@ -45,27 +46,27 @@ class Asset;
 
 // *****************************************************************************
 
-using AssetUnpackerFunc = std::function<void(Asset& dest, InputStream& src, Game game, const char* hint, s64 header_offset)>;
+using AssetUnpackerFunc = std::function<void(Asset& dest, InputStream& src, BuildConfig config, const char* hint, s64 header_offset)>;
 
 template <typename ThisAsset, typename UnpackerFunc>
 AssetUnpackerFunc* wrap_unpacker_func(UnpackerFunc func) {
-	return new AssetUnpackerFunc([func](Asset& dest, InputStream& src, Game game, const char* hint, s64 header_offset) {
-		func(static_cast<ThisAsset&>(dest), src, game);
+	return new AssetUnpackerFunc([func](Asset& dest, InputStream& src, BuildConfig config, const char* hint, s64 header_offset) {
+		func(static_cast<ThisAsset&>(dest), src, config);
 	});
 }
 
 template <typename ThisAsset, typename UnpackerFunc>
 AssetUnpackerFunc* wrap_hint_unpacker_func(UnpackerFunc func) {
-	return new AssetUnpackerFunc([func](Asset& dest, InputStream& src, Game game, const char* hint, s64 header_offset) {
-		func(static_cast<ThisAsset&>(dest), src, game, hint);
+	return new AssetUnpackerFunc([func](Asset& dest, InputStream& src, BuildConfig config, const char* hint, s64 header_offset) {
+		func(static_cast<ThisAsset&>(dest), src, config, hint);
 	});
 }
 
 template <typename ThisAsset, typename WadHeader, typename UnpackerFunc>
 AssetUnpackerFunc* wrap_wad_unpacker_func(UnpackerFunc func) {
-	return new AssetUnpackerFunc([func](Asset& dest, InputStream& src, Game game, const char* hint, s64 header_offset) {
+	return new AssetUnpackerFunc([func](Asset& dest, InputStream& src, BuildConfig config, const char* hint, s64 header_offset) {
 		WadHeader header;
-		if(game == Game::RAC) {
+		if(config.game() == Game::RAC) {
 			// The packed R&C1 headers don't have a header_size and sector field
 			// but we want to read them using a version of the header that
 			// starts with those fields so we can write them out like that, so
@@ -74,25 +75,25 @@ AssetUnpackerFunc* wrap_wad_unpacker_func(UnpackerFunc func) {
 		} else {
 			header = src.read<WadHeader>(header_offset);
 		}
-		func(static_cast<ThisAsset&>(dest), header, src, game);
+		func(static_cast<ThisAsset&>(dest), header, src, config);
 	});
 }
 
 template <typename ThisAsset, typename UnpackerFunc>
 AssetUnpackerFunc* wrap_iso_unpacker_func(UnpackerFunc func, AssetUnpackerFunc unpack) {
-	return new AssetUnpackerFunc([func, unpack](Asset& dest, InputStream& src, Game game, const char* hint, s64 header_offset) {
-		func(static_cast<ThisAsset&>(dest), src, unpack);
+	return new AssetUnpackerFunc([func, unpack](Asset& dest, InputStream& src, BuildConfig config, const char* hint, s64 header_offset) {
+		func(static_cast<ThisAsset&>(dest), src, config, unpack);
 	});
 }
 
 // *****************************************************************************
 
-using AssetPackerFunc = std::function<void((OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const Asset& src, Game game, const char* hint))>;
+using AssetPackerFunc = std::function<void((OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const Asset& src, BuildConfig config, const char* hint))>;
 
 template <typename ThisAsset, typename PackerFunc>
 AssetPackerFunc* wrap_packer_func(PackerFunc func) {
-	return new AssetPackerFunc([func](OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const Asset& src, Game game, const char* hint) {
-		func(dest, static_cast<const ThisAsset&>(src), game);
+	return new AssetPackerFunc([func](OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const Asset& src, BuildConfig config, const char* hint) {
+		func(dest, static_cast<const ThisAsset&>(src), config);
 		if(time_dest) {
 			*time_dest = fs::file_time_type::clock::now();
 		}
@@ -101,8 +102,8 @@ AssetPackerFunc* wrap_packer_func(PackerFunc func) {
 
 template <typename ThisAsset, typename PackerFunc>
 AssetPackerFunc* wrap_hint_packer_func(PackerFunc func) {
-	return new AssetPackerFunc([func](OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const Asset& src, Game game, const char* hint) {
-		func(dest, static_cast<const ThisAsset&>(src), game, hint);
+	return new AssetPackerFunc([func](OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const Asset& src, BuildConfig config, const char* hint) {
+		func(dest, static_cast<const ThisAsset&>(src), config, hint);
 		if(time_dest) {
 			*time_dest = fs::file_time_type::clock::now();
 		}
@@ -111,12 +112,12 @@ AssetPackerFunc* wrap_hint_packer_func(PackerFunc func) {
 
 template <typename ThisAsset, typename WadHeader, typename PackerFunc>
 AssetPackerFunc* wrap_wad_packer_func(PackerFunc func) {
-	return new AssetPackerFunc([func](OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const Asset& src, Game game, const char* hint) {
+	return new AssetPackerFunc([func](OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const Asset& src, BuildConfig config, const char* hint) {
 		WadHeader header = {0};
 		header.header_size = sizeof(WadHeader);
 		dest.write(header);
 		dest.pad(SECTOR_SIZE, 0);
-		func(dest, header, static_cast<const ThisAsset&>(src), game);
+		func(dest, header, static_cast<const ThisAsset&>(src), config);
 		dest.write(0, header);
 		if(header_dest) {
 			OutBuffer(*header_dest).write(0, header);
@@ -129,12 +130,12 @@ AssetPackerFunc* wrap_wad_packer_func(PackerFunc func) {
 
 template <typename ThisAsset, typename WadHeader, typename PackerFunc>
 AssetPackerFunc* wrap_wad_hint_packer_func(PackerFunc func) {
-	return new AssetPackerFunc([func](OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const Asset& src, Game game, const char* hint) {
+	return new AssetPackerFunc([func](OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const Asset& src, BuildConfig config, const char* hint) {
 		WadHeader header = {0};
 		header.header_size = sizeof(WadHeader);
 		dest.write(header);
 		dest.pad(SECTOR_SIZE, 0);
-		func(dest, header, static_cast<const ThisAsset&>(src), game, hint);
+		func(dest, header, static_cast<const ThisAsset&>(src), config, hint);
 		dest.write(0, header);
 		if(header_dest) {
 			OutBuffer(*header_dest).write(0, header);
@@ -147,15 +148,15 @@ AssetPackerFunc* wrap_wad_hint_packer_func(PackerFunc func) {
 
 template <typename ThisAsset, typename PackerFunc>
 AssetPackerFunc* wrap_bin_packer_func(PackerFunc func) {
-	return new AssetPackerFunc([func](OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const Asset& src, Game game, const char* hint) {
+	return new AssetPackerFunc([func](OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const Asset& src, BuildConfig config, const char* hint) {
 		func(dest, header_dest, time_dest, static_cast<const ThisAsset&>(src));
 	});
 }
 
 template <typename ThisAsset, typename PackerFunc>
 AssetPackerFunc* wrap_iso_packer_func(PackerFunc func, AssetPackerFunc pack) {
-	return new AssetPackerFunc([func, pack](OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const Asset& src, Game game, const char* hint) {
-		func(dest, static_cast<const ThisAsset&>(src), game, hint, pack);
+	return new AssetPackerFunc([func, pack](OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const Asset& src, BuildConfig config, const char* hint) {
+		func(dest, static_cast<const ThisAsset&>(src), config, hint, pack);
 		if(time_dest) {
 			*time_dest = fs::file_time_type::clock::now();
 		}
@@ -164,7 +165,7 @@ AssetPackerFunc* wrap_iso_packer_func(PackerFunc func, AssetPackerFunc pack) {
 
 // *****************************************************************************
 
-using AssetTestFunc = std::function<bool(std::vector<u8>& original, std::vector<u8>& repacked, Game game, const char* hint)>;
+using AssetTestFunc = std::function<bool(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint)>;
 
 // *****************************************************************************
 

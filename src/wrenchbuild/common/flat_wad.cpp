@@ -20,10 +20,10 @@
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 
-static void unpack_flat_wad_asset(FlatWadAsset& dest, InputStream& src, Game game);
-static bool unpack_image(FlatWadAsset& dest, InputStream& src, s32 offset, Game game);
+static void unpack_flat_wad_asset(FlatWadAsset& dest, InputStream& src, BuildConfig config);
+static bool unpack_image(FlatWadAsset& dest, InputStream& src, s32 offset, BuildConfig config);
 static bool is_common_texture_size(s32 number);
-static void pack_flat_wad_asset(OutputStream& dest, const FlatWadAsset& src, Game game);
+static void pack_flat_wad_asset(OutputStream& dest, const FlatWadAsset& src, BuildConfig config);
 
 on_load(FlatWad, []() {
 	FlatWadAsset::funcs.unpack_rac1 = wrap_unpacker_func<FlatWadAsset>(unpack_flat_wad_asset);
@@ -37,19 +37,19 @@ on_load(FlatWad, []() {
 	FlatWadAsset::funcs.pack_dl = wrap_packer_func<FlatWadAsset>(pack_flat_wad_asset);
 })
 
-static void unpack_flat_wad_asset(FlatWadAsset& dest, InputStream& src, Game game) {
+static void unpack_flat_wad_asset(FlatWadAsset& dest, InputStream& src, BuildConfig config) {
 	s32 header_size = src.read<s32>(0);
 	std::vector<SectorRange> ranges = src.read_multiple<SectorRange>(0x8, header_size / 0x8);
 	for(size_t i = 0; i < ranges.size(); i++) {
 		s32 offset = 0x8 + i * 0x8;
 		SubInputStream stream(src, ranges[i].bytes());
-		if(!unpack_image(dest, stream, offset, game)) {
-			unpack_asset(dest.child<BinaryAsset>(stringf("%04d_%04x", offset, offset).c_str()), src, ranges[i], game);
+		if(!unpack_image(dest, stream, offset, config)) {
+			unpack_asset(dest.child<BinaryAsset>(stringf("%04d_%04x", offset, offset).c_str()), src, ranges[i], config);
 		}
 	}
 }
 
-static bool unpack_image(FlatWadAsset& dest, InputStream& src, s32 offset, Game game) {
+static bool unpack_image(FlatWadAsset& dest, InputStream& src, s32 offset, BuildConfig config) {
 	if(src.size() < 8) {
 		return false;
 	}
@@ -62,14 +62,14 @@ static bool unpack_image(FlatWadAsset& dest, InputStream& src, s32 offset, Game 
 		std::vector<u8> compressed_bytes = src.read_multiple<u8>(0, src.size());
 		decompress_wad(bytes, compressed_bytes);
 		MemoryInputStream stream(bytes);
-		if(!unpack_image(dest, stream, offset, game)) {
-			unpack_asset(dest.child<BinaryAsset>(stringf("%04d_%04x_dcmp", offset, offset).c_str()), stream, ByteRange{0, (s32) stream.size()}, game);
+		if(!unpack_image(dest, stream, offset, config)) {
+			unpack_asset(dest.child<BinaryAsset>(stringf("%04d_%04x_dcmp", offset, offset).c_str()), stream, ByteRange{0, (s32) stream.size()}, config);
 		}
 		return true;
 	}
 	
 	if(memcmp(header, "2FIP", 4) == 0) {
-		unpack_asset(dest.child<TextureAsset>(stringf("%04d_%04x_pif", offset, offset).c_str()), src, ByteRange{0, (s32) src.size()}, game, FMT_TEXTURE_PIF8);
+		unpack_asset(dest.child<TextureAsset>(stringf("%04d_%04x_pif", offset, offset).c_str()), src, ByteRange{0, (s32) src.size()}, config, FMT_TEXTURE_PIF8);
 		return true;
 	}
 	
@@ -77,7 +77,7 @@ static bool unpack_image(FlatWadAsset& dest, InputStream& src, s32 offset, Game 
 	s32 height = *(s32*) &header[4];
 	bool common_size = is_common_texture_size(width) || is_common_texture_size(height);
 	if(width > 0 && height > 0 && common_size && src.size() >= 0x10 + width * height * 4) {
-		unpack_asset(dest.child<TextureAsset>(stringf("%04d_%04x_rgba", offset, offset).c_str()), src, ByteRange{0, (s32) src.size()}, game, FMT_TEXTURE_RGBA);
+		unpack_asset(dest.child<TextureAsset>(stringf("%04d_%04x_rgba", offset, offset).c_str()), src, ByteRange{0, (s32) src.size()}, config, FMT_TEXTURE_RGBA);
 		return true;
 	}
 	
@@ -93,7 +93,7 @@ static bool is_common_texture_size(s32 number) {
 	return false;
 }
 
-static void pack_flat_wad_asset(OutputStream& dest, const FlatWadAsset& src, Game game) {
+static void pack_flat_wad_asset(OutputStream& dest, const FlatWadAsset& src, BuildConfig config) {
 	s32 header_size = 0;
 	src.for_each_logical_child([&](const Asset& child) {
 		header_size = std::max(header_size, (s32) parse_number(child.tag()) + 0x8);
@@ -104,7 +104,7 @@ static void pack_flat_wad_asset(OutputStream& dest, const FlatWadAsset& src, Gam
 	std::vector<u8> header(header_size);
 	src.for_each_logical_child([&](const Asset& child) {
 		size_t offset = parse_number(child.tag());
-		*(SectorRange*) &header[offset] = pack_asset_sa<SectorRange>(dest, child, game);
+		*(SectorRange*) &header[offset] = pack_asset_sa<SectorRange>(dest, child, config);
 	});
 	
 	dest.seek(0);

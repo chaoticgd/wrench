@@ -22,10 +22,6 @@
 #include <core/util.h>
 #include <iso/iso_filesystem.h>
 
-enum class Region {
-	US, EU, JAPAN
-};
-
 struct Release {
 	std::string elf_name;
 	Game game = Game::UNKNOWN;

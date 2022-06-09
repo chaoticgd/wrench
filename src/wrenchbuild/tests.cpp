@@ -79,29 +79,29 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 	printf("[%3d%%] \033[34mRunning test with %s asset %s\033[0m\n", percentage, type_name, ref.c_str());
 	
 	std::string hint = binary.format_hint();
-	Game game = (Game) binary.game();
+	BuildConfig config(binary.game(), binary.region());
 	
 	AssetDispatchTable* dispatch = nullptr;
 	
 	std::vector<u8> dest;
 	if(type == MobyClassAsset::ASSET_TYPE) {
-		MobyClassData moby = read_moby_class(src, game);
-		write_moby_class(dest, moby, game);
+		MobyClassData moby = read_moby_class(src, config.game());
+		write_moby_class(dest, moby, config.game());
 		
 		dispatch = &MobyClassAsset::funcs;
 	} else {
 		AssetBank& temp = forest.mount<MemoryAssetBank>();
 		AssetFile& file = temp.asset_file("test.asset");
 		Asset& asset = file.root().physical_child(type, "test");
-		unpack_asset_impl(asset, src_stream, game, hint.c_str());
+		unpack_asset_impl(asset, src_stream, config, hint.c_str());
 		
 		MemoryOutputStream dest_stream(dest);
-		pack_asset_impl(dest_stream, nullptr, nullptr, asset, game, hint.c_str());
+		pack_asset_impl(dest_stream, nullptr, nullptr, asset, config, hint.c_str());
 		
 		dispatch = &asset.funcs;
 	}
 	
-	if(!dispatch->test || !(*dispatch->test)(src, dest, game, hint.c_str())) {
+	if(!dispatch->test || !(*dispatch->test)(src, dest, config, hint.c_str())) {
 		if(!diff_buffers(src, dest, 0, "", 0)) {
 			exit(1);
 		}

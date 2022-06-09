@@ -25,6 +25,6 @@
 #include <assetmgr/asset_types.h>
 #include <iso/table_of_contents.h>
 
-void unpack_iso(BuildAsset& dest, InputStream& src, AssetUnpackerFunc unpack);
+void unpack_iso(BuildAsset& dest, InputStream& src, BuildConfig config, AssetUnpackerFunc unpack);
 
 #endif

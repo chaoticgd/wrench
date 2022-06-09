@@ -19,8 +19,8 @@
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 
-static void unpack_boot_wad(BootWadAsset& dest, InputStream& src, Game game);
-static void pack_boot_wad(OutputStream& dest, const BootWadAsset& src, Game game);
+static void unpack_boot_wad(BootWadAsset& dest, InputStream& src, BuildConfig config);
+static void pack_boot_wad(OutputStream& dest, const BootWadAsset& src, BuildConfig config);
 
 on_load(Boot, []() {
 	BootWadAsset::funcs.unpack_rac3 = wrap_unpacker_func<BootWadAsset>(unpack_boot_wad);
@@ -41,42 +41,42 @@ packed_struct(DlBootHeader,
 	/* 0x78 */ ByteRange sram;
 )
 
-static void unpack_boot_wad(BootWadAsset& dest, InputStream& src, Game game) {
+static void unpack_boot_wad(BootWadAsset& dest, InputStream& src, BuildConfig config) {
 	auto header = src.read<DlBootHeader>(0);
 	
-	unpack_compressed_asset(dest.english(), src, header.english, game);
-	unpack_compressed_asset(dest.french(), src, header.french, game);
-	unpack_compressed_asset(dest.german(), src, header.german, game);
-	unpack_compressed_asset(dest.spanish(), src, header.spanish, game);
-	unpack_compressed_asset(dest.italian(), src, header.italian, game);
-	unpack_asset(dest.hud().child<BinaryAsset>(0), src, header.hudwad[0], game);
+	unpack_compressed_asset(dest.english(), src, header.english, config);
+	unpack_compressed_asset(dest.french(), src, header.french, config);
+	unpack_compressed_asset(dest.german(), src, header.german, config);
+	unpack_compressed_asset(dest.spanish(), src, header.spanish, config);
+	unpack_compressed_asset(dest.italian(), src, header.italian, config);
+	unpack_asset(dest.hud().child<BinaryAsset>(0), src, header.hudwad[0], config);
 	for(s32 i = 1; i < 6; i++) {
-		unpack_compressed_asset(dest.hud().child<BinaryAsset>(i), src, header.hudwad[i], game);
+		unpack_compressed_asset(dest.hud().child<BinaryAsset>(i), src, header.hudwad[i], config);
 	}
-	unpack_compressed_assets<TextureAsset>(dest.boot_plates(SWITCH_FILES), src, ARRAY_PAIR(header.boot_plates), game, FMT_TEXTURE_RGBA);
-	unpack_compressed_asset(dest.sram(), src, header.sram, game);
+	unpack_compressed_assets<TextureAsset>(dest.boot_plates(SWITCH_FILES), src, ARRAY_PAIR(header.boot_plates), config, FMT_TEXTURE_RGBA);
+	unpack_compressed_asset(dest.sram(), src, header.sram, config);
 }
 
-static void pack_boot_wad(OutputStream& dest, const BootWadAsset& src, Game game) {
+static void pack_boot_wad(OutputStream& dest, const BootWadAsset& src, BuildConfig config) {
 	DlBootHeader header;
 	dest.write(header);
 	
-	header.english = pack_compressed_asset<ByteRange>(dest, src.get_english(), game, 0x40, "english");
-	header.french = pack_compressed_asset<ByteRange>(dest, src.get_french(), game, 0x40, "french");
-	header.german = pack_compressed_asset<ByteRange>(dest, src.get_german(), game, 0x40, "german");
-	header.spanish = pack_compressed_asset<ByteRange>(dest, src.get_spanish(), game, 0x40, "spanish");
-	header.italian = pack_compressed_asset<ByteRange>(dest, src.get_italian(), game, 0x40, "italian");
+	header.english = pack_compressed_asset<ByteRange>(dest, src.get_english(), config, 0x40, "english");
+	header.french = pack_compressed_asset<ByteRange>(dest, src.get_french(), config, 0x40, "french");
+	header.german = pack_compressed_asset<ByteRange>(dest, src.get_german(), config, 0x40, "german");
+	header.spanish = pack_compressed_asset<ByteRange>(dest, src.get_spanish(), config, 0x40, "spanish");
+	header.italian = pack_compressed_asset<ByteRange>(dest, src.get_italian(), config, 0x40, "italian");
 	const CollectionAsset& hud = src.get_hud();
 	if(hud.has_child(0)) {
-		header.hudwad[0] = pack_asset<ByteRange>(dest, src.get_hud().get_child(0), game, 0x40);
+		header.hudwad[0] = pack_asset<ByteRange>(dest, src.get_hud().get_child(0), config, 0x40);
 	}
 	for(s32 i = 1; i < 6; i++) {
 		if(hud.has_child(i)) {
-			header.hudwad[i] = pack_compressed_asset<ByteRange>(dest, src.get_hud().get_child(i), game, 0x40, "hudwad");
+			header.hudwad[i] = pack_compressed_asset<ByteRange>(dest, src.get_hud().get_child(i), config, 0x40, "hudwad");
 		}
 	}
-	pack_compressed_assets(dest, ARRAY_PAIR(header.boot_plates), src.get_boot_plates(), game, 0x40, "bootplate", FMT_TEXTURE_RGBA);
-	header.sram = pack_compressed_asset<ByteRange>(dest, src.get_sram(), game, 0x40, "sram");
+	pack_compressed_assets(dest, ARRAY_PAIR(header.boot_plates), src.get_boot_plates(), config, 0x40, "bootplate", FMT_TEXTURE_RGBA);
+	header.sram = pack_compressed_asset<ByteRange>(dest, src.get_sram(), config, 0x40, "sram");
 	
 	dest.write(0, header);
 	s64 end = dest.tell();

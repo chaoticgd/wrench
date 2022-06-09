@@ -41,10 +41,10 @@ packed_struct(UyaDlSubtitleHeader,
 	/* 0xc */ s16 text_offset_k;
 )
 
-void unpack_subtitles(CollectionAsset& dest, InputStream& src, Game game) {
+void unpack_subtitles(CollectionAsset& dest, InputStream& src, BuildConfig config) {
 	std::vector<u8> bytes = src.read_multiple<u8>(0, src.size());
 	Buffer buffer(bytes);
-	if(game == Game::GC) {
+	if(config.game() == Game::GC) {
 		for(s32 i = 0;; i++) {
 			GcSubtitleHeader header = buffer.read<GcSubtitleHeader>(i * sizeof(GcSubtitleHeader), "subtitle");
 			if(header.start_frame > -1 && header.stop_frame > -1) {
@@ -66,7 +66,7 @@ void unpack_subtitles(CollectionAsset& dest, InputStream& src, Game game) {
 				break;
 			}
 		}
-	} else if(game == Game::UYA || game == Game::DL) {
+	} else if(config.game() == Game::UYA || config.game() == Game::DL) {
 		s64 table_end = src.size();
 		for(s32 i = 0; i * sizeof(UyaDlSubtitleHeader) < table_end; i++) {
 			UyaDlSubtitleHeader header = buffer.read<UyaDlSubtitleHeader>(i * sizeof(UyaDlSubtitleHeader), "subtitle");
@@ -111,7 +111,7 @@ void unpack_subtitles(CollectionAsset& dest, InputStream& src, Game game) {
 	}
 }
 
-void pack_subtitles(OutputStream& dest, const CollectionAsset& src, Game game) {
+void pack_subtitles(OutputStream& dest, const CollectionAsset& src, BuildConfig config) {
 	s32 subtitle_count = 0;
 	for(s32 i = 0; i < 1024; i++) {
 		if(src.has_child(i)) {
@@ -121,7 +121,7 @@ void pack_subtitles(OutputStream& dest, const CollectionAsset& src, Game game) {
 		}
 	}
 	
-	if(game == Game::GC) {
+	if(config.game() == Game::GC) {
 		s64 table_ofs = dest.alloc_multiple<GcSubtitleHeader>(subtitle_count);
 		dest.write<GcSubtitleHeader>({-1, -1});
 		
@@ -164,7 +164,7 @@ void pack_subtitles(OutputStream& dest, const CollectionAsset& src, Game game) {
 				break;
 			}
 		}
-	} else if(game == Game::UYA || game == Game::DL) {
+	} else if(config.game() == Game::UYA || config.game() == Game::DL) {
 		s64 table_ofs = dest.alloc_multiple<UyaDlSubtitleHeader>(subtitle_count);
 		
 		for(s32 i = 0; i < 1024; i++) {

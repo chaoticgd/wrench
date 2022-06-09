@@ -43,9 +43,10 @@ enum ArgFlags : u32 {
 	ARG_OUTPUT_PATH = 1 << 3,
 	ARG_OFFSET = 1 << 4,
 	ARG_GAME = 1 << 5,
-	ARG_HINT = 1 << 6,
-	ARG_SUBDIRECTORY = 1 << 7,
-	ARG_DEVELOPER = 1 << 8
+	ARG_REGION = 1 << 6,
+	ARG_HINT = 1 << 7,
+	ARG_SUBDIRECTORY = 1 << 8,
+	ARG_DEVELOPER = 1 << 9
 };
 
 struct ParsedArgs {
@@ -53,15 +54,16 @@ struct ParsedArgs {
 	std::string asset;
 	fs::path output_path;
 	s64 offset = -1;
-	Game game = Game::RAC;
+	Game game = Game::UNKNOWN;
+	Region region = Region::UNKNOWN;
 	std::string hint;
 	bool generate_output_subdirectory = false;
 	bool print_developer_output = false;
 };
 
 static ParsedArgs parse_args(int argc, char** argv, u32 flags);
-static void unpack(const fs::path& input_path, const fs::path& output_path, bool generate_output_subdirectory);
-static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path, Game game, const std::string& hint);
+static void unpack(const fs::path& input_path, const fs::path& output_path, Game game, Region region, bool generate_output_subdirectory);
+static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path, BuildConfig config, const std::string& hint);
 static void decompress(const fs::path& input_path, const fs::path& output_path, s64 offset);
 static void compress(const fs::path& input_path, const fs::path& output_path);
 static void extract_collision(fs::path input_path, fs::path output_path);
@@ -104,15 +106,15 @@ int main(int argc, char** argv) {
 			return 1;
 		}
 		
-		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH | ARG_SUBDIRECTORY);
-		unpack(args.input_paths[0], args.output_path, args.generate_output_subdirectory);
+		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH | ARG_GAME | ARG_REGION | ARG_SUBDIRECTORY);
+		unpack(args.input_paths[0], args.output_path, args.game, args.region, args.generate_output_subdirectory);
 		report_memory_statistics();
 		return 0;
 	}
 	
 	if(mode == "pack") {
-		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATHS | ARG_ASSET | ARG_OUTPUT_PATH | ARG_GAME | ARG_HINT);
-		pack(args.input_paths, args.asset, args.output_path, args.game, args.hint);
+		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATHS | ARG_ASSET | ARG_OUTPUT_PATH | ARG_GAME | ARG_REGION | ARG_HINT);
+		pack(args.input_paths, args.asset, args.output_path, BuildConfig(args.game, args.region), args.hint);
 		report_memory_statistics();
 		return 0;
 	}
@@ -210,18 +212,15 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 		
 		if((flags & ARG_GAME) && strcmp(argv[i], "-g") == 0) {
 			verify(i + 1 < argc, "Expected game argument.");
-			const char* game = argv[++i];
-			if(strcmp(game, "rac") == 0) {
-				args.game = Game::RAC;
-			} else if(strcmp(game, "gc") == 0) {
-				args.game = Game::GC;
-			} else if (strcmp(game, "uya") == 0) {
-				args.game = Game::UYA;
-			} else if(strcmp(game, "dl") == 0) {
-				args.game = Game::DL;
-			} else {
-				verify_not_reached("Invalid game argument. Options are: rac, gc, uya, dl.");
-			}
+			std::string game = argv[++i];
+			args.game = game_from_string(game);
+			continue;
+		}
+		
+		if((flags & ARG_REGION) && strcmp(argv[i], "-r") == 0) {
+			verify(i + 1 < argc, "Expected game argument.");
+			std::string game = argv[++i];
+			args.game = game_from_string(game);
 			continue;
 		}
 		
@@ -260,7 +259,7 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 	return args;
 }
 
-static void unpack(const fs::path& input_path, const fs::path& output_path, bool generate_output_subdirectory) {
+static void unpack(const fs::path& input_path, const fs::path& output_path, Game game, Region region, bool generate_output_subdirectory) {
 	AssetForest forest;
 	
 	FileInputStream stream;
@@ -275,21 +274,8 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, bool
 			IsoFilesystem fs = read_iso_filesystem(stream);
 			Release release = identify_release(fs.root);
 			
-			std::string game_str;
-			switch(release.game) {
-				case Game::RAC: game_str = "rac"; break;
-				case Game::GC: game_str = "gc"; break;
-				case Game::UYA: game_str = "uya"; break;
-				case Game::DL: game_str = "dl"; break;
-				default: game_str = "unknown";
-			}
-			
-			std::string region_str;
-			switch(release.region) {
-				case Region::US: region_str = "us"; break;
-				case Region::EU: region_str = "eu"; break;
-				case Region::JAPAN: region_str = "japan"; break;
-			}
+			std::string game_str = game_to_string(release.game);
+			std::string region_str = region_to_string(release.region);
 			
 			// If -n is passed we create a new subdirectory based on the elf
 			// name for the output files.
@@ -308,14 +294,13 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, bool
 			bank.game_info.type = g_asset_unpacker.dump_binaries ? AssetBankType::TEST : AssetBankType::UNPACKED;
 			
 			BuildAsset& build = bank.asset_file("build.asset").root().child<BuildAsset>(game_str.c_str());
-			build.set_game(game_str);
-			build.set_region(region_str);
 			
 			g_asset_unpacker.input_file = &stream;
 			g_asset_unpacker.current_file_offset = 0;
 			g_asset_unpacker.total_file_size = stream.size();
 			
-			unpack_asset_impl(build, stream, Game::UNKNOWN);
+			BuildConfig config(release.game, release.region);
+			unpack_asset_impl(build, stream, config);
 			
 			bank.game_info.name = build.game();
 			bank.game_info.format_version = ASSET_FORMAT_VERSION;
@@ -333,7 +318,11 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, bool
 	if(header_size < 0x10000) {
 		stream.seek(0);
 		std::vector<u8> header = stream.read_multiple<u8>(header_size);
-		auto [game, type, name] = identify_wad(header);
+		auto [detected_game, type, name] = identify_wad(header);
+		
+		if(game == Game::UNKNOWN) {
+			game = detected_game;
+		}
 		
 		if(type != WadType::UNKNOWN) {
 			AssetBank& bank = forest.mount<LooseAssetBank>(output_path, true);
@@ -363,7 +352,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, bool
 			g_asset_unpacker.current_file_offset = 0;
 			g_asset_unpacker.total_file_size = stream.size();
 			
-			unpack_asset_impl(*wad, stream, game);
+			unpack_asset_impl(*wad, stream, BuildConfig(game, region));
 			
 			bank.game_info.format_version = ASSET_FORMAT_VERSION;
 			bank.game_info.builds = {build.reference()};
@@ -378,7 +367,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, bool
 	verify_not_reached("Unable to detect type of input file '%s'!", input_path.string().c_str());
 }
 
-static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path, Game game, const std::string& hint) {
+static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path, BuildConfig config, const std::string& hint) {
 	printf("[  0%%] Mounting asset banks\n");
 	
 	AssetForest forest;
@@ -397,7 +386,7 @@ static void pack(const std::vector<fs::path>& input_paths, const std::string& as
 	g_asset_packer_max_assets_processed = 0;
 	g_asset_packer_num_assets_processed = 0;
 	g_asset_packer_dry_run = true;
-	pack_asset_impl(dummy, nullptr, nullptr, wad, game, hint.c_str());
+	pack_asset_impl(dummy, nullptr, nullptr, wad, config, hint.c_str());
 	g_asset_packer_max_assets_processed = g_asset_packer_num_assets_processed;
 	g_asset_packer_num_assets_processed = 0;
 	g_asset_packer_dry_run = false;
@@ -405,7 +394,7 @@ static void pack(const std::vector<fs::path>& input_paths, const std::string& as
 	FileOutputStream iso;
 	verify(iso.open(output_path), "Failed to open '%s' for writing.\n", output_path.string().c_str());
 	
-	pack_asset_impl(iso, nullptr, nullptr, wad, game, hint.c_str());
+	pack_asset_impl(iso, nullptr, nullptr, wad, config, hint.c_str());
 	
 	printf("[100%%] Done!\n");
 }
@@ -471,14 +460,17 @@ static void print_usage(bool developer_subcommands) {
 	puts("");
 	puts("User Subcommands");
 	puts("");
-	puts(" unpack <input file> -o <output dir> [-s]");
+	puts(" unpack <input file> -o <output dir> [-g <game>] [-r <region>] [-s]");
 	puts("   Unpack an ISO or WAD file to produce an asset bank of source files.");
+	puts("   If the file to be unpacked is a WAD, the game (rac, gc, uya or dl) should be");
+	puts("   specified and the region (us, eu or japan) must be specified.");
 	puts("   Optionally, the output files can be placed in a subdirectory of <output dir>");
 	puts("   named based on the identified release of the file unpacked by passing -s.");
 	puts("");
-	puts(" pack <input asset banks> -a <asset> -o <output iso> [-g <game>] [-h <hint>]");
+	puts(" pack <input asset banks> -a <asset> -o <output iso> [-g <game>] [-r <region>] [-h <hint>]");
 	puts("   Pack an asset (e.g. base_game) to produce a built file (e.g. an ISO file).");
-	puts("   If <asset> is not a build, the game must be specified (rac, gc, uya or dl).");
+	puts("   If <asset> is not a build, the game (rac, gc, uya or dl) and the region");
+	puts("   (us, eu or japan) must be specified.");
 	puts("   Optionally, the hint string used to specify the format of the build asset can");
 	puts("   be specified by passing -h.");
 	puts("");
@@ -491,25 +483,25 @@ static void print_usage(bool developer_subcommands) {
 		puts("");
 		puts("Developer Subcommands");
 		puts("");
-		puts(" unpack_globals <input file> -o <output dir>");
+		puts(" unpack_globals <input file> -o <output dir> [-g <game>] [-r <region>] [-s]");
 		puts("   Unpack an ISO or WAD file to produce an asset bank of source global files.");
 		puts("");
-		puts(" unpack_levels <input file> -o <output dir>");
+		puts(" unpack_levels <input file> -o <output dir> [-g <game>] [-r <region>] [-s]");
 		puts("   Unpack an ISO or WAD file to produce an asset bank of source level files.");
 		puts("");
-		puts(" unpack_wads <input files> -o <output dir>");
+		puts(" unpack_wads <input files> -o <output dir> [-g <game>] [-r <region>] [-s]");
 		puts("   Unpack an ISO or WAD file to produce an asset bank of WAD files.");
 		puts("");
-		puts(" unpack_global_wads <input file> -o <output dir>");
+		puts(" unpack_global_wads <input file> -o <output dir> [-g <game>] [-r <region>] [-s]");
 		puts("   Unpack an ISO or WAD file to produce an asset bank of global WAD files.");
 		puts("");
-		puts(" unpack_level_wads <input file> -o <output dir>");
+		puts(" unpack_level_wads <input file> -o <output dir> [-g <game>] [-r <region>] [-s]");
 		puts("   Unpack an ISO or WAD file to produce an asset bank of level WAD files.");
 		puts("");
-		puts(" unpack_binaries <input file> -o <output dir>");
+		puts(" unpack_binaries <input file> -o <output dir> [-g <game>] [-r <region>] [-s]");
 		puts("   Unpack an ISO or WAD file to produce an asset bank of binaries.");
 		puts("");
-		puts(" unpack_flat <input file> -o <output dir>");
+		puts(" unpack_flat <input file> -o <output dir> [-g <game>] [-r <region>] [-s]");
 		puts("   Unpack an ISO or WAD file to produce an asset bank of FlatWad assets.");
 		puts("");
 		puts(" decompress <input file> -o <output file> -x <offset>");

@@ -16,8 +16,34 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <wrenchbuild/asset_unpacker.h>
-#include <wrenchbuild/asset_packer.h>
+#ifndef WRENCHCORE_BUILD_CONFIG_H
+#define WRENCHCORE_BUILD_CONFIG_H
 
-void unpack_subtitles(CollectionAsset& dest, InputStream& src, BuildConfig config);
-void pack_subtitles(OutputStream& dest, const CollectionAsset& src, BuildConfig config);
+#include <core/util.h>
+
+enum class Game : u8 {
+	UNKNOWN = 0, RAC = 1, GC = 2, UYA = 3, DL = 4
+};
+
+enum class Region : u8 {
+	UNKNOWN = 0, US = 1, EU = 2, JAPAN = 3
+};
+
+class BuildConfig {
+public:
+	BuildConfig(Game game, Region region);
+	BuildConfig(const std::string& game, const std::string& region);
+	
+	Game game() const;
+	Region region() const;
+	
+private:
+	u8 value;
+};
+
+Game game_from_string(const std::string& game);
+std::string game_to_string(Game game);
+Region region_from_string(const std::string& region);
+std::string region_to_string(Region region);
+
+#endif

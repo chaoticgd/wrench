@@ -70,7 +70,8 @@ AssetType Binary {
 	// These are only used for testing.
 	StringAttribute asset_type { hidden: true }
 	StringAttribute format_hint { hidden: true }
-	IntegerAttribute game { hidden: true }
+	StringAttribute game { hidden: true }
+	StringAttribute region { hidden: true }
 	
 	Examples examples {
 		Binary code {
