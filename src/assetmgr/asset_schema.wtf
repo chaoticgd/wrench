@@ -96,7 +96,6 @@ AssetType Build {
 		required: true
 		games: [1 2 3 4]
 	}
-	
 	StringAttribute region {
 		desc: "The region. Possible values: \"us\", \"eu\", \"japan\"."
 		required: true
@@ -107,21 +106,28 @@ AssetType Build {
 		desc: "The key used to \"encrypt\" the PS2 logo."
 		min: 0
 		max: 255
-		required: true
+		required: false
+		games: [1 2 3 4]
+	}
+	Child ps2_logo_ntsc {
+		desc: "The NTSC PS2 logo stored on the first 12 sectors of the disc."
+		allowed_types: ["Texture"]
+		required: false
+		games: [1 2 3 4]
+	}
+	Child ps2_logo_pal {
+		desc: "The PAL PS2 logo stored on the first 12 sectors of the disc."
+		allowed_types: ["Texture"]
+		required: false
 		games: [1 2 3 4]
 	}
 	
-	Child ps2_logo {
-		desc: "The PS2 logo stored on the first 12 sectors of the disc."
-		allowed_types: ["Texture"]
-		required: true
-		games: [1 2 3 4]
-	}
 	Child primary_volume_descriptor {
 		allowed_types: ["PrimaryVolumeDescriptor"]
 		required: true
 		games: [1 2 3 4]
 	}
+	
 	Child armor {
 		allowed_types: ["ArmorWad" "FlatWad" "Binary"]
 		required: true

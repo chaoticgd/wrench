@@ -28,7 +28,7 @@ struct UnpackInfo {
 	ByteRange64 data_range;
 };
 
-static void unpack_ps2_logo(BuildAsset& build, InputStream& src, std::string region);
+static void unpack_ps2_logo(BuildAsset& build, InputStream& src, BuildConfig config);
 static void unpack_primary_volume_descriptor(BuildAsset& build, const IsoPrimaryVolumeDescriptor& pvd);
 static void enumerate_global_wads(std::vector<UnpackInfo>& dest, BuildAsset& build, const table_of_contents& toc, InputStream& src, Game game);
 static void enumerate_level_wads(std::vector<UnpackInfo>& dest, CollectionAsset& levels, const table_of_contents& toc, InputStream& src);
@@ -44,7 +44,7 @@ void unpack_iso(BuildAsset& dest, InputStream& src, BuildConfig config, AssetUnp
 	
 	std::vector<UnpackInfo> files;
 	
-	unpack_ps2_logo(dest, src, dest.region());
+	unpack_ps2_logo(dest, src, config);
 	unpack_primary_volume_descriptor(dest, filesystem.pvd);
 	
 	enumerate_global_wads(files, dest, toc, src, config.game());
@@ -62,7 +62,7 @@ void unpack_iso(BuildAsset& dest, InputStream& src, BuildConfig config, AssetUnp
 	}
 }
 
-static void unpack_ps2_logo(BuildAsset& build, InputStream& src, std::string region) {
+static void unpack_ps2_logo(BuildAsset& build, InputStream& src, BuildConfig config) {
 	src.seek(0);
 	std::vector<u8> logo = src.read_multiple<u8>(12 * SECTOR_SIZE);
 	
@@ -75,12 +75,12 @@ static void unpack_ps2_logo(BuildAsset& build, InputStream& src, std::string reg
 	}
 	
 	s32 width, height;
-	if(region == "eu") {
-		width = 344;
-		height = 71;
-	} else {
+	if(config.is_ntsc()) {
 		width = 384;
 		height = 64;
+	} else {
+		width = 344;
+		height = 71;
 	}
 	
 	logo.resize(width * height);
@@ -89,8 +89,11 @@ static void unpack_ps2_logo(BuildAsset& build, InputStream& src, std::string reg
 	auto [file, ref] = build.file().open_binary_file_for_writing("ps2_logo.png");
 	write_png(*file, texture);
 	
-	TextureAsset& asset = build.ps2_logo();
-	asset.set_src(ref);
+	if(config.is_ntsc()) {
+		build.ps2_logo_ntsc().set_src(ref);
+	} else {
+		build.ps2_logo_pal().set_src(ref);
+	}
 }
 
 static void unpack_primary_volume_descriptor(BuildAsset& build, const IsoPrimaryVolumeDescriptor& pvd) {

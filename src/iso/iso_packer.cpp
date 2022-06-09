@@ -21,7 +21,7 @@
 #include <core/png.h>
 #include <iso/wad_identifier.h>
 
-static void pack_ps2_logo(OutputStream& iso, const BuildAsset& build, AssetPackerFunc pack);
+static void pack_ps2_logo(OutputStream& iso, const BuildAsset& build, BuildConfig config, AssetPackerFunc pack);
 static std::vector<GlobalWadInfo> enumerate_globals(const BuildAsset& build, Game game);
 static std::vector<LevelInfo> enumerate_levels(const BuildAsset& build, Game game, const LevelAsset* single_level);
 static LevelInfo enumerate_level(const LevelAsset& level, Game game);
@@ -67,7 +67,7 @@ void pack_iso(OutputStream& iso, const BuildAsset& src, BuildConfig, const char*
 		});
 	}
 	
-	pack_ps2_logo(iso, src, pack);
+	pack_ps2_logo(iso, src, config, pack);
 	
 	table_of_contents toc;
 	toc.globals = enumerate_globals(src, config.game());
@@ -140,9 +140,20 @@ void pack_iso(OutputStream& iso, const BuildAsset& src, BuildConfig, const char*
 	assert(toc_end <= files_begin);
 }
 
-static void pack_ps2_logo(OutputStream& iso, const BuildAsset& build, AssetPackerFunc pack) {
-	const TextureAsset& asset = build.get_ps2_logo();
-	auto png = asset.file().open_binary_file_for_reading(asset.src());
+static void pack_ps2_logo(OutputStream& iso, const BuildAsset& build, BuildConfig config, AssetPackerFunc pack) {
+	const TextureAsset* asset;
+	if(config.is_ntsc()) {
+		if(!build.has_ps2_logo_ntsc()) {
+			return;
+		}
+		asset = &build.get_ps2_logo_ntsc();
+	} else {
+		if(!build.has_ps2_logo_pal()) {
+			return;
+		}
+		asset = &build.get_ps2_logo_pal();
+	}
+	auto png = asset->file().open_binary_file_for_reading(asset->src());
 	
 	Opt<Texture> texture = read_png(*png);
 	verify(texture.has_value(), "Build has bad ps2_logo.");
@@ -150,7 +161,7 @@ static void pack_ps2_logo(OutputStream& iso, const BuildAsset& build, AssetPacke
 	texture->to_grayscale();
 	verify(texture->data.size() <= 12 * SECTOR_SIZE, "PS2 logo image too big.");
 	
-	u8 key = build.ps2_logo_key();
+	u8 key = build.has_ps2_logo_key() ? build.ps2_logo_key() : 0;
 	for(u8& pixel : texture->data) {
 		pixel = ((pixel >> 3) | (pixel << 5)) ^ key;
 	}
