@@ -38,6 +38,9 @@ public:
 	Region region() const;
 	bool is_ntsc() const;
 	
+	float framerate();
+	float half_framerate();
+	
 private:
 	u8 value;
 };
@@ -46,5 +49,10 @@ Game game_from_string(const std::string& game);
 std::string game_to_string(Game game);
 Region region_from_string(const std::string& region);
 std::string region_to_string(Region region);
+
+#define NTSC_FRAMERATE 59.94005994005994f
+#define PAL_FRAMERATE 50.f
+#define HALF_NTSC_FRAMERATE 29.97002997002997f
+#define HALF_PAL_FRAMERATE 25.f
 
 #endif

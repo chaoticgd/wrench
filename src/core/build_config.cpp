@@ -36,6 +36,22 @@ bool BuildConfig::is_ntsc() const {
 	return region() != Region::EU;
 }
 
+float BuildConfig::framerate() {
+	if(is_ntsc()) {
+		return NTSC_FRAMERATE;
+	} else {
+		return PAL_FRAMERATE;
+	}
+}
+
+float BuildConfig::half_framerate() {
+	if(is_ntsc()) {
+		return HALF_NTSC_FRAMERATE;
+	} else {
+		return HALF_PAL_FRAMERATE;
+	}
+}
+
 Game game_from_string(const std::string& game) {
 	if(game == "rac") return Game::RAC;
 	if(game == "gc") return Game::GC;
@@ -58,6 +74,7 @@ Region region_from_string(const std::string& region) {
 	if(region == "us") return Region::US;
 	if(region == "eu") return Region::EU;
 	if(region == "japan") return Region::JAPAN;
+	return Region::UNKNOWN;
 }
 
 std::string region_to_string(Region region) {

@@ -151,6 +151,8 @@ static void write_attribute_table(const WtfNode* asset_type) {
 		const char* type;
 		if(strcmp(child->type_name, "IntegerAttribute") == 0) {
 			type = "Integer";
+		} else if(strcmp(child->type_name, "FloatAttribute") == 0) {
+			type = "Float";
 		} else if(strcmp(child->type_name, "BooleanAttribute") == 0) {
 			type = "Boolean";
 		} else if(strcmp(child->type_name, "StringAttribute") == 0) {

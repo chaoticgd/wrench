@@ -318,6 +318,11 @@ static void generate_read_attribute_code(const WtfNode* node, const char* result
 		indent(ind); out("%s = %s->number.i;\n", result, attrib);
 	}
 	
+	if(strcmp(node->type_name, "FloatAttribute") == 0) {
+		generate_attribute_type_check_code(attrib, "WTF_NUMBER", ind);
+		indent(ind); out("%s = %s->number.f;\n", result, attrib);
+	}
+	
 	if(strcmp(node->type_name, "BooleanAttribute") == 0) {
 		generate_attribute_type_check_code(attrib, "WTF_BOOLEAN", ind);
 		indent(ind); out("%s = %s->boolean;\n", result, attrib);
@@ -381,6 +386,10 @@ static void generate_asset_write_code(const WtfNode* node, const char* expr, int
 	
 	if(strcmp(node->type_name, "IntegerAttribute") == 0) {
 		indent(ind); out("wtf_write_integer(ctx, %s);\n", expr);
+	}
+	
+	if(strcmp(node->type_name, "FloatAttribute") == 0) {
+		indent(ind); out("wtf_write_float(ctx, %s);\n", expr);
 	}
 	
 	if(strcmp(node->type_name, "BooleanAttribute") == 0) {
@@ -476,6 +485,10 @@ static void generate_attribute_getter_code(const WtfNode* attribute, int depth) 
 		indent(ind); out("dest_%d = src_%d;\n", depth, depth);
 	}
 	
+	if(strcmp(attribute->type_name, "FloatAttribute") == 0) {
+		indent(ind); out("dest_%d = src_%d;\n", depth, depth);
+	}
+	
 	if(strcmp(attribute->type_name, "BooleanAttribute") == 0) {
 		indent(ind); out("dest_%d = src_%d;\n", depth, depth);
 	}
@@ -505,6 +518,10 @@ static void generate_attribute_setter_code(const WtfNode* attribute, int depth) 
 	int ind = depth + 1;
 	
 	if(strcmp(attribute->type_name, "IntegerAttribute") == 0) {
+		indent(ind); out("dest_%d = src_%d;\n", depth, depth);
+	}
+	
+	if(strcmp(attribute->type_name, "FloatAttribute") == 0) {
 		indent(ind); out("dest_%d = src_%d;\n", depth, depth);
 	}
 	
@@ -573,6 +590,10 @@ static void generate_child_functions(const WtfNode* asset_type) {
 static std::string node_to_cpp_type(const WtfNode* node) {
 	if(strcmp(node->type_name, "IntegerAttribute") == 0) {
 		return "int";
+	}
+	
+	if(strcmp(node->type_name, "FloatAttribute") == 0) {
+		return "float";
 	}
 	
 	if(strcmp(node->type_name, "BooleanAttribute") == 0) {

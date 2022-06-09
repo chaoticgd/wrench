@@ -50,8 +50,8 @@ void unpack_subtitles(CollectionAsset& dest, InputStream& src, BuildConfig confi
 			if(header.start_frame > -1 && header.stop_frame > -1) {
 				SubtitleAsset& subtitle = dest.child<SubtitleAsset>(i);
 				// TODO: Convert to seconds.
-				subtitle.set_start_time(header.start_frame);
-				subtitle.set_stop_time(header.stop_frame);
+				subtitle.set_start_time(header.start_frame / config.half_framerate());
+				subtitle.set_stop_time(header.stop_frame / config.half_framerate());
 				subtitle.set_text_e(buffer.read_string(header.text_offset_e));
 				subtitle.set_text_f(buffer.read_string(header.text_offset_f));
 				subtitle.set_text_g(buffer.read_string(header.text_offset_g));
@@ -72,8 +72,8 @@ void unpack_subtitles(CollectionAsset& dest, InputStream& src, BuildConfig confi
 			UyaDlSubtitleHeader header = buffer.read<UyaDlSubtitleHeader>(i * sizeof(UyaDlSubtitleHeader), "subtitle");
 			// TODO: Convert to seconds.
 			SubtitleAsset& subtitle = dest.child<SubtitleAsset>(i);
-			subtitle.set_start_time(header.start_frame);
-			subtitle.set_stop_time(header.stop_frame);
+			subtitle.set_start_time(header.start_frame / config.half_framerate());
+			subtitle.set_stop_time(header.stop_frame / config.half_framerate());
 			if(header.text_offset_e > 0) {
 				subtitle.set_text_e(buffer.read_string(header.text_offset_e));
 			}
@@ -129,8 +129,8 @@ void pack_subtitles(OutputStream& dest, const CollectionAsset& src, BuildConfig 
 			if(src.has_child(i)) {
 				const SubtitleAsset& subtitle = src.get_child(i).as<SubtitleAsset>();
 				GcSubtitleHeader header = {};
-				header.start_frame = subtitle.start_time();
-				header.stop_frame = subtitle.stop_time();
+				header.start_frame = subtitle.start_time() * config.half_framerate();
+				header.stop_frame = subtitle.stop_time() * config.half_framerate();
 				
 				std::string empty;
 				
@@ -171,8 +171,8 @@ void pack_subtitles(OutputStream& dest, const CollectionAsset& src, BuildConfig 
 			if(src.has_child(i)) {
 				const SubtitleAsset& subtitle = src.get_child(i).as<SubtitleAsset>();
 				UyaDlSubtitleHeader header = {};
-				header.start_frame = subtitle.start_time();
-				header.stop_frame = subtitle.stop_time();
+				header.start_frame = subtitle.start_time() * config.half_framerate();
+				header.stop_frame = subtitle.stop_time() * config.half_framerate();
 				
 				if(subtitle.has_text_e()) {
 					header.text_offset_e = (s16) dest.tell();
