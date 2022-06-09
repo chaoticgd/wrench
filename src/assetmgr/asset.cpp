@@ -99,7 +99,7 @@ AssetType Asset::logical_type() const {
 bool Asset::has_child(const char* tag) const {
 	for(const Asset* asset = &highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
 		for(const std::unique_ptr<Asset>& child : asset->_children) {
-			if(child->tag() == tag) {
+			if(child->tag() == tag && !child->is_deleted()) {
 				return true;
 			}
 		}
@@ -176,6 +176,12 @@ Asset& Asset::foreign_child_impl(const fs::path& path, AssetType type, const cha
 }
 
 void Asset::read(WtfNode* node) {
+	if(const WtfAttribute* deleted = wtf_attribute(node, "deleted"); deleted && deleted->type == WTF_BOOLEAN) {
+		flags |= ASSET_HAS_DELETED_FLAG;
+		if(deleted->boolean) {
+			flags |= ASSET_IS_DELETED;
+		}
+	}
 	read_attributes(node);
 	for(WtfNode* child = node->first_child; child != nullptr; child = child->next_sibling) {
 		AssetType type;
@@ -212,6 +218,11 @@ void Asset::write(WtfWriter* ctx, std::string prefix) const {
 }
 
 void Asset::write_body(WtfWriter* ctx) const {
+	if(flags & ASSET_HAS_DELETED_FLAG) {
+		wtf_begin_attribute(ctx, "deleted");
+		wtf_write_boolean(ctx, (flags & ASSET_IS_DELETED) != 0);
+		wtf_end_attribute(ctx);
+	}
 	write_attributes(ctx);
 	for_each_physical_child([&](Asset& child) {
 		child.write(ctx, std::string());
@@ -253,6 +264,15 @@ void Asset::rename(std::string new_tag) {
 	connect_precedence_pointers();
 }
 
+bool Asset::is_deleted() const {
+	for(const Asset* asset = &highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
+		if(asset->flags & ASSET_HAS_DELETED_FLAG) {
+			return (asset->flags & ASSET_IS_DELETED) != 0;
+		}
+	}
+	return false;
+}
+
 Asset& Asset::add_child(std::unique_ptr<Asset> child) {
 	assert(child.get());
 	Asset& asset = *_children.emplace_back(std::move(child)).get();
@@ -262,8 +282,10 @@ Asset& Asset::add_child(std::unique_ptr<Asset> child) {
 
 Asset& Asset::resolve_references() {
 	Asset* asset = &highest_precedence();
+	verify(!asset->is_deleted(), "Asset '%s' is deleted.", asset_reference_to_string(asset->reference()).c_str());
 	while(ReferenceAsset* reference = dynamic_cast<ReferenceAsset*>(asset)) {
 		asset = &forest().lookup_asset(reference->asset(), asset);
+		verify(!asset->is_deleted(), "Tried to find deleted asset '%s'.", asset_reference_to_string(reference->asset()).c_str());
 		verify(asset, "Failed to find asset '%s'.", asset_reference_to_string(reference->asset()).c_str());
 	}
 	return *asset;

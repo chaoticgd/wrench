@@ -50,6 +50,20 @@ If these asset files are then both packed by Wrench, the logical tree that will 
 
 The asset types are all documented in the [Asset Reference](asset_reference_latest.md).
 
+## Special Attributes
+
+### `deleted`
+
+This attribute makes it appear that the object does not exist in the logical tree, which is useful if the base game defines an asset that you want to be removed in your mod. An example:
+
+	textures {
+		Texture 0 {
+			deleted: true
+		}
+	}
+
+Here, the packer will treat the 0 asset as if it doesn't exist, even if it's defined in the base game.
+
 ## Internals
 
 The asset system is implemented as a static library compiled from code stored in `src/assetmgr`.

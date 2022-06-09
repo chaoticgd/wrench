@@ -38,7 +38,9 @@ enum AssetFlags {
 	ASSET_IS_WAD = (1 << 0),
 	ASSET_IS_LEVEL_WAD = (1 << 1),
 	ASSET_IS_BIN_LEAF = (1 << 2),
-	ASSET_IS_FLATTENABLE = (1 << 3)
+	ASSET_IS_FLATTENABLE = (1 << 3),
+	ASSET_HAS_DELETED_FLAG = (1 << 4),
+	ASSET_IS_DELETED = (1 << 5)
 };
 
 class Asset {
@@ -95,7 +97,7 @@ public:
 	void for_each_logical_child(Callback callback) {
 		for(Asset* asset = &lowest_precedence(); asset != nullptr; asset = asset->higher_precedence()) {
 			for(const std::unique_ptr<Asset>& child : asset->_children) {
-				if(child->higher_precedence() == nullptr) {
+				if(child->higher_precedence() == nullptr && !child->is_deleted()) {
 					callback(child->resolve_references());
 				}
 			}
@@ -113,7 +115,7 @@ public:
 	void for_each_logical_child_of_type(Callback callback) {
 		for(Asset* asset = &lowest_precedence(); asset != nullptr; asset = asset->higher_precedence()) {
 			for(const std::unique_ptr<Asset>& child : asset->_children) {
-				if(child->higher_precedence() == nullptr) {
+				if(child->higher_precedence() == nullptr && !child->is_deleted()) {
 					Asset& child_2 = child->resolve_references();
 					if(child_2.type() == ChildType::ASSET_TYPE) {
 						callback(static_cast<ChildType&>(child_2));
@@ -220,6 +222,8 @@ public:
 	bool weakly_equal(const Asset& rhs) const;
 	
 	void rename(std::string new_tag);
+	
+	bool is_deleted() const;
 	
 	virtual void for_each_attribute(AssetVisitorCallback callback) = 0;
 	virtual void for_each_attribute(ConstAssetVisitorCallback callback) const = 0;
