@@ -64,6 +64,14 @@ An exception to this is where the format of the assets themselves differ between
 
 The asset types are all documented in the [Asset Reference](asset_reference_latest.md).
 
+### Hints
+
+Hints are strings passed to the packers/unpackers that provide additional context. For example, the Texture asset packer can be passed a hint to determine whether the texture should be packed as a paletted PIF image or an RGBA image.
+
+All the valid hint strings are documented in the asset reference.
+
+For the top-level asset being packed, which is usually a build, the hint string can be passed in as a command line argument using the -h option.
+
 ## Special Attributes
 
 ### `deleted`
