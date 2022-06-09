@@ -119,16 +119,16 @@ static void enumerate_global_wads(std::vector<UnpackInfo>& dest, BuildAsset& bui
 			
 			Asset* asset;
 			switch(wad_type) {
-				case WadType::MPEG:   asset = &build.mpeg<MpegWadAsset>("global/mpeg/mpeg");         break;
-				case WadType::MISC:   asset = &build.misc<MiscWadAsset>("global/misc/misc");         break;
-				case WadType::HUD:    asset = &build.hud<HudWadAsset>("global/hud/hud");             break;
-				case WadType::BONUS:  asset = &build.bonus<BonusWadAsset>("global/bonus/bonus");     break;
-				case WadType::AUDIO:  asset = &build.audio<AudioWadAsset>("global/audio/audio");     break;
-				case WadType::SPACE:  asset = &build.space<SpaceWadAsset>("global/space/space");     break;
-				case WadType::SCENE:  asset = &build.scene<SceneWadAsset>("global/scene/scene");     break;
-				case WadType::GADGET: asset = &build.gadget<GadgetWadAsset>("global/gadget/gadget"); break;
-				case WadType::ARMOR:  asset = &build.armor<ArmorWadAsset>("global/armor/armor");     break;
-				case WadType::ONLINE: asset = &build.online<OnlineWadAsset>("global/online/online"); break;
+				case WadType::MPEG:   asset = &build.mpeg<MpegWadAsset>("globals/mpeg/mpeg");         break;
+				case WadType::MISC:   asset = &build.misc<MiscWadAsset>("globals/misc/misc");         break;
+				case WadType::HUD:    asset = &build.hud<HudWadAsset>("globals/hud/hud");             break;
+				case WadType::BONUS:  asset = &build.bonus<BonusWadAsset>("globals/bonus/bonus");     break;
+				case WadType::AUDIO:  asset = &build.audio<AudioWadAsset>("globals/audio/audio");     break;
+				case WadType::SPACE:  asset = &build.space<SpaceWadAsset>("globals/space/space");     break;
+				case WadType::SCENE:  asset = &build.scene<SceneWadAsset>("globals/scene/scene");     break;
+				case WadType::GADGET: asset = &build.gadget<GadgetWadAsset>("globals/gadget/gadget"); break;
+				case WadType::ARMOR:  asset = &build.armor<ArmorWadAsset>("globals/armor/armor");     break;
+				case WadType::ONLINE: asset = &build.online<OnlineWadAsset>("globals/online/online"); break;
 				default: fprintf(stderr, "warning: Extracted global WAD of unknown type to globals/%s.wad.\n", name);
 			}
 			
