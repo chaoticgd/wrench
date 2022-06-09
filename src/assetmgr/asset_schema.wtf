@@ -959,16 +959,16 @@ AssetType Mpeg {
 	bin_leaf: true
 	
 	Child video_ntsc {
-		desc: "The NTSC version of the video file. 512x416, 29.97 FPS"
+		desc: "The NTSC version of the video file. 512x416, 29.97 FPS."
 		allowed_types: ["Binary"]
-		required: true
+		required: false
 		games: [1 2 3 4]
 	}
 	
 	Child video_pal {
-		desc: "The PAL version of the video file. 512x416, 25 FPS"
+		desc: "The PAL version of the video file. 512x416, 25 FPS."
 		allowed_types: ["Binary"]
-		required: true
+		required: false
 		games: [1 2 3 4]
 	}
 	

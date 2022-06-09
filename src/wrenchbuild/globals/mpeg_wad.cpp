@@ -84,9 +84,13 @@ static void pack_rac_mpeg_wad(OutputStream& dest, RacMpegWadHeader& header, cons
 		if(mpegs.has_child(i)) {
 			const MpegAsset& mpeg = mpegs.get_child(i).as<MpegAsset>();
 			if(config.is_ntsc()) {
-				header.mpegs[i] = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video_ntsc(), config);
+				if(mpeg.has_video_ntsc()) {
+					header.mpegs[i] = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video_ntsc(), config);
+				}
 			} else {
-				header.mpegs[i] = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video_pal(), config);
+				if(mpeg.has_video_pal()) {
+					header.mpegs[i] = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video_pal(), config);
+				}
 			}
 		}
 	}
@@ -122,9 +126,13 @@ static void pack_gc_uya_dl_mpeg_wad(OutputStream& dest, Header& header, const Mp
 				header.mpegs[i].subtitles = pack_asset_sa<SectorByteRange>(dest, mpeg.get_subtitles(), config, FMT_COLLECTION_SUBTITLES);
 			}
 			if(config.is_ntsc()) {
-				header.mpegs[i].video = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video_ntsc(), config);
+				if(mpeg.has_video_ntsc()) {
+					header.mpegs[i].video = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video_ntsc(), config);
+				}
 			} else {
-				header.mpegs[i].video = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video_pal(), config);
+				if(mpeg.has_video_pal()) {
+					header.mpegs[i].video = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video_pal(), config);
+				}
 			}
 		}
 	}
