@@ -46,6 +46,20 @@ If these asset files are then both packed by Wrench, the logical tree that will 
 		}
 	}
 
+## Design Considerations
+
+### Files versus Assets
+
+Assets can be referenced from other asset banks, files cannot. Mods do not rely on where the unpacked files are on the filesystem, just where their assets are in the logical asset tree.
+
+This allows for the structure of the unpacked files to change arbitrarily without affecting mod compatibility. For example, we could give moby classes human-friendly names in the filesystem and sort them into directories without breaking any mods, as long as we don't change the asset path of those moby classes.
+
+### Different Releases
+
+It should be possible to build a mod designed for the US release of a given game on the EU or Japanese release, for example. To facilitate this, the asset format should remain the same between releases.
+
+An exception to this is where the format of the assets themselves differ between releases. For example, the MPEG cutscenes have a different framerate depending on whether it's an NTSC or PAL release, and these files cannot be swapped. In this case, the asset system should be able to represent both the NTSC and PAL assets seperately. For example the Mpeg asset has a child named video_nstc and a seperate child named video_pal.
+
 ## Asset Types
 
 The asset types are all documented in the [Asset Reference](asset_reference_latest.md).
