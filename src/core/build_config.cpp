@@ -32,6 +32,10 @@ Region BuildConfig::region() const {
 	return (Region) (value >> 4);
 }
 
+bool BuildConfig::is_ntsc() const {
+	return region() != Region::EU;
+}
+
 Game game_from_string(const std::string& game) {
 	if(game == "rac") return Game::RAC;
 	if(game == "gc") return Game::GC;

@@ -36,6 +36,7 @@ public:
 	
 	Game game() const;
 	Region region() const;
+	bool is_ntsc() const;
 	
 private:
 	u8 value;

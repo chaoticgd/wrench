@@ -935,7 +935,7 @@ AssetType MpegWad {
 		desc: "A list of all the MPEG cutscenes."
 		allowed_types: ["Collection"]
 		Child child {
-			allowed_types: ["Mpeg" "Binary"]
+			allowed_types: ["Mpeg"]
 		}
 	}
 	
@@ -950,8 +950,15 @@ AssetType Mpeg {
 	desc: "An MPEG cutscene with subtitles."
 	bin_leaf: true
 	
-	Child video {
-		desc: "The video file itself."
+	Child video_ntsc {
+		desc: "The version of the NTSC video file. 512x416, 29.97 FPS"
+		allowed_types: ["Binary"]
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	Child video_pal {
+		desc: "The version of the NTSC video file. 512x416, 25 FPS"
 		allowed_types: ["Binary"]
 		required: true
 		games: [1 2 3 4]

@@ -64,8 +64,12 @@ on_load(Mpeg, []() {
 static void unpack_rac_mpeg_wad(MpegWadAsset& dest, const RacMpegWadHeader& header, InputStream& src, BuildConfig config) {
 	for(s32 i = 0; i < ARRAY_SIZE(header.mpegs); i++) {
 		if(!header.mpegs[i].empty()) {
-			BinaryAsset& video = dest.mpegs().child<BinaryAsset>(i);
-			unpack_asset(video, src, header.mpegs[i], config, FMT_BINARY_PSS);
+			MpegAsset& mpeg = dest.mpegs().foreign_child<MpegAsset>(i);
+			if(config.is_ntsc()) {
+				unpack_asset(mpeg.video_ntsc(), src, header.mpegs[i], config, FMT_BINARY_PSS);
+			} else {
+				unpack_asset(mpeg.video_pal(), src, header.mpegs[i], config, FMT_BINARY_PSS);
+			}
 		}
 	}
 }
@@ -78,12 +82,11 @@ static void pack_rac_mpeg_wad(OutputStream& dest, RacMpegWadHeader& header, cons
 	const CollectionAsset& mpegs = src.get_mpegs();
 	for(s32 i = 0; i < ARRAY_SIZE(header.mpegs); i++) {
 		if(mpegs.has_child(i)) {
-			const Asset& child = mpegs.get_child(i);
-			if(child.logical_type() == MpegAsset::ASSET_TYPE) {
-				const MpegAsset& mpeg = child.as<MpegAsset>();
-				header.mpegs[i] = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video(), config);
+			const MpegAsset& mpeg = mpegs.get_child(i).as<MpegAsset>();
+			if(config.is_ntsc()) {
+				header.mpegs[i] = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video_ntsc(), config);
 			} else {
-				header.mpegs[i] = pack_asset_sa<SectorByteRange>(dest, child, config);
+				header.mpegs[i] = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video_pal(), config);
 			}
 		}
 	}
@@ -94,8 +97,11 @@ static void unpack_gc_uya_dl_mpeg_wad(MpegWadAsset& dest, const Header& header, 
 	for(s32 i = 0; i < ARRAY_SIZE(header.mpegs); i++) {
 		if(!header.mpegs[i].subtitles.empty() || !header.mpegs[i].video.empty()) {
 			MpegAsset& mpeg = dest.mpegs().foreign_child<MpegAsset>(i);
-			BinaryAsset& video = mpeg.child<BinaryAsset>("video");
-			unpack_asset(video, src, header.mpegs[i].video, config, FMT_BINARY_PSS);
+			if(config.is_ntsc()) {
+				unpack_asset(mpeg.video_ntsc(), src, header.mpegs[i].video, config, FMT_BINARY_PSS);
+			} else {
+				unpack_asset(mpeg.video_pal(), src, header.mpegs[i].video, config, FMT_BINARY_PSS);
+			}
 			CollectionAsset& subtitles = mpeg.child<CollectionAsset>("subtitles");
 			unpack_asset(subtitles, src, header.mpegs[i].subtitles, config, FMT_COLLECTION_SUBTITLES);
 		}
@@ -111,15 +117,14 @@ static void pack_gc_uya_dl_mpeg_wad(OutputStream& dest, Header& header, const Mp
 	const CollectionAsset& mpegs = src.get_mpegs();
 	for(s32 i = 0; i < ARRAY_SIZE(header.mpegs); i++) {
 		if(mpegs.has_child(i)) {
-			const Asset& child = mpegs.get_child(i);
-			if(child.logical_type() == MpegAsset::ASSET_TYPE) {
-				const MpegAsset& mpeg = child.as<MpegAsset>();
-				if(mpeg.has_subtitles()) {
-					header.mpegs[i].subtitles = pack_asset_sa<SectorByteRange>(dest, mpeg.get_subtitles(), config, FMT_COLLECTION_SUBTITLES);
-				}
-				header.mpegs[i].video = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video(), config);
+			const MpegAsset& mpeg = mpegs.get_child(i).as<MpegAsset>();
+			if(mpeg.has_subtitles()) {
+				header.mpegs[i].subtitles = pack_asset_sa<SectorByteRange>(dest, mpeg.get_subtitles(), config, FMT_COLLECTION_SUBTITLES);
+			}
+			if(config.is_ntsc()) {
+				header.mpegs[i].video = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video_ntsc(), config);
 			} else {
-				header.mpegs[i].video = pack_asset_sa<SectorByteRange>(dest, child, config);
+				header.mpegs[i].video = pack_asset_sa<SectorByteRange>(dest, mpeg.get_video_pal(), config);
 			}
 		}
 	}
