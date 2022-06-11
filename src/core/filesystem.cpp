@@ -40,16 +40,6 @@ std::vector<u8> read_file(FILE* file, s64 offset, s64 size) {
 	return buffer;
 }
 
-static void strip_carriage_returns(std::vector<u8>& file) {
-	size_t new_size = 0;
-	for(size_t i = 0; i < file.size(); i++) {
-		if(file[i] != 0xd) {
-			file[new_size++] = file[i];
-		}
-	}
-	file.resize(new_size);
-}
-
 std::vector<u8> read_file(fs::path path, const char* open_mode) {
 	verify(!fs::is_directory(path), "Tried to open directory '%s' as regular file.", path.string().c_str());
 	FILE* file = fopen(path.string().c_str(), "rb");
@@ -102,4 +92,14 @@ void extract_file(fs::path dest_path, FILE* dest, FILE* src, s64 offset, s64 siz
 		verify(fwrite(copy_buffer.data(), size % BUFFER_SIZE, 1, dest) == 1,
 			"Failed to write to file '%s'.", dest_path.string().c_str());
 	}
+}
+
+void strip_carriage_returns(std::vector<u8>& file) {
+	size_t new_size = 0;
+	for(size_t i = 0; i < file.size(); i++) {
+		if(file[i] != 0xd) {
+			file[new_size++] = file[i];
+		}
+	}
+	file.resize(new_size);
 }

@@ -31,6 +31,7 @@
 #include <wtf/wtf_writer.h>
 #include <core/stream.h>
 #include <core/memory_profiler.h>
+#include <assetmgr/game_info.h>
 #include <assetmgr/asset_util.h>
 #include <assetmgr/asset_dispatch.h>
 

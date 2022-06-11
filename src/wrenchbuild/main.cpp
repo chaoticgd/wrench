@@ -304,7 +304,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, Game
 			
 			bank.game_info.name = build.game();
 			bank.game_info.format_version = ASSET_FORMAT_VERSION;
-			bank.game_info.builds = {build.reference()};
+			bank.game_info.builds = {asset_reference_to_string(build.reference())};
 			
 			printf("[100%%] Done!\n");
 			
@@ -355,7 +355,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, Game
 			unpack_asset_impl(*wad, stream, BuildConfig(game, region));
 			
 			bank.game_info.format_version = ASSET_FORMAT_VERSION;
-			bank.game_info.builds = {build.reference()};
+			bank.game_info.builds = {asset_reference_to_string(build.reference())};
 			
 			printf("[100%%] Done!\n");
 			

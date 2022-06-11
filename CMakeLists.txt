@@ -77,6 +77,7 @@ add_custom_target(
 )
 
 add_library(wrench_assetmgr
+	src/assetmgr/game_info.cpp
 	src/assetmgr/asset_util.cpp
 	src/assetmgr/asset.cpp
 	src/assetmgr/asset_types.cpp
@@ -101,6 +102,8 @@ add_executable(wrenchlauncher
 	src/launcher/main.cpp
 	src/launcher/global_state.cpp
 	src/launcher/oobe.cpp
+	src/launcher/mod_list.cpp
+	src/launcher/game_list.cpp
 )
 target_link_libraries(wrenchlauncher wrenchgui wrench_assetmgr)
 

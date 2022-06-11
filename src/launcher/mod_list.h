@@ -16,16 +16,28 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WRENCHGUI_COMMAND_OUTPUT_H
-#define WRENCHGUI_COMMAND_OUTPUT_H
+#ifndef LAUNCHER_MOD_LIST_H
+#define LAUNCHER_MOD_LIST_H
 
-#include <core/shell.h>
+#include <core/filesystem.h>
+#include <assetmgr/game_info.h>
 #include <gui/gui.h>
 
-namespace gui {
+struct Mod {
+	GameInfo game_info;
+	fs::path absolute_path;
+	bool selected = false;
+};
 
-void command_output_screen(const char* id, CommandStatus& status, void (*close_callback)());
+struct ModResult {
+	Mod* current;
+	std::vector<GlTexture>* images;
+	std::vector<Mod>* mods;
+	const char* build;
+};
 
-}
+ModResult mod_list(const std::string& filter);
+void load_mod_list(const std::vector<std::string>& mods_folders);
+void free_mod_list();
 
 #endif

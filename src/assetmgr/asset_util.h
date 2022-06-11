@@ -76,24 +76,6 @@ enum AssetAccessorMode {
 
 // *****************************************************************************
 
-enum class AssetBankType {
-	UNPACKED, // Assets unpacked from a base game ISO.
-	MOD, // A mod.
-	TEST // A set of binary assets to be used for running tests on.
-};
-
-struct GameInfo {
-	std::string name;
-	s32 format_version;
-	AssetBankType type;
-	std::vector<AssetReference> builds; // List of builds included with this asset pack.
-};
-
-GameInfo read_game_info(char* input);
-void write_game_info(std::string& dest, const GameInfo& info);
-
-// *****************************************************************************
-
 struct AssetError : std::exception {};
 
 struct InvalidAssetAttributeType : AssetError {

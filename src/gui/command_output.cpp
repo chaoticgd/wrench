@@ -18,7 +18,7 @@
 
 #include "command_output.h"
 
-void gui::command_output_screen(const char* id, CommandStatus& status) {
+void gui::command_output_screen(const char* id, CommandStatus& status, void (*close_callback)()) {
 	ImVec2 centre = ImGui::GetMainViewport()->GetCenter();
 	ImGui::SetNextWindowPos(centre, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
 	ImGui::SetNextWindowSize(ImVec2(640, 480), ImGuiCond_Appearing);
@@ -70,6 +70,7 @@ void gui::command_output_screen(const char* id, CommandStatus& status) {
 		ImGui::InputTextMultiline("output", &result, size, ImGuiInputTextFlags_Multiline | ImGuiInputTextFlags_ReadOnly);
 		if(finished) {
 			if(ImGui::Button("Close")) {
+				close_callback();
 				ImGui::CloseCurrentPopup();
 			}
 		}

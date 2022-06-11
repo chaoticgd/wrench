@@ -25,12 +25,14 @@
 #include <gui/settings.h>
 #include <gui/command_output.h>
 #include <launcher/oobe.h>
+#include <launcher/mod_list.h>
+#include <launcher/game_list.h>
 #include <launcher/global_state.h>
 
 static void update_gui(f32 delta_time);
-static void update_mod_list_window();
-static void update_information_window();
-static void update_buttons_window(f32 buttons_window_height);
+static void mod_list_window();
+static void details_window();
+static void buttons_window(f32 buttons_window_height);
 static void create_dock_layout();
 void begin_docking(f32 buttons_window_height);
 
@@ -61,6 +63,9 @@ int main(int argc, char** argv) {
 				load_font(g_launcher.header->font);
 				g_launcher.placeholder_image = load_image(g_launcher.header->placeholder_images[0]);
 				
+				load_game_list(g_config.folders.games_folder);
+				load_mod_list(g_config.folders.mods_folders);
+				
 				while(g_launcher.mode == LauncherMode::DRAWING_GUI) {
 					gui::run_frame(g_launcher.window, update_gui);
 					
@@ -70,6 +75,9 @@ int main(int argc, char** argv) {
 				}
 				
 				g_launcher.placeholder_image.destroy();
+				
+				free_game_list();
+				free_mod_list();
 				
 				gui::shutdown(g_launcher.window);
 				break;
@@ -102,87 +110,68 @@ void update_gui(f32 delta_time) {
 		first_frame = false;
 	}
 	
-	update_mod_list_window();
-	update_information_window();
+	mod_list_window();
+	details_window();
 	
 	ImGui::End(); // docking
 	
-	update_buttons_window(buttons_window_height);
+	buttons_window(buttons_window_height);
 }
 
-static void update_mod_list_window() {
+static void mod_list_window() {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 	ImGui::Begin("Mod List");
 	
-	const char* greeting = "Wrench Modding Toolset v0.0";
+	char greeting[64];
+	BuildWadHeader& build = ((ToolWadInfo*) WAD_INFO)->build;
+	if(build.version_major > -1 && build.version_minor > -1) {
+		snprintf(greeting, sizeof(greeting), "Wrench Modding Toolset v%hd.%hd", build.version_major, build.version_minor);
+	} else {
+		snprintf(greeting, sizeof(greeting), "Wrench Modding Toolset");
+	}
+	
 	ImGui::NewLine();
 	f32 greeting_width = ImGui::CalcTextSize(greeting).x;
 	ImGui::SetCursorPosX((ImGui::GetWindowSize().x - greeting_width) / 2);
 	ImGui::Text("%s", greeting);
 	ImGui::NewLine();
 	
-	ImGui::AlignTextToFramePadding();
-	ImGui::Text("Game");
-	ImGui::SameLine();
-	ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-	if(ImGui::BeginCombo("##game", "Ratchet: Gladiator (EU, sces_532.58)")) {
-		ImGui::EndCombo();
-	}
-	ImGui::PopItemWidth();
+	static std::string filter;
 	
-	ImGui::BeginChild("table");
-	if(ImGui::BeginTable("mods", 4)) {
-		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed);
-		ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
-		ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed);
-		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed);
-		ImGui::TableHeadersRow();
-		
-		bool check = false;
+	if(ImGui::BeginTable("inputs", 2)) {
+		ImGui::TableSetupColumn("labels", ImGuiTableColumnFlags_WidthFixed);
+		ImGui::TableSetupColumn("inputs", ImGuiTableColumnFlags_WidthStretch);
 		
 		ImGui::TableNextRow();
 		ImGui::TableNextColumn();
-		ImGui::Checkbox("##enabled", &check);
+		ImGui::AlignTextToFramePadding();
+		ImGui::Text(" Game");
 		ImGui::TableNextColumn();
-		ImGui::Text("my mod");
-		ImGui::TableNextColumn();
-		ImGui::Text("45k");
+		ImGui::SetNextItemWidth(-1);
+		game_list();
 		
 		ImGui::TableNextRow();
 		ImGui::TableNextColumn();
-		ImGui::Checkbox("##enabled", &check);
+		ImGui::AlignTextToFramePadding();
+		ImGui::Text(" Filter");
 		ImGui::TableNextColumn();
-		ImGui::Text("more bolts mod");
-		ImGui::TableNextColumn();
-		ImGui::Text("14k");
-		
-		ImGui::TableNextRow();
-		ImGui::TableNextColumn();
-		ImGui::Checkbox("##enabled", &check);
-		ImGui::TableNextColumn();
-		ImGui::Text("nude clank mod");
-		ImGui::TableNextColumn();
-		ImGui::Text("1k");
-		
-		ImGui::TableNextRow();
-		ImGui::TableNextColumn();
-		ImGui::Checkbox("##enabled", &check);
-		ImGui::TableNextColumn();
-		ImGui::Text("less bolts mod");
-		ImGui::TableNextColumn();
-		ImGui::Text("10k");
+		ImGui::SetNextItemWidth(-1);
+		ImGui::InputText("##filter", &filter);
 		
 		ImGui::EndTable();
 	}
+	
+	ImGui::BeginChild("table");
+	mod_list(filter);
 	ImGui::EndChild();
 	
 	ImGui::End();
 	ImGui::PopStyleVar(); // ImGuiStyleVar_WindowPadding
 }
 
-static void update_information_window() {
+static void details_window() {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-	ImGui::Begin("Information");
+	ImGui::Begin("Details");
 	
 	ImGui::Image((void*) (intptr_t) g_launcher.placeholder_image.id, ImVec2(512, 320));
 	
@@ -192,7 +181,7 @@ static void update_information_window() {
 	ImGui::PopStyleVar(); // ImGuiStyleVar_WindowPadding
 }
 
-static void update_buttons_window(f32 buttons_window_height) {
+static void buttons_window(f32 buttons_window_height) {
 	ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize;
 	
 	ImVec2 viewport_size = ImGui::GetMainViewport()->Size;
@@ -223,7 +212,9 @@ static void update_buttons_window(f32 buttons_window_height) {
 		}
 	}
 	
-	gui::command_output_screen("Import ISO", g_launcher.import_iso_command);
+	gui::command_output_screen("Import ISO", g_launcher.import_iso_command, []() {
+		load_game_list(g_config.folders.games_folder);
+	});
 	
 	ImGui::SameLine();
 	if(ImGui::Button("Open Mods Folder")) {
@@ -263,6 +254,11 @@ static void update_buttons_window(f32 buttons_window_height) {
 	static bool show_the_demo = false;
 	
 	if(ImGui::BeginPopup("More Buttons")) {
+		if(ImGui::Selectable("Refresh")) {
+			load_game_list(g_config.folders.games_folder);
+			load_mod_list(g_config.folders.mods_folders);
+		}
+		ImGui::Separator();
 		if(ImGui::Selectable("About##the_button")) {
 			open_about = true;
 		}
@@ -326,11 +322,11 @@ static void create_dock_layout() {
 	ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
 	ImGui::DockBuilderSetNodeSize(dockspace_id, ImVec2(1.f, 1.f));
 
-	ImGuiID mod_list, information;
-	ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 1.f / 2.f, &mod_list, &information);
+	ImGuiID mod_list, details;
+	ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 1.f / 2.f, &mod_list, &details);
 	
 	ImGui::DockBuilderDockWindow("Mod List", mod_list);
-	ImGui::DockBuilderDockWindow("Information", information);
+	ImGui::DockBuilderDockWindow("Details", details);
 
 	ImGui::DockBuilderFinish(dockspace_id);
 }

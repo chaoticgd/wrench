@@ -16,16 +16,19 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WRENCHGUI_COMMAND_OUTPUT_H
-#define WRENCHGUI_COMMAND_OUTPUT_H
+#ifndef LAUNCHER_GAME_LIST_H
+#define LAUNCHER_GAME_LIST_H
 
-#include <core/shell.h>
-#include <gui/gui.h>
+#include <core/util.h>
+#include <core/build_config.h>
 
-namespace gui {
+struct GameResult {
+	const char* folder;
+	const std::vector<std::string>* builds;
+};
 
-void command_output_screen(const char* id, CommandStatus& status, void (*close_callback)());
-
-}
+GameResult game_list();
+void load_game_list(const std::string& games_folder);
+void free_game_list();
 
 #endif
