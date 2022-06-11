@@ -21,6 +21,7 @@
 #include <toolwads/wads.h>
 
 static void pack_build_wad();
+static void pack_gui_wad();
 static void pack_launcher_wad();
 static SectorRange pack_oobe_wad(OutputStream& dest);
 static SectorRange pack_file(OutputStream& dest, const char* src_path);
@@ -30,6 +31,7 @@ static s32 parse_positive_embedded_int(const char* str);
 
 int main() {
 	pack_build_wad();
+	pack_gui_wad();
 	pack_launcher_wad();
 	return 0;
 }
@@ -86,6 +88,17 @@ static void pack_build_wad() {
 		}
 	}
 	
+	wad.write<BuildWadHeader>(0, header);
+}
+
+static void pack_gui_wad() {
+	FileOutputStream wad;
+	assert(wad.open("data/gui.wad"));
+	
+	GuiWadHeader header = {};
+	header.header_size = sizeof(header);
+	wad.alloc<GuiWadHeader>();
+	
 	header.contributors = pack_file(wad, "CONTRIBUTORS");
 	
 	header.license_text[LICENSE_WRENCH] = pack_file(wad, "data/licenses/wrench.txt");
@@ -102,7 +115,10 @@ static void pack_build_wad() {
 	header.license_text[LICENSE_TOML11] = pack_file(wad, "data/licenses/toml11.txt");
 	header.license_text[LICENSE_ZLIB] = pack_file(wad, "data/licenses/zlib.txt");
 	
-	wad.write<BuildWadHeader>(0, header);
+	header.fonts[0] = pack_file(wad, "data/gui/Barlow-Regular.ttf");
+	header.fonts[1] = pack_file(wad, "data/gui/Barlow-Italic.ttf");
+	
+	wad.write<GuiWadHeader>(0, header);
 }
 
 static void pack_launcher_wad() {
@@ -113,7 +129,6 @@ static void pack_launcher_wad() {
 	header.header_size = sizeof(header);
 	wad.alloc<LauncherWadHeader>();
 	
-	header.font = pack_file(wad, "data/Barlow-Regular.ttf");
 	header.placeholder_images[0] = pack_compressed_image(wad, "data/launcher/my_mod.png");
 	header.oobe = pack_oobe_wad(wad);
 	

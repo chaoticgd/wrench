@@ -30,7 +30,7 @@ static OobeWadHeader* header;
 static GlTexture welcome;
 
 bool run_oobe() {
-	ByteRange64 oobe_range = g_launcher.header->oobe.bytes();
+	ByteRange64 oobe_range = wadinfo.launcher.oobe.bytes();
 	std::vector<u8> compressed = g_launcher.wad.read_multiple<u8>(oobe_range.offset, oobe_range.size);
 	decompress_wad(wad, compressed);
 	header = (OobeWadHeader*) &wad[0];

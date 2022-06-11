@@ -525,18 +525,15 @@ static void print_usage(bool developer_subcommands) {
 	}
 }
 
-extern unsigned char WAD_INFO[];
-
 static void print_version() {
-	BuildWadHeader* build = &((ToolWadInfo*) WAD_INFO)->build;
-	if(build->version_major > -1 && build->version_major > -1) {
-		printf("Wrench Build Tool v%hd.%hd\n", build->version_major, build->version_minor);
+	if(wadinfo.build.version_major > -1 && wadinfo.build.version_major > -1) {
+		printf("Wrench Build Tool v%hd.%hd\n", wadinfo.build.version_major, wadinfo.build.version_minor);
 	} else {
 		printf("Wrench Build Tool (Development Version)\n");
 	}
 	printf("Built from git commit ");
-	for(s32 i = 0; i < ARRAY_SIZE(build->commit); i++) {
-		printf("%hhx", build->commit[i]);
+	for(s32 i = 0; i < ARRAY_SIZE(wadinfo.build.commit); i++) {
+		printf("%hhx", wadinfo.build.commit[i]);
 	}
 	printf("\n");
 }

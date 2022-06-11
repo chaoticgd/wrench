@@ -22,12 +22,9 @@
 #include <core/stream.h>
 #include <core/filesystem.h>
 #include <gui/config.h>
+#include <gui/gui_state.h>
 
-static std::vector<Mod> mods;
-static size_t current_mod = 0;
-static std::vector<GlTexture> images;
-
-ModResult mod_list(const std::string& filter) {
+void mod_list(const std::string& filter) {
 	std::string filter_lower = filter;
 	for(char& c : filter_lower) c = tolower(c);
 	
@@ -45,10 +42,11 @@ ModResult mod_list(const std::string& filter) {
 		}
 		ImGui::TableHeadersRow();
 		
+		std::vector<gui::StateNode>& mods = g_gui.subnodes("mods");
 		for(size_t i = 0; i < mods.size(); i++) {
-			Mod& mod = mods[i];
+			auto mod = Mod(mods[i]);
 			
-			std::string mod_name_lowercase = mod.game_info.name;
+			std::string mod_name_lowercase = mod.name();
 			for(char& c : mod_name_lowercase) c = tolower(c);
 			
 			if(mod_name_lowercase.find(filter_lower) != std::string::npos) {
@@ -59,18 +57,20 @@ ModResult mod_list(const std::string& filter) {
 				
 				ImGui::SetCursorPosX(ImGui::GetStyle().FramePadding.x);
 				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.f, 0.f));
-				ImGui::Checkbox("##enabled", &mod.selected);
+				ImGui::Checkbox("##enabled", &mod.enabled());
 				ImGui::PopStyleVar();
 				
 				ImGui::TableNextColumn();
 				ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns;
-				if(ImGui::Selectable(mod.game_info.name.c_str(), i == current_mod, selectable_flags)) {
-					current_mod = i;
+				s32& selected_mod = g_gui.integer("selected_mod");
+				if(ImGui::Selectable(mod.name().c_str(), i == selected_mod, selectable_flags)) {
+					selected_mod = i;
+					g_gui.boolean("mod_images_dirty") = true;
 				}
 				
 				if(author_column) {
 					ImGui::TableNextColumn();
-					ImGui::Text("%s", mod.game_info.author.c_str());
+					ImGui::Text("%s", mod.author().c_str());
 				}
 				
 				ImGui::PopID();
@@ -86,12 +86,13 @@ ModResult mod_list(const std::string& filter) {
 		ImGui::MenuItem("Author", nullptr, &author_column);
 		ImGui::EndPopup();
 	}
-	
-	return {};
 }
 
 void load_mod_list(const std::vector<std::string>& mods_folders) {
 	free_mod_list();
+	
+	auto& mods = g_gui.subnodes("mods");
+	mods.clear();
 	
 	for(std::string mods_dir : mods_folders) {
 		for(fs::directory_entry mod_dir : fs::directory_iterator(mods_dir)) {
@@ -101,39 +102,25 @@ void load_mod_list(const std::vector<std::string>& mods_folders) {
 				strip_carriage_returns(game_info_txt);
 				game_info_txt.push_back(0);
 				
-				Mod& mod = mods.emplace_back();
-				mod.game_info = read_game_info((char*) game_info_txt.data());
-				mod.absolute_path = fs::absolute(mod_dir.path());
+				GameInfo info = read_game_info((char*) game_info_txt.data());
 				
-				for(std::string& image_path : mod.game_info.images) {
-					//GlTexture& texture = mod.images.emplace_back();
-					//
-					//FileInputStream image_stream;
-					//if(image_stream.open(mod_dir.path()/image_path)) {
-					//	Opt<Texture> image = read_png(image_stream);
-					//	if(image.has_value()) {
-					//		image->to_rgba();
-					//		
-					//		GlTexture texture;
-					//		glGenTextures(1, &texture.id);
-					//		glBindTexture(GL_TEXTURE_2D, texture.id);
-					//		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, *(s32*) &image[0], *(s32*) &image[4], 0, GL_RGBA, GL_UNSIGNED_BYTE, &image[16]);
-					//		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-					//		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-					//		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-					//		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-					//	}
-					//}
-				}
+				auto mod = Mod(mods.emplace_back());
+				mod.path() = mod_dir.path().string();
+				mod.name() = info.name;
+				mod.author() = info.author;
+				mod.description() = info.description;
+				mod.version() = info.version;
+				mod.images() = info.images;
 			}
 		}
 	}
 	
-	std::sort(BEGIN_END(mods), [](const Mod& lhs, const Mod& rhs)
-		{ return lhs.game_info.name < rhs.game_info.name; });
+	std::sort(BEGIN_END(g_gui.subnodes("mods")), [](gui::StateNode& lhs, gui::StateNode& rhs)
+		{ return Mod(lhs).name() < Mod(rhs).name(); });
+	
+	g_gui.integer("selected_mod") = INT32_MAX;
 }
 
 void free_mod_list() {
-	mods.clear();
-	images.clear();
+	g_gui.subnodes("mods").clear();
 }

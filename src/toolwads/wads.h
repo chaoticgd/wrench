@@ -44,20 +44,27 @@ packed_struct(BuildWadHeader,
 	/* 0x08 */ s16 version_major;
 	/* 0x0a */ s16 version_minor;
 	/* 0x0c */ u8 commit[0x14];
-	/* 0x20 */ SectorRange contributors;
-	/* 0x28 */ SectorRange license_text[MAX_LICENSE];
+)
+
+packed_struct(GuiWadHeader,
+	/* 0x000 */ s32 header_size;
+	/* 0x004 */ Sector32 sector;
+	/* 0x008 */ SectorRange contributors;
+	/* 0x010 */ SectorRange license_text[32];
+	/* 0x110 */ SectorRange fonts[10];
 )
 
 packed_struct(LauncherWadHeader,
 	/* 0x00 */ s32 header_size;
 	/* 0x04 */ Sector32 sector;
-	/* 0x08 */ SectorRange font;
+	/* 0x08 */ SectorRange unused;
 	/* 0x10 */ SectorRange placeholder_images[2];
 	/* 0x20 */ SectorRange oobe;
 )
 
 packed_struct(ToolWadInfo,
 	BuildWadHeader build;
+	GuiWadHeader gui;
 	LauncherWadHeader launcher;
 )
 
@@ -65,6 +72,8 @@ packed_struct(OobeWadHeader,
 	/* 0x0 */ ByteRange greeting;
 )
 
-extern unsigned char WAD_INFO[];
+extern "C" {
+	extern ToolWadInfo wadinfo;
+}
 
 #endif

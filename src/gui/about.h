@@ -24,7 +24,7 @@
 
 namespace gui {
 
-void about_screen(InputStream& build_wad, SectorRange* license_text);
+void about_screen();
 
 }
 

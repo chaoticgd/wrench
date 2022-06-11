@@ -33,14 +33,32 @@ endif()
 add_custom_command(
 	COMMAND toolwadpacker
 	DEPENDS toolwadpacker
-		"${CMAKE_SOURCE_DIR}/CONTRIBUTORS"
+		# build.wad
 		"${CMAKE_SOURCE_DIR}/data/git_tag.tmp"
 		"${CMAKE_SOURCE_DIR}/data/git_commit.tmp"
-		"${CMAKE_SOURCE_DIR}/data/Barlow-Regular.ttf"
+		# gui.wad
+		"${CMAKE_SOURCE_DIR}/CONTRIBUTORS"
+		"${CMAKE_SOURCE_DIR}/data/licenses/barlowfont.txt"
+		"${CMAKE_SOURCE_DIR}/data/licenses/cxxopts.txt"
+		"${CMAKE_SOURCE_DIR}/data/licenses/glad.txt"
+		"${CMAKE_SOURCE_DIR}/data/licenses/glfw.txt"
+		"${CMAKE_SOURCE_DIR}/data/licenses/glm.txt"
+		"${CMAKE_SOURCE_DIR}/data/licenses/imgui.txt"
+		"${CMAKE_SOURCE_DIR}/data/licenses/libpng.txt"
+		"${CMAKE_SOURCE_DIR}/data/licenses/nativefiledialog.txt"
+		"${CMAKE_SOURCE_DIR}/data/licenses/nlohmanjson.txt"
+		"${CMAKE_SOURCE_DIR}/data/licenses/rapidxml.txt"
+		"${CMAKE_SOURCE_DIR}/data/licenses/toml11.txt"
+		"${CMAKE_SOURCE_DIR}/data/licenses/wrench.txt"
+		"${CMAKE_SOURCE_DIR}/data/licenses/zlib.txt"
+		"${CMAKE_SOURCE_DIR}/data/gui/Barlow-Regular.ttf"
+		"${CMAKE_SOURCE_DIR}/data/gui/Barlow-Italic.ttf"
+		# launcher.wad
 		"${CMAKE_SOURCE_DIR}/data/launcher/my_mod.png"
 		"${CMAKE_SOURCE_DIR}/data/launcher/oobe/wrench_setup.png"
 	OUTPUT
 		"${CMAKE_SOURCE_DIR}/data/build.wad"
+		"${CMAKE_SOURCE_DIR}/data/gui.wad"
 		"${CMAKE_SOURCE_DIR}/data/launcher.wad"
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 	COMMENT "Generating tool wads"
@@ -55,9 +73,11 @@ add_executable(header2cpp
 add_custom_command(
 	COMMAND header2cpp _generated_wadinfo.cpp
 		"${CMAKE_SOURCE_DIR}/data/build.wad"
+		"${CMAKE_SOURCE_DIR}/data/gui.wad"
 		"${CMAKE_SOURCE_DIR}/data/launcher.wad"
 	DEPENDS header2cpp
 		"${CMAKE_SOURCE_DIR}/data/build.wad"
+		"${CMAKE_SOURCE_DIR}/data/gui.wad"
 		"${CMAKE_SOURCE_DIR}/data/launcher.wad"
 	OUTPUT _generated_wadinfo.cpp
 	COMMENT "Generating _generated_wadinfo.cpp"

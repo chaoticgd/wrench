@@ -35,8 +35,6 @@ static const gui::Page ABOUT_PAGES[] = {
 
 typedef void (*VoidFuncPtr)();
 
-static InputStream* wad;
-static SectorRange* ranges;
 static License loaded_license = MAX_LICENSE;
 static std::vector<u8> license_text;
 
@@ -45,8 +43,8 @@ static constexpr VoidFuncPtr gen_license_page() {
 	return []() {
 		if(license != loaded_license) {
 			license_text.clear();
-			SectorRange range = ranges[(s32) license];
-			std::vector<u8> compressed = wad->read_multiple<u8>(range.offset.bytes(), range.size.bytes());
+			SectorRange range = wadinfo.gui.license_text[(s32) license];
+			std::vector<u8> compressed = g_guiwad.read_multiple<u8>(range.offset.bytes(), range.size.bytes());
 			decompress_wad(license_text, compressed);
 			license_text.push_back(0);
 			loaded_license = license;
@@ -82,10 +80,7 @@ static const gui::Chapter ABOUT_SCREEN[] = {
 
 static std::vector<u8> contributors_text;
 
-void gui::about_screen(InputStream& build_wad, SectorRange* license_text) {
-	wad = &build_wad;
-	ranges = license_text;
-	
+void gui::about_screen() {
 	static const Page* page = nullptr;
 	gui::book(&page, "About##the_popup", ARRAY_PAIR(ABOUT_SCREEN), BookButtons::CLOSE);
 }
@@ -96,11 +91,8 @@ static void about_wrench() {
 
 static void about_contributors() {
 	if(contributors_text.empty()) {
-		SectorRange range = ((ToolWadInfo*) WAD_INFO)->build.contributors;
-		
-		FileInputStream wad;
-		wad.open("data/build.wad");
-		std::vector<u8> compressed_bytes = wad.read_multiple<u8>(range.offset.bytes(), range.size.bytes());
+		SectorRange range = wadinfo.gui.contributors;
+		std::vector<u8> compressed_bytes = g_guiwad.read_multiple<u8>(range.offset.bytes(), range.size.bytes());
 		
 		std::vector<u8> string;
 		decompress_wad(contributors_text, compressed_bytes);

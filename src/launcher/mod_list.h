@@ -22,21 +22,26 @@
 #include <core/filesystem.h>
 #include <assetmgr/game_info.h>
 #include <gui/gui.h>
+#include <gui/gui_state.h>
 
-struct Mod {
-	GameInfo game_info;
-	fs::path absolute_path;
-	bool selected = false;
+class Mod {
+public:
+	Mod(gui::StateNode& node) : _node(node) {}
+	
+	std::string& path() { return _node.string("path"); }
+	
+	std::string& name() { return _node.string("name"); }
+	std::string& author() { return _node.string("author"); }
+	std::string& description() { return _node.string("description"); }
+	std::string& version() { return _node.string("version"); }
+	std::vector<std::string>& images() { return _node.strings("images"); }
+	
+	bool& enabled() { return _node.boolean("enabled"); }
+private:
+	gui::StateNode& _node;
 };
 
-struct ModResult {
-	Mod* current;
-	std::vector<GlTexture>* images;
-	std::vector<Mod>* mods;
-	const char* build;
-};
-
-ModResult mod_list(const std::string& filter);
+void mod_list(const std::string& filter);
 void load_mod_list(const std::vector<std::string>& mods_folders);
 void free_mod_list();
 

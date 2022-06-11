@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
 	FILE* dest = fopen(argv[1], "wb");
 	assert(dest);
 	
-	fprintf(dest, "alignas(16) unsigned char WAD_INFO[]={");
+	fprintf(dest, "extern \"C\"{alignas(16) unsigned char wadinfo[]={");
 	for(int i = 2; i < argc; i++) {
 		FILE* src = fopen(argv[i], "rb");
 		assert(src);
@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
 			fprintf(dest, "0x%hhx,", byte);
 		}
 	}
-	fprintf(dest, "};\n");
+	fprintf(dest, "};}\n");
 	
 	return 0;
 }

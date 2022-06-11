@@ -21,6 +21,9 @@
 #include <wtf/wtf.h>
 #include <wtf/wtf_writer.h>
 
+static std::string read_string_attribute(WtfNode* node, const char* name);
+static void write_string_attribute(WtfWriter* ctx, const char* name, const std::string& value);
+
 GameInfo read_game_info(char* input) {
 	char* error_dest = nullptr;
 	WtfNode* root = wtf_parse(input, &error_dest);
@@ -30,16 +33,6 @@ GameInfo read_game_info(char* input) {
 	}
 	
 	GameInfo info;
-	
-	const WtfAttribute* name = wtf_attribute(root, "name");
-	if(name && name->type == WTF_STRING) {
-		info.name = name->string.begin;
-	}
-	
-	const WtfAttribute* author = wtf_attribute(root, "author");
-	if(author && author->type == WTF_STRING) {
-		info.author = author->string.begin;
-	}
 	
 	const WtfAttribute* format_version = wtf_attribute(root, "format_version");
 	if(format_version && format_version->type == WTF_NUMBER) {
@@ -58,6 +51,11 @@ GameInfo read_game_info(char* input) {
 	} else {
 		fprintf(stderr, "warning: No type attribute in gameinfo.txt file.\n");
 	}
+	
+	info.name = read_string_attribute(root, "name");
+	info.author = read_string_attribute(root, "author");
+	info.description = read_string_attribute(root, "description");
+	info.version = read_string_attribute(root, "version");
 	
 	const WtfAttribute* images = wtf_attribute(root, "images");
 	if(images && images->type == WTF_ARRAY) {
@@ -83,14 +81,6 @@ GameInfo read_game_info(char* input) {
 void write_game_info(std::string& dest, const GameInfo& info) {
 	WtfWriter* ctx = wtf_begin_file(dest);
 	
-	wtf_begin_attribute(ctx, "name");
-	wtf_write_string(ctx, info.name.c_str());
-	wtf_end_attribute(ctx);
-	
-	wtf_begin_attribute(ctx, "author");
-	wtf_write_string(ctx, info.author.c_str());
-	wtf_end_attribute(ctx);
-	
 	wtf_begin_attribute(ctx, "format_version");
 	wtf_write_integer(ctx, info.format_version);
 	wtf_end_attribute(ctx);
@@ -104,6 +94,11 @@ void write_game_info(std::string& dest, const GameInfo& info) {
 		wtf_write_string(ctx, "mod");
 	}
 	wtf_end_attribute(ctx);
+	
+	write_string_attribute(ctx, "name", info.name);
+	write_string_attribute(ctx, "author", info.author);
+	write_string_attribute(ctx, "description", info.description);
+	write_string_attribute(ctx, "version", info.version);
 	
 	wtf_begin_attribute(ctx, "images");
 	wtf_begin_array(ctx);
@@ -122,4 +117,18 @@ void write_game_info(std::string& dest, const GameInfo& info) {
 	wtf_end_attribute(ctx);
 	
 	wtf_end_file(ctx);
+}
+
+static std::string read_string_attribute(WtfNode* node, const char* name) {
+	const WtfAttribute* attribute = wtf_attribute(node, name);
+	if(attribute && attribute->type == WTF_STRING) {
+		return attribute->string.begin;
+	}
+	return "";
+}
+
+static void write_string_attribute(WtfWriter* ctx, const char* name, const std::string& value) {
+	wtf_begin_attribute(ctx, name);
+	wtf_write_string(ctx, value.c_str());
+	wtf_end_attribute(ctx);
 }

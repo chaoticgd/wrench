@@ -30,6 +30,7 @@
 #include <imgui/backends/imgui_impl_glfw.h>
 
 #include <core/util.h>
+#include <core/stream.h>
 
 namespace gui {
 
@@ -61,5 +62,7 @@ struct GlTexture {
 	GlTexture& operator=(GlTexture&& rhs) { id = rhs.id; rhs.id = 0; return *this; }
 	void destroy() { if(id != 0) { glDeleteTextures(1, &id); id = 0; } }
 };
+
+extern FileInputStream g_guiwad;
 
 #endif

@@ -48,11 +48,11 @@ struct LauncherState {
 	LauncherMode mode;
 	FileInputStream wad;
 	FileInputStream buildwad;
-	LauncherWadHeader* header;
 	BinPaths bin_paths;
 	GLFWwindow* window;
-	std::vector<u8> font;
-	GlTexture placeholder_image;
+	std::vector<std::vector<u8>> font_buffers;
+	ImFont* font_regular;
+	ImFont* font_italic;
 	LaunchParams launch_params;
 	CommandStatus import_iso_command;
 };

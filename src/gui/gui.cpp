@@ -56,6 +56,8 @@ GLFWwindow* gui::startup(const char* window_title, s32 width, s32 height, bool m
 	
 	last_frame_time = std::chrono::steady_clock::now();
 	
+	g_guiwad.open("data/gui.wad");
+	
 	return window;
 }
 
@@ -97,3 +99,5 @@ void gui::shutdown(GLFWwindow* window) {
 	ImGui::DestroyContext();
 	glfwTerminate();
 }
+
+FileInputStream g_guiwad;

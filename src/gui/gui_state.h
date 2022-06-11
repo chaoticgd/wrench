@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2022 chaoticgd
+	Copyright (C) 2019-2022 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,29 +16,34 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef ASSETMGR_GAME_INFO_H
-#define ASSETMGR_GAME_INFO_H
+#ifndef WRENCHGUI_GUI_STATE_H
+#define WRENCHGUI_GUI_STATE_H
 
+#include <any>
 #include <core/util.h>
 
-enum class AssetBankType {
-	UNPACKED, // Assets unpacked from a base game ISO.
-	MOD, // A mod.
-	TEST // A set of binary assets to be used for running tests on.
+namespace gui {
+
+class StateNode {
+public:
+	s32& integer(const char* tag);
+	std::vector<s32>& integers(const char* tag);
+	
+	bool& boolean(const char* tag);
+	std::vector<bool>& booleans(const char* tag);
+	
+	std::string& string(const char* tag);
+	std::vector<std::string>& strings(const char* tag);
+	
+	StateNode& subnode(const char* tag);
+	std::vector<StateNode>& subnodes(const char* tag);
+	
+private:
+	std::map<std::string, std::any> _attributes;
 };
 
-struct GameInfo {
-	std::string name;
-	std::string author;
-	std::string description;
-	std::string version;
-	std::vector<std::string> images;
-	s32 format_version;
-	AssetBankType type;
-	std::vector<std::string> builds; // List of builds included with this asset pack.
-};
+}
 
-GameInfo read_game_info(char* input);
-void write_game_info(std::string& dest, const GameInfo& info);
+extern gui::StateNode g_gui;
 
 #endif

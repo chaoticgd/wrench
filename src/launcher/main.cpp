@@ -29,21 +29,31 @@
 #include <launcher/game_list.h>
 #include <launcher/global_state.h>
 
+struct ModImage {
+	GlTexture texture;
+	s32 width;
+	s32 height;
+};
+
 static void update_gui(f32 delta_time);
 static void mod_list_window();
 static void details_window();
+static void not_specified();
 static void buttons_window(f32 buttons_window_height);
 static void create_dock_layout();
-void begin_docking(f32 buttons_window_height);
+static void begin_docking(f32 buttons_window_height);
+static void load_mod_images();
+static void free_mod_images();
+static ImFont* load_font_from_gui_wad(SectorRange range);
+static ModImage load_image_from_launcher_wad(SectorRange range);
+static GlTexture upload_gl_texture(const u8* data, s32 width, s32 height);
 
-static ImFont* load_font(SectorRange range);
-static GlTexture load_image(SectorRange range);
+static std::vector<ModImage> mod_images;
 
 int main(int argc, char** argv) {
 	g_launcher.mode = LauncherMode::DRAWING_GUI;
 	verify(g_launcher.wad.open("data/launcher.wad"), "Failed to open 'launcher.wad'.");
 	verify(g_launcher.buildwad.open("data/build.wad"), "Failed to open 'build.wad'.");
-	g_launcher.header = &((ToolWadInfo*) WAD_INFO)->launcher;
 	
 	g_launcher.bin_paths.wrenchbuild = "./bin/wrenchbuild";
 	
@@ -60,13 +70,20 @@ int main(int argc, char** argv) {
 			case LauncherMode::DRAWING_GUI: {
 				g_launcher.window = gui::startup("Wrench Launcher", 960, 600);
 				
-				load_font(g_launcher.header->font);
-				g_launcher.placeholder_image = load_image(g_launcher.header->placeholder_images[0]);
+				g_launcher.font_regular = load_font_from_gui_wad(wadinfo.gui.fonts[0]);
+				g_launcher.font_italic = load_font_from_gui_wad(wadinfo.gui.fonts[1]);
 				
 				load_game_list(g_config.folders.games_folder);
 				load_mod_list(g_config.folders.mods_folders);
+				load_mod_images();
 				
 				while(g_launcher.mode == LauncherMode::DRAWING_GUI) {
+					bool& mod_images_dirty = g_gui.boolean("mod_images_dirty");
+					if(mod_images_dirty) {
+						load_mod_images();
+						mod_images_dirty = false;
+					}
+					
 					gui::run_frame(g_launcher.window, update_gui);
 					
 					if(glfwWindowShouldClose(g_launcher.window)) {
@@ -74,10 +91,9 @@ int main(int argc, char** argv) {
 					}
 				}
 				
-				g_launcher.placeholder_image.destroy();
-				
 				free_game_list();
 				free_mod_list();
+				free_mod_images();
 				
 				gui::shutdown(g_launcher.window);
 				break;
@@ -123,7 +139,7 @@ static void mod_list_window() {
 	ImGui::Begin("Mod List");
 	
 	char greeting[64];
-	BuildWadHeader& build = ((ToolWadInfo*) WAD_INFO)->build;
+	BuildWadHeader& build = wadinfo.build;
 	if(build.version_major > -1 && build.version_minor > -1) {
 		snprintf(greeting, sizeof(greeting), "Wrench Modding Toolset v%hd.%hd", build.version_major, build.version_minor);
 	} else {
@@ -173,12 +189,66 @@ static void details_window() {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 	ImGui::Begin("Details");
 	
-	ImGui::Image((void*) (intptr_t) g_launcher.placeholder_image.id, ImVec2(512, 320));
+	assert(mod_images.size() >= 1);
+	ModImage& image = mod_images[0];
 	
-	ImGui::TextWrapped("This is a mod that enhances the gaming experience by introducing rich new ideas to create a new paradigm of synergistic gameplay.");
+	f32 display_height = 320.f;
+	f32 display_width = display_height * image.width / (f32) image.height;
+	
+	ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - display_width / 2);
+	ImGui::Image((void*) (intptr_t) image.texture.id, ImVec2(display_width, display_height));
+	
+	auto& mods = g_gui.subnodes("mods");
+	s32 selected_mod = g_gui.integer("selected_mod");
+	if(selected_mod < mods.size()) {
+		auto mod = Mod(mods[selected_mod]);
+		
+		if(ImGui::BeginTable("attributes", 2)) {
+			ImGui::TableSetupColumn("key", ImGuiTableColumnFlags_WidthFixed);
+			ImGui::TableSetupColumn("value", ImGuiTableColumnFlags_WidthStretch);
+			
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::Text("Author");
+			ImGui::TableNextColumn();
+			if(!mod.author().empty()) {
+				ImGui::TextWrapped("%s", mod.author().c_str());
+			} else {
+				not_specified();
+			}
+			
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::Text("Description");
+			ImGui::TableNextColumn();
+			if(!mod.description().empty()) {
+				ImGui::TextWrapped("%s", mod.description().c_str());
+			} else {
+				not_specified();
+			}
+			
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::Text("Version");
+			ImGui::TableNextColumn();
+			if(!mod.version().empty()) {
+				ImGui::TextWrapped("%s", mod.version().c_str());
+			} else {
+				not_specified();
+			}
+			
+			ImGui::EndTable();
+		}
+	}
 	
 	ImGui::End();
 	ImGui::PopStyleVar(); // ImGuiStyleVar_WindowPadding
+}
+
+static void not_specified() {
+	ImGui::PushFont(g_launcher.font_italic);
+	ImGui::TextWrapped("Not specified.");
+	ImGui::PopFont();
 }
 
 static void buttons_window(f32 buttons_window_height) {
@@ -281,7 +351,7 @@ static void buttons_window(f32 buttons_window_height) {
 		open_about = false;
 	}
 	
-	gui::about_screen(g_launcher.buildwad, ((ToolWadInfo*) WAD_INFO)->build.license_text);
+	gui::about_screen();
 	
 	if(open_settings) {
 		ImGui::OpenPopup("Settings##the_popup");
@@ -323,7 +393,7 @@ static void create_dock_layout() {
 	ImGui::DockBuilderSetNodeSize(dockspace_id, ImVec2(1.f, 1.f));
 
 	ImGuiID mod_list, details;
-	ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 1.f / 2.f, &mod_list, &details);
+	ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.5f, &mod_list, &details);
 	
 	ImGui::DockBuilderDockWindow("Mod List", mod_list);
 	ImGui::DockBuilderDockWindow("Details", details);
@@ -331,7 +401,7 @@ static void create_dock_layout() {
 	ImGui::DockBuilderFinish(dockspace_id);
 }
 
-void begin_docking(f32 buttons_window_height) {
+static void begin_docking(f32 buttons_window_height) {
 	ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking;
 	
 	ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -356,32 +426,75 @@ void begin_docking(f32 buttons_window_height) {
 	ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_NoTabBar);
 }
 
-static ImFont* load_font(SectorRange range) {
-	std::vector<u8> compressed_font = g_launcher.wad.read_multiple<u8>(range.offset.bytes(), range.size.bytes());
+static void load_mod_images() {
+	free_mod_images();
 	
-	decompress_wad(g_launcher.font, compressed_font);
+	s32& selected_mod = g_gui.integer("selected_mod");
+	auto& mods = g_gui.subnodes("mods");
+	if(selected_mod < mods.size()) {
+		auto mod = Mod(mods[selected_mod]);
+		const auto& images = mod.images();
+		s32 successful_loads = 0;
+		for(const std::string& image : images) {
+			FileInputStream stream;
+			if(stream.open(fs::path(mod.path())/image)) {
+				Opt<Texture> image = read_png(stream);
+				if(image.has_value()) {
+					image->to_rgba();
+					GlTexture texture = upload_gl_texture(image->data.data(), image->width, image->height);
+					mod_images.push_back(ModImage{std::move(texture), image->width, image->height});
+					successful_loads++;
+				}
+			}
+		}
+		if(successful_loads < 1) {
+			SectorRange placeholder = wadinfo.launcher.placeholder_images[0];
+			mod_images.emplace_back(load_image_from_launcher_wad(placeholder));
+		}
+	} else {
+		// TODO: Replace this image.
+		SectorRange placeholder = wadinfo.launcher.placeholder_images[0];
+		mod_images.emplace_back(load_image_from_launcher_wad(placeholder));
+	}
+}
+
+static void free_mod_images() {
+	mod_images.clear();
+}
+
+static ImFont* load_font_from_gui_wad(SectorRange range) {
+	std::vector<u8> compressed_font = g_guiwad.read_multiple<u8>(range.offset.bytes(), range.size.bytes());
+	std::vector<u8>& decompressed_font = g_launcher.font_buffers.emplace_back();
+	decompress_wad(decompressed_font, compressed_font);
 	
 	ImFontConfig font_cfg;
 	font_cfg.FontDataOwnedByAtlas = false;
 	
 	ImGuiIO& io = ImGui::GetIO();
-	return io.Fonts->AddFontFromMemoryTTF(g_launcher.font.data(), g_launcher.font.size(), 22, &font_cfg);
+	return io.Fonts->AddFontFromMemoryTTF(decompressed_font.data(), decompressed_font.size(), 22, &font_cfg);
 }
 
-static GlTexture load_image(SectorRange range) {
+static ModImage load_image_from_launcher_wad(SectorRange range) {
 	std::vector<u8> compressed_image = g_launcher.wad.read_multiple<u8>(range.offset.bytes(), range.size.bytes());
 	
 	std::vector<u8> image;
 	decompress_wad(image, compressed_image);
 	
+	s32 width = *(s32*) &image[0];
+	s32 height = *(s32*) &image[4];
+	u8* data = &image[16];
+	
+	return {upload_gl_texture(data, width, height), width, height};
+}
+
+static GlTexture upload_gl_texture(const u8* data, s32 width, s32 height) {
 	GlTexture texture;
 	glGenTextures(1, &texture.id);
 	glBindTexture(GL_TEXTURE_2D, texture.id);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, *(s32*) &image[0], *(s32*) &image[4], 0, GL_RGBA, GL_UNSIGNED_BYTE, &image[16]);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	
 	return texture;
 }
