@@ -23,6 +23,7 @@
 
 #include <core/shell.h>
 #include <core/stream.h>
+#include <core/texture.h>
 #include <toolwads/wads.h>
 #include <gui/gui.h>
 #include <gui/config.h>
@@ -53,6 +54,7 @@ struct LauncherState {
 	std::vector<std::vector<u8>> font_buffers;
 	ImFont* font_regular;
 	ImFont* font_italic;
+	Texture placeholder_image;
 	LaunchParams launch_params;
 	CommandStatus import_iso_command;
 };

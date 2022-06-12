@@ -60,6 +60,7 @@ struct GlTexture {
 	GLuint& operator()() { return id; }
 	const GLuint& operator()() const { return id; }
 	GlTexture& operator=(GlTexture&& rhs) { id = rhs.id; rhs.id = 0; return *this; }
+	void upload(const u8* data, s32 width, s32 height);
 	void destroy() { if(id != 0) { glDeleteTextures(1, &id); id = 0; } }
 };
 

@@ -91,7 +91,6 @@ add_subdirectory(src/toolwads)
 add_library(wrenchgui
 	src/gui/gui.cpp
 	src/gui/config.cpp
-	src/gui/gui_state.cpp
 	src/gui/about.cpp
 	src/gui/settings.cpp
 	src/gui/book.cpp
@@ -105,6 +104,7 @@ add_executable(wrenchlauncher
 	src/launcher/oobe.cpp
 	src/launcher/mod_list.cpp
 	src/launcher/game_list.cpp
+	src/launcher/new_mod_screen.cpp
 )
 target_link_libraries(wrenchlauncher wrenchgui wrench_assetmgr)
 

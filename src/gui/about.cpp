@@ -87,6 +87,26 @@ void gui::about_screen() {
 
 static void about_wrench() {
 	ImGui::TextWrapped("Wrench is a set of modding tools for the Ratchet & Clank PS2 games.");
+	ImGui::NewLine();
+	// These numbers are extracted from the git tag at build time. See 'src/toolwads/'.
+	if(wadinfo.build.version_major > -1 && wadinfo.build.version_minor > -1) {
+		ImGui::TextWrapped("Release Version %hd.%hd", wadinfo.build.version_major, wadinfo.build.version_minor);
+	} else {
+		ImGui::TextWrapped("Development Version");
+	}
+	ImGui::NewLine();
+	u8* c = wadinfo.build.commit;
+	ImGui::AlignTextToFramePadding();
+	ImGui::TextWrapped("Built from git commit %02hhx%02hhx%02hhx%02hhx",
+		c[0], c[1], c[2], c[3]);
+	ImGui::SameLine();
+	if(ImGui::Button("Copy Full Hash")) {
+		char text[ARRAY_SIZE(wadinfo.build.commit) * 2 + 1] = {};
+		for(s32 i = 0; i < ARRAY_SIZE(wadinfo.build.commit); i++) {
+			snprintf(text + i * 2, 3, "%02x", wadinfo.build.commit[i]);
+		}
+		ImGui::SetClipboardText(text);
+	}
 }
 
 static void about_contributors() {
@@ -104,17 +124,17 @@ static void about_contributors() {
 
 static void about_libraries() {
 	const char* libraries =
-		"cxxopts: https://github.com/jarro2783/cxxopts (MIT)\n"
-		"glad: https://github.com/Dav1dde/glad (MIT)\n"
-		"glfw: https://www.glfw.org/ (zlib)\n"
-		"glm: https://github.com/g-truc/glm (Happy Bunny/MIT)\n"
-		"imgui: https://github.com/ocornut/imgui (MIT)\n"
-		"libpng: http://www.libpng.org/pub/png/libpng.html (libpng)\n"
-		"nativefiledialog: https://github.com/mlabbe/nativefiledialog (zlib)\n"
-		"nlohmann json: https://github.com/nlohmann/json (MIT)\n"
-		"rapidxml: http://rapidxml.sourceforge.net/ (Boost)\n"
-		"toml11: https://github.com/ToruNiina/toml11 (MIT)\n"
+		"cxxopts: https://github.com/jarro2783/cxxopts\n"
+		"glad: https://github.com/Dav1dde/glad\n"
+		"glfw: https://www.glfw.org/\n"
+		"glm: https://github.com/g-truc/glm\n"
+		"imgui: https://github.com/ocornut/imgui\n"
+		"libpng: http://www.libpng.org/pub/png/libpng.html\n"
+		"nativefiledialog: https://github.com/mlabbe/nativefiledialog\n"
+		"nlohmann json: https://github.com/nlohmann/json\n"
+		"rapidxml: http://rapidxml.sourceforge.net/\n"
+		"toml11: https://github.com/ToruNiina/toml11\n"
 		"MD5 implementation by Colin Plumb\n"
-		"zlib: https://zlib.net/ (zlib)\n";
+		"zlib: https://zlib.net/\n";
 	ImGui::TextWrapped("%s", libraries);
 }

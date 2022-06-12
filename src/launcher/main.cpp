@@ -28,27 +28,17 @@
 #include <launcher/mod_list.h>
 #include <launcher/game_list.h>
 #include <launcher/global_state.h>
-
-struct ModImage {
-	GlTexture texture;
-	s32 width;
-	s32 height;
-};
+#include <launcher/new_mod_screen.h>
 
 static void update_gui(f32 delta_time);
-static void mod_list_window();
-static void details_window();
+static Mod* mod_list_window();
+static void details_window(Mod* mod);
 static void not_specified();
 static void buttons_window(f32 buttons_window_height);
 static void create_dock_layout();
 static void begin_docking(f32 buttons_window_height);
-static void load_mod_images();
-static void free_mod_images();
 static ImFont* load_font_from_gui_wad(SectorRange range);
-static ModImage load_image_from_launcher_wad(SectorRange range);
-static GlTexture upload_gl_texture(const u8* data, s32 width, s32 height);
-
-static std::vector<ModImage> mod_images;
+static Texture load_image_from_launcher_wad(SectorRange range);
 
 int main(int argc, char** argv) {
 	g_launcher.mode = LauncherMode::DRAWING_GUI;
@@ -72,18 +62,12 @@ int main(int argc, char** argv) {
 				
 				g_launcher.font_regular = load_font_from_gui_wad(wadinfo.gui.fonts[0]);
 				g_launcher.font_italic = load_font_from_gui_wad(wadinfo.gui.fonts[1]);
+				g_launcher.placeholder_image = load_image_from_launcher_wad(wadinfo.launcher.placeholder_images[0]);
 				
 				load_game_list(g_config.folders.games_folder);
 				load_mod_list(g_config.folders.mods_folders);
-				load_mod_images();
 				
 				while(g_launcher.mode == LauncherMode::DRAWING_GUI) {
-					bool& mod_images_dirty = g_gui.boolean("mod_images_dirty");
-					if(mod_images_dirty) {
-						load_mod_images();
-						mod_images_dirty = false;
-					}
-					
 					gui::run_frame(g_launcher.window, update_gui);
 					
 					if(glfwWindowShouldClose(g_launcher.window)) {
@@ -91,9 +75,11 @@ int main(int argc, char** argv) {
 					}
 				}
 				
+				g_launcher.font_buffers.clear();
+				g_launcher.placeholder_image.destroy();
+				
 				free_game_list();
 				free_mod_list();
-				free_mod_images();
 				
 				gui::shutdown(g_launcher.window);
 				break;
@@ -126,15 +112,15 @@ void update_gui(f32 delta_time) {
 		first_frame = false;
 	}
 	
-	mod_list_window();
-	details_window();
+	Mod* mod = mod_list_window();
+	details_window(mod);
 	
 	ImGui::End(); // docking
 	
 	buttons_window(buttons_window_height);
 }
 
-static void mod_list_window() {
+static Mod* mod_list_window() {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 	ImGui::Begin("Mod List");
 	
@@ -178,19 +164,21 @@ static void mod_list_window() {
 	}
 	
 	ImGui::BeginChild("table");
-	mod_list(filter);
+	Mod* mod = mod_list(filter);
 	ImGui::EndChild();
 	
 	ImGui::End();
 	ImGui::PopStyleVar(); // ImGuiStyleVar_WindowPadding
+	
+	return mod;
 }
 
-static void details_window() {
+static void details_window(Mod* mod) {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 	ImGui::Begin("Details");
 	
-	assert(mod_images.size() >= 1);
-	ModImage& image = mod_images[0];
+	assert(g_mod_images.size() >= 1);
+	ModImage& image = g_mod_images[0];
 	
 	f32 display_height = 320.f;
 	f32 display_width = display_height * image.width / (f32) image.height;
@@ -198,11 +186,7 @@ static void details_window() {
 	ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - display_width / 2);
 	ImGui::Image((void*) (intptr_t) image.texture.id, ImVec2(display_width, display_height));
 	
-	auto& mods = g_gui.subnodes("mods");
-	s32 selected_mod = g_gui.integer("selected_mod");
-	if(selected_mod < mods.size()) {
-		auto mod = Mod(mods[selected_mod]);
-		
+	if(mod) {
 		if(ImGui::BeginTable("attributes", 2)) {
 			ImGui::TableSetupColumn("key", ImGuiTableColumnFlags_WidthFixed);
 			ImGui::TableSetupColumn("value", ImGuiTableColumnFlags_WidthStretch);
@@ -211,8 +195,8 @@ static void details_window() {
 			ImGui::TableNextColumn();
 			ImGui::Text("Author");
 			ImGui::TableNextColumn();
-			if(!mod.author().empty()) {
-				ImGui::TextWrapped("%s", mod.author().c_str());
+			if(!mod->info.author.empty()) {
+				ImGui::TextWrapped("%s", mod->info.author.c_str());
 			} else {
 				not_specified();
 			}
@@ -221,8 +205,8 @@ static void details_window() {
 			ImGui::TableNextColumn();
 			ImGui::Text("Description");
 			ImGui::TableNextColumn();
-			if(!mod.description().empty()) {
-				ImGui::TextWrapped("%s", mod.description().c_str());
+			if(!mod->info.description.empty()) {
+				ImGui::TextWrapped("%s", mod->info.description.c_str());
 			} else {
 				not_specified();
 			}
@@ -231,8 +215,8 @@ static void details_window() {
 			ImGui::TableNextColumn();
 			ImGui::Text("Version");
 			ImGui::TableNextColumn();
-			if(!mod.version().empty()) {
-				ImGui::TextWrapped("%s", mod.version().c_str());
+			if(!mod->info.version.empty()) {
+				ImGui::TextWrapped("%s", mod->info.version.c_str());
 			} else {
 				not_specified();
 			}
@@ -305,8 +289,13 @@ static void buttons_window(f32 buttons_window_height) {
 	}
 	
 	ImGui::SameLine();
-	if(ImGui::Button("New Mod")) {
-		
+	if(ImGui::Button("Refresh")) {
+		load_game_list(g_config.folders.games_folder);
+		load_mod_list(g_config.folders.mods_folders);
+	}
+	
+	if(new_mod_screen()) {
+		load_mod_list(g_config.folders.mods_folders);
 	}
 	
 	ImGui::SameLine();
@@ -319,14 +308,14 @@ static void buttons_window(f32 buttons_window_height) {
 		ImGui::OpenPopup("More Buttons");
 	}
 	
+	static bool open_new_mod = false;
 	static bool open_about = false;
 	static bool open_settings = false;
 	static bool show_the_demo = false;
 	
 	if(ImGui::BeginPopup("More Buttons")) {
-		if(ImGui::Selectable("Refresh")) {
-			load_game_list(g_config.folders.games_folder);
-			load_mod_list(g_config.folders.mods_folders);
+		if(ImGui::Selectable("New Mod##the_button")) {
+			open_new_mod = true;
 		}
 		ImGui::Separator();
 		if(ImGui::Selectable("About##the_button")) {
@@ -344,6 +333,11 @@ static void buttons_window(f32 buttons_window_height) {
 			}
 		}
 		ImGui::EndPopup();
+	}
+	
+	if(open_new_mod) {
+		ImGui::OpenPopup("New Mod##the_popup");
+		open_new_mod = false;
 	}
 	
 	if(open_about) {
@@ -426,42 +420,6 @@ static void begin_docking(f32 buttons_window_height) {
 	ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_NoTabBar);
 }
 
-static void load_mod_images() {
-	free_mod_images();
-	
-	s32& selected_mod = g_gui.integer("selected_mod");
-	auto& mods = g_gui.subnodes("mods");
-	if(selected_mod < mods.size()) {
-		auto mod = Mod(mods[selected_mod]);
-		const auto& images = mod.images();
-		s32 successful_loads = 0;
-		for(const std::string& image : images) {
-			FileInputStream stream;
-			if(stream.open(fs::path(mod.path())/image)) {
-				Opt<Texture> image = read_png(stream);
-				if(image.has_value()) {
-					image->to_rgba();
-					GlTexture texture = upload_gl_texture(image->data.data(), image->width, image->height);
-					mod_images.push_back(ModImage{std::move(texture), image->width, image->height});
-					successful_loads++;
-				}
-			}
-		}
-		if(successful_loads < 1) {
-			SectorRange placeholder = wadinfo.launcher.placeholder_images[0];
-			mod_images.emplace_back(load_image_from_launcher_wad(placeholder));
-		}
-	} else {
-		// TODO: Replace this image.
-		SectorRange placeholder = wadinfo.launcher.placeholder_images[0];
-		mod_images.emplace_back(load_image_from_launcher_wad(placeholder));
-	}
-}
-
-static void free_mod_images() {
-	mod_images.clear();
-}
-
 static ImFont* load_font_from_gui_wad(SectorRange range) {
 	std::vector<u8> compressed_font = g_guiwad.read_multiple<u8>(range.offset.bytes(), range.size.bytes());
 	std::vector<u8>& decompressed_font = g_launcher.font_buffers.emplace_back();
@@ -474,7 +432,7 @@ static ImFont* load_font_from_gui_wad(SectorRange range) {
 	return io.Fonts->AddFontFromMemoryTTF(decompressed_font.data(), decompressed_font.size(), 22, &font_cfg);
 }
 
-static ModImage load_image_from_launcher_wad(SectorRange range) {
+static Texture load_image_from_launcher_wad(SectorRange range) {
 	std::vector<u8> compressed_image = g_launcher.wad.read_multiple<u8>(range.offset.bytes(), range.size.bytes());
 	
 	std::vector<u8> image;
@@ -482,19 +440,6 @@ static ModImage load_image_from_launcher_wad(SectorRange range) {
 	
 	s32 width = *(s32*) &image[0];
 	s32 height = *(s32*) &image[4];
-	u8* data = &image[16];
-	
-	return {upload_gl_texture(data, width, height), width, height};
-}
-
-static GlTexture upload_gl_texture(const u8* data, s32 width, s32 height) {
-	GlTexture texture;
-	glGenTextures(1, &texture.id);
-	glBindTexture(GL_TEXTURE_2D, texture.id);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	return texture;
+	std::vector<u8> data(&image[16], &image[16 + width * height * 4]);
+	return Texture::create_rgba(width, height, std::move(data));
 }

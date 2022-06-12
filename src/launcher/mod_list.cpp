@@ -22,55 +22,79 @@
 #include <core/stream.h>
 #include <core/filesystem.h>
 #include <gui/config.h>
-#include <gui/gui_state.h>
+#include <launcher/global_state.h>
 
-void mod_list(const std::string& filter) {
+static void load_mod_images();
+
+static std::vector<Mod> mods;
+static size_t selected_mod = SIZE_MAX;
+
+Mod* mod_list(const std::string& filter) {
+	if(g_mod_images.size() < 1) {
+		load_mod_images();
+	}
+	
 	std::string filter_lower = filter;
 	for(char& c : filter_lower) c = tolower(c);
 	
-	ImGuiTableFlags flags = ImGuiTableFlags_RowBg;
+	ImGuiTableFlags flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable;
 	
+	static bool path_column = false;
 	static bool author_column = false;
 	
 	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4, 4));
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 8));
-	if(ImGui::BeginTable("mods", 2 + author_column, flags)) {
-		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed);
+	if(ImGui::BeginTable("mods", 2 + path_column + author_column, flags)) {
+		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
 		ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
+		if(path_column) {
+			ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthStretch);
+		}
 		if(author_column) {
 			ImGui::TableSetupColumn("Author", ImGuiTableColumnFlags_WidthStretch);
 		}
 		ImGui::TableHeadersRow();
 		
-		std::vector<gui::StateNode>& mods = g_gui.subnodes("mods");
 		for(size_t i = 0; i < mods.size(); i++) {
-			auto mod = Mod(mods[i]);
+			Mod& mod = mods[i];
 			
-			std::string mod_name_lowercase = mod.name();
+			std::string mod_name_lowercase = mod.info.name;
 			for(char& c : mod_name_lowercase) c = tolower(c);
 			
 			if(mod_name_lowercase.find(filter_lower) != std::string::npos) {
-				ImGui::PushID(i);
-				
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
 				
+				ImGui::PushID(i);
+				
 				ImGui::SetCursorPosX(ImGui::GetStyle().FramePadding.x);
 				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.f, 0.f));
-				ImGui::Checkbox("##enabled", &mod.enabled());
+				ImGui::Checkbox("##enabled", &mod.enabled);
 				ImGui::PopStyleVar();
 				
 				ImGui::TableNextColumn();
 				ImGuiSelectableFlags selectable_flags = ImGuiSelectableFlags_SpanAllColumns;
-				s32& selected_mod = g_gui.integer("selected_mod");
-				if(ImGui::Selectable(mod.name().c_str(), i == selected_mod, selectable_flags)) {
+				bool selected;
+				if(!mod.info.name.empty()) {
+					selected = ImGui::Selectable(mod.info.name.c_str(), i == selected_mod, selectable_flags);
+				} else {
+					ImGui::PushFont(g_launcher.font_italic);
+					selected = ImGui::Selectable(mod.path.c_str(), i == selected_mod, selectable_flags);
+					ImGui::PopFont();
+				}
+				if(selected) {
 					selected_mod = i;
-					g_gui.boolean("mod_images_dirty") = true;
+					load_mod_images();
+				}
+				
+				if(path_column) {
+					ImGui::TableNextColumn();
+					ImGui::Text("%s", mod.path.c_str());
 				}
 				
 				if(author_column) {
 					ImGui::TableNextColumn();
-					ImGui::Text("%s", mod.author().c_str());
+					ImGui::Text("%s", mod.info.author.c_str());
 				}
 				
 				ImGui::PopID();
@@ -83,16 +107,20 @@ void mod_list(const std::string& filter) {
 	ImGui::PopStyleVar();
 	
 	if(ImGui::BeginPopupContextItem("mods")) {
+		ImGui::MenuItem("Path", nullptr, &path_column);
 		ImGui::MenuItem("Author", nullptr, &author_column);
 		ImGui::EndPopup();
 	}
+	
+	if(selected_mod >= mods.size()) {
+		return nullptr;
+	}
+	
+	return &mods[selected_mod];
 }
 
 void load_mod_list(const std::vector<std::string>& mods_folders) {
 	free_mod_list();
-	
-	auto& mods = g_gui.subnodes("mods");
-	mods.clear();
 	
 	for(std::string mods_dir : mods_folders) {
 		for(fs::directory_entry mod_dir : fs::directory_iterator(mods_dir)) {
@@ -102,25 +130,60 @@ void load_mod_list(const std::vector<std::string>& mods_folders) {
 				strip_carriage_returns(game_info_txt);
 				game_info_txt.push_back(0);
 				
-				GameInfo info = read_game_info((char*) game_info_txt.data());
-				
-				auto mod = Mod(mods.emplace_back());
-				mod.path() = mod_dir.path().string();
-				mod.name() = info.name;
-				mod.author() = info.author;
-				mod.description() = info.description;
-				mod.version() = info.version;
-				mod.images() = info.images;
+				Mod& mod = mods.emplace_back();
+				mod.path = mod_dir.path().string();
+				mod.info = read_game_info((char*) game_info_txt.data());
 			}
 		}
 	}
 	
-	std::sort(BEGIN_END(g_gui.subnodes("mods")), [](gui::StateNode& lhs, gui::StateNode& rhs)
-		{ return Mod(lhs).name() < Mod(rhs).name(); });
+	std::sort(BEGIN_END(mods), [](const Mod& lhs, const Mod& rhs)
+		{ return lhs.info.name < rhs.info.name; });
+}
+
+static void load_mod_images() {
+	g_mod_images.clear();
 	
-	g_gui.integer("selected_mod") = INT32_MAX;
+	if(selected_mod < mods.size()) {
+		Mod& mod = mods[selected_mod];
+		s32 successful_loads = 0;
+		for(const std::string& image : mod.info.images) {
+			FileInputStream stream;
+			if(stream.open(fs::path(mod.path)/image)) {
+				Opt<Texture> image = read_png(stream);
+				if(image.has_value()) {
+					image->to_rgba();
+					GlTexture texture;
+					texture.upload(image->data.data(), image->width, image->height);
+					g_mod_images.emplace_back(std::move(texture), image->width, image->height);
+					successful_loads++;
+				}
+			}
+		}
+		if(successful_loads < 1) {
+			const Texture& placeholder = g_launcher.placeholder_image;
+			GlTexture texture;
+			texture.upload(placeholder.data.data(), placeholder.width, placeholder.height);
+			g_mod_images.emplace_back(std::move(texture), placeholder.width, placeholder.height);
+		}
+	} else {
+		// TODO: Replace this image.
+		const Texture& placeholder = g_launcher.placeholder_image;
+		GlTexture texture;
+		texture.upload(placeholder.data.data(), placeholder.width, placeholder.height);
+		g_mod_images.emplace_back(std::move(texture), placeholder.width, placeholder.height);
+	}
 }
 
 void free_mod_list() {
-	g_gui.subnodes("mods").clear();
+	mods.clear();
+	selected_mod = SIZE_MAX;
+	g_mod_images.clear();
 }
+
+std::vector<const char*> enabled_mods() {
+	std::vector<const char*> result;
+	return {};
+}
+
+std::vector<ModImage> g_mod_images;

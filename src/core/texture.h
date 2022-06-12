@@ -58,6 +58,8 @@ public:
 	void multiply_alphas(); // Maps [0,0x80] to [0,0xff].
 	void divide_alphas(bool handle_80s = true); // Maps [0,0xff] to [0,0x80].
 	
+	void destroy();
+	
 	bool operator<(const Texture& rhs);
 	bool operator==(const Texture& rhs);
 	

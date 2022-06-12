@@ -355,6 +355,13 @@ void Texture::divide_alphas(bool handle_80s) {
 	}
 }
 
+void Texture::destroy() {
+	width = 0;
+	height = 0;
+	data.clear();
+	_palette.clear();
+}
+
 bool Texture::operator<(const Texture& rhs) {
 	if(width != rhs.width) return width < rhs.width;
 	if(height != rhs.height) return height < rhs.height;

@@ -16,34 +16,11 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WRENCHGUI_GUI_STATE_H
-#define WRENCHGUI_GUI_STATE_H
+#ifndef LAUNCHER_NEW_MOD_SCREEN_H
+#define LAUNCHER_NEW_MOD_SCREEN_H
 
-#include <any>
-#include <core/util.h>
+#include <gui/gui.h>
 
-namespace gui {
-
-class StateNode {
-public:
-	s32& integer(const char* tag);
-	std::vector<s32>& integers(const char* tag);
-	
-	bool& boolean(const char* tag);
-	std::vector<bool>& booleans(const char* tag);
-	
-	std::string& string(const char* tag);
-	std::vector<std::string>& strings(const char* tag);
-	
-	StateNode& subnode(const char* tag);
-	std::vector<StateNode>& subnodes(const char* tag);
-	
-private:
-	std::map<std::string, std::any> _attributes;
-};
-
-}
-
-extern gui::StateNode g_gui;
+bool new_mod_screen();
 
 #endif
