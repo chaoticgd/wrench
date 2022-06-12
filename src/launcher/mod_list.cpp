@@ -30,9 +30,7 @@ static std::vector<Mod> mods;
 static size_t selected_mod = SIZE_MAX;
 
 Mod* mod_list(const std::string& filter) {
-	if(g_mod_images.size() < 1) {
-		load_mod_images();
-	}
+	assert(g_mod_images.size() >= 1);
 	
 	std::string filter_lower = filter;
 	for(char& c : filter_lower) c = tolower(c);
@@ -139,6 +137,8 @@ void load_mod_list(const std::vector<std::string>& mods_folders) {
 	
 	std::sort(BEGIN_END(mods), [](const Mod& lhs, const Mod& rhs)
 		{ return lhs.info.name < rhs.info.name; });
+	
+	load_mod_images();
 }
 
 static void load_mod_images() {
