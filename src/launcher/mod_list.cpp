@@ -147,15 +147,15 @@ static void load_mod_images() {
 	if(selected_mod < mods.size()) {
 		Mod& mod = mods[selected_mod];
 		s32 successful_loads = 0;
-		for(const std::string& image : mod.info.images) {
+		for(const std::string& path : mod.info.images) {
 			FileInputStream stream;
-			if(stream.open(fs::path(mod.path)/image)) {
+			if(stream.open(fs::path(mod.path)/path)) {
 				Opt<Texture> image = read_png(stream);
 				if(image.has_value()) {
 					image->to_rgba();
 					GlTexture texture;
 					texture.upload(image->data.data(), image->width, image->height);
-					g_mod_images.emplace_back(std::move(texture), image->width, image->height);
+					g_mod_images.emplace_back(std::move(texture), image->width, image->height, path);
 					successful_loads++;
 				}
 			}
@@ -164,14 +164,14 @@ static void load_mod_images() {
 			const Texture& placeholder = g_launcher.placeholder_image;
 			GlTexture texture;
 			texture.upload(placeholder.data.data(), placeholder.width, placeholder.height);
-			g_mod_images.emplace_back(std::move(texture), placeholder.width, placeholder.height);
+			g_mod_images.emplace_back(std::move(texture), placeholder.width, placeholder.height, "(placeholder)");
 		}
 	} else {
 		// TODO: Replace this image.
 		const Texture& placeholder = g_launcher.placeholder_image;
 		GlTexture texture;
 		texture.upload(placeholder.data.data(), placeholder.width, placeholder.height);
-		g_mod_images.emplace_back(std::move(texture), placeholder.width, placeholder.height);
+		g_mod_images.emplace_back(std::move(texture), placeholder.width, placeholder.height, "(placeholder)");
 	}
 }
 

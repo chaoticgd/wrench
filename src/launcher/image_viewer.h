@@ -16,33 +16,12 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef LAUNCHER_MOD_LIST_H
-#define LAUNCHER_MOD_LIST_H
+#ifndef LAUNCHER_IMAGE_VIEWER_H
+#define LAUNCHER_IMAGE_VIEWER_H
 
-#include <core/filesystem.h>
-#include <assetmgr/game_info.h>
 #include <gui/gui.h>
+#include <launcher/mod_list.h>
 
-struct Mod {
-	std::string path;
-	GameInfo info;
-	bool enabled;
-};
-
-struct ModImage {
-	ModImage(GlTexture t, s32 w, s32 h, std::string p)
-		: texture(std::move(t)), width(w), height(h), path(std::move(p)) {}
-	GlTexture texture;
-	s32 width;
-	s32 height;
-	std::string path;
-};
-
-Mod* mod_list(const std::string& filter);
-void load_mod_list(const std::vector<std::string>& mods_folders);
-void free_mod_list();
-std::vector<const char*> enabled_mods();
-
-extern std::vector<ModImage> g_mod_images;
+void image_viewer(const std::vector<ModImage>& images);
 
 #endif

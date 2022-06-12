@@ -28,6 +28,7 @@
 #include <launcher/mod_list.h>
 #include <launcher/game_list.h>
 #include <launcher/global_state.h>
+#include <launcher/image_viewer.h>
 #include <launcher/new_mod_screen.h>
 
 static void update_gui(f32 delta_time);
@@ -180,11 +181,14 @@ static void details_window(Mod* mod) {
 	assert(g_mod_images.size() >= 1);
 	ModImage& image = g_mod_images[0];
 	
-	f32 display_height = 320.f;
-	f32 display_width = display_height * image.width / (f32) image.height;
+	ImVec2 display_size(320.f * image.width / (f32) image.height, 320.f);
 	
-	ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - display_width / 2);
-	ImGui::Image((void*) (intptr_t) image.texture.id, ImVec2(display_width, display_height));
+	ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - display_size.x / 2);
+	if(ImGui::ImageButton((void*) (intptr_t) image.texture.id, display_size, ImVec2(0, 0), ImVec2(1, 1), 0)) {
+		ImGui::OpenPopup("Image Viewer");
+	}
+	
+	image_viewer(g_mod_images);
 	
 	if(mod) {
 		if(ImGui::BeginTable("attributes", 2)) {

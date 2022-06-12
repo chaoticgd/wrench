@@ -105,6 +105,7 @@ add_executable(wrenchlauncher
 	src/launcher/mod_list.cpp
 	src/launcher/game_list.cpp
 	src/launcher/new_mod_screen.cpp
+	src/launcher/image_viewer.cpp
 )
 target_link_libraries(wrenchlauncher wrenchgui wrench_assetmgr)
 
