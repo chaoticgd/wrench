@@ -24,6 +24,14 @@
 void gui::PathConfig::read(const WtfNode* node) {
 	if(const WtfAttribute* attrib = wtf_attribute_of_type(node, "base_folder", WTF_STRING)) {
 		base_folder = attrib->string.begin;
+	} else {
+#ifdef _WIN32
+		base_folder = ".";
+#else
+		char* home = getenv("HOME");
+		verify(home, "HOME enviroment variable not set!");
+		base_folder = std::string(home) + "/wrench";
+#endif
 	}
 	if(const WtfAttribute* attrib = wtf_attribute_of_type(node, "mods_folders", WTF_ARRAY)) {
 		for(const WtfAttribute* element = attrib->first_array_element; element != nullptr; element = element->next) {
@@ -34,12 +42,18 @@ void gui::PathConfig::read(const WtfNode* node) {
 	}
 	if(const WtfAttribute* attrib = wtf_attribute_of_type(node, "games_folder", WTF_STRING)) {
 		games_folder = attrib->string.begin;
+	} else {
+		games_folder = base_folder + "/games";
 	}
 	if(const WtfAttribute* attrib = wtf_attribute_of_type(node, "builds_folder", WTF_STRING)) {
 		builds_folder = attrib->string.begin;
+	} else {
+		builds_folder = base_folder + "/builds";
 	}
 	if(const WtfAttribute* attrib = wtf_attribute_of_type(node, "cache_folder", WTF_STRING)) {
 		cache_folder = attrib->string.begin;
+	} else {
+		cache_folder = base_folder + "/cache";
 	}
 	if(const WtfAttribute* attrib = wtf_attribute_of_type(node, "emulator_path", WTF_STRING)) {
 		emulator_path = attrib->string.begin;
@@ -119,11 +133,22 @@ void gui::Config::write() const {
 	}
 }
 
+void gui::Config::set_to_defaults() {
+	*this = {};
+	WtfNode dummy = {};
+	paths.read(&dummy);
+	paths.mods_folders.emplace_back(paths.base_folder + "/mods");
+	ui.read(&dummy);
+}
+
 std::string gui::get_config_file_path() {
-	// TODO: Windows support
+#ifdef _WIN32
+	return "wrench.cfg";
+#else
 	const char* home = getenv("HOME");
 	verify(home, "HOME enviroment variable not set!");
 	return std::string(home) + "/.config/wrench.cfg";
+#endif
 }
 
 bool gui::config_file_exists() {

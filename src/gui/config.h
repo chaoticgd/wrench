@@ -52,6 +52,7 @@ struct Config {
 	
 	void read();
 	void write() const;
+	void set_to_defaults();
 };
 
 std::string get_config_file_path();

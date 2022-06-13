@@ -70,16 +70,7 @@ static void oobe(f32 delta_time) {
 	
 	static bool first_frame = true;
 	if(first_frame) {
-		const char* home = getenv("HOME");
-		if(home) {
-			g_config.paths.base_folder = std::string(home) + "/wrench";
-			g_config.paths.mods_folders = {g_config.paths.base_folder + "/mods"};
-			g_config.paths.games_folder = g_config.paths.base_folder + "/games";
-			g_config.paths.builds_folder = g_config.paths.base_folder + "/builds";
-			g_config.paths.cache_folder = g_config.paths.base_folder + "/cache";
-		} else {
-			g_config.paths.mods_folders = {""};
-		}
+		g_config.set_to_defaults();
 		first_frame = false;
 	}
 	
@@ -99,7 +90,7 @@ static void oobe(f32 delta_time) {
 	ImGui::Separator();
 	ImGui::TextWrapped("The following folders will be created if they do not already exist:");
 	ImGui::InputText("Base Folder", &g_config.paths.base_folder);
-	ImGui::InputText("Mods Folder", &g_config.paths.mods_folders[0]);
+	ImGui::InputText("Mods Folder", &g_config.paths.mods_folders.at(0));
 	ImGui::InputText("Games Folder", &g_config.paths.games_folder);
 	ImGui::InputText("Builds Folder", &g_config.paths.builds_folder);
 	ImGui::InputText("Cache Folder", &g_config.paths.cache_folder);
