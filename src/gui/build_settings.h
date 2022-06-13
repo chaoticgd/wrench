@@ -16,34 +16,27 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef LAUNCHER_MOD_LIST_H
-#define LAUNCHER_MOD_LIST_H
+#ifndef WRENCHGUI_BUILD_SETTINGS_H
+#define WRENCHGUI_BUILD_SETTINGS_H
 
-#include <core/filesystem.h>
-#include <assetmgr/game_info.h>
-#include <gui/gui.h>
+#include <core/util.h>
 
-struct Mod {
-	std::string path;
-	GameInfo info;
-	bool enabled = false;
+namespace gui {
+
+struct BuildParams {
+	std::string build;
+	std::string output_path = "build.iso";
+	bool launch_emulator = true;
+	bool keep_window_open = false;
+	struct {
+		bool single_level_enabled = false;
+		std::string single_level_tag;
+		bool nompegs = false;
+	} debug;
 };
 
-struct ModImage {
-	ModImage(GlTexture t, s32 w, s32 h, std::string p)
-		: texture(std::move(t)), width(w), height(h), path(std::move(p)) {}
-	GlTexture texture;
-	s32 width;
-	s32 height;
-	std::string path;
-};
+void build_settings(const std::vector<std::string>* game_builds, const std::vector<std::string>& mod_builds);
 
-Mod* mod_list(const std::string& filter);
-void load_mod_list(const std::vector<std::string>& mods_folders);
-void free_mod_list();
-std::vector<const char*> enabled_mods();
-
-extern std::vector<ModImage> g_mod_images;
-extern std::vector<std::string> g_mod_builds;
+}
 
 #endif

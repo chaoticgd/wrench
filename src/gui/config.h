@@ -29,6 +29,7 @@ struct FolderConfig {
 	std::string base_folder;
 	std::vector<std::string> mods_folders;
 	std::string games_folder;
+	std::string builds_folder;
 	std::string cache_folder;
 };
 

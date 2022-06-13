@@ -23,6 +23,7 @@
 #include <gui/gui.h>
 #include <gui/about.h>
 #include <gui/settings.h>
+#include <gui/build_settings.h>
 #include <gui/command_output.h>
 #include <launcher/oobe.h>
 #include <launcher/mod_list.h>
@@ -60,6 +61,7 @@ int main(int argc, char** argv) {
 		switch(g_launcher.mode) {
 			case LauncherMode::DRAWING_GUI: {
 				g_launcher.window = gui::startup("Wrench Launcher", 960, 600);
+				glfwSetWindowSizeLimits(g_launcher.window, 960, 600, GLFW_DONT_CARE, GLFW_DONT_CARE);
 				
 				g_launcher.font_regular = load_font_from_gui_wad(wadinfo.gui.fonts[0]);
 				g_launcher.font_italic = load_font_from_gui_wad(wadinfo.gui.fonts[1]);
@@ -366,14 +368,11 @@ static void buttons_window(f32 buttons_window_height) {
 	f32 build_run_text_width = ImGui::CalcTextSize("Build & Run").x;
 	ImGuiStyle& s = ImGui::GetStyle();
 	f32 build_run_button_width = s.FramePadding.x + build_run_text_width + s.FramePadding.x;
-	f32 build_area_width = 192 + s.ItemSpacing.x + build_run_button_width + s.WindowPadding.x;
+	f32 build_area_width = 300 + s.ItemSpacing.x + build_run_button_width + s.WindowPadding.x;
 	ImGui::SetCursorPosX(viewport_size.x - build_area_width);
 	
-	ImGui::PushItemWidth(192);
-	if(ImGui::BeginCombo("##builds", "dl")) {
-		ImGui::EndCombo();
-	}
-	ImGui::PopItemWidth();
+	ImGui::SetNextItemWidth(300);
+	gui::build_settings(g_game_builds, g_mod_builds);
 	
 	ImGui::SameLine();
 	if(ImGui::Button("Build & Run")) {

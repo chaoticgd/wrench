@@ -95,6 +95,7 @@ add_library(wrenchgui
 	src/gui/settings.cpp
 	src/gui/book.cpp
 	src/gui/command_output.cpp
+	src/gui/build_settings.cpp
 )
 target_link_libraries(wrenchgui wrenchcore wrenchengine wadinfo)
 

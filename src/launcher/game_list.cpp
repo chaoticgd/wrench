@@ -28,14 +28,17 @@ struct GameData {
 	GameInfo info;
 };
 
+static void update_game_builds();
 static GameData* get_game();
 
 static std::vector<GameData> games;
-static size_t current_game = 0;
+static size_t selected_game = 0;
 
-GameResult game_list() {
+std::string game_list() {
+	std::string folder;
 	std::string name;
 	if(GameData* game = get_game()) {
+		folder = game->directory;
 		name = game->info.name + " (" + game->directory + ")";
 	} else if(games.empty()) {
 		name = "(has no games)";
@@ -46,13 +49,14 @@ GameResult game_list() {
 		for(size_t i = 0; i < games.size(); i++) {
 			GameData& game = games[i];
 			std::string option_name = game.info.name + " (" + game.directory + ")";
-			if(ImGui::Selectable(option_name.c_str(), i == current_game)) {
-				current_game = i;
+			if(ImGui::Selectable(option_name.c_str(), i == selected_game)) {
+				selected_game = i;
+				update_game_builds();
 			}
 		}
 		ImGui::EndCombo();
 	}
-	return {nullptr, nullptr};
+	return folder;
 }
 
 void load_game_list(const std::string& games_folder) {
@@ -70,15 +74,27 @@ void load_game_list(const std::string& games_folder) {
 			game.info = read_game_info((char*) game_info_txt.data());
 		}
 	}
+	
+	update_game_builds();
 }
 
 void free_game_list() {
 	games.clear();
 }
 
+static void update_game_builds() {
+	if(GameData* game = get_game()) {
+		g_game_builds = &game->info.builds;
+	} else {
+		g_game_builds = nullptr;
+	}
+}
+
 static GameData* get_game() {
-	if(current_game >= games.size()) {
+	if(selected_game >= games.size()) {
 		return nullptr;
 	}
-	return &games[current_game];
+	return &games[selected_game];
 }
+
+const std::vector<std::string>* g_game_builds = nullptr;

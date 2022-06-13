@@ -18,13 +18,15 @@
 
 #include "mod_list.h"
 
+#include <set>
 #include <core/png.h>
 #include <core/stream.h>
 #include <core/filesystem.h>
 #include <gui/config.h>
 #include <launcher/global_state.h>
 
-static void load_mod_images();
+static void update_mod_images();
+static void update_mod_builds();
 
 static std::vector<Mod> mods;
 static size_t selected_mod = SIZE_MAX;
@@ -82,7 +84,8 @@ Mod* mod_list(const std::string& filter) {
 				}
 				if(selected) {
 					selected_mod = i;
-					load_mod_images();
+					update_mod_images();
+					update_mod_builds();
 				}
 				
 				if(path_column) {
@@ -138,10 +141,11 @@ void load_mod_list(const std::vector<std::string>& mods_folders) {
 	std::sort(BEGIN_END(mods), [](const Mod& lhs, const Mod& rhs)
 		{ return lhs.info.name < rhs.info.name; });
 	
-	load_mod_images();
+	update_mod_images();
+	update_mod_builds();
 }
 
-static void load_mod_images() {
+static void update_mod_images() {
 	g_mod_images.clear();
 	
 	if(selected_mod < mods.size()) {
@@ -175,10 +179,26 @@ static void load_mod_images() {
 	}
 }
 
+static void update_mod_builds() {
+	g_mod_builds.clear();
+	std::set<std::string> builds;
+	for(const Mod& mod : mods) {
+		if(mod.enabled) {
+			for(const std::string& build : mod.info.builds) {
+				builds.emplace(build);
+			}
+		}
+	}
+	for(const std::string& build : builds) {
+		g_mod_builds.emplace_back(build);
+	}
+}
+
 void free_mod_list() {
 	mods.clear();
 	selected_mod = SIZE_MAX;
 	g_mod_images.clear();
+	g_mod_builds.clear();
 }
 
 std::vector<const char*> enabled_mods() {
@@ -187,3 +207,4 @@ std::vector<const char*> enabled_mods() {
 }
 
 std::vector<ModImage> g_mod_images;
+std::vector<std::string> g_mod_builds;
