@@ -34,11 +34,10 @@ static GameData* get_game();
 static std::vector<GameData> games;
 static size_t selected_game = 0;
 
-std::string game_list() {
-	std::string folder;
+void game_list() {
 	std::string name;
 	if(GameData* game = get_game()) {
-		folder = game->directory;
+		g_game_path = game->directory;
 		name = game->info.name + " (" + game->directory + ")";
 	} else if(games.empty()) {
 		name = "(has no games)";
@@ -56,7 +55,6 @@ std::string game_list() {
 		}
 		ImGui::EndCombo();
 	}
-	return folder;
 }
 
 void load_game_list(const std::string& games_folder) {
@@ -101,4 +99,5 @@ static GameData* get_game() {
 	return &games[selected_game];
 }
 
+std::string g_game_path;
 const std::vector<std::string>* g_game_builds = nullptr;

@@ -21,8 +21,7 @@
 #include <nfd.h>
 #include <gui/gui.h>
 
-void gui::build_settings(const std::vector<std::string>* game_builds, const std::vector<std::string>& mod_builds) {
-	static BuildParams params;
+void gui::build_settings(PackerParams& params, const std::vector<std::string>* game_builds, const std::vector<std::string>& mod_builds) {
 	static size_t selected_build = 0;
 	
 	// Merge the list of builds from original game and the ones from any
@@ -48,6 +47,7 @@ void gui::build_settings(const std::vector<std::string>* game_builds, const std:
 		combo_text += "(no builds)";
 	} else {
 		combo_text += builds[selected_build];
+		params.build = builds[selected_build];
 	}
 	combo_text += " / ";
 	if(params.debug.single_level_enabled || params.debug.nompegs) {

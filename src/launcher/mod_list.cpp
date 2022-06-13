@@ -205,9 +205,14 @@ void free_mod_list() {
 	g_mod_builds.clear();
 }
 
-std::vector<const char*> enabled_mods() {
-	std::vector<const char*> result;
-	return {};
+std::vector<std::string> enabled_mods() {
+	std::vector<std::string> result;
+	for(const Mod& mod : mods) {
+		if(mod.enabled) {
+			result.emplace_back(mod.path);
+		}
+	}
+	return result;
 }
 
 std::vector<ModImage> g_mod_images;

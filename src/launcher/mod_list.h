@@ -41,7 +41,7 @@ struct ModImage {
 Mod* mod_list(const std::string& filter);
 void load_mod_list(const std::vector<std::string>& mods_folders);
 void free_mod_list();
-std::vector<const char*> enabled_mods();
+std::vector<std::string> enabled_mods();
 
 extern std::vector<ModImage> g_mod_images;
 extern std::vector<std::string> g_mod_builds;

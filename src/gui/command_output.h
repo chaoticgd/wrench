@@ -24,7 +24,7 @@
 
 namespace gui {
 
-void command_output_screen(const char* id, CommandStatus& status, void (*close_callback)());
+void command_output_screen(const char* id, CommandStatus& status, void (*close_callback)(), void (*run_callback)() = nullptr);
 
 }
 

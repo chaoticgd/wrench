@@ -20,22 +20,11 @@
 #define WRENCHGUI_BUILD_SETTINGS_H
 
 #include <core/util.h>
+#include <gui/commands.h>
 
 namespace gui {
 
-struct BuildParams {
-	std::string build;
-	std::string output_path = "build.iso";
-	bool launch_emulator = true;
-	bool keep_window_open = false;
-	struct {
-		bool single_level_enabled = false;
-		std::string single_level_tag;
-		bool nompegs = false;
-	} debug;
-};
-
-void build_settings(const std::vector<std::string>* game_builds, const std::vector<std::string>& mod_builds);
+void build_settings(PackerParams& params, const std::vector<std::string>* game_builds, const std::vector<std::string>& mod_builds);
 
 }
 

@@ -41,6 +41,7 @@ s32 execute_command(s32 argc, const char** argv, CommandStatus* output) {
 	
 	// Pass arguments as enviroment variables.
 	for(s32 i = 0; i < argc; i++) {
+		printf("arg: %s\n", argv[i]);
 		std::string env_var = stringf("WRENCH_ARG_%d", i);
 		if(setenv(env_var.c_str(), argv[i], 1) == -1) {
 			return 1;

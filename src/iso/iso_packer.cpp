@@ -36,14 +36,13 @@ static void pack_level_wad_outer(OutputStream& iso, IsoDirectory& directory, Lev
 void pack_iso(OutputStream& iso, const BuildAsset& src, BuildConfig, const char* hint, AssetPackerFunc pack) {
 	BuildConfig config(src.game(), src.region());
 	
-	AssetReference single_level_ref;
+	std::string single_level_tag;
 	bool no_mpegs = false;
 	
 	// Parse the hint to determine the build configuration.
 	const char* type = next_hint(&hint);
-	if(strcmp(type, "debuglf") == 0) {
-		const char* ref = next_hint(&hint);
-		single_level_ref = parse_asset_reference(ref);
+	if(strcmp(type, "testlf") == 0) {
+		single_level_tag = next_hint(&hint);
 		const char* flags = next_hint(&hint);
 		for(size_t i = 0; i < strlen(flags); i++) {
 			if(i == 0 || flags[i - 1] == '|') {
@@ -52,19 +51,14 @@ void pack_iso(OutputStream& iso, const BuildAsset& src, BuildConfig, const char*
 				}
 			}
 		}
-		no_mpegs = strcmp(next_hint(&hint), "nompegs") == 0;
 	} else if(strcmp(type, "release") != 0) {
 		verify_not_reached("Invalid hint.");
 	}
 	
 	// If only a single level is being packed, find it.
 	const LevelAsset* single_level = nullptr;
-	if(!single_level_ref.fragments.empty()) {
-		src.get_levels().for_each_logical_child_of_type<LevelAsset>([&](const LevelAsset& level) {
-			if(level.reference() == single_level_ref) {
-				single_level = &level;
-			}
-		});
+	if(!single_level_tag.empty()) {
+		single_level = &src.get_levels().get_child(single_level_tag.c_str()).as<LevelAsset>();
 	}
 	
 	pack_ps2_logo(iso, src, config, pack);

@@ -16,39 +16,41 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef LAUNCHER_GLOBAL_STATE_H
-#define LAUNCHER_GLOBAL_STATE_H
-
-#include <string>
+#ifndef WRENCHGUI_COMMANDS_H
+#define WRENCHGUI_COMMANDS_H
 
 #include <core/shell.h>
-#include <core/stream.h>
-#include <core/texture.h>
-#include <toolwads/wads.h>
-#include <gui/gui.h>
-#include <gui/config.h>
-#include <gui/commands.h>
 
-enum class LauncherMode {
-	DRAWING_GUI,
-	RUNNING_EMULATOR,
-	EXIT
+namespace gui {
+
+struct UnpackerParams {
+	std::string iso_path;
 };
 
-struct GLFWwindow;
-
-struct LauncherState {
-	LauncherMode mode;
-	FileInputStream wad;
-	FileInputStream buildwad;
-	GLFWwindow* window;
-	std::vector<std::vector<u8>> font_buffers;
-	ImFont* font_regular;
-	ImFont* font_italic;
-	Texture placeholder_image;
-	gui::EmulatorParams emulator_params;
+struct PackerParams {
+	std::string game_path;
+	std::vector<std::string> mod_paths;
+	std::string build;
+	std::string output_path = "build.iso";
+	bool launch_emulator = true;
+	bool keep_window_open = false;
+	struct {
+		bool single_level_enabled = false;
+		std::string single_level_tag;
+		bool nompegs = false;
+	} debug;
 };
 
-extern LauncherState g_launcher;
+struct EmulatorParams {
+	std::string iso_path;
+};
+
+void setup_bin_paths(const char* bin_path);
+
+void run_unpacker(const UnpackerParams& params, CommandStatus* status);
+std::string run_packer(const PackerParams& params, CommandStatus* status);
+void run_emulator(const EmulatorParams& params, CommandStatus* status);
+
+}
 
 #endif

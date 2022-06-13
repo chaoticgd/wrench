@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
 	verify(g_launcher.wad.open("data/launcher.wad"), "Failed to open 'launcher.wad'.");
 	verify(g_launcher.buildwad.open("data/build.wad"), "Failed to open 'build.wad'.");
 	
-	g_launcher.bin_paths.wrenchbuild = "./bin/wrenchbuild";
+	gui::setup_bin_paths(argv[0]);
 	
 	if(!gui::config_file_exists()) {
 		if(!run_oobe()) {
@@ -88,11 +88,14 @@ int main(int argc, char** argv) {
 				break;
 			}
 			case LauncherMode::RUNNING_EMULATOR: {
-				const char* args[] = {
-					g_launcher.launch_params.emulator_executable.c_str(),
-					g_launcher.launch_params.iso_path.c_str()
-				};
-				execute_command(ARRAY_SIZE(args), args, nullptr);
+				CommandStatus status;
+				gui::run_emulator(g_launcher.emulator_params, &status);
+				for(;;) {
+					std::lock_guard<std::mutex> g(status.mutex);
+					if(status.finished) {
+						continue;
+					}
+				}
 				g_launcher.mode = LauncherMode::DRAWING_GUI;
 				break;
 			}
@@ -251,19 +254,15 @@ static void buttons_window(f32 buttons_window_height) {
 	bool p_open;
 	ImGui::Begin("Buttons", &p_open, flags);
 	
+	static CommandStatus unpack_command;
+	
 	if(ImGui::Button("Import ISO")) {
 		nfdchar_t* path = nullptr;
 		nfdresult_t result = NFD_OpenDialog("iso", nullptr, &path);
 		if(result == NFD_OKAY) {
-			std::vector<std::string> args = {
-				g_launcher.bin_paths.wrenchbuild,
-				"unpack",
-				path,
-				"-o",
-				g_config.paths.games_folder.c_str(),
-				"-s" // Unpack it into a subdirectory.
-			};
-			spawn_command_thread(args, &g_launcher.import_iso_command);
+			gui::UnpackerParams params;
+			params.iso_path = path;
+			gui::run_unpacker(params, &unpack_command);
 			free(path);
 			
 			ImGui::OpenPopup("Import ISO");
@@ -272,7 +271,7 @@ static void buttons_window(f32 buttons_window_height) {
 		}
 	}
 	
-	gui::command_output_screen("Import ISO", g_launcher.import_iso_command, []() {
+	gui::command_output_screen("Import ISO", unpack_command, []() {
 		load_game_list(g_config.paths.games_folder);
 	});
 	
@@ -371,13 +370,23 @@ static void buttons_window(f32 buttons_window_height) {
 	f32 build_area_width = 300 + s.ItemSpacing.x + build_run_button_width + s.WindowPadding.x;
 	ImGui::SetCursorPosX(viewport_size.x - build_area_width);
 	
+	static gui::PackerParams pack_params;
+	static CommandStatus pack_command;
+	
 	ImGui::SetNextItemWidth(300);
-	gui::build_settings(g_game_builds, g_mod_builds);
+	gui::build_settings(pack_params, g_game_builds, g_mod_builds);
 	
 	ImGui::SameLine();
-	if(ImGui::Button("Build & Run")) {
-		
+	if(ImGui::Button("Build & Run##the_button")) {
+		pack_params.game_path = g_game_path;
+		pack_params.mod_paths = enabled_mods();
+		g_launcher.emulator_params.iso_path = gui::run_packer(pack_params, &pack_command);
+		ImGui::OpenPopup("Build & Run##the_popup");
 	}
+	
+	gui::command_output_screen("Build & Run##the_popup", pack_command, []() {}, []() {
+		g_launcher.mode = LauncherMode::RUNNING_EMULATOR;
+	});
 	
 	ImGui::End();
 }
