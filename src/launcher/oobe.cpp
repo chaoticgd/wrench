@@ -65,19 +65,20 @@ static void oobe(f32 delta_time) {
 	
 	ImVec2 centre = ImGui::GetMainViewport()->GetCenter();
 	ImGui::SetNextWindowPos(centre, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-	ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_Always);
+	ImGui::SetNextWindowSize(ImVec2(450, 320), ImGuiCond_Always);
 	ImGui::Begin("Wrench Setup", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
 	
 	static bool first_frame = true;
-		if(first_frame) {
+	if(first_frame) {
 		const char* home = getenv("HOME");
 		if(home) {
-			g_config.folders.base_folder = std::string(home) + "/wrench";
-			g_config.folders.mods_folders = {g_config.folders.base_folder + "/mods"};
-			g_config.folders.games_folder = g_config.folders.base_folder + "/games";
-			g_config.folders.cache_folder = g_config.folders.base_folder + "/cache";
+			g_config.paths.base_folder = std::string(home) + "/wrench";
+			g_config.paths.mods_folders = {g_config.paths.base_folder + "/mods"};
+			g_config.paths.games_folder = g_config.paths.base_folder + "/games";
+			g_config.paths.builds_folder = g_config.paths.base_folder + "/builds";
+			g_config.paths.cache_folder = g_config.paths.base_folder + "/cache";
 		} else {
-			g_config.folders.mods_folders = {""};
+			g_config.paths.mods_folders = {""};
 		}
 		first_frame = false;
 	}
@@ -86,23 +87,39 @@ static void oobe(f32 delta_time) {
 	
 	ImGui::Separator();
 	ImGui::TextWrapped("The following config file will be created:");
-	std::string config_label = gui::get_config_file_path();
+	std::string config_path = gui::get_config_file_path();
 	ImGui::SetNextItemWidth(-1);
-	ImGui::InputText("##path", &config_label, ImGuiInputTextFlags_ReadOnly);
+	ImGui::AlignTextToFramePadding();
+	ImGui::TextWrapped("%s", config_path.c_str());
+	ImGui::SameLine();
+	if(ImGui::Button("Copy Path")) {
+		ImGui::SetClipboardText(config_path.c_str());
+	}
 	
 	ImGui::Separator();
 	ImGui::TextWrapped("The following folders will be created if they do not already exist:");
-	ImGui::InputText("Base Folder", &g_config.folders.base_folder);
-	ImGui::InputText("Mods Folder", &g_config.folders.mods_folders[0]);
-	ImGui::InputText("Games Folder", &g_config.folders.games_folder);
-	ImGui::InputText("Cache Folder", &g_config.folders.cache_folder);
+	ImGui::InputText("Base Folder", &g_config.paths.base_folder);
+	ImGui::InputText("Mods Folder", &g_config.paths.mods_folders[0]);
+	ImGui::InputText("Games Folder", &g_config.paths.games_folder);
+	ImGui::InputText("Builds Folder", &g_config.paths.builds_folder);
+	ImGui::InputText("Cache Folder", &g_config.paths.cache_folder);
+	
+	ImGui::Separator();
+#ifdef _WIN32
+	ImGui::InputText("Emulator Path (.exe)", &g_config.paths.emulator_path);
+#else
+	ImGui::InputText("Emulator Path", &g_config.paths.emulator_path);
+#endif
 	
 	ImGui::Separator();
 	if(ImGui::Button("Confirm")) {
-		fs::create_directories(g_config.folders.base_folder);
-		fs::create_directories(g_config.folders.mods_folders[0]);
-		fs::create_directories(g_config.folders.games_folder);
-		fs::create_directories(g_config.folders.cache_folder);
+		fs::create_directories(g_config.paths.base_folder);
+		fs::create_directories(g_config.paths.mods_folders[0]);
+		fs::create_directories(g_config.paths.games_folder);
+		fs::create_directories(g_config.paths.builds_folder);
+		fs::create_directories(g_config.paths.cache_folder);
+		
+		g_config.write();
 		
 		done = true;
 	}

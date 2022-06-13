@@ -124,6 +124,10 @@ void load_mod_list(const std::vector<std::string>& mods_folders) {
 	free_mod_list();
 	
 	for(std::string mods_dir : mods_folders) {
+		if(!fs::is_directory(mods_dir)) {
+			continue;
+		}
+		
 		for(fs::directory_entry mod_dir : fs::directory_iterator(mods_dir)) {
 			FileInputStream stream;
 			if(stream.open(mod_dir.path()/"gameinfo.txt")) {

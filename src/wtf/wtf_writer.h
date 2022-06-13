@@ -40,4 +40,9 @@ void wtf_write_string(WtfWriter* ctx, const char* string, const char* string_end
 void wtf_begin_array(WtfWriter* ctx);
 void wtf_end_array(WtfWriter* ctx);
 
+void wtf_write_integer_attribute(WtfWriter* ctx, const char* key, int32_t i);
+void wtf_write_boolean_attribute(WtfWriter* ctx, const char* key, bool b);
+void wtf_write_float_attribute(WtfWriter* ctx, const char* key, float f);
+void wtf_write_string_attribute(WtfWriter* ctx, const char* key, const char* string, const char* string_end = NULL);
+
 #endif

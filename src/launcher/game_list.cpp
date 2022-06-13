@@ -62,6 +62,10 @@ std::string game_list() {
 void load_game_list(const std::string& games_folder) {
 	free_game_list();
 	
+	if(!fs::is_directory(games_folder)) {
+		return;
+	}
+	
 	for(fs::directory_entry game_dir : fs::directory_iterator(games_folder)) {
 		FileInputStream stream;
 		if(stream.open(game_dir.path()/"gameinfo.txt")) {

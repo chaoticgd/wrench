@@ -183,3 +183,27 @@ void wtf_end_array(WtfWriter* ctx) {
 	ctx->array_depth--;
 	ctx->array_empty = 0;
 }
+
+void wtf_write_integer_attribute(WtfWriter* ctx, const char* key, int32_t i) {
+	wtf_begin_attribute(ctx, key);
+	wtf_write_integer(ctx, i);
+	wtf_end_attribute(ctx);
+}
+
+void wtf_write_boolean_attribute(WtfWriter* ctx, const char* key, bool b) {
+	wtf_begin_attribute(ctx, key);
+	wtf_write_boolean(ctx, b);
+	wtf_end_attribute(ctx);
+}
+
+void wtf_write_float_attribute(WtfWriter* ctx, const char* key, float f) {
+	wtf_begin_attribute(ctx, key);
+	wtf_write_float(ctx, f);
+	wtf_end_attribute(ctx);
+}
+
+void wtf_write_string_attribute(WtfWriter* ctx, const char* key, const char* string, const char* string_end) {
+	wtf_begin_attribute(ctx, key);
+	wtf_write_string(ctx, string, string_end);
+	wtf_end_attribute(ctx);
+}

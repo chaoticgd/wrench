@@ -22,7 +22,6 @@
 #include <wtf/wtf_writer.h>
 
 static std::string read_string_attribute(WtfNode* node, const char* name);
-static void write_string_attribute(WtfWriter* ctx, const char* name, const std::string& value);
 
 GameInfo read_game_info(char* input) {
 	char* error_dest = nullptr;
@@ -95,10 +94,10 @@ void write_game_info(std::string& dest, const GameInfo& info) {
 	}
 	wtf_end_attribute(ctx);
 	
-	write_string_attribute(ctx, "name", info.name);
-	write_string_attribute(ctx, "author", info.author);
-	write_string_attribute(ctx, "description", info.description);
-	write_string_attribute(ctx, "version", info.version);
+	wtf_write_string_attribute(ctx, "name", info.name.c_str());
+	wtf_write_string_attribute(ctx, "author", info.author.c_str());
+	wtf_write_string_attribute(ctx, "description", info.description.c_str());
+	wtf_write_string_attribute(ctx, "version", info.version.c_str());
 	
 	wtf_begin_attribute(ctx, "images");
 	wtf_begin_array(ctx);
@@ -125,10 +124,4 @@ static std::string read_string_attribute(WtfNode* node, const char* name) {
 		return attribute->string.begin;
 	}
 	return "";
-}
-
-static void write_string_attribute(WtfWriter* ctx, const char* name, const std::string& value) {
-	wtf_begin_attribute(ctx, name);
-	wtf_write_string(ctx, value.c_str());
-	wtf_end_attribute(ctx);
 }

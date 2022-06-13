@@ -22,9 +22,9 @@
 #include <engine/compression.h>
 #include <gui/gui.h>
 #include <gui/about.h>
-#include <gui/settings.h>
 #include <gui/build_settings.h>
 #include <gui/command_output.h>
+#include <gui/settings_screen.h>
 #include <launcher/oobe.h>
 #include <launcher/mod_list.h>
 #include <launcher/game_list.h>
@@ -67,8 +67,8 @@ int main(int argc, char** argv) {
 				g_launcher.font_italic = load_font_from_gui_wad(wadinfo.gui.fonts[1]);
 				g_launcher.placeholder_image = load_image_from_launcher_wad(wadinfo.launcher.placeholder_images[0]);
 				
-				load_game_list(g_config.folders.games_folder);
-				load_mod_list(g_config.folders.mods_folders);
+				load_game_list(g_config.paths.games_folder);
+				load_mod_list(g_config.paths.mods_folders);
 				
 				while(g_launcher.mode == LauncherMode::DRAWING_GUI) {
 					gui::run_frame(g_launcher.window, update_gui);
@@ -260,7 +260,7 @@ static void buttons_window(f32 buttons_window_height) {
 				"unpack",
 				path,
 				"-o",
-				g_config.folders.games_folder.c_str(),
+				g_config.paths.games_folder.c_str(),
 				"-s" // Unpack it into a subdirectory.
 			};
 			spawn_command_thread(args, &g_launcher.import_iso_command);
@@ -273,20 +273,20 @@ static void buttons_window(f32 buttons_window_height) {
 	}
 	
 	gui::command_output_screen("Import ISO", g_launcher.import_iso_command, []() {
-		load_game_list(g_config.folders.games_folder);
+		load_game_list(g_config.paths.games_folder);
 	});
 	
 	ImGui::SameLine();
 	if(ImGui::Button("Open Mods Folder")) {
-		if(g_config.folders.mods_folders.size() == 1) {
-			open_in_file_manager(fs::absolute(g_config.folders.mods_folders[0]).string().data());
+		if(g_config.paths.mods_folders.size() == 1) {
+			open_in_file_manager(fs::absolute(g_config.paths.mods_folders[0]).string().data());
 		} else {
 			ImGui::OpenPopup("Mods Folder Selector");
 		}
 	}
 	
 	if(ImGui::BeginPopup("Mods Folder Selector")) {
-		for(const std::string& mods_folder : g_config.folders.mods_folders) {
+		for(const std::string& mods_folder : g_config.paths.mods_folders) {
 			if(ImGui::Selectable(mods_folder.c_str())) {
 				open_in_file_manager(fs::absolute(mods_folder).string().data());
 			}
@@ -296,12 +296,12 @@ static void buttons_window(f32 buttons_window_height) {
 	
 	ImGui::SameLine();
 	if(ImGui::Button("Refresh")) {
-		load_game_list(g_config.folders.games_folder);
-		load_mod_list(g_config.folders.mods_folders);
+		load_game_list(g_config.paths.games_folder);
+		load_mod_list(g_config.paths.mods_folders);
 	}
 	
 	if(new_mod_screen()) {
-		load_mod_list(g_config.folders.mods_folders);
+		load_mod_list(g_config.paths.mods_folders);
 	}
 	
 	ImGui::SameLine();
@@ -358,7 +358,7 @@ static void buttons_window(f32 buttons_window_height) {
 		open_settings = false;
 	}
 	
-	update_settings_popup();
+	gui::settings_screen();
 	
 	if(show_the_demo) {
 		ImGui::ShowDemoWindow();

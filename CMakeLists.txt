@@ -92,7 +92,7 @@ add_library(wrenchgui
 	src/gui/gui.cpp
 	src/gui/config.cpp
 	src/gui/about.cpp
-	src/gui/settings.cpp
+	src/gui/settings_screen.cpp
 	src/gui/book.cpp
 	src/gui/command_output.cpp
 	src/gui/build_settings.cpp

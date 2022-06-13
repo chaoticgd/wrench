@@ -25,26 +25,33 @@
 
 namespace gui {
 
-struct FolderConfig {
+struct PathConfig {
 	std::string base_folder;
 	std::vector<std::string> mods_folders;
 	std::string games_folder;
 	std::string builds_folder;
 	std::string cache_folder;
+	std::string emulator_path;
+	
+	void read(const WtfNode* node);
+	void write(WtfWriter* ctx) const;
 };
 
 struct UiConfig {
 	bool custom_scale = false;
 	f32 scale = 1.f;
 	bool developer = true;
+	
+	void read(const WtfNode* node);
+	void write(WtfWriter* ctx) const;
 };
 
 struct Config {
-	FolderConfig folders;
+	PathConfig paths;
 	UiConfig ui;
 	
 	void read();
-	void write();
+	void write() const;
 };
 
 std::string get_config_file_path();

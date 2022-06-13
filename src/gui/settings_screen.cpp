@@ -16,17 +16,17 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "settings.h"
+#include "settings_screen.h"
 
 #include <gui/book.h>
 #include <gui/config.h>
 
-static void folders_page();
+static void paths_page();
 static void user_interface_page();
 static void level_editor_page();
 
 static const gui::Page GENERAL_PAGES[] = {
-	{"Folders", folders_page},
+	{"Paths", paths_page},
 	{"User Interface", user_interface_page}
 };
 
@@ -39,30 +39,44 @@ static const gui::Chapter SETTINGS[] = {
 	{"Editor", ARRAY_PAIR(EDITOR_PAGES)}
 };
 
-void update_settings_popup() {
+static bool open = false;
+static gui::Config scratch_config;
+
+void gui::settings_screen() {
+	if(!open) {
+		scratch_config = g_config;
+		open = true;
+	}
+	
 	static const gui::Page* page = nullptr;
 	gui::BookResult result = gui::book(&page, "Settings##the_popup", ARRAY_PAIR(SETTINGS), gui::BookButtons::OKAY_CANCEL_APPLY);
 	switch(result) {
 		case gui::BookResult::OKAY: {
+			g_config = scratch_config;
+			g_config.write();
+			open = false;
 			break;
 		}
 		case gui::BookResult::CANCEL: {
+			open = false;
 			break;
 		}
 		case gui::BookResult::APPLY: {
+			g_config = scratch_config;
+			g_config.write();
 			break;
 		}
 		case gui::BookResult::NONE: {}
 	}
 }
 
-static void folders_page() {
-	ImGui::InputText("Base Folder", &g_config.folders.base_folder);
+static void paths_page() {
+	ImGui::InputText("Base Folder", &scratch_config.paths.base_folder);
 	static size_t selection = 0;
 	if(ImGui::BeginListBox("Mods Folders")) {
-		for(size_t i = 0; i < g_config.folders.mods_folders.size(); i++) {
+		for(size_t i = 0; i < scratch_config.paths.mods_folders.size(); i++) {
 			ImGui::PushID(i);
-			std::string label = g_config.folders.mods_folders[i] + "##selectable";
+			std::string label = scratch_config.paths.mods_folders[i] + "##selectable";
 			if(ImGui::Selectable(label.c_str(), i == selection)) {
 				selection = i;
 			}
@@ -71,7 +85,7 @@ static void folders_page() {
 		ImGui::EndListBox();
 	}
 	
-	bool selection_is_valid = selection < g_config.folders.mods_folders.size();
+	bool selection_is_valid = selection < scratch_config.paths.mods_folders.size();
 	
 	static std::string add_path;
 	if(ImGui::Button("Add")) {
@@ -83,7 +97,7 @@ static void folders_page() {
 		ImGui::SetNextItemWidth(-1);
 		ImGui::InputText("##input", &add_path);
 		if(ImGui::Button("Okay")) {
-			g_config.folders.mods_folders.push_back(add_path);
+			scratch_config.paths.mods_folders.push_back(add_path);
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::SameLine();
@@ -96,7 +110,7 @@ static void folders_page() {
 	static std::string edit_path;
 	ImGui::SameLine();
 	if(ImGui::Button("Edit") && selection_is_valid) {
-		edit_path = g_config.folders.mods_folders[selection];
+		edit_path = scratch_config.paths.mods_folders[selection];
 		ImGui::OpenPopup("Edit Mod Folder");
 	}
 	ImGui::SetNextWindowSize(ImVec2(400, -1));
@@ -104,7 +118,7 @@ static void folders_page() {
 		ImGui::SetNextItemWidth(-1);
 		ImGui::InputText("##input", &edit_path);
 		if(ImGui::Button("Okay")) {
-			g_config.folders.mods_folders[selection] = edit_path;
+			scratch_config.paths.mods_folders[selection] = edit_path;
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::SameLine();
@@ -116,11 +130,14 @@ static void folders_page() {
 	
 	ImGui::SameLine();
 	if(ImGui::Button("Remove") && selection_is_valid) {
-		g_config.folders.mods_folders.erase(g_config.folders.mods_folders.begin() + selection);
+		scratch_config.paths.mods_folders.erase(scratch_config.paths.mods_folders.begin() + selection);
 	}
 	
-	ImGui::InputText("Games Folder", &g_config.folders.games_folder);
-	ImGui::InputText("Cache Folder", &g_config.folders.cache_folder);
+	ImGui::InputText("Games Folder", &scratch_config.paths.games_folder);
+	ImGui::InputText("Builds Folder", &scratch_config.paths.builds_folder);
+	ImGui::InputText("Cache Folder", &scratch_config.paths.cache_folder);
+	ImGui::Separator();
+	ImGui::InputText("Emulator Path", &scratch_config.paths.emulator_path);
 }
 
 static void user_interface_page() {
@@ -132,14 +149,14 @@ static void user_interface_page() {
 	}
 	
 	ImGui::Separator();
-	ImGui::Checkbox("Custom DPI Scaling", &g_config.ui.custom_scale);
-	ImGui::BeginDisabled(!g_config.ui.custom_scale);
-	ImGui::SliderFloat("Scale", &g_config.ui.scale, 0.5f, 2.f, "%.1f");
+	ImGui::Checkbox("Custom DPI Scaling", &scratch_config.ui.custom_scale);
+	ImGui::BeginDisabled(!scratch_config.ui.custom_scale);
+	ImGui::SliderFloat("Scale", &scratch_config.ui.scale, 0.5f, 2.f, "%.1f");
 	ImGui::EndDisabled();
 	
 	ImGui::Separator();
 	
-	ImGui::Checkbox("Enable Developer Features", &g_config.ui.developer);
+	ImGui::Checkbox("Enable Developer Features", &scratch_config.ui.developer);
 }
 
 static void level_editor_page() {

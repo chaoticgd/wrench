@@ -618,6 +618,15 @@ const WtfAttribute* wtf_attribute(const WtfNode* node, const char* key) {
 	return NULL;
 }
 
+const WtfAttribute* wtf_attribute_of_type(const WtfNode* node, const char* key, WtfAttributeType type) {
+	for(const WtfAttribute* attribute = node->first_attribute; attribute != NULL; attribute = attribute->next) {
+		if(attribute->type == type && (!key || strcmp(attribute->key, key) == 0)) {
+			return attribute;
+		}
+	}
+	return NULL;
+}
+
 static WtfNode* alloc_node(WtfReader* ctx) {
 	assert(ctx->next_node < ctx->nodes + ctx->node_count);
 	return ctx->next_node++;

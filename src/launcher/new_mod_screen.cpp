@@ -36,17 +36,17 @@ bool new_mod_screen() {
 		static GameInfo info;
 		static bool open_folder = true;
 		
-		if(g_config.folders.mods_folders.size() >= 1) {
+		if(g_config.paths.mods_folders.size() >= 1) {
 			bool drop_down;
-			if(mods_folder < g_config.folders.mods_folders.size()) {
-				drop_down = ImGui::BeginCombo("Parent Folder", g_config.folders.mods_folders[mods_folder].c_str());
+			if(mods_folder < g_config.paths.mods_folders.size()) {
+				drop_down = ImGui::BeginCombo("Parent Folder", g_config.paths.mods_folders[mods_folder].c_str());
 			} else {
 				drop_down = ImGui::BeginCombo("Parent Folder", "(select mods folder)");
 			}
 			
 			if(drop_down) {
-				for(size_t i = 0; i < g_config.folders.mods_folders.size(); i++) {
-					if(ImGui::Selectable(g_config.folders.mods_folders[i].c_str())) {
+				for(size_t i = 0; i < g_config.paths.mods_folders.size(); i++) {
+					if(ImGui::Selectable(g_config.paths.mods_folders[i].c_str())) {
 						mods_folder = i;
 					}
 				}
@@ -56,11 +56,11 @@ bool new_mod_screen() {
 			ImGui::InputText("Folder Name", &folder);
 			ImGui::InputText("Display Name", &info.name);
 			
-			if(mods_folder < g_config.folders.mods_folders.size() && ImGui::Button("Create")) {
+			if(mods_folder < g_config.paths.mods_folders.size() && ImGui::Button("Create")) {
 				std::string text;
 				write_game_info(text, info);
 				
-				fs::path path = fs::path(g_config.folders.mods_folders[mods_folder])/folder;
+				fs::path path = fs::path(g_config.paths.mods_folders[mods_folder])/folder;
 				fs::create_directories(path);
 				FileOutputStream stream;
 				stream.open(path/"gameinfo.txt");

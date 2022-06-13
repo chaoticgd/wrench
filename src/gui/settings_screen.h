@@ -21,6 +21,10 @@
 
 #include <gui/gui.h>
 
-void update_settings_popup();
+namespace gui {
+
+void settings_screen();
+
+};
 
 #endif

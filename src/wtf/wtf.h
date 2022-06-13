@@ -97,6 +97,7 @@ const WtfNode* wtf_next_sibling(const WtfNode* node, const char* type_name);
 const WtfNode* wtf_child(const WtfNode* parent, const char* type_name, const char* tag);
 
 const WtfAttribute* wtf_attribute(const WtfNode* node, const char* key);
+const WtfAttribute* wtf_attribute_of_type(const WtfNode* node, const char* key, WtfAttributeType type);
 
 #ifdef __cplusplus
 }

@@ -50,6 +50,12 @@ void gui::build_settings(const std::vector<std::string>* game_builds, const std:
 		combo_text += builds[selected_build];
 	}
 	combo_text += " / ";
+	if(params.debug.single_level_enabled || params.debug.nompegs) {
+		combo_text += "debug";
+	} else {
+		combo_text += "release";
+	}
+	combo_text += " / ";
 	combo_text += params.output_path;
 	
 	ImGui::SetNextWindowSizeConstraints(ImVec2(400, 0), ImVec2(400, 800));
