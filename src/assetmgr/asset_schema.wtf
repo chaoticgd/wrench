@@ -1093,14 +1093,28 @@ AssetType LevelWad {
 		games: [2 3 4]
 	}
 	
-	Child data     { allowed_types: ["LevelDataWad"] }
+	Child data {
+		allowed_types: ["LevelDataWad" "Binary"]
+	}
 	Child sound_bank {
 		desc: "The main 989snd sound bank for the level. For R&C1, the child of the LevelDataWad is used instead, and for the rest of the games this asset is usually a reference to that asset. **For that reason, you probably don't want to modify this asset. You probably want to modify the sound_bank child of the LevelDataWad intead.**"
 		allowed_types: ["Binary"]
 		required: true
 		games: [2 3 4]
 	}
-	Child chunks   { allowed_types: ["Collection"] }
+	Child gameplay {
+		desc: "The gameplay file for the level. **Note that this is usually a reference to the gameplay asset in the LevelDataWad, and in the case of Deadlocked that one will be packed in addition to this one (the data is duplicated twice on the disc), so you probably want to modify that one instead.**"
+		allowed_types: ["Binary"]
+		required: true
+		games: [1 2 3 4]
+	}
+	Child art_instances {
+		desc: "Similar thing as with the gameplay file. **This is not the copy you want to modify.**"
+		allowed_types: ["Binary"]
+		required: true
+		games: [4]
+	}
+	Child chunks { allowed_types: ["Collection"] }
 	Child missions { allowed_types: ["Collection"] }
 	
 	Child occlusion {
@@ -1133,8 +1147,16 @@ AssetType LevelDataWad {
 			allowed_types: ["Texture"]
 		}
 	}
-	Child art_instances       { allowed_types: ["Binary"] }
-	Child gameplay            { allowed_types: ["Binary"] }
+	Child art_instances {
+		desc: "Similar thing as the gameplay file. This is the copy you want to modify."
+		allowed_types: ["Binary"]
+		games: [4]
+	}
+	Child gameplay {
+		desc: "The gameplay file for the level. While in the case of R&C1, GC and UYA this copy isn't used directly, the other copy (a child of the LevelWad) usually references this copy, so this is the copy you probably want to modify (regardless of the game)."
+		allowed_types: ["Binary"]
+		games: [1 2 3 4]
+	}
 	Child global_nav_data     { allowed_types: ["Binary"] }
 }
 
