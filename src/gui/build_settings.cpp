@@ -51,7 +51,7 @@ void gui::build_settings(PackerParams& params, const std::vector<std::string>* g
 	}
 	combo_text += " / ";
 	if(params.debug.single_level_enabled || params.debug.nompegs) {
-		combo_text += "debug";
+		combo_text += "test";
 	} else {
 		combo_text += "release";
 	}
@@ -104,7 +104,6 @@ void gui::build_settings(PackerParams& params, const std::vector<std::string>* g
 		}
 		
 		if(ImGui::CollapsingHeader("Testing")) {
-			ImGui::TextWrapped("These options are mainly useful for reducing build times.");
 			ImGui::SetNextItemWidth(-1);
 			ImGui::Checkbox("##single_level_enable", &params.debug.single_level_enabled);
 			ImGui::SameLine();
