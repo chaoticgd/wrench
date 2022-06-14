@@ -23,9 +23,10 @@
 #include <iso/iso_filesystem.h>
 
 struct Release {
-	std::string elf_name;
+	const char* elf_name;
 	Game game = Game::UNKNOWN;
 	Region region = Region::US;
+	const char* name;
 };
 
 Release identify_release(const IsoDirectory& root);

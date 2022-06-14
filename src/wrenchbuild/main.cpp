@@ -302,7 +302,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, Game
 			BuildConfig config(release.game, release.region);
 			unpack_asset_impl(build, stream, config);
 			
-			bank.game_info.name = build.game();
+			bank.game_info.name = release.name;
 			bank.game_info.format_version = ASSET_FORMAT_VERSION;
 			bank.game_info.builds = {asset_reference_to_string(build.reference())};
 			
