@@ -16,6 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <mutex>
+#include <thread>
 #include <fstream>
 
 #include <core/util.h>
@@ -61,6 +63,7 @@ struct ParsedArgs {
 	bool print_developer_output = false;
 };
 
+static int main_2(int argc, char** argv);
 static ParsedArgs parse_args(int argc, char** argv, u32 flags);
 static void unpack(const fs::path& input_path, const fs::path& output_path, Game game, Region region, bool generate_output_subdirectory);
 static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path, BuildConfig config, const std::string& hint);
@@ -72,10 +75,18 @@ static void extract_moby(const char* input_path, const char* output_path);
 static void build_moby(const char* input_path, const char* output_path);
 static void print_usage(bool developer_subcommands);
 static void print_version();
+static void start_stdout_flusher_thread();
+static void stop_stdout_flusher_thread();
 
 #define require_args(arg_count) verify(argc == arg_count, "Incorrect number of arguments.");
 
 int main(int argc, char** argv) {
+	int exit_code = main_2(argc, argv);
+	stop_stdout_flusher_thread();
+	return exit_code;
+}
+
+static int main_2(int argc, char** argv) {
 	if(argc < 2) {
 		print_usage(false);
 		return 1;
@@ -236,6 +247,11 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 		
 		if((flags & ARG_DEVELOPER) && strcmp(argv[i], "-d") == 0) {
 			args.print_developer_output = true;
+			continue;
+		}
+		
+		if(strcmp(argv[i], "-f") == 0) {
+			start_stdout_flusher_thread();
 			continue;
 		}
 		
@@ -536,4 +552,38 @@ static void print_version() {
 		printf("%hhx", wadinfo.build.commit[i]);
 	}
 	printf("\n");
+}
+
+static std::mutex stdout_flush_mutex;
+static bool stdout_flush_started = false;
+static bool stdout_flush_finished = false;
+static std::thread stdout_flush_thread;
+
+static void start_stdout_flusher_thread() {
+	if(!stdout_flush_started) {
+		stdout_flush_started = true;
+		stdout_flush_thread = std::thread([]() {
+			for(;;) {
+				{
+					std::lock_guard<std::mutex> g(stdout_flush_mutex);
+					if(stdout_flush_finished) {
+						break;
+					}
+				}
+				fflush(stdout);
+				fflush(stderr);
+				std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			}
+		});
+	}
+}
+
+static void stop_stdout_flusher_thread() {
+	if(stdout_flush_started) {
+		{
+			std::lock_guard<std::mutex> g(stdout_flush_mutex);
+			stdout_flush_finished = true;
+		}
+		stdout_flush_thread.join();
+	}
 }
