@@ -1114,8 +1114,15 @@ AssetType LevelWad {
 		required: true
 		games: [4]
 	}
-	Child chunks { allowed_types: ["Collection"] }
-	Child missions { allowed_types: ["Collection"] }
+	Child chunks {
+		allowed_types: ["Collection"]
+		required: false
+		games: [2 3 4]
+	}
+	Child missions {
+		allowed_types: ["Collection"]
+		games: [4]
+	}
 	
 	Child occlusion {
 		allowed_types: ["Binary"]

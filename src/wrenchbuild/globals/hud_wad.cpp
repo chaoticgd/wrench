@@ -160,7 +160,7 @@ static void unpack_hud_wad(HudWadAsset& dest, const DlHudWadHeader& header, Inpu
 	unpack_compressed_assets<TextureAsset>(dest.e3_level_ss(SWITCH_FILES), src, ARRAY_PAIR(header.e3_level_ss), config, FMT_TEXTURE_PIF8);
 	unpack_compressed_asset(dest.nw_dnas_image<TextureAsset>(), src, header.nw_dnas_image, config, FMT_TEXTURE_PIF8);
 	unpack_asset(dest.split_screen_texture<TextureAsset>(), src, header.split_screen_texture, config, FMT_TEXTURE_PIF8);
-	unpack_assets<TextureAsset>(dest.radar_maps(SWITCH_FILES), src, ARRAY_PAIR(header.radar_maps), config, FMT_TEXTURE_PIF8);
+	unpack_assets<BinaryAsset>(dest.radar_maps(SWITCH_FILES), src, ARRAY_PAIR(header.radar_maps), config);
 	unpack_assets<TextureAsset>(dest.weapon_plates_large(SWITCH_FILES), src, ARRAY_PAIR(header.weapon_plates_large), config, FMT_TEXTURE_PIF8);
 	unpack_assets<TextureAsset>(dest.mission_plates_large(SWITCH_FILES), src, ARRAY_PAIR(header.mission_plates_large), config, FMT_TEXTURE_PIF8);
 	unpack_assets<TextureAsset>(dest.gui_plates(SWITCH_FILES), src, ARRAY_PAIR(header.gui_plates), config, FMT_TEXTURE_PIF8);
@@ -185,7 +185,7 @@ static void unpack_hud_wad(HudWadAsset& dest, const DlHudWadHeader& header, Inpu
 	unpack_assets<TextureAsset>(dest.character_cards(SWITCH_FILES), src, ARRAY_PAIR(header.character_cards), config, FMT_TEXTURE_PIF8);
 	unpack_asset(dest.equip_plate<TextureAsset>(), src, header.equip_plate, config, FMT_TEXTURE_PIF8);
 	unpack_asset(dest.hud_flythru<TextureAsset>(), src, header.hud_flythru, config, FMT_TEXTURE_PIF8);
-	unpack_assets<TextureAsset>(dest.mp_maps(SWITCH_FILES), src, ARRAY_PAIR(header.mp_maps), config, FMT_TEXTURE_PIF8);
+	unpack_assets<BinaryAsset>(dest.mp_maps(SWITCH_FILES), src, ARRAY_PAIR(header.mp_maps), config);
 	unpack_assets<TextureAsset>(dest.tourney_plates_large(SWITCH_FILES), src, ARRAY_PAIR(header.tourney_plates_large), config, FMT_TEXTURE_PIF8);
 }
 
