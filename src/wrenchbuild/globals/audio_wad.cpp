@@ -91,12 +91,12 @@ static void unpack_audio_wad(AudioWadAsset& dest, const Header& header, InputStr
 		if(sector > 0) {
 			auto end_sector = end_sectors.upper_bound(sector);
 			verify(end_sector != end_sectors.end(), "Header references audio beyond end of file. The WAD file may be truncated.");
-			unpack_asset(vendor.child<BinaryAsset>(i), src, SectorRange{sector, *end_sector - sector}, config);
+			unpack_asset(vendor.child<BinaryAsset>(i), src, SectorRange{sector, *end_sector - sector}, config, FMT_BINARY_VAG);
 		}
 	}
 	
 	if constexpr(std::is_same_v<Header, DlAudioWadHeader>) {
-		unpack_assets<BinaryAsset>(dest.global_sfx(), src, ARRAY_PAIR(header.global_sfx), config);
+		unpack_assets<BinaryAsset>(dest.global_sfx(), src, ARRAY_PAIR(header.global_sfx), config, FMT_BINARY_VAG);
 	}
 	
 	CollectionAsset& help_collection = dest.help("help/help.asset");
@@ -110,10 +110,10 @@ static void unpack_audio_wad(AudioWadAsset& dest, const Header& header, InputStr
 
 template <typename Header>
 static void pack_audio_wad(OutputStream& dest, Header& header, const AudioWadAsset& src, BuildConfig config) {
-	pack_assets_sa(dest, ARRAY_PAIR(header.vendor), src.get_vendor(), config);
+	pack_assets_sa(dest, ARRAY_PAIR(header.vendor), src.get_vendor(), config, FMT_BINARY_VAG);
 	
 	if constexpr(std::is_same_v<Header, DlAudioWadHeader>) {
-		pack_assets_sa(dest, ARRAY_PAIR(header.global_sfx), src.get_global_sfx(), config);
+		pack_assets_sa(dest, ARRAY_PAIR(header.global_sfx), src.get_global_sfx(), config, FMT_BINARY_VAG);
 	}
 	
 	pack_help_audio(dest, ARRAY_PAIR(header.help_english), src.get_help(), config, 0);
@@ -139,7 +139,7 @@ static void unpack_help_audio(CollectionAsset& dest, InputStream& src, const Sec
 			
 			auto end_sector = end_sectors.upper_bound(ranges[i].sectors);
 			verify(end_sector != end_sectors.end(), "Header references audio beyond end of file (at 0x%lx). The WAD file may be truncated.", ranges[i].bytes());
-			unpack_asset(*asset, src, SectorRange{ranges[i].sectors, *end_sector - ranges[i].sectors}, config);
+			unpack_asset(*asset, src, SectorRange{ranges[i].sectors, *end_sector - ranges[i].sectors}, config, FMT_BINARY_VAG);
 		}
 	}
 }
@@ -158,7 +158,7 @@ static void pack_help_audio(OutputStream& dest, Sector32* sectors_dest, s32 coun
 				default: assert(0);
 			}
 			if(child) {
-				sectors_dest[i] = pack_asset_sa<Sector32>(dest, *child, config);
+				sectors_dest[i] = pack_asset_sa<Sector32>(dest, *child, config, FMT_BINARY_VAG);
 			}
 		}
 	}
