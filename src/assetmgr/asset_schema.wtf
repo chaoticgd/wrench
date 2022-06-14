@@ -1101,7 +1101,14 @@ AssetType LevelDataWad {
 	Child sound_bank          { allowed_types: ["Binary"] }
 	Child hud_header          { allowed_types: ["Binary"] }
 	Child hud_banks           { allowed_types: ["Collection"] }
-	Child transition_textures { allowed_types: ["Binary"] }
+	Child transition_textures {
+		allowed_types: ["Collection" "Binary"]
+		required: false
+		games: [2 3]
+		Child child {
+			allowed_types: ["Texture"]
+		}
+	}
 	Child art_instances       { allowed_types: ["Binary"] }
 	Child gameplay            { allowed_types: ["Binary"] }
 	Child global_nav_data     { allowed_types: ["Binary"] }

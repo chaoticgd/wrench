@@ -113,7 +113,7 @@ static void unpack_gc_uya_level_data_wad(LevelDataWadAsset& dest, InputStream& s
 	unpack_asset(dest.code(), src, header.code, config);
 	unpack_asset(dest.hud_header(), src, header.hud_header, config);
 	unpack_assets<BinaryAsset>(dest.hud_banks(SWITCH_FILES), src, ARRAY_PAIR(header.hud_banks), config);
-	unpack_asset(dest.transition_textures(), src, header.transition_textures, config);
+	unpack_compressed_asset(dest.transition_textures<CollectionAsset>(SWITCH_FILES), src, header.transition_textures, config, FMT_COLLECTION_PIF8);
 }
 
 static void pack_gc_uya_level_data_wad(OutputStream& dest, const LevelDataWadAsset& src, BuildConfig config) {
@@ -132,7 +132,11 @@ static void pack_gc_uya_level_data_wad(OutputStream& dest, const LevelDataWadAss
 	header.hud_header = pack_asset<ByteRange>(dest, src.get_hud_header(), config, 0x40, FMT_NO_HINT, &empty);
 	pack_assets<ByteRange>(dest, ARRAY_PAIR(header.hud_banks), src.get_hud_banks(), config, 0x40, FMT_NO_HINT, &empty);
 	header.core_data = write_vector_of_bytes(dest, data);
-	header.transition_textures = pack_asset<ByteRange>(dest, src.get_transition_textures(), config, 0x40, FMT_NO_HINT, &empty);
+	if(src.has_transition_textures()) {
+		header.transition_textures = pack_compressed_asset<ByteRange>(dest, src.get_transition_textures(), config, 0x40, "transition", FMT_COLLECTION_PIF8);
+	} else {
+		header.transition_textures = {-1, 0};
+	}
 	
 	dest.write(0, header);
 }
