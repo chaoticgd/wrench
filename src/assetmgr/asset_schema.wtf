@@ -102,6 +102,12 @@ AssetType Build {
 		games: [1 2 3 4]
 	}
 	
+	StringAttribute version {
+		desc: "The version number, as specified in the SYSTEM.CNF file."
+		required: true
+		games: [1 2 3 4]
+	}
+	
 	IntegerAttribute ps2_logo_key {
 		desc: "The key used to \"encrypt\" the PS2 logo."
 		min: 0
@@ -124,6 +130,13 @@ AssetType Build {
 	
 	Child primary_volume_descriptor {
 		allowed_types: ["PrimaryVolumeDescriptor"]
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	Child boot_elf {
+		desc: "The boot ELF, as specified in the SYSTEM.CNF file."
+		allowed_types: ["File"]
 		required: true
 		games: [1 2 3 4]
 	}

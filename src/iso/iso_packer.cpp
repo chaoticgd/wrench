@@ -27,7 +27,8 @@ static std::vector<LevelInfo> enumerate_levels(const BuildAsset& build, Game gam
 static LevelInfo enumerate_level(const LevelAsset& level, Game game);
 static IsoDirectory enumerate_files(const Asset& files);
 static void flatten_files(std::vector<IsoFileRecord*>& dest, IsoDirectory& root_dir);
-static IsoFileRecord write_system_cnf(OutputStream& iso, IsoDirectory& root_dir, const BuildAsset& build);
+static IsoFileRecord pack_system_cnf(OutputStream& iso, const BuildAsset& build);
+static IsoFileRecord pack_boot_elf(OutputStream& iso, const FileAsset& boot_elf, BuildConfig config, AssetPackerFunc pack);
 static void pack_files(OutputStream& iso, std::vector<IsoFileRecord*>& files, BuildConfig config, AssetPackerFunc pack);
 static IsoDirectory pack_globals(OutputStream& iso, std::vector<GlobalWadInfo>& globals, BuildConfig config, AssetPackerFunc pack, bool no_mpegs);
 static std::array<IsoDirectory, 3> pack_levels(OutputStream& iso, std::vector<LevelInfo>& levels, BuildConfig config, const LevelAsset* single_level, AssetPackerFunc pack);
@@ -83,7 +84,7 @@ void pack_iso(OutputStream& iso, const BuildAsset& src, BuildConfig, const char*
 	}
 	
 	// SYSTEM.CNF must be written out at sector 1000 (the game hardcodes this).
-	IsoFileRecord system_cnf_record = write_system_cnf(iso, root_dir, src);
+	IsoFileRecord system_cnf_record = pack_system_cnf(iso, src);
 	
 	// Then the table of contents at sector 1001 (also hardcoded).
 	IsoFileRecord toc_record;
@@ -110,10 +111,12 @@ void pack_iso(OutputStream& iso, const BuildAsset& src, BuildConfig, const char*
 	
 	s64 files_begin = iso.tell();
 	
+	IsoFileRecord elf_record = pack_boot_elf(iso, src.get_boot_elf(), config, pack);
 	pack_files(iso, files, config, pack);
 	
-	root_dir.files.emplace(root_dir.files.begin(), std::move(system_cnf_record));
+	root_dir.files.emplace(root_dir.files.begin(), std::move(elf_record));
 	root_dir.files.emplace(root_dir.files.begin(), std::move(toc_record));
+	root_dir.files.emplace(root_dir.files.begin(), std::move(system_cnf_record));
 	
 	root_dir.subdirs.emplace_back(pack_globals(iso, toc.globals, config, pack, no_mpegs));
 	auto [levels_dir, audio_dir, scenes_dir] =
@@ -331,24 +334,50 @@ static void flatten_files(std::vector<IsoFileRecord*>& dest, IsoDirectory& root_
 	}
 }
 
-static IsoFileRecord write_system_cnf(OutputStream& iso, IsoDirectory& root_dir, const BuildAsset& build) {
-	// TODO: Add a seperate attribute for the system.cnf file or generate it.
-	const FileAsset& file_asset = build.get_files().get_child("system_cnf").as<FileAsset>();
-	FileReference ref = file_asset.src();
+static IsoFileRecord pack_system_cnf(OutputStream& iso, const BuildAsset& build) {
+	std::string path = build.get_boot_elf().path();
+	for(char& c : path) c = toupper(c);
 	
-	auto stream = ref.owner->open_binary_file_for_reading(ref);
-	verify(stream.get(), "Failed to open '%s' for reading.", ref.path.string().c_str());
-	s64 system_cnf_size = stream->size();
+	std::string system_cnf;
+	system_cnf += "BOOT2 = cdrom:\\";
+	system_cnf += path;
+	system_cnf += " \r\nVER = ";
+	system_cnf += build.version();
+	system_cnf += " \r\nVMODE = ";
+	if(build.region() != "eu") {
+		system_cnf += "NTSC";
+	} else {
+		system_cnf += "PAL";
+	}
+	system_cnf += " \r\n";
 	
 	iso.pad(SECTOR_SIZE, 0);
 	
 	IsoFileRecord record;
 	record.name = "system.cnf";
 	record.lba = {(s32) (iso.tell() / SECTOR_SIZE)};
-	record.size = system_cnf_size;
+	record.size = system_cnf.size();
 	record.modified_time = fs::file_time_type::clock::now();
 	
-	Stream::copy(iso, *stream, system_cnf_size);
+	iso.write_n((u8*) system_cnf.data(), system_cnf.size());
+	
+	return record;
+}
+
+static IsoFileRecord pack_boot_elf(OutputStream& iso, const FileAsset& boot_elf, BuildConfig config, AssetPackerFunc pack) {
+	FileReference ref = boot_elf.src();
+	
+	fs::file_time_type modified_time;
+	auto stream = boot_elf.file().open_binary_file_for_reading(ref, &modified_time);
+	
+	IsoFileRecord record;
+	record.name = boot_elf.path();
+	record.lba = {(s32) (iso.tell() / SECTOR_SIZE)};
+	record.size = stream->size();
+	record.modified_time = modified_time;
+	
+	iso.pad(SECTOR_SIZE, 0);
+	Stream::copy(iso, *stream, stream->size());
 	
 	return record;
 }
@@ -358,12 +387,6 @@ static void pack_files(OutputStream& iso, std::vector<IsoFileRecord*>& files, Bu
 		if(file->name.find(".hdr") != std::string::npos) {
 			// We're writing out a new table of contents, so if an old one
 			// already exists we don't want to write it out.
-			continue;
-		}
-		
-		if(file->name.find("system.cnf") == 0) {
-			// SYSTEM.CNF must be written out at a fixed sector number so we
-			// handle it seperately.
 			continue;
 		}
 		
