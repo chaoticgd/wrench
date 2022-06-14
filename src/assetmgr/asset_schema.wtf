@@ -1094,6 +1094,12 @@ AssetType LevelWad {
 	}
 	
 	Child data     { allowed_types: ["LevelDataWad"] }
+	Child sound_bank {
+		desc: "The main 989snd sound bank for the level. For R&C1, the child of the LevelDataWad is used instead, and for the rest of the games this asset is usually a reference to that asset. **For that reason, you probably don't want to modify this asset. You probably want to modify the sound_bank child of the LevelDataWad intead.**"
+		allowed_types: ["Binary"]
+		required: true
+		games: [2 3 4]
+	}
 	Child chunks   { allowed_types: ["Collection"] }
 	Child missions { allowed_types: ["Collection"] }
 	
@@ -1111,7 +1117,12 @@ AssetType LevelDataWad {
 	Child core                { allowed_types: ["LevelCore"] }
 	Child moby8355_pvars      { allowed_types: ["Binary"] }
 	Child code                { allowed_types: ["Binary"] }
-	Child sound_bank          { allowed_types: ["Binary"] }
+	Child sound_bank          {
+		desc: "The main 989snd sound bank for the level. This asset is only used directly in the case of R&C1, however for the other games the version of the asset that is used is usually a reference that points to this asset. The intention of this approach is to regularize the structure of a level (to make porting levels between games easier) while still allowing for levels to be packed with a Binary asset for the LevelDataWad."
+		allowed_types: ["Binary"]
+		required: true
+		games: [1 2 3 4]
+	}
 	Child hud_header          { allowed_types: ["Binary"] }
 	Child hud_banks           { allowed_types: ["Collection"] }
 	Child transition_textures {
