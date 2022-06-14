@@ -949,7 +949,13 @@ AssetType BootWad {
 	Child german      { allowed_types: ["Binary"] }
 	Child spanish     { allowed_types: ["Binary"] }
 	Child italian     { allowed_types: ["Binary"] }
-	Child hud         { allowed_types: ["Collection"] }
+	Child hud_header  { allowed_types: ["Binary"] }
+	Child hud_banks   {
+		allowed_types: ["Collection"]
+		Child child {
+			allowed_types: ["Binary"]
+		}
+	}
 	Child boot_plates { allowed_types: ["Collection"] }
 	Child sram        { allowed_types: ["Binary"] }
 }

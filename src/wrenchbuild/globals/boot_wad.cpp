@@ -36,7 +36,8 @@ packed_struct(DlBootHeader,
 	/* 0x10 */ ByteRange german;
 	/* 0x18 */ ByteRange spanish;
 	/* 0x20 */ ByteRange italian;
-	/* 0x28 */ ByteRange hudwad[6];
+	/* 0x28 */ ByteRange hud_header;
+	/* 0x30 */ ByteRange hud_banks[5];
 	/* 0x58 */ ByteRange boot_plates[4];
 	/* 0x78 */ ByteRange sram;
 )
@@ -49,10 +50,8 @@ static void unpack_boot_wad(BootWadAsset& dest, InputStream& src, BuildConfig co
 	unpack_compressed_asset(dest.german(), src, header.german, config);
 	unpack_compressed_asset(dest.spanish(), src, header.spanish, config);
 	unpack_compressed_asset(dest.italian(), src, header.italian, config);
-	unpack_asset(dest.hud().child<BinaryAsset>(0), src, header.hudwad[0], config);
-	for(s32 i = 1; i < 6; i++) {
-		unpack_compressed_asset(dest.hud().child<BinaryAsset>(i), src, header.hudwad[i], config);
-	}
+	unpack_asset(dest.hud_header(), src, header.hud_header, config);
+	unpack_compressed_assets<BinaryAsset>(dest.hud_banks(SWITCH_FILES), src, ARRAY_PAIR(header.hud_banks), config);
 	unpack_compressed_assets<TextureAsset>(dest.boot_plates(SWITCH_FILES), src, ARRAY_PAIR(header.boot_plates), config, FMT_TEXTURE_RGBA);
 	unpack_compressed_asset(dest.sram(), src, header.sram, config);
 }
@@ -66,15 +65,8 @@ static void pack_boot_wad(OutputStream& dest, const BootWadAsset& src, BuildConf
 	header.german = pack_compressed_asset<ByteRange>(dest, src.get_german(), config, 0x40, "german");
 	header.spanish = pack_compressed_asset<ByteRange>(dest, src.get_spanish(), config, 0x40, "spanish");
 	header.italian = pack_compressed_asset<ByteRange>(dest, src.get_italian(), config, 0x40, "italian");
-	const CollectionAsset& hud = src.get_hud();
-	if(hud.has_child(0)) {
-		header.hudwad[0] = pack_asset<ByteRange>(dest, src.get_hud().get_child(0), config, 0x40);
-	}
-	for(s32 i = 1; i < 6; i++) {
-		if(hud.has_child(i)) {
-			header.hudwad[i] = pack_compressed_asset<ByteRange>(dest, src.get_hud().get_child(i), config, 0x40, "hudwad");
-		}
-	}
+	header.hud_header = pack_asset<ByteRange>(dest, src.get_hud_header(), config, 0x40);
+	pack_compressed_assets<ByteRange>(dest, ARRAY_PAIR(header.hud_banks), src.get_hud_banks(), config, 0x40, "hudwad");
 	pack_compressed_assets(dest, ARRAY_PAIR(header.boot_plates), src.get_boot_plates(), config, 0x40, "bootplate", FMT_TEXTURE_RGBA);
 	header.sram = pack_compressed_asset<ByteRange>(dest, src.get_sram(), config, 0x40, "sram");
 	
