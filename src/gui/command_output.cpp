@@ -50,11 +50,12 @@ void gui::command_output_screen(const char* id, CommandStatus& status, void (*cl
 				}
 			}
 			
-			// Go through the last 15 lines of the output and strip out colour codes.
+			// Go through the last 15 lines of the output and strip out colour
+			// codes, taking care to handle incomplete buffers.
 			for(; i < (s64) status.output.size(); i++) {
 				// \033[%sm%02x\033[0m
-				if(i + 5 < status.output.size() && memcmp(status.output.data() + i, "\033[", 2) == 0) {
-					if(status.output[i + 3] == 'm') {
+				if(i + 1 < status.output.size() && memcmp(status.output.data() + i, "\033[", 2) == 0) {
+					if(i + 3 < status.output.size() && status.output[i + 3] == 'm') {
 						i += 3;
 					} else {
 						i += 4;
