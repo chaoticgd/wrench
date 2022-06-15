@@ -129,8 +129,8 @@ void pack_subtitles(OutputStream& dest, const CollectionAsset& src, BuildConfig 
 			if(src.has_child(i)) {
 				const SubtitleAsset& subtitle = src.get_child(i).as<SubtitleAsset>();
 				GcSubtitleHeader header = {};
-				header.start_frame = subtitle.start_time() * config.half_framerate();
-				header.stop_frame = subtitle.stop_time() * config.half_framerate();
+				header.start_frame = (s16) roundf(subtitle.start_time() * config.half_framerate());
+				header.stop_frame = (s16) roundf(subtitle.stop_time() * config.half_framerate());
 				
 				std::string empty;
 				
@@ -171,8 +171,8 @@ void pack_subtitles(OutputStream& dest, const CollectionAsset& src, BuildConfig 
 			if(src.has_child(i)) {
 				const SubtitleAsset& subtitle = src.get_child(i).as<SubtitleAsset>();
 				UyaDlSubtitleHeader header = {};
-				header.start_frame = subtitle.start_time() * config.half_framerate();
-				header.stop_frame = subtitle.stop_time() * config.half_framerate();
+				header.start_frame = (s16) roundf(subtitle.start_time() * config.half_framerate());
+				header.stop_frame = (s16) roundf(subtitle.stop_time() * config.half_framerate());
 				
 				if(subtitle.has_text_e()) {
 					header.text_offset_e = (s16) dest.tell();
