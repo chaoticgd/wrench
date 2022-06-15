@@ -546,6 +546,12 @@ Asset& AssetForest::lookup_asset(const AssetReference& reference, Asset* context
 	return *asset;
 }
 
+void AssetForest::unmount_last() {
+	assert(_banks.size() >= 1);
+	_banks.erase(_banks.end() - 1);
+	_banks.back()->_higher_precedence = nullptr;
+}
+
 // *****************************************************************************
 
 LooseAssetBank::LooseAssetBank(AssetForest& forest, fs::path directory, bool is_writeable)

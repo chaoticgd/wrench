@@ -377,6 +377,8 @@ public:
 		bank->read();
 		return *bank;
 	}
+	
+	void unmount_last();
 
 private:
 	std::vector<std::unique_ptr<AssetBank>> _banks;

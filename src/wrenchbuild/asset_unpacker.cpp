@@ -110,20 +110,32 @@ static bool handle_special_debugging_cases(Asset& dest, InputStream& src, BuildC
 	}
 	
 	if(g_asset_unpacker.dump_wads && is_wad) {
-		BinaryAsset& bin = dest.parent()->transmute_child<BinaryAsset>(dest.tag().c_str());
+		std::string tag = dest.tag();
+		BinaryAsset& bin = dest.parent()->transmute_child<BinaryAsset>(tag.c_str());
 		unpack_asset_impl(bin, src, config, FMT_BINARY_WAD);
 		return true;
 	}
 	
 	if(g_asset_unpacker.dump_binaries && is_bin_leaf) {
-		const char* type = asset_type_to_string(dest.type());
-		BinaryAsset& bin = dest.parent()->transmute_child<BinaryAsset>(dest.tag().c_str());
-		bin.set_asset_type(type);
-		bin.set_format_hint(hint);
-		bin.set_game(game_to_string(config.game()));
-		bin.set_region(region_to_string(config.region()));
-		unpack_asset_impl(bin, src, config, FMT_NO_HINT);
-		return true;
+		bool is_unpackable;
+		switch(config.game()) {
+			case Game::RAC: is_unpackable = dest.funcs.unpack_rac1 != nullptr; break;
+			case Game::GC: is_unpackable = dest.funcs.unpack_rac2 != nullptr; break;
+			case Game::UYA: is_unpackable = dest.funcs.unpack_rac3 != nullptr; break;
+			case Game::DL: is_unpackable = dest.funcs.unpack_dl != nullptr; break;
+			default: verify_not_reached("Invalid game.");
+		}
+		if(is_unpackable) {
+			const char* type = asset_type_to_string(dest.type());
+			std::string tag = dest.tag();
+			BinaryAsset& bin = dest.parent()->transmute_child<BinaryAsset>(tag.c_str());
+			bin.set_asset_type(type);
+			bin.set_format_hint(hint);
+			bin.set_game(game_to_string(config.game()));
+			bin.set_region(region_to_string(config.region()));
+			unpack_asset_impl(bin, src, config, FMT_NO_HINT);
+			return true;
+		}
 	}
 	
 	if(g_asset_unpacker.dump_flat && is_wad && dest.type() != FlatWadAsset::ASSET_TYPE) {

@@ -40,6 +40,7 @@ AssetType Reference {
 
 AssetType Collection {
 	desc: "A generic container for other assets."
+	bin_leaf: true
 	
 	Hint texlist {
 		syntax: "texlist,<texture hint>"
@@ -782,6 +783,7 @@ AssetType MiscWad {
 AssetType IrxWad {
 	desc: "A container for IOP modules."
 	wad: true
+	bin_leaf: true
 	
 	Child image {
 		allowed_types: ["Texture" "Binary"]

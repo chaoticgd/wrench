@@ -112,6 +112,8 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 	
 	AssetDispatchTable* dispatch = nullptr;
 	
+	AssetBank* temp = nullptr;
+	
 	std::vector<u8> dest;
 	if(type == MobyClassAsset::ASSET_TYPE) {
 		MobyClassData moby = read_moby_class(src, config.game());
@@ -119,8 +121,8 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 		
 		dispatch = &MobyClassAsset::funcs;
 	} else {
-		AssetBank& temp = forest.mount<MemoryAssetBank>();
-		AssetFile& file = temp.asset_file("test.asset");
+		temp = &forest.mount<MemoryAssetBank>();
+		AssetFile& file = temp->asset_file("test.asset");
 		Asset& asset = file.root().physical_child(type, "test");
 		unpack_asset_impl(asset, src_stream, config, hint.c_str());
 		
@@ -143,6 +145,10 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 			}
 			fail_count++;
 		}
+	}
+	
+	if(temp) {
+		forest.unmount_last();
 	}
 }
 
