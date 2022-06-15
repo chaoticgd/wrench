@@ -18,4 +18,4 @@
 
 #include <core/filesystem.h>
 
-void run_tests(fs::path input_path);
+void run_tests(fs::path input_path, const std::string& asset_ref);

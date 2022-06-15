@@ -60,13 +60,15 @@ void unpack_asset_impl(Asset& dest, InputStream& src, BuildConfig config, const 
 	}
 	
 	std::string reference = asset_reference_to_string(dest.reference());
-	std::string type = asset_type_to_string(dest.type());
-	for(char& c : type) c = tolower(c);
-	s32 percentage = (s32) ((g_asset_unpacker.current_file_offset * 100.f) / g_asset_unpacker.total_file_size);
-	if(strlen(hint) > 0) {
-		printf("[%3d%%] \033[32mUnpacking %s asset %s (%s)\033[0m\n", percentage, type.c_str(), reference.c_str(), hint);
-	} else {
-		printf("[%3d%%] \033[32mUnpacking %s asset %s\033[0m\n", percentage, type.c_str(), reference.c_str());
+	if(!g_asset_unpacker.quiet) {
+		std::string type = asset_type_to_string(dest.type());
+		for(char& c : type) c = tolower(c);
+		s32 percentage = (s32) ((g_asset_unpacker.current_file_offset * 100.f) / g_asset_unpacker.total_file_size);
+		if(strlen(hint) > 0) {
+			printf("[%3d%%] \033[32mUnpacking %s asset %s (%s)\033[0m\n", percentage, type.c_str(), reference.c_str(), hint);
+		} else {
+			printf("[%3d%%] \033[32mUnpacking %s asset %s\033[0m\n", percentage, type.c_str(), reference.c_str());
+		}
 	}
 	
 	AssetUnpackerFunc* unpack_func = nullptr;

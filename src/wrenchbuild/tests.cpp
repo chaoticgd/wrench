@@ -24,24 +24,48 @@
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 
-static void run_round_trip_asset_packing_tests(const fs::path& input_path, s32 min_percentage, s32 max_percentage);
-static void enumerate_binaries(std::vector<BinaryAsset*>& dest, Asset& src);
-static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& binary, AssetType type, s32 percentage);
+enum TestMode {
+	RUN_ALL_TESTS,
+	PRINT_DIFF_ON_FAIL
+};
 
-void run_tests(fs::path input_path) {
-	run_round_trip_asset_packing_tests(input_path, 0, 100);
+static void run_round_trip_asset_packing_tests(const fs::path& input_path, const std::string& asset_ref, s32 min_percentage, s32 max_percentage);
+static void enumerate_binaries(std::vector<BinaryAsset*>& dest, Asset& src);
+static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& binary, AssetType type, s32 percentage, TestMode mode);
+
+static s32 pass_count = 0;
+static s32 fail_count = 0;
+
+void run_tests(fs::path input_path, const std::string& asset_ref) {
+	run_round_trip_asset_packing_tests(input_path, asset_ref, 0, 100);
 	
-	printf("\nALL TESTS HAPPY\n");
+	if(fail_count == 0) {
+		printf("\nALL TESTS HAPPY\n");
+	} else {
+		printf("%d passed, %d failed", pass_count, fail_count);
+	}
 }
 
-static void run_round_trip_asset_packing_tests(const fs::path& input_path, s32 min_percentage, s32 max_percentage) {
+static void run_round_trip_asset_packing_tests(const fs::path& input_path, const std::string& asset_ref, s32 min_percentage, s32 max_percentage) {
+	// Disable printing when an asset is packed/unpacked.
+	g_asset_unpacker.quiet = true;
+	g_asset_packer_quiet = true;
+	
 	AssetForest forest;
 	AssetBank& bank = forest.mount<LooseAssetBank>(input_path, false);
 	Asset* root = bank.root();
 	verify(root, "Tried to run test on directory with no asset files!");
 	
 	std::vector<BinaryAsset*> binaries;
-	enumerate_binaries(binaries, *root);
+	
+	if(asset_ref.empty()) {
+		enumerate_binaries(binaries, *root);
+	} else {
+		AssetReference ref = parse_asset_reference(asset_ref.c_str());
+		Asset& asset = forest.lookup_asset(ref, bank.root());
+		verify(asset.type() == BinaryAsset::ASSET_TYPE, "Specified asset is not a binary.");
+		binaries.emplace_back(&asset.as<BinaryAsset>());
+	}
 	
 	for(size_t i = 0; i < binaries.size(); i++) {
 		BinaryAsset& binary = *binaries[i];
@@ -54,7 +78,8 @@ static void run_round_trip_asset_packing_tests(const fs::path& input_path, s32 m
 		AssetType type = asset_string_to_type(asset_type.c_str());
 		if(type != NULL_ASSET_TYPE) {
 			f32 percentage = lerp(min_percentage, max_percentage, i / (f32) binaries.size());
-			run_round_trip_asset_packing_test(forest, binary, type, (s32) percentage);
+			TestMode mode = asset_ref.empty() ? RUN_ALL_TESTS : PRINT_DIFF_ON_FAIL;
+			run_round_trip_asset_packing_test(forest, binary, type, (s32) percentage, mode);
 		}
 	}
 }
@@ -69,14 +94,17 @@ static void enumerate_binaries(std::vector<BinaryAsset*>& dest, Asset& src) {
 	});
 }
 
-static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& binary, AssetType type, s32 percentage) {
+static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& binary, AssetType type, s32 percentage, TestMode mode) {
 	auto src_file = binary.file().open_binary_file_for_reading(binary.src());
 	std::vector<u8> src = src_file->read_multiple<u8>(src_file->size());
 	MemoryInputStream src_stream(src);
 	
 	const char* type_name = asset_type_to_string(type);
 	std::string ref = asset_reference_to_string(binary.reference());
-	printf("[%3d%%] \033[34mRunning test with %s asset %s\033[0m\n", percentage, type_name, ref.c_str());
+	
+	if(mode == PRINT_DIFF_ON_FAIL) {
+		printf("[%3d%%] \033[34mRunning test with %s asset %s\033[0m\n", percentage, type_name, ref.c_str());
+	}
 	
 	std::string hint = binary.format_hint();
 	BuildConfig config(binary.game(), binary.region());
@@ -102,8 +130,16 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 	}
 	
 	if(!dispatch->test || !(*dispatch->test)(src, dest, config, hint.c_str())) {
-		if(!diff_buffers(src, dest, 0, "", 0)) {
-			exit(1);
+		if(diff_buffers(src, dest, 0, 0, mode == PRINT_DIFF_ON_FAIL)) {
+			if(mode == RUN_ALL_TESTS) {
+				printf("\033[32m [PASS] %s\033[0m\n", ref.c_str());
+			}
+			pass_count++;
+		} else {
+			if(mode == RUN_ALL_TESTS) {
+				printf("\033[31m [FAIL] %s\033[0m\n", ref.c_str());
+			}
+			fail_count++;
 		}
 	}
 }

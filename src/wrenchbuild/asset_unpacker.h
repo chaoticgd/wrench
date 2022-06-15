@@ -31,6 +31,8 @@ struct AssetUnpackerGlobals {
 	bool dump_binaries = false;
 	bool dump_flat = false;
 	
+	bool quiet = false;
+	
 	InputStream* input_file = nullptr;
 	s64 current_file_offset;
 	s64 total_file_size;

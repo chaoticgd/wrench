@@ -48,7 +48,8 @@ enum ArgFlags : u32 {
 	ARG_REGION = 1 << 6,
 	ARG_HINT = 1 << 7,
 	ARG_SUBDIRECTORY = 1 << 8,
-	ARG_DEVELOPER = 1 << 9
+	ARG_DEVELOPER = 1 << 9,
+	ARG_ASSET_OPTIONAL = 1 << 10
 };
 
 struct ParsedArgs {
@@ -63,7 +64,7 @@ struct ParsedArgs {
 	bool print_developer_output = false;
 };
 
-static int main_2(int argc, char** argv);
+static int wrenchbuild(int argc, char** argv);
 static ParsedArgs parse_args(int argc, char** argv, u32 flags);
 static void unpack(const fs::path& input_path, const fs::path& output_path, Game game, Region region, bool generate_output_subdirectory);
 static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path, BuildConfig config, const std::string& hint);
@@ -81,12 +82,12 @@ static void stop_stdout_flusher_thread();
 #define require_args(arg_count) verify(argc == arg_count, "Incorrect number of arguments.");
 
 int main(int argc, char** argv) {
-	int exit_code = main_2(argc, argv);
+	int exit_code = wrenchbuild(argc, argv);
 	stop_stdout_flusher_thread();
 	return exit_code;
 }
 
-static int main_2(int argc, char** argv) {
+static int wrenchbuild(int argc, char** argv) {
 	if(argc < 2) {
 		print_usage(false);
 		return 1;
@@ -133,6 +134,12 @@ static int main_2(int argc, char** argv) {
 	if(mode == "help" || mode == "-h" || mode == "--help") {
 		ParsedArgs args = parse_args(argc, argv, ARG_DEVELOPER);
 		print_usage(args.print_developer_output);
+		return 0;
+	}
+	
+	if(mode == "test") {
+		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_ASSET_OPTIONAL);
+		run_tests(args.input_paths[0], args.asset);
 		return 0;
 	}
 	
@@ -189,9 +196,6 @@ static int main_2(int argc, char** argv) {
 	} else if(mode == "build_moby") {
 		require_args(4);
 		build_moby(argv[2], argv[3]);
-	} else if(mode == "test") {
-		require_args(3);
-		run_tests(argv[2]);
 	} else {
 		print_usage(false);
 		return 1;
@@ -203,7 +207,7 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 	ParsedArgs args;
 	
 	for(int i = 2; i < argc; i++) {
-		if((flags & ARG_ASSET) && strcmp(argv[i], "-a") == 0) {
+		if((flags & (ARG_ASSET | ARG_ASSET_OPTIONAL)) && strcmp(argv[i], "-a") == 0) {
 			verify(i + 1 < argc, "Expected asset reference argument.");
 			args.asset = argv[++i];
 			continue;
@@ -268,7 +272,7 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 	} else {
 		verify(args.input_paths.empty(), "Unknown argument.");
 	}
-	verify(((flags & ARG_ASSET) == 0) || !args.asset.empty(), "Asset reference (-a) not specified.");
+	verify(((flags & ARG_ASSET_OPTIONAL) != 0) || ((flags & ARG_ASSET) == 0) || !args.asset.empty(), "Asset reference (-a) not specified.");
 	verify(((flags & ARG_OUTPUT_PATH) == 0) || !args.output_path.empty(), "Output path (-o) not specified.");
 	verify(((flags & ARG_OFFSET) == 0) || (args.offset != -1), "Offset (-x) not specified.");
 	
@@ -520,6 +524,12 @@ static void print_usage(bool developer_subcommands) {
 		puts(" unpack_flat <input file> -o <output dir> [-g <game>] [-r <region>] [-s]");
 		puts("   Unpack an ISO or WAD file to produce an asset bank of FlatWad assets.");
 		puts("");
+		puts(" test <input asset bank> [-a <asset>]");
+		puts("   Unpack and repack binaries from the asset bank, and diff them against the");
+		puts("   originals. If -a is passed, only test the single specified binary and print");
+		puts("   a hex dump, otherwise test all the binaries in the bank without the hex dump.");
+		puts("   Use the unpack_binaries subcommand can produce the input asset bank.");
+		puts("");
 		puts(" decompress <input file> -o <output file> -x <offset>");
 		puts("   Decompress a file stored using the game's custom LZ compression scheme.");
 		puts("");
@@ -535,9 +545,6 @@ static void print_usage(bool developer_subcommands) {
 		puts("");
 		puts(" profile_memory_usage <input asset banks>");
 		puts("   Record statistics about the memory used by mounting asset banks.");
-		puts("");
-		puts(" test <asset bank>");
-		puts("   Unpack and repack each binary in an asset bank, and diff against the original.");
 	}
 }
 

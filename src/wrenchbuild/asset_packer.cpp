@@ -23,6 +23,7 @@
 s32 g_asset_packer_max_assets_processed = 0;
 s32 g_asset_packer_num_assets_processed = 0;
 bool g_asset_packer_dry_run = false;
+bool g_asset_packer_quiet = false;
 
 on_load(Packer, []() {BuildAsset::funcs.pack_rac1 = wrap_iso_packer_func<BuildAsset>(pack_iso, pack_asset_impl);
 	BuildAsset::funcs.pack_rac1 = wrap_iso_packer_func<BuildAsset>(pack_iso, pack_asset_impl);
@@ -40,7 +41,7 @@ void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_
 	for(char& c : type) c = tolower(c);
 	std::string reference = asset_reference_to_string(asset->reference());
 	
-	if(!g_asset_packer_dry_run) {
+	if(!g_asset_packer_dry_run && !g_asset_packer_quiet) {
 		s32 completion_percentage = (s32) ((g_asset_packer_num_assets_processed * 100.f) / g_asset_packer_max_assets_processed);
 		if(strlen(hint) > 0) {
 			printf("[%3d%%] \033[32mPacking %s asset %s (%s)\033[0m\n", completion_percentage, type.c_str(), reference.c_str(), hint);
