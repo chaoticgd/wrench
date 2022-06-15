@@ -32,6 +32,7 @@ enum TestMode {
 static void run_round_trip_asset_packing_tests(const fs::path& input_path, const std::string& asset_ref, s32 min_percentage, s32 max_percentage);
 static void enumerate_binaries(std::vector<BinaryAsset*>& dest, Asset& src);
 static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& binary, AssetType type, s32 percentage, TestMode mode);
+static void strip_trailing_padding_from_src(std::vector<u8>& src, std::vector<u8>& dest);
 
 static s32 pass_count = 0;
 static s32 fail_count = 0;
@@ -130,6 +131,7 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 	}
 	
 	if(!dispatch->test || !(*dispatch->test)(src, dest, config, hint.c_str())) {
+		strip_trailing_padding_from_src(src, dest);
 		if(diff_buffers(src, dest, 0, 0, mode == PRINT_DIFF_ON_FAIL)) {
 			if(mode == RUN_ALL_TESTS) {
 				printf("\033[32m [PASS] %s\033[0m\n", ref.c_str());
@@ -140,6 +142,18 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 				printf("\033[31m [FAIL] %s\033[0m\n", ref.c_str());
 			}
 			fail_count++;
+		}
+	}
+}
+
+static void strip_trailing_padding_from_src(std::vector<u8>& src, std::vector<u8>& dest) {
+	if(dest.size() > 0 && src.size() > dest.size() && src.size() <= dest.size() + SECTOR_SIZE) {
+		bool is_padding = true;
+		for(s64 i = dest.size(); i < src.size(); i++) {
+			is_padding &= src[i] == '\0';
+		}
+		if(is_padding) {
+			src.resize(dest.size());
 		}
 	}
 }
