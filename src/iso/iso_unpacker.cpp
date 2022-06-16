@@ -80,8 +80,12 @@ void unpack_iso(BuildAsset& dest, InputStream& src, BuildConfig config, AssetUnp
 		{ return lhs.data_range.offset < rhs.data_range.offset; });
 	
 	for(UnpackInfo& info : files) {
-		SubInputStream stream(src, info.data_range);
-		unpack(*info.asset, stream, info.header, config, FMT_NO_HINT);
+		if(info.data_range.size == -1) {
+			unpack(*info.asset, src, info.header, config, FMT_NO_HINT);
+		} else {
+			SubInputStream stream(src, info.data_range);
+			unpack(*info.asset, stream, info.header, config, FMT_NO_HINT);
+		}
 	}
 }
 
@@ -172,31 +176,30 @@ static std::string parse_system_cnf(BuildAsset& build, const std::string& src, c
 }
 
 static void enumerate_global_wads(std::vector<UnpackInfo>& dest, BuildAsset& build, const table_of_contents& toc, InputStream& src, Game game) {
-	if(game == Game::RAC) {
-		s64 toc_ofs = RAC1_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
-		//dest.emplace_back(UnpackInfo{&build.bonus<BonusWadAsset>("globals/bonus/bonus.asset"), toc_ofs + (s64) offsetof(RacWadInfo, bonus_1), {0, src.size()}});
-		//dest.emplace_back(UnpackInfo{&build.mpeg<MpegWadAsset>("globals/mpeg/mpeg.asset"), toc_ofs + (s64) offsetof(RacWadInfo, mpegs), {0, src.size()}});
-	} else {
-		for(const GlobalWadInfo& global : toc.globals) {
-			auto [wad_game, wad_type, name] = identify_wad(global.header);
-			std::string file_name = std::string(name) + ".wad";
-			size_t file_size = get_global_wad_file_size(global, toc);
-			
-			Asset* asset;
-			switch(wad_type) {
-				case WadType::MPEG:   asset = &build.mpeg<MpegWadAsset>("globals/mpeg/mpeg");         break;
-				case WadType::MISC:   asset = &build.misc<MiscWadAsset>("globals/misc/misc");         break;
-				case WadType::HUD:    asset = &build.hud<HudWadAsset>("globals/hud/hud");             break;
-				case WadType::BONUS:  asset = &build.bonus<BonusWadAsset>("globals/bonus/bonus");     break;
-				case WadType::AUDIO:  asset = &build.audio<AudioWadAsset>("globals/audio/audio");     break;
-				case WadType::SPACE:  asset = &build.space<SpaceWadAsset>("globals/space/space");     break;
-				case WadType::SCENE:  asset = &build.scene<SceneWadAsset>("globals/scene/scene");     break;
-				case WadType::GADGET: asset = &build.gadget<GadgetWadAsset>("globals/gadget/gadget"); break;
-				case WadType::ARMOR:  asset = &build.armor<ArmorWadAsset>("globals/armor/armor");     break;
-				case WadType::ONLINE: asset = &build.online<OnlineWadAsset>("globals/online/online"); break;
-				default: fprintf(stderr, "warning: Extracted global WAD of unknown type to globals/%s.wad.\n", name);
-			}
-			
+	for(const GlobalWadInfo& global : toc.globals) {
+		auto [wad_game, wad_type, name] = identify_wad(global.header);
+		std::string file_name = std::string(name) + ".wad";
+		size_t file_size = get_global_wad_file_size(global, toc);
+		
+		Asset* asset;
+		switch(wad_type) {
+			case WadType::GLOBAL: asset = &build.global<GlobalWadAsset>("globals/global");          break;
+			case WadType::MPEG:   asset = &build.mpeg<MpegWadAsset>("globals/mpeg/mpeg");         break;
+			case WadType::MISC:   asset = &build.misc<MiscWadAsset>("globals/misc/misc");         break;
+			case WadType::HUD:    asset = &build.hud<HudWadAsset>("globals/hud/hud");             break;
+			case WadType::BONUS:  asset = &build.bonus<BonusWadAsset>("globals/bonus/bonus");     break;
+			case WadType::AUDIO:  asset = &build.audio<AudioWadAsset>("globals/audio/audio");     break;
+			case WadType::SPACE:  asset = &build.space<SpaceWadAsset>("globals/space/space");     break;
+			case WadType::SCENE:  asset = &build.scene<SceneWadAsset>("globals/scene/scene");     break;
+			case WadType::GADGET: asset = &build.gadget<GadgetWadAsset>("globals/gadget/gadget"); break;
+			case WadType::ARMOR:  asset = &build.armor<ArmorWadAsset>("globals/armor/armor");     break;
+			case WadType::ONLINE: asset = &build.online<OnlineWadAsset>("globals/online/online"); break;
+			default: fprintf(stderr, "warning: Extracted global WAD of unknown type to globals/%s.wad.\n", name);
+		}
+		
+		if(game == Game::RAC) {
+			dest.emplace_back(UnpackInfo{asset, &global.header, {0, -1}});
+		} else {
 			dest.emplace_back(UnpackInfo{asset, &global.header, {global.sector.bytes(), (s64) file_size}});
 		}
 	}

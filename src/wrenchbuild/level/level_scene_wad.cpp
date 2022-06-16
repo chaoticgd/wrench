@@ -17,20 +17,9 @@
 */
 
 #include <set>
+#include <iso/table_of_contents.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
-
-packed_struct(RacSceneHeader,
-	/* 0x000 */ Sector32 sounds[6];
-	/* 0x018 */ Sector32 wads[68];
-)
-static_assert(sizeof(RacSceneHeader) == 0x128);
-
-packed_struct(RacLevelSceneWadHeader,
-	/* 0x000 */ s32 header_size;
-	/* 0x004 */ s32 pad_4;
-	/* 0x008 */ RacSceneHeader scenes[30];
-)
 
 packed_struct(DlSceneHeader,
 	/* 0x00 */ Sector32 speech_english_left;

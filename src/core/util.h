@@ -373,6 +373,7 @@ f32 lerp(f32 min, s32 max, f32 value);
 
 enum class WadType {
 	UNKNOWN = 0,
+	GLOBAL, // R&C1
 	ARMOR,
 	AUDIO,
 	BONUS,

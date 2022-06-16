@@ -180,6 +180,7 @@ add_executable(wrenchbuild
 	src/wrenchbuild/globals/audio_wad.cpp
 	src/wrenchbuild/globals/bonus_wad.cpp
 	src/wrenchbuild/globals/boot_wad.cpp
+	src/wrenchbuild/globals/global_wad.cpp
 	src/wrenchbuild/globals/hud_wad.cpp
 	src/wrenchbuild/globals/irx_wad.cpp
 	src/wrenchbuild/globals/misc_wad.cpp

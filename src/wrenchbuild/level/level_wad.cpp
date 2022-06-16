@@ -16,19 +16,9 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <iso/table_of_contents.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
-
-packed_struct(RacLevelWadHeader,
-	/* 0x000 */ s32 header_size;
-	/* 0x004 */ s32 unused_4;
-	/* 0x008 */ s32 id;
-	/* 0x00c */ s32 unused_c;
-	/* 0x010 */ SectorRange data;
-	/* 0x018 */ SectorRange gameplay_ntsc;
-	/* 0x020 */ SectorRange gameplay_pal;
-	/* 0x028 */ SectorRange occlusion;
-)
 
 packed_struct(ChunkWadHeader,
 	/* 0x00 */ SectorRange chunks[3];

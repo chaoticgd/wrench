@@ -56,6 +56,12 @@ table_of_contents read_table_of_contents_rac1(InputStream& src) {
 	Buffer buffer(bytes);
 	
 	table_of_contents toc;
+	
+	GlobalWadInfo global = {};
+	global.sector = {0};
+	global.header = bytes;
+	toc.globals.emplace_back(std::move(global));
+	
 	for(s64 ofs = 8; ofs < buffer.size(); ofs += 8) {
 		Sector32 lsn = buffer.read<Sector32>(ofs, "sector");
 		Sector32 size = buffer.read<Sector32>(ofs + 4, "size");
@@ -75,6 +81,7 @@ table_of_contents read_table_of_contents_rac1(InputStream& src) {
 			}
 		}
 	}
+	
 	return toc;
 }
 
@@ -89,24 +96,24 @@ static SectorByteRange sub_sector_byte_range(SectorByteRange range, Sector32 lsn
 static LevelWadInfo adapt_rac1_level_wad_header(InputStream& src, Rac1AmalgamatedWadHeader& header) {
 	// Determine where the file begins and ends on disc.
 	Sector32 low = {INT32_MAX};
-	low = {std::min(low.sectors, header.primary.offset.sectors)};
+	low = {std::min(low.sectors, header.data.offset.sectors)};
 	low = {std::min(low.sectors, header.gameplay_ntsc.offset.sectors)};
 	low = {std::min(low.sectors, header.gameplay_pal.offset.sectors)};
 	low = {std::min(low.sectors, header.occlusion.offset.sectors)};
 	
 	Sector32 high = {0};
-	high = {std::max(high.sectors, header.primary.end().sectors)};
+	high = {std::max(high.sectors, header.data.end().sectors)};
 	high = {std::max(high.sectors, header.gameplay_ntsc.end().sectors)};
 	high = {std::max(high.sectors, header.gameplay_pal.end().sectors)};
 	high = {std::max(high.sectors, header.occlusion.end().sectors)};
 	
 	// Rewrite header, convert absolute sector numbers to relative sector offsets.
-	s32 header_size_sectors = Sector32::size_from_bytes(sizeof(Rac1LevelWadHeader)).sectors;
+	s32 header_size_sectors = Sector32::size_from_bytes(sizeof(RacLevelWadHeader)).sectors;
 	Sector32 adjust = {low.sectors - header_size_sectors};
-	Rac1LevelWadHeader level_header = {0};
-	level_header.header_size = sizeof(Rac1LevelWadHeader);
-	level_header.level_number = header.level_number;
-	level_header.primary = sub_sector_range(header.primary, adjust);
+	RacLevelWadHeader level_header = {0};
+	level_header.header_size = sizeof(RacLevelWadHeader);
+	level_header.id = header.level_number;
+	level_header.data = sub_sector_range(header.data, adjust);
 	level_header.gameplay_ntsc = sub_sector_range(header.gameplay_ntsc, adjust);
 	level_header.gameplay_pal = sub_sector_range(header.gameplay_pal, adjust);
 	level_header.occlusion = sub_sector_range(header.occlusion, adjust);
@@ -115,8 +122,8 @@ static LevelWadInfo adapt_rac1_level_wad_header(InputStream& src, Rac1Amalgamate
 	level_part.header_lba = {0};
 	level_part.file_lba = adjust;
 	level_part.file_size = {high.sectors - adjust.sectors};
-	level_part.header.resize(sizeof(Rac1LevelWadHeader));
-	memcpy(level_part.header.data(), &level_header, sizeof(Rac1LevelWadHeader));
+	level_part.header.resize(sizeof(RacLevelWadHeader));
+	memcpy(level_part.header.data(), &level_header, sizeof(RacLevelWadHeader));
 	level_part.prepend_header = true;
 	
 	verify(level_part.file_size.bytes() < 1024 * 1024 * 1024, "Level WAD too big!");
@@ -144,12 +151,12 @@ static Opt<LevelWadInfo> adapt_rac1_audio_wad_header(InputStream& src, Rac1Amalg
 		return {};
 	}
 	
-	s32 header_size_sectors = Sector32::size_from_bytes(sizeof(Rac1AudioWadHeader)).sectors;
+	s32 header_size_sectors = Sector32::size_from_bytes(sizeof(RacLevelAudioWadHeader)).sectors;
 	Sector32 adjust = {low.sectors - header_size_sectors};
 	
 	// Rewrite header, convert absolute sector numbers to relative sector offsets.
-	Rac1AudioWadHeader audio_header = {0};
-	audio_header.header_size = sizeof(Rac1AudioWadHeader);
+	RacLevelAudioWadHeader audio_header = {0};
+	audio_header.header_size = sizeof(RacLevelAudioWadHeader);
 	for(s32 i = 0; i < sizeof(header.bindata) / sizeof(header.bindata[0]); i++) {
 		if(header.bindata[i].offset.sectors > 0) {
 			audio_header.bindata[i] = sub_sector_byte_range(header.bindata[i], adjust);
@@ -165,8 +172,8 @@ static Opt<LevelWadInfo> adapt_rac1_audio_wad_header(InputStream& src, Rac1Amalg
 	audio_part.header_lba = {0};
 	audio_part.file_lba = adjust;
 	audio_part.file_size = {high.sectors - adjust.sectors};
-	audio_part.header.resize(sizeof(Rac1AudioWadHeader));
-	memcpy(audio_part.header.data(), &audio_header, sizeof(Rac1AudioWadHeader));
+	audio_part.header.resize(sizeof(RacLevelAudioWadHeader));
+	memcpy(audio_part.header.data(), &audio_header, sizeof(RacLevelAudioWadHeader));
 	audio_part.prepend_header = true;
 	
 	verify(audio_part.file_size.bytes() < (1024 * 1024 * 1024), "Level audio WAD too big!");
@@ -179,7 +186,7 @@ static Opt<LevelWadInfo> adapt_rac1_scene_wad_header(InputStream& src, Rac1Amalg
 	Sector32 low = {INT32_MAX};
 	Sector32 high = {0};
 	for(s32 i = 0; i < sizeof(header.scenes) / sizeof(header.scenes[0]); i++) {
-		const Rac1SceneHeader& scene = header.scenes[i];
+		const RacSceneHeader& scene = header.scenes[i];
 		for(s32 j = 0; j < sizeof(scene.sounds) / sizeof(scene.sounds[0]); j++) {
 			if(scene.sounds[j].sectors > 0) {
 				low = {std::min(low.sectors, scene.sounds[j].sectors)};
@@ -197,15 +204,15 @@ static Opt<LevelWadInfo> adapt_rac1_scene_wad_header(InputStream& src, Rac1Amalg
 		return {};
 	}
 	
-	s32 header_size_sectors = Sector32::size_from_bytes(sizeof(Rac1SceneWadHeader)).sectors;
+	s32 header_size_sectors = Sector32::size_from_bytes(sizeof(RacLevelSceneWadHeader)).sectors;
 	Sector32 adjust = {low.sectors - header_size_sectors};
 	
 	// Rewrite header, convert absolute sector numbers to relative sector offsets.
-	Rac1SceneWadHeader scene_header = {0};
-	scene_header.header_size = sizeof(Rac1SceneWadHeader);
+	RacLevelSceneWadHeader scene_header = {0};
+	scene_header.header_size = sizeof(RacLevelSceneWadHeader);
 	for(s32 i = 0; i < sizeof(header.scenes) / sizeof(header.scenes[0]); i++) {
-		Rac1SceneHeader& dest = scene_header.scenes[i];
-		Rac1SceneHeader& src = header.scenes[i];
+		RacSceneHeader& dest = scene_header.scenes[i];
+		RacSceneHeader& src = header.scenes[i];
 		for(s32 j = 0; j < sizeof(dest.sounds) / sizeof(dest.sounds[0]); j++) {
 			if(src.sounds[j].sectors > 0) {
 				dest.sounds[j] = {src.sounds[j].sectors - adjust.sectors};
@@ -222,8 +229,8 @@ static Opt<LevelWadInfo> adapt_rac1_scene_wad_header(InputStream& src, Rac1Amalg
 	scene_part.header_lba = {0};
 	scene_part.file_lba = adjust;
 	scene_part.file_size = {high.sectors - adjust.sectors};
-	scene_part.header.resize(sizeof(Rac1SceneWadHeader));
-	memcpy(scene_part.header.data(), &scene_header, sizeof(Rac1SceneWadHeader));
+	scene_part.header.resize(sizeof(RacLevelSceneWadHeader));
+	memcpy(scene_part.header.data(), &scene_header, sizeof(RacLevelSceneWadHeader));
 	scene_part.prepend_header = true;
 	
 	verify(scene_part.file_size.bytes() < 1024 * 1024 * 1024, "Level scene WAD too big!");

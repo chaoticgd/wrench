@@ -29,6 +29,10 @@ struct WadFileDescription {
 };
 
 static WadFileDescription WAD_FILE_TYPES[] = {
+	{"global", Game::RAC    , WadType::GLOBAL     , 0x2960},
+	{"level",  Game::RAC    , WadType::LEVEL      , 0x0030},
+	{"audio",  Game::RAC    , WadType::LEVEL_AUDIO, 0x0164},
+	{"scene",  Game::RAC    , WadType::LEVEL_SCENE, 0x22b8},
 	{"mpeg"  , Game::GC     , WadType::MPEG       , 0x0328},
 	{"misc"  , Game::GC     , WadType::MISC       , 0x0040},
 	{"hud"   , Game::GC     , WadType::HUD        , 0x1870},

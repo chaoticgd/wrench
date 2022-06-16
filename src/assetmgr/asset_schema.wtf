@@ -142,6 +142,11 @@ AssetType Build {
 		games: [1 2 3 4]
 	}
 	
+	Child global {
+		allowed_types: ["GlobalWad" "FlatWad" "Binary"]
+		required: true
+		games: [1]
+	}
 	Child armor {
 		allowed_types: ["ArmorWad" "FlatWad" "Binary"]
 		required: true
@@ -387,6 +392,63 @@ Category globals {
 	name: "Globals"
 }
 
+AssetType GlobalWad {
+	desc: "Holds all of the global assets (those that are not specific to a given level) for R&C1. Not used for GC, UYA or DL."
+	
+	Child debug_font { allowed_types: ["Binary"] }
+	Child save_game { allowed_types: ["Binary"] }
+	Child ratchet_seqs { allowed_types: ["Collection"] }
+	Child hud_seqs { allowed_types: ["Collection"] }
+	Child vendor { allowed_types: ["Binary"] }
+	Child vendor_audio { allowed_types: ["Collection"] }
+	Child help_controls { allowed_types: ["Collection"] }
+	Child help_moves { allowed_types: ["Collection"] }
+	Child help_weapons { allowed_types: ["Collection"] }
+	Child help_gadgets { allowed_types: ["Collection"] }
+	Child help_items { allowed_types: ["Collection"] }
+	Child unknown_images { allowed_types: ["Collection"] }
+	Child options_menu { allowed_types: ["Collection"] }
+	Child stuff { allowed_types: ["Collection"] }
+	Child planets { allowed_types: ["Collection"] }
+	Child stuff2 { allowed_types: ["Collection"] }
+	Child goodies_images { allowed_types: ["Collection"] }
+	Child character_sketches { allowed_types: ["Collection"] }
+	Child character_renders { allowed_types: ["Collection"] }
+	Child skill_images { allowed_types: ["Collection"] }
+	Child epilogue_english { allowed_types: ["Collection"] }
+	Child epilogue_french { allowed_types: ["Collection"] }
+	Child epilogue_italian { allowed_types: ["Collection"] }
+	Child epilogue_german { allowed_types: ["Collection"] }
+	Child epilogue_spanish { allowed_types: ["Collection"] }
+	Child sketchbook { allowed_types: ["Collection"] }
+	Child commercials { allowed_types: ["Collection"] }
+	Child item_images { allowed_types: ["Collection"] }
+	Child irx { allowed_types: ["Binary"] }
+	Child sound_bank { allowed_types: ["Binary"] }
+	Child wad_14e0 { allowed_types: ["Binary"] }
+	Child music { allowed_types: ["Binary"] }
+	Child thing_not_compressed { allowed_types: ["Binary"] }
+	Child compressed_tex { allowed_types: ["Binary"] }
+	Child compressed_tex_2 { allowed_types: ["Binary"] }
+	Child empty_wad { allowed_types: ["Collection"] }
+	Child compressed_tex_3 { allowed_types: ["Binary"] }
+	Child all_text_english { allowed_types: ["Binary"] }
+	Child post_credits_helpdesk_girl_seq { allowed_types: ["Binary"] }
+	Child post_credits_audio { allowed_types: ["Collection"] }
+	Child credits_images_ntsc { allowed_types: ["Collection"] }
+	Child credits_images_pal { allowed_types: ["Collection"] }
+	Child wad_things { allowed_types: ["Collection"] }
+	Child mpegs { allowed_types: ["Collection"] }
+	Child vags5 { allowed_types: ["Collection"] }
+	Child vags2 { allowed_types: ["Collection"] }
+	Child mobies { allowed_types: ["Collection"] }
+	Child anim_looking_thing_2 { allowed_types: ["Collection"] }
+	Child pif_lists { allowed_types: ["Collection"] }
+	Child transition { allowed_types: ["Binary"] }
+	Child space_sounds { allowed_types: ["Collection"] }
+	Child things { allowed_types: ["Collection"] }
+}
+
 AssetType ArmorWad {
 	wad: true
 	flattenable: true
@@ -470,7 +532,7 @@ AssetType BonusWad {
 		desc: "Images that appear in the R&C1 goodies menu, also included in R&C2 for some reason."
 		allowed_types: ["Collection"]
 		required: true
-		games: [1 2]
+		games:[2]
 		Child child {
 			allowed_types: ["Texture"]
 		}
@@ -479,7 +541,7 @@ AssetType BonusWad {
 		desc: "Part of a cut R&C1 credits screen."
 		allowed_types: ["Collection"]
 		required: true
-		games: [1 2]
+		games:[2]
 		Child child {
 			allowed_types: ["Texture"]
 		}
@@ -488,7 +550,7 @@ AssetType BonusWad {
 		desc: "Part of a cut R&C1 credits screen, also included in R&C2 for some reason."
 		allowed_types: ["Collection"]
 		required: true
-		games: [1 2]
+		games:[2]
 		Child child {
 			allowed_types: ["Texture"]
 		}
@@ -506,7 +568,7 @@ AssetType BonusWad {
 		desc: "The english epilogue images from R&C1, also included in R&C2 for some reason."
 		allowed_types: ["Collection"]
 		required: true
-		games: [1 2]
+		games:[2]
 		Child child {
 			allowed_types: ["Texture"]
 		}
@@ -515,7 +577,7 @@ AssetType BonusWad {
 		desc: "The french epilogue images from R&C1, also included in R&C2 for some reason."
 		allowed_types: ["Collection"]
 		required: true
-		games: [1 2]
+		games:[2]
 		Child child {
 			allowed_types: ["Texture"]
 		}
@@ -524,7 +586,7 @@ AssetType BonusWad {
 		desc: "The italian epilogue images from R&C1, also included in R&C2 for some reason."
 		allowed_types: ["Collection"]
 		required: true
-		games: [1 2]
+		games:[2]
 		Child child {
 			allowed_types: ["Texture"]
 		}
@@ -533,7 +595,7 @@ AssetType BonusWad {
 		desc: "The german epilogue images from R&C1."
 		allowed_types: ["Collection"]
 		required: true
-		games: [1 2]
+		games:[2]
 		Child child {
 			allowed_types: ["Texture"]
 		}
@@ -542,7 +604,7 @@ AssetType BonusWad {
 		desc: "The spanish epilogue images from R&C1."
 		allowed_types: ["Collection"]
 		required: true
-		games: [1 2]
+		games:[2]
 		Child child {
 			allowed_types: ["Texture"]
 		}
@@ -550,7 +612,7 @@ AssetType BonusWad {
 	Child sketchbook {
 		allowed_types: ["Collection"]
 		required: true
-		games: [1 2]
+		games:[2]
 		Child child {
 			allowed_types: ["Texture"]
 		}
@@ -558,7 +620,7 @@ AssetType BonusWad {
 	Child commercials {
 		allowed_types: ["Collection"]
 		required: true
-		games: [1 2]
+		games:[2]
 		Child child {
 			allowed_types: ["Texture"]
 		}
@@ -566,7 +628,7 @@ AssetType BonusWad {
 	Child item_images {
 		allowed_types: ["Collection"]
 		required: true
-		games: [1 2]
+		games:[2]
 		Child child {
 			allowed_types: ["Texture"]
 		}
@@ -641,7 +703,7 @@ AssetType BonusWad {
 		desc: "The background images used in the credits sequence, each 512 by 416."
 		allowed_types: ["Collection"]
 		required: true
-		games: [1 2 3 4]
+		games:[2 3 4]
 		Child child {
 			allowed_types: ["Texture"]
 		}
@@ -760,17 +822,17 @@ AssetType MiscWad {
 	Child debug_font {
 		allowed_types: ["Texture" "Binary"]
 		required: true
-		games: [1 2 3 4]
+		games:[2 3 4]
 	}
 	Child irx {
 		allowed_types: ["IrxWad"]
 		required: true
-		games: [1 2 3 4]
+		games:[2 3 4]
 	}
 	Child save_game {
 		allowed_types: ["Binary"]
 		required: true
-		games: [1 2 3 4]
+		games:[2 3 4]
 	}
 	Child frontbin     { allowed_types: ["Binary"] }
 	Child frontbin_net { allowed_types: ["Binary"] }

@@ -16,15 +16,9 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <iso/table_of_contents.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
-
-packed_struct(RacLevelAudioWadHeader,
-	/* 0x000 */ s32 header_size;
-	/* 0x004 */ s32 pad_4;
-	/* 0x008 */ SectorByteRange bindata[36];
-	/* 0x128 */ Sector32 music[15];
-)
 
 packed_struct(GcLevelAudioWadHeader,
 	/* 0x0000 */ s32 header_size;

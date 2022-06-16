@@ -22,8 +22,8 @@
 packed_struct(GcHudWadHeader,
 	/* 0x0000 */ s32 header_size;
 	/* 0x0004 */ Sector32 sector;
-	/* 0x0008 */ SectorRange bank_header;
-	/* 0x0010 */ SectorRange banks[5];
+	/* 0x0008 */ SectorRange hud_header;
+	/* 0x0010 */ SectorRange hud_banks[5];
 	/* 0x0038 */ SectorRange ratchet_seqs[28];
 	/* 0x0118 */ SectorRange hud_seqs[20];
 	/* 0x01b8 */ SectorRange vendor;
