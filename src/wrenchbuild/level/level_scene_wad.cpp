@@ -20,6 +20,18 @@
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 
+packed_struct(RacSceneHeader,
+	/* 0x000 */ Sector32 sounds[6];
+	/* 0x018 */ Sector32 wads[68];
+)
+static_assert(sizeof(RacSceneHeader) == 0x128);
+
+packed_struct(RacLevelSceneWadHeader,
+	/* 0x000 */ s32 header_size;
+	/* 0x004 */ s32 pad_4;
+	/* 0x008 */ RacSceneHeader scenes[30];
+)
+
 packed_struct(DlSceneHeader,
 	/* 0x00 */ Sector32 speech_english_left;
 	/* 0x04 */ Sector32 speech_english_right;
@@ -42,15 +54,27 @@ packed_struct(DlLevelSceneWadHeader,
 	/* 0x8 */ DlSceneHeader scenes[30];
 )
 
-static SectorRange range(Sector32 offset, const std::set<s64>& end_sectors);
+static void unpack_rac_level_scene_wad(LevelSceneWadAsset& dest, const RacLevelSceneWadHeader& header, InputStream& src, BuildConfig config);
+static void pack_rac_level_scene_wad(OutputStream& dest, RacLevelSceneWadHeader& header, const LevelSceneWadAsset& src, BuildConfig config);
 static void unpack_dl_level_scene_wad(LevelSceneWadAsset& dest, const DlLevelSceneWadHeader& header, InputStream& src, BuildConfig config);
 static void pack_dl_level_scene_wad(OutputStream& dest, DlLevelSceneWadHeader& header, const LevelSceneWadAsset& src, BuildConfig config);
+static SectorRange range(Sector32 offset, const std::set<s64>& end_sectors);
 
 on_load(LevelScene, []() {
+	LevelSceneWadAsset::funcs.unpack_rac1 = wrap_wad_unpacker_func<LevelSceneWadAsset, RacLevelSceneWadHeader>(unpack_rac_level_scene_wad);
 	LevelSceneWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<LevelSceneWadAsset, DlLevelSceneWadHeader>(unpack_dl_level_scene_wad);
 	
+	LevelSceneWadAsset::funcs.pack_rac1 = wrap_wad_packer_func<LevelSceneWadAsset, RacLevelSceneWadHeader>(pack_rac_level_scene_wad);
 	LevelSceneWadAsset::funcs.pack_dl = wrap_wad_packer_func<LevelSceneWadAsset, DlLevelSceneWadHeader>(pack_dl_level_scene_wad);
 })
+
+static void unpack_rac_level_scene_wad(LevelSceneWadAsset& dest, const RacLevelSceneWadHeader& header, InputStream& src, BuildConfig config) {
+	
+}
+
+static void pack_rac_level_scene_wad(OutputStream& dest, RacLevelSceneWadHeader& header, const LevelSceneWadAsset& src, BuildConfig config) {
+	
+}
 
 static void unpack_dl_level_scene_wad(LevelSceneWadAsset& dest, const DlLevelSceneWadHeader& header, InputStream& src, BuildConfig config) {
 	std::set<s64> end_sectors;

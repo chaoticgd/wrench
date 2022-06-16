@@ -57,20 +57,14 @@ struct table_of_contents {
 	std::vector<LevelInfo> levels;
 };
 
-packed_struct(Rac1SceneHeader,
-	/* 0x000 */ Sector32 sounds[6];
-	/* 0x018 */ Sector32 wads[68];
-)
-static_assert(sizeof(Rac1SceneHeader) == 0x128);
-
 packed_struct(RacWadInfo,
 	/* 0x0000 */ s32 version;
 	/* 0x0004 */ s32 header_size;
 	/* 0x0008 */ SectorRange debug_font;
 	/* 0x0010 */ SectorRange save_game;
 	/* 0x0018 */ SectorRange ratchet_seqs[28];
-	/* 0x0158 */ SectorRange hud_seqs[20];
-	/* 0x0258 */ SectorRange vendor;
+	/* 0x00f8 */ SectorRange hud_seqs[20];
+	/* 0x0198 */ SectorRange vendor;
 	/* 0x01a0 */ SectorRange vendor_speech[37];
 	/* 0x02c8 */ SectorRange controls[12];
 	/* 0x0328 */ SectorRange moves[15];
@@ -107,6 +101,12 @@ packed_struct(RacWadInfo,
 	/* 0x28c8 */ SectorRange levels[19];
 )
 static_assert(sizeof(RacWadInfo) == 0x2960);
+
+packed_struct(Rac1SceneHeader,
+	/* 0x000 */ Sector32 sounds[6];
+	/* 0x018 */ Sector32 wads[68];
+)
+static_assert(sizeof(Rac1SceneHeader) == 0x128);
 
 // This is what's actually stored on disc. The sector numbers are absolute and
 // in the case of the audio and scene data, point to sectors before the header.

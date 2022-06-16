@@ -320,7 +320,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, Game
 			g_asset_unpacker.total_file_size = stream.size();
 			
 			BuildConfig config(release.game, release.region);
-			unpack_asset_impl(build, stream, config);
+			unpack_asset_impl(build, stream, nullptr, config);
 			
 			bank.game_info.name = release.name;
 			bank.game_info.format_version = ASSET_FORMAT_VERSION;
@@ -372,7 +372,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, Game
 			g_asset_unpacker.current_file_offset = 0;
 			g_asset_unpacker.total_file_size = stream.size();
 			
-			unpack_asset_impl(*wad, stream, BuildConfig(game, region));
+			unpack_asset_impl(*wad, stream, &header, BuildConfig(game, region));
 			
 			bank.game_info.format_version = ASSET_FORMAT_VERSION;
 			bank.game_info.builds = {asset_reference_to_string(build.reference())};

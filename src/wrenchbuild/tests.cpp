@@ -124,7 +124,7 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 		temp = &forest.mount<MemoryAssetBank>();
 		AssetFile& file = temp->asset_file("test.asset");
 		Asset& asset = file.root().physical_child(type, "test");
-		unpack_asset_impl(asset, src_stream, config, hint.c_str());
+		unpack_asset_impl(asset, src_stream, nullptr, config, hint.c_str());
 		
 		MemoryOutputStream dest_stream(dest);
 		pack_asset_impl(dest_stream, nullptr, nullptr, asset, config, hint.c_str());

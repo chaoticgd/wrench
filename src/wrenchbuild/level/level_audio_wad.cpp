@@ -19,10 +19,10 @@
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 
-packed_struct(RacAudioWadHeader,
+packed_struct(RacLevelAudioWadHeader,
 	/* 0x000 */ s32 header_size;
-	/* 0x004 */ Sector32 sector;
-	/* 0x008 */ SectorByteRange bin_data[36];
+	/* 0x004 */ s32 pad_4;
+	/* 0x008 */ SectorByteRange bindata[36];
 	/* 0x128 */ Sector32 music[15];
 )
 
@@ -53,6 +53,8 @@ packed_struct(DlLevelAudioWadHeader,
 	/* 0x298 */ SectorByteRange spare;
 )
 
+static void unpack_rac_level_audio_wad(LevelAudioWadAsset& dest, const RacLevelAudioWadHeader& header, InputStream& src, BuildConfig config);
+static void pack_rac_level_audio_wad(OutputStream& dest, RacLevelAudioWadHeader& header, const LevelAudioWadAsset& src, BuildConfig config);
 static void unpack_gc_level_audio_wad(LevelAudioWadAsset& dest, const GcLevelAudioWadHeader& header, InputStream& src, BuildConfig config);
 static void pack_gc_level_audio_wad(OutputStream& dest, GcLevelAudioWadHeader& header, const LevelAudioWadAsset& src, BuildConfig config);
 template <typename Header>
@@ -61,14 +63,23 @@ template <typename Header>
 static void pack_uya_dl_level_audio_wad(OutputStream& dest, Header& header, const LevelAudioWadAsset& src, BuildConfig config);
 
 on_load(LevelAudio, []() {
+	LevelAudioWadAsset::funcs.unpack_rac1 = wrap_wad_unpacker_func<LevelAudioWadAsset, RacLevelAudioWadHeader>(unpack_rac_level_audio_wad);
 	LevelAudioWadAsset::funcs.unpack_rac2 = wrap_wad_unpacker_func<LevelAudioWadAsset, GcLevelAudioWadHeader>(unpack_gc_level_audio_wad);
 	LevelAudioWadAsset::funcs.unpack_rac3 = wrap_wad_unpacker_func<LevelAudioWadAsset, UyaLevelAudioWadHeader>(unpack_uya_dl_level_audio_wad<UyaLevelAudioWadHeader>);
 	LevelAudioWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<LevelAudioWadAsset, DlLevelAudioWadHeader>(unpack_uya_dl_level_audio_wad<DlLevelAudioWadHeader>);
 	
+	LevelAudioWadAsset::funcs.pack_rac1 = wrap_wad_packer_func<LevelAudioWadAsset, RacLevelAudioWadHeader>(pack_rac_level_audio_wad);
 	LevelAudioWadAsset::funcs.pack_rac2 = wrap_wad_packer_func<LevelAudioWadAsset, GcLevelAudioWadHeader>(pack_gc_level_audio_wad);
 	LevelAudioWadAsset::funcs.pack_rac3 = wrap_wad_packer_func<LevelAudioWadAsset, UyaLevelAudioWadHeader>(pack_uya_dl_level_audio_wad<UyaLevelAudioWadHeader>);
 	LevelAudioWadAsset::funcs.pack_dl = wrap_wad_packer_func<LevelAudioWadAsset, DlLevelAudioWadHeader>(pack_uya_dl_level_audio_wad<DlLevelAudioWadHeader>);
 })
+
+static void unpack_rac_level_audio_wad(LevelAudioWadAsset& dest, const RacLevelAudioWadHeader& header, InputStream& src, BuildConfig config) {
+	
+}
+static void pack_rac_level_audio_wad(OutputStream& dest, RacLevelAudioWadHeader& header, const LevelAudioWadAsset& src, BuildConfig config) {
+	
+}
 
 static void unpack_gc_level_audio_wad(LevelAudioWadAsset& dest, const GcLevelAudioWadHeader& header, InputStream& src, BuildConfig config) {
 	unpack_assets<BinaryAsset>(dest.bin_data(SWITCH_FILES), src, ARRAY_PAIR(header.bin_data), config, FMT_BINARY_VAG);

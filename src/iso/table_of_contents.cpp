@@ -113,8 +113,8 @@ static LevelWadInfo adapt_rac1_level_wad_header(InputStream& src, Rac1Amalgamate
 	
 	LevelWadInfo level_part;
 	level_part.header_lba = {0};
-	level_part.file_lba = {low.sectors};
-	level_part.file_size = {high.sectors - low.sectors};
+	level_part.file_lba = adjust;
+	level_part.file_size = {high.sectors - adjust.sectors};
 	level_part.header.resize(sizeof(Rac1LevelWadHeader));
 	memcpy(level_part.header.data(), &level_header, sizeof(Rac1LevelWadHeader));
 	level_part.prepend_header = true;
@@ -163,8 +163,8 @@ static Opt<LevelWadInfo> adapt_rac1_audio_wad_header(InputStream& src, Rac1Amalg
 	
 	LevelWadInfo audio_part;
 	audio_part.header_lba = {0};
-	audio_part.file_lba = low;
-	audio_part.file_size = {high.sectors - low.sectors};
+	audio_part.file_lba = adjust;
+	audio_part.file_size = {high.sectors - adjust.sectors};
 	audio_part.header.resize(sizeof(Rac1AudioWadHeader));
 	memcpy(audio_part.header.data(), &audio_header, sizeof(Rac1AudioWadHeader));
 	audio_part.prepend_header = true;
@@ -220,8 +220,8 @@ static Opt<LevelWadInfo> adapt_rac1_scene_wad_header(InputStream& src, Rac1Amalg
 	
 	LevelWadInfo scene_part;
 	scene_part.header_lba = {0};
-	scene_part.file_lba = low;
-	scene_part.file_size = {high.sectors - low.sectors};
+	scene_part.file_lba = adjust;
+	scene_part.file_size = {high.sectors - adjust.sectors};
 	scene_part.header.resize(sizeof(Rac1SceneWadHeader));
 	memcpy(scene_part.header.data(), &scene_header, sizeof(Rac1SceneWadHeader));
 	scene_part.prepend_header = true;

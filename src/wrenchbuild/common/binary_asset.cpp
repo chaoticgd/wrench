@@ -19,7 +19,7 @@
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 
-static void unpack_binary_asset(Asset& dest, InputStream& src, BuildConfig config, const char* hint, s64 header_offset);
+static void unpack_binary_asset(Asset& dest, InputStream& src, const std::vector<u8>* header_src, BuildConfig config, const char* hint);
 static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const BinaryAsset& src);
 
 on_load(Binary, []() {
@@ -34,7 +34,7 @@ on_load(Binary, []() {
 	BinaryAsset::funcs.pack_dl = wrap_bin_packer_func<BinaryAsset>(pack_binary_asset);
 })
 
-static void unpack_binary_asset(Asset& dest, InputStream& src, BuildConfig config, const char* hint, s64 header_offset) {
+static void unpack_binary_asset(Asset& dest, InputStream& src, const std::vector<u8>* header_src, BuildConfig config, const char* hint) {
 	BinaryAsset& binary = dest.as<BinaryAsset>();
 	const char* type = next_hint(&hint);
 	const char* extension = "bin";
@@ -46,8 +46,16 @@ static void unpack_binary_asset(Asset& dest, InputStream& src, BuildConfig confi
 	verify(stream.get(), "Failed to open file '%s' for writing binary asset '%s'.",
 		file_name.c_str(),
 		asset_reference_to_string(binary.reference()).c_str());
-	src.seek(0);
-	Stream::copy(*stream, src, src.size());
+	if(header_src && config.game() == Game::RAC) {
+		s64 padded_header_size = Sector32::size_from_bytes(header_src->size()).bytes();
+		stream->write_v(*header_src);
+		stream->seek(padded_header_size);
+		src.seek(padded_header_size);
+		Stream::copy(*stream, src, src.size() - padded_header_size);
+	} else {
+		src.seek(0);
+		Stream::copy(*stream, src, src.size());
+	}
 	binary.set_src(ref);
 }
 

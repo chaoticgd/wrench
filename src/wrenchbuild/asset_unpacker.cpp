@@ -22,14 +22,14 @@
 
 AssetUnpackerGlobals g_asset_unpacker = {};
 
-static bool handle_special_debugging_cases(Asset& dest, InputStream& src, BuildConfig config, const char* hint);
+static bool handle_special_debugging_cases(Asset& dest, InputStream& src, const std::vector<u8>* header_src, BuildConfig config, const char* hint);
 
 on_load(Unpacker, []() {
 	BuildAsset::funcs.unpack_rac1 = wrap_iso_unpacker_func<BuildAsset>(unpack_iso, unpack_asset_impl);
 })
 
-void unpack_asset_impl(Asset& dest, InputStream& src, BuildConfig config, const char* hint, s64 header_offset) {
-	if(handle_special_debugging_cases(dest, src, config, hint)) {
+void unpack_asset_impl(Asset& dest, InputStream& src, const std::vector<u8>* header_src, BuildConfig config, const char* hint) {
+	if(handle_special_debugging_cases(dest, src, header_src, config, hint)) {
 		return;
 	}
 	
@@ -40,7 +40,7 @@ void unpack_asset_impl(Asset& dest, InputStream& src, BuildConfig config, const 
 		|| dest.type() == SceneWadAsset::ASSET_TYPE
 		|| dest.type() == GadgetWadAsset::ASSET_TYPE)) {
 		std::string tag = dest.tag();
-		unpack_asset_impl(dest.parent()->transmute_child<BinaryAsset>(tag.c_str()), src, config, FMT_BINARY_WAD, header_offset);
+		unpack_asset_impl(dest.parent()->transmute_child<BinaryAsset>(tag.c_str()), src, header_src, config, FMT_BINARY_WAD);
 		return;
 	}
 	
@@ -49,13 +49,13 @@ void unpack_asset_impl(Asset& dest, InputStream& src, BuildConfig config, const 
 		|| dest.type() == SpaceWadAsset::ASSET_TYPE
 		|| dest.type() == GadgetWadAsset::ASSET_TYPE)) {
 		std::string tag = dest.tag();
-		unpack_asset_impl(dest.parent()->transmute_child<BinaryAsset>(tag.c_str()), src, config, FMT_BINARY_WAD, header_offset);
+		unpack_asset_impl(dest.parent()->transmute_child<BinaryAsset>(tag.c_str()), src, header_src, config, FMT_BINARY_WAD);
 		return;
 	}
 	
 	if(dest.type() == LevelSceneWadAsset::ASSET_TYPE) {
 		std::string tag = dest.tag();
-		unpack_asset_impl(dest.parent()->transmute_child<BinaryAsset>(tag.c_str()), src, config, FMT_BINARY_WAD, header_offset);
+		unpack_asset_impl(dest.parent()->transmute_child<BinaryAsset>(tag.c_str()), src, header_src, config, FMT_BINARY_WAD);
 		return;
 	}
 	
@@ -85,7 +85,7 @@ void unpack_asset_impl(Asset& dest, InputStream& src, BuildConfig config, const 
 	}
 	
 	verify(unpack_func, "Tried to unpack nonunpackable asset '%s'.", reference.c_str());
-	(*unpack_func)(dest, src, config, hint, header_offset);
+	(*unpack_func)(dest, src, header_src, config, hint);
 	
 	// Update the completion percentage based on how far through the input file
 	// we are, ignoring streams that aren't the input file.
@@ -100,7 +100,7 @@ void unpack_asset_impl(Asset& dest, InputStream& src, BuildConfig config, const 
 	}
 }
 
-static bool handle_special_debugging_cases(Asset& dest, InputStream& src, BuildConfig config, const char* hint) {
+static bool handle_special_debugging_cases(Asset& dest, InputStream& src, const std::vector<u8>* header_src, BuildConfig config, const char* hint) {
 	s32 is_wad = dest.flags & ASSET_IS_WAD;
 	s32 is_level_wad = dest.flags & ASSET_IS_LEVEL_WAD; 
 	s32 is_bin_leaf = dest.flags & ASSET_IS_BIN_LEAF;
@@ -112,7 +112,7 @@ static bool handle_special_debugging_cases(Asset& dest, InputStream& src, BuildC
 	if(g_asset_unpacker.dump_wads && is_wad) {
 		std::string tag = dest.tag();
 		BinaryAsset& bin = dest.parent()->transmute_child<BinaryAsset>(tag.c_str());
-		unpack_asset_impl(bin, src, config, FMT_BINARY_WAD);
+		unpack_asset_impl(bin, src, header_src, config, FMT_BINARY_WAD);
 		return true;
 	}
 	
@@ -133,7 +133,7 @@ static bool handle_special_debugging_cases(Asset& dest, InputStream& src, BuildC
 			bin.set_format_hint(hint);
 			bin.set_game(game_to_string(config.game()));
 			bin.set_region(region_to_string(config.region()));
-			unpack_asset_impl(bin, src, config, FMT_NO_HINT);
+			unpack_asset_impl(bin, src, nullptr, config, FMT_NO_HINT);
 			return true;
 		}
 	}
@@ -142,7 +142,7 @@ static bool handle_special_debugging_cases(Asset& dest, InputStream& src, BuildC
 		if(is_flattenable) {
 			std::string tag = dest.tag();
 			FlatWadAsset& flat_wad = dest.parent()->transmute_child<FlatWadAsset>(tag.c_str());
-			unpack_asset_impl(flat_wad, src, config);
+			unpack_asset_impl(flat_wad, src, nullptr, config);
 		}
 		return true;
 	}

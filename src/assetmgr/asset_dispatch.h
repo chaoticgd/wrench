@@ -47,42 +47,34 @@ class Asset;
 
 // *****************************************************************************
 
-using AssetUnpackerFunc = std::function<void(Asset& dest, InputStream& src, BuildConfig config, const char* hint, s64 header_offset)>;
+using AssetUnpackerFunc = std::function<void(Asset& dest, InputStream& src, const std::vector<u8>* header_src, BuildConfig config, const char* hint)>;
 
 template <typename ThisAsset, typename UnpackerFunc>
 AssetUnpackerFunc* wrap_unpacker_func(UnpackerFunc func) {
-	return new AssetUnpackerFunc([func](Asset& dest, InputStream& src, BuildConfig config, const char* hint, s64 header_offset) {
+	return new AssetUnpackerFunc([func](Asset& dest, InputStream& src, const std::vector<u8>* header_src, BuildConfig config, const char* hint) {
 		func(static_cast<ThisAsset&>(dest), src, config);
 	});
 }
 
 template <typename ThisAsset, typename UnpackerFunc>
 AssetUnpackerFunc* wrap_hint_unpacker_func(UnpackerFunc func) {
-	return new AssetUnpackerFunc([func](Asset& dest, InputStream& src, BuildConfig config, const char* hint, s64 header_offset) {
+	return new AssetUnpackerFunc([func](Asset& dest, InputStream& src, const std::vector<u8>* header_src, BuildConfig config, const char* hint) {
 		func(static_cast<ThisAsset&>(dest), src, config, hint);
 	});
 }
 
 template <typename ThisAsset, typename WadHeader, typename UnpackerFunc>
 AssetUnpackerFunc* wrap_wad_unpacker_func(UnpackerFunc func) {
-	return new AssetUnpackerFunc([func](Asset& dest, InputStream& src, BuildConfig config, const char* hint, s64 header_offset) {
-		WadHeader header;
-		if(config.game() == Game::RAC) {
-			// The packed R&C1 headers don't have a header_size and sector field
-			// but we want to read them using a version of the header that
-			// starts with those fields so we can write them out like that, so
-			// that all of the WAD files can be identified from their header.
-			header = src.read<WadHeader>(header_offset - 8);
-		} else {
-			header = src.read<WadHeader>(header_offset);
-		}
+	return new AssetUnpackerFunc([func](Asset& dest, InputStream& src, const std::vector<u8>* header_src, BuildConfig config, const char* hint) {
+		verify(header_src, "No header passed to wad unpacker.");
+		WadHeader header = Buffer(*header_src).read<WadHeader>(0, "wad header");
 		func(static_cast<ThisAsset&>(dest), header, src, config);
 	});
 }
 
 template <typename ThisAsset, typename UnpackerFunc>
 AssetUnpackerFunc* wrap_iso_unpacker_func(UnpackerFunc func, AssetUnpackerFunc unpack) {
-	return new AssetUnpackerFunc([func, unpack](Asset& dest, InputStream& src, BuildConfig config, const char* hint, s64 header_offset) {
+	return new AssetUnpackerFunc([func, unpack](Asset& dest, InputStream& src, const std::vector<u8>* header_src, BuildConfig config, const char* hint) {
 		func(static_cast<ThisAsset&>(dest), src, config, unpack);
 	});
 }

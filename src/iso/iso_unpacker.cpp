@@ -24,7 +24,7 @@
 
 struct UnpackInfo {
 	Asset* asset;
-	s64 header_offset;
+	const std::vector<u8>* header = nullptr;
 	ByteRange64 data_range;
 };
 
@@ -81,7 +81,7 @@ void unpack_iso(BuildAsset& dest, InputStream& src, BuildConfig config, AssetUnp
 	
 	for(UnpackInfo& info : files) {
 		SubInputStream stream(src, info.data_range);
-		unpack(*info.asset, stream, config, FMT_NO_HINT, info.header_offset);
+		unpack(*info.asset, stream, info.header, config, FMT_NO_HINT);
 	}
 }
 
@@ -174,8 +174,8 @@ static std::string parse_system_cnf(BuildAsset& build, const std::string& src, c
 static void enumerate_global_wads(std::vector<UnpackInfo>& dest, BuildAsset& build, const table_of_contents& toc, InputStream& src, Game game) {
 	if(game == Game::RAC) {
 		s64 toc_ofs = RAC1_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE;
-		dest.emplace_back(UnpackInfo{&build.bonus<BonusWadAsset>("globals/bonus/bonus.asset"), toc_ofs + (s64) offsetof(RacWadInfo, bonus_1), {0, src.size()}});
-		dest.emplace_back(UnpackInfo{&build.mpeg<MpegWadAsset>("globals/mpeg/mpeg.asset"), toc_ofs + (s64) offsetof(RacWadInfo, mpegs), {0, src.size()}});
+		//dest.emplace_back(UnpackInfo{&build.bonus<BonusWadAsset>("globals/bonus/bonus.asset"), toc_ofs + (s64) offsetof(RacWadInfo, bonus_1), {0, src.size()}});
+		//dest.emplace_back(UnpackInfo{&build.mpeg<MpegWadAsset>("globals/mpeg/mpeg.asset"), toc_ofs + (s64) offsetof(RacWadInfo, mpegs), {0, src.size()}});
 	} else {
 		for(const GlobalWadInfo& global : toc.globals) {
 			auto [wad_game, wad_type, name] = identify_wad(global.header);
@@ -197,7 +197,7 @@ static void enumerate_global_wads(std::vector<UnpackInfo>& dest, BuildAsset& bui
 				default: fprintf(stderr, "warning: Extracted global WAD of unknown type to globals/%s.wad.\n", name);
 			}
 			
-			dest.emplace_back(UnpackInfo{asset, 0, {global.sector.bytes(), (s64) file_size}});
+			dest.emplace_back(UnpackInfo{asset, &global.header, {global.sector.bytes(), (s64) file_size}});
 		}
 	}
 }
@@ -214,40 +214,26 @@ static void enumerate_level_wads(std::vector<UnpackInfo>& dest, CollectionAsset&
 			LevelAsset& level_asset = levels.foreign_child<LevelAsset>(asset_path, id);
 			level_asset.set_index(i);
 			
-			for(const Opt<LevelWadInfo>& part : {level.level, level.audio, level.scene}) {
-				if(!part) {
-					continue;
-				}
-				
-				auto [wad_game, wad_type, name] = identify_wad(part->header);
-				
-				std::vector<u8> header;
-				if(part->prepend_header) {
-					// For R&C1.
-					header = part->header;
-					OutBuffer(header).pad(SECTOR_SIZE, 0);
-				}
-				
-				Asset* asset;
-				switch(wad_type) {
-					case WadType::LEVEL: {
-						LevelWadAsset& level_wad = level_asset.level<LevelWadAsset>();
-						level_wad.set_id(id);
-						asset = &level_wad;
-						break;
-					}
-					case WadType::LEVEL_AUDIO: {
-						asset = &level_asset.audio<LevelAudioWadAsset>();
-						break;
-					}
-					case WadType::LEVEL_SCENE: {
-						asset = &level_asset.scene<LevelSceneWadAsset>();
-						break;
-					}
-					default: fprintf(stderr, "warning: Extracted level WAD of unknown type.\n");
-				}
-				
-				dest.emplace_back(UnpackInfo{asset, 0, {part->file_lba.bytes(), part->file_size.bytes()}});
+			if(level.level.has_value()) {
+				const LevelWadInfo& part = *level.level;
+				LevelWadAsset& level_wad = level_asset.level<LevelWadAsset>();
+				level_wad.set_id(id);
+				ByteRange64 range{part.file_lba.bytes(), part.file_size.bytes()};
+				dest.emplace_back(UnpackInfo{&level_wad, &part.header, range});
+			}
+			
+			if(level.audio.has_value()) {
+				const LevelWadInfo& part = *level.audio;
+				LevelAudioWadAsset& audio_wad = level_asset.audio<LevelAudioWadAsset>();
+				ByteRange64 range{part.file_lba.bytes(), part.file_size.bytes()};
+				dest.emplace_back(UnpackInfo{&audio_wad, &part.header, range});
+			}
+			
+			if(level.scene.has_value()) {
+				const LevelWadInfo& part = *level.scene;
+				LevelSceneWadAsset& scene_wad = level_asset.scene<LevelSceneWadAsset>();
+				ByteRange64 range{part.file_lba.bytes(), part.file_size.bytes()};
+				dest.emplace_back(UnpackInfo{&scene_wad, &part.header, range});
 			}
 		}
 	}
