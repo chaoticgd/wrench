@@ -427,11 +427,8 @@ AssetType GlobalWad {
 	Child sound_bank { allowed_types: ["Binary"] }
 	Child wad_14e0 { allowed_types: ["Binary"] }
 	Child music { allowed_types: ["Binary"] }
-	Child thing_not_compressed { allowed_types: ["Binary"] }
-	Child compressed_tex { allowed_types: ["Binary"] }
-	Child compressed_tex_2 { allowed_types: ["Binary"] }
-	Child empty_wad { allowed_types: ["Collection"] }
-	Child compressed_tex_3 { allowed_types: ["Binary"] }
+	Child hud_header { allowed_types: ["Binary"] }
+	Child hud_banks { allowed_types: ["Collection"] }
 	Child all_text_english { allowed_types: ["Binary"] }
 	Child post_credits_helpdesk_girl_seq { allowed_types: ["Binary"] }
 	Child post_credits_audio { allowed_types: ["Collection"] }

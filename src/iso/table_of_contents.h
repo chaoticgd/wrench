@@ -98,11 +98,8 @@ packed_struct(RacWadInfo,
 	/* 0x14e0 */ SectorRange sound_bank;
 	/* 0x14e0 */ SectorRange wad_14e0;
 	/* 0x14e0 */ SectorRange music;
-	/* 0x14f8 */ SectorRange thing_not_compressed;
-	/* 0x1500 */ SectorRange compressed_tex;
-	/* 0x1508 */ SectorRange compressed_tex_2;
-	/* 0x1510 */ SectorRange empty_wad[2];
-	/* 0x1520 */ SectorRange compressed_tex_3;
+	/* 0x14f8 */ SectorRange hud_header;
+	/* 0x1500 */ SectorRange hud_banks[5];
 	/* 0x1528 */ SectorRange all_text_english;
 	/* 0x1530 */ SectorRange things[28];
 	/* 0x1610 */ SectorRange post_credits_helpdesk_girl_seq;

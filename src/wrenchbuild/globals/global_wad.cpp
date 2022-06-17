@@ -62,12 +62,8 @@ static void unpack_rac_global_wad(GlobalWadAsset& dest, const RacWadInfo& header
 	unpack_asset(dest.sound_bank(), src, header.sound_bank, config);
 	unpack_asset(dest.wad_14e0(), src, header.wad_14e0, config);
 	unpack_asset(dest.music(), src, header.music, config);
-	unpack_asset(dest.thing_not_compressed(), src, header.thing_not_compressed, config);
-	unpack_asset(dest.compressed_tex(), src, header.compressed_tex, config);
-	unpack_asset(dest.compressed_tex_2(), src, header.compressed_tex_2, config);
-	unpack_assets<BinaryAsset>(dest.empty_wad(SWITCH_FILES), src, ARRAY_PAIR(header.empty_wad), config);
-	unpack_asset(dest.compressed_tex_3(), src, header.compressed_tex_3, config);
-	unpack_asset(dest.all_text_english(), src, header.all_text_english, config);
+	unpack_asset(dest.hud_header(), src, header.hud_header, config);
+	unpack_assets<BinaryAsset>(dest.hud_banks(SWITCH_FILES), src, ARRAY_PAIR(header.hud_banks), config);
 	unpack_asset(dest.post_credits_helpdesk_girl_seq(), src, header.post_credits_helpdesk_girl_seq, config);
 	unpack_assets<BinaryAsset>(dest.post_credits_audio(SWITCH_FILES), src, ARRAY_PAIR(header.post_credits_audio), config);
 	unpack_assets<BinaryAsset>(dest.credits_images_ntsc(SWITCH_FILES), src, ARRAY_PAIR(header.credits_images_ntsc), config);
@@ -117,11 +113,8 @@ static void pack_rac_global_wad(OutputStream& dest, RacWadInfo& header, const Gl
 	// sound_bank
 	// wad_14e0
 	// music
-	// thing_not_compressed
-	// compressed_tex
-	// compressed_tex_2
-	// empty_wad
-	// compressed_tex_3
+	// hud_header
+	// hud_banks
 	// all_text_english
 	// post_credits_helpdesk_girl_seq
 	// post_credits_audio
