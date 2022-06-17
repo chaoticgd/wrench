@@ -20,12 +20,12 @@
 
 #include <core/buffer.h>
 #include <core/filesystem.h>
+#include <engine/vag.h>
 #include <iso/wad_identifier.h>
 
 static LevelWadInfo adapt_rac1_level_wad_header(InputStream& src, Rac1AmalgamatedWadHeader& header);
 static Opt<LevelWadInfo> adapt_rac1_audio_wad_header(InputStream& src, Rac1AmalgamatedWadHeader& header);
 static Opt<LevelWadInfo> adapt_rac1_scene_wad_header(InputStream& src, Rac1AmalgamatedWadHeader& header);
-static Sector32 get_vag_size(InputStream& src, Sector32 sector);
 static Sector32 get_lz_size(InputStream& src, Sector32 sector);
 
 static s64 get_rac234_level_table_offset(Buffer src);
@@ -236,14 +236,6 @@ static Opt<LevelWadInfo> adapt_rac1_scene_wad_header(InputStream& src, Rac1Amalg
 	verify(scene_part.file_size.bytes() < 1024 * 1024 * 1024, "Level scene WAD too big!");
 	
 	return scene_part;
-}
-
-static Sector32 get_vag_size(InputStream& src, Sector32 sector) {
-	VagHeader header = src.read<VagHeader>(sector.bytes());
-	if(memcmp(header.magic, "VAGp", 4) != 0) {
-		return {1};
-	}
-	return Sector32::size_from_bytes(sizeof(VagHeader) + byte_swap_32(header.data_size));
 }
 
 static Sector32 get_lz_size(InputStream& src, Sector32 sector) {

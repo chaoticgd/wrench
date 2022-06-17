@@ -164,19 +164,6 @@ packed_struct(RacLevelSceneWadHeader,
 )
 static_assert(sizeof(RacLevelSceneWadHeader) == 0x22b8);
 
-packed_struct(VagHeader,
-	/* 0x00 */ char magic[4]; // "VAGp"
-	/* 0x04 */ s32 version;
-	/* 0x08 */ s32 reserved_8;
-	/* 0x0c */ s32 data_size;
-	/* 0x10 */ s32 frequency;
-	/* 0x14 */ u8 reserved_14[10];
-	/* 0x1e */ u8 channel_count;
-	/* 0x1f */ u8 reserved_1f;
-	/* 0x20 */ char name[16];
-)
-static_assert(sizeof(VagHeader) == 0x30);
-
 packed_struct(LzHeader,
 	char magic[3]; // "WAD"
 	s32 compressed_size;

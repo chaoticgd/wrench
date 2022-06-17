@@ -16,12 +16,15 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <engine/vag.h>
 #include <iso/table_of_contents.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 
 static void unpack_rac_global_wad(GlobalWadAsset& dest, const RacWadInfo& header, InputStream& src, BuildConfig config);
 static void pack_rac_global_wad(OutputStream& dest, RacWadInfo& header, const GlobalWadAsset& src, BuildConfig config);
+
+static void unpack_vags(CollectionAsset& dest, InputStream& src, const Sector32* sectors, s32 count, BuildConfig config);
 
 on_load(Bonus, []() {
 	GlobalWadAsset::funcs.unpack_rac1 = wrap_wad_unpacker_func<GlobalWadAsset, RacWadInfo>(unpack_rac_global_wad);
@@ -71,8 +74,8 @@ static void unpack_rac_global_wad(GlobalWadAsset& dest, const RacWadInfo& header
 	unpack_assets<TextureAsset>(dest.credits_images_pal(SWITCH_FILES), src, ARRAY_PAIR(header.credits_images_pal), config, FMT_TEXTURE_RGBA_512_448);
 	unpack_compressed_assets<BinaryAsset>(dest.wad_things(SWITCH_FILES), src, ARRAY_PAIR(header.wad_things), config);
 	unpack_assets<BinaryAsset>(dest.mpegs(SWITCH_FILES), src, ARRAY_PAIR(header.mpegs), config, FMT_BINARY_PSS);
-	//unpack_assets<BinaryAsset>(dest.vags5(SWITCH_FILES), src, ARRAY_PAIR(header.vags5), config);
-	//unpack_assets<BinaryAsset>(dest.vags2(SWITCH_FILES), src, ARRAY_PAIR(header.vags2), config);
+	unpack_vags(dest.vags5(SWITCH_FILES), src, ARRAY_PAIR(header.vags5), config);
+	unpack_vags(dest.vags2(SWITCH_FILES), src, ARRAY_PAIR(header.vags2), config);
 	unpack_assets<BinaryAsset>(dest.mobies(SWITCH_FILES), src, ARRAY_PAIR(header.mobies), config);
 	unpack_assets<BinaryAsset>(dest.anim_looking_thing_2(SWITCH_FILES), src, ARRAY_PAIR(header.anim_looking_thing_2), config);
 	unpack_compressed_assets<CollectionAsset>(dest.pif_lists(SWITCH_FILES), src, ARRAY_PAIR(header.pif_lists), config, FMT_COLLECTION_PIF8);
@@ -131,4 +134,14 @@ static void pack_rac_global_wad(OutputStream& dest, RacWadInfo& header, const Gl
 	// transition
 	// space_sounds
 	// things
+}
+
+static void unpack_vags(CollectionAsset& dest, InputStream& src, const Sector32* sectors, s32 count, BuildConfig config) {
+	for(s32 i = 0; i < count; i++) {
+		if(!sectors[i].empty()) {
+			Sector32 size = get_vag_size(src, sectors[i]);
+			SectorRange range{sectors[i], size};
+			unpack_asset(dest.child<BinaryAsset>(i), src, range, config, FMT_BINARY_VAG);
+		}
+	}
 }
