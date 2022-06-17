@@ -395,7 +395,7 @@ Category globals {
 AssetType GlobalWad {
 	desc: "Holds all of the global assets (those that are not specific to a given level) for R&C1. Not used for GC, UYA or DL."
 	
-	Child debug_font { allowed_types: ["Binary"] }
+	Child debug_font { allowed_types: ["Texture" "Binary"] }
 	Child save_game { allowed_types: ["Binary"] }
 	Child ratchet_seqs { allowed_types: ["Collection"] }
 	Child hud_seqs { allowed_types: ["Collection"] }
@@ -408,6 +408,7 @@ AssetType GlobalWad {
 	Child help_items { allowed_types: ["Collection"] }
 	Child unknown_images { allowed_types: ["Collection"] }
 	Child options_menu { allowed_types: ["Collection"] }
+	Child frontbin { allowed_types: ["Binary"] }
 	Child stuff { allowed_types: ["Collection"] }
 	Child planets { allowed_types: ["Collection"] }
 	Child stuff2 { allowed_types: ["Collection"] }

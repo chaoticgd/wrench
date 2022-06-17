@@ -72,7 +72,8 @@ packed_struct(RacWadInfo,
 	/* 0x0418 */ SectorRange help_gadgets[14];
 	/* 0x0488 */ SectorRange help_items[5];
 	/* 0x04b0 */ SectorRange unknown_images[2];
-	/* 0x04c0 */ SectorRange options_menu[8];
+	/* 0x04c0 */ SectorRange options_menu[7];
+	/* 0x04f8 */ SectorRange frontbin;
 	/* 0x0500 */ SectorRange stuff[81];
 	/* 0x0788 */ SectorRange planets[19];
 	/* 0x0820 */ SectorRange stuff2[38];
