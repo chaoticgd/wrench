@@ -89,7 +89,7 @@ packed_struct(RacWadInfo,
 	/* 0x0da8 */ SectorRange sketchbook[30];
 	/* 0x0e98 */ SectorRange commercials[4];
 	/* 0x0eb8 */ SectorRange item_images[9];
-	/* 0x0f00 */ Sector32 vags2[240];
+	/* 0x0f00 */ Sector32 qwark_boss_audio[240];
 	/* 0x12c0 */ SectorRange irx;
 	/* 0x12c8 */ SectorRange mobies[4];
 	/* 0x12e8 */ SectorRange anim_looking_thing_2[20];
@@ -109,7 +109,7 @@ packed_struct(RacWadInfo,
 	/* 0x1748 */ SectorRange credits_images_pal[20];
 	/* 0x17e8 */ SectorRange wad_things[2];
 	/* 0x17f8 */ SectorByteRange mpegs[88];
-	/* 0x1ab8 */ Sector32 vags5[900];
+	/* 0x1ab8 */ Sector32 help_audio[900];
 	/* 0x28c8 */ SectorRange levels[19];
 )
 static_assert(sizeof(RacWadInfo) == 0x2960);

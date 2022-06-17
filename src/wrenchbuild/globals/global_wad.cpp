@@ -74,8 +74,8 @@ static void unpack_rac_global_wad(GlobalWadAsset& dest, const RacWadInfo& header
 	unpack_assets<TextureAsset>(dest.credits_images_pal(SWITCH_FILES), src, ARRAY_PAIR(header.credits_images_pal), config, FMT_TEXTURE_RGBA_512_448);
 	unpack_compressed_assets<BinaryAsset>(dest.wad_things(SWITCH_FILES), src, ARRAY_PAIR(header.wad_things), config);
 	unpack_assets<BinaryAsset>(dest.mpegs(SWITCH_FILES), src, ARRAY_PAIR(header.mpegs), config, FMT_BINARY_PSS);
-	unpack_vags(dest.vags5(SWITCH_FILES), src, ARRAY_PAIR(header.vags5), config);
-	unpack_vags(dest.vags2(SWITCH_FILES), src, ARRAY_PAIR(header.vags2), config);
+	unpack_vags(dest.help_audio(SWITCH_FILES), src, ARRAY_PAIR(header.help_audio), config);
+	unpack_vags(dest.qwark_boss_audio(SWITCH_FILES), src, ARRAY_PAIR(header.qwark_boss_audio), config);
 	unpack_assets<BinaryAsset>(dest.mobies(SWITCH_FILES), src, ARRAY_PAIR(header.mobies), config);
 	unpack_assets<BinaryAsset>(dest.anim_looking_thing_2(SWITCH_FILES), src, ARRAY_PAIR(header.anim_looking_thing_2), config);
 	unpack_compressed_assets<CollectionAsset>(dest.pif_lists(SWITCH_FILES), src, ARRAY_PAIR(header.pif_lists), config, FMT_COLLECTION_PIF8);

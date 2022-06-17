@@ -437,8 +437,8 @@ AssetType GlobalWad {
 	Child credits_images_pal { allowed_types: ["Collection"] }
 	Child wad_things { allowed_types: ["Collection"] }
 	Child mpegs { allowed_types: ["Collection"] }
-	Child vags5 { allowed_types: ["Collection"] }
-	Child vags2 { allowed_types: ["Collection"] }
+	Child help_audio { allowed_types: ["Collection"] }
+	Child qwark_boss_audio { allowed_types: ["Collection"] }
 	Child mobies { allowed_types: ["Collection"] }
 	Child anim_looking_thing_2 { allowed_types: ["Collection"] }
 	Child pif_lists { allowed_types: ["Collection"] }
