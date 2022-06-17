@@ -114,6 +114,20 @@ packed_struct(RacWadInfo,
 )
 static_assert(sizeof(RacWadInfo) == 0x2960);
 
+// This is to make it easier to rewrite the relative sector offsets to absolute
+// sector numbers.
+packed_struct(DumbRacWadInfo,
+	/* 0x0000 */ s32 version;
+	/* 0x0004 */ s32 header_size;
+	/* 0x0008 */ SectorRange sector_ranges_1[479];
+	/* 0x0f00 */ Sector32 sectors_1[240];
+	/* 0x12c0 */ SectorRange sector_ranges_2[167];
+	/* 0x17f8 */ SectorByteRange sector_byte_ranges[88];
+	/* 0x1ab8 */ Sector32 sectors_2[900];
+	/* 0x28c8 */ SectorRange levels[19];
+)
+static_assert(sizeof(DumbRacWadInfo) == 0x2960);
+
 packed_struct(RacSceneHeader,
 	/* 0x000 */ Sector32 sounds[6];
 	/* 0x018 */ Sector32 wads[68];
@@ -123,7 +137,7 @@ static_assert(sizeof(RacSceneHeader) == 0x128);
 // This is what's actually stored on disc. The sector numbers are absolute and
 // in the case of the audio and scene data, point to sectors before the header.
 packed_struct(Rac1AmalgamatedWadHeader,
-	/* 0x000 */ s32 level_number;
+	/* 0x000 */ s32 id;
 	/* 0x004 */ s32 header_size;
 	/* 0x008 */ SectorRange data;
 	/* 0x010 */ SectorRange gameplay_ntsc;
@@ -178,10 +192,15 @@ static const std::size_t TOC_MAX_INDEX_SIZE = 0x10000;
 static const std::size_t TOC_MAX_LEVELS     = 100;
 
 table_of_contents read_table_of_contents(InputStream& src, Game game);
-table_of_contents read_table_of_contents_rac1(InputStream& src);
-table_of_contents read_table_of_contents_rac234(InputStream& src);
+s64 write_table_of_contents(OutputStream& iso, const table_of_contents& toc, Game game);
+Sector32 calculate_table_of_contents_size(const table_of_contents& toc, Game game);
 
+table_of_contents read_table_of_contents_rac(InputStream& src);
+s64 write_table_of_contents_rac(OutputStream& iso, const table_of_contents& toc, Game game);
+Sector32 calculate_table_of_contents_size_rac(const table_of_contents& toc);
+
+table_of_contents read_table_of_contents_rac234(InputStream& src);
 s64 write_table_of_contents_rac234(OutputStream& iso, const table_of_contents& toc, Game game);
-Sector32 calculate_table_of_contents_size(const table_of_contents& toc);
+Sector32 calculate_table_of_contents_size_rac234(const table_of_contents& toc);
 
 #endif

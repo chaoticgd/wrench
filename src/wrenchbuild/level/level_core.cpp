@@ -212,8 +212,12 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 		index.write_v(ratchet_seq_offsets);
 	}
 	
-	header.sound_remap_offset = pack_asset<ByteRange>(index, src.get_sound_remap(), config, 0x10).offset;
-	header.moby_sound_remap_offset = pack_asset<ByteRange>(index, src.get_moby_sound_remap(), config, 0x10).offset;
+	if(src.has_sound_remap()) {
+		header.sound_remap_offset = pack_asset<ByteRange>(index, src.get_sound_remap(), config, 0x10).offset;
+	}
+	if(src.has_moby_sound_remap()) {
+		header.moby_sound_remap_offset = pack_asset<ByteRange>(index, src.get_moby_sound_remap(), config, 0x10).offset;
+	}
 	
 	index.pad(0x10, 0);
 	header.moby_gs_stash_list = index.tell();

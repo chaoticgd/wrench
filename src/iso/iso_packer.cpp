@@ -37,6 +37,13 @@ static void pack_level_wad_outer(OutputStream& iso, IsoDirectory& directory, Lev
 void pack_iso(OutputStream& iso, const BuildAsset& src, BuildConfig, const char* hint, AssetPackerFunc pack) {
 	BuildConfig config(src.game(), src.region());
 	
+	s64 toc_sector;
+	if(config.game() == Game::RAC) {
+		toc_sector = RAC1_TABLE_OF_CONTENTS_LBA;
+	} else {
+		toc_sector = RAC234_TABLE_OF_CONTENTS_LBA;
+	}
+	
 	std::string single_level_tag;
 	bool no_mpegs = false;
 	
@@ -68,7 +75,7 @@ void pack_iso(OutputStream& iso, const BuildAsset& src, BuildConfig, const char*
 	toc.globals = enumerate_globals(src, config.game());
 	toc.levels = enumerate_levels(src, config.game(), single_level);
 	
-	Sector32 toc_size = calculate_table_of_contents_size(toc);
+	Sector32 toc_size = calculate_table_of_contents_size(toc, config.game());
 	
 	// Mustn't modify root_dir until after pack_files is called, or the
 	// flattened file pointers will be invalidated.
@@ -97,15 +104,17 @@ void pack_iso(OutputStream& iso, const BuildAsset& src, BuildConfig, const char*
 			case Game::DL:      toc_record.name = "rc4.hdr";     break;
 			case Game::UNKNOWN: toc_record.name = "unknown.hdr"; break;
 		}
-		toc_record.lba = {RAC234_TABLE_OF_CONTENTS_LBA};
+		toc_record.lba = {toc_sector};
 		toc_record.size = toc_size.bytes();
 		toc_record.modified_time = fs::file_time_type::clock::now();
 	}
 	
 	// Write out blank sectors that are to be filled in by the table of contents later.
 	iso.pad(SECTOR_SIZE, 0);
-	assert(iso.tell() == RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
-	while(iso.tell() < RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE + toc_size.bytes()) {
+	if(config.game() != Game::RAC) {
+		assert(iso.tell() == toc_sector * SECTOR_SIZE);
+	}
+	while(iso.tell() < toc_sector * SECTOR_SIZE + toc_size.bytes()) {
 		iso.write_n(null_sector, SECTOR_SIZE);
 	}
 	
@@ -130,10 +139,10 @@ void pack_iso(OutputStream& iso, const BuildAsset& src, BuildConfig, const char*
 	
 	iso.seek(0);
 	write_iso_filesystem(iso, &root_dir);
-	assert(iso.tell() <= RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
+	assert(iso.tell() <= toc_sector * SECTOR_SIZE);
 	iso.write<IsoLsbMsb32>(0x8050, IsoLsbMsb32::from_scalar(volume_size));
 	
-	s64 toc_end = write_table_of_contents_rac234(iso, toc, config.game());
+	s64 toc_end = write_table_of_contents(iso, toc, config.game());
 	assert(toc_end <= files_begin);
 }
 
@@ -170,7 +179,9 @@ static std::vector<GlobalWadInfo> enumerate_globals(const BuildAsset& build, Gam
 	std::vector<WadType> order;
 	switch(game) {
 		case Game::RAC: {
-			order = {};
+			order = {
+				WadType::GLOBAL
+			};
 			break;
 		}
 		case Game::GC: {
@@ -223,12 +234,14 @@ static std::vector<GlobalWadInfo> enumerate_globals(const BuildAsset& build, Gam
 			case WadType::AUDIO:  global.asset = &build.get_audio();  global.name = "audio.wad";  break;
 			case WadType::BONUS:  global.asset = &build.get_bonus();  global.name = "bonus.wad";  break;
 			case WadType::GADGET: global.asset = &build.get_gadget(); global.name = "gadget.wad"; break;
+			case WadType::GLOBAL: global.asset = &build.get_global(); global.name = "global.wad"; break;
 			case WadType::HUD:    global.asset = &build.get_hud();    global.name = "hud.wad";    break;
 			case WadType::MISC:   global.asset = &build.get_misc();   global.name = "misc.wad";   break;
 			case WadType::MPEG:   global.asset = &build.get_mpeg();   global.name = "mpeg.wad";   break;
 			case WadType::ONLINE: global.asset = &build.get_online(); global.name = "online.wad"; break;
 			case WadType::SCENE:  global.asset = &build.get_scene();  global.name = "scene.wad";  break;
 			case WadType::SPACE:  global.asset = &build.get_space();  global.name = "space.wad";  break;
+			default: assert(0);
 		}
 		global.header.resize(header_size_of_wad(game, type));
 		verify(global.asset, "Failed to build ISO, missing global WAD asset.");
@@ -405,8 +418,15 @@ static IsoDirectory pack_globals(OutputStream& iso, std::vector<GlobalWadInfo>& 
 		iso.pad(SECTOR_SIZE, 0);
 		Sector32 sector = Sector32::size_from_bytes(iso.tell());
 		
-		const char* hint = (global.asset->type() == MpegWadAsset::ASSET_TYPE && no_mpegs)
-			? FMT_MPEGWAD_NOMPEGS : FMT_NO_HINT;
+		const char* hint = FMT_NO_HINT;
+		if(no_mpegs) {
+			if(global.asset->type() == GlobalWadAsset::ASSET_TYPE) {
+				hint = FMT_GLOBALWAD_NOMPEGS;
+			}
+			if(global.asset->type() == MpegWadAsset::ASSET_TYPE) {
+				hint = FMT_MPEGWAD_NOMPEGS;
+			}
+		}
 		
 		assert(global.asset);
 		fs::file_time_type modified_time;

@@ -40,7 +40,7 @@ void inspect_iso(const std::string& iso_path) {
 	
 	table_of_contents toc;
 	if(memcmp(filesystem.pvd.volume_identifier, RAC1_VOLUME_ID, 32) == 0) {
-		toc = read_table_of_contents_rac1(iso);
+		toc = read_table_of_contents_rac(iso);
 	} else {
 		toc = read_table_of_contents_rac234(iso);
 		if(toc.levels.size() == 0) {

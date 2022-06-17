@@ -445,6 +445,12 @@ AssetType GlobalWad {
 	Child transition { allowed_types: ["Binary"] }
 	Child space_sounds { allowed_types: ["Collection"] }
 	Child things { allowed_types: ["Collection"] }
+	
+	Hint nompegs {
+		syntax: "nompegs"
+		example: "nompegs"
+		desc: "This option skips writing out the mpegs to make packing faster (or provide no hint to write them out as normal)."
+	}
 }
 
 AssetType ArmorWad {

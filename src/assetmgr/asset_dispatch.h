@@ -43,6 +43,7 @@ class Asset;
 #define FMT_MOBY_CLASS_ARMOR "armor"
 #define FMT_COLLECTION_PIF8 "texlist,pif,8,unswizzled"
 #define FMT_COLLECTION_SUBTITLES "subtitles"
+#define FMT_GLOBALWAD_NOMPEGS "nompegs"
 #define FMT_MPEGWAD_NOMPEGS "nompegs"
 
 // *****************************************************************************
