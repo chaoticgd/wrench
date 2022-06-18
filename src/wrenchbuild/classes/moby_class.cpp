@@ -40,21 +40,38 @@ on_load(MobyClass, []() {
 })
 
 static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfig config) {
-	unpack_asset(dest.core<BinaryAsset>(), src, ByteRange{0, (s32) src.size()}, config);
-	//src.seek(0);
-	//std::vector<u8> buffer = src.read_multiple<u8>(src.size());
-	//MobyClassData data = read_moby_class(buffer, config.game());
-	//ColladaScene scene = recover_moby_class(data, -1, 0);
-	//std::vector<u8> xml = write_collada(scene);
-	//FileReference ref = dest.file().write_text_file("mesh.dae", (char*) xml.data());
-	//
-	//MeshAsset& mesh = dest.mesh();
-	//mesh.set_src(ref);
-	//mesh.set_node("high_lod");
-	//
-	//MeshAsset& low_lod_mesh = dest.low_lod_mesh();
-	//low_lod_mesh.set_src(ref);
-	//low_lod_mesh.set_node("low_lod");
+	unpack_asset_impl(dest.core<BinaryAsset>(), src, nullptr, config);
+	
+	s32 texture_count = 0;
+	if(dest.has_materials()) {
+		CollectionAsset& materials = dest.get_materials();
+		for(s32 i = 0; i < 16; i++) {
+			if(materials.has_child(i)) {
+				texture_count++;
+			} else {
+				break;
+			}
+		}
+	}
+	
+	std::vector<u8> buffer = src.read_multiple<u8>(0, src.size());
+	MobyClassData data = read_moby_class(buffer, config.game());
+	ColladaScene scene = recover_moby_class(data, -1, texture_count);
+	
+	if(dest.has_materials()) {
+		CollectionAsset& materials = dest.get_materials();
+		for(s32 i = 0; i < 16; i++) {
+			if(materials.has_child(i)) {
+				TextureAsset& texture = materials.get_child(i).as<TextureAsset>();
+				scene.texture_paths.push_back(texture.src().path.string());
+			} else {
+				break;
+			}
+		}
+	}
+	
+	std::vector<u8> xml = write_collada(scene);
+	dest.file().write_text_file("mesh.dae", (char*) xml.data());
 }
 
 static void pack_moby_class_core(OutputStream& dest, const MobyClassAsset& src, BuildConfig config) {

@@ -37,10 +37,7 @@ void unpack_moby_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest,
 		unpack_level_textures(asset.materials(), entry.textures, textures, texture_data, gs_ram, config.game());
 		
 		if(entry.offset_in_asset_wad != 0) {
-			unpack_asset(asset.core<BinaryAsset>(), data, level_core_block_range(entry.offset_in_asset_wad, block_bounds), config);
-			//if(entry.o_class >= 10 && !(game == Game::UYA && (entry.o_class == 5952 || entry.o_class == 5953))) {
-			//	unpack_asset(asset, data, block_range(entry.offset_in_asset_wad, block_bounds), game);
-			//}
+			unpack_asset(asset, data, level_core_block_range(entry.offset_in_asset_wad, block_bounds), config);
 		}
 		
 		refs_dest.child<ReferenceAsset>(entry.o_class).set_asset(asset.reference());
@@ -119,7 +116,7 @@ void pack_moby_classes(OutputStream& index, OutputStream& core, const Collection
 			MobyClassEntry entry = {0};
 			entry.o_class = child.id();
 			if(child.has_core()) {
-				entry.offset_in_asset_wad = pack_asset<ByteRange>(core, child.get_core(), config, 0x40).offset;
+				entry.offset_in_asset_wad = pack_asset<ByteRange>(core, child, config, 0x40).offset;
 			}
 			if(!g_asset_packer_dry_run) {
 				texture_index += write_level_texture_indices(entry.textures, textures, texture_index, MOBY_TEXTURE_TABLE);
