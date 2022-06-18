@@ -95,6 +95,13 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 	CollectionAsset& shrub_refs = dest.shrub_classes(SWITCH_FILES);
 	unpack_shrub_classes(shrub_data, shrub_refs, header, index, data, gs_ram, block_bounds, config);
 	
+	SoundRemapHeader sound_remap = index.read<SoundRemapHeader>(header.sound_remap_offset);
+	s32 sound_remap_size = sound_remap.third_part_ofs + sound_remap.third_part_count * 4;
+	unpack_asset(dest.sound_remap(), index, ByteRange{header.sound_remap_offset, sound_remap_size}, config);
+	
+	//MobySoundRemapHeader moby_remap = data.read<MobySoundRemapHeader>(header.moby_sound_remap_offset);
+	//unpack_asset(dest.moby_sound_remap(), data, ByteRange{header.moby_sound_remap_offset, moby_remap.size}, config);
+	
 	if(config.game() != Game::DL && header.ratchet_seqs_rac123 != 0) {
 		CollectionAsset& ratchet_seqs = dest.ratchet_seqs(SWITCH_FILES);
 		auto ratchet_seq_offsets = index.read_multiple<s32>(header.ratchet_seqs_rac123, 256);
@@ -105,12 +112,15 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 		}
 	}
 	
-	if(config.game() == Game::GC || config.game() == Game::UYA) {
-		unpack_asset(dest.sound_remap(), index, ByteRange{header.sound_remap_offset, header.moby_gs_stash_list - header.sound_remap_offset}, config);
-		unpack_asset(dest.moby_sound_remap(), data, level_core_block_range(header.moby_sound_remap_offset, block_bounds), config);
-	} else if(config.game() == Game::DL) {
-		unpack_asset(dest.sound_remap(), index, ByteRange{header.sound_remap_offset, header.moby_sound_remap_offset - header.sound_remap_offset}, config);
-		unpack_asset(dest.moby_sound_remap(), index, ByteRange{header.moby_sound_remap_offset, header.moby_gs_stash_list - header.moby_sound_remap_offset}, config);
+	if(config.game() == Game::RAC) {
+		CollectionAsset& gadgets = dest.gadgets(SWITCH_FILES);
+		auto gadget_entries = index.read_multiple<RacGadgetHeader>(header.gadget_offset_rac1, header.gadget_count_rac1);
+		for(RacGadgetHeader& entry : gadget_entries) {
+			ByteRange range{entry.offset_in_asset_wad, data.size() - entry.offset_in_asset_wad};
+			MobyClassAsset& moby = gadgets.foreign_child<MobyClassAsset>(entry.class_number);
+			moby.set_id(entry.class_number);
+			unpack_compressed_asset(moby, data, range, config);
+		}
 	}
 }
 
@@ -199,6 +209,13 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	data.pad(0x10, 0);
 	header.scene_view_size = data.tell();
 	
+	if(src.has_sound_remap()) {
+		header.sound_remap_offset = pack_asset<ByteRange>(index, src.get_sound_remap(), config, 0x10).offset;
+	}
+	if(src.has_moby_sound_remap()) {
+		header.moby_sound_remap_offset = pack_asset<ByteRange>(index, src.get_moby_sound_remap(), config, 0x10).offset;
+	}
+	
 	if(config.game() != Game::DL && src.has_ratchet_seqs()) {
 		const CollectionAsset& ratchet_seqs = src.get_ratchet_seqs();
 		std::vector<s32> ratchet_seq_offsets(256, 0);
@@ -212,11 +229,20 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 		index.write_v(ratchet_seq_offsets);
 	}
 	
-	if(src.has_sound_remap()) {
-		header.sound_remap_offset = pack_asset<ByteRange>(index, src.get_sound_remap(), config, 0x10).offset;
-	}
-	if(src.has_moby_sound_remap()) {
-		header.moby_sound_remap_offset = pack_asset<ByteRange>(index, src.get_moby_sound_remap(), config, 0x10).offset;
+	if(config.game() == Game::RAC) {
+		std::vector<RacGadgetHeader> entries;
+		const CollectionAsset& gadgets = src.get_gadgets();
+		gadgets.for_each_logical_child_of_type<MobyClassAsset>([&](const MobyClassAsset& moby) {
+			RacGadgetHeader entry;
+			entry.class_number = moby.id();
+			entry.offset_in_asset_wad = pack_compressed_asset<ByteRange>(data, moby, config, 0x40, "gadget").offset;
+			entry.compressed_size = data.tell() - entry.offset_in_asset_wad;
+			entries.push_back(entry);
+		});
+		header.gadget_count_rac1 = (s32) entries.size();
+		index.pad(0x10, 0);
+		header.gadget_offset_rac1 = index.tell();
+		index.write_v(entries);
 	}
 	
 	index.pad(0x10, 0);
@@ -302,6 +328,10 @@ static std::vector<s64> enumerate_level_core_block_boundaries(InputStream& src, 
 		blocks.push_back(entry.offset_in_asset_wad);
 	}
 	
+	if((game != Game::DL) && header.moby_sound_remap_offset != 0) {
+		blocks.push_back(header.moby_sound_remap_offset);
+	}
+	
 	if(game != Game::DL && header.ratchet_seqs_rac123 != 0) {
 		auto ratchet_seqs = src.read_multiple<s32>(header.ratchet_seqs_rac123, 256);
 		for(s32 ratchet_seq_ofs : ratchet_seqs) {
@@ -311,15 +341,11 @@ static std::vector<s64> enumerate_level_core_block_boundaries(InputStream& src, 
 		}
 	}
 	
-	if(game == Game::RAC && header.thing_table_offset_rac1 != 0) {
-		auto things = src.read_multiple<ThingEntry>(header.thing_table_offset_rac1, header.thing_table_count_rac1);
-		for(const ThingEntry& entry : things) {
+	if(game == Game::RAC && header.gadget_offset_rac1 != 0) {
+		auto gadgets = src.read_multiple<RacGadgetHeader>(header.gadget_offset_rac1, header.gadget_count_rac1);
+		for(const RacGadgetHeader& entry : gadgets) {
 			blocks.push_back(entry.offset_in_asset_wad);
 		}
-	}
-	
-	if((game == Game::GC || game == Game::UYA) && header.moby_sound_remap_offset != 0) {
-		blocks.push_back(header.moby_sound_remap_offset);
 	}
 	
 	return blocks;

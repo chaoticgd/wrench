@@ -78,7 +78,7 @@ static void unpack_rac_global_wad(GlobalWadAsset& dest, const RacWadInfo& header
 	unpack_vags(dest.qwark_boss_audio(SWITCH_FILES), src, ARRAY_PAIR(header.qwark_boss_audio), config);
 	unpack_assets<BinaryAsset>(dest.mobies(SWITCH_FILES), src, ARRAY_PAIR(header.mobies), config);
 	unpack_assets<BinaryAsset>(dest.anim_looking_thing_2(SWITCH_FILES), src, ARRAY_PAIR(header.anim_looking_thing_2), config);
-	unpack_compressed_assets<CollectionAsset>(dest.pif_lists(SWITCH_FILES), src, ARRAY_PAIR(header.pif_lists), config, FMT_COLLECTION_PIF8);
+	unpack_compressed_assets<CollectionAsset>(dest.pif_lists(SWITCH_FILES), src, ARRAY_PAIR(header.pif_lists), config, FMT_COLLECTION_PIF8, true);
 	unpack_asset(dest.transition(), src, header.transition, config);
 	unpack_assets<BinaryAsset>(dest.space_sounds(SWITCH_FILES), src, ARRAY_PAIR(header.space_sounds), config, FMT_BINARY_VAG);
 	unpack_assets<BinaryAsset>(dest.things(SWITCH_FILES), src, ARRAY_PAIR(header.things), config);

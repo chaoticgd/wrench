@@ -48,11 +48,11 @@ packed_struct(LevelCoreHeader,
 	)
 	/* 0x7c */ s32 scene_view_size;
 	packed_nested_anon_union(
-		/* 0x80 */ s32 thing_table_count_rac1;
+		/* 0x80 */ s32 gadget_count_rac1;
 		/* 0x80 */ s32 index_into_some1_texs_rac2_maybe3;
 	)
 	packed_nested_anon_union(
-		/* 0x84 */ s32 thing_table_offset_rac1;
+		/* 0x84 */ s32 gadget_offset_rac1;
 		/* 0x84 */ s32 moby_gs_stash_count_rac23dl;
 	)
 	/* 0x88 */ s32 assets_compressed_size;
@@ -71,36 +71,55 @@ packed_struct(LevelCoreHeader,
 )
 static_assert(sizeof(LevelCoreHeader) == 0xbc);
 
+packed_struct(EndOfRacLevelCoreHeader,
+	/* 0x00 */ u8 data[0x30];
+)
+
 packed_struct(MobyClassEntry,
-	s32 offset_in_asset_wad;
-	s32 o_class;
-	s32 unknown_8;
-	s32 unknown_c;
-	u8 textures[16];
+	/* 0x00 */ s32 offset_in_asset_wad;
+	/* 0x04 */ s32 o_class;
+	/* 0x08 */ s32 unknown_8;
+	/* 0x0c */ s32 unknown_c;
+	/* 0x10 */ u8 textures[16];
 )
 
 packed_struct(TieClassEntry,
-	s32 offset_in_asset_wad;
-	s32 o_class;
-	s32 unknown_8;
-	s32 unknown_c;
-	u8 textures[16];
+	/* 0x00 */ s32 offset_in_asset_wad;
+	/* 0x04 */ s32 o_class;
+	/* 0x08 */ s32 unknown_8;
+	/* 0x0c */ s32 unknown_c;
+	/* 0x10 */ u8 textures[16];
 )
 
 packed_struct(ShrubClassEntry,
-	s32 offset_in_asset_wad;
-	s32 o_class;
-	s32 unknown_8;
-	s32 unknown_c;
-	u8 textures[16];
-	u8 unknown_20[16];
+	/* 0x00 */ s32 offset_in_asset_wad;
+	/* 0x04 */ s32 o_class;
+	/* 0x08 */ s32 unknown_8;
+	/* 0x0c */ s32 unknown_c;
+	/* 0x10 */ u8 textures[16];
+	/* 0x20 */ u8 unknown_20[16];
 )
 
-packed_struct(ThingEntry,
+packed_struct(RacGadgetHeader,
 	/* 0x0 */ s32 offset_in_asset_wad;
-	/* 0x4 */ s32 unknown_4;
-	/* 0x8 */ s32 unknown_8;
-	/* 0xc */ s32 unknown_c;
+	/* 0x4 */ s32 class_number;
+	/* 0x8 */ s32 compressed_size;
+	/* 0xc */ s32 pad;
+)
+
+packed_struct(SoundRemapHeader,
+	/* 0x0 */ s16 second_part_ofs;
+	/* 0x2 */ s16 second_part_size;
+	/* 0x4 */ s16 third_part_ofs;
+	/* 0x6 */ s16 third_part_count;
+)
+
+packed_struct(MobySoundRemapHeader,
+	/* 0x00 */ s32 size;
+	/* 0x04 */ s32 second_part_ofs;
+	/* 0x08 */ s32 third_part_ofs;
+	/* 0x0c */ s32 fourth_part_ofs;
+	/* 0x10 */ s32 unknown;
 )
 
 void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_range, ByteRange data_range, ByteRange gs_ram_range, BuildConfig config);

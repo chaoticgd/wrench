@@ -394,6 +394,7 @@ Category globals {
 
 AssetType GlobalWad {
 	desc: "Holds all of the global assets (those that are not specific to a given level) for R&C1. Not used for GC, UYA or DL."
+	wad: true
 	
 	Child debug_font { allowed_types: ["Texture" "Binary"] }
 	Child save_game { allowed_types: ["Binary"] }
@@ -1307,6 +1308,12 @@ AssetType LevelCore {
 	Child light_cuboids {
 		allowed_types: ["Collection"]
 		games: [4]
+	}
+	Child gadgets {
+		allowed_types: ["Collection"]
+		Child child {
+			allowed_types: ["MobyClass"]
+		}
 	}
 }
 

@@ -149,6 +149,40 @@ s64 write_table_of_contents_rac(OutputStream& iso, const table_of_contents& toc,
 			header.occlusion = add_sector_range(level.occlusion, level_info->file_lba);
 		}
 		
+		const Opt<LevelWadInfo>& audio_info = toc.levels[i].audio;
+		if(audio_info.has_value()) {
+			const RacLevelAudioWadHeader& audio = Buffer(audio_info->header).read<RacLevelAudioWadHeader>(0, "level audio header");
+			for(s32 i = 0; i < ARRAY_SIZE(header.bindata); i++) {
+				if(!audio.bindata[i].empty()) {
+					header.bindata[i] = add_sector_byte_range(audio.bindata[i], audio_info->file_lba);
+				}
+			}
+			for(s32 i = 0; i < ARRAY_SIZE(header.music); i++) {
+				if(!audio.music[i].empty()) {
+					header.music[i] = {audio.music[i].sectors + audio_info->file_lba.sectors};
+				}
+			}
+		}
+		
+		const Opt<LevelWadInfo>& scene_info = toc.levels[i].scene;
+		if(scene_info.has_value()) {
+			const RacLevelSceneWadHeader& scene = Buffer(scene_info->header).read<RacLevelSceneWadHeader>(0, "level scene header");
+			for(s32 i = 0; i < ARRAY_SIZE(header.scenes); i++) {
+				RacSceneHeader& dest_scene = header.scenes[i];
+				const RacSceneHeader& src_scene = scene.scenes[i];
+				for(s32 i = 0; i < ARRAY_SIZE(dest_scene.sounds); i++) {
+					if(!src_scene.sounds[i].empty()) {
+						dest_scene.sounds[i] = {src_scene.sounds[i].sectors + scene_info->file_lba.sectors};
+					}
+				}
+				for(s32 i = 0; i < ARRAY_SIZE(dest_scene.wads); i++) {
+					if(!src_scene.wads[i].empty()) {
+						dest_scene.wads[i] = {src_scene.wads[i].sectors + scene_info->file_lba.sectors};
+					}
+				}
+			}
+		}
+		
 		iso.pad(SECTOR_SIZE, 0);
 		info.levels[i] = {{iso.tell() / SECTOR_SIZE}, {1}};
 		iso.write(header);

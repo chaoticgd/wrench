@@ -80,10 +80,16 @@ void unpack_assets(CollectionAsset& dest, InputStream& src, const Range* ranges,
 }
 
 template <typename ChildAsset, typename Range>
-void unpack_compressed_assets(CollectionAsset& dest, InputStream& src, const Range* ranges, s32 count, BuildConfig config, const char* hint = FMT_NO_HINT) {
+void unpack_compressed_assets(CollectionAsset& dest, InputStream& src, const Range* ranges, s32 count, BuildConfig config, const char* hint = FMT_NO_HINT, bool switch_files = false) {
 	for(s32 i = 0; i < count; i++) {
 		if(!ranges[i].empty()) {
-			unpack_compressed_asset(dest.child<ChildAsset>(i), src, ranges[i], config, hint);
+			ChildAsset* asset;
+			if(switch_files) {
+				asset = &dest.foreign_child<ChildAsset>(i);
+			} else {
+				asset = &dest.child<ChildAsset>(i);
+			}
+			unpack_compressed_asset(*asset, src, ranges[i], config, hint);
 		}
 	}
 }

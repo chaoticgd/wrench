@@ -20,87 +20,89 @@
 #include <wrenchbuild/asset_packer.h>
 #include <engine/moby.h>
 
-static void unpack_moby_class_core(MobyClassCoreAsset& dest, InputStream& src, BuildConfig config);
-static void pack_moby_class_core(OutputStream& dest, const MobyClassCoreAsset& src, BuildConfig config);
+static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfig config);
+static void pack_moby_class_core(OutputStream& dest, const MobyClassAsset& src, BuildConfig config);
 static std::vector<ColladaScene*> read_collada_files(std::vector<std::unique_ptr<ColladaScene>>& owners, std::vector<FileReference> refs);
 static bool test_moby_class_core(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint);
 
 on_load(MobyClass, []() {
-	MobyClassCoreAsset::funcs.unpack_rac1 = wrap_unpacker_func<MobyClassCoreAsset>(unpack_moby_class_core);
-	MobyClassCoreAsset::funcs.unpack_rac2 = wrap_unpacker_func<MobyClassCoreAsset>(unpack_moby_class_core);
-	MobyClassCoreAsset::funcs.unpack_rac3 = wrap_unpacker_func<MobyClassCoreAsset>(unpack_moby_class_core);
-	MobyClassCoreAsset::funcs.unpack_dl = wrap_unpacker_func<MobyClassCoreAsset>(unpack_moby_class_core);
+	MobyClassAsset::funcs.unpack_rac1 = wrap_unpacker_func<MobyClassAsset>(unpack_moby_class);
+	MobyClassAsset::funcs.unpack_rac2 = wrap_unpacker_func<MobyClassAsset>(unpack_moby_class);
+	MobyClassAsset::funcs.unpack_rac3 = wrap_unpacker_func<MobyClassAsset>(unpack_moby_class);
+	MobyClassAsset::funcs.unpack_dl = wrap_unpacker_func<MobyClassAsset>(unpack_moby_class);
 	
-	MobyClassCoreAsset::funcs.pack_rac1 = wrap_packer_func<MobyClassCoreAsset>(pack_moby_class_core);
-	MobyClassCoreAsset::funcs.pack_rac2 = wrap_packer_func<MobyClassCoreAsset>(pack_moby_class_core);
-	MobyClassCoreAsset::funcs.pack_rac3 = wrap_packer_func<MobyClassCoreAsset>(pack_moby_class_core);
-	MobyClassCoreAsset::funcs.pack_dl = wrap_packer_func<MobyClassCoreAsset>(pack_moby_class_core);
+	MobyClassAsset::funcs.pack_rac1 = wrap_packer_func<MobyClassAsset>(pack_moby_class_core);
+	MobyClassAsset::funcs.pack_rac2 = wrap_packer_func<MobyClassAsset>(pack_moby_class_core);
+	MobyClassAsset::funcs.pack_rac3 = wrap_packer_func<MobyClassAsset>(pack_moby_class_core);
+	MobyClassAsset::funcs.pack_dl = wrap_packer_func<MobyClassAsset>(pack_moby_class_core);
 	
-	MobyClassCoreAsset::funcs.test = new AssetTestFunc(test_moby_class_core);
+	MobyClassAsset::funcs.test = new AssetTestFunc(test_moby_class_core);
 })
 
-static void unpack_moby_class_core(MobyClassCoreAsset& dest, InputStream& src, BuildConfig config) {
-	src.seek(0);
-	std::vector<u8> buffer = src.read_multiple<u8>(src.size());
-	MobyClassData data = read_moby_class(buffer, config.game());
-	ColladaScene scene = recover_moby_class(data, -1, 0);
-	std::vector<u8> xml = write_collada(scene);
-	FileReference ref = dest.file().write_text_file("mesh.dae", (char*) xml.data());
-	
-	MeshAsset& mesh = dest.mesh();
-	mesh.set_src(ref);
-	mesh.set_node("high_lod");
-	
-	MeshAsset& low_lod_mesh = dest.low_lod_mesh();
-	low_lod_mesh.set_src(ref);
-	low_lod_mesh.set_node("low_lod");
+static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfig config) {
+	unpack_asset(dest.core<BinaryAsset>(), src, ByteRange{0, (s32) src.size()}, config);
+	//src.seek(0);
+	//std::vector<u8> buffer = src.read_multiple<u8>(src.size());
+	//MobyClassData data = read_moby_class(buffer, config.game());
+	//ColladaScene scene = recover_moby_class(data, -1, 0);
+	//std::vector<u8> xml = write_collada(scene);
+	//FileReference ref = dest.file().write_text_file("mesh.dae", (char*) xml.data());
+	//
+	//MeshAsset& mesh = dest.mesh();
+	//mesh.set_src(ref);
+	//mesh.set_node("high_lod");
+	//
+	//MeshAsset& low_lod_mesh = dest.low_lod_mesh();
+	//low_lod_mesh.set_src(ref);
+	//low_lod_mesh.set_node("low_lod");
 }
 
-static void pack_moby_class_core(OutputStream& dest, const MobyClassCoreAsset& src, BuildConfig config) {
-	const MeshAsset& mesh_asset = src.get_mesh();
-	const MeshAsset& low_lod_mesh_asset = src.get_low_lod_mesh();
-	
-	std::vector<std::unique_ptr<ColladaScene>> owners;
-	std::vector<ColladaScene*> scenes = read_collada_files(owners, {mesh_asset.src(), low_lod_mesh_asset.src()});
-	assert(scenes.size() == 2);
-	
-	Mesh* mesh = scenes[0]->find_mesh(mesh_asset.node());
-	Mesh* low_lod_mesh = scenes[1]->find_mesh(mesh_asset.node());
-	verify(mesh, "Failed to find mesh in COLLADA file.");
-	
-	MobyClassData moby;
-	moby.submeshes = build_moby_submeshes(*mesh, scenes[0]->materials);
-	moby.submesh_count = moby.submeshes.size();
-	if(low_lod_mesh) {
-		moby.low_lod_submeshes = build_moby_submeshes(*low_lod_mesh, scenes[1]->materials);
-		moby.low_lod_submesh_count = moby.low_lod_submeshes.size();
-	}
-	moby.skeleton = {};
-	moby.common_trans = {};
-	moby.unknown_9 = 0;
-	moby.lod_trans = 0x20;
-	moby.scale = 0.25;
-	moby.mip_dist = 0x8;
-	moby.bounding_sphere = glm::vec4(0.f, 0.f, 0.f, 10.f); // Arbitrary for now.
-	moby.glow_rgba = 0;
-	moby.mode_bits = 0x5000;
-	moby.type = 0;
-	moby.mode_bits2 = 0;
-	moby.header_end_offset = 0;
-	moby.submesh_table_offset = 0;
-	moby.rac1_byte_a = 0;
-	moby.rac1_byte_b = 0;
-	moby.rac1_short_2e = 0;
-	moby.has_submesh_table = true;
-	
-	MobySequence dummy_seq;
-	dummy_seq.bounding_sphere = glm::vec4(0.f, 0.f, 0.f, 10.f); // Arbitrary for now.
-	dummy_seq.frames.emplace_back();
-	moby.sequences.emplace_back(std::move(dummy_seq));
-	
-	std::vector<u8> dest_bytes;
-	write_moby_class(dest_bytes, moby, config.game());
-	dest.write_n(dest_bytes.data(), dest_bytes.size());
+static void pack_moby_class_core(OutputStream& dest, const MobyClassAsset& src, BuildConfig config) {
+	pack_asset_impl(dest, nullptr, nullptr, src.get_core(), config);
+	//const MeshAsset& mesh_asset = src.get_mesh();
+	//const MeshAsset& low_lod_mesh_asset = src.get_low_lod_mesh();
+	//
+	//std::vector<std::unique_ptr<ColladaScene>> owners;
+	//std::vector<ColladaScene*> scenes = read_collada_files(owners, {mesh_asset.src(), low_lod_mesh_asset.src()});
+	//assert(scenes.size() == 2);
+	//
+	//Mesh* mesh = scenes[0]->find_mesh(mesh_asset.node());
+	//Mesh* low_lod_mesh = scenes[1]->find_mesh(mesh_asset.node());
+	//verify(mesh, "Failed to find mesh in COLLADA file.");
+	//
+	//MobyClassData moby;
+	//moby.submeshes = build_moby_submeshes(*mesh, scenes[0]->materials);
+	//moby.submesh_count = moby.submeshes.size();
+	//if(low_lod_mesh) {
+	//	moby.low_lod_submeshes = build_moby_submeshes(*low_lod_mesh, scenes[1]->materials);
+	//	moby.low_lod_submesh_count = moby.low_lod_submeshes.size();
+	//}
+	//moby.skeleton = {};
+	//moby.common_trans = {};
+	//moby.unknown_9 = 0;
+	//moby.lod_trans = 0x20;
+	//moby.scale = 0.25;
+	//moby.mip_dist = 0x8;
+	//moby.bounding_sphere = glm::vec4(0.f, 0.f, 0.f, 10.f); // Arbitrary for now.
+	//moby.glow_rgba = 0;
+	//moby.mode_bits = 0x5000;
+	//moby.type = 0;
+	//moby.mode_bits2 = 0;
+	//moby.header_end_offset = 0;
+	//moby.submesh_table_offset = 0;
+	//moby.rac1_byte_a = 0;
+	//moby.rac1_byte_b = 0;
+	//moby.rac1_short_2e = 0;
+	//moby.has_submesh_table = true;
+	//
+	//MobySequence dummy_seq;
+	//dummy_seq.bounding_sphere = glm::vec4(0.f, 0.f, 0.f, 10.f); // Arbitrary for now.
+	//dummy_seq.frames.emplace_back();
+	//moby.sequences.emplace_back(std::move(dummy_seq));
+	//
+	//std::vector<u8> dest_bytes;
+	//write_moby_class(dest_bytes, moby, config.game());
+	//dest.write_n(dest_bytes.data(), dest_bytes.size());
 }
 
 static std::vector<ColladaScene*> read_collada_files(std::vector<std::unique_ptr<ColladaScene>>& owners, std::vector<FileReference> refs) {
