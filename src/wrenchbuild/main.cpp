@@ -72,7 +72,7 @@ static void decompress(const fs::path& input_path, const fs::path& output_path, 
 static void compress(const fs::path& input_path, const fs::path& output_path);
 static void extract_collision(fs::path input_path, fs::path output_path);
 static void build_collision(fs::path input_path, fs::path output_path);
-static void extract_moby(const char* input_path, const char* output_path);
+static void extract_moby(const fs::path& input_path, const fs::path& output_path, Game game);
 static void build_moby(const char* input_path, const char* output_path);
 static void print_usage(bool developer_subcommands);
 static void print_version();
@@ -184,15 +184,18 @@ static int wrenchbuild(int argc, char** argv) {
 		return 0;
 	}
 	
+	if(mode == "extract_moby") {
+		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH | ARG_GAME);
+		extract_moby(args.input_paths[0], args.output_path, args.game);
+		return 0;
+	}
+	
 	if(mode == "extract_collision") {
 		require_args(4);
 		extract_collision(argv[2], argv[3]);
 	} else if(mode == "build_collision") {
 		require_args(4);
 		build_collision(argv[2], argv[3]);
-	} else if(mode == "extract_moby") {
-		require_args(4);
-		extract_moby(argv[2], argv[3]);
 	} else if(mode == "build_moby") {
 		require_args(4);
 		build_moby(argv[2], argv[3]);
@@ -456,12 +459,12 @@ static void build_collision(fs::path input_path, fs::path output_path) {
 	write_file("/", output_path, bin);
 }
 
-static void extract_moby(const char* input_path, const char* output_path) {
-	auto bin = read_file(input_path);
-	MobyClassData moby = read_moby_class(bin, Game::GC);
+static void extract_moby(const fs::path& input_path, const fs::path& output_path, Game game) {
+	auto bin = read_file(input_path.string().c_str());
+	MobyClassData moby = read_moby_class(bin, game);
 	ColladaScene scene = recover_moby_class(moby, 0, 0);
 	auto xml = write_collada(scene);
-	write_file("/", output_path, xml, "w");
+	write_file(output_path, xml, "w");
 }
 
 static void build_moby(const char* input_path, const char* output_path) {
@@ -545,6 +548,10 @@ static void print_usage(bool developer_subcommands) {
 		puts("");
 		puts(" profile_memory_usage <input asset banks>");
 		puts("   Record statistics about the memory used by mounting asset banks.");
+		puts("");
+		puts(" extract_moby <input path> -o <output path> -g <game>");
+		puts("   Convert a built moby to a .dae file.");
+		puts("");
 	}
 }
 
