@@ -34,6 +34,13 @@ void unpack_asset_impl(Asset& dest, InputStream& src, const std::vector<u8>* hea
 	}
 	
 	// Hacks to skip unpacking certain wads. These should be removed over time.
+	if(config.game() == Game::RAC
+		&& (dest.type() == LevelAudioWadAsset::ASSET_TYPE)) {
+		std::string tag = dest.tag();
+		unpack_asset_impl(dest.parent()->transmute_child<BinaryAsset>(tag.c_str()), src, header_src, config, FMT_BINARY_WAD);
+		return;
+	}
+	
 	if(config.game() == Game::GC
 		&& (dest.type() == HudWadAsset::ASSET_TYPE
 		|| dest.type() == SpaceWadAsset::ASSET_TYPE
