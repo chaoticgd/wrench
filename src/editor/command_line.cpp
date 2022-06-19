@@ -22,7 +22,6 @@
 #include <iostream>
 
 #include "util.h"
-#include "config.h"
 
 cxxopts::ParseResult parse_command_line_args(int argc, char** argv, cxxopts::Options options) {
 	options.add_options()
@@ -38,8 +37,8 @@ cxxopts::ParseResult parse_command_line_args(int argc, char** argv, cxxopts::Opt
 	}
 
 	if(args.count("version")) {
-		std::cout << "wrench " WRENCH_VERSION_STR << std::endl;
-		std::cout << "Copyright (c) 2020 chaoticgd.\n"
+		std::cout << "wrench" << std::endl;
+		std::cout << "Copyright (c) 2022 chaoticgd.\n"
 		          << "License GPLv3+: GNU GPL version 3 <http://gnu.org/licenses/gpl.html>.\n"
 		          << "This is free software: you are free to change and redistribute it.\n"
 		          << "There is NO WARRANTY, to the extent permitted by law." << std::endl;

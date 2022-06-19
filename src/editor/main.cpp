@@ -18,6 +18,7 @@
 
 #include <chrono>
 
+#include <gui/commands.h>
 #include "fs_includes.h"
 #include "gl_includes.h"
 #include "command_line.h"
@@ -25,137 +26,56 @@
 #include "gui/gui.h"
 #include "renderer.h"
 
-static void run_wrench(GLFWwindow** window, cxxopts::ParseResult& args, fs::path& old_working_dir);
+static void run_wrench(GLFWwindow* window);
+static void update(f32 delta_time);
 static void init_gui(app& a, GLFWwindow** window);
 static void update_camera(app* a);
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
+static app* app_ptr;
+
 int main(int argc, char** argv) {
-	cxxopts::Options options("wrench", "A level editor for the Ratchet & Clank games.");
-	options.add_options()
-		("d,directory", "Open a directory on startup.", cxxopts::value<std::string>())
-		("f,file", "Open a file on startup.", cxxopts::value<std::string>());
-
-	auto args = parse_command_line_args(argc, argv, options);
-
-	// Set the working dir.
-	fs::path old_working_dir = fs::current_path();
-	fs::path wrench_executable_path(argv[0]);
-	std::string wrench_root = wrench_executable_path.remove_filename().string() + "..";
-	fs::current_path(wrench_root);
+	if(argc != 3) {
+		fprintf(stderr, "usage: %s <game path> <mod path>\n", argv[0]);
+		return 1;
+	}
 	
-	config::get().read();
+	gui::setup_bin_paths(argv[0]);
 	
-	GLFWwindow* window;
-	run_wrench(&window, args, old_working_dir);
+	std::string game_path = argv[1];
+	std::string mod_path = argv[2];
 	
-	glfwDestroyWindow(window);
-
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplGlfw_Shutdown();
-	ImGui::DestroyContext();
-	glfwTerminate();
+	
+	GLFWwindow* window = gui::startup("Wrench Editor", 1280, 720, true);
+	run_wrench(window);
+	gui::shutdown(window);
 }
 
-static void run_wrench(GLFWwindow** window, cxxopts::ParseResult& args, fs::path& old_working_dir) {
+
+static void run_wrench(GLFWwindow* window) {
 	app a;
+	app_ptr = &a;
 	
-	init_gui(a, window);
-	a.glfw_window = *window;
+	a.glfw_window = window;
 	
 	init_renderer();
 	
 	a.tools = enumerate_tools();
-	a.game_db = gamedb_read();
 	
-	a.windows.emplace_back(std::make_unique<gui::start_screen>());
 	a.windows.emplace_back(std::make_unique<view_3d>());
 	a.windows.emplace_back(std::make_unique<gui::moby_list>());
 	a.windows.emplace_back(std::make_unique<gui::viewport_information>());
 	a.windows.emplace_back(std::make_unique<Inspector>());
 	
-	if(args.count("directory")) {
-		fs::path dir = args["directory"].as<std::string>();
-		if(dir.is_relative()) {
-			a.open_directory(old_working_dir / dir);
-		} else {
-			a.open_directory(dir);
-		}
-	}
-	
-	if(args.count("file")) {
-		fs::path file = args["file"].as<std::string>();
-		if(file.is_relative()) {
-			a.open_file(old_working_dir / file);
-		} else {
-			a.open_file(file);
-		}
-	}
-	
-	auto last_frame_time = std::chrono::steady_clock::now();
-	
 	while(!glfwWindowShouldClose(a.glfw_window)) {
-		glfwPollEvents();
-		update_camera(&a);
-		
-		gui::render(a);
-		
-		ImGui::Render();
-		glfwMakeContextCurrent(a.glfw_window);
-		glfwGetFramebufferSize(a.glfw_window, &a.window_width, &a.window_height);
-		
-		glViewport(0, 0, a.window_width, a.window_height);
-		glClearColor(0, 0, 0, 1);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		
-		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-		
-		glfwMakeContextCurrent(a.glfw_window);
-		glfwSwapBuffers(a.glfw_window);
-		
-		auto frame_time = std::chrono::steady_clock::now();
-		a.delta_time = std::chrono::duration_cast<std::chrono::microseconds>
-			(frame_time - last_frame_time).count();
-		last_frame_time = frame_time;
+		gui::run_frame(window, update);
 	}
 	
 	shutdown_renderer();
 }
 
-static void init_gui(app& a, GLFWwindow** window) {
-	if(!glfwInit()) {
-		throw std::runtime_error("Cannot load GLFW.");
-	}
-	verify(glfwInit(), "Cannot load GLFW.");
-
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
-
-	*window = glfwCreateWindow(1280, 720, "Wrench Editor", NULL, NULL);
-	verify(*window, "Cannot create GLFW window.");
-
-	glfwMakeContextCurrent(*window);
-	glfwSwapInterval(config::get().vsync ? 1 : 0);
-
-	verify(gladLoadGLLoader((GLADloadproc) glfwGetProcAddress), "Cannot load GLAD.");
-
-	glfwSetWindowUserPointer(*window, &a);
-	glfwSetKeyCallback(*window, key_callback);
-
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-	io.ConfigDockingWithShift = true;
-	ImGui::StyleColorsDark();
-	ImGui_ImplGlfw_InitForOpenGL(*window, true);
-	ImGui_ImplOpenGL3_Init("#version 120");
-
-	a.init_gui_scale();
-	a.update_gui_scale();
-	
-	gui::init();
+static void update(f32 delta_time) {
+	gui::render(*app_ptr);
 }
 
 static void update_camera(app* a) {

@@ -117,19 +117,16 @@ add_executable(wrencheditor
 	src/editor/command_line.cpp
 	src/editor/renderer.cpp
 	src/editor/shaders.cpp
-	src/editor/worker_logger.cpp
 	src/editor/mesh.cpp
 	src/editor/util.cpp
-	src/editor/game_db.cpp
 	src/editor/tools.cpp
-	src/editor/icons.cpp
 	src/editor/gui/gui.cpp
 	src/editor/gui/window.cpp
 	src/editor/gui/view_3d.cpp
 	src/editor/gui/inspector.cpp
 	src/editor/formats/level_impl.cpp
 )
-target_link_libraries(wrencheditor wrenchcore)
+target_link_libraries(wrencheditor wrenchcore wrenchgui)
 
 add_executable(vif
 	src/vifcli.cpp

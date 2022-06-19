@@ -29,23 +29,12 @@
 #include <glm/glm.hpp>
 
 #include <editor/tools.h>
-#include <editor/game_db.h>
 #include <editor/renderer.h>
 #include <editor/fs_includes.h>
-#include <editor/worker_logger.h>
 #include <editor/gui/window.h>
 #include <editor/formats/level_impl.h>
 
 struct GLFWwindow;
-
-struct build_settings {
-	fs::path input_dir;
-	fs::path output_iso;
-	bool launch_emulator = false;
-	bool single_level = false; // Write out just a single level?
-	int single_level_index = -1; // If so, which one?
-	bool no_mpegs = false;
-};
 
 class app {
 public:
@@ -69,14 +58,6 @@ public:
 	
 	int64_t delta_time = 0;
 	
-	fs::path directory; // The directory to build new ISO files from.
-	
-	void extract_iso(fs::path iso_path, fs::path dir);
-	void open_directory(fs::path dir);
-	void build_iso(build_settings settings);
-	void open_file(fs::path path);
-	void save_level();
-	
 	level* get_level();
 	const level* get_level() const;
 	
@@ -89,29 +70,6 @@ public:
 
 	void init_gui_scale();
 	void update_gui_scale();
-
-	std::vector<gamedb_game> game_db;
-
-private:
-	std::atomic_bool _lock_project = false; // Prevent race conditions while creating/loading a project.
-	
-	std::vector<float> _gui_scale_parameters;
-};
-
-struct config {
-	std::string emulator_path;
-	int compression_threads;
-	float gui_scale;
-	bool vsync;
-	struct {
-		bool stream_tracing;
-	} debug;
-	
-	bool request_open_settings_dialog = false;
-	
-	static config& get();
-	void read();
-	void write();
 };
 
 GlTexture load_icon(std::string path);

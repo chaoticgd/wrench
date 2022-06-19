@@ -40,24 +40,8 @@ namespace gui {
 	void create_dock_layout(const app& a);
 	void begin_docking();
 	
-	void render_tree_menu(app& a);
-	
 	template <typename T, typename... T_constructor_args>
 	void render_menu_bar_window_toggle(app& a, T_constructor_args... args);
-	
-	class start_screen : public window {
-	public:
-		start_screen();
-		
-		const char* title_text() const override;
-		ImVec2 initial_size() const override;
-		void render(app& a) override;
-	
-	private:
-		bool button(const char* str, ImTextureID user_texture_id, const ImVec2& icon_size) const;
-	
-		GlTexture dvd, folder, floppy;
-	};
 
 	class moby_list : public window {
 	public:
@@ -71,21 +55,6 @@ namespace gui {
 		const char* title_text() const override;
 		ImVec2 initial_size() const override;
 		void render(app& a) override;
-	};
-	
-	class settings : public window {
-	public:
-		const char* title_text() const override;
-		ImVec2 initial_size() const override;
-		void render(app& a) override;
-	
-	private:
-		void render_general_page(app& a);
-		void render_gui_page(app& a);
-		void render_debug_page(app& a);
-		
-		std::size_t _new_game_type = 0;
-		std::string _new_game_path;
 	};
 	
 	class alert_box {
@@ -131,9 +100,6 @@ namespace gui {
 	private:
 		std::vector<std::string> _lines;
 	};
-	
-	// Don't pass untrusted input to this!
-	void open_in_browser(const char* url);
 }
 
 template <typename T, typename... T_constructor_args>

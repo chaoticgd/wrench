@@ -56,18 +56,3 @@ std::vector<std::string> to_hex_dump(uint32_t* data, std::size_t align, std::siz
 	}
 	return result;
 }
-
-int execute_command(std::string executable, std::vector<std::string> arguments) {
-#ifdef DECENT_OS
-	//
-#else
-	printf("*** USING INSECURE execute_command IMPLEMENTATION ***\n");
-	
-	std::string command = executable;
-	for(std::string& arg : arguments) {
-		command += " \"" + arg + "\"";
-	}
-	printf("command: %s\n", command.c_str());
-	return system(command.c_str());
-#endif
-}

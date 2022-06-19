@@ -26,8 +26,6 @@
 #include <core/level.h>
 #include "../util.h"
 #include "../fs_includes.h"
-#include "../worker_logger.h"
-#include "../level_file_types.h"
 #include "../mesh.h"
 
 struct EditorMobyClass {

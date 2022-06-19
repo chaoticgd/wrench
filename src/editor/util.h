@@ -36,6 +36,4 @@ bool contains(T container, const typename T::value_type& value) {
 	return std::find(container.begin(), container.end(), value) != container.end();
 }
 
-int execute_command(std::string executable, std::vector<std::string> arguments);
-
 #endif
