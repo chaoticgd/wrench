@@ -429,7 +429,7 @@ AssetType GlobalWad {
 	Child music { allowed_types: ["Binary"] }
 	Child hud_header { allowed_types: ["Binary"] }
 	Child hud_banks { allowed_types: ["Collection"] }
-	Child all_text_english { allowed_types: ["Binary"] }
+	Child all_text { allowed_types: ["Binary"] }
 	Child post_credits_helpdesk_girl_seq { allowed_types: ["Binary"] }
 	Child post_credits_audio { allowed_types: ["Collection"] }
 	Child credits_images_ntsc { allowed_types: ["Collection"] }
@@ -440,7 +440,7 @@ AssetType GlobalWad {
 	Child qwark_boss_audio { allowed_types: ["Collection"] }
 	Child spaceships { allowed_types: ["Collection"] }
 	Child anim_looking_thing_2 { allowed_types: ["Collection"] }
-	Child pif_lists { allowed_types: ["Collection"] }
+	Child space_plates { allowed_types: ["Collection"] }
 	Child transition { allowed_types: ["Binary"] }
 	Child space_audio { allowed_types: ["Collection"] }
 	Child things { allowed_types: ["Collection"] }

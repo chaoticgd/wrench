@@ -92,7 +92,7 @@ packed_struct(RacWadInfo,
 	/* 0x12c0 */ SectorRange irx;
 	/* 0x12c8 */ SectorRange spaceships[4];
 	/* 0x12e8 */ SectorRange anim_looking_thing_2[20];
-	/* 0x1388 */ SectorRange pif_lists[6];
+	/* 0x1388 */ SectorRange space_plates[6];
 	/* 0x13b8 */ SectorRange transition;
 	/* 0x13c0 */ SectorRange space_audio[36];
 	/* 0x14e0 */ SectorRange sound_bank;
@@ -100,7 +100,7 @@ packed_struct(RacWadInfo,
 	/* 0x14e0 */ SectorRange music;
 	/* 0x14f8 */ SectorRange hud_header;
 	/* 0x1500 */ SectorRange hud_banks[5];
-	/* 0x1528 */ SectorRange all_text_english;
+	/* 0x1528 */ SectorRange all_text;
 	/* 0x1530 */ SectorRange things[28];
 	/* 0x1610 */ SectorRange post_credits_helpdesk_girl_seq;
 	/* 0x1618 */ SectorRange post_credits_audio[18];
