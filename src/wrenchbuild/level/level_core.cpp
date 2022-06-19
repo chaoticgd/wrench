@@ -119,7 +119,7 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 			ByteRange range{entry.offset_in_asset_wad, data.size() - entry.offset_in_asset_wad};
 			MobyClassAsset& moby = gadgets.foreign_child<MobyClassAsset>(entry.class_number);
 			moby.set_id(entry.class_number);
-			unpack_compressed_asset(moby, data, range, config);
+			unpack_compressed_asset(moby, data, range, config, FMT_MOBY_CLASS_GADGET);
 		}
 	}
 }
@@ -235,7 +235,7 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 		gadgets.for_each_logical_child_of_type<MobyClassAsset>([&](const MobyClassAsset& moby) {
 			RacGadgetHeader entry;
 			entry.class_number = moby.id();
-			entry.offset_in_asset_wad = pack_compressed_asset<ByteRange>(data, moby, config, 0x40, "gadget").offset;
+			entry.offset_in_asset_wad = pack_compressed_asset<ByteRange>(data, moby, config, 0x40, "gadget", FMT_MOBY_CLASS_GADGET).offset;
 			entry.compressed_size = data.tell() - entry.offset_in_asset_wad;
 			entries.push_back(entry);
 		});
