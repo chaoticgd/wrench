@@ -36,7 +36,7 @@ static void update_gui(f32 delta_time);
 static Mod* mod_list_window();
 static void details_window(Mod* mod);
 static void not_specified();
-static void buttons_window(f32 buttons_window_height);
+static void buttons_window(Mod* mod, f32 buttons_window_height);
 static void create_dock_layout();
 static void begin_docking(f32 buttons_window_height);
 static ImFont* load_font_from_gui_wad(SectorRange range);
@@ -123,7 +123,7 @@ void update_gui(f32 delta_time) {
 	
 	ImGui::End(); // docking
 	
-	buttons_window(buttons_window_height);
+	buttons_window(mod, buttons_window_height);
 }
 
 static Mod* mod_list_window() {
@@ -244,7 +244,7 @@ static void not_specified() {
 	ImGui::PopFont();
 }
 
-static void buttons_window(f32 buttons_window_height) {
+static void buttons_window(Mod* mod, f32 buttons_window_height) {
 	ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize;
 	
 	ImVec2 viewport_size = ImGui::GetMainViewport()->Size;
@@ -305,7 +305,10 @@ static void buttons_window(f32 buttons_window_height) {
 	
 	ImGui::SameLine();
 	if(ImGui::Button("Open in Editor")) {
-		
+		gui::EditorParams params;
+		params.game_path = g_game_path;
+		params.mod_path = mod->path;
+		gui::open_in_editor(params);
 	}
 	
 	ImGui::SameLine();

@@ -41,6 +41,11 @@ struct PackerParams {
 	} debug;
 };
 
+struct EditorParams {
+	std::string game_path;
+	std::string mod_path;
+};
+
 struct EmulatorParams {
 	std::string iso_path;
 };
@@ -49,6 +54,7 @@ void setup_bin_paths(const char* bin_path);
 
 void run_unpacker(const UnpackerParams& params, CommandStatus* status);
 std::string run_packer(const PackerParams& params, CommandStatus* status);
+void open_in_editor(const EditorParams& params);
 void run_emulator(const EmulatorParams& params, CommandStatus* status);
 
 }

@@ -81,6 +81,16 @@ std::string gui::run_packer(const PackerParams& params, CommandStatus* status) {
 	return output_path;
 }
 
+void gui::open_in_editor(const EditorParams& params) {
+	const char* args[] = {
+		bin_paths.wrencheditor.c_str(),
+		params.game_path.c_str(),
+		params.mod_path.c_str(),
+		nullptr
+	};
+	execute_command_non_blocking(args);
+}
+
 void gui::run_emulator(const EmulatorParams& params, CommandStatus* status) {
 	std::vector<std::string> args;
 	args.emplace_back(g_config.paths.emulator_path);

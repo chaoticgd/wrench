@@ -111,7 +111,7 @@ add_executable(wrenchlauncher
 )
 target_link_libraries(wrenchlauncher wrenchgui wrench_assetmgr)
 
-add_executable(wrenchedit
+add_executable(wrencheditor
 	src/editor/main.cpp
 	src/editor/app.cpp
 	src/editor/command_line.cpp
@@ -129,7 +129,7 @@ add_executable(wrenchedit
 	src/editor/gui/inspector.cpp
 	src/editor/formats/level_impl.cpp
 )
-target_link_libraries(wrenchedit wrenchcore)
+target_link_libraries(wrencheditor wrenchcore)
 
 add_executable(vif
 	src/vifcli.cpp
@@ -209,7 +209,7 @@ if(UNIX)
 	target_compile_options(wrenchcore PRIVATE ${GCC_FLAGS} -O3)
 	target_compile_options(wrench_assetmgr PRIVATE ${GCC_FLAGS})
 	target_compile_options(wrenchlauncher PRIVATE ${GCC_FLAGS})
-	target_compile_options(wrenchedit PRIVATE ${GCC_FLAGS})
+	target_compile_options(wrencheditor PRIVATE ${GCC_FLAGS})
 	target_compile_options(vif PRIVATE ${GCC_FLAGS})
 	target_compile_options(wrenchiso PRIVATE ${GCC_FLAGS})
 	target_compile_options(wrenchengine PRIVATE ${GCC_FLAGS} -O3)
@@ -226,7 +226,7 @@ if (MSVC)
 	target_compile_options(wrenchcore PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(wrench_assetmgr PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(wrenchlauncher PRIVATE ${__MSVC_BUILD_OPTIONS__})
-	target_compile_options(wrenchedit PRIVATE ${__MSVC_BUILD_OPTIONS__})
+	target_compile_options(wrencheditor PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(vif PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(wrenchiso PRIVATE ${__MSVC_BUILD_OPTIONS__})
 	target_compile_options(wrenchengine PRIVATE ${__MSVC_BUILD_OPTIONS__})
@@ -239,7 +239,7 @@ endif()
 if(UNIX)
 	target_link_libraries(wrenchcore stdc++fs)
 	target_link_libraries(wrenchlauncher stdc++fs)
-	target_link_libraries(wrenchedit stdc++fs)
+	target_link_libraries(wrencheditor stdc++fs)
 	target_link_libraries(vif stdc++fs)
 	target_link_libraries(wrenchiso stdc++fs)
 	target_link_libraries(wrenchengine stdc++fs)
@@ -249,7 +249,7 @@ endif()
 # cxxopts
 add_subdirectory(thirdparty/cxxopts)
 target_link_libraries(wrenchlauncher cxxopts)
-target_link_libraries(wrenchedit cxxopts)
+target_link_libraries(wrencheditor cxxopts)
 target_link_libraries(vif cxxopts)
 target_link_libraries(wrenchiso cxxopts)
 
@@ -261,17 +261,17 @@ target_link_libraries(wrenchcore Threads::Threads)
 # GLAD
 add_subdirectory(thirdparty/glad)
 target_link_libraries(wrenchlauncher glad)
-target_link_libraries(wrenchedit glad)
+target_link_libraries(wrencheditor glad)
 
 # GLFW
 add_subdirectory(thirdparty/glfw)
 target_link_libraries(wrenchlauncher glfw)
-target_link_libraries(wrenchedit glfw)
+target_link_libraries(wrencheditor glfw)
 
 # GLM
 add_subdirectory(thirdparty/glm)
 target_link_libraries(wrenchlauncher glm)
-target_link_libraries(wrenchedit glm)
+target_link_libraries(wrencheditor glm)
 include_directories(thirdparty/glm)
 
 # Dear ImGui
@@ -294,7 +294,7 @@ add_library(imgui STATIC
 	thirdparty/imgui/backends/imgui_impl_opengl3.cpp
 )
 target_link_libraries(wrenchlauncher imgui)
-target_link_libraries(wrenchedit imgui)
+target_link_libraries(wrencheditor imgui)
 
 # JSON
 include_directories(thirdparty/json/single_include)
@@ -312,7 +312,7 @@ else()
 	)
 endif()
 target_link_libraries(wrenchlauncher nativefiledialog)
-target_link_libraries(wrenchedit nativefiledialog)
+target_link_libraries(wrencheditor nativefiledialog)
 include_directories(thirdparty/nativefiledialog/src/include)
 
 # libpng

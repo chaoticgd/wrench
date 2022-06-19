@@ -85,6 +85,13 @@ s32 execute_command(s32 argc, const char** argv, CommandStatus* output) {
 	}
 }
 
+void execute_command_non_blocking(const char** args) {
+	if(fork() == 0) {
+		execve(const_cast<char*>(args[0]), const_cast<char *const*>(args), nullptr);
+		perror("execve");
+	}
+}
+
 void open_in_file_manager(const char* path) {
 #ifdef _WIN32
 	ShellExecuteA(nullptr, "open", path, nullptr, nullptr, SW_SHOWDEFAULT);
