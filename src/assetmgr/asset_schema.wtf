@@ -405,11 +405,10 @@ AssetType GlobalWad {
 	Child help_moves { allowed_types: ["Collection"] }
 	Child help_weapons { allowed_types: ["Collection"] }
 	Child help_gadgets { allowed_types: ["Collection"] }
-	Child help_items { allowed_types: ["Collection"] }
-	Child unknown_images { allowed_types: ["Collection"] }
-	Child options_menu { allowed_types: ["Collection"] }
+	Child help_ss { allowed_types: ["Collection"] }
+	Child options_ss { allowed_types: ["Collection"] }
 	Child frontbin { allowed_types: ["Binary"] }
-	Child stuff { allowed_types: ["Collection"] }
+	Child mission_ss { allowed_types: ["Collection"] }
 	Child planets { allowed_types: ["Collection"] }
 	Child stuff2 { allowed_types: ["Collection"] }
 	Child goodies_images { allowed_types: ["Collection"] }
@@ -439,11 +438,11 @@ AssetType GlobalWad {
 	Child mpegs { allowed_types: ["Collection"] }
 	Child help_audio { allowed_types: ["Collection"] }
 	Child qwark_boss_audio { allowed_types: ["Collection"] }
-	Child mobies { allowed_types: ["Collection"] }
+	Child spaceships { allowed_types: ["Collection"] }
 	Child anim_looking_thing_2 { allowed_types: ["Collection"] }
 	Child pif_lists { allowed_types: ["Collection"] }
 	Child transition { allowed_types: ["Binary"] }
-	Child space_sounds { allowed_types: ["Collection"] }
+	Child space_audio { allowed_types: ["Collection"] }
 	Child things { allowed_types: ["Collection"] }
 	
 	Hint nompegs {

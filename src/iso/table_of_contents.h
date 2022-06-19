@@ -70,11 +70,10 @@ packed_struct(RacWadInfo,
 	/* 0x0328 */ SectorRange help_moves[15];
 	/* 0x03a0 */ SectorRange help_weapons[15];
 	/* 0x0418 */ SectorRange help_gadgets[14];
-	/* 0x0488 */ SectorRange help_items[5];
-	/* 0x04b0 */ SectorRange unknown_images[2];
-	/* 0x04c0 */ SectorRange options_menu[7];
+	/* 0x0488 */ SectorRange help_ss[7];
+	/* 0x04c0 */ SectorRange options_ss[7];
 	/* 0x04f8 */ SectorRange frontbin;
-	/* 0x0500 */ SectorRange stuff[81];
+	/* 0x0500 */ SectorRange mission_ss[81];
 	/* 0x0788 */ SectorRange planets[19];
 	/* 0x0820 */ SectorRange stuff2[38];
 	/* 0x0950 */ SectorRange goodies_images[10];
@@ -91,11 +90,11 @@ packed_struct(RacWadInfo,
 	/* 0x0eb8 */ SectorRange item_images[9];
 	/* 0x0f00 */ Sector32 qwark_boss_audio[240];
 	/* 0x12c0 */ SectorRange irx;
-	/* 0x12c8 */ SectorRange mobies[4];
+	/* 0x12c8 */ SectorRange spaceships[4];
 	/* 0x12e8 */ SectorRange anim_looking_thing_2[20];
 	/* 0x1388 */ SectorRange pif_lists[6];
 	/* 0x13b8 */ SectorRange transition;
-	/* 0x13c0 */ SectorRange space_sounds[36];
+	/* 0x13c0 */ SectorRange space_audio[36];
 	/* 0x14e0 */ SectorRange sound_bank;
 	/* 0x14e0 */ SectorRange wad_14e0;
 	/* 0x14e0 */ SectorRange music;
