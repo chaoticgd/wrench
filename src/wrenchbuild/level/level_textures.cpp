@@ -410,6 +410,10 @@ void unpack_fx_textures(LevelCoreAsset& core, const std::vector<FxTextureEntry>&
 			default: {}
 		}
 		
+		if(name.empty()) {
+			name = std::to_string(i);
+		}
+		
 		TextureAsset& asset = fx_textures.child<TextureAsset>(i);
 		auto [stream, ref] = asset.file().open_binary_file_for_writing(name + ".png");
 		write_png(*stream, texture);
