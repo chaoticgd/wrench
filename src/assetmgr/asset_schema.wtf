@@ -1398,6 +1398,30 @@ AssetType MobyClass {
 	
 	Child core { allowed_types: ["MobyClassCore" "Binary"] }
 	Child materials { allowed_types: ["Collection"] }
+	
+	Hint level {
+		syntax: "level"
+		example: "level"
+		desc: "A moby class to be packed in with the level data."
+	}
+	
+	Hint gadget {
+		syntax: "gadget"
+		example: "gadget"
+		desc: "A moby class to be packed in with the gadget data."
+	}
+	
+	Hint sparmor {
+		syntax: "sparmor"
+		example: "sparmor"
+		desc: "A moby class to be packed as a singleplayer armor."
+	}
+	
+	Hint mparmor {
+		syntax: "mparmor"
+		example: "mparmor"
+		desc: "A moby class to be packed as a multiplayer armor."
+	}
 }
 
 AssetType MobyClassCore {
@@ -1405,18 +1429,6 @@ AssetType MobyClassCore {
 	
 	Child mesh { allowed_types: ["Mesh"] }
 	Child low_lod_mesh { allowed_types: ["Mesh"] }
-	
-	Hint normal {
-		syntax: "normal"
-		example: "normal"
-		desc: "A moby class with a normal header, such as one those packed into levels."
-	}
-	
-	Hint armor {
-		syntax: "armor"
-		example: "armor"
-		desc: "A moby class with a minimal header, such as those packed into the armor.wad file in R&C2. Note that later games such as Deadlocked pack the armor files with the \"normal\" header rather than this one."
-	}
 }
 
 AssetType Material {

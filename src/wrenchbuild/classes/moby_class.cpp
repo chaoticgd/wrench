@@ -20,26 +20,26 @@
 #include <wrenchbuild/asset_packer.h>
 #include <engine/moby.h>
 
-static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfig config);
-static void pack_moby_class_core(OutputStream& dest, const MobyClassAsset& src, BuildConfig config);
+static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfig config, const char* hint);
+static void pack_moby_class_core(OutputStream& dest, const MobyClassAsset& src, BuildConfig config, const char* hint);
 static std::vector<ColladaScene*> read_collada_files(std::vector<std::unique_ptr<ColladaScene>>& owners, std::vector<FileReference> refs);
 static bool test_moby_class_core(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint);
 
 on_load(MobyClass, []() {
-	MobyClassAsset::funcs.unpack_rac1 = wrap_unpacker_func<MobyClassAsset>(unpack_moby_class);
-	MobyClassAsset::funcs.unpack_rac2 = wrap_unpacker_func<MobyClassAsset>(unpack_moby_class);
-	MobyClassAsset::funcs.unpack_rac3 = wrap_unpacker_func<MobyClassAsset>(unpack_moby_class);
-	MobyClassAsset::funcs.unpack_dl = wrap_unpacker_func<MobyClassAsset>(unpack_moby_class);
+	MobyClassAsset::funcs.unpack_rac1 = wrap_hint_unpacker_func<MobyClassAsset>(unpack_moby_class);
+	MobyClassAsset::funcs.unpack_rac2 = wrap_hint_unpacker_func<MobyClassAsset>(unpack_moby_class);
+	MobyClassAsset::funcs.unpack_rac3 = wrap_hint_unpacker_func<MobyClassAsset>(unpack_moby_class);
+	MobyClassAsset::funcs.unpack_dl = wrap_hint_unpacker_func<MobyClassAsset>(unpack_moby_class);
 	
-	MobyClassAsset::funcs.pack_rac1 = wrap_packer_func<MobyClassAsset>(pack_moby_class_core);
-	MobyClassAsset::funcs.pack_rac2 = wrap_packer_func<MobyClassAsset>(pack_moby_class_core);
-	MobyClassAsset::funcs.pack_rac3 = wrap_packer_func<MobyClassAsset>(pack_moby_class_core);
-	MobyClassAsset::funcs.pack_dl = wrap_packer_func<MobyClassAsset>(pack_moby_class_core);
+	MobyClassAsset::funcs.pack_rac1 = wrap_hint_packer_func<MobyClassAsset>(pack_moby_class_core);
+	MobyClassAsset::funcs.pack_rac2 = wrap_hint_packer_func<MobyClassAsset>(pack_moby_class_core);
+	MobyClassAsset::funcs.pack_rac3 = wrap_hint_packer_func<MobyClassAsset>(pack_moby_class_core);
+	MobyClassAsset::funcs.pack_dl = wrap_hint_packer_func<MobyClassAsset>(pack_moby_class_core);
 	
 	MobyClassAsset::funcs.test = new AssetTestFunc(test_moby_class_core);
 })
 
-static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfig config) {
+static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfig config, const char* hint) {
 	unpack_asset_impl(dest.core<BinaryAsset>(), src, nullptr, config);
 	
 	s32 texture_count = 0;
@@ -54,8 +54,21 @@ static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfi
 		}
 	}
 	
+	const char* type = next_hint(&hint);
+	bool is_level = strcmp(type, "level") == 0;
+	bool is_gadget = strcmp(type, "gadget") == 0;
+	bool is_sparmor = strcmp(type, "sparmor") == 0;
+	bool is_mparmor = strcmp(type, "mparmor") == 0;
+	verify(is_level || is_gadget || is_sparmor || is_mparmor, "Invalid moby hint.");
+	
 	std::vector<u8> buffer = src.read_multiple<u8>(0, src.size());
-	MobyClassData data = read_moby_class(buffer, config.game());
+	write_file("/tmp/moby.bin", buffer);
+	MobyClassData data;
+	if((config.game() == Game::GC && is_sparmor) || (config.game() == Game::UYA && is_sparmor)) {
+		data = read_armor_moby_class(buffer, config.game());
+	} else {
+		data = read_moby_class(buffer, config.game());
+	}
 	ColladaScene scene = recover_moby_class(data, -1, texture_count);
 	
 	if(dest.has_materials()) {
@@ -74,7 +87,7 @@ static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfi
 	dest.file().write_text_file("mesh.dae", (char*) xml.data());
 }
 
-static void pack_moby_class_core(OutputStream& dest, const MobyClassAsset& src, BuildConfig config) {
+static void pack_moby_class_core(OutputStream& dest, const MobyClassAsset& src, BuildConfig config, const char* hint) {
 	pack_asset_impl(dest, nullptr, nullptr, src.get_core(), config);
 	//const MeshAsset& mesh_asset = src.get_mesh();
 	//const MeshAsset& low_lod_mesh_asset = src.get_low_lod_mesh();

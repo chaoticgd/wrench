@@ -319,7 +319,7 @@ static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usag
 		write_vif_packet(dest, texture_unpack);
 		
 		if(gif_usage != nullptr) {
-			MobyGifUsageTableEntry gif_entry;
+			MobyGifUsage gif_entry;
 			gif_entry.offset_and_terminator = abs_texture_unpack_ofs - 0xc - class_header_ofs;
 			s32 gif_index = 0;
 			for(const MobyTexturePrimitive& prim : submesh.textures) {

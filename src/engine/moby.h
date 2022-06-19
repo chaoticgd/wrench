@@ -27,12 +27,14 @@
 #include <engine/moby_mesh.h>
 #include <engine/moby_animation.h>
 
-struct MobyCollision {
-	u16 unknown_0;
-	u16 unknown_2;
-	std::vector<u8> first_part;
-	std::vector<Vec3f> second_part;
-	std::vector<u8> third_part;
+struct MobyMeshSection {
+	std::vector<MobySubMesh> high_lod;
+	u8 high_lod_count = 0;
+	std::vector<MobySubMesh> low_lod;
+	u8 low_lod_count = 0;
+	std::vector<MobyMetalSubMesh> metal;
+	u8 metal_count = 0;
+	bool has_submesh_table = true;
 };
 
 packed_struct(MobyTrans,
@@ -49,6 +51,22 @@ packed_struct(MobyJoint,
 struct MobyJointEntry {
 	std::vector<u8> thing_one;
 	std::vector<u8> thing_two;
+};
+
+struct MobyAnimationSection {
+	std::vector<Opt<MobySequence>> sequences;
+	Opt<std::vector<Mat4>> skeleton;
+	Opt<std::vector<MobyTrans>> common_trans;
+	u8 joint_count = 0;
+	std::vector<MobyJointEntry> joints;
+};
+
+struct MobyCollision {
+	u16 unknown_0;
+	u16 unknown_2;
+	std::vector<u8> first_part;
+	std::vector<Vec3f> second_part;
+	std::vector<u8> third_part;
 };
 
 packed_struct(MobySoundDef,
@@ -74,21 +92,12 @@ struct MobyCornCob {
 };
 
 struct MobyClassData {
-	std::vector<MobySubMesh> submeshes;
-	u8 submesh_count = 0;
-	std::vector<MobySubMesh> low_lod_submeshes;
-	u8 low_lod_submesh_count = 0;
-	std::vector<MobyMetalSubMesh> metal_submeshes;
-	u8 metal_submesh_count = 0;
+	MobyMeshSection mesh;
+	MobyAnimationSection animation;
 	Opt<MobyBangles> bangles;
 	Opt<MobyCornCob> corncob;
-	std::vector<Opt<MobySequence>> sequences;
 	std::vector<u8> shadow;
 	Opt<MobyCollision> collision;
-	Opt<std::vector<Mat4>> skeleton;
-	Opt<std::vector<MobyTrans>> common_trans;
-	u8 joint_count = 0;
-	std::vector<MobyJointEntry> joints;
 	std::vector<MobySoundDef> sound_defs;
 	u8 unknown_9 = 0;
 	u8 lod_trans = 0;
@@ -107,15 +116,18 @@ struct MobyClassData {
 	std::vector<std::array<u32, 256>> team_palettes;
 	s32 palettes_per_texture = 0;
 	bool force_rac1_format = false; // Used for some mobies in the R&C2 Insomniac Museum.
-	bool has_submesh_table = false;
 };
+
+packed_struct(MobyMeshInfo,
+	/* 0x0 */ u8 high_lod_count;
+	/* 0x1 */ u8 low_lod_count;
+	/* 0x2 */ u8 metal_count;
+	/* 0x3 */ u8 metal_begin;
+)
 
 packed_struct(MobyClassHeader,
 	/* 0x00 */ s32 submesh_table_offset;
-	/* 0x04 */ u8 submesh_count;
-	/* 0x05 */ u8 low_lod_submesh_count;
-	/* 0x06 */ u8 metal_submesh_count;
-	/* 0x07 */ u8 metal_submesh_begin;
+	/* 0x04 */ MobyMeshInfo mesh_info;
 	/* 0x08 */ u8 joint_count;
 	/* 0x09 */ u8 unknown_9;
 	/* 0x0a */ u8 rac1_byte_a;
@@ -157,8 +169,21 @@ packed_struct(MobyCornCobHeader,
 	u8 kernels[16];
 )
 
+packed_struct(MobyArmorHeader,
+	/* 0x00 */ MobyMeshInfo info;
+	/* 0x04 */ s32 submesh_table_offset;
+	/* 0x08 */ s32 gif_usage;
+	/* 0x0c */ s32 pad;
+)
+
 MobyClassData read_moby_class(Buffer src, Game game);
 void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game);
+MobyClassData read_armor_moby_class(Buffer src, Game game);
+void write_armor_moby_class(OutBuffer dest, const MobyClassData& moby, Game game);
+MobyMeshSection read_moby_mesh_section(Buffer src, s64 table_ofs, MobyMeshInfo info, f32 scale, MobyFormat format, bool animated);
+s64 allocate_submesh_table(OutBuffer& dest, const MobyMeshSection& mesh);
+MobyMeshInfo write_moby_mesh_section(OutBuffer& dest, std::vector<MobyGifUsage>& gif_usage, s64 table_ofs, const MobyMeshSection& mesh, f32 scale, MobyFormat format);
+
 ColladaScene recover_moby_class(const MobyClassData& moby, s32 o_class, s32 texture_count);
 MobyClassData build_moby_class(const ColladaScene& scene);
 

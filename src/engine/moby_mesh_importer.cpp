@@ -31,7 +31,7 @@ static std::vector<MobyVertex> read_vertices(Buffer src, const MobySubMeshEntry&
 // recover_moby_mesh
 // map_indices
 
-std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s64 count, f32 scale, s32 joint_count, MobyFormat format) {
+std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s64 count, f32 scale, bool animated, MobyFormat format) {
 	std::vector<MobySubMesh> submeshes;
 	
 	Opt<SkinAttributes> blend_buffer[64]; // The game stores blended matrices in VU0 memory.
@@ -106,8 +106,8 @@ std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s64 coun
 		low.preloop_matrix_transfers = src.read_multiple<MobyMatrixTransfer>(array_ofs, vertex_header.matrix_transfer_count, "vertex table").copy();
 		for(const MobyMatrixTransfer& transfer : low.preloop_matrix_transfers) {
 			verify(transfer.vu0_dest_addr % 4 == 0, "Unaligned pre-loop joint address 0x%llx.", transfer.vu0_dest_addr);
-			if(joint_count == 0 && transfer.spr_joint_index == 0) {
-				// If there aren't any joints, use the blend shape matrix (identity matrix).
+			if(!animated && transfer.spr_joint_index == 0) {
+				// If the mesh isn't animated, use the blend shape matrix (identity matrix).
 				blend_buffer[transfer.vu0_dest_addr / 0x4] = SkinAttributes{1, {-1, 0, 0}, {255, 0, 0}};
 			} else {
 				blend_buffer[transfer.vu0_dest_addr / 0x4] = SkinAttributes{1, {(s8) transfer.spr_joint_index, 0, 0}, {255, 0, 0}};
