@@ -372,11 +372,7 @@ std::tuple<ArrayRange, s32, s32> pack_particle_textures(OutputStream& index, Out
 }
 
 void unpack_fx_textures(LevelCoreAsset& core, const std::vector<FxTextureEntry>& entries, InputStream& fx_bank, Game game) {
-	CollectionAsset& local_fx_textures = core.local_fx_textures("fx_textures/fx_textures.asset");
-	CollectionAsset& common_fx_textures = build_from_level_core_asset(core).fx_textures("/fx_textures/fx_textures.asset");
-	
-	ReferenceAsset& common_fx_ref = core.child<ReferenceAsset>("common_fx_textures");
-	common_fx_ref.set_asset(common_fx_textures.reference());
+	CollectionAsset& fx_textures = core.fx_textures("fx_textures/fx_textures.asset");
 	
 	std::vector<Texture> textures;
 	for(size_t i = 0; i < entries.size(); i++) {
@@ -414,32 +410,22 @@ void unpack_fx_textures(LevelCoreAsset& core, const std::vector<FxTextureEntry>&
 			default: {}
 		}
 		
-		CollectionAsset* collection;
-		if(!name.empty()) {
-			collection = &common_fx_textures;
-		} else {
-			name = stringf("%d", i);
-			collection = &local_fx_textures;
-		}
-		
-		TextureAsset& asset = collection->child<TextureAsset>(i);
+		TextureAsset& asset = fx_textures.child<TextureAsset>(i);
 		auto [stream, ref] = asset.file().open_binary_file_for_writing(name + ".png");
 		write_png(*stream, texture);
 		asset.set_src(ref);
 	}
 }
 
-std::tuple<ArrayRange, s32> pack_fx_textures(OutputStream& index, OutputStream& data, const CollectionAsset& common_fx, const CollectionAsset& local_fx, Game game) {
+std::tuple<ArrayRange, s32> pack_fx_textures(OutputStream& index, OutputStream& data, const CollectionAsset& collection, Game game) {
 	data.pad(0x100, 0);
 	s64 fx_base = data.tell();
 	
 	std::vector<LevelTexture> textures;
 	for(s32 i = 0; i < 1024; i++) {
 		const TextureAsset* asset;
-		if(local_fx.has_child(i)) {
-			asset = &local_fx.get_child(i).as<TextureAsset>();
-		} else if(common_fx.has_child(i)) {
-			asset = &common_fx.get_child(i).as<TextureAsset>();
+		if(collection.has_child(i)) {
+			asset = &collection.get_child(i).as<TextureAsset>();
 		} else {
 			break;
 		}

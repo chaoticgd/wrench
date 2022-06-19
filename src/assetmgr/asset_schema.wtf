@@ -214,7 +214,6 @@ AssetType Build {
 	Child shrub_classes { allowed_types: ["Collection"] }
 	
 	Child particle_textures { allowed_types: ["Collection"] }
-	Child fx_textures { allowed_types: ["Collection"] }
 	
 	Hint release {
 		syntax: "release"
@@ -1297,8 +1296,7 @@ AssetType LevelCore {
 	Child tie_classes { allowed_types: ["Collection"] }
 	Child shrub_classes { allowed_types: ["Collection"] }
 	Child particle_textures { allowed_types: ["Collection"] }
-	Child common_fx_textures { allowed_types: ["Collection"] }
-	Child local_fx_textures { allowed_types: ["Collection"] }
+	Child fx_textures { allowed_types: ["Collection"] }
 	Child sound_remap { allowed_types: ["Binary"] }
 	Child moby_sound_remap { allowed_types: ["Binary"] }
 	Child ratchet_seqs {

@@ -187,7 +187,7 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 		header.part_textures = std::get<0>(part_info);
 		header.part_defs_offset = std::get<1>(part_info);
 		header.part_bank_offset = std::get<2>(part_info);
-		auto [fx_textures, fx_bank_offset] = pack_fx_textures(index, data, src.get_common_fx_textures(), src.get_local_fx_textures(), config.game());
+		auto [fx_textures, fx_bank_offset] = pack_fx_textures(index, data, src.get_fx_textures(), config.game());
 		header.fx_textures = fx_textures;
 		header.fx_bank_offset = fx_bank_offset;
 		

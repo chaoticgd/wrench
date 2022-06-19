@@ -92,7 +92,7 @@ s32 write_level_texture_indices(u8 dest[16], const std::vector<LevelTexture>& te
 void unpack_particle_textures(CollectionAsset& dest, InputStream& defs, std::vector<ParticleTextureEntry>& entries, InputStream& bank, Game game);
 std::tuple<ArrayRange, s32, s32> pack_particle_textures(OutputStream& index, OutputStream& data, const CollectionAsset& particles, Game game);
 void unpack_fx_textures(LevelCoreAsset& core, const std::vector<FxTextureEntry>& entries, InputStream& fx_bank, Game game);
-std::tuple<ArrayRange, s32> pack_fx_textures(OutputStream& index, OutputStream& data, const CollectionAsset& common_fx, const CollectionAsset& local_fx, Game game);
+std::tuple<ArrayRange, s32> pack_fx_textures(OutputStream& index, OutputStream& data, const CollectionAsset& collection, Game game);
 
 void deduplicate_level_textures(std::vector<LevelTexture>& textures);
 void deduplicate_level_palettes(std::vector<LevelTexture>& textures);
