@@ -354,7 +354,7 @@ static IsoFileRecord pack_system_cnf(OutputStream& iso, const BuildAsset& build)
 	std::string system_cnf;
 	system_cnf += "BOOT2 = cdrom:\\";
 	system_cnf += path;
-	system_cnf += " \r\nVER = ";
+	system_cnf += ";1 \r\nVER = ";
 	system_cnf += build.version();
 	system_cnf += " \r\nVMODE = ";
 	if(build.region() != "eu") {
