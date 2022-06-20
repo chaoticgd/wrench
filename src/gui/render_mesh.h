@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef EDITOR_MESH_H
-#define EDITOR_MESH_H
+#ifndef GUI_RENDER_MESH_H
+#define GUI_RENDER_MESH_H
 
 #include <vector>
 

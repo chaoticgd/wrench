@@ -37,17 +37,6 @@
 #include "../unwindows.h"
 #include "window.h"
 
-void gui::init() {
-	ImGuiStyle& style = ImGui::GetStyle();
-	style.TabRounding = 2.f;
-	style.ScrollbarRounding = 2.f;
-	style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.1f, 0.1f, 0.1f, 1.f);
-	style.Colors[ImGuiCol_MenuBarBg] = style.Colors[ImGuiCol_WindowBg];
-	style.Colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.15f, 0.15f, 0.15f, 1.f);
-	style.Colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.25f, 0.25f, 0.25f, 1.f);
-	style.Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.2f, 0.2f, 0.2f, 1.f);
-}
-
 void gui::render(app& a) {
 	float menu_height = render_menu_bar(a);
 	render_tools(a, menu_height);
@@ -150,33 +139,6 @@ float gui::render_menu_bar(app& a) {
 	static alert_box message_box("Information");
 	message_box.render();
 	
-	enum class file_dialog_type {
-		OPEN, SAVE, DIR
-	};
-	
-	auto input_path = [](const char* label, std::string* dest, file_dialog_type type) {
-		ImGui::PushID(label);
-		if(strlen(label) > 0) {
-			ImGui::Text("%s", label);
-			ImGui::SameLine();
-		}
-		ImGui::InputText("##input", dest);
-		ImGui::SameLine();
-		if(ImGui::Button("Browse")) {
-			nfdresult_t result;
-			nfdchar_t* path;
-			switch(type) {
-				case file_dialog_type::OPEN: result = NFD_OpenDialog("iso", nullptr, &path); break;
-				case file_dialog_type::SAVE: result = NFD_SaveDialog("iso", nullptr, &path); break;
-				case file_dialog_type::DIR: result = NFD_PickFolder(nullptr, &path); break;
-			}
-			if(result == NFD_OKAY) {
-				*dest = std::string(path);
-				free(path);
-			}
-		}
-		ImGui::PopID();
-	};
 	
 	ImGui::BeginMainMenuBar();
 	if(ImGui::BeginMenu("File")) {
@@ -243,6 +205,18 @@ float gui::render_menu_bar(app& a) {
 		render_menu_bar_window_toggle<viewport_information>(a);
 		render_menu_bar_window_toggle<Inspector>(a);
 		ImGui::EndMenu();
+	}
+	
+	ImGuiWindow* window = ImGui::GetCurrentWindow();
+	
+	if(ImGui::BeginTabBar("layouts")) {
+		if(ImGui::BeginTabItem("Asset Browser")) {
+			ImGui::EndTabItem();
+		}
+		if(ImGui::BeginTabItem("Level Editor")) {
+			ImGui::EndTabItem();
+		}
+		ImGui::EndTabBar();
 	}
 	
 	float menu_bar_height = ImGui::GetWindowSize().y;
