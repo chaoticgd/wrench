@@ -22,9 +22,9 @@
 #include <core/util.h>
 
 enum class AssetBankType {
-	UNPACKED, // Assets unpacked from a base game ISO.
-	MOD, // A mod.
-	TEST // A set of binary assets to be used for running tests on.
+	GAME,
+	MOD,
+	TEST
 };
 
 struct GameInfo {
