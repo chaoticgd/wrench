@@ -39,7 +39,6 @@ static void not_specified();
 static void buttons_window(Mod* mod, f32 buttons_window_height);
 static void create_dock_layout();
 static void begin_docking(f32 buttons_window_height);
-static ImFont* load_font_from_gui_wad(SectorRange range);
 static Texture load_image_from_launcher_wad(SectorRange range);
 
 int main(int argc, char** argv) {
@@ -63,8 +62,8 @@ int main(int argc, char** argv) {
 				g_launcher.window = gui::startup("Wrench Launcher", 960, 600);
 				glfwSetWindowSizeLimits(g_launcher.window, 960, 600, GLFW_DONT_CARE, GLFW_DONT_CARE);
 				
-				g_launcher.font_regular = load_font_from_gui_wad(wadinfo.gui.fonts[0]);
-				g_launcher.font_italic = load_font_from_gui_wad(wadinfo.gui.fonts[1]);
+				g_launcher.font_regular = gui::load_font(wadinfo.gui.fonts[0], 22);
+				g_launcher.font_italic = gui::load_font(wadinfo.gui.fonts[1], 22);
 				g_launcher.placeholder_image = load_image_from_launcher_wad(wadinfo.launcher.placeholder_images[0]);
 				
 				load_game_list(g_config.paths.games_folder);
@@ -78,7 +77,6 @@ int main(int argc, char** argv) {
 					}
 				}
 				
-				g_launcher.font_buffers.clear();
 				g_launcher.placeholder_image.destroy();
 				
 				free_game_list();
@@ -433,18 +431,6 @@ static void begin_docking(f32 buttons_window_height) {
 
 	ImGuiID dockspace_id = ImGui::GetID("dock_space");
 	ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_NoTabBar);
-}
-
-static ImFont* load_font_from_gui_wad(SectorRange range) {
-	std::vector<u8> compressed_font = g_guiwad.read_multiple<u8>(range.offset.bytes(), range.size.bytes());
-	std::vector<u8>& decompressed_font = g_launcher.font_buffers.emplace_back();
-	decompress_wad(decompressed_font, compressed_font);
-	
-	ImFontConfig font_cfg;
-	font_cfg.FontDataOwnedByAtlas = false;
-	
-	ImGuiIO& io = ImGui::GetIO();
-	return io.Fonts->AddFontFromMemoryTTF(decompressed_font.data(), decompressed_font.size(), 22, &font_cfg);
 }
 
 static Texture load_image_from_launcher_wad(SectorRange range) {

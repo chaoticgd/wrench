@@ -16,38 +16,35 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef LAUNCHER_GLOBAL_STATE_H
-#define LAUNCHER_GLOBAL_STATE_H
+#ifndef EDITOR_LEVEL_H
+#define EDITOR_LEVEL_H
 
-#include <string>
+#include <engine/gameplay.h>
+#include <assetmgr/asset_types.h>
+#include <editor/undo_redo.h>
 
-#include <core/shell.h>
-#include <core/stream.h>
-#include <core/texture.h>
-#include <toolwads/wads.h>
-#include <gui/gui.h>
-#include <gui/config.h>
-#include <gui/commands.h>
-
-enum class LauncherMode {
-	DRAWING_GUI,
-	RUNNING_EMULATOR,
-	EXIT
+class Level {
+public:
+	Level(LevelAsset& asset, Game g);
+	
+	LevelAsset& level();
+	LevelWadAsset& level_wad();
+	LevelDataWadAsset& data_wad();
+	LevelCoreAsset& core();
+	
+	Gameplay& gameplay();
+	
+	void write();
+	
+	Game game;
+	HistoryStack<Level> history;
+	
+private:
+	BinaryAsset& gameplay_asset();
+	
+	LevelAsset& _asset;
+	Gameplay _gameplay;
+	PvarTypes _pvar_types;
 };
-
-struct GLFWwindow;
-
-struct LauncherState {
-	LauncherMode mode;
-	FileInputStream wad;
-	FileInputStream buildwad;
-	GLFWwindow* window;
-	ImFont* font_regular;
-	ImFont* font_italic;
-	Texture placeholder_image;
-	gui::EmulatorParams emulator_params;
-};
-
-extern LauncherState g_launcher;
 
 #endif

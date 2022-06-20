@@ -358,9 +358,9 @@ public:
 	
 	Asset& lookup_asset(const AssetReference& reference, Asset* context);
 	
-	template <typename Pack, typename... ConstructorArgs>
+	template <typename Bank, typename... ConstructorArgs>
 	AssetBank& mount(ConstructorArgs... args) {
-		AssetBank* bank = _banks.emplace_back(std::make_unique<Pack>(*this, args...)).get();
+		AssetBank* bank = _banks.emplace_back(std::make_unique<Bank>(*this, args...)).get();
 		if(bank->is_writeable()) {
 			if(s32 pid = bank->check_lock()) {
 				fprintf(stderr, "error: Another process (with PID %d) has locked this asset bank. This implies the process is still alive or has previously crashed. To bypass this error, delete the lock file in the asset bank directory.\n", pid);

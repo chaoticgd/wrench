@@ -194,15 +194,15 @@ float gui::render_menu_bar(app& a) {
 		if(auto lvl = a.get_level()) {
 			if(ImGui::MenuItem("Undo")) {
 				try {
-					lvl->undo();
-				} catch(command_error& error) {
+					lvl->history.undo();
+				} catch(UndoRedoError& error) {
 					undo_error_box.open(error.what());
 				}
 			}
 			if(ImGui::MenuItem("Redo")) {
 				try {
-					lvl->redo();
-				} catch(command_error& error) {
+					lvl->history.redo();
+				} catch(UndoRedoError& error) {
 					redo_error_box.open(error.what());
 				}
 			}
@@ -299,7 +299,7 @@ void gui::moby_list::render(app& a) {
 		return;
 	}
 
-	level& lvl = *a.get_level();
+	Level& lvl = *a.get_level();
 	
 	ImVec2 size = ImGui::GetWindowSize();
 	size.x -= 16;

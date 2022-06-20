@@ -28,11 +28,13 @@
 #include <functional>
 #include <glm/glm.hpp>
 
+#include <assetmgr/asset.h>
+#include <gui/gui.h>
+#include <editor/level.h>
 #include <editor/tools.h>
 #include <editor/renderer.h>
 #include <editor/fs_includes.h>
 #include <editor/gui/window.h>
-#include <editor/formats/level_impl.h>
 
 struct GLFWwindow;
 
@@ -45,24 +47,28 @@ public:
 	template <typename T, typename... T_constructor_args>
 	T* emplace_window(T_constructor_args... args);
 	
-	std::vector<std::unique_ptr<tool>> tools;
+	std::vector<std::unique_ptr<Tool>> tools;
 	std::size_t active_tool_index = 0;
-	tool& active_tool() { return *tools.at(active_tool_index).get(); }
+	Tool& active_tool() { return *tools.at(active_tool_index).get(); }
 	
 	glm::vec2 mouse_last { 0, 0 };
 
 	GLFWwindow* glfw_window;
 	int window_width, window_height;
 	
+	AssetForest asset_forest;
+	AssetBank* game_bank = nullptr;
+	AssetBank* mod_bank = nullptr;
+	
 	RenderSettings render_settings;
 	
 	int64_t delta_time = 0;
 	
-	level* get_level();
-	const level* get_level() const;
+	Level* get_level();
+	const Level* get_level() const;
 	
 private:
-	std::optional<level> _lvl;
+	std::optional<Level> _lvl;
 
 public:
 

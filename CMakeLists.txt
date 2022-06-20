@@ -28,7 +28,6 @@ add_library(wrenchwtf STATIC
 
 add_library(wrenchcore STATIC
 	src/core/buffer.cpp
-	src/core/json.cpp
 	src/core/instance.cpp
 	src/core/level.cpp
 	src/core/util.cpp
@@ -97,6 +96,8 @@ add_library(wrenchgui
 	src/gui/command_output.cpp
 	src/gui/build_settings.cpp
 	src/gui/commands.cpp
+	src/gui/shaders.cpp
+	src/gui/render_mesh.cpp
 )
 target_link_libraries(wrenchgui wrenchcore wrenchengine wadinfo)
 
@@ -115,18 +116,16 @@ add_executable(wrencheditor
 	src/editor/main.cpp
 	src/editor/app.cpp
 	src/editor/command_line.cpp
-	src/editor/renderer.cpp
-	src/editor/shaders.cpp
-	src/editor/mesh.cpp
 	src/editor/util.cpp
 	src/editor/tools.cpp
+	src/editor/renderer.cpp
 	src/editor/gui/gui.cpp
 	src/editor/gui/window.cpp
 	src/editor/gui/view_3d.cpp
 	src/editor/gui/inspector.cpp
-	src/editor/formats/level_impl.cpp
+	src/editor/level.cpp
 )
-target_link_libraries(wrencheditor wrenchcore wrenchgui)
+target_link_libraries(wrencheditor wrenchcore wrenchgui wrench_assetmgr)
 
 add_executable(vif
 	src/vifcli.cpp
@@ -152,6 +151,7 @@ add_executable(memmap
 add_library(wrenchengine
 	src/engine/collision.cpp
 	src/engine/compression.cpp
+	src/engine/gameplay.cpp
 	src/engine/moby.cpp
 	src/engine/moby_mesh_exporter.cpp
 	src/engine/moby_mesh_importer.cpp
@@ -162,7 +162,6 @@ target_link_libraries(wrenchengine wrenchcore)
 
 add_executable(wrenchbuild
 	src/wrenchbuild/main.cpp
-	src/wrenchbuild/gameplay.cpp
 	src/wrenchbuild/tests.cpp
 	src/wrenchbuild/asset_unpacker.cpp
 	src/wrenchbuild/asset_packer.cpp

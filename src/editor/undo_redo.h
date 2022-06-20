@@ -16,38 +16,23 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef LAUNCHER_GLOBAL_STATE_H
-#define LAUNCHER_GLOBAL_STATE_H
+#ifndef EDITOR_UNDO_REDO_H
+#define EDITOR_UNDO_REDO_H
 
-#include <string>
+#include <core/util.h>
 
-#include <core/shell.h>
-#include <core/stream.h>
-#include <core/texture.h>
-#include <toolwads/wads.h>
-#include <gui/gui.h>
-#include <gui/config.h>
-#include <gui/commands.h>
-
-enum class LauncherMode {
-	DRAWING_GUI,
-	RUNNING_EMULATOR,
-	EXIT
+template <typename Object>
+class HistoryStack {
+public:
+	HistoryStack(Object& object) : _object(object) {}
+	
+	void undo() {}
+	void redo() {}
+	
+private:
+	Object& _object;
 };
 
-struct GLFWwindow;
-
-struct LauncherState {
-	LauncherMode mode;
-	FileInputStream wad;
-	FileInputStream buildwad;
-	GLFWwindow* window;
-	ImFont* font_regular;
-	ImFont* font_italic;
-	Texture placeholder_image;
-	gui::EmulatorParams emulator_params;
-};
-
-extern LauncherState g_launcher;
+class UndoRedoError : public std::runtime_error {};
 
 #endif

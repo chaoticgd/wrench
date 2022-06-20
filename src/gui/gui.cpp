@@ -19,9 +19,11 @@
 #include "gui.h"
 
 #include <chrono>
+#include <engine/compression.h>
 
 static std::chrono::steady_clock::time_point last_frame_time;
 static f32 delta_time;
+static std::vector<std::vector<u8>> font_buffers;
 
 GLFWwindow* gui::startup(const char* window_title, s32 width, s32 height, bool maximized) {
 	verify(glfwInit(), "Failed to load GLFW.");
@@ -91,6 +93,20 @@ void gui::run_frame(GLFWwindow* window, void (*update_func)(f32)) {
 	last_frame_time = frame_time;
 }
 
+ImFont* gui::load_font(SectorRange range, f32 size, f32 multiply) {
+	std::vector<u8> compressed_font = g_guiwad.read_multiple<u8>(range.offset.bytes(), range.size.bytes());
+	std::vector<u8>& decompressed_font = font_buffers.emplace_back();
+	decompress_wad(decompressed_font, compressed_font);
+	
+	ImFontConfig font_cfg;
+	font_cfg.FontDataOwnedByAtlas = false;
+	font_cfg.RasterizerMultiply = multiply;
+	
+	ImGuiIO& io = ImGui::GetIO();
+	return io.Fonts->AddFontFromMemoryTTF(decompressed_font.data(), decompressed_font.size(), size, &font_cfg);
+}
+
+
 void gui::shutdown(GLFWwindow* window) {
 	glfwDestroyWindow(window);
 
@@ -98,6 +114,8 @@ void gui::shutdown(GLFWwindow* window) {
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
 	glfwTerminate();
+	
+	font_buffers.clear();
 }
 
 void GlTexture::upload(const u8* data, s32 width, s32 height) {

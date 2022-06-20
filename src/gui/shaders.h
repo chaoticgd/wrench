@@ -16,33 +16,48 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef EDITOR_MESH_H
-#define EDITOR_MESH_H
+#ifndef GUI_SHADERS_H
+#define GUI_SHADERS_H
 
-#include <vector>
+#include <stdexcept>
+#include <functional>
 
-#include <core/mesh.h>
-#include <core/collada.h>
-#include <core/texture.h>
-#include <editor/gl_includes.h>
+#include <gui/gui.h>
 
-struct RenderSubMesh {
-	GLuint material;
-	GlBuffer vertex_buffer;
-	s32 vertex_count = 0;
+class Shader {
+public:
+	using ShaderCallback = std::function<void(GLuint id)>;
+
+	Shader(const GLchar* vertex_src, const GLchar* fragment_src, ShaderCallback before, ShaderCallback after);
+	~Shader();
+
+	void init();
+	
+	GLuint id() const;
+
+private:
+	GLuint link(GLuint vertex, GLuint fragment);
+	GLuint compile(const GLchar* src, GLuint type);
+
+	GLuint _id;
+	const GLchar* _vertex_src;
+	const GLchar* _fragment_src;
+	ShaderCallback _before;
+	ShaderCallback _after;
 };
 
-struct RenderMaterial {
-	glm::vec4 colour{1.f, 1.f, 1.f, 1.f};
-	GlTexture texture;
-};
+struct Shaders {
+	Shaders();
 
-struct RenderMesh {
-	std::vector<RenderSubMesh> submeshes;
+	void init();
+	
+	Shader textured;
+	GLint textured_colour;
+	GLint textured_sampler;
+	
+	Shader selection;
+	
+	Shader pickframe;
 };
-
-RenderMesh upload_mesh(const Mesh& mesh, bool generate_normals);
-RenderMaterial upload_material(const Material& material, const std::vector<Texture>& textures);
-std::vector<RenderMaterial> upload_materials(const std::vector<Material>& materials, const std::vector<Texture>& textures);
 
 #endif

@@ -18,14 +18,19 @@
 
 #include "renderer.h"
 
-#include "app.h"
-#include "shaders.h"
+#include <gui/shaders.h>
+#include <gui/render_mesh.h>
+#include <editor/app.h>
 
-static void draw_instances(level& lvl, const glm::mat4& world_to_clip, GLenum mesh_mode, GLenum cube_mode, const RenderSettings& settings);
-static void draw_ties(level& lvl, const std::vector<TieInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
-static void draw_shrubs(level& lvl, const std::vector<ShrubInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
-static void draw_mobies(level& lvl, const std::vector<MobyInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
-static void draw_selected_moby_normals(level& lvl, const glm::mat4& world_to_clip);
+template <typename ThisInstance>
+static void upload_instance_buffer(GLuint& buffer, const Opt<std::vector<ThisInstance>>& insts, const glm::mat4& world_to_clip);
+static glm::vec4 inst_colour(bool selected);
+static glm::vec4 encode_inst_id(InstanceId id);
+static void draw_instances(Level& lvl, const glm::mat4& world_to_clip, GLenum mesh_mode, GLenum cube_mode, const RenderSettings& settings);
+static void draw_ties(Level& lvl, const std::vector<TieInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
+static void draw_shrubs(Level& lvl, const std::vector<ShrubInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
+static void draw_mobies(Level& lvl, const std::vector<MobyInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
+static void draw_selected_moby_normals(Level& lvl, const glm::mat4& world_to_clip);
 template <typename ThisPath>
 static void draw_paths(const std::vector<ThisPath>& paths, const RenderMaterial& material, const glm::mat4& world_to_clip);
 static void draw_cube_instanced(GLenum cube_mode, const RenderMaterial& material, GLuint inst_buffer, size_t inst_begin, size_t inst_count);
@@ -49,11 +54,6 @@ static GLuint moby_inst_buffer = 0;
 static GLuint cuboid_inst_buffer = 0;
 static GLuint sphere_inst_buffer = 0;
 static GLuint cylinder_inst_buffer = 0;
-
-template <typename ThisInstance>
-static void upload_instance_buffer(GLuint& buffer, const Opt<std::vector<ThisInstance>>& insts, const glm::mat4& world_to_clip);
-static glm::vec4 inst_colour(bool selected);
-static glm::vec4 encode_inst_id(InstanceId id);
 
 void init_renderer() {
 	shaders.init();
@@ -80,7 +80,7 @@ void shutdown_renderer() {
 	cyan = RenderMaterial();
 }
 
-void prepare_frame(level& lvl, const glm::mat4& world_to_clip) {
+void prepare_frame(Level& lvl, const glm::mat4& world_to_clip) {
 	upload_instance_buffer(tie_inst_buffer, lvl.gameplay().tie_instances, world_to_clip);
 	upload_instance_buffer(shrub_inst_buffer, lvl.gameplay().shrub_instances, world_to_clip);
 	upload_instance_buffer(moby_inst_buffer, lvl.gameplay().moby_instances, world_to_clip);
@@ -125,7 +125,7 @@ static glm::vec4 encode_inst_id(InstanceId id) {
 	return colour;
 }
 
-void draw_level(level& lvl, const glm::mat4& world_to_clip, const RenderSettings& settings) {
+void draw_level(Level& lvl, const glm::mat4& world_to_clip, const RenderSettings& settings) {
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 	
@@ -137,9 +137,9 @@ void draw_level(level& lvl, const glm::mat4& world_to_clip, const RenderSettings
 	
 	if(settings.draw_collision) {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		for(const RenderMesh& mesh : lvl.collision) {
-			draw_mesh(mesh, lvl.collision_materials, world_to_clip);
-		}
+		//for(const RenderMesh& mesh : lvl.collision) {
+		//	draw_mesh(mesh, lvl.collision_materials, world_to_clip);
+		//}
 	}
 	
 	glUseProgram(shaders.selection.id());
@@ -152,7 +152,7 @@ void draw_level(level& lvl, const glm::mat4& world_to_clip, const RenderSettings
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-void draw_pickframe(level& lvl, const glm::mat4& world_to_clip, const RenderSettings& settings) {
+void draw_pickframe(Level& lvl, const glm::mat4& world_to_clip, const RenderSettings& settings) {
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 	
@@ -161,7 +161,7 @@ void draw_pickframe(level& lvl, const glm::mat4& world_to_clip, const RenderSett
 	draw_instances(lvl, world_to_clip, GL_FILL, GL_FILL, settings);
 }
 
-static void draw_instances(level& lvl, const glm::mat4& world_to_clip, GLenum mesh_mode, GLenum cube_mode, const RenderSettings& settings) {
+static void draw_instances(Level& lvl, const glm::mat4& world_to_clip, GLenum mesh_mode, GLenum cube_mode, const RenderSettings& settings) {
 	if(settings.draw_ties && lvl.gameplay().tie_instances.has_value()) {
 		draw_ties(lvl, *lvl.gameplay().tie_instances, mesh_mode, cube_mode);
 	}
@@ -195,69 +195,69 @@ static void draw_instances(level& lvl, const glm::mat4& world_to_clip, GLenum me
 	}
 }
 
-static void draw_ties(level& lvl, const std::vector<TieInstance>& instances, GLenum mesh_mode, GLenum cube_mode) {
+static void draw_ties(Level& lvl, const std::vector<TieInstance>& instances, GLenum mesh_mode, GLenum cube_mode) {
 	draw_cube_instanced(cube_mode, purple, tie_inst_buffer, 0, instances.size());
 }
 
-static void draw_shrubs(level& lvl, const std::vector<ShrubInstance>& instances, GLenum mesh_mode, GLenum cube_mode) {
+static void draw_shrubs(Level& lvl, const std::vector<ShrubInstance>& instances, GLenum mesh_mode, GLenum cube_mode) {
 	draw_cube_instanced(cube_mode, green, shrub_inst_buffer, 0, instances.size());
 }
 
-static void draw_mobies(level& lvl, const std::vector<MobyInstance>& instances, GLenum mesh_mode, GLenum cube_mode) {
+static void draw_mobies(Level& lvl, const std::vector<MobyInstance>& instances, GLenum mesh_mode, GLenum cube_mode) {
 	if(instances.size() < 1) {
 		return;
 	}
 	
 	size_t begin = 0;
 	size_t end = 0;
-	for(size_t i = 1; i <= instances.size(); i++) {
-		s32 last_class = instances[i - 1].o_class;
-		if(i == instances.size() || instances[i].o_class != last_class) {
-			end = i;
-			auto iter = lvl.mobies.find(last_class);
-			if(iter != lvl.mobies.end()) {
-				EditorMobyClass& cls = iter->second;
-				glPolygonMode(GL_FRONT_AND_BACK, mesh_mode);
-				draw_mesh_instanced(cls.high_lod, cls.materials.data(), cls.materials.size(), moby_inst_buffer, begin, end - begin);
-			} else {
-				draw_cube_instanced(cube_mode, white, moby_inst_buffer, begin, end - begin);
-			}
-			begin = i;
-		}
-	}
+	//for(size_t i = 1; i <= instances.size(); i++) {
+	//	s32 last_class = instances[i - 1].o_class;
+	//	if(i == instances.size() || instances[i].o_class != last_class) {
+	//		end = i;
+	//		auto iter = lvl.mobies.find(last_class);
+	//		if(iter != lvl.mobies.end()) {
+	//			EditorMobyClass& cls = iter->second;
+	//			glPolygonMode(GL_FRONT_AND_BACK, mesh_mode);
+	//			draw_mesh_instanced(cls.high_lod, cls.materials.data(), cls.materials.size(), moby_inst_buffer, begin, end - begin);
+	//		} else {
+	//			draw_cube_instanced(cube_mode, white, moby_inst_buffer, begin, end - begin);
+	//		}
+	//		begin = i;
+	//	}
+	//}
 }
 
-static void draw_selected_moby_normals(level& lvl, const glm::mat4& world_to_clip) {
-	for(MobyInstance& inst : opt_iterator(lvl.gameplay().moby_instances)) {
-		if(inst.selected && lvl.mobies.find(inst.o_class) != lvl.mobies.end()) {
-			const EditorMobyClass& cls = lvl.mobies.at(inst.o_class);
-			for(const Vertex& v : cls.mesh.vertices) {
-				Vertex v2 = v;
-				v2.pos += v2.normal * 0.5f;
-				std::vector<Vertex> vertices;
-				vertices.emplace_back(v);
-				vertices.emplace_back(v2);
-				vertices.emplace_back(v2);
-				
-				RenderMesh mesh;
-				RenderSubMesh& submesh = mesh.submeshes.emplace_back();
-				submesh.material = 0;
-				
-				glGenBuffers(1, &submesh.vertex_buffer.id);
-				glBindBuffer(GL_ARRAY_BUFFER, submesh.vertex_buffer.id);
-				glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
-				submesh.vertex_count = vertices.size();
-				
-				auto inst_data = InstanceData(world_to_clip * inst.matrix(), glm::vec4(0.f, 0.f, 1.f, 1.f), glm::vec4(1.f));
-				GlBuffer inst_buffer;
-				glGenBuffers(1, &inst_buffer.id);
-				glBindBuffer(GL_ARRAY_BUFFER, inst_buffer.id);
-				glBufferData(GL_ARRAY_BUFFER, sizeof(inst_data), &inst_data, GL_STATIC_DRAW);
-				
-				draw_mesh_instanced(mesh, &white, 1, inst_buffer.id, 0, 1);
-			}
-		}
-	}
+static void draw_selected_moby_normals(Level& lvl, const glm::mat4& world_to_clip) {
+	//for(MobyInstance& inst : opt_iterator(lvl.gameplay().moby_instances)) {
+	//	if(inst.selected && lvl.mobies.find(inst.o_class) != lvl.mobies.end()) {
+	//		const EditorMobyClass& cls = lvl.mobies.at(inst.o_class);
+	//		for(const Vertex& v : cls.mesh.vertices) {
+	//			Vertex v2 = v;
+	//			v2.pos += v2.normal * 0.5f;
+	//			std::vector<Vertex> vertices;
+	//			vertices.emplace_back(v);
+	//			vertices.emplace_back(v2);
+	//			vertices.emplace_back(v2);
+	//			
+	//			RenderMesh mesh;
+	//			RenderSubMesh& submesh = mesh.submeshes.emplace_back();
+	//			submesh.material = 0;
+	//			
+	//			glGenBuffers(1, &submesh.vertex_buffer.id);
+	//			glBindBuffer(GL_ARRAY_BUFFER, submesh.vertex_buffer.id);
+	//			glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+	//			submesh.vertex_count = vertices.size();
+	//			
+	//			auto inst_data = InstanceData(world_to_clip * inst.matrix(), glm::vec4(0.f, 0.f, 1.f, 1.f), glm::vec4(1.f));
+	//			GlBuffer inst_buffer;
+	//			glGenBuffers(1, &inst_buffer.id);
+	//			glBindBuffer(GL_ARRAY_BUFFER, inst_buffer.id);
+	//			glBufferData(GL_ARRAY_BUFFER, sizeof(inst_data), &inst_data, GL_STATIC_DRAW);
+	//			
+	//			draw_mesh_instanced(mesh, &white, 1, inst_buffer.id, 0, 1);
+	//		}
+	//	}
+	//}
 }
 
 template <typename ThisPath>
@@ -426,7 +426,7 @@ glm::vec3 create_ray(const glm::mat4& world_to_clip, const ImVec2& screen_pos, c
 
 void reset_camera(app* a) {
 	a->render_settings.camera_rotation = glm::vec3(0, 0, 0);
-	if(level* lvl = a->get_level()) {
+	if(Level* lvl = a->get_level()) {
 		if(opt_size(lvl->gameplay().moby_instances) > 0) {
 			a->render_settings.camera_position = (*lvl->gameplay().moby_instances)[0].position();
 		} else if(lvl->gameplay().properties.has_value()) {

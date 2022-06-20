@@ -26,11 +26,11 @@
 #include "renderer.h"
 #include "fs_includes.h"
 
-level* app::get_level() {
+Level* app::get_level() {
 	return _lvl ? &(*_lvl) : nullptr;
 }
 
-const level* app::get_level() const {
+const Level* app::get_level() const {
 	return _lvl ? &(*_lvl) : nullptr;
 }
 

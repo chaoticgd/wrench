@@ -18,6 +18,7 @@
 
 #include <chrono>
 
+#include <toolwads/wads.h>
 #include <gui/commands.h>
 #include "fs_includes.h"
 #include "gl_includes.h"
@@ -26,7 +27,7 @@
 #include "gui/gui.h"
 #include "renderer.h"
 
-static void run_wrench(GLFWwindow* window);
+static void run_wrench(GLFWwindow* window, const std::string& game_path, const std::string& mod_path);
 static void update(f32 delta_time);
 static void init_gui(app& a, GLFWwindow** window);
 static void update_camera(app* a);
@@ -47,16 +48,21 @@ int main(int argc, char** argv) {
 	
 	
 	GLFWwindow* window = gui::startup("Wrench Editor", 1280, 720, true);
-	run_wrench(window);
+	run_wrench(window, game_path, mod_path);
 	gui::shutdown(window);
 }
 
 
-static void run_wrench(GLFWwindow* window) {
+static void run_wrench(GLFWwindow* window, const std::string& game_path, const std::string& mod_path) {
 	app a;
 	app_ptr = &a;
 	
 	a.glfw_window = window;
+	
+	a.game_bank = &a.asset_forest.mount<LooseAssetBank>(game_path, false);
+	a.mod_bank = &a.asset_forest.mount<LooseAssetBank>(mod_path, true);
+	
+	gui::load_font(wadinfo.gui.fonts[0], 18, 1.2f);
 	
 	init_renderer();
 	

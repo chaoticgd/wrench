@@ -32,7 +32,7 @@ static const s32 MAX_LANES = 4;
 struct InspectorFieldFuncs {
 	s32 lane_count;
 	std::function<bool(Instance& lhs, Instance& rhs, s32 lane)> compare;
-	std::function<void(level& lvl, Instance& first, bool values_equal[MAX_LANES])> draw;
+	std::function<void(Level& lvl, Instance& first, bool values_equal[MAX_LANES])> draw;
 };
 
 struct InspectorField {
@@ -42,7 +42,7 @@ struct InspectorField {
 	InspectorFieldFuncs funcs;
 };
 
-static void draw_fields(level& lvl, const std::vector<InspectorField>& fields);
+static void draw_fields(Level& lvl, const std::vector<InspectorField>& fields);
 
 template <typename Value>
 struct InspectorGetterSetter {
@@ -61,11 +61,11 @@ template <typename ThisInstance>
 static InspectorFieldFuncs foreign_id_funcs(InstanceType foreign_type, s32 ThisInstance::*field);
 static InspectorFieldFuncs moby_rooted_funcs();
 
-static bool should_draw_field(level& lvl, const InspectorField& field);
-static void should_draw_current_values(bool values_equal[MAX_LANES], level& lvl, const InspectorField& field);
+static bool should_draw_field(Level& lvl, const InspectorField& field);
+static void should_draw_current_values(bool values_equal[MAX_LANES], Level& lvl, const InspectorField& field);
 
 template <s32 lane_count, typename Value>
-static void apply_to_all_selected(level& lvl, Value value, std::array<bool, MAX_LANES> lanes, InspectorGetterSetter<Value> funcs);
+static void apply_to_all_selected(Level& lvl, Value value, std::array<bool, MAX_LANES> lanes, InspectorGetterSetter<Value> funcs);
 template <typename Value>
 static InspectorGetterSetter<Value> adapt_getter_setter(Value (Instance::*getter)() const, void (Instance::*setter)(Value));
 template <typename Value>
@@ -85,7 +85,7 @@ void Inspector::render(app& a) {
 		ImGui::Text("<no level>");
 		return;
 	}
-	level& lvl = *a.get_level();
+	Level& lvl = *a.get_level();
 	
 	const std::vector<InspectorField> fields = {
 		// Components
@@ -181,7 +181,7 @@ void Inspector::render(app& a) {
 }
 
 
-static void draw_fields(level& lvl, const std::vector<InspectorField>& fields) {
+static void draw_fields(Level& lvl, const std::vector<InspectorField>& fields) {
 	for(const InspectorField& field : fields) {
 		assert(field.funcs.lane_count <= MAX_LANES);
 		if(should_draw_field(lvl, field)) {
@@ -214,7 +214,7 @@ static InspectorFieldFuncs type_funcs() {
 	funcs.compare = [](Instance& lhs, Instance& rhs, s32 lane) {
 		return lhs.type() == rhs.type();
 	};
-	funcs.draw = [](level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
+	funcs.draw = [](Level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
 		if(values_equal[0]) {
 			const char* type;
 			switch(first.type()) {
@@ -248,7 +248,7 @@ static InspectorFieldFuncs id_funcs() {
 	funcs.compare = [](Instance& lhs, Instance& rhs, s32 lane) {
 		return lhs.id() == rhs.id();
 	};
-	funcs.draw = [](level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
+	funcs.draw = [](Level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
 		if(values_equal[0]) {
 			ImGui::Text("%d", first.id().value);
 		} else {
@@ -265,7 +265,7 @@ static InspectorFieldFuncs scalar_funcs(InspectorGetterSetter<Value> getset) {
 	funcs.compare = [getset](Instance& lhs, Instance& rhs, s32) {
 		return getset.get(lhs) == getset.get(rhs);
 	};
-	funcs.draw = [getset](level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
+	funcs.draw = [getset](Level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
 		Value value = getset.get(first);
 		std::string value_str;
 		if(values_equal[0]) {
@@ -291,7 +291,7 @@ static InspectorFieldFuncs vec3_funcs(InspectorGetterSetter<glm::vec3> getset) {
 	funcs.compare = [getset](Instance& lhs, Instance& rhs, s32 lane) {
 		return getset.get(lhs)[lane] == getset.get(rhs)[lane];
 	};
-	funcs.draw = [getset](level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
+	funcs.draw = [getset](Level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
 		glm::vec3 value = getset.get(first);
 		std::array<std::string, MAX_LANES> strings = vec4_to_strings(glm::vec4(value, -1.f), values_equal);
 		std::array<bool, MAX_LANES> changed;
@@ -312,7 +312,7 @@ static InspectorFieldFuncs vec4_funcs(InspectorGetterSetter<glm::vec4> getset) {
 	funcs.compare = [getset](Instance& lhs, Instance& rhs, s32 lane) {
 		return getset.get(lhs)[lane] == getset.get(rhs)[lane];
 	};
-	funcs.draw = [getset](level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
+	funcs.draw = [getset](Level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
 		glm::vec4 value = getset.get(first);
 		std::array<std::string, 4> strings = vec4_to_strings(value, values_equal);
 		std::array<bool, MAX_LANES> changed;
@@ -332,7 +332,7 @@ static InspectorFieldFuncs pvar_funcs() {
 	funcs.compare = [](Instance& lhs, Instance& rhs, s32 lane) {
 		return lhs.pvars().size() == 0 && rhs.pvars().size() == 0;
 	};
-	funcs.draw = [](level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
+	funcs.draw = [](Level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
 		if(values_equal[0]) {
 			ImGui::Text("<empty>");
 		} else {
@@ -351,7 +351,7 @@ static InspectorFieldFuncs foreign_id_funcs(InstanceType foreign_type, s32 ThisI
 		auto& this_rhs = dynamic_cast<ThisInstance&>(rhs);
 		return (this_lhs.*field) == (this_rhs.*field);
 	};
-	funcs.draw = [foreign_type, field](level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
+	funcs.draw = [foreign_type, field](Level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
 		auto& this_first = dynamic_cast<ThisInstance&>(first);
 		s32 value = (this_first.*field);
 		std::string value_str;
@@ -390,7 +390,7 @@ static InspectorFieldFuncs moby_rooted_funcs() {
 		auto& moby_rhs = dynamic_cast<MobyInstance&>(rhs);
 		return moby_lhs.is_rooted == moby_rhs.is_rooted && moby_lhs.rooted_distance == moby_rhs.rooted_distance;
 	};
-	funcs.draw = [](level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
+	funcs.draw = [](Level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
 		MobyInstance& moby_first = dynamic_cast<MobyInstance&>(first);
 		bool is_rooted = moby_first.is_rooted;
 		f32 rooted_distance = moby_first.rooted_distance;
@@ -424,7 +424,7 @@ static InspectorFieldFuncs moby_rooted_funcs() {
 	return funcs;
 }
 
-static bool should_draw_field(level& lvl, const InspectorField& field) {
+static bool should_draw_field(Level& lvl, const InspectorField& field) {
 	bool one_instance_has_field = false;
 	bool all_instances_have_field = true;
 	lvl.gameplay().for_each_instance([&](Instance& inst) {
@@ -440,7 +440,7 @@ static bool should_draw_field(level& lvl, const InspectorField& field) {
 	return one_instance_has_field && all_instances_have_field;
 }
 
-static void should_draw_current_values(bool values_equal[MAX_LANES], level& lvl, const InspectorField& field) {
+static void should_draw_current_values(bool values_equal[MAX_LANES], Level& lvl, const InspectorField& field) {
 	for(s32 lane = 0; lane < MAX_LANES; lane++) {
 		values_equal[lane] = true;
 	}
@@ -460,43 +460,43 @@ static void should_draw_current_values(bool values_equal[MAX_LANES], level& lvl,
 }
 
 template <s32 lane_count, typename Value>
-static void apply_to_all_selected(level& lvl, Value value, std::array<bool, MAX_LANES> lanes, InspectorGetterSetter<Value> funcs) {
+static void apply_to_all_selected(Level& lvl, Value value, std::array<bool, MAX_LANES> lanes, InspectorGetterSetter<Value> funcs) {
 	std::vector<InstanceId> ids = lvl.gameplay().selected_instances();
 	
-	std::vector<Value> old_values;
-	lvl.gameplay().for_each_instance([&](Instance& inst) {
-		if(contains(ids, inst.id())) {
-			old_values.push_back(funcs.get(inst));
-		}
-	});
+	//std::vector<Value> old_values;
+	//lvl.gameplay().for_each_instance([&](Instance& inst) {
+	//	if(contains(ids, inst.id())) {
+	//		old_values.push_back(funcs.get(inst));
+	//	}
+	//});
 	
-	lvl.push_command(
-		[funcs, lanes, ids, value](level& lvl) {
-			lvl.gameplay().for_each_instance([&](Instance& inst) {
-				if(contains(ids, inst.id())) {
-					if constexpr(lane_count > 0) {
-						Value temp = funcs.get(inst);
-						for(s32 lane = 0; lane < lane_count; lane++) {
-							if(lanes[lane]) {
-								temp[lane] = value[lane];
-							}
-						}
-						funcs.set(inst, temp);
-					} else {
-						funcs.set(inst, value);
-					}
-				}
-			});
-		},
-		[funcs, lanes, ids, old_values](level& lvl) {
-			size_t i = 0;
-			lvl.gameplay().for_each_instance([&](Instance& inst) {
-				if(contains(ids, inst.id())) {
-					funcs.set(inst, old_values[i++]);
-				}
-			});
-		}
-	);
+	//lvl.push_command(
+	//	[funcs, lanes, ids, value](Level& lvl) {
+	//		lvl.gameplay().for_each_instance([&](Instance& inst) {
+	//			if(contains(ids, inst.id())) {
+	//				if constexpr(lane_count > 0) {
+	//					Value temp = funcs.get(inst);
+	//					for(s32 lane = 0; lane < lane_count; lane++) {
+	//						if(lanes[lane]) {
+	//							temp[lane] = value[lane];
+	//						}
+	//					}
+	//					funcs.set(inst, temp);
+	//				} else {
+	//					funcs.set(inst, value);
+	//				}
+	//			}
+	//		});
+	//	},
+	//	[funcs, lanes, ids, old_values](Level& lvl) {
+	//		size_t i = 0;
+	//		lvl.gameplay().for_each_instance([&](Instance& inst) {
+	//			if(contains(ids, inst.id())) {
+	//				funcs.set(inst, old_values[i++]);
+	//			}
+	//		});
+	//	}
+	//);
 }
 
 template <typename Value>

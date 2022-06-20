@@ -24,7 +24,6 @@
 #include "../app.h"
 #include "../fs_includes.h"
 #include "../gl_includes.h"
-#include "../formats/level_impl.h"
 #include "window.h"
 #include "view_3d.h"
 #include "inspector.h"

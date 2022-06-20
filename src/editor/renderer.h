@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef RENDERER_H
-#define RENDERER_H
+#ifndef GUI_RENDERER_H
+#define GUI_RENDERER_H
 
 #define GLM_ENABLE_EXPERIMENTAL
 
@@ -25,9 +25,9 @@
 #include <glm/common.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "util.h"
+#include <core/util.h>
+#include <editor/level.h>
 #include <editor/gui/imgui_includes.h>
-#include <editor/formats/level_impl.h>
 
 class app;
 
@@ -63,9 +63,9 @@ struct RenderSettings {
 
 void init_renderer();
 void shutdown_renderer();
-void prepare_frame(level& lvl, const glm::mat4& world_to_clip);
-void draw_level(level& lvl, const glm::mat4& world_to_clip, const RenderSettings& settings);
-void draw_pickframe(level& lvl, const glm::mat4& world_to_clip, const RenderSettings& settings);
+void prepare_frame(Level& lvl, const glm::mat4& world_to_clip);
+void draw_level(Level& lvl, const glm::mat4& world_to_clip, const RenderSettings& settings);
+void draw_pickframe(Level& lvl, const glm::mat4& world_to_clip, const RenderSettings& settings);
 
 glm::mat4 compose_world_to_clip(const ImVec2& view_size, const glm::vec3& cam_pos, const glm::vec2& cam_rot);
 glm::vec3 apply_local_to_screen(const glm::mat4& world_to_clip, const glm::mat4& local_to_world, const ImVec2& view_size);

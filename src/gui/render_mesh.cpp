@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "mesh.h"
+#include "render_mesh.h"
 
 RenderMesh upload_mesh(const Mesh& mesh, bool generate_normals) {
 	RenderMesh render_mesh;

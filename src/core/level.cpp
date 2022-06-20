@@ -20,28 +20,6 @@
 
 #include "png.h"
 
-Json get_file_metadata(const char* format, const char* application) {
-	return Json {
-		{"format", format},
-		{"format_version", 7},
-		{"application", application}
-	};
-}
-
-static const char* APPLICATION_NAME = "Wrench WAD Utility";
-
-std::string CameraClass::get_pvar_type(s32 o_class) {
-	return "Camera" + std::to_string(o_class) + "Vars";
-}
-
-std::string SoundClass::get_pvar_type(s32 o_class) {
-	return "Sound" + std::to_string(o_class) + "Vars";
-}
-
-std::string MobyClass::get_pvar_type(s32 o_class) {
-	return "Moby" + std::to_string(o_class) + "Vars";
-}
-
 s32 PvarField::size() const {
 	switch(descriptor) {
 		case PVAR_S8:
@@ -61,22 +39,6 @@ s32 PvarField::size() const {
 		default:
 			assert(0);
 	}
-}
-
-void Gameplay::clear_selection() {
-	for_each_instance([&](Instance& inst) {
-		inst.selected = false;
-	});
-}
-
-std::vector<InstanceId> Gameplay::selected_instances() const {
-	std::vector<InstanceId> ids;
-	for_each_instance([&](const Instance& inst) {
-		if(inst.selected) {
-			ids.push_back(inst.id());
-		}
-	});
-	return ids;
 }
 
 bool PvarType::insert_field(PvarField to_insert, bool sort) {
@@ -105,11 +67,6 @@ bool PvarType::insert_field(PvarField to_insert, bool sort) {
 			{ return lhs.offset < rhs.offset; });
 	}
 	return true;
-}
-
-template <typename Map>
-static void read_json_file_into_map(Map& map, const fs::path& src_dir, const Json& json, const char* name, const char* key_name) {
-	map_from_json(map, Json::parse(read_file(src_dir/std::string(json[name])))[name], key_name);
 }
 
 std::string pvar_descriptor_to_string(PvarFieldDescriptor descriptor) {

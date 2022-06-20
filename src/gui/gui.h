@@ -22,6 +22,8 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <glad/include/glad/glad.h>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/glm.hpp>
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
@@ -37,6 +39,7 @@ namespace gui {
 GLFWwindow* startup(const char* window_title, s32 width, s32 height, bool maximized = false);
 void run_frame(GLFWwindow* window, void (*update_func)(f32));
 void shutdown(GLFWwindow* window);
+ImFont* load_font(SectorRange range, f32 size, f32 multiply = 1.f);
 
 }
 
