@@ -120,7 +120,8 @@ Asset& Asset::get_child(const char* tag) {
 			}
 		}
 	}
-	throw MissingChildAsset();
+	verify_not_reached("No child of '%s' with tag '%s'.",
+		asset_reference_to_string(reference()).c_str(), tag);
 }
 
 const Asset& Asset::get_child(const char* tag) const {
@@ -529,19 +530,12 @@ void AssetBank::lock() { assert(0); }
 // *****************************************************************************
 
 Asset& AssetForest::lookup_asset(const AssetReference& reference, Asset* context) {
-	if(_banks.size() < 1 || _banks[0]->_asset_files.size() < 1) {
-		throw AssetLookupFailed(asset_reference_to_string(reference));
-	}
+	verify(_banks.size() >= 1 && _banks[0]->_asset_files.size() >= 1,
+		"Asset lookup for '%s' failed because the asset forest is empty.",
+		asset_reference_to_string(reference));
 	Asset* asset = &_banks[0]->_asset_files[0]->root();
-	if(asset == nullptr) {
-		throw AssetLookupFailed(asset_reference_to_string(reference));
-	}
-	try {
-		for(const AssetReferenceFragment& fragment : reference.fragments) {
-			asset = &asset->get_child(fragment.tag.c_str());
-		}
-	} catch(MissingChildAsset&) {
-		throw AssetLookupFailed(asset_reference_to_string(reference));
+	for(const AssetReferenceFragment& fragment : reference.fragments) {
+		asset = &asset->get_child(fragment.tag.c_str());
 	}
 	return *asset;
 }

@@ -32,7 +32,7 @@ static void generate_asset_type_to_string_function(const WtfNode* root);
 static void generate_asset_implementation(const WtfNode* asset_type);
 static void generate_read_function(const WtfNode* asset_type);
 static void generate_read_attribute_code(const WtfNode* node, const char* result, const char* attrib, int depth);
-static void generate_attribute_type_check_code(const std::string& attribute, const char* expected, int ind);
+static void generate_attribute_type_check_code(const std::string& attribute, const char* expected, const char* name, int ind);
 static void generate_write_function(const WtfNode* asset_type);
 static void generate_asset_write_code(const WtfNode* node, const char* expr, int depth);
 static void generate_attribute_getter_and_setter_functions(const WtfNode* asset_type);
@@ -314,27 +314,27 @@ static void generate_read_attribute_code(const WtfNode* node, const char* result
 	int ind = depth + 2;
 	
 	if(strcmp(node->type_name, "IntegerAttribute") == 0) {
-		generate_attribute_type_check_code(attrib, "WTF_NUMBER", ind);
+		generate_attribute_type_check_code(attrib, "WTF_NUMBER", node->tag, ind);
 		indent(ind); out("%s = %s->number.i;\n", result, attrib);
 	}
 	
 	if(strcmp(node->type_name, "FloatAttribute") == 0) {
-		generate_attribute_type_check_code(attrib, "WTF_NUMBER", ind);
+		generate_attribute_type_check_code(attrib, "WTF_NUMBER", node->tag, ind);
 		indent(ind); out("%s = %s->number.f;\n", result, attrib);
 	}
 	
 	if(strcmp(node->type_name, "BooleanAttribute") == 0) {
-		generate_attribute_type_check_code(attrib, "WTF_BOOLEAN", ind);
+		generate_attribute_type_check_code(attrib, "WTF_BOOLEAN", node->tag, ind);
 		indent(ind); out("%s = %s->boolean;\n", result, attrib);
 	}
 	
 	if(strcmp(node->type_name, "StringAttribute") == 0) {
-		generate_attribute_type_check_code(attrib, "WTF_STRING", ind);
+		generate_attribute_type_check_code(attrib, "WTF_STRING", node->tag, ind);
 		indent(ind); out("%s = std::string(%s->string.begin, (size_t) (%s->string.end - %s->string.begin));\n", result, attrib, attrib, attrib);
 	}
 	
 	if(strcmp(node->type_name, "ArrayAttribute") == 0) {
-		generate_attribute_type_check_code(attrib, "WTF_ARRAY", ind);
+		generate_attribute_type_check_code(attrib, "WTF_ARRAY", node->tag, ind);
 		const WtfNode* element = wtf_child(node, NULL, "element");
 		assert(element);
 		std::string element_type = node_to_cpp_type(element);
@@ -349,20 +349,19 @@ static void generate_read_attribute_code(const WtfNode* node, const char* result
 	}
 	
 	if(strcmp(node->type_name, "AssetReferenceAttribute") == 0) {
-		generate_attribute_type_check_code(attrib, "WTF_STRING", ind);
+		generate_attribute_type_check_code(attrib, "WTF_STRING", node->tag, ind);
 		indent(ind); out("%s = parse_asset_reference(%s->string.begin);\n", result, attrib);
 	}
 	
 	if(strcmp(node->type_name, "FileReferenceAttribute") == 0) {
-		generate_attribute_type_check_code(attrib, "WTF_STRING", ind);
+		generate_attribute_type_check_code(attrib, "WTF_STRING", node->tag, ind);
 		indent(ind); out("%s = FileReference(file(), %s->string.begin);\n", result, attrib);
 	}
 }
 
-static void generate_attribute_type_check_code(const std::string& attribute, const char* expected, int ind) {
-	indent(ind); out("if(%s->type != %s) {\n", attribute.c_str(), expected);
-	indent(ind); out("\tthrow InvalidAssetAttributeType(node, %s);\n", attribute.c_str());
-	indent(ind); out("}\n");
+static void generate_attribute_type_check_code(const std::string& attribute, const char* expected, const char* name, int ind) {
+	indent(ind); out("verify(%s->type == %s, \"Asset attribute '%s' has invalid type.\");\n",
+		attribute.c_str(), expected, name);
 }
 
 static void generate_write_function(const WtfNode* asset_type) {
@@ -459,7 +458,8 @@ static void generate_attribute_getter_and_setter_functions(const WtfNode* asset_
 				out("\t\t}\n");
 				out("\t}\n");
 				if(getter_type == 0) {
-					out("\tthrow MissingAssetAttribute();\n");
+					out("\tverify_not_reached(\"Asset '%%s' has missing attribute '%s'.\",\n"
+						"\t\tasset_reference_to_string(reference()).c_str());\n", node->tag);
 				} else {
 					out("\treturn def;\n");
 				}
