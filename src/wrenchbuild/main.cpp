@@ -82,9 +82,15 @@ static void stop_stdout_flusher_thread();
 #define require_args(arg_count) verify(argc == arg_count, "Incorrect number of arguments.");
 
 int main(int argc, char** argv) {
-	int exit_code = wrenchbuild(argc, argv);
-	stop_stdout_flusher_thread();
-	return exit_code;
+	try {
+		int exit_code = wrenchbuild(argc, argv);
+		stop_stdout_flusher_thread();
+		return exit_code;
+	} catch(RuntimeError& e) {
+		e.print();
+		stop_stdout_flusher_thread();
+		return 1;
+	}
 }
 
 static int wrenchbuild(int argc, char** argv) {

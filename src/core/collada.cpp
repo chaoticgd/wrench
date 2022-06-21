@@ -84,7 +84,7 @@ ColladaScene read_collada(std::vector<u8> src) {
 	try {
 		doc.parse<0>((char*) src.data());
 	} catch(rapidxml::parse_error& err) {
-		throw ParseError("%s", err.what());
+		verify_not_reached("%s", err.what());
 	}
 	
 	const XmlNode* root = xml_child(&doc, "COLLADA");
@@ -133,9 +133,7 @@ ColladaScene read_collada(std::vector<u8> src) {
 			geometry = node_from_id(ids, xml_attrib(skin, "source")->value());
 			const char* skeleton_id = xml_child(instance, "skeleton")->value();
 			auto skeleton_iter = ids.find(skeleton_id);
-			if(skeleton_iter == ids.end()) {
-				throw ParseError("Bad skeleton ID '%s'.", skeleton_id);
-			}
+			verify(skeleton_iter != ids.end(), "Bad skeleton ID '%s'.", skeleton_id);
 			skeleton = skeleton_iter->second;
 		} else {
 			instance = node->first_node("instance_geometry");
@@ -166,18 +164,12 @@ static Material read_material(const XmlNode* material_node, const IdMap& ids, co
 	// Follow the white rabbit (it's white because its texture couldn't be loaded).
 	const XmlNode* instance_effect = xml_child(material_node, "instance_effect");
 	const XmlNode* effect = node_from_id(ids, xml_attrib(instance_effect, "url")->value());
-	if(!strcmp(effect->name(), "effect") == 0) {
-		throw ParseError("Effect referenced by id is not an <effect> node.");
-	}
+	verify(strcmp(effect->name(), "effect") == 0, "Effect referenced by id is not an <effect> node.");
 	const XmlNode* profile = effect->first_node();
-	if(!profile) {
-		throw ParseError("<%s> node has no children.", effect->name());
-	}
+	verify(profile, "<%s> node has no children.", effect->name());
 	const XmlNode* technique = xml_child(profile, "technique");
 	const XmlNode* shader = technique->first_node();
-	if(!shader) {
-		throw ParseError("<%s> node has no children.", technique->name());
-	}
+	verify(shader, "<%s> node has no children.", technique->name());
 	const XmlNode* diffuse = xml_child(shader, "diffuse");
 	if(const XmlNode* texture = diffuse->first_node("texture")) {
 		const char* sampler_sid = xml_attrib(texture, "texture")->value();
@@ -188,9 +180,7 @@ static Material read_material(const XmlNode* material_node, const IdMap& ids, co
 				break;
 			}
 		}
-		if(!sampler) {
-			throw ParseError("Unable to find sampler '%s'.", sampler_sid);
-		}
+		verify(sampler, "Unable to find sampler '%s'.", sampler_sid);
 		const char* surface_sid = xml_child(sampler, "source")->value();
 		const XmlNode* surface = nullptr;
 		xml_for_each_child_of_type(newparam, profile, "newparam") {
@@ -199,15 +189,11 @@ static Material read_material(const XmlNode* material_node, const IdMap& ids, co
 				break;
 			}
 		}
-		if(!surface) {
-			throw ParseError("Unable to find surface '%s'.", surface_sid);
-		}
+		verify(surface, "Unable to find surface '%s'.", surface_sid);
 		auto image_id = std::string("#") + xml_child(surface, "init_from")->value();
 		const XmlNode* image = node_from_id(ids, image_id.c_str());
 		auto texture_index = images.find(image);
-		if(texture_index == images.end()) {
-			throw ParseError("An <image> node that was referenced cannot be found.");
-		}
+		verify(texture_index != images.end(), "An <image> node that was referenced cannot be found.");
 		Material material;
 		material.name = xml_attrib(material_node, "id")->value();
 		material.texture = texture_index->second;
@@ -217,30 +203,22 @@ static Material read_material(const XmlNode* material_node, const IdMap& ids, co
 		const char* r_ptr = colour->value();
 		char* g_ptr;
 		value.r = strtof(r_ptr, &g_ptr);
-		if(g_ptr == r_ptr) {
-			throw ParseError("<color> node has invalid body.");
-		}
+		verify(g_ptr != r_ptr, "<color> node has invalid body.");
 		char* b_ptr;
 		value.g = strtof(g_ptr, &b_ptr);
-		if(b_ptr == g_ptr) {
-			throw ParseError("<color> node has invalid body.");
-		}
+		verify(b_ptr != g_ptr, "<color> node has invalid body.");
 		char* a_ptr;
 		value.b = strtof(b_ptr, &a_ptr);
-		if(a_ptr == b_ptr) {
-			throw ParseError("<color> node has invalid body.");
-		}
+		verify(a_ptr != b_ptr, "<color> node has invalid body.");
 		char* end_ptr;
 		value.a = strtof(a_ptr, &end_ptr);
-		if(end_ptr == a_ptr) {
-			throw ParseError("<color> node has invalid body.");
-		}
+		verify(end_ptr != a_ptr, "<color> node has invalid body.");
 		Material material;
 		material.name = xml_attrib(material_node, "id")->value();
 		material.colour = value;
 		return material;
 	}
-	throw ParseError("<diffuse> node needs either a <texture> or <color> node as a child.");
+	verify_not_reached("<diffuse> node needs either a <texture> or <color> node as a child.");
 }
 
 static VertexData read_vertices(const XmlNode* geometry, const IdMap& ids) {
@@ -268,9 +246,7 @@ static VertexData read_vertices(const XmlNode* geometry, const IdMap& ids) {
 			tex_coords_source = node_from_id(ids, xml_attrib(input, "source")->value());
 		}
 	}
-	if(!vertices) {
-		throw ParseError("<triangles> node missing VERTEX input.");
-	}
+	verify(vertices, "<triangles> node missing VERTEX input.");
 	
 	const XmlNode* positions_source = nullptr;
 	xml_for_each_child_of_type(input, vertices, "input") {
@@ -279,29 +255,21 @@ static VertexData read_vertices(const XmlNode* geometry, const IdMap& ids) {
 			positions_source = node_from_id(ids, xml_attrib(input, "source")->value());
 		}
 	}
-	if(!positions_source) {
-		throw ParseError("<vertices> node missing POSITIONS input.");
-	}
-	
+	verify(positions_source, "<vertices> node missing POSITIONS input.");
+		
 	auto positions = read_vertex_source(positions_source, ids);
-	if(positions.size() % 3 != 0) {
-		throw ParseError("Vertex positions array for mesh '%s' has a bad size (not divisible by 3).", mesh_name);
-	}
+	verify(positions.size() % 3 == 0, "Vertex positions array for mesh '%s' has a bad size (not divisible by 3).", mesh_name);
 	
 	Opt<std::vector<f32>> normals;
 	if(normals_source) {
 		normals = read_vertex_source(normals_source, ids);
-		if(normals->size() % 3 != 0) {
-			throw ParseError("Normals array for mesh '%s' has a bad size (not divisible by 3).", mesh_name);
-		}
+		verify(normals->size() % 3 == 0, "Normals array for mesh '%s' has a bad size (not divisible by 3).", mesh_name);
 	}
 	
 	Opt<std::vector<f32>> tex_coords;
 	if(tex_coords_source) {
 		tex_coords = read_vertex_source(tex_coords_source, ids);
-		if(tex_coords->size() % 2 != 0) {
-			throw ParseError("Texture coordinates array for mesh '%s' has a bad size (not divisible by 2).", mesh_name);
-		}
+		verify(tex_coords->size() % 2 == 0, "Texture coordinates array for mesh '%s' has a bad size (not divisible by 2).", mesh_name);
 	}
 	
 	return {positions, normals, tex_coords};
@@ -311,9 +279,7 @@ static std::vector<f32> read_vertex_source(const XmlNode* source, const IdMap& i
 	const XmlNode* technique_common = xml_child(source, "technique_common");
 	const XmlNode* accessor = xml_child(technique_common, "accessor");
 	const XmlNode* float_array = node_from_id(ids, xml_attrib(accessor, "source")->value());
-	if(strcmp(float_array->name(), "float_array") != 0) {
-		throw ParseError("Only <float_array> nodes are supported for storing vertex attributes.");
-	}
+	verify(strcmp(float_array->name(), "float_array") == 0, "Only <float_array> nodes are supported for storing vertex attributes.");
 	return read_float_array(float_array);
 }
 
@@ -338,12 +304,8 @@ static std::vector<SkinAttributes> read_skin(Mesh& mesh, const XmlNode* controll
 			weight_offset = atoi(xml_attrib(input, "offset")->value());
 		}
 	}
-	if(!joints_source) {
-		throw ParseError("<vertex_weights> node missing JOINT input.");
-	}
-	if(!weights_source) {
-		throw ParseError("<vertex_weights> node missing WEIGHT input.");
-	}
+	verify(joints_source, "<vertex_weights> node missing JOINT input.");
+	verify(weights_source, "<vertex_weights> node missing WEIGHT input.");
 	
 	s32 stride = std::max(joint_offset, weight_offset) + 1;
 	
@@ -359,11 +321,9 @@ static std::vector<SkinAttributes> read_skin(Mesh& mesh, const XmlNode* controll
 		}
 		auto joint_iter = joint_sids.find({skeleton, joint_name});
 		if(joint_iter == joint_sids.end()) {
-			throw ParseError("Bad joint name or skeleton.");
+			verify(joint_iter != joint_sids.end(), "Bad joint name or skeleton.");
 		}
-		if(joint_iter->second > 255) {
-			throw ParseError("Too many joints.");
-		}
+		verify(joint_iter->second < 256, "Too many joints.");
 		joint_index = joint_iter->second;
 		while(*joint_ptr == ' ') {
 			joint_ptr++;
@@ -377,9 +337,7 @@ static std::vector<SkinAttributes> read_skin(Mesh& mesh, const XmlNode* controll
 	const char* vcount = xml_child(vertex_weights, "vcount")->value();
 	for(s32 i = 0; i < vertex_weight_count; i++) {
 		s32 vc = read_s32(vcount, "<vcount> node");
-		if(vc < 0 || vc > 3) {
-			throw ParseError("Only between 0 and 3 joints weights are supported for each vertex.");
-		}
+		verify(vc >= 0 && vc <= 3, "Only between 0 and 3 joints weights are supported for each vertex.");
 		vcount_data.push_back(vc);
 	}
 	
@@ -427,9 +385,7 @@ static void read_submeshes(Mesh& mesh, const XmlNode* instance, const XmlNode* g
 					material = materials.at(node_from_id(ids, xml_attrib(instance_material, "target")->value()));
 				}
 			}
-			if(material == -1) {
-				throw ParseError("Missing <instance_material> node.");
-			}
+			verify(material != -1, "Missing <instance_material> node.");
 			
 			// Find the offsets of each <input> and the overall stride.
 			s32 position_offset = -1;
@@ -558,9 +514,7 @@ static std::vector<f32> read_float_array(const XmlNode* float_array) {
 	for(f32& value : data) {
 		char* next;
 		value = strtof(ptr, &next);
-		if(next == ptr) {
-			throw ParseError("Failed to read <float_array>.");
-		}
+		verify(next != ptr, "Failed to read <float_array>.");
 		ptr = next;
 	}
 	return data;
@@ -569,9 +523,7 @@ static std::vector<f32> read_float_array(const XmlNode* float_array) {
 static s32 read_s32(const char*& input, const char* context) {
 	char* next;
 	s32 value = strtol(input, &next, 10);
-	if(next == input) {
-		throw ParseError("Failed to read integers from %s.", context);
-	}
+	verify(next != input, "Failed to read integers from %s.", context);
 	input = next;
 	return value;
 }
@@ -597,28 +549,20 @@ static void enumerate_joint_sids(JointSidsMap& joint_sids, s32& next_joint, cons
 
 static const XmlNode* xml_child(const XmlNode* node, const char* name) {
 	XmlNode* child = node->first_node(name);
-	if(!child) {
-		throw ParseError("<%s> node missing <%s> child.", node->name(), name);
-	}
+	verify(child, "<%s> node missing <%s> child.", node->name(), name);
 	return child;
 }
 
 static const XmlAttrib* xml_attrib(const XmlNode* node, const char* name) {
 	XmlAttrib* attrib = node->first_attribute(name);
-	if(!attrib) {
-		throw ParseError("<%s> node missing %s attribute.", node->name(), name);
-	}
+	verify(attrib, "<%s> node missing %s attribute.", node->name(), name);
 	return attrib;
 }
 
 static const XmlNode* node_from_id(const IdMap& map, const char* id) {
-	if(*id != '#') {
-		throw ParseError("Only ids starting with # are supported ('%s' passed).", id);
-	}
+	verify(*id == '#', "Only ids starting with # are supported ('%s' passed).", id);
 	auto iter = map.find(id);
-	if(iter == map.end()) {
-		throw ParseError("No element with id equal to '%s'.", id);
-	}
+	verify(iter != map.end(), "No element with id equal to '%s'.", id);
 	return iter->second;
 }
 

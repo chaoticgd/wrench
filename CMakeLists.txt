@@ -30,7 +30,8 @@ add_library(wrenchcore STATIC
 	src/core/buffer.cpp
 	src/core/instance.cpp
 	src/core/level.cpp
-	src/core/util.cpp
+	src/core/util/basic_util.cpp
+	src/core/util/error_util.cpp
 	src/core/mesh.cpp
 	src/core/collada.cpp
 	src/core/timer.cpp

@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2021 chaoticgd
+	Copyright (C) 2019-2022 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,20 +16,9 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "util.h"
+#include "basic_util.h"
 
 #include <sstream>
-
-const char* UTIL_ERROR_CONTEXT_STRING = "";
-
-void assert_impl(const char* file, int line, const char* arg_str, bool condition) {
-	if(!condition) {
-		fprintf(stderr, "[%s:%d] assert%s: ", file, line, UTIL_ERROR_CONTEXT_STRING);
-		fprintf(stderr, "%s", arg_str);
-		fprintf(stderr, "\n");
-		exit(1);
-	}
-}
 
 std::string string_format(const char* format, va_list args) {
 	static char buffer[16 * 1024];
@@ -43,30 +32,6 @@ std::string stringf(const char* format, ...) {
 	std::string string = string_format(format, args);
 	va_end(args);
 	return string;
-}
-
-static std::vector<std::string> error_context_stack;
-static std::string error_context_alloc;
-
-static void update_error_context() {
-	error_context_alloc = "";
-	for(auto& str : error_context_stack) {
-		error_context_alloc += str;
-	}
-	UTIL_ERROR_CONTEXT_STRING = error_context_alloc.c_str();
-}
-
-ErrorContext::ErrorContext(const char* format, ...) {
-	va_list args;
-	va_start(args, format);
-	error_context_stack.emplace_back(" " + string_format(format, args));
-	va_end(args);
-	update_error_context();
-}
-
-ErrorContext::~ErrorContext() {
-	error_context_stack.pop_back();
-	update_error_context();
 }
 
 u16 byte_swap_16(u16 val) {

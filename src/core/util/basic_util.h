@@ -1,0 +1,152 @@
+/*
+	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
+	Copyright (C) 2019-2022 chaoticgd
+
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+#ifndef CORE_BASIC_UTIL_H
+#define CORE_BASIC_UTIL_H
+
+#include <map>
+#include <array>
+#include <cmath>
+#include <string>
+#include <vector>
+#include <cstring>
+#include <ctype.h>
+#include <stdio.h>
+#include <optional>
+#include <stdarg.h>
+#include <stdint.h>
+#include <algorithm>
+#include <exception>
+#include <functional>
+#include <type_traits>
+
+using u8 = uint8_t;
+using u16 = uint16_t;
+using u32 = uint32_t;
+using u64 = uint64_t;
+
+using s8 = int8_t;
+using s16 = int16_t;
+using s32 = int32_t;
+using s64 = int64_t;
+
+using f32 = float;
+using f64 = double;
+
+#ifdef _MSC_VER
+	#define fseek _fseeki64
+	#define ftell _ftelli64
+#endif
+
+#define BEGIN_END(container) container.begin(), container.end()
+
+#define ARRAY_SIZE(array) (sizeof(array) / sizeof(array[0]))
+#define ARRAY_PAIR(array) array, ARRAY_SIZE(array)
+
+std::string string_format(const char* format, va_list args);
+std::string stringf(const char* format, ...);
+
+u16 byte_swap_16(u16 val);
+u32 byte_swap_32(u32 val);
+
+std::size_t parse_number(std::string x);
+
+// Kludge since C++ still doesn't have proper reflection.
+#define DEF_FIELD(member) \
+	{ \
+		auto temp = std::move(member); \
+		t.field(#member, temp); \
+		member = std::move(temp); \
+	}
+#define DEF_PACKED_FIELD(member) \
+	{ \
+		auto temp = member; \
+		t.field(#member, temp); \
+		member = temp; \
+	}
+#define DEF_HEXDUMP(member) \
+	{ \
+		auto temp = std::move(member); \
+		t.hexdump(#member, temp); \
+		member = std::move(temp); \
+	}
+
+template <typename> struct MemberTraits;
+template <typename Return, typename Object>
+struct MemberTraits<Return (Object::*)> {
+	typedef Object instance_type;
+};
+
+template <typename T>
+using Opt = std::optional<T>;
+
+template <typename T>
+const T& opt_iterator(const Opt<T>& opt) {
+	if(opt.has_value()) {
+		return *opt;
+	} else {
+		static const T empty;
+		return empty;
+	}
+}
+
+template <typename T>
+const size_t opt_size(const Opt<std::vector<T>>& opt_vec) {
+	if(opt_vec.has_value()) {
+		return opt_vec->size();
+	} else {
+		return 0;
+	}
+}
+
+template <typename T>
+T& opt_iterator(Opt<T>& opt) {
+	if(opt.has_value()) {
+		return *opt;
+	} else {
+		static T empty;
+		return empty;
+	}
+}
+
+template <typename>
+struct IsVector : std::false_type {};
+template <typename Element>
+struct IsVector<std::vector<Element>> : std::true_type {};
+
+// Implements a way to delay the execution of a block of code until the
+// enclosing scope ends. This lets us write statements in a more logical order.
+template <typename F>
+struct _deferer {
+	F callback;
+	_deferer(F cb) : callback(cb) {}
+	~_deferer() { callback(); }
+};
+#define CONCAT_TOKEN_IMPL(x, y) x##y
+#define CONCAT_TOKEN(x, y) CONCAT_TOKEN_IMPL(x, y)
+#define defer(...) _deferer CONCAT_TOKEN(_deferer_object_, __COUNTER__)(__VA_ARGS__);
+
+std::string md5_to_printable_string(uint8_t in[16]);
+
+#define on_load(tag, ...) \
+	struct OnLoadType ##tag { OnLoadType ##tag() { __VA_ARGS__(); } }; \
+	static OnLoadType ##tag _on_load_ctor;
+
+f32 lerp(f32 min, s32 max, f32 value);
+
+#endif
