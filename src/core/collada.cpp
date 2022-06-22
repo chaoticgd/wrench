@@ -146,7 +146,7 @@ ColladaScene read_collada(std::vector<u8> src) {
 		}
 		
 		Mesh mesh;
-		mesh.name = xml_attrib(node, "id")->value();
+		mesh.name = xml_attrib(node, "name")->value();
 		auto vertex_data = read_vertices(geometry, ids);
 		std::vector<SkinAttributes> skin_data;
 		if(controller) {
@@ -195,7 +195,7 @@ static Material read_material(const XmlNode* material_node, const IdMap& ids, co
 		auto texture_index = images.find(image);
 		verify(texture_index != images.end(), "An <image> node that was referenced cannot be found.");
 		Material material;
-		material.name = xml_attrib(material_node, "id")->value();
+		material.name = xml_attrib(material_node, "name")->value();
 		material.texture = texture_index->second;
 		return material;
 	} else if(const XmlNode* colour = diffuse->first_node("color")) {
@@ -604,7 +604,7 @@ static void write_asset_metadata(OutBuffer dest) {
 static void write_images(OutBuffer dest, const std::vector<std::string>& texture_paths) {
 	dest.writelf("\t<library_images>");
 	for(s32 i = 0; i < (s32) texture_paths.size(); i++) {
-		dest.writelf("\t\t<image id=\"texture_%d\">", i);
+		dest.writelf("\t\t<image id=\"texture_%d\" name=\"texture_%d\">", i, i);
 		dest.writesf("\t\t\t<init_from>");
 		const std::string& path = texture_paths[i];
 		dest.vec.insert(dest.vec.end(), path.begin(), path.end());
@@ -617,7 +617,7 @@ static void write_images(OutBuffer dest, const std::vector<std::string>& texture
 static void write_effects(OutBuffer dest, const std::vector<Material>& materials, size_t texture_count) {
 	dest.writelf("\t<library_effects>");
 	for(const Material& material : materials) {
-		dest.writelf("\t\t<effect id=\"%s_effect\">", material.name.c_str());
+		dest.writelf("\t\t<effect id=\"%s_effect\" name=\"%s_effect\">", material.name.c_str(), material.name.c_str());
 		dest.writelf("\t\t\t<profile_COMMON>");
 		if(material.texture.has_value()) {
 			dest.writelf(4, "<newparam sid=\"%s_surface\">", material.name.c_str());
@@ -661,7 +661,7 @@ static void write_effects(OutBuffer dest, const std::vector<Material>& materials
 static void write_materials(OutBuffer dest, const std::vector<Material>& materials) {
 	dest.writelf("\t<library_materials>");
 	for(const Material& material : materials) {
-		dest.writelf("\t\t<material id=\"%s\">", material.name.c_str());
+		dest.writelf("\t\t<material id=\"%s\" name=\"%s\">", material.name.c_str(), material.name.c_str());
 		dest.writelf("\t\t\t<instance_effect url=\"#%s_effect\"/>", material.name.c_str());
 		dest.writelf("\t\t</material>");
 	}
@@ -672,7 +672,7 @@ static void write_geometries(OutBuffer dest, const std::vector<Mesh>& meshes) {
 	dest.writelf("\t<library_geometries>");
 	for(size_t i = 0; i < meshes.size(); i++) {
 		const Mesh& mesh = meshes[i];
-		dest.writelf("\t\t<geometry id=\"%s_mesh\">", mesh.name.c_str());
+		dest.writelf("\t\t<geometry id=\"%s_mesh\" name=\"%s_mesh\">", mesh.name.c_str(), mesh.name.c_str());
 		dest.writelf("\t\t\t<mesh>");
 		
 		dest.writelf(4, "<source id=\"mesh_%d_positions\">", i);
@@ -800,7 +800,7 @@ static void write_geometries(OutBuffer dest, const std::vector<Mesh>& meshes) {
 static void write_controllers(OutBuffer dest, const std::vector<Mesh>& meshes, const std::vector<Joint>& joints) {
 	dest.writelf("\t<library_controllers>");
 	for(const Mesh& mesh : meshes) {
-		dest.writelf("\t\t<controller id=\"%s_skin\">", mesh.name.c_str());
+		dest.writelf("\t\t<controller id=\"%s_skin\" name=\"%s_skin\">", mesh.name.c_str(), mesh.name.c_str());
 		dest.writelf("\t\t\t<skin source=\"#%s_mesh\">", mesh.name.c_str());
 		dest.writelf(4, "<source id=\"%s_joints\">", mesh.name.c_str());
 		dest.writesf(4, "\t<Name_array count=\"%d\">", (s32) joints.size());
@@ -886,7 +886,7 @@ static void write_visual_scenes(OutBuffer dest, const ColladaScene& scene) {
 	}
 	for(const Mesh& mesh : scene.meshes) {
 		assert(mesh.name.size() > 0);
-		dest.writelf("\t\t\t<node id=\"%s\">", mesh.name.c_str());
+		dest.writelf("\t\t\t<node id=\"%s\" name=\"%s\">", mesh.name.c_str(), mesh.name.c_str());
 		if(scene.joints.size() > 0) {
 			dest.writelf(4, "<instance_controller url=\"#%s_skin\">", mesh.name.c_str());
 			dest.writelf(4, "\t<skeleton>#joint_0</skeleton>");
