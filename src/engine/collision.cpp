@@ -62,7 +62,7 @@ using CollisionSectors = CollisionList<CollisionList<CollisionList<CollisionSect
 static CollisionSectors parse_collision_mesh(Buffer mesh);
 static void write_collision_mesh(OutBuffer dest, CollisionSectors& sectors);
 static ColladaScene collision_sectors_to_scene(const CollisionSectors& sectors);
-static CollisionSectors build_collision_sectors(const ColladaScene& scene);
+static CollisionSectors build_collision_sectors(const ColladaScene& scene, const std::string& name);
 static bool test_tri_sector_intersection(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2);
 static CollisionSector& lookup_sector(CollisionSectors& sectors, s32 x, s32 y, s32 z);
 static void optimise_collision(CollisionSectors& sectors);
@@ -84,10 +84,10 @@ ColladaScene read_collision(Buffer src) {
 	return collision_sectors_to_scene(sectors);
 }
 
-void write_collision(OutBuffer dest, const ColladaScene& scene) {
+void write_collision(OutBuffer dest, const ColladaScene& scene, const std::string& name) {
 	ERROR_CONTEXT("collision");
 	
-	CollisionSectors sectors = build_collision_sectors(scene);
+	CollisionSectors sectors = build_collision_sectors(scene, name);
 	optimise_collision(sectors);
 	CollisionHeader header;
 	header.mesh = 0x40;
@@ -364,11 +364,15 @@ static ColladaScene collision_sectors_to_scene(const CollisionSectors& sectors) 
 	return scene;
 }
 
-static CollisionSectors build_collision_sectors(const ColladaScene& scene) {
+static CollisionSectors build_collision_sectors(const ColladaScene& scene, const std::string& name) {
 	start_timer("build collision");
 	
 	CollisionSectors sectors;
 	for(const Mesh& mesh : scene.meshes) {
+		if(mesh.name != name) {
+			continue;
+		}
+		
 		for(const SubMesh& submesh : mesh.submeshes) {
 			const Material& material = scene.materials.at(submesh.material);
 			verify(material.collision_id >= 0 && material.collision_id <= 255,

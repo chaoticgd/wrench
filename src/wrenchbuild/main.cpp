@@ -70,10 +70,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, Game
 static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path, BuildConfig config, const std::string& hint);
 static void decompress(const fs::path& input_path, const fs::path& output_path, s64 offset);
 static void compress(const fs::path& input_path, const fs::path& output_path);
-static void extract_collision(fs::path input_path, fs::path output_path);
-static void build_collision(fs::path input_path, fs::path output_path);
 static void extract_moby(const fs::path& input_path, const fs::path& output_path, Game game);
-static void build_moby(const char* input_path, const char* output_path);
 static void print_usage(bool developer_subcommands);
 static void print_version();
 static void start_stdout_flusher_thread();
@@ -196,20 +193,8 @@ static int wrenchbuild(int argc, char** argv) {
 		return 0;
 	}
 	
-	if(mode == "extract_collision") {
-		require_args(4);
-		extract_collision(argv[2], argv[3]);
-	} else if(mode == "build_collision") {
-		require_args(4);
-		build_collision(argv[2], argv[3]);
-	} else if(mode == "build_moby") {
-		require_args(4);
-		build_moby(argv[2], argv[3]);
-	} else {
-		print_usage(false);
-		return 1;
-	}
-	return 0;
+	print_usage(false);
+	return 1;
 }
 
 static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
@@ -453,33 +438,12 @@ static void compress(const fs::path& input_path, const fs::path& output_path) {
 	write_file(output_path, compressed_bytes);
 }
 
-static void extract_collision(fs::path input_path, fs::path output_path) {
-	auto collision = read_file(input_path);
-	write_file("/", output_path, write_collada(read_collision(collision)), "w");
-}
-
-static void build_collision(fs::path input_path, fs::path output_path) {
-	auto collision = read_file(input_path, "r");
-	std::vector<u8> bin;
-	write_collision(bin, read_collada(collision));
-	write_file("/", output_path, bin);
-}
-
 static void extract_moby(const fs::path& input_path, const fs::path& output_path, Game game) {
 	auto bin = read_file(input_path.string().c_str());
 	MobyClassData moby = read_moby_class(bin, game);
 	ColladaScene scene = recover_moby_class(moby, 0, 0);
 	auto xml = write_collada(scene);
 	write_file(output_path, xml, "w");
-}
-
-static void build_moby(const char* input_path, const char* output_path) {
-	auto xml = read_file(input_path, "r");
-	ColladaScene scene = read_collada(xml);
-	MobyClassData moby = build_moby_class(scene);
-	std::vector<u8> buffer;
-	write_moby_class(buffer, moby, Game::GC);
-	write_file("/", output_path, buffer);
 }
 
 static void print_usage(bool developer_subcommands) {

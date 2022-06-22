@@ -265,7 +265,7 @@ AssetType Mesh {
 		games: [1 2 3 4]
 	}
 	
-	StringAttribute node {
+	StringAttribute name {
 		desc: "The name of the node to use. This is the same as the Blender node name."
 		required: true
 		games: [1 2 3 4]

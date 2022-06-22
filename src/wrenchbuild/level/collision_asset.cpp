@@ -45,6 +45,7 @@ static void unpack_collision_asset(CollisionAsset& dest, InputStream& src, Build
 	MeshAsset& mesh = dest.mesh<MeshAsset>();
 	auto ref = mesh.file().write_text_file("collision.dae", (const char*) collada.data());
 	mesh.set_src(ref);
+	mesh.set_name(scene.meshes.at(0).name);
 	
 	CollectionAsset& materials = dest.materials();
 	for(Material& material : scene.materials) {
@@ -76,6 +77,6 @@ static void pack_collision_asset(OutputStream& dest, const CollisionAsset& src, 
 	});
 	
 	std::vector<u8> bytes;
-	write_collision(OutBuffer(bytes), scene);
+	write_collision(OutBuffer(bytes), scene, mesh.name());
 	dest.write_v(bytes);
 }
