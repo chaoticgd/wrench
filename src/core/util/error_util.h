@@ -62,14 +62,14 @@ void assert_impl(const char* file, int line, const char* arg_str, bool condition
 template <typename... Args>
 void verify_impl(const char* file, int line, bool condition, const char* error_message, Args... args) {
 	if(!condition) {
-		throw RuntimeError(__FILE__, __LINE__, error_message, args...);
+		throw RuntimeError(file, line, error_message, args...);
 	}
 }
 #define verify(condition, ...) \
 	verify_impl(__FILE__, __LINE__, condition, __VA_ARGS__)
 template <typename... Args>
 [[noreturn]] void verify_not_reached_impl(const char* file, int line, const char* error_message, Args... args) {
-	throw RuntimeError(__FILE__, __LINE__, error_message, args...);
+	throw RuntimeError(file, line, error_message, args...);
 }
 #define verify_not_reached(...) \
 	verify_not_reached_impl(__FILE__, __LINE__, __VA_ARGS__)
