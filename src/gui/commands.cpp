@@ -91,9 +91,10 @@ void gui::open_in_editor(const EditorParams& params) {
 	execute_command_non_blocking(args);
 }
 
-void gui::run_emulator(const EmulatorParams& params, CommandStatus* status) {
-	std::vector<std::string> args;
-	args.emplace_back(g_config.paths.emulator_path);
-	args.emplace_back(params.iso_path);
-	spawn_command_thread(args, status);
+void gui::run_emulator(const EmulatorParams& params) {
+	const char* args[] = {
+		g_config.paths.emulator_path.c_str(),
+		params.iso_path.c_str()
+	};
+	execute_command(ARRAY_SIZE(args), args, nullptr);
 }

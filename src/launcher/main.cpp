@@ -86,15 +86,7 @@ int main(int argc, char** argv) {
 				break;
 			}
 			case LauncherMode::RUNNING_EMULATOR: {
-				CommandStatus status;
-				gui::run_emulator(g_launcher.emulator_params, &status);
-				for(;;) {
-					std::lock_guard<std::mutex> g(status.mutex);
-					if(status.finished) {
-						break;
-					}
-				}
-				status.thread.join();
+				gui::run_emulator(g_launcher.emulator_params);
 				g_launcher.mode = LauncherMode::DRAWING_GUI;
 				break;
 			}
