@@ -214,7 +214,7 @@ static Material read_material(const XmlNode* material_node, const IdMap& ids, co
 		value.a = strtof(a_ptr, &end_ptr);
 		verify(end_ptr != a_ptr, "<color> node has invalid body.");
 		Material material;
-		material.name = xml_attrib(material_node, "id")->value();
+		material.name = xml_attrib(material_node, "name")->value();
 		material.colour = value;
 		return material;
 	}
