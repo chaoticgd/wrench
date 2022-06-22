@@ -55,7 +55,7 @@ void unpack_tie_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest, 
 		TieClassAsset& asset = data_dest.foreign_child<TieClassAsset>(path, entry.o_class);
 		asset.set_id(entry.o_class);
 		
-		unpack_level_textures(asset.textures(), entry.textures, textures, texture_data, gs_ram, config.game());
+		unpack_level_textures(asset.materials(), entry.textures, textures, texture_data, gs_ram, config.game());
 		
 		if(entry.offset_in_asset_wad != 0) {
 			unpack_asset(asset.core(), data, level_core_block_range(entry.offset_in_asset_wad, block_bounds), config);
@@ -76,7 +76,7 @@ void unpack_shrub_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest
 		ShrubClassAsset& asset = data_dest.foreign_child<ShrubClassAsset>(path, entry.o_class);
 		asset.set_id(entry.o_class);
 		
-		unpack_level_textures(asset.textures(), entry.textures, textures, texture_data, gs_ram, config.game());
+		unpack_level_textures(asset.materials(), entry.textures, textures, texture_data, gs_ram, config.game());
 		
 		if(entry.offset_in_asset_wad != 0) {
 			unpack_asset(asset.core(), data, level_core_block_range(entry.offset_in_asset_wad, block_bounds), config);

@@ -89,7 +89,7 @@ SharedLevelTextures read_level_textures(const CollectionAsset& tfrag_textures, c
 	shared.tie_range.table = TIE_TEXTURE_TABLE;
 	shared.tie_range.begin = shared.textures.size();
 	ties.for_each_logical_child_of_type<TieClassAsset>([&](const TieClassAsset& cls) {
-		const CollectionAsset& textures = cls.get_textures();
+		const CollectionAsset& textures = cls.get_materials();
 		for(s32 i = 0; i < 16; i++) {
 			if(textures.has_child(i)) {
 				const TextureAsset& asset = textures.get_child(i).as<TextureAsset>();
@@ -105,7 +105,7 @@ SharedLevelTextures read_level_textures(const CollectionAsset& tfrag_textures, c
 	shared.shrub_range.table = SHRUB_TEXTURE_TABLE;
 	shared.shrub_range.begin = shared.textures.size();
 	shrubs.for_each_logical_child_of_type<ShrubClassAsset>([&](const ShrubClassAsset& cls) {
-		const CollectionAsset& textures = cls.get_textures();
+		const CollectionAsset& textures = cls.get_materials();
 		for(s32 i = 0; i < 16; i++) {
 			if(textures.has_child(i)) {
 				const TextureAsset& asset = textures.get_child(i).as<TextureAsset>();

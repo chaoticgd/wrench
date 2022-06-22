@@ -1394,7 +1394,15 @@ AssetType MobyClass {
 	BooleanAttribute has_moby_table_entry {}
 	
 	Child core { allowed_types: ["MobyClassCore" "Binary"] }
-	Child materials { allowed_types: ["Collection"] }
+	Child materials {
+		desc: "The materials used by this class."
+		allowed_types: ["Collection"]
+		required: true
+		games: [1 2 3 4]
+		Child child {
+			allowed_types: ["Material" "Texture"]
+		}
+	}
 	
 	Hint level {
 		syntax: "level"
@@ -1454,7 +1462,15 @@ AssetType TieClass {
 	}
 	
 	Child core { allowed_types: ["Binary"] }
-	Child textures { allowed_types: ["Collection"] }
+	Child materials {
+		desc: "The materials used by this class."
+		allowed_types: ["Collection"]
+		required: true
+		games: [1 2 3 4]
+		Child child {
+			allowed_types: ["Material" "Texture"]
+		}
+	}
 }
 
 AssetType ShrubClass {
@@ -1467,5 +1483,13 @@ AssetType ShrubClass {
 	}
 	
 	Child core { allowed_types: ["Binary"] }
-	Child textures { allowed_types: ["Collection"] }
+	Child materials {
+		desc: "The materials used by this class."
+		allowed_types: ["Collection"]
+		required: true
+		games: [1 2 3 4]
+		Child child {
+			allowed_types: ["Material" "Texture"]
+		}
+	}
 }
