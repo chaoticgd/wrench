@@ -592,7 +592,7 @@ std::vector<u8> write_collada(const ColladaScene& scene) {
 static void write_asset_metadata(OutBuffer dest) {
 	dest.writelf("\t<asset>");
 	dest.writelf("\t\t<contributor>");
-	dest.writelf("\t\t\t<authoring_tool>Wrench WAD Utility</authoring_tool>");
+	dest.writelf("\t\t\t<authoring_tool>Wrench Build Tool</authoring_tool>");
 	dest.writelf("\t\t</contributor>");
 	dest.writelf("\t\t<created>%04d-%02d-%02dT%02d:%02d:%02d</created>", 1, 1, 1, 0, 0, 0);
 	dest.writelf("\t\t<modified>%04d-%02d-%02dT%02d:%02d:%02d</modified>", 1, 1, 1, 0, 0, 0);

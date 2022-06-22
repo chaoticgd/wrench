@@ -1286,8 +1286,8 @@ AssetType LevelCore {
 		games: [1 2 3 4]
 	}
 	Child collision {
-		desc: "Collision for static objects."
-		allowed_types: ["Binary"]
+		desc: "The world space collision mesh."
+		allowed_types: ["Collision" "Binary"]
 		required: true
 		games: [1 2 3 4]
 	}
@@ -1316,7 +1316,7 @@ AssetType LevelCore {
 
 AssetType Chunk {
 	Child tfrags     { allowed_types: ["Binary"] }
-	Child collision  { allowed_types: ["Binary"] }
+	Child collision  { allowed_types: ["Collision" "Binary"] }
 	Child sound_bank { allowed_types: ["Binary"] }
 }
 
@@ -1436,22 +1436,6 @@ AssetType MobyClassCore {
 	Child low_lod_mesh { allowed_types: ["Mesh"] }
 }
 
-AssetType Material {
-	StringAttribute name {
-		desc: "The name of the COLLADA material being referenced."
-	}
-	
-	BooleanAttribute glass {
-		desc: "Make the material shiny, like glass?"
-	}
-	
-	BooleanAttribute chrome {
-		desc: "Make the material shiny, like chrome?"
-	}
-	
-	Child texture { allowed_types: ["Texture"] }
-}
-
 AssetType TieClass {
 	bin_leaf: true
 	
@@ -1491,5 +1475,60 @@ AssetType ShrubClass {
 		Child child {
 			allowed_types: ["Material" "Texture"]
 		}
+	}
+}
+
+AssetType Material {
+	StringAttribute name {
+		desc: "The name of the material being referenced."
+	}
+	
+	BooleanAttribute glass {
+		desc: "Only for mobies. Make the material shiny, like glass?"
+	}
+	
+	BooleanAttribute chrome {
+		desc: "Only for mobies. Make the material shiny, like chrome?"
+	}
+	
+	Child texture {
+		desc: "The texture."
+		allowed_types: ["Texture"]
+	}
+}
+
+AssetType Collision {
+	desc: "The world space collision mesh for a level."
+	bin_leaf: true
+	
+	Child mesh {
+		desc: "The collision mesh itself."
+		allowed_types: ["Mesh"]
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	Child materials {
+		desc: "A mapping of the materials used by the mesh to collision ID numbers."
+		allowed_types: ["Collection"]
+		required: true
+		games: [1 2 3 4]
+		Child child {
+			alloed_types: ["CollisionMaterial"]
+		}
+	}
+}
+
+AssetType CollisionMaterial {
+	StringAttribute name {
+		desc: "The name of the material being referenced."
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	IntegerAttribute id {
+		desc: "The collision ID to use for this material. This controls the type of the surface."
+		required: true
+		games: [1 2 3 4]
 	}
 }

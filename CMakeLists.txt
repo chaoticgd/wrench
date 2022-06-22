@@ -193,6 +193,7 @@ add_executable(wrenchbuild
 	src/wrenchbuild/level/level_textures.cpp
 	src/wrenchbuild/level/level_audio_wad.cpp
 	src/wrenchbuild/level/level_scene_wad.cpp
+	src/wrenchbuild/level/collision_asset.cpp
 )
 target_link_libraries(wrenchbuild wrenchcore wrench_assetmgr wrenchiso wrenchengine wadinfo)
 

@@ -322,7 +322,7 @@ static ColladaScene collision_sectors_to_scene(const CollisionSectors& sectors) 
 	
 	for(s32 i = 0; i < 256; i++) {
 		Material material;
-		material.name = "col_" + std::to_string(i);
+		material.name = stringf("col_%x", i);
 		material.colour = glm::vec4{};
 		// From https://github.com/RatchetModding/replanetizer/blob/ada7ca73418d7b01cc70eec58a41238986b84112/LibReplanetizer/Models/Collision.cs#L26
 		// Colour different types of collision without knowing what they are.
@@ -330,6 +330,7 @@ static ColladaScene collision_sectors_to_scene(const CollisionSectors& sectors) 
 		material.colour->g = ((i & 0xc) << 4) / 255.0;
 		material.colour->b = (i & 0xf0) / 255.0;
 		material.colour->a = 1.f;
+		material.collision_id = i;
 		scene.materials.emplace_back(std::move(material));
 	}
 	for(const auto& y_partitions : sectors.list) {
@@ -370,10 +371,9 @@ static CollisionSectors build_collision_sectors(const ColladaScene& scene) {
 	for(const Mesh& mesh : scene.meshes) {
 		for(const SubMesh& submesh : mesh.submeshes) {
 			const Material& material = scene.materials[submesh.material];
-			if(material.name.size() < 5 || memcmp(material.name.data(), "col_", 4) != 0) {
-				continue;
-			}
-			u8 type = strtol(material.name.c_str() + 4, nullptr, 10);
+			verify(material.collision_id >= 0 && material.collision_id <= 255,
+				"Invalid collision ID.");
+			u8 type = (u8) material.collision_id;
 			
 			for(const Face& face : submesh.faces) {
 				const glm::vec3* verts[4] = {

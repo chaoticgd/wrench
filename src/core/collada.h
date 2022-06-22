@@ -27,6 +27,7 @@ struct Material {
 	std::string name;
 	Opt<glm::vec4> colour;
 	Opt<s32> texture;
+	s32 collision_id = -1; // Only used by the collision code.
 };
 
 struct Joint {

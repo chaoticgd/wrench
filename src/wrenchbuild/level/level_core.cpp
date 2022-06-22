@@ -20,7 +20,6 @@
 
 #include <core/timer.h>
 #include <engine/moby.h>
-#include <engine/collision.h>
 #include <engine/compression.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
@@ -57,7 +56,7 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 	unpack_asset(dest.tfrags(), data, ByteRange{header.tfrags, tfrags_size}, config);
 	unpack_asset(dest.occlusion(), data, level_core_block_range(header.occlusion, block_bounds), config);
 	unpack_asset(dest.sky(), data, level_core_block_range(header.sky, block_bounds), config);
-	unpack_asset(dest.collision(), data, level_core_block_range(header.collision, block_bounds), config);
+	unpack_asset(dest.collision<CollisionAsset>(SWITCH_FILES), data, level_core_block_range(header.collision, block_bounds), config);
 	
 	CollectionAsset& tfrag_textures_collection = dest.tfrag_textures(SWITCH_FILES);
 	SubInputStream texture_data(data, header.textures_base_offset, data.size() - header.textures_base_offset);

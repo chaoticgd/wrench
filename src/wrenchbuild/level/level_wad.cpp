@@ -197,7 +197,7 @@ static void unpack_chunks(CollectionAsset& dest, InputStream& file, const ChunkW
 				s64 offset = ranges.chunks[i].offset.bytes() + chunk_header.collision;
 				s64 size = ranges.chunks[i].size.bytes() - chunk_header.collision;
 				ByteRange collision_range{(s32) offset, (s32) size};
-				unpack_compressed_asset(chunk.collision(), file, collision_range, config);
+				unpack_compressed_asset(chunk.collision<CollisionAsset>(SWITCH_FILES), file, collision_range, config);
 			}
 			unpack_asset(chunk.sound_bank(), file, ranges.sound_banks[i], config);
 		}
