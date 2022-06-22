@@ -107,7 +107,7 @@ void unpack_rac_level_wad(LevelWadAsset& dest, const RacLevelWadHeader& header, 
 	SubInputStream data(src, header.data.bytes());
 	unpack_asset(dest.data<LevelDataWadAsset>(SWITCH_FILES), src, header.data, config);
 	BinaryAsset& gameplay = dest.data<LevelDataWadAsset>().gameplay();
-	unpack_asset(gameplay, src, header.gameplay_ntsc, config);
+	unpack_compressed_asset(gameplay, src, header.gameplay_ntsc, config);
 	dest.gameplay<ReferenceAsset>().set_asset(gameplay.reference());
 	unpack_compressed_asset(dest.occlusion(), src, header.occlusion, config);
 }
@@ -116,8 +116,8 @@ static void pack_rac_level_wad(OutputStream& dest, RacLevelWadHeader& header, co
 	header.id = src.id();
 	
 	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), config);
-	header.gameplay_ntsc = pack_asset_sa<SectorRange>(dest, src.get_gameplay(), config);
-	header.gameplay_pal = pack_asset_sa<SectorRange>(dest, src.get_gameplay(), config);
+	header.gameplay_ntsc = pack_compressed_asset_sa<SectorRange>(dest, src.get_gameplay(), config, "gameplay_ntsc");
+	header.gameplay_pal = pack_compressed_asset_sa<SectorRange>(dest, src.get_gameplay(), config, "gameplay_pal");
 	header.occlusion = pack_compressed_asset_sa<SectorRange>(dest, src.get_occlusion(), config, "occlusion");
 }
 
@@ -130,7 +130,7 @@ void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHeader& hea
 	dest.sound_bank<ReferenceAsset>().set_asset(sound_bank.reference());
 	unpack_asset(dest.data<LevelDataWadAsset>(SWITCH_FILES), src, header.data, config);
 	BinaryAsset& gameplay = dest.data<LevelDataWadAsset>().gameplay();
-	unpack_asset(gameplay, src, header.gameplay, config);
+	unpack_compressed_asset(gameplay, src, header.gameplay, config);
 	dest.gameplay<ReferenceAsset>().set_asset(gameplay.reference());
 	unpack_compressed_asset(dest.occlusion(), src, header.occlusion, config);
 	unpack_chunks(dest.chunks(), src, header.chunks, config);
@@ -142,7 +142,7 @@ static void pack_gc_uya_level_wad(OutputStream& dest, GcUyaLevelWadHeader& heade
 	
 	header.sound_bank = pack_asset_sa<SectorRange>(dest, src.get_sound_bank(), config);
 	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), config);
-	header.gameplay = pack_asset_sa<SectorRange>(dest, src.get_gameplay(), config);
+	header.gameplay = pack_compressed_asset_sa<SectorRange>(dest, src.get_gameplay(), config, "gameplay");
 	header.occlusion = pack_compressed_asset_sa<SectorRange>(dest, src.get_occlusion(), config, "occlusion");
 	header.chunks = pack_chunks(dest, src.get_chunks(), config);
 }
