@@ -91,9 +91,10 @@ int main(int argc, char** argv) {
 				for(;;) {
 					std::lock_guard<std::mutex> g(status.mutex);
 					if(status.finished) {
-						continue;
+						break;
 					}
 				}
+				status.thread.join();
 				g_launcher.mode = LauncherMode::DRAWING_GUI;
 				break;
 			}
