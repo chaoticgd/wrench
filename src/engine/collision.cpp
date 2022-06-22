@@ -370,7 +370,7 @@ static CollisionSectors build_collision_sectors(const ColladaScene& scene) {
 	CollisionSectors sectors;
 	for(const Mesh& mesh : scene.meshes) {
 		for(const SubMesh& submesh : mesh.submeshes) {
-			const Material& material = scene.materials[submesh.material];
+			const Material& material = scene.materials.at(submesh.material);
 			verify(material.collision_id >= 0 && material.collision_id <= 255,
 				"Invalid collision ID.");
 			u8 type = (u8) material.collision_id;
@@ -411,6 +411,10 @@ static CollisionSectors build_collision_sectors(const ColladaScene& scene) {
 				if(zmin == zmax) { zmin--; zmax++; }
 				if(ymin == ymax) { ymin--; ymax++; }
 				if(xmin == xmax) { xmin--; xmax++; }
+				
+				if(xmin < 0) xmin = 0;
+				if(ymin < 0) ymin = 0;
+				if(zmin < 0) zmin = 0;
 				
 				// Iterate over the bounding box of sectors that could contain
 				// the current face and check which ones actually do. If a
