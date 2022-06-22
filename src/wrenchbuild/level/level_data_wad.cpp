@@ -81,7 +81,7 @@ static void unpack_rac_level_data_wad(LevelDataWadAsset& dest, InputStream& src,
 	unpack_asset(dest.code(), src, header.code, config);
 	unpack_asset(dest.sound_bank(), src, header.sound_bank, config);
 	unpack_asset(dest.hud_header(), src, header.hud_header, config);
-	unpack_assets<BinaryAsset>(dest.hud_banks(SWITCH_FILES), src, ARRAY_PAIR(header.hud_banks), config);
+	unpack_compressed_assets<BinaryAsset>(dest.hud_banks(SWITCH_FILES), src, ARRAY_PAIR(header.hud_banks), config);
 }
 
 static void pack_rac_level_data_wad(OutputStream& dest, const LevelDataWadAsset& src, BuildConfig config) {
@@ -99,7 +99,7 @@ static void pack_rac_level_data_wad(OutputStream& dest, const LevelDataWadAsset&
 	header.core_index = write_vector_of_bytes(dest, index);
 	header.gs_ram = write_vector_of_bytes(dest, gs_ram);
 	header.hud_header = pack_asset<ByteRange>(dest, src.get_hud_header(), config, 0x40, FMT_NO_HINT, &empty);
-	pack_assets<ByteRange>(dest, ARRAY_PAIR(header.hud_banks), src.get_hud_banks(), config, 0x40, FMT_NO_HINT, &empty);
+	pack_compressed_assets<ByteRange>(dest, ARRAY_PAIR(header.hud_banks), src.get_hud_banks(), config, 0x40, "hud_bank", FMT_NO_HINT);
 	header.core_data = write_vector_of_bytes(dest, data);
 	
 	dest.write(0, header);
@@ -112,7 +112,7 @@ static void unpack_gc_uya_level_data_wad(LevelDataWadAsset& dest, InputStream& s
 	
 	unpack_asset(dest.code(), src, header.code, config);
 	unpack_asset(dest.hud_header(), src, header.hud_header, config);
-	unpack_assets<BinaryAsset>(dest.hud_banks(SWITCH_FILES), src, ARRAY_PAIR(header.hud_banks), config);
+	unpack_compressed_assets<BinaryAsset>(dest.hud_banks(SWITCH_FILES), src, ARRAY_PAIR(header.hud_banks), config);
 	unpack_compressed_asset(dest.transition_textures<CollectionAsset>(SWITCH_FILES), src, header.transition_textures, config, FMT_COLLECTION_PIF8);
 }
 
@@ -130,7 +130,7 @@ static void pack_gc_uya_level_data_wad(OutputStream& dest, const LevelDataWadAss
 	header.core_index = write_vector_of_bytes(dest, index);
 	header.gs_ram = write_vector_of_bytes(dest, gs_ram);
 	header.hud_header = pack_asset<ByteRange>(dest, src.get_hud_header(), config, 0x40, FMT_NO_HINT, &empty);
-	pack_assets<ByteRange>(dest, ARRAY_PAIR(header.hud_banks), src.get_hud_banks(), config, 0x40, FMT_NO_HINT, &empty);
+	pack_compressed_assets<ByteRange>(dest, ARRAY_PAIR(header.hud_banks), src.get_hud_banks(), config, 0x40, "hud_bank", FMT_NO_HINT);
 	header.core_data = write_vector_of_bytes(dest, data);
 	if(src.has_transition_textures()) {
 		header.transition_textures = pack_compressed_asset<ByteRange>(dest, src.get_transition_textures(), config, 0x40, "transition", FMT_COLLECTION_PIF8);
