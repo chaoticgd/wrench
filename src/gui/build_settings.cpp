@@ -21,7 +21,7 @@
 #include <nfd.h>
 #include <gui/gui.h>
 
-void gui::build_settings(PackerParams& params, const std::vector<std::string>* game_builds, const std::vector<std::string>& mod_builds) {
+void gui::build_settings(PackerParams& params, const std::vector<std::string>* game_builds, const std::vector<std::string>& mod_builds, bool launcher) {
 	static size_t selected_build = 0;
 	
 	// Merge the list of builds from original game and the ones from any
@@ -95,12 +95,10 @@ void gui::build_settings(PackerParams& params, const std::vector<std::string>* g
 			ImGui::Text("Output ISO");
 			ImGui::Checkbox("Launch emulator after building", &params.launch_emulator);
 			ImGui::BeginDisabled(!params.launch_emulator);
-			ImGui::Checkbox("Keep launcher window open", &params.keep_window_open);
+			if(launcher) {
+				ImGui::Checkbox("Keep launcher window open", &params.keep_window_open);
+			}
 			ImGui::EndDisabled();
-		}
-		
-		if(ImGui::CollapsingHeader("Mod Precedence")) {
-			ImGui::TextWrapped("Not yet implemented.");
 		}
 		
 		if(ImGui::CollapsingHeader("Testing")) {

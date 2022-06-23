@@ -21,7 +21,14 @@
 
 #include <engine/gameplay.h>
 #include <assetmgr/asset_types.h>
+#include <gui/render_mesh.h>
 #include <editor/undo_redo.h>
+
+struct EditorMobyClass {
+	Mesh mesh;
+	RenderMesh high_lod;
+	std::vector<RenderMaterial> materials;
+};
 
 class Level {
 public:
@@ -38,6 +45,10 @@ public:
 	
 	Game game;
 	HistoryStack<Level> history;
+	
+	std::vector<RenderMesh> collision;
+	std::vector<RenderMaterial> collision_materials;
+	std::map<s32, EditorMobyClass> mobies;
 	
 private:
 	BinaryAsset& gameplay_asset();

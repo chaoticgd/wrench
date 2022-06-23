@@ -16,15 +16,4 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef EDITOR_GUI_VIEW_3D_H
-#define EDITOR_GUI_VIEW_3D_H
-
-
-#define GLM_ENABLE_EXPERIMENTAL
-
-#include "../app.h"
-#include "window.h"
-
-void view_3d();
-
-#endif
+void editor_gui();

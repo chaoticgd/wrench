@@ -65,3 +65,5 @@ GlTexture load_icon(std::string path) {
 	
 	return texture;
 }
+
+app* g_app = nullptr;

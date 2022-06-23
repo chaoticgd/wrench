@@ -24,7 +24,7 @@
 #include "gl_includes.h"
 #include "command_line.h"
 #include "app.h"
-#include "gui/gui.h"
+#include <editor/gui/editor_gui.h>
 #include "renderer.h"
 
 static void run_wrench(GLFWwindow* window, const std::string& game_path, const std::string& mod_path);
@@ -32,8 +32,6 @@ static void update(f32 delta_time);
 static void init_gui(app& a, GLFWwindow** window);
 static void update_camera(app* a);
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
-
-static app* app_ptr;
 
 int main(int argc, char** argv) {
 	if(argc != 3) {
@@ -55,7 +53,7 @@ int main(int argc, char** argv) {
 
 static void run_wrench(GLFWwindow* window, const std::string& game_path, const std::string& mod_path) {
 	app a;
-	app_ptr = &a;
+	g_app = &a;
 	
 	a.glfw_window = window;
 	
@@ -68,10 +66,10 @@ static void run_wrench(GLFWwindow* window, const std::string& game_path, const s
 	
 	a.tools = enumerate_tools();
 	
-	a.windows.emplace_back(std::make_unique<view_3d>());
-	a.windows.emplace_back(std::make_unique<gui::moby_list>());
-	a.windows.emplace_back(std::make_unique<gui::viewport_information>());
-	a.windows.emplace_back(std::make_unique<Inspector>());
+	//a.windows.emplace_back(std::make_unique<view_3d>());
+	//a.windows.emplace_back(std::make_unique<gui::moby_list>());
+	//a.windows.emplace_back(std::make_unique<gui::viewport_information>());
+	//a.windows.emplace_back(std::make_unique<Inspector>());
 	
 	while(!glfwWindowShouldClose(a.glfw_window)) {
 		gui::run_frame(window, update);
@@ -81,7 +79,7 @@ static void run_wrench(GLFWwindow* window, const std::string& game_path, const s
 }
 
 static void update(f32 delta_time) {
-	gui::render(*app_ptr);
+	editor_gui();
 }
 
 static void update_camera(app* a) {

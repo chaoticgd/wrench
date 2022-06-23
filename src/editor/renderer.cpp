@@ -137,9 +137,9 @@ void draw_level(Level& lvl, const glm::mat4& world_to_clip, const RenderSettings
 	
 	if(settings.draw_collision) {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		//for(const RenderMesh& mesh : lvl.collision) {
-		//	draw_mesh(mesh, lvl.collision_materials, world_to_clip);
-		//}
+		for(const RenderMesh& mesh : lvl.collision) {
+			draw_mesh(mesh, lvl.collision_materials, world_to_clip);
+		}
 	}
 	
 	glUseProgram(shaders.selection.id());
@@ -210,54 +210,54 @@ static void draw_mobies(Level& lvl, const std::vector<MobyInstance>& instances, 
 	
 	size_t begin = 0;
 	size_t end = 0;
-	//for(size_t i = 1; i <= instances.size(); i++) {
-	//	s32 last_class = instances[i - 1].o_class;
-	//	if(i == instances.size() || instances[i].o_class != last_class) {
-	//		end = i;
-	//		auto iter = lvl.mobies.find(last_class);
-	//		if(iter != lvl.mobies.end()) {
-	//			EditorMobyClass& cls = iter->second;
-	//			glPolygonMode(GL_FRONT_AND_BACK, mesh_mode);
-	//			draw_mesh_instanced(cls.high_lod, cls.materials.data(), cls.materials.size(), moby_inst_buffer, begin, end - begin);
-	//		} else {
-	//			draw_cube_instanced(cube_mode, white, moby_inst_buffer, begin, end - begin);
-	//		}
-	//		begin = i;
-	//	}
-	//}
+	for(size_t i = 1; i <= instances.size(); i++) {
+		s32 last_class = instances[i - 1].o_class;
+		if(i == instances.size() || instances[i].o_class != last_class) {
+			end = i;
+			auto iter = lvl.mobies.find(last_class);
+			if(iter != lvl.mobies.end()) {
+				EditorMobyClass& cls = iter->second;
+				glPolygonMode(GL_FRONT_AND_BACK, mesh_mode);
+				draw_mesh_instanced(cls.high_lod, cls.materials.data(), cls.materials.size(), moby_inst_buffer, begin, end - begin);
+			} else {
+				draw_cube_instanced(cube_mode, white, moby_inst_buffer, begin, end - begin);
+			}
+			begin = i;
+		}
+	}
 }
 
 static void draw_selected_moby_normals(Level& lvl, const glm::mat4& world_to_clip) {
-	//for(MobyInstance& inst : opt_iterator(lvl.gameplay().moby_instances)) {
-	//	if(inst.selected && lvl.mobies.find(inst.o_class) != lvl.mobies.end()) {
-	//		const EditorMobyClass& cls = lvl.mobies.at(inst.o_class);
-	//		for(const Vertex& v : cls.mesh.vertices) {
-	//			Vertex v2 = v;
-	//			v2.pos += v2.normal * 0.5f;
-	//			std::vector<Vertex> vertices;
-	//			vertices.emplace_back(v);
-	//			vertices.emplace_back(v2);
-	//			vertices.emplace_back(v2);
-	//			
-	//			RenderMesh mesh;
-	//			RenderSubMesh& submesh = mesh.submeshes.emplace_back();
-	//			submesh.material = 0;
-	//			
-	//			glGenBuffers(1, &submesh.vertex_buffer.id);
-	//			glBindBuffer(GL_ARRAY_BUFFER, submesh.vertex_buffer.id);
-	//			glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
-	//			submesh.vertex_count = vertices.size();
-	//			
-	//			auto inst_data = InstanceData(world_to_clip * inst.matrix(), glm::vec4(0.f, 0.f, 1.f, 1.f), glm::vec4(1.f));
-	//			GlBuffer inst_buffer;
-	//			glGenBuffers(1, &inst_buffer.id);
-	//			glBindBuffer(GL_ARRAY_BUFFER, inst_buffer.id);
-	//			glBufferData(GL_ARRAY_BUFFER, sizeof(inst_data), &inst_data, GL_STATIC_DRAW);
-	//			
-	//			draw_mesh_instanced(mesh, &white, 1, inst_buffer.id, 0, 1);
-	//		}
-	//	}
-	//}
+	for(MobyInstance& inst : opt_iterator(lvl.gameplay().moby_instances)) {
+		if(inst.selected && lvl.mobies.find(inst.o_class) != lvl.mobies.end()) {
+			const EditorMobyClass& cls = lvl.mobies.at(inst.o_class);
+			for(const Vertex& v : cls.mesh.vertices) {
+				Vertex v2 = v;
+				v2.pos += v2.normal * 0.5f;
+				std::vector<Vertex> vertices;
+				vertices.emplace_back(v);
+				vertices.emplace_back(v2);
+				vertices.emplace_back(v2);
+				
+				RenderMesh mesh;
+				RenderSubMesh& submesh = mesh.submeshes.emplace_back();
+				submesh.material = 0;
+				
+				glGenBuffers(1, &submesh.vertex_buffer.id);
+				glBindBuffer(GL_ARRAY_BUFFER, submesh.vertex_buffer.id);
+				glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+				submesh.vertex_count = vertices.size();
+				
+				auto inst_data = InstanceData(world_to_clip * inst.matrix(), glm::vec4(0.f, 0.f, 1.f, 1.f), glm::vec4(1.f));
+				GlBuffer inst_buffer;
+				glGenBuffers(1, &inst_buffer.id);
+				glBindBuffer(GL_ARRAY_BUFFER, inst_buffer.id);
+				glBufferData(GL_ARRAY_BUFFER, sizeof(inst_data), &inst_data, GL_STATIC_DRAW);
+				
+				draw_mesh_instanced(mesh, &white, 1, inst_buffer.id, 0, 1);
+			}
+		}
+	}
 }
 
 template <typename ThisPath>

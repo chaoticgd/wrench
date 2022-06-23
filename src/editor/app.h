@@ -78,6 +78,8 @@ public:
 	void update_gui_scale();
 };
 
+extern app* g_app;
+
 GlTexture load_icon(std::string path);
 
 template <typename T, typename... T_constructor_args>

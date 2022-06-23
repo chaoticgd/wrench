@@ -24,9 +24,17 @@ Level::Level(LevelAsset& asset, Game g)
 	, _asset(asset) {
 	BinaryAsset& gameplay = gameplay_asset();
 	auto stream = gameplay.file().open_binary_file_for_reading(gameplay.src());
-	
 	std::vector<u8> buffer = stream->read_multiple<u8>(stream->size());
 	read_gameplay(_gameplay, _pvar_types, buffer, game, GC_UYA_GAMEPLAY_BLOCKS);
+	
+	MeshAsset& collision_asset = core().get_collision().as<CollisionAsset>().get_mesh();
+	auto collision_stream = collision_asset.file().open_binary_file_for_reading(collision_asset.src());
+	std::vector<u8> collision_bytes = collision_stream->read_multiple<u8>(0, collision_stream->size());
+	ColladaScene collision_scene = read_collada(collision_bytes);
+	for(const Mesh& mesh : collision_scene.meshes) {
+		collision.emplace_back(upload_mesh(mesh, true));
+	}
+	collision_materials = upload_materials(collision_scene.materials, {});
 }
 
 LevelAsset& Level::level() {

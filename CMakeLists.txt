@@ -120,7 +120,7 @@ add_executable(wrencheditor
 	src/editor/util.cpp
 	src/editor/tools.cpp
 	src/editor/renderer.cpp
-	src/editor/gui/gui.cpp
+	src/editor/gui/editor_gui.cpp
 	src/editor/gui/window.cpp
 	src/editor/gui/view_3d.cpp
 	src/editor/gui/inspector.cpp
