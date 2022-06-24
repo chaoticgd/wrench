@@ -45,10 +45,10 @@ static void create_dock_layout();
 static bool layout_button(Layout& layout, size_t i);
 
 static Layout layouts[] = {
-	{"Asset Browser", nullptr, nullptr, {}},
+	//{"Asset Browser", nullptr, nullptr, {}},
 	{"Level Editor", level_editor_menu_bar, tool_bar, {}}
 };
-static size_t selected_layout = 1;
+static size_t selected_layout = 0;
 static ImRect available_rect;
 
 void editor_gui() {
