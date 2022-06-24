@@ -62,6 +62,8 @@ public:
 	Level* get_level();
 	const Level* get_level() const;
 	
+	BaseEditor* get_editor();
+	
 	void load_level(LevelAsset& asset);
 	
 private:

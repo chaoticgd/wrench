@@ -17,12 +17,14 @@
 */
 
 #include "editor_gui.h"
+#include "imgui.h"
 
 #include <gui/gui.h>
 #include <gui/config.h>
 #include <gui/build_settings.h>
 #include <editor/app.h>
 #include <editor/gui/view_3d.h>
+#include <editor/gui/inspector.h>
 #include <editor/gui/asset_selector.h>
 
 struct Layout {
@@ -78,8 +80,52 @@ static void menu_bar() {
 			ImGui::EndMenu();
 		}
 		
+		bool open_history_error_popup = false;
+		static std::string history_error_message;
+		
 		if(ImGui::BeginMenu("Edit")) {
+			if(ImGui::MenuItem("Undo")) {
+				if(BaseEditor* editor = g_app->get_editor()) {
+					try {
+						editor->undo();
+					} catch(RuntimeError& e) {
+						history_error_message = e.message;
+						open_history_error_popup = true;
+					}
+				} else {
+					history_error_message = "No editor open.";
+					open_history_error_popup = true;
+				}
+			}
+			if(ImGui::MenuItem("Redo")) {
+				if(BaseEditor* editor = g_app->get_editor()) {
+					try {
+						editor->redo();
+					} catch(RuntimeError& e) {
+						history_error_message = e.message;
+						open_history_error_popup = true;
+					}
+				} else {
+					history_error_message = "No editor open.";
+					open_history_error_popup = true;
+				}
+			}
 			ImGui::EndMenu();
+		}
+		
+		if(open_history_error_popup) {
+			ImGui::OpenPopup("History Error");
+			open_history_error_popup = false;
+		}
+		
+		ImGui::SetNextWindowSize(ImVec2(300, 200));
+		if(ImGui::BeginPopupModal("History Error")) {
+			ImGui::TextWrapped("%s", history_error_message.c_str());
+			if(ImGui::Button("Okay")) {
+				history_error_message.clear();
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::EndPopup();
 		}
 		
 		if(ImGui::BeginMenu("View")) {
@@ -191,6 +237,7 @@ static void begin_dock_space() {
 
 static void dockable_windows() {
 	dockable_window("3D View", view_3d);
+	dockable_window("Inspector", inspector);
 }
 
 static void dockable_window(const char* window, void (*func)()) {
@@ -213,20 +260,8 @@ static void create_dock_layout() {
 	ImGuiID left_centre, right;
 	ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 8.f / 10.f, &left_centre, &right);
 	
-	ImGuiID left, centre;
-	ImGui::DockBuilderSplitNode(left_centre, ImGuiDir_Left, 2.f / 10.f, &left, &centre);
-	
-	ImGuiID inspector, middle_right;
-	ImGui::DockBuilderSplitNode(right, ImGuiDir_Up, 1.f / 2.f, &inspector, &middle_right);
-	
-	ImGuiID mobies, viewport_info;
-	ImGui::DockBuilderSplitNode(middle_right, ImGuiDir_Up, 1.f / 2.f, &mobies, &viewport_info);
-	
-	ImGui::DockBuilderDockWindow("Project Tree", left);
-	ImGui::DockBuilderDockWindow("3D View", centre);
-	ImGui::DockBuilderDockWindow("Inspector", inspector);
-	ImGui::DockBuilderDockWindow("Mobies", mobies);
-	ImGui::DockBuilderDockWindow("Viewport Information", viewport_info);
+	ImGui::DockBuilderDockWindow("3D View", left_centre);
+	ImGui::DockBuilderDockWindow("Inspector", right);
 
 	ImGui::DockBuilderFinish(dockspace_id);
 }

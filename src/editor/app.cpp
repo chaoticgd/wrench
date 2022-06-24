@@ -34,6 +34,10 @@ const Level* app::get_level() const {
 	return _lvl ? &(*_lvl) : nullptr;
 }
 
+BaseEditor* app::get_editor() {
+	return get_level();
+}
+
 void app::load_level(LevelAsset& asset) {
 	_lvl.emplace();
 	_lvl->read(asset, Game::GC);

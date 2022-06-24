@@ -17,16 +17,10 @@
 */
 
 #include "inspector.h"
+#include "imgui.h"
 
-#include "../app.h"
-
-const char* Inspector::title_text() const {
-	return "Inspector";
-};
-
-ImVec2 Inspector::initial_size() const {
-	return ImVec2(200, 800);
-}
+#include <editor/app.h>
+#include <editor/util.h>
 
 static const s32 MAX_LANES = 4;
 struct InspectorFieldFuncs {
@@ -80,7 +74,8 @@ static Opt<glm::vec4> strings_to_vec4(std::array<std::string, MAX_LANES>& string
 template <typename Scalar>
 static Opt<Scalar> string_to_scalar(std::string& string);
 
-void Inspector::render(app& a) {
+void inspector() {
+	app& a = *g_app;
 	if(!a.get_level()) {
 		ImGui::Text("<no level>");
 		return;
@@ -171,12 +166,18 @@ void Inspector::render(app& a) {
 		{COM_NONE           , INST_MOBY      , "Unk 84   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_84))}
 	};
 	
-	draw_fields(lvl, fields);
-	if(lvl.game == Game::RAC) {
-		draw_fields(lvl, rac1_fields);
-	}
-	if(lvl.game == Game::GC || lvl.game == Game::UYA) {
-		draw_fields(lvl, rac23_fields);
+	if(ImGui::BeginTable("inspector", 2)) {
+		ImGui::TableSetupColumn("name", ImGuiTableColumnFlags_WidthFixed);
+		ImGui::TableSetupColumn("input", ImGuiTableColumnFlags_WidthStretch);
+		
+		draw_fields(lvl, fields);
+		if(lvl.game == Game::RAC) {
+			draw_fields(lvl, rac1_fields);
+		}
+		if(lvl.game == Game::GC || lvl.game == Game::UYA) {
+			draw_fields(lvl, rac23_fields);
+		}
+		ImGui::EndTable();
 	}
 }
 
@@ -196,11 +197,14 @@ static void draw_fields(Level& lvl, const std::vector<InspectorField>& fields) {
 					first = &inst;
 				}
 			});
+			assert(first != nullptr);
 			
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
 			ImGui::AlignTextToFramePadding();
 			ImGui::Text("%s", field.name);
-			ImGui::SameLine();
-			assert(first != nullptr);
+			
+			ImGui::TableNextColumn();
 			ImGui::PushID(field.name);
 			field.funcs.draw(lvl, *first, values_equal);
 			ImGui::PopID();
@@ -461,42 +465,53 @@ static void should_draw_current_values(bool values_equal[MAX_LANES], Level& lvl,
 
 template <s32 lane_count, typename Value>
 static void apply_to_all_selected(Level& lvl, Value value, std::array<bool, MAX_LANES> lanes, InspectorGetterSetter<Value> funcs) {
-	std::vector<InstanceId> ids = lvl.gameplay().selected_instances();
+	struct InspectorCommand {
+		InspectorGetterSetter<Value> funcs;
+		std::array<bool, MAX_LANES> lanes;
+		std::vector<InstanceId> ids;
+		Value value;
+		std::vector<Value> old_values;
+	};
 	
-	//std::vector<Value> old_values;
-	//lvl.gameplay().for_each_instance([&](Instance& inst) {
-	//	if(contains(ids, inst.id())) {
-	//		old_values.push_back(funcs.get(inst));
-	//	}
-	//});
+	InspectorCommand data;
+	data.funcs = funcs;
+	data.lanes = lanes;
+	data.ids = lvl.gameplay().selected_instances();
+	data.value = value;
 	
-	//lvl.push_command(
-	//	[funcs, lanes, ids, value](Level& lvl) {
-	//		lvl.gameplay().for_each_instance([&](Instance& inst) {
-	//			if(contains(ids, inst.id())) {
-	//				if constexpr(lane_count > 0) {
-	//					Value temp = funcs.get(inst);
-	//					for(s32 lane = 0; lane < lane_count; lane++) {
-	//						if(lanes[lane]) {
-	//							temp[lane] = value[lane];
-	//						}
-	//					}
-	//					funcs.set(inst, temp);
-	//				} else {
-	//					funcs.set(inst, value);
-	//				}
-	//			}
-	//		});
-	//	},
-	//	[funcs, lanes, ids, old_values](Level& lvl) {
-	//		size_t i = 0;
-	//		lvl.gameplay().for_each_instance([&](Instance& inst) {
-	//			if(contains(ids, inst.id())) {
-	//				funcs.set(inst, old_values[i++]);
-	//			}
-	//		});
-	//	}
-	//);
+	lvl.gameplay().for_each_instance([&](Instance& inst) {
+		if(contains(data.ids, inst.id())) {
+			data.old_values.push_back(funcs.get(inst));
+		}
+	});
+	
+	lvl.push_command<InspectorCommand>(std::move(data),
+		[](Level& lvl, InspectorCommand& data) {
+			lvl.gameplay().for_each_instance([&](Instance& inst) {
+				if(contains(data.ids, inst.id())) {
+					if constexpr(lane_count > 0) {
+						Value temp = data.funcs.get(inst);
+						for(s32 lane = 0; lane < lane_count; lane++) {
+							if(data.lanes[lane]) {
+								temp[lane] = data.value[lane];
+							}
+						}
+						data.funcs.set(inst, temp);
+					} else {
+						data.funcs.set(inst, data.value);
+					}
+				}
+			});
+		},
+		[](Level& lvl, InspectorCommand& data) {
+			size_t i = 0;
+			lvl.gameplay().for_each_instance([&](Instance& inst) {
+				if(contains(data.ids, inst.id())) {
+					data.funcs.set(inst, data.old_values[i++]);
+				}
+			});
+		}
+	);
 }
 
 template <typename Value>

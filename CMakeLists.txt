@@ -120,11 +120,12 @@ add_executable(wrencheditor
 	src/editor/util.cpp
 	src/editor/tools.cpp
 	src/editor/renderer.cpp
+	src/editor/level.cpp
+	src/editor/editor.cpp
 	src/editor/gui/editor_gui.cpp
 	src/editor/gui/view_3d.cpp
 	src/editor/gui/inspector.cpp
 	src/editor/gui/asset_selector.cpp
-	src/editor/level.cpp
 )
 target_link_libraries(wrencheditor wrenchcore wrenchgui wrench_assetmgr)
 

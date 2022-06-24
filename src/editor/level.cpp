@@ -20,7 +20,7 @@
 
 #include <core/png.h>
 
-Level::Level() : history(*this) {}
+Level::Level() {}
 
 void Level::read(LevelAsset& asset, Game g) {
 	game = g;

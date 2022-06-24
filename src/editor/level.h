@@ -22,7 +22,7 @@
 #include <engine/gameplay.h>
 #include <assetmgr/asset_types.h>
 #include <gui/render_mesh.h>
-#include <editor/undo_redo.h>
+#include <editor/editor.h>
 
 struct EditorMobyClass {
 	Mesh mesh;
@@ -30,7 +30,7 @@ struct EditorMobyClass {
 	std::vector<RenderMaterial> materials;
 };
 
-class Level {
+class Level : public Editor<Level> {
 public:
 	Level();
 	
@@ -45,7 +45,6 @@ public:
 	Gameplay& gameplay();
 	
 	Game game;
-	HistoryStack<Level> history;
 	
 	std::vector<RenderMesh> collision;
 	std::vector<RenderMaterial> collision_materials;
