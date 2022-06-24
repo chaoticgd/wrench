@@ -626,13 +626,13 @@ s32 LooseAssetBank::check_lock() const {
 }
 
 void LooseAssetBank::lock() {
-	s32 pid = getpid();
-	std::string pid_str = std::to_string(pid);
-	write_text_file("lock", pid_str.c_str());
-	fs::path dir = _directory;
-	_unlocker = [dir]() {
-		fs::remove(dir/"lock");
-	};
+	//s32 pid = getpid();
+	//std::string pid_str = std::to_string(pid);
+	//write_text_file("lock", pid_str.c_str());
+	//fs::path dir = _directory;
+	//_unlocker = [dir]() {
+	//	fs::remove(dir/"lock");
+	//};
 }
 
 // *****************************************************************************
