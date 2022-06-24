@@ -37,6 +37,7 @@ const Level* app::get_level() const {
 void app::load_level(LevelAsset& asset) {
 	_lvl.emplace();
 	_lvl->read(asset, Game::GC);
+	reset_camera(this);
 }
 
 bool app::has_camera_control() {

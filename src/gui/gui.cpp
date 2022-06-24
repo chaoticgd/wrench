@@ -31,8 +31,8 @@ static std::vector<std::vector<u8>> font_buffers;
 GLFWwindow* gui::startup(const char* window_title, s32 width, s32 height, bool maximized, GlfwCallbacks* callbacks) {
 	verify(glfwInit(), "Failed to load GLFW.");
 
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 	if(maximized) {
 		glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 	}

@@ -124,7 +124,7 @@ static void update_camera(app* a) {
 	
 	glm::vec3 movement(0, 0, 0);
 	
-	static constexpr float speed = 10.f;
+	static constexpr float speed = 30.f;
 	
 	if(is_down(GLFW_KEY_W)) {
 		movement.x -= dz * a->delta_time * speed;

@@ -109,7 +109,7 @@ static void menu_bar() {
 		
 		auto& pos = g_app->render_settings.camera_position;
 		auto& rot = g_app->render_settings.camera_rotation;
-		ImGui::Text("Cam: X=%.2f Y=%.2f Z=%.2f Pitch=%.2f Yaw=%.2f",
+		ImGui::Text("Cam (toggle with Z): X=%.2f Y=%.2f Z=%.2f Pitch=%.2f Yaw=%.2f",
 			pos.x, pos.y, pos.z, rot.x, rot.y);
 		
 		available_rect.Min.y += ImGui::GetWindowSize().y - 1;
