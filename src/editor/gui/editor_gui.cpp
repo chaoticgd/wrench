@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2020 chaoticgd
+	Copyright (C) 2019-2022 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -23,15 +23,18 @@
 #include <gui/build_settings.h>
 #include <editor/app.h>
 #include <editor/gui/view_3d.h>
+#include <editor/gui/asset_selector.h>
 
 struct Layout {
 	const char* name;
+	void (*menu_bar_extras)();
 	void (*tool_bar)();
 	std::vector<const char*> visible_windows;
 	bool hovered = false;
 };
 
 static void menu_bar();
+static void level_editor_menu_bar();
 static void tool_bar();
 static void begin_dock_space();
 static void dockable_windows();
@@ -42,8 +45,8 @@ static void create_dock_layout();
 static bool layout_button(Layout& layout, size_t i);
 
 static Layout layouts[] = {
-	{"Asset Browser", nullptr, {}},
-	{"Level Editor", tool_bar, {}}
+	{"Asset Browser", nullptr, nullptr, {}},
+	{"Level Editor", level_editor_menu_bar, tool_bar, {}}
 };
 static size_t selected_layout = 1;
 static ImRect available_rect;
@@ -93,16 +96,42 @@ static void menu_bar() {
 		static gui::PackerParams params;
 		static std::vector<std::string> game_builds;
 		static std::vector<std::string> mod_builds;
-		ImGui::SetNextItemWidth(300);
+		ImGui::SetNextItemWidth(200);
 		gui::build_settings(params, &game_builds, mod_builds, false);
 		
 		if(ImGui::Button("Build & Run")) {
 			
 		}
 		
+		if(layouts[selected_layout].menu_bar_extras) {
+			layouts[selected_layout].menu_bar_extras();
+		}
+		
+		auto& pos = g_app->render_settings.camera_position;
+		auto& rot = g_app->render_settings.camera_rotation;
+		ImGui::Text("Cam: X=%.2f Y=%.2f Z=%.2f Pitch=%.2f Yaw=%.2f",
+			pos.x, pos.y, pos.z, rot.x, rot.y);
+		
 		available_rect.Min.y += ImGui::GetWindowSize().y - 1;
+		ImGui::Text("Frame Time: %.2fms", g_app->delta_time * 1000.f);
 		
 		ImGui::EndMainMenuBar();
+	}
+}
+
+static void level_editor_menu_bar() {
+	const char* preview_value = "(select level)";
+	Level* level = g_app->get_level();
+	if(level) {
+		preview_value = "(level)";
+	}
+	
+	
+	static AssetSelector level_selector;
+	level_selector.required_type = LevelAsset::ASSET_TYPE;
+	ImGui::SetNextItemWidth(200);
+	if(Asset* asset = asset_selector("##level_selector", preview_value, level_selector, g_app->asset_forest)) {
+		g_app->load_level(asset->as<LevelAsset>());
 	}
 }
 
@@ -215,7 +244,7 @@ static bool layout_button(Layout& layout, size_t i) {
 	ImRect bb(pos, pos + size);
 	ImGui::ItemAdd(bb, id);
 	ImGui::TabItemBackground(dl, bb, ImGuiTabItemFlags_None, ImGui::GetColorU32(colour));
-	ImGui::TabItemLabelAndCloseButton(dl, bb, ImGuiTabItemFlags_None, ImVec2(0, 0), layout.name, ImGui::GetID(layout.name), 0, true, nullptr, nullptr);
+	ImGui::TabItemLabelAndCloseButton(dl, bb, ImGuiTabItemFlags_None, ImGui::GetStyle().FramePadding, layout.name, ImGui::GetID(layout.name), 0, true, nullptr, nullptr);
 	bool pressed = ImGui::ButtonBehavior(bb, id, &layout.hovered, nullptr, ImGuiButtonFlags_PressedOnClickRelease);
 	ImGui::SetCursorPos(pos + ImVec2(size.x + 4*g_config.ui.scale, 0));
 	return pressed;

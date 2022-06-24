@@ -529,6 +529,22 @@ void AssetBank::lock() { assert(0); }
 
 // *****************************************************************************
 
+AssetBank* AssetForest::any_bank() {
+	if(_banks.size() >= 1) {
+		return _banks.front().get();
+	} else {
+		return nullptr;
+	}
+}
+
+const AssetBank* AssetForest::any_bank() const {
+	if(_banks.size() >= 1) {
+		return _banks.front().get();
+	} else {
+		return nullptr;
+	}
+}
+
 Asset& AssetForest::lookup_asset(const AssetReference& reference, Asset* context) {
 	verify(_banks.size() >= 1 && _banks[0]->_asset_files.size() >= 1,
 		"Asset lookup for '%s' failed because the asset forest is empty.",

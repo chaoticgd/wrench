@@ -1404,6 +1404,13 @@ AssetType MobyClass {
 		}
 	}
 	
+	Child editor_mesh {
+		desc: "The mesh shown in the editor. This is currently used as a hack since we haven't got the moby exporter working, but in the future it could be used for invisible mobies."
+		allowed_types: ["Mesh"]
+		required: false
+		games: [1 2 3 4]
+	}
+	
 	Hint level {
 		syntax: "level"
 		example: "level"

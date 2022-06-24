@@ -74,10 +74,11 @@ void shutdown_renderer() {
 	fill_cube = RenderMesh();
 	line_cube = RenderMesh();
 	
-	white = RenderMaterial();
-	purple = RenderMaterial();
-	orange = RenderMaterial();
-	cyan = RenderMaterial();
+	purple.texture.destroy();
+	green.texture.destroy();
+	white.texture.destroy();
+	orange.texture.destroy();
+	cyan.texture.destroy();
 }
 
 void prepare_frame(Level& lvl, const glm::mat4& world_to_clip) {
@@ -102,7 +103,9 @@ static void upload_instance_buffer(GLuint& buffer, const Opt<std::vector<ThisIns
 	inst_data.clear();
 	inst_data.reserve(opt_size(insts));
 	for(const ThisInstance& inst : opt_iterator(insts)) {
-		inst_data.emplace_back(world_to_clip * inst.matrix(), inst_colour(inst.selected), encode_inst_id(inst.id()));
+		glm::mat4 mat = inst.matrix();
+		mat[3][3] = 1.f;
+		inst_data.emplace_back(world_to_clip * mat, inst_colour(inst.selected), encode_inst_id(inst.id()));
 	}
 	
 	glDeleteBuffers(1, &buffer);

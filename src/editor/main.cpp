@@ -19,17 +19,17 @@
 #include <chrono>
 
 #include <toolwads/wads.h>
+#include <gui/gui.h>
 #include <gui/commands.h>
-#include "fs_includes.h"
-#include "gl_includes.h"
-#include "command_line.h"
-#include "app.h"
+#include <imgui/backends/imgui_impl_glfw.h>
+#include <editor/fs_includes.h>
+#include <editor/command_line.h>
+#include <editor/app.h>
 #include <editor/gui/editor_gui.h>
-#include "renderer.h"
+#include <editor/renderer.h>
 
 static void run_wrench(GLFWwindow* window, const std::string& game_path, const std::string& mod_path);
 static void update(f32 delta_time);
-static void init_gui(app& a, GLFWwindow** window);
 static void update_camera(app* a);
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
@@ -44,8 +44,10 @@ int main(int argc, char** argv) {
 	std::string game_path = argv[1];
 	std::string mod_path = argv[2];
 	
+	gui::GlfwCallbacks callbacks;
+	callbacks.key_callback = key_callback;
 	
-	GLFWwindow* window = gui::startup("Wrench Editor", 1280, 720, true);
+	GLFWwindow* window = gui::startup("Wrench Editor", 1280, 720, true, &callbacks);
 	run_wrench(window, game_path, mod_path);
 	gui::shutdown(window);
 }
@@ -57,6 +59,9 @@ static void run_wrench(GLFWwindow* window, const std::string& game_path, const s
 	
 	a.glfw_window = window;
 	
+	glfwSetWindowUserPointer(window, g_app);
+	glfwSetKeyCallback(window, key_callback);
+	
 	a.game_bank = &a.asset_forest.mount<LooseAssetBank>(game_path, false);
 	a.mod_bank = &a.asset_forest.mount<LooseAssetBank>(mod_path, true);
 	
@@ -66,11 +71,6 @@ static void run_wrench(GLFWwindow* window, const std::string& game_path, const s
 	
 	a.tools = enumerate_tools();
 	
-	//a.windows.emplace_back(std::make_unique<view_3d>());
-	//a.windows.emplace_back(std::make_unique<gui::moby_list>());
-	//a.windows.emplace_back(std::make_unique<gui::viewport_information>());
-	//a.windows.emplace_back(std::make_unique<Inspector>());
-	
 	while(!glfwWindowShouldClose(a.glfw_window)) {
 		gui::run_frame(window, update);
 	}
@@ -79,6 +79,8 @@ static void run_wrench(GLFWwindow* window, const std::string& game_path, const s
 }
 
 static void update(f32 delta_time) {
+	g_app->delta_time = delta_time;
+	update_camera(g_app);
 	editor_gui();
 }
 
@@ -122,29 +124,29 @@ static void update_camera(app* a) {
 	
 	glm::vec3 movement(0, 0, 0);
 	
-	static constexpr float magic_movement = 0.0001f;
+	static constexpr float speed = 10.f;
 	
 	if(is_down(GLFW_KEY_W)) {
-		movement.x -= dz * a->delta_time * magic_movement;
-		movement.y += dx * a->delta_time * magic_movement;
+		movement.x -= dz * a->delta_time * speed;
+		movement.y += dx * a->delta_time * speed;
 	}
 	if(is_down(GLFW_KEY_S)) {
-		movement.x += dz * a->delta_time * magic_movement;
-		movement.y -= dx * a->delta_time * magic_movement;
+		movement.x += dz * a->delta_time * speed;
+		movement.y -= dx * a->delta_time * speed;
 	}
 	if(is_down(GLFW_KEY_A)) {
-		movement.x -= dx * a->delta_time * magic_movement;
-		movement.y -= dz * a->delta_time * magic_movement;
+		movement.x -= dx * a->delta_time * speed;
+		movement.y -= dz * a->delta_time * speed;
 	}
 	if(is_down(GLFW_KEY_D)) {
-		movement.x += dx * a->delta_time * magic_movement;
-		movement.y += dz * a->delta_time * magic_movement;
+		movement.x += dx * a->delta_time * speed;
+		movement.y += dz * a->delta_time * speed;
 	}
 	if(is_down(GLFW_KEY_SPACE)) {
-		movement.z += dist * a->delta_time * magic_movement;
+		movement.z += dist * a->delta_time * speed;
 	}
 	if(is_down(GLFW_KEY_LEFT_SHIFT)) {
-		movement.z -= dist * a->delta_time * magic_movement;
+		movement.z -= dist * a->delta_time * speed;
 	}
 	a->render_settings.camera_position += movement;
 }
@@ -156,5 +158,9 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 		a->render_settings.camera_control = !a->render_settings.camera_control;
 		glfwSetInputMode(window, GLFW_CURSOR,
 			a->render_settings.camera_control ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+	}
+	
+	if(!a->render_settings.camera_control) {
+		ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
 	}
 }

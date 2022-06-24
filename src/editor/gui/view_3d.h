@@ -23,7 +23,6 @@
 #define GLM_ENABLE_EXPERIMENTAL
 
 #include "../app.h"
-#include "window.h"
 
 void view_3d();
 

@@ -32,7 +32,10 @@ struct EditorMobyClass {
 
 class Level {
 public:
-	Level(LevelAsset& asset, Game g);
+	Level();
+	
+	void read(LevelAsset& asset, Game g);
+	void write();
 	
 	LevelAsset& level();
 	LevelWadAsset& level_wad();
@@ -40,8 +43,6 @@ public:
 	LevelCoreAsset& core();
 	
 	Gameplay& gameplay();
-	
-	void write();
 	
 	Game game;
 	HistoryStack<Level> history;
@@ -53,7 +54,7 @@ public:
 private:
 	BinaryAsset& gameplay_asset();
 	
-	LevelAsset& _asset;
+	LevelAsset* _asset = nullptr;
 	Gameplay _gameplay;
 	PvarTypes _pvar_types;
 };

@@ -82,8 +82,8 @@ RenderMaterial upload_material(const Material& material, const std::vector<Textu
 	if(material.colour.has_value()) {
 		rm.colour = *material.colour;
 	}
-	if(material.texture) {
-		Texture texture = textures.at(*material.texture);
+	if(material.texture && *material.texture < textures.size()) {
+		Texture texture = textures[*material.texture];
 		texture.to_rgba();
 		glGenTextures(1, &rm.texture.id);
 		glBindTexture(GL_TEXTURE_2D, rm.texture.id);

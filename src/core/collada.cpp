@@ -77,12 +77,10 @@ Mesh* ColladaScene::find_mesh(const std::string& name) {
 	return nullptr;
 }
 
-ColladaScene read_collada(std::vector<u8> src) {
-	src.push_back('\0');
-	
+ColladaScene read_collada(char* src) {
 	XmlDocument doc;
 	try {
-		doc.parse<0>((char*) src.data());
+		doc.parse<0>(src);
 	} catch(rapidxml::parse_error& err) {
 		verify_not_reached("%s", err.what());
 	}
@@ -586,6 +584,7 @@ std::vector<u8> write_collada(const ColladaScene& scene) {
 	dest.writelf("\t\t<instance_visual_scene url=\"#scene\"/>");
 	dest.writelf("\t</scene>");
 	dest.writelf("</COLLADA>");
+	vec.push_back(0);
 	return vec;
 }
 

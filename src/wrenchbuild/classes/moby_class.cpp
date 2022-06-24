@@ -62,7 +62,7 @@ static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfi
 	verify(is_level || is_gadget || is_sparmor || is_mparmor, "Invalid moby hint.");
 	
 	std::vector<u8> buffer = src.read_multiple<u8>(0, src.size());
-	write_file("/tmp/moby.bin", buffer);
+	
 	MobyClassData data;
 	if((config.game() == Game::GC && is_sparmor) || (config.game() == Game::UYA && is_sparmor)) {
 		data = read_armor_moby_class(buffer, config.game());
@@ -84,7 +84,11 @@ static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfi
 	}
 	
 	std::vector<u8> xml = write_collada(scene);
-	dest.file().write_text_file("mesh.dae", (char*) xml.data());
+	auto ref = dest.file().write_text_file("mesh.dae", (char*) xml.data());
+	
+	MeshAsset& editor_mesh = dest.editor_mesh();
+	editor_mesh.set_name("high_lod");
+	editor_mesh.set_src(ref);
 }
 
 static void pack_moby_class_core(OutputStream& dest, const MobyClassAsset& src, BuildConfig config, const char* hint) {
@@ -148,8 +152,7 @@ static std::vector<ColladaScene*> read_collada_files(std::vector<std::unique_ptr
 		}
 		if(unique) {
 			std::string xml = refs[i].owner->read_text_file(refs[i].path);
-			std::vector<u8> copy(xml.begin(), xml.end());
-			std::unique_ptr<ColladaScene>& owner = owners.emplace_back(std::make_unique<ColladaScene>(read_collada(std::move(copy))));
+			std::unique_ptr<ColladaScene>& owner = owners.emplace_back(std::make_unique<ColladaScene>(read_collada((char*) xml.data())));
 			scenes.emplace_back(owner.get());
 		} else {
 			scenes.emplace_back(scenes[j]);

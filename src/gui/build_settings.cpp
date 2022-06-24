@@ -101,7 +101,7 @@ void gui::build_settings(PackerParams& params, const std::vector<std::string>* g
 			ImGui::EndDisabled();
 		}
 		
-		if(ImGui::CollapsingHeader("Testing")) {
+		if(ImGui::CollapsingHeader("Testing", ImGuiTreeNodeFlags_DefaultOpen)) {
 			ImGui::SetNextItemWidth(-1);
 			ImGui::Checkbox("##single_level_enable", &params.debug.single_level_enabled);
 			ImGui::SameLine();

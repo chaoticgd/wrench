@@ -356,6 +356,9 @@ public:
 	
 	SETUP_MEMORY_ZONE(MEMORY_ZONE_ASSET_SYSTEM)
 	
+	AssetBank* any_bank();
+	const AssetBank* any_bank() const;
+	
 	Asset& lookup_asset(const AssetReference& reference, Asset* context);
 	
 	template <typename Bank, typename... ConstructorArgs>

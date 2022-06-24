@@ -16,9 +16,9 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "window.h"
+#include "../app.h"
 
-class Inspector : public window {
+class Inspector {
 public:
 	Inspector() {}
 	const char* title_text() const;

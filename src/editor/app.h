@@ -34,18 +34,12 @@
 #include <editor/tools.h>
 #include <editor/renderer.h>
 #include <editor/fs_includes.h>
-#include <editor/gui/window.h>
 
 struct GLFWwindow;
 
 class app {
 public:
 	app() {}
-
-	std::vector<std::unique_ptr<window>> windows;
-
-	template <typename T, typename... T_constructor_args>
-	T* emplace_window(T_constructor_args... args);
 	
 	std::vector<std::unique_ptr<Tool>> tools;
 	std::size_t active_tool_index = 0;
@@ -59,13 +53,16 @@ public:
 	AssetForest asset_forest;
 	AssetBank* game_bank = nullptr;
 	AssetBank* mod_bank = nullptr;
+	Game game = Game::UNKNOWN;
 	
 	RenderSettings render_settings;
 	
-	int64_t delta_time = 0;
+	f32 delta_time = 0;
 	
 	Level* get_level();
 	const Level* get_level() const;
+	
+	void load_level(LevelAsset& asset);
 	
 private:
 	std::optional<Level> _lvl;
@@ -73,21 +70,10 @@ private:
 public:
 
 	bool has_camera_control();
-
-	void init_gui_scale();
-	void update_gui_scale();
 };
 
 extern app* g_app;
 
 GlTexture load_icon(std::string path);
-
-template <typename T, typename... T_constructor_args>
-T* app::emplace_window(T_constructor_args... args) {
-	auto window = std::make_unique<T>(args...);
-	T* result = window.get();
-	windows.emplace_back(std::move(window));
-	return result;
-}
 
 #endif

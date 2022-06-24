@@ -26,7 +26,7 @@ void view_3d() {
 	auto lvl = a.get_level();
 	if(lvl == nullptr) {
 		ImGui::TextWrapped("%s", "");
-		ImGui::TextWrapped("   No level open. To open a level, use the 'Tree' menu.");
+		ImGui::TextWrapped("   No level open. To open a level, use the level selector in the menu bar.");
 		return;
 	}
 

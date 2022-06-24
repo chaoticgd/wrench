@@ -19,17 +19,20 @@
 #include "gui.h"
 
 #include <chrono>
+#include <imgui/backends/imgui_impl_glfw.h>
 #include <engine/compression.h>
+
+static void imgui_glfw_new_frame();
 
 static std::chrono::steady_clock::time_point last_frame_time;
 static f32 delta_time;
 static std::vector<std::vector<u8>> font_buffers;
 
-GLFWwindow* gui::startup(const char* window_title, s32 width, s32 height, bool maximized) {
+GLFWwindow* gui::startup(const char* window_title, s32 width, s32 height, bool maximized, GlfwCallbacks* callbacks) {
 	verify(glfwInit(), "Failed to load GLFW.");
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	if(maximized) {
 		glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 	}
@@ -39,7 +42,7 @@ GLFWwindow* gui::startup(const char* window_title, s32 width, s32 height, bool m
 
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1); // vsync
-
+	
 	verify(gladLoadGLLoader((GLADloadproc) glfwGetProcAddress), "Cannot load GLAD.");
 	
 	IMGUI_CHECKVERSION();
@@ -50,7 +53,17 @@ GLFWwindow* gui::startup(const char* window_title, s32 width, s32 height, bool m
 	io.ConfigDockingWithShift = true;
 	io.IniFilename = nullptr; // Disable loading/saving ImGui layout.
 	ImGui::StyleColorsDark();
-	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	ImGui_ImplGlfw_InitForOpenGL(window, callbacks == nullptr);
+	if(callbacks != nullptr) {
+		glfwSetWindowFocusCallback(window, ImGui_ImplGlfw_WindowFocusCallback);
+		glfwSetCursorEnterCallback(window, ImGui_ImplGlfw_CursorEnterCallback);
+		glfwSetCursorPosCallback(window, ImGui_ImplGlfw_CursorPosCallback);
+		glfwSetMouseButtonCallback(window, ImGui_ImplGlfw_MouseButtonCallback);
+		glfwSetScrollCallback(window, ImGui_ImplGlfw_ScrollCallback);
+		glfwSetKeyCallback(window, callbacks->key_callback);
+		glfwSetCharCallback(window, ImGui_ImplGlfw_CharCallback);
+		glfwSetMonitorCallback(ImGui_ImplGlfw_MonitorCallback);
+	}
 	ImGui_ImplOpenGL3_Init("#version 120");
 	
 	ImGuiStyle& style = ImGui::GetStyle();
