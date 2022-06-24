@@ -108,9 +108,15 @@ void Texture::to_rgba() {
 			break;
 		}
 		case PixelFormat::PALETTED_4: {
+			
 			for(s32 y = 0; y < height; y++) {
 				for(s32 x = 0; x < width; x++) {
-					u8 index = data[y * width + x];
+					u8 index = data[(y * width + x) / 2];
+					if(x % 2 == 0) {
+						index >>= 4;
+					} else {
+						index &= 0xf;
+					}
 					*(u32*) &rgba[(y * width + x) * 4] = palette().at(index);
 				}
 			}
@@ -120,12 +126,7 @@ void Texture::to_rgba() {
 		case PixelFormat::PALETTED_8: {
 			for(s32 y = 0; y < height; y++) {
 				for(s32 x = 0; x < width; x++) {
-					u8 index = data[(y * width + x) / 2];
-					if(x % 2 == 0) {
-						index >>= 4;
-					} else {
-						index &= 0xf;
-					}
+					u8 index = data[y * width + x];
 					*(u32*) &rgba[(y * width + x) * 4] = palette().at(index);
 				}
 			}
