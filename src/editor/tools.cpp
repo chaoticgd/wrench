@@ -20,8 +20,8 @@
 
 #include <glm/gtx/intersect.hpp>
 
-#include "app.h"
-#include "meshes.h"
+#include <editor/app.h>
+#include <editor/util.h>
 
 std::vector<std::unique_ptr<Tool>> enumerate_tools() {
 	std::vector<std::unique_ptr<Tool>> tools;
@@ -154,35 +154,42 @@ void TranslateTool::draw(app& a, glm::mat4 world_to_clip) {
 	if(ImGui::Button("Apply") && glm::length(_displacement) > 0.001f) {
 		assert(a.get_level());
 		Level& lvl = *a.get_level();
-		std::vector<InstanceId> ids = lvl.gameplay().selected_instances();
-		glm::vec3 displacement = _displacement;
-		std::vector<std::pair<InstanceId, glm::vec3>> old_positions;
+		
+		struct TranslateCommand {
+			std::vector<InstanceId> ids;
+			glm::vec3 displacement;
+			std::vector<std::pair<InstanceId, glm::vec3>> old_positions;
+		};
+		
+		TranslateCommand data;
+		data.ids = lvl.gameplay().selected_instances();
+		data.displacement = _displacement;
 		lvl.gameplay().for_each_instance_with(COM_TRANSFORM, [&](Instance& inst) {
 			if(inst.selected) {
-				old_positions.emplace_back(inst.id(), inst.position());
+				data.old_positions.emplace_back(inst.id(), inst.position());
 			}
 		});
 		
-		//lvl.push_command(
-		//	[ids, displacement](Level& lvl) {
-		//		lvl.gameplay().for_each_instance_with(COM_TRANSFORM, [&](Instance& inst) {
-		//			if(contains(ids, inst.id())) {
-		//				inst.set_position(inst.position() + displacement);
-		//			}
-		//		});
-		//	},
-		//	[old_positions](Level& lvl) {
-		//		size_t i = 0;
-		//		while(i < old_positions.size()) {
-		//			lvl.gameplay().for_each_instance_with(COM_TRANSFORM, [&](Instance& inst) {
-		//				if(inst.id() == old_positions[i].first) {
-		//					inst.set_position(old_positions[i].second);
-		//					i++;
-		//				}
-		//			});
-		//		}
-		//	}
-		//);
+		lvl.push_command<TranslateCommand>(std::move(data),
+			[](Level& lvl, TranslateCommand& data) {
+				lvl.gameplay().for_each_instance_with(COM_TRANSFORM, [&](Instance& inst) {
+					if(contains(data.ids, inst.id())) {
+						inst.set_position(inst.position() + data.displacement);
+					}
+				});
+			},
+			[](Level& lvl, TranslateCommand& data) {
+				size_t i = 0;
+				while(i < data.old_positions.size()) {
+					lvl.gameplay().for_each_instance_with(COM_TRANSFORM, [&](Instance& inst) {
+						if(inst.id() == data.old_positions[i].first) {
+							inst.set_position(data.old_positions[i].second);
+							i++;
+						}
+					});
+				}
+			}
+		);
 		_displacement = glm::vec3(0, 0, 0);
 	}
 	ImGui::End();
