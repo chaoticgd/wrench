@@ -236,7 +236,9 @@ static void begin_dock_space() {
 }
 
 static void dockable_windows() {
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 	dockable_window("3D View", view_3d);
+	ImGui::PopStyleVar();
 	dockable_window("Inspector", inspector);
 }
 
