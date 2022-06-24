@@ -468,6 +468,7 @@ static void generate_attribute_getter_and_setter_functions(const WtfNode* asset_
 			}
 			
 			out("void %sAsset::set_%s(%s src_0) {\n", asset_type->tag, node->tag, cpp_type.c_str());
+			out("\tassert(bank().is_writeable());\n");
 			out("\t%s dest_0;\n", cpp_type.c_str());
 			generate_attribute_setter_code(node, 0);
 			out("\t_attribute_%s = std::move(dest_0);\n", node->tag);
