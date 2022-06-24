@@ -276,9 +276,12 @@ public:
 	std::pair<std::unique_ptr<OutputStream>, FileReference> open_binary_file_for_writing(const fs::path& path) const;
 	std::string read_text_file(const fs::path& path) const;
 	FileReference write_text_file(const fs::path& path, const char* contents) const;
+	bool file_exists(const fs::path& path) const;
 	
 	AssetFile* lower_precedence();
 	AssetFile* higher_precedence();
+	
+	Asset& asset_from_reference(AssetType type, const AssetReference& reference);
 	
 private:
 	friend Asset;
@@ -335,6 +338,7 @@ private:
 	virtual std::unique_ptr<OutputStream> open_binary_file_for_writing(const fs::path& path) = 0;
 	virtual std::string read_text_file(const fs::path& path) const = 0;
 	virtual void write_text_file(const fs::path& path, const char* contents) = 0;
+	virtual bool file_exists(const fs::path& path) const = 0;
 	virtual std::vector<fs::path> enumerate_asset_files() const = 0;
 	virtual s32 check_lock() const;
 	virtual void lock();
@@ -356,8 +360,8 @@ public:
 	
 	SETUP_MEMORY_ZONE(MEMORY_ZONE_ASSET_SYSTEM)
 	
-	AssetBank* any_bank();
-	const AssetBank* any_bank() const;
+	Asset* any_root();
+	const Asset* any_root() const;
 	
 	Asset& lookup_asset(const AssetReference& reference, Asset* context);
 	
@@ -388,6 +392,7 @@ private:
 };
 
 class LooseAssetBank : public AssetBank {
+	friend AssetBank;
 public:
 	LooseAssetBank(AssetForest& forest, fs::path directory, bool is_writeable);
 	
@@ -396,6 +401,7 @@ private:
 	std::unique_ptr<OutputStream> open_binary_file_for_writing(const fs::path& path) override;
 	std::string read_text_file(const fs::path& path) const override;
 	void write_text_file(const fs::path& path, const char* contents) override;
+	bool file_exists(const fs::path& path) const override;
 	std::vector<fs::path> enumerate_asset_files() const override;
 	s32 check_lock() const override;
 	void lock() override;
@@ -412,6 +418,7 @@ private:
 	std::unique_ptr<OutputStream> open_binary_file_for_writing(const fs::path& path) override;
 	std::string read_text_file(const fs::path& path) const override;
 	void write_text_file(const fs::path& path, const char* contents) override;
+	bool file_exists(const fs::path& path) const override;
 	std::vector<fs::path> enumerate_asset_files() const override;
 	s32 check_lock() const override;
 	void lock() override;

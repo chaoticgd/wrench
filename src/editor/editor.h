@@ -19,13 +19,15 @@
 #ifndef EDITOR_UNDO_REDO_H
 #define EDITOR_UNDO_REDO_H
 
-#include "core/util/error_util.h"
 #include <core/util.h>
+#include <core/filesystem.h>
 
 class BaseEditor {
 public:
 	void undo();
 	void redo();
+	
+	virtual void save(const fs::path& path) = 0;
 	
 protected:
 	struct UndoRedoCommand {
@@ -74,6 +76,11 @@ public:
 		_commands.emplace_back(std::move(cmd));
 		_command_past_last = _commands.size();
 	}
+};
+
+struct SaveError {
+	bool retry;
+	std::string message;
 };
 
 #endif

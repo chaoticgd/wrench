@@ -17,8 +17,8 @@
 */
 
 #include "editor_gui.h"
-#include "imgui.h"
 
+#include <nfd.h>
 #include <gui/gui.h>
 #include <gui/config.h>
 #include <gui/build_settings.h>
@@ -76,12 +76,39 @@ void editor_gui() {
 
 static void menu_bar() {
 	if(ImGui::BeginMainMenuBar()) {
+		bool open_error_popup = false;
+		static std::string error_message;
+		
 		if(ImGui::BeginMenu("File")) {
+			if(ImGui::MenuItem("Save")) {
+				if(BaseEditor* editor = g_app->get_editor()) {
+					try {
+						editor->save(fs::path());
+					} catch(SaveError& e) {
+						if(e.retry) {
+							nfdchar_t* path;
+							nfdresult_t result = NFD_SaveDialog("asset", nullptr, &path);
+							if(result == NFD_OKAY) {
+								try {
+									editor->save(path);
+								} catch(SaveError& e) {
+									error_message = e.message;
+									open_error_popup = true;
+								}
+								free(path);
+							}
+						} else {
+							error_message = e.message;
+							open_error_popup = true;
+						}
+					}
+				} else {
+					error_message = "No editor open.";
+					open_error_popup = true;
+				}
+			}
 			ImGui::EndMenu();
 		}
-		
-		bool open_history_error_popup = false;
-		static std::string history_error_message;
 		
 		if(ImGui::BeginMenu("Edit")) {
 			if(ImGui::MenuItem("Undo")) {
@@ -89,12 +116,12 @@ static void menu_bar() {
 					try {
 						editor->undo();
 					} catch(RuntimeError& e) {
-						history_error_message = e.message;
-						open_history_error_popup = true;
+						error_message = e.message;
+						open_error_popup = true;
 					}
 				} else {
-					history_error_message = "No editor open.";
-					open_history_error_popup = true;
+					error_message = "No editor open.";
+					open_error_popup = true;
 				}
 			}
 			if(ImGui::MenuItem("Redo")) {
@@ -102,27 +129,26 @@ static void menu_bar() {
 					try {
 						editor->redo();
 					} catch(RuntimeError& e) {
-						history_error_message = e.message;
-						open_history_error_popup = true;
+						error_message = e.message;
+						open_error_popup = true;
 					}
 				} else {
-					history_error_message = "No editor open.";
-					open_history_error_popup = true;
+					error_message = "No editor open.";
+					open_error_popup = true;
 				}
 			}
 			ImGui::EndMenu();
 		}
 		
-		if(open_history_error_popup) {
-			ImGui::OpenPopup("History Error");
-			open_history_error_popup = false;
+		if(open_error_popup) {
+			ImGui::OpenPopup("Error");
 		}
 		
 		ImGui::SetNextWindowSize(ImVec2(300, 200));
-		if(ImGui::BeginPopupModal("History Error")) {
-			ImGui::TextWrapped("%s", history_error_message.c_str());
+		if(ImGui::BeginPopupModal("Error")) {
+			ImGui::TextWrapped("%s", error_message.c_str());
 			if(ImGui::Button("Okay")) {
-				history_error_message.clear();
+				error_message.clear();
 				ImGui::CloseCurrentPopup();
 			}
 			ImGui::EndPopup();

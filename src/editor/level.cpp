@@ -19,12 +19,14 @@
 #include "level.h"
 
 #include <core/png.h>
+#include <editor/app.h>
 
 Level::Level() {}
 
 void Level::read(LevelAsset& asset, Game g) {
 	game = g;
 	_asset = &asset;
+	_gameplay_asset = &data_wad().get_gameplay().as<BinaryAsset>();
 	
 	const std::vector<GameplayBlockDescription>* gbd = nullptr;
 	switch(game) {
@@ -35,8 +37,7 @@ void Level::read(LevelAsset& asset, Game g) {
 		default: verify_not_reached("Invalid game!"); break;
 	}
 		
-	BinaryAsset& gameplay = gameplay_asset();
-	auto stream = gameplay.file().open_binary_file_for_reading(gameplay.src());
+	auto stream = _gameplay_asset->file().open_binary_file_for_reading(_gameplay_asset->src());
 	std::vector<u8> buffer = stream->read_multiple<u8>(stream->size());
 	read_gameplay(_gameplay, _pvar_types, buffer, game, *gbd);
 	
@@ -74,14 +75,43 @@ void Level::read(LevelAsset& asset, Game g) {
 	});
 }
 
-void Level::write() {
-	std::vector<u8> buffer;
-	write_gameplay(_gameplay, _pvar_types, game, GC_UYA_GAMEPLAY_BLOCKS);
+void Level::save(const fs::path& path) {
+	assert(_gameplay_asset);
 	
-	BinaryAsset& gameplay = gameplay_asset();
-	auto [stream, ref] = gameplay.file().open_binary_file_for_writing(gameplay.src().path);
+	// If the gamplay asset isn't currently part of the mod, create a new .asset
+	// file for it. Throwing the first time with retry=true will open a save
+	// dialog and then the path argument will be populated with the chosen path.
+	if(_gameplay_asset->bank().game_info.type != AssetBankType::MOD) {
+		if(path.empty()) {
+			throw SaveError{true, "No path specified."};
+		}
+		AssetFile& gameplay_file = g_app->mod_bank->asset_file(path);
+		Asset& new_asset = gameplay_file.asset_from_reference(BinaryAsset::ASSET_TYPE, _gameplay_asset->reference());
+		if(new_asset.logical_type() != BinaryAsset::ASSET_TYPE) {
+			throw SaveError{false, "An asset of a different type already exists."};
+		}
+		_gameplay_asset = &new_asset.as<BinaryAsset>();
+	}
+	
+	fs::path gameplay_path;
+	if(_gameplay_asset->src().path.empty()) {
+		// Make sure we're not overwriting another gameplay.bin file.
+		if(!_gameplay_asset->file().file_exists("gameplay.bin")) {
+			gameplay_path = "gameplay.bin";
+		} else {
+			throw SaveError{false, "A gameplay.bin file already exists in that folder."};
+		}
+	} else {
+		gameplay_path = _gameplay_asset->src().path;
+	}
+	
+	// Write out the gameplay.bin file.
+	std::vector<u8> buffer = write_gameplay(_gameplay, _pvar_types, game, GC_UYA_GAMEPLAY_BLOCKS);
+	auto [stream, ref] = _gameplay_asset->file().open_binary_file_for_writing(gameplay_path);
 	stream->write_v(buffer);
-	gameplay.set_src(ref);
+	_gameplay_asset->set_src(ref);
+	
+	_gameplay_asset->file().write();
 }
 
 LevelAsset& Level::level() {
@@ -102,8 +132,4 @@ LevelCoreAsset& Level::core() {
 
 Gameplay& Level::gameplay() {
 	return _gameplay;
-}
-
-BinaryAsset& Level::gameplay_asset() {
-	return data_wad().get_gameplay().as<BinaryAsset>();
 }

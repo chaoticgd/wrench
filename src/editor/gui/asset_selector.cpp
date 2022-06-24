@@ -17,6 +17,7 @@
 */
 
 #include "asset_selector.h"
+#include "assetmgr/asset_util.h"
 
 #include <gui/gui.h>
 
@@ -30,10 +31,8 @@ Asset* asset_selector(const char* label, const char* preview_value, AssetSelecto
 	if(ImGui::BeginCombo(label, preview_value)) {
 		if(!open_last_frame) {
 			assets.clear();
-			if(AssetBank* bank = forest.any_bank()) {
-				if(Asset* root = bank->root()) {
-					recurse(*root, state);
-				}
+			if(Asset* root = forest.any_root()) {
+				recurse(*root, state);
 			}
 			open_last_frame = true;
 		}
@@ -50,8 +49,8 @@ Asset* asset_selector(const char* label, const char* preview_value, AssetSelecto
 }
 
 static void recurse(Asset& asset, AssetSelector& state) {
-	if(asset.type() == state.required_type) {
-		assets.push_back(&asset);
+	if(asset.logical_type() == state.required_type) {
+		assets.push_back(&asset.highest_precedence());
 		if(state.no_recurse) {
 			return;
 		}

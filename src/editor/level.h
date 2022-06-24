@@ -35,7 +35,7 @@ public:
 	Level();
 	
 	void read(LevelAsset& asset, Game g);
-	void write();
+	void save(const fs::path& path) override;
 	
 	LevelAsset& level();
 	LevelWadAsset& level_wad();
@@ -51,9 +51,8 @@ public:
 	std::map<s32, EditorMobyClass> mobies;
 	
 private:
-	BinaryAsset& gameplay_asset();
-	
 	LevelAsset* _asset = nullptr;
+	BinaryAsset* _gameplay_asset = nullptr;
 	Gameplay _gameplay;
 	PvarTypes _pvar_types;
 };
