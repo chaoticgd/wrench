@@ -62,8 +62,9 @@ static void run_round_trip_asset_packing_tests(const fs::path& input_path, const
 	if(asset_ref.empty()) {
 		enumerate_binaries(binaries, *root);
 	} else {
-		AssetReference ref = parse_asset_reference(asset_ref.c_str());
-		Asset& asset = forest.lookup_asset(ref, bank.root());
+		AssetLink link;
+		link.set(asset_ref.c_str());
+		Asset& asset = forest.lookup_asset(link, bank.root());
 		verify(asset.type() == BinaryAsset::ASSET_TYPE, "Specified asset is not a binary.");
 		binaries.emplace_back(&asset.as<BinaryAsset>());
 	}
@@ -101,7 +102,7 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 	MemoryInputStream src_stream(src);
 	
 	const char* type_name = asset_type_to_string(type);
-	std::string ref = asset_reference_to_string(binary.reference());
+	std::string ref = binary.absolute_link().to_string();
 	
 	if(mode == PRINT_DIFF_ON_FAIL) {
 		printf("[%3d%%] \033[34mRunning test with %s asset %s\033[0m\n", percentage, type_name, ref.c_str());

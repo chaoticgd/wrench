@@ -38,22 +38,24 @@ struct AssetType {
 using AssetVisitorCallback = std::function<void(const char* key, std::any value, std::function<void(std::any)> setter)>;
 using ConstAssetVisitorCallback = std::function<void(const char* key, std::any value)>;
 
-struct AssetReferenceFragment {
-	std::string tag;
-	AssetType type = {-1}; // Not populated by the parser.
-	
-	bool operator==(const AssetReferenceFragment& rhs) const { return tag == rhs.tag; }
+struct AssetLinkPointers {
+	const char* prefix = nullptr;
+	std::vector<const char*> fragments;
 };
 
-struct AssetReference {
-	std::vector<AssetReferenceFragment> fragments;
-	std::string pack;
+class AssetLink {
+public:
+	AssetLink();
 	
-	bool operator==(const AssetReference& rhs) const { return fragments == rhs.fragments && pack == rhs.pack; }
+	AssetLinkPointers get() const;
+	void set(const char* src);
+	void add_tag(const char* tag);
+	std::string to_string() const;
+private:
+	bool prefix = false;
+	s16 fragments = 0;
+	std::vector<char> data; // = [prefix \0] fragment(0) \0 ... \0 fragment(fragments-1)
 };
-
-AssetReference parse_asset_reference(const char* ptr);
-std::string asset_reference_to_string(const AssetReference& reference);
 
 class AssetForest;
 class AssetBank;

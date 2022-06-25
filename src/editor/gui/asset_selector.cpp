@@ -37,7 +37,7 @@ Asset* asset_selector(const char* label, const char* preview_value, AssetSelecto
 			open_last_frame = true;
 		}
 		for(Asset* asset : assets) {
-			if(ImGui::Selectable(asset_reference_to_string(asset->reference()).c_str())) {
+			if(ImGui::Selectable(asset->absolute_link().to_string().c_str())) {
 				selected = asset;
 			}
 		}

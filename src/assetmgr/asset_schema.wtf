@@ -31,7 +31,7 @@ AssetType Root {
 AssetType Reference {
 	desc: "A reference to an asset that can be put in place of any other asset."
 	
-	AssetReferenceAttribute asset {
+	AssetLinkAttribute asset {
 		desc: "The asset being referenced."
 		required: true
 		games: [1 2 3 4]

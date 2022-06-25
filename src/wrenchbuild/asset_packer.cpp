@@ -39,7 +39,7 @@ void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_
 	
 	std::string type = asset_type_to_string(asset->type());
 	for(char& c : type) c = tolower(c);
-	std::string reference = asset_reference_to_string(asset->reference());
+	std::string reference = asset->absolute_link().to_string();
 	
 	if(!g_asset_packer_dry_run && !g_asset_packer_quiet) {
 		s32 completion_percentage = (s32) ((g_asset_packer_num_assets_processed * 100.f) / g_asset_packer_max_assets_processed);

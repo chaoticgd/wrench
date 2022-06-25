@@ -20,46 +20,72 @@
 
 #include "asset_types.h"
 
-AssetReference parse_asset_reference(const char* ptr) {
-	std::string string(ptr);
-	
-	AssetReference reference;
-	
-	size_t tag_begin = 0;
-	for(size_t i = 0; i < string.size(); i++) {
-		if(string[i] == '.') {
-			std::string tag = string.substr(tag_begin, i - tag_begin);
-			reference.fragments.push_back(AssetReferenceFragment{std::move(tag)});
-			tag_begin = i + 1;
-		}
-		if(string[i] == '@') {
-			std::string tag = string.substr(tag_begin, i - tag_begin);
-			reference.fragments.push_back(AssetReferenceFragment{std::move(tag)});
-			reference.pack = string.substr(i + 1);
-			return reference;
-		}
+AssetLink::AssetLink() {}
+
+AssetLinkPointers AssetLink::get() const {
+	AssetLinkPointers pointers;
+	const char* ptr = &data[0];
+	if(prefix) {
+		pointers.prefix = ptr;
+		ptr += strlen(ptr) + 1;
 	}
-	
-	std::string tag = string.substr(tag_begin, string.size() - tag_begin);
-	if(tag.size() > 0) {
-		reference.fragments.push_back(AssetReferenceFragment{std::move(tag)});
+	pointers.fragments.reserve(fragments);
+	for(s16 i = 0; i < fragments; i++) {
+		pointers.fragments.push_back(ptr);
+		ptr += strlen(ptr) + 1;
 	}
-	
-	return reference;
+	return pointers;
 }
 
-std::string asset_reference_to_string(const AssetReference& reference) {
-	std::string string;
-	for(auto fragment = reference.fragments.begin(); fragment != reference.fragments.end(); fragment++) {
-		string += fragment->tag;
-		if(fragment + 1 != reference.fragments.end()) {
-			string += '.';
+void AssetLink::set(const char* src) {
+	prefix = false;
+	fragments = 0;
+	size_t size = strlen(src);
+	data.resize(size + 1);
+	for(size_t i = 0; i < strlen(src); i++) {
+		if(src[i] == '.' || src[i] == ':') {
+			if(src[i] == ':') {
+				verify(!prefix && fragments == 0, "Syntax error while parsing asset link.");
+				prefix = true;
+			} else {
+				fragments++;
+			}
+			data[i] = '\0';
+		} else {
+			data[i] = src[i];
 		}
 	}
-	if(!reference.pack.empty()) {
-		string += '@' + reference.pack;
+	fragments++;
+	data[size] = '\0';
+}
+
+void AssetLink::add_tag(const char* tag) {
+	size_t old_size = data.size();
+	size_t tag_size = strlen(tag);
+	data.resize(old_size + tag_size + 1);
+	for(size_t i = 0; i < tag_size; i++) {
+		data[old_size + i] = tag[i];
 	}
-	return string;
+	data[old_size + tag_size] = '\0';
+	fragments++;
+}
+
+std::string AssetLink::to_string() const {
+	std::string str;
+	const char* ptr = &data[0];
+	if(prefix) {
+		str += ptr;
+		str += ':';
+		ptr += strlen(ptr) + 1;
+	}
+	for(s16 i = 0; i < fragments; i++) {
+		str += ptr;
+		if(i != fragments - 1) {
+			str += '.';
+		}
+		ptr += strlen(ptr) + 1;
+	}
+	return str;
 }
 
 const char* next_hint(const char** hint) {

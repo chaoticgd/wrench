@@ -45,7 +45,7 @@ static void unpack_binary_asset(Asset& dest, InputStream& src, const std::vector
 	auto [stream, ref] = binary.file().open_binary_file_for_writing(file_name);
 	verify(stream.get(), "Failed to open file '%s' for writing binary asset '%s'.",
 		file_name.c_str(),
-		asset_reference_to_string(binary.reference()).c_str());
+		binary.absolute_link().to_string().c_str());
 	if(header_src && config.game() == Game::RAC) {
 		s64 padded_header_size = Sector32::size_from_bytes(header_src->size()).bytes();
 		stream->write_v(*header_src);

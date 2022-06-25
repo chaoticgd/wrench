@@ -318,7 +318,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, Game
 			
 			bank.game_info.name = release.name;
 			bank.game_info.format_version = ASSET_FORMAT_VERSION;
-			bank.game_info.builds = {asset_reference_to_string(build.reference())};
+			bank.game_info.builds = {build.absolute_link().to_string()};
 			
 			printf("[100%%] Done!\n");
 			
@@ -369,7 +369,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, Game
 			unpack_asset_impl(*wad, stream, &header, BuildConfig(game, region));
 			
 			bank.game_info.format_version = ASSET_FORMAT_VERSION;
-			bank.game_info.builds = {asset_reference_to_string(build.reference())};
+			bank.game_info.builds = {build.absolute_link().to_string()};
 			
 			printf("[100%%] Done!\n");
 			
@@ -390,7 +390,9 @@ static void pack(const std::vector<fs::path>& input_paths, const std::string& as
 		forest.mount<LooseAssetBank>(input_path, false);
 	}
 	
-	Asset& wad = forest.lookup_asset(parse_asset_reference(asset.c_str()), nullptr);
+	AssetLink link;
+	link.set(asset.c_str());
+	Asset& wad = forest.lookup_asset(link, nullptr);
 	
 	printf("[  0%%] Scanning dependencies of %s\n", asset.c_str());
 	

@@ -66,7 +66,7 @@ void unpack_asset_impl(Asset& dest, InputStream& src, const std::vector<u8>* hea
 		return;
 	}
 	
-	std::string reference = asset_reference_to_string(dest.reference());
+	std::string reference = dest.absolute_link().to_string();
 	if(!g_asset_unpacker.quiet) {
 		std::string type = asset_type_to_string(dest.type());
 		for(char& c : type) c = tolower(c);

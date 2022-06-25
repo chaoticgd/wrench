@@ -108,7 +108,7 @@ void unpack_rac_level_wad(LevelWadAsset& dest, const RacLevelWadHeader& header, 
 	unpack_asset(dest.data<LevelDataWadAsset>(SWITCH_FILES), src, header.data, config);
 	BinaryAsset& gameplay = dest.data<LevelDataWadAsset>().gameplay();
 	unpack_compressed_asset(gameplay, src, header.gameplay_ntsc, config);
-	dest.gameplay<ReferenceAsset>().set_asset(gameplay.reference());
+	dest.gameplay<ReferenceAsset>().set_asset(gameplay.absolute_link());
 	unpack_compressed_asset(dest.occlusion(), src, header.occlusion, config);
 }
 
@@ -127,11 +127,11 @@ void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHeader& hea
 	
 	BinaryAsset& sound_bank = dest.data<LevelDataWadAsset>().sound_bank();
 	unpack_asset(sound_bank, src, header.sound_bank, config);
-	dest.sound_bank<ReferenceAsset>().set_asset(sound_bank.reference());
+	dest.sound_bank<ReferenceAsset>().set_asset(sound_bank.absolute_link());
 	unpack_asset(dest.data<LevelDataWadAsset>(SWITCH_FILES), src, header.data, config);
 	BinaryAsset& gameplay = dest.data<LevelDataWadAsset>().gameplay();
 	unpack_compressed_asset(gameplay, src, header.gameplay, config);
-	dest.gameplay<ReferenceAsset>().set_asset(gameplay.reference());
+	dest.gameplay<ReferenceAsset>().set_asset(gameplay.absolute_link());
 	unpack_compressed_asset(dest.occlusion(), src, header.occlusion, config);
 	unpack_chunks(dest.chunks(), src, header.chunks, config);
 }
@@ -153,13 +153,13 @@ void unpack_dl_level_wad(LevelWadAsset& dest, const DlLevelWadHeader& header, In
 	
 	BinaryAsset& sound_bank = dest.data<LevelDataWadAsset>().sound_bank();
 	unpack_asset(sound_bank, src, header.sound_bank, config);
-	dest.sound_bank<ReferenceAsset>().set_asset(sound_bank.reference());
+	dest.sound_bank<ReferenceAsset>().set_asset(sound_bank.absolute_link());
 	unpack_asset(dest.data<LevelDataWadAsset>(SWITCH_FILES), src, header.data, config);
 	unpack_chunks(dest.chunks(), src, header.chunks, config);
 	LevelDataWadAsset& data = dest.get_data().as<LevelDataWadAsset>();
-	dest.gameplay<ReferenceAsset>().set_asset(data.get_gameplay().reference());
+	dest.gameplay<ReferenceAsset>().set_asset(data.get_gameplay().absolute_link());
 	unpack_missions(dest.missions(), src, header.missions, config);
-	dest.art_instances<ReferenceAsset>().set_asset(data.get_art_instances().reference());
+	dest.art_instances<ReferenceAsset>().set_asset(data.get_art_instances().absolute_link());
 }
 
 static void pack_dl_level_wad(OutputStream& dest, DlLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config) {

@@ -74,13 +74,13 @@ const Asset& Asset::highest_precedence() const {
 	return const_cast<Asset&>(*this).highest_precedence();
 }
 
-AssetReference Asset::reference() const {
+AssetLink Asset::absolute_link() const {
 	if(parent()) {
-		AssetReference reference = parent()->reference();
-		reference.fragments.emplace_back(AssetReferenceFragment{tag(), type()});
-		return reference;
+		AssetLink link = parent()->absolute_link();
+		link.add_tag(tag().c_str());
+		return link;
 	} else {
-		return AssetReference{};
+		return AssetLink{};
 	}
 }
 
@@ -122,7 +122,7 @@ Asset& Asset::get_child(const char* tag) {
 		}
 	}
 	verify_not_reached("No child of '%s' with tag '%s'.",
-		asset_reference_to_string(reference()).c_str(), tag);
+		absolute_link().to_string().c_str(), tag);
 }
 
 const Asset& Asset::get_child(const char* tag) const {
@@ -169,10 +169,11 @@ bool Asset::remove_physical_child(Asset& asset) {
 }
 
 Asset& Asset::foreign_child_impl(const fs::path& path, AssetType type, const char* tag) {
-	AssetReference ref = reference();
+	AssetLink link = absolute_link();
 	Asset* asset = &bank().asset_file(path.is_absolute() ? path.relative_path() : file()._relative_directory/path).root();
-	for(AssetReferenceFragment& fragment : ref.fragments) {
-		asset = &asset->physical_child(PlaceholderAsset::ASSET_TYPE, fragment.tag.c_str());
+	auto [prefix, tags] = link.get();
+	for(const char* tag : tags) {
+		asset = &asset->physical_child(PlaceholderAsset::ASSET_TYPE, tag);
 	}
 	return asset->physical_child(type, tag);
 }
@@ -284,11 +285,11 @@ Asset& Asset::add_child(std::unique_ptr<Asset> child) {
 
 Asset& Asset::resolve_references() {
 	Asset* asset = &highest_precedence();
-	verify(!asset->is_deleted(), "Asset '%s' is deleted.", asset_reference_to_string(asset->reference()).c_str());
+	verify(!asset->is_deleted(), "Asset '%s' is deleted.", asset->absolute_link().to_string().c_str());
 	while(ReferenceAsset* reference = dynamic_cast<ReferenceAsset*>(asset)) {
 		asset = &forest().lookup_asset(reference->asset(), asset);
-		verify(!asset->is_deleted(), "Tried to find deleted asset '%s'.", asset_reference_to_string(reference->asset()).c_str());
-		verify(asset, "Failed to find asset '%s'.", asset_reference_to_string(reference->asset()).c_str());
+		verify(!asset->is_deleted(), "Tried to find deleted asset '%s'.", reference->asset().to_string().c_str());
+		verify(asset, "Failed to find asset '%s'.", reference->asset().to_string().c_str());
 	}
 	return *asset;
 }
@@ -439,13 +440,13 @@ AssetFile* AssetFile::higher_precedence() {
 	return nullptr;
 }
 
-Asset& AssetFile::asset_from_reference(AssetType type, const AssetReference& reference) {
+Asset& AssetFile::asset_from_link(AssetType type, const AssetLink& link) {
 	Asset* asset = &root();
-	for(size_t i = 0; i < reference.fragments.size(); i++) {
-		const AssetReferenceFragment& fragment = reference.fragments[i];
-		AssetType current_type = (i == reference.fragments.size() - 1)
+	auto [prefix, tags] = link.get();
+	for(size_t i = 0; i < tags.size(); i++) {
+		AssetType current_type = (i == tags.size() - 1)
 			? type : PlaceholderAsset::ASSET_TYPE;
-		asset = &asset->physical_child(current_type, fragment.tag.c_str());
+		asset = &asset->physical_child(current_type, tags[i]);
 	}
 	return *asset;
 }
@@ -571,13 +572,14 @@ const Asset* AssetForest::any_root() const {
 	return nullptr;
 }
 
-Asset& AssetForest::lookup_asset(const AssetReference& reference, Asset* context) {
+Asset& AssetForest::lookup_asset(const AssetLink& link, Asset* context) {
 	verify(_banks.size() >= 1 && _banks[0]->_asset_files.size() >= 1,
 		"Asset lookup for '%s' failed because the asset forest is empty.",
-		asset_reference_to_string(reference));
+		link.to_string().c_str());
 	Asset* asset = &_banks[0]->_asset_files[0]->root();
-	for(const AssetReferenceFragment& fragment : reference.fragments) {
-		asset = &asset->get_child(fragment.tag.c_str());
+	auto [prefix, tags] = link.get();
+	for(const char* tag : tags) {
+		asset = &asset->get_child(tag);
 	}
 	return *asset;
 }

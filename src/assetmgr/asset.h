@@ -73,7 +73,7 @@ public:
 	const Asset& lowest_precedence() const;
 	Asset& highest_precedence();
 	const Asset& highest_precedence() const;
-	AssetReference reference() const;
+	AssetLink absolute_link() const;
 	
 	// This might return Plaholder instead of the actual type.
 	AssetType type() const;
@@ -154,7 +154,7 @@ public:
 			}
 		}
 		verify_not_reached("Failed to convert asset %s to type %s.",
-			asset_reference_to_string(reference()).c_str(),
+			absolute_link().to_string().c_str(),
 			asset_type_to_string(AssetType::ASSET_TYPE));
 	}
 	
@@ -166,7 +166,7 @@ public:
 			}
 		}
 		verify_not_reached("Failed to convert asset %s to type %s.",
-			asset_reference_to_string(reference()).c_str(),
+			absolute_link().to_string().c_str(),
 			asset_type_to_string(AssetType::ASSET_TYPE));
 	}
 	
@@ -281,7 +281,7 @@ public:
 	AssetFile* lower_precedence();
 	AssetFile* higher_precedence();
 	
-	Asset& asset_from_reference(AssetType type, const AssetReference& reference);
+	Asset& asset_from_link(AssetType type, const AssetLink& link);
 	
 private:
 	friend Asset;
@@ -363,7 +363,7 @@ public:
 	Asset* any_root();
 	const Asset* any_root() const;
 	
-	Asset& lookup_asset(const AssetReference& reference, Asset* context);
+	Asset& lookup_asset(const AssetLink& link, Asset* context);
 	
 	template <typename Bank, typename... ConstructorArgs>
 	AssetBank& mount(ConstructorArgs... args) {

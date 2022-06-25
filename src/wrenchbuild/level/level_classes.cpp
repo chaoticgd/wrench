@@ -40,7 +40,7 @@ void unpack_moby_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest,
 			unpack_asset(asset, data, level_core_block_range(entry.offset_in_asset_wad, block_bounds), config, FMT_MOBY_CLASS_LEVEL);
 		}
 		
-		refs_dest.child<ReferenceAsset>(entry.o_class).set_asset(asset.reference());
+		refs_dest.child<ReferenceAsset>(entry.o_class).set_asset(asset.absolute_link());
 	}
 }
 
@@ -61,7 +61,7 @@ void unpack_tie_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest, 
 			unpack_asset(asset.core(), data, level_core_block_range(entry.offset_in_asset_wad, block_bounds), config);
 		}
 		
-		refs_dest.child<ReferenceAsset>(entry.o_class).set_asset(asset.reference());
+		refs_dest.child<ReferenceAsset>(entry.o_class).set_asset(asset.absolute_link());
 	}
 }
 
@@ -82,7 +82,7 @@ void unpack_shrub_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest
 			unpack_asset(asset.core(), data, level_core_block_range(entry.offset_in_asset_wad, block_bounds), config);
 		}
 		
-		refs_dest.child<ReferenceAsset>(entry.o_class).set_asset(asset.reference());
+		refs_dest.child<ReferenceAsset>(entry.o_class).set_asset(asset.absolute_link());
 	}
 }
 

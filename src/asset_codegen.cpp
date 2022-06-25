@@ -348,9 +348,10 @@ static void generate_read_attribute_code(const WtfNode* node, const char* result
 		indent(ind); out("}\n");
 	}
 	
-	if(strcmp(node->type_name, "AssetReferenceAttribute") == 0) {
+	if(strcmp(node->type_name, "AssetLinkAttribute") == 0) {
 		generate_attribute_type_check_code(attrib, "WTF_STRING", node->tag, ind);
-		indent(ind); out("%s = parse_asset_reference(%s->string.begin);\n", result, attrib);
+		indent(ind); out("%s = AssetLink();\n", result);
+		indent(ind); out("%s.set(%s->string.begin);\n", result, attrib);
 	}
 	
 	if(strcmp(node->type_name, "FileReferenceAttribute") == 0) {
@@ -410,8 +411,8 @@ static void generate_asset_write_code(const WtfNode* node, const char* expr, int
 		indent(ind); out("wtf_end_array(ctx);\n");
 	}
 	
-	if(strcmp(node->type_name, "AssetReferenceAttribute") == 0) {
-		indent(ind); out("wtf_write_string(ctx, asset_reference_to_string(%s).c_str());\n", expr);
+	if(strcmp(node->type_name, "AssetLinkAttribute") == 0) {
+		indent(ind); out("wtf_write_string(ctx, %s.to_string().c_str());\n", expr);
 	}
 	
 	if(strcmp(node->type_name, "FileReferenceAttribute") == 0) {
@@ -459,7 +460,7 @@ static void generate_attribute_getter_and_setter_functions(const WtfNode* asset_
 				out("\t}\n");
 				if(getter_type == 0) {
 					out("\tverify_not_reached(\"Asset '%%s' has missing attribute '%s'.\",\n"
-						"\t\tasset_reference_to_string(reference()).c_str());\n", node->tag);
+						"\t\tabsolute_link().to_string().c_str());\n", node->tag);
 				} else {
 					out("\treturn def;\n");
 				}
@@ -506,7 +507,7 @@ static void generate_attribute_getter_code(const WtfNode* attribute, int depth) 
 		indent(ind); out("}\n");
 	}
 	
-	if(strcmp(attribute->type_name, "AssetReferenceAttribute") == 0) {
+	if(strcmp(attribute->type_name, "AssetLinkAttribute") == 0) {
 		indent(ind); out("dest_%d = src_%d;\n", depth, depth);
 	}
 	
@@ -542,7 +543,7 @@ static void generate_attribute_setter_code(const WtfNode* attribute, int depth) 
 		indent(ind); out("}\n");
 	}
 	
-	if(strcmp(attribute->type_name, "AssetReferenceAttribute") == 0) {
+	if(strcmp(attribute->type_name, "AssetLinkAttribute") == 0) {
 		indent(ind); out("dest_%d = src_%d;\n", depth, depth);
 	}
 	
@@ -613,8 +614,8 @@ static std::string node_to_cpp_type(const WtfNode* node) {
 		return "std::vector<" + element_type + ">";
 	}
 	
-	if(strcmp(node->type_name, "AssetReferenceAttribute") == 0) {
-		return "AssetReference";
+	if(strcmp(node->type_name, "AssetLinkAttribute") == 0) {
+		return "AssetLink";
 	}
 	
 	if(strcmp(node->type_name, "FileReferenceAttribute") == 0) {

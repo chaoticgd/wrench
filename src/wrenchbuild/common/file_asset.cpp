@@ -38,7 +38,7 @@ static void unpack_file_asset(FileAsset& dest, InputStream& src, BuildConfig con
 	auto [stream, ref] = dest.file().open_binary_file_for_writing(fs::path(dest.path()));
 	verify(stream.get(), "Failed to open file '%s' for writing file asset '%s'.",
 		dest.path().c_str(),
-		asset_reference_to_string(dest.reference()).c_str());
+		dest.absolute_link().to_string().c_str());
 	src.seek(0);
 	Stream::copy(*stream, src, src.size());
 	dest.set_src(ref);
