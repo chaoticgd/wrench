@@ -155,6 +155,25 @@ static void menu_bar() {
 		}
 		
 		if(ImGui::BeginMenu("View")) {
+			app& a = *g_app;
+			if(ImGui::MenuItem("Reset Camera")) {
+				reset_camera(&a);
+			}
+			if(ImGui::BeginMenu("Visibility")) {
+				ImGui::Checkbox("Ties", &a.render_settings.draw_ties);
+				ImGui::Checkbox("Shrubs", &a.render_settings.draw_shrubs);
+				ImGui::Checkbox("Mobies", &a.render_settings.draw_mobies);
+				ImGui::Checkbox("Cuboids", &a.render_settings.draw_cuboids);
+				ImGui::Checkbox("Spheres", &a.render_settings.draw_spheres);
+				ImGui::Checkbox("Cylinders", &a.render_settings.draw_cylinders);
+				ImGui::Checkbox("Paths", &a.render_settings.draw_paths);
+				ImGui::Checkbox("Grind Paths", &a.render_settings.draw_grind_paths);
+				ImGui::Checkbox("Tfrags", &a.render_settings.draw_tfrags);
+				ImGui::Checkbox("Collision", &a.render_settings.draw_collision);
+				ImGui::Separator();
+				ImGui::Checkbox("Selected Moby Normals", &a.render_settings.draw_selected_moby_normals);
+				ImGui::EndMenu();
+			}
 			ImGui::EndMenu();
 		}
 		
