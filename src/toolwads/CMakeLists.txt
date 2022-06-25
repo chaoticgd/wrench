@@ -56,10 +56,16 @@ add_custom_command(
 		# launcher.wad
 		"${CMAKE_SOURCE_DIR}/data/launcher/my_mod.png"
 		"${CMAKE_SOURCE_DIR}/data/launcher/oobe/wrench_setup.png"
+		# editor.wad
+		"${CMAKE_SOURCE_DIR}/data/editor/icons/picker_tool.txt"
+		"${CMAKE_SOURCE_DIR}/data/editor/icons/selection_tool.txt"
+		"${CMAKE_SOURCE_DIR}/data/editor/icons/translate_tool.txt"
+		"${CMAKE_SOURCE_DIR}/data/editor/icons/spline_tool.txt"
 	OUTPUT
 		"${CMAKE_SOURCE_DIR}/data/build.wad"
 		"${CMAKE_SOURCE_DIR}/data/gui.wad"
 		"${CMAKE_SOURCE_DIR}/data/launcher.wad"
+		"${CMAKE_SOURCE_DIR}/data/editor.wad"
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 	COMMENT "Generating tool wads"
 )
@@ -75,10 +81,12 @@ add_custom_command(
 		"${CMAKE_SOURCE_DIR}/data/build.wad"
 		"${CMAKE_SOURCE_DIR}/data/gui.wad"
 		"${CMAKE_SOURCE_DIR}/data/launcher.wad"
+		"${CMAKE_SOURCE_DIR}/data/editor.wad"
 	DEPENDS header2cpp
 		"${CMAKE_SOURCE_DIR}/data/build.wad"
 		"${CMAKE_SOURCE_DIR}/data/gui.wad"
 		"${CMAKE_SOURCE_DIR}/data/launcher.wad"
+		"${CMAKE_SOURCE_DIR}/data/editor.wad"
 	OUTPUT _generated_wadinfo.cpp
 	COMMENT "Generating _generated_wadinfo.cpp"
 )

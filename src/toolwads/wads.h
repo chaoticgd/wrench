@@ -62,10 +62,17 @@ packed_struct(LauncherWadHeader,
 	/* 0x20 */ SectorRange oobe;
 )
 
+packed_struct(EditorWadHeader,
+	/* 0x00 */ s32 header_size;
+	/* 0x04 */ Sector32 sector;
+	/* 0x08 */ SectorRange tool_icons[32];
+)
+
 packed_struct(ToolWadInfo,
 	BuildWadHeader build;
 	GuiWadHeader gui;
 	LauncherWadHeader launcher;
+	EditorWadHeader editor;
 )
 
 packed_struct(OobeWadHeader,
@@ -79,6 +86,7 @@ extern "C" {
 struct WadPaths {
 	std::string gui;
 	std::string launcher;
+	std::string editor;
 };
 
 WadPaths find_wads(const char* bin_path);

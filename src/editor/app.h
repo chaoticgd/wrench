@@ -78,7 +78,8 @@ public:
 };
 
 extern app* g_app;
+extern FileInputStream g_editorwad;
 
-GlTexture load_icon(std::string path);
+GlTexture load_icon(s32 index);
 
 #endif

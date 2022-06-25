@@ -11,6 +11,7 @@ WadPaths find_wads(const char* bin_path) {
 	WadPaths wads;
 	wads.gui = find_wad(directory, "gui.wad");
 	wads.launcher = find_wad(directory, "launcher.wad");
+	wads.editor = find_wad(directory, "editor.wad");
 	return wads;
 }
 

@@ -16,6 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <fstream>
 #include <core/png.h>
 #include <engine/compression.h>
 #include <toolwads/wads.h>
@@ -24,6 +25,8 @@ static void pack_build_wad();
 static void pack_gui_wad();
 static void pack_launcher_wad();
 static SectorRange pack_oobe_wad(OutputStream& dest);
+static void pack_editor_wad();
+static SectorRange pack_ascii_icon(OutputStream& dest, const char* src_path);
 static SectorRange pack_file(OutputStream& dest, const char* src_path);
 static SectorRange pack_compressed_image(OutputStream& dest, const char* src_path);
 static ByteRange pack_image(OutputStream& dest, const char* src_path);
@@ -33,6 +36,7 @@ int main() {
 	pack_build_wad();
 	pack_gui_wad();
 	pack_launcher_wad();
+	pack_editor_wad();
 	return 0;
 }
 
@@ -160,6 +164,61 @@ static SectorRange pack_oobe_wad(OutputStream& dest) {
 	range.size = Sector32::size_from_bytes(dest.tell() - offset);
 	return range;
 }
+
+static void pack_editor_wad() {
+	FileOutputStream wad;
+	assert(wad.open("data/editor.wad"));
+	
+	EditorWadHeader header = {};
+	header.header_size = sizeof(header);
+	wad.alloc<EditorWadHeader>();
+	
+	header.tool_icons[0] = pack_ascii_icon(wad, "data/editor/icons/picker_tool.txt");
+	header.tool_icons[1] = pack_ascii_icon(wad, "data/editor/icons/selection_tool.txt");
+	header.tool_icons[2] = pack_ascii_icon(wad, "data/editor/icons/translate_tool.txt");
+	header.tool_icons[3] = pack_ascii_icon(wad, "data/editor/icons/spline_tool.txt");
+	
+	wad.write<EditorWadHeader>(0, header);
+}
+
+static SectorRange pack_ascii_icon(OutputStream& dest, const char* src_path) {
+	dest.pad(SECTOR_SIZE, 0);
+	s64 offset = dest.tell();
+	
+	std::ifstream image_file((std::string(src_path)));
+	
+	u8 buffer[32][16];
+	for(s32 y = 0; y < 32; y++) {
+		std::string line;
+		std::getline(image_file, line);
+		if(line.size() > 32) {
+			line = line.substr(0, 32);
+		}
+		for(size_t x = 0; x < line.size(); x++) {
+			u8 nibble = (line[x] == '#') ? 0xf : 0x0;
+			if(x % 2 == 0) {
+				buffer[y][x / 2] = nibble << 4;
+			} else {
+				buffer[y][x / 2] |= nibble;
+			}
+		}
+		for(size_t x = line.size(); x < 32; x++) {
+			if(x % 2 == 0) {
+				buffer[y][x / 2] = 0;
+			} else {
+				buffer[y][x / 2] &= 0xf0;
+			}
+		}
+	}
+	dest.write_n((u8*) buffer, sizeof(buffer));
+	
+	SectorRange range;
+	range.offset = Sector32::size_from_bytes(offset);
+	range.size = Sector32::size_from_bytes(dest.tell() - offset);
+	return range;
+}
+
+// *****************************************************************************
 
 static SectorRange pack_file(OutputStream& dest, const char* src_path) {
 	dest.pad(SECTOR_SIZE, 0);

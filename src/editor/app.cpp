@@ -22,7 +22,8 @@
 #include "unwindows.h"
 #include <toml11/toml.hpp>
 
-#include "gui/gui.h"
+#include <toolwads/wads.h>
+#include <gui/gui.h>
 #include "renderer.h"
 #include "fs_includes.h"
 
@@ -48,21 +49,22 @@ bool app::has_camera_control() {
 	return render_settings.camera_control;
 }
 
-GlTexture load_icon(std::string path) {
-	std::ifstream image_file(path);
+GlTexture load_icon(s32 index) {
+	u8 buffer[32][16];
+	g_editorwad.seek(wadinfo.editor.tool_icons[index].offset.bytes());
+	g_editorwad.read_n((u8*) buffer, sizeof(buffer));
 	
 	uint32_t image_buffer[32][32];
-	for(std::size_t y = 0; y < 32; y++) {
-		std::string line;
-		std::getline(image_file, line);
-		if(line.size() > 32) {
-			line = line.substr(0, 32);
-		}
-		for(std::size_t x = 0; x < line.size(); x++) {
-			image_buffer[y][x] = line[x] == '#' ? 0xffffffff : 0x00000000;
-		}
-		for(std::size_t x = line.size(); x < 32; x++) {
-			image_buffer[y][x] = 0;
+	for(s32 y = 0; y < 32; y++) {
+		for(s32 x = 0; x < 32; x++) {
+			u8 gray;
+			if(x % 2 == 0) {
+				gray = ((buffer[y][x / 2] & 0xf0) >> 4) * 17;
+			} else {
+				gray = ((buffer[y][x / 2] & 0x0f) >> 0) * 17;
+			}
+			u8 alpha = (gray > 0) ? 0xff : 0x00;
+			image_buffer[y][x] = gray | (gray << 8) | (gray << 16) | (alpha << 24);
 		}
 	}
 	
@@ -77,3 +79,4 @@ GlTexture load_icon(std::string path) {
 }
 
 app* g_app = nullptr;
+FileInputStream g_editorwad = {};

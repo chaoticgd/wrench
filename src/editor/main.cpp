@@ -42,6 +42,7 @@ int main(int argc, char** argv) {
 	
 	WadPaths wads = find_wads(argv[0]);
 	g_guiwad.open(wads.gui);
+	g_editorwad.open(wads.editor);
 	
 	gui::setup_bin_paths(argv[0]);
 	

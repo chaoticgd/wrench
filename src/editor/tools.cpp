@@ -32,7 +32,7 @@ std::vector<std::unique_ptr<Tool>> enumerate_tools() {
 }
 
 PickerTool::PickerTool() {
-	icon = load_icon("data/icons/picker_tool.txt");
+	icon = load_icon(0);
 }
 
 void PickerTool::draw(app& a, glm::mat4 world_to_clip) {
@@ -101,7 +101,7 @@ void PickerTool::pick_object(app& a, glm::mat4 world_to_clip, ImVec2 position) {
 }
 
 SelectionTool::SelectionTool() {
-	icon = load_icon("data/icons/selection_tool.txt");
+	icon = load_icon(1);
 }
 
 void SelectionTool::draw(app& a, glm::mat4 world_to_clip) {
@@ -144,7 +144,7 @@ void SelectionTool::draw(app& a, glm::mat4 world_to_clip) {
 }
 
 TranslateTool::TranslateTool() {
-	icon = load_icon("data/icons/translate_tool.txt");
+	icon = load_icon(2);
 }
 
 void TranslateTool::draw(app& a, glm::mat4 world_to_clip) {
