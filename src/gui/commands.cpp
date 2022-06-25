@@ -91,10 +91,15 @@ void gui::open_in_editor(const EditorParams& params) {
 	execute_command_non_blocking(args);
 }
 
-void gui::run_emulator(const EmulatorParams& params) {
+void gui::run_emulator(const EmulatorParams& params, bool blocking) {
 	const char* args[] = {
 		g_config.paths.emulator_path.c_str(),
-		params.iso_path.c_str()
+		params.iso_path.c_str(),
+		nullptr
 	};
-	execute_command(ARRAY_SIZE(args), args, nullptr);
+	if(blocking) {
+		execute_command(ARRAY_SIZE(args), args, nullptr);
+	} else {
+		execute_command_non_blocking(args);
+	}
 }

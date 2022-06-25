@@ -17,11 +17,13 @@
 */
 
 #include "editor_gui.h"
+#include "gui/commands.h"
 
 #include <nfd.h>
 #include <gui/gui.h>
 #include <gui/config.h>
 #include <gui/build_settings.h>
+#include <gui/command_output.h>
 #include <editor/app.h>
 #include <editor/gui/view_3d.h>
 #include <editor/gui/inspector.h>
@@ -185,14 +187,28 @@ static void menu_bar() {
 		}
 		
 		static gui::PackerParams params;
-		static std::vector<std::string> game_builds;
-		static std::vector<std::string> mod_builds;
-		ImGui::SetNextItemWidth(200);
-		gui::build_settings(params, &game_builds, mod_builds, false);
+		std::vector<std::string>& game_builds = g_app->game_bank->game_info.builds;
+		std::vector<std::string>& mod_builds = g_app->mod_bank->game_info.builds;
 		
-		if(ImGui::Button("Build & Run")) {
-			
+		ImGui::SetNextItemWidth(200);
+		gui::build_settings(params, &game_builds, mod_builds, false); 
+		
+		static CommandStatus pack_command;
+		static std::string iso_path;
+		if(ImGui::Button("Build & Run##the_button")) {
+			if(!pack_command.running) {
+				params.game_path = g_app->game_path;
+				params.mod_paths = {g_app->mod_path};
+				iso_path = gui::run_packer(params, &pack_command);
+				ImGui::OpenPopup("Build & Run##the_popup");
+			}
 		}
+		
+		gui::command_output_screen("Build & Run##the_popup", pack_command, []() {}, []() {
+			gui::EmulatorParams params;
+			params.iso_path = iso_path;
+			gui::run_emulator(params, false);
+		});
 		
 		if(layouts[selected_layout].menu_bar_extras) {
 			layouts[selected_layout].menu_bar_extras();

@@ -24,6 +24,7 @@
 #include <core/util.h>
 
 struct CommandStatus {
+	bool running = false;
 	std::string buffer;
 	std::thread thread;
 	std::mutex mutex;

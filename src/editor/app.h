@@ -50,6 +50,9 @@ public:
 	GLFWwindow* glfw_window;
 	int window_width, window_height;
 	
+	std::string game_path;
+	std::string mod_path;
+	
 	AssetForest asset_forest;
 	AssetBank* game_bank = nullptr;
 	AssetBank* mod_bank = nullptr;

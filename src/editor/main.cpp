@@ -62,6 +62,9 @@ static void run_wrench(GLFWwindow* window, const std::string& game_path, const s
 	glfwSetWindowUserPointer(window, g_app);
 	glfwSetKeyCallback(window, key_callback);
 	
+	a.game_path = game_path;
+	a.mod_path = mod_path;
+	
 	a.game_bank = &a.asset_forest.mount<LooseAssetBank>(game_path, false);
 	a.mod_bank = &a.asset_forest.mount<LooseAssetBank>(mod_path, true);
 	

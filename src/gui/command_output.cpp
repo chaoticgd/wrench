@@ -72,6 +72,7 @@ void gui::command_output_screen(const char* id, CommandStatus& status, void (*cl
 		ImGui::SetNextItemWidth(-1);
 		ImGui::InputTextMultiline("output", &status.buffer, size, ImGuiInputTextFlags_Multiline | ImGuiInputTextFlags_ReadOnly);
 		if(finished) {
+			status.running = false;
 			if(run_callback) {
 				if(ImGui::Button("Run")) {
 					run_callback();

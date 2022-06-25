@@ -25,6 +25,11 @@
 #endif
 
 void spawn_command_thread(const std::vector<std::string>& args, CommandStatus* output) {
+	output->running = true;
+	{
+		std::lock_guard<std::mutex>(output->mutex);
+		output->finished = false;
+	}
 	output->thread = std::thread([args, output]() {
 		std::vector<const char*> pointers(args.size());
 		for(size_t i = 0; i < args.size(); i++) {
