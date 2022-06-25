@@ -510,7 +510,7 @@ static void fixup_identifier(char* buffer) {
 
 static char* fixup_string(char* buffer) {
 	if(buffer == NULL) {
-		return;
+		return NULL;
 	}
 	
 	char* dest = buffer;
