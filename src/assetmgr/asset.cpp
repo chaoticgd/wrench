@@ -640,6 +640,7 @@ LooseAssetBank::LooseAssetBank(AssetForest& forest, fs::path directory, bool is_
 }
 
 std::unique_ptr<InputStream> LooseAssetBank::open_binary_file_for_reading(const fs::path& path, fs::file_time_type* modified_time_dest) const {
+	assert(path.is_relative());
 	fs::path full_path = _directory/path;
 	if(modified_time_dest) {
 		*modified_time_dest = fs::last_write_time(full_path);
@@ -653,6 +654,7 @@ std::unique_ptr<InputStream> LooseAssetBank::open_binary_file_for_reading(const 
 }
 
 std::unique_ptr<OutputStream> LooseAssetBank::open_binary_file_for_writing(const fs::path& path) {
+	assert(path.is_relative());
 	assert(is_writeable());
 	fs::path full_path = _directory/path;
 	fs::create_directories(full_path.parent_path());
@@ -665,6 +667,7 @@ std::unique_ptr<OutputStream> LooseAssetBank::open_binary_file_for_writing(const
 }
 
 std::string LooseAssetBank::read_text_file(const fs::path& path) const {
+	assert(path.is_relative());
 	if(!fs::exists(_directory/path)) {
 		return "";
 	}
@@ -673,12 +676,14 @@ std::string LooseAssetBank::read_text_file(const fs::path& path) const {
 }
 
 void LooseAssetBank::write_text_file(const fs::path& path, const char* contents) {
+	assert(path.is_relative());
 	assert(is_writeable());
 	fs::create_directories((_directory/path).parent_path());
 	write_file(_directory/path, Buffer((u8*) contents, (u8*) contents + strlen(contents)), "w");
 }
 
 bool LooseAssetBank::file_exists(const fs::path& path) const {
+	assert(path.is_relative());
 	return fs::exists(_directory/path);
 }
 
