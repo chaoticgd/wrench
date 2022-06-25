@@ -67,8 +67,8 @@ void unpack_asset_impl(Asset& dest, InputStream& src, const std::vector<u8>* hea
 	}
 	
 	std::string reference = dest.absolute_link().to_string();
+	std::string type = asset_type_to_string(dest.physical_type());
 	if(!g_asset_unpacker.quiet) {
-		std::string type = asset_type_to_string(dest.physical_type());
 		for(char& c : type) c = tolower(c);
 		s32 percentage = (s32) ((g_asset_unpacker.current_file_offset * 100.f) / g_asset_unpacker.total_file_size);
 		if(strlen(hint) > 0) {
@@ -91,7 +91,8 @@ void unpack_asset_impl(Asset& dest, InputStream& src, const std::vector<u8>* hea
 		}
 	}
 	
-	verify(unpack_func, "Tried to unpack nonunpackable asset '%s'.", reference.c_str());
+	verify(unpack_func, "Tried to unpack nonunpackable asset \"%s\" of type \"%s\" for game \"%s\".",
+		reference.c_str(), type.c_str(), game_to_string(config.game()).c_str());
 	(*unpack_func)(dest, src, header_src, config, hint);
 	
 	// Update the completion percentage based on how far through the input file
