@@ -26,7 +26,7 @@ static void pack_rac_global_wad(OutputStream& dest, RacWadInfo& header, const Gl
 
 static void unpack_vags(CollectionAsset& dest, InputStream& src, const Sector32* sectors, s32 count, BuildConfig config);
 
-on_load(Bonus, []() {
+on_load(Global, []() {
 	GlobalWadAsset::funcs.unpack_rac1 = wrap_wad_unpacker_func<GlobalWadAsset, RacWadInfo>(unpack_rac_global_wad);
 	
 	GlobalWadAsset::funcs.pack_rac1 = wrap_wad_hint_packer_func<GlobalWadAsset, RacWadInfo>(pack_rac_global_wad);
