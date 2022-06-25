@@ -84,7 +84,7 @@ AssetUnpackerFunc* wrap_iso_unpacker_func(UnpackerFunc func, AssetUnpackerFunc u
 
 // *****************************************************************************
 
-using AssetPackerFunc = std::function<void((OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const Asset& src, BuildConfig config, const char* hint))>;
+using AssetPackerFunc = std::function<void(OutputStream& dest, std::vector<u8>* header_dest, fs::file_time_type* time_dest, const Asset& src, BuildConfig config, const char* hint)>;
 
 template <typename ThisAsset, typename PackerFunc>
 AssetPackerFunc* wrap_packer_func(PackerFunc func) {
