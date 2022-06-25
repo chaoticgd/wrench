@@ -65,7 +65,7 @@ static void run_round_trip_asset_packing_tests(const fs::path& input_path, const
 		AssetLink link;
 		link.set(asset_ref.c_str());
 		Asset& asset = forest.lookup_asset(link, bank.root());
-		verify(asset.type() == BinaryAsset::ASSET_TYPE, "Specified asset is not a binary.");
+		verify(asset.physical_type() == BinaryAsset::ASSET_TYPE, "Specified asset is not a binary.");
 		binaries.emplace_back(&asset.as<BinaryAsset>());
 	}
 	
@@ -87,7 +87,7 @@ static void run_round_trip_asset_packing_tests(const fs::path& input_path, const
 }
 
 static void enumerate_binaries(std::vector<BinaryAsset*>& dest, Asset& src) {
-	if(src.type() == BinaryAsset::ASSET_TYPE) {
+	if(src.physical_type() == BinaryAsset::ASSET_TYPE) {
 		dest.emplace_back(&src.as<BinaryAsset>());
 	}
 	

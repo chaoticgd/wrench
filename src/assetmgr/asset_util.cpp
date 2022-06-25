@@ -29,9 +29,9 @@ AssetLinkPointers AssetLink::get() const {
 		pointers.prefix = ptr;
 		ptr += strlen(ptr) + 1;
 	}
-	pointers.fragments.reserve(fragments);
-	for(s16 i = 0; i < fragments; i++) {
-		pointers.fragments.push_back(ptr);
+	pointers.tags.reserve(tags);
+	for(s16 i = 0; i < tags; i++) {
+		pointers.tags.push_back(ptr);
 		ptr += strlen(ptr) + 1;
 	}
 	return pointers;
@@ -39,24 +39,33 @@ AssetLinkPointers AssetLink::get() const {
 
 void AssetLink::set(const char* src) {
 	prefix = false;
-	fragments = 0;
+	tags = 0;
 	size_t size = strlen(src);
 	data.resize(size + 1);
 	for(size_t i = 0; i < strlen(src); i++) {
 		if(src[i] == '.' || src[i] == ':') {
 			if(src[i] == ':') {
-				verify(!prefix && fragments == 0, "Syntax error while parsing asset link.");
+				verify(!prefix && tags == 0, "Syntax error while parsing asset link.");
 				prefix = true;
 			} else {
-				fragments++;
+				tags++;
 			}
 			data[i] = '\0';
 		} else {
 			data[i] = src[i];
 		}
 	}
-	fragments++;
+	tags++;
 	data[size] = '\0';
+}
+
+void AssetLink::add_prefix(const char* str) {
+	assert(!prefix && tags == 0);
+	size_t size = strlen(str);
+	data.resize(size + 1);
+	memcpy(&data[0], str, size);
+	data[size] = '\0';
+	prefix = true;
 }
 
 void AssetLink::add_tag(const char* tag) {
@@ -67,7 +76,7 @@ void AssetLink::add_tag(const char* tag) {
 		data[old_size + i] = tag[i];
 	}
 	data[old_size + tag_size] = '\0';
-	fragments++;
+	tags++;
 }
 
 std::string AssetLink::to_string() const {
@@ -78,9 +87,9 @@ std::string AssetLink::to_string() const {
 		str += ':';
 		ptr += strlen(ptr) + 1;
 	}
-	for(s16 i = 0; i < fragments; i++) {
+	for(s16 i = 0; i < tags; i++) {
 		str += ptr;
-		if(i != fragments - 1) {
+		if(i != tags - 1) {
 			str += '.';
 		}
 		ptr += strlen(ptr) + 1;

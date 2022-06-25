@@ -33,11 +33,11 @@ void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_
 	// Placeholder assets come in place of that actual asset when its type isn't
 	// specified, and they're not packable so we need to skip them.
 	const Asset* asset = &src.highest_precedence();
-	while(asset->type() == PlaceholderAsset::ASSET_TYPE) {
+	while(asset->physical_type() == PlaceholderAsset::ASSET_TYPE) {
 		asset = asset->lower_precedence();
 	}
 	
-	std::string type = asset_type_to_string(asset->type());
+	std::string type = asset_type_to_string(asset->physical_type());
 	for(char& c : type) c = tolower(c);
 	std::string reference = asset->absolute_link().to_string();
 	
@@ -51,7 +51,7 @@ void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_
 	}
 	
 	AssetPackerFunc* pack_func = nullptr;
-	if(asset->type() == BuildAsset::ASSET_TYPE) {
+	if(asset->physical_type() == BuildAsset::ASSET_TYPE) {
 		pack_func = asset->funcs.pack_rac1;
 	} else {
 		switch(config.game()) {

@@ -40,20 +40,24 @@ using ConstAssetVisitorCallback = std::function<void(const char* key, std::any v
 
 struct AssetLinkPointers {
 	const char* prefix = nullptr;
-	std::vector<const char*> fragments;
+	std::vector<const char*> tags;
 };
 
+// Stores a link to an asset e.g. "gc.levels.0" as a single string in memory
+// with the seperators replaced with nulls so pointers to each section can be
+// used as strings directly.
 class AssetLink {
 public:
 	AssetLink();
 	
 	AssetLinkPointers get() const;
 	void set(const char* src);
+	void add_prefix(const char* str);
 	void add_tag(const char* tag);
 	std::string to_string() const;
 private:
 	bool prefix = false;
-	s16 fragments = 0;
+	s16 tags = 0;
 	std::vector<char> data; // = [prefix \0] fragment(0) \0 ... \0 fragment(fragments-1)
 };
 

@@ -35,32 +35,32 @@ void unpack_asset_impl(Asset& dest, InputStream& src, const std::vector<u8>* hea
 	
 	// Hacks to skip unpacking certain wads. These should be removed over time.
 	if(config.game() == Game::RAC
-		&& (dest.type() == LevelAudioWadAsset::ASSET_TYPE)) {
+		&& (dest.logical_type() == LevelAudioWadAsset::ASSET_TYPE)) {
 		std::string tag = dest.tag();
 		unpack_asset_impl(dest.parent()->transmute_child<BinaryAsset>(tag.c_str()), src, header_src, config, FMT_BINARY_WAD);
 		return;
 	}
 	
 	if(config.game() == Game::GC
-		&& (dest.type() == HudWadAsset::ASSET_TYPE
-		|| dest.type() == SpaceWadAsset::ASSET_TYPE
-		|| dest.type() == SceneWadAsset::ASSET_TYPE
-		|| dest.type() == GadgetWadAsset::ASSET_TYPE)) {
+		&& (dest.physical_type() == HudWadAsset::ASSET_TYPE
+		|| dest.physical_type() == SpaceWadAsset::ASSET_TYPE
+		|| dest.physical_type() == SceneWadAsset::ASSET_TYPE
+		|| dest.physical_type() == GadgetWadAsset::ASSET_TYPE)) {
 		std::string tag = dest.tag();
 		unpack_asset_impl(dest.parent()->transmute_child<BinaryAsset>(tag.c_str()), src, header_src, config, FMT_BINARY_WAD);
 		return;
 	}
 	
 	if(config.game() == Game::UYA
-		&& (dest.type() == HudWadAsset::ASSET_TYPE
-		|| dest.type() == SpaceWadAsset::ASSET_TYPE
-		|| dest.type() == GadgetWadAsset::ASSET_TYPE)) {
+		&& (dest.physical_type() == HudWadAsset::ASSET_TYPE
+		|| dest.physical_type() == SpaceWadAsset::ASSET_TYPE
+		|| dest.physical_type() == GadgetWadAsset::ASSET_TYPE)) {
 		std::string tag = dest.tag();
 		unpack_asset_impl(dest.parent()->transmute_child<BinaryAsset>(tag.c_str()), src, header_src, config, FMT_BINARY_WAD);
 		return;
 	}
 	
-	if(dest.type() == LevelSceneWadAsset::ASSET_TYPE) {
+	if(dest.physical_type() == LevelSceneWadAsset::ASSET_TYPE) {
 		std::string tag = dest.tag();
 		unpack_asset_impl(dest.parent()->transmute_child<BinaryAsset>(tag.c_str()), src, header_src, config, FMT_BINARY_WAD);
 		return;
@@ -68,7 +68,7 @@ void unpack_asset_impl(Asset& dest, InputStream& src, const std::vector<u8>* hea
 	
 	std::string reference = dest.absolute_link().to_string();
 	if(!g_asset_unpacker.quiet) {
-		std::string type = asset_type_to_string(dest.type());
+		std::string type = asset_type_to_string(dest.physical_type());
 		for(char& c : type) c = tolower(c);
 		s32 percentage = (s32) ((g_asset_unpacker.current_file_offset * 100.f) / g_asset_unpacker.total_file_size);
 		if(strlen(hint) > 0) {
@@ -79,7 +79,7 @@ void unpack_asset_impl(Asset& dest, InputStream& src, const std::vector<u8>* hea
 	}
 	
 	AssetUnpackerFunc* unpack_func = nullptr;
-	if(dest.type() == BuildAsset::ASSET_TYPE) {
+	if(dest.physical_type() == BuildAsset::ASSET_TYPE) {
 		unpack_func = dest.funcs.unpack_rac1;
 	} else {
 		switch(config.game()) {
@@ -133,7 +133,7 @@ static bool handle_special_debugging_cases(Asset& dest, InputStream& src, const 
 			default: verify_not_reached("Invalid game.");
 		}
 		if(is_unpackable) {
-			const char* type = asset_type_to_string(dest.type());
+			const char* type = asset_type_to_string(dest.physical_type());
 			std::string tag = dest.tag();
 			BinaryAsset& bin = dest.parent()->transmute_child<BinaryAsset>(tag.c_str());
 			bin.set_asset_type(type);
@@ -145,7 +145,7 @@ static bool handle_special_debugging_cases(Asset& dest, InputStream& src, const 
 		}
 	}
 	
-	if(g_asset_unpacker.dump_flat && is_wad && dest.type() != FlatWadAsset::ASSET_TYPE) {
+	if(g_asset_unpacker.dump_flat && is_wad && dest.physical_type() != FlatWadAsset::ASSET_TYPE) {
 		if(is_flattenable) {
 			std::string tag = dest.tag();
 			FlatWadAsset& flat_wad = dest.parent()->transmute_child<FlatWadAsset>(tag.c_str());

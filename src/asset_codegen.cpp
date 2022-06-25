@@ -433,7 +433,7 @@ static void generate_attribute_getter_and_setter_functions(const WtfNode* asset_
 			
 			out("bool %sAsset::has_%s() const {\n", asset_type->tag, getter_name.c_str());
 			out("\tfor(const Asset* asset = this; asset != nullptr; asset = asset->lower_precedence()) {\n");
-			out("\t\tif(asset->type() == type() && (static_cast<const %sAsset*>(asset)->_attrib_exists & ATTRIB_%s)) {\n", asset_type->tag, node->tag);
+			out("\t\tif(asset->physical_type() == physical_type() && (static_cast<const %sAsset*>(asset)->_attrib_exists & ATTRIB_%s)) {\n", asset_type->tag, node->tag);
 			out("\t\t\treturn true;\n");
 			out("\t\t}\n");
 			out("\t}\n");
@@ -448,7 +448,7 @@ static void generate_attribute_getter_and_setter_functions(const WtfNode* asset_
 					out("%s %sAsset::%s(%s& def) const {\n", cpp_type.c_str(), asset_type->tag, getter_name.c_str(), cpp_type.c_str());
 				}
 				out("\tfor(const Asset* asset = &highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {\n");
-				out("\t\tif(asset->type() == ASSET_TYPE) {\n");
+				out("\t\tif(asset->physical_type() == ASSET_TYPE) {\n");
 				out("\t\t\t%s dest_0;\n", cpp_type.c_str());
 				out("\t\t\tconst auto& sub = static_cast<const %sAsset&>(*asset);\n", asset_type->tag);
 				out("\t\t\tif(sub._attrib_exists & ATTRIB_%s) {\n", node->tag);

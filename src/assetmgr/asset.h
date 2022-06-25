@@ -73,10 +73,13 @@ public:
 	const Asset& lowest_precedence() const;
 	Asset& highest_precedence();
 	const Asset& highest_precedence() const;
-	AssetLink absolute_link() const;
 	
-	// This might return Plaholder instead of the actual type.
-	AssetType type() const;
+	AssetLink absolute_link() const;
+	AssetLink link_relative_to(Asset& base) const;
+	
+	// This might return Plaholder instead of the type you probably want.
+	AssetType physical_type() const;
+	
 	// This skips over placeholder nodes to get the logical type.
 	AssetType logical_type() const;
 	
@@ -118,7 +121,7 @@ public:
 			for(const std::unique_ptr<Asset>& child : asset->_children) {
 				if(child->higher_precedence() == nullptr && !child->is_deleted()) {
 					Asset& child_2 = child->resolve_references();
-					if(child_2.type() == ChildType::ASSET_TYPE) {
+					if(child_2.physical_type() == ChildType::ASSET_TYPE) {
 						callback(static_cast<ChildType&>(child_2));
 					}
 				}
@@ -149,7 +152,7 @@ public:
 	template <typename AssetType>
 	AssetType& as() {
 		for(Asset* asset = &highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
-			if(asset->type() == AssetType::ASSET_TYPE) {
+			if(asset->physical_type() == AssetType::ASSET_TYPE) {
 				return *static_cast<AssetType*>(asset);
 			}
 		}
@@ -161,7 +164,7 @@ public:
 	template <typename AssetType>
 	const AssetType& as() const {
 		for(const Asset* asset = &highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
-			if(asset->type() == AssetType::ASSET_TYPE) {
+			if(asset->physical_type() == AssetType::ASSET_TYPE) {
 				return *static_cast<const AssetType*>(asset);
 			}
 		}

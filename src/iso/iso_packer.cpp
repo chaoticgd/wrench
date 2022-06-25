@@ -420,10 +420,10 @@ static IsoDirectory pack_globals(OutputStream& iso, std::vector<GlobalWadInfo>& 
 		
 		const char* hint = FMT_NO_HINT;
 		if(no_mpegs) {
-			if(global.asset->type() == GlobalWadAsset::ASSET_TYPE) {
+			if(global.asset->logical_type() == GlobalWadAsset::ASSET_TYPE) {
 				hint = FMT_GLOBALWAD_NOMPEGS;
 			}
-			if(global.asset->type() == MpegWadAsset::ASSET_TYPE) {
+			if(global.asset->logical_type() == MpegWadAsset::ASSET_TYPE) {
 				hint = FMT_MPEGWAD_NOMPEGS;
 			}
 		}

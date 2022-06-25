@@ -80,21 +80,43 @@ AssetLink Asset::absolute_link() const {
 		link.add_tag(tag().c_str());
 		return link;
 	} else {
-		return AssetLink{};
+		return AssetLink();
 	}
 }
 
-AssetType Asset::type() const {
+AssetLink Asset::link_relative_to(Asset& base) const {
+	if(parent()) {
+		bool match = false;
+		for(Asset* asset = &base.highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
+			if(asset == parent()) {
+				match = true;
+				break;
+			}
+		}
+		AssetLink link;
+		if(match) {
+			link.add_prefix(asset_type_to_string(parent()->logical_type()));
+		} else {
+			link = parent()->link_relative_to(base);
+		}
+		link.add_tag(tag().c_str());
+		return link;
+	} else {
+		return AssetLink();
+	}
+}
+
+AssetType Asset::physical_type() const {
 	return _type;
 }
 
 AssetType Asset::logical_type() const {
 	for(const Asset* asset = &highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
-		if(asset->type() != PlaceholderAsset::ASSET_TYPE) {
-			return asset->type();
+		if(asset->physical_type() != PlaceholderAsset::ASSET_TYPE) {
+			return asset->physical_type();
 		}
 	}
-	return type();
+	return physical_type();
 }
 
 bool Asset::has_child(const char* tag) const {
@@ -121,7 +143,7 @@ Asset& Asset::get_child(const char* tag) {
 			}
 		}
 	}
-	verify_not_reached("No child of '%s' with tag '%s'.",
+	verify_not_reached("No child of \"%s\" with tag \"%s\".",
 		absolute_link().to_string().c_str(), tag);
 }
 
@@ -203,15 +225,15 @@ void Asset::read(WtfNode* node) {
 }
 
 void Asset::write(WtfWriter* ctx, std::string prefix) const {
-	if(_attrib_exists == 0 && _children.size() == 1 && type() == PlaceholderAsset::ASSET_TYPE) {
+	if(_attrib_exists == 0 && _children.size() == 1 && physical_type() == PlaceholderAsset::ASSET_TYPE) {
 		Asset& child = *_children[0].get();
 		child.write(ctx, prefix + tag() + ".");
 	} else {
 		const char* type_name;
-		if(type() == CollectionAsset::ASSET_TYPE) {
+		if(logical_type() == CollectionAsset::ASSET_TYPE) {
 			type_name = nullptr;
 		} else {
-			type_name = asset_type_to_string(type());
+			type_name = asset_type_to_string(logical_type());
 		}
 		std::string qualified_tag = prefix + tag();
 		wtf_begin_node(ctx, type_name, qualified_tag.c_str());
@@ -287,9 +309,9 @@ Asset& Asset::resolve_references() {
 	Asset* asset = &highest_precedence();
 	verify(!asset->is_deleted(), "Asset '%s' is deleted.", asset->absolute_link().to_string().c_str());
 	while(ReferenceAsset* reference = dynamic_cast<ReferenceAsset*>(asset)) {
-		asset = &forest().lookup_asset(reference->asset(), asset);
-		verify(!asset->is_deleted(), "Tried to find deleted asset '%s'.", reference->asset().to_string().c_str());
-		verify(asset, "Failed to find asset '%s'.", reference->asset().to_string().c_str());
+		asset = &forest().lookup_asset(reference->asset(), asset->parent());
+		verify(!asset->is_deleted(), "Tried to find deleted asset \"%s\".", reference->asset().to_string().c_str());
+		verify(asset, "Failed to find asset \"%s\".", reference->asset().to_string().c_str());
 	}
 	return *asset;
 }
@@ -576,10 +598,29 @@ Asset& AssetForest::lookup_asset(const AssetLink& link, Asset* context) {
 	verify(_banks.size() >= 1 && _banks[0]->_asset_files.size() >= 1,
 		"Asset lookup for '%s' failed because the asset forest is empty.",
 		link.to_string().c_str());
-	Asset* asset = &_banks[0]->_asset_files[0]->root();
 	auto [prefix, tags] = link.get();
-	for(const char* tag : tags) {
-		asset = &asset->get_child(tag);
+	bool matching_failed = false;
+	Asset* asset = nullptr;
+	if(prefix) {
+		verify(context, "Tried to lookup a relative asset reference that can't be relative.");
+		asset = context;
+		while(asset && strcmp(prefix, asset_type_to_string(asset->logical_type())) != 0) {
+			asset = asset->parent();
+		}
+	}
+	if(!asset) {
+		asset = &_banks[0]->_asset_files[0]->root();
+		matching_failed = !!prefix;
+	}
+	try {
+		for(const char* tag : tags) {
+			asset = &asset->get_child(tag);
+		}
+	} catch(RuntimeError& e) {
+		verify_not_reached("%s while looking up asset \"%s\"%s.",
+			e.message.substr(0, e.message.size() - 1).c_str(),
+			link.to_string().c_str(),
+			matching_failed ? " where no ancestors matched the prefix" : "");
 	}
 	return *asset;
 }
