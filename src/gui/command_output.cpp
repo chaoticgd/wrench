@@ -38,14 +38,16 @@ void gui::command_output_screen(const char* id, CommandStatus& status, void (*cl
 			status.buffer.reserve(16 * 1024);
 			
 			// Find the start of the last 15 lines.
-			s64 i;
+			s64 i = 0;
 			s32 new_line_count = 0;
-			for(i = (s64) status.output.size() - 1; i > 0; i--) {
-				if(status.output[i] == '\n') {
-					new_line_count++;
-					if(new_line_count >= 15) {
-						i++;
-						break;
+			if(status.output.size() > 0) {
+				for(i = (s64) status.output.size() - 1; i > 0; i--) {
+					if(status.output[i] == '\n') {
+						new_line_count++;
+						if(new_line_count >= 15) {
+							i++;
+							break;
+						}
 					}
 				}
 			}
