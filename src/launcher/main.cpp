@@ -424,6 +424,6 @@ static Texture load_image_from_launcher_wad(SectorRange range) {
 	
 	s32 width = *(s32*) &image[0];
 	s32 height = *(s32*) &image[4];
-	std::vector<u8> data(&image[16], &image[16 + width * height * 4]);
+	std::vector<u8> data(image.data() + 16, image.data() + 16 + width * height * 4);
 	return Texture::create_rgba(width, height, std::move(data));
 }

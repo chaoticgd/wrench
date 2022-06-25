@@ -63,7 +63,7 @@ void AssetLink::add_prefix(const char* str) {
 	assert(!prefix && tags == 0);
 	size_t size = strlen(str);
 	data.resize(size + 1);
-	memcpy(&data[0], str, size);
+	memcpy(data.data(), str, size);
 	data[size] = '\0';
 	prefix = true;
 }
