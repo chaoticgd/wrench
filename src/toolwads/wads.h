@@ -76,4 +76,11 @@ extern "C" {
 	extern ToolWadInfo wadinfo;
 }
 
+struct WadPaths {
+	std::string gui;
+	std::string launcher;
+};
+
+WadPaths find_wads(const char* bin_path);
+
 #endif

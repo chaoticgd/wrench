@@ -85,4 +85,5 @@ add_custom_command(
 
 add_library(wadinfo
 	_generated_wadinfo.cpp
+	find_wads.cpp
 )

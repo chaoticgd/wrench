@@ -40,6 +40,9 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 	
+	WadPaths wads = find_wads(argv[0]);
+	g_guiwad.open(wads.gui);
+	
 	gui::setup_bin_paths(argv[0]);
 	
 	g_config.read();

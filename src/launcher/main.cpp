@@ -43,8 +43,10 @@ static Texture load_image_from_launcher_wad(SectorRange range);
 
 int main(int argc, char** argv) {
 	g_launcher.mode = LauncherMode::DRAWING_GUI;
-	verify(g_launcher.wad.open("data/launcher.wad"), "Failed to open 'launcher.wad'.");
-	verify(g_launcher.buildwad.open("data/build.wad"), "Failed to open 'build.wad'.");
+	
+	WadPaths wads = find_wads(argv[0]);
+	g_guiwad.open(wads.gui);
+	g_launcher.wad.open(wads.launcher);
 	
 	gui::setup_bin_paths(argv[0]);
 	
