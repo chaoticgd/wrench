@@ -1,26 +1,29 @@
 # Wrench Editor
 
-A set of modding tools for the Ratchet & Clank PS2 games. Work in progress.
+A set of modding tools for the Ratchet & Clank PS2 games. Works with R&C1, R&C2, R&C3 and Deadlocked. Work in progress.
 
 Features currently include:
-- WAD Utility
-  - Pack/unpack levels.
-  - Export moby meshes as COLLADA files.
-  - Import/export instances/entities as JSON.
-  - Import/export textures as PNG files.
-  - Import/export collision meshes as COLLADA files.
-  - Import/export everything else as binary files.
+- **New!** Asset System
+	- A system to create, distribute and load mods.
+	- Multiple mods can be loaded at a time.
+- Launcher
+	- Create, manage and load mods.
+	- Used to launch the level editor.
+- Build Tool
+	- Pack/unpack entire ISO files.
+	- Unpack moby meshes as COLLADA files.
+	- Pack/unpack textures as PNG files.
+	- Pack/unpack collision meshes as COLLADA files.
+	- Pack/unpack everything else as binary files.
 - Level Editor
-  - View unpacked levels.
-  - Move objects and modify their properties.
-- ISO Utility
-  - Extract files from R&C1, R&C2, R&C3 and Deadlocked.
-  - Build modded ISO files for R&C2, R&C3 and Deadlocked.
+	- View unpacked levels.
+	- Move objects and modify their attributes.
 
-For build instructions, see the Building section below. For usage instructions, see the [User Guide](docs/user_guide.md). For information on the game's file formats, see the [Formats Guide](docs/formats_guide.md).
+For build instructions, see the *Building* section below. For documentation on the asset system, see [Asset System](docs/asset_system.md) and [Asset Reference](docs/asset_reference_latest.md). For information on the game's file formats, see the [Formats Guide](docs/formats_guide.md).
 
-## Screenshot
+## Screenshots
 
+![Launcher](docs/screenshots/launcher.png)
 ![Level Editor](docs/screenshots/editor.png)
 
 ## Building
