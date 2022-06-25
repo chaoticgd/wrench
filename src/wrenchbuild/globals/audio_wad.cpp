@@ -91,7 +91,7 @@ static void unpack_audio_wad(AudioWadAsset& dest, const Header& header, InputStr
 		if(sector > 0) {
 			auto end_sector = end_sectors.upper_bound(sector);
 			verify(end_sector != end_sectors.end(), "Header references audio beyond end of file. The WAD file may be truncated.");
-			unpack_asset(vendor.child<BinaryAsset>(i), src, SectorRange{sector, *end_sector - sector}, config, FMT_BINARY_VAG);
+			unpack_asset(vendor.child<BinaryAsset>(i), src, SectorRange{sector, (s32) (*end_sector - sector)}, config, FMT_BINARY_VAG);
 		}
 	}
 	
