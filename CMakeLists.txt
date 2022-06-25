@@ -266,6 +266,7 @@ target_link_libraries(wrencheditor glad)
 add_subdirectory(thirdparty/glfw)
 target_link_libraries(wrenchlauncher glfw)
 target_link_libraries(wrencheditor glfw)
+include_directories(thirdparty/glfw/include)
 
 # GLM
 add_subdirectory(thirdparty/glm)
