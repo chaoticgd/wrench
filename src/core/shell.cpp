@@ -59,7 +59,15 @@ s32 execute_command(s32 argc, const char** argv, CommandStatus* output, bool blo
 		if(setenv(env_var.c_str(), argv[i], 1) == -1) {
 			return 1;
 		}
+#ifdef _WIN32
+		if (i == 0) {
+			command += "%" + env_var + "% ";
+		} else {
+			command += "\"%" + env_var + "%\" ";
+		}
+#else
 		command += "\"$" + env_var + "\" ";
+#endif
 	}
 	
 	if(!blocking) {
