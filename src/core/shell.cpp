@@ -18,10 +18,15 @@
 
 #include "shell.h"
 
+#include <stdlib.h>
 #ifdef _WIN32
-	#include <shellapi.h>
+#include <windows.h>
+#include <shellapi.h>
+#define popen _popen
+#define pclose _pclose
+#define setenv(name, value, overwrite) (_putenv_s(name, value) == 0 ? 0 : -1)
 #else
-	#include <unistd.h>
+#include <unistd.h>
 #endif
 
 void spawn_command_thread(const std::vector<std::string>& args, CommandStatus* output) {
