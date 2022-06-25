@@ -392,7 +392,7 @@ AssetFile::AssetFile(AssetForest& forest, AssetBank& pack, const fs::path& relat
 	: _forest(forest)
 	, _bank(pack)
 	, _relative_directory(relative_path.parent_path())
-	, _file_name(relative_path.filename())
+	, _file_name(relative_path.filename().string())
 	, _root(std::make_unique<RootAsset>(*this, nullptr, "")) {}
 
 Asset& AssetFile::root() {
