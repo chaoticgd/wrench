@@ -261,6 +261,7 @@ target_link_libraries(wrenchcore Threads::Threads)
 add_subdirectory(thirdparty/glad)
 target_link_libraries(wrenchlauncher glad)
 target_link_libraries(wrencheditor glad)
+include_directories(thirdparty/glad/include)
 
 # GLFW
 add_subdirectory(thirdparty/glfw)
