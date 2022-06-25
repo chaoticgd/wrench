@@ -20,6 +20,7 @@
 #define ASSETMGR_GAME_INFO_H
 
 #include <core/util.h>
+#include <core/build_config.h>
 
 enum class AssetBankType {
 	GAME,
@@ -28,13 +29,19 @@ enum class AssetBankType {
 };
 
 struct GameInfo {
+	s32 format_version;
 	std::string name;
+	AssetBankType type;
+	struct {
+		Game game;
+	} game;
+	struct {
+		std::vector<Game> supported_games;
+	} mod;
 	std::string author;
 	std::string description;
 	std::string version;
 	std::vector<std::string> images;
-	s32 format_version;
-	AssetBankType type;
 	std::vector<std::string> builds; // List of builds included with this asset pack.
 };
 

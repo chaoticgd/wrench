@@ -306,6 +306,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, Game
 			
 			AssetBank& bank = forest.mount<LooseAssetBank>(new_output_path, true);
 			bank.game_info.type = g_asset_unpacker.dump_binaries ? AssetBankType::TEST : AssetBankType::GAME;
+			bank.game_info.game.game = release.game;
 			
 			BuildAsset& build = bank.asset_file("build.asset").root().child<BuildAsset>(game_str.c_str());
 			
@@ -341,6 +342,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, Game
 		if(type != WadType::UNKNOWN) {
 			AssetBank& bank = forest.mount<LooseAssetBank>(output_path, true);
 			bank.game_info.type = g_asset_unpacker.dump_binaries ? AssetBankType::TEST : AssetBankType::GAME;
+			bank.game_info.game.game = game;
 			
 			Asset& root = bank.asset_file("wad.asset").root();
 			BuildAsset& build = root.child<BuildAsset>("build");

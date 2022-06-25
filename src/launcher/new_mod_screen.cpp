@@ -36,6 +36,9 @@ bool new_mod_screen() {
 		static GameInfo info;
 		static bool open_folder = true;
 		
+		info.type = AssetBankType::MOD;
+		info.mod.supported_games = {Game::RAC, Game::GC, Game::UYA, Game::DL};
+		
 		if(g_config.paths.mods_folders.size() >= 1) {
 			bool drop_down;
 			if(mods_folder < g_config.paths.mods_folders.size()) {

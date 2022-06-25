@@ -65,6 +65,10 @@ static void run_wrench(GLFWwindow* window, const std::string& game_path, const s
 	a.game_bank = &a.asset_forest.mount<LooseAssetBank>(game_path, false);
 	a.mod_bank = &a.asset_forest.mount<LooseAssetBank>(mod_path, true);
 	
+	verify(a.game_bank->game_info.type == AssetBankType::GAME,
+		"The asset bank specified for the game is not a game.");
+	a.game = a.game_bank->game_info.game.game;
+		
 	gui::load_font(wadinfo.gui.fonts[0], 18, 1.2f);
 	
 	init_renderer();

@@ -40,7 +40,7 @@ BaseEditor* app::get_editor() {
 
 void app::load_level(LevelAsset& asset) {
 	_lvl.emplace();
-	_lvl->read(asset, Game::GC);
+	_lvl->read(asset, game);
 	reset_camera(this);
 }
 
