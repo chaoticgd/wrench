@@ -184,7 +184,7 @@ s64 write_table_of_contents_rac(OutputStream& iso, const table_of_contents& toc,
 		}
 		
 		iso.pad(SECTOR_SIZE, 0);
-		info.levels[i] = {{iso.tell() / SECTOR_SIZE}, {1}};
+		info.levels[i] = {{(s32) (iso.tell() / SECTOR_SIZE)}, {1}};
 		iso.write(header);
 	}
 	
@@ -199,7 +199,7 @@ s64 write_table_of_contents_rac(OutputStream& iso, const table_of_contents& toc,
 Sector32 calculate_table_of_contents_size_rac(const table_of_contents& toc) {
 	Sector32 wad_info_size = Sector32::size_from_bytes(sizeof(RacWadInfo));
 	Sector32 level_header_size = Sector32::size_from_bytes(sizeof(Rac1AmalgamatedWadHeader));
-	return {wad_info_size.sectors + level_header_size.sectors * toc.levels.size()};
+	return {wad_info_size.sectors + level_header_size.sectors * (s32) toc.levels.size()};
 }
 
 static LevelWadInfo adapt_rac1_level_wad_header(InputStream& src, Rac1AmalgamatedWadHeader& header) {

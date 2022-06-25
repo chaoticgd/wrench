@@ -17,13 +17,13 @@ WadPaths find_wads(const char* bin_path) {
 
 static std::string find_wad(const fs::path& directory, const char* file_name) {
 	if(fs::exists(directory/file_name)) {
-		return directory/file_name;
+		return (directory/file_name).string();
 	}
 	if(fs::exists(directory/"data"/file_name)) {
-		return directory/"data"/file_name;
+		return (directory/"data"/file_name).string();
 	}
 	if(fs::exists(directory/".."/"data"/file_name)) {
-		return directory/".."/"data"/file_name;
+		return (directory/".."/"data"/file_name).string();
 	}
 	verify_not_reached("Failed to find \"%s\".", file_name);
 }

@@ -139,7 +139,7 @@ static void unpack_help_audio(CollectionAsset& dest, InputStream& src, const Sec
 			
 			auto end_sector = end_sectors.upper_bound(ranges[i].sectors);
 			verify(end_sector != end_sectors.end(), "Header references audio beyond end of file (at 0x%lx). The WAD file may be truncated.", ranges[i].bytes());
-			unpack_asset(*asset, src, SectorRange{ranges[i].sectors, *end_sector - ranges[i].sectors}, config, FMT_BINARY_VAG);
+			unpack_asset(*asset, src, SectorRange{ranges[i].sectors, (s32) (*end_sector - ranges[i].sectors)}, config, FMT_BINARY_VAG);
 		}
 	}
 }

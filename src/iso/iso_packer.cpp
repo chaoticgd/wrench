@@ -104,7 +104,7 @@ void pack_iso(OutputStream& iso, const BuildAsset& src, BuildConfig, const char*
 			case Game::DL:      toc_record.name = "rc4.hdr";     break;
 			case Game::UNKNOWN: toc_record.name = "unknown.hdr"; break;
 		}
-		toc_record.lba = {toc_sector};
+		toc_record.lba = {(s32) toc_sector};
 		toc_record.size = toc_size.bytes();
 		toc_record.modified_time = fs::file_time_type::clock::now();
 	}
