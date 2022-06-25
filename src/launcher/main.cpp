@@ -16,6 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include "imgui.h"
 #include <nfd.h>
 #include <core/png.h>
 #include <core/shell.h>
@@ -37,8 +38,7 @@ static Mod* mod_list_window();
 static void details_window(Mod* mod);
 static void not_specified();
 static void buttons_window(Mod* mod, f32 buttons_window_height);
-static void create_dock_layout();
-static void begin_docking(f32 buttons_window_height);
+static void begin_main_window(f32 buttons_window_height);
 static Texture load_image_from_launcher_wad(SectorRange range);
 
 int main(int argc, char** argv) {
@@ -101,16 +101,21 @@ void update_gui(f32 delta_time) {
 	f32 button_height = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.f;
 	f32 buttons_window_height = button_height + GImGui->Style.WindowPadding.y * 2.f;
 	
-	begin_docking(buttons_window_height);
+	begin_main_window(buttons_window_height);
 	
-	static bool first_frame = true;
-	if(first_frame) {
-		create_dock_layout();
-		first_frame = false;
+	Mod* mod = nullptr;
+	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0, 0));
+	if(ImGui::BeginTable("main", 2, ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable)) {
+		ImGui::PopStyleVar();
+		ImGui::TableNextRow();
+		ImGui::TableNextColumn();
+		mod = mod_list_window();
+		ImGui::TableNextColumn();
+		details_window(mod);
+		ImGui::EndTable();
+	} else {
+		ImGui::PopStyleVar();
 	}
-	
-	Mod* mod = mod_list_window();
-	details_window(mod);
 	
 	ImGui::End(); // docking
 	
@@ -119,7 +124,7 @@ void update_gui(f32 delta_time) {
 
 static Mod* mod_list_window() {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-	ImGui::Begin("Mod List");
+	ImGui::BeginChild("Mod List");
 	
 	char greeting[64];
 	BuildWadHeader& build = wadinfo.build;
@@ -164,7 +169,7 @@ static Mod* mod_list_window() {
 	Mod* mod = mod_list(filter);
 	ImGui::EndChild();
 	
-	ImGui::End();
+	ImGui::EndChild();
 	ImGui::PopStyleVar(); // ImGuiStyleVar_WindowPadding
 	
 	return mod;
@@ -172,7 +177,7 @@ static Mod* mod_list_window() {
 
 static void details_window(Mod* mod) {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-	ImGui::Begin("Details");
+	ImGui::BeginChild("Details");
 	
 	assert(g_mod_images.size() >= 1);
 	ModImage& image = g_mod_images[0];
@@ -225,7 +230,7 @@ static void details_window(Mod* mod) {
 		}
 	}
 	
-	ImGui::End();
+	ImGui::EndChild();
 	ImGui::PopStyleVar(); // ImGuiStyleVar_WindowPadding
 }
 
@@ -385,23 +390,7 @@ static void buttons_window(Mod* mod, f32 buttons_window_height) {
 	ImGui::End();
 }
 
-static void create_dock_layout() {
-	ImGuiID dockspace_id = ImGui::GetID("dock_space");
-	
-	ImGui::DockBuilderRemoveNode(dockspace_id);
-	ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
-	ImGui::DockBuilderSetNodeSize(dockspace_id, ImVec2(1.f, 1.f));
-
-	ImGuiID mod_list, details;
-	ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.5f, &mod_list, &details);
-	
-	ImGui::DockBuilderDockWindow("Mod List", mod_list);
-	ImGui::DockBuilderDockWindow("Details", details);
-
-	ImGui::DockBuilderFinish(dockspace_id);
-}
-
-static void begin_docking(f32 buttons_window_height) {
+static void begin_main_window(f32 buttons_window_height) {
 	ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking;
 	
 	ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -421,9 +410,6 @@ static void begin_docking(f32 buttons_window_height) {
 	ImGui::PopStyleVar();
 	
 	ImGui::PopStyleVar(2);
-
-	ImGuiID dockspace_id = ImGui::GetID("dock_space");
-	ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_NoTabBar);
 }
 
 static Texture load_image_from_launcher_wad(SectorRange range) {
