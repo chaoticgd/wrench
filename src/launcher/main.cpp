@@ -303,10 +303,12 @@ static void buttons_window(Mod* mod, f32 buttons_window_height) {
 	
 	ImGui::SameLine();
 	if(ImGui::Button("Open in Editor")) {
-		gui::EditorParams params;
-		params.game_path = g_game_path;
-		params.mod_path = mod->path;
-		gui::open_in_editor(params);
+		if(mod) {
+			gui::EditorParams params;
+			params.game_path = g_game_path;
+			params.mod_path = mod->path;
+			gui::open_in_editor(params);
+		}
 	}
 	
 	ImGui::SameLine();
