@@ -29,8 +29,8 @@ void unpack_moby_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest,
 	SubInputStream texture_data(data, header.textures_base_offset, data.size() - header.textures_base_offset);
 	
 	for(const MobyClassEntry& entry : classes) {
-		std::string path = stringf("/mobies/%d/moby%d.asset", entry.o_class, entry.o_class);
-		MobyClassAsset& asset = data_dest.foreign_child<MobyClassAsset>(path, entry.o_class);
+		fs::path path = fs::path()/"mobies"/std::to_string(entry.o_class)/stringf("moby%d.asset", entry.o_class);
+		MobyClassAsset& asset = data_dest.foreign_child<MobyClassAsset>(path.string(), entry.o_class);
 		asset.set_id(entry.o_class);
 		asset.set_has_moby_table_entry(true);
 		
@@ -51,8 +51,8 @@ void unpack_tie_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest, 
 	SubInputStream texture_data(data, header.textures_base_offset, data.size() - header.textures_base_offset);
 	
 	for(const MobyClassEntry& entry : classes) {
-		std::string path = stringf("/ties/%d/tie%d.asset", entry.o_class, entry.o_class);
-		TieClassAsset& asset = data_dest.foreign_child<TieClassAsset>(path, entry.o_class);
+		fs::path path = fs::path()/"ties"/std::to_string(entry.o_class)/stringf("tie%d.asset", entry.o_class);
+		TieClassAsset& asset = data_dest.foreign_child<TieClassAsset>(path.string(), entry.o_class);
 		asset.set_id(entry.o_class);
 		
 		unpack_level_textures(asset.materials(), entry.textures, textures, texture_data, gs_ram, config.game());
@@ -72,8 +72,8 @@ void unpack_shrub_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest
 	SubInputStream texture_data(data, header.textures_base_offset, data.size() - header.textures_base_offset);
 	
 	for(const ShrubClassEntry& entry : classes) {
-		std::string path = stringf("/shrubs/%d/shrub%d.asset", entry.o_class, entry.o_class);
-		ShrubClassAsset& asset = data_dest.foreign_child<ShrubClassAsset>(path, entry.o_class);
+		fs::path path = fs::path()/"shrubs"/std::to_string(entry.o_class)/stringf("shrub%d.asset", entry.o_class);
+		ShrubClassAsset& asset = data_dest.foreign_child<ShrubClassAsset>(path.string(), entry.o_class);
 		asset.set_id(entry.o_class);
 		
 		unpack_level_textures(asset.materials(), entry.textures, textures, texture_data, gs_ram, config.game());
