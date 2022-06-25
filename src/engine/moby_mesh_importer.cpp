@@ -131,7 +131,7 @@ std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s64 coun
 		
 		low.vertices = read_vertices(src, entry, vertex_header, format);
 		submesh.vertices = unpack_vertices(low, blend_buffer, scale);
-		sort_moby_vertices_after_reading(low, submesh);
+		//sort_moby_vertices_after_reading(low, submesh);
 		
 		submesh.unknown_e = vertex_header.unknown_e;
 		if(format == MobyFormat::RAC1) {
