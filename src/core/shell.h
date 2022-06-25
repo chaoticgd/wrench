@@ -35,8 +35,7 @@ struct CommandStatus {
 };
 
 void spawn_command_thread(const std::vector<std::string>& args, CommandStatus* output);
-s32 execute_command(s32 argc, const char** argv, CommandStatus* output = nullptr);
-void execute_command_non_blocking(const char** args); // Last element of args should be nullptr.
+s32 execute_command(s32 argc, const char** argv, CommandStatus* output = nullptr, bool blocking = true);
 void open_in_file_manager(const char* path);
 
 #endif

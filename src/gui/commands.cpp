@@ -85,21 +85,15 @@ void gui::open_in_editor(const EditorParams& params) {
 	const char* args[] = {
 		bin_paths.wrencheditor.c_str(),
 		params.game_path.c_str(),
-		params.mod_path.c_str(),
-		nullptr
+		params.mod_path.c_str()
 	};
-	execute_command_non_blocking(args);
+	execute_command(ARRAY_SIZE(args), args, nullptr, false);
 }
 
 void gui::run_emulator(const EmulatorParams& params, bool blocking) {
 	const char* args[] = {
 		g_config.paths.emulator_path.c_str(),
-		params.iso_path.c_str(),
-		nullptr
+		params.iso_path.c_str()
 	};
-	if(blocking) {
-		execute_command(ARRAY_SIZE(args), args, nullptr);
-	} else {
-		execute_command_non_blocking(args);
-	}
+	execute_command(ARRAY_SIZE(args), args, nullptr, blocking);
 }

@@ -30,6 +30,9 @@ void spawn_command_thread(const std::vector<std::string>& args, CommandStatus* o
 		std::lock_guard<std::mutex>(output->mutex);
 		output->finished = false;
 	}
+	if(output->thread.joinable()) {
+		output->thread.join();
+	}
 	output->thread = std::thread([args, output]() {
 		std::vector<const char*> pointers(args.size());
 		for(size_t i = 0; i < args.size(); i++) {
@@ -39,7 +42,7 @@ void spawn_command_thread(const std::vector<std::string>& args, CommandStatus* o
 	});
 }
 
-s32 execute_command(s32 argc, const char** argv, CommandStatus* output) {
+s32 execute_command(s32 argc, const char** argv, CommandStatus* output, bool blocking) {
 	assert(argc >= 1);
 	
 	std::string command;
@@ -54,7 +57,10 @@ s32 execute_command(s32 argc, const char** argv, CommandStatus* output) {
 		command += "\"$" + env_var + "\" ";
 	}
 	
-	if(output) {
+	if(!blocking) {
+		popen(command.c_str(), "r");
+		return 0;
+	} else if(output) {
 		// Redirect stderr to stdout so we can capture it.
 		command += "2>&1";
 		
@@ -87,13 +93,6 @@ s32 execute_command(s32 argc, const char** argv, CommandStatus* output) {
 		return exit_code;
 	} else {
 		return system(command.c_str());
-	}
-}
-
-void execute_command_non_blocking(const char** args) {
-	if(fork() == 0) {
-		execve(const_cast<char*>(args[0]), const_cast<char *const*>(args), nullptr);
-		perror("execve");
 	}
 }
 

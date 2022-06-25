@@ -20,6 +20,7 @@
 
 #include <toolwads/wads.h>
 #include <gui/gui.h>
+#include <gui/config.h>
 #include <gui/commands.h>
 #include <imgui/backends/imgui_impl_glfw.h>
 #include <editor/fs_includes.h>
@@ -40,6 +41,8 @@ int main(int argc, char** argv) {
 	}
 	
 	gui::setup_bin_paths(argv[0]);
+	
+	g_config.read();
 	
 	std::string game_path = argv[1];
 	std::string mod_path = argv[2];
