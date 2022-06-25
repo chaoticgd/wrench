@@ -22,6 +22,7 @@ const char* UTIL_ERROR_CONTEXT_STRING = "";
 
 static std::vector<std::string> error_context_stack;
 static std::string error_context_alloc;
+static char what_message[2048] = {};
 
 RuntimeError::RuntimeError(const char* f, int l, const char* format, ...)
 	: file(f), line(l), context(UTIL_ERROR_CONTEXT_STRING) {
@@ -32,7 +33,8 @@ RuntimeError::RuntimeError(const char* f, int l, const char* format, ...)
 }
 
 const char* RuntimeError::what() const noexcept {
-	return message.c_str();
+	snprintf(what_message, sizeof(what_message) - 1, "[%s:%d] \033[31merror%s:\033[0m %s\n", file, line, context.c_str(), message.c_str());
+	return what_message;
 }
 
 void RuntimeError::print() const {
