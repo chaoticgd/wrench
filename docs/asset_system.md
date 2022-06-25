@@ -120,7 +120,7 @@ The `Asset` class represents an asset definition inside a .asset file. A seperat
 
 ### Code Generator
 
-Each asset type is defined in `asset_schema.wtf` and a code generator, `asset_codgen.cpp` to generate a C++ file that defines a subclass of `Asset` for each asset type. A similar generator program, `asset_docgen.cpp` is used to generate the asset reference document.
+Each asset type is defined in `asset_schema.wtf` and a code generator, `asset_codegen.cpp` is used to generate a C++ file that defines a subclass of `Asset` for each asset type. A similar generator program, `asset_docgen.cpp` is used to generate the asset reference document.
 
 
 ## Version History
