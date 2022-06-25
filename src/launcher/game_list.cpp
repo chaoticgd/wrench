@@ -72,7 +72,7 @@ void load_game_list(const std::string& games_folder) {
 			game_info_txt.push_back(0);
 			
 			GameData& game = games.emplace_back();
-			game.directory = game_dir.path();
+			game.directory = game_dir.path().string();
 			game.info = read_game_info((char*) game_info_txt.data());
 		}
 	}

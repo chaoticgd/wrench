@@ -165,13 +165,13 @@ static int wrenchbuild(int argc, char** argv) {
 	
 	if(mode == "inspect_iso") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH);
-		inspect_iso(args.input_paths[0]);
+		inspect_iso(args.input_paths[0].string());
 		return 0;
 	}
 	
 	if(mode == "parse_pcsx2_cdvd_log") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH);
-		parse_pcsx2_cdvd_log(args.input_paths[0]);
+		parse_pcsx2_cdvd_log(args.input_paths[0].string());
 		return 0;
 	}
 	
