@@ -5,9 +5,6 @@
 	path = thirdparty/json
 	url = https://github.com/nlohmann/json
 	branch = master
-[submodule "thirdparty/toml11"]
-	path = thirdparty/toml11
-	url = https://github.com/ToruNiina/toml11
 [submodule "thirdparty/glfw"]
 	path = thirdparty/glfw
 	url = https://github.com/glfw/glfw

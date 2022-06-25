@@ -20,7 +20,6 @@
 
 #include <stdlib.h>
 #include "unwindows.h"
-#include <toml11/toml.hpp>
 
 #include <toolwads/wads.h>
 #include <gui/gui.h>

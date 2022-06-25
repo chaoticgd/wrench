@@ -48,7 +48,6 @@ add_custom_command(
 		"${CMAKE_SOURCE_DIR}/data/licenses/nativefiledialog.txt"
 		"${CMAKE_SOURCE_DIR}/data/licenses/nlohmanjson.txt"
 		"${CMAKE_SOURCE_DIR}/data/licenses/rapidxml.txt"
-		"${CMAKE_SOURCE_DIR}/data/licenses/toml11.txt"
 		"${CMAKE_SOURCE_DIR}/data/licenses/wrench.txt"
 		"${CMAKE_SOURCE_DIR}/data/licenses/zlib.txt"
 		"${CMAKE_SOURCE_DIR}/data/gui/Barlow-Regular.ttf"

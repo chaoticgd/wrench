@@ -116,7 +116,6 @@ static void pack_gui_wad() {
 	header.license_text[LICENSE_NATIVEFILEDIALOG] = pack_file(wad, "data/licenses/nativefiledialog.txt");
 	header.license_text[LICENSE_NLOHMANJSON] = pack_file(wad, "data/licenses/nlohmanjson.txt");
 	header.license_text[LICENSE_RAPIDXML] = pack_file(wad, "data/licenses/rapidxml.txt");
-	header.license_text[LICENSE_TOML11] = pack_file(wad, "data/licenses/toml11.txt");
 	header.license_text[LICENSE_ZLIB] = pack_file(wad, "data/licenses/zlib.txt");
 	
 	header.fonts[0] = pack_file(wad, "data/gui/Barlow-Regular.ttf");
