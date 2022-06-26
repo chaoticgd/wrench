@@ -66,7 +66,7 @@ public:
 	void draw(app& a, glm::mat4 world_to_clip) override;
 
 private:
-	glm::vec3 _displacement;
+	glm::vec3 _displacement = {0, 0, 0};
 };
 
 #endif
