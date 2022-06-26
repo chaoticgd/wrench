@@ -89,7 +89,8 @@
        y1="263.13333"
        x2="67.73333"
        y2="212.33333"
-       gradientUnits="userSpaceOnUse" />
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(0.99064028,0,0,1.0000728,0.23694901,-0.01852174)" />
     <linearGradient
        inkscape:collect="always"
        xlink:href="#linearGradient955"
@@ -213,10 +214,10 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1.8847266"
-     inkscape:cx="336.5785"
+     inkscape:cx="241.33922"
      inkscape:cy="187.31239"
      inkscape:document-units="mm"
-     inkscape:current-layer="layer2"
+     inkscape:current-layer="layer1"
      showgrid="true"
      units="px"
      showguides="false"
@@ -263,8 +264,7 @@
      inkscape:groupmode="layer"
      id="layer1"
      transform="translate(0,-212.33332)"
-     style="display:inline"
-     sodipodi:insensitive="true">
+     style="display:inline">
     <g
        aria-label="WRENCH"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16.93333244px;line-height:1.25;font-family:'Barlow Black';-inkscape-font-specification:'Barlow Black, ';font-variant-ligatures:normal;font-variant-position:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-alternates:normal;font-feature-settings:normal;text-indent:0;text-align:center;text-decoration:none;text-decoration-line:none;text-decoration-style:solid;text-decoration-color:#000000;letter-spacing:0px;word-spacing:0px;text-transform:none;writing-mode:lr-tb;direction:ltr;text-orientation:mixed;dominant-baseline:auto;baseline-shift:baseline;text-anchor:middle;white-space:normal;shape-padding:0;opacity:1;vector-effect:none;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -301,8 +301,8 @@
          inkscape:connector-curvature="0" />
     </g>
     <path
-       style="fill:url(#linearGradient1175);fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       d="m 25.399999,246.19999 4.233334,16.93333 h 80.433337 v -16.93333 z"
+       style="fill:url(#linearGradient1175);fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:0.26335177px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 25.39921,246.19937 4.193712,16.93457 h 79.680498 v -16.93457 z"
        id="path926"
        inkscape:connector-curvature="0" />
   </g>
