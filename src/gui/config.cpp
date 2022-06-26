@@ -149,7 +149,11 @@ void gui::Config::set_to_defaults() {
 	*this = {};
 	WtfNode dummy = {};
 	paths.read(&dummy);
-	paths.mods_folders.emplace_back(paths.base_folder + "/mods");
+	if(paths.base_folder == ".") {
+		paths.mods_folders.emplace_back("mods");
+	} else {
+		paths.mods_folders.emplace_back(paths.base_folder + "/mods");
+	}
 	ui.read(&dummy);
 }
 
