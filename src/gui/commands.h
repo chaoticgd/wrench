@@ -52,8 +52,8 @@ struct EmulatorParams {
 
 void setup_bin_paths(const char* bin_path);
 
-void run_unpacker(const UnpackerParams& params, CommandStatus* status);
-std::string run_packer(const PackerParams& params, CommandStatus* status);
+void run_unpacker(const UnpackerParams& params, CommandThread& command);
+std::string run_packer(const PackerParams& params, CommandThread& command);
 void open_in_editor(const EditorParams& params);
 void run_emulator(const EmulatorParams& params, bool blocking = true);
 

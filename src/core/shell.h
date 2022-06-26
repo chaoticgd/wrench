@@ -23,19 +23,45 @@
 #include <thread>
 #include <core/util.h>
 
-struct CommandStatus {
-	bool running = false;
+class CommandThread {
+	friend s32 execute_command(s32 argc, const char** argv, bool blocking);
+public:
+	~CommandThread();
+	
+	void start(const std::vector<std::string>& args); // Run a command.
+	void stop(); // Interrupt the thread.
+	void clear(); // Free memory.
+	
+	std::string& get_last_output_lines();
+	std::string copy_entire_output();
+	
+	bool is_running();
+	bool succeeded();
+	
+private:
+	static void worker_thread(s32 argc, const char** argv, CommandThread& command);
+	void update_last_output_lines();
+
+	enum ThreadState { // condition                                  description
+		NOT_RUNNING,   // initial state, main thread sees STOPPED    the worker is not running (hasn't yet been spawned, or has been joined)
+		RUNNING,       // start() called on main thread              the worker is running the command
+		STOPPING,      // stop() called on main thread               the main thread has requested the worker stop
+		STOPPED,       // worker sees STOPPING or is finished        the worker has stopped, main thread needs to acknowledge
+	};
+	
+	struct SharedData {
+		ThreadState state = NOT_RUNNING;
+		std::string output;
+		bool success = false;
+	};
+	
 	std::string buffer;
 	std::thread thread;
 	std::mutex mutex;
-	// Shared data.
-	std::string output;
-	s32 exit_code;
-	bool finished = false;
+	SharedData shared;
 };
 
-void spawn_command_thread(const std::vector<std::string>& args, CommandStatus* output);
-s32 execute_command(s32 argc, const char** argv, CommandStatus* output = nullptr, bool blocking = true);
+s32 execute_command(s32 argc, const char** argv, bool blocking = true);
 void open_in_file_manager(const char* path);
 
 #endif

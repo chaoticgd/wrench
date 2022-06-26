@@ -253,7 +253,7 @@ static void buttons_window(Mod* mod, f32 buttons_window_height) {
 	bool p_open;
 	ImGui::Begin("Buttons", &p_open, flags);
 	
-	static CommandStatus unpack_command;
+	static CommandThread unpack_command;
 	
 	if(ImGui::Button("Import ISO")) {
 		nfdchar_t* path = nullptr;
@@ -261,7 +261,7 @@ static void buttons_window(Mod* mod, f32 buttons_window_height) {
 		if(result == NFD_OKAY) {
 			gui::UnpackerParams params;
 			params.iso_path = path;
-			gui::run_unpacker(params, &unpack_command);
+			gui::run_unpacker(params, unpack_command);
 			free(path);
 			
 			ImGui::OpenPopup("Import ISO");
@@ -379,7 +379,7 @@ static void buttons_window(Mod* mod, f32 buttons_window_height) {
 	ImGui::SetCursorPosX(viewport_size.x - build_area_width);
 	
 	static gui::PackerParams pack_params;
-	static CommandStatus pack_command;
+	static CommandThread pack_command;
 	
 	ImGui::SetNextItemWidth(300);
 	gui::build_settings(pack_params, g_game_builds, g_mod_builds);
@@ -388,7 +388,7 @@ static void buttons_window(Mod* mod, f32 buttons_window_height) {
 	if(ImGui::Button("Build & Run##the_button")) {
 		pack_params.game_path = g_game_path;
 		pack_params.mod_paths = enabled_mods();
-		g_launcher.emulator_params.iso_path = gui::run_packer(pack_params, &pack_command);
+		g_launcher.emulator_params.iso_path = gui::run_packer(pack_params, pack_command);
 		ImGui::OpenPopup("Build & Run##the_popup");
 	}
 	

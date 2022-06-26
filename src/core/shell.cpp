@@ -19,6 +19,7 @@
 #include "shell.h"
 
 #include <stdlib.h>
+#include <thread>
 #ifdef _WIN32
 #include <windows.h>
 #include <shellapi.h>
@@ -29,84 +30,192 @@
 #include <unistd.h>
 #endif
 
-void spawn_command_thread(const std::vector<std::string>& args, CommandStatus* output) {
-	output->running = true;
-	{
-		std::lock_guard<std::mutex>(output->mutex);
-		output->finished = false;
-	}
-	if(output->thread.joinable()) {
-		output->thread.join();
-	}
-	output->thread = std::thread([args, output]() {
+static std::string prepare_arguments(s32 argc, const char** argv);
+
+CommandThread::~CommandThread() {
+	stop();
+}
+
+void CommandThread::start(const std::vector<std::string>& args) {
+	clear();
+	CommandThread* command = this;
+	thread = std::thread([args, command]() {
+		{
+			std::lock_guard<std::mutex> lock(command->mutex);
+			command->shared.state = RUNNING;
+		}
 		std::vector<const char*> pointers(args.size());
 		for(size_t i = 0; i < args.size(); i++) {
 			pointers[i] = args[i].c_str();
 		}
-		execute_command(pointers.size(), pointers.data(), output);
+		worker_thread(pointers.size(), pointers.data(), *command);
 	});
 }
 
-s32 execute_command(s32 argc, const char** argv, CommandStatus* output, bool blocking) {
+void CommandThread::stop() {
+	{
+		std::lock_guard<std::mutex> lock(mutex);
+		if(shared.state == NOT_RUNNING) {
+			return;
+		} else if(shared.state != STOPPED) {
+			shared.state = STOPPING;
+		}
+	}
+	
+	// Wait for the thread to stop processing data.
+	for(;;) {
+		{
+			std::lock_guard<std::mutex> lock(mutex);
+			if(shared.state == STOPPED) {
+				shared.state = NOT_RUNNING;
+				break;
+			}
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(5));
+	}
+	
+	// Wait for the thread to terminate.
+	thread.join();
+}
+
+void CommandThread::clear() {
+	stop();
+	{
+		std::lock_guard<std::mutex> lock(mutex);
+		shared = {NOT_RUNNING};
+	}
+}
+
+std::string& CommandThread::get_last_output_lines() {
+	update_last_output_lines();
+	return buffer;
+}
+
+std::string CommandThread::copy_entire_output() {
+	std::lock_guard<std::mutex> lock(mutex);
+	return shared.output;
+}
+
+bool CommandThread::is_running() {
+	std::lock_guard<std::mutex> lock(mutex);
+	return shared.state == RUNNING;
+}
+
+bool CommandThread::succeeded() {
+	std::lock_guard<std::mutex> lock(mutex);
+	return shared.success;
+}
+
+void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& command) {
 	assert(argc >= 1);
 	
-	std::string command;
+	// Pass arguments to the shell as enviroment variables.
+	std::string command_template = prepare_arguments(argc, argv);
 	
-	// Pass arguments as enviroment variables.
-	for(s32 i = 0; i < argc; i++) {
-		printf("arg: %s\n", argv[i]);
-		std::string env_var = stringf("WRENCH_ARG_%d", i);
-		if(setenv(env_var.c_str(), argv[i], 1) == -1) {
-			return 1;
-		}
-#ifdef _WIN32
-		if (i == 0) {
-			command += "%" + env_var + "% ";
-		} else {
-			command += "\"%" + env_var + "%\" ";
-		}
-#else
-		command += "\"$" + env_var + "\" ";
-#endif
+	if(command_template.empty()) {
+		std::lock_guard<std::mutex> lock(command.mutex);
+		command.shared.output = "Failed to pass arguments to shell.\n";
+		command.shared.state = STOPPED;
+		command.shared.success = false;
 	}
+	
+	// Redirect stderr to stdout so we can capture it.
+	command_template += "2>&1";
+	
+	// Spawn the process and open a pipe so we can read its stdout and stderr.
+	FILE* pipe = popen(command_template.c_str(), "r");
+	if(!pipe) {
+		perror("popen() failed");
+		std::lock_guard<std::mutex> lock(command.mutex);
+		command.shared.output += std::string("popen() failed: ") + strerror(errno) + "\n";
+		command.shared.state = STOPPED;
+		command.shared.success = false;
+		return;
+	}
+	
+	// Read data from the pipe until the process has finished or the main thread
+	// has requested that we stop.
+	char buffer[1024];
+	while(fgets(buffer, sizeof(buffer), pipe) != NULL) {
+		std::lock_guard<std::mutex> lock(command.mutex);
+		command.shared.output += buffer;
+		if(command.shared.state == STOPPING) {
+			break;
+		}
+	}
+	
+	// Notify the main thread that we're done before we call pclose.
+	ThreadState state;
+	{
+		std::lock_guard<std::mutex> lock(command.mutex);
+		state = command.shared.state;
+		if(state == RUNNING) {
+			command.shared.state = STOPPING;
+		}
+	}
+	
+	// Finish up.
+	s32 exit_code = pclose(pipe);
+	{
+		std::lock_guard<std::mutex> lock(command.mutex);
+		command.shared.state = STOPPED;
+		if(exit_code == 0) {
+			command.shared.output += "\nProcess exited normally.\n";
+			command.shared.success = true;
+		} else {
+			command.shared.output += stringf("\nProcess exited with error code %d.\n", exit_code);
+			command.shared.success = false;
+		}
+	}
+}
+
+void CommandThread::update_last_output_lines() {
+	std::lock_guard<std::mutex> lock(mutex);
+	
+	buffer.resize(0);
+	
+	// Find the start of the last 15 lines.
+	s64 i = 0;
+	s32 new_line_count = 0;
+	if(shared.output.size() > 0) {
+		for(i = (s64) shared.output.size() - 1; i > 0; i--) {
+			if(shared.output[i] == '\n') {
+				new_line_count++;
+				if(new_line_count >= 15) {
+					i++;
+					break;
+				}
+			}
+		}
+	}
+	
+	// Go through the last 15 lines of the output and strip out colour
+	// codes, taking care to handle incomplete buffers.
+	for(; i < (s64) shared.output.size(); i++) {
+		// \033[%sm%02x\033[0m
+		if(i + 1 < shared.output.size() && memcmp(shared.output.data() + i, "\033[", 2) == 0) {
+			if(i + 3 < shared.output.size() && shared.output[i + 3] == 'm') {
+				i += 3;
+			} else {
+				i += 4;
+			}
+		} else {
+			buffer += shared.output[i];
+		}
+	}
+}
+
+s32 execute_command(s32 argc, const char** argv, bool blocking) {
+	assert(argc >= 1);
+	
+	std::string command_template = prepare_arguments(argc, argv);
 	
 	if(!blocking) {
-		popen(command.c_str(), "r");
+		popen(command_template.c_str(), "r");
 		return 0;
-	} else if(output) {
-		// Redirect stderr to stdout so we can capture it.
-		command += "2>&1";
-		
-		FILE* pipe = popen(command.c_str(), "r");
-		if(!pipe) {
-			perror("popen() failed");
-			std::lock_guard<std::mutex> guard(output->mutex);
-			output->output += std::string("popen() failed: ") + strerror(errno) + "\n";
-		}
-		
-		char buffer[16];
-		while(fgets(buffer, sizeof(buffer), pipe) != NULL) {
-			if(output) {
-				std::lock_guard<std::mutex> guard(output->mutex);
-				output->output += buffer;
-			}
-		}
-		
-		s32 exit_code = pclose(pipe);
-		{
-			std::lock_guard<std::mutex> guard(output->mutex);
-			if(exit_code == 0) {
-				output->output += "\nProcess exited normally.\n";
-			} else {
-				output->output += stringf("\nProcess exited with error code %d.\n", exit_code);
-			}
-			output->exit_code = exit_code;
-			output->finished = true;
-		}
-		return exit_code;
-	} else {
-		return system(command.c_str());
 	}
+	
+	return system(command_template.c_str());
 }
 
 void open_in_file_manager(const char* path) {
@@ -117,4 +226,28 @@ void open_in_file_manager(const char* path) {
 	setenv("WRENCH_ARG_1", path, 1);
 	system("\"$WRENCH_ARG_0\" \"$WRENCH_ARG_1\"");
 #endif
+}
+
+static std::string prepare_arguments(s32 argc, const char** argv) {
+	std::string command_template;
+	
+	// Pass arguments as enviroment variables.
+	for(s32 i = 0; i < argc; i++) {
+		printf("arg: %s\n", argv[i]);
+		std::string env_var = stringf("WRENCH_ARG_%d", i);
+		if(setenv(env_var.c_str(), argv[i], 1) == -1) {
+			return "";
+		}
+#ifdef _WIN32
+		if (i == 0) {
+			command_template += "%" + env_var + "% ";
+		} else {
+			command_template += "\"%" + env_var + "%\" ";
+		}
+#else
+		command_template += "\"$" + env_var + "\" ";
+#endif
+	}
+	
+	return command_template;
 }

@@ -34,7 +34,7 @@ void gui::setup_bin_paths(const char* bin_path) {
 	bin_paths.wrencheditor = (directory/"wrencheditor").string();
 }
 
-void gui::run_unpacker(const UnpackerParams& params, CommandStatus* status) {
+void gui::run_unpacker(const UnpackerParams& params, CommandThread& command) {
 	std::vector<std::string> args;
 	args.emplace_back(bin_paths.wrenchbuild);
 	args.emplace_back("unpack");
@@ -43,10 +43,10 @@ void gui::run_unpacker(const UnpackerParams& params, CommandStatus* status) {
 	args.emplace_back(g_config.paths.games_folder);
 	args.emplace_back("-s"); // Unpack it into a subdirectory.
 	args.emplace_back("-f"); // Aggressively flush stdout and stderr.
-	spawn_command_thread(args, status);
+	command.start(args);
 }
 
-std::string gui::run_packer(const PackerParams& params, CommandStatus* status) {
+std::string gui::run_packer(const PackerParams& params, CommandThread& command) {
 	std::string output_path;
 	
 	std::vector<std::string> args;
@@ -77,7 +77,7 @@ std::string gui::run_packer(const PackerParams& params, CommandStatus* status) {
 		args.emplace_back("release");
 	}
 	args.emplace_back("-f"); // Aggressively flush stdout and stderr.
-	spawn_command_thread(args, status);
+	command.start(args);
 	return output_path;
 }
 
@@ -87,7 +87,7 @@ void gui::open_in_editor(const EditorParams& params) {
 		params.game_path.c_str(),
 		params.mod_path.c_str()
 	};
-	execute_command(ARRAY_SIZE(args), args, nullptr, false);
+	execute_command(ARRAY_SIZE(args), args, false);
 }
 
 void gui::run_emulator(const EmulatorParams& params, bool blocking) {
@@ -95,5 +95,5 @@ void gui::run_emulator(const EmulatorParams& params, bool blocking) {
 		g_config.paths.emulator_path.c_str(),
 		params.iso_path.c_str()
 	};
-	execute_command(ARRAY_SIZE(args), args, nullptr, blocking);
+	execute_command(ARRAY_SIZE(args), args, blocking);
 }
