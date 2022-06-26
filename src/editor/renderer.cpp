@@ -319,7 +319,7 @@ static void draw_mesh(const RenderMesh& mesh, const std::vector<RenderMaterial>&
 	
 	draw_mesh_instanced(mesh, materials.data(), materials.size(), inst_buffer.id, 0, 1);
 }
-GLenum error;
+
 static void draw_mesh_instanced(const RenderMesh& mesh, const RenderMaterial* mats, size_t mat_count, GLuint inst_buffer, size_t inst_begin, size_t inst_count) {
 	size_t inst_offset = inst_begin * sizeof(InstanceData);
 	size_t matrix_offset = inst_offset + offsetof(InstanceData, matrix);
