@@ -24,7 +24,9 @@ Shader::Shader(const GLchar* vertex_src, const GLchar* fragment_src, ShaderCallb
 	: _id(0), _vertex_src(vertex_src), _fragment_src(fragment_src), _before(before), _after(after) {}
 	
 Shader::~Shader() {
-	glDeleteProgram(_id);
+	if(_id) {
+		glDeleteProgram(_id);
+	}
 }
 
 void Shader::init() {
