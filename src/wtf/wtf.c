@@ -231,7 +231,8 @@ static void read_nodes_and_attributes(WtfReader* ctx, WtfNode* parent) {
 			advance(ctx); // ':'
 			
 			WtfAttribute* attribute = NULL;
-			assert(parse_value(ctx, &attribute) == NULL);
+			ErrorStr err = parse_value(ctx, &attribute);
+			assert(err == NULL);
 			
 			attribute->prev = prev_attribute;
 			attribute->next = NULL;
