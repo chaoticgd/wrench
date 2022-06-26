@@ -43,17 +43,29 @@ void gui::PathConfig::read(const WtfNode* node) {
 	if(const WtfAttribute* attrib = wtf_attribute_of_type(node, "games_folder", WTF_STRING)) {
 		games_folder = attrib->string.begin;
 	} else {
-		games_folder = base_folder + "/games";
+		if(base_folder != ".") {
+			games_folder = base_folder + "/games";
+		} else {
+			games_folder = "games";
+		}
 	}
 	if(const WtfAttribute* attrib = wtf_attribute_of_type(node, "builds_folder", WTF_STRING)) {
 		builds_folder = attrib->string.begin;
 	} else {
-		builds_folder = base_folder + "/builds";
+		if(base_folder != ".") {
+			builds_folder = base_folder + "/builds";
+		} else {
+			builds_folder = "builds";
+		}
 	}
 	if(const WtfAttribute* attrib = wtf_attribute_of_type(node, "cache_folder", WTF_STRING)) {
 		cache_folder = attrib->string.begin;
 	} else {
-		cache_folder = base_folder + "/cache";
+		if(base_folder != ".") {
+			cache_folder = base_folder + "/cache";
+		} else {
+			cache_folder = "cache";
+		}
 	}
 	if(const WtfAttribute* attrib = wtf_attribute_of_type(node, "emulator_path", WTF_STRING)) {
 		emulator_path = attrib->string.begin;
