@@ -152,7 +152,7 @@ void load_mod_list(const std::vector<std::string>& mods_folders) {
 static void update_mod_images() {
 	g_mod_images.clear();
 	
-	if(selected_mod < mods.size()) {
+	if(selected_mod < mods.size() && mods[selected_mod].info.images.size() >= 1) {
 		Mod& mod = mods[selected_mod];
 		s32 successful_loads = 0;
 		for(const std::string& path : mod.info.images) {
@@ -172,14 +172,13 @@ static void update_mod_images() {
 			const Texture& placeholder = g_launcher.placeholder_image;
 			GlTexture texture;
 			texture.upload(placeholder.data.data(), placeholder.width, placeholder.height);
-			g_mod_images.emplace_back(std::move(texture), placeholder.width, placeholder.height, "(placeholder)");
+			g_mod_images.emplace_back(std::move(texture), placeholder.width, placeholder.height, "Placeholder");
 		}
 	} else {
-		// TODO: Replace this image.
-		const Texture& placeholder = g_launcher.placeholder_image;
+		const Texture& logo = g_launcher.logo;
 		GlTexture texture;
-		texture.upload(placeholder.data.data(), placeholder.width, placeholder.height);
-		g_mod_images.emplace_back(std::move(texture), placeholder.width, placeholder.height, "(placeholder)");
+		texture.upload(logo.data.data(), logo.width, logo.height);
+		g_mod_images.emplace_back(std::move(texture), logo.width, logo.height, "Logo");
 	}
 }
 

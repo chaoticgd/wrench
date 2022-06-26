@@ -53,6 +53,7 @@ add_custom_command(
 		"${CMAKE_SOURCE_DIR}/data/gui/Barlow-Regular.ttf"
 		"${CMAKE_SOURCE_DIR}/data/gui/Barlow-Italic.ttf"
 		# launcher.wad
+		"${CMAKE_SOURCE_DIR}/data/launcher/logo.png"
 		"${CMAKE_SOURCE_DIR}/data/launcher/my_mod.png"
 		"${CMAKE_SOURCE_DIR}/data/launcher/oobe/wrench_setup.png"
 		# editor.wad

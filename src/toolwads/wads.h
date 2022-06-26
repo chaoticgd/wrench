@@ -57,7 +57,7 @@ packed_struct(GuiWadHeader,
 packed_struct(LauncherWadHeader,
 	/* 0x00 */ s32 header_size;
 	/* 0x04 */ Sector32 sector;
-	/* 0x08 */ SectorRange unused;
+	/* 0x08 */ SectorRange logo;
 	/* 0x10 */ SectorRange placeholder_images[2];
 	/* 0x20 */ SectorRange oobe;
 )

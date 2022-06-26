@@ -44,6 +44,7 @@ struct LauncherState {
 	GLFWwindow* window;
 	ImFont* font_regular;
 	ImFont* font_italic;
+	Texture logo;
 	Texture placeholder_image;
 	gui::EmulatorParams emulator_params;
 };
