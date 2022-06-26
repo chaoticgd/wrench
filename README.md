@@ -6,7 +6,7 @@ Features currently include:
 - **New!** Asset System
 	- A system to create, distribute and load mods.
 	- Multiple mods can be loaded at a time.
-- Launcher
+- **New!** Launcher
 	- Create, manage and load mods.
 	- Used to launch the level editor.
 - Build Tool
