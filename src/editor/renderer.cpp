@@ -39,6 +39,7 @@ static void draw_mesh_instanced(const RenderMesh& mesh, const RenderMaterial* ma
 static Mesh create_fill_cube();
 static Mesh create_line_cube();
 static Texture create_white_texture();
+static void set_shader(const Shader& shader);
 
 static Shaders shaders;
 static RenderMesh fill_cube;
@@ -54,6 +55,7 @@ static GLuint moby_inst_buffer = 0;
 static GLuint cuboid_inst_buffer = 0;
 static GLuint sphere_inst_buffer = 0;
 static GLuint cylinder_inst_buffer = 0;
+static GLuint program = 0;
 
 void init_renderer() {
 	shaders.init();
@@ -135,7 +137,7 @@ void draw_level(Level& lvl, const glm::mat4& world_to_clip, const RenderSettings
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	glUseProgram(shaders.textured.id());
+	set_shader(shaders.textured);
 	draw_instances(lvl, world_to_clip, GL_FILL, GL_LINE, settings);
 	
 	if(settings.draw_collision) {
@@ -145,7 +147,7 @@ void draw_level(Level& lvl, const glm::mat4& world_to_clip, const RenderSettings
 		}
 	}
 	
-	glUseProgram(shaders.selection.id());
+	set_shader(shaders.selection);
 	draw_instances(lvl, world_to_clip, GL_LINE, GL_LINE, settings);
 	
 	if(settings.draw_selected_moby_normals) {
@@ -159,7 +161,7 @@ void draw_pickframe(Level& lvl, const glm::mat4& world_to_clip, const RenderSett
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 	
-	glUseProgram(shaders.pickframe.id());
+	set_shader(shaders.pickframe);
 	
 	draw_instances(lvl, world_to_clip, GL_FILL, GL_FILL, settings);
 }
@@ -317,10 +319,15 @@ static void draw_mesh(const RenderMesh& mesh, const std::vector<RenderMaterial>&
 	
 	draw_mesh_instanced(mesh, materials.data(), materials.size(), inst_buffer.id, 0, 1);
 }
-
+GLenum error;
 static void draw_mesh_instanced(const RenderMesh& mesh, const RenderMaterial* mats, size_t mat_count, GLuint inst_buffer, size_t inst_begin, size_t inst_count) {
 	size_t inst_offset = inst_begin * sizeof(InstanceData);
 	size_t matrix_offset = inst_offset + offsetof(InstanceData, matrix);
+	
+	// This probably isn't ideal.
+	GLuint vao;
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
 	
 	glBindBuffer(GL_ARRAY_BUFFER, inst_buffer);
 	
@@ -357,16 +364,18 @@ static void draw_mesh_instanced(const RenderMesh& mesh, const RenderMaterial* ma
 		assert(submesh.material < mat_count);
 		const RenderMaterial& material = mats[submesh.material];
 		
-		const glm::vec4& colour = material.colour;
-		glUniform4f(shaders.textured_colour, colour.r, colour.g, colour.b, colour.a);
+		if(program == shaders.textured.id()) {
+			const glm::vec4& colour = material.colour;
+			glUniform4f(shaders.textured_colour, colour.r, colour.g, colour.b, colour.a);
 		
-		glActiveTexture(GL_TEXTURE0);
-		if(material.texture.id > 0) {
-			glBindTexture(GL_TEXTURE_2D, material.texture.id);
-		} else {
-			glBindTexture(GL_TEXTURE_2D, white.texture.id);
+			glActiveTexture(GL_TEXTURE0);
+			if(material.texture.id > 0) {
+				glBindTexture(GL_TEXTURE_2D, material.texture.id);
+			} else {
+				glBindTexture(GL_TEXTURE_2D, white.texture.id);
+			}
+			glUniform1i(shaders.textured_sampler, 0);
 		}
-		glUniform1i(shaders.textured_sampler, 0);
 		
 		glDrawArraysInstanced(GL_TRIANGLES, 0, submesh.vertex_count, (GLsizei) inst_count);
 		
@@ -374,6 +383,9 @@ static void draw_mesh_instanced(const RenderMesh& mesh, const RenderMaterial* ma
 		glDisableVertexAttribArray(7);
 		glDisableVertexAttribArray(6);
 	}
+	
+			error = glGetError();
+		verify(error == GL_NO_ERROR, "GL error %d\n", error);
 	
 	glDisableVertexAttribArray(5);
 	glDisableVertexAttribArray(4);
@@ -388,6 +400,8 @@ static void draw_mesh_instanced(const RenderMesh& mesh, const RenderMaterial* ma
 	glVertexAttribDivisor(2, 0);
 	glVertexAttribDivisor(1, 0);
 	glVertexAttribDivisor(0, 0);
+	
+	glDeleteVertexArrays(1, &vao);
 }
 
 glm::mat4 compose_world_to_clip(const ImVec2& view_size, const glm::vec3& cam_pos, const glm::vec2& cam_rot) {
@@ -501,4 +515,9 @@ static Mesh create_line_cube() {
 
 static Texture create_white_texture() {
 	return Texture::create_rgba(1, 1, {0xff, 0xff, 0xff, 0xff});
+}
+
+static void set_shader(const Shader& shader) {
+	glUseProgram(shader.id());
+	program = shader.id();
 }

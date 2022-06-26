@@ -31,8 +31,8 @@ static std::vector<std::vector<u8>> font_buffers;
 GLFWwindow* gui::startup(const char* window_title, s32 width, s32 height, bool maximized, GlfwCallbacks* callbacks) {
 	verify(glfwInit(), "Failed to load GLFW.");
 
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	if(maximized) {
 		glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 	}
@@ -64,7 +64,7 @@ GLFWwindow* gui::startup(const char* window_title, s32 width, s32 height, bool m
 		glfwSetCharCallback(window, ImGui_ImplGlfw_CharCallback);
 		glfwSetMonitorCallback(ImGui_ImplGlfw_MonitorCallback);
 	}
-	ImGui_ImplOpenGL3_Init("#version 120");
+	ImGui_ImplOpenGL3_Init(nullptr);
 	
 	ImGuiStyle& style = ImGui::GetStyle();
 	style.WindowTitleAlign = ImVec2(0.5, 0.5);
