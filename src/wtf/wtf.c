@@ -97,6 +97,7 @@ WtfNode* wtf_parse(char* buffer, char** error_dest) {
 	allocation_size += ctx.node_count * sizeof(WtfNode);
 	allocation_size += ctx.attribute_count * sizeof(WtfAttribute);
 	char* allocation = malloc(allocation_size);
+	assert(allocation);
 	ctx.nodes = (WtfNode*) allocation;
 	ctx.attributes = (WtfAttribute*) (allocation + ctx.node_count * sizeof(WtfNode));
 	
