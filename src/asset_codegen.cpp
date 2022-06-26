@@ -49,7 +49,10 @@ static FILE* out_file;
 int main(int argc, char** argv) {
 	assert(argc == 2 || argc == 3);
 	FILE* file = fopen(argv[1], "r");
-	assert(file);
+	if(!file) {
+		fprintf(stderr, "Failed to open input file.\n");
+		return 1;
+	}
 	std::vector<char> bytes;
 	char c;
 	while(fread(&c, 1, 1, file) == 1) {

@@ -22,7 +22,12 @@
 #include <stdint.h>
 
 int main(int argc, char** argv) {
-	assert(argc > 2);
+	size_t retval;
+	
+	if(argc <= 3) {
+		fprintf(stderr, "Invalid number of arguments.");
+		return 1;
+	}
 	
 	FILE* dest = fopen(argv[1], "wb");
 	assert(dest);
@@ -30,15 +35,21 @@ int main(int argc, char** argv) {
 	fprintf(dest, "extern \"C\"{alignas(16) unsigned char wadinfo[]={");
 	for(int i = 2; i < argc; i++) {
 		FILE* src = fopen(argv[i], "rb");
-		assert(src);
+		if(!src) {
+			fprintf(stderr, "Failed to open file \"%s\".", argv[i]);
+			return 1;
+		}
 		
 		int32_t header_size;
-		assert(fread(&header_size, 4, 1, src) == 1);
-		assert(fseek(src, 0, SEEK_SET) == 0);
+		retval = fread(&header_size, 4, 1, src) == 1;
+		assert(retval == 1);
+		retval = fseek(src, 0, SEEK_SET);
+		assert(retval == 0);
 		assert(header_size < 0x10000);
 		
 		std::vector<char> header(header_size);
-		assert(fread(header.data(), header_size, 1, src) == 1);
+		retval = fread(header.data(), header_size, 1, src);
+		assert(retval == 1);
 		
 		for(char byte : header) {
 			fprintf(dest, "0x%hhx,", byte);
