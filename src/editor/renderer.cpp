@@ -384,9 +384,6 @@ static void draw_mesh_instanced(const RenderMesh& mesh, const RenderMaterial* ma
 		glDisableVertexAttribArray(6);
 	}
 	
-			error = glGetError();
-		verify(error == GL_NO_ERROR, "GL error %d\n", error);
-	
 	glDisableVertexAttribArray(5);
 	glDisableVertexAttribArray(4);
 	glDisableVertexAttribArray(3);
