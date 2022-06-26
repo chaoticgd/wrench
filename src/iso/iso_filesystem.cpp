@@ -353,14 +353,16 @@ static void write_directory_record(OutputStream& dest, const IsoFileRecord& file
 		(file.modified_time - fs::file_time_type::clock::now() + std::chrono::system_clock::now());
 	time_t cftime = std::chrono::system_clock::to_time_t(sctp);
 	tm* t = std::localtime(&cftime);
-	IsoDirectoryDateTime& dt = record.recording_date_time;
-	dt.years_since_1900 = t->tm_year;
-	dt.month = t->tm_mon + 1;
-	dt.day = t->tm_mday;
-	dt.hour = t->tm_hour - 1;
-	dt.minute = t->tm_min;
-	dt.second = t->tm_sec;
-	dt.time_zone = 0;
+	if(t) {
+		IsoDirectoryDateTime& dt = record.recording_date_time;
+		dt.years_since_1900 = t->tm_year;
+		dt.month = t->tm_mon + 1;
+		dt.day = t->tm_mday;
+		dt.hour = t->tm_hour - 1;
+		dt.minute = t->tm_min;
+		dt.second = t->tm_sec;
+		dt.time_zone = 0;
+	}
 	
 	record.file_flags = flags;
 	record.file_unit_size = 0;
