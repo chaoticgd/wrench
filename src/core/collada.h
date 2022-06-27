@@ -27,6 +27,7 @@ struct Material {
 	std::string name;
 	Opt<glm::vec4> colour;
 	Opt<s32> texture;
+	s32 collision_id = -1; // Only used by the collision code.
 };
 
 struct Joint {
@@ -43,10 +44,13 @@ struct ColladaScene {
 	std::vector<Material> materials;
 	std::vector<Mesh> meshes;
 	std::vector<Joint> joints;
+	
+	Mesh* find_mesh(const std::string& name);
 };
 
-ColladaScene read_collada(std::vector<u8> src); // Throws ParseError.
+ColladaScene read_collada(char* src);
 std::vector<u8> write_collada(const ColladaScene& scene);
 s32 add_joint(std::vector<Joint>& joints, Joint joint, s32 parent);
+void assert_collada_scenes_equal(const ColladaScene& lhs, const ColladaScene& rhs);
 
 #endif

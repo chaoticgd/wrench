@@ -28,100 +28,58 @@
 #include <functional>
 #include <glm/glm.hpp>
 
+#include <assetmgr/asset.h>
+#include <gui/gui.h>
+#include <editor/level.h>
 #include <editor/tools.h>
-#include <editor/game_db.h>
 #include <editor/renderer.h>
 #include <editor/fs_includes.h>
-#include <editor/worker_logger.h>
-#include <editor/gui/window.h>
-#include <editor/formats/level_impl.h>
 
 struct GLFWwindow;
-
-struct build_settings {
-	fs::path input_dir;
-	fs::path output_iso;
-	bool launch_emulator = false;
-	bool single_level = false; // Write out just a single level?
-	int single_level_index = -1; // If so, which one?
-	bool no_mpegs = false;
-};
 
 class app {
 public:
 	app() {}
-
-	std::vector<std::unique_ptr<window>> windows;
-
-	template <typename T, typename... T_constructor_args>
-	T* emplace_window(T_constructor_args... args);
 	
-	std::vector<std::unique_ptr<tool>> tools;
+	std::vector<std::unique_ptr<Tool>> tools;
 	std::size_t active_tool_index = 0;
-	tool& active_tool() { return *tools.at(active_tool_index).get(); }
+	Tool& active_tool() { return *tools.at(active_tool_index).get(); }
 	
 	glm::vec2 mouse_last { 0, 0 };
 
 	GLFWwindow* glfw_window;
 	int window_width, window_height;
 	
+	std::string game_path;
+	std::string mod_path;
+	
+	AssetForest asset_forest;
+	AssetBank* game_bank = nullptr;
+	AssetBank* mod_bank = nullptr;
+	Game game = Game::UNKNOWN;
+	
 	RenderSettings render_settings;
 	
-	int64_t delta_time = 0;
+	f32 delta_time = 0;
 	
-	fs::path directory; // The directory to build new ISO files from.
+	Level* get_level();
+	const Level* get_level() const;
 	
-	void extract_iso(fs::path iso_path, fs::path dir);
-	void open_directory(fs::path dir);
-	void build_iso(build_settings settings);
-	void open_file(fs::path path);
-	void save_level();
+	BaseEditor* get_editor();
 	
-	level* get_level();
-	const level* get_level() const;
+	void load_level(LevelAsset& asset);
 	
 private:
-	std::optional<level> _lvl;
+	std::optional<Level> _lvl;
 
 public:
 
 	bool has_camera_control();
-
-	void init_gui_scale();
-	void update_gui_scale();
-
-	std::vector<gamedb_game> game_db;
-
-private:
-	std::atomic_bool _lock_project = false; // Prevent race conditions while creating/loading a project.
-	
-	std::vector<float> _gui_scale_parameters;
 };
 
-struct config {
-	std::string emulator_path;
-	int compression_threads;
-	float gui_scale;
-	bool vsync;
-	struct {
-		bool stream_tracing;
-	} debug;
-	
-	bool request_open_settings_dialog = false;
-	
-	static config& get();
-	void read();
-	void write();
-};
+extern app* g_app;
+extern FileInputStream g_editorwad;
 
-GlTexture load_icon(std::string path);
-
-template <typename T, typename... T_constructor_args>
-T* app::emplace_window(T_constructor_args... args) {
-	auto window = std::make_unique<T>(args...);
-	T* result = window.get();
-	windows.emplace_back(std::move(window));
-	return result;
-}
+GlTexture load_icon(s32 index);
 
 #endif

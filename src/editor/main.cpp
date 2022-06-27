@@ -18,144 +18,84 @@
 
 #include <chrono>
 
-#include "fs_includes.h"
-#include "gl_includes.h"
-#include "command_line.h"
-#include "app.h"
-#include "gui/gui.h"
-#include "renderer.h"
+#include <toolwads/wads.h>
+#include <gui/gui.h>
+#include <gui/config.h>
+#include <gui/commands.h>
+#include <imgui/backends/imgui_impl_glfw.h>
+#include <editor/fs_includes.h>
+#include <editor/command_line.h>
+#include <editor/app.h>
+#include <editor/gui/editor_gui.h>
+#include <editor/renderer.h>
 
-static void run_wrench(GLFWwindow** window, cxxopts::ParseResult& args, fs::path& old_working_dir);
-static void init_gui(app& a, GLFWwindow** window);
+static void run_wrench(GLFWwindow* window, const std::string& game_path, const std::string& mod_path);
+static void update(f32 delta_time);
 static void update_camera(app* a);
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 int main(int argc, char** argv) {
-	cxxopts::Options options("wrench", "A level editor for the Ratchet & Clank games.");
-	options.add_options()
-		("d,directory", "Open a directory on startup.", cxxopts::value<std::string>())
-		("f,file", "Open a file on startup.", cxxopts::value<std::string>());
-
-	auto args = parse_command_line_args(argc, argv, options);
-
-	// Set the working dir.
-	fs::path old_working_dir = fs::current_path();
-	fs::path wrench_executable_path(argv[0]);
-	std::string wrench_root = wrench_executable_path.remove_filename().string() + "..";
-	fs::current_path(wrench_root);
+	if(argc != 3) {
+		fprintf(stderr, "usage: %s <game path> <mod path>\n", argv[0]);
+		return 1;
+	}
 	
-	config::get().read();
+	WadPaths wads = find_wads(argv[0]);
+	g_guiwad.open(wads.gui);
+	g_editorwad.open(wads.editor);
 	
-	GLFWwindow* window;
-	run_wrench(&window, args, old_working_dir);
+	gui::setup_bin_paths(argv[0]);
 	
-	glfwDestroyWindow(window);
-
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplGlfw_Shutdown();
-	ImGui::DestroyContext();
-	glfwTerminate();
+	g_config.read();
+	
+	std::string game_path = argv[1];
+	std::string mod_path = argv[2];
+	
+	gui::GlfwCallbacks callbacks;
+	callbacks.key_callback = key_callback;
+	
+	GLFWwindow* window = gui::startup("Wrench Editor", 1280, 720, true, &callbacks);
+	run_wrench(window, game_path, mod_path);
+	gui::shutdown(window);
 }
 
-static void run_wrench(GLFWwindow** window, cxxopts::ParseResult& args, fs::path& old_working_dir) {
+
+static void run_wrench(GLFWwindow* window, const std::string& game_path, const std::string& mod_path) {
 	app a;
+	g_app = &a;
 	
-	init_gui(a, window);
-	a.glfw_window = *window;
+	a.glfw_window = window;
+	
+	glfwSetWindowUserPointer(window, g_app);
+	glfwSetKeyCallback(window, key_callback);
+	
+	a.game_path = game_path;
+	a.mod_path = mod_path;
+	
+	a.game_bank = &a.asset_forest.mount<LooseAssetBank>(game_path, false);
+	a.mod_bank = &a.asset_forest.mount<LooseAssetBank>(mod_path, true);
+	
+	verify(a.game_bank->game_info.type == AssetBankType::GAME,
+		"The asset bank specified for the game is not a game.");
+	a.game = a.game_bank->game_info.game.game;
+		
+	gui::load_font(wadinfo.gui.fonts[0], 18, 1.2f);
 	
 	init_renderer();
 	
 	a.tools = enumerate_tools();
-	a.game_db = gamedb_read();
-	
-	a.windows.emplace_back(std::make_unique<gui::start_screen>());
-	a.windows.emplace_back(std::make_unique<view_3d>());
-	a.windows.emplace_back(std::make_unique<gui::moby_list>());
-	a.windows.emplace_back(std::make_unique<gui::viewport_information>());
-	a.windows.emplace_back(std::make_unique<Inspector>());
-	
-	if(args.count("directory")) {
-		fs::path dir = args["directory"].as<std::string>();
-		if(dir.is_relative()) {
-			a.open_directory(old_working_dir / dir);
-		} else {
-			a.open_directory(dir);
-		}
-	}
-	
-	if(args.count("file")) {
-		fs::path file = args["file"].as<std::string>();
-		if(file.is_relative()) {
-			a.open_file(old_working_dir / file);
-		} else {
-			a.open_file(file);
-		}
-	}
-	
-	auto last_frame_time = std::chrono::steady_clock::now();
 	
 	while(!glfwWindowShouldClose(a.glfw_window)) {
-		glfwPollEvents();
-		update_camera(&a);
-		
-		gui::render(a);
-		
-		ImGui::Render();
-		glfwMakeContextCurrent(a.glfw_window);
-		glfwGetFramebufferSize(a.glfw_window, &a.window_width, &a.window_height);
-		
-		glViewport(0, 0, a.window_width, a.window_height);
-		glClearColor(0, 0, 0, 1);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		
-		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-		
-		glfwMakeContextCurrent(a.glfw_window);
-		glfwSwapBuffers(a.glfw_window);
-		
-		auto frame_time = std::chrono::steady_clock::now();
-		a.delta_time = std::chrono::duration_cast<std::chrono::microseconds>
-			(frame_time - last_frame_time).count();
-		last_frame_time = frame_time;
+		gui::run_frame(window, update);
 	}
 	
 	shutdown_renderer();
 }
 
-static void init_gui(app& a, GLFWwindow** window) {
-	if(!glfwInit()) {
-		throw std::runtime_error("Cannot load GLFW.");
-	}
-	verify(glfwInit(), "Cannot load GLFW.");
-
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
-
-	*window = glfwCreateWindow(1280, 720, "Wrench Editor", NULL, NULL);
-	verify(*window, "Cannot create GLFW window.");
-
-	glfwMakeContextCurrent(*window);
-	glfwSwapInterval(config::get().vsync ? 1 : 0);
-
-	verify(gladLoadGLLoader((GLADloadproc) glfwGetProcAddress), "Cannot load GLAD.");
-
-	glfwSetWindowUserPointer(*window, &a);
-	glfwSetKeyCallback(*window, key_callback);
-
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-	io.ConfigDockingWithShift = true;
-	ImGui::StyleColorsDark();
-	ImGui_ImplGlfw_InitForOpenGL(*window, true);
-	ImGui_ImplOpenGL3_Init("#version 120");
-
-	a.init_gui_scale();
-	a.update_gui_scale();
-	
-	gui::init();
+static void update(f32 delta_time) {
+	g_app->delta_time = delta_time;
+	update_camera(g_app);
+	editor_gui();
 }
 
 static void update_camera(app* a) {
@@ -198,29 +138,29 @@ static void update_camera(app* a) {
 	
 	glm::vec3 movement(0, 0, 0);
 	
-	static constexpr float magic_movement = 0.0001f;
+	static constexpr float speed = 30.f;
 	
 	if(is_down(GLFW_KEY_W)) {
-		movement.x -= dz * a->delta_time * magic_movement;
-		movement.y += dx * a->delta_time * magic_movement;
+		movement.x -= dz * a->delta_time * speed;
+		movement.y += dx * a->delta_time * speed;
 	}
 	if(is_down(GLFW_KEY_S)) {
-		movement.x += dz * a->delta_time * magic_movement;
-		movement.y -= dx * a->delta_time * magic_movement;
+		movement.x += dz * a->delta_time * speed;
+		movement.y -= dx * a->delta_time * speed;
 	}
 	if(is_down(GLFW_KEY_A)) {
-		movement.x -= dx * a->delta_time * magic_movement;
-		movement.y -= dz * a->delta_time * magic_movement;
+		movement.x -= dx * a->delta_time * speed;
+		movement.y -= dz * a->delta_time * speed;
 	}
 	if(is_down(GLFW_KEY_D)) {
-		movement.x += dx * a->delta_time * magic_movement;
-		movement.y += dz * a->delta_time * magic_movement;
+		movement.x += dx * a->delta_time * speed;
+		movement.y += dz * a->delta_time * speed;
 	}
 	if(is_down(GLFW_KEY_SPACE)) {
-		movement.z += dist * a->delta_time * magic_movement;
+		movement.z += dist * a->delta_time * speed;
 	}
 	if(is_down(GLFW_KEY_LEFT_SHIFT)) {
-		movement.z -= dist * a->delta_time * magic_movement;
+		movement.z -= dist * a->delta_time * speed;
 	}
 	a->render_settings.camera_position += movement;
 }
@@ -232,5 +172,9 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 		a->render_settings.camera_control = !a->render_settings.camera_control;
 		glfwSetInputMode(window, GLFW_CURSOR,
 			a->render_settings.camera_control ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+	}
+	
+	if(!a->render_settings.camera_control) {
+		ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
 	}
 }

@@ -19,32 +19,7 @@
 #ifndef GL_INCLUDES_H
 #define GL_INCLUDES_H
 
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
-
-#include <glad/include/glad/glad.h>
-
-struct GlBuffer {
-	GLuint id = 0;
-	GlBuffer() {}
-	GlBuffer(const GlBuffer&) = delete;
-	GlBuffer(GlBuffer&& rhs) : id(rhs.id) { rhs.id = 0; }
-	~GlBuffer() { if(id != 0) glDeleteBuffers(1, &id); }
-	GLuint& operator()() { return id; }
-	const GLuint& operator()() const { return id; }
-	GlBuffer& operator=(GlBuffer&& rhs) { id = rhs.id; rhs.id = 0; return *this; }
-};
-
-struct GlTexture {
-	GLuint id = 0;
-	GlTexture() {}
-	GlTexture(const GlTexture&) = delete;
-	GlTexture(GlTexture&& rhs) : id(rhs.id) { rhs.id = 0; }
-	~GlTexture() { if(id != 0) glDeleteTextures(1, &id); }
-	GLuint& operator()() { return id; }
-	const GLuint& operator()() const { return id; }
-	GlTexture& operator=(GlTexture&& rhs) { id = rhs.id; rhs.id = 0; return *this; }
-};
+#include <gui/gui.h>
 
 #define M_PI 3.14159265358979323846
 

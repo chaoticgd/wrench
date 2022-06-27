@@ -19,10 +19,10 @@
 #ifndef WRENCH_PNG_H
 #define WRENCH_PNG_H
 
-#include "util.h"
-#include "texture.h"
+#include <core/stream.h>
+#include <core/texture.h>
 
-Opt<Texture> read_png(const char* path);
-void write_png(const char* path, const Texture& texture);
+Opt<Texture> read_png(InputStream& src);
+void write_png(OutputStream& dest, const Texture& texture);
 
 #endif

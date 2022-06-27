@@ -18,34 +18,15 @@
 
 #include "view_3d.h"
 
-#include "../formats/level_impl.h"
+static GLuint frame_buffer_texture = 0;
 
-view_3d::~view_3d() {
-	if(_frame_buffer_texture != 0) {
-		glDeleteTextures(1, &_frame_buffer_texture);
-	}
-}
-
-const char* view_3d::title_text() const {
-	return "3D View";
-}
-
-ImVec2 view_3d::initial_size() const {
-	return ImVec2(800, 600);
-}
-
-void view_3d::render(app& a) {
-	if(a.directory.empty()) {
-		ImGui::TextWrapped("%s", "");
-		ImGui::TextWrapped(
-			"   No directory open. To open a directory, either extract an ISO file "
-			"(File->Extract ISO) or open an existing directory (File->Open Directory).");
-		return;
-	}
+void view_3d() {
+	app& a = *g_app;
+	
 	auto lvl = a.get_level();
 	if(lvl == nullptr) {
 		ImGui::TextWrapped("%s", "");
-		ImGui::TextWrapped("   No level open. To open a level, use the 'Tree' menu.");
+		ImGui::TextWrapped("   No level open. To open a level, use the level selector in the menu bar.");
 		return;
 	}
 
@@ -63,7 +44,7 @@ void view_3d::render(app& a) {
 	glm::mat4 world_to_clip = compose_world_to_clip(*view_size, cam_pos, cam_rot);
 	prepare_frame(*lvl, world_to_clip);
 	
-	render_to_texture(&_frame_buffer_texture, view_size->x, view_size->y, [&]() {
+	render_to_texture(&frame_buffer_texture, view_size->x, view_size->y, [&]() {
 		glClearColor(0, 0, 0, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glViewport(0, 0, view_size->x, view_size->y);
@@ -76,9 +57,5 @@ void view_3d::render(app& a) {
 		ImGui::PopStyleVar();
 	});
 	
-	ImGui::Image((void*) (intptr_t) _frame_buffer_texture, *view_size);
-}
-
-bool view_3d::has_padding() const {
-	return false;
+	ImGui::Image((void*) (intptr_t) frame_buffer_texture, *view_size);
 }

@@ -1,14 +1,26 @@
-.directory
-__pycache__
-/CMakeCache.txt
-/CMakeFiles
-/Makefile
-/cmake_install.cmake
-/wrench
-/.vscode
-/libimgui.a
-/imgui.ini
+# cmake
+CMakeCache.txt
+CMakeFiles
+Makefile
+cmake_install.cmake
+CMakeDoxyfile.in
+CMakeDoxygenDefaults.cmake
+CMakeLists.txt.user
+CTestTestfile.cmake
+
+# build
 /bin
-/lib
-/cache
-wrench_settings.ini
+_generated_*
+*.a
+
+# tools
+/.vscode
+__pycache__
+.directory
+
+# config
+*.ini
+
+# misc
+*.dump
+/dumps

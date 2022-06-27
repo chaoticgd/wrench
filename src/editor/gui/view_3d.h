@@ -23,20 +23,7 @@
 #define GLM_ENABLE_EXPERIMENTAL
 
 #include "../app.h"
-#include "window.h"
 
-class view_3d : public window {
-public:
-	view_3d() {}
-	~view_3d();
-	const char* title_text() const;
-	ImVec2 initial_size() const;
-	void render(app& a);
-	
-	bool has_padding() const override;
-	
-private:
-	GLuint _frame_buffer_texture = 0;
-};
+void view_3d();
 
 #endif

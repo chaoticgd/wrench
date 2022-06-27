@@ -35,18 +35,6 @@ std::size_t hex_to_int(std::string x) {
 	return result;
 }
 
-std::size_t parse_number(std::string x) {
-	std::stringstream ss;
-	if(x.size() >= 2 && x[0] == '0' && x[1] == 'x') {
-		ss << std::hex << x.substr(2);
-	} else {
-		ss << x;
-	}
-	std::size_t result;
-	ss >> result;
-	return result;
-}
-
 std::vector<std::string> to_hex_dump(uint32_t* data, std::size_t align, std::size_t size_in_u32s) {
 	std::vector<std::string> result;
 	std::size_t column = align % 16;
@@ -67,19 +55,4 @@ std::vector<std::string> to_hex_dump(uint32_t* data, std::size_t align, std::siz
 		result.push_back(data_str);
 	}
 	return result;
-}
-
-int execute_command(std::string executable, std::vector<std::string> arguments) {
-#ifdef DECENT_OS
-	//
-#else
-	printf("*** USING INSECURE execute_command IMPLEMENTATION ***\n");
-	
-	std::string command = executable;
-	for(std::string& arg : arguments) {
-		command += " \"" + arg + "\"";
-	}
-	printf("command: %s\n", command.c_str());
-	return system(command.c_str());
-#endif
 }

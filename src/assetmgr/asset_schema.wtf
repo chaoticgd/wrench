@@ -1,0 +1,1541 @@
+/*
+	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
+	Copyright (C) 2019-2022 chaoticgd
+
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+format_version: 8
+
+// *****************************************************************************
+
+Category general {
+	name: "General"
+}
+
+AssetType Root {
+	hidden: true
+}
+
+AssetType Reference {
+	desc: "A reference to an asset that can be put in place of any other asset."
+	
+	AssetLinkAttribute asset {
+		desc: "The asset being referenced."
+		required: true
+		games: [1 2 3 4]
+	}
+}
+
+AssetType Collection {
+	desc: "A generic container for other assets."
+	bin_leaf: true
+	
+	Hint texlist {
+		syntax: "texlist,<texture hint>"
+		example: "texlist,pif,8,unswizzled"
+		desc: "A list of textures, where <texture hint> is the hint used by each Texture asset in the list."
+	}
+	
+	Hint subtitles {
+		syntax: "subtitles"
+		example: "subtitles"
+		desc: "A collection of subtitles."
+	}
+}
+
+AssetType Placeholder {
+	desc: "The asset type generated when a dot is used in a tag."
+}
+
+AssetType Binary {
+	desc: "A raw binary file. Used for assets that wrench cannot unpack."
+	
+	FileReferenceAttribute src {
+		desc: "The file path of the binary file, relative to the .asset file."
+		required: false
+		games: [1 2 3 4]
+	}
+	
+	// These are only used for testing.
+	StringAttribute asset_type { hidden: true }
+	StringAttribute format_hint { hidden: true }
+	StringAttribute game { hidden: true }
+	StringAttribute region { hidden: true }
+	
+	Examples examples {
+		Binary code {
+			src: "code.bin"
+		}
+	}
+	
+	Hint ext {
+		syntax: "ext,<extension>"
+		example: "ext,wad"
+		desc: "A binary file with a custom <extension> (not .bin)."
+	}
+}
+
+// *****************************************************************************
+
+AssetType Build {
+	desc: "A build of the game."
+	
+	StringAttribute game {
+		desc: "The game being built. Possible values: \"rac\", \"gc\", \"uya\", \"dl\"."
+		required: true
+		games: [1 2 3 4]
+	}
+	StringAttribute region {
+		desc: "The region. Possible values: \"us\", \"eu\", \"japan\"."
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	StringAttribute version {
+		desc: "The version number, as specified in the SYSTEM.CNF file."
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	IntegerAttribute ps2_logo_key {
+		desc: "The key used to \"encrypt\" the PS2 logo."
+		min: 0
+		max: 255
+		required: false
+		games: [1 2 3 4]
+	}
+	Child ps2_logo_ntsc {
+		desc: "The NTSC PS2 logo stored on the first 12 sectors of the disc."
+		allowed_types: ["Texture"]
+		required: false
+		games: [1 2 3 4]
+	}
+	Child ps2_logo_pal {
+		desc: "The PAL PS2 logo stored on the first 12 sectors of the disc."
+		allowed_types: ["Texture"]
+		required: false
+		games: [1 2 3 4]
+	}
+	
+	Child primary_volume_descriptor {
+		allowed_types: ["PrimaryVolumeDescriptor"]
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	Child boot_elf {
+		desc: "The boot ELF, as specified in the SYSTEM.CNF file."
+		allowed_types: ["File"]
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	Child global {
+		allowed_types: ["GlobalWad" "FlatWad" "Binary"]
+		required: true
+		games: [1]
+	}
+	Child armor {
+		allowed_types: ["ArmorWad" "FlatWad" "Binary"]
+		required: true
+		games: [2 3 4]
+	}
+	Child audio {
+		allowed_types: ["AudioWad" "FlatWad" "Binary"]
+		required: true
+		games: [2 3 4]
+	}
+	Child bonus {
+		allowed_types: ["BonusWad" "FlatWad" "Binary"]
+		required: true
+		games: [2 3 4]
+	}
+	Child gadget {
+		allowed_types: ["GadgetWad" "FlatWad" "Binary"]
+		required: true
+		games: [2 3]
+	}
+	Child hud {
+		allowed_types: ["HudWad" "FlatWad" "Binary"]
+		required: true
+		games: [2 3 4]
+	}
+	Child misc {
+		allowed_types: ["MiscWad" "FlatWad" "Binary"]
+		required: true
+		games: [2 3 4]
+	}
+	Child mpeg {
+		allowed_types: ["MpegWad" "FlatWad" "Binary"]
+		required: true
+		games: [2 3 4]
+	}
+	Child online {
+		allowed_types: ["OnlineWad" "FlatWad" "Binary"]
+		required: true
+		games: [4]
+	}
+	Child scene {
+		allowed_types: ["SceneWad" "FlatWad" "Binary"]
+		required: true
+		games: [2]
+	}
+	Child space {
+		allowed_types: ["SpaceWad" "FlatWad" "Binary"]
+		required: true
+		games: [2 3 4]
+	}
+	
+	Child levels {
+		allowed_types: ["Collection"] desc: "The list of levels to include in the build."
+		required: true
+		games: [1 2 3 4]
+	}
+	Child files {
+		allowed_types: ["Collection"] desc: "Additional files to include in the build."
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	Child moby_classes { allowed_types: ["Collection"] }
+	Child tie_classes { allowed_types: ["Collection"] }
+	Child shrub_classes { allowed_types: ["Collection"] }
+	
+	Child particle_textures { allowed_types: ["Collection"] }
+	
+	Hint release {
+		syntax: "release"
+		example: "release"
+		desc: "A full build of the game."
+	}
+	
+	Hint testlf {
+		syntax: "testlf,<level>,<flags>"
+		example: "testlf,4,nompegs"
+		desc: "Only the level with asset tag <level> is included (or leave it empty for normal level packing), and various <flags> are set. Flags are seperated by a pipe (\\|) character. Available flags: \"nompegs\""
+	}
+}
+
+AssetType PrimaryVolumeDescriptor {
+	desc: "A filesystem structure that contains metadata."
+	
+	StringAttribute system_identifier {}
+	StringAttribute volume_identifier {}
+	StringAttribute volume_set_identifier {}
+	StringAttribute publisher_identifier {}
+	StringAttribute data_preparer_identifier {}
+	StringAttribute application_identifier {}
+	StringAttribute copyright_file_identifier {}
+	StringAttribute abstract_file_identifier {}
+	StringAttribute bibliographic_file_identifier {}
+}
+
+AssetType File {
+	desc: "An additional file to be included in the built ISO."
+	
+	FileReferenceAttribute src { desc: "The path of the file, relative to the .asset file." }
+	StringAttribute path { desc: "Where to put the file on the filesystem of the built ISO."}
+	
+	Examples examples {
+		File cnf_icon_en_sys {
+			src: "cnf/icon_en.sys"
+			path: "cnf/icon_en.sys"
+		}
+	}
+}
+
+AssetType Mesh {
+	bin_leaf: true
+	
+	FileReferenceAttribute src {
+		desc: "The file path of the model file to use."
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	StringAttribute name {
+		desc: "The name of the node to use. This is the same as the Blender node name."
+		required: true
+		games: [1 2 3 4]
+	}
+}
+
+AssetType Texture {
+	desc: "A reference to an image file. Only PNG images are currently supported."
+	bin_leaf: true
+	
+	FileReferenceAttribute src {}
+	
+	Examples examples {
+		Texture my_texture {
+			src: "my_texture.png"
+		}
+	}
+	
+	Hint pif {
+		syntax: "pif,<palette size>,<swizzled>"
+		example: "pif,8,unswizzled"
+		desc: "A paletted PIF image with a <palette size> of \"4\" or \"8\" bits where the pixel data is either \"swizzled\" or \"unswizzled\"."
+	}
+	
+	Hint rgba {
+		syntax: "rgba"
+		example: "rgba"
+		desc: "An RGBA image with a header that encodes the width and height."
+	}
+	
+	Hint rawrgba {
+		syntax: "rawrgba,<width>,<height>"
+		example: "rawrgba,512,416"
+		desc: "A headerless RGBA image of size <width> by <height>."
+	}
+}
+
+AssetType FlatWad {
+	desc: "A WAD file where each child represents a different data segment referenced by the header. The tag of each child is converted to a number which is used to determine at what position to write the sector offset and size into the header. This type is mainly used for debugging."
+	wad: true
+	
+	Examples examples {
+		FlatWad online {
+			Binary 0x8 { src: "data.bin" }
+			Binary 0x10 { src: "transition_backgrounds/0.bin" }
+			Binary 0x18 { src: "transition_backgrounds/1.bin" }
+			Binary 0x20 { src: "transition_backgrounds/2.bin" }
+			Binary 0x28 { src: "transition_backgrounds/3.bin" }
+			Binary 0x30 { src: "transition_backgrounds/4.bin" }
+			Binary 0x38 { src: "transition_backgrounds/5.bin" }
+			Binary 0x40 { src: "transition_backgrounds/6.bin" }
+			Binary 0x48 { src: "transition_backgrounds/7.bin" }
+			Binary 0x50 { src: "transition_backgrounds/8.bin" }
+			Binary 0x58 { src: "transition_backgrounds/9.bin" }
+			Binary 0x60 { src: "transition_backgrounds/10.bin" }
+		}
+	}
+}
+
+AssetType Subtitle {
+	FloatAttribute start_time {
+		desc: "The time, in seconds, since the beginning of the cutscene, when the subtitle should appear."
+		required: true
+		games: [1 2 3 4]
+	}
+	FloatAttribute stop_time {
+		desc: "The time, in seconds, since the beginning of the cutscene, when the subtitle should disappear."
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	StringAttribute text_e {
+		desc: "The English subtitle text."
+		required: false
+		games: [1 2 3 4]
+	}
+	StringAttribute text_f {
+		desc: "The French subtitle text."
+		required: false
+		games: [1 2 3 4]
+	}
+	StringAttribute text_g {
+		desc: "The German subtitle text."
+		required: false
+		games: [1 2 3 4]
+	}
+	StringAttribute text_s {
+		desc: "The Spanish subtitle text."
+		required: false
+		games: [1 2 3 4]
+	}
+	StringAttribute text_i {
+		desc: "The Italian subtitle text."
+		required: false
+		games: [1 2 3 4]
+	}
+	StringAttribute text_j {
+		desc: "The Japanese subtitle text."
+		required: false
+		games: [3 4]
+	}
+	StringAttribute text_k {
+		desc: "The Korean subtitle text."
+		required: false
+		games: [3 4]
+	}
+	StringAttribute encoding_e {
+		desc: "\"raw\" means the text is in the format accepted by the game, \"utf8\" means the text is in UTF-8 (which is not yet supported)."
+		required: false
+		games: [1 2 3 4]
+	}
+	StringAttribute encoding_f { desc: "See encoding_e." required: false games: [1 2 3 4] }
+	StringAttribute encoding_g { desc: "See encoding_e." required: false games: [1 2 3 4] }
+	StringAttribute encoding_s { desc: "See encoding_e." required: false games: [1 2 3 4] }
+	StringAttribute encoding_i { desc: "See encoding_e." required: false games: [1 2 3 4] }
+	StringAttribute encoding_j { desc: "See encoding_e." required: false games: [3 4] }
+	StringAttribute encoding_k { desc: "See encoding_e." required: false games: [3 4] }
+}
+
+// *****************************************************************************
+
+Category globals {
+	name: "Globals"
+}
+
+AssetType GlobalWad {
+	desc: "Holds all of the global assets (those that are not specific to a given level) for R&C1. Not used for GC, UYA or DL."
+	wad: true
+	
+	Child debug_font { allowed_types: ["Texture" "Binary"] }
+	Child save_game { allowed_types: ["Binary"] }
+	Child ratchet_seqs { allowed_types: ["Collection"] }
+	Child hud_seqs { allowed_types: ["Collection"] }
+	Child vendor { allowed_types: ["Binary"] }
+	Child vendor_audio { allowed_types: ["Collection"] }
+	Child help_controls { allowed_types: ["Collection"] }
+	Child help_moves { allowed_types: ["Collection"] }
+	Child help_weapons { allowed_types: ["Collection"] }
+	Child help_gadgets { allowed_types: ["Collection"] }
+	Child help_ss { allowed_types: ["Collection"] }
+	Child options_ss { allowed_types: ["Collection"] }
+	Child frontbin { allowed_types: ["Binary"] }
+	Child mission_ss { allowed_types: ["Collection"] }
+	Child planets { allowed_types: ["Collection"] }
+	Child stuff2 { allowed_types: ["Collection"] }
+	Child goodies_images { allowed_types: ["Collection"] }
+	Child character_sketches { allowed_types: ["Collection"] }
+	Child character_renders { allowed_types: ["Collection"] }
+	Child skill_images { allowed_types: ["Collection"] }
+	Child epilogue_english { allowed_types: ["Collection"] }
+	Child epilogue_french { allowed_types: ["Collection"] }
+	Child epilogue_italian { allowed_types: ["Collection"] }
+	Child epilogue_german { allowed_types: ["Collection"] }
+	Child epilogue_spanish { allowed_types: ["Collection"] }
+	Child sketchbook { allowed_types: ["Collection"] }
+	Child commercials { allowed_types: ["Collection"] }
+	Child item_images { allowed_types: ["Collection"] }
+	Child irx { allowed_types: ["Binary"] }
+	Child sound_bank { allowed_types: ["Binary"] }
+	Child wad_14e0 { allowed_types: ["Binary"] }
+	Child music { allowed_types: ["Binary"] }
+	Child hud_header { allowed_types: ["Binary"] }
+	Child hud_banks { allowed_types: ["Collection"] }
+	Child all_text { allowed_types: ["Binary"] }
+	Child post_credits_helpdesk_girl_seq { allowed_types: ["Binary"] }
+	Child post_credits_audio { allowed_types: ["Collection"] }
+	Child credits_images_ntsc { allowed_types: ["Collection"] }
+	Child credits_images_pal { allowed_types: ["Collection"] }
+	Child wad_things { allowed_types: ["Collection"] }
+	Child mpegs { allowed_types: ["Collection"] }
+	Child help_audio { allowed_types: ["Collection"] }
+	Child qwark_boss_audio { allowed_types: ["Collection"] }
+	Child spaceships { allowed_types: ["Collection"] }
+	Child anim_looking_thing_2 { allowed_types: ["Collection"] }
+	Child space_plates { allowed_types: ["Collection"] }
+	Child transition { allowed_types: ["Binary"] }
+	Child space_audio { allowed_types: ["Collection"] }
+	Child things { allowed_types: ["Collection"] }
+	
+	Hint nompegs {
+		syntax: "nompegs"
+		example: "nompegs"
+		desc: "This option skips writing out the mpegs to make packing faster (or provide no hint to write them out as normal)."
+	}
+}
+
+AssetType ArmorWad {
+	wad: true
+	flattenable: true
+	
+	Child armors {
+		desc: "The armors/skins."
+		allowed_types: ["Collection"]
+		required: true
+		games: [2 3 4]
+		Child child {
+			allowed_types: ["MobyClass"]
+		}
+	}
+	
+	Child wrenches {
+		desc: "The different wrench upgrades."
+		allowed_types: ["Collection"]
+		required: true
+		games: [2 3]
+		Child child {
+			allowed_types: ["MobyClass"]
+		}
+	}
+	
+	Child multiplayer_armors {
+		desc: "The multiplayer skins."
+		allowed_types: ["Collection"]
+		required: true
+		games: [3]
+		Child child {
+			allowed_types: ["MobyClass"]
+		}
+	}
+	
+	Child bot_textures {
+		desc: "Textures for Merc and Green."
+		allowed_types: ["Collection"]
+		required: true
+		games: [4]
+		Child child {
+			allowed_types: ["Texture"]
+		}
+	}
+	Child landstalker_textures {
+		desc: "Textures for the landstalker."
+		allowed_types: ["Collection"]
+		required: true
+		games: [4]
+	}
+	Child dropship_textures {
+		desc: "Textures for the dropship."
+		allowed_types: ["Collection"]
+		required: true
+		games: [4]
+	}
+}
+
+AssetType AudioWad {
+	wad: true
+	
+	Child vendor     { allowed_types: ["Collection"] }
+	Child global_sfx { allowed_types: ["Collection"] }
+	Child help       { allowed_types: ["Collection"] }
+}
+
+AssetType HelpAudio {
+	wad: true
+	
+	Child english { allowed_types: ["Sound" "Binary"] }
+	Child french  { allowed_types: ["Sound" "Binary"] }
+	Child german  { allowed_types: ["Sound" "Binary"] }
+	Child spanish { allowed_types: ["Sound" "Binary"] }
+	Child italian { allowed_types: ["Sound" "Binary"] }
+}
+
+AssetType BonusWad {
+	wad: true
+	flattenable: true
+	
+	Child goodies_images {
+		desc: "Images that appear in the R&C1 goodies menu, also included in R&C2 for some reason."
+		allowed_types: ["Collection"]
+		required: true
+		games:[2]
+		Child child {
+			allowed_types: ["Texture"]
+		}
+	}
+	Child character_sketches {
+		desc: "Part of a cut R&C1 credits screen."
+		allowed_types: ["Collection"]
+		required: true
+		games:[2]
+		Child child {
+			allowed_types: ["Texture"]
+		}
+	}
+	Child character_renders {
+		desc: "Part of a cut R&C1 credits screen, also included in R&C2 for some reason."
+		allowed_types: ["Collection"]
+		required: true
+		games:[2]
+		Child child {
+			allowed_types: ["Texture"]
+		}
+	}
+	Child old_skill_images {
+		desc: "The skill point images from R&C1, also included in R&C2 for some reason."
+		allowed_types: ["Collection"]
+		required: true
+		games: [2]
+		Child child {
+			allowed_types: ["Texture"]
+		}
+	}
+	Child epilogue_english {
+		desc: "The english epilogue images from R&C1, also included in R&C2 for some reason."
+		allowed_types: ["Collection"]
+		required: true
+		games:[2]
+		Child child {
+			allowed_types: ["Texture"]
+		}
+	}
+	Child epilogue_french {
+		desc: "The french epilogue images from R&C1, also included in R&C2 for some reason."
+		allowed_types: ["Collection"]
+		required: true
+		games:[2]
+		Child child {
+			allowed_types: ["Texture"]
+		}
+	}
+	Child epilogue_italian {
+		desc: "The italian epilogue images from R&C1, also included in R&C2 for some reason."
+		allowed_types: ["Collection"]
+		required: true
+		games:[2]
+		Child child {
+			allowed_types: ["Texture"]
+		}
+	}
+	Child epilogue_german {
+		desc: "The german epilogue images from R&C1."
+		allowed_types: ["Collection"]
+		required: true
+		games:[2]
+		Child child {
+			allowed_types: ["Texture"]
+		}
+	}
+	Child epilogue_spanish {
+		desc: "The spanish epilogue images from R&C1."
+		allowed_types: ["Collection"]
+		required: true
+		games:[2]
+		Child child {
+			allowed_types: ["Texture"]
+		}
+	}
+	Child sketchbook {
+		allowed_types: ["Collection"]
+		required: true
+		games:[2]
+		Child child {
+			allowed_types: ["Texture"]
+		}
+	}
+	Child commercials {
+		allowed_types: ["Collection"]
+		required: true
+		games:[2]
+		Child child {
+			allowed_types: ["Texture"]
+		}
+	}
+	Child item_images {
+		allowed_types: ["Collection"]
+		required: true
+		games:[2]
+		Child child {
+			allowed_types: ["Texture"]
+		}
+	}
+	Child random_stuff {
+		allowed_types: ["Collection"]
+		required: true
+		games: [2]
+		Child child {
+			allowed_types: ["Texture"]
+		}
+	}
+	Child movie_images {
+		allowed_types: ["Collection"]
+		required: true
+		games: [2]
+		Child child {
+			allowed_types: ["Texture"]
+		}
+	}
+	Child cinematic_images {
+		allowed_types: ["Collection"]
+		required: true
+		games: [2]
+		Child child {
+			allowed_types: ["Texture"]
+		}
+	}
+	Child clanks_day_at_insomniac {
+		allowed_types: ["Collection"]
+		required: true
+		games: [2]
+		Child child {
+			allowed_types: ["Texture"]
+		}
+	}
+	Child endorsement_deals {
+		allowed_types: ["Collection"]
+		required: true
+		games: [2]
+		Child child {
+			allowed_types: ["Texture"]
+		}
+	}
+	Child short_cuts {
+		allowed_types: ["Collection"]
+		required: true
+		games: [2]
+		Child child {
+			allowed_types: ["Texture"]
+		}
+	}
+	Child paintings {
+		allowed_types: ["Collection"]
+		required: true
+		games: [2]
+		Child child {
+			allowed_types: ["Texture"]
+		}
+	}
+	
+	Child credits_text {
+		desc: "The text used in the credits sequence."
+		allowed_types: ["Collection"]
+		required: true
+		games: [2 3 4]
+		Child child {
+			allowed_types: ["Binary"]
+		}
+	}
+	Child credits_images {
+		desc: "The background images used in the credits sequence, each 512 by 416."
+		allowed_types: ["Collection"]
+		required: true
+		games:[2 3 4]
+		Child child {
+			allowed_types: ["Texture"]
+		}
+	}
+	Child credits_images_pal {
+		desc: "The background images used in the PAL R&C1 credits sequence, each 512 by 448."
+		allowed_types: ["Collection"]
+		required: true
+		games: [1]
+		Child child {
+			allowed_types: ["Texture"]
+		}
+	}
+	Child demo_menu {
+		allowed_types: ["Collection"]
+		required: true
+		games: [3 4]
+		Child child {
+			allowed_types: ["Collection"]
+			Child child {
+				allowed_types: ["Texture"]
+			}
+		}
+	}
+	Child demo_exit {
+		allowed_types: ["Collection"]
+		required: true
+		games: [3 4]
+		Child child {
+			allowed_types: ["Collection"]
+			Child child {
+				allowed_types: ["Texture"]
+			}
+		}
+	}
+	Child cheat_images {
+		desc: "The images used on the cheats screen."
+		allowed_types: ["Collection"]
+		required: true
+		games: [3 4]
+		Child child {
+			allowed_types: ["Texture"]
+		}
+	}
+	Child skill_images {
+		desc: "The images used on the skill points screen."
+		allowed_types: ["Collection"]
+		required: true
+		games: [2 3 4]
+		Child child {
+			allowed_types: ["Texture"]
+		}
+	}
+	Child trophy_image {
+		allowed_types: ["Texture" "Binary"]
+		required: true
+		games: [3 4]
+	}
+	Child dige {
+		allowed_types: ["Binary"]
+		required: true
+		games: [4]
+	}
+}
+
+AssetType GadgetWad {
+	wad: true
+}
+
+AssetType HudWad {
+	wad: true
+	flattenable: true
+	
+	Child online_images        { allowed_types: ["Collection"] }
+	Child ratchet_seqs         { allowed_types: ["Collection"] }
+	Child hud_seqs             { allowed_types: ["Collection"] }
+	Child vendor               { allowed_types: ["Binary"] }
+	Child all_text             { allowed_types: ["Collection"] }
+	Child hudw3d               { allowed_types: ["Binary"] }
+	Child e3_level_ss          { allowed_types: ["Collection"] }
+	Child nw_dnas_image        { allowed_types: ["Texture" "Binary"] }
+	Child split_screen_texture { allowed_types: ["Texture" "Binary"] }
+	Child radar_maps           { allowed_types: ["Collection"] }
+	Child weapon_plates_large  { allowed_types: ["Collection"] }
+	Child mission_plates_large { allowed_types: ["Collection"] }
+	Child gui_plates           { allowed_types: ["Collection"] }
+	Child vendor_plates        { allowed_types: ["Collection"] }
+	Child loading_screen       { allowed_types: ["Texture" "Binary"] }
+	Child planets              { allowed_types: ["Collection"] }
+	Child cinematics           { allowed_types: ["Collection"] }
+	Child equip_large          { allowed_types: ["Collection"] }
+	Child equip_small          { allowed_types: ["Collection"] }
+	Child moves                { allowed_types: ["Collection"] }
+	Child save_level           { allowed_types: ["Collection"] }
+	Child save_empty           { allowed_types: ["Collection"] }
+	Child skills               { allowed_types: ["Collection"] }
+	Child reward_back          { allowed_types: ["Texture" "Binary"] }
+	Child complete_back        { allowed_types: ["Texture" "Binary"] }
+	Child complete_back_coop   { allowed_types: ["Texture" "Binary"] }
+	Child rewards              { allowed_types: ["Collection"] }
+	Child leaderboard          { allowed_types: ["Texture" "Binary"] }
+	Child cutaways             { allowed_types: ["Collection"] }
+	Child sketchbook           { allowed_types: ["Collection"] }
+	Child character_epilogues  { allowed_types: ["Collection"] }
+	Child character_cards      { allowed_types: ["Collection"] }
+	Child equip_plate          { allowed_types: ["Texture" "Binary"] }
+	Child hud_flythru          { allowed_types: ["Texture" "Binary"] }
+	Child mp_maps              { allowed_types: ["Collection"] }
+	Child tourney_plates_large { allowed_types: ["Collection"] }
+}
+
+AssetType MiscWad {
+	wad: true
+	flattenable: true
+	
+	Child debug_font {
+		allowed_types: ["Texture" "Binary"]
+		required: true
+		games:[2 3 4]
+	}
+	Child irx {
+		allowed_types: ["IrxWad"]
+		required: true
+		games:[2 3 4]
+	}
+	Child save_game {
+		allowed_types: ["Binary"]
+		required: true
+		games:[2 3 4]
+	}
+	Child frontbin     { allowed_types: ["Binary"] }
+	Child frontbin_net { allowed_types: ["Binary"] }
+	Child frontend     { allowed_types: ["Binary"] }
+	Child exit         { allowed_types: ["Binary"] }
+	Child boot         { allowed_types: ["BootWad"] }
+	Child gadget       { allowed_types: ["Binary"] }
+}
+
+AssetType IrxWad {
+	desc: "A container for IOP modules."
+	wad: true
+	bin_leaf: true
+	
+	Child image {
+		allowed_types: ["Texture" "Binary"]
+		required: true
+		games: [2]
+	}
+	
+	Child sio2man {
+		allowed_types: ["Binary"]
+		required: true
+		games: [2 3 4]
+	}
+	Child mcman {
+		desc: "Memory card manager."
+		allowed_types: ["Binary"]
+		required: true
+		games: [2 3 4]
+	}
+	Child mcserv {
+		desc: "Memory card server."
+		allowed_types: ["Binary"]
+		required: true
+		games: [2 3 4]
+	}
+	Child dbcman {
+		allowed_types: ["Binary"]
+		required: true
+		games: [2]
+	}
+	Child sio2d {
+		allowed_types: ["Binary"]
+		required: true
+		games: [2]
+	}
+	Child ds2u {
+		allowed_types: ["Binary"]
+		required: true
+		games: [2]
+	}
+	Child padman {
+		desc: "Gamepad manager."
+		allowed_types: ["Binary"]
+		required: true
+		games: [3 4]
+	}
+	Child mtapman {
+		desc: "Multitap manager."
+		allowed_types: ["Binary"]
+		required: true
+		games: [3 4]
+	}
+	Child libsd {
+		desc: "Sound library."
+		allowed_types: ["Binary"]
+		required: true
+		games: [2 3 4]
+	}
+	Child 989snd {
+		desc: "Sound library."
+		allowed_types: ["Binary"]
+		required: true
+		games: [2 3 4]
+	}
+	Child stash {
+		allowed_types: ["Binary"]
+		required: true
+		games: [3 4]
+	}
+	Child inet {
+		desc: "Networking library."
+		allowed_types: ["Binary"]
+		required: true
+		games: [3 4]
+	}
+	Child netcnf {
+		desc: "Networking library."
+		allowed_types: ["Binary"]
+		required: true
+		games: [3 4]
+	}
+	Child inetctl  {
+		allowed_types: ["Binary"]
+		required: true
+		games: [3 4]
+	}
+	Child msifrpc  {
+		desc: "RPC library."
+		allowed_types: ["Binary"]
+		required: true
+		games: [3 4]
+	}
+	Child dev9 {
+		desc: "HDD/ethernet/modem adapter library."
+		allowed_types: ["Binary"]
+		required: true
+		games: [3 4]
+	}
+	Child smap {
+		desc: "Ethernet driver."
+		allowed_types: ["Binary"]
+		required: true
+		games: [3 4]
+	}
+	Child libnetb {
+		desc: "Networking library."
+		allowed_types: ["Binary"]
+		required: true
+		games: [3 4]
+	}
+	Child ppp {
+		desc: "Point to Point Protcol (PPP) library."
+		allowed_types: ["Binary"]
+		required: true
+		games: [3 4]
+	}
+	Child pppoe {
+		desc: "Point to Point Protcol over Ethernet (PPPoE) library."
+		allowed_types: ["Binary"]
+		required: true
+		games: [3 4]
+	}
+	Child usbd {
+		desc: "USB library."
+		allowed_types: ["Binary"]
+		required: true
+		games: [3 4]
+	}
+	Child lgaud {
+		allowed_types: ["Binary"]
+		required: true
+		games: [3 4]
+	}
+	Child eznetcnf {
+		allowed_types: ["Binary"]
+		required: true
+		games: [3 4]
+	}
+	Child eznetctl {
+		allowed_types: ["Binary"]
+		required: true
+		games: [3 4]
+	}
+	Child lgkbm {
+		allowed_types: ["Binary"]
+		required: true
+		games: [3 4]
+	}
+	Child streamer {
+		allowed_types: ["Binary"]
+		required: true
+		games: [4]
+	}
+	Child astrm {
+		allowed_types: ["Binary"]
+		required: true
+		games: [4]
+	}
+}
+
+AssetType BootWad {
+	wad: true
+	
+	Child english     { allowed_types: ["Binary"] }
+	Child french      { allowed_types: ["Binary"] }
+	Child german      { allowed_types: ["Binary"] }
+	Child spanish     { allowed_types: ["Binary"] }
+	Child italian     { allowed_types: ["Binary"] }
+	Child hud_header  { allowed_types: ["Binary"] }
+	Child hud_banks   {
+		allowed_types: ["Collection"]
+		Child child {
+			allowed_types: ["Binary"]
+		}
+	}
+	Child boot_plates { allowed_types: ["Collection"] }
+	Child sram        { allowed_types: ["Binary"] }
+}
+
+AssetType MpegWad {
+	desc: "The file containing all of the MPEG cutscenes."
+	wad: true
+	
+	Child mpegs {
+		desc: "A list of all the MPEG cutscenes."
+		allowed_types: ["Collection"]
+		Child child {
+			allowed_types: ["Mpeg"]
+		}
+	}
+	
+	Hint nompegs {
+		syntax: "nompegs"
+		example: "nompegs"
+		desc: "This option skips writing out the mpegs to make packing faster (or provide no hint to write them out as normal)."
+	}
+}
+
+AssetType Mpeg {
+	desc: "An MPEG cutscene with subtitles."
+	bin_leaf: true
+	
+	Child video_ntsc {
+		desc: "The NTSC version of the video file. 512x416, 29.97 FPS."
+		allowed_types: ["Binary"]
+		required: false
+		games: [1 2 3 4]
+	}
+	
+	Child video_pal {
+		desc: "The PAL version of the video file. 512x416, 25 FPS."
+		allowed_types: ["Binary"]
+		required: false
+		games: [1 2 3 4]
+	}
+	
+	Child subtitles {
+		desc: "The subtitles."
+		allowed_types: ["Collection" "Binary"]
+		required: false
+		games: [2 3 4]
+		Child child {
+			allowed_types: ["Subtitle"]
+		}
+	}
+}
+
+AssetType OnlineWad {
+	desc: "Container for assets used in the mutliplayer mode."
+	wad: true
+	flattenable: true
+	
+	Child data {
+		allowed_types: ["OnlineDataWad" "Binary"]
+		required: true
+		games: [4]
+	}
+	
+	Child transition_backgrounds {
+		desc: "Background images used for the multiplayer loading screen."
+		allowed_types: ["Collection"]
+		required: true
+		games: [4]
+		Child child {
+			allowed_types: ["Texture" "Binary"]
+		}
+	}
+}
+
+AssetType OnlineDataWad {
+	Child onlinew3d {
+		allowed_types: ["Binary"]
+		required: true
+		games: [4]
+	}
+	
+	Child images {
+		allowed_types: ["Collection"]
+		required: true
+		games: [4]
+		Child child {
+			allowed_types: ["Texture" "Binary"]
+		}
+	}
+	
+	Child moby_classes {
+		allowed_types: ["Collection"]
+		required: true
+		games: [4]
+		Child child {
+			allowed_types: ["Binary"]
+		}
+	}
+}
+
+AssetType SceneWad {
+	wad: true
+	flattenable: true
+}
+
+AssetType SpaceWad {
+	wad: true
+	
+	Child transitions { allowed_types: ["Collection"] }
+}
+
+// *****************************************************************************
+
+Category level {
+	name: "Level"
+}
+
+AssetType Level {
+	IntegerAttribute index {
+		desc: "The index of the level in the level table. Note that this is different to the id attribute of the associated LevelWad asset."
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	Child level { allowed_types: ["LevelWad" "Binary"] }
+	Child audio { allowed_types: ["LevelAudioWad" "Binary"] }
+	Child scene { allowed_types: ["LevelSceneWad" "Binary"] }
+}
+
+AssetType LevelWad {
+	wad: true
+	level_wad: true
+	
+	IntegerAttribute id {
+		desc: "The ID number of the level, referenced frequently at runtime. Note that this is different to the index attribute of the associated Level asset."
+		required: true
+		games: [1 2 3 4]
+	}
+	IntegerAttribute reverb {
+		required: true
+		games: [2 3 4]
+	}
+	
+	Child data {
+		desc: "Contains most of the assets for a level."
+		allowed_types: ["LevelDataWad" "Binary"]
+		required: true
+		games: [1 2 3 4]
+	}
+	Child sound_bank {
+		desc: "The main 989snd sound bank for the level. For R&C1, the child of the LevelDataWad is used instead, and for the rest of the games this asset is usually a reference to that asset. **For that reason, you probably don't want to modify this asset. You probably want to modify the sound_bank child of the LevelDataWad instead.**"
+		allowed_types: ["Binary"]
+		required: true
+		games: [2 3 4]
+	}
+	Child gameplay {
+		desc: "The gameplay file for the level. **Note that this is usually a reference to the gameplay asset in the LevelDataWad, and in the case of Deadlocked that one will be packed in addition to this one (the data is duplicated twice on the disc), so you probably want to modify that one instead.**"
+		allowed_types: ["Binary"]
+		required: true
+		games: [1 2 3 4]
+	}
+	Child art_instances {
+		desc: "Similar thing as with the gameplay file. **This is not the copy you want to modify.**"
+		allowed_types: ["Binary"]
+		required: true
+		games: [4]
+	}
+	Child chunks {
+		allowed_types: ["Collection"]
+		required: false
+		games: [2 3 4]
+	}
+	Child missions {
+		allowed_types: ["Collection"]
+		games: [4]
+	}
+	
+	Child occlusion {
+		allowed_types: ["Binary"]
+		required: false
+		games: [1 2 3]
+	}
+}
+
+AssetType LevelDataWad {
+	wad: true
+	level_wad: true
+	
+	Child core {
+		allowed_types: ["LevelCore"]
+		required: true
+		games: [1 2 3 4]
+	}
+	Child moby8355_pvars {
+		allowed_types: ["Binary"]
+		required: true
+		games: [4]
+	}
+	Child code {
+		desc: "The level code. Contains the main loop, level loading code, moby update functions, and a lot more."
+		allowed_types: ["Binary"]
+		required: true
+		games: [1 2 3 4]
+	}
+	Child sound_bank {
+		desc: "The main 989snd sound bank for the level. This asset is only used directly in the case of R&C1, however for the other games the version of the asset that is used is usually a reference that points to this asset. The intention of this approach is to regularize the structure of a level (to make porting levels between games easier) while still allowing for levels to be packed with a Binary asset for the LevelDataWad."
+		allowed_types: ["Binary"]
+		required: true
+		games: [1 2 3 4]
+	}
+	Child hud_header { allowed_types: ["Binary"] }
+	Child hud_banks { allowed_types: ["Collection"] }
+	Child transition_textures {
+		desc: "Textures that are shown during a transition to the given level."
+		allowed_types: ["Collection" "Binary"]
+		required: false
+		games: [2 3]
+		Child child {
+			allowed_types: ["Texture"]
+		}
+	}
+	Child art_instances {
+		desc: "Similar thing as the gameplay file. This is the copy you want to modify."
+		allowed_types: ["Binary"]
+		required: true
+		games: [4]
+	}
+	Child gameplay {
+		desc: "The gameplay file for the level. While in the case of R&C1, GC and UYA this copy isn't used directly, the other copy (a child of the LevelWad) usually references this copy, so this is the copy you probably want to modify (regardless of the game)."
+		allowed_types: ["Binary"]
+		required: true
+		games: [1 2 3 4]
+	}
+	Child global_nav_data {
+		allowed_types: ["Binary"]
+		required: true
+		games: [4]
+	}
+}
+
+AssetType LevelCore {
+	Child tfrags {
+		desc: "The main world-space level mesh."
+		allowed_types: ["Binary"]
+		required: true
+		games: [1 2 3 4]
+	}
+	Child tfrag_textures {
+		desc: "Textures for the tfrag mesh."
+		allowed_types: ["Collection"]
+		required: true
+		games: [1 2 3 4]
+	}
+	Child occlusion {
+		allowed_types: ["Binary"] 
+	}
+	Child sky {
+		desc: "The sky."
+		allowed_types: ["Binary"]
+		required: true
+		games: [1 2 3 4]
+	}
+	Child collision {
+		desc: "The world space collision mesh."
+		allowed_types: ["Collision" "Binary"]
+		required: true
+		games: [1 2 3 4]
+	}
+	Child moby_classes { allowed_types: ["Collection"] }
+	Child tie_classes { allowed_types: ["Collection"] }
+	Child shrub_classes { allowed_types: ["Collection"] }
+	Child particle_textures { allowed_types: ["Collection"] }
+	Child fx_textures { allowed_types: ["Collection"] }
+	Child sound_remap { allowed_types: ["Binary"] }
+	Child moby_sound_remap { allowed_types: ["Binary"] }
+	Child ratchet_seqs {
+		allowed_types: ["Collection"]
+		games: [1 2 3]
+	}
+	Child light_cuboids {
+		allowed_types: ["Collection"]
+		games: [4]
+	}
+	Child gadgets {
+		allowed_types: ["Collection"]
+		Child child {
+			allowed_types: ["MobyClass"]
+		}
+	}
+}
+
+AssetType Chunk {
+	Child tfrags     { allowed_types: ["Binary"] }
+	Child collision  { allowed_types: ["Collision" "Binary"] }
+	Child sound_bank { allowed_types: ["Binary"] }
+}
+
+AssetType Mission {
+	Child instances  { allowed_types: ["Binary"] }
+	Child classes    { allowed_types: ["Binary"] }
+	Child sound_bank { allowed_types: ["Binary"] }
+}
+
+AssetType LevelAudioWad {
+	wad: true
+	level_wad: true
+	
+	Child bin_data {
+		allowed_types: ["Collection"]
+		games: [1 2 3 4]
+	}
+	Child upgrade_sample {
+		allowed_types: ["Binary"]
+		games: [2 3 4]
+	}
+	Child thermanator_freeze {
+		allowed_types: ["Binary"]
+		games: [2]
+	}
+	Child thermanator_thaw {
+		allowed_types: ["Binary"]
+		games: [2]
+	}
+	Child platinum_bolt  {
+		allowed_types: ["Binary"]
+		games: [3 4]
+	}
+	Child spare {
+		allowed_types: ["Binary"]
+		games: [3 4]
+	}
+}
+
+AssetType LevelSceneWad {
+	wad: true
+	level_wad: true
+	
+	Child scenes { allowed_types: ["Collection"] }
+}
+
+AssetType Scene {
+	Child speech_english_left  { allowed_types: ["Binary"] }
+	Child speech_english_right { allowed_types: ["Binary"] }
+	Child subtitles            { allowed_types: ["Binary"] }
+	Child speech_french_left   { allowed_types: ["Binary"] }
+	Child speech_french_right  { allowed_types: ["Binary"] }
+	Child speech_german_left   { allowed_types: ["Binary"] }
+	Child speech_german_right  { allowed_types: ["Binary"] }
+	Child speech_spanish_left  { allowed_types: ["Binary"] }
+	Child speech_spanish_right { allowed_types: ["Binary"] }
+	Child speech_italian_left  { allowed_types: ["Binary"] }
+	Child speech_italian_right { allowed_types: ["Binary"] }
+	Child moby_load            { allowed_types: ["Binary"] }
+	Child chunks               { allowed_types: ["Collection"] }
+}
+
+// *****************************************************************************
+
+Category classes {
+	name: "Classes"
+}
+
+AssetType MobyClass {
+	IntegerAttribute id {
+		desc: "The integer used to reference this moby class at runtime."
+		required: true
+		games: [1 2 3 4]
+	}
+	BooleanAttribute has_moby_table_entry {}
+	
+	Child core { allowed_types: ["MobyClassCore" "Binary"] }
+	Child materials {
+		desc: "The materials used by this class."
+		allowed_types: ["Collection"]
+		required: true
+		games: [1 2 3 4]
+		Child child {
+			allowed_types: ["Material" "Texture"]
+		}
+	}
+	
+	Child editor_mesh {
+		desc: "The mesh shown in the editor. This is currently used as a hack since we haven't got the moby exporter working, but in the future it could be used for invisible mobies."
+		allowed_types: ["Mesh"]
+		required: false
+		games: [1 2 3 4]
+	}
+	
+	Hint level {
+		syntax: "level"
+		example: "level"
+		desc: "A moby class to be packed in with the level data."
+	}
+	
+	Hint gadget {
+		syntax: "gadget"
+		example: "gadget"
+		desc: "A moby class to be packed in with the gadget data."
+	}
+	
+	Hint sparmor {
+		syntax: "sparmor"
+		example: "sparmor"
+		desc: "A moby class to be packed as a singleplayer armor."
+	}
+	
+	Hint mparmor {
+		syntax: "mparmor"
+		example: "mparmor"
+		desc: "A moby class to be packed as a multiplayer armor."
+	}
+}
+
+AssetType MobyClassCore {
+	bin_leaf: true
+	
+	Child mesh { allowed_types: ["Mesh"] }
+	Child low_lod_mesh { allowed_types: ["Mesh"] }
+}
+
+AssetType TieClass {
+	bin_leaf: true
+	
+	IntegerAttribute id {
+		desc: "The integer used to reference this tie class at runtime."
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	Child core { allowed_types: ["Binary"] }
+	Child materials {
+		desc: "The materials used by this class."
+		allowed_types: ["Collection"]
+		required: true
+		games: [1 2 3 4]
+		Child child {
+			allowed_types: ["Material" "Texture"]
+		}
+	}
+}
+
+AssetType ShrubClass {
+	bin_leaf: true
+	
+	IntegerAttribute id {
+		desc: "The integer used to reference this shrub class at runtime."
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	Child core { allowed_types: ["Binary"] }
+	Child materials {
+		desc: "The materials used by this class."
+		allowed_types: ["Collection"]
+		required: true
+		games: [1 2 3 4]
+		Child child {
+			allowed_types: ["Material" "Texture"]
+		}
+	}
+}
+
+AssetType Material {
+	StringAttribute name {
+		desc: "The name of the material being referenced."
+	}
+	
+	BooleanAttribute glass {
+		desc: "Only for mobies. Make the material shiny, like glass?"
+	}
+	
+	BooleanAttribute chrome {
+		desc: "Only for mobies. Make the material shiny, like chrome?"
+	}
+	
+	Child texture {
+		desc: "The texture."
+		allowed_types: ["Texture"]
+	}
+}
+
+AssetType Collision {
+	desc: "The world space collision mesh for a level."
+	bin_leaf: true
+	
+	Child mesh {
+		desc: "The collision mesh itself."
+		allowed_types: ["Mesh"]
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	Child materials {
+		desc: "A mapping of the materials used by the mesh to collision ID numbers."
+		allowed_types: ["Collection"]
+		required: true
+		games: [1 2 3 4]
+		Child child {
+			alloed_types: ["CollisionMaterial"]
+		}
+	}
+}
+
+AssetType CollisionMaterial {
+	StringAttribute name {
+		desc: "The name of the material being referenced."
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	IntegerAttribute id {
+		desc: "The collision ID to use for this material. This controls the type of the surface."
+		required: true
+		games: [1 2 3 4]
+	}
+}

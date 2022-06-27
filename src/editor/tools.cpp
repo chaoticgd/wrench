@@ -20,22 +20,22 @@
 
 #include <glm/gtx/intersect.hpp>
 
-#include "app.h"
-#include "meshes.h"
+#include <editor/app.h>
+#include <editor/util.h>
 
-std::vector<std::unique_ptr<tool>> enumerate_tools() {
-	std::vector<std::unique_ptr<tool>> tools;
-	tools.emplace_back(std::make_unique<picker_tool>());
-	tools.emplace_back(std::make_unique<selection_tool>());
-	tools.emplace_back(std::make_unique<translate_tool>());
+std::vector<std::unique_ptr<Tool>> enumerate_tools() {
+	std::vector<std::unique_ptr<Tool>> tools;
+	tools.emplace_back(std::make_unique<PickerTool>());
+	tools.emplace_back(std::make_unique<SelectionTool>());
+	tools.emplace_back(std::make_unique<TranslateTool>());
 	return tools;
 }
 
-picker_tool::picker_tool() {
-	icon = load_icon("data/icons/picker_tool.txt");
+PickerTool::PickerTool() {
+	icon = load_icon(0);
 }
 
-void picker_tool::draw(app& a, glm::mat4 world_to_clip) {
+void PickerTool::draw(app& a, glm::mat4 world_to_clip) {
 	if(ImGui::IsMouseClicked(0) && ImGui::IsWindowHovered()) {
 		ImVec2 rel_pos {
 			ImGui::GetMousePos().x - ImGui::GetWindowPos().x,
@@ -45,8 +45,8 @@ void picker_tool::draw(app& a, glm::mat4 world_to_clip) {
 	}
 }
 
-void picker_tool::pick_object(app& a, glm::mat4 world_to_clip, ImVec2 position) {
-	level& lvl = *a.get_level();
+void PickerTool::pick_object(app& a, glm::mat4 world_to_clip, ImVec2 position) {
+	Level& lvl = *a.get_level();
 	
 	GLint last_framebuffer;
 	glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &last_framebuffer);
@@ -100,11 +100,11 @@ void picker_tool::pick_object(app& a, glm::mat4 world_to_clip, ImVec2 position) 
 	glBindFramebuffer(GL_FRAMEBUFFER, last_framebuffer);
 }
 
-selection_tool::selection_tool() {
-	icon = load_icon("data/icons/selection_tool.txt");
+SelectionTool::SelectionTool() {
+	icon = load_icon(1);
 }
 
-void selection_tool::draw(app& a, glm::mat4 world_to_clip) {
+void SelectionTool::draw(app& a, glm::mat4 world_to_clip) {
 	if(ImGui::IsMouseClicked(0) && ImGui::IsWindowHovered()) {
 		_selecting = true;
 		_selection_begin = ImGui::GetMousePos();
@@ -135,7 +135,7 @@ void selection_tool::draw(app& a, glm::mat4 world_to_clip) {
 				(screen_pos.y > p1.y && screen_pos.y < p2.y);
 		};
 		
-		level& lvl = *a.get_level();
+		Level& lvl = *a.get_level();
 		lvl.gameplay().for_each_instance_with(COM_TRANSFORM, [&](Instance& inst) {
 			glm::vec3 screen_pos = apply_local_to_screen(world_to_clip, inst.matrix(), a.render_settings.view_size);
 			inst.selected = in_bounds(screen_pos);
@@ -143,40 +143,47 @@ void selection_tool::draw(app& a, glm::mat4 world_to_clip) {
 	}
 }
 
-translate_tool::translate_tool() {
-	icon = load_icon("data/icons/translate_tool.txt");
+TranslateTool::TranslateTool() {
+	icon = load_icon(2);
 }
 
-void translate_tool::draw(app& a, glm::mat4 world_to_clip) {
+void TranslateTool::draw(app& a, glm::mat4 world_to_clip) {
 	ImGui::Begin("Translate Tool");
 	ImGui::Text("Displacement:");
 	ImGui::InputFloat3("##displacement_input", &_displacement.x);
 	if(ImGui::Button("Apply") && glm::length(_displacement) > 0.001f) {
 		assert(a.get_level());
-		level& lvl = *a.get_level();
-		std::vector<InstanceId> ids = lvl.gameplay().selected_instances();
-		glm::vec3 displacement = _displacement;
-		std::vector<std::pair<InstanceId, glm::vec3>> old_positions;
+		Level& lvl = *a.get_level();
+		
+		struct TranslateCommand {
+			std::vector<InstanceId> ids;
+			glm::vec3 displacement;
+			std::vector<std::pair<InstanceId, glm::vec3>> old_positions;
+		};
+		
+		TranslateCommand data;
+		data.ids = lvl.gameplay().selected_instances();
+		data.displacement = _displacement;
 		lvl.gameplay().for_each_instance_with(COM_TRANSFORM, [&](Instance& inst) {
 			if(inst.selected) {
-				old_positions.emplace_back(inst.id(), inst.position());
+				data.old_positions.emplace_back(inst.id(), inst.position());
 			}
 		});
 		
-		lvl.push_command(
-			[ids, displacement](level& lvl) {
+		lvl.push_command<TranslateCommand>(std::move(data),
+			[](Level& lvl, TranslateCommand& data) {
 				lvl.gameplay().for_each_instance_with(COM_TRANSFORM, [&](Instance& inst) {
-					if(contains(ids, inst.id())) {
-						inst.set_position(inst.position() + displacement);
+					if(contains(data.ids, inst.id())) {
+						inst.set_position(inst.position() + data.displacement);
 					}
 				});
 			},
-			[old_positions](level& lvl) {
+			[](Level& lvl, TranslateCommand& data) {
 				size_t i = 0;
-				while(i < old_positions.size()) {
+				while(i < data.old_positions.size()) {
 					lvl.gameplay().for_each_instance_with(COM_TRANSFORM, [&](Instance& inst) {
-						if(inst.id() == old_positions[i].first) {
-							inst.set_position(old_positions[i].second);
+						if(inst.id() == data.old_positions[i].first) {
+							inst.set_position(data.old_positions[i].second);
 							i++;
 						}
 					});

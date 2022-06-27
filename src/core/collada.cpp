@@ -68,14 +68,21 @@ static void write_visual_scenes(OutBuffer dest, const ColladaScene& scene);
 static void write_joint_node(OutBuffer dest, const std::vector<Joint>& joints, s32 index, s32 indent);
 static void write_matrix4x4(OutBuffer dest, const glm::mat4& matrix);
 
-ColladaScene read_collada(std::vector<u8> src) {
-	src.push_back('\0');
-	
+Mesh* ColladaScene::find_mesh(const std::string& name) {
+	for(Mesh& mesh : meshes) {
+		if(mesh.name == name) {
+			return &mesh;
+		}
+	}
+	return nullptr;
+}
+
+ColladaScene read_collada(char* src) {
 	XmlDocument doc;
 	try {
-		doc.parse<0>((char*) src.data());
+		doc.parse<0>(src);
 	} catch(rapidxml::parse_error& err) {
-		throw ParseError("%s", err.what());
+		verify_not_reached("%s", err.what());
 	}
 	
 	const XmlNode* root = xml_child(&doc, "COLLADA");
@@ -124,9 +131,7 @@ ColladaScene read_collada(std::vector<u8> src) {
 			geometry = node_from_id(ids, xml_attrib(skin, "source")->value());
 			const char* skeleton_id = xml_child(instance, "skeleton")->value();
 			auto skeleton_iter = ids.find(skeleton_id);
-			if(skeleton_iter == ids.end()) {
-				throw ParseError("Bad skeleton ID '%s'.", skeleton_id);
-			}
+			verify(skeleton_iter != ids.end(), "Bad skeleton ID '%s'.", skeleton_id);
 			skeleton = skeleton_iter->second;
 		} else {
 			instance = node->first_node("instance_geometry");
@@ -139,7 +144,7 @@ ColladaScene read_collada(std::vector<u8> src) {
 		}
 		
 		Mesh mesh;
-		mesh.name = xml_attrib(node, "id")->value();
+		mesh.name = xml_attrib(node, "name")->value();
 		auto vertex_data = read_vertices(geometry, ids);
 		std::vector<SkinAttributes> skin_data;
 		if(controller) {
@@ -157,18 +162,12 @@ static Material read_material(const XmlNode* material_node, const IdMap& ids, co
 	// Follow the white rabbit (it's white because its texture couldn't be loaded).
 	const XmlNode* instance_effect = xml_child(material_node, "instance_effect");
 	const XmlNode* effect = node_from_id(ids, xml_attrib(instance_effect, "url")->value());
-	if(!strcmp(effect->name(), "effect") == 0) {
-		throw ParseError("Effect referenced by id is not an <effect> node.");
-	}
+	verify(strcmp(effect->name(), "effect") == 0, "Effect referenced by id is not an <effect> node.");
 	const XmlNode* profile = effect->first_node();
-	if(!profile) {
-		throw ParseError("<%s> node has no children.", effect->name());
-	}
+	verify(profile, "<%s> node has no children.", effect->name());
 	const XmlNode* technique = xml_child(profile, "technique");
 	const XmlNode* shader = technique->first_node();
-	if(!shader) {
-		throw ParseError("<%s> node has no children.", technique->name());
-	}
+	verify(shader, "<%s> node has no children.", technique->name());
 	const XmlNode* diffuse = xml_child(shader, "diffuse");
 	if(const XmlNode* texture = diffuse->first_node("texture")) {
 		const char* sampler_sid = xml_attrib(texture, "texture")->value();
@@ -179,9 +178,7 @@ static Material read_material(const XmlNode* material_node, const IdMap& ids, co
 				break;
 			}
 		}
-		if(!sampler) {
-			throw ParseError("Unable to find sampler '%s'.", sampler_sid);
-		}
+		verify(sampler, "Unable to find sampler '%s'.", sampler_sid);
 		const char* surface_sid = xml_child(sampler, "source")->value();
 		const XmlNode* surface = nullptr;
 		xml_for_each_child_of_type(newparam, profile, "newparam") {
@@ -190,17 +187,13 @@ static Material read_material(const XmlNode* material_node, const IdMap& ids, co
 				break;
 			}
 		}
-		if(!surface) {
-			throw ParseError("Unable to find surface '%s'.", surface_sid);
-		}
+		verify(surface, "Unable to find surface '%s'.", surface_sid);
 		auto image_id = std::string("#") + xml_child(surface, "init_from")->value();
 		const XmlNode* image = node_from_id(ids, image_id.c_str());
 		auto texture_index = images.find(image);
-		if(texture_index == images.end()) {
-			throw ParseError("An <image> node that was referenced cannot be found.");
-		}
+		verify(texture_index != images.end(), "An <image> node that was referenced cannot be found.");
 		Material material;
-		material.name = xml_attrib(material_node, "id")->value();
+		material.name = xml_attrib(material_node, "name")->value();
 		material.texture = texture_index->second;
 		return material;
 	} else if(const XmlNode* colour = diffuse->first_node("color")) {
@@ -208,30 +201,22 @@ static Material read_material(const XmlNode* material_node, const IdMap& ids, co
 		const char* r_ptr = colour->value();
 		char* g_ptr;
 		value.r = strtof(r_ptr, &g_ptr);
-		if(g_ptr == r_ptr) {
-			throw ParseError("<color> node has invalid body.");
-		}
+		verify(g_ptr != r_ptr, "<color> node has invalid body.");
 		char* b_ptr;
 		value.g = strtof(g_ptr, &b_ptr);
-		if(b_ptr == g_ptr) {
-			throw ParseError("<color> node has invalid body.");
-		}
+		verify(b_ptr != g_ptr, "<color> node has invalid body.");
 		char* a_ptr;
 		value.b = strtof(b_ptr, &a_ptr);
-		if(a_ptr == b_ptr) {
-			throw ParseError("<color> node has invalid body.");
-		}
+		verify(a_ptr != b_ptr, "<color> node has invalid body.");
 		char* end_ptr;
 		value.a = strtof(a_ptr, &end_ptr);
-		if(end_ptr == a_ptr) {
-			throw ParseError("<color> node has invalid body.");
-		}
+		verify(end_ptr != a_ptr, "<color> node has invalid body.");
 		Material material;
-		material.name = xml_attrib(material_node, "id")->value();
+		material.name = xml_attrib(material_node, "name")->value();
 		material.colour = value;
 		return material;
 	}
-	throw ParseError("<diffuse> node needs either a <texture> or <color> node as a child.");
+	verify_not_reached("<diffuse> node needs either a <texture> or <color> node as a child.");
 }
 
 static VertexData read_vertices(const XmlNode* geometry, const IdMap& ids) {
@@ -259,9 +244,7 @@ static VertexData read_vertices(const XmlNode* geometry, const IdMap& ids) {
 			tex_coords_source = node_from_id(ids, xml_attrib(input, "source")->value());
 		}
 	}
-	if(!vertices) {
-		throw ParseError("<triangles> node missing VERTEX input.");
-	}
+	verify(vertices, "<triangles> node missing VERTEX input.");
 	
 	const XmlNode* positions_source = nullptr;
 	xml_for_each_child_of_type(input, vertices, "input") {
@@ -270,29 +253,21 @@ static VertexData read_vertices(const XmlNode* geometry, const IdMap& ids) {
 			positions_source = node_from_id(ids, xml_attrib(input, "source")->value());
 		}
 	}
-	if(!positions_source) {
-		throw ParseError("<vertices> node missing POSITIONS input.");
-	}
-	
+	verify(positions_source, "<vertices> node missing POSITIONS input.");
+		
 	auto positions = read_vertex_source(positions_source, ids);
-	if(positions.size() % 3 != 0) {
-		throw ParseError("Vertex positions array for mesh '%s' has a bad size (not divisible by 3).", mesh_name);
-	}
+	verify(positions.size() % 3 == 0, "Vertex positions array for mesh '%s' has a bad size (not divisible by 3).", mesh_name);
 	
 	Opt<std::vector<f32>> normals;
 	if(normals_source) {
 		normals = read_vertex_source(normals_source, ids);
-		if(normals->size() % 3 != 0) {
-			throw ParseError("Normals array for mesh '%s' has a bad size (not divisible by 3).", mesh_name);
-		}
+		verify(normals->size() % 3 == 0, "Normals array for mesh '%s' has a bad size (not divisible by 3).", mesh_name);
 	}
 	
 	Opt<std::vector<f32>> tex_coords;
 	if(tex_coords_source) {
 		tex_coords = read_vertex_source(tex_coords_source, ids);
-		if(tex_coords->size() % 2 != 0) {
-			throw ParseError("Texture coordinates array for mesh '%s' has a bad size (not divisible by 2).", mesh_name);
-		}
+		verify(tex_coords->size() % 2 == 0, "Texture coordinates array for mesh '%s' has a bad size (not divisible by 2).", mesh_name);
 	}
 	
 	return {positions, normals, tex_coords};
@@ -302,9 +277,7 @@ static std::vector<f32> read_vertex_source(const XmlNode* source, const IdMap& i
 	const XmlNode* technique_common = xml_child(source, "technique_common");
 	const XmlNode* accessor = xml_child(technique_common, "accessor");
 	const XmlNode* float_array = node_from_id(ids, xml_attrib(accessor, "source")->value());
-	if(strcmp(float_array->name(), "float_array") != 0) {
-		throw ParseError("Only <float_array> nodes are supported for storing vertex attributes.");
-	}
+	verify(strcmp(float_array->name(), "float_array") == 0, "Only <float_array> nodes are supported for storing vertex attributes.");
 	return read_float_array(float_array);
 }
 
@@ -329,12 +302,8 @@ static std::vector<SkinAttributes> read_skin(Mesh& mesh, const XmlNode* controll
 			weight_offset = atoi(xml_attrib(input, "offset")->value());
 		}
 	}
-	if(!joints_source) {
-		throw ParseError("<vertex_weights> node missing JOINT input.");
-	}
-	if(!weights_source) {
-		throw ParseError("<vertex_weights> node missing WEIGHT input.");
-	}
+	verify(joints_source, "<vertex_weights> node missing JOINT input.");
+	verify(weights_source, "<vertex_weights> node missing WEIGHT input.");
 	
 	s32 stride = std::max(joint_offset, weight_offset) + 1;
 	
@@ -350,11 +319,9 @@ static std::vector<SkinAttributes> read_skin(Mesh& mesh, const XmlNode* controll
 		}
 		auto joint_iter = joint_sids.find({skeleton, joint_name});
 		if(joint_iter == joint_sids.end()) {
-			throw ParseError("Bad joint name or skeleton.");
+			verify(joint_iter != joint_sids.end(), "Bad joint name or skeleton.");
 		}
-		if(joint_iter->second > 255) {
-			throw ParseError("Too many joints.");
-		}
+		verify(joint_iter->second < 256, "Too many joints.");
 		joint_index = joint_iter->second;
 		while(*joint_ptr == ' ') {
 			joint_ptr++;
@@ -368,9 +335,7 @@ static std::vector<SkinAttributes> read_skin(Mesh& mesh, const XmlNode* controll
 	const char* vcount = xml_child(vertex_weights, "vcount")->value();
 	for(s32 i = 0; i < vertex_weight_count; i++) {
 		s32 vc = read_s32(vcount, "<vcount> node");
-		if(vc < 0 || vc > 3) {
-			throw ParseError("Only between 0 and 3 joints weights are supported for each vertex.");
-		}
+		verify(vc >= 0 && vc <= 3, "Only between 0 and 3 joints weights are supported for each vertex.");
 		vcount_data.push_back(vc);
 	}
 	
@@ -418,9 +383,7 @@ static void read_submeshes(Mesh& mesh, const XmlNode* instance, const XmlNode* g
 					material = materials.at(node_from_id(ids, xml_attrib(instance_material, "target")->value()));
 				}
 			}
-			if(material == -1) {
-				throw ParseError("Missing <instance_material> node.");
-			}
+			verify(material != -1, "Missing <instance_material> node.");
 			
 			// Find the offsets of each <input> and the overall stride.
 			s32 position_offset = -1;
@@ -549,9 +512,7 @@ static std::vector<f32> read_float_array(const XmlNode* float_array) {
 	for(f32& value : data) {
 		char* next;
 		value = strtof(ptr, &next);
-		if(next == ptr) {
-			throw ParseError("Failed to read <float_array>.");
-		}
+		verify(next != ptr, "Failed to read <float_array>.");
 		ptr = next;
 	}
 	return data;
@@ -560,9 +521,7 @@ static std::vector<f32> read_float_array(const XmlNode* float_array) {
 static s32 read_s32(const char*& input, const char* context) {
 	char* next;
 	s32 value = strtol(input, &next, 10);
-	if(next == input) {
-		throw ParseError("Failed to read integers from %s.", context);
-	}
+	verify(next != input, "Failed to read integers from %s.", context);
 	input = next;
 	return value;
 }
@@ -588,28 +547,20 @@ static void enumerate_joint_sids(JointSidsMap& joint_sids, s32& next_joint, cons
 
 static const XmlNode* xml_child(const XmlNode* node, const char* name) {
 	XmlNode* child = node->first_node(name);
-	if(!child) {
-		throw ParseError("<%s> node missing <%s> child.", node->name(), name);
-	}
+	verify(child, "<%s> node missing <%s> child.", node->name(), name);
 	return child;
 }
 
 static const XmlAttrib* xml_attrib(const XmlNode* node, const char* name) {
 	XmlAttrib* attrib = node->first_attribute(name);
-	if(!attrib) {
-		throw ParseError("<%s> node missing %s attribute.", node->name(), name);
-	}
+	verify(attrib, "<%s> node missing %s attribute.", node->name(), name);
 	return attrib;
 }
 
 static const XmlNode* node_from_id(const IdMap& map, const char* id) {
-	if(*id != '#') {
-		throw ParseError("Only ids starting with # are supported ('%s' passed).", id);
-	}
+	verify(*id == '#', "Only ids starting with # are supported ('%s' passed).", id);
 	auto iter = map.find(id);
-	if(iter == map.end()) {
-		throw ParseError("No element with id equal to '%s'.", id);
-	}
+	verify(iter != map.end(), "No element with id equal to '%s'.", id);
 	return iter->second;
 }
 
@@ -633,13 +584,14 @@ std::vector<u8> write_collada(const ColladaScene& scene) {
 	dest.writelf("\t\t<instance_visual_scene url=\"#scene\"/>");
 	dest.writelf("\t</scene>");
 	dest.writelf("</COLLADA>");
+	vec.push_back(0);
 	return vec;
 }
 
 static void write_asset_metadata(OutBuffer dest) {
 	dest.writelf("\t<asset>");
 	dest.writelf("\t\t<contributor>");
-	dest.writelf("\t\t\t<authoring_tool>Wrench WAD Utility</authoring_tool>");
+	dest.writelf("\t\t\t<authoring_tool>Wrench Build Tool</authoring_tool>");
 	dest.writelf("\t\t</contributor>");
 	dest.writelf("\t\t<created>%04d-%02d-%02dT%02d:%02d:%02d</created>", 1, 1, 1, 0, 0, 0);
 	dest.writelf("\t\t<modified>%04d-%02d-%02dT%02d:%02d:%02d</modified>", 1, 1, 1, 0, 0, 0);
@@ -651,7 +603,7 @@ static void write_asset_metadata(OutBuffer dest) {
 static void write_images(OutBuffer dest, const std::vector<std::string>& texture_paths) {
 	dest.writelf("\t<library_images>");
 	for(s32 i = 0; i < (s32) texture_paths.size(); i++) {
-		dest.writelf("\t\t<image id=\"texture_%d\">", i);
+		dest.writelf("\t\t<image id=\"texture_%d\" name=\"texture_%d\">", i, i);
 		dest.writesf("\t\t\t<init_from>");
 		const std::string& path = texture_paths[i];
 		dest.vec.insert(dest.vec.end(), path.begin(), path.end());
@@ -664,7 +616,7 @@ static void write_images(OutBuffer dest, const std::vector<std::string>& texture
 static void write_effects(OutBuffer dest, const std::vector<Material>& materials, size_t texture_count) {
 	dest.writelf("\t<library_effects>");
 	for(const Material& material : materials) {
-		dest.writelf("\t\t<effect id=\"%s_effect\">", material.name.c_str());
+		dest.writelf("\t\t<effect id=\"%s_effect\" name=\"%s_effect\">", material.name.c_str(), material.name.c_str());
 		dest.writelf("\t\t\t<profile_COMMON>");
 		if(material.texture.has_value()) {
 			dest.writelf(4, "<newparam sid=\"%s_surface\">", material.name.c_str());
@@ -708,7 +660,7 @@ static void write_effects(OutBuffer dest, const std::vector<Material>& materials
 static void write_materials(OutBuffer dest, const std::vector<Material>& materials) {
 	dest.writelf("\t<library_materials>");
 	for(const Material& material : materials) {
-		dest.writelf("\t\t<material id=\"%s\">", material.name.c_str());
+		dest.writelf("\t\t<material id=\"%s\" name=\"%s\">", material.name.c_str(), material.name.c_str());
 		dest.writelf("\t\t\t<instance_effect url=\"#%s_effect\"/>", material.name.c_str());
 		dest.writelf("\t\t</material>");
 	}
@@ -719,7 +671,7 @@ static void write_geometries(OutBuffer dest, const std::vector<Mesh>& meshes) {
 	dest.writelf("\t<library_geometries>");
 	for(size_t i = 0; i < meshes.size(); i++) {
 		const Mesh& mesh = meshes[i];
-		dest.writelf("\t\t<geometry id=\"%s_mesh\">", mesh.name.c_str());
+		dest.writelf("\t\t<geometry id=\"%s_mesh\" name=\"%s_mesh\">", mesh.name.c_str(), mesh.name.c_str());
 		dest.writelf("\t\t\t<mesh>");
 		
 		dest.writelf(4, "<source id=\"mesh_%d_positions\">", i);
@@ -847,7 +799,7 @@ static void write_geometries(OutBuffer dest, const std::vector<Mesh>& meshes) {
 static void write_controllers(OutBuffer dest, const std::vector<Mesh>& meshes, const std::vector<Joint>& joints) {
 	dest.writelf("\t<library_controllers>");
 	for(const Mesh& mesh : meshes) {
-		dest.writelf("\t\t<controller id=\"%s_skin\">", mesh.name.c_str());
+		dest.writelf("\t\t<controller id=\"%s_skin\" name=\"%s_skin\">", mesh.name.c_str(), mesh.name.c_str());
 		dest.writelf("\t\t\t<skin source=\"#%s_mesh\">", mesh.name.c_str());
 		dest.writelf(4, "<source id=\"%s_joints\">", mesh.name.c_str());
 		dest.writesf(4, "\t<Name_array count=\"%d\">", (s32) joints.size());
@@ -933,7 +885,7 @@ static void write_visual_scenes(OutBuffer dest, const ColladaScene& scene) {
 	}
 	for(const Mesh& mesh : scene.meshes) {
 		assert(mesh.name.size() > 0);
-		dest.writelf("\t\t\t<node id=\"%s\">", mesh.name.c_str());
+		dest.writelf("\t\t\t<node id=\"%s\" name=\"%s\">", mesh.name.c_str(), mesh.name.c_str());
 		if(scene.joints.size() > 0) {
 			dest.writelf(4, "<instance_controller url=\"#%s_skin\">", mesh.name.c_str());
 			dest.writelf(4, "\t<skeleton>#joint_0</skeleton>");
@@ -1005,4 +957,66 @@ s32 add_joint(std::vector<Joint>& joints, Joint joint, s32 parent) {
 	}
 	joints.push_back(joint);
 	return index;
+}
+
+void assert_collada_scenes_equal(const ColladaScene& lhs, const ColladaScene& rhs) {
+	assert(lhs.texture_paths.size() == rhs.texture_paths.size());
+	assert(lhs.texture_paths == rhs.texture_paths);
+	assert(lhs.materials.size() == rhs.materials.size());
+	for(size_t i = 0; i < lhs.materials.size(); i++) {
+		const Material& lmat = lhs.materials[i];
+		const Material& rmat = rhs.materials[i];
+		assert(lmat.name == rmat.name);
+		assert(lmat.colour == rmat.colour);
+		assert(lmat.texture == rmat.texture);
+	}
+	assert(lhs.meshes.size() == rhs.meshes.size());
+	for(size_t i = 0; i < lhs.meshes.size(); i++) {
+		const Mesh& lmesh = lhs.meshes[i];
+		const Mesh& rmesh = rhs.meshes[i];
+		assert(lmesh.name == rmesh.name);
+		assert(lmesh.submeshes.size() == rmesh.submeshes.size());
+		// If there are no submeshes, we can't recover the flags.
+		assert(lmesh.flags == rmesh.flags || lmesh.submeshes.size() == 0);
+		// The COLLADA importer/exporter doesn't preserve the layout of the
+		// vertex buffer, so don't check that.
+		for(size_t j = 0; j < lmesh.submeshes.size(); j++) {
+			const SubMesh& lsub = lmesh.submeshes[j];
+			const SubMesh& rsub = rmesh.submeshes[j];
+			for(size_t k = 0; k < lsub.faces.size(); k++) {
+				const Face& lface = lsub.faces[k];
+				const Face& rface = rsub.faces[k];
+				Vertex lverts[4] = {
+					lmesh.vertices.at(lface.v0),
+					lmesh.vertices.at(lface.v1),
+					lmesh.vertices.at(lface.v2),
+					Vertex(glm::vec3(0, 0, 0))
+				};
+				Vertex rverts[4] = {
+					rmesh.vertices.at(rface.v0),
+					rmesh.vertices.at(rface.v1),
+					rmesh.vertices.at(rface.v2),
+					Vertex(glm::vec3(0, 0, 0))
+				};
+				assert((lface.v3 > -1) == (rface.v3 > -1));
+				if(lface.v3 > -1) {
+					lverts[3] = lmesh.vertices.at(lface.v3);
+					rverts[3] = rmesh.vertices.at(rface.v3);
+				}
+				for(s32 k = 0; k < 4; k++) {
+					assert(lverts[k].pos == rverts[k].pos);
+					assert(lverts[k].normal == rverts[k].normal);
+					// We don't currently preserve joint indices, so we don't
+					// check them here.
+					for(s32 l = 0; l < 3; l++) {
+						lverts[k].skin.joints[l] = 0;
+						rverts[k].skin.joints[l] = 0;
+					}
+					assert(lverts[k].skin == rverts[k].skin);
+					assert(lverts[k].tex_coord == rverts[k].tex_coord);
+				}
+			}
+			assert(lsub.material == rsub.material);
+		}
+	}
 }

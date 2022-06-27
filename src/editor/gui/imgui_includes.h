@@ -22,10 +22,6 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 
 #include "../gl_includes.h"
-#include <imgui/imgui.h>
-#include <imgui/imgui_internal.h>
-#include <imgui/misc/cpp/imgui_stdlib.h>
-#include "imgui_impl_glfw.h"
-#include <imgui/backends/imgui_impl_opengl3.h>
+#include <gui/gui.h>
 
 #endif

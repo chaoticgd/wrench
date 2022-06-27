@@ -19,27 +19,26 @@
 #ifndef TOOLS_H
 #define TOOLS_H
 
-#include "gl_includes.h"
+#include <gui/gui.h>
 #include "gui/imgui_includes.h"
-#include "formats/level_impl.h"
 
 struct app;
-struct level;
+struct Level;
 
-class tool {
+class Tool {
 public:
-	virtual ~tool() {}
+	virtual ~Tool() {}
 
 	GlTexture icon;
 	
 	virtual void draw(app& a, glm::mat4 world_to_clip) = 0;
 };
 
-std::vector<std::unique_ptr<tool>> enumerate_tools();
+std::vector<std::unique_ptr<Tool>> enumerate_tools();
 
-class picker_tool : public tool {
+class PickerTool : public Tool {
 public:
-	picker_tool();
+	PickerTool();
 
 	void draw(app& a, glm::mat4 world_to_clip) override;
 
@@ -49,9 +48,9 @@ private:
 	void pick_object(app& a, glm::mat4 world_to_clip, ImVec2 position);
 };
 
-class selection_tool : public tool {
+class SelectionTool : public Tool {
 public:
-	selection_tool();
+	SelectionTool();
 
 	void draw(app& a, glm::mat4 world_to_clip) override;
 
@@ -60,14 +59,14 @@ private:
 	ImVec2 _selection_begin { 0, 0 };
 };
 
-class translate_tool : public tool {
+class TranslateTool : public Tool {
 public:
-	translate_tool();
+	TranslateTool();
 
 	void draw(app& a, glm::mat4 world_to_clip) override;
 
 private:
-	glm::vec3 _displacement;
+	glm::vec3 _displacement = {0, 0, 0};
 };
 
 #endif

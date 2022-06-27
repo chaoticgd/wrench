@@ -16,12 +16,4 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "window.h"
-
-class Inspector : public window {
-public:
-	Inspector() {}
-	const char* title_text() const;
-	ImVec2 initial_size() const;
-	void render(app& a);
-};
+void inspector();

@@ -20,276 +20,50 @@
 
 #include <stdlib.h>
 #include "unwindows.h"
-#include <toml11/toml.hpp>
 
-#include "gui/gui.h"
+#include <toolwads/wads.h>
+#include <gui/gui.h>
 #include "renderer.h"
 #include "fs_includes.h"
-#include "worker_thread.h"
-#include "level_file_types.h"
 
-void after_directory_loaded(app& a) {
-	for(auto& window : a.windows) {
-		if(dynamic_cast<gui::start_screen*>(window.get()) != nullptr) {
-			window->close(a);
-			break;
-		}
-	}
-}
-
-#ifdef _WIN32
-	const char* ISO_UTILITY_PATH = ".\\bin\\iso";
-	const char* WAD_UTILITY_PATH = ".\\bin\\wad";
-#else
-	const char* ISO_UTILITY_PATH = "./bin/iso";
-	const char* WAD_UTILITY_PATH = "./bin/wad";
-#endif
-
-void app::extract_iso(fs::path iso_path, fs::path dir) {
-	if(_lock_project) {
-		return;
-	}
-
-	_lock_project = true;
-	directory = "";
-	
-	std::pair<fs::path, fs::path> in(iso_path, dir);
-	
-	emplace_window<worker_thread<int, decltype(in)>>(
-		"Extract ISO", in,
-		[](std::pair<fs::path, fs::path> in, worker_logger& log) {
-			if(!fs::exists(in.second)) {
-				log << "Destination directory does not exist.\n";
-				return 1;
-			}
-			fs::path built_dir = in.second/"built";
-			fs::create_directory(built_dir);
-			std::vector<std::string> iso_args = {"extract", in.first.string(), built_dir.string()};
-			int iso_exit_code = execute_command(ISO_UTILITY_PATH, iso_args);
-			if(iso_exit_code != 0) {
-				log << "\nFailed to extract files from ISO file!\n";
-				return iso_exit_code;
-			}
-			
-			fs::path levels_dir = in.second/"levels";
-			fs::create_directory(levels_dir);
-			for(fs::path input_file : fs::directory_iterator(built_dir/"levels")) {
-				log << "Unpacking level " << input_file.string() << "\n";
-				fs::path level_dir = levels_dir/input_file.filename();
-				fs::create_directory(level_dir);
-				std::vector<std::string> wad_args = {"extract", input_file.string(), level_dir.string()};
-				int wad_exit_code = execute_command(WAD_UTILITY_PATH, wad_args);
-				if(wad_exit_code != 0) {
-					log << "\nFailed to unpack level file!\n";
-					return wad_exit_code;
-				}
-			}
-			log << "\nDone!\n";
-			return 0;
-		},
-		[dir, this](int exit_code) {
-			if(exit_code != 0) {
-				_lock_project = false;
-				return;
-			}
-			directory = dir;
-			_lock_project = false;
-			reset_camera(this);
-			auto title = std::string("Wrench Editor - [") + dir.string() + "]";
-			glfwSetWindowTitle(glfw_window, title.c_str());
-			after_directory_loaded(*this);
-		}
-	);
-}
-
-void app::open_directory(fs::path dir) {
-	if(fs::is_directory(dir)) {
-		directory = dir;
-		after_directory_loaded(*this);
-	}
-}
-
-void app::build_iso(build_settings settings) {
-	emplace_window<worker_thread<int, build_settings>>(
-		"Build ISO", settings,
-		[](build_settings settings, worker_logger& log) {
-			std::vector<std::string> args = {
-				"build",
-				settings.input_dir.string(),
-				settings.output_iso.string()
-			};
-			if(settings.single_level) {
-				args.push_back("--single-level");
-				args.push_back(std::to_string(settings.single_level_index));
-			}
-			if(settings.no_mpegs) {
-				args.push_back("--no-mpegs");
-			}
-			int exit_code = execute_command(ISO_UTILITY_PATH, args);
-			if(exit_code != 0) {
-				log << "\nFailed to build ISO file!\n";
-			}
-			return exit_code;
-		},
-		[settings](int exit_code) {
-			if(exit_code == 0 && settings.launch_emulator) {
-				fs::path emu_path = config::get().emulator_path;
-				execute_command(emu_path.string(), {settings.output_iso.string()});
-			}
-		}
-	);
-}
-
-void app::open_file(fs::path path) {
-	try {
-		Json json = Json::parse(read_file(path, "r"));
-		if(json.contains("metadata") && json["metadata"].contains("format") && json["metadata"]["format"] == "wad") {
-			level new_lvl;
-			new_lvl.open(path, json);
-			_lvl.emplace(std::move(new_lvl));
-			reset_camera(this);
-		}
-	} catch(Json::parse_error& e) {
-		printf("Failed to open file: %s\n", e.what());
-	}
-}
-
-void app::save_level() {
-	assert(get_level());
-	level& lvl = *get_level();
-	lvl.save();
-	if(!fs::exists(directory) || !fs::exists(directory/"built") || !fs::exists(directory/"levels")) {
-		printf("error: A valid directory must be open to build a level.\n");
-		return;
-	}
-	fs::path level_name = lvl.path.parent_path().filename();
-	std::vector<std::string> wad_args = {"build", lvl.path.string(), (directory/"built"/"levels"/level_name).string()};
-	execute_command(WAD_UTILITY_PATH, wad_args);
-}
-
-level* app::get_level() {
+Level* app::get_level() {
 	return _lvl ? &(*_lvl) : nullptr;
 }
 
-const level* app::get_level() const {
+const Level* app::get_level() const {
 	return _lvl ? &(*_lvl) : nullptr;
+}
+
+BaseEditor* app::get_editor() {
+	return get_level();
+}
+
+void app::load_level(LevelAsset& asset) {
+	_lvl.emplace();
+	_lvl->read(asset, game);
+	reset_camera(this);
 }
 
 bool app::has_camera_control() {
 	return render_settings.camera_control;
 }
 
-std::vector<float*> get_imgui_scale_parameters() {
-	ImGuiStyle& s = ImGui::GetStyle();
-	ImGuiIO& i = ImGui::GetIO();
-	return {
-		&s.WindowPadding.x,          &s.WindowPadding.y,
-		&s.WindowRounding,           &s.WindowBorderSize,
-		&s.WindowMinSize.x,          &s.WindowMinSize.y,
-		&s.ChildRounding,            &s.ChildBorderSize,
-		&s.PopupRounding,            &s.PopupBorderSize,
-		&s.FramePadding.x,           &s.FramePadding.y,
-		&s.FrameRounding,            &s.FrameBorderSize,
-		&s.ItemSpacing.x,            &s.ItemSpacing.y,
-		&s.ItemInnerSpacing.x,       &s.ItemInnerSpacing.y,
-		&s.TouchExtraPadding.x,      &s.TouchExtraPadding.y,
-		&s.IndentSpacing,            &s.ColumnsMinSpacing,
-		&s.ScrollbarSize,            &s.ScrollbarRounding,
-		&s.GrabMinSize,              &s.GrabRounding,
-		&s.TabRounding,              &s.TabBorderSize,
-		&s.DisplayWindowPadding.x,   &s.DisplayWindowPadding.y,
-		&s.DisplaySafeAreaPadding.x, &s.DisplaySafeAreaPadding.y,
-		&s.MouseCursorScale,         &i.FontGlobalScale
-	};
-}
-
-void app::init_gui_scale() {
-	auto parameters = get_imgui_scale_parameters();
-	_gui_scale_parameters.resize(parameters.size());
-	std::transform(parameters.begin(), parameters.end(), _gui_scale_parameters.begin(),
-		[](float* param) { return *param; });
-}
-
-void app::update_gui_scale() {
-	auto parameters = get_imgui_scale_parameters();
-	for(std::size_t i = 0; i < parameters.size(); i++) {
-		*parameters[i] = _gui_scale_parameters[i] * config::get().gui_scale;
-	}
-}
-
-config& config::get() {
-	static config instance;
-	return instance;
-}
-
-const char* settings_file_path = "wrench_settings.ini";
-
-void config::read() {
-	// Default settings
-	compression_threads = 8;
-	gui_scale = 1.f;
-	vsync = true;
-	debug.stream_tracing = false;
-
-	if(fs::exists(settings_file_path)) {
-		try {
-			auto settings_file = toml::parse(settings_file_path);
-			
-			auto general_table = toml::find_or(settings_file, "general", toml::value());
-			emulator_path =
-				toml::find_or(general_table, "emulator_path", emulator_path);
-			compression_threads = toml::find_or(general_table, "compression_threads", 8);
-
-			auto gui_table = toml::find_or(settings_file, "gui", toml::value());
-			gui_scale = toml::find_or(gui_table, "scale", 1.f);
-			vsync = toml::find_or(gui_table, "vsync", true);
-			
-			auto debug_table = toml::find_or(settings_file, "debug", toml::value());
-			debug.stream_tracing = toml::find_or(debug_table, "stream_tracing", false);
-		} catch(toml::syntax_error& err) {
-			fprintf(stderr, "Failed to parse settings: %s", err.what());
-		} catch(std::out_of_range& err) {
-			fprintf(stderr, "Failed to load settings: %s", err.what());
-		}
-	} else {
-		request_open_settings_dialog = true;
-	}
-}
-
-void config::write() {
-	toml::value file {
-		{"general", {
-			{"emulator_path", emulator_path},
-			{"compression_threads", compression_threads}
-		}},
-		{"gui", {
-			{"scale", gui_scale},
-			{"vsync", vsync}
-		}},
-		{"debug", {
-			{"stream_tracing", debug.stream_tracing}
-		}}
-	};
-	
-	std::ofstream settings(settings_file_path);
-	settings << toml::format(toml::value(file));
-}
-
-GlTexture load_icon(std::string path) {
-	std::ifstream image_file(path);
+GlTexture load_icon(s32 index) {
+	u8 buffer[32][16];
+	g_editorwad.seek(wadinfo.editor.tool_icons[index].offset.bytes());
+	g_editorwad.read_n((u8*) buffer, sizeof(buffer));
 	
 	uint32_t image_buffer[32][32];
-	for(std::size_t y = 0; y < 32; y++) {
-		std::string line;
-		std::getline(image_file, line);
-		if(line.size() > 32) {
-			line = line.substr(0, 32);
-		}
-		for(std::size_t x = 0; x < line.size(); x++) {
-			image_buffer[y][x] = line[x] == '#' ? 0xffffffff : 0x00000000;
-		}
-		for(std::size_t x = line.size(); x < 32; x++) {
-			image_buffer[y][x] = 0;
+	for(s32 y = 0; y < 32; y++) {
+		for(s32 x = 0; x < 32; x++) {
+			u8 gray;
+			if(x % 2 == 0) {
+				gray = ((buffer[y][x / 2] & 0xf0) >> 4) * 17;
+			} else {
+				gray = ((buffer[y][x / 2] & 0x0f) >> 0) * 17;
+			}
+			u8 alpha = (gray > 0) ? 0xff : 0x00;
+			image_buffer[y][x] = gray | (gray << 8) | (gray << 16) | (alpha << 24);
 		}
 	}
 	
@@ -302,3 +76,6 @@ GlTexture load_icon(std::string path) {
 	
 	return texture;
 }
+
+app* g_app = nullptr;
+FileInputStream g_editorwad = {};
