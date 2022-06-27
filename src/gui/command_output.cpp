@@ -41,7 +41,7 @@ void gui::command_output_screen(const char* id, CommandThread& command, void (*c
 				ImGui::CloseCurrentPopup();
 			}
 		} else {
-			if(run_callback) {
+			if(run_callback && command.succeeded()) {
 				if(ImGui::Button("Run")) {
 					run_callback();
 					command.clear();
