@@ -85,7 +85,6 @@ table_of_contents read_table_of_contents_rac(InputStream& src) {
 	
 	for(s64 ofs = 8; ofs < buffer.size(); ofs += 8) {
 		Sector32 lsn = buffer.read<Sector32>(ofs, "sector");
-		Sector32 size = buffer.read<Sector32>(ofs + 4, "size");
 		if(lsn.sectors != 0) {
 			src.seek(lsn.bytes());
 			std::vector<u8> header_bytes = src.read_multiple<u8>(0x2434);
@@ -398,7 +397,6 @@ table_of_contents read_table_of_contents_rac234(InputStream& src) {
 		LevelInfo level;
 		level.level_table_index = i;
 		level.level_table_entry_offset = level_table_offset + i * sizeof(toc_level_table_entry);
-		bool has_level_part = false;
 		
 		// The games have the fields in different orders, so we check the type
 		// of what each field points to so we can support them all.
@@ -427,8 +425,6 @@ table_of_contents read_table_of_contents_rac234(InputStream& src) {
 				case WadType::LEVEL_SCENE: level.scene = std::move(part); break;
 				default: verify_not_reached("Level table references WAD of unknown type.");
 			}
-			
-			has_level_part |= type == WadType::LEVEL;
 		}
 		
 		toc.levels.push_back(level);
@@ -489,6 +485,7 @@ s64 write_table_of_contents_rac234(OutputStream& iso, const table_of_contents& t
 		case Game::GC:  max_sectors = 0xb;  break;
 		case Game::UYA: max_sectors = 0x10; break;
 		case Game::DL:  max_sectors = 0x1a; break;
+		default: verify_not_reached("Invalid game.");
 	}
 	verify(toc_start_size.sectors <= max_sectors,
 		"Table of contents too big. This could be because there are too many levels, or due to a bug.");

@@ -17,6 +17,7 @@
 */
 
 #include "asset_packer.h"
+#include "core/util/error_util.h"
 
 #include <iso/iso_packer.h>
 
@@ -25,7 +26,7 @@ s32 g_asset_packer_num_assets_processed = 0;
 bool g_asset_packer_dry_run = false;
 bool g_asset_packer_quiet = false;
 
-on_load(Packer, []() {BuildAsset::funcs.pack_rac1 = wrap_iso_packer_func<BuildAsset>(pack_iso, pack_asset_impl);
+on_load(Packer, []() {
 	BuildAsset::funcs.pack_rac1 = wrap_iso_packer_func<BuildAsset>(pack_iso, pack_asset_impl);
 })
 
@@ -59,6 +60,7 @@ void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_
 			case Game::GC: pack_func = asset->funcs.pack_rac2; break;
 			case Game::UYA: pack_func = asset->funcs.pack_rac3; break;
 			case Game::DL: pack_func = asset->funcs.pack_dl; break;
+			default: verify_not_reached("Invalid game."); break;
 		}
 	}
 	
