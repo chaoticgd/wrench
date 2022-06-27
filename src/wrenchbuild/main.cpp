@@ -56,7 +56,7 @@ struct ParsedArgs {
 	std::vector<fs::path> input_paths;
 	std::string asset;
 	fs::path output_path;
-	s64 offset = -1;
+	s64 offset = 0;
 	Game game = Game::UNKNOWN;
 	Region region = Region::UNKNOWN;
 	std::string hint;
@@ -268,7 +268,6 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 	}
 	verify(((flags & ARG_ASSET_OPTIONAL) != 0) || ((flags & ARG_ASSET) == 0) || !args.asset.empty(), "Asset reference (-a) not specified.");
 	verify(((flags & ARG_OUTPUT_PATH) == 0) || !args.output_path.empty(), "Output path (-o) not specified.");
-	verify(((flags & ARG_OFFSET) == 0) || (args.offset != -1), "Offset (-x) not specified.");
 	
 	return args;
 }
@@ -508,7 +507,7 @@ static void print_usage(bool developer_subcommands) {
 		puts("   a hex dump, otherwise test all the binaries in the bank without the hex dump.");
 		puts("   Use the unpack_binaries subcommand can produce the input asset bank.");
 		puts("");
-		puts(" decompress <input file> -o <output file> -x <offset>");
+		puts(" decompress <input file> -o <output file> [-x <offset>]");
 		puts("   Decompress a file stored using the game's custom LZ compression scheme.");
 		puts("");
 		puts(" compress <input file> -o <output file>");
