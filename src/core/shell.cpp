@@ -49,7 +49,7 @@ void CommandThread::start(const std::vector<std::string>& args) {
 			pointers[i] = args[i].c_str();
 		}
 		worker_thread(pointers.size(), pointers.data(), *command);
-		});
+	});
 }
 
 void CommandThread::stop() {
@@ -57,8 +57,7 @@ void CommandThread::stop() {
 		std::lock_guard<std::mutex> lock(mutex);
 		if(shared.state == NOT_RUNNING) {
 			return;
-		}
-		else if(shared.state != STOPPED) {
+		} else if(shared.state != STOPPED) {
 			shared.state = STOPPING;
 		}
 	}
@@ -83,7 +82,7 @@ void CommandThread::clear() {
 	stop();
 	{
 		std::lock_guard<std::mutex> lock(mutex);
-		shared = { NOT_RUNNING };
+		shared = {NOT_RUNNING};
 	}
 }
 
@@ -275,8 +274,7 @@ void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& co
 		if(exit_code == 0) {
 			command.shared.output += "\nProcess exited normally.\n";
 			command.shared.success = true;
-		}
-		else {
+		} else {
 			command.shared.output += stringf("\nProcess exited with error code %d.\n", exit_code);
 			command.shared.success = false;
 		}
@@ -311,12 +309,10 @@ void CommandThread::update_last_output_lines() {
 		if(i + 1 < shared.output.size() && memcmp(shared.output.data() + i, "\033[", 2) == 0) {
 			if(i + 3 < shared.output.size() && shared.output[i + 3] == 'm') {
 				i += 3;
-			}
-			else {
+			} else {
 				i += 4;
 			}
-		}
-		else {
+		} else {
 			buffer += shared.output[i];
 		}
 	}
