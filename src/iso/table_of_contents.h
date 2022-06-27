@@ -48,8 +48,8 @@ struct LevelInfo {
 	Opt<LevelWadInfo> level;
 	Opt<LevelWadInfo> audio;
 	Opt<LevelWadInfo> scene;
-	s32 level_table_index;
-	s64 level_table_entry_offset = 0;
+	s32 level_table_index; // Not used for writing.
+	s64 level_table_entry_offset = 0; // Not used for writing.
 };
 
 struct table_of_contents {

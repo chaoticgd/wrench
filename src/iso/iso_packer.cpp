@@ -255,22 +255,27 @@ static std::vector<LevelInfo> enumerate_levels(const BuildAsset& build, Game gam
 	
 	if(single_level) {
 		LevelInfo info = enumerate_level(*single_level, game);
+		
+		// Construct a list of all the levels that exist so they can be filled in later.
 		build.get_levels().for_each_logical_child_of_type<LevelAsset>([&](const LevelAsset& level) {
 			s32 level_table_index = level.index();
-			info.level_table_index = level_table_index;
-			if(levels.size() <= level_table_index) {
+			if(((s32) levels.size()) <= level_table_index) {
 				levels.resize(level_table_index + 1);
 			}
 			levels[level_table_index] = info;
 		});
+		
+		verify(levels.size() >= 1, "No levels with a valid index.");
 	} else {
 		build.get_levels().for_each_logical_child_of_type<LevelAsset>([&](const LevelAsset& level) {
 			s32 level_table_index = level.index();
-			if(levels.size() <= level_table_index) {
+			if(((s32) levels.size()) <= level_table_index) {
 				levels.resize(level_table_index + 1);
 			}
 			levels[level_table_index] = enumerate_level(level, game);
 		});
+		
+		verify(levels.size() >= 1, "No levels with a valid index.");
 	}
 	
 	return levels;
@@ -457,12 +462,12 @@ static std::array<IsoDirectory, 3> pack_levels(OutputStream& iso, std::vector<Le
 	IsoDirectory scenes_dir {"scenes"};
 	if(single_level) {
 		// Only write out a single level, and point every level at it.
-		LevelInfo& level = levels.at(0);
+		LevelInfo level = enumerate_level(*single_level, config.game());
 		if(level.level) pack_level_wad_outer(iso, levels_dir, *level.level, "level", config, 0, pack);
 		if(level.audio) pack_level_wad_outer(iso, audio_dir, *level.audio, "audio", config, 0, pack);
 		if(level.scene) pack_level_wad_outer(iso, scenes_dir, *level.scene, "scene", config, 0, pack);
 		
-		for(size_t i = 1; i < levels.size(); i++) {
+		for(size_t i = 0; i < levels.size(); i++) {
 			// Preserve empty spaces in the level table.
 			if(levels[i].level.has_value() || levels[i].audio.has_value() || levels[i].scene.has_value()) {
 				levels[i].level = level.level;
