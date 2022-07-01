@@ -227,9 +227,9 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 		}
 		
 		if((flags & ARG_REGION) && strcmp(argv[i], "-r") == 0) {
-			verify(i + 1 < argc, "Expected game argument.");
-			std::string game = argv[++i];
-			args.game = game_from_string(game);
+			verify(i + 1 < argc, "Expected region argument.");
+			std::string region = argv[++i];
+			args.region = region_from_string(region);
 			continue;
 		}
 		
