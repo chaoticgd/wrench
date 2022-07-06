@@ -129,7 +129,8 @@ struct Vertex {
 enum MeshFlags {
 	MESH_HAS_QUADS = 1 << 0,
 	MESH_HAS_NORMALS = 1 << 1,
-	MESH_HAS_TEX_COORDS = 1 << 2
+	MESH_HAS_VERTEX_COLOURS = 1 << 2,
+	MESH_HAS_TEX_COORDS = 1 << 3
 };
 
 struct SubMesh {

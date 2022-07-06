@@ -114,7 +114,7 @@ packed_struct(SkyClusterHeader,
 
 static SkyShell read_sky_shell(Buffer src, s64 offset, s32 texture_count) {
 	SkyShell shell;
-	shell.mesh.flags |= MESH_HAS_TEX_COORDS;
+	shell.mesh.flags = MESH_HAS_VERTEX_COLOURS | MESH_HAS_TEX_COORDS;
 	
 	SkyShellHeader header = src.read<SkyShellHeader>(offset, "shell header");
 	shell.textured = (header.flags & 1) == 0;
@@ -166,7 +166,7 @@ static void read_sky_cluster(Mesh& dest, Buffer src, s64 offset, s32 texture_cou
 			vertices[i].x / (INT16_MAX / 8.f),
 			vertices[i].y / (INT16_MAX / 8.f),
 			vertices[i].z / (INT16_MAX / 8.f));
-		auto st = glm::vec2(sts[i].s / (INT16_MAX / 8.f), sts[i].t / (INT16_MAX / 8.f));
+		auto st = glm::vec2(sts[i].s / (INT16_MAX / 8.f), -sts[i].t / (INT16_MAX / 8.f));
 		ColourAttribute colour = {255, 255, 255};
 		if(vertices[i].alpha == 0x80) {
 			colour.a = 0xff;
@@ -183,7 +183,7 @@ static void read_sky_cluster(Mesh& dest, Buffer src, s64 offset, s32 texture_cou
 	
 	auto faces = src.read_multiple<SkyFace>(header.data + header.tri_offset, header.tri_count, "faces");
 	for(const SkyFace& face : faces) {
-		if(submesh == nullptr || submesh->material != face.texture) {
+		if(submesh == nullptr || submesh->material != face.texture + 1) {
 			verify(face.texture < texture_count, "Sky has bad texture data.");
 			submesh = &dest.submeshes.emplace_back();
 			if(textured) {

@@ -20,6 +20,7 @@
 
 #include <ctype.h>
 
+#include "core/mesh.h"
 #include "rapidxml/rapidxml.hpp"
 using XmlDocument = rapidxml::xml_document<>;
 using XmlNode = rapidxml::xml_node<>;
@@ -34,6 +35,7 @@ using JointSidsMap = std::map<std::tuple<const XmlNode*, std::string>, s32>; // 
 struct VertexData {
 	Opt<std::vector<f32>> positions;
 	Opt<std::vector<f32>> normals;
+	Opt<std::vector<f32>> colours;
 	Opt<std::vector<f32>> tex_coords;
 };
 static VertexData read_vertices(const XmlNode* geometry, const IdMap& ids);
@@ -43,10 +45,12 @@ static void read_submeshes(Mesh& mesh, const XmlNode* instance, const XmlNode* g
 struct CreateVertexInput {
 	const std::vector<f32>* positions = nullptr;
 	const std::vector<f32>* normals = nullptr;
+	const std::vector<f32>* colours = nullptr;
 	const std::vector<f32>* tex_coords = nullptr;
 	const std::vector<SkinAttributes>* skin_data = nullptr;
 	s32 position_offset = -1;
 	s32 normal_offset = -1;
+	s32 colour_offset = -1;
 	s32 tex_coord_offset = -1;
 };
 static Vertex create_vertex(const std::vector<s32>& indices, s32 base, const CreateVertexInput& input);
@@ -231,6 +235,7 @@ static VertexData read_vertices(const XmlNode* geometry, const IdMap& ids) {
 	
 	const XmlNode* vertices = nullptr;
 	const XmlNode* normals_source = nullptr;
+	const XmlNode* colours_source = nullptr;
 	const XmlNode* tex_coords_source = nullptr;
 	xml_for_each_child_of_type(input, indices, "input") {
 		const XmlAttrib* semantic = xml_attrib(input, "semantic");
@@ -239,6 +244,9 @@ static VertexData read_vertices(const XmlNode* geometry, const IdMap& ids) {
 		}
 		if(strcmp(semantic->value(), "NORMAL") == 0) {
 			normals_source = node_from_id(ids, xml_attrib(input, "source")->value());
+		}
+		if(strcmp(semantic->value(), "COLOR") == 0) {
+			colours_source = node_from_id(ids, xml_attrib(input, "source")->value());
 		}
 		if(strcmp(semantic->value(), "TEXCOORD") == 0) {
 			tex_coords_source = node_from_id(ids, xml_attrib(input, "source")->value());
@@ -264,13 +272,19 @@ static VertexData read_vertices(const XmlNode* geometry, const IdMap& ids) {
 		verify(normals->size() % 3 == 0, "Normals array for mesh '%s' has a bad size (not divisible by 3).", mesh_name);
 	}
 	
+	Opt<std::vector<f32>> colours;
+	if(colours_source) {
+		colours = read_vertex_source(colours_source, ids);
+		verify(normals->size() % 4 == 0, "Vertex colours array for mesh '%s' has a bad size (not divisible by 4).", mesh_name);
+	}
+	
 	Opt<std::vector<f32>> tex_coords;
 	if(tex_coords_source) {
 		tex_coords = read_vertex_source(tex_coords_source, ids);
 		verify(tex_coords->size() % 2 == 0, "Texture coordinates array for mesh '%s' has a bad size (not divisible by 2).", mesh_name);
 	}
 	
-	return {positions, normals, tex_coords};
+	return {positions, normals, colours, tex_coords};
 }
 
 static std::vector<f32> read_vertex_source(const XmlNode* source, const IdMap& ids) {
@@ -388,6 +402,7 @@ static void read_submeshes(Mesh& mesh, const XmlNode* instance, const XmlNode* g
 			// Find the offsets of each <input> and the overall stride.
 			s32 position_offset = -1;
 			s32 normal_offset = -1;
+			s32 colour_offset = -1;
 			s32 tex_coord_offset = -1;
 			xml_for_each_child_of_type(input, indices, "input") {
 				if(strcmp(xml_attrib(input, "semantic")->value(), "VERTEX") == 0) {
@@ -395,6 +410,9 @@ static void read_submeshes(Mesh& mesh, const XmlNode* instance, const XmlNode* g
 				}
 				if(strcmp(xml_attrib(input, "semantic")->value(), "NORMAL") == 0) {
 					normal_offset = atoi(xml_attrib(input, "offset")->value());
+				}
+				if(strcmp(xml_attrib(input, "semantic")->value(), "COLOR") == 0) {
+					colour_offset = atoi(xml_attrib(input, "offset")->value());
 				}
 				if(strcmp(xml_attrib(input, "semantic")->value(), "TEXCOORD") == 0) {
 					tex_coord_offset = atoi(xml_attrib(input, "offset")->value());
@@ -413,9 +431,10 @@ static void read_submeshes(Mesh& mesh, const XmlNode* instance, const XmlNode* g
 			CreateVertexInput args {
 				vertex_data.positions.has_value() ? &(*vertex_data.positions) : nullptr,
 				vertex_data.normals.has_value() ? &(*vertex_data.normals) : nullptr,
+				vertex_data.colours.has_value() ? &(*vertex_data.colours) : nullptr,
 				vertex_data.tex_coords.has_value() ? &(*vertex_data.tex_coords) : nullptr,
 				skin_data.size() > 0 ? &skin_data : nullptr,
-				position_offset, normal_offset, tex_coord_offset
+				position_offset, normal_offset, colour_offset, tex_coord_offset
 			};
 			
 			// Because of the permissive nature of the COLLADA format, here we
@@ -496,6 +515,12 @@ static Vertex create_vertex(const std::vector<s32>& indices, s32 base, const Cre
 		vertex.normal.x = input.normals->at(normal_index * 3 + 0);
 		vertex.normal.y = input.normals->at(normal_index * 3 + 1);
 		vertex.normal.z = input.normals->at(normal_index * 3 + 2);
+	}
+	if(input.colour_offset > -1) {
+		s32 colour_index = indices.at(base + input.colour_offset);
+		vertex.normal.x = input.colours->at(colour_index * 3 + 0);
+		vertex.normal.y = input.colours->at(colour_index * 3 + 1);
+		vertex.normal.z = input.colours->at(colour_index * 3 + 2);
 	}
 	if(input.tex_coord_offset > -1) {
 		s32 tex_coord_index = indices.at(base + input.tex_coord_offset);
@@ -710,6 +735,30 @@ static void write_geometries(OutBuffer dest, const std::vector<Mesh>& meshes) {
 			dest.writelf(4, "\t</technique_common>");
 			dest.writelf(4, "</source>");
 		}
+		if(mesh.flags & MESH_HAS_VERTEX_COLOURS) {
+			dest.writelf(4, "<source id=\"mesh_%d_colours\">", i);
+			dest.writesf(4, "\t<float_array id=\"mesh_%d_colours_array\" count=\"%d\">", i, 3 * mesh.vertices.size());
+			for(const Vertex& v : mesh.vertices) {
+				f32 r = v.colour.r / 255.f;
+				f32 g = v.colour.g / 255.f;
+				f32 b = v.colour.b / 255.f;
+				f32 a = v.colour.a / 255.f;
+				dest.writesf("%.9g %.9g %.9g %.9g ", r, g, b, a);
+			}
+			if(mesh.vertices.size() > 0) {
+				dest.vec.resize(dest.vec.size() - 1);
+			}
+			dest.writelf("</float_array>");
+			dest.writelf(4, "\t<technique_common>");
+			dest.writelf(4, "\t\t<accessor count=\"%d\" offset=\"0\" source=\"#mesh_%d_colours_array\" stride=\"3\">", mesh.vertices.size(), i);
+			dest.writelf(4, "\t\t\t<param name=\"R\" type=\"float\"/>");
+			dest.writelf(4, "\t\t\t<param name=\"G\" type=\"float\"/>");
+			dest.writelf(4, "\t\t\t<param name=\"B\" type=\"float\"/>");
+			dest.writelf(4, "\t\t\t<param name=\"A\" type=\"float\"/>");
+			dest.writelf(4, "\t\t</accessor>");
+			dest.writelf(4, "\t</technique_common>");
+			dest.writelf(4, "</source>");
+		}
 		if(mesh.flags & MESH_HAS_TEX_COORDS) {
 			dest.writelf(4, "<source id=\"mesh_%d_texcoords\">", i);
 			dest.writesf(4, "\t<float_array id=\"mesh_%d_texcoords_array\" count=\"%d\">", i, 2 * mesh.vertices.size());
@@ -775,6 +824,9 @@ static void write_geometries(OutBuffer dest, const std::vector<Mesh>& meshes) {
 				dest.writelf(4, "\t<input semantic=\"VERTEX\" source=\"#mesh_%d_vertices\" offset=\"0\"/>", i);
 				if(mesh.flags & MESH_HAS_NORMALS) {
 					dest.writelf(4, "\t<input semantic=\"NORMAL\" source=\"#mesh_%d_normals\" offset=\"0\"/>", i);
+				}
+				if(mesh.flags & MESH_HAS_VERTEX_COLOURS) {
+					dest.writelf(4, "\t<input semantic=\"COLOR\" source=\"#mesh_%d_colours\" offset=\"0\"/>", i);
 				}
 				if(mesh.flags & MESH_HAS_TEX_COORDS) {
 					dest.writelf(4, "\t<input semantic=\"TEXCOORD\" source=\"#mesh_%d_texcoords\" offset=\"0\" set=\"0\"/>", i);
