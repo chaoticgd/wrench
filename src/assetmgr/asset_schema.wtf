@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-format_version: 8
+format_version: 9
 
 // *****************************************************************************
 
@@ -1281,7 +1281,7 @@ AssetType LevelCore {
 	}
 	Child sky {
 		desc: "The sky."
-		allowed_types: ["Binary"]
+		allowed_types: ["Sky" "Binary"]
 		required: true
 		games: [1 2 3 4]
 	}
@@ -1535,6 +1535,47 @@ AssetType CollisionMaterial {
 	
 	IntegerAttribute id {
 		desc: "The collision ID to use for this material. This controls the type of the surface."
+		required: true
+		games: [1 2 3 4]
+	}
+}
+
+AssetType Sky {
+	Child shells {
+		desc: "A list of the shells."
+		allowed_types: ["Collection"]
+		required: true
+		games: [1 2 3 4]
+		Child child {
+			allowed_types: ["SkyShell"]
+		}
+	}
+	
+	Child materials {
+		desc: "The materials used by the sky."
+		allowed_types: ["Collection"]
+		required: true
+		games: [1 2 3 4]
+		Child child {
+			allowed_types: ["Material" "Texture"]
+		}
+	}
+}
+
+AssetType SkyShell {
+	bin_leaf: true
+	
+	Vector3Attribute rotation {
+		desc: "The starting rotation."
+	}
+	
+	Vector3Attribute rotation_delta {
+		desc: "The change in rotation each frame."
+	}
+	
+	Child mesh {
+		desc: "The mesh."
+		allowed_types: ["Mesh"]
 		required: true
 		games: [1 2 3 4]
 	}

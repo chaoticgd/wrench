@@ -43,7 +43,7 @@ static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfi
 	unpack_asset_impl(dest.core<BinaryAsset>(), src, nullptr, config);
 	
 	s32 texture_count = 0;
-	if(dest.has_materials()) {
+	if(!g_asset_unpacker.dump_binaries && dest.has_materials()) {
 		CollectionAsset& materials = dest.get_materials();
 		for(s32 i = 0; i < 16; i++) {
 			if(materials.has_child(i)) {
@@ -71,7 +71,7 @@ static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfi
 	}
 	ColladaScene scene = recover_moby_class(data, -1, texture_count);
 	
-	if(dest.has_materials()) {
+	if(!g_asset_unpacker.dump_binaries && dest.has_materials()) {
 		CollectionAsset& materials = dest.get_materials();
 		for(s32 i = 0; i < 16; i++) {
 			if(materials.has_child(i)) {
