@@ -193,6 +193,18 @@ static void unpack_materials(ColladaScene& scene, CollectionAsset& materials, co
 static AssetTestResult test_sky_asset(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode) {
 	SkyHeader header = Buffer(original).read<SkyHeader>(0, "header");
 	bool headers_equal = diff_buffers(original, repacked, 0, header.texture_data, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
-	bool data_equal = diff_buffers(original, repacked, header.texture_data, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
+	
+	// Don't test the bounding spheres.
+	std::vector<ByteRange64> ignore;
+	verify(header.shell_count <= 8, "Bad shell count.");
+	for(s32 i = 0; i < header.shell_count; i++) {
+		SkyShellHeader shell = Buffer(original).read<SkyShellHeader>(header.shells[i], "shell header");
+		for(s32 j = 0; j < shell.cluster_count; j++) {
+			s64 cluster_header_ofs = header.shells[i] + sizeof(SkyShellHeader) + j * sizeof(SkyClusterHeader);
+			ignore.emplace_back(cluster_header_ofs, sizeof(SkyClusterHeader::bounding_sphere));
+		}
+	}
+	
+	bool data_equal = diff_buffers(original, repacked, header.texture_data, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL, &ignore);
 	return (headers_equal && data_equal) ? AssetTestResult::PASS : AssetTestResult::FAIL;
 }

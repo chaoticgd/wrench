@@ -79,7 +79,7 @@ struct Buffer {
 
 #define DIFF_REST_OF_BUFFER -1
 
-bool diff_buffers(Buffer lhs, Buffer rhs, s64 offset, s64 size, bool print_diff);
+bool diff_buffers(Buffer lhs, Buffer rhs, s64 offset, s64 size, bool print_diff, const std::vector<ByteRange64>* ignore_list = nullptr);
 
 struct OutBuffer {
 	std::vector<u8>& vec;

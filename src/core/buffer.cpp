@@ -80,7 +80,7 @@ void Buffer::hexdump(FILE* file, s64 column, const char* ansi_colour_code) const
 	fprintf(file, "\033[0m");
 }
 
-bool diff_buffers(Buffer lhs, Buffer rhs, s64 offset, s64 size, bool print_diff) {
+bool diff_buffers(Buffer lhs, Buffer rhs, s64 offset, s64 size, bool print_diff, const std::vector<ByteRange64>* ignore_list) {
 	if(size == DIFF_REST_OF_BUFFER) {
 		lhs = lhs.subbuf(offset);
 		rhs = rhs.subbuf(offset);
@@ -91,11 +91,30 @@ bool diff_buffers(Buffer lhs, Buffer rhs, s64 offset, s64 size, bool print_diff)
 	
 	s64 min_size = std::min(lhs.size(), rhs.size());
 	s64 max_size = std::max(lhs.size(), rhs.size());
+	
+	// Determine which bytes should be ignored.
+	std::vector<bool> ignore;
+	if(ignore_list) {
+		for(ByteRange64 range : *ignore_list) {
+			range.offset -= offset;
+			if(ignore.size() < range.offset + range.size) {
+				ignore.resize(range.offset + range.size, false);
+			}
+			for(s64 i = 0; i < range.size; i++) {
+				ignore[range.offset + i] = true;
+			}
+		}
+	}
+	
+	// Figure out if the buffers are equal. If they are not, find the first byte
+	// that doesn't match.
 	s64 diff_pos = -1;
 	for(s64 i = 0; i < min_size; i++) {
 		if(lhs[i] != rhs[i]) {
-			diff_pos = i;
-			break;
+			if(ignore.size() <= i || !ignore[i]) {
+				diff_pos = i;
+				break;
+			}
 		}
 	}
 	if(diff_pos == -1) {
@@ -122,6 +141,8 @@ bool diff_buffers(Buffer lhs, Buffer rhs, s64 offset, s64 size, bool print_diff)
 				if(lhs.in_bounds(pos) && rhs.in_bounds(pos)) {
 					if(lhs[pos] == rhs[pos]) {
 						colour = "32";
+					} else if(ignore.size() > pos && ignore[pos]) {
+						colour = "36";
 					} else {
 						colour = "31";
 					}
