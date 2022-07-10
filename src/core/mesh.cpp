@@ -116,19 +116,18 @@ Mesh deduplicate_vertices(Mesh src) {
 	process_run(last_unique_i, (s32) src.vertices.size());
 	
 	// Copy over the unique vertices, preserving their original ordering.
-	// Rewrite the index_mapping list so it points to the destination vertices
-	// instead of the source vertices.
+	std::vector<s32> src_to_dest(src.vertices.size(), -1);
 	for(size_t i = 0; i < src.vertices.size(); i++) {
 		if(!discard[i]) {
+			src_to_dest[i] = dest.vertices.size();
 			dest.vertices.emplace_back(src.vertices[i]);
-			
-			// Could do better here. Maybe follow the vertex_mapping list.
-			for(s32& index : index_mapping) {
-				if(index == i) {
-					index = dest.vertices.size() - 1;
-				}
-			}
 		}
+	}
+	
+	// Rewrite the index_mapping list so it points to the destination vertices
+	// instead of the source vertices.
+	for(s32& index : index_mapping) {
+		index = src_to_dest[index];
 	}
 	
 	// Map the indices.
