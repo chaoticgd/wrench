@@ -92,6 +92,10 @@ void write_sky(OutBuffer dest, const Sky& sky, Game game, f32 framerate) {
 		dest.write(header.texture_defs + i * sizeof(RacGcUyaSkyTexture), def);
 	}
 	
+	dest.pad(0x40);
+	header.sprites = dest.tell();
+	dest.alloc_multiple<u8>(0x1000); // Not sure what this is.
+	
 	for(size_t i = 0; i < sky.shells.size(); i++) {
 		dest.pad(0x40);
 		header.shells[i] = dest.tell();
