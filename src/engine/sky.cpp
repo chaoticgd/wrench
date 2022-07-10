@@ -131,7 +131,8 @@ static void write_sky_shell(OutBuffer dest, const SkyShell& shell, f32 framerate
 	SkyShellHeader header = {};
 	s64 header_ofs = dest.alloc<SkyShellHeader>();
 	
-	header.flags |= shell.textured;
+	header.cluster_count = (s16) shell.clusters.size();
+	header.flags |= !shell.textured;
 	header.flags |= shell.bloom << 1;
 	header.rotation.x = rotation_from_radians_per_frame(shell.rotation.x, framerate);
 	header.rotation.y = rotation_from_radians_per_frame(shell.rotation.y, framerate);
@@ -170,9 +171,9 @@ static Mesh read_sky_cluster(Buffer src, s64 offset, s32 texture_count, bool tex
 	auto sts = src.read_multiple<SkyTexCoord>(header.data + header.st_offset, header.vertex_count, "texture coordinates");
 	for(s32 i = 0; i < header.vertex_count; i++) {
 		auto position = glm::vec3(
-			vertices[i].x * (8.f / INT16_MAX),
-			vertices[i].y * (8.f / INT16_MAX),
-			vertices[i].z * (8.f / INT16_MAX));
+			vertices[i].x * (32.f / INT16_MAX),
+			vertices[i].y * (32.f / INT16_MAX),
+			vertices[i].z * (32.f / INT16_MAX));
 		auto st = glm::vec2(sts[i].s * (8.f / INT16_MAX), -sts[i].t * (8.f / INT16_MAX));
 		ColourAttribute colour = {255, 255, 255};
 		if(vertices[i].alpha == 0x80) {
@@ -216,9 +217,9 @@ static void write_sky_cluster(OutBuffer dest, SkyClusterHeader& header, const Me
 	header.vertex_offset = dest.tell() - header.data;
 	for(const Vertex& src : cluster.vertices) {
 		SkyVertex vertex;
-		vertex.x = src.pos.x * (INT16_MAX / 8.f);
-		vertex.y = src.pos.y * (INT16_MAX / 8.f);
-		vertex.z = src.pos.z * (INT16_MAX / 8.f);
+		vertex.x = src.pos.x * (INT16_MAX / 32.f);
+		vertex.y = src.pos.y * (INT16_MAX / 32.f);
+		vertex.z = src.pos.z * (INT16_MAX / 32.f);
 		if(src.colour.a == 0xff) {
 			vertex.alpha = 0x80;
 		} else {
@@ -232,7 +233,7 @@ static void write_sky_cluster(OutBuffer dest, SkyClusterHeader& header, const Me
 	for(const Vertex& src : cluster.vertices) {
 		SkyTexCoord st;
 		st.s = src.tex_coord.x * (INT16_MAX / 8.f);
-		st.t = src.tex_coord.y * (INT16_MAX / 8.f);
+		st.t = -src.tex_coord.y * (INT16_MAX / 8.f);
 		dest.write(st);
 	}
 	
@@ -265,5 +266,6 @@ static void write_sky_cluster(OutBuffer dest, SkyClusterHeader& header, const Me
 		}
 	}
 	
+	dest.pad(0x10);
 	header.data_size = dest.tell() - header.data;
 }

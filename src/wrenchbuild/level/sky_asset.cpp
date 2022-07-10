@@ -137,9 +137,15 @@ static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig 
 		shell_asset.get_mesh().for_each_logical_child_of_type<MeshAsset>([&](const MeshAsset& asset) {
 			std::string name = asset.name();
 			ColladaScene& scene = *scenes[i];
-			Mesh* mesh = scene.find_mesh(name);
-			verify(mesh, "Cannot find mesh '%s'.", name.c_str());
-			for(SubMesh& submesh : mesh->submeshes) {
+			Mesh* mesh_ptr = scene.find_mesh(name);
+			verify(mesh_ptr, "Cannot find mesh '%s'.", name.c_str());
+			Mesh mesh = sort_vertices(*mesh_ptr, [](const Vertex& lhs, const Vertex& rhs) {
+				if(lhs.colour.a != rhs.colour.a) return lhs.colour.a < rhs.colour.a;
+				if(lhs.pos.z != lhs.pos.z) return lhs.pos.z < lhs.pos.z;
+				if(lhs.pos.y != lhs.pos.y) return lhs.pos.y < lhs.pos.y;
+				return lhs.pos.x < lhs.pos.x;
+			});
+			for(SubMesh& submesh : mesh.submeshes) {
 				if(submesh.material > -1) {
 					std::string& material_name = scene.materials.at(submesh.material).name;
 					auto texture_load = texture_loads.find(material_name);
@@ -150,7 +156,7 @@ static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig 
 					}
 				}
 			}
-			sky.shells.at(shell).clusters.emplace_back(*mesh);
+			sky.shells.at(shell).clusters.emplace_back(std::move(mesh));
 		});
 		shell++;
 	});

@@ -19,15 +19,21 @@
 #include "mesh.h"
 #include "timer.h"
 
-Mesh sort_vertices(Mesh src) {
+Mesh sort_vertices(Mesh src, bool (*compare)(const Vertex& lhs, const Vertex& rhs)) {
 	std::vector<s32> vertex_mapping(src.vertices.size());
 	for(size_t i = 0; i < src.vertices.size(); i++) {
 		vertex_mapping[i] = i;
 	}
 	
-	std::sort(BEGIN_END(vertex_mapping), [&](s32 lhs, s32 rhs) {
-		return src.vertices[lhs] < src.vertices[rhs];
-	});
+	if(compare) {
+		std::sort(BEGIN_END(vertex_mapping), [&](s32 lhs, s32 rhs) {
+			return compare(src.vertices[lhs], src.vertices[rhs]);
+		});
+	} else {
+		std::sort(BEGIN_END(vertex_mapping), [&](s32 lhs, s32 rhs) {
+			return src.vertices[lhs] < src.vertices[rhs];
+		});
+	}
 	
 	std::vector<s32> inverse_mapping(src.vertices.size());
 	for(size_t i = 0; i < src.vertices.size(); i++) {

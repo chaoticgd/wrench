@@ -144,7 +144,7 @@ struct Mesh {
 	std::vector<SubMesh> submeshes;
 };
 
-Mesh sort_vertices(Mesh mesh);
+Mesh sort_vertices(Mesh mesh, bool (*compare)(const Vertex& lhs, const Vertex& rhs) = nullptr);
 
 Mesh deduplicate_vertices(Mesh old_mesh);
 Mesh deduplicate_faces(Mesh old_mesh); // Removes identical faces and tris that shadow quads.
