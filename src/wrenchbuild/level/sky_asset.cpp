@@ -139,12 +139,7 @@ static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig 
 			ColladaScene& scene = *scenes[i];
 			Mesh* mesh_ptr = scene.find_mesh(name);
 			verify(mesh_ptr, "Cannot find mesh '%s'.", name.c_str());
-			Mesh mesh = sort_vertices(*mesh_ptr, [](const Vertex& lhs, const Vertex& rhs) {
-				if(lhs.colour.a != rhs.colour.a) return lhs.colour.a < rhs.colour.a;
-				if(lhs.pos.z != lhs.pos.z) return lhs.pos.z < lhs.pos.z;
-				if(lhs.pos.y != lhs.pos.y) return lhs.pos.y < lhs.pos.y;
-				return lhs.pos.x < lhs.pos.x;
-			});
+			Mesh mesh = *mesh_ptr;
 			for(SubMesh& submesh : mesh.submeshes) {
 				if(submesh.material > -1) {
 					std::string& material_name = scene.materials.at(submesh.material).name;
