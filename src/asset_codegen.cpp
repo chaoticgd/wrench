@@ -363,8 +363,8 @@ static void generate_read_attribute_code(const WtfNode* node, const char* result
 	if(strcmp(node->type_name, VECTOR3_ATTRIB) == 0) {
 		generate_attribute_type_check_code(attrib, "WTF_ARRAY", node->tag, ind);
 		indent(ind); out("WtfAttribute* x_elem = %s->first_array_element;\n", attrib);
-		indent(ind); out("WtfAttribute* y_elem = x_elem ? y_elem->next : nullptr;\n");
-		indent(ind); out("WtfAttribute* z_elem = y_elem ? z_elem->next : nullptr;\n");
+		indent(ind); out("WtfAttribute* y_elem = x_elem ? x_elem->next : nullptr;\n");
+		indent(ind); out("WtfAttribute* z_elem = y_elem ? y_elem->next : nullptr;\n");
 		indent(ind); out("verify(z_elem, \"A Vector3 attribute does not have 3 elements.\");\n");
 		indent(ind); out("%s = glm::vec3(x_elem->number.f, y_elem->number.f, z_elem->number.f);\n", result);
 	}
@@ -433,11 +433,8 @@ static void generate_asset_write_code(const WtfNode* node, const char* expr, int
 	}
 	
 	if(strcmp(node->type_name, VECTOR3_ATTRIB) == 0) {
-		indent(ind); out("wtf_begin_array(ctx);\n");
-		indent(ind); out("wtf_write_float(ctx, %s.x);\n", expr);
-		indent(ind); out("wtf_write_float(ctx, %s.y);\n", expr);
-		indent(ind); out("wtf_write_float(ctx, %s.z);\n", expr);
-		indent(ind); out("wtf_end_array(ctx);\n");
+		indent(ind); out("float floats[3] = {%s.x, %s.y, %s.z};\n", expr, expr, expr);
+		indent(ind); out("wtf_write_floats(ctx, ARRAY_PAIR(floats));\n");
 	}
 	
 	if(strcmp(node->type_name, ASSET_LINK_ATTRIB) == 0) {

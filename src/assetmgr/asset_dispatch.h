@@ -161,7 +161,16 @@ AssetPackerFunc* wrap_iso_packer_func(PackerFunc func, AssetPackerFunc pack) {
 
 // *****************************************************************************
 
-using AssetTestFunc = std::function<bool(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint)>;
+enum class AssetTestMode {
+	RUN_ALL_TESTS,
+	PRINT_DIFF_ON_FAIL
+};
+
+enum class AssetTestResult {
+	PASS, FAIL, NOT_RUN
+};
+
+using AssetTestFunc = std::function<AssetTestResult(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode)>;
 
 // *****************************************************************************
 

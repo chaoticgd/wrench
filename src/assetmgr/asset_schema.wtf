@@ -259,14 +259,14 @@ AssetType File {
 AssetType Mesh {
 	bin_leaf: true
 	
-	FileReferenceAttribute src {
-		desc: "The file path of the model file to use."
+	StringAttribute name {
+		desc: "The name of the node to use. This is the same as the Blender node name."
 		required: true
 		games: [1 2 3 4]
 	}
 	
-	StringAttribute name {
-		desc: "The name of the node to use. This is the same as the Blender node name."
+	FileReferenceAttribute src {
+		desc: "The file path of the model file to use."
 		required: true
 		games: [1 2 3 4]
 	}
@@ -1541,6 +1541,8 @@ AssetType CollisionMaterial {
 }
 
 AssetType Sky {
+	bin_leaf: true
+	
 	Child shells {
 		desc: "A list of the shells."
 		allowed_types: ["Collection"]
@@ -1565,18 +1567,33 @@ AssetType Sky {
 AssetType SkyShell {
 	bin_leaf: true
 	
-	Vector3Attribute rotation {
-		desc: "The starting rotation."
+	BooleanAttribute textured {
+		desc: "If the mesh is textured or not."
+		required: true
+		games: [1 2 3 4]
 	}
 	
-	Vector3Attribute rotation_delta {
+	BooleanAttribute bloom {
+		desc: "Only applies if for textured shells."
+		required: false
+		games: [1 2 3 4]
+	}
+	
+	Vector3Attribute starting_rotation {
+		desc: "The starting rotation in radians per second."
+	}
+	
+	Vector3Attribute angular_velocity {
 		desc: "The change in rotation each frame."
 	}
 	
 	Child mesh {
-		desc: "The mesh."
-		allowed_types: ["Mesh"]
+		desc: "The mesh. If a Collection asset is used, each child of that asset specifies a different cluster. In the future, it may be possible to specify a single mesh and have it be automatically split up into clusters."
+		allowed_types: ["Collection"]
 		required: true
 		games: [1 2 3 4]
+		Child child {
+			allowed_types: ["Mesh"]
+		}
 	}
 }

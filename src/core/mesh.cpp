@@ -142,3 +142,57 @@ bool vec2_equal_eps(const glm::vec2& lhs, const glm::vec2& rhs, f32 eps) {
 bool vec3_equal_eps(const glm::vec3& lhs, const glm::vec3& rhs, f32 eps) {
 	return fabs(lhs.x - rhs.x) < eps && fabs(lhs.y - rhs.y) < eps && fabs(lhs.z - rhs.z) < eps;
 }
+
+Mesh merge_meshes(const std::vector<Mesh>& meshes, std::string name, u32 flags) {
+	Mesh merged;
+	merged.name = std::move(name);
+	merged.flags = flags;
+	
+	SubMesh* dest = nullptr;
+	
+	for(const Mesh& mesh : meshes) {
+		s32 base = (s32) merged.vertices.size();
+		merged.vertices.insert(merged.vertices.end(), BEGIN_END(mesh.vertices));
+		for(const SubMesh& src : mesh.submeshes) {
+			if(dest == nullptr || src.material != dest->material) {
+				dest = &merged.submeshes.emplace_back();
+				dest->material = src.material;
+			}
+			for(const Face& face : src.faces) {
+				dest->faces.emplace_back(base + face.v0, base + face.v1, base + face.v2, base + face.v3);
+			}
+		}
+	}
+	
+	return merged;
+}
+
+glm::vec4 approximate_bounding_sphere(const std::vector<Vertex>& vertices) {
+	if(vertices.size() == 0) {
+		return glm::vec4(0, 0, 0, 0);
+	}
+	
+	glm::vec3 min = vertices[0].pos;
+	for(const Vertex& vertex : vertices) {
+		min.x = std::min(vertex.pos.x, min.x);
+		min.y = std::min(vertex.pos.y, min.y);
+		min.z = std::min(vertex.pos.z, min.z);
+	}
+	
+	glm::vec3 max = vertices[0].pos;
+	for(const Vertex& vertex : vertices) {
+		max.x = std::max(vertex.pos.x, max.x);
+		max.y = std::max(vertex.pos.y, max.y);
+		max.z = std::max(vertex.pos.z, max.z);
+	}
+	
+	glm::vec3 centre = (min + max) / 2.f;
+	
+	f32 radius = 0.f;
+	for(const Vertex& vertex : vertices) {
+		glm::vec3 delta = vertex.pos - centre;
+		radius = std::max(sqrtf(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z), radius);
+	}
+	
+	return glm::vec4(centre, radius);
+}

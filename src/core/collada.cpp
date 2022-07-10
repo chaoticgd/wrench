@@ -195,7 +195,7 @@ static Material read_material(const XmlNode* material_node, const IdMap& ids, co
 		auto image_id = std::string("#") + xml_child(surface, "init_from")->value();
 		const XmlNode* image = node_from_id(ids, image_id.c_str());
 		auto texture_index = images.find(image);
-		verify(texture_index != images.end(), "An <image> node that was referenced cannot be found.");
+		verify(texture_index != images.end(), "An <image> node that was referenced with id '%s' cannot be found.", image_id.c_str());
 		Material material;
 		material.name = xml_attrib(material_node, "name")->value();
 		material.texture = texture_index->second;
@@ -518,9 +518,10 @@ static Vertex create_vertex(const std::vector<s32>& indices, s32 base, const Cre
 	}
 	if(input.colour_offset > -1) {
 		s32 colour_index = indices.at(base + input.colour_offset);
-		vertex.normal.x = input.colours->at(colour_index * 3 + 0);
-		vertex.normal.y = input.colours->at(colour_index * 3 + 1);
-		vertex.normal.z = input.colours->at(colour_index * 3 + 2);
+		vertex.colour.r = (u8) (input.colours->at(colour_index * 4 + 0) * 255.f);
+		vertex.colour.g = (u8) (input.colours->at(colour_index * 4 + 1) * 255.f);
+		vertex.colour.b = (u8) (input.colours->at(colour_index * 4 + 2) * 255.f);
+		vertex.colour.a = (u8) (input.colours->at(colour_index * 4 + 3) * 255.f);
 	}
 	if(input.tex_coord_offset > -1) {
 		s32 tex_coord_index = indices.at(base + input.tex_coord_offset);
@@ -737,7 +738,7 @@ static void write_geometries(OutBuffer dest, const std::vector<Mesh>& meshes) {
 		}
 		if(mesh.flags & MESH_HAS_VERTEX_COLOURS) {
 			dest.writelf(4, "<source id=\"mesh_%d_colours\">", i);
-			dest.writesf(4, "\t<float_array id=\"mesh_%d_colours_array\" count=\"%d\">", i, 3 * mesh.vertices.size());
+			dest.writesf(4, "\t<float_array id=\"mesh_%d_colours_array\" count=\"%d\">", i, 4 * mesh.vertices.size());
 			for(const Vertex& v : mesh.vertices) {
 				f32 r = v.colour.r / 255.f;
 				f32 g = v.colour.g / 255.f;
@@ -750,7 +751,7 @@ static void write_geometries(OutBuffer dest, const std::vector<Mesh>& meshes) {
 			}
 			dest.writelf("</float_array>");
 			dest.writelf(4, "\t<technique_common>");
-			dest.writelf(4, "\t\t<accessor count=\"%d\" offset=\"0\" source=\"#mesh_%d_colours_array\" stride=\"3\">", mesh.vertices.size(), i);
+			dest.writelf(4, "\t\t<accessor count=\"%d\" offset=\"0\" source=\"#mesh_%d_colours_array\" stride=\"4\">", mesh.vertices.size(), i);
 			dest.writelf(4, "\t\t\t<param name=\"R\" type=\"float\"/>");
 			dest.writelf(4, "\t\t\t<param name=\"G\" type=\"float\"/>");
 			dest.writelf(4, "\t\t\t<param name=\"B\" type=\"float\"/>");
