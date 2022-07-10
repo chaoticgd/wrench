@@ -28,7 +28,7 @@
 
 static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig config);
 static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig config);
-static void unpack_materials(ColladaScene& scene, CollectionAsset& materials, const std::vector<Texture>& textures);
+static void unpack_materials(ColladaScene& scene, CollectionAsset& materials, const Sky& sky);
 static AssetTestResult test_sky_asset(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode);
 
 on_load(Sky, []() {
@@ -49,11 +49,14 @@ static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig confi
 	std::vector<u8> buffer = src.read_multiple<u8>(src.size());
 	Sky sky = read_sky(buffer, config.game(), config.framerate());
 	
+	dest.set_maximum_sprite_count(sky.maximum_sprite_count);
+	
 	CollectionAsset& shells = dest.shells();
 	
 	ColladaScene scene;
-	unpack_materials(scene, dest.materials(), sky.textures);
+	unpack_materials(scene, dest.materials(), sky);
 	
+	// Copy all the meshes into the scene.
 	for(size_t i = 0; i < sky.shells.size(); i++) {
 #ifdef SEPERATE_CLUSTERS
 		SkyShell& shell = sky.shells[i];
@@ -68,10 +71,19 @@ static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig confi
 #endif
 	}
 	
+	// Convert from texture indices to material indices.
+	for(Mesh& mesh : scene.meshes) {
+		for(SubMesh& submesh : mesh.submeshes) {
+			submesh.material += 1 - (s32) sky.fx.size();
+		}
+	}
+	
+	// Write out the COLLADA file.
 	std::vector<u8> collada = write_collada(scene);
 	auto [stream, ref] = dest.file().open_binary_file_for_writing("mesh.dae");
 	stream->write_v(collada);
 	
+	// Create the assets for the shells and clusters.
 	for(size_t i = 0; i < sky.shells.size(); i++) {
 		SkyShell& src = sky.shells[i];
 		SkyShellAsset& dest = shells.child<SkyShellAsset>(i);
@@ -88,6 +100,16 @@ static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig confi
 			mesh.set_src(ref);
 		}
 	}
+	
+	// Write out the FX textures.
+	CollectionAsset& fx = dest.fx();
+	for(s32 i = 0; i < (s32) sky.fx.size(); i++) {
+		auto [stream, ref] = fx.file().open_binary_file_for_writing(stringf("%hhd.png", sky.fx[i]));
+		write_png(*stream, sky.textures[i]);
+		
+		TextureAsset& texture = fx.child<TextureAsset>(i);
+		texture.set_src(ref);
+	}
 }
 
 struct TextureLoad {
@@ -98,20 +120,30 @@ struct TextureLoad {
 static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig config) {
 	Sky sky;
 	
+	sky.maximum_sprite_count = src.maximum_sprite_count();
+	
 	std::map<std::string, TextureLoad> texture_loads;
+	
+	src.get_fx().for_each_logical_child_of_type<TextureAsset>([&](const TextureAsset& texture) {
+		auto stream = texture.file().open_binary_file_for_reading(texture.src());
+		Opt<Texture> tex = read_png(*stream);
+		verify(tex.has_value(), "Failed to read sky FX texture.");
+		sky.fx.emplace_back((u8) sky.textures.size());
+		sky.textures.emplace_back(std::move(*tex));
+	});
+	
 	src.get_materials().for_each_logical_child_of_type<MaterialAsset>([&](const MaterialAsset& material) {
 		if(material.has_texture()) {
 			texture_loads[material.name()] = {material.get_texture().src()};
 		}
 	});
 	
-	s32 tex = 0;
 	for(auto& [name, texture_load] : texture_loads) {
 		auto stream = texture_load.ref.owner->open_binary_file_for_reading(texture_load.ref);
 		Opt<Texture> texture = read_png(*stream);
-		verify(texture.has_value(), "Failed to read sky texture.");
+		verify(texture.has_value(), "Failed to read sky shell texture.");
+		texture_load.index = sky.textures.size();
 		sky.textures.emplace_back(*texture);
-		texture_load.index = tex++;
 	}
 	
 	std::vector<FileReference> refs;
@@ -161,21 +193,21 @@ static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig 
 	dest.write_v(buffer);
 }
 
-static void unpack_materials(ColladaScene& scene, CollectionAsset& materials, const std::vector<Texture>& textures) {
-	Material& dummy = scene.materials.emplace_back();
-	dummy.name = "dummy";
-	dummy.colour = glm::vec4(1.f, 0.f, 1.f, 1.f);
+static void unpack_materials(ColladaScene& scene, CollectionAsset& materials, const Sky& sky) {
+	Material& gouraud = scene.materials.emplace_back();
+	gouraud.name = "gouraud";
+	gouraud.colour = glm::vec4(1.f, 0.f, 1.f, 1.f);
 	
-	MaterialAsset& dummy_asset = materials.child<MaterialAsset>(0);
-	dummy_asset.set_name("dummy");
+	MaterialAsset& gouraud_asset = materials.child<MaterialAsset>(0);
+	gouraud_asset.set_name("gouraud");
 	
-	for(s32 i = 0; i < (s32) textures.size(); i++) {
+	for(s32 i = (s32) sky.fx.size(); i < (s32) sky.textures.size(); i++) {
 		auto [stream, ref] = materials.file().open_binary_file_for_writing(stringf("%d.png", i));
-		write_png(*stream, textures[i]);
+		write_png(*stream, sky.textures[i]);
 		
 		Material& mat = scene.materials.emplace_back();
-		mat.name = stringf("material_%d", i);
-		mat.texture = i;
+		mat.name = stringf("material_%d", i - sky.fx.size());
+		mat.texture = i - sky.fx.size();
 		
 		scene.texture_paths.emplace_back(ref.path.string());
 		

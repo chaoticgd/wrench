@@ -33,6 +33,9 @@ Sky read_sky(Buffer src, Game game, f32 framerate) {
 	SkyHeader header = src.read<SkyHeader>(0, "header");
 	verify(header.shell_count <= 8, "Too many sky shells!");
 	
+	sky.fx = src.read_multiple<u8>(header.fx_list, header.fx_count, "FX indices").copy();
+	sky.maximum_sprite_count = header.maximum_sprite_count;
+	
 	if(game == Game::DL) {
 		for(const DlSkyTexture& def : src.read_multiple<DlSkyTexture>(header.texture_defs, header.texture_count, "texture defs")) {
 			std::vector<u8> data = src.read_bytes(header.texture_data + def.texture_offset, def.width * def.height, "texture data");
@@ -67,9 +70,15 @@ void write_sky(OutBuffer dest, const Sky& sky, Game game, f32 framerate) {
 	s64 header_ofs = dest.alloc<SkyHeader>();
 	SkyHeader header = {};
 	
-	header.shell_count = (s32) sky.shells.size();
-	header.texture_count = (s32) sky.textures.size();
+	header.shell_count = (s16) sky.shells.size();
+	header.texture_count = (s16) sky.textures.size();
+	header.fx_count = (s16) sky.fx.size();
 	
+	dest.pad(0x10);
+	header.fx_list = dest.write_multiple(sky.fx);
+	header.maximum_sprite_count = (s16) sky.maximum_sprite_count;
+	
+	dest.pad(0x10);
 	header.texture_defs = dest.alloc_multiple<RacGcUyaSkyTexture>(sky.textures.size());
 	dest.pad(0x40);
 	header.texture_data = dest.tell();
@@ -94,7 +103,7 @@ void write_sky(OutBuffer dest, const Sky& sky, Game game, f32 framerate) {
 	
 	dest.pad(0x40);
 	header.sprites = dest.tell();
-	dest.alloc_multiple<u8>(0x1000); // Not sure what this is.
+	dest.alloc_multiple<u8>(header.maximum_sprite_count * 0x20);
 	
 	for(size_t i = 0; i < sky.shells.size(); i++) {
 		dest.pad(0x40);
@@ -191,12 +200,12 @@ static Mesh read_sky_cluster(Buffer src, s64 offset, s32 texture_count, bool tex
 	
 	auto faces = src.read_multiple<SkyFace>(header.data + header.tri_offset, header.tri_count, "faces");
 	for(const SkyFace& face : faces) {
-		if(submesh == nullptr || submesh->material != face.texture + 1) {
+		if(submesh == nullptr || submesh->material != face.texture) {
 			verify(face.texture < texture_count, "Sky has bad texture data.");
 			submesh = &cluster.submeshes.emplace_back();
 			if(textured) {
 				verify(face.texture < texture_count, "Sky has bad texture data.");
-				submesh->material = face.texture + 1;
+				submesh->material = face.texture;
 			} else {
 				submesh->material = 0;
 			}

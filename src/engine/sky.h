@@ -33,14 +33,11 @@ struct SkyShell {
 	glm::vec3 angular_velocity;
 };
 
-struct SkySprite {
-	
-};
-
 struct Sky {
 	std::vector<SkyShell> shells;
-	std::vector<SkySprite> sprites;
 	std::vector<Texture> textures;
+	s32 maximum_sprite_count;
+	std::vector<u8> fx;
 };
 
 packed_struct(SkyHeader,
@@ -48,7 +45,7 @@ packed_struct(SkyHeader,
 	/* 0x04 */ s16 clear_screen;
 	/* 0x06 */ s16 shell_count;
 	/* 0x08 */ s16 sprite_count;
-	/* 0x0a */ s16 sprite_max;
+	/* 0x0a */ s16 maximum_sprite_count;
 	/* 0x0c */ s16 texture_count;
 	/* 0x0e */ s16 fx_count;
 	/* 0x10 */ s32 texture_defs;

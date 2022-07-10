@@ -1543,8 +1543,14 @@ AssetType CollisionMaterial {
 AssetType Sky {
 	bin_leaf: true
 	
+	IntegerAttribute maximum_sprite_count {
+		desc: "This controls how much memory to allocate for sprites."
+		required: true
+		games: [1 2 3 4]
+	}
+	
 	Child shells {
-		desc: "A list of the shells."
+		desc: "The sky shells."
 		allowed_types: ["Collection"]
 		required: true
 		games: [1 2 3 4]
@@ -1554,12 +1560,22 @@ AssetType Sky {
 	}
 	
 	Child materials {
-		desc: "The materials used by the sky."
+		desc: "The materials used by the sky shell meshes."
 		allowed_types: ["Collection"]
 		required: true
 		games: [1 2 3 4]
 		Child child {
 			allowed_types: ["Material" "Texture"]
+		}
+	}
+	
+	Child fx {
+		desc: "The FX textures."
+		allowed_types: ["Collection"]
+		required: true
+		games: [1 2 3 4]
+		Child child {
+			allowed_types: ["Texture"]
 		}
 	}
 }
