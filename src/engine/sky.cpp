@@ -232,8 +232,8 @@ static void write_sky_cluster(OutBuffer dest, SkyClusterHeader& header, const Me
 	header.st_offset = dest.tell() - header.data;
 	for(const Vertex& src : cluster.vertices) {
 		SkyTexCoord st;
-		st.s = src.tex_coord.x * (INT16_MAX / 8.f);
-		st.t = -src.tex_coord.y * (INT16_MAX / 8.f);
+		st.s = (s16) roundf(src.tex_coord.x * (INT16_MAX / 8.f));
+		st.t = (s16) roundf(-src.tex_coord.y * (INT16_MAX / 8.f));
 		dest.write(st);
 	}
 	
