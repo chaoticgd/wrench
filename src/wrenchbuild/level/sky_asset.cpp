@@ -74,7 +74,11 @@ static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig confi
 	// Convert from texture indices to material indices.
 	for(Mesh& mesh : scene.meshes) {
 		for(SubMesh& submesh : mesh.submeshes) {
-			submesh.material += 1 - (s32) sky.fx.size();
+			if(submesh.material > -1) {
+				submesh.material += 1 - (s32) sky.fx.size();
+			} else {
+				submesh.material = 0;
+			}
 		}
 	}
 	
