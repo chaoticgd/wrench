@@ -33,6 +33,8 @@ Sky read_sky(Buffer src, Game game, f32 framerate) {
 	SkyHeader header = src.read<SkyHeader>(0, "header");
 	verify(header.shell_count <= 8, "Too many sky shells!");
 	
+	sky.background_colour = header.background_colour;
+	sky.clear_screen = !!header.clear_screen;
 	sky.fx = src.read_multiple<u8>(header.fx_list, header.fx_count, "FX indices").copy();
 	sky.maximum_sprite_count = header.maximum_sprite_count;
 	
@@ -70,6 +72,8 @@ void write_sky(OutBuffer dest, const Sky& sky, Game game, f32 framerate) {
 	s64 header_ofs = dest.alloc<SkyHeader>();
 	SkyHeader header = {};
 	
+	header.background_colour = sky.background_colour;
+	header.clear_screen = sky.clear_screen;
 	header.shell_count = (s16) sky.shells.size();
 	header.texture_count = (s16) sky.textures.size();
 	header.fx_count = (s16) sky.fx.size();
@@ -101,12 +105,14 @@ void write_sky(OutBuffer dest, const Sky& sky, Game game, f32 framerate) {
 		dest.write(header.texture_defs + i * sizeof(RacGcUyaSkyTexture), def);
 	}
 	
-	dest.pad(0x40);
-	header.sprites = dest.tell();
-	dest.alloc_multiple<u8>(header.maximum_sprite_count * 0x20);
+	if(header.maximum_sprite_count > 0) {
+		dest.pad(0x40);
+		header.sprites = dest.tell();
+		dest.alloc_multiple<u8>(header.maximum_sprite_count * 0x20);
+	}
 	
 	for(size_t i = 0; i < sky.shells.size(); i++) {
-		dest.pad(0x40);
+		dest.pad(0x10);
 		header.shells[i] = dest.tell();
 		write_sky_shell(dest, sky.shells[i], framerate);
 	}
@@ -226,9 +232,9 @@ static void write_sky_cluster(OutBuffer dest, SkyClusterHeader& header, const Me
 	header.vertex_offset = dest.tell() - header.data;
 	for(const Vertex& src : cluster.vertices) {
 		SkyVertex vertex;
-		vertex.x = src.pos.x * (INT16_MAX / 32.f);
-		vertex.y = src.pos.y * (INT16_MAX / 32.f);
-		vertex.z = src.pos.z * (INT16_MAX / 32.f);
+		vertex.x = (s16) roundf(src.pos.x * (INT16_MAX / 32.f));
+		vertex.y = (s16) roundf(src.pos.y * (INT16_MAX / 32.f));
+		vertex.z = (s16) roundf(src.pos.z * (INT16_MAX / 32.f));
 		if(src.colour.a == 0xff) {
 			vertex.alpha = 0x80;
 		} else {

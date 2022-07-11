@@ -1543,14 +1543,26 @@ AssetType CollisionMaterial {
 AssetType Sky {
 	bin_leaf: true
 	
+	ColourAttribute background_colour {
+		desc: "The colour to clear the screen with."
+		required: true
+		games: [1 2 3]
+	}
+	
+	BooleanAttribute clear_screen {
+		desc: "Whether to clear the screen or not."
+		required: true
+		games: [1 2 3 4]
+	}
+	
 	IntegerAttribute maximum_sprite_count {
-		desc: "This controls how much memory to allocate for sprites."
+		desc: "Controls how much memory to allocate for sprites."
 		required: true
 		games: [1 2 3 4]
 	}
 	
 	Child shells {
-		desc: "The sky shells."
+		desc: "The different meshes/layers that make up the sky."
 		allowed_types: ["Collection"]
 		required: true
 		games: [1 2 3 4]

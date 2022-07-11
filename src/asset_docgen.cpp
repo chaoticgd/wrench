@@ -164,7 +164,9 @@ static void write_attribute_table(const WtfNode* asset_type) {
 			type = "Array";
 		} else if(strcmp(child->type_name, "Vector3Attribute") == 0) {
 			type = "Vector3";
-		}else if(strcmp(child->type_name, "AssetLinkAttribute") == 0) {
+		} else if(strcmp(child->type_name, "ColourAttribute") == 0) {
+			type = "Colour";
+		} else if(strcmp(child->type_name, "AssetLinkAttribute") == 0) {
 			type = "AssetLink";
 		} else if(strcmp(child->type_name, "FileReferenceAttribute") == 0) {
 			type = "FilePath";
