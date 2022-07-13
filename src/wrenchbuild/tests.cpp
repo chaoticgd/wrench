@@ -41,7 +41,7 @@ void run_tests(fs::path input_path, const std::string& asset_ref, const std::str
 	if(fail_count == 0) {
 		printf("\nALL TESTS HAPPY\n");
 	} else {
-		printf("%d passed, %d failed", pass_count, fail_count);
+		printf("%d passed, %d failed\n", pass_count, fail_count);
 	}
 }
 
