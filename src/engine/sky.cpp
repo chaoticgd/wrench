@@ -20,8 +20,8 @@
 
 #include <core/mesh.h>
 
-static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(Buffer src, const SkyHeader& header, Game game);
-static std::tuple<s64, s64> write_sky_textures(OutBuffer dest, const std::vector<Texture>& textures, const std::vector<s32>& texture_mappings, Game game);
+static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(Buffer src, const SkyHeader& header);
+static std::tuple<s64, s64> write_sky_textures(OutBuffer dest, const std::vector<Texture>& textures, const std::vector<s32>& texture_mappings);
 static SkyShell read_sky_shell(Buffer src, s64 offset, s32 texture_count, f32 framerate);
 static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, f32 framerate);
 static f32 rotation_to_radians_per_frame(u16 angle, f32 framerate);
@@ -29,7 +29,7 @@ static u16 rotation_from_radians_per_frame(f32 angle, f32 framerate);
 static Mesh read_sky_cluster(Buffer src, s64 offset, s32 texture_count, bool textured);
 static void write_sky_cluster(OutBuffer dest, SkyClusterHeader& header, const Mesh& cluster);
 
-Sky read_sky(Buffer src, Game game, f32 framerate) {
+Sky read_sky(Buffer src, f32 framerate) {
 	Sky sky;
 	
 	SkyHeader header = src.read<SkyHeader>(0, "header");
@@ -40,7 +40,7 @@ Sky read_sky(Buffer src, Game game, f32 framerate) {
 	sky.fx = src.read_multiple<u8>(header.fx_list, header.fx_count, "FX indices").copy();
 	sky.maximum_sprite_count = header.maximum_sprite_count;
 	
-	std::tie(sky.textures, sky.texture_mappings) = read_sky_textures(src, header, game);
+	std::tie(sky.textures, sky.texture_mappings) = read_sky_textures(src, header);
 	
 	for(s32 i = 0; i < header.shell_count; i++) {
 		sky.shells.emplace_back(read_sky_shell(src, header.shells[i], header.texture_count, framerate));
@@ -49,7 +49,7 @@ Sky read_sky(Buffer src, Game game, f32 framerate) {
 	return sky;
 }
 
-void write_sky(OutBuffer dest, const Sky& sky, Game game, f32 framerate) {
+void write_sky(OutBuffer dest, const Sky& sky, f32 framerate) {
 	verify(sky.shells.size() <= 8, "Too many sky shells!");
 	
 	dest.pad(0x40);
@@ -66,7 +66,7 @@ void write_sky(OutBuffer dest, const Sky& sky, Game game, f32 framerate) {
 	header.fx_list = dest.write_multiple(sky.fx);
 	header.maximum_sprite_count = (s16) sky.maximum_sprite_count;
 	
-	auto [defs, data] = write_sky_textures(dest, sky.textures, sky.texture_mappings, game);
+	auto [defs, data] = write_sky_textures(dest, sky.textures, sky.texture_mappings);
 	header.texture_defs = defs;
 	header.texture_data = data;
 	
@@ -83,7 +83,7 @@ void write_sky(OutBuffer dest, const Sky& sky, Game game, f32 framerate) {
 	dest.write(header_ofs, header);
 }
 
-static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(Buffer src, const SkyHeader& header, Game game) {
+static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(Buffer src, const SkyHeader& header) {
 	std::vector<Texture> textures;
 	std::vector<s32> texture_mappings;
 	std::vector<SkyTexture> defs;
@@ -101,25 +101,9 @@ static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(Buff
 			}
 		}
 		if(index == -1) {
-			s32 texture_offset;
-			s32 palette_offset;
-			s32 width;
-			s32 height;
-			if(game == Game::DL) {
-				texture_offset = def.dl.texture_offset;
-				palette_offset = def.dl.palette_offset;
-				width = def.dl.width;
-				height = def.dl.height;
-			} else {
-				texture_offset = def.rac_gc_uya.texture_offset;
-				palette_offset = def.rac_gc_uya.palette_offset;
-				width = def.rac_gc_uya.width;
-				height = def.rac_gc_uya.height;
-			}
-			
-			std::vector<u8> data = src.read_bytes(header.texture_data + texture_offset, width * height, "texture data");
-			std::vector<u32> palette = src.read_multiple<u32>(header.texture_data + palette_offset, 256, "palette").copy();
-			Texture texture = Texture::create_8bit_paletted(width, height, std::move(data), std::move(palette));
+			std::vector<u8> data = src.read_bytes(header.texture_data + def.texture_offset, def.width * def.height, "texture data");
+			std::vector<u32> palette = src.read_multiple<u32>(header.texture_data + def.palette_offset, 256, "palette").copy();
+			Texture texture = Texture::create_8bit_paletted(def.width, def.height, std::move(data), std::move(palette));
 			texture.multiply_alphas();
 			texture.swizzle_palette();
 			
@@ -133,7 +117,7 @@ static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(Buff
 	return {textures, texture_mappings};
 }
 
-static std::tuple<s64, s64> write_sky_textures(OutBuffer dest, const std::vector<Texture>& textures, const std::vector<s32>& texture_mappings, Game game) {
+static std::tuple<s64, s64> write_sky_textures(OutBuffer dest, const std::vector<Texture>& textures, const std::vector<s32>& texture_mappings) {
 	dest.pad(0x10);
 	s64 defs_ofs = dest.alloc_multiple<SkyTexture>(texture_mappings.size());
 	dest.pad(0x40);
@@ -158,17 +142,10 @@ static std::tuple<s64, s64> write_sky_textures(OutBuffer dest, const std::vector
 		for(s32 j = 0; j < (s32) texture_mappings.size(); j++) {
 			if(texture_mappings[j] == i) {
 				SkyTexture& def = defs[j];
-				if(game == Game::DL) {
-					def.dl.texture_offset = texture_ofs;
-					def.dl.palette_offset = palette_ofs;
-					def.dl.width = (s16) texture.width;
-					def.dl.height = (s16) texture.height;
-				} else {
-					def.rac_gc_uya.texture_offset = texture_ofs;
-					def.rac_gc_uya.palette_offset = palette_ofs;
-					def.rac_gc_uya.width = texture.width;
-					def.rac_gc_uya.height = texture.height;
-				}
+				def.texture_offset = texture_ofs;
+				def.palette_offset = palette_ofs;
+				def.width = texture.width;
+				def.height = texture.height;
 			}
 		}
 	}

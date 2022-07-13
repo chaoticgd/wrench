@@ -68,26 +68,11 @@ packed_struct(SkyHeader,
 	/* 0x20 */ s32 shells[8];
 )
 
-packed_struct(RacGcUyaSkyTexture,
+packed_struct(SkyTexture,
 	/* 0x0 */ s32 palette_offset;
 	/* 0x4 */ s32 texture_offset;
 	/* 0x8 */ s32 width;
 	/* 0xc */ s32 height;
-)
-
-packed_struct(DlSkyTexture,
-	/* 0x0 */ u64 tex0;
-	/* 0x8 */ u16 texture_offset;
-	/* 0xa */ u16 palette_offset;
-	/* 0xc */ s16 width;
-	/* 0xe */ s16 height;
-)
-
-packed_struct(SkyTexture,
-	packed_nested_anon_union(
-		RacGcUyaSkyTexture rac_gc_uya;
-		DlSkyTexture dl;
-	)
 )
 
 packed_struct(Vec3u16,
@@ -131,8 +116,8 @@ packed_struct(SkyFace,
 	/* 0x3 */ s8 texture;
 )
 
-Sky read_sky(Buffer src, Game game, f32 framerate);
-void write_sky(OutBuffer dest, const Sky& sky, Game game, f32 framerate);
+Sky read_sky(Buffer src, f32 framerate);
+void write_sky(OutBuffer dest, const Sky& sky, f32 framerate);
 std::vector<Mesh> generate_clusters(const Mesh& mesh);
 
 #endif
