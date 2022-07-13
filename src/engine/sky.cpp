@@ -159,7 +159,6 @@ static SkyShell read_sky_shell(Buffer src, s64 offset, s32 texture_count, f32 fr
 	SkyShell shell;
 	
 	SkyShellHeader header = src.read<SkyShellHeader>(offset, "shell header");
-	
 	shell.textured = (header.flags & 1) == 0;
 	shell.bloom = ((header.flags >> 1) & 1) == 1;
 	shell.rotation.x = rotation_to_radians_per_frame(header.rotation.x, framerate);

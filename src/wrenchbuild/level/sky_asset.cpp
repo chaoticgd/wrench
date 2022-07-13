@@ -99,7 +99,9 @@ static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig confi
 		SkyShellAsset& dest = shells.child<SkyShellAsset>(i);
 		
 		dest.set_textured(src.textured);
-		dest.set_bloom(src.bloom);
+		if(config.game() == Game::UYA || config.game() == Game::DL) {
+			dest.set_bloom(src.bloom);
+		}
 		dest.set_starting_rotation(src.rotation);
 		dest.set_angular_velocity(src.angular_velocity);
 		
@@ -130,7 +132,9 @@ static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig 
 	src.get_shells().for_each_logical_child_of_type<SkyShellAsset>([&](const SkyShellAsset& shell_asset) {
 		SkyShell shell;
 		shell.textured = shell_asset.textured();
-		shell.bloom = shell_asset.bloom();
+		if(config.game() == Game::UYA || config.game() == Game::DL) {
+			shell.bloom = shell_asset.bloom();
+		}
 		shell.rotation = shell_asset.starting_rotation();
 		shell.angular_velocity = shell_asset.angular_velocity();
 		sky.shells.emplace_back(shell);

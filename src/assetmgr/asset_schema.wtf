@@ -1602,9 +1602,9 @@ AssetType SkyShell {
 	}
 	
 	BooleanAttribute bloom {
-		desc: "Only applies if for textured shells."
+		desc: "Only works for textured shells."
 		required: false
-		games: [1 2 3 4]
+		games: [3 4]
 	}
 	
 	Vector3Attribute starting_rotation {
