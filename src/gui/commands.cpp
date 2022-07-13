@@ -42,7 +42,7 @@ void gui::run_unpacker(const UnpackerParams& params, CommandThread& command) {
 	args.emplace_back("-o");
 	args.emplace_back(g_config.paths.games_folder);
 	args.emplace_back("-s"); // Unpack it into a subdirectory.
-	args.emplace_back("-f"); // Aggressively flush stdout and stderr.
+	args.emplace_back("--flusher-thread-hack"); // Aggressively flush stdout and stderr.
 	command.start(args);
 }
 
@@ -76,7 +76,7 @@ std::string gui::run_packer(const PackerParams& params, CommandThread& command) 
 	} else {
 		args.emplace_back("release");
 	}
-	args.emplace_back("-f"); // Aggressively flush stdout and stderr.
+	args.emplace_back("--flusher-thread-hack"); // Aggressively flush stdout and stderr.
 	command.start(args);
 	return output_path;
 }

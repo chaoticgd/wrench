@@ -248,7 +248,7 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 			continue;
 		}
 		
-		if(strcmp(argv[i], "-f") == 0) {
+		if(strcmp(argv[i], "--flusher-thread-hack") == 0) {
 			start_stdout_flusher_thread();
 			continue;
 		}
