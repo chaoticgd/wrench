@@ -16,6 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <cstdio>
 #include <mutex>
 #include <thread>
 #include <fstream>
@@ -510,11 +511,13 @@ static void print_usage(bool developer_subcommands) {
 		puts(" unpack_flat <input file> -o <output dir> [-g <game>] [-r <region>] [-s]");
 		puts("   Unpack an ISO or WAD file to produce an asset bank of FlatWad assets.");
 		puts("");
-		puts(" test <input asset bank> [-a <asset link>]");
+		puts(" test <input asset bank> [-a <asset link>] [-f <filter string>]");
 		puts("   Unpack and repack binaries from the asset bank, and diff them against the");
 		puts("   originals. If -a is passed, only test the single specified binary and print");
 		puts("   a hex dump, otherwise test all the binaries in the bank without the hex dump.");
 		puts("   Use the unpack_binaries subcommand can produce the input asset bank.");
+		puts("   If -f is passed, only tests on assets which contain the filter string in");
+		puts("   their absolute asset link string will be run.");
 		puts("");
 		puts(" decompress <input file> -o <output file> [-x <offset>]");
 		puts("   Decompress a file stored using the game's custom LZ compression scheme.");
