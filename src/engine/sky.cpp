@@ -24,8 +24,8 @@ static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(Buff
 static std::tuple<s64, s64> write_sky_textures(OutBuffer dest, const std::vector<Texture>& textures, const std::vector<s32>& texture_mappings);
 static SkyShell read_sky_shell(Buffer src, s64 offset, s32 texture_count, f32 framerate);
 static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, f32 framerate);
-static f32 rotation_to_radians_per_frame(u16 angle, f32 framerate);
-static u16 rotation_from_radians_per_frame(f32 angle, f32 framerate);
+static f32 rotation_to_radians_per_second(u16 angle, f32 framerate);
+static u16 rotation_from_radians_per_second(f32 angle, f32 framerate);
 static Mesh read_sky_cluster(Buffer src, s64 offset, s32 texture_count, bool textured);
 static void write_sky_cluster(OutBuffer dest, SkyClusterHeader& header, const Mesh& cluster);
 
@@ -161,12 +161,12 @@ static SkyShell read_sky_shell(Buffer src, s64 offset, s32 texture_count, f32 fr
 	SkyShellHeader header = src.read<SkyShellHeader>(offset, "shell header");
 	shell.textured = (header.flags & 1) == 0;
 	shell.bloom = ((header.flags >> 1) & 1) == 1;
-	shell.rotation.x = rotation_to_radians_per_frame(header.rotation.x, framerate);
-	shell.rotation.y = rotation_to_radians_per_frame(header.rotation.y, framerate);
-	shell.rotation.z = rotation_to_radians_per_frame(header.rotation.z, framerate);
-	shell.angular_velocity.x = rotation_to_radians_per_frame(header.angular_velocity.x, framerate);
-	shell.angular_velocity.y = rotation_to_radians_per_frame(header.angular_velocity.y, framerate);
-	shell.angular_velocity.z = rotation_to_radians_per_frame(header.angular_velocity.z, framerate);
+	shell.rotation.x = rotation_to_radians_per_second(header.rotation.x, framerate);
+	shell.rotation.y = rotation_to_radians_per_second(header.rotation.y, framerate);
+	shell.rotation.z = rotation_to_radians_per_second(header.rotation.z, framerate);
+	shell.angular_velocity.x = rotation_to_radians_per_second(header.angular_velocity.x, framerate);
+	shell.angular_velocity.y = rotation_to_radians_per_second(header.angular_velocity.y, framerate);
+	shell.angular_velocity.z = rotation_to_radians_per_second(header.angular_velocity.z, framerate);
 	
 	for(s32 i = 0; i < header.cluster_count; i++) {
 		shell.clusters.emplace_back(read_sky_cluster(src, offset + sizeof(SkyShellHeader) + i * sizeof(SkyClusterHeader), texture_count, shell.textured));
@@ -183,12 +183,12 @@ static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, f32 framerate)
 	header.cluster_count = (s16) shell.clusters.size();
 	header.flags |= !shell.textured;
 	header.flags |= shell.bloom << 1;
-	header.rotation.x = rotation_from_radians_per_frame(shell.rotation.x, framerate);
-	header.rotation.y = rotation_from_radians_per_frame(shell.rotation.y, framerate);
-	header.rotation.z = rotation_from_radians_per_frame(shell.rotation.z, framerate);
-	header.angular_velocity.x = rotation_from_radians_per_frame(shell.angular_velocity.x, framerate);
-	header.angular_velocity.y = rotation_from_radians_per_frame(shell.angular_velocity.y, framerate);
-	header.angular_velocity.z = rotation_from_radians_per_frame(shell.angular_velocity.z, framerate);
+	header.rotation.x = rotation_from_radians_per_second(shell.rotation.x, framerate);
+	header.rotation.y = rotation_from_radians_per_second(shell.rotation.y, framerate);
+	header.rotation.z = rotation_from_radians_per_second(shell.rotation.z, framerate);
+	header.angular_velocity.x = rotation_from_radians_per_second(shell.angular_velocity.x, framerate);
+	header.angular_velocity.y = rotation_from_radians_per_second(shell.angular_velocity.y, framerate);
+	header.angular_velocity.z = rotation_from_radians_per_second(shell.angular_velocity.z, framerate);
 	
 	s64 cluster_table_ofs = dest.alloc_multiple<SkyClusterHeader>(shell.clusters.size());
 	for(size_t i = 0; i < shell.clusters.size(); i++) {
@@ -201,12 +201,12 @@ static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, f32 framerate)
 	return header_ofs;
 }
 
-static f32 rotation_to_radians_per_frame(u16 angle, f32 framerate) {
-	return angle * ((2.f * M_PI) / UINT16_MAX);
+static f32 rotation_to_radians_per_second(u16 angle, f32 framerate) {
+	return angle * (framerate * ((2.f * M_PI) / UINT16_MAX));
 }
 
-static u16 rotation_from_radians_per_frame(f32 angle, f32 framerate) {
-	return (u16) roundf(angle * (UINT16_MAX / (2 * M_PI)));
+static u16 rotation_from_radians_per_second(f32 angle, f32 framerate) {
+	return (u16) roundf(angle * ((UINT16_MAX / (2.f * M_PI)) / framerate));
 }
 
 static Mesh read_sky_cluster(Buffer src, s64 offset, s32 texture_count, bool textured) {
