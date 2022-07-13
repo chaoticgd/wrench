@@ -20,8 +20,10 @@
 
 #include <core/mesh.h>
 
+static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(Buffer src, const SkyHeader& header, Game game);
+static std::tuple<s64, s64> write_sky_textures(OutBuffer dest, const std::vector<Texture>& textures, const std::vector<s32>& texture_mappings, Game game);
 static SkyShell read_sky_shell(Buffer src, s64 offset, s32 texture_count, f32 framerate);
-static void write_sky_shell(OutBuffer dest, const SkyShell& shell, f32 framerate);
+static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, f32 framerate);
 static f32 rotation_to_radians_per_frame(u16 angle, f32 framerate);
 static u16 rotation_from_radians_per_frame(f32 angle, f32 framerate);
 static Mesh read_sky_cluster(Buffer src, s64 offset, s32 texture_count, bool textured);
@@ -38,25 +40,7 @@ Sky read_sky(Buffer src, Game game, f32 framerate) {
 	sky.fx = src.read_multiple<u8>(header.fx_list, header.fx_count, "FX indices").copy();
 	sky.maximum_sprite_count = header.maximum_sprite_count;
 	
-	if(game == Game::DL) {
-		for(const DlSkyTexture& def : src.read_multiple<DlSkyTexture>(header.texture_defs, header.texture_count, "texture defs")) {
-			std::vector<u8> data = src.read_bytes(header.texture_data + def.texture_offset, def.width * def.height, "texture data");
-			std::vector<u32> palette = src.read_multiple<u32>(header.texture_data + def.palette_offset, 256, "palette").copy();
-			Texture texture = Texture::create_8bit_paletted(def.width, def.height, std::move(data), std::move(palette));
-			texture.multiply_alphas();
-			texture.swizzle_palette();
-			sky.textures.emplace_back(std::move(texture));
-		}
-	} else {
-		for(const RacGcUyaSkyTexture& def : src.read_multiple<RacGcUyaSkyTexture>(header.texture_defs, header.texture_count, "texture defs")) {
-			std::vector<u8> data = src.read_bytes(header.texture_data + def.texture_offset, def.width * def.height, "texture data");
-			std::vector<u32> palette = src.read_multiple<u32>(header.texture_data + def.palette_offset, 256, "palette").copy();
-			Texture texture = Texture::create_8bit_paletted(def.width, def.height, std::move(data), std::move(palette));
-			texture.multiply_alphas();
-			texture.swizzle_palette();
-			sky.textures.emplace_back(std::move(texture));
-		}
-	}
+	std::tie(sky.textures, sky.texture_mappings) = read_sky_textures(src, header, game);
 	
 	for(s32 i = 0; i < header.shell_count; i++) {
 		sky.shells.emplace_back(read_sky_shell(src, header.shells[i], header.texture_count, framerate));
@@ -75,35 +59,16 @@ void write_sky(OutBuffer dest, const Sky& sky, Game game, f32 framerate) {
 	header.background_colour = sky.background_colour;
 	header.clear_screen = sky.clear_screen;
 	header.shell_count = (s16) sky.shells.size();
-	header.texture_count = (s16) sky.textures.size();
+	header.texture_count = (s16) sky.texture_mappings.size();
 	header.fx_count = (s16) sky.fx.size();
 	
 	dest.pad(0x10);
 	header.fx_list = dest.write_multiple(sky.fx);
 	header.maximum_sprite_count = (s16) sky.maximum_sprite_count;
 	
-	dest.pad(0x10);
-	header.texture_defs = dest.alloc_multiple<RacGcUyaSkyTexture>(sky.textures.size());
-	dest.pad(0x40);
-	header.texture_data = dest.tell();
-	for(size_t i = 0; i < sky.textures.size(); i++) {
-		Texture texture = sky.textures[i];
-		texture.to_8bit_paletted();
-		texture.divide_alphas();
-		texture.swizzle_palette();
-		
-		RacGcUyaSkyTexture def = {};
-		def.width = texture.width;
-		def.height = texture.height;
-		dest.pad(0x40);
-		def.palette_offset = dest.tell() - header.texture_data;
-		dest.write_multiple(texture.palette());
-		dest.pad(0x40);
-		def.texture_offset = dest.tell() - header.texture_data;
-		dest.write_multiple(texture.data);
-		
-		dest.write(header.texture_defs + i * sizeof(RacGcUyaSkyTexture), def);
-	}
+	auto [defs, data] = write_sky_textures(dest, sky.textures, sky.texture_mappings, game);
+	header.texture_defs = defs;
+	header.texture_data = data;
 	
 	if(header.maximum_sprite_count > 0) {
 		dest.pad(0x40);
@@ -112,12 +77,104 @@ void write_sky(OutBuffer dest, const Sky& sky, Game game, f32 framerate) {
 	}
 	
 	for(size_t i = 0; i < sky.shells.size(); i++) {
-		dest.pad(0x10);
-		header.shells[i] = dest.tell();
-		write_sky_shell(dest, sky.shells[i], framerate);
+		header.shells[i] = write_sky_shell(dest, sky.shells[i], framerate);
 	}
 	
 	dest.write(header_ofs, header);
+}
+
+static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(Buffer src, const SkyHeader& header, Game game) {
+	std::vector<Texture> textures;
+	std::vector<s32> texture_mappings;
+	std::vector<SkyTexture> defs;
+	
+	// Multiple texture headers can point to the same texture. Here, we only
+	// write out each texture once, but we create a seperate element in the
+	// texture_mappings list for each duplicate.
+	for(const SkyTexture& def : src.read_multiple<SkyTexture>(header.texture_defs, header.texture_count, "texture defs")) {
+		s32 index = -1;
+		for(s32 i = 0; i < (s32) defs.size(); i++) {
+			if(memcmp(&def, &defs[i], sizeof(SkyTexture)) == 0) {
+				index = texture_mappings[i];
+				break;
+			}
+		}
+		if(index == -1) {
+			s32 texture_offset;
+			s32 palette_offset;
+			s32 width;
+			s32 height;
+			if(game == Game::DL) {
+				texture_offset = def.dl.texture_offset;
+				palette_offset = def.dl.palette_offset;
+				width = def.dl.width;
+				height = def.dl.height;
+			} else {
+				texture_offset = def.rac_gc_uya.texture_offset;
+				palette_offset = def.rac_gc_uya.palette_offset;
+				width = def.rac_gc_uya.width;
+				height = def.rac_gc_uya.height;
+			}
+			
+			std::vector<u8> data = src.read_bytes(header.texture_data + texture_offset, width * height, "texture data");
+			std::vector<u32> palette = src.read_multiple<u32>(header.texture_data + palette_offset, 256, "palette").copy();
+			Texture texture = Texture::create_8bit_paletted(width, height, std::move(data), std::move(palette));
+			texture.multiply_alphas();
+			texture.swizzle_palette();
+			
+			index = (s32) textures.size();
+			textures.emplace_back(std::move(texture));
+		}
+		texture_mappings.emplace_back(index);
+		defs.emplace_back(def);
+	}
+	
+	return {textures, texture_mappings};
+}
+
+static std::tuple<s64, s64> write_sky_textures(OutBuffer dest, const std::vector<Texture>& textures, const std::vector<s32>& texture_mappings, Game game) {
+	dest.pad(0x10);
+	s64 defs_ofs = dest.alloc_multiple<SkyTexture>(texture_mappings.size());
+	dest.pad(0x40);
+	s64 data_ofs = dest.tell();
+	
+	std::vector<SkyTexture> defs(texture_mappings.size(), {{}});
+	
+	for(s32 i = 0; i < (s32) textures.size(); i++) {
+		Texture texture = textures[i];
+		texture.to_8bit_paletted();
+		texture.divide_alphas();
+		texture.swizzle_palette();
+		
+		dest.pad(0x40);
+		s32 palette_ofs = dest.tell() - data_ofs;
+		dest.write_multiple(texture.palette());
+		dest.pad(0x40);
+		s32 texture_ofs = dest.tell() - data_ofs;
+		dest.write_multiple(texture.data);
+		
+		// Populate all the texture headers that point to this texture.
+		for(s32 j = 0; j < (s32) texture_mappings.size(); j++) {
+			if(texture_mappings[j] == i) {
+				SkyTexture& def = defs[j];
+				if(game == Game::DL) {
+					def.dl.texture_offset = texture_ofs;
+					def.dl.palette_offset = palette_ofs;
+					def.dl.width = (s16) texture.width;
+					def.dl.height = (s16) texture.height;
+				} else {
+					def.rac_gc_uya.texture_offset = texture_ofs;
+					def.rac_gc_uya.palette_offset = palette_ofs;
+					def.rac_gc_uya.width = texture.width;
+					def.rac_gc_uya.height = texture.height;
+				}
+			}
+		}
+	}
+	
+	dest.write_multiple(defs_ofs, defs);
+	
+	return {defs_ofs, data_ofs};
 }
 
 static SkyShell read_sky_shell(Buffer src, s64 offset, s32 texture_count, f32 framerate) {
@@ -141,7 +198,7 @@ static SkyShell read_sky_shell(Buffer src, s64 offset, s32 texture_count, f32 fr
 	return shell;
 }
 
-static void write_sky_shell(OutBuffer dest, const SkyShell& shell, f32 framerate) {
+static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, f32 framerate) {
 	dest.pad(0x10);
 	SkyShellHeader header = {};
 	s64 header_ofs = dest.alloc<SkyShellHeader>();
@@ -164,6 +221,7 @@ static void write_sky_shell(OutBuffer dest, const SkyShell& shell, f32 framerate
 	}
 	
 	dest.write(header_ofs, header);
+	return header_ofs;
 }
 
 static f32 rotation_to_radians_per_frame(u16 angle, f32 framerate) {

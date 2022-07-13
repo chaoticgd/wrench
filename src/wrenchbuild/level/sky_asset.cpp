@@ -16,19 +16,22 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "assetmgr/asset_dispatch.h"
-#include "core/mesh.h"
+#include "core/util/basic_util.h"
 #include <core/png.h>
 #include <core/collada.h>
 #include <engine/sky.h>
+#include <map>
+#include <string>
+#include <utility>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 
-#define SEPERATE_CLUSTERS
+#define SEPERATE_SKY_CLUSTERS
 
 static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig config);
 static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig config);
-static void unpack_materials(ColladaScene& scene, CollectionAsset& materials, const Sky& sky);
+static void unpack_sky_textures(ColladaScene& scene, CollectionAsset& fx, CollectionAsset& materials, const Sky& sky);
+static std::tuple<std::vector<s32>, std::map<std::string, s32>> pack_sky_textures(Sky& dest, const SkyAsset& src);
 static AssetTestResult test_sky_asset(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode);
 
 on_load(Sky, []() {
@@ -58,11 +61,11 @@ static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig confi
 	CollectionAsset& shells = dest.shells();
 	
 	ColladaScene scene;
-	unpack_materials(scene, dest.materials(), sky);
+	unpack_sky_textures(scene, dest.fx(), dest.materials(), sky);
 	
 	// Copy all the meshes into the scene.
 	for(size_t i = 0; i < sky.shells.size(); i++) {
-#ifdef SEPERATE_CLUSTERS
+#ifdef SEPERATE_SKY_CLUSTERS
 		SkyShell& shell = sky.shells[i];
 		for(size_t j = 0; j < shell.clusters.size(); j++) {
 			shell.clusters[j].name = stringf("shell%d_cluster%d", i, j);
@@ -108,22 +111,7 @@ static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig confi
 			mesh.set_src(ref);
 		}
 	}
-	
-	// Write out the FX textures.
-	CollectionAsset& fx = dest.fx();
-	for(s32 i = 0; i < (s32) sky.fx.size(); i++) {
-		auto [stream, ref] = fx.file().open_binary_file_for_writing(stringf("%hhd.png", sky.fx[i]));
-		write_png(*stream, sky.textures[i]);
-		
-		TextureAsset& texture = fx.child<TextureAsset>(i);
-		texture.set_src(ref);
-	}
 }
-
-struct TextureLoad {
-	FileReference ref;
-	s32 index;
-};
 
 static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig config) {
 	Sky sky;
@@ -138,30 +126,7 @@ static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig 
 	sky.clear_screen = src.clear_screen();
 	sky.maximum_sprite_count = src.maximum_sprite_count();
 	
-	std::map<std::string, TextureLoad> texture_loads;
-	
-	src.get_fx().for_each_logical_child_of_type<TextureAsset>([&](const TextureAsset& texture) {
-		auto stream = texture.file().open_binary_file_for_reading(texture.src());
-		Opt<Texture> tex = read_png(*stream);
-		verify(tex.has_value(), "Failed to read sky FX texture.");
-		sky.fx.emplace_back((u8) sky.textures.size());
-		sky.textures.emplace_back(std::move(*tex));
-	});
-	
-	src.get_materials().for_each_logical_child_of_type<MaterialAsset>([&](const MaterialAsset& material) {
-		if(material.has_texture()) {
-			texture_loads[material.name()] = {material.get_texture().src()};
-		}
-	});
-	
-	for(auto& [name, texture_load] : texture_loads) {
-		auto stream = texture_load.ref.owner->open_binary_file_for_reading(texture_load.ref);
-		Opt<Texture> texture = read_png(*stream);
-		verify(texture.has_value(), "Failed to read sky shell texture.");
-		texture_load.index = sky.textures.size();
-		sky.textures.emplace_back(*texture);
-	}
-	
+	// Read all the references to meshes.
 	std::vector<FileReference> refs;
 	src.get_shells().for_each_logical_child_of_type<SkyShellAsset>([&](const SkyShellAsset& shell_asset) {
 		SkyShell shell;
@@ -176,8 +141,25 @@ static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig 
 		});
 	});
 	
+	// Read all the referenced meshes, avoiding duplicated work where possible.
 	std::vector<std::unique_ptr<ColladaScene>> owners;
 	std::vector<ColladaScene*> scenes = read_collada_files(owners, refs);
+	
+	// Setup all the textures.
+	auto [fx_textures, material_to_texture] = pack_sky_textures(sky, src);
+	
+	// Setup a texture header for each FX texture.
+	for(s32 index : fx_textures) {
+		sky.fx.emplace_back((u8) sky.texture_mappings.size());
+		sky.texture_mappings.push_back(index);
+	}
+	
+	// Setup a texture header for each shell material.
+	for(auto& [name, texture] : material_to_texture) {
+		s32 copy = texture;
+		texture = (s32) sky.texture_mappings.size();
+		sky.texture_mappings.emplace_back(copy);
+	}
 	
 	s32 i = 0;
 	s32 shell = 0;
@@ -191,9 +173,9 @@ static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig 
 			for(SubMesh& submesh : mesh.submeshes) {
 				if(submesh.material > -1) {
 					std::string& material_name = scene.materials.at(submesh.material).name;
-					auto texture_load = texture_loads.find(material_name);
-					if(texture_load != texture_loads.end()) {
-						submesh.material = texture_load->second.index;
+					auto mapping = material_to_texture.find(material_name);
+					if(mapping != material_to_texture.end()) {
+						submesh.material = mapping->second;
 					} else {
 						submesh.material = -1;
 					}
@@ -209,28 +191,99 @@ static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig 
 	dest.write_v(buffer);
 }
 
-static void unpack_materials(ColladaScene& scene, CollectionAsset& materials, const Sky& sky) {
+static void unpack_sky_textures(ColladaScene& scene, CollectionAsset& fx, CollectionAsset& materials, const Sky& sky) {
+	std::vector<FileReference> texture_refs;
+	
+	// Write out the textures.
+	for(s32 i = 0; i < (s32) sky.textures.size(); i++) {
+		auto [stream, ref] = materials.file().open_binary_file_for_writing(stringf("%d.png", i));
+		write_png(*stream, sky.textures[i]);
+		texture_refs.emplace_back(std::move(ref));
+	}
+	
+	// Create the placeholder material for untextured shells.
 	Material& gouraud = scene.materials.emplace_back();
 	gouraud.name = "gouraud";
 	gouraud.colour = glm::vec4(1.f, 0.f, 1.f, 1.f);
 	
-	MaterialAsset& gouraud_asset = materials.child<MaterialAsset>(0);
+	MaterialAsset& gouraud_asset = materials.child<MaterialAsset>("gouraud");
 	gouraud_asset.set_name("gouraud");
 	
-	for(s32 i = (s32) sky.fx.size(); i < (s32) sky.textures.size(); i++) {
-		auto [stream, ref] = materials.file().open_binary_file_for_writing(stringf("%d.png", i));
-		write_png(*stream, sky.textures[i]);
-		
+	// Create fx texture assets.
+	for(s32 i = 0; i < (s32) sky.fx.size(); i++) {
+		TextureAsset& texture = fx.child<TextureAsset>(i);
+		texture.set_src(texture_refs.at(sky.texture_mappings.at(sky.fx[i])));
+	}
+	
+	// Create shell material assets.
+	for(s32 i = (s32) sky.fx.size(); i < (s32) sky.texture_mappings.size(); i++) {
 		Material& mat = scene.materials.emplace_back();
-		mat.name = stringf("material_%d", i - sky.fx.size());
-		mat.texture = i - sky.fx.size();
+		mat.name = stringf("material_%d", i - (s32) sky.fx.size());
+		mat.texture = i - (s32) sky.fx.size();
 		
-		scene.texture_paths.emplace_back(ref.path.string());
+		FileReference& ref = texture_refs.at(sky.texture_mappings[i]);
+		scene.texture_paths.emplace_back(ref.path);
 		
 		MaterialAsset& asset = materials.child<MaterialAsset>(i + 1);
 		asset.set_name(mat.name);
 		asset.texture().set_src(ref);
 	}
+}
+
+struct TextureLoad {
+	FileReference ref;
+	Texture texture;
+};
+
+static std::tuple<std::vector<s32>, std::map<std::string, s32>> pack_sky_textures(Sky& dest, const SkyAsset& src) {
+	std::vector<s32> fx_textures;
+	std::map<std::string, s32> material_to_texture;
+	
+	std::vector<FileReference> refs;
+	
+	src.get_fx().for_each_logical_child_of_type<TextureAsset>([&](const TextureAsset& texture) {
+		FileReference ref = texture.src();
+		s32 index = -1;
+		for(s32 i = 0; i < (s32) refs.size(); i++) {
+			if(refs[i].owner == ref.owner && refs[i].path == ref.path) {
+				index = i;
+				break;
+			}
+		}
+		if(index == -1) {
+			index = refs.size();
+			refs.emplace_back(std::move(ref));
+		}
+		fx_textures.emplace_back(index);
+	});
+	
+	src.get_materials().for_each_logical_child_of_type<MaterialAsset>([&](const MaterialAsset& material) {
+		if(material.has_texture()) {
+			const TextureAsset& texture = material.get_texture();
+			FileReference ref = texture.src();
+			s32 index = -1;
+			for(s32 i = 0; i < (s32) refs.size(); i++) {
+				if(refs[i].owner == ref.owner && refs[i].path == ref.path) {
+					index = i;
+					break;
+				}
+			}
+			if(index == -1) {
+				index = refs.size();
+				refs.emplace_back(std::move((ref)));
+			}
+			material_to_texture[material.name()] = index;
+		}
+	});
+	
+	for(FileReference& ref : refs) {
+		auto stream = ref.owner->open_binary_file_for_reading(ref);
+		Opt<Texture> texture = read_png(*stream);
+		verify(texture.has_value(), "Failed to read sky texture.");
+		dest.textures.emplace_back(*texture);
+	}
+	
+	return {fx_textures, material_to_texture};
 }
 
 static AssetTestResult test_sky_asset(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode) {

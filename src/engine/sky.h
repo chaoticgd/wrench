@@ -45,8 +45,9 @@ struct Sky {
 	bool clear_screen;
 	std::vector<SkyShell> shells;
 	std::vector<Texture> textures;
+	std::vector<s32> texture_mappings; // textures[texture_mappings[i]]
 	s32 maximum_sprite_count;
-	std::vector<u8> fx;
+	std::vector<u8> fx; // textures[texture_mappings[fx[i]]]
 };
 
 packed_struct(SkyHeader,
@@ -77,6 +78,13 @@ packed_struct(DlSkyTexture,
 	/* 0xa */ u16 palette_offset;
 	/* 0xc */ s16 width;
 	/* 0xe */ s16 height;
+)
+
+packed_struct(SkyTexture,
+	packed_nested_anon_union(
+		RacGcUyaSkyTexture rac_gc_uya;
+		DlSkyTexture dl;
+	)
 )
 
 packed_struct(Vec3u16,
