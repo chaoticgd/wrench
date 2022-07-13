@@ -95,6 +95,7 @@ static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(Buff
 		s32 index = -1;
 		for(s32 i = 0; i < (s32) defs.size(); i++) {
 			if(memcmp(&def, &defs[i], sizeof(SkyTexture)) == 0) {
+				verify(i >= header.fx_count, "Weird fx texture mapping.");
 				index = texture_mappings[i];
 				break;
 			}
@@ -262,18 +263,16 @@ static Mesh read_sky_cluster(Buffer src, s64 offset, s32 texture_count, bool tex
 		submesh = &cluster.submeshes.back();
 	}
 	
+	s32 last_submesh_material = 0;
+	
 	auto faces = src.read_multiple<SkyFace>(header.data + header.tri_offset, header.tri_count, "faces");
 	for(const SkyFace& face : faces) {
-		if(submesh == nullptr || submesh->material != face.texture) {
+		if(submesh == nullptr || face.texture != last_submesh_material) {
 			verify(face.texture < texture_count, "Sky has bad texture data.");
 			submesh = &cluster.submeshes.emplace_back();
-			if(textured) {
-				verify(face.texture < texture_count, "Sky has bad texture data.");
-				submesh->material = face.texture;
-			} else {
-				submesh->material = 0;
-			}
+			submesh->material = face.texture;
 		}
+		last_submesh_material = submesh->material;
 		
 		submesh->faces.emplace_back(face.indices[0], face.indices[1], face.indices[2]);
 	}

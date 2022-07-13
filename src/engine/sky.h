@@ -26,6 +26,9 @@
 #include <engine/basic_types.h>
 
 struct SkyShell {
+	// The material field in these meshes is actually the texture header index
+	// which is -1 for untextured meshes. These have to be rewritten before
+	// being passed to the COLLADA exporter.
 	std::vector<Mesh> clusters;
 	bool textured;
 	bool bloom;
