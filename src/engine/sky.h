@@ -30,26 +30,26 @@ struct SkyShell {
 	// which is -1 for untextured meshes. These have to be rewritten before
 	// being passed to the COLLADA exporter.
 	std::vector<Mesh> clusters;
-	bool textured;
-	bool bloom;
+	bool textured = false;
+	bool bloom = false;
 	glm::vec3 rotation;
 	glm::vec3 angular_velocity;
 };
 
 packed_struct(SkyBackgroundColour,
-	u8 r;
-	u8 g;
-	u8 b;
-	u8 a;
+	u8 r = 0;
+	u8 g = 0;
+	u8 b = 0;
+	u8 a = 0;
 )
 
 struct Sky {
 	SkyBackgroundColour background_colour;
-	bool clear_screen;
+	bool clear_screen = false;
 	std::vector<SkyShell> shells;
 	std::vector<Texture> textures;
 	std::vector<s32> texture_mappings; // textures[texture_mappings[i]]
-	s32 maximum_sprite_count;
+	s32 maximum_sprite_count = 0;
 	std::vector<u8> fx; // textures[texture_mappings[fx[i]]]
 };
 
