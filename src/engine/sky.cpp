@@ -202,11 +202,11 @@ static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, f32 framerate)
 }
 
 static f32 rotation_to_radians_per_second(u16 angle, f32 framerate) {
-	return angle * (framerate * ((2.f * M_PI) / UINT16_MAX));
+	return angle * (framerate * ((2.f * WRENCH_PI) / UINT16_MAX));
 }
 
 static u16 rotation_from_radians_per_second(f32 angle, f32 framerate) {
-	return (u16) roundf(angle * ((UINT16_MAX / (2.f * M_PI)) / framerate));
+	return (u16) roundf(angle * ((UINT16_MAX / (2.f * WRENCH_PI)) / framerate));
 }
 
 static Mesh read_sky_cluster(Buffer src, s64 offset, s32 texture_count, bool textured) {

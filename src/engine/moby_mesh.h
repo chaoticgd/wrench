@@ -26,8 +26,6 @@
 #define MOBY_EXPORT_SUBMESHES_SEPERATELY false
 #define NO_SUBMESH_FILTER -1
 
-#define WRENCH_PI 3.14159265358979323846
-
 packed_struct(MobyTexCoord,
 	/* 0x0 */ s16 s;
 	/* 0x2 */ s16 t;
