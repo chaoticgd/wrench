@@ -569,7 +569,7 @@ void AssetBank::read() {
 	}
 }
 
-s32 AssetBank::check_lock() const { assert(0); }
+s32 AssetBank::check_lock() const { assert(0); return 0; }
 void AssetBank::lock() { assert(0); }
 
 // *****************************************************************************
