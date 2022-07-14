@@ -74,6 +74,7 @@ static void pack(const std::vector<fs::path>& input_paths, const std::string& as
 static void decompress(const fs::path& input_path, const fs::path& output_path, s64 offset);
 static void compress(const fs::path& input_path, const fs::path& output_path);
 static void extract_moby(const fs::path& input_path, const fs::path& output_path, Game game);
+static void unpack_collision(const fs::path& input_path, const fs::path& output_path);
 static void print_usage(bool developer_subcommands);
 static void print_version();
 static void start_stdout_flusher_thread();
@@ -119,6 +120,10 @@ static int wrenchbuild(int argc, char** argv) {
 			g_asset_unpacker.dump_binaries = true;
 		} else if(continuation == "_flat") {
 			g_asset_unpacker.dump_flat = true;
+		} else if(continuation == "_collision") {
+			ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
+			unpack_collision(args.input_paths[0], args.output_path);
+			return 0;
 		} else if(!continuation.empty()) {
 			print_usage(false);
 			return 1;
@@ -459,6 +464,20 @@ static void extract_moby(const fs::path& input_path, const fs::path& output_path
 	write_file(output_path, xml, "w");
 }
 
+static void unpack_collision(const fs::path& input_path, const fs::path& output_path) {
+	AssetForest forest;
+	AssetBank& bank = forest.mount<LooseAssetBank>(output_path, true);
+	CollisionAsset& collision = bank.asset_file("collision.asset").root().child<CollisionAsset>("collision");
+	
+	FileInputStream stream;
+	verify(stream.open(input_path), "Cannot open input file.");
+	
+	BuildConfig config(Game::RAC, Region::US); // Don't care.
+	unpack_asset_impl(collision, stream, nullptr, config);
+	
+	bank.write();
+}
+
 static void print_usage(bool developer_subcommands) {
 	puts("Wrench Build Tool -- https://github.com/chaoticgd/wrench");
 	puts("");
@@ -510,6 +529,10 @@ static void print_usage(bool developer_subcommands) {
 		puts("");
 		puts(" unpack_flat <input file> -o <output dir> [-g <game>] [-r <region>] [-s]");
 		puts("   Unpack an ISO or WAD file to produce an asset bank of FlatWad assets.");
+		puts("");
+		puts(" unpack_collision <input file> -o <output dir>");
+		puts("   Unpack a built collision file to produce an asset bank containing a single");
+		puts("   collision asset and the corresponding mesh.");
 		puts("");
 		puts(" test <input asset bank> [-a <asset link>] [-f <filter string>]");
 		puts("   Unpack and repack binaries from the asset bank, and diff them against the");
