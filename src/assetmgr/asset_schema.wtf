@@ -1544,18 +1544,18 @@ AssetType Sky {
 	bin_leaf: true
 	
 	ColourAttribute colour {
-		required: true
+		required: false
 		games: [1 2 3]
 	}
 	
 	BooleanAttribute clear_screen {
-		required: true
+		required: false
 		games: [1 2 3 4]
 	}
 	
 	IntegerAttribute maximum_sprite_count {
 		desc: "Controls how much memory to allocate for sprites."
-		required: true
+		required: false
 		games: [1 2 3 4]
 	}
 	
@@ -1607,10 +1607,14 @@ AssetType SkyShell {
 	
 	Vector3Attribute starting_rotation {
 		desc: "The starting rotation in radians per second."
+		required: false
+		games: [1 2 3 4]
 	}
 	
 	Vector3Attribute angular_velocity {
 		desc: "The change in rotation each frame."
+		required: false
+		games: [1 2 3 4]
 	}
 	
 	Child mesh {

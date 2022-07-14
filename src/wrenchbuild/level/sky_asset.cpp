@@ -117,26 +117,36 @@ static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig confi
 static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig config) {
 	Sky sky;
 	
-	glm::vec4 col = src.colour();
-	sky.colour = {
-		(u8) roundf(col.r * 255.f),
-		(u8) roundf(col.g * 255.f),
-		(u8) roundf(col.b * 255.f),
-		(u8) (fabs(col.a - 1.f) < 0.0001f ? 0x80 : roundf(col.a * 127.f))
-	};
-	sky.clear_screen = src.clear_screen();
-	sky.maximum_sprite_count = src.maximum_sprite_count();
+	if(src.has_colour()) {
+		glm::vec4 col = src.colour();
+		sky.colour = {
+			(u8) roundf(col.r * 255.f),
+			(u8) roundf(col.g * 255.f),
+			(u8) roundf(col.b * 255.f),
+			(u8) (fabs(col.a - 1.f) < 0.0001f ? 0x80 : roundf(col.a * 127.f))
+		};
+	}
+	if(src.has_clear_screen()) {
+		sky.clear_screen = src.clear_screen();
+	}
+	if(src.has_maximum_sprite_count()) {
+		sky.maximum_sprite_count = src.maximum_sprite_count();
+	}
 	
 	// Read all the references to meshes.
 	std::vector<FileReference> refs;
 	src.get_shells().for_each_logical_child_of_type<SkyShellAsset>([&](const SkyShellAsset& shell_asset) {
 		SkyShell shell;
 		shell.textured = shell_asset.textured();
-		if(config.game() == Game::UYA || config.game() == Game::DL) {
+		if(shell_asset.has_bloom() && (config.game() == Game::UYA || config.game() == Game::DL)) {
 			shell.bloom = shell_asset.bloom();
 		}
-		shell.rotation = shell_asset.starting_rotation();
-		shell.angular_velocity = shell_asset.angular_velocity();
+		if(shell_asset.has_starting_rotation()) {
+			shell.rotation = shell_asset.starting_rotation();
+		}
+		if(shell_asset.has_angular_velocity()) {
+			shell.angular_velocity = shell_asset.angular_velocity();
+		}
 		sky.shells.emplace_back(shell);
 		
 		shell_asset.get_mesh().for_each_logical_child_of_type<MeshAsset>([&](const MeshAsset& cluster) {

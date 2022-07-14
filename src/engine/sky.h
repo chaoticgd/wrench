@@ -32,8 +32,8 @@ struct SkyShell {
 	std::vector<Mesh> clusters;
 	bool textured = false;
 	bool bloom = false;
-	glm::vec3 rotation;
-	glm::vec3 angular_velocity;
+	glm::vec3 rotation = {0.f, 0.f, 0.f};
+	glm::vec3 angular_velocity = {0.f, 0.f, 0.f};
 };
 
 packed_struct(SkyColour,
