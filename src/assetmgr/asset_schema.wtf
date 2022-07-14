@@ -1543,14 +1543,12 @@ AssetType CollisionMaterial {
 AssetType Sky {
 	bin_leaf: true
 	
-	ColourAttribute background_colour {
-		desc: "The colour to clear the screen with."
+	ColourAttribute colour {
 		required: true
 		games: [1 2 3]
 	}
 	
 	BooleanAttribute clear_screen {
-		desc: "Whether to clear the screen or not."
 		required: true
 		games: [1 2 3 4]
 	}

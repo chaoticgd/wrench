@@ -35,7 +35,7 @@ Sky read_sky(Buffer src, f32 framerate) {
 	SkyHeader header = src.read<SkyHeader>(0, "header");
 	verify(header.shell_count <= 8, "Too many sky shells!");
 	
-	sky.background_colour = header.background_colour;
+	sky.colour = header.colour;
 	sky.clear_screen = !!header.clear_screen;
 	sky.fx = src.read_multiple<u8>(header.fx_list, header.fx_count, "FX indices").copy();
 	sky.maximum_sprite_count = header.maximum_sprite_count;
@@ -56,7 +56,7 @@ void write_sky(OutBuffer dest, const Sky& sky, f32 framerate) {
 	s64 header_ofs = dest.alloc<SkyHeader>();
 	SkyHeader header = {};
 	
-	header.background_colour = sky.background_colour;
+	header.colour = sky.colour;
 	header.clear_screen = sky.clear_screen;
 	header.shell_count = (s16) sky.shells.size();
 	header.texture_count = (s16) sky.texture_mappings.size();

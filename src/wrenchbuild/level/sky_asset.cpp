@@ -51,9 +51,9 @@ static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig confi
 	std::vector<u8> buffer = src.read_multiple<u8>(src.size());
 	Sky sky = read_sky(buffer, config.framerate());
 	
-	SkyBackgroundColour bc = sky.background_colour;
-	dest.set_background_colour(glm::vec4(
-		bc.r / 255.f, bc.g / 255.f, bc.b / 255.f, bc.a == 0x80 ? 1.f : bc.a / 127.f));
+	SkyColour col = sky.colour;
+	dest.set_colour(glm::vec4(
+		col.r / 255.f, col.g / 255.f, col.b / 255.f, col.a == 0x80 ? 1.f : col.a / 127.f));
 	dest.set_clear_screen(sky.clear_screen);
 	dest.set_maximum_sprite_count(sky.maximum_sprite_count);
 	
@@ -117,12 +117,12 @@ static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig confi
 static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig config) {
 	Sky sky;
 	
-	glm::vec4 bc = src.background_colour();
-	sky.background_colour = {
-		(u8) roundf(bc.r * 255.f),
-		(u8) roundf(bc.g * 255.f),
-		(u8) roundf(bc.b * 255.f),
-		(u8) (fabs(bc.a - 1.f) < 0.0001f ? 0x80 : roundf(bc.a * 127.f))
+	glm::vec4 col = src.colour();
+	sky.colour = {
+		(u8) roundf(col.r * 255.f),
+		(u8) roundf(col.g * 255.f),
+		(u8) roundf(col.b * 255.f),
+		(u8) (fabs(col.a - 1.f) < 0.0001f ? 0x80 : roundf(col.a * 127.f))
 	};
 	sky.clear_screen = src.clear_screen();
 	sky.maximum_sprite_count = src.maximum_sprite_count();
