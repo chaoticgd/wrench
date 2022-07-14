@@ -188,7 +188,7 @@ static void unpack_sky_textures(ColladaScene& scene, CollectionAsset& fx, Collec
 	for(s32 i = 0; i < (s32) sky.textures.size(); i++) {
 		auto [stream, ref] = materials.file().open_binary_file_for_writing(stringf("%d.png", i));
 		write_png(*stream, sky.textures[i]);
-		scene.texture_paths.emplace_back(ref.path);
+		scene.texture_paths.emplace_back(ref.path.string());
 		texture_refs.emplace_back(std::move(ref));
 	}
 	
