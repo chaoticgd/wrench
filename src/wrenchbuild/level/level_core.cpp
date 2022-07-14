@@ -55,7 +55,7 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 	
 	unpack_asset(dest.tfrags(), data, ByteRange{header.tfrags, tfrags_size}, config);
 	unpack_asset(dest.occlusion(), data, level_core_block_range(header.occlusion, block_bounds), config);
-	unpack_asset(dest.sky(), data, level_core_block_range(header.sky, block_bounds), config);
+	unpack_asset(dest.sky<SkyAsset>(SWITCH_FILES), data, level_core_block_range(header.sky, block_bounds), config);
 	unpack_asset(dest.collision<CollisionAsset>(SWITCH_FILES), data, level_core_block_range(header.collision, block_bounds), config);
 	
 	CollectionAsset& tfrag_textures_collection = dest.tfrag_textures(SWITCH_FILES);

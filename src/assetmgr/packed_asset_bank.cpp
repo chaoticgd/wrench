@@ -24,6 +24,7 @@ PackedAssetBank::PackedAssetBank(AssetForest& forest, fs::path path_to_zip)
 
 std::string PackedAssetBank::read_text_file(const fs::path& path) const {
 	assert(0);
+	return "";
 }
 
 void PackedAssetBank::write_text_file(const fs::path& path, const char* contents) {
@@ -32,4 +33,5 @@ void PackedAssetBank::write_text_file(const fs::path& path, const char* contents
 
 std::vector<fs::path> PackedAssetBank::enumerate_asset_files() const {
 	assert(0);
+	return {};
 }

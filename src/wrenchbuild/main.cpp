@@ -16,6 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <cstdio>
 #include <mutex>
 #include <thread>
 #include <fstream>
@@ -49,7 +50,8 @@ enum ArgFlags : u32 {
 	ARG_HINT = 1 << 7,
 	ARG_SUBDIRECTORY = 1 << 8,
 	ARG_DEVELOPER = 1 << 9,
-	ARG_ASSET_OPTIONAL = 1 << 10
+	ARG_ASSET_OPTIONAL = 1 << 10,
+	ARG_FILTER = 1 << 11
 };
 
 struct ParsedArgs {
@@ -62,6 +64,7 @@ struct ParsedArgs {
 	std::string hint;
 	bool generate_output_subdirectory = false;
 	bool print_developer_output = false;
+	std::string filter;
 };
 
 static int wrenchbuild(int argc, char** argv);
@@ -141,8 +144,8 @@ static int wrenchbuild(int argc, char** argv) {
 	}
 	
 	if(mode == "test") {
-		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_ASSET_OPTIONAL);
-		run_tests(args.input_paths[0], args.asset);
+		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_ASSET_OPTIONAL | ARG_FILTER);
+		run_tests(args.input_paths[0], args.asset, args.filter);
 		return 0;
 	}
 	
@@ -234,6 +237,7 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 		}
 		
 		if((flags & ARG_HINT) && strcmp(argv[i], "-h") == 0) {
+			verify(i + 1 < argc, "Expected hint argument.");
 			args.hint = argv[++i];
 			continue;
 		}
@@ -248,7 +252,13 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 			continue;
 		}
 		
-		if(strcmp(argv[i], "-f") == 0) {
+		if((flags & ARG_FILTER) && strcmp(argv[i], "-f") == 0) {
+			verify(i + 1 < argc, "Expected filter argument.");
+			args.filter = argv[++i];
+			continue;
+		}
+		
+		if(strcmp(argv[i], "--flusher-thread-hack") == 0) {
 			start_stdout_flusher_thread();
 			continue;
 		}
@@ -501,11 +511,13 @@ static void print_usage(bool developer_subcommands) {
 		puts(" unpack_flat <input file> -o <output dir> [-g <game>] [-r <region>] [-s]");
 		puts("   Unpack an ISO or WAD file to produce an asset bank of FlatWad assets.");
 		puts("");
-		puts(" test <input asset bank> [-a <asset link>]");
+		puts(" test <input asset bank> [-a <asset link>] [-f <filter string>]");
 		puts("   Unpack and repack binaries from the asset bank, and diff them against the");
 		puts("   originals. If -a is passed, only test the single specified binary and print");
 		puts("   a hex dump, otherwise test all the binaries in the bank without the hex dump.");
 		puts("   Use the unpack_binaries subcommand can produce the input asset bank.");
+		puts("   If -f is passed, only tests on assets which contain the filter string in");
+		puts("   their absolute asset link string will be run.");
 		puts("");
 		puts(" decompress <input file> -o <output file> [-x <offset>]");
 		puts("   Decompress a file stored using the game's custom LZ compression scheme.");

@@ -19,15 +19,21 @@
 #include "mesh.h"
 #include "timer.h"
 
-Mesh sort_vertices(Mesh src) {
+Mesh sort_vertices(Mesh src, bool (*compare)(const Vertex& lhs, const Vertex& rhs)) {
 	std::vector<s32> vertex_mapping(src.vertices.size());
 	for(size_t i = 0; i < src.vertices.size(); i++) {
 		vertex_mapping[i] = i;
 	}
 	
-	std::sort(BEGIN_END(vertex_mapping), [&](s32 lhs, s32 rhs) {
-		return src.vertices[lhs] < src.vertices[rhs];
-	});
+	if(compare) {
+		std::sort(BEGIN_END(vertex_mapping), [&](s32 lhs, s32 rhs) {
+			return compare(src.vertices[lhs], src.vertices[rhs]);
+		});
+	} else {
+		std::sort(BEGIN_END(vertex_mapping), [&](s32 lhs, s32 rhs) {
+			return src.vertices[lhs] < src.vertices[rhs];
+		});
+	}
 	
 	std::vector<s32> inverse_mapping(src.vertices.size());
 	for(size_t i = 0; i < src.vertices.size(); i++) {
@@ -56,28 +62,75 @@ Mesh sort_vertices(Mesh src) {
 }
 
 Mesh deduplicate_vertices(Mesh src) {
-	src = sort_vertices(std::move(src));
-	
 	Mesh dest;
 	dest.name = std::move(src.name);
 	dest.flags = src.flags;
+	
+	// Build a mapping that will allow us to iterate over the vertices as if
+	// they were sorted.
+	std::vector<s32> vertex_mapping(src.vertices.size());
+	for(size_t i = 0; i < src.vertices.size(); i++) {
+		vertex_mapping[i] = i;
+	}
+	
+	std::sort(BEGIN_END(vertex_mapping), [&](s32 lhs, s32 rhs) {
+		return src.vertices[lhs] < src.vertices[rhs];
+	});
+	
 	std::vector<s32> index_mapping(src.vertices.size());
-	if(src.vertices.size() > 0) {
-		dest.vertices.push_back(src.vertices[0]);
-		index_mapping[0] = 0;
-	}
-	for(size_t i = 1; i < src.vertices.size(); i++) {
-		Vertex& prev = src.vertices[i - 1];
-		Vertex& cur = src.vertices[i];
-		bool discard = true;
-		discard &= vec3_equal_eps(prev.pos, cur.pos);
-		discard &= vec3_equal_eps(prev.normal, cur.normal);
-		discard &= vec2_equal_eps(prev.tex_coord, cur.tex_coord);
-		if(!discard) {
-			dest.vertices.push_back(src.vertices[i]);
+	std::vector<bool> discard(src.vertices.size(), true);
+	
+	s32 last_unique_i = 0;
+	
+	// Process a run of equal vertices.
+	auto process_run = [&](s32 begin, s32 end) {
+		s32 unique = INT32_MAX;
+		for(s32 i = begin; i < end; i++) {
+			unique = std::min(unique, vertex_mapping[i]);
 		}
-		index_mapping[i] = dest.vertices.size() - 1;
+		if(unique != INT32_MAX) {
+			discard[unique] = false;
+			for(s32 i = begin; i < end; i++) {
+				index_mapping[vertex_mapping[i]] = unique;
+			}
+		}
+	};
+	
+	// Iterate over each consecutive pair of vertices as in sorted order.
+	s32 i;
+	for(i = 1; i < (s32) src.vertices.size(); i++) {
+		Vertex& prev = src.vertices[vertex_mapping[i - 1]];
+		Vertex& cur = src.vertices[vertex_mapping[i]];
+		bool equal = true;
+		equal &= vec3_equal_eps(prev.pos, cur.pos);
+		equal &= vec3_equal_eps(prev.normal, cur.normal);
+		equal &= prev.skin == cur.skin;
+		equal &= prev.colour == cur.colour;
+		equal &= vec2_equal_eps(prev.tex_coord, cur.tex_coord);
+		if(!equal) {
+			process_run(last_unique_i, i);
+			last_unique_i = i;
+		}
 	}
+	
+	process_run(last_unique_i, (s32) src.vertices.size());
+	
+	// Copy over the unique vertices, preserving their original ordering.
+	std::vector<s32> src_to_dest(src.vertices.size(), -1);
+	for(size_t i = 0; i < src.vertices.size(); i++) {
+		if(!discard[i]) {
+			src_to_dest[i] = dest.vertices.size();
+			dest.vertices.emplace_back(src.vertices[i]);
+		}
+	}
+	
+	// Rewrite the index_mapping list so it points to the destination vertices
+	// instead of the source vertices.
+	for(s32& index : index_mapping) {
+		index = src_to_dest[index];
+	}
+	
+	// Map the indices.
 	dest.submeshes = std::move(src.submeshes);
 	for(SubMesh& submesh : dest.submeshes) {
 		for(Face& face : submesh.faces) {
@@ -89,6 +142,7 @@ Mesh deduplicate_vertices(Mesh src) {
 			}
 		}
 	}
+	
 	return dest;
 }
 
@@ -141,4 +195,58 @@ bool vec2_equal_eps(const glm::vec2& lhs, const glm::vec2& rhs, f32 eps) {
 
 bool vec3_equal_eps(const glm::vec3& lhs, const glm::vec3& rhs, f32 eps) {
 	return fabs(lhs.x - rhs.x) < eps && fabs(lhs.y - rhs.y) < eps && fabs(lhs.z - rhs.z) < eps;
+}
+
+Mesh merge_meshes(const std::vector<Mesh>& meshes, std::string name, u32 flags) {
+	Mesh merged;
+	merged.name = std::move(name);
+	merged.flags = flags;
+	
+	SubMesh* dest = nullptr;
+	
+	for(const Mesh& mesh : meshes) {
+		s32 base = (s32) merged.vertices.size();
+		merged.vertices.insert(merged.vertices.end(), BEGIN_END(mesh.vertices));
+		for(const SubMesh& src : mesh.submeshes) {
+			if(dest == nullptr || src.material != dest->material) {
+				dest = &merged.submeshes.emplace_back();
+				dest->material = src.material;
+			}
+			for(const Face& face : src.faces) {
+				dest->faces.emplace_back(base + face.v0, base + face.v1, base + face.v2, base + face.v3);
+			}
+		}
+	}
+	
+	return merged;
+}
+
+glm::vec4 approximate_bounding_sphere(const std::vector<Vertex>& vertices) {
+	if(vertices.size() == 0) {
+		return glm::vec4(0, 0, 0, 0);
+	}
+	
+	glm::vec3 min = vertices[0].pos;
+	for(const Vertex& vertex : vertices) {
+		min.x = std::min(vertex.pos.x, min.x);
+		min.y = std::min(vertex.pos.y, min.y);
+		min.z = std::min(vertex.pos.z, min.z);
+	}
+	
+	glm::vec3 max = vertices[0].pos;
+	for(const Vertex& vertex : vertices) {
+		max.x = std::max(vertex.pos.x, max.x);
+		max.y = std::max(vertex.pos.y, max.y);
+		max.z = std::max(vertex.pos.z, max.z);
+	}
+	
+	glm::vec3 centre = (min + max) / 2.f;
+	
+	f32 radius = 0.f;
+	for(const Vertex& vertex : vertices) {
+		glm::vec3 delta = vertex.pos - centre;
+		radius = std::max(sqrtf(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z), radius);
+	}
+	
+	return glm::vec4(centre, radius);
 }

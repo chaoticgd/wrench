@@ -97,6 +97,28 @@ std::string AssetLink::to_string() const {
 	return str;
 }
 
+std::vector<ColladaScene*> read_collada_files(std::vector<std::unique_ptr<ColladaScene>>& owners, std::vector<FileReference> refs) {
+	std::vector<ColladaScene*> scenes;
+	for(size_t i = 0; i < refs.size(); i++) {
+		bool unique = true;
+		size_t j;
+		for(j = 0; j < refs.size(); j++) {
+			if(i > j && refs[i].owner == refs[j].owner && refs[i].path == refs[j].path) {
+				unique = false;
+				break;
+			}
+		}
+		if(unique) {
+			std::string xml = refs[i].owner->read_text_file(refs[i].path);
+			std::unique_ptr<ColladaScene>& owner = owners.emplace_back(std::make_unique<ColladaScene>(read_collada((char*) xml.data())));
+			scenes.emplace_back(owner.get());
+		} else {
+			scenes.emplace_back(scenes[j]);
+		}
+	}
+	return scenes;
+}
+
 const char* next_hint(const char** hint) {
 	static char temp[256];
 	if(hint) {

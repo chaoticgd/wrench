@@ -22,8 +22,7 @@
 
 static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfig config, const char* hint);
 static void pack_moby_class_core(OutputStream& dest, const MobyClassAsset& src, BuildConfig config, const char* hint);
-static std::vector<ColladaScene*> read_collada_files(std::vector<std::unique_ptr<ColladaScene>>& owners, std::vector<FileReference> refs);
-static bool test_moby_class_core(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint);
+static AssetTestResult test_moby_class_core(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode);
 
 on_load(MobyClass, []() {
 	MobyClassAsset::funcs.unpack_rac1 = wrap_hint_unpacker_func<MobyClassAsset>(unpack_moby_class);
@@ -43,7 +42,7 @@ static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfi
 	unpack_asset_impl(dest.core<BinaryAsset>(), src, nullptr, config);
 	
 	s32 texture_count = 0;
-	if(dest.has_materials()) {
+	if(!g_asset_unpacker.dump_binaries && dest.has_materials()) {
 		CollectionAsset& materials = dest.get_materials();
 		for(s32 i = 0; i < 16; i++) {
 			if(materials.has_child(i)) {
@@ -71,7 +70,7 @@ static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfi
 	}
 	ColladaScene scene = recover_moby_class(data, -1, texture_count);
 	
-	if(dest.has_materials()) {
+	if(!g_asset_unpacker.dump_binaries && dest.has_materials()) {
 		CollectionAsset& materials = dest.get_materials();
 		for(s32 i = 0; i < 16; i++) {
 			if(materials.has_child(i)) {
@@ -139,28 +138,6 @@ static void pack_moby_class_core(OutputStream& dest, const MobyClassAsset& src, 
 	//dest.write_n(dest_bytes.data(), dest_bytes.size());
 }
 
-static std::vector<ColladaScene*> read_collada_files(std::vector<std::unique_ptr<ColladaScene>>& owners, std::vector<FileReference> refs) {
-	std::vector<ColladaScene*> scenes;
-	for(size_t i = 0; i < refs.size(); i++) {
-		bool unique = true;
-		size_t j;
-		for(j = 0; j < refs.size(); j++) {
-			if(i != j && i > j) {
-				unique = false;
-				break;
-			}
-		}
-		if(unique) {
-			std::string xml = refs[i].owner->read_text_file(refs[i].path);
-			std::unique_ptr<ColladaScene>& owner = owners.emplace_back(std::make_unique<ColladaScene>(read_collada((char*) xml.data())));
-			scenes.emplace_back(owner.get());
-		} else {
-			scenes.emplace_back(scenes[j]);
-		}
-	}
-	return scenes;
-}
-
-static bool test_moby_class_core(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint) {
-	return false;
+static AssetTestResult test_moby_class_core(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode) {
+	return AssetTestResult::NOT_RUN;
 }

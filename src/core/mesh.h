@@ -19,9 +19,8 @@
 #ifndef MESH_H
 #define MESH_H
 
-#include "util.h"
-
 #include <glm/glm.hpp>
+#include <core/util.h>
 
 struct Face {
 	s32 v0;
@@ -31,7 +30,10 @@ struct Face {
 	Face(s32 a0, s32 a1, s32 a2, s32 a3 = -1)
 		: v0(a0), v1(a1), v2(a2), v3(a3) {}
 	bool operator==(const Face& rhs) const {
-		return v0 == rhs.v0 && v1 == rhs.v1 && v2 == rhs.v2 && v3 == rhs.v3;
+		return v0 == rhs.v0
+			&& v1 == rhs.v1
+			&& v2 == rhs.v2
+			&& v3 == rhs.v3;
 	}
 	bool operator<(const Face& rhs) const {
 		// Test v3 first to seperate out tris and quads.
@@ -50,9 +52,13 @@ struct SkinAttributes {
 	s8 joints[3] = {-1, 0, 0};
 	u8 weights[3] = {255, 0, 0};
 	bool operator==(const SkinAttributes& rhs) const {
-		return count == rhs.count &&
-			joints[0] == rhs.joints[0] && joints[1] == rhs.joints[1] && joints[2] == rhs.joints[2] &&
-			weights[0] == rhs.weights[0] && weights[1] == rhs.weights[1] && weights[2] == rhs.weights[2];
+		return count == rhs.count
+			&& joints[0] == rhs.joints[0]
+			&& joints[1] == rhs.joints[1]
+			&& joints[2] == rhs.joints[2]
+			&& weights[0] == rhs.weights[0]
+			&& weights[1] == rhs.weights[1]
+			&& weights[2] == rhs.weights[2];
 	}
 	bool operator<(const SkinAttributes& rhs) const {
 		if(count != rhs.count) return count < rhs.count;
@@ -65,18 +71,44 @@ struct SkinAttributes {
 	}
 };
 
+struct ColourAttribute {
+	u8 r;
+	u8 g;
+	u8 b;
+	u8 a;
+	bool operator==(const ColourAttribute& rhs) const {
+		return r == rhs.r
+			&& g == rhs.g
+			&& b == rhs.b
+			&& a == rhs.a;
+	}
+	bool operator<(const ColourAttribute& rhs) const {
+		if(a != rhs.a) return a < rhs.a;
+		if(b != rhs.g) return b < rhs.b;
+		if(g != rhs.g) return g < rhs.g;
+		return r < rhs.r;
+	}
+};
+
 struct Vertex {
 	glm::vec3 pos;
-	glm::vec3 normal;
+	glm::vec3 normal = {0, 0, 0};
 	SkinAttributes skin;
-	glm::vec2 tex_coord;
+	ColourAttribute colour;
+	glm::vec2 tex_coord = {0, 0};
 	u16 vertex_index = 0xff; // Only used by the moby code.
 	Vertex() {}
-	Vertex(const glm::vec3& p) : pos(p), normal(0, 0, 0), tex_coord(0, 0) {}
+	Vertex(const glm::vec3& p) : pos(p) {}
 	Vertex(const glm::vec3& p, const glm::vec3& n, const SkinAttributes& s)
-		: pos(p), normal(n), skin(s), tex_coord{0, 0} {}
+		: pos(p), normal(n), skin(s) {}
+	Vertex(const glm::vec3& p, const ColourAttribute& c, const glm::vec2& t)
+		: pos(p), colour(c), tex_coord(t) {}
 	bool operator==(const Vertex& rhs) const {
-		return pos == rhs.pos && normal == rhs.normal && skin == rhs.skin && tex_coord == rhs.tex_coord;
+		return pos == rhs.pos
+			&& normal == rhs.normal
+			&& skin == rhs.skin
+			&& colour == rhs.colour
+			&& tex_coord == rhs.tex_coord;
 	}
 	bool operator<(const Vertex& rhs) const {
 		// The moby code relies on the texture coordinates being compared last.
@@ -87,6 +119,7 @@ struct Vertex {
 		if(normal.y != rhs.normal.y) return normal.y < rhs.normal.y;
 		if(normal.x != rhs.normal.x) return normal.x < rhs.normal.x;
 		if(!(skin == rhs.skin)) return skin < rhs.skin;
+		if(!(colour == rhs.colour)) return colour < rhs.colour;
 		if(tex_coord.y != rhs.tex_coord.y) return tex_coord.y < rhs.tex_coord.y;
 		return tex_coord.x < rhs.tex_coord.x;
 	}
@@ -95,7 +128,8 @@ struct Vertex {
 enum MeshFlags {
 	MESH_HAS_QUADS = 1 << 0,
 	MESH_HAS_NORMALS = 1 << 1,
-	MESH_HAS_TEX_COORDS = 1 << 2
+	MESH_HAS_VERTEX_COLOURS = 1 << 2,
+	MESH_HAS_TEX_COORDS = 1 << 3
 };
 
 struct SubMesh {
@@ -110,12 +144,16 @@ struct Mesh {
 	std::vector<SubMesh> submeshes;
 };
 
-Mesh sort_vertices(Mesh mesh);
+Mesh sort_vertices(Mesh mesh, bool (*compare)(const Vertex& lhs, const Vertex& rhs) = nullptr);
 
 Mesh deduplicate_vertices(Mesh old_mesh);
 Mesh deduplicate_faces(Mesh old_mesh); // Removes identical faces and tris that shadow quads.
 
 bool vec2_equal_eps(const glm::vec2& lhs, const glm::vec2& rhs, f32 eps = 0.00001f);
 bool vec3_equal_eps(const glm::vec3& lhs, const glm::vec3& rhs, f32 eps = 0.00001f);
+
+Mesh merge_meshes(const std::vector<Mesh>& meshes, std::string name, u32 flags);
+
+glm::vec4 approximate_bounding_sphere(const std::vector<Vertex>& vertices);
 
 #endif

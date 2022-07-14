@@ -24,7 +24,7 @@ static void unpack_texture_asset(TextureAsset& dest, InputStream& src, BuildConf
 static void pack_texture_asset(OutputStream& dest, const TextureAsset& src, BuildConfig config, const char* hint);
 static Texture unpack_pif(InputStream& src);
 static void pack_pif(OutputStream& dest, Texture& texture);
-static bool test_texture_asset(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint);
+static AssetTestResult test_texture_asset(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode);
 
 on_load(Texture, []() {
 	TextureAsset::funcs.unpack_rac1 = wrap_hint_unpacker_func<TextureAsset>(unpack_texture_asset);
@@ -207,7 +207,7 @@ static void pack_pif(OutputStream& dest, Texture& texture) {
 	dest.write(header_ofs, header);
 }
 
-static bool test_texture_asset(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint) {
+static AssetTestResult test_texture_asset(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode) {
 	const char* type = next_hint(&hint);
 	if(strcmp(type, "pif") == 0) {
 		// We don't know what this field in the PIF header is and it doesn't
@@ -218,5 +218,5 @@ static bool test_texture_asset(std::vector<u8>& original, std::vector<u8>& repac
 		*(u32*) &repacked[4] = 0;
 		original.resize(repacked.size());
 	}
-	return false;
+	return AssetTestResult::NOT_RUN;
 }

@@ -125,7 +125,8 @@ Each asset type is defined in `asset_schema.wtf` and a code generator, `asset_co
 
 ## Version History
 
-| Format Version | Description |
-| - | - |
-| 8 | The first version of the asset system. |
-| 1..7 | Old JSON level format. Not supported. |
+| Format Version | Wrench Version | Description |
+| - | - | - |
+| 9 | | Added Sky and SkyShell asset types. |
+| 8 | v0.1 | The first version of the asset system. |
+| 1..7 | | Old JSON level format. Not supported. |

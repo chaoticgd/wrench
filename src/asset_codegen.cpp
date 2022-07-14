@@ -24,6 +24,16 @@
 
 #include <wtf/wtf.h>
 
+#define INTEGER_ATTRIB        "IntegerAttribute"
+#define FLOAT_ATTRIB          "FloatAttribute"
+#define BOOLEAN_ATTRIB        "BooleanAttribute"
+#define STRING_ATTRIB         "StringAttribute"
+#define ARRAY_ATTRIB          "ArrayAttribute"
+#define VECTOR3_ATTRIB        "Vector3Attribute"
+#define COLOUR_ATTRIB         "ColourAttribute"
+#define ASSET_LINK_ATTRIB     "AssetLinkAttribute"
+#define FILE_REFERENCE_ATTRIB "FileReferenceAttribute"
+
 static void generate_asset_type(const WtfNode* asset_type, int id);
 static void generate_asset_type_function(const WtfNode* root);
 static void generate_create_asset_function(const WtfNode* root);
@@ -316,27 +326,27 @@ static void generate_read_function(const WtfNode* asset_type) {
 static void generate_read_attribute_code(const WtfNode* node, const char* result, const char* attrib, int depth) {
 	int ind = depth + 2;
 	
-	if(strcmp(node->type_name, "IntegerAttribute") == 0) {
+	if(strcmp(node->type_name, INTEGER_ATTRIB) == 0) {
 		generate_attribute_type_check_code(attrib, "WTF_NUMBER", node->tag, ind);
 		indent(ind); out("%s = %s->number.i;\n", result, attrib);
 	}
 	
-	if(strcmp(node->type_name, "FloatAttribute") == 0) {
+	if(strcmp(node->type_name, FLOAT_ATTRIB) == 0) {
 		generate_attribute_type_check_code(attrib, "WTF_NUMBER", node->tag, ind);
 		indent(ind); out("%s = %s->number.f;\n", result, attrib);
 	}
 	
-	if(strcmp(node->type_name, "BooleanAttribute") == 0) {
+	if(strcmp(node->type_name, BOOLEAN_ATTRIB) == 0) {
 		generate_attribute_type_check_code(attrib, "WTF_BOOLEAN", node->tag, ind);
 		indent(ind); out("%s = %s->boolean;\n", result, attrib);
 	}
 	
-	if(strcmp(node->type_name, "StringAttribute") == 0) {
+	if(strcmp(node->type_name, STRING_ATTRIB) == 0) {
 		generate_attribute_type_check_code(attrib, "WTF_STRING", node->tag, ind);
 		indent(ind); out("%s = std::string(%s->string.begin, (size_t) (%s->string.end - %s->string.begin));\n", result, attrib, attrib, attrib);
 	}
 	
-	if(strcmp(node->type_name, "ArrayAttribute") == 0) {
+	if(strcmp(node->type_name, ARRAY_ATTRIB) == 0) {
 		generate_attribute_type_check_code(attrib, "WTF_ARRAY", node->tag, ind);
 		const WtfNode* element = wtf_child(node, NULL, "element");
 		assert(element);
@@ -351,13 +361,39 @@ static void generate_read_attribute_code(const WtfNode* node, const char* result
 		indent(ind); out("}\n");
 	}
 	
-	if(strcmp(node->type_name, "AssetLinkAttribute") == 0) {
+	if(strcmp(node->type_name, VECTOR3_ATTRIB) == 0) {
+		generate_attribute_type_check_code(attrib, "WTF_ARRAY", node->tag, ind);
+		indent(ind); out("WtfAttribute* x_elem = %s->first_array_element;\n", attrib);
+		indent(ind); out("WtfAttribute* y_elem = x_elem ? x_elem->next : nullptr;\n");
+		indent(ind); out("WtfAttribute* z_elem = y_elem ? y_elem->next : nullptr;\n");
+		indent(ind); out("verify(z_elem, \"A Vector3 attribute does not have 3 elements.\");\n");
+		indent(ind); out("verify(x_elem->type == WTF_NUMBER, \"A Vector3 attribute has elements that aren't numbers.\");\n");
+		indent(ind); out("verify(y_elem->type == WTF_NUMBER, \"A Vector3 attribute has elements that aren't numbers.\");\n");
+		indent(ind); out("verify(z_elem->type == WTF_NUMBER, \"A Vector3 attribute has elements that aren't numbers.\");\n");
+		indent(ind); out("%s = glm::vec3(x_elem->number.f, y_elem->number.f, z_elem->number.f);\n", result);
+	}
+	
+	if(strcmp(node->type_name, COLOUR_ATTRIB) == 0) {
+		generate_attribute_type_check_code(attrib, "WTF_ARRAY", node->tag, ind);
+		indent(ind); out("WtfAttribute* r_elem = %s->first_array_element;\n", attrib);
+		indent(ind); out("WtfAttribute* g_elem = r_elem ? r_elem->next : nullptr;\n");
+		indent(ind); out("WtfAttribute* b_elem = g_elem ? g_elem->next : nullptr;\n");
+		indent(ind); out("WtfAttribute* a_elem = b_elem ? b_elem->next : nullptr;\n");
+		indent(ind); out("verify(a_elem, \"A Colour attribute does not have 4 elements.\");\n");
+		indent(ind); out("verify(r_elem->type == WTF_NUMBER, \"A Colour attribute has elements that aren't numbers.\");\n");
+		indent(ind); out("verify(g_elem->type == WTF_NUMBER, \"A Colour attribute has elements that aren't numbers.\");\n");
+		indent(ind); out("verify(b_elem->type == WTF_NUMBER, \"A Colour attribute has elements that aren't numbers.\");\n");
+		indent(ind); out("verify(a_elem->type == WTF_NUMBER, \"A Colour attribute has elements that aren't numbers.\");\n");
+		indent(ind); out("%s = glm::vec4(r_elem->number.f, g_elem->number.f, b_elem->number.f, a_elem->number.f);\n", result);
+	}
+	
+	if(strcmp(node->type_name, ASSET_LINK_ATTRIB) == 0) {
 		generate_attribute_type_check_code(attrib, "WTF_STRING", node->tag, ind);
 		indent(ind); out("%s = AssetLink();\n", result);
 		indent(ind); out("%s.set(%s->string.begin);\n", result, attrib);
 	}
 	
-	if(strcmp(node->type_name, "FileReferenceAttribute") == 0) {
+	if(strcmp(node->type_name, FILE_REFERENCE_ATTRIB) == 0) {
 		generate_attribute_type_check_code(attrib, "WTF_STRING", node->tag, ind);
 		indent(ind); out("%s = FileReference(file(), %s->string.begin);\n", result, attrib);
 	}
@@ -387,23 +423,23 @@ static void generate_write_function(const WtfNode* asset_type) {
 static void generate_asset_write_code(const WtfNode* node, const char* expr, int depth) {
 	int ind = depth + 2;
 	
-	if(strcmp(node->type_name, "IntegerAttribute") == 0) {
+	if(strcmp(node->type_name, INTEGER_ATTRIB) == 0) {
 		indent(ind); out("wtf_write_integer(ctx, %s);\n", expr);
 	}
 	
-	if(strcmp(node->type_name, "FloatAttribute") == 0) {
+	if(strcmp(node->type_name, FLOAT_ATTRIB) == 0) {
 		indent(ind); out("wtf_write_float(ctx, %s);\n", expr);
 	}
 	
-	if(strcmp(node->type_name, "BooleanAttribute") == 0) {
+	if(strcmp(node->type_name, BOOLEAN_ATTRIB) == 0) {
 		indent(ind); out("wtf_write_boolean(ctx, %s);\n", expr);
 	}
 	
-	if(strcmp(node->type_name, "StringAttribute") == 0) {
+	if(strcmp(node->type_name, STRING_ATTRIB) == 0) {
 		indent(ind); out("wtf_write_string(ctx, %s.c_str(), %s.c_str() + %s.size());\n", expr, expr, expr);
 	}
 	
-	if(strcmp(node->type_name, "ArrayAttribute") == 0) {
+	if(strcmp(node->type_name, ARRAY_ATTRIB) == 0) {
 		const WtfNode* element = wtf_child(node, NULL, "element");
 		assert(element);
 		std::string element_expr = "element_" + std::to_string(depth);
@@ -414,11 +450,21 @@ static void generate_asset_write_code(const WtfNode* node, const char* expr, int
 		indent(ind); out("wtf_end_array(ctx);\n");
 	}
 	
-	if(strcmp(node->type_name, "AssetLinkAttribute") == 0) {
+	if(strcmp(node->type_name, VECTOR3_ATTRIB) == 0) {
+		indent(ind); out("float floats[3] = {%s.x, %s.y, %s.z};\n", expr, expr, expr);
+		indent(ind); out("wtf_write_floats(ctx, ARRAY_PAIR(floats));\n");
+	}
+	
+	if(strcmp(node->type_name, COLOUR_ATTRIB) == 0) {
+		indent(ind); out("float floats[4] = {%s.x, %s.y, %s.z, %s.w};\n", expr, expr, expr, expr);
+		indent(ind); out("wtf_write_floats(ctx, ARRAY_PAIR(floats));\n");
+	}
+	
+	if(strcmp(node->type_name, ASSET_LINK_ATTRIB) == 0) {
 		indent(ind); out("wtf_write_string(ctx, %s.to_string().c_str());\n", expr);
 	}
 	
-	if(strcmp(node->type_name, "FileReferenceAttribute") == 0) {
+	if(strcmp(node->type_name, FILE_REFERENCE_ATTRIB) == 0) {
 		indent(ind); out("std::string path_%d = %s.path.string();\n", depth, expr);
 		indent(ind); out("wtf_write_string(ctx, path_%d.c_str());\n", depth);
 	}
@@ -486,23 +532,23 @@ static void generate_attribute_getter_and_setter_functions(const WtfNode* asset_
 static void generate_attribute_getter_code(const WtfNode* attribute, int depth) {
 	int ind = depth + 4;
 	
-	if(strcmp(attribute->type_name, "IntegerAttribute") == 0) {
+	if(strcmp(attribute->type_name, INTEGER_ATTRIB) == 0) {
 		indent(ind); out("dest_%d = src_%d;\n", depth, depth);
 	}
 	
-	if(strcmp(attribute->type_name, "FloatAttribute") == 0) {
+	if(strcmp(attribute->type_name, FLOAT_ATTRIB) == 0) {
 		indent(ind); out("dest_%d = src_%d;\n", depth, depth);
 	}
 	
-	if(strcmp(attribute->type_name, "BooleanAttribute") == 0) {
+	if(strcmp(attribute->type_name, BOOLEAN_ATTRIB) == 0) {
 		indent(ind); out("dest_%d = src_%d;\n", depth, depth);
 	}
 	
-	if(strcmp(attribute->type_name, "StringAttribute") == 0) {
+	if(strcmp(attribute->type_name, STRING_ATTRIB) == 0) {
 		indent(ind); out("dest_%d = src_%d;\n", depth, depth);
 	}
 	
-	if(strcmp(attribute->type_name, "ArrayAttribute") == 0) {
+	if(strcmp(attribute->type_name, ARRAY_ATTRIB) == 0) {
 		indent(ind); out("for(const auto& src_%d : src_%d) {\n", depth + 1, depth);
 		indent(ind); out("\tdecltype(dest_%d)::value_type dest_%d;\n", depth, depth + 1);
 		generate_attribute_getter_code(wtf_child(attribute, NULL, "element"), depth + 1);
@@ -510,11 +556,19 @@ static void generate_attribute_getter_code(const WtfNode* attribute, int depth) 
 		indent(ind); out("}\n");
 	}
 	
-	if(strcmp(attribute->type_name, "AssetLinkAttribute") == 0) {
+	if(strcmp(attribute->type_name, VECTOR3_ATTRIB) == 0) {
 		indent(ind); out("dest_%d = src_%d;\n", depth, depth);
 	}
 	
-	if(strcmp(attribute->type_name, "FileReferenceAttribute") == 0) {
+	if(strcmp(attribute->type_name, COLOUR_ATTRIB) == 0) {
+		indent(ind); out("dest_%d = src_%d;\n", depth, depth);
+	}
+	
+	if(strcmp(attribute->type_name, ASSET_LINK_ATTRIB) == 0) {
+		indent(ind); out("dest_%d = src_%d;\n", depth, depth);
+	}
+	
+	if(strcmp(attribute->type_name, FILE_REFERENCE_ATTRIB) == 0) {
 		indent(ind); out("dest_%d = src_%d;\n", depth, depth);
 	}
 }
@@ -522,23 +576,23 @@ static void generate_attribute_getter_code(const WtfNode* attribute, int depth) 
 static void generate_attribute_setter_code(const WtfNode* attribute, int depth) {
 	int ind = depth + 1;
 	
-	if(strcmp(attribute->type_name, "IntegerAttribute") == 0) {
+	if(strcmp(attribute->type_name, INTEGER_ATTRIB) == 0) {
 		indent(ind); out("dest_%d = src_%d;\n", depth, depth);
 	}
 	
-	if(strcmp(attribute->type_name, "FloatAttribute") == 0) {
+	if(strcmp(attribute->type_name, FLOAT_ATTRIB) == 0) {
 		indent(ind); out("dest_%d = src_%d;\n", depth, depth);
 	}
 	
-	if(strcmp(attribute->type_name, "BooleanAttribute") == 0) {
+	if(strcmp(attribute->type_name, BOOLEAN_ATTRIB) == 0) {
 		indent(ind); out("dest_%d = src_%d;\n", depth, depth);
 	}
 	
-	if(strcmp(attribute->type_name, "StringAttribute") == 0) {
+	if(strcmp(attribute->type_name, STRING_ATTRIB) == 0) {
 		indent(ind); out("dest_%d = src_%d;\n", depth, depth);
 	}
 	
-	if(strcmp(attribute->type_name, "ArrayAttribute") == 0) {
+	if(strcmp(attribute->type_name, ARRAY_ATTRIB) == 0) {
 		indent(ind); out("for(const auto& src_%d : src_%d) {\n", depth + 1, depth);
 		indent(ind); out("\tdecltype(dest_%d)::value_type dest_%d;\n", depth, depth + 1);
 		generate_attribute_setter_code(wtf_child(attribute, NULL, "element"), depth + 1);
@@ -546,11 +600,19 @@ static void generate_attribute_setter_code(const WtfNode* attribute, int depth) 
 		indent(ind); out("}\n");
 	}
 	
-	if(strcmp(attribute->type_name, "AssetLinkAttribute") == 0) {
+	if(strcmp(attribute->type_name, VECTOR3_ATTRIB) == 0) {
 		indent(ind); out("dest_%d = src_%d;\n", depth, depth);
 	}
 	
-	if(strcmp(attribute->type_name, "FileReferenceAttribute") == 0) {
+	if(strcmp(attribute->type_name, COLOUR_ATTRIB) == 0) {
+		indent(ind); out("dest_%d = src_%d;\n", depth, depth);
+	}
+	
+	if(strcmp(attribute->type_name, ASSET_LINK_ATTRIB) == 0) {
+		indent(ind); out("dest_%d = src_%d;\n", depth, depth);
+	}
+	
+	if(strcmp(attribute->type_name, FILE_REFERENCE_ATTRIB) == 0) {
 		indent(ind); out("dest_%d = src_%d;\n", depth, depth);
 	}
 }
@@ -593,23 +655,23 @@ static void generate_child_functions(const WtfNode* asset_type) {
 }
 
 static std::string node_to_cpp_type(const WtfNode* node) {
-	if(strcmp(node->type_name, "IntegerAttribute") == 0) {
+	if(strcmp(node->type_name, INTEGER_ATTRIB) == 0) {
 		return "int";
 	}
 	
-	if(strcmp(node->type_name, "FloatAttribute") == 0) {
+	if(strcmp(node->type_name, FLOAT_ATTRIB) == 0) {
 		return "float";
 	}
 	
-	if(strcmp(node->type_name, "BooleanAttribute") == 0) {
+	if(strcmp(node->type_name, BOOLEAN_ATTRIB) == 0) {
 		return "bool";
 	}
 	
-	if(strcmp(node->type_name, "StringAttribute") == 0) {
+	if(strcmp(node->type_name, STRING_ATTRIB) == 0) {
 		return "std::string";
 	}
 	
-	if(strcmp(node->type_name, "ArrayAttribute") == 0) {
+	if(strcmp(node->type_name, ARRAY_ATTRIB) == 0) {
 		const WtfNode* element = wtf_child(node, NULL, "element");
 		assert(element);
 		std::string element_type = node_to_cpp_type(element);
@@ -617,11 +679,19 @@ static std::string node_to_cpp_type(const WtfNode* node) {
 		return "std::vector<" + element_type + ">";
 	}
 	
-	if(strcmp(node->type_name, "AssetLinkAttribute") == 0) {
+	if(strcmp(node->type_name, VECTOR3_ATTRIB) == 0) {
+		return "glm::vec3";
+	}
+	
+	if(strcmp(node->type_name, COLOUR_ATTRIB) == 0) {
+		return "glm::vec4";
+	}
+	
+	if(strcmp(node->type_name, ASSET_LINK_ATTRIB) == 0) {
 		return "AssetLink";
 	}
 	
-	if(strcmp(node->type_name, "FileReferenceAttribute") == 0) {
+	if(strcmp(node->type_name, FILE_REFERENCE_ATTRIB) == 0) {
 		return "FileReference";
 	}
 	

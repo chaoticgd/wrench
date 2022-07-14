@@ -48,6 +48,8 @@ using s64 = int64_t;
 using f32 = float;
 using f64 = double;
 
+#define WRENCH_PI 3.14159265358979323846
+
 #ifdef _MSC_VER
 	#define fseek _fseeki64
 	#define ftell _ftelli64

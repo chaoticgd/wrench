@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-format_version: 8
+format_version: 9
 
 // *****************************************************************************
 
@@ -259,14 +259,14 @@ AssetType File {
 AssetType Mesh {
 	bin_leaf: true
 	
-	FileReferenceAttribute src {
-		desc: "The file path of the model file to use."
+	StringAttribute name {
+		desc: "The name of the node to use. This is the same as the Blender node name."
 		required: true
 		games: [1 2 3 4]
 	}
 	
-	StringAttribute name {
-		desc: "The name of the node to use. This is the same as the Blender node name."
+	FileReferenceAttribute src {
+		desc: "The file path of the model file to use."
 		required: true
 		games: [1 2 3 4]
 	}
@@ -1281,7 +1281,7 @@ AssetType LevelCore {
 	}
 	Child sky {
 		desc: "The sky."
-		allowed_types: ["Binary"]
+		allowed_types: ["Sky" "Binary"]
 		required: true
 		games: [1 2 3 4]
 	}
@@ -1537,5 +1537,93 @@ AssetType CollisionMaterial {
 		desc: "The collision ID to use for this material. This controls the type of the surface."
 		required: true
 		games: [1 2 3 4]
+	}
+}
+
+AssetType Sky {
+	bin_leaf: true
+	
+	ColourAttribute colour {
+		required: false
+		games: [1 2 3]
+	}
+	
+	BooleanAttribute clear_screen {
+		required: false
+		games: [1 2 3 4]
+	}
+	
+	IntegerAttribute maximum_sprite_count {
+		desc: "Controls how much memory to allocate for sprites."
+		required: false
+		games: [1 2 3 4]
+	}
+	
+	Child shells {
+		desc: "The different meshes/layers that make up the sky."
+		allowed_types: ["Collection"]
+		required: true
+		games: [1 2 3 4]
+		Child child {
+			allowed_types: ["SkyShell"]
+		}
+	}
+	
+	Child materials {
+		desc: "The materials used by the sky shell meshes."
+		allowed_types: ["Collection"]
+		required: true
+		games: [1 2 3 4]
+		Child child {
+			allowed_types: ["Material" "Texture"]
+		}
+	}
+	
+	Child fx {
+		desc: "The FX textures."
+		allowed_types: ["Collection"]
+		required: true
+		games: [1 2 3 4]
+		Child child {
+			allowed_types: ["Texture"]
+		}
+	}
+}
+
+AssetType SkyShell {
+	bin_leaf: true
+	
+	BooleanAttribute textured {
+		desc: "If the mesh is textured or not."
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	BooleanAttribute bloom {
+		desc: "Only works for textured shells."
+		required: false
+		games: [3 4]
+	}
+	
+	Vector3Attribute starting_rotation {
+		desc: "The starting rotation in radians per second."
+		required: false
+		games: [1 2 3 4]
+	}
+	
+	Vector3Attribute angular_velocity {
+		desc: "The change in rotation each frame."
+		required: false
+		games: [1 2 3 4]
+	}
+	
+	Child mesh {
+		desc: "The mesh. If a Collection asset is used, each child of that asset specifies a different cluster. In the future, it may be possible to specify a single mesh and have it be automatically split up into clusters."
+		allowed_types: ["Collection"]
+		required: true
+		games: [1 2 3 4]
+		Child child {
+			allowed_types: ["Mesh"]
+		}
 	}
 }

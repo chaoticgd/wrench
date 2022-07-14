@@ -20,10 +20,12 @@
 #define ASSETMGR_ASSET_UTIL_H
 
 #include <any>
+#include <glm/glm.hpp>
 
 #include <wtf/wtf.h>
 #include <core/util.h>
 #include <core/stream.h>
+#include <core/collada.h>
 #include <core/filesystem.h>
 
 struct AssetType {
@@ -74,6 +76,8 @@ struct FileReference {
 	const AssetFile* owner = nullptr;
 	fs::path path;
 };
+
+std::vector<ColladaScene*> read_collada_files(std::vector<std::unique_ptr<ColladaScene>>& owners, std::vector<FileReference> refs);
 
 enum AssetAccessorMode {
 	DO_NOT_SWITCH_FILES,

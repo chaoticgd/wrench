@@ -17,37 +17,35 @@
 */
 
 #include "tests.h"
+#include "assetmgr/asset_dispatch.h"
+#include "core/buffer.h"
 
 #include <md5.h>
 
 #include <engine/moby.h>
+#include <string>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 
-enum TestMode {
-	RUN_ALL_TESTS,
-	PRINT_DIFF_ON_FAIL
-};
-
-static void run_round_trip_asset_packing_tests(const fs::path& input_path, const std::string& asset_ref, s32 min_percentage, s32 max_percentage);
+static void run_round_trip_asset_packing_tests(const fs::path& input_path, const std::string& asset_ref, s32 min_percentage, s32 max_percentage, const std::string& filter);
 static void enumerate_binaries(std::vector<BinaryAsset*>& dest, Asset& src);
-static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& binary, AssetType type, s32 percentage, TestMode mode);
+static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& binary, AssetType type, s32 percentage, AssetTestMode mode, const std::string& filter);
 static void strip_trailing_padding_from_src(std::vector<u8>& src, std::vector<u8>& dest);
 
 static s32 pass_count = 0;
 static s32 fail_count = 0;
 
-void run_tests(fs::path input_path, const std::string& asset_ref) {
-	run_round_trip_asset_packing_tests(input_path, asset_ref, 0, 100);
+void run_tests(fs::path input_path, const std::string& asset_ref, const std::string& filter) {
+	run_round_trip_asset_packing_tests(input_path, asset_ref, 0, 100, filter);
 	
 	if(fail_count == 0) {
 		printf("\nALL TESTS HAPPY\n");
 	} else {
-		printf("%d passed, %d failed", pass_count, fail_count);
+		printf("%d passed, %d failed\n", pass_count, fail_count);
 	}
 }
 
-static void run_round_trip_asset_packing_tests(const fs::path& input_path, const std::string& asset_ref, s32 min_percentage, s32 max_percentage) {
+static void run_round_trip_asset_packing_tests(const fs::path& input_path, const std::string& asset_ref, s32 min_percentage, s32 max_percentage, const std::string& filter) {
 	// Disable printing when an asset is packed/unpacked.
 	g_asset_unpacker.quiet = true;
 	g_asset_packer_quiet = true;
@@ -80,8 +78,8 @@ static void run_round_trip_asset_packing_tests(const fs::path& input_path, const
 		AssetType type = asset_string_to_type(asset_type.c_str());
 		if(type != NULL_ASSET_TYPE) {
 			f32 percentage = lerp(min_percentage, max_percentage, i / (f32) binaries.size());
-			TestMode mode = asset_ref.empty() ? RUN_ALL_TESTS : PRINT_DIFF_ON_FAIL;
-			run_round_trip_asset_packing_test(forest, binary, type, (s32) percentage, mode);
+			AssetTestMode mode = asset_ref.empty() ? AssetTestMode::RUN_ALL_TESTS : AssetTestMode::PRINT_DIFF_ON_FAIL;
+			run_round_trip_asset_packing_test(forest, binary, type, (s32) percentage, mode, filter);
 		}
 	}
 }
@@ -96,15 +94,19 @@ static void enumerate_binaries(std::vector<BinaryAsset*>& dest, Asset& src) {
 	});
 }
 
-static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& binary, AssetType type, s32 percentage, TestMode mode) {
+static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& binary, AssetType type, s32 percentage, AssetTestMode mode, const std::string& filter) {
+	const char* type_name = asset_type_to_string(type);
+	std::string ref = binary.absolute_link().to_string();
+	
+	if(ref.find(filter) == std::string::npos) {
+		return;
+	}
+	
 	auto src_file = binary.file().open_binary_file_for_reading(binary.src());
 	std::vector<u8> src = src_file->read_multiple<u8>(src_file->size());
 	MemoryInputStream src_stream(src);
 	
-	const char* type_name = asset_type_to_string(type);
-	std::string ref = binary.absolute_link().to_string();
-	
-	if(mode == PRINT_DIFF_ON_FAIL) {
+	if(mode == AssetTestMode::PRINT_DIFF_ON_FAIL) {
 		printf("[%3d%%] \033[34mRunning test with %s asset %s\033[0m\n", percentage, type_name, ref.c_str());
 	}
 	
@@ -133,19 +135,24 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 		dispatch = &asset.funcs;
 	}
 	
-	if(!dispatch->test || !(*dispatch->test)(src, dest, config, hint.c_str())) {
-		strip_trailing_padding_from_src(src, dest);
-		if(diff_buffers(src, dest, 0, 0, mode == PRINT_DIFF_ON_FAIL)) {
-			if(mode == RUN_ALL_TESTS) {
-				printf("\033[32m [PASS] %s\033[0m\n", ref.c_str());
-			}
-			pass_count++;
-		} else {
-			if(mode == RUN_ALL_TESTS) {
-				printf("\033[31m [FAIL] %s\033[0m\n", ref.c_str());
-			}
-			fail_count++;
+	strip_trailing_padding_from_src(src, dest);
+	
+	AssetTestResult result;
+	if(!dispatch->test || (result = (*dispatch->test)(src, dest, config, hint.c_str(), mode)) == AssetTestResult::NOT_RUN) {
+		result = diff_buffers(src, dest, 0, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL)
+			? AssetTestResult::PASS : AssetTestResult::FAIL;
+	}
+	
+	if(result == AssetTestResult::PASS) {
+		if(mode == AssetTestMode::RUN_ALL_TESTS) {
+			printf("\033[32m [PASS] %s\033[0m\n", ref.c_str());
 		}
+		pass_count++;
+	} else {
+		if(mode == AssetTestMode::RUN_ALL_TESTS) {
+			printf("\033[31m [FAIL] %s\033[0m\n", ref.c_str());
+		}
+		fail_count++;
 	}
 	
 	if(temp) {

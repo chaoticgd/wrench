@@ -207,3 +207,13 @@ void wtf_write_string_attribute(WtfWriter* ctx, const char* key, const char* str
 	wtf_write_string(ctx, string, string_end);
 	wtf_end_attribute(ctx);
 }
+
+void wtf_write_floats(WtfWriter* ctx, float* floats, int count) {
+	*ctx->dest += "[";
+	for(int i = 0; i < count; i++) {
+		char string[64] = {0};
+		snprintf(string, 64, "%.9g%s", floats[i], i < count - 1 ? " " : "");
+		*ctx->dest += string;
+	}
+	*ctx->dest += "]\n";
+}
