@@ -21,24 +21,18 @@
 #include <core/png.h>
 #include <editor/app.h>
 
+static const std::vector<GameplayBlockDescription>* gameplay_block_descriptions_from_game(Game game);
+
 Level::Level() {}
 
 void Level::read(LevelAsset& asset, Game g) {
 	game = g;
 	_asset = &asset;
 	_gameplay_asset = &data_wad().get_gameplay().as<BinaryAsset>();
-	
-	const std::vector<GameplayBlockDescription>* gbd = nullptr;
-	switch(game) {
-		case Game::RAC: gbd = &RAC_GAMEPLAY_BLOCKS; break;
-		case Game::GC: gbd = &GC_UYA_GAMEPLAY_BLOCKS; break;
-		case Game::UYA: gbd = &GC_UYA_GAMEPLAY_BLOCKS; break;
-		case Game::DL: gbd = &DL_GAMEPLAY_CORE_BLOCKS; break;
-		default: verify_not_reached("Invalid game!"); break;
-	}
 		
 	auto stream = _gameplay_asset->file().open_binary_file_for_reading(_gameplay_asset->src());
 	std::vector<u8> buffer = stream->read_multiple<u8>(stream->size());
+	const std::vector<GameplayBlockDescription>* gbd = gameplay_block_descriptions_from_game(game);
 	read_gameplay(_gameplay, _pvar_types, buffer, game, *gbd);
 	
 	MeshAsset& collision_asset = core().get_collision().as<CollisionAsset>().get_mesh();
@@ -106,7 +100,8 @@ void Level::save(const fs::path& path) {
 	}
 	
 	// Write out the gameplay.bin file.
-	std::vector<u8> buffer = write_gameplay(_gameplay, _pvar_types, game, GC_UYA_GAMEPLAY_BLOCKS);
+	const std::vector<GameplayBlockDescription>* gbd = gameplay_block_descriptions_from_game(game);
+	std::vector<u8> buffer = write_gameplay(_gameplay, _pvar_types, game, *gbd);
 	auto [stream, ref] = _gameplay_asset->file().open_binary_file_for_writing(gameplay_path);
 	stream->write_v(buffer);
 	_gameplay_asset->set_src(ref);
@@ -132,4 +127,16 @@ LevelCoreAsset& Level::core() {
 
 Gameplay& Level::gameplay() {
 	return _gameplay;
+}
+
+static const std::vector<GameplayBlockDescription>* gameplay_block_descriptions_from_game(Game game) {
+	const std::vector<GameplayBlockDescription>* gbd = nullptr;
+	switch(game) {
+		case Game::RAC: gbd = &RAC_GAMEPLAY_BLOCKS; break;
+		case Game::GC: gbd = &GC_UYA_GAMEPLAY_BLOCKS; break;
+		case Game::UYA: gbd = &GC_UYA_GAMEPLAY_BLOCKS; break;
+		case Game::DL: gbd = &DL_GAMEPLAY_CORE_BLOCKS; break;
+		default: verify_not_reached("Invalid game!"); break;
+	}
+	return gbd;
 }
