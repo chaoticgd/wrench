@@ -72,10 +72,10 @@ struct SkinAttributes {
 };
 
 struct ColourAttribute {
-	u8 r;
-	u8 g;
-	u8 b;
-	u8 a;
+	u8 r = 0;
+	u8 g = 0;
+	u8 b = 0;
+	u8 a = 0;
 	bool operator==(const ColourAttribute& rhs) const {
 		return r == rhs.r
 			&& g == rhs.g
@@ -84,7 +84,7 @@ struct ColourAttribute {
 	}
 	bool operator<(const ColourAttribute& rhs) const {
 		if(a != rhs.a) return a < rhs.a;
-		if(b != rhs.g) return b < rhs.b;
+		if(b != rhs.b) return b < rhs.b;
 		if(g != rhs.g) return g < rhs.g;
 		return r < rhs.r;
 	}
