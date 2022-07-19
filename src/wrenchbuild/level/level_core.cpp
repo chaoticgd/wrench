@@ -55,7 +55,9 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 	
 	unpack_asset(dest.tfrags(), data, ByteRange{header.tfrags, tfrags_size}, config);
 	unpack_asset(dest.occlusion(), data, level_core_block_range(header.occlusion, block_bounds), config);
-	unpack_asset(dest.sky<SkyAsset>(SWITCH_FILES), data, level_core_block_range(header.sky, block_bounds), config);
+	if(header.sky) {
+		unpack_asset(dest.sky<SkyAsset>(SWITCH_FILES), data, level_core_block_range(header.sky, block_bounds), config);
+	}
 	unpack_asset(dest.collision<CollisionAsset>(SWITCH_FILES), data, level_core_block_range(header.collision, block_bounds), config);
 	
 	CollectionAsset& tfrag_textures_collection = dest.tfrag_textures(SWITCH_FILES);
@@ -143,7 +145,9 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	
 	header.tfrags = pack_asset<ByteRange>(data, src.get_tfrags(), config, 0x40).offset;
 	header.occlusion = pack_asset<ByteRange>(data, src.get_occlusion(), config, 0x40).offset;
-	header.sky = pack_asset<ByteRange>(data, src.get_sky(), config, 0x40).offset;
+	if(src.has_sky()) {
+		header.sky = pack_asset<ByteRange>(data, src.get_sky(), config, 0x40).offset;
+	}
 	header.collision = pack_asset<ByteRange>(data, src.get_collision(), config, 0x40).offset;
 	
 	const CollectionAsset& tfrag_textures = src.get_tfrag_textures();
