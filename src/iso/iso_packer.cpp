@@ -357,7 +357,7 @@ static IsoFileRecord pack_system_cnf(OutputStream& iso, const BuildAsset& build)
 	for(char& c : path) c = toupper(c);
 	
 	std::string system_cnf;
-	system_cnf += "BOOT2 = cdrom:\\";
+	system_cnf += "BOOT2 = cdrom0:\\";
 	system_cnf += path;
 	system_cnf += ";1 \r\nVER = ";
 	system_cnf += build.version();
