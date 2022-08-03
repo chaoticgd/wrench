@@ -27,6 +27,7 @@
 #include <assetmgr/asset.h>
 #include <assetmgr/asset_types.h>
 #include <engine/moby.h>
+#include <engine/shrub.h>
 #include <engine/collision.h>
 #include <iso/iso_packer.h>
 #include <iso/iso_unpacker.h>
@@ -74,6 +75,7 @@ static void pack(const std::vector<fs::path>& input_paths, const std::string& as
 static void decompress(const fs::path& input_path, const fs::path& output_path, s64 offset);
 static void compress(const fs::path& input_path, const fs::path& output_path);
 static void extract_moby(const fs::path& input_path, const fs::path& output_path, Game game);
+static void extract_shrub(const fs::path& input_path, const fs::path& output_path);
 static void unpack_collision(const fs::path& input_path, const fs::path& output_path);
 static void print_usage(bool developer_subcommands);
 static void print_version();
@@ -198,6 +200,12 @@ static int wrenchbuild(int argc, char** argv) {
 	if(mode == "extract_moby") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH | ARG_GAME);
 		extract_moby(args.input_paths[0], args.output_path, args.game);
+		return 0;
+	}
+	
+	if(mode == "extract_shrub") {
+		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
+		extract_shrub(args.input_paths[0], args.output_path);
 		return 0;
 	}
 	
@@ -462,6 +470,14 @@ static void extract_moby(const fs::path& input_path, const fs::path& output_path
 	ColladaScene scene = recover_moby_class(moby, 0, 0);
 	auto xml = write_collada(scene);
 	write_file(output_path, xml, "w");
+}
+
+static void extract_shrub(const fs::path& input_path, const fs::path& output_path) {
+	auto bin = read_file(input_path.string().c_str());
+	ShrubClass shrub = read_shrub_class(bin);
+	//ColladaScene scene = recover_moby_class(moby, 0, 0);
+	//auto xml = write_collada(scene);
+	//write_file(output_path, xml, "w");
 }
 
 static void unpack_collision(const fs::path& input_path, const fs::path& output_path) {

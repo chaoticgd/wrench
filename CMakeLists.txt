@@ -158,6 +158,7 @@ add_library(wrenchengine
 	src/engine/moby_mesh_exporter.cpp
 	src/engine/moby_mesh_importer.cpp
 	src/engine/moby_animation.cpp
+	src/engine/shrub.cpp
 	src/engine/sky.cpp
 	src/engine/vag.cpp
 )
