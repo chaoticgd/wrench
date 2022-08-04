@@ -80,19 +80,24 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 	//	wad.unknown_a0 = assets.read_bytes(header.unknown_a0, 0x40, "unknown a0");
 	//}
 	
-	BuildAsset& build = build_from_level_core_asset(dest);
+	BuildAsset* build;
+	if(config.is_testing()) {
+		build = &dest.child<BuildAsset>("test_build");
+	} else {
+		build = &build_from_level_core_asset(dest);
+	}
 	
 	// Unpack all the classes into the global directory and then create
 	// references to them for the current level.
-	CollectionAsset& moby_data = build.moby_classes();
+	CollectionAsset& moby_data = build->moby_classes();
 	CollectionAsset& moby_refs = dest.moby_classes(SWITCH_FILES);
 	unpack_moby_classes(moby_data, moby_refs, header, index, data, gs_ram, block_bounds, config);
 	
-	CollectionAsset& tie_data = build.tie_classes();
+	CollectionAsset& tie_data = build->tie_classes();
 	CollectionAsset& tie_refs = dest.tie_classes(SWITCH_FILES);
 	unpack_tie_classes(tie_data, tie_refs, header, index, data, gs_ram, block_bounds, config);
 	
-	CollectionAsset& shrub_data = build.shrub_classes();
+	CollectionAsset& shrub_data = build->shrub_classes();
 	CollectionAsset& shrub_refs = dest.shrub_classes(SWITCH_FILES);
 	unpack_shrub_classes(shrub_data, shrub_refs, header, index, data, gs_ram, block_bounds, config);
 	
@@ -117,7 +122,7 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 		CollectionAsset& gadgets = dest.gadgets(SWITCH_FILES);
 		auto gadget_entries = index.read_multiple<RacGadgetHeader>(header.gadget_offset_rac1, header.gadget_count_rac1);
 		for(RacGadgetHeader& entry : gadget_entries) {
-			ByteRange range{entry.offset_in_asset_wad, data.size() - entry.offset_in_asset_wad};
+			ByteRange range{entry.offset_in_asset_wad, (s32) data.size() - entry.offset_in_asset_wad};
 			MobyClassAsset& moby = gadgets.foreign_child<MobyClassAsset>(entry.class_number);
 			moby.set_id(entry.class_number);
 			unpack_compressed_asset(moby, data, range, config, FMT_MOBY_CLASS_GADGET);

@@ -19,7 +19,6 @@
 #include "level_textures.h"
 
 #include <core/png.h>
-#include <wrenchbuild/level/level_core.h> // build_from_level_core_asset
 
 static void write_nonshared_texture_data(OutputStream& data, std::vector<LevelTexture>& textures, Game game);
 
