@@ -22,7 +22,7 @@
 // This file and its associated .cpp file contains the core of Wrench's asset
 // system. The top-level object here is the asset forest, which contains asset
 // banks, which contain .asset files, which contain a tree of assets. Each mod
-// as well as each base game here would be represented by an asset pack.
+// as well as each base game here would be represented by an asset bank.
 
 #include <memory>
 #include <functional>
@@ -36,12 +36,13 @@
 #include <assetmgr/asset_dispatch.h>
 
 enum AssetFlags {
-	ASSET_IS_WAD = (1 << 0),
-	ASSET_IS_LEVEL_WAD = (1 << 1),
-	ASSET_IS_BIN_LEAF = (1 << 2),
-	ASSET_IS_FLATTENABLE = (1 << 3),
-	ASSET_HAS_DELETED_FLAG = (1 << 4),
-	ASSET_IS_DELETED = (1 << 5)
+	ASSET_IS_WAD = (1 << 0),           // This asset is a WAD file.
+	ASSET_IS_LEVEL_WAD = (1 << 1),     // This asset is a level WAD file.
+	ASSET_IS_BIN_LEAF = (1 << 2),      // This makes unpack_binaries dump this out excluding children.
+	ASSET_IS_FLATTENABLE = (1 << 3),   // This asset can be written as a FlatWadAsset for debugging.
+	ASSET_HAS_DELETED_FLAG = (1 << 4), // The deleted attribute was specified for this asset.
+	ASSET_IS_DELETED = (1 << 5),       // If the deleted attribute was specified, it was set to true.
+	ASSET_IS_BIN_INTERNAL = (1 << 6)   // This makes unpack_binaries dump this out including children.
 };
 
 class Asset {
@@ -77,7 +78,7 @@ public:
 	AssetLink absolute_link() const;
 	AssetLink link_relative_to(Asset& base) const;
 	
-	// This might return Plaholder instead of the type you probably want.
+	// This might return Placeholder instead of the type you probably want.
 	AssetType physical_type() const;
 	
 	// This skips over placeholder nodes to get the logical type.

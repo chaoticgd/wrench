@@ -1210,6 +1210,7 @@ AssetType LevelWad {
 AssetType LevelDataWad {
 	wad: true
 	level_wad: true
+	bin_internal: true
 	
 	Child core {
 		allowed_types: ["LevelCore"]
