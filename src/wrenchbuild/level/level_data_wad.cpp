@@ -195,8 +195,29 @@ static AssetTestResult test_level_data_wad(std::vector<u8>& original, std::vecto
 		if(mode == AssetTestMode::PRINT_DIFF_ON_FAIL) {
 			Buffer original_core_index = Buffer(original).subbuf(original_header.core_index.offset, original_header.core_index.size);
 			Buffer repacked_core_index = Buffer(repacked).subbuf(repacked_header.core_index.offset, repacked_header.core_index.size);
-			printf("Diffing core headers...\n");
-			diff_buffers(original_core_index, repacked_core_index, 0, DIFF_REST_OF_BUFFER, true, nullptr);
+			
+			Buffer original_header = original_core_index.subbuf(0, 0xc0);
+			Buffer repacked_header = repacked_core_index.subbuf(0, 0xc0);
+			
+			printf("Diffing core header...\n");
+			diff_buffers(original_header, repacked_header, 0, DIFF_REST_OF_BUFFER, true, nullptr);
+			
+			LevelCoreHeader original_core_header = original_core_index.read<LevelCoreHeader>(0, "core header");
+			LevelCoreHeader repacked_core_header = repacked_core_index.read<LevelCoreHeader>(0, "core header");
+			
+			// The texture data won't match, so find a good spot to start diffing that's after that.
+			s64 original_ofs = original_core_header.part_defs_offset;
+			s64 repacked_ofs = repacked_core_header.part_defs_offset;
+			
+			Buffer original_index = original_core_index.subbuf(original_ofs);
+			Buffer repacked_index = repacked_core_index.subbuf(repacked_ofs);
+			
+			printf("Diffing core index data (starting from 0x%x original, 0x%x repacked)...\n",
+				(s32) original_ofs, (s32) repacked_ofs);
+			diff_buffers(original_index, repacked_index, 0, DIFF_REST_OF_BUFFER, true, nullptr);
+			
+			write_file("/tmp/original_level_core_headers.bin", original_core_index);
+			write_file("/tmp/repacked_level_core_headers.bin", repacked_core_index);
 		}
 		return AssetTestResult::FAIL;
 	}

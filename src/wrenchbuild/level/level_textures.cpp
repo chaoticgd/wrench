@@ -268,7 +268,7 @@ void unpack_particle_textures(CollectionAsset& dest, InputStream& defs, std::vec
 	}
 }
 
-std::tuple<ArrayRange, s32, s32> pack_particle_textures(OutputStream& index, OutputStream& data, const CollectionAsset& particles, Game game) {
+std::tuple<ArrayRange, std::vector<u8>, s32> pack_particle_textures(OutputStream& index, OutputStream& data, const CollectionAsset& particles, Game game) {
 	data.pad(0x100, 0);
 	s64 particles_base = data.tell();
 	
@@ -337,23 +337,24 @@ std::tuple<ArrayRange, s32, s32> pack_particle_textures(OutputStream& index, Out
 		record.indices[0] = i++;
 	}
 	
-	s64 frame_count = 0;
-	
 	particle_count = 0x81;
+	
+	std::vector<u8> defs;
+	OutBuffer defs_buffer(defs);
 	
 	// Write out the particle defs.
 	index.pad(0x10, 0);
-	s64 defs_base = index.alloc<PartDefsHeader>();
+	defs_buffer.alloc<PartDefsHeader>();
 	PartDefsHeader defs_header = {0};
 	defs_header.particle_count = particle_count;
 	defs_header.indices_size = (s32) textures.size();
 	
-	s64 offsets_base = index.alloc_multiple<s32>(particle_count);
-	index.pad(0x10, 0);
-	defs_header.indices_offset = (s32) (index.tell() - defs_base);
+	s64 offsets_base = defs_buffer.alloc_multiple<s32>(particle_count);
+	defs_buffer.pad(0x10, 0);
+	defs_header.indices_offset = (s32) defs_buffer.tell();
 	
 	for(auto [particle, range] : ranges) {
-		index.write<s32>(offsets_base + particle * 4, defs_header.indices_offset + range.first);
+		defs_buffer.write<s32>(offsets_base + particle * 4, defs_header.indices_offset + range.first);
 		for(s32 i = range.first; i < range.second; i++) {
 			LevelTexture* texture = &textures[i];
 			if(texture->out_edge > -1) {
@@ -361,13 +362,13 @@ std::tuple<ArrayRange, s32, s32> pack_particle_textures(OutputStream& index, Out
 			}
 			
 			assert(texture->indices[0].has_value());
-			index.write<u8>(*texture->indices[0]);
+			defs_buffer.write<u8>(*texture->indices[0]);
 		}
 	}
 	
-	index.write(defs_base, defs_header);
+	defs_buffer.write(0, defs_header);
 	
-	return {range, defs_base, particles_base};
+	return {range, defs, particles_base};
 }
 
 void unpack_fx_textures(LevelCoreAsset& core, const std::vector<FxTextureEntry>& entries, InputStream& fx_bank, Game game) {

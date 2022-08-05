@@ -102,7 +102,8 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 	unpack_shrub_classes(shrub_data, shrub_refs, header, index, data, gs_ram, block_bounds, config);
 	
 	SoundRemapHeader sound_remap = index.read<SoundRemapHeader>(header.sound_remap_offset);
-	s32 sound_remap_size = sound_remap.third_part_ofs + sound_remap.third_part_count * 4;
+	SoundRemapElement sound_remap_last = index.read<SoundRemapElement>(header.sound_remap_offset + sound_remap.second_part_ofs - 4);
+	s32 sound_remap_size = sound_remap_last.offset + sound_remap_last.size * 4;
 	unpack_asset(dest.sound_remap(), index, ByteRange{header.sound_remap_offset, sound_remap_size}, config);
 	
 	//MobySoundRemapHeader moby_remap = data.read<MobySoundRemapHeader>(header.moby_sound_remap_offset);
@@ -167,6 +168,7 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	
 	SharedLevelTextures shared;
 	std::vector<GsRamEntry> gs_table;
+	std::vector<u8> part_defs;
 	if(!g_asset_packer_dry_run) {
 		shared = read_level_textures(tfrag_textures, mobies, ties, shrubs);
 		
@@ -193,7 +195,7 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 		
 		auto part_info = pack_particle_textures(index, data, src.get_particle_textures(), config.game());
 		header.part_textures = std::get<0>(part_info);
-		header.part_defs_offset = std::get<1>(part_info);
+		part_defs = std::get<1>(part_info);
 		header.part_bank_offset = std::get<2>(part_info);
 		auto [fx_textures, fx_bank_offset] = pack_fx_textures(index, data, src.get_fx_textures(), config.game());
 		header.fx_textures = fx_textures;
@@ -206,9 +208,11 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	header.gs_ram.offset = index.tell();
 	index.write_v(gs_table);
 	
-	//index.pad(0x10, 0);
-	//header.unknown_a0 = core.tell();
-	//core.write(wad.unknown_a0);
+	if(!part_defs.empty()) {
+		index.pad(0x10, 0);
+		header.part_defs_offset = index.tell();
+		index.write_v(part_defs);
+	}
 	
 	pack_moby_classes(index, data, src.get_moby_classes(), shared.textures, moby_tab.offset, shared.moby_range.begin, config);
 	pack_tie_classes(index, data, src.get_tie_classes(), shared.textures, tie_tab.offset, shared.tie_range.begin, config);
@@ -220,8 +224,14 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	if(src.has_sound_remap()) {
 		header.sound_remap_offset = pack_asset<ByteRange>(index, src.get_sound_remap(), config, 0x10).offset;
 	}
-	if(src.has_moby_sound_remap()) {
+	if(src.has_moby_sound_remap() && config.game() != Game::UYA) {
 		header.moby_sound_remap_offset = pack_asset<ByteRange>(index, src.get_moby_sound_remap(), config, 0x10).offset;
+	}
+	
+	if(config.game() == Game::UYA) {
+		index.pad(0x10, 0);
+		header.moby_gs_stash_list = index.tell();
+		index.write<s16>(-1);
 	}
 	
 	if(config.game() != Game::DL && src.has_ratchet_seqs()) {
@@ -253,9 +263,11 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 		index.write_v(entries);
 	}
 	
-	index.pad(0x10, 0);
-	header.moby_gs_stash_list = index.tell();
-	index.write<s16>(-1);
+	if(config.game() != Game::UYA) {
+		index.pad(0x10, 0);
+		header.moby_gs_stash_list = index.tell();
+		index.write<s16>(-1);
+	}
 	
 	index.pad(0x10, 0);
 	
