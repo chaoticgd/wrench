@@ -337,13 +337,18 @@ std::tuple<ArrayRange, std::vector<u8>, s32> pack_particle_textures(OutputStream
 		record.indices[0] = i++;
 	}
 	
-	particle_count = 0x81;
+	switch(game) {
+		case Game::RAC: particle_count = 0x51; break;
+		case Game::GC: particle_count = 0x6f; break;
+		case Game::UYA: particle_count = 0x81; break;
+		case Game::DL: particle_count = 0x81; break;
+		default: {}
+	}
 	
 	std::vector<u8> defs;
 	OutBuffer defs_buffer(defs);
 	
 	// Write out the particle defs.
-	index.pad(0x10, 0);
 	defs_buffer.alloc<PartDefsHeader>();
 	PartDefsHeader defs_header = {0};
 	defs_header.particle_count = particle_count;

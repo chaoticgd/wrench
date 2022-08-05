@@ -230,18 +230,18 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	if(src.has_sound_remap()) {
 		header.sound_remap_offset = pack_asset<ByteRange>(index, src.get_sound_remap(), config, 0x10).offset;
 	}
-	if(src.has_moby_sound_remap() && config.game() != Game::UYA) {
+	if(src.has_moby_sound_remap() && config.game() == Game::DL) {
 		header.moby_sound_remap_offset = pack_asset<ByteRange>(index, src.get_moby_sound_remap(), config, 0x10).offset;
 	}
 	
-	if(config.game() != Game::RAC && config.game() != Game::DL) {
+	if(config.game() == Game::GC || config.game() == Game::UYA) {
 		index.pad(0x10, 0);
 		header.moby_gs_stash_list = index.tell();
 		index.write<s16>(-1);
 		header.moby_gs_stash_count_rac23dl = 1;
 	}
 	
-	if(config.game() != Game::DL && src.has_ratchet_seqs()) {
+	if(src.has_ratchet_seqs() && config.game() != Game::DL) {
 		const CollectionAsset& ratchet_seqs = src.get_ratchet_seqs();
 		std::vector<s32> ratchet_seq_offsets(256, 0);
 		for(s32 i = 0; i < 256; i++) {
@@ -258,7 +258,7 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 		std::vector<RacGadgetHeader> entries;
 		const CollectionAsset& gadgets = src.get_gadgets();
 		gadgets.for_each_logical_child_of_type<MobyClassAsset>([&](const MobyClassAsset& moby) {
-			RacGadgetHeader entry;
+			RacGadgetHeader entry = {};
 			entry.class_number = moby.id();
 			entry.offset_in_asset_wad = pack_compressed_asset<ByteRange>(data, moby, config, 0x40, "gadget", FMT_MOBY_CLASS_GADGET).offset;
 			entry.compressed_size = data.tell() - entry.offset_in_asset_wad;
