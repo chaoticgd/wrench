@@ -101,13 +101,19 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 	CollectionAsset& shrub_refs = dest.shrub_classes(SWITCH_FILES);
 	unpack_shrub_classes(shrub_data, shrub_refs, header, index, data, gs_ram, block_bounds, config);
 	
-	SoundRemapHeader sound_remap = index.read<SoundRemapHeader>(header.sound_remap_offset);
-	SoundRemapElement sound_remap_last = index.read<SoundRemapElement>(header.sound_remap_offset + sound_remap.second_part_ofs - 4);
-	s32 sound_remap_size = sound_remap_last.offset + sound_remap_last.size * 4;
-	unpack_asset(dest.sound_remap(), index, ByteRange{header.sound_remap_offset, sound_remap_size}, config);
-	
-	//MobySoundRemapHeader moby_remap = data.read<MobySoundRemapHeader>(header.moby_sound_remap_offset);
-	//unpack_asset(dest.moby_sound_remap(), data, ByteRange{header.moby_sound_remap_offset, moby_remap.size}, config);
+	if(config.game() == Game::DL) {
+		SoundRemapHeader sound_remap = index.read<SoundRemapHeader>(header.sound_remap_offset);
+		s32 sound_remap_size = sound_remap.third_part_ofs + sound_remap.third_part_count * 4;
+		unpack_asset(dest.sound_remap(), index, ByteRange{header.sound_remap_offset, sound_remap_size}, config);
+		
+		MobySoundRemapHeader moby_remap = index.read<MobySoundRemapHeader>(header.moby_sound_remap_offset);
+		unpack_asset(dest.moby_sound_remap(), index, ByteRange{header.moby_sound_remap_offset, moby_remap.size}, config);
+	} else {
+		SoundRemapHeader sound_remap = index.read<SoundRemapHeader>(header.sound_remap_offset);
+		SoundRemapElement sound_remap_last = index.read<SoundRemapElement>(header.sound_remap_offset + sound_remap.second_part_ofs - 4);
+		s32 sound_remap_size = sound_remap_last.offset + sound_remap_last.size * 4;
+		unpack_asset(dest.sound_remap(), index, ByteRange{header.sound_remap_offset, sound_remap_size}, config);
+	}
 	
 	if(config.game() != Game::DL && header.ratchet_seqs_rac123 != 0) {
 		CollectionAsset& ratchet_seqs = dest.ratchet_seqs(SWITCH_FILES);
@@ -228,10 +234,11 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 		header.moby_sound_remap_offset = pack_asset<ByteRange>(index, src.get_moby_sound_remap(), config, 0x10).offset;
 	}
 	
-	if(config.game() == Game::UYA) {
+	if(config.game() != Game::RAC && config.game() != Game::DL) {
 		index.pad(0x10, 0);
 		header.moby_gs_stash_list = index.tell();
 		index.write<s16>(-1);
+		header.moby_gs_stash_count_rac23dl = 1;
 	}
 	
 	if(config.game() != Game::DL && src.has_ratchet_seqs()) {
@@ -263,17 +270,14 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 		index.write_v(entries);
 	}
 	
-	if(config.game() != Game::UYA) {
+	if(config.game() == Game::DL) {
 		index.pad(0x10, 0);
 		header.moby_gs_stash_list = index.tell();
 		index.write<s16>(-1);
+		header.moby_gs_stash_count_rac23dl = 1;
 	}
 	
 	index.pad(0x10, 0);
-	
-	if(config.game() != Game::RAC) {
-		header.moby_gs_stash_count_rac23dl = 1;
-	}
 	
 	header.glass_map_texture = 0x4000;
 	header.glass_map_palette = 0x400;
