@@ -26,19 +26,24 @@ extern const char* GC_FX_TEXTURE_NAMES[63];
 extern const char* UYA_FX_TEXTURE_NAMES[100];
 extern const char* DL_FX_TEXTURE_NAMES[98];
 
-void unpack_level_textures(CollectionAsset& dest, const u8 indices[16], const std::vector<TextureEntry>& textures, InputStream& data, InputStream& gs_ram, Game game) {
+void unpack_level_textures(CollectionAsset& dest, const u8 indices[16], const std::vector<TextureEntry>& textures, InputStream& data, InputStream& gs_ram, Game game, s32 moby_stash_addr) {
 	for(s32 i = 0; i < 16; i++) {
 		if(indices[i] != 0xff) {
 			const TextureEntry& texture = textures.at(indices[i]);
-			unpack_level_texture(dest.child<TextureAsset>(i), texture, data, gs_ram, game, i);
+			unpack_level_texture(dest.child<TextureAsset>(i), texture, data, gs_ram, game, i, moby_stash_addr);
 		} else {
 			break;
 		}
 	}
 }
 
-void unpack_level_texture(TextureAsset& dest, const TextureEntry& entry, InputStream& data, InputStream& gs_ram, Game game, s32 i) {
-	std::vector<u8> pixels = data.read_multiple<u8>(entry.data_offset, entry.width * entry.height);
+void unpack_level_texture(TextureAsset& dest, const TextureEntry& entry, InputStream& data, InputStream& gs_ram, Game game, s32 i, s32 moby_stash_addr) {
+	std::vector<u8> pixels;
+	if(moby_stash_addr > -1) {
+		pixels = gs_ram.read_multiple<u8>(moby_stash_addr + entry.data_offset, entry.width * entry.height);
+	} else {
+		pixels = data.read_multiple<u8>(entry.data_offset, entry.width * entry.height);
+	}
 	std::vector<u32> palette = gs_ram.read_multiple<u32>(entry.palette * 0x100, 256);
 	Texture texture = Texture::create_8bit_paletted(entry.width, entry.height, pixels, palette);
 	
@@ -150,8 +155,8 @@ s64 write_shared_level_textures(OutputStream& data, OutputStream& gs, std::vecto
 			mipmap_entry.unknown_0 = 0x13;
 			mipmap_entry.width = texture.width / 4;
 			mipmap_entry.height = texture.height / 4;
-			mipmap_entry.offset_1 = record.mipmap_offset;
-			mipmap_entry.offset_2 = record.mipmap_offset;
+			mipmap_entry.address = record.mipmap_offset;
+			mipmap_entry.offset = record.mipmap_offset;
 			gs_table.push_back(mipmap_entry);
 			
 			data.pad(0x100, 0);

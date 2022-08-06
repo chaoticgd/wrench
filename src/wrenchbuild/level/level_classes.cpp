@@ -22,7 +22,7 @@
 #include <wrenchbuild/asset_packer.h>
 #include <wrenchbuild/level/level_core.h> // LevelCoreHeader
 
-void unpack_moby_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest, const LevelCoreHeader& header, InputStream& index, InputStream& data, InputStream& gs_ram, const std::vector<s64>& block_bounds, BuildConfig config) {
+void unpack_moby_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest, const LevelCoreHeader& header, InputStream& index, InputStream& data, const std::vector<GsRamEntry>& gs_table, InputStream& gs_ram, const std::vector<s64>& block_bounds, BuildConfig config, s32 moby_stash_addr, const std::set<s32>& moby_stash) {
 	auto classes = index.read_multiple<MobyClassEntry>(header.moby_classes);
 	auto textures = index.read_multiple<TextureEntry>(header.moby_textures);
 	
@@ -34,7 +34,8 @@ void unpack_moby_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest,
 		asset.set_id(entry.o_class);
 		asset.set_has_moby_table_entry(true);
 		
-		unpack_level_textures(asset.materials(), entry.textures, textures, texture_data, gs_ram, config.game());
+		bool stashed = moby_stash.contains(entry.o_class);
+		unpack_level_textures(asset.materials(), entry.textures, textures, texture_data, gs_ram, config.game(), stashed ? moby_stash_addr : -1);
 		
 		if(entry.offset_in_asset_wad != 0) {
 			unpack_asset(asset, data, level_core_block_range(entry.offset_in_asset_wad, block_bounds), config, FMT_MOBY_CLASS_LEVEL);

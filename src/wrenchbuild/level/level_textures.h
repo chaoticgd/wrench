@@ -26,8 +26,8 @@ packed_struct(GsRamEntry,
 	s32 unknown_0; // 0 == palette RGBA32, 1 == palette RGBA16, 0x13 == IDTEX8
 	s16 width;
 	s16 height;
-	s32 offset_1;
-	s32 offset_2; // Duplicate of offset_1?
+	s32 address;
+	s32 offset; // For stashed moby textures, this is relative to the start of the stash.
 )
 
 packed_struct(TextureEntry,
@@ -82,8 +82,8 @@ struct SharedLevelTextures {
 	LevelTextureRange shrub_range;
 };
 
-void unpack_level_textures(CollectionAsset& dest, const u8 indices[16], const std::vector<TextureEntry>& textures, InputStream& data, InputStream& gs_ram, Game game);
-void unpack_level_texture(TextureAsset& dest, const TextureEntry& entry, InputStream& data, InputStream& gs_ram, Game game, s32 i);
+void unpack_level_textures(CollectionAsset& dest, const u8 indices[16], const std::vector<TextureEntry>& textures, InputStream& data, InputStream& gs_ram, Game game, s32 moby_stash_addr = -1);
+void unpack_level_texture(TextureAsset& dest, const TextureEntry& entry, InputStream& data, InputStream& gs_ram, Game game, s32 i, s32 moby_stash_addr = -1);
 SharedLevelTextures read_level_textures(const CollectionAsset& tfrag_textures, const CollectionAsset& mobies, const CollectionAsset& ties, const CollectionAsset& shrubs);
 s64 write_shared_level_textures(OutputStream& data, OutputStream& gs, std::vector<GsRamEntry>& gs_table, std::vector<LevelTexture>& textures);
 ArrayRange write_level_texture_table(OutputStream& dest, std::vector<LevelTexture>& textures, LevelTextureRange range, s32 textures_base_offset);

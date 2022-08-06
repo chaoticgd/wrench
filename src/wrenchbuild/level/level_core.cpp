@@ -87,11 +87,28 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 		build = &build_from_level_core_asset(dest);
 	}
 	
+	std::vector<GsRamEntry> gs_table = index.read_multiple<GsRamEntry>(header.gs_ram.offset, header.gs_ram.count + header.moby_gs_stash_count_rac23dl);
+	
+	// List of classes that have their textures stored permanently in GS memory.
+	std::set<s32> moby_stash;
+	for(s32 i = 0;; i++) {
+		s16 o_class = index.read<s16>(header.moby_gs_stash_list + i * 2);
+		if(o_class < 0) {
+			break;
+		}
+		moby_stash.emplace(o_class);
+	}
+	
+	s32 moby_stash_addr = 0;
+	if(header.moby_gs_stash_count_rac23dl > 0) {
+		moby_stash_addr = gs_table[header.gs_ram.count].address;
+	}
+	
 	// Unpack all the classes into the global directory and then create
 	// references to them for the current level.
 	CollectionAsset& moby_data = build->moby_classes();
 	CollectionAsset& moby_refs = dest.moby_classes(SWITCH_FILES);
-	unpack_moby_classes(moby_data, moby_refs, header, index, data, gs_ram, block_bounds, config);
+	unpack_moby_classes(moby_data, moby_refs, header, index, data, gs_table, gs_ram, block_bounds, config, moby_stash_addr, moby_stash);
 	
 	CollectionAsset& tie_data = build->tie_classes();
 	CollectionAsset& tie_refs = dest.tie_classes(SWITCH_FILES);
