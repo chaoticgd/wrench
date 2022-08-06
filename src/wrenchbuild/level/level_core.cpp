@@ -210,15 +210,18 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 		printf("Shared texture memory: 0x%x bytes\n", header.part_bank_offset - header.textures_base_offset);
 	}
 	
-	header.gs_ram.count = gs_table.size();
-	header.gs_ram.offset = index.tell();
-	index.write_v(gs_table);
-	
+	// For some reason writing this after the GS table causes a crash even
+	// though that's what Insomniac's exporter does. Something to look into.
 	if(!part_defs.empty()) {
 		index.pad(0x10, 0);
 		header.part_defs_offset = index.tell();
 		index.write_v(part_defs);
 	}
+	
+	header.gs_ram.count = gs_table.size();
+	index.pad(0x10, 0);
+	header.gs_ram.offset = index.tell();
+	index.write_v(gs_table);
 	
 	pack_moby_classes(index, data, src.get_moby_classes(), shared.textures, moby_tab.offset, shared.moby_range.begin, config);
 	pack_tie_classes(index, data, src.get_tie_classes(), shared.textures, tie_tab.offset, shared.tie_range.begin, config);

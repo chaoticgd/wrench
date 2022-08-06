@@ -23,7 +23,7 @@
 #include <assetmgr/asset_types.h>
 
 packed_struct(GsRamEntry,
-	s32 unknown_0; // Type?
+	s32 unknown_0; // 0 == palette RGBA32, 1 == palette RGBA16, 0x13 == IDTEX8
 	s16 width;
 	s16 height;
 	s32 offset_1;

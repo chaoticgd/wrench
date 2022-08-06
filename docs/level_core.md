@@ -57,5 +57,3 @@ The level core contains most of the assets for a level. It consists of a header 
 - moby sound remap
 - ratchet seqs
 - moby stash
-
-## Data Order

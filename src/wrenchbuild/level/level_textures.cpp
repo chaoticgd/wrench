@@ -455,8 +455,8 @@ std::tuple<ArrayRange, s32> pack_fx_textures(OutputStream& index, OutputStream& 
 	
 	ArrayRange range;
 	range.count = textures.size();
-	range.offset = index.tell();
 	index.pad(0x10, 0);
+	range.offset = index.tell();
 	for(LevelTexture& texture : textures) {
 		LevelTexture* data_texture = &texture;
 		if(data_texture->out_edge > -1) {
