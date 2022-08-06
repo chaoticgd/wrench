@@ -82,7 +82,8 @@ SharedLevelTextures read_level_textures(const CollectionAsset& tfrag_textures, c
 			if(textures.has_child(i)) {
 				const TextureAsset& asset = textures.get_child(i).as<TextureAsset>();
 				auto stream = asset.file().open_binary_file_for_reading(asset.src());
-				shared.textures.emplace_back(LevelTexture{read_png(*stream)});
+				bool stashed = cls.stash_textures(false);
+				shared.textures.emplace_back(LevelTexture{read_png(*stream), stashed});
 			} else {
 				shared.textures.emplace_back();
 			}
@@ -125,10 +126,12 @@ SharedLevelTextures read_level_textures(const CollectionAsset& tfrag_textures, c
 	return shared;
 }
 
-s64 write_shared_level_textures(OutputStream& data, OutputStream& gs, std::vector<GsRamEntry>& gs_table, std::vector<LevelTexture>& textures) {
+std::tuple<s32, s32> write_shared_level_textures(OutputStream& data, OutputStream& gs, std::vector<GsRamEntry>& gs_table, std::vector<LevelTexture>& textures) {
 	data.pad(0x100, 0);
-	s64 ofs = data.tell();
+	s64 base_ofs = data.tell();
 	std::vector<u8> mipmap_data;
+	
+	// Write out regular textures and palettes.
 	for(LevelTexture& record : textures) {
 		if(record.texture.has_value() && record.out_edge == -1) {
 			const Texture& texture = *record.texture;
@@ -137,37 +140,64 @@ s64 write_shared_level_textures(OutputStream& data, OutputStream& gs, std::vecto
 				gs.pad(0x100, 0);
 				record.palette_offset = gs.tell();
 				gs.write_v(texture.palette());
-				gs_table.push_back({0, 0, 0, record.palette_offset, record.palette_offset});
+				gs_table.push_back({PSM_RGBA32, 0, 0, record.palette_offset, record.palette_offset});
 			}
 			
-			mipmap_data.resize((texture.width * texture.height) / 16);
-			for(s32 y = 0; y < texture.height / 4; y++) {
-				for(s32 x = 0; x < texture.width / 4; x++) {
-					mipmap_data[y * (texture.width / 4) + x] = texture.data[y * 4 * texture.width + x * 4];
+			if(!record.stashed) {
+				mipmap_data.resize((texture.width * texture.height) / 16);
+				for(s32 y = 0; y < texture.height / 4; y++) {
+					for(s32 x = 0; x < texture.width / 4; x++) {
+						mipmap_data[y * (texture.width / 4) + x] = texture.data[y * 4 * texture.width + x * 4];
+					}
 				}
+				
+				gs.pad(0x100, 0);
+				record.mipmap_offset = gs.tell();
+				gs.write_v(mipmap_data);
+				
+				GsRamEntry mipmap_entry;
+				mipmap_entry.psm = PSM_IDTEX8;
+				mipmap_entry.width = texture.width / 4;
+				mipmap_entry.height = texture.height / 4;
+				mipmap_entry.address = record.mipmap_offset;
+				mipmap_entry.offset = record.mipmap_offset;
+				gs_table.push_back(mipmap_entry);
+				
+				data.pad(0x100, 0);
+				record.texture_offset = data.tell() - base_ofs;
+				data.write_v(texture.data);
 			}
-			
-			gs.pad(0x100, 0);
-			record.mipmap_offset = gs.tell();
-			gs.write_v(mipmap_data);
-			
-			GsRamEntry mipmap_entry;
-			mipmap_entry.unknown_0 = 0x13;
-			mipmap_entry.width = texture.width / 4;
-			mipmap_entry.height = texture.height / 4;
-			mipmap_entry.address = record.mipmap_offset;
-			mipmap_entry.offset = record.mipmap_offset;
-			gs_table.push_back(mipmap_entry);
-			
-			data.pad(0x100, 0);
-			record.texture_offset = data.tell();
-			data.write_v(texture.data);
 		}
 	}
-	return ofs;
+	
+	s32 stash_addr = (s32) gs.tell();
+	s32 stash_count = 0;
+	
+	// Write out stashed (GS memory resident) textures.
+	for(LevelTexture& record : textures) {
+		if(record.texture.has_value() && record.out_edge == -1 && record.stashed) {
+			const Texture& texture = *record.texture;
+			
+			data.pad(0x100, 0);
+			record.texture_offset = (s32) gs.tell() - stash_addr;
+			gs.write_v(texture.data);
+			
+			GsRamEntry entry;
+			entry.psm = PSM_IDTEX8;
+			entry.width = texture.width;
+			entry.height = texture.height;
+			entry.address = stash_addr + record.texture_offset;
+			entry.offset = record.texture_offset;
+			gs_table.push_back(entry);
+			
+			stash_count++;
+		}
+	}
+	
+	return {(s32) base_ofs, stash_count};
 }
 
-ArrayRange write_level_texture_table(OutputStream& dest, std::vector<LevelTexture>& textures, LevelTextureRange range, s32 textures_base_offset) {
+ArrayRange write_level_texture_table(OutputStream& dest, std::vector<LevelTexture>& textures, LevelTextureRange range) {
 	dest.pad(0x10, 0);
 	s32 table_offset = dest.tell();
 	s32 table_count = 0;
@@ -184,17 +214,23 @@ ArrayRange write_level_texture_table(OutputStream& dest, std::vector<LevelTextur
 			const Texture& texture = *record->texture;
 			assert(record->texture_offset != -1);
 			TextureEntry entry;
-			entry.data_offset = record->texture_offset - textures_base_offset;
+			entry.data_offset = record->texture_offset;
 			entry.width = texture.width;
 			entry.height = texture.height;
-			entry.unknown_8 = 3;
+			if(record->stashed) {
+				entry.type = 0;
+			} else {
+				entry.type = 3;
+			}
 			LevelTexture* palette_record = record;
 			if(palette_record->palette_out_edge > -1) {
 				palette_record = &textures.at(palette_record->palette_out_edge);
 			}
 			assert(palette_record->palette_offset != -1);
 			entry.palette = palette_record->palette_offset / 0x100;
-			entry.mipmap = record->mipmap_offset / 0x100;
+			if(!record->stashed) {
+				entry.mipmap = record->mipmap_offset / 0x100;
+			}
 			record->indices[range.table] = table_count;
 			dest.write(entry);
 			table_count++;
@@ -203,7 +239,7 @@ ArrayRange write_level_texture_table(OutputStream& dest, std::vector<LevelTextur
 	return ArrayRange {table_count, table_offset};
 }
 
-s32 write_level_texture_indices(u8 dest[16], const std::vector<LevelTexture>& textures, s32 begin, s32 table) {
+void write_level_texture_indices(u8 dest[16], const std::vector<LevelTexture>& textures, s32 begin, s32 table) {
 	for(s32 i = 0; i < 16; i++) {
 		const LevelTexture* record = &textures.at(begin + i);
 		if(record->texture.has_value()) {
@@ -220,7 +256,6 @@ s32 write_level_texture_indices(u8 dest[16], const std::vector<LevelTexture>& te
 			}
 		}
 	}
-	return 16;
 }
 
 // *****************************************************************************
@@ -529,8 +564,13 @@ void deduplicate_level_textures(std::vector<LevelTexture>& textures) {
 			lowest = std::min(lowest, index);
 		}
 		assert(lowest != SIZE_MAX);
+		bool stashed = false;
+		for(size_t index : group) {
+			stashed |= textures[index].stashed;
+		}
 		for(size_t index : group) {
 			if(index != lowest) {
+				textures[index].stashed = stashed;
 				textures[index].out_edge = lowest;
 			}
 		}

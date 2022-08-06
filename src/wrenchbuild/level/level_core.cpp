@@ -209,12 +209,16 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 		deduplicate_level_textures(shared.textures);
 		deduplicate_level_palettes(shared.textures);
 		
-		header.textures_base_offset = write_shared_level_textures(data, gs_ram, gs_table, shared.textures);
+		auto [textures_ofs, stash_count] = write_shared_level_textures(data, gs_ram, gs_table, shared.textures);
+		header.textures_base_offset = textures_ofs;
+		if(config.game() != Game::RAC) {
+			header.moby_gs_stash_count_rac23dl = stash_count;
+		}
 		
-		header.tfrag_textures = write_level_texture_table(index, shared.textures, shared.tfrag_range, header.textures_base_offset);
-		header.moby_textures = write_level_texture_table(index, shared.textures, shared.moby_range, header.textures_base_offset);
-		header.tie_textures = write_level_texture_table(index, shared.textures, shared.tie_range, header.textures_base_offset);
-		header.shrub_textures = write_level_texture_table(index, shared.textures, shared.shrub_range, header.textures_base_offset);
+		header.tfrag_textures = write_level_texture_table(index, shared.textures, shared.tfrag_range);
+		header.moby_textures = write_level_texture_table(index, shared.textures, shared.moby_range);
+		header.tie_textures = write_level_texture_table(index, shared.textures, shared.tie_range);
+		header.shrub_textures = write_level_texture_table(index, shared.textures, shared.shrub_range);
 		
 		auto part_info = pack_particle_textures(index, data, src.get_particle_textures(), config.game());
 		header.part_textures = std::get<0>(part_info);
@@ -235,12 +239,18 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 		index.write_v(part_defs);
 	}
 	
-	header.gs_ram.count = gs_table.size();
+	if(config.game() == Game::RAC) {
+		header.gs_ram.count = (s32) gs_table.size();
+	} else {
+		header.gs_ram.count = (s32) gs_table.size() - header.moby_gs_stash_count_rac23dl;
+	}
 	index.pad(0x10, 0);
 	header.gs_ram.offset = index.tell();
 	index.write_v(gs_table);
 	
-	pack_moby_classes(index, data, src.get_moby_classes(), shared.textures, moby_tab.offset, shared.moby_range.begin, config);
+	const CollectionAsset& moby_classes = src.get_moby_classes();
+	
+	pack_moby_classes(index, data, moby_classes, shared.textures, moby_tab.offset, shared.moby_range.begin, config);
 	pack_tie_classes(index, data, src.get_tie_classes(), shared.textures, tie_tab.offset, shared.tie_range.begin, config);
 	pack_shrub_classes(index, data, src.get_shrub_classes(), shared.textures, shrub_tab.offset, shared.shrub_range.begin, config);
 	
@@ -257,8 +267,12 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	if(config.game() == Game::GC || config.game() == Game::UYA) {
 		index.pad(0x10, 0);
 		header.moby_gs_stash_list = index.tell();
+		moby_classes.for_each_logical_child_of_type<MobyClassAsset>([&](const MobyClassAsset& child) {
+			if(child.stash_textures(false)) {
+				index.write<s16>(child.id());
+			}
+		});
 		index.write<s16>(-1);
-		header.moby_gs_stash_count_rac23dl = 1;
 	}
 	
 	if(src.has_ratchet_seqs() && config.game() != Game::DL) {
@@ -293,8 +307,12 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	if(config.game() == Game::DL) {
 		index.pad(0x10, 0);
 		header.moby_gs_stash_list = index.tell();
+		moby_classes.for_each_logical_child_of_type<MobyClassAsset>([&](const MobyClassAsset& child) {
+			if(child.stash_textures(false)) {
+				index.write<s16>(child.id());
+			}
+		});
 		index.write<s16>(-1);
-		header.moby_gs_stash_count_rac23dl = 1;
 	}
 	
 	index.pad(0x10, 0);

@@ -184,7 +184,7 @@ static void generate_asset_type(const WtfNode* asset_type, int id) {
 			out("\t\n");
 			out("\tbool has_%s() const;\n", getter_name.c_str());
 			out("\t%s %s() const;\n", cpp_type.c_str(), getter_name.c_str());
-			out("\t%s %s(%s& def) const;\n", cpp_type.c_str(), getter_name.c_str(), cpp_type.c_str());
+			out("\t%s %s(%s def) const;\n", cpp_type.c_str(), getter_name.c_str(), cpp_type.c_str());
 			out("\tvoid set_%s(%s src_0);\n", node->tag, cpp_type.c_str());
 		}
 		
@@ -499,7 +499,7 @@ static void generate_attribute_getter_and_setter_functions(const WtfNode* asset_
 				if(getter_type == 0) {
 					out("%s %sAsset::%s() const {\n", cpp_type.c_str(), asset_type->tag, getter_name.c_str());
 				} else {
-					out("%s %sAsset::%s(%s& def) const {\n", cpp_type.c_str(), asset_type->tag, getter_name.c_str(), cpp_type.c_str());
+					out("%s %sAsset::%s(%s def) const {\n", cpp_type.c_str(), asset_type->tag, getter_name.c_str(), cpp_type.c_str());
 				}
 				out("\tfor(const Asset* asset = &highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {\n");
 				out("\t\tif(asset->physical_type() == ASSET_TYPE) {\n");

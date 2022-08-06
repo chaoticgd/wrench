@@ -35,6 +35,10 @@ void unpack_moby_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest,
 		asset.set_has_moby_table_entry(true);
 		
 		bool stashed = moby_stash.contains(entry.o_class);
+		if(stashed) {
+			asset.set_stash_textures(true);
+		}
+		
 		unpack_level_textures(asset.materials(), entry.textures, textures, texture_data, gs_ram, config.game(), stashed ? moby_stash_addr : -1);
 		
 		if(entry.offset_in_asset_wad != 0) {
@@ -43,6 +47,24 @@ void unpack_moby_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest,
 		
 		refs_dest.child<ReferenceAsset>(entry.o_class).set_asset(asset.absolute_link());
 	}
+}
+
+void pack_moby_classes(OutputStream& index, OutputStream& core, const CollectionAsset& classes, const std::vector<LevelTexture>& textures, s32 table, s32 texture_index, BuildConfig config) {
+	s32 i = 0;
+	classes.for_each_logical_child_of_type<MobyClassAsset>([&](const MobyClassAsset& child) {
+		if(child.has_moby_table_entry()) {
+			MobyClassEntry entry = {0};
+			entry.o_class = child.id();
+			if(child.has_core()) {
+				entry.offset_in_asset_wad = pack_asset<ByteRange>(core, child, config, 0x40, FMT_MOBY_CLASS_LEVEL).offset;
+			}
+			if(!g_asset_packer_dry_run) {
+				write_level_texture_indices(entry.textures, textures, texture_index, MOBY_TEXTURE_TABLE);
+				texture_index += 16;
+			}
+			index.write(table + (i++) * sizeof(MobyClassEntry), entry);
+		}
+	});
 }
 
 void unpack_tie_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest, const LevelCoreHeader& header, InputStream& index, InputStream& data, InputStream& gs_ram, const std::vector<s64>& block_bounds, BuildConfig config) {
@@ -66,6 +88,22 @@ void unpack_tie_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest, 
 	}
 }
 
+void pack_tie_classes(OutputStream& index, OutputStream& core, const CollectionAsset& classes, const std::vector<LevelTexture>& textures, s32 table, s32 texture_index, BuildConfig config) {
+	s32 i = 0;
+	classes.for_each_logical_child_of_type<TieClassAsset>([&](const TieClassAsset& child) {
+		TieClassEntry entry = {0};
+		entry.o_class = child.id();
+		if(child.has_core()) {
+			entry.offset_in_asset_wad = pack_asset<ByteRange>(core, child.get_core(), config, 0x40).offset;
+		}
+		if(!g_asset_packer_dry_run) {
+			write_level_texture_indices(entry.textures, textures, texture_index, TIE_TEXTURE_TABLE);
+			texture_index += 16;
+		}
+		index.write(table + (i++) * sizeof(TieClassEntry), entry);
+	});
+}
+
 void unpack_shrub_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest, const LevelCoreHeader& header, InputStream& index, InputStream& data, InputStream& gs_ram, const std::vector<s64>& block_bounds, BuildConfig config) {
 	auto classes = index.read_multiple<ShrubClassEntry>(header.shrub_classes);
 	auto textures = index.read_multiple<TextureEntry>(header.shrub_textures);
@@ -85,6 +123,22 @@ void unpack_shrub_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest
 		
 		refs_dest.child<ReferenceAsset>(entry.o_class).set_asset(asset.absolute_link());
 	}
+}
+
+void pack_shrub_classes(OutputStream& index, OutputStream& core, const CollectionAsset& classes, const std::vector<LevelTexture>& textures, s32 table, s32 texture_index, BuildConfig config) {
+	s32 i = 0;
+	classes.for_each_logical_child_of_type<ShrubClassAsset>([&](const ShrubClassAsset& child) {
+		ShrubClassEntry entry = {0};
+		entry.o_class = child.id();
+		if(child.has_core()) {
+			entry.offset_in_asset_wad = pack_asset<ByteRange>(core, child.get_core(), config, 0x40).offset;
+		}
+		if(!g_asset_packer_dry_run) {
+			write_level_texture_indices(entry.textures, textures, texture_index, SHRUB_TEXTURE_TABLE);
+			texture_index += 16;
+		}
+		index.write(table + (i++) * sizeof(ShrubClassEntry), entry);
+	});
 }
 
 std::array<ArrayRange, 3> allocate_class_tables(OutputStream& index, const CollectionAsset& mobies, const CollectionAsset& ties, const CollectionAsset& shrubs) {
@@ -108,51 +162,4 @@ std::array<ArrayRange, 3> allocate_class_tables(OutputStream& index, const Colle
 	tie.offset = index.alloc_multiple<TieClassEntry>(tie.count);
 	shrub.offset = index.alloc_multiple<ShrubClassEntry>(shrub.count);
 	return {moby, tie, shrub};
-}
-
-void pack_moby_classes(OutputStream& index, OutputStream& core, const CollectionAsset& classes, const std::vector<LevelTexture>& textures, s32 table, s32 texture_index, BuildConfig config) {
-	s32 i = 0;
-	classes.for_each_logical_child_of_type<MobyClassAsset>([&](const MobyClassAsset& child) {
-		if(child.has_moby_table_entry()) {
-			MobyClassEntry entry = {0};
-			entry.o_class = child.id();
-			if(child.has_core()) {
-				entry.offset_in_asset_wad = pack_asset<ByteRange>(core, child, config, 0x40, FMT_MOBY_CLASS_LEVEL).offset;
-			}
-			if(!g_asset_packer_dry_run) {
-				texture_index += write_level_texture_indices(entry.textures, textures, texture_index, MOBY_TEXTURE_TABLE);
-			}
-			index.write(table + (i++) * sizeof(MobyClassEntry), entry);
-		}
-	});
-}
-
-void pack_tie_classes(OutputStream& index, OutputStream& core, const CollectionAsset& classes, const std::vector<LevelTexture>& textures, s32 table, s32 texture_index, BuildConfig config) {
-	s32 i = 0;
-	classes.for_each_logical_child_of_type<TieClassAsset>([&](const TieClassAsset& child) {
-		TieClassEntry entry = {0};
-		entry.o_class = child.id();
-		if(child.has_core()) {
-			entry.offset_in_asset_wad = pack_asset<ByteRange>(core, child.get_core(), config, 0x40).offset;
-		}
-		if(!g_asset_packer_dry_run) {
-			texture_index += write_level_texture_indices(entry.textures, textures, texture_index, TIE_TEXTURE_TABLE);
-		}
-		index.write(table + (i++) * sizeof(TieClassEntry), entry);
-	});
-}
-
-void pack_shrub_classes(OutputStream& index, OutputStream& core, const CollectionAsset& classes, const std::vector<LevelTexture>& textures, s32 table, s32 texture_index, BuildConfig config) {
-	s32 i = 0;
-	classes.for_each_logical_child_of_type<ShrubClassAsset>([&](const ShrubClassAsset& child) {
-		ShrubClassEntry entry = {0};
-		entry.o_class = child.id();
-		if(child.has_core()) {
-			entry.offset_in_asset_wad = pack_asset<ByteRange>(core, child.get_core(), config, 0x40).offset;
-		}
-		if(!g_asset_packer_dry_run) {
-			texture_index += write_level_texture_indices(entry.textures, textures, texture_index, SHRUB_TEXTURE_TABLE);
-		}
-		index.write(table + (i++) * sizeof(ShrubClassEntry), entry);
-	});
 }
