@@ -40,7 +40,7 @@ packed_struct(TextureEntry,
 	/* 0x6 */ s16 height;
 	/* 0x8 */ s16 type;
 	/* 0xa */ s16 palette;
-	/* 0xc */ s16 mipmap;
+	/* 0xc */ s16 mipmap = -1;
 	/* 0xe */ s16 pad = -1;
 )
 
