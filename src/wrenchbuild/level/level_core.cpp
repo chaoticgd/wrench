@@ -303,7 +303,7 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	}
 	
 	if(config.game() == Game::DL) {
-		index.pad(0x10, 0);
+		index.pad(2, 0);
 		header.moby_gs_stash_list = index.tell();
 		moby_classes.for_each_logical_child_of_type<MobyClassAsset>([&](const MobyClassAsset& child) {
 			if(child.stash_textures(false)) {
