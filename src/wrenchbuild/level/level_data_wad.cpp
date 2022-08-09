@@ -59,6 +59,8 @@ static void unpack_gc_uya_level_data_wad(LevelDataWadAsset& dest, InputStream& s
 static void pack_gc_uya_level_data_wad(OutputStream& dest, const LevelDataWadAsset& src, BuildConfig config);
 static void unpack_dl_level_data_wad(LevelDataWadAsset& dest, InputStream& src, BuildConfig config);
 static void pack_dl_level_data_wad(OutputStream& dest, const LevelDataWadAsset& src, BuildConfig config);
+template <typename Header>
+static AssetTestResult test_level_data_wad(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode);
 static ByteRange write_vector_of_bytes(OutputStream& dest, std::vector<u8>& bytes);
 
 on_load(LevelData, []() {
@@ -71,6 +73,11 @@ on_load(LevelData, []() {
 	LevelDataWadAsset::funcs.pack_rac2 = wrap_packer_func<LevelDataWadAsset>(pack_gc_uya_level_data_wad);
 	LevelDataWadAsset::funcs.pack_rac3 = wrap_packer_func<LevelDataWadAsset>(pack_gc_uya_level_data_wad);
 	LevelDataWadAsset::funcs.pack_dl = wrap_packer_func<LevelDataWadAsset>(pack_dl_level_data_wad);
+	
+	LevelDataWadAsset::funcs.test_rac = new AssetTestFunc(test_level_data_wad<RacLevelDataHeader>);
+	LevelDataWadAsset::funcs.test_gc  = new AssetTestFunc(test_level_data_wad<GcUyaLevelDataHeader>);
+	LevelDataWadAsset::funcs.test_uya = new AssetTestFunc(test_level_data_wad<GcUyaLevelDataHeader>);
+	LevelDataWadAsset::funcs.test_dl  = new AssetTestFunc(test_level_data_wad<DlLevelDataHeader>);
 })
 
 static void unpack_rac_level_data_wad(LevelDataWadAsset& dest, InputStream& src, BuildConfig config) {
@@ -177,6 +184,45 @@ static void pack_dl_level_data_wad(OutputStream& dest, const LevelDataWadAsset& 
 	header.global_nav_data = pack_compressed_asset<ByteRange>(dest, src.get_global_nav_data(), config, 0x40, "globalnav");
 	
 	dest.write(0, header);
+}
+
+template <typename Header>
+static AssetTestResult test_level_data_wad(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode) {
+	Header original_header = Buffer(original).read<Header>(0, "original level data header");
+	Header repacked_header = Buffer(repacked).read<Header>(0, "repacked level data header");
+	
+	if(original_header.core_index.size != repacked_header.core_index.size) {
+		if(mode == AssetTestMode::PRINT_DIFF_ON_FAIL) {
+			Buffer original_core_index = Buffer(original).subbuf(original_header.core_index.offset, original_header.core_index.size);
+			Buffer repacked_core_index = Buffer(repacked).subbuf(repacked_header.core_index.offset, repacked_header.core_index.size);
+			
+			Buffer original_header = original_core_index.subbuf(0, 0xc0);
+			Buffer repacked_header = repacked_core_index.subbuf(0, 0xc0);
+			
+			printf("Diffing core header...\n");
+			diff_buffers(original_header, repacked_header, 0, DIFF_REST_OF_BUFFER, true, nullptr);
+			
+			LevelCoreHeader original_core_header = original_core_index.read<LevelCoreHeader>(0, "core header");
+			LevelCoreHeader repacked_core_header = repacked_core_index.read<LevelCoreHeader>(0, "core header");
+			
+			// The texture data won't match, so find a good spot to start diffing that's after that.
+			s64 original_ofs = original_core_header.part_defs_offset;
+			s64 repacked_ofs = repacked_core_header.part_defs_offset;
+			
+			Buffer original_index = original_core_index.subbuf(original_ofs);
+			Buffer repacked_index = repacked_core_index.subbuf(repacked_ofs);
+			
+			printf("Diffing core index data (starting from 0x%x original, 0x%x repacked)...\n",
+				(s32) original_ofs, (s32) repacked_ofs);
+			diff_buffers(original_index, repacked_index, 0, DIFF_REST_OF_BUFFER, true, nullptr);
+			
+			write_file("/tmp/original_level_core_headers.bin", original_core_index);
+			write_file("/tmp/repacked_level_core_headers.bin", repacked_core_index);
+		}
+		return AssetTestResult::FAIL;
+	}
+	
+	return AssetTestResult::PASS;
 }
 
 static ByteRange write_vector_of_bytes(OutputStream& dest, std::vector<u8>& bytes) {

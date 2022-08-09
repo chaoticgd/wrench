@@ -37,7 +37,10 @@ on_load(Texture, []() {
 	TextureAsset::funcs.pack_rac3 = wrap_hint_packer_func<TextureAsset>(pack_texture_asset);
 	TextureAsset::funcs.pack_dl = wrap_hint_packer_func<TextureAsset>(pack_texture_asset);
 	
-	TextureAsset::funcs.test = new AssetTestFunc(test_texture_asset);
+	TextureAsset::funcs.test_rac = new AssetTestFunc(test_texture_asset);
+	TextureAsset::funcs.test_gc  = new AssetTestFunc(test_texture_asset);
+	TextureAsset::funcs.test_uya = new AssetTestFunc(test_texture_asset);
+	TextureAsset::funcs.test_dl  = new AssetTestFunc(test_texture_asset);
 })
 
 packed_struct(RgbaTextureHeader,

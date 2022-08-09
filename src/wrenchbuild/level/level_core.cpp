@@ -80,28 +80,57 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 	//	wad.unknown_a0 = assets.read_bytes(header.unknown_a0, 0x40, "unknown a0");
 	//}
 	
-	BuildAsset& build = build_from_level_core_asset(dest);
+	BuildAsset* build;
+	if(config.is_testing()) {
+		build = &dest.child<BuildAsset>("test_build");
+	} else {
+		build = &build_from_level_core_asset(dest);
+	}
+	
+	std::vector<GsRamEntry> gs_table = index.read_multiple<GsRamEntry>(header.gs_ram.offset, header.gs_ram.count + header.moby_gs_stash_count_rac23dl);
+	
+	// List of classes that have their textures stored permanently in GS memory.
+	std::set<s32> moby_stash;
+	for(s32 i = 0;; i++) {
+		s16 o_class = index.read<s16>(header.moby_gs_stash_list + i * 2);
+		if(o_class < 0) {
+			break;
+		}
+		moby_stash.emplace(o_class);
+	}
+	
+	s32 moby_stash_addr = 0;
+	if(header.moby_gs_stash_count_rac23dl > 0) {
+		moby_stash_addr = gs_table[header.gs_ram.count].address;
+	}
 	
 	// Unpack all the classes into the global directory and then create
 	// references to them for the current level.
-	CollectionAsset& moby_data = build.moby_classes();
+	CollectionAsset& moby_data = build->moby_classes();
 	CollectionAsset& moby_refs = dest.moby_classes(SWITCH_FILES);
-	unpack_moby_classes(moby_data, moby_refs, header, index, data, gs_ram, block_bounds, config);
+	unpack_moby_classes(moby_data, moby_refs, header, index, data, gs_table, gs_ram, block_bounds, config, moby_stash_addr, moby_stash);
 	
-	CollectionAsset& tie_data = build.tie_classes();
+	CollectionAsset& tie_data = build->tie_classes();
 	CollectionAsset& tie_refs = dest.tie_classes(SWITCH_FILES);
 	unpack_tie_classes(tie_data, tie_refs, header, index, data, gs_ram, block_bounds, config);
 	
-	CollectionAsset& shrub_data = build.shrub_classes();
+	CollectionAsset& shrub_data = build->shrub_classes();
 	CollectionAsset& shrub_refs = dest.shrub_classes(SWITCH_FILES);
 	unpack_shrub_classes(shrub_data, shrub_refs, header, index, data, gs_ram, block_bounds, config);
 	
-	SoundRemapHeader sound_remap = index.read<SoundRemapHeader>(header.sound_remap_offset);
-	s32 sound_remap_size = sound_remap.third_part_ofs + sound_remap.third_part_count * 4;
-	unpack_asset(dest.sound_remap(), index, ByteRange{header.sound_remap_offset, sound_remap_size}, config);
-	
-	//MobySoundRemapHeader moby_remap = data.read<MobySoundRemapHeader>(header.moby_sound_remap_offset);
-	//unpack_asset(dest.moby_sound_remap(), data, ByteRange{header.moby_sound_remap_offset, moby_remap.size}, config);
+	if(config.game() == Game::DL) {
+		SoundRemapHeader sound_remap = index.read<SoundRemapHeader>(header.sound_remap_offset);
+		s32 sound_remap_size = sound_remap.third_part_ofs + sound_remap.third_part_count * 4;
+		unpack_asset(dest.sound_remap(), index, ByteRange{header.sound_remap_offset, sound_remap_size}, config);
+		
+		MobySoundRemapHeader moby_remap = index.read<MobySoundRemapHeader>(header.moby_sound_remap_offset);
+		unpack_asset(dest.moby_sound_remap(), index, ByteRange{header.moby_sound_remap_offset, moby_remap.size}, config);
+	} else {
+		SoundRemapHeader sound_remap = index.read<SoundRemapHeader>(header.sound_remap_offset);
+		SoundRemapElement sound_remap_last = index.read<SoundRemapElement>(header.sound_remap_offset + sound_remap.second_part_ofs - 4);
+		s32 sound_remap_size = sound_remap_last.offset + sound_remap_last.size * 4;
+		unpack_asset(dest.sound_remap(), index, ByteRange{header.sound_remap_offset, sound_remap_size}, config);
+	}
 	
 	if(config.game() != Game::DL && header.ratchet_seqs_rac123 != 0) {
 		CollectionAsset& ratchet_seqs = dest.ratchet_seqs(SWITCH_FILES);
@@ -117,7 +146,7 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 		CollectionAsset& gadgets = dest.gadgets(SWITCH_FILES);
 		auto gadget_entries = index.read_multiple<RacGadgetHeader>(header.gadget_offset_rac1, header.gadget_count_rac1);
 		for(RacGadgetHeader& entry : gadget_entries) {
-			ByteRange range{entry.offset_in_asset_wad, data.size() - entry.offset_in_asset_wad};
+			ByteRange range{entry.offset_in_asset_wad, (s32) data.size() - entry.offset_in_asset_wad};
 			MobyClassAsset& moby = gadgets.foreign_child<MobyClassAsset>(entry.class_number);
 			moby.set_id(entry.class_number);
 			unpack_compressed_asset(moby, data, range, config, FMT_MOBY_CLASS_GADGET);
@@ -162,6 +191,7 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	
 	SharedLevelTextures shared;
 	std::vector<GsRamEntry> gs_table;
+	std::vector<u8> part_defs;
 	if(!g_asset_packer_dry_run) {
 		shared = read_level_textures(tfrag_textures, mobies, ties, shrubs);
 		
@@ -179,16 +209,20 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 		deduplicate_level_textures(shared.textures);
 		deduplicate_level_palettes(shared.textures);
 		
-		header.textures_base_offset = write_shared_level_textures(data, gs_ram, gs_table, shared.textures);
+		auto [textures_ofs, stash_count] = write_shared_level_textures(data, gs_ram, gs_table, shared.textures);
+		header.textures_base_offset = textures_ofs;
+		if(config.game() != Game::RAC) {
+			header.moby_gs_stash_count_rac23dl = stash_count;
+		}
 		
-		header.tfrag_textures = write_level_texture_table(index, shared.textures, shared.tfrag_range, header.textures_base_offset);
-		header.moby_textures = write_level_texture_table(index, shared.textures, shared.moby_range, header.textures_base_offset);
-		header.tie_textures = write_level_texture_table(index, shared.textures, shared.tie_range, header.textures_base_offset);
-		header.shrub_textures = write_level_texture_table(index, shared.textures, shared.shrub_range, header.textures_base_offset);
+		header.tfrag_textures = write_level_texture_table(index, shared.textures, shared.tfrag_range);
+		header.moby_textures = write_level_texture_table(index, shared.textures, shared.moby_range);
+		header.tie_textures = write_level_texture_table(index, shared.textures, shared.tie_range);
+		header.shrub_textures = write_level_texture_table(index, shared.textures, shared.shrub_range);
 		
 		auto part_info = pack_particle_textures(index, data, src.get_particle_textures(), config.game());
 		header.part_textures = std::get<0>(part_info);
-		header.part_defs_offset = std::get<1>(part_info);
+		part_defs = std::get<1>(part_info);
 		header.part_bank_offset = std::get<2>(part_info);
 		auto [fx_textures, fx_bank_offset] = pack_fx_textures(index, data, src.get_fx_textures(), config.game());
 		header.fx_textures = fx_textures;
@@ -197,15 +231,24 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 		printf("Shared texture memory: 0x%x bytes\n", header.part_bank_offset - header.textures_base_offset);
 	}
 	
-	header.gs_ram.count = gs_table.size();
+	if(config.game() == Game::RAC) {
+		header.gs_ram.count = (s32) gs_table.size();
+	} else {
+		header.gs_ram.count = (s32) gs_table.size() - header.moby_gs_stash_count_rac23dl;
+	}
+	index.pad(0x10, 0);
 	header.gs_ram.offset = index.tell();
 	index.write_v(gs_table);
 	
-	//index.pad(0x10, 0);
-	//header.unknown_a0 = core.tell();
-	//core.write(wad.unknown_a0);
+	if(!part_defs.empty()) {
+		index.pad(0x10, 0);
+		header.part_defs_offset = index.tell();
+		index.write_v(part_defs);
+	}
 	
-	pack_moby_classes(index, data, src.get_moby_classes(), shared.textures, moby_tab.offset, shared.moby_range.begin, config);
+	const CollectionAsset& moby_classes = src.get_moby_classes();
+	
+	pack_moby_classes(index, data, moby_classes, shared.textures, moby_tab.offset, shared.moby_range.begin, config);
 	pack_tie_classes(index, data, src.get_tie_classes(), shared.textures, tie_tab.offset, shared.tie_range.begin, config);
 	pack_shrub_classes(index, data, src.get_shrub_classes(), shared.textures, shrub_tab.offset, shared.shrub_range.begin, config);
 	
@@ -215,11 +258,22 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	if(src.has_sound_remap()) {
 		header.sound_remap_offset = pack_asset<ByteRange>(index, src.get_sound_remap(), config, 0x10).offset;
 	}
-	if(src.has_moby_sound_remap()) {
+	if(src.has_moby_sound_remap() && config.game() == Game::DL) {
 		header.moby_sound_remap_offset = pack_asset<ByteRange>(index, src.get_moby_sound_remap(), config, 0x10).offset;
 	}
 	
-	if(config.game() != Game::DL && src.has_ratchet_seqs()) {
+	if(config.game() == Game::GC || config.game() == Game::UYA) {
+		index.pad(0x10, 0);
+		header.moby_gs_stash_list = index.tell();
+		moby_classes.for_each_logical_child_of_type<MobyClassAsset>([&](const MobyClassAsset& child) {
+			if(child.stash_textures(false)) {
+				index.write<s16>(child.id());
+			}
+		});
+		index.write<s16>(-1);
+	}
+	
+	if(src.has_ratchet_seqs() && config.game() != Game::DL) {
 		const CollectionAsset& ratchet_seqs = src.get_ratchet_seqs();
 		std::vector<s32> ratchet_seq_offsets(256, 0);
 		for(s32 i = 0; i < 256; i++) {
@@ -236,7 +290,7 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 		std::vector<RacGadgetHeader> entries;
 		const CollectionAsset& gadgets = src.get_gadgets();
 		gadgets.for_each_logical_child_of_type<MobyClassAsset>([&](const MobyClassAsset& moby) {
-			RacGadgetHeader entry;
+			RacGadgetHeader entry = {};
 			entry.class_number = moby.id();
 			entry.offset_in_asset_wad = pack_compressed_asset<ByteRange>(data, moby, config, 0x40, "gadget", FMT_MOBY_CLASS_GADGET).offset;
 			entry.compressed_size = data.tell() - entry.offset_in_asset_wad;
@@ -248,15 +302,18 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 		index.write_v(entries);
 	}
 	
-	index.pad(0x10, 0);
-	header.moby_gs_stash_list = index.tell();
-	index.write<s16>(-1);
-	
-	index.pad(0x10, 0);
-	
-	if(config.game() != Game::RAC) {
-		header.moby_gs_stash_count_rac23dl = 1;
+	if(config.game() == Game::DL) {
+		index.pad(2, 0);
+		header.moby_gs_stash_list = index.tell();
+		moby_classes.for_each_logical_child_of_type<MobyClassAsset>([&](const MobyClassAsset& child) {
+			if(child.stash_textures(false)) {
+				index.write<s16>(child.id());
+			}
+		});
+		index.write<s16>(-1);
 	}
+	
+	index.pad(0x10, 0);
 	
 	header.glass_map_texture = 0x4000;
 	header.glass_map_palette = 0x400;

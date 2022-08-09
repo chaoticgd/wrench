@@ -31,18 +31,22 @@ enum class Region : u8 {
 
 class BuildConfig {
 public:
-	BuildConfig(Game game, Region region);
-	BuildConfig(const std::string& game, const std::string& region);
+	BuildConfig(Game game, Region region, bool is_testing = false);
+	BuildConfig(const std::string& game, const std::string& region, bool is_testing = false);
 	
 	Game game() const;
 	Region region() const;
+	bool is_testing() const;
+	
 	bool is_ntsc() const;
 	
 	float framerate();
 	float half_framerate();
 	
 private:
-	u8 value;
+	Game _game;
+	Region _region;
+	bool _is_testing;
 };
 
 Game game_from_string(const std::string& game);

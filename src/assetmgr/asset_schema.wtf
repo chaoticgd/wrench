@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-format_version: 9
+format_version: 10
 
 // *****************************************************************************
 
@@ -1210,6 +1210,7 @@ AssetType LevelWad {
 AssetType LevelDataWad {
 	wad: true
 	level_wad: true
+	bin_internal: true
 	
 	Child core {
 		allowed_types: ["LevelCore"]
@@ -1392,6 +1393,11 @@ AssetType MobyClass {
 		games: [1 2 3 4]
 	}
 	BooleanAttribute has_moby_table_entry {}
+	BooleanAttribute stash_textures {
+		desc: "Whether or not the textures for this class should be permanently resident in GS memory. This is typically used for items attached to Ratchet such as the heli-pack and helmet."
+		required: false
+		games: [2 3 4]
+	}
 	
 	Child core { allowed_types: ["MobyClassCore" "Binary"] }
 	Child materials {

@@ -111,7 +111,7 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 	}
 	
 	std::string hint = binary.format_hint();
-	BuildConfig config(binary.game(), binary.region());
+	BuildConfig config(binary.game(), binary.region(), true);
 	
 	AssetDispatchTable* dispatch = nullptr;
 	
@@ -137,8 +137,17 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 	
 	strip_trailing_padding_from_src(src, dest);
 	
+	AssetTestFunc* test_func;
+	switch(config.game()) {
+		case Game::RAC: test_func = dispatch->test_rac; break;
+		case Game::GC: test_func = dispatch->test_gc; break;
+		case Game::UYA: test_func = dispatch->test_uya; break;
+		case Game::DL: test_func = dispatch->test_dl; break;
+		default: return;
+	}
+	
 	AssetTestResult result;
-	if(!dispatch->test || (result = (*dispatch->test)(src, dest, config, hint.c_str(), mode)) == AssetTestResult::NOT_RUN) {
+	if(!test_func || (result = (*test_func)(src, dest, config, hint.c_str(), mode)) == AssetTestResult::NOT_RUN) {
 		result = diff_buffers(src, dest, 0, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL)
 			? AssetTestResult::PASS : AssetTestResult::FAIL;
 	}

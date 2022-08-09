@@ -22,21 +22,25 @@
 #include <core/texture.h>
 #include <assetmgr/asset_types.h>
 
+#define PSM_RGBA32 0x00
+#define PSM_RGBA16 0x01
+#define PSM_IDTEX8 0x13
+
 packed_struct(GsRamEntry,
-	s32 unknown_0; // Type?
+	s32 psm; // 0 == palette RGBA32, 1 == palette RGBA16, 0x13 == IDTEX8
 	s16 width;
 	s16 height;
-	s32 offset_1;
-	s32 offset_2; // Duplicate of offset_1?
+	s32 address;
+	s32 offset; // For stashed moby textures, this is relative to the start of the stash.
 )
 
 packed_struct(TextureEntry,
 	/* 0x0 */ s32 data_offset;
 	/* 0x4 */ s16 width;
 	/* 0x6 */ s16 height;
-	/* 0x8 */ s16 unknown_8;
+	/* 0x8 */ s16 type;
 	/* 0xa */ s16 palette;
-	/* 0xc */ s16 mipmap;
+	/* 0xc */ s16 mipmap = -1;
 	/* 0xe */ s16 pad = -1;
 )
 
@@ -56,6 +60,7 @@ packed_struct(FxTextureEntry,
 
 struct LevelTexture {
 	Opt<Texture> texture;
+	bool stashed = false;
 	s32 out_edge = -1;
 	s32 palette_out_edge = -1;
 	s32 texture_offset = -1;
@@ -82,15 +87,15 @@ struct SharedLevelTextures {
 	LevelTextureRange shrub_range;
 };
 
-void unpack_level_textures(CollectionAsset& dest, const u8 indices[16], const std::vector<TextureEntry>& textures, InputStream& data, InputStream& gs_ram, Game game);
-void unpack_level_texture(TextureAsset& dest, const TextureEntry& entry, InputStream& data, InputStream& gs_ram, Game game, s32 i);
+void unpack_level_textures(CollectionAsset& dest, const u8 indices[16], const std::vector<TextureEntry>& textures, InputStream& data, InputStream& gs_ram, Game game, s32 moby_stash_addr = -1);
+void unpack_level_texture(TextureAsset& dest, const TextureEntry& entry, InputStream& data, InputStream& gs_ram, Game game, s32 i, s32 moby_stash_addr = -1);
 SharedLevelTextures read_level_textures(const CollectionAsset& tfrag_textures, const CollectionAsset& mobies, const CollectionAsset& ties, const CollectionAsset& shrubs);
-s64 write_shared_level_textures(OutputStream& data, OutputStream& gs, std::vector<GsRamEntry>& gs_table, std::vector<LevelTexture>& textures);
-ArrayRange write_level_texture_table(OutputStream& dest, std::vector<LevelTexture>& textures, LevelTextureRange range, s32 textures_base_offset);
-s32 write_level_texture_indices(u8 dest[16], const std::vector<LevelTexture>& textures, s32 begin, s32 table);
+std::tuple<s32, s32> write_shared_level_textures(OutputStream& data, OutputStream& gs, std::vector<GsRamEntry>& gs_table, std::vector<LevelTexture>& textures);
+ArrayRange write_level_texture_table(OutputStream& dest, std::vector<LevelTexture>& textures, LevelTextureRange range);
+void write_level_texture_indices(u8 dest[16], const std::vector<LevelTexture>& textures, s32 begin, s32 table);
 
 void unpack_particle_textures(CollectionAsset& dest, InputStream& defs, std::vector<ParticleTextureEntry>& entries, InputStream& bank, Game game);
-std::tuple<ArrayRange, s32, s32> pack_particle_textures(OutputStream& index, OutputStream& data, const CollectionAsset& particles, Game game);
+std::tuple<ArrayRange, std::vector<u8>, s32> pack_particle_textures(OutputStream& index, OutputStream& data, const CollectionAsset& particles, Game game);
 void unpack_fx_textures(LevelCoreAsset& core, const std::vector<FxTextureEntry>& entries, InputStream& fx_bank, Game game);
 std::tuple<ArrayRange, s32> pack_fx_textures(OutputStream& index, OutputStream& data, const CollectionAsset& collection, Game game);
 
