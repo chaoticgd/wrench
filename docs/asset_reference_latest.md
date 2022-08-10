@@ -1,6 +1,6 @@
 # Asset Reference
 
-This file was generated from src/assetmgr/asset_schema.wtf.
+This file was generated from src/assetmgr/asset_schema.wtf and is for version 10 of the asset format.
 
 ## Index
 
@@ -953,6 +953,7 @@ Container for assets used in the mutliplayer mode.
 | - | - | - | - | - |
 | id | The integer used to reference this moby class at runtime. | Integer | Yes | RC/GC/UYA/DL |
 | has_moby_table_entry | *Not yet documented.* | Boolean | *Not yet documented.* | *Not yet documented.*  |
+| stash_textures | Whether or not the textures for this class should be permanently resident in GS memory. This is typically used for items attached to Ratchet such as the heli-pack and helmet. | Boolean | No | GC/UYA/DL |
 
 *Children*
 
