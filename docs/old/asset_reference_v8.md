@@ -1,6 +1,6 @@
 # Asset Reference
 
-This file was generated from src/assetmgr/asset_schema.wtf.
+This file was generated from src/assetmgr/asset_schema.wtf and is for version 8 of the asset format.
 
 ## Index
 
