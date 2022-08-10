@@ -22,7 +22,7 @@ Features currently include:
 	- View unpacked levels.
 	- Move objects and modify their attributes.
 
-For documentation on the asset system, see [Asset System](docs/asset_system.md) and [Asset Reference](docs/asset_reference_latest.md). For information on the game's file formats, see the [Formats Guide](docs/formats_guide.md).
+For documentation on the asset system, see [Asset System](docs/asset_system.md) and [Asset Reference](docs/asset_reference.md). For information on the game's file formats, see the [Formats Guide](docs/formats_guide.md).
 
 ## Screenshots
 
