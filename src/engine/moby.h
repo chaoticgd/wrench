@@ -84,7 +84,7 @@ packed_struct(MobySoundDef,
 
 struct MobyCornKernel {
 	Vec4f vec;
-	std::vector<MobyVertexPosition> vertices;
+	std::vector<MobyVec4> vertices;
 };
 
 struct MobyCornCob {
@@ -94,7 +94,7 @@ struct MobyCornCob {
 struct MobyClassData {
 	MobyMeshSection mesh;
 	MobyAnimationSection animation;
-	Opt<MobyBangles> bangles;
+	std::vector<MobyBangle> bangles;
 	Opt<MobyCornCob> corncob;
 	std::vector<u8> shadow;
 	Opt<MobyCollision> collision;
