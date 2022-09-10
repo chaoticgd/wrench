@@ -232,25 +232,24 @@ packed_struct(MobyBangleHeader,
 	u8 unknown_3;
 )
 
-packed_struct(MobyBangle,
+packed_struct(MobyBangleIndices,
 	u8 high_lod_submesh_begin;
 	u8 high_lod_submesh_count;
 	u8 low_lod_submesh_begin;
 	u8 low_lod_submesh_count;
 )
 
-packed_struct(MobyVertexPosition,
+packed_struct(MobyVec4,
 	s16 x;
 	s16 y;
 	s16 z;
 	s16 w;
 )
 
-struct MobyBangles {
-	MobyBangleHeader header;
-	std::vector<MobyBangle> bangles;
-	std::vector<MobyVertexPosition> vertices;
+struct MobyBangle {
 	std::vector<MobySubMesh> submeshes;
+	std::vector<MobySubMesh> low_lod_submeshes;
+	MobyVec4 vectors[2];
 };
 
 // moby_mesh_importer.cpp
@@ -263,7 +262,6 @@ void map_indices(MobySubMesh& submesh, const std::vector<size_t>& index_mapping)
 using GifUsageTable = std::vector<MobyGifUsage>;
 void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_ofs, const MobySubMesh* submeshes_in, size_t submesh_count, f32 scale, MobyFormat format, s64 class_header_ofs);
 void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalSubMesh>& submeshes, s64 class_header_ofs);
-void write_moby_bangle_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_ofs, const MobyBangles& bangles, f32 scale, MobyFormat format, s64 class_header_ofs);
 std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vector<Material>& materials);
 
 #endif
