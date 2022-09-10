@@ -185,7 +185,10 @@ struct AssetDispatchTable {
 	AssetPackerFunc* pack_rac3;
 	AssetPackerFunc* pack_dl;
 	
-	AssetTestFunc* test;
+	AssetTestFunc* test_rac;
+	AssetTestFunc* test_gc;
+	AssetTestFunc* test_uya;
+	AssetTestFunc* test_dl;
 };
 
 #endif

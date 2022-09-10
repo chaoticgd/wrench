@@ -18,8 +18,8 @@
 
 #include "moby.h"
 
-static MobyBangles read_moby_bangles(Buffer src);
-static s64 write_moby_bangles(OutBuffer dest, const MobyBangles& bangles);
+static std::vector<MobyBangle> read_moby_bangles(Buffer src, s32 bangles_ofs, s32 submesh_table_offset, f32 scale, MobyFormat format, bool animated);
+static s64 write_moby_bangles(OutBuffer dest, s64 bangles_ofs, s64 submesh_table_ofs, s32 submesh, const std::vector<MobyBangle>& bangles, f32 scale, MobyFormat format);
 static MobyCornCob read_moby_corncob(Buffer src);
 static s64 write_moby_corncob(OutBuffer dest, const MobyCornCob& corncob);
 static MobyCollision read_moby_collision(Buffer src);
@@ -72,7 +72,6 @@ MobyClassData read_moby_class(Buffer src, Game game) {
 		}
 	}
 	if(header.bangles != 0) {
-		moby.bangles = read_moby_bangles(src.subbuf(header.bangles * 0x10));
 		moby.header_end_offset = std::min(moby.header_end_offset, header.bangles * 0x10);
 	}
 	if(game == Game::RAC)  {
@@ -114,8 +113,7 @@ MobyClassData read_moby_class(Buffer src, Game game) {
 		moby.submesh_table_offset = header.submesh_table_offset;
 		moby.mesh = read_moby_mesh_section(src, header.submesh_table_offset, header.mesh_info, header.scale, format, moby.animation.joint_count > 0);
 		if(header.bangles != 0) {
-			s64 bangles_submesh_table_ofs = header.submesh_table_offset + moby.bangles->header.submesh_begin * 0x10;
-			moby.bangles->submeshes = read_moby_submeshes(src, bangles_submesh_table_ofs, moby.bangles->header.submesh_count, moby.scale, moby.animation.joint_count, format);
+			moby.bangles = read_moby_bangles(src, header.bangles * 0x10, header.submesh_table_offset, header.scale, format, moby.animation.joint_count > 0);
 		}
 	} else {
 		moby.mesh.has_submesh_table = false;
@@ -181,9 +179,11 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 	while(dest.tell() - class_header_ofs < moby.header_end_offset) {
 		dest.write<u8>(0);
 	}
-	if(moby.bangles.has_value()) {
+	s64 bangles_ofs;
+	if(!moby.bangles.empty()) {
 		dest.pad(0x10);
-		header.bangles = (write_moby_bangles(dest, *moby.bangles) - class_header_ofs) / 0x10;
+		bangles_ofs = dest.alloc_multiple<u8>(64 + 16 * moby.bangles.size());
+		header.bangles = (bangles_ofs - class_header_ofs) / 0x10;
 	}
 	if(game == Game::RAC) {
 		header.corncob = moby.rac1_short_2e;
@@ -199,8 +199,8 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 	}
 	s64 submesh_table_ofs = allocate_submesh_table(dest, moby.mesh);
 	s64 bangles_submesh_table_ofs = 0;
-	if(moby.bangles.has_value()) {
-		bangles_submesh_table_ofs = dest.alloc_multiple<MobySubMeshEntry>(moby.bangles->submeshes.size());
+	if(!moby.bangles.empty()) {
+		bangles_submesh_table_ofs = dest.alloc_multiple<MobySubMeshEntry>(moby.bangles.size());
 	}
 	if(moby.mesh.has_submesh_table) {
 		header.submesh_table_offset = submesh_table_ofs - class_header_ofs;
@@ -235,8 +235,8 @@ void write_moby_class(OutBuffer dest, const MobyClassData& moby, Game game) {
 	}
 	std::vector<MobyGifUsage> gif_usage;
 	header.mesh_info = write_moby_mesh_section(dest, gif_usage, submesh_table_ofs, moby.mesh, moby.scale, format);
-	if(moby.bangles.has_value()) {
-		write_moby_bangle_submeshes(dest, gif_usage, bangles_submesh_table_ofs, *moby.bangles, moby.scale, format, class_header_ofs);
+	if(!moby.bangles.empty()) {
+		write_moby_bangles(dest, bangles_ofs, submesh_table_ofs, header.mesh_info.metal_begin + header.mesh_info.metal_count, moby.bangles, moby.scale, format);
 	}
 	if(moby.team_palettes.size() > 0 && (game == Game::UYA || game == Game::DL)) {
 		dest.pad(0x10);
@@ -360,25 +360,33 @@ MobyMeshInfo write_moby_mesh_section(OutBuffer& dest, std::vector<MobyGifUsage>&
 
 // *****************************************************************************
 
-static MobyBangles read_moby_bangles(Buffer src) {
-	MobyBangles bangles;
-	bangles.header = src.read<MobyBangleHeader>(0, "moby bangle header");
-	bangles.bangles = src.read_multiple<MobyBangle>(4, 15, "moby bangles").copy();
-	s32 bangle_count = 0;
-	for(MobyBangle& bangle : bangles.bangles) {
-		if(bangle.high_lod_submesh_begin != 0 || bangle.high_lod_submesh_begin != 0) {
-			bangle_count++;
+static std::vector<MobyBangle> read_moby_bangles(Buffer src, s32 bangles_ofs, s32 submesh_table_offset, f32 scale, MobyFormat format, bool animated) {
+	std::vector<MobyBangle> bangles;
+	auto indices = src.read_multiple<MobyBangleIndices>(bangles_ofs + 4, 15, "bangle indices");
+	s32 i = 0;
+	for(const MobyBangleIndices& ind : indices) {
+		MobyBangle bangle;
+		if(ind.high_lod_submesh_begin != 0) {
+			s32 high_lod_ofs = submesh_table_offset + ind.high_lod_submesh_begin * 0x10;
+			bangle.submeshes = read_moby_submeshes(src, high_lod_ofs, ind.high_lod_submesh_count, scale, animated, format);
 		}
+		if(ind.low_lod_submesh_begin != 0) {
+			s32 low_lod_ofs = submesh_table_offset + ind.low_lod_submesh_begin * 0x10;
+			bangle.low_lod_submeshes = read_moby_submeshes(src, low_lod_ofs, ind.low_lod_submesh_count, scale, animated, format);
+		}
+		if(!bangle.submeshes.empty() || !bangle.low_lod_submeshes.empty()) {
+			bangle.vectors[0] = src.read<MobyVec4>(bangles_ofs + 64 + i * 16 + 0, "bangle vector 1");
+			bangle.vectors[1] = src.read<MobyVec4>(bangles_ofs + 64 + i * 16 + 8, "bangle vector 2");
+			bangles.emplace_back(std::move(bangle));
+		}
+		i++;
 	}
-	bangles.vertices = src.read_multiple<MobyVertexPosition>(0x40, 2 * bangle_count, "moby bangle vertices").copy();
 	return bangles;
 }
 
-static s64 write_moby_bangles(OutBuffer dest, const MobyBangles& bangles) {
+static s64 write_moby_bangles(OutBuffer dest, s64 bangles_ofs, s64 submesh_table_ofs, s32 submesh, const std::vector<MobyBangle>& bangles, f32 scale, MobyFormat format) {
+	// TODO: Implement this.
 	s64 ofs = dest.tell();
-	dest.write(bangles.header);
-	dest.write_multiple(bangles.bangles);
-	dest.write_multiple(bangles.vertices);
 	return ofs;
 }
 
@@ -392,7 +400,7 @@ static MobyCornCob read_moby_corncob(Buffer src) {
 			kernel.vec = src.read<Vec4f>(kernel_ofs, "corn vec4");
 			if(src.read<u64>(kernel_ofs, "corn") != 0 || src.read<u64>(kernel_ofs + 8, "corn") != 0) {
 				s16 vertex_count = src.read<s16>(kernel_ofs + 0x16, "corn vertex count");
-				kernel.vertices = src.read_multiple<MobyVertexPosition>(kernel_ofs + 0x10, vertex_count, "corn vertices").copy();
+				kernel.vertices = src.read_multiple<MobyVec4>(kernel_ofs + 0x10, vertex_count, "corn vertices").copy();
 			}
 			corncob.kernels[i] = std::move(kernel);
 		}
@@ -547,18 +555,17 @@ ColladaScene recover_moby_class(const MobyClassData& moby, s32 o_class, s32 text
 			std::string name = "low_lod_" + std::to_string(i);
 			scene.meshes.emplace_back(recover_moby_mesh(moby.mesh.low_lod, name.c_str(), o_class, texture_count, i));
 		}
-		if(moby.bangles.has_value()) {
-			for(s32 i = 0; i < (s32) moby.bangles->submeshes.size(); i++) {
-				std::string name = "bangles_" + std::to_string(i);
-				scene.meshes.emplace_back(recover_moby_mesh(moby.bangles->submeshes, name.c_str(), o_class, texture_count, i));
-			}
-		}
 	} else {
 		scene.meshes.emplace_back(recover_moby_mesh(moby.mesh.high_lod, "high_lod", o_class, texture_count, NO_SUBMESH_FILTER));
 		scene.meshes.emplace_back(recover_moby_mesh(moby.mesh.low_lod, "low_lod", o_class, texture_count, NO_SUBMESH_FILTER));
-		if(moby.bangles.has_value()) {
-			scene.meshes.emplace_back(recover_moby_mesh(moby.bangles->submeshes, "bangles", o_class, texture_count, NO_SUBMESH_FILTER));
-		}
+	}
+	
+	for(s32 i = 0; i < (s32) moby.bangles.size(); i++) {
+		std::string name = stringf("bangle_%d", i);
+		scene.meshes.emplace_back(recover_moby_mesh(moby.bangles[i].submeshes, name.c_str(), o_class, texture_count, NO_SUBMESH_FILTER));
+		
+		std::string low_lod_name = stringf("bangle_%d_low_lod", i);
+		scene.meshes.emplace_back(recover_moby_mesh(moby.bangles[i].low_lod_submeshes, low_lod_name.c_str(), o_class, texture_count, NO_SUBMESH_FILTER));
 	}
 	
 	if(moby.animation.joint_count != 0) {

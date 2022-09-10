@@ -229,40 +229,6 @@ void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std::vector
 	}
 }
 
-void write_moby_bangle_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_ofs, const MobyBangles& bangles, f32 scale, MobyFormat format, s64 class_header_ofs) {
-	// Since submeshes are usually written out such that they rely on data
-	// stored in previous submeshes, and different bangles can use the same
-	// submeshes, we must ensure that for each submesh that is written out, all
-	// bangles that include said submesh also include all dependent submeshes.
-	// Thus whenever a submesh is the first submesh of a bangle, we introduce a
-	// 'cut' such that data from before the cut cannot be used.
-	std::vector<bool> cuts(bangles.header.submesh_count, false);
-	for(size_t i = 0; i < bangles.bangles.size(); i++) {
-		const MobyBangle& bangle = bangles.bangles[i];
-		
-		assert(bangle.high_lod_submesh_begin == 0 || bangle.high_lod_submesh_begin >= bangles.header.submesh_begin);
-		if(bangle.high_lod_submesh_begin > bangles.header.submesh_begin) {
-			cuts[bangle.high_lod_submesh_begin - bangles.header.submesh_begin] = true;
-		}
-		
-		assert(bangle.low_lod_submesh_begin == 0 || bangle.low_lod_submesh_begin >= bangles.header.submesh_begin);
-		if(bangle.low_lod_submesh_begin > bangles.header.submesh_begin) {
-			cuts[bangle.low_lod_submesh_begin - bangles.header.submesh_begin] = true;
-		}
-	}
-	
-	size_t begin = 0;
-	for(size_t i = 0; i < bangles.submeshes.size(); i++) {
-		const MobySubMesh& submesh = bangles.submeshes[i];
-		if(cuts[i]) {
-			write_moby_submeshes(dest, gif_usage, table_ofs, &bangles.submeshes[begin], i - begin, scale, format, class_header_ofs);
-			table_ofs += (i - begin) * 0x10;
-			begin = i;
-		}
-	}
-	write_moby_submeshes(dest, gif_usage, table_ofs, &bangles.submeshes[begin], bangles.submeshes.size() - begin, scale, format, class_header_ofs);
-}
-
 static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usage, const MobySubMeshBase& submesh, s64 class_header_ofs) {
 	static const s32 INDEX_UNPACK_ADDR_QUADWORDS = 0x12d;
 	

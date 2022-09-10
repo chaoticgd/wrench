@@ -1,6 +1,6 @@
 # Asset Reference
 
-This file was generated from src/assetmgr/asset_schema.wtf.
+This file was generated from src/assetmgr/asset_schema.wtf and is for version 10 of the asset format.
 
 ## Index
 
@@ -52,6 +52,8 @@ This file was generated from src/assetmgr/asset_schema.wtf.
 	- [Material](#material)
 	- [Collision](#collision)
 	- [CollisionMaterial](#collisionmaterial)
+	- [Sky](#sky)
+	- [SkyShell](#skyshell)
 
 ## General
 
@@ -62,6 +64,7 @@ A reference to an asset that can be put in place of any other asset.
 *Attributes*
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
+| asset | The asset being referenced. | AssetLink | Yes | RC/GC/UYA/DL |
 
 *Children*
 
@@ -111,7 +114,7 @@ A raw binary file. Used for assets that wrench cannot unpack.
 *Attributes*
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
-| src | The file path of the binary file, relative to the .asset file. | File Path | No | RC/GC/UYA/DL |
+| src | The file path of the binary file, relative to the .asset file. | FilePath | No | RC/GC/UYA/DL |
 
 *Children*
 
@@ -209,7 +212,7 @@ An additional file to be included in the built ISO.
 *Attributes*
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
-| src | The path of the file, relative to the .asset file. | File Path | *Not yet documented.* | *Not yet documented.*  |
+| src | The path of the file, relative to the .asset file. | FilePath | *Not yet documented.* | *Not yet documented.*  |
 | path | Where to put the file on the filesystem of the built ISO. | String | *Not yet documented.* | *Not yet documented.*  |
 
 *Children*
@@ -232,8 +235,8 @@ File cnf_icon_en_sys {
 *Attributes*
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
-| src | The file path of the model file to use. | File Path | Yes | RC/GC/UYA/DL |
 | name | The name of the node to use. This is the same as the Blender node name. | String | Yes | RC/GC/UYA/DL |
+| src | The file path of the model file to use. | FilePath | Yes | RC/GC/UYA/DL |
 
 *Children*
 
@@ -248,7 +251,7 @@ A reference to an image file. Only PNG images are currently supported.
 *Attributes*
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
-| src | *Not yet documented.* | File Path | *Not yet documented.* | *Not yet documented.*  |
+| src | *Not yet documented.* | FilePath | *Not yet documented.* | *Not yet documented.*  |
 
 *Children*
 
@@ -841,7 +844,7 @@ Container for assets used in the mutliplayer mode.
 | tfrags | The main world-space level mesh. | Binary | Yes | RC/GC/UYA/DL |
 | tfrag_textures | Textures for the tfrag mesh. | Collection | Yes | RC/GC/UYA/DL |
 | occlusion | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
-| sky | The sky. | Binary | Yes | RC/GC/UYA/DL |
+| sky | The sky. | Sky, Binary | Yes | RC/GC/UYA/DL |
 | collision | The world space collision mesh. | Collision, Binary | Yes | RC/GC/UYA/DL |
 | moby_classes | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
 | tie_classes | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
@@ -950,6 +953,7 @@ Container for assets used in the mutliplayer mode.
 | - | - | - | - | - |
 | id | The integer used to reference this moby class at runtime. | Integer | Yes | RC/GC/UYA/DL |
 | has_moby_table_entry | *Not yet documented.* | Boolean | *Not yet documented.* | *Not yet documented.*  |
+| stash_textures | Whether or not the textures for this class should be permanently resident in GS memory. This is typically used for items attached to Ratchet such as the heli-pack and helmet. | Boolean | No | GC/UYA/DL |
 
 *Children*
 
@@ -1057,4 +1061,39 @@ The world space collision mesh for a level.
 
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
+
+
+### Sky
+
+*Attributes*
+| Name | Description | Type | Required | Games |
+| - | - | - | - | - |
+| colour | *Not yet documented.* | Colour | No | RC/GC/UYA |
+| clear_screen | *Not yet documented.* | Boolean | No | RC/GC/UYA/DL |
+| maximum_sprite_count | Controls how much memory to allocate for sprites. | Integer | No | RC/GC/UYA/DL |
+
+*Children*
+
+| Name | Description | Allowed Types | Required | Games |
+| - | - | - | - | - |
+| shells | The different meshes/layers that make up the sky. | SkyShell\[\] | Yes | RC/GC/UYA/DL |
+| materials | The materials used by the sky shell meshes. | Material\[\], Texture\[\] | Yes | RC/GC/UYA/DL |
+| fx | The FX textures. | Texture\[\] | Yes | RC/GC/UYA/DL |
+
+
+### SkyShell
+
+*Attributes*
+| Name | Description | Type | Required | Games |
+| - | - | - | - | - |
+| textured | If the mesh is textured or not. | Boolean | Yes | RC/GC/UYA/DL |
+| bloom | Only works for textured shells. | Boolean | No | UYA/DL |
+| starting_rotation | The starting rotation in radians per second. | Vector3 | No | RC/GC/UYA/DL |
+| angular_velocity | The change in rotation each frame. | Vector3 | No | RC/GC/UYA/DL |
+
+*Children*
+
+| Name | Description | Allowed Types | Required | Games |
+| - | - | - | - | - |
+| mesh | The mesh. If a Collection asset is used, each child of that asset specifies a different cluster. In the future, it may be possible to specify a single mesh and have it be automatically split up into clusters. | Mesh\[\] | Yes | RC/GC/UYA/DL |
 

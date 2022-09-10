@@ -67,9 +67,12 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 	
+	const WtfAttribute* format_version = wtf_attribute(root, "format_version");
+	assert(format_version && format_version->type == WTF_NUMBER);
+	
 	out("# Asset Reference\n");
 	out("\n");
-	out("This file was generated from %s.\n", argv[1]);
+	out("This file was generated from %s and is for version %d of the asset format.\n", argv[1], format_version->number.i);
 	
 	write_index(root);
 	write_contents(root);

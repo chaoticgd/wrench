@@ -44,7 +44,10 @@ on_load(Sky, []() {
 	SkyAsset::funcs.pack_rac3 = wrap_packer_func<SkyAsset>(pack_sky_asset);
 	SkyAsset::funcs.pack_dl = wrap_packer_func<SkyAsset>(pack_sky_asset);
 	
-	SkyAsset::funcs.test = new AssetTestFunc(test_sky_asset);
+	SkyAsset::funcs.test_rac = new AssetTestFunc(test_sky_asset);
+	SkyAsset::funcs.test_gc  = new AssetTestFunc(test_sky_asset);
+	SkyAsset::funcs.test_uya = new AssetTestFunc(test_sky_asset);
+	SkyAsset::funcs.test_dl  = new AssetTestFunc(test_sky_asset);
 })
 
 static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig config) {

@@ -184,7 +184,7 @@ static void generate_asset_type(const WtfNode* asset_type, int id) {
 			out("\t\n");
 			out("\tbool has_%s() const;\n", getter_name.c_str());
 			out("\t%s %s() const;\n", cpp_type.c_str(), getter_name.c_str());
-			out("\t%s %s(%s& def) const;\n", cpp_type.c_str(), getter_name.c_str(), cpp_type.c_str());
+			out("\t%s %s(%s def) const;\n", cpp_type.c_str(), getter_name.c_str(), cpp_type.c_str());
 			out("\tvoid set_%s(%s src_0);\n", node->tag, cpp_type.c_str());
 		}
 		
@@ -284,6 +284,11 @@ static void generate_asset_implementation(const WtfNode* asset_type) {
 	const WtfAttribute* bin_leaf = wtf_attribute(asset_type, "bin_leaf");
 	if(bin_leaf && bin_leaf->type == WTF_BOOLEAN && bin_leaf->boolean) {
 		out("\tflags |= ASSET_IS_BIN_LEAF;\n");
+	}
+	
+	const WtfAttribute* bin_internal = wtf_attribute(asset_type, "bin_internal");
+	if(bin_internal && bin_internal->type == WTF_BOOLEAN && bin_internal->boolean) {
+		out("\tflags |= ASSET_IS_BIN_INTERNAL;\n");
 	}
 	
 	const WtfAttribute* flattenable = wtf_attribute(asset_type, "flattenable");
@@ -494,7 +499,7 @@ static void generate_attribute_getter_and_setter_functions(const WtfNode* asset_
 				if(getter_type == 0) {
 					out("%s %sAsset::%s() const {\n", cpp_type.c_str(), asset_type->tag, getter_name.c_str());
 				} else {
-					out("%s %sAsset::%s(%s& def) const {\n", cpp_type.c_str(), asset_type->tag, getter_name.c_str(), cpp_type.c_str());
+					out("%s %sAsset::%s(%s def) const {\n", cpp_type.c_str(), asset_type->tag, getter_name.c_str(), cpp_type.c_str());
 				}
 				out("\tfor(const Asset* asset = &highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {\n");
 				out("\t\tif(asset->physical_type() == ASSET_TYPE) {\n");

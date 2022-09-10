@@ -114,6 +114,11 @@ packed_struct(SoundRemapHeader,
 	/* 0x6 */ s16 third_part_count;
 )
 
+packed_struct(SoundRemapElement,
+	/* 0x0 */ s16 offset;
+	/* 0x2 */ s16 size;
+)
+
 packed_struct(MobySoundRemapHeader,
 	/* 0x00 */ s32 size;
 	/* 0x04 */ s32 second_part_ofs;
