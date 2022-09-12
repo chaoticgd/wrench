@@ -49,7 +49,7 @@ void unpack_level_texture(TextureAsset& dest, const TextureEntry& entry, InputSt
 	
 	texture.multiply_alphas();
 	texture.swizzle_palette();
-	if(game == Game::DL) {
+	if (game == Game::DL && (entry.type & 3) != 0) {
 		texture.swizzle();
 	}
 	
