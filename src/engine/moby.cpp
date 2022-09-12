@@ -88,26 +88,25 @@ MobyClassData read_moby_class(Buffer src, Game game) {
 	}
 	if(header.skeleton != 0) {
 		moby.shadow = src.read_bytes(header.skeleton - header.shadow * 16, header.shadow * 16, "shadow");
-		if(game == Game::DL) {
+		if (game == Game::DL) {
 			moby.animation.skeleton.emplace();
-			for(const Mat3& src_mat : src.read_multiple<Mat3>(header.skeleton, header.joint_count, "skeleton")) {
+			for (const Mat3& src_mat : src.read_multiple<Mat3>(header.skeleton, header.joint_count, "skeleton")) {
 				Mat4 dest_mat;
 				dest_mat.m_0 = src_mat.m_0;
 				dest_mat.m_1 = src_mat.m_1;
 				dest_mat.m_2 = src_mat.m_2;
-				dest_mat.m_3 = {0, 0, 0, 0};
+				dest_mat.m_3 = { src_mat.m_0.w, src_mat.m_1.w, src_mat.m_2.w, 0 };
 				moby.animation.skeleton->emplace_back(dest_mat);
 			}
-		} else {
+		}
+		else {
 			moby.animation.skeleton = src.read_multiple<Mat4>(header.skeleton, header.joint_count, "skeleton").copy();
 		}
 	}
 	if(header.common_trans != 0) {
 		moby.animation.common_trans = src.read_multiple<MobyTrans>(header.common_trans, header.joint_count, "skeleton trans").copy();
 	}
-	if(game != Game::DL) { // TODO: Get this working.
-		moby.animation.joints = read_moby_joints(src, header.joints);
-	}
+	moby.animation.joints = read_moby_joints(src, header.joints);
 	moby.sound_defs = src.read_multiple<MobySoundDef>(header.sound_defs, header.sound_count, "moby sound defs").copy();
 	if(header.submesh_table_offset != 0) {
 		moby.submesh_table_offset = header.submesh_table_offset;
@@ -626,6 +625,8 @@ static std::vector<Joint> recover_moby_joints(const MobyClassData& moby, f32 sca
 	return {};
 	std::vector<Joint> joints;
 	joints.reserve(opt_size(moby.animation.common_trans));
+	s32 parent;
+	bool is_rc4_format = false; // rc4 has mobys in both formats so we need to dynamically determine format
 	
 	for(size_t i = 0; i < opt_size(moby.animation.common_trans); i++) {
 		const MobyTrans& trans = (*moby.animation.common_trans)[i];
@@ -652,12 +653,27 @@ static std::vector<Joint> recover_moby_joints(const MobyClassData& moby, f32 sca
 		Joint j;
 		j.inverse_bind_matrix = inv_bind_mat;
 		j.tip = tip;
-		s32 parent;
-		if(i > 0) {
-			parent = trans.parent_offset / 0x40;
-		} else {
+
+		// RC4 bone parents are stored as direct idx of parent bone
+		// The highest bit is sometimes set for unknown reasons
+		// A parent idx of 0x7F means no parent
+		auto rc4_parent_idx = trans.parent_offset & ~0x80;
+		if (rc4_parent_idx == 0x7F) {
+			is_rc4_format = true;
 			parent = -1;
 		}
+		else if (i > 0) {
+			if (is_rc4_format) {
+				parent = rc4_parent_idx; // parent joint id is stored in the lower bits
+			}
+			else {
+				parent = trans.parent_offset / 0x40;
+			}
+		}
+		else {
+			parent = -1;
+		}
+
 		verify(parent < (s32) joints.size(), "Bad moby joints.");
 		add_joint(joints, j, parent);
 	}
