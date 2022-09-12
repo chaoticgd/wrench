@@ -475,9 +475,9 @@ static void extract_moby(const fs::path& input_path, const fs::path& output_path
 static void extract_shrub(const fs::path& input_path, const fs::path& output_path) {
 	auto bin = read_file(input_path.string().c_str());
 	ShrubClass shrub = read_shrub_class(bin);
-	//ColladaScene scene = recover_moby_class(moby, 0, 0);
-	//auto xml = write_collada(scene);
-	//write_file(output_path, xml, "w");
+	ColladaScene scene = recover_shrub_class(shrub);
+	auto xml = write_collada(scene);
+	write_file(output_path, xml, "w");
 }
 
 static void unpack_collision(const fs::path& input_path, const fs::path& output_path) {

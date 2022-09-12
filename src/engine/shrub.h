@@ -63,19 +63,14 @@ packed_struct(ShrubClassHeader,
 	/* 0x3a */ s16 pad_s[3];
 )
 
-packed_struct(ShrubVertexHeader,
-	s16 a, b, c;
-	s16 scale;
-)
-
-packed_struct(ShrubVertex,
+packed_struct(ShrubVertexPart1,
 	/* 0x00 */ s16 x;
 	/* 0x02 */ s16 y;
 	/* 0x04 */ s16 z;
 	/* 0x06 */ s16 gs_packet_offset;
 )
 
-packed_struct(ShrubTexCoord,
+packed_struct(ShrubVertexPart2,
 	/* 0x00 */ s16 s;
 	/* 0x02 */ s16 t;
 	/* 0x04 */ s16 unknown_4; // Always 0x1000?
@@ -102,8 +97,13 @@ packed_struct(ShrubTexturePrimitive,
 	/* 0x30 */ GsAdData16 tex0_1;
 )
 
+struct ShrubVertex {
+	ShrubVertexPart1 part_1;
+	ShrubVertexPart2 part_2;
+};
+
 struct ShrubVertexPrimitive {
-	std::vector<Vertex> vertices;
+	std::vector<ShrubVertex> vertices;
 };
 
 using ShrubPrimitive = std::variant<ShrubTexturePrimitive, ShrubVertexPrimitive>;
@@ -112,14 +112,25 @@ struct ShrubPacket {
 	std::vector<ShrubPrimitive> primitives;
 };
 
+packed_struct(ShrubVec4,
+	u16 x;
+	u16 y;
+	u16 z;
+	u16 w;
+)
+
 struct ShrubClass {
 	std::vector<ShrubPacket> packets;
 	f32 mip_distance;
 	u16 mode_bits;
 	f32 scale;
+	std::vector<ShrubVec4> palette;
+	Vec4f bounding_sphere;
 };
 
 ShrubClass read_shrub_class(Buffer src);
 void write_shrub_class(OutBuffer dest, const ShrubClass& shrub);
+
+ColladaScene recover_shrub_class(const ShrubClass& shrub);
 
 #endif

@@ -22,16 +22,14 @@
 #include <core/util.h>
 
 packed_struct(GifTag12,
-	u64 low;
-	u64 regs;
+	/* 0x0 */ u64 low;
+	/* 0x8 */ u32 regs;
 	
 	u16 nloop() { return low & (0b111111111111111); }
 	void set_nloop(u16 field) { low |= field; }
 	
 	bool eop() { return (low >> 15) & 0b1; }
 	void set_eop(bool field) { low |= (!!field) << 15; }
-	
-	
 )
 
 packed_struct(GsAdData12,
