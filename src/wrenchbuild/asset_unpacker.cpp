@@ -126,33 +126,23 @@ static bool handle_special_debugging_cases(Asset& dest, InputStream& src, const 
 	}
 	
 	if(g_asset_unpacker.dump_binaries && (is_bin_leaf || is_bin_internal)) {
-		bool is_unpackable;
-		switch(config.game()) {
-			case Game::RAC: is_unpackable = dest.funcs.unpack_rac1 != nullptr; break;
-			case Game::GC: is_unpackable = dest.funcs.unpack_rac2 != nullptr; break;
-			case Game::UYA: is_unpackable = dest.funcs.unpack_rac3 != nullptr; break;
-			case Game::DL: is_unpackable = dest.funcs.unpack_dl != nullptr; break;
-			default: verify_not_reached("Invalid game.");
-		}
-		if(is_unpackable) {
-			const char* type = asset_type_to_string(dest.physical_type());
+		const char* type = asset_type_to_string(dest.physical_type());
+		std::string tag = dest.tag();
+		BinaryAsset* bin;
+		if(is_bin_internal) {
+			std::string tag = dest.tag() + "_internal";
+			bin = &dest.parent()->child<BinaryAsset>(tag.c_str());
+		} else {
 			std::string tag = dest.tag();
-			BinaryAsset* bin;
-			if(is_bin_internal) {
-				std::string tag = dest.tag() + "_internal";
-				bin = &dest.parent()->child<BinaryAsset>(tag.c_str());
-			} else {
-				std::string tag = dest.tag();
-				bin = &dest.parent()->transmute_child<BinaryAsset>(tag.c_str());
-			}
-			bin->set_asset_type(type);
-			bin->set_format_hint(hint);
-			bin->set_game(game_to_string(config.game()));
-			bin->set_region(region_to_string(config.region()));
-			unpack_asset_impl(*bin, src, nullptr, config, FMT_NO_HINT);
-			if(is_bin_leaf) {
-				return true;
-			}
+			bin = &dest.parent()->transmute_child<BinaryAsset>(tag.c_str());
+		}
+		bin->set_asset_type(type);
+		bin->set_format_hint(hint);
+		bin->set_game(game_to_string(config.game()));
+		bin->set_region(region_to_string(config.region()));
+		unpack_asset_impl(*bin, src, nullptr, config, FMT_NO_HINT);
+		if(is_bin_leaf) {
+			return true;
 		}
 	}
 	

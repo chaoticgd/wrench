@@ -74,7 +74,7 @@ packed_struct(ShrubVertexPart2,
 	/* 0x00 */ s16 s;
 	/* 0x02 */ s16 t;
 	/* 0x04 */ s16 unknown_4; // Always 0x1000?
-	/* 0x06 */ s16 colour_offset_and_end_cond; // If this is negative the strip ends.
+	/* 0x06 */ s16 colour_index_and_stop_cond; // If this is negative the strip ends.
 )
 
 packed_struct(ShrubPacketHeader,
@@ -98,8 +98,12 @@ packed_struct(ShrubTexturePrimitive,
 )
 
 struct ShrubVertex {
-	ShrubVertexPart1 part_1;
-	ShrubVertexPart2 part_2;
+	s16 x;
+	s16 y;
+	s16 z;
+	s16 s;
+	s16 t;
+	s16 colour_index;
 };
 
 struct ShrubVertexPrimitive {
@@ -120,12 +124,14 @@ packed_struct(ShrubVec4,
 )
 
 struct ShrubClass {
-	std::vector<ShrubPacket> packets;
+	Vec4f bounding_sphere;
 	f32 mip_distance;
 	u16 mode_bits;
 	f32 scale;
+	s16 o_class;
+	std::vector<ShrubPacket> packets;
+	Opt<ShrubBillboard> billboard;
 	std::vector<ShrubVec4> palette;
-	Vec4f bounding_sphere;
 };
 
 ShrubClass read_shrub_class(Buffer src);

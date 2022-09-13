@@ -25,6 +25,12 @@ ShrubClass read_shrub_class(Buffer src) {
 	
 	ShrubClassHeader header = src.read<ShrubClassHeader>(0, "shrub header");
 	
+	shrub.bounding_sphere = header.bounding_sphere;
+	shrub.mip_distance = header.mip_distance;
+	shrub.mode_bits = header.mode_bits;
+	shrub.scale = header.scale;
+	shrub.o_class = header.o_class;
+	
 	for(auto& entry : src.read_multiple<ShrubPacketEntry>(sizeof(ShrubClassHeader), header.packet_count, "packet entry")) {
 		ShrubPacket& packet = shrub.packets.emplace_back();
 		
@@ -77,10 +83,12 @@ ShrubClass read_shrub_class(Buffer src) {
 				}
 				
 				ShrubVertex& vertex = prim->vertices.emplace_back();
-				vertex.part_1 = part_1[next_vertex];
-				vertex.part_2 = part_2[next_vertex];
-				
-				verify(vertex.part_2.unknown_4 == 0x1000, "Weird shrub data.");
+				vertex.x = part_1[next_vertex].x;
+				vertex.y = part_1[next_vertex].y;
+				vertex.z = part_1[next_vertex].z;
+				vertex.s = part_2[next_vertex].s;
+				vertex.t = part_2[next_vertex].t;
+				vertex.colour_index = part_2[next_vertex].colour_index_and_stop_cond & 0b0111111111111111;
 				
 				next_vertex++;
 				next_offset += 3;
@@ -97,15 +105,163 @@ ShrubClass read_shrub_class(Buffer src) {
 		}
 	}
 	
+	if(header.billboard_offset > 0) {
+		shrub.billboard = src.read<ShrubBillboard>(header.billboard_offset, "shrub billboard");
+	}
 	shrub.palette = src.read_multiple<ShrubVec4>(header.palette_offset, 24, "shrub palette").copy();
-	shrub.bounding_sphere = header.bounding_sphere;
-	shrub.scale = header.scale;
 	
 	return shrub;
 }
 
 void write_shrub_class(OutBuffer dest, const ShrubClass& shrub) {
+	s64 header_ofs = dest.alloc<ShrubClassHeader>();
+	ShrubClassHeader header = {};
 	
+	// Fill in the header.
+	header.bounding_sphere = shrub.bounding_sphere;
+	header.mip_distance = shrub.mip_distance;
+	header.mode_bits = shrub.mode_bits;
+	header.scale = shrub.scale;
+	header.o_class = shrub.o_class;
+	header.packet_count = (s32) shrub.packets.size();
+	
+	s64 packet_list_ofs = dest.alloc_multiple<ShrubPacketEntry>(shrub.packets.size());
+	
+	// Write out the VIF command lists.
+	for(const ShrubPacket& packet : shrub.packets) {
+		ShrubPacketEntry entry;
+		
+		dest.pad(0x10, 0);
+		s64 begin_ofs = dest.tell();
+		entry.offset = begin_ofs - header_ofs;
+		
+		// Write command list prologue.
+		dest.write<u32>(0x01000404); // stcycl
+		dest.write<u32>(0x00000000); // nop
+		dest.write<u32>(0x05000000); // stmod
+		
+		s32 offset = 0;
+		
+		// Transform the data into the order it will be written out in.
+		ShrubPacketHeader packet_header = {};
+		packet_header.vertex_offset = 1;
+		std::vector<ShrubVertexGifTag> gif_tags;
+		std::vector<ShrubTexturePrimitive> textures;
+		std::vector<ShrubVertexPart1> part_1;
+		std::vector<ShrubVertexPart2> part_2;
+		for(const ShrubPrimitive& primitive : packet.primitives) {
+			if(const ShrubTexturePrimitive* prim = std::get_if<ShrubTexturePrimitive>(&primitive)) {
+				packet_header.texture_count++;
+				packet_header.vertex_offset += 4;
+				
+				ShrubTexturePrimitive& texture = textures.emplace_back(*prim);
+				texture.gs_packet_offset = offset;
+				offset += 5;
+			}
+			if(const ShrubVertexPrimitive* prim = std::get_if<ShrubVertexPrimitive>(&primitive)) {
+				packet_header.gif_tag_count++;
+				packet_header.vertex_offset += 1;
+				packet_header.vertex_count += (s32) prim->vertices.size();
+				
+				ShrubVertexGifTag& tag = gif_tags.emplace_back();
+				tag.tag = {};
+				tag.tag.set_nloop((u32) prim->vertices.size());
+				tag.tag.mid = 0x303e4000;
+				tag.tag.regs = 0x00000412;
+				tag.gs_packet_offset = offset;
+				offset += 1;
+				
+				for(const ShrubVertex& vertex : prim->vertices) {
+					ShrubVertexPart1& p1 = part_1.emplace_back();
+					p1.x = vertex.x;
+					p1.y = vertex.y;
+					p1.z = vertex.z;
+					p1.gs_packet_offset = offset;
+					ShrubVertexPart2& p2 = part_2.emplace_back();
+					p2.s = vertex.s;
+					p2.t = vertex.t;
+					p2.unknown_4 = 0x1000;
+					p2.colour_index_and_stop_cond = vertex.colour_index;
+					offset += 3;
+				}
+			}
+		}
+		
+		assert(gif_tags.size() >= 1);
+		gif_tags.back().tag.set_eop(true);
+		
+		// Insert padding vertices if there are less than 6 real vertices.
+		s32 vertex_count = (s32) part_1.size();
+		for(s32 i = 0; i < std::max(0, 6 - vertex_count); i++) {
+			part_1.emplace_back(part_1.back());
+			part_2.emplace_back(part_2.back());
+			packet_header.vertex_count++;
+		}
+		
+		// Write the stopping condition bit.
+		part_2[part_2.size() - 4].colour_index_and_stop_cond |= 0b1000000000000000;
+		
+		// Write header/gif tag/ad data unpack.
+		VifCode header_code;
+		header_code.interrupt = 0;
+		header_code.cmd = (VifCmd) 0b1100000;
+		header_code.num = 1 + packet_header.gif_tag_count + packet_header.texture_count * 4;
+		header_code.unpack.vnvl = VifVnVl::V4_32;
+		header_code.unpack.flg = VifFlg::USE_VIF1_TOPS;
+		header_code.unpack.usn = VifUsn::SIGNED;
+		header_code.unpack.addr = 0;
+		dest.write<u32>(header_code.encode_unpack());
+		dest.write(packet_header);
+		dest.write_multiple(gif_tags);
+		dest.write_multiple(textures);
+		
+		dest.write<u32>(0x05000000); // stmod
+		
+		// Write the primary vertex table.
+		VifCode part_1_code;
+		part_1_code.interrupt = 0;
+		part_1_code.cmd = (VifCmd) 0b1100000;
+		part_1_code.num = part_1.size();
+		part_1_code.unpack.vnvl = VifVnVl::V4_16;
+		part_1_code.unpack.flg = VifFlg::USE_VIF1_TOPS;
+		part_1_code.unpack.usn = VifUsn::SIGNED;
+		part_1_code.unpack.addr = packet_header.vertex_offset;
+		dest.write<u32>(part_1_code.encode_unpack());
+		dest.write_multiple(part_1);
+		
+		dest.write<u32>(0x05000000); // stmod
+		
+		// Write the secondary vertex table.
+		VifCode part_2_code;
+		part_2_code.interrupt = 0;
+		part_2_code.cmd = (VifCmd) 0b1100000;
+		part_2_code.num = part_2.size();
+		part_2_code.unpack.vnvl = VifVnVl::V4_16;
+		part_2_code.unpack.flg = VifFlg::USE_VIF1_TOPS;
+		part_2_code.unpack.usn = VifUsn::SIGNED;
+		part_2_code.unpack.addr = packet_header.vertex_offset + part_1.size();
+		dest.write<u32>(part_2_code.encode_unpack());
+		dest.write_multiple(part_2);
+		
+		entry.size = dest.tell() - begin_ofs;
+		
+		dest.write(packet_list_ofs, entry);
+		packet_list_ofs += sizeof(ShrubPacketEntry);
+	}
+	
+	// Write out the billboard.
+	if(shrub.billboard.has_value()) {
+		dest.pad(0x10, 0);
+		header.billboard_offset = (s32) (dest.tell() - header_ofs);
+		dest.write(*shrub.billboard);
+	}
+	
+	// Write out the palette.
+	dest.pad(0x10, 0);
+	header.palette_offset = (s32) (dest.tell() - header_ofs);
+	dest.write_multiple(shrub.palette);
+	
+	dest.write(header_ofs, header);
 }
 
 ColladaScene recover_shrub_class(const ShrubClass& shrub) {
@@ -136,12 +292,12 @@ ColladaScene recover_shrub_class(const ShrubClass& shrub) {
 				size_t first_index = mesh.vertices.size();
 				
 				for(const ShrubVertex& vertex : prim->vertices) {
-					f32 x = vertex.part_1.x * shrub.scale * (1.f / 256.f);
-					f32 y = vertex.part_1.y * shrub.scale * (1.f / 256.f);
-					f32 z = vertex.part_1.z * shrub.scale * (1.f / 256.f);
+					f32 x = vertex.x * shrub.scale * (1.f / 256.f);
+					f32 y = vertex.y * shrub.scale * (1.f / 256.f);
+					f32 z = vertex.z * shrub.scale * (1.f / 256.f);
 					ColourAttribute colour{1,1,1,1};
-					f32 s = vertex.part_2.s * (1.f / 4096.f);
-					f32 t = vertex.part_2.t * (1.f / 4096.f);
+					f32 s = vertex.s * (1.f / 4096.f);
+					f32 t = vertex.t * (1.f / 4096.f);
 					mesh.vertices.emplace_back(glm::vec3(x, y, z), colour, glm::vec2(s, t));
 				}
 				

@@ -1,6 +1,6 @@
 # Asset Reference
 
-This file was generated from src/assetmgr/asset_schema.wtf and is for version 10 of the asset format.
+This file was generated from src/assetmgr/asset_schema.wtf and is for version 11 of the asset format.
 
 ## Index
 
@@ -49,6 +49,7 @@ This file was generated from src/assetmgr/asset_schema.wtf and is for version 10
 	- [MobyClassCore](#mobyclasscore)
 	- [TieClass](#tieclass)
 	- [ShrubClass](#shrubclass)
+	- [ShrubClassCore](#shrubclasscore)
 	- [Material](#material)
 	- [Collision](#collision)
 	- [CollisionMaterial](#collisionmaterial)
@@ -1013,8 +1014,22 @@ Container for assets used in the mutliplayer mode.
 
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
-| core | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
+| core | *Not yet documented.* | ShrubClassCore, Binary | *Not yet documented.* | *Not yet documented.* |
 | materials | The materials used by this class. | Material\[\], Texture\[\] | Yes | RC/GC/UYA/DL |
+
+
+### ShrubClassCore
+
+*Attributes*
+| Name | Description | Type | Required | Games |
+| - | - | - | - | - |
+| scale | The factor by which the vertices will be quantized in the packed file. Larger values mean better range, smaller values mean better precision. | Float | *Not yet documented.* | *Not yet documented.*  |
+
+*Children*
+
+| Name | Description | Allowed Types | Required | Games |
+| - | - | - | - | - |
+| mesh | The mesh. | Mesh | *Not yet documented.* | *Not yet documented.* |
 
 
 ### Material

@@ -1,0 +1,82 @@
+/*
+	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
+	Copyright (C) 2019-2022 chaoticgd
+
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+#include <wrenchbuild/asset_unpacker.h>
+#include <wrenchbuild/asset_packer.h>
+#include <engine/shrub.h>
+
+static void unpack_shrub_class(ShrubClassAsset& dest, InputStream& src, BuildConfig config, const char* hint);
+static void pack_shrub_class(OutputStream& dest, const ShrubClassAsset& src, BuildConfig config, const char* hint);
+static AssetTestResult test_shrub_class(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode);
+
+on_load(ShrubClass, []() {
+	ShrubClassAsset::funcs.unpack_rac1 = wrap_hint_unpacker_func<ShrubClassAsset>(unpack_shrub_class);
+	ShrubClassAsset::funcs.unpack_rac2 = wrap_hint_unpacker_func<ShrubClassAsset>(unpack_shrub_class);
+	ShrubClassAsset::funcs.unpack_rac3 = wrap_hint_unpacker_func<ShrubClassAsset>(unpack_shrub_class);
+	ShrubClassAsset::funcs.unpack_dl = wrap_hint_unpacker_func<ShrubClassAsset>(unpack_shrub_class);
+	
+	ShrubClassAsset::funcs.pack_rac1 = wrap_hint_packer_func<ShrubClassAsset>(pack_shrub_class);
+	ShrubClassAsset::funcs.pack_rac2 = wrap_hint_packer_func<ShrubClassAsset>(pack_shrub_class);
+	ShrubClassAsset::funcs.pack_rac3 = wrap_hint_packer_func<ShrubClassAsset>(pack_shrub_class);
+	ShrubClassAsset::funcs.pack_dl = wrap_hint_packer_func<ShrubClassAsset>(pack_shrub_class);
+	
+	ShrubClassAsset::funcs.test_rac = new AssetTestFunc(test_shrub_class);
+	ShrubClassAsset::funcs.test_gc  = new AssetTestFunc(test_shrub_class);
+	ShrubClassAsset::funcs.test_uya = new AssetTestFunc(test_shrub_class);
+	ShrubClassAsset::funcs.test_dl  = new AssetTestFunc(test_shrub_class);
+})
+
+static void unpack_shrub_class(ShrubClassAsset& dest, InputStream& src, BuildConfig config, const char* hint) {
+	if(g_asset_unpacker.dump_binaries) {
+		if(!dest.has_core()) {
+			unpack_asset_impl(dest.core<ShrubClassCoreAsset>(), src, nullptr, config);
+		}
+		return;
+	}
+	
+	std::vector<u8> buffer = src.read_multiple<u8>(0, src.size());
+	ShrubClass shrub = read_shrub_class(buffer);
+	ColladaScene scene = recover_shrub_class(shrub);
+	
+	if(dest.has_materials()) {
+		CollectionAsset& materials = dest.get_materials();
+		for(s32 i = 0; i < 16; i++) {
+			if(materials.has_child(i)) {
+				TextureAsset& texture = materials.get_child(i).as<TextureAsset>();
+				scene.texture_paths.push_back(texture.src().path.string());
+			} else {
+				break;
+			}
+		}
+	}
+	
+	std::vector<u8> xml = write_collada(scene);
+	auto ref = dest.file().write_text_file("mesh.dae", (char*) xml.data());
+	
+	MeshAsset& mesh = dest.core<ShrubClassCoreAsset>().mesh();
+	mesh.set_name("mesh");
+	mesh.set_src(ref);
+}
+
+static void pack_shrub_class(OutputStream& dest, const ShrubClassAsset& src, BuildConfig config, const char* hint) {
+	
+}
+
+static AssetTestResult test_shrub_class(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode) {
+	return AssetTestResult::NOT_RUN;
+}

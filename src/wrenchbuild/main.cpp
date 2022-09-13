@@ -509,7 +509,7 @@ static void print_usage(bool developer_subcommands) {
 	puts("   name based on the identified release of said ISO by passing -s.");
 	puts("");
 	puts(" pack <input asset banks> -a <asset link> -o <output iso> [-h <hint>] [-g <game>] [-r <region>]");
-	puts("   Pack an asset (e.g. base_game) to produce a built file (e.g. an ISO file).");
+	puts("   Pack an asset (e.g. a build) to produce a built file (e.g. an ISO file).");
 	puts("   If <asset link> is not a build, the game (rac, gc, uya or dl) and the region");
 	puts("   (us, eu or japan) must be specified.");
 	puts("   A hint string used to specify the format of the asset can be set by");
@@ -575,7 +575,10 @@ static void print_usage(bool developer_subcommands) {
 		puts("   Record statistics about the memory used by mounting asset banks.");
 		puts("");
 		puts(" extract_moby <input path> -o <output path> -g <game>");
-		puts("   Convert a built moby to a .dae file.");
+		puts("   Convert a packed moby to a .dae file.");
+		puts("");
+		puts(" extract_shrub <input path> -o <output path>");
+		puts("   Convert a packed shrub to a .dae file.");
 		puts("");
 	}
 }

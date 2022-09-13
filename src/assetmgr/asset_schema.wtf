@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-format_version: 10
+format_version: 11
 
 // *****************************************************************************
 
@@ -1471,15 +1471,16 @@ AssetType TieClass {
 }
 
 AssetType ShrubClass {
-	bin_leaf: true
-	
 	IntegerAttribute id {
 		desc: "The integer used to reference this shrub class at runtime."
 		required: true
 		games: [1 2 3 4]
 	}
 	
-	Child core { allowed_types: ["Binary"] }
+	Child core {
+		allowed_types: ["ShrubClassCore" "Binary"]
+	}
+	
 	Child materials {
 		desc: "The materials used by this class."
 		allowed_types: ["Collection"]
@@ -1488,6 +1489,19 @@ AssetType ShrubClass {
 		Child child {
 			allowed_types: ["Material" "Texture"]
 		}
+	}
+}
+
+AssetType ShrubClassCore {
+	bin_leaf: true
+	
+	FloatAttribute scale {
+		desc: "The factor by which the vertices will be quantized in the packed file. Larger values mean better range, smaller values mean better precision."
+	}
+	
+	Child mesh {
+		desc: "The mesh."
+		allowed_types: ["Mesh"]
 	}
 }
 

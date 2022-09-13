@@ -171,6 +171,7 @@ add_executable(wrenchbuild
 	src/wrenchbuild/asset_packer.cpp
 	src/wrenchbuild/release.cpp
 	src/wrenchbuild/classes/moby_class.cpp
+	src/wrenchbuild/classes/shrub_class.cpp
 	src/wrenchbuild/common/binary_asset.cpp
 	src/wrenchbuild/common/collection_asset.cpp
 	src/wrenchbuild/common/file_asset.cpp

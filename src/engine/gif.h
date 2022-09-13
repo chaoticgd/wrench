@@ -22,7 +22,8 @@
 #include <core/util.h>
 
 packed_struct(GifTag12,
-	/* 0x0 */ u64 low;
+	/* 0x0 */ u32 low;
+	/* 0x4 */ u32 mid;
 	/* 0x8 */ u32 regs;
 	
 	u16 nloop() { return low & (0b111111111111111); }
