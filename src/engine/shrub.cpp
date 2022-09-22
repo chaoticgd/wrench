@@ -19,6 +19,9 @@
 #include "shrub.h"
 
 #include <core/vif.h>
+#include <core/tristrip.h>
+
+static TriStripConstraints setup_shrub_constraints();
 
 ShrubClass read_shrub_class(Buffer src) {
 	ShrubClass shrub;
@@ -163,12 +166,12 @@ void write_shrub_class(OutBuffer dest, const ShrubClass& shrub) {
 				packet_header.vertex_offset += 1;
 				packet_header.vertex_count += (s32) prim->vertices.size();
 				
-				ShrubVertexGifTag& tag = gif_tags.emplace_back();
-				tag.tag = {};
-				tag.tag.set_nloop((u32) prim->vertices.size());
-				tag.tag.mid = 0x303e4000;
-				tag.tag.regs = 0x00000412;
-				tag.gs_packet_offset = offset;
+				ShrubVertexGifTag& gif = gif_tags.emplace_back();
+				gif.tag = {};
+				gif.tag.set_nloop((u32) prim->vertices.size());
+				gif.tag.mid = 0x303e4000;
+				gif.tag.regs = 0x00000412;
+				gif.gs_packet_offset = offset;
 				offset += 1;
 				
 				for(const ShrubVertex& vertex : prim->vertices) {
@@ -271,7 +274,6 @@ ColladaScene recover_shrub_class(const ShrubClass& shrub) {
 	mesh.name = "mesh";
 	mesh.flags |= MESH_HAS_TEX_COORDS;
 	mesh.flags |= MESH_HAS_VERTEX_COLOURS;
-	
 	s32 texture_index = -1;
 	s32 max_tex_idx = 0;
 	SubMesh* submesh = nullptr;
@@ -290,7 +292,6 @@ ColladaScene recover_shrub_class(const ShrubClass& shrub) {
 				}
 				
 				size_t first_index = mesh.vertices.size();
-				
 				for(const ShrubVertex& vertex : prim->vertices) {
 					f32 x = vertex.x * shrub.scale * (1.f / 256.f);
 					f32 y = vertex.y * shrub.scale * (1.f / 256.f);
@@ -316,6 +317,9 @@ ColladaScene recover_shrub_class(const ShrubClass& shrub) {
 		scene.texture_paths.emplace_back(stringf("%d.png", i));
 	}
 	
+	mesh = deduplicate_vertices(std::move(mesh));
+	remove_zero_area_triangles(mesh);
+	
 	Mesh& bsphere_ind = scene.meshes.emplace_back();
 	bsphere_ind.name="bpshere";
 	SubMesh& sub = bsphere_ind.submeshes.emplace_back();
@@ -334,6 +338,117 @@ ColladaScene recover_shrub_class(const ShrubClass& shrub) {
 	sub.faces.emplace_back(4, 4, 4);
 	sub.faces.emplace_back(5, 5, 5);
 	
-	
 	return scene;
+}
+
+ShrubClass build_shrub_class(const Mesh& mesh, f32 mip_distance, u16 mode_bits, f32 scale, s16 o_class, Opt<ShrubBillboard> billboard) {
+	ShrubClass shrub = {};
+	
+	// Make sure the packets that get written out aren't too big to fit in VU1 memory.
+	TriStripConstraints constraints = setup_shrub_constraints();
+	
+	shrub.bounding_sphere = Vec4f::pack(approximate_bounding_sphere(mesh.vertices));
+	shrub.mip_distance = mip_distance;
+	shrub.mode_bits = mode_bits;
+	shrub.scale = scale;
+	shrub.o_class = o_class;
+	
+	// Prepare faces.
+	std::vector<TriStripFace> faces;
+	for(const SubMesh& submesh : mesh.submeshes) {
+		for(const Face& face : submesh.faces) {
+			verify(!face.is_quad(), "Automatatic triangulation not yet implemented.");
+			faces.emplace_back(face.v0, face.v1, face.v2, submesh.material);
+		}
+	}
+	
+	// Generate the strips.
+	TriStripPackets output = weave_tristrips(faces.data(), (s32) faces.size(), constraints, true);
+	
+	// Build the shrub packets.
+	for(const TriStripPacket& tpacket : output.packets) {
+		ShrubPacket& packet = shrub.packets.emplace_back();
+		s32 texture = -1;
+		
+		for(s32 i = 0; i < tpacket.strip_count; i++) {
+			const TriStrip& strip = output.strips[tpacket.strip_begin + i];
+			if(strip.texture != texture) {
+				ShrubTexturePrimitive& prim = packet.primitives.emplace_back().emplace<0>();
+				prim.xyzf2_1.address = 0x14;
+				prim.xyzf2_1.data_lo = 0xff92;
+				prim.xyzf2_1.data_hi = 0x04;
+				prim.clamp_1.address = 0x08;
+				prim.tex0_1.address = 0x34;
+				prim.tex0_1.data_lo = strip.texture;
+				prim.xyzf2_2.address = 0x06;
+				prim.xyzf2_2.data_lo = strip.texture;
+				texture = strip.texture;
+			}
+			ShrubVertexPrimitive& prim = packet.primitives.emplace_back().emplace<1>();
+			for(s32 j = 0; j < strip.index_count; j++) {
+				ShrubVertex& dest = prim.vertices.emplace_back();
+				const Vertex& src = mesh.vertices[strip.index_begin + j];
+				f32 x = src.pos.x * (1.f / scale) * 256.f * 4.f;
+				f32 y = src.pos.y * (1.f / scale) * 256.f * 4.f;
+				f32 z = src.pos.z * (1.f / scale) * 256.f * 4.f;
+				verify(x >= INT16_MIN && x <= INT16_MAX
+					&& y >= INT16_MIN && y <= INT16_MAX
+					&& z >= INT16_MIN && z <= INT16_MAX,
+					"Shrub mesh has vertices that are out of range. Increase the scale attribute.");
+				dest.x = (s16) x;
+				dest.y = (s16) y;
+				dest.z = (s16) z;
+				dest.s = src.tex_coord.x * 4096.f;
+				dest.t = src.tex_coord.y * 4096.f;
+			}
+		}
+	}
+	
+	shrub.palette.resize(24);
+	shrub.palette[0] = ShrubVec4{INT16_MAX,INT16_MAX,INT16_MAX,INT16_MAX};
+	
+	return shrub;
+}
+
+static TriStripConstraints setup_shrub_constraints() {
+	TriStripConstraints c;
+	
+	// First VIF packet size
+	c.num_constraints++;
+	c.constant_cost[0] = 1; // header
+	c.strip_cost[0] = 1; // gif tag
+	c.vertex_cost[0] = 0;
+	c.index_cost[0] = 0;
+	c.texture_cost[0] = 4; // ad data
+	c.max_cost[0] = 255; // max value of num field
+	
+	// Second and third VIF packet sizes
+	c.num_constraints++;
+	c.constant_cost[1] = 0;
+	c.strip_cost[1] = 0;
+	c.vertex_cost[1] = 0;
+	c.index_cost[1] = 1;
+	c.texture_cost[1] = 0;
+	c.max_cost[1] = 255; // max value of num field
+	
+	// Unpacked data size
+	// max GIF tag nloop in original files is 44
+	c.num_constraints++;
+	c.constant_cost[2] = 1; // header
+	c.strip_cost[2] = 1; // gif tag
+	c.vertex_cost[2] = 0; // non-indexed
+	c.index_cost[2] = 2; // second and third unpacks
+	c.texture_cost[2] = 4; // ad data
+	c.max_cost[2] = 118/2; // buffer size / fudge factor
+	
+	// GS packet size
+	c.num_constraints++;
+	c.constant_cost[3] = 0;
+	c.strip_cost[3] = 1; // gif tag
+	c.vertex_cost[3] = 0; // non-indexed
+	c.index_cost[3] = 3; // st rgbaq xyzf2
+	c.texture_cost[3] = 5; // gif tag + ad data
+	c.max_cost[3] = 168/2; // max GS packet size in original files / fudge factor
+	
+	return c;
 }

@@ -189,6 +189,18 @@ Mesh deduplicate_faces(Mesh mesh) {
 	return mesh;
 }
 
+void remove_zero_area_triangles(Mesh& mesh) {
+	for(SubMesh& submesh : mesh.submeshes) {
+		std::vector<Face> old_faces = std::move(submesh.faces);
+		submesh.faces = {};
+		for(Face& face : old_faces) {
+			if(face.is_quad() || !(face.v0 == face.v1 || face.v0 == face.v2 || face.v1 == face.v2)) {
+				submesh.faces.emplace_back(face);
+			}
+		}
+	}
+}
+
 bool vec2_equal_eps(const glm::vec2& lhs, const glm::vec2& rhs, f32 eps) {
 	return fabs(lhs.x - rhs.x) < eps && fabs(lhs.y - rhs.y) < eps;
 }

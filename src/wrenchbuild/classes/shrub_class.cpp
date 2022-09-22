@@ -74,7 +74,19 @@ static void unpack_shrub_class(ShrubClassAsset& dest, InputStream& src, BuildCon
 }
 
 static void pack_shrub_class(OutputStream& dest, const ShrubClassAsset& src, BuildConfig config, const char* hint) {
+	const ShrubClassCoreAsset& core = src.get_core().as<ShrubClassCoreAsset>();
 	
+	const MeshAsset& mesh_asset = core.get_mesh();
+	std::string xml = mesh_asset.file().read_text_file(mesh_asset.src().path);
+	ColladaScene scene = read_collada((char*) xml.data());
+	Mesh* mesh = scene.find_mesh(mesh_asset.name());
+	verify(mesh, "No mesh with name '%s'.", mesh_asset.name().c_str());
+	
+	ShrubClass shrub = build_shrub_class(*mesh, 5, 0, 0.1f, 4009, std::nullopt);
+	
+	std::vector<u8> buffer;
+	write_shrub_class(buffer, shrub);
+	dest.write_v(buffer);
 }
 
 static AssetTestResult test_shrub_class(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode) {
