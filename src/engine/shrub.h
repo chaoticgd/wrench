@@ -138,6 +138,6 @@ ShrubClass read_shrub_class(Buffer src);
 void write_shrub_class(OutBuffer dest, const ShrubClass& shrub);
 
 ColladaScene recover_shrub_class(const ShrubClass& shrub);
-ShrubClass build_shrub_class(const Mesh& mesh, f32 mip_distance, u16 mode_bits, f32 scale, s16 o_class, Opt<ShrubBillboard> billboard);
+ShrubClass build_shrub_class(const Mesh& mesh, f32 mip_distance, u16 mode_bits, s16 o_class, Opt<ShrubBillboard> billboard);
 
 #endif

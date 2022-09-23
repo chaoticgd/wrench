@@ -22,6 +22,7 @@
 #include <core/tristrip.h>
 
 static TriStripConstraints setup_shrub_constraints();
+static f32 compute_optimal_scale(const Mesh& mesh);
 
 ShrubClass read_shrub_class(Buffer src) {
 	ShrubClass shrub;
@@ -293,9 +294,9 @@ ColladaScene recover_shrub_class(const ShrubClass& shrub) {
 				
 				size_t first_index = mesh.vertices.size();
 				for(const ShrubVertex& vertex : prim->vertices) {
-					f32 x = vertex.x * shrub.scale * (1.f / 256.f);
-					f32 y = vertex.y * shrub.scale * (1.f / 256.f);
-					f32 z = vertex.z * shrub.scale * (1.f / 256.f);
+					f32 x = vertex.x * shrub.scale * (1.f / 1024.f);
+					f32 y = vertex.y * shrub.scale * (1.f / 1024.f);
+					f32 z = vertex.z * shrub.scale * (1.f / 1024.f);
 					ColourAttribute colour{1,1,1,1};
 					f32 s = vertex.s * (1.f / 4096.f);
 					f32 t = vertex.t * (1.f / 4096.f);
@@ -341,7 +342,7 @@ ColladaScene recover_shrub_class(const ShrubClass& shrub) {
 	return scene;
 }
 
-ShrubClass build_shrub_class(const Mesh& mesh, f32 mip_distance, u16 mode_bits, f32 scale, s16 o_class, Opt<ShrubBillboard> billboard) {
+ShrubClass build_shrub_class(const Mesh& mesh, f32 mip_distance, u16 mode_bits, s16 o_class, Opt<ShrubBillboard> billboard) {
 	ShrubClass shrub = {};
 	
 	// Make sure the packets that get written out aren't too big to fit in VU1 memory.
@@ -350,7 +351,7 @@ ShrubClass build_shrub_class(const Mesh& mesh, f32 mip_distance, u16 mode_bits, 
 	shrub.bounding_sphere = Vec4f::pack(approximate_bounding_sphere(mesh.vertices));
 	shrub.mip_distance = mip_distance;
 	shrub.mode_bits = mode_bits;
-	shrub.scale = scale;
+	shrub.scale = compute_optimal_scale(mesh);
 	shrub.o_class = o_class;
 	
 	// Prepare faces.
@@ -388,13 +389,12 @@ ShrubClass build_shrub_class(const Mesh& mesh, f32 mip_distance, u16 mode_bits, 
 			for(s32 j = 0; j < strip.index_count; j++) {
 				ShrubVertex& dest = prim.vertices.emplace_back();
 				const Vertex& src = mesh.vertices[strip.index_begin + j];
-				f32 x = src.pos.x * (1.f / scale) * 256.f * 4.f;
-				f32 y = src.pos.y * (1.f / scale) * 256.f * 4.f;
-				f32 z = src.pos.z * (1.f / scale) * 256.f * 4.f;
-				verify(x >= INT16_MIN && x <= INT16_MAX
+				f32 x = src.pos.x * (1.f / shrub.scale) * 1024.f;
+				f32 y = src.pos.y * (1.f / shrub.scale) * 1024.f;
+				f32 z = src.pos.z * (1.f / shrub.scale) * 1024.f;
+				assert(x >= INT16_MIN && x <= INT16_MAX
 					&& y >= INT16_MIN && y <= INT16_MAX
-					&& z >= INT16_MIN && z <= INT16_MAX,
-					"Shrub mesh has vertices that are out of range. Increase the scale attribute.");
+					&& z >= INT16_MIN && z <= INT16_MAX);
 				dest.x = (s16) x;
 				dest.y = (s16) y;
 				dest.z = (s16) z;
@@ -439,7 +439,7 @@ static TriStripConstraints setup_shrub_constraints() {
 	c.vertex_cost[2] = 0; // non-indexed
 	c.index_cost[2] = 2; // second and third unpacks
 	c.texture_cost[2] = 4; // ad data
-	c.max_cost[2] = 118/2; // buffer size / fudge factor
+	c.max_cost[2] = 118; // buffer size
 	
 	// GS packet size
 	c.num_constraints++;
@@ -448,7 +448,31 @@ static TriStripConstraints setup_shrub_constraints() {
 	c.vertex_cost[3] = 0; // non-indexed
 	c.index_cost[3] = 3; // st rgbaq xyzf2
 	c.texture_cost[3] = 5; // gif tag + ad data
-	c.max_cost[3] = 168/2; // max GS packet size in original files / fudge factor
+	c.max_cost[3] = 168; // max GS packet size in original files
 	
 	return c;
+}
+
+static f32 compute_optimal_scale(const Mesh& mesh) {
+	// Compute minimum axis-aligned bounding box.
+	f32 xmin = 0.f, xmax = 0.f;
+	f32 zmin = 0.f, zmax = 0.f;
+	f32 ymin = 0.f, ymax = 0.f;
+	for(const Vertex& v : mesh.vertices) {
+		xmin = std::min(xmin, v.pos.x);
+		ymin = std::min(ymin, v.pos.y);
+		zmin = std::min(zmin, v.pos.z);
+		
+		xmax = std::max(xmax, v.pos.x);
+		ymax = std::max(ymax, v.pos.y);
+		zmax = std::max(zmax, v.pos.z);
+	}
+	// Find the largest vertex position component we have to represent.
+	f32 required_range = std::max({
+		fabsf(xmin), fabsf(xmax),
+		fabsf(ymin), fabsf(ymax),
+		fabsf(zmin), fabsf(zmax)});
+	// Calculate a scale such that said value is quantized to the largest
+	// representable value.
+	return required_range * (1024.f / INT16_MAX);
 }

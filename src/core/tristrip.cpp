@@ -376,10 +376,6 @@ static s32 unique_vertex_from_rhs(const TriStripFace& lhs, const TriStripFace& r
 	return -1;
 }
 
-static bool is_zero_area(const TriStripFace& face) {
-	return face.v[0] == face.v[1] || face.v[0] == face.v[2] || face.v[1] == face.v[2];
-}
-
 static std::pair<s32, s32> get_shared_vertices(const TriStripFace& lhs, const TriStripFace& rhs) {
 	s32 first = -1;
 	for(s32 vertex : rhs.v) {
@@ -392,4 +388,8 @@ static std::pair<s32, s32> get_shared_vertices(const TriStripFace& lhs, const Tr
 		}
 	}
 	return {first, -1};
+}
+
+static bool is_zero_area(const TriStripFace& face) {
+	return face.v[0] == face.v[1] || face.v[0] == face.v[2] || face.v[1] == face.v[2];
 }
