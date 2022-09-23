@@ -299,7 +299,7 @@ ColladaScene recover_shrub_class(const ShrubClass& shrub) {
 					f32 z = vertex.z * shrub.scale * (1.f / 1024.f);
 					ColourAttribute colour{1,1,1,1};
 					f32 s = vertex.s * (1.f / 4096.f);
-					f32 t = vertex.t * (1.f / 4096.f);
+					f32 t = vertex.t * (-1.f / 4096.f);
 					mesh.vertices.emplace_back(glm::vec3(x, y, z), colour, glm::vec2(s, t));
 				}
 				
@@ -379,10 +379,10 @@ ShrubClass build_shrub_class(const Mesh& mesh, f32 mip_distance, u16 mode_bits, 
 				prim.xyzf2_1.data_lo = 0xff92;
 				prim.xyzf2_1.data_hi = 0x04;
 				prim.clamp_1.address = 0x08;
-				prim.tex0_1.address = 0x34;
-				prim.tex0_1.data_lo = strip.texture;
-				prim.xyzf2_2.address = 0x06;
+				prim.xyzf2_2.address = 0x34;
 				prim.xyzf2_2.data_lo = strip.texture;
+				prim.tex0_1.address = 0x06;
+				prim.tex0_1.data_lo = strip.texture;
 				texture = strip.texture;
 			}
 			ShrubVertexPrimitive& prim = packet.primitives.emplace_back().emplace<1>();
@@ -399,7 +399,7 @@ ShrubClass build_shrub_class(const Mesh& mesh, f32 mip_distance, u16 mode_bits, 
 				dest.y = (s16) y;
 				dest.z = (s16) z;
 				dest.s = src.tex_coord.x * 4096.f;
-				dest.t = src.tex_coord.y * 4096.f;
+				dest.t = -src.tex_coord.y * 4096.f;
 			}
 		}
 	}

@@ -56,11 +56,11 @@ packed_struct(ShrubClassHeader,
 	/* 0x28 */ s16 packet_count;
 	/* 0x2a */ s16 pad;
 	/* 0x2c */ s32 palette_offset;
-	/* 0x30 */ s32 pad_i;
+	/* 0x30 */ s32 pad_30;
 	/* 0x34 */ s16 drawn_count;
 	/* 0x36 */ s16 scis_count;
 	/* 0x38 */ s16 billboard_count;
-	/* 0x3a */ s16 pad_s[3];
+	/* 0x3a */ s16 pad_3a[3];
 )
 
 packed_struct(ShrubVertexPart1,
