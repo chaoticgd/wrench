@@ -38,9 +38,9 @@ packed_struct(ShrubBillboard,
 	/* 0x04 */ f32 width;
 	/* 0x08 */ f32 height;
 	/* 0x0c */ f32 z_ofs;
-	/* 0x10 */ GifAdData16 tex_1;
-	/* 0x20 */ GifAdData16 tex_0;
-	/* 0x30 */ GifAdData16 mip_1;
+	/* 0x10 */ GifAdData16 d1_tex1_1;
+	/* 0x20 */ GifAdData16 d2_tex0_1;
+	/* 0x30 */ GifAdData16 d3_miptbp1_1;
 )
 
 packed_struct(ShrubClassHeader,

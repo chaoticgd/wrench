@@ -44,12 +44,12 @@ ShrubClass read_shrub_class(Buffer src) {
 		
 		verify(unpacks.size() == 3, "Wrong number of unpacks.");
 		Buffer header_unpack = unpacks[0].data;
-		auto header = header_unpack.read<ShrubPacketHeader>(0, "packet header");
-		auto gif_tags = header_unpack.read_multiple<ShrubVertexGifTag>(0x10, header.gif_tag_count, "gif tags");
-		auto ad_gif = header_unpack.read_multiple<ShrubTexturePrimitive>(0x10 + header.gif_tag_count * 0x10, header.texture_count, "gs ad data");
+		auto packet_header = header_unpack.read<ShrubPacketHeader>(0, "packet header");
+		auto gif_tags = header_unpack.read_multiple<ShrubVertexGifTag>(0x10, packet_header.gif_tag_count, "gif tags");
+		auto ad_gif = header_unpack.read_multiple<ShrubTexturePrimitive>(0x10 + packet_header.gif_tag_count * 0x10, packet_header.texture_count, "gs ad data");
 		
-		auto part_1 = Buffer(unpacks[1].data).read_multiple<ShrubVertexPart1>(0, header.vertex_count, "vertices");
-		auto part_2 = Buffer(unpacks[2].data).read_multiple<ShrubVertexPart2>(0, header.vertex_count, "sts");
+		auto part_1 = Buffer(unpacks[1].data).read_multiple<ShrubVertexPart1>(0, packet_header.vertex_count, "vertices");
+		auto part_2 = Buffer(unpacks[2].data).read_multiple<ShrubVertexPart2>(0, packet_header.vertex_count, "sts");
 		
 		ShrubVertexPrimitive* prim = nullptr;
 		
