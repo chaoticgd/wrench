@@ -62,7 +62,7 @@ std::vector<MobySubMesh> read_moby_submeshes(Buffer src, s64 table_ofs, s64 coun
 			for(size_t i = 0; i < texture_data.size() / 0x40; i++) {
 				submesh.secret_indices.push_back(texture_data.read<s32>(i * 0x10 + 0xc, "extra index"));
 				auto prim = texture_data.read<MobyTexturePrimitive>(i * 0x40, "moby texture primitive");
-				verify(prim.d3_tex0.data_lo >= MOBY_TEX_NONE, "Regular moby submesh has a texture index that is too low.");
+				verify(prim.d3_tex0_1.data_lo >= MOBY_TEX_NONE, "Regular moby submesh has a texture index that is too low.");
 				submesh.textures.push_back(prim);
 			}
 		}
@@ -165,7 +165,7 @@ std::vector<MobyMetalSubMesh> read_moby_metal_submeshes(Buffer src, s64 table_of
 			for(size_t i = 0; i < texture_data.size() / 0x40; i++) {
 				submesh.secret_indices.push_back(texture_data.read<s32>(i * 0x10 + 0xc, "extra index"));
 				auto prim = texture_data.read<MobyTexturePrimitive>(i * 0x40, "moby texture primitive");
-				verify(prim.d3_tex0.data_lo == MOBY_TEX_CHROME || prim.d3_tex0.data_lo == MOBY_TEX_GLASS,
+				verify(prim.d3_tex0_1.data_lo == MOBY_TEX_CHROME || prim.d3_tex0_1.data_lo == MOBY_TEX_GLASS,
 					"Metal moby submesh has a bad texture index.");
 				submesh.textures.push_back(prim);
 			}
@@ -506,7 +506,7 @@ Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* na
 						mesh.submeshes.emplace_back(std::move(dest));
 					}
 					dest = SubMesh();
-					s32 texture = src.textures.at(texture_index).d3_tex0.data_lo;
+					s32 texture = src.textures.at(texture_index).d3_tex0_1.data_lo;
 					assert(texture >= -1);
 					if(texture == -1) {
 						dest.material = 0; // none

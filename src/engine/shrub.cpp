@@ -282,7 +282,7 @@ ColladaScene recover_shrub_class(const ShrubClass& shrub) {
 	for(const ShrubPacket& packet : shrub.packets) {
 		for(const ShrubPrimitive& primitive : packet.primitives) {
 			if(const ShrubTexturePrimitive* prim = std::get_if<ShrubTexturePrimitive>(&primitive)) {
-				texture_index = prim->xyzf2_2.data_lo;
+				texture_index = prim->d4_tex0_1.data_lo;
 			}
 			
 			if(const ShrubVertexPrimitive* prim = std::get_if<ShrubVertexPrimitive>(&primitive)) {
@@ -375,14 +375,14 @@ ShrubClass build_shrub_class(const Mesh& mesh, f32 mip_distance, u16 mode_bits, 
 			const TriStrip& strip = output.strips[tpacket.strip_begin + i];
 			if(strip.texture != texture) {
 				ShrubTexturePrimitive& prim = packet.primitives.emplace_back().emplace<0>();
-				prim.xyzf2_1.address = 0x14;
-				prim.xyzf2_1.data_lo = 0xff92;
-				prim.xyzf2_1.data_hi = 0x04;
-				prim.clamp_1.address = 0x08;
-				prim.xyzf2_2.address = 0x34;
-				prim.xyzf2_2.data_lo = strip.texture;
-				prim.tex0_1.address = 0x06;
-				prim.tex0_1.data_lo = strip.texture;
+				prim.d1_tex1_1.address = GIF_AD_TEX1_1;
+				prim.d1_tex1_1.data_lo = 0xff92;
+				prim.d1_tex1_1.data_hi = 0x04;
+				prim.d2_clamp_1.address = GIF_AD_CLAMP_1;
+				prim.d3_miptbp1_1.address = GIF_AD_MIPTBP1_1;
+				prim.d3_miptbp1_1.data_lo = strip.texture;
+				prim.d4_tex0_1.address = GIF_AD_TEX0_1;
+				prim.d4_tex0_1.data_lo = strip.texture;
 				texture = strip.texture;
 			}
 			ShrubVertexPrimitive& prim = packet.primitives.emplace_back().emplace<1>();

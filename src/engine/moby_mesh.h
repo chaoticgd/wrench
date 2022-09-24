@@ -102,13 +102,13 @@ packed_struct(MobyIndexHeader, // Second UNPACK header.
 )
 
 packed_struct(MobyTexturePrimitive,
-	/* 0x00 */ GsAdData12 d1_xyzf2;
+	/* 0x00 */ GifAdData12 d1_tex1_1;
 	/* 0x0c */ u32 super_secret_index_1; // The VU1 microcode reads extra indices from these fields.
-	/* 0x10 */ GsAdData12 d2_clamp;
+	/* 0x10 */ GifAdData12 d2_clamp_1;
 	/* 0x1c */ u32 super_secret_index_2;
-	/* 0x20 */ GsAdData12 d3_tex0;
+	/* 0x20 */ GifAdData12 d3_tex0_1;
 	/* 0x2c */ u32 super_secret_index_3;
-	/* 0x30 */ GsAdData12 d4_xyzf2;
+	/* 0x30 */ GifAdData12 d4_miptbp1_1;
 	/* 0x3c */ u32 super_secret_index_4;
 )
 

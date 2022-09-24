@@ -38,9 +38,9 @@ packed_struct(ShrubBillboard,
 	/* 0x04 */ f32 width;
 	/* 0x08 */ f32 height;
 	/* 0x0c */ f32 z_ofs;
-	/* 0x10 */ GsAdData16 tex_1;
-	/* 0x20 */ GsAdData16 tex_0;
-	/* 0x30 */ GsAdData16 mip_1;
+	/* 0x10 */ GifAdData16 tex_1;
+	/* 0x20 */ GifAdData16 tex_0;
+	/* 0x30 */ GifAdData16 mip_1;
 )
 
 packed_struct(ShrubClassHeader,
@@ -90,11 +90,11 @@ packed_struct(ShrubVertexGifTag,
 )
 
 packed_struct(ShrubTexturePrimitive,
-	/* 0x00 */ GsAdData12 xyzf2_1;
+	/* 0x00 */ GifAdData12 d1_tex1_1;
 	/* 0x0c */ s32 gs_packet_offset;
-	/* 0x10 */ GsAdData16 clamp_1;
-	/* 0x20 */ GsAdData16 xyzf2_2;
-	/* 0x30 */ GsAdData16 tex0_1;
+	/* 0x10 */ GifAdData16 d2_clamp_1;
+	/* 0x20 */ GifAdData16 d3_miptbp1_1;
+	/* 0x30 */ GifAdData16 d4_tex0_1;
 )
 
 struct ShrubVertex {

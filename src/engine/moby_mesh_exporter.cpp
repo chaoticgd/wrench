@@ -290,7 +290,7 @@ static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usag
 			s32 gif_index = 0;
 			for(const MobyTexturePrimitive& prim : submesh.textures) {
 				assert(gif_index < 12);
-				gif_entry.texture_indices[gif_index++] = prim.d3_tex0.data_lo;
+				gif_entry.texture_indices[gif_index++] = prim.d3_tex0_1.data_lo;
 			}
 			for(s32 i = gif_index; i < 12; i++) {
 				gif_entry.texture_indices[i] = 0xff;
@@ -1099,14 +1099,14 @@ std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vecto
 		
 		for(const MidLevelTexture& tex : mid.textures) {
 			MobyTexturePrimitive primitive = {0};
-			primitive.d1_xyzf2.data_lo = 0xff92; // Not sure.
-			primitive.d1_xyzf2.data_hi = 0x4;
-			primitive.d1_xyzf2.address = 0x4;
-			primitive.d1_xyzf2.pad_a = 0x41a0;
-			primitive.d2_clamp.address = 0x08;
-			primitive.d3_tex0.address = 0x06;
-			primitive.d3_tex0.data_lo = tex.texture;
-			primitive.d4_xyzf2.address = 0x34;
+			primitive.d1_tex1_1.data_lo = 0xff92; // Not sure.
+			primitive.d1_tex1_1.data_hi = 0x4;
+			primitive.d1_tex1_1.address = GIF_AD_TEX1_1;
+			primitive.d1_tex1_1.pad_a = 0x41a0;
+			primitive.d2_clamp_1.address = GIF_AD_CLAMP_1;
+			primitive.d3_tex0_1.address = GIF_AD_TEX0_1;
+			primitive.d3_tex0_1.data_lo = tex.texture;
+			primitive.d4_miptbp1_1.address = 0x34;
 			low.textures.push_back(primitive);
 		}
 		
