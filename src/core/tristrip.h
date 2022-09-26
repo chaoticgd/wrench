@@ -21,18 +21,6 @@
 
 #include <core/mesh.h>
 
-struct TriStripFace {
-	TriStripFace(s32 v0, s32 v1, s32 v2, s32 t)
-		: v{v0, v1, v2}, texture(t) {}
-	// Inputs
-	s32 v[3];
-	s32 texture;
-	// Internal state
-	bool included = false;
-	u8 neighbour_count = 0;
-	s32 neighbours[3] = {};
-};
-
 // This models the limited maximum size of a given packet. For each constraint,
 // the number of the given objects in a packet will be multiplied by their
 // respective costs and these results will be summed. If the sum is greater than
@@ -70,6 +58,6 @@ struct TriStripPackets {
 };
 
 // Generates a set of tristrips that cover a given mesh.
-TriStripPackets weave_tristrips(TriStripFace* faces, s32 face_count, const TriStripConstraints& constraints, bool support_instancing);
+TriStripPackets weave_tristrips(const Mesh& mesh, const TriStripConstraints& constraints, bool support_instancing);
 
 #endif

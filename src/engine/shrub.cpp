@@ -354,17 +354,8 @@ ShrubClass build_shrub_class(const Mesh& mesh, f32 mip_distance, u16 mode_bits, 
 	shrub.scale = compute_optimal_scale(mesh);
 	shrub.o_class = o_class;
 	
-	// Prepare faces.
-	std::vector<TriStripFace> faces;
-	for(const SubMesh& submesh : mesh.submeshes) {
-		for(const Face& face : submesh.faces) {
-			verify(!face.is_quad(), "Automatatic triangulation not yet implemented.");
-			faces.emplace_back(face.v0, face.v1, face.v2, submesh.material);
-		}
-	}
-	
 	// Generate the strips.
-	TriStripPackets output = weave_tristrips(faces.data(), (s32) faces.size(), constraints, true);
+	TriStripPackets output = weave_tristrips(mesh, constraints, true);
 	
 	// Build the shrub packets.
 	for(const TriStripPacket& tpacket : output.packets) {
@@ -388,7 +379,7 @@ ShrubClass build_shrub_class(const Mesh& mesh, f32 mip_distance, u16 mode_bits, 
 			ShrubVertexPrimitive& prim = packet.primitives.emplace_back().emplace<1>();
 			for(s32 j = 0; j < strip.index_count; j++) {
 				ShrubVertex& dest = prim.vertices.emplace_back();
-				const Vertex& src = mesh.vertices[strip.index_begin + j];
+				const Vertex& src = mesh.vertices.at(output.indices.at(strip.index_begin + j));
 				f32 x = src.pos.x * (1.f / shrub.scale) * 1024.f;
 				f32 y = src.pos.y * (1.f / shrub.scale) * 1024.f;
 				f32 z = src.pos.z * (1.f / shrub.scale) * 1024.f;
@@ -448,7 +439,7 @@ static TriStripConstraints setup_shrub_constraints() {
 	c.vertex_cost[3] = 0; // non-indexed
 	c.index_cost[3] = 3; // st rgbaq xyzf2
 	c.texture_cost[3] = 5; // gif tag + ad data
-	c.max_cost[3] = 168; // max GS packet size in original files
+	c.max_cost[3] = 168/2; // max GS packet size in original files
 	
 	return c;
 }

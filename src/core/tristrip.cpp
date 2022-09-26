@@ -18,6 +18,8 @@
 
 #include "tristrip.h"
 
+#include <core/mesh_graph.h>
+
 // Code to generate triangle strips and split said strips into packets based on
 // a set of size constraints.
 //
@@ -29,9 +31,20 @@ struct FaceStrip {
 	s32 texture;
 };
 
+// This is used where a list of faces may contain a zero area triangle i.e. one
+// that isn't included in the original mesh but is inserted to construct a
+// triangle strip.
+struct StripFace {
+	StripFace(VertexIndex v0, VertexIndex v1, VertexIndex v2, FaceIndex i)
+		: v{v0, v1, v2}, index(i) {}
+	VertexIndex v[3];
+	FaceIndex index = NULL_FACE_INDEX;
+	bool is_zero_area() const { return v[0] == v[1] || v[0] == v[2] || v[1] == v[2]; }
+};
+
 struct FaceStrips {
 	std::vector<FaceStrip> strips;
-	std::vector<s32> faces;
+	std::vector<StripFace> faces;
 };
 
 struct FaceStripPacket {
@@ -42,7 +55,7 @@ struct FaceStripPacket {
 struct FaceStripPackets {
 	std::vector<FaceStripPacket> packets;
 	std::vector<FaceStrip> strips;
-	std::vector<s32> faces;
+	std::vector<StripFace> faces;
 };
 
 struct TriStripRunningTotals {
@@ -52,97 +65,132 @@ struct TriStripRunningTotals {
 	s32 texture_count = 0;
 };
 
-static void compute_connectivity_information(TriStripFace* faces, s32 face_count);
-static void weave_tristrip(FaceStrips& dest, TriStripFace* faces, s32 face_count);
+static FaceIndex find_start_face(const MeshGraph& graph);
+static FaceStrip weave_strip(FaceStrips& dest, FaceIndex start_face, EdgeIndex start_edge, bool to_v1, MeshGraph& graph);
 static FaceStripPackets generate_packets(FaceStrips& input, const TriStripConstraints& constraints, bool support_instancing);
-static TriStripPackets facestrips_to_tripstrips(const FaceStripPackets& input, const TriStripFace* faces, s32 face_count);
-static void facestrip_to_tristrip(TriStripPackets& output, const FaceStrip& face_strip, const TriStripFace* faces, s32 face_count) ;
+static TriStripPackets facestrips_to_tripstrips(const FaceStripPackets& input);
+static void facestrip_to_tristrip(TriStripPackets& output, const FaceStrip& face_strip, const std::vector<StripFace>& faces) ;
 static bool try_add_strip(TriStripRunningTotals& totals, const TriStripConstraints& constraints);
 static bool try_add_unique_vertex(TriStripRunningTotals& totals, const TriStripConstraints& constraints);
 static bool try_add_duplicate_vertex(TriStripRunningTotals& totals, const TriStripConstraints& constraints);
 static bool try_add_texture(TriStripRunningTotals& totals, const TriStripConstraints& constraints);
-static s32 unique_vertex_from_rhs(const TriStripFace& lhs, const TriStripFace& rhs);
-static std::pair<s32, s32> get_shared_vertices(const TriStripFace& lhs, const TriStripFace& rhs);
-static bool is_zero_area(const TriStripFace& face);
+static VertexIndex unique_vertex_from_rhs(const StripFace& lhs, const StripFace& rhs);
+static std::pair<VertexIndex, VertexIndex> get_shared_vertices(const StripFace& lhs, const StripFace& rhs);
 
-TriStripPackets weave_tristrips(TriStripFace* faces, s32 face_count, const TriStripConstraints& constraints, bool support_instancing) {
-	// Firstly for each face, we determine which other faces are directly connected to it by an edge.
-	compute_connectivity_information(faces, face_count);
+TriStripPackets weave_tristrips(const Mesh& mesh, const TriStripConstraints& constraints, bool support_instancing) {
+	// Firstly we build a graph structure to make finding adjacent faces fast.
+	MeshGraph graph(mesh);
 	// Secondly we generate the strips of faces that when combined cover the mesh.
 	FaceStrips strips;
 	for(;;) {
-		weave_tristrip(strips, faces, face_count);
-		bool done = true;
-		for(s32 i = 0; i < face_count; i++) {
-			if(!faces[i].included) {
-				done = false;
-			}
-		}
-		if(done) {
+		FaceIndex start_face = find_start_face(graph);
+		if(start_face == NULL_FACE_INDEX) {
 			break;
 		}
+		EdgeIndex start_edge(graph.edge(graph.face_vertex(start_face, 0), graph.face_vertex(start_face, 1)));
+		FaceStrip strip = weave_strip(strips, start_face, start_edge, false, graph);
+		for(s32 i = 0; i < strip.face_count; i++) {
+			StripFace& face = strips.faces[strip.face_begin + i];
+			if(face.index != NULL_FACE_INDEX) {
+				graph.put_in_strip(face.index, (s32) strips.strips.size());
+			}
+		}
+		strips.strips.emplace_back(std::move(strip));
 	}
 	// Thirdly we split those strips up between different packets.
 	FaceStripPackets packets = generate_packets(strips, constraints, support_instancing);
 	// Fourthly we convert those strips of faces to tristrips.
-	return facestrips_to_tripstrips(packets, faces, face_count);
+	return facestrips_to_tripstrips(packets);
 }
 
-struct Edge {
-	Edge(s32 v0, s32 v1) : v{std::min(v0, v1), std::max(v0, v1)} {}
-	bool operator==(const Edge& rhs) const { return v[0] == rhs.v[0] && v[1] == rhs.v[1]; }
-	bool operator<(const Edge& rhs) const { if(v[0] != rhs.v[0]) return v[0] < rhs.v[0]; else return v[1] < rhs.v[1]; }
-	s32 v[2];
-};
-
-struct AdjacentFaces {
-	s32 count = 0;
-	s32 faces[2];
-};
-
-static void compute_connectivity_information(TriStripFace* faces, s32 face_count) {
-	std::map<Edge, AdjacentFaces> edge_to_faces;
-	
-	// Build a map of all the faces connected to each edge.
-	for(s32 i = 0; i < face_count; i++) {
-		TriStripFace& face = faces[i];
-		for(s32 i = 0; i < 3; i++) {
-			Edge edge(face.v[i], face.v[(i + 1) % 3]);
-			AdjacentFaces& adjacent = edge_to_faces[edge];
-			if(adjacent.count < 2) {
-				adjacent.faces[adjacent.count++] = i;
-			}
-		}
-	}
-	
-	// Determine for each face, which other faces share an edge with it.
-	for(auto& [edge, adjacent] : edge_to_faces) {
-		if(adjacent.count == 2) {
-			for(s32 i = 0; i < 2; i++) {
-				TriStripFace& face = faces[adjacent.faces[i]];
-				if(face.neighbour_count < 3) {
-					face.neighbours[face.neighbour_count] = adjacent.faces[1 - i];
-					face.neighbour_count++;
+static FaceIndex find_start_face(const MeshGraph& graph) {
+	for(s32 neighbour_count = 0; neighbour_count <= 3; neighbour_count++) {
+		for(FaceIndex face = 0; face.index < graph.face_count(); face.index++) {
+			s32 neighbours = 0;
+			for(s32 i = 0; i < 3; i++) {
+				if(graph.other_face(graph.edge_of_face(face, i), face) != NULL_FACE_INDEX) {
+					neighbours++;
 				}
 			}
+			if(neighbours == neighbour_count && !graph.is_in_strip(face)) {
+				return face;
+			}
 		}
 	}
+	return NULL_FACE_INDEX;
 }
 
-static void weave_tristrip(FaceStrips& dest, TriStripFace* faces, s32 face_count) {
-	if(face_count == 0) {
-		return;
+static FaceStrip weave_strip(FaceStrips& dest, FaceIndex start_face, EdgeIndex start_edge, bool to_v1, MeshGraph& graph) {
+	FaceStrip strip;
+	strip.face_count = 0;
+	strip.face_begin = (s32) dest.faces.size();
+	strip.texture = 0;
+	
+	std::vector<VertexIndex> scratch_indices;
+	
+	VertexIndex v0 = to_v1 ? graph.edge_vertex(start_edge, 0) : graph.edge_vertex(start_edge, 1);
+	VertexIndex v1 = to_v1 ? graph.edge_vertex(start_edge, 1) : graph.edge_vertex(start_edge, 0);
+	
+	scratch_indices.emplace_back(v0);
+	scratch_indices.emplace_back(v1);
+	VertexIndex v2 = graph.next_index(scratch_indices, start_face);
+	if(v2 == NULL_VERTEX_INDEX) {
+		printf("warning: Tristrip weaving failed. Failed to find v2.\n");
+		return strip;
+	}
+	scratch_indices.emplace_back(v2);
+	
+	strip.face_count++;
+	dest.faces.emplace_back(v0, v1, v2, start_face);
+	graph.put_in_temp_strip(start_face);
+	
+	VertexIndex nv0 = v1;
+	VertexIndex nv1 = v2;
+	
+	FaceIndex next_face = graph.other_face(graph.edge(nv0, nv1), start_face);
+	
+	while(next_face != NULL_FACE_INDEX && !graph.is_in_strip(next_face)) {
+		VertexIndex testnv0 = nv1;
+		VertexIndex testnv1 = graph.next_index(scratch_indices, next_face);
+		if(testnv1 == NULL_VERTEX_INDEX) {
+			printf("warning: Tristrip weaving failed. Failed to find testnv1.\n");
+			return strip;
+		}
+		
+		FaceIndex next_next_face = graph.other_face(graph.edge(testnv0, testnv1), next_face);
+		if(next_next_face == NULL_FACE_INDEX || graph.is_in_strip(next_next_face)) {
+			FaceIndex test_next_face = graph.other_face(graph.edge(nv0, testnv1), next_face);
+			if(test_next_face != NULL_FACE_INDEX && !graph.is_in_strip(test_next_face)) {
+				strip.face_count++;
+				dest.faces.emplace_back(nv0, nv1, nv0, NULL_FACE_INDEX);
+				graph.put_in_temp_strip(test_next_face);
+				
+				scratch_indices.emplace_back(nv0);
+				testnv0 = nv0;
+			}
+			break;
+		}
+		
+		VertexIndex ev0 = graph.face_vertex(next_face, 0);
+		VertexIndex ev1 = graph.face_vertex(next_face, 1);
+		VertexIndex ev2 = graph.face_vertex(next_face, 2);
+		
+		strip.face_count++;
+		assert(next_face != NULL_FACE_INDEX);
+		dest.faces.emplace_back(ev0, ev1, ev2, next_face);
+		graph.put_in_temp_strip(next_face);
+		
+		scratch_indices.emplace_back(testnv1);
+		
+		nv0 = testnv0;
+		nv1 = testnv1;
+		
+		next_face = graph.other_face(graph.edge(nv0, nv1), next_face);
 	}
 	
-	for(s32 i = 0; i < face_count; i++) {
-		// Do the very naive thing for now.
-		FaceStrip& strip = dest.strips.emplace_back();
-		strip.face_begin = (s32) dest.faces.size();
-		strip.face_count = 1;
-		strip.texture = faces[i].texture;
-		dest.faces.emplace_back(i);
-		faces[i].included = true;
-	}
+	graph.discard_temp_strip();
+	
+	return strip;
 }
 
 static FaceStripPackets generate_packets(FaceStrips& input, const TriStripConstraints& constraints, bool support_instancing) {
@@ -206,7 +254,7 @@ static FaceStripPackets generate_packets(FaceStrips& input, const TriStripConstr
 		
 		// Add the first face.
 		dest_strip.face_count++;
-		output.faces.emplace_back(input.faces[src_strip.face_begin]);
+		output.faces.emplace_back(input.faces.at(src_strip.face_begin));
 		
 		// Add as many of the remaining faces as possible.
 		for(s32 j = 1; j < src_strip.face_count; j++) {
@@ -220,14 +268,14 @@ static FaceStripPackets generate_packets(FaceStrips& input, const TriStripConstr
 			}
 			
 			dest_strip.face_count++;
-			output.faces.emplace_back(input.faces[src_strip.face_begin + j]);
+			output.faces.emplace_back(input.faces.at(src_strip.face_begin + j));
 		}
 	}
 	
 	return output;
 }
 
-static TriStripPackets facestrips_to_tripstrips(const FaceStripPackets& input, const TriStripFace* faces, s32 face_count) {
+static TriStripPackets facestrips_to_tripstrips(const FaceStripPackets& input) {
 	TriStripPackets output;
 	
 	for(const FaceStripPacket& face_packet : input.packets) {
@@ -241,21 +289,21 @@ static TriStripPackets facestrips_to_tripstrips(const FaceStripPackets& input, c
 			tri_strip.index_count = 2 + face_strip.face_count;
 			assert(face_strip.face_count >= 1);
 			
-			facestrip_to_tristrip(output, face_strip, faces, face_count);
+			facestrip_to_tristrip(output, face_strip, input.faces);
 		}
 	}
 	
 	return output;
 }
 
-static void facestrip_to_tristrip(TriStripPackets& output, const FaceStrip& face_strip, const TriStripFace* faces, s32 face_count) {
+static void facestrip_to_tristrip(TriStripPackets& output, const FaceStrip& face_strip, const std::vector<StripFace>& faces) {
 	// Process the first face.
-	TriStripFace first_face = faces[face_strip.face_begin];
+	StripFace first_face = faces[face_strip.face_begin];
 	if(face_strip.face_count >= 2) {
 		// Reorder the vertices of the first face such that a strip
 		// can be more easily constructed.
-		TriStripFace second_face = faces[face_strip.face_begin + 1];
-		s32 unique = unique_vertex_from_rhs(second_face, first_face);
+		StripFace second_face = faces[face_strip.face_begin + 1];
+		VertexIndex unique = unique_vertex_from_rhs(second_face, first_face);
 		if(unique == first_face.v[1]) {
 			std::swap(first_face.v[0], first_face.v[1]);
 		} else if(unique == first_face.v[2]) {
@@ -263,9 +311,9 @@ static void facestrip_to_tristrip(TriStripPackets& output, const FaceStrip& face
 		}
 		if(face_strip.face_count >= 3) {
 			// Same thing, but with the third face.
-			TriStripFace third_face = faces[face_strip.face_begin + 2];
-			if(is_zero_area(third_face)) {
-				s32 pivot = second_face.v[1];
+			StripFace third_face = faces[face_strip.face_begin + 2];
+			if(third_face.is_zero_area()) {
+				VertexIndex pivot = second_face.v[1];
 				if(first_face.v[1] == pivot) {
 					std::swap(first_face.v[1], first_face.v[2]);
 				}
@@ -279,22 +327,27 @@ static void facestrip_to_tristrip(TriStripPackets& output, const FaceStrip& face
 	}
 	
 	// Now actually add the first face.
-	output.indices.emplace_back(first_face.v[0]);
-	output.indices.emplace_back(first_face.v[1]);
-	output.indices.emplace_back(first_face.v[2]);
+	assert(first_face.v[0] != NULL_VERTEX_INDEX);
+	assert(first_face.v[1] != NULL_VERTEX_INDEX);
+	assert(first_face.v[2] != NULL_VERTEX_INDEX);
+	output.indices.emplace_back(first_face.v[0].index);
+	output.indices.emplace_back(first_face.v[1].index);
+	output.indices.emplace_back(first_face.v[2].index);
 	
 	// Process the rest of the faces.
-	TriStripFace last_face = first_face;
+	StripFace last_face = first_face;
 	for(s32 j = 1; j < face_strip.face_count; j++) {
-		const TriStripFace& face = faces[face_strip.face_begin + j - 1];
-		s32 unique = unique_vertex_from_rhs(last_face, face);
-		if(unique != -1) {
-			output.indices.emplace_back(unique);
+		const StripFace& face = faces[face_strip.face_begin + j - 1];
+		VertexIndex unique = unique_vertex_from_rhs(last_face, face);
+		if(unique != NULL_VERTEX_INDEX) {
+			assert(unique != NULL_VERTEX_INDEX);
+			output.indices.emplace_back(unique.index);
 			last_face.v[0] = last_face.v[1];
 			last_face.v[1] = last_face.v[2];
 			last_face.v[2] = unique;
 		} else {
-			output.indices.emplace_back(face.v[2]);
+			assert(face.v[2] != NULL_VERTEX_INDEX);
+			output.indices.emplace_back(face.v[2].index);
 			last_face.v[0] = face.v[0];
 			last_face.v[1] = face.v[1];
 			last_face.v[2] = face.v[2];
@@ -367,18 +420,18 @@ static bool try_add_texture(TriStripRunningTotals& totals, const TriStripConstra
 	return true;
 }
 
-static s32 unique_vertex_from_rhs(const TriStripFace& lhs, const TriStripFace& rhs) {
-	for(s32 vertex : rhs.v) {
+static VertexIndex unique_vertex_from_rhs(const StripFace& lhs, const StripFace& rhs) {
+	for(VertexIndex vertex : rhs.v) {
 		if(vertex != lhs.v[0] && vertex != lhs.v[1] && vertex != lhs.v[2]) {
 			return vertex;
 		}
 	}
-	return -1;
+	return NULL_VERTEX_INDEX;
 }
 
-static std::pair<s32, s32> get_shared_vertices(const TriStripFace& lhs, const TriStripFace& rhs) {
-	s32 first = -1;
-	for(s32 vertex : rhs.v) {
+static std::pair<VertexIndex, VertexIndex> get_shared_vertices(const StripFace& lhs, const StripFace& rhs) {
+	VertexIndex first = NULL_VERTEX_INDEX;
+	for(VertexIndex vertex : rhs.v) {
 		if(vertex == lhs.v[0] || vertex == lhs.v[1] || vertex == lhs.v[2]) {
 			if(first == -1) {
 				first = vertex;
@@ -387,9 +440,5 @@ static std::pair<s32, s32> get_shared_vertices(const TriStripFace& lhs, const Tr
 			}
 		}
 	}
-	return {first, -1};
-}
-
-static bool is_zero_area(const TriStripFace& face) {
-	return face.v[0] == face.v[1] || face.v[0] == face.v[2] || face.v[1] == face.v[2];
+	return {first, NULL_VERTEX_INDEX};
 }
