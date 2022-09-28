@@ -122,4 +122,21 @@ public:
 	void put_in_strip(FaceIndex face, s32 strip_index) { face_at(face).strip_index = strip_index; }
 	void put_in_temp_strip(FaceIndex face) { face_at(face).in_temp_strip = true; }
 	void discard_temp_strip() { for(FaceInfo& face : _faces) { face.in_temp_strip = false; } }
+	
+	FaceIndex face_really_expensive(VertexIndex v0, VertexIndex v1, VertexIndex v2) const {
+		for(FaceIndex i = {0}; i < face_count(); i.index++) {
+			const FaceInfo& face = face_at(i);
+			bool good = true;
+			for(VertexIndex test : face.v) {
+				if(test != v0 && test != v1 && test != v2) {
+					good = false;
+					break;
+				}
+			}
+			if(good) {
+				return i;
+			}
+		}
+		return NULL_FACE_INDEX;
+	}
 };

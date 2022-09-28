@@ -85,7 +85,7 @@ MeshGraph::MeshGraph(const Mesh& mesh) {
 				if(info.faces[1] == NULL_FACE_INDEX) {
 					info.faces[1] = i;
 				} else {
-					printf("warning: Edge has too many faces!\n");
+					verify_not_reached("Broken geometry detected. Edge has too many faces!\n");
 				}
 			}
 		}
