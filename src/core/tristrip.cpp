@@ -26,9 +26,10 @@
 // Some of the algorithms here were adapted from the NvTriStrip library.
 
 struct FaceStrip {
-	s32 face_begin;
-	s32 face_count;
-	s32 material;
+	s32 face_begin = 0;
+	s32 face_count = 0;
+	s32 material = 0;
+	s32 zero_area_tri_count = 0;
 };
 
 // This is used where a list of faces may contain a zero area triangle i.e. one
@@ -48,8 +49,8 @@ struct FaceStrips {
 };
 
 struct FaceStripPacket {
-	s32 strip_begin;
-	s32 strip_count;
+	s32 strip_begin = 0;
+	s32 strip_count = 0;
 };
 
 struct FaceStripPackets {
@@ -65,8 +66,9 @@ struct TriStripRunningTotals {
 	s32 material_count = 0;
 };
 
+static FaceStrip weave_multiple_strips_and_pick_the_best(FaceStrips& dest, MeshGraph& graph);
 static FaceIndex find_start_face(const MeshGraph& graph);
-static FaceStrip weave_strip(FaceStrips& dest, FaceIndex start_face, EdgeIndex start_edge, bool to_v1, MeshGraph& graph);
+static void weave_strip(FaceStrips& dest, FaceIndex start_face, EdgeIndex start_edge, bool to_v1, MeshGraph& graph);
 static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_face, VertexIndex nv0, VertexIndex nv1, std::vector<VertexIndex>& scratch_indices, MeshGraph& graph);
 static FaceStripPackets generate_packets(FaceStrips& input, const TriStripConstraints& constraints, bool support_instancing);
 static TriStripPackets facestrips_to_tripstrips(const FaceStripPackets& input);
@@ -89,8 +91,7 @@ TriStripPackets weave_tristrips(const Mesh& mesh, const TriStripConstraints& con
 		if(start_face == NULL_FACE_INDEX) {
 			break;
 		}
-		EdgeIndex start_edge(graph.edge(graph.face_vertex(start_face, 0), graph.face_vertex(start_face, 1)));
-		FaceStrip strip = weave_strip(strips, start_face, start_edge, false, graph);
+		FaceStrip strip = weave_multiple_strips_and_pick_the_best(strips, graph);
 		for(s32 i = 0; i < strip.face_count; i++) {
 			StripFace& face = strips.faces[strip.face_begin + i];
 			if(face.index != NULL_FACE_INDEX) {
@@ -105,6 +106,44 @@ TriStripPackets weave_tristrips(const Mesh& mesh, const TriStripConstraints& con
 	verify_face_strips(packets.strips, packets.faces, "generate_packets", graph);
 	// Fourthly we convert those strips of faces to tristrips.
 	return facestrips_to_tripstrips(packets);
+}
+
+static FaceStrip weave_multiple_strips_and_pick_the_best(FaceStrips& dest, MeshGraph& graph) {
+	// Weave multiple candidate strips.
+	FaceStrips temp;
+	for(s32 i = 0; i < 10; i++) {
+		FaceIndex start_face = find_start_face(graph);
+		weave_strip(temp, start_face, graph.edge_of_face(start_face, 0), false, graph);
+		weave_strip(temp, start_face, graph.edge_of_face(start_face, 0), true, graph);
+		weave_strip(temp, start_face, graph.edge_of_face(start_face, 1), false, graph);
+		weave_strip(temp, start_face, graph.edge_of_face(start_face, 1), true, graph);
+		weave_strip(temp, start_face, graph.edge_of_face(start_face, 2), false, graph);
+		weave_strip(temp, start_face, graph.edge_of_face(start_face, 2), true, graph);
+	}
+	
+	// Determine which is the best.
+	s32 best_strip = -1;
+	s32 best_utility = -1;
+	for(size_t i = 0; i < temp.strips.size(); i++) {
+		FaceStrip& candidate = temp.strips[i];
+		s32 utility = candidate.face_count - candidate.zero_area_tri_count;
+		if(utility > best_utility) {
+			best_strip = i;
+			best_utility = utility;
+		}
+	}
+	
+	assert(best_strip != -1);
+	
+	// Copy the best strip from the temp array to the main array.
+	FaceStrip strip;
+	strip.face_begin = (s32) dest.faces.size();
+	strip.face_count = temp.strips[best_strip].face_count;
+	strip.zero_area_tri_count = temp.strips[best_strip].zero_area_tri_count;
+	for(s32 i = 0; i < temp.strips[best_strip].face_count; i++) {
+		dest.faces.emplace_back(temp.faces[temp.strips[best_strip].face_begin + i]);
+	}
+	return strip;
 }
 
 static FaceIndex find_start_face(const MeshGraph& graph) {
@@ -124,8 +163,8 @@ static FaceIndex find_start_face(const MeshGraph& graph) {
 	return NULL_FACE_INDEX;
 }
 
-static FaceStrip weave_strip(FaceStrips& dest, FaceIndex start_face, EdgeIndex start_edge, bool to_v1, MeshGraph& graph) {
-	FaceStrip strip;
+static void weave_strip(FaceStrips& dest, FaceIndex start_face, EdgeIndex start_edge, bool to_v1, MeshGraph& graph) {
+	FaceStrip& strip = dest.strips.emplace_back();
 	strip.face_count = 0;
 	strip.face_begin = (s32) dest.faces.size();
 	strip.material = 0;
@@ -142,7 +181,7 @@ static FaceStrip weave_strip(FaceStrips& dest, FaceIndex start_face, EdgeIndex s
 	scratch_indices.emplace_back(v2);
 	if(v2 == NULL_VERTEX_INDEX) {
 		printf("warning: Tristrip weaving failed. Failed to find v2.\n");
-		return strip;
+		return;
 	}
 	
 	// Do this up here so we don't accidentally add the start face twice.
@@ -163,6 +202,7 @@ static FaceStrip weave_strip(FaceStrips& dest, FaceIndex start_face, EdgeIndex s
 	
 	// Merge the strips.
 	strip.face_count = backward.face_count + 1 + forward.face_count;
+	strip.zero_area_tri_count = backward.zero_area_tri_count + forward.zero_area_tri_count;
 	for(s32 i = 0; i < backward.face_count; i++) {
 		dest.faces.emplace_back(temp.faces[backward.face_begin + (backward.face_count - i - 1)]);
 	}
@@ -174,8 +214,6 @@ static FaceStrip weave_strip(FaceStrips& dest, FaceIndex start_face, EdgeIndex s
 	// Make it so this strip no longer registers as already part of a strip
 	// (since it might be discarded in favour of a better strip).
 	graph.discard_temp_strip();
-	
-	return strip;
 }
 
 static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_face, VertexIndex nv0, VertexIndex nv1, std::vector<VertexIndex>& scratch_indices, MeshGraph& graph) {
@@ -200,6 +238,7 @@ static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_
 				strip.face_count++;
 				dest.faces.emplace_back(nv0, nv1, nv0, NULL_FACE_INDEX);
 				graph.put_in_temp_strip(test_next_face);
+				strip.zero_area_tri_count++;
 				
 				scratch_indices.emplace_back(nv0);
 				testnv0 = nv0;

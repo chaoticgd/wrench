@@ -40,15 +40,15 @@ struct TriStripConstraints {
 
 // A unit of data that can be sent and processed on VU1 at a time.
 struct TriStripPacket {
-	s32 strip_begin;
-	s32 strip_count;
+	s32 strip_begin = 0;
+	s32 strip_count = 0;
 };
 
 // A single tristrip.
 struct TriStrip {
-	s32 index_begin;
-	s32 index_count;
-	s32 material; // -1 for no change
+	s32 index_begin = 0;
+	s32 index_count = 0;
+	s32 material = 0; // -1 for no change
 };
 
 struct TriStripPackets {
