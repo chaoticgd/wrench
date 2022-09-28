@@ -32,7 +32,7 @@ struct TriStripConstraints {
 	s32 strip_cost[4];
 	s32 vertex_cost[4];
 	s32 index_cost[4];
-	s32 texture_cost[4];
+	s32 material_cost[4];
 	s32 max_cost[4];
 };
 
@@ -48,7 +48,7 @@ struct TriStripPacket {
 struct TriStrip {
 	s32 index_begin;
 	s32 index_count;
-	s32 texture;
+	s32 material; // -1 for no change
 };
 
 struct TriStripPackets {

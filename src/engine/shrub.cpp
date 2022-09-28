@@ -360,21 +360,18 @@ ShrubClass build_shrub_class(const Mesh& mesh, f32 mip_distance, u16 mode_bits, 
 	// Build the shrub packets.
 	for(const TriStripPacket& tpacket : output.packets) {
 		ShrubPacket& packet = shrub.packets.emplace_back();
-		s32 texture = -1;
-		
 		for(s32 i = 0; i < tpacket.strip_count; i++) {
 			const TriStrip& strip = output.strips[tpacket.strip_begin + i];
-			if(strip.texture != texture) {
+			if(strip.material != -1) {
 				ShrubTexturePrimitive& prim = packet.primitives.emplace_back().emplace<0>();
 				prim.d1_tex1_1.address = GIF_AD_TEX1_1;
 				prim.d1_tex1_1.data_lo = 0xff92;
 				prim.d1_tex1_1.data_hi = 0x04;
 				prim.d2_clamp_1.address = GIF_AD_CLAMP_1;
 				prim.d3_miptbp1_1.address = GIF_AD_MIPTBP1_1;
-				prim.d3_miptbp1_1.data_lo = strip.texture;
+				prim.d3_miptbp1_1.data_lo = strip.material;
 				prim.d4_tex0_1.address = GIF_AD_TEX0_1;
-				prim.d4_tex0_1.data_lo = strip.texture;
-				texture = strip.texture;
+				prim.d4_tex0_1.data_lo = strip.material;
 			}
 			ShrubVertexPrimitive& prim = packet.primitives.emplace_back().emplace<1>();
 			for(s32 j = 0; j < strip.index_count; j++) {
@@ -410,7 +407,7 @@ static TriStripConstraints setup_shrub_constraints() {
 	c.strip_cost[0] = 1; // gif tag
 	c.vertex_cost[0] = 0;
 	c.index_cost[0] = 0;
-	c.texture_cost[0] = 4; // ad data
+	c.material_cost[0] = 4; // ad data
 	c.max_cost[0] = 255; // max value of num field
 	
 	// Second and third VIF packet sizes
@@ -419,7 +416,7 @@ static TriStripConstraints setup_shrub_constraints() {
 	c.strip_cost[1] = 0;
 	c.vertex_cost[1] = 0;
 	c.index_cost[1] = 1;
-	c.texture_cost[1] = 0;
+	c.material_cost[1] = 0;
 	c.max_cost[1] = 255; // max value of num field
 	
 	// Unpacked data size
@@ -429,7 +426,7 @@ static TriStripConstraints setup_shrub_constraints() {
 	c.strip_cost[2] = 1; // gif tag
 	c.vertex_cost[2] = 0; // non-indexed
 	c.index_cost[2] = 2; // second and third unpacks
-	c.texture_cost[2] = 4; // ad data
+	c.material_cost[2] = 4; // ad data
 	c.max_cost[2] = 118; // buffer size
 	
 	// GS packet size
@@ -438,8 +435,8 @@ static TriStripConstraints setup_shrub_constraints() {
 	c.strip_cost[3] = 1; // gif tag
 	c.vertex_cost[3] = 0; // non-indexed
 	c.index_cost[3] = 3; // st rgbaq xyzf2
-	c.texture_cost[3] = 5; // gif tag + ad data
-	c.max_cost[3] = 168/2; // max GS packet size in original files
+	c.material_cost[3] = 5; // gif tag + ad data
+	c.max_cost[3] = 168; // max GS packet size in original files
 	
 	return c;
 }

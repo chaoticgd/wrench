@@ -28,7 +28,7 @@
 struct FaceStrip {
 	s32 face_begin;
 	s32 face_count;
-	s32 texture;
+	s32 material;
 };
 
 // This is used where a list of faces may contain a zero area triangle i.e. one
@@ -62,7 +62,7 @@ struct TriStripRunningTotals {
 	s32 strip_count = 0;
 	s32 vertex_count = 0;
 	s32 index_count = 0;
-	s32 texture_count = 0;
+	s32 material_count = 0;
 };
 
 static FaceIndex find_start_face(const MeshGraph& graph);
@@ -73,7 +73,7 @@ static void facestrip_to_tristrip(TriStripPackets& output, const FaceStrip& face
 static bool try_add_strip(TriStripRunningTotals& totals, const TriStripConstraints& constraints);
 static bool try_add_unique_vertex(TriStripRunningTotals& totals, const TriStripConstraints& constraints);
 static bool try_add_duplicate_vertex(TriStripRunningTotals& totals, const TriStripConstraints& constraints);
-static bool try_add_texture(TriStripRunningTotals& totals, const TriStripConstraints& constraints);
+static bool try_add_material(TriStripRunningTotals& totals, const TriStripConstraints& constraints);
 static VertexIndex unique_vertex_from_rhs(const StripFace& lhs, const StripFace& rhs);
 static std::pair<VertexIndex, VertexIndex> get_shared_vertices(const StripFace& lhs, const StripFace& rhs);
 static void verify_face_strips(const std::vector<FaceStrip>& strips, const std::vector<StripFace>& faces, const char* context, const MeshGraph& graph);
@@ -127,7 +127,7 @@ static FaceStrip weave_strip(FaceStrips& dest, FaceIndex start_face, EdgeIndex s
 	FaceStrip strip;
 	strip.face_count = 0;
 	strip.face_begin = (s32) dest.faces.size();
-	strip.texture = 0;
+	strip.material = 0;
 	
 	std::vector<VertexIndex> scratch_indices;
 	
@@ -201,15 +201,15 @@ static FaceStripPackets generate_packets(FaceStrips& input, const TriStripConstr
 	
 	TriStripRunningTotals totals;
 	FaceStripPacket* packet;
-	s32 texture = -1;
+	s32 material = -1;
 	
 	auto new_packet = [&]() {
-		totals = {};
+		totals = {}; // Reset the constraint calculations.
 		packet = &output.packets.emplace_back();
 		packet->strip_begin = output.strips.size();
 		packet->strip_count = 0;
 		if(support_instancing) {
-			texture = -1;
+			material = -1;
 		}
 	};
 	
@@ -222,13 +222,15 @@ static FaceStripPackets generate_packets(FaceStrips& input, const TriStripConstr
 			continue;
 		}
 		
-		if(texture != src_strip.texture) {
-			if(!try_add_texture(totals, constraints)) {
+		s32 output_material = -1;
+		if(material != src_strip.material) {
+			if(!try_add_material(totals, constraints)) {
 				new_packet();
 				i--;
 				continue;
 			}
-			texture = src_strip.texture;
+			output_material = src_strip.material;
+			material = src_strip.material;
 		}
 		
 		if(!try_add_strip(totals, constraints)) {
@@ -253,7 +255,7 @@ static FaceStripPackets generate_packets(FaceStrips& input, const TriStripConstr
 		FaceStrip& dest_strip = output.strips.emplace_back();
 		dest_strip.face_begin = (s32) output.faces.size();
 		dest_strip.face_count = 0;
-		dest_strip.texture = texture;
+		dest_strip.material = output_material;
 		
 		// Add the first face.
 		dest_strip.face_count++;
@@ -271,7 +273,7 @@ static FaceStripPackets generate_packets(FaceStrips& input, const TriStripConstr
 					src_strip.face_begin++;
 					src_strip.face_count--;
 				}
-				continue;
+				break;
 			}
 			
 			dest_strip.face_count++;
@@ -294,6 +296,7 @@ static TriStripPackets facestrips_to_tripstrips(const FaceStripPackets& input) {
 			const FaceStrip& face_strip = input.strips[face_packet.strip_begin + i];
 			tri_strip.index_begin = output.indices.size();
 			tri_strip.index_count = 2 + face_strip.face_count;
+			tri_strip.material = face_strip.material;
 			assert(face_strip.face_count >= 1);
 			
 			facestrip_to_tristrip(output, face_strip, input.faces);
@@ -357,6 +360,7 @@ static void facestrip_to_tristrip(TriStripPackets& output, const FaceStrip& face
 			last_face.v[1] = last_face.v[2];
 			last_face.v[2] = unique;
 		} else {
+			// Insert a zero area triangle.
 			assert(face.v[2] != NULL_VERTEX_INDEX);
 			output.indices.emplace_back(face.v[2].index);
 			last_face.v[0] = face.v[0];
@@ -373,7 +377,7 @@ static bool try_add_strip(TriStripRunningTotals& totals, const TriStripConstrain
 		cost += constraints.strip_cost[i] * (totals.strip_count + 1);
 		cost += constraints.vertex_cost[i] * totals.vertex_count;
 		cost += constraints.index_cost[i] * totals.index_count;
-		cost += constraints.texture_cost[i] * totals.texture_count;
+		cost += constraints.material_cost[i] * totals.material_count;
 		if(cost > constraints.max_cost[i]) {
 			return false;
 		}
@@ -389,7 +393,7 @@ static bool try_add_unique_vertex(TriStripRunningTotals& totals, const TriStripC
 		cost += constraints.strip_cost[i] * totals.strip_count;
 		cost += constraints.vertex_cost[i] * (totals.vertex_count + 1);
 		cost += constraints.index_cost[i] * (totals.index_count + 1);
-		cost += constraints.texture_cost[i] * totals.texture_count;
+		cost += constraints.material_cost[i] * totals.material_count;
 		if(cost > constraints.max_cost[i]) {
 			return false;
 		}
@@ -406,7 +410,7 @@ static bool try_add_duplicate_vertex(TriStripRunningTotals& totals, const TriStr
 		cost += constraints.strip_cost[i] * totals.strip_count;
 		cost += constraints.vertex_cost[i] * totals.vertex_count;
 		cost += constraints.index_cost[i] * (totals.index_count + 1);
-		cost += constraints.texture_cost[i] * totals.texture_count;
+		cost += constraints.material_cost[i] * totals.material_count;
 		if(cost > constraints.max_cost[i]) {
 			return false;
 		}
@@ -415,19 +419,19 @@ static bool try_add_duplicate_vertex(TriStripRunningTotals& totals, const TriStr
 	return true;
 }
 
-static bool try_add_texture(TriStripRunningTotals& totals, const TriStripConstraints& constraints) {
+static bool try_add_material(TriStripRunningTotals& totals, const TriStripConstraints& constraints) {
 	for(s32 i = 0; i < constraints.num_constraints; i++) {
 		s32 cost = 0;
 		cost += constraints.constant_cost[i];
 		cost += constraints.strip_cost[i] * totals.strip_count;
 		cost += constraints.vertex_cost[i] * totals.vertex_count;
 		cost += constraints.index_cost[i] * totals.index_count;
-		cost += constraints.texture_cost[i] * (totals.texture_count + 1);
+		cost += constraints.material_cost[i] * (totals.material_count + 1);
 		if(cost > constraints.max_cost[i]) {
 			return false;
 		}
 	}
-	totals.texture_count++;
+	totals.material_count++;
 	return true;
 }
 
