@@ -67,6 +67,7 @@ struct TriStripRunningTotals {
 };
 
 static FaceStrip weave_multiple_strips_and_pick_the_best(FaceStrips& dest, MeshGraph& graph);
+static FaceIndex find_reset_face(const MeshGraph& graph);
 static FaceIndex find_start_face(const MeshGraph& graph);
 static void weave_strip(FaceStrips& dest, FaceIndex start_face, EdgeIndex start_edge, bool to_v1, MeshGraph& graph);
 static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_face, VertexIndex nv0, VertexIndex nv1, std::vector<VertexIndex>& scratch_indices, MeshGraph& graph);
@@ -81,9 +82,14 @@ static VertexIndex unique_vertex_from_rhs(const StripFace& lhs, const StripFace&
 static std::pair<VertexIndex, VertexIndex> get_shared_vertices(const StripFace& lhs, const StripFace& rhs);
 static void verify_face_strips(const std::vector<FaceStrip>& strips, const std::vector<StripFace>& faces, const char* context, const MeshGraph& graph);
 
+static bool first_time_reset;
+static float mesh_jump;
+
 TriStripPackets weave_tristrips(const Mesh& mesh, const TriStripConstraints& constraints, bool support_instancing) {
 	// Firstly we build a graph structure to make finding adjacent faces fast.
 	MeshGraph graph(mesh);
+	first_time_reset = true;
+	mesh_jump = 0.f;
 	// Secondly we generate the strips of faces that when combined cover the mesh.
 	FaceStrips strips;
 	for(;;) {
@@ -112,7 +118,7 @@ static FaceStrip weave_multiple_strips_and_pick_the_best(FaceStrips& dest, MeshG
 	// Weave multiple candidate strips.
 	FaceStrips temp;
 	for(s32 i = 0; i < 10; i++) {
-		FaceIndex start_face = find_start_face(graph);
+		FaceIndex start_face = find_reset_face(graph);
 		weave_strip(temp, start_face, graph.edge_of_face(start_face, 0), false, graph);
 		weave_strip(temp, start_face, graph.edge_of_face(start_face, 0), true, graph);
 		weave_strip(temp, start_face, graph.edge_of_face(start_face, 1), false, graph);
@@ -144,6 +150,35 @@ static FaceStrip weave_multiple_strips_and_pick_the_best(FaceStrips& dest, MeshG
 		dest.faces.emplace_back(temp.faces[temp.strips[best_strip].face_begin + i]);
 	}
 	return strip;
+}
+
+static FaceIndex find_reset_face(const MeshGraph& graph) {
+	FaceIndex start_face;
+	if(first_time_reset) {
+		start_face = find_start_face(graph);
+		first_time_reset = false;
+	} else {
+		start_face = FaceIndex((s32) ((graph.face_count() - 1) * mesh_jump));
+	}
+	
+	FaceIndex result = NULL_FACE_INDEX;
+	FaceIndex i = start_face;
+	do {
+		if(!graph.is_in_strip(i)) {
+			result = i;
+			break;
+		}
+		if(++i.index >= graph.face_count()) {
+			i = {0};
+		}
+	} while(i != start_face);
+	
+	mesh_jump += 0.1f;
+	if(mesh_jump > 1.f) {
+		mesh_jump = 0.05f;
+	}
+	
+	return result;
 }
 
 static FaceIndex find_start_face(const MeshGraph& graph) {
