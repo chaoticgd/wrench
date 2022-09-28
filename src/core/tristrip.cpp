@@ -67,6 +67,7 @@ struct TriStripRunningTotals {
 
 static FaceIndex find_start_face(const MeshGraph& graph);
 static FaceStrip weave_strip(FaceStrips& dest, FaceIndex start_face, EdgeIndex start_edge, bool to_v1, MeshGraph& graph);
+static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_face, VertexIndex nv0, VertexIndex nv1, std::vector<VertexIndex>& scratch_indices, MeshGraph& graph);
 static FaceStripPackets generate_packets(FaceStrips& input, const TriStripConstraints& constraints, bool support_instancing);
 static TriStripPackets facestrips_to_tripstrips(const FaceStripPackets& input);
 static void facestrip_to_tristrip(TriStripPackets& output, const FaceStrip& face_strip, const std::vector<StripFace>& faces) ;
@@ -136,19 +137,51 @@ static FaceStrip weave_strip(FaceStrips& dest, FaceIndex start_face, EdgeIndex s
 	
 	scratch_indices.emplace_back(v0);
 	scratch_indices.emplace_back(v1);
+	
 	VertexIndex v2 = graph.next_index(scratch_indices, start_face);
+	scratch_indices.emplace_back(v2);
 	if(v2 == NULL_VERTEX_INDEX) {
 		printf("warning: Tristrip weaving failed. Failed to find v2.\n");
 		return strip;
 	}
-	scratch_indices.emplace_back(v2);
 	
-	strip.face_count++;
-	dest.faces.emplace_back(v0, v1, v2, start_face);
+	// Do this up here so we don't accidentally add the start face twice.
 	graph.put_in_temp_strip(start_face);
 	
-	VertexIndex nv0 = v1;
-	VertexIndex nv1 = v2;
+	// Stores the separate forward and backward strips.
+	FaceStrips temp;
+	
+	// Weave the strip forwards.
+	FaceStrip forward = weave_strip_in_one_direction(temp, start_face, v1, v2, scratch_indices, graph);
+	
+	// Weave the strip backwards.
+	scratch_indices.resize(0);
+	scratch_indices.push_back(v2);
+	scratch_indices.push_back(v1);
+	scratch_indices.push_back(v0);
+	FaceStrip backward = weave_strip_in_one_direction(temp, start_face, v1, v0, scratch_indices, graph);
+	
+	// Merge the strips.
+	strip.face_count = backward.face_count + 1 + forward.face_count;
+	for(s32 i = 0; i < backward.face_count; i++) {
+		dest.faces.emplace_back(temp.faces[backward.face_begin + (backward.face_count - i - 1)]);
+	}
+	dest.faces.emplace_back(v0, v1, v2, start_face);
+	for(s32 i = 0; i < forward.face_count; i++) {
+		dest.faces.emplace_back(temp.faces[forward.face_begin + i]);
+	}
+	
+	// Make it so this strip no longer registers as already part of a strip
+	// (since it might be discarded in favour of a better strip).
+	graph.discard_temp_strip();
+	
+	return strip;
+}
+
+static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_face, VertexIndex nv0, VertexIndex nv1, std::vector<VertexIndex>& scratch_indices, MeshGraph& graph) {
+	FaceStrip strip;
+	strip.face_begin = (s32) dest.faces.size();
+	strip.face_count = 0;
 	
 	FaceIndex next_face = graph.other_face(graph.edge(nv0, nv1), start_face);
 	
@@ -190,8 +223,6 @@ static FaceStrip weave_strip(FaceStrips& dest, FaceIndex start_face, EdgeIndex s
 		
 		next_face = graph.other_face(graph.edge(nv0, nv1), next_face);
 	}
-	
-	graph.discard_temp_strip();
 	
 	return strip;
 }
