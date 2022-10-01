@@ -18,6 +18,7 @@
 
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
+#include <wrenchbuild/material_asset.h>
 #include <engine/shrub.h>
 
 static void unpack_shrub_class(ShrubClassAsset& dest, InputStream& src, BuildConfig config, const char* hint);
@@ -44,7 +45,7 @@ on_load(ShrubClass, []() {
 static void unpack_shrub_class(ShrubClassAsset& dest, InputStream& src, BuildConfig config, const char* hint) {
 	if(g_asset_unpacker.dump_binaries) {
 		if(!dest.has_core()) {
-			unpack_asset_impl(dest.core<ShrubClassCoreAsset>(), src, nullptr, config);
+			unpack_asset_impl(dest.core<BinaryAsset>(), src, nullptr, config);
 		}
 		return;
 	}
@@ -82,7 +83,10 @@ static void pack_shrub_class(OutputStream& dest, const ShrubClassAsset& src, Bui
 	Mesh* mesh = scene.find_mesh(mesh_asset.name());
 	verify(mesh, "No mesh with name '%s'.", mesh_asset.name().c_str());
 	
-	ShrubClass shrub = build_shrub_class(*mesh, 5, 0, 4009, std::nullopt);
+	MaterialSet material_set = read_material_assets(src.get_materials());
+	map_lhs_material_indices_to_rhs_list(scene, material_set.materials);
+	
+	ShrubClass shrub = build_shrub_class(*mesh, material_set.materials, 5, 0, 4009, std::nullopt);
 	
 	std::vector<u8> buffer;
 	write_shrub_class(buffer, shrub);

@@ -45,6 +45,8 @@ add_library(wrenchcore STATIC
 	src/core/build_config.cpp
 	src/core/mesh_graph.cpp
 	src/core/tristrip.cpp
+	src/core/material.cpp
+	src/core/tristrip_packet.cpp
 	thirdparty/md5.cpp
 )
 target_link_libraries(wrenchcore wrenchwtf)
@@ -171,6 +173,7 @@ add_executable(wrenchbuild
 	src/wrenchbuild/tests.cpp
 	src/wrenchbuild/asset_unpacker.cpp
 	src/wrenchbuild/asset_packer.cpp
+	src/wrenchbuild/material_asset.cpp
 	src/wrenchbuild/release.cpp
 	src/wrenchbuild/classes/moby_class.cpp
 	src/wrenchbuild/classes/shrub_class.cpp

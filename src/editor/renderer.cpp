@@ -63,11 +63,11 @@ void init_renderer() {
 	fill_cube = upload_mesh(create_fill_cube(), false);
 	line_cube = upload_mesh(create_line_cube(), false);
 	
-	purple = upload_material(Material{"", glm::vec4(0.5f, 0.f, 1.f, 1.f), 0}, {create_white_texture()});
-	green = upload_material(Material{"", glm::vec4(0.f, 0.5f, 0.f, 1.f), 0}, {create_white_texture()});
-	white = upload_material(Material{"", glm::vec4(1.f, 1.f, 1.f, 1.f), 0}, {create_white_texture()});
-	orange = upload_material(Material{"", glm::vec4(1.f, 0.5f, 0.f, 1.f), 0}, {create_white_texture()});
-	cyan = upload_material(Material{"", glm::vec4(0.f, 0.5f, 1.f, 1.f), 0}, {create_white_texture()});
+	purple = upload_material(Material{"", glm::vec4(0.5f, 0.f, 1.f, 1.f)}, {create_white_texture()});
+	green = upload_material(Material{"", glm::vec4(0.f, 0.5f, 0.f, 1.f)}, {create_white_texture()});
+	white = upload_material(Material{"", glm::vec4(1.f, 1.f, 1.f, 1.f)}, {create_white_texture()});
+	orange = upload_material(Material{"", glm::vec4(1.f, 0.5f, 0.f, 1.f)}, {create_white_texture()});
+	cyan = upload_material(Material{"", glm::vec4(0.f, 0.5f, 1.f, 1.f)}, {create_white_texture()});
 }
 
 void shutdown_renderer() {

@@ -618,7 +618,7 @@ void VU0MatrixAllocator::new_submesh() {
 }
 
 Opt<u8> VU0MatrixAllocator::allocate_transferred(u8 joint, const char* context) {
-	SkinAttributes attribs{1, {joint, 0, 0}, {255, 0, 0}};
+	SkinAttributes attribs{1, {(s8) joint, 0, 0}, {255, 0, 0}};
 	MatrixAllocation& allocation = allocations[attribs];
 	if(allocation.generation != slots[allocation.address / 0x4].generation) {
 		VERBOSE_MATRIX_ALLOCATION(printf("Alloc %s transferred matrix {%hhu,{%hhd,%hhd,%hhd},{%hhu,%hhu,%hhu}} -> %hhx\n",
@@ -950,7 +950,7 @@ struct MidLevelSubMesh {
 	std::vector<MidLevelDuplicateVertex> duplicate_vertices;
 };
 
-std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vector<Material>& materials) {
+std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vector<ColladaMaterial>& materials) {
 	static const s32 MAX_SUBMESH_TEXTURE_COUNT = 4;
 	static const s32 MAX_SUBMESH_STORED_VERTEX_COUNT = 97;
 	static const s32 MAX_SUBMESH_TOTAL_VERTEX_COUNT = 0x7f;
@@ -974,7 +974,7 @@ std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vecto
 			continue;
 		}
 		
-		const Material& material = materials.at(high.material);
+		const ColladaMaterial& material = materials.at(high.material);
 		s32 texture = -1;
 		if(material.name.size() > 4 && memcmp(material.name.data(), "mat_", 4) == 0) {
 			texture = strtol(material.name.c_str() + 4, nullptr, 10);

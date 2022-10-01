@@ -16,33 +16,19 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef CORE_TRISTRIP_H
-#define CORE_TRISTRIP_H
+#ifndef WRENCHBUILD_MATERIAL_ASSET_H
+#define WRENCHBUILD_MATERIAL_ASSET_H
 
-#include <core/mesh.h>
 #include <core/material.h>
-#include <core/tristrip_packet.h>
+#include <assetmgr/asset_types.h>
 
-// A unit of data that can be sent and processed on VU1 at a time.
-struct TriStripPacket {
-	s32 strip_begin = 0;
-	s32 strip_count = 0;
+struct MaterialSet {
+	std::vector<Material> materials;
+	std::vector<FileReference> textures;
 };
 
-// A single tristrip.
-struct TriStrip {
-	s32 index_begin = 0;
-	s32 index_count = 0;
-	s32 effective_material = 0; // -1 for no change
-};
-
-struct TriStripPackets {
-	std::vector<TriStripPacket> packets;
-	std::vector<TriStrip> strips;
-	std::vector<s32> indices;
-};
-
-// Generates a set of tristrips that cover a given mesh.
-TriStripPackets weave_tristrips(const Mesh& mesh, const std::vector<EffectiveMaterial>& materials, TriStripPacketGenerator& packet_generator);
+// Reads a collection of material assets and deduplicates textures referenced
+// multiple times in the set of input materials.
+MaterialSet read_material_assets(const CollectionAsset& src);
 
 #endif

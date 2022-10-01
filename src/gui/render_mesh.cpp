@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019 chaoticgd
+	Copyright (C) 2019-2022 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -77,13 +77,13 @@ RenderMesh upload_mesh(const Mesh& mesh, bool generate_normals) {
 	return render_mesh;
 }
 
-RenderMaterial upload_material(const Material& material, const std::vector<Texture>& textures) {
+RenderMaterial upload_material(const ColladaMaterial& material, const std::vector<Texture>& textures) {
 	RenderMaterial rm;
-	if(material.colour.has_value()) {
-		rm.colour = *material.colour;
+	if(material.surface.type == MaterialSurfaceType::COLOUR) {
+		rm.colour = material.surface.colour;
 	}
-	if(material.texture && *material.texture < textures.size()) {
-		Texture texture = textures[*material.texture];
+	if(material.surface.type == MaterialSurfaceType::TEXTURE && material.surface.texture < textures.size()) {
+		Texture texture = textures[material.surface.texture];
 		texture.to_rgba();
 		glGenTextures(1, &rm.texture.id);
 		glBindTexture(GL_TEXTURE_2D, rm.texture.id);
@@ -96,9 +96,9 @@ RenderMaterial upload_material(const Material& material, const std::vector<Textu
 	return rm;
 }
 
-std::vector<RenderMaterial> upload_materials(const std::vector<Material>& materials, const std::vector<Texture>& textures) {
+std::vector<RenderMaterial> upload_materials(const std::vector<ColladaMaterial>& materials, const std::vector<Texture>& textures) {
 	std::vector<RenderMaterial> rms;
-	for(const Material& material : materials) {
+	for(const ColladaMaterial& material : materials) {
 		rms.emplace_back(upload_material(material, textures));
 	}
 	return rms;

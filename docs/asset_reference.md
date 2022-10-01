@@ -1,6 +1,6 @@
 # Asset Reference
 
-This file was generated from src/assetmgr/asset_schema.wtf and is for version 11 of the asset format.
+This file was generated from src/assetmgr/asset_schema.wtf and is for version 12 of the asset format.
 
 ## Index
 
@@ -1015,7 +1015,7 @@ Container for assets used in the mutliplayer mode.
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
 | core | *Not yet documented.* | ShrubClassCore, Binary | *Not yet documented.* | *Not yet documented.* |
-| materials | The materials used by this class. | Material\[\], Texture\[\] | Yes | RC/GC/UYA/DL |
+| materials | The materials used by this class. | Material\[\] | Yes | RC/GC/UYA/DL |
 
 
 ### ShrubClassCore
@@ -1037,7 +1037,8 @@ Container for assets used in the mutliplayer mode.
 *Attributes*
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
-| name | The name of the material being referenced. | String | *Not yet documented.* | *Not yet documented.*  |
+| name | The name of the material being referenced. | String | Yes | RC/GC/UYA/DL |
+| wrap_mode | The UV wrapping mode, stored as an array of two strings. Possible values are ["repeat", "repeat"] (the default), ["repeat", "clamp"], ["clamp", "repeat"] and ["clamp", "clamp"]. | Array | No | RC/GC/UYA/DL |
 | glass | Only for mobies. Make the material shiny, like glass? | Boolean | *Not yet documented.* | *Not yet documented.*  |
 | chrome | Only for mobies. Make the material shiny, like chrome? | Boolean | *Not yet documented.* | *Not yet documented.*  |
 
@@ -1045,7 +1046,7 @@ Container for assets used in the mutliplayer mode.
 
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
-| texture | The texture. | Texture | *Not yet documented.* | *Not yet documented.* |
+| diffuse | The diffuse map (main texture). | Texture | Yes | RC/GC/UYA/DL |
 
 
 ### Collision

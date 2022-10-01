@@ -16,7 +16,11 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#ifndef CORE_MESH_GRAPH_H
+#define CORE_MESH_GRAPH_H
+
 #include <core/mesh.h>
+#include <core/material.h>
 
 // A class that keeps track of the relationship between the vertices, edges and
 // faces in a mesh. This is used by the tristrip code.
@@ -123,6 +127,22 @@ public:
 	void put_in_temp_strip(FaceIndex face) { face_at(face).in_temp_strip = true; }
 	void discard_temp_strip() { for(FaceInfo& face : _faces) { face.in_temp_strip = false; } }
 	
+	bool can_be_added_to_strip(FaceIndex face, const EffectiveMaterial& effective) const {
+		if(is_in_strip(face)) {
+			// If the face is already in a strip it cannot be added to another strip.
+			return false;
+		}
+		s32 material_of_face = face_material(face).index;
+		for(s32 material : effective.materials) {
+			if(material == material_of_face) {
+				// The material is valid for the current strip.
+				return true;
+			}
+		}
+		// The face should be added to a different strip instead.
+		return false;
+	}
+	
 	FaceIndex face_really_expensive(VertexIndex v0, VertexIndex v1, VertexIndex v2) const {
 		for(FaceIndex i = {0}; i < face_count(); i.index++) {
 			const FaceInfo& face = face_at(i);
@@ -140,3 +160,5 @@ public:
 		return NULL_FACE_INDEX;
 	}
 };
+
+#endif

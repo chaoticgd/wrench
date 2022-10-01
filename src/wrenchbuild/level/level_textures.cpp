@@ -19,6 +19,7 @@
 #include "level_textures.h"
 
 #include <core/png.h>
+#include <wrenchbuild/material_asset.h>
 
 static void write_nonshared_texture_data(OutputStream& data, std::vector<LevelTexture>& textures, Game game);
 
@@ -110,15 +111,19 @@ SharedLevelTextures read_level_textures(const CollectionAsset& tfrag_textures, c
 	shared.shrub_range.table = SHRUB_TEXTURE_TABLE;
 	shared.shrub_range.begin = shared.textures.size();
 	shrubs.for_each_logical_child_of_type<ShrubClassAsset>([&](const ShrubClassAsset& cls) {
-		const CollectionAsset& textures = cls.get_materials();
-		for(s32 i = 0; i < 16; i++) {
-			if(textures.has_child(i)) {
-				const TextureAsset& asset = textures.get_child(i).as<TextureAsset>();
-				auto stream = asset.file().open_binary_file_for_reading(asset.src());
-				shared.textures.emplace_back(LevelTexture{read_png(*stream)});
-			} else {
-				shared.textures.emplace_back();
-			}
+		const CollectionAsset& materials = cls.get_materials();
+		MaterialSet material_set = read_material_assets(materials);
+		verify(material_set.textures.size() <= 15,
+			"Too many textures on shrub class '%s'!",
+			cls.tag().c_str());
+		s32 i = 0;
+		for(; i < (s32) material_set.textures.size(); i++) {
+			FileReference& texture = material_set.textures[i];
+			auto stream = texture.owner->open_binary_file_for_reading(texture);
+			shared.textures.emplace_back(LevelTexture{read_png(*stream)});
+		}
+		for(; i < 16; i++) {
+			shared.textures.emplace_back();
 		}
 	});
 	shared.shrub_range.end = shared.textures.size();

@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-format_version: 11
+format_version: 12
 
 // *****************************************************************************
 
@@ -1487,7 +1487,7 @@ AssetType ShrubClass {
 		required: true
 		games: [1 2 3 4]
 		Child child {
-			allowed_types: ["Material" "Texture"]
+			allowed_types: ["Material"]
 		}
 	}
 }
@@ -1508,6 +1508,15 @@ AssetType ShrubClassCore {
 AssetType Material {
 	StringAttribute name {
 		desc: "The name of the material being referenced."
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	ArrayAttribute wrap_mode {
+		desc: "The UV wrapping mode, stored as an array of two strings. Possible values are [\"repeat\", \"repeat\"] (the default), [\"repeat\", \"clamp\"], [\"clamp\", \"repeat\"] and [\"clamp\", \"clamp\"]."
+		required: false
+		games: [1 2 3 4]
+		StringAttribute element {}
 	}
 	
 	BooleanAttribute glass {
@@ -1518,9 +1527,11 @@ AssetType Material {
 		desc: "Only for mobies. Make the material shiny, like chrome?"
 	}
 	
-	Child texture {
-		desc: "The texture."
+	Child diffuse {
+		desc: "The diffuse map (main texture)."
 		allowed_types: ["Texture"]
+		required: true
+		games: [1 2 3 4]
 	}
 }
 

@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019 chaoticgd
+	Copyright (C) 2019-2022 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@ struct RenderMesh {
 };
 
 RenderMesh upload_mesh(const Mesh& mesh, bool generate_normals);
-RenderMaterial upload_material(const Material& material, const std::vector<Texture>& textures);
-std::vector<RenderMaterial> upload_materials(const std::vector<Material>& materials, const std::vector<Texture>& textures);
+RenderMaterial upload_material(const ColladaMaterial& material, const std::vector<Texture>& textures);
+std::vector<RenderMaterial> upload_materials(const std::vector<ColladaMaterial>& materials, const std::vector<Texture>& textures);
 
 #endif

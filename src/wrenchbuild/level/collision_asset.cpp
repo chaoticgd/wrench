@@ -48,7 +48,7 @@ static void unpack_collision_asset(CollisionAsset& dest, InputStream& src, Build
 	mesh.set_name(scene.meshes.at(0).name);
 	
 	CollectionAsset& materials = dest.materials();
-	for(Material& material : scene.materials) {
+	for(ColladaMaterial& material : scene.materials) {
 		CollisionMaterialAsset& asset = materials.child<CollisionMaterialAsset>(material.name.c_str());
 		asset.set_name(material.name);
 		asset.set_id(material.collision_id);
@@ -68,7 +68,7 @@ static void pack_collision_asset(OutputStream& dest, const CollisionAsset& src, 
 		std::string name = asset.name();
 		s32 id = asset.id();
 		
-		for(Material& material : scene.materials) {
+		for(ColladaMaterial& material : scene.materials) {
 			if(material.name == name) {
 				material.collision_id = id;
 			}

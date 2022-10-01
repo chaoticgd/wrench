@@ -258,6 +258,6 @@ void map_indices(MobySubMesh& submesh, const std::vector<size_t>& index_mapping)
 using GifUsageTable = std::vector<MobyGifUsage>;
 void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_ofs, const MobySubMesh* submeshes_in, size_t submesh_count, f32 scale, MobyFormat format, s64 class_header_ofs);
 void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalSubMesh>& submeshes, s64 class_header_ofs);
-std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vector<Material>& materials);
+std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vector<ColladaMaterial>& materials);
 
 #endif

@@ -311,9 +311,9 @@ ColladaScene recover_shrub_class(const ShrubClass& shrub) {
 	}
 	
 	for(s32 i = 0; i <= max_tex_idx; i++) {
-		Material& mat = scene.materials.emplace_back();
+		ColladaMaterial& mat = scene.materials.emplace_back();
 		mat.name = stringf("texture_%d", i);
-		mat.texture = i;
+		mat.surface = MaterialSurface(i);
 		
 		scene.texture_paths.emplace_back(stringf("%d.png", i));
 	}
@@ -342,7 +342,7 @@ ColladaScene recover_shrub_class(const ShrubClass& shrub) {
 	return scene;
 }
 
-ShrubClass build_shrub_class(const Mesh& mesh, f32 mip_distance, u16 mode_bits, s16 o_class, Opt<ShrubBillboard> billboard) {
+ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& materials, f32 mip_distance, u16 mode_bits, s16 o_class, Opt<ShrubBillboard> billboard) {
 	ShrubClass shrub = {};
 	
 	// Make sure the packets that get written out aren't too big to fit in VU1 memory.
@@ -354,24 +354,31 @@ ShrubClass build_shrub_class(const Mesh& mesh, f32 mip_distance, u16 mode_bits, 
 	shrub.scale = compute_optimal_scale(mesh);
 	shrub.o_class = o_class;
 	
+	std::vector<EffectiveMaterial> effectives = effective_materials(materials, MATERIAL_ATTRIB_SURFACE | MATERIAL_ATTRIB_WRAP_MODE);
+	
 	// Generate the strips.
-	TriStripPackets output = weave_tristrips(mesh, constraints, true);
+	TriStripPacketGenerator generator(effectives, materials, constraints, true);
+	TriStripPackets output = weave_tristrips(mesh, effectives, generator);
 	
 	// Build the shrub packets.
 	for(const TriStripPacket& tpacket : output.packets) {
 		ShrubPacket& packet = shrub.packets.emplace_back();
 		for(s32 i = 0; i < tpacket.strip_count; i++) {
 			const TriStrip& strip = output.strips[tpacket.strip_begin + i];
-			if(strip.material != -1) {
+			if(strip.effective_material != -1) {
+				const Material& material = materials[effectives.at(strip.effective_material).materials.at(0)];
+				verify(material.surface.type == MaterialSurfaceType::TEXTURE,
+					"A shrub material does not have a texture.");
+				
 				ShrubTexturePrimitive& prim = packet.primitives.emplace_back().emplace<0>();
 				prim.d1_tex1_1.address = GIF_AD_TEX1_1;
 				prim.d1_tex1_1.data_lo = 0xff92;
 				prim.d1_tex1_1.data_hi = 0x04;
 				prim.d2_clamp_1.address = GIF_AD_CLAMP_1;
 				prim.d3_miptbp1_1.address = GIF_AD_MIPTBP1_1;
-				prim.d3_miptbp1_1.data_lo = strip.material;
+				prim.d3_miptbp1_1.data_lo = material.surface.texture;
 				prim.d4_tex0_1.address = GIF_AD_TEX0_1;
-				prim.d4_tex0_1.data_lo = strip.material;
+				prim.d4_tex0_1.data_lo = material.surface.texture;
 			}
 			ShrubVertexPrimitive& prim = packet.primitives.emplace_back().emplace<1>();
 			for(s32 j = 0; j < strip.index_count; j++) {
