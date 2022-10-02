@@ -43,9 +43,8 @@ static void unpack_binary_asset(Asset& dest, InputStream& src, const std::vector
 	}
 	std::string file_name = binary.tag() + "." + extension;
 	auto [stream, ref] = binary.file().open_binary_file_for_writing(file_name);
-	verify(stream.get(), "Failed to open file '%s' for writing binary asset '%s'.",
-		file_name.c_str(),
-		binary.absolute_link().to_string().c_str());
+	verify(stream.get(), "Failed to open file '%s' for writing while unpacking binary asset '%s'.",
+		file_name.c_str(), binary.absolute_link().to_string().c_str());
 	if(header_src && config.game() == Game::RAC) {
 		s64 padded_header_size = Sector32::size_from_bytes(header_src->size()).bytes();
 		stream->write_v(*header_src);
@@ -65,6 +64,8 @@ static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, 
 	}
 	
 	auto stream = src.file().open_binary_file_for_reading(src.src(), time_dest);
+	verify(stream.get(), "Failed to open '%s' for reading while packing binary asset '%s'.",
+		src.src().path.string().c_str(), src.absolute_link().to_string().c_str());
 	if(header_dest) {
 		s32 header_size = stream->read<s32>();
 		assert(header_size == header_dest->size());
