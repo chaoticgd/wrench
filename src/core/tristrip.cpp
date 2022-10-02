@@ -197,19 +197,20 @@ static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_
 	strip.face_begin = (s32) dest.faces.size();
 	strip.face_count = 0;
 	
-	FaceIndex next_face = graph.other_face(graph.edge(nv0, nv1), start_face);
+	FaceIndex face = graph.other_face(graph.edge(nv0, nv1), start_face);
 	
-	while(next_face != NULL_FACE_INDEX && graph.can_be_added_to_strip(next_face, effective)) {
+	while(face != NULL_FACE_INDEX && graph.can_be_added_to_strip(face, effective)) {
 		VertexIndex testnv0 = nv1;
-		VertexIndex testnv1 = graph.next_index(scratch_indices, next_face);
+		VertexIndex testnv1 = graph.next_index(scratch_indices, face);
 		if(testnv1 == NULL_VERTEX_INDEX) {
 			printf("warning: Tristrip weaving failed. Failed to find testnv1.\n");
 			return strip;
 		}
 		
-		FaceIndex next_next_face = graph.other_face(graph.edge(testnv0, testnv1), next_face);
-		if(next_next_face == NULL_FACE_INDEX || !graph.can_be_added_to_strip(next_next_face, effective)) {
-			FaceIndex test_next_face = graph.other_face(graph.edge(nv0, testnv1), next_face);
+		FaceIndex next_face = graph.other_face(graph.edge(testnv0, testnv1), face);
+		if(next_face == NULL_FACE_INDEX || !graph.can_be_added_to_strip(next_face, effective)) {
+			// We need to swap.
+			FaceIndex test_next_face = graph.other_face(graph.edge(nv0, testnv1), face);
 			if(test_next_face != NULL_FACE_INDEX && graph.can_be_added_to_strip(test_next_face, effective)) {
 				strip.face_count++;
 				dest.faces.emplace_back(nv0, nv1, nv0, NULL_FACE_INDEX);
@@ -219,24 +220,25 @@ static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_
 				scratch_indices.emplace_back(nv0);
 				testnv0 = nv0;
 			}
+			// We can't swap, so end the strip.
 			break;
 		}
 		
-		VertexIndex ev0 = graph.face_vertex(next_face, 0);
-		VertexIndex ev1 = graph.face_vertex(next_face, 1);
-		VertexIndex ev2 = graph.face_vertex(next_face, 2);
+		VertexIndex ev0 = graph.face_vertex(face, 0);
+		VertexIndex ev1 = graph.face_vertex(face, 1);
+		VertexIndex ev2 = graph.face_vertex(face, 2);
 		
 		strip.face_count++;
-		assert(next_face != NULL_FACE_INDEX);
-		dest.faces.emplace_back(ev0, ev1, ev2, next_face);
-		graph.put_in_temp_strip(next_face);
+		assert(face != NULL_FACE_INDEX);
+		dest.faces.emplace_back(ev0, ev1, ev2, face);
+		graph.put_in_temp_strip(face);
 		
 		scratch_indices.emplace_back(testnv1);
 		
 		nv0 = testnv0;
 		nv1 = testnv1;
 		
-		next_face = graph.other_face(graph.edge(nv0, nv1), next_face);
+		face = graph.other_face(graph.edge(nv0, nv1), face);
 	}
 	
 	return strip;
