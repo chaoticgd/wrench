@@ -19,12 +19,12 @@
 #include "tristrip_packet.h"
 
 TriStripPacketGenerator::TriStripPacketGenerator(
-	const std::vector<EffectiveMaterial>& effectives,
 	const std::vector<Material>& materials,
+	const std::vector<EffectiveMaterial>& effectives,
 	const TriStripConstraints& constraints,
 	bool support_instancing)
-	: _effectives(effectives)
-	, _materials(materials)
+	: _materials(materials)
+	, _effectives(effectives)
 	, _constraints(constraints)
 	, _support_instancing(support_instancing) {
 	new_packet();
@@ -67,7 +67,7 @@ void TriStripPacketGenerator::add_strip(const StripFace* faces, s32 face_count, 
 	FaceStrip& dest_strip = _output.strips.emplace_back();
 	dest_strip.face_begin = (s32) _output.faces.size();
 	dest_strip.face_count = 0;
-	dest_strip.material = _output_material;
+	dest_strip.effective_material = _output_material;
 	
 	// Add the first face.
 	dest_strip.face_count++;

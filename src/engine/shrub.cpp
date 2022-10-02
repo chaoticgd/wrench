@@ -344,29 +344,27 @@ ColladaScene recover_shrub_class(const ShrubClass& shrub) {
 
 ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& materials, f32 mip_distance, u16 mode_bits, s16 o_class, Opt<ShrubBillboard> billboard) {
 	ShrubClass shrub = {};
-	
-	// Make sure the packets that get written out aren't too big to fit in VU1 memory.
-	TriStripConstraints constraints = setup_shrub_constraints();
-	
 	shrub.bounding_sphere = Vec4f::pack(approximate_bounding_sphere(mesh.vertices));
 	shrub.mip_distance = mip_distance;
 	shrub.mode_bits = mode_bits;
 	shrub.scale = compute_optimal_scale(mesh);
 	shrub.o_class = o_class;
 	
-	std::vector<EffectiveMaterial> effectives = effective_materials(materials, MATERIAL_ATTRIB_SURFACE | MATERIAL_ATTRIB_WRAP_MODE);
+	TriStripConfig config;
+	// Make sure the packets that get written out aren't too big to fit in VU1 memory.
+	config.constraints = setup_shrub_constraints();
+	config.support_instancing = true; // Make sure extra AD GIFs are added.
 	
 	// Generate the strips.
-	TriStripPacketGenerator generator(effectives, materials, constraints, true);
-	TriStripPackets output = weave_tristrips(mesh, effectives, generator);
+	TriStripPackets output = weave_tristrips(mesh, materials, config);
 	
 	// Build the shrub packets.
 	for(const TriStripPacket& tpacket : output.packets) {
 		ShrubPacket& packet = shrub.packets.emplace_back();
 		for(s32 i = 0; i < tpacket.strip_count; i++) {
 			const TriStrip& strip = output.strips[tpacket.strip_begin + i];
-			if(strip.effective_material != -1) {
-				const Material& material = materials[effectives.at(strip.effective_material).materials.at(0)];
+			if(strip.material != -1) {
+				const Material& material = materials[strip.material];
 				verify(material.surface.type == MaterialSurfaceType::TEXTURE,
 					"A shrub material does not have a texture.");
 				

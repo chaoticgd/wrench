@@ -29,18 +29,20 @@ static FaceStrip weave_multiple_strips_and_pick_the_best(FaceStrips& dest, MeshG
 static FaceIndex find_start_face(const MeshGraph& graph, const EffectiveMaterial& effective, FaceIndex min_face);
 static void weave_strip(FaceStrips& dest, FaceIndex start_face, EdgeIndex start_edge, bool to_v1, MeshGraph& graph, const EffectiveMaterial& effective);
 static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_face, VertexIndex nv0, VertexIndex nv1, std::vector<VertexIndex>& scratch_indices, MeshGraph& graph, const EffectiveMaterial& effective);
-static TriStripPackets facestrips_to_tripstrips(const FaceStripPackets& input);
+static FaceStripPackets generate_packets(const FaceStrips& strips, const std::vector<Material>& materials, const std::vector<EffectiveMaterial>& effectives, const TriStripConfig& config);
+static TriStripPackets facestrips_to_tripstrips(const FaceStripPackets& input, const std::vector<EffectiveMaterial>& effectives);
 static void facestrip_to_tristrip(TriStripPackets& output, const FaceStrip& face_strip, const std::vector<StripFace>& faces);
 static VertexIndex unique_vertex_from_rhs(const StripFace& lhs, const StripFace& rhs);
 static std::pair<VertexIndex, VertexIndex> get_shared_vertices(const StripFace& lhs, const StripFace& rhs);
 static void verify_face_strips(const std::vector<FaceStrip>& strips, const std::vector<StripFace>& faces, const char* context, const MeshGraph& graph);
 
-TriStripPackets weave_tristrips(const Mesh& mesh, const std::vector<EffectiveMaterial>& materials, TriStripPacketGenerator& packet_generator) {
+TriStripPackets weave_tristrips(const Mesh& mesh, const std::vector<Material>& materials, const TriStripConfig& config) {
 	// Firstly we build a graph structure to make finding adjacent faces fast.
 	MeshGraph graph(mesh);
-	for(s32 i = 0; i < (s32) materials.size(); i++) {
-		const EffectiveMaterial& effective = materials[i];
-		FaceStrips strips;
+	std::vector<EffectiveMaterial> effectives = effective_materials(materials, MATERIAL_ATTRIB_SURFACE | MATERIAL_ATTRIB_WRAP_MODE);
+	FaceStrips strips;
+	for(s32 i = 0; i < (s32) effectives.size(); i++) {
+		const EffectiveMaterial& effective = effectives[i];
 		for(;;) {
 			bool done = true;
 			for(FaceIndex j = {0}; j.index < graph.face_count(); j.index++) {
@@ -52,19 +54,20 @@ TriStripPackets weave_tristrips(const Mesh& mesh, const std::vector<EffectiveMat
 				break;
 			}
 			FaceStrip strip = weave_multiple_strips_and_pick_the_best(strips, graph, effective);
+			strip.effective_material = i;
 			for(s32 i = 0; i < strip.face_count; i++) {
 				StripFace& face = strips.faces[strip.face_begin + i];
 				if(face.index != NULL_FACE_INDEX) {
 					graph.put_in_strip(face.index, (s32) strips.strips.size());
 				}
 			}
-			packet_generator.add_strip(&strips.faces[strip.face_begin], strip.face_count, i);
+			strips.strips.emplace_back(strip);
 		}
 	}
-	FaceStripPackets packets = packet_generator.get_output();
+	FaceStripPackets packets = generate_packets(strips, materials, effectives, config);
 	verify_face_strips(packets.strips, packets.faces, "generate_packets", graph);
 	// Convert those strips of faces to tristrips.
-	return facestrips_to_tripstrips(packets);
+	return facestrips_to_tripstrips(packets, effectives);
 }
 
 static FaceStrip weave_multiple_strips_and_pick_the_best(FaceStrips& dest, MeshGraph& graph, const EffectiveMaterial& effective) {
@@ -141,7 +144,6 @@ static void weave_strip(FaceStrips& dest, FaceIndex start_face, EdgeIndex start_
 	FaceStrip& strip = dest.strips.emplace_back();
 	strip.face_count = 0;
 	strip.face_begin = (s32) dest.faces.size();
-	strip.material = 0;
 	
 	std::vector<VertexIndex> scratch_indices;
 	
@@ -240,7 +242,15 @@ static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_
 	return strip;
 }
 
-static TriStripPackets facestrips_to_tripstrips(const FaceStripPackets& input) {
+static FaceStripPackets generate_packets(const FaceStrips& strips, const std::vector<Material>& materials, const std::vector<EffectiveMaterial>& effectives, const TriStripConfig& config) {
+	TriStripPacketGenerator generator(materials, effectives, config.constraints, config.support_instancing);
+	for(const FaceStrip& strip : strips.strips) {
+		generator.add_strip(&strips.faces[strip.face_begin], strip.face_count, strip.effective_material);
+	}
+	return generator.get_output();
+}
+
+static TriStripPackets facestrips_to_tripstrips(const FaceStripPackets& input, const std::vector<EffectiveMaterial>& effectives) {
 	TriStripPackets output;
 	
 	for(const FaceStripPacket& face_packet : input.packets) {
@@ -252,7 +262,7 @@ static TriStripPackets facestrips_to_tripstrips(const FaceStripPackets& input) {
 			const FaceStrip& face_strip = input.strips[face_packet.strip_begin + i];
 			tri_strip.index_begin = output.indices.size();
 			tri_strip.index_count = 2 + face_strip.face_count;
-			tri_strip.effective_material = face_strip.material;
+			tri_strip.material = effectives[face_strip.effective_material].materials.at(0);
 			assert(face_strip.face_count >= 1);
 			
 			facestrip_to_tristrip(output, face_strip, input.faces);

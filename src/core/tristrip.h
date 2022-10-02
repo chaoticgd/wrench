@@ -23,6 +23,11 @@
 #include <core/material.h>
 #include <core/tristrip_packet.h>
 
+struct TriStripConfig {
+	TriStripConstraints constraints;
+	bool support_instancing;
+};
+
 // A unit of data that can be sent and processed on VU1 at a time.
 struct TriStripPacket {
 	s32 strip_begin = 0;
@@ -33,7 +38,7 @@ struct TriStripPacket {
 struct TriStrip {
 	s32 index_begin = 0;
 	s32 index_count = 0;
-	s32 effective_material = 0; // -1 for no change
+	s32 material = 0; // -1 for no change
 };
 
 struct TriStripPackets {
@@ -43,6 +48,6 @@ struct TriStripPackets {
 };
 
 // Generates a set of tristrips that cover a given mesh.
-TriStripPackets weave_tristrips(const Mesh& mesh, const std::vector<EffectiveMaterial>& materials, TriStripPacketGenerator& packet_generator);
+TriStripPackets weave_tristrips(const Mesh& mesh, const std::vector<Material>& materials, const TriStripConfig& config);
 
 #endif

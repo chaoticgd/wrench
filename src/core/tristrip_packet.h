@@ -41,7 +41,7 @@ struct TriStripConstraints {
 struct FaceStrip {
 	s32 face_begin = 0;
 	s32 face_count = 0;
-	s32 material = 0;
+	s32 effective_material = 0;
 	s32 zero_area_tri_count = 0;
 };
 
@@ -82,8 +82,8 @@ struct TriStripRunningTotals {
 // Gets fed tristrips (as well as triangle lists) and incrementally splits them
 // up into packets based on the constraints passed to it at construction time.
 class TriStripPacketGenerator {
-	const std::vector<EffectiveMaterial>& _effectives;
 	const std::vector<Material>& _materials;
+	const std::vector<EffectiveMaterial>& _effectives;
 	const TriStripConstraints& _constraints;
 	bool _support_instancing;
 	
@@ -95,7 +95,7 @@ class TriStripPacketGenerator {
 	FaceStripPackets _output;
 	
 public:
-	TriStripPacketGenerator(const std::vector<EffectiveMaterial>& effectives, const std::vector<Material>& materials, const TriStripConstraints& constraints, bool support_instancing);
+	TriStripPacketGenerator(const std::vector<Material>& materials, const std::vector<EffectiveMaterial>& effectives, const TriStripConstraints& constraints, bool support_instancing);
 	void add_strip(const StripFace* faces, s32 face_count, s32 effective_material);
 	void add_list(const VertexIndex* indices, s32 face_count, s32 effective_material);
 	FaceStripPackets get_output();
