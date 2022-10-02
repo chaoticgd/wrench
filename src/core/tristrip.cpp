@@ -262,7 +262,11 @@ static TriStripPackets facestrips_to_tripstrips(const FaceStripPackets& input, c
 			const FaceStrip& face_strip = input.strips[face_packet.strip_begin + i];
 			tri_strip.index_begin = output.indices.size();
 			tri_strip.index_count = 2 + face_strip.face_count;
-			tri_strip.material = effectives[face_strip.effective_material].materials.at(0);
+			if(face_strip.effective_material >= 0) {
+				tri_strip.material = effectives[face_strip.effective_material].materials.at(0);
+			} else {
+				tri_strip.material = -1;
+			}
 			assert(face_strip.face_count >= 1);
 			
 			facestrip_to_tristrip(output, face_strip, input.faces);

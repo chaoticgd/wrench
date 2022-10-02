@@ -23,11 +23,6 @@
 #include <core/material.h>
 #include <core/tristrip_packet.h>
 
-struct TriStripConfig {
-	TriStripConstraints constraints;
-	bool support_instancing;
-};
-
 // A unit of data that can be sent and processed on VU1 at a time.
 struct TriStripPacket {
 	s32 strip_begin = 0;
@@ -45,6 +40,11 @@ struct TriStripPackets {
 	std::vector<TriStripPacket> packets;
 	std::vector<TriStrip> strips;
 	std::vector<s32> indices;
+};
+
+struct TriStripConfig {
+	TriStripConstraints constraints;
+	bool support_instancing;
 };
 
 // Generates a set of tristrips that cover a given mesh.
