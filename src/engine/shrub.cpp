@@ -469,5 +469,5 @@ static f32 compute_optimal_scale(const Mesh& mesh) {
 		fabsf(zmin), fabsf(zmax)});
 	// Calculate a scale such that said value is quantized to the largest
 	// representable value.
-	return required_range * (1024.f / INT16_MAX);
+	return required_range * (1024.f / (INT16_MAX - 1.f));
 }
