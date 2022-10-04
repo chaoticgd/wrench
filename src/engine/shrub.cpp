@@ -21,6 +21,8 @@
 #include <core/vif.h>
 #include <core/tristrip.h>
 
+//#define WRITE_OUT_SHRUB_STRIPS_AS_SEPARATE_MESHES
+
 static TriStripConstraints setup_shrub_constraints();
 static f32 compute_optimal_scale(const Mesh& mesh);
 
@@ -271,16 +273,27 @@ void write_shrub_class(OutBuffer dest, const ShrubClass& shrub) {
 ColladaScene recover_shrub_class(const ShrubClass& shrub) {
 	ColladaScene scene;
 	
+#ifndef WRITE_OUT_SHRUB_STRIPS_AS_SEPARATE_MESHES
 	Mesh& mesh = scene.meshes.emplace_back();
 	mesh.name = "mesh";
 	mesh.flags |= MESH_HAS_TEX_COORDS;
 	mesh.flags |= MESH_HAS_VERTEX_COLOURS;
-	s32 texture_index = -1;
-	s32 max_tex_idx = 0;
 	SubMesh* submesh = nullptr;
+#endif
+	s32 texture_index = -1;
+	s32 max_texture_index = 0;
 	
-	for(const ShrubPacket& packet : shrub.packets) {
-		for(const ShrubPrimitive& primitive : packet.primitives) {
+	for(size_t i = 0; i < shrub.packets.size(); i++) {
+		const ShrubPacket& packet = shrub.packets[i];
+		for(size_t j = 0; j < packet.primitives.size(); j++) {
+			const ShrubPrimitive& primitive = packet.primitives[j];
+#ifdef WRITE_OUT_SHRUB_STRIPS_AS_SEPARATE_MESHES
+			Mesh& mesh = scene.meshes.emplace_back();
+			mesh.name = stringf("packet_%d_strip_%d", (s32) i, (s32) j);
+			mesh.flags |= MESH_HAS_TEX_COORDS;
+			mesh.flags |= MESH_HAS_VERTEX_COLOURS;
+			SubMesh* submesh = nullptr;
+#endif
 			if(const ShrubTexturePrimitive* prim = std::get_if<ShrubTexturePrimitive>(&primitive)) {
 				texture_index = prim->d4_tex0_1.data_lo;
 			}
@@ -289,7 +302,7 @@ ColladaScene recover_shrub_class(const ShrubClass& shrub) {
 				if(submesh == nullptr || texture_index != submesh->material) {
 					submesh = &mesh.submeshes.emplace_back();
 					submesh->material = texture_index;
-					max_tex_idx = std::max(max_tex_idx, texture_index);
+					max_texture_index = std::max(max_texture_index, texture_index);
 				}
 				
 				size_t first_index = mesh.vertices.size();
@@ -310,16 +323,18 @@ ColladaScene recover_shrub_class(const ShrubClass& shrub) {
 		}
 	}
 	
-	for(s32 i = 0; i <= max_tex_idx; i++) {
+	for(s32 i = 0; i <= max_texture_index; i++) {
 		ColladaMaterial& mat = scene.materials.emplace_back();
 		mat.name = stringf("texture_%d", i);
 		mat.surface = MaterialSurface(i);
 		
 		scene.texture_paths.emplace_back(stringf("%d.png", i));
 	}
-	
+
+#ifndef WRITE_OUT_SHRUB_STRIPS_AS_SEPARATE_MESHES
 	mesh = deduplicate_vertices(std::move(mesh));
 	remove_zero_area_triangles(mesh);
+#endif
 	
 	Mesh& bsphere_ind = scene.meshes.emplace_back();
 	bsphere_ind.name="bpshere";
