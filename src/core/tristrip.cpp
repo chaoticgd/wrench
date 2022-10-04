@@ -209,18 +209,6 @@ static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_
 		
 		FaceIndex next_face = graph.other_face(graph.edge(testnv0, testnv1), face);
 		if(next_face == NULL_FACE_INDEX || !graph.can_be_added_to_strip(next_face, effective)) {
-			// We need to swap.
-			FaceIndex test_next_face = graph.other_face(graph.edge(nv0, testnv1), face);
-			if(test_next_face != NULL_FACE_INDEX && graph.can_be_added_to_strip(test_next_face, effective)) {
-				strip.face_count++;
-				dest.faces.emplace_back(nv0, nv1, nv0, NULL_FACE_INDEX);
-				graph.put_in_temp_strip(test_next_face);
-				strip.zero_area_tri_count++;
-				
-				scratch_indices.emplace_back(nv0);
-				testnv0 = nv0;
-			}
-			// We can't swap, so end the strip.
 			break;
 		}
 		
