@@ -28,7 +28,7 @@
 static FaceStrip weave_multiple_strips_and_pick_the_best(FaceStrips& dest, MeshGraph& graph, const EffectiveMaterial& effective);
 static FaceIndex find_start_face(const MeshGraph& graph, const EffectiveMaterial& effective, FaceIndex min_face);
 static void weave_strip(FaceStrips& dest, FaceIndex start_face, EdgeIndex start_edge, bool to_v1, MeshGraph& graph, const EffectiveMaterial& effective);
-static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_face, VertexIndex nv0, VertexIndex nv1, std::vector<VertexIndex>& scratch_indices, MeshGraph& graph, const EffectiveMaterial& effective);
+static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_face, VertexIndex v0, VertexIndex v1, MeshGraph& graph, const EffectiveMaterial& effective);
 static FaceStripPackets generate_packets(const FaceStrips& strips, const std::vector<Material>& materials, const std::vector<EffectiveMaterial>& effectives, const TriStripConfig& config);
 static TriStripPackets facestrips_to_tripstrips(const FaceStripPackets& input, const std::vector<EffectiveMaterial>& effectives);
 static void facestrip_to_tristrip(TriStripPackets& output, const FaceStrip& face_strip, const std::vector<StripFace>& faces);
@@ -145,16 +145,10 @@ static void weave_strip(FaceStrips& dest, FaceIndex start_face, EdgeIndex start_
 	strip.face_count = 0;
 	strip.face_begin = (s32) dest.faces.size();
 	
-	std::vector<VertexIndex> scratch_indices;
-	
 	VertexIndex v0 = to_v1 ? graph.edge_vertex(start_edge, 0) : graph.edge_vertex(start_edge, 1);
 	VertexIndex v1 = to_v1 ? graph.edge_vertex(start_edge, 1) : graph.edge_vertex(start_edge, 0);
 	
-	scratch_indices.emplace_back(v0);
-	scratch_indices.emplace_back(v1);
-	
-	VertexIndex v2 = graph.next_index(scratch_indices, start_face);
-	scratch_indices.emplace_back(v2);
+	VertexIndex v2 = graph.next_index(v0, v1, start_face);
 	if(v2 == NULL_VERTEX_INDEX) {
 		printf("warning: Tristrip weaving failed. Failed to find v2.\n");
 		return;
@@ -167,14 +161,10 @@ static void weave_strip(FaceStrips& dest, FaceIndex start_face, EdgeIndex start_
 	FaceStrips temp;
 	
 	// Weave the strip forwards.
-	FaceStrip forward = weave_strip_in_one_direction(temp, start_face, v1, v2, scratch_indices, graph, effective);
+	FaceStrip forward = weave_strip_in_one_direction(temp, start_face, v1, v2, graph, effective);
 	
 	// Weave the strip backwards.
-	scratch_indices.resize(0);
-	scratch_indices.push_back(v2);
-	scratch_indices.push_back(v1);
-	scratch_indices.push_back(v0);
-	FaceStrip backward = weave_strip_in_one_direction(temp, start_face, v1, v0, scratch_indices, graph, effective);
+	FaceStrip backward = weave_strip_in_one_direction(temp, start_face, v1, v0, graph, effective);
 	
 	// Merge the strips.
 	strip.face_count = backward.face_count + 1 + forward.face_count;
@@ -192,41 +182,29 @@ static void weave_strip(FaceStrips& dest, FaceIndex start_face, EdgeIndex start_
 	graph.discard_temp_strip();
 }
 
-static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_face, VertexIndex nv0, VertexIndex nv1, std::vector<VertexIndex>& scratch_indices, MeshGraph& graph, const EffectiveMaterial& effective) {
+static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_face, VertexIndex v0, VertexIndex v1, MeshGraph& graph, const EffectiveMaterial& effective) {
 	FaceStrip strip;
 	strip.face_begin = (s32) dest.faces.size();
 	strip.face_count = 0;
 	
-	FaceIndex face = graph.other_face(graph.edge(nv0, nv1), start_face);
+	FaceIndex face = graph.other_face(graph.edge(v0, v1), start_face);
 	
 	while(face != NULL_FACE_INDEX && graph.can_be_added_to_strip(face, effective)) {
-		VertexIndex testnv0 = nv1;
-		VertexIndex testnv1 = graph.next_index(scratch_indices, face);
-		if(testnv1 == NULL_VERTEX_INDEX) {
-			printf("warning: Tristrip weaving failed. Failed to find testnv1.\n");
+		VertexIndex v2 = graph.next_index(v0, v1, face);
+		if(v2 == NULL_VERTEX_INDEX) {
+			printf("warning: Tristrip weaving failed. Failed to find testv1.\n");
 			return strip;
 		}
 		
-		FaceIndex next_face = graph.other_face(graph.edge(testnv0, testnv1), face);
-		if(next_face == NULL_FACE_INDEX || !graph.can_be_added_to_strip(next_face, effective)) {
-			break;
-		}
-		
-		VertexIndex ev0 = graph.face_vertex(face, 0);
-		VertexIndex ev1 = graph.face_vertex(face, 1);
-		VertexIndex ev2 = graph.face_vertex(face, 2);
-		
 		strip.face_count++;
 		assert(face != NULL_FACE_INDEX);
-		dest.faces.emplace_back(ev0, ev1, ev2, face);
+		dest.faces.emplace_back(v0, v1, v2, face);
 		graph.put_in_temp_strip(face);
 		
-		scratch_indices.emplace_back(testnv1);
+		v0 = v1;
+		v1 = v2;
 		
-		nv0 = testnv0;
-		nv1 = testnv1;
-		
-		face = graph.other_face(graph.edge(nv0, nv1), face);
+		face = graph.other_face(graph.edge(v0, v1), face);
 	}
 	
 	return strip;

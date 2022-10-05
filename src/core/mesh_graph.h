@@ -109,10 +109,7 @@ public:
 		}
 	}
 	
-	VertexIndex next_index(std::vector<VertexIndex>& indices, FaceIndex face) {
-		assert(indices.size() >= 2);
-		VertexIndex v0 = indices[indices.size() - 2];
-		VertexIndex v1 = indices[indices.size() - 1];
+	VertexIndex next_index(VertexIndex v0, VertexIndex v1, FaceIndex face) {
 		for(VertexIndex v : face_at(face).v) {
 			if(v != v0 && v != v1) {
 				return v;
