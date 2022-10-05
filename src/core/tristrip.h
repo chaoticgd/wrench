@@ -23,22 +23,21 @@
 #include <core/material.h>
 #include <core/tristrip_packet.h>
 
-// A unit of data that can be sent and processed on VU1 at a time.
-struct TriStripPacket {
-	s32 strip_begin = 0;
-	s32 strip_count = 0;
+struct GeometryPacket {
+	s32 primitive_begin;
+	s32 primitive_count;
 };
 
-// A single tristrip.
-struct TriStrip {
+struct GeometryPrimitive {
+	GeometryType type;
 	s32 index_begin = 0;
 	s32 index_count = 0;
 	s32 material = 0; // -1 for no change
 };
 
-struct TriStripPackets {
-	std::vector<TriStripPacket> packets;
-	std::vector<TriStrip> strips;
+struct GeometryPackets {
+	std::vector<GeometryPacket> packets;
+	std::vector<GeometryPrimitive> primitives;
 	std::vector<s32> indices;
 };
 
@@ -48,6 +47,6 @@ struct TriStripConfig {
 };
 
 // Generates a set of tristrips that cover a given mesh.
-TriStripPackets weave_tristrips(const Mesh& mesh, const std::vector<Material>& materials, const TriStripConfig& config);
+GeometryPackets weave_tristrips(const Mesh& mesh, const std::vector<Material>& materials, const TriStripConfig& config);
 
 #endif

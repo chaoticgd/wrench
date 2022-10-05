@@ -44,10 +44,6 @@ const char* VIF_USN_STRINGS[2] = {
 	"SIGNED", "UNSIGNED"
 };
 
-static s32 bit_range(u64 val, s32 lo, s32 hi) {
-	return (val >> lo) & ((1 << (hi - lo + 1)) - 1);
-}
-
 u32 VifCode::encode_unpack() const {
 	assert(is_unpack());
 	u32 value = 0;

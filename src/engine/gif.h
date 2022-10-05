@@ -21,16 +21,91 @@
 
 #include <core/util.h>
 
+enum GsPrimitiveType {
+	GS_PRIMITIVE_POINT = 0b000,
+	GS_PRIMITIVE_LINE = 0b001,
+	GS_PRIMITIVE_LINE_STRIP = 0b010,
+	GS_PRIMITIVE_TRIANGLE = 0b011,
+	GS_PRIMITIVE_TRIANGLE_STRIP = 0b100,
+	GS_PRIMITIVE_TRIANGLE_FAN = 0b101,
+	GS_PRIMITIVE_SPRITE = 0b110,
+	GS_PRIMITIVE_MYSTERY = 0b111
+};
+
+packed_struct(GsPrimRegister,
+	u32 val = 0;
+	
+	// Drawing primitive type
+	s32 primitive() const { return bit_range(val, 0, 2); }
+	void set_primitive(u32 field) { val |= field; }
+	
+	// Shading method
+	s32 iip() const { return bit_range(val, 3, 3); }
+	void set_iip(u32 field) { val |= (field << 3); }
+	
+	// Texture mapping
+	s32 tme() const { return bit_range(val, 4, 4); }
+	void set_tme(u32 field) { val |= (field << 4); }
+	
+	// Fogging
+	s32 fge() const { return bit_range(val, 5, 5); }
+	void set_fge(u32 field) { val |= (field << 5); }
+	
+	// Alpha blending
+	s32 abe() const { return bit_range(val, 6, 6); }
+	void set_abe(u32 field) { val |= (field << 6); }
+	
+	// Antialiasing
+	s32 aa1() const { return bit_range(val, 7, 7); }
+	void set_aa1(u32 field) { val |= (field << 7); }
+	
+	// Method of specifying texture coordinates
+	s32 fst() const { return bit_range(val, 8, 8); }
+	void set_fst(u32 field) { val |= (field << 8); }
+	
+	// Context
+	s32 ctxt() const { return bit_range(val, 9, 9); }
+	void set_ctxt(u32 field) { val |= (field << 9); }
+	
+	// Fragment value control
+	s32 fix() const { return bit_range(val, 10, 10); }
+	void set_fix(u32 field) { val |= (field << 10); }
+)
+
+enum GifDataFormat {
+	GIF_DATA_FORMAT_PACKED = 0b00,
+	GIF_DATA_FORMAT_REGLIST = 0b01,
+	GIF_DATA_FORMAT_IMAGE = 0b10,
+	GIF_DATA_FORMAT_DISABLE = 0b11
+};
+
 packed_struct(GifTag12,
-	/* 0x0 */ u32 low;
-	/* 0x4 */ u32 mid;
+	/* 0x0 */ u64 low;
 	/* 0x8 */ u32 regs;
 	
-	u16 nloop() { return low & (0b111111111111111); }
-	void set_nloop(u16 field) { low |= field; }
+	// Repeat count
+	s32 nloop() const { return bit_range(low, 0, 14); }
+	void set_nloop(u64 field) { low |= (field & 0b111111111111111); }
 	
-	bool eop() { return (low >> 15) & 0b1; }
-	void set_eop(bool field) { low |= (!!field) << 15; }
+	// End of packet marker
+	s32 eop() const { return bit_range(low, 15, 15); }
+	void set_eop(u64 field) { low |= (!!field << 15); }
+	
+	// PRIM field enable bit
+	s32 pre() const { return bit_range(low, 46, 46); }
+	void set_pre(u64 field) { low |= (field << 46); }
+	
+	// PRIM register
+	s32 prim() const { return bit_range(low, 47, 57); }
+	void set_prim(u64 field) { low |= (field << 47); }
+	
+	// Data format
+	s32 flg() const { return bit_range(low, 58, 59); }
+	void set_flg(u64 field) { low |= (field << 58); }
+	
+	// Register descriptor count
+	s32 nreg() const { return bit_range(low, 60, 63); }
+	void set_nreg(u64 field) { low |= (field << 60); }
 )
 
 packed_struct(GifAdData12,

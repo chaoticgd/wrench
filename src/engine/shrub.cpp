@@ -19,7 +19,6 @@
 #include "shrub.h"
 
 #include <core/vif.h>
-#include <core/tristrip.h>
 
 //#define WRITE_OUT_SHRUB_STRIPS_AS_SEPARATE_MESHES
 
@@ -54,6 +53,7 @@ ShrubClass read_shrub_class(Buffer src) {
 		auto part_2 = Buffer(unpacks[2].data).read_multiple<ShrubVertexPart2>(0, packet_header.vertex_count, "sts");
 		
 		ShrubVertexPrimitive* prim = nullptr;
+		GeometryType prim_type;
 		
 		// Interpret the data in the order it would be written to the GS packet.
 		s32 next_gif_tag = 0;
@@ -64,6 +64,18 @@ ShrubClass read_shrub_class(Buffer src) {
 			// GIF tags for the vertices (not the AD data).
 			if(next_gif_tag < gif_tags.size() && gif_tags[next_gif_tag].gs_packet_offset == next_offset) {
 				prim = nullptr;
+				GsPrimRegister reg{(u32) gif_tags[next_gif_tag].tag.prim()};
+				switch(reg.primitive()) {
+					case GS_PRIMITIVE_TRIANGLE:
+						prim_type = GeometryType::TRIANGLE_LIST;
+						break;
+					case GS_PRIMITIVE_TRIANGLE_STRIP:
+						prim_type = GeometryType::TRIANGLE_STRIP;
+						break;
+					default: {
+						verify_not_reached("Shrub data has primitives that aren't triangle lists of triangle strips.");
+					}
+				}
 				
 				next_gif_tag++;
 				next_offset += 1;
@@ -87,6 +99,8 @@ ShrubClass read_shrub_class(Buffer src) {
 				if(prim == nullptr) {
 					prim = &packet.primitives.emplace_back().emplace<1>();
 				}
+				
+				prim->type = prim_type;
 				
 				ShrubVertex& vertex = prim->vertices.emplace_back();
 				vertex.x = part_1[next_vertex].x;
@@ -169,10 +183,33 @@ void write_shrub_class(OutBuffer dest, const ShrubClass& shrub) {
 				packet_header.vertex_offset += 1;
 				packet_header.vertex_count += (s32) prim->vertices.size();
 				
+				GsPrimRegister prim_reg;
+				switch(prim->type) {
+					case GeometryType::TRIANGLE_LIST:
+						prim_reg.set_primitive(GS_PRIMITIVE_TRIANGLE);
+						break;
+					case GeometryType::TRIANGLE_STRIP:
+						prim_reg.set_primitive(GS_PRIMITIVE_TRIANGLE_STRIP);
+						break;
+					case GeometryType::TRIANGLE_FAN:
+						prim_reg.set_primitive(GS_PRIMITIVE_TRIANGLE_FAN);
+						break;
+				}
+				prim_reg.set_iip(1);
+				prim_reg.set_tme(1);
+				prim_reg.set_fge(1);
+				prim_reg.set_abe(1);
+				prim_reg.set_aa1(0);
+				prim_reg.set_fst(0);
+				prim_reg.set_ctxt(0);
+				prim_reg.set_fix(0);
 				ShrubVertexGifTag& gif = gif_tags.emplace_back();
 				gif.tag = {};
 				gif.tag.set_nloop((u32) prim->vertices.size());
-				gif.tag.mid = 0x303e4000;
+				gif.tag.set_pre(1);
+				gif.tag.set_prim(prim_reg.val);
+				gif.tag.set_flg(0);
+				gif.tag.set_nreg(3);
 				gif.tag.regs = 0x00000412;
 				gif.gs_packet_offset = offset;
 				offset += 1;
@@ -316,8 +353,14 @@ ColladaScene recover_shrub_class(const ShrubClass& shrub) {
 					mesh.vertices.emplace_back(glm::vec3(x, y, z), colour, glm::vec2(s, t));
 				}
 				
-				for(size_t i = first_index; i < mesh.vertices.size() - 2; i++) {
-					submesh->faces.emplace_back(i, i + 1, i + 2);
+				if(prim->type == GeometryType::TRIANGLE_LIST) {
+					for(size_t i = first_index; i < mesh.vertices.size() - 2; i += 3) {
+						submesh->faces.emplace_back(i, i + 1, i + 2);
+					}
+				} else {
+					for(size_t i = first_index; i < mesh.vertices.size() - 2; i++) {
+						submesh->faces.emplace_back(i, i + 1, i + 2);
+					}
 				}
 			}
 		}
@@ -371,43 +414,44 @@ ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& mate
 	config.support_instancing = true; // Make sure extra AD GIFs are added.
 	
 	// Generate the strips.
-	TriStripPackets output = weave_tristrips(mesh, materials, config);
+	GeometryPackets output = weave_tristrips(mesh, materials, config);
 	
 	// Build the shrub packets.
-	for(const TriStripPacket& tpacket : output.packets) {
-		ShrubPacket& packet = shrub.packets.emplace_back();
-		for(s32 i = 0; i < tpacket.strip_count; i++) {
-			const TriStrip& strip = output.strips[tpacket.strip_begin + i];
-			if(strip.material != -1) {
-				const Material& material = materials[strip.material];
+	for(const GeometryPacket& src_packet : output.packets) {
+		ShrubPacket& dest_packet = shrub.packets.emplace_back();
+		for(s32 i = 0; i < src_packet.primitive_count; i++) {
+			const GeometryPrimitive& src_primitive = output.primitives[src_packet.primitive_begin + i];
+			if(src_primitive.material != -1) {
+				const Material& material = materials[src_primitive.material];
 				verify(material.surface.type == MaterialSurfaceType::TEXTURE,
 					"A shrub material does not have a texture.");
 				
-				ShrubTexturePrimitive& prim = packet.primitives.emplace_back().emplace<0>();
-				prim.d1_tex1_1.address = GIF_AD_TEX1_1;
-				prim.d1_tex1_1.data_lo = 0xff92;
-				prim.d1_tex1_1.data_hi = 0x04;
-				prim.d2_clamp_1.address = GIF_AD_CLAMP_1;
-				prim.d3_miptbp1_1.address = GIF_AD_MIPTBP1_1;
-				prim.d3_miptbp1_1.data_lo = material.surface.texture;
-				prim.d4_tex0_1.address = GIF_AD_TEX0_1;
-				prim.d4_tex0_1.data_lo = material.surface.texture;
+				ShrubTexturePrimitive& dest_primitive = dest_packet.primitives.emplace_back().emplace<0>();
+				dest_primitive.d1_tex1_1.address = GIF_AD_TEX1_1;
+				dest_primitive.d1_tex1_1.data_lo = 0xff92;
+				dest_primitive.d1_tex1_1.data_hi = 0x04;
+				dest_primitive.d2_clamp_1.address = GIF_AD_CLAMP_1;
+				dest_primitive.d3_miptbp1_1.address = GIF_AD_MIPTBP1_1;
+				dest_primitive.d3_miptbp1_1.data_lo = material.surface.texture;
+				dest_primitive.d4_tex0_1.address = GIF_AD_TEX0_1;
+				dest_primitive.d4_tex0_1.data_lo = material.surface.texture;
 			}
-			ShrubVertexPrimitive& prim = packet.primitives.emplace_back().emplace<1>();
-			for(s32 j = 0; j < strip.index_count; j++) {
-				ShrubVertex& dest = prim.vertices.emplace_back();
-				const Vertex& src = mesh.vertices.at(output.indices.at(strip.index_begin + j));
+			ShrubVertexPrimitive& dest_primitive = dest_packet.primitives.emplace_back().emplace<1>();
+			dest_primitive.type = src_primitive.type;
+			for(s32 j = 0; j < src_primitive.index_count; j++) {
+				ShrubVertex& dest_vertex = dest_primitive.vertices.emplace_back();
+				const Vertex& src = mesh.vertices.at(output.indices.at(src_primitive.index_begin + j));
 				f32 x = src.pos.x * (1.f / shrub.scale) * 1024.f;
 				f32 y = src.pos.y * (1.f / shrub.scale) * 1024.f;
 				f32 z = src.pos.z * (1.f / shrub.scale) * 1024.f;
 				assert(x >= INT16_MIN && x <= INT16_MAX
 					&& y >= INT16_MIN && y <= INT16_MAX
 					&& z >= INT16_MIN && z <= INT16_MAX);
-				dest.x = (s16) x;
-				dest.y = (s16) y;
-				dest.z = (s16) z;
-				dest.s = src.tex_coord.x * 4096.f;
-				dest.t = -src.tex_coord.y * 4096.f;
+				dest_vertex.x = (s16) x;
+				dest_vertex.y = (s16) y;
+				dest_vertex.z = (s16) z;
+				dest_vertex.s = src.tex_coord.x * 4096.f;
+				dest_vertex.t = -src.tex_coord.y * 4096.f;
 			}
 		}
 	}

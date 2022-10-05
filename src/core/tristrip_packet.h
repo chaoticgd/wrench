@@ -38,7 +38,14 @@ struct TriStripConstraints {
 	s32 max_cost[4];
 };
 
+enum class GeometryType {
+	TRIANGLE_LIST,
+	TRIANGLE_STRIP,
+	TRIANGLE_FAN
+};
+
 struct FaceStrip {
+	GeometryType type;
 	s32 face_begin = 0;
 	s32 face_count = 0;
 	s32 effective_material = 0;
@@ -49,6 +56,7 @@ struct FaceStrip {
 // that isn't included in the original mesh but is inserted to construct a
 // triangle strip.
 struct StripFace {
+	StripFace() {}
 	StripFace(VertexIndex v0, VertexIndex v1, VertexIndex v2, FaceIndex i)
 		: v{v0, v1, v2}, index(i) {}
 	VertexIndex v[3];
@@ -96,8 +104,8 @@ class TriStripPacketGenerator {
 	
 public:
 	TriStripPacketGenerator(const std::vector<Material>& materials, const std::vector<EffectiveMaterial>& effectives, const TriStripConstraints& constraints, bool support_instancing);
-	void add_strip(const StripFace* faces, s32 face_count, s32 effective_material);
 	void add_list(const VertexIndex* indices, s32 face_count, s32 effective_material);
+	void add_strip(const StripFace* faces, s32 face_count, s32 effective_material);
 	FaceStripPackets get_output();
 	
 private:

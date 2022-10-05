@@ -24,6 +24,7 @@
 #include <core/buffer.h>
 #include <core/collada.h>
 #include <core/texture.h>
+#include <core/tristrip.h>
 #include <core/build_config.h>
 #include <engine/basic_types.h>
 #include <engine/gif.h>
@@ -107,6 +108,7 @@ struct ShrubVertex {
 };
 
 struct ShrubVertexPrimitive {
+	GeometryType type;
 	std::vector<ShrubVertex> vertices;
 };
 
