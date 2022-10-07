@@ -125,10 +125,10 @@ public:
 	void discard_temp_strip() { for(FaceInfo& face : _faces) { face.in_temp_strip = false; } }
 	
 	bool can_be_added_to_strip(FaceIndex face, const EffectiveMaterial& effective) const {
-		if(is_in_strip(face)) {
-			// If the face is already in a strip it cannot be added to another strip.
-			return false;
-		}
+		return is_correct_material(face, effective) && !is_in_strip(face);
+	}
+	
+	bool is_correct_material(FaceIndex face, const EffectiveMaterial& effective) const {
 		s32 material_of_face = face_material(face).index;
 		for(s32 material : effective.materials) {
 			if(material == material_of_face) {

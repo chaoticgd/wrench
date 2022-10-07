@@ -26,9 +26,9 @@
 // Some of the algorithms here were adapted from the NvTriStrip library.
 
 static FaceStrip weave_multiple_strips_and_pick_the_best(FaceStrips& dest, MeshGraph& graph, const EffectiveMaterial& effective);
-static FaceIndex find_start_face(const MeshGraph& graph, const EffectiveMaterial& effective, FaceIndex min_face);
+static FaceIndex find_start_face(const MeshGraph& graph, const EffectiveMaterial& effective, FaceIndex next_faces[3]);
 static void weave_strip(FaceStrips& dest, FaceIndex start_face, EdgeIndex start_edge, bool to_v1, MeshGraph& graph, const EffectiveMaterial& effective);
-static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_face, VertexIndex v0, VertexIndex v1, MeshGraph& graph, const EffectiveMaterial& effective);
+static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_face, VertexIndex v1, VertexIndex v2, MeshGraph& graph, const EffectiveMaterial& effective);
 static FaceStripPackets generate_packets(const FaceStrips& strips, const std::vector<Material>& materials, const std::vector<EffectiveMaterial>& effectives, const TriStripConfig& config);
 static GeometryPackets facestrips_to_tripstrips(const FaceStripPackets& input, const std::vector<EffectiveMaterial>& effectives);
 static void facestrip_to_tristrip(GeometryPackets& output, const FaceStrip& face_strip, const std::vector<StripFace>& faces);
@@ -44,16 +44,10 @@ GeometryPackets weave_tristrips(const Mesh& mesh, const std::vector<Material>& m
 	for(s32 i = 0; i < (s32) effectives.size(); i++) {
 		const EffectiveMaterial& effective = effectives[i];
 		for(;;) {
-			bool done = true;
-			for(FaceIndex j = {0}; j.index < graph.face_count(); j.index++) {
-				if(graph.can_be_added_to_strip(j, effective)) {
-					done = false;
-				}
-			}
-			if(done) {
+			FaceStrip strip = weave_multiple_strips_and_pick_the_best(strips, graph, effective);
+			if(strip.face_count == 0) {
 				break;
 			}
-			FaceStrip strip = weave_multiple_strips_and_pick_the_best(strips, graph, effective);
 			strip.effective_material = i;
 			for(s32 i = 0; i < strip.face_count; i++) {
 				StripFace& face = strips.faces[strip.face_begin + i];
@@ -73,10 +67,17 @@ GeometryPackets weave_tristrips(const Mesh& mesh, const std::vector<Material>& m
 static FaceStrip weave_multiple_strips_and_pick_the_best(FaceStrips& dest, MeshGraph& graph, const EffectiveMaterial& effective) {
 	// Weave multiple candidate strips.
 	FaceStrips temp;
-	FaceIndex min_face = {0};
-	for(s32 i = 0; i < 10; i++) {
-		FaceIndex start_face = find_start_face(graph, effective, min_face);
-		min_face = (start_face.index + 1) % graph.face_count();
+	FaceIndex next_faces[4] = {0, 0, 0, 0};
+	FaceIndex last_start_face = NULL_FACE_INDEX;
+	for(s32 i = 0; i < 20; i++) {
+		FaceIndex start_face = find_start_face(graph, effective, next_faces);
+		if(start_face == NULL_FACE_INDEX) {
+			return {};
+		}
+		if(start_face == last_start_face) {
+			break;
+		}
+		last_start_face = start_face;
 		weave_strip(temp, start_face, graph.edge_of_face(start_face, 0), false, graph, effective);
 		weave_strip(temp, start_face, graph.edge_of_face(start_face, 0), true, graph, effective);
 		weave_strip(temp, start_face, graph.edge_of_face(start_face, 1), false, graph, effective);
@@ -87,17 +88,17 @@ static FaceStrip weave_multiple_strips_and_pick_the_best(FaceStrips& dest, MeshG
 	
 	// Determine which is the best.
 	s32 best_strip = -1;
-	s32 best_utility = -1;
+	f32 best_utility = -1000000000;
 	for(size_t i = 0; i < temp.strips.size(); i++) {
 		FaceStrip& candidate = temp.strips[i];
-		s32 utility = candidate.face_count - candidate.zero_area_tri_count;
+		f32 utility = candidate.face_count - candidate.zero_area_tri_count * 2.5f;
 		if(utility > best_utility) {
 			best_strip = i;
 			best_utility = utility;
 		}
 	}
 	
-	assert(best_strip != -1);
+	assert(best_strip != -1000000000);
 	
 	// Copy the best strip from the temp array to the main array.
 	FaceStrip strip;
@@ -110,32 +111,25 @@ static FaceStrip weave_multiple_strips_and_pick_the_best(FaceStrips& dest, MeshG
 	return strip;
 }
 
-static FaceIndex find_start_face(const MeshGraph& graph, const EffectiveMaterial& effective, FaceIndex min_face) {
-	for(s32 neighbour_count = 0; neighbour_count <= 3; neighbour_count++) {
-		for(FaceIndex face = min_face; face.index < graph.face_count(); face.index++) {
-			s32 neighbours = 0;
-			for(s32 i = 0; i < 3; i++) {
-				FaceIndex other_face = graph.other_face(graph.edge_of_face(face, i), face);
+static FaceIndex find_start_face(const MeshGraph& graph, const EffectiveMaterial& effective, FaceIndex next_faces[4]) {
+	// First try individual triangles connected to zero other valid triangles,
+	// the one, then two, then three other valid triangles.
+	for(s32 i = 0; i <= 3; i++) {
+		FaceIndex face = next_faces[i];
+		do {
+			s32 neighbour_count = 0;
+			for(s32 j = 0; j < 3; j++) {
+				FaceIndex other_face = graph.other_face(graph.edge_of_face(face, j), face);
 				if(other_face != NULL_FACE_INDEX && graph.can_be_added_to_strip(other_face, effective)) {
-					neighbours++;
+					neighbour_count++;
 				}
 			}
-			if(neighbours == neighbour_count && graph.can_be_added_to_strip(face, effective)) {
+			if(neighbour_count == i && graph.can_be_added_to_strip(face, effective)) {
+				next_faces[i] = (face.index + 1) % graph.face_count();
 				return face;
 			}
-		}
-		for(FaceIndex face = 0; face < min_face; face.index++) {
-			s32 neighbours = 0;
-			for(s32 i = 0; i < 3; i++) {
-				FaceIndex other_face = graph.other_face(graph.edge_of_face(face, i), face);
-				if(other_face != NULL_FACE_INDEX && graph.can_be_added_to_strip(other_face, effective)) {
-					neighbours++;
-				}
-			}
-			if(neighbours == neighbour_count && graph.can_be_added_to_strip(face, effective)) {
-				return face;
-			}
-		}
+			face.index = (face.index + 1) % graph.face_count();
+		} while(face != next_faces[i]);
 	}
 	return NULL_FACE_INDEX;
 }
@@ -182,29 +176,71 @@ static void weave_strip(FaceStrips& dest, FaceIndex start_face, EdgeIndex start_
 	graph.discard_temp_strip();
 }
 
-static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_face, VertexIndex v0, VertexIndex v1, MeshGraph& graph, const EffectiveMaterial& effective) {
+static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_face, VertexIndex v1, VertexIndex v2, MeshGraph& graph, const EffectiveMaterial& effective) {
 	FaceStrip strip;
 	strip.face_begin = (s32) dest.faces.size();
 	strip.face_count = 0;
 	
-	FaceIndex face = graph.other_face(graph.edge(v0, v1), start_face);
+	VertexIndex v0 = NULL_VERTEX_INDEX;
+	FaceIndex f0 = start_face;
 	
-	while(face != NULL_FACE_INDEX && graph.can_be_added_to_strip(face, effective)) {
-		VertexIndex v2 = graph.next_index(v0, v1, face);
-		if(v2 == NULL_VERTEX_INDEX) {
-			printf("warning: Tristrip weaving failed. Failed to find v2.\n");
+	for(;;) {
+		FaceIndex f1 = graph.other_face(graph.edge(v1, v2), f0);
+		
+		if(f1 == NULL_FACE_INDEX || !graph.can_be_added_to_strip(f1, effective)) {
+			// Consider swapping, but only if it helps us.
+			//
+			// Preconditions: f0 already added to strip, can't find f1.
+			// Postconditions: Swap added, variables reassigned as shown below.
+			//
+			// ->+------v1            +------v1
+			//   |    /  |            |    /  |
+			//   v   >   v            v   x   |
+			//   |  / f0 |    SWAP    |  / f1 |
+			//   v0-----v2  ------->  v2-->--v3
+			//   | f2 /  |            |    /  |
+			//   |   /   |            |   v   |
+			//   |  / f3 |            |  /    |
+			//   v4------+            +--->---+
+			if(v0 == NULL_VERTEX_INDEX) {
+				break;
+			}
+			FaceIndex f2 = graph.other_face(graph.edge(v0, v2), f1);
+			if(f2 == NULL_FACE_INDEX || !graph.can_be_added_to_strip(f2, effective)) {
+				break;
+			} 
+			VertexIndex v4 = graph.next_index(v0, v2, f2);
+			FaceIndex f3 = graph.other_face(graph.edge(v2, v4), f2);
+			if(f3 == NULL_FACE_INDEX || !graph.can_be_added_to_strip(f3, effective)) {
+				break;
+			}
+			
+			// Remove v2, add v0.
+			dest.faces.back() = StripFace(v0, v1, v0, NULL_FACE_INDEX);
+			strip.zero_area_tri_count++;
+			
+			v2 = v0;
+			v0 = NULL_VERTEX_INDEX;
+			f1 = f0;
+			
+			// Fall through so we work out the new v3 and add f0/f1 again.
+		}
+		
+		VertexIndex v3 = graph.next_index(v1, v2, f1);
+		if(v3 == NULL_VERTEX_INDEX) {
+			printf("warning: Tristrip weaving failed. Failed to find v3.\n");
 			return strip;
 		}
 		
 		strip.face_count++;
-		assert(face != NULL_FACE_INDEX);
-		dest.faces.emplace_back(v0, v1, v2, face);
-		graph.put_in_temp_strip(face);
+		assert(f1 != NULL_FACE_INDEX);
+		dest.faces.emplace_back(v1, v2, v3, f1);
+		graph.put_in_temp_strip(f1);
 		
 		v0 = v1;
 		v1 = v2;
-		
-		face = graph.other_face(graph.edge(v0, v1), face);
+		v2 = v3;
+		f0 = f1;
 	}
 	
 	return strip;
