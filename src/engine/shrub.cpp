@@ -464,43 +464,28 @@ ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& mate
 
 static TriStripConstraints setup_shrub_constraints() {
 	TriStripConstraints c;
-	
-	// First VIF packet size
-	c.num_constraints++;
-	c.constant_cost[0] = 1; // header
-	c.strip_cost[0] = 1; // gif tag
-	c.vertex_cost[0] = 0;
-	c.index_cost[0] = 0;
-	c.material_cost[0] = 4; // ad data
-	c.max_cost[0] = 255; // max value of num field
-	
-	// Second and third VIF packet sizes
-	c.num_constraints++;
-	c.constant_cost[1] = 0;
-	c.strip_cost[1] = 0;
-	c.vertex_cost[1] = 0;
-	c.index_cost[1] = 1;
-	c.material_cost[1] = 0;
-	c.max_cost[1] = 255; // max value of num field
-	
+		
 	// Unpacked data size
 	// max GIF tag nloop in original files is 44
 	c.num_constraints++;
-	c.constant_cost[2] = 1; // header
-	c.strip_cost[2] = 1; // gif tag
-	c.vertex_cost[2] = 0; // non-indexed
-	c.index_cost[2] = 2; // second and third unpacks
-	c.material_cost[2] = 4; // ad data
-	c.max_cost[2] = 118; // buffer size
+	c.constant_cost[0] = 1; // header
+	c.strip_cost[0] = 1; // gif tag
+	c.vertex_cost[0] = 0; // non-indexed
+	c.index_cost[0] = 2; // second and third unpacks
+	c.material_cost[0] = 4; // ad data
+	c.max_cost[0] = 118; // buffer size
 	
 	// GS packet size
 	c.num_constraints++;
-	c.constant_cost[3] = 0;
-	c.strip_cost[3] = 1; // gif tag
-	c.vertex_cost[3] = 0; // non-indexed
-	c.index_cost[3] = 3; // st rgbaq xyzf2
-	c.material_cost[3] = 5; // gif tag + ad data
-	c.max_cost[3] = 168; // max GS packet size in original files
+	c.constant_cost[1] = 0;
+	c.strip_cost[1] = 1; // gif tag
+	c.vertex_cost[1] = 0; // non-indexed
+	c.index_cost[1] = 3; // st rgbaq xyzf2
+	c.material_cost[1] = 5; // gif tag + ad data
+	c.max_cost[1] = 168; // max GS packet size in original files
+	
+	// The VIF packet size is bounded by the unpacked data size, so no
+	// additional checks need to be made for it.
 	
 	return c;
 }
