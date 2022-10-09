@@ -348,8 +348,8 @@ ColladaScene recover_shrub_class(const ShrubClass& shrub) {
 					f32 y = vertex.y * shrub.scale * (1.f / 1024.f);
 					f32 z = vertex.z * shrub.scale * (1.f / 1024.f);
 					ColourAttribute colour{1,1,1,1};
-					f32 s = vertex.s * (1.f / 4096.f);
-					f32 t = vertex.t * (-1.f / 4096.f);
+					f32 s = vu_fixed12_to_float(vertex.s);
+					f32 t = vu_fixed12_to_float(vertex.t);
 					mesh.vertices.emplace_back(glm::vec3(x, y, z), colour, glm::vec2(s, t));
 				}
 				
@@ -450,8 +450,8 @@ ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& mate
 				dest_vertex.x = (s16) x;
 				dest_vertex.y = (s16) y;
 				dest_vertex.z = (s16) z;
-				dest_vertex.s = src.tex_coord.x * 4096.f;
-				dest_vertex.t = -src.tex_coord.y * 4096.f;
+				dest_vertex.s = vu_float_to_fixed12(src.tex_coord.x);
+				dest_vertex.t = vu_float_to_fixed12(src.tex_coord.y);
 			}
 		}
 	}

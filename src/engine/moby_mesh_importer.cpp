@@ -450,12 +450,8 @@ Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* na
 			Vertex vertex = src.vertices[j];
 			
 			const MobyTexCoord& tex_coord = src.sts.at(mesh.vertices.size() - vertex_base);
-			f32 s = tex_coord.s / (INT16_MAX / 8.f);
-			f32 t = -tex_coord.t / (INT16_MAX / 8.f);
-			while(s < 0) s += 1;
-			while(t < 0) t += 1;
-			vertex.tex_coord.s = s;
-			vertex.tex_coord.t = t;
+			vertex.tex_coord.s = vu_fixed12_to_float(tex_coord.s);
+			vertex.tex_coord.t = vu_fixed12_to_float(tex_coord.t);
 			
 			intermediate_buffer[vertex.vertex_index & 0x1ff] = vertex;
 			mesh.vertices.emplace_back(vertex);
@@ -466,12 +462,8 @@ Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* na
 			VERIFY_SUBMESH(v.has_value(), "duplicate vertex");
 			
 			const MobyTexCoord& tex_coord = src.sts.at(mesh.vertices.size() - vertex_base);
-			f32 s = tex_coord.s / (INT16_MAX / 8.f);
-			f32 t = -tex_coord.t / (INT16_MAX / 8.f);
-			while(s < 0) s += 1;
-			while(t < 0) t += 1;
-			v->tex_coord.s = s;
-			v->tex_coord.t = t;
+			v->tex_coord.s = vu_fixed12_to_float(tex_coord.s);
+			v->tex_coord.t = vu_fixed12_to_float(tex_coord.t);
 			mesh.vertices.emplace_back(*v);
 		}
 		

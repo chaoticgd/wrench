@@ -19,7 +19,10 @@
 #ifndef WAD_VIF_H
 #define WAD_VIF_H
 
-#include "buffer.h"
+#include <core/buffer.h>
+
+#define vu_fixed12_to_float(i) ((i) * (1.f / 4096.f))
+#define vu_float_to_fixed12(f) ((u16) roundf((f) * 4096.f))
 
 enum class VifCmd {
 	NOP      = 0b0000000,

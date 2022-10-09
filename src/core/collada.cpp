@@ -526,7 +526,7 @@ static Vertex create_vertex(const std::vector<s32>& indices, s32 base, const Cre
 	if(input.tex_coord_offset > -1) {
 		s32 tex_coord_index = indices.at(base + input.tex_coord_offset);
 		vertex.tex_coord.x = input.tex_coords->at(tex_coord_index * 2 + 0);
-		vertex.tex_coord.y = input.tex_coords->at(tex_coord_index * 2 + 1);
+		vertex.tex_coord.y = 1.f - input.tex_coords->at(tex_coord_index * 2 + 1);
 	}
 	return vertex;
 }
@@ -785,7 +785,7 @@ static void write_geometries(OutBuffer dest, const std::vector<Mesh>& meshes) {
 			dest.writelf(4, "<source id=\"mesh_%d_texcoords\">", i);
 			dest.writesf(4, "\t<float_array id=\"mesh_%d_texcoords_array\" count=\"%d\">", i, 2 * mesh.vertices.size());
 			for(const Vertex& v : mesh.vertices) {
-				dest.writesf("%.9g %.9g ", v.tex_coord.x, v.tex_coord.y);
+				dest.writesf("%.9g %.9g ", v.tex_coord.x, 1.f - v.tex_coord.y);
 			}
 			if(mesh.vertices.size() > 0) {
 				dest.vec.resize(dest.vec.size() - 1);

@@ -1114,8 +1114,8 @@ std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vecto
 			low.duplicate_vertices.push_back(dupe.index);
 			
 			const glm::vec2& tex_coord = mesh.vertices[dupe.tex_coord].tex_coord;
-			s16 s = tex_coord.x * (INT16_MAX / 8.f);
-			s16 t = tex_coord.y * (INT16_MAX / 8.f);
+			s16 s = vu_float_to_fixed12(tex_coord.s);
+			s16 t = vu_float_to_fixed12(tex_coord.t);
 			low.sts.push_back({s, t});
 		}
 		
