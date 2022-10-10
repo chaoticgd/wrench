@@ -50,6 +50,7 @@ MeshGraph::MeshGraph(const Mesh& mesh) {
 	// Generate edge and vertex info structs.
 	for(FaceIndex i = {0}; i.index < face_count(); i.index++) {
 		FaceInfo& face = face_at(i);
+		
 		// Iterate over all the edges that make up the face.
 		for(s32 j = 0; j < 3; j++) {
 			VertexIndex v0 = face.v[j];
@@ -58,17 +59,8 @@ MeshGraph::MeshGraph(const Mesh& mesh) {
 				std::swap(v0, v1);
 			}
 			
-			VertexInfo& vi0 = vertex_at(v0);
-			VertexInfo& vi1 = vertex_at(v1);
-			
 			// Try to find an edge info record for this edge.
-			EdgeIndex index = NULL_EDGE_INDEX;
-			for(EdgeIndex edge : vi0.edges) {
-				EdgeInfo& info = edge_at(edge);
-				if(info.v[0] == v0 && info.v[1] == v1) {
-					index = edge;
-				}
-			}
+			EdgeIndex index = edge(v0, v1);
 			
 			// Create an edge info record if it doesn't already exist, or
 			// fill in the second face index if it does.
@@ -77,16 +69,42 @@ MeshGraph::MeshGraph(const Mesh& mesh) {
 				EdgeInfo& info = _edges.emplace_back();
 				info.v[0] = v0;
 				info.v[1] = v1;
+				vertex_at(v0).edges.emplace_back(index);
+				vertex_at(v1).edges.emplace_back(index);
+			}
+			
+			EdgeInfo& info = edge_at(index);
+			
+			if(info.faces[0] == NULL_FACE_INDEX) {
 				info.faces[0] = i;
-				vi0.edges.emplace_back(index);
-				vi1.edges.emplace_back(index);
+			} else if(info.faces[1] == NULL_FACE_INDEX) {
+				info.faces[1] = i;
 			} else {
-				EdgeInfo& info = edge_at(index);
-				if(info.faces[1] == NULL_FACE_INDEX) {
-					info.faces[1] = i;
-				} else {
-					verify_not_reached("Broken geometry detected. Edge has too many faces!\n");
+				// The current face has an edge that connects three or more
+				// faces. We should remove it from the graph so it doesn't cause
+				// problems later.
+				for(s32 k = j - 1; k >= 0; k--) {
+					VertexIndex r0 = face.v[k];
+					VertexIndex r1 = face.v[(k + 1) % 3];
+					if(r1 < r0) {
+						std::swap(r0, r1);
+					}
+					
+					EdgeIndex remove_index = edge(r0, r1);
+					assert(remove_index != NULL_EDGE_INDEX);
+					
+					EdgeInfo& remove_info = edge_at(remove_index);
+					for(FaceIndex& remove_face : remove_info.faces) {
+						if(remove_face == i) {
+							remove_face = NULL_FACE_INDEX;
+						}
+					}
 				}
+				
+				// We need to handle this separately later.
+				face.is_evil = true;
+				
+				break;
 			}
 		}
 	}

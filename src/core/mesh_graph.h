@@ -59,7 +59,8 @@ class MeshGraph {
 		VertexIndex v[3];
 		MaterialIndex material;
 		s32 strip_index = -1;
-		bool in_temp_strip = false;
+		bool in_temp_strip = false; // Is it in the strip that's currently being constructed?
+		bool is_evil = false; // Does this face have an edge connecting three or more faces?
 	};
 	std::vector<FaceInfo> _faces;
 	
@@ -76,6 +77,7 @@ public:
 	s32 face_count() const { return _faces.size(); }
 	VertexIndex face_vertex(FaceIndex face, s32 position) const { return face_at(face).v[position]; }
 	MaterialIndex face_material(FaceIndex face) const { return face_at(face).material; }
+	bool face_is_evil(FaceIndex face) const { return face_at(face).is_evil; }
 	
 	VertexIndex edge_vertex(EdgeIndex edge, s32 position) const { return edge_at(edge).v[position]; }
 	
@@ -135,7 +137,8 @@ public:
 		return false;
 	}
 	
-	FaceIndex face_really_expensive(VertexIndex v0, VertexIndex v1, VertexIndex v2) const {
+	std::vector<FaceIndex> faces_really_expensive(VertexIndex v0, VertexIndex v1, VertexIndex v2) const {
+		std::vector<FaceIndex> faces;
 		for(FaceIndex i = {0}; i < face_count(); i.index++) {
 			const FaceInfo& face = face_at(i);
 			bool good = true;
@@ -146,10 +149,10 @@ public:
 				}
 			}
 			if(good) {
-				return i;
+				faces.emplace_back(i);
 			}
 		}
-		return NULL_FACE_INDEX;
+		return faces;
 	}
 };
 
