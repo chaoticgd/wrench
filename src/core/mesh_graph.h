@@ -95,11 +95,6 @@ public:
 		return NULL_EDGE_INDEX;
 	}
 	
-	std::pair<FaceIndex, FaceIndex> faces_connected_by_edge(EdgeIndex edge) const {
-		const EdgeInfo& info = edge_at(edge);
-		return {info.faces[0], info.faces[1]};
-	}
-	
 	FaceIndex other_face(EdgeIndex edge, FaceIndex face) const {
 		const EdgeInfo& info = edge_at(edge);
 		if(info.faces[0] == face) {
