@@ -206,7 +206,7 @@ static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_
 			if(v0 == NULL_VERTEX_INDEX) {
 				break;
 			}
-			FaceIndex f2 = graph.other_face(graph.edge(v0, v2), f1);
+			FaceIndex f2 = graph.other_face(graph.edge(v0, v2), f0);
 			if(f2 == NULL_FACE_INDEX || !graph.can_be_added_to_strip(f2, effective)) {
 				break;
 			} 
