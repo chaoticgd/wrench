@@ -58,8 +58,8 @@ static void unpack_shrub_class(ShrubClassAsset& dest, InputStream& src, BuildCon
 		CollectionAsset& materials = dest.get_materials();
 		for(s32 i = 0; i < 16; i++) {
 			if(materials.has_child(i)) {
-				TextureAsset& texture = materials.get_child(i).as<TextureAsset>();
-				scene.texture_paths.push_back(texture.src().path.string());
+				MaterialAsset& material = materials.get_child(i).as<MaterialAsset>();
+				scene.texture_paths.push_back(material.diffuse().src().path.string());
 			} else {
 				break;
 			}
@@ -69,9 +69,19 @@ static void unpack_shrub_class(ShrubClassAsset& dest, InputStream& src, BuildCon
 	std::vector<u8> xml = write_collada(scene);
 	auto ref = dest.file().write_text_file("mesh.dae", (char*) xml.data());
 	
-	MeshAsset& mesh = dest.core<ShrubClassCoreAsset>().mesh();
+	ShrubClassCoreAsset& core = dest.core<ShrubClassCoreAsset>();
+	
+	MeshAsset& mesh = core.mesh();
 	mesh.set_name("mesh");
 	mesh.set_src(ref);
+	
+	if(shrub.billboard.has_value()) {
+		ShrubBillboardAsset& billboard = core.billboard();
+		billboard.set_fade_distance(shrub.billboard->fade_distance);
+		billboard.set_width(shrub.billboard->width);
+		billboard.set_height(shrub.billboard->height);
+		billboard.set_z_offset(shrub.billboard->z_ofs);
+	}
 }
 
 static void pack_shrub_class(OutputStream& dest, const ShrubClassAsset& src, BuildConfig config, const char* hint) {

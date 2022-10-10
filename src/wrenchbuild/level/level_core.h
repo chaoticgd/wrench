@@ -20,6 +20,7 @@
 #define WRENCHBUILD_LEVEL_CORE_H
 
 #include <assetmgr/asset_types.h>
+#include <wrenchbuild/level/level_textures.h>
 
 packed_struct(LevelCoreHeader,
 	/* 0x00 */ ArrayRange gs_ram;
@@ -94,10 +95,10 @@ packed_struct(TieClassEntry,
 packed_struct(ShrubClassEntry,
 	/* 0x00 */ s32 offset_in_asset_wad;
 	/* 0x04 */ s32 o_class;
-	/* 0x08 */ s32 unknown_8;
-	/* 0x0c */ s32 unknown_c;
+	/* 0x08 */ s32 pad_8;
+	/* 0x0c */ s32 pad_c;
 	/* 0x10 */ u8 textures[16];
-	/* 0x20 */ u8 unknown_20[16];
+	/* 0x20 */ ShrubBillboardInfo billboard;
 )
 
 packed_struct(RacGadgetHeader,

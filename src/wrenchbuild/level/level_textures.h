@@ -52,10 +52,21 @@ packed_struct(ParticleTextureEntry,
 )
 
 packed_struct(FxTextureEntry,
-	s32 palette;
-	s32 texture;
-	s32 width;
-	s32 height;
+	/* 0x0 */ s32 palette;
+	/* 0x4 */ s32 texture;
+	/* 0x8 */ s32 width;
+	/* 0xc */ s32 height;
+)
+
+packed_struct(ShrubBillboardInfo,
+	/* 0x0 */ s16 texture_width = 0;
+	/* 0x2 */ s16 texture_height = 0;
+	/* 0x4 */ s16 maximum_mipmap_level = 0;
+	/* 0x6 */ s16 palette_offset = 0;
+	/* 0x8 */ s16 texture_offset = 0;
+	/* 0xa */ s16 mipmap_1_offset = 0;
+	/* 0xc */ s16 mipmap_2_offset = 0;
+	/* 0xe */ s16 mipmap_3_offset = 0;
 )
 
 struct LevelTexture {
@@ -89,6 +100,9 @@ struct SharedLevelTextures {
 
 void unpack_level_textures(CollectionAsset& dest, const u8 indices[16], const std::vector<TextureEntry>& textures, InputStream& data, InputStream& gs_ram, Game game, s32 moby_stash_addr = -1);
 void unpack_level_texture(TextureAsset& dest, const TextureEntry& entry, InputStream& data, InputStream& gs_ram, Game game, s32 i, s32 moby_stash_addr = -1);
+void unpack_level_materials(CollectionAsset& dest, const u8 indices[16], const std::vector<TextureEntry>& textures, InputStream& data, InputStream& gs_ram, Game game, s32 moby_stash_addr = -1);
+void unpack_level_material(MaterialAsset& dest, const TextureEntry& entry, InputStream& data, InputStream& gs_ram, Game game, s32 i, s32 moby_stash_addr);
+void unpack_shrub_billboard_texture(TextureAsset& dest, const ShrubBillboardInfo& billboard, InputStream& gs_ram, Game game);
 SharedLevelTextures read_level_textures(const CollectionAsset& tfrag_textures, const CollectionAsset& mobies, const CollectionAsset& ties, const CollectionAsset& shrubs);
 std::tuple<s32, s32> write_shared_level_textures(OutputStream& data, OutputStream& gs, std::vector<GsRamEntry>& gs_table, std::vector<LevelTexture>& textures);
 ArrayRange write_level_texture_table(OutputStream& dest, std::vector<LevelTexture>& textures, LevelTextureRange range);

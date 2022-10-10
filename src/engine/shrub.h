@@ -55,7 +55,7 @@ packed_struct(ShrubClassHeader,
 	/* 0x24 */ s16 o_class;
 	/* 0x26 */ s16 s_class;
 	/* 0x28 */ s16 packet_count;
-	/* 0x2a */ s16 pad;
+	/* 0x2a */ s16 pad_2a;
 	/* 0x2c */ s32 palette_offset;
 	/* 0x30 */ s32 pad_30;
 	/* 0x34 */ s16 drawn_count;

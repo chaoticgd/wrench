@@ -115,10 +115,13 @@ void unpack_shrub_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest
 		ShrubClassAsset& asset = data_dest.foreign_child<ShrubClassAsset>(path.string(), entry.o_class);
 		asset.set_id(entry.o_class);
 		
-		unpack_level_textures(asset.materials(), entry.textures, textures, texture_data, gs_ram, config.game());
+		unpack_level_materials(asset.materials(), entry.textures, textures, texture_data, gs_ram, config.game());
+		if(entry.billboard.texture_width != 0 && !g_asset_unpacker.dump_binaries) {
+			unpack_shrub_billboard_texture(asset.core<ShrubClassCoreAsset>().billboard().texture(), entry.billboard, gs_ram, config.game());
+		}
 		
 		if(entry.offset_in_asset_wad != 0) {
-			unpack_asset(asset.core<BinaryAsset>(), data, level_core_block_range(entry.offset_in_asset_wad, block_bounds), config);
+			unpack_asset(asset, data, level_core_block_range(entry.offset_in_asset_wad, block_bounds), config);
 		}
 		
 		refs_dest.child<ReferenceAsset>(entry.o_class).set_asset(asset.absolute_link());

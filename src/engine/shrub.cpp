@@ -73,7 +73,7 @@ ShrubClass read_shrub_class(Buffer src) {
 						prim_type = GeometryType::TRIANGLE_STRIP;
 						break;
 					default: {
-						verify_not_reached("Shrub data has primitives that aren't triangle lists of triangle strips.");
+						verify_not_reached("Shrub data has primitives that aren't triangle lists or triangle strips.");
 					}
 				}
 				
@@ -368,7 +368,7 @@ ColladaScene recover_shrub_class(const ShrubClass& shrub) {
 	
 	for(s32 i = 0; i <= max_texture_index; i++) {
 		ColladaMaterial& mat = scene.materials.emplace_back();
-		mat.name = stringf("texture_%d", i);
+		mat.name = stringf("%d", i);
 		mat.surface = MaterialSurface(i);
 		
 		scene.texture_paths.emplace_back(stringf("%d.png", i));

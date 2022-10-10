@@ -59,6 +59,60 @@ void unpack_level_texture(TextureAsset& dest, const TextureEntry& entry, InputSt
 	dest.set_src(ref);
 }
 
+void unpack_level_materials(CollectionAsset& dest, const u8 indices[16], const std::vector<TextureEntry>& textures, InputStream& data, InputStream& gs_ram, Game game, s32 moby_stash_addr) {
+	for(s32 i = 0; i < 16; i++) {
+		if(indices[i] != 0xff) {
+			const TextureEntry& texture = textures.at(indices[i]);
+			unpack_level_material(dest.child<MaterialAsset>(i), texture, data, gs_ram, game, i, moby_stash_addr);
+		} else {
+			break;
+		}
+	}
+}
+
+void unpack_level_material(MaterialAsset& dest, const TextureEntry& entry, InputStream& data, InputStream& gs_ram, Game game, s32 i, s32 moby_stash_addr) {
+	std::vector<u8> pixels;
+	if(moby_stash_addr > -1) {
+		pixels = gs_ram.read_multiple<u8>(moby_stash_addr + entry.data_offset, entry.width * entry.height);
+	} else {
+		pixels = data.read_multiple<u8>(entry.data_offset, entry.width * entry.height);
+	}
+	std::vector<u32> palette = gs_ram.read_multiple<u32>(entry.palette * 0x100, 256);
+	Texture texture = Texture::create_8bit_paletted(entry.width, entry.height, pixels, palette);
+	
+	texture.multiply_alphas();
+	texture.swizzle_palette();
+	if(game == Game::DL) {
+		texture.swizzle();
+	}
+	
+	auto [stream, ref] = dest.file().open_binary_file_for_writing(stringf("%d.png", i));
+	verify(stream.get(), "Failed to open PNG file for writing.");
+	write_png(*stream, texture);
+	
+	dest.set_name(stringf("%d", i));
+	
+	TextureAsset& diffuse = dest.diffuse();
+	diffuse.set_src(ref);
+}
+
+void unpack_shrub_billboard_texture(TextureAsset& dest, const ShrubBillboardInfo& billboard, InputStream& gs_ram, Game game) {
+	std::vector<u8> pixels = gs_ram.read_multiple<u8>(billboard.texture_offset * 0x100, billboard.texture_width * billboard.texture_height);
+	std::vector<u32> palette = gs_ram.read_multiple<u32>(billboard.palette_offset * 0x100, 256);
+	
+	Texture texture = Texture::create_8bit_paletted(billboard.texture_width, billboard.texture_height, pixels, palette);
+	texture.multiply_alphas();
+	texture.swizzle_palette();
+	if(game == Game::DL) {
+		texture.swizzle();
+	}
+	
+	auto [stream, ref] = dest.file().open_binary_file_for_writing("billboard.png");
+	verify(stream.get(), "Failed to open PNG file for writing.");
+	write_png(*stream, texture);
+	dest.set_src(ref);
+}
+
 SharedLevelTextures read_level_textures(const CollectionAsset& tfrag_textures, const CollectionAsset& mobies, const CollectionAsset& ties, const CollectionAsset& shrubs) {
 	SharedLevelTextures shared;
 	

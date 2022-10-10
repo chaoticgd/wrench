@@ -23,7 +23,6 @@
 #include <engine/compression.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
-#include <wrenchbuild/level/level_textures.h>
 #include <wrenchbuild/level/level_classes.h>
 
 static std::vector<s64> enumerate_level_core_block_boundaries(InputStream& src, const LevelCoreHeader& header, Game game);
