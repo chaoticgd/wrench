@@ -27,6 +27,7 @@ extern s32 g_asset_packer_max_assets_processed;
 extern s32 g_asset_packer_num_assets_processed;
 extern bool g_asset_packer_dry_run;
 extern bool g_asset_packer_quiet;
+extern s32 g_asset_packer_current_level_id;
 
 // Packs asset into a binary and writes it out to dest, using hint to determine
 // details of the expected output format if necessary.

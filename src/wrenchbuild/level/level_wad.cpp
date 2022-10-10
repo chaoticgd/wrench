@@ -103,6 +103,7 @@ on_load(Level, []() {
 
 void unpack_rac_level_wad(LevelWadAsset& dest, const RacLevelWadHeader& header, InputStream& src, BuildConfig config) {
 	dest.set_id(header.id);
+	g_asset_unpacker.current_level_id = header.id;
 	
 	SubInputStream data(src, header.data.bytes());
 	unpack_asset(dest.data<LevelDataWadAsset>(SWITCH_FILES), src, header.data, config);
@@ -114,6 +115,7 @@ void unpack_rac_level_wad(LevelWadAsset& dest, const RacLevelWadHeader& header, 
 
 static void pack_rac_level_wad(OutputStream& dest, RacLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config) {
 	header.id = src.id();
+	g_asset_packer_current_level_id = src.id();
 	
 	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), config);
 	header.gameplay_ntsc = pack_compressed_asset_sa<SectorRange>(dest, src.get_gameplay(), config, "gameplay_ntsc");
@@ -124,6 +126,7 @@ static void pack_rac_level_wad(OutputStream& dest, RacLevelWadHeader& header, co
 void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHeader& header, InputStream& src, BuildConfig config) {
 	dest.set_id(header.id);
 	dest.set_reverb(header.reverb);
+	g_asset_unpacker.current_level_id = header.id;
 	
 	BinaryAsset& sound_bank = dest.data<LevelDataWadAsset>().sound_bank();
 	unpack_asset(sound_bank, src, header.sound_bank, config);
@@ -139,6 +142,7 @@ void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHeader& hea
 static void pack_gc_uya_level_wad(OutputStream& dest, GcUyaLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config) {
 	header.id = src.id();
 	header.reverb = src.reverb();
+	g_asset_packer_current_level_id = src.id();
 	
 	header.sound_bank = pack_asset_sa<SectorRange>(dest, src.get_sound_bank(), config);
 	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), config);
@@ -150,6 +154,7 @@ static void pack_gc_uya_level_wad(OutputStream& dest, GcUyaLevelWadHeader& heade
 void unpack_dl_level_wad(LevelWadAsset& dest, const DlLevelWadHeader& header, InputStream& src, BuildConfig config) {
 	dest.set_id(header.id);
 	dest.set_reverb(header.reverb);
+	g_asset_unpacker.current_level_id = header.id;
 	
 	BinaryAsset& sound_bank = dest.data<LevelDataWadAsset>().sound_bank();
 	unpack_asset(sound_bank, src, header.sound_bank, config);
@@ -165,6 +170,7 @@ void unpack_dl_level_wad(LevelWadAsset& dest, const DlLevelWadHeader& header, In
 static void pack_dl_level_wad(OutputStream& dest, DlLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config) {
 	header.id = src.id();
 	header.reverb = src.reverb();
+	g_asset_packer_current_level_id = src.id();
 	
 	header.sound_bank = pack_asset_sa<SectorRange>(dest, src.get_sound_bank(), config);
 	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), config);

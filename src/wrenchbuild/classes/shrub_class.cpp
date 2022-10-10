@@ -85,6 +85,10 @@ static void unpack_shrub_class(ShrubClassAsset& dest, InputStream& src, BuildCon
 }
 
 static void pack_shrub_class(OutputStream& dest, const ShrubClassAsset& src, BuildConfig config, const char* hint) {
+	if(g_asset_packer_dry_run) {
+		return;
+	}
+	
 	const ShrubClassCoreAsset& core = src.get_core().as<ShrubClassCoreAsset>();
 	
 	const MeshAsset& mesh_asset = core.get_mesh();
@@ -92,6 +96,11 @@ static void pack_shrub_class(OutputStream& dest, const ShrubClassAsset& src, Bui
 	ColladaScene scene = read_collada((char*) xml.data());
 	Mesh* mesh = scene.find_mesh(mesh_asset.name());
 	verify(mesh, "No mesh with name '%s'.", mesh_asset.name().c_str());
+	
+	for(Vertex& vertex : mesh->vertices) {
+		vertex.normal = glm::vec3(0, 0, 0);
+	}
+	*mesh = deduplicate_vertices(std::move(*mesh));
 	
 	MaterialSet material_set = read_material_assets(src.get_materials());
 	map_lhs_material_indices_to_rhs_list(scene, material_set.materials);

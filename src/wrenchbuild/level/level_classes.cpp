@@ -126,22 +126,34 @@ void unpack_shrub_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest
 		
 		refs_dest.child<ReferenceAsset>(entry.o_class).set_asset(asset.absolute_link());
 	}
+	
+	if(!classes.empty()) {
+		s32 last_shrub_usage = level_core_block_range(classes.back().offset_in_asset_wad, block_bounds).size;
+		s32 shrub_mem_usage = classes.back().offset_in_asset_wad - classes.front().offset_in_asset_wad + last_shrub_usage;
+		printf("%d shrub mem: %dk\n", g_asset_unpacker.current_level_id, shrub_mem_usage / 1024);
+	}
 }
 
 void pack_shrub_classes(OutputStream& index, OutputStream& core, const CollectionAsset& classes, const std::vector<LevelTexture>& textures, s32 table, s32 texture_index, BuildConfig config) {
+	s64 begin = core.tell();
+	
 	s32 i = 0;
 	classes.for_each_logical_child_of_type<ShrubClassAsset>([&](const ShrubClassAsset& child) {
 		ShrubClassEntry entry = {0};
 		entry.o_class = child.id();
-		if(child.has_core()) {
-			entry.offset_in_asset_wad = pack_asset<ByteRange>(core, child.get_core(), config, 0x40).offset;
-		}
+		entry.offset_in_asset_wad = pack_asset<ByteRange>(core, child, config, 0x40).offset;
 		if(!g_asset_packer_dry_run) {
 			write_level_texture_indices(entry.textures, textures, texture_index, SHRUB_TEXTURE_TABLE);
 			texture_index += 16;
 		}
 		index.write(table + (i++) * sizeof(ShrubClassEntry), entry);
 	});
+	
+	s64 end = core.tell();
+	s32 shrub_mem_usage = (s32) ((end - begin) / 1024);
+	if(!g_asset_packer_dry_run) {
+		printf("%d shrub mem: %dk\n", g_asset_packer_current_level_id, shrub_mem_usage);
+	}
 }
 
 std::array<ArrayRange, 3> allocate_class_tables(OutputStream& index, const CollectionAsset& mobies, const CollectionAsset& ties, const CollectionAsset& shrubs) {
