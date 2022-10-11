@@ -16,10 +16,10 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <assetmgr/material_asset.h>
+#include <engine/shrub.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
-#include <wrenchbuild/material_asset.h>
-#include <engine/shrub.h>
 
 static void unpack_shrub_class(ShrubClassAsset& dest, InputStream& src, BuildConfig config, const char* hint);
 static void pack_shrub_class(OutputStream& dest, const ShrubClassAsset& src, BuildConfig config, const char* hint);

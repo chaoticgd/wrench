@@ -205,7 +205,27 @@ static void draw_ties(Level& lvl, const std::vector<TieInstance>& instances, GLe
 }
 
 static void draw_shrubs(Level& lvl, const std::vector<ShrubInstance>& instances, GLenum mesh_mode, GLenum cube_mode) {
-	draw_cube_instanced(cube_mode, green, shrub_inst_buffer, 0, instances.size());
+	if(instances.size() < 1) {
+		return;
+	}
+	
+	size_t begin = 0;
+	size_t end = 0;
+	for(size_t i = 1; i <= instances.size(); i++) {
+		s32 last_class = instances[i - 1].o_class;
+		if(i == instances.size() || instances[i].o_class != last_class) {
+			end = i;
+			auto iter = lvl.shrubs.find(last_class);
+			if(iter != lvl.shrubs.end()) {
+				EditorShrubClass& cls = iter->second;
+				glPolygonMode(GL_FRONT_AND_BACK, mesh_mode);
+				draw_mesh_instanced(cls.render_mesh, cls.materials.data(), cls.materials.size(), shrub_inst_buffer, begin, end - begin);
+			} else {
+				draw_cube_instanced(cube_mode, white, shrub_inst_buffer, begin, end - begin);
+			}
+			begin = i;
+		}
+	}
 }
 
 static void draw_mobies(Level& lvl, const std::vector<MobyInstance>& instances, GLenum mesh_mode, GLenum cube_mode) {

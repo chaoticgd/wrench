@@ -86,6 +86,7 @@ add_library(wrench_assetmgr
 	src/assetmgr/asset.cpp
 	src/assetmgr/asset_types.cpp
 	src/assetmgr/packed_asset_bank.cpp
+	src/assetmgr/material_asset.cpp
 	src/assetmgr/_generated_asset_types.inl
 )
 target_link_libraries(wrench_assetmgr wrenchcore)
@@ -173,7 +174,6 @@ add_executable(wrenchbuild
 	src/wrenchbuild/tests.cpp
 	src/wrenchbuild/asset_unpacker.cpp
 	src/wrenchbuild/asset_packer.cpp
-	src/wrenchbuild/material_asset.cpp
 	src/wrenchbuild/release.cpp
 	src/wrenchbuild/classes/moby_class.cpp
 	src/wrenchbuild/classes/shrub_class.cpp

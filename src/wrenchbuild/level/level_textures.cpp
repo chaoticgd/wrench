@@ -19,7 +19,7 @@
 #include "level_textures.h"
 
 #include <core/png.h>
-#include <wrenchbuild/material_asset.h>
+#include <assetmgr/material_asset.h>
 
 static void write_nonshared_texture_data(OutputStream& data, std::vector<LevelTexture>& textures, Game game);
 
