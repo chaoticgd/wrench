@@ -79,11 +79,15 @@ RenderMesh upload_mesh(const Mesh& mesh, bool generate_normals) {
 
 RenderMaterial upload_material(const ColladaMaterial& material, const std::vector<Texture>& textures) {
 	RenderMaterial rm;
+	s32 texture_index;
 	if(material.surface.type == MaterialSurfaceType::COLOUR) {
 		rm.colour = material.surface.colour;
+		texture_index = 0;
+	} else {
+		texture_index = material.surface.texture;
 	}
-	if(material.surface.type == MaterialSurfaceType::TEXTURE && material.surface.texture < textures.size()) {
-		Texture texture = textures[material.surface.texture];
+	if(texture_index < textures.size()) {
+		Texture texture = textures.at(texture_index);
 		texture.to_rgba();
 		glGenTextures(1, &rm.texture.id);
 		glBindTexture(GL_TEXTURE_2D, rm.texture.id);
