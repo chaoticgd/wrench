@@ -70,7 +70,7 @@ static FaceStrip weave_multiple_strips_and_pick_the_best(FaceStrips& dest, MeshG
 	FaceStrips temp;
 	FaceIndex next_faces[4] = {0, 0, 0, 0};
 	FaceIndex last_start_face = NULL_FACE_INDEX;
-	for(s32 i = 0; i < 20; i++) {
+	for(s32 i = 0; i < 10; i++) {
 		FaceIndex start_face = find_start_face(graph, effective, next_faces);
 		if(start_face == NULL_FACE_INDEX) {
 			return {};
@@ -81,7 +81,7 @@ static FaceStrip weave_multiple_strips_and_pick_the_best(FaceStrips& dest, MeshG
 		
 		// Edge with more than two faces, this should be included as a single
 		// triangle so it doesn't cause problems.
-		if(graph.face_is_evil(start_face)) {printf("evil strip gen %d\n", start_face.index);
+		if(graph.face_is_evil(start_face)) {
 			FaceStrip strip;
 			strip.face_begin = (s32) dest.faces.size();
 			strip.face_count = 1;
@@ -216,8 +216,8 @@ static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_
 			//   v0-----v2  ------->  v2-->--v3
 			//   | f2 /  |            |    /  |
 			//   |   /   |            |   v   |
-			//   |  / f3 |            |  /    |
-			//   v4------+            +--->---+
+			//   |  /    |            |  /    |
+			//   +-------+            +--->---+
 			if(v0 == NULL_VERTEX_INDEX) {
 				break;
 			}
@@ -225,11 +225,6 @@ static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_
 			if(f2 == NULL_FACE_INDEX || !graph.can_be_added_to_strip(f2, effective)) {
 				break;
 			} 
-			VertexIndex v4 = graph.next_index(v0, v2, f2);
-			FaceIndex f3 = graph.other_face(graph.edge(v2, v4), f2);
-			if(f3 == NULL_FACE_INDEX || !graph.can_be_added_to_strip(f3, effective)) {
-				break;
-			}
 			
 			// Remove v2, add v0.
 			dest.faces.back() = StripFace(v0, v1, v0, NULL_FACE_INDEX);
