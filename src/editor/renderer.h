@@ -45,7 +45,7 @@ struct RenderSettings {
 	glm::vec2 camera_rotation { 0, 0 };
 	
 	bool draw_ties = true;
-	bool draw_shrubs = false;
+	bool draw_shrubs = true;
 	bool draw_mobies = true;
 	bool draw_cuboids = false;
 	bool draw_spheres = false;
