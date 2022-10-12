@@ -100,7 +100,19 @@ static void pack_shrub_class(OutputStream& dest, const ShrubClassAsset& src, Bui
 	MaterialSet material_set = read_material_assets(src.get_materials());
 	map_lhs_material_indices_to_rhs_list(scene, material_set.materials);
 	
-	ShrubClass shrub = build_shrub_class(*mesh, material_set.materials, 5, 0, 4009, std::nullopt);
+	Opt<ShrubBillboardInfo> billboard;
+	if(core.has_billboard()) {
+		const ShrubBillboardAsset& billboard_asset = core.get_billboard();
+		billboard.emplace();
+		billboard->fade_distance = billboard_asset.fade_distance();
+		billboard->width = billboard_asset.width();
+		billboard->height = billboard_asset.height();
+		billboard->z_ofs = billboard_asset.z_offset();
+		billboard->lod_k = 0xff92;
+		billboard->lod_mmin = 4;
+	}
+	
+	ShrubClass shrub = build_shrub_class(*mesh, material_set.materials, 5, 0, 4009, billboard);
 	
 	std::vector<u8> buffer;
 	write_shrub_class(buffer, shrub);

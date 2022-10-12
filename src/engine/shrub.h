@@ -44,6 +44,15 @@ packed_struct(ShrubBillboard,
 	/* 0x30 */ GifAdData16 d3_miptbp1_1;
 )
 
+struct ShrubBillboardInfo {
+	f32 fade_distance;
+	f32 width;
+	f32 height;
+	f32 z_ofs;
+	s32 lod_k;
+	s32 lod_mmin;
+};
+
 packed_struct(ShrubClassHeader,
 	/* 0x00 */ Vec4f bounding_sphere;
 	/* 0x10 */ f32 mip_distance;
@@ -141,6 +150,6 @@ ShrubClass read_shrub_class(Buffer src);
 void write_shrub_class(OutBuffer dest, const ShrubClass& shrub);
 
 ColladaScene recover_shrub_class(const ShrubClass& shrub);
-ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& materials, f32 mip_distance, u16 mode_bits, s16 o_class, Opt<ShrubBillboard> billboard);
+ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& materials, f32 mip_distance, u16 mode_bits, s16 o_class, Opt<ShrubBillboardInfo> billboard);
 
 #endif

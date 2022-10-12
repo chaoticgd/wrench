@@ -411,7 +411,7 @@ ColladaScene recover_shrub_class(const ShrubClass& shrub) {
 	return scene;
 }
 
-ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& materials, f32 mip_distance, u16 mode_bits, s16 o_class, Opt<ShrubBillboard> billboard) {
+ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& materials, f32 mip_distance, u16 mode_bits, s16 o_class, Opt<ShrubBillboardInfo> billboard_info) {
 	ShrubClass shrub = {};
 	shrub.bounding_sphere = Vec4f::pack(approximate_bounding_sphere(mesh.vertices));
 	shrub.mip_distance = mip_distance;
@@ -481,6 +481,17 @@ ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& mate
 		}
 	}
 	
+	if(billboard_info.has_value()) {
+		ShrubBillboard billboard = {};
+		billboard.fade_distance = billboard_info->fade_distance;
+		billboard.width = billboard_info->width;
+		billboard.height = billboard_info->height;
+		billboard.z_ofs = billboard_info->z_ofs;
+		billboard.d1_tex1_1.data_lo = billboard_info->lod_k;
+		billboard.d1_tex1_1.data_hi = billboard_info->lod_mmin;
+		billboard.d2_tex0_1.data_lo = 1;
+		shrub.billboard = billboard;
+	}
 	shrub.normals = std::move(normals);
 	
 	return shrub;
