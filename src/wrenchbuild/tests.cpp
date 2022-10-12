@@ -160,12 +160,12 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 	
 	if(result == AssetTestResult::PASS) {
 		if(mode == AssetTestMode::RUN_ALL_TESTS) {
-			printf("\033[32m [PASS] %s\033[0m\n", ref.c_str());
+			printf("\033[32m[PASS] %s\033[0m\n", ref.c_str());
 		}
 		pass_count++;
 	} else {
 		if(mode == AssetTestMode::RUN_ALL_TESTS) {
-			printf("\033[31m [FAIL] %s\033[0m\n", ref.c_str());
+			printf("\033[31m[FAIL] %s\033[0m\n", ref.c_str());
 		}
 		fail_count++;
 	}
