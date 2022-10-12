@@ -55,7 +55,7 @@ struct RenderSettings {
 	bool draw_tfrags = true;
 	bool draw_collision = true;
 	
-	bool draw_selected_moby_normals = false;
+	bool draw_selected_instance_normals = false;
 	
 	ImVec2 view_pos;
 	ImVec2 view_size;
