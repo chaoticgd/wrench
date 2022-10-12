@@ -97,11 +97,6 @@ static void pack_shrub_class(OutputStream& dest, const ShrubClassAsset& src, Bui
 	Mesh* mesh = scene.find_mesh(mesh_asset.name());
 	verify(mesh, "No mesh with name '%s'.", mesh_asset.name().c_str());
 	
-	for(Vertex& vertex : mesh->vertices) {
-		vertex.normal = glm::vec3(0, 0, 0);
-	}
-	*mesh = deduplicate_vertices(std::move(*mesh));
-	
 	MaterialSet material_set = read_material_assets(src.get_materials());
 	map_lhs_material_indices_to_rhs_list(scene, material_set.materials);
 	

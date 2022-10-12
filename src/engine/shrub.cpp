@@ -24,6 +24,7 @@
 
 static TriStripConstraints setup_shrub_constraints();
 static f32 compute_optimal_scale(const Mesh& mesh);
+static std::pair<std::vector<ShrubNormal>, std::vector<s32>> compute_normal_clusters(const std::vector<Vertex>& vertices);
 
 ShrubClass read_shrub_class(Buffer src) {
 	ShrubClass shrub;
@@ -417,6 +418,8 @@ ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& mate
 	shrub.scale = compute_optimal_scale(mesh);
 	shrub.o_class = o_class;
 	
+	auto [normals, normal_indices] = compute_normal_clusters(mesh.vertices);
+	
 	TriStripConfig config;
 	// Make sure the packets that get written out aren't too big to fit in VU1 memory.
 	config.constraints = setup_shrub_constraints();
@@ -449,7 +452,8 @@ ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& mate
 			dest_primitive.type = src_primitive.type;
 			for(s32 j = 0; j < src_primitive.index_count; j++) {
 				ShrubVertex& dest_vertex = dest_primitive.vertices.emplace_back();
-				const Vertex& src = mesh.vertices.at(output.indices.at(src_primitive.index_begin + j));
+				s32 vertex_index = output.indices.at(src_primitive.index_begin + j);
+				const Vertex& src = mesh.vertices.at(vertex_index);
 				f32 x = src.pos.x * (1.f / shrub.scale) * 1024.f;
 				f32 y = src.pos.y * (1.f / shrub.scale) * 1024.f;
 				f32 z = src.pos.z * (1.f / shrub.scale) * 1024.f;
@@ -462,13 +466,12 @@ ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& mate
 				dest_vertex.s = vu_float_to_fixed12(src.tex_coord.x);
 				dest_vertex.t = vu_float_to_fixed12(src.tex_coord.y);
 				dest_vertex.h = vu_float_to_fixed12(1.f);
-				dest_vertex.n = 0;
+				dest_vertex.n = normal_indices[vertex_index];
 			}
 		}
 	}
 	
-	shrub.normals.resize(24);
-	shrub.normals[0] = ShrubNormal{INT16_MAX, 0, 0, 0};
+	shrub.normals = std::move(normals);
 	
 	return shrub;
 }
@@ -523,4 +526,69 @@ static f32 compute_optimal_scale(const Mesh& mesh) {
 	// Calculate a scale such that said value is quantized to the largest
 	// representable value.
 	return required_range * (1024.f / (INT16_MAX - 1.f));
+}
+
+static std::pair<std::vector<ShrubNormal>, std::vector<s32>> compute_normal_clusters(const std::vector<Vertex>& vertices) {
+	// https://stackoverflow.com/questions/9600801/evenly-distributing-n-points-on-a-sphere
+	std::vector<glm::vec3> clusters = {
+		{0.0, 1.0, 0.0},
+		{-0.3007449209690094, 0.9130434989929199, 0.27550697326660156},
+		{0.049268126487731934, 0.8260869383811951, -0.561384916305542},
+		{0.409821480512619, 0.739130437374115, 0.5345395803451538},
+		{-0.7464811205863953, 0.6521739363670349, -0.13204200565814972},
+		{0.696049153804779, 0.5652173757553101, -0.44276949763298035},
+		{-0.22798912227153778, 0.47826087474823, 0.848108172416687},
+		{-0.4241549074649811, 0.3913043439388275, -0.8166844844818115},
+		{0.89476078748703, 0.30434781312942505, 0.3267652094364166},
+		{-0.9022393822669983, 0.21739129722118378, 0.37243130803108215},
+		{0.42022502422332764, 0.1304347813129425, -0.8979964852333069},
+		{0.2990008592605591, 0.043478261679410934, 0.9532618522644043},
+		{-0.8643930554389954, -0.043478261679410934, -0.5009334087371826},
+		{0.9683319330215454, -0.1304347813129425, -0.2128850519657135},
+		{-0.5613749623298645, -0.21739129722118378, 0.7984980940818787},
+		{-0.12241426855325699, -0.30434781312942505, -0.9446624517440796},
+		{0.7036768794059753, -0.3913043439388275, 0.5930596590042114},
+		{-0.8774678707122803, -0.47826087474823, 0.03628605231642723},
+		{0.5847431421279907, -0.5652173757553101, -0.5818975567817688},
+		{-0.035016320645809174, -0.6521739363670349, 0.7572602033615112},
+		{-0.4315575361251831, -0.739130437374115, -0.5171501636505127},
+		{0.558509886264801, -0.8260869383811951, 0.07514671981334686},
+		{-0.33479711413383484, -0.9130434989929199, 0.2329431176185608},
+		{0.0, -1.0, -0.0}
+	};
+	
+	// TODO: Refine clusters e.g. using k-means algorithm?
+	
+	// Quantize the normal for each clusters.
+	std::vector<ShrubNormal> normals;
+	normals.reserve(24);
+	for(glm::vec3& cluster : clusters) {
+		ShrubNormal& normal = normals.emplace_back();
+		normal.x = (s16) roundf(cluster.x * INT16_MAX);
+		normal.y = (s16) roundf(cluster.y * INT16_MAX);
+		normal.z = (s16) roundf(cluster.z * INT16_MAX);
+	}
+	
+	// Generate a mapping of vertex indices to cluster indices.
+	std::vector<s32> indices;
+	indices.reserve(vertices.size());
+	for(const Vertex& vertex : vertices) {
+		// Find which cluster the vertex is in.
+		s32 best = -1;
+		f32 distance = 0.f;
+		for(s32 j = 0; j < 24; j++) {
+			f32 new_distance = glm::distance(clusters[j], vertex.normal);
+			if(best == -1 || new_distance < distance) {
+				best = j;
+				distance = new_distance;
+			}
+		}
+		if(best == -1) {
+			printf("warning: Failed to assign vertex to cluster. This might be due to bad normals.\n");
+			best = 0;
+		}
+		indices.emplace_back(best);
+	}
+	
+	return {normals, indices};
 }
