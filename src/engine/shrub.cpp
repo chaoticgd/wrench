@@ -205,6 +205,7 @@ void write_shrub_class(OutBuffer dest, const ShrubClass& shrub) {
 				prim_reg.set_fst(0);
 				prim_reg.set_ctxt(0);
 				prim_reg.set_fix(0);
+				
 				ShrubVertexGifTag& gif = gif_tags.emplace_back();
 				gif.tag = {};
 				gif.tag.set_nloop((u32) prim->vertices.size());
@@ -438,11 +439,20 @@ ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& mate
 				verify(material.surface.type == MaterialSurfaceType::TEXTURE,
 					"A shrub material does not have a texture.");
 				
+				// The data written here doesn't match the layout of the
+				// respective GS registers. This is because the data is fixed up
+				// at runtime by the game.
 				ShrubTexturePrimitive& dest_primitive = dest_packet.primitives.emplace_back().emplace<0>();
 				dest_primitive.d1_tex1_1.address = GIF_AD_TEX1_1;
-				dest_primitive.d1_tex1_1.data_lo = 0xff92;
-				dest_primitive.d1_tex1_1.data_hi = 0x04;
+				dest_primitive.d1_tex1_1.data_lo = 0xff92; // k
+				dest_primitive.d1_tex1_1.data_hi = 0x04; // mmin
 				dest_primitive.d2_clamp_1.address = GIF_AD_CLAMP_1;
+				if(material.wrap_mode_s == WrapMode::CLAMP) {
+					dest_primitive.d2_clamp_1.data_lo = 1;
+				}
+				if(material.wrap_mode_t == WrapMode::CLAMP) {
+					dest_primitive.d2_clamp_1.data_hi = 1;
+				}
 				dest_primitive.d3_miptbp1_1.address = GIF_AD_MIPTBP1_1;
 				dest_primitive.d3_miptbp1_1.data_lo = material.surface.texture;
 				dest_primitive.d4_tex0_1.address = GIF_AD_TEX0_1;

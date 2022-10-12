@@ -59,7 +59,8 @@ enum class MetalEffectMode {
 struct Material {
 	std::string name;
 	MaterialSurface surface;
-	WrapMode wrap_mode = WrapMode::REPEAT;
+	WrapMode wrap_mode_s = WrapMode::REPEAT;
+	WrapMode wrap_mode_t = WrapMode::REPEAT;
 	MetalEffectMode metal_mode = MetalEffectMode::OFF;
 };
 
