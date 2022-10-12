@@ -56,7 +56,7 @@ packed_struct(ShrubClassHeader,
 	/* 0x26 */ s16 s_class;
 	/* 0x28 */ s16 packet_count;
 	/* 0x2a */ s16 pad_2a;
-	/* 0x2c */ s32 palette_offset;
+	/* 0x2c */ s32 normals_offset;
 	/* 0x30 */ s32 pad_30;
 	/* 0x34 */ s16 drawn_count;
 	/* 0x36 */ s16 scis_count;
@@ -74,8 +74,8 @@ packed_struct(ShrubVertexPart1,
 packed_struct(ShrubVertexPart2,
 	/* 0x00 */ s16 s;
 	/* 0x02 */ s16 t;
-	/* 0x04 */ s16 unknown_4; // Always 0x1000?
-	/* 0x06 */ s16 colour_index_and_stop_cond; // If this is negative the strip ends.
+	/* 0x04 */ s16 h;
+	/* 0x06 */ s16 n_and_stop_cond; // If this is negative the strip ends.
 )
 
 packed_struct(ShrubPacketHeader,
@@ -104,7 +104,8 @@ struct ShrubVertex {
 	s16 z;
 	s16 s;
 	s16 t;
-	s16 colour_index;
+	s16 h;
+	s16 n;
 };
 
 struct ShrubVertexPrimitive {
@@ -118,11 +119,11 @@ struct ShrubPacket {
 	std::vector<ShrubPrimitive> primitives;
 };
 
-packed_struct(ShrubVec4,
-	u16 x;
-	u16 y;
-	u16 z;
-	u16 w;
+packed_struct(ShrubNormal,
+	s16 x;
+	s16 y;
+	s16 z;
+	s16 pad = 0;
 )
 
 struct ShrubClass {
@@ -133,7 +134,7 @@ struct ShrubClass {
 	s16 o_class;
 	std::vector<ShrubPacket> packets;
 	Opt<ShrubBillboard> billboard;
-	std::vector<ShrubVec4> palette;
+	std::vector<ShrubNormal> normals;
 };
 
 ShrubClass read_shrub_class(Buffer src);

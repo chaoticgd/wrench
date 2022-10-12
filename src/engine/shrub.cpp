@@ -108,7 +108,8 @@ ShrubClass read_shrub_class(Buffer src) {
 				vertex.z = part_1[next_vertex].z;
 				vertex.s = part_2[next_vertex].s;
 				vertex.t = part_2[next_vertex].t;
-				vertex.colour_index = part_2[next_vertex].colour_index_and_stop_cond & 0b0111111111111111;
+				vertex.h = part_2[next_vertex].h;
+				vertex.n = part_2[next_vertex].n_and_stop_cond & 0b0111111111111111;
 				
 				next_vertex++;
 				next_offset += 3;
@@ -128,7 +129,7 @@ ShrubClass read_shrub_class(Buffer src) {
 	if(header.billboard_offset > 0) {
 		shrub.billboard = src.read<ShrubBillboard>(header.billboard_offset, "shrub billboard");
 	}
-	shrub.palette = src.read_multiple<ShrubVec4>(header.palette_offset, 24, "shrub palette").copy();
+	shrub.normals = src.read_multiple<ShrubNormal>(header.normals_offset, 24, "shrub normals").copy();
 	
 	return shrub;
 }
@@ -223,8 +224,8 @@ void write_shrub_class(OutBuffer dest, const ShrubClass& shrub) {
 					ShrubVertexPart2& p2 = part_2.emplace_back();
 					p2.s = vertex.s;
 					p2.t = vertex.t;
-					p2.unknown_4 = 0x1000;
-					p2.colour_index_and_stop_cond = vertex.colour_index;
+					p2.h = vertex.h;
+					p2.n_and_stop_cond = vertex.n;
 					offset += 3;
 				}
 			}
@@ -242,7 +243,7 @@ void write_shrub_class(OutBuffer dest, const ShrubClass& shrub) {
 		}
 		
 		// Write the stopping condition bit.
-		part_2[part_2.size() - 4].colour_index_and_stop_cond |= 0b1000000000000000;
+		part_2[part_2.size() - 4].n_and_stop_cond |= 0b1000000000000000;
 		
 		// Write header/gif tag/ad data unpack.
 		VifCode header_code;
@@ -301,8 +302,8 @@ void write_shrub_class(OutBuffer dest, const ShrubClass& shrub) {
 	
 	// Write out the palette.
 	dest.pad(0x10, 0);
-	header.palette_offset = (s32) (dest.tell() - header_ofs);
-	dest.write_multiple(shrub.palette);
+	header.normals_offset = (s32) (dest.tell() - header_ofs);
+	dest.write_multiple(shrub.normals);
 	
 	dest.write(header_ofs, header);
 }
@@ -314,7 +315,7 @@ ColladaScene recover_shrub_class(const ShrubClass& shrub) {
 	Mesh& mesh = scene.meshes.emplace_back();
 	mesh.name = "mesh";
 	mesh.flags |= MESH_HAS_TEX_COORDS;
-	mesh.flags |= MESH_HAS_VERTEX_COLOURS;
+	mesh.flags |= MESH_HAS_NORMALS;
 	SubMesh* submesh = nullptr;
 #endif
 	s32 texture_index = -1;
@@ -344,13 +345,17 @@ ColladaScene recover_shrub_class(const ShrubClass& shrub) {
 				
 				size_t first_index = mesh.vertices.size();
 				for(const ShrubVertex& vertex : prim->vertices) {
+					Vertex& dest_vertex = mesh.vertices.emplace_back();
 					f32 x = vertex.x * shrub.scale * (1.f / 1024.f);
 					f32 y = vertex.y * shrub.scale * (1.f / 1024.f);
 					f32 z = vertex.z * shrub.scale * (1.f / 1024.f);
-					ColourAttribute colour{1,1,1,1};
-					f32 s = vu_fixed12_to_float(vertex.s);
-					f32 t = vu_fixed12_to_float(vertex.t);
-					mesh.vertices.emplace_back(glm::vec3(x, y, z), colour, glm::vec2(s, t));
+					dest_vertex.pos = glm::vec3(x, y, z);
+					f32 nx = shrub.normals[vertex.n].x * (1.f / INT16_MAX);
+					f32 ny = shrub.normals[vertex.n].y * (1.f / INT16_MAX);
+					f32 nz = shrub.normals[vertex.n].z * (1.f / INT16_MAX);
+					dest_vertex.normal = glm::vec3(nx, ny, nz);
+					dest_vertex.tex_coord.s = vu_fixed12_to_float(vertex.s);
+					dest_vertex.tex_coord.t = vu_fixed12_to_float(vertex.t);
 				}
 				
 				if(prim->type == GeometryType::TRIANGLE_LIST) {
@@ -378,6 +383,10 @@ ColladaScene recover_shrub_class(const ShrubClass& shrub) {
 	mesh = deduplicate_vertices(std::move(mesh));
 	remove_zero_area_triangles(mesh);
 #endif
+	
+	// The winding orders of the faces weren't preserved by Insomniac's triangle
+	// stripper, so we need to recalculate them here.
+	fix_winding_orders_of_triangles_based_on_normals(mesh);
 	
 	Mesh& bsphere_ind = scene.meshes.emplace_back();
 	bsphere_ind.name="bpshere";
@@ -452,12 +461,14 @@ ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& mate
 				dest_vertex.z = (s16) z;
 				dest_vertex.s = vu_float_to_fixed12(src.tex_coord.x);
 				dest_vertex.t = vu_float_to_fixed12(src.tex_coord.y);
+				dest_vertex.h = vu_float_to_fixed12(1.f);
+				dest_vertex.n = 0;
 			}
 		}
 	}
 	
-	shrub.palette.resize(24);
-	shrub.palette[0] = ShrubVec4{INT16_MAX,INT16_MAX,INT16_MAX,INT16_MAX};
+	shrub.normals.resize(24);
+	shrub.normals[0] = ShrubNormal{INT16_MAX, 0, 0, 0};
 	
 	return shrub;
 }
