@@ -49,8 +49,6 @@ struct ShrubBillboardInfo {
 	f32 width;
 	f32 height;
 	f32 z_ofs;
-	s32 lod_k;
-	s32 lod_mmin;
 };
 
 packed_struct(ShrubClassHeader,

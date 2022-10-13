@@ -25,6 +25,7 @@
 static TriStripConstraints setup_shrub_constraints();
 static f32 compute_optimal_scale(const Mesh& mesh);
 static std::pair<std::vector<ShrubNormal>, std::vector<s32>> compute_normal_clusters(const std::vector<Vertex>& vertices);
+static s32 compute_lod_k(f32 distance);
 
 ShrubClass read_shrub_class(Buffer src) {
 	ShrubClass shrub;
@@ -444,7 +445,7 @@ ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& mate
 				// at runtime by the game.
 				ShrubTexturePrimitive& dest_primitive = dest_packet.primitives.emplace_back().emplace<0>();
 				dest_primitive.d1_tex1_1.address = GIF_AD_TEX1_1;
-				dest_primitive.d1_tex1_1.data_lo = 0xff92; // k
+				dest_primitive.d1_tex1_1.data_lo = compute_lod_k(mip_distance);
 				dest_primitive.d1_tex1_1.data_hi = 0x04; // mmin
 				dest_primitive.d2_clamp_1.address = GIF_AD_CLAMP_1;
 				if(material.wrap_mode_s == WrapMode::CLAMP) {
@@ -487,8 +488,8 @@ ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& mate
 		billboard.width = billboard_info->width;
 		billboard.height = billboard_info->height;
 		billboard.z_ofs = billboard_info->z_ofs;
-		billboard.d1_tex1_1.data_lo = billboard_info->lod_k;
-		billboard.d1_tex1_1.data_hi = billboard_info->lod_mmin;
+		billboard.d1_tex1_1.data_lo = compute_lod_k(billboard_info->fade_distance);
+		billboard.d1_tex1_1.data_hi = 4;
 		billboard.d2_tex0_1.data_lo = 1;
 		shrub.billboard = billboard;
 	}
@@ -501,7 +502,6 @@ static TriStripConstraints setup_shrub_constraints() {
 	TriStripConstraints c;
 		
 	// Unpacked data size
-	// max GIF tag nloop in original files is 44
 	c.num_constraints++;
 	c.constant_cost[0] = 1; // header
 	c.strip_cost[0] = 1; // gif tag
@@ -526,10 +526,10 @@ static TriStripConstraints setup_shrub_constraints() {
 }
 
 static f32 compute_optimal_scale(const Mesh& mesh) {
-	// Compute minimum axis-aligned bounding box.
+	// Compute the minimum axis-aligned bounding box.
 	f32 xmin = 0.f, xmax = 0.f;
-	f32 zmin = 0.f, zmax = 0.f;
 	f32 ymin = 0.f, ymax = 0.f;
+	f32 zmin = 0.f, zmax = 0.f;
 	for(const Vertex& v : mesh.vertices) {
 		xmin = std::min(xmin, v.pos.x);
 		ymin = std::min(ymin, v.pos.y);
@@ -612,4 +612,15 @@ static std::pair<std::vector<ShrubNormal>, std::vector<s32>> compute_normal_clus
 	}
 	
 	return {normals, indices};
+}
+
+static s32 compute_lod_k(f32 distance) {
+	// This is similar to the equation in the GS User's Manual and seems to fit
+	// most of the points in the original files. It's kinda off for larger
+	// distances such as those of billbaords but I'm not really sure.
+	if(distance < 0.0001f) {
+		distance = 0.0001f;
+	}
+	s16 k = (s16) roundf(-log2(distance) * 16 - 73.f);
+	return (s32) (u32) (u16) k;
 }

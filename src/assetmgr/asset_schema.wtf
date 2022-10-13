@@ -1495,8 +1495,9 @@ AssetType ShrubClass {
 AssetType ShrubClassCore {
 	bin_leaf: true
 	
-	FloatAttribute scale {
-		desc: "The factor by which the vertices will be quantized in the packed file. Larger values mean better range, smaller values mean better precision."
+	FloatAttribute mipmap_distance {
+		required: true
+		games: [1 2 3 4]
 	}
 	
 	Child mesh {

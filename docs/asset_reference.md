@@ -1024,7 +1024,7 @@ Container for assets used in the mutliplayer mode.
 *Attributes*
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
-| scale | The factor by which the vertices will be quantized in the packed file. Larger values mean better range, smaller values mean better precision. | Float | *Not yet documented.* | *Not yet documented.*  |
+| mipmap_distance | *Not yet documented.* | Float | Yes | RC/GC/UYA/DL |
 
 *Children*
 

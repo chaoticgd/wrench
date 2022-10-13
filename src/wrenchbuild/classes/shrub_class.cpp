@@ -70,6 +70,7 @@ static void unpack_shrub_class(ShrubClassAsset& dest, InputStream& src, BuildCon
 	auto ref = dest.file().write_text_file("mesh.dae", (char*) xml.data());
 	
 	ShrubClassCoreAsset& core = dest.core<ShrubClassCoreAsset>();
+	core.set_mipmap_distance(shrub.mip_distance);
 	
 	MeshAsset& mesh = core.mesh();
 	mesh.set_name("mesh");
@@ -108,11 +109,9 @@ static void pack_shrub_class(OutputStream& dest, const ShrubClassAsset& src, Bui
 		billboard->width = billboard_asset.width();
 		billboard->height = billboard_asset.height();
 		billboard->z_ofs = billboard_asset.z_offset();
-		billboard->lod_k = 0xff92;
-		billboard->lod_mmin = 4;
 	}
 	
-	ShrubClass shrub = build_shrub_class(*mesh, material_set.materials, 5, 0, 4009, billboard);
+	ShrubClass shrub = build_shrub_class(*mesh, material_set.materials, core.mipmap_distance(), 0, src.id(), billboard);
 	
 	std::vector<u8> buffer;
 	write_shrub_class(buffer, shrub);
