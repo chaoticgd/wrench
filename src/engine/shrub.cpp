@@ -21,6 +21,7 @@
 #include <core/vif.h>
 
 //#define WRITE_OUT_SHRUB_STRIPS_AS_SEPARATE_MESHES
+//#define WRITE_OUT_BOUNDING_SPHERE_POINTS
 
 static TriStripConstraints setup_shrub_constraints();
 static f32 compute_optimal_scale(const Mesh& mesh);
@@ -390,11 +391,12 @@ ColladaScene recover_shrub_class(const ShrubClass& shrub) {
 	// The winding orders of the faces weren't preserved by Insomniac's triangle
 	// stripper, so we need to recalculate them here.
 	fix_winding_orders_of_triangles_based_on_normals(mesh);
-	
+
+#ifdef WRITE_OUT_BOUNDING_SPHERE_POINTS
 	Mesh& bsphere_ind = scene.meshes.emplace_back();
-	bsphere_ind.name="bpshere";
+	bsphere_ind.name = "bpshere";
 	SubMesh& sub = bsphere_ind.submeshes.emplace_back();
-	auto bs = shrub.bounding_sphere;
+	glm::vec4 bs = shrub.bounding_sphere.unpack() * shrub.scale;
 	sub.material = 0;
 	bsphere_ind.vertices.emplace_back(glm::vec3(bs.x + bs.w, bs.y, bs.z));
 	bsphere_ind.vertices.emplace_back(glm::vec3(bs.x - bs.w, bs.y, bs.z));
@@ -408,17 +410,19 @@ ColladaScene recover_shrub_class(const ShrubClass& shrub) {
 	sub.faces.emplace_back(3, 3, 3);
 	sub.faces.emplace_back(4, 4, 4);
 	sub.faces.emplace_back(5, 5, 5);
+#endif
 	
 	return scene;
 }
 
 ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& materials, f32 mip_distance, u16 mode_bits, s16 o_class, Opt<ShrubBillboardInfo> billboard_info) {
 	ShrubClass shrub = {};
-	shrub.bounding_sphere = Vec4f::pack(approximate_bounding_sphere(mesh.vertices));
 	shrub.mip_distance = mip_distance;
 	shrub.mode_bits = mode_bits;
 	shrub.scale = compute_optimal_scale(mesh);
 	shrub.o_class = o_class;
+	
+	shrub.bounding_sphere = Vec4f::pack(approximate_bounding_sphere(mesh.vertices) / shrub.scale);
 	
 	auto [normals, normal_indices] = compute_normal_clusters(mesh.vertices);
 	
