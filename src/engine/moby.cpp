@@ -520,29 +520,29 @@ ColladaScene recover_moby_class(const MobyClassData& moby, s32 o_class, s32 text
 	ColladaScene scene;
 	
 	// Used for when the texture index stored in a GS primitive is -1.
-	Material& none = scene.materials.emplace_back();
+	ColladaMaterial& none = scene.materials.emplace_back();
 	none.name = "none";
-	none.colour = glm::vec4(1, 1, 1, 1);
+	none.surface = MaterialSurface(glm::vec4(1, 1, 1, 1));
 	// Used for when there're more textures referenced than are listed in the
 	// moby class table. This happens for R&C2 ship parts.
-	Material& dummy = scene.materials.emplace_back();
+	ColladaMaterial& dummy = scene.materials.emplace_back();
 	dummy.name = "dummy";
-	dummy.colour = glm::vec4(0.5, 0.5, 0.5, 1);
+	dummy.surface = MaterialSurface(glm::vec4(0.5, 0.5, 0.5, 1));
 	
 	for(s32 texture = 0; texture < texture_count; texture++) {
-		Material& mat = scene.materials.emplace_back();
+		ColladaMaterial& mat = scene.materials.emplace_back();
 		mat.name = "mat_" + std::to_string(texture);
-		mat.texture = texture;
+		mat.surface = MaterialSurface(texture);
 	}
 	for(s32 texture = 0; texture < texture_count; texture++) {
-		Material& chrome = scene.materials.emplace_back();
+		ColladaMaterial& chrome = scene.materials.emplace_back();
 		chrome.name = "chrome_" + std::to_string(texture);
-		chrome.texture = texture;
+		chrome.surface = MaterialSurface(texture);
 	}
 	for(s32 texture = 0; texture < texture_count; texture++) {
-		Material& glass = scene.materials.emplace_back();
+		ColladaMaterial& glass = scene.materials.emplace_back();
 		glass.name = "glass_" + std::to_string(texture);
-		glass.texture = texture;
+		glass.surface = MaterialSurface(texture);
 	}
 	
 	if(MOBY_EXPORT_SUBMESHES_SEPERATELY) {

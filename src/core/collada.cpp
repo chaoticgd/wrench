@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2021 chaoticgd
+	Copyright (C) 2019-2022 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ using XmlAttrib = rapidxml::xml_attribute<>;
 
 using IdMap = std::map<std::string, const XmlNode*>;
 using NodeToIndexMap = std::map<const XmlNode*, s32>;
-static Material read_material(const XmlNode* material_node, const IdMap& ids, const NodeToIndexMap& images);
+static ColladaMaterial read_material(const XmlNode* material_node, const IdMap& ids, const NodeToIndexMap& images);
 using JointSidsMap = std::map<std::tuple<const XmlNode*, std::string>, s32>; // (skeleton, joint name) -> joint id
 struct VertexData {
 	Opt<std::vector<f32>> positions;
@@ -64,8 +64,8 @@ static const XmlNode* node_from_id(const IdMap& map, const char* id);
 
 static void write_asset_metadata(OutBuffer dest);
 static void write_images(OutBuffer dest, const std::vector<std::string>& texture_paths);
-static void write_effects(OutBuffer dest, const std::vector<Material>& materials, size_t texture_count);
-static void write_materials(OutBuffer dest, const std::vector<Material>& materials);
+static void write_effects(OutBuffer dest, const std::vector<ColladaMaterial>& materials, size_t texture_count);
+static void write_materials(OutBuffer dest, const std::vector<ColladaMaterial>& materials);
 static void write_geometries(OutBuffer dest, const std::vector<Mesh>& meshes);
 static void write_controllers(OutBuffer dest, const std::vector<Mesh>& meshes, const std::vector<Joint>& joints);
 static void write_visual_scenes(OutBuffer dest, const ColladaScene& scene);
@@ -162,7 +162,7 @@ ColladaScene read_collada(char* src) {
 	return scene;
 }
 
-static Material read_material(const XmlNode* material_node, const IdMap& ids, const NodeToIndexMap& images) {
+static ColladaMaterial read_material(const XmlNode* material_node, const IdMap& ids, const NodeToIndexMap& images) {
 	// Follow the white rabbit (it's white because its texture couldn't be loaded).
 	const XmlNode* instance_effect = xml_child(material_node, "instance_effect");
 	const XmlNode* effect = node_from_id(ids, xml_attrib(instance_effect, "url")->value());
@@ -196,9 +196,9 @@ static Material read_material(const XmlNode* material_node, const IdMap& ids, co
 		const XmlNode* image = node_from_id(ids, image_id.c_str());
 		auto texture_index = images.find(image);
 		verify(texture_index != images.end(), "An <image> node that was referenced with id '%s' cannot be found.", image_id.c_str());
-		Material material;
+		ColladaMaterial material;
 		material.name = xml_attrib(material_node, "name")->value();
-		material.texture = texture_index->second;
+		material.surface = MaterialSurface(texture_index->second);
 		return material;
 	} else if(const XmlNode* colour = diffuse->first_node("color")) {
 		glm::vec4 value;
@@ -215,9 +215,9 @@ static Material read_material(const XmlNode* material_node, const IdMap& ids, co
 		char* end_ptr;
 		value.a = strtof(a_ptr, &end_ptr);
 		verify(end_ptr != a_ptr, "<color> node has invalid body.");
-		Material material;
+		ColladaMaterial material;
 		material.name = xml_attrib(material_node, "name")->value();
-		material.colour = value;
+		material.surface = MaterialSurface(value);
 		return material;
 	}
 	verify_not_reached("<diffuse> node needs either a <texture> or <color> node as a child.");
@@ -526,7 +526,7 @@ static Vertex create_vertex(const std::vector<s32>& indices, s32 base, const Cre
 	if(input.tex_coord_offset > -1) {
 		s32 tex_coord_index = indices.at(base + input.tex_coord_offset);
 		vertex.tex_coord.x = input.tex_coords->at(tex_coord_index * 2 + 0);
-		vertex.tex_coord.y = input.tex_coords->at(tex_coord_index * 2 + 1);
+		vertex.tex_coord.y = 1.f - input.tex_coords->at(tex_coord_index * 2 + 1);
 	}
 	return vertex;
 }
@@ -590,6 +590,28 @@ static const XmlNode* node_from_id(const IdMap& map, const char* id) {
 	return iter->second;
 }
 
+void map_lhs_material_indices_to_rhs_list(ColladaScene& scene, const std::vector<Material>& materials) {
+	// Generate mapping.
+	std::vector<s32> mapping(scene.materials.size(), -1);
+	for(size_t i = 0; i < scene.materials.size(); i++) {
+		for(size_t j = 0; j < materials.size(); j++) {
+			if(materials[j].name == scene.materials[i].name) {
+				mapping[i] = j;
+			}
+		}
+	}
+	
+	// Apply mapping.
+	for(Mesh& mesh : scene.meshes) {
+		for(SubMesh& submesh : mesh.submeshes) {
+			verify(mapping[submesh.material] > -1,
+				"Material '%s' has no corresponding asset defined for it.",
+				scene.materials.at(submesh.material).name.c_str());
+			submesh.material = mapping[submesh.material];
+		}
+	}
+}
+
 std::vector<u8> write_collada(const ColladaScene& scene) {
 	std::vector<u8> vec;
 	OutBuffer dest(vec);
@@ -639,16 +661,16 @@ static void write_images(OutBuffer dest, const std::vector<std::string>& texture
 	dest.writelf("\t</library_images>");
 }
 
-static void write_effects(OutBuffer dest, const std::vector<Material>& materials, size_t texture_count) {
+static void write_effects(OutBuffer dest, const std::vector<ColladaMaterial>& materials, size_t texture_count) {
 	dest.writelf("\t<library_effects>");
-	for(const Material& material : materials) {
+	for(const ColladaMaterial& material : materials) {
 		dest.writelf("\t\t<effect id=\"%s_effect\" name=\"%s_effect\">", material.name.c_str(), material.name.c_str());
 		dest.writelf("\t\t\t<profile_COMMON>");
-		if(material.texture.has_value()) {
+		if(material.surface.type == MaterialSurfaceType::TEXTURE) {
 			dest.writelf(4, "<newparam sid=\"%s_surface\">", material.name.c_str());
 			dest.writelf(4, "\t<surface type=\"2D\">");
-			assert(material.texture < texture_count);
-			dest.writelf(4, "\t\t<init_from>texture_%d</init_from>", material.texture);
+			assert(material.surface.texture < texture_count);
+			dest.writelf(4, "\t\t<init_from>texture_%d</init_from>", material.surface.texture);
 			dest.writelf(4, "\t\t<format>A8R8G8B8</format>");
 			dest.writelf(4, "\t</surface>");
 			dest.writelf(4, "</newparam>");
@@ -666,12 +688,11 @@ static void write_effects(OutBuffer dest, const std::vector<Material>& materials
 			dest.writelf(4, "\t\t</diffuse>");
 			dest.writelf(4, "\t</lambert>");
 			dest.writelf(4, "</technique>");
-		} else {
-			assert(material.colour.has_value());
+		} else if(material.surface.type == MaterialSurfaceType::COLOUR) {
 			dest.writelf(4, "<technique sid=\"common\">");
 			dest.writelf(4, "\t<lambert>");
 			dest.writelf(4, "\t\t<diffuse>");
-			auto col = *material.colour;
+			const auto& col = material.surface.colour;
 			dest.writelf(4, "\t\t\t<color sid=\"diffuse\">%.9g %.9g %.9g %.9g</color>", col.r, col.g, col.b, col.a);
 			dest.writelf(4, "\t\t</diffuse>");
 			dest.writelf(4, "\t</lambert>");
@@ -683,9 +704,9 @@ static void write_effects(OutBuffer dest, const std::vector<Material>& materials
 	dest.writelf("\t</library_effects>");
 }
 
-static void write_materials(OutBuffer dest, const std::vector<Material>& materials) {
+static void write_materials(OutBuffer dest, const std::vector<ColladaMaterial>& materials) {
 	dest.writelf("\t<library_materials>");
-	for(const Material& material : materials) {
+	for(const ColladaMaterial& material : materials) {
 		dest.writelf("\t\t<material id=\"%s\" name=\"%s\">", material.name.c_str(), material.name.c_str());
 		dest.writelf("\t\t\t<instance_effect url=\"#%s_effect\"/>", material.name.c_str());
 		dest.writelf("\t\t</material>");
@@ -764,7 +785,7 @@ static void write_geometries(OutBuffer dest, const std::vector<Mesh>& meshes) {
 			dest.writelf(4, "<source id=\"mesh_%d_texcoords\">", i);
 			dest.writesf(4, "\t<float_array id=\"mesh_%d_texcoords_array\" count=\"%d\">", i, 2 * mesh.vertices.size());
 			for(const Vertex& v : mesh.vertices) {
-				dest.writesf("%.9g %.9g ", v.tex_coord.x, v.tex_coord.y);
+				dest.writesf("%.9g %.9g ", v.tex_coord.x, 1.f - v.tex_coord.y);
 			}
 			if(mesh.vertices.size() > 0) {
 				dest.vec.resize(dest.vec.size() - 1);
@@ -1017,11 +1038,10 @@ void assert_collada_scenes_equal(const ColladaScene& lhs, const ColladaScene& rh
 	assert(lhs.texture_paths == rhs.texture_paths);
 	assert(lhs.materials.size() == rhs.materials.size());
 	for(size_t i = 0; i < lhs.materials.size(); i++) {
-		const Material& lmat = lhs.materials[i];
-		const Material& rmat = rhs.materials[i];
+		const ColladaMaterial& lmat = lhs.materials[i];
+		const ColladaMaterial& rmat = rhs.materials[i];
 		assert(lmat.name == rmat.name);
-		assert(lmat.colour == rmat.colour);
-		assert(lmat.texture == rmat.texture);
+		assert(lmat.surface == rmat.surface);
 	}
 	assert(lhs.meshes.size() == rhs.meshes.size());
 	for(size_t i = 0; i < lhs.meshes.size(); i++) {

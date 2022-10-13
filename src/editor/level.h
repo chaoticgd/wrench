@@ -30,6 +30,12 @@ struct EditorMobyClass {
 	std::vector<RenderMaterial> materials;
 };
 
+struct EditorShrubClass {
+	Mesh mesh;
+	RenderMesh render_mesh;
+	std::vector<RenderMaterial> materials;
+};
+
 class Level : public Editor<Level> {
 public:
 	Level();
@@ -49,6 +55,7 @@ public:
 	std::vector<RenderMesh> collision;
 	std::vector<RenderMaterial> collision_materials;
 	std::map<s32, EditorMobyClass> mobies;
+	std::map<s32, EditorShrubClass> shrubs;
 	
 private:
 	LevelAsset* _asset = nullptr;

@@ -16,33 +16,37 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GUI_RENDER_MESH_H
-#define GUI_RENDER_MESH_H
-
-#include <vector>
+#ifndef CORE_TRISTRIP_H
+#define CORE_TRISTRIP_H
 
 #include <core/mesh.h>
-#include <core/collada.h>
-#include <core/texture.h>
-#include <gui/gui.h>
+#include <core/material.h>
+#include <core/tristrip_packet.h>
 
-struct RenderSubMesh {
-	GLuint material;
-	GlBuffer vertex_buffer;
-	s32 vertex_count = 0;
+struct GeometryPacket {
+	s32 primitive_begin;
+	s32 primitive_count;
 };
 
-struct RenderMaterial {
-	glm::vec4 colour{1.f, 1.f, 1.f, 1.f};
-	GlTexture texture;
+struct GeometryPrimitive {
+	GeometryType type;
+	s32 index_begin = 0;
+	s32 index_count = 0;
+	s32 material = 0; // -1 for no change
 };
 
-struct RenderMesh {
-	std::vector<RenderSubMesh> submeshes;
+struct GeometryPackets {
+	std::vector<GeometryPacket> packets;
+	std::vector<GeometryPrimitive> primitives;
+	std::vector<s32> indices;
 };
 
-RenderMesh upload_mesh(const Mesh& mesh, bool generate_normals);
-RenderMaterial upload_material(const ColladaMaterial& material, const std::vector<Texture>& textures);
-std::vector<RenderMaterial> upload_materials(const std::vector<ColladaMaterial>& materials, const std::vector<Texture>& textures);
+struct TriStripConfig {
+	TriStripConstraints constraints;
+	bool support_instancing;
+};
+
+// Generates a set of tristrips that cover a given mesh.
+GeometryPackets weave_tristrips(const Mesh& mesh, const std::vector<Material>& materials, const TriStripConfig& config);
 
 #endif

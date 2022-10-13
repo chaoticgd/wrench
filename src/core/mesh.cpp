@@ -189,6 +189,33 @@ Mesh deduplicate_faces(Mesh mesh) {
 	return mesh;
 }
 
+void remove_zero_area_triangles(Mesh& mesh) {
+	for(SubMesh& submesh : mesh.submeshes) {
+		std::vector<Face> old_faces = std::move(submesh.faces);
+		submesh.faces = {};
+		for(Face& face : old_faces) {
+			if(face.is_quad() || !(face.v0 == face.v1 || face.v0 == face.v2 || face.v1 == face.v2)) {
+				submesh.faces.emplace_back(face);
+			}
+		}
+	}
+}
+
+void fix_winding_orders_of_triangles_based_on_normals(Mesh& mesh) {
+	for(SubMesh& submesh : mesh.submeshes) {
+		for(Face& face : submesh.faces) {
+			Vertex& v0 = mesh.vertices[face.v0];
+			Vertex& v1 = mesh.vertices[face.v1];
+			Vertex& v2 = mesh.vertices[face.v2];
+			glm::vec3 stored_normal = (v0.normal + v1.normal + v2.normal) / 3.f;
+			glm::vec3 calculated_normal = glm::cross(v1.pos - v0.pos, v2.pos - v0.pos);
+			if(glm::dot(calculated_normal, stored_normal) < 0.f) {
+				std::swap(face.v0, face.v2);
+			}
+		}
+	}
+}
+
 bool vec2_equal_eps(const glm::vec2& lhs, const glm::vec2& rhs, f32 eps) {
 	return fabs(lhs.x - rhs.x) < eps && fabs(lhs.y - rhs.y) < eps;
 }

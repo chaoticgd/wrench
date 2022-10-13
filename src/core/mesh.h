@@ -148,6 +148,8 @@ Mesh sort_vertices(Mesh mesh, bool (*compare)(const Vertex& lhs, const Vertex& r
 
 Mesh deduplicate_vertices(Mesh old_mesh);
 Mesh deduplicate_faces(Mesh old_mesh); // Removes identical faces and tris that shadow quads.
+void remove_zero_area_triangles(Mesh& mesh); // Run deduplicate_vertices first!
+void fix_winding_orders_of_triangles_based_on_normals(Mesh& mesh);
 
 bool vec2_equal_eps(const glm::vec2& lhs, const glm::vec2& rhs, f32 eps = 0.00001f);
 bool vec3_equal_eps(const glm::vec3& lhs, const glm::vec3& rhs, f32 eps = 0.00001f);
@@ -155,5 +157,6 @@ bool vec3_equal_eps(const glm::vec3& lhs, const glm::vec3& rhs, f32 eps = 0.0000
 Mesh merge_meshes(const std::vector<Mesh>& meshes, std::string name, u32 flags);
 
 glm::vec4 approximate_bounding_sphere(const std::vector<Vertex>& vertices);
+;
 
 #endif

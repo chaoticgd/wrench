@@ -36,6 +36,8 @@ struct AssetUnpackerGlobals {
 	InputStream* input_file = nullptr;
 	s64 current_file_offset;
 	s64 total_file_size;
+	
+	s32 current_level_id = -1;
 };
 
 extern AssetUnpackerGlobals g_asset_unpacker;

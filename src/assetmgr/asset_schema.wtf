@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-format_version: 10
+format_version: 12
 
 // *****************************************************************************
 
@@ -1471,29 +1471,93 @@ AssetType TieClass {
 }
 
 AssetType ShrubClass {
-	bin_leaf: true
-	
 	IntegerAttribute id {
 		desc: "The integer used to reference this shrub class at runtime."
 		required: true
 		games: [1 2 3 4]
 	}
 	
-	Child core { allowed_types: ["Binary"] }
+	Child core {
+		allowed_types: ["ShrubClassCore" "Binary"]
+	}
+	
 	Child materials {
 		desc: "The materials used by this class."
 		allowed_types: ["Collection"]
 		required: true
 		games: [1 2 3 4]
 		Child child {
-			allowed_types: ["Material" "Texture"]
+			allowed_types: ["Material"]
 		}
+	}
+}
+
+AssetType ShrubClassCore {
+	bin_leaf: true
+	
+	FloatAttribute mipmap_distance {
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	Child mesh {
+		desc: "The mesh."
+		allowed_types: ["Mesh"]
+	}
+	
+	Child billboard {
+		desc: "Cheap billboard, to be drawn when the camera is far away."
+		allowed_types: ["ShrubBillboard"]
+		required: false
+		games: [1 2 3 4]
+	}
+}
+
+AssetType ShrubBillboard {
+	FloatAttribute fade_distance {
+		desc: "The distance from the camera in which the shrub turns transparent and disappears."
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	FloatAttribute width {
+		desc: "The width of the billboard."
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	FloatAttribute height {
+		desc: "The height of the billboard."
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	FloatAttribute z_offset {
+		desc: "..."
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	Child texture {
+		desc: "The texture to show on the billboard."
+		allowed_types: ["Texture"]
+		required: true
+		games: [1 2 3 4]
 	}
 }
 
 AssetType Material {
 	StringAttribute name {
 		desc: "The name of the material being referenced."
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	ArrayAttribute wrap_mode {
+		desc: "The UV wrapping mode, stored as an array of two strings. Possible values are [\"repeat\", \"repeat\"] (the default), [\"repeat\", \"clamp\"], [\"clamp\", \"repeat\"] and [\"clamp\", \"clamp\"]."
+		required: false
+		games: [1 2 3 4]
+		StringAttribute element {}
 	}
 	
 	BooleanAttribute glass {
@@ -1504,9 +1568,11 @@ AssetType Material {
 		desc: "Only for mobies. Make the material shiny, like chrome?"
 	}
 	
-	Child texture {
-		desc: "The texture."
+	Child diffuse {
+		desc: "The diffuse map (main texture)."
 		allowed_types: ["Texture"]
+		required: true
+		games: [1 2 3 4]
 	}
 }
 

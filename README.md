@@ -14,9 +14,10 @@ Features currently include:
 - Build Tool
 	- Pack/unpack entire ISO files.
 	- Unpack moby meshes as COLLADA files.
-	- Pack/unpack textures as PNG files.
 	- Pack/unpack collision meshes as COLLADA files.
+	- **New in v0.2!** Pack/unpack shrub meshes as COLLADA files.
 	- **New in v0.2!** Pack/unpack sky meshes as COLLADA files.
+	- Pack/unpack textures as PNG files.
 	- Pack/unpack everything else as binary files.
 - Level Editor
 	- View unpacked levels.

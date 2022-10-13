@@ -27,6 +27,7 @@
 #include <assetmgr/asset.h>
 #include <assetmgr/asset_types.h>
 #include <engine/moby.h>
+#include <engine/shrub.h>
 #include <engine/collision.h>
 #include <iso/iso_packer.h>
 #include <iso/iso_unpacker.h>
@@ -74,6 +75,7 @@ static void pack(const std::vector<fs::path>& input_paths, const std::string& as
 static void decompress(const fs::path& input_path, const fs::path& output_path, s64 offset);
 static void compress(const fs::path& input_path, const fs::path& output_path);
 static void extract_moby(const fs::path& input_path, const fs::path& output_path, Game game);
+static void extract_shrub(const fs::path& input_path, const fs::path& output_path);
 static void unpack_collision(const fs::path& input_path, const fs::path& output_path);
 static void print_usage(bool developer_subcommands);
 static void print_version();
@@ -198,6 +200,12 @@ static int wrenchbuild(int argc, char** argv) {
 	if(mode == "extract_moby") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH | ARG_GAME);
 		extract_moby(args.input_paths[0], args.output_path, args.game);
+		return 0;
+	}
+	
+	if(mode == "extract_shrub") {
+		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
+		extract_shrub(args.input_paths[0], args.output_path);
 		return 0;
 	}
 	
@@ -464,6 +472,14 @@ static void extract_moby(const fs::path& input_path, const fs::path& output_path
 	write_file(output_path, xml, "w");
 }
 
+static void extract_shrub(const fs::path& input_path, const fs::path& output_path) {
+	auto bin = read_file(input_path.string().c_str());
+	ShrubClass shrub = read_shrub_class(bin);
+	ColladaScene scene = recover_shrub_class(shrub);
+	auto xml = write_collada(scene);
+	write_file(output_path, xml, "w");
+}
+
 static void unpack_collision(const fs::path& input_path, const fs::path& output_path) {
 	AssetForest forest;
 	AssetBank& bank = forest.mount<LooseAssetBank>(output_path, true);
@@ -493,7 +509,7 @@ static void print_usage(bool developer_subcommands) {
 	puts("   name based on the identified release of said ISO by passing -s.");
 	puts("");
 	puts(" pack <input asset banks> -a <asset link> -o <output iso> [-h <hint>] [-g <game>] [-r <region>]");
-	puts("   Pack an asset (e.g. base_game) to produce a built file (e.g. an ISO file).");
+	puts("   Pack an asset (e.g. a build) to produce a built file (e.g. an ISO file).");
 	puts("   If <asset link> is not a build, the game (rac, gc, uya or dl) and the region");
 	puts("   (us, eu or japan) must be specified.");
 	puts("   A hint string used to specify the format of the asset can be set by");
@@ -559,7 +575,10 @@ static void print_usage(bool developer_subcommands) {
 		puts("   Record statistics about the memory used by mounting asset banks.");
 		puts("");
 		puts(" extract_moby <input path> -o <output path> -g <game>");
-		puts("   Convert a built moby to a .dae file.");
+		puts("   Convert a packed moby to a .dae file.");
+		puts("");
+		puts(" extract_shrub <input path> -o <output path>");
+		puts("   Convert a packed shrub to a .dae file.");
 		puts("");
 	}
 }

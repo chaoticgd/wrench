@@ -25,6 +25,7 @@ s32 g_asset_packer_max_assets_processed = 0;
 s32 g_asset_packer_num_assets_processed = 0;
 bool g_asset_packer_dry_run = false;
 bool g_asset_packer_quiet = false;
+s32 g_asset_packer_current_level_id = -1;
 
 on_load(Packer, []() {
 	BuildAsset::funcs.pack_rac1 = wrap_iso_packer_func<BuildAsset>(pack_iso, pack_asset_impl);

@@ -132,7 +132,7 @@ Opt<Texture> read_png(InputStream& src) {
 			s32 num_trans = 0;
 			png_get_tRNS(png_ptr, info_ptr, &trans_alpha, &num_trans, nullptr);
 			
-			std::vector<u32> palette_rgba(num_palette);
+			std::vector<u32> palette_rgba(256, 0);
 			for(s32 i = 0; i < num_palette; i++) {
 				u32& dest = palette_rgba[i];
 				dest |= palette_rgb[i].red << 0;
@@ -147,25 +147,57 @@ Opt<Texture> read_png(InputStream& src) {
 			
 			assert(png_get_rowbytes(png_ptr, info_ptr) == (width * bit_depth) / 8);
 			
-			std::vector<u8> data;
-			if(bit_depth == 4) {
-				data.resize(width * height);
+			verify(bit_depth == 1 || bit_depth == 2 || bit_depth == 4 || bit_depth == 8,
+				"PNG has invalid bit depth.");
+			
+			s32 factor = 0;
+			if(bit_depth == 1) {
+				factor = 8;
+			} else if(bit_depth == 2) {
+				factor = 4;
+			} else if(bit_depth == 4) {
+				factor = 2;
 			} else if(bit_depth == 8) {
-				data.resize(width * height);
-			} else {
-				printf("warning: PNG has invalid bit depth.");
-				return {};
+				factor = 1;
 			}
+			
+			std::vector<u8> packed_data((width * height * bit_depth) / 8);
 			std::vector<png_bytep> row_pointers(height);
 			for(u32 y = 0; y < height; y++) {
-				row_pointers[y] = &data[(y * width) / ((bit_depth == 4) ? 2 : 1)];
+				row_pointers[y] = &packed_data[(y * width) / factor];
 			}
 			png_read_image(png_ptr, row_pointers.data());
 			
 			png_read_end(png_ptr, info_ptr);
 			png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
 			
-			return Texture::create_8bit_paletted(width, height, std::move(data), std::move(palette_rgba));
+			if(bit_depth == 1) {
+				std::vector<u8> data(width * height);
+				for(s32 i = 0; i < (width * height) / 8; i++) {
+					data[i * 8 + 0] = (packed_data[i] & 0b10000000) != 0;
+					data[i * 8 + 1] = (packed_data[i] & 0b01000000) != 0;
+					data[i * 8 + 2] = (packed_data[i] & 0b00100000) != 0;
+					data[i * 8 + 3] = (packed_data[i] & 0b00010000) != 0;
+					data[i * 8 + 4] = (packed_data[i] & 0b00001000) != 0;
+					data[i * 8 + 5] = (packed_data[i] & 0b00000100) != 0;
+					data[i * 8 + 6] = (packed_data[i] & 0b00000010) != 0;
+					data[i * 8 + 7] = (packed_data[i] & 0b00000001) != 0;
+				}
+				return Texture::create_8bit_paletted(width, height, std::move(data), std::move(palette_rgba));
+			} else if(bit_depth == 2) {
+				std::vector<u8> data(width * height);
+				for(s32 i = 0; i < (width * height) / 4; i++) {
+					data[i * 4 + 0] = (packed_data[i] & 0b11000000) >> 6;
+					data[i * 4 + 1] = (packed_data[i] & 0b00110000) >> 4;
+					data[i * 4 + 2] = (packed_data[i] & 0b00001100) >> 2;
+					data[i * 4 + 3] = (packed_data[i] & 0b00000011) >> 0;
+				}
+				return Texture::create_8bit_paletted(width, height, std::move(data), std::move(palette_rgba));
+			} else if(bit_depth == 4) {
+				return Texture::create_4bit_paletted(width, height, std::move(packed_data), std::move(palette_rgba));
+			} else {
+				return Texture::create_8bit_paletted(width, height, std::move(packed_data), std::move(palette_rgba));
+			}
 		}
 	}
 	

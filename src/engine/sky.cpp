@@ -18,6 +18,7 @@
 
 #include "sky.h"
 
+#include <core/vif.h>
 #include <core/mesh.h>
 
 static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(Buffer src, const SkyHeader& header);
@@ -220,18 +221,18 @@ static Mesh read_sky_cluster(Buffer src, s64 offset, s32 texture_count, bool tex
 	auto vertices = src.read_multiple<SkyVertex>(header.data + header.vertex_offset, header.vertex_count, "vertex positions");
 	auto sts = src.read_multiple<SkyTexCoord>(header.data + header.st_offset, header.vertex_count, "texture coordinates");
 	for(s32 i = 0; i < header.vertex_count; i++) {
-		auto position = glm::vec3(
-			vertices[i].x * (32.f / INT16_MAX),
-			vertices[i].y * (32.f / INT16_MAX),
-			vertices[i].z * (32.f / INT16_MAX));
-		auto st = glm::vec2(sts[i].s * (8.f / INT16_MAX), -sts[i].t * (8.f / INT16_MAX));
+		f32 x = vertices[i].x * (1 / 1024.f);
+		f32 y = vertices[i].y * (1 / 1024.f);
+		f32 z = vertices[i].z * (1 / 1024.f);
+		f32 s = vu_fixed12_to_float(sts[i].s);
+		f32 t = vu_fixed12_to_float(sts[i].t);
 		ColourAttribute colour = {255, 255, 255};
 		if(vertices[i].alpha == 0x80) {
 			colour.a = 0xff;
 		} else {
 			colour.a = vertices[i].alpha * 2;
 		}
-		cluster.vertices.emplace_back(position, colour, st);
+		cluster.vertices.emplace_back(glm::vec3(x, y, z), colour, glm::vec2(s, t));
 	}
 	
 	SubMesh* submesh = nullptr;
@@ -265,9 +266,9 @@ static void write_sky_cluster(OutBuffer dest, SkyClusterHeader& header, const Me
 	header.vertex_offset = dest.tell() - header.data;
 	for(const Vertex& src : cluster.vertices) {
 		SkyVertex vertex;
-		vertex.x = (s16) roundf(src.pos.x * (INT16_MAX / 32.f));
-		vertex.y = (s16) roundf(src.pos.y * (INT16_MAX / 32.f));
-		vertex.z = (s16) roundf(src.pos.z * (INT16_MAX / 32.f));
+		vertex.x = (s16) roundf(src.pos.x * 1024.f);
+		vertex.y = (s16) roundf(src.pos.y * 1024.f);
+		vertex.z = (s16) roundf(src.pos.z * 1024.f);
 		if(src.colour.a == 0xff) {
 			vertex.alpha = 0x80;
 		} else {
@@ -280,8 +281,8 @@ static void write_sky_cluster(OutBuffer dest, SkyClusterHeader& header, const Me
 	header.st_offset = dest.tell() - header.data;
 	for(const Vertex& src : cluster.vertices) {
 		SkyTexCoord st;
-		st.s = (s16) roundf(src.tex_coord.x * (INT16_MAX / 8.f));
-		st.t = (s16) roundf(-src.tex_coord.y * (INT16_MAX / 8.f));
+		st.s = vu_float_to_fixed12(src.tex_coord.x);
+		st.t = vu_float_to_fixed12(src.tex_coord.y);
 		dest.write(st);
 	}
 	

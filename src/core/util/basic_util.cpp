@@ -72,3 +72,7 @@ std::string md5_to_printable_string(uint8_t in[16]) {
 f32 lerp(f32 min, s32 max, f32 value) {
 	return min + (max - min) * value;
 }
+
+s32 bit_range(u64 val, s32 lo, s32 hi) {
+	return (val >> lo) & ((1 << (hi - lo + 1)) - 1);
+}

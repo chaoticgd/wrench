@@ -173,7 +173,7 @@ static void menu_bar() {
 				ImGui::Checkbox("Tfrags", &a.render_settings.draw_tfrags);
 				ImGui::Checkbox("Collision", &a.render_settings.draw_collision);
 				ImGui::Separator();
-				ImGui::Checkbox("Selected Moby Normals", &a.render_settings.draw_selected_moby_normals);
+				ImGui::Checkbox("Selected Instance Normals", &a.render_settings.draw_selected_instance_normals);
 				ImGui::EndMenu();
 			}
 			ImGui::EndMenu();

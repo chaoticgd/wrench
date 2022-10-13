@@ -206,9 +206,9 @@ static void unpack_sky_textures(ColladaScene& scene, CollectionAsset& fx, Collec
 	}
 	
 	// Create the placeholder material for untextured shells.
-	Material& gouraud = scene.materials.emplace_back();
+	ColladaMaterial& gouraud = scene.materials.emplace_back();
 	gouraud.name = "gouraud";
-	gouraud.colour = glm::vec4(1.f, 0.f, 1.f, 1.f);
+	gouraud.surface = MaterialSurface(glm::vec4(1.f, 0.f, 1.f, 1.f));
 	
 	MaterialAsset& gouraud_asset = materials.child<MaterialAsset>("gouraud");
 	gouraud_asset.set_name("gouraud");
@@ -221,13 +221,13 @@ static void unpack_sky_textures(ColladaScene& scene, CollectionAsset& fx, Collec
 	
 	// Create shell material assets.
 	for(s32 i = (s32) sky.fx.size(); i < (s32) sky.texture_mappings.size(); i++) {
-		Material& mat = scene.materials.emplace_back();
+		ColladaMaterial& mat = scene.materials.emplace_back();
 		mat.name = stringf("material_%d", i - (s32) sky.fx.size());
-		mat.texture = sky.texture_mappings[i];
+		mat.surface = MaterialSurface(sky.texture_mappings[i]);
 		
 		MaterialAsset& asset = materials.child<MaterialAsset>(i);
 		asset.set_name(mat.name);
-		asset.texture().set_src(texture_refs.at(sky.texture_mappings[i]));
+		asset.diffuse().set_src(texture_refs.at(sky.texture_mappings[i]));
 	}
 }
 
@@ -249,8 +249,8 @@ std::map<std::string, s32> pack_sky_textures(Sky& dest, const SkyAsset& src) {
 	});
 	
 	src.get_materials().for_each_logical_child_of_type<MaterialAsset>([&](const MaterialAsset& material) {
-		if(material.has_texture()) {
-			const TextureAsset& texture = material.get_texture();
+		if(material.has_diffuse()) {
+			const TextureAsset& texture = material.get_diffuse();
 			FileReference ref = texture.src();
 			s32 index = -1;
 			for(s32 i = 0; i < (s32) refs.size(); i++) {

@@ -23,7 +23,6 @@
 #include <engine/compression.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
-#include <wrenchbuild/level/level_textures.h>
 #include <wrenchbuild/level/level_classes.h>
 
 static std::vector<s64> enumerate_level_core_block_boundaries(InputStream& src, const LevelCoreHeader& header, Game game);
@@ -87,21 +86,31 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 		build = &build_from_level_core_asset(dest);
 	}
 	
-	std::vector<GsRamEntry> gs_table = index.read_multiple<GsRamEntry>(header.gs_ram.offset, header.gs_ram.count + header.moby_gs_stash_count_rac23dl);
+	std::vector<GsRamEntry> gs_table;
+	if(config.game() == Game::RAC) {
+		gs_table = index.read_multiple<GsRamEntry>(header.gs_ram.offset, header.gs_ram.count);
+	} else {
+		gs_table = index.read_multiple<GsRamEntry>(header.gs_ram.offset, header.gs_ram.count + header.moby_gs_stash_count_rac23dl);
+	}
+	
 	
 	// List of classes that have their textures stored permanently in GS memory.
 	std::set<s32> moby_stash;
-	for(s32 i = 0;; i++) {
-		s16 o_class = index.read<s16>(header.moby_gs_stash_list + i * 2);
-		if(o_class < 0) {
-			break;
+	if(config.game() != Game::RAC) {
+		for(s32 i = 0;; i++) {
+			s16 o_class = index.read<s16>(header.moby_gs_stash_list + i * 2);
+			if(o_class < 0) {
+				break;
+			}
+			moby_stash.emplace(o_class);
 		}
-		moby_stash.emplace(o_class);
 	}
 	
-	s32 moby_stash_addr = 0;
-	if(header.moby_gs_stash_count_rac23dl > 0) {
-		moby_stash_addr = gs_table[header.gs_ram.count].address;
+	s32 moby_stash_addr = -1;
+	if(config.game() != Game::RAC) {
+		if(header.moby_gs_stash_count_rac23dl > 0) {
+			moby_stash_addr = gs_table[header.gs_ram.count].address;
+		}
 	}
 	
 	// Unpack all the classes into the global directory and then create

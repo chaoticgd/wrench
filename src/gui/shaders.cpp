@@ -117,7 +117,7 @@ Shaders::Shaders() :
 			varying vec4 shading;
 
 			void main() {
-				gl_FragColor = texture2D(sampler, uv) * colour - shading;
+				gl_FragColor = texture2D(sampler, vec2(uv.x, 1.f - uv.y)) * colour - shading;
 			}
 		)",
 		[&](GLuint id) {

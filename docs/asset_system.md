@@ -80,7 +80,7 @@ Here, the link is relative to the first ancestor, starting from the asset that i
 
 ## Asset Types
 
-The asset types are all documented in the [Asset Reference](asset_reference_latest.md).
+The asset types are all documented in the [Asset Reference](asset_reference.md).
 
 ### Hints
 
@@ -127,6 +127,7 @@ Each asset type is defined in `asset_schema.wtf` and a code generator, `asset_co
 
 | Format Version | Wrench Version | Description |
 | -    | -     | - |
+| 11   |       | Shrub meshes are now stored as COLLADA files. ShrubClass/ShrubClassCore/Material overhauled. |
 | 10   |       | Added stash_textures attribute to MobyClass asset. |
 | 9    |       | Added Sky and SkyShell asset types. |
 | 8    | v0.1  | The first version of the asset system. |

@@ -1,6 +1,6 @@
 # Asset Reference
 
-This file was generated from src/assetmgr/asset_schema.wtf and is for version 12 of the asset format.
+This file was generated from src/assetmgr/asset_schema.wtf and is for version 10 of the asset format.
 
 ## Index
 
@@ -49,8 +49,6 @@ This file was generated from src/assetmgr/asset_schema.wtf and is for version 12
 	- [MobyClassCore](#mobyclasscore)
 	- [TieClass](#tieclass)
 	- [ShrubClass](#shrubclass)
-	- [ShrubClassCore](#shrubclasscore)
-	- [ShrubBillboard](#shrubbillboard)
 	- [Material](#material)
 	- [Collision](#collision)
 	- [CollisionMaterial](#collisionmaterial)
@@ -1015,40 +1013,8 @@ Container for assets used in the mutliplayer mode.
 
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
-| core | *Not yet documented.* | ShrubClassCore, Binary | *Not yet documented.* | *Not yet documented.* |
-| materials | The materials used by this class. | Material\[\] | Yes | RC/GC/UYA/DL |
-
-
-### ShrubClassCore
-
-*Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
-| mipmap_distance | *Not yet documented.* | Float | Yes | RC/GC/UYA/DL |
-
-*Children*
-
-| Name | Description | Allowed Types | Required | Games |
-| - | - | - | - | - |
-| mesh | The mesh. | Mesh | *Not yet documented.* | *Not yet documented.* |
-| billboard | Cheap billboard, to be drawn when the camera is far away. | ShrubBillboard | No | RC/GC/UYA/DL |
-
-
-### ShrubBillboard
-
-*Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
-| fade_distance | The distance from the camera in which the shrub turns transparent and disappears. | Float | Yes | RC/GC/UYA/DL |
-| width | The width of the billboard. | Float | Yes | RC/GC/UYA/DL |
-| height | The height of the billboard. | Float | Yes | RC/GC/UYA/DL |
-| z_offset | ... | Float | Yes | RC/GC/UYA/DL |
-
-*Children*
-
-| Name | Description | Allowed Types | Required | Games |
-| - | - | - | - | - |
-| texture | The texture to show on the billboard. | Texture | Yes | RC/GC/UYA/DL |
+| core | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
+| materials | The materials used by this class. | Material\[\], Texture\[\] | Yes | RC/GC/UYA/DL |
 
 
 ### Material
@@ -1056,8 +1022,7 @@ Container for assets used in the mutliplayer mode.
 *Attributes*
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
-| name | The name of the material being referenced. | String | Yes | RC/GC/UYA/DL |
-| wrap_mode | The UV wrapping mode, stored as an array of two strings. Possible values are ["repeat", "repeat"] (the default), ["repeat", "clamp"], ["clamp", "repeat"] and ["clamp", "clamp"]. | Array | No | RC/GC/UYA/DL |
+| name | The name of the material being referenced. | String | *Not yet documented.* | *Not yet documented.*  |
 | glass | Only for mobies. Make the material shiny, like glass? | Boolean | *Not yet documented.* | *Not yet documented.*  |
 | chrome | Only for mobies. Make the material shiny, like chrome? | Boolean | *Not yet documented.* | *Not yet documented.*  |
 
@@ -1065,7 +1030,7 @@ Container for assets used in the mutliplayer mode.
 
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
-| diffuse | The diffuse map (main texture). | Texture | Yes | RC/GC/UYA/DL |
+| texture | The texture. | Texture | *Not yet documented.* | *Not yet documented.* |
 
 
 ### Collision

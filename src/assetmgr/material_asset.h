@@ -16,33 +16,19 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GUI_RENDER_MESH_H
-#define GUI_RENDER_MESH_H
+#ifndef WRENCHBUILD_MATERIAL_ASSET_H
+#define WRENCHBUILD_MATERIAL_ASSET_H
 
-#include <vector>
+#include <core/material.h>
+#include <assetmgr/asset_types.h>
 
-#include <core/mesh.h>
-#include <core/collada.h>
-#include <core/texture.h>
-#include <gui/gui.h>
-
-struct RenderSubMesh {
-	GLuint material;
-	GlBuffer vertex_buffer;
-	s32 vertex_count = 0;
+struct MaterialSet {
+	std::vector<Material> materials;
+	std::vector<FileReference> textures;
 };
 
-struct RenderMaterial {
-	glm::vec4 colour{1.f, 1.f, 1.f, 1.f};
-	GlTexture texture;
-};
-
-struct RenderMesh {
-	std::vector<RenderSubMesh> submeshes;
-};
-
-RenderMesh upload_mesh(const Mesh& mesh, bool generate_normals);
-RenderMaterial upload_material(const ColladaMaterial& material, const std::vector<Texture>& textures);
-std::vector<RenderMaterial> upload_materials(const std::vector<ColladaMaterial>& materials, const std::vector<Texture>& textures);
+// Reads a collection of material assets and deduplicates textures referenced
+// multiple times in the set of input materials.
+MaterialSet read_material_assets(const CollectionAsset& src);
 
 #endif

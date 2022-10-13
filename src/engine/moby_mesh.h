@@ -22,6 +22,7 @@
 #include <core/util.h>
 #include <core/buffer.h>
 #include <core/collada.h>
+#include <engine/gif.h>
 
 #define MOBY_EXPORT_SUBMESHES_SEPERATELY false
 #define NO_SUBMESH_FILTER -1
@@ -100,20 +101,15 @@ packed_struct(MobyIndexHeader, // Second UNPACK header.
 	// Indices directly follow.
 )
 
-packed_struct(GsAdData,
-	/* 0x0 */ s32 data_lo;
-	/* 0x4 */ s32 data_hi;
-	/* 0x8 */ u8 address;
-	/* 0x9 */ u8 pad_9;
-	/* 0xa */ u16 pad_a;
-	/* 0xc */ u32 super_secret_index; // The VU1 microcode reads extra indices from here.
-)
-
 packed_struct(MobyTexturePrimitive,
-	/* 0x00 */ GsAdData d1_xyzf2;
-	/* 0x10 */ GsAdData d2_clamp;
-	/* 0x20 */ GsAdData d3_tex0;
-	/* 0x30 */ GsAdData d4_xyzf2;
+	/* 0x00 */ GifAdData12 d1_tex1_1;
+	/* 0x0c */ u32 super_secret_index_1; // The VU1 microcode reads extra indices from these fields.
+	/* 0x10 */ GifAdData12 d2_clamp_1;
+	/* 0x1c */ u32 super_secret_index_2;
+	/* 0x20 */ GifAdData12 d3_tex0_1;
+	/* 0x2c */ u32 super_secret_index_3;
+	/* 0x30 */ GifAdData12 d4_miptbp1_1;
+	/* 0x3c */ u32 super_secret_index_4;
 )
 
 enum MobySpecialTextureIndex {
@@ -262,6 +258,6 @@ void map_indices(MobySubMesh& submesh, const std::vector<size_t>& index_mapping)
 using GifUsageTable = std::vector<MobyGifUsage>;
 void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_ofs, const MobySubMesh* submeshes_in, size_t submesh_count, f32 scale, MobyFormat format, s64 class_header_ofs);
 void write_moby_metal_submeshes(OutBuffer dest, s64 table_ofs, const std::vector<MobyMetalSubMesh>& submeshes, s64 class_header_ofs);
-std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vector<Material>& materials);
+std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vector<ColladaMaterial>& materials);
 
 #endif
