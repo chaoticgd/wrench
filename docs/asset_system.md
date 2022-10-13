@@ -80,7 +80,7 @@ Here, the link is relative to the first ancestor, starting from the asset that i
 
 ## Asset Types
 
-The asset types are all documented in the [Asset Reference](asset_reference_latest.md).
+The asset types are all documented in the [Asset Reference](asset_reference.md).
 
 ### Hints
 
