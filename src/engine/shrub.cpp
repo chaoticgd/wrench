@@ -425,7 +425,8 @@ ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& mate
 	TriStripConfig config;
 	// Make sure the packets that get written out aren't too big to fit in VU1 memory.
 	config.constraints = setup_shrub_constraints();
-	config.support_instancing = true; // Make sure extra AD GIFs are added.
+	// Make sure AD GIFs are added at the beginning of each packet.
+	config.support_instancing = true;
 	
 	// Generate the strips.
 	GeometryPackets output = weave_tristrips(mesh, materials, config);
