@@ -101,7 +101,7 @@ on_load(Level, []() {
 	LevelWadAsset::funcs.pack_dl = wrap_wad_packer_func<LevelWadAsset, DlLevelWadHeader>(pack_dl_level_wad);
 })
 
-void unpack_rac_level_wad(LevelWadAsset& dest, const RacLevelWadHeader& header, InputStream& src, BuildConfig config) {
+static void unpack_rac_level_wad(LevelWadAsset& dest, const RacLevelWadHeader& header, InputStream& src, BuildConfig config) {
 	dest.set_id(header.id);
 	g_asset_unpacker.current_level_id = header.id;
 	
@@ -123,7 +123,7 @@ static void pack_rac_level_wad(OutputStream& dest, RacLevelWadHeader& header, co
 	header.occlusion = pack_compressed_asset_sa<SectorRange>(dest, src.get_occlusion(), config, "occlusion");
 }
 
-void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHeader& header, InputStream& src, BuildConfig config) {
+static void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHeader& header, InputStream& src, BuildConfig config) {
 	dest.set_id(header.id);
 	dest.set_reverb(header.reverb);
 	g_asset_unpacker.current_level_id = header.id;
@@ -151,7 +151,7 @@ static void pack_gc_uya_level_wad(OutputStream& dest, GcUyaLevelWadHeader& heade
 	header.chunks = pack_chunks(dest, src.get_chunks(), config);
 }
 
-void unpack_dl_level_wad(LevelWadAsset& dest, const DlLevelWadHeader& header, InputStream& src, BuildConfig config) {
+static void unpack_dl_level_wad(LevelWadAsset& dest, const DlLevelWadHeader& header, InputStream& src, BuildConfig config) {
 	dest.set_id(header.id);
 	dest.set_reverb(header.reverb);
 	g_asset_unpacker.current_level_id = header.id;
