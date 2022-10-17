@@ -35,10 +35,11 @@ packed_struct(UyaArmorWadHeader,
 	/* 0x000 */ s32 header_size;
 	/* 0x004 */ Sector32 sector;
 	/* 0x008 */ ArmorHeader armors[29];
-	/* 001d8 */ ArmorHeader wrenches[6];
-	/* 0x238 */ ArmorHeader multiplayer_armors[20];
-	/* 0x378 */ SectorRange unused[2];
-)	
+	/* 0x1d8 */ ArmorHeader wrenches[6];
+	/* 0x238 */ ArmorHeader multiplayer_armors[21];
+	/* 0x388 */ SectorRange clank_textures[2];
+)
+static_assert(sizeof(UyaArmorWadHeader) == 0x398);
 
 packed_struct(DlArmorWadHeader,
 	/* 0x000 */ s32 header_size;
@@ -82,12 +83,14 @@ static void unpack_uya_armor_wad(ArmorWadAsset& dest, const UyaArmorWadHeader& h
 	unpack_armors(dest.armors(SWITCH_FILES), src, ARRAY_PAIR(header.armors), config, FMT_MOBY_CLASS_SPARMOR);
 	unpack_armors(dest.wrenches(SWITCH_FILES), src, ARRAY_PAIR(header.wrenches), config, FMT_MOBY_CLASS_SPARMOR);
 	unpack_armors(dest.multiplayer_armors(SWITCH_FILES), src, ARRAY_PAIR(header.multiplayer_armors), config, FMT_MOBY_CLASS_MPARMOR);
+	unpack_assets<TextureAsset>(dest.clank_textures(SWITCH_FILES), src, ARRAY_PAIR(header.clank_textures), config, FMT_TEXTURE_PIF8, true);
 }
 
 static void pack_uya_armor_wad(OutputStream& dest, UyaArmorWadHeader& header, const ArmorWadAsset& src, BuildConfig config) {
 	pack_armors(dest, ARRAY_PAIR(header.armors), src.get_armors(), config, FMT_MOBY_CLASS_SPARMOR);
 	pack_armors(dest, ARRAY_PAIR(header.wrenches), src.get_wrenches(), config, FMT_MOBY_CLASS_SPARMOR);
 	pack_armors(dest, ARRAY_PAIR(header.multiplayer_armors), src.get_multiplayer_armors(), config, FMT_MOBY_CLASS_MPARMOR);
+	pack_assets_sa(dest, ARRAY_PAIR(header.clank_textures), src.get_clank_textures(), config, FMT_TEXTURE_PIF8);
 }
 
 static void unpack_dl_armor_wad(ArmorWadAsset& dest, const DlArmorWadHeader& header, InputStream& src, BuildConfig config) {
