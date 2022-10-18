@@ -21,8 +21,8 @@
 #include <core/vif.h>
 #include <core/mesh.h>
 
-static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(Buffer src, const SkyHeader& header);
-static std::tuple<s64, s64> write_sky_textures(OutBuffer dest, const std::vector<Texture>& textures, const std::vector<s32>& texture_mappings);
+static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(Buffer src, const SkyHeader& header, Game game);
+static std::tuple<s64, s64> write_sky_textures(OutBuffer dest, const std::vector<Texture>& textures, const std::vector<s32>& texture_mappings, Game game);
 static SkyShell read_sky_shell(Buffer src, s64 offset, s32 texture_count, f32 framerate);
 static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, f32 framerate);
 static f32 rotation_to_radians_per_second(s16 angle, f32 framerate);
@@ -30,7 +30,7 @@ static s16 rotation_from_radians_per_second(f32 angle, f32 framerate);
 static Mesh read_sky_cluster(Buffer src, s64 offset, s32 texture_count, bool textured);
 static void write_sky_cluster(OutBuffer dest, SkyClusterHeader& header, const Mesh& cluster);
 
-Sky read_sky(Buffer src, f32 framerate) {
+Sky read_sky(Buffer src, Game game, f32 framerate) {
 	Sky sky;
 	
 	SkyHeader header = src.read<SkyHeader>(0, "header");
@@ -41,7 +41,7 @@ Sky read_sky(Buffer src, f32 framerate) {
 	sky.fx = src.read_multiple<u8>(header.fx_list, header.fx_count, "FX indices").copy();
 	sky.maximum_sprite_count = header.maximum_sprite_count;
 	
-	std::tie(sky.textures, sky.texture_mappings) = read_sky_textures(src, header);
+	std::tie(sky.textures, sky.texture_mappings) = read_sky_textures(src, header, game);
 	
 	for(s32 i = 0; i < header.shell_count; i++) {
 		sky.shells.emplace_back(read_sky_shell(src, header.shells[i], header.texture_count, framerate));
@@ -50,7 +50,7 @@ Sky read_sky(Buffer src, f32 framerate) {
 	return sky;
 }
 
-void write_sky(OutBuffer dest, const Sky& sky, f32 framerate) {
+void write_sky(OutBuffer dest, const Sky& sky, Game game, f32 framerate) {
 	verify(sky.shells.size() <= 8, "Too many sky shells!");
 	
 	dest.pad(0x40);
@@ -67,7 +67,7 @@ void write_sky(OutBuffer dest, const Sky& sky, f32 framerate) {
 	header.fx_list = dest.write_multiple(sky.fx);
 	header.maximum_sprite_count = (s16) sky.maximum_sprite_count;
 	
-	auto [defs, data] = write_sky_textures(dest, sky.textures, sky.texture_mappings);
+	auto [defs, data] = write_sky_textures(dest, sky.textures, sky.texture_mappings, game);
 	header.texture_defs = defs;
 	header.texture_data = data;
 	
@@ -84,7 +84,7 @@ void write_sky(OutBuffer dest, const Sky& sky, f32 framerate) {
 	dest.write(header_ofs, header);
 }
 
-static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(Buffer src, const SkyHeader& header) {
+static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(Buffer src, const SkyHeader& header, Game game) {
 	std::vector<Texture> textures;
 	std::vector<s32> texture_mappings;
 	std::vector<SkyTexture> defs;
@@ -107,6 +107,9 @@ static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(Buff
 			Texture texture = Texture::create_8bit_paletted(def.width, def.height, std::move(data), std::move(palette));
 			texture.multiply_alphas();
 			texture.swizzle_palette();
+			if(game == Game::DL) {
+				texture.swizzle();
+			}
 			
 			index = (s32) textures.size();
 			textures.emplace_back(std::move(texture));
@@ -118,7 +121,7 @@ static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(Buff
 	return {textures, texture_mappings};
 }
 
-static std::tuple<s64, s64> write_sky_textures(OutBuffer dest, const std::vector<Texture>& textures, const std::vector<s32>& texture_mappings) {
+static std::tuple<s64, s64> write_sky_textures(OutBuffer dest, const std::vector<Texture>& textures, const std::vector<s32>& texture_mappings, Game game) {
 	dest.pad(0x10);
 	s64 defs_ofs = dest.alloc_multiple<SkyTexture>(texture_mappings.size());
 	dest.pad(0x40);
@@ -131,6 +134,9 @@ static std::tuple<s64, s64> write_sky_textures(OutBuffer dest, const std::vector
 		texture.to_8bit_paletted();
 		texture.divide_alphas();
 		texture.swizzle_palette();
+		if(game == Game::DL) {
+			texture.swizzle();
+		}
 		
 		dest.pad(0x40);
 		s32 palette_ofs = dest.tell() - data_ofs;

@@ -52,7 +52,7 @@ on_load(Sky, []() {
 
 static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig config) {
 	std::vector<u8> buffer = src.read_multiple<u8>(src.size());
-	Sky sky = read_sky(buffer, config.framerate());
+	Sky sky = read_sky(buffer, config.game(), config.framerate());
 	
 	SkyColour col = sky.colour;
 	dest.set_colour(glm::vec4(
@@ -190,7 +190,7 @@ static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig 
 	});
 	
 	std::vector<u8> buffer;
-	write_sky(buffer, sky, config.framerate());
+	write_sky(buffer, sky, config.game(), config.framerate());
 	dest.write_v(buffer);
 }
 
