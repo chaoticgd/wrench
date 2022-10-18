@@ -262,7 +262,7 @@ static VertexData read_vertices(const XmlNode* geometry, const IdMap& ids) {
 		}
 	}
 	verify(positions_source, "<vertices> node missing POSITIONS input.");
-		
+	
 	auto positions = read_vertex_source(positions_source, ids);
 	verify(positions.size() % 3 == 0, "Vertex positions array for mesh '%s' has a bad size (not divisible by 3).", mesh_name);
 	
@@ -275,7 +275,7 @@ static VertexData read_vertices(const XmlNode* geometry, const IdMap& ids) {
 	Opt<std::vector<f32>> colours;
 	if(colours_source) {
 		colours = read_vertex_source(colours_source, ids);
-		verify(normals->size() % 4 == 0, "Vertex colours array for mesh '%s' has a bad size (not divisible by 4).", mesh_name);
+		verify(colours->size() % 4 == 0, "Vertex colours array for mesh '%s' has a bad size (not divisible by 4).", mesh_name);
 	}
 	
 	Opt<std::vector<f32>> tex_coords;
