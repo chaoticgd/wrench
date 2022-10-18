@@ -119,6 +119,19 @@ AssetType Asset::logical_type() const {
 	return physical_type();
 }
 
+Asset& Asset::as(AssetType type) {
+	for(Asset* asset = &highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
+		if(asset->physical_type() == type) {
+			return *asset;
+		} else if(asset->physical_type() != PlaceholderAsset::ASSET_TYPE) {
+			break;
+		}
+	}
+	verify_not_reached("Failed to convert asset %s to type %s.",
+		absolute_link().to_string().c_str(),
+		asset_type_to_string(type));
+}
+
 bool Asset::has_child(const char* tag) const {
 	for(const Asset* asset = &highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
 		for(const std::unique_ptr<Asset>& child : asset->_children) {

@@ -122,8 +122,8 @@ public:
 			for(const std::unique_ptr<Asset>& child : asset->_children) {
 				if(child->higher_precedence() == nullptr && !child->is_deleted()) {
 					Asset& child_2 = child->resolve_references();
-					if(child_2.physical_type() == ChildType::ASSET_TYPE) {
-						callback(static_cast<ChildType&>(child_2));
+					if(child_2.logical_type() == ChildType::ASSET_TYPE) {
+						callback(child_2.as<ChildType>());
 					}
 				}
 			}
@@ -150,28 +150,16 @@ public:
 		return asset.as<ChildType>();
 	}
 	
+	Asset& as(AssetType type);
+	
 	template <typename AssetType>
 	AssetType& as() {
-		for(Asset* asset = &highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
-			if(asset->physical_type() == AssetType::ASSET_TYPE) {
-				return *static_cast<AssetType*>(asset);
-			}
-		}
-		verify_not_reached("Failed to convert asset %s to type %s.",
-			absolute_link().to_string().c_str(),
-			asset_type_to_string(AssetType::ASSET_TYPE));
+		return static_cast<AssetType&>(as(AssetType::ASSET_TYPE));
 	}
 	
 	template <typename AssetType>
 	const AssetType& as() const {
-		for(const Asset* asset = &highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
-			if(asset->physical_type() == AssetType::ASSET_TYPE) {
-				return *static_cast<const AssetType*>(asset);
-			}
-		}
-		verify_not_reached("Failed to convert asset %s to type %s.",
-			absolute_link().to_string().c_str(),
-			asset_type_to_string(AssetType::ASSET_TYPE));
+		return const_cast<Asset*>(this)->as<AssetType>();
 	}
 	
 	template <typename ChildTargetType>
