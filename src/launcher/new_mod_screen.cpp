@@ -21,6 +21,7 @@
 #include <core/shell.h>
 #include <core/stream.h>
 #include <assetmgr/game_info.h>
+#include <assetmgr/asset_types.h>
 #include <gui/config.h>
 
 bool new_mod_screen() {
@@ -35,9 +36,6 @@ bool new_mod_screen() {
 		static std::string folder;
 		static GameInfo info;
 		static bool open_folder = true;
-		
-		info.type = AssetBankType::MOD;
-		info.mod.supported_games = {Game::RAC, Game::GC, Game::UYA, Game::DL};
 		
 		if(g_config.paths.mods_folders.size() >= 1) {
 			bool drop_down;
@@ -60,6 +58,10 @@ bool new_mod_screen() {
 			ImGui::InputText("Display Name", &info.name);
 			
 			if(mods_folder < g_config.paths.mods_folders.size() && ImGui::Button("Create")) {
+				info.format_version = ASSET_FORMAT_VERSION;
+				info.type = AssetBankType::MOD;
+				info.mod.supported_games = {Game::RAC, Game::GC, Game::UYA, Game::DL};
+				
 				std::string text;
 				write_game_info(text, info);
 				
