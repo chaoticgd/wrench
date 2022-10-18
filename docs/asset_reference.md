@@ -1124,8 +1124,8 @@ The world space collision mesh for a level.
 | - | - | - | - | - |
 | textured | If the mesh is textured or not. | Boolean | Yes | RC/GC/UYA/DL |
 | bloom | Only works for textured shells. | Boolean | No | UYA/DL |
-| starting_rotation | The starting rotation in radians per second. | Vector3 | No | RC/GC/UYA/DL |
-| angular_velocity | The change in rotation each frame. | Vector3 | No | RC/GC/UYA/DL |
+| starting_rotation | The starting rotation. Each component is in radians. | Vector3 | No | RC/GC/UYA/DL |
+| angular_velocity | The change in rotation. Each component is in radians per second. | Vector3 | No | RC/GC/UYA/DL |
 
 *Children*
 

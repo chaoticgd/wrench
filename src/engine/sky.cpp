@@ -25,8 +25,8 @@ static std::tuple<std::vector<Texture>, std::vector<s32>> read_sky_textures(Buff
 static std::tuple<s64, s64> write_sky_textures(OutBuffer dest, const std::vector<Texture>& textures, const std::vector<s32>& texture_mappings);
 static SkyShell read_sky_shell(Buffer src, s64 offset, s32 texture_count, f32 framerate);
 static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, f32 framerate);
-static f32 rotation_to_radians_per_second(u16 angle, f32 framerate);
-static u16 rotation_from_radians_per_second(f32 angle, f32 framerate);
+static f32 rotation_to_radians_per_second(s16 angle, f32 framerate);
+static s16 rotation_from_radians_per_second(f32 angle, f32 framerate);
 static Mesh read_sky_cluster(Buffer src, s64 offset, s32 texture_count, bool textured);
 static void write_sky_cluster(OutBuffer dest, SkyClusterHeader& header, const Mesh& cluster);
 
@@ -202,12 +202,12 @@ static s64 write_sky_shell(OutBuffer dest, const SkyShell& shell, f32 framerate)
 	return header_ofs;
 }
 
-static f32 rotation_to_radians_per_second(u16 angle, f32 framerate) {
-	return angle * (framerate * ((2.f * WRENCH_PI) / UINT16_MAX));
+static f32 rotation_to_radians_per_second(s16 angle, f32 framerate) {
+	return angle * (framerate * ((2.f * WRENCH_PI) / 32768.f));
 }
 
-static u16 rotation_from_radians_per_second(f32 angle, f32 framerate) {
-	return (u16) roundf(angle * ((UINT16_MAX / (2.f * WRENCH_PI)) / framerate));
+static s16 rotation_from_radians_per_second(f32 angle, f32 framerate) {
+	return (u16) roundf(angle * ((32768.f / (2.f * WRENCH_PI)) / framerate));
 }
 
 static Mesh read_sky_cluster(Buffer src, s64 offset, s32 texture_count, bool textured) {

@@ -75,17 +75,17 @@ packed_struct(SkyTexture,
 	/* 0xc */ s32 height;
 )
 
-packed_struct(Vec3u16,
-	/* 0x0 */ u16 x;
-	/* 0x2 */ u16 y;
-	/* 0x4 */ u16 z;
+packed_struct(Vec3s16,
+	/* 0x0 */ s16 x;
+	/* 0x2 */ s16 y;
+	/* 0x4 */ s16 z;
 )
 
 packed_struct(SkyShellHeader,
 	/* 0x0 */ s16 cluster_count;
 	/* 0x2 */ s16 flags;
-	/* 0x4 */ Vec3u16 rotation;
-	/* 0xa */ Vec3u16 angular_velocity;
+	/* 0x4 */ Vec3s16 rotation;
+	/* 0xa */ Vec3s16 angular_velocity;
 )
 
 packed_struct(SkyClusterHeader,
