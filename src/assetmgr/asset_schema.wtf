@@ -486,6 +486,16 @@ AssetType ArmorWad {
 		}
 	}
 	
+	Child clank_textures {
+		desc: "Textures for Clank."
+		allowed_types: ["Collection"]
+		required: true
+		games: [3]
+		Child child {
+			allowed_types: ["Texture" "Binary"]
+		}
+	}
+	
 	Child bot_textures {
 		desc: "Textures for Merc and Green."
 		allowed_types: ["Collection"]
@@ -495,12 +505,14 @@ AssetType ArmorWad {
 			allowed_types: ["Texture"]
 		}
 	}
+	
 	Child landstalker_textures {
 		desc: "Textures for the landstalker."
 		allowed_types: ["Collection"]
 		required: true
 		games: [4]
 	}
+	
 	Child dropship_textures {
 		desc: "Textures for the dropship."
 		allowed_types: ["Collection"]
@@ -1678,13 +1690,13 @@ AssetType SkyShell {
 	}
 	
 	Vector3Attribute starting_rotation {
-		desc: "The starting rotation in radians per second."
+		desc: "The starting rotation. Each component is in radians."
 		required: false
 		games: [1 2 3 4]
 	}
 	
 	Vector3Attribute angular_velocity {
-		desc: "The change in rotation each frame."
+		desc: "The change in rotation. Each component is in radians per second."
 		required: false
 		games: [1 2 3 4]
 	}

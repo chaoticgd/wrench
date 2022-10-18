@@ -101,7 +101,7 @@ on_load(Level, []() {
 	LevelWadAsset::funcs.pack_dl = wrap_wad_packer_func<LevelWadAsset, DlLevelWadHeader>(pack_dl_level_wad);
 })
 
-void unpack_rac_level_wad(LevelWadAsset& dest, const RacLevelWadHeader& header, InputStream& src, BuildConfig config) {
+static void unpack_rac_level_wad(LevelWadAsset& dest, const RacLevelWadHeader& header, InputStream& src, BuildConfig config) {
 	dest.set_id(header.id);
 	g_asset_unpacker.current_level_id = header.id;
 	
@@ -110,7 +110,7 @@ void unpack_rac_level_wad(LevelWadAsset& dest, const RacLevelWadHeader& header, 
 	BinaryAsset& gameplay = dest.data<LevelDataWadAsset>().gameplay();
 	unpack_compressed_asset(gameplay, src, header.gameplay_ntsc, config);
 	dest.gameplay<ReferenceAsset>().set_asset(gameplay.link_relative_to(dest));
-	unpack_compressed_asset(dest.occlusion(), src, header.occlusion, config);
+	unpack_asset(dest.occlusion(), src, header.occlusion, config);
 }
 
 static void pack_rac_level_wad(OutputStream& dest, RacLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config) {
@@ -120,10 +120,10 @@ static void pack_rac_level_wad(OutputStream& dest, RacLevelWadHeader& header, co
 	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), config);
 	header.gameplay_ntsc = pack_compressed_asset_sa<SectorRange>(dest, src.get_gameplay(), config, "gameplay_ntsc");
 	header.gameplay_pal = pack_compressed_asset_sa<SectorRange>(dest, src.get_gameplay(), config, "gameplay_pal");
-	header.occlusion = pack_compressed_asset_sa<SectorRange>(dest, src.get_occlusion(), config, "occlusion");
+	header.occlusion = pack_asset_sa<SectorRange>(dest, src.get_occlusion(), config, "occlusion");
 }
 
-void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHeader& header, InputStream& src, BuildConfig config) {
+static void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHeader& header, InputStream& src, BuildConfig config) {
 	dest.set_id(header.id);
 	dest.set_reverb(header.reverb);
 	g_asset_unpacker.current_level_id = header.id;
@@ -135,7 +135,7 @@ void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHeader& hea
 	BinaryAsset& gameplay = dest.data<LevelDataWadAsset>().gameplay();
 	unpack_compressed_asset(gameplay, src, header.gameplay, config);
 	dest.gameplay<ReferenceAsset>().set_asset(gameplay.link_relative_to(dest));
-	unpack_compressed_asset(dest.occlusion(), src, header.occlusion, config);
+	unpack_asset(dest.occlusion(), src, header.occlusion, config);
 	unpack_chunks(dest.chunks(), src, header.chunks, config);
 }
 
@@ -147,11 +147,11 @@ static void pack_gc_uya_level_wad(OutputStream& dest, GcUyaLevelWadHeader& heade
 	header.sound_bank = pack_asset_sa<SectorRange>(dest, src.get_sound_bank(), config);
 	header.data = pack_asset_sa<SectorRange>(dest, src.get_data(), config);
 	header.gameplay = pack_compressed_asset_sa<SectorRange>(dest, src.get_gameplay(), config, "gameplay");
-	header.occlusion = pack_compressed_asset_sa<SectorRange>(dest, src.get_occlusion(), config, "occlusion");
+	header.occlusion = pack_asset_sa<SectorRange>(dest, src.get_occlusion(), config, "occlusion");
 	header.chunks = pack_chunks(dest, src.get_chunks(), config);
 }
 
-void unpack_dl_level_wad(LevelWadAsset& dest, const DlLevelWadHeader& header, InputStream& src, BuildConfig config) {
+static void unpack_dl_level_wad(LevelWadAsset& dest, const DlLevelWadHeader& header, InputStream& src, BuildConfig config) {
 	dest.set_id(header.id);
 	dest.set_reverb(header.reverb);
 	g_asset_unpacker.current_level_id = header.id;

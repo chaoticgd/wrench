@@ -1,6 +1,6 @@
 # Asset Reference
 
-This file was generated from src/assetmgr/asset_schema.wtf and is for version 12 of the asset format.
+This file was generated from src/assetmgr/asset_schema.wtf and is for version 11 of the asset format.
 
 ## Index
 
@@ -457,7 +457,6 @@ Holds all of the global assets (those that are not specific to a given level) fo
 | armors | The armors/skins. | MobyClass\[\] | Yes | GC/UYA/DL |
 | wrenches | The different wrench upgrades. | MobyClass\[\] | Yes | GC/UYA |
 | multiplayer_armors | The multiplayer skins. | MobyClass\[\] | Yes | UYA |
-| clank_textures | Textures for Clank. | Texture\[\], Binary\[\] | Yes | UYA |
 | bot_textures | Textures for Merc and Green. | Texture\[\] | Yes | DL |
 | landstalker_textures | Textures for the landstalker. | Collection | Yes | DL |
 | dropship_textures | Textures for the dropship. | Collection | Yes | DL |
@@ -1124,8 +1123,8 @@ The world space collision mesh for a level.
 | - | - | - | - | - |
 | textured | If the mesh is textured or not. | Boolean | Yes | RC/GC/UYA/DL |
 | bloom | Only works for textured shells. | Boolean | No | UYA/DL |
-| starting_rotation | The starting rotation. Each component is in radians. | Vector3 | No | RC/GC/UYA/DL |
-| angular_velocity | The change in rotation. Each component is in radians per second. | Vector3 | No | RC/GC/UYA/DL |
+| starting_rotation | The starting rotation in radians per second. | Vector3 | No | RC/GC/UYA/DL |
+| angular_velocity | The change in rotation each frame. | Vector3 | No | RC/GC/UYA/DL |
 
 *Children*
 
