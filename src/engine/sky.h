@@ -116,8 +116,8 @@ packed_struct(SkyFace,
 	/* 0x3 */ s8 texture;
 )
 
-Sky read_sky(Buffer src, f32 framerate);
-void write_sky(OutBuffer dest, const Sky& sky, f32 framerate);
+Sky read_sky(Buffer src, Game game, f32 framerate);
+void write_sky(OutBuffer dest, const Sky& sky, Game game, f32 framerate);
 std::vector<Mesh> generate_clusters(const Mesh& mesh);
 
 #endif
