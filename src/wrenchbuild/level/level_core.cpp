@@ -28,7 +28,7 @@
 static std::vector<s64> enumerate_level_core_block_boundaries(InputStream& src, const LevelCoreHeader& header, Game game);
 static void print_level_core_header(const LevelCoreHeader& header);
 
-void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_range, ByteRange data_range, ByteRange gs_ram_range, BuildConfig config) {
+void unpack_level_core(LevelWadAsset& dest, InputStream& src, ByteRange index_range, ByteRange data_range, ByteRange gs_ram_range, BuildConfig config) {
 	SubInputStream index(src, index_range.bytes());
 	std::vector<u8> decompressed_data;
 	std::vector<u8> compressed_data = src.read_multiple<u8>(data_range.offset, data_range.size);
@@ -83,7 +83,7 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 	if(config.is_testing()) {
 		build = &dest.child<BuildAsset>("test_build");
 	} else {
-		build = &build_from_level_core_asset(dest);
+		build = &build_from_level_wad_asset(dest);
 	}
 	
 	std::vector<GsRamEntry> gs_table;
@@ -163,7 +163,7 @@ void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_r
 	}
 }
 
-void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, std::vector<u8>& gs_ram_dest, const LevelCoreAsset& src, BuildConfig config) {
+void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, std::vector<u8>& gs_ram_dest, const LevelWadAsset& src, BuildConfig config) {
 	MemoryOutputStream index(index_dest);
 	MemoryOutputStream gs_ram(gs_ram_dest);
 	
@@ -339,13 +339,11 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 }
 
 // Only designed to work on assets that have just been unpacked.
-BuildAsset& build_from_level_core_asset(LevelCoreAsset& core) {
-	assert(core.parent()); // LevelDataWad
-	assert(core.parent()->parent()); // LevelWad
-	assert(core.parent()->parent()->parent()); // Level
-	assert(core.parent()->parent()->parent()->parent()); // Collection
-	assert(core.parent()->parent()->parent()->parent()->parent()); // Build
-	Asset& build = *core.parent()->parent()->parent()->parent()->parent();
+BuildAsset& build_from_level_wad_asset(LevelWadAsset& core) {
+	assert(core.parent()); // Level
+	assert(core.parent()->parent()); // Collection
+	assert(core.parent()->parent()->parent()); // Build
+	Asset& build = *core.parent()->parent()->parent();
 	for(Asset* asset = &build.highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
 		if(asset->logical_type() == BuildAsset::ASSET_TYPE) {
 			return asset->as<BuildAsset>();

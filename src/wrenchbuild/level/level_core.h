@@ -128,9 +128,9 @@ packed_struct(MobySoundRemapHeader,
 	/* 0x10 */ s32 unknown;
 )
 
-void unpack_level_core(LevelCoreAsset& dest, InputStream& src, ByteRange index_range, ByteRange data_range, ByteRange gs_ram_range, BuildConfig config);
-void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, std::vector<u8>& gs_ram_dest, const LevelCoreAsset& src, BuildConfig config);
-BuildAsset& build_from_level_core_asset(LevelCoreAsset& core);
+void unpack_level_core(LevelWadAsset& dest, InputStream& src, ByteRange index_range, ByteRange data_range, ByteRange gs_ram_range, BuildConfig config);
+void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, std::vector<u8>& gs_ram_dest, const LevelWadAsset& src, BuildConfig config);
+BuildAsset& build_from_level_wad_asset(LevelWadAsset& core);
 ByteRange level_core_block_range(s32 ofs, const std::vector<s64>& block_bounds);
 
 #endif

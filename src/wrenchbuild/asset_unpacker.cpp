@@ -113,7 +113,6 @@ static bool handle_special_debugging_cases(Asset& dest, InputStream& src, const 
 	s32 is_level_wad = dest.flags & ASSET_IS_LEVEL_WAD; 
 	s32 is_bin_leaf = dest.flags & ASSET_IS_BIN_LEAF;
 	s32 is_flattenable = dest.flags & ASSET_IS_FLATTENABLE;
-	s32 is_bin_internal = dest.flags & ASSET_IS_BIN_INTERNAL;
 	if(is_wad && ((!is_level_wad && g_asset_unpacker.skip_globals) || (is_level_wad && g_asset_unpacker.skip_levels))) {
 		return true;
 	}
@@ -125,25 +124,16 @@ static bool handle_special_debugging_cases(Asset& dest, InputStream& src, const 
 		return true;
 	}
 	
-	if(g_asset_unpacker.dump_binaries && (is_bin_leaf || is_bin_internal)) {
+	if(g_asset_unpacker.dump_binaries && is_bin_leaf) {
 		const char* type = asset_type_to_string(dest.physical_type());
 		std::string tag = dest.tag();
-		BinaryAsset* bin;
-		if(is_bin_internal) {
-			std::string tag = dest.tag() + "_internal";
-			bin = &dest.parent()->child<BinaryAsset>(tag.c_str());
-		} else {
-			std::string tag = dest.tag();
-			bin = &dest.parent()->transmute_child<BinaryAsset>(tag.c_str());
-		}
-		bin->set_asset_type(type);
-		bin->set_format_hint(hint);
-		bin->set_game(game_to_string(config.game()));
-		bin->set_region(region_to_string(config.region()));
-		unpack_asset_impl(*bin, src, nullptr, config, FMT_NO_HINT);
-		if(is_bin_leaf) {
-			return true;
-		}
+		BinaryAsset& bin = dest.parent()->transmute_child<BinaryAsset>(tag.c_str());
+		bin.set_asset_type(type);
+		bin.set_format_hint(hint);
+		bin.set_game(game_to_string(config.game()));
+		bin.set_region(region_to_string(config.region()));
+		unpack_asset_impl(bin, src, nullptr, config, FMT_NO_HINT);
+		return true;
 	}
 	
 	if(g_asset_unpacker.dump_flat && is_wad && dest.physical_type() != FlatWadAsset::ASSET_TYPE) {

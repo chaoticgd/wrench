@@ -45,8 +45,6 @@ public:
 	
 	LevelAsset& level();
 	LevelWadAsset& level_wad();
-	LevelDataWadAsset& data_wad();
-	LevelCoreAsset& core();
 	
 	Gameplay& gameplay();
 	

@@ -42,7 +42,6 @@ enum AssetFlags {
 	ASSET_IS_FLATTENABLE = (1 << 3),   // This asset can be written as a FlatWadAsset for debugging.
 	ASSET_HAS_DELETED_FLAG = (1 << 4), // The deleted attribute was specified for this asset.
 	ASSET_IS_DELETED = (1 << 5),       // If the deleted attribute was specified, it was set to true.
-	ASSET_IS_BIN_INTERNAL = (1 << 6)   // This makes unpack_binaries dump this out including children.
 };
 
 class Asset {

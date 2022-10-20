@@ -475,7 +475,7 @@ std::tuple<ArrayRange, std::vector<u8>, s32> pack_particle_textures(OutputStream
 	return {range, defs, particles_base};
 }
 
-void unpack_fx_textures(LevelCoreAsset& core, const std::vector<FxTextureEntry>& entries, InputStream& fx_bank, Game game) {
+void unpack_fx_textures(LevelWadAsset& core, const std::vector<FxTextureEntry>& entries, InputStream& fx_bank, Game game) {
 	CollectionAsset& fx_textures = core.fx_textures("fx_textures/fx_textures.asset");
 	
 	std::vector<Texture> textures;

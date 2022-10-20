@@ -53,37 +53,14 @@ packed_struct(DlLevelDataHeader,
 	/* 0x68 */ ByteRange global_nav_data;
 )
 
-static void unpack_rac_level_data_wad(LevelDataWadAsset& dest, InputStream& src, BuildConfig config);
-static void pack_rac_level_data_wad(OutputStream& dest, const LevelDataWadAsset& src, BuildConfig config);
-static void unpack_gc_uya_level_data_wad(LevelDataWadAsset& dest, InputStream& src, BuildConfig config);
-static void pack_gc_uya_level_data_wad(OutputStream& dest, const LevelDataWadAsset& src, BuildConfig config);
-static void unpack_dl_level_data_wad(LevelDataWadAsset& dest, InputStream& src, BuildConfig config);
-static void pack_dl_level_data_wad(OutputStream& dest, const LevelDataWadAsset& src, BuildConfig config);
 template <typename Header>
 static AssetTestResult test_level_data_wad(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode);
 static ByteRange write_vector_of_bytes(OutputStream& dest, std::vector<u8>& bytes);
 
-on_load(LevelData, []() {
-	LevelDataWadAsset::funcs.unpack_rac1 = wrap_unpacker_func<LevelDataWadAsset>(unpack_rac_level_data_wad);
-	LevelDataWadAsset::funcs.unpack_rac2 = wrap_unpacker_func<LevelDataWadAsset>(unpack_gc_uya_level_data_wad);
-	LevelDataWadAsset::funcs.unpack_rac3 = wrap_unpacker_func<LevelDataWadAsset>(unpack_gc_uya_level_data_wad);
-	LevelDataWadAsset::funcs.unpack_dl = wrap_unpacker_func<LevelDataWadAsset>(unpack_dl_level_data_wad);
-	
-	LevelDataWadAsset::funcs.pack_rac1 = wrap_packer_func<LevelDataWadAsset>(pack_rac_level_data_wad);
-	LevelDataWadAsset::funcs.pack_rac2 = wrap_packer_func<LevelDataWadAsset>(pack_gc_uya_level_data_wad);
-	LevelDataWadAsset::funcs.pack_rac3 = wrap_packer_func<LevelDataWadAsset>(pack_gc_uya_level_data_wad);
-	LevelDataWadAsset::funcs.pack_dl = wrap_packer_func<LevelDataWadAsset>(pack_dl_level_data_wad);
-	
-	LevelDataWadAsset::funcs.test_rac = new AssetTestFunc(test_level_data_wad<RacLevelDataHeader>);
-	LevelDataWadAsset::funcs.test_gc  = new AssetTestFunc(test_level_data_wad<GcUyaLevelDataHeader>);
-	LevelDataWadAsset::funcs.test_uya = new AssetTestFunc(test_level_data_wad<GcUyaLevelDataHeader>);
-	LevelDataWadAsset::funcs.test_dl  = new AssetTestFunc(test_level_data_wad<DlLevelDataHeader>);
-})
-
-static void unpack_rac_level_data_wad(LevelDataWadAsset& dest, InputStream& src, BuildConfig config) {
+void unpack_rac_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig config) {
 	auto header = src.read<RacLevelDataHeader>(0);
 	
-	unpack_level_core(dest.core(), src, header.core_index, header.core_data, header.gs_ram, config);
+	unpack_level_core(dest, src, header.core_index, header.core_data, header.gs_ram, config);
 	
 	unpack_asset(dest.code(), src, header.code, config);
 	unpack_asset(dest.sound_bank(), src, header.sound_bank, config);
@@ -91,15 +68,15 @@ static void unpack_rac_level_data_wad(LevelDataWadAsset& dest, InputStream& src,
 	unpack_compressed_assets<BinaryAsset>(dest.hud_banks(SWITCH_FILES), src, ARRAY_PAIR(header.hud_banks), config);
 }
 
-static void pack_rac_level_data_wad(OutputStream& dest, const LevelDataWadAsset& src, BuildConfig config) {
-	RacLevelDataHeader header = {0};
+void pack_rac_level_data_wad(OutputStream& dest, const LevelWadAsset& src, BuildConfig config) {
+	RacLevelDataHeader header = {};
 	dest.write(header);
 	ByteRange empty = {-1, 0};
 	
 	std::vector<u8> index;
 	std::vector<u8> data;
 	std::vector<u8> gs_ram;
-	pack_level_core(index, data, gs_ram, src.get_core(), config);
+	pack_level_core(index, data, gs_ram, src, config);
 	
 	header.code = pack_asset<ByteRange>(dest, src.get_code(), config, 0x40, FMT_NO_HINT, &empty);
 	header.sound_bank = pack_asset<ByteRange>(dest, src.get_sound_bank(), config, 0x40, FMT_NO_HINT, &empty);
@@ -112,10 +89,10 @@ static void pack_rac_level_data_wad(OutputStream& dest, const LevelDataWadAsset&
 	dest.write(0, header);
 }
 
-static void unpack_gc_uya_level_data_wad(LevelDataWadAsset& dest, InputStream& src, BuildConfig config) {
+void unpack_gc_uya_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig config) {
 	auto header = src.read<GcUyaLevelDataHeader>(0);
 	
-	unpack_level_core(dest.core(), src, header.core_index, header.core_data, header.gs_ram, config);
+	unpack_level_core(dest, src, header.core_index, header.core_data, header.gs_ram, config);
 	
 	unpack_asset(dest.code(), src, header.code, config);
 	unpack_asset(dest.hud_header(), src, header.hud_header, config);
@@ -123,15 +100,15 @@ static void unpack_gc_uya_level_data_wad(LevelDataWadAsset& dest, InputStream& s
 	unpack_compressed_asset(dest.transition_textures<CollectionAsset>(SWITCH_FILES), src, header.transition_textures, config, FMT_COLLECTION_PIF8);
 }
 
-static void pack_gc_uya_level_data_wad(OutputStream& dest, const LevelDataWadAsset& src, BuildConfig config) {
-	GcUyaLevelDataHeader header = {0};
+void pack_gc_uya_level_data_wad(OutputStream& dest, const LevelWadAsset& src, BuildConfig config) {
+	GcUyaLevelDataHeader header = {};
 	dest.write(header);
 	ByteRange empty = {-1, 0};
 	
 	std::vector<u8> index;
 	std::vector<u8> data;
 	std::vector<u8> gs_ram;
-	pack_level_core(index, data, gs_ram, src.get_core(), config);
+	pack_level_core(index, data, gs_ram, src, config);
 	
 	header.code = pack_asset<ByteRange>(dest, src.get_code(), config, 0x40, FMT_NO_HINT, &empty);
 	header.core_index = write_vector_of_bytes(dest, index);
@@ -148,10 +125,10 @@ static void pack_gc_uya_level_data_wad(OutputStream& dest, const LevelDataWadAss
 	dest.write(0, header);
 }
 
-static void unpack_dl_level_data_wad(LevelDataWadAsset& dest, InputStream& src, BuildConfig config) {
+void unpack_dl_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig config) {
 	auto header = src.read<DlLevelDataHeader>(0);
 	
-	unpack_level_core(dest.core(), src, header.core_index, header.core_data, header.gs_ram, config);
+	unpack_level_core(dest, src, header.core_index, header.core_data, header.gs_ram, config);
 	
 	unpack_asset(dest.moby8355_pvars(), src, header.moby8355_pvars, config);
 	unpack_asset(dest.code(), src, header.code, config);
@@ -162,15 +139,15 @@ static void unpack_dl_level_data_wad(LevelDataWadAsset& dest, InputStream& src, 
 	unpack_compressed_asset(dest.global_nav_data(), src, header.global_nav_data, config);
 }
 
-static void pack_dl_level_data_wad(OutputStream& dest, const LevelDataWadAsset& src, BuildConfig config) {
-	DlLevelDataHeader header = {0};
+void pack_dl_level_data_wad(OutputStream& dest, std::vector<u8>& compressed_art_instances, std::vector<u8>& compressed_gameplay, const LevelWadAsset& src, BuildConfig config) {
+	DlLevelDataHeader header = {};
 	dest.write(header);
 	ByteRange empty = {-1, 0};
 	
 	std::vector<u8> index;
 	std::vector<u8> data;
 	std::vector<u8> gs_ram;
-	pack_level_core(index, data, gs_ram, src.get_core(), config);
+	pack_level_core(index, data, gs_ram, src, config);
 	
 	header.moby8355_pvars = pack_asset<ByteRange>(dest, src.get_moby8355_pvars(), config, 0x40, FMT_NO_HINT, &empty);
 	header.code = pack_asset<ByteRange>(dest, src.get_code(), config, 0x40, FMT_NO_HINT, &empty);
@@ -179,8 +156,15 @@ static void pack_dl_level_data_wad(OutputStream& dest, const LevelDataWadAsset& 
 	header.hud_header = pack_asset<ByteRange>(dest, src.get_hud_header(), config, 0x40, FMT_NO_HINT, &empty);
 	pack_compressed_assets<ByteRange>(dest, ARRAY_PAIR(header.hud_banks), src.get_hud_banks(), config, 0x40, "hud_bank");
 	header.core_data = write_vector_of_bytes(dest, data);
-	header.art_instances = pack_compressed_asset<ByteRange>(dest, src.get_art_instances(), config, 0x40, "art_insts");
-	header.gameplay = pack_compressed_asset<ByteRange>(dest, src.get_gameplay(), config, 0x40, "gameplay");
+	
+	MemoryOutputStream art_instances_dest(compressed_art_instances);
+	pack_compressed_asset<ByteRange>(art_instances_dest, src.get_art_instances(), config, 0x40, "art_insts");
+	header.art_instances = write_vector_of_bytes(dest, compressed_art_instances);
+	
+	MemoryOutputStream gameplay_dest(compressed_gameplay);
+	pack_compressed_asset<ByteRange>(gameplay_dest, src.get_gameplay(), config, 0x40, "gameplay");
+	header.gameplay = write_vector_of_bytes(dest, compressed_gameplay);
+	
 	header.global_nav_data = pack_compressed_asset<ByteRange>(dest, src.get_global_nav_data(), config, 0x40, "globalnav");
 	
 	dest.write(0, header);
