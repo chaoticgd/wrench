@@ -286,11 +286,6 @@ static void generate_asset_implementation(const WtfNode* asset_type) {
 		out("\tflags |= ASSET_IS_BIN_LEAF;\n");
 	}
 	
-	const WtfAttribute* bin_internal = wtf_attribute(asset_type, "bin_internal");
-	if(bin_internal && bin_internal->type == WTF_BOOLEAN && bin_internal->boolean) {
-		out("\tflags |= ASSET_IS_BIN_INTERNAL;\n");
-	}
-	
 	const WtfAttribute* flattenable = wtf_attribute(asset_type, "flattenable");
 	if(flattenable && flattenable->type == WTF_BOOLEAN && flattenable->boolean) {
 		out("\tflags |= ASSET_IS_FLATTENABLE;\n");

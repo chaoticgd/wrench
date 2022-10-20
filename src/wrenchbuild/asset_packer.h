@@ -35,7 +35,7 @@ void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_
 
 template <typename Range>
 Range pack_asset(OutputStream& dest, const Asset& src, BuildConfig config, s64 alignment, const char* hint = FMT_NO_HINT, Range* empty_range = nullptr) {
-	if(src.logical_type() == BinaryAsset::ASSET_TYPE && !static_cast<const BinaryAsset&>(src).has_src()) {
+	if(src.logical_type() == BinaryAsset::ASSET_TYPE && !(src.as<BinaryAsset>().has_src())) {
 		return empty_range ? *empty_range : Range::from_bytes(0, 0);
 	}
 	dest.seek(dest.size());

@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-format_version: 12
+format_version: 13
 
 // *****************************************************************************
 
@@ -1178,26 +1178,20 @@ AssetType LevelWad {
 		games: [2 3 4]
 	}
 	
-	Child data {
-		desc: "Contains most of the assets for a level."
-		allowed_types: ["LevelDataWad" "Binary"]
+	Child sound_bank {
+		desc: "The main 989snd sound bank for the level."
+		allowed_types: ["Binary"]
 		required: true
 		games: [1 2 3 4]
 	}
-	Child sound_bank {
-		desc: "The main 989snd sound bank for the level. For R&C1, the child of the LevelDataWad is used instead, and for the rest of the games this asset is usually a reference to that asset. **For that reason, you probably don't want to modify this asset. You probably want to modify the sound_bank child of the LevelDataWad instead.**"
-		allowed_types: ["Binary"]
-		required: true
-		games: [2 3 4]
-	}
 	Child gameplay {
-		desc: "The gameplay file for the level. **Note that this is usually a reference to the gameplay asset in the LevelDataWad, and in the case of Deadlocked that one will be packed in addition to this one (the data is duplicated twice on the disc), so you probably want to modify that one instead.**"
+		desc: "The gameplay file for the level."
 		allowed_types: ["Binary"]
 		required: true
 		games: [1 2 3 4]
 	}
 	Child art_instances {
-		desc: "Similar thing as with the gameplay file. **This is not the copy you want to modify.**"
+		desc: "Similar thing as with the gameplay file."
 		allowed_types: ["Binary"]
 		required: true
 		games: [4]
@@ -1212,23 +1206,7 @@ AssetType LevelWad {
 		games: [4]
 	}
 	
-	Child occlusion {
-		allowed_types: ["Binary"]
-		required: false
-		games: [1 2 3]
-	}
-}
-
-AssetType LevelDataWad {
-	wad: true
-	level_wad: true
-	bin_internal: true
-	
-	Child core {
-		allowed_types: ["LevelCore"]
-		required: true
-		games: [1 2 3 4]
-	}
+	// Level Data Wad
 	Child moby8355_pvars {
 		allowed_types: ["Binary"]
 		required: true
@@ -1236,12 +1214,6 @@ AssetType LevelDataWad {
 	}
 	Child code {
 		desc: "The level code. Contains the main loop, level loading code, moby update functions, and a lot more."
-		allowed_types: ["Binary"]
-		required: true
-		games: [1 2 3 4]
-	}
-	Child sound_bank {
-		desc: "The main 989snd sound bank for the level. This asset is only used directly in the case of R&C1, however for the other games the version of the asset that is used is usually a reference that points to this asset. The intention of this approach is to regularize the structure of a level (to make porting levels between games easier) while still allowing for levels to be packed with a Binary asset for the LevelDataWad."
 		allowed_types: ["Binary"]
 		required: true
 		games: [1 2 3 4]
@@ -1257,26 +1229,13 @@ AssetType LevelDataWad {
 			allowed_types: ["Texture"]
 		}
 	}
-	Child art_instances {
-		desc: "Similar thing as the gameplay file. This is the copy you want to modify."
-		allowed_types: ["Binary"]
-		required: true
-		games: [4]
-	}
-	Child gameplay {
-		desc: "The gameplay file for the level. While in the case of R&C1, GC and UYA this copy isn't used directly, the other copy (a child of the LevelWad) usually references this copy, so this is the copy you probably want to modify (regardless of the game)."
-		allowed_types: ["Binary"]
-		required: true
-		games: [1 2 3 4]
-	}
 	Child global_nav_data {
 		allowed_types: ["Binary"]
 		required: true
 		games: [4]
 	}
-}
-
-AssetType LevelCore {
+	
+	// Level Core
 	Child tfrags {
 		desc: "The main world-space level mesh."
 		allowed_types: ["Binary"]

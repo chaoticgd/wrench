@@ -1,6 +1,6 @@
 # Asset Reference
 
-This file was generated from src/assetmgr/asset_schema.wtf and is for version 13 of the asset format.
+This file was generated from src/assetmgr/asset_schema.wtf and is for version 12 of the asset format.
 
 ## Index
 
@@ -37,6 +37,8 @@ This file was generated from src/assetmgr/asset_schema.wtf and is for version 13
 - [Level](#level)
 	- [Level](#level)
 	- [LevelWad](#levelwad)
+	- [LevelDataWad](#leveldatawad)
+	- [LevelCore](#levelcore)
 	- [Chunk](#chunk)
 	- [Mission](#mission)
 	- [LevelAudioWad](#levelaudiowad)
@@ -801,17 +803,47 @@ Container for assets used in the mutliplayer mode.
 
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
-| sound_bank | The main 989snd sound bank for the level. | Binary | Yes | RC/GC/UYA/DL |
-| gameplay | The gameplay file for the level. | Binary | Yes | RC/GC/UYA/DL |
-| art_instances | Similar thing as with the gameplay file. | Binary | Yes | DL |
+| data | Contains most of the assets for a level. | LevelDataWad, Binary | Yes | RC/GC/UYA/DL |
+| sound_bank | The main 989snd sound bank for the level. For R&C1, the child of the LevelDataWad is used instead, and for the rest of the games this asset is usually a reference to that asset. **For that reason, you probably don't want to modify this asset. You probably want to modify the sound_bank child of the LevelDataWad instead.** | Binary | Yes | GC/UYA/DL |
+| gameplay | The gameplay file for the level. **Note that this is usually a reference to the gameplay asset in the LevelDataWad, and in the case of Deadlocked that one will be packed in addition to this one (the data is duplicated twice on the disc), so you probably want to modify that one instead.** | Binary | Yes | RC/GC/UYA/DL |
+| art_instances | Similar thing as with the gameplay file. **This is not the copy you want to modify.** | Binary | Yes | DL |
 | chunks | *Not yet documented.* | Collection | No | GC/UYA/DL |
 | missions | *Not yet documented.* | Collection | *Not yet documented.* | DL |
+| occlusion | *Not yet documented.* | Binary | No | RC/GC/UYA |
+
+
+### LevelDataWad
+
+*Attributes*
+| Name | Description | Type | Required | Games |
+| - | - | - | - | - |
+
+*Children*
+
+| Name | Description | Allowed Types | Required | Games |
+| - | - | - | - | - |
+| core | *Not yet documented.* | LevelCore | Yes | RC/GC/UYA/DL |
 | moby8355_pvars | *Not yet documented.* | Binary | Yes | DL |
 | code | The level code. Contains the main loop, level loading code, moby update functions, and a lot more. | Binary | Yes | RC/GC/UYA/DL |
+| sound_bank | The main 989snd sound bank for the level. This asset is only used directly in the case of R&C1, however for the other games the version of the asset that is used is usually a reference that points to this asset. The intention of this approach is to regularize the structure of a level (to make porting levels between games easier) while still allowing for levels to be packed with a Binary asset for the LevelDataWad. | Binary | Yes | RC/GC/UYA/DL |
 | hud_header | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
 | hud_banks | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
 | transition_textures | Textures that are shown during a transition to the given level. | Texture\[\], Binary | No | GC/UYA |
+| art_instances | Similar thing as the gameplay file. This is the copy you want to modify. | Binary | Yes | DL |
+| gameplay | The gameplay file for the level. While in the case of R&C1, GC and UYA this copy isn't used directly, the other copy (a child of the LevelWad) usually references this copy, so this is the copy you probably want to modify (regardless of the game). | Binary | Yes | RC/GC/UYA/DL |
 | global_nav_data | *Not yet documented.* | Binary | Yes | DL |
+
+
+### LevelCore
+
+*Attributes*
+| Name | Description | Type | Required | Games |
+| - | - | - | - | - |
+
+*Children*
+
+| Name | Description | Allowed Types | Required | Games |
+| - | - | - | - | - |
 | tfrags | The main world-space level mesh. | Binary | Yes | RC/GC/UYA/DL |
 | tfrag_textures | Textures for the tfrag mesh. | Collection | Yes | RC/GC/UYA/DL |
 | occlusion | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |

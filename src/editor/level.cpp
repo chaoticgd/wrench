@@ -29,14 +29,14 @@ Level::Level() {}
 void Level::read(LevelAsset& asset, Game g) {
 	game = g;
 	_asset = &asset;
-	_gameplay_asset = &data_wad().get_gameplay().as<BinaryAsset>();
+	_gameplay_asset = &level_wad().get_gameplay().as<BinaryAsset>();
 		
 	auto stream = _gameplay_asset->file().open_binary_file_for_reading(_gameplay_asset->src());
 	std::vector<u8> buffer = stream->read_multiple<u8>(stream->size());
 	const std::vector<GameplayBlockDescription>* gbd = gameplay_block_descriptions_from_game(game);
 	read_gameplay(_gameplay, _pvar_types, buffer, game, *gbd);
 	
-	MeshAsset& collision_asset = core().get_collision().as<CollisionAsset>().get_mesh();
+	MeshAsset& collision_asset = level_wad().get_collision().as<CollisionAsset>().get_mesh();
 	std::string collision_xml = collision_asset.file().read_text_file(collision_asset.src().path);
 	ColladaScene collision_scene = read_collada((char*) collision_xml.data());
 	for(const Mesh& mesh : collision_scene.meshes) {
@@ -44,7 +44,7 @@ void Level::read(LevelAsset& asset, Game g) {
 	}
 	collision_materials = upload_materials(collision_scene.materials, {});
 	
-	core().get_moby_classes().for_each_logical_child_of_type<MobyClassAsset>([&](MobyClassAsset& moby) {
+	level_wad().get_moby_classes().for_each_logical_child_of_type<MobyClassAsset>([&](MobyClassAsset& moby) {
 		if(moby.has_editor_mesh()) {
 			MeshAsset& asset = moby.get_editor_mesh();
 			std::string xml = asset.file().read_text_file(asset.src().path);
@@ -69,7 +69,7 @@ void Level::read(LevelAsset& asset, Game g) {
 		}
 	});
 	
-	core().get_shrub_classes().for_each_logical_child_of_type<ShrubClassAsset>([&](ShrubClassAsset& shrub) {
+	level_wad().get_shrub_classes().for_each_logical_child_of_type<ShrubClassAsset>([&](ShrubClassAsset& shrub) {
 		if(!shrub.has_core()) {
 			return;
 		}
@@ -155,14 +155,6 @@ LevelAsset& Level::level() {
 
 LevelWadAsset& Level::level_wad() {
 	return level().get_level().as<LevelWadAsset>();
-}
-
-LevelDataWadAsset& Level::data_wad() {
-	return level_wad().get_data().as<LevelDataWadAsset>();
-}
-
-LevelCoreAsset& Level::core() {
-	return data_wad().get_core();
 }
 
 Gameplay& Level::gameplay() {
