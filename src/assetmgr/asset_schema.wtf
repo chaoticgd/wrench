@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-format_version: 13
+format_version: 14
 
 // *****************************************************************************
 
@@ -52,6 +52,12 @@ AssetType Collection {
 		syntax: "subtitles"
 		example: "subtitles"
 		desc: "A collection of subtitles."
+	}
+	
+	Hint missionclasses {
+		syntax: "missionclasses"
+		example: "missionclasses"
+		desc: "A set of moby classes to be packed in the files for a mission in Deadlocked."
 	}
 }
 
@@ -1293,9 +1299,25 @@ AssetType Chunk {
 }
 
 AssetType Mission {
-	Child instances  { allowed_types: ["Binary"] }
-	Child classes    { allowed_types: ["Binary"] }
-	Child sound_bank { allowed_types: ["Binary"] }
+	desc: "A Deadlocked mission."
+	
+	Child instances {
+		desc: "Moby gameplay instances and pvar data for this mission."
+		allowed_types: ["Binary"]
+		games: [4]
+	}
+	
+	Child classes {
+		desc: "Moby classes for this mission."
+		allowed_types: ["Collection" "Binary"]
+		games: [4]
+	}
+	
+	Child sound_bank {
+		desc: "Sound bank for this mission."
+		allowed_types: ["Binary"]
+		games: [4]
+	}
 }
 
 AssetType LevelAudioWad {
@@ -1398,6 +1420,12 @@ AssetType MobyClass {
 		syntax: "gadget"
 		example: "gadget"
 		desc: "A moby class to be packed in with the gadget data."
+	}
+	
+	Hint mission {
+		syntax: "mission"
+		example: "mission"
+		desc: "A moby class to be packed into a mission."
 	}
 	
 	Hint sparmor {

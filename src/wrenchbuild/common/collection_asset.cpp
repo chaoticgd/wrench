@@ -25,6 +25,8 @@ static void unpack_collection_asset(CollectionAsset& dest, InputStream& src, Bui
 static void pack_collection_asset(OutputStream& dest, const CollectionAsset& src, BuildConfig config, const char* hint);
 static void unpack_texture_list(CollectionAsset& dest, InputStream& src, BuildConfig config, const char* hint);
 static void pack_texture_list(OutputStream& dest, const CollectionAsset& src, BuildConfig config, const char* hint);
+static void unpack_mission_classes(CollectionAsset& dest, InputStream& src, BuildConfig config);
+static void pack_mission_classes(OutputStream& dest, const CollectionAsset& src, BuildConfig config);
 
 on_load(Collection, []() {
 	CollectionAsset::funcs.unpack_rac1 = wrap_hint_unpacker_func<CollectionAsset>(unpack_collection_asset);
@@ -44,6 +46,8 @@ static void unpack_collection_asset(CollectionAsset& dest, InputStream& src, Bui
 		unpack_texture_list(dest, src, config, hint);
 	} else if(strcmp(type, "subtitles") == 0) {
 		unpack_subtitles(dest, src, config);
+	} else if(strcmp(type, "missionclasses") == 0) {
+		unpack_mission_classes(dest, src, config);
 	} else {
 		verify_not_reached("Invalid hint \"%s\" passed to collection asset unpacker.", hint);
 	}
@@ -55,6 +59,8 @@ static void pack_collection_asset(OutputStream& dest, const CollectionAsset& src
 		pack_texture_list(dest, src, config, hint);
 	} else if(strcmp(type, "subtitles") == 0) {
 		pack_subtitles(dest, src, config);
+	} else if(strcmp(type, "missionclasses") == 0) {
+		pack_mission_classes(dest, src, config);
 	} else {
 		verify_not_reached("Invalid hint \"%s\" passed to collection asset packer.", hint);
 	}
@@ -99,4 +105,57 @@ static void pack_texture_list(OutputStream& dest, const CollectionAsset& src, Bu
 	
 	dest.seek(4);
 	dest.write_v(offsets);
+}
+
+packed_struct(MissionClassEntry,
+	s32 o_class;
+	s32 class_offset;
+	s32 texture_list_offset;
+	s32 pad;
+)
+
+static void unpack_mission_classes(CollectionAsset& dest, InputStream& src, BuildConfig config) {
+	// The asset to actually store all the moby classes in.
+	CollectionAsset* moby_classes = &dest;
+	
+	// This is very ugly, but basically if we can find a build asset we store
+	// the actual mobies in the moby_classes child of that to deduplicate them
+	// and just store references in the mission asset itself.
+	if(dest.parent() // Mission
+		&& dest.parent()->parent() // Collection
+		&& dest.parent()->parent()->parent() // LevelWad
+		&& dest.parent()->parent()->parent()->parent() // Level
+		&& dest.parent()->parent()->parent()->parent()->parent() // Collection
+		&& dest.parent()->parent()->parent()->parent()->parent()->parent() // Build
+		&& dest.parent()->parent()->parent()->parent()->parent()->parent()->logical_type() == BuildAsset::ASSET_TYPE) {
+		BuildAsset& build = dest.parent()->parent()->parent()->parent()->parent()->parent()->as<BuildAsset>();
+		moby_classes = &build.moby_classes(SWITCH_FILES);
+	}
+	
+	s32 class_count = src.read<s32>(0);
+	for(s32 i = 0; i < class_count; i++) {
+		MissionClassEntry entry = src.read<MissionClassEntry>(0x10 + i * sizeof(MissionClassEntry));
+		std::string path = stringf("/mobies/%d/moby%d.asset", entry.o_class, entry.o_class);
+		MobyClassAsset& moby = moby_classes->foreign_child<MobyClassAsset>(path, entry.o_class);
+		moby.set_id(entry.o_class);
+		moby.set_has_moby_table_entry(true);
+		
+		if(entry.texture_list_offset != 0) {
+			ByteRange textures_range{entry.texture_list_offset, (s32) src.size() - entry.texture_list_offset};
+			unpack_asset(moby.materials(), src, textures_range, config, FMT_COLLECTION_PIF8);
+		}
+		
+		if(entry.class_offset != 0) {
+			ByteRange class_range{entry.class_offset, (s32) src.size() - entry.class_offset};
+			unpack_asset(moby, src, class_range, config, FMT_MOBY_CLASS_MISSION);
+		}
+		
+		if(&dest != moby_classes) {
+			dest.child<ReferenceAsset>(entry.o_class).set_asset(moby.absolute_link());
+		}
+	}
+}
+
+static void pack_mission_classes(OutputStream& dest, const CollectionAsset& src, BuildConfig config) {
+	
 }

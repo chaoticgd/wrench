@@ -59,9 +59,10 @@ static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfi
 	const char* type = next_hint(&hint);
 	bool is_level = strcmp(type, "level") == 0;
 	bool is_gadget = strcmp(type, "gadget") == 0;
+	bool is_mission = strcmp(type, "mission") == 0;
 	bool is_sparmor = strcmp(type, "sparmor") == 0;
 	bool is_mparmor = strcmp(type, "mparmor") == 0;
-	verify(is_level || is_gadget || is_sparmor || is_mparmor, "Invalid moby hint.");
+	verify(is_level || is_gadget || is_mission || is_sparmor || is_mparmor, "Invalid moby hint.");
 	
 	std::vector<u8> buffer = src.read_multiple<u8>(0, src.size());
 	

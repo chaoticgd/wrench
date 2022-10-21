@@ -41,10 +41,12 @@ class Asset;
 #define FMT_TEXTURE_PIF8_SWIZZLED "pif,8,swizzled"
 #define FMT_MOBY_CLASS_LEVEL "level"
 #define FMT_MOBY_CLASS_GADGET "gadget"
+#define FMT_MOBY_CLASS_MISSION "mission"
 #define FMT_MOBY_CLASS_SPARMOR "sparmor"
 #define FMT_MOBY_CLASS_MPARMOR "mparmor"
 #define FMT_COLLECTION_PIF8 "texlist,pif,8,unswizzled"
 #define FMT_COLLECTION_SUBTITLES "subtitles"
+#define FMT_COLLECTION_MISSION_CLASSES "missionclasses"
 #define FMT_GLOBALWAD_NOMPEGS "nompegs"
 #define FMT_MPEGWAD_NOMPEGS "nompegs"
 

@@ -29,8 +29,8 @@ void unpack_moby_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest,
 	SubInputStream texture_data(data, header.textures_base_offset, data.size() - header.textures_base_offset);
 	
 	for(const MobyClassEntry& entry : classes) {
-		fs::path path = fs::path()/"mobies"/std::to_string(entry.o_class)/stringf("moby%d.asset", entry.o_class);
-		MobyClassAsset& asset = data_dest.foreign_child<MobyClassAsset>(path.string(), entry.o_class);
+		std::string path = stringf("/mobies/%d/moby%d.asset", entry.o_class, entry.o_class);
+		MobyClassAsset& asset = data_dest.foreign_child<MobyClassAsset>(path, entry.o_class);
 		asset.set_id(entry.o_class);
 		asset.set_has_moby_table_entry(true);
 		

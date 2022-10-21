@@ -1,6 +1,6 @@
 # Asset Reference
 
-This file was generated from src/assetmgr/asset_schema.wtf and is for version 13 of the asset format.
+This file was generated from src/assetmgr/asset_schema.wtf and is for version 14 of the asset format.
 
 ## Index
 
@@ -92,6 +92,7 @@ A generic container for other assets.
 | - | - | - |
 | `texlist,<texture hint>` | `texlist,pif,8,unswizzled` | A list of textures, where \<texture hint\> is the hint used by each Texture asset in the list. |
 | `subtitles` | `subtitles` | A collection of subtitles. |
+| `missionclasses` | `missionclasses` | A set of moby classes to be packed in the files for a mission in Deadlocked. |
 
 ### Placeholder
 
@@ -846,6 +847,8 @@ Container for assets used in the mutliplayer mode.
 
 ### Mission
 
+A Deadlocked mission.
+
 *Attributes*
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
@@ -854,9 +857,9 @@ Container for assets used in the mutliplayer mode.
 
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
-| instances | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
-| classes | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
-| sound_bank | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
+| instances | Moby gameplay instances and pvar data for this mission. | Binary | *Not yet documented.* | DL |
+| classes | Moby classes for this mission. | Collection, Binary | *Not yet documented.* | DL |
+| sound_bank | Sound bank for this mission. | Binary | *Not yet documented.* | DL |
 
 
 ### LevelAudioWad
@@ -941,6 +944,7 @@ Container for assets used in the mutliplayer mode.
 | - | - | - |
 | `level` | `level` | A moby class to be packed in with the level data. |
 | `gadget` | `gadget` | A moby class to be packed in with the gadget data. |
+| `mission` | `mission` | A moby class to be packed into a mission. |
 | `sparmor` | `sparmor` | A moby class to be packed as a singleplayer armor. |
 | `mparmor` | `mparmor` | A moby class to be packed as a multiplayer armor. |
 
