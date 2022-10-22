@@ -133,6 +133,16 @@ static void unpack_mission_classes(CollectionAsset& dest, InputStream& src, Buil
 	}
 	
 	s32 class_count = src.read<s32>(0);
+	
+	// Find the end of each block.
+	std::vector<s32> block_bounds;
+	for(s32 i = 0; i < class_count; i++) {
+		MissionClassEntry entry = src.read<MissionClassEntry>(0x10 + i * sizeof(MissionClassEntry));
+		block_bounds.push_back(entry.class_offset);
+		block_bounds.push_back(entry.texture_list_offset);
+	}
+	block_bounds.emplace_back(src.size());
+	
 	for(s32 i = 0; i < class_count; i++) {
 		MissionClassEntry entry = src.read<MissionClassEntry>(0x10 + i * sizeof(MissionClassEntry));
 		std::string path = stringf("/mobies/%d/moby%d.asset", entry.o_class, entry.o_class);
@@ -141,12 +151,28 @@ static void unpack_mission_classes(CollectionAsset& dest, InputStream& src, Buil
 		moby.set_has_moby_table_entry(true);
 		
 		if(entry.texture_list_offset != 0) {
-			ByteRange textures_range{entry.texture_list_offset, (s32) src.size() - entry.texture_list_offset};
+			s32 end = 0;
+			for(s32 bound : block_bounds) {
+				if(bound > entry.texture_list_offset) {
+					end = bound;
+					break;
+				}
+			}
+			
+			ByteRange textures_range{entry.texture_list_offset, end - entry.texture_list_offset};
 			unpack_asset(moby.materials(), src, textures_range, config, FMT_COLLECTION_PIF8);
 		}
 		
 		if(entry.class_offset != 0) {
-			ByteRange class_range{entry.class_offset, (s32) src.size() - entry.class_offset};
+			s32 end = 0;
+			for(s32 bound : block_bounds) {
+				if(bound > entry.class_offset) {
+					end = bound;
+					break;
+				}
+			}
+			
+			ByteRange class_range{entry.class_offset, end - entry.class_offset};
 			unpack_asset(moby, src, class_range, config, FMT_MOBY_CLASS_MISSION);
 		}
 		
@@ -157,5 +183,33 @@ static void unpack_mission_classes(CollectionAsset& dest, InputStream& src, Buil
 }
 
 static void pack_mission_classes(OutputStream& dest, const CollectionAsset& src, BuildConfig config) {
+	s32 class_count = 0;
+	src.for_each_logical_child_of_type<MobyClassAsset>([&](const MobyClassAsset& moby) {
+		if(moby.has_moby_table_entry()) {
+			class_count++;
+		}
+	});
 	
+	dest.write(class_count);
+	dest.pad(0x10, 0);
+	s64 list_ofs = dest.alloc_multiple<MissionClassEntry>(class_count);
+	
+	src.for_each_logical_child_of_type<MobyClassAsset>([&](const MobyClassAsset& moby) {
+		if(moby.has_moby_table_entry()) {
+			dest.pad(0x10, 0);
+			MissionClassEntry entry = {};
+			entry.o_class = moby.id();
+			
+			if(moby.has_core()) {
+				entry.class_offset = pack_asset<ByteRange>(dest, moby, config, 0x10, FMT_MOBY_CLASS_MISSION).offset;
+			}
+			
+			if(moby.has_materials()) {
+				entry.texture_list_offset = pack_asset<ByteRange>(dest, moby.get_materials(), config, 0x10, FMT_COLLECTION_PIF8).offset;
+			}
+			
+			dest.write(list_ofs, entry);
+			list_ofs += sizeof(MissionClassEntry);
+		}
+	});
 }
