@@ -296,7 +296,7 @@ static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& 
 				std::vector<u8> compressed_bytes;
 				compress_wad(compressed_bytes, bytes, "msinstncs", 8);
 				
-				dest.pad(0x10, 0);
+				dest.pad(0x40, 0);
 				s64 begin = dest.tell();
 				dest.write_n(compressed_bytes.data(), compressed_bytes.size());
 				s64 end = dest.tell();
@@ -312,7 +312,7 @@ static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& 
 				std::vector<u8> compressed_bytes;
 				compress_wad(compressed_bytes, bytes, "msclasses", 8);
 				
-				dest.pad(0x10, 0);
+				dest.pad(0x40, 0);
 				s64 begin = dest.tell();
 				dest.write_n(compressed_bytes.data(), compressed_bytes.size());
 				s64 end = dest.tell();

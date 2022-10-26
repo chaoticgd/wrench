@@ -115,23 +115,6 @@ packed_struct(MissionClassEntry,
 )
 
 static void unpack_mission_classes(CollectionAsset& dest, InputStream& src, BuildConfig config) {
-	// The asset to actually store all the moby classes in.
-	CollectionAsset* moby_classes = &dest;
-	
-	// This is very ugly, but basically if we can find a build asset we store
-	// the actual mobies in the moby_classes child of that to deduplicate them
-	// and just store references in the mission asset itself.
-	if(dest.parent() // Mission
-		&& dest.parent()->parent() // Collection
-		&& dest.parent()->parent()->parent() // LevelWad
-		&& dest.parent()->parent()->parent()->parent() // Level
-		&& dest.parent()->parent()->parent()->parent()->parent() // Collection
-		&& dest.parent()->parent()->parent()->parent()->parent()->parent() // Build
-		&& dest.parent()->parent()->parent()->parent()->parent()->parent()->logical_type() == BuildAsset::ASSET_TYPE) {
-		BuildAsset& build = dest.parent()->parent()->parent()->parent()->parent()->parent()->as<BuildAsset>();
-		moby_classes = &build.moby_classes(SWITCH_FILES);
-	}
-	
 	s32 class_count = src.read<s32>(0);
 	
 	// Find the end of each block.
@@ -146,7 +129,7 @@ static void unpack_mission_classes(CollectionAsset& dest, InputStream& src, Buil
 	for(s32 i = 0; i < class_count; i++) {
 		MissionClassEntry entry = src.read<MissionClassEntry>(0x10 + i * sizeof(MissionClassEntry));
 		std::string path = stringf("/mobies/%d/moby%d.asset", entry.o_class, entry.o_class);
-		MobyClassAsset& moby = moby_classes->foreign_child<MobyClassAsset>(path, entry.o_class);
+		MobyClassAsset& moby = dest.foreign_child<MobyClassAsset>(path, entry.o_class);
 		moby.set_id(entry.o_class);
 		moby.set_has_moby_table_entry(true);
 		
@@ -174,10 +157,6 @@ static void unpack_mission_classes(CollectionAsset& dest, InputStream& src, Buil
 			
 			ByteRange class_range{entry.class_offset, end - entry.class_offset};
 			unpack_asset(moby, src, class_range, config, FMT_MOBY_CLASS_MISSION);
-		}
-		
-		if(&dest != moby_classes) {
-			dest.child<ReferenceAsset>(entry.o_class).set_asset(moby.absolute_link());
 		}
 	}
 }

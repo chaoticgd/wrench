@@ -1396,7 +1396,7 @@ AssetType MobyClass {
 	Child materials {
 		desc: "The materials used by this class."
 		allowed_types: ["Collection"]
-		required: true
+		required: false
 		games: [1 2 3 4]
 		Child child {
 			allowed_types: ["Material" "Texture"]
