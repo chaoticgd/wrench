@@ -1,6 +1,6 @@
 # Asset Reference
 
-This file was generated from src/assetmgr/asset_schema.wtf and is for version 13 of the asset format.
+This file was generated from src/assetmgr/asset_schema.wtf and is for version 14 of the asset format.
 
 ## Index
 
@@ -92,6 +92,7 @@ A generic container for other assets.
 | - | - | - |
 | `texlist,<texture hint>` | `texlist,pif,8,unswizzled` | A list of textures, where \<texture hint\> is the hint used by each Texture asset in the list. |
 | `subtitles` | `subtitles` | A collection of subtitles. |
+| `missionclasses` | `missionclasses` | A set of moby classes to be packed in the files for a mission in Deadlocked. |
 
 ### Placeholder
 
@@ -271,7 +272,7 @@ Texture my_texture {
 
 | Syntax | Example | Description |
 | - | - | - |
-| `pif,<palette size>,<swizzled>` | `pif,8,unswizzled` | A paletted PIF image with a \<palette size\> of "4" or "8" bits where the pixel data is either "swizzled" or "unswizzled". |
+| `pif,<palette size>,<mip levels>,<swizzled>` | `pif,8,1,unswizzled` | A paletted PIF image with a \<palette size\> of "4" or "8" bits with 1 or more mip levels (where 1 is just a single image), where the pixel data is either "swizzled" or "unswizzled". |
 | `rgba` | `rgba` | An RGBA image with a header that encodes the width and height. |
 | `rawrgba,<width>,<height>` | `rawrgba,512,416` | A headerless RGBA image of size \<width\> by \<height\>. |
 
@@ -846,6 +847,8 @@ Container for assets used in the mutliplayer mode.
 
 ### Mission
 
+A Deadlocked mission.
+
 *Attributes*
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
@@ -854,9 +857,9 @@ Container for assets used in the mutliplayer mode.
 
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
-| instances | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
-| classes | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
-| sound_bank | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
+| instances | Moby gameplay instances and pvar data for this mission. | Binary | *Not yet documented.* | DL |
+| classes | Moby classes for this mission. | Collection, Binary | *Not yet documented.* | DL |
+| sound_bank | Sound bank for this mission. | Binary | *Not yet documented.* | DL |
 
 
 ### LevelAudioWad
@@ -931,7 +934,7 @@ Container for assets used in the mutliplayer mode.
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
 | core | *Not yet documented.* | MobyClassCore, Binary | *Not yet documented.* | *Not yet documented.* |
-| materials | The materials used by this class. | Material\[\], Texture\[\] | Yes | RC/GC/UYA/DL |
+| materials | The materials used by this class. | Material\[\], Texture\[\] | No | RC/GC/UYA/DL |
 | editor_mesh | The mesh shown in the editor. This is currently used as a hack since we haven't got the moby exporter working, but in the future it could be used for invisible mobies. | Mesh | No | RC/GC/UYA/DL |
 
 
@@ -941,6 +944,7 @@ Container for assets used in the mutliplayer mode.
 | - | - | - |
 | `level` | `level` | A moby class to be packed in with the level data. |
 | `gadget` | `gadget` | A moby class to be packed in with the gadget data. |
+| `mission` | `mission` | A moby class to be packed into a mission. |
 | `sparmor` | `sparmor` | A moby class to be packed as a singleplayer armor. |
 | `mparmor` | `mparmor` | A moby class to be packed as a multiplayer armor. |
 

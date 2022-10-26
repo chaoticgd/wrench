@@ -29,8 +29,8 @@ void unpack_moby_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest,
 	SubInputStream texture_data(data, header.textures_base_offset, data.size() - header.textures_base_offset);
 	
 	for(const MobyClassEntry& entry : classes) {
-		fs::path path = fs::path()/"mobies"/std::to_string(entry.o_class)/stringf("moby%d.asset", entry.o_class);
-		MobyClassAsset& asset = data_dest.foreign_child<MobyClassAsset>(path.string(), entry.o_class);
+		std::string path = stringf("/mobies/%d/moby%d.asset", entry.o_class, entry.o_class);
+		MobyClassAsset& asset = data_dest.foreign_child<MobyClassAsset>(path, entry.o_class);
 		asset.set_id(entry.o_class);
 		asset.set_has_moby_table_entry(true);
 		
@@ -39,7 +39,9 @@ void unpack_moby_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest,
 			asset.set_stash_textures(true);
 		}
 		
-		unpack_level_textures(asset.materials(), entry.textures, textures, texture_data, gs_ram, config.game(), stashed ? moby_stash_addr : -1);
+		if(entry.textures[0] != 0xff) {
+			unpack_level_textures(asset.materials(), entry.textures, textures, texture_data, gs_ram, config.game(), stashed ? moby_stash_addr : -1);
+		}
 		
 		if(entry.offset_in_asset_wad != 0) {
 			unpack_asset(asset, data, level_core_block_range(entry.offset_in_asset_wad, block_bounds), config, FMT_MOBY_CLASS_LEVEL);

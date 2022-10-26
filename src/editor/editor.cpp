@@ -18,6 +18,8 @@
 
 #include "editor.h"
 
+#include <utility>
+
 void BaseEditor::undo() {
 	verify(_command_past_last >= 1, "Nothing to undo.");
 	UndoRedoCommand& cmd = _commands[--_command_past_last];

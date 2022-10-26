@@ -356,6 +356,43 @@ void Texture::divide_alphas(bool handle_80s) {
 	}
 }
 
+TextureMipmaps Texture::generate_mipmaps(s32 max_mip_levels) {
+	Texture texture = *this;
+	texture.to_8bit_paletted();
+	
+	verify((texture.width & (texture.width - 1)) == 0, "Texture width is not a power of two.");
+	verify(texture.width >= 8, "Texture width is less than 8 pixels.");
+	
+	TextureMipmaps output;
+	
+	for(s32 level = 0; level < max_mip_levels; level++) {
+		if(texture.width >= 8) {
+			output.mip_levels++;
+			output.mips[level] = texture.data;
+			texture.reduce();
+		} else {
+			break;
+		}
+	}
+	
+	// For now we use the same palette as the original texture.
+	output.palette = _palette;
+	
+	return output;
+}
+
+void Texture::reduce() {
+	std::vector<u8> reduced((width * height) / 4);
+	for(s32 y = 0; y < (height / 2); y++) {
+		for(s32 x = 0; x < (width / 2); x++) {
+			reduced[y * (width / 2) + x] = data[(y * 2) * width + (x * 2)];
+		}
+	}
+	data = std::move(reduced);
+	width /= 2;
+	height /= 2;
+}
+
 void Texture::destroy() {
 	width = 0;
 	height = 0;

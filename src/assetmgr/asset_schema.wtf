@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-format_version: 13
+format_version: 14
 
 // *****************************************************************************
 
@@ -52,6 +52,12 @@ AssetType Collection {
 		syntax: "subtitles"
 		example: "subtitles"
 		desc: "A collection of subtitles."
+	}
+	
+	Hint missionclasses {
+		syntax: "missionclasses"
+		example: "missionclasses"
+		desc: "A set of moby classes to be packed in the files for a mission in Deadlocked."
 	}
 }
 
@@ -285,9 +291,9 @@ AssetType Texture {
 	}
 	
 	Hint pif {
-		syntax: "pif,<palette size>,<swizzled>"
-		example: "pif,8,unswizzled"
-		desc: "A paletted PIF image with a <palette size> of \"4\" or \"8\" bits where the pixel data is either \"swizzled\" or \"unswizzled\"."
+		syntax: "pif,<palette size>,<mip levels>,<swizzled>"
+		example: "pif,8,1,unswizzled"
+		desc: "A paletted PIF image with a <palette size> of \"4\" or \"8\" bits with 1 or more mip levels (where 1 is just a single image), where the pixel data is either \"swizzled\" or \"unswizzled\"."
 	}
 	
 	Hint rgba {
@@ -1293,9 +1299,25 @@ AssetType Chunk {
 }
 
 AssetType Mission {
-	Child instances  { allowed_types: ["Binary"] }
-	Child classes    { allowed_types: ["Binary"] }
-	Child sound_bank { allowed_types: ["Binary"] }
+	desc: "A Deadlocked mission."
+	
+	Child instances {
+		desc: "Moby gameplay instances and pvar data for this mission."
+		allowed_types: ["Binary"]
+		games: [4]
+	}
+	
+	Child classes {
+		desc: "Moby classes for this mission."
+		allowed_types: ["Collection" "Binary"]
+		games: [4]
+	}
+	
+	Child sound_bank {
+		desc: "Sound bank for this mission."
+		allowed_types: ["Binary"]
+		games: [4]
+	}
 }
 
 AssetType LevelAudioWad {
@@ -1374,7 +1396,7 @@ AssetType MobyClass {
 	Child materials {
 		desc: "The materials used by this class."
 		allowed_types: ["Collection"]
-		required: true
+		required: false
 		games: [1 2 3 4]
 		Child child {
 			allowed_types: ["Material" "Texture"]
@@ -1398,6 +1420,12 @@ AssetType MobyClass {
 		syntax: "gadget"
 		example: "gadget"
 		desc: "A moby class to be packed in with the gadget data."
+	}
+	
+	Hint mission {
+		syntax: "mission"
+		example: "mission"
+		desc: "A moby class to be packed into a mission."
 	}
 	
 	Hint sparmor {

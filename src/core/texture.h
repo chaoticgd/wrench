@@ -28,6 +28,12 @@ enum class PixelFormat {
 	PALETTED_8
 };
 
+struct TextureMipmaps {
+	s32 mip_levels = 0;
+	std::vector<u8> mips[4];
+	std::vector<u32> palette;
+};
+
 class Texture {
 public:
 	Texture();
@@ -57,6 +63,9 @@ public:
 	
 	void multiply_alphas(); // Maps [0,0x80] to [0,0xff].
 	void divide_alphas(bool handle_80s = true); // Maps [0,0xff] to [0,0x80].
+	
+	TextureMipmaps generate_mipmaps(s32 max_mip_levels);
+	void reduce();
 	
 	void destroy();
 	

@@ -260,7 +260,7 @@ static void unpack_missions(CollectionAsset& dest, InputStream& file, const Miss
 			std::string path = stringf("missions/%d/mission%d.asset", i, i);
 			MissionAsset& mission = dest.foreign_child<MissionAsset>(path, i);
 			unpack_compressed_asset(mission.instances(), file, header.instances, config);
-			unpack_compressed_asset(mission.classes(), file, header.classes, config);
+			unpack_compressed_asset(mission.classes<CollectionAsset>(), file, header.classes, config, FMT_COLLECTION_MISSION_CLASSES);
 			unpack_asset(mission.sound_bank(), file, ranges.sound_banks[i], config);
 		}
 	}
@@ -296,7 +296,7 @@ static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& 
 				std::vector<u8> compressed_bytes;
 				compress_wad(compressed_bytes, bytes, "msinstncs", 8);
 				
-				dest.pad(0x10, 0);
+				dest.pad(0x40, 0);
 				s64 begin = dest.tell();
 				dest.write_n(compressed_bytes.data(), compressed_bytes.size());
 				s64 end = dest.tell();
@@ -305,14 +305,14 @@ static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& 
 			if(mission.has_classes()) {
 				std::vector<u8> bytes;
 				MemoryOutputStream stream(bytes);
-				pack_asset<ByteRange>(stream, mission.get_classes(), config, 0x10);
+				pack_asset<ByteRange>(stream, mission.get_classes(), config, 0x10, FMT_COLLECTION_MISSION_CLASSES);
 				
 				max_sizes.max_classes_size = std::max(max_sizes.max_classes_size, (s32) bytes.size());
 				
 				std::vector<u8> compressed_bytes;
 				compress_wad(compressed_bytes, bytes, "msclasses", 8);
 				
-				dest.pad(0x10, 0);
+				dest.pad(0x40, 0);
 				s64 begin = dest.tell();
 				dest.write_n(compressed_bytes.data(), compressed_bytes.size());
 				s64 end = dest.tell();
