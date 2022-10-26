@@ -160,7 +160,7 @@ static void unpack_mission_classes(CollectionAsset& dest, InputStream& src, Buil
 			}
 			
 			ByteRange textures_range{entry.texture_list_offset, end - entry.texture_list_offset};
-			unpack_asset(moby.materials(), src, textures_range, config, FMT_COLLECTION_PIF8);
+			unpack_asset(moby.materials(), src, textures_range, config, FMT_COLLECTION_PIF8_4MIPS);
 		}
 		
 		if(entry.class_offset != 0) {
@@ -205,7 +205,7 @@ static void pack_mission_classes(OutputStream& dest, const CollectionAsset& src,
 			}
 			
 			if(moby.has_materials()) {
-				entry.texture_list_offset = pack_asset<ByteRange>(dest, moby.get_materials(), config, 0x10, FMT_COLLECTION_PIF8).offset;
+				entry.texture_list_offset = pack_asset<ByteRange>(dest, moby.get_materials(), config, 0x10, FMT_COLLECTION_PIF8_4MIPS).offset;
 			}
 			
 			dest.write(list_ofs, entry);

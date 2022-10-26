@@ -291,9 +291,9 @@ AssetType Texture {
 	}
 	
 	Hint pif {
-		syntax: "pif,<palette size>,<swizzled>"
-		example: "pif,8,unswizzled"
-		desc: "A paletted PIF image with a <palette size> of \"4\" or \"8\" bits where the pixel data is either \"swizzled\" or \"unswizzled\"."
+		syntax: "pif,<palette size>,<mip levels>,<swizzled>"
+		example: "pif,8,1,unswizzled"
+		desc: "A paletted PIF image with a <palette size> of \"4\" or \"8\" bits with 1 or more mip levels (where 1 is just a single image), where the pixel data is either \"swizzled\" or \"unswizzled\"."
 	}
 	
 	Hint rgba {

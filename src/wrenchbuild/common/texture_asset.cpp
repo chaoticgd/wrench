@@ -23,7 +23,7 @@
 static void unpack_texture_asset(TextureAsset& dest, InputStream& src, BuildConfig config, const char* hint);
 static void pack_texture_asset(OutputStream& dest, const TextureAsset& src, BuildConfig config, const char* hint);
 static Texture unpack_pif(InputStream& src);
-static void pack_pif(OutputStream& dest, Texture& texture);
+static void pack_pif(OutputStream& dest, Texture& texture, s32 mip_level);
 static AssetTestResult test_texture_asset(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode);
 
 on_load(Texture, []() {
@@ -66,6 +66,7 @@ static void unpack_texture_asset(TextureAsset& dest, InputStream& src, BuildConf
 		texture.multiply_alphas();
 	} else if(strcmp(type, "pif") == 0) {
 		next_hint(&hint); // palette_size
+		next_hint(&hint); // mip_levels
 		bool swizzled = strcmp(next_hint(&hint), "swizzled") == 0;
 		texture = unpack_pif(src);
 		if(swizzled) {
@@ -114,13 +115,14 @@ static void pack_texture_asset(OutputStream& dest, const TextureAsset& src, Buil
 		} else {
 			verify_not_reached("Tried to pack a texture with an invalid palette size specified in the hint.");
 		}
+		s32 mip_levels = atoi(next_hint(&hint));
 		const char* swizzled = next_hint(&hint);
 		// TODO: Once we've figure out swizzling for where palette_size == 4
 		// make sure to enable that here.
 		if(strcmp(swizzled, "swizzled") == 0 && palette_size == 8) {
 			texture->swizzle();
 		}
-		pack_pif(dest, *texture);
+		pack_pif(dest, *texture, mip_levels);
 	} else {
 		verify_not_reached("Tried to pack a texture with an invalid hint.");
 	}
@@ -168,11 +170,11 @@ static Texture unpack_pif(InputStream& src) {
 	}
 }
 
-static void pack_pif(OutputStream& dest, Texture& texture) {
+static void pack_pif(OutputStream& dest, Texture& texture, s32 mip_levels) {
 	texture.divide_alphas();
 	
 	s64 header_ofs = dest.tell();
-	PifHeader header = {0};
+	PifHeader header = {};
 	dest.write(header);
 	memcpy(header.magic, "2FIP", 4);
 	header.width = texture.width;
@@ -196,12 +198,19 @@ static void pack_pif(OutputStream& dest, Texture& texture) {
 			
 			assert(texture.data.size() == texture.width * texture.height);
 			
+			TextureMipmaps mipmaps = texture.generate_mipmaps(mip_levels);
+			
 			header.format = 0x13;
-			dest.write_n((u8*) texture.palette().data(), std::min(texture.palette().size(), (size_t) 256) * 4);
-			for(size_t i = texture.palette().size(); i < 256; i++) {
+			header.mip_levels = mipmaps.mip_levels;
+			
+			dest.write_n((u8*) mipmaps.palette.data(), std::min(mipmaps.palette.size(), (size_t) 256) * 4);
+			for(size_t i = mipmaps.palette.size(); i < 256; i++) {
 				dest.write<u32>(0);
 			}
-			dest.write_n(texture.data.data(), texture.data.size());
+			for(s32 level = 0 ; level < mipmaps.mip_levels; level++) {
+				dest.write_n(mipmaps.mips[level].data(), mipmaps.mips[level].size());
+			}
+			
 			break;
 		}
 		default: assert(0);

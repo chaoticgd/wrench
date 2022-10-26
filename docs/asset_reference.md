@@ -272,7 +272,7 @@ Texture my_texture {
 
 | Syntax | Example | Description |
 | - | - | - |
-| `pif,<palette size>,<swizzled>` | `pif,8,unswizzled` | A paletted PIF image with a \<palette size\> of "4" or "8" bits where the pixel data is either "swizzled" or "unswizzled". |
+| `pif,<palette size>,<mip levels>,<swizzled>` | `pif,8,1,unswizzled` | A paletted PIF image with a \<palette size\> of "4" or "8" bits with 1 or more mip levels (where 1 is just a single image), where the pixel data is either "swizzled" or "unswizzled". |
 | `rgba` | `rgba` | An RGBA image with a header that encodes the width and height. |
 | `rawrgba,<width>,<height>` | `rawrgba,512,416` | A headerless RGBA image of size \<width\> by \<height\>. |
 
