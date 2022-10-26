@@ -128,7 +128,7 @@ static void unpack_mission_classes(CollectionAsset& dest, InputStream& src, Buil
 	
 	for(s32 i = 0; i < class_count; i++) {
 		MissionClassEntry entry = src.read<MissionClassEntry>(0x10 + i * sizeof(MissionClassEntry));
-		std::string path = stringf("/mobies/%d/moby%d.asset", entry.o_class, entry.o_class);
+		std::string path = stringf("mobies/%d/moby%d.asset", entry.o_class, entry.o_class);
 		MobyClassAsset& moby = dest.foreign_child<MobyClassAsset>(path, entry.o_class);
 		moby.set_id(entry.o_class);
 		moby.set_has_moby_table_entry(true);
