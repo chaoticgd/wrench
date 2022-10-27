@@ -133,6 +133,7 @@ static void unpack_mission_classes(CollectionAsset& dest, InputStream& src, Buil
 		moby.set_id(entry.o_class);
 		moby.set_has_moby_table_entry(true);
 		
+		CollectionAsset& materials = moby.materials();
 		if(entry.texture_list_offset != 0) {
 			s32 end = 0;
 			for(s32 bound : block_bounds) {
@@ -143,7 +144,7 @@ static void unpack_mission_classes(CollectionAsset& dest, InputStream& src, Buil
 			}
 			
 			ByteRange textures_range{entry.texture_list_offset, end - entry.texture_list_offset};
-			unpack_asset(moby.materials(), src, textures_range, config, FMT_COLLECTION_PIF8_4MIPS);
+			unpack_asset(materials, src, textures_range, config, FMT_COLLECTION_PIF8_4MIPS);
 		}
 		
 		if(entry.class_offset != 0) {
@@ -184,7 +185,15 @@ static void pack_mission_classes(OutputStream& dest, const CollectionAsset& src,
 			}
 			
 			if(moby.has_materials()) {
-				entry.texture_list_offset = pack_asset<ByteRange>(dest, moby.get_materials(), config, 0x10, FMT_COLLECTION_PIF8_4MIPS).offset;
+				const CollectionAsset& materials = moby.get_materials();
+				s32 material_count = 0;
+				materials.for_each_logical_child_of_type<TextureAsset>([&](const TextureAsset&) {
+					material_count++;
+				});
+				
+				if(material_count > 0) {
+					entry.texture_list_offset = pack_asset<ByteRange>(dest, moby.get_materials(), config, 0x10, FMT_COLLECTION_PIF8_4MIPS).offset;
+				}
 			}
 			
 			dest.write(list_ofs, entry);

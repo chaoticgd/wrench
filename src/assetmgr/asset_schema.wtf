@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-format_version: 14
+format_version: 15
 
 // *****************************************************************************
 
@@ -1396,7 +1396,7 @@ AssetType MobyClass {
 	Child materials {
 		desc: "The materials used by this class."
 		allowed_types: ["Collection"]
-		required: false
+		required: true
 		games: [1 2 3 4]
 		Child child {
 			allowed_types: ["Material" "Texture"]
