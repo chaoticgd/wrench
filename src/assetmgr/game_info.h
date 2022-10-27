@@ -23,6 +23,7 @@
 #include <core/build_config.h>
 
 enum class AssetBankType {
+	UNDERLAY,
 	GAME,
 	MOD,
 	TEST

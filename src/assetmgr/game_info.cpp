@@ -43,7 +43,9 @@ GameInfo read_game_info(char* input) {
 	
 	const WtfAttribute* type = wtf_attribute(root, "type");
 	if(type && type->type == WTF_STRING) {
-		if(strcmp(type->string.begin, "game") == 0) {
+		if(strcmp(type->string.begin, "underlay") == 0) {
+			info.type = AssetBankType::UNDERLAY;
+		} else if(strcmp(type->string.begin, "game") == 0) {
 			info.type = AssetBankType::GAME;
 		} else if(strcmp(type->string.begin, "test") == 0) {
 			info.type = AssetBankType::TEST;
@@ -109,7 +111,9 @@ void write_game_info(std::string& dest, const GameInfo& info) {
 	wtf_write_string_attribute(ctx, "name", info.name.c_str());
 	
 	wtf_begin_attribute(ctx, "type");
-	if(info.type == AssetBankType::GAME) {
+	if(info.type == AssetBankType::UNDERLAY) {
+		wtf_write_string(ctx, "underlay");
+	} else if(info.type == AssetBankType::GAME) {
 		wtf_write_string(ctx, "game");
 	} else if(info.type == AssetBankType::TEST) {
 		wtf_write_string(ctx, "test");
