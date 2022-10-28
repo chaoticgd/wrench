@@ -1,0 +1,19 @@
+Level rac.levels.0  { name: "Veldin Tutorial" }
+Level rac.levels.1  { name: "Novalis" }
+Level rac.levels.2  { name: "Aridia" }
+Level rac.levels.3  { name: "Kerwan" }
+Level rac.levels.4  { name: "Eudora" }
+Level rac.levels.5  { name: "Rilgar" }
+Level rac.levels.6  { name: "Nebula G34" }
+Level rac.levels.7  { name: "Umbris" }
+Level rac.levels.8  { name: "Batalia" }
+Level rac.levels.9  { name: "Gaspar" }
+Level rac.levels.10 { name: "Orxon" }
+Level rac.levels.11 { name: "Pokitaru" }
+Level rac.levels.12 { name: "Hoven" }
+Level rac.levels.13 { name: "Oltanis Orbit" }
+Level rac.levels.14 { name: "Oltanis" }
+Level rac.levels.15 { name: "Quartu" }
+Level rac.levels.16 { name: "Kalebo III" }
+Level rac.levels.17 { name: "Veldin Orbit" }
+Level rac.levels.18 { name: "Veldin Finale" }

@@ -1,0 +1,47 @@
+Level dl.level.0  { category: "Multiplayer"       name: "Multiplayer Menu" }
+Level dl.level.1  { category: "Campaign"          name: "DreadZone Station" }
+Level dl.level.2  { category: "Campaign"          name: "Catacrom Graveyard" }
+Level dl.level.4  { category: "Campaign"          name: "Sarathos Swamp" }
+Level dl.level.5  { category: "Campaign"          name: "Dark Cathedral" }
+Level dl.level.6  { category: "Campaign"          name: "Temple of Shaar" }
+Level dl.level.7  { category: "Campaign"          name: "Valix Lighthouse" }
+Level dl.level.8  { category: "Campaign"          name: "Mining Facility" }
+Level dl.level.10 { category: "Campaign"          name: "Torval Ruins" }
+Level dl.level.11 { category: "Campaign"          name: "Tempus Station" }
+Level dl.level.13 { category: "Campaign"          name: "Maraxus Prison" }
+Level dl.level.14 { category: "Campaign"          name: "Ghost Station" }
+Level dl.level.15 { category: "Campaign"          name: "Control Level" }
+Level dl.level.21 { category: "Campaign"          name: "DreadZone Station (Split-screen)" }
+Level dl.level.22 { category: "Campaign"          name: "Catacrom Graveyard (Split-screen)" }
+Level dl.level.24 { category: "Campaign"          name: "Sarathos Swamp (Split-screen)" }
+Level dl.level.25 { category: "Campaign"          name: "Dark Cathedral (Split-screen)" }
+Level dl.level.26 { category: "Campaign"          name: "Temple of Shaar (Split-screen)" }
+Level dl.level.27 { category: "Campaign"          name: "Valix Lighthouse (Split-screen)" }
+Level dl.level.28 { category: "Campaign"          name: "Mining Facility (Split-screen)" }
+Level dl.level.30 { category: "Campaign"          name: "Torval Ruins (Split-screen)" }
+Level dl.level.31 { category: "Campaign"          name: "Tempus Station (Split-screen)" }
+Level dl.level.33 { category: "Campaign"          name: "Maraxus Prison (Split-screen)" }
+Level dl.level.34 { category: "Campaign"          name: "Ghost Station (Split-screen)" }
+Level dl.level.35 { category: "Campaign"          name: "Control Level (Split-screen)" }
+Level dl.level.41 { category: "Multiplayer"       name: "Battledome Tower" }
+Level dl.level.42 { category: "Multiplayer"       name: "Catacrom Graveyard" }
+Level dl.level.44 { category: "Multiplayer"       name: "Sarathos Swamp" }
+Level dl.level.45 { category: "Multiplayer"       name: "Dark Cathedral" }
+Level dl.level.46 { category: "Multiplayer"       name: "Temple of Shaar" }
+Level dl.level.47 { category: "Multiplayer"       name: "Valix Lighthouse" }
+Level dl.level.48 { category: "Multiplayer"       name: "Mining Facility" }
+Level dl.level.50 { category: "Multiplayer"       name: "Torval Ruins" }
+Level dl.level.51 { category: "Multiplayer"       name: "Tempus Station" }
+Level dl.level.53 { category: "Multiplayer"       name: "Maraxus Prison" }
+Level dl.level.54 { category: "Multiplayer"       name: "Ghost Station" }
+Level dl.level.61 { category: "Multiplayer"       name: "Battledome Tower (Split-screen)" }
+Level dl.level.62 { category: "Multiplayer"       name: "Catacrom Graveyard (Split-screen)" }
+Level dl.level.64 { category: "Multiplayer"       name: "Sarathos Swamp (Split-screen)" }
+Level dl.level.65 { category: "Multiplayer"       name: "Dark Cathedral (Split-screen)" }
+Level dl.level.66 { category: "Multiplayer"       name: "Temple of Shaar (Split-screen)" }
+Level dl.level.67 { category: "Multiplayer"       name: "Valix Lighthouse (Split-screen)" }
+Level dl.level.68 { category: "Multiplayer"       name: "Mining Facility (Split-screen)" }
+Level dl.level.70 { category: "Multiplayer"       name: "Torval Ruins (Split-screen)" }
+Level dl.level.71 { category: "Multiplayer"       name: "Tempus Station (Split-screen)" }
+Level dl.level.73 { category: "Multiplayer"       name: "Maraxus Prison (Split-screen)" }
+Level dl.level.74 { category: "Multiplayer"       name: "Ghost Station (Split-screen)" }
