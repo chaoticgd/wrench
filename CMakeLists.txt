@@ -22,6 +22,10 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
 	message(FATAL_ERROR "In-tree build detected. You should do an out-of-tree build instead:\n\tcmake -S . -B bin/")
 endif()
 
+# pthreads
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 add_library(wrenchwtf STATIC
 	src/wtf/wtf.c
 	src/wtf/wtf_writer.cpp
@@ -51,6 +55,7 @@ add_library(wrenchcore STATIC
 	thirdparty/md5.cpp
 )
 target_link_libraries(wrenchcore wrenchwtf)
+target_link_libraries(wrenchcore Threads::Threads png_static zlibstatic)
 
 add_executable(asset_codegen
 	src/asset_codegen.cpp
@@ -108,7 +113,10 @@ add_library(wrenchgui
 	src/gui/shaders.cpp
 	src/gui/render_mesh.cpp
 )
+target_include_directories(wrenchgui PUBLIC thirdparty/imgui)
+target_include_directories(wrenchgui PUBLIC thirdparty/nativefiledialog/src/include)
 target_link_libraries(wrenchgui wrenchcore wrenchengine wadinfo)
+target_link_libraries(wrenchgui glfw glm glad imgui nativefiledialog)
 
 add_executable(wrenchlauncher
 	src/launcher/main.cpp
@@ -135,14 +143,14 @@ add_executable(wrencheditor
 	src/editor/gui/inspector.cpp
 	src/editor/gui/asset_selector.cpp
 )
-target_link_libraries(wrencheditor wrenchcore wrenchgui wrench_assetmgr)
+target_link_libraries(wrencheditor wrenchcore wrenchgui wrench_assetmgr cxxopts)
 
 add_executable(vif
 	src/vifcli.cpp
 	src/editor/util.cpp
 	src/editor/command_line.cpp
 )
-target_link_libraries(vif wrenchcore)
+target_link_libraries(vif wrenchcore cxxopts)
 
 add_library(wrenchiso
 	src/iso/iso_unpacker.cpp
@@ -213,6 +221,7 @@ target_link_libraries(wrenchbuild wrenchcore wrench_assetmgr wrenchiso wrencheng
 add_executable(asset2json
 	src/asset2json.cpp
 )
+target_include_directories(asset2json PUBLIC thirdparty/json/single_include)
 target_link_libraries(asset2json wrenchcore)
 
 if(UNIX)
@@ -246,98 +255,4 @@ if (MSVC)
 	unset(__MSVC_BUILD_OPTIONS__)
 endif()
 
-# std::filesystem
-if(UNIX)
-	target_link_libraries(wrenchcore stdc++fs)
-	target_link_libraries(wrenchlauncher stdc++fs)
-	target_link_libraries(wrencheditor stdc++fs)
-	target_link_libraries(vif stdc++fs)
-	target_link_libraries(wrenchiso stdc++fs)
-	target_link_libraries(wrenchengine stdc++fs)
-	target_link_libraries(wrenchbuild stdc++fs)
-endif()
-
-# cxxopts
-add_subdirectory(thirdparty/cxxopts)
-target_link_libraries(wrenchlauncher cxxopts)
-target_link_libraries(wrencheditor cxxopts)
-target_link_libraries(vif cxxopts)
-target_link_libraries(wrenchiso cxxopts)
-
-# pthreads
-set(THREADS_PREFER_PTHREAD_FLAG ON)
-find_package(Threads REQUIRED)
-target_link_libraries(wrenchcore Threads::Threads)
-
-# GLAD
-add_subdirectory(thirdparty/glad)
-target_link_libraries(wrenchlauncher glad)
-target_link_libraries(wrencheditor glad)
-include_directories(thirdparty/glad/include)
-
-# GLFW
-add_subdirectory(thirdparty/glfw)
-target_link_libraries(wrenchlauncher glfw)
-target_link_libraries(wrencheditor glfw)
-include_directories(thirdparty/glfw/include)
-
-# GLM
-add_subdirectory(thirdparty/glm)
-target_link_libraries(wrenchlauncher glm)
-target_link_libraries(wrencheditor glm)
-include_directories(thirdparty/glm)
-
-# Dear ImGui
-include_directories(thirdparty/imgui)
-add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_GLAD=1)
-add_library(imgui STATIC
-	thirdparty/imgui/imconfig.h
-	thirdparty/imgui/imgui_demo.cpp
-	thirdparty/imgui/imgui_draw.cpp
-	thirdparty/imgui/imgui_internal.h
-	thirdparty/imgui/imgui_tables.cpp
-	thirdparty/imgui/imgui_widgets.cpp
-	thirdparty/imgui/imgui.cpp
-	thirdparty/imgui/imgui.h
-	thirdparty/imgui/imstb_rectpack.h
-	thirdparty/imgui/imstb_textedit.h
-	thirdparty/imgui/imstb_truetype.h
-	thirdparty/imgui/misc/cpp/imgui_stdlib.cpp
-	thirdparty/imgui/backends/imgui_impl_glfw.cpp
-	thirdparty/imgui/backends/imgui_impl_opengl3.cpp
-)
-target_link_libraries(wrenchlauncher imgui)
-target_link_libraries(wrencheditor imgui)
-
-# JSON
-include_directories(thirdparty/json/single_include)
-
-# Native File Dialog
-if(WIN32)
-	add_library(nativefiledialog STATIC
-		thirdparty/nativefiledialog/src/nfd_common.c
-		thirdparty/nativefiledialog/src/nfd_win.cpp
-	)
-else()
-	add_library(nativefiledialog STATIC
-		thirdparty/nativefiledialog/src/nfd_common.c
-		thirdparty/nativefiledialog/src/nfd_zenity.c
-	)
-endif()
-target_link_libraries(wrenchlauncher nativefiledialog)
-target_link_libraries(wrencheditor nativefiledialog)
-include_directories(thirdparty/nativefiledialog/src/include)
-
-# libpng
-include_directories(wrenchcore thirdparty/zlib thirdparty/libpng)
-add_subdirectory(thirdparty/zlib)
-option(PNG_BUILD_ZLIB "" ON)
-option(PNG_SHARED "" OFF)
-option(PNG_STATIC "" ON)
-option(PNG_EXECUTABLES "" OFF)
-option(PNG_TESTS "" OFF)
-set(ZLIB_LIBRARY zlibstatic)
-set(ZLIB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/thirdparty/zlib)
-set(SKIP_INSTALL_EXPORT ON FORCE)
-add_subdirectory(thirdparty/libpng)
-target_link_libraries(wrenchcore png_static zlibstatic)
+add_subdirectory(thirdparty)
