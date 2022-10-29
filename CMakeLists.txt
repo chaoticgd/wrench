@@ -18,8 +18,9 @@ if(MSVC)
 	add_definitions(/D "_CRT_SECURE_NO_WARNINGS")
 endif()
 
-set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $<1:${CMAKE_SOURCE_DIR}/bin>)
+if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
+	message(FATAL_ERROR "In-tree build detected. You should do an out-of-tree build instead:\n\tcmake -S . -B bin/")
+endif()
 
 add_library(wrenchwtf STATIC
 	src/wtf/wtf.c
@@ -62,18 +63,20 @@ add_executable(asset_docgen
 target_link_libraries(asset_docgen wrenchwtf)
 
 add_custom_command(
-	COMMAND asset_codegen src/assetmgr/asset_schema.wtf src/assetmgr/_generated_asset_types.inl
-	DEPENDS asset_codegen src/assetmgr/asset_schema.wtf
-	OUTPUT src/assetmgr/_generated_asset_types.inl
+	COMMAND asset_codegen ${CMAKE_SOURCE_DIR}/src/assetmgr/asset_schema.wtf ${CMAKE_BINARY_DIR}/_generated_asset_types.inl
+	DEPENDS asset_codegen ${CMAKE_SOURCE_DIR}/src/assetmgr/asset_schema.wtf
+	OUTPUT ${CMAKE_BINARY_DIR}/_generated_asset_types.inl
 	COMMENT "Generating asset types"
 )
 
 add_custom_command(
-	COMMAND asset_docgen src/assetmgr/asset_schema.wtf docs/asset_reference.md
-	DEPENDS asset_docgen src/assetmgr/asset_schema.wtf
+	COMMAND asset_docgen ${CMAKE_SOURCE_DIR}/src/assetmgr/asset_schema.wtf ${CMAKE_SOURCE_DIR}/docs/asset_reference.md
+	DEPENDS asset_docgen ${CMAKE_SOURCE_DIR}/src/assetmgr/asset_schema.wtf
 	OUTPUT docs/asset_reference.md
 	COMMENT "Generating asset reference"
 )
+
+include_directories(${CMAKE_BINARY_DIR})
 
 add_custom_target(
 	asset_docgen_target ALL
@@ -87,7 +90,7 @@ add_library(wrench_assetmgr
 	src/assetmgr/asset_types.cpp
 	src/assetmgr/packed_asset_bank.cpp
 	src/assetmgr/material_asset.cpp
-	src/assetmgr/_generated_asset_types.inl
+	${CMAKE_BINARY_DIR}/_generated_asset_types.inl
 )
 target_link_libraries(wrench_assetmgr wrenchcore)
 
