@@ -42,7 +42,7 @@ int main() {
 
 static void pack_build_wad() {
 	FileOutputStream wad;
-	assert(wad.open("data/build.wad"));
+	assert(wad.open("bin/build.wad"));
 	
 	BuildWadHeader header = {};
 	header.header_size = sizeof(header);
@@ -52,7 +52,7 @@ static void pack_build_wad() {
 	header.version_major = -1;
 	header.version_minor = -1;
 	
-	std::vector<u8> tag_str = read_file("data/git_tag.tmp");
+	std::vector<u8> tag_str = read_file("bin/git_tag.tmp");
 	tag_str.push_back(0);
 	const char* tag = (const char*) tag_str.data();
 	
@@ -71,7 +71,7 @@ static void pack_build_wad() {
 		}
 	}
 	
-	std::vector<u8> commit_str = read_file("data/git_commit.tmp");
+	std::vector<u8> commit_str = read_file("bin/git_commit.tmp");
 	commit_str.push_back(0);
 	const char* commit = (const char*) commit_str.data();
 	
@@ -97,7 +97,7 @@ static void pack_build_wad() {
 
 static void pack_gui_wad() {
 	FileOutputStream wad;
-	assert(wad.open("data/gui.wad"));
+	assert(wad.open("bin/gui.wad"));
 	
 	GuiWadHeader header = {};
 	header.header_size = sizeof(header);
@@ -126,7 +126,7 @@ static void pack_gui_wad() {
 
 static void pack_launcher_wad() {
 	FileOutputStream wad;
-	assert(wad.open("data/launcher.wad"));
+	assert(wad.open("bin/launcher.wad"));
 	
 	LauncherWadHeader header = {};
 	header.header_size = sizeof(header);
@@ -167,7 +167,7 @@ static SectorRange pack_oobe_wad(OutputStream& dest) {
 
 static void pack_editor_wad() {
 	FileOutputStream wad;
-	assert(wad.open("data/editor.wad"));
+	assert(wad.open("bin/editor.wad"));
 	
 	EditorWadHeader header = {};
 	header.header_size = sizeof(header);

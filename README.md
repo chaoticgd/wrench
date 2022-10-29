@@ -50,7 +50,7 @@ For documentation on the asset system, see [Asset System](docs/asset_system.md) 
 	> cd wrench
 
 4.	Build it with cmake:
-	> cmake . && cmake --build . -- -j8
+	> cmake -S . -B bin/ && cmake --build bin/ -- -j8
 	
 	(in the above example 8 threads are used)
 
@@ -71,7 +71,7 @@ For documentation on the asset system, see [Asset System](docs/asset_system.md) 
 	> cd wrench
 
 6.	Generate cmake files:
-	> cmake .
+	> cmake -S . -B bin/
 
 	This should generate `wrench.sln` along with a few `.vcxproj` files. 
 	In case no such files are generated, you can explicitly specify usage of the Visual Studio generator by running the following command:
@@ -82,7 +82,7 @@ For documentation on the asset system, see [Asset System](docs/asset_system.md) 
 7.	Build the project
 	* From the command line
 
-	> cmake --build . --config BUILD_TYPE
+	> cmake --build bin/ --config BUILD_TYPE
 
 	where `BUILD_TYPE` is one of `Debug` (very slow - not recommended), `Release` (no symbols - not recommended), `RelWithDebInfo` (recommended) or `MinSizeRel`.
 

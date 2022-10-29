@@ -11,21 +11,21 @@ find_package(Git QUIET)
 if(GIT_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
 	MESSAGE("-- Found git")
 	add_custom_command(
-		COMMAND ${GIT_EXECUTABLE} tag --points-at HEAD > "${CMAKE_SOURCE_DIR}/data/git_tag.tmp"
+		COMMAND ${GIT_EXECUTABLE} tag --points-at HEAD > "${CMAKE_BINARY_DIR}/git_tag.tmp"
 		DEPENDS "${CMAKE_SOURCE_DIR}/*"
-		OUTPUT "${CMAKE_SOURCE_DIR}/data/git_tag.tmp"
+		OUTPUT "${CMAKE_BINARY_DIR}/git_tag.tmp"
 		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 	)
 	add_custom_command(
-		COMMAND ${GIT_EXECUTABLE} rev-parse HEAD > "${CMAKE_SOURCE_DIR}/data/git_commit.tmp"
+		COMMAND ${GIT_EXECUTABLE} rev-parse HEAD > "${CMAKE_BINARY_DIR}/git_commit.tmp"
 		DEPENDS "${CMAKE_SOURCE_DIR}/*"
-		OUTPUT "${CMAKE_SOURCE_DIR}/data/git_commit.tmp"
+		OUTPUT "${CMAKE_BINARY_DIR}/git_commit.tmp"
 		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 	)
 else()
 	MESSAGE("-- Cannot find git (not fatal)")
-	file(WRITE "${CMAKE_SOURCE_DIR}/data/git_tag.tmp" "")
-	file(WRITE "${CMAKE_SOURCE_DIR}/data/git_commit.tmp" "")
+	file(WRITE "${CMAKE_BINARY_DIR}/git_tag.tmp" "")
+	file(WRITE "${CMAKE_BINARY_DIR}/git_commit.tmp" "")
 endif()
 
 # Generate wads
@@ -34,8 +34,8 @@ add_custom_command(
 	COMMAND toolwadpacker
 	DEPENDS toolwadpacker
 		# build.wad
-		"${CMAKE_SOURCE_DIR}/data/git_tag.tmp"
-		"${CMAKE_SOURCE_DIR}/data/git_commit.tmp"
+		"${CMAKE_BINARY_DIR}/git_tag.tmp"
+		"${CMAKE_BINARY_DIR}/git_commit.tmp"
 		# gui.wad
 		"${CMAKE_SOURCE_DIR}/CONTRIBUTORS"
 		"${CMAKE_SOURCE_DIR}/data/licenses/barlowfont.txt"
@@ -62,10 +62,10 @@ add_custom_command(
 		"${CMAKE_SOURCE_DIR}/data/editor/icons/translate_tool.txt"
 		"${CMAKE_SOURCE_DIR}/data/editor/icons/spline_tool.txt"
 	OUTPUT
-		"${CMAKE_SOURCE_DIR}/data/build.wad"
-		"${CMAKE_SOURCE_DIR}/data/gui.wad"
-		"${CMAKE_SOURCE_DIR}/data/launcher.wad"
-		"${CMAKE_SOURCE_DIR}/data/editor.wad"
+		"${CMAKE_BINARY_DIR}/build.wad"
+		"${CMAKE_BINARY_DIR}/gui.wad"
+		"${CMAKE_BINARY_DIR}/launcher.wad"
+		"${CMAKE_BINARY_DIR}/editor.wad"
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 	COMMENT "Generating tool wads"
 )
@@ -77,21 +77,21 @@ add_executable(header2cpp
 )
 
 add_custom_command(
-	COMMAND header2cpp _generated_wadinfo.cpp
-		"${CMAKE_SOURCE_DIR}/data/build.wad"
-		"${CMAKE_SOURCE_DIR}/data/gui.wad"
-		"${CMAKE_SOURCE_DIR}/data/launcher.wad"
-		"${CMAKE_SOURCE_DIR}/data/editor.wad"
+	COMMAND header2cpp "${CMAKE_BINARY_DIR}/_generated_wadinfo.cpp"
+		"${CMAKE_BINARY_DIR}/build.wad"
+		"${CMAKE_BINARY_DIR}/gui.wad"
+		"${CMAKE_BINARY_DIR}/launcher.wad"
+		"${CMAKE_BINARY_DIR}/editor.wad"
 	DEPENDS header2cpp
-		"${CMAKE_SOURCE_DIR}/data/build.wad"
-		"${CMAKE_SOURCE_DIR}/data/gui.wad"
-		"${CMAKE_SOURCE_DIR}/data/launcher.wad"
-		"${CMAKE_SOURCE_DIR}/data/editor.wad"
-	OUTPUT _generated_wadinfo.cpp
+		"${CMAKE_BINARY_DIR}/build.wad"
+		"${CMAKE_BINARY_DIR}/gui.wad"
+		"${CMAKE_BINARY_DIR}/launcher.wad"
+		"${CMAKE_BINARY_DIR}/editor.wad"
+	OUTPUT ${CMAKE_BINARY_DIR}/_generated_wadinfo.cpp
 	COMMENT "Generating _generated_wadinfo.cpp"
 )
 
 add_library(wadinfo
-	_generated_wadinfo.cpp
+	${CMAKE_BINARY_DIR}/_generated_wadinfo.cpp
 	find_wads.cpp
 )
