@@ -16,21 +16,48 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef ASSETMGR_ZIPPED_ASSET_PACK_H
-#define ASSETMGR_ZIPPED_ASSET_PACK_H
+#ifndef ASSETMGR_ZIPPED_ASSET_BANK_H
+#define ASSETMGR_ZIPPED_ASSET_BANK_H
+
+#include <zip.h>
 
 #include "asset.h"
 
-class PackedAssetBank : public AssetBank {
+class ZippedAssetBank : public AssetBank {
 public:
-	PackedAssetBank(AssetForest& forest, fs::path path_to_zip);
+	ZippedAssetBank(AssetForest& forest, const char* zip_path, fs::path prefix);
+	~ZippedAssetBank();
 	
 private:
+	std::unique_ptr<InputStream> open_binary_file_for_reading(const fs::path& path, fs::file_time_type* modified_time_dest) const override;
+	std::unique_ptr<OutputStream> open_binary_file_for_writing(const fs::path& path) override;
 	std::string read_text_file(const fs::path& path) const override;
 	void write_text_file(const fs::path& path, const char* contents) override;
+	bool file_exists(const fs::path& path) const override;
 	std::vector<fs::path> enumerate_asset_files() const override;
+	s32 check_lock() const override;
+	void lock() override;
 	
-	fs::path _path_to_zip;
+	zip_t* _zip;
+	fs::path _prefix;
+};
+
+class ZipInputStream : public InputStream {
+public:
+	ZipInputStream() {}
+	~ZipInputStream();
+	
+	bool open(zip_t* zip, const char* path, s64 size);
+	
+	bool seek(s64 offset) override;
+	s64 tell() const override;
+	s64 size() const override;
+	
+	bool read_n(u8* dest, s64 size) override;
+	
+private:
+	zip_file_t* _file = nullptr;
+	s64 _size;
 };
 
 #endif

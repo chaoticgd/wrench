@@ -26,6 +26,7 @@
 #include <core/stream.h>
 #include <assetmgr/asset.h>
 #include <assetmgr/asset_types.h>
+#include <assetmgr/zipped_asset_bank.h>
 #include <engine/moby.h>
 #include <engine/shrub.h>
 #include <engine/collision.h>
@@ -311,7 +312,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, Game
 			Release release = identify_release(fs.root);
 			
 			std::string game_str = game_to_string(release.game);
-			std::string region_str = region_to_string(release.region);
+		std::string region_str = region_to_string(release.region);
 			
 			// If -n is passed we create a new subdirectory based on the elf
 			// name for the output files.
@@ -411,7 +412,13 @@ static void pack(const std::vector<fs::path>& input_paths, const std::string& as
 	AssetForest forest;
 	
 	for(const fs::path& input_path : input_paths) {
-		forest.mount<LooseAssetBank>(input_path, false);
+		if(fs::is_directory(input_path)) {
+			forest.mount<LooseAssetBank>(input_path, false);
+		} else if(input_path.extension() == ".zip") {
+			forest.mount<ZippedAssetBank>(input_path.string().c_str(), fs::path());
+		} else {
+			verify_not_reached("An input path points to neither a directory nor a zip file.");
+		}
 	}
 	
 	AssetLink link;

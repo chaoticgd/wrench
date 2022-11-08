@@ -50,14 +50,32 @@ else()
 endif()
 include_directories(nativefiledialog/src/include)
 
-# libpng
+# zlib
 add_subdirectory(zlib)
+set(ZLIB_FOUND TRUE)
+set(ZLIB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/thirdparty/zlib)
+
+# libpng
 option(PNG_BUILD_ZLIB "" ON)
 option(PNG_SHARED "" OFF)
 option(PNG_STATIC "" ON)
 option(PNG_EXECUTABLES "" OFF)
 option(PNG_TESTS "" OFF)
-set(ZLIB_LIBRARY zlibstatic)
-set(ZLIB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/thirdparty/zlib)
 set(SKIP_INSTALL_EXPORT ON FORCE)
 add_subdirectory(libpng)
+
+# libzip
+set(LIBZIP_DO_INSTALL OFF CACHE BOOL "")
+set(ENABLE_COMMONCRYPTO OFF CACHE BOOL "")
+set(ENABLE_GNUTLS OFF CACHE BOOL "")
+set(ENABLE_MBEDTLS OFF CACHE BOOL "")
+set(ENABLE_WINDOWS_CRYPTO OFF CACHE BOOL "")
+set(ENABLE_OPENSSL OFF CACHE BOOL "")
+set(ENABLE_BZIP2 OFF CACHE BOOL "")
+set(ENABLE_LZMA OFF CACHE BOOL "")
+set(ENABLE_ZSTD OFF CACHE BOOL "")
+set(BUILD_TOOLS OFF CACHE BOOL "")
+set(BUILD_REGRESS OFF CACHE BOOL "")
+set(BUILD_EXAMPLES OFF CACHE BOOL "")
+set(BUILD_DOC OFF CACHE BOOL "")
+add_subdirectory(libzip)
