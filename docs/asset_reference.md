@@ -1,6 +1,6 @@
 # Asset Reference
 
-This file was generated from src/assetmgr/asset_schema.wtf and is for version 15 of the asset format.
+This file was generated from /home/thomas/projects/wrench-editor/src/assetmgr/asset_schema.wtf and is for version 15 of the asset format.
 
 ## Index
 
@@ -779,6 +779,8 @@ Container for assets used in the mutliplayer mode.
 *Attributes*
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
+| name | A human-friendly string that identifies the level e.g. "Pokitaru". | String | No | RC/GC/UYA/DL |
+| category | A human-friendly string that identifies the type of the level e.g. "Multiplayer". | String | No | RC/GC/UYA/DL |
 | index | The index of the level in the level table. Note that this is different to the id attribute of the associated LevelWad asset. | Integer | Yes | RC/GC/UYA/DL |
 
 *Children*

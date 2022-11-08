@@ -19,6 +19,7 @@
 #include "mod_list.h"
 
 #include <set>
+#include <zip.h>
 #include <core/png.h>
 #include <core/stream.h>
 #include <core/filesystem.h>
@@ -128,15 +129,44 @@ void load_mod_list(const std::vector<std::string>& mods_folders) {
 			continue;
 		}
 		
-		for(fs::directory_entry mod_dir : fs::directory_iterator(mods_dir)) {
+		for(fs::directory_entry entry : fs::directory_iterator(mods_dir)) {
+			std::vector<u8> game_info_txt;
+			
 			FileInputStream stream;
-			if(stream.open(mod_dir.path()/"gameinfo.txt")) {
-				std::vector<u8> game_info_txt = stream.read_multiple<u8>(stream.size());
+			int error;
+			if(stream.open(entry.path()/"gameinfo.txt")) {
+				game_info_txt = stream.read_multiple<u8>(stream.size());
+			} else if(entry.path().extension() == ".zip") {
+				zip_t* zip = zip_open(entry.path().string().c_str(), ZIP_RDONLY, &error);
+				if(zip) {
+					s64 count = zip_get_num_entries(zip, 0);
+					for(s64 i = 0; i < count; i++) {
+						fs::path path = zip_get_name(zip, i, 0);
+						if(path.filename() != "gameinfo.txt") {
+							continue;
+						}
+						
+						zip_stat_t stat;
+						if(zip_stat_index(zip, i, 0, &stat) != 0 || (stat.valid & ZIP_STAT_SIZE) == 0) {
+							continue;
+						}
+						
+						game_info_txt.resize(stat.size);
+						
+						zip_file_t* file = zip_fopen_index(zip, i, 0);
+						zip_fread(file, (u8*) game_info_txt.data(), stat.size);
+						zip_fclose(file);
+					}
+					zip_close(zip);
+				}
+			}
+			
+			if(!game_info_txt.empty()) {
 				strip_carriage_returns(game_info_txt);
 				game_info_txt.push_back(0);
 				
 				Mod& mod = mods.emplace_back();
-				mod.path = mod_dir.path().string();
+				mod.path = entry.path().string();
 				mod.info = read_game_info((char*) game_info_txt.data());
 			}
 		}
