@@ -38,6 +38,7 @@ void game_list() {
 	std::string name;
 	if(GameData* game = get_game()) {
 		g_game_path = game->directory;
+		g_game = game->info.game.game;
 		name = game->info.name + " (" + game->directory + ")";
 	} else if(games.empty()) {
 		name = "(has no games)";
@@ -71,9 +72,12 @@ void load_game_list(const std::string& games_folder) {
 			strip_carriage_returns(game_info_txt);
 			game_info_txt.push_back(0);
 			
-			GameData& game = games.emplace_back();
+			GameData game;
 			game.directory = game_dir.path().string();
 			game.info = read_game_info((char*) game_info_txt.data());
+			if(game.info.type == AssetBankType::GAME) {
+				games.emplace_back(std::move(game));
+			}
 		}
 	}
 	
@@ -100,4 +104,5 @@ static GameData* get_game() {
 }
 
 std::string g_game_path;
+Game g_game;
 const std::vector<std::string>* g_game_builds = nullptr;

@@ -20,6 +20,7 @@
 #define WRENCHGUI_COMMANDS_H
 
 #include <core/shell.h>
+#include <core/build_config.h>
 
 namespace gui {
 
@@ -44,6 +45,7 @@ struct PackerParams {
 struct EditorParams {
 	std::string game_path;
 	std::string mod_path;
+	Game game;
 };
 
 struct EmulatorParams {

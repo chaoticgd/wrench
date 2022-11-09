@@ -27,6 +27,7 @@ void load_game_list(const std::string& games_folder);
 void free_game_list();
 
 extern std::string g_game_path;
+extern Game g_game;
 extern const std::vector<std::string>* g_game_builds;
 
 #endif

@@ -18,6 +18,7 @@
 
 #include <chrono>
 
+#include <assetmgr/zipped_asset_bank.h>
 #include <toolwads/wads.h>
 #include <gui/gui.h>
 #include <gui/config.h>
@@ -29,14 +30,14 @@
 #include <editor/gui/editor_gui.h>
 #include <editor/renderer.h>
 
-static void run_wrench(GLFWwindow* window, const std::string& game_path, const std::string& mod_path);
+static void run_wrench(GLFWwindow* window, const std::string& underlays_path, const std::string& game_path, const std::string& mod_path, Game game);
 static void update(f32 delta_time);
 static void update_camera(app* a);
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 int main(int argc, char** argv) {
-	if(argc != 3) {
-		fprintf(stderr, "usage: %s <game path> <mod path>\n", argv[0]);
+	if(argc != 4) {
+		fprintf(stderr, "usage: %s <game path> <mod path> <game>\n", argv[0]);
 		return 1;
 	}
 	
@@ -50,17 +51,18 @@ int main(int argc, char** argv) {
 	
 	std::string game_path = argv[1];
 	std::string mod_path = argv[2];
+	std::string game_str = argv[3];
 	
 	gui::GlfwCallbacks callbacks;
 	callbacks.key_callback = key_callback;
 	
 	GLFWwindow* window = gui::startup("Wrench Editor", 1280, 720, true, &callbacks);
-	run_wrench(window, game_path, mod_path);
+	run_wrench(window, wads.underlays, game_path, mod_path, game_from_string(game_str));
 	gui::shutdown(window);
 }
 
 
-static void run_wrench(GLFWwindow* window, const std::string& game_path, const std::string& mod_path) {
+static void run_wrench(GLFWwindow* window, const std::string& underlays_path, const std::string& game_path, const std::string& mod_path, Game game) {
 	app a;
 	g_app = &a;
 	
@@ -72,6 +74,7 @@ static void run_wrench(GLFWwindow* window, const std::string& game_path, const s
 	a.game_path = game_path;
 	a.mod_path = mod_path;
 	
+	a.asset_forest.mount<ZippedAssetBank>(underlays_path.c_str(), fs::path(game_to_string(game)));
 	a.game_bank = &a.asset_forest.mount<LooseAssetBank>(game_path, false);
 	a.mod_bank = &a.asset_forest.mount<LooseAssetBank>(mod_path, true);
 	

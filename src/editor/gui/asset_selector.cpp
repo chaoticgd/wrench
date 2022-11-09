@@ -17,11 +17,12 @@
 */
 
 #include "asset_selector.h"
-#include "assetmgr/asset_util.h"
 
+#include <assetmgr/asset_types.h>
 #include <gui/gui.h>
 
 static void recurse(Asset& asset, AssetSelector& state);
+static std::string get_display_name(Asset& asset);
 
 static std::vector<Asset*> assets;
 
@@ -37,7 +38,7 @@ Asset* asset_selector(const char* label, const char* preview_value, AssetSelecto
 			open_last_frame = true;
 		}
 		for(Asset* asset : assets) {
-			if(ImGui::Selectable(asset->absolute_link().to_string().c_str())) {
+			if(ImGui::Selectable(get_display_name(*asset).c_str())) {
 				selected = asset;
 			}
 		}
@@ -58,4 +59,15 @@ static void recurse(Asset& asset, AssetSelector& state) {
 	asset.for_each_logical_child([&](Asset& child) {
 		recurse(child, state);
 	});
+}
+
+static std::string get_display_name(Asset& asset) {
+	std::string link = asset.absolute_link().to_string();
+	if(asset.logical_type() == LevelAsset::ASSET_TYPE) {
+		LevelAsset& level = asset.as<LevelAsset>();
+		if(level.has_name()) {
+			return link + " " + level.name();
+		}
+	}
+	return link;
 }
