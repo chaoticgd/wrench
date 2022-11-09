@@ -174,12 +174,13 @@ const Asset& Asset::get_child(s32 tag) const {
 }
 
 Asset& Asset::physical_child(AssetType type, const char* tag) {
+	// Hitting this assert in packing code means you probably meant to use
+	// the get_child function (or a get_<child name> function) instead.
 	assert(bank().is_writeable());
 	for(std::unique_ptr<Asset>& child : _children) {
 		if(child->tag() == tag) {
 			return *child.get();
 		}
-		verify(child->tag() != tag, "Attempting to overwrite an asset that already exists with one of a different type.");
 	}
 	return add_child(create_asset(type, file(), this, tag));
 }
@@ -222,6 +223,7 @@ void Asset::read(WtfNode* node) {
 	}
 	read_attributes(node);
 	for(WtfNode* child = node->first_child; child != nullptr; child = child->next_sibling) {
+		// Determine the type of the asset.
 		AssetType type;
 		if(strlen(child->type_name) == 0) {
 			if(child->collapsed) {
@@ -232,8 +234,25 @@ void Asset::read(WtfNode* node) {
 		} else {
 			type = asset_string_to_type(child->type_name);
 		}
-		Asset& asset = add_child(create_asset(type, file(), this, child->tag));
-		asset.read(child);
+		
+		Asset* asset = nullptr;
+		
+		// Handle the case where the same asset id defined multiple times in the
+		// same file.
+		for(std::unique_ptr<Asset>& asset_child : _children) {
+			if(asset_child->tag() == child->tag) {
+				asset = asset_child.get();
+				break;
+			}
+		}
+		
+		// If the asset hasn't been defined before in this file, create it.
+		if(asset == nullptr) {
+			asset = &add_child(create_asset(type, file(), this, child->tag));
+		}
+		
+		// Read its attributes and child assets.
+		asset->read(child);
 	}
 }
 
@@ -649,7 +668,9 @@ void AssetForest::unmount_last() {
 LooseAssetBank::LooseAssetBank(AssetForest& forest, fs::path directory, bool is_writeable)
 	: AssetBank(forest, is_writeable)
 	, _directory(directory) {
-	fs::create_directories(directory);
+	if(is_writeable) {
+		fs::create_directories(directory);
+	}
 }
 
 std::unique_ptr<InputStream> LooseAssetBank::open_binary_file_for_reading(const fs::path& path, fs::file_time_type* modified_time_dest) const {

@@ -183,7 +183,7 @@ static void enumerate_global_wads(std::vector<UnpackInfo>& dest, BuildAsset& bui
 		
 		Asset* asset;
 		switch(wad_type) {
-			case WadType::GLOBAL: asset = &build.global<GlobalWadAsset>("globals/global");          break;
+			case WadType::GLOBAL: asset = &build.global<GlobalWadAsset>("globals/global");        break;
 			case WadType::MPEG:   asset = &build.mpeg<MpegWadAsset>("globals/mpeg/mpeg");         break;
 			case WadType::MISC:   asset = &build.misc<MiscWadAsset>("globals/misc/misc");         break;
 			case WadType::HUD:    asset = &build.hud<HudWadAsset>("globals/hud/hud");             break;
@@ -213,7 +213,24 @@ static void enumerate_level_wads(std::vector<UnpackInfo>& dest, CollectionAsset&
 			assert(level.level->header.size() >= 0xc);
 			s32 id = *(s32*) &level.level->header[8];
 			
-			std::string asset_path = stringf("%02d/level.asset", id);
+			// Try to read the output path for the level from the underlay.
+			std::string asset_path;
+			if(levels.has_child(id)) {
+				LevelAsset& level_asset = levels.get_child(id).as<LevelAsset>();
+				if(level_asset.has_name() && !level_asset.name().empty()) {
+					std::string name = to_snake_case(level_asset.name().c_str());
+					if(level_asset.has_category() && !level_asset.category().empty()) {
+						std::string category = to_snake_case(level_asset.category().c_str());
+						asset_path = stringf("%s/%02d_%s/level%02d.asset", category.c_str(), id, name.c_str(), id);
+					} else {
+						asset_path = stringf("%02d_%s/level%02d.asset", id, name.c_str(), id);
+					}
+				}
+			}
+			if(asset_path.empty()) {
+				asset_path = stringf("%02d/level%02d.asset", id, id);
+			}
+			
 			LevelAsset& level_asset = levels.foreign_child<LevelAsset>(asset_path, id);
 			level_asset.set_index(i);
 			

@@ -76,3 +76,16 @@ f32 lerp(f32 min, s32 max, f32 value) {
 s32 bit_range(u64 val, s32 lo, s32 hi) {
 	return (val >> lo) & ((1 << (hi - lo + 1)) - 1);
 }
+
+std::string to_snake_case(const char* src) {
+	std::string result;
+	size_t size = strlen(src);
+	for(size_t i = 0; i < size; i++) {
+		if(src[i] == ' ') {
+			result += '_';
+		} else if(isalnum(src[i])) {
+			result += tolower(src[i]);
+		}
+	}
+	return result;
+}

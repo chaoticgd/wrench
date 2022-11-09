@@ -71,7 +71,7 @@ struct ParsedArgs {
 
 static int wrenchbuild(int argc, char** argv);
 static ParsedArgs parse_args(int argc, char** argv, u32 flags);
-static void unpack(const fs::path& input_path, const fs::path& output_path, Game game, Region region, bool generate_output_subdirectory);
+static void unpack(const fs::path& input_path, const fs::path& output_path, Game game, Region region, bool generate_output_subdirectory, const char* underlays_zip);
 static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path, BuildConfig config, const std::string& hint);
 static void decompress(const fs::path& input_path, const fs::path& output_path, s64 offset);
 static void compress(const fs::path& input_path, const fs::path& output_path);
@@ -94,6 +94,9 @@ int main(int argc, char** argv) {
 		e.print();
 		stop_stdout_flusher_thread();
 		return 1;
+	} catch(...) {
+		stop_stdout_flusher_thread();
+		return 1;
 	}
 }
 
@@ -102,6 +105,8 @@ static int wrenchbuild(int argc, char** argv) {
 		print_usage(false);
 		return 1;
 	}
+	
+	WadPaths wads = find_wads(argv[0]);
 	
 	std::string mode = argv[1];
 	
@@ -133,7 +138,7 @@ static int wrenchbuild(int argc, char** argv) {
 		}
 		
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH | ARG_GAME | ARG_REGION | ARG_SUBDIRECTORY);
-		unpack(args.input_paths[0], args.output_path, args.game, args.region, args.generate_output_subdirectory);
+		unpack(args.input_paths[0], args.output_path, args.game, args.region, args.generate_output_subdirectory, wads.underlays.c_str());
 		report_memory_statistics();
 		return 0;
 	}
@@ -296,7 +301,7 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 	return args;
 }
 
-static void unpack(const fs::path& input_path, const fs::path& output_path, Game game, Region region, bool generate_output_subdirectory) {
+static void unpack(const fs::path& input_path, const fs::path& output_path, Game game, Region region, bool generate_output_subdirectory, const char* underlays_zip) {
 	AssetForest forest;
 	
 	FileInputStream stream;
@@ -312,9 +317,9 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, Game
 			Release release = identify_release(fs.root);
 			
 			std::string game_str = game_to_string(release.game);
-		std::string region_str = region_to_string(release.region);
+			std::string region_str = region_to_string(release.region);
 			
-			// If -n is passed we create a new subdirectory based on the elf
+			// If -s is passed we create a new subdirectory based on the elf
 			// name for the output files.
 			fs::path new_output_path = output_path;
 			if(generate_output_subdirectory) {
@@ -326,6 +331,10 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, Game
 				}
 				new_output_path = new_output_path/fs::path(name);
 			}
+			
+			// Mount the underlay, which contains metadata to be used to name
+			// files and directories while unpacking.
+			forest.mount<ZippedAssetBank>(underlays_zip, fs::path(game_str));
 			
 			AssetBank& bank = forest.mount<LooseAssetBank>(new_output_path, true);
 			bank.game_info.type = g_asset_unpacker.dump_binaries ? AssetBankType::TEST : AssetBankType::GAME;
@@ -363,6 +372,10 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, Game
 		}
 		
 		if(type != WadType::UNKNOWN) {
+			// Mount the underlay, which contains metadata to be used to name
+			// files and directories while unpacking.
+			forest.mount<ZippedAssetBank>(underlays_zip, fs::path(game_to_string(game)));
+			
 			AssetBank& bank = forest.mount<LooseAssetBank>(output_path, true);
 			bank.game_info.type = g_asset_unpacker.dump_binaries ? AssetBankType::TEST : AssetBankType::GAME;
 			bank.game_info.game.game = game;

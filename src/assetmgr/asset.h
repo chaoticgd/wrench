@@ -396,7 +396,7 @@ private:
 	std::vector<fs::path> enumerate_asset_files() const override;
 	s32 check_lock() const override;
 	void lock() override;
-	
+	public:
 	fs::path _directory;
 };
 

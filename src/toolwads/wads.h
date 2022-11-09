@@ -87,6 +87,7 @@ struct WadPaths {
 	std::string gui;
 	std::string launcher;
 	std::string editor;
+	std::string underlays;
 };
 
 WadPaths find_wads(const char* bin_path);
