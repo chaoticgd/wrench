@@ -332,12 +332,15 @@ void Asset::rename(std::string new_tag) {
 }
 
 bool Asset::is_deleted() const {
+	if((highest_precedence().flags & ASSET_IS_WEAKLY_DELETED) != 0) {
+		return true;
+	}
 	for(const Asset* asset = &highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
 		if(asset->flags & ASSET_HAS_STRONGLY_DELETED_FLAG) {
 			return (asset->flags & ASSET_IS_STRONGLY_DELETED) != 0;
 		}
 	}
-	return (highest_precedence().flags & ASSET_IS_WEAKLY_DELETED) != 0;
+	return false;
 }
 
 Asset& Asset::add_child(std::unique_ptr<Asset> child) {
