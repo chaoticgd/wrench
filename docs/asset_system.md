@@ -127,6 +127,7 @@ Each asset type is defined in `asset_schema.wtf` and a code generator, `asset_co
 
 | Format Version | Wrench Version | Description |
 | -    | -     | - |
+| 15   |       | Added underlay asset banks. Level, MobyClass, TieClass and ShrubClass asset now have name and category attributes. |
 | 14   |       | Moby classes stored in missions are now packed/unpacked separately for Deadlocked. |
 | 13   |       | Merged LevelDataWad and LevelCore into the Level asset type. |
 | 12   | v0.2  | Clank's textures are now packed/unpacked correctly for UYA. Modified how the rotation of sky shells is stored. |

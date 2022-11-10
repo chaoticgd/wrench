@@ -213,25 +213,8 @@ static void enumerate_level_wads(std::vector<UnpackInfo>& dest, CollectionAsset&
 			assert(level.level->header.size() >= 0xc);
 			s32 id = *(s32*) &level.level->header[8];
 			
-			// Try to read the output path for the level from the underlay.
-			std::string asset_path;
-			if(levels.has_child(id)) {
-				LevelAsset& level_asset = levels.get_child(id).as<LevelAsset>();
-				if(level_asset.has_name() && !level_asset.name().empty()) {
-					std::string name = to_snake_case(level_asset.name().c_str());
-					if(level_asset.has_category() && !level_asset.category().empty()) {
-						std::string category = to_snake_case(level_asset.category().c_str());
-						asset_path = stringf("%s/%02d_%s/level%02d.asset", category.c_str(), id, name.c_str(), id);
-					} else {
-						asset_path = stringf("%02d_%s/level%02d.asset", id, name.c_str(), id);
-					}
-				}
-			}
-			if(asset_path.empty()) {
-				asset_path = stringf("%02d/level%02d.asset", id, id);
-			}
-			
-			LevelAsset& level_asset = levels.foreign_child<LevelAsset>(asset_path, id);
+			std::string path = generate_asset_path<LevelAsset>("levels", "level", id, levels);
+			LevelAsset& level_asset = levels.foreign_child<LevelAsset>(path, id);
 			level_asset.set_index(i);
 			
 			if(level.level.has_value()) {
