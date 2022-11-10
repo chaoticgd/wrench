@@ -72,7 +72,7 @@ struct ParsedArgs {
 static int wrenchbuild(int argc, char** argv);
 static ParsedArgs parse_args(int argc, char** argv, u32 flags);
 static void unpack(const fs::path& input_path, const fs::path& output_path, Game game, Region region, bool generate_output_subdirectory, const char* underlays_zip);
-static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path, BuildConfig config, const std::string& hint);
+static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path, BuildConfig config, const std::string& hint, const char* underlays_zip);
 static void decompress(const fs::path& input_path, const fs::path& output_path, s64 offset);
 static void compress(const fs::path& input_path, const fs::path& output_path);
 static void extract_moby(const fs::path& input_path, const fs::path& output_path, Game game);
@@ -145,7 +145,7 @@ static int wrenchbuild(int argc, char** argv) {
 	
 	if(mode == "pack") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATHS | ARG_ASSET | ARG_OUTPUT_PATH | ARG_GAME | ARG_REGION | ARG_HINT);
-		pack(args.input_paths, args.asset, args.output_path, BuildConfig(args.game, args.region), args.hint);
+		pack(args.input_paths, args.asset, args.output_path, BuildConfig(args.game, args.region), args.hint, wads.underlays.c_str());
 		report_memory_statistics();
 		return 0;
 	}
@@ -419,10 +419,21 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, Game
 	verify_not_reached("Unable to detect type of input file '%s'!", input_path.string().c_str());
 }
 
-static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path, BuildConfig config, const std::string& hint) {
+static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path, BuildConfig config, const std::string& hint, const char* underlay_path) {
 	printf("[  0%%] Mounting asset banks\n");
 	
 	AssetForest forest;
+	
+	// Load the underlay, and mark all underlay assets as weakly deleted so they
+	// don't show up if the asset isn't actually present.
+	forest.mount<ZippedAssetBank>(underlay_path, "");
+	forest.any_root()->for_each_logical_descendant([&](Asset& asset) {
+		// If the asset has strongly_deleted set to false, interpret that to
+		// mean the asset should shouldn't be weakly deleted.
+		if((asset.flags & ASSET_HAS_STRONGLY_DELETED_FLAG) == 0 || (asset.flags & ASSET_IS_STRONGLY_DELETED) != 0) {
+			asset.flags |= ASSET_IS_WEAKLY_DELETED;
+		}
+	});
 	
 	for(const fs::path& input_path : input_paths) {
 		if(fs::is_directory(input_path)) {

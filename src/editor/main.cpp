@@ -74,7 +74,17 @@ static void run_wrench(GLFWwindow* window, const std::string& underlays_path, co
 	a.game_path = game_path;
 	a.mod_path = mod_path;
 	
+	// Load the underlay, and mark all underlay assets as weakly deleted so they
+	// don't show up if the asset isn't actually present.
 	a.asset_forest.mount<ZippedAssetBank>(underlays_path.c_str(), fs::path(game_to_string(game)));
+	a.asset_forest.any_root()->for_each_logical_descendant([&](Asset& asset) {
+		// If the asset has strongly_deleted set to false, interpret that to
+		// mean the asset should shouldn't be weakly deleted.
+		if((asset.flags & ASSET_HAS_STRONGLY_DELETED_FLAG) == 0 || (asset.flags & ASSET_IS_STRONGLY_DELETED) != 0) {
+			asset.flags |= ASSET_IS_WEAKLY_DELETED;
+		}
+	});
+	
 	a.game_bank = &a.asset_forest.mount<LooseAssetBank>(game_path, false);
 	a.mod_bank = &a.asset_forest.mount<LooseAssetBank>(mod_path, true);
 	

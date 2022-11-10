@@ -91,6 +91,7 @@ public:
 		}
 	}
 	
+	
 	template <typename Callback>
 	void for_each_physical_child(Callback callback) const {
 		for(const std::unique_ptr<Asset>& child : _children) {
@@ -134,6 +135,14 @@ public:
 	void for_each_logical_child_of_type(Callback callback) const {
 		const_cast<Asset&>(*this).for_each_logical_child_of_type<ChildType>([&](const ChildType& child) {
 			callback(child);
+		});
+	}
+	
+	template <typename Callback>
+	void for_each_logical_descendant(Callback callback) {
+		for_each_logical_child([&](Asset& child) {
+			callback(child);
+			child.for_each_logical_descendant(callback);
 		});
 	}
 	
