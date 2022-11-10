@@ -215,11 +215,16 @@ Asset& Asset::foreign_child_impl(const fs::path& path, AssetType type, const cha
 }
 
 void Asset::read(WtfNode* node) {
-	if(const WtfAttribute* deleted = wtf_attribute(node, "deleted"); deleted && deleted->type == WTF_BOOLEAN) {
-		flags |= ASSET_HAS_DELETED_FLAG;
-		if(deleted->boolean) {
-			flags |= ASSET_IS_DELETED;
+	const WtfAttribute* strongly_deleted = wtf_attribute(node, "strongly_deleted");
+	if(strongly_deleted && strongly_deleted->type == WTF_BOOLEAN) {
+		flags |= ASSET_HAS_STRONGLY_DELETED_FLAG;
+		if(strongly_deleted->boolean) {
+			flags |= ASSET_IS_STRONGLY_DELETED;
 		}
+	}
+	const WtfAttribute* weakly_deleted = wtf_attribute(node, "weakly_deleted");
+	if(weakly_deleted && weakly_deleted->type == WTF_BOOLEAN && weakly_deleted->boolean) {
+		flags |= ASSET_IS_WEAKLY_DELETED;
 	}
 	read_attributes(node);
 	for(WtfNode* child = node->first_child; child != nullptr; child = child->next_sibling) {
@@ -275,9 +280,14 @@ void Asset::write(WtfWriter* ctx, std::string prefix) const {
 }
 
 void Asset::write_body(WtfWriter* ctx) const {
-	if(flags & ASSET_HAS_DELETED_FLAG) {
-		wtf_begin_attribute(ctx, "deleted");
-		wtf_write_boolean(ctx, (flags & ASSET_IS_DELETED) != 0);
+	if(flags & ASSET_HAS_STRONGLY_DELETED_FLAG) {
+		wtf_begin_attribute(ctx, "strongly_deleted");
+		wtf_write_boolean(ctx, (flags & ASSET_IS_STRONGLY_DELETED) != 0);
+		wtf_end_attribute(ctx);
+	}
+	if(flags & ASSET_IS_WEAKLY_DELETED) {
+		wtf_begin_attribute(ctx, "weakly_deleted");
+		wtf_write_boolean(ctx, (flags & ASSET_IS_WEAKLY_DELETED) != 0);
 		wtf_end_attribute(ctx);
 	}
 	write_attributes(ctx);
@@ -323,11 +333,11 @@ void Asset::rename(std::string new_tag) {
 
 bool Asset::is_deleted() const {
 	for(const Asset* asset = &highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
-		if(asset->flags & ASSET_HAS_DELETED_FLAG) {
-			return (asset->flags & ASSET_IS_DELETED) != 0;
+		if(asset->flags & ASSET_HAS_STRONGLY_DELETED_FLAG) {
+			return (asset->flags & ASSET_IS_STRONGLY_DELETED) != 0;
 		}
 	}
-	return false;
+	return (highest_precedence().flags & ASSET_IS_WEAKLY_DELETED) != 0;
 }
 
 Asset& Asset::add_child(std::unique_ptr<Asset> child) {

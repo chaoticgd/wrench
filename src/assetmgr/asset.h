@@ -36,12 +36,13 @@
 #include <assetmgr/asset_dispatch.h>
 
 enum AssetFlags {
-	ASSET_IS_WAD = (1 << 0),           // This asset is a WAD file.
-	ASSET_IS_LEVEL_WAD = (1 << 1),     // This asset is a level WAD file.
-	ASSET_IS_BIN_LEAF = (1 << 2),      // This makes unpack_binaries dump this out excluding children.
-	ASSET_IS_FLATTENABLE = (1 << 3),   // This asset can be written as a FlatWadAsset for debugging.
-	ASSET_HAS_DELETED_FLAG = (1 << 4), // The deleted attribute was specified for this asset.
-	ASSET_IS_DELETED = (1 << 5),       // If the deleted attribute was specified, it was set to true.
+	ASSET_IS_WAD = (1 << 0),                    // This asset is a WAD file.
+	ASSET_IS_LEVEL_WAD = (1 << 1),              // This asset is a level WAD file.
+	ASSET_IS_BIN_LEAF = (1 << 2),               // This makes unpack_binaries dump this out excluding children.
+	ASSET_IS_FLATTENABLE = (1 << 3),            // This asset can be written as a FlatWadAsset for debugging.
+	ASSET_HAS_STRONGLY_DELETED_FLAG = (1 << 4), // The strongly deleted attribute was specified for this asset.
+	ASSET_IS_STRONGLY_DELETED = (1 << 5),       // If the strongly deleted attribute was specified, it was set to true.
+	ASSET_IS_WEAKLY_DELETED = (1 << 6)          // Like the strongly deleted flag, but is treated as false if not set.
 };
 
 class Asset {
