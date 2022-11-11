@@ -30,14 +30,14 @@
 #include <editor/gui/editor_gui.h>
 #include <editor/renderer.h>
 
-static void run_wrench(GLFWwindow* window, const std::string& underlays_path, const std::string& game_path, const std::string& mod_path, Game game);
+static void run_wrench(GLFWwindow* window, const std::string& underlay_path, const std::string& game_path, const std::string& mod_path);
 static void update(f32 delta_time);
 static void update_camera(app* a);
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 int main(int argc, char** argv) {
-	if(argc != 4) {
-		fprintf(stderr, "usage: %s <game path> <mod path> <game>\n", argv[0]);
+	if(argc != 3) {
+		fprintf(stderr, "usage: %s <game path> <mod path>\n", argv[0]);
 		return 1;
 	}
 	
@@ -51,18 +51,17 @@ int main(int argc, char** argv) {
 	
 	std::string game_path = argv[1];
 	std::string mod_path = argv[2];
-	std::string game_str = argv[3];
 	
 	gui::GlfwCallbacks callbacks;
 	callbacks.key_callback = key_callback;
 	
 	GLFWwindow* window = gui::startup("Wrench Editor", 1280, 720, true, &callbacks);
-	run_wrench(window, wads.underlays, game_path, mod_path, game_from_string(game_str));
+	run_wrench(window, wads.underlay, game_path, mod_path);
 	gui::shutdown(window);
 }
 
 
-static void run_wrench(GLFWwindow* window, const std::string& underlays_path, const std::string& game_path, const std::string& mod_path, Game game) {
+static void run_wrench(GLFWwindow* window, const std::string& underlay_path, const std::string& game_path, const std::string& mod_path) {
 	app a;
 	g_app = &a;
 	
@@ -76,7 +75,7 @@ static void run_wrench(GLFWwindow* window, const std::string& underlays_path, co
 	
 	// Load the underlay, and mark all underlay assets as weakly deleted so they
 	// don't show up if the asset isn't actually present.
-	a.asset_forest.mount<ZippedAssetBank>(underlays_path.c_str(), fs::path(game_to_string(game)));
+	a.asset_forest.mount<ZippedAssetBank>(underlay_path.c_str());
 	a.asset_forest.any_root()->for_each_logical_descendant([&](Asset& asset) {
 		// If the asset has strongly_deleted set to false, interpret that to
 		// mean the asset should shouldn't be weakly deleted.

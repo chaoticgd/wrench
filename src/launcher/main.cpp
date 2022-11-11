@@ -310,7 +310,6 @@ static void buttons_window(Mod* mod, f32 buttons_window_height) {
 			gui::EditorParams params;
 			params.game_path = g_game_path;
 			params.mod_path = mod->path;
-			params.game = g_game;
 			gui::open_in_editor(params);
 		}
 	}

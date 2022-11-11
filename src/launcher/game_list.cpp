@@ -38,7 +38,6 @@ void game_list() {
 	std::string name;
 	if(GameData* game = get_game()) {
 		g_game_path = game->directory;
-		g_game = game->info.game.game;
 		name = game->info.name + " (" + game->directory + ")";
 	} else if(games.empty()) {
 		name = "(has no games)";
@@ -104,5 +103,4 @@ static GameData* get_game() {
 }
 
 std::string g_game_path;
-Game g_game;
 const std::vector<std::string>* g_game_builds = nullptr;

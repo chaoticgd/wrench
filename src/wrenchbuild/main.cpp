@@ -71,8 +71,8 @@ struct ParsedArgs {
 
 static int wrenchbuild(int argc, char** argv);
 static ParsedArgs parse_args(int argc, char** argv, u32 flags);
-static void unpack(const fs::path& input_path, const fs::path& output_path, Game game, Region region, bool generate_output_subdirectory, const char* underlays_zip);
-static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path, BuildConfig config, const std::string& hint, const char* underlays_zip);
+static void unpack(const fs::path& input_path, const fs::path& output_path, Game game, Region region, bool generate_output_subdirectory, const char* underlay_path);
+static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path, BuildConfig config, const std::string& hint, const char* underlay_path);
 static void decompress(const fs::path& input_path, const fs::path& output_path, s64 offset);
 static void compress(const fs::path& input_path, const fs::path& output_path);
 static void extract_moby(const fs::path& input_path, const fs::path& output_path, Game game);
@@ -138,14 +138,14 @@ static int wrenchbuild(int argc, char** argv) {
 		}
 		
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH | ARG_GAME | ARG_REGION | ARG_SUBDIRECTORY);
-		unpack(args.input_paths[0], args.output_path, args.game, args.region, args.generate_output_subdirectory, wads.underlays.c_str());
+		unpack(args.input_paths[0], args.output_path, args.game, args.region, args.generate_output_subdirectory, wads.underlay.c_str());
 		report_memory_statistics();
 		return 0;
 	}
 	
 	if(mode == "pack") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATHS | ARG_ASSET | ARG_OUTPUT_PATH | ARG_GAME | ARG_REGION | ARG_HINT);
-		pack(args.input_paths, args.asset, args.output_path, BuildConfig(args.game, args.region), args.hint, wads.underlays.c_str());
+		pack(args.input_paths, args.asset, args.output_path, BuildConfig(args.game, args.region), args.hint, wads.underlay.c_str());
 		report_memory_statistics();
 		return 0;
 	}
@@ -301,7 +301,7 @@ static ParsedArgs parse_args(int argc, char** argv, u32 flags) {
 	return args;
 }
 
-static void unpack(const fs::path& input_path, const fs::path& output_path, Game game, Region region, bool generate_output_subdirectory, const char* underlays_zip) {
+static void unpack(const fs::path& input_path, const fs::path& output_path, Game game, Region region, bool generate_output_subdirectory, const char* underlay_path) {
 	AssetForest forest;
 	
 	FileInputStream stream;
@@ -334,7 +334,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, Game
 			
 			// Mount the underlay, which contains metadata to be used to name
 			// files and directories while unpacking.
-			forest.mount<ZippedAssetBank>(underlays_zip, fs::path(game_str));
+			forest.mount<ZippedAssetBank>(underlay_path);
 			
 			AssetBank& bank = forest.mount<LooseAssetBank>(new_output_path, true);
 			bank.game_info.type = g_asset_unpacker.dump_binaries ? AssetBankType::TEST : AssetBankType::GAME;
@@ -374,7 +374,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, Game
 		if(type != WadType::UNKNOWN) {
 			// Mount the underlay, which contains metadata to be used to name
 			// files and directories while unpacking.
-			forest.mount<ZippedAssetBank>(underlays_zip, fs::path(game_to_string(game)));
+			forest.mount<ZippedAssetBank>(underlay_path);
 			
 			AssetBank& bank = forest.mount<LooseAssetBank>(output_path, true);
 			bank.game_info.type = g_asset_unpacker.dump_binaries ? AssetBankType::TEST : AssetBankType::GAME;
@@ -426,7 +426,7 @@ static void pack(const std::vector<fs::path>& input_paths, const std::string& as
 	
 	// Load the underlay, and mark all underlay assets as weakly deleted so they
 	// don't show up if the asset isn't actually present.
-	forest.mount<ZippedAssetBank>(underlay_path, "");
+	forest.mount<ZippedAssetBank>(underlay_path);
 	forest.any_root()->for_each_logical_descendant([&](Asset& asset) {
 		// If the asset has strongly_deleted set to false, interpret that to
 		// mean the asset should shouldn't be weakly deleted.

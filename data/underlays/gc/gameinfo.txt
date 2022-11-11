@@ -1,3 +1,0 @@
-format_version: 15
-name: "GC underlay"
-type: "underlay"

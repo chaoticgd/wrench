@@ -108,9 +108,9 @@ add_library(wadinfo
 # Zip the underlay
 # ******************************************************************************
 
-add_custom_target(underlays_zip ALL
-	COMMAND ${CMAKE_COMMAND} -E tar "cfv" "${CMAKE_BINARY_DIR}/underlays.zip" --format=zip "."
-	DEPENDS "${CMAKE_SOURCE_DIR}/data/underlays/*"
-	WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/data/underlays"
-	COMMENT "Generating underlays.zip"
+add_custom_target(underlay_zip ALL
+	COMMAND ${CMAKE_COMMAND} -E tar "cfv" "${CMAKE_BINARY_DIR}/underlay.zip" --format=zip "."
+	DEPENDS "${CMAKE_SOURCE_DIR}/data/underlay/*"
+	WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/data/underlay"
+	COMMENT "Generating underlay.zip"
 )

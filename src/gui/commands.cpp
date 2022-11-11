@@ -82,12 +82,10 @@ std::string gui::run_packer(const PackerParams& params, CommandThread& command) 
 }
 
 void gui::open_in_editor(const EditorParams& params) {
-	std::string game = game_to_string(params.game);
 	const char* args[] = {
 		bin_paths.wrencheditor.c_str(),
 		params.game_path.c_str(),
-		params.mod_path.c_str(),
-		game.c_str()
+		params.mod_path.c_str()
 	};
 	execute_command(ARRAY_SIZE(args), args, false);
 }

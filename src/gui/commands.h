@@ -45,7 +45,6 @@ struct PackerParams {
 struct EditorParams {
 	std::string game_path;
 	std::string mod_path;
-	Game game;
 };
 
 struct EmulatorParams {
