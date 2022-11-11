@@ -20,9 +20,6 @@
 [submodule "thirdparty/zlib"]
 	path = thirdparty/zlib
 	url = https://github.com/madler/zlib
-[submodule "thirdparty/libpng"]
-	path = thirdparty/libpng
-	url = https://git.code.sf.net/p/libpng/code
 [submodule "thirdparty/libzip"]
 	path = thirdparty/libzip
 	url = https://github.com/nih-at/libzip
