@@ -23,3 +23,6 @@
 [submodule "thirdparty/libzip"]
 	path = thirdparty/libzip
 	url = https://github.com/nih-at/libzip
+[submodule "thirdparty/libpng"]
+	path = thirdparty/libpng
+	url = https://github.com/glennrp/libpng
