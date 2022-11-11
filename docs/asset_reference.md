@@ -1,6 +1,6 @@
 # Asset Reference
 
-This file was generated from /home/thomas/projects/wrench-editor/src/assetmgr/asset_schema.wtf and is for version 14 of the asset format.
+This file was generated from /home/thomas/projects/wrench-editor/src/assetmgr/asset_schema.wtf and is for version 15 of the asset format.
 
 ## Index
 
@@ -779,6 +779,8 @@ Container for assets used in the mutliplayer mode.
 *Attributes*
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
+| name | A human-friendly string that identifies the level e.g. "Pokitaru". | String | No | RC/GC/UYA/DL |
+| category | A human-friendly string that identifies the type of the level e.g. "Multiplayer". | String | No | RC/GC/UYA/DL |
 | index | The index of the level in the level table. Note that this is different to the id attribute of the associated LevelWad asset. | Integer | Yes | RC/GC/UYA/DL |
 
 *Children*
@@ -925,6 +927,8 @@ A Deadlocked mission.
 *Attributes*
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
+| name | A human-friendly string that identifies the class e.g. "Gold Bolt". | String | No | RC/GC/UYA/DL |
+| category | A human-friendly string that identifies the type of the class e.g. "Gameplay". | String | No | RC/GC/UYA/DL |
 | id | The integer used to reference this moby class at runtime. | Integer | Yes | RC/GC/UYA/DL |
 | has_moby_table_entry | *Not yet documented.* | Boolean | *Not yet documented.* | *Not yet documented.*  |
 | stash_textures | Whether or not the textures for this class should be permanently resident in GS memory. This is typically used for items attached to Ratchet such as the heli-pack and helmet. | Boolean | No | GC/UYA/DL |
@@ -934,7 +938,7 @@ A Deadlocked mission.
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
 | core | *Not yet documented.* | MobyClassCore, Binary | *Not yet documented.* | *Not yet documented.* |
-| materials | The materials used by this class. | Material\[\], Texture\[\] | No | RC/GC/UYA/DL |
+| materials | The materials used by this class. | Material\[\], Texture\[\] | Yes | RC/GC/UYA/DL |
 | editor_mesh | The mesh shown in the editor. This is currently used as a hack since we haven't got the moby exporter working, but in the future it could be used for invisible mobies. | Mesh | No | RC/GC/UYA/DL |
 
 
@@ -967,6 +971,8 @@ A Deadlocked mission.
 *Attributes*
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
+| name | A human-friendly string that identifies the class e.g. "Snowy Mountain". | String | No | RC/GC/UYA/DL |
+| category | A human-friendly string that identifies the type of the class e.g. "Mountains". | String | No | RC/GC/UYA/DL |
 | id | The integer used to reference this tie class at runtime. | Integer | Yes | RC/GC/UYA/DL |
 
 *Children*
@@ -982,6 +988,8 @@ A Deadlocked mission.
 *Attributes*
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
+| name | A human-friendly string that identifies the class e.g. "Yellow Flower". | String | No | RC/GC/UYA/DL |
+| category | A human-friendly string that identifies the type of the class e.g. "Flowers". | String | No | RC/GC/UYA/DL |
 | id | The integer used to reference this shrub class at runtime. | Integer | Yes | RC/GC/UYA/DL |
 
 *Children*

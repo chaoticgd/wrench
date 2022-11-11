@@ -1,0 +1,27 @@
+Level gc.levels.0  { name: "Aranos Tutorial" }
+Level gc.levels.1  { name: "Oozla" }
+Level gc.levels.2  { name: "Maktar Nebula" }
+Level gc.levels.3  { name: "Endako" }
+Level gc.levels.4  { name: "Barlow" }
+Level gc.levels.5  { name: "Feltzin System" }
+Level gc.levels.6  { name: "Notak" }
+Level gc.levels.7  { name: "Siberius" }
+Level gc.levels.8  { name: "Tabora" }
+Level gc.levels.9  { name: "Dobbo" }
+Level gc.levels.10 { name: "Hrugis Cloud" }
+Level gc.levels.11 { name: "Joba" }
+Level gc.levels.12 { name: "Todano" }
+Level gc.levels.13 { name: "Boldan" }
+Level gc.levels.14 { name: "Aranos Prison" }
+Level gc.levels.15 { name: "Gorn" }
+Level gc.levels.16 { name: "Snivelak" }
+Level gc.levels.17 { name: "Smolg" }
+Level gc.levels.18 { name: "Damosel" }
+Level gc.levels.19 { name: "Grelbin" }
+Level gc.levels.20 { name: "Yeedil" }
+Level gc.levels.22 { name: "Dobbo Orbit" }
+Level gc.levels.23 { name: "Damosel Orbit" }
+Level gc.levels.24 { name: "Ship Shack" }
+Level gc.levels.25 { name: "Wupash Nebula" }
+Level gc.levels.26 { name: "Jamming Array" }
+Level gc.levels.30 { name: "Insomniac Museum" }

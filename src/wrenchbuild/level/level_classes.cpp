@@ -29,7 +29,7 @@ void unpack_moby_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest,
 	SubInputStream texture_data(data, header.textures_base_offset, data.size() - header.textures_base_offset);
 	
 	for(const MobyClassEntry& entry : classes) {
-		std::string path = stringf("/mobies/%d/moby%d.asset", entry.o_class, entry.o_class);
+		std::string path = generate_asset_path<MobyClassAsset>("moby_classes", "moby", entry.o_class, data_dest);
 		MobyClassAsset& asset = data_dest.foreign_child<MobyClassAsset>(path, entry.o_class);
 		asset.set_id(entry.o_class);
 		asset.set_has_moby_table_entry(true);
@@ -39,9 +39,7 @@ void unpack_moby_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest,
 			asset.set_stash_textures(true);
 		}
 		
-		if(entry.textures[0] != 0xff) {
-			unpack_level_textures(asset.materials(), entry.textures, textures, texture_data, gs_ram, config.game(), stashed ? moby_stash_addr : -1);
-		}
+		unpack_level_textures(asset.materials(), entry.textures, textures, texture_data, gs_ram, config.game(), stashed ? moby_stash_addr : -1);
 		
 		if(entry.offset_in_asset_wad != 0) {
 			unpack_asset(asset, data, level_core_block_range(entry.offset_in_asset_wad, block_bounds), config, FMT_MOBY_CLASS_LEVEL);
@@ -76,8 +74,8 @@ void unpack_tie_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest, 
 	SubInputStream texture_data(data, header.textures_base_offset, data.size() - header.textures_base_offset);
 	
 	for(const MobyClassEntry& entry : classes) {
-		fs::path path = fs::path()/"ties"/std::to_string(entry.o_class)/stringf("tie%d.asset", entry.o_class);
-		TieClassAsset& asset = data_dest.foreign_child<TieClassAsset>(path.string(), entry.o_class);
+		std::string path = generate_asset_path<TieClassAsset>("tie_classes", "tie", entry.o_class, data_dest);
+		TieClassAsset& asset = data_dest.foreign_child<TieClassAsset>(path, entry.o_class);
 		asset.set_id(entry.o_class);
 		
 		unpack_level_textures(asset.materials(), entry.textures, textures, texture_data, gs_ram, config.game());
@@ -113,8 +111,8 @@ void unpack_shrub_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest
 	SubInputStream texture_data(data, header.textures_base_offset, data.size() - header.textures_base_offset);
 	
 	for(const ShrubClassEntry& entry : classes) {
-		fs::path path = fs::path()/"shrubs"/std::to_string(entry.o_class)/stringf("shrub%d.asset", entry.o_class);
-		ShrubClassAsset& asset = data_dest.foreign_child<ShrubClassAsset>(path.string(), entry.o_class);
+		std::string path = generate_asset_path<ShrubClassAsset>("shrub_classes", "shrub", entry.o_class, data_dest);
+		ShrubClassAsset& asset = data_dest.foreign_child<ShrubClassAsset>(path, entry.o_class);
 		asset.set_id(entry.o_class);
 		
 		unpack_level_materials(asset.materials(), entry.textures, textures, texture_data, gs_ram, config.game());

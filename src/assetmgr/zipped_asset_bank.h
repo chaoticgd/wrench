@@ -25,7 +25,7 @@
 
 class ZippedAssetBank : public AssetBank {
 public:
-	ZippedAssetBank(AssetForest& forest, const char* zip_path, fs::path prefix);
+	ZippedAssetBank(AssetForest& forest, const char* zip_path, fs::path prefix = "");
 	~ZippedAssetBank();
 	
 private:

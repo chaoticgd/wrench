@@ -1,15 +1,19 @@
+# ******************************************************************************
 # Build packer
+# ******************************************************************************
 
 add_executable(toolwadpacker
 	packer.cpp
 )
 target_link_libraries(toolwadpacker wrenchcore wrenchengine)
 
+# ******************************************************************************
 # Gather git tag and commit hash
+# ******************************************************************************
 
 find_package(Git QUIET)
 if(GIT_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
-	MESSAGE("-- Found git")
+	message("-- Found git")
 	add_custom_command(
 		COMMAND ${GIT_EXECUTABLE} tag --points-at HEAD > "${CMAKE_BINARY_DIR}/git_tag.tmp"
 		DEPENDS "${CMAKE_SOURCE_DIR}/*"
@@ -23,12 +27,14 @@ if(GIT_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
 		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 	)
 else()
-	MESSAGE("-- Cannot find git (not fatal)")
+	message("-- Cannot find git (not fatal)")
 	file(WRITE "${CMAKE_BINARY_DIR}/git_tag.tmp" "")
 	file(WRITE "${CMAKE_BINARY_DIR}/git_commit.tmp" "")
 endif()
 
+# ******************************************************************************
 # Generate wads
+# ******************************************************************************
 
 add_custom_command(
 	COMMAND toolwadpacker
@@ -70,7 +76,9 @@ add_custom_command(
 	COMMENT "Generating tool wads"
 )
 
+# ******************************************************************************
 # Pack headers into executables (this is mimicking how the game does things)
+# ******************************************************************************
 
 add_executable(header2cpp
 	header2cpp.cpp
@@ -94,4 +102,15 @@ add_custom_command(
 add_library(wadinfo
 	${CMAKE_BINARY_DIR}/_generated_wadinfo.cpp
 	find_wads.cpp
+)
+
+# ******************************************************************************
+# Zip the underlay
+# ******************************************************************************
+
+add_custom_target(underlay_zip ALL
+	COMMAND ${CMAKE_COMMAND} -E tar "cfv" "${CMAKE_BINARY_DIR}/underlay.zip" --format=zip "."
+	DEPENDS "${CMAKE_SOURCE_DIR}/data/underlay/*"
+	WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/data/underlay"
+	COMMENT "Generating underlay.zip"
 )

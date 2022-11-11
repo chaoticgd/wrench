@@ -155,4 +155,6 @@ f32 lerp(f32 min, s32 max, f32 value);
 //  bit_range(0bAABBCCDD, 2, 3) => 0bCC
 s32 bit_range(u64 val, s32 lo, s32 hi);
 
+std::string to_snake_case(const char* src);
+
 #endif

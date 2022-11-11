@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-format_version: 14
+format_version: 15
 
 // *****************************************************************************
 
@@ -1159,6 +1159,20 @@ Category level {
 }
 
 AssetType Level {
+	StringAttribute name {
+		desc: "A human-friendly string that identifies the level e.g. \"Pokitaru\"."
+		required: false
+		games: [1 2 3 4]
+		metadata: true
+	}
+	
+	StringAttribute category {
+		desc: "A human-friendly string that identifies the type of the level e.g. \"Multiplayer\"."
+		required: false
+		games: [1 2 3 4]
+		metadata: true
+	}
+	
 	IntegerAttribute index {
 		desc: "The index of the level in the level table. Note that this is different to the id attribute of the associated LevelWad asset."
 		required: true
@@ -1380,6 +1394,20 @@ Category classes {
 }
 
 AssetType MobyClass {
+	StringAttribute name {
+		desc: "A human-friendly string that identifies the class e.g. \"Gold Bolt\"."
+		required: false
+		games: [1 2 3 4]
+		metadata: true
+	}
+	
+	StringAttribute category {
+		desc: "A human-friendly string that identifies the type of the class e.g. \"Gameplay\"."
+		required: false
+		games: [1 2 3 4]
+		metadata: true
+	}
+	
 	IntegerAttribute id {
 		desc: "The integer used to reference this moby class at runtime."
 		required: true
@@ -1396,7 +1424,7 @@ AssetType MobyClass {
 	Child materials {
 		desc: "The materials used by this class."
 		allowed_types: ["Collection"]
-		required: false
+		required: true
 		games: [1 2 3 4]
 		Child child {
 			allowed_types: ["Material" "Texture"]
@@ -1451,6 +1479,20 @@ AssetType MobyClassCore {
 AssetType TieClass {
 	bin_leaf: true
 	
+	StringAttribute name {
+		desc: "A human-friendly string that identifies the class e.g. \"Snowy Mountain\"."
+		required: false
+		games: [1 2 3 4]
+		metadata: true
+	}
+	
+	StringAttribute category {
+		desc: "A human-friendly string that identifies the type of the class e.g. \"Mountains\"."
+		required: false
+		games: [1 2 3 4]
+		metadata: true
+	}
+	
 	IntegerAttribute id {
 		desc: "The integer used to reference this tie class at runtime."
 		required: true
@@ -1470,6 +1512,20 @@ AssetType TieClass {
 }
 
 AssetType ShrubClass {
+	StringAttribute name {
+		desc: "A human-friendly string that identifies the class e.g. \"Yellow Flower\"."
+		required: false
+		games: [1 2 3 4]
+		metadata: true
+	}
+	
+	StringAttribute category {
+		desc: "A human-friendly string that identifies the type of the class e.g. \"Flowers\"."
+		required: false
+		games: [1 2 3 4]
+		metadata: true
+	}
+	
 	IntegerAttribute id {
 		desc: "The integer used to reference this shrub class at runtime."
 		required: true

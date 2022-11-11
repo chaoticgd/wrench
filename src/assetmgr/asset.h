@@ -36,12 +36,13 @@
 #include <assetmgr/asset_dispatch.h>
 
 enum AssetFlags {
-	ASSET_IS_WAD = (1 << 0),           // This asset is a WAD file.
-	ASSET_IS_LEVEL_WAD = (1 << 1),     // This asset is a level WAD file.
-	ASSET_IS_BIN_LEAF = (1 << 2),      // This makes unpack_binaries dump this out excluding children.
-	ASSET_IS_FLATTENABLE = (1 << 3),   // This asset can be written as a FlatWadAsset for debugging.
-	ASSET_HAS_DELETED_FLAG = (1 << 4), // The deleted attribute was specified for this asset.
-	ASSET_IS_DELETED = (1 << 5),       // If the deleted attribute was specified, it was set to true.
+	ASSET_IS_WAD = (1 << 0),                    // This asset is a WAD file.
+	ASSET_IS_LEVEL_WAD = (1 << 1),              // This asset is a level WAD file.
+	ASSET_IS_BIN_LEAF = (1 << 2),               // This makes unpack_binaries dump this out excluding children.
+	ASSET_IS_FLATTENABLE = (1 << 3),            // This asset can be written as a FlatWadAsset for debugging.
+	ASSET_HAS_STRONGLY_DELETED_FLAG = (1 << 4), // The strongly deleted attribute was specified for this asset.
+	ASSET_IS_STRONGLY_DELETED = (1 << 5),       // If the strongly deleted attribute was specified, it was set to true.
+	ASSET_IS_WEAKLY_DELETED = (1 << 6)          // Like the strongly deleted flag, but is treated as false if not set.
 };
 
 class Asset {
@@ -90,6 +91,7 @@ public:
 		}
 	}
 	
+	
 	template <typename Callback>
 	void for_each_physical_child(Callback callback) const {
 		for(const std::unique_ptr<Asset>& child : _children) {
@@ -133,6 +135,14 @@ public:
 	void for_each_logical_child_of_type(Callback callback) const {
 		const_cast<Asset&>(*this).for_each_logical_child_of_type<ChildType>([&](const ChildType& child) {
 			callback(child);
+		});
+	}
+	
+	template <typename Callback>
+	void for_each_logical_descendant(Callback callback) {
+		for_each_logical_child([&](Asset& child) {
+			callback(child);
+			child.for_each_logical_descendant(callback);
 		});
 	}
 	
@@ -396,7 +406,7 @@ private:
 	std::vector<fs::path> enumerate_asset_files() const override;
 	s32 check_lock() const override;
 	void lock() override;
-	
+	public:
 	fs::path _directory;
 };
 
@@ -416,5 +426,24 @@ private:
 	
 	std::map<fs::path, std::vector<u8>> _files;
 };
+
+// Try to read the output path for an asset from the underlay.
+template <typename ClassAsset>
+std::string generate_asset_path(const char* directory, const char* type, s32 id, const Asset& parent) {
+	if(parent.has_child(id)) {
+		const ClassAsset& child = parent.get_child(id).as<ClassAsset>();
+		if(child.has_name() && !child.name().empty()) {
+			std::string name = to_snake_case(child.name().c_str());
+			if(child.has_category() && !child.category().empty()) {
+				std::string category = to_snake_case(child.category().c_str());
+				return stringf("/%s/%s/%d_%s/%s_%s.asset", directory, category.c_str(), id, name.c_str(), type, name.c_str());
+			} else {
+				return stringf("/%s/%d_%s/%s_%s.asset", directory, id, name.c_str(), type, name.c_str());
+			}
+		}
+	}
+	
+	return stringf("/%s/unsorted/%d/%s_%d.asset", directory, id, type, id);
+}
 
 #endif

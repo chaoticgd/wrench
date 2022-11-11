@@ -1,0 +1,51 @@
+Level uya.levels.1  { category: "Singleplayer"    name: "Veldin" }
+Level uya.levels.2  { category: "Singleplayer"    name: "Florana" }
+Level uya.levels.3  { category: "Singleplayer"    name: "Starship Phoenix" }
+Level uya.levels.4  { category: "Singleplayer"    name: "Marcadia" }
+Level uya.levels.5  { category: "Singleplayer"    name: "Daxx" }
+Level uya.levels.6  { category: "Singleplayer"    name: "Starship Phoenix (Under Attack)" }
+Level uya.levels.7  { category: "Singleplayer"    name: "Annihilation Nation" }
+Level uya.levels.8  { category: "Singleplayer"    name: "Aquatos" }
+Level uya.levels.9  { category: "Singleplayer"    name: "Tyhrranosis" }
+Level uya.levels.10 { category: "Singleplayer"    name: "Zeldrin Starport" }
+Level uya.levels.11 { category: "Singleplayer"    name: "Obani Moons" }
+Level uya.levels.12 { category: "Singleplayer"    name: "Rilgar" }
+Level uya.levels.13 { category: "Singleplayer"    name: "Holostar Studios Ratchet" }
+Level uya.levels.14 { category: "Singleplayer"    name: "Koros" }
+Level uya.levels.16 { category: "Singleplayer"    name: "Kerwan" }
+Level uya.levels.17 { category: "Singleplayer"    name: "Crash Site" }
+Level uya.levels.18 { category: "Singleplayer"    name: "Aridia" }
+Level uya.levels.19 { category: "Singleplayer"    name: "Thran Asteroid Belt" }
+Level uya.levels.20 { category: "Singleplayer"    name: "Final Boss" }
+Level uya.levels.21 { category: "Singleplayer"    name: "Obani Draco" }
+Level uya.levels.22 { category: "Singleplayer"    name: "Mylon" }
+Level uya.levels.23 { category: "Singleplayer"    name: "Holostar Studios Clank" }
+Level uya.levels.24 { category: "Singleplayer"    name: "Insomniac Museum" }
+Level uya.levels.26 { category: "Singleplayer"    name: "Kerwan Ranger Missions" }
+Level uya.levels.27 { category: "Singleplayer"    name: "Aquatos Base" }
+Level uya.levels.28 { category: "Singleplayer"    name: "Aquatos Sewers" }
+Level uya.levels.29 { category: "Singleplayer"    name: "Tyhrranosis Ranger Missions" }
+Level uya.levels.30 { category: "Singleplayer"    name: "Vid-Comic Unnamed" }
+Level uya.levels.31 { category: "Singleplayer"    name: "Vid-Comic 1" }
+Level uya.levels.32 { category: "Singleplayer"    name: "Vid-Comic 4" }
+Level uya.levels.33 { category: "Singleplayer"    name: "Vid-Comic 2" }
+Level uya.levels.34 { category: "Singleplayer"    name: "Vid-Comic 3" }
+Level uya.levels.35 { category: "Singleplayer"    name: "Vid-Comic 5" }
+Level uya.levels.36 { category: "Singleplayer"    name: "Vid-Comic 1 Special Edition" }
+Level uya.levels.39 { category: "Multiplayer"     name: "Multiplayer Menu" }
+Level uya.levels.40 { category: "Multiplayer"     name: "Bakisi Isles" }
+Level uya.levels.41 { category: "Multiplayer"     name: "Hoven Gorge" }
+Level uya.levels.42 { category: "Multiplayer"     name: "Outpost X12" }
+Level uya.levels.43 { category: "Multiplayer"     name: "Korgon Outpost" }
+Level uya.levels.44 { category: "Multiplayer"     name: "Metropolis" }
+Level uya.levels.45 { category: "Multiplayer"     name: "Blackwater City" }
+Level uya.levels.46 { category: "Multiplayer"     name: "Command Center" }
+Level uya.levels.47 { category: "Multiplayer"     name: "Blackwater Docks" }
+Level uya.levels.48 { category: "Multiplayer"     name: "Aquatos Sewers" }
+Level uya.levels.49 { category: "Multiplayer"     name: "Marcadia Palace" }
+Level uya.levels.50 { category: "Multiplayer"     name: "Bakisi Isles (Split-screen)" }
+Level uya.levels.51 { category: "Multiplayer"     name: "Hoven Gorge (Split-screen)" }
+Level uya.levels.52 { category: "Multiplayer"     name: "Outpost X12 (Split-screen)" }
+Level uya.levels.53 { category: "Multiplayer"     name: "Korgon Outpost (Split-screen)" }
+Level uya.levels.54 { category: "Multiplayer"     name: "Metropolis (Split-screen)" }
+Level uya.levels.55 { category: "Multiplayer"     name: "Blackwater City (Split-screen)" }

@@ -92,17 +92,21 @@ For the top-level asset being packed, which is usually a build, the hint string 
 
 ## Special Attributes
 
-### `deleted`
+### `strongly_deleted` (since version 15)
 
 This attribute makes it appear that the asset it is applied to does not exist in the logical tree, which is useful if the base game defines an asset that you want to be removed in your mod. An example:
 
 	textures {
 		Texture 0 {
-			deleted: true
+			strongly_deleted: true
 		}
 	}
 
 Here, the packer will treat the 0 asset as if it doesn't exist, even if it's defined in the base game.
+
+### `weakly_deleted` (since version 15)
+
+Same as `strongly_deleted` except it will be assumed to be set to `false` (instead of unset) if it is omitted for a given asset. This means that only the `weakly_deleted` attributes of the highest precedence assets will be read.
 
 ## Internals
 
@@ -127,6 +131,7 @@ Each asset type is defined in `asset_schema.wtf` and a code generator, `asset_co
 
 | Format Version | Wrench Version | Description |
 | -    | -     | - |
+| 15   |       | Added underlay asset banks. Level, MobyClass, TieClass and ShrubClass asset now have name and category attributes. Replaced deleted attribute with strongly_deleted and weakly_deleted attributes. |
 | 14   |       | Moby classes stored in missions are now packed/unpacked separately for Deadlocked. |
 | 13   |       | Merged LevelDataWad and LevelCore into the Level asset type. |
 | 12   | v0.2  | Clank's textures are now packed/unpacked correctly for UYA. Modified how the rotation of sky shells is stored. |

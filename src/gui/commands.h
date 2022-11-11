@@ -20,6 +20,7 @@
 #define WRENCHGUI_COMMANDS_H
 
 #include <core/shell.h>
+#include <core/build_config.h>
 
 namespace gui {
 

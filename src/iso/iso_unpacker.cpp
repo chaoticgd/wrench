@@ -183,7 +183,7 @@ static void enumerate_global_wads(std::vector<UnpackInfo>& dest, BuildAsset& bui
 		
 		Asset* asset;
 		switch(wad_type) {
-			case WadType::GLOBAL: asset = &build.global<GlobalWadAsset>("globals/global");          break;
+			case WadType::GLOBAL: asset = &build.global<GlobalWadAsset>("globals/global");        break;
 			case WadType::MPEG:   asset = &build.mpeg<MpegWadAsset>("globals/mpeg/mpeg");         break;
 			case WadType::MISC:   asset = &build.misc<MiscWadAsset>("globals/misc/misc");         break;
 			case WadType::HUD:    asset = &build.hud<HudWadAsset>("globals/hud/hud");             break;
@@ -213,8 +213,8 @@ static void enumerate_level_wads(std::vector<UnpackInfo>& dest, CollectionAsset&
 			assert(level.level->header.size() >= 0xc);
 			s32 id = *(s32*) &level.level->header[8];
 			
-			std::string asset_path = stringf("%02d/level.asset", id);
-			LevelAsset& level_asset = levels.foreign_child<LevelAsset>(asset_path, id);
+			std::string path = generate_asset_path<LevelAsset>("levels", "level", id, levels);
+			LevelAsset& level_asset = levels.foreign_child<LevelAsset>(path, id);
 			level_asset.set_index(i);
 			
 			if(level.level.has_value()) {

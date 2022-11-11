@@ -96,5 +96,4 @@ void unpack_compressed_assets(CollectionAsset& dest, InputStream& src, const Ran
 	}
 }
 
-
 #endif

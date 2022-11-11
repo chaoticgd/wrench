@@ -71,9 +71,12 @@ void load_game_list(const std::string& games_folder) {
 			strip_carriage_returns(game_info_txt);
 			game_info_txt.push_back(0);
 			
-			GameData& game = games.emplace_back();
+			GameData game;
 			game.directory = game_dir.path().string();
 			game.info = read_game_info((char*) game_info_txt.data());
+			if(game.info.type == AssetBankType::GAME) {
+				games.emplace_back(std::move(game));
+			}
 		}
 	}
 	
