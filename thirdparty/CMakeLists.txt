@@ -57,13 +57,10 @@ include_directories(${CMAKE_BINARY_DIR}/thirdparty/zlib)
 set(ZLIB_FOUND TRUE)
 set(ZLIB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/thirdparty/zlib)
 if(WIN32)
-	add_custom_target(copy_zlib_h_hack
-		COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/zlib/zlib.h" "${CMAKE_CURRENT_BINARY_DIR}/zlib/scripts/zlib.h"
-		DEPENDS zlibstatic
-	)
+	execute_process(COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/zlib/zlib.h" "${CMAKE_CURRENT_BINARY_DIR}/zlib/zlib.h")
+	execute_process(COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/zlib/zlib.h" "${CMAKE_CURRENT_BINARY_DIR}/zlib/scripts/zlib.h")
 	add_custom_target(copy_zlib_lib_hack
 		COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:zlibstatic>" "${CMAKE_CURRENT_BINARY_DIR}/zlib.lib"
-		DEPENDS zlibstatic
 	)
 	set(ZLIB_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/zlib.lib")
 endif()
@@ -76,9 +73,6 @@ option(PNG_EXECUTABLES "" OFF)
 option(PNG_TESTS "" OFF)
 set(SKIP_INSTALL_EXPORT ON FORCE)
 add_subdirectory(libpng)
-if(WIN32)
-	add_dependencies(png_static copy_zlib_h_hack)
-endif()
 
 # libzip
 set(LIBZIP_DO_INSTALL OFF CACHE BOOL "")
