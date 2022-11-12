@@ -77,7 +77,7 @@ option(PNG_TESTS "" OFF)
 set(SKIP_INSTALL_EXPORT ON FORCE)
 add_subdirectory(libpng)
 if(WIN32)
-	add_dependencies(libpng copy_zlib_h_hack)
+	add_dependencies(png_static copy_zlib_h_hack)
 endif()
 
 # libzip
