@@ -52,9 +52,21 @@ include_directories(nativefiledialog/src/include)
 # zlib
 set(SKIP_INSTALL_ALL ON)
 add_subdirectory(zlib)
+include_directories(zlib)
 include_directories(${CMAKE_BINARY_DIR}/thirdparty/zlib)
 set(ZLIB_FOUND TRUE)
 set(ZLIB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/thirdparty/zlib)
+if(WIN32)
+	add_custom_target(copy_zlib_h_hack
+		COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/zlib/zlib.h" "${CMAKE_CURRENT_BINARY_DIR}/zlib/zlib.h"
+		DEPENDS zlibstatic
+	)
+	add_custom_target(copy_zlib_lib_hack
+		COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:zlibstatic>" "${CMAKE_CURRENT_BINARY_DIR}/zlib.lib"
+		DEPENDS zlibstatic
+	)
+	set(ZLIB_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/zlib.lib")
+endif()
 
 # libpng
 option(PNG_BUILD_ZLIB "" ON)
@@ -64,7 +76,9 @@ option(PNG_EXECUTABLES "" OFF)
 option(PNG_TESTS "" OFF)
 set(SKIP_INSTALL_EXPORT ON FORCE)
 add_subdirectory(libpng)
-target_include_directories(pnglibconf_out zlib)
+if(WIN32)
+	add_dependencies(libpng copy_zlib_h_hack)
+endif()
 
 # libzip
 set(LIBZIP_DO_INSTALL OFF CACHE BOOL "")
@@ -80,14 +94,7 @@ set(BUILD_TOOLS OFF CACHE BOOL "")
 set(BUILD_REGRESS OFF CACHE BOOL "")
 set(BUILD_EXAMPLES OFF CACHE BOOL "")
 set(BUILD_DOC OFF CACHE BOOL "")
-if(WIN32)
-	add_custom_target(copy_zlib_hack
-		COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:zlibstatic>" "${CMAKE_CURRENT_BINARY_DIR}/zlib.lib"
-		DEPENDS zlibstatic
-	)
-	set(ZLIB_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/zlib.lib")
-endif()
 add_subdirectory(libzip)
 if(WIN32)
-	add_dependencies(zip copy_zlib_hack)
+	add_dependencies(zip copy_zlib_lib_hack)
 endif()
