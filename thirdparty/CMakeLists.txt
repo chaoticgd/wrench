@@ -52,7 +52,6 @@ include_directories(nativefiledialog/src/include)
 # zlib
 set(SKIP_INSTALL_ALL ON)
 add_subdirectory(zlib)
-include_directories(zlib)
 include_directories(${CMAKE_BINARY_DIR}/thirdparty/zlib)
 set(ZLIB_FOUND TRUE)
 set(ZLIB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/thirdparty/zlib)
@@ -86,7 +85,6 @@ if(WIN32)
 		DEPENDS zlibstatic
 	)
 	set(ZLIB_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/zlib.lib")
-
 endif()
 add_subdirectory(libzip)
 if(WIN32)
