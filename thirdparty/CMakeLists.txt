@@ -58,7 +58,7 @@ set(ZLIB_FOUND TRUE)
 set(ZLIB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/thirdparty/zlib)
 if(WIN32)
 	add_custom_target(copy_zlib_h_hack
-		COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/zlib/zlib.h" "${CMAKE_CURRENT_BINARY_DIR}/zlib/zlib.h"
+		COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/zlib/zlib.h" "${CMAKE_CURRENT_BINARY_DIR}/zlib/scripts/zlib.h"
 		DEPENDS zlibstatic
 	)
 	add_custom_target(copy_zlib_lib_hack
