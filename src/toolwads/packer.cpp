@@ -32,7 +32,16 @@ static SectorRange pack_compressed_image(OutputStream& dest, const char* src_pat
 static ByteRange pack_image(OutputStream& dest, const char* src_path);
 static s32 parse_positive_embedded_int(const char* str);
 
-int main() {
+std::string build_dir;
+
+int main(int argc, char** argv) {
+	if(argc != 2) {
+		if(argc != 0) {
+			fprintf(stderr, "usage: %s <build dir>\n", argv[0]);
+		}
+		exit(1);
+	}
+	build_dir = argv[1];
 	pack_build_wad();
 	pack_gui_wad();
 	pack_launcher_wad();
@@ -42,7 +51,7 @@ int main() {
 
 static void pack_build_wad() {
 	FileOutputStream wad;
-	assert(wad.open("bin/build.wad"));
+	assert(wad.open(build_dir + "/build.wad"));
 	
 	BuildWadHeader header = {};
 	header.header_size = sizeof(header);
@@ -52,7 +61,7 @@ static void pack_build_wad() {
 	header.version_major = -1;
 	header.version_minor = -1;
 	
-	std::vector<u8> tag_str = read_file("bin/git_tag.tmp");
+	std::vector<u8> tag_str = read_file(build_dir + "/git_tag.tmp");
 	tag_str.push_back(0);
 	const char* tag = (const char*) tag_str.data();
 	
@@ -71,7 +80,7 @@ static void pack_build_wad() {
 		}
 	}
 	
-	std::vector<u8> commit_str = read_file("bin/git_commit.tmp");
+	std::vector<u8> commit_str = read_file(build_dir + "/git_commit.tmp");
 	commit_str.push_back(0);
 	const char* commit = (const char*) commit_str.data();
 	
@@ -97,7 +106,7 @@ static void pack_build_wad() {
 
 static void pack_gui_wad() {
 	FileOutputStream wad;
-	assert(wad.open("bin/gui.wad"));
+	assert(wad.open(build_dir + "/gui.wad"));
 	
 	GuiWadHeader header = {};
 	header.header_size = sizeof(header);
@@ -126,7 +135,7 @@ static void pack_gui_wad() {
 
 static void pack_launcher_wad() {
 	FileOutputStream wad;
-	assert(wad.open("bin/launcher.wad"));
+	assert(wad.open(build_dir + "/launcher.wad"));
 	
 	LauncherWadHeader header = {};
 	header.header_size = sizeof(header);
@@ -167,7 +176,7 @@ static SectorRange pack_oobe_wad(OutputStream& dest) {
 
 static void pack_editor_wad() {
 	FileOutputStream wad;
-	assert(wad.open("bin/editor.wad"));
+	assert(wad.open(build_dir + "/editor.wad"));
 	
 	EditorWadHeader header = {};
 	header.header_size = sizeof(header);
