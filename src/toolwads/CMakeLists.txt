@@ -37,7 +37,7 @@ endif()
 # ******************************************************************************
 
 add_custom_command(
-	COMMAND toolwadpacker
+	COMMAND toolwadpacker "${CMAKE_BINARY_DIR}"
 	DEPENDS toolwadpacker
 		# build.wad
 		"${CMAKE_BINARY_DIR}/git_tag.tmp"
