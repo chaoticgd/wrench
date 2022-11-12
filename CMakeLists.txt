@@ -256,3 +256,6 @@ if (MSVC)
 endif()
 
 add_subdirectory(thirdparty)
+include_directories(thirdparty/glm)
+include_directories(thirdparty/libpng)
+include_directories(${CMAKE_BINARY_DIR}/thirdparty/libpng)
