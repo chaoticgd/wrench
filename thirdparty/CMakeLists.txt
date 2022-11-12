@@ -56,8 +56,11 @@ include_directories(zlib)
 include_directories(${CMAKE_BINARY_DIR}/thirdparty/zlib)
 set(ZLIB_FOUND TRUE)
 set(ZLIB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/thirdparty/zlib ${CMAKE_BINARY_DIR}/thirdparty/zlib)
+# ZLIB_INCLUDE_DIRS is used by genout.cmake.in from libpng.
 set(ZLIB_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/thirdparty/zlib ${CMAKE_BINARY_DIR}/thirdparty/zlib)
 if(WIN32)
+	# ZLIB_LIBRARY is used by libzip and must be set at configuration time hence
+	# we copy the library file into a fixed location.
 	add_custom_target(copy_zlib_lib_hack
 		COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:zlibstatic>" "${CMAKE_CURRENT_BINARY_DIR}/zlib.lib"
 	)

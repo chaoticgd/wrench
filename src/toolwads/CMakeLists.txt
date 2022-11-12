@@ -15,13 +15,13 @@ find_package(Git QUIET)
 if(GIT_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
 	message("-- Found git")
 	add_custom_command(
-		COMMAND ${GIT_EXECUTABLE} tag --points-at HEAD > "${CMAKE_BINARY_DIR}/git_tag.tmp"
+		COMMAND ${GIT_EXECUTABLE} tag --points-at HEAD > "${CMAKE_BINARY_DIR}/git_tag.tmp" || echo "" > "${CMAKE_BINARY_DIR}/git_tag.tmp"
 		DEPENDS "${CMAKE_SOURCE_DIR}/*"
 		OUTPUT "${CMAKE_BINARY_DIR}/git_tag.tmp"
 		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 	)
 	add_custom_command(
-		COMMAND ${GIT_EXECUTABLE} rev-parse HEAD > "${CMAKE_BINARY_DIR}/git_commit.tmp"
+		COMMAND ${GIT_EXECUTABLE} rev-parse HEAD > "${CMAKE_BINARY_DIR}/git_commit.tmp" || echo "" > "${CMAKE_BINARY_DIR}/git_commit.tmp"
 		DEPENDS "${CMAKE_SOURCE_DIR}/*"
 		OUTPUT "${CMAKE_BINARY_DIR}/git_commit.tmp"
 		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
