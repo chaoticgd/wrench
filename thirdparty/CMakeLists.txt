@@ -64,6 +64,7 @@ option(PNG_EXECUTABLES "" OFF)
 option(PNG_TESTS "" OFF)
 set(SKIP_INSTALL_EXPORT ON FORCE)
 add_subdirectory(libpng)
+target_include_directories(pnglibconf_out zlib)
 
 # libzip
 set(LIBZIP_DO_INSTALL OFF CACHE BOOL "")
