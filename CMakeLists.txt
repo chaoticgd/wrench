@@ -176,6 +176,7 @@ add_library(wrenchengine
 	src/engine/moby_animation.cpp
 	src/engine/shrub.cpp
 	src/engine/sky.cpp
+	src/engine/tfrag.cpp
 	src/engine/vag.cpp
 )
 target_link_libraries(wrenchengine wrenchcore)
@@ -215,6 +216,7 @@ add_executable(wrenchbuild
 	src/wrenchbuild/level/level_scene_wad.cpp
 	src/wrenchbuild/level/collision_asset.cpp
 	src/wrenchbuild/level/sky_asset.cpp
+	src/wrenchbuild/level/tfrags_asset.cpp
 )
 target_link_libraries(wrenchbuild wrenchcore wrench_assetmgr wrenchiso wrenchengine wadinfo)
 

@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-format_version: 15
+format_version: 16
 
 // *****************************************************************************
 
@@ -1258,16 +1258,11 @@ AssetType LevelWad {
 	// Level Core
 	Child tfrags {
 		desc: "The main world-space level mesh."
-		allowed_types: ["Binary"]
+		allowed_types: ["Tfrags"]
 		required: true
 		games: [1 2 3 4]
 	}
-	Child tfrag_textures {
-		desc: "Textures for the tfrag mesh."
-		allowed_types: ["Collection"]
-		required: true
-		games: [1 2 3 4]
-	}
+	
 	Child occlusion {
 		allowed_types: ["Binary"] 
 	}
@@ -1470,8 +1465,6 @@ AssetType MobyClass {
 }
 
 AssetType MobyClassCore {
-	bin_leaf: true
-	
 	Child mesh { allowed_types: ["Mesh"] }
 	Child low_lod_mesh { allowed_types: ["Mesh"] }
 }
@@ -1599,6 +1592,26 @@ AssetType ShrubBillboard {
 		required: true
 		games: [1 2 3 4]
 	}
+}
+
+AssetType Tfrags {
+	Child core {
+		allowed_types: ["TfragsCore" "Binary"]
+	}
+	
+	Child materials {
+		desc: "The materials used by the tfrags."
+		allowed_types: ["Collection"]
+		required: true
+		games: [1 2 3 4]
+		Child child {
+			allowed_types: ["Material"]
+		}
+	}
+}
+
+AssetType TfragsCore {
+	bin_leaf: true
 }
 
 AssetType Material {

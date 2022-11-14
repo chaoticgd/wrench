@@ -1,6 +1,6 @@
 # Asset Reference
 
-This file was generated from /home/thomas/projects/wrench-editor/src/assetmgr/asset_schema.wtf and is for version 15 of the asset format.
+This file was generated from /home/thomas/projects/wrench-editor/src/assetmgr/asset_schema.wtf and is for version 16 of the asset format.
 
 ## Index
 
@@ -49,6 +49,8 @@ This file was generated from /home/thomas/projects/wrench-editor/src/assetmgr/as
 	- [ShrubClass](#shrubclass)
 	- [ShrubClassCore](#shrubclasscore)
 	- [ShrubBillboard](#shrubbillboard)
+	- [Tfrags](#tfrags)
+	- [TfragsCore](#tfragscore)
 	- [Material](#material)
 	- [Collision](#collision)
 	- [CollisionMaterial](#collisionmaterial)
@@ -815,8 +817,7 @@ Container for assets used in the mutliplayer mode.
 | hud_banks | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
 | transition_textures | Textures that are shown during a transition to the given level. | Texture\[\], Binary | No | GC/UYA |
 | global_nav_data | *Not yet documented.* | Binary | Yes | DL |
-| tfrags | The main world-space level mesh. | Binary | Yes | RC/GC/UYA/DL |
-| tfrag_textures | Textures for the tfrag mesh. | Collection | Yes | RC/GC/UYA/DL |
+| tfrags | The main world-space level mesh. | Tfrags | Yes | RC/GC/UYA/DL |
 | occlusion | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
 | sky | The sky. | Sky, Binary | Yes | RC/GC/UYA/DL |
 | collision | The world space collision mesh. | Collision, Binary | Yes | RC/GC/UYA/DL |
@@ -1030,6 +1031,32 @@ A Deadlocked mission.
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
 | texture | The texture to show on the billboard. | Texture | Yes | RC/GC/UYA/DL |
+
+
+### Tfrags
+
+*Attributes*
+| Name | Description | Type | Required | Games |
+| - | - | - | - | - |
+
+*Children*
+
+| Name | Description | Allowed Types | Required | Games |
+| - | - | - | - | - |
+| core | *Not yet documented.* | TfragsCore, Binary | *Not yet documented.* | *Not yet documented.* |
+| materials | The materials used by the tfrags. | Material\[\] | Yes | RC/GC/UYA/DL |
+
+
+### TfragsCore
+
+*Attributes*
+| Name | Description | Type | Required | Games |
+| - | - | - | - | - |
+
+*Children*
+
+| Name | Description | Allowed Types | Required | Games |
+| - | - | - | - | - |
 
 
 ### Material
