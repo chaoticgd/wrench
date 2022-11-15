@@ -17,15 +17,15 @@
 */
 
 #include <assetmgr/material_asset.h>
-#include <engine/shrub.h>
+#include <engine/tfrag.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 
 static void unpack_tfrags(TfragsAsset& dest, InputStream& src, BuildConfig config, const char* hint);
 static void pack_tfrags(OutputStream& dest, const TfragsAsset& src, BuildConfig config, const char* hint);
-static AssetTestResult test_tfrags(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode);
+static bool test_tfrags(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode);
 
-on_load(ShrubClass, []() {
+on_load(Tfrags, []() {
 	TfragsAsset::funcs.unpack_rac1 = wrap_hint_unpacker_func<TfragsAsset>(unpack_tfrags);
 	TfragsAsset::funcs.unpack_rac2 = wrap_hint_unpacker_func<TfragsAsset>(unpack_tfrags);
 	TfragsAsset::funcs.unpack_rac3 = wrap_hint_unpacker_func<TfragsAsset>(unpack_tfrags);
@@ -36,10 +36,10 @@ on_load(ShrubClass, []() {
 	TfragsAsset::funcs.pack_rac3 = wrap_hint_packer_func<TfragsAsset>(pack_tfrags);
 	TfragsAsset::funcs.pack_dl = wrap_hint_packer_func<TfragsAsset>(pack_tfrags);
 	
-	TfragsAsset::funcs.test_rac = new AssetTestFunc(test_tfrags);
-	TfragsAsset::funcs.test_gc  = new AssetTestFunc(test_tfrags);
-	TfragsAsset::funcs.test_uya = new AssetTestFunc(test_tfrags);
-	TfragsAsset::funcs.test_dl  = new AssetTestFunc(test_tfrags);
+	TfragsCoreAsset::funcs.test_rac = new AssetTestFunc(test_tfrags);
+	TfragsCoreAsset::funcs.test_gc  = new AssetTestFunc(test_tfrags);
+	TfragsCoreAsset::funcs.test_uya = new AssetTestFunc(test_tfrags);
+	TfragsCoreAsset::funcs.test_dl  = new AssetTestFunc(test_tfrags);
 })
 
 static void unpack_tfrags(TfragsAsset& dest, InputStream& src, BuildConfig config, const char* hint) {
@@ -62,6 +62,11 @@ static void pack_tfrags(OutputStream& dest, const TfragsAsset& src, BuildConfig 
 	}
 }
 
-static AssetTestResult test_tfrags(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode) {
-	return AssetTestResult::NOT_RUN;
+static bool test_tfrags(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode) {
+	std::vector<Tfrag> tfrags = read_tfrags(src);
+	
+	std::vector<u8> dest;
+	write_tfrags(dest, tfrags);
+	
+	return diff_buffers(src, dest, 0, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
 }

@@ -17,21 +17,17 @@
 */
 
 #include "tests.h"
-#include "assetmgr/asset_dispatch.h"
-#include "core/buffer.h"
 
+#include <string>
 #include <md5.h>
-
 #include <engine/moby.h>
 #include <engine/shrub.h>
-#include <string>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 
 static void run_round_trip_asset_packing_tests(const fs::path& input_path, const std::string& asset_ref, s32 min_percentage, s32 max_percentage, const std::string& filter);
 static void enumerate_binaries(std::vector<BinaryAsset*>& dest, Asset& src);
 static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& binary, AssetType type, s32 percentage, AssetTestMode mode, const std::string& filter);
-static void strip_trailing_padding_from_src(std::vector<u8>& src, std::vector<u8>& dest);
 
 static s32 pass_count = 0;
 static s32 fail_count = 0;
@@ -86,7 +82,7 @@ static void run_round_trip_asset_packing_tests(const fs::path& input_path, const
 }
 
 static void enumerate_binaries(std::vector<BinaryAsset*>& dest, Asset& src) {
-	if(src.physical_type() == BinaryAsset::ASSET_TYPE) {
+	if(src.logical_type() == BinaryAsset::ASSET_TYPE) {
 		dest.emplace_back(&src.as<BinaryAsset>());
 	}
 	
@@ -103,45 +99,20 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 		return;
 	}
 	
-	auto src_file = binary.file().open_binary_file_for_reading(binary.src());
-	std::vector<u8> src = src_file->read_multiple<u8>(src_file->size());
-	MemoryInputStream src_stream(src);
 	
 	if(mode == AssetTestMode::PRINT_DIFF_ON_FAIL) {
 		printf("[%3d%%] \033[34mRunning test with %s asset %s\033[0m\n", percentage, type_name, ref.c_str());
 	}
 	
+	auto src_file = binary.file().open_binary_file_for_reading(binary.src());
+	std::vector<u8> src = src_file->read_multiple<u8>(src_file->size());
+	MemoryInputStream src_stream(src);
+	
 	std::string hint = binary.format_hint();
 	BuildConfig config(binary.game(), binary.region(), true);
 	
-	AssetDispatchTable* dispatch = nullptr;
-	
-	AssetBank* temp = nullptr;
-	
-	std::vector<u8> dest;
-	if(type == MobyClassAsset::ASSET_TYPE) {
-		MobyClassData moby = read_moby_class(src, config.game());
-		write_moby_class(dest, moby, config.game());
-		
-		dispatch = &MobyClassAsset::funcs;
-	} else if(type == ShrubClassCoreAsset::ASSET_TYPE) {
-		ShrubClass shrub = read_shrub_class(src);
-		write_shrub_class(dest, shrub);
-		
-		dispatch = &ShrubClassAsset::funcs;
-	} else {
-		temp = &forest.mount<MemoryAssetBank>();
-		AssetFile& file = temp->asset_file("test.asset");
-		Asset& asset = file.root().physical_child(type, "test");
-		unpack_asset_impl(asset, src_stream, nullptr, config, hint.c_str());
-		
-		MemoryOutputStream dest_stream(dest);
-		pack_asset_impl(dest_stream, nullptr, nullptr, asset, config, hint.c_str());
-		
-		dispatch = &asset.funcs;
-	}
-	
-	strip_trailing_padding_from_src(src, dest);
+	AssetDispatchTable* dispatch = dispatch_table_from_asset_type(type);
+	assert(dispatch);
 	
 	AssetTestFunc* test_func;
 	switch(config.game()) {
@@ -152,30 +123,22 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 		default: return;
 	}
 	
-	AssetTestResult result;
-	if(!test_func || (result = (*test_func)(src, dest, config, hint.c_str(), mode)) == AssetTestResult::NOT_RUN) {
-		result = diff_buffers(src, dest, 0, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL)
-			? AssetTestResult::PASS : AssetTestResult::FAIL;
-	}
-	
-	if(result == AssetTestResult::PASS) {
-		if(mode == AssetTestMode::RUN_ALL_TESTS) {
-			printf("\033[32m[PASS] %s\033[0m\n", ref.c_str());
+	if(test_func) {
+		if((*test_func)(src, type, config, hint.c_str(), mode)) {
+			if(mode == AssetTestMode::RUN_ALL_TESTS) {
+				printf("\033[32m[PASS] %s\033[0m\n", ref.c_str());
+			}
+			pass_count++;
+		} else {
+			if(mode == AssetTestMode::RUN_ALL_TESTS) {
+				printf("\033[31m[FAIL] %s\033[0m\n", ref.c_str());
+			}
+			fail_count++;
 		}
-		pass_count++;
-	} else {
-		if(mode == AssetTestMode::RUN_ALL_TESTS) {
-			printf("\033[31m[FAIL] %s\033[0m\n", ref.c_str());
-		}
-		fail_count++;
-	}
-	
-	if(temp) {
-		forest.unmount_last();
 	}
 }
 
-static void strip_trailing_padding_from_src(std::vector<u8>& src, std::vector<u8>& dest) {
+void strip_trailing_padding_from_src(std::vector<u8>& src, std::vector<u8>& dest) {
 	if(dest.size() > 0 && src.size() > dest.size() && src.size() <= dest.size() + SECTOR_SIZE) {
 		bool is_padding = true;
 		for(s64 i = dest.size(); i < src.size(); i++) {
@@ -185,4 +148,10 @@ static void strip_trailing_padding_from_src(std::vector<u8>& src, std::vector<u8
 			src.resize(dest.size());
 		}
 	}
+}
+
+AssetTestFunc* generate_default_diff_test_func() {
+	return wrap_diff_test_func([](const std::vector<u8>& src, const std::vector<u8>& dest, BuildConfig config, const char* hint, AssetTestMode mode) -> bool {
+		return diff_buffers(src, dest, 0, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
+	});
 }

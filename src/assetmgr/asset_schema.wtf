@@ -1465,13 +1465,13 @@ AssetType MobyClass {
 }
 
 AssetType MobyClassCore {
+	bin_leaf: true
+	
 	Child mesh { allowed_types: ["Mesh"] }
 	Child low_lod_mesh { allowed_types: ["Mesh"] }
 }
 
 AssetType TieClass {
-	bin_leaf: true
-	
 	StringAttribute name {
 		desc: "A human-friendly string that identifies the class e.g. \"Snowy Mountain\"."
 		required: false

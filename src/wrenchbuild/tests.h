@@ -17,5 +17,31 @@
 */
 
 #include <core/filesystem.h>
+#include <assetmgr/asset.h>
+#include <wrenchbuild/asset_unpacker.h>
+#include <wrenchbuild/asset_packer.h>
 
 void run_tests(fs::path input_path, const std::string& asset_ref, const std::string& filter);
+void strip_trailing_padding_from_src(std::vector<u8>& src, std::vector<u8>& dest);
+AssetTestFunc* generate_default_diff_test_func();
+
+template <typename TestFunc>
+AssetTestFunc* wrap_diff_test_func(TestFunc func) {
+	return new AssetTestFunc([func](std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode) -> bool {
+		MemoryInputStream src_stream(src);
+		
+		AssetForest forest;
+		AssetBank& temp = forest.mount<MemoryAssetBank>();
+		AssetFile& file = temp.asset_file("test.asset");
+		Asset& asset = file.root().physical_child(type, "test");
+		unpack_asset_impl(asset, src_stream, nullptr, config, hint);
+		
+		std::vector<u8> dest;
+		MemoryOutputStream dest_stream(dest);
+		pack_asset_impl(dest_stream, nullptr, nullptr, asset, config, hint);
+		
+		strip_trailing_padding_from_src(src, dest);
+		
+		return func(src, dest, config, hint, mode);
+	});
+}

@@ -19,12 +19,13 @@
 #include <core/png.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
+#include <wrenchbuild/tests.h>
 
 static void unpack_texture_asset(TextureAsset& dest, InputStream& src, BuildConfig config, const char* hint);
 static void pack_texture_asset(OutputStream& dest, const TextureAsset& src, BuildConfig config, const char* hint);
 static Texture unpack_pif(InputStream& src);
 static void pack_pif(OutputStream& dest, Texture& texture, s32 mip_level);
-static AssetTestResult test_texture_asset(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode);
+static bool test_texture_asset(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode);
 
 on_load(Texture, []() {
 	TextureAsset::funcs.unpack_rac1 = wrap_hint_unpacker_func<TextureAsset>(unpack_texture_asset);
@@ -37,10 +38,10 @@ on_load(Texture, []() {
 	TextureAsset::funcs.pack_rac3 = wrap_hint_packer_func<TextureAsset>(pack_texture_asset);
 	TextureAsset::funcs.pack_dl = wrap_hint_packer_func<TextureAsset>(pack_texture_asset);
 	
-	TextureAsset::funcs.test_rac = new AssetTestFunc(test_texture_asset);
-	TextureAsset::funcs.test_gc  = new AssetTestFunc(test_texture_asset);
-	TextureAsset::funcs.test_uya = new AssetTestFunc(test_texture_asset);
-	TextureAsset::funcs.test_dl  = new AssetTestFunc(test_texture_asset);
+	TextureAsset::funcs.test_rac = wrap_diff_test_func(test_texture_asset);
+	TextureAsset::funcs.test_gc  = wrap_diff_test_func(test_texture_asset);
+	TextureAsset::funcs.test_uya = wrap_diff_test_func(test_texture_asset);
+	TextureAsset::funcs.test_dl  = wrap_diff_test_func(test_texture_asset);
 })
 
 packed_struct(RgbaTextureHeader,
@@ -219,7 +220,7 @@ static void pack_pif(OutputStream& dest, Texture& texture, s32 mip_levels) {
 	dest.write(header_ofs, header);
 }
 
-static AssetTestResult test_texture_asset(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode) {
+static bool test_texture_asset(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode) {
 	const char* type = next_hint(&hint);
 	if(strcmp(type, "pif") == 0) {
 		// We don't know what this field in the PIF header is and it doesn't
@@ -230,5 +231,5 @@ static AssetTestResult test_texture_asset(std::vector<u8>& original, std::vector
 		*(u32*) &repacked[4] = 0;
 		original.resize(repacked.size());
 	}
-	return AssetTestResult::NOT_RUN;
+	return diff_buffers(original, repacked, 0, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
 }

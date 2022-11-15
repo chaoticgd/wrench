@@ -22,7 +22,7 @@
 
 static void unpack_moby_class(MobyClassAsset& dest, InputStream& src, BuildConfig config, const char* hint);
 static void pack_moby_class_core(OutputStream& dest, const MobyClassAsset& src, BuildConfig config, const char* hint);
-static AssetTestResult test_moby_class_core(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode);
+static bool test_moby_class_core(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode);
 
 on_load(MobyClass, []() {
 	MobyClassAsset::funcs.unpack_rac1 = wrap_hint_unpacker_func<MobyClassAsset>(unpack_moby_class);
@@ -142,6 +142,11 @@ static void pack_moby_class_core(OutputStream& dest, const MobyClassAsset& src, 
 	//dest.write_n(dest_bytes.data(), dest_bytes.size());
 }
 
-static AssetTestResult test_moby_class_core(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode) {
-	return AssetTestResult::NOT_RUN;
+static bool test_moby_class_core(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode) {
+	MobyClassData moby = read_moby_class(src, config.game());
+	
+	std::vector<u8> dest;
+	write_moby_class(dest, moby, config.game());
+	
+	diff_buffers(src, dest, 0, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
 }
