@@ -131,6 +131,7 @@ Each asset type is defined in `asset_schema.wtf` and a code generator, `asset_co
 
 | Format Version | Wrench Version | Description |
 | -    | -     | - |
+| 16   |       | The billboard asset is now a child of ShrubClass assets instead of ShrubClassCore assets. The mipmap_distance attribute of ShrubClassCore assets has been renamed to mip_distance. |
 | 15   |       | Added underlay asset banks. Level, MobyClass, TieClass and ShrubClass asset now have name and category attributes. Replaced deleted attribute with strongly_deleted and weakly_deleted attributes. |
 | 14   |       | Moby classes stored in missions are now packed/unpacked separately for Deadlocked. |
 | 13   |       | Merged LevelDataWad and LevelCore into the Level asset type. |
