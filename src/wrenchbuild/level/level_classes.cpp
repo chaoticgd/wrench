@@ -117,7 +117,7 @@ void unpack_shrub_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest
 		
 		unpack_level_materials(asset.materials(), entry.textures, textures, texture_data, gs_ram, config.game());
 		if(entry.billboard.texture_width != 0 && !g_asset_unpacker.dump_binaries) {
-			unpack_shrub_billboard_texture(asset.core<ShrubClassCoreAsset>().billboard().texture(), entry.billboard, gs_ram, config.game());
+			unpack_shrub_billboard_texture(asset.billboard().texture(), entry.billboard, gs_ram, config.game());
 		}
 		
 		if(entry.offset_in_asset_wad != 0) {

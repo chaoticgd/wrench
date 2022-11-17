@@ -84,13 +84,13 @@ MeshGraph::MeshGraph(const Mesh& mesh) {
 				// faces. We should remove it from the graph so it doesn't cause
 				// problems later.
 				for(s32 k = j - 1; k >= 0; k--) {
-					VertexIndex r0 = face.v[k];
-					VertexIndex r1 = face.v[(k + 1) % 3];
-					if(r1 < r0) {
-						std::swap(r0, r1);
+					VertexIndex v2 = face.v[k];
+					VertexIndex v3 = face.v[(k + 1) % 3];
+					if(v3 < v2) {
+						std::swap(v2, v3);
 					}
 					
-					EdgeIndex remove_index = edge(r0, r1);
+					EdgeIndex remove_index = edge(v2, v3);
 					assert(remove_index != NULL_EDGE_INDEX);
 					
 					EdgeInfo& remove_info = edge_at(remove_index);
@@ -98,6 +98,25 @@ MeshGraph::MeshGraph(const Mesh& mesh) {
 						if(remove_face == i) {
 							remove_face = NULL_FACE_INDEX;
 						}
+					}
+				}
+				
+				// Make the remaining edge objects.
+				for(s32 k = j + 1; k < 3; k++) {
+					VertexIndex v2 = face.v[k];
+					VertexIndex v3 = face.v[(k + 1) % 3];
+					if(v3 < v2) {
+						std::swap(v2, v3);
+					}
+					
+					EdgeIndex index = edge(v2, v3);
+					if(index == NULL_EDGE_INDEX) {
+						index = EdgeIndex((s32) _edges.size());
+						EdgeInfo& info = _edges.emplace_back();
+						info.v[0] = v2;
+						info.v[1] = v3;
+						vertex_at(v0).edges.emplace_back(index);
+						vertex_at(v1).edges.emplace_back(index);
 					}
 				}
 				

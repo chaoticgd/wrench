@@ -71,14 +71,14 @@ static void unpack_shrub_class(ShrubClassAsset& dest, InputStream& src, BuildCon
 	auto ref = dest.file().write_text_file("mesh.dae", (char*) xml.data());
 	
 	ShrubClassCoreAsset& core = dest.core<ShrubClassCoreAsset>();
-	core.set_mipmap_distance(shrub.mip_distance);
+	core.set_mip_distance(shrub.mip_distance);
 	
 	MeshAsset& mesh = core.mesh();
 	mesh.set_name("mesh");
 	mesh.set_src(ref);
 	
 	if(shrub.billboard.has_value()) {
-		ShrubBillboardAsset& billboard = core.billboard();
+		ShrubBillboardAsset& billboard = dest.billboard();
 		billboard.set_fade_distance(shrub.billboard->fade_distance);
 		billboard.set_width(shrub.billboard->width);
 		billboard.set_height(shrub.billboard->height);
@@ -88,6 +88,11 @@ static void unpack_shrub_class(ShrubClassAsset& dest, InputStream& src, BuildCon
 
 static void pack_shrub_class(OutputStream& dest, const ShrubClassAsset& src, BuildConfig config, const char* hint) {
 	if(g_asset_packer_dry_run) {
+		return;
+	}
+	
+	if(src.get_core().logical_type() == BinaryAsset::ASSET_TYPE) {
+		pack_asset_impl(dest, nullptr, nullptr, src.get_core(), config, nullptr);
 		return;
 	}
 	
@@ -103,8 +108,8 @@ static void pack_shrub_class(OutputStream& dest, const ShrubClassAsset& src, Bui
 	map_lhs_material_indices_to_rhs_list(scene, material_set.materials);
 	
 	Opt<ShrubBillboardInfo> billboard;
-	if(core.has_billboard()) {
-		const ShrubBillboardAsset& billboard_asset = core.get_billboard();
+	if(src.has_billboard()) {
+		const ShrubBillboardAsset& billboard_asset = src.get_billboard();
 		billboard.emplace();
 		billboard->fade_distance = billboard_asset.fade_distance();
 		billboard->width = billboard_asset.width();
@@ -112,7 +117,7 @@ static void pack_shrub_class(OutputStream& dest, const ShrubClassAsset& src, Bui
 		billboard->z_ofs = billboard_asset.z_offset();
 	}
 	
-	ShrubClass shrub = build_shrub_class(*mesh, material_set.materials, core.mipmap_distance(), 0, src.id(), billboard);
+	ShrubClass shrub = build_shrub_class(*mesh, material_set.materials, core.mip_distance(), 0, src.id(), billboard);
 	
 	std::vector<u8> buffer;
 	write_shrub_class(buffer, shrub);
