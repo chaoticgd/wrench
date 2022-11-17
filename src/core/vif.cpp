@@ -103,7 +103,6 @@ s64 VifCode::packet_size() const {
 		default:
 			if(is_unpack()) {
 				// This is what PCSX2 does when wl <= cl.
-				// Assume wl = cl = 4.
 				s32 gsize = ((32 >> unpack.vl) * (unpack.vn + 1)) / 8;
 				s32 size = num * gsize;
 				if (size % 4 != 0)
