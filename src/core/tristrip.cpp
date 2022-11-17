@@ -39,6 +39,9 @@ static void verify_face_strips(const std::vector<FaceStrip>& strips, const std::
 GeometryPackets weave_tristrips(const Mesh& mesh, const std::vector<Material>& materials, const TriStripConfig& config) {
 	// Firstly we build a graph structure to make finding adjacent faces fast.
 	MeshGraph graph(mesh);
+	if(graph.face_count() == 0) {
+		return {};
+	}
 	std::vector<EffectiveMaterial> effectives = effective_materials(materials, MATERIAL_ATTRIB_SURFACE | MATERIAL_ATTRIB_WRAP_MODE);
 	FaceStrips strips;
 	for(s32 i = 0; i < (s32) effectives.size(); i++) {
@@ -135,7 +138,9 @@ static FaceIndex find_start_face(const MeshGraph& graph, const EffectiveMaterial
 		do {
 			s32 neighbour_count = 0;
 			for(s32 j = 0; j < 3; j++) {
-				FaceIndex other_face = graph.other_face(graph.edge_of_face(face, j), face);
+				EdgeIndex edge = graph.edge_of_face(face, j);
+				assert(edge != NULL_EDGE_INDEX);
+				FaceIndex other_face = graph.other_face(edge, face);
 				if(other_face != NULL_FACE_INDEX && graph.can_be_added_to_strip(other_face, effective)) {
 					neighbour_count++;
 				}
