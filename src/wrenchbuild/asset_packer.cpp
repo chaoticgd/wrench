@@ -45,7 +45,7 @@ void pack_asset_impl(OutputStream& dest, std::vector<u8>* header_dest, fs::file_
 	
 	if(!g_asset_packer_dry_run && !g_asset_packer_quiet) {
 		s32 completion_percentage = (s32) ((g_asset_packer_num_assets_processed * 100.f) / g_asset_packer_max_assets_processed);
-		if(strlen(hint) > 0) {
+		if(hint && strlen(hint) > 0) {
 			printf("[%3d%%] \033[32mPacking %s asset %s (%s)\033[0m\n", completion_percentage, type.c_str(), reference.c_str(), hint);
 		} else {
 			printf("[%3d%%] \033[32mPacking %s asset %s\033[0m\n", completion_percentage, type.c_str(), reference.c_str());

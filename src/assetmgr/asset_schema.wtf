@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-format_version: 15
+format_version: 16
 
 // *****************************************************************************
 
@@ -1536,6 +1536,13 @@ AssetType ShrubClass {
 		allowed_types: ["ShrubClassCore" "Binary"]
 	}
 	
+	Child billboard {
+		desc: "Cheap billboard, to be drawn when the camera is far away."
+		allowed_types: ["ShrubBillboard"]
+		required: false
+		games: [1 2 3 4]
+	}
+	
 	Child materials {
 		desc: "The materials used by this class."
 		allowed_types: ["Collection"]
@@ -1550,7 +1557,7 @@ AssetType ShrubClass {
 AssetType ShrubClassCore {
 	bin_leaf: true
 	
-	FloatAttribute mipmap_distance {
+	FloatAttribute mip_distance {
 		required: true
 		games: [1 2 3 4]
 	}
@@ -1558,13 +1565,6 @@ AssetType ShrubClassCore {
 	Child mesh {
 		desc: "The mesh."
 		allowed_types: ["Mesh"]
-	}
-	
-	Child billboard {
-		desc: "Cheap billboard, to be drawn when the camera is far away."
-		allowed_types: ["ShrubBillboard"]
-		required: false
-		games: [1 2 3 4]
 	}
 }
 

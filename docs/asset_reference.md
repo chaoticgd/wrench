@@ -1,6 +1,6 @@
 # Asset Reference
 
-This file was generated from /home/thomas/projects/wrench-editor/src/assetmgr/asset_schema.wtf and is for version 15 of the asset format.
+This file was generated from /home/thomas/projects/wrench-editor/src/assetmgr/asset_schema.wtf and is for version 16 of the asset format.
 
 ## Index
 
@@ -997,6 +997,7 @@ A Deadlocked mission.
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
 | core | *Not yet documented.* | ShrubClassCore, Binary | *Not yet documented.* | *Not yet documented.* |
+| billboard | Cheap billboard, to be drawn when the camera is far away. | ShrubBillboard | No | RC/GC/UYA/DL |
 | materials | The materials used by this class. | Material\[\] | Yes | RC/GC/UYA/DL |
 
 
@@ -1005,14 +1006,13 @@ A Deadlocked mission.
 *Attributes*
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
-| mipmap_distance | *Not yet documented.* | Float | Yes | RC/GC/UYA/DL |
+| mip_distance | *Not yet documented.* | Float | Yes | RC/GC/UYA/DL |
 
 *Children*
 
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
 | mesh | The mesh. | Mesh | *Not yet documented.* | *Not yet documented.* |
-| billboard | Cheap billboard, to be drawn when the camera is far away. | ShrubBillboard | No | RC/GC/UYA/DL |
 
 
 ### ShrubBillboard
