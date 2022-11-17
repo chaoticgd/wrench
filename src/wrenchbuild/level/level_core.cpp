@@ -52,14 +52,16 @@ void unpack_level_core(LevelWadAsset& dest, InputStream& src, ByteRange index_ra
 		verify_not_reached("Unable to determine size of tfrag block.");
 	}
 	
-	unpack_asset(dest.tfrags<TfragsAsset>(), data, ByteRange{header.tfrags, tfrags_size}, config);
+	TfragsAsset& tfrags = dest.tfrags<TfragsAsset>(SWITCH_FILES);
+	
+	unpack_asset(tfrags, data, ByteRange{header.tfrags, tfrags_size}, config);
 	unpack_asset(dest.occlusion(), data, level_core_block_range(header.occlusion, block_bounds), config);
 	if(header.sky) {
 		unpack_asset(dest.sky<SkyAsset>(SWITCH_FILES), data, level_core_block_range(header.sky, block_bounds), config);
 	}
 	unpack_asset(dest.collision<CollisionAsset>(SWITCH_FILES), data, level_core_block_range(header.collision, block_bounds), config);
 	
-	CollectionAsset& tfrag_textures_collection = dest.tfrags<TfragsAsset>(SWITCH_FILES).materials();
+	CollectionAsset& tfrag_textures_collection = tfrags.materials();
 	SubInputStream texture_data(data, header.textures_base_offset, data.size() - header.textures_base_offset);
 	auto tfrag_textures = index.read_multiple<TextureEntry>(header.tfrag_textures);
 	for(s32 i = 0; i < (s32) tfrag_textures.size(); i++) {
