@@ -90,6 +90,11 @@ static void pack_shrub_class(OutputStream& dest, const ShrubClassAsset& src, Bui
 		return;
 	}
 	
+	if(src.get_core().logical_type() == BinaryAsset::ASSET_TYPE) {
+		pack_asset_impl(dest, nullptr, nullptr, src.get_core(), config, nullptr);
+		return;
+	}
+	
 	const ShrubClassCoreAsset& core = src.get_core().as<ShrubClassCoreAsset>();
 	
 	const MeshAsset& mesh_asset = core.get_mesh();
