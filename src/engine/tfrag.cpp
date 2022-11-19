@@ -144,24 +144,23 @@ void write_tfrags(OutBuffer dest, const std::vector<Tfrag>& tfrags) {
 	for(const Tfrag& tfrag : tfrags) {
 		TfragHeader header = {};
 		
-		// LOD 2
 		dest.pad(0x10, 0);
 		s64 tfrag_ofs = dest.tell();
 		header.data = checked_int_cast<s32>(tfrag_ofs - table_header_ofs);
 		header.lod_2_ofs = 0;
 		
+		// LOD 2
 		write_strow(dest, 0x000000a8, 0x000000a8, 0x000000a8, 0x000000a8);
 		dest.write<u32>(0x05000001); // stmod
 		write_unpack(dest, tfrag.lod_2_1, VifVnVl::V4_8, VifUsn::UNSIGNED);
 		dest.write<u32>(0x05000000); // stmod
 		write_unpack(dest, tfrag.lod_2_2, VifVnVl::V4_8, VifUsn::SIGNED);
 		
-		// shared
 		dest.pad(0x10, 0);
 		s64 shared_ofs = dest.tell();
-		header.lod_2_size = checked_int_cast<u8>((shared_ofs - tfrag_ofs) / 0x10);
 		header.shared_ofs = checked_int_cast<u16>(shared_ofs - tfrag_ofs);
 		
+		// shared
 		write_unpack(dest, tfrag.shared_1, VifVnVl::V4_16, VifUsn::UNSIGNED);
 		write_unpack(dest, tfrag.shared_textures, VifVnVl::V4_32, VifUsn::SIGNED);
 		write_strow(dest, 0x45000000, 0x45000000, 0x00000000, 0x00000018);
@@ -173,23 +172,21 @@ void write_tfrags(OutBuffer dest, const std::vector<Tfrag>& tfrags) {
 		dest.write<u32>(0x01000404); // stcycl
 		dest.write<u32>(0x05000000); // stmod
 		
-		// LOD 1
 		dest.pad(0x10, 0);
 		s64 lod_1_ofs = dest.tell();
-		header.common_size = checked_int_cast<u8>((lod_1_ofs - shared_ofs) / 0x10);
 		header.lod_1_ofs = checked_int_cast<u16>(lod_1_ofs - tfrag_ofs);
 		
+		// LOD 1
 		write_unpack(dest, tfrag.lod_1_1, VifVnVl::V4_8, VifUsn::SIGNED);
 		write_strow(dest, 0x000000a8, 0x000000a8, 0x000000a8, 0x000000a8);
 		dest.write<u32>(0x05000001); // stmod
 		write_unpack(dest, tfrag.lod_1_2, VifVnVl::V4_8, VifUsn::UNSIGNED);
 		
-		// LOD 01
 		dest.pad(0x10, 0);
-		s64 lod_0_ofs = dest.tell();
-		header.lod_1_size = checked_int_cast<u8>((lod_0_ofs - lod_1_ofs) / 0x10);
-		header.lod_0_ofs = checked_int_cast<u16>(lod_0_ofs - tfrag_ofs);
+		s64 lod_01_ofs = dest.tell();
+		header.lod_0_ofs = checked_int_cast<u16>(lod_01_ofs - tfrag_ofs);
 		
+		// LOD 01
 		write_strow(dest, 0x000000a8, 0x000000a8, 0x000000a8, 0x000000a8);
 		dest.write<u32>(0x05000001); // stmod
 		write_unpack(dest, tfrag.lod_01_1, VifVnVl::V4_8, VifUsn::SIGNED);
@@ -199,9 +196,10 @@ void write_tfrags(OutBuffer dest, const std::vector<Tfrag>& tfrags) {
 		dest.write<u32>(0x01000102); // stcycl
 		write_unpack(dest, tfrag.lod_01_3, VifVnVl::V3_16, VifUsn::SIGNED);
 		
-		// LOD 0
+		dest.pad(0x10);
+		s64 lod_0_ofs = dest.tell();
 		
-		dest.pad(0x10, 0);
+		// LOD 0
 		write_unpack(dest, tfrag.lod_0_1, VifVnVl::V3_16, VifUsn::SIGNED);
 		dest.write<u32>(0x05000000); // stmod
 		dest.write<u32>(0x01000404); // stcycl
@@ -219,6 +217,14 @@ void write_tfrags(OutBuffer dest, const std::vector<Tfrag>& tfrags) {
 		s64 end_ofs = dest.tell();
 		header.lod_0_size = checked_int_cast<u8>((end_ofs - lod_0_ofs) / 0x10);
 		
+		// Fill in VIF command list sizes.
+		header.common_size = checked_int_cast<u8>((lod_1_ofs - shared_ofs) / 0x10);
+		header.lod_2_size = checked_int_cast<u8>((lod_1_ofs - tfrag_ofs) / 0x10);
+		header.lod_1_size = checked_int_cast<u8>((lod_0_ofs - shared_ofs) / 0x10);
+		header.lod_0_size = checked_int_cast<u8>((end_ofs - lod_01_ofs) / 0x10);
+		
+		
+		// RGBA
 		dest.pad(0x10, 0);
 		header.lod_2_rgba_count = tfrag.lod_2_rgba_count;
 		header.lod_1_rgba_count = tfrag.lod_1_rgba_count;
