@@ -169,8 +169,7 @@ void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_of
 		st_unpack.code.unpack.flg = VifFlg::USE_VIF1_TOPS;
 		st_unpack.code.unpack.usn = VifUsn::SIGNED;
 		st_unpack.code.unpack.addr = ST_UNPACK_ADDR_QUADWORDS;
-		st_unpack.data.resize(submesh.sts.size() * 4);
-		memcpy(st_unpack.data.data(), submesh.sts.data(), submesh.sts.size() * 4);
+		st_unpack.data = Buffer((u8*) &submesh.sts[0], (u8*) (&submesh.sts[0] + submesh.sts.size()));
 		write_vif_packet(dest, st_unpack);
 		
 		s64 tex_unpack = write_shared_moby_vif_packets(dest, &gif_usage, submesh, class_header_ofs);
@@ -255,7 +254,7 @@ static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usag
 	index_unpack.code.unpack.flg = VifFlg::USE_VIF1_TOPS;
 	index_unpack.code.unpack.usn = VifUsn::SIGNED;
 	index_unpack.code.unpack.addr = INDEX_UNPACK_ADDR_QUADWORDS;
-	index_unpack.data = std::move(indices);
+	index_unpack.data = Buffer(indices);
 	write_vif_packet(dest, index_unpack);
 	
 	s64 rel_texture_unpack_ofs = 0;
@@ -274,13 +273,15 @@ static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usag
 		texture_unpack.code.unpack.addr = INDEX_UNPACK_ADDR_QUADWORDS + index_unpack.code.num;
 		
 		assert(submesh.secret_indices.size() >= submesh.textures.size());
+		std::vector<u8> texture_unpack_data;
 		for(size_t i = 0; i < submesh.textures.size(); i++) {
 			MobyTexturePrimitive primitive = submesh.textures[i];
-			OutBuffer(texture_unpack.data).write(primitive);
+			OutBuffer(texture_unpack_data).write(primitive);
 		}
 		for(size_t i = 1; i < submesh.secret_indices.size(); i++) {
-			OutBuffer(texture_unpack.data).write((i - 1) * 0x10 + 0xc, submesh.secret_indices[i]);
+			OutBuffer(texture_unpack_data).write((i - 1) * 0x10 + 0xc, submesh.secret_indices[i]);
 		}
+		texture_unpack.data = Buffer(texture_unpack_data);
 		s32 abs_texture_unpack_ofs = dest.tell();
 		write_vif_packet(dest, texture_unpack);
 		

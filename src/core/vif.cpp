@@ -102,9 +102,7 @@ s64 VifCode::packet_size() const {
 			break;
 		default:
 			if(is_unpack()) {
-				// This is what PCSX2 does when wl <= cl.
-				s32 gsize = ((32 >> unpack.vl) * (unpack.vn + 1)) / 8;
-				s32 size = num * gsize;
+				s32 size = num * element_size();
 				if (size % 4 != 0)
 					size += 4 - (size % 4);
 
@@ -153,6 +151,19 @@ std::string VifCode::to_string() const {
 	ss << " interrupt=" << interrupt
 	   << " SIZE=" << packet_size();
 	return ss.str();
+}
+
+s32 VifCode::element_size() const {
+	// This is what PCSX2 does when wl <= cl.
+	return ((32 >> vl()) * (vn() + 1)) / 8;
+}
+
+s32 VifCode::vn() const {
+	return ((s32) unpack.vnvl & 0b1100) >> 2;
+}
+
+s32 VifCode::vl() const {
+	return ((s32) unpack.vnvl) & 0b11;
 }
 
 Opt<VifCode> read_vif_code(u32 val) {
@@ -219,11 +230,9 @@ Opt<VifCode> read_vif_code(u32 val) {
 			if(!code.is_unpack()) {
 				return {};
 			}
-			code.unpack.vn = bit_range(val, 26, 27);
-			code.unpack.vl = bit_range(val, 24, 25);
-			code.unpack.vnvl = static_cast<VifVnVl>(bit_range(val, 24, 27));
-			code.unpack.flg  = static_cast<VifFlg>(bit_range(val, 15, 15));
-			code.unpack.usn  = static_cast<VifUsn>(bit_range(val, 14, 14));
+			code.unpack.vnvl = (VifVnVl) bit_range(val, 24, 27);
+			code.unpack.flg  = (VifFlg)  bit_range(val, 15, 15);
+			code.unpack.usn  = (VifUsn)  bit_range(val, 14, 14);
 			code.unpack.addr = bit_range(val, 0, 9);
 	}
 	
@@ -258,7 +267,7 @@ std::vector<VifPacket> read_vif_command_list(Buffer src) {
 			break;
 		}
 		
-		packet.data = src.read_bytes(ofs + 4, packet_size - 4, "vif packet data");
+		packet.data = src.subbuf(ofs + 4, packet_size - 4);
 		command_list.emplace_back(packet);
 		
 		ofs += packet_size;
@@ -279,7 +288,8 @@ std::vector<VifPacket> filter_vif_unpacks(std::vector<VifPacket>& src) {
 void write_vif_packet(OutBuffer dest, const VifPacket& packet) {
 	if(packet.code.is_unpack()) {
 		dest.write<u32>(packet.code.encode_unpack());
-		dest.write_multiple(packet.data);
+		dest.vec.insert(dest.vec.end(), packet.data.lo, packet.data.hi);
+		dest.pad(4, 0);
 	} else if(packet.code.cmd == VifCmd::NOP) {
 		dest.write<u32>(0);
 	} else {

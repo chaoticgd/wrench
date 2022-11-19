@@ -42,7 +42,8 @@ struct Buffer {
 	
 	Buffer() {}
 	Buffer(const u8* l, const u8* h) : lo(l), hi(h) {}
-	Buffer(const std::vector<u8>& src) : lo(src.data()), hi(src.data() + src.size()) {}
+	template <typename T>
+	Buffer(const std::vector<T>& src) : lo((u8*) src.data()), hi((u8*) (src.data() + src.size())) {}
 	Buffer(const std::string& src) : lo((u8*) src.data()), hi((u8*) src.data() + src.size()) {}
 	const u8& operator[](s64 i) const { return lo[i]; }
 	s64 size() const { return hi - lo; }
@@ -64,6 +65,14 @@ struct Buffer {
 		verify(lo + offset + count * sizeof(T) <= hi, "Failed to read %s: Attempted to read past end of buffer.", subject);
 		const T* iter_lo = (const T*) (lo + offset);
 		return {iter_lo, iter_lo + count};
+	}
+	
+	template <typename T>
+	BufferArray<T> read_all(s64 offset = 0) const {
+		s64 buffer_size = hi - (lo + offset);
+		s64 element_count = buffer_size / sizeof(T);
+		s64 data_size = element_count * sizeof(T);
+		return {(const T*) (lo + offset), (const T*) (lo + offset + data_size)};
 	}
 	
 	template <typename T>

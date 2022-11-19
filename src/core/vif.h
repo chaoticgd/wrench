@@ -47,22 +47,6 @@ enum class VifCmd {
 	DIRECTHL = 0b1010001
 };
 
-enum class VifVn {
-	ONE   = 0b00,
-	TWO   = 0b01,
-	THREE = 0b10,
-	FOUR  = 0b11
-};
-extern const char* VIF_VN_STRINGS[4];
-
-enum class VifVl {
-	QWORD = 0b00,
-	DWORD = 0b01,
-	BYTE  = 0b10,
-	B5551 = 0b11
-};
-extern const char* VIF_VL_STRINGS[4];
-
 enum class VifVnVl {
 	S_32     = 0b0000,
 	S_16     = 0b0001,
@@ -114,8 +98,6 @@ struct VifCode {
 		struct { s32 size; } direct;
 		struct { s32 size; } directhl;
 		struct {
-			s32 vn; // Ignored by encode_pack.
-			s32 vl; // Ignored by encode_pack.
 			VifVnVl vnvl;
 			VifFlg flg;
 			VifUsn usn;
@@ -128,12 +110,16 @@ struct VifCode {
 	bool is_strow() const;
 	s64 packet_size() const; // In bytes.
 	std::string to_string() const;
+	
+	s32 element_size() const;
+	s32 vn() const;
+	s32 vl() const;
 };
 
 struct VifPacket {
 	s64 offset;
 	VifCode code;
-	std::vector<u8> data;
+	Buffer data;
 	std::string error;
 };
 
