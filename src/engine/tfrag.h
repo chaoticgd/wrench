@@ -16,6 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <core/vif.h>
 #include <core/buffer.h>
 #include <engine/basic_types.h>
 #include <engine/gif.h>
@@ -46,23 +47,62 @@ packed_struct(TfragCube,
 	TfragVec4i vectors[8];
 )
 
+packed_struct(TfragHeaderUnpack,
+	/* PACK UNPK */
+	/* 0x00 0x00 */ u16 unknown_0;
+	/* 0x02 0x04 */ u16 unknown_2;
+	/* 0x04 0x08 */ u16 unknown_4;
+	/* 0x06 0x0c */ u16 unknown_6;
+	/* 0x08 0x10 */ u16 unknown_8;
+	/* 0x0a 0x14 */ u16 unknown_a;
+	/* 0x0c 0x18 */ u16 vertex_pos_and_colours;
+	/* 0x0e 0x1c */ u16 vertex_sts_and_pointers;
+	/* 0x10 0x20 */ u16 unknown_10;
+	/* 0x12 0x24 */ u16 unknown_12;
+	/* 0x14 0x28 */ u16 unknown_14;
+	/* 0x16 0x2c */ u16 unknown_16;
+	/* 0x18 0x30 */ u16 unknown_18;
+	/* 0x1a 0x34 */ u16 vertex_double_pointers; // Indices are transformed into addresses by the VIF.
+	/* 0x1c 0x38 */ u16 unknown_1c;
+	/* 0x1e 0x3c */ u16 unknown_1e;
+	/* 0x20 0x40 */ u16 unknown_20;
+	/* 0x22 0x44 */ u16 unknown_22;
+	/* 0x24 0x48 */ u16 unknown_24;
+	/* 0x26 0x4c */ u16 texture_ad_gifs;
+)
+
+packed_struct(TfragVertexPosition,
+	/* PACK UNPK */
+	/* 0x00 0x00 */ s16 x;
+	/* 0x02 0x04 */ s16 y;
+	/* 0x04 0x08 */ s16 z;
+)
+
+packed_struct(TfragVertexInfo,
+	/* PACK UNPK */
+	/* 0x00 0x00 */ s16 s;
+	/* 0x02 0x04 */ s16 t;
+	/* 0x04 0x08 */ s16 second_level_indices[2];
+)
+
 struct Tfrag {
 	Vec4f bsphere;
-	std::vector<u8> lod_2_1;
-	std::vector<s8> lod_2_2;
-	std::vector<u16> shared_1;
-	std::vector<TfragTexturePrimitive> shared_textures;
-	std::vector<s16> shared_3;
-	std::vector<s16> shared_4;
-	std::vector<s8> lod_1_1;
-	std::vector<u8> lod_1_2;
-	std::vector<u8> lod_01_1;
-	std::vector<s16> lod_01_2;
-	std::vector<s16> lod_01_3;
-	std::vector<s16> lod_0_1;
-	std::vector<s8> lod_0_2;
-	std::vector<std::vector<s8>> lod_0_3;
-	std::vector<s16> lod_0_4;
+	VifSTROW base_position;
+	std::vector<u8> lod_2_indices;
+	std::vector<s8> lod_2_mystery;
+	TfragHeaderUnpack common_vu_header;
+	std::vector<TfragTexturePrimitive> common_textures;
+	std::vector<TfragVertexInfo> common_vertex_info;
+	std::vector<TfragVertexPosition> common_positions;
+	std::vector<s8> lod_1_mystery;
+	std::vector<u8> lod_1_indices;
+	std::vector<u8> lod_01_indices;
+	std::vector<TfragVertexInfo> lod_01_vertex_info;
+	std::vector<TfragVertexPosition> lod_01_positions;
+	std::vector<TfragVertexPosition> lod_0_positions;
+	std::vector<s8> lod_0_mystery;
+	std::vector<std::vector<s8>> lod_0_indices;
+	std::vector<TfragVertexInfo> lod_0_vertex_info;
 	std::vector<TfragRgba> rgbas;
 	u8 lod_2_rgba_count;
 	u8 lod_1_rgba_count;

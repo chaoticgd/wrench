@@ -123,6 +123,13 @@ struct VifPacket {
 	std::string error;
 };
 
+packed_struct(VifSTROW,
+	/* 0x0 */ s32 vif1_r0;
+	/* 0x4 */ s32 vif1_r1;
+	/* 0x8 */ s32 vif1_r2;
+	/* 0xc */ s32 vif1_r3;
+)
+
 Opt<VifCode> read_vif_code(u32 val);
 std::vector<VifPacket> read_vif_command_list(Buffer src);
 std::vector<VifPacket> filter_vif_unpacks(std::vector<VifPacket>& src);
