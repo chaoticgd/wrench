@@ -107,6 +107,36 @@ void Level::read(LevelAsset& asset, Game g) {
 		es.materials = upload_materials(scene.materials, textures);
 		shrubs.emplace(shrub.id(), std::move(es));
 	});
+	
+	{
+		TfragsAsset& tfrags_asset = level_wad().get_tfrags();
+		
+		if(!tfrags_asset.has_editor_mesh()) {
+			return;
+		}
+		MeshAsset& asset = tfrags_asset.get_editor_mesh();
+		std::string xml = asset.file().read_text_file(asset.src().path);
+		ColladaScene scene = read_collada((char*) xml.data());
+		Mesh* mesh = scene.find_mesh(asset.name());
+		if(!mesh) {
+			return;
+		}
+		
+		MaterialSet material_set = read_material_assets(tfrags_asset.get_materials());
+		map_lhs_material_indices_to_rhs_list(scene, material_set.materials);
+		
+		std::vector<Texture> textures;
+		for(FileReference ref : material_set.textures) {
+			auto stream = ref.owner->open_binary_file_for_reading(ref);
+			verify(stream.get(), "Failed to open shrub texture file.");
+			Opt<Texture> texture = read_png(*stream.get());
+			verify(texture.has_value(), "Failed to read shrub texture.");
+			textures.emplace_back(*texture);
+		}
+		
+		tfrags = upload_mesh(*mesh, true);
+		tfrag_materials = upload_materials(scene.materials, textures);
+	}
 }
 
 void Level::save(const fs::path& path) {

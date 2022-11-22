@@ -162,7 +162,9 @@ static void menu_bar() {
 				reset_camera(&a);
 			}
 			if(ImGui::BeginMenu("Visibility")) {
+				ImGui::Checkbox("Tfrags", &a.render_settings.draw_tfrags);
 				ImGui::Checkbox("Ties", &a.render_settings.draw_ties);
+				ImGui::Checkbox("Collision", &a.render_settings.draw_collision);
 				ImGui::Checkbox("Shrubs", &a.render_settings.draw_shrubs);
 				ImGui::Checkbox("Mobies", &a.render_settings.draw_mobies);
 				ImGui::Checkbox("Cuboids", &a.render_settings.draw_cuboids);
@@ -170,8 +172,6 @@ static void menu_bar() {
 				ImGui::Checkbox("Cylinders", &a.render_settings.draw_cylinders);
 				ImGui::Checkbox("Paths", &a.render_settings.draw_paths);
 				ImGui::Checkbox("Grind Paths", &a.render_settings.draw_grind_paths);
-				ImGui::Checkbox("Tfrags", &a.render_settings.draw_tfrags);
-				ImGui::Checkbox("Collision", &a.render_settings.draw_collision);
 				ImGui::Separator();
 				ImGui::Checkbox("Selected Instance Normals", &a.render_settings.draw_selected_instance_normals);
 				ImGui::EndMenu();
