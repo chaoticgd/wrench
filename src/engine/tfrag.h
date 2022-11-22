@@ -105,7 +105,7 @@ packed_struct(TfragHeaderUnpack,
 	/* 0x14 0x28 */ u16 unknown_14;
 	/* 0x16 0x2c */ u16 unknown_16;
 	/* 0x18 0x30 */ u16 unknown_18;
-	/* 0x1a 0x34 */ u16 vertex_pointers; // Indices are transformed into addresses by the VIF.
+	/* 0x1a 0x34 */ u16 indices;
 	/* 0x1c 0x38 */ u16 unknown_1c;
 	/* 0x1e 0x3c */ u16 unknown_1e;
 	/* 0x20 0x40 */ u16 unknown_20;

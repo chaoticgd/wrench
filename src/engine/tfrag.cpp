@@ -46,18 +46,18 @@ std::vector<Tfrag> read_tfrags(Buffer src) {
 		tfrag.lod_2_indices = read_unpack<u8>(lod_2[0], VifVnVl::V4_8);
 		tfrag.lod_2_faces = read_unpack<Tface>(lod_2[1], VifVnVl::V4_8);
 		
-		// Shared
-		Buffer shared_buffer = data.subbuf(header.shared_ofs, header.lod_1_ofs - header.shared_ofs);
-		std::vector<VifPacket> shared_command_list = read_vif_command_list(shared_buffer);
-		verify(shared_command_list.size() > 5, "Too few shared VIF commands.");
-		tfrag.base_position = shared_command_list[5].data.read<VifSTROW>(0, "base position");
-		std::vector<VifPacket> shared = filter_vif_unpacks(shared_command_list);
-		verify(shared.size() == 4, "Incorrect number of shared VIF unpacks!");
+		// Common
+		Buffer common_buffer = data.subbuf(header.shared_ofs, header.lod_1_ofs - header.shared_ofs);
+		std::vector<VifPacket> common_command_list = read_vif_command_list(common_buffer);
+		verify(common_command_list.size() > 5, "Too few shared VIF commands.");
+		tfrag.base_position = common_command_list[5].data.read<VifSTROW>(0, "base position");
+		std::vector<VifPacket> common = filter_vif_unpacks(common_command_list);
+		verify(common.size() == 4, "Incorrect number of shared VIF unpacks!");
 		
-		tfrag.common_vu_header = shared[0].data.read<TfragHeaderUnpack>(0, "VU header");
-		tfrag.common_textures = read_unpack<TfragTexturePrimitive>(shared[1], VifVnVl::V4_32);
-		tfrag.common_vertex_info = read_unpack<TfragVertexInfo>(shared[2], VifVnVl::V4_16);
-		tfrag.common_positions = read_unpack<TfragVertexPosition>(shared[3], VifVnVl::V3_16);
+		tfrag.common_vu_header = common[0].data.read<TfragHeaderUnpack>(0, "VU header");
+		tfrag.common_textures = read_unpack<TfragTexturePrimitive>(common[1], VifVnVl::V4_32);
+		tfrag.common_vertex_info = read_unpack<TfragVertexInfo>(common[2], VifVnVl::V4_16);
+		tfrag.common_positions = read_unpack<TfragVertexPosition>(common[3], VifVnVl::V3_16);
 		
 		// LOD 1
 		Buffer lod_1_buffer = data.subbuf(header.lod_1_ofs, header.lod_0_ofs - header.lod_1_ofs);
