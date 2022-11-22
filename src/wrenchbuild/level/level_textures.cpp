@@ -113,18 +113,18 @@ void unpack_shrub_billboard_texture(TextureAsset& dest, const ShrubBillboardInfo
 	dest.set_src(ref);
 }
 
-SharedLevelTextures read_level_textures(const CollectionAsset& tfrag_textures, const CollectionAsset& mobies, const CollectionAsset& ties, const CollectionAsset& shrubs) {
+SharedLevelTextures read_level_textures(const CollectionAsset& tfrag_materials, const CollectionAsset& mobies, const CollectionAsset& ties, const CollectionAsset& shrubs) {
 	SharedLevelTextures shared;
 	
 	shared.tfrag_range.table = TFRAG_TEXTURE_TABLE;
 	shared.tfrag_range.begin = shared.textures.size();
-	for(s32 i = 0; i < 1024; i++) {
-		if(tfrag_textures.has_child(i)) {
-			const TextureAsset& asset = tfrag_textures.get_child(i).as<TextureAsset>();
-			auto stream = asset.file().open_binary_file_for_reading(asset.src());
+	{
+		MaterialSet material_set = read_material_assets(tfrag_materials);
+		s32 i = 0;
+		for(; i < (s32) material_set.textures.size(); i++) {
+			FileReference& texture = material_set.textures[i];
+			auto stream = texture.owner->open_binary_file_for_reading(texture);
 			shared.textures.emplace_back(LevelTexture{read_png(*stream)});
-		} else {
-			shared.textures.emplace_back();
 		}
 	}
 	shared.tfrag_range.end = shared.textures.size();

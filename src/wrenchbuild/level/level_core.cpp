@@ -65,7 +65,7 @@ void unpack_level_core(LevelWadAsset& dest, InputStream& src, ByteRange index_ra
 	SubInputStream texture_data(data, header.textures_base_offset, data.size() - header.textures_base_offset);
 	auto tfrag_textures = index.read_multiple<TextureEntry>(header.tfrag_textures);
 	for(s32 i = 0; i < (s32) tfrag_textures.size(); i++) {
-		unpack_level_texture(tfrag_textures_collection.child<TextureAsset>(i), tfrag_textures[i], texture_data, gs_ram, config.game(), i);
+		unpack_level_material(tfrag_textures_collection.child<MaterialAsset>(i), tfrag_textures[i], texture_data, gs_ram, config.game(), i);
 	}
 	
 	SubInputStream part_defs(index, header.part_defs_offset, index.size() - header.part_defs_offset);
