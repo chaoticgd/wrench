@@ -29,6 +29,7 @@
 #include <assetmgr/zipped_asset_bank.h>
 #include <engine/moby.h>
 #include <engine/shrub.h>
+#include <engine/tfrag.h>
 #include <engine/collision.h>
 #include <iso/iso_packer.h>
 #include <iso/iso_unpacker.h>
@@ -77,6 +78,7 @@ static void decompress(const fs::path& input_path, const fs::path& output_path, 
 static void compress(const fs::path& input_path, const fs::path& output_path);
 static void extract_moby(const fs::path& input_path, const fs::path& output_path, Game game);
 static void extract_shrub(const fs::path& input_path, const fs::path& output_path);
+static void extract_tfrags(const fs::path& input_path, const fs::path& output_path);
 static void unpack_collision(const fs::path& input_path, const fs::path& output_path);
 static void print_usage(bool developer_subcommands);
 static void print_version();
@@ -96,7 +98,7 @@ int main(int argc, char** argv) {
 		return 1;
 	} catch(...) {
 		stop_stdout_flusher_thread();
-		return 1;
+		throw;
 	}
 }
 
@@ -212,6 +214,12 @@ static int wrenchbuild(int argc, char** argv) {
 	if(mode == "extract_shrub") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
 		extract_shrub(args.input_paths[0], args.output_path);
+		return 0;
+	}
+	
+	if(mode == "extract_tfrags") {
+		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
+		extract_tfrags(args.input_paths[0], args.output_path);
 		return 0;
 	}
 	
@@ -511,6 +519,19 @@ static void extract_shrub(const fs::path& input_path, const fs::path& output_pat
 	write_file(output_path, xml, "w");
 }
 
+static void extract_tfrags(const fs::path& input_path, const fs::path& output_path) {
+	auto bin = read_file(input_path.string().c_str());
+	std::vector<Tfrag> tfrags = read_tfrags(bin);
+	std::vector<TfragHighestLod> highest_lods;
+	highest_lods.reserve(tfrags.size());
+	for(Tfrag& tfrag : tfrags) {
+		highest_lods.emplace_back(extract_highest_tfrag_lod(std::move(tfrag)));
+	}
+	ColladaScene scene = recover_tfrags(highest_lods);
+	auto xml = write_collada(scene);
+	write_file(output_path, xml, "w");
+}
+
 static void unpack_collision(const fs::path& input_path, const fs::path& output_path) {
 	AssetForest forest;
 	AssetBank& bank = forest.mount<LooseAssetBank>(output_path, true);
@@ -610,6 +631,9 @@ static void print_usage(bool developer_subcommands) {
 		puts("");
 		puts(" extract_shrub <input path> -o <output path>");
 		puts("   Convert a packed shrub to a .dae file.");
+		puts("");
+		puts(" extract_tfrags <input path> -o <output path>");
+		puts("   Convert a packed tfrag mesh to a .dae file.");
 		puts("");
 	}
 }
