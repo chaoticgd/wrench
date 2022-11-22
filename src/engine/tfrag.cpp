@@ -269,6 +269,7 @@ TfragHighestLod extract_highest_tfrag_lod(Tfrag tfrag) {
 	TfragHighestLod highest_lod;
 	highest_lod.bsphere = tfrag.bsphere;
 	highest_lod.base_position = tfrag.base_position;
+	highest_lod.common_textures = tfrag.common_textures;
 	highest_lod.faces = std::move(tfrag.lod_0_faces);
 	highest_lod.indices.insert(highest_lod.indices.end(), BEGIN_END(tfrag.lod_0_indices));
 	highest_lod.vertex_info.insert(highest_lod.vertex_info.end(), BEGIN_END(tfrag.common_vertex_info));
@@ -285,14 +286,36 @@ TfragHighestLod extract_highest_tfrag_lod(Tfrag tfrag) {
 }
 
 ColladaScene recover_tfrags(const std::vector<TfragHighestLod>& tfrags) {
+	s32 texture_count = 0;
+	for(const TfragHighestLod& tfrag : tfrags) {
+		for(const TfragTexturePrimitive& primitive : tfrag.common_textures) {
+			texture_count = std::max(texture_count, primitive.d0_tex0_1.data_lo + 1);
+		}
+	}
+	
 	ColladaScene scene;
 	
 	Mesh& mesh = scene.meshes.emplace_back();
 	mesh.name = "mesh";
-	SubMesh& submesh = mesh.submeshes.emplace_back();
-	submesh.material = 0;
+	mesh.flags |= MESH_HAS_TEX_COORDS;
+	
+	for(s32 i = 0; i < texture_count; i++) {
+		ColladaMaterial& material = scene.materials.emplace_back();
+		material.name = stringf("%d", i);
+		material.surface = MaterialSurface(i);
 		
-	scene.materials.emplace_back();
+		scene.texture_paths.emplace_back(stringf("%d.png", i));
+	}
+	
+	if(texture_count == 0) {
+		ColladaMaterial& dummy = scene.materials.emplace_back();
+		dummy.name = "dummy";
+		dummy.surface = MaterialSurface(glm::vec4(1.f, 1.f, 1.f, 1.f));
+	}
+	
+	SubMesh* submesh = nullptr;
+	s32 next_texture = 0;
+	
 	for(const TfragHighestLod& tfrag : tfrags) {
 		s32 vertex_base = (s32) mesh.vertices.size();
 		for(const TfragVertexInfo& src : tfrag.vertex_info) {
@@ -303,6 +326,8 @@ ColladaScene recover_tfrags(const std::vector<TfragHighestLod>& tfrags) {
 			dest.pos.x = (tfrag.base_position.vif1_r0 + pos.x) / 1024.f;
 			dest.pos.y = (tfrag.base_position.vif1_r1 + pos.y) / 1024.f;
 			dest.pos.z = (tfrag.base_position.vif1_r2 + pos.z) / 1024.f;
+			dest.tex_coord.s = vu_fixed12_to_float(src.s);
+			dest.tex_coord.t = vu_fixed12_to_float(src.t);
 		}
 		s32 index_offset = 0;
 		for(const Tface& face : tfrag.faces) {
@@ -310,18 +335,24 @@ ColladaScene recover_tfrags(const std::vector<TfragHighestLod>& tfrags) {
 			if(vertex_count <= 0) {
 				if(vertex_count == 0) {
 					break;
-				} else if(face.end_of_packet_flag >= 0) {
-					// Set new material.
+				} else if(face.end_of_packet_flag >= 0 && texture_count != 0) {
+					next_texture = tfrag.common_textures.at(face.ad_gif_offset / 0x5).d0_tex0_1.data_lo;
 				}
 				vertex_count += 128;
 			}
+			
+			if(submesh == nullptr || next_texture != submesh->material) {
+				submesh = &mesh.submeshes.emplace_back();
+				submesh->material = next_texture;
+			}
+			
 			s32 queue[2] = {};
 			for(s32 i = 0; i < vertex_count; i++) {
 				assert(index_offset < tfrag.indices.size());
 				s32 index = tfrag.indices[index_offset++];
 				assert(index >= 0 && index < tfrag.vertex_info.size());
 				if(i >= 2) {
-					submesh.faces.emplace_back(queue[0], queue[1], vertex_base + index);
+					submesh->faces.emplace_back(queue[0], queue[1], vertex_base + index);
 				}
 				queue[0] = queue[1];
 				queue[1] = vertex_base + index;

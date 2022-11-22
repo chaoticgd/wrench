@@ -1044,6 +1044,7 @@ A Deadlocked mission.
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
 | core | *Not yet documented.* | TfragsCore, Binary | *Not yet documented.* | *Not yet documented.* |
+| editor_mesh | The mesh shown in the editor. This is a hack since we haven't got the tfrag exporter working. | Mesh | No | RC/GC/UYA/DL |
 | materials | The materials used by the tfrags. | Material\[\] | Yes | RC/GC/UYA/DL |
 
 

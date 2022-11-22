@@ -167,6 +167,7 @@ struct Tfrag {
 struct TfragHighestLod {
 	Vec4f bsphere;
 	VifSTROW base_position;
+	std::vector<TfragTexturePrimitive> common_textures;
 	std::vector<Tface> faces;
 	std::vector<u8> indices;
 	std::vector<TfragVertexInfo> vertex_info;

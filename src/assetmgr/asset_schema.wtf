@@ -1599,6 +1599,13 @@ AssetType Tfrags {
 		allowed_types: ["TfragsCore" "Binary"]
 	}
 	
+	Child editor_mesh {
+		desc: "The mesh shown in the editor. This is a hack since we haven't got the tfrag exporter working."
+		allowed_types: ["Mesh"]
+		required: false
+		games: [1 2 3 4]
+	}
+	
 	Child materials {
 		desc: "The materials used by the tfrags."
 		allowed_types: ["Collection"]

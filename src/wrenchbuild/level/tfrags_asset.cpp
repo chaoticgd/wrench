@@ -59,6 +59,8 @@ static void pack_tfrags(OutputStream& dest, const TfragsAsset& src, BuildConfig 
 	if(src.get_core().logical_type() == BinaryAsset::ASSET_TYPE) {
 		pack_asset_impl(dest, nullptr, nullptr, src.get_core(), config, nullptr);
 		return;
+	} else {
+		assert_not_reached("Not yet implemented.");
 	}
 }
 
