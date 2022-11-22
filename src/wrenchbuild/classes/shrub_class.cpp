@@ -20,10 +20,11 @@
 #include <engine/shrub.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
+#include <wrenchbuild/tests.h>
 
 static void unpack_shrub_class(ShrubClassAsset& dest, InputStream& src, BuildConfig config, const char* hint);
 static void pack_shrub_class(OutputStream& dest, const ShrubClassAsset& src, BuildConfig config, const char* hint);
-static AssetTestResult test_shrub_class(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode);
+static bool test_shrub_class_core(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode);
 
 on_load(ShrubClass, []() {
 	ShrubClassAsset::funcs.unpack_rac1 = wrap_hint_unpacker_func<ShrubClassAsset>(unpack_shrub_class);
@@ -36,16 +37,16 @@ on_load(ShrubClass, []() {
 	ShrubClassAsset::funcs.pack_rac3 = wrap_hint_packer_func<ShrubClassAsset>(pack_shrub_class);
 	ShrubClassAsset::funcs.pack_dl = wrap_hint_packer_func<ShrubClassAsset>(pack_shrub_class);
 	
-	ShrubClassAsset::funcs.test_rac = new AssetTestFunc(test_shrub_class);
-	ShrubClassAsset::funcs.test_gc  = new AssetTestFunc(test_shrub_class);
-	ShrubClassAsset::funcs.test_uya = new AssetTestFunc(test_shrub_class);
-	ShrubClassAsset::funcs.test_dl  = new AssetTestFunc(test_shrub_class);
+	ShrubClassCoreAsset::funcs.test_rac = new AssetTestFunc(test_shrub_class_core);
+	ShrubClassCoreAsset::funcs.test_gc  = new AssetTestFunc(test_shrub_class_core);
+	ShrubClassCoreAsset::funcs.test_uya = new AssetTestFunc(test_shrub_class_core);
+	ShrubClassCoreAsset::funcs.test_dl  = new AssetTestFunc(test_shrub_class_core);
 })
 
 static void unpack_shrub_class(ShrubClassAsset& dest, InputStream& src, BuildConfig config, const char* hint) {
 	if(g_asset_unpacker.dump_binaries) {
 		if(!dest.has_core()) {
-			unpack_asset_impl(dest.core<BinaryAsset>(), src, nullptr, config);
+			unpack_asset_impl(dest.core<ShrubClassCoreAsset>(), src, nullptr, config);
 		}
 		return;
 	}
@@ -123,6 +124,11 @@ static void pack_shrub_class(OutputStream& dest, const ShrubClassAsset& src, Bui
 	dest.write_v(buffer);
 }
 
-static AssetTestResult test_shrub_class(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode) {
-	return AssetTestResult::NOT_RUN;
+static bool test_shrub_class_core(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode) {
+	ShrubClass shrub = read_shrub_class(src);
+	
+	std::vector<u8> dest;
+	write_shrub_class(dest, shrub);
+	
+	return diff_buffers(src, dest, 0, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
 }

@@ -238,6 +238,7 @@ void Asset::read(WtfNode* node) {
 			}
 		} else {
 			type = asset_string_to_type(child->type_name);
+			verify(type != NULL_ASSET_TYPE, "Invalid asset type '%s'.", child->type_name);
 		}
 		
 		Asset* asset = nullptr;

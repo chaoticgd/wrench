@@ -55,6 +55,9 @@ public:
 	std::map<s32, EditorMobyClass> mobies;
 	std::map<s32, EditorShrubClass> shrubs;
 	
+	RenderMesh tfrags;
+	std::vector<RenderMaterial> tfrag_materials;
+	
 private:
 	LevelAsset* _asset = nullptr;
 	BinaryAsset* _gameplay_asset = nullptr;

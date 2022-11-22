@@ -39,6 +39,7 @@ static void generate_asset_type_function(const WtfNode* root);
 static void generate_create_asset_function(const WtfNode* root);
 static void generate_asset_string_to_type_function(const WtfNode* root);
 static void generate_asset_type_to_string_function(const WtfNode* root);
+static void generate_dispatch_table_from_asset_type_function(const WtfNode* root);
 static void generate_asset_implementation(const WtfNode* asset_type);
 static void generate_read_function(const WtfNode* asset_type);
 static void generate_read_attribute_code(const WtfNode* node, const char* result, const char* attrib, int depth);
@@ -97,6 +98,7 @@ int main(int argc, char** argv) {
 	out("std::unique_ptr<Asset> create_asset(AssetType type, AssetFile& file, Asset* parent, std::string tag);\n");
 	out("AssetType asset_string_to_type(const char* type_name);\n");
 	out("const char* asset_type_to_string(AssetType type);\n");
+	out("AssetDispatchTable* dispatch_table_from_asset_type(AssetType type);\n");
 	int id = 0;
 	for(const WtfNode* node = wtf_first_child(root, "AssetType"); node != NULL; node = wtf_next_sibling(node, "AssetType")) {
 		generate_asset_type(node, id++);
@@ -116,6 +118,7 @@ int main(int argc, char** argv) {
 	generate_create_asset_function(root);
 	generate_asset_string_to_type_function(root);
 	generate_asset_type_to_string_function(root);
+	generate_dispatch_table_from_asset_type_function(root);
 	const WtfNode* first_asset_type = wtf_first_child(root, "AssetType");
 	for(const WtfNode* node = first_asset_type; node != NULL; node = wtf_next_sibling(node, "AssetType")) {
 		if(node != first_asset_type) {
@@ -238,10 +241,11 @@ static void generate_asset_type(const WtfNode* asset_type, int id) {
 
 static void generate_create_asset_function(const WtfNode* root) {
 	out("std::unique_ptr<Asset> create_asset(AssetType type, AssetFile& file, Asset* parent, std::string tag) {\n");
-	int id = 0;
+	out("\tswitch(type.id) {\n");
 	for(const WtfNode* node = wtf_first_child(root, "AssetType"); node != NULL; node = wtf_next_sibling(node, "AssetType")) {
-		out("\tif(type.id == %d) return std::make_unique<%sAsset>(file, parent, std::move(tag));\n", id++, node->tag);
+		out("\t\tcase %sAsset::ASSET_TYPE.id: return std::make_unique<%sAsset>(file, parent, std::move(tag));\n", node->tag, node->tag);
 	}
+	out("\t}\n");
 	out("\treturn nullptr;\n");
 	out("}\n\n");
 }
@@ -258,10 +262,22 @@ static void generate_asset_string_to_type_function(const WtfNode* root) {
 
 static void generate_asset_type_to_string_function(const WtfNode* root) {
 	out("const char* asset_type_to_string(AssetType type) {\n");
-	int id = 0;
+	out("\tswitch(type.id) {\n");
 	for(const WtfNode* node = wtf_first_child(root, "AssetType"); node != NULL; node = wtf_next_sibling(node, "AssetType")) {
-		out("\tif(type.id == %d) return \"%s\";\n", id++, node->tag);
+		out("\t\tcase %sAsset::ASSET_TYPE.id: return \"%s\";\n", node->tag, node->tag);
 	}
+	out("\t}\n");
+	out("\treturn nullptr;\n");
+	out("}\n\n");
+}
+
+static void generate_dispatch_table_from_asset_type_function(const WtfNode* root) {
+	out("AssetDispatchTable* dispatch_table_from_asset_type(AssetType type) {\n");
+	out("\tswitch(type.id) {\n");
+	for(const WtfNode* node = wtf_first_child(root, "AssetType"); node != NULL; node = wtf_next_sibling(node, "AssetType")) {
+		out("\t\tcase %sAsset::ASSET_TYPE.id: return &%sAsset::funcs;\n", node->tag, node->tag);
+	}
+	out("\t}\n");
 	out("\treturn nullptr;\n");
 	out("}\n\n");
 }

@@ -54,7 +54,7 @@ packed_struct(DlLevelDataHeader,
 )
 
 template <typename Header>
-static AssetTestResult test_level_data_wad(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode);
+static bool test_level_data_wad(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode);
 static ByteRange write_vector_of_bytes(OutputStream& dest, std::vector<u8>& bytes);
 
 void unpack_rac_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig config) {
@@ -171,7 +171,7 @@ void pack_dl_level_data_wad(OutputStream& dest, std::vector<u8>& compressed_art_
 }
 
 template <typename Header>
-static AssetTestResult test_level_data_wad(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode) {
+static bool test_level_data_wad(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode) {
 	Header original_header = Buffer(original).read<Header>(0, "original level data header");
 	Header repacked_header = Buffer(repacked).read<Header>(0, "repacked level data header");
 	
@@ -203,10 +203,10 @@ static AssetTestResult test_level_data_wad(std::vector<u8>& original, std::vecto
 			write_file("/tmp/original_level_core_headers.bin", original_core_index);
 			write_file("/tmp/repacked_level_core_headers.bin", repacked_core_index);
 		}
-		return AssetTestResult::FAIL;
+		return false;
 	}
 	
-	return AssetTestResult::PASS;
+	return true;
 }
 
 static ByteRange write_vector_of_bytes(OutputStream& dest, std::vector<u8>& bytes) {

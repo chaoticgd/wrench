@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019 chaoticgd
+	Copyright (C) 2019-2022 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ static void draw_selected_moby_normals(Level& lvl, const glm::mat4& world_to_cli
 template <typename ThisPath>
 static void draw_paths(const std::vector<ThisPath>& paths, const RenderMaterial& material, const glm::mat4& world_to_clip);
 static void draw_cube_instanced(GLenum cube_mode, const RenderMaterial& material, GLuint inst_buffer, size_t inst_begin, size_t inst_count);
-static void draw_mesh(const RenderMesh& mesh, const std::vector<RenderMaterial>& materials, const glm::mat4& local_to_world);
+static void draw_mesh(const RenderMesh& mesh, const std::vector<RenderMaterial>& materials, const glm::mat4& local_to_clip);
 static void draw_mesh_instanced(const RenderMesh& mesh, const RenderMaterial* mats, size_t mat_count, GLuint inst_buffer, size_t inst_begin, size_t inst_count);
 static Mesh create_fill_cube();
 static Mesh create_line_cube();
@@ -139,6 +139,11 @@ void draw_level(Level& lvl, const glm::mat4& world_to_clip, const RenderSettings
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	set_shader(shaders.textured);
+	
+	if(settings.draw_tfrags) {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		draw_mesh(lvl.tfrags, lvl.tfrag_materials, world_to_clip);
+	}
 	draw_instances(lvl, world_to_clip, GL_FILL, GL_LINE, settings);
 	
 	if(settings.draw_collision) {
@@ -367,8 +372,8 @@ static void draw_cube_instanced(GLenum cube_mode, const RenderMaterial& material
 	}
 }
 
-static void draw_mesh(const RenderMesh& mesh, const std::vector<RenderMaterial>& materials, const glm::mat4& local_to_world) {
-	auto inst = InstanceData(local_to_world, {}, {});
+static void draw_mesh(const RenderMesh& mesh, const std::vector<RenderMaterial>& materials, const glm::mat4& local_to_clip) {
+	auto inst = InstanceData(local_to_clip, {}, {});
 	
 	GlBuffer inst_buffer;
 	glGenBuffers(1, &inst_buffer.id);

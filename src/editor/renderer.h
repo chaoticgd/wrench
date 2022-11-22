@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019 chaoticgd
+	Copyright (C) 2019-2022 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -44,6 +44,8 @@ struct RenderSettings {
 	glm::vec3 camera_position { 0, 0, 0 };
 	glm::vec2 camera_rotation { 0, 0 };
 	
+	bool draw_tfrags = true;
+	bool draw_collision = false;
 	bool draw_ties = true;
 	bool draw_shrubs = true;
 	bool draw_mobies = true;
@@ -52,8 +54,6 @@ struct RenderSettings {
 	bool draw_cylinders = false;
 	bool draw_paths = true;
 	bool draw_grind_paths = true;
-	bool draw_tfrags = true;
-	bool draw_collision = true;
 	
 	bool draw_selected_instance_normals = false;
 	

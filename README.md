@@ -14,6 +14,7 @@ Features currently include:
 - Build Tool
 	- Pack/unpack entire ISO files.
 	- Unpack moby meshes as COLLADA files.
+	- **New in v0.3!** Unpack tfrag meshes as COLLADA files.
 	- Pack/unpack collision meshes as COLLADA files.
 	- **New in v0.2!** Pack/unpack shrub meshes as COLLADA files.
 	- **New in v0.2!** Pack/unpack sky meshes as COLLADA files.

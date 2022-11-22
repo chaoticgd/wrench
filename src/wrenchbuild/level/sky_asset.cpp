@@ -24,6 +24,7 @@
 #include <utility>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
+#include <wrenchbuild/tests.h>
 
 #define SEPERATE_SKY_CLUSTERS
 
@@ -31,7 +32,7 @@ static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig confi
 static void pack_sky_asset(OutputStream& dest, const SkyAsset& src, BuildConfig config);
 static void unpack_sky_textures(ColladaScene& scene, CollectionAsset& fx, CollectionAsset& materials, const Sky& sky);
 static std::map<std::string, s32> pack_sky_textures(Sky& dest, const SkyAsset& src);
-static AssetTestResult test_sky_asset(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode);
+static bool test_sky_asset(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode);
 
 on_load(Sky, []() {
 	SkyAsset::funcs.unpack_rac1 = wrap_unpacker_func<SkyAsset>(unpack_sky_asset);
@@ -44,10 +45,10 @@ on_load(Sky, []() {
 	SkyAsset::funcs.pack_rac3 = wrap_packer_func<SkyAsset>(pack_sky_asset);
 	SkyAsset::funcs.pack_dl = wrap_packer_func<SkyAsset>(pack_sky_asset);
 	
-	SkyAsset::funcs.test_rac = new AssetTestFunc(test_sky_asset);
-	SkyAsset::funcs.test_gc  = new AssetTestFunc(test_sky_asset);
-	SkyAsset::funcs.test_uya = new AssetTestFunc(test_sky_asset);
-	SkyAsset::funcs.test_dl  = new AssetTestFunc(test_sky_asset);
+	SkyAsset::funcs.test_rac = wrap_diff_test_func(test_sky_asset);
+	SkyAsset::funcs.test_gc  = wrap_diff_test_func(test_sky_asset);
+	SkyAsset::funcs.test_uya = wrap_diff_test_func(test_sky_asset);
+	SkyAsset::funcs.test_dl  = wrap_diff_test_func(test_sky_asset);
 })
 
 static void unpack_sky_asset(SkyAsset& dest, InputStream& src, BuildConfig config) {
@@ -279,7 +280,7 @@ std::map<std::string, s32> pack_sky_textures(Sky& dest, const SkyAsset& src) {
 	return material_to_texture;
 }
 
-static AssetTestResult test_sky_asset(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode) {
+static bool test_sky_asset(std::vector<u8>& original, std::vector<u8>& repacked, BuildConfig config, const char* hint, AssetTestMode mode) {
 	SkyHeader header = Buffer(original).read<SkyHeader>(0, "header");
 	bool headers_equal = diff_buffers(original, repacked, 0, header.texture_data, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
 	
@@ -295,5 +296,5 @@ static AssetTestResult test_sky_asset(std::vector<u8>& original, std::vector<u8>
 	}
 	
 	bool data_equal = diff_buffers(original, repacked, header.texture_data, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL, &ignore);
-	return (headers_equal && data_equal) ? AssetTestResult::PASS : AssetTestResult::FAIL;
+	return headers_equal && data_equal;
 }
