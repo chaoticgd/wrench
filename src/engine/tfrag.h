@@ -147,7 +147,7 @@ struct Tfrag {
 	std::vector<TfragVertexPosition> common_positions;
 	std::vector<Tface> lod_1_faces;
 	std::vector<u8> lod_1_indices;
-	std::vector<u8> lod_01_unknown_indices;
+	std::vector<std::vector<u8>> lod_01_unknown_indices;
 	std::vector<TfragVertexInfo> lod_01_vertex_info;
 	std::vector<TfragVertexPosition> lod_01_positions;
 	std::vector<TfragVertexPosition> lod_0_positions;

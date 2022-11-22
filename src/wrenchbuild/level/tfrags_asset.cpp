@@ -49,6 +49,24 @@ static void unpack_tfrags(TfragsAsset& dest, InputStream& src, BuildConfig confi
 		}
 		return;
 	}
+	
+	unpack_asset_impl(dest.core<BinaryAsset>(), src, nullptr, config);
+	
+	std::vector<u8> buffer = src.read_multiple<u8>(0, src.size());
+	std::vector<Tfrag> tfrags = read_tfrags(buffer);
+	std::vector<TfragHighestLod> highest_lods;
+	highest_lods.reserve(tfrags.size());
+	for(Tfrag& tfrag : tfrags) {
+		highest_lods.emplace_back(extract_highest_tfrag_lod(std::move(tfrag)));
+	}
+	ColladaScene scene = recover_tfrags(highest_lods);
+	
+	std::vector<u8> xml = write_collada(scene);
+	auto ref = dest.file().write_text_file("mesh.dae", (char*) xml.data());
+	
+	MeshAsset& editor_mesh = dest.editor_mesh();
+	editor_mesh.set_name("mesh");
+	editor_mesh.set_src(ref);
 }
 
 static void pack_tfrags(OutputStream& dest, const TfragsAsset& src, BuildConfig config, const char* hint) {
