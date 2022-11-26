@@ -969,8 +969,9 @@ static void write_visual_scenes(OutBuffer dest, const ColladaScene& scene) {
 		dest.writelf(4, "\t<bind_material>");
 		dest.writelf(4, "\t\t<technique_common>");
 		for(s32 i = 0; i < (s32) mesh.submeshes.size(); i++) {
-			assert(mesh.submeshes[i].material >= 0);
-			const std::string& material_name = scene.materials.at(mesh.submeshes[i].material).name;
+			s32 material_index = mesh.submeshes[i].material;
+			assert(material_index >= 0 && material_index < scene.materials.size());
+			const std::string& material_name = scene.materials[material_index].name;
 			dest.writelf(7, "<instance_material symbol=\"material_symbol_%d\" target=\"#%s\">", i, material_name.c_str());
 			dest.writelf(7, "\t<bind_vertex_input semantic=\"%s_texcoord\" input_semantic=\"TEXCOORD\" input_set=\"0\"/>", material_name.c_str());
 			dest.writelf(7, "</instance_material>");

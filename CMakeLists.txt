@@ -177,6 +177,7 @@ add_library(wrenchengine
 	src/engine/shrub.cpp
 	src/engine/sky.cpp
 	src/engine/tfrag.cpp
+	src/engine/tie.cpp
 	src/engine/vag.cpp
 )
 target_link_libraries(wrenchengine wrenchcore)
