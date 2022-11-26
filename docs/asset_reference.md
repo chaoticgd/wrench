@@ -46,6 +46,7 @@ This file was generated from /home/thomas/projects/wrench-editor/src/assetmgr/as
 	- [MobyClass](#mobyclass)
 	- [MobyClassCore](#mobyclasscore)
 	- [TieClass](#tieclass)
+	- [TieClassCore](#tieclasscore)
 	- [ShrubClass](#shrubclass)
 	- [ShrubClassCore](#shrubclasscore)
 	- [ShrubBillboard](#shrubbillboard)
@@ -980,8 +981,22 @@ A Deadlocked mission.
 
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
-| core | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
-| materials | The materials used by this class. | Material\[\], Texture\[\] | Yes | RC/GC/UYA/DL |
+| core | *Not yet documented.* | TieClassCore, Binary | *Not yet documented.* | *Not yet documented.* |
+| editor_mesh | The mesh shown in the editor. We're using this as a hack since we haven't got the tie exporter working. | Mesh | No | RC/GC/UYA/DL |
+| materials | The materials used by this class. | Material\[\] | Yes | RC/GC/UYA/DL |
+
+
+### TieClassCore
+
+*Attributes*
+| Name | Description | Type | Required | Games |
+| - | - | - | - | - |
+
+*Children*
+
+| Name | Description | Allowed Types | Required | Games |
+| - | - | - | - | - |
+| mesh | The mesh. | Mesh | *Not yet documented.* | *Not yet documented.* |
 
 
 ### ShrubClass
@@ -1044,7 +1059,7 @@ A Deadlocked mission.
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
 | core | *Not yet documented.* | TfragsCore, Binary | *Not yet documented.* | *Not yet documented.* |
-| editor_mesh | The mesh shown in the editor. This is a hack since we haven't got the tfrag exporter working. | Mesh | No | RC/GC/UYA/DL |
+| editor_mesh | The mesh shown in the editor. We're using this as a hack since we haven't got the tfrag exporter working. | Mesh | No | RC/GC/UYA/DL |
 | materials | The materials used by the tfrags. | Material\[\] | Yes | RC/GC/UYA/DL |
 
 

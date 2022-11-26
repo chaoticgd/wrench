@@ -68,7 +68,7 @@ static GcUyaDlTieClassHeader read_tie_header(Buffer src, Game game) {
 	return header;
 }
 
-static TiePacket read_tie_packet(Buffer src, const TiePacketHeader& header) {printf("packet!\n");
+static TiePacket read_tie_packet(Buffer src, const TiePacketHeader& header) {
 	TiePacket packet;
 	
 	auto ad_gif_dest_offsets = src.read_multiple<s32>(0x0, 4, "ad gif destination offsets");
@@ -84,34 +84,52 @@ static TiePacket read_tie_packet(Buffer src, const TiePacketHeader& header) {pri
 	auto fat_vertices = vertex_buffer.read_all<TieFatVertex>(dinky_vertex_count * 0x10);
 	
 	// Combine the dinky and fat vertices.
-	std::vector<TieDinkyVertex> vertices;
+	std::vector<TieDinkyVertex> raw_vertices;
 	for(const TieDinkyVertex& src : dinky_vertices) {
-		TieDinkyVertex& dest_1 = vertices.emplace_back();
+		TieDinkyVertex& dest_1 = raw_vertices.emplace_back();
 		dest_1 = src;
 		
 		if(src.gs_packet_write_ofs_2 != 0 && src.gs_packet_write_ofs_2 != src.gs_packet_write_ofs) {
-			TieDinkyVertex& dest_2 = vertices.emplace_back();
-			dest_2 = src;
+			TieDinkyVertex& dest_2 = raw_vertices.emplace_back();
+			dest_2 = dest_1;
 			dest_2.gs_packet_write_ofs = src.gs_packet_write_ofs_2;
 		}
 	}
 	for(const TieFatVertex& src : fat_vertices) {
-		TieDinkyVertex& dest = vertices.emplace_back();
-		dest.x = src.x;
-		dest.y = src.y;
-		dest.z = src.z;
-		dest.gs_packet_write_ofs = src.gs_packet_write_ofs;
-		dest.s = src.s;
-		dest.t = src.t;
-		dest.q = src.q;
-		dest.gs_packet_write_ofs_2 = src.pad_16;
+		TieDinkyVertex& dest_1 = raw_vertices.emplace_back();
+		dest_1.x = src.x;
+		dest_1.y = src.y;
+		dest_1.z = src.z;
+		dest_1.gs_packet_write_ofs = src.gs_packet_write_ofs;
+		dest_1.s = src.s;
+		dest_1.t = src.t;
+		dest_1.q = src.q;
+		dest_1.gs_packet_write_ofs_2 = src.gs_packet_write_ofs_2;
+		
+		if(src.gs_packet_write_ofs_2 != 0 && src.gs_packet_write_ofs_2 != src.gs_packet_write_ofs) {
+			TieDinkyVertex& dest_2 = raw_vertices.emplace_back();
+			dest_2 = dest_1;
+			dest_2.gs_packet_write_ofs = src.gs_packet_write_ofs_2;
+		}
 	}
 	
 	// The vertices in the file are not sorted by their GS packet address,
 	// probably to help with buffering. For the purposes of reading ties, we
 	// want to read them in the order they appear in the GS packet.
-	std::sort(BEGIN_END(vertices), [](TieDinkyVertex& lhs, TieDinkyVertex& rhs)
+	std::sort(BEGIN_END(raw_vertices), [](TieDinkyVertex& lhs, TieDinkyVertex& rhs)
 		{ return lhs.gs_packet_write_ofs < rhs.gs_packet_write_ofs; });
+	
+	// Each packet must have a minimum of 4 regular vertices, so there may be
+	// duplicates to pad out small packets. These can be safely removed.
+	std::vector<TieDinkyVertex> vertices;
+	if(raw_vertices.size() >= 1) {
+		vertices.emplace_back(raw_vertices[0]);
+	}
+	for(size_t i = 1; i < raw_vertices.size(); i++) {
+		if(raw_vertices[i].gs_packet_write_ofs != raw_vertices[i - 1].gs_packet_write_ofs) {
+			vertices.emplace_back(raw_vertices[i]);
+		}
+	}
 	
 	s32 material_index = -1;
 	TiePrimitive* prim = nullptr;

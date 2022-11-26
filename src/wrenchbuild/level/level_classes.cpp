@@ -78,10 +78,10 @@ void unpack_tie_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest, 
 		TieClassAsset& asset = data_dest.foreign_child<TieClassAsset>(path, entry.o_class);
 		asset.set_id(entry.o_class);
 		
-		unpack_level_textures(asset.materials(), entry.textures, textures, texture_data, gs_ram, config.game());
+		unpack_level_materials(asset.materials(), entry.textures, textures, texture_data, gs_ram, config.game());
 		
 		if(entry.offset_in_asset_wad != 0) {
-			unpack_asset(asset.core(), data, level_core_block_range(entry.offset_in_asset_wad, block_bounds), config);
+			unpack_asset(asset, data, level_core_block_range(entry.offset_in_asset_wad, block_bounds), config);
 		}
 		
 		refs_dest.child<ReferenceAsset>(entry.o_class).set_asset(asset.absolute_link());
@@ -94,7 +94,7 @@ void pack_tie_classes(OutputStream& index, OutputStream& core, const CollectionA
 		TieClassEntry entry = {0};
 		entry.o_class = child.id();
 		if(child.has_core()) {
-			entry.offset_in_asset_wad = pack_asset<ByteRange>(core, child.get_core(), config, 0x40).offset;
+			entry.offset_in_asset_wad = pack_asset<ByteRange>(core, child, config, 0x40).offset;
 		}
 		if(!g_asset_packer_dry_run) {
 			write_level_texture_indices(entry.textures, textures, texture_index, TIE_TEXTURE_TABLE);

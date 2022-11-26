@@ -154,7 +154,7 @@ packed_struct(TieFatVertex,
 	/* 0x10 0x20 */ u16 s;
 	/* 0x12 0x24 */ u16 t;
 	/* 0x14 0x28 */ u16 q;
-	/* 0x16 0x2c */ u16 pad_16;
+	/* 0x16 0x2c */ u16 gs_packet_write_ofs_2;
 )
 
 struct TiePrimitive {
