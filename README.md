@@ -5,16 +5,17 @@ A set of modding tools for the Ratchet & Clank PS2 games. Works with R&C1, R&C2,
 To download the latest Windows build, see the [Releases](https://github.com/chaoticgd/wrench/releases) page. Linux users can follow the build instructions below.
 
 Features currently include:
-- **New in v0.1!** Asset System
+- Asset System
 	- A system to create, distribute and load mods.
 	- Multiple mods can be loaded at a time.
-- **New in v0.1!** Launcher
+- Launcher
 	- A user interface to manage mods.
 	- Used to launch the level editor.
 - Build Tool
 	- Pack/unpack entire ISO files.
-	- Unpack moby meshes as COLLADA files.
 	- **New in v0.3!** Unpack tfrag meshes as COLLADA files.
+	- Unpack moby meshes as COLLADA files.
+	- **New in v0.3!** Unpack tie meshes as COLLADA files.
 	- Pack/unpack collision meshes as COLLADA files.
 	- **New in v0.2!** Pack/unpack shrub meshes as COLLADA files.
 	- **New in v0.2!** Pack/unpack sky meshes as COLLADA files.

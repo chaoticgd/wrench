@@ -44,6 +44,36 @@ void Level::read(LevelAsset& asset, Game g) {
 	}
 	collision_materials = upload_materials(collision_scene.materials, {});
 	
+	{
+		TfragsAsset& tfrags_asset = level_wad().get_tfrags();
+		
+		if(!tfrags_asset.has_editor_mesh()) {
+			return;
+		}
+		MeshAsset& asset = tfrags_asset.get_editor_mesh();
+		std::string xml = asset.file().read_text_file(asset.src().path);
+		ColladaScene scene = read_collada((char*) xml.data());
+		Mesh* mesh = scene.find_mesh(asset.name());
+		if(!mesh) {
+			return;
+		}
+		
+		MaterialSet material_set = read_material_assets(tfrags_asset.get_materials());
+		map_lhs_material_indices_to_rhs_list(scene, material_set.materials);
+		
+		std::vector<Texture> textures;
+		for(FileReference ref : material_set.textures) {
+			auto stream = ref.owner->open_binary_file_for_reading(ref);
+			verify(stream.get(), "Failed to open shrub texture file.");
+			Opt<Texture> texture = read_png(*stream.get());
+			verify(texture.has_value(), "Failed to read shrub texture.");
+			textures.emplace_back(*texture);
+		}
+		
+		tfrags = upload_mesh(*mesh, true);
+		tfrag_materials = upload_materials(scene.materials, textures);
+	}
+	
 	level_wad().get_moby_classes().for_each_logical_child_of_type<MobyClassAsset>([&](MobyClassAsset& moby) {
 		if(moby.has_editor_mesh()) {
 			MeshAsset& asset = moby.get_editor_mesh();
@@ -60,13 +90,44 @@ void Level::read(LevelAsset& asset, Game g) {
 					}
 				});
 				
-				EditorMobyClass ec;
+				EditorClass ec;
 				ec.mesh = *mesh;
-				ec.high_lod = upload_mesh(*mesh, true);
+				ec.render_mesh = upload_mesh(*mesh, true);
 				ec.materials = upload_materials(scene.materials, textures);
 				mobies.emplace(moby.id(), std::move(ec));
 			}
 		}
+	});
+	
+	level_wad().get_tie_classes().for_each_logical_child_of_type<TieClassAsset>([&](TieClassAsset& tie) {
+		if(!tie.has_editor_mesh()) {
+			return;
+		}
+		MeshAsset& asset = tie.get_editor_mesh();
+		std::string xml = asset.file().read_text_file(asset.src().path);
+		ColladaScene scene = read_collada((char*) xml.data());
+		Mesh* mesh = scene.find_mesh(asset.name());
+		if(!mesh) {
+			return;
+		}
+		
+		MaterialSet material_set = read_material_assets(tie.get_materials());
+		map_lhs_material_indices_to_rhs_list(scene, material_set.materials);
+		
+		std::vector<Texture> textures;
+		for(FileReference ref : material_set.textures) {
+			auto stream = ref.owner->open_binary_file_for_reading(ref);
+			verify(stream.get(), "Failed to open shrub texture file.");
+			Opt<Texture> texture = read_png(*stream.get());
+			verify(texture.has_value(), "Failed to read shrub texture.");
+			textures.emplace_back(*texture);
+		}
+		
+		EditorClass et;
+		et.mesh = *mesh;
+		et.render_mesh = upload_mesh(*mesh, true);
+		et.materials = upload_materials(scene.materials, textures);
+		ties.emplace(tie.id(), std::move(et));
 	});
 	
 	level_wad().get_shrub_classes().for_each_logical_child_of_type<ShrubClassAsset>([&](ShrubClassAsset& shrub) {
@@ -101,42 +162,12 @@ void Level::read(LevelAsset& asset, Game g) {
 			textures.emplace_back(*texture);
 		}
 		
-		EditorShrubClass es;
+		EditorClass es;
 		es.mesh = *mesh;
 		es.render_mesh = upload_mesh(*mesh, true);
 		es.materials = upload_materials(scene.materials, textures);
 		shrubs.emplace(shrub.id(), std::move(es));
 	});
-	
-	{
-		TfragsAsset& tfrags_asset = level_wad().get_tfrags();
-		
-		if(!tfrags_asset.has_editor_mesh()) {
-			return;
-		}
-		MeshAsset& asset = tfrags_asset.get_editor_mesh();
-		std::string xml = asset.file().read_text_file(asset.src().path);
-		ColladaScene scene = read_collada((char*) xml.data());
-		Mesh* mesh = scene.find_mesh(asset.name());
-		if(!mesh) {
-			return;
-		}
-		
-		MaterialSet material_set = read_material_assets(tfrags_asset.get_materials());
-		map_lhs_material_indices_to_rhs_list(scene, material_set.materials);
-		
-		std::vector<Texture> textures;
-		for(FileReference ref : material_set.textures) {
-			auto stream = ref.owner->open_binary_file_for_reading(ref);
-			verify(stream.get(), "Failed to open shrub texture file.");
-			Opt<Texture> texture = read_png(*stream.get());
-			verify(texture.has_value(), "Failed to read shrub texture.");
-			textures.emplace_back(*texture);
-		}
-		
-		tfrags = upload_mesh(*mesh, true);
-		tfrag_materials = upload_materials(scene.materials, textures);
-	}
 }
 
 void Level::save(const fs::path& path) {

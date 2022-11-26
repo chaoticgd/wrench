@@ -62,6 +62,7 @@ struct Buffer {
 	template <typename T>
 	BufferArray<T> read_multiple(s64 offset, s64 count, const char* subject) const {
 		verify(offset >= 0, "Failed to read %s: Offset cannot be negative.", subject);
+		verify(count >= 0, "Failed to read %s: Count cannot be negative.", count);
 		verify(lo + offset + count * sizeof(T) <= hi, "Failed to read %s: Attempted to read past end of buffer.", subject);
 		const T* iter_lo = (const T*) (lo + offset);
 		return {iter_lo, iter_lo + count};

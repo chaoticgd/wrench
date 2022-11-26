@@ -45,15 +45,15 @@ struct RenderSettings {
 	glm::vec2 camera_rotation { 0, 0 };
 	
 	bool draw_tfrags = true;
-	bool draw_collision = false;
+	bool draw_mobies = true;
 	bool draw_ties = true;
 	bool draw_shrubs = true;
-	bool draw_mobies = true;
 	bool draw_cuboids = false;
 	bool draw_spheres = false;
 	bool draw_cylinders = false;
 	bool draw_paths = true;
 	bool draw_grind_paths = true;
+	bool draw_collision = false;
 	
 	bool draw_selected_instance_normals = false;
 	

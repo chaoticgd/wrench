@@ -27,10 +27,10 @@ static void upload_instance_buffer(GLuint& buffer, const Opt<std::vector<ThisIns
 static glm::vec4 inst_colour(bool selected);
 static glm::vec4 encode_inst_id(InstanceId id);
 static void draw_instances(Level& lvl, const glm::mat4& world_to_clip, GLenum mesh_mode, GLenum cube_mode, const RenderSettings& settings);
+static void draw_mobies(Level& lvl, const std::vector<MobyInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
 static void draw_ties(Level& lvl, const std::vector<TieInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
 static void draw_shrubs(Level& lvl, const std::vector<ShrubInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
 static void draw_selected_shrub_normals(Level& lvl, const glm::mat4& world_to_clip);
-static void draw_mobies(Level& lvl, const std::vector<MobyInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
 static void draw_selected_moby_normals(Level& lvl, const glm::mat4& world_to_clip);
 template <typename ThisPath>
 static void draw_paths(const std::vector<ThisPath>& paths, const RenderMaterial& material, const glm::mat4& world_to_clip);
@@ -174,16 +174,16 @@ void draw_pickframe(Level& lvl, const glm::mat4& world_to_clip, const RenderSett
 }
 
 static void draw_instances(Level& lvl, const glm::mat4& world_to_clip, GLenum mesh_mode, GLenum cube_mode, const RenderSettings& settings) {
+	if(settings.draw_mobies && lvl.gameplay().moby_instances.has_value()) {
+		draw_mobies(lvl, *lvl.gameplay().moby_instances, mesh_mode, cube_mode);
+	}
+	
 	if(settings.draw_ties && lvl.gameplay().tie_instances.has_value()) {
 		draw_ties(lvl, *lvl.gameplay().tie_instances, mesh_mode, cube_mode);
 	}
 	
 	if(settings.draw_shrubs && lvl.gameplay().shrub_instances.has_value()) {
 		draw_shrubs(lvl, *lvl.gameplay().shrub_instances, mesh_mode, cube_mode);
-	}
-	
-	if(settings.draw_mobies && lvl.gameplay().moby_instances.has_value()) {
-		draw_mobies(lvl, *lvl.gameplay().moby_instances, mesh_mode, cube_mode);
 	}
 	
 	if(settings.draw_cuboids && lvl.gameplay().cuboids.has_value()) {
@@ -207,8 +207,52 @@ static void draw_instances(Level& lvl, const glm::mat4& world_to_clip, GLenum me
 	}
 }
 
+static void draw_mobies(Level& lvl, const std::vector<MobyInstance>& instances, GLenum mesh_mode, GLenum cube_mode) {
+	if(instances.size() < 1) {
+		return;
+	}
+	
+	size_t begin = 0;
+	size_t end = 0;
+	for(size_t i = 1; i <= instances.size(); i++) {
+		s32 last_class = instances[i - 1].o_class;
+		if(i == instances.size() || instances[i].o_class != last_class) {
+			end = i;
+			auto iter = lvl.mobies.find(last_class);
+			if(iter != lvl.mobies.end()) {
+				EditorClass& cls = iter->second;
+				glPolygonMode(GL_FRONT_AND_BACK, mesh_mode);
+				draw_mesh_instanced(cls.render_mesh, cls.materials.data(), cls.materials.size(), moby_inst_buffer, begin, end - begin);
+			} else {
+				draw_cube_instanced(cube_mode, white, moby_inst_buffer, begin, end - begin);
+			}
+			begin = i;
+		}
+	}
+}
+
 static void draw_ties(Level& lvl, const std::vector<TieInstance>& instances, GLenum mesh_mode, GLenum cube_mode) {
-	draw_cube_instanced(cube_mode, purple, tie_inst_buffer, 0, instances.size());
+	if(instances.size() < 1) {
+		return;
+	}
+	
+	size_t begin = 0;
+	size_t end = 0;
+	for(size_t i = 1; i <= instances.size(); i++) {
+		s32 last_class = instances[i - 1].o_class;
+		if(i == instances.size() || instances[i].o_class != last_class) {
+			end = i;
+			auto iter = lvl.ties.find(last_class);
+			if(iter != lvl.ties.end()) {
+				EditorClass& cls = iter->second;
+				glPolygonMode(GL_FRONT_AND_BACK, mesh_mode);
+				draw_mesh_instanced(cls.render_mesh, cls.materials.data(), cls.materials.size(), tie_inst_buffer, begin, end - begin);
+			} else {
+				draw_cube_instanced(cube_mode, purple, tie_inst_buffer, begin, end - begin);
+			}
+			begin = i;
+		}
+	}
 }
 
 static void draw_shrubs(Level& lvl, const std::vector<ShrubInstance>& instances, GLenum mesh_mode, GLenum cube_mode) {
@@ -224,7 +268,7 @@ static void draw_shrubs(Level& lvl, const std::vector<ShrubInstance>& instances,
 			end = i;
 			auto iter = lvl.shrubs.find(last_class);
 			if(iter != lvl.shrubs.end()) {
-				EditorShrubClass& cls = iter->second;
+				EditorClass& cls = iter->second;
 				glPolygonMode(GL_FRONT_AND_BACK, mesh_mode);
 				draw_mesh_instanced(cls.render_mesh, cls.materials.data(), cls.materials.size(), shrub_inst_buffer, begin, end - begin);
 			} else {
@@ -238,7 +282,7 @@ static void draw_shrubs(Level& lvl, const std::vector<ShrubInstance>& instances,
 static void draw_selected_shrub_normals(Level& lvl, const glm::mat4& world_to_clip) {
 	for(ShrubInstance& inst : opt_iterator(lvl.gameplay().shrub_instances)) {
 		if(inst.selected && lvl.shrubs.find(inst.o_class) != lvl.shrubs.end()) {
-			const EditorShrubClass& cls = lvl.shrubs.at(inst.o_class);
+			const EditorClass& cls = lvl.shrubs.at(inst.o_class);
 			std::vector<Vertex> vertices;
 			for(const Vertex& v : cls.mesh.vertices) {
 				Vertex v2 = v;
@@ -271,34 +315,10 @@ static void draw_selected_shrub_normals(Level& lvl, const glm::mat4& world_to_cl
 	}
 }
 
-static void draw_mobies(Level& lvl, const std::vector<MobyInstance>& instances, GLenum mesh_mode, GLenum cube_mode) {
-	if(instances.size() < 1) {
-		return;
-	}
-	
-	size_t begin = 0;
-	size_t end = 0;
-	for(size_t i = 1; i <= instances.size(); i++) {
-		s32 last_class = instances[i - 1].o_class;
-		if(i == instances.size() || instances[i].o_class != last_class) {
-			end = i;
-			auto iter = lvl.mobies.find(last_class);
-			if(iter != lvl.mobies.end()) {
-				EditorMobyClass& cls = iter->second;
-				glPolygonMode(GL_FRONT_AND_BACK, mesh_mode);
-				draw_mesh_instanced(cls.high_lod, cls.materials.data(), cls.materials.size(), moby_inst_buffer, begin, end - begin);
-			} else {
-				draw_cube_instanced(cube_mode, white, moby_inst_buffer, begin, end - begin);
-			}
-			begin = i;
-		}
-	}
-}
-
 static void draw_selected_moby_normals(Level& lvl, const glm::mat4& world_to_clip) {
 	for(MobyInstance& inst : opt_iterator(lvl.gameplay().moby_instances)) {
 		if(inst.selected && lvl.mobies.find(inst.o_class) != lvl.mobies.end()) {
-			const EditorMobyClass& cls = lvl.mobies.at(inst.o_class);
+			const EditorClass& cls = lvl.mobies.at(inst.o_class);
 			std::vector<Vertex> vertices;
 			for(const Vertex& v : cls.mesh.vertices) {
 				Vertex v2 = v;

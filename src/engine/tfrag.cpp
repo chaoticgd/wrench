@@ -308,7 +308,7 @@ ColladaScene recover_tfrags(const std::vector<TfragHighestLod>& tfrags) {
 	s32 texture_count = 0;
 	for(const TfragHighestLod& tfrag : tfrags) {
 		for(const TfragTexturePrimitive& primitive : tfrag.common_textures) {
-			texture_count = std::max(texture_count, primitive.d0_tex0_1.data_lo + 1);
+			texture_count = std::max(texture_count, primitive.d1_tex0_1.data_lo + 1);
 		}
 	}
 	
@@ -355,7 +355,7 @@ ColladaScene recover_tfrags(const std::vector<TfragHighestLod>& tfrags) {
 				if(vertex_count == 0) {
 					break;
 				} else if(face.end_of_packet_flag >= 0 && texture_count != 0) {
-					next_texture = tfrag.common_textures.at(face.ad_gif_offset / 0x5).d0_tex0_1.data_lo;
+					next_texture = tfrag.common_textures.at(face.ad_gif_offset / 0x5).d1_tex0_1.data_lo;
 				}
 				vertex_count += 128;
 			}

@@ -27,9 +27,10 @@
 #include <assetmgr/asset.h>
 #include <assetmgr/asset_types.h>
 #include <assetmgr/zipped_asset_bank.h>
-#include <engine/moby.h>
-#include <engine/shrub.h>
 #include <engine/tfrag.h>
+#include <engine/moby.h>
+#include <engine/tie.h>
+#include <engine/shrub.h>
 #include <engine/collision.h>
 #include <iso/iso_packer.h>
 #include <iso/iso_unpacker.h>
@@ -76,9 +77,10 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, Game
 static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path, BuildConfig config, const std::string& hint, const char* underlay_path);
 static void decompress(const fs::path& input_path, const fs::path& output_path, s64 offset);
 static void compress(const fs::path& input_path, const fs::path& output_path);
-static void extract_moby(const fs::path& input_path, const fs::path& output_path, Game game);
-static void extract_shrub(const fs::path& input_path, const fs::path& output_path);
 static void extract_tfrags(const fs::path& input_path, const fs::path& output_path);
+static void extract_moby(const fs::path& input_path, const fs::path& output_path, Game game);
+static void extract_tie(const fs::path& input_path, const fs::path& output_path, Game game);
+static void extract_shrub(const fs::path& input_path, const fs::path& output_path);
 static void unpack_collision(const fs::path& input_path, const fs::path& output_path);
 static void print_usage(bool developer_subcommands);
 static void print_version();
@@ -208,6 +210,12 @@ static int wrenchbuild(int argc, char** argv) {
 	if(mode == "extract_moby") {
 		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH | ARG_GAME);
 		extract_moby(args.input_paths[0], args.output_path, args.game);
+		return 0;
+	}
+	
+	if(mode == "extract_tie") {
+		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH | ARG_GAME);
+		extract_tie(args.input_paths[0], args.output_path, args.game);
 		return 0;
 	}
 	
@@ -503,22 +511,6 @@ static void compress(const fs::path& input_path, const fs::path& output_path) {
 	write_file(output_path, compressed_bytes);
 }
 
-static void extract_moby(const fs::path& input_path, const fs::path& output_path, Game game) {
-	auto bin = read_file(input_path.string().c_str());
-	MobyClassData moby = read_moby_class(bin, game);
-	ColladaScene scene = recover_moby_class(moby, 0, 0);
-	auto xml = write_collada(scene);
-	write_file(output_path, xml, "w");
-}
-
-static void extract_shrub(const fs::path& input_path, const fs::path& output_path) {
-	auto bin = read_file(input_path.string().c_str());
-	ShrubClass shrub = read_shrub_class(bin);
-	ColladaScene scene = recover_shrub_class(shrub);
-	auto xml = write_collada(scene);
-	write_file(output_path, xml, "w");
-}
-
 static void extract_tfrags(const fs::path& input_path, const fs::path& output_path) {
 	auto bin = read_file(input_path.string().c_str());
 	std::vector<Tfrag> tfrags = read_tfrags(bin);
@@ -528,6 +520,30 @@ static void extract_tfrags(const fs::path& input_path, const fs::path& output_pa
 		highest_lods.emplace_back(extract_highest_tfrag_lod(std::move(tfrag)));
 	}
 	ColladaScene scene = recover_tfrags(highest_lods);
+	auto xml = write_collada(scene);
+	write_file(output_path, xml, "w");
+}
+
+static void extract_moby(const fs::path& input_path, const fs::path& output_path, Game game) {
+	auto bin = read_file(input_path.string().c_str());
+	MobyClassData moby = read_moby_class(bin, game);
+	ColladaScene scene = recover_moby_class(moby, 0, 0);
+	auto xml = write_collada(scene);
+	write_file(output_path, xml, "w");
+}
+
+static void extract_tie(const fs::path& input_path, const fs::path& output_path, Game game) {
+	auto bin = read_file(input_path.string().c_str());
+	TieClass tie = read_tie_class(bin, game);
+	ColladaScene scene = recover_tie_class(tie);
+	auto xml = write_collada(scene);
+	write_file(output_path, xml, "w");
+}
+
+static void extract_shrub(const fs::path& input_path, const fs::path& output_path) {
+	auto bin = read_file(input_path.string().c_str());
+	ShrubClass shrub = read_shrub_class(bin);
+	ColladaScene scene = recover_shrub_class(shrub);
 	auto xml = write_collada(scene);
 	write_file(output_path, xml, "w");
 }
@@ -626,14 +642,17 @@ static void print_usage(bool developer_subcommands) {
 		puts(" profile_memory_usage <input asset banks>");
 		puts("   Record statistics about the memory used by mounting asset banks.");
 		puts("");
+		puts(" extract_tfrags <input path> -o <output path>");
+		puts("   Convert packed tfrags to a .dae file.");
+		puts("");
 		puts(" extract_moby <input path> -o <output path> -g <game>");
 		puts("   Convert a packed moby to a .dae file.");
 		puts("");
+		puts(" extract_tie <input path> -o <output path>");
+		puts("   Convert a packed tie to a .dae file.");
+		puts("");
 		puts(" extract_shrub <input path> -o <output path>");
 		puts("   Convert a packed shrub to a .dae file.");
-		puts("");
-		puts(" extract_tfrags <input path> -o <output path>");
-		puts("   Convert a packed tfrag mesh to a .dae file.");
 		puts("");
 	}
 }

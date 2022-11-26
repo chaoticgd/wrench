@@ -50,7 +50,7 @@ void unpack_level_texture(TextureAsset& dest, const TextureEntry& entry, InputSt
 	
 	texture.multiply_alphas();
 	texture.swizzle_palette();
-	if (game == Game::DL && (entry.type & 3) != 0) {
+	if(game == Game::DL && (entry.type & 3) != 0) {
 		texture.swizzle();
 	}
 	
@@ -149,15 +149,19 @@ SharedLevelTextures read_level_textures(const CollectionAsset& tfrag_materials, 
 	shared.tie_range.table = TIE_TEXTURE_TABLE;
 	shared.tie_range.begin = shared.textures.size();
 	ties.for_each_logical_child_of_type<TieClassAsset>([&](const TieClassAsset& cls) {
-		const CollectionAsset& textures = cls.get_materials();
-		for(s32 i = 0; i < 16; i++) {
-			if(textures.has_child(i)) {
-				const TextureAsset& asset = textures.get_child(i).as<TextureAsset>();
-				auto stream = asset.file().open_binary_file_for_reading(asset.src());
-				shared.textures.emplace_back(LevelTexture{read_png(*stream)});
-			} else {
-				shared.textures.emplace_back();
-			}
+		const CollectionAsset& materials = cls.get_materials();
+		MaterialSet material_set = read_material_assets(materials);
+		verify(material_set.textures.size() <= 15,
+			"Too many textures on tie class '%s'!",
+			cls.tag().c_str());
+		s32 i = 0;
+		for(; i < (s32) material_set.textures.size(); i++) {
+			FileReference& texture = material_set.textures[i];
+			auto stream = texture.owner->open_binary_file_for_reading(texture);
+			shared.textures.emplace_back(LevelTexture{read_png(*stream)});
+		}
+		for(; i < 16; i++) {
+			shared.textures.emplace_back();
 		}
 	});
 	shared.tie_range.end = shared.textures.size();

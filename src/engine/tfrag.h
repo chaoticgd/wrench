@@ -16,6 +16,9 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#ifndef ENGINE_TFRAG_H
+#define ENGINE_TFRAG_H
+
 #include <core/vif.h>
 #include <core/buffer.h>
 #include <core/collada.h>
@@ -65,11 +68,11 @@ packed_struct(TfragHeader,
 )
 
 packed_struct(TfragTexturePrimitive,
-	/* 0x00 */ GifAdData16 d0_tex0_1;
-	/* 0x10 */ GifAdData16 d1_tex1_1;
-	/* 0x20 */ GifAdData16 d2_clamp_1;
-	/* 0x30 */ GifAdData16 d3_miptbp1_1;
-	/* 0x40 */ GifAdData16 d4_miptbp2_1;
+	/* 0x00 */ GifAdData16 d1_tex0_1;
+	/* 0x10 */ GifAdData16 d2_tex1_1;
+	/* 0x20 */ GifAdData16 d3_clamp_1;
+	/* 0x30 */ GifAdData16 d4_miptbp1_1;
+	/* 0x40 */ GifAdData16 d5_miptbp2_1;
 )
 
 packed_struct(TfragRgba,
@@ -183,3 +186,5 @@ void write_tfrags(OutBuffer dest, const std::vector<Tfrag>& tfrags);
 
 TfragHighestLod extract_highest_tfrag_lod(Tfrag tfrag);
 ColladaScene recover_tfrags(const std::vector<TfragHighestLod>& tfrags);
+
+#endif

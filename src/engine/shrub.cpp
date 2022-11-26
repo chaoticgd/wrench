@@ -58,7 +58,7 @@ ShrubClass read_shrub_class(Buffer src) {
 		ShrubVertexPrimitive* prim = nullptr;
 		GeometryType prim_type;
 		
-		// Interpret the data in the order it would be written to the GS packet.
+		// Interpret the data in the order it would appear in the GS packet.
 		s32 next_gif_tag = 0;
 		s32 next_ad_gif = 0;
 		s32 next_vertex = 0;

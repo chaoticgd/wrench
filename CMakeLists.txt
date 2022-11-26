@@ -177,6 +177,7 @@ add_library(wrenchengine
 	src/engine/shrub.cpp
 	src/engine/sky.cpp
 	src/engine/tfrag.cpp
+	src/engine/tie.cpp
 	src/engine/vag.cpp
 )
 target_link_libraries(wrenchengine wrenchcore)
@@ -189,6 +190,7 @@ add_executable(wrenchbuild
 	src/wrenchbuild/release.cpp
 	src/wrenchbuild/classes/moby_class.cpp
 	src/wrenchbuild/classes/shrub_class.cpp
+	src/wrenchbuild/classes/tie_class.cpp
 	src/wrenchbuild/common/binary_asset.cpp
 	src/wrenchbuild/common/collection_asset.cpp
 	src/wrenchbuild/common/file_asset.cpp
