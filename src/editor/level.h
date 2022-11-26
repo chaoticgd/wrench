@@ -24,13 +24,7 @@
 #include <gui/render_mesh.h>
 #include <editor/editor.h>
 
-struct EditorMobyClass {
-	Mesh mesh;
-	RenderMesh high_lod;
-	std::vector<RenderMaterial> materials;
-};
-
-struct EditorShrubClass {
+struct EditorClass {
 	Mesh mesh;
 	RenderMesh render_mesh;
 	std::vector<RenderMaterial> materials;
@@ -52,11 +46,11 @@ public:
 	
 	std::vector<RenderMesh> collision;
 	std::vector<RenderMaterial> collision_materials;
-	std::map<s32, EditorMobyClass> mobies;
-	std::map<s32, EditorShrubClass> shrubs;
-	
 	RenderMesh tfrags;
 	std::vector<RenderMaterial> tfrag_materials;
+	std::map<s32, EditorClass> mobies;
+	std::map<s32, EditorClass> ties;
+	std::map<s32, EditorClass> shrubs;
 	
 private:
 	LevelAsset* _asset = nullptr;

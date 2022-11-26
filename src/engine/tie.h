@@ -47,7 +47,7 @@ packed_struct(RacTieClassHeader,
 	/* 0x28 */ u32 unknown_28;
 	/* 0x2c */ u32 ad_gif_ofs;
 	/* 0x30 */ Vec4f bsphere;
-	/* 0x40 */ u32 unknown_40;
+	/* 0x40 */ f32 scale;
 	/* 0x44 */ u32 unknown_44;
 	/* 0x48 */ u32 unknown_48;
 	/* 0x4c */ u32 unknown_4c;
@@ -182,6 +182,7 @@ packed_struct(TieAdGifs,
 
 struct TieClass {
 	TieLod lods[3];
+	f32 scale;
 	std::vector<TieAdGifs> ad_gifs;
 };
 

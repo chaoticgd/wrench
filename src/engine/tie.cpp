@@ -27,6 +27,8 @@ TieClass read_tie_class(Buffer src, Game game) {
 	TieClass tie;
 	
 	GcUyaDlTieClassHeader header = read_tie_header(src, game);
+	tie.scale = header.scale;
+	
 	for(s32 i = 0; i < 3; i++) {
 		TieLod& lod = tie.lods[i];
 		lod.packets.reserve(header.packet_count[i]);
@@ -60,6 +62,7 @@ static GcUyaDlTieClassHeader read_tie_header(Buffer src, Game game) {
 		header.mid_dist = rac_header.mid_dist;
 		header.far_dist = rac_header.far_dist;
 		header.ad_gif_ofs = rac_header.ad_gif_ofs;
+		header.scale = rac_header.scale;
 		header.bsphere = rac_header.bsphere;
 	} else {
 		header = src.read<GcUyaDlTieClassHeader>(0, "header");
@@ -219,9 +222,9 @@ ColladaScene recover_tie_class(const TieClass& tie) {
 			for(s32 i = 0; i < (s32) primitive.vertices.size(); i++) {
 				Vertex& dest = mesh.vertices.emplace_back();
 				const TieDinkyVertex& src = primitive.vertices[i];
-				dest.pos.x = src.x / 1024.f;
-				dest.pos.y = src.y / 1024.f;
-				dest.pos.z = src.z / 1024.f;
+				dest.pos.x = src.x * (tie.scale / 1024.f);
+				dest.pos.y = src.y * (tie.scale / 1024.f);
+				dest.pos.z = src.z * (tie.scale / 1024.f);
 				dest.tex_coord.s = vu_fixed12_to_float(src.s);
 				dest.tex_coord.t = vu_fixed12_to_float(src.t);
 				
