@@ -345,7 +345,7 @@ static std::string prepare_arguments(s32 argc, const char** argv) {
 	std::string command_template;
 
 #ifdef _WIN32
-	command_template += "cmd /c "; // Since we're using cmd.exe.
+	command_template += "cmd /c ";
 #endif
 
 	// Pass arguments as enviroment variables.
@@ -356,12 +356,7 @@ static std::string prepare_arguments(s32 argc, const char** argv) {
 			return "";
 		}
 #ifdef _WIN32
-		if(i == 0) {
-			command_template += "%" + env_var + "% ";
-		}
-		else {
-			command_template += "\"%" + env_var + "%\" ";
-		}
+		command_template += "\"%" + env_var + "%\" ";
 #else
 		command_template += "\"$" + env_var + "\" ";
 #endif
