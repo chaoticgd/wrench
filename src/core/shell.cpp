@@ -344,7 +344,7 @@ void open_in_file_manager(const char* path) {
 #ifdef _WIN32
 // https://web.archive.org/web/20190109172835/https://blogs.msdn.microsoft.com/twistylittlepassagesallalike/2011/04/23/everyone-quotes-command-line-arguments-the-wrong-way/
 static void argv_quote(std::string& command, const std::string& argument) {
-	if(!argument.empty() && argument.find_first_of(L" \t\n\v\"") == std::string::npos) {
+	if(!argument.empty() && argument.find_first_of(" \t\n\v\"") == std::string::npos) {
 		command.append(argument);
 	} else {
 		command.push_back('"');
@@ -367,7 +367,7 @@ static void argv_quote(std::string& command, const std::string& argument) {
 				command.push_back(*iter);
 			}
 		}
-		command.push_back(L'"');
+		command.push_back('"');
 	}
 }
 #endif
