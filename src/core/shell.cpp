@@ -380,11 +380,23 @@ static std::string prepare_arguments(s32 argc, const char** argv) {
 	
 	for(s32 i = 0; i < argc; i++) {
 		argv_quote(unescaped_command, std::string(argv[i]));
+		if(i + 1 != argc) {
+			unescaped_command += " ";
+		}
 	}
 	
 	// Prepare the command for consumtion by cmd.exe.
 	for(char c : unescaped_command) {
-		if(c == '"') {
+		if(c == '('
+			|| c == ')'
+			|| c == '%'
+			|| c == '!'
+			|| c == '^'
+			|| c =='"'
+			|| c == '<'
+			|| c == '>'
+			|| c == '&'
+			|| c == '|') {
 			command += '^';
 		}
 		command += c;
