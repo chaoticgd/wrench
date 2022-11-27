@@ -341,39 +341,37 @@ void open_in_file_manager(const char* path) {
 #endif
 }
 
-#ifdef _WIN32
 // https://web.archive.org/web/20190109172835/https://blogs.msdn.microsoft.com/twistylittlepassagesallalike/2011/04/23/everyone-quotes-command-line-arguments-the-wrong-way/
-static std::string argv_quote_cmd(const std::string& argument) {
+static std::string argv_quote_cmd(const std::string& argument, bool insert_carets) {
 	std::string command;
-	if(!argument.empty() && argument.find_first_of(" \t\n\v\"") == std::string::npos) {
-		command.append(argument);
-	} else {
-		command.push_back('"');
-		for(auto iter = argument.begin();; iter++) {
-			unsigned backslash_count = 0;
-		
-			while (iter != argument.end() && *iter == '\\') {
-				iter++;
-				backslash_count++;
-			}
-		
-			if(iter == argument.end()) {
-				command.append(backslash_count * 2, '\\');
-				break;
-			} else if (*iter == '"') {
-				command.append(backslash_count * 2 + 1, '\\');
-				command.push_back(*iter);
-			} else {
-				command.append(backslash_count, '\\');
-				command.push_back(*iter);
-			}
+
+	for(auto iter = argument.begin();; iter++) {
+		unsigned backslash_count = 0;
+	
+		while (iter != argument.end() && *iter == '\\') {
+			iter++;
+			backslash_count++;
 		}
-		command.push_back('"');
+	
+		if(iter == argument.end()) {
+			command.append(backslash_count * 2, '\\');
+			break;
+		} else if (*iter == '"') {
+			command.append(backslash_count * 2 + 1, '\\');
+			command.push_back(*iter);
+		} else {
+			command.append(backslash_count, '\\');
+			command.push_back(*iter);
+		}
 	}
 	
 	// Prepare the command for consumption by cmd.exe.
 	std::string escaped_command;
-	for(char c : command) {
+	if(insert_carets) {
+		escaped_command += "^";
+	}
+	escaped_command += "\"";
+	for(char c: command) {
 		if(c == '('
 			|| c == ')'
 			|| c == '%'
@@ -388,10 +386,13 @@ static std::string argv_quote_cmd(const std::string& argument) {
 		}
 		escaped_command += c;
 	}
+	if(insert_carets) {
+		escaped_command += "^";
+	}
+	escaped_command += "\" ";
 	
 	return escaped_command;
 }
-#endif
 
 static std::string prepare_arguments(s32 argc, const char** argv) {
 	assert(argc >= 1);
@@ -401,13 +402,9 @@ static std::string prepare_arguments(s32 argc, const char** argv) {
 #ifdef _WIN32
 	// I'm not sure how this works, but it does.
 	command = "cmd /c \"";
-	command += "\"";
-	command += argv_quote_cmd(argv[0]);
-	command += "\" ";
+	command += argv_quote_cmd(argv[0], false);
 	for(s32 i = 1; i < argc; i++) {
-		command += "^\"";
-		command += argv_quote_cmd(std::string(argv[i]));
-		command += "^\" ";
+		command += argv_quote_cmd(argv[i], true);
 	}
 	command += "\"";
 	
