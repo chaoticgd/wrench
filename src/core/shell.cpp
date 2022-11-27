@@ -343,7 +343,8 @@ void open_in_file_manager(const char* path) {
 
 #ifdef _WIN32
 // https://web.archive.org/web/20190109172835/https://blogs.msdn.microsoft.com/twistylittlepassagesallalike/2011/04/23/everyone-quotes-command-line-arguments-the-wrong-way/
-static void argv_quote(std::string& command, const std::string& argument) {
+static std::string argv_quote_cmd(const std::string& argument) {
+	std::string command;
 	if(!argument.empty() && argument.find_first_of(" \t\n\v\"") == std::string::npos) {
 		command.append(argument);
 	} else {
@@ -369,22 +370,10 @@ static void argv_quote(std::string& command, const std::string& argument) {
 		}
 		command.push_back('"');
 	}
-}
-#endif
-
-static std::string prepare_arguments(s32 argc, const char** argv) {
-	std::string command;
-	
-#ifdef _WIN32
-	std::string unescaped_command = "cmd /c ";
-	
-	for(s32 i = 0; i < argc; i++) {
-		argv_quote(unescaped_command, std::string(argv[i]));
-		unescaped_command += " ";
-	}
 	
 	// Prepare the command for consumption by cmd.exe.
-	for(char c : unescaped_command) {
+	std::string escaped_command;
+	for(char c : command) {
 		if(c == '('
 			|| c == ')'
 			|| c == '%'
@@ -395,10 +384,32 @@ static std::string prepare_arguments(s32 argc, const char** argv) {
 			|| c == '>'
 			|| c == '&'
 			|| c == '|') {
-			command += '^';
+			escaped_command += '^';
 		}
-		command += c;
+		escaped_command += c;
 	}
+	
+	return escaped_command;
+}
+#endif
+
+static std::string prepare_arguments(s32 argc, const char** argv) {
+	assert(argc >= 1);
+	
+	std::string command;
+	
+#ifdef _WIN32
+	// I'm not sure how this works, but it does.
+	command = "cmd /c \"";
+	command += "\"";
+	command += argv_quote_cmd(argv[0]);
+	command += "\" ";
+	for(s32 i = 1; i < argc; i++) {
+		command += "^\"";
+		command += argv_quote_cmd(std::string(argv[i]));
+		command += "^\" ";
+	}
+	command += "\"";
 	
 	printf("command: %s\n", command.c_str());
 #else
