@@ -385,14 +385,14 @@ static std::string prepare_arguments(s32 argc, const char** argv) {
 		}
 	}
 	
-	// Prepare the command for consumtion by cmd.exe.
+	// Prepare the command for consumption by cmd.exe.
 	for(char c : unescaped_command) {
 		if(c == '('
 			|| c == ')'
 			|| c == '%'
 			|| c == '!'
 			|| c == '^'
-			|| c =='"'
+			|| c == '"'
 			|| c == '<'
 			|| c == '>'
 			|| c == '&'
