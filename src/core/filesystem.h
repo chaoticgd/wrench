@@ -32,5 +32,6 @@ std::string write_file(fs::path dest_dir, fs::path rel_path, Buffer buffer, cons
 void extract_file(fs::path dest_path, FILE* dest, FILE* src, s64 offset, s64 size);
 
 void strip_carriage_returns(std::vector<u8>& file);
+void strip_carriage_returns_from_string(std::string& str);
 
 #endif

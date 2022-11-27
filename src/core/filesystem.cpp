@@ -97,9 +97,19 @@ void extract_file(fs::path dest_path, FILE* dest, FILE* src, s64 offset, s64 siz
 void strip_carriage_returns(std::vector<u8>& file) {
 	size_t new_size = 0;
 	for(size_t i = 0; i < file.size(); i++) {
-		if(file[i] != 0xd) {
+		if(file[i] != '\r') {
 			file[new_size++] = file[i];
 		}
 	}
 	file.resize(new_size);
+}
+
+void strip_carriage_returns_from_string(std::string& str) {
+	size_t new_size = 0;
+	for(size_t i = 0; i < str.size(); i++) {
+		if(str[i] != '\r') {
+			str[new_size++] = str[i];
+		}
+	}
+	str.resize(new_size);
 }

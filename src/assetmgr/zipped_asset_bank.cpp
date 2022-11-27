@@ -67,6 +67,7 @@ std::string ZippedAssetBank::read_text_file(const fs::path& path) const {
 	std::string data;
 	data.resize(size);
 	stream->read_n((u8*) data.data(), size);
+	strip_carriage_returns_from_string(data);
 	return data;
 }
 
