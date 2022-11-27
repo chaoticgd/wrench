@@ -110,9 +110,9 @@ void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& co
 	assert(argc >= 1);
 
 	// Pass arguments to the shell as enviroment variables.
-	std::string command_template = prepare_arguments(argc, argv);
+	std::string command_string = prepare_arguments(argc, argv);
 
-	if(command_template.empty()) {
+	if(command_string.empty()) {
 		std::lock_guard<std::mutex> lock(command.mutex);
 		command.shared.output = "Failed to pass arguments to shell.\n";
 		command.shared.state = STOPPED;
@@ -121,7 +121,7 @@ void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& co
 	}
 
 	// Redirect stderr to stdout so we can capture it.
-	command_template += "2>&1";
+	command_string += "2>&1";
 
 #ifdef _WIN32
 	// Start the forbidden incantation.
@@ -153,7 +153,7 @@ void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& co
 	startup_info.dwFlags |= STARTF_USESTDHANDLES;
 
 	bool create_success = CreateProcessA(
-		NULL, (LPSTR)command_template.c_str(),
+		NULL, (LPSTR)command_string.c_str(),
 		NULL, NULL, TRUE, 0, NULL, NULL,
 		&startup_info, &process_info
 	);
@@ -236,7 +236,7 @@ void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& co
 	}
 #else
 	// Spawn the process and open a pipe so we can read its stdout and stderr.
-	FILE* pipe = popen(command_template.c_str(), "r");
+	FILE* pipe = popen(command_string.c_str(), "r");
 	if(!pipe) {
 		perror("popen failed");
 		std::lock_guard<std::mutex> lock(command.mutex);
@@ -321,14 +321,14 @@ void CommandThread::update_last_output_lines() {
 s32 execute_command(s32 argc, const char** argv, bool blocking) {
 	assert(argc >= 1);
 
-	std::string command_template = prepare_arguments(argc, argv);
+	std::string command_string = prepare_arguments(argc, argv);
 
 	if(!blocking) {
-		popen(command_template.c_str(), "r");
+		popen(command_string.c_str(), "r");
 		return 0;
 	}
 
-	return system(command_template.c_str());
+	return system(command_string.c_str());
 }
 
 void open_in_file_manager(const char* path) {
@@ -341,13 +341,47 @@ void open_in_file_manager(const char* path) {
 #endif
 }
 
-static std::string prepare_arguments(s32 argc, const char** argv) {
-	std::string command_template;
-
 #ifdef _WIN32
-	command_template += "cmd /c ";
+// https://web.archive.org/web/20190109172835/https://blogs.msdn.microsoft.com/twistylitertlepassagesallalike/2011/04/23/everyone-quotes-command-line-arguments-the-wrong-way/
+static void argv_quote(std::string& command, const std::string& argument) {
+	if(!argument.empty() && argument.find_first_of(L" \t\n\v\"") == std::string::npos) {
+		command.append(argument);
+	} else {
+		command.push_back('"');
+		for(auto iter = argument.begin();; iter++) {
+			unsigned backslash_count = 0;
+		
+			while (iter != argument.end() && *iter == '\\') {
+				iter++;
+				backslash_count++;
+			}
+		
+			if(iter == argument.end()) {
+				command.append(backslash_count * 2, '\\');
+				break;
+			} else if (*iter == '"') {
+				command.append(backslash_count * 2 + 1, '\\');
+				command.push_back(*iter);
+			} else {
+				command.append(backslash_count, '\\');
+				command.push_back(*iter);
+			}
+		}
+		command.push_back(L'"');
+	}
+}
 #endif
 
+static std::string prepare_arguments(s32 argc, const char** argv) {
+	std::string command;
+
+#ifdef _WIN32
+	command += "cmd /c ";
+	
+	for(s32 i = 0; i < argc; i++) {
+		argv_quote(command, std::string(argv[i]));
+	}
+#else
 	// Pass arguments as enviroment variables.
 	for(s32 i = 0; i < argc; i++) {
 		printf("arg: %s\n", argv[i]);
@@ -355,12 +389,9 @@ static std::string prepare_arguments(s32 argc, const char** argv) {
 		if(setenv(env_var.c_str(), argv[i], 1) == -1) {
 			return "";
 		}
-#ifdef _WIN32
-		command_template += "\"%" + env_var + "%\" ";
-#else
-		command_template += "\"$" + env_var + "\" ";
-#endif
+		command += "\"$" + env_var + "\" ";
 	}
+#endif
 
-	return command_template;
+	return command;
 }
