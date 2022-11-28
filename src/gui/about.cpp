@@ -61,10 +61,10 @@ static const gui::Page LICENSE_PAGES[] = {
 	{"Wrench", gen_license_page<LICENSE_WRENCH>()},
 	{"Barlow", gen_license_page<LICENSE_BARLOW>()},
 	{"cxxopts", gen_license_page<LICENSE_CXXOPTS>()},
+	{"Dear ImGui", gen_license_page<LICENSE_IMGUI>()},
 	{"GLAD", gen_license_page<LICENSE_GLAD>()},
 	{"GLFW", gen_license_page<LICENSE_GLFW>()},
 	{"GLM", gen_license_page<LICENSE_GLM>()},
-	{"Dear ImGui", gen_license_page<LICENSE_IMGUI>()},
 	{"libpng", gen_license_page<LICENSE_LIBPNG>()},
 	{"libzip", gen_license_page<LICENSE_LIBZIP>()},
 	{"nativefiledialog", gen_license_page<LICENSE_NATIVEFILEDIALOG>()},
@@ -125,10 +125,10 @@ static void about_contributors() {
 static void about_libraries() {
 	const char* libraries =
 		"cxxopts: https://github.com/jarro2783/cxxopts\n"
+		"dear imgui: https://github.com/ocornut/imgui\n"
 		"glad: https://github.com/Dav1dde/glad\n"
 		"glfw: https://www.glfw.org/\n"
 		"glm: https://github.com/g-truc/glm\n"
-		"imgui: https://github.com/ocornut/imgui\n"
 		"libpng: http://www.libpng.org/pub/png/libpng.html\n"
 		"libzip: https://libzip.org/\n"
 		"nativefiledialog: https://github.com/mlabbe/nativefiledialog\n"
