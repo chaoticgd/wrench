@@ -244,5 +244,14 @@ std::vector<std::string> enabled_mods() {
 	return result;
 }
 
+bool any_mods_enabled() {
+	for(const Mod& mod : mods) {
+		if(mod.enabled) {
+			return true;
+		}
+	}
+	return false;
+}
+
 std::vector<ModImage> g_mod_images;
 std::vector<std::string> g_mod_builds;
