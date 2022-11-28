@@ -85,6 +85,7 @@ void load_game_list(const std::string& games_folder) {
 
 void free_game_list() {
 	games.clear();
+	g_game_path.clear();
 }
 
 static void update_game_builds() {
