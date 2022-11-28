@@ -66,6 +66,7 @@ static const gui::Page LICENSE_PAGES[] = {
 	{"GLM", gen_license_page<LICENSE_GLM>()},
 	{"Dear ImGui", gen_license_page<LICENSE_IMGUI>()},
 	{"libpng", gen_license_page<LICENSE_LIBPNG>()},
+	{"libzip", gen_license_page<LICENSE_LIBZIP>()},
 	{"nativefiledialog", gen_license_page<LICENSE_NATIVEFILEDIALOG>()},
 	{"nlohmanjson", gen_license_page<LICENSE_NLOHMANJSON>()},
 	{"RapidXML", gen_license_page<LICENSE_RAPIDXML>()},
@@ -129,6 +130,7 @@ static void about_libraries() {
 		"glm: https://github.com/g-truc/glm\n"
 		"imgui: https://github.com/ocornut/imgui\n"
 		"libpng: http://www.libpng.org/pub/png/libpng.html\n"
+		"libzip: https://libzip.org/\n"
 		"nativefiledialog: https://github.com/mlabbe/nativefiledialog\n"
 		"nlohmann json: https://github.com/nlohmann/json\n"
 		"rapidxml: http://rapidxml.sourceforge.net/\n"

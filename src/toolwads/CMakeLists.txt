@@ -39,34 +39,10 @@ endif()
 add_custom_command(
 	COMMAND toolwadpacker "${CMAKE_BINARY_DIR}"
 	DEPENDS toolwadpacker
-		# build.wad
 		"${CMAKE_BINARY_DIR}/git_tag.tmp"
 		"${CMAKE_BINARY_DIR}/git_commit.tmp"
-		# gui.wad
 		"${CMAKE_SOURCE_DIR}/CONTRIBUTORS"
-		"${CMAKE_SOURCE_DIR}/data/licenses/barlowfont.txt"
-		"${CMAKE_SOURCE_DIR}/data/licenses/cxxopts.txt"
-		"${CMAKE_SOURCE_DIR}/data/licenses/glad.txt"
-		"${CMAKE_SOURCE_DIR}/data/licenses/glfw.txt"
-		"${CMAKE_SOURCE_DIR}/data/licenses/glm.txt"
-		"${CMAKE_SOURCE_DIR}/data/licenses/imgui.txt"
-		"${CMAKE_SOURCE_DIR}/data/licenses/libpng.txt"
-		"${CMAKE_SOURCE_DIR}/data/licenses/nativefiledialog.txt"
-		"${CMAKE_SOURCE_DIR}/data/licenses/nlohmanjson.txt"
-		"${CMAKE_SOURCE_DIR}/data/licenses/rapidxml.txt"
-		"${CMAKE_SOURCE_DIR}/data/licenses/wrench.txt"
-		"${CMAKE_SOURCE_DIR}/data/licenses/zlib.txt"
-		"${CMAKE_SOURCE_DIR}/data/gui/Barlow-Regular.ttf"
-		"${CMAKE_SOURCE_DIR}/data/gui/Barlow-Italic.ttf"
-		# launcher.wad
-		"${CMAKE_SOURCE_DIR}/data/launcher/logo.png"
-		"${CMAKE_SOURCE_DIR}/data/launcher/my_mod.png"
-		"${CMAKE_SOURCE_DIR}/data/launcher/oobe/wrench_setup.png"
-		# editor.wad
-		"${CMAKE_SOURCE_DIR}/data/editor/icons/picker_tool.txt"
-		"${CMAKE_SOURCE_DIR}/data/editor/icons/selection_tool.txt"
-		"${CMAKE_SOURCE_DIR}/data/editor/icons/translate_tool.txt"
-		"${CMAKE_SOURCE_DIR}/data/editor/icons/spline_tool.txt"
+		"${CMAKE_SOURCE_DIR}/data/*"
 	OUTPUT
 		"${CMAKE_BINARY_DIR}/build.wad"
 		"${CMAKE_BINARY_DIR}/gui.wad"
