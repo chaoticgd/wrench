@@ -1,0 +1,13 @@
+TieClass uya.tie_classes.6927  { category: "Aquatos"        name: "Sewer Pipe I Wet" }
+TieClass uya.tie_classes.6928  { category: "Aquatos"        name: "Sewer Pipe L Wet" }
+TieClass uya.tie_classes.6929  { category: "Aquatos"        name: "Sewer Pipe T Wet" }
+TieClass uya.tie_classes.6930  { category: "Aquatos"        name: "Sewer Pipe X Wet" }
+TieClass uya.tie_classes.6931  { category: "Aquatos"        name: "Sewer Pipe Hub Wet" }
+TieClass uya.tie_classes.6952  { category: "Aquatos"        name: "Sewer Pipe V Wet" }
+TieClass uya.tie_classes.7154  { category: "Aquatos"        name: "Sewer Pipe Vertical L Dry" }
+TieClass uya.tie_classes.7155  { category: "Aquatos"        name: "Sewer Pipe Vertical T Wet" }
+TieClass uya.tie_classes.7218  { category: "Aquatos"        name: "Sewer Pipe I Dry" }
+TieClass uya.tie_classes.7219  { category: "Aquatos"        name: "Sewer Pipe L Dry" }
+TieClass uya.tie_classes.7220  { category: "Aquatos"        name: "Sewer Pipe T Dry" }
+TieClass uya.tie_classes.7221  { category: "Aquatos"        name: "Sewer Pipe X Dry" }
+TieClass uya.tie_classes.7222  { category: "Aquatos"        name: "Sewer Pipe Hub Dry" }
