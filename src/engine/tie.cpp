@@ -195,16 +195,13 @@ static void write_tie_packet(OutBuffer dest, const TiePacket& packet) {
 ColladaScene recover_tie_class(const TieClass& tie) {
 	ColladaScene scene;
 	
-	s32 texture_count = 0;
-	
 	for(s32 i = 0; i < (s32) tie.ad_gifs.size(); i++) {
 		ColladaMaterial& material = scene.materials.emplace_back();
 		material.name = stringf("%d", i);
-		material.surface = MaterialSurface(tie.ad_gifs[i].d4_clamp_1.data_hi);
-		texture_count = std::max(texture_count, tie.ad_gifs[i].d4_clamp_1.data_hi + 1);
+		material.surface = MaterialSurface(i);
 	}
 	
-	for(s32 i = 0; i < texture_count; i++) {
+	for(s32 i = 0; i < (s32) tie.ad_gifs.size(); i++) {
 		scene.texture_paths.emplace_back(stringf("%d.png", i));
 	}
 	
