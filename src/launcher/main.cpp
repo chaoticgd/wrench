@@ -304,7 +304,7 @@ static void buttons_window(Mod* mod, f32 buttons_window_height) {
 	
 	ImGui::SameLine();
 	if(ImGui::Button("Open in Editor")) {
-		if(mod) {
+		if(!g_game_path.empty() && mod) {
 			gui::EditorParams params;
 			params.game_path = g_game_path;
 			params.mod_path = mod->path;
@@ -312,7 +312,11 @@ static void buttons_window(Mod* mod, f32 buttons_window_height) {
 		}
 	}
 	
-	if(!mod && ImGui::IsItemHovered()) {
+	if(g_game_path.empty() && ImGui::IsItemHovered()) {
+		ImGui::BeginTooltip();
+		ImGui::Text("No game imported.");
+		ImGui::EndTooltip();
+	} else if(!mod && ImGui::IsItemHovered()) {
 		ImGui::BeginTooltip();
 		ImGui::Text("No mod selected. To create a mod, use the 'New Mod' option in the '···' menu.");
 		ImGui::EndTooltip();
@@ -388,10 +392,18 @@ static void buttons_window(Mod* mod, f32 buttons_window_height) {
 	
 	ImGui::SameLine();
 	if(ImGui::Button("Build & Run##the_button")) {
-		pack_params.game_path = g_game_path;
-		pack_params.mod_paths = enabled_mods();
-		g_launcher.emulator_params.iso_path = gui::run_packer(pack_params, pack_command);
-		ImGui::OpenPopup("Build & Run##the_popup");
+		if(!g_game_path.empty()) {
+			pack_params.game_path = g_game_path;
+			pack_params.mod_paths = enabled_mods();
+			g_launcher.emulator_params.iso_path = gui::run_packer(pack_params, pack_command);
+			ImGui::OpenPopup("Build & Run##the_popup");
+		}
+	}
+	
+	if(g_game_path.empty() && ImGui::IsItemHovered()) {
+		ImGui::BeginTooltip();
+		ImGui::Text("No game imported.");
+		ImGui::EndTooltip();
 	}
 	
 	gui::command_output_screen("Build & Run##the_popup", pack_command, []() {}, []() {
