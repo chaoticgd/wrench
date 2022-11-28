@@ -120,9 +120,6 @@ void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& co
 		return;
 	}
 
-	// Redirect stderr to stdout so we can capture it.
-	command_string += "2>&1";
-
 #ifdef _WIN32
 	// Start the forbidden incantation.
 	HANDLE read_handle, write_handle;
@@ -235,6 +232,9 @@ void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& co
 		}
 	}
 #else
+	// Redirect stderr to stdout so we can capture it.
+	command_string += "2>&1";
+	
 	// Spawn the process and open a pipe so we can read its stdout and stderr.
 	FILE* pipe = popen(command_string.c_str(), "r");
 	if(!pipe) {
@@ -342,71 +342,43 @@ void open_in_file_manager(const char* path) {
 }
 
 // https://web.archive.org/web/20190109172835/https://blogs.msdn.microsoft.com/twistylittlepassagesallalike/2011/04/23/everyone-quotes-command-line-arguments-the-wrong-way/
-static std::string argv_quote_cmd(const std::string& argument, bool insert_carets) {
+static std::string argv_quote(const std::string& argument) {
 	std::string command;
-
-	for(auto iter = argument.begin();; iter++) {
-		unsigned backslash_count = 0;
-	
-		while (iter != argument.end() && *iter == '\\') {
-			iter++;
-			backslash_count++;
+	if(!argument.empty() && argument.find_first_of(" \t\n\v\"") == std::string::npos) {
+		command.append(argument);
+	} else {
+		command.push_back('"');
+		for(auto iter = argument.begin();; iter++) {
+			s32 backslash_count = 0;
+		
+			while (iter != argument.end() && *iter == '\\') {
+				iter++;
+				backslash_count++;
+			}
+		
+			if(iter == argument.end()) {
+				command.append(backslash_count * 2, '\\');
+				break;
+			} else if (*iter == '"') {
+				command.append(backslash_count * 2 + 1, '\\');
+				command.push_back(*iter);
+			} else {
+				command.append(backslash_count, '\\');
+				command.push_back(*iter);
+			}
 		}
-	
-		if(iter == argument.end()) {
-			command.append(backslash_count * 2, '\\');
-			break;
-		} else if (*iter == '"') {
-			command.append(backslash_count * 2 + 1, '\\');
-			command.push_back(*iter);
-		} else {
-			command.append(backslash_count, '\\');
-			command.push_back(*iter);
-		}
+		command.push_back('"');
 	}
-	
-	// Prepare the command for consumption by cmd.exe.
-	std::string escaped_command;
-	if(insert_carets) {
-		escaped_command += "^";
-	}
-	escaped_command += "\"";
-	for(char c: command) {
-		if(c == '('
-			|| c == ')'
-			|| c == '%'
-			|| c == '!'
-			|| c == '^'
-			|| c == '"'
-			|| c == '<'
-			|| c == '>'
-			|| c == '&'
-			|| c == '|') {
-			escaped_command += '^';
-		}
-		escaped_command += c;
-	}
-	if(insert_carets) {
-		escaped_command += "^";
-	}
-	escaped_command += "\" ";
-	
-	return escaped_command;
+	return command;
 }
 
 static std::string prepare_arguments(s32 argc, const char** argv) {
-	assert(argc >= 1);
-	
 	std::string command;
 	
 #ifdef _WIN32
-	// I'm not sure how this works, but it does.
-	command = "cmd /c \"";
-	command += argv_quote_cmd(argv[0], false);
-	for(s32 i = 1; i < argc; i++) {
-		command += argv_quote_cmd(argv[i], true);
+	for(s32 i = 0; i < argc; i++) {
+		command += argv_quote(argv[i]) + " ";
 	}
-	command += "\"";
 	
 	printf("command: %s\n", command.c_str());
 #else
