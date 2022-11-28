@@ -406,6 +406,12 @@ static void buttons_window(Mod* mod, f32 buttons_window_height) {
 		ImGui::EndTooltip();
 	}
 	
+	if(!any_mods_enabled() && ImGui::IsItemHovered()) {
+		ImGui::BeginTooltip();
+		ImGui::Text("No mods enabled.");
+		ImGui::EndTooltip();
+	}
+	
 	gui::command_output_screen("Build & Run##the_popup", pack_command, []() {}, []() {
 		g_launcher.mode = LauncherMode::RUNNING_EMULATOR;
 	});

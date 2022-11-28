@@ -42,6 +42,7 @@ Mod* mod_list(const std::string& filter);
 void load_mod_list(const std::vector<std::string>& mods_folders);
 void free_mod_list();
 std::vector<std::string> enabled_mods();
+bool any_mods_enabled();
 
 extern std::vector<ModImage> g_mod_images;
 extern std::vector<std::string> g_mod_builds;
