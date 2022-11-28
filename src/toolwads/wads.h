@@ -35,7 +35,8 @@ enum License {
 	LICENSE_RAPIDXML = 10,
 	LICENSE_UNUSED = 11,
 	LICENSE_ZLIB = 12,
-	MAX_LICENSE = 13
+	LICENSE_LIBZIP = 13,
+	MAX_LICENSE = 14
 };
 
 packed_struct(BuildWadHeader,
