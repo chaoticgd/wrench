@@ -302,8 +302,6 @@ static void buttons_window(Mod* mod, f32 buttons_window_height) {
 		load_mod_list(g_config.paths.mods_folders);
 	}
 	
-	ImGui::BeginDisabled(!mod);
-	
 	ImGui::SameLine();
 	if(ImGui::Button("Open in Editor")) {
 		if(mod) {
@@ -314,7 +312,11 @@ static void buttons_window(Mod* mod, f32 buttons_window_height) {
 		}
 	}
 	
-	ImGui::EndDisabled();
+	if(!mod && ImGui::IsItemHovered()) {
+		ImGui::BeginTooltip();
+		ImGui::Text("No mod selected. To create a mod, use the 'New Mod' option in the '···' menu.");
+		ImGui::EndTooltip();
+	}
 	
 	ImGui::SameLine();
 	if(ImGui::Button("···")) {
