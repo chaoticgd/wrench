@@ -20,6 +20,9 @@ static std::string find_wad(const fs::path& directory, const char* file_name) {
 	if(fs::exists(directory/file_name)) {
 		return (directory/file_name).string();
 	}
+	if(fs::exists(directory/".."/file_name)) {
+		return (directory/".."/file_name).string();
+	}
 	if(fs::exists(directory/".."/"share"/"wrench"/file_name)) {
 		return (directory/".."/"share"/"wrench"/file_name).string();
 	}
