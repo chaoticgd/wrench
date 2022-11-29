@@ -115,8 +115,8 @@ MeshGraph::MeshGraph(const Mesh& mesh) {
 						EdgeInfo& info = _edges.emplace_back();
 						info.v[0] = v2;
 						info.v[1] = v3;
-						vertex_at(v0).edges.emplace_back(index);
-						vertex_at(v1).edges.emplace_back(index);
+						vertex_at(v2).edges.emplace_back(index);
+						vertex_at(v3).edges.emplace_back(index);
 					}
 				}
 				
