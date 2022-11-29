@@ -126,7 +126,7 @@ static void pack_audio_wad(OutputStream& dest, Header& header, const AudioWadAss
 static void unpack_help_audio(CollectionAsset& dest, InputStream& src, const Sector32* ranges, s32 count, BuildConfig config, const std::set<s64>& end_sectors, s32 language) {
 	for(s32 i = 0; i < count; i++) {
 		if(ranges[i].sectors > 0) {
-			HelpAudioAsset& child = dest.foreign_child<HelpAudioAsset>(stringf("%d/audio.asset", i), i);
+			HelpAudioAsset& child = dest.foreign_child<HelpAudioAsset>(stringf("%d/audio.asset", i), false, i);
 			Asset* asset;
 			switch(language) {
 				case 0: asset = &child.english<BinaryAsset>(); break;

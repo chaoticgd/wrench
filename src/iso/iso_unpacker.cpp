@@ -214,7 +214,7 @@ static void enumerate_level_wads(std::vector<UnpackInfo>& dest, CollectionAsset&
 			s32 id = *(s32*) &level.level->header[8];
 			
 			std::string path = generate_asset_path<LevelAsset>("levels", "level", id, levels);
-			LevelAsset& level_asset = levels.foreign_child<LevelAsset>(path, id);
+			LevelAsset& level_asset = levels.foreign_child<LevelAsset>(path, true, id);
 			level_asset.set_index(i);
 			
 			if(level.level.has_value()) {

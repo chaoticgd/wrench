@@ -197,24 +197,24 @@ public:
 	// Switch to another .asset file, and create a child of the node in the same
 	// place in the tree as the current node.
 	template <typename ChildType>
-	ChildType& foreign_child(std::string path, std::string tag) {
-		return foreign_child_impl(path, ChildType::ASSET_TYPE, tag.c_str()).template as<ChildType>();
+	ChildType& foreign_child(std::string path, bool is_absolute, std::string tag) {
+		return foreign_child_impl(path, is_absolute, ChildType::ASSET_TYPE, tag.c_str()).template as<ChildType>();
 	}
 	
 	template <typename ChildType>
-	ChildType& foreign_child(std::string path, s32 index) {
+	ChildType& foreign_child(std::string path, bool is_absolute, s32 index) {
 		std::string tag = std::to_string(index);
-		return foreign_child_impl(path, ChildType::ASSET_TYPE, tag.c_str()).template as<ChildType>();
+		return foreign_child_impl(path, is_absolute, ChildType::ASSET_TYPE, tag.c_str()).template as<ChildType>();
 	}
 	
 	template <typename ChildType>
 	ChildType& foreign_child(s32 index) {
 		std::string tag = std::to_string(index);
 		fs::path path = fs::path(tag)/tag;
-		return foreign_child_impl(path, ChildType::ASSET_TYPE, tag.c_str()).template as<ChildType>();
+		return foreign_child_impl(path, false, ChildType::ASSET_TYPE, tag.c_str()).template as<ChildType>();
 	}
 	
-	Asset& foreign_child_impl(const fs::path& path, AssetType type, const char* tag);
+	Asset& foreign_child_impl(const fs::path& path, bool is_absolute, AssetType type, const char* tag);
 	
 	void read(WtfNode* node);
 	void write(WtfWriter* ctx, std::string prefix) const;
@@ -436,14 +436,14 @@ std::string generate_asset_path(const char* directory, const char* type, s32 id,
 			std::string name = to_snake_case(child.name().c_str());
 			if(child.has_category() && !child.category().empty()) {
 				std::string category = to_snake_case(child.category().c_str());
-				return stringf("/%s/%s/%d_%s/%s_%s.asset", directory, category.c_str(), id, name.c_str(), type, name.c_str());
+				return stringf("%s/%s/%d_%s/%s_%s.asset", directory, category.c_str(), id, name.c_str(), type, name.c_str());
 			} else {
-				return stringf("/%s/%d_%s/%s_%s.asset", directory, id, name.c_str(), type, name.c_str());
+				return stringf("%s/%d_%s/%s_%s.asset", directory, id, name.c_str(), type, name.c_str());
 			}
 		}
 	}
 	
-	return stringf("/%s/unsorted/%d/%s_%d.asset", directory, id, type, id);
+	return stringf("%s/unsorted/%d/%s_%d.asset", directory, id, type, id);
 }
 
 #endif

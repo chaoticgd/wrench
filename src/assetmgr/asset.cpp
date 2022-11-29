@@ -204,9 +204,9 @@ bool Asset::remove_physical_child(Asset& asset) {
 	return false;
 }
 
-Asset& Asset::foreign_child_impl(const fs::path& path, AssetType type, const char* tag) {
+Asset& Asset::foreign_child_impl(const fs::path& path, bool is_absolute, AssetType type, const char* tag) {
 	AssetLink link = absolute_link();
-	Asset* asset = &bank().asset_file(path.is_absolute() ? path.relative_path() : file()._relative_directory/path).root();
+	Asset* asset = &bank().asset_file(is_absolute ? path.relative_path() : file()._relative_directory/path).root();
 	auto [prefix, tags] = link.get();
 	for(const char* tag : tags) {
 		asset = &asset->physical_child(PlaceholderAsset::ASSET_TYPE, tag);

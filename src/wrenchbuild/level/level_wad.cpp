@@ -193,7 +193,7 @@ static void unpack_chunks(CollectionAsset& dest, InputStream& file, const ChunkW
 			chunk_header = file.read<ChunkHeader>(ranges.chunks[i].offset.bytes());
 		}
 		if(chunk_header.tfrags > 0 || chunk_header.collision > 0 || !ranges.sound_banks[i].empty()) {
-			ChunkAsset& chunk = dest.foreign_child<ChunkAsset>(stringf("chunks/%d/chunk%d.asset", i, i), i);
+			ChunkAsset& chunk = dest.foreign_child<ChunkAsset>(stringf("chunks/%d/chunk%d.asset", i, i), false, i);
 			if(chunk_header.tfrags > 0) {
 				s64 offset = ranges.chunks[i].offset.bytes() + chunk_header.tfrags;
 				s64 size = ranges.chunks[i].size.bytes() - chunk_header.tfrags;
@@ -258,7 +258,7 @@ static void unpack_missions(CollectionAsset& dest, InputStream& file, const Miss
 		}
 		if(!header.instances.empty() || !header.classes.empty() || !ranges.sound_banks[i].empty()) {
 			std::string path = stringf("missions/%d/mission%d.asset", i, i);
-			MissionAsset& mission = dest.foreign_child<MissionAsset>(path, i);
+			MissionAsset& mission = dest.foreign_child<MissionAsset>(path, false, i);
 			unpack_compressed_asset(mission.instances(), file, header.instances, config);
 			unpack_compressed_asset(mission.classes<CollectionAsset>(), file, header.classes, config, FMT_COLLECTION_MISSION_CLASSES);
 			unpack_asset(mission.sound_bank(), file, ranges.sound_banks[i], config);

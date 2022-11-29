@@ -88,7 +88,7 @@ static void unpack_dl_level_scene_wad(LevelSceneWadAsset& dest, const DlLevelSce
 	
 	CollectionAsset& scenes = dest.scenes();
 	for(s32 i = 0; i < ARRAY_SIZE(header.scenes); i++) {
-		SceneAsset& scene = scenes.foreign_child<SceneAsset>(stringf("scenes/%d/%d", i, i), i);
+		SceneAsset& scene = scenes.foreign_child<SceneAsset>(stringf("scenes/%d/%d", i, i), false, i);
 		const DlSceneHeader& scene_header = header.scenes[i];
 		unpack_asset(scene.speech_english_left(), src, range(scene_header.speech_english_left, end_sectors), config, FMT_BINARY_VAG);
 		unpack_asset(scene.speech_english_right(), src, range(scene_header.speech_english_right, end_sectors), config, FMT_BINARY_VAG);
