@@ -131,7 +131,7 @@ Each asset type is defined in `asset_schema.wtf` and a code generator, `asset_co
 
 | Format Version | Wrench Version | Description |
 | -    | -     | - |
-| 18   |       | Added editor_mesh attribute to the TieClass asset type. Material assets are now used to store tie textures. |
+| 18   | v0.3  | Added editor_mesh attribute to the TieClass asset type. Material assets are now used to store tie textures. |
 | 17   |       | Added Tfrags and TfragsCore asset types. Material assets are now used to store tfrag textures. |
 | 16   |       | The billboard asset is now a child of ShrubClass assets instead of ShrubClassCore assets. The mipmap_distance attribute of ShrubClassCore assets has been renamed to mip_distance. |
 | 15   |       | Added underlay asset banks. Level, MobyClass, TieClass and ShrubClass asset now have name and category attributes. Replaced deleted attribute with strongly_deleted and weakly_deleted attributes. |
