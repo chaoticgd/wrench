@@ -22,6 +22,7 @@
 #include <assert.h>
 #include <stdarg.h>
 #include <string.h>
+#include <filesystem>
 
 #include <wtf/wtf.h>
 #include <wtf/wtf_writer.h>
@@ -72,7 +73,8 @@ int main(int argc, char** argv) {
 	
 	out("# Asset Reference\n");
 	out("\n");
-	out("This file was generated from %s and is for version %d of the asset format.\n", argv[1], format_version->number.i);
+	out("This file was generated from %s and is for version %d of the asset format.\n",
+		std::filesystem::path(argv[1]).filename().string().c_str(), format_version->number.i);
 	
 	write_index(root);
 	write_contents(root);
