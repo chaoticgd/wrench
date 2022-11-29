@@ -349,7 +349,7 @@ void unpack_particle_textures(CollectionAsset& dest, InputStream& defs, std::vec
 		}
 		assert(begin >= 0 && end >= begin);
 		std::string path = stringf("particle_textures/%d/particle%d.asset", part, part);
-		CollectionAsset& part_asset = dest.foreign_child<CollectionAsset>(path, part);
+		CollectionAsset& part_asset = dest.foreign_child<CollectionAsset>(path, false, part);
 		for(s32 frame = begin; frame < end; frame++) {
 			u8 index = indices[frame];
 			ParticleTextureEntry entry = entries.at(index);
