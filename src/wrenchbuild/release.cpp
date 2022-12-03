@@ -51,13 +51,51 @@ static const Release RELEASES[] = {
 	{"scus_974.87", Game::DL, Region::US, "Ratchet: Deadlocked"} // us public beta
 };
 
-Release identify_release(const IsoDirectory& root) {
+static std::pair<Game, const char*> GAME_SEARCH_PATTERNS[] = {
+	{Game::DL, "Deadlocked"},
+	{Game::UYA, "Up Your Arsenal"},
+	{Game::GC, "Going Commando"},
+	{Game::RAC, "Ratchet & Clank"}
+};
+
+Release identify_release(const IsoDirectory& root, InputStream& iso) {
 	Release result;
+	// First check all of the known releases.
 	for(const IsoFileRecord& file : root.files) {
 		for(const Release& release : RELEASES) {
-			if(strcmp(release.elf_name, file.name.c_str()) == 0) {
+			if(release.elf_name == file.name) {
 				result = release;
 				break;
+			}
+		}
+	}
+	if(result.game == Game::UNKNOWN) {
+		// Unknown build, try to identify it in a dirtier slower way.
+		for(const IsoFileRecord& record : root.files) {
+			if(record.size > 4) {
+				// Look for the boot ELF.
+				u8 magic[4] = {};
+				iso.seek(record.lba.bytes());
+				iso.read_n(magic, 4);
+				if(memcmp(magic, "\x7f\x45\x4c\x46", 4) == 0) {
+					iso.seek(record.lba.bytes());
+					std::vector<u8> elf = iso.read_multiple<u8>(record.size);
+					// Look for the names of the respective games in the boot ELF.
+					for(auto [game, pattern] : GAME_SEARCH_PATTERNS) {
+						for(s32 i = 0; i < (s32) elf.size() - strlen(pattern); i++) {
+							if(memcmp(&elf[i], pattern, strlen(pattern)) == 0) {
+								printf("Unknown build identified as %s.\n", game_to_string(game).c_str());
+								result.elf_name = record.name;
+								result.game = game;
+								result.name = "unknown";
+								break;
+							}
+						}
+						if(result.game != Game::UNKNOWN) {
+							break;
+						}
+					}
+				}
 			}
 		}
 	}

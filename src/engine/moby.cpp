@@ -74,14 +74,13 @@ MobyClassData read_moby_class(Buffer src, Game game) {
 	if(header.bangles != 0) {
 		moby.header_end_offset = std::min(moby.header_end_offset, header.bangles * 0x10);
 	}
-	if(game == Game::RAC)  {
+	if(game == Game::RAC) {
 		moby.rac1_short_2e = header.corncob;
 	} else if(header.corncob != 0) {
 		moby.corncob = read_moby_corncob(src.subbuf(header.corncob * 0x10));
 		moby.header_end_offset = std::min(moby.header_end_offset, header.corncob * 0x10);
 	}
 	moby.animation.sequences = read_moby_sequences(src, header.sequence_count, header.joint_count, game);
-	verify(header.sequence_count >= 1, "Moby class has no sequences.");
 	if(header.collision != 0) {
 		moby.collision = read_moby_collision(src.subbuf(header.collision));
 		s64 coll_size = 0x10 + moby.collision->first_part.size() + moby.collision->second_part.size() * 8 + moby.collision->third_part.size();

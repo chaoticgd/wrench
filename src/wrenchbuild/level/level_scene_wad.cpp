@@ -50,8 +50,8 @@ static void pack_dl_level_scene_wad(OutputStream& dest, DlLevelSceneWadHeader& h
 static SectorRange range(Sector32 offset, const std::set<s64>& end_sectors);
 
 on_load(LevelScene, []() {
-	LevelSceneWadAsset::funcs.unpack_rac1 = wrap_wad_unpacker_func<LevelSceneWadAsset, RacLevelSceneWadHeader>(unpack_rac_level_scene_wad);
-	LevelSceneWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<LevelSceneWadAsset, DlLevelSceneWadHeader>(unpack_dl_level_scene_wad);
+	LevelSceneWadAsset::funcs.unpack_rac1 = wrap_wad_unpacker_func<LevelSceneWadAsset, RacLevelSceneWadHeader>(unpack_rac_level_scene_wad, false);
+	LevelSceneWadAsset::funcs.unpack_dl = wrap_wad_unpacker_func<LevelSceneWadAsset, DlLevelSceneWadHeader>(unpack_dl_level_scene_wad, false);
 	
 	LevelSceneWadAsset::funcs.pack_rac1 = wrap_wad_packer_func<LevelSceneWadAsset, RacLevelSceneWadHeader>(pack_rac_level_scene_wad);
 	LevelSceneWadAsset::funcs.pack_dl = wrap_wad_packer_func<LevelSceneWadAsset, DlLevelSceneWadHeader>(pack_dl_level_scene_wad);

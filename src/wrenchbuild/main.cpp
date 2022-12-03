@@ -330,7 +330,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, Game
 		
 		if(memcmp(identifier.data(), "CD001", 5) == 0) {
 			IsoFilesystem fs = read_iso_filesystem(stream);
-			Release release = identify_release(fs.root);
+			Release release = identify_release(fs.root, stream);
 			
 			std::string game_str = game_to_string(release.game);
 			std::string region_str = region_to_string(release.region);

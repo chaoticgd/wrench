@@ -26,6 +26,8 @@ struct WadFileDescription {
 	s32 secondary_offset = -1; // Secondary offset to check if multiple types of files have the same header size.
 	s32 secondary_value_min;
 	s32 secondary_value_max;
+	s32 tertiary_offset = -1;
+	s32 tertiary_value_not_equal;
 };
 
 static WadFileDescription WAD_FILE_TYPES[] = {
@@ -60,8 +62,8 @@ static WadFileDescription WAD_FILE_TYPES[] = {
 	{"scene" , Game::UNKNOWN, WadType::LEVEL_SCENE, 0x26f0},
 	{"misc"  , Game::DL     , WadType::MISC       , 0x0050},
 	{"bonus" , Game::DL     , WadType::BONUS      , 0x02a8},
-	{"space" , Game::DL     , WadType::SPACE      , 0x0068, 0xc, 0, 0x75d}, // 0x252, 0x255
-	{"online", Game::DL     , WadType::ONLINE     , 0x0068, 0xc, 0x75e, 0x1000}, // 0xc6a
+	{"space" , Game::DL     , WadType::SPACE      , 0x0068, 0xc, 0, 0x75d, 0x14, 0x1}, // secondary: 0x252, 0x255
+	{"online", Game::DL     , WadType::ONLINE     , 0x0068, 0xc, 0x75e, 0x1000, 0x14, 0x1}, // secondary: 0xc6a
 	{"level" , Game::UNKNOWN, WadType::LEVEL      , 0x0068},
 	{"armor" , Game::DL     , WadType::ARMOR      , 0x0228},
 	{"audio" , Game::DL     , WadType::AUDIO      , 0xa870},
@@ -81,6 +83,13 @@ std::tuple<Game, WadType, const char*> identify_wad(Buffer header) {
 		if(desc.secondary_offset > -1) {
 			s32 value = header.read<s32>(desc.secondary_offset, "header");
 			if(value < desc.secondary_value_min || value > desc.secondary_value_max) {
+				continue;
+			}
+		}
+		
+		if(desc.tertiary_offset > -1) {
+			s32 value = header.read<s32>(desc.tertiary_offset, "header");
+			if(value == desc.tertiary_value_not_equal) {
 				continue;
 			}
 		}

@@ -423,7 +423,7 @@ table_of_contents read_table_of_contents_rac234(InputStream& src) {
 				case WadType::LEVEL: level.level = std::move(part); break;
 				case WadType::LEVEL_AUDIO: level.audio = std::move(part); break;
 				case WadType::LEVEL_SCENE: level.scene = std::move(part); break;
-				default: verify_not_reached("Level table references WAD of unknown type.");
+				default: verify_not_reached("Level table references WAD of unknown type '%x'.", *(u32*) &part.header[0]);
 			}
 		}
 		
