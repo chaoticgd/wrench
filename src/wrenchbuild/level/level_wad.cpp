@@ -45,8 +45,8 @@ packed_struct(GcLevelWadHeader68,
 	/* 0x08 */ s32 id;
 	/* 0x0c */ SectorRange data;
 	/* 0x14 */ SectorRange sound_bank;
-	/* 0x1c */ SectorRange gameplay_1;
-	/* 0x24 */ SectorRange gameplay_2;
+	/* 0x1c */ SectorRange gameplay_ntsc;
+	/* 0x24 */ SectorRange gameplay_pal;
 	/* 0x2c */ SectorRange occlusion;
 	/* 0x34 */ SectorRange chunks[3];
 	/* 0x4c */ s32 reverb;
@@ -127,7 +127,28 @@ static void pack_rac_level_wad(OutputStream& dest, RacLevelWadHeader& header, co
 	header.occlusion = write_occlusion_copy(dest, gameplay, 0x8c);
 }
 
+static void unpack_gc_68_level_wad(LevelWadAsset& dest, const GcLevelWadHeader68& header, InputStream& src, BuildConfig config) {
+	dest.set_id(header.id);
+	dest.set_reverb(header.reverb);
+	g_asset_unpacker.current_level_id = header.id;
+	
+	unpack_asset(dest.sound_bank(), src, header.sound_bank, config);
+	SubInputStream data(src, header.data.bytes());
+	unpack_gc_uya_level_data_wad(dest, data, config);
+	unpack_compressed_asset(dest.gameplay(), src, header.gameplay_ntsc, config);
+	
+	ChunkWadHeader chunks;
+	memcpy(&chunks.chunks, header.chunks, sizeof(chunks.chunks));
+	memcpy(&chunks.sound_banks, header.chunk_banks, sizeof(chunks.sound_banks));
+	unpack_chunks(dest.chunks(), src, chunks, config);
+}
+
 static void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHeader& header, InputStream& src, BuildConfig config) {
+	if(header.header_size == 0x68) {
+		unpack_gc_68_level_wad(dest, src.read<GcLevelWadHeader68>(0), src, config);
+		return;
+	}
+	
 	dest.set_id(header.id);
 	dest.set_reverb(header.reverb);
 	g_asset_unpacker.current_level_id = header.id;

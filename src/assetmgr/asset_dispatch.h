@@ -70,9 +70,12 @@ AssetUnpackerFunc* wrap_hint_unpacker_func(UnpackerFunc func) {
 }
 
 template <typename ThisAsset, typename WadHeader, typename UnpackerFunc>
-AssetUnpackerFunc* wrap_wad_unpacker_func(UnpackerFunc func) {
-	return new AssetUnpackerFunc([func](Asset& dest, InputStream& src, const std::vector<u8>* header_src, BuildConfig config, const char* hint) {
+AssetUnpackerFunc* wrap_wad_unpacker_func(UnpackerFunc func, bool error_fatal = true) {
+	return new AssetUnpackerFunc([func, error_fatal](Asset& dest, InputStream& src, const std::vector<u8>* header_src, BuildConfig config, const char* hint) {
 		verify(header_src, "No header passed to wad unpacker.");
+		if(!error_fatal && Buffer(*header_src).read<s32>(0, "wad header") != sizeof(WadHeader)) {
+			return;
+		}
 		WadHeader header = Buffer(*header_src).read<WadHeader>(0, "wad header");
 		func(static_cast<ThisAsset&>(dest), header, src, config);
 	});

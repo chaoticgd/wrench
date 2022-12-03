@@ -28,6 +28,7 @@ struct UnpackInfo {
 	ByteRange64 data_range;
 };
 
+static void add_missing_levels_from_filesystem(table_of_contents& toc, const IsoFilesystem& fs, InputStream& iso);
 static void unpack_ps2_logo(BuildAsset& build, InputStream& src, BuildConfig config);
 static void unpack_primary_volume_descriptor(BuildAsset& build, const IsoPrimaryVolumeDescriptor& pvd);
 static void enumerate_global_wads(std::vector<UnpackInfo>& dest, BuildAsset& build, const table_of_contents& toc, InputStream& src, Game game);
@@ -42,6 +43,7 @@ void unpack_iso(BuildAsset& dest, InputStream& src, BuildConfig config, AssetUnp
 	
 	IsoFilesystem filesystem = read_iso_filesystem(src);
 	table_of_contents toc = read_table_of_contents(src, config.game());
+	add_missing_levels_from_filesystem(toc, filesystem, src);
 	
 	std::vector<UnpackInfo> files;
 	
@@ -80,11 +82,49 @@ void unpack_iso(BuildAsset& dest, InputStream& src, BuildConfig config, AssetUnp
 		{ return lhs.data_range.offset < rhs.data_range.offset; });
 	
 	for(UnpackInfo& info : files) {
-		if(info.data_range.size == -1) {
-			unpack(*info.asset, src, info.header, config, FMT_NO_HINT);
-		} else {
-			SubInputStream stream(src, info.data_range);
-			unpack(*info.asset, stream, info.header, config, FMT_NO_HINT);
+		if(info.asset != nullptr) {
+			if(info.data_range.size == -1) {
+				unpack(*info.asset, src, info.header, config, FMT_NO_HINT);
+			} else {
+				SubInputStream stream(src, info.data_range);
+				unpack(*info.asset, stream, info.header, config, FMT_NO_HINT);
+			}
+		}
+	}
+}
+
+static void add_missing_levels_from_filesystem(table_of_contents& toc, const IsoFilesystem& fs, InputStream& iso) {
+	// Some builds have levels not referenced by the toc. Try to find these.
+	
+	const IsoDirectory* g_dir = nullptr;
+	for(const IsoDirectory& dir : fs.root.subdirs) {
+		if(dir.name == "g") {
+			g_dir = &dir;
+		}
+	}
+	
+	if(g_dir == nullptr) {
+		return;
+	}
+	
+	for(const IsoFileRecord& record : g_dir->files) {
+		if(record.name.starts_with("level")) {
+			auto str_end = record.name.find(".wad");
+			std::string index_str = record.name.substr(5, str_end - 5);
+			s32 index = atoi(index_str.c_str());
+			
+			if(toc.levels.size() > index) {
+				LevelInfo& info = toc.levels[index];
+				if(!info.level.has_value()) {
+					info.level.emplace();
+					info.level->header_lba = record.lba;
+					info.level->file_lba = record.lba;
+					info.level->file_size = record.size;
+					s32 header_size = iso.read<s32>(record.lba.bytes());
+					info.level->header = iso.read_multiple<u8>(record.lba.bytes(), header_size);
+					info.level->prepend_header = false;
+				}
+			}
 		}
 	}
 }
@@ -181,7 +221,7 @@ static void enumerate_global_wads(std::vector<UnpackInfo>& dest, BuildAsset& bui
 		std::string file_name = std::string(name) + ".wad";
 		size_t file_size = get_global_wad_file_size(global, toc);
 		
-		Asset* asset;
+		Asset* asset = nullptr;
 		switch(wad_type) {
 			case WadType::GLOBAL: asset = &build.global<GlobalWadAsset>("globals/global");        break;
 			case WadType::MPEG:   asset = &build.mpeg<MpegWadAsset>("globals/mpeg/mpeg");         break;

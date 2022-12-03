@@ -23,12 +23,12 @@
 #include <iso/iso_filesystem.h>
 
 struct Release {
-	const char* elf_name;
+	std::string elf_name;
 	Game game = Game::UNKNOWN;
 	Region region = Region::US;
 	const char* name;
 };
 
-Release identify_release(const IsoDirectory& root);
+Release identify_release(const IsoDirectory& root, InputStream& iso);
 
 #endif
