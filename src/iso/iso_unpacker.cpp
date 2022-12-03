@@ -28,7 +28,7 @@ struct UnpackInfo {
 	ByteRange64 data_range;
 };
 
-static void add_missing_levels_from_filesystem(table_of_contents& toc, const IsoFilesystem& fs, InputStream& iso);
+static void add_missing_levels_from_filesystem(table_of_contents& toc, const IsoDirectory& dir, InputStream& iso);
 static void unpack_ps2_logo(BuildAsset& build, InputStream& src, BuildConfig config);
 static void unpack_primary_volume_descriptor(BuildAsset& build, const IsoPrimaryVolumeDescriptor& pvd);
 static void enumerate_global_wads(std::vector<UnpackInfo>& dest, BuildAsset& build, const table_of_contents& toc, InputStream& src, Game game);
@@ -43,7 +43,7 @@ void unpack_iso(BuildAsset& dest, InputStream& src, BuildConfig config, AssetUnp
 	
 	IsoFilesystem filesystem = read_iso_filesystem(src);
 	table_of_contents toc = read_table_of_contents(src, config.game());
-	add_missing_levels_from_filesystem(toc, filesystem, src);
+	add_missing_levels_from_filesystem(toc, filesystem.root, src);
 	
 	std::vector<UnpackInfo> files;
 	
@@ -93,24 +93,12 @@ void unpack_iso(BuildAsset& dest, InputStream& src, BuildConfig config, AssetUnp
 	}
 }
 
-static void add_missing_levels_from_filesystem(table_of_contents& toc, const IsoFilesystem& fs, InputStream& iso) {
+static void add_missing_levels_from_filesystem(table_of_contents& toc, const IsoDirectory& dir, InputStream& iso) {
 	// Some builds have levels not referenced by the toc. Try to find these.
 	
-	const IsoDirectory* g_dir = nullptr;
-	for(const IsoDirectory& dir : fs.root.subdirs) {
-		if(dir.name == "g") {
-			g_dir = &dir;
-		}
-	}
-	
-	if(g_dir == nullptr) {
-		return;
-	}
-	
-	for(const IsoFileRecord& record : g_dir->files) {
-		if(record.name.starts_with("level")) {
-			auto str_end = record.name.find(".wad");
-			std::string index_str = record.name.substr(5, str_end - 5);
+	for(const IsoFileRecord& record : dir.files) {
+		if(record.name.starts_with("level") && record.name.ends_with(".wad")) {
+			std::string index_str = record.name.substr(5, record.name.size() - 9);
 			s32 index = atoi(index_str.c_str());
 			
 			if(toc.levels.size() > index) {
@@ -126,6 +114,10 @@ static void add_missing_levels_from_filesystem(table_of_contents& toc, const Iso
 				}
 			}
 		}
+	}
+	
+	for(const IsoDirectory& subdir : dir.subdirs) {
+		add_missing_levels_from_filesystem(toc, subdir, iso);
 	}
 }
 
