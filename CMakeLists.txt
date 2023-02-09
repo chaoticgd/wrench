@@ -52,6 +52,7 @@ add_library(wrenchcore STATIC
 	src/core/tristrip.cpp
 	src/core/material.cpp
 	src/core/tristrip_packet.cpp
+	src/core/elf.cpp
 	thirdparty/md5.cpp
 )
 target_link_libraries(wrenchcore wrenchwtf)
@@ -227,6 +228,11 @@ add_executable(asset2json
 )
 target_include_directories(asset2json PUBLIC thirdparty/json/single_include)
 target_link_libraries(asset2json wrenchcore)
+
+add_executable(unpackbin
+	src/unpackbin.cpp
+)
+target_link_libraries(unpackbin wrenchcore)
 
 if(UNIX)
 	add_compile_options(-Wall -Wno-sign-compare -g -O3)
