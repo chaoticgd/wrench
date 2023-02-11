@@ -21,49 +21,6 @@
 
 #include <core/buffer.h>
 
-enum ElfSegmentType : u32 {
-	PT_NULL = 0,
-	PT_LOAD = 1,
-	PT_DYNAMIC = 2,
-	PT_INTERP = 3,
-	PT_NOTE = 4,
-	PT_SHLIB = 5,
-	PT_PHDR = 6,
-	PT_TLS = 7,
-	PT_NUM = 8,
-	PT_LOOS = 0x60000000,
-	PT_GNU_EH_FRAME = 0x6474e550,
-	PT_GNU_STACK = 0x6474e551,
-	PT_GNU_RELRO = 0x6474e552,
-	PT_GNU_PROPERTY = 0x6474e553,
-	PT_LOSUNW = 0x6ffffffa,
-	PT_SUNWBSS = 0x6ffffffa,
-	PT_SUNWSTACK = 0x6ffffffb,
-	PT_HISUNW = 0x6fffffff,
-	PT_HIOS = 0x6fffffff,
-	PT_LOPROC = 0x70000000,
-	PT_HIPROC = 0x7fffffff
-};
-
-enum ElfProgramHeaderFlags{
-	PF_X = (1 << 0),
-	PF_W = (1 << 1),
-	PF_R = (1 << 2),
-	PF_MASKO = 0x0ff00000,
-	PF_MASKPRO = 0xf0000000
-};
-
-packed_struct(ElfProgramHeader,
-	/* 0x00 */ ElfSegmentType type;
-	/* 0x04 */ s32 offset;
-	/* 0x08 */ s32 vaddr;
-	/* 0x0c */ s32 paddr;
-	/* 0x10 */ s32 filesz;
-	/* 0x14 */ s32 memsz;
-	/* 0x18 */ u32 flags;
-	/* 0x1c */ s32 align;
-)
-
 enum ElfSectionType : u32 {
 	SHT_NULL_SECTION = 0x0,
 	SHT_PROGBITS = 0x1,
@@ -127,6 +84,49 @@ struct ElfSection {
 	std::vector<u8> data;
 };
 
+enum ElfProgramHeaderType : u32 {
+	PT_NULL = 0,
+	PT_LOAD = 1,
+	PT_DYNAMIC = 2,
+	PT_INTERP = 3,
+	PT_NOTE = 4,
+	PT_SHLIB = 5,
+	PT_PHDR = 6,
+	PT_TLS = 7,
+	PT_NUM = 8,
+	PT_LOOS = 0x60000000,
+	PT_GNU_EH_FRAME = 0x6474e550,
+	PT_GNU_STACK = 0x6474e551,
+	PT_GNU_RELRO = 0x6474e552,
+	PT_GNU_PROPERTY = 0x6474e553,
+	PT_LOSUNW = 0x6ffffffa,
+	PT_SUNWBSS = 0x6ffffffa,
+	PT_SUNWSTACK = 0x6ffffffb,
+	PT_HISUNW = 0x6fffffff,
+	PT_HIOS = 0x6fffffff,
+	PT_LOPROC = 0x70000000,
+	PT_HIPROC = 0x7fffffff
+};
+
+enum ElfProgramHeaderFlags {
+	PF_X = (1 << 0),
+	PF_W = (1 << 1),
+	PF_R = (1 << 2),
+	PF_MASKO = 0x0ff00000,
+	PF_MASKPRO = 0xf0000000
+};
+
+packed_struct(ElfProgramHeader,
+	/* 0x00 */ ElfProgramHeaderType type;
+	/* 0x04 */ s32 offset;
+	/* 0x08 */ s32 vaddr;
+	/* 0x0c */ s32 paddr;
+	/* 0x10 */ s32 filesz;
+	/* 0x14 */ s32 memsz;
+	/* 0x18 */ u32 flags;
+	/* 0x1c */ s32 align;
+)
+
 struct ElfFile {
 	s32 entry_point = 0;
 	std::vector<ElfSection> sections;
@@ -139,6 +139,6 @@ void write_elf_file(OutBuffer dest, const ElfFile& elf);
 ElfFile read_ratchet_executable(Buffer src);
 void write_ratchet_executable(const ElfFile& elf);
 
-bool recover_deadlocked_section_info(ElfFile& elf);
+bool recover_deadlocked_elf_headers(ElfFile& elf);
 
 #endif

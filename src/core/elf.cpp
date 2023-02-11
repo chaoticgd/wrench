@@ -79,7 +79,7 @@ void write_elf_file(OutBuffer dest, const ElfFile& elf) {
 		section_headers.emplace_back(section.header);
 	}
 	
-	// Determine the layout of the file and write out the data.
+	// Determine the layout of the file and write out the section data.
 	s64 file_header_ofs = dest.alloc<ElfFileHeader>();
 	s64 program_headers_ofs = dest.alloc_multiple<ElfProgramHeader>(elf.segments.size());
 	dest.pad(0x1000);
@@ -100,12 +100,14 @@ void write_elf_file(OutBuffer dest, const ElfFile& elf) {
 					} else if(padding_size < 0) {
 						fprintf(stderr, "warning: Padding calculation gave negative result, segments may be incorrect.\n");
 					}
+				} else {
+					dest.pad(elf.segments.at(section.segment).align);
 				}
 			} else {
 				dest.pad(0x80);
 			}
 		}
-		// Write the data.
+		// Write the data and fill in the section headers.
 		s64 offset = dest.write_multiple(section.data);
 		section_headers[i].offset = (s32) offset;
 		section_headers[i].size = (s32) section.data.size();
@@ -122,7 +124,32 @@ void write_elf_file(OutBuffer dest, const ElfFile& elf) {
 	dest.writesf(".shstrtab");
 	dest.write<char>('\0');
 	s64 section_header_names_end = dest.tell();
+	dest.pad(4);
 	s64 section_headers_ofs = dest.alloc_multiple<ElfSectionHeader>(elf.sections.size() + 1);
+	
+	// Fill in the program headers.
+	for(size_t segment = 0; segment < elf.segments.size(); segment++) {
+		s32 addr = INT32_MAX;
+		s32 offset = INT32_MAX;
+		s32 end = INT32_MIN;
+		for(size_t section = 0; section < elf.sections.size(); section++) {
+			if(elf.sections[section].segment == segment && section_headers[section].addr > 0) {
+				addr = std::min(addr, section_headers[section].addr);
+				offset = std::min(offset, section_headers[section].offset);
+				end = std::max(end, section_headers[section].offset + (s32) elf.sections[section].data.size());
+			}
+		}
+		
+		if(addr == INT32_MAX) addr = 0;
+		if(offset == INT32_MAX) offset = 0;
+		if(end == INT32_MIN) end = 0;
+		
+		program_headers[segment].offset = offset;
+		program_headers[segment].vaddr = addr;
+		program_headers[segment].paddr = addr;
+		program_headers[segment].filesz = end - offset;
+		program_headers[segment].memsz = end - offset;
+	}
 	
 	// Write out the file header.
 	ElfFileHeader file_header = {};
@@ -211,7 +238,7 @@ void write_ratchet_executable(const ElfFile& elf) {
 	
 }
 
-bool recover_deadlocked_section_info(ElfFile& elf) {
+bool recover_deadlocked_elf_headers(ElfFile& elf) {
 	static const u32 ax = SHF_ALLOC | SHF_EXECINSTR;
 	static const u32 wa = SHF_WRITE | SHF_ALLOC;
 	static const u32 a = SHF_ALLOC;
@@ -249,10 +276,18 @@ bool recover_deadlocked_section_info(ElfFile& elf) {
 		ElfSection& section = elf.sections[i];
 		const ElfSection& expected = expected_sections[i];
 		section.name = expected.name;
+		section.segment = expected.segment;
 		section.header.flags = expected.header.flags;
 		section.header.addralign = expected.header.addralign;
 		section.header.entsize = expected.header.entsize;
 	}
+	
+	ElfProgramHeader load = {};
+	load.type = PT_LOAD;
+	load.flags = PF_R | PF_W | PF_X;
+	load.align = 0x1000;
+	elf.segments.emplace_back(load);
+	elf.segments.emplace_back(load);
 	
 	return true;
 }
