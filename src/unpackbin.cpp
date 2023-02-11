@@ -33,7 +33,9 @@ int main(int argc, const char** argv) {
 	std::vector<u8> input = read_file(input_path);
 	ElfFile elf = read_ratchet_executable(input);
 	printf("%d sections\n", (s32) elf.sections.size());
-	recover_deadlocked_section_info(elf);
+	if(!recover_deadlocked_section_info(elf)) {
+		fprintf(stderr, "warning: Failed to recover section information!\n");
+	}
 	std::vector<u8> output;
 	write_elf_file(output, elf);
 	write_file(output_path, output);

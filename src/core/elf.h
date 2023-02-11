@@ -21,7 +21,7 @@
 
 #include <core/buffer.h>
 
-enum ElfSegmentType {
+enum ElfSegmentType : u32 {
 	PT_NULL = 0,
 	PT_LOAD = 1,
 	PT_DYNAMIC = 2,
@@ -45,18 +45,16 @@ enum ElfSegmentType {
 	PT_HIPROC = 0x7fffffff
 };
 
-namespace ElfSegmentHeaderFlags {
-	enum {
-		X = (1 << 0),
-		W = (1 << 1),
-		R = (1 << 2),
-		MASKO = 0x0ff00000,
-		MASKPRO = 0xf0000000
-	};
-}
+enum ElfProgramHeaderFlags{
+	PF_X = (1 << 0),
+	PF_W = (1 << 1),
+	PF_R = (1 << 2),
+	PF_MASKO = 0x0ff00000,
+	PF_MASKPRO = 0xf0000000
+};
 
-packed_struct(ElfSegmentHeader,
-	/* 0x00 */ u32 type;
+packed_struct(ElfProgramHeader,
+	/* 0x00 */ ElfSegmentType type;
 	/* 0x04 */ s32 offset;
 	/* 0x08 */ s32 vaddr;
 	/* 0x0c */ s32 paddr;
@@ -124,14 +122,15 @@ packed_struct(ElfSectionHeader,
 
 struct ElfSection {
 	std::string name;
+	s32 segment = -1;
 	ElfSectionHeader header = {};
+	std::vector<u8> data;
 };
 
 struct ElfFile {
 	s32 entry_point = 0;
-	std::vector<u8> data;
-	std::vector<ElfSegmentHeader> segments;
 	std::vector<ElfSection> sections;
+	std::vector<ElfProgramHeader> segments;
 };
 
 ElfFile read_elf_file(Buffer src);
