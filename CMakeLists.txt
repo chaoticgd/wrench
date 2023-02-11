@@ -232,7 +232,7 @@ target_link_libraries(asset2json wrenchcore)
 add_executable(unpackbin
 	src/unpackbin.cpp
 )
-target_link_libraries(unpackbin wrenchcore)
+target_link_libraries(unpackbin wrenchcore wrenchengine)
 
 if(UNIX)
 	add_compile_options(-Wall -Wno-sign-compare -g -O3)

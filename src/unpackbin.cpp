@@ -18,6 +18,9 @@
 
 #include <core/elf.h>
 #include <core/filesystem.h>
+#include <engine/compression.h>
+
+static std::vector<u8> decompress_file(const std::vector<u8>& file);
 
 int main(int argc, const char** argv) {
 	if(argc < 3) {
@@ -31,13 +34,28 @@ int main(int argc, const char** argv) {
 	fs::path output_path = argv[2];
 	
 	std::vector<u8> input = read_file(input_path);
-	ElfFile elf = read_ratchet_executable(input);
+	std::vector<u8> decompressed = decompress_file(input);
+	ElfFile elf = read_ratchet_executable(decompressed);
 	printf("%d sections\n", (s32) elf.sections.size());
-	if(!recover_deadlocked_section_info(elf)) {
+	if(!recover_deadlocked_elf_headers(elf)) {
 		fprintf(stderr, "warning: Failed to recover section information!\n");
 	}
 	std::vector<u8> output;
 	write_elf_file(output, elf);
 	write_file(output_path, output);
 	return 0;
+}
+
+static std::vector<u8> decompress_file(const std::vector<u8>& file) {
+	s64 wad_ofs = -1;
+	for(s64 i = 0; i < file.size() - 3; i++) {
+		if(memcmp(&file.data()[i], "WAD", 3) == 0) {
+			wad_ofs = i;
+			break;
+		}
+	}
+	verify(wad_ofs > -1, "Cannot find 'WAD' magic bytes (LZ compression header).");
+	std::vector<u8> decompressed;
+	decompress_wad(decompressed, WadBuffer{file.data() + wad_ofs, file.data() + file.size()});
+	return decompressed;
 }
