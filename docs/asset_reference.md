@@ -1,6 +1,6 @@
 # Asset Reference
 
-This file was generated from asset_schema.wtf and is for version 18 of the asset format.
+This file was generated from asset_schema.wtf and is for version 19 of the asset format.
 
 ## Index
 
@@ -17,6 +17,7 @@ This file was generated from asset_schema.wtf and is for version 18 of the asset
 	- [Texture](#texture)
 	- [FlatWad](#flatwad)
 	- [Subtitle](#subtitle)
+	- [ElfFile](#elffile)
 - [Globals](#globals)
 	- [GlobalWad](#globalwad)
 	- [ArmorWad](#armorwad)
@@ -374,6 +375,27 @@ FlatWad online {
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
 
+
+### ElfFile
+
+An ELF executable file. Currently used for the frontend and level code.
+
+*Attributes*
+| Name | Description | Type | Required | Games |
+| - | - | - | - | - |
+| src | The path of the ELF file, relative to the .asset file. | FilePath | Yes | RC/GC/UYA/DL |
+
+*Children*
+
+| Name | Description | Allowed Types | Required | Games |
+| - | - | - | - | - |
+
+
+*Hints*
+
+| Syntax | Example | Description |
+| - | - | - |
+| `ratchetexecutable` | `ratchetexecutable` | Convert the ELF file to and from a packed Ratchet executable while packing/unpacking. |
 
 ## Globals
 
@@ -813,7 +835,7 @@ Container for assets used in the mutliplayer mode.
 | chunks | *Not yet documented.* | Collection | No | GC/UYA/DL |
 | missions | *Not yet documented.* | Collection | *Not yet documented.* | DL |
 | moby8355_pvars | *Not yet documented.* | Binary | Yes | DL |
-| code | The level code. Contains the main loop, level loading code, moby update functions, and a lot more. | Binary | Yes | RC/GC/UYA/DL |
+| code | The level code. Contains the main loop, level loading code, moby update functions, and a lot more. | ElfFile, Binary | Yes | RC/GC/UYA/DL |
 | hud_header | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
 | hud_banks | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
 | transition_textures | Textures that are shown during a transition to the given level. | Texture\[\], Binary | No | GC/UYA |

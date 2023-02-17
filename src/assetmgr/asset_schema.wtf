@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-format_version: 18
+format_version: 19
 
 // *****************************************************************************
 
@@ -389,6 +389,22 @@ AssetType Subtitle {
 	StringAttribute encoding_i { desc: "See encoding_e." required: false games: [1 2 3 4] }
 	StringAttribute encoding_j { desc: "See encoding_e." required: false games: [3 4] }
 	StringAttribute encoding_k { desc: "See encoding_e." required: false games: [3 4] }
+}
+
+AssetType ElfFile {
+	desc: "An ELF executable file. Currently used for the frontend and level code."
+	
+	FileReferenceAttribute src {
+		desc: "The path of the ELF file, relative to the .asset file."
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	Hint ratchetexecutable {
+		syntax: "ratchetexecutable"
+		example: "ratchetexecutable"
+		desc: "Convert the ELF file to and from a packed Ratchet executable while packing/unpacking."
+	}
 }
 
 // *****************************************************************************
@@ -1234,7 +1250,7 @@ AssetType LevelWad {
 	}
 	Child code {
 		desc: "The level code. Contains the main loop, level loading code, moby update functions, and a lot more."
-		allowed_types: ["Binary"]
+		allowed_types: ["ElfFile" "Binary"]
 		required: true
 		games: [1 2 3 4]
 	}

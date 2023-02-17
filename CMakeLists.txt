@@ -194,6 +194,7 @@ add_executable(wrenchbuild
 	src/wrenchbuild/classes/tie_class.cpp
 	src/wrenchbuild/common/binary_asset.cpp
 	src/wrenchbuild/common/collection_asset.cpp
+	src/wrenchbuild/common/elf_asset.cpp
 	src/wrenchbuild/common/file_asset.cpp
 	src/wrenchbuild/common/texture_asset.cpp
 	src/wrenchbuild/common/flat_wad.cpp

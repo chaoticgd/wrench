@@ -37,7 +37,7 @@ int main(int argc, const char** argv) {
 	std::vector<u8> decompressed = decompress_file(input);
 	ElfFile elf = read_ratchet_executable(decompressed);
 	printf("%d sections\n", (s32) elf.sections.size());
-	if(!recover_deadlocked_elf_headers(elf)) {
+	if(!fill_in_elf_headers(elf, EXPECTED_DEADLOCKED_BOOT_ELF_HEADERS)) {
 		fprintf(stderr, "warning: Failed to recover section information!\n");
 	}
 	std::vector<u8> output;

@@ -50,6 +50,7 @@ class Asset;
 #define FMT_COLLECTION_MISSION_CLASSES "missionclasses"
 #define FMT_GLOBALWAD_NOMPEGS "nompegs"
 #define FMT_MPEGWAD_NOMPEGS "nompegs"
+#define FMT_ELFFILE_RATCHET_EXECUTABLE "ratchetexecutable"
 
 // *****************************************************************************
 
