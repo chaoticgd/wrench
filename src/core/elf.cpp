@@ -350,7 +350,7 @@ extern const ElfFile DONOR_LEVEL_ELF_HEADERS = {
 		{"lvl.vtbl"   ,  0, {0, SHT_PROGBITS    ,   A, 0, 0, 0, 0, 0,   1, 0}},
 		{"lvl.camvtbl",  0, {0, SHT_PROGBITS    ,   A, 0, 0, 0, 0, 0,   1, 0}},
 		{"lvl.sndvtbl",  0, {0, SHT_PROGBITS    ,   A, 0, 0, 0, 0, 0,   1, 0}},
-		{".text"      ,  0, {0, SHT_PROGBITS    ,  AX, 0, 0, 0, 0, 0,   8, 0}}
+		{".text"      ,  0, {0, SHT_PROGBITS    ,  AX, 0, 0, 0, 0, 0,  64, 0}}
 	},
 	{
 		// Type   Of VA PA FS MS Flags               Align
