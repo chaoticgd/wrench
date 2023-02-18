@@ -1,6 +1,6 @@
 # Asset Reference
 
-This file was generated from asset_schema.wtf and is for version 18 of the asset format.
+This file was generated from asset_schema.wtf and is for version 19 of the asset format.
 
 ## Index
 
@@ -17,6 +17,7 @@ This file was generated from asset_schema.wtf and is for version 18 of the asset
 	- [Texture](#texture)
 	- [FlatWad](#flatwad)
 	- [Subtitle](#subtitle)
+	- [ElfFile](#elffile)
 - [Globals](#globals)
 	- [GlobalWad](#globalwad)
 	- [ArmorWad](#armorwad)
@@ -159,7 +160,7 @@ A build of the game.
 | ps2_logo_ntsc | The NTSC PS2 logo stored on the first 12 sectors of the disc. | Texture | No | RC/GC/UYA/DL |
 | ps2_logo_pal | The PAL PS2 logo stored on the first 12 sectors of the disc. | Texture | No | RC/GC/UYA/DL |
 | primary_volume_descriptor | *Not yet documented.* | PrimaryVolumeDescriptor | Yes | RC/GC/UYA/DL |
-| boot_elf | The boot ELF, as specified in the SYSTEM.CNF file. | File | Yes | RC/GC/UYA/DL |
+| boot_elf | The boot ELF, as specified in the SYSTEM.CNF file. | ElfFile, File | Yes | RC/GC/UYA/DL |
 | global | *Not yet documented.* | GlobalWad, FlatWad, Binary | Yes | RC |
 | armor | *Not yet documented.* | ArmorWad, FlatWad, Binary | Yes | GC/UYA/DL |
 | audio | *Not yet documented.* | AudioWad, FlatWad, Binary | Yes | GC/UYA/DL |
@@ -375,6 +376,28 @@ FlatWad online {
 | - | - | - | - | - |
 
 
+### ElfFile
+
+An ELF executable file. Currently used for the frontend and level code.
+
+*Attributes*
+| Name | Description | Type | Required | Games |
+| - | - | - | - | - |
+| name | The name of ELF file on the filesystem of the built ISO (if relevant). | String | No | RC/GC/UYA/DL |
+| src | The path of the ELF file, relative to the .asset file. | FilePath | Yes | RC/GC/UYA/DL |
+
+*Children*
+
+| Name | Description | Allowed Types | Required | Games |
+| - | - | - | - | - |
+
+
+*Hints*
+
+| Syntax | Example | Description |
+| - | - | - |
+| `ratchetexecutable` | `ratchetexecutable` | Convert the ELF file to and from a packed Ratchet executable while packing/unpacking. |
+
 ## Globals
 
 ### GlobalWad
@@ -401,7 +424,7 @@ Holds all of the global assets (those that are not specific to a given level) fo
 | help_gadgets | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
 | help_ss | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
 | options_ss | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
-| frontbin | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
+| frontbin | *Not yet documented.* | ElfFile, Binary | *Not yet documented.* | *Not yet documented.* |
 | mission_ss | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
 | planets | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
 | stuff2 | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
@@ -610,7 +633,7 @@ Holds all of the global assets (those that are not specific to a given level) fo
 | debug_font | *Not yet documented.* | Texture, Binary | Yes | GC/UYA/DL |
 | irx | *Not yet documented.* | IrxWad | Yes | GC/UYA/DL |
 | save_game | *Not yet documented.* | Binary | Yes | GC/UYA/DL |
-| frontbin | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
+| frontbin | *Not yet documented.* | ElfFile, Binary | *Not yet documented.* | *Not yet documented.* |
 | frontbin_net | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
 | frontend | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
 | exit | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
@@ -813,7 +836,7 @@ Container for assets used in the mutliplayer mode.
 | chunks | *Not yet documented.* | Collection | No | GC/UYA/DL |
 | missions | *Not yet documented.* | Collection | *Not yet documented.* | DL |
 | moby8355_pvars | *Not yet documented.* | Binary | Yes | DL |
-| code | The level code. Contains the main loop, level loading code, moby update functions, and a lot more. | Binary | Yes | RC/GC/UYA/DL |
+| code | The level code. Contains the main loop, level loading code, moby update functions, and a lot more. | ElfFile, Binary | Yes | RC/GC/UYA/DL |
 | hud_header | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
 | hud_banks | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
 | transition_textures | Textures that are shown during a transition to the given level. | Texture\[\], Binary | No | GC/UYA |

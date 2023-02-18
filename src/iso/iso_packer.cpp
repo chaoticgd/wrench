@@ -28,7 +28,8 @@ static LevelInfo enumerate_level(const LevelAsset& level, Game game);
 static IsoDirectory enumerate_files(const Asset& files);
 static void flatten_files(std::vector<IsoFileRecord*>& dest, IsoDirectory& root_dir);
 static IsoFileRecord pack_system_cnf(OutputStream& iso, const BuildAsset& build);
-static IsoFileRecord pack_boot_elf(OutputStream& iso, const FileAsset& boot_elf, BuildConfig config, AssetPackerFunc pack);
+static IsoFileRecord pack_boot_elf(OutputStream& iso, const Asset& boot_elf, BuildConfig config, AssetPackerFunc pack);
+static std::string get_boot_elf_path(const Asset& boot_elf);
 static void pack_files(OutputStream& iso, std::vector<IsoFileRecord*>& files, BuildConfig config, AssetPackerFunc pack);
 static IsoDirectory pack_globals(OutputStream& iso, std::vector<GlobalWadInfo>& globals, BuildConfig config, AssetPackerFunc pack, bool no_mpegs);
 static std::array<IsoDirectory, 3> pack_levels(OutputStream& iso, std::vector<LevelInfo>& levels, BuildConfig config, const LevelAsset* single_level, AssetPackerFunc pack);
@@ -353,7 +354,7 @@ static void flatten_files(std::vector<IsoFileRecord*>& dest, IsoDirectory& root_
 }
 
 static IsoFileRecord pack_system_cnf(OutputStream& iso, const BuildAsset& build) {
-	std::string path = build.get_boot_elf().path();
+	std::string path = get_boot_elf_path(build.get_boot_elf());
 	for(char& c : path) c = toupper(c);
 	
 	std::string system_cnf;
@@ -382,22 +383,30 @@ static IsoFileRecord pack_system_cnf(OutputStream& iso, const BuildAsset& build)
 	return record;
 }
 
-static IsoFileRecord pack_boot_elf(OutputStream& iso, const FileAsset& boot_elf, BuildConfig config, AssetPackerFunc pack) {
-	FileReference ref = boot_elf.src();
-	
-	fs::file_time_type modified_time;
-	auto stream = boot_elf.file().open_binary_file_for_reading(ref, &modified_time);
-	
+static IsoFileRecord pack_boot_elf(OutputStream& iso, const Asset& boot_elf, BuildConfig config, AssetPackerFunc pack) {
 	IsoFileRecord record;
-	record.name = boot_elf.path();
-	record.lba = {(s32) (iso.tell() / SECTOR_SIZE)};
-	record.size = stream->size();
-	record.modified_time = modified_time;
+	record.name = get_boot_elf_path(boot_elf);
 	
 	iso.pad(SECTOR_SIZE, 0);
-	Stream::copy(iso, *stream, stream->size());
+	record.lba = {(s32) (iso.tell() / SECTOR_SIZE)};
+	const char* hint = (config.game() == Game::UYA || config.game() == Game::DL) ?
+		FMT_ELFFILE_PACKED : FMT_NO_HINT;
+	pack(iso, nullptr, &record.modified_time, boot_elf, config, hint);
+	
+	s64 end_of_file = iso.tell();
+	record.size = (u32) (end_of_file - record.lba.bytes());
 	
 	return record;
+}
+
+static std::string get_boot_elf_path(const Asset& boot_elf) {
+	if(boot_elf.logical_type() == ElfFileAsset::ASSET_TYPE) {
+		return boot_elf.as<ElfFileAsset>().name();
+	} else if(boot_elf.logical_type() == FileAsset::ASSET_TYPE) {
+		return boot_elf.as<FileAsset>().path();
+	} else {
+		verify_not_reached("The boot_elf asset is of an invalid type.");
+	}
 }
 
 static void pack_files(OutputStream& iso, std::vector<IsoFileRecord*>& files, BuildConfig config, AssetPackerFunc pack) {

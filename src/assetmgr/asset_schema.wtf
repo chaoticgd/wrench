@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-format_version: 18
+format_version: 19
 
 // *****************************************************************************
 
@@ -143,7 +143,7 @@ AssetType Build {
 	
 	Child boot_elf {
 		desc: "The boot ELF, as specified in the SYSTEM.CNF file."
-		allowed_types: ["File"]
+		allowed_types: ["ElfFile" "File"]
 		required: true
 		games: [1 2 3 4]
 	}
@@ -391,6 +391,28 @@ AssetType Subtitle {
 	StringAttribute encoding_k { desc: "See encoding_e." required: false games: [3 4] }
 }
 
+AssetType ElfFile {
+	desc: "An ELF executable file. Currently used for the frontend and level code."
+	
+	StringAttribute name {
+		desc: "The name of ELF file on the filesystem of the built ISO (if relevant)."
+		required: false
+		games: [1 2 3 4]
+	}
+	
+	FileReferenceAttribute src {
+		desc: "The path of the ELF file, relative to the .asset file."
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	Hint ratchetexecutable {
+		syntax: "ratchetexecutable"
+		example: "ratchetexecutable"
+		desc: "Convert the ELF file to and from a packed Ratchet executable while packing/unpacking."
+	}
+}
+
 // *****************************************************************************
 
 Category globals {
@@ -413,7 +435,7 @@ AssetType GlobalWad {
 	Child help_gadgets { allowed_types: ["Collection"] }
 	Child help_ss { allowed_types: ["Collection"] }
 	Child options_ss { allowed_types: ["Collection"] }
-	Child frontbin { allowed_types: ["Binary"] }
+	Child frontbin { allowed_types: ["ElfFile" "Binary"] }
 	Child mission_ss { allowed_types: ["Collection"] }
 	Child planets { allowed_types: ["Collection"] }
 	Child stuff2 { allowed_types: ["Collection"] }
@@ -855,7 +877,7 @@ AssetType MiscWad {
 		required: true
 		games:[2 3 4]
 	}
-	Child frontbin     { allowed_types: ["Binary"] }
+	Child frontbin     { allowed_types: ["ElfFile" "Binary"] }
 	Child frontbin_net { allowed_types: ["Binary"] }
 	Child frontend     { allowed_types: ["Binary"] }
 	Child exit         { allowed_types: ["Binary"] }
@@ -1234,7 +1256,7 @@ AssetType LevelWad {
 	}
 	Child code {
 		desc: "The level code. Contains the main loop, level loading code, moby update functions, and a lot more."
-		allowed_types: ["Binary"]
+		allowed_types: ["ElfFile" "Binary"]
 		required: true
 		games: [1 2 3 4]
 	}

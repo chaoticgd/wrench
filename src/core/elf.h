@@ -128,17 +128,23 @@ packed_struct(ElfProgramHeader,
 )
 
 struct ElfFile {
-	s32 entry_point = 0;
 	std::vector<ElfSection> sections;
 	std::vector<ElfProgramHeader> segments;
+	s32 entry_point = 0;
 };
 
 ElfFile read_elf_file(Buffer src);
 void write_elf_file(OutBuffer dest, const ElfFile& elf);
 
 ElfFile read_ratchet_executable(Buffer src);
-void write_ratchet_executable(const ElfFile& elf);
+void write_ratchet_executable(OutBuffer dest, const ElfFile& elf);
 
-bool recover_deadlocked_elf_headers(ElfFile& elf);
+bool fill_in_elf_headers(ElfFile& elf, const ElfFile& donor);
+
+extern const ElfFile DONOR_UYA_BOOT_ELF_HEADERS;
+extern const ElfFile DONOR_DL_BOOT_ELF_HEADERS;
+extern const ElfFile DONOR_RAC_GC_UYA_LEVEL_ELF_HEADERS;
+extern const ElfFile DONOR_DL_LEVEL_ELF_NOBITS_HEADERS;
+extern const ElfFile DONOR_DL_LEVEL_ELF_PROGBITS_HEADERS;
 
 #endif

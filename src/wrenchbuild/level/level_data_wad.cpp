@@ -62,7 +62,7 @@ void unpack_rac_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfi
 	
 	unpack_level_core(dest, src, header.core_index, header.core_data, header.gs_ram, config);
 	
-	unpack_asset(dest.code(), src, header.code, config);
+	unpack_asset(dest.code<ElfFileAsset>(), src, header.code, config, FMT_ELFFILE_RATCHET_EXECUTABLE);
 	unpack_asset(dest.sound_bank(), src, header.sound_bank, config);
 	unpack_asset(dest.hud_header(), src, header.hud_header, config);
 	unpack_compressed_assets<BinaryAsset>(dest.hud_banks(SWITCH_FILES), src, ARRAY_PAIR(header.hud_banks), config);
@@ -78,7 +78,7 @@ void pack_rac_level_data_wad(OutputStream& dest, const LevelWadAsset& src, Build
 	std::vector<u8> gs_ram;
 	pack_level_core(index, data, gs_ram, src, config);
 	
-	header.code = pack_asset<ByteRange>(dest, src.get_code(), config, 0x40, FMT_NO_HINT, &empty);
+	header.code = pack_asset<ByteRange>(dest, src.get_code(), config, 0x40, FMT_ELFFILE_RATCHET_EXECUTABLE, &empty);
 	header.sound_bank = pack_asset<ByteRange>(dest, src.get_sound_bank(), config, 0x40, FMT_NO_HINT, &empty);
 	header.core_index = write_vector_of_bytes(dest, index);
 	header.gs_ram = write_vector_of_bytes(dest, gs_ram);
@@ -94,7 +94,7 @@ void unpack_gc_uya_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildCo
 	
 	unpack_level_core(dest, src, header.core_index, header.core_data, header.gs_ram, config);
 	
-	unpack_asset(dest.code(), src, header.code, config);
+	unpack_asset(dest.code<ElfFileAsset>(), src, header.code, config, FMT_ELFFILE_RATCHET_EXECUTABLE);
 	unpack_asset(dest.hud_header(), src, header.hud_header, config);
 	unpack_compressed_assets<BinaryAsset>(dest.hud_banks(SWITCH_FILES), src, ARRAY_PAIR(header.hud_banks), config);
 	unpack_compressed_asset(dest.transition_textures<CollectionAsset>(SWITCH_FILES), src, header.transition_textures, config, FMT_COLLECTION_PIF8);
@@ -110,7 +110,7 @@ void pack_gc_uya_level_data_wad(OutputStream& dest, const LevelWadAsset& src, Bu
 	std::vector<u8> gs_ram;
 	pack_level_core(index, data, gs_ram, src, config);
 	
-	header.code = pack_asset<ByteRange>(dest, src.get_code(), config, 0x40, FMT_NO_HINT, &empty);
+	header.code = pack_asset<ByteRange>(dest, src.get_code(), config, 0x40, FMT_ELFFILE_RATCHET_EXECUTABLE, &empty);
 	header.core_index = write_vector_of_bytes(dest, index);
 	header.gs_ram = write_vector_of_bytes(dest, gs_ram);
 	header.hud_header = pack_asset<ByteRange>(dest, src.get_hud_header(), config, 0x40, FMT_NO_HINT, &empty);
@@ -131,7 +131,7 @@ void unpack_dl_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig
 	unpack_level_core(dest, src, header.core_index, header.core_data, header.gs_ram, config);
 	
 	unpack_asset(dest.moby8355_pvars(), src, header.moby8355_pvars, config);
-	unpack_asset(dest.code(), src, header.code, config);
+	unpack_asset(dest.code<ElfFileAsset>(), src, header.code, config, FMT_ELFFILE_RATCHET_EXECUTABLE);
 	unpack_asset(dest.hud_header(), src, header.hud_header, config);
 	unpack_compressed_assets<BinaryAsset>(dest.hud_banks(SWITCH_FILES), src, ARRAY_PAIR(header.hud_banks), config);
 	unpack_compressed_asset(dest.art_instances(), src, header.art_instances, config);
@@ -150,7 +150,7 @@ void pack_dl_level_data_wad(OutputStream& dest, std::vector<u8>& compressed_art_
 	pack_level_core(index, data, gs_ram, src, config);
 	
 	header.moby8355_pvars = pack_asset<ByteRange>(dest, src.get_moby8355_pvars(), config, 0x40, FMT_NO_HINT, &empty);
-	header.code = pack_asset<ByteRange>(dest, src.get_code(), config, 0x40, FMT_NO_HINT, &empty);
+	header.code = pack_asset<ByteRange>(dest, src.get_code(), config, 0x40, FMT_ELFFILE_RATCHET_EXECUTABLE, &empty);
 	header.core_index = write_vector_of_bytes(dest, index);
 	header.gs_ram = write_vector_of_bytes(dest, gs_ram);
 	header.hud_header = pack_asset<ByteRange>(dest, src.get_hud_header(), config, 0x40, FMT_NO_HINT, &empty);

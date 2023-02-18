@@ -45,7 +45,7 @@ static void unpack_rac_global_wad(GlobalWadAsset& dest, const RacWadInfo& header
 	unpack_compressed_assets<TextureAsset>(dest.help_gadgets(SWITCH_FILES), src, ARRAY_PAIR(header.help_gadgets), config, FMT_TEXTURE_PIF8);
 	unpack_compressed_assets<TextureAsset>(dest.help_ss(SWITCH_FILES), src, ARRAY_PAIR(header.help_ss), config, FMT_TEXTURE_PIF8);
 	unpack_compressed_assets<TextureAsset>(dest.options_ss(SWITCH_FILES), src, ARRAY_PAIR(header.options_ss), config, FMT_TEXTURE_PIF8);
-	unpack_asset<BinaryAsset>(dest.frontbin(SWITCH_FILES), src, header.frontbin, config);
+	unpack_asset(dest.frontbin<ElfFileAsset>(SWITCH_FILES), src, header.frontbin, config, FMT_ELFFILE_RATCHET_EXECUTABLE);
 	unpack_compressed_assets<TextureAsset>(dest.mission_ss(SWITCH_FILES), src, ARRAY_PAIR(header.mission_ss), config, FMT_TEXTURE_PIF8);
 	unpack_compressed_assets<TextureAsset>(dest.planets(SWITCH_FILES), src, ARRAY_PAIR(header.planets), config, FMT_TEXTURE_PIF8);
 	unpack_compressed_assets<BinaryAsset>(dest.stuff2(SWITCH_FILES), src, ARRAY_PAIR(header.stuff2), config);
@@ -99,7 +99,7 @@ static void pack_rac_global_wad(OutputStream& dest, RacWadInfo& header, const Gl
 	pack_compressed_assets_sa<SectorRange>(dest, ARRAY_PAIR(header.help_gadgets), src.get_help_gadgets(), config, "gadgets", FMT_TEXTURE_PIF8);
 	pack_compressed_assets_sa<SectorRange>(dest, ARRAY_PAIR(header.help_ss), src.get_help_ss(), config, "help_ss", FMT_TEXTURE_PIF8);
 	pack_compressed_assets_sa<SectorRange>(dest, ARRAY_PAIR(header.options_ss), src.get_options_ss(), config, "options", FMT_TEXTURE_PIF8);
-	header.frontbin = pack_asset_sa<SectorRange>(dest, src.get_frontbin(), config);
+	header.frontbin = pack_asset_sa<SectorRange>(dest, src.get_frontbin(), config, FMT_ELFFILE_RATCHET_EXECUTABLE);
 	pack_compressed_assets_sa<SectorRange>(dest, ARRAY_PAIR(header.mission_ss), src.get_mission_ss(), config, "mission_ss", FMT_TEXTURE_PIF8);
 	pack_compressed_assets_sa<SectorRange>(dest, ARRAY_PAIR(header.planets), src.get_planets(), config, "planets", FMT_TEXTURE_PIF8);
 	pack_compressed_assets_sa(dest, ARRAY_PAIR(header.stuff2), src.get_stuff2(), config, "");
