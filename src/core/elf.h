@@ -139,9 +139,10 @@ void write_elf_file(OutBuffer dest, const ElfFile& elf);
 ElfFile read_ratchet_executable(Buffer src);
 void write_ratchet_executable(OutBuffer dest, const ElfFile& elf);
 
-bool fill_in_elf_headers(ElfFile& elf, const ElfFile& expected);
+bool fill_in_elf_headers(ElfFile& elf, const ElfFile& donor);
 
-extern const ElfFile EXPECTED_LEVEL_ELF_HEADERS;
-extern const ElfFile EXPECTED_DEADLOCKED_BOOT_ELF_HEADERS;
+extern const ElfFile DONOR_UYA_BOOT_ELF_HEADERS;
+extern const ElfFile DONOR_DEADLOCKED_BOOT_ELF_HEADERS;
+extern const ElfFile DONOR_LEVEL_ELF_HEADERS;
 
 #endif

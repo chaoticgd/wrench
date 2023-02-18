@@ -23,10 +23,8 @@
 static std::vector<u8> decompress_file(const std::vector<u8>& file);
 
 int main(int argc, const char** argv) {
-	if(argc < 3) {
-		if(argc > 0) {
-			printf("usage: %s <input file> <output file>\n", argv[0]);
-		}
+	if(argc != 3) {
+		fprintf(stderr, "usage: %s <input file> <output file>\n", (argc > 0) ? argv[0] : "unpackbin");
 		return 1;
 	}
 	
@@ -37,7 +35,13 @@ int main(int argc, const char** argv) {
 	std::vector<u8> decompressed = decompress_file(input);
 	ElfFile elf = read_ratchet_executable(decompressed);
 	printf("%d sections\n", (s32) elf.sections.size());
-	if(!fill_in_elf_headers(elf, EXPECTED_DEADLOCKED_BOOT_ELF_HEADERS)) {
+	bool success = false;
+	if(elf.sections.size() == DONOR_UYA_BOOT_ELF_HEADERS.sections.size()) {
+		success = fill_in_elf_headers(elf, DONOR_UYA_BOOT_ELF_HEADERS);
+	} else if(elf.sections.size() == DONOR_DEADLOCKED_BOOT_ELF_HEADERS.sections.size()) {
+		success = fill_in_elf_headers(elf, DONOR_DEADLOCKED_BOOT_ELF_HEADERS);
+	}
+	if(!success) {
 		fprintf(stderr, "warning: Failed to recover section information!\n");
 	}
 	std::vector<u8> output;

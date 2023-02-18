@@ -46,7 +46,7 @@ static void unpack_elf_asset(ElfFileAsset& dest, InputStream& src, BuildConfig c
 	if(convert_from_ratchet_executable) {
 		std::vector<u8> ratchet_bytes = src.read_multiple<u8>(0, src.size());
 		ElfFile elf = read_ratchet_executable(ratchet_bytes);
-		verify(fill_in_elf_headers(elf, EXPECTED_LEVEL_ELF_HEADERS),
+		verify(fill_in_elf_headers(elf, DONOR_LEVEL_ELF_HEADERS),
 			"Failed to recover ELF section headers for the level code!");
 		std::vector<u8> elf_bytes;
 		write_elf_file(elf_bytes, elf);
@@ -55,6 +55,7 @@ static void unpack_elf_asset(ElfFileAsset& dest, InputStream& src, BuildConfig c
 		Stream::copy(*stream, src, src.size());
 	}
 }
+
 static void pack_elf_asset(OutputStream& dest, const ElfFileAsset& src, BuildConfig config, const char* hint) {
 	if(g_asset_packer_dry_run) {
 		return;

@@ -255,25 +255,25 @@ void write_ratchet_executable(OutBuffer dest, const ElfFile& elf) {
 	}
 }
 
-bool fill_in_elf_headers(ElfFile& elf, const ElfFile& expected) {
-	if(elf.sections.size() != expected.sections.size())
+bool fill_in_elf_headers(ElfFile& elf, const ElfFile& donor) {
+	if(elf.sections.size() != donor.sections.size())
 		return false;
 	
-	for(s32 i = 0; i < expected.sections.size(); i++)
-		if(elf.sections[i].header.type != expected.sections[i].header.type)
+	for(s32 i = 0; i < donor.sections.size(); i++)
+		if(elf.sections[i].header.type != donor.sections[i].header.type)
 			return false;
 	
-	for(s32 i = 0; i < expected.sections.size(); i++) {
+	for(s32 i = 0; i < donor.sections.size(); i++) {
 		ElfSection& section = elf.sections[i];
-		const ElfSection& expected_section = expected.sections[i];
-		section.name = expected_section.name;
-		section.segment = expected_section.segment;
-		section.header.flags = expected_section.header.flags;
-		section.header.addralign = expected_section.header.addralign;
-		section.header.entsize = expected_section.header.entsize;
+		const ElfSection& donor_section = donor.sections[i];
+		section.name = donor_section.name;
+		section.segment = donor_section.segment;
+		section.header.flags = donor_section.header.flags;
+		section.header.addralign = donor_section.header.addralign;
+		section.header.entsize = donor_section.header.entsize;
 	}
 	
-	elf.segments = expected.segments;
+	elf.segments = donor.segments;
 	
 	return true;
 }
@@ -284,26 +284,38 @@ static const u32 A = SHF_ALLOC;
 static const u32 WAP = SHF_WRITE | SHF_ALLOC | SHF_MASKPROC;
 static const u32 WAX = SHF_WRITE | SHF_ALLOC | SHF_EXECINSTR;
 
-extern const ElfFile EXPECTED_LEVEL_ELF_HEADERS = {
+const ElfFile DONOR_UYA_BOOT_ELF_HEADERS = {
 	{
-		//              Seg  N  Type              Flag Ad Of Sz Lk In Algn ES
+		// Name         Seg  N  Type              Flag Ad Of Sz Lk In Algn ES
+		{".reginfo"   , -1, {0, SHT_MIPS_REGINFO,   0, 0, 0, 0, 0, 0,  4,  1}},
+		{".vutext"    ,  0, {0, SHT_PROGBITS    ,  AX, 0, 0, 0, 0, 0,  16, 0}},
+		{"core.text"  ,  0, {0, SHT_PROGBITS    ,  AX, 0, 0, 0, 0, 0,  64, 0}},
+		{"core.data"  ,  0, {0, SHT_PROGBITS    ,  WA, 0, 0, 0, 0, 0, 128, 0}},
+		{"core.rdata" ,  0, {0, SHT_PROGBITS    ,   A, 0, 0, 0, 0, 0,  16, 0}},
+		{"core.bss"   ,  0, {0, SHT_NOBITS      , WAP, 0, 0, 0, 0, 0,  64, 0}},
+		{"core.lit"   ,  0, {0, SHT_PROGBITS    , WAP, 0, 0, 0, 0, 0,   8, 0}},
 		{".lit"       ,  0, {0, SHT_PROGBITS    , WAP, 0, 0, 0, 0, 0,  64, 0}},
 		{".bss"       ,  0, {0, SHT_NOBITS      , WAP, 0, 0, 0, 0, 0,  64, 0}},
 		{".data"      ,  0, {0, SHT_PROGBITS    ,  WA, 0, 0, 0, 0, 0,  64, 0}},
 		{"lvl.vtbl"   ,  0, {0, SHT_PROGBITS    ,   A, 0, 0, 0, 0, 0,   1, 0}},
 		{"lvl.camvtbl",  0, {0, SHT_PROGBITS    ,   A, 0, 0, 0, 0, 0,   1, 0}},
 		{"lvl.sndvtbl",  0, {0, SHT_PROGBITS    ,   A, 0, 0, 0, 0, 0,   1, 0}},
-		{".text"      ,  0, {0, SHT_PROGBITS    ,  AX, 0, 0, 0, 0, 0,   8, 0}}
+		{".text"      ,  0, {0, SHT_PROGBITS    ,  AX, 0, 0, 0, 0, 0,  64, 0}},
+		{"patch.data" ,  0, {0, SHT_MIPS_REGINFO,  AX, 0, 0, 0, 0, 0,   4, 1}},
+		{"legal.data" ,  1, {0, SHT_PROGBITS    ,  WA, 0, 0, 0, 0, 0,   4, 0}},
+		{"mc1.data"   ,  1, {0, SHT_PROGBITS    ,  WA, 0, 0, 0, 0, 0,  64, 0}},
+		{"mc1.data"   ,  1, {0, SHT_PROGBITS    ,  WA, 0, 0, 0, 0, 0,  64, 0}},
 	},
 	{
 		// Type   Of VA PA FS MS Flags               Align
 		{PT_LOAD, 0, 0, 0, 0, 0, PF_R | PF_W | PF_X, 0x1000},
+		{PT_LOAD, 0, 0, 0, 0, 0, PF_R | PF_W | PF_X, 0x1000}
 	}
 };
 
-extern const ElfFile EXPECTED_DEADLOCKED_BOOT_ELF_HEADERS = {
+extern const ElfFile DONOR_DEADLOCKED_BOOT_ELF_HEADERS = {
 	{
-		//              Seg  N  Type              Flag Ad Of Sz Lk In Algn ES
+		// Name         Seg  N  Type              Flag Ad Of Sz Lk In Algn ES
 		{".reginfo"   , -1, {0, SHT_MIPS_REGINFO,   0, 0, 0, 0, 0, 0,   4, 1}},
 		{".vutext"    ,  0, {0, SHT_PROGBITS    ,  AX, 0, 0, 0, 0, 0,  16, 0}},
 		{"core.text"  ,  0, {0, SHT_PROGBITS    ,  AX, 0, 0, 0, 0, 0,  64, 0}},
@@ -325,6 +337,23 @@ extern const ElfFile EXPECTED_DEADLOCKED_BOOT_ELF_HEADERS = {
 	{
 		// Type   Of VA PA FS MS Flags               Align
 		{PT_LOAD, 0, 0, 0, 0, 0, PF_R | PF_W | PF_X, 0x1000},
+		{PT_LOAD, 0, 0, 0, 0, 0, PF_R | PF_W | PF_X, 0x1000}
+	}
+};
+
+extern const ElfFile DONOR_LEVEL_ELF_HEADERS = {
+	{
+		// Name         Seg  N  Type              Flag Ad Of Sz Lk In Algn ES
+		{".lit"       ,  0, {0, SHT_PROGBITS    , WAP, 0, 0, 0, 0, 0,  64, 0}},
+		{".bss"       ,  0, {0, SHT_NOBITS      , WAP, 0, 0, 0, 0, 0,  64, 0}},
+		{".data"      ,  0, {0, SHT_PROGBITS    ,  WA, 0, 0, 0, 0, 0,  64, 0}},
+		{"lvl.vtbl"   ,  0, {0, SHT_PROGBITS    ,   A, 0, 0, 0, 0, 0,   1, 0}},
+		{"lvl.camvtbl",  0, {0, SHT_PROGBITS    ,   A, 0, 0, 0, 0, 0,   1, 0}},
+		{"lvl.sndvtbl",  0, {0, SHT_PROGBITS    ,   A, 0, 0, 0, 0, 0,   1, 0}},
+		{".text"      ,  0, {0, SHT_PROGBITS    ,  AX, 0, 0, 0, 0, 0,   8, 0}}
+	},
+	{
+		// Type   Of VA PA FS MS Flags               Align
 		{PT_LOAD, 0, 0, 0, 0, 0, PF_R | PF_W | PF_X, 0x1000}
 	}
 };
