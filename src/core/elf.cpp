@@ -313,7 +313,7 @@ const ElfFile DONOR_UYA_BOOT_ELF_HEADERS = {
 	}
 };
 
-extern const ElfFile DONOR_DEADLOCKED_BOOT_ELF_HEADERS = {
+extern const ElfFile DONOR_DL_BOOT_ELF_HEADERS = {
 	{
 		// Name         Seg  N  Type              Flag Ad Of Sz Lk In Algn ES
 		{".reginfo"   , -1, {0, SHT_MIPS_REGINFO,   0, 0, 0, 0, 0, 0,   4, 1}},
@@ -341,7 +341,7 @@ extern const ElfFile DONOR_DEADLOCKED_BOOT_ELF_HEADERS = {
 	}
 };
 
-extern const ElfFile DONOR_LEVEL_ELF_HEADERS = {
+extern const ElfFile DONOR_RAC_GC_UYA_LEVEL_ELF_HEADERS = {
 	{
 		// Name         Seg  N  Type              Flag Ad Of Sz Lk In Algn ES
 		{".lit"       ,  0, {0, SHT_PROGBITS    , WAP, 0, 0, 0, 0, 0,  64, 0}},
@@ -354,6 +354,45 @@ extern const ElfFile DONOR_LEVEL_ELF_HEADERS = {
 	},
 	{
 		// Type   Of VA PA FS MS Flags               Align
+		{PT_LOAD, 0, 0, 0, 0, 0, PF_R | PF_W | PF_X, 0x1000}
+	}
+};
+
+extern const ElfFile DONOR_DL_LEVEL_ELF_NOBITS_HEADERS = {
+	{
+		// Name         Seg  N  Type              Flag Ad Of Sz Lk In Algn ES
+		{".lit"       ,  0, {0, SHT_PROGBITS    , WAP, 0, 0, 0, 0, 0,  64, 0}},
+		{".bss"       ,  0, {0, SHT_NOBITS      , WAP, 0, 0, 0, 0, 0,  64, 0}},
+		{".data"      ,  0, {0, SHT_PROGBITS    ,  WA, 0, 0, 0, 0, 0,  64, 0}},
+		{"lvl.vtbl"   ,  0, {0, SHT_PROGBITS    ,   A, 0, 0, 0, 0, 0,   1, 0}},
+		{"lvl.camvtbl",  0, {0, SHT_PROGBITS    ,   A, 0, 0, 0, 0, 0,   1, 0}},
+		{"lvl.sndvtbl",  0, {0, SHT_PROGBITS    ,   A, 0, 0, 0, 0, 0,   1, 0}},
+		{".text"      ,  0, {0, SHT_PROGBITS    ,  AX, 0, 0, 0, 0, 0,  64, 0}},
+		{"net.text"   ,  1, {0, SHT_PROGBITS    , WAX, 0, 0, 0, 0, 0,  16, 0}}
+	},
+	{
+		// Type   Of VA PA FS MS Flags               Align
+		{PT_LOAD, 0, 0, 0, 0, 0, PF_R | PF_W | PF_X, 0x1000},
+		{PT_LOAD, 0, 0, 0, 0, 0, PF_R | PF_W | PF_X, 0x1000}
+	}
+};
+
+// For some reason the .bss section is of type PROGBITS for some levels.
+extern const ElfFile DONOR_DL_LEVEL_ELF_PROGBITS_HEADERS = {
+	{
+		// Name         Seg  N  Type              Flag Ad Of Sz Lk In Algn ES
+		{".lit"       ,  0, {0, SHT_PROGBITS    , WAP, 0, 0, 0, 0, 0,  64, 0}},
+		{".bss"       ,  0, {0, SHT_PROGBITS    , WAP, 0, 0, 0, 0, 0,  64, 0}},
+		{".data"      ,  0, {0, SHT_PROGBITS    ,  WA, 0, 0, 0, 0, 0,  64, 0}},
+		{"lvl.vtbl"   ,  0, {0, SHT_PROGBITS    ,   A, 0, 0, 0, 0, 0,   1, 0}},
+		{"lvl.camvtbl",  0, {0, SHT_PROGBITS    ,   A, 0, 0, 0, 0, 0,   1, 0}},
+		{"lvl.sndvtbl",  0, {0, SHT_PROGBITS    ,   A, 0, 0, 0, 0, 0,   1, 0}},
+		{".text"      ,  0, {0, SHT_PROGBITS    ,  AX, 0, 0, 0, 0, 0,  64, 0}},
+		{"net.text"   ,  1, {0, SHT_PROGBITS    , WAX, 0, 0, 0, 0, 0,  16, 0}}
+	},
+	{
+		// Type   Of VA PA FS MS Flags               Align
+		{PT_LOAD, 0, 0, 0, 0, 0, PF_R | PF_W | PF_X, 0x1000},
 		{PT_LOAD, 0, 0, 0, 0, 0, PF_R | PF_W | PF_X, 0x1000}
 	}
 };

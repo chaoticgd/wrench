@@ -38,10 +38,16 @@ int main(int argc, const char** argv) {
 	bool success = false;
 	if(elf.sections.size() == DONOR_UYA_BOOT_ELF_HEADERS.sections.size()) {
 		success = fill_in_elf_headers(elf, DONOR_UYA_BOOT_ELF_HEADERS);
-	} else if(elf.sections.size() == DONOR_DEADLOCKED_BOOT_ELF_HEADERS.sections.size()) {
-		success = fill_in_elf_headers(elf, DONOR_DEADLOCKED_BOOT_ELF_HEADERS);
-	} else if(elf.sections.size() == DONOR_LEVEL_ELF_HEADERS.sections.size()) {
-		success = fill_in_elf_headers(elf, DONOR_LEVEL_ELF_HEADERS);
+	} else if(elf.sections.size() == DONOR_DL_BOOT_ELF_HEADERS.sections.size()) {
+		success = fill_in_elf_headers(elf, DONOR_DL_BOOT_ELF_HEADERS);
+	} else if(elf.sections.size() == DONOR_RAC_GC_UYA_LEVEL_ELF_HEADERS.sections.size()) {
+		success = fill_in_elf_headers(elf, DONOR_RAC_GC_UYA_LEVEL_ELF_HEADERS);
+	} else if(elf.sections.size() == DONOR_DL_LEVEL_ELF_NOBITS_HEADERS.sections.size()) {
+		if(elf.sections[1].header.type == SHT_NOBITS) {
+			success = fill_in_elf_headers(elf, DONOR_DL_LEVEL_ELF_NOBITS_HEADERS);
+		} else {
+			success = fill_in_elf_headers(elf, DONOR_DL_LEVEL_ELF_PROGBITS_HEADERS);
+		}
 	}
 	if(!success) {
 		fprintf(stderr, "warning: Failed to recover section information!\n");

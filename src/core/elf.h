@@ -142,7 +142,9 @@ void write_ratchet_executable(OutBuffer dest, const ElfFile& elf);
 bool fill_in_elf_headers(ElfFile& elf, const ElfFile& donor);
 
 extern const ElfFile DONOR_UYA_BOOT_ELF_HEADERS;
-extern const ElfFile DONOR_DEADLOCKED_BOOT_ELF_HEADERS;
-extern const ElfFile DONOR_LEVEL_ELF_HEADERS;
+extern const ElfFile DONOR_DL_BOOT_ELF_HEADERS;
+extern const ElfFile DONOR_RAC_GC_UYA_LEVEL_ELF_HEADERS;
+extern const ElfFile DONOR_DL_LEVEL_ELF_NOBITS_HEADERS;
+extern const ElfFile DONOR_DL_LEVEL_ELF_PROGBITS_HEADERS;
 
 #endif

@@ -61,7 +61,7 @@ static void unpack_elf_asset(ElfFileAsset& dest, InputStream& src, BuildConfig c
 					break;
 				}
 				case Game::DL: {
-					donor_elf = &DONOR_DEADLOCKED_BOOT_ELF_HEADERS;
+					donor_elf = &DONOR_DL_BOOT_ELF_HEADERS;
 					break;
 				}
 				case Game::UNKNOWN: {}
@@ -78,7 +78,17 @@ static void unpack_elf_asset(ElfFileAsset& dest, InputStream& src, BuildConfig c
 	} else if(convert_from_ratchet_executable) {
 		std::vector<u8> ratchet_bytes = src.read_multiple<u8>(0, src.size());
 		ElfFile elf = read_ratchet_executable(ratchet_bytes);
-		verify(fill_in_elf_headers(elf, DONOR_LEVEL_ELF_HEADERS),
+		const ElfFile* donor_elf = nullptr;
+		if(config.game() == Game::DL) {
+			if(elf.sections.size() >= 2 && elf.sections[1].header.type == SHT_NOBITS) {
+				donor_elf = &DONOR_DL_LEVEL_ELF_NOBITS_HEADERS;
+			} else {
+				donor_elf = &DONOR_DL_LEVEL_ELF_PROGBITS_HEADERS;
+			}
+		} else {
+			donor_elf = &DONOR_RAC_GC_UYA_LEVEL_ELF_HEADERS;
+		}
+		verify(fill_in_elf_headers(elf, *donor_elf),
 			"Failed to recover ELF section headers for the level code!");
 		std::vector<u8> elf_bytes;
 		write_elf_file(elf_bytes, elf);
