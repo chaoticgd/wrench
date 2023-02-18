@@ -20,7 +20,7 @@
 #include <core/filesystem.h>
 #include <engine/compression.h>
 
-static std::vector<u8> decompress_file(const std::vector<u8>& file);
+static std::vector<u8> extract_file(std::vector<u8>& file);
 
 int main(int argc, const char** argv) {
 	if(argc != 3) {
@@ -32,7 +32,7 @@ int main(int argc, const char** argv) {
 	fs::path output_path = argv[2];
 	
 	std::vector<u8> input = read_file(input_path);
-	std::vector<u8> decompressed = decompress_file(input);
+	std::vector<u8> decompressed = extract_file(input);
 	ElfFile elf = read_ratchet_executable(decompressed);
 	printf("%d sections\n", (s32) elf.sections.size());
 	bool success = false;
@@ -40,6 +40,8 @@ int main(int argc, const char** argv) {
 		success = fill_in_elf_headers(elf, DONOR_UYA_BOOT_ELF_HEADERS);
 	} else if(elf.sections.size() == DONOR_DEADLOCKED_BOOT_ELF_HEADERS.sections.size()) {
 		success = fill_in_elf_headers(elf, DONOR_DEADLOCKED_BOOT_ELF_HEADERS);
+	} else if(elf.sections.size() == DONOR_LEVEL_ELF_HEADERS.sections.size()) {
+		success = fill_in_elf_headers(elf, DONOR_LEVEL_ELF_HEADERS);
 	}
 	if(!success) {
 		fprintf(stderr, "warning: Failed to recover section information!\n");
@@ -50,7 +52,7 @@ int main(int argc, const char** argv) {
 	return 0;
 }
 
-static std::vector<u8> decompress_file(const std::vector<u8>& file) {
+static std::vector<u8> extract_file(std::vector<u8>& file) {
 	s64 wad_ofs = -1;
 	for(s64 i = 0; i < file.size() - 3; i++) {
 		if(memcmp(&file.data()[i], "WAD", 3) == 0) {
@@ -58,8 +60,12 @@ static std::vector<u8> decompress_file(const std::vector<u8>& file) {
 			break;
 		}
 	}
-	verify(wad_ofs > -1, "Cannot find 'WAD' magic bytes (LZ compression header).");
-	std::vector<u8> decompressed;
-	decompress_wad(decompressed, WadBuffer{file.data() + wad_ofs, file.data() + file.size()});
-	return decompressed;
+	if(wad_ofs > -1) {
+		std::vector<u8> decompressed;
+		decompress_wad(decompressed, WadBuffer{file.data() + wad_ofs, file.data() + file.size()});
+		file.clear();
+		return decompressed;
+	} else {
+		return std::move(file);
+	}
 }
