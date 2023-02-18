@@ -389,7 +389,9 @@ static IsoFileRecord pack_boot_elf(OutputStream& iso, const Asset& boot_elf, Bui
 	
 	iso.pad(SECTOR_SIZE, 0);
 	record.lba = {(s32) (iso.tell() / SECTOR_SIZE)};
-	pack(iso, nullptr, &record.modified_time, boot_elf, config, FMT_NO_HINT);
+	const char* hint = (config.game() == Game::UYA || config.game() == Game::DL) ?
+		FMT_ELFFILE_PACKED : FMT_NO_HINT;
+	pack(iso, nullptr, &record.modified_time, boot_elf, config, hint);
 	
 	s64 end_of_file = iso.tell();
 	record.size = (u32) (end_of_file - record.lba.bytes());

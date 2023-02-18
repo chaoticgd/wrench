@@ -73,6 +73,7 @@ static void unpack_elf_asset(ElfFileAsset& dest, InputStream& src, BuildConfig c
 			stream->write_v(elf_bytes);
 		} else {
 			// The file isn't packed, so just copy the raw ELF.
+			src.seek(0);
 			Stream::copy(*stream, src, src.size());
 		}
 	} else if(convert_from_ratchet_executable) {
@@ -94,6 +95,7 @@ static void unpack_elf_asset(ElfFileAsset& dest, InputStream& src, BuildConfig c
 		write_elf_file(elf_bytes, elf);
 		stream->write_v(elf_bytes);
 	} else {
+		src.seek(0);
 		Stream::copy(*stream, src, src.size());
 	}
 }

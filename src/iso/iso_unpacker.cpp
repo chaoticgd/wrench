@@ -92,10 +92,10 @@ void unpack_iso(BuildAsset& dest, InputStream& src, BuildConfig config, AssetUnp
 	for(UnpackInfo& info : files) {
 		if(info.asset != nullptr) {
 			if(info.data_range.size == -1) {
-				unpack(*info.asset, src, info.header, config, FMT_NO_HINT);
+				unpack(*info.asset, src, info.header, config, info.hint);
 			} else {
 				SubInputStream stream(src, info.data_range);
-				unpack(*info.asset, stream, info.header, config, FMT_NO_HINT);
+				unpack(*info.asset, stream, info.header, config, info.hint);
 			}
 		}
 	}
