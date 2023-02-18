@@ -23,9 +23,10 @@
 #include <iso/wad_identifier.h>
 
 struct UnpackInfo {
-	Asset* asset;
+	Asset* asset = nullptr;
 	const std::vector<u8>* header = nullptr;
-	ByteRange64 data_range;
+	ByteRange64 data_range = {-1, -1};
+	const char* hint = FMT_NO_HINT;
 };
 
 static void add_missing_levels_from_filesystem(table_of_contents& toc, const IsoDirectory& dir, InputStream& iso);
@@ -63,9 +64,16 @@ void unpack_iso(BuildAsset& dest, InputStream& src, BuildConfig config, AssetUnp
 	bool boot_elf_found = false;
 	for(const IsoFileRecord& record : filesystem.root.files) {
 		if(record.name == boot_elf) {
-			FileAsset& asset = dest.boot_elf();
-			asset.set_path(boot_elf);
-			files.emplace_back(UnpackInfo{&asset, 0, {record.lba.bytes(), record.size}});
+			ElfFileAsset& asset = dest.boot_elf<ElfFileAsset>();
+			asset.set_name(boot_elf);
+			UnpackInfo& info = files.emplace_back();
+			info.asset = &asset;
+			info.data_range = {record.lba.bytes(), record.size};
+			if(config.game() == Game::UYA || config.game() == Game::DL) {
+				info.hint = FMT_ELFFILE_PACKED;
+			} else {
+				info.hint = FMT_NO_HINT;
+			}
 			boot_elf_found = true;
 			break;
 		}

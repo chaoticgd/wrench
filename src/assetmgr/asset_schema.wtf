@@ -143,7 +143,7 @@ AssetType Build {
 	
 	Child boot_elf {
 		desc: "The boot ELF, as specified in the SYSTEM.CNF file."
-		allowed_types: ["File"]
+		allowed_types: ["ElfFile" "File"]
 		required: true
 		games: [1 2 3 4]
 	}
@@ -393,6 +393,12 @@ AssetType Subtitle {
 
 AssetType ElfFile {
 	desc: "An ELF executable file. Currently used for the frontend and level code."
+	
+	StringAttribute name {
+		desc: "The name of ELF file on the filesystem of the built ISO (if relevant)."
+		required: false
+		games: [1 2 3 4]
+	}
 	
 	FileReferenceAttribute src {
 		desc: "The path of the ELF file, relative to the .asset file."

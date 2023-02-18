@@ -160,7 +160,7 @@ A build of the game.
 | ps2_logo_ntsc | The NTSC PS2 logo stored on the first 12 sectors of the disc. | Texture | No | RC/GC/UYA/DL |
 | ps2_logo_pal | The PAL PS2 logo stored on the first 12 sectors of the disc. | Texture | No | RC/GC/UYA/DL |
 | primary_volume_descriptor | *Not yet documented.* | PrimaryVolumeDescriptor | Yes | RC/GC/UYA/DL |
-| boot_elf | The boot ELF, as specified in the SYSTEM.CNF file. | File | Yes | RC/GC/UYA/DL |
+| boot_elf | The boot ELF, as specified in the SYSTEM.CNF file. | ElfFile, File | Yes | RC/GC/UYA/DL |
 | global | *Not yet documented.* | GlobalWad, FlatWad, Binary | Yes | RC |
 | armor | *Not yet documented.* | ArmorWad, FlatWad, Binary | Yes | GC/UYA/DL |
 | audio | *Not yet documented.* | AudioWad, FlatWad, Binary | Yes | GC/UYA/DL |
@@ -383,6 +383,7 @@ An ELF executable file. Currently used for the frontend and level code.
 *Attributes*
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
+| name | The name of ELF file on the filesystem of the built ISO (if relevant). | String | No | RC/GC/UYA/DL |
 | src | The path of the ELF file, relative to the .asset file. | FilePath | Yes | RC/GC/UYA/DL |
 
 *Children*
