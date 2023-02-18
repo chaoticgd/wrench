@@ -77,7 +77,7 @@ static void unpack_gc_misc_wad(MiscWadAsset& dest, const GcMiscWadHeader& header
 	unpack_asset(dest.debug_font<TextureAsset>(), src, header.debug_font, config, FMT_TEXTURE_PIF8);
 	unpack_compressed_asset(dest.irx(SWITCH_FILES), src, header.irx, config);
 	unpack_asset(dest.save_game(), src, header.save_game, config);
-	unpack_asset(dest.frontbin(), src, header.frontbin, config);
+	unpack_asset(dest.frontbin<ElfFileAsset>(), src, header.frontbin, config, FMT_ELFFILE_RATCHET_EXECUTABLE);
 	unpack_compressed_asset(dest.frontbin_net(), src, header.frontbin_net, config);
 	unpack_asset(dest.frontend(), src, header.frontend, config);
 	unpack_asset(dest.exit(), src, header.exit, config);
@@ -89,7 +89,7 @@ static void pack_gc_misc_wad(OutputStream& dest, GcMiscWadHeader& header, const 
 	header.save_game = pack_asset_sa<SectorRange>(dest, src.get_save_game(), config);
 	header.frontbin = pack_asset_sa<SectorRange>(dest, src.get_frontbin(), config);
 	header.frontbin_net = pack_compressed_asset_sa<SectorRange>(dest, src.get_frontbin_net(), config, "frontbin_net");
-	header.frontend = pack_asset_sa<SectorRange>(dest, src.get_frontend(), config);
+	header.frontend = pack_asset_sa<SectorRange>(dest, src.get_frontend(), config, FMT_ELFFILE_RATCHET_EXECUTABLE);
 	header.exit = pack_asset_sa<SectorRange>(dest, src.get_exit(), config);
 }
 
@@ -97,7 +97,7 @@ static void unpack_uya_misc_wad(MiscWadAsset& dest, const UyaMiscWadHeader& head
 	unpack_asset(dest.debug_font<TextureAsset>(), src, header.debug_font, config, FMT_TEXTURE_PIF8);
 	unpack_compressed_asset(dest.irx(SWITCH_FILES), src, header.irx, config);
 	unpack_asset(dest.save_game(), src, header.save_game, config);
-	unpack_asset(dest.frontbin(), src, header.frontbin, config);
+	unpack_asset(dest.frontbin<ElfFileAsset>(), src, header.frontbin, config, FMT_ELFFILE_RATCHET_EXECUTABLE);
 	unpack_compressed_asset(dest.frontbin_net(), src, header.frontbin_net, config);
 	unpack_asset(dest.boot(SWITCH_FILES), src, header.boot, config);
 }
@@ -106,7 +106,7 @@ static void pack_uya_misc_wad(OutputStream& dest, UyaMiscWadHeader& header, cons
 	header.debug_font = pack_asset_sa<SectorRange>(dest, src.get_debug_font(), config, FMT_TEXTURE_PIF8);
 	header.irx = pack_compressed_asset_sa<SectorRange>(dest, src.get_irx(), config, "irx");
 	header.save_game = pack_asset_sa<SectorRange>(dest, src.get_save_game(), config);
-	header.frontbin = pack_asset_sa<SectorRange>(dest, src.get_frontbin(), config);
+	header.frontbin = pack_asset_sa<SectorRange>(dest, src.get_frontbin(), config, FMT_ELFFILE_RATCHET_EXECUTABLE);
 	header.frontbin_net = pack_compressed_asset_sa<SectorRange>(dest, src.get_frontbin_net(), config, "frontbin_net");
 	header.boot = pack_asset_sa<SectorRange>(dest, src.get_boot(), config);
 }
@@ -115,7 +115,7 @@ static void unpack_dl_misc_wad(MiscWadAsset& dest, const DlMiscWadHeader& header
 	unpack_asset(dest.debug_font<TextureAsset>(), src, header.debug_font, config, FMT_TEXTURE_PIF8);
 	unpack_compressed_asset(dest.irx(SWITCH_FILES), src, header.irx, config);
 	unpack_asset(dest.save_game(), src, header.save_game, config);
-	unpack_asset(dest.frontbin(), src, header.frontbin, config);
+	unpack_asset(dest.frontbin<ElfFileAsset>(), src, header.frontbin, config, FMT_ELFFILE_RATCHET_EXECUTABLE);
 	unpack_asset(dest.boot(SWITCH_FILES), src, header.boot, config);
 	unpack_asset(dest.gadget(), src, header.gadget, config);
 }
@@ -124,7 +124,7 @@ static void pack_dl_misc_wad(OutputStream& dest, DlMiscWadHeader& header, const 
 	header.debug_font = pack_asset_sa<SectorRange>(dest, src.get_debug_font(), config, FMT_TEXTURE_PIF8);
 	header.irx = pack_compressed_asset_sa<SectorRange>(dest, src.get_irx(), config, "irx");
 	header.save_game = pack_asset_sa<SectorRange>(dest, src.get_save_game(), config);
-	header.frontbin = pack_asset_sa<SectorRange>(dest, src.get_frontbin(), config);
+	header.frontbin = pack_asset_sa<SectorRange>(dest, src.get_frontbin(), config, FMT_ELFFILE_RATCHET_EXECUTABLE);
 	header.boot = pack_asset_sa<SectorRange>(dest, src.get_boot(), config);
 	header.gadget = pack_asset_sa<SectorRange>(dest, src.get_gadget(), config);
 }

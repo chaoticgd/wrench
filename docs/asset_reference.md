@@ -423,7 +423,7 @@ Holds all of the global assets (those that are not specific to a given level) fo
 | help_gadgets | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
 | help_ss | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
 | options_ss | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
-| frontbin | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
+| frontbin | *Not yet documented.* | ElfFile, Binary | *Not yet documented.* | *Not yet documented.* |
 | mission_ss | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
 | planets | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
 | stuff2 | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
@@ -632,7 +632,7 @@ Holds all of the global assets (those that are not specific to a given level) fo
 | debug_font | *Not yet documented.* | Texture, Binary | Yes | GC/UYA/DL |
 | irx | *Not yet documented.* | IrxWad | Yes | GC/UYA/DL |
 | save_game | *Not yet documented.* | Binary | Yes | GC/UYA/DL |
-| frontbin | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
+| frontbin | *Not yet documented.* | ElfFile, Binary | *Not yet documented.* | *Not yet documented.* |
 | frontbin_net | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
 | frontend | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
 | exit | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |

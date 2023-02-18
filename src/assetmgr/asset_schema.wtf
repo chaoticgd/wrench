@@ -429,7 +429,7 @@ AssetType GlobalWad {
 	Child help_gadgets { allowed_types: ["Collection"] }
 	Child help_ss { allowed_types: ["Collection"] }
 	Child options_ss { allowed_types: ["Collection"] }
-	Child frontbin { allowed_types: ["Binary"] }
+	Child frontbin { allowed_types: ["ElfFile" "Binary"] }
 	Child mission_ss { allowed_types: ["Collection"] }
 	Child planets { allowed_types: ["Collection"] }
 	Child stuff2 { allowed_types: ["Collection"] }
@@ -871,7 +871,7 @@ AssetType MiscWad {
 		required: true
 		games:[2 3 4]
 	}
-	Child frontbin     { allowed_types: ["Binary"] }
+	Child frontbin     { allowed_types: ["ElfFile" "Binary"] }
 	Child frontbin_net { allowed_types: ["Binary"] }
 	Child frontend     { allowed_types: ["Binary"] }
 	Child exit         { allowed_types: ["Binary"] }
