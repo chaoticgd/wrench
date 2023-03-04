@@ -89,3 +89,10 @@ std::string to_snake_case(const char* src) {
 	}
 	return result;
 }
+
+s64 align64(s64 value, s64 alignment) {
+	if(value % alignment != 0) {
+		value += alignment - (value % alignment);
+	}
+	return value;
+}
