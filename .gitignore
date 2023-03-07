@@ -10,6 +10,7 @@ CTestTestfile.cmake
 
 # build
 /bin
+/build
 _generated_*
 *.a
 
