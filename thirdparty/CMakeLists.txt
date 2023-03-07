@@ -1,4 +1,5 @@
 # cxxopts
+set(CXXOPTS_BUILD_EXAMPLES OFF CACHE BOOL "Set to ON to build examples" FORCE)
 add_subdirectory(cxxopts)
 
 # GLAD
@@ -63,6 +64,7 @@ if(WIN32)
 	# we copy the library file into a fixed location.
 	add_custom_target(copy_zlib_lib_hack
 		COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:zlibstatic>" "${CMAKE_CURRENT_BINARY_DIR}/zlib.lib"
+		BYPRODUCTS "${CMAKE_CURRENT_BINARY_DIR}/zlib.lib"
 	)
 	set(ZLIB_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/zlib.lib")
 endif()

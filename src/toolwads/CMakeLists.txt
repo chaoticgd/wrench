@@ -14,15 +14,16 @@ target_link_libraries(toolwadpacker wrenchcore wrenchengine)
 find_package(Git QUIET)
 if(GIT_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
 	message("-- Found git")
+	file(GLOB GIT_DEPENDS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/*")
 	add_custom_command(
 		COMMAND ${GIT_EXECUTABLE} tag --points-at HEAD > "${CMAKE_BINARY_DIR}/git_tag.tmp" || echo "" > "${CMAKE_BINARY_DIR}/git_tag.tmp"
-		DEPENDS "${CMAKE_SOURCE_DIR}/*"
+		DEPENDS ${GIT_DEPENDS}
 		OUTPUT "${CMAKE_BINARY_DIR}/git_tag.tmp"
 		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 	)
 	add_custom_command(
 		COMMAND ${GIT_EXECUTABLE} rev-parse HEAD > "${CMAKE_BINARY_DIR}/git_commit.tmp" || echo "" > "${CMAKE_BINARY_DIR}/git_commit.tmp"
-		DEPENDS "${CMAKE_SOURCE_DIR}/*"
+		DEPENDS ${GIT_DEPENDS}
 		OUTPUT "${CMAKE_BINARY_DIR}/git_commit.tmp"
 		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 	)
@@ -36,13 +37,14 @@ endif()
 # Generate wads
 # ******************************************************************************
 
+file(GLOB TOOLWADPACKER_DEPENDS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/data/*")
 add_custom_command(
 	COMMAND toolwadpacker "${CMAKE_BINARY_DIR}"
 	DEPENDS toolwadpacker
 		"${CMAKE_BINARY_DIR}/git_tag.tmp"
 		"${CMAKE_BINARY_DIR}/git_commit.tmp"
 		"${CMAKE_SOURCE_DIR}/CONTRIBUTORS"
-		"${CMAKE_SOURCE_DIR}/data/*"
+		"${TOOLWADPACKER_DEPENDS}"
 	OUTPUT
 		"${CMAKE_BINARY_DIR}/build.wad"
 		"${CMAKE_BINARY_DIR}/gui.wad"
@@ -84,9 +86,10 @@ add_library(wadinfo
 # Zip the underlay
 # ******************************************************************************
 
+file(GLOB UNDERLAY_ZIP_DEPENDS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/data/underlay/*")
 add_custom_target(underlay_zip ALL
 	COMMAND ${CMAKE_COMMAND} -E tar "cfv" "${CMAKE_BINARY_DIR}/underlay.zip" --format=zip "."
-	DEPENDS "${CMAKE_SOURCE_DIR}/data/underlay/*"
+	DEPENDS ${UNDERLAY_ZIP_DEPENDS}
 	WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/data/underlay"
 	COMMENT "Generating underlay.zip"
 )
