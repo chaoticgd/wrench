@@ -31,26 +31,26 @@ packed_struct(ChecksumHeader,
 )
 
 packed_struct(SectionHeader,
-	SectionType type;
+	s32 type;
 	s32 size;
 )
 
-SaveGame read(Buffer src) {
-	SaveGame save;
+File read_save(Buffer src) {
+	File save;
 	s64 pos = 0;
 	
 	const FileHeader& file_header = src.read<FileHeader>(pos, "file header");
 	pos += sizeof(FileHeader);
 	
-	save.game = read_sections(src, pos);
+	save.game = read_sections(&save.checksum_does_not_match, src, pos);
 	while(pos + 3 < src.size()) {
-		save.levels.emplace_back(read_sections(src, pos));
+		save.levels.emplace_back(read_sections(&save.checksum_does_not_match, src, pos));
 	}
 	
 	return save;
 }
 
-std::vector<Section> read_sections(Buffer src, s64& pos) {
+std::vector<Section> read_sections(bool* checksum_does_not_match_out, Buffer src, s64& pos) {
 	std::vector<Section> sections;
 	
 	const ChecksumHeader& checksum_header = src.read<ChecksumHeader>(pos, "checksum header");
@@ -58,13 +58,13 @@ std::vector<Section> read_sections(Buffer src, s64& pos) {
 	
 	u32 check_value = checksum(src.subbuf(pos, checksum_header.size));
 	if(check_value != checksum_header.checksum) {
-		fprintf(stderr, "warning: Save game checksum doesn't match!\n");
+		*checksum_does_not_match_out |= true;
 	}
 	
 	for(;;) {
 		const SectionHeader& section_header = src.read<SectionHeader>(pos, "section header");
 		pos += sizeof(SectionHeader);
-		if(section_header.type == TERMINATOR) {
+		if(section_header.type == -1) {
 			break;
 		}
 		
@@ -77,7 +77,7 @@ std::vector<Section> read_sections(Buffer src, s64& pos) {
 	return sections;
 }
 
-void write(OutBuffer dest, const SaveGame& save) {
+void write(OutBuffer dest, const File& save) {
 	
 }
 
@@ -96,5 +96,70 @@ u32 checksum(Buffer src) {
 	}
 	return value & 0xffff;
 }
+
+SaveGame parse_save(const File& file) {
+	SaveGame save;
+	for(const Section& section : file.game) {
+		Buffer buffer = section.data;
+		switch(section.type) {
+			case SECTION_LEVEL:                   save.level                      = buffer.read<s32>(0);                             break;
+			case SECTION_ELAPSEDTIME:             save.elapsed_time               = buffer.read<s32>(0);                             break;
+			case SECTION_LASTSAVETIME:            save.last_save_time             = buffer.read<Clock>(0);                           break;
+			case SECTION_GLOBALFLAGS:             save.global_flags               = buffer.read_multiple<u8>(0, 12);                 break;
+			case SECTION_CHEATSACTIVATED:         save.cheats_activated           = buffer.read_multiple<u8>(0, 14);                 break;
+			case SECTION_SKILLPOINTS:             save.skill_points               = buffer.read_multiple<s32>(0, 15);                break;
+			case SECTION_HELPDATAMESSAGES:        save.help_data_messages         = buffer.read_multiple<HelpDatum>(0, 2086).copy(); break;
+			case SECTION_HELPDATAMISC:            save.help_data_messages         = buffer.read_multiple<HelpDatum>(0, 16).copy();   break;
+			case SECTION_HELPDATAGADGETS:         save.help_data_messages         = buffer.read_multiple<HelpDatum>(0, 20).copy();   break;
+			case SECTION_CHEATSEVERACTIVATED:     save.cheats_ever_activated      = buffer.read_multiple<u8>(0, 14);                 break;
+			case SECTION_SETTINGS:                save.settings                   = buffer.read<GameSettings>(0);                    break;
+			case SECTION_HEROSAVE:                save.hero_save                  = buffer.read<HeroSave>(0);                        break;
+			case SECTION_MOVIESPLAYEDRECORD:      save.movies_played_record       = buffer.read_multiple<u32>(0, 64);                break;
+			case SECTION_TOTALPLAYTIME:           save.total_play_time            = buffer.read<u32>(0);                             break;
+			case SECTION_TOTALDEATHS:             save.total_deaths               = buffer.read<s32>(0);                             break;
+			case SECTION_HELPLOG:                 save.help_log                   = buffer.read_multiple<s16>(0, 2100);              break;
+			case SECTION_HELPLOGPOS:              save.help_log_pos               = buffer.read<s32>(0);                             break;
+			case SECTION_HEROGADGETBOX:           save.hero_gadget_box            = buffer.read<GadgetBox>(0);                       break;
+			case SECTION_PURCHASEABLEGADGETS:     save.purchaseable_gadgets       = buffer.read_multiple<u8>(0, 20);                 break;
+			case SECTION_BOTSAVE:                 save.bot_save                   = buffer.read<BotSave>(0);                         break;
+			case SECTION_FIRSTPERSONDESIREDMODE:  save.first_person_desired_mode  = buffer.read_multiple<s32>(0, 10);                break;
+			case SECTION_SAVEDDIFFICULTYLEVEL:    save.saved_difficulty_level     = buffer.read<s32>(0);                             break;
+			case SECTION_PLAYERSTATISTICS:        save.player_statistics          = buffer.read_multiple<PlayerData>(0, 2);          break;
+			case SECTION_BATTLEDOMEWINSANDLOSSES: save.battledome_wins_and_losses = buffer.read_multiple<s32>(0, 2);                 break;
+			case SECTION_ENEMYKILLS:              save.enemy_kills                = buffer.read_multiple<EnemyKillInfo>(0, 30);      break;
+			case SECTION_QUICKSWITCHGADGETS:      save.quick_switch_gadgets       = buffer.read<QuickSwitchGadgets>(0);              break;
+		}
+	}
+	return save;
+}
+
+const std::vector<FileFormat> FILE_FORMATS = {
+	{Game::DL, SAVE, {
+		SECTION_LEVEL,
+		SECTION_HEROSAVE,
+		SECTION_ELAPSEDTIME,
+		SECTION_LASTSAVETIME,
+		SECTION_TOTALPLAYTIME,
+		SECTION_SAVEDDIFFICULTYLEVEL,
+		SECTION_GLOBALFLAGS,
+		SECTION_CHEATSACTIVATED,
+		SECTION_CHEATSEVERACTIVATED,
+		SECTION_SKILLPOINTS,
+		SECTION_HEROGADGETBOX,
+		SECTION_HELPDATAMESSAGES,
+		SECTION_HELPDATAMISC,
+		SECTION_HELPDATAGADGETS,
+		SECTION_SETTINGS,
+		SECTION_FIRSTPERSONDESIREDMODE,
+		SECTION_MOVIESPLAYEDRECORD,
+		SECTION_TOTALDEATHS,
+		SECTION_HELPLOG,
+		SECTION_HELPLOGPOS,
+		SECTION_PURCHASEABLEGADGETS
+	}, {
+		SECTION_LEVELSAVEDATA
+	}}
+};
+
 
 }

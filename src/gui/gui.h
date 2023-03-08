@@ -25,6 +25,7 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #define IMGUI_DEFINE_MATH_OPERATORS
+#include <nfd.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 #include <imgui/misc/cpp/imgui_stdlib.h>
@@ -44,6 +45,7 @@ GLFWwindow* startup(const char* window_title, s32 width, s32 height, bool maximi
 void run_frame(GLFWwindow* window, void (*update_func)(f32));
 void shutdown(GLFWwindow* window);
 ImFont* load_font(SectorRange range, f32 size, f32 multiply = 1.f);
+bool input_folder_path(std::string* output_path, const char* id, const nfdchar_t* default_path);
 
 }
 

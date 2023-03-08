@@ -239,7 +239,7 @@ target_link_libraries(unpackbin wrenchcore wrenchengine)
 add_executable(memcard
 	src/memcard.cpp
 )
-target_link_libraries(memcard wrenchcore)
+target_link_libraries(memcard wrenchcore wrenchgui)
 
 if(UNIX)
 	add_compile_options(-Wall -Wno-sign-compare -g -O3)

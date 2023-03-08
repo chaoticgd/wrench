@@ -22,13 +22,15 @@
 #include <imgui/backends/imgui_impl_glfw.h>
 #include <engine/compression.h>
 
+namespace gui {
+
 static void imgui_glfw_new_frame();
 
 static std::chrono::steady_clock::time_point last_frame_time;
 static f32 delta_time;
 static std::vector<std::vector<u8>> font_buffers;
 
-GLFWwindow* gui::startup(const char* window_title, s32 width, s32 height, bool maximized, GlfwCallbacks* callbacks) {
+GLFWwindow* startup(const char* window_title, s32 width, s32 height, bool maximized, GlfwCallbacks* callbacks) {
 	verify(glfwInit(), "Failed to load GLFW.");
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -70,6 +72,7 @@ GLFWwindow* gui::startup(const char* window_title, s32 width, s32 height, bool m
 	style.WindowTitleAlign = ImVec2(0.5, 0.5);
 	style.TabRounding = 2.f;
 	style.ScrollbarRounding = 2.f;
+	style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.1f, 0.1f, 0.1f, 1.f);
 	style.Colors[ImGuiCol_MenuBarBg] = style.Colors[ImGuiCol_WindowBg];
 	style.Colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.15f, 0.15f, 0.15f, 1.f);
 	style.Colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.25f, 0.25f, 0.25f, 1.f);
@@ -80,7 +83,7 @@ GLFWwindow* gui::startup(const char* window_title, s32 width, s32 height, bool m
 	return window;
 }
 
-void gui::run_frame(GLFWwindow* window, void (*update_func)(f32)) {
+void run_frame(GLFWwindow* window, void (*update_func)(f32)) {
 	glfwPollEvents();
 	
 	ImGui_ImplOpenGL3_NewFrame();
@@ -110,7 +113,7 @@ void gui::run_frame(GLFWwindow* window, void (*update_func)(f32)) {
 	last_frame_time = frame_time;
 }
 
-ImFont* gui::load_font(SectorRange range, f32 size, f32 multiply) {
+ImFont* load_font(SectorRange range, f32 size, f32 multiply) {
 	std::vector<u8> compressed_font = g_guiwad.read_multiple<u8>(range.offset.bytes(), range.size.bytes());
 	std::vector<u8>& decompressed_font = font_buffers.emplace_back();
 	decompress_wad(decompressed_font, compressed_font);
@@ -124,7 +127,7 @@ ImFont* gui::load_font(SectorRange range, f32 size, f32 multiply) {
 }
 
 
-void gui::shutdown(GLFWwindow* window) {
+void shutdown(GLFWwindow* window) {
 	glfwDestroyWindow(window);
 
 	ImGui_ImplOpenGL3_Shutdown();
@@ -133,6 +136,27 @@ void gui::shutdown(GLFWwindow* window) {
 	glfwTerminate();
 	
 	font_buffers.clear();
+}
+
+bool input_folder_path(std::string* output_path, const char* id, const nfdchar_t* default_path) {
+	ImGuiStyle& s = ImGui::GetStyle();
+	ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize("Browse").x - s.FramePadding.x * 2 - s.ItemSpacing.x);
+	if(ImGui::InputText(id, output_path)) {
+		return true;
+	}
+	ImGui::SameLine();
+	if(ImGui::Button("Browse")) {
+		nfdchar_t* path;
+		nfdresult_t result = NFD_PickFolder(default_path, &path);
+		if(result == NFD_OKAY) {
+			*output_path = path;
+			free(path);
+			return true;
+		}
+	}
+	return false;
+}
+
 }
 
 void GlTexture::upload(const u8* data, s32 width, s32 height) {

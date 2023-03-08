@@ -68,7 +68,6 @@ void editor_gui() {
 	
 	static bool is_first_frame = true;
 	if(is_first_frame) {
-		ImGui::GetStyle().Colors[ImGuiCol_TitleBgActive] = ImVec4(0.1f, 0.1f, 0.1f, 1.f);
 		create_dock_layout();
 		is_first_frame = false;
 	}
