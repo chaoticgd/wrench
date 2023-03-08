@@ -27,20 +27,34 @@ static void sections();
 static void editor();
 static void begin_dock_space();
 static void create_dock_layout();
-static void common_page();
-static void gadgets_page();
-static void hero_page();
-static void settings_page();
-static void statistics_page();
+static bool save_page(bool draw_gui);
+static bool bots_page(bool draw_gui);
+static bool enemy_kills_page(bool draw_gui);
+static bool gadget_page(bool draw_gui);
+static void gadget_general_subpage();
+static void gadget_entries_subpage();
+static void gadget_events_subpage();
+static void gadget_messages_subpage();
+static bool help_page(bool draw_gui);
+static void help_subpage(const char* label, std::vector<memory_card::HelpDatum>& help);
+static bool hero_page(bool draw_gui);
+static bool settings_page(bool draw_gui);
+static bool statistics_page(bool draw_gui);
+static u8 from_bcd(u8 value);
+static u8 to_bcd(u8 value);
 
 struct Page {
 	const char* name;
-	void (*func)();
+	bool (*func)(bool draw_gui);
+	bool visible = false;
 };
 
-static const Page PAGES[] = {
-	{"Common", &common_page},
-	{"Gadgets", &gadgets_page},
+static Page PAGES[] = {
+	{"Save", &save_page},
+	{"Bots", &bots_page},
+	{"Enemy Kills", &enemy_kills_page},
+	{"Gadgets", &gadget_page},
+	{"Help", &help_page},
 	{"Hero", &hero_page},
 	{"Settings", &settings_page},
 	{"Statistics", &statistics_page}
@@ -49,18 +63,41 @@ static const Page PAGES[] = {
 static std::string directory;
 static std::vector<fs::path> file_paths;
 static size_t selected_file_index = 0;
+static bool should_load_now = false;
+static bool should_save_now = false;
 static Opt<memory_card::File> file;
 static std::string load_error_message;
-static Opt<memory_card::SaveGame> save;
+static memory_card::SaveGame save;
 
 int main(int argc, char** argv) {
 	WadPaths wads = find_wads(argv[0]);
 	g_guiwad.open(wads.gui);
 	
-	GLFWwindow* window = gui::startup("Wrench Memory Card Editor", 960, 720);
+	GLFWwindow* window = gui::startup("Wrench Memory Card Editor", 1280, 720);
 	gui::load_font(wadinfo.gui.fonts[0], 22);
 	while(!glfwWindowShouldClose(window)) {
 		gui::run_frame(window, update_gui);
+		
+		if(should_load_now) {
+			if(selected_file_index < file_paths.size()) {
+				try {
+					std::vector<u8> buffer = read_file(file_paths[selected_file_index]);
+					file = memory_card::read_save(buffer);
+					load_error_message.clear();
+					save = memory_card::parse_save(*file);
+					for(Page& page : PAGES) {
+						page.visible = page.func(false);
+					}
+				} catch(RuntimeError& error) {
+					load_error_message = error.message;
+				}
+			}
+			should_load_now = false;
+		}
+		
+		if(should_save_now) {
+			should_save_now = false;
+		}
 	}
 	gui::shutdown(window);
 }
@@ -112,14 +149,7 @@ static void files() {
 	ImGui::BeginChild("##files");
 	for(size_t i = 0; i < file_paths.size(); i++) {
 		if(ImGui::Selectable(file_paths[i].filename().string().c_str(), i == selected_file_index)) {
-			try {
-				std::vector<u8> buffer = read_file(file_paths[i]);
-				file = memory_card::read_save(buffer);
-				load_error_message.clear();
-				save = memory_card::parse_save(*file);
-			} catch(RuntimeError& error) {
-				load_error_message = error.message;
-			}
+			should_load_now = true;
 			selected_file_index = i;
 		}
 	}
@@ -136,7 +166,7 @@ static void editor() {
 		return;
 	}
 	
-	if(!file.has_value() || !save.has_value()) {
+	if(!file.has_value() || !save.loaded) {
 		ImGui::Text("No file loaded.");
 		return;
 	}
@@ -150,9 +180,11 @@ static void editor() {
 	}
 	
 	if(ImGui::BeginTabBar("##tabs")) {
-		for(const Page& page : PAGES) {
-			if(ImGui::BeginTabItem(page.name)) {
-				page.func();
+		for(Page& page : PAGES) {
+			if(page.visible && ImGui::BeginTabItem(page.name)) {
+				ImGui::BeginChild("##tab");
+				page.func(true);
+				ImGui::EndChild();
 				ImGui::EndTabItem();
 			}
 		}
@@ -202,33 +234,366 @@ static void create_dock_layout() {
 	ImGui::DockBuilderFinish(dockspace_id);
 }
 
-// I'm using macros instead of functions so that the compiler doesn't complain
-// about misaligned pointers (even if in practice they'll always be aligned).
+// I'm using macros instead of functions here so that the compiler doesn't
+// complain about misaligned pointers (even if in practice they should be aligned).
 #define input_scalar(data_type, label, value) \
-	{ auto temp = value; ImGui::InputScalar(label, data_type, &value); value = temp; }
-#define input_scalar_n(data_type, label, value, dim) \
+	{ \
+		auto temp = value; \
+		if(ImGui::InputScalar(label, data_type, &temp)) { \
+			should_save_now = true; \
+		} \
+		value = temp; \
+	}
+#define input_scalar_n(data_type, label, array) \
+	{ \
+		decltype(array) temp; \
+		memcpy(temp, array, sizeof(array)); \
+		if(ImGui::InputScalarN(label, data_type, temp, ARRAY_SIZE(array), nullptr, nullptr, nullptr, ImGuiInputTextFlags_None)) { \
+			should_save_now = true; \
+		} \
+		memcpy(array, temp, sizeof(array)); \
+	}
+#define input_scalar_multi(data_type, label, value, rows, columns) \
 	{ \
 		decltype(value) temp; \
 		memcpy(temp, value, sizeof(value)); \
-		ImGui::InputScalarN(label, data_type, temp, dim, nullptr, nullptr, nullptr, ImGuiInputTextFlags_None); \
+		for(s32 i = 0; i < rows; i++) { \
+			std::string row_label = stringf("%s %d", label, i); \
+			if(ImGui::InputScalarN(row_label.c_str(), data_type, temp[i], columns, nullptr, nullptr, nullptr, ImGuiInputTextFlags_None)) { \
+				should_save_now = true; \
+			} \
+		} \
 		memcpy(value, temp, sizeof(value)); \
 	}
+#define input_clock(label, value) \
+	{ \
+		u8 clock[6]; \
+		clock[0] = from_bcd((value).second); \
+		clock[1] = from_bcd((value).minute); \
+		clock[2] = from_bcd((value).hour); \
+		clock[3] = from_bcd((value).day); \
+		clock[4] = from_bcd((value).month); \
+		clock[5] = from_bcd((value).year); \
+		input_scalar_n(ImGuiDataType_U8, label, clock); \
+		(value).second = to_bcd(clock[0]); \
+		(value).minute = to_bcd(clock[1]); \
+		(value).hour = to_bcd(clock[2]); \
+		(value).day = to_bcd(clock[3]); \
+		(value).month = to_bcd(clock[4]); \
+		(value).year = to_bcd(clock[5]); \
+	}
 
-static void common_page() {
-	ImGui::InputInt("Level", &(*save->level));
+static bool save_page(bool draw_gui) {
+	if(!draw_gui) return true;
 	
-	u8 clock[sizeof(memory_card::Clock)];
-	memcpy(clock, &(*save->last_save_time), sizeof(memory_card::Clock));
-	ImGui::InputScalarN("Last Save Time", ImGuiDataType_U8, clock, sizeof(memory_card::Clock), nullptr, nullptr, nullptr, ImGuiInputTextFlags_None);
-	memcpy(&(*save->last_save_time), clock, sizeof(memory_card::Clock));
+	if(save.level.has_value()) input_scalar(ImGuiDataType_S32, "Level", *save.level);
+	if(save.elapsed_time.has_value()) input_scalar(ImGuiDataType_S32, "Elapsed Time", *save.elapsed_time);
+	if(save.last_save_time.has_value()) input_clock("Last Save Time (smhdmy)", *save.last_save_time)
+	if(save.global_flags.has_value()) input_scalar_n(ImGuiDataType_U8, "Global Flags", save.global_flags->data);
+	if(save.global_flags.has_value()) input_scalar_n(ImGuiDataType_U8, "Global Flags", save.global_flags->data);
+	if(save.cheats_activated.has_value()) input_scalar_n(ImGuiDataType_U8, "Cheats Activated", save.cheats_activated->data);
+	if(save.skill_points.has_value()) input_scalar_n(ImGuiDataType_S32, "Skill Points", save.skill_points->data);
+	if(save.cheats_ever_activated.has_value()) input_scalar_n(ImGuiDataType_U8, "Cheats Ever Activated", save.cheats_ever_activated->data);
+	if(save.movies_played_record.has_value()) input_scalar_n(ImGuiDataType_U32, "Movies Played Record", save.movies_played_record->data);
+	if(save.total_play_time.has_value()) input_scalar(ImGuiDataType_S32, "Total Play Time", *save.total_play_time);
+	if(save.total_deaths.has_value()) input_scalar(ImGuiDataType_S32, "Total Deaths", *save.total_deaths);
+	if(save.purchaseable_gadgets.has_value()) input_scalar_n(ImGuiDataType_U8, "Purchaseable Gadgets", save.purchaseable_gadgets->data);
+	if(save.first_person_desired_mode.has_value()) input_scalar_n(ImGuiDataType_S32, "First Person Desired Mode", save.first_person_desired_mode->data);
+	if(save.saved_difficulty_level.has_value()) input_scalar(ImGuiDataType_S32, "Saved Difficulty Level", *save.saved_difficulty_level);
+	if(save.battledome_wins_and_losses.has_value()) input_scalar_n(ImGuiDataType_S32, "Battledome Wins and Losses", save.battledome_wins_and_losses->data);
+	if(save.quick_switch_gadgets.has_value()) input_scalar_multi(ImGuiDataType_S32, "Quick Select Gadgets", save.quick_switch_gadgets->array, 4, 3);
+	
+	return true;
 }
 
-static void gadgets_page() {
-	input_scalar(ImGuiDataType_S32, "ptr", save->hero_gadget_box->p_next_gadget_event);
+static bool bots_page(bool draw_gui) {
+	if(!save.bot_save.has_value()) return false;
+	if(!draw_gui) return true;
+	memory_card::BotSave& s = *save.bot_save;
+	
+	input_scalar_n(ImGuiDataType_S32, "Bot Upgrades", s.bot_upgrades);
+	input_scalar_n(ImGuiDataType_S32, "Bot Paintjobs", s.bot_upgrades);
+	input_scalar_n(ImGuiDataType_S32, "Bot Heads", s.bot_upgrades);
+	input_scalar_n(ImGuiDataType_S32, "Current Bot Paint Job", s.bot_upgrades);
+	input_scalar_n(ImGuiDataType_S32, "Current Bot Head", s.bot_upgrades);
+	
+	return true;
 }
 
-static void hero_page() {
-	memory_card::HeroSave& h = *save->hero_save;
+static bool enemy_kills_page(bool draw_gui) {
+	if(!save.enemy_kills.has_value()) return false;
+	if(!draw_gui) return true;
+	
+	ImGui::BeginTable("##enemy_kills", 3, ImGuiTableFlags_RowBg);
+	ImGui::TableSetupColumn("Index");
+	ImGui::TableSetupColumn("Enemy Class");
+	ImGui::TableSetupColumn("Kill Count");
+	ImGui::TableHeadersRow();
+	for(s32 i = 0; i < ARRAY_SIZE(save.enemy_kills->data); i++) {
+		ImGui::PushID(i);
+		ImGui::TableNextRow();
+		ImGui::TableNextColumn();
+		ImGui::Text("%d", i);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar(ImGuiDataType_S32, "##o_class", save.enemy_kills->data[i].o_class);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar(ImGuiDataType_S32, "##kills", save.enemy_kills->data[i].kills);
+		ImGui::PopID();
+	}
+	ImGui::EndTable();
+	
+	return true;
+}
+
+static bool gadget_page(bool draw_gui) {
+	if(!save.hero_gadget_box.has_value()) return false;
+	if(!draw_gui) return true;
+	memory_card::GadgetBox& g = *save.hero_gadget_box;
+	
+	if(ImGui::BeginTabBar("##gadget_tabs")) {
+		if(ImGui::BeginTabItem("General")) {
+			gadget_general_subpage();
+			ImGui::EndTabItem();
+		}
+		if(ImGui::BeginTabItem("Entries")) {
+			gadget_entries_subpage();
+			ImGui::EndTabItem();
+		}
+		if(ImGui::BeginTabItem("Events")) {
+			gadget_events_subpage();
+			ImGui::EndTabItem();
+		}
+		if(ImGui::BeginTabItem("Event Messages")) {
+			gadget_messages_subpage();
+			ImGui::EndTabItem();
+		}
+		ImGui::EndTabBar();
+	}
+	
+	return true;
+}
+
+static void gadget_general_subpage() {
+	memory_card::GadgetBox& g = *save.hero_gadget_box;
+	
+	input_scalar(ImGuiDataType_U8, "Initialized", g.initialized);
+	input_scalar(ImGuiDataType_U8, "Level", g.level);
+	input_scalar_n(ImGuiDataType_U8, "Button Down", g.button_down);
+	input_scalar_n(ImGuiDataType_S16, "Button Up Frames", g.button_up_frames);
+	input_scalar(ImGuiDataType_U8, "Num Gadget Events", g.num_gadget_events);
+	input_scalar_n(ImGuiDataType_U8, "Mod Basic", g.mod_basic);
+	input_scalar(ImGuiDataType_S16, "Mod Post FX", g.mod_post_fx);
+	input_scalar(ImGuiDataType_U32, "Gadget Event Pointer", g.p_next_gadget_event);
+}
+
+static void gadget_entries_subpage() {
+	memory_card::GadgetBox& g = *save.hero_gadget_box;
+	
+	ImGui::BeginTable("##gadget_entries", 9, ImGuiTableFlags_RowBg);
+	ImGui::TableSetupColumn("Index");
+	ImGui::TableSetupColumn("Level");
+	ImGui::TableSetupColumn("Ammo");
+	ImGui::TableSetupColumn("XP");
+	ImGui::TableSetupColumn("Action Frame");
+	ImGui::TableSetupColumn("Mod Active Post FX");
+	ImGui::TableSetupColumn("Most Active Weapon");
+	ImGui::TableSetupColumn("Mod Active Basic");
+	ImGui::TableSetupColumn("Mod Weapon");
+	ImGui::TableHeadersRow();
+	for(s32 i = 0; i < ARRAY_SIZE(save.hero_gadget_box->gadgets); i++) {
+		ImGui::PushID(i);
+		ImGui::TableNextRow();
+		ImGui::TableNextColumn();
+		ImGui::Text("%d", i);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar(ImGuiDataType_S16, "##level", save.hero_gadget_box->gadgets[i].level);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar(ImGuiDataType_S16, "##ammo", save.hero_gadget_box->gadgets[i].ammo);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar(ImGuiDataType_U32, "##xp", save.hero_gadget_box->gadgets[i].xp);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar(ImGuiDataType_S32, "##action_frame", save.hero_gadget_box->gadgets[i].action_frame);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar(ImGuiDataType_S32, "##mod_active_post_fx", save.hero_gadget_box->gadgets[i].mod_active_post_fx);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar(ImGuiDataType_S32, "##mod_active_weapon", save.hero_gadget_box->gadgets[i].mod_active_weapon);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar_n(ImGuiDataType_S32, "##mod_active_basic", save.hero_gadget_box->gadgets[i].mod_active_basic);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar_n(ImGuiDataType_S32, "##mod_weapon", save.hero_gadget_box->gadgets[i].mod_weapon);
+		ImGui::PopID();
+	}
+	ImGui::EndTable();
+}
+
+static void gadget_events_subpage() {
+	memory_card::GadgetBox& g = *save.hero_gadget_box;
+	
+	ImGui::BeginTable("##gadget_entries", 9, ImGuiTableFlags_RowBg);
+	ImGui::TableSetupColumn("Index");
+	ImGui::TableSetupColumn("Gadget ID");
+	ImGui::TableSetupColumn("Player Index");
+	ImGui::TableSetupColumn("Gadget Type");
+	ImGui::TableSetupColumn("Gadget Event Type");
+	ImGui::TableSetupColumn("Active Time");
+	ImGui::TableSetupColumn("Target UID");
+	ImGui::TableSetupColumn("Target Offset Quat");
+	ImGui::TableSetupColumn("Next Gadget Event Pointer");
+	ImGui::TableHeadersRow();
+	for(s32 i = 0; i < ARRAY_SIZE(save.hero_gadget_box->gadget_event_slots); i++) {
+		ImGui::PushID(i);
+		ImGui::TableNextRow();
+		ImGui::TableNextColumn();
+		ImGui::Text("%d", i);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar(ImGuiDataType_U8, "##gadget_id", save.hero_gadget_box->gadget_event_slots[i].gadget_id);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar(ImGuiDataType_U8, "##player_index", save.hero_gadget_box->gadget_event_slots[i].player_index);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar(ImGuiDataType_U8, "##gadget_type", save.hero_gadget_box->gadget_event_slots[i].gadget_type);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar(ImGuiDataType_U8, "##gadget_event_type", save.hero_gadget_box->gadget_event_slots[i].gadget_event_type);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar(ImGuiDataType_S32, "##active_time", save.hero_gadget_box->gadget_event_slots[i].active_time);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar(ImGuiDataType_U32, "##target_uid", save.hero_gadget_box->gadget_event_slots[i].target_uid);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar_n(ImGuiDataType_Float, "##target_offset_quat", save.hero_gadget_box->gadget_event_slots[i].target_offset_quat);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar(ImGuiDataType_U32, "##p_next_gadget_event", save.hero_gadget_box->gadget_event_slots[i].p_next_gadget_event);
+		ImGui::PopID();
+	}
+	ImGui::EndTable();
+}
+
+static void gadget_messages_subpage() {
+	memory_card::GadgetBox& g = *save.hero_gadget_box;
+	
+	ImGui::BeginTable("##gadget_messages", 9, ImGuiTableFlags_RowBg);
+	ImGui::TableSetupColumn("Index");
+	ImGui::TableSetupColumn("Gadget ID");
+	ImGui::TableSetupColumn("Player Index");
+	ImGui::TableSetupColumn("Gadget Event Type");
+	ImGui::TableSetupColumn("Extra Data");
+	ImGui::TableSetupColumn("Active Time");
+	ImGui::TableSetupColumn("Target UID");
+	ImGui::TableSetupColumn("Firing Location");
+	ImGui::TableSetupColumn("Target Direction");
+	ImGui::TableHeadersRow();
+	for(s32 i = 0; i < ARRAY_SIZE(save.hero_gadget_box->gadget_event_slots); i++) {
+		ImGui::PushID(i);
+		ImGui::TableNextRow();
+		ImGui::TableNextColumn();
+		ImGui::Text("%d", i);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar(ImGuiDataType_S16, "##gadget_id", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.gadget_id);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar(ImGuiDataType_U8, "##player_index", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.player_index);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar(ImGuiDataType_U8, "##gadget_event_type", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.gadget_event_type);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar(ImGuiDataType_U8, "##extra_data", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.extra_data);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar(ImGuiDataType_S32, "##active_time", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.active_time);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar(ImGuiDataType_U32, "##target_uid", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.target_uid);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar_n(ImGuiDataType_Float, "##firing_loc", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.firing_loc);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar_n(ImGuiDataType_Float, "##target_dir", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.target_dir);
+		ImGui::PopID();
+	}
+	ImGui::EndTable();
+}
+
+static bool help_page(bool draw_gui) {
+	if(!draw_gui) {
+		return save.help_data_messages.has_value()
+			|| save.help_data_misc.has_value()
+			|| save.help_data_gadgets.has_value();
+	}
+	
+	if(ImGui::BeginTabBar("##help_tabs")) {
+		if(save.help_data_messages.has_value() && ImGui::BeginTabItem("Messages")) {
+			help_subpage("##help_messages", *save.help_data_messages);
+			ImGui::EndTabItem();
+		}
+		if(save.help_data_misc.has_value() && ImGui::BeginTabItem("Misc")) {
+			help_subpage("##help_misc", *save.help_data_misc);
+			ImGui::EndTabItem();
+		}
+		if(save.help_data_gadgets.has_value() && ImGui::BeginTabItem("Gadgets")) {
+			help_subpage("##help_gadgets", *save.help_data_gadgets);
+			ImGui::EndTabItem();
+		}
+		ImGui::EndTabBar();
+	}
+	
+	return true;
+}
+
+static void help_subpage(const char* label, std::vector<memory_card::HelpDatum>& help) {
+	ImGui::BeginTable(label, 9, ImGuiTableFlags_RowBg);
+	ImGui::TableSetupColumn("Index");
+	ImGui::TableSetupColumn("Times Used");
+	ImGui::TableSetupColumn("Counter");
+	ImGui::TableSetupColumn("Last Time");
+	ImGui::TableSetupColumn("Level Die");
+	ImGui::TableHeadersRow();
+	for(s32 i = 0; i < (s32) help.size(); i++) {
+		ImGui::PushID(i);
+		ImGui::TableNextRow();
+		ImGui::TableNextColumn();
+		ImGui::Text("%d", i);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar(ImGuiDataType_U16, "##times_used", help[i].times_used);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar(ImGuiDataType_U16, "##counter", help[i].counter);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar(ImGuiDataType_U32, "##last_time", help[i].last_time);
+		ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(-1);
+		input_scalar(ImGuiDataType_U32, "##level_die", help[i].level_die);
+		
+		ImGui::PopID();
+	}
+	ImGui::EndTable();
+}
+
+static bool hero_page(bool draw_gui) {
+	if(!save.hero_save.has_value()) return false;
+	if(!draw_gui) return true;
+	memory_card::HeroSave& h = *save.hero_save;
+	
 	input_scalar(ImGuiDataType_S32, "Bolts", h.bolts);
 	input_scalar(ImGuiDataType_S32, "Bolts Deficit", h.bolt_deficit);
 	input_scalar(ImGuiDataType_S32, "XP", h.xp);
@@ -247,38 +612,90 @@ static void hero_page() {
 	input_scalar(ImGuiDataType_U8, "Gold Badges", h.gold_badges);
 	input_scalar(ImGuiDataType_U8, "Black Badges", h.black_badges);
 	input_scalar(ImGuiDataType_U8, "Completes", h.completes);
-	input_scalar_n(ImGuiDataType_U8, "Last Equipped Gadget", h.last_equipped_gadget, 2);
-	input_scalar_n(ImGuiDataType_U8, "Temp Weapons", h.temp_weapons, 4);
+	input_scalar_n(ImGuiDataType_U8, "Last Equipped Gadget", h.last_equipped_gadget);
+	input_scalar_n(ImGuiDataType_U8, "Temp Weapons", h.temp_weapons);
 	input_scalar(ImGuiDataType_S32, "Current Max Limit Break", h.current_max_limit_break);
 	input_scalar(ImGuiDataType_S16, "Armor Level 2", h.armor_level_2);
 	input_scalar(ImGuiDataType_S16, "Progression Armor Level", h.progression_armor_level);
 	input_scalar(ImGuiDataType_S32, "Start Limit Break Diff", h.start_limit_break_diff);
+	
+	return true;
 }
 
-static void settings_page() {
-	if(!save->settings.has_value()) {
-		return;
+static bool settings_page(bool draw_gui) {
+	if(!save.settings.has_value()) return false;
+	if(!draw_gui) return true;
+	memory_card::GameSettings& s = *save.settings;
+	
+	input_scalar(ImGuiDataType_S32, "PAL Mode", s.pal_mode);
+	input_scalar(ImGuiDataType_U8, "Help Voice On", s.help_voice_on);
+	input_scalar(ImGuiDataType_U8, "Help Text On", s.help_text_on);
+	input_scalar(ImGuiDataType_U8, "Subtitles Active", s.subtitles_active);
+	input_scalar(ImGuiDataType_S32, "Stereo", s.stereo);
+	input_scalar(ImGuiDataType_S32, "Music Volume", s.music_volume);
+	input_scalar(ImGuiDataType_S32, "Effects Volume", s.effects_volume);
+	input_scalar(ImGuiDataType_S32, "Voice Volume", s.voice_volume);
+	input_scalar_multi(ImGuiDataType_S32, "Camera Elevation Dir", s.camera_elevation_dir, 3, 4);
+	input_scalar_multi(ImGuiDataType_S32, "Camera Azimuth Dir", s.camera_azimuth_dir, 3, 4);
+	input_scalar_multi(ImGuiDataType_S32, "Camera Rotate Speed", s.camera_rotate_speed, 3, 4);
+	input_scalar_n(ImGuiDataType_U8, "First Person Mode On", s.first_person_mode_on);
+	input_scalar(ImGuiDataType_U8, "Was NTSC Progessive", s.was_ntsc_progessive);
+	input_scalar(ImGuiDataType_U8, "Wide", s.wide);
+	input_scalar_n(ImGuiDataType_U8, "Controller Vibration On", s.controller_vibration_on);
+	input_scalar(ImGuiDataType_U8, "Quick Select Pause On", s.quick_select_pause_on);
+	input_scalar(ImGuiDataType_U8, "Language", s.language);
+	input_scalar(ImGuiDataType_U8, "Aux Setting 2", s.aux_setting_2);
+	input_scalar(ImGuiDataType_U8, "Aux Setting 3", s.aux_setting_3);
+	input_scalar(ImGuiDataType_U8, "Aux Setting 4", s.aux_setting_4);
+	input_scalar(ImGuiDataType_U8, "Auto Save On", s.auto_save_on);
+	
+	return true;
+}
+
+static bool statistics_page(bool draw_gui) {
+	if(!save.player_statistics.has_value()) return false;
+	if(!draw_gui) return true;
+	
+	if(ImGui::BeginTabBar("##player_statistics_tabs")) {
+		for(s32 i = 0; i < 2; i++) {
+			ImGui::PushID(i);
+			std::string tab_name = stringf("Player %d", i + 1);
+			if(ImGui::BeginTabItem(tab_name.c_str())) {
+				memory_card::PlayerData& d = save.player_statistics->data[i];
+				input_scalar(ImGuiDataType_U32, "Health Received", d.health_received);
+				input_scalar(ImGuiDataType_U32, "Damage Received", d.damage_received);
+				input_scalar(ImGuiDataType_U32, "Ammo Received", d.ammo_received);
+				input_scalar(ImGuiDataType_U32, "Time Charge Booting", d.time_charge_booting);
+				input_scalar(ImGuiDataType_U32, "Num Deaths", d.num_deaths);
+				input_scalar_n(ImGuiDataType_U32, "Weapon Kills", d.weapon_kills);
+				input_scalar_n(ImGuiDataType_Float, "Weapon Kill Percentage", d.weapon_kill_percentage);
+				input_scalar_n(ImGuiDataType_U32, "Ammo Used", d.ammo_used);
+				input_scalar_n(ImGuiDataType_U32, "Shots That Hit", d.shots_that_hit);
+				input_scalar_n(ImGuiDataType_U32, "Shots That Miss", d.shots_that_miss);
+				input_scalar_n(ImGuiDataType_Float, "Shot Accuracy", d.shot_accuracy);
+				input_scalar_n(ImGuiDataType_U32, "Func Mod Kills", d.func_mod_kills);
+				input_scalar_n(ImGuiDataType_U32, "Func Mod Used", d.func_mod_used);
+				input_scalar_n(ImGuiDataType_U32, "Time Spent In Vehicles", d.time_spent_in_vehicles);
+				input_scalar_n(ImGuiDataType_U32, "Kills With Vehicle Weaps", d.kills_with_vehicle_weaps);
+				input_scalar_n(ImGuiDataType_U32, "Kills From Vehicle Squashing", d.kills_from_vehicle_squashing);
+				input_scalar(ImGuiDataType_U32, "Kills While In Vehicle", d.kills_while_in_vehicle);
+				input_scalar_n(ImGuiDataType_U32, "Vehicle Shots That Hit", d.vehicle_shots_that_hit);
+				input_scalar_n(ImGuiDataType_U32, "Vehicle Shots That Miss", d.vehicle_shots_that_miss);
+				input_scalar_n(ImGuiDataType_Float, "Vehicle Shot Accuracy", d.vehicle_shot_accuracy);
+				ImGui::EndTabItem();
+			}
+			ImGui::PopID();
+		}
+		ImGui::EndTabBar();
 	}
 	
-	memory_card::GameSettings& s = *save->settings;
-	//ImGui::InputInt("PAL Mode", &s.pal_mode);
-	//input_u8("help_voice_on", &s.help_voice_on);
-	//input_u8("help_text_on", &s.help_text_on);
-	//input_u8("subtitles_active", &s.subtitles_active);
-	//ImGui::InputInt("stereo", &s.stereo);
-	//ImGui::InputInt("music_volume", &s.music_volume);
-	//ImGui::InputInt("effects_volume", &s.effects_volume);
-	//ImGui::InputInt("voice_volume", &s.voice_volume);
-	//input_u8("was_ntsc_progessive", &s.was_ntsc_progessive);
-	//input_u8("wide", &s.wide);
-	//input_u8("quick_select_pause_on", &s.quick_select_pause_on);
-	//input_u8("language", &s.language);
-	//input_u8("aux_setting_2", &s.aux_setting_2);
-	//input_u8("aux_setting_3", &s.aux_setting_3);
-	//input_u8("aux_setting_4", &s.aux_setting_4);
-	//input_u8("auto_save_on", &s.auto_save_on);
+	return true;
 }
 
-static void statistics_page() {
-	
+static u8 from_bcd(u8 value) {
+	return (value & 0xf) + ((value & 0xf0) >> 4) * 10;
+}
+
+static u8 to_bcd(u8 value) {
+	return (value % 10) | (value / 10) << 4;
 }

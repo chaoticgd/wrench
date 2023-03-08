@@ -89,21 +89,6 @@ struct FileFormat {
 	std::vector<SectionType> level_sections;
 };
 
-packed_struct(Vec3,
-	/* 0x0 */ f32 x;
-	/* 0x4 */ f32 y;
-	/* 0x8 */ f32 z;
-)
-static_assert(sizeof(Vec3) == 0xc);
-
-packed_struct(Vec4,
-	/* 0x0 */ f32 x;
-	/* 0x4 */ f32 y;
-	/* 0x8 */ f32 z;
-	/* 0xc */ f32 w;
-)
-static_assert(sizeof(Vec4) == 0x10);
-
 packed_struct(Clock,
 	u8 stat;
 	u8 second;
@@ -188,8 +173,8 @@ packed_struct(GadgetEventMessage,
 	/* 0x05 */ u8 pad_5[3];
 	/* 0x08 */ s32 active_time;
 	/* 0x0c */ u32 target_uid;
-	/* 0x10 */ Vec3 firing_loc;
-	/* 0x1c */ Vec3 target_dir;
+	/* 0x10 */ f32 firing_loc[3];
+	/* 0x1c */ f32 target_dir[3];
 )
 static_assert(sizeof(GadgetEventMessage) == 0x28);
 
@@ -201,7 +186,7 @@ packed_struct(GadgetEvent,
 	/* 0x04 */ s32 active_time;
 	/* 0x08 */ u32 target_uid;
 	/* 0x0c */ u8 pad_c[4];
-	/* 0x10 */ Vec4 target_offset_quat;
+	/* 0x10 */ f32 target_offset_quat[4];
 	/* 0x20 */ u32 p_next_gadget_event;
 	/* 0x24 */ GadgetEventMessage gadget_event_msg;
 	/* 0x4c */ u8 pad_4c[4];
@@ -253,10 +238,10 @@ packed_struct(GadgetEntry,
 	/* 0x02 */ s16 ammo;
 	/* 0x04 */ u32 xp;
 	/* 0x08 */ s32 action_frame;
-	/* 0x0c */ ModPostFXType mod_active_post_fx;
-	/* 0x10 */ ModWeaponType mod_active_weapon;
-	/* 0x14 */ ModBasicType mod_active_basic[10];
-	/* 0x3c */ ModWeaponType mod_weapon[2];
+	/* 0x0c */ s32 mod_active_post_fx;
+	/* 0x10 */ s32 mod_active_weapon;
+	/* 0x14 */ s32 mod_active_basic[10];
+	/* 0x3c */ s32 mod_weapon[2];
 )
 static_assert(sizeof(GadgetEntry) == 0x44);
 
@@ -276,11 +261,11 @@ packed_struct(GadgetBox,
 static_assert(sizeof(GadgetBox) == 0x12b0);
 
 packed_struct(BotSave,
-	/* 0x000 */ u8 bot_upgrades[17];
-	/* 0x011 */ u8 bot_paintjobs[11];
-	/* 0x01c */ u8 bot_heads[8];
-	/* 0x024 */ u8 cur_bot_paint_job[2];
-	/* 0x026 */ u8 cur_bot_head[2];
+	/* 0x00 */ u8 bot_upgrades[17];
+	/* 0x11 */ u8 bot_paintjobs[11];
+	/* 0x1c */ u8 bot_heads[8];
+	/* 0x24 */ u8 cur_bot_paint_job[2];
+	/* 0x26 */ u8 cur_bot_head[2];
 )
 static_assert(sizeof(BotSave) == 0x28);
 
@@ -309,8 +294,8 @@ packed_struct(PlayerData,
 static_assert(sizeof(PlayerData) == 0x2a0);
 
 packed_struct(EnemyKillInfo,
-	/* 0x000 */ s32 o_class;
-	/* 0x004 */ s32 kills;
+	/* 0x0 */ s32 o_class;
+	/* 0x4 */ s32 kills;
 )
 static_assert(sizeof(EnemyKillInfo) == 0x8);
 
@@ -320,6 +305,7 @@ packed_struct(QuickSwitchGadgets,
 static_assert(sizeof(QuickSwitchGadgets) == 0x30);
 
 struct SaveGame {
+	bool loaded = false;
 	Opt<s32> level;
 	Opt<s32> elapsed_time;
 	Opt<Clock> last_save_time;

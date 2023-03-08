@@ -99,6 +99,7 @@ u32 checksum(Buffer src) {
 
 SaveGame parse_save(const File& file) {
 	SaveGame save;
+	save.loaded = true;
 	for(const Section& section : file.game) {
 		Buffer buffer = section.data;
 		switch(section.type) {
