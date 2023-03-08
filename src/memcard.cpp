@@ -62,7 +62,7 @@ static Page PAGES[] = {
 	{"Statistics", &statistics_page}
 };
 
-static std::string directory;
+static std::string directory = "-/home/thomas/pcsx2/memcards/folder_card.ps2/BESCES-53285RATCHET/";
 static std::vector<fs::path> file_paths;
 static size_t selected_file_index = 0;
 static bool should_load_now = false;
@@ -248,7 +248,11 @@ static void do_save() {
 			memory_card::update_save(*file, save);
 			std::vector<u8> buffer;
 			memory_card::write_save(buffer, *file);
-			write_file(file->path.replace_extension(".test"), buffer);
+			fs::path backup_path = file->path.replace_extension("backup");
+			if(fs::exists(file->path) && !fs::exists(backup_path)) {
+				fs::copy(file->path, backup_path);
+			}
+			write_file(file->path, buffer);
 		} catch(RuntimeError& error) {
 			error_message = error.message;
 		}
