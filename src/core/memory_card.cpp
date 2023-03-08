@@ -68,21 +68,25 @@ std::vector<Section> read_sections(bool* checksum_does_not_match_out, Buffer src
 			break;
 		}
 		
+		// Preserve uninitialised padding.
+		s32 read_size = align64(section_header.size, 4);
+		
 		Section& section = sections.emplace_back();
 		section.type = section_header.type;
-		section.data = src.read_bytes(pos, section_header.size, "section data");
-		pos = align64(pos + section_header.size, 4);
+		section.unpadded_size = section_header.size;
+		section.data = src.read_bytes(pos, read_size, "section data");
+		pos += read_size;
 	}
 	
 	return sections;
 }
 
-void write_save(OutBuffer dest, const File& save) {
+void write_save(OutBuffer dest, File& save) {
 	s64 file_header_ofs = dest.alloc<FileHeader>();
 	FileHeader file_header;
 	file_header.game_data_size = (s32) write_sections(dest, save.sections);
 	file_header.level_data_size = 0;
-	for(const std::vector<Section>& sections : save.levels) {
+	for(std::vector<Section>& sections : save.levels) {
 		u32 data_size = (s32) write_sections(dest, sections);
 		if(file_header.level_data_size == 0) {
 			file_header.level_data_size = data_size;
@@ -93,14 +97,14 @@ void write_save(OutBuffer dest, const File& save) {
 	dest.write(file_header_ofs, file_header);
 }
 
-s64 write_sections(OutBuffer dest, const std::vector<Section>& sections) {
+s64 write_sections(OutBuffer dest, std::vector<Section>& sections) {
 	s64 checksum_header_ofs = dest.alloc<ChecksumHeader>();
 	s64 checksum_start_ofs = dest.tell();
 	
-	for(const Section& section : sections) {
+	for(Section& section : sections) {
 		SectionHeader header;
 		header.type = section.type;
-		header.size = (s32) section.data.size();
+		header.size = section.unpadded_size;
 		dest.write(header);
 		dest.write_multiple(section.data);
 		dest.pad(4);
@@ -176,16 +180,14 @@ SaveGame parse_save(const File& file) {
 template <typename T>
 static void update_section(OutBuffer dest, const Opt<T>& src) {
 	if(src.has_value()) {
-		dest.vec.clear();
-		dest.write( *src);
+		dest.write(0, *src);
 	}
 }
 
 template <typename T>
 static void update_section_array(OutBuffer dest, const Opt<T>& src) {
 	if(src.has_value()) {
-		dest.vec.clear();
-		dest.write_multiple(*src);
+		dest.write_multiple(0, *src);
 	}
 }
 

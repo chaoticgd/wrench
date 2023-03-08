@@ -31,6 +31,7 @@ namespace memory_card {
 
 struct Section {
 	s32 type;
+	s32 unpadded_size;
 	std::vector<u8> data;
 };
 
@@ -43,8 +44,8 @@ struct File {
 
 File read_save(Buffer src);
 std::vector<Section> read_sections(bool* checksum_does_not_match_out, Buffer src, s64& pos);
-void write_save(OutBuffer dest, const File& save);
-s64 write_sections(OutBuffer dest, const std::vector<Section>& sections);
+void write_save(OutBuffer dest, File& save);
+s64 write_sections(OutBuffer dest, std::vector<Section>& sections);
 u32 checksum(Buffer src);
 
 // *****************************************************************************
