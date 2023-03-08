@@ -38,11 +38,14 @@ struct BufferArray {
 
 template <typename T, s64 N>
 packed_struct(FixedArray,
-	T data[N];
-	FixedArray(const BufferArray<T>& array) {
-		assert(array.size() == N);
-		memcpy(data, array.lo, array.size() * sizeof(T));
+	T array[N];
+	using value_type = T;
+	FixedArray(const BufferArray<T>& src) {
+		assert(src.size() == N);
+		memcpy(array, src.lo, src.size() * sizeof(T));
 	}
+	const T* data() const { return array; }
+	s64 size() const { return N; }
 )
 
 struct Buffer {

@@ -27,6 +27,8 @@ static void sections();
 static void editor();
 static void begin_dock_space();
 static void create_dock_layout();
+static void do_load();
+static void do_save();
 static bool save_page(bool draw_gui);
 static bool bots_page(bool draw_gui);
 static bool enemy_kills_page(bool draw_gui);
@@ -66,7 +68,7 @@ static size_t selected_file_index = 0;
 static bool should_load_now = false;
 static bool should_save_now = false;
 static Opt<memory_card::File> file;
-static std::string load_error_message;
+static std::string error_message;
 static memory_card::SaveGame save;
 
 int main(int argc, char** argv) {
@@ -79,23 +81,12 @@ int main(int argc, char** argv) {
 		gui::run_frame(window, update_gui);
 		
 		if(should_load_now) {
-			if(selected_file_index < file_paths.size()) {
-				try {
-					std::vector<u8> buffer = read_file(file_paths[selected_file_index]);
-					file = memory_card::read_save(buffer);
-					load_error_message.clear();
-					save = memory_card::parse_save(*file);
-					for(Page& page : PAGES) {
-						page.visible = page.func(false);
-					}
-				} catch(RuntimeError& error) {
-					load_error_message = error.message;
-				}
-			}
+			do_load();
 			should_load_now = false;
 		}
 		
 		if(should_save_now) {
+			do_save();
 			should_save_now = false;
 		}
 	}
@@ -161,8 +152,8 @@ static void sections() {
 }
 
 static void editor() {
-	if(!load_error_message.empty()) {
-		ImGui::Text("%s", load_error_message.c_str());
+	if(!error_message.empty()) {
+		ImGui::Text("%s", error_message.c_str());
 		return;
 	}
 	
@@ -234,6 +225,36 @@ static void create_dock_layout() {
 	ImGui::DockBuilderFinish(dockspace_id);
 }
 
+static void do_load() {
+	if(selected_file_index < file_paths.size()) {
+		try {
+			std::vector<u8> buffer = read_file(file_paths[selected_file_index]);
+			file = memory_card::read_save(buffer);
+			file->path = file_paths[selected_file_index];
+			error_message.clear();
+			save = memory_card::parse_save(*file);
+			for(Page& page : PAGES) {
+				page.visible = page.func(false);
+			}
+		} catch(RuntimeError& error) {
+			error_message = error.message;
+		}
+	}
+}
+
+static void do_save() {
+	if(file.has_value() && save.loaded) {
+		try {
+			memory_card::update_save(*file, save);
+			std::vector<u8> buffer;
+			memory_card::write_save(buffer, *file);
+			write_file(file->path.replace_extension(".test"), buffer);
+		} catch(RuntimeError& error) {
+			error_message = error.message;
+		}
+	}
+}
+
 // I'm using macros instead of functions here so that the compiler doesn't
 // complain about misaligned pointers (even if in practice they should be aligned).
 #define input_scalar(data_type, label, value) \
@@ -289,18 +310,18 @@ static bool save_page(bool draw_gui) {
 	if(save.level.has_value()) input_scalar(ImGuiDataType_S32, "Level", *save.level);
 	if(save.elapsed_time.has_value()) input_scalar(ImGuiDataType_S32, "Elapsed Time", *save.elapsed_time);
 	if(save.last_save_time.has_value()) input_clock("Last Save Time (smhdmy)", *save.last_save_time)
-	if(save.global_flags.has_value()) input_scalar_n(ImGuiDataType_U8, "Global Flags", save.global_flags->data);
-	if(save.global_flags.has_value()) input_scalar_n(ImGuiDataType_U8, "Global Flags", save.global_flags->data);
-	if(save.cheats_activated.has_value()) input_scalar_n(ImGuiDataType_U8, "Cheats Activated", save.cheats_activated->data);
-	if(save.skill_points.has_value()) input_scalar_n(ImGuiDataType_S32, "Skill Points", save.skill_points->data);
-	if(save.cheats_ever_activated.has_value()) input_scalar_n(ImGuiDataType_U8, "Cheats Ever Activated", save.cheats_ever_activated->data);
-	if(save.movies_played_record.has_value()) input_scalar_n(ImGuiDataType_U32, "Movies Played Record", save.movies_played_record->data);
+	if(save.global_flags.has_value()) input_scalar_n(ImGuiDataType_U8, "Global Flags", save.global_flags->array);
+	if(save.global_flags.has_value()) input_scalar_n(ImGuiDataType_U8, "Global Flags", save.global_flags->array);
+	if(save.cheats_activated.has_value()) input_scalar_n(ImGuiDataType_U8, "Cheats Activated", save.cheats_activated->array);
+	if(save.skill_points.has_value()) input_scalar_n(ImGuiDataType_S32, "Skill Points", save.skill_points->array);
+	if(save.cheats_ever_activated.has_value()) input_scalar_n(ImGuiDataType_U8, "Cheats Ever Activated", save.cheats_ever_activated->array);
+	if(save.movies_played_record.has_value()) input_scalar_n(ImGuiDataType_U32, "Movies Played Record", save.movies_played_record->array);
 	if(save.total_play_time.has_value()) input_scalar(ImGuiDataType_S32, "Total Play Time", *save.total_play_time);
 	if(save.total_deaths.has_value()) input_scalar(ImGuiDataType_S32, "Total Deaths", *save.total_deaths);
-	if(save.purchaseable_gadgets.has_value()) input_scalar_n(ImGuiDataType_U8, "Purchaseable Gadgets", save.purchaseable_gadgets->data);
-	if(save.first_person_desired_mode.has_value()) input_scalar_n(ImGuiDataType_S32, "First Person Desired Mode", save.first_person_desired_mode->data);
+	if(save.purchaseable_gadgets.has_value()) input_scalar_n(ImGuiDataType_U8, "Purchaseable Gadgets", save.purchaseable_gadgets->array);
+	if(save.first_person_desired_mode.has_value()) input_scalar_n(ImGuiDataType_S32, "First Person Desired Mode", save.first_person_desired_mode->array);
 	if(save.saved_difficulty_level.has_value()) input_scalar(ImGuiDataType_S32, "Saved Difficulty Level", *save.saved_difficulty_level);
-	if(save.battledome_wins_and_losses.has_value()) input_scalar_n(ImGuiDataType_S32, "Battledome Wins and Losses", save.battledome_wins_and_losses->data);
+	if(save.battledome_wins_and_losses.has_value()) input_scalar_n(ImGuiDataType_S32, "Battledome Wins and Losses", save.battledome_wins_and_losses->array);
 	if(save.quick_switch_gadgets.has_value()) input_scalar_multi(ImGuiDataType_S32, "Quick Select Gadgets", save.quick_switch_gadgets->array, 4, 3);
 	
 	return true;
@@ -329,17 +350,17 @@ static bool enemy_kills_page(bool draw_gui) {
 	ImGui::TableSetupColumn("Enemy Class");
 	ImGui::TableSetupColumn("Kill Count");
 	ImGui::TableHeadersRow();
-	for(s32 i = 0; i < ARRAY_SIZE(save.enemy_kills->data); i++) {
+	for(s32 i = 0; i < ARRAY_SIZE(save.enemy_kills->array); i++) {
 		ImGui::PushID(i);
 		ImGui::TableNextRow();
 		ImGui::TableNextColumn();
 		ImGui::Text("%d", i);
 		ImGui::TableNextColumn();
 		ImGui::SetNextItemWidth(-1);
-		input_scalar(ImGuiDataType_S32, "##o_class", save.enemy_kills->data[i].o_class);
+		input_scalar(ImGuiDataType_S32, "##o_class", save.enemy_kills->array[i].o_class);
 		ImGui::TableNextColumn();
 		ImGui::SetNextItemWidth(-1);
-		input_scalar(ImGuiDataType_S32, "##kills", save.enemy_kills->data[i].kills);
+		input_scalar(ImGuiDataType_S32, "##kills", save.enemy_kills->array[i].kills);
 		ImGui::PopID();
 	}
 	ImGui::EndTable();
@@ -661,7 +682,7 @@ static bool statistics_page(bool draw_gui) {
 			ImGui::PushID(i);
 			std::string tab_name = stringf("Player %d", i + 1);
 			if(ImGui::BeginTabItem(tab_name.c_str())) {
-				memory_card::PlayerData& d = save.player_statistics->data[i];
+				memory_card::PlayerData& d = save.player_statistics->array[i];
 				input_scalar(ImGuiDataType_U32, "Health Received", d.health_received);
 				input_scalar(ImGuiDataType_U32, "Damage Received", d.damage_received);
 				input_scalar(ImGuiDataType_U32, "Ammo Received", d.ammo_received);

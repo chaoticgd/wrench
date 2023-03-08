@@ -20,6 +20,7 @@
 #define CORE_MEMORY_CARD_H
 
 #include <core/buffer.h>
+#include <core/filesystem.h>
 #include <core/build_config.h>
 
 namespace memory_card {
@@ -34,14 +35,16 @@ struct Section {
 };
 
 struct File {
+	fs::path path;
 	bool checksum_does_not_match = false;
-	std::vector<Section> game;
+	std::vector<Section> sections;
 	std::vector<std::vector<Section>> levels;
 };
 
 File read_save(Buffer src);
 std::vector<Section> read_sections(bool* checksum_does_not_match_out, Buffer src, s64& pos);
-void write(OutBuffer dest, const File& save);
+void write_save(OutBuffer dest, const File& save);
+s64 write_sections(OutBuffer dest, const std::vector<Section>& sections);
 u32 checksum(Buffer src);
 
 // *****************************************************************************
@@ -53,33 +56,33 @@ enum FileType {
 };
 
 enum SectionType : s32 {
-	SECTION_LEVEL                   = 0,
-	SECTION_ELAPSEDTIME             = 3,
-	SECTION_LASTSAVETIME            = 4,
-	SECTION_GLOBALFLAGS             = 5,
-	SECTION_CHEATSACTIVATED         = 7,
-	SECTION_SKILLPOINTS             = 8,
-	SECTION_HELPDATAMESSAGES        = 10,
-	SECTION_HELPDATAMISC            = 11,
-	SECTION_HELPDATAGADGETS         = 12,
-	SECTION_CHEATSEVERACTIVATED     = 37,
-	SECTION_SETTINGS                = 38,
-	SECTION_HEROSAVE                = 39,
-	SECTION_MOVIESPLAYEDRECORD      = 43,
-	SECTION_TOTALPLAYTIME           = 1003,
-	SECTION_TOTALDEATHS             = 1005,
-	SECTION_HELPLOG                 = 1010,
-	SECTION_HELPLOGPOS              = 1011,
-	SECTION_HEROGADGETBOX           = 7008,
-	SECTION_LEVELSAVEDATA           = 7009,
-	SECTION_PURCHASEABLEGADGETS     = 7010,
-	SECTION_BOTSAVE                 = 7014,
-	SECTION_FIRSTPERSONDESIREDMODE  = 7015,
-	SECTION_SAVEDDIFFICULTYLEVEL    = 7016,
-	SECTION_PLAYERSTATISTICS        = 7017,
-	SECTION_BATTLEDOMEWINSANDLOSSES = 7018,
-	SECTION_ENEMYKILLS              = 7019,
-	SECTION_QUICKSWITCHGADGETS      = 7020
+	ST_LEVEL                = 0,
+	ST_ELAPSEDTIME          = 3,
+	ST_LASTSAVETIME         = 4,
+	ST_GLOBALFLAGS          = 5,
+	ST_CHEATSACTIVATED      = 7,
+	ST_SKILLPOINTS          = 8,
+	ST_HELPDATAMESSAGES     = 10,
+	ST_HELPDATAMISC         = 11,
+	ST_HELPDATAGADGETS      = 12,
+	ST_CHEATSEVERACTIVATED  = 37,
+	ST_SETTINGS             = 38,
+	ST_HEROSAVE             = 39,
+	ST_MOVIESPLAYEDRECORD   = 43,
+	ST_TOTALPLAYTIME        = 1003,
+	ST_TOTALDEATHS          = 1005,
+	ST_HELPLOG              = 1010,
+	ST_HELPLOGPOS           = 1011,
+	ST_HEROGADGETBOX        = 7008,
+	ST_LEVELSAVEDATA        = 7009,
+	ST_PURCHASEABLEGADGETS  = 7010,
+	ST_BOTSAVE              = 7014,
+	ST_FIRSTPERSONMODE      = 7015,
+	ST_SAVEDDIFFICULTYLEVEL = 7016,
+	ST_PLAYERSTATISTICS     = 7017,
+	ST_BATTLEDOMEWINSLOSSES = 7018,
+	ST_ENEMYKILLS           = 7019,
+	ST_QUICKSWITCHGADGETS   = 7020
 };
 
 struct FileFormat {
@@ -336,6 +339,7 @@ struct SaveGame {
 
 
 SaveGame parse_save(const File& file);
+void update_save(File& dest, const SaveGame& save);
 
 extern const std::vector<FileFormat> FILE_FORMATS;
 
