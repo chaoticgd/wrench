@@ -690,10 +690,13 @@ static bool statistics_page(bool draw_gui) {
 	if(!save.player_statistics.has_value()) return false;
 	if(!draw_gui) return true;
 	
+	ImGui::AlignTextToFramePadding();
+	ImGui::Text("Player:");
+	ImGui::SameLine();
 	if(ImGui::BeginTabBar("##player_statistics_tabs")) {
 		for(s32 i = 0; i < 2; i++) {
 			ImGui::PushID(i);
-			std::string tab_name = stringf("Player %d", i + 1);
+			std::string tab_name = stringf("%d", i + 1);
 			if(ImGui::BeginTabItem(tab_name.c_str())) {
 				memory_card::PlayerData& d = save.player_statistics->array[i];
 				input_scalar(ImGuiDataType_U32, "Health Received", d.health_received);
@@ -755,8 +758,18 @@ static bool levels_page(bool draw_gui) {
 	return true;
 }
 static bool missions_page(bool draw_gui) {
+	bool any_tabs = false;
+	for(const memory_card::LevelSaveGame& level_save_game : save.levels) {
+		if(level_save_game.level.has_value()) {
+			any_tabs = true;
+		}
+	}
+	if(!any_tabs) return false;
 	if(!draw_gui) return true;
 	
+	ImGui::AlignTextToFramePadding();
+	ImGui::Text("Level:");
+	ImGui::SameLine();
 	if(ImGui::BeginTabBar("##mission_tabs")) {
 		for(s32 i = 0; i < (s32) save.levels.size(); i++) {
 			memory_card::LevelSaveGame& level_save_game = save.levels[i];
