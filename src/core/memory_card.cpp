@@ -174,6 +174,15 @@ SaveGame parse_save(const File& file) {
 			case ST_QUICKSWITCHGADGETS:   save.quick_switch_gadgets       = buffer.read<QuickSwitchGadgets>(0);              break;
 		}
 	}
+	for(const std::vector<Section>& sections : file.levels) {
+		LevelSaveGame& level_save_game = save.levels.emplace_back();
+		for(const Section& section : sections) {
+			Buffer buffer = section.data;
+			switch(section.type) {
+				case ST_LEVELSAVEDATA: level_save_game.level = buffer.read<LevelSave>(0); break;
+			}
+		}
+	}
 	return save;
 }
 
@@ -221,6 +230,15 @@ void update_save(File& dest, const SaveGame& save) {
 			case ST_BATTLEDOMEWINSLOSSES: update_section_array(buffer, save.battledome_wins_and_losses); break;
 			case ST_ENEMYKILLS:           update_section_array(buffer, save.enemy_kills);                break;
 			case ST_QUICKSWITCHGADGETS:   update_section      (buffer, save.quick_switch_gadgets);       break;
+		}
+	}
+	assert(dest.levels.size() == save.levels.size());
+	for(size_t i = 0; i < dest.levels.size(); i++) {
+		for(Section& section : dest.levels[i]) {
+			OutBuffer buffer = section.data;
+			switch(section.type) {
+				case ST_LEVELSAVEDATA: update_section(buffer, save.levels[i].level); break;
+			}
 		}
 	}
 }

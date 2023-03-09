@@ -42,6 +42,8 @@ static void help_subpage(const char* label, std::vector<memory_card::HelpDatum>&
 static bool hero_page(bool draw_gui);
 static bool settings_page(bool draw_gui);
 static bool statistics_page(bool draw_gui);
+static bool levels_page(bool draw_gui);
+static bool missions_page(bool draw_gui);
 static u8 from_bcd(u8 value);
 static u8 to_bcd(u8 value);
 
@@ -59,7 +61,9 @@ static Page PAGES[] = {
 	{"Help", &help_page},
 	{"Hero", &hero_page},
 	{"Settings", &settings_page},
-	{"Statistics", &statistics_page}
+	{"Statistics", &statistics_page},
+	{"Levels", &levels_page},
+	{"Missions", &missions_page}
 };
 
 static std::string directory = "-/home/thomas/pcsx2/memcards/folder_card.ps2/BESCES-53285RATCHET/";
@@ -358,6 +362,7 @@ static bool enemy_kills_page(bool draw_gui) {
 		ImGui::PushID(i);
 		ImGui::TableNextRow();
 		ImGui::TableNextColumn();
+		ImGui::AlignTextToFramePadding();
 		ImGui::Text("%d", i);
 		ImGui::TableNextColumn();
 		ImGui::SetNextItemWidth(-1);
@@ -431,6 +436,7 @@ static void gadget_entries_subpage() {
 		ImGui::PushID(i);
 		ImGui::TableNextRow();
 		ImGui::TableNextColumn();
+		ImGui::AlignTextToFramePadding();
 		ImGui::Text("%d", i);
 		ImGui::TableNextColumn();
 		ImGui::SetNextItemWidth(-1);
@@ -479,6 +485,7 @@ static void gadget_events_subpage() {
 		ImGui::PushID(i);
 		ImGui::TableNextRow();
 		ImGui::TableNextColumn();
+		ImGui::AlignTextToFramePadding();
 		ImGui::Text("%d", i);
 		ImGui::TableNextColumn();
 		ImGui::SetNextItemWidth(-1);
@@ -527,6 +534,7 @@ static void gadget_messages_subpage() {
 		ImGui::PushID(i);
 		ImGui::TableNextRow();
 		ImGui::TableNextColumn();
+		ImGui::AlignTextToFramePadding();
 		ImGui::Text("%d", i);
 		ImGui::TableNextColumn();
 		ImGui::SetNextItemWidth(-1);
@@ -595,6 +603,7 @@ static void help_subpage(const char* label, std::vector<memory_card::HelpDatum>&
 		ImGui::PushID(i);
 		ImGui::TableNextRow();
 		ImGui::TableNextColumn();
+		ImGui::AlignTextToFramePadding();
 		ImGui::Text("%d", i);
 		ImGui::TableNextColumn();
 		ImGui::SetNextItemWidth(-1);
@@ -710,6 +719,86 @@ static bool statistics_page(bool draw_gui) {
 				ImGui::EndTabItem();
 			}
 			ImGui::PopID();
+		}
+		ImGui::EndTabBar();
+	}
+	
+	return true;
+}
+
+static bool levels_page(bool draw_gui) {
+	if(!draw_gui) return true;
+	
+	ImGui::BeginTable("##levels", 3, ImGuiTableFlags_RowBg);
+	ImGui::TableSetupColumn("Index");
+	ImGui::TableSetupColumn("Status");
+	ImGui::TableSetupColumn("Jackpot");
+	ImGui::TableHeadersRow();
+	for(s32 i = 0; i < (s32) save.levels.size(); i++) {
+		if(save.levels[i].level.has_value()) {
+			ImGui::PushID(i);
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("%d", i);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar(ImGuiDataType_U8, "##status", save.levels[i].level->status);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar(ImGuiDataType_U8, "##jackpot", save.levels[i].level->jackpot);
+			ImGui::PopID();
+		}
+	}
+	ImGui::EndTable();
+	
+	return true;
+}
+static bool missions_page(bool draw_gui) {
+	if(!draw_gui) return true;
+	
+	if(ImGui::BeginTabBar("##mission_tabs")) {
+		for(s32 i = 0; i < (s32) save.levels.size(); i++) {
+			memory_card::LevelSaveGame& level_save_game = save.levels[i];
+			std::string tab_name = stringf("%d", i);
+			if(level_save_game.level.has_value() && ImGui::BeginTabItem(tab_name.c_str())) {
+				memory_card::LevelSave& level = *level_save_game.level;
+				ImGui::BeginTable("##missions", 6, ImGuiTableFlags_RowBg);
+				ImGui::TableSetupColumn("Index");
+				ImGui::TableSetupColumn("XP");
+				ImGui::TableSetupColumn("Bolts");
+				ImGui::TableSetupColumn("Status");
+				ImGui::TableSetupColumn("Completes");
+				ImGui::TableSetupColumn("Difficulty");
+				ImGui::TableHeadersRow();
+				for(s32 j = 0; j < ARRAY_SIZE(level_save_game.level->mission); j++) {
+					if(save.levels[i].level.has_value()) {
+						ImGui::PushID(j);
+						ImGui::TableNextRow();
+						ImGui::TableNextColumn();
+						ImGui::AlignTextToFramePadding();
+						ImGui::Text("%d", j);
+						ImGui::TableNextColumn();
+						ImGui::SetNextItemWidth(-1);
+						input_scalar(ImGuiDataType_S32, "##xp", level.mission[j].xp);
+						ImGui::TableNextColumn();
+						ImGui::SetNextItemWidth(-1);
+						input_scalar(ImGuiDataType_S32, "##bolts", level.mission[j].bolts);
+						ImGui::TableNextColumn();
+						ImGui::SetNextItemWidth(-1);
+						input_scalar(ImGuiDataType_U8, "##status", level.mission[j].status);
+						ImGui::TableNextColumn();
+						ImGui::SetNextItemWidth(-1);
+						input_scalar(ImGuiDataType_U8, "##completes", level.mission[j].completes);
+						ImGui::TableNextColumn();
+						ImGui::SetNextItemWidth(-1);
+						input_scalar(ImGuiDataType_U8, "##difficulty", level.mission[j].difficulty);
+						ImGui::PopID();
+					}
+				}
+				ImGui::EndTable();
+				ImGui::EndTabItem();
+			}
 		}
 		ImGui::EndTabBar();
 	}

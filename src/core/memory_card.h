@@ -308,6 +308,28 @@ packed_struct(QuickSwitchGadgets,
 )
 static_assert(sizeof(QuickSwitchGadgets) == 0x30);
 
+packed_struct(MissionSave,
+	/* 0x000 */ s32 xp;
+	/* 0x004 */ s32 bolts;
+	/* 0x008 */ u8 status;
+	/* 0x009 */ u8 completes;
+	/* 0x00a */ u8 difficulty;
+	/* 0x00b */ u8 pad_b;
+)
+static_assert(sizeof(MissionSave) == 0xc);
+
+packed_struct(LevelSave,
+	/* 0x000 */ MissionSave mission[64];
+	/* 0x300 */ u8 status;
+	/* 0x301 */ u8 jackpot;
+	/* 0x302 */ u8 pad_302[2];
+)
+static_assert(sizeof(LevelSave) == 0x304);
+
+struct LevelSaveGame {
+	Opt<LevelSave> level;
+};
+
 struct SaveGame {
 	bool loaded = false;
 	Opt<s32> level;
@@ -336,6 +358,7 @@ struct SaveGame {
 	Opt<FixedArray<s32, 2>> battledome_wins_and_losses;
 	Opt<FixedArray<EnemyKillInfo, 30>> enemy_kills;
 	Opt<QuickSwitchGadgets> quick_switch_gadgets;
+	std::vector<LevelSaveGame> levels;
 };
 
 
