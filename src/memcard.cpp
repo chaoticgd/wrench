@@ -145,9 +145,7 @@ static void files() {
 		file_paths.clear();
 		try {
 			for(auto entry : fs::directory_iterator(directory)) {
-				if(entry.is_regular_file()) {
-					file_paths.emplace_back(entry.path());
-				}
+				file_paths.emplace_back(entry.path());
 			}
 			listing_error.clear();
 		} catch(std::filesystem::filesystem_error& error) {
@@ -162,10 +160,28 @@ static void files() {
 	}
 	
 	ImGui::BeginChild("##files");
+	if(ImGui::Selectable("[DIR] .")) {
+		should_reload_file_list = true;
+	}
+	if(ImGui::Selectable("[DIR] ..")) {
+		directory = fs::weakly_canonical(fs::path(directory)).parent_path().string();
+		should_reload_file_list = true;
+	}
 	for(auto& path : file_paths) {
-		if(ImGui::Selectable(path.filename().string().c_str(), path == selected_file_path)) {
-			should_load_now = true;
-			selected_file_path = path;
+		if(fs::is_directory(path)) {
+			std::string label = stringf("[DIR] %s", path.filename().string().c_str());
+			if(ImGui::Selectable(label.c_str())) {
+				directory = path;
+				should_reload_file_list = true;
+			}
+		}
+	}
+	for(auto& path : file_paths) {
+		if(fs::is_regular_file(path)) {
+			if(ImGui::Selectable(path.filename().string().c_str(), path == selected_file_path)) {
+				should_load_now = true;
+				selected_file_path = path;
+			}
 		}
 	}
 	ImGui::EndChild();
