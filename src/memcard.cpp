@@ -80,6 +80,8 @@ int main(int argc, char** argv) {
 	WadPaths wads = find_wads(argv[0]);
 	g_guiwad.open(wads.gui);
 	
+	s64 frame = 0;
+	
 	GLFWwindow* window = gui::startup("Wrench Memory Card Editor", 1280, 720);
 	gui::load_font(wadinfo.gui.fonts[0], 22);
 	while(!glfwWindowShouldClose(window)) {
@@ -94,6 +96,13 @@ int main(int argc, char** argv) {
 			do_save();
 			should_save_now = false;
 		}
+		
+		if((frame % 60) == 0) {
+			should_reload_file_list = true;
+			fflush(stdout);
+		}
+		
+		frame++;
 	}
 	gui::shutdown(window);
 }
@@ -130,6 +139,8 @@ static void update_gui(f32 delta_time) {
 
 
 static void files() {
+	static std::string listing_error;
+	
 	if(gui::input_folder_path(&directory, "##directory", nullptr) || should_reload_file_list) {
 		file_paths.clear();
 		try {
@@ -138,9 +149,16 @@ static void files() {
 					file_paths.emplace_back(entry.path());
 				}
 			}
-		} catch(std::filesystem::filesystem_error&) {}
+			listing_error.clear();
+		} catch(std::filesystem::filesystem_error& error) {
+			listing_error = error.code().message();
+		}
 		std::sort(BEGIN_END(file_paths));
 		should_reload_file_list = false;
+	}
+	
+	if(!listing_error.empty()) {
+		ImGui::Text("%s", listing_error.c_str());
 	}
 	
 	ImGui::BeginChild("##files");
