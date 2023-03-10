@@ -66,9 +66,10 @@ static Page PAGES[] = {
 	{"Missions", &missions_page}
 };
 
-static std::string directory = "-/home/thomas/pcsx2/memcards/folder_card.ps2/BESCES-53285RATCHET/";
+static std::string directory = "/home/thomas/pcsx2/memcards/folder_card.ps2/BESCES-53285RATCHET/";
 static std::vector<fs::path> file_paths;
-static size_t selected_file_index = 0;
+static bool should_reload_file_list = true;
+static fs::path selected_file_path;
 static bool should_load_now = false;
 static bool should_save_now = false;
 static Opt<memory_card::File> file;
@@ -129,7 +130,7 @@ static void update_gui(f32 delta_time) {
 
 
 static void files() {
-	if(gui::input_folder_path(&directory, "##directory", nullptr)) {
+	if(gui::input_folder_path(&directory, "##directory", nullptr) || should_reload_file_list) {
 		file_paths.clear();
 		try {
 			for(auto entry : fs::directory_iterator(directory)) {
@@ -139,13 +140,14 @@ static void files() {
 			}
 		} catch(std::filesystem::filesystem_error&) {}
 		std::sort(BEGIN_END(file_paths));
+		should_reload_file_list = false;
 	}
 	
 	ImGui::BeginChild("##files");
-	for(size_t i = 0; i < file_paths.size(); i++) {
-		if(ImGui::Selectable(file_paths[i].filename().string().c_str(), i == selected_file_index)) {
+	for(auto& path : file_paths) {
+		if(ImGui::Selectable(path.filename().string().c_str(), path == selected_file_path)) {
 			should_load_now = true;
-			selected_file_index = i;
+			selected_file_path = path;
 		}
 	}
 	ImGui::EndChild();
@@ -230,11 +232,11 @@ static void create_dock_layout() {
 }
 
 static void do_load() {
-	if(selected_file_index < file_paths.size()) {
+	if(!selected_file_path.empty()) {
 		try {
-			std::vector<u8> buffer = read_file(file_paths[selected_file_index]);
+			std::vector<u8> buffer = read_file(selected_file_path);
 			file = memory_card::read_save(buffer);
-			file->path = file_paths[selected_file_index];
+			file->path = selected_file_path;
 			error_message.clear();
 			save = memory_card::parse_save(*file);
 			for(Page& page : PAGES) {
@@ -260,6 +262,7 @@ static void do_save() {
 		} catch(RuntimeError& error) {
 			error_message = error.message;
 		}
+		should_reload_file_list = true;
 	}
 }
 
@@ -690,13 +693,10 @@ static bool statistics_page(bool draw_gui) {
 	if(!save.player_statistics.has_value()) return false;
 	if(!draw_gui) return true;
 	
-	ImGui::AlignTextToFramePadding();
-	ImGui::Text("Player:");
-	ImGui::SameLine();
 	if(ImGui::BeginTabBar("##player_statistics_tabs")) {
 		for(s32 i = 0; i < 2; i++) {
 			ImGui::PushID(i);
-			std::string tab_name = stringf("%d", i + 1);
+			std::string tab_name = stringf("Player %d", i + 1);
 			if(ImGui::BeginTabItem(tab_name.c_str())) {
 				memory_card::PlayerData& d = save.player_statistics->array[i];
 				input_scalar(ImGuiDataType_U32, "Health Received", d.health_received);
