@@ -409,26 +409,27 @@ static bool enemy_kills_page(bool draw_gui) {
 	if(!save.enemy_kills.has_value()) return false;
 	if(!draw_gui) return true;
 	
-	ImGui::BeginTable("##enemy_kills", 3, ImGuiTableFlags_RowBg);
-	ImGui::TableSetupColumn("Index");
-	ImGui::TableSetupColumn("Enemy Class");
-	ImGui::TableSetupColumn("Kill Count");
-	ImGui::TableHeadersRow();
-	for(s32 i = 0; i < ARRAY_SIZE(save.enemy_kills->array); i++) {
-		ImGui::PushID(i);
-		ImGui::TableNextRow();
-		ImGui::TableNextColumn();
-		ImGui::AlignTextToFramePadding();
-		ImGui::Text("%d", i);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar(ImGuiDataType_S32, "##o_class", save.enemy_kills->array[i].o_class);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar(ImGuiDataType_S32, "##kills", save.enemy_kills->array[i].kills);
-		ImGui::PopID();
+	if(ImGui::BeginTable("##enemy_kills", 3, ImGuiTableFlags_RowBg)) {
+		ImGui::TableSetupColumn("Index");
+		ImGui::TableSetupColumn("Enemy Class");
+		ImGui::TableSetupColumn("Kill Count");
+		ImGui::TableHeadersRow();
+		for(s32 i = 0; i < ARRAY_SIZE(save.enemy_kills->array); i++) {
+			ImGui::PushID(i);
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("%d", i);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar(ImGuiDataType_S32, "##o_class", save.enemy_kills->array[i].o_class);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar(ImGuiDataType_S32, "##kills", save.enemy_kills->array[i].kills);
+			ImGui::PopID();
+		}
+		ImGui::EndTable();
 	}
-	ImGui::EndTable();
 	
 	return true;
 }
@@ -477,148 +478,151 @@ static void gadget_general_subpage() {
 static void gadget_entries_subpage() {
 	memory_card::GadgetBox& g = *save.hero_gadget_box;
 	
-	ImGui::BeginTable("##gadget_entries", 9, ImGuiTableFlags_RowBg);
-	ImGui::TableSetupColumn("Index");
-	ImGui::TableSetupColumn("Level");
-	ImGui::TableSetupColumn("Ammo");
-	ImGui::TableSetupColumn("XP");
-	ImGui::TableSetupColumn("Action Frame");
-	ImGui::TableSetupColumn("Mod Active Post FX");
-	ImGui::TableSetupColumn("Most Active Weapon");
-	ImGui::TableSetupColumn("Mod Active Basic");
-	ImGui::TableSetupColumn("Mod Weapon");
-	ImGui::TableHeadersRow();
-	for(s32 i = 0; i < ARRAY_SIZE(save.hero_gadget_box->gadgets); i++) {
-		ImGui::PushID(i);
-		ImGui::TableNextRow();
-		ImGui::TableNextColumn();
-		ImGui::AlignTextToFramePadding();
-		ImGui::Text("%d", i);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar(ImGuiDataType_S16, "##level", save.hero_gadget_box->gadgets[i].level);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar(ImGuiDataType_S16, "##ammo", save.hero_gadget_box->gadgets[i].ammo);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar(ImGuiDataType_U32, "##xp", save.hero_gadget_box->gadgets[i].xp);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar(ImGuiDataType_S32, "##action_frame", save.hero_gadget_box->gadgets[i].action_frame);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar(ImGuiDataType_S32, "##mod_active_post_fx", save.hero_gadget_box->gadgets[i].mod_active_post_fx);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar(ImGuiDataType_S32, "##mod_active_weapon", save.hero_gadget_box->gadgets[i].mod_active_weapon);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar_n(ImGuiDataType_S32, "##mod_active_basic", save.hero_gadget_box->gadgets[i].mod_active_basic);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar_n(ImGuiDataType_S32, "##mod_weapon", save.hero_gadget_box->gadgets[i].mod_weapon);
-		ImGui::PopID();
+	if(ImGui::BeginTable("##gadget_entries", 9, ImGuiTableFlags_RowBg)) {
+		ImGui::TableSetupColumn("Index");
+		ImGui::TableSetupColumn("Level");
+		ImGui::TableSetupColumn("Ammo");
+		ImGui::TableSetupColumn("XP");
+		ImGui::TableSetupColumn("Action Frame");
+		ImGui::TableSetupColumn("Mod Active Post FX");
+		ImGui::TableSetupColumn("Most Active Weapon");
+		ImGui::TableSetupColumn("Mod Active Basic");
+		ImGui::TableSetupColumn("Mod Weapon");
+		ImGui::TableHeadersRow();
+		for(s32 i = 0; i < ARRAY_SIZE(save.hero_gadget_box->gadgets); i++) {
+			ImGui::PushID(i);
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("%d", i);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar(ImGuiDataType_S16, "##level", save.hero_gadget_box->gadgets[i].level);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar(ImGuiDataType_S16, "##ammo", save.hero_gadget_box->gadgets[i].ammo);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar(ImGuiDataType_U32, "##xp", save.hero_gadget_box->gadgets[i].xp);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar(ImGuiDataType_S32, "##action_frame", save.hero_gadget_box->gadgets[i].action_frame);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar(ImGuiDataType_S32, "##mod_active_post_fx", save.hero_gadget_box->gadgets[i].mod_active_post_fx);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar(ImGuiDataType_S32, "##mod_active_weapon", save.hero_gadget_box->gadgets[i].mod_active_weapon);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar_n(ImGuiDataType_S32, "##mod_active_basic", save.hero_gadget_box->gadgets[i].mod_active_basic);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar_n(ImGuiDataType_S32, "##mod_weapon", save.hero_gadget_box->gadgets[i].mod_weapon);
+			ImGui::PopID();
+		}
+		ImGui::EndTable();
 	}
-	ImGui::EndTable();
 }
 
 static void gadget_events_subpage() {
 	memory_card::GadgetBox& g = *save.hero_gadget_box;
 	
-	ImGui::BeginTable("##gadget_entries", 9, ImGuiTableFlags_RowBg);
-	ImGui::TableSetupColumn("Index");
-	ImGui::TableSetupColumn("Gadget ID");
-	ImGui::TableSetupColumn("Player Index");
-	ImGui::TableSetupColumn("Gadget Type");
-	ImGui::TableSetupColumn("Gadget Event Type");
-	ImGui::TableSetupColumn("Active Time");
-	ImGui::TableSetupColumn("Target UID");
-	ImGui::TableSetupColumn("Target Offset Quat");
-	ImGui::TableSetupColumn("Next Gadget Event Pointer");
-	ImGui::TableHeadersRow();
-	for(s32 i = 0; i < ARRAY_SIZE(save.hero_gadget_box->gadget_event_slots); i++) {
-		ImGui::PushID(i);
-		ImGui::TableNextRow();
-		ImGui::TableNextColumn();
-		ImGui::AlignTextToFramePadding();
-		ImGui::Text("%d", i);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar(ImGuiDataType_U8, "##gadget_id", save.hero_gadget_box->gadget_event_slots[i].gadget_id);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar(ImGuiDataType_U8, "##player_index", save.hero_gadget_box->gadget_event_slots[i].player_index);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar(ImGuiDataType_U8, "##gadget_type", save.hero_gadget_box->gadget_event_slots[i].gadget_type);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar(ImGuiDataType_U8, "##gadget_event_type", save.hero_gadget_box->gadget_event_slots[i].gadget_event_type);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar(ImGuiDataType_S32, "##active_time", save.hero_gadget_box->gadget_event_slots[i].active_time);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar(ImGuiDataType_U32, "##target_uid", save.hero_gadget_box->gadget_event_slots[i].target_uid);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar_n(ImGuiDataType_Float, "##target_offset_quat", save.hero_gadget_box->gadget_event_slots[i].target_offset_quat);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar(ImGuiDataType_U32, "##p_next_gadget_event", save.hero_gadget_box->gadget_event_slots[i].p_next_gadget_event);
-		ImGui::PopID();
+	if(ImGui::BeginTable("##gadget_entries", 9, ImGuiTableFlags_RowBg)) {
+		ImGui::TableSetupColumn("Index");
+		ImGui::TableSetupColumn("Gadget ID");
+		ImGui::TableSetupColumn("Player Index");
+		ImGui::TableSetupColumn("Gadget Type");
+		ImGui::TableSetupColumn("Gadget Event Type");
+		ImGui::TableSetupColumn("Active Time");
+		ImGui::TableSetupColumn("Target UID");
+		ImGui::TableSetupColumn("Target Offset Quat");
+		ImGui::TableSetupColumn("Next Gadget Event Pointer");
+		ImGui::TableHeadersRow();
+		for(s32 i = 0; i < ARRAY_SIZE(save.hero_gadget_box->gadget_event_slots); i++) {
+			ImGui::PushID(i);
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("%d", i);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar(ImGuiDataType_U8, "##gadget_id", save.hero_gadget_box->gadget_event_slots[i].gadget_id);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar(ImGuiDataType_U8, "##player_index", save.hero_gadget_box->gadget_event_slots[i].player_index);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar(ImGuiDataType_U8, "##gadget_type", save.hero_gadget_box->gadget_event_slots[i].gadget_type);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar(ImGuiDataType_U8, "##gadget_event_type", save.hero_gadget_box->gadget_event_slots[i].gadget_event_type);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar(ImGuiDataType_S32, "##active_time", save.hero_gadget_box->gadget_event_slots[i].active_time);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar(ImGuiDataType_U32, "##target_uid", save.hero_gadget_box->gadget_event_slots[i].target_uid);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar_n(ImGuiDataType_Float, "##target_offset_quat", save.hero_gadget_box->gadget_event_slots[i].target_offset_quat);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar(ImGuiDataType_U32, "##p_next_gadget_event", save.hero_gadget_box->gadget_event_slots[i].p_next_gadget_event);
+			ImGui::PopID();
+		}
+		ImGui::EndTable();
 	}
-	ImGui::EndTable();
 }
 
 static void gadget_messages_subpage() {
 	memory_card::GadgetBox& g = *save.hero_gadget_box;
 	
-	ImGui::BeginTable("##gadget_messages", 9, ImGuiTableFlags_RowBg);
-	ImGui::TableSetupColumn("Index");
-	ImGui::TableSetupColumn("Gadget ID");
-	ImGui::TableSetupColumn("Player Index");
-	ImGui::TableSetupColumn("Gadget Event Type");
-	ImGui::TableSetupColumn("Extra Data");
-	ImGui::TableSetupColumn("Active Time");
-	ImGui::TableSetupColumn("Target UID");
-	ImGui::TableSetupColumn("Firing Location");
-	ImGui::TableSetupColumn("Target Direction");
-	ImGui::TableHeadersRow();
-	for(s32 i = 0; i < ARRAY_SIZE(save.hero_gadget_box->gadget_event_slots); i++) {
-		ImGui::PushID(i);
-		ImGui::TableNextRow();
-		ImGui::TableNextColumn();
-		ImGui::AlignTextToFramePadding();
-		ImGui::Text("%d", i);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar(ImGuiDataType_S16, "##gadget_id", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.gadget_id);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar(ImGuiDataType_U8, "##player_index", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.player_index);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar(ImGuiDataType_U8, "##gadget_event_type", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.gadget_event_type);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar(ImGuiDataType_U8, "##extra_data", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.extra_data);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar(ImGuiDataType_S32, "##active_time", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.active_time);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar(ImGuiDataType_U32, "##target_uid", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.target_uid);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar_n(ImGuiDataType_Float, "##firing_loc", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.firing_loc);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar_n(ImGuiDataType_Float, "##target_dir", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.target_dir);
-		ImGui::PopID();
+	if(ImGui::BeginTable("##gadget_messages", 9, ImGuiTableFlags_RowBg)) {
+		ImGui::TableSetupColumn("Index");
+		ImGui::TableSetupColumn("Gadget ID");
+		ImGui::TableSetupColumn("Player Index");
+		ImGui::TableSetupColumn("Gadget Event Type");
+		ImGui::TableSetupColumn("Extra Data");
+		ImGui::TableSetupColumn("Active Time");
+		ImGui::TableSetupColumn("Target UID");
+		ImGui::TableSetupColumn("Firing Location");
+		ImGui::TableSetupColumn("Target Direction");
+		ImGui::TableHeadersRow();
+		for(s32 i = 0; i < ARRAY_SIZE(save.hero_gadget_box->gadget_event_slots); i++) {
+			ImGui::PushID(i);
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("%d", i);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar(ImGuiDataType_S16, "##gadget_id", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.gadget_id);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar(ImGuiDataType_U8, "##player_index", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.player_index);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar(ImGuiDataType_U8, "##gadget_event_type", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.gadget_event_type);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar(ImGuiDataType_U8, "##extra_data", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.extra_data);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar(ImGuiDataType_S32, "##active_time", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.active_time);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar(ImGuiDataType_U32, "##target_uid", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.target_uid);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar_n(ImGuiDataType_Float, "##firing_loc", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.firing_loc);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar_n(ImGuiDataType_Float, "##target_dir", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.target_dir);
+			ImGui::PopID();
+		}
+		ImGui::EndTable();
 	}
-	ImGui::EndTable();
 }
 
 static bool help_page(bool draw_gui) {
@@ -648,35 +652,36 @@ static bool help_page(bool draw_gui) {
 }
 
 static void help_subpage(const char* label, std::vector<memory_card::HelpDatum>& help) {
-	ImGui::BeginTable(label, 9, ImGuiTableFlags_RowBg);
-	ImGui::TableSetupColumn("Index");
-	ImGui::TableSetupColumn("Times Used");
-	ImGui::TableSetupColumn("Counter");
-	ImGui::TableSetupColumn("Last Time");
-	ImGui::TableSetupColumn("Level Die");
-	ImGui::TableHeadersRow();
-	for(s32 i = 0; i < (s32) help.size(); i++) {
-		ImGui::PushID(i);
-		ImGui::TableNextRow();
-		ImGui::TableNextColumn();
-		ImGui::AlignTextToFramePadding();
-		ImGui::Text("%d", i);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar(ImGuiDataType_U16, "##times_used", help[i].times_used);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar(ImGuiDataType_U16, "##counter", help[i].counter);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar(ImGuiDataType_U32, "##last_time", help[i].last_time);
-		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(-1);
-		input_scalar(ImGuiDataType_U32, "##level_die", help[i].level_die);
-		
-		ImGui::PopID();
+	if(ImGui::BeginTable(label, 9, ImGuiTableFlags_RowBg)) {
+		ImGui::TableSetupColumn("Index");
+		ImGui::TableSetupColumn("Times Used");
+		ImGui::TableSetupColumn("Counter");
+		ImGui::TableSetupColumn("Last Time");
+		ImGui::TableSetupColumn("Level Die");
+		ImGui::TableHeadersRow();
+		for(s32 i = 0; i < (s32) help.size(); i++) {
+			ImGui::PushID(i);
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("%d", i);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar(ImGuiDataType_U16, "##times_used", help[i].times_used);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar(ImGuiDataType_U16, "##counter", help[i].counter);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar(ImGuiDataType_U32, "##last_time", help[i].last_time);
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-1);
+			input_scalar(ImGuiDataType_U32, "##level_die", help[i].level_die);
+			
+			ImGui::PopID();
+		}
+		ImGui::EndTable();
 	}
-	ImGui::EndTable();
 }
 
 static bool hero_page(bool draw_gui) {
@@ -793,28 +798,29 @@ static bool levels_page(bool draw_gui) {
 	if(!any_tabs) return false;
 	if(!draw_gui) return true;
 	
-	ImGui::BeginTable("##levels", 3, ImGuiTableFlags_RowBg);
-	ImGui::TableSetupColumn("Index");
-	ImGui::TableSetupColumn("Status");
-	ImGui::TableSetupColumn("Jackpot");
-	ImGui::TableHeadersRow();
-	for(s32 i = 0; i < (s32) save.levels.size(); i++) {
-		if(save.levels[i].level.has_value()) {
-			ImGui::PushID(i);
-			ImGui::TableNextRow();
-			ImGui::TableNextColumn();
-			ImGui::AlignTextToFramePadding();
-			ImGui::Text("%d", i);
-			ImGui::TableNextColumn();
-			ImGui::SetNextItemWidth(-1);
-			input_scalar(ImGuiDataType_U8, "##status", save.levels[i].level->status);
-			ImGui::TableNextColumn();
-			ImGui::SetNextItemWidth(-1);
-			input_scalar(ImGuiDataType_U8, "##jackpot", save.levels[i].level->jackpot);
-			ImGui::PopID();
+	if(ImGui::BeginTable("##levels", 3, ImGuiTableFlags_RowBg)) {
+		ImGui::TableSetupColumn("Index");
+		ImGui::TableSetupColumn("Status");
+		ImGui::TableSetupColumn("Jackpot");
+		ImGui::TableHeadersRow();
+		for(s32 i = 0; i < (s32) save.levels.size(); i++) {
+			if(save.levels[i].level.has_value()) {
+				ImGui::PushID(i);
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("%d", i);
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1);
+				input_scalar(ImGuiDataType_U8, "##status", save.levels[i].level->status);
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(-1);
+				input_scalar(ImGuiDataType_U8, "##jackpot", save.levels[i].level->jackpot);
+				ImGui::PopID();
+			}
 		}
+		ImGui::EndTable();
 	}
-	ImGui::EndTable();
 	
 	return true;
 }
@@ -837,40 +843,41 @@ static bool missions_page(bool draw_gui) {
 			std::string tab_name = stringf("%d", i);
 			if(level_save_game.level.has_value() && ImGui::BeginTabItem(tab_name.c_str())) {
 				memory_card::LevelSave& level = *level_save_game.level;
-				ImGui::BeginTable("##missions", 6, ImGuiTableFlags_RowBg);
-				ImGui::TableSetupColumn("Index");
-				ImGui::TableSetupColumn("XP");
-				ImGui::TableSetupColumn("Bolts");
-				ImGui::TableSetupColumn("Status");
-				ImGui::TableSetupColumn("Completes");
-				ImGui::TableSetupColumn("Difficulty");
-				ImGui::TableHeadersRow();
-				for(s32 j = 0; j < ARRAY_SIZE(level_save_game.level->mission); j++) {
-					if(save.levels[i].level.has_value()) {
-						ImGui::PushID(j);
-						ImGui::TableNextRow();
-						ImGui::TableNextColumn();
-						ImGui::AlignTextToFramePadding();
-						ImGui::Text("%d", j);
-						ImGui::TableNextColumn();
-						ImGui::SetNextItemWidth(-1);
-						input_scalar(ImGuiDataType_S32, "##xp", level.mission[j].xp);
-						ImGui::TableNextColumn();
-						ImGui::SetNextItemWidth(-1);
-						input_scalar(ImGuiDataType_S32, "##bolts", level.mission[j].bolts);
-						ImGui::TableNextColumn();
-						ImGui::SetNextItemWidth(-1);
-						input_scalar(ImGuiDataType_U8, "##status", level.mission[j].status);
-						ImGui::TableNextColumn();
-						ImGui::SetNextItemWidth(-1);
-						input_scalar(ImGuiDataType_U8, "##completes", level.mission[j].completes);
-						ImGui::TableNextColumn();
-						ImGui::SetNextItemWidth(-1);
-						input_scalar(ImGuiDataType_U8, "##difficulty", level.mission[j].difficulty);
-						ImGui::PopID();
+				if(ImGui::BeginTable("##missions", 6, ImGuiTableFlags_RowBg)) {
+					ImGui::TableSetupColumn("Index");
+					ImGui::TableSetupColumn("XP");
+					ImGui::TableSetupColumn("Bolts");
+					ImGui::TableSetupColumn("Status");
+					ImGui::TableSetupColumn("Completes");
+					ImGui::TableSetupColumn("Difficulty");
+					ImGui::TableHeadersRow();
+					for(s32 j = 0; j < ARRAY_SIZE(level_save_game.level->mission); j++) {
+						if(save.levels[i].level.has_value()) {
+							ImGui::PushID(j);
+							ImGui::TableNextRow();
+							ImGui::TableNextColumn();
+							ImGui::AlignTextToFramePadding();
+							ImGui::Text("%d", j);
+							ImGui::TableNextColumn();
+							ImGui::SetNextItemWidth(-1);
+							input_scalar(ImGuiDataType_S32, "##xp", level.mission[j].xp);
+							ImGui::TableNextColumn();
+							ImGui::SetNextItemWidth(-1);
+							input_scalar(ImGuiDataType_S32, "##bolts", level.mission[j].bolts);
+							ImGui::TableNextColumn();
+							ImGui::SetNextItemWidth(-1);
+							input_scalar(ImGuiDataType_U8, "##status", level.mission[j].status);
+							ImGui::TableNextColumn();
+							ImGui::SetNextItemWidth(-1);
+							input_scalar(ImGuiDataType_U8, "##completes", level.mission[j].completes);
+							ImGui::TableNextColumn();
+							ImGui::SetNextItemWidth(-1);
+							input_scalar(ImGuiDataType_U8, "##difficulty", level.mission[j].difficulty);
+							ImGui::PopID();
+						}
 					}
+					ImGui::EndTable();
 				}
-				ImGui::EndTable();
 				ImGui::EndTabItem();
 			}
 		}
