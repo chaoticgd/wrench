@@ -192,22 +192,22 @@ packed_struct(ProfileStruct,
 	/* 0x000 */ s32 skin;
 	/* 0x004 */ CameraMode camera_options[3];
 	/* 0x01c */ u8 first_person_mode_on;
-	/* 0x01d */ char name[16];
-	/* 0x02d */ char password[16];
-	/* 0x03d */ u8 map_access;
-	/* 0x03e */ u8 pal_server;
-	/* 0x03f */ u8 help_msg_off;
-	/* 0x040 */ u8 save_password;
-	/* 0x041 */ u8 location_idx;
+	/* 0x01d */ s8 name[16];
+	/* 0x02d */ s8 password[16];
+	/* 0x03d */ s8 map_access;
+	/* 0x03e */ s8 pal_server;
+	/* 0x03f */ s8 help_msg_off;
+	/* 0x040 */ s8 save_password;
+	/* 0x041 */ s8 location_idx;
 	/* 0x042 */ u8 pad_42[2];
 	/* 0x044 */ GeneralStatStruct general_stats;
 	/* 0x058 */ SiegeMatchStatStruct siege_match_stats;
 	/* 0x09c */ DeadMatchStatStruct dead_match_stats;
-	/* 0x0dc */ u8 active;
+	/* 0x0dc */ s8 active;
 	/* 0x0dd */ u8 pad_dd[3];
 	/* 0x0e0 */ s32 help_data[32];
-	/* 0x160 */ u8 net_enabled;
-	/* 0x161 */ u8 vibration;
+	/* 0x160 */ s8 net_enabled;
+	/* 0x161 */ s8 vibration;
 	/* 0x162 */ s16 music_volume;
 	/* 0x164 */ s32 extra_data_padding[31];
 )
@@ -235,9 +235,9 @@ static_assert(sizeof(HelpDatum) == 0xc);
 
 packed_struct(GameSettings,
 	/* 0x00 */ s32 pal_mode;
-	/* 0x04 */ u8 help_voice_on;
-	/* 0x05 */ u8 help_text_on;
-	/* 0x06 */ u8 subtitles_active;
+	/* 0x04 */ s8 help_voice_on;
+	/* 0x05 */ s8 help_text_on;
+	/* 0x06 */ s8 subtitles_active;
 	/* 0x07 */ u8 pad_7;
 	/* 0x08 */ s32 stereo;
 	/* 0x0c */ s32 music_volume;
@@ -247,16 +247,16 @@ packed_struct(GameSettings,
 	/* 0x48 */ s32 camera_azimuth_dir[3][4];
 	/* 0x78 */ s32 camera_rotate_speed[3][4];
 	/* 0xa8 */ u8 first_person_mode_on[10];
-	/* 0xb2 */ u8 was_ntsc_progessive;
-	/* 0xb3 */ u8 wide;
-	/* 0xb4 */ u8 controller_vibration_on[8];
-	/* 0xbc */ u8 quick_select_pause_on;
-	/* 0xbd */ u8 language;
-	/* 0xbe */ u8 aux_setting_2;
-	/* 0xbf */ u8 aux_setting_3;
-	/* 0xc0 */ u8 aux_setting_4;
-	/* 0xc1 */ u8 auto_save_on;
-	/* 0xc2 */ u8 pad_c2[2];
+	/* 0xb2 */ s8 was_ntsc_progessive;
+	/* 0xb3 */ s8 wide;
+	/* 0xb4 */ s8 controller_vibration_on[8];
+	/* 0xbc */ s8 quick_select_pause_on;
+	/* 0xbd */ s8 language;
+	/* 0xbe */ s8 aux_setting_2;
+	/* 0xbf */ s8 aux_setting_3;
+	/* 0xc0 */ s8 aux_setting_4;
+	/* 0xc1 */ s8 auto_save_on;
+	/* 0xc2 */ s8 pad_c2[2];
 )
 static_assert(sizeof(GameSettings) == 0xc4);
 
@@ -270,17 +270,17 @@ packed_struct(HeroSave,
 	/* 0x14 */ f32 limit_break;
 	/* 0x18 */ s32 purchased_skins;
 	/* 0x1c */ s16 spent_diff_stars;
-	/* 0x1e */ u8 bolt_mult_level;
-	/* 0x1f */ u8 bolt_mult_sub_level;
-	/* 0x20 */ u8 old_game_save_data;
-	/* 0x21 */ u8 blue_badges;
-	/* 0x22 */ u8 red_badges;
-	/* 0x23 */ u8 green_badges;
-	/* 0x24 */ u8 gold_badges;
-	/* 0x25 */ u8 black_badges;
-	/* 0x26 */ u8 completes;
-	/* 0x27 */ u8 last_equipped_gadget[2];
-	/* 0x29 */ u8 temp_weapons[4];
+	/* 0x1e */ s8 bolt_mult_level;
+	/* 0x1f */ s8 bolt_mult_sub_level;
+	/* 0x20 */ s8 old_game_save_data;
+	/* 0x21 */ s8 blue_badges;
+	/* 0x22 */ s8 red_badges;
+	/* 0x23 */ s8 green_badges;
+	/* 0x24 */ s8 gold_badges;
+	/* 0x25 */ s8 black_badges;
+	/* 0x26 */ s8 completes;
+	/* 0x27 */ s8 last_equipped_gadget[2];
+	/* 0x29 */ s8 temp_weapons[4];
 	/* 0x2d */ u8 pad_2d[3];
 	/* 0x30 */ s32 current_max_limit_break;
 	/* 0x34 */ s16 armor_level_2;
@@ -291,9 +291,9 @@ static_assert(sizeof(HeroSave) == 0x3c);
 
 packed_struct(GadgetEventMessage,
 	/* 0x00 */ s16 gadget_id;
-	/* 0x02 */ u8 player_index;
-	/* 0x03 */ u8 gadget_event_type;
-	/* 0x04 */ u8 extra_data;
+	/* 0x02 */ s8 player_index;
+	/* 0x03 */ s8 gadget_event_type;
+	/* 0x04 */ s8 extra_data;
 	/* 0x05 */ u8 pad_5[3];
 	/* 0x08 */ s32 active_time;
 	/* 0x0c */ u32 target_uid;
@@ -305,8 +305,8 @@ static_assert(sizeof(GadgetEventMessage) == 0x28);
 packed_struct(GadgetEvent,
 	/* 0x00 */ u8 gadget_id;
 	/* 0x01 */ u8 player_index;
-	/* 0x02 */ u8 gadget_type;
-	/* 0x03 */ u8 gadget_event_type;
+	/* 0x02 */ s8 gadget_type;
+	/* 0x03 */ s8 gadget_event_type;
 	/* 0x04 */ s32 active_time;
 	/* 0x08 */ u32 target_uid;
 	/* 0x0c */ u8 pad_c[4];
@@ -370,14 +370,14 @@ packed_struct(GadgetEntry,
 static_assert(sizeof(GadgetEntry) == 0x44);
 
 packed_struct(GadgetBox,
-	/* 0x000 */ u8 initialized;
-	/* 0x001 */ u8 level;
-	/* 0x002 */ u8 button_down[10];
+	/* 0x000 */ s8 initialized;
+	/* 0x001 */ s8 level;
+	/* 0x002 */ s8 button_down[10];
 	/* 0x00c */ s16 button_up_frames[10];
-	/* 0x020 */ u8 num_gadget_events;
-	/* 0x021 */ u8 mod_basic[8];
+	/* 0x020 */ s8 num_gadget_events;
+	/* 0x021 */ s8 mod_basic[8];
 	/* 0x02a */ s16 mod_post_fx;
-	/* 0x02b */ u8 pad_2b;
+	/* 0x02b */ s8 pad_2b;
 	/* 0x02c */ u32 p_next_gadget_event;
 	/* 0x030 */ GadgetEvent gadget_event_slots[32];
 	/* 0xa30 */ GadgetEntry gadgets[32];
@@ -385,11 +385,11 @@ packed_struct(GadgetBox,
 static_assert(sizeof(GadgetBox) == 0x12b0);
 
 packed_struct(BotSave,
-	/* 0x00 */ u8 bot_upgrades[17];
-	/* 0x11 */ u8 bot_paintjobs[11];
-	/* 0x1c */ u8 bot_heads[8];
-	/* 0x24 */ u8 cur_bot_paint_job[2];
-	/* 0x26 */ u8 cur_bot_head[2];
+	/* 0x00 */ s8 bot_upgrades[17];
+	/* 0x11 */ s8 bot_paintjobs[11];
+	/* 0x1c */ s8 bot_heads[8];
+	/* 0x24 */ s8 cur_bot_paint_job[2];
+	/* 0x26 */ s8 cur_bot_head[2];
 )
 static_assert(sizeof(BotSave) == 0x28);
 

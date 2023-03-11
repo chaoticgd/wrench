@@ -342,7 +342,7 @@ static void do_save() {
 	}
 #define input_text(data_type, label, value) \
 	{ \
-		if(ImGui::InputText(label, ARRAY_PAIR(value))) { \
+		if(ImGui::InputText(label, (char*) ARRAY_PAIR(value))) { \
 			should_save_now = true; \
 		} \
 	}
