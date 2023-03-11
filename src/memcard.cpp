@@ -494,19 +494,27 @@ static bool gadget_page(bool draw_gui) {
 	
 	if(ImGui::BeginTabBar("##gadget_tabs")) {
 		if(ImGui::BeginTabItem("General")) {
+			ImGui::BeginChild("##general");
 			gadget_general_subpage();
+			ImGui::EndChild();
 			ImGui::EndTabItem();
 		}
 		if(ImGui::BeginTabItem("Entries")) {
+			ImGui::BeginChild("##entries");
 			gadget_entries_subpage();
+			ImGui::EndChild();
 			ImGui::EndTabItem();
 		}
 		if(ImGui::BeginTabItem("Events")) {
+			ImGui::BeginChild("##events");
 			gadget_events_subpage();
+			ImGui::EndChild();
 			ImGui::EndTabItem();
 		}
 		if(ImGui::BeginTabItem("Event Messages")) {
+			ImGui::BeginChild("##messages");
 			gadget_messages_subpage();
+			ImGui::EndChild();
 			ImGui::EndTabItem();
 		}
 		ImGui::EndTabBar();
@@ -809,6 +817,7 @@ static bool statistics_page(bool draw_gui) {
 			ImGui::PushID(i);
 			std::string tab_name = stringf("Player %d", i + 1);
 			if(ImGui::BeginTabItem(tab_name.c_str())) {
+				ImGui::BeginChild("##level");
 				memory_card::PlayerData& d = save.player_statistics->array[i];
 				input_scalar(ImGuiDataType_U32, "Health Received", d.health_received);
 				input_scalar(ImGuiDataType_U32, "Damage Received", d.damage_received);
@@ -830,6 +839,7 @@ static bool statistics_page(bool draw_gui) {
 				input_scalar_n(ImGuiDataType_U32, "Vehicle Shots That Hit", d.vehicle_shots_that_hit);
 				input_scalar_n(ImGuiDataType_U32, "Vehicle Shots That Miss", d.vehicle_shots_that_miss);
 				input_scalar_n(ImGuiDataType_Float, "Vehicle Shot Accuracy", d.vehicle_shot_accuracy);
+				ImGui::EndChild();
 				ImGui::EndTabItem();
 			}
 			ImGui::PopID();
@@ -894,6 +904,7 @@ static bool missions_page(bool draw_gui) {
 			memory_card::LevelSaveGame& level_save_game = save.levels[i];
 			std::string tab_name = stringf("%d", i);
 			if(level_save_game.level.has_value() && ImGui::BeginTabItem(tab_name.c_str())) {
+				ImGui::BeginChild("##level");
 				memory_card::LevelSave& level = *level_save_game.level;
 				if(ImGui::BeginTable("##missions", 6, ImGuiTableFlags_RowBg)) {
 					ImGui::TableSetupColumn("Index");
@@ -930,6 +941,7 @@ static bool missions_page(bool draw_gui) {
 					}
 					ImGui::EndTable();
 				}
+				ImGui::EndChild();
 				ImGui::EndTabItem();
 			}
 		}
