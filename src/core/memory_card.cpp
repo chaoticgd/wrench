@@ -20,7 +20,7 @@
 
 namespace memory_card {
 
-packed_struct(FileHeader,
+packed_struct(SaveSlotFileHeader,
 	/* 0x0 */ s32 game_data_size;
 	/* 0x4 */ s32 level_data_size;
 )
@@ -35,19 +35,60 @@ packed_struct(SectionHeader,
 	/* 0x4 */ s32 size;
 )
 
-File read_save(Buffer src) {
+File read(Buffer src, const fs::path& path) {
 	File file;
 	s64 pos = 0;
 	
-	const FileHeader& file_header = src.read<FileHeader>(pos, "file header");
-	pos += sizeof(FileHeader);
+	file.path = path;
+	file.type = identify(path.filename().string());
 	
-	file.sections = read_sections(&file.checksum_does_not_match, src, pos);
-	while(pos + 3 < src.size()) {
-		file.levels.emplace_back(read_sections(&file.checksum_does_not_match, src, pos));
+	switch(file.type) {
+		case FileType::MAIN: {
+			file.main.data = src.read_all<u8>().copy();
+			break;
+		}
+		case FileType::NET: {
+			file.net.sections = read_sections(&file.checksum_does_not_match, src, pos);
+			break;
+		}
+		case FileType::PATCH: {
+			file.patch.data = src.read_all<u8>().copy();
+			break;
+		}
+		case FileType::SLOT: {
+			const SaveSlotFileHeader& file_header = src.read<SaveSlotFileHeader>(pos, "file header");
+			pos += sizeof(SaveSlotFileHeader);
+			
+			file.slot.sections = read_sections(&file.checksum_does_not_match, src, pos);
+			while(pos + 3 < src.size()) {
+				file.slot.levels.emplace_back(read_sections(&file.checksum_does_not_match, src, pos));
+			}
+			break;
+		}
+		case FileType::SYS: {
+			file.sys.data = src.read_all<u8>().copy();
+			break;
+		}
 	}
 	
 	return file;
+}
+
+FileType identify(std::string filename) {
+	for(char& c : filename) c = tolower(c);
+	if(filename.find("ratchet") != std::string::npos) {
+		return FileType::MAIN;
+	} if(filename.starts_with("net")) {
+		return FileType::NET;
+	} else if(filename.starts_with("patch")) {
+		return FileType::PATCH;
+	} else if(filename.starts_with("save")) {
+		return FileType::SLOT;
+	} else if(filename.starts_with("icon")) {
+		return FileType::SYS;
+	} else {
+		verify_not_reached("Unable to identify file type.");
+	}
 }
 
 std::vector<Section> read_sections(bool* checksum_does_not_match_out, Buffer src, s64& pos) {
@@ -81,20 +122,41 @@ std::vector<Section> read_sections(bool* checksum_does_not_match_out, Buffer src
 	return sections;
 }
 
-void write_save(OutBuffer dest, File& save) {
-	s64 file_header_ofs = dest.alloc<FileHeader>();
-	FileHeader file_header;
-	file_header.game_data_size = (s32) write_sections(dest, save.sections);
-	file_header.level_data_size = 0;
-	for(std::vector<Section>& sections : save.levels) {
-		u32 data_size = (s32) write_sections(dest, sections);
-		if(file_header.level_data_size == 0) {
-			file_header.level_data_size = data_size;
-		} else {
-			assert(data_size == file_header.level_data_size);
+void write(OutBuffer dest, File& file) {
+	switch(file.type) {
+		case FileType::MAIN: {
+			dest.write_multiple(file.main.data);
+			break;
+		}
+		case FileType::NET: {
+			write_sections(dest, file.net.sections);
+			break;
+		}
+		case FileType::PATCH: {
+			dest.write_multiple(file.patch.data);
+			break;
+		}
+		case FileType::SLOT: {
+			s64 file_header_ofs = dest.alloc<SaveSlotFileHeader>();
+			SaveSlotFileHeader file_header;
+			file_header.game_data_size = (s32) write_sections(dest, file.slot.sections);
+			file_header.level_data_size = 0;
+			for(std::vector<Section>& sections : file.slot.levels) {
+				u32 data_size = (s32) write_sections(dest, sections);
+				if(file_header.level_data_size == 0) {
+					file_header.level_data_size = data_size;
+				} else {
+					assert(data_size == file_header.level_data_size);
+				}
+			}
+			dest.write(file_header_ofs, file_header);
+			break;
+		}
+		case FileType::SYS: {
+			dest.write_multiple(file.sys.data);
+			break;
 		}
 	}
-	dest.write(file_header_ofs, file_header);
 }
 
 s64 write_sections(OutBuffer dest, std::vector<Section>& sections) {
@@ -140,10 +202,38 @@ u32 checksum(Buffer src) {
 	return value & 0xffff;
 }
 
-SaveGame parse_save(const File& file) {
+SaveGame parse(const File& file) {
+	SaveGame save;
+	switch(file.type) {
+		case FileType::MAIN: break;
+		case FileType::NET: save = parse_net(file); break;
+		case FileType::PATCH: break;
+		case FileType::SLOT: save = parse_slot(file); break;
+		case FileType::SYS: break;
+	}
+	return save;
+}
+
+SaveGame parse_net(const File& file) {
+	assert(file.type == FileType::NET);
 	SaveGame save;
 	save.loaded = true;
-	for(const Section& section : file.sections) {
+	for(const Section& section : file.slot.sections) {
+		Buffer buffer = section.data;
+		switch(section.type) {
+			case ST_GAMEMODEOPTIONS: save.game_mode_options = buffer.read<GameModeStruct>(0);            break;
+			case ST_MPPROFILES:      save.mp_profiles       = buffer.read_multiple<ProfileStruct>(0, 8); break;
+		}
+	}
+	return save;
+}
+
+SaveGame parse_slot(const File& file) {
+	assert(file.type == FileType::SLOT);
+	SaveGame save;
+	save.loaded = true;
+	save.type = file.type;
+	for(const Section& section : file.slot.sections) {
 		Buffer buffer = section.data;
 		switch(section.type) {
 			case ST_LEVEL:                save.level                      = buffer.read<s32>(0);                             break;
@@ -174,7 +264,7 @@ SaveGame parse_save(const File& file) {
 			case ST_QUICKSWITCHGADGETS:   save.quick_switch_gadgets       = buffer.read<QuickSwitchGadgets>(0);              break;
 		}
 	}
-	for(const std::vector<Section>& sections : file.levels) {
+	for(const std::vector<Section>& sections : file.slot.levels) {
 		LevelSaveGame& level_save_game = save.levels.emplace_back();
 		for(const Section& section : sections) {
 			Buffer buffer = section.data;
@@ -200,8 +290,28 @@ static void update_section_array(OutBuffer dest, const Opt<T>& src) {
 	}
 }
 
-void update_save(File& dest, const SaveGame& save) {
-	for(Section& section : dest.sections) {
+void update(File& dest, const SaveGame& save) {
+	switch(dest.type) {
+		case FileType::MAIN: break;
+		case FileType::NET: update_net(dest, save); break;
+		case FileType::PATCH: break;
+		case FileType::SLOT: update_slot(dest, save); break;
+		case FileType::SYS: break;
+	}
+}
+
+void update_net(File& dest, const SaveGame& save) {
+	for(Section& section : dest.slot.sections) {
+		OutBuffer buffer = section.data;
+		switch(section.type) {
+			case ST_GAMEMODEOPTIONS: update_section      (buffer, save.game_mode_options); break;
+			case ST_MPPROFILES:      update_section_array(buffer, save.mp_profiles);       break;
+		}
+	}
+}
+
+void update_slot(File& dest, const SaveGame& save) {
+	for(Section& section : dest.slot.sections) {
 		OutBuffer buffer = section.data;
 		switch(section.type) {
 			case ST_LEVEL:                update_section      (buffer, save.level);                      break;
@@ -232,9 +342,9 @@ void update_save(File& dest, const SaveGame& save) {
 			case ST_QUICKSWITCHGADGETS:   update_section      (buffer, save.quick_switch_gadgets);       break;
 		}
 	}
-	assert(dest.levels.size() == save.levels.size());
-	for(size_t i = 0; i < dest.levels.size(); i++) {
-		for(Section& section : dest.levels[i]) {
+	assert(dest.slot.levels.size() == save.levels.size());
+	for(size_t i = 0; i < dest.slot.levels.size(); i++) {
+		for(Section& section : dest.slot.levels[i]) {
 			OutBuffer buffer = section.data;
 			switch(section.type) {
 				case ST_LEVELSAVEDATA: update_section(buffer, save.levels[i].level); break;
@@ -244,7 +354,7 @@ void update_save(File& dest, const SaveGame& save) {
 }
 
 const std::vector<FileFormat> FILE_FORMATS = {
-	{Game::DL, SAVE, {
+	{Game::DL, FileType::SLOT, {
 		ST_LEVEL,
 		ST_HEROSAVE,
 		ST_ELAPSEDTIME,

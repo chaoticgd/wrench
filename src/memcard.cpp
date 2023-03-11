@@ -29,7 +29,9 @@ static void begin_dock_space();
 static void create_dock_layout();
 static void do_load();
 static void do_save();
-static bool save_page(bool draw_gui);
+static bool game_modes_page(bool draw_gui);
+static bool profiles_page(bool draw_gui);
+static bool slot_page(bool draw_gui);
 static bool bots_page(bool draw_gui);
 static bool enemy_kills_page(bool draw_gui);
 static bool gadget_page(bool draw_gui);
@@ -54,7 +56,14 @@ struct Page {
 };
 
 static Page PAGES[] = {
-	{"Save", &save_page},
+	// net
+	{"Game Modes", &game_modes_page},
+	{"Profiles", &profiles_page},
+	{"General Stats", &profiles_page},
+	{"Siege Match Stats", &profiles_page},
+	{"Death Match Stats", &profiles_page},
+	// slot
+	{"Slot", &slot_page},
 	{"Bots", &bots_page},
 	{"Enemy Kills", &enemy_kills_page},
 	{"Gadgets", &gadget_page},
@@ -145,7 +154,9 @@ static void files() {
 		file_paths.clear();
 		try {
 			for(auto entry : fs::directory_iterator(directory)) {
-				file_paths.emplace_back(entry.path());
+				if(entry.path().extension() != ".backup") {
+					file_paths.emplace_back(entry.path());
+				}
 			}
 			listing_error.clear();
 		} catch(std::filesystem::filesystem_error& error) {
@@ -269,10 +280,9 @@ static void do_load() {
 	if(!selected_file_path.empty()) {
 		try {
 			std::vector<u8> buffer = read_file(selected_file_path);
-			file = memory_card::read_save(buffer);
-			file->path = selected_file_path;
+			file = memory_card::read(buffer, selected_file_path);
 			error_message.clear();
-			save = memory_card::parse_save(*file);
+			save = memory_card::parse(*file);
 			for(Page& page : PAGES) {
 				page.visible = page.func(false);
 			}
@@ -285,9 +295,9 @@ static void do_load() {
 static void do_save() {
 	if(file.has_value() && save.loaded) {
 		try {
-			memory_card::update_save(*file, save);
+			memory_card::update(*file, save);
 			std::vector<u8> buffer;
-			memory_card::write_save(buffer, *file);
+			memory_card::write(buffer, *file);
 			fs::path backup_path = file->path.replace_extension("backup");
 			if(fs::exists(file->path) && !fs::exists(backup_path)) {
 				fs::copy(file->path, backup_path);
@@ -349,7 +359,16 @@ static void do_save() {
 		(value).year = to_bcd(clock[5]); \
 	}
 
-static bool save_page(bool draw_gui) {
+static bool game_modes_page(bool draw_gui) {
+	return true;
+}
+
+static bool profiles_page(bool draw_gui) {
+	return true;
+}
+
+static bool slot_page(bool draw_gui) {
+	if(save.type != memory_card::FileType::SLOT) return false;
 	if(!draw_gui) return true;
 	
 	if(save.level.has_value()) input_scalar(ImGuiDataType_S32, "Level", *save.level);
@@ -764,6 +783,14 @@ static bool statistics_page(bool draw_gui) {
 }
 
 static bool levels_page(bool draw_gui) {
+	bool any_tabs = false;
+	
+	for(const memory_card::LevelSaveGame& level_save_game : save.levels) {
+		if(level_save_game.level.has_value()) {
+			any_tabs = true;
+		}
+	}
+	if(!any_tabs) return false;
 	if(!draw_gui) return true;
 	
 	ImGui::BeginTable("##levels", 3, ImGuiTableFlags_RowBg);

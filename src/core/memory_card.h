@@ -35,26 +35,46 @@ struct Section {
 	std::vector<u8> data;
 };
 
+enum class FileType {
+	MAIN,
+	NET,
+	PATCH,
+	SLOT,
+	SYS
+};
+
 struct File {
 	fs::path path;
 	bool checksum_does_not_match = false;
-	std::vector<Section> sections;
-	std::vector<std::vector<Section>> levels;
+	FileType type;
+	struct {
+		std::vector<u8> data;
+	} main;
+	struct {
+		std::vector<Section> sections;
+	} net;
+	struct {
+		std::vector<u8> data;
+	} patch;
+	struct {
+		std::vector<Section> sections;
+		std::vector<std::vector<Section>> levels;
+	} slot;
+	struct {
+		std::vector<u8> data;
+	} sys;
 };
 
-File read_save(Buffer src);
+File read(Buffer src, const fs::path& path);
+FileType identify(std::string filename);
 std::vector<Section> read_sections(bool* checksum_does_not_match_out, Buffer src, s64& pos);
-void write_save(OutBuffer dest, File& save);
+void write(OutBuffer dest, File& file);
 s64 write_sections(OutBuffer dest, std::vector<Section>& sections);
 u32 checksum(Buffer src);
 
 // *****************************************************************************
 // Save game
 // *****************************************************************************
-
-enum FileType {
-	SAVE
-};
 
 enum SectionType : s32 {
 	ST_LEVEL                = 0,
@@ -74,6 +94,8 @@ enum SectionType : s32 {
 	ST_TOTALDEATHS          = 1005,
 	ST_HELPLOG              = 1010,
 	ST_HELPLOGPOS           = 1011,
+	ST_GAMEMODEOPTIONS      = 7000,
+	ST_MPPROFILES           = 7001,
 	ST_HEROGADGETBOX        = 7008,
 	ST_LEVELSAVEDATA        = 7009,
 	ST_PURCHASEABLEGADGETS  = 7010,
@@ -92,6 +114,104 @@ struct FileFormat {
 	std::vector<SectionType> sections;
 	std::vector<SectionType> level_sections;
 };
+
+packed_struct(SiegeMatch,
+	/* 0x000 */ s32 time_limit;
+	/* 0x004 */ bool nodes_on;
+	/* 0x005 */ bool ais_on;
+	/* 0x006 */ bool vehicles_on;
+	/* 0x007 */ bool friendlyfire_on;
+)
+static_assert(sizeof(SiegeMatch) == 0x8);
+
+packed_struct(TimeDeathMatch,
+	/* 0x000 */ s32 time_limit;
+	/* 0x004 */ bool vehicles_on;
+	/* 0x005 */ bool friendly_fire_on;
+	/* 0x006 */ bool suicide_on;
+	/* 0x007 */ u8 pad_7;
+)
+static_assert(sizeof(TimeDeathMatch) == 0x8);
+
+packed_struct(FragDeathMatch,
+	/* 0x000 */ s32 frag_limit;
+	/* 0x004 */ bool vechicles_on;
+	/* 0x005 */ bool suicide_on;
+	/* 0x006 */ bool friendly_fire_on;
+	/* 0x007 */ u8 pad_7;
+)
+static_assert(sizeof(FragDeathMatch) == 0x8);
+
+packed_struct(GameModeStruct,
+	/* 0x000 */ s32 mode_chosen;
+	/* 0x004 */ SiegeMatch siege_options;
+	/* 0x00c */ TimeDeathMatch time_death_match_options;
+	/* 0x014 */ FragDeathMatch frag_death_match_options;
+)
+static_assert(sizeof(GameModeStruct) == 0x1c);
+
+packed_struct(GeneralStatStruct,
+	/* 0x000 */ s32 no_of_games_played;
+	/* 0x004 */ s32 no_of_games_won;
+	/* 0x008 */ s32 no_of_games_lost;
+	/* 0x00c */ s32 no_of_kills;
+	/* 0x010 */ s32 no_of_deaths;
+)
+static_assert(sizeof(GeneralStatStruct) == 0x14);
+
+packed_struct(SiegeMatchStatStruct,
+	/* 0x000 */ s32 no_of_wins;
+	/* 0x004 */ s32 no_of_losses;
+	/* 0x008 */ s32 wins_per_level[6];
+	/* 0x020 */ s32 losses_per_level[6];
+	/* 0x038 */ s32 no_of_base_captures;
+	/* 0x03c */ s32 no_of_kills;
+	/* 0x040 */ s32 no_of_deaths;
+)
+static_assert(sizeof(SiegeMatchStatStruct) == 0x44);
+
+packed_struct(DeadMatchStatStruct,
+	/* 0x000 */ s32 no_of_wins;
+	/* 0x004 */ s32 no_of_losses;
+	/* 0x008 */ s32 wins_per_level[6];
+	/* 0x020 */ s32 losses_per_level[6];
+	/* 0x038 */ s32 no_of_kills;
+	/* 0x03c */ s32 noof_deaths;
+)
+static_assert(sizeof(DeadMatchStatStruct) == 0x40);
+
+packed_struct(CameraMode,
+	/* 0x000 */ bool normal_left_right_mode;
+	/* 0x001 */ bool normal_up_down_mode;
+	/* 0x002 */ u8 pad_2[2];
+	/* 0x004 */ s32 camera_speed;
+)
+static_assert(sizeof(CameraMode) == 0x8);
+
+packed_struct(ProfileStruct,
+	/* 0x000 */ s32 skin;
+	/* 0x004 */ CameraMode camera_options[3];
+	/* 0x01c */ u8 first_person_mode_on;
+	/* 0x01d */ char name[16];
+	/* 0x02d */ char password[16];
+	/* 0x03d */ u8 map_access;
+	/* 0x03e */ u8 pal_server;
+	/* 0x03f */ u8 help_msg_off;
+	/* 0x040 */ u8 save_password;
+	/* 0x041 */ u8 location_idx;
+	/* 0x042 */ u8 pad_42[2];
+	/* 0x044 */ GeneralStatStruct general_stats;
+	/* 0x058 */ SiegeMatchStatStruct siege_match_stats;
+	/* 0x09c */ DeadMatchStatStruct dead_match_stats;
+	/* 0x0dc */ u8 active;
+	/* 0x0dd */ u8 pad_dd[3];
+	/* 0x0e0 */ s32 help_data[32];
+	/* 0x160 */ u8 net_enabled;
+	/* 0x161 */ u8 vibration;
+	/* 0x162 */ s16 music_volume;
+	/* 0x164 */ s32 extra_data_padding[31];
+)
+static_assert(sizeof(ProfileStruct) == 0x1e0);
 
 packed_struct(Clock,
 	u8 stat;
@@ -332,6 +452,11 @@ struct LevelSaveGame {
 
 struct SaveGame {
 	bool loaded = false;
+	FileType type;
+	// net
+	Opt<GameModeStruct> game_mode_options;
+	Opt<FixedArray<ProfileStruct, 8>> mp_profiles;
+	// slot
 	Opt<s32> level;
 	Opt<s32> elapsed_time;
 	Opt<Clock> last_save_time;
@@ -362,8 +487,12 @@ struct SaveGame {
 };
 
 
-SaveGame parse_save(const File& file);
-void update_save(File& dest, const SaveGame& save);
+SaveGame parse(const File& file);
+SaveGame parse_net(const File& file);
+SaveGame parse_slot(const File& file);
+void update(File& dest, const SaveGame& save);
+void update_net(File& dest, const SaveGame& save);
+void update_slot(File& dest, const SaveGame& save);
 
 extern const std::vector<FileFormat> FILE_FORMATS;
 
