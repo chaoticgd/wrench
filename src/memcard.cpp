@@ -311,7 +311,6 @@ static void do_save() {
 template <typename T>
 static ImGuiDataType get_imgui_type() {
 	using Type = std::remove_reference_t<T>;
-	if constexpr(std::is_same_v<Type, bool>) return ImGuiDataType_U8;
 	if constexpr(std::is_same_v<Type, s8>) return ImGuiDataType_S8;
 	if constexpr(std::is_same_v<Type, u8>) return ImGuiDataType_U8;
 	if constexpr(std::is_same_v<Type, s16>) return ImGuiDataType_S16;
@@ -411,9 +410,6 @@ static bool profiles_page(bool draw_gui) {
 				input_scalar("Help Msg off", p.help_msg_off);
 				input_scalar("Save Password", p.save_password);
 				input_scalar("Location index", p.location_idx);
-				//input_scalar("general_stats", p.general_stats);
-				//input_scalar("siege_match_stats", p.siege_match_stats);
-				//input_scalar("dead_match_stats", p.dead_match_stats);
 				input_scalar("Active", p.active);
 				input_array("Help Data", p.help_data);
 				input_scalar("Net Enabled", p.net_enabled);
@@ -429,14 +425,95 @@ static bool profiles_page(bool draw_gui) {
 }
 
 static bool profile_stats_page(bool draw_gui) {
+	if(!save.mp_profiles.has_value()) return false;
+	if(!draw_gui) return true;
+	
+	if(ImGui::BeginTabBar("##profile_stats")) {
+		for(s32 i = 0; i < ARRAY_SIZE(save.mp_profiles->array); i++) {
+			memory_card::ProfileStruct& p = save.mp_profiles->array[i];
+			if(ImGui::BeginTabItem(stringf("%d", i).c_str())) {
+				memory_card::GeneralStatStruct& g = p.general_stats;
+				input_scalar("Games Played", g.no_of_games_played);
+				input_scalar("Games Won", g.no_of_games_won);
+				input_scalar("Games Lost", g.no_of_games_lost);
+				input_scalar("Kills", g.no_of_kills);
+				input_scalar("Deaths", g.no_of_deaths);
+				
+				memory_card::SiegeMatchStatStruct& s = p.siege_match_stats;
+				input_scalar("Siege Match Games Won", s.no_of_wins);
+				input_scalar("Siege Match Games Lost", s.no_of_losses);
+				input_array("Siege Match Wins Per Level", s.wins_per_level);
+				input_array("Siege Match Losses Per Level", s.losses_per_level);
+				input_scalar("Siege Match Base Captures", s.no_of_base_captures);
+				input_scalar("Siege Match Kills", g.no_of_kills);
+				input_scalar("Siege Match Deaths", g.no_of_deaths);
+				
+				memory_card::DeadMatchStatStruct& d = p.dead_match_stats;
+				input_scalar("Death Match Wins", d.no_of_wins);
+				input_scalar("Death Match Losses", d.no_of_losses);
+				input_array("Death Match Wins Per Level", d.wins_per_level);
+				input_array("Death Match Losses Per Level", d.losses_per_level);
+				input_scalar("Siege Match Kills", d.no_of_kills);
+				input_scalar("Siege Match Deaths", d.no_of_deaths);
+				
+				ImGui::EndTabItem();
+			}
+		}
+		ImGui::EndTabBar();
+	}
+	
 	return true;
 }
+
+//packed_struct(SiegeMatch,
+//	/* 0x000 */ s32 time_limit;
+//	/* 0x004 */ u8 nodes_on;
+//	/* 0x005 */ u8 ais_on;
+//	/* 0x006 */ u8 vehicles_on;
+//	/* 0x007 */ std::u8string friendlyfire_on;
+//)
+//static_assert(sizeof(SiegeMatch) == 0x8);
+//
+//packed_struct(TimeDeathMatch,
+//	/* 0x000 */ s32 time_limit;
+//	/* 0x004 */ u8 vehicles_on;
+//	/* 0x005 */ u8 friendly_fire_on;
+//	/* 0x006 */ u8 suicide_on;
+//	/* 0x007 */ u8 pad_7;
+//)
+//static_assert(sizeof(TimeDeathMatch) == 0x8);
+//
+//packed_struct(FragDeathMatch,
+//	/* 0x000 */ s32 frag_limit;
+//	/* 0x004 */ u8 vechicles_on;
+//	/* 0x005 */ u8 suicide_on;
+//	/* 0x006 */ u8 friendly_fire_on;
+//	/* 0x007 */ u8 pad_7;
+//)
+//static_assert(sizeof(FragDeathMatch) == 0x8);
 
 static bool game_modes_page(bool draw_gui) {
 	if(!save.game_mode_options.has_value()) return false;
 	if(!draw_gui) return true;
 	
 	memory_card::GameModeStruct& o = *save.game_mode_options;
+	input_scalar("Mode Chosen", o.mode_chosen);
+	
+	input_scalar("Siege Match Time Limit", o.siege_options.time_limit);
+	input_scalar("Siege Match Nodes", o.siege_options.nodes_on);
+	input_scalar("Siege Match Aids", o.siege_options.ais_on);
+	input_scalar("Siege Match Vehicles", o.siege_options.vehicles_on);
+	input_scalar("Siege Match Friendly Fire", o.siege_options.friendlyfire_on);
+	
+	input_scalar("Time Death Match Time Limit", o.time_death_match_options.time_limit);
+	input_scalar("Time Death Match Vehicles", o.time_death_match_options.vehicles_on);
+	input_scalar("Time Death Match Friendly Fire", o.time_death_match_options.friendly_fire_on);
+	input_scalar("Time Death Match Suicide", o.time_death_match_options.suicide_on);
+	
+	input_scalar("Frag Death Match Frag Limit", o.frag_death_match_options.frag_limit);
+	input_scalar("Frag Death Match Vehicles", o.frag_death_match_options.vechicles_on);
+	input_scalar("Frag Death Match Suicide", o.frag_death_match_options.suicide_on);
+	input_scalar("Frag Death Match Friendly Fire", o.frag_death_match_options.friendly_fire_on);
 	
 	return true;
 }

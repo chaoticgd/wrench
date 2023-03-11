@@ -211,6 +211,7 @@ SaveGame parse(const File& file) {
 		case FileType::SLOT: save = parse_slot(file); break;
 		case FileType::SYS: break;
 	}
+	save.type = file.type;
 	return save;
 }
 
@@ -232,7 +233,6 @@ SaveGame parse_slot(const File& file) {
 	assert(file.type == FileType::SLOT);
 	SaveGame save;
 	save.loaded = true;
-	save.type = file.type;
 	for(const Section& section : file.slot.sections) {
 		Buffer buffer = section.data;
 		switch(section.type) {

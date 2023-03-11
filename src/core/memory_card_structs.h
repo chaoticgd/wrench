@@ -25,27 +25,27 @@ namespace memory_card {
 
 packed_struct(SiegeMatch,
 	/* 0x000 */ s32 time_limit;
-	/* 0x004 */ bool nodes_on;
-	/* 0x005 */ bool ais_on;
-	/* 0x006 */ bool vehicles_on;
-	/* 0x007 */ bool friendlyfire_on;
+	/* 0x004 */ u8 nodes_on;
+	/* 0x005 */ u8 ais_on;
+	/* 0x006 */ u8 vehicles_on;
+	/* 0x007 */ u8 friendlyfire_on;
 )
 static_assert(sizeof(SiegeMatch) == 0x8);
 
 packed_struct(TimeDeathMatch,
 	/* 0x000 */ s32 time_limit;
-	/* 0x004 */ bool vehicles_on;
-	/* 0x005 */ bool friendly_fire_on;
-	/* 0x006 */ bool suicide_on;
+	/* 0x004 */ u8 vehicles_on;
+	/* 0x005 */ u8 friendly_fire_on;
+	/* 0x006 */ u8 suicide_on;
 	/* 0x007 */ u8 pad_7;
 )
 static_assert(sizeof(TimeDeathMatch) == 0x8);
 
 packed_struct(FragDeathMatch,
 	/* 0x000 */ s32 frag_limit;
-	/* 0x004 */ bool vechicles_on;
-	/* 0x005 */ bool suicide_on;
-	/* 0x006 */ bool friendly_fire_on;
+	/* 0x004 */ u8 vechicles_on;
+	/* 0x005 */ u8 suicide_on;
+	/* 0x006 */ u8 friendly_fire_on;
 	/* 0x007 */ u8 pad_7;
 )
 static_assert(sizeof(FragDeathMatch) == 0x8);
@@ -84,13 +84,13 @@ packed_struct(DeadMatchStatStruct,
 	/* 0x008 */ s32 wins_per_level[6];
 	/* 0x020 */ s32 losses_per_level[6];
 	/* 0x038 */ s32 no_of_kills;
-	/* 0x03c */ s32 noof_deaths;
+	/* 0x03c */ s32 no_of_deaths;
 )
 static_assert(sizeof(DeadMatchStatStruct) == 0x40);
 
 packed_struct(CameraMode,
-	/* 0x000 */ bool normal_left_right_mode;
-	/* 0x001 */ bool normal_up_down_mode;
+	/* 0x000 */ u8 normal_left_right_mode;
+	/* 0x001 */ u8 normal_up_down_mode;
 	/* 0x002 */ u8 pad_2[2];
 	/* 0x004 */ s32 camera_speed;
 )
