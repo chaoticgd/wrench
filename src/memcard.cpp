@@ -165,36 +165,36 @@ static void files() {
 		should_reload_file_list = false;
 	}
 	
-	if(!listing_error.empty()) {
+	if(listing_error.empty()) {
+		ImGui::BeginChild("##files");
+		if(ImGui::Selectable("[DIR] .")) {
+			should_reload_file_list = true;
+		}
+		if(ImGui::Selectable("[DIR] ..")) {
+			directory = fs::weakly_canonical(fs::path(directory)).parent_path().string();
+			should_reload_file_list = true;
+		}
+		for(auto& path : file_paths) {
+			if(fs::is_directory(path)) {
+				std::string label = stringf("[DIR] %s", path.filename().string().c_str());
+				if(ImGui::Selectable(label.c_str())) {
+					directory = path;
+					should_reload_file_list = true;
+				}
+			}
+		}
+		for(auto& path : file_paths) {
+			if(fs::is_regular_file(path)) {
+				if(ImGui::Selectable(path.filename().string().c_str(), path == selected_file_path)) {
+					should_load_now = true;
+					selected_file_path = path;
+				}
+			}
+		}
+		ImGui::EndChild();
+	} else {
 		ImGui::Text("%s", listing_error.c_str());
 	}
-	
-	ImGui::BeginChild("##files");
-	if(ImGui::Selectable("[DIR] .")) {
-		should_reload_file_list = true;
-	}
-	if(ImGui::Selectable("[DIR] ..")) {
-		directory = fs::weakly_canonical(fs::path(directory)).parent_path().string();
-		should_reload_file_list = true;
-	}
-	for(auto& path : file_paths) {
-		if(fs::is_directory(path)) {
-			std::string label = stringf("[DIR] %s", path.filename().string().c_str());
-			if(ImGui::Selectable(label.c_str())) {
-				directory = path;
-				should_reload_file_list = true;
-			}
-		}
-	}
-	for(auto& path : file_paths) {
-		if(fs::is_regular_file(path)) {
-			if(ImGui::Selectable(path.filename().string().c_str(), path == selected_file_path)) {
-				should_load_now = true;
-				selected_file_path = path;
-			}
-		}
-	}
-	ImGui::EndChild();
 }
 
 static void sections() {
