@@ -83,6 +83,7 @@ static bool should_save_now = false;
 static Opt<memory_card::File> file;
 static std::string error_message;
 static memory_card::SaveGame save;
+static bool raw_mode = false;
 
 int main(int argc, char** argv) {
 	WadPaths wads = find_wads(argv[0]);
@@ -231,6 +232,11 @@ static void editor() {
 		}
 		ImGui::EndTabBar();
 	}
+	
+	ImGui::SameLine();
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.f, 0.f));
+	ImGui::Checkbox("Raw Mode", &raw_mode);
+	ImGui::PopStyleVar();
 }
 
 static void begin_dock_space() {
@@ -324,16 +330,41 @@ static ImGuiDataType get_imgui_type() {
 	assert_not_reached("Bad field type.");
 }
 
+enum FieldWidget {
+	SCALAR, CHECKBOX
+};
+
+struct FieldDecorator {
+	FieldDecorator() : widget(SCALAR) {}
+	FieldDecorator(FieldWidget w) : widget(w) {}
+	FieldWidget widget;
+};
+
 // I'm using macros instead of functions here so that the compiler doesn't
 // complain about misaligned pointers (even if in practice they should be aligned).
-#define input_scalar(label, value) \
+#define input_scalar(label, value, ...) \
 	{ \
-		auto temp = value; \
+		FieldDecorator decorator{__VA_ARGS__}; \
+		if(raw_mode) decorator = SCALAR; \
 		ImGuiDataType data_type = get_imgui_type<decltype(value)>();\
-		if(ImGui::InputScalar(label, data_type, &temp)) { \
-			should_save_now = true; \
+		switch(decorator.widget) { \
+			case SCALAR: { \
+				auto temp = value; \
+				if(ImGui::InputScalar(label, data_type, &temp)) { \
+					should_save_now = true; \
+				} \
+				value = temp; \
+				break; \
+			} \
+			case CHECKBOX: { \
+				bool temp = (bool) value; \
+				if(ImGui::Checkbox(label, &temp)) { \
+					should_save_now = true; \
+				} \
+				value = temp; \
+				break; \
+			} \
 		} \
-		value = temp; \
 	}
 #define input_array(label, array) \
 	{ \
@@ -393,16 +424,16 @@ static bool profiles_page(bool draw_gui) {
 			memory_card::ProfileStruct& p = save.mp_profiles->array[i];
 			if(ImGui::BeginTabItem(stringf("%d", i).c_str())) {
 				input_scalar("Skin", p.skin);
-				input_scalar("Camera 0 Normal Left/Right Mode", p.camera_options[0].normal_left_right_mode);
-				input_scalar("Camera 0 Normal Up/Down Mode", p.camera_options[0].normal_up_down_mode);
+				input_scalar("Camera 0 Normal Left/Right Mode", p.camera_options[0].normal_left_right_mode, CHECKBOX);
+				input_scalar("Camera 0 Normal Up/Down Mode", p.camera_options[0].normal_up_down_mode, CHECKBOX);
 				input_scalar("Camera 0 Speed", p.camera_options[0].camera_speed);
-				input_scalar("Camera 1 Normal Left/Right Mode", p.camera_options[1].normal_left_right_mode);
-				input_scalar("Camera 1 Normal Up/Down Mode", p.camera_options[1].normal_up_down_mode);
+				input_scalar("Camera 1 Normal Left/Right Mode", p.camera_options[1].normal_left_right_mode, CHECKBOX);
+				input_scalar("Camera 1 Normal Up/Down Mode", p.camera_options[1].normal_up_down_mode, CHECKBOX);
 				input_scalar("Camera 1 Speed", p.camera_options[1].camera_speed);
-				input_scalar("Camera 2 Normal Left/Right Mode", p.camera_options[2].normal_left_right_mode);
-				input_scalar("Camera 2 Normal Up/Down Mode", p.camera_options[2].normal_up_down_mode);
+				input_scalar("Camera 2 Normal Left/Right Mode", p.camera_options[2].normal_left_right_mode, CHECKBOX);
+				input_scalar("Camera 2 Normal Up/Down Mode", p.camera_options[2].normal_up_down_mode, CHECKBOX);
 				input_scalar("Camera 2 Speed", p.camera_options[2].camera_speed);
-				input_scalar("First Person Mode On", p.first_person_mode_on);
+				input_scalar("First Person Mode On", p.first_person_mode_on, CHECKBOX);
 				input_text("Name", p.name);
 				input_text("Password", p.password);
 				input_scalar("Map Access", p.map_access);
@@ -412,8 +443,8 @@ static bool profiles_page(bool draw_gui) {
 				input_scalar("Location index", p.location_idx);
 				input_scalar("Active", p.active);
 				input_array("Help Data", p.help_data);
-				input_scalar("Net Enabled", p.net_enabled);
-				input_scalar("Vibration", p.vibration);
+				input_scalar("Net Enabled", p.net_enabled, CHECKBOX);
+				input_scalar("Vibration", p.vibration, CHECKBOX);
 				input_scalar("Music Volume", p.music_volume);
 				ImGui::EndTabItem();
 			}
@@ -465,33 +496,6 @@ static bool profile_stats_page(bool draw_gui) {
 	return true;
 }
 
-//packed_struct(SiegeMatch,
-//	/* 0x000 */ s32 time_limit;
-//	/* 0x004 */ u8 nodes_on;
-//	/* 0x005 */ u8 ais_on;
-//	/* 0x006 */ u8 vehicles_on;
-//	/* 0x007 */ std::u8string friendlyfire_on;
-//)
-//static_assert(sizeof(SiegeMatch) == 0x8);
-//
-//packed_struct(TimeDeathMatch,
-//	/* 0x000 */ s32 time_limit;
-//	/* 0x004 */ u8 vehicles_on;
-//	/* 0x005 */ u8 friendly_fire_on;
-//	/* 0x006 */ u8 suicide_on;
-//	/* 0x007 */ u8 pad_7;
-//)
-//static_assert(sizeof(TimeDeathMatch) == 0x8);
-//
-//packed_struct(FragDeathMatch,
-//	/* 0x000 */ s32 frag_limit;
-//	/* 0x004 */ u8 vechicles_on;
-//	/* 0x005 */ u8 suicide_on;
-//	/* 0x006 */ u8 friendly_fire_on;
-//	/* 0x007 */ u8 pad_7;
-//)
-//static_assert(sizeof(FragDeathMatch) == 0x8);
-
 static bool game_modes_page(bool draw_gui) {
 	if(!save.game_mode_options.has_value()) return false;
 	if(!draw_gui) return true;
@@ -500,20 +504,20 @@ static bool game_modes_page(bool draw_gui) {
 	input_scalar("Mode Chosen", o.mode_chosen);
 	
 	input_scalar("Siege Match Time Limit", o.siege_options.time_limit);
-	input_scalar("Siege Match Nodes", o.siege_options.nodes_on);
-	input_scalar("Siege Match Aids", o.siege_options.ais_on);
-	input_scalar("Siege Match Vehicles", o.siege_options.vehicles_on);
-	input_scalar("Siege Match Friendly Fire", o.siege_options.friendlyfire_on);
+	input_scalar("Siege Match Nodes", o.siege_options.nodes_on, CHECKBOX);
+	input_scalar("Siege Match Aids", o.siege_options.ais_on, CHECKBOX);
+	input_scalar("Siege Match Vehicles", o.siege_options.vehicles_on, CHECKBOX);
+	input_scalar("Siege Match Friendly Fire", o.siege_options.friendlyfire_on, CHECKBOX);
 	
 	input_scalar("Time Death Match Time Limit", o.time_death_match_options.time_limit);
-	input_scalar("Time Death Match Vehicles", o.time_death_match_options.vehicles_on);
-	input_scalar("Time Death Match Friendly Fire", o.time_death_match_options.friendly_fire_on);
-	input_scalar("Time Death Match Suicide", o.time_death_match_options.suicide_on);
+	input_scalar("Time Death Match Vehicles", o.time_death_match_options.vehicles_on, CHECKBOX);
+	input_scalar("Time Death Match Friendly Fire", o.time_death_match_options.friendly_fire_on, CHECKBOX);
+	input_scalar("Time Death Match Suicide", o.time_death_match_options.suicide_on, CHECKBOX);
 	
 	input_scalar("Frag Death Match Frag Limit", o.frag_death_match_options.frag_limit);
-	input_scalar("Frag Death Match Vehicles", o.frag_death_match_options.vechicles_on);
-	input_scalar("Frag Death Match Suicide", o.frag_death_match_options.suicide_on);
-	input_scalar("Frag Death Match Friendly Fire", o.frag_death_match_options.friendly_fire_on);
+	input_scalar("Frag Death Match Vehicles", o.frag_death_match_options.vechicles_on, CHECKBOX);
+	input_scalar("Frag Death Match Suicide", o.frag_death_match_options.suicide_on, CHECKBOX);
+	input_scalar("Frag Death Match Friendly Fire", o.frag_death_match_options.friendly_fire_on, CHECKBOX);
 	
 	return true;
 }
@@ -624,7 +628,7 @@ static bool gadget_page(bool draw_gui) {
 static void gadget_general_subpage() {
 	memory_card::GadgetBox& g = *save.hero_gadget_box;
 	
-	input_scalar("Initialized", g.initialized);
+	input_scalar("Initialized", g.initialized, CHECKBOX);
 	input_scalar("Level", g.level);
 	input_array("Button Down", g.button_down);
 	input_array("Button Up Frames", g.button_up_frames);
@@ -881,27 +885,27 @@ static bool settings_page(bool draw_gui) {
 	if(!draw_gui) return true;
 	memory_card::GameSettings& s = *save.settings;
 	
-	input_scalar("PAL Mode", s.pal_mode);
-	input_scalar("Help Voice On", s.help_voice_on);
-	input_scalar("Help Text On", s.help_text_on);
-	input_scalar("Subtitles Active", s.subtitles_active);
-	input_scalar("Stereo", s.stereo);
+	input_scalar("PAL Mode", s.pal_mode, CHECKBOX);
+	input_scalar("Help Voice On", s.help_voice_on, CHECKBOX);
+	input_scalar("Help Text On", s.help_text_on, CHECKBOX);
+	input_scalar("Subtitles Active", s.subtitles_active, CHECKBOX);
+	input_scalar("Stereo", s.stereo, CHECKBOX);
 	input_scalar("Music Volume", s.music_volume);
 	input_scalar("Effects Volume", s.effects_volume);
 	input_scalar("Voice Volume", s.voice_volume);
 	input_array_2d("Camera Elevation Dir", s.camera_elevation_dir);
 	input_array_2d("Camera Azimuth Dir", s.camera_azimuth_dir);
 	input_array_2d("Camera Rotate Speed", s.camera_rotate_speed);
-	input_array("First Person Mode On", s.first_person_mode_on);
+	input_array("First Person Mode", s.first_person_mode_on);
 	input_scalar("Was NTSC Progessive", s.was_ntsc_progessive);
 	input_scalar("Wide", s.wide);
-	input_array("Controller Vibration On", s.controller_vibration_on);
-	input_scalar("Quick Select Pause On", s.quick_select_pause_on);
+	input_array("Controller Vibration", s.controller_vibration_on);
+	input_scalar("Quick Select Pause", s.quick_select_pause_on, CHECKBOX);
 	input_scalar("Language", s.language);
 	input_scalar("Aux Setting 2", s.aux_setting_2);
 	input_scalar("Aux Setting 3", s.aux_setting_3);
 	input_scalar("Aux Setting 4", s.aux_setting_4);
-	input_scalar("Auto Save On", s.auto_save_on);
+	input_scalar("Auto Save", s.auto_save_on, CHECKBOX);
 	
 	return true;
 }
