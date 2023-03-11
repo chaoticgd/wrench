@@ -255,6 +255,8 @@ SaveGame parse_slot(const File& file) {
 			case ST_HELPLOGPOS:           save.help_log_pos               = buffer.read<s32>(0);                             break;
 			case ST_HEROGADGETBOX:        save.hero_gadget_box            = buffer.read<GadgetBox>(0);                       break;
 			case ST_PURCHASEABLEGADGETS:  save.purchaseable_gadgets       = buffer.read_multiple<u8>(0, 20);                 break;
+			case ST_PURCHASEABLEWRENCH:   save.purchaseable_wrench_level  = buffer.read<u8>(0);                              break;
+			case ST_PURCHASEABLEPOSTMODS: save.purchaseable_post_fx_mods  = buffer.read_multiple<u8>(0, 9);                  break;
 			case ST_BOTSAVE:              save.bot_save                   = buffer.read<BotSave>(0);                         break;
 			case ST_FIRSTPERSONMODE:      save.first_person_desired_mode  = buffer.read_multiple<s32>(0, 10);                break;
 			case ST_SAVEDDIFFICULTYLEVEL: save.saved_difficulty_level     = buffer.read<s32>(0);                             break;
@@ -333,6 +335,8 @@ void update_slot(File& dest, const SaveGame& save) {
 			case ST_HELPLOGPOS:           update_section      (buffer, save.help_log_pos);               break;
 			case ST_HEROGADGETBOX:        update_section      (buffer, save.hero_gadget_box);            break;
 			case ST_PURCHASEABLEGADGETS:  update_section_array(buffer, save.purchaseable_gadgets);       break;
+			case ST_PURCHASEABLEWRENCH:   update_section      (buffer, save.purchaseable_wrench_level);  break;
+			case ST_PURCHASEABLEPOSTMODS: update_section_array(buffer, save.purchaseable_post_fx_mods);  break;
 			case ST_BOTSAVE:              update_section      (buffer, save.bot_save);                   break;
 			case ST_FIRSTPERSONMODE:      update_section_array(buffer, save.first_person_desired_mode);  break;
 			case ST_SAVEDDIFFICULTYLEVEL: update_section      (buffer, save.saved_difficulty_level);     break;

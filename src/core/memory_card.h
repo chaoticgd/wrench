@@ -100,6 +100,8 @@ enum SectionType : s32 {
 	ST_HEROGADGETBOX        = 7008,
 	ST_LEVELSAVEDATA        = 7009,
 	ST_PURCHASEABLEGADGETS  = 7010,
+	ST_PURCHASEABLEWRENCH   = 7012,
+	ST_PURCHASEABLEPOSTMODS = 7013,
 	ST_BOTSAVE              = 7014,
 	ST_FIRSTPERSONMODE      = 7015,
 	ST_SAVEDDIFFICULTYLEVEL = 7016,
@@ -146,6 +148,8 @@ struct SaveGame {
 	Opt<s32> help_log_pos;
 	Opt<GadgetBox> hero_gadget_box;
 	Opt<FixedArray<u8, 20>> purchaseable_gadgets;
+	Opt<u8> purchaseable_wrench_level;
+	Opt<FixedArray<u8, 9>> purchaseable_post_fx_mods;
 	Opt<BotSave> bot_save;
 	Opt<FixedArray<s32, 10>> first_person_desired_mode;
 	Opt<s32> saved_difficulty_level;
