@@ -308,39 +308,60 @@ static void do_save() {
 		should_reload_file_list = true;
 	}
 }
+template <typename T>
+static ImGuiDataType get_imgui_type() {
+	using Type = std::remove_reference_t<T>;
+	if constexpr(std::is_same_v<Type, bool>) return ImGuiDataType_U8;
+	if constexpr(std::is_same_v<Type, s8>) return ImGuiDataType_S8;
+	if constexpr(std::is_same_v<Type, u8>) return ImGuiDataType_U8;
+	if constexpr(std::is_same_v<Type, s16>) return ImGuiDataType_S16;
+	if constexpr(std::is_same_v<Type, u16>) return ImGuiDataType_U16;
+	if constexpr(std::is_same_v<Type, s32>) return ImGuiDataType_S32;
+	if constexpr(std::is_same_v<Type, u32>) return ImGuiDataType_U32;
+	if constexpr(std::is_same_v<Type, s64>) return ImGuiDataType_S64;
+	if constexpr(std::is_same_v<Type, u64>) return ImGuiDataType_U64;
+	if constexpr(std::is_same_v<Type, f32>) return ImGuiDataType_Float;
+	if constexpr(std::is_same_v<Type, f64>) return ImGuiDataType_Double;
+	assert_not_reached("Bad field type.");
+}
 
 // I'm using macros instead of functions here so that the compiler doesn't
 // complain about misaligned pointers (even if in practice they should be aligned).
-#define input_scalar(data_type, label, value) \
+#define input_scalar(label, value) \
 	{ \
 		auto temp = value; \
+		ImGuiDataType data_type = get_imgui_type<decltype(value)>();\
 		if(ImGui::InputScalar(label, data_type, &temp)) { \
 			should_save_now = true; \
 		} \
 		value = temp; \
 	}
-#define input_scalar_n(data_type, label, array) \
+#define input_array(label, array) \
 	{ \
 		decltype(array) temp; \
 		memcpy(temp, array, sizeof(array)); \
+		ImGuiDataType data_type = get_imgui_type<decltype(array[0])>(); \
 		if(ImGui::InputScalarN(label, data_type, temp, ARRAY_SIZE(array), nullptr, nullptr, nullptr, ImGuiInputTextFlags_None)) { \
 			should_save_now = true; \
 		} \
 		memcpy(array, temp, sizeof(array)); \
 	}
-#define input_scalar_multi(data_type, label, value, rows, columns) \
+#define input_array_2d(label, array) \
 	{ \
-		decltype(value) temp; \
-		memcpy(temp, value, sizeof(value)); \
+		s32 rows = ARRAY_SIZE(array); \
+		s32 columns = ARRAY_SIZE(array[0]); \
+		decltype(array) temp; \
+		memcpy(temp, array, sizeof(array)); \
 		for(s32 i = 0; i < rows; i++) { \
 			std::string row_label = stringf("%s %d", label, i); \
+			ImGuiDataType data_type = get_imgui_type<decltype(array[0][0])>(); \
 			if(ImGui::InputScalarN(row_label.c_str(), data_type, temp[i], columns, nullptr, nullptr, nullptr, ImGuiInputTextFlags_None)) { \
 				should_save_now = true; \
 			} \
 		} \
-		memcpy(value, temp, sizeof(value)); \
+		memcpy(array, temp, sizeof(array)); \
 	}
-#define input_text(data_type, label, value) \
+#define input_text(label, value) \
 	{ \
 		if(ImGui::InputText(label, (char*) ARRAY_PAIR(value))) { \
 			should_save_now = true; \
@@ -355,7 +376,7 @@ static void do_save() {
 		clock[3] = from_bcd((value).day); \
 		clock[4] = from_bcd((value).month); \
 		clock[5] = from_bcd((value).year); \
-		input_scalar_n(ImGuiDataType_U8, label, clock); \
+		input_array(label, clock); \
 		(value).second = to_bcd(clock[0]); \
 		(value).minute = to_bcd(clock[1]); \
 		(value).hour = to_bcd(clock[2]); \
@@ -372,32 +393,32 @@ static bool profiles_page(bool draw_gui) {
 		for(s32 i = 0; i < ARRAY_SIZE(save.mp_profiles->array); i++) {
 			memory_card::ProfileStruct& p = save.mp_profiles->array[i];
 			if(ImGui::BeginTabItem(stringf("%d", i).c_str())) {
-				input_scalar(ImGuiDataType_S32, "Skin", p.skin);
-				input_scalar(ImGuiDataType_U8, "Camera 0 Normal Left/Right Mode", p.camera_options[0].normal_left_right_mode);
-				input_scalar(ImGuiDataType_U8, "Camera 0 Normal Up/Down Mode", p.camera_options[0].normal_up_down_mode);
-				input_scalar(ImGuiDataType_S32, "Camera 0 Speed", p.camera_options[0].camera_speed);
-				input_scalar(ImGuiDataType_U8, "Camera 1 Normal Left/Right Mode", p.camera_options[1].normal_left_right_mode);
-				input_scalar(ImGuiDataType_U8, "Camera 1 Normal Up/Down Mode", p.camera_options[1].normal_up_down_mode);
-				input_scalar(ImGuiDataType_S32, "Camera 1 Speed", p.camera_options[1].camera_speed);
-				input_scalar(ImGuiDataType_U8, "Camera 2 Normal Left/Right Mode", p.camera_options[2].normal_left_right_mode);
-				input_scalar(ImGuiDataType_U8, "Camera 2 Normal Up/Down Mode", p.camera_options[2].normal_up_down_mode);
-				input_scalar(ImGuiDataType_S32, "Camera 2 Speed", p.camera_options[2].camera_speed);
-				input_scalar(ImGuiDataType_U8, "First Person Mode On", p.first_person_mode_on);
-				input_text(ImGuiDataType_U8, "Name", p.name);
-				input_text(ImGuiDataType_U8, "Password", p.password);
-				input_scalar(ImGuiDataType_U8, "Map Access", p.map_access);
-				input_scalar(ImGuiDataType_U8, "PAL Server", p.pal_server);
-				input_scalar(ImGuiDataType_U8, "Help Msg off", p.help_msg_off);
-				input_scalar(ImGuiDataType_U8, "Save Password", p.save_password);
-				input_scalar(ImGuiDataType_U8, "Location index", p.location_idx);
-				//input_scalar(ImGuiDataType_U8, "general_stats", p.general_stats);
-				//input_scalar(ImGuiDataType_U8, "siege_match_stats", p.siege_match_stats);
-				//input_scalar(ImGuiDataType_U8, "dead_match_stats", p.dead_match_stats);
-				input_scalar(ImGuiDataType_U8, "Active", p.active);
-				input_scalar_n(ImGuiDataType_S32, "Help Data", p.help_data);
-				input_scalar(ImGuiDataType_U8, "Net Enabled", p.net_enabled);
-				input_scalar(ImGuiDataType_U8, "Vibration", p.vibration);
-				input_scalar(ImGuiDataType_S16, "Music Volume", p.music_volume);
+				input_scalar("Skin", p.skin);
+				input_scalar("Camera 0 Normal Left/Right Mode", p.camera_options[0].normal_left_right_mode);
+				input_scalar("Camera 0 Normal Up/Down Mode", p.camera_options[0].normal_up_down_mode);
+				input_scalar("Camera 0 Speed", p.camera_options[0].camera_speed);
+				input_scalar("Camera 1 Normal Left/Right Mode", p.camera_options[1].normal_left_right_mode);
+				input_scalar("Camera 1 Normal Up/Down Mode", p.camera_options[1].normal_up_down_mode);
+				input_scalar("Camera 1 Speed", p.camera_options[1].camera_speed);
+				input_scalar("Camera 2 Normal Left/Right Mode", p.camera_options[2].normal_left_right_mode);
+				input_scalar("Camera 2 Normal Up/Down Mode", p.camera_options[2].normal_up_down_mode);
+				input_scalar("Camera 2 Speed", p.camera_options[2].camera_speed);
+				input_scalar("First Person Mode On", p.first_person_mode_on);
+				input_text("Name", p.name);
+				input_text("Password", p.password);
+				input_scalar("Map Access", p.map_access);
+				input_scalar("PAL Server", p.pal_server);
+				input_scalar("Help Msg off", p.help_msg_off);
+				input_scalar("Save Password", p.save_password);
+				input_scalar("Location index", p.location_idx);
+				//input_scalar("general_stats", p.general_stats);
+				//input_scalar("siege_match_stats", p.siege_match_stats);
+				//input_scalar("dead_match_stats", p.dead_match_stats);
+				input_scalar("Active", p.active);
+				input_array("Help Data", p.help_data);
+				input_scalar("Net Enabled", p.net_enabled);
+				input_scalar("Vibration", p.vibration);
+				input_scalar("Music Volume", p.music_volume);
 				ImGui::EndTabItem();
 			}
 		}
@@ -424,22 +445,22 @@ static bool slot_page(bool draw_gui) {
 	if(save.type != memory_card::FileType::SLOT) return false;
 	if(!draw_gui) return true;
 	
-	if(save.level.has_value()) input_scalar(ImGuiDataType_S32, "Level", *save.level);
-	if(save.elapsed_time.has_value()) input_scalar(ImGuiDataType_S32, "Elapsed Time", *save.elapsed_time);
+	if(save.level.has_value()) input_scalar("Level", *save.level);
+	if(save.elapsed_time.has_value()) input_scalar("Elapsed Time", *save.elapsed_time);
 	if(save.last_save_time.has_value()) input_clock("Last Save Time (smhdmy)", *save.last_save_time)
-	if(save.global_flags.has_value()) input_scalar_n(ImGuiDataType_U8, "Global Flags", save.global_flags->array);
-	if(save.global_flags.has_value()) input_scalar_n(ImGuiDataType_U8, "Global Flags", save.global_flags->array);
-	if(save.cheats_activated.has_value()) input_scalar_n(ImGuiDataType_U8, "Cheats Activated", save.cheats_activated->array);
-	if(save.skill_points.has_value()) input_scalar_n(ImGuiDataType_S32, "Skill Points", save.skill_points->array);
-	if(save.cheats_ever_activated.has_value()) input_scalar_n(ImGuiDataType_U8, "Cheats Ever Activated", save.cheats_ever_activated->array);
-	if(save.movies_played_record.has_value()) input_scalar_n(ImGuiDataType_U32, "Movies Played Record", save.movies_played_record->array);
-	if(save.total_play_time.has_value()) input_scalar(ImGuiDataType_S32, "Total Play Time", *save.total_play_time);
-	if(save.total_deaths.has_value()) input_scalar(ImGuiDataType_S32, "Total Deaths", *save.total_deaths);
-	if(save.purchaseable_gadgets.has_value()) input_scalar_n(ImGuiDataType_U8, "Purchaseable Gadgets", save.purchaseable_gadgets->array);
-	if(save.first_person_desired_mode.has_value()) input_scalar_n(ImGuiDataType_S32, "First Person Desired Mode", save.first_person_desired_mode->array);
-	if(save.saved_difficulty_level.has_value()) input_scalar(ImGuiDataType_S32, "Saved Difficulty Level", *save.saved_difficulty_level);
-	if(save.battledome_wins_and_losses.has_value()) input_scalar_n(ImGuiDataType_S32, "Battledome Wins and Losses", save.battledome_wins_and_losses->array);
-	if(save.quick_switch_gadgets.has_value()) input_scalar_multi(ImGuiDataType_S32, "Quick Select Gadgets", save.quick_switch_gadgets->array, 4, 3);
+	if(save.global_flags.has_value()) input_array("Global Flags", save.global_flags->array);
+	if(save.global_flags.has_value()) input_array("Global Flags", save.global_flags->array);
+	if(save.cheats_activated.has_value()) input_array("Cheats Activated", save.cheats_activated->array);
+	if(save.skill_points.has_value()) input_array("Skill Points", save.skill_points->array);
+	if(save.cheats_ever_activated.has_value()) input_array("Cheats Ever Activated", save.cheats_ever_activated->array);
+	if(save.movies_played_record.has_value()) input_array("Movies Played Record", save.movies_played_record->array);
+	if(save.total_play_time.has_value()) input_scalar("Total Play Time", *save.total_play_time);
+	if(save.total_deaths.has_value()) input_scalar("Total Deaths", *save.total_deaths);
+	if(save.purchaseable_gadgets.has_value()) input_array("Purchaseable Gadgets", save.purchaseable_gadgets->array);
+	if(save.first_person_desired_mode.has_value()) input_array("First Person Desired Mode", save.first_person_desired_mode->array);
+	if(save.saved_difficulty_level.has_value()) input_scalar("Saved Difficulty Level", *save.saved_difficulty_level);
+	if(save.battledome_wins_and_losses.has_value()) input_array("Battledome Wins and Losses", save.battledome_wins_and_losses->array);
+	if(save.quick_switch_gadgets.has_value()) input_array_2d("Quick Select Gadgets", save.quick_switch_gadgets->array);
 	
 	return true;
 }
@@ -449,11 +470,11 @@ static bool bots_page(bool draw_gui) {
 	if(!draw_gui) return true;
 	memory_card::BotSave& s = *save.bot_save;
 	
-	input_scalar_n(ImGuiDataType_S32, "Bot Upgrades", s.bot_upgrades);
-	input_scalar_n(ImGuiDataType_S32, "Bot Paintjobs", s.bot_upgrades);
-	input_scalar_n(ImGuiDataType_S32, "Bot Heads", s.bot_upgrades);
-	input_scalar_n(ImGuiDataType_S32, "Current Bot Paint Job", s.bot_upgrades);
-	input_scalar_n(ImGuiDataType_S32, "Current Bot Head", s.bot_upgrades);
+	input_array("Bot Upgrades", s.bot_upgrades);
+	input_array("Bot Paintjobs", s.bot_upgrades);
+	input_array("Bot Heads", s.bot_upgrades);
+	input_array("Current Bot Paint Job", s.bot_upgrades);
+	input_array("Current Bot Head", s.bot_upgrades);
 	
 	return true;
 }
@@ -475,10 +496,10 @@ static bool enemy_kills_page(bool draw_gui) {
 			ImGui::Text("%d", i);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar(ImGuiDataType_S32, "##o_class", save.enemy_kills->array[i].o_class);
+			input_scalar("##o_class", save.enemy_kills->array[i].o_class);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar(ImGuiDataType_S32, "##kills", save.enemy_kills->array[i].kills);
+			input_scalar("##kills", save.enemy_kills->array[i].kills);
 			ImGui::PopID();
 		}
 		ImGui::EndTable();
@@ -526,14 +547,14 @@ static bool gadget_page(bool draw_gui) {
 static void gadget_general_subpage() {
 	memory_card::GadgetBox& g = *save.hero_gadget_box;
 	
-	input_scalar(ImGuiDataType_U8, "Initialized", g.initialized);
-	input_scalar(ImGuiDataType_U8, "Level", g.level);
-	input_scalar_n(ImGuiDataType_U8, "Button Down", g.button_down);
-	input_scalar_n(ImGuiDataType_S16, "Button Up Frames", g.button_up_frames);
-	input_scalar(ImGuiDataType_U8, "Num Gadget Events", g.num_gadget_events);
-	input_scalar_n(ImGuiDataType_U8, "Mod Basic", g.mod_basic);
-	input_scalar(ImGuiDataType_S16, "Mod Post FX", g.mod_post_fx);
-	input_scalar(ImGuiDataType_U32, "Gadget Event Pointer", g.p_next_gadget_event);
+	input_scalar("Initialized", g.initialized);
+	input_scalar("Level", g.level);
+	input_array("Button Down", g.button_down);
+	input_array("Button Up Frames", g.button_up_frames);
+	input_scalar("Num Gadget Events", g.num_gadget_events);
+	input_array("Mod Basic", g.mod_basic);
+	input_scalar("Mod Post FX", g.mod_post_fx);
+	input_scalar("Gadget Event Pointer", g.p_next_gadget_event);
 }
 
 static void gadget_entries_subpage() {
@@ -558,28 +579,28 @@ static void gadget_entries_subpage() {
 			ImGui::Text("%d", i);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar(ImGuiDataType_S16, "##level", save.hero_gadget_box->gadgets[i].level);
+			input_scalar("##level", save.hero_gadget_box->gadgets[i].level);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar(ImGuiDataType_S16, "##ammo", save.hero_gadget_box->gadgets[i].ammo);
+			input_scalar("##ammo", save.hero_gadget_box->gadgets[i].ammo);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar(ImGuiDataType_U32, "##xp", save.hero_gadget_box->gadgets[i].xp);
+			input_scalar("##xp", save.hero_gadget_box->gadgets[i].xp);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar(ImGuiDataType_S32, "##action_frame", save.hero_gadget_box->gadgets[i].action_frame);
+			input_scalar("##action_frame", save.hero_gadget_box->gadgets[i].action_frame);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar(ImGuiDataType_S32, "##mod_active_post_fx", save.hero_gadget_box->gadgets[i].mod_active_post_fx);
+			input_scalar("##mod_active_post_fx", save.hero_gadget_box->gadgets[i].mod_active_post_fx);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar(ImGuiDataType_S32, "##mod_active_weapon", save.hero_gadget_box->gadgets[i].mod_active_weapon);
+			input_scalar("##mod_active_weapon", save.hero_gadget_box->gadgets[i].mod_active_weapon);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar_n(ImGuiDataType_S32, "##mod_active_basic", save.hero_gadget_box->gadgets[i].mod_active_basic);
+			input_array("##mod_active_basic", save.hero_gadget_box->gadgets[i].mod_active_basic);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar_n(ImGuiDataType_S32, "##mod_weapon", save.hero_gadget_box->gadgets[i].mod_weapon);
+			input_array("##mod_weapon", save.hero_gadget_box->gadgets[i].mod_weapon);
 			ImGui::PopID();
 		}
 		ImGui::EndTable();
@@ -608,28 +629,28 @@ static void gadget_events_subpage() {
 			ImGui::Text("%d", i);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar(ImGuiDataType_U8, "##gadget_id", save.hero_gadget_box->gadget_event_slots[i].gadget_id);
+			input_scalar("##gadget_id", save.hero_gadget_box->gadget_event_slots[i].gadget_id);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar(ImGuiDataType_U8, "##player_index", save.hero_gadget_box->gadget_event_slots[i].player_index);
+			input_scalar("##player_index", save.hero_gadget_box->gadget_event_slots[i].player_index);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar(ImGuiDataType_U8, "##gadget_type", save.hero_gadget_box->gadget_event_slots[i].gadget_type);
+			input_scalar("##gadget_type", save.hero_gadget_box->gadget_event_slots[i].gadget_type);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar(ImGuiDataType_U8, "##gadget_event_type", save.hero_gadget_box->gadget_event_slots[i].gadget_event_type);
+			input_scalar("##gadget_event_type", save.hero_gadget_box->gadget_event_slots[i].gadget_event_type);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar(ImGuiDataType_S32, "##active_time", save.hero_gadget_box->gadget_event_slots[i].active_time);
+			input_scalar("##active_time", save.hero_gadget_box->gadget_event_slots[i].active_time);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar(ImGuiDataType_U32, "##target_uid", save.hero_gadget_box->gadget_event_slots[i].target_uid);
+			input_scalar("##target_uid", save.hero_gadget_box->gadget_event_slots[i].target_uid);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar_n(ImGuiDataType_Float, "##target_offset_quat", save.hero_gadget_box->gadget_event_slots[i].target_offset_quat);
+			input_array("##target_offset_quat", save.hero_gadget_box->gadget_event_slots[i].target_offset_quat);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar(ImGuiDataType_U32, "##p_next_gadget_event", save.hero_gadget_box->gadget_event_slots[i].p_next_gadget_event);
+			input_scalar("##p_next_gadget_event", save.hero_gadget_box->gadget_event_slots[i].p_next_gadget_event);
 			ImGui::PopID();
 		}
 		ImGui::EndTable();
@@ -658,28 +679,28 @@ static void gadget_messages_subpage() {
 			ImGui::Text("%d", i);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar(ImGuiDataType_S16, "##gadget_id", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.gadget_id);
+			input_scalar("##gadget_id", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.gadget_id);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar(ImGuiDataType_U8, "##player_index", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.player_index);
+			input_scalar("##player_index", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.player_index);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar(ImGuiDataType_U8, "##gadget_event_type", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.gadget_event_type);
+			input_scalar("##gadget_event_type", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.gadget_event_type);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar(ImGuiDataType_U8, "##extra_data", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.extra_data);
+			input_scalar("##extra_data", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.extra_data);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar(ImGuiDataType_S32, "##active_time", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.active_time);
+			input_scalar("##active_time", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.active_time);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar(ImGuiDataType_U32, "##target_uid", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.target_uid);
+			input_scalar("##target_uid", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.target_uid);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar_n(ImGuiDataType_Float, "##firing_loc", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.firing_loc);
+			input_array("##firing_loc", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.firing_loc);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar_n(ImGuiDataType_Float, "##target_dir", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.target_dir);
+			input_array("##target_dir", save.hero_gadget_box->gadget_event_slots[i].gadget_event_msg.target_dir);
 			ImGui::PopID();
 		}
 		ImGui::EndTable();
@@ -728,16 +749,16 @@ static void help_subpage(const char* label, std::vector<memory_card::HelpDatum>&
 			ImGui::Text("%d", i);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar(ImGuiDataType_U16, "##times_used", help[i].times_used);
+			input_scalar("##times_used", help[i].times_used);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar(ImGuiDataType_U16, "##counter", help[i].counter);
+			input_scalar("##counter", help[i].counter);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar(ImGuiDataType_U32, "##last_time", help[i].last_time);
+			input_scalar("##last_time", help[i].last_time);
 			ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(-1);
-			input_scalar(ImGuiDataType_U32, "##level_die", help[i].level_die);
+			input_scalar("##level_die", help[i].level_die);
 			
 			ImGui::PopID();
 		}
@@ -750,30 +771,30 @@ static bool hero_page(bool draw_gui) {
 	if(!draw_gui) return true;
 	memory_card::HeroSave& h = *save.hero_save;
 	
-	input_scalar(ImGuiDataType_S32, "Bolts", h.bolts);
-	input_scalar(ImGuiDataType_S32, "Bolts Deficit", h.bolt_deficit);
-	input_scalar(ImGuiDataType_S32, "XP", h.xp);
-	input_scalar(ImGuiDataType_S32, "Points", h.points);
-	input_scalar(ImGuiDataType_S16, "Hero Max HP", h.hero_max_hp);
-	input_scalar(ImGuiDataType_S16, "Armor Level", h.armor_level);
-	input_scalar(ImGuiDataType_Float, "Limit Break", h.limit_break);
-	input_scalar(ImGuiDataType_S32, "Purchased Skins", h.purchased_skins);
-	input_scalar(ImGuiDataType_S16, "Spent Diff Stars", h.spent_diff_stars);
-	input_scalar(ImGuiDataType_U8, "Bolt Mult Level", h.bolt_mult_level);
-	input_scalar(ImGuiDataType_U8, "Bolt Mult Sub Level", h.bolt_mult_sub_level);
-	input_scalar(ImGuiDataType_U8, "Old Game Save Data", h.old_game_save_data);
-	input_scalar(ImGuiDataType_U8, "Blue Badges", h.blue_badges);
-	input_scalar(ImGuiDataType_U8, "Red Badges", h.red_badges);
-	input_scalar(ImGuiDataType_U8, "Green Badges", h.green_badges);
-	input_scalar(ImGuiDataType_U8, "Gold Badges", h.gold_badges);
-	input_scalar(ImGuiDataType_U8, "Black Badges", h.black_badges);
-	input_scalar(ImGuiDataType_U8, "Completes", h.completes);
-	input_scalar_n(ImGuiDataType_U8, "Last Equipped Gadget", h.last_equipped_gadget);
-	input_scalar_n(ImGuiDataType_U8, "Temp Weapons", h.temp_weapons);
-	input_scalar(ImGuiDataType_S32, "Current Max Limit Break", h.current_max_limit_break);
-	input_scalar(ImGuiDataType_S16, "Armor Level 2", h.armor_level_2);
-	input_scalar(ImGuiDataType_S16, "Progression Armor Level", h.progression_armor_level);
-	input_scalar(ImGuiDataType_S32, "Start Limit Break Diff", h.start_limit_break_diff);
+	input_scalar("Bolts", h.bolts);
+	input_scalar("Bolts Deficit", h.bolt_deficit);
+	input_scalar("XP", h.xp);
+	input_scalar("Points", h.points);
+	input_scalar("Hero Max HP", h.hero_max_hp);
+	input_scalar("Armor Level", h.armor_level);
+	input_scalar("Limit Break", h.limit_break);
+	input_scalar("Purchased Skins", h.purchased_skins);
+	input_scalar("Spent Diff Stars", h.spent_diff_stars);
+	input_scalar("Bolt Mult Level", h.bolt_mult_level);
+	input_scalar("Bolt Mult Sub Level", h.bolt_mult_sub_level);
+	input_scalar("Old Game Save Data", h.old_game_save_data);
+	input_scalar("Blue Badges", h.blue_badges);
+	input_scalar("Red Badges", h.red_badges);
+	input_scalar("Green Badges", h.green_badges);
+	input_scalar("Gold Badges", h.gold_badges);
+	input_scalar("Black Badges", h.black_badges);
+	input_scalar("Completes", h.completes);
+	input_array("Last Equipped Gadget", h.last_equipped_gadget);
+	input_array("Temp Weapons", h.temp_weapons);
+	input_scalar("Current Max Limit Break", h.current_max_limit_break);
+	input_scalar("Armor Level 2", h.armor_level_2);
+	input_scalar("Progression Armor Level", h.progression_armor_level);
+	input_scalar("Start Limit Break Diff", h.start_limit_break_diff);
 	
 	return true;
 }
@@ -783,27 +804,27 @@ static bool settings_page(bool draw_gui) {
 	if(!draw_gui) return true;
 	memory_card::GameSettings& s = *save.settings;
 	
-	input_scalar(ImGuiDataType_S32, "PAL Mode", s.pal_mode);
-	input_scalar(ImGuiDataType_U8, "Help Voice On", s.help_voice_on);
-	input_scalar(ImGuiDataType_U8, "Help Text On", s.help_text_on);
-	input_scalar(ImGuiDataType_U8, "Subtitles Active", s.subtitles_active);
-	input_scalar(ImGuiDataType_S32, "Stereo", s.stereo);
-	input_scalar(ImGuiDataType_S32, "Music Volume", s.music_volume);
-	input_scalar(ImGuiDataType_S32, "Effects Volume", s.effects_volume);
-	input_scalar(ImGuiDataType_S32, "Voice Volume", s.voice_volume);
-	input_scalar_multi(ImGuiDataType_S32, "Camera Elevation Dir", s.camera_elevation_dir, 3, 4);
-	input_scalar_multi(ImGuiDataType_S32, "Camera Azimuth Dir", s.camera_azimuth_dir, 3, 4);
-	input_scalar_multi(ImGuiDataType_S32, "Camera Rotate Speed", s.camera_rotate_speed, 3, 4);
-	input_scalar_n(ImGuiDataType_U8, "First Person Mode On", s.first_person_mode_on);
-	input_scalar(ImGuiDataType_U8, "Was NTSC Progessive", s.was_ntsc_progessive);
-	input_scalar(ImGuiDataType_U8, "Wide", s.wide);
-	input_scalar_n(ImGuiDataType_U8, "Controller Vibration On", s.controller_vibration_on);
-	input_scalar(ImGuiDataType_U8, "Quick Select Pause On", s.quick_select_pause_on);
-	input_scalar(ImGuiDataType_U8, "Language", s.language);
-	input_scalar(ImGuiDataType_U8, "Aux Setting 2", s.aux_setting_2);
-	input_scalar(ImGuiDataType_U8, "Aux Setting 3", s.aux_setting_3);
-	input_scalar(ImGuiDataType_U8, "Aux Setting 4", s.aux_setting_4);
-	input_scalar(ImGuiDataType_U8, "Auto Save On", s.auto_save_on);
+	input_scalar("PAL Mode", s.pal_mode);
+	input_scalar("Help Voice On", s.help_voice_on);
+	input_scalar("Help Text On", s.help_text_on);
+	input_scalar("Subtitles Active", s.subtitles_active);
+	input_scalar("Stereo", s.stereo);
+	input_scalar("Music Volume", s.music_volume);
+	input_scalar("Effects Volume", s.effects_volume);
+	input_scalar("Voice Volume", s.voice_volume);
+	input_array_2d("Camera Elevation Dir", s.camera_elevation_dir);
+	input_array_2d("Camera Azimuth Dir", s.camera_azimuth_dir);
+	input_array_2d("Camera Rotate Speed", s.camera_rotate_speed);
+	input_array("First Person Mode On", s.first_person_mode_on);
+	input_scalar("Was NTSC Progessive", s.was_ntsc_progessive);
+	input_scalar("Wide", s.wide);
+	input_array("Controller Vibration On", s.controller_vibration_on);
+	input_scalar("Quick Select Pause On", s.quick_select_pause_on);
+	input_scalar("Language", s.language);
+	input_scalar("Aux Setting 2", s.aux_setting_2);
+	input_scalar("Aux Setting 3", s.aux_setting_3);
+	input_scalar("Aux Setting 4", s.aux_setting_4);
+	input_scalar("Auto Save On", s.auto_save_on);
 	
 	return true;
 }
@@ -819,26 +840,26 @@ static bool statistics_page(bool draw_gui) {
 			if(ImGui::BeginTabItem(tab_name.c_str())) {
 				ImGui::BeginChild("##level");
 				memory_card::PlayerData& d = save.player_statistics->array[i];
-				input_scalar(ImGuiDataType_U32, "Health Received", d.health_received);
-				input_scalar(ImGuiDataType_U32, "Damage Received", d.damage_received);
-				input_scalar(ImGuiDataType_U32, "Ammo Received", d.ammo_received);
-				input_scalar(ImGuiDataType_U32, "Time Charge Booting", d.time_charge_booting);
-				input_scalar(ImGuiDataType_U32, "Num Deaths", d.num_deaths);
-				input_scalar_n(ImGuiDataType_U32, "Weapon Kills", d.weapon_kills);
-				input_scalar_n(ImGuiDataType_Float, "Weapon Kill Percentage", d.weapon_kill_percentage);
-				input_scalar_n(ImGuiDataType_U32, "Ammo Used", d.ammo_used);
-				input_scalar_n(ImGuiDataType_U32, "Shots That Hit", d.shots_that_hit);
-				input_scalar_n(ImGuiDataType_U32, "Shots That Miss", d.shots_that_miss);
-				input_scalar_n(ImGuiDataType_Float, "Shot Accuracy", d.shot_accuracy);
-				input_scalar_n(ImGuiDataType_U32, "Func Mod Kills", d.func_mod_kills);
-				input_scalar_n(ImGuiDataType_U32, "Func Mod Used", d.func_mod_used);
-				input_scalar_n(ImGuiDataType_U32, "Time Spent In Vehicles", d.time_spent_in_vehicles);
-				input_scalar_n(ImGuiDataType_U32, "Kills With Vehicle Weaps", d.kills_with_vehicle_weaps);
-				input_scalar_n(ImGuiDataType_U32, "Kills From Vehicle Squashing", d.kills_from_vehicle_squashing);
-				input_scalar(ImGuiDataType_U32, "Kills While In Vehicle", d.kills_while_in_vehicle);
-				input_scalar_n(ImGuiDataType_U32, "Vehicle Shots That Hit", d.vehicle_shots_that_hit);
-				input_scalar_n(ImGuiDataType_U32, "Vehicle Shots That Miss", d.vehicle_shots_that_miss);
-				input_scalar_n(ImGuiDataType_Float, "Vehicle Shot Accuracy", d.vehicle_shot_accuracy);
+				input_scalar("Health Received", d.health_received);
+				input_scalar("Damage Received", d.damage_received);
+				input_scalar("Ammo Received", d.ammo_received);
+				input_scalar("Time Charge Booting", d.time_charge_booting);
+				input_scalar("Num Deaths", d.num_deaths);
+				input_array("Weapon Kills", d.weapon_kills);
+				input_array("Weapon Kill Percentage", d.weapon_kill_percentage);
+				input_array("Ammo Used", d.ammo_used);
+				input_array("Shots That Hit", d.shots_that_hit);
+				input_array("Shots That Miss", d.shots_that_miss);
+				input_array("Shot Accuracy", d.shot_accuracy);
+				input_array("Func Mod Kills", d.func_mod_kills);
+				input_array("Func Mod Used", d.func_mod_used);
+				input_array("Time Spent In Vehicles", d.time_spent_in_vehicles);
+				input_array("Kills With Vehicle Weaps", d.kills_with_vehicle_weaps);
+				input_array("Kills From Vehicle Squashing", d.kills_from_vehicle_squashing);
+				input_scalar("Kills While In Vehicle", d.kills_while_in_vehicle);
+				input_array("Vehicle Shots That Hit", d.vehicle_shots_that_hit);
+				input_array("Vehicle Shots That Miss", d.vehicle_shots_that_miss);
+				input_array("Vehicle Shot Accuracy", d.vehicle_shot_accuracy);
 				ImGui::EndChild();
 				ImGui::EndTabItem();
 			}
@@ -874,10 +895,10 @@ static bool levels_page(bool draw_gui) {
 				ImGui::Text("%d", i);
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1);
-				input_scalar(ImGuiDataType_U8, "##status", save.levels[i].level->status);
+				input_scalar("##status", save.levels[i].level->status);
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-1);
-				input_scalar(ImGuiDataType_U8, "##jackpot", save.levels[i].level->jackpot);
+				input_scalar("##jackpot", save.levels[i].level->jackpot);
 				ImGui::PopID();
 			}
 		}
@@ -923,19 +944,19 @@ static bool missions_page(bool draw_gui) {
 							ImGui::Text("%d", j);
 							ImGui::TableNextColumn();
 							ImGui::SetNextItemWidth(-1);
-							input_scalar(ImGuiDataType_S32, "##xp", level.mission[j].xp);
+							input_scalar("##xp", level.mission[j].xp);
 							ImGui::TableNextColumn();
 							ImGui::SetNextItemWidth(-1);
-							input_scalar(ImGuiDataType_S32, "##bolts", level.mission[j].bolts);
+							input_scalar("##bolts", level.mission[j].bolts);
 							ImGui::TableNextColumn();
 							ImGui::SetNextItemWidth(-1);
-							input_scalar(ImGuiDataType_U8, "##status", level.mission[j].status);
+							input_scalar("##status", level.mission[j].status);
 							ImGui::TableNextColumn();
 							ImGui::SetNextItemWidth(-1);
-							input_scalar(ImGuiDataType_U8, "##completes", level.mission[j].completes);
+							input_scalar("##completes", level.mission[j].completes);
 							ImGui::TableNextColumn();
 							ImGui::SetNextItemWidth(-1);
-							input_scalar(ImGuiDataType_U8, "##difficulty", level.mission[j].difficulty);
+							input_scalar("##difficulty", level.mission[j].difficulty);
 							ImGui::PopID();
 						}
 					}
