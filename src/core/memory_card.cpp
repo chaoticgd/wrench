@@ -218,7 +218,7 @@ SaveGame parse_net(const File& file) {
 	assert(file.type == FileType::NET);
 	SaveGame save;
 	save.loaded = true;
-	for(const Section& section : file.slot.sections) {
+	for(const Section& section : file.net.sections) {
 		Buffer buffer = section.data;
 		switch(section.type) {
 			case ST_GAMEMODEOPTIONS: save.game_mode_options = buffer.read<GameModeStruct>(0);            break;
@@ -301,7 +301,7 @@ void update(File& dest, const SaveGame& save) {
 }
 
 void update_net(File& dest, const SaveGame& save) {
-	for(Section& section : dest.slot.sections) {
+	for(Section& section : dest.net.sections) {
 		OutBuffer buffer = section.data;
 		switch(section.type) {
 			case ST_GAMEMODEOPTIONS: update_section      (buffer, save.game_mode_options); break;

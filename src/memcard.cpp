@@ -29,8 +29,9 @@ static void begin_dock_space();
 static void create_dock_layout();
 static void do_load();
 static void do_save();
-static bool game_modes_page(bool draw_gui);
 static bool profiles_page(bool draw_gui);
+static bool profile_stats_page(bool draw_gui);
+static bool game_modes_page(bool draw_gui);
 static bool slot_page(bool draw_gui);
 static bool bots_page(bool draw_gui);
 static bool enemy_kills_page(bool draw_gui);
@@ -57,11 +58,9 @@ struct Page {
 
 static Page PAGES[] = {
 	// net
-	{"Game Modes", &game_modes_page},
 	{"Profiles", &profiles_page},
-	{"General Stats", &profiles_page},
-	{"Siege Match Stats", &profiles_page},
-	{"Death Match Stats", &profiles_page},
+	{"Profile Statistics", &profile_stats_page},
+	{"Game Modes", &game_modes_page},
 	// slot
 	{"Slot", &slot_page},
 	{"Bots", &bots_page},
@@ -341,6 +340,12 @@ static void do_save() {
 		} \
 		memcpy(value, temp, sizeof(value)); \
 	}
+#define input_text(data_type, label, value) \
+	{ \
+		if(ImGui::InputText(label, ARRAY_PAIR(value))) { \
+			should_save_now = true; \
+		} \
+	}
 #define input_clock(label, value) \
 	{ \
 		u8 clock[6]; \
@@ -359,11 +364,59 @@ static void do_save() {
 		(value).year = to_bcd(clock[5]); \
 	}
 
-static bool game_modes_page(bool draw_gui) {
+static bool profiles_page(bool draw_gui) {
+	if(!save.mp_profiles.has_value()) return false;
+	if(!draw_gui) return true;
+	
+	if(ImGui::BeginTabBar("##profiles")) {
+		for(s32 i = 0; i < ARRAY_SIZE(save.mp_profiles->array); i++) {
+			memory_card::ProfileStruct& p = save.mp_profiles->array[i];
+			if(ImGui::BeginTabItem(stringf("%d", i).c_str())) {
+				input_scalar(ImGuiDataType_S32, "Skin", p.skin);
+				input_scalar(ImGuiDataType_U8, "Camera 0 Normal Left/Right Mode", p.camera_options[0].normal_left_right_mode);
+				input_scalar(ImGuiDataType_U8, "Camera 0 Normal Up/Down Mode", p.camera_options[0].normal_up_down_mode);
+				input_scalar(ImGuiDataType_S32, "Camera 0 Speed", p.camera_options[0].camera_speed);
+				input_scalar(ImGuiDataType_U8, "Camera 1 Normal Left/Right Mode", p.camera_options[1].normal_left_right_mode);
+				input_scalar(ImGuiDataType_U8, "Camera 1 Normal Up/Down Mode", p.camera_options[1].normal_up_down_mode);
+				input_scalar(ImGuiDataType_S32, "Camera 1 Speed", p.camera_options[1].camera_speed);
+				input_scalar(ImGuiDataType_U8, "Camera 2 Normal Left/Right Mode", p.camera_options[2].normal_left_right_mode);
+				input_scalar(ImGuiDataType_U8, "Camera 2 Normal Up/Down Mode", p.camera_options[2].normal_up_down_mode);
+				input_scalar(ImGuiDataType_S32, "Camera 2 Speed", p.camera_options[2].camera_speed);
+				input_scalar(ImGuiDataType_U8, "First Person Mode On", p.first_person_mode_on);
+				input_text(ImGuiDataType_U8, "Name", p.name);
+				input_text(ImGuiDataType_U8, "Password", p.password);
+				input_scalar(ImGuiDataType_U8, "Map Access", p.map_access);
+				input_scalar(ImGuiDataType_U8, "PAL Server", p.pal_server);
+				input_scalar(ImGuiDataType_U8, "Help Msg off", p.help_msg_off);
+				input_scalar(ImGuiDataType_U8, "Save Password", p.save_password);
+				input_scalar(ImGuiDataType_U8, "Location index", p.location_idx);
+				//input_scalar(ImGuiDataType_U8, "general_stats", p.general_stats);
+				//input_scalar(ImGuiDataType_U8, "siege_match_stats", p.siege_match_stats);
+				//input_scalar(ImGuiDataType_U8, "dead_match_stats", p.dead_match_stats);
+				input_scalar(ImGuiDataType_U8, "Active", p.active);
+				input_scalar_n(ImGuiDataType_S32, "Help Data", p.help_data);
+				input_scalar(ImGuiDataType_U8, "Net Enabled", p.net_enabled);
+				input_scalar(ImGuiDataType_U8, "Vibration", p.vibration);
+				input_scalar(ImGuiDataType_S16, "Music Volume", p.music_volume);
+				ImGui::EndTabItem();
+			}
+		}
+		ImGui::EndTabBar();
+	}
+	
 	return true;
 }
 
-static bool profiles_page(bool draw_gui) {
+static bool profile_stats_page(bool draw_gui) {
+	return true;
+}
+
+static bool game_modes_page(bool draw_gui) {
+	if(!save.game_mode_options.has_value()) return false;
+	if(!draw_gui) return true;
+	
+	memory_card::GameModeStruct& o = *save.game_mode_options;
+	
 	return true;
 }
 
@@ -789,7 +842,6 @@ static bool statistics_page(bool draw_gui) {
 
 static bool levels_page(bool draw_gui) {
 	bool any_tabs = false;
-	
 	for(const memory_card::LevelSaveGame& level_save_game : save.levels) {
 		if(level_save_game.level.has_value()) {
 			any_tabs = true;
