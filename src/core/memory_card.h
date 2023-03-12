@@ -137,7 +137,7 @@ struct SaveGame {
 	Opt<FixedArray<u8, 12>> global_flags;
 	Opt<FixedArray<u8, 14>> cheats_activated;
 	Opt<FixedArray<s32, 15>> skill_points;
-	Opt<FixedArray<HelpDatum, 2086>> help_data_messages;
+	Opt<FixedArray<HelpDatum, 2088>> help_data_messages;
 	Opt<FixedArray<HelpDatum, 16>> help_data_misc;
 	Opt<FixedArray<HelpDatum, 20>> help_data_gadgets;
 	Opt<FixedArray<u8, 14>> cheats_ever_activated;

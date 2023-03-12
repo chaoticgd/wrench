@@ -230,6 +230,8 @@ void update(File& dest, const SaveGame& save) {
 template <typename T>
 static void parse_section(const memory_card::Section& section, Opt<T>& dest) {
 	ERROR_CONTEXT("%s section", section_type(section.type));
+	s64 size_difference = section.data.size() - sizeof(T);
+	verify(size_difference > -1 && size_difference < 4, "Section has unexpected size.");
 	dest = Buffer(section.data).read<T>(0);
 }
 
@@ -243,6 +245,8 @@ static void update_section(OutBuffer dest, const Opt<T>& src) {
 template <typename T>
 static void parse_section_array(const memory_card::Section& section, Opt<T>& dest) {
 	ERROR_CONTEXT("%s section", section_type(section.type));
+	s64 size_difference = section.data.size() - sizeof(T);
+	verify(size_difference > -1 && size_difference < 4, "Array section has unexpected size.");
 	dest = Buffer(section.data).read_multiple<typename T::value_type>(0, T::element_count, "array");
 }
 
