@@ -245,8 +245,8 @@ SaveGame parse_slot(const File& file) {
 			case ST_CHEATSACTIVATED:      save.cheats_activated           = buffer.read_multiple<u8>(0, 14);                 break;
 			case ST_SKILLPOINTS:          save.skill_points               = buffer.read_multiple<s32>(0, 15);                break;
 			case ST_HELPDATAMESSAGES:     save.help_data_messages         = buffer.read_multiple<HelpDatum>(0, 2086).copy(); break;
-			case ST_HELPDATAMISC:         save.help_data_messages         = buffer.read_multiple<HelpDatum>(0, 16).copy();   break;
-			case ST_HELPDATAGADGETS:      save.help_data_messages         = buffer.read_multiple<HelpDatum>(0, 20).copy();   break;
+			case ST_HELPDATAMISC:         save.help_data_misc             = buffer.read_multiple<HelpDatum>(0, 16).copy();   break;
+			case ST_HELPDATAGADGETS:      save.help_data_gadgets          = buffer.read_multiple<HelpDatum>(0, 20).copy();   break;
 			case ST_CHEATSEVERACTIVATED:  save.cheats_ever_activated      = buffer.read_multiple<u8>(0, 14);                 break;
 			case ST_SETTINGS:             save.settings                   = buffer.read<GameSettings>(0);                    break;
 			case ST_HEROSAVE:             save.hero_save                  = buffer.read<HeroSave>(0);                        break;
@@ -326,8 +326,8 @@ void update_slot(File& dest, const SaveGame& save) {
 			case ST_CHEATSACTIVATED:      update_section_array(buffer, save.cheats_activated);           break;
 			case ST_SKILLPOINTS:          update_section_array(buffer, save.skill_points);               break;
 			case ST_HELPDATAMESSAGES:     update_section_array(buffer, save.help_data_messages);         break;
-			case ST_HELPDATAMISC:         update_section_array(buffer, save.help_data_messages);         break;
-			case ST_HELPDATAGADGETS:      update_section_array(buffer, save.help_data_messages);         break;
+			case ST_HELPDATAMISC:         update_section_array(buffer, save.help_data_misc);             break;
+			case ST_HELPDATAGADGETS:      update_section_array(buffer, save.help_data_gadgets);          break;
 			case ST_CHEATSEVERACTIVATED:  update_section_array(buffer, save.cheats_ever_activated);      break;
 			case ST_SETTINGS:             update_section      (buffer, save.settings);                   break;
 			case ST_HEROSAVE:             update_section      (buffer, save.hero_save);                  break;
