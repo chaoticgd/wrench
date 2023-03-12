@@ -41,7 +41,7 @@ static void gadget_entries_subpage();
 static void gadget_events_subpage();
 static void gadget_messages_subpage();
 static bool help_page(bool draw_gui);
-static void help_subpage(const char* label, std::vector<memory_card::HelpDatum>& help);
+static void help_subpage(const char* label, memory_card::HelpDatum* help, s32 count);
 static bool hero_page(bool draw_gui);
 static bool settings_page(bool draw_gui);
 static bool statistics_page(bool draw_gui);
@@ -295,7 +295,7 @@ static void do_load() {
 				page.visible = page.func(false);
 			}
 		} catch(RuntimeError& error) {
-			error_message = error.message;
+			error_message = (error.context.empty() ? "" : (error.context + ": ")) + error.message;
 		}
 	}
 }
@@ -312,7 +312,7 @@ static void do_save() {
 			}
 			write_file(file->path, buffer);
 		} catch(RuntimeError& error) {
-			error_message = error.message;
+			error_message = (error.context.empty() ? "" : (error.context + ": ")) + error.message;
 		}
 		should_reload_file_list = true;
 	}
@@ -803,15 +803,15 @@ static bool help_page(bool draw_gui) {
 	
 	if(ImGui::BeginTabBar("##help_tabs")) {
 		if(save.help_data_messages.has_value() && ImGui::BeginTabItem("Messages")) {
-			help_subpage("##help_messages", *save.help_data_messages);
+			help_subpage("##help_messages", ARRAY_PAIR(save.help_data_messages->array));
 			ImGui::EndTabItem();
 		}
 		if(save.help_data_misc.has_value() && ImGui::BeginTabItem("Misc")) {
-			help_subpage("##help_misc", *save.help_data_misc);
+			help_subpage("##help_misc", ARRAY_PAIR(save.help_data_misc->array));
 			ImGui::EndTabItem();
 		}
 		if(save.help_data_gadgets.has_value() && ImGui::BeginTabItem("Gadgets")) {
-			help_subpage("##help_gadgets", *save.help_data_gadgets);
+			help_subpage("##help_gadgets", ARRAY_PAIR(save.help_data_gadgets->array));
 			ImGui::EndTabItem();
 		}
 		ImGui::EndTabBar();
@@ -820,7 +820,7 @@ static bool help_page(bool draw_gui) {
 	return true;
 }
 
-static void help_subpage(const char* label, std::vector<memory_card::HelpDatum>& help) {
+static void help_subpage(const char* label, memory_card::HelpDatum* help, s32 count) {
 	if(ImGui::BeginTable(label, 9, ImGuiTableFlags_RowBg)) {
 		ImGui::TableSetupColumn("Index");
 		ImGui::TableSetupColumn("Times Used");
@@ -828,7 +828,7 @@ static void help_subpage(const char* label, std::vector<memory_card::HelpDatum>&
 		ImGui::TableSetupColumn("Last Time");
 		ImGui::TableSetupColumn("Level Die");
 		ImGui::TableHeadersRow();
-		for(s32 i = 0; i < (s32) help.size(); i++) {
+		for(s32 i = 0; i < count; i++) {
 			ImGui::PushID(i);
 			ImGui::TableNextRow();
 			ImGui::TableNextColumn();

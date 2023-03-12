@@ -40,6 +40,7 @@ template <typename T, s64 N>
 packed_struct(FixedArray,
 	T array[N];
 	using value_type = T;
+	static const constexpr s64 element_count = N;
 	FixedArray(const BufferArray<T>& src) {
 		assert(src.size() == N);
 		memcpy(array, src.lo, src.size() * sizeof(T));
