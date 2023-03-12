@@ -217,6 +217,16 @@ SaveGame parse(const File& file) {
 	return save;
 }
 
+void update(File& dest, const SaveGame& save) {
+	switch(dest.type) {
+		case FileType::MAIN: break;
+		case FileType::NET: update_net(dest, save); break;
+		case FileType::PATCH: break;
+		case FileType::SLOT: update_slot(dest, save); break;
+		case FileType::SYS: break;
+	}
+}
+
 template <typename T>
 static void parse_section(const memory_card::Section& section, Opt<T>& dest) {
 	ERROR_CONTEXT("%s section", section_type(section.type));
@@ -224,9 +234,23 @@ static void parse_section(const memory_card::Section& section, Opt<T>& dest) {
 }
 
 template <typename T>
+static void update_section(OutBuffer dest, const Opt<T>& src) {
+	if(src.has_value()) {
+		dest.write(0, *src);
+	}
+}
+
+template <typename T>
 static void parse_section_array(const memory_card::Section& section, Opt<T>& dest) {
 	ERROR_CONTEXT("%s section", section_type(section.type));
 	dest = Buffer(section.data).read_multiple<typename T::value_type>(0, T::element_count, "array");
+}
+
+template <typename T>
+static void update_section_array(OutBuffer dest, const Opt<T>& src) {
+	if(src.has_value()) {
+		dest.write_multiple(0, *src);
+	}
 }
 
 SaveGame parse_net(const File& file) {
@@ -241,6 +265,16 @@ SaveGame parse_net(const File& file) {
 		}
 	}
 	return save;
+}
+
+void update_net(File& dest, const SaveGame& save) {
+	for(Section& section : dest.net.sections) {
+		OutBuffer buffer = section.data;
+		switch(section.type) {
+			case ST_GAMEMODEOPTIONS: update_section      (buffer, save.game_mode_options); break;
+			case ST_MPPROFILES:      update_section_array(buffer, save.mp_profiles);       break;
+		}
+	}
 }
 
 SaveGame parse_slot(const File& file) {
@@ -290,40 +324,6 @@ SaveGame parse_slot(const File& file) {
 		}
 	}
 	return save;
-}
-
-void update(File& dest, const SaveGame& save) {
-	switch(dest.type) {
-		case FileType::MAIN: break;
-		case FileType::NET: update_net(dest, save); break;
-		case FileType::PATCH: break;
-		case FileType::SLOT: update_slot(dest, save); break;
-		case FileType::SYS: break;
-	}
-}
-
-template <typename T>
-static void update_section(OutBuffer dest, const Opt<T>& src) {
-	if(src.has_value()) {
-		dest.write(0, *src);
-	}
-}
-
-template <typename T>
-static void update_section_array(OutBuffer dest, const Opt<T>& src) {
-	if(src.has_value()) {
-		dest.write_multiple(0, *src);
-	}
-}
-
-void update_net(File& dest, const SaveGame& save) {
-	for(Section& section : dest.net.sections) {
-		OutBuffer buffer = section.data;
-		switch(section.type) {
-			case ST_GAMEMODEOPTIONS: update_section      (buffer, save.game_mode_options); break;
-			case ST_MPPROFILES:      update_section_array(buffer, save.mp_profiles);       break;
-		}
-	}
 }
 
 void update_slot(File& dest, const SaveGame& save) {

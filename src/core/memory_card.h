@@ -165,10 +165,10 @@ struct SaveGame {
 
 
 SaveGame parse(const File& file);
-SaveGame parse_net(const File& file);
-SaveGame parse_slot(const File& file);
 void update(File& dest, const SaveGame& save);
+SaveGame parse_net(const File& file);
 void update_net(File& dest, const SaveGame& save);
+SaveGame parse_slot(const File& file);
 void update_slot(File& dest, const SaveGame& save);
 const char* section_type(u32 type);
 
