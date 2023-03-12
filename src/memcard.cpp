@@ -803,15 +803,21 @@ static bool help_page(bool draw_gui) {
 	
 	if(ImGui::BeginTabBar("##help_tabs")) {
 		if(save.help_data_messages.has_value() && ImGui::BeginTabItem("Messages")) {
-			help_subpage("##help_messages", ARRAY_PAIR(save.help_data_messages->array));
+			ImGui::BeginChild("#help_messages");
+			help_subpage("##help_messages_table", ARRAY_PAIR(save.help_data_messages->array));
+			ImGui::EndChild();
 			ImGui::EndTabItem();
 		}
 		if(save.help_data_misc.has_value() && ImGui::BeginTabItem("Misc")) {
-			help_subpage("##help_misc", ARRAY_PAIR(save.help_data_misc->array));
+			ImGui::BeginChild("#help_misc");
+			help_subpage("##help_misc_table", ARRAY_PAIR(save.help_data_misc->array));
+			ImGui::EndChild();
 			ImGui::EndTabItem();
 		}
 		if(save.help_data_gadgets.has_value() && ImGui::BeginTabItem("Gadgets")) {
-			help_subpage("##help_gadgets", ARRAY_PAIR(save.help_data_gadgets->array));
+			ImGui::BeginChild("#help_gadgets");
+			help_subpage("##help_gadgets_table", ARRAY_PAIR(save.help_data_gadgets->array));
+			ImGui::EndChild();
 			ImGui::EndTabItem();
 		}
 		ImGui::EndTabBar();
