@@ -1080,12 +1080,10 @@ static bool sections_page(bool draw_gui) {
 					ImGui::EndChild();
 					ImGui::EndTabItem();
 				}
-				ImGui::SameLine();
-				ImGui::Text("Level:");
 				for(s32 i = 0; i < (s32) file->slot.levels.size(); i++) {
 					const std::vector<memory_card::Section>& sections = file->slot.levels[i];
 					ImGui::PushID(i);
-					if(ImGui::BeginTabItem(std::to_string(i).c_str())) {
+					if(ImGui::BeginTabItem(stringf("Lvl %d", i).c_str())) {
 						ImGui::BeginChild("##sections");
 						sections_subpage(sections);
 						ImGui::EndChild();
@@ -1122,7 +1120,7 @@ static void sections_subpage(const std::vector<memory_card::Section>& sections) 
 			ImGui::Text("%d", i);
 			ImGui::TableNextColumn();
 			ImGui::AlignTextToFramePadding();
-			ImGui::Text("%d (%s)", section.type, memory_card::section_type(section.type));
+			ImGui::Text("%04d (%s)", section.type, memory_card::section_type(section.type));
 			ImGui::TableNextColumn();
 			ImGui::AlignTextToFramePadding();
 			ImGui::Text("0x%x / %d", section.offset, section.offset);
