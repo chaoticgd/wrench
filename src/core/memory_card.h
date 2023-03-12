@@ -31,6 +31,7 @@ namespace memory_card {
 // *****************************************************************************
 
 struct Section {
+	s32 offset;
 	s32 type;
 	s32 unpadded_size;
 	std::vector<u8> data;
@@ -167,6 +168,7 @@ SaveGame parse_slot(const File& file);
 void update(File& dest, const SaveGame& save);
 void update_net(File& dest, const SaveGame& save);
 void update_slot(File& dest, const SaveGame& save);
+const char* section_type(u32 type);
 
 extern const std::vector<FileFormat> FILE_FORMATS;
 

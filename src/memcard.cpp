@@ -47,6 +47,8 @@ static bool settings_page(bool draw_gui);
 static bool statistics_page(bool draw_gui);
 static bool levels_page(bool draw_gui);
 static bool missions_page(bool draw_gui);
+static bool sections_page(bool draw_gui);
+static void sections_subpage(const std::vector<memory_card::Section>& sections);
 static u8 from_bcd(u8 value);
 static u8 to_bcd(u8 value);
 
@@ -71,7 +73,9 @@ static Page PAGES[] = {
 	{"Settings", &settings_page},
 	{"Statistics", &statistics_page},
 	{"Levels", &levels_page},
-	{"Missions", &missions_page}
+	{"Missions", &missions_page},
+	// sections
+	{"Sections", &sections_page}
 };
 
 static std::string directory = "/home/thomas/pcsx2/memcards/folder_card.ps2/BESCES-53285RATCHET/";
@@ -108,7 +112,6 @@ int main(int argc, char** argv) {
 		
 		if((frame % 60) == 0) {
 			should_reload_file_list = true;
-			fflush(stdout);
 		}
 		
 		frame++;
@@ -422,7 +425,7 @@ static bool profiles_page(bool draw_gui) {
 	if(ImGui::BeginTabBar("##profiles")) {
 		for(s32 i = 0; i < ARRAY_SIZE(save.mp_profiles->array); i++) {
 			memory_card::ProfileStruct& p = save.mp_profiles->array[i];
-			if(ImGui::BeginTabItem(stringf("%d", i).c_str())) {
+			if(ImGui::BeginTabItem(std::to_string(i).c_str())) {
 				input_scalar("Skin", p.skin);
 				input_scalar("Camera 0 Normal Left/Right Mode", p.camera_options[0].normal_left_right_mode, CHECKBOX);
 				input_scalar("Camera 0 Normal Up/Down Mode", p.camera_options[0].normal_up_down_mode, CHECKBOX);
@@ -990,6 +993,7 @@ static bool levels_page(bool draw_gui) {
 	
 	return true;
 }
+
 static bool missions_page(bool draw_gui) {
 	bool any_tabs = false;
 	for(const memory_card::LevelSaveGame& level_save_game : save.levels) {
@@ -1000,14 +1004,10 @@ static bool missions_page(bool draw_gui) {
 	if(!any_tabs) return false;
 	if(!draw_gui) return true;
 	
-	ImGui::AlignTextToFramePadding();
-	ImGui::Text("Level:");
-	ImGui::SameLine();
 	if(ImGui::BeginTabBar("##mission_tabs")) {
 		for(s32 i = 0; i < (s32) save.levels.size(); i++) {
 			memory_card::LevelSaveGame& level_save_game = save.levels[i];
-			std::string tab_name = stringf("%d", i);
-			if(level_save_game.level.has_value() && ImGui::BeginTabItem(tab_name.c_str())) {
+			if(level_save_game.level.has_value() && ImGui::BeginTabItem(std::to_string(i).c_str())) {
 				ImGui::BeginChild("##level");
 				memory_card::LevelSave& level = *level_save_game.level;
 				if(ImGui::BeginTable("##missions", 6, ImGuiTableFlags_RowBg)) {
@@ -1053,6 +1053,89 @@ static bool missions_page(bool draw_gui) {
 	}
 	
 	return true;
+}
+
+static bool sections_page(bool draw_gui) {
+	if(file->type == memory_card::FileType::MAIN) return false;
+	if(file->type == memory_card::FileType::PATCH) return false;
+	if(file->type == memory_card::FileType::SYS) return false;
+	if(!draw_gui) return true;
+	
+	switch(file->type) {
+		case memory_card::FileType::MAIN: {
+			break;
+		}
+		case memory_card::FileType::NET: {
+			sections_subpage(file->net.sections);
+			break;
+		}
+		case memory_card::FileType::PATCH: {
+			break;
+		}
+		case memory_card::FileType::SLOT: {
+			if(ImGui::BeginTabBar("##section_tables")) {
+				if(ImGui::BeginTabItem("Game")) {
+					ImGui::BeginChild("##sections");
+					sections_subpage(file->slot.sections);
+					ImGui::EndChild();
+					ImGui::EndTabItem();
+				}
+				ImGui::SameLine();
+				ImGui::Text("Level:");
+				for(s32 i = 0; i < (s32) file->slot.levels.size(); i++) {
+					const std::vector<memory_card::Section>& sections = file->slot.levels[i];
+					ImGui::PushID(i);
+					if(ImGui::BeginTabItem(std::to_string(i).c_str())) {
+						ImGui::BeginChild("##sections");
+						sections_subpage(sections);
+						ImGui::EndChild();
+						ImGui::EndTabItem();
+					}
+					ImGui::PopID();
+				}
+				ImGui::EndTabBar();
+			}
+			break;
+		}
+		case memory_card::FileType::SYS: {
+			break;
+		}
+	}
+	
+	return true;
+}
+
+static void sections_subpage(const std::vector<memory_card::Section>& sections) {
+	if(ImGui::BeginTable("##sections_table", 5, ImGuiTableFlags_RowBg)) {
+		ImGui::TableSetupColumn("Index");
+		ImGui::TableSetupColumn("Type");
+		ImGui::TableSetupColumn("Data Offset (Bytes)");
+		ImGui::TableSetupColumn("Data Size (Bytes)");
+		ImGui::TableSetupColumn("Padded Data Size (Bytes)");
+		ImGui::TableHeadersRow();
+		for(s32 i = 0; i < (s32) sections.size(); i++) {
+			const memory_card::Section& section = sections[i];
+			ImGui::PushID(i);
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("%d", i);
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("%d (%s)", section.type, memory_card::section_type(section.type));
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("0x%x / %d", section.offset, section.offset);
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("0x%x / %d", section.unpadded_size, section.unpadded_size);
+			ImGui::TableNextColumn();
+			ImGui::AlignTextToFramePadding();
+			ImGui::Text("0x%x / %d", (s32) section.data.size(), (s32) section.data.size());
+			ImGui::PopID();
+		}
+		ImGui::EndTable();
+	}
 }
 
 static u8 from_bcd(u8 value) {

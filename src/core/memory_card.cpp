@@ -113,6 +113,7 @@ std::vector<Section> read_sections(bool* checksum_does_not_match_out, Buffer src
 		s32 read_size = align64(section_header.size, 4);
 		
 		Section& section = sections.emplace_back();
+		section.offset = (s32) pos;
 		section.type = section_header.type;
 		section.unpadded_size = section_header.size;
 		section.data = src.read_bytes(pos, read_size, "section data");
@@ -168,6 +169,7 @@ s64 write_sections(OutBuffer dest, std::vector<Section>& sections) {
 		header.type = section.type;
 		header.size = section.unpadded_size;
 		dest.write(header);
+		section.offset = (s32) dest.tell();
 		dest.write_multiple(section.data);
 		dest.pad(4);
 	}
@@ -355,6 +357,43 @@ void update_slot(File& dest, const SaveGame& save) {
 			}
 		}
 	}
+}
+
+const char* section_type(u32 type) {
+	switch(type) {
+		case ST_LEVEL: return "level ID";
+		case ST_ELAPSEDTIME: return "elapsed time";
+		case ST_LASTSAVETIME: return "last save time";
+		case ST_GLOBALFLAGS: return "global flags";
+		case ST_CHEATSACTIVATED: return "cheats activated";
+		case ST_SKILLPOINTS: return "skill points";
+		case ST_HELPDATAMESSAGES: return "help data messages";
+		case ST_HELPDATAMISC: return "help data misc";
+		case ST_HELPDATAGADGETS: return "help data gadgets";
+		case ST_CHEATSEVERACTIVATED: return "cheats ever activated";
+		case ST_SETTINGS: return "settings";
+		case ST_HEROSAVE: return "hero save";
+		case ST_MOVIESPLAYEDRECORD: return "movies played record";
+		case ST_TOTALPLAYTIME: return "total play time";
+		case ST_TOTALDEATHS: return "total deaths";
+		case ST_HELPLOG: return "help log";
+		case ST_HELPLOGPOS: return "help log pos";
+		case ST_GAMEMODEOPTIONS: return "game mode options";
+		case ST_MPPROFILES: return "mp profiles";
+		case ST_HEROGADGETBOX: return "hero gadget box";
+		case ST_LEVELSAVEDATA: return "level save data";
+		case ST_PURCHASEABLEGADGETS: return "purchaseable gadgets";
+		case ST_PURCHASEABLEWRENCH: return "purchaseable wrench";
+		case ST_PURCHASEABLEPOSTMODS: return "purchaseable post fx mods";
+		case ST_BOTSAVE: return "bot save";
+		case ST_FIRSTPERSONMODE: return "first person mode";
+		case ST_SAVEDDIFFICULTYLEVEL: return "saved difficulty level";
+		case ST_PLAYERSTATISTICS: return "player statistics";
+		case ST_BATTLEDOMEWINSLOSSES: return "battle dome wins and losses";
+		case ST_ENEMYKILLS: return "enemy kills";
+		case ST_QUICKSWITCHGADGETS: return "quick select gadgets";
+	}
+	return "???";
 }
 
 const std::vector<FileFormat> FILE_FORMATS = {
