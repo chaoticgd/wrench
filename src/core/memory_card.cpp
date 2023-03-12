@@ -257,6 +257,7 @@ SaveGame parse_slot(const File& file) {
 			case ST_HELPLOGPOS:           save.help_log_pos               = buffer.read<s32>(0);                             break;
 			case ST_HEROGADGETBOX:        save.hero_gadget_box            = buffer.read<GadgetBox>(0);                       break;
 			case ST_PURCHASEABLEGADGETS:  save.purchaseable_gadgets       = buffer.read_multiple<u8>(0, 20);                 break;
+			case ST_PURCHASEABLEBOTUPGRD: save.purchaseable_bot_upgrades  = buffer.read_multiple<u8>(0, 17);                 break;
 			case ST_PURCHASEABLEWRENCH:   save.purchaseable_wrench_level  = buffer.read<u8>(0);                              break;
 			case ST_PURCHASEABLEPOSTMODS: save.purchaseable_post_fx_mods  = buffer.read_multiple<u8>(0, 9);                  break;
 			case ST_BOTSAVE:              save.bot_save                   = buffer.read<BotSave>(0);                         break;
@@ -337,6 +338,7 @@ void update_slot(File& dest, const SaveGame& save) {
 			case ST_HELPLOGPOS:           update_section      (buffer, save.help_log_pos);               break;
 			case ST_HEROGADGETBOX:        update_section      (buffer, save.hero_gadget_box);            break;
 			case ST_PURCHASEABLEGADGETS:  update_section_array(buffer, save.purchaseable_gadgets);       break;
+			case ST_PURCHASEABLEBOTUPGRD: update_section_array(buffer, save.purchaseable_bot_upgrades);  break;
 			case ST_PURCHASEABLEWRENCH:   update_section      (buffer, save.purchaseable_wrench_level);  break;
 			case ST_PURCHASEABLEPOSTMODS: update_section_array(buffer, save.purchaseable_post_fx_mods);  break;
 			case ST_BOTSAVE:              update_section      (buffer, save.bot_save);                   break;
@@ -383,6 +385,7 @@ const char* section_type(u32 type) {
 		case ST_HEROGADGETBOX: return "hero gadget box";
 		case ST_LEVELSAVEDATA: return "level save data";
 		case ST_PURCHASEABLEGADGETS: return "purchaseable gadgets";
+		case ST_PURCHASEABLEBOTUPGRD: return "purchaseable bot upgrades";
 		case ST_PURCHASEABLEWRENCH: return "purchaseable wrench";
 		case ST_PURCHASEABLEPOSTMODS: return "purchaseable post fx mods";
 		case ST_BOTSAVE: return "bot save";

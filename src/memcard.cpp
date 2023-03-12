@@ -541,6 +541,7 @@ static bool slot_page(bool draw_gui) {
 	if(save.total_play_time.has_value()) input_scalar("Total Play Time", *save.total_play_time);
 	if(save.total_deaths.has_value()) input_scalar("Total Deaths", *save.total_deaths);
 	if(save.purchaseable_gadgets.has_value()) input_array("Purchaseable Gadgets", save.purchaseable_gadgets->array);
+	if(save.purchaseable_bot_upgrades.has_value()) input_array("Purchaseable Bot Upgrades", save.purchaseable_bot_upgrades->array);
 	if(save.purchaseable_wrench_level.has_value()) input_scalar("Purchaseable Wrench Level", *save.purchaseable_wrench_level);
 	if(save.purchaseable_post_fx_mods.has_value()) input_array("Purchaseable Post FX Mods", save.purchaseable_post_fx_mods->array);
 	if(save.first_person_desired_mode.has_value()) input_array("First Person Desired Mode", save.first_person_desired_mode->array);

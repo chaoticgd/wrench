@@ -85,9 +85,9 @@ enum SectionType : s32 {
 	ST_GLOBALFLAGS          = 5,
 	ST_CHEATSACTIVATED      = 7,
 	ST_SKILLPOINTS          = 8,
-	ST_HELPDATAMESSAGES     = 10,
-	ST_HELPDATAMISC         = 11,
-	ST_HELPDATAGADGETS      = 12,
+	ST_HELPDATAMESSAGES     = 16,
+	ST_HELPDATAMISC         = 17,
+	ST_HELPDATAGADGETS      = 18,
 	ST_CHEATSEVERACTIVATED  = 37,
 	ST_SETTINGS             = 38,
 	ST_HEROSAVE             = 39,
@@ -101,6 +101,7 @@ enum SectionType : s32 {
 	ST_HEROGADGETBOX        = 7008,
 	ST_LEVELSAVEDATA        = 7009,
 	ST_PURCHASEABLEGADGETS  = 7010,
+	ST_PURCHASEABLEBOTUPGRD = 7011,
 	ST_PURCHASEABLEWRENCH   = 7012,
 	ST_PURCHASEABLEPOSTMODS = 7013,
 	ST_BOTSAVE              = 7014,
@@ -149,6 +150,7 @@ struct SaveGame {
 	Opt<s32> help_log_pos;
 	Opt<GadgetBox> hero_gadget_box;
 	Opt<FixedArray<u8, 20>> purchaseable_gadgets;
+	Opt<FixedArray<u8, 17>> purchaseable_bot_upgrades;
 	Opt<u8> purchaseable_wrench_level;
 	Opt<FixedArray<u8, 9>> purchaseable_post_fx_mods;
 	Opt<BotSave> bot_save;
