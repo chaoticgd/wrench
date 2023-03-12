@@ -317,6 +317,7 @@ static void do_save() {
 		should_reload_file_list = true;
 	}
 }
+
 template <typename T>
 static ImGuiDataType get_imgui_type() {
 	using Type = std::remove_reference_t<T>;
@@ -419,7 +420,8 @@ struct FieldDecorator {
 	}
 
 static bool profiles_page(bool draw_gui) {
-	if(!save.mp_profiles.has_value()) return false;
+	if(save.type != memory_card::FileType::NET) return false;
+	if(!save.mp_profiles.check(save.game)) return false;
 	if(!draw_gui) return true;
 	
 	if(ImGui::BeginTabBar("##profiles")) {
@@ -459,7 +461,8 @@ static bool profiles_page(bool draw_gui) {
 }
 
 static bool profile_stats_page(bool draw_gui) {
-	if(!save.mp_profiles.has_value()) return false;
+	if(save.type != memory_card::FileType::NET) return false;
+	if(!save.mp_profiles.check(save.game)) return false;
 	if(!draw_gui) return true;
 	
 	if(ImGui::BeginTabBar("##profile_stats")) {
@@ -500,7 +503,8 @@ static bool profile_stats_page(bool draw_gui) {
 }
 
 static bool game_modes_page(bool draw_gui) {
-	if(!save.game_mode_options.has_value()) return false;
+	if(save.type != memory_card::FileType::NET) return false;
+	if(!save.game_mode_options.check(save.game)) return false;
 	if(!draw_gui) return true;
 	
 	memory_card::GameModeStruct& o = *save.game_mode_options;
@@ -529,31 +533,32 @@ static bool slot_page(bool draw_gui) {
 	if(save.type != memory_card::FileType::SLOT) return false;
 	if(!draw_gui) return true;
 	
-	if(save.level.has_value()) input_scalar("Level", *save.level);
-	if(save.elapsed_time.has_value()) input_scalar("Elapsed Time", *save.elapsed_time);
-	if(save.last_save_time.has_value()) input_clock("Last Save Time (smhdmy)", *save.last_save_time)
-	if(save.global_flags.has_value()) input_array("Global Flags", save.global_flags->array);
-	if(save.global_flags.has_value()) input_array("Global Flags", save.global_flags->array);
-	if(save.cheats_activated.has_value()) input_array("Cheats Activated", save.cheats_activated->array);
-	if(save.skill_points.has_value()) input_array("Skill Points", save.skill_points->array);
-	if(save.cheats_ever_activated.has_value()) input_array("Cheats Ever Activated", save.cheats_ever_activated->array);
-	if(save.movies_played_record.has_value()) input_array("Movies Played Record", save.movies_played_record->array);
-	if(save.total_play_time.has_value()) input_scalar("Total Play Time", *save.total_play_time);
-	if(save.total_deaths.has_value()) input_scalar("Total Deaths", *save.total_deaths);
-	if(save.purchaseable_gadgets.has_value()) input_array("Purchaseable Gadgets", save.purchaseable_gadgets->array);
-	if(save.purchaseable_bot_upgrades.has_value()) input_array("Purchaseable Bot Upgrades", save.purchaseable_bot_upgrades->array);
-	if(save.purchaseable_wrench_level.has_value()) input_scalar("Purchaseable Wrench Level", *save.purchaseable_wrench_level);
-	if(save.purchaseable_post_fx_mods.has_value()) input_array("Purchaseable Post FX Mods", save.purchaseable_post_fx_mods->array);
-	if(save.first_person_desired_mode.has_value()) input_array("First Person Desired Mode", save.first_person_desired_mode->array);
-	if(save.saved_difficulty_level.has_value()) input_scalar("Saved Difficulty Level", *save.saved_difficulty_level);
-	if(save.battledome_wins_and_losses.has_value()) input_array("Battledome Wins and Losses", save.battledome_wins_and_losses->array);
-	if(save.quick_switch_gadgets.has_value()) input_array_2d("Quick Select Gadgets", save.quick_switch_gadgets->array);
+	if(save.level.check(save.game)) input_scalar("Level", *save.level);
+	if(save.elapsed_time.check(save.game)) input_scalar("Elapsed Time", *save.elapsed_time);
+	if(save.last_save_time.check(save.game)) input_clock("Last Save Time (smhdmy)", *save.last_save_time)
+	if(save.global_flags.check(save.game)) input_array("Global Flags", save.global_flags->array);
+	if(save.global_flags.check(save.game)) input_array("Global Flags", save.global_flags->array);
+	if(save.cheats_activated.check(save.game)) input_array("Cheats Activated", save.cheats_activated->array);
+	if(save.skill_points.check(save.game)) input_array("Skill Points", save.skill_points->array);
+	if(save.cheats_ever_activated.check(save.game)) input_array("Cheats Ever Activated", save.cheats_ever_activated->array);
+	if(save.movies_played_record.check(save.game)) input_array("Movies Played Record", save.movies_played_record->array);
+	if(save.total_play_time.check(save.game)) input_scalar("Total Play Time", *save.total_play_time);
+	if(save.total_deaths.check(save.game)) input_scalar("Total Deaths", *save.total_deaths);
+	if(save.purchaseable_gadgets.check(save.game)) input_array("Purchaseable Gadgets", save.purchaseable_gadgets->array);
+	if(save.purchaseable_bot_upgrades.check(save.game)) input_array("Purchaseable Bot Upgrades", save.purchaseable_bot_upgrades->array);
+	if(save.purchaseable_wrench_level.check(save.game)) input_scalar("Purchaseable Wrench Level", *save.purchaseable_wrench_level);
+	if(save.purchaseable_post_fx_mods.check(save.game)) input_array("Purchaseable Post FX Mods", save.purchaseable_post_fx_mods->array);
+	if(save.first_person_desired_mode.check(save.game)) input_array("First Person Desired Mode", save.first_person_desired_mode->array);
+	if(save.saved_difficulty_level.check(save.game)) input_scalar("Saved Difficulty Level", *save.saved_difficulty_level);
+	if(save.battledome_wins_and_losses.check(save.game)) input_array("Battledome Wins and Losses", save.battledome_wins_and_losses->array);
+	if(save.quick_switch_gadgets.check(save.game)) input_array_2d("Quick Select Gadgets", save.quick_switch_gadgets->array);
 	
 	return true;
 }
 
 static bool bots_page(bool draw_gui) {
-	if(!save.bot_save.has_value()) return false;
+	if(save.type != memory_card::FileType::SLOT) return false;
+	if(!save.bot_save.check(save.game)) return false;
 	if(!draw_gui) return true;
 	memory_card::BotSave& s = *save.bot_save;
 	
@@ -567,7 +572,8 @@ static bool bots_page(bool draw_gui) {
 }
 
 static bool enemy_kills_page(bool draw_gui) {
-	if(!save.enemy_kills.has_value()) return false;
+	if(save.type != memory_card::FileType::SLOT) return false;
+	if(!save.enemy_kills.check(save.game)) return false;
 	if(!draw_gui) return true;
 	
 	if(ImGui::BeginTable("##enemy_kills", 3, ImGuiTableFlags_RowBg)) {
@@ -596,7 +602,8 @@ static bool enemy_kills_page(bool draw_gui) {
 }
 
 static bool gadget_page(bool draw_gui) {
-	if(!save.hero_gadget_box.has_value()) return false;
+	if(save.type != memory_card::FileType::SLOT) return false;
+	if(!save.hero_gadget_box.check(save.game)) return false;
 	if(!draw_gui) return true;
 	memory_card::GadgetBox& g = *save.hero_gadget_box;
 	
@@ -795,26 +802,28 @@ static void gadget_messages_subpage() {
 }
 
 static bool help_page(bool draw_gui) {
+	if(save.type != memory_card::FileType::SLOT) return false;
+	
 	if(!draw_gui) {
-		return save.help_data_messages.has_value()
-			|| save.help_data_misc.has_value()
-			|| save.help_data_gadgets.has_value();
+		return save.help_data_messages.check(save.game)
+			|| save.help_data_misc.check(save.game)
+			|| save.help_data_gadgets.check(save.game);
 	}
 	
 	if(ImGui::BeginTabBar("##help_tabs")) {
-		if(save.help_data_messages.has_value() && ImGui::BeginTabItem("Messages")) {
+		if(save.help_data_messages.check(save.game) && ImGui::BeginTabItem("Messages")) {
 			ImGui::BeginChild("#help_messages");
 			help_subpage("##help_messages_table", ARRAY_PAIR(save.help_data_messages->array));
 			ImGui::EndChild();
 			ImGui::EndTabItem();
 		}
-		if(save.help_data_misc.has_value() && ImGui::BeginTabItem("Misc")) {
+		if(save.help_data_misc.check(save.game) && ImGui::BeginTabItem("Misc")) {
 			ImGui::BeginChild("#help_misc");
 			help_subpage("##help_misc_table", ARRAY_PAIR(save.help_data_misc->array));
 			ImGui::EndChild();
 			ImGui::EndTabItem();
 		}
-		if(save.help_data_gadgets.has_value() && ImGui::BeginTabItem("Gadgets")) {
+		if(save.help_data_gadgets.check(save.game) && ImGui::BeginTabItem("Gadgets")) {
 			ImGui::BeginChild("#help_gadgets");
 			help_subpage("##help_gadgets_table", ARRAY_PAIR(save.help_data_gadgets->array));
 			ImGui::EndChild();
@@ -860,7 +869,8 @@ static void help_subpage(const char* label, memory_card::HelpDatum* help, s32 co
 }
 
 static bool hero_page(bool draw_gui) {
-	if(!save.hero_save.has_value()) return false;
+	if(save.type != memory_card::FileType::SLOT) return false;
+	if(!save.hero_save.check(save.game)) return false;
 	if(!draw_gui) return true;
 	memory_card::HeroSave& h = *save.hero_save;
 	
@@ -893,7 +903,8 @@ static bool hero_page(bool draw_gui) {
 }
 
 static bool settings_page(bool draw_gui) {
-	if(!save.settings.has_value()) return false;
+	if(save.type != memory_card::FileType::SLOT) return false;
+	if(!save.settings.check(save.game)) return false;
 	if(!draw_gui) return true;
 	memory_card::GameSettings& s = *save.settings;
 	
@@ -923,7 +934,8 @@ static bool settings_page(bool draw_gui) {
 }
 
 static bool statistics_page(bool draw_gui) {
-	if(!save.player_statistics.has_value()) return false;
+	if(save.type != memory_card::FileType::SLOT) return false;
+	if(!save.player_statistics.check(save.game)) return false;
 	if(!draw_gui) return true;
 	
 	if(ImGui::BeginTabBar("##player_statistics_tabs")) {
@@ -965,9 +977,10 @@ static bool statistics_page(bool draw_gui) {
 }
 
 static bool levels_page(bool draw_gui) {
+	if(save.type != memory_card::FileType::SLOT) return false;
 	bool any_tabs = false;
 	for(const memory_card::LevelSaveGame& level_save_game : save.levels) {
-		if(level_save_game.level.has_value()) {
+		if(level_save_game.level.check(save.game)) {
 			any_tabs = true;
 		}
 	}
@@ -980,7 +993,7 @@ static bool levels_page(bool draw_gui) {
 		ImGui::TableSetupColumn("Jackpot");
 		ImGui::TableHeadersRow();
 		for(s32 i = 0; i < (s32) save.levels.size(); i++) {
-			if(save.levels[i].level.has_value()) {
+			if(save.levels[i].level.check(save.game)) {
 				ImGui::PushID(i);
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
@@ -1002,9 +1015,10 @@ static bool levels_page(bool draw_gui) {
 }
 
 static bool missions_page(bool draw_gui) {
+	if(save.type != memory_card::FileType::SLOT) return false;
 	bool any_tabs = false;
 	for(const memory_card::LevelSaveGame& level_save_game : save.levels) {
-		if(level_save_game.level.has_value()) {
+		if(level_save_game.level.check(save.game)) {
 			any_tabs = true;
 		}
 	}
@@ -1014,7 +1028,7 @@ static bool missions_page(bool draw_gui) {
 	if(ImGui::BeginTabBar("##mission_tabs")) {
 		for(s32 i = 0; i < (s32) save.levels.size(); i++) {
 			memory_card::LevelSaveGame& level_save_game = save.levels[i];
-			if(level_save_game.level.has_value() && ImGui::BeginTabItem(std::to_string(i).c_str())) {
+			if(level_save_game.level.check(save.game) && ImGui::BeginTabItem(std::to_string(i).c_str())) {
 				ImGui::BeginChild("##level");
 				memory_card::LevelSave& level = *level_save_game.level;
 				if(ImGui::BeginTable("##missions", 6, ImGuiTableFlags_RowBg)) {
@@ -1026,7 +1040,7 @@ static bool missions_page(bool draw_gui) {
 					ImGui::TableSetupColumn("Difficulty");
 					ImGui::TableHeadersRow();
 					for(s32 j = 0; j < ARRAY_SIZE(level_save_game.level->mission); j++) {
-						if(save.levels[i].level.has_value()) {
+						if(save.levels[i].level.check(save.game)) {
 							ImGui::PushID(j);
 							ImGui::TableNextRow();
 							ImGui::TableNextColumn();
@@ -1090,7 +1104,7 @@ static bool sections_page(bool draw_gui) {
 				for(s32 i = 0; i < (s32) file->slot.levels.size(); i++) {
 					const std::vector<memory_card::Section>& sections = file->slot.levels[i];
 					ImGui::PushID(i);
-					if(ImGui::BeginTabItem(stringf("Lvl %d", i).c_str())) {
+					if(ImGui::BeginTabItem(std::to_string(i).c_str())) {
 						ImGui::BeginChild("##sections");
 						sections_subpage(sections);
 						ImGui::EndChild();

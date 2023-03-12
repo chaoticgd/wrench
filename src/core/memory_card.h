@@ -113,56 +113,85 @@ enum SectionType : s32 {
 	ST_QUICKSWITCHGADGETS   = 7020
 };
 
-struct FileFormat {
-	Game game;
-	FileType type;
-	std::vector<SectionType> sections;
-	std::vector<SectionType> level_sections;
+enum GameBitfield {
+	RAC = 1,
+	GC = 2,
+	UYA = 4,
+	DL = 8,
+	__ = 0,
+	___ = 0
+};
+
+template <u8 games, typename Value>
+struct GameOpt {
+	Opt<Value> data;
+	using value_type = Value;
+	static const constexpr u8 valid_games = games;
+	bool check(u8 current_game) const { return valid_games & current_game; }
+	Value& operator*() {
+		verify(data.has_value(), "Tried to access GameOpt without a value.");
+		return *data;
+	}
+	const Value& operator*() const {
+		verify(data.has_value(), "Tried to access GameOpt without a value.");
+		return *data;
+	}
+	Value* operator->() {
+		verify(data.has_value(), "Tried to access GameOpt without a value.");
+		return &(*data);
+	}
 };
 
 struct LevelSaveGame {
-	Opt<LevelSave> level;
+	GameOpt<RAC|GC|UYA|DL, LevelSave> level;
 };
 
 struct SaveGame {
 	bool loaded = false;
 	FileType type;
+	GameBitfield game = __;
 	// net
-	Opt<GameModeStruct> game_mode_options;
-	Opt<FixedArray<ProfileStruct, 8>> mp_profiles;
+	GameOpt<RAC|GC|UYA|DL, GameModeStruct> game_mode_options;
+	GameOpt<RAC|GC|UYA|DL, FixedArray<ProfileStruct, 8>> mp_profiles;
 	// slot
-	Opt<s32> level;
-	Opt<s32> elapsed_time;
-	Opt<Clock> last_save_time;
-	Opt<FixedArray<u8, 12>> global_flags;
-	Opt<FixedArray<u8, 14>> cheats_activated;
-	Opt<FixedArray<s32, 15>> skill_points;
-	Opt<FixedArray<HelpDatum, 2088>> help_data_messages;
-	Opt<FixedArray<HelpDatum, 16>> help_data_misc;
-	Opt<FixedArray<HelpDatum, 20>> help_data_gadgets;
-	Opt<FixedArray<u8, 14>> cheats_ever_activated;
-	Opt<GameSettings> settings;
-	Opt<HeroSave> hero_save;
-	Opt<FixedArray<u32, 64>> movies_played_record;
-	Opt<u32> total_play_time;
-	Opt<s32> total_deaths;
-	Opt<FixedArray<s16, 2100>> help_log;
-	Opt<s32> help_log_pos;
-	Opt<GadgetBox> hero_gadget_box;
-	Opt<FixedArray<u8, 20>> purchaseable_gadgets;
-	Opt<FixedArray<u8, 17>> purchaseable_bot_upgrades;
-	Opt<u8> purchaseable_wrench_level;
-	Opt<FixedArray<u8, 9>> purchaseable_post_fx_mods;
-	Opt<BotSave> bot_save;
-	Opt<FixedArray<s32, 10>> first_person_desired_mode;
-	Opt<s32> saved_difficulty_level;
-	Opt<FixedArray<PlayerData, 2>> player_statistics;
-	Opt<FixedArray<s32, 2>> battledome_wins_and_losses;
-	Opt<FixedArray<EnemyKillInfo, 30>> enemy_kills;
-	Opt<QuickSwitchGadgets> quick_switch_gadgets;
+	GameOpt<RAC|GC|UYA|DL, s32> level;
+	GameOpt<RAC|GC|UYA|DL, s32> elapsed_time;
+	GameOpt<RAC|GC|UYA|DL, Clock> last_save_time;
+	GameOpt<RAC|GC|UYA|DL, FixedArray<u8, 12>> global_flags;
+	GameOpt<RAC|GC|UYA|DL, FixedArray<u8, 14>> cheats_activated;
+	GameOpt<RAC|GC|UYA|DL, FixedArray<s32, 15>> skill_points;
+	GameOpt<RAC|GC|UYA|DL, FixedArray<HelpDatum, 2088>> help_data_messages;
+	GameOpt<RAC|GC|UYA|DL, FixedArray<HelpDatum, 16>> help_data_misc;
+	GameOpt<RAC|GC|UYA|DL, FixedArray<HelpDatum, 20>> help_data_gadgets;
+	GameOpt<RAC|GC|UYA|DL, FixedArray<u8, 14>> cheats_ever_activated;
+	GameOpt<RAC|GC|UYA|DL, GameSettings> settings;
+	GameOpt<RAC|GC|UYA|DL, HeroSave> hero_save;
+	GameOpt<RAC|GC|UYA|DL, FixedArray<u32, 64>> movies_played_record;
+	GameOpt<RAC|GC|UYA|DL, u32> total_play_time;
+	GameOpt<RAC|GC|UYA|DL, s32> total_deaths;
+	GameOpt<RAC|GC|UYA|DL, FixedArray<s16, 2100>> help_log;
+	GameOpt<RAC|GC|UYA|DL, s32> help_log_pos;
+	GameOpt<RAC|GC|UYA|DL, GadgetBox> hero_gadget_box;
+	GameOpt<RAC|GC|UYA|DL, FixedArray<u8, 20>> purchaseable_gadgets;
+	GameOpt<RAC|GC|UYA|DL, FixedArray<u8, 17>> purchaseable_bot_upgrades;
+	GameOpt<RAC|GC|UYA|DL, u8> purchaseable_wrench_level;
+	GameOpt<RAC|GC|UYA|DL, FixedArray<u8, 9>> purchaseable_post_fx_mods;
+	GameOpt<RAC|GC|UYA|DL, BotSave> bot_save;
+	GameOpt<RAC|GC|UYA|DL, FixedArray<s32, 10>> first_person_desired_mode;
+	GameOpt<RAC|GC|UYA|DL, s32> saved_difficulty_level;
+	GameOpt<RAC|GC|UYA|DL, FixedArray<PlayerData, 2>> player_statistics;
+	GameOpt<RAC|GC|UYA|DL, FixedArray<s32, 2>> battledome_wins_and_losses;
+	GameOpt<RAC|GC|UYA|DL, FixedArray<EnemyKillInfo, 30>> enemy_kills;
+	GameOpt<RAC|GC|UYA|DL, QuickSwitchGadgets> quick_switch_gadgets;
 	std::vector<LevelSaveGame> levels;
 };
 
+struct FileFormat {
+	GameBitfield game;
+	FileType type;
+	std::vector<SectionType> sections;
+	std::vector<SectionType> level_sections;
+};
 
 SaveGame parse(const File& file);
 void update(File& dest, const SaveGame& save);
@@ -170,6 +199,7 @@ SaveGame parse_net(const File& file);
 void update_net(File& dest, const SaveGame& save);
 SaveGame parse_slot(const File& file);
 void update_slot(File& dest, const SaveGame& save);
+GameBitfield identify_game(const File& file);
 const char* section_type(u32 type);
 
 extern const std::vector<FileFormat> FILE_FORMATS;
