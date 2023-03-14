@@ -85,12 +85,29 @@ enum SectionType : s32 {
 	ST_GLOBALFLAGS          = 5,
 	ST_CHEATSACTIVATED      = 7,
 	ST_SKILLPOINTS          = 8,
+	ST_9                    = 9,
+	ST_10                   = 10,
+	ST_11                   = 11,
+	ST_12                   = 12,
+	ST_13                   = 13,
+	ST_14                   = 14,
+	ST_15                   = 15,
 	ST_HELPDATAMESSAGES     = 16,
 	ST_HELPDATAMISC         = 17,
 	ST_HELPDATAGADGETS      = 18,
+	ST_20                   = 20,
+	ST_30                   = 30,
+	ST_32                   = 32,
 	ST_CHEATSEVERACTIVATED  = 37,
 	ST_SETTINGS             = 38,
 	ST_HEROSAVE             = 39,
+	ST_40                   = 40,
+	ST_41                   = 41,
+	ST_42                   = 42,
+	ST_44                   = 44,
+	ST_45                   = 45,
+	ST_46                   = 46,
+	ST_47                   = 47,
 	ST_MOVIESPLAYEDRECORD   = 43,
 	ST_TOTALPLAYTIME        = 1003,
 	ST_TOTALDEATHS          = 1005,
@@ -98,6 +115,12 @@ enum SectionType : s32 {
 	ST_HELPLOGPOS           = 1011,
 	ST_GAMEMODEOPTIONS      = 7000,
 	ST_MPPROFILES           = 7001,
+	ST_7002                 = 7002,
+	ST_7003                 = 7003,
+	ST_7004                 = 7004,
+	ST_7005                 = 7005,
+	ST_7006                 = 7006,
+	ST_7007                 = 7007,
 	ST_HEROGADGETBOX        = 7008,
 	ST_LEVELSAVEDATA        = 7009,
 	ST_PURCHASEABLEGADGETS  = 7010,
@@ -110,16 +133,7 @@ enum SectionType : s32 {
 	ST_PLAYERSTATISTICS     = 7017,
 	ST_BATTLEDOMEWINSLOSSES = 7018,
 	ST_ENEMYKILLS           = 7019,
-	ST_QUICKSWITCHGADGETS   = 7020
-};
-
-enum GameBitfield {
-	RAC = 1,
-	GC = 2,
-	UYA = 4,
-	DL = 8,
-	__ = 0,
-	___ = 0
+	ST_QUICKSWITCHGADGETS   = 7020,
 };
 
 template <u8 games, typename Value>
@@ -142,48 +156,92 @@ struct GameOpt {
 	}
 };
 
+// For sections where the structure differs for each game, this macro is used
+// to generate an accessor function template to retrieve a reference to the
+// structure corresponding to a particular game.
+#define MULTI_GAME_ACCESSOR(container, name, rac_field, gc_field, uya_field, dl_field) \
+	template <typename T> \
+	T& name() { \
+		if constexpr(std::is_same_v<T, typename decltype(container().rac_field)::value_type>) return *rac_field; \
+		if constexpr(std::is_same_v<T, typename decltype(container().gc_field)::value_type>) return *gc_field; \
+		if constexpr(std::is_same_v<T, typename decltype(container().uya_field)::value_type>) return *uya_field; \
+		if constexpr(std::is_same_v<T, typename decltype(container().dl_field)::value_type>) return *dl_field; \
+		assert_not_reached("Multi-game accessor called with bad template parameter."); \
+	}
+
 struct LevelSaveGame {
 	GameOpt<RAC|GC|UYA|DL, LevelSave> level;
+};
+
+struct DummyType {
+	using value_type = void;
+	void* operator*() { return nullptr; }
 };
 
 struct SaveGame {
 	bool loaded = false;
 	FileType type;
-	GameBitfield game = __;
+	u8 game = 0;
+	DummyType _no_field; // Dummy field used for MULTI_GAME_ACCESSOR.
 	// net
 	GameOpt<RAC|GC|UYA|DL, GameModeStruct> game_mode_options;
 	GameOpt<RAC|GC|UYA|DL, FixedArray<ProfileStruct, 8>> mp_profiles;
 	// slot
-	GameOpt<RAC|GC|UYA|DL, s32> level;
-	GameOpt<RAC|GC|UYA|DL, s32> elapsed_time;
-	GameOpt<RAC|GC|UYA|DL, Clock> last_save_time;
-	GameOpt<RAC|GC|UYA|DL, FixedArray<u8, 12>> global_flags;
-	GameOpt<RAC|GC|UYA|DL, FixedArray<u8, 14>> cheats_activated;
-	GameOpt<RAC|GC|UYA|DL, FixedArray<s32, 15>> skill_points;
-	GameOpt<RAC|GC|UYA|DL, FixedArray<HelpDatum, 2088>> help_data_messages;
-	GameOpt<RAC|GC|UYA|DL, FixedArray<HelpDatum, 16>> help_data_misc;
-	GameOpt<RAC|GC|UYA|DL, FixedArray<HelpDatum, 20>> help_data_gadgets;
-	GameOpt<RAC|GC|UYA|DL, FixedArray<u8, 14>> cheats_ever_activated;
-	GameOpt<RAC|GC|UYA|DL, GameSettings> settings;
-	GameOpt<RAC|GC|UYA|DL, HeroSave> hero_save;
-	GameOpt<RAC|GC|UYA|DL, FixedArray<u32, 64>> movies_played_record;
-	GameOpt<RAC|GC|UYA|DL, u32> total_play_time;
-	GameOpt<RAC|GC|UYA|DL, s32> total_deaths;
-	GameOpt<RAC|GC|UYA|DL, FixedArray<s16, 2100>> help_log;
-	GameOpt<RAC|GC|UYA|DL, s32> help_log_pos;
-	GameOpt<RAC|GC|UYA|DL, GadgetBox> hero_gadget_box;
-	GameOpt<RAC|GC|UYA|DL, FixedArray<u8, 20>> purchaseable_gadgets;
-	GameOpt<RAC|GC|UYA|DL, FixedArray<u8, 17>> purchaseable_bot_upgrades;
-	GameOpt<RAC|GC|UYA|DL, u8> purchaseable_wrench_level;
-	GameOpt<RAC|GC|UYA|DL, FixedArray<u8, 9>> purchaseable_post_fx_mods;
-	GameOpt<RAC|GC|UYA|DL, BotSave> bot_save;
-	GameOpt<RAC|GC|UYA|DL, FixedArray<s32, 10>> first_person_desired_mode;
-	GameOpt<RAC|GC|UYA|DL, s32> saved_difficulty_level;
-	GameOpt<RAC|GC|UYA|DL, FixedArray<PlayerData, 2>> player_statistics;
-	GameOpt<RAC|GC|UYA|DL, FixedArray<s32, 2>> battledome_wins_and_losses;
-	GameOpt<RAC|GC|UYA|DL, FixedArray<EnemyKillInfo, 30>> enemy_kills;
-	GameOpt<RAC|GC|UYA|DL, QuickSwitchGadgets> quick_switch_gadgets;
+	GameOpt<UYA|DL, s32> level;
+	GameOpt<UYA|DL, s32> elapsed_time;
+	GameOpt<UYA|DL, Clock> last_save_time;
+	GameOpt<    DL, FixedArray<u8, 12>> global_flags;
+	GameOpt<    DL, FixedArray<u8, 14>> cheats_activated;
+	GameOpt<    DL, FixedArray<s32, 15>> skill_points;
+	GameOpt<UYA   , FixedArray<u8, 123>> unknown_9;
+	GameOpt<UYA   , FixedArray<u8, 123>> unknown_10;
+	GameOpt<UYA   , FixedArray<u8, 123>> unknown_11;
+	GameOpt<UYA   , FixedArray<u8, 123>> unknown_12;
+	GameOpt<UYA   , FixedArray<u8, 123>> unknown_13;
+	GameOpt<UYA   , FixedArray<u8, 123>> unknown_14;
+	GameOpt<UYA   , FixedArray<u8, 123>> unknown_15;
+	GameOpt<    DL, FixedArray<HelpDatum, 2088>> help_data_messages;
+	GameOpt<    DL, FixedArray<HelpDatum, 16>> help_data_misc;
+	GameOpt<    DL, FixedArray<HelpDatum, 20>> help_data_gadgets;
+	GameOpt<UYA   , FixedArray<u8, 123>> unknown_20;
+	GameOpt<UYA   , FixedArray<u8, 123>> unknown_30;
+	GameOpt<UYA   , FixedArray<u8, 123>> unknown_32;
+	GameOpt<    DL, FixedArray<u8, 14>> cheats_ever_activated;
+	GameOpt<    DL, GameSettings> settings;
+	GameOpt<UYA   , UyaHeroSave> hero_save_uya;
+	GameOpt<    DL, DlHeroSave> hero_save_dl;
+	GameOpt<UYA   , FixedArray<u8, 123>> unknown_40;
+	GameOpt<UYA   , FixedArray<u8, 123>> unknown_41;
+	GameOpt<UYA   , FixedArray<u8, 123>> unknown_42;
+	GameOpt<UYA   , FixedArray<u8, 123>> unknown_44;
+	GameOpt<UYA   , FixedArray<u8, 123>> unknown_45;
+	GameOpt<UYA   , FixedArray<u8, 123>> unknown_46;
+	GameOpt<UYA   , FixedArray<u8, 123>> unknown_47;
+	GameOpt<UYA|DL, FixedArray<u32, 64>> movies_played_record;
+	GameOpt<UYA|DL, u32> total_play_time;
+	GameOpt<UYA|DL, s32> total_deaths;
+	GameOpt<    DL, FixedArray<s16, 2100>> help_log;
+	GameOpt<    DL, s32> help_log_pos;
+	GameOpt<UYA   , FixedArray<u8, 123>> unknown_7002;
+	GameOpt<UYA   , FixedArray<u8, 123>> unknown_7003;
+	GameOpt<UYA   , FixedArray<u8, 123>> unknown_7004;
+	GameOpt<UYA   , FixedArray<u8, 123>> unknown_7005;
+	GameOpt<UYA   , FixedArray<u8, 123>> unknown_7006;
+	GameOpt<UYA   , FixedArray<u8, 123>> unknown_7007;
+	GameOpt<    DL, GadgetBox> hero_gadget_box;
+	GameOpt<    DL, FixedArray<u8, 20>> purchaseable_gadgets;
+	GameOpt<    DL, FixedArray<u8, 17>> purchaseable_bot_upgrades;
+	GameOpt<    DL, u32> purchaseable_wrench_level;
+	GameOpt<    DL, FixedArray<u8, 9>> purchaseable_post_fx_mods;
+	GameOpt<    DL, BotSave> bot_save;
+	GameOpt<    DL, FixedArray<s32, 10>> first_person_desired_mode;
+	GameOpt<    DL, s32> saved_difficulty_level;
+	GameOpt<    DL, FixedArray<PlayerData, 2>> player_statistics;
+	GameOpt<    DL, FixedArray<s32, 2>> battledome_wins_and_losses;
+	GameOpt<    DL, FixedArray<EnemyKillInfo, 30>> enemy_kills;
+	GameOpt<    DL, QuickSwitchGadgets> quick_switch_gadgets;
 	std::vector<LevelSaveGame> levels;
+	MULTI_GAME_ACCESSOR(SaveGame, hero_save, _no_field, _no_field, hero_save_uya, hero_save_dl)
 };
 
 struct FileFormat {

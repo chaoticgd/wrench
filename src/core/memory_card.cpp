@@ -165,6 +165,9 @@ s64 write_sections(OutBuffer dest, std::vector<Section>& sections) {
 	s64 checksum_start_ofs = dest.tell();
 	
 	for(Section& section : sections) {
+		s64 size_difference = section.data.size() - section.unpadded_size;
+		assert(size_difference > -1 && size_difference < 4);
+		
 		SectionHeader header;
 		header.type = section.type;
 		header.size = section.unpadded_size;
@@ -231,8 +234,7 @@ template <u8 valid_games, typename T>
 static void parse_section(u8 current_game, const memory_card::Section& section, GameOpt<valid_games, T>& dest) {
 	if(dest.check(current_game)) {
 		ERROR_CONTEXT("%s section", section_type(section.type));
-		s64 size_difference = section.data.size() - sizeof(T);
-		verify(size_difference > -1 && size_difference < 4, "Section has unexpected size.");
+		verify(section.unpadded_size == sizeof(T), "Section has unexpected size.");
 		dest.data = Buffer(section.data).read<T>(0);
 	}
 }
@@ -248,8 +250,7 @@ template <u8 valid_games, typename T>
 static void parse_section_array(u8 current_game, const memory_card::Section& section, GameOpt<valid_games, T>& dest) {
 	if(dest.check(current_game)) {
 		ERROR_CONTEXT("%s section", section_type(section.type));
-		s64 size_difference = section.data.size() - sizeof(T);
-		verify(size_difference > -1 && size_difference < 4, "Array section has unexpected size.");
+		verify(section.unpadded_size == sizeof(T), "Array section has unexpected size.");
 		dest.data = Buffer(section.data).read_multiple<typename T::value_type>(0, T::element_count, "array");
 	}
 }
@@ -304,7 +305,10 @@ SaveGame parse_slot(const File& file) {
 			case ST_HELPDATAGADGETS:      parse_section_array(save.game, section, save.help_data_gadgets);         break;
 			case ST_CHEATSEVERACTIVATED:  parse_section_array(save.game, section, save.cheats_ever_activated);     break;
 			case ST_SETTINGS:             parse_section      (save.game, section, save.settings);                  break;
-			case ST_HEROSAVE:             parse_section      (save.game, section, save.hero_save);                 break;
+			case ST_HEROSAVE:
+				parse_section(save.game, section, save.hero_save_uya);
+				parse_section(save.game, section, save.hero_save_dl);
+				break;
 			case ST_MOVIESPLAYEDRECORD:   parse_section_array(save.game, section, save.movies_played_record);      break;
 			case ST_TOTALPLAYTIME:        parse_section      (save.game, section, save.total_play_time);           break;
 			case ST_TOTALDEATHS:          parse_section      (save.game, section, save.total_deaths);              break;
@@ -351,7 +355,10 @@ void update_slot(File& dest, const SaveGame& save) {
 			case ST_HELPDATAGADGETS:      update_section_array(save.game, buffer, save.help_data_gadgets);          break;
 			case ST_CHEATSEVERACTIVATED:  update_section_array(save.game, buffer, save.cheats_ever_activated);      break;
 			case ST_SETTINGS:             update_section      (save.game, buffer, save.settings);                   break;
-			case ST_HEROSAVE:             update_section      (save.game, buffer, save.hero_save);                  break;
+			case ST_HEROSAVE:
+				update_section(save.game, buffer, save.hero_save_uya);
+			    update_section(save.game, buffer, save.hero_save_dl);
+				break;
 			case ST_MOVIESPLAYEDRECORD:   update_section_array(save.game, buffer, save.movies_played_record);       break;
 			case ST_TOTALPLAYTIME:        update_section      (save.game, buffer, save.total_play_time);            break;
 			case ST_TOTALDEATHS:          update_section      (save.game, buffer, save.total_deaths);               break;
@@ -451,7 +458,7 @@ const char* section_type(u32 type) {
 		case ST_LEVELSAVEDATA: return "level save data";
 		case ST_PURCHASEABLEGADGETS: return "purchaseable gadgets";
 		case ST_PURCHASEABLEBOTUPGRD: return "purchaseable bot upgrades";
-		case ST_PURCHASEABLEWRENCH: return "purchaseable wrench upgrades";
+		case ST_PURCHASEABLEWRENCH: return "purchaseable wrench level";
 		case ST_PURCHASEABLEPOSTMODS: return "purchaseable post fx mods";
 		case ST_BOTSAVE: return "bot save";
 		case ST_FIRSTPERSONMODE: return "first person mode";
@@ -465,6 +472,48 @@ const char* section_type(u32 type) {
 }
 
 const std::vector<FileFormat> FILE_FORMATS = {
+	{UYA, FileType::SLOT, {
+		ST_LEVEL,
+		ST_HEROSAVE,
+		ST_ELAPSEDTIME,
+		ST_LASTSAVETIME,
+		ST_TOTALPLAYTIME,
+		ST_GLOBALFLAGS,
+		ST_CHEATSACTIVATED,
+		ST_SKILLPOINTS,
+		ST_9,
+		ST_10,
+		ST_11,
+		ST_40,
+		ST_12,
+		ST_13,
+		ST_14,
+		ST_20,
+		ST_15,
+		ST_HELPDATAMESSAGES,
+		ST_HELPDATAMISC,
+		ST_HELPDATAGADGETS,
+		ST_SETTINGS,
+		ST_30,
+		ST_32,
+		ST_CHEATSEVERACTIVATED,
+		ST_41,
+		ST_42,
+		ST_45,
+		ST_MOVIESPLAYEDRECORD,
+		ST_44,
+		ST_46,
+		ST_47,
+		ST_TOTALDEATHS,
+		ST_HELPLOG,
+		ST_HELPLOGPOS,
+		ST_7002,
+		ST_7003,
+		ST_7004,
+		ST_7005,
+		ST_7006,
+		ST_7007
+	}},
 	{DL, FileType::NET, {
 		ST_GAMEMODEOPTIONS,
 		ST_MPPROFILES

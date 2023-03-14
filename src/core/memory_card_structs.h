@@ -23,6 +23,13 @@
 
 namespace memory_card {
 
+enum GameBitfield {
+	RAC = 1,
+	GC = 2,
+	UYA = 4,
+	DL = 8
+};
+
 packed_struct(SiegeMatch,
 	/* 0x000 */ s32 time_limit;
 	/* 0x004 */ u8 nodes_on;
@@ -168,7 +175,15 @@ packed_struct(GameSettings,
 )
 static_assert(sizeof(GameSettings) == 0xc4);
 
-packed_struct(HeroSave,
+packed_struct(UyaHeroSave,
+	static const constexpr GameBitfield GAME = UYA;
+	/* 0x00 */ s32 bolts;
+	/* 0x04 */ u8 unknonw[0x7c];
+)
+static_assert(sizeof(UyaHeroSave) == 0x80);
+
+packed_struct(DlHeroSave,
+	static const constexpr GameBitfield GAME = DL;
 	/* 0x00 */ s32 bolts;
 	/* 0x04 */ s32 bolt_deficit;
 	/* 0x08 */ s32 xp;
@@ -195,7 +210,7 @@ packed_struct(HeroSave,
 	/* 0x36 */ s16 progression_armor_level;
 	/* 0x38 */ s32 start_limit_break_diff;
 )
-static_assert(sizeof(HeroSave) == 0x3c);
+static_assert(sizeof(DlHeroSave) == 0x3c);
 
 packed_struct(GadgetEventMessage,
 	/* 0x00 */ s16 gadget_id;

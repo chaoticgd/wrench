@@ -42,6 +42,7 @@ static void gadget_events_subpage();
 static void gadget_messages_subpage();
 static bool help_page(bool draw_gui);
 static void help_subpage(const char* label, memory_card::HelpDatum* help, s32 count);
+template <typename HeroSave>
 static bool hero_page(bool draw_gui);
 static bool settings_page(bool draw_gui);
 static bool statistics_page(bool draw_gui);
@@ -69,7 +70,8 @@ static Page PAGES[] = {
 	{"Enemy Kills", &enemy_kills_page},
 	{"Gadgets", &gadget_page},
 	{"Help", &help_page},
-	{"Hero", &hero_page},
+	{"Hero", &hero_page<memory_card::UyaHeroSave>},
+	{"Hero", &hero_page<memory_card::DlHeroSave>},
 	{"Settings", &settings_page},
 	{"Statistics", &statistics_page},
 	{"Levels", &levels_page},
@@ -78,7 +80,7 @@ static Page PAGES[] = {
 	{"Sections", &sections_page}
 };
 
-static std::string directory = "/home/thomas/pcsx2/memcards/folder_card.ps2/BESCES-53285RATCHET/";
+static std::string directory;
 static std::vector<fs::path> file_paths;
 static bool should_reload_file_list = true;
 static fs::path selected_file_path;
@@ -868,36 +870,40 @@ static void help_subpage(const char* label, memory_card::HelpDatum* help, s32 co
 	}
 }
 
+template <typename HeroSave>
 static bool hero_page(bool draw_gui) {
 	if(save.type != memory_card::FileType::SLOT) return false;
-	if(!save.hero_save.check(save.game)) return false;
+	if(save.game != HeroSave::GAME) return false;
+	//if(!save.hero_save_uya.check(save.game)) return false;
 	if(!draw_gui) return true;
-	memory_card::HeroSave& h = *save.hero_save;
+	HeroSave& h = save.hero_save<HeroSave>();
 	
 	input_scalar("Bolts", h.bolts);
-	input_scalar("Bolts Deficit", h.bolt_deficit);
-	input_scalar("XP", h.xp);
-	input_scalar("Points", h.points);
-	input_scalar("Hero Max HP", h.hero_max_hp);
-	input_scalar("Armor Level", h.armor_level);
-	input_scalar("Limit Break", h.limit_break);
-	input_scalar("Purchased Skins", h.purchased_skins);
-	input_scalar("Spent Diff Stars", h.spent_diff_stars);
-	input_scalar("Bolt Mult Level", h.bolt_mult_level);
-	input_scalar("Bolt Mult Sub Level", h.bolt_mult_sub_level);
-	input_scalar("Old Game Save Data", h.old_game_save_data);
-	input_scalar("Blue Badges", h.blue_badges);
-	input_scalar("Red Badges", h.red_badges);
-	input_scalar("Green Badges", h.green_badges);
-	input_scalar("Gold Badges", h.gold_badges);
-	input_scalar("Black Badges", h.black_badges);
-	input_scalar("Completes", h.completes);
-	input_array("Last Equipped Gadget", h.last_equipped_gadget);
-	input_array("Temp Weapons", h.temp_weapons);
-	input_scalar("Current Max Limit Break", h.current_max_limit_break);
-	input_scalar("Armor Level 2", h.armor_level_2);
-	input_scalar("Progression Armor Level", h.progression_armor_level);
-	input_scalar("Start Limit Break Diff", h.start_limit_break_diff);
+	if constexpr(std::is_same_v<HeroSave, memory_card::DlHeroSave>) {
+		input_scalar("Bolts Deficit", h.bolt_deficit);
+		input_scalar("XP", h.xp);
+		input_scalar("Points", h.points);
+		input_scalar("Hero Max HP", h.hero_max_hp);
+		input_scalar("Armor Level", h.armor_level);
+		input_scalar("Limit Break", h.limit_break);
+		input_scalar("Purchased Skins", h.purchased_skins);
+		input_scalar("Spent Diff Stars", h.spent_diff_stars);
+		input_scalar("Bolt Mult Level", h.bolt_mult_level);
+		input_scalar("Bolt Mult Sub Level", h.bolt_mult_sub_level);
+		input_scalar("Old Game Save Data", h.old_game_save_data);
+		input_scalar("Blue Badges", h.blue_badges);
+		input_scalar("Red Badges", h.red_badges);
+		input_scalar("Green Badges", h.green_badges);
+		input_scalar("Gold Badges", h.gold_badges);
+		input_scalar("Black Badges", h.black_badges);
+		input_scalar("Completes", h.completes);
+		input_array("Last Equipped Gadget", h.last_equipped_gadget);
+		input_array("Temp Weapons", h.temp_weapons);
+		input_scalar("Current Max Limit Break", h.current_max_limit_break);
+		input_scalar("Armor Level 2", h.armor_level_2);
+		input_scalar("Progression Armor Level", h.progression_armor_level);
+		input_scalar("Start Limit Break Diff", h.start_limit_break_diff);
+	}
 	
 	return true;
 }
@@ -978,6 +984,7 @@ static bool statistics_page(bool draw_gui) {
 
 static bool levels_page(bool draw_gui) {
 	if(save.type != memory_card::FileType::SLOT) return false;
+	if(save.game != memory_card::DL) return false;
 	bool any_tabs = false;
 	for(const memory_card::LevelSaveGame& level_save_game : save.levels) {
 		if(level_save_game.level.check(save.game)) {
@@ -1016,6 +1023,7 @@ static bool levels_page(bool draw_gui) {
 
 static bool missions_page(bool draw_gui) {
 	if(save.type != memory_card::FileType::SLOT) return false;
+	if(save.game != memory_card::DL) return false;
 	bool any_tabs = false;
 	for(const memory_card::LevelSaveGame& level_save_game : save.levels) {
 		if(level_save_game.level.check(save.game)) {
