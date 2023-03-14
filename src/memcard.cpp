@@ -182,7 +182,7 @@ static void files() {
 			if(fs::is_directory(path)) {
 				std::string label = stringf("[DIR] %s", path.filename().string().c_str());
 				if(ImGui::Selectable(label.c_str())) {
-					directory = path;
+					directory = path.string();
 					should_reload_file_list = true;
 				}
 			}
