@@ -159,9 +159,7 @@ static void files() {
 		file_paths.clear();
 		try {
 			for(auto entry : fs::directory_iterator(directory)) {
-				if(entry.path().extension() != ".backup") {
-					file_paths.emplace_back(entry.path());
-				}
+				file_paths.emplace_back(entry.path());
 			}
 			listing_error.clear();
 		} catch(std::filesystem::filesystem_error& error) {
@@ -308,10 +306,6 @@ static void do_save() {
 			memory_card::update(*file, save);
 			std::vector<u8> buffer;
 			memory_card::write(buffer, *file);
-			fs::path backup_path = file->path.replace_extension("backup");
-			if(fs::exists(file->path) && !fs::exists(backup_path)) {
-				fs::copy(file->path, backup_path);
-			}
 			write_file(file->path, buffer);
 		} catch(RuntimeError& error) {
 			error_message = (error.context.empty() ? "" : (error.context + ": ")) + error.message;
