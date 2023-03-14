@@ -53,6 +53,7 @@ add_library(wrenchcore STATIC
 	src/core/material.cpp
 	src/core/tristrip_packet.cpp
 	src/core/elf.cpp
+	src/core/memory_card.cpp
 	thirdparty/md5.cpp
 )
 target_link_libraries(wrenchcore wrenchwtf)
@@ -234,6 +235,11 @@ add_executable(unpackbin
 	src/unpackbin.cpp
 )
 target_link_libraries(unpackbin wrenchcore wrenchengine)
+
+add_executable(memcard
+	src/memcard.cpp
+)
+target_link_libraries(memcard wrenchcore wrenchgui)
 
 if(UNIX)
 	add_compile_options(-Wall -Wno-sign-compare -g -O3)

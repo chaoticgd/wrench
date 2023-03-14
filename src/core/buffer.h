@@ -36,6 +36,19 @@ struct BufferArray {
 	}
 };
 
+template <typename T, s64 N>
+packed_struct(FixedArray,
+	T array[N];
+	using value_type = T;
+	static const constexpr s64 element_count = N;
+	FixedArray(const BufferArray<T>& src) {
+		assert(src.size() == N);
+		memcpy(array, src.lo, src.size() * sizeof(T));
+	}
+	const T* data() const { return array; }
+	s64 size() const { return N; }
+)
+
 struct Buffer {
 	const u8* lo = nullptr;
 	const u8* hi = nullptr;
@@ -53,16 +66,16 @@ struct Buffer {
 	Buffer subbuf(s64 offset, s64 new_size) const;
 	
 	template <typename T>
-	const T& read(s64 offset, const char* subject) const {
+	const T& read(s64 offset, const char* subject = "buffer") const {
 		verify(offset >= 0, "Failed to read %s: Offset cannot be negative.", subject);
 		verify(lo + offset + sizeof(T) <= hi, "Failed to read %s: Attempted to read past end of buffer.", subject);
 		return *(const T*) (lo + offset);
 	}
 	
 	template <typename T>
-	BufferArray<T> read_multiple(s64 offset, s64 count, const char* subject) const {
+	BufferArray<T> read_multiple(s64 offset, s64 count, const char* subject = "buffer") const {
 		verify(offset >= 0, "Failed to read %s: Offset cannot be negative.", subject);
-		verify(count >= 0, "Failed to read %s: Count cannot be negative.", count);
+		verify(count >= 0, "Failed to read %s: Count cannot be negative.", subject);
 		verify(lo + offset + count * sizeof(T) <= hi, "Failed to read %s: Attempted to read past end of buffer.", subject);
 		const T* iter_lo = (const T*) (lo + offset);
 		return {iter_lo, iter_lo + count};
