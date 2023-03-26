@@ -2,6 +2,11 @@
 
 In no particular order:
 
+- Build System/CI
+	- Run CI on multiple platforms
+	- Integrate automated testing
+	- Automate releases
+	- Clean up some other cmake stuff
 - Moby Model Packing
 	- Seperate out matrix allocation/scheduling from read/write functions to improve testability
 	- Use the existing tristrip algorithm to build new submeshes
@@ -43,6 +48,8 @@ In no particular order:
 - Texture Packing
 	- Automatic conversion to paletted colour
 	- Merge palettes together (like the original game does)
-- Memory map
+- Memory Map
 	- Determine memory map during build
 		- Error out if the files are too big to work
+- Collsion System
+	- Recover instanced collision.
