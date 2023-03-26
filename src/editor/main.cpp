@@ -18,7 +18,6 @@
 
 #include <chrono>
 
-#include <assetmgr/zipped_asset_bank.h>
 #include <toolwads/wads.h>
 #include <gui/gui.h>
 #include <gui/config.h>
@@ -75,7 +74,7 @@ static void run_wrench(GLFWwindow* window, const std::string& underlay_path, con
 	
 	// Load the underlay, and mark all underlay assets as weakly deleted so they
 	// don't show up if the asset isn't actually present.
-	a.asset_forest.mount<ZippedAssetBank>(underlay_path.c_str());
+	a.asset_forest.mount<LooseAssetBank>(underlay_path.c_str(), false);
 	a.asset_forest.any_root()->for_each_logical_descendant([&](Asset& asset) {
 		// If the asset has strongly_deleted set to false, interpret that to
 		// mean the asset should shouldn't be weakly deleted.

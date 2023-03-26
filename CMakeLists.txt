@@ -58,11 +58,12 @@ set(RELEASE_FILES
 	$<TARGET_FILE:wrenchbuild>
 	$<TARGET_FILE:wrencheditor>
 	$<TARGET_FILE:wrenchlauncher>
-	${CMAKE_BINARY_DIR}/editor.wad
-	${CMAKE_BINARY_DIR}/gui.wad
-	${CMAKE_BINARY_DIR}/launcher.wad
-	${CMAKE_BINARY_DIR}/underlay.zip
+	"${CMAKE_BINARY_DIR}/editor.wad"
+	"${CMAKE_BINARY_DIR}/gui.wad"
+	"${CMAKE_BINARY_DIR}/launcher.wad"
+	"${CMAKE_BINARY_DIR}/underlay.zip"
 )
-set(RELEASE_DOCS_DIRECTORY ${CMAKE_SOURCE_DIR}/docs)
-set(RELEASE_LICENSES_DIRECTORY ${CMAKE_SOURCE_DIR}/data/licenses)
+set(RELEASE_DOCS_DIRECTORY "${CMAKE_SOURCE_DIR}/docs")
+set(RELEASE_LICENSES_DIRECTORY "${CMAKE_SOURCE_DIR}/data/licenses")
+set(RELEASE_UNDERLAY_DIRECTORY "${CMAKE_SOURCE_DIR}/data/underlay")
 include(cmake/release_crafter.cmake)
