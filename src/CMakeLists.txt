@@ -9,10 +9,12 @@ add_library(wrenchwtf STATIC
 
 add_subdirectory(core)
 add_subdirectory(toolwads)
+add_subdirectory(engine)
 add_subdirectory(assetmgr)
 add_subdirectory(gui)
 add_subdirectory(launcher)
 add_subdirectory(editor)
+add_subdirectory(wrenchbuild)
 
 add_executable(vif
 	vifcli.cpp
@@ -26,8 +28,6 @@ add_subdirectory(iso)
 add_executable(memmap
 	memmap.c
 )
-
-add_subdirectory(engine)
 
 add_executable(asset2json
 	asset2json.cpp

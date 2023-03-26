@@ -49,3 +49,20 @@ if(MSVC)
 endif()
 
 add_subdirectory(thirdparty)
+
+set(RELEASE_FILES
+	$<TARGET_FILE:asset2json>
+	$<TARGET_FILE:memcard>
+	$<TARGET_FILE:memmap>
+	$<TARGET_FILE:vif>
+	$<TARGET_FILE:wrenchbuild>
+	$<TARGET_FILE:wrencheditor>
+	$<TARGET_FILE:wrenchlauncher>
+	${CMAKE_BINARY_DIR}/editor.wad
+	${CMAKE_BINARY_DIR}/gui.wad
+	${CMAKE_BINARY_DIR}/launcher.wad
+	${CMAKE_BINARY_DIR}/underlay.zip
+)
+set(RELEASE_DOCS_DIRECTORY ${CMAKE_SOURCE_DIR}/docs)
+set(RELEASE_LICENSES_DIRECTORY ${CMAKE_SOURCE_DIR}/data/licenses)
+include(cmake/release_crafter.cmake)
