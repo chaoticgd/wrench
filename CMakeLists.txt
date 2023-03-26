@@ -22,11 +22,14 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
 	message(FATAL_ERROR "In-tree build detected. You should do an out-of-tree build instead:\n\tcmake -S . -B bin/")
 endif()
 
-# pthreads
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 include_directories(${CMAKE_BINARY_DIR})
+include_directories(thirdparty/glm)
+include_directories(thirdparty/libpng)
+include_directories(${CMAKE_BINARY_DIR}/thirdparty/libpng)
+
 add_subdirectory(src)
 
 if(UNIX)
@@ -41,6 +44,3 @@ if(MSVC)
 endif()
 
 add_subdirectory(thirdparty)
-include_directories(thirdparty/glm)
-include_directories(thirdparty/libpng)
-include_directories(${CMAKE_BINARY_DIR}/thirdparty/libpng)
