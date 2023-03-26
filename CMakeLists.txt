@@ -61,7 +61,6 @@ set(RELEASE_FILES
 	"${CMAKE_BINARY_DIR}/editor.wad"
 	"${CMAKE_BINARY_DIR}/gui.wad"
 	"${CMAKE_BINARY_DIR}/launcher.wad"
-	"${CMAKE_BINARY_DIR}/underlay.zip"
 )
 set(RELEASE_DOCS_DIRECTORY "${CMAKE_SOURCE_DIR}/docs")
 set(RELEASE_LICENSES_DIRECTORY "${CMAKE_SOURCE_DIR}/data/licenses")

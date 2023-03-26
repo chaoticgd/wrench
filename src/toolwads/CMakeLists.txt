@@ -57,15 +57,3 @@ add_library(wadinfo
 	${CMAKE_BINARY_DIR}/_generated_wadinfo.cpp
 	find_wads.cpp
 )
-
-# ******************************************************************************
-# Zip the underlay
-# ******************************************************************************
-
-file(GLOB UNDERLAY_ZIP_DEPENDS CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/data/underlay/*")
-add_custom_target(underlay_zip ALL
-	COMMAND ${CMAKE_COMMAND} -E tar "cfv" "${CMAKE_BINARY_DIR}/underlay.zip" --format=zip "."
-	DEPENDS ${UNDERLAY_ZIP_DEPENDS}
-	WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/data/underlay"
-	COMMENT "Generating underlay.zip"
-)
