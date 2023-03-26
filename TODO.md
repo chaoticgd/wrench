@@ -1,0 +1,48 @@
+# Todo List
+
+In no particular order:
+
+- Moby Model Packing
+	- Seperate out matrix allocation/scheduling from read/write functions to improve testability
+	- Use the existing tristrip algorithm to build new submeshes
+- Tfrag Model Packing
+	- Recover original tfaces
+		- Possibly compare different LOD levels to determine which strips are part of which tface
+	- Figure out how tfaces should be represented in the source format
+	- Build new tfrags
+- Tie Model Packing
+	- Similar issues as with the tfrag renderer
+- Occlusion System
+	- Possibly use OpenGL in wrenchbuild to speed things up (should be faster than raycasting)
+- Gameplay Source Format
+	- Will probably be based on the Wrench Text Format
+	- System for editing/storing pvar data
+- General Editor Improvements
+	- Transform tool, etc
+	- GUI for editing asset files
+		- Should make use of the asset schema
+- Audio Packing/Unpacking
+	- VAG files
+	- 989snd sound banks
+		- Samples
+		- IOP-side scripting with grains
+		- Version used in R&C doesn't seem to support MIDI (good?)
+- GUI/HUD System
+	- Widget 3D file
+	- HUD banks
+- Asset system improvements
+	- Incremental build support
+	- Support for storing the asset graph to disk and only reparsing asset files that have been modified
+		- All *Asset objects stored in a single buffer
+		- Relative pointers
+		- Don't worry about ABI issues, the files don't need to be portable
+		- Security? Validate the input, or use a machine ID + checksum?
+	- Multithreading?
+- Sky Packing
+	- Automatically split up a mesh into separate clusters
+- Texture Packing
+	- Automatic conversion to paletted colour
+	- Merge palettes together (like the original game does)
+- Memory map
+	- Determine memory map during build
+		- Error out if the files are too big to work
