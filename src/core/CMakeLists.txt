@@ -1,0 +1,27 @@
+add_library(wrenchcore STATIC
+	buffer.cpp
+	instance.cpp
+	level.cpp
+	util/basic_util.cpp
+	util/error_util.cpp
+	mesh.cpp
+	collada.cpp
+	timer.cpp
+	png.cpp
+	texture.cpp
+	vif.cpp
+	filesystem.cpp
+	stream.cpp
+	memory_profiler.cpp
+	shell.cpp
+	build_config.cpp
+	mesh_graph.cpp
+	tristrip.cpp
+	material.cpp
+	tristrip_packet.cpp
+	elf.cpp
+	memory_card.cpp
+	${CMAKE_SOURCE_DIR}/thirdparty/md5.cpp
+)
+target_link_libraries(wrenchcore wrenchwtf)
+target_link_libraries(wrenchcore Threads::Threads png_static zlibstatic)
