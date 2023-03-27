@@ -8,7 +8,12 @@ if(ZIP_RELEASE)
 		set(RELEASE_VERSION ${GIT_TAG})
 	endif()
 	if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-		set(RELEASE_OS "linux")
+		execute_process(
+			COMMAND bash -c "ldd --version | sed -n 's/ldd (Ubuntu GLIBC //p' | sed 's/).*//'"
+			OUTPUT_VARIABLE GLIBC_VERSION_STRING
+			OUTPUT_STRIP_TRAILING_WHITESPACE
+		)
+		set(RELEASE_OS "linux-glibc${GLIBC_VERSION_STRING}")
 	elseif(APPLE)
 		set(RELEASE_OS "mac")
 	elseif(WIN32)
