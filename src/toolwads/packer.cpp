@@ -274,6 +274,7 @@ static SectorRange pack_compressed_image(OutputStream& dest, const char* src_pat
 }
 
 static ByteRange pack_image(OutputStream& dest, const char* src_path) {
+	return {0, 0};
 	s32 offset = (s32) dest.tell();
 	
 	FileInputStream src;
