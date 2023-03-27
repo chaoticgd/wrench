@@ -36,7 +36,7 @@ jobs:
       uses: ncipollo/release-action@a2e71bdd4e7dab70ca26a852f29600c98b33153e
       with:
         name: ${{ github.ref }}
-        tag: ${{ github.ref }}
+        tag: 'unstable'
         artifacts: build/wrench_*.zip
         allowUpdates: true
         draft: false
