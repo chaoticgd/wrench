@@ -1,10 +1,9 @@
-name: Test
+name: Release
 
 on:
   push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
+    tag:
+      - 'v*'
 
 env:
   BUILD_TYPE: Release
@@ -33,3 +32,19 @@ jobs:
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    - name: Release
+      uses: ncipollo/release-action@a2e71bdd4e7dab70ca26a852f29600c98b33153e
+      with:
+        name: ${{ github.ref }}
+        tag: ${{ github.ref }}
+        artifacts: build/wrench_*.zip
+        allowUpdates: false
+        draft: true
+        omitBodyDuringUpdate: false
+        omitDraftDuringUpdate: false
+        omitNameDuringUpdate: false
+        omitPrereleaseDuringUpdate: false
+        prerelease: true
+        replacesArtifacts: false
+        skipIfReleaseExists: true
