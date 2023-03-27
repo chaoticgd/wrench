@@ -113,7 +113,7 @@ A raw binary file. Used for assets that wrench cannot unpack.
 
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
-| src | The file path of the binary file, relative to the .asset file. | FilePath | No | RC/GC/UYA/DL |
+| src | The file path of the binary file, relative to the .asset file. | FilePath | No | RAC/GC/UYA/DL |
 
 *Children*
 
@@ -141,20 +141,20 @@ A build of the game.
 
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
-| game | The game being built. Possible values: "rac", "gc", "uya", "dl". | String | Yes | RC/GC/UYA/DL |
-| region | The region. Possible values: "us", "eu", "japan". | String | Yes | RC/GC/UYA/DL |
-| version | The version number, as specified in the SYSTEM.CNF file. | String | Yes | RC/GC/UYA/DL |
-| ps2_logo_key | The key used to "encrypt" the PS2 logo. | Integer | No | RC/GC/UYA/DL |
+| game | The game being built. Possible values: "rac", "gc", "uya", "dl". | String | Yes | RAC/GC/UYA/DL |
+| region | The region. Possible values: "us", "eu", "japan". | String | Yes | RAC/GC/UYA/DL |
+| version | The version number, as specified in the SYSTEM.CNF file. | String | Yes | RAC/GC/UYA/DL |
+| ps2_logo_key | The key used to "encrypt" the PS2 logo. | Integer | No | RAC/GC/UYA/DL |
 
 *Children*
 
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
-| ps2_logo_ntsc | The NTSC PS2 logo stored on the first 12 sectors of the disc. | Texture | No | RC/GC/UYA/DL |
-| ps2_logo_pal | The PAL PS2 logo stored on the first 12 sectors of the disc. | Texture | No | RC/GC/UYA/DL |
-| primary_volume_descriptor | *Not yet documented.* | PrimaryVolumeDescriptor | Yes | RC/GC/UYA/DL |
-| boot_elf | The boot ELF, as specified in the SYSTEM.CNF file. | ElfFile, File | Yes | RC/GC/UYA/DL |
-| global | *Not yet documented.* | GlobalWad, FlatWad, Binary | Yes | RC |
+| ps2_logo_ntsc | The NTSC PS2 logo stored on the first 12 sectors of the disc. | Texture | No | RAC/GC/UYA/DL |
+| ps2_logo_pal | The PAL PS2 logo stored on the first 12 sectors of the disc. | Texture | No | RAC/GC/UYA/DL |
+| primary_volume_descriptor | *Not yet documented.* | PrimaryVolumeDescriptor | Yes | RAC/GC/UYA/DL |
+| boot_elf | The boot ELF, as specified in the SYSTEM.CNF file. | ElfFile, File | Yes | RAC/GC/UYA/DL |
+| global | *Not yet documented.* | GlobalWad, FlatWad, Binary | Yes | RAC |
 | armor | *Not yet documented.* | ArmorWad, FlatWad, Binary | Yes | GC/UYA/DL |
 | audio | *Not yet documented.* | AudioWad, FlatWad, Binary | Yes | GC/UYA/DL |
 | bonus | *Not yet documented.* | BonusWad, FlatWad, Binary | Yes | GC/UYA/DL |
@@ -165,8 +165,8 @@ A build of the game.
 | online | *Not yet documented.* | OnlineWad, FlatWad, Binary | Yes | DL |
 | scene | *Not yet documented.* | SceneWad, FlatWad, Binary | Yes | GC |
 | space | *Not yet documented.* | SpaceWad, FlatWad, Binary | Yes | GC/UYA/DL |
-| levels | The list of levels to include in the build. | Collection | Yes | RC/GC/UYA/DL |
-| files | Additional files to include in the build. | Collection | Yes | RC/GC/UYA/DL |
+| levels | The list of levels to include in the build. | Collection | Yes | RAC/GC/UYA/DL |
+| files | Additional files to include in the build. | Collection | Yes | RAC/GC/UYA/DL |
 | moby_classes | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
 | tie_classes | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
 | shrub_classes | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
@@ -232,8 +232,8 @@ File cnf_icon_en_sys {
 
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
-| name | The name of the node to use. This is the same as the Blender node name. | String | Yes | RC/GC/UYA/DL |
-| src | The file path of the model file to use. | FilePath | Yes | RC/GC/UYA/DL |
+| name | The name of the node to use. This is the same as the Blender node name. | String | Yes | RAC/GC/UYA/DL |
+| src | The file path of the model file to use. | FilePath | Yes | RAC/GC/UYA/DL |
 
 *Children*
 
@@ -341,20 +341,20 @@ FlatWad online {
 
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
-| start_time | The time, in seconds, since the beginning of the cutscene, when the subtitle should appear. | Float | Yes | RC/GC/UYA/DL |
-| stop_time | The time, in seconds, since the beginning of the cutscene, when the subtitle should disappear. | Float | Yes | RC/GC/UYA/DL |
-| text_e | The English subtitle text. | String | No | RC/GC/UYA/DL |
-| text_f | The French subtitle text. | String | No | RC/GC/UYA/DL |
-| text_g | The German subtitle text. | String | No | RC/GC/UYA/DL |
-| text_s | The Spanish subtitle text. | String | No | RC/GC/UYA/DL |
-| text_i | The Italian subtitle text. | String | No | RC/GC/UYA/DL |
+| start_time | The time, in seconds, since the beginning of the cutscene, when the subtitle should appear. | Float | Yes | RAC/GC/UYA/DL |
+| stop_time | The time, in seconds, since the beginning of the cutscene, when the subtitle should disappear. | Float | Yes | RAC/GC/UYA/DL |
+| text_e | The English subtitle text. | String | No | RAC/GC/UYA/DL |
+| text_f | The French subtitle text. | String | No | RAC/GC/UYA/DL |
+| text_g | The German subtitle text. | String | No | RAC/GC/UYA/DL |
+| text_s | The Spanish subtitle text. | String | No | RAC/GC/UYA/DL |
+| text_i | The Italian subtitle text. | String | No | RAC/GC/UYA/DL |
 | text_j | The Japanese subtitle text. | String | No | UYA/DL |
 | text_k | The Korean subtitle text. | String | No | UYA/DL |
-| encoding_e | "raw" means the text is in the format accepted by the game, "utf8" means the text is in UTF-8 (which is not yet supported). | String | No | RC/GC/UYA/DL |
-| encoding_f | See encoding_e. | String | No | RC/GC/UYA/DL |
-| encoding_g | See encoding_e. | String | No | RC/GC/UYA/DL |
-| encoding_s | See encoding_e. | String | No | RC/GC/UYA/DL |
-| encoding_i | See encoding_e. | String | No | RC/GC/UYA/DL |
+| encoding_e | "raw" means the text is in the format accepted by the game, "utf8" means the text is in UTF-8 (which is not yet supported). | String | No | RAC/GC/UYA/DL |
+| encoding_f | See encoding_e. | String | No | RAC/GC/UYA/DL |
+| encoding_g | See encoding_e. | String | No | RAC/GC/UYA/DL |
+| encoding_s | See encoding_e. | String | No | RAC/GC/UYA/DL |
+| encoding_i | See encoding_e. | String | No | RAC/GC/UYA/DL |
 | encoding_j | See encoding_e. | String | No | UYA/DL |
 | encoding_k | See encoding_e. | String | No | UYA/DL |
 
@@ -370,8 +370,8 @@ An ELF executable file. Currently used for the frontend and level code.
 
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
-| name | The name of ELF file on the filesystem of the built ISO (if relevant). | String | No | RC/GC/UYA/DL |
-| src | The path of the ELF file, relative to the .asset file. | FilePath | Yes | RC/GC/UYA/DL |
+| name | The name of ELF file on the filesystem of the built ISO (if relevant). | String | No | RAC/GC/UYA/DL |
+| src | The path of the ELF file, relative to the .asset file. | FilePath | Yes | RAC/GC/UYA/DL |
 
 *Children*
 
@@ -536,7 +536,7 @@ No attributes.
 | paintings | *Not yet documented.* | Texture\[\] | Yes | GC |
 | credits_text | The text used in the credits sequence. | Binary\[\] | Yes | GC/UYA/DL |
 | credits_images | The background images used in the credits sequence, each 512 by 416. | Texture\[\] | Yes | GC/UYA/DL |
-| credits_images_pal | The background images used in the PAL R&C1 credits sequence, each 512 by 448. | Texture\[\] | Yes | RC |
+| credits_images_pal | The background images used in the PAL R&C1 credits sequence, each 512 by 448. | Texture\[\] | Yes | RAC |
 | demo_menu | *Not yet documented.* | Texture\[\]\[\] | Yes | UYA/DL |
 | demo_exit | *Not yet documented.* | Texture\[\]\[\] | Yes | UYA/DL |
 | cheat_images | The images used on the cheats screen. | Texture\[\] | Yes | UYA/DL |
@@ -720,8 +720,8 @@ No attributes.
 
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
-| video_ntsc | The NTSC version of the video file. 512x416, 29.97 FPS. | Binary | No | RC/GC/UYA/DL |
-| video_pal | The PAL version of the video file. 512x416, 25 FPS. | Binary | No | RC/GC/UYA/DL |
+| video_ntsc | The NTSC version of the video file. 512x416, 29.97 FPS. | Binary | No | RAC/GC/UYA/DL |
+| video_pal | The PAL version of the video file. 512x416, 25 FPS. | Binary | No | RAC/GC/UYA/DL |
 | subtitles | The subtitles. | Subtitle\[\], Binary | No | GC/UYA/DL |
 
 
@@ -787,9 +787,9 @@ No attributes.
 
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
-| name | A human-friendly string that identifies the level e.g. "Pokitaru". | String | No | RC/GC/UYA/DL |
-| category | A human-friendly string that identifies the type of the level e.g. "Multiplayer". | String | No | RC/GC/UYA/DL |
-| index | The index of the level in the level table. Note that this is different to the id attribute of the associated LevelWad asset. | Integer | Yes | RC/GC/UYA/DL |
+| name | A human-friendly string that identifies the level e.g. "Pokitaru". | String | No | RAC/GC/UYA/DL |
+| category | A human-friendly string that identifies the type of the level e.g. "Multiplayer". | String | No | RAC/GC/UYA/DL |
+| index | The index of the level in the level table. Note that this is different to the id attribute of the associated LevelWad asset. | Integer | Yes | RAC/GC/UYA/DL |
 
 *Children*
 
@@ -806,28 +806,28 @@ No attributes.
 
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
-| id | The ID number of the level, referenced frequently at runtime. Note that this is different to the index attribute of the associated Level asset. | Integer | Yes | RC/GC/UYA/DL |
+| id | The ID number of the level, referenced frequently at runtime. Note that this is different to the index attribute of the associated Level asset. | Integer | Yes | RAC/GC/UYA/DL |
 | reverb | *Not yet documented.* | Integer | Yes | GC/UYA/DL |
 
 *Children*
 
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
-| sound_bank | The main 989snd sound bank for the level. | Binary | Yes | RC/GC/UYA/DL |
-| gameplay | The gameplay file for the level. | Binary | Yes | RC/GC/UYA/DL |
+| sound_bank | The main 989snd sound bank for the level. | Binary | Yes | RAC/GC/UYA/DL |
+| gameplay | The gameplay file for the level. | Binary | Yes | RAC/GC/UYA/DL |
 | art_instances | Similar thing as with the gameplay file. | Binary | Yes | DL |
 | chunks | *Not yet documented.* | Collection | No | GC/UYA/DL |
 | missions | *Not yet documented.* | Collection | *Not yet documented.* | DL |
 | moby8355_pvars | *Not yet documented.* | Binary | Yes | DL |
-| code | The level code. Contains the main loop, level loading code, moby update functions, and a lot more. | ElfFile, Binary | Yes | RC/GC/UYA/DL |
+| code | The level code. Contains the main loop, level loading code, moby update functions, and a lot more. | ElfFile, Binary | Yes | RAC/GC/UYA/DL |
 | hud_header | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
 | hud_banks | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
 | transition_textures | Textures that are shown during a transition to the given level. | Texture\[\], Binary | No | GC/UYA |
 | global_nav_data | *Not yet documented.* | Binary | Yes | DL |
-| tfrags | The main world-space level mesh. | Tfrags | Yes | RC/GC/UYA/DL |
+| tfrags | The main world-space level mesh. | Tfrags | Yes | RAC/GC/UYA/DL |
 | occlusion | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
-| sky | The sky. | Sky, Binary | Yes | RC/GC/UYA/DL |
-| collision | The world space collision mesh. | Collision, Binary | Yes | RC/GC/UYA/DL |
+| sky | The sky. | Sky, Binary | Yes | RAC/GC/UYA/DL |
+| collision | The world space collision mesh. | Collision, Binary | Yes | RAC/GC/UYA/DL |
 | moby_classes | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
 | tie_classes | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
 | shrub_classes | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
@@ -835,7 +835,7 @@ No attributes.
 | fx_textures | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
 | sound_remap | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
 | moby_sound_remap | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
-| ratchet_seqs | *Not yet documented.* | Collection | *Not yet documented.* | RC/GC/UYA |
+| ratchet_seqs | *Not yet documented.* | Collection | *Not yet documented.* | RAC/GC/UYA |
 | light_cuboids | *Not yet documented.* | Collection | *Not yet documented.* | DL |
 | gadgets | *Not yet documented.* | MobyClass\[\] | *Not yet documented.* | *Not yet documented.* |
 
@@ -882,7 +882,7 @@ No attributes.
 
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
-| bin_data | *Not yet documented.* | Collection | *Not yet documented.* | RC/GC/UYA/DL |
+| bin_data | *Not yet documented.* | Collection | *Not yet documented.* | RAC/GC/UYA/DL |
 | upgrade_sample | *Not yet documented.* | Binary | *Not yet documented.* | GC/UYA/DL |
 | thermanator_freeze | *Not yet documented.* | Binary | *Not yet documented.* | GC |
 | thermanator_thaw | *Not yet documented.* | Binary | *Not yet documented.* | GC |
@@ -936,9 +936,9 @@ No attributes.
 
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
-| name | A human-friendly string that identifies the class e.g. "Gold Bolt". | String | No | RC/GC/UYA/DL |
-| category | A human-friendly string that identifies the type of the class e.g. "Gameplay". | String | No | RC/GC/UYA/DL |
-| id | The integer used to reference this moby class at runtime. | Integer | Yes | RC/GC/UYA/DL |
+| name | A human-friendly string that identifies the class e.g. "Gold Bolt". | String | No | RAC/GC/UYA/DL |
+| category | A human-friendly string that identifies the type of the class e.g. "Gameplay". | String | No | RAC/GC/UYA/DL |
+| id | The integer used to reference this moby class at runtime. | Integer | Yes | RAC/GC/UYA/DL |
 | has_moby_table_entry | *Not yet documented.* | Boolean | *Not yet documented.* | *Not yet documented.*  |
 | stash_textures | Whether or not the textures for this class should be permanently resident in GS memory. This is typically used for items attached to Ratchet such as the heli-pack and helmet. | Boolean | No | GC/UYA/DL |
 
@@ -947,8 +947,8 @@ No attributes.
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
 | core | *Not yet documented.* | MobyClassCore, Binary | *Not yet documented.* | *Not yet documented.* |
-| materials | The materials used by this class. | Material\[\], Texture\[\] | Yes | RC/GC/UYA/DL |
-| editor_mesh | The mesh shown in the editor. This is currently used as a hack since we haven't got the moby exporter working, but in the future it could be used for invisible mobies. | Mesh | No | RC/GC/UYA/DL |
+| materials | The materials used by this class. | Material\[\], Texture\[\] | Yes | RAC/GC/UYA/DL |
+| editor_mesh | The mesh shown in the editor. This is currently used as a hack since we haven't got the moby exporter working, but in the future it could be used for invisible mobies. | Mesh | No | RAC/GC/UYA/DL |
 
 
 *Hints*
@@ -981,17 +981,17 @@ No attributes.
 
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
-| name | A human-friendly string that identifies the class e.g. "Snowy Mountain". | String | No | RC/GC/UYA/DL |
-| category | A human-friendly string that identifies the type of the class e.g. "Mountains". | String | No | RC/GC/UYA/DL |
-| id | The integer used to reference this tie class at runtime. | Integer | Yes | RC/GC/UYA/DL |
+| name | A human-friendly string that identifies the class e.g. "Snowy Mountain". | String | No | RAC/GC/UYA/DL |
+| category | A human-friendly string that identifies the type of the class e.g. "Mountains". | String | No | RAC/GC/UYA/DL |
+| id | The integer used to reference this tie class at runtime. | Integer | Yes | RAC/GC/UYA/DL |
 
 *Children*
 
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
 | core | *Not yet documented.* | TieClassCore, Binary | *Not yet documented.* | *Not yet documented.* |
-| editor_mesh | The mesh shown in the editor. We're using this as a hack since we haven't got the tie exporter working. | Mesh | No | RC/GC/UYA/DL |
-| materials | The materials used by this class. | Material\[\] | Yes | RC/GC/UYA/DL |
+| editor_mesh | The mesh shown in the editor. We're using this as a hack since we haven't got the tie exporter working. | Mesh | No | RAC/GC/UYA/DL |
+| materials | The materials used by this class. | Material\[\] | Yes | RAC/GC/UYA/DL |
 
 
 ### TieClassCore
@@ -1013,17 +1013,17 @@ No attributes.
 
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
-| name | A human-friendly string that identifies the class e.g. "Yellow Flower". | String | No | RC/GC/UYA/DL |
-| category | A human-friendly string that identifies the type of the class e.g. "Flowers". | String | No | RC/GC/UYA/DL |
-| id | The integer used to reference this shrub class at runtime. | Integer | Yes | RC/GC/UYA/DL |
+| name | A human-friendly string that identifies the class e.g. "Yellow Flower". | String | No | RAC/GC/UYA/DL |
+| category | A human-friendly string that identifies the type of the class e.g. "Flowers". | String | No | RAC/GC/UYA/DL |
+| id | The integer used to reference this shrub class at runtime. | Integer | Yes | RAC/GC/UYA/DL |
 
 *Children*
 
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
 | core | *Not yet documented.* | ShrubClassCore, Binary | *Not yet documented.* | *Not yet documented.* |
-| billboard | Cheap billboard, to be drawn when the camera is far away. | ShrubBillboard | No | RC/GC/UYA/DL |
-| materials | The materials used by this class. | Material\[\] | Yes | RC/GC/UYA/DL |
+| billboard | Cheap billboard, to be drawn when the camera is far away. | ShrubBillboard | No | RAC/GC/UYA/DL |
+| materials | The materials used by this class. | Material\[\] | Yes | RAC/GC/UYA/DL |
 
 
 ### ShrubClassCore
@@ -1032,7 +1032,7 @@ No attributes.
 
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
-| mip_distance | *Not yet documented.* | Float | Yes | RC/GC/UYA/DL |
+| mip_distance | *Not yet documented.* | Float | Yes | RAC/GC/UYA/DL |
 
 *Children*
 
@@ -1047,16 +1047,16 @@ No attributes.
 
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
-| fade_distance | The distance from the camera in which the shrub turns transparent and disappears. | Float | Yes | RC/GC/UYA/DL |
-| width | The width of the billboard. | Float | Yes | RC/GC/UYA/DL |
-| height | The height of the billboard. | Float | Yes | RC/GC/UYA/DL |
-| z_offset | ... | Float | Yes | RC/GC/UYA/DL |
+| fade_distance | The distance from the camera in which the shrub turns transparent and disappears. | Float | Yes | RAC/GC/UYA/DL |
+| width | The width of the billboard. | Float | Yes | RAC/GC/UYA/DL |
+| height | The height of the billboard. | Float | Yes | RAC/GC/UYA/DL |
+| z_offset | ... | Float | Yes | RAC/GC/UYA/DL |
 
 *Children*
 
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
-| texture | The texture to show on the billboard. | Texture | Yes | RC/GC/UYA/DL |
+| texture | The texture to show on the billboard. | Texture | Yes | RAC/GC/UYA/DL |
 
 
 ### Tfrags
@@ -1070,8 +1070,8 @@ No attributes.
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
 | core | *Not yet documented.* | TfragsCore, Binary | *Not yet documented.* | *Not yet documented.* |
-| editor_mesh | The mesh shown in the editor. We're using this as a hack since we haven't got the tfrag exporter working. | Mesh | No | RC/GC/UYA/DL |
-| materials | The materials used by the tfrags. | Material\[\] | Yes | RC/GC/UYA/DL |
+| editor_mesh | The mesh shown in the editor. We're using this as a hack since we haven't got the tfrag exporter working. | Mesh | No | RAC/GC/UYA/DL |
+| materials | The materials used by the tfrags. | Material\[\] | Yes | RAC/GC/UYA/DL |
 
 
 ### TfragsCore
@@ -1090,8 +1090,8 @@ No children.
 
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
-| name | The name of the material being referenced. | String | Yes | RC/GC/UYA/DL |
-| wrap_mode | The UV wrapping mode, stored as an array of two strings. Possible values are ["repeat", "repeat"] (the default), ["repeat", "clamp"], ["clamp", "repeat"] and ["clamp", "clamp"]. | Array | No | RC/GC/UYA/DL |
+| name | The name of the material being referenced. | String | Yes | RAC/GC/UYA/DL |
+| wrap_mode | The UV wrapping mode, stored as an array of two strings. Possible values are ["repeat", "repeat"] (the default), ["repeat", "clamp"], ["clamp", "repeat"] and ["clamp", "clamp"]. | Array | No | RAC/GC/UYA/DL |
 | glass | Only for mobies. Make the material shiny, like glass? | Boolean | *Not yet documented.* | *Not yet documented.*  |
 | chrome | Only for mobies. Make the material shiny, like chrome? | Boolean | *Not yet documented.* | *Not yet documented.*  |
 
@@ -1099,7 +1099,7 @@ No children.
 
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
-| diffuse | The diffuse map (main texture). | Texture | Yes | RC/GC/UYA/DL |
+| diffuse | The diffuse map (main texture). | Texture | Yes | RAC/GC/UYA/DL |
 
 
 ### Collision
@@ -1114,8 +1114,8 @@ No attributes.
 
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
-| mesh | The collision mesh itself. | Mesh | Yes | RC/GC/UYA/DL |
-| materials | A mapping of the materials used by the mesh to collision ID numbers. | *Not yet documented.* | Yes | RC/GC/UYA/DL |
+| mesh | The collision mesh itself. | Mesh | Yes | RAC/GC/UYA/DL |
+| materials | A mapping of the materials used by the mesh to collision ID numbers. | *Not yet documented.* | Yes | RAC/GC/UYA/DL |
 
 
 ### CollisionMaterial
@@ -1124,8 +1124,8 @@ No attributes.
 
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
-| name | The name of the material being referenced. | String | Yes | RC/GC/UYA/DL |
-| id | The collision ID to use for this material. This controls the type of the surface. | Integer | Yes | RC/GC/UYA/DL |
+| name | The name of the material being referenced. | String | Yes | RAC/GC/UYA/DL |
+| id | The collision ID to use for this material. This controls the type of the surface. | Integer | Yes | RAC/GC/UYA/DL |
 
 *Children*
 
@@ -1137,17 +1137,17 @@ No children.
 
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
-| colour | *Not yet documented.* | Colour | No | RC/GC/UYA |
-| clear_screen | *Not yet documented.* | Boolean | No | RC/GC/UYA/DL |
-| maximum_sprite_count | Controls how much memory to allocate for sprites. | Integer | No | RC/GC/UYA/DL |
+| colour | *Not yet documented.* | Colour | No | RAC/GC/UYA |
+| clear_screen | *Not yet documented.* | Boolean | No | RAC/GC/UYA/DL |
+| maximum_sprite_count | Controls how much memory to allocate for sprites. | Integer | No | RAC/GC/UYA/DL |
 
 *Children*
 
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
-| shells | The different meshes/layers that make up the sky. | SkyShell\[\] | Yes | RC/GC/UYA/DL |
-| materials | The materials used by the sky shell meshes. | Material\[\], Texture\[\] | Yes | RC/GC/UYA/DL |
-| fx | The FX textures. | Texture\[\] | Yes | RC/GC/UYA/DL |
+| shells | The different meshes/layers that make up the sky. | SkyShell\[\] | Yes | RAC/GC/UYA/DL |
+| materials | The materials used by the sky shell meshes. | Material\[\], Texture\[\] | Yes | RAC/GC/UYA/DL |
+| fx | The FX textures. | Texture\[\] | Yes | RAC/GC/UYA/DL |
 
 
 ### SkyShell
@@ -1156,14 +1156,14 @@ No children.
 
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
-| textured | If the mesh is textured or not. | Boolean | Yes | RC/GC/UYA/DL |
+| textured | If the mesh is textured or not. | Boolean | Yes | RAC/GC/UYA/DL |
 | bloom | Only works for textured shells. | Boolean | No | UYA/DL |
-| starting_rotation | The starting rotation. Each component is in radians. | Vector3 | No | RC/GC/UYA/DL |
-| angular_velocity | The change in rotation. Each component is in radians per second. | Vector3 | No | RC/GC/UYA/DL |
+| starting_rotation | The starting rotation. Each component is in radians. | Vector3 | No | RAC/GC/UYA/DL |
+| angular_velocity | The change in rotation. Each component is in radians per second. | Vector3 | No | RAC/GC/UYA/DL |
 
 *Children*
 
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
-| mesh | The mesh. If a Collection asset is used, each child of that asset specifies a different cluster. In the future, it may be possible to specify a single mesh and have it be automatically split up into clusters. | Mesh\[\] | Yes | RC/GC/UYA/DL |
+| mesh | The mesh. If a Collection asset is used, each child of that asset specifies a different cluster. In the future, it may be possible to specify a single mesh and have it be automatically split up into clusters. | Mesh\[\] | Yes | RAC/GC/UYA/DL |
 

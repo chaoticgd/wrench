@@ -206,7 +206,7 @@ static void write_attribute_table(const WtfNode* asset_type) {
 			for(const WtfAttribute* elem = games->first_array_element; elem != nullptr; elem = elem->next) {
 				if(elem->type == WTF_NUMBER) {
 					switch(elem->number.i) {
-						case 1: games_str += "RC"; break;
+						case 1: games_str += "RAC"; break;
 						case 2: games_str += "GC"; break;
 						case 3: games_str += "UYA"; break;
 						case 4: games_str += "DL"; break;
@@ -265,7 +265,7 @@ static void write_child_table(const WtfNode* asset_type) {
 				for(const WtfAttribute* elem = games->first_array_element; elem != nullptr; elem = elem->next) {
 					if(elem->type == WTF_NUMBER) {
 						switch(elem->number.i) {
-							case 1: games_str += "RC"; break;
+							case 1: games_str += "RAC"; break;
 							case 2: games_str += "GC"; break;
 							case 3: games_str += "UYA"; break;
 							case 4: games_str += "DL"; break;
