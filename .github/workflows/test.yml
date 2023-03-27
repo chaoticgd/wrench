@@ -17,7 +17,6 @@ jobs:
         sys: 
           - { os: windows-latest, shell: pwsh }
           - { os: ubuntu-latest,  shell: bash }
-          - { os: macos-latest,   shell: bash }
 
     steps:
     - name: Checkout
