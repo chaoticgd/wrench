@@ -42,12 +42,23 @@ int main(int argc, char** argv) {
 		exit(1);
 	}
 	build_dir = argv[1];
+	printf("Packing build wad...\n");
+	fflush(stdout);
 	pack_build_wad();
+	printf("Packing gui wad...\n");
+	fflush(stdout);
 	pack_gui_wad();
+	printf("Packing launcher wad...\n");
+	fflush(stdout);
 	pack_launcher_wad();
+	printf("Packing editor wad...\n");
+	fflush(stdout);
 	pack_editor_wad();
 	return 0;
 }
+
+extern const char* git_commit;
+extern const char* git_tag;
 
 static void pack_build_wad() {
 	FileOutputStream wad;
@@ -61,13 +72,9 @@ static void pack_build_wad() {
 	header.version_major = -1;
 	header.version_minor = -1;
 	
-	std::vector<u8> tag_str = read_file(build_dir + "/git_tag.tmp");
-	tag_str.push_back(0);
-	const char* tag = (const char*) tag_str.data();
-	
 	// Parse the version number from the git tag.
-	if(tag[0] == 'v') {
-		const char* major_pos = tag + 1;
+	if(git_tag && git_tag[0] == 'v') {
+		const char* major_pos = git_tag + 1;
 		header.version_major = parse_positive_embedded_int(major_pos);
 		
 		const char* minor_pos = major_pos;
@@ -80,13 +87,9 @@ static void pack_build_wad() {
 		}
 	}
 	
-	std::vector<u8> commit_str = read_file(build_dir + "/git_commit.tmp");
-	commit_str.push_back(0);
-	const char* commit = (const char*) commit_str.data();
-	
 	// Parse the git commit hash.
-	for(size_t i = 0; i < std::min(strlen(commit), sizeof(header.commit) * 2); i++) {
-		u8 nibble = (u8) commit[i];
+	for(size_t i = 0; git_commit && i < std::min(strlen(git_commit), sizeof(header.commit) * 2); i++) {
+		u8 nibble = (u8) git_commit[i];
 		if(nibble >= '0' && nibble <= '9') {
 			nibble -= '0';
 		} else if(nibble >= 'a' && nibble <= 'f') {

@@ -350,7 +350,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, Game
 			
 			// Mount the underlay, which contains metadata to be used to name
 			// files and directories while unpacking.
-			forest.mount<ZippedAssetBank>(underlay_path);
+			forest.mount<LooseAssetBank>(underlay_path, false);
 			
 			AssetBank& bank = forest.mount<LooseAssetBank>(new_output_path, true);
 			bank.game_info.type = g_asset_unpacker.dump_binaries ? AssetBankType::TEST : AssetBankType::GAME;
@@ -390,7 +390,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, Game
 		if(type != WadType::UNKNOWN) {
 			// Mount the underlay, which contains metadata to be used to name
 			// files and directories while unpacking.
-			forest.mount<ZippedAssetBank>(underlay_path);
+			forest.mount<LooseAssetBank>(underlay_path, false);
 			
 			AssetBank& bank = forest.mount<LooseAssetBank>(output_path, true);
 			bank.game_info.type = g_asset_unpacker.dump_binaries ? AssetBankType::TEST : AssetBankType::GAME;
@@ -442,7 +442,7 @@ static void pack(const std::vector<fs::path>& input_paths, const std::string& as
 	
 	// Load the underlay, and mark all underlay assets as weakly deleted so they
 	// don't show up if the asset isn't actually present.
-	forest.mount<ZippedAssetBank>(underlay_path);
+	forest.mount<LooseAssetBank>(underlay_path, false);
 	forest.any_root()->for_each_logical_descendant([&](Asset& asset) {
 		// If the asset has strongly_deleted set to false, interpret that to
 		// mean the asset should shouldn't be weakly deleted.
