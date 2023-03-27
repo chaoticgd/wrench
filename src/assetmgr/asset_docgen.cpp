@@ -143,7 +143,26 @@ static void write_contents(const WtfNode* root) {
 
 static void write_attribute_table(const WtfNode* asset_type) {
 	out("\n");
-	out("*Attributes*\n");
+	out("*Attributes*\n\n");
+	
+	bool has_attributes = false;
+	for(const WtfNode* child = asset_type->first_child; child != nullptr; child = child->next_sibling) {
+		const WtfAttribute* attrib_hidden = wtf_attribute(child, "hidden");
+		if(attrib_hidden && attrib_hidden->type == WTF_BOOLEAN && attrib_hidden->boolean) {
+			continue;
+		}
+		char* end_of_name = strchr(child->type_name, 'A');
+		if(!end_of_name || strcmp(end_of_name, "Attribute") != 0) {
+			continue;
+		}
+		has_attributes = true;
+		break;
+	}
+	
+	if(!has_attributes) {
+		out("No attributes.\n");
+		return;
+	}
 	
 	out("| Name | Description | Type | Required | Games |\n");
 	out("| - | - | - | - | - |\n");
@@ -208,6 +227,19 @@ static void write_child_table(const WtfNode* asset_type) {
 	out("\n");
 	out("*Children*\n");
 	out("\n");
+	
+	bool has_children = false;
+	for(const WtfNode* child = asset_type->first_child; child != nullptr; child = child->next_sibling) {
+		if(strcmp(child->type_name, "Child") == 0) {
+			has_children = true;
+			break;
+		}
+	}
+	
+	if(!has_children) {
+		out("No children.\n");
+		return;
+	}
 	
 	out("| Name | Description | Allowed Types | Required | Games |\n");
 	out("| - | - | - | - | - |\n");

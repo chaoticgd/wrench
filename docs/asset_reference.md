@@ -66,29 +66,24 @@ This file was generated from asset_schema.wtf and is for version 19 of the asset
 A reference to an asset that can be put in place of any other asset.
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
-| asset | The asset being referenced. | AssetLink | Yes | RC/GC/UYA/DL |
+
+No attributes.
 
 *Children*
 
-| Name | Description | Allowed Types | Required | Games |
-| - | - | - | - | - |
-
+No children.
 
 ### Collection
 
 A generic container for other assets.
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
-| Name | Description | Allowed Types | Required | Games |
-| - | - | - | - | - |
-
+No children.
 
 *Hints*
 
@@ -103,29 +98,26 @@ A generic container for other assets.
 The asset type generated when a dot is used in a tag.
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
-| Name | Description | Allowed Types | Required | Games |
-| - | - | - | - | - |
-
+No children.
 
 ### Binary
 
 A raw binary file. Used for assets that wrench cannot unpack.
 
 *Attributes*
+
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
 | src | The file path of the binary file, relative to the .asset file. | FilePath | No | RC/GC/UYA/DL |
 
 *Children*
 
-| Name | Description | Allowed Types | Required | Games |
-| - | - | - | - | - |
-
+No children.
 
 *Example*
 
@@ -146,6 +138,7 @@ Binary code {
 A build of the game.
 
 *Attributes*
+
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
 | game | The game being built. Possible values: "rac", "gc", "uya", "dl". | String | Yes | RC/GC/UYA/DL |
@@ -192,6 +185,7 @@ A build of the game.
 A filesystem structure that contains metadata.
 
 *Attributes*
+
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
 | system_identifier | *Not yet documented.* | String | *Not yet documented.* | *Not yet documented.*  |
@@ -206,15 +200,14 @@ A filesystem structure that contains metadata.
 
 *Children*
 
-| Name | Description | Allowed Types | Required | Games |
-| - | - | - | - | - |
-
+No children.
 
 ### File
 
 An additional file to be included in the built ISO.
 
 *Attributes*
+
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
 | src | The path of the file, relative to the .asset file. | FilePath | *Not yet documented.* | *Not yet documented.*  |
@@ -222,9 +215,7 @@ An additional file to be included in the built ISO.
 
 *Children*
 
-| Name | Description | Allowed Types | Required | Games |
-| - | - | - | - | - |
-
+No children.
 
 *Example*
 
@@ -238,6 +229,7 @@ File cnf_icon_en_sys {
 ### Mesh
 
 *Attributes*
+
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
 | name | The name of the node to use. This is the same as the Blender node name. | String | Yes | RC/GC/UYA/DL |
@@ -245,24 +237,21 @@ File cnf_icon_en_sys {
 
 *Children*
 
-| Name | Description | Allowed Types | Required | Games |
-| - | - | - | - | - |
-
+No children.
 
 ### Texture
 
 A reference to an image file. Only PNG images are currently supported.
 
 *Attributes*
+
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
 | src | *Not yet documented.* | FilePath | *Not yet documented.* | *Not yet documented.*  |
 
 *Children*
 
-| Name | Description | Allowed Types | Required | Games |
-| - | - | - | - | - |
-
+No children.
 
 *Example*
 
@@ -285,14 +274,12 @@ Texture my_texture {
 A WAD file where each child represents a different data segment referenced by the header. The tag of each child is converted to a number which is used to determine at what position to write the sector offset and size into the header. This type is mainly used for debugging.
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
-| Name | Description | Allowed Types | Required | Games |
-| - | - | - | - | - |
-
+No children.
 
 *Example*
 
@@ -351,6 +338,7 @@ FlatWad online {
 ### Subtitle
 
 *Attributes*
+
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
 | start_time | The time, in seconds, since the beginning of the cutscene, when the subtitle should appear. | Float | Yes | RC/GC/UYA/DL |
@@ -372,15 +360,14 @@ FlatWad online {
 
 *Children*
 
-| Name | Description | Allowed Types | Required | Games |
-| - | - | - | - | - |
-
+No children.
 
 ### ElfFile
 
 An ELF executable file. Currently used for the frontend and level code.
 
 *Attributes*
+
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
 | name | The name of ELF file on the filesystem of the built ISO (if relevant). | String | No | RC/GC/UYA/DL |
@@ -388,9 +375,7 @@ An ELF executable file. Currently used for the frontend and level code.
 
 *Children*
 
-| Name | Description | Allowed Types | Required | Games |
-| - | - | - | - | - |
-
+No children.
 
 *Hints*
 
@@ -405,8 +390,8 @@ An ELF executable file. Currently used for the frontend and level code.
 Holds all of the global assets (those that are not specific to a given level) for R&C1. Not used for GC, UYA or DL.
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
@@ -472,8 +457,8 @@ Holds all of the global assets (those that are not specific to a given level) fo
 ### ArmorWad
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
@@ -491,8 +476,8 @@ Holds all of the global assets (those that are not specific to a given level) fo
 ### AudioWad
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
@@ -506,8 +491,8 @@ Holds all of the global assets (those that are not specific to a given level) fo
 ### HelpAudio
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
@@ -523,8 +508,8 @@ Holds all of the global assets (those that are not specific to a given level) fo
 ### BonusWad
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
@@ -563,20 +548,18 @@ Holds all of the global assets (those that are not specific to a given level) fo
 ### GadgetWad
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
-| Name | Description | Allowed Types | Required | Games |
-| - | - | - | - | - |
-
+No children.
 
 ### HudWad
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
@@ -623,8 +606,8 @@ Holds all of the global assets (those that are not specific to a given level) fo
 ### MiscWad
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
@@ -646,8 +629,8 @@ Holds all of the global assets (those that are not specific to a given level) fo
 A container for IOP modules.
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
@@ -686,8 +669,8 @@ A container for IOP modules.
 ### BootWad
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
@@ -709,8 +692,8 @@ A container for IOP modules.
 The file containing all of the MPEG cutscenes.
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
@@ -730,8 +713,8 @@ The file containing all of the MPEG cutscenes.
 An MPEG cutscene with subtitles.
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
@@ -747,8 +730,8 @@ An MPEG cutscene with subtitles.
 Container for assets used in the mutliplayer mode.
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
@@ -761,8 +744,8 @@ Container for assets used in the mutliplayer mode.
 ### OnlineDataWad
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
@@ -776,20 +759,18 @@ Container for assets used in the mutliplayer mode.
 ### SceneWad
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
-| Name | Description | Allowed Types | Required | Games |
-| - | - | - | - | - |
-
+No children.
 
 ### SpaceWad
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
@@ -803,6 +784,7 @@ Container for assets used in the mutliplayer mode.
 ### Level
 
 *Attributes*
+
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
 | name | A human-friendly string that identifies the level e.g. "Pokitaru". | String | No | RC/GC/UYA/DL |
@@ -821,6 +803,7 @@ Container for assets used in the mutliplayer mode.
 ### LevelWad
 
 *Attributes*
+
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
 | id | The ID number of the level, referenced frequently at runtime. Note that this is different to the index attribute of the associated Level asset. | Integer | Yes | RC/GC/UYA/DL |
@@ -860,8 +843,8 @@ Container for assets used in the mutliplayer mode.
 ### Chunk
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
@@ -877,8 +860,8 @@ Container for assets used in the mutliplayer mode.
 A Deadlocked mission.
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
@@ -892,8 +875,8 @@ A Deadlocked mission.
 ### LevelAudioWad
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
@@ -910,8 +893,8 @@ A Deadlocked mission.
 ### LevelSceneWad
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
@@ -923,8 +906,8 @@ A Deadlocked mission.
 ### Scene
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
@@ -950,6 +933,7 @@ A Deadlocked mission.
 ### MobyClass
 
 *Attributes*
+
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
 | name | A human-friendly string that identifies the class e.g. "Gold Bolt". | String | No | RC/GC/UYA/DL |
@@ -980,8 +964,8 @@ A Deadlocked mission.
 ### MobyClassCore
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
@@ -994,6 +978,7 @@ A Deadlocked mission.
 ### TieClass
 
 *Attributes*
+
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
 | name | A human-friendly string that identifies the class e.g. "Snowy Mountain". | String | No | RC/GC/UYA/DL |
@@ -1012,8 +997,8 @@ A Deadlocked mission.
 ### TieClassCore
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
@@ -1025,6 +1010,7 @@ A Deadlocked mission.
 ### ShrubClass
 
 *Attributes*
+
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
 | name | A human-friendly string that identifies the class e.g. "Yellow Flower". | String | No | RC/GC/UYA/DL |
@@ -1043,6 +1029,7 @@ A Deadlocked mission.
 ### ShrubClassCore
 
 *Attributes*
+
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
 | mip_distance | *Not yet documented.* | Float | Yes | RC/GC/UYA/DL |
@@ -1057,6 +1044,7 @@ A Deadlocked mission.
 ### ShrubBillboard
 
 *Attributes*
+
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
 | fade_distance | The distance from the camera in which the shrub turns transparent and disappears. | Float | Yes | RC/GC/UYA/DL |
@@ -1074,8 +1062,8 @@ A Deadlocked mission.
 ### Tfrags
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
@@ -1089,18 +1077,17 @@ A Deadlocked mission.
 ### TfragsCore
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
-| Name | Description | Allowed Types | Required | Games |
-| - | - | - | - | - |
-
+No children.
 
 ### Material
 
 *Attributes*
+
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
 | name | The name of the material being referenced. | String | Yes | RC/GC/UYA/DL |
@@ -1120,8 +1107,8 @@ A Deadlocked mission.
 The world space collision mesh for a level.
 
 *Attributes*
-| Name | Description | Type | Required | Games |
-| - | - | - | - | - |
+
+No attributes.
 
 *Children*
 
@@ -1134,6 +1121,7 @@ The world space collision mesh for a level.
 ### CollisionMaterial
 
 *Attributes*
+
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
 | name | The name of the material being referenced. | String | Yes | RC/GC/UYA/DL |
@@ -1141,13 +1129,12 @@ The world space collision mesh for a level.
 
 *Children*
 
-| Name | Description | Allowed Types | Required | Games |
-| - | - | - | - | - |
-
+No children.
 
 ### Sky
 
 *Attributes*
+
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
 | colour | *Not yet documented.* | Colour | No | RC/GC/UYA |
@@ -1166,6 +1153,7 @@ The world space collision mesh for a level.
 ### SkyShell
 
 *Attributes*
+
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
 | textured | If the mesh is textured or not. | Boolean | Yes | RC/GC/UYA/DL |
