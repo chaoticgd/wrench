@@ -43,12 +43,16 @@ int main(int argc, char** argv) {
 	}
 	build_dir = argv[1];
 	printf("Packing build wad...\n");
+	fflush(stdout);
 	pack_build_wad();
 	printf("Packing gui wad...\n");
+	fflush(stdout);
 	pack_gui_wad();
 	printf("Packing launcher wad...\n");
+	fflush(stdout);
 	pack_launcher_wad();
 	printf("Packing editor wad...\n");
+	fflush(stdout);
 	pack_editor_wad();
 	return 0;
 }
