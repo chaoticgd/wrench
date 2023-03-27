@@ -17,7 +17,7 @@
 */
 
 #ifndef CORE_BINARY_UTIL_H
-#define CORE_BINRAY_UTIL_H
+#define CORE_BINARY_UTIL_H
 
 #include <core/util/basic_util.h>
 #include <core/util/error_util.h>
