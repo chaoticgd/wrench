@@ -18,6 +18,7 @@ In no particular order:
 - Tie Model Packing
 	- Similar issues as with the tfrag renderer
 - Occlusion System
+	- Generate new occlusion data during a build
 	- Possibly use OpenGL in wrenchbuild to speed things up (should be faster than raycasting)
 - Gameplay Source Format
 	- Will probably be based on the Wrench Text Format
@@ -43,13 +44,15 @@ In no particular order:
 		- Don't worry about ABI issues, the files don't need to be portable
 		- Security? Validate the input, or use a machine ID + checksum?
 	- Multithreading?
+	- Replace all uses of std::filesystem::path for asset bank file paths (so the behaviour is consistent between platforms)
 - Sky Packing
 	- Automatically split up a mesh into separate clusters
 - Texture Packing
 	- Automatic conversion to paletted colour
 	- Merge palettes together (like the original game does)
+	- Generate better mipmaps
 - Memory Map
 	- Determine memory map during build
 		- Error out if the files are too big to work
 - Collsion System
-	- Recover instanced collision.
+	- Recover instanced collision
