@@ -55,7 +55,7 @@ extern const char* git_tag;
 static void pack_build_wad() {
 	FileOutputStream wad;
 	assert(wad.open(build_dir + "/build.wad"));
-	
+	return;
 	BuildWadHeader header = {};
 	header.header_size = sizeof(header);
 	wad.alloc<BuildWadHeader>();
