@@ -20,10 +20,15 @@ jobs:
           - { os: macos-latest,   shell: bash }
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout
+      uses: actions/checkout@v3
       with:
         submodules: 'recursive'
-
+    
+    - name: Install Dependencies
+      if: ${{ matrix.sys.os == 'ubuntu-latest' }}
+      run: sudo apt install xorg-dev zenity
+    
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
