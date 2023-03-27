@@ -42,9 +42,13 @@ int main(int argc, char** argv) {
 		exit(1);
 	}
 	build_dir = argv[1];
+	printf("Packing build wad...\n");
 	pack_build_wad();
+	printf("Packing gui wad...\n");
 	pack_gui_wad();
+	printf("Packing launcher wad...\n");
 	pack_launcher_wad();
+	printf("Packing editor wad...\n");
 	pack_editor_wad();
 	return 0;
 }
@@ -55,7 +59,7 @@ extern const char* git_tag;
 static void pack_build_wad() {
 	FileOutputStream wad;
 	assert(wad.open(build_dir + "/build.wad"));
-	return;
+	
 	BuildWadHeader header = {};
 	header.header_size = sizeof(header);
 	wad.alloc<BuildWadHeader>();
