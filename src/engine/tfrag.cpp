@@ -44,7 +44,7 @@ std::vector<Tfrag> read_tfrags(Buffer src) {
 		verify(lod_2.size() == 2, "Incorrect number of LOD 2 VIF unpacks! %d");
 		
 		tfrag.lod_2_indices = read_unpack<u8>(lod_2[0], VifVnVl::V4_8);
-		tfrag.lod_2_faces = read_unpack<Tface>(lod_2[1], VifVnVl::V4_8);
+		tfrag.lod_2_strips = read_unpack<TfragStrip>(lod_2[1], VifVnVl::V4_8);
 		
 		// Common
 		Buffer common_buffer = data.subbuf(header.shared_ofs, header.lod_1_ofs - header.shared_ofs);
@@ -65,7 +65,7 @@ std::vector<Tfrag> read_tfrags(Buffer src) {
 		std::vector<VifPacket> lod_1 = filter_vif_unpacks(lod_1_command_list);
 		verify(lod_1.size() == 2, "Incorrect number of LOD 1 VIF unpacks!");
 		
-		tfrag.lod_1_faces = read_unpack<Tface>(lod_1[0], VifVnVl::V4_8);
+		tfrag.lod_1_strips = read_unpack<TfragStrip>(lod_1[0], VifVnVl::V4_8);
 		tfrag.lod_1_indices = read_unpack<u8>(lod_1[1], VifVnVl::V4_8);
 		
 		// LOD 01
@@ -98,7 +98,7 @@ std::vector<Tfrag> read_tfrags(Buffer src) {
 			tfrag.lod_0_positions = read_unpack<TfragVertexPosition>(lod_0[i++], VifVnVl::V3_16);
 		}
 		verify(i < lod_0.size(), "Too few LOD 0 VIF unpacks!");
-		tfrag.lod_0_faces = read_unpack<Tface>(lod_0[i++], VifVnVl::V4_8);
+		tfrag.lod_0_strips = read_unpack<TfragStrip>(lod_0[i++], VifVnVl::V4_8);
 		verify(i < lod_0.size(), "Too few LOD 0 VIF unpacks!");
 		tfrag.lod_0_indices = read_unpack<u8>(lod_0[i++], VifVnVl::V4_8);
 		while(i < lod_0.size() && lod_0[i].code.unpack.vnvl == VifVnVl::V4_8) {
@@ -175,7 +175,7 @@ void write_tfrags(OutBuffer dest, const std::vector<Tfrag>& tfrags) {
 		dest.write<u32>(0x05000001); // stmod
 		write_unpack(dest, tfrag.lod_2_indices, VifVnVl::V4_8, VifUsn::UNSIGNED);
 		dest.write<u32>(0x05000000); // stmod
-		write_unpack(dest, tfrag.lod_2_faces, VifVnVl::V4_8, VifUsn::SIGNED);
+		write_unpack(dest, tfrag.lod_2_strips, VifVnVl::V4_8, VifUsn::SIGNED);
 		
 		dest.pad(0x10, 0);
 		s64 common_ofs = dest.tell();
@@ -199,7 +199,7 @@ void write_tfrags(OutBuffer dest, const std::vector<Tfrag>& tfrags) {
 		header.lod_1_ofs = checked_int_cast<u16>(lod_1_ofs - tfrag_ofs);
 		
 		// LOD 1
-		write_unpack(dest, tfrag.lod_1_faces, VifVnVl::V4_8, VifUsn::SIGNED);
+		write_unpack(dest, tfrag.lod_1_strips, VifVnVl::V4_8, VifUsn::SIGNED);
 		write_strow(dest, indices_strow);
 		dest.write<u32>(0x05000001); // stmod
 		write_unpack(dest, tfrag.lod_1_indices, VifVnVl::V4_8, VifUsn::UNSIGNED);
@@ -233,7 +233,7 @@ void write_tfrags(OutBuffer dest, const std::vector<Tfrag>& tfrags) {
 		}
 		dest.write<u32>(0x05000000); // stmod
 		dest.write<u32>(0x01000404); // stcycl
-		write_unpack(dest, tfrag.lod_0_faces, VifVnVl::V4_8, VifUsn::SIGNED);
+		write_unpack(dest, tfrag.lod_0_strips, VifVnVl::V4_8, VifUsn::SIGNED);
 		write_strow(dest, indices_strow);
 		dest.write<u32>(0x05000001); // stmod
 		write_unpack(dest, tfrag.lod_0_indices, VifVnVl::V4_8, VifUsn::UNSIGNED);
@@ -289,7 +289,7 @@ TfragHighestLod extract_highest_tfrag_lod(Tfrag tfrag) {
 	highest_lod.bsphere = tfrag.bsphere;
 	highest_lod.base_position = tfrag.base_position;
 	highest_lod.common_textures = tfrag.common_textures;
-	highest_lod.faces = std::move(tfrag.lod_0_faces);
+	highest_lod.faces = std::move(tfrag.lod_0_strips);
 	highest_lod.indices.insert(highest_lod.indices.end(), BEGIN_END(tfrag.lod_0_indices));
 	highest_lod.vertex_info.insert(highest_lod.vertex_info.end(), BEGIN_END(tfrag.common_vertex_info));
 	highest_lod.vertex_info.insert(highest_lod.vertex_info.end(), BEGIN_END(tfrag.lod_01_vertex_info));
@@ -349,7 +349,7 @@ ColladaScene recover_tfrags(const std::vector<TfragHighestLod>& tfrags) {
 			dest.tex_coord.t = vu_fixed12_to_float(src.t);
 		}
 		s32 index_offset = 0;
-		for(const Tface& face : tfrag.faces) {
+		for(const TfragStrip& face : tfrag.faces) {
 			s8 vertex_count = face.vertex_count_and_flag;
 			if(vertex_count <= 0) {
 				if(vertex_count == 0) {

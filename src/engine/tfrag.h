@@ -131,7 +131,7 @@ packed_struct(TfragVertexInfo,
 	/* 0x04 0x08 */ s16 vertex_data_offsets[2];
 )
 
-packed_struct(Tface,
+packed_struct(TfragStrip,
 	/* PACK UNPK */
 	/* 0x00 0x00 */ s8 vertex_count_and_flag;
 	/* 0x01 0x04 */ s8 end_of_packet_flag;
@@ -143,18 +143,18 @@ struct Tfrag {
 	Vec4f bsphere;
 	VifSTROW base_position;
 	std::vector<u8> lod_2_indices;
-	std::vector<Tface> lod_2_faces;
+	std::vector<TfragStrip> lod_2_strips;
 	TfragHeaderUnpack common_vu_header;
 	std::vector<TfragTexturePrimitive> common_textures;
 	std::vector<TfragVertexInfo> common_vertex_info;
 	std::vector<TfragVertexPosition> common_positions;
-	std::vector<Tface> lod_1_faces;
+	std::vector<TfragStrip> lod_1_strips;
 	std::vector<u8> lod_1_indices;
 	std::vector<std::vector<u8>> lod_01_unknown_indices;
 	std::vector<TfragVertexInfo> lod_01_vertex_info;
 	std::vector<TfragVertexPosition> lod_01_positions;
 	std::vector<TfragVertexPosition> lod_0_positions;
-	std::vector<Tface> lod_0_faces;
+	std::vector<TfragStrip> lod_0_strips;
 	std::vector<u8> lod_0_indices;
 	std::vector<std::vector<u8>> lod_0_unknown_indices;
 	std::vector<TfragVertexInfo> lod_0_vertex_info;
@@ -171,7 +171,7 @@ struct TfragHighestLod {
 	Vec4f bsphere;
 	VifSTROW base_position;
 	std::vector<TfragTexturePrimitive> common_textures;
-	std::vector<Tface> faces;
+	std::vector<TfragStrip> faces;
 	std::vector<u8> indices;
 	std::vector<TfragVertexInfo> vertex_info;
 	std::vector<TfragVertexPosition> positions;
