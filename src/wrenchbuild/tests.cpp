@@ -138,20 +138,14 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 	}
 }
 
-void strip_trailing_padding_from_src(std::vector<u8>& src, std::vector<u8>& dest) {
-	if(dest.size() > 0 && src.size() > dest.size() && src.size() <= dest.size() + SECTOR_SIZE) {
+void strip_trailing_padding_from_lhs(std::vector<u8>& lhs, std::vector<u8>& rhs) {
+	if(rhs.size() > 0 && lhs.size() > rhs.size() && lhs.size() <= rhs.size() + SECTOR_SIZE) {
 		bool is_padding = true;
-		for(s64 i = dest.size(); i < src.size(); i++) {
-			is_padding &= src[i] == '\0';
+		for(s64 i = rhs.size(); i < lhs.size(); i++) {
+			is_padding &= lhs[i] == '\0';
 		}
 		if(is_padding) {
-			src.resize(dest.size());
+			lhs.resize(rhs.size());
 		}
 	}
-}
-
-AssetTestFunc* generate_default_diff_test_func() {
-	return wrap_diff_test_func([](const std::vector<u8>& src, const std::vector<u8>& dest, BuildConfig config, const char* hint, AssetTestMode mode) -> bool {
-		return diff_buffers(src, dest, 0, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
-	});
 }

@@ -126,9 +126,8 @@ static void pack_shrub_class(OutputStream& dest, const ShrubClassAsset& src, Bui
 
 static bool test_shrub_class_core(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode) {
 	ShrubClass shrub = read_shrub_class(src);
-	
 	std::vector<u8> dest;
 	write_shrub_class(dest, shrub);
-	
+	strip_trailing_padding_from_lhs(src, dest);
 	return diff_buffers(src, dest, 0, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
 }

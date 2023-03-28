@@ -22,8 +22,7 @@
 #include <wrenchbuild/asset_packer.h>
 
 void run_tests(fs::path input_path, const std::string& asset_ref, const std::string& filter);
-void strip_trailing_padding_from_src(std::vector<u8>& src, std::vector<u8>& dest);
-AssetTestFunc* generate_default_diff_test_func();
+void strip_trailing_padding_from_lhs(std::vector<u8>& src, std::vector<u8>& dest);
 
 template <typename TestFunc>
 AssetTestFunc* wrap_diff_test_func(TestFunc func) {
@@ -40,7 +39,7 @@ AssetTestFunc* wrap_diff_test_func(TestFunc func) {
 		MemoryOutputStream dest_stream(dest);
 		pack_asset_impl(dest_stream, nullptr, nullptr, asset, config, hint);
 		
-		strip_trailing_padding_from_src(src, dest);
+		strip_trailing_padding_from_lhs(src, dest);
 		
 		return func(src, dest, config, hint, mode);
 	});
