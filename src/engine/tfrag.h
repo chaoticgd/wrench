@@ -167,11 +167,11 @@ struct Tfrag {
 	TfragCube cube;
 };
 
-struct TfragHighestLod {
+struct TfragLod {
 	Vec4f bsphere;
 	VifSTROW base_position;
 	std::vector<TfragTexturePrimitive> common_textures;
-	std::vector<TfragStrip> faces;
+	std::vector<TfragStrip> strips;
 	std::vector<u8> indices;
 	std::vector<TfragVertexInfo> vertex_info;
 	std::vector<TfragVertexPosition> positions;
@@ -184,7 +184,6 @@ struct TfragHighestLod {
 std::vector<Tfrag> read_tfrags(Buffer src);
 void write_tfrags(OutBuffer dest, const std::vector<Tfrag>& tfrags);
 
-TfragHighestLod extract_highest_tfrag_lod(Tfrag tfrag);
-ColladaScene recover_tfrags(const std::vector<TfragHighestLod>& tfrags);
+ColladaScene recover_tfrags(const std::vector<Tfrag>& tfrags);
 
 #endif

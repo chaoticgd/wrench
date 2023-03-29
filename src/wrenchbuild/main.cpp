@@ -514,12 +514,7 @@ static void compress(const fs::path& input_path, const fs::path& output_path) {
 static void extract_tfrags(const fs::path& input_path, const fs::path& output_path) {
 	auto bin = read_file(input_path.string().c_str());
 	std::vector<Tfrag> tfrags = read_tfrags(bin);
-	std::vector<TfragHighestLod> highest_lods;
-	highest_lods.reserve(tfrags.size());
-	for(Tfrag& tfrag : tfrags) {
-		highest_lods.emplace_back(extract_highest_tfrag_lod(std::move(tfrag)));
-	}
-	ColladaScene scene = recover_tfrags(highest_lods);
+	ColladaScene scene = recover_tfrags(tfrags);
 	auto xml = write_collada(scene);
 	write_file(output_path, xml, "w");
 }

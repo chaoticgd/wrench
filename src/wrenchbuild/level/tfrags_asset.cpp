@@ -54,12 +54,7 @@ static void unpack_tfrags(TfragsAsset& dest, InputStream& src, BuildConfig confi
 	
 	std::vector<u8> buffer = src.read_multiple<u8>(0, src.size());
 	std::vector<Tfrag> tfrags = read_tfrags(buffer);
-	std::vector<TfragHighestLod> highest_lods;
-	highest_lods.reserve(tfrags.size());
-	for(Tfrag& tfrag : tfrags) {
-		highest_lods.emplace_back(extract_highest_tfrag_lod(std::move(tfrag)));
-	}
-	ColladaScene scene = recover_tfrags(highest_lods);
+	ColladaScene scene = recover_tfrags(tfrags);
 	
 	std::vector<u8> xml = write_collada(scene);
 	auto ref = dest.file().write_text_file("mesh.dae", (char*) xml.data());
