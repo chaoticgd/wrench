@@ -78,10 +78,40 @@ static void pack_tfrags(OutputStream& dest, const TfragsAsset& src, BuildConfig 
 }
 
 static bool test_tfrags(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode) {
-	std::vector<Tfrag> tfrags = read_tfrags(src);
+	std::vector<Tfrag> tfrags_original = read_tfrags(src);
+	
+	std::vector<Tfrag> tfrags_reallocated = tfrags_original;
+	allocate_tfrags_vu(tfrags_reallocated);
+	
+	// Test that the data is being allocated in VU memory correctly. We do this
+	// sepearately so that more helpful error messages can be generated.
+	for(s32 i = 0; i < (s32) tfrags_original.size(); i++) {
+		bool matching_allocation = false;
+		#define COMPARE(field) \
+			if(tfrags_original[i].memory_map.field != tfrags_reallocated[i].memory_map.field) { \
+				fprintf(stderr, "Field " #field " for tfrag %d doesn't match. Original is 0x%x, reallocated is 0x%x.\n", \
+					i, tfrags_original[i].memory_map.field, tfrags_reallocated[i].memory_map.field); \
+				matching_allocation = true; \
+			}
+		COMPARE(header_common_addr);
+		COMPARE(ad_gifs_common_addr);
+		COMPARE(positions_common_addr);
+		COMPARE(positions_lod_01_addr);
+		COMPARE(positions_lod_0_addr);
+		COMPARE(vertex_info_common_addr);
+		COMPARE(vertex_info_lod_01_addr);
+		COMPARE(vertex_info_lod_0_addr);
+		COMPARE(unk_indices_lod_01_addr);
+		COMPARE(unk_indices_lod_0_addr);
+		COMPARE(indices_addr);
+		COMPARE(strips_addr);
+		if(matching_allocation) {
+			return false;
+		}
+	}
 	
 	std::vector<u8> dest;
-	write_tfrags(dest, tfrags);
+	write_tfrags(dest, tfrags_reallocated);
 	
 	return diff_buffers(src, dest, 0, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
 }

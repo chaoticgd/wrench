@@ -139,6 +139,23 @@ packed_struct(TfragStrip,
 	/* 0x03 0x0c */ s8 pad;
 )
 
+struct TfragMemoryMap {
+	s32 header_common_addr = -1;
+	s32 ad_gifs_common_addr = -1;
+	s32 positions_common_addr = -1;
+	s32 positions_lod_01_addr = -1;
+	s32 positions_lod_0_addr = -1;
+	s32 vertex_info_common_addr = -1;
+	s32 vertex_info_lod_01_addr = -1;
+	s32 vertex_info_lod_0_addr = -1;
+	s32 unk_indices_lod_01_addr = -1;
+	s32 unk_indices_2_lod_01_addr = -1;
+	s32 unk_indices_lod_0_addr = -1;
+	s32 unk_indices_2_lod_0_addr = -1;
+	s32 indices_addr = -1;
+	s32 strips_addr = -1;
+};
+
 struct Tfrag {
 	Vec4f bsphere;
 	VifSTROW base_position;
@@ -150,13 +167,15 @@ struct Tfrag {
 	std::vector<TfragVertexPosition> common_positions;
 	std::vector<TfragStrip> lod_1_strips;
 	std::vector<u8> lod_1_indices;
-	std::vector<std::vector<u8>> lod_01_unknown_indices;
+	std::vector<u8> lod_01_unknown_indices;
+	std::vector<u8> lod_01_unknown_indices_2;
 	std::vector<TfragVertexInfo> lod_01_vertex_info;
 	std::vector<TfragVertexPosition> lod_01_positions;
 	std::vector<TfragVertexPosition> lod_0_positions;
 	std::vector<TfragStrip> lod_0_strips;
 	std::vector<u8> lod_0_indices;
-	std::vector<std::vector<u8>> lod_0_unknown_indices;
+	std::vector<u8> lod_0_unknown_indices;
+	std::vector<u8> lod_0_unknown_indices_2;
 	std::vector<TfragVertexInfo> lod_0_vertex_info;
 	std::vector<TfragRgba> rgbas;
 	u8 lod_2_rgba_count;
@@ -165,6 +184,7 @@ struct Tfrag {
 	std::vector<u8> light;
 	std::vector<Vec4f> msphere;
 	TfragCube cube;
+	TfragMemoryMap memory_map;
 };
 
 struct TfragLod {
@@ -183,6 +203,8 @@ struct TfragLod {
 
 std::vector<Tfrag> read_tfrags(Buffer src);
 void write_tfrags(OutBuffer dest, const std::vector<Tfrag>& tfrags);
+
+void allocate_tfrags_vu(std::vector<Tfrag>& tfrags);
 
 ColladaScene recover_tfrags(const std::vector<Tfrag>& tfrags);
 
