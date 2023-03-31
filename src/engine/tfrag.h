@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2022 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -99,19 +99,19 @@ packed_struct(TfragHeaderUnpack,
 	/* 0x02 0x04 */ u16 unknown_2;
 	/* 0x04 0x08 */ u16 unknown_4;
 	/* 0x06 0x0c */ u16 unknown_6;
-	/* 0x08 0x10 */ u16 unknown_8;
+	/* 0x08 0x10 */ u16 vertex_info_part_2_count;
 	/* 0x0a 0x14 */ u16 unknown_a;
 	/* 0x0c 0x18 */ u16 vertex_pos_and_colours;
-	/* 0x0e 0x1c */ u16 vertex_sts_and_pointers;
+	/* 0x0e 0x1c */ u16 vertex_info;
 	/* 0x10 0x20 */ u16 unknown_10;
 	/* 0x12 0x24 */ u16 unknown_12;
 	/* 0x14 0x28 */ u16 unknown_14;
-	/* 0x16 0x2c */ u16 unknown_16;
+	/* 0x16 0x2c */ u16 vertex_info_part_2; // Only the part 2 entries have vertex_data_offsets[0] populated.
 	/* 0x18 0x30 */ u16 unknown_18;
 	/* 0x1a 0x34 */ u16 indices;
 	/* 0x1c 0x38 */ u16 unknown_1c;
 	/* 0x1e 0x3c */ u16 unknown_1e;
-	/* 0x20 0x40 */ u16 unknown_20;
+	/* 0x20 0x40 */ u16 unk_indices;
 	/* 0x22 0x44 */ u16 unknown_22;
 	/* 0x24 0x48 */ u16 commands;
 	/* 0x26 0x4c */ u16 texture_ad_gifs;
@@ -128,7 +128,7 @@ packed_struct(TfragVertexInfo,
 	/* PACK UNPK */
 	/* 0x00 0x00 */ s16 s;
 	/* 0x02 0x04 */ s16 t;
-	/* 0x04 0x08 */ s16 vertex_data_offsets[2];
+	/* 0x04 0x08 */ s16 vertex_data_offsets[2]; // vertex_data_offsets[0] always 0x1000 for common_vertex_info only.
 )
 
 packed_struct(TfragStrip,

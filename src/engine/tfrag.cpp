@@ -18,8 +18,8 @@
 
 #include "tfrag.h"
 
-//#define TFRAG_DEBUG_RECOVER_ALL_LODS
-//#define TFRAG_DEBUG_RAINBOW_STRIPS
+#define TFRAG_DEBUG_RECOVER_ALL_LODS
+#define TFRAG_DEBUG_RAINBOW_STRIPS
 
 static TfragLod extract_highest_tfrag_lod(const Tfrag& tfrag);
 static TfragLod extract_medium_tfrag_lod(const Tfrag& tfrag);
@@ -356,57 +356,57 @@ ColladaScene recover_tfrags(const std::vector<Tfrag>& tfrags) {
 }
 
 static TfragLod extract_highest_tfrag_lod(const Tfrag& tfrag) {
-	TfragLod highest_lod;
-	highest_lod.bsphere = tfrag.bsphere;
-	highest_lod.base_position = tfrag.base_position;
-	highest_lod.common_textures = tfrag.common_textures;
-	highest_lod.strips = tfrag.lod_0_strips;
-	highest_lod.indices.insert(highest_lod.indices.end(), BEGIN_END(tfrag.lod_0_indices));
-	highest_lod.vertex_info.insert(highest_lod.vertex_info.end(), BEGIN_END(tfrag.common_vertex_info));
-	highest_lod.vertex_info.insert(highest_lod.vertex_info.end(), BEGIN_END(tfrag.lod_01_vertex_info));
-	highest_lod.vertex_info.insert(highest_lod.vertex_info.end(), BEGIN_END(tfrag.lod_0_vertex_info));
-	highest_lod.positions.insert(highest_lod.positions.end(), BEGIN_END(tfrag.common_positions));
-	highest_lod.positions.insert(highest_lod.positions.end(), BEGIN_END(tfrag.lod_01_positions));
-	highest_lod.positions.insert(highest_lod.positions.end(), BEGIN_END(tfrag.lod_0_positions));
-	highest_lod.rgbas = tfrag.rgbas;
-	highest_lod.light = tfrag.light;
-	highest_lod.msphere = tfrag.msphere;
-	highest_lod.cube = tfrag.cube;
-	return highest_lod;
+	TfragLod lod;
+	lod.bsphere = tfrag.bsphere;
+	lod.base_position = tfrag.base_position;
+	lod.common_textures = tfrag.common_textures;
+	lod.strips = tfrag.lod_0_strips;
+	lod.indices.insert(lod.indices.end(), BEGIN_END(tfrag.lod_0_indices));
+	lod.vertex_info.insert(lod.vertex_info.end(), BEGIN_END(tfrag.common_vertex_info));
+	lod.vertex_info.insert(lod.vertex_info.end(), BEGIN_END(tfrag.lod_01_vertex_info));
+	lod.vertex_info.insert(lod.vertex_info.end(), BEGIN_END(tfrag.lod_0_vertex_info));
+	lod.positions.insert(lod.positions.end(), BEGIN_END(tfrag.common_positions));
+	lod.positions.insert(lod.positions.end(), BEGIN_END(tfrag.lod_01_positions));
+	lod.positions.insert(lod.positions.end(), BEGIN_END(tfrag.lod_0_positions));
+	lod.rgbas = tfrag.rgbas;
+	lod.light = tfrag.light;
+	lod.msphere = tfrag.msphere;
+	lod.cube = tfrag.cube;
+	return lod;
 }
 
 static TfragLod extract_medium_tfrag_lod(const Tfrag& tfrag) {
-	TfragLod highest_lod;
-	highest_lod.bsphere = tfrag.bsphere;
-	highest_lod.base_position = tfrag.base_position;
-	highest_lod.common_textures = tfrag.common_textures;
-	highest_lod.strips = tfrag.lod_1_strips;
-	highest_lod.indices.insert(highest_lod.indices.end(), BEGIN_END(tfrag.lod_1_indices));
-	highest_lod.vertex_info.insert(highest_lod.vertex_info.end(), BEGIN_END(tfrag.common_vertex_info));
-	highest_lod.vertex_info.insert(highest_lod.vertex_info.end(), BEGIN_END(tfrag.lod_01_vertex_info));
-	highest_lod.positions.insert(highest_lod.positions.end(), BEGIN_END(tfrag.common_positions));
-	highest_lod.positions.insert(highest_lod.positions.end(), BEGIN_END(tfrag.lod_01_positions));
-	highest_lod.rgbas = tfrag.rgbas;
-	highest_lod.light = tfrag.light;
-	highest_lod.msphere = tfrag.msphere;
-	highest_lod.cube = tfrag.cube;
-	return highest_lod;
+	TfragLod lod;
+	lod.bsphere = tfrag.bsphere;
+	lod.base_position = tfrag.base_position;
+	lod.common_textures = tfrag.common_textures;
+	lod.strips = tfrag.lod_1_strips;
+	lod.indices.insert(lod.indices.end(), BEGIN_END(tfrag.lod_1_indices));
+	lod.vertex_info.insert(lod.vertex_info.end(), BEGIN_END(tfrag.common_vertex_info));
+	lod.vertex_info.insert(lod.vertex_info.end(), BEGIN_END(tfrag.lod_01_vertex_info));
+	lod.positions.insert(lod.positions.end(), BEGIN_END(tfrag.common_positions));
+	lod.positions.insert(lod.positions.end(), BEGIN_END(tfrag.lod_01_positions));
+	lod.rgbas = tfrag.rgbas;
+	lod.light = tfrag.light;
+	lod.msphere = tfrag.msphere;
+	lod.cube = tfrag.cube;
+	return lod;
 }
 
 static TfragLod extract_low_tfrag_lod(const Tfrag& tfrag) {
-	TfragLod highest_lod;
-	highest_lod.bsphere = tfrag.bsphere;
-	highest_lod.base_position = tfrag.base_position;
-	highest_lod.common_textures = tfrag.common_textures;
-	highest_lod.strips = tfrag.lod_2_strips;
-	highest_lod.indices.insert(highest_lod.indices.end(), BEGIN_END(tfrag.lod_2_indices));
-	highest_lod.vertex_info.insert(highest_lod.vertex_info.end(), BEGIN_END(tfrag.common_vertex_info));
-	highest_lod.positions.insert(highest_lod.positions.end(), BEGIN_END(tfrag.common_positions));
-	highest_lod.rgbas = tfrag.rgbas;
-	highest_lod.light = tfrag.light;
-	highest_lod.msphere = tfrag.msphere;
-	highest_lod.cube = tfrag.cube;
-	return highest_lod;
+	TfragLod lod;
+	lod.bsphere = tfrag.bsphere;
+	lod.base_position = tfrag.base_position;
+	lod.common_textures = tfrag.common_textures;
+	lod.strips = tfrag.lod_2_strips;
+	lod.indices.insert(lod.indices.end(), BEGIN_END(tfrag.lod_2_indices));
+	lod.vertex_info.insert(lod.vertex_info.end(), BEGIN_END(tfrag.common_vertex_info));
+	lod.positions.insert(lod.positions.end(), BEGIN_END(tfrag.common_positions));
+	lod.rgbas = tfrag.rgbas;
+	lod.light = tfrag.light;
+	lod.msphere = tfrag.msphere;
+	lod.cube = tfrag.cube;
+	return lod;
 }
 
 void recover_tfrag_lod(Mesh& mesh, const TfragLod& lod, s32 texture_count) {
@@ -457,18 +457,18 @@ void recover_tfrag_lod(Mesh& mesh, const TfragLod& lod, s32 texture_count) {
 static s32 recover_tfrag_vertices(Mesh& mesh, const TfragLod& lod, s32 strip_index) {
 #ifdef TFRAG_DEBUG_RAINBOW_STRIPS
 	static const u8 colours[12][4] = {
-		{255,0,0,255},
-		{255,255,0,255},
-		{0,255,0,255},
-		{0,255,255,255},
-		{0,0,255,255},
-		{255,0,255,255},
-		{128,0,0,255},
-		{128,128,0,255},
-		{0,128,0,255},
-		{0,128,128,255},
-		{0,0,128,255},
-		{128,0,128,255},
+		{255, 0,   0,   255},
+		{255, 255, 0,   255},
+		{0,   255, 0,   255},
+		{0,   255, 255, 255},
+		{0,   0,   255, 255},
+		{255, 0,   255, 255},
+		{128, 0,   0,   255},
+		{128, 128, 0,   255},
+		{0,   128, 0,   255},
+		{0,   128, 128, 255},
+		{0,   0,   128, 255},
+		{128, 0,   128, 255}
 	};
 #endif
 	
