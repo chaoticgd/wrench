@@ -12,7 +12,6 @@ See `src/engine/tfrag.h` for a C++ struct definition.
 
 <table>
 	<th>
-		<td></td>
 		<td>0x0</td><td>0x1</td><td>0x2</td><td>0x3</td>
 		<td>0x4</td><td>0x5</td><td>0x6</td><td>0x7</td>
 		<td>0x8</td><td>0x9</td><td>0xa</td><td>0xb</td>
@@ -20,13 +19,55 @@ See `src/engine/tfrag.h` for a C++ struct definition.
 	</th>
 	<tr>
 		<td>0x00</td>
-		<td colspan="4">bsphere[x]</td>
-		<td colspan="4">bsphere[y]</td>
-		<td colspan="4">bsphere[z]</td>
-		<td colspan="4">bsphere[w]</td>
+		<td colspan="16">bsphere</td>
+	</tr>
+	<tr>
+		<td>0x10</td>
+		<td colspan="4">data</td>
+		<td colspan="2">lod_02_ofs</td>
+		<td colspan="2">shared_ofs</td>
+		<td colspan="2">lod_1_ofs</td>
+		<td colspan="2">lod_0_ofs</td>
+		<td colspan="2">tex_ofs</td>
+		<td colspan="2">rgba_ofs</td>
+	</tr>
+	<tr>
+		<td>0x20</td>
+		<td>common*</td>
+		<td>lod2*</td>
+		<td>lod1*</td>
+		<td>lod0*</td>
+		<td>lod2rgba**</td>
+		<td>lod1rgba**</td>
+		<td>lod0rgba**</td>
+		<td>base_only</td>
+		<td>texture_count</td>
+		<td>rgba_size</td>
+		<td>rgba_verts_loc</td>
+		<td>occl_index_stash</td>
+		<td>msphere_count</td>
+		<td>flags</td>
+		<td colspan="2">msphere_ofs</td>
+	</tr>
+	<tr>
+		<td>0x30</td>
+		<td colspan="2">light_ofs</td>
+		<td colspan="2">light_vert_start_ofs</td>
+		<td>dir_lights_one</td>
+		<td>dir_lights_upd</td>
+		<td colspan="2">point_lights</td>
+		<td colspan="2">cube_ofs</td>
+		<td colspan="2">occl_index</td>
+		<td>vert_count</td>
+		<td>tri_count</td>
+		<td colspan="2">mip_dist</td>
 	</tr>
 	<tr><td></td></tr>
 </table>
+
+\* These fields are sizes.
+
+\*\* These fields are counts.
 
 ## VIF Command List Format
 
