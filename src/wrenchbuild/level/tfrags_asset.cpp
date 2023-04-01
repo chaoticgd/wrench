@@ -20,6 +20,7 @@
 #include <engine/tfrag.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
+#include <wrenchbuild/tests.h>
 
 static void unpack_tfrags(TfragsAsset& dest, InputStream& src, BuildConfig config, const char* hint);
 static void pack_tfrags(OutputStream& dest, const TfragsAsset& src, BuildConfig config, const char* hint);
@@ -53,7 +54,7 @@ static void unpack_tfrags(TfragsAsset& dest, InputStream& src, BuildConfig confi
 	unpack_asset_impl(dest.core<BinaryAsset>(), src, nullptr, config);
 	
 	std::vector<u8> buffer = src.read_multiple<u8>(0, src.size());
-	std::vector<Tfrag> tfrags = read_tfrags(buffer);
+	Tfrags tfrags = read_tfrags(buffer);
 	ColladaScene scene = recover_tfrags(tfrags);
 	
 	std::vector<u8> xml = write_collada(scene);
@@ -78,19 +79,19 @@ static void pack_tfrags(OutputStream& dest, const TfragsAsset& src, BuildConfig 
 }
 
 static bool test_tfrags(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode) {
-	std::vector<Tfrag> tfrags_original = read_tfrags(src);
+	Tfrags tfrags_original = read_tfrags(src);
 	
-	std::vector<Tfrag> tfrags_reallocated = tfrags_original;
+	Tfrags tfrags_reallocated = tfrags_original;
 	allocate_tfrags_vu(tfrags_reallocated);
 	
 	// Test that the data is being allocated in VU memory correctly. We do this
 	// sepearately so that more helpful error messages can be generated.
-	for(s32 i = 0; i < (s32) tfrags_original.size(); i++) {
+	for(s32 i = 0; i < (s32) tfrags_original.fragments.size(); i++) {
 		bool matching_allocation = false;
 		#define COMPARE(field) \
-			if(tfrags_original[i].memory_map.field != tfrags_reallocated[i].memory_map.field) { \
+			if(tfrags_original.fragments[i].memory_map.field != tfrags_reallocated.fragments[i].memory_map.field) { \
 				fprintf(stderr, "Field " #field " for tfrag %d doesn't match. Original is 0x%x, reallocated is 0x%x.\n", \
-					i, tfrags_original[i].memory_map.field, tfrags_reallocated[i].memory_map.field); \
+					i, tfrags_original.fragments[i].memory_map.field, tfrags_reallocated.fragments[i].memory_map.field); \
 				matching_allocation = true; \
 			}
 		COMPARE(header_common_addr);
@@ -113,5 +114,6 @@ static bool test_tfrags(std::vector<u8>& src, AssetType type, BuildConfig config
 	std::vector<u8> dest;
 	write_tfrags(dest, tfrags_reallocated);
 	
+	strip_trailing_padding_from_lhs(src, dest);
 	return diff_buffers(src, dest, 0, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
 }

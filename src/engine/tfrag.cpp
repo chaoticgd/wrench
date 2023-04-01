@@ -21,6 +21,7 @@
 #define TFRAG_DEBUG_RECOVER_ALL_LODS
 #define TFRAG_DEBUG_RAINBOW_STRIPS
 
+static s32 count_triangles(const Tfrag& tfrag);
 static TfragLod extract_highest_tfrag_lod(const Tfrag& tfrag);
 static TfragLod extract_medium_tfrag_lod(const Tfrag& tfrag);
 static TfragLod extract_low_tfrag_lod(const Tfrag& tfrag);
@@ -33,18 +34,23 @@ static std::vector<T> read_unpack(const VifPacket& packet, VifVnVl vnvl) {
 	return packet.data.read_all<T>().copy();
 }
 
-std::vector<Tfrag> read_tfrags(Buffer src) {
-	TfragsHeader table_header = src.read<TfragsHeader>(0, "tfrags header");
+Tfrags read_tfrags(Buffer src) {
+	Tfrags tfrags;
 	
-	std::vector<Tfrag> tfrags;
-	tfrags.reserve(table_header.tfrag_count);
+	TfragsHeader table_header = src.read<TfragsHeader>(0, "tfrags header");
+	tfrags.thingy = table_header.thingy;
+	tfrags.fragments.reserve(table_header.tfrag_count);
 	
 	auto table = src.read_multiple<TfragHeader>(table_header.table_offset, table_header.tfrag_count, "tfrag table");
 	for(const TfragHeader& header : table) {
-		Tfrag& tfrag = tfrags.emplace_back();
+		Tfrag& tfrag = tfrags.fragments.emplace_back();
 		Buffer data = src.subbuf(table_header.table_offset + header.data);
 		
 		tfrag.bsphere = header.bsphere;
+		tfrag.lod_2_rgba_count = header.lod_2_rgba_count;
+		tfrag.lod_1_rgba_count = header.lod_1_rgba_count;
+		tfrag.lod_0_rgba_count = header.lod_0_rgba_count;
+		tfrag.rgba_verts_loc = header.rgba_verts_loc;
 		tfrag.mip_dist = header.mip_dist;
 		
 		// LOD 2
@@ -153,10 +159,6 @@ std::vector<Tfrag> read_tfrags(Buffer src) {
 		}
 		
 		tfrag.rgbas = data.read_multiple<TfragRgba>(header.rgba_ofs, header.rgba_size * 4, "rgbas").copy();
-		tfrag.lod_2_rgba_count = header.lod_2_rgba_count;
-		tfrag.lod_1_rgba_count = header.lod_1_rgba_count;
-		tfrag.lod_0_rgba_count = header.lod_0_rgba_count;
-		
 		tfrag.light = data.read_multiple<u8>(header.light_ofs, header.light_vert_start_ofs - header.light_ofs, "light").copy();
 		tfrag.msphere = data.read_multiple<Vec4f>(header.msphere_ofs, header.msphere_count, "mspheres").copy();
 		tfrag.cube = data.read<TfragCube>(header.cube_ofs, "cube");
@@ -193,20 +195,32 @@ static void write_strow(OutBuffer dest, const VifSTROW& strow) {
 	dest.write<u32>(strow.vif1_r3);
 }
 
-void write_tfrags(OutBuffer dest, const std::vector<Tfrag>& tfrags) {
+void write_tfrags(OutBuffer dest, const Tfrags& tfrags) {
 	s64 table_header_ofs = dest.alloc<TfragsHeader>();
 	TfragsHeader table_header = {};
 	dest.pad(0x40);
-	s64 table_ofs = dest.alloc_multiple<TfragHeader>(tfrags.size());
+	s64 table_ofs = dest.alloc_multiple<TfragHeader>(tfrags.fragments.size());
 	s64 next_header_ofs = table_ofs;
 	table_header.table_offset = (s32) next_header_ofs;
-	table_header.tfrag_count = (s32) tfrags.size();
+	table_header.tfrag_count = (s32) tfrags.fragments.size();
+	table_header.thingy = tfrags.thingy;
 	
-	for(const Tfrag& tfrag : tfrags) {
+	for(const Tfrag& tfrag : tfrags.fragments) {
 		TfragHeader header = {};
 		TfragHeaderUnpack unpack_header = tfrag.common_vu_header;
 		
 		header.bsphere = tfrag.bsphere;
+		header.lod_2_rgba_count = tfrag.lod_2_rgba_count;
+		header.lod_1_rgba_count = tfrag.lod_1_rgba_count;
+		header.lod_0_rgba_count = tfrag.lod_0_rgba_count;
+		header.rgba_verts_loc = tfrag.rgba_verts_loc;
+		header.dir_lights_one = 0xff;
+		header.point_lights = 0xffff;
+		header.vert_count = checked_int_cast<u8>(
+			tfrag.common_positions.size() +
+			tfrag.lod_01_positions.size() +
+			tfrag.lod_0_positions.size());
+		header.tri_count = checked_int_cast<u8>(count_triangles(tfrag));
 		header.mip_dist = tfrag.mip_dist;
 		
 		dest.pad(0x10, 0);
@@ -330,9 +344,6 @@ void write_tfrags(OutBuffer dest, const std::vector<Tfrag>& tfrags) {
 		
 		// RGBA
 		dest.pad(0x10, 0);
-		header.lod_2_rgba_count = tfrag.lod_2_rgba_count;
-		header.lod_1_rgba_count = tfrag.lod_1_rgba_count;
-		header.lod_0_rgba_count = tfrag.lod_0_rgba_count;
 		header.rgba_ofs = checked_int_cast<u16>(dest.tell() - tfrag_ofs);
 		header.rgba_size = checked_int_cast<u8>((tfrag.rgbas.size() + 3) / 4);
 		dest.write_multiple(tfrag.rgbas);
@@ -343,6 +354,7 @@ void write_tfrags(OutBuffer dest, const std::vector<Tfrag>& tfrags) {
 		
 		dest.pad(0x10);
 		header.msphere_ofs = checked_int_cast<u16>(dest.tell() - tfrag_ofs);
+		header.light_vert_start_ofs = header.msphere_ofs;
 		header.msphere_count = checked_int_cast<u8>(tfrag.msphere.size());
 		dest.write_multiple(tfrag.msphere);
 		
@@ -357,10 +369,25 @@ void write_tfrags(OutBuffer dest, const std::vector<Tfrag>& tfrags) {
 	dest.write(table_header_ofs, table_header);
 }
 
-void allocate_tfrags_vu(std::vector<Tfrag>& tfrags) {
+static s32 count_triangles(const Tfrag& tfrag) {
+	s32 triangles = 0;
+	for(const TfragStrip& strip : tfrag.lod_0_strips) {
+		s8 vertex_count = strip.vertex_count_and_flag;
+		if(vertex_count <= 0) {
+			if(vertex_count == 0) {
+				break;
+			}
+			vertex_count += 128;
+		}
+		triangles += vertex_count - 2;
+	}
+	return triangles;
+}
+
+void allocate_tfrags_vu(Tfrags& tfrags) {
 	static const s32 VU1_BUFFER_SIZE = 0x118;
 	
-	for(Tfrag& tfrag : tfrags) {
+	for(Tfrag& tfrag : tfrags.fragments) {
 		// Calculate sizes in VU memory.
 		s32 header_common_size = 9;
 		s32 ad_gifs_common_size = tfrag.common_textures.size() * (sizeof(TfragTexturePrimitive) / 16);
@@ -393,14 +420,21 @@ void allocate_tfrags_vu(std::vector<Tfrag>& tfrags) {
 		tfrag.memory_map.indices_addr = tfrag.memory_map.unk_indices_2_lod_0_addr + unk_indices_2_lod_0_size;
 		tfrag.memory_map.strips_addr = tfrag.memory_map.indices_addr + indices_size;
 		
+		if(positions_lod_01_size == 0) tfrag.memory_map.positions_lod_01_addr = -1;
+		if(positions_lod_0_size == 0) tfrag.memory_map.positions_lod_0_addr = -1;
+		if(vertex_info_lod_01_size == 0) tfrag.memory_map.vertex_info_lod_01_addr = -1;
+		if(vertex_info_lod_0_size == 0) tfrag.memory_map.vertex_info_lod_0_addr = -1;
+		if(unk_indices_lod_01_size == 0) tfrag.memory_map.unk_indices_lod_01_addr = -1;
+		if(unk_indices_lod_0_size == 0) tfrag.memory_map.unk_indices_lod_0_addr = -1;
+		
 		s32 end_addr = tfrag.memory_map.strips_addr + strips_size;
 		//assert(end_addr <= VU1_BUFFER_SIZE);
 	}
 }
 
-ColladaScene recover_tfrags(const std::vector<Tfrag>& tfrags) {
+ColladaScene recover_tfrags(const Tfrags& tfrags) {
 	s32 texture_count = 0;
-	for(const Tfrag& tfrag : tfrags) {
+	for(const Tfrag& tfrag : tfrags.fragments) {
 		for(const TfragTexturePrimitive& primitive : tfrag.common_textures) {
 			texture_count = std::max(texture_count, primitive.d1_tex0_1.data_lo + 1);
 		}
@@ -432,7 +466,7 @@ ColladaScene recover_tfrags(const std::vector<Tfrag>& tfrags) {
 	high_mesh.name = "mesh";
 	high_mesh.flags |= mesh_flags;
 	
-	for(const Tfrag& tfrag : tfrags) {
+	for(const Tfrag& tfrag : tfrags.fragments) {
 		TfragLod lod = extract_highest_tfrag_lod(tfrag);
 		recover_tfrag_lod(high_mesh, lod, texture_count);
 	}
@@ -442,7 +476,7 @@ ColladaScene recover_tfrags(const std::vector<Tfrag>& tfrags) {
 	medium_mesh.name = "medium_lod";
 	medium_mesh.flags |= mesh_flags;
 	
-	for(const Tfrag& tfrag : tfrags) {
+	for(const Tfrag& tfrag : tfrags.fragments) {
 		TfragLod lod = extract_medium_tfrag_lod(tfrag);
 		recover_tfrag_lod(medium_mesh, lod, texture_count);
 	}
@@ -451,7 +485,7 @@ ColladaScene recover_tfrags(const std::vector<Tfrag>& tfrags) {
 	low_mesh.name = "low_lod";
 	low_mesh.flags |= mesh_flags;
 	
-	for(const Tfrag& tfrag : tfrags) {
+	for(const Tfrag& tfrag : tfrags.fragments) {
 		TfragLod lod = extract_low_tfrag_lod(tfrag);
 		recover_tfrag_lod(low_mesh, lod, texture_count);
 	}

@@ -158,6 +158,7 @@ struct TfragMemoryMap {
 
 struct Tfrag {
 	Vec4f bsphere;
+	u8 rgba_verts_loc;
 	u16 mip_dist;
 	VifSTROW base_position;
 	std::vector<u8> lod_2_indices;
@@ -188,6 +189,11 @@ struct Tfrag {
 	TfragMemoryMap memory_map;
 };
 
+struct Tfrags {
+	f32 thingy;
+	std::vector<Tfrag> fragments;
+};
+
 struct TfragLod {
 	Vec4f bsphere;
 	VifSTROW base_position;
@@ -202,11 +208,11 @@ struct TfragLod {
 	TfragCube cube;
 };
 
-std::vector<Tfrag> read_tfrags(Buffer src);
-void write_tfrags(OutBuffer dest, const std::vector<Tfrag>& tfrags);
+Tfrags read_tfrags(Buffer src);
+void write_tfrags(OutBuffer dest, const Tfrags& tfrags);
 
-void allocate_tfrags_vu(std::vector<Tfrag>& tfrags);
+void allocate_tfrags_vu(Tfrags& tfrags);
 
-ColladaScene recover_tfrags(const std::vector<Tfrag>& tfrags);
+ColladaScene recover_tfrags(const Tfrags& tfrags);
 
 #endif
