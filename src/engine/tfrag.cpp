@@ -389,7 +389,8 @@ void allocate_tfrags_vu(Tfrags& tfrags) {
 	
 	for(Tfrag& tfrag : tfrags.fragments) {
 		// Calculate sizes in VU memory.
-		s32 header_common_size = 9;
+		s32 header_common_size = 5;
+		s32 matrix_size = 4;
 		s32 ad_gifs_common_size = tfrag.common_textures.size() * (sizeof(TfragTexturePrimitive) / 16);
 		s32 positions_common_size = tfrag.common_positions.size() * 2;
 		s32 positions_lod_01_size = tfrag.lod_01_positions.size() * 2;
@@ -406,7 +407,7 @@ void allocate_tfrags_vu(Tfrags& tfrags) {
 		
 		// Calculate addresses in VU memory.
 		tfrag.memory_map.header_common_addr = 0;
-		tfrag.memory_map.ad_gifs_common_addr = tfrag.memory_map.header_common_addr + header_common_size;
+		tfrag.memory_map.ad_gifs_common_addr = tfrag.memory_map.header_common_addr + header_common_size + matrix_size;
 		tfrag.memory_map.positions_common_addr = tfrag.memory_map.ad_gifs_common_addr + ad_gifs_common_size;
 		tfrag.memory_map.positions_lod_01_addr = tfrag.memory_map.positions_common_addr + positions_common_size;
 		tfrag.memory_map.positions_lod_0_addr = tfrag.memory_map.positions_lod_01_addr + positions_lod_01_size;
@@ -439,6 +440,24 @@ ColladaScene recover_tfrags(const Tfrags& tfrags) {
 			texture_count = std::max(texture_count, primitive.d1_tex0_1.data_lo + 1);
 		}
 	}
+	
+	for(s32 i = 0; i < sizeof(TfragHeaderUnpack); i+=2) {
+		printf("%02x: %hx\n", i*2, *(u16*) &((u8*) &tfrags.fragments[0].common_vu_header)[i]);
+	}
+	
+	printf("\ncommonvtxinfo:\n");
+	for(const TfragVertexInfo& info : tfrags.fragments[0].common_vertex_info) {
+		printf("%hx %hx | ", info.vertex_data_offsets[0], info.vertex_data_offsets[1]);
+	}
+	printf("\nlod01vtxinfo:\n");
+	for(const TfragVertexInfo& info : tfrags.fragments[0].lod_01_vertex_info) {
+		printf("%hx %hx | ", info.vertex_data_offsets[0], info.vertex_data_offsets[1]);
+	}
+	printf("\nlod0vtxinfo:\n");
+	for(const TfragVertexInfo& info : tfrags.fragments[0].lod_0_vertex_info) {
+		printf("%hx %hx | ", info.vertex_data_offsets[0], info.vertex_data_offsets[1]);
+	}
+	printf("\nendvtxinfo\n");
 	
 	ColladaScene scene;
 	

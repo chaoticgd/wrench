@@ -71,7 +71,31 @@ static void pack_tfrags(OutputStream& dest, const TfragsAsset& src, BuildConfig 
 	}
 	
 	if(src.get_core().logical_type() == BinaryAsset::ASSET_TYPE) {
-		pack_asset_impl(dest, nullptr, nullptr, src.get_core(), config, nullptr);
+		std::vector<u8> databank;
+		MemoryOutputStream memout(databank);
+		pack_asset_impl(memout, nullptr, nullptr, src.get_core(), config, nullptr);
+		Tfrags tfrags = read_tfrags(databank);
+		for(Tfrag& tfrag : tfrags.fragments) {
+			tfrag.common_vu_header.unk_indices_count = 0;
+			//for(TfragVertexPosition& pos : tfrag.common_positions) {
+			//	s32 abspos = (tfrag.base_position.vif1_r0 + pos.x) * (tfrag.base_position.vif1_r1 + pos.y) * (tfrag.base_position.vif1_r2 + pos.z);
+			//	srand(abspos);
+			//	pos.z += 512 - (rand() % 1024);
+			//}
+			//for(TfragVertexPosition& pos : tfrag.lod_01_positions) {
+			//	s32 abspos = (tfrag.base_position.vif1_r0 + pos.x) * (tfrag.base_position.vif1_r1 + pos.y) * (tfrag.base_position.vif1_r2 + pos.z);
+			//	srand(abspos);
+			//	pos.z += 512 - (rand() % 1024);
+			//}
+			//for(TfragVertexPosition& pos : tfrag.lod_0_positions) {
+			//	s32 abspos = (tfrag.base_position.vif1_r0 + pos.x) * (tfrag.base_position.vif1_r1 + pos.y) * (tfrag.base_position.vif1_r2 + pos.z);
+			//	srand(abspos);
+			//	pos.z += 1024 - (rand() % 2048);
+			//}
+		}
+		std::vector<u8> newbank;
+		write_tfrags(newbank, tfrags);
+		dest.write_v(newbank);
 		return;
 	} else {
 		assert_not_reached("Not yet implemented.");

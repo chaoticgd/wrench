@@ -95,26 +95,26 @@ packed_struct(TfragCube,
 
 packed_struct(TfragHeaderUnpack,
 	/* PACK UNPK */
-	/* 0x00 0x00 */ u16 unknown_0;
+	/* 0x00 0x00 */ u16 common_positions_count;
 	/* 0x02 0x04 */ u16 unknown_2;
-	/* 0x04 0x08 */ u16 unknown_4;
+	/* 0x04 0x08 */ u16 lod_01_positions_count;
 	/* 0x06 0x0c */ u16 unknown_6;
-	/* 0x08 0x10 */ u16 vertex_info_part_2_count;
+	/* 0x08 0x10 */ u16 lod_0_positions_count;
 	/* 0x0a 0x14 */ u16 unknown_a;
-	/* 0x0c 0x18 */ u16 vertex_pos_and_colours;
+	/* 0x0c 0x18 */ u16 vertex_pos_and_colours_addr;
 	/* 0x0e 0x1c */ u16 vertex_info;
 	/* 0x10 0x20 */ u16 unknown_10;
-	/* 0x12 0x24 */ u16 unknown_12;
+	/* 0x12 0x24 */ u16 other_vertex_info_part_2;
 	/* 0x14 0x28 */ u16 unknown_14;
 	/* 0x16 0x2c */ u16 vertex_info_part_2; // Only the part 2 entries have vertex_data_offsets[0] populated.
 	/* 0x18 0x30 */ u16 unknown_18;
 	/* 0x1a 0x34 */ u16 indices;
-	/* 0x1c 0x38 */ u16 unknown_1c;
+	/* 0x1c 0x38 */ u16 other_unk_indices;
 	/* 0x1e 0x3c */ u16 unknown_1e;
 	/* 0x20 0x40 */ u16 unk_indices;
 	/* 0x22 0x44 */ u16 unknown_22;
-	/* 0x24 0x48 */ u16 commands;
-	/* 0x26 0x4c */ u16 texture_ad_gifs;
+	/* 0x24 0x48 */ u16 strips_addr;
+	/* 0x26 0x4c */ u16 texture_ad_gifs_addr;
 )
 
 packed_struct(TfragVertexPosition,
