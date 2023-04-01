@@ -28,7 +28,7 @@
 packed_struct(TfragsHeader,
 	/* 0x0 */ s32 table_offset;
 	/* 0x4 */ s32 tfrag_count;
-	/* 0x8 */ s32 unknown;
+	/* 0x8 */ f32 thingy;
 )
 
 packed_struct(TfragHeader,
@@ -158,6 +158,7 @@ struct TfragMemoryMap {
 
 struct Tfrag {
 	Vec4f bsphere;
+	u16 mip_dist;
 	VifSTROW base_position;
 	std::vector<u8> lod_2_indices;
 	std::vector<TfragStrip> lod_2_strips;
