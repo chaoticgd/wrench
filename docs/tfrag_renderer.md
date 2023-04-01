@@ -76,69 +76,71 @@ These command lists are stored in the model files and are used for transferring 
 
 ### LOD 2 Only
 
-| VIF Code             | Explanation                                                                           |
-| -------------------- | ------------------------------------------------------------------------------------- |
-| STROW                | Converts indices below into addresses by adding the address of the vertex info table. |
-| STMOD mode=1         | Enable offset mode (see STROW).                                                       |
-| UNPACK V4_8 UNSIGNED | Unpack indices into VU1 memory.                                                       |
-| STMOD mode=0         | Disable offset mode (see STROW).                                                      |
-| UNPACK V4_8 SIGNED   | Unpack strips into VU1 memory.                                                        |
+| VIF Code             | Always Present | Explanation                                                                           |
+| -------------------- | -------------- | ------------------------------------------------------------------------------------- |
+| STROW                | Yes            | Converts indices below into addresses by adding the address of the vertex info table. |
+| STMOD mode=1         | Yes            | Enable offset mode (see STROW).                                                       |
+| UNPACK V4_8 UNSIGNED | Yes            | Unpack indices into VU1 memory.                                                       |
+| STMOD mode=0         | Yes            | Disable offset mode (see STROW).                                                      |
+| UNPACK V4_8 SIGNED   | Yes            | Unpack strips into VU1 memory.                                                        |
 
 ### All LODs
 
-| VIF Code                 | Explanation                                                                                 |
-| ------------------------ | ------------------------------------------------------------------------------------------- |
-| UNPACK V4_16 UNSIGNED    | Unpack header containing addresses into VU1 memory.                                         |
-| UNPACK V4_32 SIGNED      | Unpack AD GIF texture data into VU1 memory.                                                 |
-| STROW                    | Convert position indices below into addresses by adding the address of the positions table. |
-| STMOD mode=1             | Enable offset mode (see STROW).                                                             |
-| UNPACK V4_16 SIGNED      | Unpack vertex info into VU1 memory (part 1).                                                |
-| STROW                    | Add tfrag origin position to positions below.                                               |
-| STCYCL num=100 wl=1 cl=2 | Scatter the vertex positions below so that there is space for the colours.                  |
-| UNPACK V3_16 SIGNED      | Unpack positions into VU1 memory (part 1).                                                  |
-| STCYCL num=100 wl=4 cl=4 | Turn off scattering.                                                                        |
-| STMOD mode=0             | Disable offset mode (see STROW)                                                             |
+| VIF Code                 | Always Present | Explanation                                                                                 |
+| ------------------------ | -------------- | ------------------------------------------------------------------------------------------- |
+| UNPACK V4_16 UNSIGNED    | Yes            | Unpack header containing addresses into VU1 memory.                                         |
+| UNPACK V4_32 SIGNED      | Yes            | Unpack AD GIF texture data into VU1 memory.                                                 |
+| STROW                    | Yes            | Convert position indices below into addresses by adding the address of the positions table. |
+| STMOD mode=1             | Yes            | Enable offset mode (see STROW).                                                             |
+| UNPACK V4_16 SIGNED      | Yes            | Unpack vertex info into VU1 memory (part 1).                                                |
+| STROW                    | Yes            | Add tfrag origin position to positions below.                                               |
+| STCYCL num=100 wl=1 cl=2 | Yes            | Scatter the vertex positions below so that there is space for the colours.                  |
+| UNPACK V3_16 SIGNED      | Yes            | Unpack positions into VU1 memory (part 1).                                                  |
+| STCYCL num=100 wl=4 cl=4 | Yes            | Turn off scattering.                                                                        |
+| STMOD mode=0             | Yes            | Disable offset mode (see STROW)                                                             |
 
 ### LOD 1 Only
 
 
-| VIF Code             | Explanation                                                                           |
-| -------------------- | ------------------------------------------------------------------------------------- |
-| UNPACK V4_8 SIGNED   | Unpack strips into VU1 memory.                                                        |
-| STROW                | Converts indices below into addresses by adding the address of the vertex info table. |
-| STMOD mode=1         | Enable offset mode (see STROW).                                                       |
-| UNPACK V4_8 UNSIGNED | Unpack indices into VU1 memory.                                                       |
+| VIF Code             | Always Present | Explanation                                                                           |
+| -------------------- | -------------- | ------------------------------------------------------------------------------------- |
+| UNPACK V4_8 SIGNED   | Yes            | Unpack strips into VU1 memory.                                                        |
+| STROW                | Yes            | Converts indices below into addresses by adding the address of the vertex info table. |
+| STMOD mode=1         | Yes            | Enable offset mode (see STROW).                                                       |
+| UNPACK V4_8 UNSIGNED | Yes            | Unpack indices into VU1 memory.                                                       |
 
 ### LOD 0 and LOD 1
 
-| VIF Code                 | Explanation                                                                                 |
-| ------------------------ | ------------------------------------------------------------------------------------------- |
-| STROW                    | Converts indices below into addresses by adding the address of the vertex info table.       |
-| STMOD mode=1             | Enable offset mode (see STROW).                                                             |
-| UNPACK V4_8 UNSIGNED     | Unpack unknown indices into VU1 memory.                                                     |
-| STROW                    | Convert position indices below into addresses by adding the address of the positions table. |
-| UNPACK                   | Unpack vertex info into VU1 memory (part 2).                                                |
-| STROW                    | Add tfrag origin position to positions below.                                               |
-| STCYCL num=100 wl=1 cl=2 | Scatter the vertex positions below so that there is space for the colours.                  |
-| UNPACK V3_16 SIGNED      | Unpack positions into VU1 memory (part 2).                                                  |
+| VIF Code                 | Always Present | Explanation                                                                                 |
+| ------------------------ | -------------- | ------------------------------------------------------------------------------------------- |
+| STROW                    | No             | Converts indices below into addresses by adding the address of the vertex info table.       |
+| STMOD mode=1             | No             | Enable offset mode (see STROW).                                                             |
+| UNPACK V4_8 UNSIGNED     | No             | Unpack unknown indices 1 into VU1 memory.                                                   |
+| UNPACK V4_8 UNSIGNED     | No             | Unpack unknown indices 2 into VU1 memory.                                                   |
+| STROW                    | No             | Convert position indices below into addresses by adding the address of the positions table. |
+| UNPACK                   | No             | Unpack vertex info into VU1 memory (part 2).                                                |
+| STROW                    | No             | Add tfrag origin position to positions below.                                               |
+| STCYCL num=100 wl=1 cl=2 | No             | Scatter the vertex positions below so that there is space for the colours.                  |
+| UNPACK V3_16 SIGNED      | No             | Unpack positions into VU1 memory (part 2).                                                  |
 
 ### LOD 0 Only
 
 Note that the VIF is still in the state setup by the STCYCL and STROW commands from the end of the last command list at the beginning of this command list.
 
-| VIF Code                 | Explanation                                                                                 |
-| ------------------------ | ------------------------------------------------------------------------------------------- |
-| UNPACK V3_16 SIGNED      | Unpack positions into VU1 memory (part 3).                                                  |
-| STMOD mode=0             | Disable offset mode (see STROW)                                                             |
-| STCYCL num=100 wl=4 cl=4 | Turn off scattering.                                                                        |
-| UNPACK V4_8 SIGNED       | Unpack strips into VU1 memory.                                                              |
-| STROW                    | Converts indices below into addresses by adding the address of the vertex info table.       |
-| STMOD mode=1             | Enable offset mode (see STROW).                                                             |
-| UNPACK V4_8 UNSIGNED     | Unpack indices into VU1 memory.                                                             |
-| UNPACK V4_8 UNSIGNED     | Unpack unknown indices into VU1 memory.                                                     |
-| STROW                    | Convert position indices below into addresses by adding the address of the positions table. |
-| UNPACK                   | Unpack vertex info into VU1 memory (part 3).                                                |
-| STMOD mode=0             | Disable offset mode (see STROW)                                                             |
+| VIF Code                 | Always Present | Explanation                                                                                 |
+| ------------------------ | -------------- | ------------------------------------------------------------------------------------------- |
+| UNPACK V3_16 SIGNED      | No             | Unpack positions into VU1 memory (part 3).                                                  |
+| STMOD mode=0             | No             | Disable offset mode (see STROW)                                                             |
+| STCYCL num=100 wl=4 cl=4 | No             | Turn off scattering.                                                                        |
+| UNPACK V4_8 SIGNED       | No             | Unpack strips into VU1 memory.                                                              |
+| STROW                    | No             | Converts indices below into addresses by adding the address of the vertex info table.       |
+| STMOD mode=1             | No             | Enable offset mode (see STROW).                                                             |
+| UNPACK V4_8 UNSIGNED     | No             | Unpack indices into VU1 memory.                                                             |
+| UNPACK V4_8 UNSIGNED     | No             | Unpack unknown indices 1 into VU1 memory.                                                   |
+| UNPACK V4_8 UNSIGNED     | No             | Unpack unknown indices 2 into VU1 memory.                                                   |
+| STROW                    | No             | Convert position indices below into addresses by adding the address of the positions table. |
+| UNPACK                   | No             | Unpack vertex info into VU1 memory (part 3).                                                |
+| STMOD mode=0             | No             | Disable offset mode (see STROW)                                                             |
 
 ## Tfrag Microprogram
 
@@ -146,45 +148,45 @@ Note that the VIF is still in the state setup by the STCYCL and STROW commands f
 
 The table below represents the contents of VU1 data memory while the tfrag microprogram is running. The data shown, with the exception of the matrix, would all be unpacked into VU1 memory from the command lists described above. Double buffering would be used, however only one buffer is shown. In addition, the output buffers for the GS packets are not shown.
 
-| +0x0                       | +0x4                  | +0x8                    | +0xc                    |
-| -------------------------- | --------------------- | ----------------------- | ----------------------- |
-| common_positions_count     |                       | lod_01_positions_count  |                         |
-| lod_0_positions_count      |                       | positions_colours_addr  | vertex_info_addr        |
-|                            |                       |                         | vertex_info_part_2_addr |
-|                            | indices_addr          |                         |                         |
-|                            |                       | strips_addr             | texture_ad_gifs_addr    |
-|                            |                       |                         |                         |
-| matrix[0][0]               | matrix[0][1]          | matrix[0][2]            | matrix[0][3]            |
-| matrix[1][0]               | matrix[1][1]          | matrix[1][2]            | matrix[1][3]            |
-| matrix[2][0]               | matrix[2][1]          | matrix[2][2]            | matrix[2][3]            |
-| matrix[3][0]               | matrix[3][1]          | matrix[3][2]            | matrix[3][3]            |
-|                            |                       |                         |                         |
-| position[0][x]             | position[0][y]        | position[0][z]          |                         |
-| colour[0][r]               | colour[0][g]          | colour[0][b]            |                         |
-| ...                        | ...                   | ...                     | ...                     |
-| position[n-1][x]           | position[n-1][y]      | position[n-1][z]        |                         |
-| colour[n-1][r]             | colour[n-1][g]        | colour[n-1][b]          |                         |
-|                            |                       |                         |                         |
-| info[0].texcoord[s]        | info[0].texcoord[t]   | info[0].pos_addr_1\*2   | info[0].pos_addr_2\*2   |
-| ...                        | ...                   | ...                     | ...                     |
-| info[n-1].texcoord[s]      | info[n-1].texcoord[t] | info[n-1].pos_addr_1\*2 | info[n-1].pos_addr_2\*2 |
-|                            |                       |                         |                         |
-| unk_indices[0]             | unk_indices[1]        | unk_indices[2]          | unk_indices[3]          |
-| ...                        | ...                   | ...                     | ...                     |
-| ...                        | unk_indices[n-1]      |                         |                         |
-|                            |                       |                         |                         |
-| indices[0]                 | indices[1]            | indices[2]              | indices[3]              |
-| ...                        | ...                   | ...                     | ...                     |
-| ...                        | indices[n-1]          |                         |                         |
-|                            |                       |                         |                         |
-| strips[0].vertex_count-128 | 0 (copy ad gifs)      | ad_gif_addrs[0]         |                         |
-| strips[1].vertex_count     |                       |                         |                         |
-| ...                        | ...                   | ...                     | ...                     |
-| strips[?].vertex_count-128 | -128 (do XGKICK)      |                         |                         |
-| ...                        | ...                   | ...                     | ...                     |
-| strips[n-2].vertex_count   |                       |                         |                         |
-| strips[n-1].vertex_count   |                       |                         |                         |
-| 0 (end microprogram)       |                       |                         |                         |
+| +0x0                       | +0x4                  | +0x8                   | +0xc                    |
+| -------------------------- | --------------------- | ---------------------- | ----------------------- |
+| common_positions_count     |                       | lod_01_positions_count |                         |
+| lod_0_positions_count      |                       | positions_colours_addr | vertex_info_addr        |
+|                            |                       |                        | vertex_info_part_2_addr |
+|                            | indices_addr          |                        |                         |
+|                            |                       | strips_addr            | texture_ad_gifs_addr    |
+|                            |                       |                        |                         |
+| matrix[0][0]               | matrix[0][1]          | matrix[0][2]           | matrix[0][3]            |
+| matrix[1][0]               | matrix[1][1]          | matrix[1][2]           | matrix[1][3]            |
+| matrix[2][0]               | matrix[2][1]          | matrix[2][2]           | matrix[2][3]            |
+| matrix[3][0]               | matrix[3][1]          | matrix[3][2]           | matrix[3][3]            |
+|                            |                       |                        |                         |
+| position[0][x]             | position[0][y]        | position[0][z]         |                         |
+| colour[0][r]               | colour[0][g]          | colour[0][b]           |                         |
+| ...                        | ...                   | ...                    | ...                     |
+| position[n-1][x]           | position[n-1][y]      | position[n-1][z]       |                         |
+| colour[n-1][r]             | colour[n-1][g]        | colour[n-1][b]         |                         |
+|                            |                       |                        |                         |
+| info[0].texcoord[s]        | info[0].texcoord[t]   | info[0].pos_addr_1     | info[0].pos_addr_2      |
+| ...                        | ...                   | ...                    | ...                     |
+| info[n-1].texcoord[s]      | info[n-1].texcoord[t] | info[n-1].pos_addr_1   | info[n-1].pos_addr_2    |
+|                            |                       |                        |                         |
+| unk_indices[0]             | unk_indices[1]        | unk_indices[2]         | unk_indices[3]          |
+| ...                        | ...                   | ...                    | ...                     |
+| ...                        | unk_indices[n-1]      |                        |                         |
+|                            |                       |                        |                         |
+| indices[0]                 | indices[1]            | indices[2]             | indices[3]              |
+| ...                        | ...                   | ...                    | ...                     |
+| ...                        | indices[n-1]          |                        |                         |
+|                            |                       |                        |                         |
+| strips[0].vertex_count-128 | 0 (copy ad gifs)      | ad_gif_addrs[0]        |                         |
+| strips[1].vertex_count     |                       |                        |                         |
+| ...                        | ...                   | ...                    | ...                     |
+| strips[?].vertex_count-128 | -128 (do XGKICK)      |                        |                         |
+| ...                        | ...                   | ...                    | ...                     |
+| strips[n-2].vertex_count   |                       |                        |                         |
+| strips[n-1].vertex_count   |                       |                        |                         |
+| 0 (end microprogram)       |                       |                        |                         |
 
 Note that for the last section, the strips do not have to come in the order shown (which is provided as an example).
 
