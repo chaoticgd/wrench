@@ -54,7 +54,7 @@ static void unpack_tfrags(TfragsAsset& dest, InputStream& src, BuildConfig confi
 	unpack_asset_impl(dest.core<BinaryAsset>(), src, nullptr, config);
 	
 	std::vector<u8> buffer = src.read_multiple<u8>(0, src.size());
-	Tfrags tfrags = read_tfrags(buffer);
+	Tfrags tfrags = read_tfrags(buffer, config.game());
 	ColladaScene scene = recover_tfrags(tfrags);
 	
 	std::vector<u8> xml = write_collada(scene);
@@ -79,7 +79,7 @@ static void pack_tfrags(OutputStream& dest, const TfragsAsset& src, BuildConfig 
 }
 
 static bool test_tfrags(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode) {
-	Tfrags tfrags_original = read_tfrags(src);
+	Tfrags tfrags_original = read_tfrags(src, config.game());
 	
 	Tfrags tfrags_reallocated = tfrags_original;
 	allocate_tfrags_vu(tfrags_reallocated);
@@ -112,7 +112,7 @@ static bool test_tfrags(std::vector<u8>& src, AssetType type, BuildConfig config
 	}
 	
 	std::vector<u8> dest;
-	write_tfrags(dest, tfrags_reallocated);
+	write_tfrags(dest, tfrags_reallocated, config.game());
 	
 	strip_trailing_padding_from_lhs(src, dest);
 	return diff_buffers(src, dest, 0, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);

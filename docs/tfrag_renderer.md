@@ -119,8 +119,8 @@ These command lists are stored in the model files and are used for transferring 
 | UNPACK V4_8 UNSIGNED     | No             | Unpack unknown indices 2 into VU1 memory.                                                   |
 | STROW                    | No             | Convert position indices below into addresses by adding the address of the positions table. |
 | UNPACK                   | No             | Unpack vertex info into VU1 memory (part 2).                                                |
-| STROW                    | No             | Add tfrag origin position to positions below.                                               |
-| STCYCL num=100 wl=1 cl=2 | No             | Scatter the vertex positions below so that there is space for the colours.                  |
+| STROW                    | Yes            | Add tfrag origin position to positions below.                                               |
+| STCYCL num=100 wl=1 cl=2 | Yes            | Scatter the vertex positions below so that there is space for the colours.                  |
 | UNPACK V3_16 SIGNED      | No             | Unpack positions into VU1 memory (part 2).                                                  |
 
 ### LOD 0 Only
@@ -130,17 +130,17 @@ Note that the VIF is still in the state setup by the STCYCL and STROW commands f
 | VIF Code                 | Always Present | Explanation                                                                                 |
 | ------------------------ | -------------- | ------------------------------------------------------------------------------------------- |
 | UNPACK V3_16 SIGNED      | No             | Unpack positions into VU1 memory (part 3).                                                  |
-| STMOD mode=0             | No             | Disable offset mode (see STROW)                                                             |
-| STCYCL num=100 wl=4 cl=4 | No             | Turn off scattering.                                                                        |
-| UNPACK V4_8 SIGNED       | No             | Unpack strips into VU1 memory.                                                              |
-| STROW                    | No             | Converts indices below into addresses by adding the address of the vertex info table.       |
-| STMOD mode=1             | No             | Enable offset mode (see STROW).                                                             |
+| STMOD mode=0             | Yes            | Disable offset mode (see STROW)                                                             |
+| STCYCL num=100 wl=4 cl=4 | Yes            | Turn off scattering.                                                                        |
+| UNPACK V4_8 SIGNED       | Yes            | Unpack strips into VU1 memory.                                                              |
+| STROW                    | Yes            | Converts indices below into addresses by adding the address of the vertex info table.       |
+| STMOD mode=1             | Yes            | Enable offset mode (see STROW).                                                             |
 | UNPACK V4_8 UNSIGNED     | No             | Unpack indices into VU1 memory.                                                             |
 | UNPACK V4_8 UNSIGNED     | No             | Unpack unknown indices 1 into VU1 memory.                                                   |
 | UNPACK V4_8 UNSIGNED     | No             | Unpack unknown indices 2 into VU1 memory.                                                   |
 | STROW                    | No             | Convert position indices below into addresses by adding the address of the positions table. |
 | UNPACK                   | No             | Unpack vertex info into VU1 memory (part 3).                                                |
-| STMOD mode=0             | No             | Disable offset mode (see STROW)                                                             |
+| STMOD mode=0             | Yes            | Disable offset mode (see STROW)                                                             |
 
 ## Tfrag Microprogram
 

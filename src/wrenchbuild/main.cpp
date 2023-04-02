@@ -77,7 +77,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, Game
 static void pack(const std::vector<fs::path>& input_paths, const std::string& asset, const fs::path& output_path, BuildConfig config, const std::string& hint, const char* underlay_path);
 static void decompress(const fs::path& input_path, const fs::path& output_path, s64 offset);
 static void compress(const fs::path& input_path, const fs::path& output_path);
-static void extract_tfrags(const fs::path& input_path, const fs::path& output_path);
+static void extract_tfrags(const fs::path& input_path, const fs::path& output_path, Game game);
 static void extract_moby(const fs::path& input_path, const fs::path& output_path, Game game);
 static void extract_tie(const fs::path& input_path, const fs::path& output_path, Game game);
 static void extract_shrub(const fs::path& input_path, const fs::path& output_path);
@@ -226,8 +226,8 @@ static int wrenchbuild(int argc, char** argv) {
 	}
 	
 	if(mode == "extract_tfrags") {
-		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH);
-		extract_tfrags(args.input_paths[0], args.output_path);
+		ParsedArgs args = parse_args(argc, argv, ARG_INPUT_PATH | ARG_OUTPUT_PATH | ARG_GAME);
+		extract_tfrags(args.input_paths[0], args.output_path, args.game);
 		return 0;
 	}
 	
@@ -511,9 +511,9 @@ static void compress(const fs::path& input_path, const fs::path& output_path) {
 	write_file(output_path, compressed_bytes);
 }
 
-static void extract_tfrags(const fs::path& input_path, const fs::path& output_path) {
+static void extract_tfrags(const fs::path& input_path, const fs::path& output_path, Game game) {
 	auto bin = read_file(input_path.string().c_str());
-	Tfrags tfrags = read_tfrags(bin);
+	Tfrags tfrags = read_tfrags(bin, game);
 	ColladaScene scene = recover_tfrags(tfrags);
 	auto xml = write_collada(scene);
 	write_file(output_path, xml, "w");

@@ -22,6 +22,7 @@
 #include <core/vif.h>
 #include <core/buffer.h>
 #include <core/collada.h>
+#include <core/build_config.h>
 #include <engine/basic_types.h>
 #include <engine/gif.h>
 
@@ -29,6 +30,7 @@ packed_struct(TfragsHeader,
 	/* 0x0 */ s32 table_offset;
 	/* 0x4 */ s32 tfrag_count;
 	/* 0x8 */ f32 thingy;
+	/* 0xc */ u32 mysterious_second_thingy;
 )
 
 packed_struct(TfragHeader,
@@ -56,7 +58,10 @@ packed_struct(TfragHeader,
 	/* 0x2d */ u8 flags;
 	/* 0x2e */ u16 msphere_ofs;
 	/* 0x30 */ u16 light_ofs;
-	/* 0x32 */ u16 light_vert_start_ofs;
+	packed_nested_anon_union(
+		/* 0x32 */ u16 msphere_ofs_2_rac;
+		/* 0x32 */ u16 light_vert_start_ofs_gc_uya_dl;
+	)
 	/* 0x34 */ u8 dir_lights_one;
 	/* 0x35 */ u8 dir_lights_upd;
 	/* 0x36 */ u16 point_lights;
@@ -158,7 +163,13 @@ struct TfragMemoryMap {
 
 struct Tfrag {
 	Vec4f bsphere;
+	u8 lod_2_rgba_count;
+	u8 lod_1_rgba_count;
+	u8 lod_0_rgba_count;
+	u8 base_only;
 	u8 rgba_verts_loc;
+	u8 flags;
+	u16 occl_index;
 	u16 mip_dist;
 	VifSTROW base_position;
 	std::vector<u8> lod_2_indices;
@@ -180,9 +191,6 @@ struct Tfrag {
 	std::vector<u8> lod_0_unknown_indices_2;
 	std::vector<TfragVertexInfo> lod_0_vertex_info;
 	std::vector<TfragRgba> rgbas;
-	u8 lod_2_rgba_count;
-	u8 lod_1_rgba_count;
-	u8 lod_0_rgba_count;
 	std::vector<u8> light;
 	std::vector<Vec4f> msphere;
 	TfragCube cube;
@@ -191,6 +199,7 @@ struct Tfrag {
 
 struct Tfrags {
 	f32 thingy;
+	u32 mysterious_second_thingy;
 	std::vector<Tfrag> fragments;
 };
 
@@ -208,8 +217,8 @@ struct TfragLod {
 	TfragCube cube;
 };
 
-Tfrags read_tfrags(Buffer src);
-void write_tfrags(OutBuffer dest, const Tfrags& tfrags);
+Tfrags read_tfrags(Buffer src, Game game);
+void write_tfrags(OutBuffer dest, const Tfrags& tfrags, Game game);
 
 void allocate_tfrags_vu(Tfrags& tfrags);
 
