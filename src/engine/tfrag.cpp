@@ -42,7 +42,11 @@ Tfrags read_tfrags(Buffer src) {
 	tfrags.fragments.reserve(table_header.tfrag_count);
 	
 	auto table = src.read_multiple<TfragHeader>(table_header.table_offset, table_header.tfrag_count, "tfrag table");
-	for(const TfragHeader& header : table) {
+	for(size_t i = 0; i < table.size(); i++) {
+		const TfragHeader& header = table[i];
+		
+		ERROR_CONTEXT("tfrag %d", i);
+		
 		Tfrag& tfrag = tfrags.fragments.emplace_back();
 		Buffer data = src.subbuf(table_header.table_offset + header.data);
 		
@@ -99,26 +103,26 @@ Tfrags read_tfrags(Buffer src) {
 		std::vector<VifPacket> lod_01_command_list = read_vif_command_list(lod_01_buffer);
 		std::vector<VifPacket> lod_01 = filter_vif_unpacks(lod_01_command_list);
 		
-		s32 i = 0;
-		if(i < lod_01.size() && lod_01[i].code.unpack.vnvl == VifVnVl::V4_8) {
-			tfrag.lod_01_unknown_indices = read_unpack<u8>(lod_01[i], VifVnVl::V4_8);
-			tfrag.memory_map.unk_indices_lod_01_addr = lod_01[i].code.unpack.addr;
-			i++;
+		s32 j = 0;
+		if(j < lod_01.size() && lod_01[j].code.unpack.vnvl == VifVnVl::V4_8) {
+			tfrag.lod_01_unknown_indices = read_unpack<u8>(lod_01[j], VifVnVl::V4_8);
+			tfrag.memory_map.unk_indices_lod_01_addr = lod_01[j].code.unpack.addr;
+			j++;
 		}
-		if(i < lod_01.size() && lod_01[i].code.unpack.vnvl == VifVnVl::V4_8) {
-			tfrag.lod_01_unknown_indices_2 = read_unpack<u8>(lod_01[i], VifVnVl::V4_8);
-			tfrag.memory_map.unk_indices_2_lod_01_addr = lod_01[i].code.unpack.addr;
-			i++;
+		if(j < lod_01.size() && lod_01[j].code.unpack.vnvl == VifVnVl::V4_8) {
+			tfrag.lod_01_unknown_indices_2 = read_unpack<u8>(lod_01[j], VifVnVl::V4_8);
+			tfrag.memory_map.unk_indices_2_lod_01_addr = lod_01[j].code.unpack.addr;
+			j++;
 		}
-		if(i < lod_01.size() && lod_01[i].code.unpack.vnvl == VifVnVl::V4_16) {
-			tfrag.lod_01_vertex_info = read_unpack<TfragVertexInfo>(lod_01[i], VifVnVl::V4_16);
-			tfrag.memory_map.vertex_info_lod_01_addr = lod_01[i].code.unpack.addr;
-			i++;
+		if(j < lod_01.size() && lod_01[j].code.unpack.vnvl == VifVnVl::V4_16) {
+			tfrag.lod_01_vertex_info = read_unpack<TfragVertexInfo>(lod_01[j], VifVnVl::V4_16);
+			tfrag.memory_map.vertex_info_lod_01_addr = lod_01[j].code.unpack.addr;
+			j++;
 		}
-		if(i < lod_01.size() && lod_01[i].code.unpack.vnvl == VifVnVl::V3_16) {
-			tfrag.lod_01_positions = read_unpack<TfragVertexPosition>(lod_01[i], VifVnVl::V3_16);
-			tfrag.memory_map.positions_lod_01_addr = lod_01[i].code.unpack.addr;
-			i++;
+		if(j < lod_01.size() && lod_01[j].code.unpack.vnvl == VifVnVl::V3_16) {
+			tfrag.lod_01_positions = read_unpack<TfragVertexPosition>(lod_01[j], VifVnVl::V3_16);
+			tfrag.memory_map.positions_lod_01_addr = lod_01[j].code.unpack.addr;
+			j++;
 		}
 		
 		// LOD 0
@@ -128,34 +132,34 @@ Tfrags read_tfrags(Buffer src) {
 		std::vector<VifPacket> lod_0_command_list = read_vif_command_list(lod_0_buffer);
 		std::vector<VifPacket> lod_0 = filter_vif_unpacks(lod_0_command_list);
 		
-		i = 0;
-		if(i < lod_0.size() && lod_0[i].code.unpack.vnvl == VifVnVl::V3_16) {
-			tfrag.lod_0_positions = read_unpack<TfragVertexPosition>(lod_0[i], VifVnVl::V3_16);
-			tfrag.memory_map.positions_lod_0_addr = lod_0[i].code.unpack.addr;
-			i++;
+		j = 0;
+		if(j < lod_0.size() && lod_0[j].code.unpack.vnvl == VifVnVl::V3_16) {
+			tfrag.lod_0_positions = read_unpack<TfragVertexPosition>(lod_0[j], VifVnVl::V3_16);
+			tfrag.memory_map.positions_lod_0_addr = lod_0[j].code.unpack.addr;
+			j++;
 		}
-		verify(i < lod_0.size(), "Too few LOD 0 VIF unpacks!");
-		tfrag.lod_0_strips = read_unpack<TfragStrip>(lod_0[i], VifVnVl::V4_8);
-		verify(tfrag.memory_map.strips_addr == lod_0[i].code.unpack.addr, "Weird tfrag.");
-		i++;
-		verify(i < lod_0.size(), "Too few LOD 0 VIF unpacks!");
-		tfrag.lod_0_indices = read_unpack<u8>(lod_0[i], VifVnVl::V4_8);
-		verify(tfrag.memory_map.indices_addr == lod_0[i].code.unpack.addr, "Weird tfrag.");
-		i++;
-		if(i < lod_0.size() && lod_0[i].code.unpack.vnvl == VifVnVl::V4_8) {
-			tfrag.lod_0_unknown_indices = read_unpack<u8>(lod_0[i], VifVnVl::V4_8);
-			tfrag.memory_map.unk_indices_lod_0_addr = lod_0[i].code.unpack.addr;
-			i++;
+		verify(j < lod_0.size(), "Too few LOD 0 VIF unpacks!");
+		tfrag.lod_0_strips = read_unpack<TfragStrip>(lod_0[j], VifVnVl::V4_8);
+		verify(tfrag.memory_map.strips_addr == lod_0[j].code.unpack.addr, "Weird tfrag.");
+		j++;
+		verify(j < lod_0.size(), "Too few LOD 0 VIF unpacks!");
+		tfrag.lod_0_indices = read_unpack<u8>(lod_0[j], VifVnVl::V4_8);
+		verify(tfrag.memory_map.indices_addr == lod_0[j].code.unpack.addr, "Weird tfrag.");
+		j++;
+		if(j < lod_0.size() && lod_0[j].code.unpack.vnvl == VifVnVl::V4_8) {
+			tfrag.lod_0_unknown_indices = read_unpack<u8>(lod_0[j], VifVnVl::V4_8);
+			tfrag.memory_map.unk_indices_lod_0_addr = lod_0[j].code.unpack.addr;
+			j++;
 		}
-		if(i < lod_0.size() && lod_0[i].code.unpack.vnvl == VifVnVl::V4_8) {
-			tfrag.lod_0_unknown_indices_2 = read_unpack<u8>(lod_0[i], VifVnVl::V4_8);
-			tfrag.memory_map.unk_indices_2_lod_0_addr = lod_0[i].code.unpack.addr;
-			i++;
+		if(j < lod_0.size() && lod_0[j].code.unpack.vnvl == VifVnVl::V4_8) {
+			tfrag.lod_0_unknown_indices_2 = read_unpack<u8>(lod_0[j], VifVnVl::V4_8);
+			tfrag.memory_map.unk_indices_2_lod_0_addr = lod_0[j].code.unpack.addr;
+			j++;
 		}
-		if(i < lod_0.size() && lod_0[i].code.unpack.vnvl == VifVnVl::V4_16) {
-			tfrag.lod_0_vertex_info = read_unpack<TfragVertexInfo>(lod_0[i], VifVnVl::V4_16);
-			tfrag.memory_map.vertex_info_lod_0_addr = lod_0[i].code.unpack.addr;
-			i++;
+		if(j < lod_0.size() && lod_0[j].code.unpack.vnvl == VifVnVl::V4_16) {
+			tfrag.lod_0_vertex_info = read_unpack<TfragVertexInfo>(lod_0[j], VifVnVl::V4_16);
+			tfrag.memory_map.vertex_info_lod_0_addr = lod_0[j].code.unpack.addr;
+			j++;
 		}
 		
 		tfrag.rgbas = data.read_multiple<TfragRgba>(header.rgba_ofs, header.rgba_size * 4, "rgbas").copy();
@@ -440,24 +444,6 @@ ColladaScene recover_tfrags(const Tfrags& tfrags) {
 			texture_count = std::max(texture_count, primitive.d1_tex0_1.data_lo + 1);
 		}
 	}
-	
-	for(s32 i = 0; i < sizeof(TfragHeaderUnpack); i+=2) {
-		printf("%02x: %hx\n", i*2, *(u16*) &((u8*) &tfrags.fragments[0].common_vu_header)[i]);
-	}
-	
-	printf("\ncommonvtxinfo:\n");
-	for(const TfragVertexInfo& info : tfrags.fragments[0].common_vertex_info) {
-		printf("%hx %hx | ", info.vertex_data_offsets[0], info.vertex_data_offsets[1]);
-	}
-	printf("\nlod01vtxinfo:\n");
-	for(const TfragVertexInfo& info : tfrags.fragments[0].lod_01_vertex_info) {
-		printf("%hx %hx | ", info.vertex_data_offsets[0], info.vertex_data_offsets[1]);
-	}
-	printf("\nlod0vtxinfo:\n");
-	for(const TfragVertexInfo& info : tfrags.fragments[0].lod_0_vertex_info) {
-		printf("%hx %hx | ", info.vertex_data_offsets[0], info.vertex_data_offsets[1]);
-	}
-	printf("\nendvtxinfo\n");
 	
 	ColladaScene scene;
 	
