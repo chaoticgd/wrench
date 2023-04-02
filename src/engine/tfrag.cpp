@@ -303,16 +303,15 @@ void write_tfrags(OutBuffer dest, const Tfrags& tfrags, Game game) {
 		header.lod_0_ofs = checked_int_cast<u16>(lod_01_ofs - tfrag_ofs);
 		
 		// LOD 01
-		if(game == Game::RAC || !tfrag.lod_01_unknown_indices.empty() || !tfrag.lod_01_unknown_indices_2.empty()) {
+		if(!tfrag.lod_01_unknown_indices.empty() || !tfrag.lod_01_unknown_indices_2.empty()) {
 			write_strow(dest, indices_strow);
 		}
-		// R&C1 didn't optimise the VIF command lists so much.
-		bool lod_01_needs_stmod = game == Game::RAC
-			|| !tfrag.lod_01_unknown_indices.empty()
-			|| !tfrag.lod_01_unknown_indices_2.empty()
-			|| !tfrag.lod_01_vertex_info.empty()
-			|| !tfrag.lod_01_positions.empty()
-			|| !tfrag.lod_0_positions.empty();
+		bool lod_01_needs_stmod =
+			!tfrag.lod_01_unknown_indices.empty() ||
+			!tfrag.lod_01_unknown_indices_2.empty() ||
+			!tfrag.lod_01_vertex_info.empty() ||
+			!tfrag.lod_01_positions.empty() ||
+			!tfrag.lod_0_positions.empty();
 		if(lod_01_needs_stmod) {
 			dest.write<u32>(0x05000001); // stmod
 		}
@@ -322,7 +321,7 @@ void write_tfrags(OutBuffer dest, const Tfrags& tfrags, Game game) {
 		if(!tfrag.lod_01_unknown_indices_2.empty()) {
 			write_unpack(dest, tfrag.lod_01_unknown_indices_2, VifVnVl::V4_8, VifUsn::UNSIGNED, tfrag.memory_map.unk_indices_2_lod_01_addr);
 		}
-		if(game == Game::RAC || !tfrag.lod_01_vertex_info.empty()) {
+		if(!tfrag.lod_01_vertex_info.empty()) {
 			write_strow(dest, double_vertex_info_strow);
 		}
 		if(!tfrag.lod_01_vertex_info.empty()) {
@@ -353,7 +352,7 @@ void write_tfrags(OutBuffer dest, const Tfrags& tfrags, Game game) {
 		if(!tfrag.lod_0_unknown_indices_2.empty()) {
 			write_unpack(dest, tfrag.lod_0_unknown_indices_2, VifVnVl::V4_8, VifUsn::UNSIGNED, tfrag.memory_map.unk_indices_2_lod_0_addr);
 		}
-		if(game == Game::RAC || !tfrag.lod_0_vertex_info.empty()) {
+		if(!tfrag.lod_0_vertex_info.empty()) {
 			write_strow(dest, double_vertex_info_strow);
 		}
 		if(!tfrag.lod_0_vertex_info.empty()) {
