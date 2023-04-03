@@ -20,6 +20,7 @@
 #define ASSETMGR_ASSET_UTIL_H
 
 #include <any>
+#include <functional>
 #include <glm/glm.hpp>
 
 #include <wtf/wtf.h>

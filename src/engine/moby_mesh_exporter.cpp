@@ -20,6 +20,8 @@
 
 #include <map>
 #include <set>
+#include <algorithm>
+
 #include <core/vif.h>
 
 #define VERBOSE_MATRIX_ALLOCATION(...) //__VA_ARGS__

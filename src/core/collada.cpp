@@ -20,6 +20,7 @@
 
 #include <map>
 #include <ctype.h>
+#include <algorithm>
 #include <rapidxml/rapidxml.hpp>
 
 #include <core/mesh.h>

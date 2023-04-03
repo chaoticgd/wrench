@@ -18,6 +18,8 @@
 
 #include "iso_tools.h"
 
+#include <functional>
+
 #include <core/filesystem.h>
 #include <editor/util.h>
 #include <editor/fs_includes.h>

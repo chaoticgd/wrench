@@ -17,7 +17,9 @@
 */
 
 #include "inspector.h"
-#include "imgui.h"
+
+#include <functional>
+#include <imgui.h>
 
 #include <editor/app.h>
 #include <editor/util.h>

@@ -18,8 +18,10 @@
 
 #include "asset.h"
 
-#include "asset_types.h"
+#include <algorithm>
 #include <filesystem>
+
+#include "asset_types.h"
 
 #ifndef _MSC_VER
 #include <unistd.h> // getpid

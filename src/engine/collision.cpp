@@ -18,6 +18,8 @@
 
 #include "collision.h"
 
+#include <algorithm>
+
 #include <core/timer.h>
 
 packed_struct(CollisionHeader,

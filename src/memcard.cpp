@@ -16,6 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <algorithm>
+
 #include <core/filesystem.h>
 #include <core/memory_card.h>
 #include <gui/gui.h>

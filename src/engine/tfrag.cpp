@@ -18,6 +18,8 @@
 
 #include "tfrag.h"
 
+#include <algorithm>
+
 #define TFRAG_DEBUG_RECOVER_ALL_LODS
 #define TFRAG_DEBUG_RAINBOW_STRIPS
 

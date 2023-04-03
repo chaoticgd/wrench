@@ -18,7 +18,8 @@
 
 #include "level.h"
 
-#include "png.h"
+#include <algorithm>
+#include <core/png.h>
 
 s32 PvarField::size() const {
 	switch(descriptor) {

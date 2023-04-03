@@ -20,6 +20,8 @@
 
 #include <set>
 #include <zip.h>
+#include <algorithm>
+
 #include <core/png.h>
 #include <core/stream.h>
 #include <core/filesystem.h>

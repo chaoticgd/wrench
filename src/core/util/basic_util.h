@@ -30,7 +30,6 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <exception>
-#include <functional>
 #include <type_traits>
 
 using u8 = unsigned char;

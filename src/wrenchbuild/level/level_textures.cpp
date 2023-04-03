@@ -19,6 +19,7 @@
 #include "level_textures.h"
 
 #include <map>
+#include <algorithm>
 
 #include <core/png.h>
 #include <assetmgr/material_asset.h>

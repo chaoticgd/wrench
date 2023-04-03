@@ -16,8 +16,10 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "mesh.h"
-#include "timer.h"
+#include <algorithm>
+
+#include <core/mesh.h>
+#include <core/timer.h>
 
 Mesh sort_vertices(Mesh src, bool (*compare)(const Vertex& lhs, const Vertex& rhs)) {
 	std::vector<s32> vertex_mapping(src.vertices.size());

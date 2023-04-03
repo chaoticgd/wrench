@@ -18,6 +18,8 @@
 
 #include "iso_unpacker.h"
 
+#include <algorithm>
+
 #include <core/png.h>
 #include <iso/iso_filesystem.h>
 #include <iso/wad_identifier.h>

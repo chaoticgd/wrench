@@ -18,6 +18,8 @@
 
 #include "shrub.h"
 
+#include <algorithm>
+
 #include <core/vif.h>
 
 //#define WRITE_OUT_SHRUB_STRIPS_AS_SEPARATE_MESHES

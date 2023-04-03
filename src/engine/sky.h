@@ -19,6 +19,8 @@
 #ifndef ENGINE_SKY_H
 #define ENGINE_SKY_H
 
+#include <tuple>
+
 #include <core/buffer.h>
 #include <core/collada.h>
 #include <core/texture.h>
