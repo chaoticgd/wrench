@@ -1,8 +1,10 @@
 # Wrench Editor
 
-A set of modding tools for the Ratchet & Clank PS2 games. Works with R&C1, R&C2, R&C3 and Deadlocked. Work in progress.
+A set of modding tools for the Ratchet & Clank PS2 games. Compatible with with R&C1, R&C2, R&C3 and Deadlocked. Work in progress.
 
-To download the latest Windows build, see the [Releases](https://github.com/chaoticgd/wrench/releases) page. Linux users can follow the build instructions below.
+To download the latest release, see the [Releases](https://github.com/chaoticgd/wrench/releases) page. To download the latest unstable build, see the [Unstable Builds](https://github.com/chaoticgd/wrench/releases/tag/unstable) page. Currently only Windows and Linux are supported.
+
+Feel free to use the issues page to ask questions about Wrench or technical questions about the games.
 
 Features currently include:
 - Asset System
@@ -78,17 +80,17 @@ For documentation on the asset system, see [Asset System](docs/asset_system.md) 
 	This should generate `wrench.sln` along with a few `.vcxproj` files. 
 	In case no such files are generated, you can explicitly specify usage of the Visual Studio generator by running the following command:
 	> cmake . -G "Visual Studio X YYYY"
+	
 	where `X` is the Visual Studio version and `YYYY` is the Visual Studio year (example: `Visual Studio 16 2019`)
 	A complete list can be obtained by running `cmake --help`.
 
-7.	Build the project
-	* From the command line
-
-	> cmake --build bin/ --config BUILD_TYPE
-
-	where `BUILD_TYPE` is one of `Debug` (very slow - not recommended), `Release` (no symbols - not recommended), `RelWithDebInfo` (recommended) or `MinSizeRel`.
-
-	* From Visual Studio
+7. Build the project:
+	- From the command line
+		
+		> cmake --build bin/ --config BUILD_TYPE
+		
+		where `BUILD_TYPE` is one of `Debug` (very slow - not recommended), `Release` (no symbols - not recommended), `RelWithDebInfo` (recommended) or `MinSizeRel`.
 	
-	Open the newly generated `wrench.sln` in Visual Studio. In the Solution Explorer, right-click on `wrench` and click `Set as Startup Project`.
-	You should now be able to build and debug wrench using the toolbar controls and all Visual Studio features.
+	- From Visual Studio
+		
+		Open the newly generated `wrench.sln` in Visual Studio. In the Solution Explorer, right-click on `wrench` and click `Set as Startup Project`. You should now be able to build and debug wrench using the toolbar controls and all Visual Studio features.

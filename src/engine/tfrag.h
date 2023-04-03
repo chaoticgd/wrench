@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2022 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,13 +22,15 @@
 #include <core/vif.h>
 #include <core/buffer.h>
 #include <core/collada.h>
+#include <core/build_config.h>
 #include <engine/basic_types.h>
 #include <engine/gif.h>
 
 packed_struct(TfragsHeader,
 	/* 0x0 */ s32 table_offset;
 	/* 0x4 */ s32 tfrag_count;
-	/* 0x8 */ s32 unknown;
+	/* 0x8 */ f32 thingy;
+	/* 0xc */ u32 mysterious_second_thingy;
 )
 
 packed_struct(TfragHeader,
@@ -56,7 +58,10 @@ packed_struct(TfragHeader,
 	/* 0x2d */ u8 flags;
 	/* 0x2e */ u16 msphere_ofs;
 	/* 0x30 */ u16 light_ofs;
-	/* 0x32 */ u16 light_vert_start_ofs;
+	packed_nested_anon_union(
+		/* 0x32 */ u16 light_end_ofs_rac_gc_uya;
+		/* 0x32 */ u16 light_vert_start_ofs_dl;
+	)
 	/* 0x34 */ u8 dir_lights_one;
 	/* 0x35 */ u8 dir_lights_upd;
 	/* 0x36 */ u16 point_lights;
@@ -95,26 +100,26 @@ packed_struct(TfragCube,
 
 packed_struct(TfragHeaderUnpack,
 	/* PACK UNPK */
-	/* 0x00 0x00 */ u16 unknown_0;
+	/* 0x00 0x00 */ u16 common_positions_count;
 	/* 0x02 0x04 */ u16 unknown_2;
-	/* 0x04 0x08 */ u16 unknown_4;
+	/* 0x04 0x08 */ u16 lod_01_positions_count;
 	/* 0x06 0x0c */ u16 unknown_6;
-	/* 0x08 0x10 */ u16 unknown_8;
+	/* 0x08 0x10 */ u16 lod_0_positions_count;
 	/* 0x0a 0x14 */ u16 unknown_a;
-	/* 0x0c 0x18 */ u16 vertex_pos_and_colours;
-	/* 0x0e 0x1c */ u16 vertex_sts_and_pointers;
+	/* 0x0c 0x18 */ u16 vertex_pos_and_colours_addr;
+	/* 0x0e 0x1c */ u16 vertex_info;
 	/* 0x10 0x20 */ u16 unknown_10;
-	/* 0x12 0x24 */ u16 unknown_12;
+	/* 0x12 0x24 */ u16 other_vertex_info_part_2;
 	/* 0x14 0x28 */ u16 unknown_14;
-	/* 0x16 0x2c */ u16 unknown_16;
+	/* 0x16 0x2c */ u16 vertex_info_part_2; // Only the part 2 entries have vertex_data_offsets[0] populated.
 	/* 0x18 0x30 */ u16 unknown_18;
 	/* 0x1a 0x34 */ u16 indices;
-	/* 0x1c 0x38 */ u16 unknown_1c;
+	/* 0x1c 0x38 */ u16 other_unk_indices;
 	/* 0x1e 0x3c */ u16 unknown_1e;
-	/* 0x20 0x40 */ u16 unknown_20;
+	/* 0x20 0x40 */ u16 unk_indices;
 	/* 0x22 0x44 */ u16 unknown_22;
-	/* 0x24 0x48 */ u16 commands;
-	/* 0x26 0x4c */ u16 texture_ad_gifs;
+	/* 0x24 0x48 */ u16 strips_addr;
+	/* 0x26 0x4c */ u16 texture_ad_gifs_addr;
 )
 
 packed_struct(TfragVertexPosition,
@@ -128,10 +133,10 @@ packed_struct(TfragVertexInfo,
 	/* PACK UNPK */
 	/* 0x00 0x00 */ s16 s;
 	/* 0x02 0x04 */ s16 t;
-	/* 0x04 0x08 */ s16 vertex_data_offsets[2];
+	/* 0x04 0x08 */ s16 vertex_data_offsets[2]; // vertex_data_offsets[0] always 0x1000 for common_vertex_info only.
 )
 
-packed_struct(Tface,
+packed_struct(TfragStrip,
 	/* PACK UNPK */
 	/* 0x00 0x00 */ s8 vertex_count_and_flag;
 	/* 0x01 0x04 */ s8 end_of_packet_flag;
@@ -139,39 +144,70 @@ packed_struct(Tface,
 	/* 0x03 0x0c */ s8 pad;
 )
 
+struct TfragMemoryMap {
+	s32 header_common_addr = -1;
+	s32 ad_gifs_common_addr = -1;
+	s32 positions_common_addr = -1;
+	s32 positions_lod_01_addr = -1;
+	s32 positions_lod_0_addr = -1;
+	s32 vertex_info_common_addr = -1;
+	s32 vertex_info_lod_01_addr = -1;
+	s32 vertex_info_lod_0_addr = -1;
+	s32 unk_indices_lod_01_addr = -1;
+	s32 unk_indices_2_lod_01_addr = -1;
+	s32 unk_indices_lod_0_addr = -1;
+	s32 unk_indices_2_lod_0_addr = -1;
+	s32 indices_addr = -1;
+	s32 strips_addr = -1;
+};
+
 struct Tfrag {
 	Vec4f bsphere;
+	u8 lod_2_rgba_count;
+	u8 lod_1_rgba_count;
+	u8 lod_0_rgba_count;
+	u8 base_only;
+	u8 rgba_verts_loc;
+	u8 flags;
+	u16 occl_index;
+	u16 mip_dist;
 	VifSTROW base_position;
 	std::vector<u8> lod_2_indices;
-	std::vector<Tface> lod_2_faces;
+	std::vector<TfragStrip> lod_2_strips;
 	TfragHeaderUnpack common_vu_header;
 	std::vector<TfragTexturePrimitive> common_textures;
 	std::vector<TfragVertexInfo> common_vertex_info;
 	std::vector<TfragVertexPosition> common_positions;
-	std::vector<Tface> lod_1_faces;
+	std::vector<TfragStrip> lod_1_strips;
 	std::vector<u8> lod_1_indices;
-	std::vector<std::vector<u8>> lod_01_unknown_indices;
+	std::vector<u8> lod_01_unknown_indices;
+	std::vector<u8> lod_01_unknown_indices_2;
 	std::vector<TfragVertexInfo> lod_01_vertex_info;
 	std::vector<TfragVertexPosition> lod_01_positions;
 	std::vector<TfragVertexPosition> lod_0_positions;
-	std::vector<Tface> lod_0_faces;
+	std::vector<TfragStrip> lod_0_strips;
 	std::vector<u8> lod_0_indices;
-	std::vector<std::vector<u8>> lod_0_unknown_indices;
+	std::vector<u8> lod_0_unknown_indices;
+	std::vector<u8> lod_0_unknown_indices_2;
 	std::vector<TfragVertexInfo> lod_0_vertex_info;
 	std::vector<TfragRgba> rgbas;
-	u8 lod_2_rgba_count;
-	u8 lod_1_rgba_count;
-	u8 lod_0_rgba_count;
 	std::vector<u8> light;
 	std::vector<Vec4f> msphere;
 	TfragCube cube;
+	TfragMemoryMap memory_map;
 };
 
-struct TfragHighestLod {
+struct Tfrags {
+	f32 thingy;
+	u32 mysterious_second_thingy;
+	std::vector<Tfrag> fragments;
+};
+
+struct TfragLod {
 	Vec4f bsphere;
 	VifSTROW base_position;
 	std::vector<TfragTexturePrimitive> common_textures;
-	std::vector<Tface> faces;
+	std::vector<TfragStrip> strips;
 	std::vector<u8> indices;
 	std::vector<TfragVertexInfo> vertex_info;
 	std::vector<TfragVertexPosition> positions;
@@ -181,10 +217,11 @@ struct TfragHighestLod {
 	TfragCube cube;
 };
 
-std::vector<Tfrag> read_tfrags(Buffer src);
-void write_tfrags(OutBuffer dest, const std::vector<Tfrag>& tfrags);
+Tfrags read_tfrags(Buffer src, Game game);
+void write_tfrags(OutBuffer dest, const Tfrags& tfrags, Game game);
 
-TfragHighestLod extract_highest_tfrag_lod(Tfrag tfrag);
-ColladaScene recover_tfrags(const std::vector<TfragHighestLod>& tfrags);
+void allocate_tfrags_vu(Tfrags& tfrags);
+
+ColladaScene recover_tfrags(const Tfrags& tfrags);
 
 #endif

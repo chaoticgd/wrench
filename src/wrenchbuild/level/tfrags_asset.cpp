@@ -20,6 +20,7 @@
 #include <engine/tfrag.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
+#include <wrenchbuild/tests.h>
 
 static void unpack_tfrags(TfragsAsset& dest, InputStream& src, BuildConfig config, const char* hint);
 static void pack_tfrags(OutputStream& dest, const TfragsAsset& src, BuildConfig config, const char* hint);
@@ -53,13 +54,8 @@ static void unpack_tfrags(TfragsAsset& dest, InputStream& src, BuildConfig confi
 	unpack_asset_impl(dest.core<BinaryAsset>(), src, nullptr, config);
 	
 	std::vector<u8> buffer = src.read_multiple<u8>(0, src.size());
-	std::vector<Tfrag> tfrags = read_tfrags(buffer);
-	std::vector<TfragHighestLod> highest_lods;
-	highest_lods.reserve(tfrags.size());
-	for(Tfrag& tfrag : tfrags) {
-		highest_lods.emplace_back(extract_highest_tfrag_lod(std::move(tfrag)));
-	}
-	ColladaScene scene = recover_tfrags(highest_lods);
+	Tfrags tfrags = read_tfrags(buffer, config.game());
+	ColladaScene scene = recover_tfrags(tfrags);
 	
 	std::vector<u8> xml = write_collada(scene);
 	auto ref = dest.file().write_text_file("mesh.dae", (char*) xml.data());
@@ -83,10 +79,43 @@ static void pack_tfrags(OutputStream& dest, const TfragsAsset& src, BuildConfig 
 }
 
 static bool test_tfrags(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode) {
-	std::vector<Tfrag> tfrags = read_tfrags(src);
+	Tfrags tfrags_original = read_tfrags(src, config.game());
+	
+	Tfrags tfrags_reallocated = tfrags_original;
+	allocate_tfrags_vu(tfrags_reallocated);
+	
+	// Test that the data is being allocated in VU memory correctly. We do this
+	// sepearately so that more helpful error messages can be generated.
+	for(s32 i = 0; i < (s32) tfrags_original.fragments.size(); i++) {
+		bool matching_allocation = false;
+		#define COMPARE(field) \
+			if(tfrags_original.fragments[i].memory_map.field != tfrags_reallocated.fragments[i].memory_map.field) { \
+				fprintf(stderr, "Field " #field " for tfrag %d doesn't match. Original is 0x%x, reallocated is 0x%x.\n", \
+					i, tfrags_original.fragments[i].memory_map.field, tfrags_reallocated.fragments[i].memory_map.field); \
+				matching_allocation = true; \
+			}
+		COMPARE(header_common_addr);
+		COMPARE(ad_gifs_common_addr);
+		COMPARE(positions_common_addr);
+		COMPARE(positions_lod_01_addr);
+		COMPARE(positions_lod_0_addr);
+		COMPARE(vertex_info_common_addr);
+		COMPARE(vertex_info_lod_01_addr);
+		COMPARE(vertex_info_lod_0_addr);
+		COMPARE(unk_indices_lod_01_addr);
+		COMPARE(unk_indices_lod_0_addr);
+		COMPARE(indices_addr);
+		COMPARE(strips_addr);
+		if(matching_allocation) {
+			return false;
+		}
+	}
 	
 	std::vector<u8> dest;
-	write_tfrags(dest, tfrags);
+	write_tfrags(dest, tfrags_reallocated, config.game());
+	
+	// Padding is inserted so that the tfrags block for each chunk is the same size.
+	strip_trailing_padding_from_lhs(src, dest, -1);
 	
 	return diff_buffers(src, dest, 0, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
 }
