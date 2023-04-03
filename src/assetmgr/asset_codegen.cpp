@@ -136,16 +136,20 @@ int main(int argc, char** argv) {
 static void generate_asset_type(const WtfNode* asset_type, int id) {
 	out("class %sAsset : public Asset {\n", asset_type->tag);
 	
-	out("\tenum {\n");
 	int attribute_count = 0;
 	for(WtfNode* node = asset_type->first_child; node != NULL; node = node->next_sibling) {
 		std::string cpp_type = node_to_cpp_type(node);
 		if(!cpp_type.empty()) {
+			if(attribute_count == 0) {
+				out("\tenum {\n");
+			}
 			out("\t\tATTRIB_%s = (1 << %d),\n", node->tag, attribute_count);
 			attribute_count++;
 		}
 	}
-	out("\t};\n");
+	if(attribute_count > 0) {
+		out("\t};\n");
+	}
 	
 	// We use a bitfield to store whether each attribute exists instead of
 	// something like std::optional to save memory. If you need this to be

@@ -34,7 +34,7 @@ void zone_delete(void* pointer, std::size_t size, s32 zone) {
 	MemoryUsageStatistics& stats = g_memory_zones[zone].stats;
 	stats.bytes_used -= size;
 	stats.total_frees++;
-	return ::operator delete(pointer, size);
+	return ::operator delete(pointer);
 }
 
 void report_memory_statistics() {
