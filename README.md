@@ -1,6 +1,6 @@
 # Wrench Editor
 
-A set of modding tools for the Ratchet & Clank PS2 games. Compatible with with R&C1, R&C2, R&C3 and Deadlocked. Work in progress.
+A set of modding tools for the Ratchet & Clank PS2 games. Compatible with R&C1, R&C2, R&C3 and Deadlocked. Work in progress.
 
 To download the latest release, see the [Releases](https://github.com/chaoticgd/wrench/releases) page. To download the latest unstable build, see the [Unstable Builds](https://github.com/chaoticgd/wrench/releases/tag/unstable) page. Currently only Windows and Linux are supported.
 
@@ -84,13 +84,13 @@ For documentation on the asset system, see [Asset System](docs/asset_system.md) 
 	where `X` is the Visual Studio version and `YYYY` is the Visual Studio year (example: `Visual Studio 16 2019`)
 	A complete list can be obtained by running `cmake --help`.
 
-7. Build the project:
+7.	Build the project:
 	- From the command line
-		
+
 		> cmake --build bin/ --config BUILD_TYPE
-		
+
 		where `BUILD_TYPE` is one of `Debug` (very slow - not recommended), `Release` (no symbols - not recommended), `RelWithDebInfo` (recommended) or `MinSizeRel`.
-	
+
 	- From Visual Studio
-		
+
 		Open the newly generated `wrench.sln` in Visual Studio. In the Solution Explorer, right-click on `wrench` and click `Set as Startup Project`. You should now be able to build and debug wrench using the toolbar controls and all Visual Studio features.
