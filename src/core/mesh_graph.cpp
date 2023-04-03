@@ -24,7 +24,7 @@ MeshGraph::MeshGraph(const Mesh& mesh) {
 	// Collect faces.
 	for(const SubMesh& submesh : mesh.submeshes) {
 		for(const Face& face : submesh.faces) {
-			assert(!face.is_quad());
+			verify_fatal(!face.is_quad());
 			if(face.is_quad()) {
 				FaceInfo& info_1 = _faces.emplace_back();
 				info_1.v[0] = face.v0;
@@ -91,7 +91,7 @@ MeshGraph::MeshGraph(const Mesh& mesh) {
 					}
 					
 					EdgeIndex remove_index = edge(v2, v3);
-					assert(remove_index != NULL_EDGE_INDEX);
+					verify_fatal(remove_index != NULL_EDGE_INDEX);
 					
 					EdgeInfo& remove_info = edge_at(remove_index);
 					for(FaceIndex& remove_face : remove_info.faces) {

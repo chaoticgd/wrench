@@ -182,7 +182,7 @@ void OutBuffer::writesf(s32 indent_level, const char* format, va_list args) {
 	}
 	
 	s32 count = vsnprintf(temp + indent_level, 16 * 1024 - indent_level, format, args);
-	assert(count >= 0);
+	verify_fatal(count >= 0);
 	count += indent_level;
 	
 	size_t write_ofs = vec.size();
@@ -198,7 +198,7 @@ void OutBuffer::writelf(s32 indent_level, const char* format, va_list args) {
 	}
 	
 	s32 count = vsnprintf(temp + indent_level, 16 * 1024 - indent_level, format, args);
-	assert(count >= 0);
+	verify_fatal(count >= 0);
 	count += indent_level;
 	
 	size_t write_ofs = vec.size();

@@ -94,7 +94,7 @@ void write_collision(OutBuffer dest, const ColladaScene& scene, const std::strin
 	CollisionHeader header;
 	header.mesh = 0x40;
 	header.second_part = 0;
-	assert(dest.tell() % 0x40 == 0);
+	verify_fatal(dest.tell() % 0x40 == 0);
 	dest.write(header);
 	dest.pad(0x40);
 	write_collision_mesh(dest, sectors);
@@ -464,7 +464,7 @@ static CollisionSectors build_collision_sectors(const ColladaScene& scene, const
 						}
 					}
 				}
-				assert(inserts > 0);
+				verify_fatal(inserts > 0);
 			}
 		}
 	}

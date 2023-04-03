@@ -35,7 +35,7 @@ static std::vector<Mod> mods;
 static size_t selected_mod = SIZE_MAX;
 
 Mod* mod_list(const std::string& filter) {
-	assert(g_mod_images.size() >= 1);
+	verify_fatal(g_mod_images.size() >= 1);
 	
 	std::string filter_lower = filter;
 	for(char& c : filter_lower) c = tolower(c);

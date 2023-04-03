@@ -24,7 +24,7 @@ static u8 map_palette_index(u8 index);
 Texture::Texture() {}
 
 Texture Texture::create_rgba(s32 width, s32 height, std::vector<u8> data) {
-	assert(data.size() == width * height * 4);
+	verify_fatal(data.size() == width * height * 4);
 	
 	Texture texture;
 	texture.width = width;
@@ -35,7 +35,7 @@ Texture Texture::create_rgba(s32 width, s32 height, std::vector<u8> data) {
 }
 
 Texture Texture::create_grayscale(s32 width, s32 height, std::vector<u8> data) {
-	assert(data.size() == width * height);
+	verify_fatal(data.size() == width * height);
 	
 	Texture texture;
 	texture.width = width;
@@ -46,8 +46,8 @@ Texture Texture::create_grayscale(s32 width, s32 height, std::vector<u8> data) {
 }
 
 Texture Texture::create_4bit_paletted(s32 width, s32 height, std::vector<u8> data, std::vector<u32> palette) {
-	assert(data.size() == (width * height / 2));
-	assert(palette.size() <= 16);
+	verify_fatal(data.size() == (width * height / 2));
+	verify_fatal(palette.size() <= 16);
 	
 	Texture texture;
 	texture.width = width;
@@ -59,8 +59,8 @@ Texture Texture::create_4bit_paletted(s32 width, s32 height, std::vector<u8> dat
 }
 
 Texture Texture::create_8bit_paletted(s32 width, s32 height, std::vector<u8> data, std::vector<u32> palette) {
-	assert(data.size() == width * height);
-	assert(palette.size() <= 256);
+	verify_fatal(data.size() == width * height);
+	verify_fatal(palette.size() <= 256);
 	
 	Texture texture;
 	texture.width = width;
@@ -78,7 +78,7 @@ s32 Texture::bits_per_component() const {
 		case PixelFormat::PALETTED_8: return 8;
 		case PixelFormat::GRAYSCALE: return 8;
 	}
-	assert(0);
+	verify_fatal(0);
 }
 
 s32 Texture::bits_per_pixel() const {
@@ -88,16 +88,16 @@ s32 Texture::bits_per_pixel() const {
 		case PixelFormat::PALETTED_8: return 8;
 		case PixelFormat::GRAYSCALE: return 8;
 	}
-	assert(0);
+	verify_fatal(0);
 }
 
 std::vector<u32>& Texture::palette() {
-	assert(format == PixelFormat::PALETTED_4 || format == PixelFormat::PALETTED_8)
+	verify_fatal(format == PixelFormat::PALETTED_4 || format == PixelFormat::PALETTED_8)
 	return _palette;
 }
 
 const std::vector<u32>& Texture::palette() const {
-	assert(format == PixelFormat::PALETTED_4 || format == PixelFormat::PALETTED_8)
+	verify_fatal(format == PixelFormat::PALETTED_4 || format == PixelFormat::PALETTED_8)
 	return _palette;
 }
 

@@ -147,7 +147,7 @@ void write(OutBuffer dest, File& file) {
 				if(file_header.level_data_size == 0) {
 					file_header.level_data_size = data_size;
 				} else {
-					assert(data_size == file_header.level_data_size);
+					verify_fatal(data_size == file_header.level_data_size);
 				}
 			}
 			dest.write(file_header_ofs, file_header);
@@ -166,7 +166,7 @@ s64 write_sections(OutBuffer dest, std::vector<Section>& sections) {
 	
 	for(Section& section : sections) {
 		s64 size_difference = section.data.size() - section.unpadded_size;
-		assert(size_difference > -1 && size_difference < 4);
+		verify_fatal(size_difference > -1 && size_difference < 4);
 		
 		SectionHeader header;
 		header.type = section.type;
@@ -263,7 +263,7 @@ static void update_section_array(u8 current_game, OutBuffer dest, const GameOpt<
 }
 
 SaveGame parse_net(const File& file) {
-	assert(file.type == FileType::NET);
+	verify_fatal(file.type == FileType::NET);
 	SaveGame save;
 	save.loaded = true;
 	save.game = identify_game(file);
@@ -288,7 +288,7 @@ void update_net(File& dest, const SaveGame& save) {
 }
 
 SaveGame parse_slot(const File& file) {
-	assert(file.type == FileType::SLOT);
+	verify_fatal(file.type == FileType::SLOT);
 	SaveGame save;
 	save.loaded = true;
 	save.game = identify_game(file);
@@ -378,7 +378,7 @@ void update_slot(File& dest, const SaveGame& save) {
 			case ST_QUICKSWITCHGADGETS:   update_section      (save.game, buffer, save.quick_switch_gadgets);       break;
 		}
 	}
-	assert(dest.slot.levels.size() == save.levels.size());
+	verify_fatal(dest.slot.levels.size() == save.levels.size());
 	for(size_t i = 0; i < dest.slot.levels.size(); i++) {
 		for(Section& section : dest.slot.levels[i]) {
 			OutBuffer buffer = section.data;
@@ -403,7 +403,7 @@ GameBitfield identify_game(const File& file) {
 		case FileType::MAIN:
 		case FileType::PATCH:
 		case FileType::SYS: {
-			assert_not_reached("identify_format called on incorrect file type.");
+			verify_not_reached_fatal("identify_format called on incorrect file type.");
 		}
 	}
 	

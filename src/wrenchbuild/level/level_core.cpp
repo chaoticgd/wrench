@@ -343,16 +343,16 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 
 // Only designed to work on assets that have just been unpacked.
 BuildAsset& build_from_level_wad_asset(LevelWadAsset& core) {
-	assert(core.parent()); // Level
-	assert(core.parent()->parent()); // Collection
-	assert(core.parent()->parent()->parent()); // Build
+	verify_fatal(core.parent()); // Level
+	verify_fatal(core.parent()->parent()); // Collection
+	verify_fatal(core.parent()->parent()->parent()); // Build
 	Asset& build = *core.parent()->parent()->parent();
 	for(Asset* asset = &build.highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
 		if(asset->logical_type() == BuildAsset::ASSET_TYPE) {
 			return asset->as<BuildAsset>();
 		}
 	}
-	assert(0);
+	verify_fatal(0);
 }
 
 ByteRange level_core_block_range(s32 ofs, const std::vector<s64>& block_bounds) {

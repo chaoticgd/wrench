@@ -113,7 +113,7 @@ void pack_iso(OutputStream& iso, const BuildAsset& src, BuildConfig, const char*
 	// Write out blank sectors that are to be filled in by the table of contents later.
 	iso.pad(SECTOR_SIZE, 0);
 	if(config.game() != Game::RAC) {
-		assert(iso.tell() == toc_sector * SECTOR_SIZE);
+		verify_fatal(iso.tell() == toc_sector * SECTOR_SIZE);
 	}
 	while(iso.tell() < toc_sector * SECTOR_SIZE + toc_size.bytes()) {
 		iso.write_n(null_sector, SECTOR_SIZE);
@@ -140,11 +140,11 @@ void pack_iso(OutputStream& iso, const BuildAsset& src, BuildConfig, const char*
 	
 	iso.seek(0);
 	write_iso_filesystem(iso, &root_dir);
-	assert(iso.tell() <= toc_sector * SECTOR_SIZE);
+	verify_fatal(iso.tell() <= toc_sector * SECTOR_SIZE);
 	iso.write<IsoLsbMsb32>(0x8050, IsoLsbMsb32::from_scalar(volume_size));
 	
 	s64 toc_end = write_table_of_contents(iso, toc, config.game());
-	assert(toc_end <= files_begin);
+	verify_fatal(toc_end <= files_begin);
 }
 
 static void pack_ps2_logo(OutputStream& iso, const BuildAsset& build, BuildConfig config, AssetPackerFunc pack) {
@@ -242,7 +242,7 @@ static std::vector<GlobalWadInfo> enumerate_globals(const BuildAsset& build, Gam
 			case WadType::ONLINE: global.asset = &build.get_online(); global.name = "online.wad"; break;
 			case WadType::SCENE:  global.asset = &build.get_scene();  global.name = "scene.wad";  break;
 			case WadType::SPACE:  global.asset = &build.get_space();  global.name = "space.wad";  break;
-			default: assert(0);
+			default: verify_fatal(0);
 		}
 		global.header.resize(header_size_of_wad(game, type));
 		verify(global.asset, "Failed to build ISO, missing global WAD asset.");
@@ -442,7 +442,7 @@ static IsoDirectory pack_globals(OutputStream& iso, std::vector<GlobalWadInfo>& 
 			}
 		}
 		
-		assert(global.asset);
+		verify_fatal(global.asset);
 		fs::file_time_type modified_time;
 		pack(iso, &global.header, &modified_time, *global.asset, config, hint);
 		
@@ -456,7 +456,7 @@ static IsoDirectory pack_globals(OutputStream& iso, std::vector<GlobalWadInfo>& 
 		IsoFileRecord record;
 		record.name = global.name;
 		record.lba = sector;
-		assert(file_size < UINT32_MAX);
+		verify_fatal(file_size < UINT32_MAX);
 		record.size = file_size;
 		record.modified_time = std::move(modified_time);
 		globals_dir.files.push_back(record);
@@ -522,7 +522,7 @@ static void pack_level_wad_outer(OutputStream& iso, IsoDirectory& directory, Lev
 	iso.pad(SECTOR_SIZE, 0);
 	Sector32 sector = Sector32::size_from_bytes(iso.tell());
 	
-	assert(wad.asset);
+	verify_fatal(wad.asset);
 	fs::file_time_type modified_time;
 	pack(iso, &wad.header, &modified_time, *wad.asset, config, FMT_NO_HINT);
 	
@@ -536,7 +536,7 @@ static void pack_level_wad_outer(OutputStream& iso, IsoDirectory& directory, Lev
 	IsoFileRecord record;
 	record.name = file_name.c_str();
 	record.lba = sector;
-	assert(file_size < UINT32_MAX);
+	verify_fatal(file_size < UINT32_MAX);
 	record.size = file_size;
 	record.modified_time = std::move(modified_time);
 	directory.files.push_back(record);

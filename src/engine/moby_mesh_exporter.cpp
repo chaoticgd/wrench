@@ -118,7 +118,7 @@ void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_of
 	s32 max_joints_per_submesh = max_num_joints_referenced_per_submesh(submeshes);
 	
 	std::vector<std::vector<MatrixLivenessInfo>> liveness = compute_matrix_liveness(submeshes);
-	assert(liveness.size() == submeshes.size());
+	verify_fatal(liveness.size() == submeshes.size());
 	
 	std::vector<MobySubMeshLowLevel> low_submeshes;
 	MobySubMeshLowLevel* last = nullptr;
@@ -130,17 +130,17 @@ void write_moby_submeshes(OutBuffer dest, GifUsageTable& gif_usage, s64 table_of
 		MobySubMeshLowLevel low = pack_vertices((s32) i, submeshes[i], matrix_allocator, liveness[i], scale);
 		
 		// Write the scheduled transfers.
-		assert((last == nullptr && schedule.last_submesh_transfers.size() == 0) ||
+		verify_fatal((last == nullptr && schedule.last_submesh_transfers.size() == 0) ||
 			(last != nullptr && schedule.last_submesh_transfers.size() <= last->main_vertex_count));
 		for(size_t i = 0; i < schedule.last_submesh_transfers.size(); i++) {
-			assert(last != nullptr);
+			verify_fatal(last != nullptr);
 			MobyVertex& mv = last->vertices.at(last->vertices.size() - i - 1);
 			MobyMatrixTransfer& transfer = schedule.last_submesh_transfers[i];
 			mv.v.regular.low_halfword |= transfer.spr_joint_index << 9;
 			mv.v.regular.vu0_transferred_matrix_store_addr = transfer.vu0_dest_addr;
 		}
 		low.preloop_matrix_transfers = std::move(schedule.preloop_transfers);
-		assert(schedule.two_way_transfers.size() <= low.two_way_blend_vertex_count);
+		verify_fatal(schedule.two_way_transfers.size() <= low.two_way_blend_vertex_count);
 		for(size_t i = 0; i < schedule.two_way_transfers.size(); i++) {
 			MobyVertex& mv = low.vertices.at(i);
 			MobyMatrixTransfer& transfer = schedule.two_way_transfers[i];
@@ -275,7 +275,7 @@ static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usag
 		texture_unpack.code.unpack.usn = VifUsn::SIGNED;
 		texture_unpack.code.unpack.addr = INDEX_UNPACK_ADDR_QUADWORDS + index_unpack.code.num;
 		
-		assert(submesh.secret_indices.size() >= submesh.textures.size());
+		verify_fatal(submesh.secret_indices.size() >= submesh.textures.size());
 		std::vector<u8> texture_unpack_data;
 		for(size_t i = 0; i < submesh.textures.size(); i++) {
 			MobyTexturePrimitive primitive = submesh.textures[i];
@@ -293,7 +293,7 @@ static s64 write_shared_moby_vif_packets(OutBuffer dest, GifUsageTable* gif_usag
 			gif_entry.offset_and_terminator = abs_texture_unpack_ofs - 0xc - class_header_ofs;
 			s32 gif_index = 0;
 			for(const MobyTexturePrimitive& prim : submesh.textures) {
-				assert(gif_index < 12);
+				verify_fatal(gif_index < 12);
 				gif_entry.texture_indices[gif_index++] = prim.d3_tex0_1.data_lo;
 			}
 			for(s32 i = gif_index; i < 12; i++) {
@@ -416,7 +416,7 @@ static MatrixTransferSchedule schedule_matrix_transfers(s32 smi, const MobySubMe
 	if(last_submesh != nullptr) {
 		// Try to schedule as many matrix transfers as is possible given this
 		// heuristic on the last submesh.
-		assert(last_submesh->vertices.size() >= 1);
+		verify_fatal(last_submesh->vertices.size() >= 1);
 		s64 insert_index = (s64) last_submesh->vertices.size() - 1 - schedule.last_submesh_transfers.size();
 		s64 last_three_way_end = last_submesh->two_way_blend_vertex_count + last_submesh->three_way_blend_vertex_count;
 		for(MobyMatrixTransfer& transfer : matrix_transfers) {
@@ -497,7 +497,7 @@ static MobySubMeshLowLevel pack_vertices(s32 smi, const MobySubMesh& submesh, VU
 				
 				auto alloc_1 = mat_alloc.get_allocation(load_1, smi);
 				auto alloc_2 = mat_alloc.get_allocation(load_2, smi);
-				assert(alloc_1 && alloc_2);
+				verify_fatal(alloc_1 && alloc_2);
 				
 				mv.v.two_way_blend.vu0_matrix_load_addr_1 = alloc_1->address;
 				mv.v.two_way_blend.vu0_matrix_load_addr_2 = alloc_2->address;
@@ -542,7 +542,7 @@ static MobySubMeshLowLevel pack_vertices(s32 smi, const MobySubMesh& submesh, VU
 				auto alloc_1 = mat_alloc.get_allocation(load_1, smi);
 				auto alloc_2 = mat_alloc.get_allocation(load_2, smi);
 				auto alloc_3 = mat_alloc.get_allocation(load_3, smi);
-				assert(alloc_1 && alloc_2 && alloc_3);
+				verify_fatal(alloc_1 && alloc_2 && alloc_3);
 				
 				mv.v.three_way_blend.vu0_matrix_load_addr_1 = alloc_1->address;
 				mv.v.three_way_blend.vu0_matrix_load_addr_2 = alloc_2->address;
@@ -569,7 +569,7 @@ static MobySubMeshLowLevel pack_vertices(s32 smi, const MobySubMesh& submesh, VU
 			dest.index_mapping[i] = dest.vertices.size();
 			
 			auto alloc = mat_alloc.get_allocation(vertex.skin, smi);
-			assert(alloc);
+			verify_fatal(alloc);
 			
 			MobyVertex mv = {0};
 			mv.v.i.low_halfword = vertex.vertex_index & 0x1ff;
@@ -590,7 +590,7 @@ static MobySubMeshLowLevel pack_vertices(s32 smi, const MobySubMesh& submesh, VU
 			dest.index_mapping[i] = dest.vertices.size();
 			
 			auto alloc = mat_alloc.get_allocation(vertex.skin, smi);
-			assert(alloc);
+			verify_fatal(alloc);
 			
 			MobyVertex mv = {0};
 			mv.v.i.low_halfword = vertex.vertex_index & 0x1ff;
@@ -793,9 +793,9 @@ static std::vector<std::vector<MatrixLivenessInfo>> compute_matrix_liveness(cons
 				last_submesh = (s32) mapping[j].submesh;
 			}
 		}
-		assert(first_vertex.submesh != SIZE_MAX);
-		assert(first_vertex.vertex != SIZE_MAX);
-		assert(last_submesh != -1);
+		verify_fatal(first_vertex.submesh != SIZE_MAX);
+		verify_fatal(first_vertex.vertex != SIZE_MAX);
+		verify_fatal(last_submesh != -1);
 		liveness[first_vertex.submesh][first_vertex.vertex].population_count = end - begin;
 		for(size_t j = begin; j < end; j++) {
 			liveness[mapping[j].submesh][mapping[j].vertex].last_submesh = last_submesh;
@@ -869,7 +869,7 @@ static MobyVertexTableHeaderRac1 write_vertices(OutBuffer& dest, const MobySubMe
 		}
 		vertices.push_back(vertex);
 	}
-	assert(trailing < trailing_vertex_indices.size());
+	verify_fatal(trailing < trailing_vertex_indices.size());
 	MobyVertex last_vertex = {0};
 	if(submesh.vertices.size() + trailing >= 7) {
 		last_vertex.v.i.low_halfword = trailing_vertex_indices[trailing];
@@ -1085,7 +1085,7 @@ std::vector<MobySubMesh> build_moby_submeshes(const Mesh& mesh, const std::vecto
 				out = cur.index;
 			}
 			if(texture_index < mid.textures.size() && mid.textures.at(texture_index).starting_index >= i) {
-				assert(cur.restart);
+				verify_fatal(cur.restart);
 				low.indices.push_back(0);
 				low.secret_indices.push_back(out + 1);
 				texture_index++;

@@ -42,7 +42,7 @@ packed_struct(FixedArray,
 	using value_type = T;
 	static const constexpr s64 element_count = N;
 	FixedArray(const BufferArray<T>& src) {
-		assert(src.size() == N);
+		verify_fatal(src.size() == N);
 		memcpy(array, src.lo, src.size() * sizeof(T));
 	}
 	const T* data() const { return array; }
@@ -134,8 +134,8 @@ struct OutBuffer {
 	
 	template <typename T>
 	s64 write(s64 offset, const T& thing) {
-		assert(offset >= 0);
-		assert(offset + sizeof(T) <= vec.size());
+		verify_fatal(offset >= 0);
+		verify_fatal(offset + sizeof(T) <= vec.size());
 		*(T*) &vec[offset] = thing;
 		return offset;
 	}
@@ -150,8 +150,8 @@ struct OutBuffer {
 	
 	template <typename T>
 	s64 write_multiple(s64 offset, const T& things) {
-		assert(offset >= 0);
-		assert(offset + things.size() * sizeof(typename T::value_type) <= vec.size());
+		verify_fatal(offset >= 0);
+		verify_fatal(offset + things.size() * sizeof(typename T::value_type) <= vec.size());
 		memcpy(&vec[offset], things.data(), things.size() * sizeof(typename T::value_type));
 		return offset;
 	}

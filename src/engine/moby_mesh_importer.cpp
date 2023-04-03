@@ -184,7 +184,7 @@ std::vector<MobyMetalSubMesh> read_moby_metal_submeshes(Buffer src, s64 table_of
 }
 
 static void sort_moby_vertices_after_reading(MobySubMeshLowLevel& low, MobySubMesh& submesh) {
-	assert(low.vertices.size() == submesh.vertices.size());
+	verify_fatal(low.vertices.size() == submesh.vertices.size());
 	
 	s32 two_way_end = low.two_way_blend_vertex_count;
 	s32 three_way_end = low.two_way_blend_vertex_count + low.three_way_blend_vertex_count;
@@ -214,7 +214,7 @@ static void sort_moby_vertices_after_reading(MobySubMeshLowLevel& low, MobySubMe
 	while(three_way_index < three_way_end) {
 		mapping[three_way_index++] = next_mapped_index++;
 	}
-	assert(next_mapped_index == three_way_end);
+	verify_fatal(next_mapped_index == three_way_end);
 	
 	for(s32 i = three_way_end; i < (s32) low.vertices.size(); i++) {
 		mapping[i] = i;
@@ -499,7 +499,7 @@ Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* na
 					}
 					dest = SubMesh();
 					s32 texture = src.textures.at(texture_index).d3_tex0_1.data_lo;
-					assert(texture >= -1);
+					verify_fatal(texture >= -1);
 					if(texture == -1) {
 						dest.material = 0; // none
 					} else if(texture >= texture_count) {
@@ -543,7 +543,7 @@ Mesh recover_moby_mesh(const std::vector<MobySubMesh>& submeshes, const char* na
 }
 
 void map_indices(MobySubMesh& submesh, const std::vector<size_t>& mapping) {
-	assert(submesh.vertices.size() == mapping.size());
+	verify_fatal(submesh.vertices.size() == mapping.size());
 	
 	// Find the end of the index buffer.
 	s32 next_secret_index_pos = 0;
@@ -552,7 +552,7 @@ void map_indices(MobySubMesh& submesh, const std::vector<size_t>& mapping) {
 		u8 index = submesh.indices[i];
 		if(index == 0) {
 			if(next_secret_index_pos >= submesh.secret_indices.size() || submesh.secret_indices[next_secret_index_pos] == 0) {
-				assert(i >= 3);
+				verify_fatal(i >= 3);
 				buffer_end = i - 3;
 			}
 			next_secret_index_pos++;

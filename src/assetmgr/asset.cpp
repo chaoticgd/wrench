@@ -176,9 +176,9 @@ const Asset& Asset::get_child(s32 tag) const {
 }
 
 Asset& Asset::physical_child(AssetType type, const char* tag) {
-	// Hitting this assert in packing code means you probably meant to use
+	// Hitting this verify_fatal in packing code means you probably meant to use
 	// the get_child function (or a get_<child name> function) instead.
-	assert(bank().is_writeable());
+	verify_fatal(bank().is_writeable());
 	for(std::unique_ptr<Asset>& child : _children) {
 		if(child->tag() == tag) {
 			return *child.get();
@@ -324,8 +324,8 @@ bool Asset::weakly_equal(const Asset& rhs) const {
 }
 
 void Asset::rename(std::string new_tag) {
-	assert(parent());
-	assert(_children.size() == 0); // TODO: Do something *fancy* with the precedence pointers to handle this case.
+	verify_fatal(parent());
+	verify_fatal(_children.size() == 0); // TODO: Do something *fancy* with the precedence pointers to handle this case.
 	disconnect_precedence_pointers();
 	parent()->for_each_logical_child([&](Asset& asset) {
 		verify(asset.tag() != new_tag || &asset == this, "Asset with new tag already exists.");
@@ -347,7 +347,7 @@ bool Asset::is_deleted() const {
 }
 
 Asset& Asset::add_child(std::unique_ptr<Asset> child) {
-	assert(child.get());
+	verify_fatal(child.get());
 	Asset& asset = *_children.emplace_back(std::move(child)).get();
 	asset.connect_precedence_pointers();
 	return asset;
@@ -372,18 +372,18 @@ void Asset::connect_precedence_pointers() {
 		// Check for a lower precedence node first. This should be the more
 		// common case while editing.
 		for(Asset* lower_parent = parent()->lower_precedence(); lower_parent != nullptr; lower_parent = lower_parent->lower_precedence()) {
-			assert(lower_parent != parent());
+			verify_fatal(lower_parent != parent());
 			if(Asset* lower = lower_parent->get_physical_child(tag().c_str())) {
 				Asset* higher = lower->higher_precedence();
 				_lower_precedence = lower;
 				_higher_precedence = higher;
-				assert(_lower_precedence != this);
-				assert(_higher_precedence != this);
+				verify_fatal(_lower_precedence != this);
+				verify_fatal(_higher_precedence != this);
 				lower->_higher_precedence = this;
-				assert(lower->_higher_precedence != lower);
+				verify_fatal(lower->_higher_precedence != lower);
 				if(higher) {
 					higher->_lower_precedence = this;
-					assert(higher->_lower_precedence != higher);
+					verify_fatal(higher->_lower_precedence != higher);
 				}
 				return;
 			}
@@ -391,19 +391,19 @@ void Asset::connect_precedence_pointers() {
 		// There was no lower precedence node, so now check if there's is a
 		// higher precedence node.
 		for(Asset* higher_parent = parent()->higher_precedence(); higher_parent != nullptr; higher_parent = higher_parent->higher_precedence()) {
-			assert(higher_parent != parent());
+			verify_fatal(higher_parent != parent());
 			if(Asset* higher = higher_parent->get_physical_child(tag().c_str())) {
 				Asset* lower = higher->lower_precedence();
 				_lower_precedence = lower;
 				_higher_precedence = higher;
-				assert(_lower_precedence != this);
-				assert(_higher_precedence != this);
+				verify_fatal(_lower_precedence != this);
+				verify_fatal(_higher_precedence != this);
 				if(lower) {
 					lower->_higher_precedence = this;
-					assert(lower->_higher_precedence != lower);
+					verify_fatal(lower->_higher_precedence != lower);
 				}
 				higher->_lower_precedence = this;
-				assert(higher->_lower_precedence != higher);
+				verify_fatal(higher->_lower_precedence != higher);
 				return;
 			}
 		}
@@ -411,13 +411,13 @@ void Asset::connect_precedence_pointers() {
 		AssetFile* lower = file().lower_precedence();
 		if(lower) {
 			_lower_precedence = &lower->root();
-			assert(_lower_precedence != &file().root());
+			verify_fatal(_lower_precedence != &file().root());
 			lower->root()._higher_precedence = this;
 		}
 		AssetFile* higher = file().higher_precedence();
 		if(higher) {
 			_higher_precedence = &higher->root();
-			assert(_higher_precedence != &file().root());
+			verify_fatal(_higher_precedence != &file().root());
 			higher->root()._lower_precedence = this;
 		}
 	}
@@ -426,11 +426,11 @@ void Asset::connect_precedence_pointers() {
 void Asset::disconnect_precedence_pointers() {
 	if(lower_precedence()) {
 		_lower_precedence->_higher_precedence = higher_precedence();
-		assert(_lower_precedence->_higher_precedence != _lower_precedence);
+		verify_fatal(_lower_precedence->_higher_precedence != _lower_precedence);
 	}
 	if(higher_precedence()) {
 		_higher_precedence->_lower_precedence = lower_precedence();
-		assert(_higher_precedence->_lower_precedence != _higher_precedence);
+		verify_fatal(_higher_precedence->_lower_precedence != _higher_precedence);
 	}
 }
 
@@ -444,7 +444,7 @@ AssetFile::AssetFile(AssetForest& forest, AssetBank& pack, const fs::path& relat
 	, _root(std::make_unique<RootAsset>(*this, nullptr, "")) {}
 
 Asset& AssetFile::root() {
-	assert(_root.get());
+	verify_fatal(_root.get());
 	return *_root.get();
 }
 
@@ -459,7 +459,7 @@ void AssetFile::write() const {
 }
 
 std::unique_ptr<InputStream> AssetFile::open_binary_file_for_reading(const FileReference& reference, fs::file_time_type* modified_time_dest) const {
-	assert(reference.owner == this);
+	verify_fatal(reference.owner == this);
 	return _bank.open_binary_file_for_reading(_relative_directory/reference.path, modified_time_dest);
 }
 
@@ -481,7 +481,7 @@ bool AssetFile::file_exists(const fs::path& path) const {
 }
 
 AssetFile* AssetFile::lower_precedence() {
-	assert(_bank._asset_files.size() > 0);
+	verify_fatal(_bank._asset_files.size() > 0);
 	for(size_t i = 1; i < _bank._asset_files.size(); i++) {
 		if(_bank._asset_files[i].get() == this) {
 			return _bank._asset_files[i - 1].get();
@@ -496,7 +496,7 @@ AssetFile* AssetFile::lower_precedence() {
 }
 
 AssetFile* AssetFile::higher_precedence() {
-	assert(_bank._asset_files.size() > 0);
+	verify_fatal(_bank._asset_files.size() > 0);
 	for(size_t i = 0; i < _bank._asset_files.size() - 1; i++) {
 		if(_bank._asset_files[i].get() == this) {
 			return _bank._asset_files[i + 1].get();
@@ -617,8 +617,8 @@ void AssetBank::read() {
 	}
 }
 
-s32 AssetBank::check_lock() const { assert(0); return 0; }
-void AssetBank::lock() { assert(0); }
+s32 AssetBank::check_lock() const { verify_fatal(0); return 0; }
+void AssetBank::lock() { verify_fatal(0); }
 
 // *****************************************************************************
 
@@ -674,7 +674,7 @@ Asset& AssetForest::lookup_asset(const AssetLink& link, Asset* context) {
 }
 
 void AssetForest::unmount_last() {
-	assert(_banks.size() >= 1);
+	verify_fatal(_banks.size() >= 1);
 	_banks.erase(_banks.end() - 1);
 	_banks.back()->_higher_precedence = nullptr;
 }
@@ -690,7 +690,7 @@ LooseAssetBank::LooseAssetBank(AssetForest& forest, fs::path directory, bool is_
 }
 
 std::unique_ptr<InputStream> LooseAssetBank::open_binary_file_for_reading(const fs::path& path, fs::file_time_type* modified_time_dest) const {
-	assert(path.is_relative());
+	verify_fatal(path.is_relative());
 	fs::path full_path = _directory/path;
 	if(modified_time_dest) {
 		*modified_time_dest = fs::last_write_time(full_path);
@@ -704,8 +704,8 @@ std::unique_ptr<InputStream> LooseAssetBank::open_binary_file_for_reading(const 
 }
 
 std::unique_ptr<OutputStream> LooseAssetBank::open_binary_file_for_writing(const fs::path& path) {
-	assert(path.is_relative());
-	assert(is_writeable());
+	verify_fatal(path.is_relative());
+	verify_fatal(is_writeable());
 	fs::path full_path = _directory/path;
 	fs::create_directories(full_path.parent_path());
 	auto stream = std::make_unique<FileOutputStream>();
@@ -717,7 +717,7 @@ std::unique_ptr<OutputStream> LooseAssetBank::open_binary_file_for_writing(const
 }
 
 std::string LooseAssetBank::read_text_file(const fs::path& path) const {
-	assert(path.is_relative());
+	verify_fatal(path.is_relative());
 	if(!fs::exists(_directory/path)) {
 		return "";
 	}
@@ -726,14 +726,14 @@ std::string LooseAssetBank::read_text_file(const fs::path& path) const {
 }
 
 void LooseAssetBank::write_text_file(const fs::path& path, const char* contents) {
-	assert(path.is_relative());
-	assert(is_writeable());
+	verify_fatal(path.is_relative());
+	verify_fatal(is_writeable());
 	fs::create_directories((_directory/path).parent_path());
 	write_file(_directory/path, Buffer((u8*) contents, (u8*) contents + strlen(contents)), "w");
 }
 
 bool LooseAssetBank::file_exists(const fs::path& path) const {
-	assert(path.is_relative());
+	verify_fatal(path.is_relative());
 	return fs::exists(_directory/path);
 }
 

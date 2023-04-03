@@ -237,7 +237,7 @@ void write_shrub_class(OutBuffer dest, const ShrubClass& shrub) {
 			}
 		}
 		
-		assert(gif_tags.size() >= 1);
+		verify_fatal(gif_tags.size() >= 1);
 		gif_tags.back().tag.set_eop(true);
 		
 		// Insert padding vertices if there are less than 6 real vertices.
@@ -475,7 +475,7 @@ ShrubClass build_shrub_class(const Mesh& mesh, const std::vector<Material>& mate
 				f32 x = src.pos.x * (1.f / shrub.scale) * 1024.f;
 				f32 y = src.pos.y * (1.f / shrub.scale) * 1024.f;
 				f32 z = src.pos.z * (1.f / shrub.scale) * 1024.f;
-				assert(x >= INT16_MIN && x <= INT16_MAX
+				verify_fatal(x >= INT16_MIN && x <= INT16_MAX
 					&& y >= INT16_MIN && y <= INT16_MAX
 					&& z >= INT16_MIN && z <= INT16_MAX);
 				dest_vertex.x = (s16) x;

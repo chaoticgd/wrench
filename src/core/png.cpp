@@ -60,7 +60,7 @@ Opt<Texture> read_png(InputStream& src) {
 	s32 bit_depth;
 	s32 colour_type;
 	s32 interlace_type;
-	assert(png_get_IHDR(png_ptr, info_ptr,
+	verify_fatal(png_get_IHDR(png_ptr, info_ptr,
 		&width, &height,
 		&bit_depth, &colour_type,
 		&interlace_type, nullptr, nullptr) != 0);
@@ -68,7 +68,7 @@ Opt<Texture> read_png(InputStream& src) {
 	switch(colour_type) {
 		case PNG_COLOR_TYPE_RGB: {
 			verify(bit_depth == 8, "RGB PNG files must have a bit depth of 8.");
-			assert(png_get_rowbytes(png_ptr, info_ptr) == width * 3);
+			verify_fatal(png_get_rowbytes(png_ptr, info_ptr) == width * 3);
 			
 			std::vector<u8> rgb_data(width * height * 3);
 			std::vector<png_bytep> row_pointers(height);
@@ -92,7 +92,7 @@ Opt<Texture> read_png(InputStream& src) {
 		}
 		case PNG_COLOR_TYPE_RGBA: {
 			verify(bit_depth == 8, "RGBA PNG files must have a bit depth of 8.");
-			assert(png_get_rowbytes(png_ptr, info_ptr) == width * 4);
+			verify_fatal(png_get_rowbytes(png_ptr, info_ptr) == width * 4);
 			
 			std::vector<u8> data(width * height * 4);
 			std::vector<png_bytep> row_pointers(height);
@@ -108,7 +108,7 @@ Opt<Texture> read_png(InputStream& src) {
 		}
 		case PNG_COLOR_TYPE_GRAY: {
 			verify(bit_depth == 8, "Grayscale PNG files must have a bit depth of 8.");
-			assert(png_get_rowbytes(png_ptr, info_ptr) == width);
+			verify_fatal(png_get_rowbytes(png_ptr, info_ptr) == width);
 			
 			std::vector<u8> data(width * height);
 			std::vector<png_bytep> row_pointers(height);
@@ -125,8 +125,8 @@ Opt<Texture> read_png(InputStream& src) {
 		case PNG_COLOR_TYPE_PALETTE: {
 			png_colorp palette_rgb;
 			s32 num_palette;
-			assert(png_get_PLTE(png_ptr, info_ptr, &palette_rgb, &num_palette) != 0);
-			assert(num_palette <= 256);
+			verify_fatal(png_get_PLTE(png_ptr, info_ptr, &palette_rgb, &num_palette) != 0);
+			verify_fatal(num_palette <= 256);
 			
 			png_bytep trans_alpha;
 			s32 num_trans = 0;
@@ -145,7 +145,7 @@ Opt<Texture> read_png(InputStream& src) {
 				}
 			}
 			
-			assert(png_get_rowbytes(png_ptr, info_ptr) == (width * bit_depth) / 8);
+			verify_fatal(png_get_rowbytes(png_ptr, info_ptr) == (width * bit_depth) / 8);
 			
 			verify(bit_depth == 1 || bit_depth == 2 || bit_depth == 4 || bit_depth == 8,
 				"PNG has invalid bit depth.");
@@ -207,7 +207,7 @@ Opt<Texture> read_png(InputStream& src) {
 
 static void read_callback(png_structp png_ptr, png_bytep dest, size_t size) {
 	png_voidp io_ptr = png_get_io_ptr(png_ptr);
-	assert(io_ptr);
+	verify_fatal(io_ptr);
 	InputStream& src = *(InputStream*) io_ptr;
 	src.read_n(dest, size);
 }
@@ -227,7 +227,7 @@ void write_png(OutputStream& dest, const Texture& texture) {
 	
 	switch(texture.format) {
 		case PixelFormat::RGBA: {
-			assert(texture.data.size() == texture.width * texture.height * 4);
+			verify_fatal(texture.data.size() == texture.width * texture.height * 4);
 			
 			png_set_IHDR(png_ptr, info_ptr,
 				texture.width, texture.height, 8,
@@ -247,7 +247,7 @@ void write_png(OutputStream& dest, const Texture& texture) {
 			break;
 		}
 		case PixelFormat::GRAYSCALE: {
-			assert(texture.data.size() == texture.width * texture.height);
+			verify_fatal(texture.data.size() == texture.width * texture.height);
 			
 			png_set_IHDR(png_ptr, info_ptr,
 				texture.width, texture.height, 8,
@@ -267,14 +267,14 @@ void write_png(OutputStream& dest, const Texture& texture) {
 			break;
 		}
 		case PixelFormat::PALETTED_4: {
-			assert(texture.data.size() == (texture.width * texture.height) / 2);
+			verify_fatal(texture.data.size() == (texture.width * texture.height) / 2);
 			
 			png_set_IHDR(png_ptr, info_ptr,
 				texture.width, texture.height, 4,
 				PNG_COLOR_TYPE_PALETTE, PNG_INTERLACE_NONE,
 				PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
 			
-			assert(texture.palette().size() <= 16);
+			verify_fatal(texture.palette().size() <= 16);
 			png_color palette[16];
 			for(s32 i = 0; i < texture.palette().size(); i++) {
 				u32 colour = texture.palette()[i];
@@ -303,14 +303,14 @@ void write_png(OutputStream& dest, const Texture& texture) {
 			break;
 		}
 		case PixelFormat::PALETTED_8: {
-			assert(texture.data.size() == texture.width * texture.height);
+			verify_fatal(texture.data.size() == texture.width * texture.height);
 			
 			png_set_IHDR(png_ptr, info_ptr,
 				texture.width, texture.height, 8,
 				PNG_COLOR_TYPE_PALETTE, PNG_INTERLACE_NONE,
 				PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
 			
-			assert(texture.palette().size() <= 256);
+			verify_fatal(texture.palette().size() <= 256);
 			png_color palette[256];
 			for(s32 i = 0; i < texture.palette().size(); i++) {
 				u32 colour = texture.palette()[i];
@@ -346,7 +346,7 @@ void write_png(OutputStream& dest, const Texture& texture) {
 
 static void write_callback(png_structp png_ptr, png_bytep src, size_t size) {
 	png_voidp io_ptr = png_get_io_ptr(png_ptr);
-	assert(io_ptr);
+	verify_fatal(io_ptr);
 	OutputStream& dest = *(OutputStream*) io_ptr;
 	dest.write_n(src, size);
 }

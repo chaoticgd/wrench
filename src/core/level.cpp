@@ -38,7 +38,7 @@ s32 PvarField::size() const {
 		case PVAR_GLOBAL_PVAR_POINTER:
 			return 4;
 		default:
-			assert(0);
+			verify_not_reached_fatal("Invalid pvar field size.");
 	}
 }
 
@@ -84,7 +84,7 @@ std::string pvar_descriptor_to_string(PvarFieldDescriptor descriptor) {
 		case PVAR_SCRATCHPAD_POINTER: return "scratchpad_pointer";
 		case PVAR_GLOBAL_PVAR_POINTER: return "global_pvar_pointer";
 		case PVAR_STRUCT: return "struct";
-		default: assert(0);
+		default: verify_not_reached_fatal("Invalid pvar type descriptor.");
 	}
 }
 PvarFieldDescriptor pvar_string_to_descriptor(std::string str) {

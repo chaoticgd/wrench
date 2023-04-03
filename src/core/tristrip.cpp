@@ -117,7 +117,7 @@ static FaceStrip weave_multiple_strips_and_pick_the_best(FaceStrips& dest, MeshG
 		}
 	}
 	
-	assert(best_strip != -1000000000);
+	verify_fatal(best_strip != -1000000000);
 	
 	// Copy the best strip from the temp array to the main array.
 	FaceStrip strip;
@@ -139,7 +139,7 @@ static FaceIndex find_start_face(const MeshGraph& graph, const EffectiveMaterial
 			s32 neighbour_count = 0;
 			for(s32 j = 0; j < 3; j++) {
 				EdgeIndex edge = graph.edge_of_face(face, j);
-				assert(edge != NULL_EDGE_INDEX);
+				verify_fatal(edge != NULL_EDGE_INDEX);
 				FaceIndex other_face = graph.other_face(edge, face);
 				if(other_face != NULL_FACE_INDEX && graph.can_be_added_to_strip(other_face, effective)) {
 					neighbour_count++;
@@ -249,7 +249,7 @@ static FaceStrip weave_strip_in_one_direction(FaceStrips& dest, FaceIndex start_
 		}
 		
 		strip.face_count++;
-		assert(f1 != NULL_FACE_INDEX);
+		verify_fatal(f1 != NULL_FACE_INDEX);
 		dest.faces.emplace_back(v1, v2, v3, f1);
 		graph.put_in_temp_strip(f1);
 		
@@ -307,7 +307,7 @@ static GeometryPackets facestrips_to_tripstrips(const FaceStripPackets& input, c
 			} else {
 				dest_primitive.material = -1;
 			}
-			assert(src_primitive.face_count >= 1);
+			verify_fatal(src_primitive.face_count >= 1);
 			if(src_primitive.type == GeometryType::TRIANGLE_LIST) {
 				dest_primitive.index_count = src_primitive.face_count * 3;
 				for(s32 i = 0; i < src_primitive.face_count; i++) {
@@ -360,9 +360,9 @@ static void facestrip_to_tristrip(GeometryPackets& output, const FaceStrip& face
 	}
 	
 	// Now actually add the first face.
-	assert(first_face.v[0] != NULL_VERTEX_INDEX);
-	assert(first_face.v[1] != NULL_VERTEX_INDEX);
-	assert(first_face.v[2] != NULL_VERTEX_INDEX);
+	verify_fatal(first_face.v[0] != NULL_VERTEX_INDEX);
+	verify_fatal(first_face.v[1] != NULL_VERTEX_INDEX);
+	verify_fatal(first_face.v[2] != NULL_VERTEX_INDEX);
 	output.indices.emplace_back(first_face.v[0].index);
 	output.indices.emplace_back(first_face.v[1].index);
 	output.indices.emplace_back(first_face.v[2].index);
@@ -373,14 +373,14 @@ static void facestrip_to_tristrip(GeometryPackets& output, const FaceStrip& face
 		const StripFace& face = faces[face_strip.face_begin + j];
 		VertexIndex unique = unique_vertex_from_rhs(last_face, face);
 		if(unique != NULL_VERTEX_INDEX) {
-			assert(unique != NULL_VERTEX_INDEX);
+			verify_fatal(unique != NULL_VERTEX_INDEX);
 			output.indices.emplace_back(unique.index);
 			last_face.v[0] = last_face.v[1];
 			last_face.v[1] = last_face.v[2];
 			last_face.v[2] = unique;
 		} else {
 			// Insert a zero area triangle.
-			assert(face.v[2] != NULL_VERTEX_INDEX);
+			verify_fatal(face.v[2] != NULL_VERTEX_INDEX);
 			output.indices.emplace_back(face.v[2].index);
 			last_face.v[0] = face.v[0];
 			last_face.v[1] = face.v[1];

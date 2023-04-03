@@ -73,7 +73,7 @@ static void pack_tie_class(OutputStream& dest, const TieClassAsset& src, BuildCo
 		pack_asset_impl(dest, nullptr, nullptr, src.get_core(), config, nullptr);
 		return;
 	} else {
-		assert_not_reached("Not yet implemented.");
+		verify_not_reached_fatal("Not yet implemented.");
 	}
 }
 

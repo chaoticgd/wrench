@@ -184,7 +184,7 @@ static void pack_pif(OutputStream& dest, Texture& texture, s32 mip_levels) {
 	
 	switch(texture.format) {
 		case PixelFormat::PALETTED_4: {
-			assert(texture.data.size() == (texture.width * texture.height) / 2);
+			verify_fatal(texture.data.size() == (texture.width * texture.height) / 2);
 			
 			header.format = 0x94;
 			dest.write_n((u8*) texture.palette().data(), std::min(texture.palette().size(), (size_t) 16) * 4);
@@ -197,7 +197,7 @@ static void pack_pif(OutputStream& dest, Texture& texture, s32 mip_levels) {
 		case PixelFormat::PALETTED_8: {
 			texture.swizzle_palette();
 			
-			assert(texture.data.size() == texture.width * texture.height);
+			verify_fatal(texture.data.size() == texture.width * texture.height);
 			
 			TextureMipmaps mipmaps = texture.generate_mipmaps(mip_levels);
 			
@@ -214,7 +214,7 @@ static void pack_pif(OutputStream& dest, Texture& texture, s32 mip_levels) {
 			
 			break;
 		}
-		default: assert(0);
+		default: verify_fatal(0);
 	}
 	
 	dest.write(header_ofs, header);
@@ -225,9 +225,9 @@ static bool test_texture_asset(std::vector<u8>& original, std::vector<u8>& repac
 	if(strcmp(type, "pif") == 0) {
 		// We don't know what this field in the PIF header is and it doesn't
 		// seem to be used, so just zero it during tests.
-		assert(original.size() >= 8);
+		verify_fatal(original.size() >= 8);
 		*(u32*) &original[4] = 0;
-		assert(repacked.size() >= 8);
+		verify_fatal(repacked.size() >= 8);
 		*(u32*) &repacked[4] = 0;
 		original.resize(repacked.size());
 	}

@@ -672,7 +672,7 @@ static void write_effects(OutBuffer dest, const std::vector<ColladaMaterial>& ma
 		if(material.surface.type == MaterialSurfaceType::TEXTURE) {
 			dest.writelf(4, "<newparam sid=\"%s_surface\">", material.name.c_str());
 			dest.writelf(4, "\t<surface type=\"2D\">");
-			assert(material.surface.texture < texture_count);
+			verify_fatal(material.surface.texture < texture_count);
 			dest.writelf(4, "\t\t<init_from>texture_%d</init_from>", material.surface.texture);
 			dest.writelf(4, "\t\t<format>A8R8G8B8</format>");
 			dest.writelf(4, "\t</surface>");
@@ -895,7 +895,7 @@ static void write_controllers(OutBuffer dest, const std::vector<Mesh>& meshes, c
 		}
 		dest.writesf(4, "\t<float_array count=\"%d\">", weight_count);
 		for(const Vertex& vertex : mesh.vertices) {
-			assert(vertex.skin.count > 0);
+			verify_fatal(vertex.skin.count > 0);
 			for(s32 i = 0; i < vertex.skin.count; i++) {
 				dest.writesf("%.9g ", vertex.skin.weights[i] / 255.f);
 			}
@@ -938,7 +938,7 @@ static void write_controllers(OutBuffer dest, const std::vector<Mesh>& meshes, c
 		dest.writesf(4, "\t<v>");
 		s32 weight_index = 0;
 		for(const Vertex& vertex : mesh.vertices) {
-			assert(vertex.skin.count > 0);
+			verify_fatal(vertex.skin.count > 0);
 			for(s32 i = 0; i < vertex.skin.count; i++) {
 				dest.writesf("%hhd %d ", vertex.skin.joints[i], weight_index++);
 			}
@@ -961,7 +961,7 @@ static void write_visual_scenes(OutBuffer dest, const ColladaScene& scene) {
 		write_joint_node(dest, scene.joints, 0, 3);
 	}
 	for(const Mesh& mesh : scene.meshes) {
-		assert(mesh.name.size() > 0);
+		verify_fatal(mesh.name.size() > 0);
 		dest.writelf("\t\t\t<node id=\"%s\" name=\"%s\">", mesh.name.c_str(), mesh.name.c_str());
 		if(scene.joints.size() > 0) {
 			dest.writelf(4, "<instance_controller url=\"#%s_skin\">", mesh.name.c_str());
@@ -973,7 +973,7 @@ static void write_visual_scenes(OutBuffer dest, const ColladaScene& scene) {
 		dest.writelf(4, "\t\t<technique_common>");
 		for(s32 i = 0; i < (s32) mesh.submeshes.size(); i++) {
 			s32 material_index = mesh.submeshes[i].material;
-			assert(material_index >= 0 && material_index < scene.materials.size());
+			verify_fatal(material_index >= 0 && material_index < scene.materials.size());
 			const std::string& material_name = scene.materials[material_index].name;
 			dest.writelf(7, "<instance_material symbol=\"material_symbol_%d\" target=\"#%s\">", i, material_name.c_str());
 			dest.writelf(7, "\t<bind_vertex_input semantic=\"%s_texcoord\" input_semantic=\"TEXCOORD\" input_set=\"0\"/>", material_name.c_str());
@@ -1037,24 +1037,24 @@ s32 add_joint(std::vector<Joint>& joints, Joint joint, s32 parent) {
 	return index;
 }
 
-void assert_collada_scenes_equal(const ColladaScene& lhs, const ColladaScene& rhs) {
-	assert(lhs.texture_paths.size() == rhs.texture_paths.size());
-	assert(lhs.texture_paths == rhs.texture_paths);
-	assert(lhs.materials.size() == rhs.materials.size());
+void verify_fatal_collada_scenes_equal(const ColladaScene& lhs, const ColladaScene& rhs) {
+	verify_fatal(lhs.texture_paths.size() == rhs.texture_paths.size());
+	verify_fatal(lhs.texture_paths == rhs.texture_paths);
+	verify_fatal(lhs.materials.size() == rhs.materials.size());
 	for(size_t i = 0; i < lhs.materials.size(); i++) {
 		const ColladaMaterial& lmat = lhs.materials[i];
 		const ColladaMaterial& rmat = rhs.materials[i];
-		assert(lmat.name == rmat.name);
-		assert(lmat.surface == rmat.surface);
+		verify_fatal(lmat.name == rmat.name);
+		verify_fatal(lmat.surface == rmat.surface);
 	}
-	assert(lhs.meshes.size() == rhs.meshes.size());
+	verify_fatal(lhs.meshes.size() == rhs.meshes.size());
 	for(size_t i = 0; i < lhs.meshes.size(); i++) {
 		const Mesh& lmesh = lhs.meshes[i];
 		const Mesh& rmesh = rhs.meshes[i];
-		assert(lmesh.name == rmesh.name);
-		assert(lmesh.submeshes.size() == rmesh.submeshes.size());
+		verify_fatal(lmesh.name == rmesh.name);
+		verify_fatal(lmesh.submeshes.size() == rmesh.submeshes.size());
 		// If there are no submeshes, we can't recover the flags.
-		assert(lmesh.flags == rmesh.flags || lmesh.submeshes.size() == 0);
+		verify_fatal(lmesh.flags == rmesh.flags || lmesh.submeshes.size() == 0);
 		// The COLLADA importer/exporter doesn't preserve the layout of the
 		// vertex buffer, so don't check that.
 		for(size_t j = 0; j < lmesh.submeshes.size(); j++) {
@@ -1075,25 +1075,25 @@ void assert_collada_scenes_equal(const ColladaScene& lhs, const ColladaScene& rh
 					rmesh.vertices.at(rface.v2),
 					Vertex(glm::vec3(0, 0, 0))
 				};
-				assert((lface.v3 > -1) == (rface.v3 > -1));
+				verify_fatal((lface.v3 > -1) == (rface.v3 > -1));
 				if(lface.v3 > -1) {
 					lverts[3] = lmesh.vertices.at(lface.v3);
 					rverts[3] = rmesh.vertices.at(rface.v3);
 				}
 				for(s32 k = 0; k < 4; k++) {
-					assert(lverts[k].pos == rverts[k].pos);
-					assert(lverts[k].normal == rverts[k].normal);
+					verify_fatal(lverts[k].pos == rverts[k].pos);
+					verify_fatal(lverts[k].normal == rverts[k].normal);
 					// We don't currently preserve joint indices, so we don't
 					// check them here.
 					for(s32 l = 0; l < 3; l++) {
 						lverts[k].skin.joints[l] = 0;
 						rverts[k].skin.joints[l] = 0;
 					}
-					assert(lverts[k].skin == rverts[k].skin);
-					assert(lverts[k].tex_coord == rverts[k].tex_coord);
+					verify_fatal(lverts[k].skin == rverts[k].skin);
+					verify_fatal(lverts[k].tex_coord == rverts[k].tex_coord);
 				}
 			}
-			assert(lsub.material == rsub.material);
+			verify_fatal(lsub.material == rsub.material);
 		}
 	}
 }

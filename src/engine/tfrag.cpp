@@ -179,7 +179,7 @@ Tfrags read_tfrags(Buffer src, Game game) {
 
 template <typename Dest, typename Src>
 static Dest checked_int_cast(Src src) {
-	assert(src >= std::numeric_limits<Dest>::min()
+	verify_fatal(src >= std::numeric_limits<Dest>::min()
 		&& src <= std::numeric_limits<Dest>::max());
 	return static_cast<Dest>(src);
 }
@@ -462,7 +462,7 @@ void allocate_tfrags_vu(Tfrags& tfrags) {
 		if(unk_indices_lod_0_size == 0) tfrag.memory_map.unk_indices_lod_0_addr = -1;
 		
 		s32 end_addr = tfrag.memory_map.strips_addr + strips_size;
-		//assert(end_addr <= VU1_BUFFER_SIZE);
+		//verify_fatal(end_addr <= VU1_BUFFER_SIZE);
 	}
 }
 
@@ -615,9 +615,9 @@ void recover_tfrag_lod(Mesh& mesh, const TfragLod& lod, s32 texture_count) {
 		
 		s32 queue[2] = {};
 		for(s32 i = 0; i < vertex_count; i++) {
-			assert(index_offset < lod.indices.size());
+			verify_fatal(index_offset < lod.indices.size());
 			s32 index = lod.indices[index_offset++];
-			assert(index >= 0 && index < lod.vertex_info.size());
+			verify_fatal(index >= 0 && index < lod.vertex_info.size());
 			if(i >= 2) {
 				submesh->faces.emplace_back(queue[0], queue[1], vertex_base + index);
 			}
@@ -649,7 +649,7 @@ static s32 recover_tfrag_vertices(Mesh& mesh, const TfragLod& lod, s32 strip_ind
 	for(const TfragVertexInfo& src : lod.vertex_info) {
 		Vertex& dest = mesh.vertices.emplace_back();
 		s16 index = src.vertex_data_offsets[1] / 2;
-		assert(index >= 0 && index < lod.positions.size());
+		verify_fatal(index >= 0 && index < lod.positions.size());
 		const TfragVertexPosition& pos = lod.positions[index];
 		dest.pos.x = (lod.base_position.vif1_r0 + pos.x) / 1024.f;
 		dest.pos.y = (lod.base_position.vif1_r1 + pos.y) / 1024.f;

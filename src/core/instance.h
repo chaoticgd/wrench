@@ -96,7 +96,7 @@ struct Instance {
 	virtual ~Instance() {}
 	
 	InstanceId id() const { return _id; }
-	void set_id_value(s32 value) { assert(_id.value == -1); _id.value = value; }
+	void set_id_value(s32 value) { verify_fatal(_id.value == -1); _id.value = value; }
 	InstanceType type() const { return _id.type; }
 	u32 components_mask() const { return _components_mask; }
 	bool has_component(InstanceComponent component) const { return (_components_mask & component) == component; }
@@ -229,7 +229,7 @@ template <typename T>
 					break;
 				}
 				default: {
-					assert_not_reached("Instance with a transform component lacks a valid transform mode.");
+					verify_not_reached_fatal("Instance with a transform component lacks a valid transform mode.");
 				}
 			}
 		}

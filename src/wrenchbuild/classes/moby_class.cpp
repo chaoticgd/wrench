@@ -101,7 +101,7 @@ static void pack_moby_class_core(OutputStream& dest, const MobyClassAsset& src, 
 	//
 	//std::vector<std::unique_ptr<ColladaScene>> owners;
 	//std::vector<ColladaScene*> scenes = read_collada_files(owners, {mesh_asset.src(), low_lod_mesh_asset.src()});
-	//assert(scenes.size() == 2);
+	//verify_fatal(scenes.size() == 2);
 	//
 	//Mesh* mesh = scenes[0]->find_mesh(mesh_asset.node());
 	//Mesh* low_lod_mesh = scenes[1]->find_mesh(mesh_asset.node());

@@ -45,7 +45,7 @@ std::vector<u8> write_gameplay(const Gameplay& gameplay_arg, const PvarTypes& ty
 			block_count++;
 		}
 	}
-	assert(header_size == block_count * 4);
+	verify_fatal(header_size == block_count * 4);
 	
 	rewire_pvar_indices(gameplay); // Set pvar_index fields.
 	rewire_global_pvar_pointers(types, gameplay); // Extract global pvar pointers from pvars.
@@ -62,7 +62,7 @@ std::vector<u8> write_gameplay(const Gameplay& gameplay_arg, const PvarTypes& ty
 			}
 			s32 ofs = (s32) dest_vec.size();
 			if(block.funcs.write(dest, types, gameplay, game)) {
-				assert(block.header_pointer_offset + 4 <= (s32) dest_vec.size());
+				verify_fatal(block.header_pointer_offset + 4 <= (s32) dest_vec.size());
 				*(s32*) &dest_vec[block.header_pointer_offset] = ofs;
 				if(strcmp(block.name, "art instance shrub groups") == 0
 					&& gameplay.shrub_groups.has_value()
@@ -800,7 +800,7 @@ struct PvarTableBlock {
 
 struct PvarDataBlock {
 	static void read(PvarTypes& types, Gameplay& dest, Buffer src, Game game) {
-		assert(dest.pvars_temp.has_value());
+		verify_fatal(dest.pvars_temp.has_value());
 		dest.for_each_pvar_instance([&](Instance& inst) {
 			if(inst.temp_pvar_index() >= 0) {
 				PvarTableEntry& entry = dest.pvars_temp->at(inst.temp_pvar_index());
@@ -1280,7 +1280,7 @@ struct TieAmbientRgbaBlock {
 		for(const TieInstance& inst : opt_iterator(src.tie_instances)) {
 			if(inst.ambient_rgbas.size() > 0) {
 				dest.write(index);
-				assert(inst.ambient_rgbas.size() % 2 == 0);
+				verify_fatal(inst.ambient_rgbas.size() % 2 == 0);
 				dest.write<s16>(inst.ambient_rgbas.size() / 2);
 				dest.write_multiple(inst.ambient_rgbas);
 			}

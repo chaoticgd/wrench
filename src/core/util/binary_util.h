@@ -91,8 +91,8 @@ packed_struct(Sector32,
 			size_in_bytes += SECTOR_SIZE - (size_in_bytes % SECTOR_SIZE);
 		}
 		s32 size_in_sectors = (s32) (size_in_bytes / SECTOR_SIZE);
-		// If this ever asserts then hello from the distant past.
-		assert(size_in_sectors == (s64) size_in_bytes / SECTOR_SIZE);
+		// If this check ever fails then hello from the distant past.
+		verify_fatal(size_in_sectors == (s64) size_in_bytes / SECTOR_SIZE);
 		return { size_in_sectors };
 	}
 	

@@ -106,7 +106,7 @@ table_of_contents read_table_of_contents_rac(InputStream& src) {
 }
 
 s64 write_table_of_contents_rac(OutputStream& iso, const table_of_contents& toc, Game game) {
-	assert(toc.globals.size() == 1);
+	verify_fatal(toc.globals.size() == 1);
 	const GlobalWadInfo& global = toc.globals[0];
 	DumbRacWadInfo info = Buffer(global.header).read<DumbRacWadInfo>(0, "wad info");
 	info.version = 1;
@@ -466,7 +466,7 @@ s64 write_table_of_contents_rac234(OutputStream& iso, const table_of_contents& t
 	iso.seek(RAC234_TABLE_OF_CONTENTS_LBA * SECTOR_SIZE);
 	
 	for(const GlobalWadInfo& global : toc.globals) {
-		assert(global.header.size() > 8);
+		verify_fatal(global.header.size() > 8);
 		iso.write<s32>(Buffer(global.header).read<s32>(0, "global header"));
 		iso.write<s32>(global.sector.sectors);
 		iso.write_n(global.header.data() + 8, global.header.size() - 8);
@@ -529,7 +529,7 @@ s64 write_table_of_contents_rac234(OutputStream& iso, const table_of_contents& t
 Sector32 calculate_table_of_contents_size_rac234(const table_of_contents& toc) {
 	s64 resident_toc_size_bytes = 0;
 	for(const GlobalWadInfo& global : toc.globals) {
-		assert(global.header.size() > 0);
+		verify_fatal(global.header.size() > 0);
 		resident_toc_size_bytes += global.header.size();
 	}
 	resident_toc_size_bytes += toc.levels.size() * sizeof(SectorRange) * 3;
@@ -537,7 +537,7 @@ Sector32 calculate_table_of_contents_size_rac234(const table_of_contents& toc) {
 	for(auto& level : toc.levels) {
 		for(const Opt<LevelWadInfo>& wad : {level.level, level.audio, level.scene}) {
 			if(wad) {
-				assert(wad->header.size() > 0);
+				verify_fatal(wad->header.size() > 0);
 				toc_size.sectors += Sector32::size_from_bytes(wad->header.size()).sectors;
 			}
 		}
