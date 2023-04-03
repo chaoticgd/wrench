@@ -114,6 +114,8 @@ static bool test_tfrags(std::vector<u8>& src, AssetType type, BuildConfig config
 	std::vector<u8> dest;
 	write_tfrags(dest, tfrags_reallocated, config.game());
 	
-	strip_trailing_padding_from_lhs(src, dest);
+	// Padding is inserted so that the tfrags block for each chunk is the same size.
+	strip_trailing_padding_from_lhs(src, dest, -1);
+	
 	return diff_buffers(src, dest, 0, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
 }

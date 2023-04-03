@@ -138,8 +138,8 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 	}
 }
 
-void strip_trailing_padding_from_lhs(std::vector<u8>& lhs, std::vector<u8>& rhs) {
-	if(rhs.size() > 0 && lhs.size() > rhs.size() && lhs.size() <= rhs.size() + SECTOR_SIZE) {
+void strip_trailing_padding_from_lhs(std::vector<u8>& lhs, std::vector<u8>& rhs, s32 max_padding_size) {
+	if(rhs.size() > 0 && lhs.size() > rhs.size() && (max_padding_size == -1 || lhs.size() <= rhs.size() + max_padding_size)) {
 		bool is_padding = true;
 		for(s64 i = rhs.size(); i < lhs.size(); i++) {
 			is_padding &= lhs[i] == '\0';

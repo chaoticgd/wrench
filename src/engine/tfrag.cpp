@@ -281,8 +281,8 @@ void write_tfrags(OutBuffer dest, const Tfrags& tfrags, Game game) {
 		write_unpack(dest, tfrag.common_vertex_info, VifVnVl::V4_16, VifUsn::SIGNED, tfrag.memory_map.vertex_info_common_addr);
 		write_strow(dest, tfrag.base_position);
 		dest.write<u32>(0x01000102); // stcycl
-		if(game != Game::RAC) {
-			header.light_vert_start_ofs_gc_uya_dl = checked_int_cast<u16>(dest.tell() + 4 - tfrag_ofs);
+		if(game == Game::DL) {
+			header.light_vert_start_ofs_dl = checked_int_cast<u16>(dest.tell() + 4 - tfrag_ofs);
 		}
 		write_unpack(dest, tfrag.common_positions, VifVnVl::V3_16, VifUsn::SIGNED, tfrag.memory_map.positions_common_addr);
 		dest.write<u32>(0x01000404); // stcycl
@@ -383,8 +383,8 @@ void write_tfrags(OutBuffer dest, const Tfrags& tfrags, Game game) {
 		
 		dest.pad(0x10);
 		header.msphere_ofs = checked_int_cast<u16>(dest.tell() - tfrag_ofs);
-		if(game == Game::RAC) {
-			header.msphere_ofs_2_rac = header.msphere_ofs;
+		if(game != Game::DL) {
+			header.light_end_ofs_rac_gc_uya = header.msphere_ofs;
 		}
 		header.msphere_count = checked_int_cast<u8>(tfrag.msphere.size());
 		dest.write_multiple(tfrag.msphere);

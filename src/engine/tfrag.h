@@ -59,8 +59,8 @@ packed_struct(TfragHeader,
 	/* 0x2e */ u16 msphere_ofs;
 	/* 0x30 */ u16 light_ofs;
 	packed_nested_anon_union(
-		/* 0x32 */ u16 msphere_ofs_2_rac;
-		/* 0x32 */ u16 light_vert_start_ofs_gc_uya_dl;
+		/* 0x32 */ u16 light_end_ofs_rac_gc_uya;
+		/* 0x32 */ u16 light_vert_start_ofs_dl;
 	)
 	/* 0x34 */ u8 dir_lights_one;
 	/* 0x35 */ u8 dir_lights_upd;

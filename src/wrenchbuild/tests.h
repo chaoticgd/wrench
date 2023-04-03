@@ -22,7 +22,7 @@
 #include <wrenchbuild/asset_packer.h>
 
 void run_tests(fs::path input_path, const std::string& asset_ref, const std::string& filter);
-void strip_trailing_padding_from_lhs(std::vector<u8>& src, std::vector<u8>& dest);
+void strip_trailing_padding_from_lhs(std::vector<u8>& src, std::vector<u8>& dest, s32 max_padding_size = SECTOR_SIZE);
 
 template <typename TestFunc>
 AssetTestFunc* wrap_diff_test_func(TestFunc func) {
