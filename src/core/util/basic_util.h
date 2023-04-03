@@ -30,7 +30,6 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <exception>
-#include <type_traits>
 
 using u8 = unsigned char;
 using u16 = uint16_t;
