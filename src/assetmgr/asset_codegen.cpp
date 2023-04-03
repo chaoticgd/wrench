@@ -235,7 +235,7 @@ static void generate_asset_type(const WtfNode* asset_type, int id) {
 	}
 	out("\t\n");
 	out("\tstatic const constexpr AssetType ASSET_TYPE = AssetType{%d};\n", id);
-	if(wtf_attribute)
+	
 	out("};\n\n");
 }
 
