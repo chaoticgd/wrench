@@ -18,6 +18,7 @@
 
 #include "moby_mesh.h"
 
+#include <map>
 #include <set>
 #include <core/vif.h>
 

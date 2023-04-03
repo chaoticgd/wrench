@@ -16,12 +16,11 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <map>
+
 #include <core/png.h>
 #include <core/collada.h>
 #include <engine/sky.h>
-#include <map>
-#include <string>
-#include <utility>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 #include <wrenchbuild/tests.h>

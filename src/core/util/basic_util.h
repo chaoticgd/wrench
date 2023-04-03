@@ -19,7 +19,6 @@
 #ifndef CORE_BASIC_UTIL_H
 #define CORE_BASIC_UTIL_H
 
-#include <map>
 #include <array>
 #include <cmath>
 #include <string>

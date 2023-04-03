@@ -18,10 +18,12 @@
 
 #include "collada.h"
 
+#include <map>
 #include <ctype.h>
+#include <rapidxml/rapidxml.hpp>
 
-#include "core/mesh.h"
-#include "rapidxml/rapidxml.hpp"
+#include <core/mesh.h>
+
 using XmlDocument = rapidxml::xml_document<>;
 using XmlNode = rapidxml::xml_node<>;
 using XmlAttrib = rapidxml::xml_attribute<>;

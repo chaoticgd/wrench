@@ -18,6 +18,8 @@
 
 #include "level_textures.h"
 
+#include <map>
+
 #include <core/png.h>
 #include <assetmgr/material_asset.h>
 
