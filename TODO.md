@@ -3,10 +3,7 @@
 In no particular order:
 
 - Build System/CI
-	- Run CI on multiple platforms
 	- Integrate automated testing
-	- Automate releases
-	- Clean up some other cmake stuff
 - Moby Model Packing
 	- Seperate out matrix allocation/scheduling from read/write functions to improve testability
 	- Use the existing tristrip algorithm to build new submeshes
@@ -15,6 +12,7 @@ In no particular order:
 		- Possibly compare different LOD levels to determine which strips are part of which tface
 	- Figure out how tfaces should be represented in the source format
 	- Build new tfrags
+	- Make sure to pad the tfrag blocks in the level core and the chunks to the same size
 - Tie Model Packing
 	- Similar issues as with the tfrag renderer
 - Occlusion System
@@ -51,8 +49,11 @@ In no particular order:
 	- Automatic conversion to paletted colour
 	- Merge palettes together (like the original game does)
 	- Generate better mipmaps
+	- Fix general glitchiness
 - Memory Map
 	- Determine memory map during build
 		- Error out if the files are too big to work
 - Collsion System
 	- Recover instanced collision
+- Level Packing
+	- Don't unpack the tfrag block for chunk 0 twice
