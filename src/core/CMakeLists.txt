@@ -29,4 +29,6 @@ add_library(wrenchcore STATIC
 )
 target_link_libraries(wrenchcore wrenchwtf)
 target_link_libraries(wrenchcore Threads::Threads png_static zlibstatic)
-target_precompile_headers(wrenchcore PUBLIC util.h)
+if(MSVC)
+	target_precompile_headers(wrenchcore PUBLIC util.h)
+endif()
