@@ -29,7 +29,6 @@
 #include <optional>
 #include <stdarg.h>
 #include <stdint.h>
-#include <algorithm>
 #include <exception>
 #include <functional>
 #include <type_traits>
