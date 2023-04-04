@@ -400,7 +400,7 @@ void Texture::destroy() {
 	_palette.clear();
 }
 
-bool Texture::operator<(const Texture& rhs) {
+bool Texture::operator<(const Texture& rhs) const {
 	if(width != rhs.width) return width < rhs.width;
 	if(height != rhs.height) return height < rhs.height;
 	if(format != rhs.format) return format < rhs.format;
@@ -408,7 +408,7 @@ bool Texture::operator<(const Texture& rhs) {
 	return _palette < rhs._palette;
 }
 
-bool Texture::operator==(const Texture& rhs) {
+bool Texture::operator==(const Texture& rhs) const {
 	return width == rhs.width
 		&& height == rhs.height
 		&& format == rhs.format

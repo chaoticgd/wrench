@@ -225,6 +225,7 @@ static std::vector<GlobalWadInfo> enumerate_globals(const BuildAsset& build, Gam
 			};
 			break;
 		}
+		default: verify_fatal("Invalid game.");
 	}
 	
 	std::vector<GlobalWadInfo> globals;

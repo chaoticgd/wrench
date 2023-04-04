@@ -69,8 +69,8 @@ public:
 	
 	void destroy();
 	
-	bool operator<(const Texture& rhs);
-	bool operator==(const Texture& rhs);
+	bool operator<(const Texture& rhs) const;
+	bool operator==(const Texture& rhs) const;
 	
 private:
 	std::vector<u32> _palette;

@@ -396,7 +396,7 @@ table_of_contents read_table_of_contents_rac234(InputStream& src) {
 		
 		LevelInfo level;
 		level.level_table_index = i;
-		level.level_table_entry_offset = level_table_offset + i * sizeof(toc_level_table_entry);
+		level.level_table_entry_offset = (s32) level_table_offset + i * sizeof(toc_level_table_entry);
 		
 		// The games have the fields in different orders, so we check the type
 		// of what each field points to so we can support them all.

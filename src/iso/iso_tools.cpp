@@ -54,11 +54,11 @@ void inspect_iso(const std::string& iso_path) {
 	printf("+-[Global WADs]---------+-------------+-------------+\n");
 	printf("| Index | Offset in ToC | Size in ToC | Data Offset |\n");
 	printf("| ----- | ------------- | ----------- | ----------- |\n");
-	for(size_t i = 0; i < toc.globals.size(); i++) {
+	for(s32 i = 0; i < (s32) toc.globals.size(); i++) {
 		GlobalWadInfo& global = toc.globals[i];
 		size_t base_offset = global.sector.bytes();
-	printf("| %02ld    | %08x      | %08x    | %08lx    |\n",
-		i, global.offset_in_toc, global.header.size(), base_offset);
+	printf("| %02d    | %08x      | %08x    | %08lx    |\n",
+		i, global.offset_in_toc, (s32) global.header.size(), base_offset);
 	}
 	printf("+-------+---------------+-------------+-------------+\n");
 	
@@ -68,7 +68,7 @@ void inspect_iso(const std::string& iso_path) {
 	printf("| Index  Entry    | Offset      Size       | Offset      Size       | Offset      Size       |\n");
 	printf("| -----  -----    | ------      ----       | ------      ----       | ------      ----       |\n");
 	for(LevelInfo& level : toc.levels) {
-		printf("| %03ld    %08lx |", level.level_table_index, level.level_table_entry_offset);
+		printf("| %03d    %08x |", level.level_table_index, level.level_table_entry_offset);
 		for(const Opt<LevelWadInfo>& wad : {level.level, level.audio, level.scene}) {
 			if(wad) {
 				printf(" %010lx  %010lx |", wad->file_lba.bytes(), wad->file_size.bytes());

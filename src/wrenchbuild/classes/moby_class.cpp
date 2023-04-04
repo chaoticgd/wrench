@@ -148,5 +148,5 @@ static bool test_moby_class_core(std::vector<u8>& src, AssetType type, BuildConf
 	std::vector<u8> dest;
 	write_moby_class(dest, moby, config.game());
 	
-	diff_buffers(src, dest, 0, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
+	return diff_buffers(src, dest, 0, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
 }
