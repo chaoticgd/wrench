@@ -107,7 +107,7 @@ bool CommandThread::succeeded() {
 }
 
 void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& command) {
-	assert(argc >= 1);
+	verify_fatal(argc >= 1);
 
 	// Pass arguments to the shell as enviroment variables.
 	std::string command_string = prepare_arguments(argc, argv);
@@ -319,7 +319,7 @@ void CommandThread::update_last_output_lines() {
 }
 
 s32 execute_command(s32 argc, const char** argv, bool blocking) {
-	assert(argc >= 1);
+	verify_fatal(argc >= 1);
 
 	std::string command_string = prepare_arguments(argc, argv);
 

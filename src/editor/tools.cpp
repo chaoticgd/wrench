@@ -152,7 +152,7 @@ void TranslateTool::draw(app& a, glm::mat4 world_to_clip) {
 	ImGui::Text("Displacement:");
 	ImGui::InputFloat3("##displacement_input", &_displacement.x);
 	if(ImGui::Button("Apply") && glm::length(_displacement) > 0.001f) {
-		assert(a.get_level());
+		verify_fatal(a.get_level());
 		Level& lvl = *a.get_level();
 		
 		struct TranslateCommand {

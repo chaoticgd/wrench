@@ -19,6 +19,8 @@
 #ifndef EDITOR_UNDO_REDO_H
 #define EDITOR_UNDO_REDO_H
 
+#include <functional>
+
 #include <core/util.h>
 #include <core/filesystem.h>
 

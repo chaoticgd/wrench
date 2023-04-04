@@ -166,7 +166,7 @@ struct GameOpt {
 		if constexpr(std::is_same_v<T, typename decltype(container().gc_field)::value_type>) return *gc_field; \
 		if constexpr(std::is_same_v<T, typename decltype(container().uya_field)::value_type>) return *uya_field; \
 		if constexpr(std::is_same_v<T, typename decltype(container().dl_field)::value_type>) return *dl_field; \
-		assert_not_reached("Multi-game accessor called with bad template parameter."); \
+		verify_not_reached_fatal("Multi-game accessor called with bad template parameter."); \
 	}
 
 struct LevelSaveGame {

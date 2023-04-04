@@ -112,7 +112,7 @@ static void run_round_trip_asset_packing_test(AssetForest& forest, BinaryAsset& 
 	BuildConfig config(binary.game(), binary.region(), true);
 	
 	AssetDispatchTable* dispatch = dispatch_table_from_asset_type(type);
-	assert(dispatch);
+	verify_fatal(dispatch);
 	
 	AssetTestFunc* test_func;
 	switch(config.game()) {

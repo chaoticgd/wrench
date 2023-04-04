@@ -18,6 +18,9 @@
 
 #include "level_textures.h"
 
+#include <map>
+#include <algorithm>
+
 #include <core/png.h>
 #include <assetmgr/material_asset.h>
 
@@ -264,7 +267,7 @@ ArrayRange write_level_texture_table(OutputStream& dest, std::vector<LevelTextur
 	dest.pad(0x10, 0);
 	s32 table_offset = dest.tell();
 	s32 table_count = 0;
-	assert(range.begin <= range.end);
+	verify_fatal(range.begin <= range.end);
 	for(s32 i = range.begin; i < range.end; i++) {
 		LevelTexture* record = &textures.at(i);
 		if(record->out_edge > -1) {
@@ -272,10 +275,10 @@ ArrayRange write_level_texture_table(OutputStream& dest, std::vector<LevelTextur
 		}
 		// If there already exists an entry in the relevant table for the
 		// texture, don't write another one.
-		assert(range.table < 4);
+		verify_fatal(range.table < 4);
 		if(record->texture.has_value() && !record->indices[range.table].has_value()) {
 			const Texture& texture = *record->texture;
-			assert(record->texture_offset != -1);
+			verify_fatal(record->texture_offset != -1);
 			TextureEntry entry;
 			entry.data_offset = record->texture_offset;
 			entry.width = texture.width;
@@ -289,7 +292,7 @@ ArrayRange write_level_texture_table(OutputStream& dest, std::vector<LevelTextur
 			if(palette_record->palette_out_edge > -1) {
 				palette_record = &textures.at(palette_record->palette_out_edge);
 			}
-			assert(palette_record->palette_offset != -1);
+			verify_fatal(palette_record->palette_offset != -1);
 			entry.palette = palette_record->palette_offset / 0x100;
 			if(!record->stashed) {
 				entry.mipmap = record->mipmap_offset / 0x100;
@@ -309,7 +312,7 @@ void write_level_texture_indices(u8 dest[16], const std::vector<LevelTexture>& t
 			if(record->out_edge > -1) {
 				record = &textures[record->out_edge];
 			}
-			assert(record->indices[table].has_value());
+			verify_fatal(record->indices[table].has_value());
 			verify(*record->indices[table] < 0xff, "Too many textures.\n");
 			dest[i] = *record->indices[table];
 		} else {
@@ -347,7 +350,7 @@ void unpack_particle_textures(CollectionAsset& dest, InputStream& defs, std::vec
 				break;
 			}
 		}
-		assert(begin >= 0 && end >= begin);
+		verify_fatal(begin >= 0 && end >= begin);
 		std::string path = stringf("particle_textures/%d/particle%d.asset", part, part);
 		CollectionAsset& part_asset = dest.foreign_child<CollectionAsset>(path, false, part);
 		for(s32 frame = begin; frame < end; frame++) {
@@ -469,7 +472,7 @@ std::tuple<ArrayRange, std::vector<u8>, s32> pack_particle_textures(OutputStream
 				texture = &textures[texture->out_edge];
 			}
 			
-			assert(texture->indices[0].has_value());
+			verify_fatal(texture->indices[0].has_value());
 			defs_buffer.write<u8>(*texture->indices[0]);
 		}
 	}
@@ -626,7 +629,7 @@ void deduplicate_level_textures(std::vector<LevelTexture>& textures) {
 		for(size_t index : group) {
 			lowest = std::min(lowest, index);
 		}
-		assert(lowest != SIZE_MAX);
+		verify_fatal(lowest != SIZE_MAX);
 		bool stashed = false;
 		for(size_t index : group) {
 			stashed |= textures[index].stashed;
@@ -675,7 +678,7 @@ void deduplicate_level_palettes(std::vector<LevelTexture>& textures) {
 		for(size_t index : group) {
 			lowest = std::min(lowest, index);
 		}
-		assert(lowest != SIZE_MAX);
+		verify_fatal(lowest != SIZE_MAX);
 		for(size_t index : group) {
 			if(index != lowest) {
 				textures[index].palette_out_edge = lowest;

@@ -38,9 +38,7 @@ struct RuntimeError : std::exception {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-security"
 
-void assert_impl(const char* file, int line, const char* arg_str, bool condition);
-#undef assert
-#define assert(condition) \
+#define verify_fatal(condition) \
 	if(!(condition)) { \
 		fflush(stdout); \
 		fflush(stderr); \
@@ -48,7 +46,7 @@ void assert_impl(const char* file, int line, const char* arg_str, bool condition
 		fflush(stderr); \
 		abort(); \
 	}
-#define assert_not_reached(error_message) \
+#define verify_not_reached_fatal(error_message) \
 	fflush(stdout); \
 	fflush(stderr); \
 	fprintf(stderr, "[%s:%d] assert%s: ", __FILE__, __LINE__, UTIL_ERROR_CONTEXT_STRING); \

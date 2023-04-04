@@ -182,7 +182,7 @@ static void details_window(Mod* mod) {
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 	ImGui::BeginChild("Details");
 	
-	assert(g_mod_images.size() >= 1);
+	verify_fatal(g_mod_images.size() >= 1);
 	ModImage& image = g_mod_images[0];
 	
 	ImVec2 display_size(320.f * image.width / (f32) image.height, 320.f);

@@ -107,7 +107,7 @@ void unpack_subtitles(CollectionAsset& dest, InputStream& src, BuildConfig confi
 			}
 		}
 	} else {
-		assert(0);
+		verify_fatal("Invalid game.");
 	}
 }
 
@@ -236,6 +236,6 @@ void pack_subtitles(OutputStream& dest, const CollectionAsset& src, BuildConfig 
 			}
 		}
 	} else {
-		assert(0);
+		verify_fatal("Invalid game.");
 	}
 }

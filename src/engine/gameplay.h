@@ -19,6 +19,8 @@
 #ifndef WRENCHBUILD_GAMEPLAY_H
 #define WRENCHBUILD_GAMEPLAY_H
 
+#include <functional>
+
 #include <core/util.h>
 #include <core/level.h>
 

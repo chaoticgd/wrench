@@ -101,7 +101,7 @@ static void pack_moby_class_core(OutputStream& dest, const MobyClassAsset& src, 
 	//
 	//std::vector<std::unique_ptr<ColladaScene>> owners;
 	//std::vector<ColladaScene*> scenes = read_collada_files(owners, {mesh_asset.src(), low_lod_mesh_asset.src()});
-	//assert(scenes.size() == 2);
+	//verify_fatal(scenes.size() == 2);
 	//
 	//Mesh* mesh = scenes[0]->find_mesh(mesh_asset.node());
 	//Mesh* low_lod_mesh = scenes[1]->find_mesh(mesh_asset.node());
@@ -148,5 +148,5 @@ static bool test_moby_class_core(std::vector<u8>& src, AssetType type, BuildConf
 	std::vector<u8> dest;
 	write_moby_class(dest, moby, config.game());
 	
-	diff_buffers(src, dest, 0, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
+	return diff_buffers(src, dest, 0, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
 }

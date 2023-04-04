@@ -18,6 +18,8 @@
 
 #include "iso_unpacker.h"
 
+#include <algorithm>
+
 #include <core/png.h>
 #include <iso/iso_filesystem.h>
 #include <iso/wad_identifier.h>
@@ -250,7 +252,7 @@ static void enumerate_level_wads(std::vector<UnpackInfo>& dest, CollectionAsset&
 		const LevelInfo& level = toc.levels[i];
 		
 		if(level.level.has_value()) {
-			assert(level.level->header.size() >= 0xc);
+			verify_fatal(level.level->header.size() >= 0xc);
 			s32 id = *(s32*) &level.level->header[8];
 			
 			std::string path = generate_asset_path<LevelAsset>("levels", "level", id, levels);
@@ -329,7 +331,7 @@ static size_t get_global_wad_file_size(const GlobalWadInfo& global, const table_
 			}
 		}
 	}
-	assert(end_of_file != SIZE_MAX);
-	assert(end_of_file >= start_of_file);
+	verify_fatal(end_of_file != SIZE_MAX);
+	verify_fatal(end_of_file >= start_of_file);
 	return end_of_file - start_of_file;
 }

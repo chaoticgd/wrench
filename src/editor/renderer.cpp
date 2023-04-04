@@ -444,7 +444,7 @@ static void draw_mesh_instanced(const RenderMesh& mesh, const RenderMaterial* ma
 		glEnableVertexAttribArray(8);
 		glVertexAttribPointer(8, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*) offsetof(Vertex, tex_coord));
 		
-		assert(submesh.material < mat_count);
+		verify_fatal(submesh.material < mat_count);
 		const RenderMaterial& material = mats[submesh.material];
 		
 		if(program == shaders.textured.id()) {

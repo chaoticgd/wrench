@@ -16,6 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <algorithm>
+
 #include <core/filesystem.h>
 #include <core/memory_card.h>
 #include <gui/gui.h>
@@ -327,7 +329,7 @@ static ImGuiDataType get_imgui_type() {
 	if constexpr(std::is_same_v<Type, u64>) return ImGuiDataType_U64;
 	if constexpr(std::is_same_v<Type, f32>) return ImGuiDataType_Float;
 	if constexpr(std::is_same_v<Type, f64>) return ImGuiDataType_Double;
-	assert_not_reached("Bad field type.");
+	verify_not_reached_fatal("Bad field type.");
 }
 
 enum FieldWidget {

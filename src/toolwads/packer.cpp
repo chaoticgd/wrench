@@ -62,7 +62,7 @@ extern const char* git_tag;
 
 static void pack_build_wad() {
 	FileOutputStream wad;
-	assert(wad.open(build_dir + "/build.wad"));
+	verify_fatal(wad.open(build_dir + "/build.wad"));
 	
 	BuildWadHeader header = {};
 	header.header_size = sizeof(header);
@@ -109,7 +109,7 @@ static void pack_build_wad() {
 
 static void pack_gui_wad() {
 	FileOutputStream wad;
-	assert(wad.open(build_dir + "/gui.wad"));
+	verify_fatal(wad.open(build_dir + "/gui.wad"));
 	
 	GuiWadHeader header = {};
 	header.header_size = sizeof(header);
@@ -139,7 +139,7 @@ static void pack_gui_wad() {
 
 static void pack_launcher_wad() {
 	FileOutputStream wad;
-	assert(wad.open(build_dir + "/launcher.wad"));
+	verify_fatal(wad.open(build_dir + "/launcher.wad"));
 	
 	LauncherWadHeader header = {};
 	header.header_size = sizeof(header);
@@ -180,7 +180,7 @@ static SectorRange pack_oobe_wad(OutputStream& dest) {
 
 static void pack_editor_wad() {
 	FileOutputStream wad;
-	assert(wad.open(build_dir + "/editor.wad"));
+	verify_fatal(wad.open(build_dir + "/editor.wad"));
 	
 	EditorWadHeader header = {};
 	header.header_size = sizeof(header);
@@ -238,7 +238,7 @@ static SectorRange pack_file(OutputStream& dest, const char* src_path) {
 	s64 offset = dest.tell();
 	
 	FileInputStream src;
-	assert(src.open(src_path));
+	verify_fatal(src.open(src_path));
 	
 	std::vector<u8> bytes = src.read_multiple<u8>(0, src.size());
 	
@@ -277,7 +277,7 @@ static ByteRange pack_image(OutputStream& dest, const char* src_path) {
 	s32 offset = (s32) dest.tell();
 	
 	FileInputStream src;
-	assert(src.open(src_path));
+	verify_fatal(src.open(src_path));
 	
 	Opt<Texture> image = read_png(src);
 	image->to_rgba();

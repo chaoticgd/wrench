@@ -17,7 +17,9 @@
 */
 
 #include "inspector.h"
-#include "imgui.h"
+
+#include <functional>
+#include <imgui.h>
 
 #include <editor/app.h>
 #include <editor/util.h>
@@ -184,7 +186,7 @@ void inspector() {
 
 static void draw_fields(Level& lvl, const std::vector<InspectorField>& fields) {
 	for(const InspectorField& field : fields) {
-		assert(field.funcs.lane_count <= MAX_LANES);
+		verify_fatal(field.funcs.lane_count <= MAX_LANES);
 		if(should_draw_field(lvl, field)) {
 			// If selected objects have fields with conflicting values, we
 			// shouldn't draw the old value.
@@ -197,7 +199,7 @@ static void draw_fields(Level& lvl, const std::vector<InspectorField>& fields) {
 					first = &inst;
 				}
 			});
-			assert(first != nullptr);
+			verify_fatal(first != nullptr);
 			
 			ImGui::TableNextRow();
 			ImGui::TableNextColumn();
@@ -222,7 +224,7 @@ static InspectorFieldFuncs type_funcs() {
 		if(values_equal[0]) {
 			const char* type;
 			switch(first.type()) {
-				case INST_NONE: assert(0); break;
+				case INST_NONE: verify_not_reached_fatal("Invalid instance type."); break;
 				case INST_GC_8c_DL_70: type = "GC 8c DL 70"; break;
 				case INST_LIGHT_TRIGGER: type = "Light Trigger"; break;
 				case INST_CAMERA: type = "Camera"; break;
@@ -236,7 +238,7 @@ static InspectorFieldFuncs type_funcs() {
 				case INST_LIGHT: type = "Light"; break;
 				case INST_TIE: type = "Tie"; break;
 				case INST_SHRUB: type = "Shrub"; break;
-				default: assert(0);
+				default: verify_not_reached_fatal("Invalid instance type.");
 			}
 			ImGui::Text("%s", type);
 		} else {

@@ -50,10 +50,10 @@ int main(int argc, char** argv) {
 		VifPacket& packet = command_list.front();
 		if(packet.error == "") {
 			std::string code_string = packet.code.to_string();
-			printf("%08x %s\n", (s32) offset + packet.offset, code_string.c_str());
+			printf("%08x %s\n", (s32) (offset + packet.offset), code_string.c_str());
 			command_list.erase(command_list.begin());
 		} else {
-			printf("%08x %s\n", (s32) offset + packet.offset, packet.error.c_str());
+			printf("%08x %s\n", (s32) (offset + packet.offset), packet.error.c_str());
 			if(offset + packet.offset > end_offset) {
 				break;
 			} else {

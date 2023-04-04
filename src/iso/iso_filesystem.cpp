@@ -307,7 +307,7 @@ void write_iso_filesystem(OutputStream& dest, IsoDirectory* root_dir) {
 	
 	// Write out all the directories.
 	dest.pad(SECTOR_SIZE, 0);
-	assert(dest.tell() == pvd.root_directory.lba.lsb * SECTOR_SIZE);
+	verify_fatal(dest.tell() == pvd.root_directory.lba.lsb * SECTOR_SIZE);
 	write_directory_records(dest, *root_dir);
 	for(IsoDirectory* dir : flat_dirs) {
 		dest.pad(SECTOR_SIZE, 0);
@@ -319,7 +319,7 @@ static void write_directory_records(OutputStream& dest, const IsoDirectory& dir)
 	// Either this is being written out to a dummy stream to calculate the space
 	// required for the directory record, or this should be being written out at
 	// the correct LBA.
-	assert(dest.tell() == 0 || dest.tell() == dir.lba.bytes());
+	verify_fatal(dest.tell() == 0 || dest.tell() == dir.lba.bytes());
 	IsoFileRecord dot = {"", dir.lba, dir.size};
 	write_directory_record(dest, dot, 2);
 	IsoFileRecord dot_dot = {"\x01", dir.lba, dir.size};

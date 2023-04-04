@@ -102,7 +102,7 @@ gui::BookResult gui::book(const Page** current_page, const char* id, const Chapt
 
 static void navigation(const gui::Page** current_page, const gui::Chapter* chapters, s32 chapter_count, f32 buttons_height) {
 	if(*current_page == nullptr) {
-		assert(chapter_count > 0 && chapters[0].count > 0);
+		verify_fatal(chapter_count > 0 && chapters[0].count > 0);
 		*current_page = &chapters[0].pages[0];
 	}
 	

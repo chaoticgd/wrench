@@ -19,7 +19,6 @@
 #ifndef CORE_BASIC_UTIL_H
 #define CORE_BASIC_UTIL_H
 
-#include <map>
 #include <array>
 #include <cmath>
 #include <string>
@@ -30,10 +29,7 @@
 #include <optional>
 #include <stdarg.h>
 #include <stdint.h>
-#include <algorithm>
 #include <exception>
-#include <functional>
-#include <type_traits>
 
 using u8 = unsigned char;
 using u16 = uint16_t;

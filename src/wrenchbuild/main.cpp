@@ -414,6 +414,7 @@ static void unpack(const fs::path& input_path, const fs::path& output_path, Game
 				case WadType::LEVEL: wad = &build.levels().child<LevelAsset>("level").level<LevelWadAsset>(); break;
 				case WadType::LEVEL_AUDIO: wad = &build.levels().child<LevelAsset>("level").audio<LevelWadAsset>(); break;
 				case WadType::LEVEL_SCENE: wad = &build.levels().child<LevelAsset>("level").scene<LevelWadAsset>(); break;
+				default: verify_fatal("Invalid WAD type.");
 			}
 			
 			g_asset_unpacker.input_file = &stream;

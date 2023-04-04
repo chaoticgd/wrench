@@ -51,7 +51,7 @@ typedef char* ErrorStr;
 static ErrorStr count_nodes_and_attributes(WtfReader* ctx);
 static ErrorStr count_additional_nodes_generated_by_tag(WtfReader* ctx, const char* src);
 static void read_nodes_and_attributes(WtfReader* ctx, WtfNode* parent);
-static WtfNode* add_nodes(WtfReader* ctx, const char* type_name, const char* tag);
+static WtfNode* add_nodes(WtfReader* ctx, char* type_name, char* tag);
 static ErrorStr parse_value(WtfReader* ctx, WtfAttribute** attribute_dest);
 static ErrorStr parse_float(WtfReader* ctx, float* dest);
 static ErrorStr parse_string(WtfReader* ctx, char** dest);
@@ -272,7 +272,7 @@ static void read_nodes_and_attributes(WtfReader* ctx, WtfNode* parent) {
 	}
 }
 
-static WtfNode* add_nodes(WtfReader* ctx, const char* type_name, const char* tag) {
+static WtfNode* add_nodes(WtfReader* ctx, char* type_name, char* tag) {
 	WtfNode* first = NULL;
 	WtfNode* current = NULL;
 	

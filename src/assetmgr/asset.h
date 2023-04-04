@@ -24,6 +24,7 @@
 // banks, which contain .asset files, which contain a tree of assets. Each mod
 // as well as each base game here would be represented by an asset bank.
 
+#include <map>
 #include <memory>
 #include <functional>
 

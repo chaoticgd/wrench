@@ -45,7 +45,7 @@ const char* VIF_USN_STRINGS[2] = {
 };
 
 u32 VifCode::encode_unpack() const {
-	assert(is_unpack());
+	verify_fatal(is_unpack());
 	u32 value = 0;
 	value |= (interrupt & 0b1) << 31;
 	value |= (((u32) cmd) & 0b11111111) << 24;
@@ -109,7 +109,7 @@ s64 VifCode::packet_size() const {
 				result = 1 + (size / 4);
 			}
 	}
-	assert(result != 0);
+	verify_fatal(result != 0);
 	return result * 4;
 }
 
@@ -293,6 +293,6 @@ void write_vif_packet(OutBuffer dest, const VifPacket& packet) {
 	} else if(packet.code.cmd == VifCmd::NOP) {
 		dest.write<u32>(0);
 	} else {
-		assert_not_reached("Failed to write VIF command list.");
+		verify_not_reached_fatal("Failed to write VIF command list.");
 	}
 }

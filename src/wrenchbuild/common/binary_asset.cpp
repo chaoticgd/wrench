@@ -68,11 +68,11 @@ static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, 
 		src.src().path.string().c_str(), src.absolute_link().to_string().c_str());
 	if(header_dest) {
 		s32 header_size = stream->read<s32>();
-		assert(header_size == header_dest->size());
+		verify_fatal(header_size == header_dest->size());
 		s64 padded_header_size = Sector32::size_from_bytes(header_size).bytes();
 		
 		// Extract the header.
-		assert(padded_header_size >= 4);
+		verify_fatal(padded_header_size >= 4);
 		header_dest->resize(padded_header_size);
 		*(s32*) header_dest->data() = header_size;
 		stream->read_n(header_dest->data() + 4, padded_header_size - 4);
@@ -83,7 +83,7 @@ static void pack_binary_asset(OutputStream& dest, std::vector<u8>* header_dest, 
 		// The calling code needs the unpadded header.
 		header_dest->resize(header_size);
 		
-		assert(dest.tell() % SECTOR_SIZE == 0);
+		verify_fatal(dest.tell() % SECTOR_SIZE == 0);
 		
 		// Copy the rest of the file.
 		Stream::copy(dest, *stream, stream->size() - padded_header_size);

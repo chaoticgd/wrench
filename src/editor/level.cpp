@@ -171,7 +171,7 @@ void Level::read(LevelAsset& asset, Game g) {
 }
 
 void Level::save(const fs::path& path) {
-	assert(_gameplay_asset);
+	verify_fatal(_gameplay_asset);
 	
 	// If the gamplay asset isn't currently part of the mod, create a new .asset
 	// file for it. Throwing the first time with retry=true will open a save

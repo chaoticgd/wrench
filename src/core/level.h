@@ -19,6 +19,8 @@
 #ifndef LEVEL_H
 #define LEVEL_H
 
+#include <map>
+
 #include <core/util.h>
 #include <core/collada.h>
 #include <core/buffer.h>

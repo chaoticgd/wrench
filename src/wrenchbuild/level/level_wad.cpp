@@ -195,7 +195,7 @@ static void pack_dl_level_wad(OutputStream& dest, DlLevelWadHeader& header, cons
 	header.data = pack_data_wad(dest, src, config, [&](OutputStream& data_dest, const LevelWadAsset& data_src, BuildConfig data_config) {
 		pack_dl_level_data_wad(data_dest, compressed_art_instances, compressed_gameplay, data_src, data_config);
 	});
-	assert(!compressed_gameplay.empty() && !compressed_art_instances.empty());
+	verify_fatal(!compressed_gameplay.empty() && !compressed_art_instances.empty());
 	header.chunks = pack_chunks(dest, src.get_chunks(), config);
 	header.gameplay = write_section(dest, compressed_gameplay.data(), compressed_gameplay.size());
 	std::tie(header.missions, header.max_mission_sizes) = pack_missions(dest, src.get_missions(), config);

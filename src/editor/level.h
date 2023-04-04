@@ -19,6 +19,8 @@
 #ifndef EDITOR_LEVEL_H
 #define EDITOR_LEVEL_H
 
+#include <map>
+
 #include <engine/gameplay.h>
 #include <assetmgr/asset_types.h>
 #include <gui/render_mesh.h>

@@ -18,6 +18,8 @@
 
 #include "tie.h"
 
+#include <algorithm>
+
 static GcUyaDlTieClassHeader read_tie_header(Buffer src, Game game);
 static TiePacket read_tie_packet(Buffer src, const TiePacketHeader& header);
 static void write_tie_packet(OutBuffer dest, const TiePacket& packet);

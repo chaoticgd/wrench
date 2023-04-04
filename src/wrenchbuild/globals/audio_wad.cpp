@@ -134,7 +134,7 @@ static void unpack_help_audio(CollectionAsset& dest, InputStream& src, const Sec
 				case 2: asset = &child.german<BinaryAsset>(); break;
 				case 3: asset = &child.spanish<BinaryAsset>(); break;
 				case 4: asset = &child.italian<BinaryAsset>(); break;
-				default: assert(0);
+				default: verify_not_reached_fatal("Invalid language.");
 			}
 			
 			auto end_sector = end_sectors.upper_bound(ranges[i].sectors);
@@ -155,7 +155,7 @@ static void pack_help_audio(OutputStream& dest, Sector32* sectors_dest, s32 coun
 				case 2: if(asset.has_german()) child = &asset.get_german(); break;
 				case 3: if(asset.has_spanish()) child = &asset.get_spanish(); break;
 				case 4: if(asset.has_italian()) child = &asset.get_italian(); break;
-				default: assert(0);
+				default: verify_not_reached_fatal("Invalid language.");
 			}
 			if(child) {
 				sectors_dest[i] = pack_asset_sa<Sector32>(dest, *child, config, FMT_BINARY_VAG);
