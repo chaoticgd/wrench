@@ -20,8 +20,8 @@
 
 #include <algorithm>
 
-#define TFRAG_DEBUG_RECOVER_ALL_LODS
-#define TFRAG_DEBUG_RAINBOW_STRIPS
+//#define TFRAG_DEBUG_RECOVER_ALL_LODS
+//#define TFRAG_DEBUG_RAINBOW_STRIPS
 
 static s32 count_triangles(const Tfrag& tfrag);
 static TfragLod extract_highest_tfrag_lod(const Tfrag& tfrag);
