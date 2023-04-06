@@ -22,6 +22,7 @@
 
 //#define TFRAG_DEBUG_RECOVER_ALL_LODS
 //#define TFRAG_DEBUG_RAINBOW_STRIPS
+#define TFRAG_DEBUG_POLES
 
 static s32 count_triangles(const Tfrag& tfrag);
 static TfragLod extract_highest_tfrag_lod(const Tfrag& tfrag);
@@ -490,7 +491,7 @@ ColladaScene recover_tfrags(const Tfrags& tfrags) {
 		dummy.surface = MaterialSurface(glm::vec4(1.f, 1.f, 1.f, 1.f));
 	}
 
-#ifdef TFRAG_DEBUG_RAINBOW_STRIPS
+#if defined(TFRAG_DEBUG_RAINBOW_STRIPS) || defined(TFRAG_DEBUG_POLES)
 	u32 mesh_flags = MESH_HAS_TEX_COORDS | MESH_HAS_VERTEX_COLOURS;
 #else
 	u32 mesh_flags = MESH_HAS_TEX_COORDS;
@@ -535,6 +536,7 @@ static TfragLod extract_highest_tfrag_lod(const Tfrag& tfrag) {
 	lod.common_textures = tfrag.common_textures;
 	lod.strips = tfrag.lod_0_strips;
 	lod.indices.insert(lod.indices.end(), BEGIN_END(tfrag.lod_0_indices));
+	lod.unknown_indices.insert(lod.unknown_indices.end(), BEGIN_END(tfrag.lod_0_unknown_indices));
 	lod.vertex_info.insert(lod.vertex_info.end(), BEGIN_END(tfrag.common_vertex_info));
 	lod.vertex_info.insert(lod.vertex_info.end(), BEGIN_END(tfrag.lod_01_vertex_info));
 	lod.vertex_info.insert(lod.vertex_info.end(), BEGIN_END(tfrag.lod_0_vertex_info));
@@ -625,6 +627,17 @@ void recover_tfrag_lod(Mesh& mesh, const TfragLod& lod, s32 texture_count) {
 			queue[1] = vertex_base + index;
 		}
 	}
+
+#ifdef TFRAG_DEBUG_POLES
+	SubMesh& pole_submesh = mesh.submeshes.emplace_back();
+	pole_submesh.material = 0;
+	for(u8 ind : lod.unknown_indices) {
+		Face& face = pole_submesh.faces.emplace_back();
+		face.v0 = vertex_base + ind;
+		face.v1 = vertex_base + ind + lod.vertex_info.size();
+		face.v2 = vertex_base + ind + lod.vertex_info.size() * 2;
+	}
+#endif
 }
 
 static s32 recover_tfrag_vertices(Mesh& mesh, const TfragLod& lod, s32 strip_index) {
@@ -661,7 +674,44 @@ static s32 recover_tfrag_vertices(Mesh& mesh, const TfragLod& lod, s32 strip_ind
 		dest.colour.g = colours[strip_index % 12][1];
 		dest.colour.b = colours[strip_index % 12][2];
 		dest.colour.a = colours[strip_index % 12][3];
+#elif defined(TFRAG_DEBUG_POLES)
+		dest.colour.r = 255;
+		dest.colour.g = 255;
+		dest.colour.b = 255;
+		dest.colour.a = 255;
 #endif
 	}
+#ifdef TFRAG_DEBUG_POLES
+	for(const TfragVertexInfo& src : lod.vertex_info) {
+			Vertex& dest = mesh.vertices.emplace_back();
+			s16 index = src.vertex_data_offsets[1] / 2;
+			verify_fatal(index >= 0 && index < lod.positions.size());
+			const TfragVertexPosition& pos = lod.positions[index];
+			dest.pos.x = (lod.base_position.vif1_r0 + pos.x) / 1024.f;
+			dest.pos.y = (lod.base_position.vif1_r1 + pos.y) / 1024.f;
+			dest.pos.z = (lod.base_position.vif1_r2 + pos.z) / 1024.f + 1.f;
+			dest.tex_coord.s = vu_fixed12_to_float(src.s);
+			dest.tex_coord.t = vu_fixed12_to_float(src.t);
+			dest.colour.r = 255;
+			dest.colour.g = 0;
+			dest.colour.b = 0;
+			dest.colour.a = 255;
+	}
+	for(const TfragVertexInfo& src : lod.vertex_info) {
+			Vertex& dest = mesh.vertices.emplace_back();
+			s16 index = src.vertex_data_offsets[1] / 2;
+			verify_fatal(index >= 0 && index < lod.positions.size());
+			const TfragVertexPosition& pos = lod.positions[index];
+			dest.pos.x = (lod.base_position.vif1_r0 + pos.x) / 1024.f + 0.1f;
+			dest.pos.y = (lod.base_position.vif1_r1 + pos.y) / 1024.f + 0.1f;
+			dest.pos.z = (lod.base_position.vif1_r2 + pos.z) / 1024.f + 1.f;
+			dest.tex_coord.s = vu_fixed12_to_float(src.s);
+			dest.tex_coord.t = vu_fixed12_to_float(src.t);
+			dest.colour.r = 255;
+			dest.colour.g = 0;
+			dest.colour.b = 0;
+			dest.colour.a = 255;
+	}
+#endif
 	return vertex_base;
 }

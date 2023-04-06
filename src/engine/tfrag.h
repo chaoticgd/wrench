@@ -209,6 +209,7 @@ struct TfragLod {
 	std::vector<TfragTexturePrimitive> common_textures;
 	std::vector<TfragStrip> strips;
 	std::vector<u8> indices;
+	std::vector<u8> unknown_indices;
 	std::vector<TfragVertexInfo> vertex_info;
 	std::vector<TfragVertexPosition> positions;
 	std::vector<TfragRgba> rgbas;
