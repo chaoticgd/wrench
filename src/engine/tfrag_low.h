@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef ENGINE_TFRAG_H
-#define ENGINE_TFRAG_H
+#ifndef ENGINE_TFRAG_LOW_H
+#define ENGINE_TFRAG_LOW_H
 
 #include <core/vif.h>
 #include <core/buffer.h>
@@ -220,9 +220,6 @@ struct TfragLod {
 
 Tfrags read_tfrags(Buffer src, Game game);
 void write_tfrags(OutBuffer dest, const Tfrags& tfrags, Game game);
-
 void allocate_tfrags_vu(Tfrags& tfrags);
-
-ColladaScene recover_tfrags(const Tfrags& tfrags);
 
 #endif
