@@ -26,7 +26,8 @@ struct Face {
 	s32 v0;
 	s32 v1;
 	s32 v2;
-	s32 v3; // -1 for tris.
+	s32 v3 = -1; // -1 for tris.
+	Face() {}
 	Face(s32 a0, s32 a1, s32 a2, s32 a3 = -1)
 		: v0(a0), v1(a1), v2(a2), v3(a3) {}
 	bool operator==(const Face& rhs) const {

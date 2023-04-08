@@ -27,7 +27,7 @@
 #include <assetmgr/asset.h>
 #include <assetmgr/asset_types.h>
 #include <assetmgr/zipped_asset_bank.h>
-#include <engine/tfrag.h>
+#include <engine/tfrag_high.h>
 #include <engine/moby.h>
 #include <engine/tie.h>
 #include <engine/shrub.h>

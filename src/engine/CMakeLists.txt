@@ -12,7 +12,8 @@ add_library(wrenchengine
 	moby_animation.cpp
 	shrub.cpp
 	sky.cpp
-	tfrag.cpp
+	tfrag_low.cpp
+	tfrag_high.cpp
 	tie.cpp
 	vag.cpp
 )

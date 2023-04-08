@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef ENGINE_TFRAG_H
-#define ENGINE_TFRAG_H
+#ifndef ENGINE_TFRAG_LOW_H
+#define ENGINE_TFRAG_LOW_H
 
 #include <core/vif.h>
 #include <core/buffer.h>
@@ -209,6 +209,7 @@ struct TfragLod {
 	std::vector<TfragTexturePrimitive> common_textures;
 	std::vector<TfragStrip> strips;
 	std::vector<u8> indices;
+	std::vector<u8> unknown_indices;
 	std::vector<TfragVertexInfo> vertex_info;
 	std::vector<TfragVertexPosition> positions;
 	std::vector<TfragRgba> rgbas;
@@ -219,9 +220,6 @@ struct TfragLod {
 
 Tfrags read_tfrags(Buffer src, Game game);
 void write_tfrags(OutBuffer dest, const Tfrags& tfrags, Game game);
-
 void allocate_tfrags_vu(Tfrags& tfrags);
-
-ColladaScene recover_tfrags(const Tfrags& tfrags);
 
 #endif

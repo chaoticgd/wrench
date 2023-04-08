@@ -17,7 +17,7 @@
 */
 
 #include <assetmgr/material_asset.h>
-#include <engine/tfrag.h>
+#include <engine/tfrag_high.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 #include <wrenchbuild/tests.h>
