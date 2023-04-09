@@ -22,5 +22,6 @@
 #include <engine/tfrag_low.h>
 
 ColladaScene recover_tfrags(const Tfrags& tfrags);
+ColladaScene recover_tfrag_lods(const Tfrags& tfrags);
 
 #endif

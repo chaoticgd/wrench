@@ -409,10 +409,29 @@ static s32 count_triangles(const Tfrag& tfrag) {
 	return triangles;
 }
 
+static void pad_index_array(std::vector<u8>& indices) {
+	if(indices.size() % 2 != 0) {
+		indices.emplace_back(0);
+	}
+	if(indices.size() % 4 != 0) {
+		indices.emplace_back(0);
+		indices.emplace_back(0);
+	}
+}
+
 void allocate_tfrags_vu(Tfrags& tfrags) {
 	static const s32 VU1_BUFFER_SIZE = 0x118;
 	
 	for(Tfrag& tfrag : tfrags.fragments) {
+		// Pad index arrays.
+		pad_index_array(tfrag.lod_2_indices);
+		pad_index_array(tfrag.lod_1_indices);
+		pad_index_array(tfrag.lod_01_unknown_indices);
+		pad_index_array(tfrag.lod_01_unknown_indices_2);
+		pad_index_array(tfrag.lod_0_indices);
+		pad_index_array(tfrag.lod_0_unknown_indices);
+		pad_index_array(tfrag.lod_0_unknown_indices_2);
+		
 		// Calculate sizes in VU memory.
 		s32 header_common_size = 5;
 		s32 matrix_size = 4;

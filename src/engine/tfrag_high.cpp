@@ -18,20 +18,24 @@
 
 #include "tfrag_high.h"
 
-//#define TFRAG_DEBUG_RECOVER_ALL_LODS
+#define TFRAG_DEBUG_RECOVER_ALL_LODS
 //#define TFRAG_DEBUG_RAINBOW_STRIPS
-//#define TFRAG_DEBUG_POLES
+#define TFRAG_DEBUG_POLES
 
 static TfragLod extract_highest_tfrag_lod(const Tfrag& tfrag);
 static TfragLod extract_medium_tfrag_lod(const Tfrag& tfrag);
 static TfragLod extract_low_tfrag_lod(const Tfrag& tfrag);
-void recover_tfrag_lod(Mesh& mesh, const TfragLod& lod, const Tfrag& tfrag, s32 texture_count);
+void recover_tfrag_lod(Mesh& mesh, const TfragLod& lod, const Tfrag& tfrag, s32 texture_count, bool highest_lod);
 static s32 recover_tfrag_vertices(Mesh& mesh, const TfragLod& lod, s32 strip_index);
 
 static void create_debug_pole_vertices(Mesh& mesh, const TfragLod& lod, s32 strip_index);
 static void create_debug_pole_faces(Mesh& mesh, const TfragLod& lod, const Tfrag& tfrag, s32 vertex_base);
 
 ColladaScene recover_tfrags(const Tfrags& tfrags) {
+	return recover_tfrag_lods(tfrags);
+}
+
+ColladaScene recover_tfrag_lods(const Tfrags& tfrags) {
 	s32 texture_count = 0;
 	for(const Tfrag& tfrag : tfrags.fragments) {
 		for(const TfragTexturePrimitive& primitive : tfrag.common_textures) {
@@ -67,7 +71,7 @@ ColladaScene recover_tfrags(const Tfrags& tfrags) {
 	
 	for(const Tfrag& tfrag : tfrags.fragments) {
 		TfragLod lod = extract_highest_tfrag_lod(tfrag);
-		recover_tfrag_lod(high_mesh, lod, tfrag, texture_count);
+		recover_tfrag_lod(high_mesh, lod, tfrag, texture_count, true);
 	}
 
 #ifdef TFRAG_DEBUG_RECOVER_ALL_LODS
@@ -77,7 +81,7 @@ ColladaScene recover_tfrags(const Tfrags& tfrags) {
 	
 	for(const Tfrag& tfrag : tfrags.fragments) {
 		TfragLod lod = extract_medium_tfrag_lod(tfrag);
-		recover_tfrag_lod(medium_mesh, lod, tfrag, texture_count);
+		recover_tfrag_lod(medium_mesh, lod, tfrag, texture_count, false);
 	}
 	
 	Mesh& low_mesh = scene.meshes.emplace_back();
@@ -86,7 +90,7 @@ ColladaScene recover_tfrags(const Tfrags& tfrags) {
 	
 	for(const Tfrag& tfrag : tfrags.fragments) {
 		TfragLod lod = extract_low_tfrag_lod(tfrag);
-		recover_tfrag_lod(low_mesh, lod, tfrag, texture_count);
+		recover_tfrag_lod(low_mesh, lod, tfrag, texture_count, false);
 	}
 #endif
 	
@@ -148,7 +152,7 @@ static TfragLod extract_low_tfrag_lod(const Tfrag& tfrag) {
 	return lod;
 }
 
-void recover_tfrag_lod(Mesh& mesh, const TfragLod& lod, const Tfrag& tfrag, s32 texture_count) {
+void recover_tfrag_lod(Mesh& mesh, const TfragLod& lod, const Tfrag& tfrag, s32 texture_count, bool highest_lod) {
 	SubMesh* submesh = nullptr;
 	s32 next_texture = 0;
 	
@@ -193,7 +197,9 @@ void recover_tfrag_lod(Mesh& mesh, const TfragLod& lod, const Tfrag& tfrag, s32 
 	}
 
 #ifdef TFRAG_DEBUG_POLES
-	create_debug_pole_faces(mesh, lod, tfrag, vertex_base);
+	if(highest_lod) {
+		create_debug_pole_faces(mesh, lod, tfrag, vertex_base);
+	}
 #endif
 }
 
@@ -248,18 +254,20 @@ static s32 recover_tfrag_vertices(Mesh& mesh, const TfragLod& lod, s32 strip_ind
 
 static void create_debug_pole_vertices(Mesh& mesh, const TfragLod& lod, s32 strip_index) {
 	// Parent-child relationships.
-	for(s32 elevation = 0; elevation < 2; elevation++) {
-		for(const TfragVertexPosition& pos : lod.positions) {
-			Vertex& dest = mesh.vertices.emplace_back();
-			dest.pos.x = (lod.base_position.vif1_r0 + pos.x) / 1024.f;
-			dest.pos.y = (lod.base_position.vif1_r1 + pos.y) / 1024.f;
-			dest.pos.z = (lod.base_position.vif1_r2 + pos.z) / 1024.f + (elevation ? 0.5f : 0.f);
-			dest.tex_coord.s = 0;
-			dest.tex_coord.t = 0;
-			dest.colour.r = 0;
-			dest.colour.g = 0;
-			dest.colour.b = 255;
-			dest.colour.a = 255;
+	for(s32 elevation = 0; elevation < 3; elevation++) {
+		for(s32 colour = 0; colour < 2; colour++) {
+			for(const TfragVertexPosition& pos : lod.positions) {
+				Vertex& dest = mesh.vertices.emplace_back();
+				dest.pos.x = (lod.base_position.vif1_r0 + pos.x) / 1024.f;
+				dest.pos.y = (lod.base_position.vif1_r1 + pos.y) / 1024.f;
+				dest.pos.z = (lod.base_position.vif1_r2 + pos.z) / 1024.f + elevation * 0.25f;
+				dest.tex_coord.s = 0;
+				dest.tex_coord.t = 0;
+				dest.colour.r = colour ? 255 : 0;
+				dest.colour.g = 0;
+				dest.colour.b = 255;
+				dest.colour.a = 255;
+			}
 		}
 	}
 	
@@ -288,25 +296,46 @@ static void create_debug_pole_vertices(Mesh& mesh, const TfragLod& lod, s32 stri
 	}
 }
 
-#define POLE_VERTEX_INDEX(wideness, side, colour, vertex_count) \
-	lod.vertex_info.size() + \
-	2*lod.positions.size() + \
-	lod.vertex_info.size() * (2*3*wideness + 2*colour + side) // poles
+#define MIGRATION_VERTEX_INDEX(elevation, colour) \
+	lod.vertex_info.size() + /* normal vertices */ \
+	lod.positions.size() * (2*elevation + colour)
+
+#define POLE_VERTEX_INDEX(wideness, side, colour) \
+	lod.vertex_info.size() + /* normal vertices */ \
+	6*lod.positions.size() + /* parent-child relationships */ \
+	lod.vertex_info.size() * (2*3*wideness + 2*colour + side) /* poles */
 
 static void create_debug_pole_faces(Mesh& mesh, const TfragLod& lod, const Tfrag& tfrag, s32 vertex_base) {
-	SubMesh& pole_submesh = mesh.submeshes.emplace_back();
-	pole_submesh.material = 0;
+	SubMesh& debug_submesh = mesh.submeshes.emplace_back();
+	debug_submesh.material = 0;
+	
+	// LOD 0 migrations.
+	for(size_t i = 0; i < tfrag.lod_0_positions.size(); i++) {
+		u8 unk_index = tfrag.lod_0_unknown_indices.at(i);
+		const TfragVertexInfo& i_info = lod.vertex_info[tfrag.common_vertex_info.size() + tfrag.lod_01_vertex_info.size() + i];
+		const TfragVertexInfo& unk_info = lod.vertex_info[unk_index];
+		s32 pos_0 = unk_info.vertex_data_offsets[1] / 2;
+		s32 pos_1 = i_info.vertex_data_offsets[1] / 2;
+		Face& face_pc = debug_submesh.faces.emplace_back();
+		face_pc.v0 = vertex_base + MIGRATION_VERTEX_INDEX(0, 0) + pos_0;
+		face_pc.v1 = vertex_base + MIGRATION_VERTEX_INDEX(0, 0) + pos_1;
+		face_pc.v2 = vertex_base + MIGRATION_VERTEX_INDEX(2, 0) + pos_1;
+	}
+	
+	// LOD 1 migrations.
+	for(size_t i = 0; i < tfrag.lod_01_positions.size(); i++) {
+		u8 unk_index = tfrag.lod_01_unknown_indices.at(i);
+		const TfragVertexInfo& i_info = lod.vertex_info[tfrag.common_vertex_info.size() + i];
+		const TfragVertexInfo& unk_info = lod.vertex_info[unk_index];
+		s32 pos_0 = unk_info.vertex_data_offsets[1] / 2;
+		s32 pos_1 = i_info.vertex_data_offsets[1] / 2;
+		Face& face_pc = debug_submesh.faces.emplace_back();
+		face_pc.v0 = vertex_base + MIGRATION_VERTEX_INDEX(0, 0) + pos_0;
+		face_pc.v1 = vertex_base + MIGRATION_VERTEX_INDEX(0, 1) + pos_1;
+		face_pc.v2 = vertex_base + MIGRATION_VERTEX_INDEX(1, 1) + pos_1;
+	}
+	
 	for(size_t i = 0; i < lod.vertex_info.size(); i++) {
-		// Parent-child relationships.
-		if(lod.vertex_info[i].vertex_data_offsets[0] != 4096) {
-			s32 pos_0 = lod.vertex_info[i].vertex_data_offsets[0] / 2;
-			s32 pos_1 = lod.vertex_info[i].vertex_data_offsets[1] / 2;
-			Face& face_pc = pole_submesh.faces.emplace_back();
-			face_pc.v0 = vertex_base + lod.vertex_info.size() + pos_0;
-			face_pc.v1 = vertex_base + lod.vertex_info.size() + pos_1;
-			face_pc.v2 = vertex_base + lod.vertex_info.size() + lod.positions.size() + pos_1;
-		}
-		
 		// Vertical poles.
 		s32 wideness = 0;
 		if(i < tfrag.common_vertex_info.size()) {
@@ -317,15 +346,15 @@ static void create_debug_pole_faces(Mesh& mesh, const TfragLod& lod, const Tfrag
 			wideness = 0;
 		}
 		s32 colour = 0;
-		for(u8 unk : lod.unknown_indices) {
-			if(unk == i) {
+		for(s32 j = 0; j < tfrag.common_vu_header.lod_0_positions_count; j++) {
+			if(tfrag.lod_0_unknown_indices.at(j) == i) {
 				colour = 1;
 				break;
 			}
 		}
-		Face& face_vp = pole_submesh.faces.emplace_back();
+		Face& face_vp = debug_submesh.faces.emplace_back();
 		face_vp.v0 = vertex_base + i;
-		face_vp.v1 = vertex_base + POLE_VERTEX_INDEX(wideness, 0, colour, lod.vertex_info.size()) + i;
-		face_vp.v2 = vertex_base + POLE_VERTEX_INDEX(wideness, 1, colour, lod.vertex_info.size()) + i;
+		face_vp.v1 = vertex_base + POLE_VERTEX_INDEX(wideness, 0, colour) + i;
+		face_vp.v2 = vertex_base + POLE_VERTEX_INDEX(wideness, 1, colour) + i;
 	}
 }
