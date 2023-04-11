@@ -161,6 +161,7 @@ struct TfragMemoryMap {
 	s32 strips_addr = -1;
 };
 
+// A full tfrag, including all LOD levels and migration information.
 struct Tfrag {
 	Vec4f bsphere;
 	u8 lod_2_rgba_count;
@@ -180,14 +181,14 @@ struct Tfrag {
 	std::vector<TfragVertexPosition> common_positions;
 	std::vector<TfragStrip> lod_1_strips;
 	std::vector<u8> lod_1_indices;
-	std::vector<u8> lod_01_unknown_indices;
+	std::vector<u8> lod_01_parent_indices;
 	std::vector<u8> lod_01_unknown_indices_2;
 	std::vector<TfragVertexInfo> lod_01_vertex_info;
 	std::vector<TfragVertexPosition> lod_01_positions;
 	std::vector<TfragVertexPosition> lod_0_positions;
 	std::vector<TfragStrip> lod_0_strips;
 	std::vector<u8> lod_0_indices;
-	std::vector<u8> lod_0_unknown_indices;
+	std::vector<u8> lod_0_parent_indices; // lod_0_parent_indices.size() ~= lod_0_positions.size()
 	std::vector<u8> lod_0_unknown_indices_2;
 	std::vector<TfragVertexInfo> lod_0_vertex_info;
 	std::vector<TfragRgba> rgbas;
@@ -203,13 +204,13 @@ struct Tfrags {
 	std::vector<Tfrag> fragments;
 };
 
+// A single LOD level, not including migration information.
 struct TfragLod {
 	Vec4f bsphere;
 	VifSTROW base_position;
 	std::vector<TfragTexturePrimitive> common_textures;
 	std::vector<TfragStrip> strips;
 	std::vector<u8> indices;
-	std::vector<u8> unknown_indices;
 	std::vector<TfragVertexInfo> vertex_info;
 	std::vector<TfragVertexPosition> positions;
 	std::vector<TfragRgba> rgbas;

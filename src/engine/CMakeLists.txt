@@ -14,6 +14,7 @@ add_library(wrenchengine
 	sky.cpp
 	tfrag_low.cpp
 	tfrag_high.cpp
+	tfrag_debug.cpp
 	tie.cpp
 	vag.cpp
 )

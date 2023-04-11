@@ -103,7 +103,7 @@ Tfrags read_tfrags(Buffer src, Game game) {
 		
 		s32 j = 0;
 		if(j < lod_01.size() && lod_01[j].code.unpack.vnvl == VifVnVl::V4_8) {
-			tfrag.lod_01_unknown_indices = read_unpack<u8>(lod_01[j], VifVnVl::V4_8);
+			tfrag.lod_01_parent_indices = read_unpack<u8>(lod_01[j], VifVnVl::V4_8);
 			tfrag.memory_map.unk_indices_lod_01_addr = lod_01[j].code.unpack.addr;
 			j++;
 		}
@@ -145,7 +145,7 @@ Tfrags read_tfrags(Buffer src, Game game) {
 		verify(tfrag.memory_map.indices_addr == lod_0[j].code.unpack.addr, "Weird tfrag.");
 		j++;
 		if(j < lod_0.size() && lod_0[j].code.unpack.vnvl == VifVnVl::V4_8) {
-			tfrag.lod_0_unknown_indices = read_unpack<u8>(lod_0[j], VifVnVl::V4_8);
+			tfrag.lod_0_parent_indices = read_unpack<u8>(lod_0[j], VifVnVl::V4_8);
 			tfrag.memory_map.unk_indices_lod_0_addr = lod_0[j].code.unpack.addr;
 			j++;
 		}
@@ -297,11 +297,11 @@ void write_tfrags(OutBuffer dest, const Tfrags& tfrags, Game game) {
 		header.lod_0_ofs = checked_int_cast<u16>(lod_01_ofs - tfrag_ofs);
 		
 		// LOD 01
-		if(!tfrag.lod_01_unknown_indices.empty() || !tfrag.lod_01_unknown_indices_2.empty()) {
+		if(!tfrag.lod_01_parent_indices.empty() || !tfrag.lod_01_unknown_indices_2.empty()) {
 			write_strow(dest, indices_strow);
 		}
 		bool lod_01_needs_stmod =
-			!tfrag.lod_01_unknown_indices.empty() ||
+			!tfrag.lod_01_parent_indices.empty() ||
 			!tfrag.lod_01_unknown_indices_2.empty() ||
 			!tfrag.lod_01_vertex_info.empty() ||
 			!tfrag.lod_01_positions.empty() ||
@@ -309,8 +309,8 @@ void write_tfrags(OutBuffer dest, const Tfrags& tfrags, Game game) {
 		if(lod_01_needs_stmod) {
 			dest.write<u32>(0x05000001); // stmod
 		}
-		if(!tfrag.lod_01_unknown_indices.empty()) {
-			write_unpack(dest, tfrag.lod_01_unknown_indices, VifVnVl::V4_8, VifUsn::UNSIGNED, tfrag.memory_map.unk_indices_lod_01_addr);
+		if(!tfrag.lod_01_parent_indices.empty()) {
+			write_unpack(dest, tfrag.lod_01_parent_indices, VifVnVl::V4_8, VifUsn::UNSIGNED, tfrag.memory_map.unk_indices_lod_01_addr);
 		}
 		if(!tfrag.lod_01_unknown_indices_2.empty()) {
 			write_unpack(dest, tfrag.lod_01_unknown_indices_2, VifVnVl::V4_8, VifUsn::UNSIGNED, tfrag.memory_map.unk_indices_2_lod_01_addr);
@@ -340,8 +340,8 @@ void write_tfrags(OutBuffer dest, const Tfrags& tfrags, Game game) {
 		write_strow(dest, indices_strow);
 		dest.write<u32>(0x05000001); // stmod
 		write_unpack(dest, tfrag.lod_0_indices, VifVnVl::V4_8, VifUsn::UNSIGNED, tfrag.memory_map.indices_addr);
-		if(!tfrag.lod_0_unknown_indices.empty()) {
-			write_unpack(dest, tfrag.lod_0_unknown_indices, VifVnVl::V4_8, VifUsn::UNSIGNED, tfrag.memory_map.unk_indices_lod_0_addr);
+		if(!tfrag.lod_0_parent_indices.empty()) {
+			write_unpack(dest, tfrag.lod_0_parent_indices, VifVnVl::V4_8, VifUsn::UNSIGNED, tfrag.memory_map.unk_indices_lod_0_addr);
 		}
 		if(!tfrag.lod_0_unknown_indices_2.empty()) {
 			write_unpack(dest, tfrag.lod_0_unknown_indices_2, VifVnVl::V4_8, VifUsn::UNSIGNED, tfrag.memory_map.unk_indices_2_lod_0_addr);
@@ -426,10 +426,10 @@ void allocate_tfrags_vu(Tfrags& tfrags) {
 		// Pad index arrays.
 		pad_index_array(tfrag.lod_2_indices);
 		pad_index_array(tfrag.lod_1_indices);
-		pad_index_array(tfrag.lod_01_unknown_indices);
+		pad_index_array(tfrag.lod_01_parent_indices);
 		pad_index_array(tfrag.lod_01_unknown_indices_2);
 		pad_index_array(tfrag.lod_0_indices);
-		pad_index_array(tfrag.lod_0_unknown_indices);
+		pad_index_array(tfrag.lod_0_parent_indices);
 		pad_index_array(tfrag.lod_0_unknown_indices_2);
 		
 		// Calculate sizes in VU memory.
@@ -442,9 +442,9 @@ void allocate_tfrags_vu(Tfrags& tfrags) {
 		s32 vertex_info_common_size = tfrag.common_vertex_info.size();
 		s32 vertex_info_lod_01_size = tfrag.lod_01_vertex_info.size();
 		s32 vertex_info_lod_0_size = tfrag.lod_0_vertex_info.size();
-		s32 unk_indices_lod_01_size = align32(tfrag.lod_01_unknown_indices.size(), 4) / 4;
+		s32 unk_indices_lod_01_size = align32(tfrag.lod_01_parent_indices.size(), 4) / 4;
 		s32 unk_indices_2_lod_01_size = align32(tfrag.lod_01_unknown_indices_2.size(), 4) / 4;
-		s32 unk_indices_lod_0_size = align32(tfrag.lod_0_unknown_indices.size(), 4) / 4;
+		s32 unk_indices_lod_0_size = align32(tfrag.lod_0_parent_indices.size(), 4) / 4;
 		s32 unk_indices_2_lod_0_size = align32(tfrag.lod_0_unknown_indices_2.size(), 4) / 4;
 		s32 indices_size = align32(std::max({tfrag.lod_0_indices.size(), tfrag.lod_1_indices.size(), tfrag.lod_2_indices.size()}), 4) / 4;
 		s32 strips_size = std::max({tfrag.lod_0_strips.size(), tfrag.lod_1_strips.size(), tfrag.lod_2_strips.size()});

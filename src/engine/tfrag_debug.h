@@ -16,12 +16,12 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef ENGINE_TFRAG_HIGH_H
-#define ENGINE_TFRAG_HIGH_H
+#ifndef ENGINE_TFRAG_DEBUG_H
+#define ENGINE_TFRAG_DEBUG_H
 
 #include <engine/tfrag_low.h>
-#include <engine/tfrag_debug.h>
 
-ColladaScene recover_tfrags(const Tfrags& tfrags);
+bool tfrag_debug_output_enabled();
+ColladaScene recover_tfrags_debug(const Tfrags& tfrags);
 
 #endif
