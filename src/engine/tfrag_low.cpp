@@ -102,12 +102,15 @@ Tfrags read_tfrags(Buffer src, Game game) {
 		std::vector<VifPacket> lod_01 = filter_vif_unpacks(lod_01_command_list);
 		
 		s32 j = 0;
-		if(j < lod_01.size() && lod_01[j].code.unpack.vnvl == VifVnVl::V4_8) {
+		if(j < lod_01.size() && lod_01[j].code.unpack.vnvl == VifVnVl::V4_8 && lod_01[j].code.unpack.addr == tfrag.common_vu_header.parent_indices_lod_01_addr) {
 			tfrag.lod_01_parent_indices = read_unpack<u8>(lod_01[j], VifVnVl::V4_8);
-			tfrag.memory_map.unk_indices_lod_01_addr = lod_01[j].code.unpack.addr;
+			tfrag.memory_map.parent_indices_lod_01_addr = lod_01[j].code.unpack.addr;
+			s32 size_difference = (s32) tfrag.lod_01_parent_indices.size() - (s32) tfrag.common_vu_header.positions_lod_01_count;
+			verify(size_difference >= 0 && size_difference < 4, "Parent indices array has bad size.");
+			tfrag.lod_01_parent_indices.resize(tfrag.common_vu_header.positions_lod_01_count);
 			j++;
 		}
-		if(j < lod_01.size() && lod_01[j].code.unpack.vnvl == VifVnVl::V4_8) {
+		if(j < lod_01.size() && lod_01[j].code.unpack.vnvl == VifVnVl::V4_8 && lod_01[j].code.unpack.addr) {
 			tfrag.lod_01_unknown_indices_2 = read_unpack<u8>(lod_01[j], VifVnVl::V4_8);
 			tfrag.memory_map.unk_indices_2_lod_01_addr = lod_01[j].code.unpack.addr;
 			j++;
@@ -144,9 +147,12 @@ Tfrags read_tfrags(Buffer src, Game game) {
 		tfrag.lod_0_indices = read_unpack<u8>(lod_0[j], VifVnVl::V4_8);
 		verify(tfrag.memory_map.indices_addr == lod_0[j].code.unpack.addr, "Weird tfrag.");
 		j++;
-		if(j < lod_0.size() && lod_0[j].code.unpack.vnvl == VifVnVl::V4_8) {
+		if(j < lod_0.size() && lod_0[j].code.unpack.vnvl == VifVnVl::V4_8 && lod_0[j].code.unpack.addr == tfrag.common_vu_header.parent_indices_lod_0_addr) {
 			tfrag.lod_0_parent_indices = read_unpack<u8>(lod_0[j], VifVnVl::V4_8);
-			tfrag.memory_map.unk_indices_lod_0_addr = lod_0[j].code.unpack.addr;
+			tfrag.memory_map.parent_indices_lod_0_addr = lod_0[j].code.unpack.addr;
+			s32 size_difference = (s32) tfrag.lod_0_parent_indices.size() - (s32) tfrag.common_vu_header.positions_lod_0_count;
+			verify(size_difference >= 0 && size_difference < 4, "Parent indices array has bad size.");
+			tfrag.lod_0_parent_indices.resize(tfrag.common_vu_header.positions_lod_0_count);
 			j++;
 		}
 		if(j < lod_0.size() && lod_0[j].code.unpack.vnvl == VifVnVl::V4_8) {
@@ -310,7 +316,7 @@ void write_tfrags(OutBuffer dest, const Tfrags& tfrags, Game game) {
 			dest.write<u32>(0x05000001); // stmod
 		}
 		if(!tfrag.lod_01_parent_indices.empty()) {
-			write_unpack(dest, tfrag.lod_01_parent_indices, VifVnVl::V4_8, VifUsn::UNSIGNED, tfrag.memory_map.unk_indices_lod_01_addr);
+			write_unpack(dest, tfrag.lod_01_parent_indices, VifVnVl::V4_8, VifUsn::UNSIGNED, tfrag.memory_map.parent_indices_lod_01_addr);
 		}
 		if(!tfrag.lod_01_unknown_indices_2.empty()) {
 			write_unpack(dest, tfrag.lod_01_unknown_indices_2, VifVnVl::V4_8, VifUsn::UNSIGNED, tfrag.memory_map.unk_indices_2_lod_01_addr);
@@ -341,7 +347,7 @@ void write_tfrags(OutBuffer dest, const Tfrags& tfrags, Game game) {
 		dest.write<u32>(0x05000001); // stmod
 		write_unpack(dest, tfrag.lod_0_indices, VifVnVl::V4_8, VifUsn::UNSIGNED, tfrag.memory_map.indices_addr);
 		if(!tfrag.lod_0_parent_indices.empty()) {
-			write_unpack(dest, tfrag.lod_0_parent_indices, VifVnVl::V4_8, VifUsn::UNSIGNED, tfrag.memory_map.unk_indices_lod_0_addr);
+			write_unpack(dest, tfrag.lod_0_parent_indices, VifVnVl::V4_8, VifUsn::UNSIGNED, tfrag.memory_map.parent_indices_lod_0_addr);
 		}
 		if(!tfrag.lod_0_unknown_indices_2.empty()) {
 			write_unpack(dest, tfrag.lod_0_unknown_indices_2, VifVnVl::V4_8, VifUsn::UNSIGNED, tfrag.memory_map.unk_indices_2_lod_0_addr);
@@ -409,7 +415,8 @@ static s32 count_triangles(const Tfrag& tfrag) {
 	return triangles;
 }
 
-static void pad_index_array(std::vector<u8>& indices) {
+static s32 pad_index_array(std::vector<u8>& indices) {
+	s32 old_size = (s32) indices.size();
 	if(indices.size() % 2 != 0) {
 		indices.emplace_back(0);
 	}
@@ -417,12 +424,18 @@ static void pad_index_array(std::vector<u8>& indices) {
 		indices.emplace_back(0);
 		indices.emplace_back(0);
 	}
+	return old_size;
 }
 
 void allocate_tfrags_vu(Tfrags& tfrags) {
 	static const s32 VU1_BUFFER_SIZE = 0x118;
 	
 	for(Tfrag& tfrag : tfrags.fragments) {
+		// Write counts into the VU header.
+		tfrag.common_vu_header.positions_common_count = checked_int_cast<u16>(tfrag.common_positions.size());
+		tfrag.common_vu_header.positions_lod_01_count = checked_int_cast<u16>(tfrag.lod_01_positions.size());
+		tfrag.common_vu_header.positions_lod_0_count = checked_int_cast<u16>(tfrag.lod_0_positions.size());
+		
 		// Pad index arrays.
 		pad_index_array(tfrag.lod_2_indices);
 		pad_index_array(tfrag.lod_1_indices);
@@ -458,19 +471,31 @@ void allocate_tfrags_vu(Tfrags& tfrags) {
 		//tfrag.memory_map.vertex_info_common_addr = tfrag.memory_map.positions_lod_0_addr + positions_lod_0_size + 2;
 		tfrag.memory_map.vertex_info_lod_01_addr = tfrag.memory_map.vertex_info_common_addr + vertex_info_common_size;
 		tfrag.memory_map.vertex_info_lod_0_addr = tfrag.memory_map.vertex_info_lod_01_addr + vertex_info_lod_01_size;
-		tfrag.memory_map.unk_indices_lod_01_addr = tfrag.memory_map.vertex_info_lod_0_addr + vertex_info_lod_0_size;
-		tfrag.memory_map.unk_indices_2_lod_01_addr = tfrag.memory_map.unk_indices_lod_01_addr + unk_indices_lod_01_size;
-		tfrag.memory_map.unk_indices_lod_0_addr = tfrag.memory_map.unk_indices_2_lod_01_addr + unk_indices_2_lod_01_size;
-		tfrag.memory_map.unk_indices_2_lod_0_addr = tfrag.memory_map.unk_indices_lod_0_addr + unk_indices_lod_0_size;
+		tfrag.memory_map.parent_indices_lod_01_addr = tfrag.memory_map.vertex_info_lod_0_addr + vertex_info_lod_0_size;
+		tfrag.memory_map.unk_indices_2_lod_01_addr = tfrag.memory_map.parent_indices_lod_01_addr + unk_indices_lod_01_size;
+		tfrag.memory_map.parent_indices_lod_0_addr = tfrag.memory_map.unk_indices_2_lod_01_addr + unk_indices_2_lod_01_size;
+		tfrag.memory_map.unk_indices_2_lod_0_addr = tfrag.memory_map.parent_indices_lod_0_addr + unk_indices_lod_0_size;
 		tfrag.memory_map.indices_addr = tfrag.memory_map.unk_indices_2_lod_0_addr + unk_indices_2_lod_0_size;
 		tfrag.memory_map.strips_addr = tfrag.memory_map.indices_addr + indices_size;
 		
+		// Write addresses into the VU header.
+		tfrag.common_vu_header.positions_common_addr = checked_int_cast<u16>(tfrag.memory_map.positions_common_addr);
+		tfrag.common_vu_header.vertex_info_common_addr = checked_int_cast<u16>(tfrag.memory_map.vertex_info_common_addr);
+		tfrag.common_vu_header.vertex_info_lod_01_addr = checked_int_cast<u16>(tfrag.memory_map.vertex_info_lod_01_addr);
+		tfrag.common_vu_header.vertex_info_lod_0_addr = checked_int_cast<u16>(tfrag.memory_map.vertex_info_lod_0_addr);
+		tfrag.common_vu_header.indices_addr = checked_int_cast<u16>(tfrag.memory_map.indices_addr);
+		tfrag.common_vu_header.parent_indices_lod_01_addr = checked_int_cast<u16>(tfrag.memory_map.parent_indices_lod_01_addr);
+		tfrag.common_vu_header.parent_indices_lod_0_addr = checked_int_cast<u16>(tfrag.memory_map.parent_indices_lod_0_addr);
+		tfrag.common_vu_header.strips_addr = checked_int_cast<u16>(tfrag.memory_map.strips_addr);
+		tfrag.common_vu_header.texture_ad_gifs_addr = checked_int_cast<u16>(tfrag.memory_map.ad_gifs_common_addr);
+		
+		// For testing purposes.
 		if(positions_lod_01_size == 0) tfrag.memory_map.positions_lod_01_addr = -1;
 		if(positions_lod_0_size == 0) tfrag.memory_map.positions_lod_0_addr = -1;
 		if(vertex_info_lod_01_size == 0) tfrag.memory_map.vertex_info_lod_01_addr = -1;
 		if(vertex_info_lod_0_size == 0) tfrag.memory_map.vertex_info_lod_0_addr = -1;
-		if(unk_indices_lod_01_size == 0) tfrag.memory_map.unk_indices_lod_01_addr = -1;
-		if(unk_indices_lod_0_size == 0) tfrag.memory_map.unk_indices_lod_0_addr = -1;
+		if(unk_indices_lod_01_size == 0) tfrag.memory_map.parent_indices_lod_01_addr = -1;
+		if(unk_indices_lod_0_size == 0) tfrag.memory_map.parent_indices_lod_0_addr = -1;
 		
 		s32 end_addr = tfrag.memory_map.strips_addr + strips_size;
 		//verify_fatal(end_addr <= VU1_BUFFER_SIZE);

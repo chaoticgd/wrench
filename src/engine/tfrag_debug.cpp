@@ -350,7 +350,7 @@ static void create_debug_pole_faces(Mesh& mesh, const TfragLod& lod, const Tfrag
 			wideness = 0;
 		}
 		s32 colour = 0;
-		for(s32 j = 0; j < tfrag.common_vu_header.lod_0_positions_count; j++) {
+		for(s32 j = 0; j < tfrag.common_vu_header.positions_lod_0_count; j++) {
 			if(tfrag.lod_0_parent_indices.at(j) == i) {
 				colour = 1;
 				break;

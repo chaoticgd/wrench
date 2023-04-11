@@ -115,7 +115,7 @@ These command lists are stored in the model files and are used for transferring 
 | ------------------------ | -------------- | ------------------------------------------------------------------------------------------- |
 | STROW                    | No             | Converts indices below into addresses by adding the address of the vertex info table.       |
 | STMOD mode=1             | No             | Enable offset mode (see STROW).                                                             |
-| UNPACK V4_8 UNSIGNED     | No             | Unpack unknown indices 1 into VU1 memory.                                                   |
+| UNPACK V4_8 UNSIGNED     | No             | Unpack parent indices into VU1 memory.                                                      |
 | UNPACK V4_8 UNSIGNED     | No             | Unpack unknown indices 2 into VU1 memory.                                                   |
 | STROW                    | No             | Convert position indices below into addresses by adding the address of the positions table. |
 | UNPACK                   | No             | Unpack vertex info into VU1 memory (part 2).                                                |
@@ -136,7 +136,7 @@ Note that the VIF is still in the state setup by the STCYCL and STROW commands f
 | STROW                    | Yes            | Converts indices below into addresses by adding the address of the vertex info table.       |
 | STMOD mode=1             | Yes            | Enable offset mode (see STROW).                                                             |
 | UNPACK V4_8 UNSIGNED     | No             | Unpack indices into VU1 memory.                                                             |
-| UNPACK V4_8 UNSIGNED     | No             | Unpack unknown indices 1 into VU1 memory.                                                   |
+| UNPACK V4_8 UNSIGNED     | No             | Unpack parent indices into VU1 memory.                                                      |
 | UNPACK V4_8 UNSIGNED     | No             | Unpack unknown indices 2 into VU1 memory.                                                   |
 | STROW                    | No             | Convert position indices below into addresses by adding the address of the positions table. |
 | UNPACK                   | No             | Unpack vertex info into VU1 memory (part 3).                                                |
@@ -171,9 +171,10 @@ The table below represents the contents of VU1 data memory while the tfrag micro
 | ...                        | ...                   | ...                    | ...                     |
 | info[n-1].texcoord[s]      | info[n-1].texcoord[t] | info[n-1].pos_addr_1   | info[n-1].pos_addr_2    |
 |                            |                       |                        |                         |
-| unk_indices[0]             | unk_indices[1]        | unk_indices[2]         | unk_indices[3]          |
+| parent_indices[0]          | parent_indices[1]     | parent_indices[2]      | parent_indices[3]       |
 | ...                        | ...                   | ...                    | ...                     |
-| ...                        | unk_indices[n-1]      |                        |                         |
+| ...                        | parent_indices[n-1]   |                        |                         |
+| unk_indices[0]             | ...                   | unk_indices[n-1]       |                         |
 |                            |                       |                        |                         |
 | indices[0]                 | indices[1]            | indices[2]             | indices[3]              |
 | ...                        | ...                   | ...                    | ...                     |
@@ -205,7 +206,7 @@ for(strip in strips) {
 			xgkick();
 		} else {
 			ad_gif_source_offset = strip[z]
-			process_next_ad_gif(ad_gif_source_offset);
+			process_ad_gif(ad_gif_source_offset);
 		}
 		vertex_count = strip[x] + 128;
 	} else {
