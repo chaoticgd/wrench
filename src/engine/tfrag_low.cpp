@@ -170,6 +170,19 @@ Tfrags read_tfrags(Buffer src, Game game) {
 		tfrag.light = data.read_multiple<u8>(header.light_ofs, header.msphere_ofs - header.light_ofs, "light").copy();
 		tfrag.msphere = data.read_multiple<Vec4f>(header.msphere_ofs, header.msphere_count, "mspheres").copy();
 		tfrag.cube = data.read<TfragCube>(header.cube_ofs, "cube");
+		
+		s32 positions_end = 0;
+		if(tfrag.memory_map.positions_lod_0_addr != -1) {
+			positions_end = tfrag.memory_map.positions_lod_0_addr + tfrag.lod_0_positions.size() * 2;
+		} else if(tfrag.memory_map.positions_lod_01_addr != -1) {
+			positions_end = tfrag.memory_map.positions_lod_01_addr + tfrag.lod_01_positions.size() * 2;
+		} else if(tfrag.memory_map.positions_common_addr != -1) {
+			positions_end = tfrag.memory_map.positions_common_addr + tfrag.common_positions.size() * 2;
+		} else {
+			verify_not_reached("Bad tfrag positions.");
+		}
+		
+		tfrag.positions_slack = tfrag.memory_map.vertex_info_common_addr - positions_end;
 	}
 	
 	return tfrags;
@@ -431,6 +444,9 @@ void allocate_tfrags_vu(Tfrags& tfrags) {
 	static const s32 VU1_BUFFER_SIZE = 0x148;
 	
 	for(Tfrag& tfrag : tfrags.fragments) {
+		// Clear old data (for testing).
+		tfrag.memory_map = {};
+		
 		// Write counts into the VU header.
 		tfrag.common_vu_header.positions_common_count = checked_int_cast<u16>(tfrag.common_positions.size());
 		tfrag.common_vu_header.positions_lod_01_count = checked_int_cast<u16>(tfrag.lod_01_positions.size());
@@ -468,7 +484,7 @@ void allocate_tfrags_vu(Tfrags& tfrags) {
 		tfrag.memory_map.positions_common_addr = tfrag.memory_map.ad_gifs_common_addr + ad_gifs_common_size;
 		tfrag.memory_map.positions_lod_01_addr = tfrag.memory_map.positions_common_addr + positions_common_size;
 		tfrag.memory_map.positions_lod_0_addr = tfrag.memory_map.positions_lod_01_addr + positions_lod_01_size;
-		//tfrag.memory_map.vertex_info_common_addr = tfrag.memory_map.positions_lod_0_addr + positions_lod_0_size + 2;
+		tfrag.memory_map.vertex_info_common_addr = tfrag.memory_map.positions_lod_0_addr + positions_lod_0_size + tfrag.positions_slack;
 		tfrag.memory_map.vertex_info_lod_01_addr = tfrag.memory_map.vertex_info_common_addr + vertex_info_common_size;
 		tfrag.memory_map.vertex_info_lod_0_addr = tfrag.memory_map.vertex_info_lod_01_addr + vertex_info_lod_01_size;
 		tfrag.memory_map.parent_indices_lod_01_addr = tfrag.memory_map.vertex_info_lod_0_addr + vertex_info_lod_0_size;

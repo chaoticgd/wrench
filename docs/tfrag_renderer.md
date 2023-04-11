@@ -148,7 +148,7 @@ Note that the VIF is still in the state setup by the STCYCL and STROW commands f
 
 The table below represents the contents of VU1 data memory while the tfrag microprogram is running. The data shown, with the exception of the matrix, would all be unpacked into VU1 memory from the command lists described above. Double buffering would be used, however only one buffer is shown. In addition, the output buffers for the GS packets are not shown.
 
-| +0x0                       | +0x4                  | +0x8                   | +0xc                    |
+| X                          | Y                     | Z                      | W                       |
 | -------------------------- | --------------------- | ---------------------- | ----------------------- |
 | common_positions_count     |                       | lod_01_positions_count |                         |
 | lod_0_positions_count      |                       | positions_colours_addr | vertex_info_addr        |
@@ -205,12 +205,12 @@ for(strip in strips) {
 		} else if(strip[y] <= 0) {
 			xgkick();
 		} else {
-			ad_gif_source_offset = strip[z]
+			ad_gif_source_offset = strip[z];
 			process_ad_gif(ad_gif_source_offset);
 		}
 		vertex_count = strip[x] + 128;
 	} else {
-		vertex_count = strip[x]
+		vertex_count = strip[x];
 	}
 	process_strip(vertex_count);
 }

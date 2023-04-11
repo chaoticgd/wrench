@@ -196,6 +196,7 @@ struct Tfrag {
 	std::vector<Vec4f> msphere;
 	TfragCube cube;
 	TfragMemoryMap memory_map;
+	u16 positions_slack; // Space between the positions and vertex info arrays in VU memory.
 };
 
 struct Tfrags {
