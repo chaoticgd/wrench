@@ -24,12 +24,6 @@ static s32 count_triangles(const Tfrag& tfrag);
 static void read_tfrag_command_lists(Tfrag& tfrag, const TfragHeader& header, Buffer data);
 static void write_tfrag_command_lists(OutBuffer dest, TfragHeader& header, const Tfrag& tfrag, s64 tfrag_ofs, Game game);
 
-template <typename T>
-static std::vector<T> read_unpack(const VifPacket& packet, VifVnVl vnvl) {
-	verify(packet.code.is_unpack() && packet.code.unpack.vnvl == vnvl, "Bad VIF command.");
-	return packet.data.read_all<T>().copy();
-}
-
 Tfrags read_tfrags(Buffer src, Game game) {
 	Tfrags tfrags;
 	
@@ -80,34 +74,6 @@ Tfrags read_tfrags(Buffer src, Game game) {
 	}
 	
 	return tfrags;
-}
-
-template <typename Dest, typename Src>
-static Dest checked_int_cast(Src src) {
-	verify_fatal(src >= std::numeric_limits<Dest>::min()
-		&& src <= std::numeric_limits<Dest>::max());
-	return static_cast<Dest>(src);
-}
-
-static void write_unpack(OutBuffer dest, Buffer data, VifVnVl vnvl, VifUsn usn, s32 addr) {
-	VifPacket packet;
-	packet.code.interrupt = 0;
-	packet.code.cmd = (VifCmd) 0b1100000; // UNPACK
-	packet.code.unpack.vnvl = vnvl;
-	packet.code.unpack.flg = VifFlg::USE_VIF1_TOPS;
-	packet.code.unpack.usn = usn;
-	packet.code.unpack.addr = addr;
-	packet.data = data;
-	packet.code.num = packet.data.size() / packet.code.element_size();
-	write_vif_packet(dest, packet);
-}
-
-static void write_strow(OutBuffer dest, const VifSTROW& strow) {
-	dest.write<u32>(0x30000000);
-	dest.write<u32>(strow.vif1_r0);
-	dest.write<u32>(strow.vif1_r1);
-	dest.write<u32>(strow.vif1_r2);
-	dest.write<u32>(strow.vif1_r3);
 }
 
 void write_tfrags(OutBuffer dest, const Tfrags& tfrags, Game game) {
@@ -192,6 +158,12 @@ static s32 count_triangles(const Tfrag& tfrag) {
 		triangles += vertex_count - 2;
 	}
 	return triangles;
+}
+
+template <typename T>
+static std::vector<T> read_unpack(const VifPacket& packet, VifVnVl vnvl) {
+	verify(packet.code.is_unpack() && packet.code.unpack.vnvl == vnvl, "Bad VIF command.");
+	return packet.data.read_all<T>().copy();
 }
 
 static void read_tfrag_command_lists(Tfrag& tfrag, const TfragHeader& header, Buffer data) {
@@ -305,6 +277,27 @@ static void read_tfrag_command_lists(Tfrag& tfrag, const TfragHeader& header, Bu
 		tfrag.memory_map.vertex_info_lod_0_addr = lod_0[i].code.unpack.addr;
 		i++;
 	}
+}
+
+static void write_unpack(OutBuffer dest, Buffer data, VifVnVl vnvl, VifUsn usn, s32 addr) {
+	VifPacket packet;
+	packet.code.interrupt = 0;
+	packet.code.cmd = (VifCmd) 0b1100000; // UNPACK
+	packet.code.unpack.vnvl = vnvl;
+	packet.code.unpack.flg = VifFlg::USE_VIF1_TOPS;
+	packet.code.unpack.usn = usn;
+	packet.code.unpack.addr = addr;
+	packet.data = data;
+	packet.code.num = packet.data.size() / packet.code.element_size();
+	write_vif_packet(dest, packet);
+}
+
+static void write_strow(OutBuffer dest, const VifSTROW& strow) {
+	dest.write<u32>(0x30000000);
+	dest.write<u32>(strow.vif1_r0);
+	dest.write<u32>(strow.vif1_r1);
+	dest.write<u32>(strow.vif1_r2);
+	dest.write<u32>(strow.vif1_r3);
 }
 
 static void write_tfrag_command_lists(OutBuffer dest, TfragHeader& header, const Tfrag& tfrag, s64 tfrag_ofs, Game game) {
