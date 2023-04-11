@@ -428,7 +428,7 @@ static s32 pad_index_array(std::vector<u8>& indices) {
 }
 
 void allocate_tfrags_vu(Tfrags& tfrags) {
-	static const s32 VU1_BUFFER_SIZE = 0x118;
+	static const s32 VU1_BUFFER_SIZE = 0x148;
 	
 	for(Tfrag& tfrag : tfrags.fragments) {
 		// Write counts into the VU header.
@@ -485,7 +485,9 @@ void allocate_tfrags_vu(Tfrags& tfrags) {
 		tfrag.common_vu_header.vertex_info_lod_0_addr = checked_int_cast<u16>(tfrag.memory_map.vertex_info_lod_0_addr);
 		tfrag.common_vu_header.indices_addr = checked_int_cast<u16>(tfrag.memory_map.indices_addr);
 		tfrag.common_vu_header.parent_indices_lod_01_addr = checked_int_cast<u16>(tfrag.memory_map.parent_indices_lod_01_addr);
+		tfrag.common_vu_header.unk_indices_2_lod_01_addr = checked_int_cast<u16>(tfrag.memory_map.unk_indices_2_lod_01_addr);
 		tfrag.common_vu_header.parent_indices_lod_0_addr = checked_int_cast<u16>(tfrag.memory_map.parent_indices_lod_0_addr);
+		tfrag.common_vu_header.unk_indices_2_lod_0_addr = checked_int_cast<u16>(tfrag.memory_map.unk_indices_2_lod_0_addr);
 		tfrag.common_vu_header.strips_addr = checked_int_cast<u16>(tfrag.memory_map.strips_addr);
 		tfrag.common_vu_header.texture_ad_gifs_addr = checked_int_cast<u16>(tfrag.memory_map.ad_gifs_common_addr);
 		
@@ -498,6 +500,6 @@ void allocate_tfrags_vu(Tfrags& tfrags) {
 		if(unk_indices_lod_0_size == 0) tfrag.memory_map.parent_indices_lod_0_addr = -1;
 		
 		s32 end_addr = tfrag.memory_map.strips_addr + strips_size;
-		//verify_fatal(end_addr <= VU1_BUFFER_SIZE);
+		verify_fatal(end_addr <= VU1_BUFFER_SIZE);
 	}
 }

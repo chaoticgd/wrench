@@ -112,12 +112,12 @@ packed_struct(TfragHeaderUnpack,
 	/* 0x12 0x24 */ u16 vertex_info_lod_01_addr; // Only the LOD 01 and LOD 0 entries have vertex_data_offsets[0] populated.
 	/* 0x14 0x28 */ u16 unknown_14;
 	/* 0x16 0x2c */ u16 vertex_info_lod_0_addr;
-	/* 0x18 0x30 */ u16 parent_indices_addr;
+	/* 0x18 0x30 */ u16 unknown_18;
 	/* 0x1a 0x34 */ u16 indices_addr;
 	/* 0x1c 0x38 */ u16 parent_indices_lod_01_addr;
-	/* 0x1e 0x3c */ u16 unknown_1e;
+	/* 0x1e 0x3c */ u16 unk_indices_2_lod_01_addr;
 	/* 0x20 0x40 */ u16 parent_indices_lod_0_addr;
-	/* 0x22 0x44 */ u16 unknown_22;
+	/* 0x22 0x44 */ u16 unk_indices_2_lod_0_addr;
 	/* 0x24 0x48 */ u16 strips_addr;
 	/* 0x26 0x4c */ u16 texture_ad_gifs_addr;
 )
