@@ -8,7 +8,7 @@ Each tfrag model is broken up into individual tfrags based on VU1 memory constra
 
 ## Tfrag Header
 
-See `src/engine/tfrag.h` for a C++ struct definition.
+See `src/engine/tfrag_low.h` for a C++ struct definition.
 
 <table>
 	<th>
