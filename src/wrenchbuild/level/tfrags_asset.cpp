@@ -71,7 +71,15 @@ static void pack_tfrags(OutputStream& dest, const TfragsAsset& src, BuildConfig 
 	}
 	
 	if(src.get_core().logical_type() == BinaryAsset::ASSET_TYPE) {
-		pack_asset_impl(dest, nullptr, nullptr, src.get_core(), config, nullptr);
+		std::vector<u8> membank;
+		MemoryOutputStream memstream(membank);
+		pack_asset_impl(memstream, nullptr, nullptr, src.get_core(), config, nullptr);
+		Tfrags tfrags = read_tfrags(membank, config.game());
+		
+		allocate_tfrags_vu(tfrags);
+		std::vector<u8> outbank;
+		write_tfrags(outbank, tfrags, config.game());
+		dest.write_v(outbank);
 		return;
 	} else {
 		verify_not_reached_fatal("Not yet implemented.");

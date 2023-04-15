@@ -18,10 +18,25 @@
 
 #include "tfrag_debug.h"
 
-#define TFRAG_DEBUG_ENABLED
+//#define TFRAG_DEBUG_ENABLED
 #define TFRAG_DEBUG_RECOVER_ALL_LODS
 //#define TFRAG_DEBUG_RAINBOW_STRIPS
 #define TFRAG_DEBUG_POLES
+
+// A single LOD level, not including migration information.
+struct TfragLod {
+	Vec4f bsphere;
+	VifSTROW base_position;
+	std::vector<TfragTexturePrimitive> common_textures;
+	std::vector<TfragStrip> strips;
+	std::vector<u8> indices;
+	std::vector<TfragVertexInfo> vertex_info;
+	std::vector<TfragVertexPosition> positions;
+	std::vector<TfragRgba> rgbas;
+	std::vector<u8> light;
+	std::vector<Vec4f> msphere;
+	TfragCube cube;
+};
 
 static TfragLod extract_highest_tfrag_lod(const Tfrag& tfrag);
 static TfragLod extract_medium_tfrag_lod(const Tfrag& tfrag);
@@ -315,28 +330,28 @@ static void create_debug_pole_faces(Mesh& mesh, const TfragLod& lod, const Tfrag
 	
 	// LOD 0 migrations.
 	for(size_t i = 0; i < tfrag.lod_0_positions.size(); i++) {
-		u8 unk_index = tfrag.lod_0_parent_indices.at(i);
-		const TfragVertexInfo& i_info = lod.vertex_info[tfrag.common_vertex_info.size() + tfrag.lod_01_vertex_info.size() + i];
-		const TfragVertexInfo& unk_info = lod.vertex_info[unk_index];
-		s32 pos_0 = unk_info.vertex_data_offsets[1] / 2;
-		s32 pos_1 = i_info.vertex_data_offsets[1] / 2;
+		u8 parent_index = tfrag.lod_0_parent_indices.at(i);
+		const TfragVertexInfo& child = lod.vertex_info[tfrag.common_vertex_info.size() + tfrag.lod_01_vertex_info.size() + i];
+		const TfragVertexInfo& parent = lod.vertex_info[parent_index];
+		s32 child_pos = child.vertex_data_offsets[1] / 2;
+		s32 parent_pos = parent.vertex_data_offsets[1] / 2;
 		Face& face_pc = debug_submesh.faces.emplace_back();
-		face_pc.v0 = vertex_base + MIGRATION_VERTEX_INDEX(0, 0) + pos_0;
-		face_pc.v1 = vertex_base + MIGRATION_VERTEX_INDEX(0, 0) + pos_1;
-		face_pc.v2 = vertex_base + MIGRATION_VERTEX_INDEX(2, 0) + pos_1;
+		face_pc.v0 = vertex_base + MIGRATION_VERTEX_INDEX(0, 0) + parent_pos;
+		face_pc.v1 = vertex_base + MIGRATION_VERTEX_INDEX(0, 0) + child_pos;
+		face_pc.v2 = vertex_base + MIGRATION_VERTEX_INDEX(2, 0) + child_pos;
 	}
 	
 	// LOD 1 migrations.
 	for(size_t i = 0; i < tfrag.lod_01_positions.size(); i++) {
-		u8 unk_index = tfrag.lod_01_parent_indices.at(i);
-		const TfragVertexInfo& i_info = lod.vertex_info[tfrag.common_vertex_info.size() + i];
-		const TfragVertexInfo& unk_info = lod.vertex_info[unk_index];
-		s32 pos_0 = unk_info.vertex_data_offsets[1] / 2;
-		s32 pos_1 = i_info.vertex_data_offsets[1] / 2;
+		u8 parent_index = tfrag.lod_01_parent_indices.at(i);
+		const TfragVertexInfo& child = lod.vertex_info[tfrag.common_vertex_info.size() + i];
+		const TfragVertexInfo& parent = lod.vertex_info[parent_index];
+		s32 child_pos = child.vertex_data_offsets[1] / 2;
+		s32 parent_pos = parent.vertex_data_offsets[1] / 2;
 		Face& face_pc = debug_submesh.faces.emplace_back();
-		face_pc.v0 = vertex_base + MIGRATION_VERTEX_INDEX(0, 0) + pos_0;
-		face_pc.v1 = vertex_base + MIGRATION_VERTEX_INDEX(0, 1) + pos_1;
-		face_pc.v2 = vertex_base + MIGRATION_VERTEX_INDEX(1, 1) + pos_1;
+		face_pc.v0 = vertex_base + MIGRATION_VERTEX_INDEX(0, 1) + parent_pos;
+		face_pc.v1 = vertex_base + MIGRATION_VERTEX_INDEX(0, 1) + child_pos;
+		face_pc.v2 = vertex_base + MIGRATION_VERTEX_INDEX(1, 1) + child_pos;
 	}
 	
 	for(size_t i = 0; i < lod.vertex_info.size(); i++) {

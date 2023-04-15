@@ -205,21 +205,6 @@ struct Tfrags {
 	std::vector<Tfrag> fragments;
 };
 
-// A single LOD level, not including migration information.
-struct TfragLod {
-	Vec4f bsphere;
-	VifSTROW base_position;
-	std::vector<TfragTexturePrimitive> common_textures;
-	std::vector<TfragStrip> strips;
-	std::vector<u8> indices;
-	std::vector<TfragVertexInfo> vertex_info;
-	std::vector<TfragVertexPosition> positions;
-	std::vector<TfragRgba> rgbas;
-	std::vector<u8> light;
-	std::vector<Vec4f> msphere;
-	TfragCube cube;
-};
-
 Tfrags read_tfrags(Buffer src, Game game);
 void write_tfrags(OutBuffer dest, const Tfrags& tfrags, Game game);
 void allocate_tfrags_vu(Tfrags& tfrags);
