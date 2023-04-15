@@ -103,7 +103,7 @@ ColladaScene recover_tfrags(const Tfrags& tfrags) {
 			if(i < tfrag.lod_0_parent_indices.size()) {
 				dest.parent = tfrag.lod_0_parent_indices[i];
 				if(dest.parent > -1 && dest.parent < vertices.size()) {
-					dest.grand_parent = vertices[dest.parent].parent;
+					dest.grand_parent = vertices.at(dest.parent).parent;
 				}
 			}
 		}
@@ -116,8 +116,9 @@ ColladaScene recover_tfrags(const Tfrags& tfrags) {
 			// Enumerate parent vertices.
 			s32 parents[4] = {-1, -1, -1, -1};
 			for(s32 i = 0; i < 4; i++) {
-				if(parents[face.indices[i]] > -1) {
-					parents[i] = parents[face.indices[i]];
+				s32 parent = vertices.at(face.indices[i]).parent;
+				if(parent > -1) {
+					parents[i] = parent;
 				}
 			}
 			
@@ -140,15 +141,15 @@ ColladaScene recover_tfrags(const Tfrags& tfrags) {
 			tfrag.common_vertex_info.size() +
 			tfrag.lod_01_vertex_info.size() +
 			tfrag.lod_0_vertex_info.size();
-		std::vector<s32> tfaces(tfrag.common_vertex_info.size(), -1);
+		std::vector<s32> tfaces(vertices.size(), -1);
 		for(const TfragFace& face : faces) {
 			// Identify which tface this face is a part of.
 			s32 tface_index = -1;
 			for(s32 i = 0; i < 4; i++) {
-				if(vertices.at(face.indices[i]).is_diagonal_leaf) {
-					tface_index = (vertices[face.indices[i]].grand_parent > -1) ?
-						vertices[face.indices[i]].grand_parent :
-						vertices[face.indices[i]].parent;
+				VertexInfoEx& vertex = vertices.at(face.indices[i]);
+				if(vertex.is_diagonal_leaf) {
+					tface_index = (vertex.grand_parent > -1) ?
+						vertex.grand_parent : vertex.parent;
 					break;
 				}
 			}
