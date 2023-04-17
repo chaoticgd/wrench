@@ -133,7 +133,8 @@ packed_struct(TfragVertexInfo,
 	/* PACK UNPK */
 	/* 0x00 0x00 */ s16 s;
 	/* 0x02 0x04 */ s16 t;
-	/* 0x04 0x08 */ s16 vertex_data_offsets[2]; // vertex_data_offsets[0] always 0x1000 for common_vertex_info only.
+	/* 0x04 0x08 */ s16 parent;
+	/* 0x04 0x08 */ s16 vertex;
 )
 
 packed_struct(TfragStrip,
