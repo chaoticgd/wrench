@@ -19,9 +19,9 @@
 #include "tfrag_debug.h"
 
 //#define TFRAG_DEBUG_ENABLED
-#define TFRAG_DEBUG_RECOVER_ALL_LODS
+//#define TFRAG_DEBUG_RECOVER_ALL_LODS
 //#define TFRAG_DEBUG_RAINBOW_STRIPS
-#define TFRAG_DEBUG_POLES
+//#define TFRAG_DEBUG_POLES
 
 // A single LOD level, not including migration information.
 struct TfragLod {
