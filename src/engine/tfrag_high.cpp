@@ -94,7 +94,7 @@ ColladaScene recover_tfrags(const Tfrags& tfrags) {
 	
 	Mesh& lost_found = scene.meshes.emplace_back();
 	lost_found.name = "lost_and_found";
-	lost_found.flags = MESH_HAS_QUADS | MESH_HAS_TEX_COORDS;
+	lost_found.flags = MESH_HAS_QUADS | MESH_HAS_TEX_COORDS | MESH_HAS_VERTEX_COLOURS;
 	
 	for(const Tfrag& tfrag : tfrags.fragments) {
 		// Enumerate vertex positions from different LODs.
@@ -207,7 +207,7 @@ ColladaScene recover_tfrags(const Tfrags& tfrags) {
 					mesh_index = (s32) scene.meshes.size();
 					mesh = &scene.meshes.emplace_back();
 					mesh->name = stringf("tface_%d", mesh_index);
-					mesh->flags |= MESH_HAS_QUADS | MESH_HAS_TEX_COORDS;
+					mesh->flags |= MESH_HAS_QUADS | MESH_HAS_TEX_COORDS | MESH_HAS_VERTEX_COLOURS;
 				} else {
 					mesh = &scene.meshes.at(mesh_index);
 				}
@@ -229,6 +229,15 @@ ColladaScene recover_tfrags(const Tfrags& tfrags) {
 					dest.pos.z = (tfrag.base_position.vif1_r2 + pos.z) / 1024.f;
 					dest.tex_coord.s = vu_fixed12_to_float(src.s);
 					dest.tex_coord.t = vu_fixed12_to_float(src.t);
+					const TfragRgba& colour = tfrag.rgbas.at(index);
+					dest.colour.r = colour.r;
+					dest.colour.g = colour.g;
+					dest.colour.b = colour.b;
+					if(colour.a < 0x80) {
+						dest.colour.a = colour.a * 2;
+					} else {
+						dest.colour.a = 255;
+					}
 				}
 			}
 	
