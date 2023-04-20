@@ -217,9 +217,11 @@ static void read_tfrag_command_lists(Tfrag& tfrag, const TfragHeader& header, Bu
 	if(i < lod_01.size() && lod_01[i].code.unpack.vnvl == VifVnVl::V4_8 && lod_01[i].code.unpack.addr == tfrag.common_vu_header.parent_indices_lod_01_addr) {
 		tfrag.lod_01_parent_indices = read_unpack<u8>(lod_01[i], VifVnVl::V4_8);
 		tfrag.memory_map.parent_indices_lod_01_addr = lod_01[i].code.unpack.addr;
-		s32 size_difference = (s32) tfrag.lod_01_parent_indices.size() - (s32) tfrag.common_vu_header.positions_lod_01_count;
-		verify(size_difference >= 0 && size_difference < 4, "Parent indices array has bad size.");
-		tfrag.lod_01_parent_indices.resize(tfrag.common_vu_header.positions_lod_01_count);
+		if(tfrag.common_vu_header.positions_lod_01_count != 0) {
+			s32 size_difference = (s32) tfrag.lod_01_parent_indices.size() - (s32) tfrag.common_vu_header.positions_lod_01_count;
+			verify(size_difference >= 0 && size_difference < 4, "Parent indices array has bad size.");
+			tfrag.lod_01_parent_indices.resize(tfrag.common_vu_header.positions_lod_01_count);
+		}
 		i++;
 	}
 	if(i < lod_01.size() && lod_01[i].code.unpack.vnvl == VifVnVl::V4_8 && lod_01[i].code.unpack.addr) {
@@ -262,9 +264,11 @@ static void read_tfrag_command_lists(Tfrag& tfrag, const TfragHeader& header, Bu
 	if(i < lod_0.size() && lod_0[i].code.unpack.vnvl == VifVnVl::V4_8 && lod_0[i].code.unpack.addr == tfrag.common_vu_header.parent_indices_lod_0_addr) {
 		tfrag.lod_0_parent_indices = read_unpack<u8>(lod_0[i], VifVnVl::V4_8);
 		tfrag.memory_map.parent_indices_lod_0_addr = lod_0[i].code.unpack.addr;
-		s32 size_difference = (s32) tfrag.lod_0_parent_indices.size() - (s32) tfrag.common_vu_header.positions_lod_0_count;
-		verify(size_difference >= 0 && size_difference < 4, "Parent indices array has bad size.");
-		tfrag.lod_0_parent_indices.resize(tfrag.common_vu_header.positions_lod_0_count);
+		if(tfrag.common_vu_header.positions_lod_0_count != 0) {
+			s32 size_difference = (s32) tfrag.lod_0_parent_indices.size() - (s32) tfrag.common_vu_header.positions_lod_0_count;
+			verify(size_difference >= 0 && size_difference < 4, "Parent indices array has bad size.");
+			tfrag.lod_0_parent_indices.resize(tfrag.common_vu_header.positions_lod_0_count);
+		}
 		i++;
 	}
 	if(i < lod_0.size() && lod_0[i].code.unpack.vnvl == VifVnVl::V4_8) {
