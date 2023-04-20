@@ -18,20 +18,55 @@
 
 #include "tfrag_high.h"
 
-//#define TFRAG_DEBUG_RECOVER_ALL_LODS
-//#define TFRAG_DEBUG_RAINBOW_STRIPS
-//#define TFRAG_DEBUG_POLES
+#include <set>
 
-static TfragLod extract_highest_tfrag_lod(const Tfrag& tfrag);
-static TfragLod extract_medium_tfrag_lod(const Tfrag& tfrag);
-static TfragLod extract_low_tfrag_lod(const Tfrag& tfrag);
-void recover_tfrag_lod(Mesh& mesh, const TfragLod& lod, const Tfrag& tfrag, s32 texture_count);
-static s32 recover_tfrag_vertices(Mesh& mesh, const TfragLod& lod, s32 strip_index);
+#define MAX_TFACES_TOUCHING_VERTEX 8
+#define INIT_TFACE_INDICES \
+	{-1, -1, -1, -1, -1, -1, -1, -1}
 
-static void create_debug_pole_vertices(Mesh& mesh, const TfragLod& lod, s32 strip_index);
-static void create_debug_pole_faces(Mesh& mesh, const TfragLod& lod, const Tfrag& tfrag, s32 vertex_base);
+struct TfragFace {
+	s32 ad_gif;
+	s32 indices[4];
+};
+
+struct TfragVertexEx {
+	const TfragVertexPosition* position;
+	s32 parents[2] = {-1, -1};
+	s32 tfaces[MAX_TFACES_TOUCHING_VERTEX] = INIT_TFACE_INDICES;
+	
+	bool push_tface(s32 tface) {
+		for(s32 i = 0; i < ARRAY_SIZE(tfaces); i++) {
+			if(tfaces[i] == -1) {
+				tfaces[i] = tface;
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	bool set_tfaces(const TfragVertexEx& left_parent, TfragVertexEx& right_parent) {
+		for(s32 i = 0; i < ARRAY_SIZE(tfaces); i++) {
+			if(left_parent.tfaces[i] > -1) {
+				for(s32 j = 0; j < ARRAY_SIZE(tfaces); j++) {
+					if(left_parent.tfaces[i] == right_parent.tfaces[j] && !push_tface(left_parent.tfaces[i])) {
+						return false;
+					}
+				}
+			}
+		}
+		return true;
+	}
+};
+
+static size_t propagate_tface_information(std::vector<TfragVertexEx>& vertices, const Tfrag& tfrag, const std::vector<TfragVertexInfo>& vertex_infos);
+static std::vector<TfragFace> recover_faces(const std::vector<TfragStrip>& strips, const std::vector<u8>& indices);
+static s32 map_face_to_tface(const TfragFace& face, const std::vector<TfragVertexEx>& vertices, const std::vector<TfragVertexInfo>& vertex_infos);
 
 ColladaScene recover_tfrags(const Tfrags& tfrags) {
+	if(tfrag_debug_output_enabled()) {
+		return recover_tfrags_debug(tfrags);
+	}
+	
 	s32 texture_count = 0;
 	for(const Tfrag& tfrag : tfrags.fragments) {
 		for(const TfragTexturePrimitive& primitive : tfrag.common_textures) {
@@ -49,283 +84,217 @@ ColladaScene recover_tfrags(const Tfrags& tfrags) {
 		scene.texture_paths.emplace_back(stringf("%d.png", i));
 	}
 	
-	if(texture_count == 0) {
-		ColladaMaterial& dummy = scene.materials.emplace_back();
-		dummy.name = "dummy";
-		dummy.surface = MaterialSurface(glm::vec4(1.f, 1.f, 1.f, 1.f));
-	}
-
-#if defined(TFRAG_DEBUG_RAINBOW_STRIPS) || defined(TFRAG_DEBUG_POLES)
-	u32 mesh_flags = MESH_HAS_VERTEX_COLOURS;
-#else
-	u32 mesh_flags = MESH_HAS_TEX_COORDS;
-#endif
-
-	Mesh& high_mesh = scene.meshes.emplace_back();
-	high_mesh.name = "mesh";
-	high_mesh.flags |= mesh_flags;
+	Mesh& mesh = scene.meshes.emplace_back();
+	mesh.name = "mesh";
+	mesh.flags = MESH_HAS_QUADS | MESH_HAS_TEX_COORDS | MESH_HAS_VERTEX_COLOURS;
+	
+	SubMesh& lost_and_found = mesh.submeshes.emplace_back();
+	lost_and_found.material = 0;
 	
 	for(const Tfrag& tfrag : tfrags.fragments) {
-		TfragLod lod = extract_highest_tfrag_lod(tfrag);
-		recover_tfrag_lod(high_mesh, lod, tfrag, texture_count);
+		// Enumerate vertex positions from different LODs.
+		std::vector<TfragVertexEx> vertices;
+		for(const TfragVertexPosition& position : tfrag.common_positions) {
+			vertices.emplace_back().position = &position;
+		}
+		for(const TfragVertexPosition& position : tfrag.lod_01_positions) {
+			vertices.emplace_back().position = &position;
+		}
+		for(const TfragVertexPosition& position : tfrag.lod_0_positions) {
+			vertices.emplace_back().position = &position;
+		}
+		
+		// Enumerate vertex infos.
+		std::vector<TfragVertexInfo> vertex_infos;
+		vertex_infos.insert(vertex_infos.end(), BEGIN_END(tfrag.common_vertex_info));
+		vertex_infos.insert(vertex_infos.end(), BEGIN_END(tfrag.lod_01_vertex_info));
+		vertex_infos.insert(vertex_infos.end(), BEGIN_END(tfrag.lod_0_vertex_info));
+		
+		// Figure out which vertices belong to which tfaces.
+		size_t tface_count = propagate_tface_information(vertices, tfrag, vertex_infos);
+		
+		// Create the vertices.
+		size_t vertex_base = mesh.vertices.size();
+		for(const TfragVertexInfo& src : vertex_infos) {
+			Vertex& dest = mesh.vertices.emplace_back();
+			s16 index = src.vertex / 2;
+			verify_fatal(index >= 0 && index < vertices.size());
+			const TfragVertexPosition& pos = *vertices[index].position;
+			dest.pos.x = (tfrag.base_position.vif1_r0 + pos.x) / 1024.f;
+			dest.pos.y = (tfrag.base_position.vif1_r1 + pos.y) / 1024.f;
+			dest.pos.z = (tfrag.base_position.vif1_r2 + pos.z) / 1024.f;
+			dest.tex_coord.s = vu_fixed12_to_float(src.s);
+			dest.tex_coord.t = vu_fixed12_to_float(src.t);
+			const TfragRgba& colour = tfrag.rgbas.at(index);
+			dest.colour.r = colour.r;
+			dest.colour.g = colour.g;
+			dest.colour.b = colour.b;
+			if(colour.a < 0x80) {
+				dest.colour.a = colour.a * 2;
+			} else {
+				dest.colour.a = 255;
+			}
+		}
+		
+		// Create the faces.
+		std::vector<s32> tfaces(tface_count, -1);
+		std::vector<TfragFace> lod_0_faces = recover_faces(tfrag.lod_0_strips, tfrag.lod_0_indices);
+		for(const TfragFace& face : lod_0_faces) {
+			// Identify which tface this face is a part of.
+			s32 tface_index = map_face_to_tface(face, vertices, vertex_infos);
+			
+			// Create a submesh for this tface if it doesn't already exist.
+			SubMesh* submesh = nullptr;
+			if(tface_index > -1) {
+				verify(tface_index < tfaces.size(), "Bad tfaces.");
+				s32& submesh_index = tfaces.at(tface_index);
+				if(submesh_index == -1) {
+					submesh_index = (s32) mesh.submeshes.size();
+					submesh = &mesh.submeshes.emplace_back();
+					submesh->material = tfrag.common_textures.at(face.ad_gif).d1_tex0_1.data_lo;
+				} else {
+					submesh = &mesh.submeshes.at(submesh_index);
+				}
+			} else {
+				submesh = &mesh.submeshes.at(0);
+			}
+			
+			// Add the new face.
+			Face& f = submesh->faces.emplace_back();
+			f.v0 = vertex_base + face.indices[0];
+			f.v1 = vertex_base + face.indices[1];
+			f.v2 = vertex_base + face.indices[2];
+			f.v3 = (face.indices[3] > -1) ? (vertex_base + face.indices[3]) : -1;
+		}
 	}
-
-#ifdef TFRAG_DEBUG_RECOVER_ALL_LODS
-	Mesh& medium_mesh = scene.meshes.emplace_back();
-	medium_mesh.name = "medium_lod";
-	medium_mesh.flags |= mesh_flags;
-	
-	for(const Tfrag& tfrag : tfrags.fragments) {
-		TfragLod lod = extract_medium_tfrag_lod(tfrag);
-		recover_tfrag_lod(medium_mesh, lod, tfrag, texture_count);
-	}
-	
-	Mesh& low_mesh = scene.meshes.emplace_back();
-	low_mesh.name = "low_lod";
-	low_mesh.flags |= mesh_flags;
-	
-	for(const Tfrag& tfrag : tfrags.fragments) {
-		TfragLod lod = extract_low_tfrag_lod(tfrag);
-		recover_tfrag_lod(low_mesh, lod, tfrag, texture_count);
-	}
-#endif
 	
 	return scene;
 }
 
-static TfragLod extract_highest_tfrag_lod(const Tfrag& tfrag) {
-	TfragLod lod;
-	lod.bsphere = tfrag.bsphere;
-	lod.base_position = tfrag.base_position;
-	lod.common_textures = tfrag.common_textures;
-	lod.strips = tfrag.lod_0_strips;
-	lod.indices.insert(lod.indices.end(), BEGIN_END(tfrag.lod_0_indices));
-	lod.unknown_indices.insert(lod.unknown_indices.end(), BEGIN_END(tfrag.lod_0_unknown_indices));
-	lod.vertex_info.insert(lod.vertex_info.end(), BEGIN_END(tfrag.common_vertex_info));
-	lod.vertex_info.insert(lod.vertex_info.end(), BEGIN_END(tfrag.lod_01_vertex_info));
-	lod.vertex_info.insert(lod.vertex_info.end(), BEGIN_END(tfrag.lod_0_vertex_info));
-	lod.positions.insert(lod.positions.end(), BEGIN_END(tfrag.common_positions));
-	lod.positions.insert(lod.positions.end(), BEGIN_END(tfrag.lod_01_positions));
-	lod.positions.insert(lod.positions.end(), BEGIN_END(tfrag.lod_0_positions));
-	lod.rgbas = tfrag.rgbas;
-	lod.light = tfrag.light;
-	lod.msphere = tfrag.msphere;
-	lod.cube = tfrag.cube;
-	return lod;
-}
-
-static TfragLod extract_medium_tfrag_lod(const Tfrag& tfrag) {
-	TfragLod lod;
-	lod.bsphere = tfrag.bsphere;
-	lod.base_position = tfrag.base_position;
-	lod.common_textures = tfrag.common_textures;
-	lod.strips = tfrag.lod_1_strips;
-	lod.indices.insert(lod.indices.end(), BEGIN_END(tfrag.lod_1_indices));
-	lod.vertex_info.insert(lod.vertex_info.end(), BEGIN_END(tfrag.common_vertex_info));
-	lod.vertex_info.insert(lod.vertex_info.end(), BEGIN_END(tfrag.lod_01_vertex_info));
-	lod.positions.insert(lod.positions.end(), BEGIN_END(tfrag.common_positions));
-	lod.positions.insert(lod.positions.end(), BEGIN_END(tfrag.lod_01_positions));
-	lod.rgbas = tfrag.rgbas;
-	lod.light = tfrag.light;
-	lod.msphere = tfrag.msphere;
-	lod.cube = tfrag.cube;
-	return lod;
-}
-
-static TfragLod extract_low_tfrag_lod(const Tfrag& tfrag) {
-	TfragLod lod;
-	lod.bsphere = tfrag.bsphere;
-	lod.base_position = tfrag.base_position;
-	lod.common_textures = tfrag.common_textures;
-	lod.strips = tfrag.lod_2_strips;
-	lod.indices.insert(lod.indices.end(), BEGIN_END(tfrag.lod_2_indices));
-	lod.vertex_info.insert(lod.vertex_info.end(), BEGIN_END(tfrag.common_vertex_info));
-	lod.positions.insert(lod.positions.end(), BEGIN_END(tfrag.common_positions));
-	lod.rgbas = tfrag.rgbas;
-	lod.light = tfrag.light;
-	lod.msphere = tfrag.msphere;
-	lod.cube = tfrag.cube;
-	return lod;
-}
-
-void recover_tfrag_lod(Mesh& mesh, const TfragLod& lod, const Tfrag& tfrag, s32 texture_count) {
-	SubMesh* submesh = nullptr;
-	s32 next_texture = 0;
+static size_t propagate_tface_information(std::vector<TfragVertexEx>& vertices, const Tfrag& tfrag, const std::vector<TfragVertexInfo>& vertex_infos) {
+	// Determine parent-child relationships.
+	for(size_t i = 0; i < tfrag.lod_01_vertex_info.size(); i++) {
+		const TfragVertexInfo& info = tfrag.lod_01_vertex_info[i];
+		TfragVertexEx& vertex = vertices.at(info.vertex / 2);
+		if(i < tfrag.lod_01_parent_indices.size()) {
+			vertex.parents[0] = vertex_infos.at(tfrag.lod_01_parent_indices[i]).vertex / 2;
+		}
+		vertex.parents[1] = info.parent / 2;
+	}
+	for(size_t i = 0; i < tfrag.lod_0_vertex_info.size(); i++) {
+		const TfragVertexInfo& info = tfrag.lod_0_vertex_info[i];
+		TfragVertexEx& vertex = vertices.at(info.vertex / 2);
+		if(i < tfrag.lod_0_parent_indices.size()) {
+			vertex.parents[0] = vertex_infos.at(tfrag.lod_0_parent_indices[i]).vertex / 2;
+		}
+		vertex.parents[1] = info.parent / 2;
+	}
 	
-#ifdef TFRAG_DEBUG_RAINBOW_STRIPS
-	static s32 strip_index = 0;
-#else
-	s32 vertex_base = recover_tfrag_vertices(mesh, lod, 0);
-#endif
+	// Mark all the LOD 2 vertices as belonging to particular tfaces.
+	std::vector<TfragFace> lod_2_faces = recover_faces(tfrag.lod_2_strips, tfrag.lod_2_indices);
+	for(size_t i = 0; i < lod_2_faces.size(); i++) {
+		for(s32 index : lod_2_faces[i].indices) {
+			if(index > -1) {
+				TfragVertexEx& vertex = vertices.at(vertex_infos.at(index).vertex / 2);
+				verify(vertex.push_tface(i), "Overloaded vertex (lod 2).");
+			}
+		}
+	}
 	
-	s32 index_offset = 0;
-	for(const TfragStrip& strip : lod.strips) {
+	// Propagate tface information to LOD 1 vertices.
+	for(size_t i = 0; i < tfrag.lod_01_positions.size(); i++) {
+		TfragVertexEx& vertex = vertices.at(tfrag.common_positions.size() + i);
+		TfragVertexEx& left_parent = vertices.at(vertex.parents[0]);
+		TfragVertexEx& right_parent = vertices.at(vertex.parents[1]);
+		vertex.set_tfaces(left_parent, right_parent);
+	}
+	
+	// Propagate tface information to LOD 0 vertices.
+	for(size_t i = 0; i < tfrag.lod_0_positions.size(); i++) {
+		TfragVertexEx& vertex = vertices.at(tfrag.common_positions.size() + tfrag.lod_01_positions.size() + i);
+		TfragVertexEx& left_parent = vertices.at(vertex.parents[0]);
+		TfragVertexEx& right_parent = vertices.at(vertex.parents[1]);
+		vertex.set_tfaces(left_parent, right_parent);
+	}
+	
+	return lod_2_faces.size();
+}
+
+static std::vector<TfragFace> recover_faces(const std::vector<TfragStrip>& strips, const std::vector<u8>& indices) {
+	std::vector<TfragFace> tfaces;
+	s32 active_ad_gif = -1;
+	s32 next_strip = 0;
+	for(const TfragStrip& strip : strips) {
 		s8 vertex_count = strip.vertex_count_and_flag;
 		if(vertex_count <= 0) {
 			if(vertex_count == 0) {
 				break;
-			} else if(strip.end_of_packet_flag >= 0 && texture_count != 0) {
-				next_texture = lod.common_textures.at(strip.ad_gif_offset / 0x5).d1_tex0_1.data_lo;
+			} else if(strip.end_of_packet_flag >= 0) {
+				active_ad_gif = strip.ad_gif_offset / 0x5;
 			}
 			vertex_count += 128;
 		}
-		
-		if(submesh == nullptr || next_texture != submesh->material) {
-			submesh = &mesh.submeshes.emplace_back();
-			submesh->material = next_texture;
-		}
-		
-#ifdef TFRAG_DEBUG_RAINBOW_STRIPS
-		s32 vertex_base = recover_tfrag_vertices(mesh, lod, strip_index++);
-#endif
-		
-		s32 queue[2] = {};
-		for(s32 i = 0; i < vertex_count; i++) {
-			verify_fatal(index_offset < lod.indices.size());
-			s32 index = lod.indices[index_offset++];
-			verify_fatal(index >= 0 && index < lod.vertex_info.size());
-			if(i >= 2) {
-				submesh->faces.emplace_back(queue[0], queue[1], vertex_base + index);
+		if(vertex_count % 2 == 0) {
+			for(s32 i = 0; i < vertex_count - 2; i += 2) {
+				TfragFace& face = tfaces.emplace_back();
+				face.ad_gif = active_ad_gif;
+				for(s32 j = 0; j < 4; j++) {
+					// 1 - 3    1 - 4
+					// | / | -> |   |
+					// 2 - 4    2 - 3
+					s32 index = next_strip + i + (j ^ (j > 1));
+					face.indices[j] = indices.at(index);
+				}
 			}
-			queue[0] = queue[1];
-			queue[1] = vertex_base + index;
+		} else {
+			for(s32 i = 0; i < vertex_count - 2; i++) {
+				TfragFace& face = tfaces.emplace_back();
+				face.ad_gif = active_ad_gif;
+				face.indices[0] = indices.at(next_strip + i + 0);
+				face.indices[1] = indices.at(next_strip + i + 1);
+				face.indices[2] = indices.at(next_strip + i + 2);
+				face.indices[3] = -1;
+			}
 		}
+		
+		next_strip += vertex_count;
 	}
-
-#ifdef TFRAG_DEBUG_POLES
-	create_debug_pole_faces(mesh, lod, tfrag, vertex_base);
-#endif
+	return tfaces;
 }
 
-static s32 recover_tfrag_vertices(Mesh& mesh, const TfragLod& lod, s32 strip_index) {
-#ifdef TFRAG_DEBUG_RAINBOW_STRIPS
-	static const u8 colours[12][4] = {
-		{255, 0,   0,   255},
-		{255, 255, 0,   255},
-		{0,   255, 0,   255},
-		{0,   255, 255, 255},
-		{0,   0,   255, 255},
-		{255, 0,   255, 255},
-		{128, 0,   0,   255},
-		{128, 128, 0,   255},
-		{0,   128, 0,   255},
-		{0,   128, 128, 255},
-		{0,   0,   128, 255},
-		{128, 0,   128, 255}
-	};
-#endif
-	
-	s32 vertex_base = (s32) mesh.vertices.size();
-	for(const TfragVertexInfo& src : lod.vertex_info) {
-		Vertex& dest = mesh.vertices.emplace_back();
-		s16 index = src.vertex_data_offsets[1] / 2;
-		verify_fatal(index >= 0 && index < lod.positions.size());
-		const TfragVertexPosition& pos = lod.positions[index];
-		dest.pos.x = (lod.base_position.vif1_r0 + pos.x) / 1024.f;
-		dest.pos.y = (lod.base_position.vif1_r1 + pos.y) / 1024.f;
-		dest.pos.z = (lod.base_position.vif1_r2 + pos.z) / 1024.f;
-		dest.tex_coord.s = vu_fixed12_to_float(src.s);
-		dest.tex_coord.t = vu_fixed12_to_float(src.t);
-#ifdef TFRAG_DEBUG_RAINBOW_STRIPS
-		dest.colour.r = colours[strip_index % 12][0];
-		dest.colour.g = colours[strip_index % 12][1];
-		dest.colour.b = colours[strip_index % 12][2];
-		dest.colour.a = colours[strip_index % 12][3];
-#elif defined(TFRAG_DEBUG_POLES)
-		dest.colour.r = 255;
-		dest.colour.g = 255;
-		dest.colour.b = 255;
-		dest.colour.a = 255;
-#endif
-	}
-	
-#ifdef TFRAG_DEBUG_POLES
-	create_debug_pole_vertices(mesh, lod, strip_index);
-#endif
-	
-	return vertex_base;
-}
-
-static void create_debug_pole_vertices(Mesh& mesh, const TfragLod& lod, s32 strip_index) {
-	// Parent-child relationships.
-	for(s32 elevation = 0; elevation < 2; elevation++) {
-		for(const TfragVertexPosition& pos : lod.positions) {
-			Vertex& dest = mesh.vertices.emplace_back();
-			dest.pos.x = (lod.base_position.vif1_r0 + pos.x) / 1024.f;
-			dest.pos.y = (lod.base_position.vif1_r1 + pos.y) / 1024.f;
-			dest.pos.z = (lod.base_position.vif1_r2 + pos.z) / 1024.f + (elevation ? 0.5f : 0.f);
-			dest.tex_coord.s = 0;
-			dest.tex_coord.t = 0;
-			dest.colour.r = 0;
-			dest.colour.g = 0;
-			dest.colour.b = 255;
-			dest.colour.a = 255;
-		}
-	}
-	
-	// Vertical poles.
-	for(s32 wideness = 0; wideness < 3; wideness++) {
-		static const f32 offsets[3] = {0.05f, 0.15f, 0.4f};
-		for(s32 colour = 0; colour < 3; colour++) {
-			for(s32 side = 0; side < 2; side++) {
-				for(const TfragVertexInfo& src : lod.vertex_info) {
-					Vertex& dest = mesh.vertices.emplace_back();
-					s16 index = src.vertex_data_offsets[1] / 2;
-					verify_fatal(index >= 0 && index < lod.positions.size());
-					const TfragVertexPosition& pos = lod.positions[index];
-					dest.pos.x = (lod.base_position.vif1_r0 + pos.x) / 1024.f + (offsets[wideness] * ((side == 0) ? -1 : 1));
-					dest.pos.y = (lod.base_position.vif1_r1 + pos.y) / 1024.f + (offsets[wideness] * ((side == 0) ? -1 : 1));
-					dest.pos.z = (lod.base_position.vif1_r2 + pos.z) / 1024.f + 1.f;
-					dest.tex_coord.s = 0;
-					dest.tex_coord.t = 0;
-					dest.colour.r = (colour == 0) ? 255 : 0;
-					dest.colour.g = (colour == 1) ? 255 : 0;
-					dest.colour.b = (colour == 2) ? 255 : 0;
-					dest.colour.a = 255;
+static s32 map_face_to_tface(const TfragFace& face, const std::vector<TfragVertexEx>& vertices, const std::vector<TfragVertexInfo>& vertex_infos) {
+	s32 tface_index = -1;
+	if(face.indices[3] > -1) {
+		s32 tface_indices[MAX_TFACES_TOUCHING_VERTEX] = INIT_TFACE_INDICES;
+		memcpy(tface_indices, vertices.at(vertex_infos.at(face.indices[0]).vertex / 2).tfaces, sizeof(tface_indices));
+		for(s32 i = 1; i < ARRAY_SIZE(face.indices); i++) {
+			const TfragVertexEx& vertex = vertices.at(vertex_infos.at(face.indices[i]).vertex / 2);
+			for(s32 j = 0; j < ARRAY_SIZE(tface_indices); j++) {
+				bool found = false;
+				for(s32 k = 0; k < ARRAY_SIZE(vertex.tfaces); k++) {
+					if(vertex.tfaces[k] == tface_indices[j]) {
+						found = true;
+					}
+				}
+				if(!found) {
+					tface_indices[j] = -1;
 				}
 			}
 		}
-	}
-}
-
-#define POLE_VERTEX_INDEX(wideness, side, colour, vertex_count) \
-	lod.vertex_info.size() + \
-	2*lod.positions.size() + \
-	lod.vertex_info.size() * (2*3*wideness + 2*colour + side) // poles
-
-static void create_debug_pole_faces(Mesh& mesh, const TfragLod& lod, const Tfrag& tfrag, s32 vertex_base) {
-	SubMesh& pole_submesh = mesh.submeshes.emplace_back();
-	pole_submesh.material = 0;
-	for(size_t i = 0; i < lod.vertex_info.size(); i++) {
-		// Parent-child relationships.
-		if(lod.vertex_info[i].vertex_data_offsets[0] != 4096) {
-			s32 pos_0 = lod.vertex_info[i].vertex_data_offsets[0] / 2;
-			s32 pos_1 = lod.vertex_info[i].vertex_data_offsets[1] / 2;
-			Face& face_pc = pole_submesh.faces.emplace_back();
-			face_pc.v0 = vertex_base + lod.vertex_info.size() + pos_0;
-			face_pc.v1 = vertex_base + lod.vertex_info.size() + pos_1;
-			face_pc.v2 = vertex_base + lod.vertex_info.size() + lod.positions.size() + pos_1;
-		}
 		
-		// Vertical poles.
-		s32 wideness = 0;
-		if(i < tfrag.common_vertex_info.size()) {
-			wideness = 2;
-		} else if(i < tfrag.common_vertex_info.size() + tfrag.lod_01_vertex_info.size()) {
-			wideness = 1;
-		} else {
-			wideness = 0;
-		}
-		s32 colour = 0;
-		for(u8 unk : lod.unknown_indices) {
-			if(unk == i) {
-				colour = 1;
+		for(s32 i = 0; i < ARRAY_SIZE(tface_indices); i++) {
+			bool matches = true;
+			for(s32 j = 0; j < ARRAY_SIZE(tface_indices); j++) {
+				if((i == j) ? (tface_indices[j] == -1) : (tface_indices[j] != -1 && tface_indices[j] != tface_indices[i])) {
+					matches = false;
+				}
+			}
+			if(matches) {
+				tface_index = tface_indices[i];
 				break;
 			}
 		}
-		Face& face_vp = pole_submesh.faces.emplace_back();
-		face_vp.v0 = vertex_base + i;
-		face_vp.v1 = vertex_base + POLE_VERTEX_INDEX(wideness, 0, colour, lod.vertex_info.size()) + i;
-		face_vp.v2 = vertex_base + POLE_VERTEX_INDEX(wideness, 1, colour, lod.vertex_info.size()) + i;
 	}
+	
+	return tface_index;
 }

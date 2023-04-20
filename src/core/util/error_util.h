@@ -84,4 +84,12 @@ struct ErrorContext {
 
 #pragma GCC diagnostic pop
 
+template <typename Dest, typename Src>
+static Dest checked_int_cast(Src src) {
+	verify(src >= std::numeric_limits<Dest>::min()
+		&& src <= std::numeric_limits<Dest>::max(),
+		"Value unrepresentable due to a narrowing conversion.");
+	return static_cast<Dest>(src);
+}
+
 #endif

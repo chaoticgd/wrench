@@ -100,24 +100,24 @@ packed_struct(TfragCube,
 
 packed_struct(TfragHeaderUnpack,
 	/* PACK UNPK */
-	/* 0x00 0x00 */ u16 common_positions_count;
+	/* 0x00 0x00 */ u16 positions_common_count;
 	/* 0x02 0x04 */ u16 unknown_2;
-	/* 0x04 0x08 */ u16 lod_01_positions_count;
+	/* 0x04 0x08 */ u16 positions_lod_01_count;
 	/* 0x06 0x0c */ u16 unknown_6;
-	/* 0x08 0x10 */ u16 lod_0_positions_count;
+	/* 0x08 0x10 */ u16 positions_lod_0_count;
 	/* 0x0a 0x14 */ u16 unknown_a;
-	/* 0x0c 0x18 */ u16 vertex_pos_and_colours_addr;
-	/* 0x0e 0x1c */ u16 vertex_info;
+	/* 0x0c 0x18 */ u16 positions_common_addr;
+	/* 0x0e 0x1c */ u16 vertex_info_common_addr;
 	/* 0x10 0x20 */ u16 unknown_10;
-	/* 0x12 0x24 */ u16 other_vertex_info_part_2;
+	/* 0x12 0x24 */ u16 vertex_info_lod_01_addr; // Only the LOD 01 and LOD 0 entries have vertex_data_offsets[0] populated.
 	/* 0x14 0x28 */ u16 unknown_14;
-	/* 0x16 0x2c */ u16 vertex_info_part_2; // Only the part 2 entries have vertex_data_offsets[0] populated.
+	/* 0x16 0x2c */ u16 vertex_info_lod_0_addr;
 	/* 0x18 0x30 */ u16 unknown_18;
-	/* 0x1a 0x34 */ u16 indices;
-	/* 0x1c 0x38 */ u16 other_unk_indices;
-	/* 0x1e 0x3c */ u16 unknown_1e;
-	/* 0x20 0x40 */ u16 unk_indices;
-	/* 0x22 0x44 */ u16 unknown_22;
+	/* 0x1a 0x34 */ u16 indices_addr;
+	/* 0x1c 0x38 */ u16 parent_indices_lod_01_addr;
+	/* 0x1e 0x3c */ u16 unk_indices_2_lod_01_addr;
+	/* 0x20 0x40 */ u16 parent_indices_lod_0_addr;
+	/* 0x22 0x44 */ u16 unk_indices_2_lod_0_addr;
 	/* 0x24 0x48 */ u16 strips_addr;
 	/* 0x26 0x4c */ u16 texture_ad_gifs_addr;
 )
@@ -133,7 +133,8 @@ packed_struct(TfragVertexInfo,
 	/* PACK UNPK */
 	/* 0x00 0x00 */ s16 s;
 	/* 0x02 0x04 */ s16 t;
-	/* 0x04 0x08 */ s16 vertex_data_offsets[2]; // vertex_data_offsets[0] always 0x1000 for common_vertex_info only.
+	/* 0x04 0x08 */ s16 parent;
+	/* 0x04 0x08 */ s16 vertex;
 )
 
 packed_struct(TfragStrip,
@@ -153,14 +154,15 @@ struct TfragMemoryMap {
 	s32 vertex_info_common_addr = -1;
 	s32 vertex_info_lod_01_addr = -1;
 	s32 vertex_info_lod_0_addr = -1;
-	s32 unk_indices_lod_01_addr = -1;
+	s32 parent_indices_lod_01_addr = -1;
 	s32 unk_indices_2_lod_01_addr = -1;
-	s32 unk_indices_lod_0_addr = -1;
+	s32 parent_indices_lod_0_addr = -1;
 	s32 unk_indices_2_lod_0_addr = -1;
 	s32 indices_addr = -1;
 	s32 strips_addr = -1;
 };
 
+// A full tfrag, including all LOD levels and migration information.
 struct Tfrag {
 	Vec4f bsphere;
 	u8 lod_2_rgba_count;
@@ -180,14 +182,14 @@ struct Tfrag {
 	std::vector<TfragVertexPosition> common_positions;
 	std::vector<TfragStrip> lod_1_strips;
 	std::vector<u8> lod_1_indices;
-	std::vector<u8> lod_01_unknown_indices;
+	std::vector<u8> lod_01_parent_indices;
 	std::vector<u8> lod_01_unknown_indices_2;
 	std::vector<TfragVertexInfo> lod_01_vertex_info;
 	std::vector<TfragVertexPosition> lod_01_positions;
 	std::vector<TfragVertexPosition> lod_0_positions;
 	std::vector<TfragStrip> lod_0_strips;
 	std::vector<u8> lod_0_indices;
-	std::vector<u8> lod_0_unknown_indices;
+	std::vector<u8> lod_0_parent_indices; // lod_0_parent_indices.size() ~= lod_0_positions.size()
 	std::vector<u8> lod_0_unknown_indices_2;
 	std::vector<TfragVertexInfo> lod_0_vertex_info;
 	std::vector<TfragRgba> rgbas;
@@ -195,27 +197,13 @@ struct Tfrag {
 	std::vector<Vec4f> msphere;
 	TfragCube cube;
 	TfragMemoryMap memory_map;
+	u16 positions_slack; // Space between the positions and vertex info arrays in VU memory.
 };
 
 struct Tfrags {
 	f32 thingy;
 	u32 mysterious_second_thingy;
 	std::vector<Tfrag> fragments;
-};
-
-struct TfragLod {
-	Vec4f bsphere;
-	VifSTROW base_position;
-	std::vector<TfragTexturePrimitive> common_textures;
-	std::vector<TfragStrip> strips;
-	std::vector<u8> indices;
-	std::vector<u8> unknown_indices;
-	std::vector<TfragVertexInfo> vertex_info;
-	std::vector<TfragVertexPosition> positions;
-	std::vector<TfragRgba> rgbas;
-	std::vector<u8> light;
-	std::vector<Vec4f> msphere;
-	TfragCube cube;
 };
 
 Tfrags read_tfrags(Buffer src, Game game);

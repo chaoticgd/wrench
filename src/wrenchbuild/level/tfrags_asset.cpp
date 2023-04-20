@@ -102,8 +102,8 @@ static bool test_tfrags(std::vector<u8>& src, AssetType type, BuildConfig config
 		COMPARE(vertex_info_common_addr);
 		COMPARE(vertex_info_lod_01_addr);
 		COMPARE(vertex_info_lod_0_addr);
-		COMPARE(unk_indices_lod_01_addr);
-		COMPARE(unk_indices_lod_0_addr);
+		COMPARE(parent_indices_lod_01_addr);
+		COMPARE(parent_indices_lod_0_addr);
 		COMPARE(indices_addr);
 		COMPARE(strips_addr);
 		if(matching_allocation) {
