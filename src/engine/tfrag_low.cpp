@@ -214,14 +214,12 @@ static void read_tfrag_command_lists(Tfrag& tfrag, const TfragHeader& header, Bu
 	std::vector<VifPacket> lod_01 = filter_vif_unpacks(lod_01_command_list);
 	
 	s32 i = 0;
-	if(i < lod_01.size() && lod_01[i].code.unpack.vnvl == VifVnVl::V4_8 && lod_01[i].code.unpack.addr == tfrag.common_vu_header.parent_indices_lod_01_addr) {
+	if(i < lod_01.size() && lod_01[i].code.unpack.vnvl == VifVnVl::V4_8 && tfrag.common_vu_header.positions_lod_01_count > 0) {
 		tfrag.lod_01_parent_indices = read_unpack<u8>(lod_01[i], VifVnVl::V4_8);
 		tfrag.memory_map.parent_indices_lod_01_addr = lod_01[i].code.unpack.addr;
-		if(tfrag.common_vu_header.positions_lod_01_count != 0) {
-			s32 size_difference = (s32) tfrag.lod_01_parent_indices.size() - (s32) tfrag.common_vu_header.positions_lod_01_count;
-			verify(size_difference >= 0 && size_difference < 4, "Parent indices array has bad size.");
-			tfrag.lod_01_parent_indices.resize(tfrag.common_vu_header.positions_lod_01_count);
-		}
+		s32 size_difference = (s32) tfrag.lod_01_parent_indices.size() - (s32) tfrag.common_vu_header.positions_lod_01_count;
+		verify(size_difference >= 0 && size_difference < 4, "Parent indices array has bad size.");
+		tfrag.lod_01_parent_indices.resize(tfrag.common_vu_header.positions_lod_01_count);
 		i++;
 	}
 	if(i < lod_01.size() && lod_01[i].code.unpack.vnvl == VifVnVl::V4_8 && lod_01[i].code.unpack.addr) {
@@ -261,14 +259,12 @@ static void read_tfrag_command_lists(Tfrag& tfrag, const TfragHeader& header, Bu
 	tfrag.lod_0_indices = read_unpack<u8>(lod_0[i], VifVnVl::V4_8);
 	verify(tfrag.memory_map.indices_addr == lod_0[i].code.unpack.addr, "Weird tfrag.");
 	i++;
-	if(i < lod_0.size() && lod_0[i].code.unpack.vnvl == VifVnVl::V4_8 && lod_0[i].code.unpack.addr == tfrag.common_vu_header.parent_indices_lod_0_addr) {
+	if(i < lod_0.size() && lod_0[i].code.unpack.vnvl == VifVnVl::V4_8 && tfrag.common_vu_header.positions_lod_0_count > 0) {
 		tfrag.lod_0_parent_indices = read_unpack<u8>(lod_0[i], VifVnVl::V4_8);
 		tfrag.memory_map.parent_indices_lod_0_addr = lod_0[i].code.unpack.addr;
-		if(tfrag.common_vu_header.positions_lod_0_count != 0) {
-			s32 size_difference = (s32) tfrag.lod_0_parent_indices.size() - (s32) tfrag.common_vu_header.positions_lod_0_count;
-			verify(size_difference >= 0 && size_difference < 4, "Parent indices array has bad size.");
-			tfrag.lod_0_parent_indices.resize(tfrag.common_vu_header.positions_lod_0_count);
-		}
+		s32 size_difference = (s32) tfrag.lod_0_parent_indices.size() - (s32) tfrag.common_vu_header.positions_lod_0_count;
+		verify(size_difference >= 0 && size_difference < 4, "Parent indices array has bad size.");
+		tfrag.lod_0_parent_indices.resize(tfrag.common_vu_header.positions_lod_0_count);
 		i++;
 	}
 	if(i < lod_0.size() && lod_0[i].code.unpack.vnvl == VifVnVl::V4_8) {
@@ -478,9 +474,9 @@ void allocate_tfrags_vu(Tfrags& tfrags) {
 		s32 vertex_info_common_size = tfrag.common_vertex_info.size();
 		s32 vertex_info_lod_01_size = tfrag.lod_01_vertex_info.size();
 		s32 vertex_info_lod_0_size = tfrag.lod_0_vertex_info.size();
-		s32 unk_indices_lod_01_size = align32(tfrag.lod_01_parent_indices.size(), 4) / 4;
+		s32 parent_indices_lod_01_size = align32(tfrag.lod_01_parent_indices.size(), 4) / 4;
 		s32 unk_indices_2_lod_01_size = align32(tfrag.lod_01_unknown_indices_2.size(), 4) / 4;
-		s32 unk_indices_lod_0_size = align32(tfrag.lod_0_parent_indices.size(), 4) / 4;
+		s32 parent_indices_lod_0_size = align32(tfrag.lod_0_parent_indices.size(), 4) / 4;
 		s32 unk_indices_2_lod_0_size = align32(tfrag.lod_0_unknown_indices_2.size(), 4) / 4;
 		s32 indices_size = align32(std::max({tfrag.lod_0_indices.size(), tfrag.lod_1_indices.size(), tfrag.lod_2_indices.size()}), 4) / 4;
 		s32 strips_size = std::max({tfrag.lod_0_strips.size(), tfrag.lod_1_strips.size(), tfrag.lod_2_strips.size()});
@@ -495,9 +491,9 @@ void allocate_tfrags_vu(Tfrags& tfrags) {
 		tfrag.memory_map.vertex_info_lod_01_addr = tfrag.memory_map.vertex_info_common_addr + vertex_info_common_size;
 		tfrag.memory_map.vertex_info_lod_0_addr = tfrag.memory_map.vertex_info_lod_01_addr + vertex_info_lod_01_size;
 		tfrag.memory_map.parent_indices_lod_01_addr = tfrag.memory_map.vertex_info_lod_0_addr + vertex_info_lod_0_size;
-		tfrag.memory_map.unk_indices_2_lod_01_addr = tfrag.memory_map.parent_indices_lod_01_addr + unk_indices_lod_01_size;
+		tfrag.memory_map.unk_indices_2_lod_01_addr = tfrag.memory_map.parent_indices_lod_01_addr + parent_indices_lod_01_size;
 		tfrag.memory_map.parent_indices_lod_0_addr = tfrag.memory_map.unk_indices_2_lod_01_addr + unk_indices_2_lod_01_size;
-		tfrag.memory_map.unk_indices_2_lod_0_addr = tfrag.memory_map.parent_indices_lod_0_addr + unk_indices_lod_0_size;
+		tfrag.memory_map.unk_indices_2_lod_0_addr = tfrag.memory_map.parent_indices_lod_0_addr + parent_indices_lod_0_size;
 		tfrag.memory_map.indices_addr = tfrag.memory_map.unk_indices_2_lod_0_addr + unk_indices_2_lod_0_size;
 		tfrag.memory_map.strips_addr = tfrag.memory_map.indices_addr + indices_size;
 		
@@ -519,8 +515,8 @@ void allocate_tfrags_vu(Tfrags& tfrags) {
 		if(positions_lod_0_size == 0) tfrag.memory_map.positions_lod_0_addr = -1;
 		if(vertex_info_lod_01_size == 0) tfrag.memory_map.vertex_info_lod_01_addr = -1;
 		if(vertex_info_lod_0_size == 0) tfrag.memory_map.vertex_info_lod_0_addr = -1;
-		if(unk_indices_lod_01_size == 0) tfrag.memory_map.parent_indices_lod_01_addr = -1;
-		if(unk_indices_lod_0_size == 0) tfrag.memory_map.parent_indices_lod_0_addr = -1;
+		if(parent_indices_lod_01_size == 0) tfrag.memory_map.parent_indices_lod_01_addr = -1;
+		if(parent_indices_lod_0_size == 0) tfrag.memory_map.parent_indices_lod_0_addr = -1;
 		
 		s32 end_addr = tfrag.memory_map.strips_addr + strips_size;
 		verify_fatal(end_addr <= VU1_BUFFER_SIZE);
