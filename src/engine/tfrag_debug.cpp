@@ -22,6 +22,7 @@
 //#define TFRAG_DEBUG_RECOVER_ALL_LODS
 //#define TFRAG_DEBUG_RAINBOW_STRIPS
 //#define TFRAG_DEBUG_POLES
+//#define TFRAG_DEBUG_TFRAGS_AS_SEPARATE_MESHES
 
 // A single LOD level, not including migration information.
 struct TfragLod {
@@ -90,7 +91,13 @@ ColladaScene recover_tfrags_debug(const Tfrags& tfrags) {
 	high_mesh.name = "mesh";
 	high_mesh.flags |= mesh_flags;
 	
-	for(const Tfrag& tfrag : tfrags.fragments) {
+	for(size_t i = 0; i < tfrags.fragments.size(); i++) {
+		const Tfrag& tfrag = tfrags.fragments[i];
+#ifdef TFRAG_DEBUG_TFRAGS_AS_SEPARATE_MESHES
+		Mesh& high_mesh = scene.meshes.emplace_back();
+		high_mesh.name = std::to_string(i);
+		high_mesh.flags |= mesh_flags;
+#endif
 		TfragLod lod = extract_highest_tfrag_lod(tfrag);
 		recover_tfrag_lod(high_mesh, lod, tfrag, texture_count);
 	}
