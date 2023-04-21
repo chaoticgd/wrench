@@ -59,6 +59,7 @@ static constexpr VoidFuncPtr gen_license_page() {
 
 static const gui::Page LICENSE_PAGES[] = {
 	{"Wrench", gen_license_page<LICENSE_WRENCH>()},
+	{"Catch2", gen_license_page<LICENSE_CATCH2>()},
 	{"Barlow", gen_license_page<LICENSE_BARLOW>()},
 	{"Dear ImGui", gen_license_page<LICENSE_IMGUI>()},
 	{"GLAD", gen_license_page<LICENSE_GLAD>()},
@@ -123,6 +124,7 @@ static void about_contributors() {
 
 static void about_libraries() {
 	const char* libraries =
+		"Catch2: https://github.com/catchorg/Catch2\n"
 		"dear imgui: https://github.com/ocornut/imgui\n"
 		"glad: https://github.com/Dav1dde/glad\n"
 		"glfw: https://www.glfw.org/\n"
