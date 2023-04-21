@@ -15,15 +15,14 @@ TEST_CASE("Asset System", "[assetmgr]") {
 	CollectionAsset& collection = file_a.root().child<CollectionAsset>("collection");
 	BinaryAsset& binary_a = collection.child<BinaryAsset>("binary_a");
 	ReferenceAsset& reference = file_a.root().child<ReferenceAsset>("reference");
-	reference.set_asset("reference.binary_b");
+	reference.set_asset("collection.binary_a");
 	ReferenceAsset& double_reference_1 = file_a.root().child<ReferenceAsset>("double_reference_1");
 	double_reference_1.set_asset("double_reference_2");
 	ReferenceAsset& double_reference_2 = file_a.root().child<ReferenceAsset>("double_reference_2");
 	double_reference_2.set_asset("collection.binary_a");
 	
-	// Create some assets in file B.
-	PlaceholderAsset& shadowing = file_b.root().child<PlaceholderAsset>("reference");
-	BinaryAsset& binary_b = shadowing.child<BinaryAsset>("binary_b");
+	// Create a placeholder shadowing the reference.
+	file_b.root().child<PlaceholderAsset>("reference");
 	
 	// Test link resolution.
 	SECTION("Absolute link lookup.") {
@@ -43,6 +42,6 @@ TEST_CASE("Asset System", "[assetmgr]") {
 	
 	SECTION("Reference shadowed by placeholder still works.") {
 		Asset& asset = forest.lookup_asset("reference", nullptr);
-		REQUIRE(asset.absolute_link().to_string() == binary_b.absolute_link().to_string());
+		REQUIRE(asset.absolute_link().to_string() == binary_a.absolute_link().to_string());
 	}
 }

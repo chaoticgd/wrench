@@ -161,6 +161,7 @@ public:
 	}
 	
 	Asset& as(AssetType type);
+	Asset* maybe_as(AssetType type);
 	
 	template <typename AssetType>
 	AssetType& as() {
@@ -170,6 +171,16 @@ public:
 	template <typename AssetType>
 	const AssetType& as() const {
 		return const_cast<Asset*>(this)->as<AssetType>();
+	}
+	
+	template <typename AssetType>
+	AssetType* maybe_as() {
+		return static_cast<AssetType*>(maybe_as(AssetType::ASSET_TYPE));
+	}
+	
+	template <typename AssetType>
+	const AssetType* maybe_as() const {
+		return const_cast<Asset*>(this)->maybe_as<AssetType>();
 	}
 	
 	template <typename ChildTargetType>
