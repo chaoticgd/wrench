@@ -19,7 +19,7 @@ add_subdirectory(wrenchbuild)
 add_executable(vif
 	vifcli.cpp
 )
-target_link_libraries(vif wrenchcore cxxopts)
+target_link_libraries(vif wrenchcore)
 
 add_subdirectory(iso)
 
