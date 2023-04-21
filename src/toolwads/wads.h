@@ -50,7 +50,7 @@ packed_struct(BuildWadHeader,
 packed_struct(GuiWadHeader,
 	/* 0x000 */ s32 header_size;
 	/* 0x004 */ Sector32 sector;
-	/* 0x008 */ SectorRange contributors;
+	/* 0x008 */ SectorRange credits;
 	/* 0x010 */ SectorRange license_text[32];
 	/* 0x110 */ SectorRange fonts[10];
 )
