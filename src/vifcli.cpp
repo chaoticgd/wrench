@@ -22,27 +22,15 @@
 
 #include <core/vif.h>
 #include <core/filesystem.h>
-#include <editor/util.h>
-#include <editor/command_line.h>
 
 int main(int argc, char** argv) {
-	cxxopts::Options options("vif", "Parse PS2 VIF chains until an invalid VIF code is encountered.");
-	options.add_options()
-		("s,src", "The input file.",
-			cxxopts::value<std::string>())
-		("o,offset", "The offset in the input file where the VIF chain begins.",
-			cxxopts::value<std::string>()->default_value("0"))
-		("e,end", "The minimum offset where if we fail to parse a VIF code, we can stop searching.",
-			cxxopts::value<std::string>()->default_value("0"));
-
-	options.parse_positional({
-		"src"
-	});
-
-	auto args = parse_command_line_args(argc, argv, options);
-	std::string src_path = cli_get(args, "src");
-	std::size_t offset = parse_number(cli_get_or(args, "offset", "0"));
-	std::size_t end_offset = parse_number(cli_get_or(args, "end", "0"));
+	if(argc != 3) {
+		fprintf(stderr, "usage: %s <input file> <offset>", (argc > 0) ? argv[0] : "vif");
+		return 1;
+	}
+	
+	std::string src_path = argv[1];
+	std::size_t offset = parse_number(argv[2]);
 	
 	std::vector<u8> data = read_file(src_path);
 	std::vector<VifPacket> command_list = read_vif_command_list(Buffer(data).subbuf(offset));
@@ -54,11 +42,7 @@ int main(int argc, char** argv) {
 			command_list.erase(command_list.begin());
 		} else {
 			printf("%08x %s\n", (s32) (offset + packet.offset), packet.error.c_str());
-			if(offset + packet.offset > end_offset) {
-				break;
-			} else {
-				command_list = read_vif_command_list(Buffer(data).subbuf(offset + packet.offset + 4, SIZE_MAX));
-			}
+			command_list = read_vif_command_list(Buffer(data).subbuf(offset + packet.offset + 4, SIZE_MAX));
 		}
 	}
 }

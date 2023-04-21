@@ -22,7 +22,6 @@
 #include <imgui.h>
 
 #include <editor/app.h>
-#include <editor/util.h>
 
 static const s32 MAX_LANES = 4;
 struct InspectorFieldFuncs {

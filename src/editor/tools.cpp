@@ -21,7 +21,6 @@
 #include <glm/gtx/intersect.hpp>
 
 #include <editor/app.h>
-#include <editor/util.h>
 
 std::vector<std::unique_ptr<Tool>> enumerate_tools() {
 	std::vector<std::unique_ptr<Tool>> tools;

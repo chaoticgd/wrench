@@ -115,11 +115,11 @@ static void pack_gui_wad() {
 	header.header_size = sizeof(header);
 	wad.alloc<GuiWadHeader>();
 	
-	header.contributors = pack_file(wad, "CONTRIBUTORS");
+	header.credits = pack_file(wad, "CREDITS");
 	
 	header.license_text[LICENSE_WRENCH] = pack_file(wad, "data/licenses/wrench.txt");
 	header.license_text[LICENSE_BARLOW] = pack_file(wad, "data/licenses/barlowfont.txt");
-	header.license_text[LICENSE_CXXOPTS] = pack_file(wad, "data/licenses/cxxopts.txt");
+	header.license_text[LICENSE_CATCH2] = pack_file(wad, "data/licenses/catch2.txt");
 	header.license_text[LICENSE_GLAD] = pack_file(wad, "data/licenses/glad.txt");
 	header.license_text[LICENSE_GLFW] = pack_file(wad, "data/licenses/glfw.txt");
 	header.license_text[LICENSE_GLM] = pack_file(wad, "data/licenses/glm.txt");

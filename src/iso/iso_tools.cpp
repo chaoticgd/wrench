@@ -18,12 +18,10 @@
 
 #include "iso_tools.h"
 
+#include <iostream>
 #include <functional>
 
 #include <core/filesystem.h>
-#include <editor/util.h>
-#include <editor/fs_includes.h>
-#include <editor/command_line.h>
 #include <iso/iso_filesystem.h>
 #include <iso/table_of_contents.h>
 #include <iso/iso_unpacker.h>

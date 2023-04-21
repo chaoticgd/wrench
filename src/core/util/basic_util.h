@@ -156,4 +156,14 @@ std::string to_snake_case(const char* src);
 s32 align32(s32 value, s32 alignment);
 s64 align64(s64 value, s64 alignment);
 
+template <typename T>
+bool contains(const T container, const typename T::value_type& value) {
+	for(const auto& element : container) {
+		if(element == value) {
+			return true;
+		}
+	}
+	return false;
+}
+
 #endif

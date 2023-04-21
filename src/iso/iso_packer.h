@@ -20,9 +20,7 @@
 #define ISO_PACKER_H
 
 #include <core/stream.h>
-#include <editor/util.h>
-#include <editor/fs_includes.h>
-#include <editor/command_line.h>
+#include <core/filesystem.h>
 #include <assetmgr/asset.h>
 #include <assetmgr/asset_types.h>
 #include <iso/iso_filesystem.h>

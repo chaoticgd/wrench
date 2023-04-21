@@ -24,7 +24,7 @@
 enum License {
 	LICENSE_WRENCH = 0,
 	LICENSE_BARLOW = 1,
-	LICENSE_CXXOPTS = 2,
+	LICENSE_CATCH2 = 2,
 	LICENSE_GLAD = 3,
 	LICENSE_GLFW = 4,
 	LICENSE_GLM = 5,
@@ -33,7 +33,7 @@ enum License {
 	LICENSE_NATIVEFILEDIALOG = 8,
 	LICENSE_NLOHMANJSON = 9,
 	LICENSE_RAPIDXML = 10,
-	LICENSE_UNUSED = 11,
+	LICENSE_UNUSED_11 = 11,
 	LICENSE_ZLIB = 12,
 	LICENSE_LIBZIP = 13,
 	MAX_LICENSE = 14
@@ -50,7 +50,7 @@ packed_struct(BuildWadHeader,
 packed_struct(GuiWadHeader,
 	/* 0x000 */ s32 header_size;
 	/* 0x004 */ Sector32 sector;
-	/* 0x008 */ SectorRange contributors;
+	/* 0x008 */ SectorRange credits;
 	/* 0x010 */ SectorRange license_text[32];
 	/* 0x110 */ SectorRange fonts[10];
 )

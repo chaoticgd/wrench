@@ -24,12 +24,12 @@
 #include <gui/book.h>
 
 static void about_wrench();
-static void about_contributors();
+static void about_credits();
 static void about_libraries();
 
 static const gui::Page ABOUT_PAGES[] = {
 	{"Wrench", about_wrench},
-	{"Contributors", about_contributors},
+	{"Credits", about_credits},
 	{"Libraries", about_libraries}
 };
 
@@ -59,8 +59,8 @@ static constexpr VoidFuncPtr gen_license_page() {
 
 static const gui::Page LICENSE_PAGES[] = {
 	{"Wrench", gen_license_page<LICENSE_WRENCH>()},
+	{"Catch2", gen_license_page<LICENSE_CATCH2>()},
 	{"Barlow", gen_license_page<LICENSE_BARLOW>()},
-	{"cxxopts", gen_license_page<LICENSE_CXXOPTS>()},
 	{"Dear ImGui", gen_license_page<LICENSE_IMGUI>()},
 	{"GLAD", gen_license_page<LICENSE_GLAD>()},
 	{"GLFW", gen_license_page<LICENSE_GLFW>()},
@@ -78,7 +78,7 @@ static const gui::Chapter ABOUT_SCREEN[] = {
 	{"Licenses", ARRAY_PAIR(LICENSE_PAGES)}
 };
 
-static std::vector<u8> contributors_text;
+static std::vector<u8> credits_text;
 
 void gui::about_screen() {
 	static const Page* page = nullptr;
@@ -109,22 +109,22 @@ static void about_wrench() {
 	}
 }
 
-static void about_contributors() {
-	if(contributors_text.empty()) {
-		SectorRange range = wadinfo.gui.contributors;
+static void about_credits() {
+	if(credits_text.empty()) {
+		SectorRange range = wadinfo.gui.credits;
 		std::vector<u8> compressed_bytes = g_guiwad.read_multiple<u8>(range.offset.bytes(), range.size.bytes());
 		
 		std::vector<u8> string;
-		decompress_wad(contributors_text, compressed_bytes);
-		contributors_text.push_back(0);
+		decompress_wad(credits_text, compressed_bytes);
+		credits_text.push_back(0);
 	}
 	
-	ImGui::TextWrapped("%s", (const char*) contributors_text.data());
+	ImGui::TextWrapped("%s", (const char*) credits_text.data());
 }
 
 static void about_libraries() {
 	const char* libraries =
-		"cxxopts: https://github.com/jarro2783/cxxopts\n"
+		"Catch2: https://github.com/catchorg/Catch2\n"
 		"dear imgui: https://github.com/ocornut/imgui\n"
 		"glad: https://github.com/Dav1dde/glad\n"
 		"glfw: https://www.glfw.org/\n"

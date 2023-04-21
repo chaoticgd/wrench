@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.13)
 project(wrench)
 
+enable_testing()
+
 include_directories(src)
 include_directories(thirdparty)
 
@@ -48,6 +50,7 @@ if(MSVC)
 	add_compile_options(/W4 /EHsc /MP)
 endif()
 
+add_subdirectory(test)
 add_subdirectory(thirdparty)
 
 set(RELEASE_FILES

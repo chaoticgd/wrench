@@ -5,8 +5,6 @@ endif()
 add_executable(wrencheditor
 	main.cpp
 	app.cpp
-	command_line.cpp
-	util.cpp
 	tools.cpp
 	renderer.cpp
 	level.cpp
@@ -16,4 +14,4 @@ add_executable(wrencheditor
 	gui/inspector.cpp
 	gui/asset_selector.cpp
 )
-target_link_libraries(wrencheditor wrenchcore wrenchgui wrench_assetmgr cxxopts)
+target_link_libraries(wrencheditor wrenchcore wrenchgui wrench_assetmgr)
