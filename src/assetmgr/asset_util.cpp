@@ -22,6 +22,10 @@
 
 AssetLink::AssetLink() {}
 
+AssetLink::AssetLink(const char* src) {
+	set(src);
+}
+
 AssetLinkPointers AssetLink::get() const {
 	AssetLinkPointers pointers;
 	const char* ptr = &data[0];
