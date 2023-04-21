@@ -2,11 +2,6 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 	message(FATAL_ERROR "You should build Wrench using the CMakeLists.txt file in the root of the repository.")
 endif()
 
-# cxxopts
-set(CXXOPTS_BUILD_TESTS OFF)
-set(CXXOPTS_BUILD_EXAMPLES OFF)
-add_subdirectory(cxxopts)
-
 # GLAD
 add_subdirectory(glad)
 include_directories(glad/include)
