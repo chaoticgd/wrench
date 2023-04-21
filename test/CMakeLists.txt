@@ -7,3 +7,5 @@ add_executable(runtests
 )
 target_link_libraries(runtests catch2)
 target_link_libraries(runtests wrenchcore wrench_assetmgr wrenchiso wrenchengine)
+
+add_test(NAME catch2_tests COMMAND runtests)
