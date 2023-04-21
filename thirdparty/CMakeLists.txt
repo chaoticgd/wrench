@@ -3,7 +3,8 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 endif()
 
 # cxxopts
-set(CXXOPTS_BUILD_EXAMPLES OFF CACHE BOOL "Set to ON to build examples" FORCE)
+set(CXXOPTS_BUILD_TESTS OFF)
+set(CXXOPTS_BUILD_EXAMPLES OFF)
 add_subdirectory(cxxopts)
 
 # GLAD
