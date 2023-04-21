@@ -10,7 +10,7 @@ env:
 
 jobs:
   build:
-    runs-on: ${{ matrix.sys.os }} 
+    runs-on: ${{ matrix.sys.os }}
     strategy:
       matrix:
         sys: 
@@ -32,6 +32,10 @@ jobs:
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    - name: Test
+      working-directory: ${{github.workspace}}/build
+      run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
 
     - name: Release
       uses: ncipollo/release-action@a2e71bdd4e7dab70ca26a852f29600c98b33153e

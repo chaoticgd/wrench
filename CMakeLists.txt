@@ -48,6 +48,7 @@ if(MSVC)
 	add_compile_options(/W4 /EHsc /MP)
 endif()
 
+add_subdirectory(test)
 add_subdirectory(thirdparty)
 
 set(RELEASE_FILES

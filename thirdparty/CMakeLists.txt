@@ -1,3 +1,7 @@
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+	message(FATAL_ERROR "You should build Wrench using the CMakeLists.txt file in the root of the repository.")
+endif()
+
 # cxxopts
 set(CXXOPTS_BUILD_EXAMPLES OFF CACHE BOOL "Set to ON to build examples" FORCE)
 add_subdirectory(cxxopts)
@@ -96,3 +100,6 @@ add_subdirectory(libzip)
 if(WIN32)
 	add_dependencies(zip copy_zlib_lib_hack)
 endif()
+
+# Catch2
+add_subdirectory(catch2)
