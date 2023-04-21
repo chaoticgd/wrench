@@ -9,4 +9,4 @@ target_link_libraries(runtests catch2)
 target_link_libraries(runtests wrenchcore wrench_assetmgr wrenchiso wrenchengine)
 
 add_test(NAME catch2_tests COMMAND runtests)
-configure_file(CTestCustom.cmake ${CMAKE_BINARY_DIR})
+file(COPY CTestCustom.cmake DESTINATION ${CMAKE_BINARY_DIR})
