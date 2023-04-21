@@ -18,8 +18,6 @@ add_subdirectory(wrenchbuild)
 
 add_executable(vif
 	vifcli.cpp
-	editor/util.cpp
-	editor/command_line.cpp
 )
 target_link_libraries(vif wrenchcore cxxopts)
 

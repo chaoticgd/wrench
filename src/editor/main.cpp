@@ -24,7 +24,6 @@
 #include <gui/commands.h>
 #include <imgui/backends/imgui_impl_glfw.h>
 #include <editor/fs_includes.h>
-#include <editor/command_line.h>
 #include <editor/app.h>
 #include <editor/gui/editor_gui.h>
 #include <editor/renderer.h>

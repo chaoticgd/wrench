@@ -5,8 +5,6 @@ endif()
 add_executable(wrencheditor
 	main.cpp
 	app.cpp
-	command_line.cpp
-	util.cpp
 	tools.cpp
 	renderer.cpp
 	level.cpp
