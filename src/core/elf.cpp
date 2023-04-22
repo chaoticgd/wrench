@@ -51,17 +51,26 @@ ElfFile read_elf_file(Buffer src) {
 	ElfFile elf;
 	
 	auto section_headers = src.read_multiple<ElfSectionHeader>(file_header.shoff, file_header.shnum, "ELF section headers");
+	auto program_headers = src.read_multiple<ElfProgramHeader>(file_header.phoff, file_header.phnum, "ELF program headers");
+	
 	const ElfSectionHeader& name_section = section_headers[file_header.shstrndx];
 	for(size_t i = 0; i < section_headers.size(); i++) {
-		const ElfSectionHeader& section_header = section_headers[i];
+		const ElfSectionHeader& shdr = section_headers[i];
 		if(i != file_header.shstrndx) {
 			ElfSection& section = elf.sections.emplace_back();
-			section.header = section_header;
-			section.data = src.read_bytes(section_header.offset, section_header.size, "ELF section data");
+			section.name = src.read_string(name_section.offset + shdr.name, false);
+			for(s32 j = 0; j < (s32) program_headers.size(); j++) {
+				const ElfProgramHeader& phdr = program_headers[j];
+				if(shdr.offset >= program_headers[j].offset && shdr.offset + shdr.size <= phdr.offset + phdr.filesz) {
+					section.segment = j;
+					break;
+				}
+			}
+			section.header = shdr;
+			section.data = src.read_bytes(shdr.offset, shdr.size, "ELF section data");
 		}
 	}
 	
-	auto program_headers = src.read_multiple<ElfProgramHeader>(file_header.phoff, file_header.phnum, "ELF program headers");
 	for(const ElfProgramHeader& program_header : program_headers) {
 		ElfProgramHeader& segment = elf.segments.emplace_back(program_header);
 	}
