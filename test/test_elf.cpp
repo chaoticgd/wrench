@@ -29,6 +29,5 @@ TEST_CASE("ELF file preserved") {
 	ElfFile elf = read_elf_file(input);
 	std::vector<u8> output;
 	write_elf_file(output, elf);
-	write_file("/tmp/output.elf", output);
 	REQUIRE(diff_buffers(input, output, 0, DIFF_REST_OF_BUFFER, true));
 }
