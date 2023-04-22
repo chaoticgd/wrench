@@ -55,7 +55,7 @@ void unpack_level_core(LevelWadAsset& dest, InputStream& src, ByteRange index_ra
 	TfragsAsset& tfrags = dest.tfrags<TfragsAsset>(SWITCH_FILES);
 	
 	unpack_asset(tfrags, data, ByteRange{header.tfrags, tfrags_size}, config);
-	unpack_asset(dest.occlusion(), data, level_core_block_range(header.occlusion, block_bounds), config);
+	unpack_asset(dest.occlusion<OcclusionAsset>(), data, level_core_block_range(header.occlusion, block_bounds), config);
 	if(header.sky) {
 		unpack_asset(dest.sky<SkyAsset>(SWITCH_FILES), data, level_core_block_range(header.sky, block_bounds), config);
 	}

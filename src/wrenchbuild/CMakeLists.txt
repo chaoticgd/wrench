@@ -40,5 +40,6 @@ add_executable(wrenchbuild
 	level/collision_asset.cpp
 	level/sky_asset.cpp
 	level/tfrags_asset.cpp
+	level/occlusion_asset.cpp
 )
 target_link_libraries(wrenchbuild wrenchcore wrench_assetmgr wrenchiso wrenchengine wadinfo)

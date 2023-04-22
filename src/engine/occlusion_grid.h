@@ -16,13 +16,32 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef ENGINE_COLLISION_H
-#define ENGINE_COLLISION_H
+#ifndef ENGINE_OCCLUSION_GRID_H
+#define ENGINE_OCCLUSION_GRID_H
 
 #include <core/buffer.h>
-#include <core/collada.h>
 
-ColladaScene read_collision(Buffer src);
-void write_collision(OutBuffer dest, const ColladaScene& scene, const std::string& name);
+// A 4x4x4 cube with a bit mask that determines what is visible when the camera
+// is inside the cube. Similar to how the collision works.
+struct OcclusionOctant {
+	s32 x;
+	s32 y;
+	s32 z;
+	u8 mask[128];
+};
+
+std::vector<OcclusionOctant> read_occlusion_grid(Buffer src);
+void write_occlusion_grid(OutBuffer dest, const std::vector<OcclusionOctant>& octants);
+
+struct OcclusionVector {
+	s32 x = -1;
+	s32 y = -1;
+	s32 z = -1;
+};
+
+std::vector<OcclusionVector> read_occlusion_octants(std::string& str);
+void write_occlusion_octants(OutBuffer dest, const std::vector<OcclusionVector>& octants);
+
+void swap_occlusion(std::vector<OcclusionOctant>& grid, std::vector<OcclusionVector>& vectors);
 
 #endif

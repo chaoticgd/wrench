@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2022 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-format_version: 19
+format_version: 20
 
 // *****************************************************************************
 
@@ -1284,9 +1284,8 @@ AssetType LevelWad {
 		required: true
 		games: [1 2 3 4]
 	}
-	
 	Child occlusion {
-		allowed_types: ["Binary"] 
+		allowed_types: ["Occlusion" "Binary"]
 	}
 	Child sky {
 		desc: "The sky."
@@ -1635,6 +1634,12 @@ AssetType ShrubBillboard {
 	}
 }
 
+// *****************************************************************************
+
+Category miscellaneous {
+	name: "Miscellaneous"
+}
+
 AssetType Tfrags {
 	Child core {
 		allowed_types: ["TfragsCore" "Binary"]
@@ -1813,5 +1818,16 @@ AssetType SkyShell {
 		Child child {
 			allowed_types: ["Mesh"]
 		}
+	}
+}
+
+AssetType Occlusion {
+	desc: "Information required to build the occlusion culling data for a level.\n\nThe playable space of a level is divided into 4x4x4 cubes called octants that dictate which objects are visible at a given time."
+	bin_leaf: true
+	
+	FileReferenceAttribute octants {
+		desc: "A path to text file containing a list of all the octants for which occlusion should be generated. Each line is a list of 3 integers X, Y and Z separated by spaces. Each coordinate must be multiplied by 4 to obtain world coordinates."
+		required: true
+		games: [1 2 3 4]
 	}
 }

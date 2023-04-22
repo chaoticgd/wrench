@@ -1,6 +1,6 @@
 # Asset Reference
 
-This file was generated from asset_schema.wtf and is for version 19 of the asset format.
+This file was generated from asset_schema.wtf and is for version 20 of the asset format.
 
 ## Index
 
@@ -51,6 +51,7 @@ This file was generated from asset_schema.wtf and is for version 19 of the asset
 	- [ShrubClass](#shrubclass)
 	- [ShrubClassCore](#shrubclasscore)
 	- [ShrubBillboard](#shrubbillboard)
+- [Miscellaneous](#miscellaneous)
 	- [Tfrags](#tfrags)
 	- [TfragsCore](#tfragscore)
 	- [Material](#material)
@@ -58,6 +59,7 @@ This file was generated from asset_schema.wtf and is for version 19 of the asset
 	- [CollisionMaterial](#collisionmaterial)
 	- [Sky](#sky)
 	- [SkyShell](#skyshell)
+	- [Occlusion](#occlusion)
 
 ## General
 
@@ -825,7 +827,7 @@ No attributes.
 | transition_textures | Textures that are shown during a transition to the given level. | Texture\[\], Binary | No | GC/UYA |
 | global_nav_data | *Not yet documented.* | Binary | Yes | DL |
 | tfrags | The main world-space level mesh. | Tfrags | Yes | RAC/GC/UYA/DL |
-| occlusion | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
+| occlusion | *Not yet documented.* | Occlusion, Binary | *Not yet documented.* | *Not yet documented.* |
 | sky | The sky. | Sky, Binary | Yes | RAC/GC/UYA/DL |
 | collision | The world space collision mesh. | Collision, Binary | Yes | RAC/GC/UYA/DL |
 | moby_classes | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
@@ -1059,6 +1061,8 @@ No attributes.
 | texture | The texture to show on the billboard. | Texture | Yes | RAC/GC/UYA/DL |
 
 
+## Miscellaneous
+
 ### Tfrags
 
 *Attributes*
@@ -1167,3 +1171,17 @@ No children.
 | - | - | - | - | - |
 | mesh | The mesh. If a Collection asset is used, each child of that asset specifies a different cluster. In the future, it may be possible to specify a single mesh and have it be automatically split up into clusters. | Mesh\[\] | Yes | RAC/GC/UYA/DL |
 
+
+### Occlusion
+
+Information required to build the occlusion culling data for a level.		The playable space of a level is divided into 4x4x4 cubes called octants that dictate which objects are visible at a given time.
+
+*Attributes*
+
+| Name | Description | Type | Required | Games |
+| - | - | - | - | - |
+| octants | A path to text file containing a list of all the octants for which occlusion should be generated. Each line is a list of 3 integers X, Y and Z separated by spaces. Each coordinate must be multiplied by 4 to obtain world coordinates. | FilePath | Yes | RAC/GC/UYA/DL |
+
+*Children*
+
+No children.
