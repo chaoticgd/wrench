@@ -4,6 +4,7 @@ endif()
 
 add_executable(runtests
 	test_assetmgr.cpp
+	test_compression.cpp
 	test_elf.cpp
 )
 target_link_libraries(runtests catch2)
