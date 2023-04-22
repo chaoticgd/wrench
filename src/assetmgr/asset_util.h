@@ -52,6 +52,7 @@ struct AssetLinkPointers {
 class AssetLink {
 public:
 	AssetLink();
+	AssetLink(const char* src);
 	
 	AssetLinkPointers get() const;
 	void set(const char* src);

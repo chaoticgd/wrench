@@ -122,16 +122,23 @@ AssetType Asset::logical_type() const {
 }
 
 Asset& Asset::as(AssetType type) {
-	for(Asset* asset = &highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
-		if(asset->physical_type() == type) {
-			return *asset;
-		} else if(asset->physical_type() != PlaceholderAsset::ASSET_TYPE) {
-			break;
-		}
+	if(Asset* asset = maybe_as(type)) {
+		return *asset;
 	}
 	verify_not_reached("Failed to convert asset %s to type %s.",
 		absolute_link().to_string().c_str(),
 		asset_type_to_string(type));
+}
+
+Asset* Asset::maybe_as(AssetType type) {
+	for(Asset* asset = &highest_precedence(); asset != nullptr; asset = asset->lower_precedence()) {
+		if(asset->physical_type() == type) {
+			return asset;
+		} else if(asset->physical_type() != PlaceholderAsset::ASSET_TYPE) {
+			break;
+		}
+	}
+	return nullptr;
 }
 
 bool Asset::has_child(const char* tag) const {
@@ -356,7 +363,7 @@ Asset& Asset::add_child(std::unique_ptr<Asset> child) {
 Asset& Asset::resolve_references() {
 	Asset* asset = &highest_precedence();
 	verify(!asset->is_deleted(), "Asset '%s' is deleted.", asset->absolute_link().to_string().c_str());
-	while(ReferenceAsset* reference = dynamic_cast<ReferenceAsset*>(asset)) {
+	while(ReferenceAsset* reference = asset->maybe_as<ReferenceAsset>()) {
 		asset = &forest().lookup_asset(reference->asset(), asset->parent());
 		verify(!asset->is_deleted(), "Tried to find deleted asset \"%s\".", reference->asset().to_string().c_str());
 		verify(asset, "Failed to find asset \"%s\".", reference->asset().to_string().c_str());
