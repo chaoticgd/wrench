@@ -21,16 +21,22 @@
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 
-static void unpack_occlusion_asset(OcclusionAsset& dest, InputStream& src, BuildConfig config);
+static void unpack_occlusion(OcclusionAsset& dest, InputStream& src, BuildConfig config);
+static bool test_occlusion(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode);
 
 on_load(Occlusion, []() {
-	OcclusionAsset::funcs.unpack_rac1 = wrap_unpacker_func<OcclusionAsset>(unpack_occlusion_asset);
-	OcclusionAsset::funcs.unpack_rac2 = wrap_unpacker_func<OcclusionAsset>(unpack_occlusion_asset);
-	OcclusionAsset::funcs.unpack_rac3 = wrap_unpacker_func<OcclusionAsset>(unpack_occlusion_asset);
-	OcclusionAsset::funcs.unpack_dl = wrap_unpacker_func<OcclusionAsset>(unpack_occlusion_asset);
+	OcclusionAsset::funcs.unpack_rac1 = wrap_unpacker_func<OcclusionAsset>(unpack_occlusion);
+	OcclusionAsset::funcs.unpack_rac2 = wrap_unpacker_func<OcclusionAsset>(unpack_occlusion);
+	OcclusionAsset::funcs.unpack_rac3 = wrap_unpacker_func<OcclusionAsset>(unpack_occlusion);
+	OcclusionAsset::funcs.unpack_dl = wrap_unpacker_func<OcclusionAsset>(unpack_occlusion);
+	
+	OcclusionAsset::funcs.test_rac = new AssetTestFunc(test_occlusion);
+	OcclusionAsset::funcs.test_gc = new AssetTestFunc(test_occlusion);
+	OcclusionAsset::funcs.test_uya = new AssetTestFunc(test_occlusion);
+	OcclusionAsset::funcs.test_dl = new AssetTestFunc(test_occlusion);
 })
 
-static void unpack_occlusion_asset(OcclusionAsset& dest, InputStream& src, BuildConfig config) {
+static void unpack_occlusion(OcclusionAsset& dest, InputStream& src, BuildConfig config) {
 	std::vector<u8> bytes = src.read_multiple<u8>(0, src.size());
 	std::vector<OcclusionOctant> grid = read_occlusion_grid(bytes);
 	std::vector<OcclusionVector> vectors(grid.size());
@@ -39,5 +45,11 @@ static void unpack_occlusion_asset(OcclusionAsset& dest, InputStream& src, Build
 	std::vector<u8> octants;
 	write_occlusion_octants(octants, vectors);
 	dest.set_octants(dest.file().write_text_file("occlusion_octants.txt", (const char*) octants.data()));
-	
+}
+
+static bool test_occlusion(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode) {
+	std::vector<OcclusionOctant> grid = read_occlusion_grid(src);
+	std::vector<u8> dest;
+	write_occlusion_grid(dest, grid);
+	return diff_buffers(grid, dest, 0, DIFF_REST_OF_BUFFER, true);
 }
