@@ -217,6 +217,7 @@ void write_occlusion_octants(OutBuffer dest, const std::vector<OcclusionVector>&
 	for(const OcclusionVector& octant : octants) {
 		dest.writelf("%d %d %d", octant.x, octant.y, octant.z);
 	}
+	dest.vec.push_back(0);
 }
 
 void swap_occlusion(std::vector<OcclusionOctant>& grid, std::vector<OcclusionVector>& vectors) {
