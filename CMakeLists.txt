@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
-project(wrench)
+project(wrench CXX C)
+
+option(PORTABLE_BUILD "Produce executables that are portable to other machines." ON)
 
 enable_testing()
 
@@ -9,12 +11,17 @@ include_directories(thirdparty)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+# libzip needs C extensions
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_EXTENSIONS ON)
+
 if(MSVC)
 	# Without this, MSVC won't report the correct standards version via the
 	# __cplusplus macro. See:
 	#  https://devblogs.microsoft.com/cppblog/msvc-now-correctly-reports-__cplusplus/
 	set(CMAKE_CXX_FLAGS "/Zc:__cplusplus")
-	
+
 	# Disables MSVC warnings for usage of insecure stdlib functions
 	# like fopen instead of fopen_s.
 	add_definitions(/D "_CRT_SECURE_NO_WARNINGS")
@@ -37,18 +44,9 @@ include_directories(thirdparty/glm)
 include_directories(thirdparty/libpng)
 include_directories(${CMAKE_BINARY_DIR}/thirdparty/libpng)
 
+include(cmake/wrench_compiler_flags.cmake)
+
 add_subdirectory(src)
-
-if(UNIX)
-	add_compile_options(-Wall -Wno-sign-compare -g -O3)
-endif()
-
-if(MSVC)
-	# /W4 - enable all non-default-disabled warnings (-Wall equivalent)
-	# /EHsc - needed for proper C++ exception handling
-	# /MP - enables multi-process builds
-	add_compile_options(/W4 /EHsc /MP)
-endif()
 
 add_subdirectory(test)
 add_subdirectory(thirdparty)
