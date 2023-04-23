@@ -20,6 +20,7 @@
 #include <engine/occlusion_grid.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
+#include <wrenchbuild/tests.h>
 
 static void unpack_occlusion(OcclusionAsset& dest, InputStream& src, BuildConfig config);
 static bool test_occlusion(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode);
@@ -51,5 +52,6 @@ static bool test_occlusion(std::vector<u8>& src, AssetType type, BuildConfig con
 	std::vector<OcclusionOctant> grid = read_occlusion_grid(src);
 	std::vector<u8> dest;
 	write_occlusion_grid(dest, grid);
-	return diff_buffers(grid, dest, 0, DIFF_REST_OF_BUFFER, true);
+	strip_trailing_padding_from_lhs(src, dest);
+	return diff_buffers(src, dest, 0, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
 }

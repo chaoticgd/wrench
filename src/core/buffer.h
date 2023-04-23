@@ -118,9 +118,9 @@ struct OutBuffer {
 	}
 	
 	template <typename T>
-	s64 alloc_multiple(s64 count) {
+	s64 alloc_multiple(s64 count, u8 fill = 0) {
 		size_t write_ofs = vec.size();
-		vec.resize(vec.size() + count * sizeof(T));
+		vec.resize(vec.size() + count * sizeof(T), fill);
 		return write_ofs;
 	}
 	

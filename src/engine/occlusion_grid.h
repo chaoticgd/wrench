@@ -24,14 +24,16 @@
 // A 4x4x4 cube with a bit mask that determines what is visible when the camera
 // is inside the cube. Similar to how the collision works.
 struct OcclusionOctant {
-	s32 x;
-	s32 y;
-	s32 z;
-	u8 mask[128];
+	s32 x = -1;
+	s32 y = -1;
+	s32 z = -1;
+	s32 index = -1;
+	s32 index2 = -1;
+	u8 mask[128] = {};
 };
 
 std::vector<OcclusionOctant> read_occlusion_grid(Buffer src);
-void write_occlusion_grid(OutBuffer dest, const std::vector<OcclusionOctant>& octants);
+void write_occlusion_grid(OutBuffer dest, std::vector<OcclusionOctant>& octants);
 
 struct OcclusionVector {
 	s32 x = -1;

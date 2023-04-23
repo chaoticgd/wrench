@@ -3,6 +3,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 endif()
 
 add_executable(runtests
+	test_algorithm.cpp
 	test_assetmgr.cpp
 	test_compression.cpp
 	test_elf.cpp

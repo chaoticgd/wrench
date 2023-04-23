@@ -17,27 +17,23 @@
 */
 
 #include <catch2/catch_amalgamated.hpp>
+#include <core/algorithm.h>
 
-#include <core/util.h>
-#include <engine/compression.h>
-
-TEST_CASE("Compression and decompression yields same result", "[compression]") {
-	srand(time(NULL));
+TEST_CASE("mark_duplicates empty list", "[algorithm]") {
+	std::vector<s32> empty;
+	bool marked = false;
+	mark_duplicates(empty,
+		[](s32 lhs, s32 rhs) { return memcmp(&lhs, &rhs, 4); },
+		[&](s32 index, s32 canonical) { marked = true; });
+	REQUIRE(!marked);
+}
 	
-	s32 data_size = GENERATE(10, 100, 1000, 10000, 100000);
-	
-	std::vector<u8> uncompressed(data_size);
-	uncompressed[0] = (u8) rand();
-	for(s32 i = 1; i < data_size; i++) {
-		// Make it more likely we'll get some match packets.
-		uncompressed[i] = (rand() % 4 == 0) ? rand() : uncompressed[i - 1];
-	}
-	
-	std::vector<u8> compressed;
-	compress_wad(compressed, uncompressed, nullptr, 8);
-	
-	std::vector<u8> decompressed;
-	REQUIRE(decompress_wad(decompressed, compressed));
-	
-	REQUIRE(decompressed == uncompressed);
+TEST_CASE("mark_duplicates integer list", "[algorithm]") {
+	std::vector<s32> list = {1, 2, 3, 2, 4, 4};
+	std::vector<s32> mark(list.size());
+	mark_duplicates(list,
+		[](s32 lhs, s32 rhs) { return memcmp(&lhs, &rhs, 4); },
+		[&](s32 index, s32 canonical) { mark[index] = canonical; });
+	std::vector<s32> correct_mark = {0, 3, 2, 3, 5, 5};
+	REQUIRE(mark == correct_mark);
 }

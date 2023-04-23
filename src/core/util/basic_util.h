@@ -29,6 +29,7 @@
 #include <optional>
 #include <stdarg.h>
 #include <stdint.h>
+#include <algorithm>
 #include <exception>
 
 using u8 = unsigned char;
