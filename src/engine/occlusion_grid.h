@@ -27,9 +27,17 @@ struct OcclusionOctant {
 	s32 x = -1;
 	s32 y = -1;
 	s32 z = -1;
-	s32 index = -1;
-	s32 index2 = -1;
 	u8 mask[128] = {};
+	union {
+		struct {
+			s32 mask_index;
+		} read_scratch;
+		struct {
+			s32 sort_index;
+			s32 canonical;
+			s32 new_index;
+		} write_scratch;
+	};
 };
 
 std::vector<OcclusionOctant> read_occlusion_grid(Buffer src);

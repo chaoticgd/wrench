@@ -54,7 +54,7 @@ std::vector<OcclusionOctant> read_occlusion_grid(Buffer src) {
 				octant.x = x_coord + k;
 				octant.y = y_coord + j;
 				octant.z = z_coord + i;
-				octant.index = x_indices[k];
+				octant.read_scratch.mask_index = x_indices[k];
 				
 				auto mask = src.read_multiple<u8>(masks_offset + x_indices[k] * 128, 128, "octant mask");
 				verify_fatal(mask.size() == sizeof(octant.mask));
@@ -64,7 +64,8 @@ std::vector<OcclusionOctant> read_occlusion_grid(Buffer src) {
 	}
 	
 	// This is to try and support multiple octants referencing a single mask.
-	std::sort(BEGIN_END(octants), [&](auto& lhs, auto& rhs) { return lhs.index < rhs.index; });
+	std::sort(BEGIN_END(octants), [&](auto& lhs, auto& rhs)
+		{ return lhs.read_scratch.mask_index < rhs.read_scratch.mask_index; });
 	
 	return octants;
 }
@@ -77,10 +78,20 @@ void write_occlusion_grid(OutBuffer dest, std::vector<OcclusionOctant>& octants)
 	// Mark duplicate masks.
 	mark_duplicates(octants,
 		[](OcclusionOctant& lhs, OcclusionOctant& rhs) { return memcmp(lhs.mask, rhs.mask, sizeof(OcclusionOctant::mask)); },
-		[&](s32 index, s32 canonical) { octants[index].index = canonical; });
+		[&](s32 index, s32 canonical) { octants[index].write_scratch.canonical = canonical; });
 	
+	s32 next_index = 0;
 	for(s32 i = 0; i < (s32) octants.size(); i++) {
-		octants[i].index2 = i;
+		octants[i].write_scratch.sort_index = (s32) i;
+		if(octants[i].write_scratch.canonical == i) {
+			octants[i].write_scratch.new_index = next_index++;
+			octants[i].write_scratch.canonical = -1;
+		}
+	}
+	for(s32 i = 0; i < (s32) octants.size(); i++) {
+		if(octants[i].write_scratch.canonical > -1) {
+			octants[i].write_scratch.new_index = octants[octants[i].write_scratch.canonical].write_scratch.new_index;
+		}
 	}
 	
 	std::stable_sort(BEGIN_END(octants), [&](auto& lhs, auto& rhs) { return lhs.x < rhs.x; });
@@ -150,7 +161,7 @@ void write_occlusion_grid(OutBuffer dest, std::vector<OcclusionOctant>& octants)
 						
 						// Fill in mask indices.
 						for(s32 k = j_start; k <= j; k++) {
-							dest.write<u16>(offsets + (octants[k].x - x_coord) * 2, octants[k].index2);
+							dest.write<u16>(offsets + (octants[k].x - x_coord) * 2, octants[k].write_scratch.new_index);
 						}
 						
 						// Write out Y offset.
@@ -168,13 +179,14 @@ void write_occlusion_grid(OutBuffer dest, std::vector<OcclusionOctant>& octants)
 	
 	printf("Masks = %lx\n", dest.tell());
 	
-	std::stable_sort(BEGIN_END(octants), [&](auto& lhs, auto& rhs) { return lhs.index2 < rhs.index2; });
+	std::stable_sort(BEGIN_END(octants), [&](auto& lhs, auto& rhs)
+		{ return lhs.write_scratch.sort_index < rhs.write_scratch.sort_index; });
 	
 	// Write out the masks.
 	dest.pad(0x10, 0);
 	s64 masks_offset = dest.tell();
 	for(s32 i = 0; i < (s32) octants.size(); i++) {
-		if(octants[i].index == octants[i].index2) {
+		if(octants[i].write_scratch.canonical == -1) {
 			dest.vec.insert(dest.vec.end(), octants[i].mask, octants[i].mask + sizeof(OcclusionOctant::mask));
 		}
 	}
