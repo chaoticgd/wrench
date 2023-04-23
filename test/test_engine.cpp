@@ -20,6 +20,14 @@
 #include <engine/occlusion_grid.h>
 #include <core/filesystem.h>
 
+TEST_CASE("Occlusion grid empty", "[engine]") {
+	std::vector<OcclusionOctant> input;
+	std::vector<u8> buffer;
+	write_occlusion_grid(buffer, input);
+	std::vector<OcclusionOctant> output = read_occlusion_grid(buffer);
+	REQUIRE(input.empty());
+}
+
 TEST_CASE("Occlusion grid round trip", "[engine]") {
 	std::vector<OcclusionOctant> input = {
 		{1, 2, 3, {1, 2, 3}},
@@ -28,11 +36,17 @@ TEST_CASE("Occlusion grid round trip", "[engine]") {
 	};
 	std::vector<u8> buffer;
 	write_occlusion_grid(buffer, input);
-	write_file("/tmp/testgrid.bin", buffer);
 	std::vector<OcclusionOctant> output = read_occlusion_grid(buffer);
-	REQUIRE(input.size() == output.size());
+	REQUIRE(input == output);
 }
 
 TEST_CASE("Occlusion octants round trip", "[engine]") {
-	
+	std::vector<OcclusionVector> input = {
+		{1, 2, 3},
+		{4, 5, 6}
+	};
+	std::vector<u8> buffer;
+	write_occlusion_octants(buffer, input);
+	std::vector<OcclusionVector> output = read_occlusion_octants((char*) buffer.data());
+	REQUIRE(input == output);
 }

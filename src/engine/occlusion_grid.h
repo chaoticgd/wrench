@@ -38,6 +38,8 @@ struct OcclusionOctant {
 			s32 new_index;
 		} write_scratch;
 	};
+	
+	bool operator==(const OcclusionOctant& rhs) const;
 };
 
 std::vector<OcclusionOctant> read_occlusion_grid(Buffer src);
@@ -47,9 +49,11 @@ struct OcclusionVector {
 	s32 x = -1;
 	s32 y = -1;
 	s32 z = -1;
+	
+	friend auto operator<=>(const OcclusionVector& lhs, const OcclusionVector& rhs) = default;
 };
 
-std::vector<OcclusionVector> read_occlusion_octants(std::string& str);
+std::vector<OcclusionVector> read_occlusion_octants(const char* ptr);
 void write_occlusion_octants(OutBuffer dest, const std::vector<OcclusionVector>& octants);
 
 void swap_occlusion(std::vector<OcclusionOctant>& grid, std::vector<OcclusionVector>& vectors);

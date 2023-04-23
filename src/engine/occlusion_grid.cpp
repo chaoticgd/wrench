@@ -20,6 +20,10 @@
 
 #include <core/algorithm.h>
 
+bool OcclusionOctant::operator==(const OcclusionOctant& rhs) const {
+	return x == rhs.x && y == rhs.y && z == rhs.z && memcmp(mask, rhs.mask, sizeof(mask)) == 0;
+}
+
 std::vector<OcclusionOctant> read_occlusion_grid(Buffer src) {
 	ERROR_CONTEXT("reading occlusion grid");
 	
@@ -195,17 +199,15 @@ void write_occlusion_grid(OutBuffer dest, std::vector<OcclusionOctant>& octants)
 	dest.write(begin_offset, (s32) masks_offset);
 }
 
-std::vector<OcclusionVector> read_occlusion_octants(std::string& str) {
+std::vector<OcclusionVector> read_occlusion_octants(const char* ptr) {
 	std::vector<OcclusionVector> octants;
 	
-	char line[128];
-	
-	const char* ptr = str.c_str();
 	while(*ptr != '\0') {
 		OcclusionVector& octant = octants.emplace_back();
 		int total_read = sscanf(ptr, "%d %d %d\n", &octant.x, &octant.y, &octant.z);
-		verify(octant.x != -1 && octant.y != -1 && octant.z != -1, "Failed to parse octants list.");
-		ptr += total_read;
+		verify(total_read == 3, "Failed to parse octants list.");
+		for(;*ptr != '\n' && *ptr != '\0'; ptr++);
+		if(*ptr == '\n') ptr++;
 	}
 	
 	return octants;
