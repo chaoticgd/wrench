@@ -109,8 +109,6 @@ void write_occlusion_grid(OutBuffer dest, std::vector<OcclusionOctant>& octants)
 		
 		std::vector<u16> z_offsets(z_count, 0);
 		
-		printf("Z offsets = %lx\n", dest.tell());
-		
 		// Allocate the Z offsets.
 		dest.pad(4);
 		dest.write(z_coord);
@@ -118,8 +116,6 @@ void write_occlusion_grid(OutBuffer dest, std::vector<OcclusionOctant>& octants)
 		dest.alloc_multiple<u16>(z_count);
 		
 		s32 i_start, j_start;
-		
-		printf("Y offsets = %lx\n", dest.tell());
 		
 		// Allocate the Y offsets, write out the Z offsets.
 		i_start = 0;
@@ -142,8 +138,6 @@ void write_occlusion_grid(OutBuffer dest, std::vector<OcclusionOctant>& octants)
 				i_start = i + 1;
 			}
 		}
-		
-		printf("Z offsets = %lx\n", dest.tell());
 		
 		// Write out the X offsets and Y offsets.
 		i_start = 0;
@@ -180,8 +174,6 @@ void write_occlusion_grid(OutBuffer dest, std::vector<OcclusionOctant>& octants)
 			}
 		}
 	}
-	
-	printf("Masks = %lx\n", dest.tell());
 	
 	std::stable_sort(BEGIN_END(octants), [&](auto& lhs, auto& rhs)
 		{ return lhs.write_scratch.sort_index < rhs.write_scratch.sort_index; });
