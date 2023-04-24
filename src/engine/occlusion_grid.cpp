@@ -45,10 +45,10 @@ std::vector<OcclusionOctant> read_occlusion_grid(Buffer src) {
 			if(y_offsets[j] == 0) {
 				continue;
 			}
-			s32 x_offset = y_offsets[j] * 4;
-			u16 x_coord = src.read<u16>(x_offset + 0);
-			u16 x_count = src.read<u16>(x_offset + 2);
-			auto x_indices = src.read_multiple<u16>(x_offset + 4, x_count, "x offsets");
+			s32 y_offset = y_offsets[j] * 4;
+			u16 x_coord = src.read<u16>(y_offset + 0);
+			u16 x_count = src.read<u16>(y_offset + 2);
+			auto x_indices = src.read_multiple<u16>(y_offset + 4, x_count, "x offsets");
 			for(s32 k = 0; k < x_count; k++) {
 				if(x_indices[k] == 0xffff) {
 					continue;
