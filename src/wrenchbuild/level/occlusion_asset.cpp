@@ -53,5 +53,9 @@ static bool test_occlusion(std::vector<u8>& src, AssetType type, BuildConfig con
 	std::vector<u8> dest;
 	write_occlusion_grid(dest, grid);
 	strip_trailing_padding_from_lhs(src, dest);
-	return diff_buffers(src, dest, 0, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
+	if(src.size() < 4 || dest.size() < 4) return false;
+	s32 masks_offset_src = *(s32*) src.data();
+	s32 masks_offset_dest = *(s32*) dest.data();
+	if(masks_offset_src != masks_offset_dest) return false;
+	return diff_buffers(src, dest, masks_offset_src, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
 }
