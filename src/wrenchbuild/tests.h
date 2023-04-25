@@ -16,6 +16,9 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#ifndef WRENCHBUILD_TESTS_H
+#define WRENCHBUILD_TESTS_H
+
 #include <core/filesystem.h>
 #include <assetmgr/asset.h>
 #include <wrenchbuild/asset_unpacker.h>
@@ -44,3 +47,5 @@ AssetTestFunc* wrap_diff_test_func(TestFunc func) {
 		return func(src, dest, config, hint, mode);
 	});
 }
+
+#endif

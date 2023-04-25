@@ -21,7 +21,7 @@
 #include <core/algorithm.h>
 
 bool OcclusionOctant::operator==(const OcclusionOctant& rhs) const {
-	return x == rhs.x && y == rhs.y && z == rhs.z && memcmp(mask, rhs.mask, sizeof(mask)) == 0;
+	return x == rhs.x && y == rhs.y && z == rhs.z && memcmp(visibility, rhs.visibility, sizeof(visibility)) == 0;
 }
 
 std::vector<OcclusionOctant> read_occlusion_grid(Buffer src) {
@@ -61,8 +61,8 @@ std::vector<OcclusionOctant> read_occlusion_grid(Buffer src) {
 				octant.read_scratch.mask_index = x_indices[k];
 				
 				auto mask = src.read_multiple<u8>(masks_offset + x_indices[k] * 128, 128, "octant mask");
-				verify_fatal(mask.size() == sizeof(octant.mask));
-				memcpy(octant.mask, mask.lo, sizeof(octant.mask));
+				verify_fatal(mask.size() == sizeof(octant.visibility));
+				memcpy(octant.visibility, mask.lo, sizeof(octant.visibility));
 			}
 		}
 	}
@@ -81,7 +81,7 @@ void write_occlusion_grid(OutBuffer dest, std::vector<OcclusionOctant>& octants)
 	
 	// Mark duplicate masks.
 	mark_duplicates(octants,
-		[](OcclusionOctant& lhs, OcclusionOctant& rhs) { return memcmp(lhs.mask, rhs.mask, sizeof(OcclusionOctant::mask)); },
+		[](OcclusionOctant& lhs, OcclusionOctant& rhs) { return memcmp(lhs.visibility, rhs.visibility, sizeof(OcclusionOctant::visibility)); },
 		[&](s32 index, s32 canonical) { octants[index].write_scratch.canonical = canonical; });
 	
 	s32 next_index = 0;
@@ -183,7 +183,7 @@ void write_occlusion_grid(OutBuffer dest, std::vector<OcclusionOctant>& octants)
 	s64 masks_offset = dest.tell();
 	for(s32 i = 0; i < (s32) octants.size(); i++) {
 		if(octants[i].write_scratch.canonical == -1) {
-			dest.vec.insert(dest.vec.end(), octants[i].mask, octants[i].mask + sizeof(OcclusionOctant::mask));
+			dest.vec.insert(dest.vec.end(), octants[i].visibility, octants[i].visibility + sizeof(OcclusionOctant::visibility));
 		}
 	}
 	

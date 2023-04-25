@@ -16,11 +16,11 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include "occlusion_asset.h"
+
 #include <core/collada.h>
 #include <engine/occlusion.h>
-#include <wrenchbuild/asset_unpacker.h>
-#include <wrenchbuild/asset_packer.h>
-#include <wrenchbuild/tests.h>
+#include <engine/visibility.h>
 
 static void unpack_occlusion(OcclusionAsset& dest, InputStream& src, BuildConfig config);
 static bool test_occlusion(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode);
@@ -46,6 +46,40 @@ static void unpack_occlusion(OcclusionAsset& dest, InputStream& src, BuildConfig
 	std::vector<u8> octants;
 	write_occlusion_octants(octants, vectors);
 	dest.set_octants(dest.file().write_text_file("occlusion_octants.txt", (const char*) octants.data()));
+}
+
+ByteRange pack_occlusion(OutputStream& dest, const OcclusionAsset& asset, const std::vector<Mesh>& tfrags, BuildConfig config) {
+	if(g_asset_packer_dry_run) {
+		return {0, 0};
+	}
+	
+	s64 ofs = dest.tell();
+	
+	std::string octants_txt = asset.file().read_text_file(asset.octants().path);
+	std::vector<OcclusionVector> octants = read_occlusion_octants(octants_txt.c_str());
+	
+	// Plug in all the inputs the visibility algorithm needs.
+	VisInput input;
+	input.octant_size_x = 4;
+	input.octant_size_y = 4;
+	input.octant_size_z = 4;
+	input.octants = octants;
+	for(const Mesh& tfrag : tfrags) {
+		VisInstance& instance = input.instances[VIS_TFRAG].emplace_back();
+		instance.mesh = (s32) input.meshes.size();
+		input.meshes.emplace_back(&tfrag);
+	}
+	
+	// The interesting bit: Compute which objects are visible from each octant!
+	VisOutput vis = compute_level_visibility(input);
+	
+	// Build the lookup tree and write out all the visibility masks.
+	std::vector<u8> buffer;
+	write_occlusion_grid(buffer, vis.octants);
+	dest.write_v(buffer);
+	
+	s64 end_ofs = dest.tell();
+	return {(s32) ofs, (s32) (end_ofs - ofs)};
 }
 
 static bool test_occlusion(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode) {

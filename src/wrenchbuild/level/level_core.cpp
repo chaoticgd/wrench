@@ -24,6 +24,10 @@
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 #include <wrenchbuild/level/level_classes.h>
+#include <wrenchbuild/level/tfrags_asset.h>
+#include <wrenchbuild/level/occlusion_asset.h>
+
+// This file is quite messy! Also the texture packing code needs to be redone!
 
 static std::vector<s64> enumerate_level_core_block_boundaries(InputStream& src, const LevelCoreHeader& header, Game game);
 static void print_level_core_header(const LevelCoreHeader& header);
@@ -180,13 +184,22 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	}
 	OutputStream& data = *data_ptr;
 	
-	LevelCoreHeader header = {0};
+	LevelCoreHeader header = {};
 	index.alloc<LevelCoreHeader>();
 	
 	const TfragsAsset& tfrags = src.get_tfrags();
+	std::vector<Mesh> tfrag_meshes;
 	
-	header.tfrags = pack_asset<ByteRange>(data, tfrags, config, 0x40).offset;
-	header.occlusion = pack_asset<ByteRange>(data, src.get_occlusion(), config, 0x40).offset;
+	// TODO: Use the tfrag meshes from the chunks instead.
+	data.pad(0x40, 0);
+	header.tfrags = pack_tfrags(data, &tfrag_meshes, tfrags, config).offset;
+	const Asset& occlusion_asset = src.get_occlusion();
+	if(const OcclusionAsset* asset = occlusion_asset.maybe_as<OcclusionAsset>()) {
+		data.pad(0x40, 0);
+		header.occlusion = pack_occlusion(data, *asset, tfrag_meshes, config).offset;
+	} else {
+		header.occlusion = pack_asset<ByteRange>(data, occlusion_asset, config, 0x40).offset;
+	}
 	if(src.has_sky()) {
 		header.sky = pack_asset<ByteRange>(data, src.get_sky(), config, 0x40).offset;
 	}

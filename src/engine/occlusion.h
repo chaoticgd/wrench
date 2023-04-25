@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef ENGINE_OCCLUSION_GRID_H
-#define ENGINE_OCCLUSION_GRID_H
+#ifndef ENGINE_OCCLUSION_H
+#define ENGINE_OCCLUSION_H
 
 #include <core/buffer.h>
 
@@ -27,7 +27,7 @@ struct OcclusionOctant {
 	s32 x = -1;
 	s32 y = -1;
 	s32 z = -1;
-	u8 mask[128] = {};
+	u8 visibility[128] = {};
 	union {
 		struct {
 			s32 mask_index;

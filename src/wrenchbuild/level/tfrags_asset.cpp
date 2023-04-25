@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2022 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,14 +16,13 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include "tfrags_asset.h"
+
 #include <assetmgr/material_asset.h>
 #include <engine/tfrag_high.h>
-#include <wrenchbuild/asset_unpacker.h>
-#include <wrenchbuild/asset_packer.h>
-#include <wrenchbuild/tests.h>
 
 static void unpack_tfrags(TfragsAsset& dest, InputStream& src, BuildConfig config, const char* hint);
-static void pack_tfrags(OutputStream& dest, const TfragsAsset& src, BuildConfig config, const char* hint);
+static void pack_tfrags_simple(OutputStream& dest, const TfragsAsset& src, BuildConfig config, const char* hint);
 static bool test_tfrags(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode);
 
 on_load(Tfrags, []() {
@@ -32,10 +31,10 @@ on_load(Tfrags, []() {
 	TfragsAsset::funcs.unpack_rac3 = wrap_hint_unpacker_func<TfragsAsset>(unpack_tfrags);
 	TfragsAsset::funcs.unpack_dl = wrap_hint_unpacker_func<TfragsAsset>(unpack_tfrags);
 	
-	TfragsAsset::funcs.pack_rac1 = wrap_hint_packer_func<TfragsAsset>(pack_tfrags);
-	TfragsAsset::funcs.pack_rac2 = wrap_hint_packer_func<TfragsAsset>(pack_tfrags);
-	TfragsAsset::funcs.pack_rac3 = wrap_hint_packer_func<TfragsAsset>(pack_tfrags);
-	TfragsAsset::funcs.pack_dl = wrap_hint_packer_func<TfragsAsset>(pack_tfrags);
+	TfragsAsset::funcs.pack_rac1 = wrap_hint_packer_func<TfragsAsset>(pack_tfrags_simple);
+	TfragsAsset::funcs.pack_rac2 = wrap_hint_packer_func<TfragsAsset>(pack_tfrags_simple);
+	TfragsAsset::funcs.pack_rac3 = wrap_hint_packer_func<TfragsAsset>(pack_tfrags_simple);
+	TfragsAsset::funcs.pack_dl = wrap_hint_packer_func<TfragsAsset>(pack_tfrags_simple);
 	
 	TfragsCoreAsset::funcs.test_rac = new AssetTestFunc(test_tfrags);
 	TfragsCoreAsset::funcs.test_gc  = new AssetTestFunc(test_tfrags);
@@ -65,17 +64,40 @@ static void unpack_tfrags(TfragsAsset& dest, InputStream& src, BuildConfig confi
 	editor_mesh.set_src(ref);
 }
 
-static void pack_tfrags(OutputStream& dest, const TfragsAsset& src, BuildConfig config, const char* hint) {
+static void pack_tfrags_simple(OutputStream& dest, const TfragsAsset& src, BuildConfig config, const char* hint) {
+	pack_tfrags(dest, nullptr, src, config);
+}
+
+ByteRange pack_tfrags(OutputStream& bin_dest, std::vector<Mesh>* tfrags_dest, const TfragsAsset& src, BuildConfig config) {
 	if(g_asset_packer_dry_run) {
-		return;
+		return {0, 0};
 	}
 	
+	s64 ofs = bin_dest.tell();
+	
 	if(src.get_core().logical_type() == BinaryAsset::ASSET_TYPE) {
-		pack_asset_impl(dest, nullptr, nullptr, src.get_core(), config, nullptr);
-		return;
+		// Since the tfrags were provided as a binary file, we need to unpack
+		// that file so we can generate occlusion data for the level.
+		std::vector<u8> input_buffer;
+		MemoryOutputStream input_stream(input_buffer);
+		pack_asset_impl(input_stream, nullptr, nullptr, src.get_core(), config, nullptr);
+		Tfrags tfrags = read_tfrags(input_buffer, config.game());
+		
+		ColladaScene scene = recover_tfrags(tfrags);
+		
+		
+		// Rebuild the tfrags and write out the data. I'm doing it this way as
+		// it's quite useful for testing.
+		allocate_tfrags_vu(tfrags);
+		std::vector<u8> output_buffer;
+		write_tfrags(output_buffer, tfrags, config.game());
+		bin_dest.write_v(output_buffer);
 	} else {
 		verify_not_reached_fatal("Not yet implemented.");
 	}
+	
+	s64 end_ofs = bin_dest.tell();
+	return {(s32) ofs, (s32) (end_ofs - ofs)};
 }
 
 static bool test_tfrags(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode) {
