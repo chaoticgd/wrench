@@ -17,7 +17,7 @@
 */
 
 #include <catch2/catch_amalgamated.hpp>
-#include <engine/occlusion_grid.h>
+#include <engine/occlusion.h>
 #include <core/filesystem.h>
 
 TEST_CASE("Occlusion grid empty", "[engine]") {

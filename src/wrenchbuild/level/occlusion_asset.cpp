@@ -17,7 +17,7 @@
 */
 
 #include <core/collada.h>
-#include <engine/occlusion_grid.h>
+#include <engine/occlusion.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 #include <wrenchbuild/tests.h>

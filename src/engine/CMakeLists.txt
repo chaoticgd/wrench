@@ -10,7 +10,7 @@ add_library(wrenchengine
 	moby_mesh_exporter.cpp
 	moby_mesh_importer.cpp
 	moby_animation.cpp
-	occlusion_grid.cpp
+	occlusion.cpp
 	shrub.cpp
 	sky.cpp
 	tfrag_low.cpp

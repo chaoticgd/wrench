@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "occlusion_grid.h"
+#include "occlusion.h"
 
 #include <core/algorithm.h>
 
