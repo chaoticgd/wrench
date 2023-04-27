@@ -54,7 +54,7 @@ static void unpack_tfrags(TfragsAsset& dest, InputStream& src, BuildConfig confi
 	
 	std::vector<u8> buffer = src.read_multiple<u8>(0, src.size());
 	Tfrags tfrags = read_tfrags(buffer, config.game());
-	ColladaScene scene = recover_tfrags(tfrags);
+	ColladaScene scene = recover_tfrags(tfrags, TFRAG_NO_FLAGS);
 	
 	std::vector<u8> xml = write_collada(scene);
 	auto ref = dest.file().write_text_file("mesh.dae", (char*) xml.data());
@@ -83,8 +83,10 @@ ByteRange pack_tfrags(OutputStream& bin_dest, std::vector<Mesh>* tfrags_dest, co
 		pack_asset_impl(input_stream, nullptr, nullptr, src.get_core(), config, nullptr);
 		Tfrags tfrags = read_tfrags(input_buffer, config.game());
 		
-		ColladaScene scene = recover_tfrags(tfrags);
-		
+		ColladaScene scene = recover_tfrags(tfrags, TFRAG_SEPARATE_MESHES);
+		if(tfrags_dest) {
+			*tfrags_dest = std::move(scene.meshes);
+		}
 		
 		// Rebuild the tfrags and write out the data. I'm doing it this way as
 		// it's quite useful for testing.

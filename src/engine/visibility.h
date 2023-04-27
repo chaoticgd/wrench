@@ -19,6 +19,13 @@
 #ifndef ENGINE_VISIBILITY_H
 #define ENGINE_VISIBILITY_H
 
+// Implements the Potentially Visible Set occlusion culling algorithm used for
+// optimising what objects the game draws based on the position of the camera.
+//
+// The playable space is divided up into cube-shaped octants and then it is
+// determined which objects are visible from each octant. This data is then
+// crunched down into a 1024 bit mask for each octant for use by the game.
+
 #include <core/mesh.h>
 #include <engine/occlusion.h>
 
@@ -33,16 +40,25 @@ struct VisInstance {
 };
 
 struct VisInput {
+	// The size of a single octant. Normally 4x4x4.
 	s32 octant_size_x;
 	s32 octant_size_y;
 	s32 octant_size_z;
+	// The octants for which visibility should be precomputed.
 	std::vector<OcclusionVector> octants;
+	// Lists of objects in the level that matter for occlusion.
 	std::vector<VisInstance> instances[VIS_OBJECT_TYPE_COUNT];
+	// List of meshes referenced by the instances.
 	std::vector<const Mesh*> meshes;
 };
 
 struct VisOutput {
+	// For each object type, a mapping from the index of said object to the
+	// index of the bit in the visibility mask which should be checked to see
+	// if the object needs to be drawn.
 	std::vector<s32> mappings[VIS_OBJECT_TYPE_COUNT];
+	// A list of octants (4x4x4 cubes) for which visibility has been precomputed
+	// including finished visibility masks.
 	std::vector<OcclusionOctant> octants;
 };
 

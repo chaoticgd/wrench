@@ -22,6 +22,11 @@
 #include <engine/tfrag_low.h>
 #include <engine/tfrag_debug.h>
 
-ColladaScene recover_tfrags(const Tfrags& tfrags);
+enum TfragRecoveryFlags {
+	TFRAG_NO_FLAGS = 0,
+	TFRAG_SEPARATE_MESHES = 1 << 0
+};
+
+ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags);
 
 #endif
