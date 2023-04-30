@@ -75,6 +75,18 @@ std::vector<u8> write_gameplay(const Gameplay& gameplay_arg, const PvarTypes& ty
 	return dest_vec;
 }
 
+const std::vector<GameplayBlockDescription>* gameplay_block_descriptions_from_game(Game game) {
+	const std::vector<GameplayBlockDescription>* gbd = nullptr;
+	switch(game) {
+		case Game::RAC: gbd = &RAC_GAMEPLAY_BLOCKS; break;
+		case Game::GC: gbd = &GC_UYA_GAMEPLAY_BLOCKS; break;
+		case Game::UYA: gbd = &GC_UYA_GAMEPLAY_BLOCKS; break;
+		case Game::DL: gbd = &DL_GAMEPLAY_CORE_BLOCKS; break;
+		default: verify_not_reached("Invalid game!"); break;
+	}
+	return gbd;
+}
+
 template <typename Packed>
 static void swap_matrix(Instance& inst, Packed& packed) {
 	glm::mat4 matrix = inst.matrix();

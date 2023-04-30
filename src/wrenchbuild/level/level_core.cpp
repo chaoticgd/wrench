@@ -20,6 +20,7 @@
 
 #include <core/timer.h>
 #include <engine/moby.h>
+#include <engine/gameplay.h>
 #include <engine/compression.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
@@ -190,13 +191,21 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	const TfragsAsset& tfrags = src.get_tfrags();
 	std::vector<Mesh> tfrag_meshes;
 	
+	const BinaryAsset& gameplay_asset = src.get_gameplay();
+	Gameplay gameplay;
+	PvarTypes pvars;
+	std::unique_ptr<InputStream> gameplay_stream = gameplay_asset.file().open_binary_file_for_reading(gameplay_asset.src());
+	std::vector<u8> gameplay_buffer = gameplay_stream->read_multiple<u8>(gameplay_stream->size());
+	read_gameplay(gameplay, pvars, gameplay_buffer, config.game(), *gameplay_block_descriptions_from_game(config.game()));
+	ClassesHigh high_classes = load_classes(src);
+	
 	// TODO: Use the tfrag meshes from the chunks instead.
 	data.pad(0x40, 0);
 	header.tfrags = pack_tfrags(data, &tfrag_meshes, tfrags, config).offset;
 	const Asset& occlusion_asset = src.get_occlusion();
 	if(const OcclusionAsset* asset = occlusion_asset.maybe_as<OcclusionAsset>()) {
 		data.pad(0x40, 0);
-		header.occlusion = pack_occlusion(data, *asset, tfrag_meshes, config).offset;
+		header.occlusion = pack_occlusion(data, *asset, tfrag_meshes, gameplay, high_classes, config).offset;
 	} else {
 		header.occlusion = pack_asset<ByteRange>(data, occlusion_asset, config, 0x40).offset;
 	}

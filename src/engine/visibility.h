@@ -20,9 +20,10 @@
 #define ENGINE_VISIBILITY_H
 
 // Implements the Potentially Visible Set occlusion culling algorithm used for
-// optimising what objects the game draws based on the position of the camera.
+// reducing the number of objects the game draws per frame based on the position
+// of the camera.
 //
-// The playable space is divided up into cube-shaped octants and then it is
+// The playable space is divided up into cube-shaped "octants" and then it is
 // determined which objects are visible from each octant. This data is then
 // crunched down into a 1024 bit mask for each octant for use by the game.
 

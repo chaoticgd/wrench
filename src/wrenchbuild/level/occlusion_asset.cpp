@@ -48,7 +48,7 @@ static void unpack_occlusion(OcclusionAsset& dest, InputStream& src, BuildConfig
 	dest.set_octants(dest.file().write_text_file("occlusion_octants.txt", (const char*) octants.data()));
 }
 
-ByteRange pack_occlusion(OutputStream& dest, const OcclusionAsset& asset, const std::vector<Mesh>& tfrags, BuildConfig config) {
+ByteRange pack_occlusion(OutputStream& dest, const OcclusionAsset& asset, const std::vector<Mesh>& tfrags, const Gameplay& gameplay, const ClassesHigh& high_classes, BuildConfig config) {
 	if(g_asset_packer_dry_run) {
 		return {0, 0};
 	}
@@ -68,6 +68,36 @@ ByteRange pack_occlusion(OutputStream& dest, const OcclusionAsset& asset, const 
 		VisInstance& instance = input.instances[VIS_TFRAG].emplace_back();
 		instance.mesh = (s32) input.meshes.size();
 		input.meshes.emplace_back(&tfrag);
+	}
+	
+	std::map<s32, size_t> tie_class_to_index;
+	for(const auto& [id, tie_class] : high_classes.tie_classes) {
+		tie_class_to_index[id] = input.meshes.size();
+		input.meshes.emplace_back(tie_class.mesh);
+	}
+	for(const TieInstance& instance : opt_iterator(gameplay.tie_instances)) {
+		VisInstance& vis_instance = input.instances[VIS_TIE].emplace_back();
+		auto index = tie_class_to_index.find(instance.o_class);
+		if(index != tie_class_to_index.end()) {
+			vis_instance.mesh = index->second;
+			vis_instance.matrix = instance.matrix();
+			vis_instance.matrix[3][3] = 1.f;
+		}
+	}
+	
+	std::map<s32, size_t> moby_class_to_index;
+	for(const auto& [id, moby_class] : high_classes.moby_classes) {
+		moby_class_to_index[id] = input.meshes.size();
+		input.meshes.emplace_back(moby_class.mesh);
+	}
+	for(const MobyInstance& instance : opt_iterator(gameplay.moby_instances)) {
+		VisInstance& vis_instance = input.instances[VIS_MOBY].emplace_back();
+		auto index = moby_class_to_index.find(instance.o_class);
+		if(index != moby_class_to_index.end()) {
+			vis_instance.mesh = index->second;
+			vis_instance.matrix = instance.matrix();
+			vis_instance.matrix[3][3] = 1.f;
+		}
 	}
 	
 	// The interesting bit: Compute which objects are visible from each octant!

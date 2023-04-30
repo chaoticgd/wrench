@@ -19,10 +19,12 @@
 #ifndef WRENCHBUILD_LEVEL_OCCLUSION_ASSET_H
 #define WRENCHBUILD_LEVEL_OCCLUSION_ASSET_H
 
+#include <engine/gameplay.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 #include <wrenchbuild/tests.h>
+#include <wrenchbuild/level/level_classes.h>
 
-ByteRange pack_occlusion(OutputStream& dest, const OcclusionAsset& asset, const std::vector<Mesh>& tfrags, BuildConfig config);
+ByteRange pack_occlusion(OutputStream& dest, const OcclusionAsset& asset, const std::vector<Mesh>& tfrags, const Gameplay& gameplay, const ClassesHigh& high_classes, BuildConfig config);
 
 #endif

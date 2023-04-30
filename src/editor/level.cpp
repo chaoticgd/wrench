@@ -22,8 +22,6 @@
 #include <assetmgr/material_asset.h>
 #include <editor/app.h>
 
-static const std::vector<GameplayBlockDescription>* gameplay_block_descriptions_from_game(Game game);
-
 Level::Level() {}
 
 void Level::read(LevelAsset& asset, Game g) {
@@ -220,16 +218,4 @@ LevelWadAsset& Level::level_wad() {
 
 Gameplay& Level::gameplay() {
 	return _gameplay;
-}
-
-static const std::vector<GameplayBlockDescription>* gameplay_block_descriptions_from_game(Game game) {
-	const std::vector<GameplayBlockDescription>* gbd = nullptr;
-	switch(game) {
-		case Game::RAC: gbd = &RAC_GAMEPLAY_BLOCKS; break;
-		case Game::GC: gbd = &GC_UYA_GAMEPLAY_BLOCKS; break;
-		case Game::UYA: gbd = &GC_UYA_GAMEPLAY_BLOCKS; break;
-		case Game::DL: gbd = &DL_GAMEPLAY_CORE_BLOCKS; break;
-		default: verify_not_reached("Invalid game!"); break;
-	}
-	return gbd;
 }
