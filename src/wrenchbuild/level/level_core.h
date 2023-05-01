@@ -19,6 +19,7 @@
 #ifndef WRENCHBUILD_LEVEL_CORE_H
 #define WRENCHBUILD_LEVEL_CORE_H
 
+#include <engine/gameplay.h>
 #include <assetmgr/asset_types.h>
 #include <wrenchbuild/level/level_textures.h>
 
@@ -129,7 +130,7 @@ packed_struct(MobySoundRemapHeader,
 )
 
 void unpack_level_core(LevelWadAsset& dest, InputStream& src, ByteRange index_range, ByteRange data_range, ByteRange gs_ram_range, BuildConfig config);
-void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, std::vector<u8>& gs_ram_dest, const LevelWadAsset& src, BuildConfig config);
+void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, std::vector<u8>& gs_ram_dest, Gameplay& gameplay, const LevelWadAsset& src, BuildConfig config);
 BuildAsset& build_from_level_wad_asset(LevelWadAsset& core);
 ByteRange level_core_block_range(s32 ofs, const std::vector<s64>& block_bounds);
 

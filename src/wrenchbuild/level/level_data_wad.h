@@ -20,12 +20,13 @@
 #define WRENCHBUILD_LEVEL_DATA_WAD_H
 
 #include <assetmgr/asset_types.h>
+#include <engine/gameplay.h>
 
 void unpack_rac_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig config);
-void pack_rac_level_data_wad(OutputStream& dest, const LevelWadAsset& src, BuildConfig config);
+void pack_rac_level_data_wad(OutputStream& dest, Gameplay& gameplay, const LevelWadAsset& src, BuildConfig config);
 void unpack_gc_uya_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig config);
-void pack_gc_uya_level_data_wad(OutputStream& dest, const LevelWadAsset& src, BuildConfig config);
+void pack_gc_uya_level_data_wad(OutputStream& dest, Gameplay& gameplay, const LevelWadAsset& src, BuildConfig config);
 void unpack_dl_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig config);
-void pack_dl_level_data_wad(OutputStream& dest, std::vector<u8>& compressed_art_instances, std::vector<u8>& compressed_gameplay, const LevelWadAsset& src, BuildConfig config);
+void pack_dl_level_data_wad(OutputStream& dest, std::vector<u8>& compressed_art_instances, std::vector<u8>& compressed_gameplay, Gameplay& gameplay, const LevelWadAsset& src, BuildConfig config);
 
 #endif

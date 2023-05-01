@@ -1347,41 +1347,41 @@ struct RAC1_78_Block {
 	}
 };
 
-packed_struct(OcclusionHeader,
-	s32 count_1;
-	s32 count_2;
-	s32 count_3;
+packed_struct(OcclusionMappingsHeader,
+	s32 tfrag_mapping_count;
+	s32 tie_mapping_count;
+	s32 moby_mapping_count;
 	s32 pad = 0;
 )
 
-struct OcclusionBlock {
-	static void read(Occlusion& dest, Buffer src, Game game) {
-		auto& header = src.read<OcclusionHeader>(0, "occlusion header");
+struct OcclusionMappingsBlock {
+	static void read(OcclusionMappings& dest, Buffer src, Game game) {
+		auto& header = src.read<OcclusionMappingsHeader>(0, "occlusion header");
 		s64 ofs = 0x10;
-		dest.first_part = src.read_multiple<u8>(ofs, header.count_1 * 8, "first part of occlusion").copy();
-		ofs += header.count_1 * 8;
-		dest.second_part = src.read_multiple<u8>(ofs, header.count_2 * 8, "second part of occlusion").copy();
-		ofs += header.count_2 * 8;
-		dest.third_part = src.read_multiple<u8>(ofs, header.count_3 * 8, "third part of occlusion").copy();
+		dest.tfrag_mappings = src.read_multiple<OcclusionMapping>(ofs, header.tfrag_mapping_count, "tfrag occlusion mappings").copy();
+		ofs += header.tfrag_mapping_count * 8;
+		dest.tie_mappings = src.read_multiple<OcclusionMapping>(ofs, header.tie_mapping_count, "tie occlusion mappings").copy();
+		ofs += header.tie_mapping_count * 8;
+		dest.moby_mappings = src.read_multiple<OcclusionMapping>(ofs, header.moby_mapping_count, "moby occlusion mappings").copy();
 	}
 	
-	static void write(OutBuffer dest, const Occlusion& src, Game game) {
-		OcclusionHeader header;
-		header.count_1 = (s32) src.first_part.size() / 8;
-		header.count_2 = (s32) src.second_part.size() / 8;
-		header.count_3 = (s32) src.third_part.size() / 8;
+	static void write(OutBuffer dest, const OcclusionMappings& src, Game game) {
+		OcclusionMappingsHeader header;
+		header.tfrag_mapping_count = (s32) src.tfrag_mappings.size();
+		header.tie_mapping_count = (s32) src.tie_mappings.size();
+		header.moby_mapping_count = (s32) src.moby_mappings.size();
 		dest.write(header);
-		dest.write_multiple(src.first_part);
-		dest.write_multiple(src.second_part);
-		dest.write_multiple(src.third_part);
+		dest.write_multiple(src.tfrag_mappings);
+		dest.write_multiple(src.tie_mappings);
+		dest.write_multiple(src.moby_mappings);
 		dest.pad(0x40, 0);
 	}
 };
 
-std::vector<u8> write_occlusion(const Gameplay& gameplay, Game game) {
+std::vector<u8> write_occlusion_mappings(const Gameplay& gameplay, Game game) {
 	std::vector<u8> dest;
 	if(gameplay.occlusion.has_value()) {
-		OcclusionBlock::write(dest, *gameplay.occlusion, game);
+		OcclusionMappingsBlock::write(dest, *gameplay.occlusion, game);
 	}
 	return dest;
 }
@@ -1679,7 +1679,7 @@ const std::vector<GameplayBlockDescription> RAC_GAMEPLAY_BLOCKS = {
 	{0x7c, bf<InstanceBlock<RAC1_7c, RAC1_7c_Packed>>(&Gameplay::rac1_7c), "RAC1 7c"},
 	{0x78, bf<RAC1_78_Block>(&Gameplay::rac1_78), "RAC1 78"},
 	{0x74, bf<GrindPathBlock>(&Gameplay::grind_paths), "grindpaths"},
-	{0x8c, bf<OcclusionBlock>(&Gameplay::occlusion), "occlusion"},
+	{0x8c, bf<OcclusionMappingsBlock>(&Gameplay::occlusion), "occlusion"},
 	{0x90, {nullptr, nullptr}, "pad"}
 };
 
@@ -1722,7 +1722,7 @@ const std::vector<GameplayBlockDescription> GC_UYA_GAMEPLAY_BLOCKS = {
 	{0x80, bf<GC_80_DL_64_Block>(&Gameplay::gc_80_dl_64), "GC 80 DL 64"},
 	{0x7c, bf<GrindPathBlock>(&Gameplay::grind_paths), "grindpaths"},
 	{0x98, bf<AreasBlock>(&Gameplay::areas), "areas"},
-	{0x90, bf<OcclusionBlock>(&Gameplay::occlusion), "occlusion"}
+	{0x90, bf<OcclusionMappingsBlock>(&Gameplay::occlusion), "occlusion"}
 };
 
 const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS = {
@@ -1767,7 +1767,7 @@ const std::vector<GameplayBlockDescription> DL_ART_INSTANCE_BLOCKS = {
 	{0x10, {ShrubClassBlock::read, ShrubClassBlock::write}, "shrub classes"},
 	{0x14, bf<InstanceBlock<ShrubInstance, ShrubInstancePacked>>(&Gameplay::shrub_instances), "shrub instances"},
 	{0x18, bf<GroupBlock>(&Gameplay::shrub_groups), "art instance shrub groups"},
-	{0x1c, bf<OcclusionBlock>(&Gameplay::occlusion), "occlusion"},
+	{0x1c, bf<OcclusionMappingsBlock>(&Gameplay::occlusion), "occlusion"},
 	{0x24, {nullptr, nullptr}, "pad 1"},
 	{0x28, {nullptr, nullptr}, "pad 2"},
 	{0x2c, {nullptr, nullptr}, "pad 3"},

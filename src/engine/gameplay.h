@@ -71,7 +71,7 @@ struct Gameplay {
 	Opt<std::vector<Group>> tie_groups;
 	Opt<std::vector<ShrubInstance>> shrub_instances;
 	Opt<std::vector<Group>> shrub_groups;
-	Opt<Occlusion> occlusion;
+	Opt<OcclusionMappings> occlusion;
 	
 	// Only used while reading the binary gameplay file.
 	Opt<std::vector<PvarTableEntry>> pvars_temp;
@@ -141,7 +141,7 @@ extern const std::vector<GameplayBlockDescription> DL_GAMEPLAY_MISSION_INSTANCE_
 void read_gameplay(Gameplay& gameplay, PvarTypes& types, Buffer src, Game game, const std::vector<GameplayBlockDescription>& blocks);
 std::vector<u8> write_gameplay(const Gameplay& gameplay_arg, const PvarTypes& types, Game game, const std::vector<GameplayBlockDescription>& blocks);
 const std::vector<GameplayBlockDescription>* gameplay_block_descriptions_from_game(Game game);
-std::vector<u8> write_occlusion(const Gameplay& gameplay, Game game);
+std::vector<u8> write_occlusion_mappings(const Gameplay& gameplay, Game game);
 
 // *****************************************************************************
 

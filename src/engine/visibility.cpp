@@ -36,8 +36,14 @@
 		GLenum error = glGetError(); \
 		verify(error == GL_NO_ERROR, "GL Error %x\n", error); \
 	}
+//#define VIS_DEBUG_RENDERDOC
 
-#define VIS_RENDER_SIZE 64
+#define VIS_RENDER_SIZE 128
+
+#ifdef VIS_DEBUG_RENDERDOC
+#include "renderdoc_app.h"
+#include <dlfcn.h>
+#endif
 
 struct VisVertex {
 	glm::vec3 pos;
@@ -72,27 +78,31 @@ struct GPUHandles {
 	GLuint program;
 	GLuint matrix_uniform;
 	std::vector<GPUVisMesh> vis_meshes;
+#ifdef VIS_DEBUG_RENDERDOC
+	RENDERDOC_API_1_1_2* renderdoc = nullptr;
+	bool capturing = false;
+#endif
 };
 
 static void startup_opengl(GPUHandles& gpu);
 static std::vector<CPUVisMesh> build_vis_meshes(const VisInput& input);
 static std::vector<GPUVisMesh> upload_vis_meshes(const std::vector<CPUVisMesh>& cpu_meshes);
-static void compute_vis_sample(u8* mask_dest, s32 mask_size_bytes, const glm::vec3& sample_point, const GPUHandles& gpu);
-static void compress_vis_masks(std::vector<u8>& masks_dest, std::vector<s32>& mapping_dest, const std::vector<u8>& masks_src, s32 octant_count, s32 mask_size_bits, s32 stride);
+static void compute_vis_sample(u8* mask_dest, s32 mask_size_bytes, const glm::vec3& sample_point, GPUHandles& gpu);
+static void compress_vis_masks(std::vector<u8>& masks_dest, std::vector<s32>& mapping_dest, const std::vector<u8>& octant_masks_of_object_bits, s32 octant_count, s32 instance_count, s32 stride);
 static void shutdown_opengl(GPUHandles& gpu);
 
 #define GET_BIT(val_dest, mask_src, index, size) \
 	{ \
-		s32 array_index = index >> 3; \
-		s32 bit_index = index & 7; \
+		s32 array_index = (index) >> 3; \
+		s32 bit_index = (index) & 7; \
 		VIS_DEBUG(verify(array_index > -1 || array_index < size, "Tried to get a bit out of range.")); \
 		val_dest = ((mask_src)[array_index] >> bit_index) & 1; \
 	}
 
 #define SET_BIT(mask_dest, index, val_src, size) \
 	{ \
-		s32 array_index = index >> 3; \
-		s32 bit_index = index & 7; \
+		s32 array_index = (index) >> 3; \
+		s32 bit_index = (index) & 7; \
 		VIS_DEBUG(verify(array_index > -1 || array_index < size, "Tried to set a bit out of range.")); \
 		(mask_dest)[array_index] |= val_src << bit_index; \
 	}
@@ -118,7 +128,7 @@ static const char* vis_fragment_shader = R"(
 	out uint id_out;
 	
 	void main() {
-		id_out = uint(id_mid);
+		id_out = id_mid;
 	}
 )";
 
@@ -133,17 +143,17 @@ VisOutput compute_level_visibility(const VisInput& input) {
 	puts("**** Entered visibility routine! ****");
 	
 	// Calculate mask size.
-	s32 mask_size_bits = 0;
+	s32 instance_count = 0;
 	for(s32 i = 0; i < VIS_OBJECT_TYPE_COUNT; i++) {
-		mask_size_bits += (s32) input.instances[i].size();
+		instance_count += (s32) input.instances[i].size();
 	}
 	
-	s32 mask_size_bytes = align32(mask_size_bits, 64) / 8;
+	s32 mask_size_bytes = align32(instance_count, 64) / 8;
 	
 	std::vector<u8> sample_masks_of_object_bits;
 	std::map<OcclusionVector, s32> sample_lookup;
 	
-	std::vector<u8> octant_masks_of_object_bits(input.octants.size() * mask_size_bits, 0);
+	std::vector<u8> octant_masks_of_object_bits(input.octants.size() * mask_size_bytes, 0);
 	verify_fatal(((s64) octant_masks_of_object_bits.data()) % 8 == 0);
 	
 	// Do the OpenGL dance.
@@ -187,6 +197,7 @@ VisOutput compute_level_visibility(const VisInput& input) {
 						sample_vec.z * input.octant_size_z
 					};
 					compute_vis_sample(&sample_masks_of_object_bits[sample_ofs], mask_size_bytes, sample_point, gpu);
+					sample_lookup[sample_vec] = sample_ofs;
 				} else {
 					sample_ofs = sample->second;
 				}
@@ -206,8 +217,9 @@ VisOutput compute_level_visibility(const VisInput& input) {
 		defer([&]() { stop_timer(); });
 		
 		// Merge bits based on how well they can be predicted by other bits.
-		//compress_vis_masks(compressed_vis_masks, compressed_mappings, uncompressed_vis_masks, (s32) input.octants.size(), mem_usage.mask_size_bits, mem_usage.	mask_size_bytes);
+		compress_vis_masks(compressed_vis_masks, compressed_mappings, octant_masks_of_object_bits, (s32) input.octants.size(), instance_count, mask_size_bytes);
 		verify_fatal(compressed_vis_masks.size() == input.octants.size() * 128);
+		verify_fatal(compressed_mappings.size() == instance_count);
 	}
 	
 	VisOutput output;
@@ -215,8 +227,9 @@ VisOutput compute_level_visibility(const VisInput& input) {
 	// Separate out the mappings into separate lists for each type of object.
 	s32 next_mapping = 0;
 	for(s32 i = 0; i < VIS_OBJECT_TYPE_COUNT; i++) {
+		output.mappings[i].reserve(input.instances[i].size());
 		for(size_t j = 0; j < input.instances[i].size(); j++) {
-			output.mappings[i][j] = compressed_mappings.at(next_mapping++);
+			output.mappings[i].emplace_back(compressed_mappings[next_mapping++]);
 		}
 	}
 	
@@ -238,6 +251,14 @@ VisOutput compute_level_visibility(const VisInput& input) {
 }
 
 static void startup_opengl(GPUHandles& gpu) {
+#ifdef VIS_DEBUG_RENDERDOC
+	if(void* mod = dlopen("librenderdoc.so", RTLD_NOW | RTLD_NOLOAD)) {
+		pRENDERDOC_GetAPI RENDERDOC_GetAPI = (pRENDERDOC_GetAPI) dlsym(mod, "RENDERDOC_GetAPI");
+		int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_1_2, (void**) &gpu.renderdoc);
+		verify_fatal(ret == 1);
+	}
+#endif
+	
 	verify(glfwInit(), "Failed to load OpenGL (glfwInit).");
 	
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -316,11 +337,11 @@ static void startup_opengl(GPUHandles& gpu) {
 		verify_not_reached("Failed to link shaders!\n%s", message.c_str());
 	}
 
-	GL_CALL(glDetachShader(gpu.program, vertex_shader);
+	GL_CALL(glDetachShader(gpu.program, vertex_shader));
 	GL_CALL(glDetachShader(gpu.program, fragment_shader));
-	GL_CALL(glDeleteShader(vertex_shader);)
+	GL_CALL(glDeleteShader(vertex_shader));
 	GL_CALL(glDeleteShader(fragment_shader));
-	)
+	
 	// Setup viewport.
 	GL_CALL(glClearColor(0, 0, 0, 1));
 	GL_CALL(glViewport(0, 0, VIS_RENDER_SIZE, VIS_RENDER_SIZE));
@@ -334,10 +355,10 @@ static std::vector<CPUVisMesh> build_vis_meshes(const VisInput& input) {
 		for(size_t j = 0; j < input.instances[i].size(); j++) {
 			const VisInstance& instance = input.instances[i][j];
 			const Mesh& mesh = *input.meshes.at(instance.mesh);
-			size_t vertex_base = mesh.vertices.size();
+			size_t vertex_base = vismesh.vertices.size();
 			for(const Vertex& src : mesh.vertices) {
 				VisVertex& dest = vismesh.vertices.emplace_back();
-				dest.pos = src.pos;
+				dest.pos = glm::vec3(instance.matrix * glm::vec4(src.pos, 1.f));
 				dest.id = occlusion_id;
 			}
 			for(const SubMesh& submesh : mesh.submeshes) {
@@ -356,6 +377,7 @@ static std::vector<CPUVisMesh> build_vis_meshes(const VisInput& input) {
 			occlusion_id++;
 		}
 	}
+	verify(vismesh.vertices.size() < UINT32_MAX, "Too many vertices to compute visiblity!");
 	return vis_meshes;
 }
 
@@ -389,18 +411,22 @@ static std::vector<GPUVisMesh> upload_vis_meshes(const std::vector<CPUVisMesh>& 
 	return gpu_meshes;
 }
 #include <core/png.h>
-static void compute_vis_sample(u8* mask_dest, s32 mask_size_bytes, const glm::vec3& sample_point, const GPUHandles& gpu) {
-	//static glm::mat4 directions = {
-	//	glm::mat4(1.f),
-	//	glm::rotate(glm::mat4(1.f), glm::radians(90.f))
-	//};
+static void compute_vis_sample(u8* mask_dest, s32 mask_size_bytes, const glm::vec3& sample_point, GPUHandles& gpu) {
+	static const glm::mat4 directions[6] = {
+		glm::mat4(1.f),
+		glm::rotate(glm::mat4(1.f), glm::radians(90.f), glm::vec3(0.f, 0.f, 1.f)),
+		glm::rotate(glm::mat4(1.f), glm::radians(180.f), glm::vec3(0.f, 0.f, 1.f)),
+		glm::rotate(glm::mat4(1.f), glm::radians(270.f), glm::vec3(0.f, 0.f, 1.f)),
+		glm::rotate(glm::mat4(1.f), glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f)),
+		glm::rotate(glm::mat4(1.f), glm::radians(270.f), glm::vec3(0.f, 1.f, 0.f))
+	};
 	
-	for(s32 i = 0; i < 1; i++) {
+	for(s32 i = 0; i < 6; i++) {
 		GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 		
 		glm::mat4 perspective = glm::perspective(glm::radians(90.f), 1.f, 0.1f, 10000.0f);
 		glm::mat4 translate = glm::translate(glm::mat4(1.0f), -sample_point);
-		glm::mat4 matrix = perspective * RATCHET_TO_OPENGL_MATRIX * translate;
+		glm::mat4 matrix = perspective * RATCHET_TO_OPENGL_MATRIX * directions[i] * translate;
 		
 		GL_CALL(glUniformMatrix4fv(gpu.matrix_uniform, 1, GL_FALSE, &matrix[0][0]));
 		
@@ -417,9 +443,14 @@ static void compute_vis_sample(u8* mask_dest, s32 mask_size_bytes, const glm::ve
 		std::vector<u16> buffer(VIS_RENDER_SIZE * VIS_RENDER_SIZE);
 		GL_CALL(glReadPixels(0, 0, VIS_RENDER_SIZE, VIS_RENDER_SIZE, GL_RED_INTEGER, GL_UNSIGNED_SHORT, buffer.data()));
 		
+		for(u16 id : buffer) {
+			if(id > 0 && ((id) >> 3) < mask_size_bytes) {
+				SET_BIT(mask_dest, id - 1, 1, mask_size_bytes);
+			}
+		}
+		
 		VIS_DEBUG(
-			if(glm::distance(sample_point, glm::vec3(308.59f, 295.43f, 56.49f)) < 8.f) {
-			//if(fabs(sample_point.x-324.f)<0.1f && fabs(sample_point.y-296.f)<0.1f && fabs(sample_point.z-64.f)<0.1f) {
+			if(glm::distance(sample_point, glm::vec3(308.59f, 295.43f, 56.49f)) < 4.f) {
 				Texture texture;
 				texture.width = VIS_RENDER_SIZE;
 				texture.height = VIS_RENDER_SIZE;
@@ -436,74 +467,102 @@ static void compute_vis_sample(u8* mask_dest, s32 mask_size_bytes, const glm::ve
 	}
 }
 
-static void compress_vis_masks(std::vector<u8>& masks_dest, std::vector<s32>& mapping_dest, const std::vector<u8>& masks_src, s32 octant_count, s32 mask_size_bits, s32 stride) {
-	s32 compressed_mask_size_bits = mask_size_bits;
-	std::vector<s32> bit_mappings(mask_size_bits, -1);
+static void compress_vis_masks(std::vector<u8>& masks_dest, std::vector<s32>& mapping_dest, const std::vector<u8>& octant_masks_of_object_bits, s32 octant_count, s32 instance_count, s32 stride) {
+	std::vector<s32> bit_mappings(instance_count, -1);
 	
-	verify_fatal(masks_src.size() % stride == 0);
+	verify_fatal(octant_masks_of_object_bits.size() % stride == 0);
 	
-	s32 object_bitstring_size = align32(octant_count, 64) / 8;
+	s32 object_mask_size = align32(octant_count, 64) / 8;
 	
 	// Convert the data into a form that should make the code below run faster:
-	//  octant bitstrings of object bits -> object bitstrings of octant bits
-	std::vector<u8> object_bitstrings_of_octant_bits(object_bitstring_size * mask_size_bits);
-	for(s32 src_bit = 0; src_bit < mask_size_bits; src_bit++) {
+	//  octant masks of object bits -> object masks of octant bits
+	std::vector<u8> object_masks_of_octant_bits(object_mask_size * instance_count);
+	for(s32 src_bit = 0; src_bit < instance_count; src_bit++) {
 		for(s32 dest_bit = 0; dest_bit < octant_count; dest_bit++) {
 			u8 bit;
-			GET_BIT(bit, &masks_src[dest_bit * stride], src_bit, stride);
-			SET_BIT(&object_bitstrings_of_octant_bits[src_bit * object_bitstring_size], dest_bit, bit, object_bitstring_size);
+			GET_BIT(bit, &octant_masks_of_object_bits[dest_bit * stride], src_bit, stride);
+			SET_BIT(&object_masks_of_octant_bits[src_bit * object_mask_size], dest_bit, bit, object_mask_size);
 		}
 	}
 	
-	// Stupid algorithm I know.
-	for(s32 i = compressed_mask_size_bits; i > 1024; i--) {
-		s32 min_error = INT32_MAX;
-		s32 lhs_least_error = 0;
-		s32 rhs_least_error = 0;
-		for(s32 lhs = 0; lhs < (s32) masks_src.size(); lhs += stride) {
-			for(s32 rhs = lhs + 1; rhs < (s32) masks_src.size(); rhs += stride) {
-				s32 error = 0;
-				for(s32 bit = 0; bit < mask_size_bits; bit++) {
-					if(bit_mappings[bit] == -1) {
-						u8 lhs_bit;
-						//GET_BIT(lhs_bit, &masks_src[lhs], bit, stride);
-						u8 rhs_bit;
-						//GET_BIT(rhs_bit, &masks_src[rhs], bit, stride);
-						if((lhs_bit ^ rhs_bit) == 1) error++;
+	write_file("/tmp/octantmasks.bin", octant_masks_of_object_bits);
+	write_file("/tmp/objectmasks.bin", object_masks_of_octant_bits);
+	
+	s32 bits_required = instance_count;
+	
+	for(s32 acceptable_error = 0;; acceptable_error++) {
+		s32 prev_bits_required = bits_required;
+		for(s32 lhs = 0; lhs < instance_count; lhs++) {
+			s32 lhs_ofs = lhs * object_mask_size;
+			for(s32 rhs = lhs + 1; rhs < instance_count; rhs++) {
+				s32 rhs_ofs = rhs * object_mask_size;
+				if(bit_mappings[rhs] == -1) {
+					s32 error = 0;
+					for(s32 ofs = 0; ofs < object_mask_size; ofs += 8) {
+						u64 lhs_value = *(u64*) &object_masks_of_octant_bits[lhs_ofs + ofs];
+						u64 rhs_value = *(u64*) &object_masks_of_octant_bits[rhs_ofs + ofs];
+						error += std::popcount(lhs_value ^ rhs_value);
+						if(error > acceptable_error) {
+							break;
+						}
+					}
+					if(error == acceptable_error) {
+						bit_mappings[rhs] = lhs;
+						bits_required--;
+						if(bits_required <= 1024) {
+							break;
+						}
 					}
 				}
-				if(error < min_error) {
-					lhs_least_error = lhs;
-					rhs_least_error = rhs;
-					min_error = error;
-				}
 			}
-		}
-		
-		bit_mappings[rhs_least_error] = lhs_least_error;
+			if(bits_required <= 1024) {
+				break;
+			}
 	}
+		if(bits_required <= 1024) {
+			break;
+		}
+		if(acceptable_error > 0 && acceptable_error % 8 == 0) {
+			printf("\n");
+		}
+		printf("%4d %4d ", acceptable_error, prev_bits_required - bits_required);
+		fflush(stdout);
+	}
+	printf("\n");
 	
 	masks_dest.resize(octant_count * 128);
-	mapping_dest.resize(mask_size_bits, -1);
+	mapping_dest.resize(instance_count, -1);
 	
 	// OR the merged bits together i.e. if at least one of the objects is
 	// visible all merged objects will be drawn.
+	for(size_t i = 0; i < bit_mappings.size(); i++) {
+		if(bit_mappings[i] > -1) {
+			for(s32 ofs = 0; ofs < object_mask_size; ofs += 8) {
+				*(u64*) &object_masks_of_octant_bits[bit_mappings[i] * object_mask_size + ofs]
+					|= *(u64*) &object_masks_of_octant_bits[i * object_mask_size + ofs];
+			}
+		}
+	}
 	
 	// Write the output masks.
 	for(s32 octant = 0; octant < octant_count; octant++) {
 		s32 dest_bit = 0;
-		for(s32 src_bit = 0; src_bit < mask_size_bits; src_bit++) {
-			if(bit_mappings[src_bit] == -1) {
+		for(s32 instance = 0; instance < instance_count; instance++) {
+			if(bit_mappings[instance] == -1) {
 				s32 bit;
-				GET_BIT(bit, &masks_src[octant * stride], src_bit, stride);
+				GET_BIT(bit, &object_masks_of_octant_bits[instance * object_mask_size], octant, stride);
 				SET_BIT(&masks_dest[octant * 128], dest_bit, bit, stride);
+				dest_bit++;
 			}
 		}
+		verify_fatal(dest_bit <= 1024);
 	}
+	
+	write_file("/tmp/outmasks.bin", masks_dest);
 	
 	// Write the output mapping.
 	s32 dest_bit = 0;
-	for(s32 src_bit = 0; src_bit < mask_size_bits; src_bit++) {
+	for(s32 src_bit = 0; src_bit < instance_count; src_bit++) {
 		if(bit_mappings[src_bit] == -1) {
 			mapping_dest[src_bit] = dest_bit++;
 		} else {
@@ -511,11 +570,10 @@ static void compress_vis_masks(std::vector<u8>& masks_dest, std::vector<s32>& ma
 			verify_fatal(mapping_dest[src_bit] > -1);
 		}
 	}
+	verify_fatal(dest_bit <= 1024);
 }
 
 static void shutdown_opengl(GPUHandles& gpu) {
-	glfwSwapBuffers(gpu.dummy);
-	
 	GL_CALL(glDeleteFramebuffers(1, &gpu.frame_buffer));
 	GL_CALL(glDeleteTextures(1, &gpu.id_buffer));
 	GL_CALL(glDeleteTextures(1, &gpu.depth_buffer));

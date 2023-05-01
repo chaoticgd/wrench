@@ -48,7 +48,7 @@ static void unpack_occlusion(OcclusionAsset& dest, InputStream& src, BuildConfig
 	dest.set_octants(dest.file().write_text_file("occlusion_octants.txt", (const char*) octants.data()));
 }
 
-ByteRange pack_occlusion(OutputStream& dest, const OcclusionAsset& asset, const std::vector<Mesh>& tfrags, const Gameplay& gameplay, const ClassesHigh& high_classes, BuildConfig config) {
+ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const OcclusionAsset& asset, const std::vector<Mesh>& tfrags, const ClassesHigh& high_classes, BuildConfig config) {
 	if(g_asset_packer_dry_run) {
 		return {0, 0};
 	}
@@ -67,12 +67,14 @@ ByteRange pack_occlusion(OutputStream& dest, const OcclusionAsset& asset, const 
 	for(const Mesh& tfrag : tfrags) {
 		VisInstance& instance = input.instances[VIS_TFRAG].emplace_back();
 		instance.mesh = (s32) input.meshes.size();
+		instance.matrix = glm::mat4(1.f);
 		input.meshes.emplace_back(&tfrag);
 	}
 	
-	std::map<s32, size_t> tie_class_to_index;
+	std::map<s32, s32> tie_class_to_index;
 	for(const auto& [id, tie_class] : high_classes.tie_classes) {
-		tie_class_to_index[id] = input.meshes.size();
+		verify_fatal(tie_class.mesh);
+		tie_class_to_index[id] = (s32) input.meshes.size();
 		input.meshes.emplace_back(tie_class.mesh);
 	}
 	for(const TieInstance& instance : opt_iterator(gameplay.tie_instances)) {
@@ -85,9 +87,10 @@ ByteRange pack_occlusion(OutputStream& dest, const OcclusionAsset& asset, const 
 		}
 	}
 	
-	std::map<s32, size_t> moby_class_to_index;
+	std::map<s32, s32> moby_class_to_index;
 	for(const auto& [id, moby_class] : high_classes.moby_classes) {
-		moby_class_to_index[id] = input.meshes.size();
+		verify_fatal(moby_class.mesh);
+		moby_class_to_index[id] = (s32) input.meshes.size();
 		input.meshes.emplace_back(moby_class.mesh);
 	}
 	for(const MobyInstance& instance : opt_iterator(gameplay.moby_instances)) {
@@ -107,6 +110,25 @@ ByteRange pack_occlusion(OutputStream& dest, const OcclusionAsset& asset, const 
 	std::vector<u8> buffer;
 	write_occlusion_grid(buffer, vis.octants);
 	dest.write_v(buffer);
+	
+	gameplay.occlusion = OcclusionMappings();
+	for(s32 i = 0; i < (s32) vis.mappings[VIS_TFRAG].size(); i++) {
+		OcclusionMapping& mapping = gameplay.occlusion->tfrag_mappings.emplace_back();
+		mapping.bit_index = vis.mappings[VIS_TFRAG][i];
+		mapping.occlusion_id = i;
+	}
+	for(s32 i = 0; i < (s32) vis.mappings[VIS_TIE].size(); i++) {
+		OcclusionMapping& mapping = gameplay.occlusion->tie_mappings.emplace_back();
+		mapping.bit_index = vis.mappings[VIS_TIE][i];
+		mapping.occlusion_id = i;
+	}
+	for(s32 i = 0; i < (s32) vis.mappings[VIS_MOBY].size(); i++) {
+		OcclusionMapping& mapping = gameplay.occlusion->moby_mappings.emplace_back();
+		mapping.bit_index = vis.mappings[VIS_MOBY][i];
+		mapping.occlusion_id = i;
+	}
+	
+	write_file("/tmp/occlgrid.bin", buffer);
 	
 	s64 end_ofs = dest.tell();
 	return {(s32) ofs, (s32) (end_ofs - ofs)};

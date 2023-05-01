@@ -681,17 +681,15 @@ struct ShrubInstance : Instance {
 	}
 };
 
-struct Occlusion {
-	std::vector<u8> first_part;
-	std::vector<u8> second_part;
-	std::vector<u8> third_part;
-	
-	template <typename T>
-	void enumerate_fields(T& t) {
-		DEF_HEXDUMP(first_part);
-		DEF_HEXDUMP(second_part);
-		DEF_HEXDUMP(third_part);
-	}
+packed_struct(OcclusionMapping,
+	s32 bit_index;
+	s32 occlusion_id;
+)
+
+struct OcclusionMappings {
+	std::vector<OcclusionMapping> tfrag_mappings;
+	std::vector<OcclusionMapping> tie_mappings;
+	std::vector<OcclusionMapping> moby_mappings;
 };
 
 #endif
