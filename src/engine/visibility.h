@@ -63,6 +63,6 @@ struct VisOutput {
 	std::vector<OcclusionOctant> octants;
 };
 
-VisOutput compute_level_visibility(const VisInput& input);
+VisOutput compute_level_visibility(const VisInput& input, s32 memory_budget_for_masks);
 
 #endif

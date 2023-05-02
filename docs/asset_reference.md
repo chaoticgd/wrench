@@ -1180,6 +1180,7 @@ Information required to build the occlusion culling data for a level.		The playa
 
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
+| memory_budget | The maximum size of the computed collision database in bytes, including both the octant lookup tree and the visibility masks. | Integer | No | RAC/GC/UYA/DL |
 | octants | A path to text file containing a list of all the octants for which occlusion should be generated. Each line is a list of 3 integers X, Y and Z separated by spaces. Each coordinate must be multiplied by 4 to obtain world coordinates. | FilePath | Yes | RAC/GC/UYA/DL |
 
 *Children*

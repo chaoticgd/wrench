@@ -42,9 +42,6 @@ struct OcclusionOctant {
 	bool operator==(const OcclusionOctant& rhs) const;
 };
 
-std::vector<OcclusionOctant> read_occlusion_grid(Buffer src);
-void write_occlusion_grid(OutBuffer dest, std::vector<OcclusionOctant>& octants);
-
 struct OcclusionVector {
 	s32 x = -1;
 	s32 y = -1;
@@ -52,6 +49,10 @@ struct OcclusionVector {
 	
 	friend auto operator<=>(const OcclusionVector& lhs, const OcclusionVector& rhs) = default;
 };
+
+std::vector<OcclusionOctant> read_occlusion_grid(Buffer src);
+void write_occlusion_grid(OutBuffer dest, std::vector<OcclusionOctant>& octants);
+s32 compute_occlusion_tree_size(std::vector<OcclusionVector> octants);
 
 std::vector<OcclusionVector> read_occlusion_octants(const char* ptr);
 void write_occlusion_octants(OutBuffer dest, const std::vector<OcclusionVector>& octants);

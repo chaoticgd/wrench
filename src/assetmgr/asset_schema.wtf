@@ -1825,6 +1825,12 @@ AssetType Occlusion {
 	desc: "Information required to build the occlusion culling data for a level.\n\nThe playable space of a level is divided into 4x4x4 cubes called octants that dictate which objects are visible at a given time."
 	bin_leaf: true
 	
+	IntegerAttribute memory_budget {
+		desc: "The maximum size of the computed collision database in bytes, including both the octant lookup tree and the visibility masks."
+		required: false
+		games: [1 2 3 4]
+	}
+	
 	FileReferenceAttribute octants {
 		desc: "A path to text file containing a list of all the octants for which occlusion should be generated. Each line is a list of 3 integers X, Y and Z separated by spaces. Each coordinate must be multiplied by 4 to obtain world coordinates."
 		required: true

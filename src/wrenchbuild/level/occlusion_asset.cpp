@@ -45,6 +45,7 @@ static void unpack_occlusion(OcclusionAsset& dest, InputStream& src, BuildConfig
 	
 	std::vector<u8> octants;
 	write_occlusion_octants(octants, vectors);
+	dest.set_memory_budget(src.size());
 	dest.set_octants(dest.file().write_text_file("occlusion_octants.txt", (const char*) octants.data()));
 }
 
@@ -63,7 +64,7 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 	input.octant_size_x = 4;
 	input.octant_size_y = 4;
 	input.octant_size_z = 4;
-	input.octants = octants;
+	input.octants = std::move(octants);
 	for(const Mesh& tfrag : tfrags) {
 		VisInstance& instance = input.instances[VIS_TFRAG].emplace_back();
 		instance.mesh = (s32) input.meshes.size();
@@ -103,8 +104,15 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 		}
 	}
 	
+	s32 memory_budget = -1;
+	if(asset.has_memory_budget()) {
+		memory_budget = asset.memory_budget();
+	}
+	
+	s32 tree_size = compute_occlusion_tree_size(input.octants);
+	
 	// The interesting bit: Compute which objects are visible from each octant!
-	VisOutput vis = compute_level_visibility(input);
+	VisOutput vis = compute_level_visibility(input, memory_budget - tree_size);
 	
 	// Build the lookup tree and write out all the visibility masks.
 	std::vector<u8> buffer;
@@ -121,9 +129,7 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 		OcclusionMapping& mapping = gameplay.occlusion->tie_mappings.emplace_back();
 		mapping.bit_index = vis.mappings[VIS_TIE][i];
 		mapping.occlusion_id = i;
-		if(gameplay.tie_instances.has_value()) {
-			gameplay.tie_instances->at(i).occlusion_index = (s32) i;
-		}
+		gameplay.tie_instances->at(i).occlusion_index = (s32) i;
 	}
 	for(s32 i = 0; i < (s32) vis.mappings[VIS_MOBY].size(); i++) {
 		OcclusionMapping& mapping = gameplay.occlusion->moby_mappings.emplace_back();

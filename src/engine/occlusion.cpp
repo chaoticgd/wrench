@@ -191,6 +191,63 @@ void write_occlusion_grid(OutBuffer dest, std::vector<OcclusionOctant>& octants)
 	dest.write(begin_offset, (s32) masks_offset);
 }
 
+s32 compute_occlusion_tree_size(std::vector<OcclusionVector> octants) {
+	s32 tree_size = 0;
+	
+	std::stable_sort(BEGIN_END(octants), [&](auto& lhs, auto& rhs) { return lhs.x < rhs.x; });
+	std::stable_sort(BEGIN_END(octants), [&](auto& lhs, auto& rhs) { return lhs.y < rhs.y; });
+	std::stable_sort(BEGIN_END(octants), [&](auto& lhs, auto& rhs) { return lhs.z < rhs.z; });
+	
+	if(!octants.empty()) {
+		u16 z_coord = checked_int_cast<u16>(octants.front().z);
+		u16 z_count = checked_int_cast<u16>(octants.back().z - z_coord + 1);
+		
+		std::vector<u16> z_offsets(z_count, 0);
+		
+		// Compute size of root.
+		tree_size += 4 + z_count * 2;
+		
+		s32 i_start, j_start;
+		
+		// Compute size of Z nodes.
+		i_start = 0;
+		for(s32 i = 0; i < (s32) octants.size(); i++) {
+			if(i == (s32) octants.size() - 1 || octants[i].z != octants[i + 1].z) {
+				u16 y_coord = checked_int_cast<u16>(octants[i_start].y);
+				u16 y_count = checked_int_cast<u16>(octants[i].y - y_coord + 1);
+				
+				tree_size = align32(tree_size, 4);
+				tree_size += 4 + y_count * 2;
+				
+				i_start = i + 1;
+			}
+		}
+		
+		// Compute size of Y nodes.
+		i_start = 0;
+		for(s32 i = 0; i < (s32) octants.size(); i++) {
+			if(i == (s32) octants.size() - 1 || octants[i].z != octants[i + 1].z) {
+				j_start = i_start;
+				for(s32 j = i_start; j <= i; j++) {
+					if(j == i || octants[j].y != octants[j + 1].y) {
+						u16 x_coord = checked_int_cast<u16>(octants[j_start].x);
+						u16 x_count = checked_int_cast<u16>(octants[j].x - x_coord + 1);
+						
+						tree_size = align32(tree_size, 4);
+						tree_size += 4 + x_count * 2;
+						
+						j_start = j + 1;
+					}
+				}
+				
+				i_start = i + 1;
+			}
+		}
+	}
+	
+	return tree_size;
+}
+
 std::vector<OcclusionVector> read_occlusion_octants(const char* ptr) {
 	std::vector<OcclusionVector> octants;
 	
