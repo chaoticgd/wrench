@@ -216,6 +216,8 @@ static void menu_bar() {
 		ImGui::Text("Cam (toggle with Z): X=%.2f Y=%.2f Z=%.2f Pitch=%.2f Yaw=%.2f",
 			pos.x, pos.y, pos.z, rot.x, rot.y);
 		
+		ImGui::Text("Octant: %d %d %d", (s32) (pos.x / 4), (s32) (pos.y / 4), (s32) (pos.z / 4));
+		
 		available_rect.Min.y += ImGui::GetWindowSize().y - 1;
 		ImGui::Text("Frame Time: %.2fms", g_app->delta_time * 1000.f);
 		
