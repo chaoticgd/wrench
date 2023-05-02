@@ -15,17 +15,21 @@ Features currently include:
 	- Used to launch the level editor.
 - Build Tool
 	- Pack/unpack entire ISO files.
-	- **New in v0.3!** Unpack tfrag meshes as COLLADA files.
+	- Unpack tfrag meshes as COLLADA files.
 	- Unpack moby meshes as COLLADA files.
-	- **New in v0.3!** Unpack tie meshes as COLLADA files.
+	- Unpack tie meshes as COLLADA files.
 	- Pack/unpack collision meshes as COLLADA files.
-	- **New in v0.2!** Pack/unpack shrub meshes as COLLADA files.
-	- **New in v0.2!** Pack/unpack sky meshes as COLLADA files.
+	- Pack/unpack shrub meshes as COLLADA files.
+	- Pack/unpack sky meshes as COLLADA files.
 	- Pack/unpack textures as PNG files.
+	- **New in v0.4!** Pack/unpack packed executables and level overlays as ELF files.
+	- **New in v0.4!** Recompute the occlusion data.
 	- Pack/unpack everything else as binary files.
 - Level Editor
 	- View unpacked levels.
 	- Move objects and modify their attributes.
+- **New in v0.4!** Memory Card Editor
+	- Only works properly on Deadlocked saves. Experimental.
 
 For documentation on the asset system, see [Asset System](docs/asset_system.md) and [Asset Reference](docs/asset_reference.md). For information on the game's file formats, see the [Formats Guide](docs/formats_guide.md).
 
