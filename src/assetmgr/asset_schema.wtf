@@ -393,6 +393,7 @@ AssetType Subtitle {
 
 AssetType ElfFile {
 	desc: "An ELF executable file. Currently used for the frontend and level code."
+	bin_leaf: true
 	
 	StringAttribute name {
 		desc: "The name of ELF file on the filesystem of the built ISO (if relevant)."
@@ -1254,8 +1255,8 @@ AssetType LevelWad {
 		required: true
 		games: [4]
 	}
-	Child code {
-		desc: "The level code. Contains the main loop, level loading code, moby update functions, and a lot more."
+	Child overlay {
+		desc: "The level code overlay. Contains most of the code for the game and engine."
 		allowed_types: ["ElfFile" "Binary"]
 		required: true
 		games: [1 2 3 4]

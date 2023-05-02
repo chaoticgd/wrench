@@ -821,7 +821,7 @@ No attributes.
 | chunks | *Not yet documented.* | Collection | No | GC/UYA/DL |
 | missions | *Not yet documented.* | Collection | *Not yet documented.* | DL |
 | moby8355_pvars | *Not yet documented.* | Binary | Yes | DL |
-| code | The level code. Contains the main loop, level loading code, moby update functions, and a lot more. | ElfFile, Binary | Yes | RAC/GC/UYA/DL |
+| overlay | The level code overlay. Contains most of the code for the game and engine. | ElfFile, Binary | Yes | RAC/GC/UYA/DL |
 | hud_header | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
 | hud_banks | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
 | transition_textures | Textures that are shown during a transition to the given level. | Texture\[\], Binary | No | GC/UYA |
