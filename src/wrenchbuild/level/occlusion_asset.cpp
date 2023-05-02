@@ -121,6 +121,9 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 		OcclusionMapping& mapping = gameplay.occlusion->tie_mappings.emplace_back();
 		mapping.bit_index = vis.mappings[VIS_TIE][i];
 		mapping.occlusion_id = i;
+		if(gameplay.tie_instances.has_value()) {
+			gameplay.tie_instances->at(i).occlusion_index = (s32) i;
+		}
 	}
 	for(s32 i = 0; i < (s32) vis.mappings[VIS_MOBY].size(); i++) {
 		OcclusionMapping& mapping = gameplay.occlusion->moby_mappings.emplace_back();
