@@ -220,7 +220,9 @@ VisOutput compute_level_visibility(const VisInput& input, s32 memory_budget_for_
 		
 		// Merge bits based on how well they can be predicted by other bits.
 		compress_objects(compressed_vis_masks, compressed_mappings, octant_masks_of_object_bits, (s32) input.octants.size(), instance_count, mask_size_bytes);
-		compress_octants(compressed_vis_masks, (s32) input.octants.size(), memory_budget_for_masks);
+		if(memory_budget_for_masks > -1) {
+			compress_octants(compressed_vis_masks, (s32) input.octants.size(), memory_budget_for_masks);
+		}
 		verify_fatal(compressed_vis_masks.size() == input.octants.size() * 128);
 		verify_fatal(compressed_mappings.size() == instance_count);
 	}

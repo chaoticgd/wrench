@@ -109,10 +109,13 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 		memory_budget = asset.memory_budget();
 	}
 	
-	s32 tree_size = compute_occlusion_tree_size(input.octants);
+	s32 memory_budget_for_masks = -1;
+	if(memory_budget) {
+		memory_budget_for_masks = memory_budget - compute_occlusion_tree_size(input.octants);
+	}
 	
 	// The interesting bit: Compute which objects are visible from each octant!
-	VisOutput vis = compute_level_visibility(input, memory_budget - tree_size);
+	VisOutput vis = compute_level_visibility(input, memory_budget_for_masks);
 	
 	// Build the lookup tree and write out all the visibility masks.
 	std::vector<u8> buffer;
