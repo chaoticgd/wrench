@@ -3,21 +3,21 @@
 In no particular order:
 
 - Build System/CI
-	- Integrate automated testing
+	- ~~Integrate automated testing~~
 - Moby Model Packing
 	- Seperate out matrix allocation/scheduling from read/write functions to improve testability
 	- Use the existing tristrip algorithm to build new submeshes
 - Tfrag Model Packing
-	- Recover original tfaces
-		- Possibly compare different LOD levels to determine which strips are part of which tface
+	- ~~Recover original tfaces~~
+		- ~~Possibly compare different LOD levels to determine which strips are part of which tface~~
 	- Figure out how tfaces should be represented in the source format
 	- Build new tfrags
 	- Make sure to pad the tfrag blocks in the level core and the chunks to the same size
 - Tie Model Packing
 	- Similar issues as with the tfrag renderer
 - Occlusion System
-	- Generate new occlusion data during a build
-	- Possibly use OpenGL in wrenchbuild to speed things up (should be faster than raycasting)
+	- ~~Generate new occlusion data during a build~~
+	- ~~Possibly use OpenGL in wrenchbuild to speed things up (should be faster than raycasting)~~
 - Gameplay Source Format
 	- Will probably be based on the Wrench Text Format
 	- System for editing/storing pvar data
@@ -37,10 +37,6 @@ In no particular order:
 - Asset system improvements
 	- Incremental build support
 	- Support for storing the asset graph to disk and only reparsing asset files that have been modified
-		- All *Asset objects stored in a single buffer
-		- Relative pointers
-		- Don't worry about ABI issues, the files don't need to be portable
-		- Security? Validate the input, or use a machine ID + checksum?
 	- Multithreading?
 	- Replace all uses of std::filesystem::path for asset bank file paths (so the behaviour is consistent between platforms)
 - Sky Packing
