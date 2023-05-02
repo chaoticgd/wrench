@@ -421,6 +421,9 @@ static void compute_vis_sample(u8* mask_dest, s32 mask_size_bytes, const glm::ve
 		glm::rotate(glm::mat4(1.f), glm::radians(270.f), glm::vec3(0.f, 1.f, 0.f))
 	};
 	
+	s32 render_size = VIS_RENDER_SIZE * VIS_RENDER_SIZE;
+	std::vector<u16> buffer(render_size * 6);
+	
 	for(s32 i = 0; i < 6; i++) {
 		GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 		
@@ -440,31 +443,36 @@ static void compute_vis_sample(u8* mask_dest, s32 mask_size_bytes, const glm::ve
 		GL_CALL(glFinish());
 		GL_CALL(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
 		
-		std::vector<u16> buffer(VIS_RENDER_SIZE * VIS_RENDER_SIZE);
-		GL_CALL(glReadPixels(0, 0, VIS_RENDER_SIZE, VIS_RENDER_SIZE, GL_RED_INTEGER, GL_UNSIGNED_SHORT, buffer.data()));
+		
+		GL_CALL(glReadPixels(0, 0, VIS_RENDER_SIZE, VIS_RENDER_SIZE, GL_RED_INTEGER, GL_UNSIGNED_SHORT, &buffer[i * render_size]));
 		
 		for(u16 id : buffer) {
 			if(id > 0 && ((id) >> 3) < mask_size_bytes) {
 				SET_BIT(mask_dest, id - 1, 1, mask_size_bytes);
 			}
 		}
-		
-		VIS_DEBUG(
-			if(glm::distance(sample_point, glm::vec3(308.59f, 295.43f, 56.49f)) < 4.f) {
-				Texture texture;
-				texture.width = VIS_RENDER_SIZE;
-				texture.height = VIS_RENDER_SIZE;
-				texture.format = PixelFormat::GRAYSCALE;
-				texture.data.resize(VIS_RENDER_SIZE * VIS_RENDER_SIZE);
-				for(s32 i = 0 ; i < VIS_RENDER_SIZE * VIS_RENDER_SIZE; i++) {
-					texture.data[i] = (u8) buffer[i];
-				}
-				FileOutputStream out;
-				out.open(fs::path(stringf("/tmp/out%f_%f_%f_%d.png", sample_point.x, sample_point.y, sample_point.z, i)));
-				write_png(out, texture);
-			}
-		)
 	}
+	
+	VIS_DEBUG(
+		Texture texture;
+		texture.width = VIS_RENDER_SIZE * 4;
+		texture.height = VIS_RENDER_SIZE * 2;
+		texture.format = PixelFormat::GRAYSCALE;
+		texture.data.resize(texture.width * texture.height);
+		for(s32 i = 0; i < 6; i++) {
+			s32 base_x = (i % 4) * VIS_RENDER_SIZE;
+			s32 base_y = (i / 4) * VIS_RENDER_SIZE;
+			// Combine the renders into a panorama.
+			for(s32 y = 0; y < VIS_RENDER_SIZE; y++) {
+				for(s32 x = 0; x < VIS_RENDER_SIZE; x++) {
+					texture.data[(base_y + y) * texture.width + base_x + x] = buffer[i * render_size + y * VIS_RENDER_SIZE + x];
+				}
+			}
+		}
+		FileOutputStream out;
+		out.open(fs::path(stringf("/tmp/visout/%f_%f_%f.png", sample_point.x, sample_point.y, sample_point.z)));
+		write_png(out, texture);
+	)
 }
 
 static void compress_vis_masks(std::vector<u8>& masks_dest, std::vector<s32>& mapping_dest, const std::vector<u8>& octant_masks_of_object_bits, s32 octant_count, s32 instance_count, s32 stride) {
@@ -485,8 +493,8 @@ static void compress_vis_masks(std::vector<u8>& masks_dest, std::vector<s32>& ma
 		}
 	}
 	
-	write_file("/tmp/octantmasks.bin", octant_masks_of_object_bits);
-	write_file("/tmp/objectmasks.bin", object_masks_of_octant_bits);
+	VIS_DEBUG(write_file("/tmp/octantmasks.bin", octant_masks_of_object_bits));
+	VIS_DEBUG(write_file("/tmp/objectmasks.bin", object_masks_of_octant_bits));
 	
 	s32 bits_required = instance_count;
 	
@@ -558,7 +566,7 @@ static void compress_vis_masks(std::vector<u8>& masks_dest, std::vector<s32>& ma
 		verify_fatal(dest_bit <= 1024);
 	}
 	
-	write_file("/tmp/outmasks.bin", masks_dest);
+	VIS_DEBUG(write_file("/tmp/outmasks.bin", masks_dest));
 	
 	// Write the output mapping.
 	s32 dest_bit = 0;

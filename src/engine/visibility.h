@@ -25,7 +25,7 @@
 //
 // The playable space is divided up into cube-shaped "octants" and then it is
 // determined which objects are visible from each octant. This data is then
-// crunched down into a 1024 bit mask for each octant for use by the game.
+// crunched down into a 1024 bit mask per octant for use by the game.
 
 #include <core/mesh.h>
 #include <engine/occlusion.h>
