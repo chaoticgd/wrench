@@ -93,14 +93,13 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 		input.meshes.emplace_back(tie_class.mesh);
 	}
 	for(const TieInstance& instance : opt_iterator(gameplay.tie_instances)) {
-		VisInstance& vis_instance = input.instances[VIS_TIE].emplace_back();
 		auto index = tie_class_to_index.find(instance.o_class);
-		if(index != tie_class_to_index.end()) {
-			vis_instance.mesh = index->second;
-			vis_instance.matrix = instance.matrix();
-			vis_instance.matrix[3][3] = 1.f;
-			vis_instance.chunk = chunk_index_from_position(glm::vec3(vis_instance.matrix[3]), gameplay);
-		}
+		verify(index != tie_class_to_index.end(), "Cannot find tie model!");
+		VisInstance& vis_instance = input.instances[VIS_TIE].emplace_back();
+		vis_instance.mesh = index->second;
+		vis_instance.matrix = instance.matrix();
+		vis_instance.matrix[3][3] = 1.f;
+		vis_instance.chunk = chunk_index_from_position(glm::vec3(vis_instance.matrix[3]), gameplay);
 	}
 	
 	std::map<s32, s32> moby_class_to_index;
@@ -110,9 +109,9 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 		input.meshes.emplace_back(moby_class.mesh);
 	}
 	for(const MobyInstance& instance : opt_iterator(gameplay.moby_instances)) {
-		VisInstance& vis_instance = input.instances[VIS_MOBY].emplace_back();
 		auto index = moby_class_to_index.find(instance.o_class);
 		if(index != moby_class_to_index.end()) {
+			VisInstance& vis_instance = input.instances[VIS_MOBY].emplace_back();
 			vis_instance.mesh = index->second;
 			vis_instance.matrix = instance.matrix();
 			vis_instance.matrix[3][3] = 1.f;
@@ -144,16 +143,23 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 		mapping.bit_index = vis.mappings[VIS_TFRAG][i];
 		mapping.occlusion_id = i;
 	}
+	
 	for(s32 i = 0; i < (s32) vis.mappings[VIS_TIE].size(); i++) {
 		OcclusionMapping& mapping = gameplay.occlusion->tie_mappings.emplace_back();
 		mapping.bit_index = vis.mappings[VIS_TIE][i];
 		mapping.occlusion_id = i;
-		gameplay.tie_instances->at(i).occlusion_index = (s32) i;
+		gameplay.tie_instances->at(i).occlusion_index = i;
 	}
+	
+	s32 moby_instance_index = 0;
 	for(s32 i = 0; i < (s32) vis.mappings[VIS_MOBY].size(); i++) {
+		while(moby_class_to_index.find(gameplay.moby_instances->at(moby_instance_index).o_class) == moby_class_to_index.end()) {
+			moby_instance_index++;
+		}
+		
 		OcclusionMapping& mapping = gameplay.occlusion->moby_mappings.emplace_back();
 		mapping.bit_index = vis.mappings[VIS_MOBY][i];
-		mapping.occlusion_id = i;
+		mapping.occlusion_id = (s32) i;
 	}
 	
 	write_file("/tmp/occlgrid.bin", buffer);

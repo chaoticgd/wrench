@@ -363,33 +363,69 @@ static void startup_opengl(GPUHandles& gpu) {
 }
 
 static std::vector<CPUVisMesh> build_vis_meshes(const VisInput& input) {
-	std::vector<CPUVisMesh> vis_meshes(3);
+	s32 max_vertices, max_indices;
+	GL_CALL(glGetIntegerv(GL_MAX_ELEMENTS_VERTICES, &max_vertices));
+	GL_CALL(glGetIntegerv(GL_MAX_ELEMENTS_INDICES, &max_indices));
+	
+	std::vector<CPUVisMesh> vis_meshes;
+	s32 current_vis_meshes[3] = {-1, -1, -1};
 	u16 occlusion_id = 1;
 	for(s32 i = 0; i < VIS_OBJECT_TYPE_COUNT; i++) {
 		for(size_t j = 0; j < input.instances[i].size(); j++) {
 			const VisInstance& instance = input.instances[i][j];
 			verify_fatal(instance.chunk >= 0 && instance.chunk < VIS_MAX_CHUNKS);
-			CPUVisMesh& vis_mesh = vis_meshes.at(instance.chunk);
-			vis_mesh.chunk = instance.chunk;
 			const Mesh& mesh = *input.meshes.at(instance.mesh);
-			size_t vertex_base = vis_mesh.vertices.size();
+			
+			// Check if we need to create a new vis mesh.
+			bool new_vis_mesh = false;
+			s32& vis_mesh_index = current_vis_meshes[instance.chunk];
+			if(vis_mesh_index == -1) {
+				new_vis_mesh = true;
+			} else {
+				s32 index_count = 0;
+				for(const SubMesh& submesh : mesh.submeshes) {
+					index_count += (s32) submesh.faces.size() * 4;
+				}
+				
+				s32 new_vertex_count = vis_meshes[vis_mesh_index].vertices.size() + mesh.vertices.size();
+				s32 new_index_count = vis_meshes[vis_mesh_index].indices.size() + index_count;
+				if(new_vertex_count > max_vertices || new_index_count > max_indices) {
+					new_vis_mesh = true;
+				}
+			}
+			
+			// Create a new vis mesh if necessary.
+			CPUVisMesh* vis_mesh;
+			if(new_vis_mesh) {
+				current_vis_meshes[instance.chunk] = (s32) vis_meshes.size();
+				vis_mesh = &vis_meshes.emplace_back();
+				vis_mesh->chunk = instance.chunk;
+			} else {
+				vis_mesh = &vis_meshes[vis_mesh_index];
+			}
+			
+			// Add vertices.
+			size_t vertex_base = vis_mesh->vertices.size();
 			for(const Vertex& src : mesh.vertices) {
-				VisVertex& dest = vis_mesh.vertices.emplace_back();
+				VisVertex& dest = vis_mesh->vertices.emplace_back();
 				dest.pos = glm::vec3(instance.matrix * glm::vec4(src.pos, 1.f));
 				dest.id = occlusion_id;
 			}
+			
+			// Add indices.
 			for(const SubMesh& submesh : mesh.submeshes) {
 				for(const Face& face : submesh.faces) {
-					vis_mesh.indices.emplace_back(vertex_base + face.v0);
-					vis_mesh.indices.emplace_back(vertex_base + face.v1);
-					vis_mesh.indices.emplace_back(vertex_base + face.v2);
+					vis_mesh->indices.emplace_back(vertex_base + face.v0);
+					vis_mesh->indices.emplace_back(vertex_base + face.v1);
+					vis_mesh->indices.emplace_back(vertex_base + face.v2);
 					if(face.is_quad()) {
-						vis_mesh.indices.emplace_back(vertex_base + face.v2);
-						vis_mesh.indices.emplace_back(vertex_base + face.v3);
-						vis_mesh.indices.emplace_back(vertex_base + face.v0);
+						vis_mesh->indices.emplace_back(vertex_base + face.v2);
+						vis_mesh->indices.emplace_back(vertex_base + face.v3);
+						vis_mesh->indices.emplace_back(vertex_base + face.v0);
 					}
 				}
 			}
+			
 			verify(occlusion_id != 0xffff, "Too many objects to compute visibility!");
 			occlusion_id++;
 		}
@@ -489,7 +525,7 @@ static void compute_vis_sample(u8* mask_dest, s32 mask_size_bytes, const glm::ve
 			}
 		}
 		FileOutputStream out;
-		out.open(fs::path(stringf("/tmp/visout/%f_%f_%f.png", sample_point.x, sample_point.y, sample_point.z)));
+		out.open(fs::path(stringf("/tmp/visout/%d_%d_%d.png", (s32) sample_point.x, (s32) sample_point.y, (s32) sample_point.z)));
 		write_png(out, texture);
 	)
 }
