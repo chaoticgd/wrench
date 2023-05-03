@@ -187,9 +187,9 @@ VisOutput compute_level_visibility(const VisInput& input, s32 memory_budget_for_
 				
 				printf("%3d,%3d,%3d%s", src.x, src.y, src.z, (i % 4 == 3) ? "\n" : "  ");
 				for(s32 corner = 0; corner < 8; corner++) {
-					s32 x_ofs = corner & 1;
-					s32 y_ofs = corner & 2;
-					s32 z_ofs = corner & 4;
+					s32 x_ofs = (corner & 1) != 0;
+					s32 y_ofs = (corner & 2) != 0;
+					s32 z_ofs = (corner & 4) != 0;
 					OcclusionVector sample_vec = {
 						src.x + x_ofs,
 						src.y + y_ofs,
