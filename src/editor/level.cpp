@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2022 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -34,43 +34,52 @@ void Level::read(LevelAsset& asset, Game g) {
 	const std::vector<GameplayBlockDescription>* gbd = gameplay_block_descriptions_from_game(game);
 	read_gameplay(_gameplay, _pvar_types, buffer, game, *gbd);
 	
-	//MeshAsset& collision_asset = level_wad().get_collision().as<CollisionAsset>().get_mesh();
-	//std::string collision_xml = collision_asset.file().read_text_file(collision_asset.src().path);
-	//ColladaScene collision_scene = read_collada((char*) collision_xml.data());
-	//for(const Mesh& mesh : collision_scene.meshes) {
-	//	collision.emplace_back(upload_mesh(mesh, true));
-	//}
-	//collision_materials = upload_materials(collision_scene.materials, {});
-	//
-	//{
-	//	TfragsAsset& tfrags_asset = level_wad().get_tfrags();
-	//	
-	//	if(!tfrags_asset.has_editor_mesh()) {
-	//		return;
-	//	}
-	//	MeshAsset& asset = tfrags_asset.get_editor_mesh();
-	//	std::string xml = asset.file().read_text_file(asset.src().path);
-	//	ColladaScene scene = read_collada((char*) xml.data());
-	//	Mesh* mesh = scene.find_mesh(asset.name());
-	//	if(!mesh) {
-	//		return;
-	//	}
-	//	
-	//	MaterialSet material_set = read_material_assets(tfrags_asset.get_materials());
-	//	map_lhs_material_indices_to_rhs_list(scene, material_set.materials);
-	//	
-	//	std::vector<Texture> textures;
-	//	for(FileReference ref : material_set.textures) {
-	//		auto stream = ref.owner->open_binary_file_for_reading(ref);
-	//		verify(stream.get(), "Failed to open shrub texture file.");
-	//		Opt<Texture> texture = read_png(*stream.get());
-	//		verify(texture.has_value(), "Failed to read shrub texture.");
-	//		textures.emplace_back(*texture);
-	//	}
-	//	
-	//	tfrags = upload_mesh(*mesh, true);
-	//	tfrag_materials = upload_materials(scene.materials, textures);
-	//}
+	const CollectionAsset& chunk_collection = level_wad().get_chunks();
+	for(s32 i = 0; i < 3; i++) {
+		if(!chunk_collection.has_child(i)) {
+			continue;
+		}
+		const ChunkAsset& chunk_asset = chunk_collection.get_child(i).as<ChunkAsset>();
+		EditorChunk& chunk = chunks.emplace_back();
+		
+		const MeshAsset& collision_asset = chunk_asset.get_collision().as<CollisionAsset>().get_mesh();
+		std::string collision_xml = collision_asset.file().read_text_file(collision_asset.src().path);
+		ColladaScene collision_scene = read_collada((char*) collision_xml.data());
+		for(const Mesh& mesh : collision_scene.meshes) {
+			chunk.collision.emplace_back(upload_mesh(mesh, true));
+		}
+		chunk.collision_materials = upload_materials(collision_scene.materials, {});
+		
+		const TfragsAsset& tfrags_asset = chunk_asset.get_tfrags();
+		
+		if(!tfrags_asset.has_editor_mesh()) {
+			continue;
+		}
+		const MeshAsset& tfrags_mesh_asset = tfrags_asset.get_editor_mesh();
+		std::string xml = tfrags_mesh_asset.file().read_text_file(tfrags_mesh_asset.src().path);
+		ColladaScene scene = read_collada((char*) xml.data());
+		Mesh* mesh = scene.find_mesh(tfrags_mesh_asset.name());
+		if(!mesh) {
+			continue;
+		}
+		chunk.tfrags = upload_mesh(*mesh, true);
+		
+		if(i == 0 && tfrags_asset.has_materials()) {
+			MaterialSet material_set = read_material_assets(tfrags_asset.get_materials());
+			map_lhs_material_indices_to_rhs_list(scene, material_set.materials);
+			
+			std::vector<Texture> textures;
+			for(FileReference ref : material_set.textures) {
+				auto stream = ref.owner->open_binary_file_for_reading(ref);
+				verify(stream.get(), "Failed to open shrub texture file.");
+				Opt<Texture> texture = read_png(*stream.get());
+				verify(texture.has_value(), "Failed to read shrub texture.");
+				textures.emplace_back(*texture);
+			}
+			
+			tfrag_materials = upload_materials(scene.materials, textures);
+		}
+	}
 	
 	level_wad().get_moby_classes().for_each_logical_child_of_type<MobyClassAsset>([&](MobyClassAsset& moby) {
 		if(moby.has_editor_mesh()) {

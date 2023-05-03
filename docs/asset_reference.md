@@ -1075,7 +1075,7 @@ No attributes.
 | - | - | - | - | - |
 | core | *Not yet documented.* | TfragsCore, Binary | *Not yet documented.* | *Not yet documented.* |
 | editor_mesh | The mesh shown in the editor. We're using this as a hack since we haven't got the tfrag exporter working. | Mesh | No | RAC/GC/UYA/DL |
-| materials | The materials used by the tfrags. | Material\[\] | Yes | RAC/GC/UYA/DL |
+| materials | The materials used by the tfrags. | Material\[\] | No | RAC/GC/UYA/DL |
 
 
 ### TfragsCore

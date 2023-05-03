@@ -140,18 +140,20 @@ void draw_level(Level& lvl, const glm::mat4& world_to_clip, const RenderSettings
 
 	set_shader(shaders.textured);
 	
-	if(settings.draw_tfrags) {
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		draw_mesh(lvl.tfrags, lvl.tfrag_materials, world_to_clip);
-	}
-	draw_instances(lvl, world_to_clip, GL_FILL, GL_LINE, settings);
-	
-	if(settings.draw_collision) {
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		for(const RenderMesh& mesh : lvl.collision) {
-			draw_mesh(mesh, lvl.collision_materials, world_to_clip);
+	for(const EditorChunk& chunk : lvl.chunks) {
+		if(settings.draw_tfrags) {
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			draw_mesh(chunk.tfrags, lvl.tfrag_materials, world_to_clip);
+		}
+		if(settings.draw_collision) {
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			for(const RenderMesh& mesh : chunk.collision) {
+				draw_mesh(mesh, chunk.collision_materials, world_to_clip);
+			}
 		}
 	}
+	
+	draw_instances(lvl, world_to_clip, GL_FILL, GL_LINE, settings);
 	
 	set_shader(shaders.selection);
 	draw_instances(lvl, world_to_clip, GL_LINE, GL_LINE, settings);
@@ -435,6 +437,10 @@ static void draw_mesh_instanced(const RenderMesh& mesh, const RenderMaterial* ma
 	glVertexAttribDivisor(5, 1);
 	
 	for(const RenderSubMesh& submesh : mesh.submeshes) {
+		if(submesh.material >= mat_count) {
+			continue;
+		}
+		
 		glBindBuffer(GL_ARRAY_BUFFER, submesh.vertex_buffer.id);
 		
 		glEnableVertexAttribArray(6);
@@ -444,7 +450,6 @@ static void draw_mesh_instanced(const RenderMesh& mesh, const RenderMaterial* ma
 		glEnableVertexAttribArray(8);
 		glVertexAttribPointer(8, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*) offsetof(Vertex, tex_coord));
 		
-		verify_fatal(submesh.material < mat_count);
 		const RenderMaterial& material = mats[submesh.material];
 		
 		if(program == shaders.textured.id()) {
