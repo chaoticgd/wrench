@@ -211,7 +211,7 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	const Asset& occlusion_asset = src.get_occlusion();
 	if(const OcclusionAsset* asset = occlusion_asset.maybe_as<OcclusionAsset>()) {
 		data.pad(0x40, 0);
-		header.occlusion = pack_occlusion(data, gameplay, *asset, chunks[0].tfrag_meshes, high_classes, config).offset;
+		header.occlusion = pack_occlusion(data, gameplay, *asset, chunks, high_classes, config).offset;
 	} else {
 		header.occlusion = pack_asset<ByteRange>(data, occlusion_asset, config, 0x40).offset;
 	}

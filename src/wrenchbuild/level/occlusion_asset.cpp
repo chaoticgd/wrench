@@ -50,7 +50,7 @@ static void unpack_occlusion(OcclusionAsset& dest, InputStream& src, BuildConfig
 	dest.set_octants(dest.file().write_text_file("occlusion_octants.txt", (const char*) octants.data()));
 }
 
-ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const OcclusionAsset& asset, const std::vector<Mesh>& tfrags, const ClassesHigh& high_classes, BuildConfig config) {
+ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const OcclusionAsset& asset, const std::vector<LevelChunk>& chunks, const ClassesHigh& high_classes, BuildConfig config) {
 	if(g_asset_packer_dry_run) {
 		return {0, 0};
 	}
@@ -75,12 +75,15 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 	input.octant_size_y = 4;
 	input.octant_size_z = 4;
 	input.octants = std::move(octants);
-	for(const Mesh& tfrag : tfrags) {
-		VisInstance& vis_instance = input.instances[VIS_TFRAG].emplace_back();
-		vis_instance.mesh = (s32) input.meshes.size();
-		vis_instance.chunk = 0; // TODO: Handle tfrags from other chunks.
-		vis_instance.matrix = glm::mat4(1.f);
-		input.meshes.emplace_back(&tfrag);
+	
+	for(s32 i = 0; i < (s32) chunks.size(); i++) {
+		for(const Mesh& tfrag_mesh : chunks[i].tfrag_meshes) {
+			VisInstance& vis_instance = input.instances[VIS_TFRAG].emplace_back();
+			vis_instance.mesh = (s32) input.meshes.size();
+			vis_instance.chunk = i;
+			vis_instance.matrix = glm::mat4(1.f);
+			input.meshes.emplace_back(&tfrag_mesh);
+		}
 	}
 	
 	std::map<s32, s32> tie_class_to_index;

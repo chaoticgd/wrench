@@ -21,7 +21,7 @@
 
 #include <assetmgr/asset_types.h>
 #include <engine/gameplay.h>
-#include <wrenchbuild/level/level_core.h>
+#include <wrenchbuild/level/level_chunks.h>
 
 void unpack_rac_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig config);
 void pack_rac_level_data_wad(OutputStream& dest, const std::vector<LevelChunk>& chunks, Gameplay& gameplay, const LevelWadAsset& src, BuildConfig config);

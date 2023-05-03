@@ -33,6 +33,7 @@ add_executable(wrenchbuild
 	level/level_wad.cpp
 	level/level_data_wad.cpp
 	level/level_core.cpp
+	level/level_chunks.cpp
 	level/level_classes.cpp
 	level/level_textures.cpp
 	level/level_audio_wad.cpp

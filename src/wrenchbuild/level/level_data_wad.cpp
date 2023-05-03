@@ -20,6 +20,7 @@
 
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
+#include <wrenchbuild/level/level_core.h>
 
 packed_struct(RacLevelDataHeader,
 	/* 0x00 */ ByteRange overlay;

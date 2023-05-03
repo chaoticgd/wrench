@@ -16,16 +16,27 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef WRENCHBUILD_LEVEL_OCCLUSION_ASSET_H
-#define WRENCHBUILD_LEVEL_OCCLUSION_ASSET_H
+#ifndef WRENCHBUILD_LEVEL_CHUNKS_H
+#define WRENCHBUILD_LEVEL_CHUNKS_H
 
-#include <engine/gameplay.h>
-#include <wrenchbuild/asset_unpacker.h>
-#include <wrenchbuild/asset_packer.h>
-#include <wrenchbuild/tests.h>
-#include <wrenchbuild/level/level_chunks.h>
-#include <wrenchbuild/level/level_classes.h>
+#include <core/mesh.h>
+#include <core/stream.h>
+#include <assetmgr/asset_types.h>
 
-ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const OcclusionAsset& asset, const std::vector<LevelChunk>& chunks, const ClassesHigh& high_classes, BuildConfig config);
+packed_struct(ChunkWadHeader,
+	/* 0x00 */ SectorRange chunks[3];
+	/* 0x18 */ SectorRange sound_banks[3];
+)
+
+struct LevelChunk {
+	std::vector<u8> tfrags;
+	std::vector<Mesh> tfrag_meshes;
+	std::vector<u8> collision;
+	std::vector<u8> sound_bank;
+};
+
+void unpack_level_chunks(CollectionAsset& dest, InputStream& file, const ChunkWadHeader& ranges, BuildConfig config);
+std::vector<LevelChunk> load_level_chunks(const CollectionAsset& collection, BuildConfig config);
+ChunkWadHeader write_level_chunks(OutputStream& dest, const std::vector<LevelChunk>& chunks);
 
 #endif
