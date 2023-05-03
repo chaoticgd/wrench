@@ -34,9 +34,11 @@
 #define VIS_TFRAG 0
 #define VIS_TIE 1
 #define VIS_MOBY 2
+#define VIS_MAX_CHUNKS 3
 
 struct VisInstance {
 	s32 mesh;
+	s32 chunk; // -1 to determine the chunk from the position.
 	glm::mat4 matrix;
 };
 

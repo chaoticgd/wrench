@@ -59,6 +59,7 @@ struct VisAABB {
 struct CPUVisMesh {
 	std::vector<VisVertex> vertices;
 	std::vector<u32> indices;
+	s32 chunk;
 	VisAABB aabb;
 };
 
@@ -68,6 +69,7 @@ struct GPUVisMesh {
 	s32 vertex_count;
 	GLuint index_buffer;
 	s32 index_count;
+	s32 chunk;
 	VisAABB bounding_box;
 };
 
@@ -88,7 +90,7 @@ struct GPUHandles {
 static void startup_opengl(GPUHandles& gpu);
 static std::vector<CPUVisMesh> build_vis_meshes(const VisInput& input);
 static std::vector<GPUVisMesh> upload_vis_meshes(const std::vector<CPUVisMesh>& cpu_meshes);
-static void compute_vis_sample(u8* mask_dest, s32 mask_size_bytes, const glm::vec3& sample_point, GPUHandles& gpu);
+static void compute_vis_sample(u8* mask_dest, s32 mask_size_bytes, const glm::vec3& sample_point, s32 chunk, GPUHandles& gpu);
 static void compress_objects(std::vector<u8>& masks_dest, std::vector<s32>& mapping_dest, const std::vector<u8>& octant_masks_of_object_bits, s32 octant_count, s32 instance_count, s32 stride);
 static void compress_octants(std::vector<u8>& compressed_vis_masks, s32 mask_count, s32 memory_budget_for_masks);
 static void shutdown_opengl(GPUHandles& gpu);
@@ -152,9 +154,6 @@ VisOutput compute_level_visibility(const VisInput& input, s32 memory_budget_for_
 	
 	s32 mask_size_bytes = align32(instance_count, 64) / 8;
 	
-	std::vector<u8> sample_masks_of_object_bits;
-	std::map<OcclusionVector, s32> sample_lookup;
-	
 	std::vector<u8> octant_masks_of_object_bits(input.octants.size() * mask_size_bytes, 0);
 	verify_fatal(((s64) octant_masks_of_object_bits.data()) % 8 == 0);
 	
@@ -175,38 +174,49 @@ VisOutput compute_level_visibility(const VisInput& input, s32 memory_budget_for_
 		
 		// Determine which objects are visible and populate the visibility mask for
 		// each octant.
-		for(size_t i = 0; i < input.octants.size(); i++) {
-			const OcclusionVector& src = input.octants[i];
-			printf("%3d,%3d,%3d%s", src.x, src.y, src.z, (i % 4 == 3) ? "\n" : "  ");
-			for(s32 corner = 0; corner < 8; corner++) {
-				s32 x_ofs = corner & 1;
-				s32 y_ofs = corner & 2;
-				s32 z_ofs = corner & 4;
-				OcclusionVector sample_vec = {
-					src.x + x_ofs,
-					src.y + y_ofs,
-					src.z + z_ofs
-				};
-				s32 sample_ofs;
-				auto sample = sample_lookup.find(sample_vec);
-				if(sample == sample_lookup.end()) {
-					sample_ofs = (s32) sample_masks_of_object_bits.size();
-					sample_masks_of_object_bits.resize(sample_masks_of_object_bits.size() + mask_size_bytes);
-					verify_fatal(((s64) sample_masks_of_object_bits.data()) % 8 == 0);
-					glm::vec3 sample_point = {
-						sample_vec.x * input.octant_size_x,
-						sample_vec.y * input.octant_size_y,
-						sample_vec.z * input.octant_size_z
+		s32 i = 0;
+		for(s32 chunk = 0; chunk < VIS_MAX_CHUNKS; chunk++) {
+			std::vector<u8> sample_masks_of_object_bits;
+			std::map<OcclusionVector, s32> sample_lookup;
+			
+			for(size_t octant = 0; octant < input.octants.size(); octant++) {
+				const OcclusionVector& src = input.octants[octant];
+				if(src.chunk != chunk) {
+					continue;
+				}
+				
+				printf("%3d,%3d,%3d%s", src.x, src.y, src.z, (i % 4 == 3) ? "\n" : "  ");
+				for(s32 corner = 0; corner < 8; corner++) {
+					s32 x_ofs = corner & 1;
+					s32 y_ofs = corner & 2;
+					s32 z_ofs = corner & 4;
+					OcclusionVector sample_vec = {
+						src.x + x_ofs,
+						src.y + y_ofs,
+						src.z + z_ofs
 					};
-					compute_vis_sample(&sample_masks_of_object_bits[sample_ofs], mask_size_bytes, sample_point, gpu);
-					sample_lookup[sample_vec] = sample_ofs;
-				} else {
-					sample_ofs = sample->second;
+					s32 sample_ofs;
+					auto sample = sample_lookup.find(sample_vec);
+					if(sample == sample_lookup.end()) {
+						sample_ofs = (s32) sample_masks_of_object_bits.size();
+						sample_masks_of_object_bits.resize(sample_masks_of_object_bits.size() + mask_size_bytes);
+						verify_fatal(((s64) sample_masks_of_object_bits.data()) % 8 == 0);
+						glm::vec3 sample_point = {
+							sample_vec.x * input.octant_size_x,
+							sample_vec.y * input.octant_size_y,
+							sample_vec.z * input.octant_size_z
+						};
+						compute_vis_sample(&sample_masks_of_object_bits[sample_ofs], mask_size_bytes, sample_point, chunk, gpu);
+						sample_lookup[sample_vec] = sample_ofs;
+					} else {
+						sample_ofs = sample->second;
+					}
+					for(s32 ofs = 0; ofs < mask_size_bytes; ofs += 8) {
+						*(u64*) &octant_masks_of_object_bits[octant * mask_size_bytes + ofs]
+							|= *(u64*) &sample_masks_of_object_bits[sample_ofs + ofs];
+					}
 				}
-				for(s32 ofs = 0; ofs < mask_size_bytes; ofs += 8) {
-					*(u64*) &octant_masks_of_object_bits[i * mask_size_bytes + ofs]
-						|= *(u64*) &sample_masks_of_object_bits[sample_ofs + ofs];
-				}
+				i++;
 			}
 		}
 		printf("\n");
@@ -353,28 +363,30 @@ static void startup_opengl(GPUHandles& gpu) {
 }
 
 static std::vector<CPUVisMesh> build_vis_meshes(const VisInput& input) {
-	std::vector<CPUVisMesh> vis_meshes;
-	CPUVisMesh& vismesh = vis_meshes.emplace_back();
+	std::vector<CPUVisMesh> vis_meshes(3);
 	u16 occlusion_id = 1;
 	for(s32 i = 0; i < VIS_OBJECT_TYPE_COUNT; i++) {
 		for(size_t j = 0; j < input.instances[i].size(); j++) {
 			const VisInstance& instance = input.instances[i][j];
+			verify_fatal(instance.chunk >= 0 && instance.chunk < VIS_MAX_CHUNKS);
+			CPUVisMesh& vis_mesh = vis_meshes.at(instance.chunk);
+			vis_mesh.chunk = instance.chunk;
 			const Mesh& mesh = *input.meshes.at(instance.mesh);
-			size_t vertex_base = vismesh.vertices.size();
+			size_t vertex_base = vis_mesh.vertices.size();
 			for(const Vertex& src : mesh.vertices) {
-				VisVertex& dest = vismesh.vertices.emplace_back();
+				VisVertex& dest = vis_mesh.vertices.emplace_back();
 				dest.pos = glm::vec3(instance.matrix * glm::vec4(src.pos, 1.f));
 				dest.id = occlusion_id;
 			}
 			for(const SubMesh& submesh : mesh.submeshes) {
 				for(const Face& face : submesh.faces) {
-					vismesh.indices.emplace_back(vertex_base + face.v0);
-					vismesh.indices.emplace_back(vertex_base + face.v1);
-					vismesh.indices.emplace_back(vertex_base + face.v2);
+					vis_mesh.indices.emplace_back(vertex_base + face.v0);
+					vis_mesh.indices.emplace_back(vertex_base + face.v1);
+					vis_mesh.indices.emplace_back(vertex_base + face.v2);
 					if(face.is_quad()) {
-						vismesh.indices.emplace_back(vertex_base + face.v2);
-						vismesh.indices.emplace_back(vertex_base + face.v3);
-						vismesh.indices.emplace_back(vertex_base + face.v0);
+						vis_mesh.indices.emplace_back(vertex_base + face.v2);
+						vis_mesh.indices.emplace_back(vertex_base + face.v3);
+						vis_mesh.indices.emplace_back(vertex_base + face.v0);
 					}
 				}
 			}
@@ -382,7 +394,6 @@ static std::vector<CPUVisMesh> build_vis_meshes(const VisInput& input) {
 			occlusion_id++;
 		}
 	}
-	verify(vismesh.vertices.size() < UINT32_MAX, "Too many vertices to compute visiblity!");
 	return vis_meshes;
 }
 
@@ -391,6 +402,7 @@ static std::vector<GPUVisMesh> upload_vis_meshes(const std::vector<CPUVisMesh>& 
 	gpu_meshes.reserve(cpu_meshes.size());
 	for(const CPUVisMesh& src : cpu_meshes) {
 		GPUVisMesh& dest = gpu_meshes.emplace_back();
+		dest.chunk = src.chunk;
 		
 		// Setup vertex array object.
 		GL_CALL(glGenVertexArrays(1, &dest.vertex_array_object));
@@ -416,7 +428,7 @@ static std::vector<GPUVisMesh> upload_vis_meshes(const std::vector<CPUVisMesh>& 
 	return gpu_meshes;
 }
 #include <core/png.h>
-static void compute_vis_sample(u8* mask_dest, s32 mask_size_bytes, const glm::vec3& sample_point, GPUHandles& gpu) {
+static void compute_vis_sample(u8* mask_dest, s32 mask_size_bytes, const glm::vec3& sample_point, s32 chunk, GPUHandles& gpu) {
 	static const glm::mat4 directions[6] = {
 		glm::mat4(1.f),
 		glm::rotate(glm::mat4(1.f), glm::radians(90.f), glm::vec3(0.f, 0.f, 1.f)),
@@ -439,9 +451,11 @@ static void compute_vis_sample(u8* mask_dest, s32 mask_size_bytes, const glm::ve
 		GL_CALL(glUniformMatrix4fv(gpu.matrix_uniform, 1, GL_FALSE, &matrix[0][0]));
 		
 		for(const GPUVisMesh& vis_mesh : gpu.vis_meshes) {
-			GL_CALL(glBindVertexArray(vis_mesh.vertex_array_object));
-			GL_CALL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vis_mesh.index_buffer));
-			GL_CALL(glDrawElements(GL_TRIANGLES, vis_mesh.vertex_count, GL_UNSIGNED_INT, nullptr));
+			if(vis_mesh.chunk == chunk) {
+				GL_CALL(glBindVertexArray(vis_mesh.vertex_array_object));
+				GL_CALL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vis_mesh.index_buffer));
+				GL_CALL(glDrawElements(GL_TRIANGLES, vis_mesh.vertex_count, GL_UNSIGNED_INT, nullptr));
+			}
 		}
 		
 		GL_CALL(glFlush());
@@ -452,7 +466,7 @@ static void compute_vis_sample(u8* mask_dest, s32 mask_size_bytes, const glm::ve
 		GL_CALL(glReadPixels(0, 0, VIS_RENDER_SIZE, VIS_RENDER_SIZE, GL_RED_INTEGER, GL_UNSIGNED_SHORT, &buffer[i * render_size]));
 		
 		for(u16 id : buffer) {
-			if(id > 0 && ((id) >> 3) < mask_size_bytes) {
+			if(id > 0 && ((id - 1) >> 3) < mask_size_bytes) {
 				SET_BIT(mask_dest, id - 1, 1, mask_size_bytes);
 			}
 		}

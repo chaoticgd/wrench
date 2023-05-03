@@ -23,6 +23,7 @@
 #include <engine/visibility.h>
 
 static void unpack_occlusion(OcclusionAsset& dest, InputStream& src, BuildConfig config);
+static s32 chunk_index_from_position(const glm::vec3& point, const Gameplay& gameplay);
 static bool test_occlusion(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode);
 
 on_load(Occlusion, []() {
@@ -59,6 +60,15 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 	std::string octants_txt = asset.file().read_text_file(asset.octants().path);
 	std::vector<OcclusionVector> octants = read_occlusion_octants(octants_txt.c_str());
 	
+	for(OcclusionVector& octant : octants) {
+		glm::vec3 point = {
+			octant.x * 4.f,
+			octant.y * 4.f,
+			octant.z * 4.f
+		};
+		octant.chunk = chunk_index_from_position(point, gameplay);
+	}
+	
 	// Plug in all the inputs the visibility algorithm needs.
 	VisInput input;
 	input.octant_size_x = 4;
@@ -66,9 +76,10 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 	input.octant_size_z = 4;
 	input.octants = std::move(octants);
 	for(const Mesh& tfrag : tfrags) {
-		VisInstance& instance = input.instances[VIS_TFRAG].emplace_back();
-		instance.mesh = (s32) input.meshes.size();
-		instance.matrix = glm::mat4(1.f);
+		VisInstance& vis_instance = input.instances[VIS_TFRAG].emplace_back();
+		vis_instance.mesh = (s32) input.meshes.size();
+		vis_instance.chunk = 0; // TODO: Handle tfrags from other chunks.
+		vis_instance.matrix = glm::mat4(1.f);
 		input.meshes.emplace_back(&tfrag);
 	}
 	
@@ -85,6 +96,7 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 			vis_instance.mesh = index->second;
 			vis_instance.matrix = instance.matrix();
 			vis_instance.matrix[3][3] = 1.f;
+			vis_instance.chunk = chunk_index_from_position(glm::vec3(vis_instance.matrix[3]), gameplay);
 		}
 	}
 	
@@ -99,8 +111,10 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 		auto index = moby_class_to_index.find(instance.o_class);
 		if(index != moby_class_to_index.end()) {
 			vis_instance.mesh = index->second;
+			vis_instance.chunk = -1;
 			vis_instance.matrix = instance.matrix();
 			vis_instance.matrix[3][3] = 1.f;
+			vis_instance.chunk = chunk_index_from_position(glm::vec3(vis_instance.matrix[3]), gameplay);
 		}
 	}
 	
@@ -144,6 +158,42 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 	
 	s64 end_ofs = dest.tell();
 	return {(s32) ofs, (s32) (end_ofs - ofs)};
+}
+
+static s32 chunk_index_from_position(const glm::vec3& point, const Gameplay& gameplay) {
+	verify_fatal(gameplay.properties.has_value());
+	const Properties& properties = *gameplay.properties;
+	if(properties.chunk_planes.has_value() && !properties.chunk_planes->empty()) {
+		glm::vec3 plane_1_point = {
+			(*properties.chunk_planes)[0].point_x,
+			(*properties.chunk_planes)[0].point_y,
+			(*properties.chunk_planes)[0].point_z
+		};
+		glm::vec3 plane_1_normal = {
+			(*properties.chunk_planes)[0].normal_x,
+			(*properties.chunk_planes)[0].normal_y,
+			(*properties.chunk_planes)[0].normal_z
+		};
+		if(glm::dot(plane_1_normal, point - plane_1_point)) {
+			return 1;
+		}
+		if(properties.chunk_planes->size() > 1) {
+			glm::vec3 plane_2_point = {
+				(*properties.chunk_planes)[1].point_x,
+				(*properties.chunk_planes)[1].point_y,
+				(*properties.chunk_planes)[1].point_z
+			};
+			glm::vec3 plane_2_normal = {
+				(*properties.chunk_planes)[1].normal_x,
+				(*properties.chunk_planes)[1].normal_y,
+				(*properties.chunk_planes)[1].normal_z
+			};
+			if(glm::dot(plane_2_normal, point - plane_2_point)) {
+				return 2;
+			}
+		}
+	}
+	return 0;
 }
 
 static bool test_occlusion(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode) {

@@ -195,12 +195,12 @@ struct PropertiesBlock {
 			PropertiesFirstPartRAC234 first_part = src.read<PropertiesFirstPartRAC234>(ofs, "gameplay properties");
 			swap_first_part_rac234(dest.first_part, first_part);
 			ofs += sizeof(PropertiesFirstPartRAC234);
-			s32 second_part_count = src.read<s32>(ofs + 0xc, "second part count");
-			if(second_part_count > 0) {
-				dest.second_part = src.read_multiple<PropertiesSecondPart>(ofs, second_part_count, "second part").copy();
-				ofs += second_part_count * sizeof(PropertiesSecondPart);
+			s32 chunk_plane_count = src.read<s32>(ofs + 0xc, "second part count");
+			if(chunk_plane_count > 0) {
+				dest.chunk_planes = src.read_multiple<ChunkPlane>(ofs, chunk_plane_count, "second part").copy();
+				ofs += chunk_plane_count * sizeof(ChunkPlane);
 			} else {
-				ofs += sizeof(PropertiesSecondPart);
+				ofs += sizeof(ChunkPlane);
 			}
 			dest.core_sounds_count = src.read<s32>(ofs, "core sounds count");
 			ofs += 4;
@@ -234,10 +234,10 @@ struct PropertiesBlock {
 			PropertiesFirstPartRAC234 first_part_packed;
 			swap_first_part_rac234(first_part, first_part_packed);
 			dest.write(first_part_packed);
-			if(src.second_part.has_value() && src.second_part->size() > 0) {
-				dest.write_multiple(*src.second_part);
+			if(src.chunk_planes.has_value() && src.chunk_planes->size() > 0) {
+				dest.write_multiple(*src.chunk_planes);
 			} else {
-				PropertiesSecondPart terminator = {0};
+				ChunkPlane terminator = {0};
 				dest.write(terminator);
 			}
 			verify(src.core_sounds_count.has_value(), "Missing core_sounds_count in properties block.");

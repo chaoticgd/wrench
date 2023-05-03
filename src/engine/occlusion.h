@@ -46,6 +46,7 @@ struct OcclusionVector {
 	s32 x = -1;
 	s32 y = -1;
 	s32 z = -1;
+	s32 chunk = -1;
 	
 	friend auto operator<=>(const OcclusionVector& lhs, const OcclusionVector& rhs) = default;
 };

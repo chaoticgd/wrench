@@ -44,15 +44,17 @@ struct PropertiesFirstPart {
 	Rgb96 unknown_colour;
 };
 
-packed_struct(PropertiesSecondPart,
-	s32 unknown_0;
-	s32 unknown_4;
-	s32 unknown_8;
-	s32 unknown_c;
-	s32 unknown_10;
-	s32 unknown_14;
-	s32 unknown_18;
-	s32 unknown_1c;
+// A plane that defines the bounds of a chunk. Everything on the side of the
+// plane in the direction that the normal is pointing is inside the chunk.
+packed_struct(ChunkPlane,
+	/* 0x00 */ f32 point_x;
+	/* 0x04 */ f32 point_y;
+	/* 0x08 */ f32 point_z;
+	/* 0x0c */ s32 plane_count;
+	/* 0x10 */ s32 normal_x;
+	/* 0x14 */ s32 normal_y;
+	/* 0x18 */ s32 normal_z;
+	/* 0x1c */ u32 pad;
 )
 
 packed_struct(PropertiesThirdPart,
@@ -83,7 +85,10 @@ packed_struct(PropertiesFifthPart,
 
 struct Properties {
 	PropertiesFirstPart first_part;
-	Opt<std::vector<PropertiesSecondPart>> second_part;
+	// Planes specifying the volumes of the level chunks. The first element
+	// represents the second chunk, and the second element represents the third
+	// chunk. If both tests fail, you can assume it's the first chunk (chunk 0).
+	Opt<std::vector<ChunkPlane>> chunk_planes;
 	Opt<s32> core_sounds_count;
 	Opt<s32> rac3_third_part;
 	Opt<std::vector<PropertiesThirdPart>> third_part;
