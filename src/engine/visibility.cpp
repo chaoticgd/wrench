@@ -490,7 +490,7 @@ static void compute_vis_sample(u8* mask_dest, s32 mask_size_bytes, const glm::ve
 			if(vis_mesh.chunk == chunk) {
 				GL_CALL(glBindVertexArray(vis_mesh.vertex_array_object));
 				GL_CALL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vis_mesh.index_buffer));
-				GL_CALL(glDrawElements(GL_TRIANGLES, vis_mesh.vertex_count, GL_UNSIGNED_INT, nullptr));
+				GL_CALL(glDrawElements(GL_TRIANGLES, vis_mesh.index_count, GL_UNSIGNED_INT, nullptr));
 			}
 		}
 		
