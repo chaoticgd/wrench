@@ -174,7 +174,7 @@ static s32 chunk_index_from_position(const glm::vec3& point, const Gameplay& gam
 			(*properties.chunk_planes)[0].normal_y,
 			(*properties.chunk_planes)[0].normal_z
 		};
-		if(glm::dot(plane_1_normal, point - plane_1_point)) {
+		if(glm::dot(plane_1_normal, point - plane_1_point) > 0.f) {
 			return 1;
 		}
 		if(properties.chunk_planes->size() > 1) {
@@ -188,7 +188,7 @@ static s32 chunk_index_from_position(const glm::vec3& point, const Gameplay& gam
 				(*properties.chunk_planes)[1].normal_y,
 				(*properties.chunk_planes)[1].normal_z
 			};
-			if(glm::dot(plane_2_normal, point - plane_2_point)) {
+			if(glm::dot(plane_2_normal, point - plane_2_point) > 0.f) {
 				return 2;
 			}
 		}
