@@ -131,7 +131,7 @@ Each asset type is defined in `asset_schema.wtf` and a code generator, `asset_co
 
 | Format Version | Wrench Version | Description |
 | -    | -     | - |
-| 20   |       | Added Occlusion asset type. The 'code' child of LevelWad asset has been renamed to 'overlay'. |
+| 20   |       | Added Occlusion asset type. The code child of LevelWad asset has been renamed to overlay. Removed the tfrags and collision children of the LevelWad asset (the assets from the first chunk are used instead). |
 | 19   |       | Added ElfFile asset type. |
 | 18   | v0.3  | Added editor_mesh attribute to the TieClass asset type. Material assets are now used to store tie textures. |
 | 17   |       | Added Tfrags and TfragsCore asset types. Material assets are now used to store tfrag textures. |

@@ -818,7 +818,7 @@ No attributes.
 | sound_bank | The main 989snd sound bank for the level. | Binary | Yes | RAC/GC/UYA/DL |
 | gameplay | The gameplay file for the level. | Binary | Yes | RAC/GC/UYA/DL |
 | art_instances | Similar thing as with the gameplay file. | Binary | Yes | DL |
-| chunks | *Not yet documented.* | Collection | No | GC/UYA/DL |
+| chunks | The chunks (see Chunk asset). | Collection | Yes | RAC/GC/UYA/DL |
 | missions | *Not yet documented.* | Collection | *Not yet documented.* | DL |
 | moby8355_pvars | *Not yet documented.* | Binary | Yes | DL |
 | overlay | The level code overlay. Contains most of the code for the game and engine. | ElfFile, Binary | Yes | RAC/GC/UYA/DL |
@@ -826,10 +826,8 @@ No attributes.
 | hud_banks | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
 | transition_textures | Textures that are shown during a transition to the given level. | Texture\[\], Binary | No | GC/UYA |
 | global_nav_data | *Not yet documented.* | Binary | Yes | DL |
-| tfrags | The main world-space level mesh. | Tfrags | Yes | RAC/GC/UYA/DL |
 | occlusion | *Not yet documented.* | Occlusion, Binary | *Not yet documented.* | *Not yet documented.* |
 | sky | The sky. | Sky, Binary | Yes | RAC/GC/UYA/DL |
-| collision | The world space collision mesh. | Collision, Binary | Yes | RAC/GC/UYA/DL |
 | moby_classes | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
 | tie_classes | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
 | shrub_classes | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
@@ -844,6 +842,8 @@ No attributes.
 
 ### Chunk
 
+A chunk consists of tfrags, collision and a 989snd sound bank. These assets can be swapped out for those of another chunk without doing a full level load. R&C1 doesn't support chunks, so for Wrench's source format we only allow a single chunk (chunk 0) without a sound bank. The other games support 3 chunks per level (0, 1 and 2). The gamplay file contains planes that specify the boundaries of each chunk.
+
 *Attributes*
 
 No attributes.
@@ -852,9 +852,9 @@ No attributes.
 
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
-| tfrags | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
-| collision | *Not yet documented.* | Collision, Binary | *Not yet documented.* | *Not yet documented.* |
-| sound_bank | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
+| tfrags | See Tfrags asset. | Tfrags | *Not yet documented.* | RAC/GC/UYA/DL |
+| collision | See Collision asset. | Collision, Binary | *Not yet documented.* | RAC/GC/UYA/DL |
+| sound_bank | The 989snd sound bank for this chunk. | Binary | *Not yet documented.* | GC/UYA/DL |
 
 
 ### Mission
@@ -1108,7 +1108,7 @@ No children.
 
 ### Collision
 
-The world space collision mesh for a level.
+The world space collision mesh.
 
 *Attributes*
 

@@ -56,14 +56,15 @@ void unpack_level_core(LevelWadAsset& dest, InputStream& src, ByteRange index_ra
 		verify_not_reached("Unable to determine size of tfrag block.");
 	}
 	
-	TfragsAsset& tfrags = dest.tfrags<TfragsAsset>(SWITCH_FILES);
+	ChunkAsset& chunk = dest.chunks().foreign_child<ChunkAsset>(stringf("chunks/0/chunk_0.asset", 0, 0), false, 0);
+	TfragsAsset& tfrags = chunk.tfrags(SWITCH_FILES);
 	
 	unpack_asset(tfrags, data, ByteRange{header.tfrags, tfrags_size}, config);
 	unpack_asset(dest.occlusion<OcclusionAsset>(), data, level_core_block_range(header.occlusion, block_bounds), config);
 	if(header.sky) {
 		unpack_asset(dest.sky<SkyAsset>(SWITCH_FILES), data, level_core_block_range(header.sky, block_bounds), config);
 	}
-	unpack_asset(dest.collision<CollisionAsset>(SWITCH_FILES), data, level_core_block_range(header.collision, block_bounds), config);
+	unpack_asset(chunk.collision<CollisionAsset>(SWITCH_FILES), data, level_core_block_range(header.collision, block_bounds), config);
 	
 	CollectionAsset& tfrag_textures_collection = tfrags.materials();
 	SubInputStream texture_data(data, header.textures_base_offset, data.size() - header.textures_base_offset);
@@ -169,7 +170,7 @@ void unpack_level_core(LevelWadAsset& dest, InputStream& src, ByteRange index_ra
 	}
 }
 
-void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, std::vector<u8>& gs_ram_dest, Gameplay& gameplay, const LevelWadAsset& src, BuildConfig config) {
+void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, std::vector<u8>& gs_ram_dest, const std::vector<LevelChunk>& chunks, Gameplay& gameplay, const LevelWadAsset& src, BuildConfig config) {
 	MemoryOutputStream index(index_dest);
 	MemoryOutputStream gs_ram(gs_ram_dest);
 	
@@ -187,25 +188,43 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	LevelCoreHeader header = {};
 	index.alloc<LevelCoreHeader>();
 	
-	const TfragsAsset& tfrags = src.get_tfrags();
-	std::vector<Mesh> tfrag_meshes;
+	const CollectionAsset& chunk_collection = src.get_chunks();
+	const ChunkAsset& first_chunk_asset = chunk_collection.get_child(0).as<ChunkAsset>();
+	
+	s32 max_tfrags_size = 0;
+	s32 max_collision_size = 0;
+	for(const LevelChunk& chunk : chunks) {
+		max_tfrags_size = std::max(max_tfrags_size, (s32) chunk.tfrags.size());
+		max_collision_size = std::max(max_collision_size, (s32) chunk.collision.size());
+	}
 	
 	ClassesHigh high_classes = load_classes(src);
 	
-	// TODO: Use the tfrag meshes from the chunks instead.
 	data.pad(0x40, 0);
-	header.tfrags = pack_tfrags(data, &tfrag_meshes, tfrags, config).offset;
+	header.tfrags = (s32) data.tell();
+	data.write_v(chunks[0].tfrags);
+	// Insert padding so there's space for the tfrags from the other chunks.
+	for(s32 i = 0; i < max_tfrags_size - chunks[0].tfrags.size(); i++) {
+		data.write<u8>(0);
+	}
+	
 	const Asset& occlusion_asset = src.get_occlusion();
 	if(const OcclusionAsset* asset = occlusion_asset.maybe_as<OcclusionAsset>()) {
 		data.pad(0x40, 0);
-		header.occlusion = pack_occlusion(data, gameplay, *asset, tfrag_meshes, high_classes, config).offset;
+		header.occlusion = pack_occlusion(data, gameplay, *asset, chunks[0].tfrag_meshes, high_classes, config).offset;
 	} else {
 		header.occlusion = pack_asset<ByteRange>(data, occlusion_asset, config, 0x40).offset;
 	}
 	if(src.has_sky()) {
 		header.sky = pack_asset<ByteRange>(data, src.get_sky(), config, 0x40).offset;
 	}
-	header.collision = pack_asset<ByteRange>(data, src.get_collision(), config, 0x40).offset;
+	data.pad(0x40, 0);
+	header.collision = (s32) data.tell();
+	data.write_v(chunks[0].collision);
+	// Insert padding so there's space for the collision from the other chunks.
+	for(s32 i = 0; i < max_collision_size - chunks[0].collision.size(); i++) {
+		data.write<u8>(0);
+	}
 	
 	const CollectionAsset& mobies = src.get_moby_classes();
 	const CollectionAsset& ties = src.get_tie_classes();
@@ -220,7 +239,7 @@ void pack_level_core(std::vector<u8>& index_dest, std::vector<u8>& data_dest, st
 	std::vector<GsRamEntry> gs_table;
 	std::vector<u8> part_defs;
 	if(!g_asset_packer_dry_run) {
-		shared = read_level_textures(tfrags.get_materials(), mobies, ties, shrubs);
+		shared = read_level_textures(first_chunk_asset.get_tfrags().get_materials(), mobies, ties, shrubs);
 		
 		for(LevelTexture& record : shared.textures) {
 			if(record.texture.has_value()) {

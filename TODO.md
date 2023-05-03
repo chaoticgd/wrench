@@ -52,4 +52,4 @@ In no particular order:
 - Collsion System
 	- Recover instanced collision
 - Level Packing
-	- Don't unpack the tfrag block for chunk 0 twice
+	- ~~Don't unpack the tfrag block for chunk 0 twice~~

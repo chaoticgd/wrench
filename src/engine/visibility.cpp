@@ -30,7 +30,7 @@
 #include <core/timer.h>
 
 #define VIS_DEBUG_MISC(...) __VA_ARGS__
-#define VIS_DEBUG_DUMP(...) //__VA_ARGS__
+#define VIS_DEBUG_DUMP(...) __VA_ARGS__
 #define GL_CALL(...) \
 	{ \
 		__VA_ARGS__; \

@@ -1240,9 +1240,10 @@ AssetType LevelWad {
 		games: [4]
 	}
 	Child chunks {
+		desc: "The chunks (see Chunk asset)."
 		allowed_types: ["Collection"]
-		required: false
-		games: [2 3 4]
+		required: true
+		games: [1 2 3 4]
 	}
 	Child missions {
 		allowed_types: ["Collection"]
@@ -1279,24 +1280,12 @@ AssetType LevelWad {
 	}
 	
 	// Level Core
-	Child tfrags {
-		desc: "The main world-space level mesh."
-		allowed_types: ["Tfrags"]
-		required: true
-		games: [1 2 3 4]
-	}
 	Child occlusion {
 		allowed_types: ["Occlusion" "Binary"]
 	}
 	Child sky {
 		desc: "The sky."
 		allowed_types: ["Sky" "Binary"]
-		required: true
-		games: [1 2 3 4]
-	}
-	Child collision {
-		desc: "The world space collision mesh."
-		allowed_types: ["Collision" "Binary"]
 		required: true
 		games: [1 2 3 4]
 	}
@@ -1324,9 +1313,23 @@ AssetType LevelWad {
 }
 
 AssetType Chunk {
-	Child tfrags     { allowed_types: ["Binary"] }
-	Child collision  { allowed_types: ["Collision" "Binary"] }
-	Child sound_bank { allowed_types: ["Binary"] }
+	desc: "A chunk consists of tfrags, collision and a 989snd sound bank. These assets can be swapped out for those of another chunk without doing a full level load. R&C1 doesn't support chunks, so for Wrench's source format we only allow a single chunk (chunk 0) without a sound bank. The other games support 3 chunks per level (0, 1 and 2). The gamplay file contains planes that specify the boundaries of each chunk."
+	
+	Child tfrags {
+		desc: "See Tfrags asset."
+		allowed_types: ["Tfrags"]
+		games: [1 2 3 4]
+	}
+	Child collision {
+		desc: "See Collision asset."
+		allowed_types: ["Collision" "Binary"]
+		games: [1 2 3 4]
+	}
+	Child sound_bank {
+		desc: "The 989snd sound bank for this chunk."
+		allowed_types: ["Binary"]
+		games: [2 3 4]
+	}
 }
 
 AssetType Mission {
@@ -1699,7 +1702,7 @@ AssetType Material {
 }
 
 AssetType Collision {
-	desc: "The world space collision mesh for a level."
+	desc: "The world space collision mesh."
 	bin_leaf: true
 	
 	Child mesh {

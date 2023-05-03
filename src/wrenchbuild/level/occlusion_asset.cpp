@@ -111,7 +111,6 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 		auto index = moby_class_to_index.find(instance.o_class);
 		if(index != moby_class_to_index.end()) {
 			vis_instance.mesh = index->second;
-			vis_instance.chunk = -1;
 			vis_instance.matrix = instance.matrix();
 			vis_instance.matrix[3][3] = 1.f;
 			vis_instance.chunk = chunk_index_from_position(glm::vec3(vis_instance.matrix[3]), gameplay);
