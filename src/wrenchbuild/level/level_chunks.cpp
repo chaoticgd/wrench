@@ -54,13 +54,14 @@ void unpack_level_chunks(CollectionAsset& dest, InputStream& file, const ChunkWa
 
 std::vector<LevelChunk> load_level_chunks(const CollectionAsset& collection, BuildConfig config) {
 	std::vector<LevelChunk> chunks(3);
+	u16 next_occlusion_index = 0;
 	for(s32 i = 0; i < 3; i++) {
 		if(collection.has_child(i)) {
 			const ChunkAsset& asset = collection.get_child(i).as<ChunkAsset>();
 			if(asset.has_tfrags()) {
 				MemoryOutputStream stream(chunks[i].tfrags);
 				const TfragsAsset& tfrags_asset = asset.get_tfrags();
-				pack_tfrags(stream, &chunks[i].tfrag_meshes, tfrags_asset, config);
+				pack_tfrags(stream, &chunks[i].tfrag_meshes, tfrags_asset, &next_occlusion_index, config);
 			}
 			if(asset.has_collision()) {
 				MemoryOutputStream stream(chunks[i].collision);

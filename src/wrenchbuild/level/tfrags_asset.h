@@ -23,6 +23,6 @@
 #include <wrenchbuild/asset_packer.h>
 #include <wrenchbuild/tests.h>
 
-ByteRange pack_tfrags(OutputStream& bin_dest, std::vector<Mesh>* tfrags_dest, const TfragsAsset& src, BuildConfig config);
+ByteRange pack_tfrags(OutputStream& bin_dest, std::vector<Mesh>* tfrags_dest, const TfragsAsset& src, u16* next_occlusion_index, BuildConfig config);
 
 #endif

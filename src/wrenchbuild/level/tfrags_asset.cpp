@@ -65,10 +65,10 @@ static void unpack_tfrags(TfragsAsset& dest, InputStream& src, BuildConfig confi
 }
 
 static void pack_tfrags_simple(OutputStream& dest, const TfragsAsset& src, BuildConfig config, const char* hint) {
-	pack_tfrags(dest, nullptr, src, config);
+	pack_tfrags(dest, nullptr, src, nullptr, config);
 }
 
-ByteRange pack_tfrags(OutputStream& bin_dest, std::vector<Mesh>* tfrags_dest, const TfragsAsset& src, BuildConfig config) {
+ByteRange pack_tfrags(OutputStream& bin_dest, std::vector<Mesh>* tfrags_dest, const TfragsAsset& src, u16* next_occlusion_index, BuildConfig config) {
 	if(g_asset_packer_dry_run) {
 		return {0, 0};
 	}
@@ -88,8 +88,14 @@ ByteRange pack_tfrags(OutputStream& bin_dest, std::vector<Mesh>* tfrags_dest, co
 			*tfrags_dest = std::move(scene.meshes);
 		}
 		
-		// Rebuild the tfrags and write out the data. I'm doing it this way as
-		// it's quite useful for testing.
+		// Rewrite all the occlusion indices so they're equal to what the
+		// occlusion code expects.
+		if(next_occlusion_index) {
+			for(Tfrag& tfrag : tfrags.fragments) {
+				tfrag.occl_index = (*next_occlusion_index)++;
+			}
+		}
+		
 		allocate_tfrags_vu(tfrags);
 		std::vector<u8> output_buffer;
 		write_tfrags(output_buffer, tfrags, config.game());
