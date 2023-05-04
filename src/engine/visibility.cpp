@@ -28,10 +28,11 @@
 #include <glm/common.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <core/png.h>
 #include <core/timer.h>
 
 #define VIS_DEBUG_MISC(...) __VA_ARGS__
-#define VIS_DEBUG_DUMP(...) //__VA_ARGS__
+#define VIS_DEBUG_DUMP(...) __VA_ARGS__
 #define GL_CALL(...) \
 	{ \
 		__VA_ARGS__; \
@@ -63,7 +64,7 @@ struct CPUVisMesh {
 	std::vector<VisVertex> vertices;
 	std::vector<u32> indices;
 	s32 chunk;
-	VisAABB aabb;
+	VisAABB bounding_box;
 };
 
 struct GPUVisMesh {
@@ -330,7 +331,7 @@ static void startup_opengl(GPUHandles& gpu) {
 	GL_CALL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gpu.id_buffer, 0));
 	GL_CALL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, gpu.depth_buffer, 0));
 	
-	gpu.temp_frame.resize(VIS_RENDER_SIZE * VIS_RENDER_SIZE);
+	gpu.temp_frame.resize(VIS_RENDER_SIZE * VIS_RENDER_SIZE, 0);
 	
 	GL_CALL(glEnable(GL_DEPTH_TEST));
 	GL_CALL(glDepthFunc(GL_LESS));
@@ -401,68 +402,93 @@ static std::vector<CPUVisMesh> build_vis_meshes(const VisInput& input) {
 	GL_CALL(glGetIntegerv(GL_MAX_ELEMENTS_INDICES, &max_indices));
 	
 	std::vector<CPUVisMesh> vis_meshes;
-	s32 current_vis_meshes[3] = {-1, -1, -1};
-	u16 occlusion_id = 1;
-	for(s32 i = 0; i < VIS_OBJECT_TYPE_COUNT; i++) {
-		for(size_t j = 0; j < input.instances[i].size(); j++) {
-			const VisInstance& instance = input.instances[i][j];
-			verify_fatal(instance.chunk >= 0 && instance.chunk < VIS_MAX_CHUNKS);
-			const Mesh& mesh = *input.meshes.at(instance.mesh);
-			
-			// Check if we need to create a new vis mesh.
-			bool new_vis_mesh = false;
-			s32& vis_mesh_index = current_vis_meshes[instance.chunk];
-			if(vis_mesh_index == -1) {
-				new_vis_mesh = true;
-			} else {
-				s32 index_count = 0;
-				for(const SubMesh& submesh : mesh.submeshes) {
-					index_count += (s32) submesh.faces.size() * 4;
+	for(s32 i = 0; i < VIS_MAX_CHUNKS; i++) {
+		std::map<VisSamplePoint, s32> current_vis_meshes;
+		u16 occlusion_id = 1;
+		for(s32 j = 0; j < VIS_OBJECT_TYPE_COUNT; j++) {
+			for(size_t k = 0; k < input.instances[j].size(); k++) {
+				const VisInstance& instance = input.instances[j][k];
+				if(instance.chunk != i) {
+					occlusion_id++;
+					continue;
 				}
+				verify(occlusion_id != 0xffff, "Too many objects to compute visibility!");
 				
-				s32 new_vertex_count = vis_meshes[vis_mesh_index].vertices.size() + mesh.vertices.size();
-				s32 new_index_count = vis_meshes[vis_mesh_index].indices.size() + index_count;
-				if(new_vertex_count > max_vertices || new_index_count > max_indices) {
+				const Mesh& mesh = *input.meshes.at(instance.mesh);
+				
+				VisSamplePoint region;
+				region.x = instance.matrix[3][0] * (1.f / 64.f);
+				region.y = instance.matrix[3][1] * (1.f / 64.f);
+				region.z = instance.matrix[3][2] * (1.f / 64.f);
+				
+				// Check if we need to create a new vis mesh.
+				bool new_vis_mesh = false;
+				auto vis_mesh_index = current_vis_meshes.find(region);
+				if(vis_mesh_index == current_vis_meshes.end()) {
 					new_vis_mesh = true;
-				}
-			}
-			
-			// Create a new vis mesh if necessary.
-			CPUVisMesh* vis_mesh;
-			if(new_vis_mesh) {
-				current_vis_meshes[instance.chunk] = (s32) vis_meshes.size();
-				vis_mesh = &vis_meshes.emplace_back();
-				vis_mesh->chunk = instance.chunk;
-			} else {
-				vis_mesh = &vis_meshes[vis_mesh_index];
-			}
-			
-			// Add vertices.
-			size_t vertex_base = vis_mesh->vertices.size();
-			for(const Vertex& src : mesh.vertices) {
-				VisVertex& dest = vis_mesh->vertices.emplace_back();
-				dest.pos = glm::vec3(instance.matrix * glm::vec4(src.pos, 1.f));
-				dest.id = occlusion_id;
-			}
-			
-			// Add indices.
-			for(const SubMesh& submesh : mesh.submeshes) {
-				for(const Face& face : submesh.faces) {
-					vis_mesh->indices.emplace_back(vertex_base + face.v0);
-					vis_mesh->indices.emplace_back(vertex_base + face.v1);
-					vis_mesh->indices.emplace_back(vertex_base + face.v2);
-					if(face.is_quad()) {
-						vis_mesh->indices.emplace_back(vertex_base + face.v2);
-						vis_mesh->indices.emplace_back(vertex_base + face.v3);
-						vis_mesh->indices.emplace_back(vertex_base + face.v0);
+				} else {
+					s32 index_count = 0;
+					for(const SubMesh& submesh : mesh.submeshes) {
+						index_count += (s32) submesh.faces.size() * 6;
+					}
+					
+					s32 new_vertex_count = vis_meshes[vis_mesh_index->second].vertices.size() + mesh.vertices.size();
+					s32 new_index_count = vis_meshes[vis_mesh_index->second].indices.size() + index_count;
+					if(new_vertex_count > max_vertices || new_index_count > max_indices) {
+						new_vis_mesh = true;
 					}
 				}
+				
+				// Create a new vis mesh if necessary.
+				CPUVisMesh* vis_mesh;
+				if(new_vis_mesh) {
+					current_vis_meshes[region] = (s32) vis_meshes.size();
+					vis_mesh = &vis_meshes.emplace_back();
+					vis_mesh->chunk = instance.chunk;
+				} else {
+					vis_mesh = &vis_meshes[vis_mesh_index->second];
+				}
+				
+				// Add vertices.
+				size_t vertex_base = vis_mesh->vertices.size();
+				for(const Vertex& src : mesh.vertices) {
+					VisVertex& dest = vis_mesh->vertices.emplace_back();
+					dest.pos = glm::vec3(instance.matrix * glm::vec4(src.pos, 1.f));
+					dest.id = occlusion_id;
+				}
+				
+				// Add indices.
+				for(const SubMesh& submesh : mesh.submeshes) {
+					for(const Face& face : submesh.faces) {
+						vis_mesh->indices.emplace_back(vertex_base + face.v0);
+						vis_mesh->indices.emplace_back(vertex_base + face.v1);
+						vis_mesh->indices.emplace_back(vertex_base + face.v2);
+						if(face.is_quad()) {
+							vis_mesh->indices.emplace_back(vertex_base + face.v2);
+							vis_mesh->indices.emplace_back(vertex_base + face.v3);
+							vis_mesh->indices.emplace_back(vertex_base + face.v0);
+						}
+					}
+				}
+				occlusion_id++;
 			}
-			
-			verify(occlusion_id != 0xffff, "Too many objects to compute visibility!");
-			occlusion_id++;
 		}
 	}
+	
+	// Calculate bounding boxes.
+	for(CPUVisMesh& vis_mesh : vis_meshes) {
+		vis_mesh.bounding_box.min = {1000000.f, 1000000.f, 1000000.f};
+		vis_mesh.bounding_box.max = {-1000000.f, -1000000.f, -1000000.f};
+		for(VisVertex& vertex : vis_mesh.vertices) {
+			vis_mesh.bounding_box.min.x = std::min(vis_mesh.bounding_box.min.x, vertex.pos.x);
+			vis_mesh.bounding_box.min.y = std::min(vis_mesh.bounding_box.min.y, vertex.pos.y);
+			vis_mesh.bounding_box.min.z = std::min(vis_mesh.bounding_box.min.z, vertex.pos.z);
+			vis_mesh.bounding_box.max.x = std::max(vis_mesh.bounding_box.max.x, vertex.pos.x);
+			vis_mesh.bounding_box.max.y = std::max(vis_mesh.bounding_box.max.y, vertex.pos.y);
+			vis_mesh.bounding_box.max.z = std::max(vis_mesh.bounding_box.max.z, vertex.pos.z);
+		}
+	}
+	
 	return vis_meshes;
 }
 
@@ -472,6 +498,7 @@ static std::vector<GPUVisMesh> upload_vis_meshes(const std::vector<CPUVisMesh>& 
 	for(const CPUVisMesh& src : cpu_meshes) {
 		GPUVisMesh& dest = gpu_meshes.emplace_back();
 		dest.chunk = src.chunk;
+		dest.bounding_box = src.bounding_box;
 		
 		// Setup vertex array object.
 		GL_CALL(glGenVertexArrays(1, &dest.vertex_array_object));
@@ -513,6 +540,8 @@ static void compute_vis_sample(VisSamples& samples, GPUHandles& gpu, const VisSa
 		sample_point.z
 	};
 	
+	VIS_DEBUG_DUMP(std::vector<u16> buffer(VIS_RENDER_SIZE * VIS_RENDER_SIZE * 6));
+	
 	for(s32 i = 0; i < 6; i++) {
 		GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 		
@@ -533,6 +562,7 @@ static void compute_vis_sample(VisSamples& samples, GPUHandles& gpu, const VisSa
 		gpu.frame_sample_point = sample_point;
 		
 		sync_vis_samples(samples, gpu);
+		VIS_DEBUG_DUMP(memcpy(&buffer[i * VIS_RENDER_SIZE * VIS_RENDER_SIZE], gpu.temp_frame.data(), gpu.temp_frame.size() * 2));
 	}
 	
 	VIS_DEBUG_DUMP(
@@ -547,7 +577,7 @@ static void compute_vis_sample(VisSamples& samples, GPUHandles& gpu, const VisSa
 			// Combine the renders into a panorama.
 			for(s32 y = 0; y < VIS_RENDER_SIZE; y++) {
 				for(s32 x = 0; x < VIS_RENDER_SIZE; x++) {
-					texture.data[(base_y + y) * texture.width + base_x + x] = buffer[i * render_size + y * VIS_RENDER_SIZE + x];
+					texture.data[(base_y + y) * texture.width + base_x + x] = buffer[i * VIS_RENDER_SIZE * VIS_RENDER_SIZE + y * VIS_RENDER_SIZE + x];
 				}
 			}
 		}

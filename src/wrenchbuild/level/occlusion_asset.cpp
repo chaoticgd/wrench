@@ -171,7 +171,9 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 		
 		OcclusionMapping& mapping = gameplay.occlusion->moby_mappings.emplace_back();
 		mapping.bit_index = vis.mappings[VIS_MOBY][i];
-		mapping.occlusion_id = (s32) i;
+		mapping.occlusion_id = gameplay.moby_instances->at(moby_instance_index).uid;
+		
+		moby_instance_index++;
 	}
 	
 	write_file("/tmp/occlgrid.bin", buffer);
