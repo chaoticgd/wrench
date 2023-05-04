@@ -18,6 +18,7 @@
 
 #include "visibility.h"
 
+#include <bit>
 #include <map>
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -30,7 +31,7 @@
 #include <core/timer.h>
 
 #define VIS_DEBUG_MISC(...) __VA_ARGS__
-#define VIS_DEBUG_DUMP(...) __VA_ARGS__
+#define VIS_DEBUG_DUMP(...) //__VA_ARGS__
 #define GL_CALL(...) \
 	{ \
 		__VA_ARGS__; \
@@ -40,6 +41,8 @@
 #define VIS_DEBUG_RENDERDOC
 
 #define VIS_RENDER_SIZE 128
+
+#define VIS_SAMPLE_NOT_YET_ALLOCATED -1
 
 #ifdef VIS_DEBUG_RENDERDOC
 #include "renderdoc_app.h"
@@ -78,6 +81,8 @@ struct GPUHandles {
 	GLuint frame_buffer;
 	GLuint id_buffer;
 	GLuint depth_buffer;
+	std::vector<u16> temp_frame;
+	VisSamplePoint frame_sample_point;
 	GLuint program;
 	GLuint matrix_uniform;
 	std::vector<GPUVisMesh> vis_meshes;
@@ -87,10 +92,17 @@ struct GPUHandles {
 #endif
 };
 
+struct VisSamples {
+	std::vector<u8> masks_of_object_bits;
+	std::map<VisSamplePoint, s32> lookup;
+	s32 mask_size_bytes;
+};
+
 static void startup_opengl(GPUHandles& gpu);
 static std::vector<CPUVisMesh> build_vis_meshes(const VisInput& input);
 static std::vector<GPUVisMesh> upload_vis_meshes(const std::vector<CPUVisMesh>& cpu_meshes);
-static void compute_vis_sample(u8* mask_dest, s32 mask_size_bytes, const glm::vec3& sample_point, s32 chunk, GPUHandles& gpu);
+static void compute_vis_sample(VisSamples& samples, GPUHandles& gpu, const VisSamplePoint& sample_point, s32 chunk);
+static void sync_vis_samples(VisSamples& samples, GPUHandles& gpu);
 static void compress_objects(std::vector<u8>& masks_dest, std::vector<s32>& mapping_dest, const std::vector<u8>& octant_masks_of_object_bits, s32 octant_count, s32 instance_count, s32 stride);
 static void compress_octants(std::vector<u8>& compressed_vis_masks, s32 mask_count, s32 memory_budget_for_masks);
 static void shutdown_opengl(GPUHandles& gpu);
@@ -144,6 +156,8 @@ static const glm::mat4 RATCHET_TO_OPENGL_MATRIX = {
 };
 
 VisOutput compute_level_visibility(const VisInput& input, s32 memory_budget_for_masks) {
+	ERROR_CONTEXT("building visibility");
+	
 	puts("**** Entered visibility routine! ****");
 	
 	// Calculate mask size.
@@ -155,7 +169,6 @@ VisOutput compute_level_visibility(const VisInput& input, s32 memory_budget_for_
 	s32 mask_size_bytes = align32(instance_count, 64) / 8;
 	
 	std::vector<u8> octant_masks_of_object_bits(input.octants.size() * mask_size_bytes, 0);
-	verify_fatal(((s64) octant_masks_of_object_bits.data()) % 8 == 0);
 	
 	// Do the OpenGL dance.
 	GPUHandles gpu;
@@ -176,9 +189,10 @@ VisOutput compute_level_visibility(const VisInput& input, s32 memory_budget_for_
 		// each octant.
 		s32 i = 0;
 		for(s32 chunk = 0; chunk < VIS_MAX_CHUNKS; chunk++) {
-			std::vector<u8> sample_masks_of_object_bits;
-			std::map<OcclusionVector, s32> sample_lookup;
+			VisSamples samples;
+			samples.mask_size_bytes = mask_size_bytes;
 			
+			// Render samples.
 			for(size_t octant = 0; octant < input.octants.size(); octant++) {
 				const OcclusionVector& src = input.octants[octant];
 				if(src.chunk != chunk) {
@@ -186,37 +200,52 @@ VisOutput compute_level_visibility(const VisInput& input, s32 memory_budget_for_
 				}
 				
 				printf("%3d,%3d,%3d%s", src.x, src.y, src.z, (i % 4 == 3) ? "\n" : "  ");
-				for(s32 corner = 0; corner < 8; corner++) {
-					s32 x_ofs = (corner & 1) != 0;
-					s32 y_ofs = (corner & 2) != 0;
-					s32 z_ofs = (corner & 4) != 0;
-					OcclusionVector sample_vec = {
-						src.x + x_ofs,
-						src.y + y_ofs,
-						src.z + z_ofs
-					};
-					s32 sample_ofs;
-					auto sample = sample_lookup.find(sample_vec);
-					if(sample == sample_lookup.end()) {
-						sample_ofs = (s32) sample_masks_of_object_bits.size();
-						sample_masks_of_object_bits.resize(sample_masks_of_object_bits.size() + mask_size_bytes);
-						verify_fatal(((s64) sample_masks_of_object_bits.data()) % 8 == 0);
-						glm::vec3 sample_point = {
-							sample_vec.x * input.octant_size_x,
-							sample_vec.y * input.octant_size_y,
-							sample_vec.z * input.octant_size_z
-						};
-						compute_vis_sample(&sample_masks_of_object_bits[sample_ofs], mask_size_bytes, sample_point, chunk, gpu);
-						sample_lookup[sample_vec] = sample_ofs;
-					} else {
-						sample_ofs = sample->second;
+				
+				for(s32 sample = 0; sample < VIS_MAX_SAMPLES_PER_OCTANT; sample++) {
+					if(input.sample_points[sample].x == -1) {
+						continue;
 					}
-					for(s32 ofs = 0; ofs < mask_size_bytes; ofs += 8) {
-						*(u64*) &octant_masks_of_object_bits[octant * mask_size_bytes + ofs]
-							|= *(u64*) &sample_masks_of_object_bits[sample_ofs + ofs];
+					
+					VisSamplePoint sample_point = {
+						src.x * input.octant_size_x + input.sample_points[sample].x,
+						src.y * input.octant_size_y + input.sample_points[sample].y,
+						src.z * input.octant_size_z + input.sample_points[sample].z
+					};
+					auto sample_iter = samples.lookup.find(sample_point);
+					if(sample_iter == samples.lookup.end()) {
+						samples.lookup[sample_point] = VIS_SAMPLE_NOT_YET_ALLOCATED;
+						compute_vis_sample(samples, gpu, sample_point, chunk);
 					}
 				}
 				i++;
+			}
+			
+			// Merge samples.
+			for(size_t octant = 0; octant < input.octants.size(); octant++) {
+				const OcclusionVector& src = input.octants[octant];
+				if(src.chunk != chunk) {
+					continue;
+				}
+				
+				for(s32 sample = 0; sample < VIS_MAX_SAMPLES_PER_OCTANT; sample++) {
+					if(input.sample_points[sample].x == -1) {
+						continue;
+					}
+					
+					VisSamplePoint sample_point = {
+						src.x * input.octant_size_x + input.sample_points[sample].x,
+						src.y * input.octant_size_y + input.sample_points[sample].y,
+						src.z * input.octant_size_z + input.sample_points[sample].z
+					};
+					auto sample_iter = samples.lookup.find(sample_point);
+					verify_fatal(sample_iter != samples.lookup.end());
+					verify_fatal(sample_iter->second != VIS_SAMPLE_NOT_YET_ALLOCATED);
+					
+					for(s32 ofs = 0; ofs < mask_size_bytes; ofs += 8) {
+						*(u64*) &octant_masks_of_object_bits[octant * mask_size_bytes + ofs]
+							|= *(u64*) &samples.masks_of_object_bits[sample_iter->second + ofs];
+					}
+				}
 			}
 		}
 		printf("\n");
@@ -291,15 +320,17 @@ static void startup_opengl(GPUHandles& gpu) {
 	GL_CALL(glGenTextures(1, &gpu.id_buffer));
 	GL_CALL(glBindTexture(GL_TEXTURE_2D, gpu.id_buffer));
 	GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_R16UI, VIS_RENDER_SIZE, VIS_RENDER_SIZE, 0, GL_RED_INTEGER, GL_UNSIGNED_SHORT, 0));
-	
+		
 	GL_CALL(glGenTextures(1, &gpu.depth_buffer));
 	GL_CALL(glBindTexture(GL_TEXTURE_2D, gpu.depth_buffer));
 	GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, VIS_RENDER_SIZE, VIS_RENDER_SIZE, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0));
-	
+		
 	GL_CALL(glGenFramebuffers(1, &gpu.frame_buffer));
 	GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, gpu.frame_buffer));
 	GL_CALL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gpu.id_buffer, 0));
 	GL_CALL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, gpu.depth_buffer, 0));
+	
+	gpu.temp_frame.resize(VIS_RENDER_SIZE * VIS_RENDER_SIZE);
 	
 	GL_CALL(glEnable(GL_DEPTH_TEST));
 	GL_CALL(glDepthFunc(GL_LESS));
@@ -334,21 +365,21 @@ static void startup_opengl(GPUHandles& gpu) {
 	
 	// Link shaders.
 	gpu.program = glCreateProgram();
-	glAttachShader(gpu.program, vertex_shader);
-	glAttachShader(gpu.program, fragment_shader);
+	GL_CALL(glAttachShader(gpu.program, vertex_shader));
+	GL_CALL(glAttachShader(gpu.program, fragment_shader));
 	
-	glBindAttribLocation(gpu.program, 0, "pos");
-	glBindAttribLocation(gpu.program, 1, "id_in");
-	glLinkProgram(gpu.program);
+	GL_CALL(glBindAttribLocation(gpu.program, 0, "pos"));
+	GL_CALL(glBindAttribLocation(gpu.program, 1, "id_in"));
+	GL_CALL(glLinkProgram(gpu.program));
 	gpu.matrix_uniform = glGetUniformLocation(gpu.program, "matrix");
-	glUseProgram(gpu.program);
+	GL_CALL(glUseProgram(gpu.program));
 
-	glGetProgramiv(gpu.program, GL_LINK_STATUS, &result);
-	glGetProgramiv(gpu.program, GL_INFO_LOG_LENGTH, &log_length);
+	GL_CALL(glGetProgramiv(gpu.program, GL_LINK_STATUS, &result));
+	GL_CALL(glGetProgramiv(gpu.program, GL_INFO_LOG_LENGTH, &log_length));
 	if(log_length > 0) {
 		std::string message;
 		message.resize(log_length);
-		glGetProgramInfoLog(gpu.program, log_length, NULL, message.data());
+		GL_CALL(glGetProgramInfoLog(gpu.program, log_length, NULL, message.data()));
 		verify_not_reached("Failed to link shaders!\n%s", message.c_str());
 	}
 
@@ -360,6 +391,8 @@ static void startup_opengl(GPUHandles& gpu) {
 	// Setup viewport.
 	GL_CALL(glClearColor(0, 0, 0, 1));
 	GL_CALL(glViewport(0, 0, VIS_RENDER_SIZE, VIS_RENDER_SIZE));
+	
+	GL_CALL(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
 }
 
 static std::vector<CPUVisMesh> build_vis_meshes(const VisInput& input) {
@@ -463,8 +496,8 @@ static std::vector<GPUVisMesh> upload_vis_meshes(const std::vector<CPUVisMesh>& 
 	}
 	return gpu_meshes;
 }
-#include <core/png.h>
-static void compute_vis_sample(u8* mask_dest, s32 mask_size_bytes, const glm::vec3& sample_point, s32 chunk, GPUHandles& gpu) {
+
+static void compute_vis_sample(VisSamples& samples, GPUHandles& gpu, const VisSamplePoint& sample_point, s32 chunk) {
 	static const glm::mat4 directions[6] = {
 		glm::mat4(1.f),
 		glm::rotate(glm::mat4(1.f), glm::radians(90.f), glm::vec3(0.f, 0.f, 1.f)),
@@ -474,14 +507,17 @@ static void compute_vis_sample(u8* mask_dest, s32 mask_size_bytes, const glm::ve
 		glm::rotate(glm::mat4(1.f), glm::radians(270.f), glm::vec3(0.f, 1.f, 0.f))
 	};
 	
-	s32 render_size = VIS_RENDER_SIZE * VIS_RENDER_SIZE;
-	std::vector<u16> buffer(render_size * 6);
+	glm::vec3 sample_point_f = {
+		sample_point.x,
+		sample_point.y,
+		sample_point.z
+	};
 	
 	for(s32 i = 0; i < 6; i++) {
 		GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 		
 		glm::mat4 perspective = glm::perspective(glm::radians(90.f), 1.f, 0.1f, 10000.0f);
-		glm::mat4 translate = glm::translate(glm::mat4(1.0f), -sample_point);
+		glm::mat4 translate = glm::translate(glm::mat4(1.0f), -sample_point_f);
 		glm::mat4 matrix = perspective * RATCHET_TO_OPENGL_MATRIX * directions[i] * translate;
 		
 		GL_CALL(glUniformMatrix4fv(gpu.matrix_uniform, 1, GL_FALSE, &matrix[0][0]));
@@ -494,18 +530,9 @@ static void compute_vis_sample(u8* mask_dest, s32 mask_size_bytes, const glm::ve
 			}
 		}
 		
-		GL_CALL(glFlush());
-		GL_CALL(glFinish());
-		GL_CALL(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
+		gpu.frame_sample_point = sample_point;
 		
-		
-		GL_CALL(glReadPixels(0, 0, VIS_RENDER_SIZE, VIS_RENDER_SIZE, GL_RED_INTEGER, GL_UNSIGNED_SHORT, &buffer[i * render_size]));
-		
-		for(u16 id : buffer) {
-			if(id > 0 && ((id - 1) >> 3) < mask_size_bytes) {
-				SET_BIT(mask_dest, id - 1, 1, mask_size_bytes);
-			}
-		}
+		sync_vis_samples(samples, gpu);
 	}
 	
 	VIS_DEBUG_DUMP(
@@ -528,6 +555,30 @@ static void compute_vis_sample(u8* mask_dest, s32 mask_size_bytes, const glm::ve
 		out.open(fs::path(stringf("/tmp/visout/%d_%d_%d.png", (s32) sample_point.x, (s32) sample_point.y, (s32) sample_point.z)));
 		write_png(out, texture);
 	)
+}
+
+static void sync_vis_samples(VisSamples& samples, GPUHandles& gpu) {
+	// Read the contents of the framebuffer.
+	GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, gpu.frame_buffer));
+	GL_CALL(glReadPixels(0, 0, VIS_RENDER_SIZE, VIS_RENDER_SIZE, GL_RED_INTEGER, GL_UNSIGNED_SHORT, gpu.temp_frame.data()));
+	
+	// Allocate memory for the sample if it doesn't already exist.
+	s32 sample_ofs;
+	auto sample = samples.lookup.find(gpu.frame_sample_point);
+	if(sample == samples.lookup.end() || sample->second == VIS_SAMPLE_NOT_YET_ALLOCATED) {
+		sample_ofs = (s32) samples.masks_of_object_bits.size();
+		samples.masks_of_object_bits.resize(samples.masks_of_object_bits.size() + samples.mask_size_bytes, 0);
+		samples.lookup[gpu.frame_sample_point] = sample_ofs;
+	} else {
+		sample_ofs = sample->second;
+	}
+	
+	// Populate the sample mask.
+	for(u16 id : gpu.temp_frame) {
+		if(id > 0 && ((id - 1) >> 3) < samples.mask_size_bytes) {
+			SET_BIT(&samples.masks_of_object_bits[sample_ofs], id - 1, 1, samples.mask_size_bytes);
+		}
+	}
 }
 
 static void compress_objects(std::vector<u8>& masks_dest, std::vector<s32>& mapping_dest, const std::vector<u8>& octant_masks_of_object_bits, s32 octant_count, s32 instance_count, s32 stride) {

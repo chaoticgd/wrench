@@ -35,6 +35,7 @@
 #define VIS_TIE 1
 #define VIS_MOBY 2
 #define VIS_MAX_CHUNKS 3
+#define VIS_MAX_SAMPLES_PER_OCTANT 8
 
 struct VisInstance {
 	s32 mesh;
@@ -42,11 +43,21 @@ struct VisInstance {
 	glm::mat4 matrix;
 };
 
+struct VisSamplePoint {
+	s32 x = -1;
+	s32 y = -1;
+	s32 z = -1;
+	
+	friend auto operator<=>(const VisSamplePoint& lhs, const VisSamplePoint& rhs) = default;
+};
+
 struct VisInput {
 	// The size of a single octant. Normally 4x4x4.
 	s32 octant_size_x;
 	s32 octant_size_y;
 	s32 octant_size_z;
+	// List of samples to be taken for each octant.
+	VisSamplePoint sample_points[VIS_MAX_SAMPLES_PER_OCTANT];
 	// The octants for which visibility should be precomputed.
 	std::vector<OcclusionVector> octants;
 	// Lists of objects in the level that matter for occlusion.
