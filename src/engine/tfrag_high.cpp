@@ -86,7 +86,7 @@ ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags) {
 	
 	Mesh* mesh = nullptr;
 	
-	if((flags & TFRAG_SEPARATE_MESHES) == 0) {
+	if((flags & TFRAG_SEPARATE_MESHES) == 0 && !tfrags.fragments.empty()) {
 		mesh = &scene.meshes.emplace_back();
 		mesh->name = "mesh";
 		mesh->flags = MESH_HAS_QUADS | MESH_HAS_TEX_COORDS | MESH_HAS_VERTEX_COLOURS;
