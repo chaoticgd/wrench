@@ -16,28 +16,27 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <catch2/catch_amalgamated.hpp>
+#ifndef WRENCHBUILD_LEVEL_CHUNKS_H
+#define WRENCHBUILD_LEVEL_CHUNKS_H
 
-#include <core/util.h>
-#include <engine/compression.h>
+#include <core/mesh.h>
+#include <core/stream.h>
+#include <assetmgr/asset_types.h>
 
-TEST_CASE("Compression and decompression yields same result", "[compression]") {
-	srand(time(NULL));
-	
-	s32 data_size = GENERATE(10, 100, 1000, 10000, 100000);
-	
-	std::vector<u8> uncompressed(data_size);
-	uncompressed[0] = (u8) rand();
-	for(s32 i = 1; i < data_size; i++) {
-		// Make it more likely we'll get some match packets.
-		uncompressed[i] = (rand() % 4 == 0) ? rand() : uncompressed[i - 1];
-	}
-	
-	std::vector<u8> compressed;
-	compress_wad(compressed, uncompressed, nullptr, 8);
-	
-	std::vector<u8> decompressed;
-	REQUIRE(decompress_wad(decompressed, compressed));
-	
-	REQUIRE(decompressed == uncompressed);
-}
+packed_struct(ChunkWadHeader,
+	/* 0x00 */ SectorRange chunks[3];
+	/* 0x18 */ SectorRange sound_banks[3];
+)
+
+struct LevelChunk {
+	std::vector<u8> tfrags;
+	std::vector<Mesh> tfrag_meshes;
+	std::vector<u8> collision;
+	std::vector<u8> sound_bank;
+};
+
+void unpack_level_chunks(CollectionAsset& dest, InputStream& file, const ChunkWadHeader& ranges, BuildConfig config);
+std::vector<LevelChunk> load_level_chunks(const CollectionAsset& collection, BuildConfig config);
+ChunkWadHeader write_level_chunks(OutputStream& dest, const std::vector<LevelChunk>& chunks);
+
+#endif

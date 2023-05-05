@@ -22,6 +22,42 @@
 #include <wrenchbuild/asset_packer.h>
 #include <wrenchbuild/level/level_core.h> // LevelCoreHeader
 
+static std::map<s32, MobyClassHigh> load_moby_classes(const CollectionAsset& collection);
+static std::map<s32, TieClassHigh> load_tie_classes(const CollectionAsset& collection);
+
+ClassesHigh load_classes(const LevelWadAsset& level) {
+	ClassesHigh high;
+	high.moby_classes = load_moby_classes(level.get_moby_classes());
+	high.tie_classes = load_tie_classes(level.get_tie_classes());
+	return high;
+}
+
+static std::map<s32, MobyClassHigh> load_moby_classes(const CollectionAsset& collection) {
+	std::map<s32, MobyClassHigh> classes;
+	collection.for_each_logical_child_of_type<MobyClassAsset>([&](const MobyClassAsset& child) {
+		if(child.has_editor_mesh()) {
+			MobyClassHigh& moby_class = classes[child.id()];
+			const MeshAsset& editor_mesh = child.get_editor_mesh();
+			std::string collada = editor_mesh.file().read_text_file(editor_mesh.src().path);
+			moby_class.scene = read_collada((char*) collada.c_str());
+			moby_class.mesh = moby_class.scene.find_mesh(editor_mesh.name());
+		}
+	});
+	return classes;
+}
+
+static std::map<s32, TieClassHigh> load_tie_classes(const CollectionAsset& collection) {
+	std::map<s32, TieClassHigh> classes;
+	collection.for_each_logical_child_of_type<TieClassAsset>([&](const TieClassAsset& child) {
+		TieClassHigh& tie_class = classes[child.id()];
+		const MeshAsset& editor_mesh = child.get_editor_mesh();
+		std::string collada = editor_mesh.file().read_text_file(editor_mesh.src().path);
+		tie_class.scene = read_collada((char*) collada.c_str());
+		tie_class.mesh = tie_class.scene.find_mesh(editor_mesh.name());
+	});
+	return classes;
+}
+
 void unpack_moby_classes(CollectionAsset& data_dest, CollectionAsset& refs_dest, const LevelCoreHeader& header, InputStream& index, InputStream& data, const std::vector<GsRamEntry>& gs_table, InputStream& gs_ram, const std::vector<s64>& block_bounds, BuildConfig config, s32 moby_stash_addr, const std::set<s32>& moby_stash) {
 	auto classes = index.read_multiple<MobyClassEntry>(header.moby_classes);
 	auto textures = index.read_multiple<TextureEntry>(header.moby_textures);

@@ -33,6 +33,7 @@ add_executable(wrenchbuild
 	level/level_wad.cpp
 	level/level_data_wad.cpp
 	level/level_core.cpp
+	level/level_chunks.cpp
 	level/level_classes.cpp
 	level/level_textures.cpp
 	level/level_audio_wad.cpp
@@ -40,5 +41,6 @@ add_executable(wrenchbuild
 	level/collision_asset.cpp
 	level/sky_asset.cpp
 	level/tfrags_asset.cpp
+	level/occlusion_asset.cpp
 )
 target_link_libraries(wrenchbuild wrenchcore wrench_assetmgr wrenchiso wrenchengine wadinfo)

@@ -21,12 +21,14 @@
 #include <glm/gtx/intersect.hpp>
 
 #include <editor/app.h>
+#include <editor/tools/occlusion_tool.h>
 
 std::vector<std::unique_ptr<Tool>> enumerate_tools() {
 	std::vector<std::unique_ptr<Tool>> tools;
 	tools.emplace_back(std::make_unique<PickerTool>());
 	tools.emplace_back(std::make_unique<SelectionTool>());
 	tools.emplace_back(std::make_unique<TranslateTool>());
+	tools.emplace_back(std::make_unique<OcclusionTool>());
 	return tools;
 }
 

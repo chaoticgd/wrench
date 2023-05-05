@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2022 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-format_version: 19
+format_version: 20
 
 // *****************************************************************************
 
@@ -393,6 +393,7 @@ AssetType Subtitle {
 
 AssetType ElfFile {
 	desc: "An ELF executable file. Currently used for the frontend and level code."
+	bin_leaf: true
 	
 	StringAttribute name {
 		desc: "The name of ELF file on the filesystem of the built ISO (if relevant)."
@@ -1239,9 +1240,10 @@ AssetType LevelWad {
 		games: [4]
 	}
 	Child chunks {
+		desc: "The chunks (see Chunk asset)."
 		allowed_types: ["Collection"]
-		required: false
-		games: [2 3 4]
+		required: true
+		games: [1 2 3 4]
 	}
 	Child missions {
 		allowed_types: ["Collection"]
@@ -1254,8 +1256,8 @@ AssetType LevelWad {
 		required: true
 		games: [4]
 	}
-	Child code {
-		desc: "The level code. Contains the main loop, level loading code, moby update functions, and a lot more."
+	Child overlay {
+		desc: "The level code overlay. Contains most of the code for the game and engine."
 		allowed_types: ["ElfFile" "Binary"]
 		required: true
 		games: [1 2 3 4]
@@ -1278,25 +1280,12 @@ AssetType LevelWad {
 	}
 	
 	// Level Core
-	Child tfrags {
-		desc: "The main world-space level mesh."
-		allowed_types: ["Tfrags"]
-		required: true
-		games: [1 2 3 4]
-	}
-	
 	Child occlusion {
-		allowed_types: ["Binary"] 
+		allowed_types: ["Occlusion" "Binary"]
 	}
 	Child sky {
 		desc: "The sky."
 		allowed_types: ["Sky" "Binary"]
-		required: true
-		games: [1 2 3 4]
-	}
-	Child collision {
-		desc: "The world space collision mesh."
-		allowed_types: ["Collision" "Binary"]
 		required: true
 		games: [1 2 3 4]
 	}
@@ -1324,9 +1313,23 @@ AssetType LevelWad {
 }
 
 AssetType Chunk {
-	Child tfrags     { allowed_types: ["Binary"] }
-	Child collision  { allowed_types: ["Collision" "Binary"] }
-	Child sound_bank { allowed_types: ["Binary"] }
+	desc: "A chunk consists of tfrags, collision and a 989snd sound bank. These assets can be swapped out for those of another chunk without doing a full level load. R&C1 doesn't support chunks, so for Wrench's source format we only allow a single chunk (chunk 0) without a sound bank. The other games support 3 chunks per level (0, 1 and 2). The gamplay file contains planes that specify the boundaries of each chunk."
+	
+	Child tfrags {
+		desc: "See Tfrags asset."
+		allowed_types: ["Tfrags"]
+		games: [1 2 3 4]
+	}
+	Child collision {
+		desc: "See Collision asset."
+		allowed_types: ["Collision" "Binary"]
+		games: [1 2 3 4]
+	}
+	Child sound_bank {
+		desc: "The 989snd sound bank for this chunk."
+		allowed_types: ["Binary"]
+		games: [2 3 4]
+	}
 }
 
 AssetType Mission {
@@ -1635,6 +1638,12 @@ AssetType ShrubBillboard {
 	}
 }
 
+// *****************************************************************************
+
+Category miscellaneous {
+	name: "Miscellaneous"
+}
+
 AssetType Tfrags {
 	Child core {
 		allowed_types: ["TfragsCore" "Binary"]
@@ -1650,7 +1659,7 @@ AssetType Tfrags {
 	Child materials {
 		desc: "The materials used by the tfrags."
 		allowed_types: ["Collection"]
-		required: true
+		required: false
 		games: [1 2 3 4]
 		Child child {
 			allowed_types: ["Material"]
@@ -1693,7 +1702,7 @@ AssetType Material {
 }
 
 AssetType Collision {
-	desc: "The world space collision mesh for a level."
+	desc: "The world space collision mesh."
 	bin_leaf: true
 	
 	Child mesh {
@@ -1813,5 +1822,22 @@ AssetType SkyShell {
 		Child child {
 			allowed_types: ["Mesh"]
 		}
+	}
+}
+
+AssetType Occlusion {
+	desc: "Information required to build the occlusion culling data for a level.\n\nThe playable space of a level is divided into 4x4x4 cubes called octants that dictate which objects are visible at a given time."
+	bin_leaf: true
+	
+	IntegerAttribute memory_budget {
+		desc: "The maximum size of the computed collision database in bytes, including both the octant lookup tree and the visibility masks."
+		required: false
+		games: [1 2 3 4]
+	}
+	
+	FileReferenceAttribute octants {
+		desc: "A path to text file containing a list of all the octants for which occlusion should be generated. Each line is a list of 3 integers X, Y and Z separated by spaces. Each coordinate must be multiplied by 4 to obtain world coordinates."
+		required: true
+		games: [1 2 3 4]
 	}
 }

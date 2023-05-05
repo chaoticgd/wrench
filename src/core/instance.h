@@ -472,7 +472,6 @@ struct MobyInstance : Instance {
 	s32 rac1_unknown_28;
 	s32 rac1_unknown_2c;
 	s32 rac1_unknown_54;
-	s32 rac1_unknown_5c;
 	s32 rac1_unknown_60;
 	s32 rac1_unknown_70;
 	s32 rac1_unknown_74;
@@ -513,7 +512,6 @@ struct MobyInstance : Instance {
 		DEF_FIELD(rac1_unknown_28);
 		DEF_FIELD(rac1_unknown_2c);
 		DEF_FIELD(rac1_unknown_54);
-		DEF_FIELD(rac1_unknown_5c);
 		DEF_FIELD(rac1_unknown_60);
 		DEF_FIELD(rac1_unknown_70);
 		DEF_FIELD(rac1_unknown_74);
@@ -681,17 +679,15 @@ struct ShrubInstance : Instance {
 	}
 };
 
-struct Occlusion {
-	std::vector<u8> first_part;
-	std::vector<u8> second_part;
-	std::vector<u8> third_part;
-	
-	template <typename T>
-	void enumerate_fields(T& t) {
-		DEF_HEXDUMP(first_part);
-		DEF_HEXDUMP(second_part);
-		DEF_HEXDUMP(third_part);
-	}
+packed_struct(OcclusionMapping,
+	s32 bit_index;
+	s32 occlusion_id;
+)
+
+struct OcclusionMappings {
+	std::vector<OcclusionMapping> tfrag_mappings;
+	std::vector<OcclusionMapping> tie_mappings;
+	std::vector<OcclusionMapping> moby_mappings;
 };
 
 #endif

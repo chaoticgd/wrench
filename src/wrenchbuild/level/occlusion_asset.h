@@ -16,28 +16,16 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <catch2/catch_amalgamated.hpp>
+#ifndef WRENCHBUILD_LEVEL_OCCLUSION_ASSET_H
+#define WRENCHBUILD_LEVEL_OCCLUSION_ASSET_H
 
-#include <core/util.h>
-#include <engine/compression.h>
+#include <engine/gameplay.h>
+#include <wrenchbuild/asset_unpacker.h>
+#include <wrenchbuild/asset_packer.h>
+#include <wrenchbuild/tests.h>
+#include <wrenchbuild/level/level_chunks.h>
+#include <wrenchbuild/level/level_classes.h>
 
-TEST_CASE("Compression and decompression yields same result", "[compression]") {
-	srand(time(NULL));
-	
-	s32 data_size = GENERATE(10, 100, 1000, 10000, 100000);
-	
-	std::vector<u8> uncompressed(data_size);
-	uncompressed[0] = (u8) rand();
-	for(s32 i = 1; i < data_size; i++) {
-		// Make it more likely we'll get some match packets.
-		uncompressed[i] = (rand() % 4 == 0) ? rand() : uncompressed[i - 1];
-	}
-	
-	std::vector<u8> compressed;
-	compress_wad(compressed, uncompressed, nullptr, 8);
-	
-	std::vector<u8> decompressed;
-	REQUIRE(decompress_wad(decompressed, compressed));
-	
-	REQUIRE(decompressed == uncompressed);
-}
+ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const OcclusionAsset& asset, const std::vector<LevelChunk>& chunks, const ClassesHigh& high_classes, BuildConfig config);
+
+#endif

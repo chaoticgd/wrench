@@ -75,6 +75,18 @@ std::vector<u8> write_gameplay(const Gameplay& gameplay_arg, const PvarTypes& ty
 	return dest_vec;
 }
 
+const std::vector<GameplayBlockDescription>* gameplay_block_descriptions_from_game(Game game) {
+	const std::vector<GameplayBlockDescription>* gbd = nullptr;
+	switch(game) {
+		case Game::RAC: gbd = &RAC_GAMEPLAY_BLOCKS; break;
+		case Game::GC: gbd = &GC_UYA_GAMEPLAY_BLOCKS; break;
+		case Game::UYA: gbd = &GC_UYA_GAMEPLAY_BLOCKS; break;
+		case Game::DL: gbd = &DL_GAMEPLAY_CORE_BLOCKS; break;
+		default: verify_not_reached("Invalid game!"); break;
+	}
+	return gbd;
+}
+
 template <typename Packed>
 static void swap_matrix(Instance& inst, Packed& packed) {
 	glm::mat4 matrix = inst.matrix();
@@ -183,12 +195,12 @@ struct PropertiesBlock {
 			PropertiesFirstPartRAC234 first_part = src.read<PropertiesFirstPartRAC234>(ofs, "gameplay properties");
 			swap_first_part_rac234(dest.first_part, first_part);
 			ofs += sizeof(PropertiesFirstPartRAC234);
-			s32 second_part_count = src.read<s32>(ofs + 0xc, "second part count");
-			if(second_part_count > 0) {
-				dest.second_part = src.read_multiple<PropertiesSecondPart>(ofs, second_part_count, "second part").copy();
-				ofs += second_part_count * sizeof(PropertiesSecondPart);
+			s32 chunk_plane_count = src.read<s32>(ofs + 0xc, "second part count");
+			if(chunk_plane_count > 0) {
+				dest.chunk_planes = src.read_multiple<ChunkPlane>(ofs, chunk_plane_count, "second part").copy();
+				ofs += chunk_plane_count * sizeof(ChunkPlane);
 			} else {
-				ofs += sizeof(PropertiesSecondPart);
+				ofs += sizeof(ChunkPlane);
 			}
 			dest.core_sounds_count = src.read<s32>(ofs, "core sounds count");
 			ofs += 4;
@@ -222,10 +234,10 @@ struct PropertiesBlock {
 			PropertiesFirstPartRAC234 first_part_packed;
 			swap_first_part_rac234(first_part, first_part_packed);
 			dest.write(first_part_packed);
-			if(src.second_part.has_value() && src.second_part->size() > 0) {
-				dest.write_multiple(*src.second_part);
+			if(src.chunk_planes.has_value() && src.chunk_planes->size() > 0) {
+				dest.write_multiple(*src.chunk_planes);
 			} else {
-				PropertiesSecondPart terminator = {0};
+				ChunkPlane terminator = {0};
 				dest.write(terminator);
 			}
 			verify(src.core_sounds_count.has_value(), "Missing core_sounds_count in properties block.");
@@ -526,7 +538,7 @@ packed_struct(MobyInstanceRAC1,
 	/* 0x50 */ f32 rooted_distance;
 	/* 0x54 */ s32 unknown_54;
 	/* 0x58 */ s32 pvar_index;
-	/* 0x5c */ s32 unknown_5c;
+	/* 0x5c */ s32 occlusion; // 0 = precompute occlusion
 	/* 0x60 */ s32 unknown_60;
 	/* 0x64 */ Rgb96 colour;
 	/* 0x70 */ s32 unknown_70;
@@ -582,7 +594,7 @@ struct RAC1MobyBlock {
 		SWAP_PACKED(l.is_rooted, r.is_rooted);
 		SWAP_PACKED(l.rooted_distance, r.rooted_distance);
 		SWAP_PACKED(l.rac1_unknown_54, r.unknown_54);
-		SWAP_PACKED(l.rac1_unknown_5c, r.unknown_5c);
+		SWAP_PACKED(l.occlusion, r.occlusion);
 		SWAP_PACKED(l.rac1_unknown_60, r.unknown_60);
 		SWAP_PACKED(l.colour().r, r.colour.r);
 		SWAP_PACKED(l.colour().g, r.colour.g);
@@ -616,7 +628,7 @@ packed_struct(MobyInstanceRAC23,
 	/* 0x60 */ f32 rooted_distance;
 	/* 0x64 */ s32 unknown_4c;
 	/* 0x68 */ s32 pvar_index;
-	/* 0x6c */ s32 occlusion;
+	/* 0x6c */ s32 occlusion; // 0 = precompute occlusion
 	/* 0x70 */ s32 mode_bits;
 	/* 0x74 */ Rgb96 light_colour;
 	/* 0x80 */ s32 light;
@@ -704,7 +716,7 @@ packed_struct(MobyInstanceDL,
 	/* 0x48 */ f32 rooted_distance;
 	/* 0x4c */ s32 unknown_4c;
 	/* 0x50 */ s32 pvar_index;
-	/* 0x54 */ s32 occlusion;
+	/* 0x54 */ s32 occlusion; // 0 = precompute occlusion
 	/* 0x58 */ s32 mode_bits;
 	/* 0x5c */ Rgb96 light_colour;
 	/* 0x68 */ s32 light;
@@ -1335,41 +1347,41 @@ struct RAC1_78_Block {
 	}
 };
 
-packed_struct(OcclusionHeader,
-	s32 count_1;
-	s32 count_2;
-	s32 count_3;
+packed_struct(OcclusionMappingsHeader,
+	s32 tfrag_mapping_count;
+	s32 tie_mapping_count;
+	s32 moby_mapping_count;
 	s32 pad = 0;
 )
 
-struct OcclusionBlock {
-	static void read(Occlusion& dest, Buffer src, Game game) {
-		auto& header = src.read<OcclusionHeader>(0, "occlusion header");
+struct OcclusionMappingsBlock {
+	static void read(OcclusionMappings& dest, Buffer src, Game game) {
+		auto& header = src.read<OcclusionMappingsHeader>(0, "occlusion header");
 		s64 ofs = 0x10;
-		dest.first_part = src.read_multiple<u8>(ofs, header.count_1 * 8, "first part of occlusion").copy();
-		ofs += header.count_1 * 8;
-		dest.second_part = src.read_multiple<u8>(ofs, header.count_2 * 8, "second part of occlusion").copy();
-		ofs += header.count_2 * 8;
-		dest.third_part = src.read_multiple<u8>(ofs, header.count_3 * 8, "third part of occlusion").copy();
+		dest.tfrag_mappings = src.read_multiple<OcclusionMapping>(ofs, header.tfrag_mapping_count, "tfrag occlusion mappings").copy();
+		ofs += header.tfrag_mapping_count * 8;
+		dest.tie_mappings = src.read_multiple<OcclusionMapping>(ofs, header.tie_mapping_count, "tie occlusion mappings").copy();
+		ofs += header.tie_mapping_count * 8;
+		dest.moby_mappings = src.read_multiple<OcclusionMapping>(ofs, header.moby_mapping_count, "moby occlusion mappings").copy();
 	}
 	
-	static void write(OutBuffer dest, const Occlusion& src, Game game) {
-		OcclusionHeader header;
-		header.count_1 = (s32) src.first_part.size() / 8;
-		header.count_2 = (s32) src.second_part.size() / 8;
-		header.count_3 = (s32) src.third_part.size() / 8;
+	static void write(OutBuffer dest, const OcclusionMappings& src, Game game) {
+		OcclusionMappingsHeader header;
+		header.tfrag_mapping_count = (s32) src.tfrag_mappings.size();
+		header.tie_mapping_count = (s32) src.tie_mappings.size();
+		header.moby_mapping_count = (s32) src.moby_mappings.size();
 		dest.write(header);
-		dest.write_multiple(src.first_part);
-		dest.write_multiple(src.second_part);
-		dest.write_multiple(src.third_part);
+		dest.write_multiple(src.tfrag_mappings);
+		dest.write_multiple(src.tie_mappings);
+		dest.write_multiple(src.moby_mappings);
 		dest.pad(0x40, 0);
 	}
 };
 
-std::vector<u8> write_occlusion(const Gameplay& gameplay, Game game) {
+std::vector<u8> write_occlusion_mappings(const Gameplay& gameplay, Game game) {
 	std::vector<u8> dest;
 	if(gameplay.occlusion.has_value()) {
-		OcclusionBlock::write(dest, *gameplay.occlusion, game);
+		OcclusionMappingsBlock::write(dest, *gameplay.occlusion, game);
 	}
 	return dest;
 }
@@ -1667,7 +1679,7 @@ const std::vector<GameplayBlockDescription> RAC_GAMEPLAY_BLOCKS = {
 	{0x7c, bf<InstanceBlock<RAC1_7c, RAC1_7c_Packed>>(&Gameplay::rac1_7c), "RAC1 7c"},
 	{0x78, bf<RAC1_78_Block>(&Gameplay::rac1_78), "RAC1 78"},
 	{0x74, bf<GrindPathBlock>(&Gameplay::grind_paths), "grindpaths"},
-	{0x8c, bf<OcclusionBlock>(&Gameplay::occlusion), "occlusion"},
+	{0x8c, bf<OcclusionMappingsBlock>(&Gameplay::occlusion), "occlusion"},
 	{0x90, {nullptr, nullptr}, "pad"}
 };
 
@@ -1710,7 +1722,7 @@ const std::vector<GameplayBlockDescription> GC_UYA_GAMEPLAY_BLOCKS = {
 	{0x80, bf<GC_80_DL_64_Block>(&Gameplay::gc_80_dl_64), "GC 80 DL 64"},
 	{0x7c, bf<GrindPathBlock>(&Gameplay::grind_paths), "grindpaths"},
 	{0x98, bf<AreasBlock>(&Gameplay::areas), "areas"},
-	{0x90, bf<OcclusionBlock>(&Gameplay::occlusion), "occlusion"}
+	{0x90, bf<OcclusionMappingsBlock>(&Gameplay::occlusion), "occlusion"}
 };
 
 const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS = {
@@ -1755,7 +1767,7 @@ const std::vector<GameplayBlockDescription> DL_ART_INSTANCE_BLOCKS = {
 	{0x10, {ShrubClassBlock::read, ShrubClassBlock::write}, "shrub classes"},
 	{0x14, bf<InstanceBlock<ShrubInstance, ShrubInstancePacked>>(&Gameplay::shrub_instances), "shrub instances"},
 	{0x18, bf<GroupBlock>(&Gameplay::shrub_groups), "art instance shrub groups"},
-	{0x1c, bf<OcclusionBlock>(&Gameplay::occlusion), "occlusion"},
+	{0x1c, bf<OcclusionMappingsBlock>(&Gameplay::occlusion), "occlusion"},
 	{0x24, {nullptr, nullptr}, "pad 1"},
 	{0x28, {nullptr, nullptr}, "pad 2"},
 	{0x2c, {nullptr, nullptr}, "pad 3"},

@@ -1,6 +1,6 @@
 # Asset Reference
 
-This file was generated from asset_schema.wtf and is for version 19 of the asset format.
+This file was generated from asset_schema.wtf and is for version 20 of the asset format.
 
 ## Index
 
@@ -51,6 +51,7 @@ This file was generated from asset_schema.wtf and is for version 19 of the asset
 	- [ShrubClass](#shrubclass)
 	- [ShrubClassCore](#shrubclasscore)
 	- [ShrubBillboard](#shrubbillboard)
+- [Miscellaneous](#miscellaneous)
 	- [Tfrags](#tfrags)
 	- [TfragsCore](#tfragscore)
 	- [Material](#material)
@@ -58,6 +59,7 @@ This file was generated from asset_schema.wtf and is for version 19 of the asset
 	- [CollisionMaterial](#collisionmaterial)
 	- [Sky](#sky)
 	- [SkyShell](#skyshell)
+	- [Occlusion](#occlusion)
 
 ## General
 
@@ -816,18 +818,16 @@ No attributes.
 | sound_bank | The main 989snd sound bank for the level. | Binary | Yes | RAC/GC/UYA/DL |
 | gameplay | The gameplay file for the level. | Binary | Yes | RAC/GC/UYA/DL |
 | art_instances | Similar thing as with the gameplay file. | Binary | Yes | DL |
-| chunks | *Not yet documented.* | Collection | No | GC/UYA/DL |
+| chunks | The chunks (see Chunk asset). | Collection | Yes | RAC/GC/UYA/DL |
 | missions | *Not yet documented.* | Collection | *Not yet documented.* | DL |
 | moby8355_pvars | *Not yet documented.* | Binary | Yes | DL |
-| code | The level code. Contains the main loop, level loading code, moby update functions, and a lot more. | ElfFile, Binary | Yes | RAC/GC/UYA/DL |
+| overlay | The level code overlay. Contains most of the code for the game and engine. | ElfFile, Binary | Yes | RAC/GC/UYA/DL |
 | hud_header | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
 | hud_banks | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
 | transition_textures | Textures that are shown during a transition to the given level. | Texture\[\], Binary | No | GC/UYA |
 | global_nav_data | *Not yet documented.* | Binary | Yes | DL |
-| tfrags | The main world-space level mesh. | Tfrags | Yes | RAC/GC/UYA/DL |
-| occlusion | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
+| occlusion | *Not yet documented.* | Occlusion, Binary | *Not yet documented.* | *Not yet documented.* |
 | sky | The sky. | Sky, Binary | Yes | RAC/GC/UYA/DL |
-| collision | The world space collision mesh. | Collision, Binary | Yes | RAC/GC/UYA/DL |
 | moby_classes | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
 | tie_classes | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
 | shrub_classes | *Not yet documented.* | Collection | *Not yet documented.* | *Not yet documented.* |
@@ -842,6 +842,8 @@ No attributes.
 
 ### Chunk
 
+A chunk consists of tfrags, collision and a 989snd sound bank. These assets can be swapped out for those of another chunk without doing a full level load. R&C1 doesn't support chunks, so for Wrench's source format we only allow a single chunk (chunk 0) without a sound bank. The other games support 3 chunks per level (0, 1 and 2). The gamplay file contains planes that specify the boundaries of each chunk.
+
 *Attributes*
 
 No attributes.
@@ -850,9 +852,9 @@ No attributes.
 
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
-| tfrags | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
-| collision | *Not yet documented.* | Collision, Binary | *Not yet documented.* | *Not yet documented.* |
-| sound_bank | *Not yet documented.* | Binary | *Not yet documented.* | *Not yet documented.* |
+| tfrags | See Tfrags asset. | Tfrags | *Not yet documented.* | RAC/GC/UYA/DL |
+| collision | See Collision asset. | Collision, Binary | *Not yet documented.* | RAC/GC/UYA/DL |
+| sound_bank | The 989snd sound bank for this chunk. | Binary | *Not yet documented.* | GC/UYA/DL |
 
 
 ### Mission
@@ -1059,6 +1061,8 @@ No attributes.
 | texture | The texture to show on the billboard. | Texture | Yes | RAC/GC/UYA/DL |
 
 
+## Miscellaneous
+
 ### Tfrags
 
 *Attributes*
@@ -1071,7 +1075,7 @@ No attributes.
 | - | - | - | - | - |
 | core | *Not yet documented.* | TfragsCore, Binary | *Not yet documented.* | *Not yet documented.* |
 | editor_mesh | The mesh shown in the editor. We're using this as a hack since we haven't got the tfrag exporter working. | Mesh | No | RAC/GC/UYA/DL |
-| materials | The materials used by the tfrags. | Material\[\] | Yes | RAC/GC/UYA/DL |
+| materials | The materials used by the tfrags. | Material\[\] | No | RAC/GC/UYA/DL |
 
 
 ### TfragsCore
@@ -1104,7 +1108,7 @@ No children.
 
 ### Collision
 
-The world space collision mesh for a level.
+The world space collision mesh.
 
 *Attributes*
 
@@ -1167,3 +1171,18 @@ No children.
 | - | - | - | - | - |
 | mesh | The mesh. If a Collection asset is used, each child of that asset specifies a different cluster. In the future, it may be possible to specify a single mesh and have it be automatically split up into clusters. | Mesh\[\] | Yes | RAC/GC/UYA/DL |
 
+
+### Occlusion
+
+Information required to build the occlusion culling data for a level.		The playable space of a level is divided into 4x4x4 cubes called octants that dictate which objects are visible at a given time.
+
+*Attributes*
+
+| Name | Description | Type | Required | Games |
+| - | - | - | - | - |
+| memory_budget | The maximum size of the computed collision database in bytes, including both the octant lookup tree and the visibility masks. | Integer | No | RAC/GC/UYA/DL |
+| octants | A path to text file containing a list of all the octants for which occlusion should be generated. Each line is a list of 3 integers X, Y and Z separated by spaces. Each coordinate must be multiplied by 4 to obtain world coordinates. | FilePath | Yes | RAC/GC/UYA/DL |
+
+*Children*
+
+No children.

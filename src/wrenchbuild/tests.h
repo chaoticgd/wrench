@@ -16,13 +16,16 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#ifndef WRENCHBUILD_TESTS_H
+#define WRENCHBUILD_TESTS_H
+
 #include <core/filesystem.h>
 #include <assetmgr/asset.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 
 void run_tests(fs::path input_path, const std::string& asset_ref, const std::string& filter);
-void strip_trailing_padding_from_lhs(std::vector<u8>& src, std::vector<u8>& dest, s32 max_padding_size = SECTOR_SIZE);
+void strip_trailing_padding_from_lhs(std::vector<u8>& lhs, std::vector<u8>& rhs, s32 max_padding_size = SECTOR_SIZE);
 
 template <typename TestFunc>
 AssetTestFunc* wrap_diff_test_func(TestFunc func) {
@@ -44,3 +47,5 @@ AssetTestFunc* wrap_diff_test_func(TestFunc func) {
 		return func(src, dest, config, hint, mode);
 	});
 }
+
+#endif

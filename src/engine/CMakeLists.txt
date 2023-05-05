@@ -10,6 +10,7 @@ add_library(wrenchengine
 	moby_mesh_exporter.cpp
 	moby_mesh_importer.cpp
 	moby_animation.cpp
+	occlusion.cpp
 	shrub.cpp
 	sky.cpp
 	tfrag_low.cpp
@@ -17,5 +18,7 @@ add_library(wrenchengine
 	tfrag_debug.cpp
 	tie.cpp
 	vag.cpp
+	visibility.cpp
 )
 target_link_libraries(wrenchengine wrenchcore)
+target_link_libraries(wrenchengine glfw glm glad)

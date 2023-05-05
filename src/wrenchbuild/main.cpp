@@ -515,7 +515,7 @@ static void compress(const fs::path& input_path, const fs::path& output_path) {
 static void extract_tfrags(const fs::path& input_path, const fs::path& output_path, Game game) {
 	auto bin = read_file(input_path.string().c_str());
 	Tfrags tfrags = read_tfrags(bin, game);
-	ColladaScene scene = recover_tfrags(tfrags);
+	ColladaScene scene = recover_tfrags(tfrags, TFRAG_NO_FLAGS);
 	auto xml = write_collada(scene);
 	write_file(output_path, xml, "w");
 }

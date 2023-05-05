@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2022 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,12 +16,14 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include "level_data_wad.h"
+
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 #include <wrenchbuild/level/level_core.h>
 
 packed_struct(RacLevelDataHeader,
-	/* 0x00 */ ByteRange code;
+	/* 0x00 */ ByteRange overlay;
 	/* 0x08 */ ByteRange sound_bank;
 	/* 0x10 */ ByteRange core_index;
 	/* 0x18 */ ByteRange gs_ram;
@@ -31,7 +33,7 @@ packed_struct(RacLevelDataHeader,
 )
 
 packed_struct(GcUyaLevelDataHeader,
-	/* 0x00 */ ByteRange code;
+	/* 0x00 */ ByteRange overlay;
 	/* 0x08 */ ByteRange core_index;
 	/* 0x10 */ ByteRange gs_ram;
 	/* 0x18 */ ByteRange hud_header;
@@ -42,7 +44,7 @@ packed_struct(GcUyaLevelDataHeader,
 
 packed_struct(DlLevelDataHeader,
 	/* 0x00 */ ByteRange moby8355_pvars;
-	/* 0x08 */ ByteRange code;
+	/* 0x08 */ ByteRange overlay;
 	/* 0x10 */ ByteRange core_index;
 	/* 0x18 */ ByteRange gs_ram;
 	/* 0x20 */ ByteRange hud_header;
@@ -62,13 +64,13 @@ void unpack_rac_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfi
 	
 	unpack_level_core(dest, src, header.core_index, header.core_data, header.gs_ram, config);
 	
-	unpack_asset(dest.code<ElfFileAsset>(), src, header.code, config, FMT_ELFFILE_RATCHET_EXECUTABLE);
+	unpack_asset(dest.overlay<ElfFileAsset>(), src, header.overlay, config, FMT_ELFFILE_RATCHET_EXECUTABLE);
 	unpack_asset(dest.sound_bank(), src, header.sound_bank, config);
 	unpack_asset(dest.hud_header(), src, header.hud_header, config);
 	unpack_compressed_assets<BinaryAsset>(dest.hud_banks(SWITCH_FILES), src, ARRAY_PAIR(header.hud_banks), config);
 }
 
-void pack_rac_level_data_wad(OutputStream& dest, const LevelWadAsset& src, BuildConfig config) {
+void pack_rac_level_data_wad(OutputStream& dest, const std::vector<LevelChunk>& chunks, Gameplay& gameplay, const LevelWadAsset& src, BuildConfig config) {
 	RacLevelDataHeader header = {};
 	dest.write(header);
 	ByteRange empty = {-1, 0};
@@ -76,9 +78,9 @@ void pack_rac_level_data_wad(OutputStream& dest, const LevelWadAsset& src, Build
 	std::vector<u8> index;
 	std::vector<u8> data;
 	std::vector<u8> gs_ram;
-	pack_level_core(index, data, gs_ram, src, config);
+	pack_level_core(index, data, gs_ram, chunks, gameplay, src, config);
 	
-	header.code = pack_asset<ByteRange>(dest, src.get_code(), config, 0x40, FMT_ELFFILE_RATCHET_EXECUTABLE, &empty);
+	header.overlay = pack_asset<ByteRange>(dest, src.get_overlay(), config, 0x40, FMT_ELFFILE_RATCHET_EXECUTABLE, &empty);
 	header.sound_bank = pack_asset<ByteRange>(dest, src.get_sound_bank(), config, 0x40, FMT_NO_HINT, &empty);
 	header.core_index = write_vector_of_bytes(dest, index);
 	header.gs_ram = write_vector_of_bytes(dest, gs_ram);
@@ -94,13 +96,13 @@ void unpack_gc_uya_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildCo
 	
 	unpack_level_core(dest, src, header.core_index, header.core_data, header.gs_ram, config);
 	
-	unpack_asset(dest.code<ElfFileAsset>(), src, header.code, config, FMT_ELFFILE_RATCHET_EXECUTABLE);
+	unpack_asset(dest.overlay<ElfFileAsset>(), src, header.overlay, config, FMT_ELFFILE_RATCHET_EXECUTABLE);
 	unpack_asset(dest.hud_header(), src, header.hud_header, config);
 	unpack_compressed_assets<BinaryAsset>(dest.hud_banks(SWITCH_FILES), src, ARRAY_PAIR(header.hud_banks), config);
 	unpack_compressed_asset(dest.transition_textures<CollectionAsset>(SWITCH_FILES), src, header.transition_textures, config, FMT_COLLECTION_PIF8);
 }
 
-void pack_gc_uya_level_data_wad(OutputStream& dest, const LevelWadAsset& src, BuildConfig config) {
+void pack_gc_uya_level_data_wad(OutputStream& dest, const std::vector<LevelChunk>& chunks, Gameplay& gameplay, const LevelWadAsset& src, BuildConfig config) {
 	GcUyaLevelDataHeader header = {};
 	dest.write(header);
 	ByteRange empty = {-1, 0};
@@ -108,9 +110,9 @@ void pack_gc_uya_level_data_wad(OutputStream& dest, const LevelWadAsset& src, Bu
 	std::vector<u8> index;
 	std::vector<u8> data;
 	std::vector<u8> gs_ram;
-	pack_level_core(index, data, gs_ram, src, config);
+	pack_level_core(index, data, gs_ram, chunks, gameplay, src, config);
 	
-	header.code = pack_asset<ByteRange>(dest, src.get_code(), config, 0x40, FMT_ELFFILE_RATCHET_EXECUTABLE, &empty);
+	header.overlay = pack_asset<ByteRange>(dest, src.get_overlay(), config, 0x40, FMT_ELFFILE_RATCHET_EXECUTABLE, &empty);
 	header.core_index = write_vector_of_bytes(dest, index);
 	header.gs_ram = write_vector_of_bytes(dest, gs_ram);
 	header.hud_header = pack_asset<ByteRange>(dest, src.get_hud_header(), config, 0x40, FMT_NO_HINT, &empty);
@@ -131,7 +133,7 @@ void unpack_dl_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig
 	unpack_level_core(dest, src, header.core_index, header.core_data, header.gs_ram, config);
 	
 	unpack_asset(dest.moby8355_pvars(), src, header.moby8355_pvars, config);
-	unpack_asset(dest.code<ElfFileAsset>(), src, header.code, config, FMT_ELFFILE_RATCHET_EXECUTABLE);
+	unpack_asset(dest.overlay<ElfFileAsset>(), src, header.overlay, config, FMT_ELFFILE_RATCHET_EXECUTABLE);
 	unpack_asset(dest.hud_header(), src, header.hud_header, config);
 	unpack_compressed_assets<BinaryAsset>(dest.hud_banks(SWITCH_FILES), src, ARRAY_PAIR(header.hud_banks), config);
 	unpack_compressed_asset(dest.art_instances(), src, header.art_instances, config);
@@ -139,7 +141,7 @@ void unpack_dl_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig
 	unpack_compressed_asset(dest.global_nav_data(), src, header.global_nav_data, config);
 }
 
-void pack_dl_level_data_wad(OutputStream& dest, std::vector<u8>& compressed_art_instances, std::vector<u8>& compressed_gameplay, const LevelWadAsset& src, BuildConfig config) {
+void pack_dl_level_data_wad(OutputStream& dest, const std::vector<LevelChunk>& chunks, std::vector<u8>& compressed_art_instances, std::vector<u8>& compressed_gameplay, Gameplay& gameplay, const LevelWadAsset& src, BuildConfig config) {
 	DlLevelDataHeader header = {};
 	dest.write(header);
 	ByteRange empty = {-1, 0};
@@ -147,10 +149,10 @@ void pack_dl_level_data_wad(OutputStream& dest, std::vector<u8>& compressed_art_
 	std::vector<u8> index;
 	std::vector<u8> data;
 	std::vector<u8> gs_ram;
-	pack_level_core(index, data, gs_ram, src, config);
+	pack_level_core(index, data, gs_ram, chunks, gameplay, src, config);
 	
 	header.moby8355_pvars = pack_asset<ByteRange>(dest, src.get_moby8355_pvars(), config, 0x40, FMT_NO_HINT, &empty);
-	header.code = pack_asset<ByteRange>(dest, src.get_code(), config, 0x40, FMT_ELFFILE_RATCHET_EXECUTABLE, &empty);
+	header.overlay = pack_asset<ByteRange>(dest, src.get_overlay(), config, 0x40, FMT_ELFFILE_RATCHET_EXECUTABLE, &empty);
 	header.core_index = write_vector_of_bytes(dest, index);
 	header.gs_ram = write_vector_of_bytes(dest, gs_ram);
 	header.hud_header = pack_asset<ByteRange>(dest, src.get_hud_header(), config, 0x40, FMT_NO_HINT, &empty);

@@ -20,9 +20,9 @@
 
 #include <set>
 
-#define MAX_TFACES_TOUCHING_VERTEX 8
+#define MAX_TFACES_TOUCHING_VERTEX 12
 #define INIT_TFACE_INDICES \
-	{-1, -1, -1, -1, -1, -1, -1, -1}
+	{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 
 struct TfragFace {
 	s32 ad_gif;
@@ -62,7 +62,7 @@ static size_t propagate_tface_information(std::vector<TfragVertexEx>& vertices, 
 static std::vector<TfragFace> recover_faces(const std::vector<TfragStrip>& strips, const std::vector<u8>& indices);
 static s32 map_face_to_tface(const TfragFace& face, const std::vector<TfragVertexEx>& vertices, const std::vector<TfragVertexInfo>& vertex_infos);
 
-ColladaScene recover_tfrags(const Tfrags& tfrags) {
+ColladaScene recover_tfrags(const Tfrags& tfrags, TfragRecoveryFlags flags) {
 	if(tfrag_debug_output_enabled()) {
 		return recover_tfrags_debug(tfrags);
 	}
@@ -84,14 +84,29 @@ ColladaScene recover_tfrags(const Tfrags& tfrags) {
 		scene.texture_paths.emplace_back(stringf("%d.png", i));
 	}
 	
-	Mesh& mesh = scene.meshes.emplace_back();
-	mesh.name = "mesh";
-	mesh.flags = MESH_HAS_QUADS | MESH_HAS_TEX_COORDS | MESH_HAS_VERTEX_COLOURS;
+	Mesh* mesh = nullptr;
 	
-	SubMesh& lost_and_found = mesh.submeshes.emplace_back();
-	lost_and_found.material = 0;
+	if((flags & TFRAG_SEPARATE_MESHES) == 0 && !tfrags.fragments.empty()) {
+		mesh = &scene.meshes.emplace_back();
+		mesh->name = "mesh";
+		mesh->flags = MESH_HAS_QUADS | MESH_HAS_TEX_COORDS | MESH_HAS_VERTEX_COLOURS;
+		
+		SubMesh& lost_and_found = mesh->submeshes.emplace_back();
+		lost_and_found.material = 0;
+	}
 	
-	for(const Tfrag& tfrag : tfrags.fragments) {
+	for(s32 i = 0; i < (s32) tfrags.fragments.size(); i++) {
+		const Tfrag& tfrag = tfrags.fragments[i];
+		
+		if(flags & TFRAG_SEPARATE_MESHES) {
+			mesh = &scene.meshes.emplace_back();
+			mesh->name = stringf("tfrag_%d", i);
+			mesh->flags = MESH_HAS_QUADS | MESH_HAS_TEX_COORDS | MESH_HAS_VERTEX_COLOURS;
+			
+			SubMesh& lost_and_found = mesh->submeshes.emplace_back();
+			lost_and_found.material = 0;
+		}
+		
 		// Enumerate vertex positions from different LODs.
 		std::vector<TfragVertexEx> vertices;
 		for(const TfragVertexPosition& position : tfrag.common_positions) {
@@ -114,9 +129,9 @@ ColladaScene recover_tfrags(const Tfrags& tfrags) {
 		size_t tface_count = propagate_tface_information(vertices, tfrag, vertex_infos);
 		
 		// Create the vertices.
-		size_t vertex_base = mesh.vertices.size();
+		size_t vertex_base = mesh->vertices.size();
 		for(const TfragVertexInfo& src : vertex_infos) {
-			Vertex& dest = mesh.vertices.emplace_back();
+			Vertex& dest = mesh->vertices.emplace_back();
 			s16 index = src.vertex / 2;
 			verify_fatal(index >= 0 && index < vertices.size());
 			const TfragVertexPosition& pos = *vertices[index].position;
@@ -149,14 +164,14 @@ ColladaScene recover_tfrags(const Tfrags& tfrags) {
 				verify(tface_index < tfaces.size(), "Bad tfaces.");
 				s32& submesh_index = tfaces.at(tface_index);
 				if(submesh_index == -1) {
-					submesh_index = (s32) mesh.submeshes.size();
-					submesh = &mesh.submeshes.emplace_back();
+					submesh_index = (s32) mesh->submeshes.size();
+					submesh = &mesh->submeshes.emplace_back();
 					submesh->material = tfrag.common_textures.at(face.ad_gif).d1_tex0_1.data_lo;
 				} else {
-					submesh = &mesh.submeshes.at(submesh_index);
+					submesh = &mesh->submeshes.at(submesh_index);
 				}
 			} else {
-				submesh = &mesh.submeshes.at(0);
+				submesh = &mesh->submeshes.at(0);
 			}
 			
 			// Add the new face.
