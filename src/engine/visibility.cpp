@@ -417,10 +417,12 @@ static std::vector<CPUVisMesh> build_vis_meshes(const VisInput& input) {
 				
 				const Mesh& mesh = *input.meshes.at(instance.mesh);
 				
+				// We split up the vis meshes based on their position so we can
+				// do frustum culling.
 				VisSamplePoint region;
-				region.x = instance.matrix[3][0] * (1.f / 64.f);
-				region.y = instance.matrix[3][1] * (1.f / 64.f);
-				region.z = instance.matrix[3][2] * (1.f / 64.f);
+				region.x = instance.matrix[3][0] * (1.f / 50.f);
+				region.y = instance.matrix[3][1] * (1.f / 50.f);
+				region.z = instance.matrix[3][2] * (1.f / 50.f);
 				
 				// Check if we need to create a new vis mesh.
 				bool new_vis_mesh = false;
