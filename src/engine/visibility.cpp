@@ -642,8 +642,6 @@ static void sync_vis_samples(VisSamples& samples, GPUHandles& gpu) {
 }
 
 static void compress_objects(std::vector<u8>& masks_dest, std::vector<s32>& mapping_dest, const std::vector<u8>& octant_masks_of_object_bits, s32 octant_count, s32 instance_count, s32 stride) {
-	std::vector<s32> bit_mappings(instance_count, -1);
-	
 	verify_fatal(octant_masks_of_object_bits.size() % stride == 0);
 	
 	s32 object_mask_size = align32(octant_count, 64) / 8;
@@ -659,27 +657,33 @@ static void compress_objects(std::vector<u8>& masks_dest, std::vector<s32>& mapp
 		}
 	}
 	
-	VIS_DEBUG_DUMP(write_file("/tmp/octantmasks.bin", octant_masks_of_object_bits));
-	VIS_DEBUG_DUMP(write_file("/tmp/objectmasks.bin", object_masks_of_octant_bits));
+	verify((s64) instance_count * instance_count * 2 < (s64) 4 * 1024 * 1024 * 1024,
+		"Memory required to merge object bits would exceed 4GB.");
 	
+	// Calculate the error values between the different object masks.
+	std::vector<u16> errors((s64) instance_count * instance_count);
+	for(s64 lhs = 0; lhs < instance_count; lhs++) {
+		s64 lhs_ofs = lhs * object_mask_size;
+		for(s64 rhs = lhs + 1; rhs < instance_count; rhs++) {
+			s64 rhs_ofs = rhs * object_mask_size;
+			u16 error = 0;
+			for(s64 ofs = 0; ofs < object_mask_size; ofs += 8) {
+				u64 lhs_value = *(u64*) &object_masks_of_octant_bits[lhs_ofs + ofs];
+				u64 rhs_value = *(u64*) &object_masks_of_octant_bits[rhs_ofs + ofs];
+				error += (u16) std::popcount(lhs_value ^ rhs_value);
+			}
+			errors[lhs * instance_count + rhs] = error;
+		}
+	}
+	
+	// Merge bits such that the total error is minimised.
+	std::vector<s32> bit_mappings(instance_count, -1);
 	s32 bits_required = instance_count;
-	
-	for(s32 acceptable_error = 0;; acceptable_error++) {
-		s32 prev_bits_required = bits_required;
-		for(s32 lhs = 0; lhs < instance_count; lhs++) {
-			s32 lhs_ofs = lhs * object_mask_size;
-			for(s32 rhs = lhs + 1; rhs < instance_count; rhs++) {
-				s32 rhs_ofs = rhs * object_mask_size;
+	for(u16 acceptable_error = 0;; acceptable_error++) {
+		for(s64 lhs = 0; lhs < instance_count; lhs++) {
+			for(s64 rhs = lhs + 1; rhs < instance_count; rhs++) {
 				if(bit_mappings[rhs] == -1) {
-					s32 error = 0;
-					for(s32 ofs = 0; ofs < object_mask_size; ofs += 8) {
-						u64 lhs_value = *(u64*) &object_masks_of_octant_bits[lhs_ofs + ofs];
-						u64 rhs_value = *(u64*) &object_masks_of_octant_bits[rhs_ofs + ofs];
-						error += std::popcount(lhs_value ^ rhs_value);
-						if(error > acceptable_error) {
-							break;
-						}
-					}
+					u16 error = errors[lhs * instance_count + rhs];
 					if(error == acceptable_error) {
 						bit_mappings[rhs] = lhs;
 						bits_required--;
@@ -696,14 +700,11 @@ static void compress_objects(std::vector<u8>& masks_dest, std::vector<s32>& mapp
 		if(bits_required <= 1024) {
 			break;
 		}
-		if(acceptable_error > 0 && acceptable_error % 8 == 0) {
-			printf("\n");
-		}
-		printf("%4d %4d ", acceptable_error, prev_bits_required - bits_required);
-		fflush(stdout);
+		
+		verify_fatal(acceptable_error != 0xffff);
 	}
-	printf("\n");
 	
+	errors.clear();
 	masks_dest.resize(octant_count * 128);
 	mapping_dest.resize(instance_count, -1);
 	
@@ -732,8 +733,6 @@ static void compress_objects(std::vector<u8>& masks_dest, std::vector<s32>& mapp
 		verify_fatal(dest_bit <= 1024);
 	}
 	
-	VIS_DEBUG_DUMP(write_file("/tmp/outmasks.bin", masks_dest));
-	
 	// Write the output mapping.
 	s32 dest_bit = 0;
 	for(s32 src_bit = 0; src_bit < instance_count; src_bit++) {
@@ -748,27 +747,36 @@ static void compress_objects(std::vector<u8>& masks_dest, std::vector<s32>& mapp
 }
 
 static void compress_octants(std::vector<u8>& compressed_vis_masks, s32 mask_count, s32 memory_budget_for_masks) {
-	std::vector<s32> mappings(mask_count, -1);
 	s32 max_masks = memory_budget_for_masks / 128;
 	s32 masks_required = mask_count;
 	
+	verify((s64) mask_count * mask_count * 2 < (s64) 4 * 1024 * 1024 * 1024,
+		"Memory required to merge octant bits would exceed 4GB.");
+	
+	// Calculate the error values between the different octant masks.
+	std::vector<u16> errors((s64) mask_count * mask_count);
+	for(s64 lhs = 0; lhs < mask_count; lhs++) {
+		s64 lhs_ofs = lhs * 128;
+		for(s64 rhs = lhs + 1; rhs < mask_count; rhs++) {
+			s64 rhs_ofs = rhs * 128;
+			u16 error = 0;
+			for(s32 ofs = 0; ofs < 128; ofs += 8) {
+				u64 lhs_value = *(u64*) &compressed_vis_masks[lhs_ofs + ofs];
+				u64 rhs_value = *(u64*) &compressed_vis_masks[rhs_ofs + ofs];
+				error += std::popcount(lhs_value ^ rhs_value);
+			}
+			errors[lhs * mask_count + rhs] = error;
+		}
+	}
+	
 	// Determine which octant masks should be merged together.
-	for(s32 acceptable_error = 0;; acceptable_error++) {
+	std::vector<s32> mappings(mask_count, -1);
+	for(u16 acceptable_error = 0;; acceptable_error++) {
 		printf("%d\n", acceptable_error);
-		for(s32 lhs = 0; lhs < mask_count; lhs++) {
-			s32 lhs_ofs = lhs * 128;
-			for(s32 rhs = lhs + 1; rhs < mask_count; rhs++) {
-				s32 rhs_ofs = rhs * 128;
+		for(s64 lhs = 0; lhs < mask_count; lhs++) {
+			for(s64 rhs = lhs + 1; rhs < mask_count; rhs++) {
 				if(mappings[rhs] == -1) {
-					s32 error = 0;
-					for(s32 ofs = 0; ofs < 128; ofs += 8) {
-						u64 lhs_value = *(u64*) &compressed_vis_masks[lhs_ofs + ofs];
-						u64 rhs_value = *(u64*) &compressed_vis_masks[rhs_ofs + ofs];
-						error += std::popcount(lhs_value ^ rhs_value);
-						if(error > acceptable_error) {
-							break;
-						}
-					}
+					u16 error = errors[lhs * mask_count + rhs];
 					if(error == acceptable_error) {
 						mappings[rhs] = lhs;
 						masks_required--;
@@ -785,6 +793,8 @@ static void compress_octants(std::vector<u8>& compressed_vis_masks, s32 mask_cou
 		if(masks_required <= max_masks) {
 			break;
 		}
+		
+		verify_fatal(acceptable_error != 0xffff);
 	}
 	
 	// OR all the merged octants together.
