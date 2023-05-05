@@ -39,7 +39,7 @@
 		GLenum error = glGetError(); \
 		verify(error == GL_NO_ERROR, "GL Error %x\n", error); \
 	}
-#define VIS_DEBUG_RENDERDOC
+//#define VIS_DEBUG_RENDERDOC
 
 #define VIS_RENDER_SIZE 256
 
