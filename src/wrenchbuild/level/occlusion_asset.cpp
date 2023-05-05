@@ -181,8 +181,6 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 		moby_instance_index++;
 	}
 	
-	write_file("/tmp/occlgrid.bin", buffer);
-	
 	s64 end_ofs = dest.tell();
 	return {(s32) ofs, (s32) (end_ofs - ofs)};
 }
