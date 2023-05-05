@@ -628,7 +628,7 @@ packed_struct(MobyInstanceRAC23,
 	/* 0x60 */ f32 rooted_distance;
 	/* 0x64 */ s32 unknown_4c;
 	/* 0x68 */ s32 pvar_index;
-	/* 0x6c */ s32 occlusion;
+	/* 0x6c */ s32 occlusion; // 0 = precompute occlusion
 	/* 0x70 */ s32 mode_bits;
 	/* 0x74 */ Rgb96 light_colour;
 	/* 0x80 */ s32 light;
@@ -716,7 +716,7 @@ packed_struct(MobyInstanceDL,
 	/* 0x48 */ f32 rooted_distance;
 	/* 0x4c */ s32 unknown_4c;
 	/* 0x50 */ s32 pvar_index;
-	/* 0x54 */ s32 occlusion;
+	/* 0x54 */ s32 occlusion; // 0 = precompute occlusion
 	/* 0x58 */ s32 mode_bits;
 	/* 0x5c */ Rgb96 light_colour;
 	/* 0x68 */ s32 light;
