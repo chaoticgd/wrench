@@ -75,15 +75,15 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 	input.octant_size_y = 4;
 	input.octant_size_z = 4;
 	
-	// Take samples at the corner of each octant.
-	for(s32 corner = 0; corner < 8; corner++) {
-		s32 x_ofs = (corner & 1) != 0;
-		s32 y_ofs = (corner & 2) != 0;
-		s32 z_ofs = (corner & 4) != 0;
-		input.sample_points[corner] = {
-			x_ofs * 4, y_ofs * 4, z_ofs * 4
-		};
-	}
+	// Take samples at the corners of each octant.
+	input.sample_points[0] = {0, 0, 0};
+	input.sample_points[1] = {0, 0, 4};
+	input.sample_points[2] = {0, 4, 0};
+	input.sample_points[3] = {0, 4, 4};
+	input.sample_points[4] = {4, 0, 0};
+	input.sample_points[5] = {4, 0, 4};
+	input.sample_points[6] = {4, 4, 0};
+	input.sample_points[7] = {4, 4, 4};
 	static_assert(VIS_MAX_SAMPLES_PER_OCTANT >= 8);
 	
 	input.octants = std::move(octants);
