@@ -41,7 +41,7 @@
 	}
 #define VIS_DEBUG_RENDERDOC
 
-#define VIS_RENDER_SIZE 128
+#define VIS_RENDER_SIZE 256
 
 #define VIS_SAMPLE_NOT_YET_ALLOCATED -1
 
@@ -680,6 +680,7 @@ static void compress_objects(std::vector<u8>& masks_dest, std::vector<s32>& mapp
 	std::vector<s32> bit_mappings(instance_count, -1);
 	s32 bits_required = instance_count;
 	for(u16 acceptable_error = 0;; acceptable_error++) {
+		printf("%d\n", acceptable_error);
 		for(s64 lhs = 0; lhs < instance_count; lhs++) {
 			for(s64 rhs = lhs + 1; rhs < instance_count; rhs++) {
 				if(bit_mappings[rhs] == -1) {
