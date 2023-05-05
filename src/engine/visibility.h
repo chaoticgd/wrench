@@ -39,7 +39,7 @@
 
 struct VisInstance {
 	s32 mesh;
-	s32 chunk; // -1 to determine the chunk from the position.
+	s32 chunk;
 	glm::mat4 matrix;
 };
 

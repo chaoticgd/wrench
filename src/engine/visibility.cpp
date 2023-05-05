@@ -32,7 +32,7 @@
 #include <core/timer.h>
 
 #define VIS_DEBUG_MISC(...) __VA_ARGS__
-#define VIS_DEBUG_DUMP(...) __VA_ARGS__
+#define VIS_DEBUG_DUMP(...) //__VA_ARGS__
 #define GL_CALL(...) \
 	{ \
 		__VA_ARGS__; \
@@ -64,7 +64,7 @@ struct CPUVisMesh {
 	std::vector<VisVertex> vertices;
 	std::vector<u32> indices;
 	s32 chunk;
-	VisAABB bounding_box;
+	VisAABB aabb;
 };
 
 struct GPUVisMesh {
@@ -74,7 +74,7 @@ struct GPUVisMesh {
 	GLuint index_buffer;
 	s32 index_count;
 	s32 chunk;
-	VisAABB bounding_box;
+	VisAABB aabb;
 };
 
 struct GPUHandles {
@@ -103,6 +103,7 @@ static void startup_opengl(GPUHandles& gpu);
 static std::vector<CPUVisMesh> build_vis_meshes(const VisInput& input);
 static std::vector<GPUVisMesh> upload_vis_meshes(const std::vector<CPUVisMesh>& cpu_meshes);
 static void compute_vis_sample(VisSamples& samples, GPUHandles& gpu, const VisSamplePoint& sample_point, s32 chunk);
+static bool test_aabb_against_frustum(const VisAABB& aabb, const glm::mat4& matrix);
 static void sync_vis_samples(VisSamples& samples, GPUHandles& gpu);
 static void compress_objects(std::vector<u8>& masks_dest, std::vector<s32>& mapping_dest, const std::vector<u8>& octant_masks_of_object_bits, s32 octant_count, s32 instance_count, s32 stride);
 static void compress_octants(std::vector<u8>& compressed_vis_masks, s32 mask_count, s32 memory_budget_for_masks);
@@ -477,15 +478,15 @@ static std::vector<CPUVisMesh> build_vis_meshes(const VisInput& input) {
 	
 	// Calculate bounding boxes.
 	for(CPUVisMesh& vis_mesh : vis_meshes) {
-		vis_mesh.bounding_box.min = {1000000.f, 1000000.f, 1000000.f};
-		vis_mesh.bounding_box.max = {-1000000.f, -1000000.f, -1000000.f};
+		vis_mesh.aabb.min = {1000000.f, 1000000.f, 1000000.f};
+		vis_mesh.aabb.max = {-1000000.f, -1000000.f, -1000000.f};
 		for(VisVertex& vertex : vis_mesh.vertices) {
-			vis_mesh.bounding_box.min.x = std::min(vis_mesh.bounding_box.min.x, vertex.pos.x);
-			vis_mesh.bounding_box.min.y = std::min(vis_mesh.bounding_box.min.y, vertex.pos.y);
-			vis_mesh.bounding_box.min.z = std::min(vis_mesh.bounding_box.min.z, vertex.pos.z);
-			vis_mesh.bounding_box.max.x = std::max(vis_mesh.bounding_box.max.x, vertex.pos.x);
-			vis_mesh.bounding_box.max.y = std::max(vis_mesh.bounding_box.max.y, vertex.pos.y);
-			vis_mesh.bounding_box.max.z = std::max(vis_mesh.bounding_box.max.z, vertex.pos.z);
+			vis_mesh.aabb.min.x = std::min(vis_mesh.aabb.min.x, vertex.pos.x);
+			vis_mesh.aabb.min.y = std::min(vis_mesh.aabb.min.y, vertex.pos.y);
+			vis_mesh.aabb.min.z = std::min(vis_mesh.aabb.min.z, vertex.pos.z);
+			vis_mesh.aabb.max.x = std::max(vis_mesh.aabb.max.x, vertex.pos.x);
+			vis_mesh.aabb.max.y = std::max(vis_mesh.aabb.max.y, vertex.pos.y);
+			vis_mesh.aabb.max.z = std::max(vis_mesh.aabb.max.z, vertex.pos.z);
 		}
 	}
 	
@@ -498,7 +499,7 @@ static std::vector<GPUVisMesh> upload_vis_meshes(const std::vector<CPUVisMesh>& 
 	for(const CPUVisMesh& src : cpu_meshes) {
 		GPUVisMesh& dest = gpu_meshes.emplace_back();
 		dest.chunk = src.chunk;
-		dest.bounding_box = src.bounding_box;
+		dest.aabb = src.aabb;
 		
 		// Setup vertex array object.
 		GL_CALL(glGenVertexArrays(1, &dest.vertex_array_object));
@@ -552,7 +553,7 @@ static void compute_vis_sample(VisSamples& samples, GPUHandles& gpu, const VisSa
 		GL_CALL(glUniformMatrix4fv(gpu.matrix_uniform, 1, GL_FALSE, &matrix[0][0]));
 		
 		for(const GPUVisMesh& vis_mesh : gpu.vis_meshes) {
-			if(vis_mesh.chunk == chunk) {
+			if(vis_mesh.chunk == chunk && test_aabb_against_frustum(vis_mesh.aabb, matrix)) {
 				GL_CALL(glBindVertexArray(vis_mesh.vertex_array_object));
 				GL_CALL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vis_mesh.index_buffer));
 				GL_CALL(glDrawElements(GL_TRIANGLES, vis_mesh.index_count, GL_UNSIGNED_INT, nullptr));
@@ -585,6 +586,33 @@ static void compute_vis_sample(VisSamples& samples, GPUHandles& gpu, const VisSa
 		out.open(fs::path(stringf("/tmp/visout/%d_%d_%d.png", (s32) sample_point.x, (s32) sample_point.y, (s32) sample_point.z)));
 		write_png(out, texture);
 	)
+}
+
+// https://bruop.github.io/frustum_culling/
+static bool test_aabb_against_frustum(const VisAABB& aabb, const glm::mat4& matrix) {
+	glm::vec4 corners[8] = {
+		{aabb.min.x, aabb.min.y, aabb.min.z, 1.0f},
+		{aabb.max.x, aabb.min.y, aabb.min.z, 1.0f},
+		{aabb.min.x, aabb.max.y, aabb.min.z, 1.0f},
+		{aabb.max.x, aabb.max.y, aabb.min.z, 1.0f},
+		
+		{aabb.min.x, aabb.min.y, aabb.max.z, 1.0f},
+		{aabb.max.x, aabb.min.y, aabb.max.z, 1.0f},
+		{aabb.min.x, aabb.max.y, aabb.max.z, 1.0f},
+		{aabb.max.x, aabb.max.y, aabb.max.z, 1.0f},
+	};
+	
+	for (s32 i = 0; i < 8; i++) {
+		glm::vec4 corner = matrix * corners[i];
+		bool inside = true;
+		inside &= -corner.w <= corner.x && corner.x <= corner.w;
+		inside &= -corner.w <= corner.y && corner.y <= corner.w;
+		inside &= 0.f <= corner.z && corner.z <= corner.w;
+		if(inside) {
+			return true;
+		}
+	}
+	return false;
 }
 
 static void sync_vis_samples(VisSamples& samples, GPUHandles& gpu) {
