@@ -4,7 +4,7 @@ A set of modding tools for the Ratchet & Clank PS2 games. Compatible with R&C1, 
 
 To download the latest release, see the [Releases](https://github.com/chaoticgd/wrench/releases) page. To download the latest unstable build, see the [Unstable Builds](https://github.com/chaoticgd/wrench/releases/tag/unstable) page. Currently only Windows and Linux are supported.
 
-Feel free to use the issues page to ask questions about Wrench or technical questions about the games.
+For documentation about Wrench and reverse engineered information about tha games see [this page](docs/README.md). Feel free to use the issue tracker to ask questions about Wrench or technical questions about the games.
 
 Features currently include:
 - Asset System
@@ -30,8 +30,6 @@ Features currently include:
 	- Move objects and modify their attributes.
 - **New in v0.4!** Memory Card Editor
 	- Only works properly on Deadlocked saves. Experimental.
-
-For documentation on the asset system, see [Asset System](docs/asset_system.md) and [Asset Reference](docs/asset_reference.md). For information on the game's file formats, see the [Formats Guide](docs/formats_guide.md).
 
 ## Screenshots
 
