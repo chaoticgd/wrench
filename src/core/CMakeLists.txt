@@ -2,6 +2,12 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 	message(FATAL_ERROR "You should build Wrench using the CMakeLists.txt file in the root of the repository.")
 endif()
 
+if(WIN32)
+	set(WRENCH_FILEIO_SRC fileio_win.cpp)
+else()
+	set(WRENCH_FILEIO_SRC fileio.cpp)
+endif()
+
 add_library(wrenchcore STATIC
 	buffer.cpp
 	instance.cpp
@@ -15,6 +21,7 @@ add_library(wrenchcore STATIC
 	texture.cpp
 	vif.cpp
 	filesystem.cpp
+	${WRENCH_FILEIO_SRC}
 	stream.cpp
 	memory_profiler.cpp
 	shell.cpp
