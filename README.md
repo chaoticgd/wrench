@@ -47,7 +47,7 @@ Features currently include:
 	- xorg-dev (needed to build GLFW)
 	- zenity
 
-2.	cd into the directory above where you want Wrench to live e.g. `cd ~/code`.
+2.	cd into the directory above where you want Wrench to live e.g. `cd ~/programs`.
 
 2.	Download the source code and additional dependencies using Git:
 	> git clone --recursive https://github.com/chaoticgd/wrench
@@ -56,7 +56,7 @@ Features currently include:
 	> cd wrench
 
 4.	Build it with cmake:
-	> cmake -S . -B bin/ && cmake --build bin/ -- -j8
+	> cmake . -B bin/ && cmake --build bin/ -j 8
 	
 	(in the above example 8 threads are used)
 
@@ -68,7 +68,7 @@ Features currently include:
 
 2.	Open a Visual Studio developer command prompt.
 
-3.	cd into the directory above where you want Wrench to live e.g. `cd c:\code`.
+3.	cd into the directory above where you want Wrench to live e.g. `cd c:\programs`.
 
 4.	Download the source code and dependencies using Git:
 	> git clone --recursive https://github.com/chaoticgd/wrench
@@ -77,8 +77,8 @@ Features currently include:
 	> cd wrench
 
 6.	Generate cmake files:
-	> cmake -S . -B bin/
-
+	> cmake . -B bin/
+	
 	This should generate `wrench.sln` along with a few `.vcxproj` files. 
 	In case no such files are generated, you can explicitly specify usage of the Visual Studio generator by running the following command:
 	> cmake . -G "Visual Studio X YYYY"
@@ -86,13 +86,12 @@ Features currently include:
 	where `X` is the Visual Studio version and `YYYY` is the Visual Studio year (example: `Visual Studio 16 2019`)
 	A complete list can be obtained by running `cmake --help`.
 
-7.	Build the project:
-	- From the command line
+7.	**(Option A)** Build the project from the command line:
+	
+	> cmake --build bin/ --config BUILD_TYPE
+	
+	where `BUILD_TYPE` is one of `Debug` (very slow - not recommended), `Release` (no symbols - not recommended), `RelWithDebInfo` (recommended) or `MinSizeRel`.
+	
+	**(Option B)** Build the project from Visual Studio:
 
-		> cmake --build bin/ --config BUILD_TYPE
-
-		where `BUILD_TYPE` is one of `Debug` (very slow - not recommended), `Release` (no symbols - not recommended), `RelWithDebInfo` (recommended) or `MinSizeRel`.
-
-	- From Visual Studio
-
-		Open the newly generated `wrench.sln` in Visual Studio. In the Solution Explorer, right-click on `wrench` and click `Set as Startup Project`. You should now be able to build and debug wrench using the toolbar controls and all Visual Studio features.
+	Open the newly generated `wrench.sln` in Visual Studio. In the Solution Explorer, right-click on `wrench` and click `Set as Startup Project`. You should now be able to build and debug wrench using the toolbar controls and all Visual Studio features.

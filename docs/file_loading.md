@@ -4,9 +4,30 @@ Each game disc has a standard ISO filesystem which is used to access the `SYSTEM
 
 Once this executable is loaded all other assets are accessed by their sector number, via raw disk I/O. In the case of R&C2 retail builds these assets are also included on the filesystem, however for retail builds of R&C1, R&C3 and Deadlocked they are not. The sector numbers of these assets are stored in a file that is unofficially called the table of contents, which is itself located at a hardcoded sector number and is not to be confused with the standard CD table of contents. A single sector is `0x800` bytes in size.
 
+## Code
+
+The game's code is stored in both the main ELF file and overlays in the level files. The ELF file contains sections `.vutext`, `core.text`, `core.data`, `core.rdata`, `core.bss` and `core.lit` which remain in memory at all times, as well as sections `.lit`, `.bss`, `.data`, `lvl.vtbl`, `lvl.camvtbl`, `lvl.sndvtbl` and `.text` which are overwritten when a level is loaded.
+
+The majority of the game's code is stored in the non-core sections. During the level loading process, these sections are loaded from the level files in the form of a custom executable format used by the games. This format consists of a stream of section headers immediately followed by the data. These headers are structured like so:
+
+| Offset | Name         | Type | Description                                       |
+| ------ | ------------ | ---- | ------------------------------------------------- |
+| 0x0    | dest_address | s32  | The address to copy the section data to.          |
+| 0x4    | copy_size    | s32  | The size of the section not including the header. |
+| 0x8    | section_type | s32  | The ELF section type. Not used by the game.       |
+| 0xc    | entry_point  | s32  | The address of the startlevel function.           |
+
+The `lvl.*vtbl` sections contain tables of function pointers for the various moby, camera and sound classes that are included in a level. For example `lvl.vtbl` contains pointers to all the moby update functions.
+
+Note that in the case of UYA and DL the main ELF file is packed. The actual sections are stored in the same format used for the level overlays, except compressed (see WAD Compression section below). Wrench (versions >= 0.4) will automatically unpack the file while importing the ISO.
+
 ## Table of Contents
 
-### R&C2, R&C3 and Deadlocked
+### R&C1
+
+The table of contents begins at sector number `1500`. It consists of a C struct with sector numbers for all the global assets followed by an array of sector numbers pointing to level headers. In R&C1, there is only a single header for each level, which is stored at the beginning of the level WAD file. These headers contain absolute sector numbers pointing to all the assets needed for a level.
+
+### GC, UYA and DL
 
 The table of contents begins at sector number `1001` (`0x1f4800` in bytes) and in the case of R&C2 is referenced on the filesystem as `RC2.HDR`. The first section of the file consists of the headers for all the global WAD files appended together with no additional padding inserted. These headers all begin like so:
 
@@ -15,7 +36,7 @@ The table of contents begins at sector number `1001` (`0x1f4800` in bytes) and i
 | 0x0    | header_size | s32  | Size of this header.                |
 | 0x4    | sector      | s32  | Absolute sector number of the file. |
 
-Following all the non-level sections is the level table. Each level entry contains three position/size pairs (again in sectors). The positions are absolute. For each triple, one points to a duplicate of the header for a `LEVEL%d.WAD` file, one for the `AUDIOn.WAD` file, and another for the `SCENE%d.WAD` file.
+Following the global headers is the level table. Each level entry contains three position/size pairs (again in sectors). The positions are absolute. For each triple, one points to a duplicate of the header for a `LEVEL%d.WAD` file, one for the `AUDIOn.WAD` file, and another for the `SCENE%d.WAD` file.
 
 For R&C2, the triples are structured like so:
 

@@ -1,8 +1,13 @@
 # Wrench Documentation
 
-- [Overview](overview.md)
+## The Tools
+
 - [Asset System](asset_system.md)
 	- [Asset Reference](asset_reference.md)
+	- [Wrench Text Format](wrench_text_format.md)
+
+## The Games
+
 - [File Loading](file_loading.md)
 - [Gameplay](gameplay.md)
 - [Occlusion Culling](occlusion_culling.md)
@@ -11,3 +16,5 @@
 	- [Shrub Renderer](shrub_renderer.md)
 	- Sky Renderer
 	- [Tfrag Renderer](tfrag_renderer.md)
+	- Tie Renderer
+- [Sound](sound.md)
