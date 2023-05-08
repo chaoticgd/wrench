@@ -52,7 +52,7 @@ If these asset files are then both packed by Wrench, the logical tree that will 
 
 Assets can be referenced from other asset banks, files cannot. Mods do not rely on where the unpacked files are on the filesystem, just where their assets are in the logical asset tree.
 
-This allows for the structure of the unpacked files to change arbitrarily without affecting mod compatibility. For example, we could give moby classes human-friendly names in the filesystem and sort them into directories without breaking any mods, as long as we don't change the asset link of those moby classes.
+This allows for the structure of the unpacked files to change arbitrarily without affecting mod compatibility. For example, we have given levels and object classes human-friendly names in the filesystem and sorted them into directories in a manor such that we can change the names without breaking any mods.
 
 ### Different Releases
 
@@ -107,6 +107,10 @@ Here, the packer will treat the 0 asset as if it doesn't exist, even if it's def
 ### `weakly_deleted` (since version 15)
 
 Same as `strongly_deleted` except it will be assumed to be set to `false` (instead of unset) if it is omitted for a given asset. This means that only the `weakly_deleted` attributes of the highest precedence assets will be read.
+
+## The Underlay
+
+In addition to the game and loaded mods, an underlay asset bank is also typically loaded while packing and unpacking. This contains metadata for assets that is not stored on the disc. For example, names of levels and object classes. In the future this could also include data type definitions for pvars.
 
 ## Internals
 

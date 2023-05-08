@@ -4,7 +4,7 @@ A set of modding tools for the Ratchet & Clank PS2 games. Compatible with R&C1, 
 
 To download the latest release, see the [Releases](https://github.com/chaoticgd/wrench/releases) page. To download the latest unstable build, see the [Unstable Builds](https://github.com/chaoticgd/wrench/releases/tag/unstable) page. Currently only Windows and Linux are supported.
 
-Feel free to use the issues page to ask questions about Wrench or technical questions about the games.
+For documentation about Wrench and reverse engineered information about tha games see [this page](docs/README.md). Feel free to use the issue tracker to ask questions about Wrench or technical questions about the games.
 
 Features currently include:
 - Asset System
@@ -31,8 +31,6 @@ Features currently include:
 - **New in v0.4!** Memory Card Editor
 	- Only works properly on Deadlocked saves. Experimental.
 
-For documentation on the asset system, see [Asset System](docs/asset_system.md) and [Asset Reference](docs/asset_reference.md). For information on the game's file formats, see the [Formats Guide](docs/formats_guide.md).
-
 ## Screenshots
 
 ![Launcher](docs/screenshots/launcher.png)
@@ -49,7 +47,7 @@ For documentation on the asset system, see [Asset System](docs/asset_system.md) 
 	- xorg-dev (needed to build GLFW)
 	- zenity
 
-2.	cd into the directory above where you want Wrench to live e.g. `cd ~/code`.
+2.	cd into the directory above where you want Wrench to live e.g. `cd ~/programs`.
 
 2.	Download the source code and additional dependencies using Git:
 	> git clone --recursive https://github.com/chaoticgd/wrench
@@ -58,7 +56,7 @@ For documentation on the asset system, see [Asset System](docs/asset_system.md) 
 	> cd wrench
 
 4.	Build it with cmake:
-	> cmake -S . -B bin/ && cmake --build bin/ -- -j8
+	> cmake . -B bin/ && cmake --build bin/ -j 8
 	
 	(in the above example 8 threads are used)
 
@@ -70,7 +68,7 @@ For documentation on the asset system, see [Asset System](docs/asset_system.md) 
 
 2.	Open a Visual Studio developer command prompt.
 
-3.	cd into the directory above where you want Wrench to live e.g. `cd c:\code`.
+3.	cd into the directory above where you want Wrench to live e.g. `cd c:\programs`.
 
 4.	Download the source code and dependencies using Git:
 	> git clone --recursive https://github.com/chaoticgd/wrench
@@ -79,8 +77,8 @@ For documentation on the asset system, see [Asset System](docs/asset_system.md) 
 	> cd wrench
 
 6.	Generate cmake files:
-	> cmake -S . -B bin/
-
+	> cmake . -B bin/
+	
 	This should generate `wrench.sln` along with a few `.vcxproj` files. 
 	In case no such files are generated, you can explicitly specify usage of the Visual Studio generator by running the following command:
 	> cmake . -G "Visual Studio X YYYY"
@@ -88,13 +86,12 @@ For documentation on the asset system, see [Asset System](docs/asset_system.md) 
 	where `X` is the Visual Studio version and `YYYY` is the Visual Studio year (example: `Visual Studio 16 2019`)
 	A complete list can be obtained by running `cmake --help`.
 
-7.	Build the project:
-	- From the command line
+7.	**(Option A)** Build the project from the command line:
+	
+	> cmake --build bin/ --config BUILD_TYPE
+	
+	where `BUILD_TYPE` is one of `Debug` (very slow - not recommended), `Release` (no symbols - not recommended), `RelWithDebInfo` (recommended) or `MinSizeRel`.
+	
+	**(Option B)** Build the project from Visual Studio:
 
-		> cmake --build bin/ --config BUILD_TYPE
-
-		where `BUILD_TYPE` is one of `Debug` (very slow - not recommended), `Release` (no symbols - not recommended), `RelWithDebInfo` (recommended) or `MinSizeRel`.
-
-	- From Visual Studio
-
-		Open the newly generated `wrench.sln` in Visual Studio. In the Solution Explorer, right-click on `wrench` and click `Set as Startup Project`. You should now be able to build and debug wrench using the toolbar controls and all Visual Studio features.
+	Open the newly generated `wrench.sln` in Visual Studio. In the Solution Explorer, right-click on `wrench` and click `Set as Startup Project`. You should now be able to build and debug wrench using the toolbar controls and all Visual Studio features.

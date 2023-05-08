@@ -7,6 +7,7 @@ New features:
 - Occlusion data for a level is now rebuilt during the packing process. This means that objects should no longer disappear when they are moved far from their initial position.
 - Packed ELF files and the level code overlays can now be unpacked to a regular ELF file.
 - Tfrag meshes are now unpacked with quad faces (internally tfaces are recovered, but I'm yet to develop a solution to properly export that information).
+- Overhauled the documentation.
 
 Changes:
 - Tfrag and collision assets are no longer duplicated in the unpacked asset files (they are now only stored inside Chunk assets, even in the case of R&C1).
