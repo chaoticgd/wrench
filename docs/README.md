@@ -18,3 +18,4 @@
 	- [Tfrag Renderer](tfrag_renderer.md)
 	- Tie Renderer
 - [Sound](sound.md)
+- [Textures](textures.md)
