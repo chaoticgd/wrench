@@ -16,7 +16,7 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-format_version: 20
+format_version: 21
 
 // *****************************************************************************
 
@@ -1229,13 +1229,13 @@ AssetType LevelWad {
 	}
 	Child gameplay {
 		desc: "The gameplay file for the level."
-		allowed_types: ["Binary"]
+		allowed_types: ["Instances" "Binary"]
 		required: true
 		games: [1 2 3 4]
 	}
 	Child art_instances {
 		desc: "Similar thing as with the gameplay file."
-		allowed_types: ["Binary"]
+		allowed_types: ["Instances" "Binary"]
 		required: true
 		games: [4]
 	}
@@ -1337,7 +1337,7 @@ AssetType Mission {
 	
 	Child instances {
 		desc: "Moby gameplay instances and pvar data for this mission."
-		allowed_types: ["Binary"]
+		allowed_types: ["Instances" "Binary"]
 		games: [4]
 	}
 	
@@ -1836,8 +1836,37 @@ AssetType Occlusion {
 	}
 	
 	FileReferenceAttribute octants {
-		desc: "A path to text file containing a list of all the octants for which occlusion should be generated. Each line is a list of 3 integers X, Y and Z separated by spaces. Each coordinate must be multiplied by 4 to obtain world coordinates."
+		desc: "A path to a text file containing a list of all the octants for which occlusion should be generated. Each line is a list of 3 integers X, Y and Z separated by spaces. Each coordinate must be multiplied by 4 to obtain world coordinates."
 		required: true
 		games: [1 2 3 4]
+	}
+}
+
+AssetType Instances {
+	desc: "The instances."
+	bin_leaf: true
+	
+	FileReferenceAttribute src {
+		desc: "A path to the instances file."
+		required: true
+		games: [1 2 3 4]
+	}
+	
+	Hint gameplay {
+		syntax: "gameplay"
+		example: "gameplay"
+		desc: "A gameplay file."
+	}
+	
+	Hint art {
+		syntax: "art"
+		example: "art"
+		desc: "A Deadlocked art instances file."
+	}
+	
+	Hint mission {
+		syntax: "mission"
+		example: "mission"
+		desc: "A Deadlocked mission instances file."
 	}
 }

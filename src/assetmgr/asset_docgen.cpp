@@ -151,7 +151,7 @@ static void write_attribute_table(const WtfNode* asset_type) {
 		if(attrib_hidden && attrib_hidden->type == WTF_BOOLEAN && attrib_hidden->boolean) {
 			continue;
 		}
-		char* end_of_name = strchr(child->type_name, 'A');
+		char* end_of_name = strrchr(child->type_name, 'A');
 		if(!end_of_name || strcmp(end_of_name, "Attribute") != 0) {
 			continue;
 		}

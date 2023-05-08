@@ -136,8 +136,8 @@ void unpack_dl_level_data_wad(LevelWadAsset& dest, InputStream& src, BuildConfig
 	unpack_asset(dest.overlay<ElfFileAsset>(), src, header.overlay, config, FMT_ELFFILE_RATCHET_EXECUTABLE);
 	unpack_asset(dest.hud_header(), src, header.hud_header, config);
 	unpack_compressed_assets<BinaryAsset>(dest.hud_banks(SWITCH_FILES), src, ARRAY_PAIR(header.hud_banks), config);
-	unpack_compressed_asset(dest.art_instances(), src, header.art_instances, config);
-	unpack_compressed_asset(dest.gameplay(), src, header.gameplay, config);
+	unpack_compressed_asset(dest.art_instances<InstancesAsset>(), src, header.art_instances, config, FMT_INSTANCES_ART);
+	unpack_compressed_asset(dest.gameplay<InstancesAsset>(), src, header.gameplay, config, FMT_INSTANCES_GAMEPLAY);
 	unpack_compressed_asset(dest.global_nav_data(), src, header.global_nav_data, config);
 }
 

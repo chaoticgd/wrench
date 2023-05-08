@@ -109,7 +109,7 @@ static void unpack_rac_level_wad(LevelWadAsset& dest, const RacLevelWadHeader& h
 	
 	SubInputStream data(src, header.data.bytes());
 	unpack_rac_level_data_wad(dest, data, config);
-	unpack_compressed_asset(dest.gameplay(), src, header.gameplay_ntsc, config);
+	unpack_compressed_asset(dest.gameplay<InstancesAsset>(), src, header.gameplay_ntsc, config, FMT_INSTANCES_GAMEPLAY);
 }
 
 static void pack_rac_level_wad(OutputStream& dest, RacLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config) {
@@ -133,7 +133,7 @@ static void unpack_gc_68_level_wad(LevelWadAsset& dest, const GcLevelWadHeader68
 	unpack_asset(dest.sound_bank(), src, header.sound_bank, config);
 	SubInputStream data(src, header.data.bytes());
 	unpack_gc_uya_level_data_wad(dest, data, config);
-	unpack_compressed_asset(dest.gameplay(), src, header.gameplay_ntsc, config);
+	unpack_compressed_asset(dest.gameplay<InstancesAsset>(), src, header.gameplay_ntsc, config, FMT_INSTANCES_GAMEPLAY);
 	
 	ChunkWadHeader chunks;
 	memcpy(&chunks.chunks, header.chunks, sizeof(chunks.chunks));
@@ -154,7 +154,7 @@ static void unpack_gc_uya_level_wad(LevelWadAsset& dest, const GcUyaLevelWadHead
 	unpack_asset(dest.sound_bank(), src, header.sound_bank, config);
 	SubInputStream data(src, header.data.bytes());
 	unpack_gc_uya_level_data_wad(dest, data, config);
-	unpack_compressed_asset(dest.gameplay(), src, header.gameplay, config);
+	unpack_compressed_asset(dest.gameplay<InstancesAsset>(), src, header.gameplay, config, FMT_INSTANCES_GAMEPLAY);
 	unpack_level_chunks(dest.chunks(), src, header.chunks, config);
 }
 
@@ -220,7 +220,7 @@ static void unpack_missions(CollectionAsset& dest, InputStream& file, const Miss
 		if(!header.instances.empty() || !header.classes.empty() || !ranges.sound_banks[i].empty()) {
 			std::string path = stringf("missions/%d/mission%d.asset", i, i);
 			MissionAsset& mission = dest.foreign_child<MissionAsset>(path, false, i);
-			unpack_compressed_asset(mission.instances(), file, header.instances, config);
+			unpack_compressed_asset(mission.instances<InstancesAsset>(), file, header.instances, config, FMT_INSTANCES_MISSION);
 			unpack_compressed_asset(mission.classes<CollectionAsset>(), file, header.classes, config, FMT_COLLECTION_MISSION_CLASSES);
 			unpack_asset(mission.sound_bank(), file, ranges.sound_banks[i], config);
 		}
@@ -303,7 +303,7 @@ static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& 
 }
 
 static std::pair<Gameplay, PvarTypes> load_gameplay(const LevelWadAsset& src, const BuildConfig& config) {
-	const BinaryAsset& gameplay_asset = src.get_gameplay();
+	const BinaryAsset& gameplay_asset = src.get_gameplay().as<BinaryAsset>();
 	Gameplay gameplay;
 	PvarTypes pvars;
 	std::unique_ptr<InputStream> gameplay_stream = gameplay_asset.file().open_binary_file_for_reading(gameplay_asset.src());

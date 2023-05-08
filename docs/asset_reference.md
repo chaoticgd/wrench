@@ -1,6 +1,6 @@
 # Asset Reference
 
-This file was generated from asset_schema.wtf and is for version 20 of the asset format.
+This file was generated from asset_schema.wtf and is for version 21 of the asset format.
 
 ## Index
 
@@ -60,6 +60,7 @@ This file was generated from asset_schema.wtf and is for version 20 of the asset
 	- [Sky](#sky)
 	- [SkyShell](#skyshell)
 	- [Occlusion](#occlusion)
+	- [Instances](#instances)
 
 ## General
 
@@ -69,7 +70,9 @@ A reference to an asset that can be put in place of any other asset.
 
 *Attributes*
 
-No attributes.
+| Name | Description | Type | Required | Games |
+| - | - | - | - | - |
+| asset | The asset being referenced. | AssetLink | Yes | RAC/GC/UYA/DL |
 
 *Children*
 
@@ -816,8 +819,8 @@ No attributes.
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
 | sound_bank | The main 989snd sound bank for the level. | Binary | Yes | RAC/GC/UYA/DL |
-| gameplay | The gameplay file for the level. | Binary | Yes | RAC/GC/UYA/DL |
-| art_instances | Similar thing as with the gameplay file. | Binary | Yes | DL |
+| gameplay | The gameplay file for the level. | Instances, Binary | Yes | RAC/GC/UYA/DL |
+| art_instances | Similar thing as with the gameplay file. | Instances, Binary | Yes | DL |
 | chunks | The chunks (see Chunk asset). | Collection | Yes | RAC/GC/UYA/DL |
 | missions | *Not yet documented.* | Collection | *Not yet documented.* | DL |
 | moby8355_pvars | *Not yet documented.* | Binary | Yes | DL |
@@ -869,7 +872,7 @@ No attributes.
 
 | Name | Description | Allowed Types | Required | Games |
 | - | - | - | - | - |
-| instances | Moby gameplay instances and pvar data for this mission. | Binary | *Not yet documented.* | DL |
+| instances | Moby gameplay instances and pvar data for this mission. | Instances, Binary | *Not yet documented.* | DL |
 | classes | Moby classes for this mission. | Collection, Binary | *Not yet documented.* | DL |
 | sound_bank | Sound bank for this mission. | Binary | *Not yet documented.* | DL |
 
@@ -1181,8 +1184,30 @@ Information required to build the occlusion culling data for a level.		The playa
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
 | memory_budget | The maximum size of the computed collision database in bytes, including both the octant lookup tree and the visibility masks. | Integer | No | RAC/GC/UYA/DL |
-| octants | A path to text file containing a list of all the octants for which occlusion should be generated. Each line is a list of 3 integers X, Y and Z separated by spaces. Each coordinate must be multiplied by 4 to obtain world coordinates. | FilePath | Yes | RAC/GC/UYA/DL |
+| octants | A path to a text file containing a list of all the octants for which occlusion should be generated. Each line is a list of 3 integers X, Y and Z separated by spaces. Each coordinate must be multiplied by 4 to obtain world coordinates. | FilePath | Yes | RAC/GC/UYA/DL |
 
 *Children*
 
 No children.
+
+### Instances
+
+The instances.
+
+*Attributes*
+
+| Name | Description | Type | Required | Games |
+| - | - | - | - | - |
+| src | A path to the instances file. | FilePath | Yes | RAC/GC/UYA/DL |
+
+*Children*
+
+No children.
+
+*Hints*
+
+| Syntax | Example | Description |
+| - | - | - |
+| `gameplay` | `gameplay` | A gameplay file. |
+| `art` | `art` | A Deadlocked art instances file. |
+| `mission` | `mission` | A Deadlocked mission instances file. |

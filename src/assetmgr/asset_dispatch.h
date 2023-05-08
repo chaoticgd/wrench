@@ -52,6 +52,9 @@ class Asset;
 #define FMT_MPEGWAD_NOMPEGS "nompegs"
 #define FMT_ELFFILE_PACKED "packed"
 #define FMT_ELFFILE_RATCHET_EXECUTABLE "ratchetexecutable"
+#define FMT_INSTANCES_GAMEPLAY "gameplay"
+#define FMT_INSTANCES_ART "art"
+#define FMT_INSTANCES_MISSION "mission"
 
 // *****************************************************************************
 

@@ -336,7 +336,7 @@ static void generate_read_function(const WtfNode* asset_type) {
 			out("\tconst WtfAttribute* %s = wtf_attribute(node, \"%s\");\n", attrib.c_str(), node->tag);
 			out("\tif(%s) {\n", attrib.c_str());
 			generate_read_attribute_code(node, result.c_str(), attrib.c_str(), 0);
-			out("\t_attrib_exists |= ATTRIB_%s;\n", node->tag);
+			out("\t\t_attrib_exists |= ATTRIB_%s;\n", node->tag);
 			out("\t}\n");
 		}
 	}
