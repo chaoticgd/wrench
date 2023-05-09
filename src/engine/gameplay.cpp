@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2022 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -54,21 +54,16 @@ std::vector<u8> write_gameplay(const Gameplay& gameplay_arg, const PvarTypes& ty
 	OutBuffer dest(dest_vec);
 	for(const GameplayBlockDescription& block : blocks) {
 		if(block.header_pointer_offset != NONE && block.funcs.write != nullptr) {
-			if(strcmp(block.name, "us english help messages") != 0) {
+			if(strcmp(block.name, "us english help messages") != 0 && strcmp(block.name, "occlusion") != 0) {
 				dest.pad(0x10, 0);
 			}
-			if(strcmp(block.name, "occlusion") == 0) {
+			if(strcmp(block.name, "occlusion") == 0 && gameplay.occlusion.has_value()) {
 				dest.pad(0x40, 0);
 			}
 			s32 ofs = (s32) dest_vec.size();
 			if(block.funcs.write(dest, types, gameplay, game)) {
 				verify_fatal(block.header_pointer_offset + 4 <= (s32) dest_vec.size());
 				*(s32*) &dest_vec[block.header_pointer_offset] = ofs;
-				if(strcmp(block.name, "art instance shrub groups") == 0
-					&& gameplay.shrub_groups.has_value()
-					&& gameplay.shrub_groups->size() > 0) {
-					dest.pad(0x40, 0);
-				}
 			}
 		}
 	}
@@ -1206,9 +1201,8 @@ packed_struct(GameplayAreaPacked,
 struct AreasBlock {
 	static void read(std::vector<Area>& dest, Buffer src, Game game) {
 		src = src.subbuf(4); // Skip past size field.
-		s64 header_size = sizeof(AreasHeader);
 		auto header = src.read<AreasHeader>(0, "area list block header");
-		auto entries = src.read_multiple<GameplayAreaPacked>(header_size, header.area_count, "area list table");
+		auto entries = src.read_multiple<GameplayAreaPacked>(sizeof(AreasHeader), header.area_count, "area list table");
 		s32 index = 0;
 		for(const GameplayAreaPacked& entry : entries) {
 			Area area;
@@ -1376,7 +1370,6 @@ struct OcclusionMappingsBlock {
 		dest.write_multiple(src.tfrag_mappings);
 		dest.write_multiple(src.tie_mappings);
 		dest.write_multiple(src.moby_mappings);
-		dest.pad(0x40, 0);
 	}
 };
 

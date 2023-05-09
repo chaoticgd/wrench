@@ -64,14 +64,15 @@ static const std::vector<GameplayBlockDescription>* get_gameplay_block_descripti
 			blocks = &GC_UYA_GAMEPLAY_BLOCKS;
 			break;
 		case Game::DL:
-			if(strcmp(hint, "gameplay") == 0) {
+			if(strcmp(hint, FMT_INSTANCES_GAMEPLAY) == 0) {
 				blocks = &DL_GAMEPLAY_CORE_BLOCKS;
-			} if(strcmp(hint, "art") == 0) {
+			} else if(strcmp(hint, FMT_INSTANCES_ART) == 0) {
 				blocks = &DL_ART_INSTANCE_BLOCKS;
-			} else if(strcmp(hint, "mission") == 0) {
+			} else if(strcmp(hint, FMT_INSTANCES_MISSION) == 0) {
 				blocks = &DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS;
 			} else {
-				verify_not_reached("Invalid hint. Must be 'gameplay', 'art' or 'mission'.");
+				verify_not_reached("Invalid hint. Must be '%s', '%s' or '%s'.",
+					FMT_INSTANCES_GAMEPLAY, FMT_INSTANCES_ART, FMT_INSTANCES_MISSION);
 			}
 			break;
 		default: verify_fatal(0);
