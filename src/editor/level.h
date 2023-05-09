@@ -60,7 +60,7 @@ public:
 	
 private:
 	LevelAsset* _asset = nullptr;
-	BinaryAsset* _gameplay_asset = nullptr;
+	InstancesAsset* _gameplay_asset = nullptr;
 	Gameplay _gameplay;
 	PvarTypes _pvar_types;
 };

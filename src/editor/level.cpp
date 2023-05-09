@@ -27,7 +27,7 @@ Level::Level() {}
 void Level::read(LevelAsset& asset, Game g) {
 	game = g;
 	_asset = &asset;
-	_gameplay_asset = &level_wad().get_gameplay().as<BinaryAsset>();
+	_gameplay_asset = &level_wad().get_gameplay().as<InstancesAsset>();
 		
 	auto stream = _gameplay_asset->file().open_binary_file_for_reading(_gameplay_asset->src());
 	std::vector<u8> buffer = stream->read_multiple<u8>(stream->size());
@@ -192,7 +192,7 @@ void Level::save(const fs::path& path) {
 		if(new_asset.logical_type() != BinaryAsset::ASSET_TYPE) {
 			throw SaveError{false, "An asset of a different type already exists."};
 		}
-		_gameplay_asset = &new_asset.as<BinaryAsset>();
+		_gameplay_asset = &new_asset.as<InstancesAsset>();
 	}
 	
 	fs::path gameplay_path;
