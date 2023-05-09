@@ -65,6 +65,8 @@ WrenchFileHandle* file_open(const char* filename, const WrenchFileMode mode) {
             break;
     }
 
+	DWORD share_mode = FILE_SHARE_READ | FILE_SHARE_WRITE;
+
 	LPCCH input_string = (LPCCH) filename;
 
 	int wide_string_size = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, input_string, -1, (LPWSTR) 0, 0);
@@ -81,7 +83,7 @@ WrenchFileHandle* file_open(const char* filename, const WrenchFileMode mode) {
 
 	WrenchFileHandle* file = (WrenchFileHandle*) malloc(sizeof(WrenchFileHandle));
 
-	file->file = CreateFileW(wide_string, desired_access, (DWORD) 0, (LPSECURITY_ATTRIBUTES) 0, creation_disposition, FILE_ATTRIBUTE_NORMAL, (HANDLE) 0);
+	file->file = CreateFileW(wide_string, desired_access, share_mode, (LPSECURITY_ATTRIBUTES) 0, creation_disposition, FILE_ATTRIBUTE_NORMAL, (HANDLE) 0);
 
 	verify(file->file != INVALID_HANDLE_VALUE, "Failed to open file. WinAPI Error Code: %d.", GetLastError());
 
