@@ -518,8 +518,8 @@ packed_struct(MobyBlockHeader,
 	s32 pad[2];
 )
 
-packed_struct(MobyInstanceRAC1,
-	/* 0x00 */ s32 size; // Always 0x78.
+packed_struct(RacMobyInstance,
+	/* 0x00 */ s32 size; // sizeof(RacMobyInstance)
 	/* 0x04 */ s32 unknown_4;
 	/* 0x08 */ s32 unknown_8;
 	/* 0x0c */ s32 unknown_c;
@@ -529,8 +529,8 @@ packed_struct(MobyInstanceRAC1,
 	/* 0x1c */ f32 scale;
 	/* 0x20 */ f32 draw_distance;
 	/* 0x24 */ s32 update_distance;
-	/* 0x28 */ s32 unknown_28;
-	/* 0x2c */ s32 unknown_2c;
+	/* 0x28 */ s32 unused_28;
+	/* 0x2c */ s32 unused_2c;
 	/* 0x30 */ Vec3f position;
 	/* 0x3c */ Vec3f rotation;
 	/* 0x48 */ s32 group;
@@ -541,9 +541,10 @@ packed_struct(MobyInstanceRAC1,
 	/* 0x5c */ s32 occlusion; // 0 = precompute occlusion
 	/* 0x60 */ s32 unknown_60;
 	/* 0x64 */ Rgb96 colour;
-	/* 0x70 */ s32 unknown_70;
+	/* 0x70 */ s32 light;
 	/* 0x74 */ s32 unknown_74;
 )
+static_assert(sizeof(RacMobyInstance) == 0x78);
 
 struct RAC1MobyBlock {
 	static void read(PvarTypes& types, Gameplay& gameplay, Buffer src, Game game) {
@@ -552,7 +553,7 @@ struct RAC1MobyBlock {
 		s32 index = 0;
 		gameplay.moby_instances = std::vector<MobyInstance>();
 		gameplay.moby_instances->reserve(header.static_count);
-		for(MobyInstanceRAC1 entry : src.read_multiple<MobyInstanceRAC1>(0x10, header.static_count, "moby instances")) {
+		for(RacMobyInstance entry : src.read_multiple<RacMobyInstance>(0x10, header.static_count, "moby instances")) {
 			verify(entry.size == 0x78, "Moby size field has invalid value.");
 			MobyInstance instance;
 			instance.set_id_value(index++);
@@ -569,15 +570,15 @@ struct RAC1MobyBlock {
 		header.dynamic_count = *gameplay.dynamic_moby_count;
 		dest.write(header);
 		for(MobyInstance instance : *gameplay.moby_instances) {
-			MobyInstanceRAC1 entry;
+			RacMobyInstance entry;
 			swap_moby(instance, entry);
 			dest.write(entry);
 		}
 		return true;
 	}
 	
-	static void swap_moby(MobyInstance& l, MobyInstanceRAC1& r) {
-		r.size = 0x78;
+	static void swap_moby(MobyInstance& l, RacMobyInstance& r) {
+		r.size = sizeof(RacMobyInstance);
 		swap_position_rotation_scale(l, r);
 		SWAP_PACKED(l.temp_pvar_index(), r.pvar_index);
 		SWAP_PACKED(l.draw_distance(), r.draw_distance);
@@ -588,8 +589,8 @@ struct RAC1MobyBlock {
 		SWAP_PACKED(l.rac1_unknown_14, r.unknown_14);
 		SWAP_PACKED(l.o_class, r.o_class);
 		SWAP_PACKED(l.update_distance, r.update_distance);
-		SWAP_PACKED(l.rac1_unknown_28, r.unknown_28);
-		SWAP_PACKED(l.rac1_unknown_2c, r.unknown_2c);
+		r.unused_28 = 32;
+		r.unused_2c = 64;
 		SWAP_PACKED(l.group, r.group);
 		SWAP_PACKED(l.is_rooted, r.is_rooted);
 		SWAP_PACKED(l.rooted_distance, r.rooted_distance);
@@ -599,12 +600,12 @@ struct RAC1MobyBlock {
 		SWAP_PACKED(l.colour().r, r.colour.r);
 		SWAP_PACKED(l.colour().g, r.colour.g);
 		SWAP_PACKED(l.colour().b, r.colour.b);
-		SWAP_PACKED(l.rac1_unknown_70, r.unknown_70);
+		SWAP_PACKED(l.light, r.light);
 		SWAP_PACKED(l.rac1_unknown_74, r.unknown_74);
 	}
 };
 
-packed_struct(MobyInstanceRAC23,
+packed_struct(GcUyaMobyInstance,
 	/* 0x00 */ s32 size; // Always 0x88.
 	/* 0x04 */ s32 mission;
 	/* 0x08 */ s32 unknown_8;
@@ -619,8 +620,8 @@ packed_struct(MobyInstanceRAC23,
 	/* 0x2c */ f32 scale;
 	/* 0x30 */ s32 draw_distance;
 	/* 0x34 */ s32 update_distance;
-	/* 0x38 */ s32 unknown_38;
-	/* 0x3c */ s32 unknown_3c;
+	/* 0x38 */ s32 unused_38;
+	/* 0x3c */ s32 unused_3c;
 	/* 0x40 */ Vec3f position;
 	/* 0x4c */ Vec3f rotation;
 	/* 0x58 */ s32 group;
@@ -634,6 +635,7 @@ packed_struct(MobyInstanceRAC23,
 	/* 0x80 */ s32 light;
 	/* 0x84 */ s32 unknown_84;
 )
+static_assert(sizeof(GcUyaMobyInstance) == 0x88);
 
 struct RAC23MobyBlock {
 	static void read(PvarTypes& types, Gameplay& gameplay, Buffer src, Game game) {
@@ -642,7 +644,7 @@ struct RAC23MobyBlock {
 		s32 index = 0;
 		gameplay.moby_instances = std::vector<MobyInstance>();
 		gameplay.moby_instances->reserve(header.static_count);
-		for(MobyInstanceRAC23 entry : src.read_multiple<MobyInstanceRAC23>(0x10, header.static_count, "moby instances")) {
+		for(GcUyaMobyInstance entry : src.read_multiple<GcUyaMobyInstance>(0x10, header.static_count, "moby instances")) {
 			verify(entry.size == 0x88, "Moby size field has invalid value.");
 			MobyInstance instance;
 			instance.set_id_value(index++);
@@ -659,14 +661,14 @@ struct RAC23MobyBlock {
 		header.dynamic_count = *gameplay.dynamic_moby_count;
 		dest.write(header);
 		for(MobyInstance instance : *gameplay.moby_instances) {
-			MobyInstanceRAC23 entry;
+			GcUyaMobyInstance entry;
 			swap_moby(instance, entry);
 			dest.write(entry);
 		}
 		return true;
 	}
 	
-	static void swap_moby(MobyInstance& l, MobyInstanceRAC23& r) {
+	static void swap_moby(MobyInstance& l, GcUyaMobyInstance& r) {
 		r.size = 0x88;
 		swap_position_rotation_scale(l, r);
 		SWAP_PACKED(l.temp_pvar_index(), r.pvar_index);
@@ -685,8 +687,8 @@ struct RAC23MobyBlock {
 		SWAP_PACKED(l.rac23_unknown_24, r.unknown_24);
 		SWAP_PACKED(l.o_class, r.o_class);
 		SWAP_PACKED(l.update_distance, r.update_distance);
-		SWAP_PACKED(l.rac23_unknown_38, r.unknown_38);
-		SWAP_PACKED(l.rac23_unknown_3c, r.unknown_3c);
+		r.unused_38 = 32;
+		r.unused_3c = 64;
 		SWAP_PACKED(l.group, r.group);
 		SWAP_PACKED(l.is_rooted, r.is_rooted);
 		SWAP_PACKED(l.rooted_distance, r.rooted_distance);
@@ -698,8 +700,8 @@ struct RAC23MobyBlock {
 	}
 };
 
-packed_struct(MobyInstanceDL,
-	/* 0x00 */ s32 size; // Always 0x70.
+packed_struct(DlMobyInstance,
+	/* 0x00 */ s32 size; // sizeof(DlMobyInstance)
 	/* 0x04 */ s32 mission;
 	/* 0x08 */ s32 uid;
 	/* 0x0c */ s32 bolts;
@@ -707,8 +709,8 @@ packed_struct(MobyInstanceDL,
 	/* 0x14 */ f32 scale;
 	/* 0x18 */ s32 draw_distance;
 	/* 0x1c */ s32 update_distance;
-	/* 0x20 */ s32 unknown_20;
-	/* 0x24 */ s32 unknown_24;
+	/* 0x20 */ s32 unused_20;
+	/* 0x24 */ s32 unused_24;
 	/* 0x28 */ Vec3f position;
 	/* 0x34 */ Vec3f rotation;
 	/* 0x40 */ s32 group;
@@ -718,11 +720,11 @@ packed_struct(MobyInstanceDL,
 	/* 0x50 */ s32 pvar_index;
 	/* 0x54 */ s32 occlusion; // 0 = precompute occlusion
 	/* 0x58 */ s32 mode_bits;
-	/* 0x5c */ Rgb96 light_colour;
+	/* 0x5c */ Rgb96 colour;
 	/* 0x68 */ s32 light;
-	/* 0x6c */ s32 unknown_6c;
+	/* 0x6c */ s32 unused_6c;
 )
-static_assert(sizeof(MobyInstanceDL) == 0x70);
+static_assert(sizeof(DlMobyInstance) == 0x70);
 
 struct DeadlockedMobyBlock {
 	static void read(PvarTypes& types, Gameplay& gameplay, Buffer src, Game game) {
@@ -731,12 +733,12 @@ struct DeadlockedMobyBlock {
 		gameplay.moby_instances = std::vector<MobyInstance>();
 		gameplay.moby_instances->reserve(header.static_count);
 		s32 index = 0;
-		for(MobyInstanceDL entry : src.read_multiple<MobyInstanceDL>(0x10, header.static_count, "moby instances")) {
-			verify(entry.size == 0x70, "Moby size field has invalid value.");
-			verify(entry.unknown_20 == 32, "Moby field has weird value.");
-			verify(entry.unknown_24 == 64, "Moby field has weird value.");
+		for(DlMobyInstance entry : src.read_multiple<DlMobyInstance>(0x10, header.static_count, "moby instances")) {
+			verify(entry.size == sizeof(DlMobyInstance), "Moby size field has invalid value.");
+			verify(entry.unused_20 == 32, "Moby field has weird value.");
+			verify(entry.unused_24 == 64, "Moby field has weird value.");
 			verify(entry.unknown_4c == 1, "Moby field has weird value.");
-			verify(entry.unknown_6c == -1, "Moby field has weird value.");
+			verify(entry.unused_6c == -1, "Moby field has weird value.");
 			
 			MobyInstance instance;
 			instance.set_id_value(index++);
@@ -753,28 +755,28 @@ struct DeadlockedMobyBlock {
 		header.dynamic_count = *gameplay.dynamic_moby_count;
 		dest.write(header);
 		for(MobyInstance instance : *gameplay.moby_instances) {
-			MobyInstanceDL entry;
+			DlMobyInstance entry;
 			swap_moby(instance, entry);
 			dest.write(entry);
 		}
 		return true;
 	}
 	
-	static void swap_moby(MobyInstance& l, MobyInstanceDL& r) {
+	static void swap_moby(MobyInstance& l, DlMobyInstance& r) {
 		r.size = 0x70;
 		swap_position_rotation_scale(l, r);
 		SWAP_PACKED(l.temp_pvar_index(), r.pvar_index);
 		SWAP_PACKED(l.draw_distance(), r.draw_distance);
-		SWAP_PACKED(l.colour().r, r.light_colour.r);
-		SWAP_PACKED(l.colour().g, r.light_colour.g);
-		SWAP_PACKED(l.colour().b, r.light_colour.b);
+		SWAP_PACKED(l.colour().r, r.colour.r);
+		SWAP_PACKED(l.colour().g, r.colour.g);
+		SWAP_PACKED(l.colour().b, r.colour.b);
 		SWAP_PACKED(l.mission, r.mission);
 		SWAP_PACKED(l.uid, r.uid);
 		SWAP_PACKED(l.bolts, r.bolts);
 		SWAP_PACKED(l.o_class, r.o_class);
 		SWAP_PACKED(l.update_distance, r.update_distance);
-		r.unknown_20 = 32;
-		r.unknown_24 = 64;
+		r.unused_20 = 32;
+		r.unused_24 = 64;
 		SWAP_PACKED(l.group, r.group);
 		SWAP_PACKED(l.is_rooted, r.is_rooted);
 		SWAP_PACKED(l.rooted_distance, r.rooted_distance);
@@ -782,7 +784,7 @@ struct DeadlockedMobyBlock {
 		SWAP_PACKED(l.occlusion, r.occlusion);
 		SWAP_PACKED(l.mode_bits, r.mode_bits);
 		SWAP_PACKED(l.light, r.light);
-		r.unknown_6c = -1;
+		r.unused_6c = -1;
 	}
 };
 

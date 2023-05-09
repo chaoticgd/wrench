@@ -469,11 +469,8 @@ struct MobyInstance : Instance {
 	s32 rac1_unknown_1c;
 	s32 rac1_unknown_20;
 	s32 rac1_unknown_24;
-	s32 rac1_unknown_28;
-	s32 rac1_unknown_2c;
 	s32 rac1_unknown_54;
 	s32 rac1_unknown_60;
-	s32 rac1_unknown_70;
 	s32 rac1_unknown_74;
 	s32 rac23_unknown_8;
 	s32 rac23_unknown_c;
@@ -509,11 +506,8 @@ struct MobyInstance : Instance {
 		DEF_FIELD(rac1_unknown_1c);
 		DEF_FIELD(rac1_unknown_20);
 		DEF_FIELD(rac1_unknown_24);
-		DEF_FIELD(rac1_unknown_28);
-		DEF_FIELD(rac1_unknown_2c);
 		DEF_FIELD(rac1_unknown_54);
 		DEF_FIELD(rac1_unknown_60);
-		DEF_FIELD(rac1_unknown_70);
 		DEF_FIELD(rac1_unknown_74);
 		DEF_FIELD(rac23_unknown_8);
 		DEF_FIELD(rac23_unknown_c);
@@ -521,8 +515,6 @@ struct MobyInstance : Instance {
 		DEF_FIELD(rac23_unknown_1c);
 		DEF_FIELD(rac23_unknown_20);
 		DEF_FIELD(rac23_unknown_24);
-		DEF_FIELD(rac23_unknown_38);
-		DEF_FIELD(rac23_unknown_3c);
 		DEF_FIELD(rac23_unknown_4c);
 		DEF_FIELD(rac23_unknown_84);
 	}

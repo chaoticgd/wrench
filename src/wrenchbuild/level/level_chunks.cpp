@@ -35,13 +35,13 @@ void unpack_level_chunks(CollectionAsset& dest, InputStream& file, const ChunkWa
 		}
 		if(chunk_header.tfrags > 0 || chunk_header.collision > 0 || !ranges.sound_banks[i].empty()) {
 			ChunkAsset& chunk = dest.foreign_child<ChunkAsset>(stringf("chunks/%d/chunk_%d.asset", i, i), false, i);
-			if(chunk_header.tfrags > 0) {
+			if(chunk_header.tfrags > 0 && !chunk.has_tfrags()) {
 				s64 offset = ranges.chunks[i].offset.bytes() + chunk_header.tfrags;
 				s64 size = ranges.chunks[i].size.bytes() - chunk_header.tfrags;
 				ByteRange tfrags_range{(s32) offset, (s32) size};
 				unpack_compressed_asset(chunk.tfrags(SWITCH_FILES), file, tfrags_range, config);
 			}
-			if(chunk_header.collision > 0) {
+			if(chunk_header.collision > 0 && !chunk.has_collision()) {
 				s64 offset = ranges.chunks[i].offset.bytes() + chunk_header.collision;
 				s64 size = ranges.chunks[i].size.bytes() - chunk_header.collision;
 				ByteRange collision_range{(s32) offset, (s32) size};

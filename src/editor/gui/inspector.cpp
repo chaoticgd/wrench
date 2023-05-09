@@ -145,11 +145,8 @@ void inspector() {
 		{COM_NONE           , INST_MOBY      , "Unk 1c   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_1c))},
 		{COM_NONE           , INST_MOBY      , "Unk 20   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_20))},
 		{COM_NONE           , INST_MOBY      , "Unk 24   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_24))},
-		{COM_NONE           , INST_MOBY      , "Unk 28   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_28))},
-		{COM_NONE           , INST_MOBY      , "Unk 2c   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_2c))},
 		{COM_NONE           , INST_MOBY      , "Unk 54   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_54))},
 		{COM_NONE           , INST_MOBY      , "Unk 60   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_60))},
-		{COM_NONE           , INST_MOBY      , "Unk 70   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_70))},
 		{COM_NONE           , INST_MOBY      , "Unk 74   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac1_unknown_74))}
 	};
 	
@@ -160,8 +157,6 @@ void inspector() {
 		{COM_NONE           , INST_MOBY      , "Unk 1c   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_1c))},
 		{COM_NONE           , INST_MOBY      , "Unk 20   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_20))},
 		{COM_NONE           , INST_MOBY      , "Unk 24   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_24))},
-		{COM_NONE           , INST_MOBY      , "Unk 38   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_38))},
-		{COM_NONE           , INST_MOBY      , "Unk 3c   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_3c))},
 		{COM_NONE           , INST_MOBY      , "Unk 4c   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_4c))},
 		{COM_NONE           , INST_MOBY      , "Unk 84   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_84))}
 	};

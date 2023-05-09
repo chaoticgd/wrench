@@ -71,7 +71,7 @@ static const std::vector<GameplayBlockDescription>* get_gameplay_block_descripti
 			} else if(strcmp(hint, "mission") == 0) {
 				blocks = &DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS;
 			} else {
-				verify_not_reached("Invalid hint. Must be 'gameplay' or 'art' or 'mission'.");
+				verify_not_reached("Invalid hint. Must be 'gameplay', 'art' or 'mission'.");
 			}
 			break;
 		default: verify_fatal(0);
