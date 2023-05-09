@@ -21,15 +21,15 @@
 #include <wrenchbuild/asset_packer.h>
 #include <wrenchbuild/tests.h>
 
-static void unpack_instances_asset(InstancesAsset& dest, InputStream& src, BuildConfig config);
+static void unpack_instances_asset(InstancesAsset& dest, InputStream& src, BuildConfig config, const char* hint);
 static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode);
 static const std::vector<GameplayBlockDescription>* get_gameplay_block_descriptions(Game game, const char* hint);
 
 on_load(Instances, []() {
-	InstancesAsset::funcs.unpack_rac1 = wrap_unpacker_func<InstancesAsset>(unpack_instances_asset);
-	InstancesAsset::funcs.unpack_rac2 = wrap_unpacker_func<InstancesAsset>(unpack_instances_asset);
-	InstancesAsset::funcs.unpack_rac3 = wrap_unpacker_func<InstancesAsset>(unpack_instances_asset);
-	InstancesAsset::funcs.unpack_dl = wrap_unpacker_func<InstancesAsset>(unpack_instances_asset);
+	InstancesAsset::funcs.unpack_rac1 = wrap_hint_unpacker_func<InstancesAsset>(unpack_instances_asset);
+	InstancesAsset::funcs.unpack_rac2 = wrap_hint_unpacker_func<InstancesAsset>(unpack_instances_asset);
+	InstancesAsset::funcs.unpack_rac3 = wrap_hint_unpacker_func<InstancesAsset>(unpack_instances_asset);
+	InstancesAsset::funcs.unpack_dl = wrap_hint_unpacker_func<InstancesAsset>(unpack_instances_asset);
 	
 	InstancesAsset::funcs.test_rac = new AssetTestFunc(test_instances_asset);
 	InstancesAsset::funcs.test_gc = new AssetTestFunc(test_instances_asset);
@@ -37,8 +37,26 @@ on_load(Instances, []() {
 	InstancesAsset::funcs.test_dl = new AssetTestFunc(test_instances_asset);
 })
 
-static void unpack_instances_asset(InstancesAsset& dest, InputStream& src, BuildConfig config) {
-	
+static void unpack_instances_asset(InstancesAsset& dest, InputStream& src, BuildConfig config, const char* hint) {
+	std::vector<u8> buffer = src.read_multiple<u8>(0, src.size());
+	auto [stream, ref] = dest.file().open_binary_file_for_writing(stringf("%s.instances", hint));
+	stream->write_v(buffer);
+	dest.set_src(ref);
+}
+
+std::pair<Gameplay, PvarTypes> load_instances(const Asset& src, const BuildConfig& config, const char* hint) {
+	std::vector <u8> gameplay_buffer;
+	if(const InstancesAsset* asset = src.maybe_as<InstancesAsset>()) {
+		std::unique_ptr<InputStream> gameplay_stream = asset->file().open_binary_file_for_reading(asset->src());
+		gameplay_buffer = gameplay_stream->read_multiple<u8>(gameplay_stream->size());
+	} else if(const BinaryAsset* asset = src.maybe_as<BinaryAsset>()) {
+		std::unique_ptr<InputStream> gameplay_stream = asset->file().open_binary_file_for_reading(asset->src());
+		gameplay_buffer = gameplay_stream->read_multiple<u8>(gameplay_stream->size());
+	}
+	Gameplay gameplay;
+	PvarTypes pvars;
+	read_gameplay(gameplay, pvars, gameplay_buffer, config.game(), *gameplay_block_descriptions_from_game(config.game()));
+	return {gameplay, pvars};
 }
 
 static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode) {

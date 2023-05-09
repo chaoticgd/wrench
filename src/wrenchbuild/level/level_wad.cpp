@@ -22,6 +22,7 @@
 #include <wrenchbuild/asset_packer.h>
 #include <wrenchbuild/level/level_chunks.h>
 #include <wrenchbuild/level/level_data_wad.h>
+#include <wrenchbuild/level/instances_asset.h>
 
 packed_struct(GcUyaLevelWadHeader,
 	/* 0x00 */ s32 header_size;
@@ -84,7 +85,6 @@ static void unpack_dl_level_wad(LevelWadAsset& dest, const DlLevelWadHeader& hea
 static void pack_dl_level_wad(OutputStream& dest, DlLevelWadHeader& header, const LevelWadAsset& src, BuildConfig config);
 static void unpack_missions(CollectionAsset& dest, InputStream& file, const MissionWadHeader& ranges, BuildConfig config);
 static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& dest, const CollectionAsset& missions, BuildConfig config);
-static std::pair<Gameplay, PvarTypes> load_gameplay(const LevelWadAsset& src, const BuildConfig& config);
 template <typename PackerFunc>
 static SectorRange pack_data_wad(OutputStream& dest, const std::vector<LevelChunk>& chunks, Gameplay& gameplay, const LevelWadAsset& src, BuildConfig config, PackerFunc packer);
 static SectorRange write_gameplay_section(OutputStream& dest, const Gameplay& gameplay, const PvarTypes& types, BuildConfig config);
@@ -117,7 +117,7 @@ static void pack_rac_level_wad(OutputStream& dest, RacLevelWadHeader& header, co
 	g_asset_packer_current_level_id = src.id();
 	
 	std::vector<LevelChunk> chunks = load_level_chunks(src.get_chunks(), config);
-	auto [gameplay, pvar_types] = load_gameplay(src, config);
+	auto [gameplay, pvar_types] = load_instances(src.get_gameplay(), config, FMT_INSTANCES_GAMEPLAY);
 	
 	header.data = pack_data_wad(dest, chunks, gameplay, src, config, pack_rac_level_data_wad);
 	header.gameplay_ntsc = write_gameplay_section(dest, gameplay, pvar_types, config);
@@ -164,7 +164,7 @@ static void pack_gc_uya_level_wad(OutputStream& dest, GcUyaLevelWadHeader& heade
 	g_asset_packer_current_level_id = src.id();
 	
 	std::vector<LevelChunk> chunks = load_level_chunks(src.get_chunks(), config);
-	auto [gameplay, pvar_types] = load_gameplay(src, config);
+	auto [gameplay, pvar_types] = load_instances(src.get_gameplay(), config, FMT_INSTANCES_GAMEPLAY);
 	
 	header.sound_bank = pack_asset_sa<SectorRange>(dest, src.get_sound_bank(), config);
 	header.data = pack_data_wad(dest, chunks, gameplay, src, config, pack_gc_uya_level_data_wad);
@@ -191,7 +191,7 @@ static void pack_dl_level_wad(OutputStream& dest, DlLevelWadHeader& header, cons
 	g_asset_packer_current_level_id = src.id();
 	
 	std::vector<LevelChunk> chunks = load_level_chunks(src.get_chunks(), config);
-	auto [gameplay, pvar_types] = load_gameplay(src, config);
+	auto [gameplay, pvar_types] = load_instances(src.get_gameplay(), config, FMT_INSTANCES_GAMEPLAY);
 	
 	header.sound_bank = pack_asset_sa<SectorRange>(dest, src.get_sound_bank(), config);
 	std::vector<u8> compressed_art_instances, compressed_gameplay;
@@ -300,16 +300,6 @@ static std::pair<MissionWadHeader, MaxMissionSizes> pack_missions(OutputStream& 
 		}
 	}
 	return {header, max_sizes};
-}
-
-static std::pair<Gameplay, PvarTypes> load_gameplay(const LevelWadAsset& src, const BuildConfig& config) {
-	const BinaryAsset& gameplay_asset = src.get_gameplay().as<BinaryAsset>();
-	Gameplay gameplay;
-	PvarTypes pvars;
-	std::unique_ptr<InputStream> gameplay_stream = gameplay_asset.file().open_binary_file_for_reading(gameplay_asset.src());
-	std::vector<u8> gameplay_buffer = gameplay_stream->read_multiple<u8>(gameplay_stream->size());
-	read_gameplay(gameplay, pvars, gameplay_buffer, config.game(), *gameplay_block_descriptions_from_game(config.game()));
-	return {gameplay, pvars};
 }
 
 template <typename PackerFunc>
