@@ -71,13 +71,13 @@ WrenchFileHandle* file_open(const char* filename, const WrenchFileMode mode) {
 
 	verify(wide_string_size != 0, "Failed to compute wide filename size. WinAPI Error Code: %d.", GetLastError());
 
-	LPWSTR wide_string = (LPWSTR) malloc(wide_string_size);
+	LPWSTR wide_string = (LPWSTR) malloc(wide_string_size * sizeof(WCHAR));
 
 	verify(wide_string != (LPWSTR) 0, "Failed to allocate wide filename.");
 
 	int written_bytes = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, input_string, -1, wide_string, wide_string_size);
 
-	verify(written_bytes != 0, "Failed to convert filename. WinAPI Error Code: %d.", GetLastError());
+	verify(written_bytes != 0 && written_bytes <= wide_string_size, "Failed to convert filename. WinAPI Error Code: %d.", GetLastError());
 
 	WrenchFileHandle* file = (WrenchFileHandle*) malloc(sizeof(WrenchFileHandle));
 
