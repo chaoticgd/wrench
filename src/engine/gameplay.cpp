@@ -487,9 +487,9 @@ struct InstanceBlock {
 	static void write(OutBuffer dest, const std::vector<ThisInstance>& src, Game game) {
 		TableHeader header = {(s32) src.size()};
 		dest.write(header);
-		for(ThisInstance camera : src) {
+		for(ThisInstance instance : src) {
 			Packed packed;
-			swap_instance(camera, packed);
+			swap_instance(instance, packed);
 			dest.write(packed);
 		}
 	}
@@ -1504,7 +1504,7 @@ static void swap_instance(DirectionalLight& l, DirectionalLightPacked& r) {
 	r.direction_b.swap(l.direction_b);
 }
 
-packed_struct(TieInstanceRAC1,
+packed_struct(RacTieInstance,
 	/* 0x00 */ s32 o_class;
 	/* 0x04 */ s32 draw_distance;
 	/* 0x08 */ s32 pad_8;
@@ -1516,9 +1516,9 @@ packed_struct(TieInstanceRAC1,
 	/* 0x58 */ s32 pad_58;
 	/* 0x5c */ s32 pad_5c;
 )
-static_assert(sizeof(TieInstanceRAC1) == 0xe0);
+static_assert(sizeof(RacTieInstance) == 0xe0);
 
-static void swap_instance(TieInstance& l, TieInstanceRAC1& r) {
+static void swap_instance(TieInstance& l, RacTieInstance& r) {
 	swap_matrix(l, r);
 	SWAP_PACKED(l.draw_distance(), r.draw_distance);
 	SWAP_PACKED(l.o_class, r.o_class);
@@ -1539,7 +1539,7 @@ static void swap_instance(TieInstance& l, TieInstanceRAC1& r) {
 	memcpy(r.ambient_rgbas, temp_rgbas, 0x80);
 }
 
-packed_struct(TieInstancePacked,
+packed_struct(GcUyaDlTieInstance,
 	/* 0x00 */ s32 o_class;
 	/* 0x04 */ s32 draw_distance;
 	/* 0x08 */ s32 pad_8;
@@ -1550,9 +1550,9 @@ packed_struct(TieInstancePacked,
 	/* 0x58 */ s32 pad_58;
 	/* 0x5c */ s32 pad_5c;
 )
-static_assert(sizeof(TieInstancePacked) == 0x60);
+static_assert(sizeof(GcUyaDlTieInstance) == 0x60);
 
-static void swap_instance(TieInstance& l, TieInstancePacked& r) {
+static void swap_instance(TieInstance& l, GcUyaDlTieInstance& r) {
 	swap_matrix(l, r);
 	SWAP_PACKED(l.draw_distance(), r.draw_distance);
 	SWAP_PACKED(l.o_class, r.o_class);
@@ -1567,30 +1567,30 @@ static void swap_instance(TieInstance& l, TieInstancePacked& r) {
 packed_struct(ShrubInstancePacked,
 	/* 0x00 */ s32 o_class;
 	/* 0x04 */ f32 draw_distance;
-	/* 0x08 */ s32 unknown_8;
-	/* 0x0c */ s32 unknown_c;
+	/* 0x08 */ s32 unused_8;
+	/* 0x0c */ s32 unused_c;
 	/* 0x10 */ Mat4 matrix;
-	/* 0x50 */ Rgb96 light_colour;
+	/* 0x50 */ Rgb96 colour;
 	/* 0x5c */ s32 unknown_5c;
-	/* 0x60 */ s32 unknown_60;
+	/* 0x60 */ s32 dir_lights;
 	/* 0x64 */ s32 unknown_64;
-	/* 0x68 */ s32 unknown_68;
+	/* 0x68 */ f32 unknown_68;
 	/* 0x6c */ s32 unknown_6c;
 )
 
 static void swap_instance(ShrubInstance& l, ShrubInstancePacked& r) {
 	swap_matrix(l, r);
 	SWAP_PACKED(l.draw_distance(), r.draw_distance);
-	SWAP_PACKED(l.colour().r, r.light_colour.r);
-	SWAP_PACKED(l.colour().g, r.light_colour.g);
-	SWAP_PACKED(l.colour().b, r.light_colour.b);
+	SWAP_PACKED(l.colour().r, r.colour.r);
+	SWAP_PACKED(l.colour().g, r.colour.g);
+	SWAP_PACKED(l.colour().b, r.colour.b);
 	SWAP_PACKED(l.o_class, r.o_class);
-	SWAP_PACKED(l.unknown_8, r.unknown_8);
-	SWAP_PACKED(l.unknown_c, r.unknown_c);
+	r.unused_8 = 0;
+	r.unused_c = 0;
 	SWAP_PACKED(l.unknown_5c, r.unknown_5c);
-	SWAP_PACKED(l.unknown_60, r.unknown_60);
+	SWAP_PACKED(l.dir_lights, r.dir_lights);
 	SWAP_PACKED(l.unknown_64, r.unknown_64);
-	SWAP_PACKED(l.unknown_68, r.unknown_68);
+	SWAP_PACKED(l.unknown_68, r.unknown_68);r.unknown_68 = -1000.f;
 	SWAP_PACKED(l.unknown_6c, r.unknown_6c);
 }
 
@@ -1662,7 +1662,7 @@ const std::vector<GameplayBlockDescription> RAC_GAMEPLAY_BLOCKS = {
 	{0x48, bf<GroupBlock>(&Gameplay::moby_groups), "moby groups"},
 	{0x4c, {GlobalPvarBlock::read, GlobalPvarBlock::write}, "global pvar"},
 	{0x30, {TieClassBlock::read, TieClassBlock::write}, "tie classes"},
-	{0x34, bf<InstanceBlock<TieInstance, TieInstanceRAC1>>(&Gameplay::tie_instances), "tie instances"},
+	{0x34, bf<InstanceBlock<TieInstance, RacTieInstance>>(&Gameplay::tie_instances), "tie instances"},
 	{0x38, {ShrubClassBlock::read, ShrubClassBlock::write}, "shrub classes"},
 	{0x3c, bf<InstanceBlock<ShrubInstance, ShrubInstancePacked>>(&Gameplay::shrub_instances), "shrub instances"},
 	{0x70, bf<PathBlock>(&Gameplay::paths), "paths"},
@@ -1702,7 +1702,7 @@ const std::vector<GameplayBlockDescription> GC_UYA_GAMEPLAY_BLOCKS = {
 	{0x50, bf<GroupBlock>(&Gameplay::moby_groups), "moby groups"},
 	{0x54, {GlobalPvarBlock::read, GlobalPvarBlock::write}, "global pvar"},
 	{0x30, {TieClassBlock::read, TieClassBlock::write}, "tie classes"},
-	{0x34, bf<InstanceBlock<TieInstance, TieInstancePacked>>(&Gameplay::tie_instances), "tie instances"},
+	{0x34, bf<InstanceBlock<TieInstance, GcUyaDlTieInstance>>(&Gameplay::tie_instances), "tie instances"},
 	{0x94, {TieAmbientRgbaBlock::read, TieAmbientRgbaBlock::write}, "tie ambient rgbas"},
 	{0x38, bf<GroupBlock>(&Gameplay::tie_groups), "tie groups"},
 	{0x3c, {ShrubClassBlock::read, ShrubClassBlock::write}, "shrub classes"},
@@ -1756,7 +1756,7 @@ const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS = {
 const std::vector<GameplayBlockDescription> DL_ART_INSTANCE_BLOCKS = {
 	{0x00, bf<InstanceBlock<DirectionalLight, DirectionalLightPacked>>(&Gameplay::lights), "directional lights"},
 	{0x04, {TieClassBlock::read, TieClassBlock::write}, "tie classes"},
-	{0x08, bf<InstanceBlock<TieInstance, TieInstancePacked>>(&Gameplay::tie_instances), "tie instances"},
+	{0x08, bf<InstanceBlock<TieInstance, GcUyaDlTieInstance>>(&Gameplay::tie_instances), "tie instances"},
 	{0x20, {TieAmbientRgbaBlock::read, TieAmbientRgbaBlock::write}, "tie ambient rgbas"},
 	{0x0c, bf<GroupBlock>(&Gameplay::tie_groups), "tie groups"},
 	{0x10, {ShrubClassBlock::read, ShrubClassBlock::write}, "shrub classes"},

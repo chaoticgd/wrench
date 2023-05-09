@@ -126,10 +126,8 @@ void inspector() {
 		{COM_NONE           , INST_TIE       , "UID      ", scalar_funcs(adapt_member_pointer(&TieInstance::uid))},
 		// ShrubInstance
 		{COM_NONE           , INST_SHRUB     , "Class    ", scalar_funcs(adapt_member_pointer(&ShrubInstance::o_class))},
-		{COM_NONE           , INST_SHRUB     , "Unk 8    ", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_8))},
-		{COM_NONE           , INST_SHRUB     , "Unk c    ", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_c))},
 		{COM_NONE           , INST_SHRUB     , "Unk 5c   ", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_5c))},
-		{COM_NONE           , INST_SHRUB     , "Unk 60   ", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_60))},
+		{COM_NONE           , INST_SHRUB     , "DirLights", scalar_funcs(adapt_member_pointer(&ShrubInstance::dir_lights))},
 		{COM_NONE           , INST_SHRUB     , "Unk 64   ", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_64))},
 		{COM_NONE           , INST_SHRUB     , "Unk 68   ", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_68))},
 		{COM_NONE           , INST_SHRUB     , "Unk 6c   ", scalar_funcs(adapt_member_pointer(&ShrubInstance::unknown_6c))},

@@ -649,10 +649,8 @@ struct TieInstance : Instance {
 struct ShrubInstance : Instance {
 	ShrubInstance() : Instance(INST_SHRUB, COM_TRANSFORM | COM_DRAW_DISTANCE | COM_COLOUR, TransformMode::MATRIX) {}
 	s32 o_class;
-	s32 unknown_8;
-	s32 unknown_c;
 	s32 unknown_5c;
-	s32 unknown_60;
+	s32 dir_lights;
 	s32 unknown_64;
 	s32 unknown_68;
 	s32 unknown_6c;
@@ -661,10 +659,8 @@ struct ShrubInstance : Instance {
 	void enumerate_fields(T& t) {
 		Instance::enumerate_fields(t);
 		DEF_FIELD(o_class);
-		DEF_FIELD(unknown_8);
-		DEF_FIELD(unknown_c);
 		DEF_FIELD(unknown_5c);
-		DEF_FIELD(unknown_60);
+		DEF_FIELD(dir_lights);
 		DEF_FIELD(unknown_64);
 		DEF_FIELD(unknown_68);
 		DEF_FIELD(unknown_6c);
