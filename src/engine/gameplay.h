@@ -48,7 +48,7 @@ struct Gameplay {
 	Opt<std::vector<HelpMessage>> italian_help_messages;
 	Opt<std::vector<HelpMessage>> japanese_help_messages;
 	Opt<std::vector<HelpMessage>> korean_help_messages;
-	Opt<std::vector<LightTriggerInstance>> light_triggers;
+	Opt<std::vector<EnvTriggerInstance>> env_triggers;
 	Opt<std::vector<Camera>> cameras;
 	Opt<std::vector<SoundInstance>> sound_instances;
 	Opt<std::vector<s32>> moby_classes;

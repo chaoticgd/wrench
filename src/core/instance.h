@@ -28,7 +28,7 @@ enum InstanceType : u32 {
 	INST_RAC1_88 = 14,
 	INST_RAC1_7c = 15,
 	INST_GC_8c_DL_70 = 1,
-	INST_LIGHT_TRIGGER = 2,
+	INST_ENV_TRIGGER = 2,
 	INST_CAMERA = 3,
 	INST_SOUND = 4,
 	INST_MOBY = 5,
@@ -349,10 +349,17 @@ packed_struct(GC_8c_DL_70,
 	}
 )
 
+packed_struct(Rgb32,
+	/* 0x0 */ u8 r;
+	/* 0x1 */ u8 g;
+	/* 0x2 */ u8 b;
+	/* 0x3 */ u8 pad;
+)
+
 packed_struct(Rgb96,
-	s32 r;
-	s32 g;
-	s32 b;
+	/* 0x0 */ s32 r;
+	/* 0x4 */ s32 g;
+	/* 0xc */ s32 b;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
@@ -362,50 +369,44 @@ packed_struct(Rgb96,
 	}
 )
 
-struct LightTriggerInstance {
-	s32 id;
-	glm::vec4 point;
-	glm::mat3x4 matrix;
-	glm::vec4 point_2;
-	s32 unknown_40;
-	s32 unknown_44;
-	s32 light;
-	s32 unknown_4c;
-	s32 unknown_50;
-	s32 unknown_54;
-	s32 unknown_58;
-	s32 unknown_5c;
-	s32 unknown_60;
-	s32 unknown_64;
-	s32 unknown_68;
-	s32 unknown_6c;
-	s32 unknown_70;
-	s32 unknown_74;
-	s32 unknown_78;
-	s32 unknown_7c;
+struct EnvTriggerInstance : Instance {
+	EnvTriggerInstance() : Instance(INST_ENV_TRIGGER, COM_TRANSFORM | COM_BOUNDING_SPHERE, TransformMode::MATRIX) {}
+	
+	bool enable_hero;
+	Rgb32 hero_colour_1;
+	Rgb32 hero_colour_2;
+	s32 hero_light_1;
+	s32 hero_light_2;
+	bool enable_fog;
+	Rgb32 fog_colour_1;
+	Rgb32 fog_colour_2;
+	f32 fog_near_dist_1;
+	f32 fog_near_intensity_1;
+	f32 fog_far_dist_1;
+	f32 fog_far_intensity_1;
+	f32 fog_near_dist_2;
+	f32 fog_near_intensity_2;
+	f32 fog_far_dist_2;
+	f32 fog_far_intensity_2;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(id);
-		DEF_FIELD(point);
-		DEF_FIELD(matrix);
-		DEF_FIELD(point_2);
-		DEF_FIELD(unknown_40);
-		DEF_FIELD(unknown_44);
-		DEF_FIELD(light);
-		DEF_FIELD(unknown_4c);
-		DEF_FIELD(unknown_50);
-		DEF_FIELD(unknown_54);
-		DEF_FIELD(unknown_58);
-		DEF_FIELD(unknown_5c);
-		DEF_FIELD(unknown_60);
-		DEF_FIELD(unknown_64);
-		DEF_FIELD(unknown_68);
-		DEF_FIELD(unknown_6c);
-		DEF_FIELD(unknown_70);
-		DEF_FIELD(unknown_74);
-		DEF_FIELD(unknown_78);
-		DEF_FIELD(unknown_7c);
+		DEF_FIELD(enable_hero);
+		DEF_FIELD(hero_colour_1);
+		DEF_FIELD(hero_colour_2);
+		DEF_FIELD(hero_light_1);
+		DEF_FIELD(hero_light_2);
+		DEF_FIELD(enable_fog);
+		DEF_FIELD(fog_colour_1);
+		DEF_FIELD(fog_colour_2);
+		DEF_FIELD(fog_near_dist_1);
+		DEF_FIELD(fog_near_intensity_1);
+		DEF_FIELD(fog_far_dist_1);
+		DEF_FIELD(fog_far_intensity_1);
+		DEF_FIELD(fog_near_dist_2);
+		DEF_FIELD(fog_near_intensity_2);
+		DEF_FIELD(fog_far_dist_2);
+		DEF_FIELD(fog_far_intensity_2);
 	}
 };
 

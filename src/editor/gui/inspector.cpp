@@ -217,7 +217,7 @@ static InspectorFieldFuncs type_funcs() {
 			switch(first.type()) {
 				case INST_NONE: verify_not_reached_fatal("Invalid instance type."); break;
 				case INST_GC_8c_DL_70: type = "GC 8c DL 70"; break;
-				case INST_LIGHT_TRIGGER: type = "Light Trigger"; break;
+				case INST_ENV_TRIGGER: type = "Env Trigger"; break;
 				case INST_CAMERA: type = "Camera"; break;
 				case INST_SOUND: type = "Sound"; break;
 				case INST_MOBY: type = "Moby"; break;

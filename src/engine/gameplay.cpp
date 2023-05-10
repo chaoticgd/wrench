@@ -396,77 +396,88 @@ struct HelpMessageBlock {
 	}
 };
 
-packed_struct(LightTriggerPacked,
-	Mat3 matrix;
-	Vec4f point_2;
-	s32 unknown_40;
-	s32 unknown_44;
-	s32 light;
-	s32 unknown_4c;
-	s32 unknown_50;
-	s32 unknown_54;
-	s32 unknown_58;
-	s32 unknown_5c;
-	s32 unknown_60;
-	s32 unknown_64;
-	s32 unknown_68;
-	s32 unknown_6c;
-	s32 unknown_70;
-	s32 unknown_74;
-	s32 unknown_78;
-	s32 unknown_7c;
+packed_struct(Rgba,
+
 )
 
-struct LightTriggerBlock {
-	static void read(std::vector<LightTriggerInstance>& dest, Buffer src, Game game) {
+packed_struct(MobyLights,
+	u8 light_1;
+	u8 light_2;
+	u8 interp;
+	u8 pad;
+)
+
+packed_struct(EnvTriggerPacked,
+	/* 0x00 */ Mat4 matrix;
+	/* 0x40 */ Rgb32 hero_colour_1;
+	/* 0x44 */ Rgb32 hero_colour_2;
+	/* 0x48 */ s32 hero_light_1;
+	/* 0x4c */ s32 hero_light_2;
+	/* 0x50 */ u32 flags;
+	/* 0x54 */ Rgb32 fog_colour_1;
+	/* 0x58 */ Rgb32 fog_colour_2;
+	/* 0x5c */ f32 fog_near_dist_1;
+	/* 0x60 */ f32 fog_near_intensity_1;
+	/* 0x64 */ f32 fog_far_dist_1;
+	/* 0x68 */ f32 fog_far_intensity_1;
+	/* 0x6c */ f32 fog_near_dist_2;
+	/* 0x70 */ f32 fog_near_intensity_2;
+	/* 0x74 */ f32 fog_far_dist_2;
+	/* 0x78 */ f32 fog_far_intensity_2;
+	/* 0x7c */ s32 unused_7c;
+)
+
+struct EnvTriggerBlock {
+	static void read(std::vector<EnvTriggerInstance>& dest, Buffer src, Game game) {
 		TableHeader header = src.read<TableHeader>(0, "GC 84 block header");
-		dest.resize(header.count_1);
 		s64 ofs = 0x10;
-		auto points = src.read_multiple<Vec4f>(ofs, header.count_1, "GC 84 points");
+		auto bspheres = src.read_multiple<Vec4f>(ofs, header.count_1, "env trigger bspheres");
 		ofs += header.count_1 * sizeof(Vec4f);
-		auto data = src.read_multiple<LightTriggerPacked>(ofs, header.count_1, "GC 84 data");
+		auto data = src.read_multiple<EnvTriggerPacked>(ofs, header.count_1, "env triggers");
+		dest.reserve(header.count_1);
 		for(s64 i = 0; i < header.count_1; i++) {
-			LightTriggerPacked packed = data[i];
-			dest[i].id = i;
-			dest[i].point = points[i].unpack();
-			dest[i].matrix = packed.matrix.unpack();
-			dest[i].point_2 = packed.point_2.unpack();
-			swap_gc_84(dest[i], packed);
+			EnvTriggerPacked packed = data[i];
+			EnvTriggerInstance& inst = dest.emplace_back();
+			inst.set_id_value(i);
+			inst.set_transform(packed.matrix.unpack());
+			inst.bounding_sphere() = bspheres[i].unpack();
+			inst.enable_hero = packed.flags & 1;
+			inst.enable_fog = (packed.flags & 2) >> 1;
+			swap_env_trigger(inst, packed);
 		}
 	}
 	
-	static void write(OutBuffer dest, const std::vector<LightTriggerInstance>& src, Game game) {
+	static void write(OutBuffer dest, const std::vector<EnvTriggerInstance>& src, Game game) {
 		TableHeader header = {(s32) src.size()};
 		dest.write(header);
-		for(const LightTriggerInstance& inst : src) {
-			dest.write(inst.point);
+		for(const EnvTriggerInstance& inst : src) {
+			dest.write(Vec4f::pack(inst.bounding_sphere()));
 		}
-		for(LightTriggerInstance inst : src) {
-			LightTriggerPacked packed;
-			packed.matrix = Mat3::pack(inst.matrix);
-			packed.point_2 = Vec4f::pack(inst.point_2);
-			swap_gc_84(inst, packed);
+		for(EnvTriggerInstance inst : src) {
+			EnvTriggerPacked packed;
+			packed.matrix = Mat4::pack(inst.matrix());
+			packed.flags = inst.enable_hero | (inst.enable_fog << 1);
+			packed.unused_7c = 0;
+			swap_env_trigger(inst, packed);
 			dest.write(packed);
 		}
 	}
 	
-	static void swap_gc_84(LightTriggerInstance& l, LightTriggerPacked& r) {
-		SWAP_PACKED(l.unknown_40, r.unknown_40);
-		SWAP_PACKED(l.unknown_44, r.unknown_44);
-		SWAP_PACKED(l.light, r.light);
-		SWAP_PACKED(l.unknown_4c, r.unknown_4c);
-		SWAP_PACKED(l.unknown_50, r.unknown_50);
-		SWAP_PACKED(l.unknown_54, r.unknown_54);
-		SWAP_PACKED(l.unknown_58, r.unknown_58);
-		SWAP_PACKED(l.unknown_5c, r.unknown_5c);
-		SWAP_PACKED(l.unknown_60, r.unknown_60);
-		SWAP_PACKED(l.unknown_64, r.unknown_64);
-		SWAP_PACKED(l.unknown_68, r.unknown_68);
-		SWAP_PACKED(l.unknown_6c, r.unknown_6c);
-		SWAP_PACKED(l.unknown_70, r.unknown_70);
-		SWAP_PACKED(l.unknown_74, r.unknown_74);
-		SWAP_PACKED(l.unknown_78, r.unknown_78);
-		SWAP_PACKED(l.unknown_7c, r.unknown_7c);
+	static void swap_env_trigger(EnvTriggerInstance& l, EnvTriggerPacked& r) {
+		SWAP_PACKED(l.hero_colour_1, r.hero_colour_1);
+		SWAP_PACKED(l.hero_colour_2, r.hero_colour_2);
+		SWAP_PACKED(l.hero_light_1, r.hero_light_1);
+		SWAP_PACKED(l.hero_light_2, r.hero_light_2);
+		SWAP_PACKED(l.fog_colour_1, r.fog_colour_1);
+		SWAP_PACKED(l.fog_colour_2, r.fog_colour_2);
+		SWAP_PACKED(l.fog_near_dist_1, r.fog_near_dist_1);
+		SWAP_PACKED(l.fog_near_intensity_1, r.fog_near_intensity_1);
+		SWAP_PACKED(l.fog_far_dist_1, r.fog_far_dist_1);
+		SWAP_PACKED(l.fog_far_intensity_1, r.fog_far_intensity_1);
+		SWAP_PACKED(l.fog_near_dist_2, r.fog_near_dist_2);
+		SWAP_PACKED(l.fog_near_intensity_2, r.fog_near_intensity_2);
+		SWAP_PACKED(l.fog_far_dist_2, r.fog_far_dist_2);
+		SWAP_PACKED(l.fog_far_intensity_2, r.fog_far_intensity_2);
 	}
 };
 
@@ -1590,7 +1601,7 @@ static void swap_instance(ShrubInstance& l, ShrubInstancePacked& r) {
 	SWAP_PACKED(l.unknown_5c, r.unknown_5c);
 	SWAP_PACKED(l.dir_lights, r.dir_lights);
 	SWAP_PACKED(l.unknown_64, r.unknown_64);
-	SWAP_PACKED(l.unknown_68, r.unknown_68);r.unknown_68 = -1000.f;
+	SWAP_PACKED(l.unknown_68, r.unknown_68);
 	SWAP_PACKED(l.unknown_6c, r.unknown_6c);
 }
 
@@ -1650,7 +1661,7 @@ const std::vector<GameplayBlockDescription> RAC_GAMEPLAY_BLOCKS = {
 	{0x28, bf<HelpMessageBlock<false>>(&Gameplay::japanese_help_messages), "japanese help messages"},
 	{0x2c, bf<HelpMessageBlock<true>>(&Gameplay::korean_help_messages), "korean help messages"},
 	{0x04, bf<InstanceBlock<DirectionalLight, DirectionalLightPacked>>(&Gameplay::lights), "directional lights"},
-	{0x80, bf<LightTriggerBlock>(&Gameplay::light_triggers), "light triggers"},
+	{0x80, bf<EnvTriggerBlock>(&Gameplay::env_triggers), "env triggers"},
 	{0x08, bf<InstanceBlock<Camera, CameraPacked>>(&Gameplay::cameras), "cameras"},
 	{0x0c, bf<InstanceBlock<SoundInstance, SoundInstancePacked>>(&Gameplay::sound_instances), "sound instances"},
 	{0x40, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},
@@ -1690,7 +1701,7 @@ const std::vector<GameplayBlockDescription> GC_UYA_GAMEPLAY_BLOCKS = {
 	{0x28, bf<HelpMessageBlock<false>>(&Gameplay::japanese_help_messages), "japanese help messages"},
 	{0x2c, bf<HelpMessageBlock<true>>(&Gameplay::korean_help_messages), "korean help messages"},
 	{0x04, bf<InstanceBlock<DirectionalLight, DirectionalLightPacked>>(&Gameplay::lights), "directional lights"},
-	{0x84, bf<LightTriggerBlock>(&Gameplay::light_triggers), "light triggers"},
+	{0x84, bf<EnvTriggerBlock>(&Gameplay::env_triggers), "env triggers"},
 	{0x08, bf<InstanceBlock<Camera, CameraPacked>>(&Gameplay::cameras), "cameras"},
 	{0x0c, bf<InstanceBlock<SoundInstance, SoundInstancePacked>>(&Gameplay::sound_instances), "sound instances"},
 	{0x48, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},
