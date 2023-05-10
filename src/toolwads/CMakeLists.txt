@@ -37,6 +37,7 @@ add_custom_command(
 add_executable(header2cpp
 	header2cpp.cpp
 )
+target_link_libraries(header2cpp wrenchcore)
 
 add_custom_command(
 	COMMAND header2cpp "${CMAKE_BINARY_DIR}/_generated_wadinfo.cpp"

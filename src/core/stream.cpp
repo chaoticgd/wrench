@@ -1,17 +1,6 @@
 
 #include "stream.h"
 
-#if defined(_WIN32) || defined(WIN32)
-// std::max won't work otherwise because windows.h defines macros max and min
-#ifndef NOMINMAX
-#define NOMINMAX 1
-#endif /* NOMINMAX */
-
-#include <Windows.h>
-#include <fileapi.h>
-#include <io.h>
-#endif
-
 Stream::~Stream() {}
 
 void Stream::copy(OutputStream& dest, InputStream& src, s64 size) {
@@ -122,57 +111,32 @@ FileInputStream::FileInputStream() {}
 
 FileInputStream::~FileInputStream() {
 	if(file != nullptr) {
-		fclose(file);
+		file_close(file);
 	}
 }
 
 bool FileInputStream::open(const fs::path& path) {
 	if(file != nullptr) {
-		fclose(file);
+		file_close(file);
 	}
-	file = fopen(path.string().c_str(), "rb");
+	file = file_open(path.string().c_str(), WRENCH_FILE_MODE_READ);
 	return file != nullptr;
 }
 
 bool FileInputStream::seek(s64 offset) {
-	return fseek(file, offset, SEEK_SET) == 0;
+	return file_seek(file, offset, WRENCH_FILE_ORIGIN_START) == 0;
 }
 
 s64 FileInputStream::tell() const {
-	return ftell(file);
+	return file_tell(file);
 }
 
 s64 FileInputStream::size() const {
-	s64 size_val;
-
-	// SEEK_END is not required to be implemented in a meaningful away according to
-	// the C90 standard. On Windows, the UCRT does not implement SEEK_END for the
-	// standard fseek function but only for _fseeki64. This approach is not
-	// necessary given that the correct fseek version is used but this approach
-	// should always work on Windows and hence it is safer.
-#if defined(_WIN32) || defined(WIN32)
-	int fd = _fileno(file);
-	HANDLE hfile = (HANDLE) _get_osfhandle(fd);
-	FlushFileBuffers(hfile);
-
-	LARGE_INTEGER size;
-	bool success = GetFileSizeEx(hfile, &size);
-	DWORD err = GetLastError();
-
-	verify(success, "Failed to retrieve file size. WinAPI Error Code: '%d'.", err);
-
-	size_val = (s64) size.QuadPart;
-#else
-	s64 offset = ftell(file);
-	fseek(file, 0, SEEK_END);
-	size_val = ftell(file);
-	fseek(file, offset, SEEK_SET);
-#endif
-	return size_val;
+	return file_size(file);
 }
 
 bool FileInputStream::read_n(u8* dest, s64 size) {
-	return fread(dest, size, 1, file) == 1;
+	return file_read(dest, size, file) == size;
 }
 
 // *****************************************************************************
@@ -181,57 +145,32 @@ FileOutputStream::FileOutputStream() {}
 
 FileOutputStream::~FileOutputStream() {
 	if(file != nullptr) {
-		fclose(file);
+		file_close(file);
 	}
 }
 
 bool FileOutputStream::open(const fs::path& path) {
 	if(file != nullptr) {
-		fclose(file);
+		file_close(file);
 	}
-	file = fopen(path.string().c_str(), "wb");
+	file = file_open(path.string().c_str(), WRENCH_FILE_MODE_WRITE);
 	return file != nullptr;
 }
 
 bool FileOutputStream::seek(s64 offset) {
-	return fseek(file, offset, SEEK_SET) == 0;
+	return file_seek(file, offset, WRENCH_FILE_ORIGIN_START) == 0;
 }
 
 s64 FileOutputStream::tell() const {
-	return ftell(file);
+	return file_tell(file);
 }
 
 s64 FileOutputStream::size() const {
-	s64 size_val;
-
-	// SEEK_END is not required to be implemented in a meaningful away according to
-	// the C90 standard. On Windows, the UCRT does not implement SEEK_END for the
-	// standard fseek function but only for _fseeki64. This approach is not
-	// necessary given that the correct fseek version is used but this approach
-	// should always work on Windows and hence it is safer.
-#if defined(_WIN32) || defined(WIN32)
-	int fd = _fileno(file);
-	HANDLE hfile = (HANDLE) _get_osfhandle(fd);
-	FlushFileBuffers(hfile);
-
-	LARGE_INTEGER size;
-	bool success = GetFileSizeEx(hfile, &size);
-	DWORD err = GetLastError();
-
-	verify(success, "Failed to retrieve file size. WinAPI Error Code: '%d'.", err);
-
-	size_val = (s64) size.QuadPart;
-#else
-	s64 offset = ftell(file);
-	fseek(file, 0, SEEK_END);
-	size_val = ftell(file);
-	fseek(file, offset, SEEK_SET);
-#endif
-	return size_val;
+	return file_size(file);
 }
 
 bool FileOutputStream::write_n(const u8* src, s64 size) {
-	return fwrite(src, size, 1, file) == 1;
+	return file_write(src, size, file) == size;
 }
 
 // *****************************************************************************

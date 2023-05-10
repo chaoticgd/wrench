@@ -23,13 +23,14 @@
 namespace fs = std::filesystem;
 
 #include "buffer.h"
+#include <core/fileio.h>
 
 // These functions all call exit on error.
-std::vector<u8> read_file(FILE* file, s64 offset, s64 size);
-std::vector<u8> read_file(fs::path path, const char* open_mode = "rb");
-void write_file(const fs::path& path, Buffer buffer, const char* open_mode = "wb");
-std::string write_file(fs::path dest_dir, fs::path rel_path, Buffer buffer, const char* open_mode = "wb");
-void extract_file(fs::path dest_path, FILE* dest, FILE* src, s64 offset, s64 size);
+std::vector<u8> read_file(WrenchFileHandle* file, s64 offset, s64 size);
+std::vector<u8> read_file(fs::path path, bool text_mode = false);
+void write_file(const fs::path& path, Buffer buffer, bool text_mode = false);
+std::string write_file(fs::path dest_dir, fs::path rel_path, Buffer buffer, bool text_mode = false);
+void extract_file(fs::path dest_path, WrenchFileHandle* dest, WrenchFileHandle* src, s64 offset, s64 size);
 
 void strip_carriage_returns(std::vector<u8>& file);
 void strip_carriage_returns_from_string(std::string& str);
