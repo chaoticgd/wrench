@@ -20,6 +20,16 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+/*
+ * This file provides a standard implementation of the fileio API.
+ * This implementation uses only functionalities provided by the C standard.
+ *
+ * Platforms that only provide a minimal implementation of the C standard library may require
+ * their own platform specific implementation.
+ *
+ * Line endings in this implementation are assumed to be '\n'.
+ */
+
 enum _last_unflushed_op {
     _last_unflushed_op_none = 0,
     _last_unflushed_op_read = 1,
@@ -84,9 +94,13 @@ WrenchFileHandle* file_open(const char* filename, const WrenchFileMode mode) {
 }
 
 size_t file_read(void* buffer, size_t size, WrenchFileHandle* file) {
+    verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+
     if (size == 0) {
         return 0;
     }
+
+    verify(buffer != (void*) 0, "Buffer was NULL.");
 
     if (file->last_op == _last_unflushed_op_write) {
         file_flush(file);
@@ -102,9 +116,13 @@ size_t file_read(void* buffer, size_t size, WrenchFileHandle* file) {
 }
 
 size_t file_write(const void* buffer, size_t size, WrenchFileHandle* file) {
+    verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+
     if (size == 0) {
         return 0;
     }
+
+    verify(buffer != (const void*) 0, "Buffer was NULL.");
 
     if (file->last_op == _last_unflushed_op_read) {
         file_flush(file);
@@ -119,7 +137,44 @@ size_t file_write(const void* buffer, size_t size, WrenchFileHandle* file) {
     return val;
 }
 
+size_t file_read_string(char* str, size_t buffer_size, WrenchFileHandle* file) {
+	verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+
+	if (buffer_size == 0) {
+		return 0;
+	}
+
+	verify(str != (char*) 0, "String buffer was NULL.");
+
+	size_t num_bytes = file_read(str, buffer_size - 1, file);
+
+	size_t offset = 0;
+	for (size_t i = 0; i < num_bytes; i++) {
+		if (str[i] == '\r') {
+			str[i] = '\0';
+			continue;
+		}
+
+		str[offset++] = str[i];
+	}
+
+	for (size_t i = offset; i < buffer_size; i++) {
+		str[i] = '\0';
+	}
+
+	return offset;
+}
+
+size_t file_write_string(const char* str, WrenchFileHandle* file) {
+    verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+	verify(str != (char*) 0, "String buffer was NULL.");
+
+	return file_write(str, strlen(str), file);
+}
+
 int file_seek(WrenchFileHandle* file, s64 offset, WrenchFileOrigin origin) {
+    verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+
     int _origin;
 
     switch (origin) {
@@ -143,10 +198,14 @@ int file_seek(WrenchFileHandle* file, s64 offset, WrenchFileOrigin origin) {
 }
 
 s64 file_tell(WrenchFileHandle* file) {
+    verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+
     return ftell(file->file);
 }
 
 s64 file_size(WrenchFileHandle* file) {
+    verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+
 	s64 offset = file_tell(file);
 	file_seek(file, 0, WRENCH_FILE_ORIGIN_END);
 	s64 size_val = file_tell(file);
@@ -156,13 +215,20 @@ s64 file_size(WrenchFileHandle* file) {
 }
 
 int file_flush(WrenchFileHandle* file) {
+    verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+
     file->last_op = _last_unflushed_op_none;
 
     return fflush(file->file);
 }
 
 int file_close(WrenchFileHandle* file) {
-    int val = fclose(file->file);
+    verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+
+    int val = EOF;
+    if (file->file != (FILE*) 0) {
+        val = fclose(file->file);
+    }
 
     free(file);
 

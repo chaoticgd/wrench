@@ -93,9 +93,13 @@ WrenchFileHandle* file_open(const char* filename, const WrenchFileMode mode) {
 }
 
 size_t file_read(void* buffer, size_t size, WrenchFileHandle* file) {
+	verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+
 	if (size == 0) {
 		return 0;
 	}
+
+	verify(buffer != (void*) 0, "Buffer was NULL.");
 
 	DWORD _num_bytes = (DWORD) size;
 	DWORD _bytes_read;
@@ -108,9 +112,13 @@ size_t file_read(void* buffer, size_t size, WrenchFileHandle* file) {
 }
 
 size_t file_write(const void* buffer, size_t size, WrenchFileHandle* file) {
+	verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+
 	if (size == 0) {
 		return 0;
 	}
+
+	verify(buffer != (const void*) 0, "Buffer was NULL.");
 
 	DWORD _num_bytes = (DWORD) size;
 	DWORD _bytes_written;
@@ -122,7 +130,60 @@ size_t file_write(const void* buffer, size_t size, WrenchFileHandle* file) {
 	return (size_t) _bytes_written;
 }
 
+size_t file_read_string(char* str, size_t buffer_size, WrenchFileHandle* file) {
+	verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+
+	if (buffer_size == 0) {
+		return 0;
+	}
+
+	verify(str != (char*) 0, "String buffer was NULL.");
+
+	size_t num_bytes = file_read(str, buffer_size - 1, file);
+
+	size_t offset = 0;
+	for (size_t i = 0; i < num_bytes; i++) {
+		if (str[i] == '\r') {
+			str[i] = '\0';
+			continue;
+		}
+
+		str[offset++] = str[i];
+	}
+
+	for (size_t i = offset; i < buffer_size; i++) {
+		str[i] = '\0';
+	}
+
+	return offset;
+}
+
+size_t file_write_string(const char* str, WrenchFileHandle* file) {
+	verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+	verify(str != (char*) 0, "String buffer was NULL.");
+
+	size_t str_len = strlen(str);
+
+	char* str_no_r = (char*) malloc(2 * str_len);
+
+	size_t offset = 0;
+	for (size_t i = 0; i < str_len; i++) {
+		if (str[i] == '\n') {
+			str_no_r[offset++] = '\r';
+		}
+		str_no_r[offset++] = str[i];
+	}
+
+	size_t bytes_written = file_write(str_no_r, offset, file);
+
+	free(str_no_r);
+
+	return bytes_written;
+}
+
 int file_seek(WrenchFileHandle* file, s64 offset, WrenchFileOrigin origin) {
+	verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+
 	DWORD _move_method = 0;
 
 	switch (origin) {
@@ -151,6 +212,8 @@ int file_seek(WrenchFileHandle* file, s64 offset, WrenchFileOrigin origin) {
 }
 
 s64 file_tell(WrenchFileHandle* file) {
+	verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+
 	DWORD _move_method = FILE_CURRENT;
 
 	LARGE_INTEGER _offset;
@@ -166,6 +229,8 @@ s64 file_tell(WrenchFileHandle* file) {
 }
 
 s64 file_size(WrenchFileHandle* file) {
+	verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+
 	file_flush(file);
 
 	LARGE_INTEGER size;
@@ -177,15 +242,21 @@ s64 file_size(WrenchFileHandle* file) {
 }
 
 int file_flush(WrenchFileHandle* file) {
+	verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+
     WINBOOL success = FlushFileBuffers(file->file);
 
     return (success) ? 0 : EOF;
 }
 
 int file_close(WrenchFileHandle* file) {
-	WINBOOL success = CloseHandle(file->file);
+	verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
 
-	verify(success != 0, "Failed to close the file. WinAPI Error Code: %d.", GetLastError());
+	WINBOOL success = 0;
+	if (file->file != INVALID_HANDLE_VALUE) {
+		success = CloseHandle(file->file);
+		verify(success != 0, "Failed to close the file. WinAPI Error Code: %d.", GetLastError());
+	}
 
 	free(file);
 

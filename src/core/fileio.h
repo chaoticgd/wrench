@@ -43,19 +43,123 @@ enum _wrench_file_mode {
 enum _wrench_file_origin {
     // Origin is the beginning of the file.
     WRENCH_FILE_ORIGIN_START = 1,
-    // Origin is the position of the current file pointer..
+    // Origin is the position of the current file pointer.
     WRENCH_FILE_ORIGIN_CURRENT = 2,
     // Origin is the end of the file.
     WRENCH_FILE_ORIGIN_END = 3
 } typedef WrenchFileOrigin;
 
+
+/**
+ * Opens a file indicated by filename and returns a pointer to an associated
+ * file handle.
+ *
+ * \param filename Name of file to open.
+ * \param mode File access mode, see \ref WrenchFileMode.
+ * \return Handle for the file on success, NULL else.
+ *
+ */
 WrenchFileHandle* file_open(const char* filename, const WrenchFileMode mode);
+
+/**
+ * Reads up to size many bytes from an input file handle.
+ * If there are less than size bytes left in the file from the current file pointer,
+ * then all bytes until the end of file are read.
+ *
+ * \param buffer Buffer in which the read bytes are stored.
+ * \param size Number of bytes to reads.
+ * \param file Handle to a stream with read access.
+ * \return Number of bytes read.
+ *
+ */
 size_t file_read(void* buffer, size_t size, WrenchFileHandle* file);
+
+/**
+ * Writes size many bytes from the given buffer to an output file handle.
+ *
+ * \param buffer Buffer to be stored.
+ * \param size Number of bytes to write.
+ * \param file Handle to a stream with write or append access.
+ * \return Number of bytes written.
+ *
+ */
 size_t file_write(const void* buffer, size_t size, WrenchFileHandle* file);
+
+
+/**
+ * Reads a text from the provided file handle.
+ * Converts platform dependent line endings into '\n'.
+ * This functions assumes that the file may originate from any supported platform
+ * and performs line ending conversion accordingly.
+ * The returned string will always be null-terminated.
+ *
+ * \param str Buffer in which the string will be stored.
+ * \param buffer_size Size of the provided buffer in bytes.
+ * \param file Handle to a stream with read access.
+ * \return Size of returned string excluding null-terminator.
+ *
+ */
+size_t file_read_string(char* str, size_t buffer_size, WrenchFileHandle* file);
+
+/**
+ * Writes a null-terminated string to a provided file handle.
+ * The null-terminator is not written to file.
+ * Converts '\n' into platform dependent line endings.
+ * This function in intended for use when writing text files.
+ *
+ * \param str Null-terminated string to be stored.
+ * \param file Handle to a stream with write or append access.
+ * \return Number of bytes written.
+ *
+ */
+size_t file_write_string(const char* str, WrenchFileHandle* file);
+
+/**
+ * Sets the current file pointer of the given file handle to a position defined
+ * by origin with offset added onto it.
+ *
+ * \param file File handle.
+ * \param offset Offset to be applied to origin.
+ * \param origin Origin from which to compute the file pointer, see \ref WrenchFileOrigin.
+ * \return Returns 0 on success, EOF else.
+ *
+ */
 int file_seek(WrenchFileHandle* file, s64 offset, WrenchFileOrigin origin);
+
+/**
+ * Returns the current file pointer of the given file handle.
+ *
+ * \param file File handle.
+ * \return Current file pointer.
+ *
+ */
 s64 file_tell(WrenchFileHandle* file);
+
+/**
+ * Gathers the current size of the file associated with the given file handle.
+ *
+ * \param file File handle.
+ * \return Size of file in bytes.
+ *
+ */
 s64 file_size(WrenchFileHandle* file);
+
+/**
+ * Forces immediate execution of any write operations to the file associated with the given file handle.
+ *
+ * \param file File handle.
+ * \return Returns 0 on success, EOF else.
+ *
+ */
 int file_flush(WrenchFileHandle* file);
+
+/**
+ * Closes a file handle obtained through \ref file_open.
+ *
+ * \param file File handle.
+ * \return Returns 0 on success, EOF else.
+ *
+ */
 int file_close(WrenchFileHandle* file);
 
 #endif /* CORE_FILEIO_H */
