@@ -104,7 +104,7 @@ size_t file_read(void* buffer, size_t size, WrenchFileHandle* file) {
 	DWORD _num_bytes = (DWORD) size;
 	DWORD _bytes_read;
 
-	WINBOOL success = ReadFile(file->file, (LPVOID) buffer, _num_bytes, (LPDWORD) &_bytes_read, (LPOVERLAPPED) 0);
+	BOOL success = ReadFile(file->file, (LPVOID) buffer, _num_bytes, (LPDWORD) &_bytes_read, (LPOVERLAPPED) 0);
 
 	verify(success != 0, "Failed to read from file. WinAPI Error Code: %d.", GetLastError());
 
@@ -123,7 +123,7 @@ size_t file_write(const void* buffer, size_t size, WrenchFileHandle* file) {
 	DWORD _num_bytes = (DWORD) size;
 	DWORD _bytes_written;
 
-	WINBOOL success = WriteFile(file->file, (LPCVOID) buffer, _num_bytes, (LPDWORD) &_bytes_written, (LPOVERLAPPED) 0);
+	BOOL success = WriteFile(file->file, (LPCVOID) buffer, _num_bytes, (LPDWORD) &_bytes_written, (LPOVERLAPPED) 0);
 
 	verify(success != 0, "Failed to write to file. WinAPI Error Code: %d.", GetLastError());
 
@@ -204,7 +204,7 @@ int file_seek(WrenchFileHandle* file, s64 offset, WrenchFileOrigin origin) {
 	LARGE_INTEGER _offset;
 	_offset.QuadPart = offset;
 
-	WINBOOL success = SetFilePointerEx(file->file, _offset, (PLARGE_INTEGER) 0, _move_method);
+	BOOL success = SetFilePointerEx(file->file, _offset, (PLARGE_INTEGER) 0, _move_method);
 
 	verify(success != 0, "Failed to seek file. WinAPI Error Code: %d.", GetLastError());
 
@@ -221,7 +221,7 @@ s64 file_tell(WrenchFileHandle* file) {
 
 	LARGE_INTEGER _tell;
 
-	WINBOOL success = SetFilePointerEx(file->file, _offset, (PLARGE_INTEGER) &_tell, _move_method);
+	BOOL success = SetFilePointerEx(file->file, _offset, (PLARGE_INTEGER) &_tell, _move_method);
 
 	verify(success != 0, "Failed to seek file. WinAPI Error Code: %d.", GetLastError());
 
@@ -234,7 +234,7 @@ s64 file_size(WrenchFileHandle* file) {
 	file_flush(file);
 
 	LARGE_INTEGER size;
-	WINBOOL success = GetFileSizeEx(file->file, &size);
+	BOOL success = GetFileSizeEx(file->file, &size);
 
 	verify(success != 0, "Failed to retrieve file size. WinAPI Error Code: %d.", GetLastError());
 
@@ -244,7 +244,7 @@ s64 file_size(WrenchFileHandle* file) {
 int file_flush(WrenchFileHandle* file) {
 	verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
 
-    WINBOOL success = FlushFileBuffers(file->file);
+    BOOL success = FlushFileBuffers(file->file);
 
     return (success) ? 0 : EOF;
 }
@@ -252,7 +252,7 @@ int file_flush(WrenchFileHandle* file) {
 int file_close(WrenchFileHandle* file) {
 	verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
 
-	WINBOOL success = 0;
+	BOOL success = 0;
 	if (file->file != INVALID_HANDLE_VALUE) {
 		success = CloseHandle(file->file);
 		verify(success != 0, "Failed to close the file. WinAPI Error Code: %d.", GetLastError());
