@@ -23,7 +23,7 @@
 namespace fs = std::filesystem;
 
 #include "buffer.h"
-#include <core/fileio.h>
+#include <platform/fileio.h>
 
 // These functions all call exit on error.
 std::vector<u8> read_file(WrenchFileHandle* file, s64 offset, s64 size);

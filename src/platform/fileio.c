@@ -19,6 +19,28 @@
 #include "fileio.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+
+static const char* _fileio_message_ok = "No errors occurred.";
+static char _fileio_message_error_buffer[128];
+
+const char* FILEIO_ERROR_CONTEXT_STRING = "No errors occurred.";
+
+#define _fileio_verify(condition, retval, message, ...) \
+	{\
+		if (!(condition)) {\
+			sprintf(_fileio_message_error_buffer, message, ##__VA_ARGS__);\
+			FILEIO_ERROR_CONTEXT_STRING = _fileio_message_error_buffer;\
+			return retval;\
+		}\
+	}
+
+#define _fileio_verify_not_reached(retval, message, ...) \
+	{\
+		sprintf(_fileio_message_error_buffer, message, ##__VA_ARGS__);\
+		FILEIO_ERROR_CONTEXT_STRING = _fileio_message_error_buffer;\
+		return retval;\
+	}
 
 /*
  * This file provides a standard implementation of the fileio API.
@@ -43,8 +65,8 @@ struct _wrench_file_handle {
 };
 
 WrenchFileHandle* file_open(const char* filename, const WrenchFileMode mode) {
-    verify(mode != 0, "No mode was specified when opening a file.");
-    verify(filename != (const char*) 0, "Filename is NULL.");
+    _fileio_verify(mode != 0, (WrenchFileHandle*) 0, "No mode was specified when opening a file.");
+	_fileio_verify(filename != (const char*) 0, (WrenchFileHandle*) 0, "Filename is NULL.");
 
     char* mode_string = (char*) 0;
     int update_mode = 0;
@@ -75,32 +97,34 @@ WrenchFileHandle* file_open(const char* filename, const WrenchFileMode mode) {
             update_mode = 0;
             break;
         default:
-            verify_not_reached("No valid file access mode was specified.");
+            _fileio_verify_not_reached((WrenchFileHandle*) 0, "No valid file access mode was specified.");
             break;
     }
 
     WrenchFileHandle* file = (WrenchFileHandle*) malloc(sizeof(WrenchFileHandle));
 
-    verify(file != (WrenchFileHandle*) 0, "Failed to allocate WrenchFileHandle.");
+    _fileio_verify(file != (WrenchFileHandle*) 0, (WrenchFileHandle*) 0, "Failed to allocate WrenchFileHandle.");
 
     file->file = fopen(filename, mode_string);
 
-    verify(file->file != (FILE*) 0, "Failed to open file %s.", filename);
+    _fileio_verify(file->file != (FILE*) 0, (WrenchFileHandle*) 0, "Failed to open file %s.", filename);
 
     file->update_mode = update_mode;
     file->last_op = _last_unflushed_op_none;
+
+    FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
 
     return file;
 }
 
 size_t file_read(void* buffer, size_t size, WrenchFileHandle* file) {
-    verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+    _fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
 
     if (size == 0) {
         return 0;
     }
 
-    verify(buffer != (void*) 0, "Buffer was NULL.");
+    _fileio_verify(buffer != (void*) 0, 0, "Buffer was NULL.");
 
     if (file->last_op == _last_unflushed_op_write) {
         file_flush(file);
@@ -112,17 +136,19 @@ size_t file_read(void* buffer, size_t size, WrenchFileHandle* file) {
         file->last_op = _last_unflushed_op_read;
     }
 
+    FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
+
     return val;
 }
 
 size_t file_write(const void* buffer, size_t size, WrenchFileHandle* file) {
-    verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+    _fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
 
     if (size == 0) {
         return 0;
     }
 
-    verify(buffer != (const void*) 0, "Buffer was NULL.");
+    _fileio_verify(buffer != (const void*) 0, 0, "Buffer was NULL.");
 
     if (file->last_op == _last_unflushed_op_read) {
         file_flush(file);
@@ -134,17 +160,19 @@ size_t file_write(const void* buffer, size_t size, WrenchFileHandle* file) {
         file->last_op = _last_unflushed_op_write;
     }
 
+    FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
+
     return val;
 }
 
 size_t file_read_string(char* str, size_t buffer_size, WrenchFileHandle* file) {
-	verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+	_fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
 
 	if (buffer_size == 0) {
 		return 0;
 	}
 
-	verify(str != (char*) 0, "String buffer was NULL.");
+	_fileio_verify(str != (char*) 0, 0, "String buffer was NULL.");
 
 	size_t num_bytes = file_read(str, buffer_size - 1, file);
 
@@ -166,14 +194,14 @@ size_t file_read_string(char* str, size_t buffer_size, WrenchFileHandle* file) {
 }
 
 size_t file_write_string(const char* str, WrenchFileHandle* file) {
-    verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
-	verify(str != (char*) 0, "String buffer was NULL.");
+    _fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
+	_fileio_verify(str != (const char*) 0, 0, "String buffer was NULL.");
 
 	return file_write(str, strlen(str), file);
 }
 
-int file_seek(WrenchFileHandle* file, s64 offset, WrenchFileOrigin origin) {
-    verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+int file_seek(WrenchFileHandle* file, size_t offset, WrenchFileOrigin origin) {
+    _fileio_verify(file != (WrenchFileHandle*) 0, EOF, "File handle was NULL.");
 
     int _origin;
 
@@ -188,49 +216,67 @@ int file_seek(WrenchFileHandle* file, s64 offset, WrenchFileOrigin origin) {
             _origin = SEEK_END;
             break;
         default:
-            verify_not_reached("Invalid origin specified for file seeking.");
+            _fileio_verify_not_reached(EOF, "Invalid origin specified for file seeking.");
             break;
     }
 
     file->last_op = _last_unflushed_op_none;
 
-    return fseek(file->file, offset, _origin);
+    int val = fseek(file->file, offset, _origin);
+
+    _fileio_verify(val == 0, EOF, "Failed to seek the file.");
+
+    FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
+
+    return val;
 }
 
-s64 file_tell(WrenchFileHandle* file) {
-    verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+size_t file_tell(WrenchFileHandle* file) {
+    _fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
+
+    FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
 
     return ftell(file->file);
 }
 
-s64 file_size(WrenchFileHandle* file) {
-    verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+size_t file_size(WrenchFileHandle* file) {
+    _fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
 
-	s64 offset = file_tell(file);
+	size_t offset = file_tell(file);
 	file_seek(file, 0, WRENCH_FILE_ORIGIN_END);
-	s64 size_val = file_tell(file);
+	size_t size_val = file_tell(file);
 	file_seek(file, offset, WRENCH_FILE_ORIGIN_START);
+
+    FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
 
     return size_val;
 }
 
 int file_flush(WrenchFileHandle* file) {
-    verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+    _fileio_verify(file != (WrenchFileHandle*) 0, EOF, "File handle was NULL.");
 
     file->last_op = _last_unflushed_op_none;
 
-    return fflush(file->file);
+    int val = fflush(file->file);
+
+    _fileio_verify(val == 0, EOF, "Failed to flush the file.");
+
+    FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
+
+    return val;
 }
 
 int file_close(WrenchFileHandle* file) {
-    verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+    _fileio_verify(file != (WrenchFileHandle*) 0, EOF, "File handle was NULL.");
+    _fileio_verify(file->file != (FILE*) 0, EOF, "File handle is invalid.");
 
-    int val = EOF;
-    if (file->file != (FILE*) 0) {
-        val = fclose(file->file);
-    }
+    int val = fclose(file->file);
 
     free(file);
+
+    _fileio_verify(val == 0, EOF, "Failed to close the file.");
+
+    FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
 
     return val;
 }

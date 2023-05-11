@@ -20,7 +20,7 @@
 #define CORE_STREAM_H
 
 #include <core/util.h>
-#include <core/fileio.h>
+#include <platform/fileio.h>
 #include <core/filesystem.h>
 
 // Binary streams that can either be backed by memory or a file. For stuff that

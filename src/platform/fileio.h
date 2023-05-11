@@ -19,7 +19,15 @@
 #ifndef CORE_FILEIO_H
 #define CORE_FILEIO_H
 
-#include <core/util/basic_util.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// This contains a null-terminated string containing
+// information of the last call to a file I/O function.
+extern const char* FILEIO_ERROR_CONTEXT_STRING;
+
+#include <stdlib.h>
 
 // Opaque structure with platform dependent implementation.
 struct _wrench_file_handle;
@@ -124,7 +132,7 @@ size_t file_write_string(const char* str, WrenchFileHandle* file);
  * \return Returns 0 on success, EOF else.
  *
  */
-int file_seek(WrenchFileHandle* file, s64 offset, WrenchFileOrigin origin);
+int file_seek(WrenchFileHandle* file, size_t offset, WrenchFileOrigin origin);
 
 /**
  * Returns the current file pointer of the given file handle.
@@ -133,7 +141,7 @@ int file_seek(WrenchFileHandle* file, s64 offset, WrenchFileOrigin origin);
  * \return Current file pointer.
  *
  */
-s64 file_tell(WrenchFileHandle* file);
+size_t file_tell(WrenchFileHandle* file);
 
 /**
  * Gathers the current size of the file associated with the given file handle.
@@ -142,7 +150,7 @@ s64 file_tell(WrenchFileHandle* file);
  * \return Size of file in bytes.
  *
  */
-s64 file_size(WrenchFileHandle* file);
+size_t file_size(WrenchFileHandle* file);
 
 /**
  * Forces immediate execution of any write operations to the file associated with the given file handle.
@@ -161,5 +169,9 @@ int file_flush(WrenchFileHandle* file);
  *
  */
 int file_close(WrenchFileHandle* file);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CORE_FILEIO_H */

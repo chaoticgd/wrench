@@ -19,17 +19,39 @@
 #include "fileio.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include <Windows.h>
 #include <fileapi.h>
+
+static const char* _fileio_message_ok = "No errors occurred.";
+static char _fileio_message_error_buffer[128];
+
+const char* FILEIO_ERROR_CONTEXT_STRING = "No errors occurred.";
 
 struct _wrench_file_handle {
     HANDLE file;
 };
 
+#define _fileio_verify(condition, retval, message, ...) \
+	{\
+		if (!(condition)) {\
+			sprintf(_fileio_message_error_buffer, message, ##__VA_ARGS__);\
+			FILEIO_ERROR_CONTEXT_STRING = _fileio_message_error_buffer;\
+			return retval;\
+		}\
+	}
+
+#define _fileio_verify_not_reached(retval, message, ...) \
+	{\
+		sprintf(_fileio_message_error_buffer, message, ##__VA_ARGS__);\
+		FILEIO_ERROR_CONTEXT_STRING = _fileio_message_error_buffer;\
+		return retval;\
+	}
+
 WrenchFileHandle* file_open(const char* filename, const WrenchFileMode mode) {
-    verify(mode != 0, "No mode was specified when opening a file.");
-    verify(filename != (const char*) 0, "Filename is NULL.");
+	_fileio_verify(mode != 0, (WrenchFileHandle*) 0, "No mode was specified when opening a file.");
+	_fileio_verify(filename != (const char*) 0, (WrenchFileHandle*) 0, "Filename is NULL.");
 
 	DWORD desired_access = 0;
 	DWORD creation_disposition = 0;
@@ -61,7 +83,7 @@ WrenchFileHandle* file_open(const char* filename, const WrenchFileMode mode) {
             creation_disposition = OPEN_ALWAYS;
             break;
         default:
-            verify_not_reached("No valid file access mode was specified.");
+            _fileio_verify_not_reached((WrenchFileHandle*) 0, "No valid file access mode was specified.");
             break;
     }
 
@@ -71,73 +93,79 @@ WrenchFileHandle* file_open(const char* filename, const WrenchFileMode mode) {
 
 	int wide_string_size = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, input_string, -1, (LPWSTR) 0, 0);
 
-	verify(wide_string_size != 0, "Failed to compute wide filename size. WinAPI Error Code: %d.", GetLastError());
+	_fileio_verify(wide_string_size != 0, (WrenchFileHandle*) 0, "Failed to compute wide filename size. WinAPI Error Code: %d.", GetLastError());
 
 	LPWSTR wide_string = (LPWSTR) malloc(wide_string_size * sizeof(WCHAR));
 
-	verify(wide_string != (LPWSTR) 0, "Failed to allocate wide filename.");
+	_fileio_verify(wide_string != (LPWSTR) 0, (WrenchFileHandle*) 0, "Failed to allocate wide filename.");
 
 	int written_bytes = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, input_string, -1, wide_string, wide_string_size);
 
-	verify(written_bytes != 0 && written_bytes <= wide_string_size, "Failed to convert filename. WinAPI Error Code: %d.", GetLastError());
+	_fileio_verify(written_bytes != 0, (WrenchFileHandle*) 0, "Failed to convert filename. WinAPI Error Code: %d.", GetLastError());
 
 	WrenchFileHandle* file = (WrenchFileHandle*) malloc(sizeof(WrenchFileHandle));
 
 	file->file = CreateFileW(wide_string, desired_access, share_mode, (LPSECURITY_ATTRIBUTES) 0, creation_disposition, FILE_ATTRIBUTE_NORMAL, (HANDLE) 0);
 
-	verify(file->file != INVALID_HANDLE_VALUE, "Failed to open file. WinAPI Error Code: %d.", GetLastError());
+	_fileio_verify(file->file != INVALID_HANDLE_VALUE, (WrenchFileHandle*) 0, "Failed to open file. WinAPI Error Code: %d.", GetLastError());
 
 	free(wide_string);
+
+	FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
 
 	return file;
 }
 
 size_t file_read(void* buffer, size_t size, WrenchFileHandle* file) {
-	verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+	_fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
 
 	if (size == 0) {
 		return 0;
 	}
 
-	verify(buffer != (void*) 0, "Buffer was NULL.");
+	_fileio_verify(buffer != (void*) 0, 0, "Buffer was NULL.");
 
 	DWORD _num_bytes = (DWORD) size;
 	DWORD _bytes_read;
 
 	BOOL success = ReadFile(file->file, (LPVOID) buffer, _num_bytes, (LPDWORD) &_bytes_read, (LPOVERLAPPED) 0);
 
-	verify(success != 0, "Failed to read from file. WinAPI Error Code: %d.", GetLastError());
+	_fileio_verify(success != 0, 0, "Failed to read from file. WinAPI Error Code: %d.", GetLastError());
+
+	FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
 
 	return (size_t) _bytes_read;
 }
 
 size_t file_write(const void* buffer, size_t size, WrenchFileHandle* file) {
-	verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+	_fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
 
 	if (size == 0) {
 		return 0;
 	}
 
-	verify(buffer != (const void*) 0, "Buffer was NULL.");
+	_fileio_verify(buffer != (const void*) 0, 0, "Buffer was NULL.");
 
 	DWORD _num_bytes = (DWORD) size;
 	DWORD _bytes_written;
 
 	BOOL success = WriteFile(file->file, (LPCVOID) buffer, _num_bytes, (LPDWORD) &_bytes_written, (LPOVERLAPPED) 0);
 
-	verify(success != 0, "Failed to write to file. WinAPI Error Code: %d.", GetLastError());
+	_fileio_verify(success != 0, 0, "Failed to write to file. WinAPI Error Code: %d.", GetLastError());
+
+	FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
 
 	return (size_t) _bytes_written;
 }
 
 size_t file_read_string(char* str, size_t buffer_size, WrenchFileHandle* file) {
-	verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+	_fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
 
 	if (buffer_size == 0) {
 		return 0;
 	}
 
-	verify(str != (char*) 0, "String buffer was NULL.");
+	_fileio_verify(str != (char*) 0, 0, "String buffer was NULL.");
 
 	size_t num_bytes = file_read(str, buffer_size - 1, file);
 
@@ -159,8 +187,8 @@ size_t file_read_string(char* str, size_t buffer_size, WrenchFileHandle* file) {
 }
 
 size_t file_write_string(const char* str, WrenchFileHandle* file) {
-	verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
-	verify(str != (char*) 0, "String buffer was NULL.");
+	_fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
+	_fileio_verify(str != (const char*) 0, 0, "String buffer was NULL.");
 
 	size_t str_len = strlen(str);
 
@@ -181,8 +209,8 @@ size_t file_write_string(const char* str, WrenchFileHandle* file) {
 	return bytes_written;
 }
 
-int file_seek(WrenchFileHandle* file, s64 offset, WrenchFileOrigin origin) {
-	verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+int file_seek(WrenchFileHandle* file, size_t offset, WrenchFileOrigin origin) {
+	_fileio_verify(file != (WrenchFileHandle*) 0, EOF, "File handle was NULL.");
 
 	DWORD _move_method = 0;
 
@@ -197,7 +225,7 @@ int file_seek(WrenchFileHandle* file, s64 offset, WrenchFileOrigin origin) {
 			_move_method = FILE_END;
 			break;
 		default:
-			verify_not_reached("Invalid origin specified for file seeking.");
+			_fileio_verify_not_reached(EOF, "Invalid origin specified for file seeking.");
 			break;
 	}
 
@@ -206,13 +234,15 @@ int file_seek(WrenchFileHandle* file, s64 offset, WrenchFileOrigin origin) {
 
 	BOOL success = SetFilePointerEx(file->file, _offset, (PLARGE_INTEGER) 0, _move_method);
 
-	verify(success != 0, "Failed to seek file. WinAPI Error Code: %d.", GetLastError());
+	_fileio_verify(success != 0, EOF, "Failed to seek file. WinAPI Error Code: %d.", GetLastError());
+
+	FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
 
 	return (success != 0) ? 0 : EOF;
 }
 
-s64 file_tell(WrenchFileHandle* file) {
-	verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+size_t file_tell(WrenchFileHandle* file) {
+	_fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
 
 	DWORD _move_method = FILE_CURRENT;
 
@@ -223,42 +253,51 @@ s64 file_tell(WrenchFileHandle* file) {
 
 	BOOL success = SetFilePointerEx(file->file, _offset, (PLARGE_INTEGER) &_tell, _move_method);
 
-	verify(success != 0, "Failed to seek file. WinAPI Error Code: %d.", GetLastError());
+	_fileio_verify(success != 0, 0, "Failed to seek file. WinAPI Error Code: %d.", GetLastError());
 
-	return (s64) _tell.QuadPart;
+	FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
+
+	return (size_t) _tell.QuadPart;
 }
 
-s64 file_size(WrenchFileHandle* file) {
-	verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+size_t file_size(WrenchFileHandle* file) {
+	_fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
 
 	file_flush(file);
 
 	LARGE_INTEGER size;
 	BOOL success = GetFileSizeEx(file->file, &size);
 
-	verify(success != 0, "Failed to retrieve file size. WinAPI Error Code: %d.", GetLastError());
+	_fileio_verify(success != 0, 0, "Failed to retrieve file size. WinAPI Error Code: %d.", GetLastError());
 
-	return (s64) size.QuadPart;
+	FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
+
+	return (size_t) size.QuadPart;
 }
 
 int file_flush(WrenchFileHandle* file) {
-	verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+	_fileio_verify(file != (WrenchFileHandle*) 0, EOF, "File handle was NULL.");
 
     BOOL success = FlushFileBuffers(file->file);
+
+	_fileio_verify(success != 0, EOF, "Failed to flush the file buffers. WinAPI Error Code: %d.", GetLastError());
+
+	FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
 
     return (success) ? 0 : EOF;
 }
 
 int file_close(WrenchFileHandle* file) {
-	verify(file != (WrenchFileHandle*) 0, "File handle was NULL.");
+	_fileio_verify(file != (WrenchFileHandle*) 0, EOF, "File handle was NULL.");
+	_fileio_verify(file->file != INVALID_HANDLE_VALUE, EOF, "File handle is invalid.");
 
-	BOOL success = 0;
-	if (file->file != INVALID_HANDLE_VALUE) {
-		success = CloseHandle(file->file);
-		verify(success != 0, "Failed to close the file. WinAPI Error Code: %d.", GetLastError());
-	}
+	BOOL success = CloseHandle(file->file);
 
 	free(file);
+
+	_fileio_verify(success != 0, EOF, "Failed to close the file. WinAPI Error Code: %d.", GetLastError());
+
+	FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
 
     return (success != 0) ? 0 : EOF;
 }

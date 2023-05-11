@@ -7,6 +7,7 @@ add_library(wrenchwtf STATIC
 	wtf/wtf_writer.cpp
 )
 
+add_subdirectory(platform)
 add_subdirectory(core)
 add_subdirectory(toolwads)
 add_subdirectory(engine)

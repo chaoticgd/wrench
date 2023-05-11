@@ -21,7 +21,7 @@
 #include <assert.h>
 #include <stdint.h>
 
-#include <core/fileio.h>
+#include <platform/fileio.h>
 
 int main(int argc, char** argv) {
 	size_t retval;
