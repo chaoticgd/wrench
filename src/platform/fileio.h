@@ -123,6 +123,33 @@ size_t file_read_string(char* str, size_t buffer_size, WrenchFileHandle* file);
 size_t file_write_string(const char* str, WrenchFileHandle* file);
 
 /**
+ * Writes a string given by a null-terminated format string and a list
+ * of data to a provided file handle.
+ * Converts '\n' into platform dependent line endings.
+ * This function in intended for use when writing text files.
+ *
+ * \param file Handle to a stream with write or append access.
+ * \param format Pointer to a null-terminated character string specifying how to interpret the data.
+ * \param vlist Variable argument list containing the data to print.
+ * \return Number of bytes written.
+ *
+ */
+size_t file_vprintf(WrenchFileHandle* file, const char* format, va_list vlist);
+
+/**
+ * Writes a string given by a null-terminated format string and a list
+ * of data to a provided file handle.
+ * Converts '\n' into platform dependent line endings.
+ * This function in intended for use when writing text files.
+ *
+ * \param str Null-terminated string to be stored.
+ * \param file Handle to a stream with write or append access.
+ * \return Number of bytes written.
+ *
+ */
+size_t file_printf(WrenchFileHandle* file, const char* format, ...);
+
+/**
  * Sets the current file pointer of the given file handle to a position defined
  * by origin with offset added onto it.
  *

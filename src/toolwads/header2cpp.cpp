@@ -34,8 +34,7 @@ int main(int argc, char** argv) {
 	WrenchFileHandle* dest = file_open(argv[1], WRENCH_FILE_MODE_WRITE);
 	assert(dest);
 
-	char start_of_file_text[] = "extern \"C\"{alignas(16) unsigned char wadinfo[]={";
-	file_write_string(start_of_file_text, dest);
+	file_write_string("extern \"C\"{alignas(16) unsigned char wadinfo[]={", dest);
 	for(int i = 2; i < argc; i++) {
 		WrenchFileHandle* src = file_open(argv[i], WRENCH_FILE_MODE_READ);
 		if(!src) {
@@ -56,14 +55,11 @@ int main(int argc, char** argv) {
 
 		file_close(src);
 
-		char byte_hex[32];
 		for(char byte : header) {
-			int num_chars = sprintf(byte_hex, "0x%hhx,", byte);
-			file_write_string(byte_hex, dest);
+			file_printf(dest, "0x%hhx,", byte);
 		}
 	}
-	char end_of_file_text[] = "};}\n";
-	file_write_string(end_of_file_text, dest);
+	file_write_string("};}\n", dest);
 
 	file_close(dest);
 

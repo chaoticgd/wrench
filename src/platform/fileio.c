@@ -17,6 +17,7 @@
 */
 
 #include "fileio.h"
+#include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -198,6 +199,29 @@ size_t file_write_string(const char* str, WrenchFileHandle* file) {
 	_fileio_verify(str != (const char*) 0, 0, "String buffer was NULL.");
 
 	return file_write(str, strlen(str), file);
+}
+
+size_t file_vprintf(WrenchFileHandle* file, const char* format, va_list vlist) {
+	_fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
+
+    int val = vfprintf(file->file, format, vlist);
+
+    _fileio_verify(val >= 0, 0, "Failed to write formatted string.");
+
+    FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
+
+    return val;
+}
+
+size_t file_printf(WrenchFileHandle* file, const char* format, ...) {
+	_fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
+
+	va_list list;
+	va_start(list, format);
+	size_t val = file_vprintf(file, format, list);
+	va_end(list);
+
+	return val;
 }
 
 int file_seek(WrenchFileHandle* file, size_t offset, WrenchFileOrigin origin) {

@@ -17,6 +17,7 @@
 */
 
 #include "fileio.h"
+#include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -207,6 +208,33 @@ size_t file_write_string(const char* str, WrenchFileHandle* file) {
 	free(str_no_r);
 
 	return bytes_written;
+}
+
+size_t file_vprintf(WrenchFileHandle* file, const char* format, va_list vlist) {
+	_fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
+
+    int num_chars_required = vsnprintf((char*) 0, 0, format, vlist) + 1;
+
+    char* buffer = malloc(num_chars_required);
+
+    vsnprintf(buffer, num_chars_required, format, vlist);
+
+	size_t num_bytes_written = file_write_string(buffer, file);
+
+	free(buffer);
+
+    return num_bytes_written;
+}
+
+size_t file_printf(WrenchFileHandle* file, const char* format, ...) {
+	_fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
+
+	va_list list;
+	va_start(list, format);
+	size_t val = file_vprintf(file, format, list);
+	va_end(list);
+
+	return val;
 }
 
 int file_seek(WrenchFileHandle* file, size_t offset, WrenchFileOrigin origin) {
