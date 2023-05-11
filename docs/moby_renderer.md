@@ -200,6 +200,6 @@ for(submesh in submeshes) {
 }
 ```
 
-where `VU0mem` refers to Vector Unit 0's data memory and `SPR` refers to the EE core's scratchpad memory. In the actual game the implementation of the above logic is split across a routine on the EE core and a VU0 microprogram. These two parts communicate via shared registers.
+where `VU0mem` refers to Vector Unit 0's data memory, `SPR` refers to the EE core's scratchpad memory and `v.matrix` refers to the blended matrix to be applied to a given vertex. In the actual game the implementation of the above logic is split across a routine on the EE core and a VU0 microprogram. These two parts communicate via shared registers.
 
 Note that the state of VU0 memory is preserved between submeshes, and Insomniac's moby exporter took advantage of this. Also note that just because a vertex does no blends, that does not mean that it isn't animated using a previously blended matrix.
