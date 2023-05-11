@@ -174,7 +174,7 @@ The first 9 bits of each vertex v[i] is an ID which determines at which index ve
 
 ### Blending
 
-The games support skeletal animation with 3 joints per vertex. Psuedocode for how game performs blending is shown below:
+The games support skeletal animation with 3 joints per vertex. Psuedocode for how the games perform blending is shown below:
 
 ```
 mtx4 VU0mem[64];
@@ -187,11 +187,11 @@ for(submesh in submeshes) {
 	for(v in vertices_that_do_two_way_blends) {
 		VU0mem[v.ST/4] = SPR[v.JI];
 		v.matrix = VU0mem[v.L1/4]*(v.W1/255.f)+VU0mem[v.L2/4]*(v.W2/255.f);
-		VU0mem[v.SB] = v.matrix;
+		VU0mem[v.SB/4] = v.matrix;
 	}
 	for(v in vertices_that_do_three_way_blends) {
 		v.matrix = VU0mem[v.L1/4]*(v.W1/255.f)+VU0mem[v.L2/4]*(v.W2/255.f)+VU0mem[v.L3/4]*(v.W3/255.f);
-		VU0mem[v.SB] = v.matrix;
+		VU0mem[v.SB/4] = v.matrix;
 	}
 	for(v in vertices_that_dont_do_blends) {
 		VU0mem[v.ST/4] = SPR[v.JI];
