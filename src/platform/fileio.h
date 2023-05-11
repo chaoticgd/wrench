@@ -27,6 +27,7 @@ extern "C" {
 // information of the last call to a file I/O function.
 extern const char* FILEIO_ERROR_CONTEXT_STRING;
 
+#include <stdarg.h>
 #include <stdlib.h>
 
 // Opaque structure with platform dependent implementation.
