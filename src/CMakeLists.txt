@@ -27,6 +27,7 @@ add_subdirectory(iso)
 add_executable(memmap
 	memmap.c
 )
+target_link_libraries(memmap wrenchplatform)
 
 add_executable(asset2json
 	asset2json.cpp
