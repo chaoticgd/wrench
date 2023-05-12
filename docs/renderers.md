@@ -43,4 +43,4 @@ Used for drawing large non-instanced geometry. Inherited from Naughty Dog.
 
 ## Tie Renderer
 
-Used for drawing large instanced geometry. Similar to the tie renderer. Also inherited from Naughty Dog.
+Used for drawing large instanced geometry. The LOD system is similar to that of the tfrag renderer. Also inherited from Naughty Dog.
