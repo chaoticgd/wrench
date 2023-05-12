@@ -38,7 +38,7 @@ struct Gameplay {
 	Opt<std::vector<RAC1_88>> rac1_88;
 	Opt<std::vector<u8>> rac1_78;
 	Opt<std::vector<RAC1_7c>> rac1_7c;
-	Opt<std::vector<GC_8c_DL_70>> gc_8c_dl_70;
+	Opt<std::vector<EnvParamsInstance>> env_params;
 	Opt<Properties> properties;
 	Opt<std::vector<HelpMessage>> us_english_help_messages;
 	Opt<std::vector<HelpMessage>> uk_english_help_messages;
@@ -48,7 +48,7 @@ struct Gameplay {
 	Opt<std::vector<HelpMessage>> italian_help_messages;
 	Opt<std::vector<HelpMessage>> japanese_help_messages;
 	Opt<std::vector<HelpMessage>> korean_help_messages;
-	Opt<std::vector<EnvTriggerInstance>> env_triggers;
+	Opt<std::vector<EnvTransitionInstance>> env_transitions;
 	Opt<std::vector<Camera>> cameras;
 	Opt<std::vector<SoundInstance>> sound_instances;
 	Opt<std::vector<s32>> moby_classes;

@@ -396,18 +396,95 @@ struct HelpMessageBlock {
 	}
 };
 
-packed_struct(Rgba,
-
+// Fog only applied if fog_near_dist < fog_far_dist.
+packed_struct(EnvParamsPacked,
+	/* 0x00 */ s32 hero_light;
+	/* 0x04 */ s16 pos_x;
+	/* 0x06 */ s16 pos_y;
+	/* 0x08 */ s16 pos_z;
+	/* 0x0a */ s16 reverb_depth;
+	/* 0x0c */ s16 music_track;
+	/* 0x0e */ u8 fog_near_intensity;
+	/* 0x0f */ u8 fog_far_intensity;
+	/* 0x10 */ u8 hero_colour_r;
+	/* 0x11 */ u8 hero_colour_g;
+	/* 0x12 */ u8 hero_colour_b;
+	/* 0x13 */ u8 reverb_type;
+	/* 0x14 */ u8 reverb_delay;
+	/* 0x15 */ u8 reverb_feedback;
+	/* 0x16 */ u8 enable_reverb_params;
+	/* 0x17 */ u8 fog_r;
+	/* 0x18 */ u8 fog_g;
+	/* 0x19 */ u8 fog_b;
+	/* 0x1a */ s16 fog_near_dist;
+	/* 0x1c */ s16 fog_far_dist;
+	/* 0x1e */ u16 unused_1e;
 )
 
-packed_struct(MobyLights,
-	u8 light_1;
-	u8 light_2;
-	u8 interp;
-	u8 pad;
-)
+struct EnvParamsBlock {
+	static void read(std::vector<EnvParamsInstance>& dest, Buffer src, Game game) {
+		TableHeader header = src.read<TableHeader>(0, "env params block header");
+		auto data = src.read_multiple<EnvParamsPacked>(0x10, header.count_1, "env params");
+		dest.reserve(header.count_1);
+		for(s64 i = 0; i < header.count_1; i++) {
+			EnvParamsPacked packed = data[i];
+			EnvParamsInstance& inst = dest.emplace_back();
+			inst.set_id_value(i);
+			inst.set_transform(glm::vec3(packed.pos_x, packed.pos_y, packed.pos_z));
+			if(packed.fog_far_dist > packed.fog_near_dist) {
+				inst.enable_fog_params = true;
+				inst.fog_near_dist = packed.fog_near_dist;
+				inst.fog_far_dist = packed.fog_far_dist;
+			} else {
+				inst.enable_fog_params = false;
+				inst.fog_near_dist = 0;
+				inst.fog_far_dist = 0;
+			}
+			swap_env_params(inst, packed);
+		}
+	}
+	
+	static void write(OutBuffer dest, const std::vector<EnvParamsInstance>& src, Game game) {
+		TableHeader header = {(s32) src.size()};
+		dest.write(header);
+		for(EnvParamsInstance inst : src) {
+			EnvParamsPacked packed;
+			packed.pos_x = (s16) inst.position().x;
+			packed.pos_y = (s16) inst.position().y;
+			packed.pos_z = (s16) inst.position().z;
+			if(inst.enable_fog_params) {
+				packed.fog_near_dist = inst.fog_near_dist;
+				packed.fog_far_dist = inst.fog_far_dist;
+			} else {
+				packed.fog_near_dist = 0;
+				packed.fog_far_dist = 0;
+			}
+			packed.unused_1e = 0xffff;
+			swap_env_params(inst, packed);
+			dest.write(packed);
+		}
+	}
+	
+	static void swap_env_params(EnvParamsInstance& l, EnvParamsPacked& r) {
+		SWAP_PACKED(l.hero_light, r.hero_light);
+		SWAP_PACKED(l.reverb_depth, r.reverb_depth);
+		SWAP_PACKED(l.music_track, r.music_track);
+		SWAP_PACKED(l.fog_near_intensity, r.fog_near_intensity);
+		SWAP_PACKED(l.fog_far_intensity, r.fog_far_intensity);
+		SWAP_PACKED(l.hero_colour_r, r.hero_colour_r);
+		SWAP_PACKED(l.hero_colour_g, r.hero_colour_g);
+		SWAP_PACKED(l.hero_colour_b, r.hero_colour_b);
+		SWAP_PACKED(l.reverb_type, r.reverb_type);
+		SWAP_PACKED(l.reverb_delay, r.reverb_delay);
+		SWAP_PACKED(l.reverb_feedback, r.reverb_feedback);
+		SWAP_PACKED(l.enable_reverb_params, r.enable_reverb_params);
+		SWAP_PACKED(l.fog_r, r.fog_r);
+		SWAP_PACKED(l.fog_g, r.fog_g);
+		SWAP_PACKED(l.fog_b, r.fog_b);
+	}
+};
 
-packed_struct(EnvTriggerPacked,
+packed_struct(EnvTransitionPacked,
 	/* 0x00 */ Mat4 matrix;
 	/* 0x40 */ Rgb32 hero_colour_1;
 	/* 0x44 */ Rgb32 hero_colour_2;
@@ -427,43 +504,43 @@ packed_struct(EnvTriggerPacked,
 	/* 0x7c */ s32 unused_7c;
 )
 
-struct EnvTriggerBlock {
-	static void read(std::vector<EnvTriggerInstance>& dest, Buffer src, Game game) {
-		TableHeader header = src.read<TableHeader>(0, "GC 84 block header");
+struct EnvTransitionBlock {
+	static void read(std::vector<EnvTransitionInstance>& dest, Buffer src, Game game) {
+		TableHeader header = src.read<TableHeader>(0, "env transitions block header");
 		s64 ofs = 0x10;
-		auto bspheres = src.read_multiple<Vec4f>(ofs, header.count_1, "env trigger bspheres");
+		auto bspheres = src.read_multiple<Vec4f>(ofs, header.count_1, "env transition bspheres");
 		ofs += header.count_1 * sizeof(Vec4f);
-		auto data = src.read_multiple<EnvTriggerPacked>(ofs, header.count_1, "env triggers");
+		auto data = src.read_multiple<EnvTransitionPacked>(ofs, header.count_1, "env transitions");
 		dest.reserve(header.count_1);
 		for(s64 i = 0; i < header.count_1; i++) {
-			EnvTriggerPacked packed = data[i];
-			EnvTriggerInstance& inst = dest.emplace_back();
+			EnvTransitionPacked packed = data[i];
+			EnvTransitionInstance& inst = dest.emplace_back();
 			inst.set_id_value(i);
 			inst.set_transform(packed.matrix.unpack());
 			inst.bounding_sphere() = bspheres[i].unpack();
 			inst.enable_hero = packed.flags & 1;
 			inst.enable_fog = (packed.flags & 2) >> 1;
-			swap_env_trigger(inst, packed);
+			swap_env_transition(inst, packed);
 		}
 	}
 	
-	static void write(OutBuffer dest, const std::vector<EnvTriggerInstance>& src, Game game) {
+	static void write(OutBuffer dest, const std::vector<EnvTransitionInstance>& src, Game game) {
 		TableHeader header = {(s32) src.size()};
 		dest.write(header);
-		for(const EnvTriggerInstance& inst : src) {
+		for(const EnvTransitionInstance& inst : src) {
 			dest.write(Vec4f::pack(inst.bounding_sphere()));
 		}
-		for(EnvTriggerInstance inst : src) {
-			EnvTriggerPacked packed;
+		for(EnvTransitionInstance inst : src) {
+			EnvTransitionPacked packed;
 			packed.matrix = Mat4::pack(inst.matrix());
 			packed.flags = inst.enable_hero | (inst.enable_fog << 1);
 			packed.unused_7c = 0;
-			swap_env_trigger(inst, packed);
+			swap_env_transition(inst, packed);
 			dest.write(packed);
 		}
 	}
 	
-	static void swap_env_trigger(EnvTriggerInstance& l, EnvTriggerPacked& r) {
+	static void swap_env_transition(EnvTransitionInstance& l, EnvTransitionPacked& r) {
 		SWAP_PACKED(l.hero_colour_1, r.hero_colour_1);
 		SWAP_PACKED(l.hero_colour_2, r.hero_colour_2);
 		SWAP_PACKED(l.hero_light_1, r.hero_light_1);
@@ -722,7 +799,7 @@ packed_struct(DlMobyInstance,
 	/* 0x40 */ s32 group;
 	/* 0x44 */ s32 is_rooted;
 	/* 0x48 */ f32 rooted_distance;
-	/* 0x4c */ s32 unknown_4c;
+	/* 0x4c */ s32 unused_4c;
 	/* 0x50 */ s32 pvar_index;
 	/* 0x54 */ s32 occlusion; // 0 = precompute occlusion
 	/* 0x58 */ s32 mode_bits;
@@ -743,7 +820,7 @@ struct DeadlockedMobyBlock {
 			verify(entry.size == sizeof(DlMobyInstance), "Moby size field has invalid value.");
 			verify(entry.unused_20 == 32, "Moby field has weird value.");
 			verify(entry.unused_24 == 64, "Moby field has weird value.");
-			verify(entry.unknown_4c == 1, "Moby field has weird value.");
+			verify(entry.unused_4c == 1, "Moby field has weird value.");
 			verify(entry.unused_6c == -1, "Moby field has weird value.");
 			
 			MobyInstance instance;
@@ -786,7 +863,7 @@ struct DeadlockedMobyBlock {
 		SWAP_PACKED(l.group, r.group);
 		SWAP_PACKED(l.is_rooted, r.is_rooted);
 		SWAP_PACKED(l.rooted_distance, r.rooted_distance);
-		r.unknown_4c = 1;
+		r.unused_4c = 1;
 		SWAP_PACKED(l.occlusion, r.occlusion);
 		SWAP_PACKED(l.mode_bits, r.mode_bits);
 		SWAP_PACKED(l.light, r.light);
@@ -839,8 +916,8 @@ struct PvarDataBlock {
 };
 
 packed_struct(PvarPointerEntry,
-	s32 pvar_index;
-	u32 pointer_offset;
+	/* 0x0 */ s32 pvar_index;
+	/* 0x4 */ u32 pointer_offset;
 )
 
 static PvarType& get_pvar_type(s32 pvar_index, PvarTypes& types, Gameplay& dest) {
@@ -928,9 +1005,9 @@ struct PvarPointerRewireBlock {
 };
 
 packed_struct(GroupHeader,
-	s32 group_count;
-	s32 data_size;
-	s32 pad[2];
+	/* 0x0 */ s32 group_count;
+	/* 0x4 */ s32 data_size;
+	/* 0x8 */ s32 pad[2];
 )
 
 struct GroupBlock {
@@ -983,7 +1060,7 @@ struct GroupBlock {
 		
 		dest.pad(0x10, 0);
 		
-		GroupHeader header = {0};
+		GroupHeader header = {};
 		header.group_count = src.size();
 		header.data_size = dest.tell() - data_ofs;
 		dest.write(header_ofs, header);
@@ -992,15 +1069,15 @@ struct GroupBlock {
 };
 
 packed_struct(GlobalPvarBlockHeader,
-	s32 global_pvar_size;
-	s32 pointer_count;
-	s32 pad[2];
+	/* 0x0 */ s32 global_pvar_size;
+	/* 0x4 */ s32 pointer_count;
+	/* 0x8 */ s32 unused_8[2];
 )
 
 packed_struct(GlobalPvarPointer,
-	u16 pvar_index;
-	u16 pointer_offset;
-	s32 global_pvar_offset;
+	/* 0x0 */ u16 pvar_index;
+	/* 0x2 */ u16 pointer_offset;
+	/* 0x4 */ s32 global_pvar_offset;
 )
 
 struct GlobalPvarBlock {
@@ -1026,13 +1103,13 @@ struct GlobalPvarBlock {
 	
 	static bool write(OutBuffer dest, const PvarTypes& types, const Gameplay& src, Game game) {
 		if(!src.global_pvar.has_value()) {
-			GlobalPvarBlockHeader header {0};
+			GlobalPvarBlockHeader header {};
 			dest.write(header);
 			return true;
 		}
 		
 		s32 header_ofs = dest.alloc<GlobalPvarBlockHeader>();
-		GlobalPvarBlockHeader header = {0};
+		GlobalPvarBlockHeader header = {};
 		header.global_pvar_size = src.global_pvar->size();
 		
 		dest.write_multiple(*src.global_pvar);
@@ -1480,32 +1557,32 @@ static void swap_instance(SoundInstance& l, SoundInstancePacked& r) {
 }
 
 packed_struct(ShapePacked,
-	Mat4 matrix;
-	Mat3 inverse_matrix;
-	Vec3f rotation;
-	f32 pad;
+	/* 0x00 */ Mat4 matrix;
+	/* 0x40 */ Mat3 inverse_matrix;
+	/* 0x70 */ Vec3f rotation;
+	/* 0x7c */ f32 unused_7c;
 )
 
 static void swap_instance(Cuboid& l, ShapePacked& r) {
 	swap_matrix_inverse_rotation(l, r);
-	r.pad = 0.f;
+	r.unused_7c = 0.f;
 }
 
 static void swap_instance(Sphere& l, ShapePacked& r) {
 	swap_matrix_inverse_rotation(l, r);
-	r.pad = 0.f;
+	r.unused_7c = 0.f;
 }
 
 static void swap_instance(Cylinder& l, ShapePacked& r) {
 	swap_matrix_inverse_rotation(l, r);
-	r.pad = 0.f;
+	r.unused_7c = 0.f;
 }
 
 packed_struct(DirectionalLightPacked,
-	Vec4f colour_a;
-	Vec4f direction_a;
-	Vec4f colour_b;
-	Vec4f direction_b;
+	/* 0x00 */ Vec4f colour_a;
+	/* 0x10 */ Vec4f direction_a;
+	/* 0x20 */ Vec4f colour_b;
+	/* 0x30 */ Vec4f direction_b;
 )
 
 static void swap_instance(DirectionalLight& l, DirectionalLightPacked& r) {
@@ -1661,7 +1738,7 @@ const std::vector<GameplayBlockDescription> RAC_GAMEPLAY_BLOCKS = {
 	{0x28, bf<HelpMessageBlock<false>>(&Gameplay::japanese_help_messages), "japanese help messages"},
 	{0x2c, bf<HelpMessageBlock<true>>(&Gameplay::korean_help_messages), "korean help messages"},
 	{0x04, bf<InstanceBlock<DirectionalLight, DirectionalLightPacked>>(&Gameplay::lights), "directional lights"},
-	{0x80, bf<EnvTriggerBlock>(&Gameplay::env_triggers), "env triggers"},
+	{0x80, bf<EnvTransitionBlock>(&Gameplay::env_transitions), "env transitions"},
 	{0x08, bf<InstanceBlock<Camera, CameraPacked>>(&Gameplay::cameras), "cameras"},
 	{0x0c, bf<InstanceBlock<SoundInstance, SoundInstancePacked>>(&Gameplay::sound_instances), "sound instances"},
 	{0x40, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},
@@ -1690,7 +1767,7 @@ const std::vector<GameplayBlockDescription> RAC_GAMEPLAY_BLOCKS = {
 };
 
 const std::vector<GameplayBlockDescription> GC_UYA_GAMEPLAY_BLOCKS = {
-	{0x8c, bf<TableBlock<GC_8c_DL_70>>(&Gameplay::gc_8c_dl_70), "GC 8c DL 70"},
+	{0x8c, bf<EnvParamsBlock>(&Gameplay::env_params), "env params"},
 	{0x00, bf<PropertiesBlock>(&Gameplay::properties), "properties"},
 	{0x10, bf<HelpMessageBlock<false>>(&Gameplay::us_english_help_messages), "us english help messages"},
 	{0x14, bf<HelpMessageBlock<false>>(&Gameplay::uk_english_help_messages), "uk english help messages"},
@@ -1701,7 +1778,7 @@ const std::vector<GameplayBlockDescription> GC_UYA_GAMEPLAY_BLOCKS = {
 	{0x28, bf<HelpMessageBlock<false>>(&Gameplay::japanese_help_messages), "japanese help messages"},
 	{0x2c, bf<HelpMessageBlock<true>>(&Gameplay::korean_help_messages), "korean help messages"},
 	{0x04, bf<InstanceBlock<DirectionalLight, DirectionalLightPacked>>(&Gameplay::lights), "directional lights"},
-	{0x84, bf<EnvTriggerBlock>(&Gameplay::env_triggers), "env triggers"},
+	{0x84, bf<EnvTransitionBlock>(&Gameplay::env_transitions), "env transitions"},
 	{0x08, bf<InstanceBlock<Camera, CameraPacked>>(&Gameplay::cameras), "cameras"},
 	{0x0c, bf<InstanceBlock<SoundInstance, SoundInstancePacked>>(&Gameplay::sound_instances), "sound instances"},
 	{0x48, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},
@@ -1732,7 +1809,7 @@ const std::vector<GameplayBlockDescription> GC_UYA_GAMEPLAY_BLOCKS = {
 };
 
 const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS = {
-	{0x70, bf<TableBlock<GC_8c_DL_70>>(&Gameplay::gc_8c_dl_70), "GC 8c DL 70"},
+	{0x70, bf<EnvParamsBlock>(&Gameplay::env_params), "env params"},
 	{0x00, bf<PropertiesBlock>(&Gameplay::properties), "properties"},
 	{0x0c, bf<HelpMessageBlock<false>>(&Gameplay::us_english_help_messages), "us english help messages"},
 	{0x10, bf<HelpMessageBlock<false>>(&Gameplay::uk_english_help_messages), "uk english help messages"},

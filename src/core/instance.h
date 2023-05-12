@@ -27,8 +27,8 @@ enum InstanceType : u32 {
 	INST_NONE = 0,
 	INST_RAC1_88 = 14,
 	INST_RAC1_7c = 15,
-	INST_GC_8c_DL_70 = 1,
-	INST_ENV_TRIGGER = 2,
+	INST_ENV_PARAMS = 1,
+	INST_ENV_TRANSITION = 2,
 	INST_CAMERA = 3,
 	INST_SOUND = 4,
 	INST_MOBY = 5,
@@ -39,7 +39,7 @@ enum InstanceType : u32 {
 	INST_GRIND_PATH = 10,
 	INST_LIGHT = 11,
 	INST_TIE = 12,
-	INST_SHRUB = 13
+	INST_SHRUB = 13,
 };
 
 struct InstanceId {
@@ -84,6 +84,7 @@ enum class TransformMode {
 	MATRIX,
 	MATRIX_AND_INVERSE,
 	MATRIX_INVERSE_ROTATION,
+	POSITION,
 	POSITION_ROTATION,
 	POSITION_ROTATION_SCALE
 };
@@ -104,7 +105,7 @@ struct Instance {
 	
 	void set_transform(glm::mat4 matrix, glm::mat3x4* inverse = nullptr);
 	void set_transform(glm::mat4 matrix, glm::mat3x4 inverse, glm::vec3 rotation);
-	void set_transform(glm::vec3 position, glm::vec3 rotation, f32 scale = 1.f);
+	void set_transform(glm::vec3 position, glm::vec3 rotation = glm::vec3(0.f, 0.f, 0.f), f32 scale = 1.f);
 	glm::mat4 matrix() const;
 	glm::mat3x4 inverse_matrix() const;
 	glm::vec3 position() const;
@@ -201,6 +202,15 @@ template <typename T>
 					DEF_FIELD(rotation);
 					if constexpr(std::is_same_v<T, FromJsonVisitor>) {
 						set_transform(_transform.matrix, _transform.inverse_matrix, _transform.rotation);
+					}
+					break;
+				}
+				case TransformMode::POSITION: {
+					glm::vec3 position = _transform.matrix[3];
+					DEF_FIELD(position);
+					_transform.matrix[3] = glm::vec4(position, 1.f);
+					if constexpr(std::is_same_v<T, FromJsonVisitor>) {
+						set_transform(position);
 					}
 					break;
 				}
@@ -314,40 +324,31 @@ struct RAC1_7c : Instance {
 	}
 };
 
-packed_struct(GC_8c_DL_70,
-	s16 unknown_0;
-	s16 unknown_2;
-	s16 unknown_4;
-	s16 unknown_6;
-	u32 unknown_8;
-	s16 unknown_c;
-	s16 unknown_e;
-	s8 unknown_10;
-	s8 unknown_11;
-	s16 unknown_12;
-	u32 unknown_14;
-	u32 unknown_18;
-	s16 unknown_1c;
-	s16 unknown_1e;
+
+struct EnvParamsInstance : Instance {
+	EnvParamsInstance() : Instance(INST_ENV_PARAMS, COM_TRANSFORM, TransformMode::POSITION) {}
 	
-	template <typename T>
-	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD(unknown_0);
-		DEF_PACKED_FIELD(unknown_2);
-		DEF_PACKED_FIELD(unknown_4);
-		DEF_PACKED_FIELD(unknown_6);
-		DEF_PACKED_FIELD(unknown_8);
-		DEF_PACKED_FIELD(unknown_c);
-		DEF_PACKED_FIELD(unknown_e);
-		DEF_PACKED_FIELD(unknown_10);
-		DEF_PACKED_FIELD(unknown_11);
-		DEF_PACKED_FIELD(unknown_12);
-		DEF_PACKED_FIELD(unknown_14);
-		DEF_PACKED_FIELD(unknown_18);
-		DEF_PACKED_FIELD(unknown_1c);
-		DEF_PACKED_FIELD(unknown_1e);
-	}
-)
+	s32 hero_light;
+	s16 music_track;
+	u8 hero_colour_r;
+	u8 hero_colour_g;
+	u8 hero_colour_b;
+	
+	bool enable_reverb_params;
+	u8 reverb_type;
+	s16 reverb_depth;
+	u8 reverb_delay;
+	u8 reverb_feedback;
+	
+	bool enable_fog_params;
+	u8 fog_near_intensity;
+	u8 fog_far_intensity;
+	u8 fog_r;
+	u8 fog_g;
+	u8 fog_b;
+	s16 fog_near_dist;
+	s16 fog_far_dist;
+};
 
 packed_struct(Rgb32,
 	/* 0x0 */ u8 r;
@@ -369,8 +370,8 @@ packed_struct(Rgb96,
 	}
 )
 
-struct EnvTriggerInstance : Instance {
-	EnvTriggerInstance() : Instance(INST_ENV_TRIGGER, COM_TRANSFORM | COM_BOUNDING_SPHERE, TransformMode::MATRIX) {}
+struct EnvTransitionInstance : Instance {
+	EnvTransitionInstance() : Instance(INST_ENV_TRANSITION, COM_TRANSFORM | COM_BOUNDING_SPHERE, TransformMode::MATRIX) {}
 	
 	bool enable_hero;
 	Rgb32 hero_colour_1;
