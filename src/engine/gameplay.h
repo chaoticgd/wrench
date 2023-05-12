@@ -55,11 +55,11 @@ struct Gameplay {
 	Opt<std::vector<MobyInstance>> moby_instances;
 	Opt<std::vector<Group>> moby_groups;
 	Opt<std::vector<u8>> global_pvar;
-	Opt<std::vector<s32>> gc_74_dl_58;
 	Opt<std::vector<Path>> paths;
 	Opt<std::vector<Cuboid>> cuboids;
 	Opt<std::vector<Sphere>> spheres;
 	Opt<std::vector<Cylinder>> cylinders;
+	Opt<std::vector<Pill>> pills;
 	Opt<std::vector<u8>> gc_88_dl_6c;
 	Opt<GC_80_DL_64> gc_80_dl_64;
 	Opt<std::vector<GrindPath>> grind_paths;

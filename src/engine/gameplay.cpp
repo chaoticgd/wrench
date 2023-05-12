@@ -1263,6 +1263,18 @@ struct GC_88_DL_6c_Block {
 	}
 };
 
+struct RAC1_78_Block {
+	static void read(std::vector<u8>& dest, Buffer src, Game game) {
+		s32 size = src.read<s32>(0, "RAC 78 size");
+		dest = src.read_multiple<u8>(4, size, "RAC 78 data").copy();
+	}
+	
+	static void write(OutBuffer dest, const std::vector<u8>& src, Game game) {
+		dest.write((s32) src.size());
+		dest.write_multiple(src);
+	}
+};
+
 struct GC_80_DL_64_Block {
 	static void read(GC_80_DL_64& dest, Buffer src, Game game) {
 		auto header = src.read<TableHeader>(0, "block header");
@@ -1472,18 +1484,6 @@ struct ShrubClassBlock {
 	}
 };
 
-struct RAC1_78_Block {
-	static void read(std::vector<u8>& dest, Buffer src, Game game) {
-		s32 size = src.read<s32>(0, "RAC 78 size");
-		dest = src.read_multiple<u8>(4, size, "RAC 78 data").copy();
-	}
-	
-	static void write(OutBuffer dest, const std::vector<u8>& src, Game game) {
-		dest.write((s32) src.size());
-		dest.write_multiple(src);
-	}
-};
-
 packed_struct(OcclusionMappingsHeader,
 	s32 tfrag_mapping_count;
 	s32 tie_mapping_count;
@@ -1612,6 +1612,11 @@ static void swap_instance(Sphere& l, ShapePacked& r) {
 }
 
 static void swap_instance(Cylinder& l, ShapePacked& r) {
+	swap_matrix_inverse_rotation(l, r);
+	r.unused_7c = 0.f;
+}
+
+static void swap_instance(Pill& l, ShapePacked& r) {
 	swap_matrix_inverse_rotation(l, r);
 	r.unused_7c = 0.f;
 }
@@ -1795,7 +1800,7 @@ const std::vector<GameplayBlockDescription> RAC_GAMEPLAY_BLOCKS = {
 	{0x60, bf<InstanceBlock<Cuboid, ShapePacked>>(&Gameplay::cuboids), "cuboids"},
 	{0x64, bf<InstanceBlock<Sphere, ShapePacked>>(&Gameplay::spheres), "spheres"},
 	{0x68, bf<InstanceBlock<Cylinder, ShapePacked>>(&Gameplay::cylinders), "cylinders"},
-	{0x6c, bf<TableBlock<s32>>(&Gameplay::gc_74_dl_58), "GC 74 DL 58"},
+	{0x6c, bf<InstanceBlock<Pill, ShapePacked>>(&Gameplay::pills), "pills"},
 	{0x84, bf<GC_88_DL_6c_Block>(&Gameplay::gc_88_dl_6c), "GC 88 DL 6c"},
 	{0x7c, bf<InstanceBlock<RAC1_7c, RAC1_7c_Packed>>(&Gameplay::rac1_7c), "RAC1 7c"},
 	{0x78, bf<RAC1_78_Block>(&Gameplay::rac1_78), "RAC1 78"},
@@ -1838,7 +1843,7 @@ const std::vector<GameplayBlockDescription> GC_UYA_GAMEPLAY_BLOCKS = {
 	{0x68, bf<InstanceBlock<Cuboid, ShapePacked>>(&Gameplay::cuboids), "cuboids"},
 	{0x6c, bf<InstanceBlock<Sphere, ShapePacked>>(&Gameplay::spheres), "spheres"},
 	{0x70, bf<InstanceBlock<Cylinder, ShapePacked>>(&Gameplay::cylinders), "cylinders"},
-	{0x74, bf<TableBlock<s32>>(&Gameplay::gc_74_dl_58), "GC 74 DL 58"},
+	{0x74, bf<InstanceBlock<Pill, ShapePacked>>(&Gameplay::pills), "pills"},
 	{0x88, bf<GC_88_DL_6c_Block>(&Gameplay::gc_88_dl_6c), "GC 88 DL 6c"},
 	{0x80, bf<GC_80_DL_64_Block>(&Gameplay::gc_80_dl_64), "GC 80 DL 64"},
 	{0x7c, bf<GrindPathBlock>(&Gameplay::grind_paths), "grindpaths"},
@@ -1871,7 +1876,7 @@ const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS = {
 	{0x4c, bf<InstanceBlock<Cuboid, ShapePacked>>(&Gameplay::cuboids), "cuboids"},
 	{0x50, bf<InstanceBlock<Sphere, ShapePacked>>(&Gameplay::spheres), "spheres"},
 	{0x54, bf<InstanceBlock<Cylinder, ShapePacked>>(&Gameplay::cylinders), "cylinders"},
-	{0x58, bf<TableBlock<s32>>(&Gameplay::gc_74_dl_58), "GC 74 DL 58"},
+	{0x58, bf<InstanceBlock<Pill, ShapePacked>>(&Gameplay::pills), "pills"},
 	{0x6c, bf<GC_88_DL_6c_Block>(&Gameplay::gc_88_dl_6c), "GC 88 DL 6c"},
 	{0x64, bf<GC_80_DL_64_Block>(&Gameplay::gc_80_dl_64), "GC 80 DL 64"},
 	{0x60, bf<GrindPathBlock>(&Gameplay::grind_paths), "grindpaths"},

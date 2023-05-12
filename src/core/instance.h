@@ -35,10 +35,11 @@ enum InstanceType : u32 {
 	INST_CUBOID = 7,
 	INST_SPHERE = 8,
 	INST_CYLINDER = 9,
-	INST_GRIND_PATH = 10,
-	INST_LIGHT = 11,
-	INST_TIE = 12,
-	INST_SHRUB = 13,
+	INST_PILL = 10,
+	INST_GRIND_PATH = 11,
+	INST_LIGHT = 12,
+	INST_TIE = 13,
+	INST_SHRUB = 14,
 };
 
 struct InstanceId {
@@ -398,6 +399,11 @@ struct Sphere : Instance {
 
 struct Cylinder : Instance {
 	Cylinder() : Instance(INST_CYLINDER, COM_TRANSFORM, TransformMode::MATRIX_INVERSE_ROTATION) {}
+};
+
+// There are none of these in any of the games.
+struct Pill : Instance {
+	Pill() : Instance(INST_PILL, COM_TRANSFORM, TransformMode::MATRIX_INVERSE_ROTATION) {}
 };
 
 struct SoundInstance : Instance {
