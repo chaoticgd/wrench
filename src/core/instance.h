@@ -25,9 +25,8 @@
 
 enum InstanceType : u32 {
 	INST_NONE = 0,
-	INST_RAC1_88 = 14,
 	INST_RAC1_7c = 15,
-	INST_ENV_PARAMS = 1,
+	INST_ENV_SAMPLE_POINT = 1,
 	INST_ENV_TRANSITION = 2,
 	INST_CAMERA = 3,
 	INST_SOUND = 4,
@@ -266,39 +265,6 @@ template <typename T>
 	}
 };
 
-struct RAC1_88 : Instance {
-	RAC1_88() : Instance(INST_RAC1_88, COM_NONE, TransformMode::NONE) {}
-	
-	u32 unknown_0;
-	u32 unknown_4;
-	u32 unknown_8;
-	u32 unknown_c;
-	u32 unknown_10;
-	u32 unknown_14;
-	u32 unknown_18;
-	u32 unknown_1c;
-	u32 unknown_20;
-	u32 unknown_24;
-	u32 unknown_28;
-	u32 unknown_2c;
-	
-	template <typename T>
-	void enumerate_fields(T& t) {
-		DEF_FIELD(unknown_0);
-		DEF_FIELD(unknown_4);
-		DEF_FIELD(unknown_8);
-		DEF_FIELD(unknown_c);
-		DEF_FIELD(unknown_10);
-		DEF_FIELD(unknown_14);
-		DEF_FIELD(unknown_18);
-		DEF_FIELD(unknown_1c);
-		DEF_FIELD(unknown_20);
-		DEF_FIELD(unknown_24);
-		DEF_FIELD(unknown_28);
-		DEF_FIELD(unknown_2c);
-	}
-};
-
 struct RAC1_7c : Instance {
 	RAC1_7c() : Instance(INST_RAC1_7c, COM_NONE, TransformMode::NONE) {}
 	
@@ -325,29 +291,29 @@ struct RAC1_7c : Instance {
 };
 
 
-struct EnvParamsInstance : Instance {
-	EnvParamsInstance() : Instance(INST_ENV_PARAMS, COM_TRANSFORM, TransformMode::POSITION) {}
+struct EnvSamplePointInstance : Instance {
+	EnvSamplePointInstance() : Instance(INST_ENV_SAMPLE_POINT, COM_TRANSFORM, TransformMode::POSITION) {}
 	
-	s32 hero_light;
-	s16 music_track;
-	u8 hero_colour_r;
-	u8 hero_colour_g;
-	u8 hero_colour_b;
+	s32 hero_light = 0;
+	s16 music_track = 0;
+	u8 hero_colour_r = 0;
+	u8 hero_colour_g = 0;
+	u8 hero_colour_b = 0;
 	
-	bool enable_reverb_params;
-	u8 reverb_type;
-	s16 reverb_depth;
-	u8 reverb_delay;
-	u8 reverb_feedback;
+	bool enable_reverb_params = false;
+	u8 reverb_type = 0;
+	s16 reverb_depth = 0;
+	u8 reverb_delay = 0;
+	u8 reverb_feedback = 0;
 	
-	bool enable_fog_params;
-	u8 fog_near_intensity;
-	u8 fog_far_intensity;
-	u8 fog_r;
-	u8 fog_g;
-	u8 fog_b;
-	s16 fog_near_dist;
-	s16 fog_far_dist;
+	bool enable_fog_params = false;
+	u8 fog_near_intensity = 0;
+	u8 fog_far_intensity = 0;
+	u8 fog_r = 0;
+	u8 fog_g = 0;
+	u8 fog_b = 0;
+	s16 fog_near_dist = 0;
+	s16 fog_far_dist = 0;
 };
 
 packed_struct(Rgb32,

@@ -35,10 +35,9 @@ struct HelpMessage {
 };
 
 struct Gameplay {
-	Opt<std::vector<RAC1_88>> rac1_88;
 	Opt<std::vector<u8>> rac1_78;
 	Opt<std::vector<RAC1_7c>> rac1_7c;
-	Opt<std::vector<EnvParamsInstance>> env_params;
+	Opt<std::vector<EnvSamplePointInstance>> env_sample_points;
 	Opt<Properties> properties;
 	Opt<std::vector<HelpMessage>> us_english_help_messages;
 	Opt<std::vector<HelpMessage>> uk_english_help_messages;

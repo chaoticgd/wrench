@@ -216,7 +216,7 @@ static InspectorFieldFuncs type_funcs() {
 			const char* type;
 			switch(first.type()) {
 				case INST_NONE: verify_not_reached_fatal("Invalid instance type."); break;
-				case INST_ENV_PARAMS: type = "Env Params"; break;
+				case INST_ENV_SAMPLE_POINT: type = "Env Sample Point"; break;
 				case INST_ENV_TRANSITION: type = "Env Transition"; break;
 				case INST_CAMERA: type = "Camera"; break;
 				case INST_SOUND: type = "Sound"; break;

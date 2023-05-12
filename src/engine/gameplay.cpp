@@ -396,8 +396,65 @@ struct HelpMessageBlock {
 	}
 };
 
+packed_struct(RacEnvSamplePointPacked,
+	/* 0x00 */ Vec3f pos;
+	/* 0x0c */ f32 one;
+	/* 0x10 */ s32 hero_colour_r;
+	/* 0x14 */ s32 hero_colour_g;
+	/* 0x18 */ s32 hero_colour_b;
+	/* 0x1c */ s32 hero_light;
+	/* 0x20 */ s32 reverb_depth;
+	/* 0x24 */ u8 reverb_type;
+	/* 0x25 */ u8 reverb_delay;
+	/* 0x26 */ u8 reverb_feedback;
+	/* 0x27 */ u8 enable_reverb_params;
+	/* 0x28 */ s32 music_track;
+	/* 0x2c */ s32 unused_2c;
+)
+
+struct RacEnvSamplePointBlock {
+	static void read(std::vector<EnvSamplePointInstance>& dest, Buffer src, Game game) {
+		TableHeader header = src.read<TableHeader>(0, "env sample points block header");
+		auto data = src.read_multiple<RacEnvSamplePointPacked>(0x10, header.count_1, "env sample points");
+		dest.reserve(header.count_1);
+		for(s64 i = 0; i < header.count_1; i++) {
+			RacEnvSamplePointPacked packed = data[i];
+			EnvSamplePointInstance& inst = dest.emplace_back();
+			inst.set_id_value(i);
+			inst.set_transform(packed.pos.unpack());
+			swap_env_params(inst, packed);
+		}
+	}
+	
+	static void write(OutBuffer dest, const std::vector<EnvSamplePointInstance>& src, Game game) {
+		TableHeader header = {(s32) src.size()};
+		dest.write(header);
+		for(EnvSamplePointInstance inst : src) {
+			RacEnvSamplePointPacked packed;
+			packed.pos = Vec3f::pack(inst.position());
+			packed.one = 1.f;
+			swap_env_params(inst, packed);
+			packed.unused_2c = 0x11223344;
+			dest.write(packed);
+		}
+	}
+	
+	static void swap_env_params(EnvSamplePointInstance& l, RacEnvSamplePointPacked& r) {
+		SWAP_PACKED(l.hero_colour_r, r.hero_colour_r);
+		SWAP_PACKED(l.hero_colour_g, r.hero_colour_g);
+		SWAP_PACKED(l.hero_colour_b, r.hero_colour_b);
+		SWAP_PACKED(l.hero_light, r.hero_light);
+		SWAP_PACKED(l.reverb_depth, r.reverb_depth);
+		SWAP_PACKED(l.reverb_type, r.reverb_type);
+		SWAP_PACKED(l.reverb_delay, r.reverb_delay);
+		SWAP_PACKED(l.reverb_feedback, r.reverb_feedback);
+		SWAP_PACKED(l.enable_reverb_params, r.enable_reverb_params);
+		SWAP_PACKED(l.music_track, r.music_track);
+	}
+};
+
 // Fog only applied if fog_near_dist < fog_far_dist.
-packed_struct(EnvParamsPacked,
+packed_struct(GcUyaDlEnvSamplePointPacked,
 	/* 0x00 */ s32 hero_light;
 	/* 0x04 */ s16 pos_x;
 	/* 0x06 */ s16 pos_y;
@@ -421,34 +478,30 @@ packed_struct(EnvParamsPacked,
 	/* 0x1e */ u16 unused_1e;
 )
 
-struct EnvParamsBlock {
-	static void read(std::vector<EnvParamsInstance>& dest, Buffer src, Game game) {
-		TableHeader header = src.read<TableHeader>(0, "env params block header");
-		auto data = src.read_multiple<EnvParamsPacked>(0x10, header.count_1, "env params");
+struct GcUyaDlEnvSamplePointBlock {
+	static void read(std::vector<EnvSamplePointInstance>& dest, Buffer src, Game game) {
+		TableHeader header = src.read<TableHeader>(0, "env sample points block header");
+		auto data = src.read_multiple<GcUyaDlEnvSamplePointPacked>(0x10, header.count_1, "env sample points");
 		dest.reserve(header.count_1);
 		for(s64 i = 0; i < header.count_1; i++) {
-			EnvParamsPacked packed = data[i];
-			EnvParamsInstance& inst = dest.emplace_back();
+			GcUyaDlEnvSamplePointPacked packed = data[i];
+			EnvSamplePointInstance& inst = dest.emplace_back();
 			inst.set_id_value(i);
 			inst.set_transform(glm::vec3(packed.pos_x, packed.pos_y, packed.pos_z));
 			if(packed.fog_far_dist > packed.fog_near_dist) {
 				inst.enable_fog_params = true;
 				inst.fog_near_dist = packed.fog_near_dist;
 				inst.fog_far_dist = packed.fog_far_dist;
-			} else {
-				inst.enable_fog_params = false;
-				inst.fog_near_dist = 0;
-				inst.fog_far_dist = 0;
 			}
 			swap_env_params(inst, packed);
 		}
 	}
 	
-	static void write(OutBuffer dest, const std::vector<EnvParamsInstance>& src, Game game) {
+	static void write(OutBuffer dest, const std::vector<EnvSamplePointInstance>& src, Game game) {
 		TableHeader header = {(s32) src.size()};
 		dest.write(header);
-		for(EnvParamsInstance inst : src) {
-			EnvParamsPacked packed;
+		for(EnvSamplePointInstance inst : src) {
+			GcUyaDlEnvSamplePointPacked packed;
 			packed.pos_x = (s16) inst.position().x;
 			packed.pos_y = (s16) inst.position().y;
 			packed.pos_z = (s16) inst.position().z;
@@ -465,7 +518,7 @@ struct EnvParamsBlock {
 		}
 	}
 	
-	static void swap_env_params(EnvParamsInstance& l, EnvParamsPacked& r) {
+	static void swap_env_params(EnvSamplePointInstance& l, GcUyaDlEnvSamplePointPacked& r) {
 		SWAP_PACKED(l.hero_light, r.hero_light);
 		SWAP_PACKED(l.reverb_depth, r.reverb_depth);
 		SWAP_PACKED(l.music_track, r.music_track);
@@ -1484,21 +1537,6 @@ packed_struct(RAC1_88_Packed,
 	u32 unknown_2c;
 )
 
-static void swap_instance(RAC1_88& l, RAC1_88_Packed& r) {
-	SWAP_PACKED(l.unknown_0, r.unknown_0);
-	SWAP_PACKED(l.unknown_4, r.unknown_4);
-	SWAP_PACKED(l.unknown_8, r.unknown_8);
-	SWAP_PACKED(l.unknown_c, r.unknown_c);
-	SWAP_PACKED(l.unknown_10, r.unknown_10);
-	SWAP_PACKED(l.unknown_14, r.unknown_14);
-	SWAP_PACKED(l.unknown_18, r.unknown_18);
-	SWAP_PACKED(l.unknown_1c, r.unknown_1c);
-	SWAP_PACKED(l.unknown_20, r.unknown_20);
-	SWAP_PACKED(l.unknown_24, r.unknown_24);
-	SWAP_PACKED(l.unknown_28, r.unknown_28);
-	SWAP_PACKED(l.unknown_2c, r.unknown_2c);
-}
-
 packed_struct(RAC1_7c_Packed,
 	u32 unknown_0;
 	u32 unknown_4;
@@ -1727,7 +1765,7 @@ static GameplayBlockFuncs bf(Field field) {
 }
 
 const std::vector<GameplayBlockDescription> RAC_GAMEPLAY_BLOCKS = {
-	{0x88, bf<InstanceBlock<RAC1_88, RAC1_88_Packed>>(&Gameplay::rac1_88), "RAC1 88"},
+	{0x88, bf<RacEnvSamplePointBlock>(&Gameplay::env_sample_points), "env sample points"},
 	{0x00, bf<PropertiesBlock>(&Gameplay::properties), "properties"},
 	{0x10, bf<HelpMessageBlock<false>>(&Gameplay::us_english_help_messages), "us english help messages"},
 	{0x14, bf<HelpMessageBlock<false>>(&Gameplay::uk_english_help_messages), "uk english help messages"},
@@ -1767,7 +1805,7 @@ const std::vector<GameplayBlockDescription> RAC_GAMEPLAY_BLOCKS = {
 };
 
 const std::vector<GameplayBlockDescription> GC_UYA_GAMEPLAY_BLOCKS = {
-	{0x8c, bf<EnvParamsBlock>(&Gameplay::env_params), "env params"},
+	{0x8c, bf<GcUyaDlEnvSamplePointBlock>(&Gameplay::env_sample_points), "env sample points"},
 	{0x00, bf<PropertiesBlock>(&Gameplay::properties), "properties"},
 	{0x10, bf<HelpMessageBlock<false>>(&Gameplay::us_english_help_messages), "us english help messages"},
 	{0x14, bf<HelpMessageBlock<false>>(&Gameplay::uk_english_help_messages), "uk english help messages"},
@@ -1809,7 +1847,7 @@ const std::vector<GameplayBlockDescription> GC_UYA_GAMEPLAY_BLOCKS = {
 };
 
 const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS = {
-	{0x70, bf<EnvParamsBlock>(&Gameplay::env_params), "env params"},
+	{0x70, bf<GcUyaDlEnvSamplePointBlock>(&Gameplay::env_sample_points), "env sample points"},
 	{0x00, bf<PropertiesBlock>(&Gameplay::properties), "properties"},
 	{0x0c, bf<HelpMessageBlock<false>>(&Gameplay::us_english_help_messages), "us english help messages"},
 	{0x10, bf<HelpMessageBlock<false>>(&Gameplay::uk_english_help_messages), "uk english help messages"},
