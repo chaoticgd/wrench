@@ -4,10 +4,13 @@ endif()
 
 if(WIN32)
 	set(WRENCH_FILEIO_SRC fileio_win.c)
+	set(WRENCH_PIPEIO_SRC pipeio_win.c)
 else()
 	set(WRENCH_FILEIO_SRC fileio.c)
+	set(WRENCH_PIPEIO_SRC pipeio.c)
 endif()
 
 add_library(wrenchplatform STATIC
 	${WRENCH_FILEIO_SRC}
+	${WRENCH_PIPEIO_SRC}
 )

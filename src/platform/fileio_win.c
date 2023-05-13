@@ -119,6 +119,7 @@ size_t file_read(void* buffer, size_t size, WrenchFileHandle* file) {
 	_fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
 
 	if (size == 0) {
+		FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
 		return 0;
 	}
 
@@ -140,6 +141,7 @@ size_t file_write(const void* buffer, size_t size, WrenchFileHandle* file) {
 	_fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
 
 	if (size == 0) {
+		FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
 		return 0;
 	}
 
@@ -161,6 +163,7 @@ size_t file_read_string(char* str, size_t buffer_size, WrenchFileHandle* file) {
 	_fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
 
 	if (buffer_size == 0) {
+		FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
 		return 0;
 	}
 

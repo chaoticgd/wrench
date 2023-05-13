@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef CORE_FILEIO_H
-#define CORE_FILEIO_H
+#ifndef PLATFORM_FILEIO_H
+#define PLATFORM_FILEIO_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -202,4 +202,4 @@ int file_close(WrenchFileHandle* file);
 }
 #endif
 
-#endif /* CORE_FILEIO_H */
+#endif /* PLATFORM_FILEIO_H */

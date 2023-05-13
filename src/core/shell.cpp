@@ -30,6 +30,8 @@
 #include <unistd.h>
 #endif
 
+#include <platform/pipeio.h>
+
 static std::string prepare_arguments(s32 argc, const char** argv);
 
 CommandThread::~CommandThread() {
@@ -120,136 +122,25 @@ void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& co
 		return;
 	}
 
-#ifdef _WIN32
-	// Start the forbidden incantation.
-	HANDLE read_handle, write_handle;
-	SECURITY_ATTRIBUTES security = {};
-	security.nLength = sizeof(security);
-	security.bInheritHandle = TRUE;
-	if(!CreatePipe(&read_handle, &write_handle, &security, 0)) {
-		std::lock_guard<std::mutex> lock(command.mutex);
-		command.shared.output += "CreatePipe failed.\n";
-		command.shared.state = STOPPED;
-		command.shared.success = false;
-		return;
-	}
-
-	if(!SetHandleInformation(read_handle, HANDLE_FLAG_INHERIT, 0)) {
-		std::lock_guard<std::mutex> lock(command.mutex);
-		command.shared.output += "SetHandleInformation failed.\n";
-		command.shared.state = STOPPED;
-		command.shared.success = false;
-		return;
-	}
-
-	STARTUPINFO startup_info = {};
-	PROCESS_INFORMATION process_info = {};
-	startup_info.cb = sizeof(startup_info);
-	startup_info.hStdError = write_handle;
-	startup_info.hStdOutput = write_handle;
-	startup_info.dwFlags |= STARTF_USESTDHANDLES;
-
-	bool create_success = CreateProcessA(
-		NULL, (LPSTR)command_string.c_str(),
-		NULL, NULL, TRUE, 0, NULL, NULL,
-		&startup_info, &process_info
-	);
-	if(!create_success) {
-		std::lock_guard<std::mutex> lock(command.mutex);
-		command.shared.output += stringf("CreateProcessA failed with error code %d.\n", GetLastError());
-		command.shared.state = STOPPED;
-		command.shared.success = false;
-		return;
-	}
-
-	CloseHandle(write_handle);
-
-	char buffer[1024];
-	bool read_error = false;
-	for(;;) {
-		DWORD bytes_read;
-		if(!ReadFile(read_handle, &buffer, sizeof(buffer) - 1, &bytes_read, NULL)) {
-			DWORD err = GetLastError();
-			if(err != ERROR_HANDLE_EOF && err != ERROR_MORE_DATA && err != ERROR_BROKEN_PIPE) {
-				read_error = true;
-			}
-			break;
-		}
-		buffer[bytes_read] = '\0';
-		{
-			std::lock_guard<std::mutex> lock(command.mutex);
-			command.shared.output += buffer;
-			if(command.shared.state == STOPPING) {
-				break;
-			}
-		}
-	}
-
-	{
-		std::lock_guard<std::mutex> lock(command.mutex);
-		if(read_error || command.shared.state == STOPPING) {
-			TerminateProcess(process_info.hProcess, 1);
-			
-			CloseHandle(process_info.hProcess);
-			CloseHandle(process_info.hThread);
-			CloseHandle(read_handle);
-
-			command.shared.state = STOPPED;
-			command.shared.output += "\nProcess was interrupted.\n";
-			command.shared.success = false;
-
-			return;
-		}
-	}
-
-	DWORD exit_code;
-	for(s32 i = 0; i < 10; i++) {
-		BOOL error = GetExitCodeProcess(process_info.hProcess, &exit_code);
-		if(error != STILL_ACTIVE && error != 0) {
-			break;
-		}
-		if(i == 9) {
-			TerminateProcess(process_info.hProcess, 1);
-			exit_code = 0xfa43da7a;
-			break;
-		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(500));
-	}
-
-	CloseHandle(process_info.hProcess);
-	CloseHandle(process_info.hThread);
-	CloseHandle(read_handle);
-
-	{
-		std::lock_guard<std::mutex> lock(command.mutex);
-		command.shared.state = STOPPED;
-		if(exit_code == 0) {
-			command.shared.output += "\nProcess exited normally.\n";
-			command.shared.success = true;
-		} else {
-			command.shared.output += stringf("\nProcess exited with error code %d.\n", exit_code);
-			command.shared.success = false;
-		}
-	}
-#else
+#ifdef linux
 	// Redirect stderr to stdout so we can capture it.
 	command_string += "2>&1";
-	
-	// Spawn the process and open a pipe so we can read its stdout and stderr.
-	FILE* pipe = popen(command_string.c_str(), "r");
-	if(!pipe) {
-		perror("popen failed");
+#endif
+
+	WrenchPipeHandle* pipe = pipe_open(command_string.c_str(), WRENCH_PIPE_MODE_READ);
+	if (!pipe) {
 		std::lock_guard<std::mutex> lock(command.mutex);
-		command.shared.output += std::string("popen failed: ") + strerror(errno) + "\n";
+		command.shared.output += std::string("pipe_open failed: ") + PIPEIO_ERROR_CONTEXT_STRING + "\n";
 		command.shared.state = STOPPED;
 		command.shared.success = false;
 		return;
 	}
+
 
 	// Read data from the pipe until the process has finished or the main thread
 	// has requested that we stop.
 	char buffer[1024];
-	while(fgets(buffer, sizeof(buffer), pipe) != NULL) {
+	while(pipe_gets(buffer, sizeof(buffer), pipe) != NULL) {
 		std::lock_guard<std::mutex> lock(command.mutex);
 		command.shared.output += buffer;
 		if(command.shared.state == STOPPING) {
@@ -267,7 +158,7 @@ void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& co
 		}
 	}
 
-	s32 exit_code = pclose(pipe);
+	int exit_code = pipe_close(pipe);
 	{
 		std::lock_guard<std::mutex> lock(command.mutex);
 		command.shared.state = STOPPED;
@@ -275,11 +166,10 @@ void CommandThread::worker_thread(s32 argc, const char** argv, CommandThread& co
 			command.shared.output += "\nProcess exited normally.\n";
 			command.shared.success = true;
 		} else {
-			command.shared.output += stringf("\nProcess exited with error code %d.\n", exit_code);
+			command.shared.output += stringf("\nProcess exited with error code %d.\nError message upon pipe closing: %s\n", exit_code, PIPEIO_ERROR_CONTEXT_STRING);
 			command.shared.success = false;
 		}
 	}
-#endif
 }
 
 void CommandThread::update_last_output_lines() {
