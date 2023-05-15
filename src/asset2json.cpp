@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 	
-	std::vector<u8> input = read_file(argv[1], "r");
+	std::vector<u8> input = read_file(argv[1], true);
 	input.push_back(0); // Null terminator.
 	
 	char* error = nullptr;

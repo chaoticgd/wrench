@@ -5,12 +5,12 @@ endif()
 add_executable(asset_codegen
 	asset_codegen.cpp
 )
-target_link_libraries(asset_codegen wrenchwtf)
+target_link_libraries(asset_codegen wrenchwtf wrenchplatform)
 
 add_executable(asset_docgen
 	asset_docgen.cpp
 )
-target_link_libraries(asset_docgen wrenchwtf)
+target_link_libraries(asset_docgen wrenchwtf wrenchplatform)
 
 add_custom_command(
 	COMMAND asset_codegen ${CMAKE_SOURCE_DIR}/src/assetmgr/asset_schema.wtf ${CMAKE_BINARY_DIR}/_generated_asset_types.inl

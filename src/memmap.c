@@ -31,6 +31,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <platform/fileio.h>
+
 // Prints out a memory map from an eeMemory.bin file.
 // Supports R&C1, R&C2, R&C3 and Deadlocked.
 
@@ -78,12 +80,12 @@ int main(int argc, char** argv) {
 		exit(1);
 	}
 	uint8_t* ee_memory = malloc(EE_MEMORY_SIZE);
-	FILE* file = fopen(argv[1], "rb");
+	WrenchFileHandle* file = file_open(argv[1], WRENCH_FILE_MODE_READ);
 	if(!file) {
 		fprintf(stderr, "Failed to open file.\n");
 		return 1;
 	}
-	if(fread(ee_memory, EE_MEMORY_SIZE, 1, file) != 1) {
+	if(file_read(ee_memory, EE_MEMORY_SIZE, file) != EE_MEMORY_SIZE) {
 		fprintf(stderr, "Failed to read data from file.\n");
 		return 1;
 	}
@@ -110,7 +112,7 @@ int main(int argc, char** argv) {
 	}
 	print_memory_map(map, SEGMENT_COUNTS[game]);
 	free(ee_memory);
-	fclose(file);
+	file_close(file);
 	return 0;
 }
 

@@ -21,41 +21,47 @@
 #include <assert.h>
 #include <stdint.h>
 
+#include <platform/fileio.h>
+
 int main(int argc, char** argv) {
 	size_t retval;
-	
+
 	if(argc <= 3) {
 		fprintf(stderr, "Invalid number of arguments.");
 		return 1;
 	}
-	
-	FILE* dest = fopen(argv[1], "wb");
+
+	WrenchFileHandle* dest = file_open(argv[1], WRENCH_FILE_MODE_WRITE);
 	assert(dest);
-	
-	fprintf(dest, "extern \"C\"{alignas(16) unsigned char wadinfo[]={");
+
+	file_write_string("extern \"C\"{alignas(16) unsigned char wadinfo[]={", dest);
 	for(int i = 2; i < argc; i++) {
-		FILE* src = fopen(argv[i], "rb");
+		WrenchFileHandle* src = file_open(argv[i], WRENCH_FILE_MODE_READ);
 		if(!src) {
 			fprintf(stderr, "Failed to open file \"%s\".", argv[i]);
 			return 1;
 		}
-		
+
 		int32_t header_size;
-		retval = fread(&header_size, 4, 1, src) == 1;
+		retval = file_read(&header_size, 4, src) == 4;
 		assert(retval == 1);
-		retval = fseek(src, 0, SEEK_SET);
+		retval = file_seek(src, 0, WRENCH_FILE_ORIGIN_START);
 		assert(retval == 0);
 		assert(header_size < 0x10000);
-		
+
 		std::vector<char> header(header_size);
-		retval = fread(header.data(), header_size, 1, src);
+		retval = file_read(header.data(), header_size, src) == header_size;
 		assert(retval == 1);
-		
+
+		file_close(src);
+
 		for(char byte : header) {
-			fprintf(dest, "0x%hhx,", byte);
+			file_printf(dest, "0x%hhx,", byte);
 		}
 	}
-	fprintf(dest, "};}\n");
-	
+	file_write_string("};}\n", dest);
+
+	file_close(dest);
+
 	return 0;
 }

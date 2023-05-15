@@ -22,6 +22,8 @@
 #include <stdarg.h>
 #include <string.h>
 
+#include <platform/fileio.h>
+
 #include <wtf/wtf.h>
 
 #define INTEGER_ATTRIB        "IntegerAttribute"
@@ -55,24 +57,27 @@ static std::string node_to_cpp_type(const WtfNode* node);
 static void indent(int ind);
 static void out(const char* format, ...);
 
-static FILE* out_file;
+static FILE* out_file = NULL;
+static WrenchFileHandle* out_handle = NULL;
 
 int main(int argc, char** argv) {
 	assert(argc == 2 || argc == 3);
-	FILE* file = fopen(argv[1], "r");
+	WrenchFileHandle* file = file_open(argv[1], WRENCH_FILE_MODE_READ);
 	if(!file) {
 		fprintf(stderr, "Failed to open input file.\n");
 		return 1;
 	}
 	std::vector<char> bytes;
 	char c;
-	while(fread(&c, 1, 1, file) == 1) {
+	while(file_read(&c, 1, file) == 1) {
 		bytes.emplace_back(c);
 	}
 	bytes.push_back(0);
-	
+
+	file_close(file);
+
 	if(argc == 3) {
-		out_file = fopen(argv[2], "w");
+		out_handle = file_open(argv[2], WRENCH_FILE_MODE_WRITE);
 	} else {
 		out_file = stdout;
 	}
@@ -131,6 +136,10 @@ int main(int argc, char** argv) {
 	out("#endif\n");
 	
 	wtf_free(root);
+
+	if (out_handle != NULL) {
+		file_close(out_handle);
+	}
 }
 
 static void generate_asset_type(const WtfNode* asset_type, int id) {
@@ -727,6 +736,11 @@ static void indent(int ind) {
 static void out(const char* format, ...) {
 	va_list list;
 	va_start(list, format);
-	vfprintf(out_file, format, list);
+	if (out_file != NULL) {
+		vfprintf(out_file, format, list);
+	}
+	if (out_handle != NULL) {
+		file_vprintf(out_handle, format, list);
+	}
 	va_end(list);
 }

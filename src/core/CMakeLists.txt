@@ -27,7 +27,7 @@ add_library(wrenchcore STATIC
 	memory_card.cpp
 	${CMAKE_SOURCE_DIR}/thirdparty/md5.cpp
 )
-target_link_libraries(wrenchcore wrenchwtf)
+target_link_libraries(wrenchcore wrenchwtf wrenchplatform)
 target_link_libraries(wrenchcore Threads::Threads png_static zlibstatic)
 target_precompile_headers(wrenchcore PUBLIC util.h)
 target_precompile_headers(wrenchcore PUBLIC ../../thirdparty/glm/glm/glm.hpp)

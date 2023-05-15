@@ -246,7 +246,7 @@ static SectorRange pack_file(OutputStream& dest, const char* src_path) {
 	compress_wad(compressed_bytes, bytes, "", 8);
 	
 	dest.write_v(compressed_bytes);
-	
+	dest.pad(SECTOR_SIZE, 0);
 	SectorRange range;
 	range.offset = Sector32::size_from_bytes(offset);
 	range.size = Sector32::size_from_bytes(dest.tell() - offset);
