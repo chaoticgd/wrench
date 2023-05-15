@@ -20,6 +20,7 @@
 #define CORE_STREAM_H
 
 #include <core/util.h>
+#include <platform/fileio.h>
 #include <core/filesystem.h>
 
 // Binary streams that can either be backed by memory or a file. For stuff that
@@ -190,7 +191,7 @@ public:
 	
 	bool read_n(u8* dest, s64 size) override;
 
-	FILE* file = nullptr;
+	WrenchFileHandle* file = nullptr;
 };
 
 class FileOutputStream : public OutputStream {
@@ -206,7 +207,7 @@ public:
 	
 	bool write_n(const u8* src, s64 size) override;
 	
-	FILE* file = nullptr;
+	WrenchFileHandle* file = nullptr;
 };
 
 class SubInputStream : public InputStream {

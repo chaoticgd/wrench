@@ -728,7 +728,7 @@ std::string LooseAssetBank::read_text_file(const fs::path& path) const {
 	if(!fs::exists(_directory/path)) {
 		return "";
 	}
-	auto bytes = read_file(_directory/path, "r");
+	auto bytes = read_file(_directory/path, true);
 	return std::string((char*) bytes.data(), bytes.size());
 }
 

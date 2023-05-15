@@ -488,7 +488,7 @@ static void pack(const std::vector<fs::path>& input_paths, const std::string& as
 }
 
 static void decompress(const fs::path& input_path, const fs::path& output_path, s64 offset) {
-	FILE* file = fopen(input_path.string().c_str(), "rb");
+	WrenchFileHandle* file = file_open(input_path.string().c_str(), WRENCH_FILE_MODE_READ);
 	verify(file, "Failed to open file for reading.");
 	
 	std::vector<u8> header = read_file(file, offset, 0x10);

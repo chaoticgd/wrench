@@ -47,10 +47,6 @@ using f64 = double;
 
 #define WRENCH_PI 3.14159265358979323846
 
-#ifdef _WIN32
-	#define fseek _fseeki64
-	#define ftell _ftelli64
-#endif
 
 #define BEGIN_END(container) container.begin(), container.end()
 
