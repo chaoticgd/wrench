@@ -53,7 +53,7 @@ add_custom_command(
 	COMMENT "Generating _generated_wadinfo.cpp"
 )
 
-add_library(wadinfo
+add_library(wadinfo STATIC
 	${CMAKE_BINARY_DIR}/_generated_wadinfo.cpp
 	find_wads.cpp
 )

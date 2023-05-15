@@ -21,7 +21,7 @@
 
 #include <map>
 
-#include <engine/gameplay.h>
+#include <instancemgr/gameplay.h>
 #include <assetmgr/asset_types.h>
 #include <gui/render_mesh.h>
 #include <editor/editor.h>

@@ -44,4 +44,4 @@ add_executable(wrenchbuild
 	level/occlusion_asset.cpp
 	level/instances_asset.cpp
 )
-target_link_libraries(wrenchbuild wrenchcore wrench_assetmgr wrenchiso wrenchengine wadinfo)
+target_link_libraries(wrenchbuild wrenchcore wrench_assetmgr wrenchiso wrenchengine wrenchinstancemgr wadinfo)

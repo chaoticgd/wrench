@@ -24,10 +24,10 @@
 #include <core/util.h>
 #include <core/collada.h>
 #include <core/buffer.h>
-#include <core/instance.h>
 #include <core/texture.h>
 #include <core/filesystem.h>
 #include <core/build_config.h>
+#include <instancemgr/instance.h>
 
 struct PropertiesFirstPart {
 	Rgb96 background_colour;

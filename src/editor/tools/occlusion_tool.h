@@ -22,9 +22,9 @@
 // Really hacky occlusion debugger. Disabled by default because it's of such
 // poor quality, but still kept in source control since it's still useful.
 
-#include <engine/gameplay.h>
 #include <engine/occlusion.h>
 #include <editor/tools.h>
+#include <instancemgr/gameplay.h>
 
 class OcclusionTool : public Tool {
 public:

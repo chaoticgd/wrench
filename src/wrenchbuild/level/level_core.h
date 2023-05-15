@@ -19,7 +19,7 @@
 #ifndef WRENCHBUILD_LEVEL_CORE_H
 #define WRENCHBUILD_LEVEL_CORE_H
 
-#include <engine/gameplay.h>
+#include <instancemgr/gameplay.h>
 #include <assetmgr/asset_types.h>
 #include <wrenchbuild/level/level_chunks.h>
 #include <wrenchbuild/level/level_textures.h>

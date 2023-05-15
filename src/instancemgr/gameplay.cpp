@@ -1388,7 +1388,10 @@ struct CamCollGridBlock {
 				}
 			}
 		}
+		
+		// Calculate bounding sphere.
 		glm::vec4 bsphere = approximate_bounding_sphere(bpshere_points);
+		
 		// Handle edge cases.
 		if(xmin == xmax) { xmin--; xmax++; }
 		if(ymin == ymax) { ymin--; ymax++; }

@@ -16,7 +16,12 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <engine/gameplay.h>
+#ifndef WRENCHBUILD_LEVEL_INSTANCES_ASSET_H
+#define WRENCHBUILD_LEVEL_INSTANCES_ASSET_H
+
+#include <instancemgr/gameplay.h>
 #include <assetmgr/asset_types.h>
 
 std::pair<Gameplay, PvarTypes> load_instances(const Asset& src, const BuildConfig& config, const char* hint);
+
+#endif

@@ -15,4 +15,4 @@ add_executable(wrencheditor
 	gui/asset_selector.cpp
 	tools/occlusion_tool.cpp
 )
-target_link_libraries(wrencheditor wrenchcore wrenchgui wrench_assetmgr)
+target_link_libraries(wrencheditor wrenchcore wrenchgui wrench_assetmgr wrenchinstancemgr)

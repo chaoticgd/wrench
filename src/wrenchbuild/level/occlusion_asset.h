@@ -19,7 +19,7 @@
 #ifndef WRENCHBUILD_LEVEL_OCCLUSION_ASSET_H
 #define WRENCHBUILD_LEVEL_OCCLUSION_ASSET_H
 
-#include <engine/gameplay.h>
+#include <instancemgr/gameplay.h>
 #include <wrenchbuild/asset_unpacker.h>
 #include <wrenchbuild/asset_packer.h>
 #include <wrenchbuild/tests.h>
