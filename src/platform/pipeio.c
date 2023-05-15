@@ -68,11 +68,9 @@ WrenchPipeHandle* pipe_open(const char* command, const WrenchPipeMode mode) {
 	}
 
 	WrenchPipeHandle* pipe = (WrenchPipeHandle*) malloc(sizeof(WrenchPipeHandle));
-
 	_pipeio_verify(pipe != (WrenchPipeHandle*) 0, (WrenchPipeHandle*) 0, "Failed to allocate WrenchFileHandle.");
 
 	pipe->pipe = popen(command, mode_string);
-
 	_pipeio_verify(pipe->pipe != (FILE*) 0, (WrenchPipeHandle*) 0, "Failed to open pipe for the command %s.", command);
 
 	PIPEIO_ERROR_CONTEXT_STRING = _pipeio_message_ok;
@@ -91,7 +89,6 @@ char* pipe_gets(char* str, size_t buffer_size, WrenchPipeHandle* pipe) {
 	_pipeio_verify(str != (char*) 0, (char*) 0, "String buffer was NULL.");
 
 	char* retval = fgets(str, buffer_size - 1, pipe->pipe);
-
 	_pipeio_verify(retval != (char*) 0, (char*) 0, "An error occuring in fgets.");
 
 	PIPEIO_ERROR_CONTEXT_STRING = _pipeio_message_ok;
@@ -99,14 +96,12 @@ char* pipe_gets(char* str, size_t buffer_size, WrenchPipeHandle* pipe) {
 	return retval;
 }
 
-int pipe_close(WrenchPipeHandle* pipe) {
+long pipe_close(WrenchPipeHandle* pipe) {
 	_pipeio_verify(pipe != (WrenchPipeHandle*) 0, EOF, "Pipe handle was NULL.");
 	_pipeio_verify(pipe->pipe != (FILE*) 0, EOF, "Pipe handle is invalid.");
 
 	int val = pclose(pipe->pipe);
-
 	free(pipe);
-
 	_pipeio_verify(val == 0, EOF, "Failed to close the pipe.");
 
 	PIPEIO_ERROR_CONTEXT_STRING = _pipeio_message_ok;

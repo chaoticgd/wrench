@@ -71,10 +71,10 @@ char* pipe_gets(char* str, size_t buffer_size, WrenchPipeHandle* pipe);
  * Closes a pipe handle obtained through \ref pipe_open.
  *
  * \param pipe File handle.
- * \return Returns 0 on success, EOF else.
+ * \return Returns exit code of the terminated process on success, EOF else.
  *
  */
-int pipe_close(WrenchPipeHandle* pipe);
+long pipe_close(WrenchPipeHandle* pipe);
 
 #ifdef __cplusplus
 }
