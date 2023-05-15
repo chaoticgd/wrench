@@ -35,29 +35,28 @@ struct _wrench_file_handle;
 typedef struct _wrench_file_handle WrenchFileHandle;
 
 enum _wrench_file_mode {
-    // Opens a file with read access, fails if file does not exist.
-    WRENCH_FILE_MODE_READ              = 1,
-    // Opens a file with write access, deletes original file if it exists.
-    WRENCH_FILE_MODE_WRITE             = 2,
-    // Opens a file with write access, keeps original file if it exists and writes to the end of the file.
-    WRENCH_FILE_MODE_WRITE_APPEND      = 3,
-    // Opens a file with read and write access, keeps original file if it exists, fails otherwise.
-    WRENCH_FILE_MODE_READ_WRITE_MODIFY = 4,
-    // Opens a file with read and write access, deletes original file if it exists.
-    WRENCH_FILE_MODE_READ_WRITE_NEW    = 5,
-    // Opens a file with read and write access, keeps original file if it exists and writes to the end of the file.
-    WRENCH_FILE_MODE_READ_WRITE_APPEND = 6
+	// Opens a file with read access, fails if file does not exist.
+	WRENCH_FILE_MODE_READ = 1,
+	// Opens a file with write access, deletes original file if it exists.
+	WRENCH_FILE_MODE_WRITE = 2,
+	// Opens a file with write access, keeps original file if it exists and writes to the end of the file.
+	WRENCH_FILE_MODE_WRITE_APPEND = 3,
+	// Opens a file with read and write access, keeps original file if it exists, fails otherwise.
+	WRENCH_FILE_MODE_READ_WRITE_MODIFY = 4,
+	// Opens a file with read and write access, deletes original file if it exists.
+	WRENCH_FILE_MODE_READ_WRITE_NEW = 5,
+	// Opens a file with read and write access, keeps original file if it exists and writes to the end of the file.
+	WRENCH_FILE_MODE_READ_WRITE_APPEND = 6
 } typedef WrenchFileMode;
 
 enum _wrench_file_origin {
-    // Origin is the beginning of the file.
-    WRENCH_FILE_ORIGIN_START = 1,
-    // Origin is the position of the current file pointer.
-    WRENCH_FILE_ORIGIN_CURRENT = 2,
-    // Origin is the end of the file.
-    WRENCH_FILE_ORIGIN_END = 3
+	// Origin is the beginning of the file.
+	WRENCH_FILE_ORIGIN_START = 1,
+	// Origin is the position of the current file pointer.
+	WRENCH_FILE_ORIGIN_CURRENT = 2,
+	// Origin is the end of the file.
+	WRENCH_FILE_ORIGIN_END = 3
 } typedef WrenchFileOrigin;
-
 
 /**
  * Opens a file indicated by filename and returns a pointer to an associated
@@ -93,7 +92,6 @@ size_t file_read(void* buffer, size_t size, WrenchFileHandle* file);
  *
  */
 size_t file_write(const void* buffer, size_t size, WrenchFileHandle* file);
-
 
 /**
  * Reads a text from the provided file handle.

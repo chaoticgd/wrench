@@ -35,12 +35,11 @@ typedef struct _wrench_pipe_handle WrenchPipeHandle;
 extern const char* PIPEIO_ERROR_CONTEXT_STRING;
 
 enum _wrench_pipe_mode {
-    // Opens a read-only pipe.
-    WRENCH_PIPE_MODE_READ              = 1
-    // Opens a write-only pipe, currently not implemented.
-    // WRENCH_PIPE_MODE_WRITE             = 2
+	// Opens a read-only pipe.
+	WRENCH_PIPE_MODE_READ = 1
+	// Opens a write-only pipe, currently not implemented.
+	// WRENCH_PIPE_MODE_WRITE             = 2
 } typedef WrenchPipeMode;
-
 
 /**
  * Opens a process by creating a pipe, forking and invoking the shell.
@@ -53,10 +52,11 @@ enum _wrench_pipe_mode {
 WrenchPipeHandle* pipe_open(const char* command, const WrenchPipeMode mode);
 
 /**
- * Reads a line from the provided pipe handle.
+ * Reads from a pipe and converts line endings to '\n'.
  * A line ends if a platform dependent line ending is encountered.
  * This functions assumes that the text originates from the same platform and
  * thus has the same line endings.
+ * The returned string may contain multiple lines.
  * The returned string will always be null-terminated.
  *
  * \param str Buffer in which the string will be stored.

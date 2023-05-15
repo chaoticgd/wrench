@@ -29,23 +29,23 @@ static char _fileio_message_error_buffer[128];
 const char* FILEIO_ERROR_CONTEXT_STRING = "No errors occurred.";
 
 struct _wrench_file_handle {
-    HANDLE file;
+	HANDLE file;
 };
 
 #define _fileio_verify(condition, retval, message, ...) \
-	{\
-		if (!(condition)) {\
-			sprintf(_fileio_message_error_buffer, message, ##__VA_ARGS__);\
-			FILEIO_ERROR_CONTEXT_STRING = _fileio_message_error_buffer;\
-			return retval;\
-		}\
+	{ \
+		if(!(condition)) { \
+			sprintf(_fileio_message_error_buffer, message, ##__VA_ARGS__); \
+			FILEIO_ERROR_CONTEXT_STRING = _fileio_message_error_buffer; \
+			return retval; \
+		} \
 	}
 
 #define _fileio_verify_not_reached(retval, message, ...) \
-	{\
-		sprintf(_fileio_message_error_buffer, message, ##__VA_ARGS__);\
-		FILEIO_ERROR_CONTEXT_STRING = _fileio_message_error_buffer;\
-		return retval;\
+	{ \
+		sprintf(_fileio_message_error_buffer, message, ##__VA_ARGS__); \
+		FILEIO_ERROR_CONTEXT_STRING = _fileio_message_error_buffer; \
+		return retval; \
 	}
 
 WrenchFileHandle* file_open(const char* filename, const WrenchFileMode mode) {
@@ -55,36 +55,33 @@ WrenchFileHandle* file_open(const char* filename, const WrenchFileMode mode) {
 	DWORD desired_access = 0;
 	DWORD creation_disposition = 0;
 
-	switch (mode)
-    {
-        case WRENCH_FILE_MODE_READ:
+	switch(mode) {
+		case WRENCH_FILE_MODE_READ:
 			desired_access = FILE_GENERIC_READ;
-            creation_disposition = OPEN_EXISTING;
-            break;
-        case WRENCH_FILE_MODE_WRITE:
+			creation_disposition = OPEN_EXISTING;
+			break;
+		case WRENCH_FILE_MODE_WRITE:
 			desired_access = FILE_GENERIC_WRITE;
-            creation_disposition = CREATE_ALWAYS;
-            break;
-        case WRENCH_FILE_MODE_WRITE_APPEND:
+			creation_disposition = CREATE_ALWAYS;
+			break;
+		case WRENCH_FILE_MODE_WRITE_APPEND:
 			desired_access = FILE_APPEND_DATA;
-            creation_disposition = OPEN_ALWAYS;
-            break;
-        case WRENCH_FILE_MODE_READ_WRITE_MODIFY:
+			creation_disposition = OPEN_ALWAYS;
+			break;
+		case WRENCH_FILE_MODE_READ_WRITE_MODIFY:
 			desired_access = FILE_GENERIC_READ | FILE_GENERIC_WRITE;
-            creation_disposition = OPEN_EXISTING;
-            break;
-        case WRENCH_FILE_MODE_READ_WRITE_NEW:
+			creation_disposition = OPEN_EXISTING;
+			break;
+		case WRENCH_FILE_MODE_READ_WRITE_NEW:
 			desired_access = FILE_GENERIC_READ | FILE_GENERIC_WRITE;
-            creation_disposition = CREATE_ALWAYS;
-            break;
-        case WRENCH_FILE_MODE_READ_WRITE_APPEND:
+			creation_disposition = CREATE_ALWAYS;
+			break;
+		case WRENCH_FILE_MODE_READ_WRITE_APPEND:
 			desired_access = FILE_GENERIC_READ | FILE_APPEND_DATA;
-            creation_disposition = OPEN_ALWAYS;
-            break;
-        default:
-            _fileio_verify_not_reached((WrenchFileHandle*) 0, "No valid file access mode was specified.");
-            break;
-    }
+			creation_disposition = OPEN_ALWAYS;
+			break;
+		default: _fileio_verify_not_reached((WrenchFileHandle*) 0, "No valid file access mode was specified."); break;
+	}
 
 	DWORD share_mode = FILE_SHARE_READ | FILE_SHARE_WRITE;
 
@@ -92,21 +89,37 @@ WrenchFileHandle* file_open(const char* filename, const WrenchFileMode mode) {
 
 	int wide_string_size = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, input_string, -1, (LPWSTR) 0, 0);
 
-	_fileio_verify(wide_string_size != 0, (WrenchFileHandle*) 0, "Failed to compute wide filename size. WinAPI Error Code: %d.", GetLastError());
+	_fileio_verify(wide_string_size != 0,
+		(WrenchFileHandle*) 0,
+		"Failed to compute wide filename size. WinAPI Error Code: %d.",
+		GetLastError());
 
 	LPWSTR wide_string = (LPWSTR) malloc(wide_string_size * sizeof(WCHAR));
 
 	_fileio_verify(wide_string != (LPWSTR) 0, (WrenchFileHandle*) 0, "Failed to allocate wide filename.");
 
-	int written_bytes = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, input_string, -1, wide_string, wide_string_size);
+	int written_bytes =
+		MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, input_string, -1, wide_string, wide_string_size);
 
-	_fileio_verify(written_bytes != 0, (WrenchFileHandle*) 0, "Failed to convert filename. WinAPI Error Code: %d.", GetLastError());
+	_fileio_verify(written_bytes != 0,
+		(WrenchFileHandle*) 0,
+		"Failed to convert filename. WinAPI Error Code: %d.",
+		GetLastError());
 
 	WrenchFileHandle* file = (WrenchFileHandle*) malloc(sizeof(WrenchFileHandle));
 
-	file->file = CreateFileW(wide_string, desired_access, share_mode, (LPSECURITY_ATTRIBUTES) 0, creation_disposition, FILE_ATTRIBUTE_NORMAL, (HANDLE) 0);
+	file->file = CreateFileW(wide_string,
+		desired_access,
+		share_mode,
+		(LPSECURITY_ATTRIBUTES) 0,
+		creation_disposition,
+		FILE_ATTRIBUTE_NORMAL,
+		(HANDLE) 0);
 
-	_fileio_verify(file->file != INVALID_HANDLE_VALUE, (WrenchFileHandle*) 0, "Failed to open file. WinAPI Error Code: %d.", GetLastError());
+	_fileio_verify(file->file != INVALID_HANDLE_VALUE,
+		(WrenchFileHandle*) 0,
+		"Failed to open file. WinAPI Error Code: %d.",
+		GetLastError());
 
 	free(wide_string);
 
@@ -118,7 +131,7 @@ WrenchFileHandle* file_open(const char* filename, const WrenchFileMode mode) {
 size_t file_read(void* buffer, size_t size, WrenchFileHandle* file) {
 	_fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
 
-	if (size == 0) {
+	if(size == 0) {
 		FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
 		return 0;
 	}
@@ -140,7 +153,7 @@ size_t file_read(void* buffer, size_t size, WrenchFileHandle* file) {
 size_t file_write(const void* buffer, size_t size, WrenchFileHandle* file) {
 	_fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
 
-	if (size == 0) {
+	if(size == 0) {
 		FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
 		return 0;
 	}
@@ -162,7 +175,7 @@ size_t file_write(const void* buffer, size_t size, WrenchFileHandle* file) {
 size_t file_read_string(char* str, size_t buffer_size, WrenchFileHandle* file) {
 	_fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
 
-	if (buffer_size == 0) {
+	if(buffer_size == 0) {
 		FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
 		return 0;
 	}
@@ -172,8 +185,8 @@ size_t file_read_string(char* str, size_t buffer_size, WrenchFileHandle* file) {
 	size_t num_bytes = file_read(str, buffer_size - 1, file);
 
 	size_t offset = 0;
-	for (size_t i = 0; i < num_bytes; i++) {
-		if (str[i] == '\r') {
+	for(size_t i = 0; i < num_bytes; i++) {
+		if(str[i] == '\r') {
 			str[i] = '\0';
 			continue;
 		}
@@ -181,7 +194,7 @@ size_t file_read_string(char* str, size_t buffer_size, WrenchFileHandle* file) {
 		str[offset++] = str[i];
 	}
 
-	for (size_t i = offset; i < buffer_size; i++) {
+	for(size_t i = offset; i < buffer_size; i++) {
 		str[i] = '\0';
 	}
 
@@ -197,8 +210,8 @@ size_t file_write_string(const char* str, WrenchFileHandle* file) {
 	char* str_no_r = (char*) malloc(2 * str_len);
 
 	size_t offset = 0;
-	for (size_t i = 0; i < str_len; i++) {
-		if (str[i] == '\n') {
+	for(size_t i = 0; i < str_len; i++) {
+		if(str[i] == '\n') {
 			str_no_r[offset++] = '\r';
 		}
 		str_no_r[offset++] = str[i];
@@ -214,17 +227,17 @@ size_t file_write_string(const char* str, WrenchFileHandle* file) {
 size_t file_vprintf(WrenchFileHandle* file, const char* format, va_list vlist) {
 	_fileio_verify(file != (WrenchFileHandle*) 0, 0, "File handle was NULL.");
 
-    int num_chars_required = vsnprintf((char*) 0, 0, format, vlist) + 1;
+	int num_chars_required = vsnprintf((char*) 0, 0, format, vlist) + 1;
 
-    char* buffer = malloc(num_chars_required);
+	char* buffer = malloc(num_chars_required);
 
-    vsnprintf(buffer, num_chars_required, format, vlist);
+	vsnprintf(buffer, num_chars_required, format, vlist);
 
 	size_t num_bytes_written = file_write_string(buffer, file);
 
 	free(buffer);
 
-    return num_bytes_written;
+	return num_bytes_written;
 }
 
 size_t file_printf(WrenchFileHandle* file, const char* format, ...) {
@@ -243,19 +256,11 @@ int file_seek(WrenchFileHandle* file, size_t offset, WrenchFileOrigin origin) {
 
 	DWORD _move_method = 0;
 
-	switch (origin) {
-		case WRENCH_FILE_ORIGIN_START:
-			_move_method = FILE_BEGIN;
-			break;
-		case WRENCH_FILE_ORIGIN_CURRENT:
-			_move_method = FILE_CURRENT;
-			break;
-		case WRENCH_FILE_ORIGIN_END:
-			_move_method = FILE_END;
-			break;
-		default:
-			_fileio_verify_not_reached(EOF, "Invalid origin specified for file seeking.");
-			break;
+	switch(origin) {
+		case WRENCH_FILE_ORIGIN_START: _move_method = FILE_BEGIN; break;
+		case WRENCH_FILE_ORIGIN_CURRENT: _move_method = FILE_CURRENT; break;
+		case WRENCH_FILE_ORIGIN_END: _move_method = FILE_END; break;
+		default: _fileio_verify_not_reached(EOF, "Invalid origin specified for file seeking."); break;
 	}
 
 	LARGE_INTEGER _offset;
@@ -307,13 +312,13 @@ size_t file_size(WrenchFileHandle* file) {
 int file_flush(WrenchFileHandle* file) {
 	_fileio_verify(file != (WrenchFileHandle*) 0, EOF, "File handle was NULL.");
 
-    BOOL success = FlushFileBuffers(file->file);
+	BOOL success = FlushFileBuffers(file->file);
 
 	_fileio_verify(success != 0, EOF, "Failed to flush the file buffers. WinAPI Error Code: %d.", GetLastError());
 
 	FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
 
-    return (success) ? 0 : EOF;
+	return (success) ? 0 : EOF;
 }
 
 int file_close(WrenchFileHandle* file) {
@@ -328,5 +333,5 @@ int file_close(WrenchFileHandle* file) {
 
 	FILEIO_ERROR_CONTEXT_STRING = _fileio_message_ok;
 
-    return (success != 0) ? 0 : EOF;
+	return (success != 0) ? 0 : EOF;
 }
