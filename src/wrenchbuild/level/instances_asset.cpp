@@ -68,7 +68,9 @@ static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConf
 	std::vector<u8> dest = write_gameplay(gameplay, types, config.game(), *blocks);
 	
 	strip_trailing_padding_from_lhs(src, dest);
-	return diff_buffers(src, dest, 0, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
+	bool headers_equal = diff_buffers(src, dest, 0, 0x100, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
+	bool data_equal = diff_buffers(src, dest, 0x100, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
+	return headers_equal && data_equal;
 }
 
 static const std::vector<GameplayBlockDescription>* get_gameplay_block_descriptions(Game game, const char* hint) {

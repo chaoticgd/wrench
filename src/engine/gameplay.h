@@ -72,6 +72,8 @@ struct Gameplay {
 	Opt<std::vector<Group>> shrub_groups;
 	Opt<OcclusionMappings> occlusion;
 	
+	Opt<s32> dummy;
+	
 	// Only used while reading the binary gameplay file.
 	Opt<std::vector<PvarTableEntry>> pvars_temp;
 	

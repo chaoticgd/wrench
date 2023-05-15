@@ -188,8 +188,8 @@ void Level::save(const fs::path& path) {
 			throw SaveError{true, "No path specified."};
 		}
 		AssetFile& gameplay_file = g_app->mod_bank->asset_file(path);
-		Asset& new_asset = gameplay_file.asset_from_link(BinaryAsset::ASSET_TYPE, _gameplay_asset->absolute_link());
-		if(new_asset.logical_type() != BinaryAsset::ASSET_TYPE) {
+		Asset& new_asset = gameplay_file.asset_from_link(InstancesAsset::ASSET_TYPE, _gameplay_asset->absolute_link());
+		if(new_asset.logical_type() != InstancesAsset::ASSET_TYPE) {
 			throw SaveError{false, "An asset of a different type already exists."};
 		}
 		_gameplay_asset = &new_asset.as<InstancesAsset>();

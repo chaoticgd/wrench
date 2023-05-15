@@ -195,3 +195,13 @@ glm::vec4& Instance::bounding_sphere() {
 	verify_fatal(_components_mask & COM_BOUNDING_SPHERE);
 	return _bounding_sphere;
 }
+
+CameraCollisionParams Instance::camera_collision() const {
+	verify_fatal(_components_mask & COM_CAMERA_COLLISION);
+	return _camera_collision;
+}
+
+CameraCollisionParams& Instance::camera_collision() {
+	verify_fatal(_components_mask & COM_CAMERA_COLLISION);
+	return _camera_collision;
+}

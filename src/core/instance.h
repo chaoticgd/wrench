@@ -21,7 +21,7 @@
 
 #include <glm/glm.hpp>
 
-#include "util.h"
+#include <core/util.h>
 
 enum InstanceType : u32 {
 	INST_NONE = 0,
@@ -63,7 +63,8 @@ enum InstanceComponent : u32 {
 	COM_COLOUR = (1 << 3),
 	COM_DRAW_DISTANCE = (1 << 4),
 	COM_SPLINE = (1 << 5),
-	COM_BOUNDING_SPHERE = (1 << 6)
+	COM_BOUNDING_SPHERE = (1 << 6),
+	COM_CAMERA_COLLISION = (1 << 7)
 };
 
 struct Colour {
@@ -92,6 +93,15 @@ enum class TransformMode {
 using GlobalPvarPointers = std::vector<std::pair<s32, s32>>;
 
 struct FromJsonVisitor;
+
+struct CameraCollisionParams {
+	bool enabled = false;
+	s32 flags = 0;
+	s32 i_value = 0;
+	f32 f_value = 0.f;
+	
+	friend auto operator<=>(const CameraCollisionParams& lhs, const CameraCollisionParams& rhs) = default;
+};
 
 struct Instance {
 	virtual ~Instance() {}
@@ -136,6 +146,9 @@ struct Instance {
 	const glm::vec4& bounding_sphere() const;
 	glm::vec4& bounding_sphere();
 	
+	CameraCollisionParams camera_collision() const;
+	CameraCollisionParams& camera_collision();
+	
 protected:
 	Instance(InstanceType type, u32 components_mask, TransformMode transform_mode)
 		: _id({type, 0, -1}), _components_mask(components_mask), _transform_mode(transform_mode) {}
@@ -158,7 +171,7 @@ private:
 	f32 _draw_distance = 0.f;
 	std::vector<glm::vec4> _spline;
 	glm::vec4 _bounding_sphere = glm::vec4(0.f);
-
+	CameraCollisionParams _camera_collision;
 public:
 template <typename T>
 	void enumerate_fields(T& t) {
@@ -390,20 +403,20 @@ struct Camera : Instance {
 };
 
 struct Cuboid : Instance {
-	Cuboid() : Instance(INST_CUBOID, COM_TRANSFORM, TransformMode::MATRIX_INVERSE_ROTATION) {}
+	Cuboid() : Instance(INST_CUBOID, COM_TRANSFORM | COM_CAMERA_COLLISION, TransformMode::MATRIX_INVERSE_ROTATION) {}
 };
 
 struct Sphere : Instance {
-	Sphere() : Instance(INST_SPHERE, COM_TRANSFORM, TransformMode::MATRIX_INVERSE_ROTATION) {}
+	Sphere() : Instance(INST_SPHERE, COM_TRANSFORM | COM_CAMERA_COLLISION, TransformMode::MATRIX_INVERSE_ROTATION) {}
 };
 
 struct Cylinder : Instance {
-	Cylinder() : Instance(INST_CYLINDER, COM_TRANSFORM, TransformMode::MATRIX_INVERSE_ROTATION) {}
+	Cylinder() : Instance(INST_CYLINDER, COM_TRANSFORM | COM_CAMERA_COLLISION, TransformMode::MATRIX_INVERSE_ROTATION) {}
 };
 
 // There are none of these in any of the games.
 struct Pill : Instance {
-	Pill() : Instance(INST_PILL, COM_TRANSFORM, TransformMode::MATRIX_INVERSE_ROTATION) {}
+	Pill() : Instance(INST_PILL, COM_TRANSFORM | COM_CAMERA_COLLISION, TransformMode::MATRIX_INVERSE_ROTATION) {}
 };
 
 struct SoundInstance : Instance {
