@@ -21,6 +21,8 @@
 
 #include <instancemgr/gameplay_impl_common.h>
 
+//#define GAMEPLAY_DEBUG_LIGHT_GRID
+
 packed_struct(RacEnvSamplePointPacked,
 	/* 0x00 */ Vec3f pos;
 	/* 0x0c */ f32 one;
@@ -316,7 +318,7 @@ struct CamCollGridBlock {
 			populate_grid_with_instance(grid, (*src.pills)[i], i);
 		}
 		
-		// Write out the primitives.
+		// Write out the lists of primitives.
 		s64 header_ofs = dest.alloc<TableHeader>();
 		s64 grid_ofs = dest.alloc_multiple<s32>(GRID_SIZE_X * GRID_SIZE_Y);
 		std::vector<s32> offsets(GRID_SIZE_X * GRID_SIZE_Y, 0);
@@ -326,9 +328,9 @@ struct CamCollGridBlock {
 				if(!prims.empty()) {
 					dest.pad(0x10);
 					offsets[y * GRID_SIZE_X + x] = (s32) (dest.tell() - grid_ofs);
-					TableHeader prim_header = {};
-					prim_header.count_1 = (s32) prims.size();
-					dest.write<TableHeader>(prim_header);
+					TableHeader list_header = {};
+					list_header.count_1 = (s32) prims.size();
+					dest.write<TableHeader>(list_header);
 					dest.write_multiple(prims);
 				}
 			}
@@ -376,14 +378,13 @@ struct CamCollGridBlock {
 		
 		// Calculate bounding sphere.
 		glm::vec4 bsphere = approximate_bounding_sphere(bpshere_points);
+		bsphere.z = 0.f;
 		
 		// Handle edge cases.
-		if(xmin == xmax) { xmin--; xmax++; }
-		if(ymin == ymax) { ymin--; ymax++; }
 		if(xmin < 0) xmin = 0;
 		if(ymin < 0) ymin = 0;
-		if(xmax >= GRID_SIZE_X) xmax = GRID_SIZE_X;
-		if(ymax >= GRID_SIZE_Y) ymax = GRID_SIZE_Y;
+		if(xmax > GRID_SIZE_X) xmax = GRID_SIZE_X;
+		if(ymax > GRID_SIZE_Y) ymax = GRID_SIZE_Y;
 		
 		// Populate the grid.
 		for(s32 y = ymin; y < ymax; y++) {
@@ -409,15 +410,162 @@ struct CamCollGridBlock {
 	}
 };
 
-struct RAC1_78_Block {
-	static void read(std::vector<u8>& dest, Buffer src, Game game) {
-		s32 size = src.read<s32>(0, "RAC 78 size");
-		dest = src.read_multiple<u8>(4, size, "RAC 78 data").copy();
+// TODO: Fix up all this stuff later.
+
+#ifdef GAMEPLAY_DEBUG_LIGHT_GRID
+#define rgb(r, g ,b) {r, g, b, 0}
+static Rgb32 palette[] = {
+	rgb(255,0,0),
+	rgb(255,255,0),
+	rgb(0,234,255),
+	rgb(170,0,255),
+	rgb(255,127,0),
+	rgb(191,255,0),
+	rgb(0,149,255),
+	rgb(255,0,170),
+	rgb(255,212,0),
+	rgb(106,255,0),
+	rgb(0,64,255),
+	rgb(237,185,185),
+	rgb(185,215,237),
+	rgb(231,233,185),
+	rgb(220,185,237),
+	rgb(185,237,224),
+	rgb(143,35,35),
+	rgb(35,98,143),
+	rgb(143,106,35),
+	rgb(107,35,143),
+	rgb(79,143,35),
+	rgb(0,0,0),
+	rgb(115,115,115),
+	rgb(204,204,204),
+};
+#define PXL(x, y) (((y) * 1024 + (x)) * 4)
+#include <core/png.h>
+#endif
+
+struct PointLightGridBlock {
+	static const s32 GRID_SIZE_X = 0x40;
+	static const s32 GRID_SIZE_Y = 0x40;
+	
+	static void read(PvarTypes& types, Gameplay& dest, Buffer src, Game game) {
+#ifdef GAMEPLAY_DEBUG_LIGHT_GRID
+		Texture debug;
+		debug.format = PixelFormat::RGBA;
+		debug.width = 1024;
+		debug.height = 1024;
+		debug.data.resize(1024*1024*4, 0);
+		srand(time(NULL));
+		auto grid = src.read_multiple<s32>(0x10, GRID_SIZE_X * GRID_SIZE_Y, "camera collision grid");
+		for(s32 y = 0; y < 0x40; y++) {
+			for(s32 x = 0; x < 0x40; x++) {
+				s32 list_offset = grid[y * GRID_SIZE_X + x];
+				if(list_offset != 0) {
+					s32 prim_count = src.read<s32>(0x10 + list_offset);
+					for(s32 i = 0; i < prim_count; i++) {
+						s32 index = src.read<s32>(0x10 + list_offset + 4+ i * 4);
+						for(s32 j = 0; j < 16; j++) {
+							if(j%prim_count!=i) continue;
+							debug.data[PXL(x*16+j,y*16)+0] = palette[index%ARRAY_SIZE(palette)].r;
+							debug.data[PXL(x*16+j,y*16)+1] = palette[index%ARRAY_SIZE(palette)].g;
+							debug.data[PXL(x*16+j,y*16)+2] = palette[index%ARRAY_SIZE(palette)].b;
+							debug.data[PXL(x*16+j,y*16)+3] = 255;
+						}
+						for(s32 j = 0; j < 16; j++) {
+							if(j%prim_count!=i) continue;
+							debug.data[PXL(x*16+j,y*16+15)+0] = palette[index%ARRAY_SIZE(palette)].r;
+							debug.data[PXL(x*16+j,y*16+15)+1] = palette[index%ARRAY_SIZE(palette)].g;
+							debug.data[PXL(x*16+j,y*16+15)+2] = palette[index%ARRAY_SIZE(palette)].b;
+							debug.data[PXL(x*16+j,y*16+15)+3] = 255;
+						}
+					}
+				}
+			}
+		}
+		
+		s32 col = 0;
+		for(const PointLight& pl : opt_iterator(dest.point_lights)) {
+			glm::vec2 pos(pl.position());
+			s32 x = pos.x;
+			s32 y = pos.y;
+			if(x < 0) x =0;
+			if(y < 0) y =0;
+			if(x > 1023)x=1023;
+			if(y>1023)y=1023;
+			for(s32 i = 0; i < pl.radius; i++) {if(i%2==0&&i!=0&&i!=2)continue;
+				debug.data[PXL(x,y+i)+0] = palette[col%ARRAY_SIZE(palette)].r;
+				debug.data[PXL(x,y+i)+1] = palette[col%ARRAY_SIZE(palette)].g;
+				debug.data[PXL(x,y+i)+2] = palette[col%ARRAY_SIZE(palette)].b;
+				debug.data[PXL(x,y+i)+3] = 255;
+			}
+			col++;
+		}
+		
+		std::vector<u8> png;
+		MemoryOutputStream mos(png);
+		write_png(mos, debug);
+		write_file("/tmp/lights.png", png);
+#endif
 	}
 	
-	static void write(OutBuffer dest, const std::vector<u8>& src, Game game) {
-		dest.write((s32) src.size());
-		dest.write_multiple(src);
+	static bool write(OutBuffer dest, const PvarTypes& types, const Gameplay& src, Game game) {
+		// Determine which grid cells intersect with the point lights.
+		std::vector<std::vector<s32>> grid(GRID_SIZE_X * GRID_SIZE_Y);
+		for(s32 i = 0; i < (s32) opt_size(src.point_lights); i++) {
+			const PointLight& light = (*src.point_lights)[i];
+			glm::vec2 position = light.position();
+			f32 radius = light.radius * 0.2f;
+			
+			s32 xmin = (s32) floorf((position.x - radius) * 0.0625f);
+			s32 ymin = (s32) floorf((position.y - radius) * 0.0625f);
+			s32 xmax = (s32) ceilf((position.x + radius) * 0.0625f);
+			s32 ymax = (s32) ceilf((position.y + radius) * 0.0625f);
+			
+			// Handle edge cases.
+			if(xmin < 0) xmin = 0;
+			if(ymin < 0) ymin = 0;
+			if(xmax > GRID_SIZE_X) xmax = GRID_SIZE_X;
+			if(ymax > GRID_SIZE_Y) ymax = GRID_SIZE_Y;
+			
+			for(s32 y = ymin; y < ymax; y++) {
+				for(s32 x = xmin; x < xmax; x++) {
+					grid[y * GRID_SIZE_X + x].emplace_back(i);
+				}
+			}
+		}
+		
+		// Write out the lists of lights.
+		s64 header_ofs = dest.alloc<TableHeader>();
+		s64 grid_ofs = dest.alloc_multiple<s32>(GRID_SIZE_X * GRID_SIZE_Y);
+		std::vector<s32> offsets(GRID_SIZE_X * GRID_SIZE_Y, 0);
+		for(s32 y = 0; y < GRID_SIZE_Y; y++) {
+			for(s32 x = 0; x < GRID_SIZE_X; x++) {
+				std::vector<s32>& lights = grid[y * GRID_SIZE_X + x];
+				if(!lights.empty()) {
+					dest.pad(0x10);
+					offsets[y * GRID_SIZE_X + x] = (s32) (dest.tell() - grid_ofs);
+					dest.write<s32>((s32) lights.size());
+					dest.write_multiple(lights);
+				}
+			}
+		}
+		dest.pad(0x10);
+		
+		// Write out the header and grid.
+		TableHeader header = {};
+		header.count_1 = (s32) (dest.tell() - header_ofs - 0x4);
+		dest.write(header_ofs, header);
+		dest.write_multiple(grid_ofs, offsets);
+		
+		return true;
+	}
+	
+	static bool sphere_intersects_grid_cell(const glm::vec2& position, f32 radius, s32 x, s32 y) {
+		glm::vec2 grid_cell_centre = glm::vec2(x, y) * 16.f + 8.f;
+		glm::vec2 relative = glm::abs(position - grid_cell_centre);
+		if(relative.x > 8.f + radius || relative.y > 8.f + radius) return false;
+		if(relative.x < 8.f || relative.y < 8.f) return true;
+		return glm::distance(relative, glm::vec2(8.f, 8.f)) < radius;
 	}
 };
 
@@ -468,6 +616,27 @@ static void swap_instance(DirectionalLight& l, DirectionalLightPacked& r) {
 	r.direction_a.swap(l.direction_a);
 	r.colour_b.swap(l.colour_b);
 	r.direction_b.swap(l.direction_b);
+}
+
+packed_struct(PointLightPacked,
+	/* 0x00 */ Vec3f position;
+	/* 0x0c */ f32 radius;
+	/* 0x10 */ Rgb32 colour;
+	/* 0x14 */ u32 unused_14;
+	/* 0x18 */ u32 unused_18;
+	/* 0x1c */ u32 unused_1c;
+)
+
+static void swap_instance(PointLight& l, PointLightPacked& r) {
+	swap_position(l, r);
+	SWAP_PACKED(l.radius, r.radius);
+	SWAP_PACKED(l.colour().r, r.colour.r);
+	SWAP_PACKED(l.colour().g, r.colour.g);
+	SWAP_PACKED(l.colour().b, r.colour.b);
+	r.colour.pad = 0;
+	r.unused_14 = 0;
+	r.unused_18 = 0;
+	r.unused_1c = 0;
 }
 
 #endif

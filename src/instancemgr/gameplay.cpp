@@ -142,8 +142,8 @@ const std::vector<GameplayBlockDescription> RAC_GAMEPLAY_BLOCKS = {
 	{0x68, bf<InstanceBlock<Cylinder, ShapePacked>>(&Gameplay::cylinders), "cylinders"},
 	{0x6c, bf<InstanceBlock<Pill, ShapePacked>>(&Gameplay::pills), "pills"},
 	{0x84, {CamCollGridBlock::read, CamCollGridBlock::write}, "cam coll grid"},
-	{0x7c, bf<InstanceBlock<RAC1_7c, RAC1_7c_Packed>>(&Gameplay::rac1_7c), "RAC1 7c"},
-	{0x78, bf<RAC1_78_Block>(&Gameplay::rac1_78), "other grid"},
+	{0x7c, bf<InstanceBlock<PointLight, PointLightPacked>>(&Gameplay::point_lights), "point lights"},
+	{0x78, {PointLightGridBlock::read, PointLightGridBlock::write}, "point light grid"},
 	{0x74, bf<GrindPathBlock>(&Gameplay::grind_paths), "grindpaths"},
 	{0x8c, bf<OcclusionMappingsBlock>(&Gameplay::occlusion), "occlusion"},
 	{0x90, {nullptr, nullptr}, "pad"}

@@ -231,6 +231,7 @@ static InspectorFieldFuncs type_funcs() {
 				case INST_LIGHT: type = "Light"; break;
 				case INST_TIE: type = "Tie"; break;
 				case INST_SHRUB: type = "Shrub"; break;
+				case INST_POINT_LIGHT: type = "Point Light"; break;
 				default: verify_not_reached_fatal("Invalid instance type.");
 			}
 			ImGui::Text("%s", type);

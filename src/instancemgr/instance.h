@@ -25,7 +25,6 @@
 
 enum InstanceType : u32 {
 	INST_NONE = 0,
-	INST_RAC1_7c = 15,
 	INST_ENV_SAMPLE_POINT = 1,
 	INST_ENV_TRANSITION = 2,
 	INST_CAMERA = 3,
@@ -40,6 +39,7 @@ enum InstanceType : u32 {
 	INST_LIGHT = 12,
 	INST_TIE = 13,
 	INST_SHRUB = 14,
+	INST_POINT_LIGHT = 15,
 };
 
 struct InstanceId {
@@ -279,31 +279,31 @@ template <typename T>
 	}
 };
 
-struct RAC1_7c : Instance {
-	RAC1_7c() : Instance(INST_RAC1_7c, COM_NONE, TransformMode::NONE) {}
-	
-	u32 unknown_0;
-	u32 unknown_4;
-	u32 unknown_8;
-	u32 unknown_c;
-	u32 unknown_10;
-	u32 unknown_14;
-	u32 unknown_18;
-	u32 unknown_1c;
+packed_struct(Rgb32,
+	/* 0x0 */ u8 r;
+	/* 0x1 */ u8 g;
+	/* 0x2 */ u8 b;
+	/* 0x3 */ u8 pad;
+)
+
+packed_struct(Rgb96,
+	/* 0x0 */ s32 r;
+	/* 0x4 */ s32 g;
+	/* 0xc */ s32 b;
 	
 	template <typename T>
 	void enumerate_fields(T& t) {
-		DEF_FIELD(unknown_0);
-		DEF_FIELD(unknown_4);
-		DEF_FIELD(unknown_8);
-		DEF_FIELD(unknown_c);
-		DEF_FIELD(unknown_10);
-		DEF_FIELD(unknown_14);
-		DEF_FIELD(unknown_18);
-		DEF_FIELD(unknown_1c);
+		DEF_PACKED_FIELD(r);
+		DEF_PACKED_FIELD(g);
+		DEF_PACKED_FIELD(b);
 	}
-};
+)
 
+struct PointLight : Instance {
+	PointLight() : Instance(INST_POINT_LIGHT, COM_TRANSFORM | COM_COLOUR, TransformMode::POSITION) {}
+	
+	f32 radius;
+};
 
 struct EnvSamplePointInstance : Instance {
 	EnvSamplePointInstance() : Instance(INST_ENV_SAMPLE_POINT, COM_TRANSFORM, TransformMode::POSITION) {}
@@ -329,26 +329,6 @@ struct EnvSamplePointInstance : Instance {
 	s16 fog_near_dist = 0;
 	s16 fog_far_dist = 0;
 };
-
-packed_struct(Rgb32,
-	/* 0x0 */ u8 r;
-	/* 0x1 */ u8 g;
-	/* 0x2 */ u8 b;
-	/* 0x3 */ u8 pad;
-)
-
-packed_struct(Rgb96,
-	/* 0x0 */ s32 r;
-	/* 0x4 */ s32 g;
-	/* 0xc */ s32 b;
-	
-	template <typename T>
-	void enumerate_fields(T& t) {
-		DEF_PACKED_FIELD(r);
-		DEF_PACKED_FIELD(g);
-		DEF_PACKED_FIELD(b);
-	}
-)
 
 struct EnvTransitionInstance : Instance {
 	EnvTransitionInstance() : Instance(INST_ENV_TRANSITION, COM_TRANSFORM | COM_BOUNDING_SPHERE, TransformMode::MATRIX) {}

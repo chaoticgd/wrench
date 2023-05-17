@@ -56,6 +56,7 @@ static GLuint moby_inst_buffer = 0;
 static GLuint cuboid_inst_buffer = 0;
 static GLuint sphere_inst_buffer = 0;
 static GLuint cylinder_inst_buffer = 0;
+static GLuint pl_inst_buffer = 0;
 static GLuint program = 0;
 
 void init_renderer() {
@@ -91,6 +92,7 @@ void prepare_frame(Level& lvl, const glm::mat4& world_to_clip) {
 	upload_instance_buffer(cuboid_inst_buffer, lvl.gameplay().cuboids, world_to_clip);
 	upload_instance_buffer(sphere_inst_buffer, lvl.gameplay().spheres, world_to_clip);
 	upload_instance_buffer(cylinder_inst_buffer, lvl.gameplay().cylinders, world_to_clip);
+	upload_instance_buffer(pl_inst_buffer, lvl.gameplay().point_lights, world_to_clip);
 }
 
 struct InstanceData {
@@ -206,6 +208,10 @@ static void draw_instances(Level& lvl, const glm::mat4& world_to_clip, GLenum me
 	
 	if(settings.draw_grind_paths && lvl.gameplay().grind_paths.has_value()) {
 		draw_paths(*lvl.gameplay().grind_paths, cyan, world_to_clip);
+	}
+	
+	if(true && lvl.gameplay().point_lights.has_value()) {
+		draw_cube_instanced(cube_mode, cyan, pl_inst_buffer, 0, lvl.gameplay().point_lights->size());
 	}
 }
 

@@ -513,43 +513,6 @@ std::vector<u8> write_occlusion_mappings(const Gameplay& gameplay, Game game) {
 	return dest;
 }
 
-packed_struct(RAC1_88_Packed,
-	u32 unknown_0;
-	u32 unknown_4;
-	u32 unknown_8;
-	u32 unknown_c;
-	u32 unknown_10;
-	u32 unknown_14;
-	u32 unknown_18;
-	u32 unknown_1c;
-	u32 unknown_20;
-	u32 unknown_24;
-	u32 unknown_28;
-	u32 unknown_2c;
-)
-
-packed_struct(RAC1_7c_Packed,
-	u32 unknown_0;
-	u32 unknown_4;
-	u32 unknown_8;
-	u32 unknown_c;
-	u32 unknown_10;
-	u32 unknown_14;
-	u32 unknown_18;
-	u32 unknown_1c;
-)
-
-static void swap_instance(RAC1_7c& l, RAC1_7c_Packed& r) {
-	SWAP_PACKED(l.unknown_0, r.unknown_0);
-	SWAP_PACKED(l.unknown_4, r.unknown_4);
-	SWAP_PACKED(l.unknown_8, r.unknown_8);
-	SWAP_PACKED(l.unknown_c, r.unknown_c);
-	SWAP_PACKED(l.unknown_10, r.unknown_10);
-	SWAP_PACKED(l.unknown_14, r.unknown_14);
-	SWAP_PACKED(l.unknown_18, r.unknown_18);
-	SWAP_PACKED(l.unknown_1c, r.unknown_1c);
-}
-
 packed_struct(ShapePacked,
 	/* 0x00 */ Mat4 matrix;
 	/* 0x40 */ Mat3 inverse_matrix;

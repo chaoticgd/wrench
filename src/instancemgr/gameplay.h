@@ -36,7 +36,7 @@ struct HelpMessage {
 
 struct Gameplay {
 	Opt<std::vector<u8>> rac1_78;
-	Opt<std::vector<RAC1_7c>> rac1_7c;
+	Opt<std::vector<PointLight>> point_lights;
 	Opt<std::vector<EnvSamplePointInstance>> env_sample_points;
 	Opt<Properties> properties;
 	Opt<std::vector<HelpMessage>> us_english_help_messages;
@@ -60,7 +60,6 @@ struct Gameplay {
 	Opt<std::vector<Sphere>> spheres;
 	Opt<std::vector<Cylinder>> cylinders;
 	Opt<std::vector<Pill>> pills;
-	Opt<std::vector<u8>> gc_88_dl_6c;
 	Opt<GC_80_DL_64> gc_80_dl_64;
 	Opt<std::vector<GrindPath>> grind_paths;
 	Opt<std::vector<Area>> areas;
@@ -71,8 +70,6 @@ struct Gameplay {
 	Opt<std::vector<ShrubInstance>> shrub_instances;
 	Opt<std::vector<Group>> shrub_groups;
 	Opt<OcclusionMappings> occlusion;
-	
-	Opt<s32> dummy;
 	
 	// Only used while reading the binary gameplay file.
 	Opt<std::vector<PvarTableEntry>> pvars_temp;
@@ -170,6 +167,7 @@ void Gameplay::for_each_instance_with(u32 required_components_mask, Callback cal
 	for_each_instance_of_type_with(required_components_mask, lights, callback);
 	for_each_instance_of_type_with(required_components_mask, tie_instances, callback);
 	for_each_instance_of_type_with(required_components_mask, shrub_instances, callback);
+	for_each_instance_of_type_with(required_components_mask, point_lights, callback);
 }
 
 template <typename Callback>
