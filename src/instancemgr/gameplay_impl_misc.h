@@ -272,6 +272,7 @@ struct HelpMessageBlock {
 struct GC_80_DL_64_Block {
 	static void read(GC_80_DL_64& dest, Buffer src, Game game) {
 		auto header = src.read<TableHeader>(0, "block header");
+		printf("%d", header.count_1);
 		dest.first_part = src.read_multiple<u8>(0x10, 0x800, "first part of block").copy();
 		dest.second_part = src.read_multiple<u8>(0x810, header.count_1 * 0x10, "second part of block").copy();
 	}

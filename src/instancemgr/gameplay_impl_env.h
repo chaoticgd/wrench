@@ -48,7 +48,7 @@ struct RacEnvSamplePointBlock {
 			RacEnvSamplePointPacked packed = data[i];
 			EnvSamplePointInstance& inst = dest.emplace_back();
 			inst.set_id_value(i);
-			inst.set_transform(packed.pos.unpack());
+			inst.set_position(packed.pos.unpack());
 			swap_env_params(inst, packed);
 		}
 	}
@@ -114,7 +114,7 @@ struct GcUyaDlEnvSamplePointBlock {
 			GcUyaDlEnvSamplePointPacked packed = data[i];
 			EnvSamplePointInstance& inst = dest.emplace_back();
 			inst.set_id_value(i);
-			inst.set_transform(glm::vec3(packed.pos_x, packed.pos_y, packed.pos_z));
+			inst.set_position(glm::vec3(packed.pos_x, packed.pos_y, packed.pos_z));
 			if(packed.fog_far_dist > packed.fog_near_dist) {
 				inst.enable_fog_params = true;
 				inst.fog_near_dist = packed.fog_near_dist;
@@ -638,5 +638,81 @@ static void swap_instance(PointLight& l, PointLightPacked& r) {
 	r.unused_18 = 0;
 	r.unused_1c = 0;
 }
+
+packed_struct(GcUyaPointLightPacked,
+	/* 0x0 */ s16 pos_x;
+	/* 0x2 */ s16 pos_y;
+	/* 0x4 */ s16 pos_z;
+	/* 0x6 */ s16 radius;
+	/* 0x8 */ u16 colour_r;
+	/* 0xa */ u16 colour_g;
+	/* 0xc */ u16 colour_b;
+	/* 0xe */ u16 unused_e;
+)
+
+struct GcUyaPointLightsBlock {
+	static void read(std::vector<PointLight>& dest, Buffer src, Game game) {
+		const TableHeader& header = src.read<TableHeader>(0, "point lights header");
+		for(s32 i = 0; i < header.count_1; i++) {
+			const GcUyaPointLightPacked& packed = src.read<GcUyaPointLightPacked>(0x800 + i * 0x10, "point light");
+			PointLight& inst = dest.emplace_back();
+			inst.set_id_value(i);
+			glm::vec3 pos;
+			pos.x = packed.pos_x * (1.f / 64.f);
+			pos.y = packed.pos_y * (1.f / 64.f);
+			pos.z = packed.pos_z * (1.f / 64.f);
+			inst.set_position(pos);
+			inst.radius = packed.radius * (1.f / 64.f);
+			inst.colour().r = packed.colour_r;
+			inst.colour().g = packed.colour_g;
+			inst.colour().b = packed.colour_b;
+		}
+	}
+	
+	static void write(OutBuffer dest, const std::vector<PointLight>& src, Game game) {
+		verify(src.size() < 128, "Too many point lights (max 128)!");
+		printf("%ld\n", src.size());
+		TableHeader header = {};
+		header.count_1 = (s32) src.size();
+		dest.write(header);
+		
+		// Write out the grid.
+		for(s32 x = 0; x < 0x40; x++) {
+			std::array<u8, 16> mask = {};
+			for(s32 light = 0; light < (s32) src.size(); light++) {
+				f32 min = src[light].position().x - src[light].radius;
+				s32 max = src[light].position().x + src[light].radius;
+				if(x * 16.f > min && (x + 1) * 16.f < max) {
+					mask[light >> 3] |= 1 << (light & 7);
+				}
+			}
+			dest.write_multiple(mask);
+		}
+		for(s32 y = 0; y < 0x40; y++) {
+			std::array<u8, 16> mask = {};
+			for(s32 light = 0; light < (s32) src.size(); light++) {
+				f32 min = src[light].position().y - src[light].radius;
+				s32 max = src[light].position().y + src[light].radius;
+				if(y * 16.f > min && (y + 1) * 16.f < max) {
+					mask[light >> 3] |= 1 << (light & 7);
+				}
+			}
+			dest.write_multiple(mask);
+		}
+		
+		// Write out the lights.
+		for(const PointLight& inst : src) {
+			GcUyaPointLightPacked packed = {};
+			packed.pos_x = (s16) roundf(inst.position().x * 64.f);
+			packed.pos_y = (s16) roundf(inst.position().y * 64.f);
+			packed.pos_z = (s16) roundf(inst.position().z * 64.f);
+			packed.radius = inst.radius * 64.f;
+			packed.colour_r = inst.colour().r;
+			packed.colour_g = inst.colour().g;
+			packed.colour_b = inst.colour().b;
+			dest.write(packed);
+		}
+	}
+};
 
 #endif

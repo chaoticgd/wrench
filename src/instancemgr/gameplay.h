@@ -60,7 +60,6 @@ struct Gameplay {
 	Opt<std::vector<Sphere>> spheres;
 	Opt<std::vector<Cylinder>> cylinders;
 	Opt<std::vector<Pill>> pills;
-	Opt<GC_80_DL_64> gc_80_dl_64;
 	Opt<std::vector<GrindPath>> grind_paths;
 	Opt<std::vector<Area>> areas;
 	

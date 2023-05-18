@@ -185,7 +185,7 @@ const std::vector<GameplayBlockDescription> GC_UYA_GAMEPLAY_BLOCKS = {
 	{0x70, bf<InstanceBlock<Cylinder, ShapePacked>>(&Gameplay::cylinders), "cylinders"},
 	{0x74, bf<InstanceBlock<Pill, ShapePacked>>(&Gameplay::pills), "pills"},
 	{0x88, {CamCollGridBlock::read, CamCollGridBlock::write}, "cam coll grid"},
-	{0x80, bf<GC_80_DL_64_Block>(&Gameplay::gc_80_dl_64), "GC 80 DL 64"},
+	{0x80, bf<GcUyaPointLightsBlock>(&Gameplay::point_lights), "point lights"},
 	{0x7c, bf<GrindPathBlock>(&Gameplay::grind_paths), "grindpaths"},
 	{0x98, bf<AreasBlock>(&Gameplay::areas), "areas"},
 	{0x90, bf<OcclusionMappingsBlock>(&Gameplay::occlusion), "occlusion"}
@@ -218,7 +218,7 @@ const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS = {
 	{0x54, bf<InstanceBlock<Cylinder, ShapePacked>>(&Gameplay::cylinders), "cylinders"},
 	{0x58, bf<InstanceBlock<Pill, ShapePacked>>(&Gameplay::pills), "pills"},
 	{0x6c, {CamCollGridBlock::read, CamCollGridBlock::write}, "cam coll grid"},
-	{0x64, bf<GC_80_DL_64_Block>(&Gameplay::gc_80_dl_64), "GC 80 DL 64"},
+	{0x64, bf<GcUyaPointLightsBlock>(&Gameplay::point_lights), "point lights"},
 	{0x60, bf<GrindPathBlock>(&Gameplay::grind_paths), "grindpaths"},
 	{0x74, bf<AreasBlock>(&Gameplay::areas), "areas"},
 	{0x68, {nullptr, nullptr}, "pad"}

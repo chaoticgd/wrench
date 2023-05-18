@@ -49,7 +49,7 @@ static void swap_matrix_inverse_rotation(Instance& inst, Packed& packed) {
 template <typename Packed>
 static void swap_position(Instance& instance, Packed& packed) {
 	glm::vec3 pos = instance.position();
-	instance.set_transform(packed.position.unpack());
+	instance.set_position(packed.position.unpack());
 	packed.position = Vec3f::pack(pos);
 }
 

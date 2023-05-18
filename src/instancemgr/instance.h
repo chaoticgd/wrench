@@ -115,7 +115,7 @@ struct Instance {
 	
 	void set_transform(glm::mat4 matrix, glm::mat3x4* inverse = nullptr);
 	void set_transform(glm::mat4 matrix, glm::mat3x4 inverse, glm::vec3 rotation);
-	void set_transform(glm::vec3 position, glm::vec3 rotation = glm::vec3(0.f, 0.f, 0.f), f32 scale = 1.f);
+	void set_transform(glm::vec3 position, glm::vec3 rotation, f32 scale = 1.f);
 	glm::mat4 matrix() const;
 	glm::mat3x4 inverse_matrix() const;
 	glm::vec3 position() const;
@@ -223,7 +223,7 @@ template <typename T>
 					DEF_FIELD(position);
 					_transform.matrix[3] = glm::vec4(position, 1.f);
 					if constexpr(std::is_same_v<T, FromJsonVisitor>) {
-						set_transform(position);
+						set_position(position);
 					}
 					break;
 				}
@@ -500,17 +500,6 @@ struct Group {
 	void enumerate_fields(T& t) {
 		DEF_FIELD(id);
 		DEF_FIELD(members);
-	}
-};
-
-struct GC_54_DL_38 {
-	std::vector<s8> first_part;
-	std::vector<s64> second_part;
-	
-	template <typename T>
-	void enumerate_fields(T& t) {
-		DEF_FIELD(first_part);
-		DEF_FIELD(second_part);
 	}
 };
 
