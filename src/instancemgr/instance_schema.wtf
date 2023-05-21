@@ -141,13 +141,13 @@ InstanceType EnvTransition {
 	variable: "env_transitions"
 	
 	bool enable_hero {}
-	Rgb32 hero_colour_1 {}
-	Rgb32 hero_colour_2 {}
+	vec3 hero_colour_1 {}
+	vec3 hero_colour_2 {}
 	s32 hero_light_1 {}
 	s32 hero_light_2 {}
 	bool enable_fog {}
-	Rgb32 fog_colour_1 {}
-	Rgb32 fog_colour_2 {}
+	vec3 fog_colour_1 {}
+	vec3 fog_colour_2 {}
 	f32 fog_near_dist_1 {}
 	f32 fog_near_intensity_1 {}
 	f32 fog_far_dist_1 {}

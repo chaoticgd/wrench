@@ -31,16 +31,10 @@
 
 // A plane that defines the bounds of a chunk. Everything on the side of the
 // plane in the direction that the normal is pointing is inside the chunk.
-packed_struct(ChunkPlane,
-	/* 0x00 */ f32 point_x;
-	/* 0x04 */ f32 point_y;
-	/* 0x08 */ f32 point_z;
-	/* 0x0c */ s32 plane_count;
-	/* 0x10 */ f32 normal_x;
-	/* 0x14 */ f32 normal_y;
-	/* 0x18 */ f32 normal_z;
-	/* 0x1c */ u32 pad;
-)
+struct ChunkPlane {
+	glm::vec3 point;
+	glm::vec3 normal;
+};
 
 packed_struct(LevelSettingsThirdPart,
 	s32 unknown_0;
@@ -69,22 +63,22 @@ packed_struct(LevelSettingsFifthPart,
 )
 
 struct LevelSettings {
-	Rgb96 background_colour = {};
-	Rgb96 fog_colour = {};
-	f32 fog_near_distance = 0.f;
-	f32 fog_far_distance = 0.f;
+	Opt<glm::vec3> background_colour;
+	Opt<glm::vec3> fog_colour;
+	f32 fog_near_dist = 0.f;
+	f32 fog_far_dist = 0.f;
 	f32 fog_near_intensity = 0.f;
 	f32 fog_far_intensity = 0.f;
 	f32 death_height = 0.f;
-	Opt<s32> is_spherical_world;
-	Opt<glm::vec3> sphere_centre;
-	glm::vec3 ship_position = {0.f, 0.f, 0.f};
-	f32 ship_rotation_z = 0.f;
-	Rgb96 unknown_colour = {};
+	bool is_spherical_world;
+	glm::vec3 sphere_pos = {0.f, 0.f, 0.f};
+	glm::vec3 ship_pos = {0.f, 0.f, 0.f};
+	f32 ship_rot_z = 0.f;
+	Opt<glm::vec3> unknown_colour;
 	// Planes specifying the volumes of the level chunks. The first element
 	// represents the second chunk, and the second element represents the third
 	// chunk. If both tests fail, you can assume it's the first chunk (chunk 0).
-	Opt<std::vector<ChunkPlane>> chunk_planes;
+	std::vector<ChunkPlane> chunk_planes;
 	Opt<s32> core_sounds_count;
 	Opt<s32> rac3_third_part;
 	Opt<std::vector<LevelSettingsThirdPart>> third_part;

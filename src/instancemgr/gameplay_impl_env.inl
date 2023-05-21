@@ -129,7 +129,7 @@ struct GcUyaDlEnvSamplePointBlock {
 		dest.write(header);
 		for(EnvSamplePointInstance inst : src) {
 			GcUyaDlEnvSamplePointPacked packed;
-			const InstanceTransform& transform = inst.transform();
+			const TransformComponent& transform = inst.transform();
 			packed.pos_x = (s16) transform.pos().x;
 			packed.pos_y = (s16) transform.pos().y;
 			packed.pos_z = (s16) transform.pos().z;
@@ -222,12 +222,12 @@ struct EnvTransitionBlock {
 	}
 	
 	static void swap_env_transition(EnvTransitionInstance& l, EnvTransitionPacked& r) {
-		SWAP_PACKED(l.hero_colour_1, r.hero_colour_1);
-		SWAP_PACKED(l.hero_colour_2, r.hero_colour_2);
+		SWAP_COLOUR(l.hero_colour_1, r.hero_colour_1);
+		SWAP_COLOUR(l.hero_colour_2, r.hero_colour_2);
 		SWAP_PACKED(l.hero_light_1, r.hero_light_1);
 		SWAP_PACKED(l.hero_light_2, r.hero_light_2);
-		SWAP_PACKED(l.fog_colour_1, r.fog_colour_1);
-		SWAP_PACKED(l.fog_colour_2, r.fog_colour_2);
+		SWAP_COLOUR(l.fog_colour_1, r.fog_colour_1);
+		SWAP_COLOUR(l.fog_colour_2, r.fog_colour_2);
 		SWAP_PACKED(l.fog_near_dist_1, r.fog_near_dist_1);
 		SWAP_PACKED(l.fog_near_intensity_1, r.fog_near_intensity_1);
 		SWAP_PACKED(l.fog_far_dist_1, r.fog_far_dist_1);
@@ -681,7 +681,7 @@ struct GcUyaPointLightsBlock {
 		for(s32 x = 0; x < 0x40; x++) {
 			std::array<u8, 16> mask = {};
 			for(s32 light = 0; light < (s32) src.size(); light++) {
-				const InstanceTransform& transform = src[light].transform();
+				const TransformComponent& transform = src[light].transform();
 				f32 lower = transform.pos().x - src[light].radius;
 				f32 upper = transform.pos().x + src[light].radius;
 				if(lower < (x + 1) * 16.f && upper > x * 16.f) {
@@ -693,7 +693,7 @@ struct GcUyaPointLightsBlock {
 		for(s32 y = 0; y < 0x40; y++) {
 			std::array<u8, 16> mask = {};
 			for(s32 light = 0; light < (s32) src.size(); light++) {
-				const InstanceTransform& transform = src[light].transform();
+				const TransformComponent& transform = src[light].transform();
 				f32 lower = transform.pos().y - src[light].radius;
 				f32 upper = transform.pos().y + src[light].radius;
 				if(lower < (y + 1) * 16.f && upper > y * 16.f) {
@@ -706,7 +706,7 @@ struct GcUyaPointLightsBlock {
 		// Write out the lights.
 		for(const PointLightInstance& inst : src) {
 			GcUyaPointLightPacked packed = {};
-			const InstanceTransform& transform = inst.transform();
+			const TransformComponent& transform = inst.transform();
 			packed.pos_x = (u16) roundf(transform.pos().x * 64.f);
 			packed.pos_y = (u16) roundf(transform.pos().y * 64.f);
 			packed.pos_z = (u16) roundf(transform.pos().z * 64.f);

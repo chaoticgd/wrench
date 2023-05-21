@@ -72,10 +72,10 @@ int main(int argc, char** argv) {
 		assert(desc && desc->type == WTF_STRING);
 		out("### %s", type->tag);
 		out("");
-		out("%s", desc->string.begin);
 		
 		const WtfNode* field = type->first_child;
 		if(field) {
+			out("");
 			out("*Fields*");
 			out("");
 			out("| Name | Description | Type |");

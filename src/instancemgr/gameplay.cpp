@@ -302,7 +302,7 @@ void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, Occlus
 }
 
 void move_instances_to_gameplay(Gameplay& dest, Instances& src, HelpMessages* help_src, OcclusionMappings* occlusion_src) {
-	dest.level_settings = src.level_settings;
+	dest.level_settings = std::move(src.level_settings);
 	
 	if(help_src) {
 		dest.us_english_help_messages = std::move(help_src->us_english);

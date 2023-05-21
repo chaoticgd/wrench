@@ -6,7 +6,7 @@ This file was generated from instance_schema.wtf and is for version 21 of the in
 
 ### Moby
 
-Moving, interactive, or otherwise dynamic objects with an associated update function.
+
 *Fields*
 
 | Name | Description | Type |
@@ -47,7 +47,7 @@ Moving, interactive, or otherwise dynamic objects with an associated update func
 
 ### Tie
 
-Large static objects.
+
 *Fields*
 
 | Name | Description | Type |
@@ -60,7 +60,7 @@ Large static objects.
 
 ### Shrub
 
-Small static objects with only a single LOD level and optionally a billboard.
+
 *Fields*
 
 | Name | Description | Type |
@@ -74,7 +74,7 @@ Small static objects with only a single LOD level and optionally a billboard.
 
 ### DirLight
 
-A directional light. This is the main type of light.
+
 *Fields*
 
 | Name | Description | Type |
@@ -86,7 +86,7 @@ A directional light. This is the main type of light.
 
 ### PointLight
 
-A point light that only affects moby instances. In R&C1, it only affects Ratchet.
+
 *Fields*
 
 | Name | Description | Type |
@@ -95,7 +95,7 @@ A point light that only affects moby instances. In R&C1, it only affects Ratchet
 
 ### EnvSamplePoint
 
-Sets up lighting, fogging, and sound parameters for an area. The nearest env sample point is used.
+
 *Fields*
 
 | Name | Description | Type |
@@ -121,19 +121,19 @@ Sets up lighting, fogging, and sound parameters for an area. The nearest env sam
 
 ### EnvTransition
 
-A volume in which there is a transition in lighting and fogging e.g. a doorway.
+
 *Fields*
 
 | Name | Description | Type |
 | - | - | - |
 | enable_hero |  | bool |
-| hero_colour_1 |  | Rgb32 |
-| hero_colour_2 |  | Rgb32 |
+| hero_colour_1 |  | vec3 |
+| hero_colour_2 |  | vec3 |
 | hero_light_1 |  | s32 |
 | hero_light_2 |  | s32 |
 | enable_fog |  | bool |
-| fog_colour_1 |  | Rgb32 |
-| fog_colour_2 |  | Rgb32 |
+| fog_colour_1 |  | vec3 |
+| fog_colour_2 |  | vec3 |
 | fog_near_dist_1 |  | f32 |
 | fog_near_intensity_1 |  | f32 |
 | fog_far_dist_1 |  | f32 |
@@ -145,23 +145,19 @@ A volume in which there is a transition in lighting and fogging e.g. a doorway.
 
 ### Cuboid
 
-A cuboid-shaped trigger volume.
 
 ### Sphere
 
-A sphere-shaped trigger volume.
 
 ### Cylinder
 
-A cylinder-shaped trigger volume.
 
 ### Pill
 
-A pill-shaped trigger volume. Appears to be unused.
 
 ### Camera
 
-A camera.
+
 *Fields*
 
 | Name | Description | Type |
@@ -170,7 +166,7 @@ A camera.
 
 ### Sound
 
-A sound instance.
+
 *Fields*
 
 | Name | Description | Type |
@@ -181,11 +177,10 @@ A sound instance.
 
 ### Path
 
-A spline.
 
 ### GrindPath
 
-A spline used for generating a grind rail.
+
 *Fields*
 
 | Name | Description | Type |

@@ -188,31 +188,15 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 static s32 chunk_index_from_position(const glm::vec3& point, const Gameplay& gameplay) {
 	verify_fatal(gameplay.level_settings.has_value());
 	const LevelSettings& level_settings = *gameplay.level_settings;
-	if(level_settings.chunk_planes.has_value() && !level_settings.chunk_planes->empty()) {
-		glm::vec3 plane_1_point = {
-			(*level_settings.chunk_planes)[0].point_x,
-			(*level_settings.chunk_planes)[0].point_y,
-			(*level_settings.chunk_planes)[0].point_z
-		};
-		glm::vec3 plane_1_normal = {
-			(*level_settings.chunk_planes)[0].normal_x,
-			(*level_settings.chunk_planes)[0].normal_y,
-			(*level_settings.chunk_planes)[0].normal_z
-		};
+	if(!level_settings.chunk_planes.empty()) {
+		glm::vec3 plane_1_point = level_settings.chunk_planes[0].point;
+		glm::vec3 plane_1_normal = level_settings.chunk_planes[0].normal;
 		if(glm::dot(plane_1_normal, point - plane_1_point) > 0.f) {
 			return 1;
 		}
-		if(level_settings.chunk_planes->size() > 1) {
-			glm::vec3 plane_2_point = {
-				(*level_settings.chunk_planes)[1].point_x,
-				(*level_settings.chunk_planes)[1].point_y,
-				(*level_settings.chunk_planes)[1].point_z
-			};
-			glm::vec3 plane_2_normal = {
-				(*level_settings.chunk_planes)[1].normal_x,
-				(*level_settings.chunk_planes)[1].normal_y,
-				(*level_settings.chunk_planes)[1].normal_z
-			};
+		if(level_settings.chunk_planes.size() > 1) {
+			glm::vec3 plane_2_point = level_settings.chunk_planes[1].point;
+			glm::vec3 plane_2_normal = level_settings.chunk_planes[1].normal;
 			if(glm::dot(plane_2_normal, point - plane_2_point) > 0.f) {
 				return 2;
 			}

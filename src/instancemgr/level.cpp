@@ -25,21 +25,81 @@
 LevelSettings read_level_settings(const WtfNode* node) {
 	LevelSettings settings;
 	
-	const WtfAttribute* core_sounds_count_attrib = wtf_attribute_of_type(node, "core_sounds_count", WTF_NUMBER);
-	if(core_sounds_count_attrib) {
-		settings.core_sounds_count = core_sounds_count_attrib->number.f;
+	const WtfAttribute* background_col_attrib = wtf_attribute(node, "background_col");
+	if(background_col_attrib) {
+		settings.background_colour = read_inst_float_list<glm::vec3>(background_col_attrib, "background_col");
+	}
+	const WtfAttribute* fog_col_attrib = wtf_attribute(node, "fog_col");
+	if(fog_col_attrib) {
+		settings.fog_colour = read_inst_float_list<glm::vec3>(fog_col_attrib, "fog_col");
+	}
+	settings.fog_near_dist = read_inst_float(node, "fog_near_dist");
+	settings.fog_far_dist = read_inst_float(node, "fog_far_dist");
+	settings.fog_near_intensity = read_inst_float(node, "fog_near_intensity");
+	settings.fog_far_intensity = read_inst_float(node, "fog_far_intensity");
+	settings.death_height = read_inst_float(node, "death_height");
+	settings.is_spherical_world = read_inst_bool(node, "is_spherical_world");
+	settings.sphere_pos = read_inst_float_list<glm::vec3>(node, "sphere_pos");
+	settings.ship_pos = read_inst_float_list<glm::vec3>(node, "ship_pos");
+	settings.ship_rot_z = read_inst_float(node, "ship_rot_z");
+	const WtfAttribute* unknown_col_attrib = wtf_attribute(node, "unknown_col");
+	if(unknown_col_attrib) {
+		settings.unknown_colour = read_inst_float_list<glm::vec3>(unknown_col_attrib, "unknown_col");
 	}
 	
-	settings.rac3_third_part.emplace();
-	settings.fourth_part.emplace();
-	settings.fifth_part.emplace();
+	for(const WtfNode* plane_node = wtf_first_child(node, "ChunkPlane"); plane_node != nullptr; plane_node = wtf_next_sibling(plane_node, "ChunkPlane")) {
+		ChunkPlane& plane = settings.chunk_planes.emplace_back();
+		plane.point = read_inst_float_list<glm::vec3>(plane_node, "point");
+		plane.normal = read_inst_float_list<glm::vec3>(plane_node, "normal");
+	}
+	
+	const WtfAttribute* core_sounds_count_attrib = wtf_attribute_of_type(node, "core_sounds_count", WTF_NUMBER);
+	if(core_sounds_count_attrib) {
+		settings.core_sounds_count = core_sounds_count_attrib->number.i;
+	}
+	
+	const WtfAttribute* rac3_third_part_attrib = wtf_attribute_of_type(node, "rac3_third_part", WTF_NUMBER);
+	if(rac3_third_part_attrib) {
+		settings.rac3_third_part = rac3_third_part_attrib->number.i;
+	}
 	
 	return settings;
 }
 
 void write_level_settings(WtfWriter* ctx, const LevelSettings& settings) {
+	if(settings.background_colour.has_value()) {
+		write_inst_float_list(ctx, "background_col", *settings.background_colour);
+	}
+	if(settings.fog_colour.has_value()) {
+		write_inst_float_list(ctx, "fog_col", *settings.fog_colour);
+	}
+	wtf_write_float_attribute(ctx, "fog_near_dist", settings.fog_near_dist);
+	wtf_write_float_attribute(ctx, "fog_far_dist", settings.fog_far_dist);
+	wtf_write_float_attribute(ctx, "fog_near_intensity", settings.fog_near_intensity);
+	wtf_write_float_attribute(ctx, "fog_far_intensity", settings.fog_far_intensity);
+	wtf_write_float_attribute(ctx, "death_height", settings.death_height);
+	wtf_write_boolean_attribute(ctx, "is_spherical_world", settings.is_spherical_world);
+	write_inst_float_list(ctx, "sphere_pos", settings.sphere_pos);
+	write_inst_float_list(ctx, "ship_pos", settings.ship_pos);
+	wtf_write_float_attribute(ctx, "ship_rot_z", settings.ship_rot_z);
+	if(settings.unknown_colour.has_value()) {
+		write_inst_float_list(ctx, "unknown_col", *settings.unknown_colour);
+	}
+	
+	s32 i = 1;
+	for(const ChunkPlane& plane : settings.chunk_planes) {
+		wtf_begin_node(ctx, "ChunkPlane", std::to_string(i++).c_str());
+		write_inst_float_list(ctx, "point", plane.point);
+		write_inst_float_list(ctx, "normal", plane.normal);
+		wtf_end_node(ctx);
+	}
+	
 	if(settings.core_sounds_count.has_value()) {
-		wtf_write_float_attribute(ctx, "core_sounds_count", *settings.core_sounds_count);
+		wtf_write_integer_attribute(ctx, "core_sounds_count", *settings.core_sounds_count);
+	}
+	
+	if(settings.rac3_third_part.has_value()) {
+		wtf_write_integer_attribute(ctx, "rac3_third_part", *settings.rac3_third_part);
 	}
 }
 

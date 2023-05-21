@@ -76,6 +76,7 @@ static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConf
 	
 	// Write out instances file and read it back.
 	std::string instances_text = write_instances(instances_in);
+	write_file("/tmp/instances.txt", instances_text);
 	Instances instances_out = read_instances(instances_text);
 	
 	// Write out new gameplay file.

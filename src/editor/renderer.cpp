@@ -538,7 +538,7 @@ void reset_camera(app* a) {
 		if(!lvl->instances().moby_instances.empty()) {
 			a->render_settings.camera_position = lvl->instances().moby_instances[0].transform().pos();
 		} else {
-			a->render_settings.camera_position = lvl->instances().level_settings.ship_position;
+			a->render_settings.camera_position = lvl->instances().level_settings.ship_pos;
 		}
 	} else {
 		a->render_settings.camera_position = glm::vec3(0, 0, 0);

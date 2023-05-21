@@ -60,7 +60,7 @@ Instances read_instances(std::string& src) {
 		dest.level_settings = read_level_settings(level_settings_node);
 	}
 	
-	for(WtfNode* node = root->first_child; node != nullptr; node = root->next_sibling) {
+	for(WtfNode* node = root->first_child; node != nullptr; node = node->next_sibling) {
 		for(const InstanceReadWriteFuncs& funcs : read_write_funcs) {
 			if(strcmp(instance_type_to_string(funcs.type), node->type_name) == 0) {
 				funcs.read(dest, node);

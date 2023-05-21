@@ -28,6 +28,10 @@
 #include "_generated_instance_types.inl"
 #undef GENERATED_INSTANCE_TYPE_ENUM
 
+struct Instances;
+struct WtfNode;
+struct WtfWriter;
+
 struct InstanceId {
 	InstanceType type;
 	s32 value;
@@ -51,6 +55,7 @@ enum InstanceComponent : u32 {
 };
 
 enum class TransformMode {
+	NONE,
 	MATRIX,
 	MATRIX_AND_INVERSE,
 	MATRIX_INVERSE_ROTATION,
@@ -59,25 +64,30 @@ enum class TransformMode {
 	POSITION_ROTATION_SCALE
 };
 
-class InstanceTransform {
+class TransformComponent {
 public:
+	TransformComponent() : _mode(TransformMode::NONE) {}
+	TransformComponent(TransformMode mode) : _mode(mode) {}
+
 	const glm::mat4& matrix() const;
-	const glm::mat4& inverse_matrix() const;
+	const glm::mat3x4& inverse_matrix() const;
 	const glm::vec3& pos() const;
 	const glm::vec3& rot() const;
 	const f32& scale() const;
-	void set_from_matrix(const glm::mat4& new_matrix);
+	void set_from_matrix(const glm::mat4& new_matrix, const glm::mat3x4* new_inverse_matrix = nullptr, const glm::vec3* new_rot = nullptr);
 	void set_from_pos_rot_scale(const glm::vec3& pos, const glm::vec3& rot = glm::vec3(0.f, 0.f, 0.f), f32 scale = 1.f);
+	
+	void read(const WtfNode* src);
+	void write(WtfWriter* dest) const;
 private:
+	TransformMode _mode;
 	glm::mat4 _matrix = glm::mat4(1.f);
-	glm::mat4 _inverse_matrix = glm::mat4(1.f);
+	glm::mat3x4 _inverse_matrix = glm::mat3x4(1.f);
 	glm::vec3 _rot = glm::vec3(0.f);
 	f32 _scale = 1.f;
 };
 
 using GlobalPvarPointers = std::vector<std::pair<s32, s32>>;
-
-struct FromJsonVisitor;
 
 struct CameraCollisionParams {
 	bool enabled = false;
@@ -87,10 +97,6 @@ struct CameraCollisionParams {
 	
 	friend auto operator<=>(const CameraCollisionParams& lhs, const CameraCollisionParams& rhs) = default;
 };
-
-struct Instances;
-struct WtfNode;
-struct WtfWriter;
 
 struct Instance {
 	virtual ~Instance() {}
@@ -102,8 +108,8 @@ struct Instance {
 	bool has_component(InstanceComponent component) const { return (_components_mask & component) == component; }
 	bool selected = false;
 	
-	const InstanceTransform& transform() const;
-	InstanceTransform& transform();
+	const TransformComponent& transform() const;
+	TransformComponent& transform();
 	
 	const std::vector<u8>& pvars() const;
 	std::vector<u8>& pvars();
@@ -136,13 +142,14 @@ protected:
 	Instance(InstanceType type, u32 components_mask)
 		: _id({type, -1})
 		, _components_mask(components_mask) {}
-	Instance(InstanceType type, u32 components_mask, TransformMode unused)
+	Instance(InstanceType type, u32 components_mask, TransformMode transform_mode)
 		: _id({type, -1})
-		, _components_mask(components_mask) {}
+		, _components_mask(components_mask)
+		, _transform(transform_mode) {}
 private:
 	InstanceId _id;
 	u32 _components_mask;
-	InstanceTransform _transform;
+	TransformComponent _transform;
 	std::vector<u8> _pvars;
 	s32 _pvar_index = -1; // Only used during reading/writing!
 	GlobalPvarPointers _global_pvar_pointers; // Only used when writing!
@@ -154,19 +161,6 @@ private:
 };
 
 const char* instance_type_to_string(InstanceType type);
-
-packed_struct(Rgb32,
-	/* 0x0 */ u8 r;
-	/* 0x1 */ u8 g;
-	/* 0x2 */ u8 b;
-	/* 0x3 */ u8 pad;
-)
-
-packed_struct(Rgb96,
-	/* 0x0 */ s32 r;
-	/* 0x4 */ s32 g;
-	/* 0xc */ s32 b;
-)
 
 #define GENERATED_INSTANCE_TYPES
 #include "_generated_instance_types.inl"

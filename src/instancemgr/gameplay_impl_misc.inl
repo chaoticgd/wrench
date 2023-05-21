@@ -53,6 +53,18 @@ packed_struct(GcUyaDlLevelSettingsFirstPart,
 )
 static_assert(sizeof(GcUyaDlLevelSettingsFirstPart) == 0x5c);
 
+packed_struct(ChunkPlanePacked,
+	/* 0x00 */ f32 point_x;
+	/* 0x04 */ f32 point_y;
+	/* 0x08 */ f32 point_z;
+	/* 0x0c */ s32 plane_count;
+	/* 0x10 */ f32 normal_x;
+	/* 0x14 */ f32 normal_y;
+	/* 0x18 */ f32 normal_z;
+	/* 0x1c */ u32 pad;
+)
+static_assert(sizeof(ChunkPlanePacked) == 0x20);
+
 struct LevelSettingsBlock {
 	static void read(LevelSettings& dest, Buffer src, Game game) {
 		s32 ofs = 0;
@@ -65,10 +77,19 @@ struct LevelSettingsBlock {
 			ofs += sizeof(GcUyaDlLevelSettingsFirstPart);
 			s32 chunk_plane_count = src.read<s32>(ofs + 0xc, "second part count");
 			if(chunk_plane_count > 0) {
-				dest.chunk_planes = src.read_multiple<ChunkPlane>(ofs, chunk_plane_count, "second part").copy();
-				ofs += chunk_plane_count * sizeof(ChunkPlane);
+				auto chunk_planes = src.read_multiple<ChunkPlanePacked>(ofs, chunk_plane_count, "second part").copy();
+				for(ChunkPlanePacked& packed : chunk_planes) {
+					ChunkPlane& plane = dest.chunk_planes.emplace_back();
+					plane.point.x = packed.point_x;
+					plane.point.y = packed.point_y;
+					plane.point.z = packed.point_z;
+					plane.normal.x = packed.normal_x;
+					plane.normal.y = packed.normal_y;
+					plane.normal.z = packed.normal_z;
+				}
+				ofs += chunk_plane_count * sizeof(ChunkPlanePacked);
 			} else {
-				ofs += sizeof(ChunkPlane);
+				ofs += sizeof(ChunkPlanePacked);
 			}
 			dest.core_sounds_count = src.read<s32>(ofs, "core sounds count");
 			ofs += 4;
@@ -102,10 +123,20 @@ struct LevelSettingsBlock {
 			GcUyaDlLevelSettingsFirstPart first_part_packed;
 			swap_gc_uya_dl_first_part(copy, first_part_packed);
 			dest.write(first_part_packed);
-			if(src.chunk_planes.has_value() && src.chunk_planes->size() > 0) {
-				dest.write_multiple(*src.chunk_planes);
+			if(!src.chunk_planes.empty()) {
+				for(const ChunkPlane& plane : src.chunk_planes) {
+					ChunkPlanePacked packed = {};
+					packed.point_x = plane.point.x;
+					packed.point_y = plane.point.y;
+					packed.point_z = plane.point.z;
+					packed.plane_count = (s32) src.chunk_planes.size();
+					packed.normal_x = plane.normal.x;
+					packed.normal_y = plane.normal.y;
+					packed.normal_z = plane.normal.z;
+					dest.write(packed);
+				}
 			} else {
-				ChunkPlane terminator = {0};
+				ChunkPlane terminator = {};
 				dest.write(terminator);
 			}
 			verify(src.core_sounds_count.has_value(), "Missing core_sounds_count in level settings block.");
@@ -132,57 +163,39 @@ struct LevelSettingsBlock {
 	}
 	
 	static void swap_rac_first_part(LevelSettings& l, RacLevelSettingsFirstPart& r) {
-		SWAP_PACKED(l.background_colour.r, r.background_colour.r);
-		SWAP_PACKED(l.background_colour.g, r.background_colour.g);
-		SWAP_PACKED(l.background_colour.b, r.background_colour.b);
-		SWAP_PACKED(l.fog_colour.r, r.fog_colour.r);
-		SWAP_PACKED(l.fog_colour.g, r.fog_colour.g);
-		SWAP_PACKED(l.fog_colour.b, r.fog_colour.b);
-		SWAP_PACKED(l.fog_near_distance, r.fog_near_distance);
-		SWAP_PACKED(l.fog_far_distance, r.fog_far_distance);
+		SWAP_COLOUR_OPT(l.background_colour, r.background_colour);
+		SWAP_COLOUR_OPT(l.fog_colour, r.fog_colour);
+		SWAP_PACKED(l.fog_near_dist, r.fog_near_distance);
+		SWAP_PACKED(l.fog_far_dist, r.fog_far_distance);
 		SWAP_PACKED(l.fog_near_intensity, r.fog_near_intensity);
 		SWAP_PACKED(l.fog_far_intensity, r.fog_far_intensity);
 		SWAP_PACKED(l.death_height, r.death_height);
-		SWAP_PACKED(l.ship_position.x, r.ship_position.x);
-		SWAP_PACKED(l.ship_position.y, r.ship_position.y);
-		SWAP_PACKED(l.ship_position.z, r.ship_position.z);
-		SWAP_PACKED(l.ship_rotation_z, r.ship_rotation_z);
-		SWAP_PACKED(l.unknown_colour.r, r.unknown_colour.r);
-		SWAP_PACKED(l.unknown_colour.g, r.unknown_colour.g);
-		SWAP_PACKED(l.unknown_colour.b, r.unknown_colour.b);
+		SWAP_PACKED(l.ship_pos.x, r.ship_position.x);
+		SWAP_PACKED(l.ship_pos.y, r.ship_position.y);
+		SWAP_PACKED(l.ship_pos.z, r.ship_position.z);
+		SWAP_PACKED(l.ship_rot_z, r.ship_rotation_z);
+		SWAP_COLOUR_OPT(l.unknown_colour, r.unknown_colour);
 		r.pad[0] = 0;
 		r.pad[1] = 0;
 	}
 	
 	static void swap_gc_uya_dl_first_part(LevelSettings& l, GcUyaDlLevelSettingsFirstPart& r) {
-		SWAP_PACKED(l.background_colour.r, r.background_colour.r);
-		SWAP_PACKED(l.background_colour.g, r.background_colour.g);
-		SWAP_PACKED(l.background_colour.b, r.background_colour.b);
-		SWAP_PACKED(l.fog_colour.r, r.fog_colour.r);
-		SWAP_PACKED(l.fog_colour.g, r.fog_colour.g);
-		SWAP_PACKED(l.fog_colour.b, r.fog_colour.b);
-		SWAP_PACKED(l.fog_near_distance, r.fog_near_distance);
-		SWAP_PACKED(l.fog_far_distance, r.fog_far_distance);
+		SWAP_COLOUR_OPT(l.background_colour, r.background_colour);
+		SWAP_COLOUR_OPT(l.fog_colour, r.fog_colour);
+		SWAP_PACKED(l.fog_near_dist, r.fog_near_distance);
+		SWAP_PACKED(l.fog_far_dist, r.fog_far_distance);
 		SWAP_PACKED(l.fog_near_intensity, r.fog_near_intensity);
 		SWAP_PACKED(l.fog_far_intensity, r.fog_far_intensity);
 		SWAP_PACKED(l.death_height, r.death_height);
-		if(!l.is_spherical_world.has_value()) {
-			l.is_spherical_world = false;
-		}
-		SWAP_PACKED(*l.is_spherical_world, r.is_spherical_world);
-		if(!l.sphere_centre.has_value()) {
-			l.sphere_centre = glm::vec3();
-		}
-		SWAP_PACKED(l.sphere_centre->x, r.sphere_centre.x);
-		SWAP_PACKED(l.sphere_centre->y, r.sphere_centre.y);
-		SWAP_PACKED(l.sphere_centre->z, r.sphere_centre.z);
-		SWAP_PACKED(l.ship_position.x, r.ship_position.x);
-		SWAP_PACKED(l.ship_position.y, r.ship_position.y);
-		SWAP_PACKED(l.ship_position.z, r.ship_position.z);
-		SWAP_PACKED(l.ship_rotation_z, r.ship_rotation_z);
-		SWAP_PACKED(l.unknown_colour.r, r.unknown_colour.r);
-		SWAP_PACKED(l.unknown_colour.g, r.unknown_colour.g);
-		SWAP_PACKED(l.unknown_colour.b, r.unknown_colour.b);
+		SWAP_PACKED(l.is_spherical_world, r.is_spherical_world);
+		SWAP_PACKED(l.sphere_pos.x, r.sphere_centre.x);
+		SWAP_PACKED(l.sphere_pos.y, r.sphere_centre.y);
+		SWAP_PACKED(l.sphere_pos.z, r.sphere_centre.z);
+		SWAP_PACKED(l.ship_pos.x, r.ship_position.x);
+		SWAP_PACKED(l.ship_pos.y, r.ship_position.y);
+		SWAP_PACKED(l.ship_pos.z, r.ship_position.z);
+		SWAP_PACKED(l.ship_rot_z, r.ship_rotation_z);
+		SWAP_COLOUR_OPT(l.unknown_colour, r.unknown_colour);
 		r.pad = 0;
 	}
 };

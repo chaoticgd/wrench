@@ -34,7 +34,9 @@ static void swap_matrix_inverse_rotation(Instance& inst, Packed& packed) {
 	glm::mat4 matrix = inst.transform().matrix();
 	glm::mat3 inverse_matrix = inst.transform().inverse_matrix();
 	glm::vec3 rotation = inst.transform().rot();
-	inst.transform().set_from_matrix(packed.matrix.unpack());
+	glm::mat3x4 packed_inverse = packed.inverse_matrix.unpack();
+	glm::vec3 packed_rot = packed.rotation.unpack();
+	inst.transform().set_from_matrix(packed.matrix.unpack(), &packed_inverse, &packed_rot);
 	packed.matrix = Mat4::pack(matrix);
 	packed.inverse_matrix = Mat3::pack(inverse_matrix);
 	packed.rotation = Vec3f::pack(rotation);
@@ -66,6 +68,52 @@ static void swap_position_rotation_scale(Instance& instance, Packed& packed) {
 	packed.rotation = Vec3f::pack(rot);
 	packed.scale = scale;
 }
+
+packed_struct(Rgb32,
+	/* 0x0 */ u8 r;
+	/* 0x1 */ u8 g;
+	/* 0x2 */ u8 b;
+	/* 0x3 */ u8 pad;
+)
+
+packed_struct(Rgb96,
+	/* 0x0 */ s32 r;
+	/* 0x4 */ s32 g;
+	/* 0xc */ s32 b;
+)
+
+#define SWAP_COLOUR(vector, packed) \
+	{ \
+		glm::vec3 temp = vector; \
+		(vector).r = (packed).r * (1.f / 255.f); \
+		(vector).g = (packed).g * (1.f / 255.f); \
+		(vector).b = (packed).b * (1.f / 255.f); \
+		(packed).r = (u8) roundf(temp.r * 255.f); \
+		(packed).g = (u8) roundf(temp.g * 255.f); \
+		(packed).b = (u8) roundf(temp.b * 255.f); \
+	}
+
+#define SWAP_COLOUR_OPT(vector, packed) \
+	{ \
+		Opt<glm::vec3> temp = (vector); \
+		if((packed).r != -1) { \
+			(vector).emplace(); \
+			(vector)->r = (packed).r * (1.f / 255.f); \
+			(vector)->g = (packed).g * (1.f / 255.f); \
+			(vector)->b = (packed).b * (1.f / 255.f); \
+		} else { \
+			vector = std::nullopt; \
+		} \
+		if(temp.has_value()) { \
+			(packed).r = (u8) roundf(temp->r * 255.f); \
+			(packed).g = (u8) roundf(temp->g * 255.f); \
+			(packed).b = (u8) roundf(temp->b * 255.f); \
+		} else { \
+			(packed).r = -1; \
+			(packed).g = 0; \
+			(packed).b = 0; \
+		} \
+	}
 
 packed_struct(TableHeader,
 	s32 count_1;

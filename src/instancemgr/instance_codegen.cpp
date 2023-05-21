@@ -167,11 +167,17 @@ static void generate_instance_read_write_funcs(WtfNode* root) {
 		out("void %sInstance::read(Instances& dest, const WtfNode* src) {", type->tag);
 		out("\t%sInstance& inst = dest.%s.create(atoi(src->tag));", type->tag, variable->string.begin);
 		out("\tinst.read_common(src);");
+		for(const WtfNode* field = type->first_child; field != nullptr; field = field->next_sibling) {
+			out("\tread_inst_field(inst.%s, src, \"%s\");", field->tag, field->tag);
+		}
 		out("}");
 		out("");
 		out("void %sInstance::write(WtfWriter* dest, const Instances& src) {", type->tag);
 		out("\tfor(const %sInstance& inst : src.%s) {", type->tag, variable->string.begin);
 		out("\t\tinst.begin_write(dest);");
+		for(const WtfNode* field = type->first_child; field != nullptr; field = field->next_sibling) {
+			out("\t\twrite_inst_field(dest, \"%s\", inst.%s);", field->tag, field->tag);
+		}
 		out("\t\tinst.end_write(dest);");
 		out("\t}");
 		out("}");
