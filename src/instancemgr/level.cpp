@@ -20,6 +20,28 @@
 
 #include <algorithm>
 #include <core/png.h>
+#include <instancemgr/wtf_util.h>
+
+LevelSettings read_level_settings(const WtfNode* node) {
+	LevelSettings settings;
+	
+	const WtfAttribute* core_sounds_count_attrib = wtf_attribute_of_type(node, "core_sounds_count", WTF_NUMBER);
+	if(core_sounds_count_attrib) {
+		settings.core_sounds_count = core_sounds_count_attrib->number.f;
+	}
+	
+	settings.rac3_third_part.emplace();
+	settings.fourth_part.emplace();
+	settings.fifth_part.emplace();
+	
+	return settings;
+}
+
+void write_level_settings(WtfWriter* ctx, const LevelSettings& settings) {
+	if(settings.core_sounds_count.has_value()) {
+		wtf_write_float_attribute(ctx, "core_sounds_count", *settings.core_sounds_count);
+	}
+}
 
 s32 PvarField::size() const {
 	switch(descriptor) {

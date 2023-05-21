@@ -109,7 +109,7 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 		verify(index != tie_class_to_index.end(), "Cannot find tie model!");
 		VisInstance& vis_instance = input.instances[VIS_TIE].emplace_back();
 		vis_instance.mesh = index->second;
-		vis_instance.matrix = instance.matrix();
+		vis_instance.matrix = instance.transform().matrix();
 		vis_instance.matrix[3][3] = 1.f;
 		vis_instance.chunk = chunk_index_from_position(glm::vec3(vis_instance.matrix[3]), gameplay);
 	}
@@ -126,7 +126,7 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 			if(index != moby_class_to_index.end()) {
 				VisInstance& vis_instance = input.instances[VIS_MOBY].emplace_back();
 				vis_instance.mesh = index->second;
-				vis_instance.matrix = instance.matrix();
+				vis_instance.matrix = instance.transform().matrix();
 				vis_instance.matrix[3][3] = 1.f;
 				vis_instance.chunk = chunk_index_from_position(glm::vec3(vis_instance.matrix[3]), gameplay);
 			}
@@ -186,32 +186,32 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 }
 
 static s32 chunk_index_from_position(const glm::vec3& point, const Gameplay& gameplay) {
-	verify_fatal(gameplay.properties.has_value());
-	const Properties& properties = *gameplay.properties;
-	if(properties.chunk_planes.has_value() && !properties.chunk_planes->empty()) {
+	verify_fatal(gameplay.level_settings.has_value());
+	const LevelSettings& level_settings = *gameplay.level_settings;
+	if(level_settings.chunk_planes.has_value() && !level_settings.chunk_planes->empty()) {
 		glm::vec3 plane_1_point = {
-			(*properties.chunk_planes)[0].point_x,
-			(*properties.chunk_planes)[0].point_y,
-			(*properties.chunk_planes)[0].point_z
+			(*level_settings.chunk_planes)[0].point_x,
+			(*level_settings.chunk_planes)[0].point_y,
+			(*level_settings.chunk_planes)[0].point_z
 		};
 		glm::vec3 plane_1_normal = {
-			(*properties.chunk_planes)[0].normal_x,
-			(*properties.chunk_planes)[0].normal_y,
-			(*properties.chunk_planes)[0].normal_z
+			(*level_settings.chunk_planes)[0].normal_x,
+			(*level_settings.chunk_planes)[0].normal_y,
+			(*level_settings.chunk_planes)[0].normal_z
 		};
 		if(glm::dot(plane_1_normal, point - plane_1_point) > 0.f) {
 			return 1;
 		}
-		if(properties.chunk_planes->size() > 1) {
+		if(level_settings.chunk_planes->size() > 1) {
 			glm::vec3 plane_2_point = {
-				(*properties.chunk_planes)[1].point_x,
-				(*properties.chunk_planes)[1].point_y,
-				(*properties.chunk_planes)[1].point_z
+				(*level_settings.chunk_planes)[1].point_x,
+				(*level_settings.chunk_planes)[1].point_y,
+				(*level_settings.chunk_planes)[1].point_z
 			};
 			glm::vec3 plane_2_normal = {
-				(*properties.chunk_planes)[1].normal_x,
-				(*properties.chunk_planes)[1].normal_y,
-				(*properties.chunk_planes)[1].normal_z
+				(*level_settings.chunk_planes)[1].normal_x,
+				(*level_settings.chunk_planes)[1].normal_y,
+				(*level_settings.chunk_planes)[1].normal_z
 			};
 			if(glm::dot(plane_2_normal, point - plane_2_point) > 0.f) {
 				return 2;

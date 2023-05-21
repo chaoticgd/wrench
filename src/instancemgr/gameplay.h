@@ -21,24 +21,11 @@
 
 #include <functional>
 
-#include <core/util.h>
-#include <instancemgr/level.h>
+#include <instancemgr/instances.h>
 
-struct HelpMessage {
-	Opt<std::string> string;
-	s32 id;
-	s16 short_id;
-	s16 third_person_id;
-	s16 coop_id;
-	s16 vag;
-	s16 character;
-};
-
+// Represents a packed gameplay file.
 struct Gameplay {
-	Opt<std::vector<u8>> rac1_78;
-	Opt<std::vector<PointLight>> point_lights;
-	Opt<std::vector<EnvSamplePointInstance>> env_sample_points;
-	Opt<Properties> properties;
+	Opt<LevelSettings> level_settings;
 	Opt<std::vector<HelpMessage>> us_english_help_messages;
 	Opt<std::vector<HelpMessage>> uk_english_help_messages;
 	Opt<std::vector<HelpMessage>> french_help_messages;
@@ -47,45 +34,37 @@ struct Gameplay {
 	Opt<std::vector<HelpMessage>> italian_help_messages;
 	Opt<std::vector<HelpMessage>> japanese_help_messages;
 	Opt<std::vector<HelpMessage>> korean_help_messages;
-	Opt<std::vector<EnvTransitionInstance>> env_transitions;
-	Opt<std::vector<Camera>> cameras;
-	Opt<std::vector<SoundInstance>> sound_instances;
-	Opt<std::vector<s32>> moby_classes;
-	Opt<s32> dynamic_moby_count;
-	Opt<std::vector<MobyInstance>> moby_instances;
-	Opt<std::vector<Group>> moby_groups;
-	Opt<std::vector<u8>> global_pvar;
-	Opt<std::vector<Path>> paths;
-	Opt<std::vector<Cuboid>> cuboids;
-	Opt<std::vector<Sphere>> spheres;
-	Opt<std::vector<Cylinder>> cylinders;
-	Opt<std::vector<Pill>> pills;
-	Opt<std::vector<GrindPath>> grind_paths;
-	Opt<std::vector<Area>> areas;
 	
-	Opt<std::vector<DirectionalLight>> lights;
+	Opt<std::vector<MobyInstance>> moby_instances;
+	Opt<s32> dynamic_moby_count;
+	Opt<std::vector<s32>> moby_classes;
+	Opt<std::vector<Group>> moby_groups;
 	Opt<std::vector<TieInstance>> tie_instances;
 	Opt<std::vector<Group>> tie_groups;
 	Opt<std::vector<ShrubInstance>> shrub_instances;
 	Opt<std::vector<Group>> shrub_groups;
+	Opt<std::vector<u8>> global_pvar;
+	
+	Opt<std::vector<DirLightInstance>> dir_lights;
+	Opt<std::vector<PointLightInstance>> point_lights;
+	Opt<std::vector<EnvSamplePointInstance>> env_sample_points;
+	Opt<std::vector<EnvTransitionInstance>> env_transitions;
+	
+	Opt<std::vector<CuboidInstance>> cuboids;
+	Opt<std::vector<SphereInstance>> spheres;
+	Opt<std::vector<CylinderInstance>> cylinders;
+	Opt<std::vector<PillInstance>> pills;
+	
+	Opt<std::vector<CameraInstance>> cameras;
+	Opt<std::vector<SoundInstance>> sound_instances;
+	Opt<std::vector<PathInstance>> paths;
+	Opt<std::vector<GrindPathInstance>> grind_paths;
+	Opt<std::vector<Area>> areas;
+	
 	Opt<OcclusionMappings> occlusion;
 	
 	// Only used while reading the binary gameplay file.
 	Opt<std::vector<PvarTableEntry>> pvars_temp;
-	
-	template <typename Callback>
-	void for_each_instance_with(u32 required_components_mask, Callback callback) const;
-	template <typename Callback>
-	void for_each_instance_with(u32 required_components_mask, Callback callback);
-	
-	template <typename Callback>
-	void for_each_instance(Callback callback) const {
-		for_each_instance_with(COM_NONE, callback);
-	}
-	template <typename Callback>
-	void for_each_instance(Callback callback) {
-		for_each_instance_with(COM_NONE, callback);
-	}
 	
 	// These functions don't skip over instances where pvars.size() == 0.
 	template <typename Callback>
@@ -97,20 +76,6 @@ struct Gameplay {
 	void for_each_pvar_instance_const(const PvarTypes& types, Callback callback) const;
 	template <typename Callback>
 	void for_each_pvar_instance(const PvarTypes& types, Callback callback);
-	
-	void clear_selection();
-	std::vector<InstanceId> selected_instances() const;
-};
-
-struct HelpMessages {
-	Opt<std::vector<HelpMessage>> us_english;
-	Opt<std::vector<HelpMessage>> uk_english;
-	Opt<std::vector<HelpMessage>> french;
-	Opt<std::vector<HelpMessage>> german;
-	Opt<std::vector<HelpMessage>> spanish;
-	Opt<std::vector<HelpMessage>> italian;
-	Opt<std::vector<HelpMessage>> japanese;
-	Opt<std::vector<HelpMessage>> korean;
 };
 
 // *****************************************************************************
@@ -139,46 +104,12 @@ void read_gameplay(Gameplay& gameplay, PvarTypes& types, Buffer src, Game game, 
 std::vector<u8> write_gameplay(const Gameplay& gameplay_arg, const PvarTypes& types, Game game, const std::vector<GameplayBlockDescription>& blocks);
 const std::vector<GameplayBlockDescription>* gameplay_block_descriptions_from_game(Game game);
 std::vector<u8> write_occlusion_mappings(const Gameplay& gameplay, Game game);
-
-// *****************************************************************************
-
-template <typename Callback, typename InstanceVec>
-static void for_each_instance_of_type_with(u32 required_components_mask, const InstanceVec& instances, Callback callback) {
-	if(instances.has_value() && instances->size() > 0) {
-		if(((*instances)[0].components_mask() & required_components_mask) == required_components_mask) {
-			for(const Instance& instance : *instances) {
-				callback(instance);
-			}
-		}
-	}
-}
-
-template <typename Callback>
-void Gameplay::for_each_instance_with(u32 required_components_mask, Callback callback) const {
-	for_each_instance_of_type_with(required_components_mask, cameras, callback);
-	for_each_instance_of_type_with(required_components_mask, sound_instances, callback);
-	for_each_instance_of_type_with(required_components_mask, moby_instances, callback);
-	for_each_instance_of_type_with(required_components_mask, spheres, callback);
-	for_each_instance_of_type_with(required_components_mask, cylinders, callback);
-	for_each_instance_of_type_with(required_components_mask, paths, callback);
-	for_each_instance_of_type_with(required_components_mask, cuboids, callback);
-	for_each_instance_of_type_with(required_components_mask, grind_paths, callback);
-	for_each_instance_of_type_with(required_components_mask, lights, callback);
-	for_each_instance_of_type_with(required_components_mask, tie_instances, callback);
-	for_each_instance_of_type_with(required_components_mask, shrub_instances, callback);
-	for_each_instance_of_type_with(required_components_mask, point_lights, callback);
-}
-
-template <typename Callback>
-void Gameplay::for_each_instance_with(u32 required_components_mask, Callback callback) {
-	static_cast<const Gameplay*>(this)->for_each_instance_with(required_components_mask, [&](const Instance& inst) {
-		callback(const_cast<Instance&>(inst));
-	});
-}
+void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, OcclusionMappings* occlusion_dest, Gameplay& src);
+void move_instances_to_gameplay(Gameplay& dest, Instances& src, HelpMessages* help_src, OcclusionMappings* occlusion_src);
 
 template <typename Callback>
 void Gameplay::for_each_pvar_instance_const(Callback callback) const {
-	for(const Camera& inst : opt_iterator(cameras)) {
+	for(const CameraInstance& inst : opt_iterator(cameras)) {
 		callback(inst);
 	}
 	for(const SoundInstance& inst : opt_iterator(sound_instances)) {
@@ -198,7 +129,7 @@ void Gameplay::for_each_pvar_instance(Callback callback) {
 
 template <typename Callback>
 void Gameplay::for_each_pvar_instance_const(const PvarTypes& types, Callback callback) const {
-	for(const Camera& inst : opt_iterator(cameras)) {
+	for(const CameraInstance& inst : opt_iterator(cameras)) {
 		auto iter = types.camera.find(inst.type);
 		if(iter != types.camera.end()) {
 			const PvarType& type = iter->second;
@@ -227,5 +158,6 @@ void Gameplay::for_each_pvar_instance(const PvarTypes& types, Callback callback)
 		callback(const_cast<Instance&>(inst), type);
 	});
 }
+
 
 #endif

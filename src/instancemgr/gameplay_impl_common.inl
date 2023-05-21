@@ -24,50 +24,44 @@
 
 template <typename Packed>
 static void swap_matrix(Instance& inst, Packed& packed) {
-	glm::mat4 matrix = inst.matrix();
-	inst.set_transform(packed.matrix.unpack());
-	f32 m33_value = packed.matrix.m_3.w;
+	glm::mat4 matrix = inst.transform().matrix();
+	inst.transform().set_from_matrix(packed.matrix.unpack());
 	packed.matrix = Mat4::pack(matrix);
-	packed.matrix.m_3.w = inst.m33_value_do_not_use();
-	inst.m33_value_do_not_use() = m33_value;
 }
 
 template <typename Packed>
 static void swap_matrix_inverse_rotation(Instance& inst, Packed& packed) {
-	glm::mat4 matrix = inst.matrix();
-	glm::mat3 inverse_matrix = inst.inverse_matrix();
-	glm::vec3 rotation = inst.rotation();
-	inst.set_transform(packed.matrix.unpack(), packed.inverse_matrix.unpack(), packed.rotation.unpack());
-	f32 m33_value = packed.matrix.m_3.w;
+	glm::mat4 matrix = inst.transform().matrix();
+	glm::mat3 inverse_matrix = inst.transform().inverse_matrix();
+	glm::vec3 rotation = inst.transform().rot();
+	inst.transform().set_from_matrix(packed.matrix.unpack());
 	packed.matrix = Mat4::pack(matrix);
-	packed.matrix.m_3.w = inst.m33_value_do_not_use();
-	inst.m33_value_do_not_use() = m33_value;
 	packed.inverse_matrix = Mat3::pack(inverse_matrix);
 	packed.rotation = Vec3f::pack(rotation);
 }
 
 template <typename Packed>
 static void swap_position(Instance& instance, Packed& packed) {
-	glm::vec3 pos = instance.position();
-	instance.set_position(packed.position.unpack());
+	glm::vec3 pos = instance.transform().pos();
+	instance.transform().set_from_pos_rot_scale(packed.position.unpack());
 	packed.position = Vec3f::pack(pos);
 }
 
 template <typename Packed>
 static void swap_position_rotation(Instance& instance, Packed& packed) {
-	glm::vec3 pos = instance.position();
-	glm::vec3 rot = instance.rotation();
-	instance.set_transform(packed.position.unpack(), packed.rotation.unpack());
+	glm::vec3 pos = instance.transform().pos();
+	glm::vec3 rot = instance.transform().rot();
+	instance.transform().set_from_pos_rot_scale(packed.position.unpack(), packed.rotation.unpack());
 	packed.position = Vec3f::pack(pos);
 	packed.rotation = Vec3f::pack(rot);
 }
 
 template <typename Packed>
 static void swap_position_rotation_scale(Instance& instance, Packed& packed) {
-	glm::vec3 pos = instance.position();
-	glm::vec3 rot = instance.rotation();
-	f32 scale = instance.scale();
-	instance.set_transform(packed.position.unpack(), packed.rotation.unpack(), packed.scale);
+	glm::vec3 pos = instance.transform().pos();
+	glm::vec3 rot = instance.transform().rot();
+	f32 scale = instance.transform().scale();
+	instance.transform().set_from_pos_rot_scale(packed.position.unpack(), packed.rotation.unpack(), packed.scale);
 	packed.position = Vec3f::pack(pos);
 	packed.rotation = Vec3f::pack(rot);
 	packed.scale = scale;

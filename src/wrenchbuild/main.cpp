@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2022 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
 #include <assetmgr/asset.h>
 #include <assetmgr/asset_types.h>
 #include <assetmgr/zipped_asset_bank.h>
+#include <instancemgr/instance.h>
 #include <engine/tfrag_high.h>
 #include <engine/moby.h>
 #include <engine/tie.h>
@@ -699,3 +700,7 @@ static void stop_stdout_flusher_thread() {
 		stdout_flush_thread.join();
 	}
 }
+
+// If you're hitting this assert it means the asset schema is out of sync with
+// the instance schema. The version numbers should be the same.
+static_assert(ASSET_FORMAT_VERSION == INSTANCE_FORMAT_VERSION);

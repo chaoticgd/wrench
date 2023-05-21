@@ -29,6 +29,7 @@
 #include "wtf.h"
 
 #include <ctype.h>
+#undef NDEBUG
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>

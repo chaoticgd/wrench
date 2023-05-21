@@ -20,6 +20,7 @@
 
 #include <core/png.h>
 #include <assetmgr/material_asset.h>
+#include <instancemgr/gameplay.h>
 #include <editor/app.h>
 
 Level::Level() {}
@@ -27,12 +28,14 @@ Level::Level() {}
 void Level::read(LevelAsset& asset, Game g) {
 	game = g;
 	_asset = &asset;
-	_gameplay_asset = &level_wad().get_gameplay().as<InstancesAsset>();
+	_instances_asset = &level_wad().get_gameplay().as<InstancesAsset>();
 		
-	auto stream = _gameplay_asset->file().open_binary_file_for_reading(_gameplay_asset->src());
+	auto stream = _instances_asset->file().open_binary_file_for_reading(_instances_asset->src());
 	std::vector<u8> buffer = stream->read_multiple<u8>(stream->size());
 	const std::vector<GameplayBlockDescription>* gbd = gameplay_block_descriptions_from_game(game);
-	read_gameplay(_gameplay, _pvar_types, buffer, game, *gbd);
+	Gameplay gameplay;
+	read_gameplay(gameplay, _pvar_types, buffer, game, *gbd);
+	move_gameplay_to_instances(_instances, nullptr, nullptr, gameplay);
 	
 	const CollectionAsset& chunk_collection = level_wad().get_chunks();
 	for(s32 i = 0; i < 3; i++) {
@@ -178,43 +181,46 @@ void Level::read(LevelAsset& asset, Game g) {
 }
 
 void Level::save(const fs::path& path) {
-	verify_fatal(_gameplay_asset);
+	verify_fatal(_instances_asset);
 	
 	// If the gamplay asset isn't currently part of the mod, create a new .asset
 	// file for it. Throwing the first time with retry=true will open a save
 	// dialog and then the path argument will be populated with the chosen path.
-	if(_gameplay_asset->bank().game_info.type != AssetBankType::MOD) {
+	if(_instances_asset->bank().game_info.type != AssetBankType::MOD) {
 		if(path.empty()) {
 			throw SaveError{true, "No path specified."};
 		}
 		AssetFile& gameplay_file = g_app->mod_bank->asset_file(path);
-		Asset& new_asset = gameplay_file.asset_from_link(InstancesAsset::ASSET_TYPE, _gameplay_asset->absolute_link());
+		Asset& new_asset = gameplay_file.asset_from_link(InstancesAsset::ASSET_TYPE, _instances_asset->absolute_link());
 		if(new_asset.logical_type() != InstancesAsset::ASSET_TYPE) {
 			throw SaveError{false, "An asset of a different type already exists."};
 		}
-		_gameplay_asset = &new_asset.as<InstancesAsset>();
+		_instances_asset = &new_asset.as<InstancesAsset>();
 	}
 	
 	fs::path gameplay_path;
-	if(_gameplay_asset->src().path.empty()) {
+	if(_instances_asset->src().path.empty()) {
 		// Make sure we're not overwriting another gameplay.bin file.
-		if(!_gameplay_asset->file().file_exists("gameplay.bin")) {
+		if(!_instances_asset->file().file_exists("gameplay.bin")) {
 			gameplay_path = "gameplay.bin";
 		} else {
 			throw SaveError{false, "A gameplay.bin file already exists in that folder."};
 		}
 	} else {
-		gameplay_path = _gameplay_asset->src().path;
+		gameplay_path = _instances_asset->src().path;
 	}
 	
 	// Write out the gameplay.bin file.
+	Instances instances = _instances;
+	Gameplay gameplay;
+	move_instances_to_gameplay(gameplay, instances, nullptr, nullptr);
 	const std::vector<GameplayBlockDescription>* gbd = gameplay_block_descriptions_from_game(game);
-	std::vector<u8> buffer = write_gameplay(_gameplay, _pvar_types, game, *gbd);
-	auto [stream, ref] = _gameplay_asset->file().open_binary_file_for_writing(gameplay_path);
+	std::vector<u8> buffer = write_gameplay(gameplay, _pvar_types, game, *gbd);
+	auto [stream, ref] = _instances_asset->file().open_binary_file_for_writing(gameplay_path);
 	stream->write_v(buffer);
-	_gameplay_asset->set_src(ref);
+	_instances_asset->set_src(ref);
 	
-	_gameplay_asset->file().write();
+	_instances_asset->file().write();
 }
 
 LevelAsset& Level::level() {
@@ -225,6 +231,6 @@ LevelWadAsset& Level::level_wad() {
 	return level().get_level().as<LevelWadAsset>();
 }
 
-Gameplay& Level::gameplay() {
-	return _gameplay;
+Instances& Level::instances() {
+	return _instances;
 }

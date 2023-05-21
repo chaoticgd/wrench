@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2021 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -88,15 +88,15 @@ void inspector() {
 		// Components
 		{COM_NONE            , INST_NONE      , "Type     ", type_funcs()},
 		{COM_NONE            , INST_NONE      , "ID       ", id_funcs()},
-		{COM_TRANSFORM       , INST_NONE      , "Position ", vec3_funcs(adapt_getter_setter(&Instance::position, &Instance::set_position))},
-		{COM_TRANSFORM       , INST_NONE      , "Rotation ", vec3_funcs(adapt_getter_setter(&Instance::rotation, &Instance::set_rotation))},
-		{COM_TRANSFORM       , INST_NONE      , "Scale    ", scalar_funcs(adapt_getter_setter(&Instance::scale, &Instance::set_scale))},
+		//{COM_TRANSFORM       , INST_NONE      , "Position ", vec3_funcs(adapt_getter_setter(&Instance::position, &Instance::set_position))},
+		//{COM_TRANSFORM       , INST_NONE      , "Rotation ", vec3_funcs(adapt_getter_setter(&Instance::rotation, &Instance::set_rotation))},
+		//{COM_TRANSFORM       , INST_NONE      , "Scale    ", scalar_funcs(adapt_getter_setter(&Instance::scale, &Instance::set_scale))},
 		{COM_PVARS           , INST_NONE      , "Pvars    ", pvar_funcs()},
 		{COM_DRAW_DISTANCE   , INST_NONE      , "Draw Dist", scalar_funcs(adapt_reference_member_function<f32>(&Instance::draw_distance))},
 		{COM_BOUNDING_SPHERE , INST_NONE      , "Bsphere  ", vec4_funcs(adapt_reference_member_function<glm::vec4>(&Instance::bounding_sphere))},
 		{COM_CAMERA_COLLISION, INST_NONE      , "Cam Coll ", camera_collision_funcs()},
 		// Camera
-		{COM_NONE            , INST_CAMERA    , "Type     ", scalar_funcs(adapt_member_pointer(&Camera::type))},
+		{COM_NONE            , INST_CAMERA    , "Type     ", scalar_funcs(adapt_member_pointer(&CameraInstance::type))},
 		// SoundInstance
 		{COM_NONE            , INST_SOUND     , "O Class  ", scalar_funcs(adapt_member_pointer(&SoundInstance::o_class))},
 		{COM_NONE            , INST_SOUND     , "M Class  ", scalar_funcs(adapt_member_pointer(&SoundInstance::m_class))},
@@ -111,20 +111,20 @@ void inspector() {
 		{COM_NONE            , INST_MOBY      , "Rooted   ", moby_rooted_funcs()},
 		{COM_NONE            , INST_MOBY      , "Occlusion", scalar_funcs(adapt_member_pointer(&MobyInstance::occlusion))},
 		{COM_NONE            , INST_MOBY      , "Mode Bits", scalar_funcs(adapt_member_pointer(&MobyInstance::mode_bits))},
-		{COM_NONE            , INST_MOBY      , "Light    ", foreign_id_funcs(INST_LIGHT, &MobyInstance::light)},
+		{COM_NONE            , INST_MOBY      , "Light    ", foreign_id_funcs(INST_DIRLIGHT, &MobyInstance::light)},
 		// GrindPath
-		{COM_NONE            , INST_GRIND_PATH, "Wrap     ", scalar_funcs(adapt_member_pointer(&GrindPath::wrap))},
-		{COM_NONE            , INST_GRIND_PATH, "Inactive ", scalar_funcs(adapt_member_pointer(&GrindPath::inactive))},
-		{COM_NONE            , INST_GRIND_PATH, "Unk 4    ", scalar_funcs(adapt_member_pointer(&GrindPath::unknown_4))},
+		{COM_NONE            , INST_GRINDPATH, "Wrap     ", scalar_funcs(adapt_member_pointer(&GrindPathInstance::wrap))},
+		{COM_NONE            , INST_GRINDPATH, "Inactive ", scalar_funcs(adapt_member_pointer(&GrindPathInstance::inactive))},
+		{COM_NONE            , INST_GRINDPATH, "Unk 4    ", scalar_funcs(adapt_member_pointer(&GrindPathInstance::unknown_4))},
 		// DirectionalLight
-		{COM_NONE            , INST_LIGHT     , "Colour A ", vec4_funcs(adapt_member_pointer(&DirectionalLight::colour_a))},
-		{COM_NONE            , INST_LIGHT     , "Dir A    ", vec4_funcs(adapt_member_pointer(&DirectionalLight::direction_a))},
-		{COM_NONE            , INST_LIGHT     , "Colour B ", vec4_funcs(adapt_member_pointer(&DirectionalLight::colour_b))},
-		{COM_NONE            , INST_LIGHT     , "Dir B    ", vec4_funcs(adapt_member_pointer(&DirectionalLight::direction_b))},
+		{COM_NONE            , INST_DIRLIGHT , "Colour A ", vec4_funcs(adapt_member_pointer(&DirLightInstance::col_a))},
+		{COM_NONE            , INST_DIRLIGHT , "Dir A    ", vec4_funcs(adapt_member_pointer(&DirLightInstance::dir_a))},
+		{COM_NONE            , INST_DIRLIGHT , "Colour B ", vec4_funcs(adapt_member_pointer(&DirLightInstance::col_b))},
+		{COM_NONE            , INST_DIRLIGHT , "Dir B    ", vec4_funcs(adapt_member_pointer(&DirLightInstance::dir_b))},
 		// TieInstance
 		{COM_NONE            , INST_TIE       , "Class    ", scalar_funcs(adapt_member_pointer(&TieInstance::o_class))},
 		{COM_NONE            , INST_TIE       , "Occlusion", scalar_funcs(adapt_member_pointer(&TieInstance::occlusion_index))},
-		{COM_NONE            , INST_TIE       , "Light    ", foreign_id_funcs(INST_LIGHT, &TieInstance::directional_lights)},
+		{COM_NONE            , INST_TIE       , "Light    ", foreign_id_funcs(INST_DIRLIGHT, &TieInstance::directional_lights)},
 		{COM_NONE            , INST_TIE       , "UID      ", scalar_funcs(adapt_member_pointer(&TieInstance::uid))},
 		// ShrubInstance
 		{COM_NONE            , INST_SHRUB     , "Class    ", scalar_funcs(adapt_member_pointer(&ShrubInstance::o_class))},
@@ -187,7 +187,7 @@ static void draw_fields(Level& lvl, const std::vector<InspectorField>& fields) {
 			should_draw_current_values(values_equal, lvl, field);
 			
 			Instance* first = nullptr;
-			lvl.gameplay().for_each_instance([&](Instance& inst) {
+			lvl.instances().for_each([&](Instance& inst) {
 				if(first == nullptr && inst.selected) {
 					first = &inst;
 				}
@@ -215,25 +215,7 @@ static InspectorFieldFuncs type_funcs() {
 	};
 	funcs.draw = [](Level& lvl, Instance& first, bool values_equal[MAX_LANES]) {
 		if(values_equal[0]) {
-			const char* type;
-			switch(first.type()) {
-				case INST_NONE: verify_not_reached_fatal("Invalid instance type."); break;
-				case INST_ENV_SAMPLE_POINT: type = "Env Sample Point"; break;
-				case INST_ENV_TRANSITION: type = "Env Transition"; break;
-				case INST_CAMERA: type = "Camera"; break;
-				case INST_SOUND: type = "Sound"; break;
-				case INST_MOBY: type = "Moby"; break;
-				case INST_PATH: type = "Path"; break;
-				case INST_CUBOID: type = "Cuboid"; break;
-				case INST_SPHERE: type = "Sphere"; break;
-				case INST_CYLINDER: type = "Cylinder"; break;
-				case INST_GRIND_PATH: type = "Grind Path"; break;
-				case INST_LIGHT: type = "Light"; break;
-				case INST_TIE: type = "Tie"; break;
-				case INST_SHRUB: type = "Shrub"; break;
-				case INST_POINT_LIGHT: type = "Point Light"; break;
-				default: verify_not_reached_fatal("Invalid instance type.");
-			}
+			const char* type = instance_type_to_string(first.type());
 			ImGui::Text("%s", type);
 		} else {
 			ImGui::Text("<multiple selected>");
@@ -361,7 +343,7 @@ static InspectorFieldFuncs foreign_id_funcs(InstanceType foreign_type, s32 ThisI
 		bool changed = false;
 		ImGui::PushItemWidth(calc_remaining_item_width());
 		if(ImGui::BeginCombo("##combo", value_str.c_str())) {
-			lvl.gameplay().for_each_instance([&](Instance& inst) {
+			lvl.instances().for_each([&](Instance& inst) {
 				if(inst.type() == foreign_type) {
 					s32 new_value = inst.id().value;
 					std::string new_value_str = std::to_string(new_value);
@@ -467,7 +449,7 @@ static InspectorFieldFuncs moby_rooted_funcs() {
 static bool should_draw_field(Level& lvl, const InspectorField& field) {
 	bool one_instance_has_field = false;
 	bool all_instances_have_field = true;
-	lvl.gameplay().for_each_instance([&](Instance& inst) {
+	lvl.instances().for_each([&](Instance& inst) {
 		if(inst.selected) {
 			bool required_type = field.required_type == INST_NONE || inst.type() == field.required_type;
 			if(inst.has_component(field.required_component) && required_type) {
@@ -485,7 +467,7 @@ static void should_draw_current_values(bool values_equal[MAX_LANES], Level& lvl,
 		values_equal[lane] = true;
 	}
 	Instance* last_inst = nullptr;
-	lvl.gameplay().for_each_instance([&](Instance& inst) {
+	lvl.instances().for_each([&](Instance& inst) {
 		if(inst.selected) {
 			if(last_inst != nullptr) {
 				for(s32 lane = 0; lane < field.funcs.lane_count; lane++) {
@@ -512,10 +494,10 @@ static void apply_to_all_selected(Level& lvl, Value value, std::array<bool, MAX_
 	InspectorCommand data;
 	data.funcs = funcs;
 	data.lanes = lanes;
-	data.ids = lvl.gameplay().selected_instances();
+	data.ids = lvl.instances().selected_instances();
 	data.value = value;
 	
-	lvl.gameplay().for_each_instance([&](Instance& inst) {
+	lvl.instances().for_each([&](Instance& inst) {
 		if(contains(data.ids, inst.id())) {
 			data.old_values.push_back(funcs.get(inst));
 		}
@@ -523,7 +505,7 @@ static void apply_to_all_selected(Level& lvl, Value value, std::array<bool, MAX_
 	
 	lvl.push_command<InspectorCommand>(std::move(data),
 		[](Level& lvl, InspectorCommand& data) {
-			lvl.gameplay().for_each_instance([&](Instance& inst) {
+			lvl.instances().for_each([&](Instance& inst) {
 				if(contains(data.ids, inst.id())) {
 					if constexpr(lane_count > 0) {
 						Value temp = data.funcs.get(inst);
@@ -541,7 +523,7 @@ static void apply_to_all_selected(Level& lvl, Value value, std::array<bool, MAX_
 		},
 		[](Level& lvl, InspectorCommand& data) {
 			size_t i = 0;
-			lvl.gameplay().for_each_instance([&](Instance& inst) {
+			lvl.instances().for_each([&](Instance& inst) {
 				if(contains(data.ids, inst.id())) {
 					data.funcs.set(inst, data.old_values[i++]);
 				}

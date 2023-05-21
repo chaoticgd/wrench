@@ -21,7 +21,7 @@
 
 #include <map>
 
-#include <instancemgr/gameplay.h>
+#include <instancemgr/instances.h>
 #include <assetmgr/asset_types.h>
 #include <gui/render_mesh.h>
 #include <editor/editor.h>
@@ -48,7 +48,7 @@ public:
 	LevelAsset& level();
 	LevelWadAsset& level_wad();
 	
-	Gameplay& gameplay();
+	Instances& instances();
 	
 	Game game;
 	
@@ -60,8 +60,8 @@ public:
 	
 private:
 	LevelAsset* _asset = nullptr;
-	InstancesAsset* _gameplay_asset = nullptr;
-	Gameplay _gameplay;
+	InstancesAsset* _instances_asset = nullptr;
+	Instances _instances;
 	PvarTypes _pvar_types;
 };
 

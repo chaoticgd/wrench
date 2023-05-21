@@ -1,0 +1,223 @@
+/*
+	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
+	Copyright (C) 2019-2023 chaoticgd
+
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY {} without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+format_version: 21
+
+InstanceType Moby {
+	desc: "Moving, interactive, or otherwise dynamic objects with an associated update function."
+	components: "COM_TRANSFORM | COM_PVARS | COM_DRAW_DISTANCE | COM_COLOUR"
+	transform_mode: "POSITION_ROTATION_SCALE"
+	variable: "moby_instances"
+	
+	s8 mission {}
+	s32 uid {}
+	s32 bolts {}
+	s32 o_class {}
+	s32 update_distance {}
+	s32 group {}
+	bool is_rooted {}
+	f32 rooted_distance {}
+	s32 occlusion {}
+	s32 mode_bits {}
+	s32 light {}
+	s32 rac1_unknown_4 {}
+	s32 rac1_unknown_8 {}
+	s32 rac1_unknown_c {}
+	s32 rac1_unknown_10 {}
+	s32 rac1_unknown_14 {}
+	s32 rac1_unknown_18 {}
+	s32 rac1_unknown_1c {}
+	s32 rac1_unknown_20 {}
+	s32 rac1_unknown_24 {}
+	s32 rac1_unknown_54 {}
+	s32 rac1_unknown_60 {}
+	s32 rac1_unknown_74 {}
+	s32 rac23_unknown_8 {}
+	s32 rac23_unknown_c {}
+	s32 rac23_unknown_18 {}
+	s32 rac23_unknown_1c {}
+	s32 rac23_unknown_20 {}
+	s32 rac23_unknown_24 {}
+	s32 rac23_unknown_38 {}
+	s32 rac23_unknown_3c {}
+	s32 rac23_unknown_4c {}
+	s32 rac23_unknown_84 {}
+}
+
+InstanceType Tie {
+	desc: "Large static objects."
+	components: "COM_TRANSFORM | COM_DRAW_DISTANCE"
+	transform_mode: "MATRIX"
+	variable: "tie_instances"
+	
+	s32 o_class {}
+	s32 occlusion_index {}
+	s32 directional_lights {}
+	s32 uid {}
+	bytes ambient_rgbas {}
+}
+
+InstanceType Shrub {
+	desc: "Small static objects with only a single LOD level and optionally a billboard."
+	components: "COM_TRANSFORM | COM_DRAW_DISTANCE | COM_COLOUR"
+	transform_mode: "MATRIX"
+	variable: "shrub_instances"
+	
+	s32 o_class {}
+	s32 unknown_5c {}
+	s32 dir_lights {}
+	s32 unknown_64 {}
+	s32 unknown_68 {}
+	s32 unknown_6c {}
+}
+
+InstanceType DirLight {
+	desc: "A directional light. This is the main type of light."
+	components: "COM_NONE"
+	variable: "dir_lights"
+	
+	vec4 col_a {}
+	vec4 dir_a {}
+	vec4 col_b {}
+	vec4 dir_b {}
+}
+
+InstanceType PointLight {
+	desc: "A point light that only affects moby instances. In R&C1, it only affects Ratchet."
+	components: "COM_TRANSFORM | COM_COLOUR"
+	transform_mode: "POSITION"
+	variable: "point_lights"
+	
+	f32 radius {}
+}
+
+InstanceType EnvSamplePoint {
+	desc: "Sets up lighting, fogging, and sound parameters for an area. The nearest env sample point is used."
+	components: "COM_TRANSFORM"
+	transform_mode: "POSITION"
+	variable: "env_sample_points"
+	
+	s32 hero_light {}
+	s16 music_track {}
+	u8 hero_colour_r {}
+	u8 hero_colour_g {}
+	u8 hero_colour_b {}
+	
+	bool enable_reverb_params {}
+	u8 reverb_type {}
+	s16 reverb_depth {}
+	u8 reverb_delay {}
+	u8 reverb_feedback {}
+	
+	bool enable_fog_params {}
+	u8 fog_near_intensity {}
+	u8 fog_far_intensity {}
+	u8 fog_r {}
+	u8 fog_g {}
+	u8 fog_b {}
+	s16 fog_near_dist {}
+	s16 fog_far_dist {}
+}
+
+InstanceType EnvTransition {
+	desc: "A volume in which there is a transition in lighting and fogging e.g. a doorway."
+	components: "COM_TRANSFORM | COM_BOUNDING_SPHERE"
+	transform_mode: "MATRIX"
+	variable: "env_transitions"
+	
+	bool enable_hero {}
+	Rgb32 hero_colour_1 {}
+	Rgb32 hero_colour_2 {}
+	s32 hero_light_1 {}
+	s32 hero_light_2 {}
+	bool enable_fog {}
+	Rgb32 fog_colour_1 {}
+	Rgb32 fog_colour_2 {}
+	f32 fog_near_dist_1 {}
+	f32 fog_near_intensity_1 {}
+	f32 fog_far_dist_1 {}
+	f32 fog_far_intensity_1 {}
+	f32 fog_near_dist_2 {}
+	f32 fog_near_intensity_2 {}
+	f32 fog_far_dist_2 {}
+	f32 fog_far_intensity_2 {}
+}
+
+InstanceType Cuboid {
+	desc: "A cuboid-shaped trigger volume."
+	components: "COM_TRANSFORM | COM_CAMERA_COLLISION"
+	transform_mode: "MATRIX_INVERSE_ROTATION"
+	variable: "cuboids"
+}
+
+InstanceType Sphere {
+	desc: "A sphere-shaped trigger volume."
+	components: "COM_TRANSFORM | COM_CAMERA_COLLISION"
+	transform_mode: "MATRIX_INVERSE_ROTATION"
+	variable: "spheres"
+}
+
+InstanceType Cylinder {
+	desc: "A cylinder-shaped trigger volume."
+	components: "COM_TRANSFORM | COM_CAMERA_COLLISION"
+	transform_mode: "MATRIX_INVERSE_ROTATION"
+	variable: "cylinders"
+}
+
+InstanceType Pill {
+	desc: "A pill-shaped trigger volume. Appears to be unused."
+	components: "COM_TRANSFORM | COM_CAMERA_COLLISION"
+	transform_mode: "MATRIX_INVERSE_ROTATION"
+	variable: "pills"
+}
+
+InstanceType Camera {
+	desc: "A camera."
+	components: "COM_TRANSFORM | COM_PVARS"
+	transform_mode: "POSITION_ROTATION"
+	variable: "cameras"
+	
+	s32 type {}
+}
+
+InstanceType Sound {
+	desc: "A sound instance."
+	components: "COM_TRANSFORM | COM_PVARS"
+	transform_mode: "MATRIX_INVERSE_ROTATION"
+	variable: "sound_instances"
+	
+	s16 o_class {}
+	s16 m_class {}
+	f32 range {}
+}
+
+InstanceType Path {
+	desc: "A spline."
+	components: "COM_SPLINE"
+	variable: "paths"
+}
+
+InstanceType GrindPath {
+	desc: "A spline used for generating a grind rail."
+	components: "COM_SPLINE | COM_BOUNDING_SPHERE"
+	variable: "grind_paths"
+	
+	s32 unknown_4 {}
+	s32 wrap {}
+	s32 inactive {}
+}

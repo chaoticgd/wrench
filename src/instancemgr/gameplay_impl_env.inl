@@ -19,7 +19,7 @@
 #ifndef INSTANCEMGR_GAMEPLAY_IMPL_ENV_H
 #define INSTANCEMGR_GAMEPLAY_IMPL_ENV_H
 
-#include <instancemgr/gameplay_impl_common.h>
+#include <instancemgr/gameplay_impl_common.inl>
 
 //#define GAMEPLAY_DEBUG_LIGHT_GRID
 
@@ -48,7 +48,7 @@ struct RacEnvSamplePointBlock {
 			RacEnvSamplePointPacked packed = data[i];
 			EnvSamplePointInstance& inst = dest.emplace_back();
 			inst.set_id_value(i);
-			inst.set_position(packed.pos.unpack());
+			inst.transform().set_from_pos_rot_scale(packed.pos.unpack());
 			swap_env_params(inst, packed);
 		}
 	}
@@ -58,7 +58,7 @@ struct RacEnvSamplePointBlock {
 		dest.write(header);
 		for(EnvSamplePointInstance inst : src) {
 			RacEnvSamplePointPacked packed;
-			packed.pos = Vec3f::pack(inst.position());
+			packed.pos = Vec3f::pack(inst.transform().pos());
 			packed.one = 1.f;
 			swap_env_params(inst, packed);
 			packed.unused_2c = 0x11223344;
@@ -114,7 +114,7 @@ struct GcUyaDlEnvSamplePointBlock {
 			GcUyaDlEnvSamplePointPacked packed = data[i];
 			EnvSamplePointInstance& inst = dest.emplace_back();
 			inst.set_id_value(i);
-			inst.set_position(glm::vec3(packed.pos_x, packed.pos_y, packed.pos_z));
+			inst.transform().set_from_pos_rot_scale(glm::vec3(packed.pos_x, packed.pos_y, packed.pos_z));
 			if(packed.fog_far_dist > packed.fog_near_dist) {
 				inst.enable_fog_params = true;
 				inst.fog_near_dist = packed.fog_near_dist;
@@ -129,9 +129,10 @@ struct GcUyaDlEnvSamplePointBlock {
 		dest.write(header);
 		for(EnvSamplePointInstance inst : src) {
 			GcUyaDlEnvSamplePointPacked packed;
-			packed.pos_x = (s16) inst.position().x;
-			packed.pos_y = (s16) inst.position().y;
-			packed.pos_z = (s16) inst.position().z;
+			const InstanceTransform& transform = inst.transform();
+			packed.pos_x = (s16) transform.pos().x;
+			packed.pos_y = (s16) transform.pos().y;
+			packed.pos_z = (s16) transform.pos().z;
 			if(inst.enable_fog_params) {
 				packed.fog_near_dist = inst.fog_near_dist;
 				packed.fog_far_dist = inst.fog_far_dist;
@@ -196,7 +197,7 @@ struct EnvTransitionBlock {
 			EnvTransitionPacked packed = data[i];
 			EnvTransitionInstance& inst = dest.emplace_back();
 			inst.set_id_value(i);
-			inst.set_transform(packed.matrix.unpack());
+			inst.transform().set_from_matrix(packed.matrix.unpack());
 			inst.bounding_sphere() = bspheres[i].unpack();
 			inst.enable_hero = packed.flags & 1;
 			inst.enable_fog = (packed.flags & 2) >> 1;
@@ -212,7 +213,7 @@ struct EnvTransitionBlock {
 		}
 		for(EnvTransitionInstance inst : src) {
 			EnvTransitionPacked packed;
-			packed.matrix = Mat4::pack(inst.matrix());
+			packed.matrix = Mat4::pack(inst.transform().matrix());
 			packed.flags = inst.enable_hero | (inst.enable_fog << 1);
 			packed.unused_7c = 0;
 			swap_env_transition(inst, packed);
@@ -351,7 +352,7 @@ struct CamCollGridBlock {
 			return;
 		}
 		
-		glm::mat4 matrix = instance.matrix();
+		glm::mat4 matrix = instance.transform().matrix();
 		matrix[3][3] = 1.f;
 		
 		// Detect which grid cells the cuboid could intersect with.
@@ -512,8 +513,8 @@ struct PointLightGridBlock {
 		// Determine which grid cells intersect with the point lights.
 		std::vector<std::vector<s32>> grid(GRID_SIZE_X * GRID_SIZE_Y);
 		for(s32 i = 0; i < (s32) opt_size(src.point_lights); i++) {
-			const PointLight& light = (*src.point_lights)[i];
-			glm::vec2 position = light.position();
+			const PointLightInstance& light = (*src.point_lights)[i];
+			glm::vec2 position = light.transform().pos();
 			f32 radius = light.radius * 0.2f;
 			
 			s32 xmin = (s32) floorf((position.x - radius) * 0.0625f);
@@ -576,7 +577,7 @@ packed_struct(CameraPacked,
 	/* 0x1c */ s32 pvar_index;
 )
 
-static void swap_instance(Camera& l, CameraPacked& r) {
+static void swap_instance(CameraInstance& l, CameraPacked& r) {
 	swap_position_rotation(l, r);
 	SWAP_PACKED(l.temp_pvar_index(), r.pvar_index);
 	SWAP_PACKED(l.type, r.type);
@@ -611,11 +612,11 @@ packed_struct(DirectionalLightPacked,
 	/* 0x30 */ Vec4f direction_b;
 )
 
-static void swap_instance(DirectionalLight& l, DirectionalLightPacked& r) {
-	r.colour_a.swap(l.colour_a);
-	r.direction_a.swap(l.direction_a);
-	r.colour_b.swap(l.colour_b);
-	r.direction_b.swap(l.direction_b);
+static void swap_instance(DirLightInstance& l, DirectionalLightPacked& r) {
+	r.colour_a.swap(l.col_a);
+	r.direction_a.swap(l.dir_a);
+	r.colour_b.swap(l.col_b);
+	r.direction_b.swap(l.dir_b);
 }
 
 packed_struct(PointLightPacked,
@@ -627,7 +628,7 @@ packed_struct(PointLightPacked,
 	/* 0x1c */ u32 unused_1c;
 )
 
-static void swap_instance(PointLight& l, PointLightPacked& r) {
+static void swap_instance(PointLightInstance& l, PointLightPacked& r) {
 	swap_position(l, r);
 	SWAP_PACKED(l.radius, r.radius);
 	SWAP_PACKED(l.colour().r, r.colour.r);
@@ -640,10 +641,10 @@ static void swap_instance(PointLight& l, PointLightPacked& r) {
 }
 
 packed_struct(GcUyaPointLightPacked,
-	/* 0x0 */ s16 pos_x;
-	/* 0x2 */ s16 pos_y;
-	/* 0x4 */ s16 pos_z;
-	/* 0x6 */ s16 radius;
+	/* 0x0 */ u16 pos_x;
+	/* 0x2 */ u16 pos_y;
+	/* 0x4 */ u16 pos_z;
+	/* 0x6 */ u16 radius;
 	/* 0x8 */ u16 colour_r;
 	/* 0xa */ u16 colour_g;
 	/* 0xc */ u16 colour_b;
@@ -651,17 +652,17 @@ packed_struct(GcUyaPointLightPacked,
 )
 
 struct GcUyaPointLightsBlock {
-	static void read(std::vector<PointLight>& dest, Buffer src, Game game) {
+	static void read(std::vector<PointLightInstance>& dest, Buffer src, Game game) {
 		const TableHeader& header = src.read<TableHeader>(0, "point lights header");
 		for(s32 i = 0; i < header.count_1; i++) {
-			const GcUyaPointLightPacked& packed = src.read<GcUyaPointLightPacked>(0x800 + i * 0x10, "point light");
-			PointLight& inst = dest.emplace_back();
+			const GcUyaPointLightPacked& packed = src.read<GcUyaPointLightPacked>(0x10 + 0x800 + i * 0x10, "point light");
+			PointLightInstance& inst = dest.emplace_back();
 			inst.set_id_value(i);
 			glm::vec3 pos;
 			pos.x = packed.pos_x * (1.f / 64.f);
 			pos.y = packed.pos_y * (1.f / 64.f);
 			pos.z = packed.pos_z * (1.f / 64.f);
-			inst.set_position(pos);
+			inst.transform().set_from_pos_rot_scale(pos);
 			inst.radius = packed.radius * (1.f / 64.f);
 			inst.colour().r = packed.colour_r;
 			inst.colour().g = packed.colour_g;
@@ -669,9 +670,9 @@ struct GcUyaPointLightsBlock {
 		}
 	}
 	
-	static void write(OutBuffer dest, const std::vector<PointLight>& src, Game game) {
+	static void write(OutBuffer dest, const std::vector<PointLightInstance>& src, Game game) {
 		verify(src.size() < 128, "Too many point lights (max 128)!");
-		printf("%ld\n", src.size());
+		
 		TableHeader header = {};
 		header.count_1 = (s32) src.size();
 		dest.write(header);
@@ -680,9 +681,10 @@ struct GcUyaPointLightsBlock {
 		for(s32 x = 0; x < 0x40; x++) {
 			std::array<u8, 16> mask = {};
 			for(s32 light = 0; light < (s32) src.size(); light++) {
-				f32 min = src[light].position().x - src[light].radius;
-				s32 max = src[light].position().x + src[light].radius;
-				if(x * 16.f > min && (x + 1) * 16.f < max) {
+				const InstanceTransform& transform = src[light].transform();
+				f32 lower = transform.pos().x - src[light].radius;
+				f32 upper = transform.pos().x + src[light].radius;
+				if(lower < (x + 1) * 16.f && upper > x * 16.f) {
 					mask[light >> 3] |= 1 << (light & 7);
 				}
 			}
@@ -691,9 +693,10 @@ struct GcUyaPointLightsBlock {
 		for(s32 y = 0; y < 0x40; y++) {
 			std::array<u8, 16> mask = {};
 			for(s32 light = 0; light < (s32) src.size(); light++) {
-				f32 min = src[light].position().y - src[light].radius;
-				s32 max = src[light].position().y + src[light].radius;
-				if(y * 16.f > min && (y + 1) * 16.f < max) {
+				const InstanceTransform& transform = src[light].transform();
+				f32 lower = transform.pos().y - src[light].radius;
+				f32 upper = transform.pos().y + src[light].radius;
+				if(lower < (y + 1) * 16.f && upper > y * 16.f) {
 					mask[light >> 3] |= 1 << (light & 7);
 				}
 			}
@@ -701,11 +704,12 @@ struct GcUyaPointLightsBlock {
 		}
 		
 		// Write out the lights.
-		for(const PointLight& inst : src) {
+		for(const PointLightInstance& inst : src) {
 			GcUyaPointLightPacked packed = {};
-			packed.pos_x = (s16) roundf(inst.position().x * 64.f);
-			packed.pos_y = (s16) roundf(inst.position().y * 64.f);
-			packed.pos_z = (s16) roundf(inst.position().z * 64.f);
+			const InstanceTransform& transform = inst.transform();
+			packed.pos_x = (u16) roundf(transform.pos().x * 64.f);
+			packed.pos_y = (u16) roundf(transform.pos().y * 64.f);
+			packed.pos_z = (u16) roundf(transform.pos().z * 64.f);
 			packed.radius = inst.radius * 64.f;
 			packed.colour_r = inst.colour().r;
 			packed.colour_g = inst.colour().g;

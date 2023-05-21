@@ -63,11 +63,27 @@ std::pair<Gameplay, PvarTypes> load_instances(const Asset& src, const BuildConfi
 static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode) {
 	const std::vector<GameplayBlockDescription>* blocks = get_gameplay_block_descriptions(config.game(), hint);
 	
-	Gameplay gameplay;
+	// Parse gameplay file.
+	Gameplay gameplay_in;
 	PvarTypes types;
-	read_gameplay(gameplay, types, src, config.game(), *blocks);
-	std::vector<u8> dest = write_gameplay(gameplay, types, config.game(), *blocks);
+	read_gameplay(gameplay_in, types, src, config.game(), *blocks);
 	
+	// Separate out the different parts of the file.
+	Instances instances_in;
+	HelpMessages help_messages;
+	OcclusionMappings occlusion;
+	move_gameplay_to_instances(instances_in, &help_messages, &occlusion, gameplay_in);
+	
+	// Write out instances file and read it back.
+	std::string instances_text = write_instances(instances_in);
+	Instances instances_out = read_instances(instances_text);
+	
+	// Write out new gameplay file.
+	Gameplay gameplay_out;
+	move_instances_to_gameplay(gameplay_out, instances_out, &help_messages, &occlusion);
+	std::vector<u8> dest = write_gameplay(gameplay_out, types, config.game(), *blocks);
+	
+	// Compare the new file against the original.
 	strip_trailing_padding_from_lhs(src, dest);
 	bool headers_equal = diff_buffers(src, dest, 0, 0x100, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);
 	bool data_equal = diff_buffers(src, dest, 0x100, DIFF_REST_OF_BUFFER, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);

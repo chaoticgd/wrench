@@ -19,6 +19,7 @@
 #include <math.h>
 #include <string>
 #include <vector>
+#undef NDEBUG
 #include <assert.h>
 #include <stdarg.h>
 #include <string.h>
@@ -440,10 +441,10 @@ static void reify_value(WtfWriter* ctx, const WtfAttribute* value) {
 static void out(const char* format, ...) {
 	va_list list;
 	va_start(list, format);
-	if (out_file != NULL) {
+	if(out_file != NULL) {
 		vfprintf(out_file, format, list);
 	}
-	if (out_handle != NULL) {
+	if(out_handle != NULL) {
 		file_vprintf(out_handle, format, list);
 	}
 	va_end(list);

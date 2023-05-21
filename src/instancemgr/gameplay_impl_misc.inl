@@ -19,9 +19,9 @@
 #ifndef INSTANCEMGR_GAMEPLAY_IMPL_MISC_H
 #define INSTANCEMGR_GAMEPLAY_IMPL_MISC_H
 
-#include <instancemgr/gameplay_impl_common.h>
+#include <instancemgr/gameplay_impl_common.inl>
 
-packed_struct(PropertiesFirstPartRAC1,
+packed_struct(RacLevelSettingsFirstPart,
 	/* 0x00 */ Rgb96 background_colour;
 	/* 0x0c */ Rgb96 fog_colour;
 	/* 0x18 */ f32 fog_near_distance;
@@ -34,9 +34,9 @@ packed_struct(PropertiesFirstPartRAC1,
 	/* 0x3c */ Rgb96 unknown_colour;
 	/* 0x48 */ u32 pad[2];
 )
-static_assert(sizeof(PropertiesFirstPartRAC1) == 0x50);
+static_assert(sizeof(RacLevelSettingsFirstPart) == 0x50);
 
-packed_struct(PropertiesFirstPartRAC234,
+packed_struct(GcUyaDlLevelSettingsFirstPart,
 	/* 0x00 */ Rgb96 background_colour;
 	/* 0x0c */ Rgb96 fog_colour;
 	/* 0x18 */ f32 fog_near_distance;
@@ -51,18 +51,18 @@ packed_struct(PropertiesFirstPartRAC234,
 	/* 0x4c */ Rgb96 unknown_colour;
 	/* 0x58 */ u32 pad;
 )
-static_assert(sizeof(PropertiesFirstPartRAC234) == 0x5c);
+static_assert(sizeof(GcUyaDlLevelSettingsFirstPart) == 0x5c);
 
-struct PropertiesBlock {
-	static void read(Properties& dest, Buffer src, Game game) {
+struct LevelSettingsBlock {
+	static void read(LevelSettings& dest, Buffer src, Game game) {
 		s32 ofs = 0;
 		if(game == Game::RAC) {
-			PropertiesFirstPartRAC1 first_part = src.read<PropertiesFirstPartRAC1>(ofs, "gameplay properties R&C1");
-			swap_first_part_rac1(dest.first_part, first_part);
+			RacLevelSettingsFirstPart first_part = src.read<RacLevelSettingsFirstPart>(ofs, "level settings");
+			swap_rac_first_part(dest, first_part);
 		} else {
-			PropertiesFirstPartRAC234 first_part = src.read<PropertiesFirstPartRAC234>(ofs, "gameplay properties");
-			swap_first_part_rac234(dest.first_part, first_part);
-			ofs += sizeof(PropertiesFirstPartRAC234);
+			GcUyaDlLevelSettingsFirstPart first_part = src.read<GcUyaDlLevelSettingsFirstPart>(ofs, "level settings");
+			swap_gc_uya_dl_first_part(dest, first_part);
+			ofs += sizeof(GcUyaDlLevelSettingsFirstPart);
 			s32 chunk_plane_count = src.read<s32>(ofs + 0xc, "second part count");
 			if(chunk_plane_count > 0) {
 				dest.chunk_planes = src.read_multiple<ChunkPlane>(ofs, chunk_plane_count, "second part").copy();
@@ -78,29 +78,29 @@ struct PropertiesBlock {
 				s64 third_part_count = src.read<s32>(ofs, "third part count");
 				ofs += 4;
 				if(third_part_count >= 0) {
-					dest.third_part = src.read_multiple<PropertiesThirdPart>(ofs, third_part_count, "third part").copy();
-					ofs += third_part_count * sizeof(PropertiesThirdPart);
-					dest.fourth_part = src.read<PropertiesFourthPart>(ofs, "fourth part");
-					ofs += sizeof(PropertiesFourthPart);
+					dest.third_part = src.read_multiple<LevelSettingsThirdPart>(ofs, third_part_count, "third part").copy();
+					ofs += third_part_count * sizeof(LevelSettingsThirdPart);
+					dest.fourth_part = src.read<LevelSettingsFourthPart>(ofs, "fourth part");
+					ofs += sizeof(LevelSettingsFourthPart);
 				} else {
-					ofs += sizeof(PropertiesThirdPart);
+					ofs += sizeof(LevelSettingsThirdPart);
 				}
-				dest.fifth_part = src.read<PropertiesFifthPart>(ofs, "fifth part");
-				ofs += sizeof(PropertiesFifthPart);
+				dest.fifth_part = src.read<LevelSettingsFifthPart>(ofs, "fifth part");
+				ofs += sizeof(LevelSettingsFifthPart);
 				dest.sixth_part = src.read_multiple<s8>(ofs, dest.fifth_part->sixth_part_count, "sixth part").copy();
 			}
 		}
 	}
 	
-	static void write(OutBuffer dest, const Properties& src, Game game) {
-		PropertiesFirstPart first_part = src.first_part;
+	static void write(OutBuffer dest, const LevelSettings& src, Game game) {
+		LevelSettings copy = src;
 		if(game == Game::RAC) {
-			PropertiesFirstPartRAC1 first_part_packed;
-			swap_first_part_rac1(first_part, first_part_packed);
+			RacLevelSettingsFirstPart first_part_packed;
+			swap_rac_first_part(copy, first_part_packed);
 			dest.write(first_part_packed);
 		} else {
-			PropertiesFirstPartRAC234 first_part_packed;
-			swap_first_part_rac234(first_part, first_part_packed);
+			GcUyaDlLevelSettingsFirstPart first_part_packed;
+			swap_gc_uya_dl_first_part(copy, first_part_packed);
 			dest.write(first_part_packed);
 			if(src.chunk_planes.has_value() && src.chunk_planes->size() > 0) {
 				dest.write_multiple(*src.chunk_planes);
@@ -108,30 +108,30 @@ struct PropertiesBlock {
 				ChunkPlane terminator = {0};
 				dest.write(terminator);
 			}
-			verify(src.core_sounds_count.has_value(), "Missing core_sounds_count in properties block.");
+			verify(src.core_sounds_count.has_value(), "Missing core_sounds_count in level settings block.");
 			dest.write(*src.core_sounds_count);
 			if(game == Game::UYA) {
-				verify(src.rac3_third_part.has_value(), "Missing rac3_third_part in properties block.");
+				verify(src.rac3_third_part.has_value(), "Missing rac3_third_part in level settings block.");
 				dest.write(*src.rac3_third_part);
 			} else if(game == Game::DL) {
-				verify(src.third_part.has_value(), "Missing third_part in properties block.");
+				verify(src.third_part.has_value(), "Missing third_part in level settings block.");
 				dest.write((s32) src.third_part->size());
 				if(src.third_part->size() > 0) {
 					dest.write_multiple(*src.third_part);
-					verify(src.fourth_part.has_value(), "Missing fourth_part in properties block.");
+					verify(src.fourth_part.has_value(), "Missing fourth_part in level settings block.");
 					dest.write(*src.fourth_part);
 				} else {
 					dest.vec.resize(dest.tell() + 0x18, 0);
 				}
-				verify(src.fifth_part.has_value(), "Missing fifth in properties block.");
+				verify(src.fifth_part.has_value(), "Missing fifth in level settings block.");
 				dest.write(*src.fifth_part);
-				verify(src.sixth_part.has_value(), "Missing sixth_part in properties block.");
+				verify(src.sixth_part.has_value(), "Missing sixth_part in level settings block.");
 				dest.write_multiple(*src.sixth_part);
 			}
 		}
 	}
 	
-	static void swap_first_part_rac1(PropertiesFirstPart& l, PropertiesFirstPartRAC1& r) {
+	static void swap_rac_first_part(LevelSettings& l, RacLevelSettingsFirstPart& r) {
 		SWAP_PACKED(l.background_colour.r, r.background_colour.r);
 		SWAP_PACKED(l.background_colour.g, r.background_colour.g);
 		SWAP_PACKED(l.background_colour.b, r.background_colour.b);
@@ -154,7 +154,7 @@ struct PropertiesBlock {
 		r.pad[1] = 0;
 	}
 	
-	static void swap_first_part_rac234(PropertiesFirstPart& l, PropertiesFirstPartRAC234& r) {
+	static void swap_gc_uya_dl_first_part(LevelSettings& l, GcUyaDlLevelSettingsFirstPart& r) {
 		SWAP_PACKED(l.background_colour.r, r.background_colour.r);
 		SWAP_PACKED(l.background_colour.g, r.background_colour.g);
 		SWAP_PACKED(l.background_colour.b, r.background_colour.b);
@@ -269,22 +269,6 @@ struct HelpMessageBlock {
 	}
 };
 
-struct GC_80_DL_64_Block {
-	static void read(GC_80_DL_64& dest, Buffer src, Game game) {
-		auto header = src.read<TableHeader>(0, "block header");
-		printf("%d", header.count_1);
-		dest.first_part = src.read_multiple<u8>(0x10, 0x800, "first part of block").copy();
-		dest.second_part = src.read_multiple<u8>(0x810, header.count_1 * 0x10, "second part of block").copy();
-	}
-	
-	static void write(OutBuffer dest, const GC_80_DL_64& src, Game game) {
-		TableHeader header {(s32) src.second_part.size() / 0x10};
-		dest.write(header);
-		dest.write_multiple(src.first_part);
-		dest.write_multiple(src.second_part);
-	}
-};
-
 static std::vector<std::vector<glm::vec4>> read_splines(Buffer src, s32 count, s32 data_offset) {
 	std::vector<std::vector<glm::vec4>> splines;
 	auto relative_offsets = src.read_multiple<s32>(0, count, "spline offsets");
@@ -323,20 +307,20 @@ packed_struct(PathBlockHeader,
 )
 
 struct PathBlock {
-	static void read(std::vector<Path>& dest, Buffer src, Game game) {
+	static void read(std::vector<PathInstance>& dest, Buffer src, Game game) {
 		auto& header = src.read<PathBlockHeader>(0, "path block header");
 		std::vector<std::vector<glm::vec4>> splines = read_splines(src.subbuf(0x10), header.spline_count, header.data_offset - 0x10);
 		for(size_t i = 0; i < splines.size(); i++) {
-			Path inst;
+			PathInstance inst;
 			inst.set_id_value(i);
 			inst.spline() = std::move(splines[i]);
 			dest.emplace_back(std::move(inst));
 		}
 	}
 	
-	static void write(OutBuffer dest, const std::vector<Path>& src, Game game) {
+	static void write(OutBuffer dest, const std::vector<PathInstance>& src, Game game) {
 		std::vector<std::vector<glm::vec4>> splines;
-		for(const Path& inst : src) {
+		for(const PathInstance& inst : src) {
 			splines.emplace_back(inst.spline());
 		}
 		
@@ -359,13 +343,13 @@ packed_struct(GrindPathData,
 )
 
 struct GrindPathBlock {
-	static void read(std::vector<GrindPath>& dest, Buffer src, Game game) {
+	static void read(std::vector<GrindPathInstance>& dest, Buffer src, Game game) {
 		auto& header = src.read<PathBlockHeader>(0, "spline block header");
 		auto grindpaths = src.read_multiple<GrindPathData>(0x10, header.spline_count, "grindrail data");
 		s64 offsets_pos = 0x10 + header.spline_count * sizeof(GrindPathData);
 		auto splines = read_splines(src.subbuf(offsets_pos), header.spline_count, header.data_offset - offsets_pos);
 		for(s64 i = 0; i < header.spline_count; i++) {
-			GrindPath inst;
+			GrindPathInstance inst;
 			inst.set_id_value(i);
 			inst.bounding_sphere() = grindpaths[i].bounding_sphere.unpack();
 			inst.unknown_4 = grindpaths[i].unknown_4;
@@ -376,10 +360,10 @@ struct GrindPathBlock {
 		}
 	}
 	
-	static void write(OutBuffer dest, const std::vector<GrindPath>& src, Game game) {
+	static void write(OutBuffer dest, const std::vector<GrindPathInstance>& src, Game game) {
 		s64 header_ofs = dest.alloc<PathBlockHeader>();
 		std::vector<std::vector<glm::vec4>> splines;
-		for(const GrindPath& inst : src) {
+		for(const GrindPathInstance& inst : src) {
 			GrindPathData packed;
 			packed.bounding_sphere = Vec4f::pack(inst.bounding_sphere());
 			packed.unknown_4 = inst.unknown_4;
@@ -521,22 +505,22 @@ packed_struct(ShapePacked,
 	/* 0x7c */ f32 unused_7c;
 )
 
-static void swap_instance(Cuboid& l, ShapePacked& r) {
+static void swap_instance(CuboidInstance& l, ShapePacked& r) {
 	swap_matrix_inverse_rotation(l, r);
 	r.unused_7c = 0.f;
 }
 
-static void swap_instance(Sphere& l, ShapePacked& r) {
+static void swap_instance(SphereInstance& l, ShapePacked& r) {
 	swap_matrix_inverse_rotation(l, r);
 	r.unused_7c = 0.f;
 }
 
-static void swap_instance(Cylinder& l, ShapePacked& r) {
+static void swap_instance(CylinderInstance& l, ShapePacked& r) {
 	swap_matrix_inverse_rotation(l, r);
 	r.unused_7c = 0.f;
 }
 
-static void swap_instance(Pill& l, ShapePacked& r) {
+static void swap_instance(PillInstance& l, ShapePacked& r) {
 	swap_matrix_inverse_rotation(l, r);
 	r.unused_7c = 0.f;
 }

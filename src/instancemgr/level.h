@@ -29,21 +29,6 @@
 #include <core/build_config.h>
 #include <instancemgr/instance.h>
 
-struct PropertiesFirstPart {
-	Rgb96 background_colour;
-	Rgb96 fog_colour;
-	f32 fog_near_distance;
-	f32 fog_far_distance;
-	f32 fog_near_intensity;
-	f32 fog_far_intensity;
-	f32 death_height;
-	Opt<s32> is_spherical_world;
-	Opt<glm::vec3> sphere_centre;
-	glm::vec3 ship_position;
-	f32 ship_rotation_z;
-	Rgb96 unknown_colour;
-};
-
 // A plane that defines the bounds of a chunk. Everything on the side of the
 // plane in the direction that the normal is pointing is inside the chunk.
 packed_struct(ChunkPlane,
@@ -51,20 +36,20 @@ packed_struct(ChunkPlane,
 	/* 0x04 */ f32 point_y;
 	/* 0x08 */ f32 point_z;
 	/* 0x0c */ s32 plane_count;
-	/* 0x10 */ s32 normal_x;
-	/* 0x14 */ s32 normal_y;
-	/* 0x18 */ s32 normal_z;
+	/* 0x10 */ f32 normal_x;
+	/* 0x14 */ f32 normal_y;
+	/* 0x18 */ f32 normal_z;
 	/* 0x1c */ u32 pad;
 )
 
-packed_struct(PropertiesThirdPart,
+packed_struct(LevelSettingsThirdPart,
 	s32 unknown_0;
 	s32 unknown_4;
 	s32 unknown_8;
 	s32 unknown_c;
 )
 
-packed_struct(PropertiesFourthPart,
+packed_struct(LevelSettingsFourthPart,
 	s32 unknown_0;
 	s32 unknown_4;
 	s32 unknown_8;
@@ -73,7 +58,7 @@ packed_struct(PropertiesFourthPart,
 	s32 unknown_14;
 )
 
-packed_struct(PropertiesFifthPart,
+packed_struct(LevelSettingsFifthPart,
 	s32 unknown_0;
 	s32 unknown_4;
 	s32 unknown_8;
@@ -83,58 +68,36 @@ packed_struct(PropertiesFifthPart,
 	s32 sixth_part_count;
 )
 
-struct Properties {
-	PropertiesFirstPart first_part;
+struct LevelSettings {
+	Rgb96 background_colour = {};
+	Rgb96 fog_colour = {};
+	f32 fog_near_distance = 0.f;
+	f32 fog_far_distance = 0.f;
+	f32 fog_near_intensity = 0.f;
+	f32 fog_far_intensity = 0.f;
+	f32 death_height = 0.f;
+	Opt<s32> is_spherical_world;
+	Opt<glm::vec3> sphere_centre;
+	glm::vec3 ship_position = {0.f, 0.f, 0.f};
+	f32 ship_rotation_z = 0.f;
+	Rgb96 unknown_colour = {};
 	// Planes specifying the volumes of the level chunks. The first element
 	// represents the second chunk, and the second element represents the third
 	// chunk. If both tests fail, you can assume it's the first chunk (chunk 0).
 	Opt<std::vector<ChunkPlane>> chunk_planes;
 	Opt<s32> core_sounds_count;
 	Opt<s32> rac3_third_part;
-	Opt<std::vector<PropertiesThirdPart>> third_part;
-	Opt<PropertiesFourthPart> fourth_part;
-	Opt<PropertiesFifthPart> fifth_part;
+	Opt<std::vector<LevelSettingsThirdPart>> third_part;
+	Opt<LevelSettingsFourthPart> fourth_part;
+	Opt<LevelSettingsFifthPart> fifth_part;
 	Opt<std::vector<s8>> sixth_part;
 };
 
-struct LevelWad;
+struct WtfNode;
+struct WtfWriter;
 
-struct CameraClass {
-	static std::string get_pvar_type(s32 o_class);
-	
-	template <typename T>
-	void enumerate_fields(T& t) {}
-};
-
-struct SoundClass {
-	static std::string get_pvar_type(s32 o_class);
-	
-	template <typename T>
-	void enumerate_fields(T& t) {}
-};
-
-struct Class {
-	s32 o_class;
-};
-
-struct MobyClass : Class {
-	Opt<std::vector<u8>> model;
-	Opt<ColladaScene> high_model;
-	std::vector<Texture> textures;
-	bool has_asset_table_entry = false;
-	
-	static std::string get_pvar_type(s32 o_class);
-};
-
-struct TieClass : Class {
-	std::vector<u8> model;
-	std::vector<Texture> textures;
-};
-
-struct ShrubClass : Class {
-	std::vector<u8> model;
-	std::vector<Texture> textures;
-};
+LevelSettings read_level_settings(const WtfNode* node);
+void write_level_settings(WtfWriter* ctx, const LevelSettings& settings);
 
 enum PvarFieldDescriptor {
 	PVAR_INTEGERS_BEGIN = 0,

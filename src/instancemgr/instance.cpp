@@ -20,110 +20,62 @@
 
 #include <glm/gtx/matrix_decompose.hpp>
 
-void Instance::set_transform(glm::mat4 matrix, glm::mat3x4* inverse) {
-	verify_fatal(_components_mask & COM_TRANSFORM);
-	_transform.matrix = matrix;
-	if(inverse == nullptr) {
-		_transform.inverse_matrix = glm::inverse(matrix);
-	} else {
-		_transform.inverse_matrix = *inverse;
-	}
+#include <instancemgr/wtf_util.h>
+#include <instancemgr/instances.h>
+
+const glm::mat4& InstanceTransform::matrix() const {
+	return _matrix;
+}
+
+const glm::mat4& InstanceTransform::inverse_matrix() const {
+	return _inverse_matrix;
+}
+
+const glm::vec3& InstanceTransform::pos() const {
+	return *(glm::vec3*) &_matrix[3][0];
+}
+
+const glm::vec3& InstanceTransform::rot() const {
+	return _rot;
+}
+
+const f32& InstanceTransform::scale() const {
+	return _scale;
+}
+
+void InstanceTransform::set_from_matrix(const glm::mat4& new_matrix) {
+	_matrix = new_matrix;
+	_inverse_matrix = glm::inverse(_matrix);
 	glm::vec3 scale;
 	glm::quat orientation;
 	glm::vec3 translation;
 	glm::vec3 skew;
 	glm::vec4 perspective;
-	glm::decompose(matrix, scale, orientation, translation, skew, perspective);
-	_transform.rotation = glm::eulerAngles(orientation);
-	if(_transform_mode == TransformMode::POSITION_ROTATION_SCALE) {
-		_transform.scale = (scale[0] + scale[1] + scale[2]) / 3.f;
-	} else {
-		_transform.scale = 1.f;
-	}
+	glm::decompose(_matrix, scale, orientation, translation, skew, perspective);
+	_rot = glm::eulerAngles(orientation);
+	_scale = (scale[0] + scale[1] + scale[2]) / 3.f;
 }
 
-void Instance::set_transform(glm::mat4 matrix, glm::mat3x4 inverse, glm::vec3 rotation) {
-	verify_fatal(_components_mask & COM_TRANSFORM);
-	_transform.matrix = matrix;
-	_transform.inverse_matrix = inverse;
-	_transform.rotation = rotation;
-	if(_transform_mode == TransformMode::POSITION_ROTATION_SCALE) {
-		glm::vec3 scale;
-		glm::quat orientation;
-		glm::vec3 translation;
-		glm::vec3 skew;
-		glm::vec4 perspective;
-		glm::decompose(matrix, scale, orientation, translation, skew, perspective);
-		_transform.scale = (scale[0] + scale[1] + scale[2]) / 3.f;
-	} else {
-		_transform.scale = 1.f;
-	}
+void InstanceTransform::set_from_pos_rot_scale(const glm::vec3& pos, const glm::vec3& rot, f32 scale) {
+	_matrix = glm::mat4(1.f);
+	_matrix = glm::translate(_matrix, pos);
+	_matrix = glm::scale(_matrix, glm::vec3(scale));
+	_matrix = glm::rotate(_matrix, _rot.z, glm::vec3(0.f, 0.f, 1.f));
+	_matrix = glm::rotate(_matrix, _rot.y, glm::vec3(0.f, 1.f, 0.f));
+	_matrix = glm::rotate(_matrix, _rot.x, glm::vec3(1.f, 0.f, 0.f));
+	_inverse_matrix = glm::inverse(_matrix);
+	_rot = rot;
+	_scale = scale;
 }
 
-void Instance::set_transform(glm::vec3 position, glm::vec3 rotation, f32 scale) {
+const InstanceTransform& Instance::transform() const {
 	verify_fatal(_components_mask & COM_TRANSFORM);
-	glm::mat4 matrix(1);
-	matrix = glm::translate(matrix, position);
-	matrix = glm::scale(matrix, glm::vec3(scale));
-	matrix = glm::rotate(matrix, rotation.z, glm::vec3(0, 0, 1));
-	matrix = glm::rotate(matrix, rotation.y, glm::vec3(0, 1, 0));
-	matrix = glm::rotate(matrix, rotation.x, glm::vec3(1, 0, 0));
-	_transform.matrix = matrix;
-	_transform.inverse_matrix = glm::inverse(matrix);
-	_transform.rotation = rotation;
-	_transform.scale = scale;
+	return _transform;
 }
 
-glm::mat4 Instance::matrix() const {
+InstanceTransform& Instance::transform() {
 	verify_fatal(_components_mask & COM_TRANSFORM);
-	return _transform.matrix;
-}
-
-glm::mat3x4 Instance::inverse_matrix() const {
-	verify_fatal(_components_mask & COM_TRANSFORM);
-	return _transform.inverse_matrix;
-}
- 
-glm::vec3 Instance::position() const {
-	verify_fatal(_components_mask & COM_TRANSFORM);
-	return _transform.matrix[3];
-}
-
-void Instance::set_position(glm::vec3 position) {
-	verify_fatal(_components_mask & COM_TRANSFORM);
-	_transform.matrix[3] = glm::vec4(position, 1.f);
-}
-
-glm::vec3 Instance::rotation() const {
-	verify_fatal(_components_mask & COM_TRANSFORM);
-	return _transform.rotation;
-}
-
-void Instance::set_rotation(glm::vec3 rotation) {
-	verify_fatal(_components_mask & COM_TRANSFORM);
-	_transform.matrix = glm::rotate(_transform.matrix, -_transform.rotation.x, glm::vec3(1, 0, 0));
-	_transform.matrix = glm::rotate(_transform.matrix, -_transform.rotation.y, glm::vec3(0, 1, 0));
-	_transform.matrix = glm::rotate(_transform.matrix, -_transform.rotation.z, glm::vec3(0, 0, 1));
-	_transform.rotation = rotation;
-	_transform.matrix = glm::rotate(_transform.matrix, _transform.rotation.z, glm::vec3(0, 0, 1));
-	_transform.matrix = glm::rotate(_transform.matrix, _transform.rotation.y, glm::vec3(0, 1, 0));
-	_transform.matrix = glm::rotate(_transform.matrix, _transform.rotation.x, glm::vec3(1, 0, 0));
-	_transform.inverse_matrix = glm::inverse(_transform.matrix);
-}
-
-f32 Instance::scale() const {
-	verify_fatal(_components_mask & COM_TRANSFORM);
-	return _transform.scale;
-}
-
-void Instance::set_scale(f32 scale) {
-	verify_fatal(_components_mask & COM_TRANSFORM);
-	_transform.scale = scale;
-}
-
-f32& Instance::m33_value_do_not_use() {
-	verify_fatal(_components_mask & COM_TRANSFORM);
-	return _transform.m33;
+	return _transform;
 }
 
 const std::vector<u8>& Instance::pvars() const {
@@ -156,12 +108,12 @@ GlobalPvarPointers& Instance::temp_global_pvar_pointers() {
 	return _global_pvar_pointers;
 }
 
-const Colour& Instance::colour() const {
+const glm::vec3& Instance::colour() const {
 	verify_fatal(_components_mask & COM_COLOUR);
 	return _colour;
 }
 
-Colour& Instance::colour() {
+glm::vec3& Instance::colour() {
 	verify_fatal(_components_mask & COM_COLOUR);
 	return _colour;
 }
@@ -196,7 +148,7 @@ glm::vec4& Instance::bounding_sphere() {
 	return _bounding_sphere;
 }
 
-CameraCollisionParams Instance::camera_collision() const {
+const CameraCollisionParams& Instance::camera_collision() const {
 	verify_fatal(_components_mask & COM_CAMERA_COLLISION);
 	return _camera_collision;
 }
@@ -205,3 +157,88 @@ CameraCollisionParams& Instance::camera_collision() {
 	verify_fatal(_components_mask & COM_CAMERA_COLLISION);
 	return _camera_collision;
 }
+
+void Instance::read_common(const WtfNode* src) {
+	if(has_component(COM_TRANSFORM)) {
+		transform().set_from_matrix(read_inst_float_list<glm::mat4>(src, "matrix"));
+	}
+	
+	if(has_component(COM_PVARS)) {
+		pvars() = read_inst_byte_list(src, "pvars");
+	}
+	
+	if(has_component(COM_COLOUR)) {
+		colour() = read_inst_float_list<glm::vec3>(src, "col");
+	}
+	
+	if(has_component(COM_DRAW_DISTANCE)) {
+		draw_distance() = read_inst_float(src, "draw_dist");
+	}
+	
+	if(has_component(COM_SPLINE)) {
+		std::vector<glm::vec4>& points = spline();
+		points.clear();
+		const WtfAttribute* attrib = wtf_attribute_of_type(src, "spline", WTF_ARRAY);
+		verify(attrib, "Missing 'spline' attribute.");
+		for(WtfAttribute* vector_attrib = attrib->first_array_element; vector_attrib != nullptr; vector_attrib = vector_attrib->next) {
+			verify(vector_attrib->type == WTF_ARRAY, "Invalid 'spline' attribute.");
+			float vector[4];
+			s32 i = 0;
+			for(WtfAttribute* number_attrib = vector_attrib->first_array_element; number_attrib != nullptr; number_attrib = number_attrib->next) {
+				verify(number_attrib->type == WTF_NUMBER && i < 4, "Invalid 'spline' attribute.");
+				vector[i++] = number_attrib->number.f;
+			}
+			points.emplace_back(glm::vec4(vector[0], vector[1], vector[2], vector[3]));
+		}
+	}
+	
+	if(has_component(COM_BOUNDING_SPHERE)) {
+		bounding_sphere() = read_inst_float_list<glm::vec4>(src, "bsphere");
+	}
+}
+
+void Instance::begin_write(WtfWriter* dest) const {
+	wtf_begin_node(dest, instance_type_to_string(type()), std::to_string(id().value).c_str());
+	
+	if(has_component(COM_TRANSFORM)) {
+		write_inst_float_list(dest, "matrix", transform().matrix());
+	}
+	
+	if(has_component(COM_PVARS)) {
+		write_inst_byte_list(dest, "pvars", pvars());
+	}
+	
+	if(has_component(COM_COLOUR)) {
+		write_inst_float_list(dest, "col", colour());
+	}
+	
+	if(has_component(COM_DRAW_DISTANCE)) {
+		wtf_write_float_attribute(dest, "draw_dist", draw_distance());
+	}
+	
+	if(has_component(COM_SPLINE)) {
+		wtf_begin_attribute(dest, "spline");
+		wtf_begin_array(dest);
+		for(const glm::vec4& vec : spline()) {
+			wtf_write_floats(dest, &vec.x, 4);
+		}
+		wtf_end_array(dest);
+		wtf_end_attribute(dest);
+	}
+	
+	if(has_component(COM_BOUNDING_SPHERE)) {
+		write_inst_float_list(dest, "col", bounding_sphere());
+	}
+}
+
+void Instance::end_write(WtfWriter* dest) const {
+	wtf_end_node(dest);
+}
+
+#define GENERATED_INSTANCE_READ_WRITE_FUNCS
+#include "_generated_instance_types.inl"
+#undef GENERATED_INSTANCE_READ_WRITE_FUNCS
+
+#define GENERATED_INSTANCE_TYPE_TO_STRING_FUNC
+#include "_generated_instance_types.inl"
+#undef GENERATED_INSTANCE_TYPE_TO_STRING_FUNC

@@ -19,7 +19,7 @@
 #ifndef INSTANCEMGR_GAMEPLAY_IMPL_CLASSES_H
 #define INSTANCEMGR_GAMEPLAY_IMPL_CLASSES_H
 
-#include <instancemgr/gameplay_impl_common.h>
+#include <instancemgr/gameplay_impl_common.inl>
 
 struct ClassBlock {
 	static void read(std::vector<s32>& dest, Buffer src, Game game) {
@@ -360,7 +360,7 @@ packed_struct(PvarPointerEntry,
 
 static PvarType& get_pvar_type(s32 pvar_index, PvarTypes& types, Gameplay& dest) {
 	Opt<std::string> pvar_type_name;
-	for(Camera& inst : opt_iterator(dest.cameras)) {
+	for(CameraInstance& inst : opt_iterator(dest.cameras)) {
 		if(inst.temp_pvar_index() == pvar_index) {
 			return types.camera[inst.type];
 		}

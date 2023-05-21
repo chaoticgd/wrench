@@ -13,6 +13,5 @@ add_executable(wrencheditor
 	gui/view_3d.cpp
 	gui/inspector.cpp
 	gui/asset_selector.cpp
-	tools/occlusion_tool.cpp
 )
 target_link_libraries(wrencheditor wrenchcore wrenchgui wrench_assetmgr wrenchinstancemgr)
