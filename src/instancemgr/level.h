@@ -43,23 +43,22 @@ packed_struct(LevelSettingsThirdPart,
 	s32 unknown_c;
 )
 
-packed_struct(LevelSettingsFourthPart,
-	s32 unknown_0;
-	s32 unknown_4;
-	s32 unknown_8;
-	s32 unknown_c;
+packed_struct(LevelSettingsRewardStats,
+	f32 xp_decay_rate;
+	f32 xp_decay_min;
+	f32 bolt_decay_rate;
+	f32 bolt_decay_min;
 	s32 unknown_10;
 	s32 unknown_14;
 )
 
 packed_struct(LevelSettingsFifthPart,
-	s32 unknown_0;
-	s32 unknown_4;
-	s32 unknown_8;
-	s32 unknown_c;
-	s32 unknown_10;
-	s32 unknown_14;
-	s32 sixth_part_count;
+	/* 0x00 */ s32 unknown_0;
+	/* 0x04 */ s32 moby_inst_count;
+	/* 0x08 */ s32 unknown_8;
+	/* 0x0c */ s32 unknown_c;
+	/* 0x10 */ s32 unknown_10;
+	/* 0x14 */ s32 dbg_hit_points;
 )
 
 struct LevelSettings {
@@ -74,9 +73,9 @@ struct LevelSettings {
 	glm::vec3 sphere_pos = {0.f, 0.f, 0.f};
 	glm::vec3 ship_pos = {0.f, 0.f, 0.f};
 	f32 ship_rot_z = 0.f;
-	s32 unknown_1;
-	s32 unknown_2;
-	s32 unknown_3;
+	PathLink ship_path;
+	CuboidLink ship_camera_cuboid_start;
+	CuboidLink ship_camera_cuboid_end;
 	// Planes specifying the volumes of the level chunks. The first element
 	// represents the second chunk, and the second element represents the third
 	// chunk. If both tests fail, you can assume it's the first chunk (chunk 0).
@@ -84,9 +83,9 @@ struct LevelSettings {
 	Opt<s32> core_sounds_count;
 	Opt<s32> rac3_third_part;
 	Opt<std::vector<LevelSettingsThirdPart>> third_part;
-	Opt<LevelSettingsFourthPart> fourth_part;
+	Opt<LevelSettingsRewardStats> reward_stats;
 	Opt<LevelSettingsFifthPart> fifth_part;
-	Opt<std::vector<s8>> sixth_part;
+	Opt<std::vector<u8>> dbg_attack_damage;
 };
 
 struct WtfNode;

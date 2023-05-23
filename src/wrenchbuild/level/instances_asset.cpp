@@ -40,8 +40,17 @@ on_load(Instances, []() {
 
 static void unpack_instances_asset(InstancesAsset& dest, InputStream& src, BuildConfig config, const char* hint) {
 	std::vector<u8> buffer = src.read_multiple<u8>(0, src.size());
-	auto [stream, ref] = dest.file().open_binary_file_for_writing(stringf("%s.instances", hint));
-	stream->write_v(buffer);
+	
+	Gameplay gameplay;
+	PvarTypes pvar_types;
+	read_gameplay(gameplay, pvar_types, buffer, config.game(), *get_gameplay_block_descriptions(config.game(), hint)); 
+	
+	Instances instances;
+	move_gameplay_to_instances(instances, nullptr, nullptr, gameplay);
+	
+	std::string text = write_instances(instances);
+	
+	FileReference ref = dest.file().write_text_file(stringf("%s.instances", hint), text.c_str());
 	dest.set_src(ref);
 }
 

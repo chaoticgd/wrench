@@ -209,7 +209,11 @@ void wtf_write_string_attribute(WtfWriter* ctx, const char* key, const char* str
 }
 
 void wtf_write_bytes(WtfWriter* ctx, const uint8_t* bytes, int count) {
-	if(!ctx->array_empty) {
+	if(ctx->array_empty) {
+		*ctx->dest += "\n";
+		ctx->array_empty = 0;
+	}
+	if(ctx->array_depth > 0) {
 		indent(ctx);
 	}
 	*ctx->dest += "[";
@@ -219,7 +223,6 @@ void wtf_write_bytes(WtfWriter* ctx, const uint8_t* bytes, int count) {
 		*ctx->dest += string;
 	}
 	*ctx->dest += "]\n";
-	ctx->array_empty = 0;
 }
 
 void wtf_write_floats(WtfWriter* ctx, const float* floats, int count) {

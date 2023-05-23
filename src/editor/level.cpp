@@ -30,12 +30,8 @@ void Level::read(LevelAsset& asset, Game g) {
 	_asset = &asset;
 	_instances_asset = &level_wad().get_gameplay().as<InstancesAsset>();
 		
-	auto stream = _instances_asset->file().open_binary_file_for_reading(_instances_asset->src());
-	std::vector<u8> buffer = stream->read_multiple<u8>(stream->size());
-	const std::vector<GameplayBlockDescription>* gbd = gameplay_block_descriptions_from_game(game);
-	Gameplay gameplay;
-	read_gameplay(gameplay, _pvar_types, buffer, game, *gbd);
-	move_gameplay_to_instances(_instances, nullptr, nullptr, gameplay);
+	std::string text = _instances_asset->file().read_text_file(_instances_asset->src().path);
+	_instances = read_instances(text);
 	
 	const CollectionAsset& chunk_collection = level_wad().get_chunks();
 	for(s32 i = 0; i < 3; i++) {
@@ -211,13 +207,8 @@ void Level::save(const fs::path& path) {
 	}
 	
 	// Write out the gameplay.bin file.
-	Instances instances = _instances;
-	Gameplay gameplay;
-	move_instances_to_gameplay(gameplay, instances, nullptr, nullptr);
-	const std::vector<GameplayBlockDescription>* gbd = gameplay_block_descriptions_from_game(game);
-	std::vector<u8> buffer = write_gameplay(gameplay, _pvar_types, game, *gbd);
-	auto [stream, ref] = _instances_asset->file().open_binary_file_for_writing(gameplay_path);
-	stream->write_v(buffer);
+	std::string text = write_instances(_instances);
+	FileReference ref = _instances_asset->file().write_text_file(gameplay_path, text.c_str());
 	_instances_asset->set_src(ref);
 	
 	_instances_asset->file().write();

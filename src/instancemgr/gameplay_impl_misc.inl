@@ -31,9 +31,9 @@ packed_struct(RacLevelSettingsFirstPart,
 	/* 0x28 */ f32 death_height;
 	/* 0x2c */ Vec3f ship_position;
 	/* 0x38 */ f32 ship_rotation_z;
-	/* 0x3c */ s32 unknown_3c;
-	/* 0x40 */ s32 unknown_40;
-	/* 0x44 */ s32 unknown_44;
+	/* 0x3c */ s32 ship_path;
+	/* 0x40 */ s32 ship_camera_cuboid_start;
+	/* 0x44 */ s32 ship_camera_cuboid_end;
 	/* 0x48 */ u32 pad[2];
 )
 static_assert(sizeof(RacLevelSettingsFirstPart) == 0x50);
@@ -50,9 +50,9 @@ packed_struct(GcUyaDlLevelSettingsFirstPart,
 	/* 0x30 */ Vec3f sphere_centre;
 	/* 0x3c */ Vec3f ship_position;
 	/* 0x48 */ f32 ship_rotation_z;
-	/* 0x4c */ s32 unknown_4c;
-	/* 0x50 */ s32 unknown_50;
-	/* 0x54 */ s32 unknown_54;
+	/* 0x4c */ s32 ship_path;
+	/* 0x50 */ s32 ship_camera_cuboid_start;
+	/* 0x54 */ s32 ship_camera_cuboid_end;
 	/* 0x58 */ u32 pad;
 )
 static_assert(sizeof(GcUyaDlLevelSettingsFirstPart) == 0x5c);
@@ -105,14 +105,16 @@ struct LevelSettingsBlock {
 				if(third_part_count >= 0) {
 					dest.third_part = src.read_multiple<LevelSettingsThirdPart>(ofs, third_part_count, "third part").copy();
 					ofs += third_part_count * sizeof(LevelSettingsThirdPart);
-					dest.fourth_part = src.read<LevelSettingsFourthPart>(ofs, "fourth part");
-					ofs += sizeof(LevelSettingsFourthPart);
+					dest.reward_stats = src.read<LevelSettingsRewardStats>(ofs, "reward stats");
+					ofs += sizeof(LevelSettingsRewardStats);
 				} else {
 					ofs += sizeof(LevelSettingsThirdPart);
 				}
 				dest.fifth_part = src.read<LevelSettingsFifthPart>(ofs, "fifth part");
 				ofs += sizeof(LevelSettingsFifthPart);
-				dest.sixth_part = src.read_multiple<s8>(ofs, dest.fifth_part->sixth_part_count, "sixth part").copy();
+				s32 dbg_attack_damange_count = src.read<s32>(ofs);
+				ofs += 4;
+				dest.dbg_attack_damage = src.read_multiple<u8>(ofs, dbg_attack_damange_count, "dbg attack damage array").copy();
 			}
 		}
 	}
@@ -153,15 +155,16 @@ struct LevelSettingsBlock {
 				dest.write((s32) src.third_part->size());
 				if(src.third_part->size() > 0) {
 					dest.write_multiple(*src.third_part);
-					verify(src.fourth_part.has_value(), "Missing fourth_part in level settings block.");
-					dest.write(*src.fourth_part);
+					verify(src.reward_stats.has_value(), "Missing fourth_part in level settings block.");
+					dest.write(*src.reward_stats);
 				} else {
 					dest.vec.resize(dest.tell() + 0x18, 0);
 				}
 				verify(src.fifth_part.has_value(), "Missing fifth in level settings block.");
 				dest.write(*src.fifth_part);
-				verify(src.sixth_part.has_value(), "Missing sixth_part in level settings block.");
-				dest.write_multiple(*src.sixth_part);
+				verify(src.dbg_attack_damage.has_value(), "Missing dbg attack damage array in level settings block.");
+				dest.write<s32>(src.dbg_attack_damage->size());
+				dest.write_multiple(*src.dbg_attack_damage);
 			}
 		}
 	}
@@ -178,9 +181,9 @@ struct LevelSettingsBlock {
 		SWAP_PACKED(l.ship_pos.y, r.ship_position.y);
 		SWAP_PACKED(l.ship_pos.z, r.ship_position.z);
 		SWAP_PACKED(l.ship_rot_z, r.ship_rotation_z);
-		SWAP_PACKED(l.unknown_1, r.unknown_3c);
-		SWAP_PACKED(l.unknown_2, r.unknown_40);
-		SWAP_PACKED(l.unknown_3, r.unknown_44);
+		SWAP_PACKED(l.ship_path.id, r.ship_path);
+		SWAP_PACKED(l.ship_camera_cuboid_start.id, r.ship_camera_cuboid_start);
+		SWAP_PACKED(l.ship_camera_cuboid_end.id, r.ship_camera_cuboid_end);
 		r.pad[0] = 0;
 		r.pad[1] = 0;
 	}
@@ -201,9 +204,9 @@ struct LevelSettingsBlock {
 		SWAP_PACKED(l.ship_pos.y, r.ship_position.y);
 		SWAP_PACKED(l.ship_pos.z, r.ship_position.z);
 		SWAP_PACKED(l.ship_rot_z, r.ship_rotation_z);
-		SWAP_PACKED(l.unknown_1, r.unknown_4c);
-		SWAP_PACKED(l.unknown_2, r.unknown_50);
-		SWAP_PACKED(l.unknown_3, r.unknown_54);
+		SWAP_PACKED(l.ship_path.id, r.ship_path);
+		SWAP_PACKED(l.ship_camera_cuboid_start.id, r.ship_camera_cuboid_start);
+		SWAP_PACKED(l.ship_camera_cuboid_end.id, r.ship_camera_cuboid_end);
 		r.pad = 0;
 	}
 };

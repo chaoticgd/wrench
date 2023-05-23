@@ -44,9 +44,9 @@ LevelSettings read_level_settings(const WtfNode* node) {
 	read_inst_field(settings.sphere_pos, node, "sphere_pos");
 	read_inst_field(settings.ship_pos, node, "ship_pos");
 	read_inst_field(settings.ship_rot_z, node, "ship_rot_z");
-	read_inst_field(settings.unknown_1, node, "unknown_1");
-	read_inst_field(settings.unknown_2, node, "unknown_2");
-	read_inst_field(settings.unknown_3, node, "unknown_3");
+	read_inst_field(settings.ship_path, node, "ship_path");
+	read_inst_field(settings.ship_camera_cuboid_start, node, "ship_camera_cuboid_start");
+	read_inst_field(settings.ship_camera_cuboid_end, node, "ship_camera_cuboid_end");
 	
 	const WtfAttribute* core_sounds_count_attrib = wtf_attribute_of_type(node, "core_sounds_count", WTF_NUMBER);
 	if(core_sounds_count_attrib) {
@@ -83,9 +83,9 @@ void write_level_settings(WtfWriter* ctx, const LevelSettings& settings) {
 	write_inst_field(ctx, "sphere_pos", settings.sphere_pos);
 	write_inst_field(ctx, "ship_pos", settings.ship_pos);
 	write_inst_field(ctx, "ship_rot_z", settings.ship_rot_z);
-	write_inst_field(ctx, "unknown_1", settings.unknown_1);
-	write_inst_field(ctx, "unknown_2", settings.unknown_2);
-	write_inst_field(ctx, "unknown_3", settings.unknown_3);
+	write_inst_field(ctx, "ship_path", settings.ship_path);
+	write_inst_field(ctx, "ship_camera_cuboid_start", settings.ship_camera_cuboid_start);
+	write_inst_field(ctx, "ship_camera_cuboid_end", settings.ship_camera_cuboid_end);
 	
 	if(settings.core_sounds_count.has_value()) {
 		wtf_write_integer_attribute(ctx, "core_sounds_count", *settings.core_sounds_count);

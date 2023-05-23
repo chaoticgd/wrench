@@ -49,7 +49,7 @@ struct InstanceReadWriteFuncs {
 
 Instances read_instances(std::string& src) {
 	char* error = nullptr;
-	WtfNode* root = wtf_parse((char*) src.c_str(), &error);
+	WtfNode* root = wtf_parse(src.data(), &error);
 	verify(!error && root, "Failed to parse instances file. %s", error);
 	defer([&]() { wtf_free(root); });
 	
