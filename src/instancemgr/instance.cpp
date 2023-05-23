@@ -20,7 +20,7 @@
 
 #include <glm/gtx/matrix_decompose.hpp>
 
-#include <instancemgr/wtf_util.h>
+#include <instancemgr/wtf_glue.h>
 #include <instancemgr/instances.h>
 
 const glm::mat4& TransformComponent::matrix() const {
@@ -82,41 +82,53 @@ void TransformComponent::read(const WtfNode* src) {
 			break;
 		}
 		case TransformMode::MATRIX: {
-			glm::mat4 matrix = read_inst_float_list<glm::mat4>(src, "matrix");
+			glm::mat4 matrix;
+			read_inst_field(matrix, src, "matrix");
 			set_from_matrix(matrix);
 			break;
 		}
 		case TransformMode::MATRIX_AND_INVERSE: {
-			glm::mat4 matrix = read_inst_float_list<glm::mat4>(src, "matrix");
-			glm::mat3x4 inverse_matrix = read_inst_float_list<glm::mat3x4>(src, "inverse_matrix");
+			glm::mat4 matrix;
+			glm::mat3x4 inverse_matrix;
+			read_inst_field(matrix, src, "matrix");
+			read_inst_field(inverse_matrix, src, "inverse_matrix");
 			set_from_matrix(matrix, &inverse_matrix);
 			break;
 		}
 		case TransformMode::MATRIX_INVERSE_ROTATION: {
-			glm::mat4 matrix = read_inst_float_list<glm::mat4>(src, "matrix");
-			glm::mat3x4 inverse_matrix = read_inst_float_list<glm::mat3x4>(src, "inverse_matrix");
-			glm::vec3 rot = read_inst_float_list<glm::vec3>(src, "rot");
+			glm::mat4 matrix;
+			glm::mat3x4 inverse_matrix;
+			glm::vec3 rot;
+			read_inst_field(matrix, src, "matrix");
+			read_inst_field(inverse_matrix, src, "inverse_matrix");
+			read_inst_field(rot, src, "rot");
 			set_from_matrix(matrix, &inverse_matrix, &rot);
 			break;
 		}
 		case TransformMode::POSITION: {
-			glm::vec3 pos = read_inst_float_list<glm::vec3>(src, "pos");
+			glm::vec3 pos;
 			glm::vec3 rot = {0.f, 0.f, 0.f};
 			f32 scale = 1.f;
+			read_inst_field(pos, src, "pos");
 			set_from_pos_rot_scale(pos, rot, scale);
 			break;
 		}
 		case TransformMode::POSITION_ROTATION: {
-			glm::vec3 pos = read_inst_float_list<glm::vec3>(src, "pos");
-			glm::vec3 rot = read_inst_float_list<glm::vec3>(src, "rot");
+			glm::vec3 pos;
+			glm::vec3 rot;
 			f32 scale = 1.f;
+			read_inst_field(pos, src, "pos");
+			read_inst_field(rot, src, "rot");
 			set_from_pos_rot_scale(pos, rot, scale);
 			break;
 		}
 		case TransformMode::POSITION_ROTATION_SCALE: {
-			glm::vec3 pos = read_inst_float_list<glm::vec3>(src, "pos");
-			glm::vec3 rot = read_inst_float_list<glm::vec3>(src, "rot");
-			f32 scale = read_inst_float(src, "scale");
+			glm::vec3 pos;
+			glm::vec3 rot;
+			f32 scale;
+			read_inst_field(pos, src, "pos");
+			read_inst_field(rot, src, "rot");
+			read_inst_field(scale, src, "scale");
 			set_from_pos_rot_scale(pos, rot, scale);
 			break;
 		}
@@ -129,33 +141,33 @@ void TransformComponent::write(WtfWriter* dest) const {
 			break;
 		}
 		case TransformMode::MATRIX: {
-			write_inst_float_list(dest, "matrix", matrix());
+			write_inst_field(dest, "matrix", matrix());
 			break;
 		}
 		case TransformMode::MATRIX_AND_INVERSE: {
-			write_inst_float_list(dest, "matrix", matrix());
-			write_inst_float_list(dest, "inverse_matrix", inverse_matrix());
+			write_inst_field(dest, "matrix", matrix());
+			write_inst_field(dest, "inverse_matrix", inverse_matrix());
 			break;
 		}
 		case TransformMode::MATRIX_INVERSE_ROTATION: {
-			write_inst_float_list(dest, "matrix", matrix());
-			write_inst_float_list(dest, "inverse_matrix", inverse_matrix());
-			write_inst_float_list(dest, "rot", rot());
+			write_inst_field(dest, "matrix", matrix());
+			write_inst_field(dest, "inverse_matrix", inverse_matrix());
+			write_inst_field(dest, "rot", rot());
 			break;
 		}
 		case TransformMode::POSITION: {
-			write_inst_float_list(dest, "pos", pos());
+			write_inst_field(dest, "pos", pos());
 			break;
 		}
 		case TransformMode::POSITION_ROTATION: {
-			write_inst_float_list(dest, "pos", pos());
-			write_inst_float_list(dest, "rot", rot());
+			write_inst_field(dest, "pos", pos());
+			write_inst_field(dest, "rot", rot());
 			break;
 		}
 		case TransformMode::POSITION_ROTATION_SCALE: {
-			write_inst_float_list(dest, "pos", pos());
-			write_inst_float_list(dest, "rot", rot());
-			wtf_write_float_attribute(dest, "scale", scale());
+			write_inst_field(dest, "pos", pos());
+			write_inst_field(dest, "rot", rot());
+			write_inst_field(dest, "scale", scale());
 			break;
 		}
 	}
@@ -257,11 +269,11 @@ void Instance::read_common(const WtfNode* src) {
 	}
 	
 	if(has_component(COM_PVARS)) {
-		pvars() = read_inst_byte_list(src, "pvars");
+		read_inst_field(pvars(), src, "pvars");
 	}
 	
 	if(has_component(COM_COLOUR)) {
-		colour() = read_inst_float_list<glm::vec3>(src, "col");
+		read_inst_field(colour(), src, "col");
 	}
 	
 	if(has_component(COM_DRAW_DISTANCE)) {
@@ -286,7 +298,7 @@ void Instance::read_common(const WtfNode* src) {
 	}
 	
 	if(has_component(COM_BOUNDING_SPHERE)) {
-		bounding_sphere() = read_inst_float_list<glm::vec4>(src, "bsphere");
+		read_inst_field(bounding_sphere(), src, "bsphere");
 	}
 }
 
@@ -298,11 +310,11 @@ void Instance::begin_write(WtfWriter* dest) const {
 	}
 	
 	if(has_component(COM_PVARS)) {
-		write_inst_byte_list(dest, "pvars", pvars());
+		write_inst_field(dest, "pvars", pvars());
 	}
 	
 	if(has_component(COM_COLOUR)) {
-		write_inst_float_list(dest, "col", colour());
+		write_inst_field(dest, "col", colour());
 	}
 	
 	if(has_component(COM_DRAW_DISTANCE)) {
@@ -320,7 +332,7 @@ void Instance::begin_write(WtfWriter* dest) const {
 	}
 	
 	if(has_component(COM_BOUNDING_SPHERE)) {
-		write_inst_float_list(dest, "bsphere", bounding_sphere());
+		write_inst_field(dest, "bsphere", bounding_sphere());
 	}
 }
 

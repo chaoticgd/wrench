@@ -631,9 +631,7 @@ packed_struct(PointLightPacked,
 static void swap_instance(PointLightInstance& l, PointLightPacked& r) {
 	swap_position(l, r);
 	SWAP_PACKED(l.radius, r.radius);
-	SWAP_PACKED(l.colour().r, r.colour.r);
-	SWAP_PACKED(l.colour().g, r.colour.g);
-	SWAP_PACKED(l.colour().b, r.colour.b);
+	SWAP_COLOUR(l.colour(), r.colour);
 	r.colour.pad = 0;
 	r.unused_14 = 0;
 	r.unused_18 = 0;
@@ -664,9 +662,9 @@ struct GcUyaPointLightsBlock {
 			pos.z = packed.pos_z * (1.f / 64.f);
 			inst.transform().set_from_pos_rot_scale(pos);
 			inst.radius = packed.radius * (1.f / 64.f);
-			inst.colour().r = packed.colour_r;
-			inst.colour().g = packed.colour_g;
-			inst.colour().b = packed.colour_b;
+			inst.colour().r = packed.colour_r * (1.f / 65535.f);
+			inst.colour().g = packed.colour_g * (1.f / 65535.f);
+			inst.colour().b = packed.colour_b * (1.f / 65535.f);
 		}
 	}
 	
@@ -711,9 +709,9 @@ struct GcUyaPointLightsBlock {
 			packed.pos_y = (u16) roundf(transform.pos().y * 64.f);
 			packed.pos_z = (u16) roundf(transform.pos().z * 64.f);
 			packed.radius = inst.radius * 64.f;
-			packed.colour_r = inst.colour().r;
-			packed.colour_g = inst.colour().g;
-			packed.colour_b = inst.colour().b;
+			packed.colour_r = (u16) roundf(inst.colour().r * 65535.f);
+			packed.colour_g = (u16) roundf(inst.colour().g * 65535.f);
+			packed.colour_b = (u16) roundf(inst.colour().b * 65535.f);
 			dest.write(packed);
 		}
 	}

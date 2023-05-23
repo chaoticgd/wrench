@@ -125,12 +125,12 @@ const std::vector<GameplayBlockDescription> RAC_GAMEPLAY_BLOCKS = {
 	{0x08, bf<InstanceBlock<CameraInstance, CameraPacked>>(&Gameplay::cameras), "cameras"},
 	{0x0c, bf<InstanceBlock<SoundInstance, SoundInstancePacked>>(&Gameplay::sound_instances), "sound instances"},
 	{0x40, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},
-	{0x44, {RAC1MobyBlock::read, RAC1MobyBlock::write}, "moby instances"},
+	{0x44, {RacMobyBlock::read, RacMobyBlock::write}, "moby instances"},
 	{0x54, {PvarTableBlock::read, PvarTableBlock::write}, "pvar table"},
 	{0x58, {PvarDataBlock::read, PvarDataBlock::write}, "pvar data"},
 	{0x50, {PvarScratchpadBlock::read, PvarScratchpadBlock::write}, "pvar pointer scratchpad table"},
 	{0x5c, {PvarPointerRewireBlock::read, PvarPointerRewireBlock::write}, "pvar pointer rewire table"},
-	{0x48, bf<GroupBlock>(&Gameplay::moby_groups), "moby groups"},
+	{0x48, bf<GroupBlock<MobyGroupInstance>>(&Gameplay::moby_groups), "moby groups"},
 	{0x4c, {GlobalPvarBlock::read, GlobalPvarBlock::write}, "global pvar"},
 	{0x30, {TieClassBlock::read, TieClassBlock::write}, "tie classes"},
 	{0x34, bf<InstanceBlock<TieInstance, RacTieInstance>>(&Gameplay::tie_instances), "tie instances"},
@@ -165,20 +165,20 @@ const std::vector<GameplayBlockDescription> GC_UYA_GAMEPLAY_BLOCKS = {
 	{0x08, bf<InstanceBlock<CameraInstance, CameraPacked>>(&Gameplay::cameras), "cameras"},
 	{0x0c, bf<InstanceBlock<SoundInstance, SoundInstancePacked>>(&Gameplay::sound_instances), "sound instances"},
 	{0x48, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},
-	{0x4c, {RAC23MobyBlock::read, RAC23MobyBlock::write}, "moby instances"},
+	{0x4c, {GcUyaMobyBlock::read, GcUyaMobyBlock::write}, "moby instances"},
 	{0x5c, {PvarTableBlock::read, PvarTableBlock::write}, "pvar table"},
 	{0x60, {PvarDataBlock::read, PvarDataBlock::write}, "pvar data"},
 	{0x58, {PvarScratchpadBlock::read, PvarScratchpadBlock::write}, "pvar pointer scratchpad table"},
 	{0x64, {PvarPointerRewireBlock::read, PvarPointerRewireBlock::write}, "pvar pointer rewire table"},
-	{0x50, bf<GroupBlock>(&Gameplay::moby_groups), "moby groups"},
+	{0x50, bf<GroupBlock<MobyGroupInstance>>(&Gameplay::moby_groups), "moby groups"},
 	{0x54, {GlobalPvarBlock::read, GlobalPvarBlock::write}, "global pvar"},
 	{0x30, {TieClassBlock::read, TieClassBlock::write}, "tie classes"},
 	{0x34, bf<InstanceBlock<TieInstance, GcUyaDlTieInstance>>(&Gameplay::tie_instances), "tie instances"},
 	{0x94, {TieAmbientRgbaBlock::read, TieAmbientRgbaBlock::write}, "tie ambient rgbas"},
-	{0x38, bf<GroupBlock>(&Gameplay::tie_groups), "tie groups"},
+	{0x38, bf<GroupBlock<TieGroupInstance>>(&Gameplay::tie_groups), "tie groups"},
 	{0x3c, {ShrubClassBlock::read, ShrubClassBlock::write}, "shrub classes"},
 	{0x40, bf<InstanceBlock<ShrubInstance, ShrubInstancePacked>>(&Gameplay::shrub_instances), "shrub instances"},
-	{0x44, bf<GroupBlock>(&Gameplay::shrub_groups), "shrub groups"},
+	{0x44, bf<GroupBlock<ShrubGroupInstance>>(&Gameplay::shrub_groups), "shrub groups"},
 	{0x78, bf<PathBlock>(&Gameplay::paths), "paths"},
 	{0x68, bf<InstanceBlock<CuboidInstance, ShapePacked>>(&Gameplay::cuboids), "cuboids"},
 	{0x6c, bf<InstanceBlock<SphereInstance, ShapePacked>>(&Gameplay::spheres), "spheres"},
@@ -205,12 +205,12 @@ const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS = {
 	{0x04, bf<InstanceBlock<CameraInstance, CameraPacked>>(&Gameplay::cameras), "import cameras"},
 	{0x08, bf<InstanceBlock<SoundInstance, SoundInstancePacked>>(&Gameplay::sound_instances), "sound instances"},
 	{0x2c, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},
-	{0x30, {DeadlockedMobyBlock::read, DeadlockedMobyBlock::write}, "moby instances"},
+	{0x30, {DlMobyBlock::read, DlMobyBlock::write}, "moby instances"},
 	{0x40, {PvarTableBlock::read, PvarTableBlock::write}, "pvar table"},
 	{0x44, {PvarDataBlock::read, PvarDataBlock::write}, "pvar data"},
 	{0x3c, {PvarScratchpadBlock::read, PvarScratchpadBlock::write}, "pvar pointer scratchpad table"},
 	{0x48, {PvarPointerRewireBlock::read, PvarPointerRewireBlock::write}, "pvar pointer rewire table"},
-	{0x34, bf<GroupBlock>(&Gameplay::moby_groups), "moby groups"},
+	{0x34, bf<GroupBlock<MobyGroupInstance>>(&Gameplay::moby_groups), "moby groups"},
 	{0x38, {GlobalPvarBlock::read, GlobalPvarBlock::write}, "global pvar"},
 	{0x5c, bf<PathBlock>(&Gameplay::paths), "paths"},
 	{0x4c, bf<InstanceBlock<CuboidInstance, ShapePacked>>(&Gameplay::cuboids), "cuboids"},
@@ -229,10 +229,10 @@ const std::vector<GameplayBlockDescription> DL_ART_INSTANCE_BLOCKS = {
 	{0x04, {TieClassBlock::read, TieClassBlock::write}, "tie classes"},
 	{0x08, bf<InstanceBlock<TieInstance, GcUyaDlTieInstance>>(&Gameplay::tie_instances), "tie instances"},
 	{0x20, {TieAmbientRgbaBlock::read, TieAmbientRgbaBlock::write}, "tie ambient rgbas"},
-	{0x0c, bf<GroupBlock>(&Gameplay::tie_groups), "tie groups"},
+	{0x0c, bf<GroupBlock<TieGroupInstance>>(&Gameplay::tie_groups), "tie groups"},
 	{0x10, {ShrubClassBlock::read, ShrubClassBlock::write}, "shrub classes"},
 	{0x14, bf<InstanceBlock<ShrubInstance, ShrubInstancePacked>>(&Gameplay::shrub_instances), "shrub instances"},
-	{0x18, bf<GroupBlock>(&Gameplay::shrub_groups), "art instance shrub groups"},
+	{0x18, bf<GroupBlock<ShrubGroupInstance>>(&Gameplay::shrub_groups), "art instance shrub groups"},
 	{0x1c, bf<OcclusionMappingsBlock>(&Gameplay::occlusion), "occlusion"},
 	{0x24, {nullptr, nullptr}, "pad 1"},
 	{0x28, {nullptr, nullptr}, "pad 2"},
@@ -245,12 +245,12 @@ const std::vector<GameplayBlockDescription> DL_ART_INSTANCE_BLOCKS = {
 
 const std::vector<GameplayBlockDescription> DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS = {
 	{0x00, bf<ClassBlock>(&Gameplay::moby_classes), "moby classes"},
-	{0x04, {DeadlockedMobyBlock::read, DeadlockedMobyBlock::write}, "moby instances"},
+	{0x04, {DlMobyBlock::read, DlMobyBlock::write}, "moby instances"},
 	{0x14, {PvarTableBlock::read, PvarTableBlock::write}, "pvar table"},
 	{0x18, {PvarDataBlock::read, PvarDataBlock::write}, "pvar data"},
 	{0x10, {PvarScratchpadBlock::read, PvarScratchpadBlock::write}, "pvar pointer scratchpad table"},
 	{0x1c, {PvarPointerRewireBlock::read, PvarPointerRewireBlock::write}, "pvar pointer rewire table"},
-	{0x08, bf<GroupBlock>(&Gameplay::moby_groups), "moby groups"},
+	{0x08, bf<GroupBlock<MobyGroupInstance>>(&Gameplay::moby_groups), "moby groups"},
 	{0x0c, {GlobalPvarBlock::read, GlobalPvarBlock::write}, "global pvar"},
 };
 
@@ -260,7 +260,7 @@ void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, Occlus
 	}
 	
 	dest.moby_instances = std::move(opt_iterator(src.moby_instances));
-	dest.dynamic_moby_count = opt_or_zero(src.dynamic_moby_count);
+	dest.spawnable_moby_count = opt_or_zero(src.spawnable_moby_count);
 	dest.moby_classes = std::move(opt_iterator(src.moby_classes));
 	dest.moby_groups = std::move(opt_iterator(src.moby_groups));
 	dest.tie_instances = std::move(opt_iterator(src.tie_instances));
@@ -316,13 +316,13 @@ void move_instances_to_gameplay(Gameplay& dest, Instances& src, HelpMessages* he
 	}
 	
 	dest.moby_instances = src.moby_instances.release();
-	dest.dynamic_moby_count = src.dynamic_moby_count;
+	dest.spawnable_moby_count = src.spawnable_moby_count;
 	dest.moby_classes = std::move(src.moby_classes);
-	dest.moby_groups = std::move(src.moby_groups);
+	dest.moby_groups = src.moby_groups.release();
 	dest.tie_instances = src.tie_instances.release();
-	dest.tie_groups = std::move(src.tie_groups);
+	dest.tie_groups = src.tie_groups.release();
 	dest.shrub_instances = (src.shrub_instances).release();
-	dest.shrub_groups = std::move(src.shrub_groups);
+	dest.shrub_groups = src.shrub_groups.release();
 	dest.global_pvar = std::move(src.global_pvar);
 	
 	dest.dir_lights = src.dir_lights.release();
@@ -339,9 +339,11 @@ void move_instances_to_gameplay(Gameplay& dest, Instances& src, HelpMessages* he
 	dest.sound_instances = src.sound_instances.release();
 	dest.paths = src.paths.release();
 	dest.grind_paths = src.grind_paths.release();
-	dest.areas = std::move(src.areas);
+	dest.areas = src.areas.release();
 	
-	if(occlusion_src) {
+	if(occlusion_src && (!occlusion_src->tfrag_mappings.empty()
+			|| !occlusion_src->tie_mappings.empty()
+			|| !occlusion_src->moby_mappings.empty())) {
 		dest.occlusion = *occlusion_src;
 	}
 }

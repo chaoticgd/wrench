@@ -75,7 +75,7 @@ Each header pointed to has the following fields:
 
 The header stored on the disc is located at the beginning of the main level file, uses absolute sector numbers, and references sectors before itself on the disc.
 
-Because this header would be useless if directly extracted from the disc, the Wrench ISO utility rewrites the header into 3 seperate headers for the 3 different files that make up a level, using relative sector numbers. These headers were designed to be similar those of R&C2/R&C3/Deadlocked.
+Because this header would be useless if directly extracted from the disc, the Wrench Build Tool rewrites the header into 3 seperate headers for the 3 different files that make up a level, using relative sector numbers. These headers were designed to be similar those of R&C2/R&C3/Deadlocked.
 
 <table><tbody>
 	<tr><td></td><td>0x0</td><td>0x04</td><td>0x8</td><td>0xc</td></tr>

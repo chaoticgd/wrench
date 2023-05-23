@@ -36,13 +36,13 @@ struct Gameplay {
 	Opt<std::vector<HelpMessage>> korean_help_messages;
 	
 	Opt<std::vector<MobyInstance>> moby_instances;
-	Opt<s32> dynamic_moby_count;
+	Opt<s32> spawnable_moby_count;
 	Opt<std::vector<s32>> moby_classes;
-	Opt<std::vector<Group>> moby_groups;
+	Opt<std::vector<MobyGroupInstance>> moby_groups;
 	Opt<std::vector<TieInstance>> tie_instances;
-	Opt<std::vector<Group>> tie_groups;
+	Opt<std::vector<TieGroupInstance>> tie_groups;
 	Opt<std::vector<ShrubInstance>> shrub_instances;
-	Opt<std::vector<Group>> shrub_groups;
+	Opt<std::vector<ShrubGroupInstance>> shrub_groups;
 	Opt<std::vector<u8>> global_pvar;
 	
 	Opt<std::vector<DirLightInstance>> dir_lights;
@@ -59,7 +59,7 @@ struct Gameplay {
 	Opt<std::vector<SoundInstance>> sound_instances;
 	Opt<std::vector<PathInstance>> paths;
 	Opt<std::vector<GrindPathInstance>> grind_paths;
-	Opt<std::vector<Area>> areas;
+	Opt<std::vector<AreaInstance>> areas;
 	
 	Opt<OcclusionMappings> occlusion;
 	

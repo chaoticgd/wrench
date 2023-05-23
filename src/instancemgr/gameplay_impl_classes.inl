@@ -35,9 +35,21 @@ struct ClassBlock {
 
 packed_struct(MobyBlockHeader,
 	s32 static_count;
-	s32 dynamic_count;
+	s32 spawnable_moby_count;
 	s32 pad[2];
 )
+
+static std::vector<s32> moby_index_to_group(const std::vector<MobyGroupInstance>& groups, s32 instance_count) {
+	std::vector<s32> index_to_group(instance_count, -1);
+	for(s32 i =0; i < (s32) groups.size(); i++) {
+		const MobyGroupInstance& group = groups[i];
+		for(MobyLink link : group.members) {
+			verify(index_to_group.at(link.id) == -1, "A moby instance is in two or more different groups!");
+			index_to_group.at(link.id) = i;
+		}
+	}
+	return index_to_group;
+}
 
 packed_struct(RacMobyInstance,
 	/* 0x00 */ s32 size; // sizeof(RacMobyInstance)
@@ -67,10 +79,10 @@ packed_struct(RacMobyInstance,
 )
 static_assert(sizeof(RacMobyInstance) == 0x78);
 
-struct RAC1MobyBlock {
+struct RacMobyBlock {
 	static void read(PvarTypes& types, Gameplay& gameplay, Buffer src, Game game) {
 		auto& header = src.read<MobyBlockHeader>(0, "moby block header");
-		gameplay.dynamic_moby_count = header.dynamic_count;
+		gameplay.spawnable_moby_count = header.spawnable_moby_count;
 		s32 index = 0;
 		gameplay.moby_instances = std::vector<MobyInstance>();
 		gameplay.moby_instances->reserve(header.static_count);
@@ -84,15 +96,21 @@ struct RAC1MobyBlock {
 	}
 	
 	static bool write(OutBuffer dest, const PvarTypes& types, const Gameplay& gameplay, Game game) {
-		verify(gameplay.dynamic_moby_count.has_value(), "Missing dynamic moby count field.");
+		verify(gameplay.spawnable_moby_count.has_value(), "Missing dynamic moby count field.");
 		verify(gameplay.moby_instances.has_value(), "Missing moby instances array.");
+		verify(gameplay.moby_groups.has_value(), "Missing moby groups array.");
+		
+		std::vector<s32> index_to_group = moby_index_to_group(*gameplay.moby_groups, (s32) opt_size(gameplay.moby_instances));
+		
 		MobyBlockHeader header = {0};
 		header.static_count = gameplay.moby_instances->size();
-		header.dynamic_count = *gameplay.dynamic_moby_count;
+		header.spawnable_moby_count = *gameplay.spawnable_moby_count;
 		dest.write(header);
-		for(MobyInstance instance : *gameplay.moby_instances) {
+		for(size_t i = 0; i < gameplay.moby_instances->size(); i++) {
+			MobyInstance instance = (*gameplay.moby_instances)[i];
 			RacMobyInstance entry;
 			swap_moby(instance, entry);
+			entry.group = index_to_group.at(i);
 			dest.write(entry);
 		}
 		return true;
@@ -112,15 +130,12 @@ struct RAC1MobyBlock {
 		SWAP_PACKED(l.update_distance, r.update_distance);
 		r.unused_28 = 32;
 		r.unused_2c = 64;
-		SWAP_PACKED(l.group, r.group);
 		SWAP_PACKED(l.is_rooted, r.is_rooted);
 		SWAP_PACKED(l.rooted_distance, r.rooted_distance);
 		SWAP_PACKED(l.rac1_unknown_54, r.unknown_54);
 		SWAP_PACKED(l.occlusion, r.occlusion);
 		SWAP_PACKED(l.rac1_unknown_60, r.unknown_60);
-		SWAP_PACKED(l.colour().r, r.colour.r);
-		SWAP_PACKED(l.colour().g, r.colour.g);
-		SWAP_PACKED(l.colour().b, r.colour.b);
+		SWAP_COLOUR(l.colour(), r.colour);
 		SWAP_PACKED(l.light, r.light);
 		SWAP_PACKED(l.rac1_unknown_74, r.unknown_74);
 	}
@@ -158,10 +173,10 @@ packed_struct(GcUyaMobyInstance,
 )
 static_assert(sizeof(GcUyaMobyInstance) == 0x88);
 
-struct RAC23MobyBlock {
+struct GcUyaMobyBlock {
 	static void read(PvarTypes& types, Gameplay& gameplay, Buffer src, Game game) {
 		auto& header = src.read<MobyBlockHeader>(0, "moby block header");
-		gameplay.dynamic_moby_count = header.dynamic_count;
+		gameplay.spawnable_moby_count = header.spawnable_moby_count;
 		s32 index = 0;
 		gameplay.moby_instances = std::vector<MobyInstance>();
 		gameplay.moby_instances->reserve(header.static_count);
@@ -175,15 +190,21 @@ struct RAC23MobyBlock {
 	}
 	
 	static bool write(OutBuffer dest, const PvarTypes& types, const Gameplay& gameplay, Game game) {
-		verify(gameplay.dynamic_moby_count.has_value(), "Missing dynamic moby count field.");
+		verify(gameplay.spawnable_moby_count.has_value(), "Missing dynamic moby count field.");
 		verify(gameplay.moby_instances.has_value(), "Missing moby instances array.");
+		verify(gameplay.moby_groups.has_value(), "Missing moby groups array.");
+		
+		std::vector<s32> index_to_group = moby_index_to_group(*gameplay.moby_groups, (s32) opt_size(gameplay.moby_instances));
+		
 		MobyBlockHeader header = {0};
 		header.static_count = gameplay.moby_instances->size();
-		header.dynamic_count = *gameplay.dynamic_moby_count;
+		header.spawnable_moby_count = *gameplay.spawnable_moby_count;
 		dest.write(header);
-		for(MobyInstance instance : *gameplay.moby_instances) {
+		for(size_t i = 0; i < gameplay.moby_instances->size(); i++) {
+			MobyInstance instance = (*gameplay.moby_instances)[i];
 			GcUyaMobyInstance entry;
 			swap_moby(instance, entry);
+			entry.group = index_to_group.at(i);
 			dest.write(entry);
 		}
 		return true;
@@ -194,9 +215,7 @@ struct RAC23MobyBlock {
 		swap_position_rotation_scale(l, r);
 		SWAP_PACKED(l.temp_pvar_index(), r.pvar_index);
 		SWAP_PACKED(l.draw_distance(), r.draw_distance);
-		SWAP_PACKED(l.colour().r, r.light_colour.r);
-		SWAP_PACKED(l.colour().g, r.light_colour.g);
-		SWAP_PACKED(l.colour().b, r.light_colour.b);
+		SWAP_COLOUR(l.colour(), r.light_colour);
 		SWAP_PACKED(l.mission, r.mission);
 		SWAP_PACKED(l.rac23_unknown_8, r.unknown_8);
 		SWAP_PACKED(l.rac23_unknown_c, r.unknown_c);
@@ -210,7 +229,6 @@ struct RAC23MobyBlock {
 		SWAP_PACKED(l.update_distance, r.update_distance);
 		r.unused_38 = 32;
 		r.unused_3c = 64;
-		SWAP_PACKED(l.group, r.group);
 		SWAP_PACKED(l.is_rooted, r.is_rooted);
 		SWAP_PACKED(l.rooted_distance, r.rooted_distance);
 		SWAP_PACKED(l.rac23_unknown_4c, r.unknown_4c);
@@ -247,10 +265,10 @@ packed_struct(DlMobyInstance,
 )
 static_assert(sizeof(DlMobyInstance) == 0x70);
 
-struct DeadlockedMobyBlock {
+struct DlMobyBlock {
 	static void read(PvarTypes& types, Gameplay& gameplay, Buffer src, Game game) {
 		auto& header = src.read<MobyBlockHeader>(0, "moby block header");
-		gameplay.dynamic_moby_count = header.dynamic_count;
+		gameplay.spawnable_moby_count = header.spawnable_moby_count;
 		gameplay.moby_instances = std::vector<MobyInstance>();
 		gameplay.moby_instances->reserve(header.static_count);
 		s32 index = 0;
@@ -269,15 +287,21 @@ struct DeadlockedMobyBlock {
 	}
 	
 	static bool write(OutBuffer dest, const PvarTypes& types, const Gameplay& gameplay, Game game) {
-		verify(gameplay.dynamic_moby_count.has_value(), "Missing dynamic moby count field.");
+		verify(gameplay.spawnable_moby_count.has_value(), "Missing dynamic moby count field.");
 		verify(gameplay.moby_instances.has_value(), "Missing moby instances array.");
+		verify(gameplay.moby_groups.has_value(), "Missing moby groups array.");
+		
+		std::vector<s32> index_to_group = moby_index_to_group(*gameplay.moby_groups, (s32) opt_size(gameplay.moby_instances));
+		
 		MobyBlockHeader header = {0};
 		header.static_count = gameplay.moby_instances->size();
-		header.dynamic_count = *gameplay.dynamic_moby_count;
+		header.spawnable_moby_count = *gameplay.spawnable_moby_count;
 		dest.write(header);
-		for(MobyInstance instance : *gameplay.moby_instances) {
+		for(size_t i = 0; i < gameplay.moby_instances->size(); i++) {
+			MobyInstance instance = (*gameplay.moby_instances)[i];
 			DlMobyInstance entry;
 			swap_moby(instance, entry);
+			entry.group = index_to_group.at(i);
 			dest.write(entry);
 		}
 		return true;
@@ -288,9 +312,7 @@ struct DeadlockedMobyBlock {
 		swap_position_rotation_scale(l, r);
 		SWAP_PACKED(l.temp_pvar_index(), r.pvar_index);
 		SWAP_PACKED(l.draw_distance(), r.draw_distance);
-		SWAP_PACKED(l.colour().r, r.colour.r);
-		SWAP_PACKED(l.colour().g, r.colour.g);
-		SWAP_PACKED(l.colour().b, r.colour.b);
+		SWAP_COLOUR(l.colour(), r.colour);
 		SWAP_PACKED(l.mission, r.mission);
 		SWAP_PACKED(l.uid, r.uid);
 		SWAP_PACKED(l.bolts, r.bolts);
@@ -298,7 +320,6 @@ struct DeadlockedMobyBlock {
 		SWAP_PACKED(l.update_distance, r.update_distance);
 		r.unused_20 = 32;
 		r.unused_24 = 64;
-		SWAP_PACKED(l.group, r.group);
 		SWAP_PACKED(l.is_rooted, r.is_rooted);
 		SWAP_PACKED(l.rooted_distance, r.rooted_distance);
 		r.unused_4c = 1;
@@ -448,8 +469,9 @@ packed_struct(GroupHeader,
 	/* 0x8 */ s32 pad[2];
 )
 
+template <typename GroupInstance>
 struct GroupBlock {
-	static void read(std::vector<Group>& dest, Buffer src, Game game) {
+	static void read(std::vector<GroupInstance>& dest, Buffer src, Game game) {
 		auto& header = src.read<GroupHeader>(0, "group block header");
 		auto pointers = src.read_multiple<s32>(0x10, header.group_count, "group pointers");
 		s64 data_ofs = 0x10 + header.group_count * 4;
@@ -460,20 +482,19 @@ struct GroupBlock {
 		s32 index = 0;
 		for(s32 pointer : pointers) {
 			s32 member_index = pointer / 2;
-			Group group;
-			group.id = index++;
+			GroupInstance& group = dest.emplace_back();
+			group.set_id_value(index++);
 			s32 member;
 			if(pointer >= 0) {
 				do {
 					member = members[member_index++];
-					group.members.push_back(member & 0x7fff);
+					group.members.emplace_back(member & 0x7fff);
 				} while(!(member & 0x8000));
 			}
-			dest.emplace_back(std::move(group));
 		}
 	}
 	
-	static void write(OutBuffer dest, const std::vector<Group>& src, Game game) {
+	static void write(OutBuffer dest, const std::vector<GroupInstance>& src, Game game) {
 		s64 header_ofs = dest.alloc<GroupHeader>();
 		s64 pointer_ofs = dest.alloc_multiple<s32>(src.size());
 		dest.pad(0x10, 0);
@@ -481,14 +502,14 @@ struct GroupBlock {
 		
 		std::vector<s32> pointers;
 		pointers.reserve(src.size());
-		for(const Group& group : src) {
+		for(const GroupInstance& group : src) {
 			if(group.members.size() > 0) {
 				pointers.push_back(dest.tell() - data_ofs);
 				for(size_t i = 0; i < group.members.size(); i++) {
 					if(i == group.members.size() - 1) {
-						dest.write<u16>(group.members[i] | 0x8000);
+						dest.write<u16>(group.members[i].id | 0x8000);
 					} else {
-						dest.write<u16>(group.members[i]);
+						dest.write<u16>(group.members[i].id);
 					}
 				}
 			} else {
@@ -716,9 +737,7 @@ packed_struct(ShrubInstancePacked,
 static void swap_instance(ShrubInstance& l, ShrubInstancePacked& r) {
 	swap_matrix(l, r);
 	SWAP_PACKED(l.draw_distance(), r.draw_distance);
-	SWAP_PACKED(l.colour().r, r.colour.r);
-	SWAP_PACKED(l.colour().g, r.colour.g);
-	SWAP_PACKED(l.colour().b, r.colour.b);
+	SWAP_COLOUR(l.colour(), r.colour);
 	SWAP_PACKED(l.o_class, r.o_class);
 	r.unused_8 = 0;
 	r.unused_c = 0;

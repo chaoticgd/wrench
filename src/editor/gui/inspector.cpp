@@ -107,7 +107,7 @@ void inspector() {
 		{COM_NONE            , INST_MOBY      , "Bolts    ", scalar_funcs(adapt_member_pointer(&MobyInstance::bolts))},
 		{COM_NONE            , INST_MOBY      , "Class    ", scalar_funcs(adapt_member_pointer(&MobyInstance::o_class))},
 		{COM_NONE            , INST_MOBY      , "Updt Dist", scalar_funcs(adapt_member_pointer(&MobyInstance::update_distance))},
-		{COM_NONE            , INST_MOBY      , "Group    ", scalar_funcs(adapt_member_pointer(&MobyInstance::group))},
+		//{COM_NONE            , INST_MOBY      , "Group    ", scalar_funcs(adapt_member_pointer(&MobyInstance::group))},
 		{COM_NONE            , INST_MOBY      , "Rooted   ", moby_rooted_funcs()},
 		{COM_NONE            , INST_MOBY      , "Occlusion", scalar_funcs(adapt_member_pointer(&MobyInstance::occlusion))},
 		{COM_NONE            , INST_MOBY      , "Mode Bits", scalar_funcs(adapt_member_pointer(&MobyInstance::mode_bits))},

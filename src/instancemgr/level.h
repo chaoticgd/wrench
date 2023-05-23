@@ -74,7 +74,9 @@ struct LevelSettings {
 	glm::vec3 sphere_pos = {0.f, 0.f, 0.f};
 	glm::vec3 ship_pos = {0.f, 0.f, 0.f};
 	f32 ship_rot_z = 0.f;
-	Opt<glm::vec3> unknown_colour;
+	s32 unknown_1;
+	s32 unknown_2;
+	s32 unknown_3;
 	// Planes specifying the volumes of the level chunks. The first element
 	// represents the second chunk, and the second element represents the third
 	// chunk. If both tests fail, you can assume it's the first chunk (chunk 0).

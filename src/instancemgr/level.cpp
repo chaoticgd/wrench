@@ -20,38 +20,33 @@
 
 #include <algorithm>
 #include <core/png.h>
-#include <instancemgr/wtf_util.h>
+#include <instancemgr/wtf_glue.h>
 
 LevelSettings read_level_settings(const WtfNode* node) {
 	LevelSettings settings;
 	
 	const WtfAttribute* background_col_attrib = wtf_attribute(node, "background_col");
 	if(background_col_attrib) {
-		settings.background_colour = read_inst_float_list<glm::vec3>(background_col_attrib, "background_col");
+		settings.background_colour.emplace();
+		read_inst_attrib(*settings.background_colour, background_col_attrib, "background_col");
 	}
 	const WtfAttribute* fog_col_attrib = wtf_attribute(node, "fog_col");
 	if(fog_col_attrib) {
-		settings.fog_colour = read_inst_float_list<glm::vec3>(fog_col_attrib, "fog_col");
+		settings.fog_colour.emplace();
+		read_inst_attrib(*settings.fog_colour, fog_col_attrib, "fog_col");
 	}
-	settings.fog_near_dist = read_inst_float(node, "fog_near_dist");
-	settings.fog_far_dist = read_inst_float(node, "fog_far_dist");
-	settings.fog_near_intensity = read_inst_float(node, "fog_near_intensity");
-	settings.fog_far_intensity = read_inst_float(node, "fog_far_intensity");
-	settings.death_height = read_inst_float(node, "death_height");
-	settings.is_spherical_world = read_inst_bool(node, "is_spherical_world");
-	settings.sphere_pos = read_inst_float_list<glm::vec3>(node, "sphere_pos");
-	settings.ship_pos = read_inst_float_list<glm::vec3>(node, "ship_pos");
-	settings.ship_rot_z = read_inst_float(node, "ship_rot_z");
-	const WtfAttribute* unknown_col_attrib = wtf_attribute(node, "unknown_col");
-	if(unknown_col_attrib) {
-		settings.unknown_colour = read_inst_float_list<glm::vec3>(unknown_col_attrib, "unknown_col");
-	}
-	
-	for(const WtfNode* plane_node = wtf_first_child(node, "ChunkPlane"); plane_node != nullptr; plane_node = wtf_next_sibling(plane_node, "ChunkPlane")) {
-		ChunkPlane& plane = settings.chunk_planes.emplace_back();
-		plane.point = read_inst_float_list<glm::vec3>(plane_node, "point");
-		plane.normal = read_inst_float_list<glm::vec3>(plane_node, "normal");
-	}
+	read_inst_field(settings.fog_near_dist, node, "fog_near_dist");
+	read_inst_field(settings.fog_far_dist, node, "fog_far_dist");
+	read_inst_field(settings.fog_near_intensity, node, "fog_near_intensity");
+	read_inst_field(settings.fog_far_intensity, node, "fog_far_intensity");
+	read_inst_field(settings.death_height, node, "death_height");
+	read_inst_field(settings.is_spherical_world, node, "is_spherical_world");
+	read_inst_field(settings.sphere_pos, node, "sphere_pos");
+	read_inst_field(settings.ship_pos, node, "ship_pos");
+	read_inst_field(settings.ship_rot_z, node, "ship_rot_z");
+	read_inst_field(settings.unknown_1, node, "unknown_1");
+	read_inst_field(settings.unknown_2, node, "unknown_2");
+	read_inst_field(settings.unknown_3, node, "unknown_3");
 	
 	const WtfAttribute* core_sounds_count_attrib = wtf_attribute_of_type(node, "core_sounds_count", WTF_NUMBER);
 	if(core_sounds_count_attrib) {
@@ -63,36 +58,34 @@ LevelSettings read_level_settings(const WtfNode* node) {
 		settings.rac3_third_part = rac3_third_part_attrib->number.i;
 	}
 	
+	for(const WtfNode* plane_node = wtf_first_child(node, "ChunkPlane"); plane_node != nullptr; plane_node = wtf_next_sibling(plane_node, "ChunkPlane")) {
+		ChunkPlane& plane = settings.chunk_planes.emplace_back();
+		read_inst_field(plane.point, plane_node, "point");
+		read_inst_field(plane.normal, plane_node, "normal");
+	}
+	
 	return settings;
 }
 
 void write_level_settings(WtfWriter* ctx, const LevelSettings& settings) {
 	if(settings.background_colour.has_value()) {
-		write_inst_float_list(ctx, "background_col", *settings.background_colour);
+		write_inst_field(ctx, "background_col", *settings.background_colour);
 	}
 	if(settings.fog_colour.has_value()) {
-		write_inst_float_list(ctx, "fog_col", *settings.fog_colour);
+		write_inst_field(ctx, "fog_col", *settings.fog_colour);
 	}
-	wtf_write_float_attribute(ctx, "fog_near_dist", settings.fog_near_dist);
-	wtf_write_float_attribute(ctx, "fog_far_dist", settings.fog_far_dist);
-	wtf_write_float_attribute(ctx, "fog_near_intensity", settings.fog_near_intensity);
-	wtf_write_float_attribute(ctx, "fog_far_intensity", settings.fog_far_intensity);
-	wtf_write_float_attribute(ctx, "death_height", settings.death_height);
-	wtf_write_boolean_attribute(ctx, "is_spherical_world", settings.is_spherical_world);
-	write_inst_float_list(ctx, "sphere_pos", settings.sphere_pos);
-	write_inst_float_list(ctx, "ship_pos", settings.ship_pos);
-	wtf_write_float_attribute(ctx, "ship_rot_z", settings.ship_rot_z);
-	if(settings.unknown_colour.has_value()) {
-		write_inst_float_list(ctx, "unknown_col", *settings.unknown_colour);
-	}
-	
-	s32 i = 1;
-	for(const ChunkPlane& plane : settings.chunk_planes) {
-		wtf_begin_node(ctx, "ChunkPlane", std::to_string(i++).c_str());
-		write_inst_float_list(ctx, "point", plane.point);
-		write_inst_float_list(ctx, "normal", plane.normal);
-		wtf_end_node(ctx);
-	}
+	write_inst_field(ctx, "fog_near_dist", settings.fog_near_dist);
+	write_inst_field(ctx, "fog_far_dist", settings.fog_far_dist);
+	write_inst_field(ctx, "fog_near_intensity", settings.fog_near_intensity);
+	write_inst_field(ctx, "fog_far_intensity", settings.fog_far_intensity);
+	write_inst_field(ctx, "death_height", settings.death_height);
+	write_inst_field(ctx, "is_spherical_world", settings.is_spherical_world);
+	write_inst_field(ctx, "sphere_pos", settings.sphere_pos);
+	write_inst_field(ctx, "ship_pos", settings.ship_pos);
+	write_inst_field(ctx, "ship_rot_z", settings.ship_rot_z);
+	write_inst_field(ctx, "unknown_1", settings.unknown_1);
+	write_inst_field(ctx, "unknown_2", settings.unknown_2);
+	write_inst_field(ctx, "unknown_3", settings.unknown_3);
 	
 	if(settings.core_sounds_count.has_value()) {
 		wtf_write_integer_attribute(ctx, "core_sounds_count", *settings.core_sounds_count);
@@ -100,6 +93,14 @@ void write_level_settings(WtfWriter* ctx, const LevelSettings& settings) {
 	
 	if(settings.rac3_third_part.has_value()) {
 		wtf_write_integer_attribute(ctx, "rac3_third_part", *settings.rac3_third_part);
+	}
+	
+	s32 i = 1;
+	for(const ChunkPlane& plane : settings.chunk_planes) {
+		wtf_begin_node(ctx, "ChunkPlane", std::to_string(i++).c_str());
+		write_inst_field(ctx, "point", plane.point);
+		write_inst_field(ctx, "normal", plane.normal);
+		wtf_end_node(ctx);
 	}
 }
 

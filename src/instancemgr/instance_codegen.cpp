@@ -27,6 +27,7 @@
 #include <wtf/wtf.h>
 
 static void generate_instance_type_enum(WtfNode* root);
+static void generate_instance_links(WtfNode* root);
 static void generate_instance_types(WtfNode* root);
 static void generate_instance_read_write_funcs(WtfNode* root);
 static void generate_instance_read_write_table(WtfNode* root);
@@ -70,19 +71,21 @@ int main(int argc, char** argv) {
 	generate_instance_type_enum(root);
 	out("");
 	out("#endif");
+	out("#ifdef GENERATED_INSTANCE_LINKS");
 	out("");
+	generate_instance_links(root);
+	out("");
+	out("#endif");
 	out("#ifdef GENERATED_INSTANCE_TYPES");
 	out("");
 	out("#define INSTANCE_FORMAT_VERSION %d", format_version->number.i);
 	out("");
 	generate_instance_types(root);
 	out("#endif");
-	out("");
 	out("#ifdef GENERATED_INSTANCE_READ_WRITE_FUNCS");
 	out("");
 	generate_instance_read_write_funcs(root);
 	out("#endif");
-	out("");
 	out("#ifdef GENERATED_INSTANCE_READ_WRITE_TABLE");
 	out("");
 	generate_instance_read_write_table(root);
@@ -105,6 +108,18 @@ static void generate_instance_type_enum(WtfNode* root) {
 		out("\tINST_%s = %d,", enum_name.c_str(), number++);
 	}
 	out("};\n");
+}
+
+static void generate_instance_links(WtfNode* root) {
+	for(const WtfNode* type = wtf_first_child(root, "InstanceType"); type != nullptr; type = wtf_next_sibling(type, "InstanceType")) {
+		out("struct %sLink : InstanceLink {", type->tag);
+		out("\ts32 id;");
+		out("\t%sLink() : id(-1) {}", type->tag);
+		out("\t%sLink(s32 i) : id(i) {}", type->tag);
+		out("\tfriend auto operator<=>(const %sLink& lhs, const %sLink& rhs) = default;", type->tag, type->tag);
+		out("};");
+		out("typedef std::vector<%sLink> %sLinks;", type->tag, type->tag);
+	}
 }
 
 static const struct { const char* wtf_type; const char* cpp_type; const char* set = nullptr; } FIELD_TYPES[] = {
@@ -144,6 +159,9 @@ static void generate_instance_types(WtfNode* root) {
 					cpp_type = field_type.cpp_type;
 					set = field_type.set;
 				}
+			}
+			if(strstr(field->type_name, "Link")) {
+				set = nullptr;
 			}
 			if(!cpp_type) {
 				cpp_type = field->type_name;

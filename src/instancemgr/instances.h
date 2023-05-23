@@ -28,13 +28,13 @@ struct Instances {
 	
 	// objects
 	InstanceList<MobyInstance> moby_instances;
-	s32 dynamic_moby_count;
+	s32 spawnable_moby_count = 400;
 	std::vector<s32> moby_classes;
-	std::vector<Group> moby_groups;
+	InstanceList<MobyGroupInstance> moby_groups;
 	InstanceList<TieInstance> tie_instances;
-	std::vector<Group> tie_groups;
+	InstanceList<TieGroupInstance> tie_groups;
 	InstanceList<ShrubInstance> shrub_instances;
-	std::vector<Group> shrub_groups;
+	InstanceList<ShrubGroupInstance> shrub_groups;
 	std::vector<u8> global_pvar;
 	
 	// environment/lighting
@@ -54,7 +54,7 @@ struct Instances {
 	InstanceList<SoundInstance> sound_instances;
 	InstanceList<PathInstance> paths;
 	InstanceList<GrindPathInstance> grind_paths;
-	std::vector<Area> areas;
+	InstanceList<AreaInstance> areas;
 	
 	template <typename Callback>
 	void for_each_with(u32 required_components_mask, Callback callback) const;

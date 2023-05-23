@@ -78,12 +78,13 @@ static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConf
 	std::string instances_text = write_instances(instances_in);
 	write_file("/tmp/instances.txt", instances_text);
 	Instances instances_out = read_instances(instances_text);
+	instances_out.global_pvar = std::move(instances_in.global_pvar);
 	
 	// Write out new gameplay file.
 	Gameplay gameplay_out;
 	move_instances_to_gameplay(gameplay_out, instances_out, &help_messages, &occlusion);
 	std::vector<u8> dest = write_gameplay(gameplay_out, types, config.game(), *blocks);
-	
+		
 	// Compare the new file against the original.
 	strip_trailing_padding_from_lhs(src, dest);
 	bool headers_equal = diff_buffers(src, dest, 0, 0x100, mode == AssetTestMode::PRINT_DIFF_ON_FAIL);

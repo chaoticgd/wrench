@@ -16,7 +16,6 @@ This file was generated from instance_schema.wtf and is for version 21 of the in
 | bolts |  | s32 |
 | o_class |  | s32 |
 | update_distance |  | s32 |
-| group |  | s32 |
 | is_rooted |  | bool |
 | rooted_distance |  | f32 |
 | occlusion |  | s32 |
@@ -45,6 +44,15 @@ This file was generated from instance_schema.wtf and is for version 21 of the in
 | rac23_unknown_4c |  | s32 |
 | rac23_unknown_84 |  | s32 |
 
+### MobyGroup
+
+
+*Fields*
+
+| Name | Description | Type |
+| - | - | - |
+| members |  | MobyLinks |
+
 ### Tie
 
 
@@ -57,6 +65,15 @@ This file was generated from instance_schema.wtf and is for version 21 of the in
 | directional_lights |  | s32 |
 | uid |  | s32 |
 | ambient_rgbas |  | bytes |
+
+### TieGroup
+
+
+*Fields*
+
+| Name | Description | Type |
+| - | - | - |
+| members |  | TieLinks |
 
 ### Shrub
 
@@ -71,6 +88,15 @@ This file was generated from instance_schema.wtf and is for version 21 of the in
 | unknown_64 |  | s32 |
 | unknown_68 |  | s32 |
 | unknown_6c |  | s32 |
+
+### ShrubGroup
+
+
+*Fields*
+
+| Name | Description | Type |
+| - | - | - |
+| members |  | ShrubLinks |
 
 ### DirLight
 
@@ -188,4 +214,18 @@ This file was generated from instance_schema.wtf and is for version 21 of the in
 | unknown_4 |  | s32 |
 | wrap |  | s32 |
 | inactive |  | s32 |
+
+### Area
+
+
+*Fields*
+
+| Name | Description | Type |
+| - | - | - |
+| last_update_time |  | s32 |
+| paths |  | PathLinks |
+| cuboids |  | CuboidLinks |
+| spheres |  | SphereLinks |
+| cylinders |  | CylinderLinks |
+| negative_cuboids |  | CuboidLinks |
 

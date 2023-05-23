@@ -31,7 +31,9 @@ packed_struct(RacLevelSettingsFirstPart,
 	/* 0x28 */ f32 death_height;
 	/* 0x2c */ Vec3f ship_position;
 	/* 0x38 */ f32 ship_rotation_z;
-	/* 0x3c */ Rgb96 unknown_colour;
+	/* 0x3c */ s32 unknown_3c;
+	/* 0x40 */ s32 unknown_40;
+	/* 0x44 */ s32 unknown_44;
 	/* 0x48 */ u32 pad[2];
 )
 static_assert(sizeof(RacLevelSettingsFirstPart) == 0x50);
@@ -48,7 +50,9 @@ packed_struct(GcUyaDlLevelSettingsFirstPart,
 	/* 0x30 */ Vec3f sphere_centre;
 	/* 0x3c */ Vec3f ship_position;
 	/* 0x48 */ f32 ship_rotation_z;
-	/* 0x4c */ Rgb96 unknown_colour;
+	/* 0x4c */ s32 unknown_4c;
+	/* 0x50 */ s32 unknown_50;
+	/* 0x54 */ s32 unknown_54;
 	/* 0x58 */ u32 pad;
 )
 static_assert(sizeof(GcUyaDlLevelSettingsFirstPart) == 0x5c);
@@ -136,7 +140,7 @@ struct LevelSettingsBlock {
 					dest.write(packed);
 				}
 			} else {
-				ChunkPlane terminator = {};
+				ChunkPlanePacked terminator = {};
 				dest.write(terminator);
 			}
 			verify(src.core_sounds_count.has_value(), "Missing core_sounds_count in level settings block.");
@@ -174,7 +178,9 @@ struct LevelSettingsBlock {
 		SWAP_PACKED(l.ship_pos.y, r.ship_position.y);
 		SWAP_PACKED(l.ship_pos.z, r.ship_position.z);
 		SWAP_PACKED(l.ship_rot_z, r.ship_rotation_z);
-		SWAP_COLOUR_OPT(l.unknown_colour, r.unknown_colour);
+		SWAP_PACKED(l.unknown_1, r.unknown_3c);
+		SWAP_PACKED(l.unknown_2, r.unknown_40);
+		SWAP_PACKED(l.unknown_3, r.unknown_44);
 		r.pad[0] = 0;
 		r.pad[1] = 0;
 	}
@@ -195,7 +201,9 @@ struct LevelSettingsBlock {
 		SWAP_PACKED(l.ship_pos.y, r.ship_position.y);
 		SWAP_PACKED(l.ship_pos.z, r.ship_position.z);
 		SWAP_PACKED(l.ship_rot_z, r.ship_rotation_z);
-		SWAP_COLOUR_OPT(l.unknown_colour, r.unknown_colour);
+		SWAP_PACKED(l.unknown_1, r.unknown_4c);
+		SWAP_PACKED(l.unknown_2, r.unknown_50);
+		SWAP_PACKED(l.unknown_3, r.unknown_54);
 		r.pad = 0;
 	}
 };
@@ -226,7 +234,7 @@ struct HelpMessageBlock {
 		}
 		
 		for(HelpMessageEntry entry : table) {
-			HelpMessage message;
+			HelpMessage& message = dest.emplace_back();
 			if(entry.offset != 0) {
 				message.string = src.read_string(entry.offset, is_korean);
 			}
@@ -236,7 +244,6 @@ struct HelpMessageBlock {
 			message.coop_id = entry.coop_id;
 			message.vag = entry.vag;
 			message.character = entry.character;
-			dest.emplace_back(std::move(message));
 		}
 	}
 	
@@ -253,7 +260,7 @@ struct HelpMessageBlock {
 		
 		s64 entry_ofs = table_ofs;
 		for(const HelpMessage& message : src) {
-			HelpMessageEntry entry {0};
+			HelpMessageEntry entry = {};
 			if(message.string) {
 				entry.offset = dest.tell() - base_ofs;
 			}
@@ -324,10 +331,9 @@ struct PathBlock {
 		auto& header = src.read<PathBlockHeader>(0, "path block header");
 		std::vector<std::vector<glm::vec4>> splines = read_splines(src.subbuf(0x10), header.spline_count, header.data_offset - 0x10);
 		for(size_t i = 0; i < splines.size(); i++) {
-			PathInstance inst;
+			PathInstance& inst = dest.emplace_back();
 			inst.set_id_value(i);
 			inst.spline() = std::move(splines[i]);
-			dest.emplace_back(std::move(inst));
 		}
 	}
 	
@@ -338,7 +344,7 @@ struct PathBlock {
 		}
 		
 		s64 header_pos = dest.alloc<PathBlockHeader>();
-		PathBlockHeader header = {0};
+		PathBlockHeader header = {};
 		header.spline_count = src.size();
 		header.data_offset = write_splines(dest, splines);
 		header.data_size = dest.tell() - header.data_offset;
@@ -352,7 +358,7 @@ packed_struct(GrindPathData,
 	s32 unknown_4;
 	s32 wrap;
 	s32 inactive;
-	s32 pad = 0;
+	s32 pad;
 )
 
 struct GrindPathBlock {
@@ -362,14 +368,13 @@ struct GrindPathBlock {
 		s64 offsets_pos = 0x10 + header.spline_count * sizeof(GrindPathData);
 		auto splines = read_splines(src.subbuf(offsets_pos), header.spline_count, header.data_offset - offsets_pos);
 		for(s64 i = 0; i < header.spline_count; i++) {
-			GrindPathInstance inst;
+			GrindPathInstance& inst = dest.emplace_back();
 			inst.set_id_value(i);
 			inst.bounding_sphere() = grindpaths[i].bounding_sphere.unpack();
 			inst.unknown_4 = grindpaths[i].unknown_4;
 			inst.wrap = grindpaths[i].wrap;
 			inst.inactive = grindpaths[i].inactive;
 			inst.spline() = splines[i];
-			dest.emplace_back(std::move(inst));
 		}
 	}
 	
@@ -377,7 +382,7 @@ struct GrindPathBlock {
 		s64 header_ofs = dest.alloc<PathBlockHeader>();
 		std::vector<std::vector<glm::vec4>> splines;
 		for(const GrindPathInstance& inst : src) {
-			GrindPathData packed;
+			GrindPathData packed = {};
 			packed.bounding_sphere = Vec4f::pack(inst.bounding_sphere());
 			packed.unknown_4 = inst.unknown_4;
 			packed.wrap = inst.wrap;
@@ -385,7 +390,7 @@ struct GrindPathBlock {
 			dest.write(packed);
 			splines.emplace_back(inst.spline());
 		}
-		PathBlockHeader header = {0};
+		PathBlockHeader header = {};
 		header.spline_count = src.size();
 		s32 abs_data_offset = write_splines(dest, splines);
 		header.data_offset = abs_data_offset - header_ofs;
@@ -394,78 +399,171 @@ struct GrindPathBlock {
 	}
 };
 
+packed_struct(ShapePacked,
+	/* 0x00 */ Mat4 matrix;
+	/* 0x40 */ Mat3 inverse_matrix;
+	/* 0x70 */ Vec3f rotation;
+	/* 0x7c */ f32 unused_7c;
+)
+
+static void swap_instance(CuboidInstance& l, ShapePacked& r) {
+	swap_matrix_inverse_rotation(l, r);
+	r.unused_7c = 0.f;
+}
+
+static void swap_instance(SphereInstance& l, ShapePacked& r) {
+	swap_matrix_inverse_rotation(l, r);
+	r.unused_7c = 0.f;
+}
+
+static void swap_instance(CylinderInstance& l, ShapePacked& r) {
+	swap_matrix_inverse_rotation(l, r);
+	r.unused_7c = 0.f;
+}
+
+static void swap_instance(PillInstance& l, ShapePacked& r) {
+	swap_matrix_inverse_rotation(l, r);
+	r.unused_7c = 0.f;
+}
+
 packed_struct(AreasHeader,
-	s32 area_count;
-	s32 part_offsets[5];
-	s32 unknown_1c;
-	s32 unknown_20;
+	/* 0x00 */ s32 area_count;
+	/* 0x04 */ s32 part_offsets[5];
+	/* 0x1c */ s32 unused_1c;
+	/* 0x20 */ s32 unused_20;
 )
 
 packed_struct(GameplayAreaPacked,
-	Vec4f bounding_sphere;
-	s16 part_counts[5];
-	s16 last_update_time;
-	s32 relative_part_offsets[5];
+	/* 0x00 */ Vec4f bounding_sphere;
+	/* 0x10 */ s16 part_counts[5];
+	/* 0x1a */ s16 last_update_time;
+	/* 0x1c */ s32 relative_part_offsets[5];
 )
 
+enum AreaPart {
+	AREA_PART_PATHS = 0,
+	AREA_PART_CUBOIDS = 1,
+	AREA_PART_SPHERES = 2,
+	AREA_PART_CYLINDERS = 3,
+	AREA_PART_NEGATIVE_CUBOIDS = 4
+};
+
 struct AreasBlock {
-	static void read(std::vector<Area>& dest, Buffer src, Game game) {
+	static void read(std::vector<AreaInstance>& dest, Buffer src, Game game) {
 		src = src.subbuf(4); // Skip past size field.
 		auto header = src.read<AreasHeader>(0, "area list block header");
-		auto entries = src.read_multiple<GameplayAreaPacked>(sizeof(AreasHeader), header.area_count, "area list table");
-		s32 index = 0;
-		for(const GameplayAreaPacked& entry : entries) {
-			Area area;
-			area.id = index++;
-			area.bounding_sphere = entry.bounding_sphere.unpack();
-			area.last_update_time = entry.last_update_time;
-			for(s32 part = 0; part < 5; part++) {
-				s32 part_ofs = header.part_offsets[part] + entry.relative_part_offsets[part];
-				area.parts[part] = src.read_multiple<s32>(part_ofs, entry.part_counts[part], "area list data").copy();
+		auto table = src.read_multiple<GameplayAreaPacked>(sizeof(AreasHeader), header.area_count, "area list table");
+		for(s32 i = 0; i < (s32) table.size(); i++) {
+			const GameplayAreaPacked& packed = table[i];
+			AreaInstance& inst = dest.emplace_back();
+			inst.set_id_value(i);
+			inst.bounding_sphere() = packed.bounding_sphere.unpack();
+			inst.last_update_time = packed.last_update_time;
+			
+			s32 paths_ofs = header.part_offsets[AREA_PART_PATHS] + packed.relative_part_offsets[AREA_PART_PATHS];
+			auto paths = src.read_multiple<s32>(paths_ofs, packed.part_counts[AREA_PART_PATHS], "area path links").copy();
+			for(s32 link : paths) {
+				inst.paths.emplace_back(link);
 			}
-			dest.emplace_back(std::move(area));
+			
+			s32 cuboids_ofs = header.part_offsets[AREA_PART_CUBOIDS] + packed.relative_part_offsets[AREA_PART_CUBOIDS];
+			auto cuboids = src.read_multiple<s32>(cuboids_ofs, packed.part_counts[AREA_PART_CUBOIDS], "area cuboid links").copy();
+			for(s32 link : cuboids) {
+				inst.cuboids.emplace_back(link);
+			}
+			
+			s32 spheres_ofs = header.part_offsets[AREA_PART_SPHERES] + packed.relative_part_offsets[AREA_PART_SPHERES];
+			auto spheres = src.read_multiple<s32>(spheres_ofs, packed.part_counts[AREA_PART_SPHERES], "area sphere links").copy();
+			for(s32 link : spheres) {
+				inst.spheres.emplace_back(link);
+			}
+			
+			s32 cylinders_ofs = header.part_offsets[AREA_PART_CYLINDERS] + packed.relative_part_offsets[AREA_PART_CYLINDERS];
+			auto cylinders = src.read_multiple<s32>(cylinders_ofs, packed.part_counts[AREA_PART_CYLINDERS], "cylinder links").copy();
+			for(s32 link : cylinders) {
+				inst.cylinders.emplace_back(link);
+			}
+			
+			s32 negative_cuboids_ofs = header.part_offsets[AREA_PART_NEGATIVE_CUBOIDS] + packed.relative_part_offsets[AREA_PART_NEGATIVE_CUBOIDS];
+			auto negative_cuboids = src.read_multiple<s32>(negative_cuboids_ofs, packed.part_counts[AREA_PART_NEGATIVE_CUBOIDS], "negative cuboids").copy();
+			for(s32 link : negative_cuboids) {
+				inst.negative_cuboids.emplace_back(link);
+			}
 		}
 	}
 	
-	static void write(OutBuffer dest, const std::vector<Area>& src, Game game) {
+	static void write(OutBuffer dest, const std::vector<AreaInstance>& src, Game game) {
 		s64 size_ofs = dest.alloc<s32>();
 		s64 header_ofs = dest.alloc<AreasHeader>();
 		s64 table_ofs = dest.alloc_multiple<GameplayAreaPacked>(src.size());
 		
-		s64 total_part_counts[5] = {0, 0, 0, 0, 0};
-		
-		AreasHeader header;
 		std::vector<GameplayAreaPacked> table;
-		for(const Area& area : src) {
-			GameplayAreaPacked packed;
-			packed.bounding_sphere = Vec4f::pack(area.bounding_sphere);
-			for(s32 part = 0; part < 5; part++) {
-				packed.part_counts[part] = area.parts[part].size();
-				total_part_counts[part] += area.parts[part].size();
+		std::vector<s32> links[5];
+		
+		for(const AreaInstance& inst : src) {
+			GameplayAreaPacked& packed = table.emplace_back();
+			packed.bounding_sphere = Vec4f::pack(inst.bounding_sphere());
+			packed.last_update_time = inst.last_update_time;
+			
+			packed.relative_part_offsets[AREA_PART_PATHS] = (s32) !inst.paths.empty()
+				? (links[AREA_PART_PATHS].size() * 4) : 0;
+			packed.part_counts[AREA_PART_PATHS] = (s32) inst.paths.size();
+			for(PathLink link : inst.paths) {
+				links[AREA_PART_PATHS].emplace_back(link.id);
 			}
-			packed.last_update_time = area.last_update_time;
-			table.emplace_back(std::move(packed));
+			
+			packed.relative_part_offsets[AREA_PART_CUBOIDS] = (s32) !inst.cuboids.empty()
+				? (links[AREA_PART_CUBOIDS].size() * 4) : 0;
+			packed.part_counts[AREA_PART_CUBOIDS] = (s32) inst.cuboids.size();
+			for(CuboidLink link : inst.cuboids) {
+				links[AREA_PART_CUBOIDS].emplace_back(link.id);
+			}
+			
+			packed.relative_part_offsets[AREA_PART_SPHERES] = (s32) !inst.spheres.empty()
+				? (links[AREA_PART_SPHERES].size() * 4) : 0;
+			packed.part_counts[AREA_PART_SPHERES] = (s32) inst.spheres.size();
+			for(SphereLink link : inst.spheres) {
+				links[AREA_PART_SPHERES].emplace_back(link.id);
+			}
+			
+			packed.relative_part_offsets[AREA_PART_CYLINDERS] = (s32) !inst.cylinders.empty()
+				? (links[AREA_PART_CYLINDERS].size() * 4) : 0;
+			packed.part_counts[AREA_PART_CYLINDERS] = (s32) inst.cylinders.size();
+			for(CylinderLink link : inst.cylinders) {
+				links[AREA_PART_CYLINDERS].emplace_back(link.id);
+			}
+			
+			packed.relative_part_offsets[AREA_PART_NEGATIVE_CUBOIDS] = (s32) !inst.negative_cuboids.empty()
+				? (links[AREA_PART_NEGATIVE_CUBOIDS].size() * 4) : 0;
+			packed.part_counts[AREA_PART_NEGATIVE_CUBOIDS] = (s32) inst.negative_cuboids.size();
+			for(CuboidLink link : inst.negative_cuboids) {
+				links[AREA_PART_NEGATIVE_CUBOIDS].emplace_back(link.id);
+			}
 		}
 		
-		for(s32 part = 0; part < 5; part++) {
-			s64 paths_ofs = dest.tell();
-			if(total_part_counts[part] > 0) {
-				header.part_offsets[part] = paths_ofs - header_ofs;
-			} else {
-				header.part_offsets[part] = 0;
-			}
-			for(size_t area = 0; area < src.size(); area++) {
-				if(table[area].part_counts[part] > 0) {
-					table[area].relative_part_offsets[part] = dest.tell() - paths_ofs;
-					dest.write_multiple(src[area].parts[part]);
-				} else {
-					table[area].relative_part_offsets[part] = 0;
-				}
-			}
+		AreasHeader header = {};
+		header.area_count = (s32) src.size();
+		
+		if(!links[AREA_PART_PATHS].empty()) {
+			header.part_offsets[AREA_PART_PATHS] = (s32) (dest.tell() - header_ofs);
+			dest.write_multiple(links[AREA_PART_PATHS]);
 		}
-		header.area_count = src.size();
-		header.unknown_1c = 0;
-		header.unknown_20 = 0;
+		if(!links[AREA_PART_CUBOIDS].empty()) {
+			header.part_offsets[AREA_PART_CUBOIDS] = (s32) (dest.tell() - header_ofs);
+			dest.write_multiple(links[AREA_PART_CUBOIDS]);
+		}
+		if(!links[AREA_PART_SPHERES].empty()) {
+			header.part_offsets[AREA_PART_SPHERES] = (s32) (dest.tell() - header_ofs);
+			dest.write_multiple(links[AREA_PART_SPHERES]);
+		}
+		if(!links[AREA_PART_CYLINDERS].empty()) {
+			header.part_offsets[AREA_PART_CYLINDERS] = (s32) (dest.tell() - header_ofs);
+			dest.write_multiple(links[AREA_PART_CYLINDERS]);
+		}
+		if(!links[AREA_PART_NEGATIVE_CUBOIDS].empty()) {
+			header.part_offsets[AREA_PART_NEGATIVE_CUBOIDS] = (s32) (dest.tell() - header_ofs);
+			dest.write_multiple(links[AREA_PART_NEGATIVE_CUBOIDS]);
+		}
 		
 		dest.write(size_ofs, dest.tell() - header_ofs);
 		dest.write(header_ofs, header);
@@ -509,33 +607,6 @@ std::vector<u8> write_occlusion_mappings(const Gameplay& gameplay, Game game) {
 		OcclusionMappingsBlock::write(dest, *gameplay.occlusion, game);
 	}
 	return dest;
-}
-
-packed_struct(ShapePacked,
-	/* 0x00 */ Mat4 matrix;
-	/* 0x40 */ Mat3 inverse_matrix;
-	/* 0x70 */ Vec3f rotation;
-	/* 0x7c */ f32 unused_7c;
-)
-
-static void swap_instance(CuboidInstance& l, ShapePacked& r) {
-	swap_matrix_inverse_rotation(l, r);
-	r.unused_7c = 0.f;
-}
-
-static void swap_instance(SphereInstance& l, ShapePacked& r) {
-	swap_matrix_inverse_rotation(l, r);
-	r.unused_7c = 0.f;
-}
-
-static void swap_instance(CylinderInstance& l, ShapePacked& r) {
-	swap_matrix_inverse_rotation(l, r);
-	r.unused_7c = 0.f;
-}
-
-static void swap_instance(PillInstance& l, ShapePacked& r) {
-	swap_matrix_inverse_rotation(l, r);
-	r.unused_7c = 0.f;
 }
 
 #endif

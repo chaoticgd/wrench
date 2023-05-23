@@ -36,6 +36,7 @@ add_library(wrenchinstancemgr STATIC
 	instance.cpp
 	instances.cpp
 	level.cpp
+	wtf_glue.cpp
 	${CMAKE_BINARY_DIR}/_generated_instance_types.inl
 )
 target_link_libraries(wrenchinstancemgr wrenchcore)

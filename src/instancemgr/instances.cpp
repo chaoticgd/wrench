@@ -68,6 +68,16 @@ Instances read_instances(std::string& src) {
 		}
 	}
 	
+	const WtfAttribute* moby_classes_attrib = wtf_attribute_of_type(root, "moby_classes", WTF_ARRAY);
+	for(WtfAttribute* o_class = moby_classes_attrib->first_array_element; o_class != nullptr; o_class = o_class->next) {
+		verify(o_class->type == WTF_NUMBER, "Bad moby class number.");
+		dest.moby_classes.emplace_back(o_class->number.i);
+	}
+	
+	const WtfAttribute* spawnable_moby_count_attrib = wtf_attribute_of_type(root, "spawnable_moby_count", WTF_NUMBER);
+	verify(spawnable_moby_count_attrib, "Missing 'spawnable_moby_count' field.");
+	dest.spawnable_moby_count = spawnable_moby_count_attrib->number.i;
+	
 	return dest;
 }
 
@@ -83,6 +93,16 @@ std::string write_instances(const Instances& src) {
 	for(const InstanceReadWriteFuncs& funcs : read_write_funcs) {
 		funcs.write(ctx, src);
 	}
+	
+	wtf_begin_attribute(ctx, "moby_classes");
+	wtf_begin_array(ctx);
+	for(s32 o_class : src.moby_classes) {
+		wtf_write_integer(ctx, o_class);
+	}
+	wtf_end_array(ctx);
+	wtf_end_attribute(ctx);
+	
+	wtf_write_integer_attribute(ctx, "spawnable_moby_count", src.spawnable_moby_count);
 	
 	return dest;
 }

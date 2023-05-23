@@ -28,6 +28,11 @@
 #include "_generated_instance_types.inl"
 #undef GENERATED_INSTANCE_TYPE_ENUM
 
+struct InstanceLink {};
+#define GENERATED_INSTANCE_LINKS
+#include "_generated_instance_types.inl"
+#undef GENERATED_INSTANCE_LINKS
+
 struct Instances;
 struct WtfNode;
 struct WtfWriter;
@@ -165,26 +170,6 @@ const char* instance_type_to_string(InstanceType type);
 #define GENERATED_INSTANCE_TYPES
 #include "_generated_instance_types.inl"
 #undef GENERATED_INSTANCE_TYPES
-
-struct Group {
-	s32 id;
-	std::vector<u16> members;
-};
-
-enum AreaPart {
-	AREA_PART_PATHS = 0,
-	AREA_PART_CUBOIDS = 1,
-	AREA_PART_SPHERES = 2,
-	AREA_PART_CYLINDERS = 3,
-	AREA_PART_NEG_CUBOIDS = 4
-};
-
-struct Area {
-	s32 id;
-	glm::vec4 bounding_sphere;
-	s32 last_update_time;
-	std::vector<s32> parts[5];
-};
 
 packed_struct(OcclusionMapping,
 	s32 bit_index;
