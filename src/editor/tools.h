@@ -31,7 +31,7 @@ public:
 
 	GlTexture icon;
 	
-	virtual void draw(app& a, glm::mat4 world_to_clip) = 0;
+	virtual void draw(app& a, const glm::mat4& view, const glm::mat4& projection) = 0;
 };
 
 std::vector<std::unique_ptr<Tool>> enumerate_tools();
@@ -40,19 +40,19 @@ class PickerTool : public Tool {
 public:
 	PickerTool();
 
-	void draw(app& a, glm::mat4 world_to_clip) override;
+	void draw(app& a, const glm::mat4& view, const glm::mat4& projection) override;
 
 private:
 	// Allows the user to select an object by clicking on it. See:
 	// https://www.opengl-tutorial.org/miscellaneous/clicking-on-objects/picking-with-an-opengl-hack/
-	void pick_object(app& a, glm::mat4 world_to_clip, ImVec2 position);
+	void pick_object(app& a, const glm::mat4& view, const glm::mat4& projection, ImVec2 position);
 };
 
 class SelectionTool : public Tool {
 public:
 	SelectionTool();
 
-	void draw(app& a, glm::mat4 world_to_clip) override;
+	void draw(app& a, const glm::mat4& view, const glm::mat4& projection) override;
 
 private:
 	bool _selecting = false;
@@ -63,7 +63,7 @@ class TranslateTool : public Tool {
 public:
 	TranslateTool();
 
-	void draw(app& a, glm::mat4 world_to_clip) override;
+	void draw(app& a, const glm::mat4& view, const glm::mat4& projection) override;
 
 private:
 	glm::vec3 _displacement = {0, 0, 0};

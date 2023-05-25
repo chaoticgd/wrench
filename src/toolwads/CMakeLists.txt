@@ -9,7 +9,7 @@ endif()
 add_executable(toolwadpacker
 	packer.cpp
 )
-target_link_libraries(toolwadpacker wrenchcore wrenchengine versioninfo)
+target_link_libraries(toolwadpacker wrenchcore wrenchengine wrenchinstancemgr versioninfo)
 
 # ******************************************************************************
 # Generate wads

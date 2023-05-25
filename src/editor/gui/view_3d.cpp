@@ -41,19 +41,20 @@ void view_3d() {
 	
 	auto& cam_pos = a.render_settings.camera_position;
 	auto& cam_rot = a.render_settings.camera_rotation;
-	glm::mat4 world_to_clip = compose_world_to_clip(*view_size, cam_pos, cam_rot);
-	prepare_frame(*lvl, world_to_clip);
+	glm::mat4 view = compose_view_matrix(cam_pos, cam_rot);
+	glm::mat4 projection = compose_projection_matrix(*view_size);
+	prepare_frame(*lvl);
 	
 	render_to_texture(&frame_buffer_texture, view_size->x, view_size->y, [&]() {
 		glClearColor(0, 0, 0, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glViewport(0, 0, view_size->x, view_size->y);
 		
-		draw_level(*lvl, world_to_clip, a.render_settings);
+		draw_level(*lvl, view, projection, a.render_settings);
 		
 		ImGuiContext& g = *GImGui;
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, g.Style.WindowPadding * 2.0f);
-		a.active_tool().draw(a, world_to_clip);
+		a.active_tool().draw(a, view, projection);
 		ImGui::PopStyleVar();
 	});
 	

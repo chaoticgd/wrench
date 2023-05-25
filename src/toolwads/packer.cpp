@@ -19,6 +19,7 @@
 #include <fstream>
 #include <core/png.h>
 #include <engine/compression.h>
+#include <instancemgr/instance.h>
 #include <toolwads/wads.h>
 
 static void pack_build_wad();
@@ -134,6 +135,7 @@ static void pack_gui_wad() {
 	header.fonts[0] = pack_file(wad, "data/gui/Barlow-Regular.ttf");
 	header.fonts[1] = pack_file(wad, "data/gui/Barlow-Italic.ttf");
 	
+	wad.pad(SECTOR_SIZE, 0);
 	wad.write<GuiWadHeader>(0, header);
 }
 
@@ -149,6 +151,7 @@ static void pack_launcher_wad() {
 	header.placeholder_images[0] = pack_compressed_image(wad, "data/launcher/my_mod.png");
 	header.oobe = pack_oobe_wad(wad);
 	
+	wad.pad(SECTOR_SIZE, 0);
 	wad.write<LauncherWadHeader>(0, header);
 }
 
@@ -168,7 +171,7 @@ static SectorRange pack_oobe_wad(OutputStream& dest) {
 	stream.write(0, header);
 	
 	std::vector<u8> compressed_bytes;
-	compress_wad(compressed_bytes, bytes, "", 8);
+	compress_wad(compressed_bytes, bytes, "", 1);
 	
 	dest.write_v(compressed_bytes);
 	
@@ -191,6 +194,9 @@ static void pack_editor_wad() {
 	header.tool_icons[2] = pack_ascii_icon(wad, "data/editor/icons/translate_tool.txt");
 	header.tool_icons[3] = pack_ascii_icon(wad, "data/editor/icons/spline_tool.txt");
 	
+	header.instance_3d_view_icons[INST_POINTLIGHT] = pack_compressed_image(wad, "data/editor/icons/point_light.png");
+	
+	wad.pad(SECTOR_SIZE, 0);
 	wad.write<EditorWadHeader>(0, header);
 }
 
@@ -243,10 +249,10 @@ static SectorRange pack_file(OutputStream& dest, const char* src_path) {
 	std::vector<u8> bytes = src.read_multiple<u8>(0, src.size());
 	
 	std::vector<u8> compressed_bytes;
-	compress_wad(compressed_bytes, bytes, "", 8);
+	compress_wad(compressed_bytes, bytes, "", 1);
 	
 	dest.write_v(compressed_bytes);
-	dest.pad(SECTOR_SIZE, 0);
+	
 	SectorRange range;
 	range.offset = Sector32::size_from_bytes(offset);
 	range.size = Sector32::size_from_bytes(dest.tell() - offset);
@@ -263,7 +269,7 @@ static SectorRange pack_compressed_image(OutputStream& dest, const char* src_pat
 	pack_image(stream, src_path);
 	
 	std::vector<u8> compressed_bytes;
-	compress_wad(compressed_bytes, bytes, "", 8);
+	compress_wad(compressed_bytes, bytes, "", 1);
 	
 	dest.write_v(compressed_bytes);
 	

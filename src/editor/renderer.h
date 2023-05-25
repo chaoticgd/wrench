@@ -69,11 +69,12 @@ struct RenderSettings {
 
 void init_renderer();
 void shutdown_renderer();
-void prepare_frame(Level& lvl, const glm::mat4& world_to_clip);
-void draw_level(Level& lvl, const glm::mat4& world_to_clip, const RenderSettings& settings);
-void draw_pickframe(Level& lvl, const glm::mat4& world_to_clip, const RenderSettings& settings);
+void prepare_frame(Level& lvl);
+void draw_level(Level& lvl, const glm::mat4& view, const glm::mat4& projection, const RenderSettings& settings);
+void draw_pickframe(Level& lvl, const glm::mat4& view, const glm::mat4& projection, const RenderSettings& settings);
 
-glm::mat4 compose_world_to_clip(const ImVec2& view_size, const glm::vec3& cam_pos, const glm::vec2& cam_rot);
+glm::mat4 compose_view_matrix(const glm::vec3& cam_pos, const glm::vec2& cam_rot);
+glm::mat4 compose_projection_matrix(const ImVec2& view_size);
 glm::vec3 apply_local_to_screen(const glm::mat4& world_to_clip, const glm::mat4& local_to_world, const ImVec2& view_size);
 glm::vec3 create_ray(const glm::mat4& world_to_clip, const ImVec2& screen_pos, const ImVec2& view_pos, const ImVec2& view_size);
 

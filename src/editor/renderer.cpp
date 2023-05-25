@@ -18,38 +18,45 @@
 
 #include "renderer.h"
 
+#include <toolwads/wads.h>
+#include <engine/compression.h>
 #include <gui/shaders.h>
 #include <gui/render_mesh.h>
 #include <editor/app.h>
 
 template <typename ThisInstance>
-static void upload_instance_buffer(GLuint& buffer, const InstanceList<ThisInstance>& insts, const glm::mat4& world_to_clip);
+static void upload_instance_buffer(GLuint& buffer, const InstanceList<ThisInstance>& insts);
 static glm::vec4 inst_colour(bool selected);
 static glm::vec4 encode_inst_id(InstanceId id);
-static void draw_instances(Level& lvl, const glm::mat4& world_to_clip, GLenum mesh_mode, GLenum cube_mode, const RenderSettings& settings);
+static void draw_instances(Level& lvl, GLenum mesh_mode, GLenum cube_mode, const RenderSettings& settings);
 static void draw_mobies(Level& lvl, const InstanceList<MobyInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
 static void draw_ties(Level& lvl, const InstanceList<TieInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
 static void draw_shrubs(Level& lvl, const InstanceList<ShrubInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
-static void draw_selected_shrub_normals(Level& lvl, const glm::mat4& world_to_clip);
-static void draw_selected_moby_normals(Level& lvl, const glm::mat4& world_to_clip);
+static void draw_selected_shrub_normals(Level& lvl);
+static void draw_selected_moby_normals(Level& lvl);
 template <typename ThisPath>
-static void draw_paths(const InstanceList<ThisPath>& paths, const RenderMaterial& material, const glm::mat4& world_to_clip);
+static void draw_paths(const InstanceList<ThisPath>& paths, const RenderMaterial& material);
+static void draw_icons(Level& lvl, const RenderSettings& settings);
 static void draw_cube_instanced(GLenum cube_mode, const RenderMaterial& material, GLuint inst_buffer, size_t inst_begin, size_t inst_count);
-static void draw_mesh(const RenderMesh& mesh, const std::vector<RenderMaterial>& materials, const glm::mat4& local_to_clip);
+static void draw_icon_instanced(s32 type, GLuint inst_buffer, size_t inst_count);
+static void draw_mesh(const RenderMesh& mesh, const std::vector<RenderMaterial>& materials, const glm::mat4& local_to_world);
 static void draw_mesh_instanced(const RenderMesh& mesh, const RenderMaterial* mats, size_t mat_count, GLuint inst_buffer, size_t inst_begin, size_t inst_count);
 static Mesh create_fill_cube();
 static Mesh create_line_cube();
+static Mesh create_quad();
 static Texture create_white_texture();
 static void set_shader(const Shader& shader);
 
 static Shaders shaders;
 static RenderMesh fill_cube;
 static RenderMesh line_cube;
+static RenderMesh quad;
 static RenderMaterial purple;
 static RenderMaterial green;
 static RenderMaterial white;
 static RenderMaterial orange;
 static RenderMaterial cyan;
+static RenderMaterial instance_icons[ARRAY_SIZE(wadinfo.editor.instance_3d_view_icons)];
 static GLuint moby_inst_buffer = 0;
 static GLuint tie_inst_buffer = 0;
 static GLuint shrub_inst_buffer = 0;
@@ -69,12 +76,27 @@ void init_renderer() {
 	
 	fill_cube = upload_mesh(create_fill_cube(), false);
 	line_cube = upload_mesh(create_line_cube(), false);
+	quad = upload_mesh(create_quad(), false);
 	
 	purple = upload_material(Material{"", glm::vec4(0.5f, 0.f, 1.f, 1.f)}, {create_white_texture()});
 	green = upload_material(Material{"", glm::vec4(0.f, 0.5f, 0.f, 1.f)}, {create_white_texture()});
 	white = upload_material(Material{"", glm::vec4(1.f, 1.f, 1.f, 1.f)}, {create_white_texture()});
 	orange = upload_material(Material{"", glm::vec4(1.f, 0.5f, 0.f, 1.f)}, {create_white_texture()});
 	cyan = upload_material(Material{"", glm::vec4(0.f, 0.5f, 1.f, 1.f)}, {create_white_texture()});
+	
+	for(s32 i = 0; i < ARRAY_SIZE(wadinfo.editor.instance_3d_view_icons); i++) {
+		if(!wadinfo.editor.instance_3d_view_icons[i].offset.empty()) {
+			g_editorwad.seek(wadinfo.editor.instance_3d_view_icons[i].offset.bytes());
+			std::vector<u8> compressed = g_editorwad.read_multiple<u8>(wadinfo.editor.instance_3d_view_icons[i].size.bytes());
+			std::vector<u8> decompressed;
+			decompress_wad(decompressed, compressed);
+			s32 width = *(s32*) &decompressed[0];
+			s32 height = *(s32*) &decompressed[4];
+			decompressed.erase(decompressed.begin(), decompressed.begin() + 16);
+			std::vector<Texture> textures = {Texture::create_rgba(width, height, std::move(decompressed))};
+			instance_icons[i] = upload_material(Material{"", glm::vec4(1.f, 1.f, 1.f, 1.f)}, textures);
+		}
+	}
 }
 
 void shutdown_renderer() {
@@ -82,27 +104,32 @@ void shutdown_renderer() {
 	
 	fill_cube = RenderMesh();
 	line_cube = RenderMesh();
+	quad = RenderMesh();
 	
 	purple.texture.destroy();
 	green.texture.destroy();
 	white.texture.destroy();
 	orange.texture.destroy();
 	cyan.texture.destroy();
+	
+	for(s32 i = 0; i < ARRAY_SIZE(wadinfo.editor.instance_3d_view_icons); i++) {
+		instance_icons[i].texture.destroy();
+	}
 }
 
-void prepare_frame(Level& lvl, const glm::mat4& world_to_clip) {
-	upload_instance_buffer(moby_inst_buffer, lvl.instances().moby_instances, world_to_clip);
-	upload_instance_buffer(tie_inst_buffer, lvl.instances().tie_instances, world_to_clip);
-	upload_instance_buffer(shrub_inst_buffer, lvl.instances().shrub_instances, world_to_clip);
-	upload_instance_buffer(point_light_inst_buffer, lvl.instances().point_lights, world_to_clip);
-	upload_instance_buffer(env_sample_point_inst_buffer, lvl.instances().env_sample_points, world_to_clip);
-	upload_instance_buffer(env_transition_inst_buffer, lvl.instances().env_transitions, world_to_clip);
-	upload_instance_buffer(cuboid_inst_buffer, lvl.instances().cuboids, world_to_clip);
-	upload_instance_buffer(sphere_inst_buffer, lvl.instances().spheres, world_to_clip);
-	upload_instance_buffer(cylinder_inst_buffer, lvl.instances().cylinders, world_to_clip);
-	upload_instance_buffer(pill_inst_buffer, lvl.instances().pills, world_to_clip);
-	upload_instance_buffer(camera_inst_buffer, lvl.instances().cameras, world_to_clip);
-	upload_instance_buffer(sound_inst_buffer, lvl.instances().sound_instances, world_to_clip);
+void prepare_frame(Level& lvl) {
+	upload_instance_buffer(moby_inst_buffer, lvl.instances().moby_instances);
+	upload_instance_buffer(tie_inst_buffer, lvl.instances().tie_instances);
+	upload_instance_buffer(shrub_inst_buffer, lvl.instances().shrub_instances);
+	upload_instance_buffer(point_light_inst_buffer, lvl.instances().point_lights);
+	upload_instance_buffer(env_sample_point_inst_buffer, lvl.instances().env_sample_points);
+	upload_instance_buffer(env_transition_inst_buffer, lvl.instances().env_transitions);
+	upload_instance_buffer(cuboid_inst_buffer, lvl.instances().cuboids);
+	upload_instance_buffer(sphere_inst_buffer, lvl.instances().spheres);
+	upload_instance_buffer(cylinder_inst_buffer, lvl.instances().cylinders);
+	upload_instance_buffer(pill_inst_buffer, lvl.instances().pills);
+	upload_instance_buffer(camera_inst_buffer, lvl.instances().cameras);
+	upload_instance_buffer(sound_inst_buffer, lvl.instances().sound_instances);
 }
 
 struct InstanceData {
@@ -113,13 +140,13 @@ struct InstanceData {
 };
 
 template <typename ThisInstance>
-static void upload_instance_buffer(GLuint& buffer, const InstanceList<ThisInstance>& insts, const glm::mat4& world_to_clip) {
+static void upload_instance_buffer(GLuint& buffer, const InstanceList<ThisInstance>& insts) {
 	static std::vector<InstanceData> inst_data;
 	inst_data.clear();
 	inst_data.reserve(insts.size());
 	for(const ThisInstance& inst : insts) {
 		glm::mat4 mat = inst.transform().matrix();
-		inst_data.emplace_back(world_to_clip * mat, inst_colour(inst.selected), encode_inst_id(inst.id()));
+		inst_data.emplace_back(mat, inst_colour(inst.selected), encode_inst_id(inst.id()));
 	}
 	
 	glDeleteBuffers(1, &buffer);
@@ -142,7 +169,7 @@ static glm::vec4 encode_inst_id(InstanceId id) {
 	return colour;
 }
 
-void draw_level(Level& lvl, const glm::mat4& world_to_clip, const RenderSettings& settings) {
+void draw_level(Level& lvl, const glm::mat4& view, const glm::mat4& projection, const RenderSettings& settings) {
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 	
@@ -150,43 +177,55 @@ void draw_level(Level& lvl, const glm::mat4& world_to_clip, const RenderSettings
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	set_shader(shaders.textured);
+	glUniformMatrix4fv(shaders.textured_view_matrix, 1, GL_FALSE, &view[0][0]);
+	glUniformMatrix4fv(shaders.textured_projection_matrix, 1, GL_FALSE, &projection[0][0]);
 	
 	for(const EditorChunk& chunk : lvl.chunks) {
 		if(settings.draw_tfrags) {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-			draw_mesh(chunk.tfrags, lvl.tfrag_materials, world_to_clip);
+			draw_mesh(chunk.tfrags, lvl.tfrag_materials, glm::mat4(1.f));
 		}
 		if(settings.draw_collision) {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 			for(const RenderMesh& mesh : chunk.collision) {
-				draw_mesh(mesh, chunk.collision_materials, world_to_clip);
+				draw_mesh(mesh, chunk.collision_materials, glm::mat4(1.f));
 			}
 		}
 	}
 	
-	draw_instances(lvl, world_to_clip, GL_FILL, GL_LINE, settings);
+	draw_instances(lvl, GL_FILL, GL_LINE, settings);
 	
 	set_shader(shaders.selection);
-	draw_instances(lvl, world_to_clip, GL_LINE, GL_LINE, settings);
+	glUniformMatrix4fv(shaders.selection_view_matrix, 1, GL_FALSE, &view[0][0]);
+	glUniformMatrix4fv(shaders.selection_projection_matrix, 1, GL_FALSE, &projection[0][0]);
+	
+	draw_instances(lvl, GL_LINE, GL_LINE, settings);
 	
 	if(settings.draw_selected_instance_normals) {
-		draw_selected_shrub_normals(lvl, world_to_clip);
-		draw_selected_moby_normals(lvl, world_to_clip);
+		draw_selected_shrub_normals(lvl);
+		draw_selected_moby_normals(lvl);
 	}
 	
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+	set_shader(shaders.icons);
+	glUniformMatrix4fv(shaders.icons_view_matrix, 1, GL_FALSE, &view[0][0]);
+	glUniformMatrix4fv(shaders.icons_projection_matrix, 1, GL_FALSE, &projection[0][0]);
+	draw_icons(lvl, settings);
 }
 
-void draw_pickframe(Level& lvl, const glm::mat4& world_to_clip, const RenderSettings& settings) {
+void draw_pickframe(Level& lvl, const glm::mat4& view, const glm::mat4& projection, const RenderSettings& settings) {
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 	
 	set_shader(shaders.pickframe);
+	glUniformMatrix4fv(shaders.pickframe_view_matrix, 1, GL_FALSE, &view[0][0]);
+	glUniformMatrix4fv(shaders.pickframe_projection_matrix, 1, GL_FALSE, &projection[0][0]);
 	
-	draw_instances(lvl, world_to_clip, GL_FILL, GL_FILL, settings);
+	draw_instances(lvl, GL_FILL, GL_FILL, settings);
 }
 
-static void draw_instances(Level& lvl, const glm::mat4& world_to_clip, GLenum mesh_mode, GLenum cube_mode, const RenderSettings& settings) {
+static void draw_instances(Level& lvl, GLenum mesh_mode, GLenum cube_mode, const RenderSettings& settings) {
 	if(settings.draw_mobies) {
 		draw_mobies(lvl, lvl.instances().moby_instances, mesh_mode, cube_mode);
 	}
@@ -200,15 +239,15 @@ static void draw_instances(Level& lvl, const glm::mat4& world_to_clip, GLenum me
 	}
 	
 	if(settings.draw_point_lights) {
-		draw_cube_instanced(cube_mode, purple, point_light_inst_buffer, 0, lvl.instances().point_lights.size());
+		draw_cube_instanced(cube_mode, white, point_light_inst_buffer, 0, lvl.instances().point_lights.size());
 	}
 	
 	if(settings.draw_env_sample_points) {
-		draw_cube_instanced(cube_mode, orange, env_sample_point_inst_buffer, 0, lvl.instances().env_sample_points.size());
+		draw_cube_instanced(cube_mode, white, env_sample_point_inst_buffer, 0, lvl.instances().env_sample_points.size());
 	}
 	
 	if(settings.draw_env_transitions) {
-		draw_cube_instanced(cube_mode, cyan, env_transition_inst_buffer, 0, lvl.instances().env_transitions.size());
+		draw_cube_instanced(cube_mode, white, env_transition_inst_buffer, 0, lvl.instances().env_transitions.size());
 	}
 	
 	if(settings.draw_cuboids) {
@@ -228,19 +267,19 @@ static void draw_instances(Level& lvl, const glm::mat4& world_to_clip, GLenum me
 	}
 	
 	if(settings.draw_cameras) {
-		draw_cube_instanced(cube_mode, purple, camera_inst_buffer, 0, lvl.instances().cameras.size());
+		draw_cube_instanced(cube_mode, white, camera_inst_buffer, 0, lvl.instances().cameras.size());
 	}
 	
 	if(settings.draw_sound_instances) {
-		draw_cube_instanced(cube_mode, green, sound_inst_buffer, 0, lvl.instances().sound_instances.size());
+		draw_cube_instanced(cube_mode, white, sound_inst_buffer, 0, lvl.instances().sound_instances.size());
 	}
 	
 	if(settings.draw_paths) {
-		draw_paths(lvl.instances().paths, orange, world_to_clip);
+		draw_paths(lvl.instances().paths, orange);
 	}
 	
 	if(settings.draw_grind_paths) {
-		draw_paths(lvl.instances().grind_paths, cyan, world_to_clip);
+		draw_paths(lvl.instances().grind_paths, cyan);
 	}
 }
 
@@ -316,7 +355,7 @@ static void draw_shrubs(Level& lvl, const InstanceList<ShrubInstance>& instances
 	}
 }
 
-static void draw_selected_shrub_normals(Level& lvl, const glm::mat4& world_to_clip) {
+static void draw_selected_shrub_normals(Level& lvl) {
 	for(ShrubInstance& inst : lvl.instances().shrub_instances) {
 		if(inst.selected && lvl.shrubs.find(inst.o_class) != lvl.shrubs.end()) {
 			const EditorClass& cls = lvl.shrubs.at(inst.o_class);
@@ -340,7 +379,7 @@ static void draw_selected_shrub_normals(Level& lvl, const glm::mat4& world_to_cl
 			
 			glm::mat4 matrix = inst.transform().matrix();
 			
-			auto inst_data = InstanceData(world_to_clip * matrix, glm::vec4(0.f, 0.f, 1.f, 1.f), glm::vec4(1.f));
+			auto inst_data = InstanceData(matrix, glm::vec4(0.f, 0.f, 1.f, 1.f), glm::vec4(1.f));
 			GlBuffer inst_buffer;
 			glGenBuffers(1, &inst_buffer.id);
 			glBindBuffer(GL_ARRAY_BUFFER, inst_buffer.id);
@@ -351,7 +390,7 @@ static void draw_selected_shrub_normals(Level& lvl, const glm::mat4& world_to_cl
 	}
 }
 
-static void draw_selected_moby_normals(Level& lvl, const glm::mat4& world_to_clip) {
+static void draw_selected_moby_normals(Level& lvl) {
 	for(MobyInstance& inst : lvl.instances().moby_instances) {
 		if(inst.selected && lvl.mobies.find(inst.o_class) != lvl.mobies.end()) {
 			const EditorClass& cls = lvl.mobies.at(inst.o_class);
@@ -373,7 +412,7 @@ static void draw_selected_moby_normals(Level& lvl, const glm::mat4& world_to_cli
 			glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
 			submesh.vertex_count = vertices.size();
 			
-			auto inst_data = InstanceData(world_to_clip * inst.transform().matrix(), glm::vec4(0.f, 0.f, 1.f, 1.f), glm::vec4(1.f));
+			auto inst_data = InstanceData(inst.transform().matrix(), glm::vec4(0.f, 0.f, 1.f, 1.f), glm::vec4(1.f));
 			GlBuffer inst_buffer;
 			glGenBuffers(1, &inst_buffer.id);
 			glBindBuffer(GL_ARRAY_BUFFER, inst_buffer.id);
@@ -385,7 +424,7 @@ static void draw_selected_moby_normals(Level& lvl, const glm::mat4& world_to_cli
 }
 
 template <typename ThisPath>
-static void draw_paths(const InstanceList<ThisPath>& paths, const RenderMaterial& material, const glm::mat4& world_to_clip) {
+static void draw_paths(const InstanceList<ThisPath>& paths, const RenderMaterial& material) {
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	
 	for(const ThisPath& path : paths) {
@@ -409,13 +448,19 @@ static void draw_paths(const InstanceList<ThisPath>& paths, const RenderMaterial
 		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
 		submesh.vertex_count = vertices.size();
 		
-		auto inst = InstanceData(world_to_clip, inst_colour(path.selected), encode_inst_id(path.id()));
+		auto inst = InstanceData(glm::mat4(1.f), inst_colour(path.selected), encode_inst_id(path.id()));
 		GlBuffer inst_buffer;
 		glGenBuffers(1, &inst_buffer.id);
 		glBindBuffer(GL_ARRAY_BUFFER, inst_buffer.id);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(inst), &inst, GL_STATIC_DRAW);
 		
 		draw_mesh_instanced(mesh, &material, 1, inst_buffer.id, 0, 1);
+	}
+}
+
+static void draw_icons(Level& lvl, const RenderSettings& settings) {
+	if(settings.draw_point_lights) {
+		draw_icon_instanced(INST_POINTLIGHT, point_light_inst_buffer, lvl.instances().point_lights.size());
 	}
 }
 
@@ -428,8 +473,12 @@ static void draw_cube_instanced(GLenum cube_mode, const RenderMaterial& material
 	}
 }
 
-static void draw_mesh(const RenderMesh& mesh, const std::vector<RenderMaterial>& materials, const glm::mat4& local_to_clip) {
-	auto inst = InstanceData(local_to_clip, {}, {});
+static void draw_icon_instanced(s32 type, GLuint inst_buffer, size_t inst_count) {
+	draw_mesh_instanced(quad, &instance_icons[type], 1, inst_buffer, 0, inst_count);
+}
+
+static void draw_mesh(const RenderMesh& mesh, const std::vector<RenderMaterial>& materials, const glm::mat4& local_to_world) {
+	auto inst = InstanceData(local_to_world, {}, {});
 	
 	GlBuffer inst_buffer;
 	glGenBuffers(1, &inst_buffer.id);
@@ -497,6 +546,14 @@ static void draw_mesh_instanced(const RenderMesh& mesh, const RenderMaterial* ma
 				glBindTexture(GL_TEXTURE_2D, white.texture.id);
 			}
 			glUniform1i(shaders.textured_sampler, 0);
+		} else if(program == shaders.icons.id()) {
+			glActiveTexture(GL_TEXTURE0);
+			if(material.texture.id > 0) {
+				glBindTexture(GL_TEXTURE_2D, material.texture.id);
+			} else {
+				glBindTexture(GL_TEXTURE_2D, white.texture.id);
+			}
+			glUniform1i(shaders.icons_sampler, 0);
 		}
 		
 		glDrawArraysInstanced(GL_TRIANGLES, 0, submesh.vertex_count, (GLsizei) inst_count);
@@ -523,13 +580,15 @@ static void draw_mesh_instanced(const RenderMesh& mesh, const RenderMaterial* ma
 	glDeleteVertexArrays(1, &vao);
 }
 
-glm::mat4 compose_world_to_clip(const ImVec2& view_size, const glm::vec3& cam_pos, const glm::vec2& cam_rot) {
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), view_size.x / view_size.y, 0.1f, 10000.0f);
+glm::mat4 compose_view_matrix(const glm::vec3& cam_pos, const glm::vec2& cam_rot) {
 	glm::mat4 pitch = glm::rotate(glm::mat4(1.0f), cam_rot.x, glm::vec3(1.0f, 0.0f, 0.0f));
 	glm::mat4 yaw = glm::rotate(glm::mat4(1.0f), cam_rot.y, glm::vec3(0.0f, 1.0f, 0.0f));
 	glm::mat4 translate = glm::translate(glm::mat4(1.0f), -cam_pos);
-	glm::mat4 view = pitch * yaw * RATCHET_TO_OPENGL_MATRIX * translate;
-	return projection * view;
+	return pitch * yaw * RATCHET_TO_OPENGL_MATRIX * translate;
+}
+
+glm::mat4 compose_projection_matrix(const ImVec2& view_size) {
+	return glm::perspective(glm::radians(45.0f), view_size.x / view_size.y, 0.1f, 10000.0f);
 }
 
 glm::vec3 apply_local_to_screen(const glm::mat4& world_to_clip, const glm::mat4& local_to_world, const ImVec2& view_size) {
@@ -626,6 +685,24 @@ static Mesh create_line_cube() {
 	submesh.faces.emplace_back(2, 6, 6);
 	submesh.faces.emplace_back(1, 3, 3);
 	submesh.faces.emplace_back(1, 5, 5);
+	
+	return mesh;
+}
+
+static Mesh create_quad() {
+	Mesh mesh;
+	
+	ColourAttribute dummy{};
+	mesh.vertices.emplace_back(glm::vec3(-1.f, -1.f, 0.f), dummy, glm::vec2(0.f, 0.f));
+	mesh.vertices.emplace_back(glm::vec3(1.f, -1.f, 0.f), dummy, glm::vec2(1.f, 0.f));
+	mesh.vertices.emplace_back(glm::vec3(-1.f, 1.f, 0.f), dummy, glm::vec2(0.f, 1.f));
+	mesh.vertices.emplace_back(glm::vec3(1.f, 1.f, 0.f), dummy, glm::vec2(1.f, 1.f));
+	
+	SubMesh& submesh = mesh.submeshes.emplace_back();
+	submesh.material = 0;
+	
+	submesh.faces.emplace_back(0, 1, 2);
+	submesh.faces.emplace_back(3, 2, 1);
 	
 	return mesh;
 }

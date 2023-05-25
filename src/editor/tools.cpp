@@ -34,24 +34,24 @@ PickerTool::PickerTool() {
 	icon = load_icon(0);
 }
 
-void PickerTool::draw(app& a, glm::mat4 world_to_clip) {
+void PickerTool::draw(app& a, const glm::mat4& view, const glm::mat4& projection) {
 	if(ImGui::IsMouseClicked(0) && ImGui::IsWindowHovered()) {
 		ImVec2 rel_pos {
 			ImGui::GetMousePos().x - ImGui::GetWindowPos().x,
 			ImGui::GetMousePos().y - ImGui::GetWindowPos().y - 20
 		};
-		pick_object(a, world_to_clip, rel_pos);
+		pick_object(a, view, projection, rel_pos);
 	}
 }
 
-void PickerTool::pick_object(app& a, glm::mat4 world_to_clip, ImVec2 position) {
+void PickerTool::pick_object(app& a, const glm::mat4& view, const glm::mat4& projection, ImVec2 position) {
 	Level& lvl = *a.get_level();
 	
 	GLint last_framebuffer;
 	glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &last_framebuffer);
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	draw_pickframe(lvl, world_to_clip, a.render_settings);
+	draw_pickframe(lvl, view, projection, a.render_settings);
 	
 	glFlush();
 	glFinish();
@@ -103,7 +103,7 @@ SelectionTool::SelectionTool() {
 	icon = load_icon(1);
 }
 
-void SelectionTool::draw(app& a, glm::mat4 world_to_clip) {
+void SelectionTool::draw(app& a, const glm::mat4& view, const glm::mat4& projection) {
 	if(ImGui::IsMouseClicked(0) && ImGui::IsWindowHovered()) {
 		_selecting = true;
 		_selection_begin = ImGui::GetMousePos();
@@ -134,6 +134,8 @@ void SelectionTool::draw(app& a, glm::mat4 world_to_clip) {
 				(screen_pos.y > p1.y && screen_pos.y < p2.y);
 		};
 		
+		glm::mat4 world_to_clip = projection * view;
+		
 		Level& lvl = *a.get_level();
 		lvl.instances().for_each_with(COM_TRANSFORM, [&](Instance& inst) {
 			glm::vec3 screen_pos = apply_local_to_screen(world_to_clip, inst.transform().matrix(), a.render_settings.view_size);
@@ -146,7 +148,7 @@ TranslateTool::TranslateTool() {
 	icon = load_icon(2);
 }
 
-void TranslateTool::draw(app& a, glm::mat4 world_to_clip) {
+void TranslateTool::draw(app& a, const glm::mat4& view, const glm::mat4& projection) {
 	ImGui::Begin("Translate Tool");
 	ImGui::Text("Displacement:");
 	ImGui::InputFloat3("##displacement_input", &_displacement.x);
