@@ -165,9 +165,15 @@ static void menu_bar() {
 				ImGui::Checkbox("Mobies", &a.render_settings.draw_mobies);
 				ImGui::Checkbox("Ties", &a.render_settings.draw_ties);
 				ImGui::Checkbox("Shrubs", &a.render_settings.draw_shrubs);
+				ImGui::Checkbox("Point Lights", &a.render_settings.draw_point_lights);
+				ImGui::Checkbox("Env Sample Points", &a.render_settings.draw_env_sample_points);
+				ImGui::Checkbox("Env Transitions", &a.render_settings.draw_env_transitions);
 				ImGui::Checkbox("Cuboids", &a.render_settings.draw_cuboids);
 				ImGui::Checkbox("Spheres", &a.render_settings.draw_spheres);
 				ImGui::Checkbox("Cylinders", &a.render_settings.draw_cylinders);
+				ImGui::Checkbox("Pills", &a.render_settings.draw_pills);
+				ImGui::Checkbox("Cameras", &a.render_settings.draw_cameras);
+				ImGui::Checkbox("Sound Instances", &a.render_settings.draw_sound_instances);
 				ImGui::Checkbox("Paths", &a.render_settings.draw_paths);
 				ImGui::Checkbox("Grind Paths", &a.render_settings.draw_grind_paths);
 				ImGui::Checkbox("Collision", &a.render_settings.draw_collision);

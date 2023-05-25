@@ -50,13 +50,18 @@ static RenderMaterial green;
 static RenderMaterial white;
 static RenderMaterial orange;
 static RenderMaterial cyan;
+static GLuint moby_inst_buffer = 0;
 static GLuint tie_inst_buffer = 0;
 static GLuint shrub_inst_buffer = 0;
-static GLuint moby_inst_buffer = 0;
+static GLuint point_light_inst_buffer = 0;
+static GLuint env_sample_point_inst_buffer = 0;
+static GLuint env_transition_inst_buffer = 0;
 static GLuint cuboid_inst_buffer = 0;
 static GLuint sphere_inst_buffer = 0;
 static GLuint cylinder_inst_buffer = 0;
-static GLuint pl_inst_buffer = 0;
+static GLuint pill_inst_buffer = 0;
+static GLuint camera_inst_buffer = 0;
+static GLuint sound_inst_buffer = 0;
 static GLuint program = 0;
 
 void init_renderer() {
@@ -86,13 +91,18 @@ void shutdown_renderer() {
 }
 
 void prepare_frame(Level& lvl, const glm::mat4& world_to_clip) {
+	upload_instance_buffer(moby_inst_buffer, lvl.instances().moby_instances, world_to_clip);
 	upload_instance_buffer(tie_inst_buffer, lvl.instances().tie_instances, world_to_clip);
 	upload_instance_buffer(shrub_inst_buffer, lvl.instances().shrub_instances, world_to_clip);
-	upload_instance_buffer(moby_inst_buffer, lvl.instances().moby_instances, world_to_clip);
+	upload_instance_buffer(point_light_inst_buffer, lvl.instances().point_lights, world_to_clip);
+	upload_instance_buffer(env_sample_point_inst_buffer, lvl.instances().env_sample_points, world_to_clip);
+	upload_instance_buffer(env_transition_inst_buffer, lvl.instances().env_transitions, world_to_clip);
 	upload_instance_buffer(cuboid_inst_buffer, lvl.instances().cuboids, world_to_clip);
 	upload_instance_buffer(sphere_inst_buffer, lvl.instances().spheres, world_to_clip);
 	upload_instance_buffer(cylinder_inst_buffer, lvl.instances().cylinders, world_to_clip);
-	upload_instance_buffer(pl_inst_buffer, lvl.instances().point_lights, world_to_clip);
+	upload_instance_buffer(pill_inst_buffer, lvl.instances().pills, world_to_clip);
+	upload_instance_buffer(camera_inst_buffer, lvl.instances().cameras, world_to_clip);
+	upload_instance_buffer(sound_inst_buffer, lvl.instances().sound_instances, world_to_clip);
 }
 
 struct InstanceData {
@@ -109,7 +119,6 @@ static void upload_instance_buffer(GLuint& buffer, const InstanceList<ThisInstan
 	inst_data.reserve(insts.size());
 	for(const ThisInstance& inst : insts) {
 		glm::mat4 mat = inst.transform().matrix();
-		mat[3][3] = 1.f;
 		inst_data.emplace_back(world_to_clip * mat, inst_colour(inst.selected), encode_inst_id(inst.id()));
 	}
 	
@@ -190,6 +199,18 @@ static void draw_instances(Level& lvl, const glm::mat4& world_to_clip, GLenum me
 		draw_shrubs(lvl, lvl.instances().shrub_instances, mesh_mode, cube_mode);
 	}
 	
+	if(settings.draw_point_lights) {
+		draw_cube_instanced(cube_mode, purple, point_light_inst_buffer, 0, lvl.instances().point_lights.size());
+	}
+	
+	if(settings.draw_env_sample_points) {
+		draw_cube_instanced(cube_mode, orange, env_sample_point_inst_buffer, 0, lvl.instances().env_sample_points.size());
+	}
+	
+	if(settings.draw_env_transitions) {
+		draw_cube_instanced(cube_mode, cyan, env_transition_inst_buffer, 0, lvl.instances().env_transitions.size());
+	}
+	
 	if(settings.draw_cuboids) {
 		draw_cube_instanced(cube_mode, white, cuboid_inst_buffer, 0, lvl.instances().cuboids.size());
 	}
@@ -202,16 +223,24 @@ static void draw_instances(Level& lvl, const glm::mat4& world_to_clip, GLenum me
 		draw_cube_instanced(cube_mode, white, cylinder_inst_buffer, 0, lvl.instances().cylinders.size());
 	}
 	
+	if(settings.draw_pills) {
+		draw_cube_instanced(cube_mode, white, pill_inst_buffer, 0, lvl.instances().pills.size());
+	}
+	
+	if(settings.draw_cameras) {
+		draw_cube_instanced(cube_mode, purple, camera_inst_buffer, 0, lvl.instances().cameras.size());
+	}
+	
+	if(settings.draw_sound_instances) {
+		draw_cube_instanced(cube_mode, green, sound_inst_buffer, 0, lvl.instances().sound_instances.size());
+	}
+	
 	if(settings.draw_paths) {
 		draw_paths(lvl.instances().paths, orange, world_to_clip);
 	}
 	
 	if(settings.draw_grind_paths) {
 		draw_paths(lvl.instances().grind_paths, cyan, world_to_clip);
-	}
-	
-	if(true) {
-		draw_cube_instanced(cube_mode, cyan, pl_inst_buffer, 0, lvl.instances().point_lights.size());
 	}
 }
 
@@ -280,7 +309,7 @@ static void draw_shrubs(Level& lvl, const InstanceList<ShrubInstance>& instances
 				glPolygonMode(GL_FRONT_AND_BACK, mesh_mode);
 				draw_mesh_instanced(cls.render_mesh, cls.materials.data(), cls.materials.size(), shrub_inst_buffer, begin, end - begin);
 			} else {
-				draw_cube_instanced(cube_mode, white, shrub_inst_buffer, begin, end - begin);
+				draw_cube_instanced(cube_mode, green, shrub_inst_buffer, begin, end - begin);
 			}
 			begin = i;
 		}
@@ -310,7 +339,6 @@ static void draw_selected_shrub_normals(Level& lvl, const glm::mat4& world_to_cl
 			submesh.vertex_count = vertices.size();
 			
 			glm::mat4 matrix = inst.transform().matrix();
-			matrix[3][3] = 1.f;
 			
 			auto inst_data = InstanceData(world_to_clip * matrix, glm::vec4(0.f, 0.f, 1.f, 1.f), glm::vec4(1.f));
 			GlBuffer inst_buffer;

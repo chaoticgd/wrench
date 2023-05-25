@@ -107,24 +107,12 @@ static void for_each_instance_of_type_with(u32 required_components_mask, const I
 
 template <typename Callback>
 void Instances::for_each_with(u32 required_components_mask, Callback callback) const {
-	for_each_instance_of_type_with(required_components_mask, moby_instances, callback);
-	for_each_instance_of_type_with(required_components_mask, tie_instances, callback);
-	for_each_instance_of_type_with(required_components_mask, shrub_instances, callback);
-	
-	for_each_instance_of_type_with(required_components_mask, dir_lights, callback);
-	for_each_instance_of_type_with(required_components_mask, point_lights, callback);
-	for_each_instance_of_type_with(required_components_mask, env_sample_points, callback);
-	for_each_instance_of_type_with(required_components_mask, env_transitions, callback);
-	
-	for_each_instance_of_type_with(required_components_mask, cuboids, callback);
-	for_each_instance_of_type_with(required_components_mask, spheres, callback);
-	for_each_instance_of_type_with(required_components_mask, cylinders, callback);
-	for_each_instance_of_type_with(required_components_mask, pills, callback);
-	
-	for_each_instance_of_type_with(required_components_mask, cameras, callback);
-	for_each_instance_of_type_with(required_components_mask, sound_instances, callback);
-	for_each_instance_of_type_with(required_components_mask, paths, callback);
-	for_each_instance_of_type_with(required_components_mask, grind_paths, callback);
+#define DEF_INSTANCE(inst_type, inst_variable) \
+	for_each_instance_of_type_with(required_components_mask, inst_variable, callback);
+#define GENERATED_INSTANCE_MACRO_CALLS
+#include "_generated_instance_types.inl"
+#undef GENERATED_INSTANCE_MACRO_CALLS
+#undef DEF_INSTANCE
 }
 
 template <typename Callback>

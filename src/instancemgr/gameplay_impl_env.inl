@@ -114,7 +114,10 @@ struct GcUyaDlEnvSamplePointBlock {
 			GcUyaDlEnvSamplePointPacked packed = data[i];
 			EnvSamplePointInstance& inst = dest.emplace_back();
 			inst.set_id_value(i);
-			inst.transform().set_from_pos_rot_scale(glm::vec3(packed.pos_x, packed.pos_y, packed.pos_z));
+			f32 x = packed.pos_x * (1.f / 4.f);
+			f32 y = packed.pos_y * (1.f / 4.f);
+			f32 z = packed.pos_z * (1.f / 4.f);
+			inst.transform().set_from_pos_rot_scale(glm::vec3(x, y, z));
 			if(packed.fog_far_dist > packed.fog_near_dist) {
 				inst.enable_fog_params = true;
 				inst.fog_near_dist = packed.fog_near_dist;
@@ -130,9 +133,9 @@ struct GcUyaDlEnvSamplePointBlock {
 		for(EnvSamplePointInstance inst : src) {
 			GcUyaDlEnvSamplePointPacked packed;
 			const TransformComponent& transform = inst.transform();
-			packed.pos_x = (s16) transform.pos().x;
-			packed.pos_y = (s16) transform.pos().y;
-			packed.pos_z = (s16) transform.pos().z;
+			packed.pos_x = (s16) roundf(transform.pos().x * 4.f);
+			packed.pos_y = (s16) roundf(transform.pos().y * 4.f);
+			packed.pos_z = (s16) roundf(transform.pos().z * 4.f);
 			if(inst.enable_fog_params) {
 				packed.fog_near_dist = inst.fog_near_dist;
 				packed.fog_far_dist = inst.fog_far_dist;

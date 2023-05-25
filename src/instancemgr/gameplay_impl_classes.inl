@@ -727,11 +727,11 @@ packed_struct(ShrubInstancePacked,
 	/* 0x0c */ s32 unused_c;
 	/* 0x10 */ Mat4 matrix;
 	/* 0x50 */ Rgb96 colour;
-	/* 0x5c */ s32 unknown_5c;
+	/* 0x5c */ s32 unused_5c;
 	/* 0x60 */ s32 dir_lights;
-	/* 0x64 */ s32 unknown_64;
-	/* 0x68 */ f32 unknown_68;
-	/* 0x6c */ s32 unknown_6c;
+	/* 0x64 */ s32 unused_64;
+	/* 0x68 */ s32 unused_68;
+	/* 0x6c */ s32 unused_6c;
 )
 
 static void swap_instance(ShrubInstance& l, ShrubInstancePacked& r) {
@@ -741,11 +741,11 @@ static void swap_instance(ShrubInstance& l, ShrubInstancePacked& r) {
 	SWAP_PACKED(l.o_class, r.o_class);
 	r.unused_8 = 0;
 	r.unused_c = 0;
-	SWAP_PACKED(l.unknown_5c, r.unknown_5c);
+	r.unused_5c = 0;
 	SWAP_PACKED(l.dir_lights, r.dir_lights);
-	SWAP_PACKED(l.unknown_64, r.unknown_64);
-	SWAP_PACKED(l.unknown_68, r.unknown_68);
-	SWAP_PACKED(l.unknown_6c, r.unknown_6c);
+	r.unused_64 = 0;
+	r.unused_68 = 0;
+	r.unused_6c = 0;
 }
 
 static void rewire_pvar_indices(Gameplay& gameplay) {

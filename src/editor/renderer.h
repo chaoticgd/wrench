@@ -48,9 +48,15 @@ struct RenderSettings {
 	bool draw_mobies = true;
 	bool draw_ties = true;
 	bool draw_shrubs = true;
+	bool draw_point_lights = true;
+	bool draw_env_sample_points = true;
+	bool draw_env_transitions = true;
 	bool draw_cuboids = false;
 	bool draw_spheres = false;
 	bool draw_cylinders = false;
+	bool draw_pills = false;
+	bool draw_cameras = true;
+	bool draw_sound_instances = true;
 	bool draw_paths = true;
 	bool draw_grind_paths = true;
 	bool draw_collision = false;

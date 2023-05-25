@@ -68,9 +68,9 @@ void TransformComponent::set_from_pos_rot_scale(const glm::vec3& pos, const glm:
 	_matrix = glm::mat4(1.f);
 	_matrix = glm::translate(_matrix, pos);
 	_matrix = glm::scale(_matrix, glm::vec3(scale));
-	_matrix = glm::rotate(_matrix, _rot.z, glm::vec3(0.f, 0.f, 1.f));
-	_matrix = glm::rotate(_matrix, _rot.y, glm::vec3(0.f, 1.f, 0.f));
-	_matrix = glm::rotate(_matrix, _rot.x, glm::vec3(1.f, 0.f, 0.f));
+	_matrix = glm::rotate(_matrix, rot.z, glm::vec3(0.f, 0.f, 1.f));
+	_matrix = glm::rotate(_matrix, rot.y, glm::vec3(0.f, 1.f, 0.f));
+	_matrix = glm::rotate(_matrix, rot.x, glm::vec3(1.f, 0.f, 0.f));
 	_inverse_matrix = glm::inverse(_matrix);
 	_rot = rot;
 	_scale = scale;

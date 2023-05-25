@@ -110,7 +110,6 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 		VisInstance& vis_instance = input.instances[VIS_TIE].emplace_back();
 		vis_instance.mesh = index->second;
 		vis_instance.matrix = instance.transform().matrix();
-		vis_instance.matrix[3][3] = 1.f;
 		vis_instance.chunk = chunk_index_from_position(glm::vec3(vis_instance.matrix[3]), gameplay);
 	}
 	
@@ -127,7 +126,6 @@ ByteRange pack_occlusion(OutputStream& dest, Gameplay& gameplay, const Occlusion
 				VisInstance& vis_instance = input.instances[VIS_MOBY].emplace_back();
 				vis_instance.mesh = index->second;
 				vis_instance.matrix = instance.transform().matrix();
-				vis_instance.matrix[3][3] = 1.f;
 				vis_instance.chunk = chunk_index_from_position(glm::vec3(vis_instance.matrix[3]), gameplay);
 			}
 		}

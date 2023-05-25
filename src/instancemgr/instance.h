@@ -29,9 +29,19 @@
 #undef GENERATED_INSTANCE_TYPE_ENUM
 
 struct InstanceLink {};
-#define GENERATED_INSTANCE_LINKS
+
+#define DEF_INSTANCE(inst_type, inst_variable) \
+	struct inst_type##Link : InstanceLink { \
+		s32 id; \
+		inst_type##Link() : id(-1) {} \
+		inst_type##Link(s32 i) : id(i) {} \
+		friend auto operator<=>(const inst_type##Link& lhs, const inst_type##Link& rhs) = default; \
+	}; \
+	typedef std::vector<inst_type##Link> inst_type##Links;
+#define GENERATED_INSTANCE_MACRO_CALLS
 #include "_generated_instance_types.inl"
-#undef GENERATED_INSTANCE_LINKS
+#undef GENERATED_INSTANCE_MACRO_CALLS
+#undef DEF_INSTANCE
 
 struct Instances;
 struct WtfNode;

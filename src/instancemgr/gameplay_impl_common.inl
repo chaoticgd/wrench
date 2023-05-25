@@ -25,7 +25,9 @@
 template <typename Packed>
 static void swap_matrix(Instance& inst, Packed& packed) {
 	glm::mat4 matrix = inst.transform().matrix();
+	packed.matrix.m_3.w = 1.f;
 	inst.transform().set_from_matrix(packed.matrix.unpack());
+	matrix[3][3] = 0.01f;
 	packed.matrix = Mat4::pack(matrix);
 }
 
@@ -36,7 +38,9 @@ static void swap_matrix_inverse_rotation(Instance& inst, Packed& packed) {
 	glm::vec3 rotation = inst.transform().rot();
 	glm::mat3x4 packed_inverse = packed.inverse_matrix.unpack();
 	glm::vec3 packed_rot = packed.rotation.unpack();
+	packed.matrix.m_3.w = 1.f;
 	inst.transform().set_from_matrix(packed.matrix.unpack(), &packed_inverse, &packed_rot);
+	matrix[3][3] = 0.01f;
 	packed.matrix = Mat4::pack(matrix);
 	packed.inverse_matrix = Mat3::pack(inverse_matrix);
 	packed.rotation = Vec3f::pack(rotation);

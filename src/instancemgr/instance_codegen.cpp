@@ -26,8 +26,8 @@
 #include <platform/fileio.h>
 #include <wtf/wtf.h>
 
+static void generate_instance_macro_calls(WtfNode* root);
 static void generate_instance_type_enum(WtfNode* root);
-static void generate_instance_links(WtfNode* root);
 static void generate_instance_types(WtfNode* root);
 static void generate_instance_read_write_funcs(WtfNode* root);
 static void generate_instance_read_write_table(WtfNode* root);
@@ -66,14 +66,14 @@ int main(int argc, char** argv) {
 	
 	out("// Generated from %s. Do not edit.", argv[1]);
 	out("");
+	out("#ifdef GENERATED_INSTANCE_MACRO_CALLS");
+	out("");
+	generate_instance_macro_calls(root);
+	out("");
+	out("#endif");
 	out("#ifdef GENERATED_INSTANCE_TYPE_ENUM");
 	out("");
 	generate_instance_type_enum(root);
-	out("");
-	out("#endif");
-	out("#ifdef GENERATED_INSTANCE_LINKS");
-	out("");
-	generate_instance_links(root);
 	out("");
 	out("#endif");
 	out("#ifdef GENERATED_INSTANCE_TYPES");
@@ -98,6 +98,15 @@ int main(int argc, char** argv) {
 	out("#endif");
 }
 
+static void generate_instance_macro_calls(WtfNode* root) {
+	for(const WtfNode* type = wtf_first_child(root, "InstanceType"); type != nullptr; type = wtf_next_sibling(type, "InstanceType")) {
+		const WtfAttribute* variable = wtf_attribute_of_type(type, "variable", WTF_STRING);
+		assert(variable);
+		
+		out("DEF_INSTANCE(%s, %s)", type->tag, variable->string.begin);
+	}
+}
+
 static void generate_instance_type_enum(WtfNode* root) {
 	out("enum InstanceType : u32 {");
 	out("\tINST_NONE = 0,");
@@ -108,18 +117,6 @@ static void generate_instance_type_enum(WtfNode* root) {
 		out("\tINST_%s = %d,", enum_name.c_str(), number++);
 	}
 	out("};\n");
-}
-
-static void generate_instance_links(WtfNode* root) {
-	for(const WtfNode* type = wtf_first_child(root, "InstanceType"); type != nullptr; type = wtf_next_sibling(type, "InstanceType")) {
-		out("struct %sLink : InstanceLink {", type->tag);
-		out("\ts32 id;");
-		out("\t%sLink() : id(-1) {}", type->tag);
-		out("\t%sLink(s32 i) : id(i) {}", type->tag);
-		out("\tfriend auto operator<=>(const %sLink& lhs, const %sLink& rhs) = default;", type->tag, type->tag);
-		out("};");
-		out("typedef std::vector<%sLink> %sLinks;", type->tag, type->tag);
-	}
 }
 
 static const struct { const char* wtf_type; const char* cpp_type; const char* set = nullptr; } FIELD_TYPES[] = {
