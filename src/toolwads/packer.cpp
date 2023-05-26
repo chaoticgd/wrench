@@ -194,7 +194,10 @@ static void pack_editor_wad() {
 	header.tool_icons[2] = pack_ascii_icon(wad, "data/editor/icons/translate_tool.txt");
 	header.tool_icons[3] = pack_ascii_icon(wad, "data/editor/icons/spline_tool.txt");
 	
+	header.instance_3d_view_icons[INST_MOBY] = pack_compressed_image(wad, "data/editor/icons/moby.png");
 	header.instance_3d_view_icons[INST_POINTLIGHT] = pack_compressed_image(wad, "data/editor/icons/point_light.png");
+	header.instance_3d_view_icons[INST_CAMERA] = pack_compressed_image(wad, "data/editor/icons/camera.png");
+	header.instance_3d_view_icons[INST_SOUND] = pack_compressed_image(wad, "data/editor/icons/sound.png");
 	
 	wad.pad(SECTOR_SIZE, 0);
 	wad.write<EditorWadHeader>(0, header);

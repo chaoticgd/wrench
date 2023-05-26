@@ -29,7 +29,7 @@ static void upload_instance_buffer(GLuint& buffer, const InstanceList<ThisInstan
 static glm::vec4 inst_colour(bool selected);
 static glm::vec4 encode_inst_id(InstanceId id);
 static void draw_instances(Level& lvl, GLenum mesh_mode, GLenum cube_mode, const RenderSettings& settings);
-static void draw_mobies(Level& lvl, const InstanceList<MobyInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
+static void draw_mobies(Level& lvl, InstanceList<MobyInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
 static void draw_ties(Level& lvl, const InstanceList<TieInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
 static void draw_shrubs(Level& lvl, const InstanceList<ShrubInstance>& instances, GLenum mesh_mode, GLenum cube_mode);
 static void draw_selected_shrub_normals(Level& lvl);
@@ -37,8 +37,9 @@ static void draw_selected_moby_normals(Level& lvl);
 template <typename ThisPath>
 static void draw_paths(const InstanceList<ThisPath>& paths, const RenderMaterial& material);
 static void draw_icons(Level& lvl, const RenderSettings& settings);
+static void draw_moby_icons(Level& lvl, InstanceList<MobyInstance>& instances);
 static void draw_cube_instanced(GLenum cube_mode, const RenderMaterial& material, GLuint inst_buffer, size_t inst_begin, size_t inst_count);
-static void draw_icon_instanced(s32 type, GLuint inst_buffer, size_t inst_count);
+static void draw_icon_instanced(s32 type, GLuint inst_buffer, size_t inst_begin, size_t inst_count);
 static void draw_mesh(const RenderMesh& mesh, const std::vector<RenderMaterial>& materials, const glm::mat4& local_to_world);
 static void draw_mesh_instanced(const RenderMesh& mesh, const RenderMaterial* mats, size_t mat_count, GLuint inst_buffer, size_t inst_begin, size_t inst_count);
 static Mesh create_fill_cube();
@@ -283,7 +284,7 @@ static void draw_instances(Level& lvl, GLenum mesh_mode, GLenum cube_mode, const
 	}
 }
 
-static void draw_mobies(Level& lvl, const InstanceList<MobyInstance>& instances, GLenum mesh_mode, GLenum cube_mode) {
+static void draw_mobies(Level& lvl, InstanceList<MobyInstance>& instances, GLenum mesh_mode, GLenum cube_mode) {
 	if(instances.size() < 1) {
 		return;
 	}
@@ -459,10 +460,43 @@ static void draw_paths(const InstanceList<ThisPath>& paths, const RenderMaterial
 }
 
 static void draw_icons(Level& lvl, const RenderSettings& settings) {
+	if(settings.draw_mobies) {
+		draw_moby_icons(lvl, lvl.instances().moby_instances);
+	}
+	
 	if(settings.draw_point_lights) {
-		draw_icon_instanced(INST_POINTLIGHT, point_light_inst_buffer, lvl.instances().point_lights.size());
+		draw_icon_instanced(INST_POINTLIGHT, point_light_inst_buffer, 0, lvl.instances().point_lights.size());
+	}
+	
+	if(settings.draw_cameras) {
+		draw_icon_instanced(INST_CAMERA, camera_inst_buffer, 0, lvl.instances().cameras.size());
+	}
+	
+	if(settings.draw_sound_instances) {
+		draw_icon_instanced(INST_SOUND, sound_inst_buffer, 0, lvl.instances().sound_instances.size());
 	}
 }
+
+static void draw_moby_icons(Level& lvl, InstanceList<MobyInstance>& instances) {
+	if(instances.size() < 1) {
+		return;
+	}
+	
+	size_t begin = 0;
+	size_t end = 0;
+	for(size_t i = 1; i <= instances.size(); i++) {
+		s32 last_class = instances[i - 1].o_class;
+		if(i == instances.size() || instances[i].o_class != last_class) {
+			end = i;
+			auto iter = lvl.mobies.find(last_class);
+			if(iter == lvl.mobies.end()) {
+				draw_icon_instanced(INST_MOBY, moby_inst_buffer, begin, end - begin);
+			}
+			begin = i;
+		}
+	}
+}
+
 
 static void draw_cube_instanced(GLenum cube_mode, const RenderMaterial& material, GLuint inst_buffer, size_t inst_begin, size_t inst_count) {
 	glPolygonMode(GL_FRONT_AND_BACK, cube_mode);
@@ -473,8 +507,8 @@ static void draw_cube_instanced(GLenum cube_mode, const RenderMaterial& material
 	}
 }
 
-static void draw_icon_instanced(s32 type, GLuint inst_buffer, size_t inst_count) {
-	draw_mesh_instanced(quad, &instance_icons[type], 1, inst_buffer, 0, inst_count);
+static void draw_icon_instanced(s32 type, GLuint inst_buffer, size_t inst_begin, size_t inst_count) {
+	draw_mesh_instanced(quad, &instance_icons[type], 1, inst_buffer, inst_begin, inst_count);
 }
 
 static void draw_mesh(const RenderMesh& mesh, const std::vector<RenderMaterial>& materials, const glm::mat4& local_to_world) {

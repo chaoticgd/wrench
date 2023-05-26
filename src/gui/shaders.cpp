@@ -199,7 +199,9 @@ Shaders::Shaders() :
 				vec3 pos = vec3(inst_matrix[3])
 					+ cam_right * position.x
 					+ cam_up * position.y;
-				gl_Position = projection * view * vec4(pos, 1);
+				vec4 point_pos = projection * view * vec4(pos, 1);
+				vec4 centre_pos = projection * view * inst_matrix[3];
+				gl_Position = vec4(point_pos.x, point_pos.y, centre_pos.z, centre_pos.w);
 				uv = tex_coord;
 			}
 		)",
