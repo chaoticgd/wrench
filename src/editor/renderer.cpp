@@ -476,6 +476,22 @@ static void draw_icons(Level& lvl, const RenderSettings& settings) {
 		draw_icon_instanced(INST_ENVTRANSITION, env_transition_inst_buffer, 0, lvl.instances().env_transitions.size());
 	}
 	
+	if(settings.draw_cuboids) {
+		draw_icon_instanced(INST_CUBOID, cuboid_inst_buffer, 0, lvl.instances().cuboids.size());
+	}
+	
+	if(settings.draw_spheres) {
+		draw_icon_instanced(INST_SPHERE, sphere_inst_buffer, 0, lvl.instances().spheres.size());
+	}
+	
+	if(settings.draw_cylinders) {
+		draw_icon_instanced(INST_CYLINDER, cylinder_inst_buffer, 0, lvl.instances().cylinders.size());
+	}
+	
+	if(settings.draw_pills) {
+		draw_icon_instanced(INST_PILL, pill_inst_buffer, 0, lvl.instances().pills.size());
+	}
+	
 	if(settings.draw_cameras) {
 		draw_icon_instanced(INST_CAMERA, camera_inst_buffer, 0, lvl.instances().cameras.size());
 	}

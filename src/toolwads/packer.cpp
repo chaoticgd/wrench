@@ -198,6 +198,10 @@ static void pack_editor_wad() {
 	header.instance_3d_view_icons[INST_POINTLIGHT] = pack_compressed_image(wad, "data/editor/icons/point_light.png");
 	header.instance_3d_view_icons[INST_ENVSAMPLEPOINT] = pack_compressed_image(wad, "data/editor/icons/env_sample_point.png");
 	header.instance_3d_view_icons[INST_ENVTRANSITION] = pack_compressed_image(wad, "data/editor/icons/env_transition.png");
+	header.instance_3d_view_icons[INST_CUBOID] = pack_compressed_image(wad, "data/editor/icons/cuboid.png");
+	header.instance_3d_view_icons[INST_SPHERE] = pack_compressed_image(wad, "data/editor/icons/sphere.png");
+	header.instance_3d_view_icons[INST_CYLINDER] = pack_compressed_image(wad, "data/editor/icons/cylinder.png");
+	header.instance_3d_view_icons[INST_PILL] = pack_compressed_image(wad, "data/editor/icons/pill.png");
 	header.instance_3d_view_icons[INST_CAMERA] = pack_compressed_image(wad, "data/editor/icons/camera.png");
 	header.instance_3d_view_icons[INST_SOUND] = pack_compressed_image(wad, "data/editor/icons/sound.png");
 	
