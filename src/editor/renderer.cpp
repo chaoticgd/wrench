@@ -468,6 +468,10 @@ static void draw_icons(Level& lvl, const RenderSettings& settings) {
 		draw_icon_instanced(INST_POINTLIGHT, point_light_inst_buffer, 0, lvl.instances().point_lights.size());
 	}
 	
+	if(settings.draw_env_sample_points) {
+		draw_icon_instanced(INST_ENVSAMPLEPOINT, env_sample_point_inst_buffer, 0, lvl.instances().env_sample_points.size());
+	}
+	
 	if(settings.draw_cameras) {
 		draw_icon_instanced(INST_CAMERA, camera_inst_buffer, 0, lvl.instances().cameras.size());
 	}
