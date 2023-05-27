@@ -160,7 +160,7 @@ InstanceType EnvSamplePoint {
 InstanceType EnvTransition {
 	desc: "A volume in which there is a transition in lighting and fogging e.g. a doorway."
 	components: "COM_TRANSFORM | COM_BOUNDING_SPHERE"
-	transform_mode: "MATRIX"
+	transform_mode: "MATRIX_INVERSE"
 	variable: "env_transitions"
 	
 	bool enable_hero {}

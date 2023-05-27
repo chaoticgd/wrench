@@ -72,6 +72,7 @@ enum InstanceComponent : u32 {
 enum class TransformMode {
 	NONE,
 	MATRIX,
+	MATRIX_INVERSE,
 	MATRIX_AND_INVERSE,
 	MATRIX_INVERSE_ROTATION,
 	POSITION,
@@ -85,11 +86,11 @@ public:
 	TransformComponent(TransformMode mode) : _mode(mode) {}
 
 	const glm::mat4& matrix() const;
-	const glm::mat3x4& inverse_matrix() const;
+	const glm::mat4& inverse_matrix() const;
 	const glm::vec3& pos() const;
 	const glm::vec3& rot() const;
 	const f32& scale() const;
-	void set_from_matrix(const glm::mat4& new_matrix, const glm::mat3x4* new_inverse_matrix = nullptr, const glm::vec3* new_rot = nullptr);
+	void set_from_matrix(const glm::mat4* new_matrix, const glm::mat4* new_inverse_matrix = nullptr, const glm::vec3* new_rot = nullptr);
 	void set_from_pos_rot_scale(const glm::vec3& pos, const glm::vec3& rot = glm::vec3(0.f, 0.f, 0.f), f32 scale = 1.f);
 	
 	void read(const WtfNode* src);
@@ -97,7 +98,7 @@ public:
 private:
 	TransformMode _mode;
 	glm::mat4 _matrix = glm::mat4(1.f);
-	glm::mat3x4 _inverse_matrix = glm::mat3x4(1.f);
+	glm::mat4 _inverse_matrix = glm::mat4(1.f);
 	glm::vec3 _rot = glm::vec3(0.f);
 	f32 _scale = 1.f;
 };

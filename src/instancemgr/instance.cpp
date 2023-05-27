@@ -27,7 +27,7 @@ const glm::mat4& TransformComponent::matrix() const {
 	return _matrix;
 }
 
-const glm::mat3x4& TransformComponent::inverse_matrix() const {
+const glm::mat4& TransformComponent::inverse_matrix() const {
 	return _inverse_matrix;
 }
 
@@ -43,12 +43,17 @@ const f32& TransformComponent::scale() const {
 	return _scale;
 }
 
-void TransformComponent::set_from_matrix(const glm::mat4& new_matrix, const glm::mat3x4* new_inverse_matrix, const glm::vec3* new_rot) {
-	_matrix = new_matrix;
+void TransformComponent::set_from_matrix(const glm::mat4* new_matrix, const glm::mat4* new_inverse_matrix, const glm::vec3* new_rot) {
+	verify_fatal(new_matrix || new_inverse_matrix);
+	if(new_matrix) {
+		_matrix = *new_matrix;
+	} else {
+		_matrix = glm::inverse(*new_inverse_matrix);
+	}
 	if(new_inverse_matrix) {
 		_inverse_matrix = *new_inverse_matrix;
 	} else {
-		_inverse_matrix = glm::inverse(_matrix);
+		_inverse_matrix = glm::inverse(*new_matrix);
 	}
 	glm::vec3 scale = {0.f, 0.f, 0.f};
 	glm::quat orientation = {0.f, 0.f, 0.f, 0.f};
@@ -84,25 +89,31 @@ void TransformComponent::read(const WtfNode* src) {
 		case TransformMode::MATRIX: {
 			glm::mat4 matrix;
 			read_inst_field(matrix, src, "matrix");
-			set_from_matrix(matrix);
+			set_from_matrix(&matrix);
+			break;
+		}
+		case TransformMode::MATRIX_INVERSE: {
+			glm::mat4 inverse_matrix;
+			read_inst_field(inverse_matrix, src, "inverse_matrix");
+			set_from_matrix(nullptr, &inverse_matrix);
 			break;
 		}
 		case TransformMode::MATRIX_AND_INVERSE: {
 			glm::mat4 matrix;
-			glm::mat3x4 inverse_matrix;
+			glm::mat4 inverse_matrix;
 			read_inst_field(matrix, src, "matrix");
 			read_inst_field(inverse_matrix, src, "inverse_matrix");
-			set_from_matrix(matrix, &inverse_matrix);
+			set_from_matrix(&matrix, &inverse_matrix);
 			break;
 		}
 		case TransformMode::MATRIX_INVERSE_ROTATION: {
 			glm::mat4 matrix;
-			glm::mat3x4 inverse_matrix;
+			glm::mat4 inverse_matrix;
 			glm::vec3 rot;
 			read_inst_field(matrix, src, "matrix");
 			read_inst_field(inverse_matrix, src, "inverse_matrix");
 			read_inst_field(rot, src, "rot");
-			set_from_matrix(matrix, &inverse_matrix, &rot);
+			set_from_matrix(&matrix, &inverse_matrix, &rot);
 			break;
 		}
 		case TransformMode::POSITION: {
@@ -142,6 +153,10 @@ void TransformComponent::write(WtfWriter* dest) const {
 		}
 		case TransformMode::MATRIX: {
 			write_inst_field(dest, "matrix", matrix());
+			break;
+		}
+		case TransformMode::MATRIX_INVERSE: {
+			write_inst_field(dest, "inverse_matrix", inverse_matrix());
 			break;
 		}
 		case TransformMode::MATRIX_AND_INVERSE: {

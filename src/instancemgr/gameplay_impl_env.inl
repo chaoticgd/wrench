@@ -169,7 +169,7 @@ struct GcUyaDlEnvSamplePointBlock {
 };
 
 packed_struct(EnvTransitionPacked,
-	/* 0x00 */ Mat4 matrix;
+	/* 0x00 */ Mat4 inverse_matrix;
 	/* 0x40 */ Rgb32 hero_colour_1;
 	/* 0x44 */ Rgb32 hero_colour_2;
 	/* 0x48 */ s32 hero_light_1;
@@ -200,7 +200,9 @@ struct EnvTransitionBlock {
 			EnvTransitionPacked packed = data[i];
 			EnvTransitionInstance& inst = dest.emplace_back();
 			inst.set_id_value(i);
-			inst.transform().set_from_matrix(packed.matrix.unpack());
+			glm::mat4 inverse_matrix = packed.inverse_matrix.unpack();
+			glm::mat4 matrix = glm::inverse(inverse_matrix);
+			inst.transform().set_from_matrix(&matrix, &inverse_matrix);
 			inst.bounding_sphere() = bspheres[i].unpack();
 			inst.enable_hero = packed.flags & 1;
 			inst.enable_fog = (packed.flags & 2) >> 1;
@@ -216,7 +218,7 @@ struct EnvTransitionBlock {
 		}
 		for(EnvTransitionInstance inst : src) {
 			EnvTransitionPacked packed;
-			packed.matrix = Mat4::pack(inst.transform().matrix());
+			packed.inverse_matrix = Mat4::pack(inst.transform().inverse_matrix());
 			packed.flags = inst.enable_hero | (inst.enable_fog << 1);
 			packed.unused_7c = 0;
 			swap_env_transition(inst, packed);

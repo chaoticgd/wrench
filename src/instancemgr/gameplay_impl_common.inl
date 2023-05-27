@@ -24,26 +24,35 @@
 
 template <typename Packed>
 static void swap_matrix(Instance& inst, Packed& packed) {
-	glm::mat4 matrix = inst.transform().matrix();
+	glm::mat4 lhs_matrix = inst.transform().matrix();
 	packed.matrix.m_3.w = 1.f;
-	inst.transform().set_from_matrix(packed.matrix.unpack());
-	matrix[3][3] = 0.01f;
-	packed.matrix = Mat4::pack(matrix);
+	glm::mat4 rhs_matrix = packed.matrix.unpack();
+	inst.transform().set_from_matrix(&rhs_matrix);
+	lhs_matrix[3][3] = 0.01f;
+	packed.matrix = Mat4::pack(lhs_matrix);
 }
 
 template <typename Packed>
 static void swap_matrix_inverse_rotation(Instance& inst, Packed& packed) {
-	glm::mat4 matrix = inst.transform().matrix();
-	glm::mat3 inverse_matrix = inst.transform().inverse_matrix();
-	glm::vec3 rotation = inst.transform().rot();
-	glm::mat3x4 packed_inverse = packed.inverse_matrix.unpack();
-	glm::vec3 packed_rot = packed.rotation.unpack();
+	glm::mat4 lhs_matrix = inst.transform().matrix();
+	glm::mat3 lhs_inverse_matrix = inst.transform().inverse_matrix();
+	glm::vec3 lhs_rotation = inst.transform().rot();
+	glm::mat4 rhs_matrix = packed.matrix.unpack();
+	glm::mat4 rhs_inverse = packed.inverse_matrix.unpack();
+	glm::vec3 rhs_rot = packed.rotation.unpack();
 	packed.matrix.m_3.w = 1.f;
-	inst.transform().set_from_matrix(packed.matrix.unpack(), &packed_inverse, &packed_rot);
-	matrix[3][3] = 0.01f;
-	packed.matrix = Mat4::pack(matrix);
-	packed.inverse_matrix = Mat3::pack(inverse_matrix);
-	packed.rotation = Vec3f::pack(rotation);
+	glm::mat4 computed_inverse = glm::inverse(rhs_matrix);
+	glm::mat4 stored_inverse = {
+		rhs_inverse[0],
+		rhs_inverse[1],
+		rhs_inverse[2],
+		computed_inverse[3]
+	};
+	inst.transform().set_from_matrix(&rhs_matrix, &stored_inverse, &rhs_rot);
+	lhs_matrix[3][3] = 0.01f;
+	packed.matrix = Mat4::pack(lhs_matrix);
+	packed.inverse_matrix = Mat3::pack(lhs_inverse_matrix);
+	packed.rotation = Vec3f::pack(lhs_rotation);
 }
 
 template <typename Packed>
