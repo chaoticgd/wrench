@@ -8,9 +8,10 @@ add_executable(runtests
 	test_compression.cpp
 	test_elf.cpp
 	test_engine.cpp
+	test_instancemgr.cpp
 )
 target_link_libraries(runtests catch2)
-target_link_libraries(runtests wrenchcore wrench_assetmgr wrenchiso wrenchengine)
+target_link_libraries(runtests wrenchcore wrench_assetmgr wrenchiso wrenchengine wrenchinstancemgr)
 
 add_test(NAME catch2_tests COMMAND runtests)
 file(COPY CTestCustom.cmake DESTINATION ${CMAKE_BINARY_DIR})

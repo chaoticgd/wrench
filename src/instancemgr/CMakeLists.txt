@@ -32,6 +32,7 @@ add_custom_target(
 )
 
 add_library(wrenchinstancemgr STATIC
+	cpp_lexer.cpp
 	gameplay.cpp
 	instance.cpp
 	instances.cpp
