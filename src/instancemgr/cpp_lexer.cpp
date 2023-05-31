@@ -73,15 +73,15 @@ const char* eat_cpp_file(std::vector<CppToken>& tokens, char* ptr) {
 		if(ptr[0] == '<' && ptr[1] == ':' && ptr[2] == ':' && (ptr[3] != ':' && ptr[3] != '>')) {
 			ptr += 3;
 			CppToken& token_1 = tokens.emplace_back();
-			token_1.type = CppTokenType::OPERATOR;
+			token_1.type = CPP_OPERATOR;
 			token_1.op = CPP_OP_LESS_THAN;
 			CppToken& token_2 = tokens.emplace_back();
-			token_2.type = CppTokenType::OPERATOR;
+			token_2.type = CPP_OPERATOR;
 			token_2.op = CPP_OP_SCOPE_SEPARATOR;
 			continue;
 		}
 		
-		if(eat_comment(tokens,ptr)) {
+		if(eat_comment(tokens, ptr)) {
 			continue;
 		}
 		
@@ -124,14 +124,16 @@ static bool eat_raw_string(std::vector<CppToken>& tokens, char*& ptr) {
 	
 	ptr += 2;
 	char dchar[17];
-	dchar[0] = '(';
+	dchar[0] = ')';
 	s32 dchar_size;
+	// Read opening delimiter.
 	for(dchar_size = 0; dchar_size < 16; dchar_size++) {
 		if(*ptr == '(' || *ptr == '\0') break;
 		dchar[dchar_size + 1] = *(ptr++);
 	}
 	if(*ptr != '\0') ptr++; // Skip past '('.
 	const char* str_begin = ptr;
+	// Scan for closing delimiter.
 	while(*ptr != '\0') {
 		bool matches = true;
 		for(s32 i = 0; i < dchar_size + 1; i++) {
@@ -141,20 +143,15 @@ static bool eat_raw_string(std::vector<CppToken>& tokens, char*& ptr) {
 			}
 		}
 		if(matches) {
-			ptr += dchar_size + 1;
 			break;
 		}
 		ptr++;
 	}
 	const char* str_end = ptr;
-	if(*ptr != '\0') ptr++; // Skip past ')'.
-	// Skip past closing dchar.
-	for(s32 j = 0; j < 16; j++) {
-		if(*ptr == '(' || *ptr == '\0') break;
-		ptr++;
-	}
+	ptr += dchar_size + 2;
+	
 	CppToken& token = tokens.emplace_back();
-	token.type = CppTokenType::LITERAL;
+	token.type = CPP_LITERAL;
 	token.str_begin = str_begin;
 	token.str_end = str_end;
 	
@@ -170,7 +167,7 @@ static bool eat_comment(std::vector<CppToken>& tokens, char*& ptr) {
 			if(ptr[0] == '*' && ptr[1] == '/') {
 				ptr += 2;
 				CppToken& token = tokens.emplace_back();
-				token.type = CppTokenType::COMMENT;
+				token.type = CPP_COMMENT;
 				token.str_begin = str_begin;
 				token.str_end = ptr;
 				break;
@@ -185,7 +182,7 @@ static bool eat_comment(std::vector<CppToken>& tokens, char*& ptr) {
 			if(ptr[0] == '\n') {
 				ptr++;
 				CppToken& token = tokens.emplace_back();
-				token.type = CppTokenType::COMMENT;
+				token.type = CPP_COMMENT;
 				token.str_begin = str_begin;
 				token.str_end = ptr;
 				break;
@@ -203,7 +200,7 @@ static bool eat_keyword_or_operator(std::vector<CppToken>& tokens, char*& ptr) {
 		if(strncmp(ptr, CPP_KEYWORDS[i].string, strlen(CPP_KEYWORDS[i].string)) == 0) {
 			ptr += strlen(CPP_KEYWORDS[i].string);
 			CppToken& token = tokens.emplace_back();
-			token.type = CppTokenType::KEYWORD;
+			token.type = CPP_KEYWORD;
 			token.keyword = CPP_KEYWORDS[i].keyword;
 			return true;
 		}
@@ -215,7 +212,7 @@ static bool eat_keyword_or_operator(std::vector<CppToken>& tokens, char*& ptr) {
 		if(strncmp(ptr, CPP_OPERATORS[i].string, chars) == 0) {
 			ptr += chars;
 			CppToken& token = tokens.emplace_back();
-			token.type = CppTokenType::OPERATOR;
+			token.type = CPP_OPERATOR;
 			token.op = CPP_OPERATORS[i].op;
 			return true;
 		}
@@ -237,7 +234,7 @@ static bool eat_literal(std::vector<CppToken>& tokens, char*& ptr) {
 	
 	if(!hungry) {
 		CppToken& token = tokens.emplace_back();
-		token.type = CppTokenType::LITERAL;
+		token.type = CPP_LITERAL;
 		token.str_begin = str_begin;
 		token.str_end = ptr;
 		return true;
@@ -274,6 +271,7 @@ static bool eat_number_literal(std::vector<CppToken>& tokens, char*& ptr) {
 			if(*ptr == 'e' || *ptr == 'E') {
 				ptr++;
 				if(*ptr == '-' || *ptr == '+') {
+					ptr++;
 					while(*ptr >= '0' && *ptr <= '9') ptr++;
 				}
 			}
@@ -401,10 +399,21 @@ static bool eat_identifier(std::vector<CppToken>& tokens, char*& ptr) {
 			ptr++;
 		}
 		CppToken& token = tokens.emplace_back();
-		token.type = CppTokenType::IDENTIFIER;
+		token.type = CPP_IDENTIFIER;
 		token.str_begin = str_begin;
 		token.str_end = ptr;
 		return true;
 	}
 	return false;
+}
+
+const char* cpp_token_type(CppTokenType type) {
+	switch(type) {
+		case CPP_COMMENT: return "comment";
+		case CPP_IDENTIFIER: return "identifier";
+		case CPP_KEYWORD: return "keyword";
+		case CPP_LITERAL: return "literal";
+		case CPP_OPERATOR: return "operator";
+	}
+	return "(invalid token)";
 }

@@ -54,12 +54,12 @@ struct CppOperatorTableEntry {
 extern const CppOperatorTableEntry CPP_OPERATORS[];
 extern const s32 CPP_OPERATOR_COUNT;
 
-enum class CppTokenType {
-	COMMENT,
-	IDENTIFIER,
-	KEYWORD,
-	LITERAL,
-	OPERATOR
+enum CppTokenType {
+	CPP_COMMENT,
+	CPP_IDENTIFIER,
+	CPP_KEYWORD,
+	CPP_LITERAL,
+	CPP_OPERATOR
 };
 
 struct CppToken {
@@ -72,5 +72,6 @@ struct CppToken {
 
 #define CPP_NO_ERROR nullptr
 const char* eat_cpp_file(std::vector<CppToken>& tokens, char* ptr);
+const char* cpp_token_type(CppTokenType type);
 
 #endif
