@@ -46,9 +46,8 @@ static bool eat_pointer_literal(std::vector<CppToken>& tokens, char*& ptr);
 static bool eat_identifier(std::vector<CppToken>& tokens, char*& ptr);
 static bool is_literal_char(char c);
 
-static std::string error_buffer;
-
-const char* eat_cpp_file(std::vector<CppToken>& tokens, char* ptr) {
+std::vector<CppToken> eat_cpp_file(char* ptr) {
+	std::vector<CppToken> tokens;
 	splice_physical_lines(ptr); // [lex.phases] 1
 	while(*ptr != '\0') {
 		
@@ -98,11 +97,10 @@ const char* eat_cpp_file(std::vector<CppToken>& tokens, char* ptr) {
 		}
 		
 		std::string str(ptr);
-		error_buffer = stringf("Unrecognised token: %s", str.substr(0, 32).c_str());
-		return error_buffer.c_str();
+		verify_not_reached("Unrecognised token: %s", str.substr(0, 32).c_str());
 	}
 	
-	return CPP_NO_ERROR;
+	return tokens;
 }
 
 static void splice_physical_lines(char* string) {

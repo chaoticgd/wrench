@@ -61,11 +61,7 @@ TEST_CASE("c++ lexer" "[instancemgr]") {
 
 static s32 test_lexer(const char* src, std::vector<CppTokenType>&& expected) {
 	std::string str(src);
-	std::vector<CppToken> tokens;
-	const char* result = eat_cpp_file(tokens, &str[0]);
-	if(result != CPP_NO_ERROR) {
-		UNSCOPED_INFO(stringf("error: %s\n(end of error)\n", result));
-	}
+	std::vector<CppToken> tokens = eat_cpp_file(&str[0]);
 	for(size_t i = 0; i < std::max(tokens.size(), expected.size()); i++) {
 		print_token(tokens[i]);
 		if(i >= tokens.size()) return -3;
@@ -151,13 +147,26 @@ TEST_CASE("c++ parser" "[instancemgr]") {
 			return type;
 		}()
 	));
+	CHECK(test_parser(
+		"union Union { float **double_pointer; };",
+		[]() {
+			PvarType type(PTD_STRUCT_OR_UNION);
+			type.name = "Union";
+			type.struct_or_union.is_union = true;
+			PvarType& field = type.struct_or_union.fields.emplace_back(PTD_POINTER_OR_REFERENCE);
+			field.name = "double_pointer";
+			field.pointer_or_reference.value_type = std::make_unique<PvarType>(PTD_POINTER_OR_REFERENCE);
+			PvarType& inner = *field.pointer_or_reference.value_type.get();
+			inner.pointer_or_reference.value_type = std::make_unique<PvarType>(PTD_BUILT_IN);
+			inner.pointer_or_reference.value_type->built_in = PvarBuiltIn::FLOAT;
+			return type;
+		}()
+	));
 }
 
 static bool test_parser(const char* src, PvarType&& expected) {
 	std::string str(src);
-	std::vector<CppToken> tokens;
-	const char* result = eat_cpp_file(tokens, &str[0]);
-	if(result != CPP_NO_ERROR) UNSCOPED_INFO(stringf("error: %s\n(end of error)\n", result));
+	std::vector<CppToken> tokens = eat_cpp_file(&str[0]);
 	std::vector<PvarType> types = parse_pvar_types(tokens);
 	if(types.size() != 1) {
 		return false;

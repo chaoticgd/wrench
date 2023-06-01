@@ -46,6 +46,16 @@ std::vector<PvarType> parse_pvar_types(const std::vector<CppToken>& tokens) {
 static void parse_struct_or_union(PvarType& dest, const std::vector<CppToken>& tokens, size_t& pos) {
 	while(check_eof(tokens, pos) && !(tokens[pos].type == CPP_OPERATOR && tokens[pos].op == CPP_OP_CLOSING_CURLY)) {
 		PvarType field_type = parse_type_name(tokens, pos);
+		
+		// Parse pointers.
+		while(check_eof(tokens, pos) && tokens[pos].type == CPP_OPERATOR && (tokens[pos].op == CPP_OP_STAR || tokens[pos].op == CPP_OP_AMPERSAND)) {
+			PvarType type(PTD_POINTER_OR_REFERENCE);
+			type.pointer_or_reference.is_reference = tokens[pos].op == CPP_OP_AMPERSAND;
+			type.pointer_or_reference.value_type = std::make_unique<PvarType>(std::move(field_type));
+			field_type = std::move(type);
+			pos++;
+		}
+		
 		check_eof(tokens, pos);
 		std::string name = std::string(tokens[pos].str_begin, tokens[pos].str_end);
 		pos++;
@@ -56,7 +66,7 @@ static void parse_struct_or_union(PvarType& dest, const std::vector<CppToken>& t
 			pos++;
 			check_eof(tokens, pos);
 			verify(tokens[pos].type == CPP_INTEGER_LITERAL, "Expected integer literal.");
-			array_indices.emplace_back(5);
+			array_indices.emplace_back(tokens[pos].i);
 			pos++;
 			check_eof(tokens, pos);
 			verify(tokens[pos].type == CPP_OPERATOR && tokens[pos].op == CPP_OP_CLOSING_SQUARE, "Expected ']'.");
@@ -109,6 +119,8 @@ static PvarType parse_type_name(const std::vector<CppToken>& tokens, size_t& pos
 				}
 				break;
 			}
+			case CPP_KEYWORD_float: field.built_in = PvarBuiltIn::FLOAT; break;
+			case CPP_KEYWORD_double: field.built_in = PvarBuiltIn::DOUBLE; break;
 			default: verify_not_reached("Expected type name.");
 		}
 		

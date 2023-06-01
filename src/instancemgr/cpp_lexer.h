@@ -77,8 +77,7 @@ struct CppToken {
 	f32 f = 0.f;
 };
 
-#define CPP_NO_ERROR nullptr
-const char* eat_cpp_file(std::vector<CppToken>& tokens, char* ptr);
+std::vector<CppToken> eat_cpp_file(char* ptr);
 const char* cpp_token_type(CppTokenType type);
 
 #endif
