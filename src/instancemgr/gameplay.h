@@ -23,6 +23,22 @@
 
 #include <instancemgr/instances.h>
 
+packed_struct(PvarTableEntry,
+	s32 offset;
+	s32 size;
+)
+
+packed_struct(PvarPointerEntry,
+	/* 0x0 */ s32 pvar_index;
+	/* 0x4 */ u32 pointer_offset;
+)
+
+packed_struct(GlobalPvarPointer,
+	/* 0x0 */ u16 pvar_index;
+	/* 0x2 */ u16 pointer_offset;
+	/* 0x4 */ s32 global_pvar_offset;
+)
+
 // Represents a packed gameplay file.
 struct Gameplay {
 	Opt<LevelSettings> level_settings;
@@ -63,25 +79,16 @@ struct Gameplay {
 	
 	Opt<OcclusionMappings> occlusion;
 	
-	// Only used while reading the binary gameplay file.
-	Opt<std::vector<PvarTableEntry>> pvars_temp;
-	
-	// These functions don't skip over instances where pvars.size() == 0.
-	template <typename Callback>
-	void for_each_pvar_instance_const(Callback callback) const;
-	template <typename Callback>
-	void for_each_pvar_instance(Callback callback);
-	// And these skip over instances that don't have an associated pvar type.
-	template <typename Callback>
-	void for_each_pvar_instance_const(const PvarTypes& types, Callback callback) const;
-	template <typename Callback>
-	void for_each_pvar_instance(const PvarTypes& types, Callback callback);
+	Opt<std::vector<PvarTableEntry>> pvar_table;
+	Opt<std::vector<PvarPointerEntry>> pvar_scratchpad;
+	Opt<std::vector<PvarPointerEntry>> pvar_relatives;
+	Opt<std::vector<GlobalPvarPointer>> global_pvar_table;
 };
 
 // *****************************************************************************
 
-using GameplayBlockReadFunc = std::function<void(PvarTypes& types, Gameplay& gameplay, Buffer src, Game game)>;
-using GameplayBlockWriteFunc = std::function<bool(OutBuffer dest, const PvarTypes& types, const Gameplay& gameplay, Game game)>;
+using GameplayBlockReadFunc = std::function<void(Gameplay& gameplay, Buffer src, Game game)>;
+using GameplayBlockWriteFunc = std::function<bool(OutBuffer dest, const Gameplay& gameplay, Game game)>;
 
 struct GameplayBlockFuncs {
 	GameplayBlockReadFunc read;
@@ -100,64 +107,11 @@ extern const std::vector<GameplayBlockDescription> DL_GAMEPLAY_CORE_BLOCKS;
 extern const std::vector<GameplayBlockDescription> DL_ART_INSTANCE_BLOCKS;
 extern const std::vector<GameplayBlockDescription> DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS;
 
-void read_gameplay(Gameplay& gameplay, PvarTypes& types, Buffer src, Game game, const std::vector<GameplayBlockDescription>& blocks);
-std::vector<u8> write_gameplay(const Gameplay& gameplay_arg, const PvarTypes& types, Game game, const std::vector<GameplayBlockDescription>& blocks);
+void read_gameplay(Gameplay& gameplay, Buffer src, Game game, const std::vector<GameplayBlockDescription>& blocks);
+std::vector<u8> write_gameplay(const Gameplay& gameplay_arg, Game game, const std::vector<GameplayBlockDescription>& blocks);
 const std::vector<GameplayBlockDescription>* gameplay_block_descriptions_from_game(Game game);
 std::vector<u8> write_occlusion_mappings(const Gameplay& gameplay, Game game);
 void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, OcclusionMappings* occlusion_dest, Gameplay& src);
 void move_instances_to_gameplay(Gameplay& dest, Instances& src, HelpMessages* help_src, OcclusionMappings* occlusion_src);
-
-template <typename Callback>
-void Gameplay::for_each_pvar_instance_const(Callback callback) const {
-	for(const CameraInstance& inst : opt_iterator(cameras)) {
-		callback(inst);
-	}
-	for(const SoundInstance& inst : opt_iterator(sound_instances)) {
-		callback(inst);
-	}
-	for(const MobyInstance& inst : opt_iterator(moby_instances)) {
-		callback(inst);
-	}
-}
-
-template <typename Callback>
-void Gameplay::for_each_pvar_instance(Callback callback) {
-	for_each_pvar_instance_const([&](const Instance& inst) {
-		callback(const_cast<Instance&>(inst));
-	});
-}
-
-template <typename Callback>
-void Gameplay::for_each_pvar_instance_const(const PvarTypes& types, Callback callback) const {
-	for(const CameraInstance& inst : opt_iterator(cameras)) {
-		auto iter = types.camera.find(inst.type);
-		if(iter != types.camera.end()) {
-			const PvarType& type = iter->second;
-			callback(inst, type);
-		}
-	}
-	for(const SoundInstance& inst : opt_iterator(sound_instances)) {
-		auto iter = types.sound.find(inst.o_class);
-		if(iter != types.sound.end()) {
-			const PvarType& type = iter->second;
-			callback(inst, type);
-		}
-	}
-	for(const MobyInstance& inst : opt_iterator(moby_instances)) {
-		auto iter = types.moby.find(inst.o_class);
-		if(iter != types.moby.end()) {
-			const PvarType& type = iter->second;
-			callback(inst, type);
-		}
-	}
-}
-
-template <typename Callback>
-void Gameplay::for_each_pvar_instance(const PvarTypes& types, Callback callback) {
-	for_each_pvar_instance_const(types, [&](const Instance& inst, const PvarType& type) {
-		callback(const_cast<Instance&>(inst), type);
-	});
-}
-
 
 #endif

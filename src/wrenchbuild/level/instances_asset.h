@@ -22,6 +22,6 @@
 #include <instancemgr/gameplay.h>
 #include <assetmgr/asset_types.h>
 
-std::pair<Gameplay, PvarTypes> load_instances(const Asset& src, const BuildConfig& config, const char* hint);
+Gameplay load_instances(const Asset& src, const BuildConfig& config, const char* hint);
 
 #endif

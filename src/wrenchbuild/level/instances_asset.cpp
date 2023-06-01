@@ -42,8 +42,7 @@ static void unpack_instances_asset(InstancesAsset& dest, InputStream& src, Build
 	std::vector<u8> buffer = src.read_multiple<u8>(0, src.size());
 	
 	Gameplay gameplay;
-	PvarTypes pvar_types;
-	read_gameplay(gameplay, pvar_types, buffer, config.game(), *get_gameplay_block_descriptions(config.game(), hint)); 
+	read_gameplay(gameplay, buffer, config.game(), *get_gameplay_block_descriptions(config.game(), hint)); 
 	
 	Instances instances;
 	move_gameplay_to_instances(instances, nullptr, nullptr, gameplay);
@@ -54,7 +53,7 @@ static void unpack_instances_asset(InstancesAsset& dest, InputStream& src, Build
 	dest.set_src(ref);
 }
 
-std::pair<Gameplay, PvarTypes> load_instances(const Asset& src, const BuildConfig& config, const char* hint) {
+Gameplay load_instances(const Asset& src, const BuildConfig& config, const char* hint) {
 	std::vector <u8> gameplay_buffer;
 	if(const InstancesAsset* asset = src.maybe_as<InstancesAsset>()) {
 		std::unique_ptr<InputStream> gameplay_stream = asset->file().open_binary_file_for_reading(asset->src());
@@ -64,9 +63,8 @@ std::pair<Gameplay, PvarTypes> load_instances(const Asset& src, const BuildConfi
 		gameplay_buffer = gameplay_stream->read_multiple<u8>(gameplay_stream->size());
 	}
 	Gameplay gameplay;
-	PvarTypes pvars;
-	read_gameplay(gameplay, pvars, gameplay_buffer, config.game(), *gameplay_block_descriptions_from_game(config.game()));
-	return {gameplay, pvars};
+	read_gameplay(gameplay, gameplay_buffer, config.game(), *gameplay_block_descriptions_from_game(config.game()));
+	return gameplay;
 }
 
 static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConfig config, const char* hint, AssetTestMode mode) {
@@ -74,8 +72,7 @@ static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConf
 	
 	// Parse gameplay file.
 	Gameplay gameplay_in;
-	PvarTypes types;
-	read_gameplay(gameplay_in, types, src, config.game(), *blocks);
+	read_gameplay(gameplay_in, src, config.game(), *blocks);
 	
 	// Separate out the different parts of the file.
 	Instances instances_in;
@@ -92,7 +89,12 @@ static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConf
 	// Write out new gameplay file.
 	Gameplay gameplay_out;
 	move_instances_to_gameplay(gameplay_out, instances_out, &help_messages, &occlusion);
-	std::vector<u8> dest = write_gameplay(gameplay_out, types, config.game(), *blocks);
+	gameplay_out.pvar_table = gameplay_in.pvar_table;
+	gameplay_out.pvar_scratchpad = gameplay_in.pvar_scratchpad;
+	gameplay_out.pvar_relatives = gameplay_in.pvar_relatives;
+	gameplay_out.global_pvar = gameplay_in.global_pvar;
+	gameplay_out.global_pvar_table = gameplay_in.global_pvar_table;
+	std::vector<u8> dest = write_gameplay(gameplay_out, config.game(), *blocks);
 		
 	// Compare the new file against the original.
 	strip_trailing_padding_from_lhs(src, dest);

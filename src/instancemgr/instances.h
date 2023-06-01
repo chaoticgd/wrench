@@ -19,8 +19,8 @@
 #ifndef INSTANCEMGR_INSTANCES_H
 #define INSTANCEMGR_INSTANCES_H
 
-#include <instancemgr/level.h>
 #include <instancemgr/instance.h>
+#include <instancemgr/level_settings.h>
 
 // Represents a gameplay source file.
 struct Instances {

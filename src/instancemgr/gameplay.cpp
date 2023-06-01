@@ -22,19 +22,16 @@
 
 const s32 NONE = -1;
 
-static void rewire_pvar_indices(Gameplay& gameplay);
-static void rewire_global_pvar_pointers(const PvarTypes& types, Gameplay& gameplay);
-
-void read_gameplay(Gameplay& gameplay, PvarTypes& types, Buffer src, Game game, const std::vector<GameplayBlockDescription>& blocks) {
+void read_gameplay(Gameplay& gameplay, Buffer src, Game game, const std::vector<GameplayBlockDescription>& blocks) {
 	for(const GameplayBlockDescription& block : blocks) {
 		s32 block_offset = src.read<s32>(block.header_pointer_offset, "gameplay header");
 		if(block_offset != 0 && block.funcs.read != nullptr) {
-			block.funcs.read(types, gameplay, src.subbuf(block_offset), game);
+			block.funcs.read(gameplay, src.subbuf(block_offset), game);
 		}
 	}
 }
 
-std::vector<u8> write_gameplay(const Gameplay& gameplay_arg, const PvarTypes& types, Game game, const std::vector<GameplayBlockDescription>& blocks) {
+std::vector<u8> write_gameplay(const Gameplay& gameplay_arg, Game game, const std::vector<GameplayBlockDescription>& blocks) {
 	Gameplay gameplay = gameplay_arg;
 	
 	s32 header_size = 0;
@@ -47,9 +44,6 @@ std::vector<u8> write_gameplay(const Gameplay& gameplay_arg, const PvarTypes& ty
 	}
 	verify_fatal(header_size == block_count * 4);
 	
-	rewire_pvar_indices(gameplay); // Set pvar_index fields.
-	rewire_global_pvar_pointers(types, gameplay); // Extract global pvar pointers from pvars.
-	
 	std::vector<u8> dest_vec(header_size, 0);
 	OutBuffer dest(dest_vec);
 	for(const GameplayBlockDescription& block : blocks) {
@@ -61,7 +55,7 @@ std::vector<u8> write_gameplay(const Gameplay& gameplay_arg, const PvarTypes& ty
 				dest.pad(0x40, 0);
 			}
 			s32 ofs = (s32) dest_vec.size();
-			if(block.funcs.write(dest, types, gameplay, game)) {
+			if(block.funcs.write(dest, gameplay, game)) {
 				verify_fatal(block.header_pointer_offset + 4 <= (s32) dest_vec.size());
 				*(s32*) &dest_vec[block.header_pointer_offset] = ofs;
 			}
@@ -94,12 +88,12 @@ static GameplayBlockFuncs bf(Field field) {
 	using FieldType = typename std::remove_reference<decltype(Gameplay().*field)>::type::value_type;
 	
 	GameplayBlockFuncs funcs;
-	funcs.read = [field](PvarTypes&, Gameplay& gameplay, Buffer src, Game game) {
+	funcs.read = [field](Gameplay& gameplay, Buffer src, Game game) {
 		FieldType value;
 		Block::read(value, src, game);
 		gameplay.*field = std::move(value);
 	};
-	funcs.write = [field](OutBuffer dest, const PvarTypes&, const Gameplay& gameplay, Game game) {
+	funcs.write = [field](OutBuffer dest, const Gameplay& gameplay, Game game) {
 		if(!(gameplay.*field).has_value()) {
 			return false;
 		}

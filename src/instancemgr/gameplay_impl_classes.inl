@@ -80,7 +80,7 @@ packed_struct(RacMobyInstance,
 static_assert(sizeof(RacMobyInstance) == 0x78);
 
 struct RacMobyBlock {
-	static void read(PvarTypes& types, Gameplay& gameplay, Buffer src, Game game) {
+	static void read(Gameplay& gameplay, Buffer src, Game game) {
 		auto& header = src.read<MobyBlockHeader>(0, "moby block header");
 		gameplay.spawnable_moby_count = header.spawnable_moby_count;
 		s32 index = 0;
@@ -95,7 +95,7 @@ struct RacMobyBlock {
 		}
 	}
 	
-	static bool write(OutBuffer dest, const PvarTypes& types, const Gameplay& gameplay, Game game) {
+	static bool write(OutBuffer dest, const Gameplay& gameplay, Game game) {
 		verify(gameplay.spawnable_moby_count.has_value(), "Missing dynamic moby count field.");
 		verify(gameplay.moby_instances.has_value(), "Missing moby instances array.");
 		verify(gameplay.moby_groups.has_value(), "Missing moby groups array.");
@@ -174,7 +174,7 @@ packed_struct(GcUyaMobyInstance,
 static_assert(sizeof(GcUyaMobyInstance) == 0x88);
 
 struct GcUyaMobyBlock {
-	static void read(PvarTypes& types, Gameplay& gameplay, Buffer src, Game game) {
+	static void read(Gameplay& gameplay, Buffer src, Game game) {
 		auto& header = src.read<MobyBlockHeader>(0, "moby block header");
 		gameplay.spawnable_moby_count = header.spawnable_moby_count;
 		s32 index = 0;
@@ -189,7 +189,7 @@ struct GcUyaMobyBlock {
 		}
 	}
 	
-	static bool write(OutBuffer dest, const PvarTypes& types, const Gameplay& gameplay, Game game) {
+	static bool write(OutBuffer dest, const Gameplay& gameplay, Game game) {
 		verify(gameplay.spawnable_moby_count.has_value(), "Missing dynamic moby count field.");
 		verify(gameplay.moby_instances.has_value(), "Missing moby instances array.");
 		verify(gameplay.moby_groups.has_value(), "Missing moby groups array.");
@@ -266,7 +266,7 @@ packed_struct(DlMobyInstance,
 static_assert(sizeof(DlMobyInstance) == 0x70);
 
 struct DlMobyBlock {
-	static void read(PvarTypes& types, Gameplay& gameplay, Buffer src, Game game) {
+	static void read(Gameplay& gameplay, Buffer src, Game game) {
 		auto& header = src.read<MobyBlockHeader>(0, "moby block header");
 		gameplay.spawnable_moby_count = header.spawnable_moby_count;
 		gameplay.moby_instances = std::vector<MobyInstance>();
@@ -286,7 +286,7 @@ struct DlMobyBlock {
 		}
 	}
 	
-	static bool write(OutBuffer dest, const PvarTypes& types, const Gameplay& gameplay, Game game) {
+	static bool write(OutBuffer dest, const Gameplay& gameplay, Game game) {
 		verify(gameplay.spawnable_moby_count.has_value(), "Missing dynamic moby count field.");
 		verify(gameplay.moby_instances.has_value(), "Missing moby instances array.");
 		verify(gameplay.moby_groups.has_value(), "Missing moby groups array.");
@@ -331,134 +331,103 @@ struct DlMobyBlock {
 };
 
 struct PvarTableBlock {
-	static void read(PvarTypes& types, Gameplay& dest, Buffer src, Game game) {
+	static void read(Gameplay& dest, Buffer src, Game game) {
 		s32 pvar_count = 0;
-		dest.for_each_pvar_instance([&](Instance& inst) {
+		for(const MobyInstance& inst : opt_iterator(dest.moby_instances)) {
 			pvar_count = std::max(pvar_count, inst.temp_pvar_index() + 1);
-		});
+		}
+		for(const CameraInstance& inst : opt_iterator(dest.cameras)) {
+			pvar_count = std::max(pvar_count, inst.temp_pvar_index() + 1);
+		}
+		for(const SoundInstance& inst : opt_iterator(dest.sound_instances)) {
+			pvar_count = std::max(pvar_count, inst.temp_pvar_index() + 1);
+		}
 		
-		// Store the table for use in PvarDataBlock::read.
-		dest.pvars_temp = src.read_multiple<PvarTableEntry>(0, pvar_count, "pvar table").copy();
+		dest.pvar_table = src.read_multiple<PvarTableEntry>(0, pvar_count, "pvar table").copy();
 	}
 	
-	static bool write(OutBuffer dest, const PvarTypes& types, const Gameplay& src, Game game) {
-		s32 data_offset = 0;
-		src.for_each_pvar_instance_const([&](const Instance& inst) {
-			if(inst.pvars().size() > 0) {
-				dest.write(data_offset);
-				dest.write((s32) inst.pvars().size());
-				data_offset += inst.pvars().size();
-			}
-		});
-		return true;
+	static bool write(OutBuffer dest, const Gameplay& src, Game game) {
+		if(src.pvar_table.has_value()) {
+			dest.write_multiple(*src.pvar_table);
+			return true;
+		}
+		return false;
 	}
 };
 
 struct PvarDataBlock {
-	static void read(PvarTypes& types, Gameplay& dest, Buffer src, Game game) {
-		verify_fatal(dest.pvars_temp.has_value());
-		dest.for_each_pvar_instance([&](Instance& inst) {
+	static void read(Gameplay& dest, Buffer src, Game game) {
+		verify_fatal(dest.pvar_table.has_value());
+		for(MobyInstance& inst : opt_iterator(dest.moby_instances)) {
 			if(inst.temp_pvar_index() >= 0) {
-				PvarTableEntry& entry = dest.pvars_temp->at(inst.temp_pvar_index());
+				PvarTableEntry& entry = dest.pvar_table->at(inst.temp_pvar_index());
 				inst.pvars() = src.read_multiple<u8>(entry.offset, entry.size, "pvar data").copy();
 			}
-		});
-		dest.pvars_temp = {};
+		}
+		for(CameraInstance& inst : opt_iterator(dest.cameras)) {
+			if(inst.temp_pvar_index() >= 0) {
+				PvarTableEntry& entry = dest.pvar_table->at(inst.temp_pvar_index());
+				inst.pvars() = src.read_multiple<u8>(entry.offset, entry.size, "pvar data").copy();
+			}
+		}
+		for(SoundInstance& inst : opt_iterator(dest.sound_instances)) {
+			if(inst.temp_pvar_index() >= 0) {
+				PvarTableEntry& entry = dest.pvar_table->at(inst.temp_pvar_index());
+				inst.pvars() = src.read_multiple<u8>(entry.offset, entry.size, "pvar data").copy();
+			}
+		}
 	}
 	
-	static bool write(OutBuffer dest, const PvarTypes& types, const Gameplay& src, Game game) {
-		src.for_each_pvar_instance_const([&](const Instance& inst) {
+	static bool write(OutBuffer dest, const Gameplay& src, Game game) {
+		for(const MobyInstance& inst : opt_iterator(src.moby_instances)) {
 			dest.write_multiple(inst.pvars());
-		});
+		}
+		for(const CameraInstance& inst : opt_iterator(src.cameras)) {
+			dest.write_multiple(inst.pvars());
+		}
+		for(const SoundInstance& inst : opt_iterator(src.sound_instances)) {
+			dest.write_multiple(inst.pvars());
+		}
 		return true;
 	}
 };
 
-packed_struct(PvarPointerEntry,
-	/* 0x0 */ s32 pvar_index;
-	/* 0x4 */ u32 pointer_offset;
-)
-
-static PvarType& get_pvar_type(s32 pvar_index, PvarTypes& types, Gameplay& dest) {
-	Opt<std::string> pvar_type_name;
-	for(CameraInstance& inst : opt_iterator(dest.cameras)) {
-		if(inst.temp_pvar_index() == pvar_index) {
-			return types.camera[inst.type];
-		}
-	}
-	for(SoundInstance& inst : opt_iterator(dest.sound_instances)) {
-		if(inst.temp_pvar_index() == pvar_index) {
-			return types.sound[inst.o_class];
-		}
-	}
-	for(MobyInstance& inst : opt_iterator(dest.moby_instances)) {
-		if(inst.temp_pvar_index() == pvar_index) {
-			return types.moby[inst.o_class];
-		}
-	}
-	verify_not_reached("Invalid pvar index.");
-}
-
-auto write_pvar_pointer_entries(PvarFieldDescriptor descriptor, OutBuffer dest, const PvarTypes& types, const Gameplay& src, Game game) {
-	src.for_each_pvar_instance_const(types, [&](const Instance& inst, const PvarType& type) {
-		for(const PvarField& field : type.fields) {
-			if(field.descriptor == descriptor && (descriptor == PVAR_RELATIVE_POINTER || Buffer(inst.pvars()).read<s32>(field.offset, "pvar pointer") >= 0)) {
-				PvarPointerEntry entry;
-				entry.pvar_index = inst.temp_pvar_index();
-				entry.pointer_offset = field.offset;
-				dest.write(entry);
-			}
-		}
-	});
-	
-	PvarPointerEntry terminator;
-	terminator.pvar_index = -1;
-	terminator.pointer_offset = -1;
-	dest.write(terminator);
-}
-
 struct PvarScratchpadBlock {
-	static void read(PvarTypes& types, Gameplay& dest, Buffer src, Game game) {
+	static void read(Gameplay& dest, Buffer src, Game game) {
+		dest.pvar_scratchpad.emplace();
 		for(s64 offset = 0;; offset += sizeof(PvarPointerEntry)) {
 			auto& entry = src.read<PvarPointerEntry>(offset, "pvar scratchpad block");
 			if(entry.pvar_index < 0) {
 				break;
 			}
 			
-			// If the field already exists, this will do nothing.
-			PvarType& type = get_pvar_type(entry.pvar_index, types, dest);
-			PvarField field;
-			field.offset = entry.pointer_offset;
-			field.descriptor = PVAR_SCRATCHPAD_POINTER;
-			verify(type.insert_field(field, true), "Conflicting pvar type information.");
+			dest.pvar_scratchpad->emplace_back(entry);
 		}
 	}
 	
-	static bool write(OutBuffer dest, const PvarTypes& types, const Gameplay& src, Game game) {
-		write_pvar_pointer_entries(PVAR_SCRATCHPAD_POINTER, dest, types, src, game);
+	static bool write(OutBuffer dest, const Gameplay& src, Game game) {
+		verify_fatal(src.pvar_scratchpad.has_value());
+		dest.write_multiple(*src.pvar_scratchpad);
 		return true;
 	}
 };
 
 struct PvarPointerRewireBlock {
-	static void read(PvarTypes& types, Gameplay& dest, Buffer src, Game game) {
+	static void read(Gameplay& dest, Buffer src, Game game) {
+		dest.pvar_relatives.emplace();
 		for(s64 offset = 0;; offset += sizeof(PvarPointerEntry)) {
 			auto& entry = src.read<PvarPointerEntry>(offset, "pvar pointer rewire block");
 			if(entry.pvar_index < 0) {
 				break;
 			}
 			
-			// If the field already exists, this will do nothing.
-			PvarType& type = get_pvar_type(entry.pvar_index, types, dest);
-			PvarField field;
-			field.offset = entry.pointer_offset;
-			field.descriptor = PVAR_RELATIVE_POINTER;
-			verify(type.insert_field(field, false), "Conflicting pvar type information.");
+			dest.pvar_relatives->emplace_back(entry);
 		}
 	}
 	
-	static bool write(OutBuffer dest, const PvarTypes& types, const Gameplay& src, Game game) {
-		write_pvar_pointer_entries(PVAR_RELATIVE_POINTER, dest, types, src, game);
+	static bool write(OutBuffer dest, const Gameplay& src, Game game) {
+		verify_fatal(src.pvar_relatives.has_value());
+		dest.write_multiple(*src.pvar_relatives);
 		return true;
 	}
 };
@@ -533,67 +502,28 @@ packed_struct(GlobalPvarBlockHeader,
 	/* 0x8 */ s32 unused_8[2];
 )
 
-packed_struct(GlobalPvarPointer,
-	/* 0x0 */ u16 pvar_index;
-	/* 0x2 */ u16 pointer_offset;
-	/* 0x4 */ s32 global_pvar_offset;
-)
-
 struct GlobalPvarBlock {
-	static void read(PvarTypes& types, Gameplay& dest, Buffer src, Game game) {
+	static void read(Gameplay& dest, Buffer src, Game game) {
 		auto& header = src.read<GlobalPvarBlockHeader>(0, "global pvar block header");
 		dest.global_pvar = src.read_multiple<u8>(0x10, header.global_pvar_size, "global pvar").copy();
-		auto pointers = src.read_multiple<GlobalPvarPointer>(0x10 + header.global_pvar_size, header.pointer_count, "global pvar pointers");
-		for(const GlobalPvarPointer& entry : pointers) {
-			PvarType& type = get_pvar_type(entry.pvar_index, types, dest);
-			PvarField field;
-			field.offset = entry.pointer_offset;
-			field.descriptor = PVAR_GLOBAL_PVAR_POINTER;
-			verify(type.insert_field(field, false), "Conflicting pvar type information.");
-			
-			dest.for_each_pvar_instance([&](Instance& inst) {
-				if(inst.temp_pvar_index() == entry.pvar_index) {
-					verify(inst.pvars().size() >= (size_t) entry.pointer_offset + 4, "Pvar too small.");
-					*(s32*) &inst.pvars()[entry.pointer_offset] = entry.global_pvar_offset;
-				}
-			});
-		}
+		dest.global_pvar_table = src.read_multiple<GlobalPvarPointer>(0x10 + header.global_pvar_size, header.pointer_count, "global pvar pointers").copy();
 	}
 	
-	static bool write(OutBuffer dest, const PvarTypes& types, const Gameplay& src, Game game) {
-		if(!src.global_pvar.has_value()) {
+	static bool write(OutBuffer dest, const Gameplay& src, Game game) {
+		if(!src.global_pvar.has_value() && !src.global_pvar_table.has_value()) {
 			GlobalPvarBlockHeader header {};
 			dest.write(header);
 			return true;
 		}
 		
-		s32 header_ofs = dest.alloc<GlobalPvarBlockHeader>();
-		GlobalPvarBlockHeader header = {};
-		header.global_pvar_size = src.global_pvar->size();
-		
 		dest.write_multiple(*src.global_pvar);
-		
-		std::vector<GlobalPvarPointer> pointers;
-		src.for_each_pvar_instance_const(types, [&](const Instance& inst, const PvarType& type) {
-			for(auto& [offset, value] : inst.temp_global_pvar_pointers()) {
-				GlobalPvarPointer entry;
-				entry.pvar_index = inst.temp_pvar_index();
-				entry.pointer_offset = offset;
-				entry.global_pvar_offset = value;
-				pointers.push_back(entry);
-			}
-		});
-		std::stable_sort(BEGIN_END(pointers), [](const GlobalPvarPointer& l, const GlobalPvarPointer& r)
-			{ return l.global_pvar_offset < r.global_pvar_offset; });
-		header.pointer_count = pointers.size();
-		dest.write_multiple(pointers);
-		dest.write(header_ofs, header);
+		dest.write_multiple(*src.global_pvar_table);
 		return true;
 	}
 };
 
 struct TieAmbientRgbaBlock {
-	static void read(PvarTypes& types, Gameplay& dest, Buffer src, Game game) {
+	static void read(Gameplay& dest, Buffer src, Game game) {
 		if(!dest.tie_instances.has_value()) {
 			return;
 		}
@@ -612,7 +542,7 @@ struct TieAmbientRgbaBlock {
 		}
 	}
 	
-	static bool write(OutBuffer dest, const PvarTypes& types, const Gameplay& src, Game game) {
+	static bool write(OutBuffer dest, const Gameplay& src, Game game) {
 		s16 index = 0;
 		for(const TieInstance& inst : opt_iterator(src.tie_instances)) {
 			if(inst.ambient_rgbas.size() > 0) {
@@ -629,9 +559,9 @@ struct TieAmbientRgbaBlock {
 };
 
 struct TieClassBlock {
-	static void read(PvarTypes& types, Gameplay& dest, Buffer src, Game game) {}
+	static void read(Gameplay& dest, Buffer src, Game game) {}
 	
-	static bool write(OutBuffer dest, const PvarTypes& types, const Gameplay& src, Game game) {
+	static bool write(OutBuffer dest, const Gameplay& src, Game game) {
 		std::vector<s32> classes;
 		for(const TieInstance& inst : opt_iterator(src.tie_instances)) {
 			if(std::find(BEGIN_END(classes), inst.o_class) == classes.end()) {
@@ -645,9 +575,9 @@ struct TieClassBlock {
 };
 
 struct ShrubClassBlock {
-	static void read(PvarTypes& types, Gameplay& dest, Buffer src, Game game) {}
+	static void read(Gameplay& dest, Buffer src, Game game) {}
 	
-	static bool write(OutBuffer dest, const PvarTypes& types, const Gameplay& src, Game game) {
+	static bool write(OutBuffer dest, const Gameplay& src, Game game) {
 		std::vector<s32> classes;
 		for(const ShrubInstance& inst : opt_iterator(src.shrub_instances)) {
 			if(std::find(BEGIN_END(classes), inst.o_class) == classes.end()) {
@@ -746,28 +676,6 @@ static void swap_instance(ShrubInstance& l, ShrubInstancePacked& r) {
 	r.unused_64 = 0;
 	r.unused_68 = 0;
 	r.unused_6c = 0;
-}
-
-static void rewire_pvar_indices(Gameplay& gameplay) {
-	s32 pvar_index = 0;
-	gameplay.for_each_pvar_instance([&](Instance& inst) {
-		if(inst.pvars().size() > 0) {
-			inst.temp_pvar_index() = pvar_index++;
-		} else {
-			inst.temp_pvar_index() = -1;
-		}
-	});
-}
-static void rewire_global_pvar_pointers(const PvarTypes& types, Gameplay& gameplay) {
-	gameplay.for_each_pvar_instance(types, [&](Instance& inst, const PvarType& type) {
-		for(const PvarField& field : type.fields) {
-			if(field.descriptor == PVAR_GLOBAL_PVAR_POINTER) {
-				verify(inst.pvars().size() >= (size_t) field.offset + 4, "Pvars too small.");
-				inst.temp_global_pvar_pointers().emplace_back(field.offset, *(s32*) &inst.pvars()[field.offset]);
-				*(s32*) &inst.pvars()[field.offset] = 0;
-			}
-		}
-	});
 }
 
 #endif

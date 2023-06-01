@@ -193,11 +193,6 @@ struct OcclusionMappings {
 	std::vector<OcclusionMapping> moby_mappings;
 };
 
-packed_struct(PvarTableEntry,
-	s32 offset;
-	s32 size;
-)
-
 template <typename ThisInstance>
 class InstanceList {
 private:

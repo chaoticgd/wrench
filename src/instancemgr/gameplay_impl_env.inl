@@ -265,7 +265,7 @@ struct CamCollGridBlock {
 	static const s32 GRID_SIZE_X = 0x40;
 	static const s32 GRID_SIZE_Y = 0x40;
 	
-	static void read(PvarTypes& types, Gameplay& dest, Buffer src, Game game) {
+	static void read(Gameplay& dest, Buffer src, Game game) {
 		auto grid = src.read_multiple<s32>(0x10, GRID_SIZE_X * GRID_SIZE_Y, "camera collision grid");
 		for(s32 list_offset : grid) {
 			if(list_offset != 0) {
@@ -307,7 +307,7 @@ struct CamCollGridBlock {
 		}
 	}
 	
-	static bool write(OutBuffer dest, const PvarTypes& types, const Gameplay& src, Game game) {
+	static bool write(OutBuffer dest, const Gameplay& src, Game game) {
 		// Determine which grid cells intersect with the types of volumes we
 		// care about.
 		std::vector<std::vector<CamCollGridPrim>> grid(GRID_SIZE_X * GRID_SIZE_Y);
@@ -454,7 +454,7 @@ struct PointLightGridBlock {
 	static const s32 GRID_SIZE_X = 0x40;
 	static const s32 GRID_SIZE_Y = 0x40;
 	
-	static void read(PvarTypes& types, Gameplay& dest, Buffer src, Game game) {
+	static void read(Gameplay& dest, Buffer src, Game game) {
 #ifdef GAMEPLAY_DEBUG_LIGHT_GRID
 		Texture debug;
 		debug.format = PixelFormat::RGBA;
@@ -514,7 +514,7 @@ struct PointLightGridBlock {
 #endif
 	}
 	
-	static bool write(OutBuffer dest, const PvarTypes& types, const Gameplay& src, Game game) {
+	static bool write(OutBuffer dest, const Gameplay& src, Game game) {
 		// Determine which grid cells intersect with the point lights.
 		std::vector<std::vector<s32>> grid(GRID_SIZE_X * GRID_SIZE_Y);
 		for(s32 i = 0; i < (s32) opt_size(src.point_lights); i++) {

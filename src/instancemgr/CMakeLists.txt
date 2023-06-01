@@ -36,7 +36,7 @@ add_library(wrenchinstancemgr STATIC
 	gameplay.cpp
 	instance.cpp
 	instances.cpp
-	level.cpp
+	level_settings.cpp
 	pvar.cpp
 	wtf_glue.cpp
 	${CMAKE_BINARY_DIR}/_generated_instance_types.inl

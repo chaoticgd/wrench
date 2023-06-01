@@ -1,6 +1,6 @@
 /*
 	wrench - A set of modding tools for the Ratchet & Clank PS2 games.
-	Copyright (C) 2019-2021 chaoticgd
+	Copyright (C) 2019-2023 chaoticgd
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef LEVEL_H
-#define LEVEL_H
+#ifndef INSTANCEMGR_LEVEL_SETTINGS_H
+#define INSTANCEMGR_LEVEL_SETTINGS_H
 
 #include <map>
 
@@ -93,61 +93,5 @@ struct WtfWriter;
 
 LevelSettings read_level_settings(const WtfNode* node);
 void write_level_settings(WtfWriter* ctx, const LevelSettings& settings);
-
-enum PvarFieldDescriptor {
-	PVAR_INTEGERS_BEGIN = 0,
-	PVAR_S8 = 1, PVAR_S16 = 2, PVAR_S32 = 3,
-	PVAR_U8 = 4, PVAR_U16 = 5, PVAR_U32 = 6,
-	PVAR_INTEGERS_END = 7,
-	PVAR_F32 = 8,
-	PVAR_POINTERS_BEGIN = 100,
-	PVAR_RUNTIME_POINTER = 101,
-	PVAR_RELATIVE_POINTER = 102,
-	PVAR_SCRATCHPAD_POINTER = 103,
-	PVAR_GLOBAL_PVAR_POINTER = 104,
-	PVAR_POINTERS_END = 105,
-	PVAR_STRUCT = 106
-};
-
-std::string pvar_descriptor_to_string(PvarFieldDescriptor descriptor);
-PvarFieldDescriptor pvar_string_to_descriptor(std::string str);
-
-struct PvarField {
-	s32 offset;
-	std::string name;
-	PvarFieldDescriptor descriptor = PVAR_U8;
-	std::string value_type; // Only set for pointer types.
-	
-	s32 size() const;
-	
-	template <typename T>
-	void enumerate_fields(T& t) {
-		DEF_FIELD(offset);
-		DEF_FIELD(name);
-		std::string type = pvar_descriptor_to_string(descriptor);
-		DEF_FIELD(type);
-		descriptor = pvar_string_to_descriptor(type);
-		if(descriptor > PVAR_POINTERS_BEGIN || descriptor < PVAR_POINTERS_END) {
-			DEF_FIELD(value_type);
-		}
-	}
-};
-
-struct PvarType {
-	std::vector<PvarField> fields;
-	
-	bool insert_field(PvarField to_insert, bool sort);
-	
-	template <typename T>
-	void enumerate_fields(T& t) {
-		DEF_FIELD(fields);
-	}
-};
-
-struct PvarTypes {
-	std::map<s32, PvarType> moby;
-	std::map<s32, PvarType> camera;
-	std::map<s32, PvarType> sound;
-};
 
 #endif

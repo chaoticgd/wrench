@@ -62,7 +62,6 @@ private:
 	LevelAsset* _asset = nullptr;
 	InstancesAsset* _instances_asset = nullptr;
 	Instances _instances;
-	PvarTypes _pvar_types;
 };
 
 #endif
