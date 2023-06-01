@@ -314,6 +314,7 @@ static bool eat_character_literal(std::vector<CppToken>& tokens, char*& ptr) {
 		while(*ptr != '\'' && *ptr != '\0') {
 			eat_literal_char(ptr);
 		}
+		if(*ptr != '\0') ptr++;
 		return true;
 	}
 	
@@ -332,6 +333,7 @@ static bool eat_string_literal(std::vector<CppToken>& tokens, char*& ptr) {
 		while(*ptr != '\"' && *ptr != '\0') {
 			eat_literal_char(ptr);
 		}
+		if(*ptr != '\0') ptr++;
 		return true;
 	}
 	

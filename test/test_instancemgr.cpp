@@ -27,7 +27,15 @@ static void print_token(const CppToken& token);
 
 TEST_CASE("c++ lexer" "[instancemgr]") {
 	CHECK(CPP_TEST_PASSED == test_lexer(
-		"const char* str = R\"abc(\\\"Hello World\\\"\n(Hello\\x20World))abc\";",
+		"char c = \"\x42\";",
+		{CPP_KEYWORD, CPP_IDENTIFIER, CPP_OPERATOR, CPP_LITERAL, CPP_OPERATOR}));
+	
+	CHECK(CPP_TEST_PASSED == test_lexer(
+		"const char* simple_str = \"simple string\";",
+		{CPP_KEYWORD, CPP_KEYWORD, CPP_OPERATOR, CPP_IDENTIFIER, CPP_OPERATOR, CPP_LITERAL, CPP_OPERATOR}));
+	
+	CHECK(CPP_TEST_PASSED == test_lexer(
+		"const char* raw_str = R\"abc(\\\"Hello World\\\"\n(Hello\\x20World))abc\";",
 		{CPP_KEYWORD, CPP_KEYWORD, CPP_OPERATOR, CPP_IDENTIFIER, CPP_OPERATOR, CPP_LITERAL, CPP_OPERATOR}));
 	
 	CHECK(CPP_TEST_PASSED == test_lexer(
