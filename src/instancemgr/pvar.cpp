@@ -55,7 +55,7 @@ static void parse_struct_or_union(PvarType& dest, const std::vector<CppToken>& t
 		while(check_eof(tokens, pos) && tokens[pos].type == CPP_OPERATOR && tokens[pos].op == CPP_OP_OPENING_SQUARE) {
 			pos++;
 			check_eof(tokens, pos);
-			verify(tokens[pos].type == CPP_LITERAL, "Expected integer literal.");
+			verify(tokens[pos].type == CPP_INTEGER_LITERAL, "Expected integer literal.");
 			array_indices.emplace_back(5);
 			pos++;
 			check_eof(tokens, pos);

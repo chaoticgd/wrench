@@ -27,16 +27,32 @@ static void print_token(const CppToken& token);
 
 TEST_CASE("c++ lexer" "[instancemgr]") {
 	CHECK(CPP_TEST_PASSED == test_lexer(
-		"char c = \"\x42\";",
-		{CPP_KEYWORD, CPP_IDENTIFIER, CPP_OPERATOR, CPP_LITERAL, CPP_OPERATOR}));
+		"int dec_lit = 123;",
+		{CPP_KEYWORD, CPP_IDENTIFIER, CPP_OPERATOR, CPP_INTEGER_LITERAL, CPP_OPERATOR}));
+	
+	CHECK(CPP_TEST_PASSED == test_lexer(
+		"int hex_lit = 0x123;",
+		{CPP_KEYWORD, CPP_IDENTIFIER, CPP_OPERATOR, CPP_INTEGER_LITERAL, CPP_OPERATOR}));
+	
+	CHECK(CPP_TEST_PASSED == test_lexer(
+		"int octal_lit = 0123;",
+		{CPP_KEYWORD, CPP_IDENTIFIER, CPP_OPERATOR, CPP_INTEGER_LITERAL, CPP_OPERATOR}));
+	
+	CHECK(CPP_TEST_PASSED == test_lexer(
+		"float float_lit = 1.23f;",
+		{CPP_KEYWORD, CPP_IDENTIFIER, CPP_OPERATOR, CPP_FLOATING_POINT_LITERAL, CPP_OPERATOR}));
+	
+	CHECK(CPP_TEST_PASSED == test_lexer(
+		"char c = '\x42';",
+		{CPP_KEYWORD, CPP_IDENTIFIER, CPP_OPERATOR, CPP_CHARACTER_LITERAL, CPP_OPERATOR}));
 	
 	CHECK(CPP_TEST_PASSED == test_lexer(
 		"const char* simple_str = \"simple string\";",
-		{CPP_KEYWORD, CPP_KEYWORD, CPP_OPERATOR, CPP_IDENTIFIER, CPP_OPERATOR, CPP_LITERAL, CPP_OPERATOR}));
+		{CPP_KEYWORD, CPP_KEYWORD, CPP_OPERATOR, CPP_IDENTIFIER, CPP_OPERATOR, CPP_STRING_LITERAL, CPP_OPERATOR}));
 	
 	CHECK(CPP_TEST_PASSED == test_lexer(
 		"const char* raw_str = R\"abc(\\\"Hello World\\\"\n(Hello\\x20World))abc\";",
-		{CPP_KEYWORD, CPP_KEYWORD, CPP_OPERATOR, CPP_IDENTIFIER, CPP_OPERATOR, CPP_LITERAL, CPP_OPERATOR}));
+		{CPP_KEYWORD, CPP_KEYWORD, CPP_OPERATOR, CPP_IDENTIFIER, CPP_OPERATOR, CPP_STRING_LITERAL, CPP_OPERATOR}));
 	
 	CHECK(CPP_TEST_PASSED == test_lexer(
 		"struct SomeStruct {int a;}",
@@ -82,9 +98,28 @@ static void print_token(const CppToken& token) {
 			}
 			break;
 		}
-		case CPP_LITERAL: {
-			std::string str(token.str_begin, token.str_end);
-			UNSCOPED_INFO(stringf("literal %s\n", str.c_str()));
+		case CPP_BOOLEAN_LITERAL: {
+			UNSCOPED_INFO(stringf("boolean literal %s", (token.i != 0) ? "true" : "false"));
+			break;
+		}
+		case CPP_CHARACTER_LITERAL: {
+			UNSCOPED_INFO("character literal");
+			break;
+		}
+		case CPP_FLOATING_POINT_LITERAL: {
+			UNSCOPED_INFO(stringf("floating point literal %f", token.f));
+			break;
+		}
+		case CPP_INTEGER_LITERAL: {
+			UNSCOPED_INFO(stringf("integer literal %d", token.i));
+			break;
+		}
+		case CPP_POINTER_LITERAL: {
+			UNSCOPED_INFO("pointer literal");
+			break;
+		}
+		case CPP_STRING_LITERAL: {
+			UNSCOPED_INFO("string literal");
 			break;
 		}
 		case CPP_OPERATOR: {

@@ -43,8 +43,8 @@ static bool eat_string_literal(std::vector<CppToken>& tokens, char*& ptr);
 static void eat_literal_char(char*& ptr);
 static bool eat_boolean_literal(std::vector<CppToken>& tokens, char*& ptr);
 static bool eat_pointer_literal(std::vector<CppToken>& tokens, char*& ptr);
-static bool eat_user_defined_literal(std::vector<CppToken>& tokens, char*& ptr);
 static bool eat_identifier(std::vector<CppToken>& tokens, char*& ptr);
+static bool is_literal_char(char c);
 
 static std::string error_buffer;
 
@@ -151,7 +151,7 @@ static bool eat_raw_string(std::vector<CppToken>& tokens, char*& ptr) {
 	ptr += dchar_size + 2;
 	
 	CppToken& token = tokens.emplace_back();
-	token.type = CPP_LITERAL;
+	token.type = CPP_STRING_LITERAL;
 	token.str_begin = str_begin;
 	token.str_end = str_end;
 	
@@ -197,7 +197,8 @@ static bool eat_comment(std::vector<CppToken>& tokens, char*& ptr) {
 static bool eat_keyword_or_operator(std::vector<CppToken>& tokens, char*& ptr) {
 	// [lex.key]
 	for(s32 i = 0; i < CPP_KEYWORD_COUNT; i++) {
-		if(strncmp(ptr, CPP_KEYWORDS[i].string, strlen(CPP_KEYWORDS[i].string)) == 0) {
+		size_t chars = strlen(CPP_KEYWORDS[i].string);
+		if(strncmp(ptr, CPP_KEYWORDS[i].string, chars) == 0 && !is_literal_char(ptr[chars])) {
 			ptr += strlen(CPP_KEYWORDS[i].string);
 			CppToken& token = tokens.emplace_back();
 			token.type = CPP_KEYWORD;
@@ -222,7 +223,6 @@ static bool eat_keyword_or_operator(std::vector<CppToken>& tokens, char*& ptr) {
 }
 
 static bool eat_literal(std::vector<CppToken>& tokens, char*& ptr) {
-	char* str_begin = ptr;
 	bool hungry = true;
 	
 	if(hungry && eat_number_literal(tokens, ptr)) hungry = false;
@@ -230,79 +230,92 @@ static bool eat_literal(std::vector<CppToken>& tokens, char*& ptr) {
 	if(hungry && eat_string_literal(tokens, ptr)) hungry = false;
 	if(hungry && eat_boolean_literal(tokens, ptr)) hungry = false;
 	if(hungry && eat_pointer_literal(tokens, ptr)) hungry = false;
-	if(hungry && eat_user_defined_literal(tokens, ptr)) hungry = false;
 	
-	if(!hungry) {
-		CppToken& token = tokens.emplace_back();
-		token.type = CPP_LITERAL;
-		token.str_begin = str_begin;
-		token.str_end = ptr;
-		return true;
-	}
-	
-	return false;
+	return !hungry;
 }
 
 static bool eat_number_literal(std::vector<CppToken>& tokens, char*& ptr) {
+	const char* str_begin = ptr;
+	
 	if(ptr[0] == '0' && (ptr[1] == 'b' || ptr[1] == 'B')) {
 		// binary-literal
 		ptr += 2;
-		while(*ptr == '0' 
-			|| *ptr == '1'
-			|| *ptr == '\'') ptr++;
+		while(*ptr == '0'  || *ptr == '1' || *ptr == '\'') ptr++;
+		
+		CppToken& token = tokens.emplace_back();
+		token.type = CPP_INTEGER_LITERAL;
+		token.str_begin = str_begin;
+		token.str_end = ptr;
+		token.i = strtoll(std::string(str_begin + 2, (const char*) ptr).c_str(), nullptr, 2);
+		
 		return true;
 	} else if(ptr[0] == '0' && (ptr[1] == 'x' || ptr[1] == 'X')) {
-		// hexadecimal-literal / hexadecimal-floating-point-literal
+		// hexadecimal-literal
 		ptr += 2;
-		while((*ptr >= '0' && *ptr <= '0')
+		while((*ptr >= '0' && *ptr <= '9')
 			|| (*ptr >= 'a' && *ptr <= 'f')
 			|| (*ptr >= 'A' && *ptr <= 'F')
 			|| *ptr == '\'') ptr++;
-		bool hexadecimal_floating_point = false;
-		if(*ptr == '.') {
-			ptr++;
-			hexadecimal_floating_point = true;
-		}
-		while((*ptr >= '0' && *ptr <= '0')
-			|| (*ptr >= 'a' && *ptr <= 'f')
-			|| (*ptr >= 'A' && *ptr <= 'F')
-			|| *ptr == '\'') ptr++;
-		if(hexadecimal_floating_point) {
-			if(*ptr == 'e' || *ptr == 'E') {
-				ptr++;
-				if(*ptr == '-' || *ptr == '+') {
-					ptr++;
-					while(*ptr >= '0' && *ptr <= '9') ptr++;
-				}
-			}
-		}
+		
+		CppToken& token = tokens.emplace_back();
+		token.type = CPP_INTEGER_LITERAL;
+		token.str_begin = str_begin;
+		token.str_end = ptr;
+		token.i = strtoll(std::string(str_begin + 2, (const char*) ptr).c_str(), nullptr, 16);
+		
 		return true;
 	} else if(ptr[0] == '0') {
 		// octal-literal
 		ptr++;
-		while((*ptr >= '0' && *ptr <= '7')
-			|| *ptr == '\'') ptr++;
-		if(*ptr == '.') ptr++;
-		while((*ptr >= '0' && *ptr <= '7')
-			|| *ptr == '\'') ptr++;
+		while((*ptr >= '0' && *ptr <= '7') || *ptr == '\'') ptr++;
+		
+		CppToken& token = tokens.emplace_back();
+		token.type = CPP_INTEGER_LITERAL;
+		token.str_begin = str_begin;
+		token.str_end = ptr;
+		token.i = strtoll(std::string(str_begin + 1, (const char*) ptr).c_str(), nullptr, 8);
+		
 		return true;
 	} else if(ptr[0] >= '0' && ptr[0] <= '9') {
-		// integer-literal / decimal-floating-point-literal
-		ptr++;
-		while((*ptr >= '0' && *ptr <= '9')
-			|| *ptr == '\'') ptr++;
-		if(*ptr == '.') ptr++;
-		while((*ptr >= '0' && *ptr <= '9')
-			|| *ptr == '\'') ptr++;
-		// integer-suffix / floating-point-suffix
-		if(*ptr == 'u' || *ptr == 'U' || *ptr == 'l' || *ptr == 'L' || *ptr == 'f' || *ptr == 'F') ptr++;
-		if(*ptr == 'u' || *ptr == 'U' || *ptr == 'l' || *ptr == 'L' || *ptr == 'f' || *ptr == 'F') ptr++;
+		// decimal-literal / decimal-floating-point-literal
+		while((*ptr >= '0' && *ptr <= '9') || *ptr == '\'') ptr++;
+		if(*ptr == '.') {
+			ptr++;
+			while((*ptr >= '0' && *ptr <= '9') || *ptr == '\'') ptr++;
+			
+			CppToken& token = tokens.emplace_back();
+			token.type = CPP_FLOATING_POINT_LITERAL;
+			token.str_begin = str_begin;
+			token.str_end = ptr;
+			token.f = strtof(std::string(str_begin, (const char*) ptr).c_str(), nullptr);
+			
+			// floating-point-suffix
+			if(*ptr == 'f' || *ptr == 'F') ptr++;
+			if(*ptr == 'f' || *ptr == 'F') ptr++;
+		} else {
+			while((*ptr >= '0' && *ptr <= '9')
+				|| *ptr == '\'') ptr++;
+			
+			CppToken& token = tokens.emplace_back();
+			token.type = CPP_INTEGER_LITERAL;
+			token.str_begin = str_begin;
+			token.str_end = ptr;
+			token.i = strtoll(std::string(str_begin, (const char*) ptr).c_str(), nullptr, 10);
+			
+			// integer-suffix
+			if(*ptr == 'u' || *ptr == 'U' || *ptr == 'l' || *ptr == 'L') ptr++;
+			if(*ptr == 'u' || *ptr == 'U' || *ptr == 'l' || *ptr == 'L') ptr++;
+		}
+		
 		return true;
 	}
+	
 	return false;
 }
 
 static bool eat_character_literal(std::vector<CppToken>& tokens, char*& ptr) {
+	const char* str_begin = ptr;
+	
 	bool hungry = true;
 	if(hungry && strncmp(ptr, "u8'", 3) == 0) { ptr += 3; hungry = false; }
 	if(hungry && strncmp(ptr, "u'", 2) == 0) { ptr += 2; hungry = false; }
@@ -314,7 +327,13 @@ static bool eat_character_literal(std::vector<CppToken>& tokens, char*& ptr) {
 		while(*ptr != '\'' && *ptr != '\0') {
 			eat_literal_char(ptr);
 		}
-		if(*ptr != '\0') ptr++;
+		if(*ptr != '\0') ptr++; // '\''
+		
+		CppToken& token = tokens.emplace_back();
+		token.type = CPP_CHARACTER_LITERAL;
+		token.str_begin = str_begin;
+		token.str_end = ptr;
+		
 		return true;
 	}
 	
@@ -329,11 +348,20 @@ static bool eat_string_literal(std::vector<CppToken>& tokens, char*& ptr) {
 	if(hungry && strncmp(ptr, "L\"", 2) == 0) { ptr += 2; hungry = false; }
 	if(hungry && strncmp(ptr, "\"", 1) == 0) { ptr += 1; hungry = false; }
 	
+	const char* str_begin = ptr;
+	
 	if(!hungry) {
 		while(*ptr != '\"' && *ptr != '\0') {
 			eat_literal_char(ptr);
 		}
+		
+		CppToken& token = tokens.emplace_back();
+		token.type = CPP_STRING_LITERAL;
+		token.str_begin = str_begin;
+		token.str_end = ptr;
+		
 		if(*ptr != '\0') ptr++;
+		
 		return true;
 	}
 	
@@ -370,26 +398,47 @@ static void eat_literal_char(char*& ptr) {
 }
 
 static bool eat_boolean_literal(std::vector<CppToken>& tokens, char*& ptr) {
-	if(strncmp(ptr, "false", 5) == 0) {
+	const char* str_begin = ptr;
+	
+	if(strncmp(ptr, "false", 5) == 0 && !is_literal_char(ptr[5])) {
 		ptr += 5;
+		
+		CppToken& token = tokens.emplace_back();
+		token.type = CPP_BOOLEAN_LITERAL;
+		token.str_begin = str_begin;
+		token.str_end = ptr;
+		token.i = false;
+		
 		return true;
 	}
-	if(strncmp(ptr, "true", 4) == 0) {
+	if(strncmp(ptr, "true", 4) == 0 && !is_literal_char(ptr[4])) {
 		ptr += 4;
+		
+		CppToken& token = tokens.emplace_back();
+		token.type = CPP_BOOLEAN_LITERAL;
+		token.str_begin = str_begin;
+		token.str_end = ptr;
+		token.i = true;
+		
 		return true;
 	}
 	return false;
 }
 
 static bool eat_pointer_literal(std::vector<CppToken>& tokens, char*& ptr) {
-	if(strncmp(ptr, "nullptr", 7) == 0) {
+	const char* str_begin = ptr;
+	
+	if(strncmp(ptr, "nullptr", 7) == 0 && !is_literal_char(ptr[7])) {
 		ptr += 7;
+		
+		CppToken& token = tokens.emplace_back();
+		token.type = CPP_POINTER_LITERAL;
+		token.str_begin = str_begin;
+		token.str_end = ptr;
+		token.i = true;
+		
 		return true;
 	}
-	return false;
-}
-
-static bool eat_user_defined_literal(std::vector<CppToken>& tokens, char*& ptr) {
 	return false;
 }
 
@@ -397,7 +446,7 @@ static bool eat_identifier(std::vector<CppToken>& tokens, char*& ptr) {
 	if((*ptr >= 'A' && *ptr <= 'Z') || (*ptr >= 'a' && *ptr <= 'z') || *ptr == '_') {
 		const char* str_begin = ptr;
 		ptr++;
-		while((*ptr >= 'A' && *ptr <= 'Z') || (*ptr >= 'a' && *ptr <= 'z') || *ptr == '_' || (*ptr >= '0' && *ptr <= '9')) {
+		while(is_literal_char(*ptr)) {
 			ptr++;
 		}
 		CppToken& token = tokens.emplace_back();
@@ -409,12 +458,21 @@ static bool eat_identifier(std::vector<CppToken>& tokens, char*& ptr) {
 	return false;
 }
 
+static bool is_literal_char(char c) {
+	return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_';
+}
+
 const char* cpp_token_type(CppTokenType type) {
 	switch(type) {
 		case CPP_COMMENT: return "comment";
 		case CPP_IDENTIFIER: return "identifier";
 		case CPP_KEYWORD: return "keyword";
-		case CPP_LITERAL: return "literal";
+		case CPP_BOOLEAN_LITERAL: return "boolean literal";
+		case CPP_CHARACTER_LITERAL: return "character literal";
+		case CPP_FLOATING_POINT_LITERAL: return "floating point literal";
+		case CPP_INTEGER_LITERAL: return "integer literal";
+		case CPP_POINTER_LITERAL: return "pointer literal";
+		case CPP_STRING_LITERAL: return "string literal";
 		case CPP_OPERATOR: return "operator";
 	}
 	return "(invalid token)";

@@ -58,7 +58,12 @@ enum CppTokenType {
 	CPP_COMMENT,
 	CPP_IDENTIFIER,
 	CPP_KEYWORD,
-	CPP_LITERAL,
+	CPP_BOOLEAN_LITERAL,
+	CPP_CHARACTER_LITERAL,
+	CPP_FLOATING_POINT_LITERAL,
+	CPP_INTEGER_LITERAL,
+	CPP_POINTER_LITERAL,
+	CPP_STRING_LITERAL,
 	CPP_OPERATOR
 };
 
@@ -68,6 +73,8 @@ struct CppToken {
 	const char* str_end = nullptr;
 	CppKeyword keyword;
 	CppOperator op = CPP_OP_NONE;
+	s64 i = -1;
+	f32 f = 0.f;
 };
 
 #define CPP_NO_ERROR nullptr
