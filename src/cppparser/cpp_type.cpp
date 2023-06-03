@@ -16,20 +16,20 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "pvar.h"
+#include "cpp_type.h"
 
-static void parse_struct_or_union(PvarType& dest, const std::vector<CppToken>& tokens, size_t& pos);
-static PvarType parse_type_name(const std::vector<CppToken>& tokens, size_t& pos);
+static void parse_struct_or_union(CppType& dest, const std::vector<CppToken>& tokens, size_t& pos);
+static CppType parse_type_name(const std::vector<CppToken>& tokens, size_t& pos);
 static bool check_eof(const std::vector<CppToken>& tokens, size_t& pos, const char* thing = nullptr);
 
-std::vector<PvarType> parse_pvar_types(const std::vector<CppToken>& tokens) {
-	std::vector<PvarType> types;
+std::vector<CppType> parse_cpp_types(const std::vector<CppToken>& tokens) {
+	std::vector<CppType> types;
 	size_t pos = 0;
 	while(pos < tokens.size()) {
 		if(tokens[pos].type == CPP_KEYWORD && (tokens[pos].keyword == CPP_KEYWORD_struct || tokens[pos].keyword == CPP_KEYWORD_union)) {
 			if(pos + 1 < tokens.size() && tokens[pos + 1].type == CPP_IDENTIFIER) {
 				if(pos + 2 < tokens.size() && tokens[pos + 2].type == CPP_OPERATOR && tokens[pos + 2].op == CPP_OP_OPENING_CURLY) {
-					PvarType& type = types.emplace_back(PTD_STRUCT_OR_UNION);
+					CppType& type = types.emplace_back(CPP_STRUCT_OR_UNION);
 					type.struct_or_union.is_union = tokens[pos].keyword == CPP_KEYWORD_union;
 					type.name = std::string(tokens[pos + 1].str_begin, tokens[pos + 1].str_end);
 					pos += 3;
@@ -43,15 +43,15 @@ std::vector<PvarType> parse_pvar_types(const std::vector<CppToken>& tokens) {
 	return types;
 }
 
-static void parse_struct_or_union(PvarType& dest, const std::vector<CppToken>& tokens, size_t& pos) {
+static void parse_struct_or_union(CppType& dest, const std::vector<CppToken>& tokens, size_t& pos) {
 	while(check_eof(tokens, pos) && !(tokens[pos].type == CPP_OPERATOR && tokens[pos].op == CPP_OP_CLOSING_CURLY)) {
-		PvarType field_type = parse_type_name(tokens, pos);
+		CppType field_type = parse_type_name(tokens, pos);
 		
 		// Parse pointers.
 		while(check_eof(tokens, pos) && tokens[pos].type == CPP_OPERATOR && (tokens[pos].op == CPP_OP_STAR || tokens[pos].op == CPP_OP_AMPERSAND)) {
-			PvarType type(PTD_POINTER_OR_REFERENCE);
+			CppType type(CPP_POINTER_OR_REFERENCE);
 			type.pointer_or_reference.is_reference = tokens[pos].op == CPP_OP_AMPERSAND;
-			type.pointer_or_reference.value_type = std::make_unique<PvarType>(std::move(field_type));
+			type.pointer_or_reference.value_type = std::make_unique<CppType>(std::move(field_type));
 			field_type = std::move(type);
 			pos++;
 		}
@@ -73,9 +73,9 @@ static void parse_struct_or_union(PvarType& dest, const std::vector<CppToken>& t
 			pos++;
 		}
 		for(size_t i = array_indices.size(); i > 0; i--) {
-			PvarType array_type(PTD_ARRAY);
+			CppType array_type(CPP_ARRAY);
 			array_type.array.element_count = array_indices[i - 1];
-			array_type.array.element_type = std::make_unique<PvarType>(std::move(field_type));
+			array_type.array.element_type = std::make_unique<CppType>(std::move(field_type));
 			field_type = std::move(array_type);
 		}
 		
@@ -89,7 +89,7 @@ static void parse_struct_or_union(PvarType& dest, const std::vector<CppToken>& t
 	pos++; // '}'
 }
 
-static PvarType parse_type_name(const std::vector<CppToken>& tokens, size_t& pos) {
+static CppType parse_type_name(const std::vector<CppToken>& tokens, size_t& pos) {
 	if(tokens[pos].type == CPP_KEYWORD) {
 		s32 sign = 0;
 		if(tokens[pos].keyword == CPP_KEYWORD_signed) {
@@ -102,25 +102,25 @@ static PvarType parse_type_name(const std::vector<CppToken>& tokens, size_t& pos
 			check_eof(tokens, pos, "'unsigned' keyword");
 		}
 		
-		PvarType field(PTD_BUILT_IN);
+		CppType field(CPP_BUILT_IN);
 		switch(tokens[pos].keyword) {
-			case CPP_KEYWORD_char: field.built_in = (sign == -1) ? PvarBuiltIn::UCHAR : PvarBuiltIn::SCHAR; break;
-			case CPP_KEYWORD_char8_t: field.built_in = PvarBuiltIn::S8; break;
-			case CPP_KEYWORD_char16_t: field.built_in = PvarBuiltIn::S16; break;
-			case CPP_KEYWORD_char32_t: field.built_in = PvarBuiltIn::S32; break;
-			case CPP_KEYWORD_short: field.built_in = (sign == -1) ? PvarBuiltIn::USHORT : PvarBuiltIn::SHORT; break;
-			case CPP_KEYWORD_int: field.built_in = (sign == -1) ? PvarBuiltIn::UINT : PvarBuiltIn::INT; break;
+			case CPP_KEYWORD_char: field.built_in = (sign == -1) ? CppBuiltIn::UCHAR : CppBuiltIn::SCHAR; break;
+			case CPP_KEYWORD_char8_t: field.built_in = CppBuiltIn::S8; break;
+			case CPP_KEYWORD_char16_t: field.built_in = CppBuiltIn::S16; break;
+			case CPP_KEYWORD_char32_t: field.built_in = CppBuiltIn::S32; break;
+			case CPP_KEYWORD_short: field.built_in = (sign == -1) ? CppBuiltIn::USHORT : CppBuiltIn::SHORT; break;
+			case CPP_KEYWORD_int: field.built_in = (sign == -1) ? CppBuiltIn::UINT : CppBuiltIn::INT; break;
 			case CPP_KEYWORD_long: {
 				if(pos + 1 < tokens.size() && tokens[pos + 1].type == CPP_KEYWORD && tokens[pos + 1].keyword == CPP_KEYWORD_long) {
-					field.built_in = (sign == -1) ? PvarBuiltIn::ULONGLONG : PvarBuiltIn::LONGLONG;
+					field.built_in = (sign == -1) ? CppBuiltIn::ULONGLONG : CppBuiltIn::LONGLONG;
 					pos++;
 				} else {
-					field.built_in = (sign == -1) ? PvarBuiltIn::ULONG : PvarBuiltIn::LONG;
+					field.built_in = (sign == -1) ? CppBuiltIn::ULONG : CppBuiltIn::LONG;
 				}
 				break;
 			}
-			case CPP_KEYWORD_float: field.built_in = PvarBuiltIn::FLOAT; break;
-			case CPP_KEYWORD_double: field.built_in = PvarBuiltIn::DOUBLE; break;
+			case CPP_KEYWORD_float: field.built_in = CppBuiltIn::FLOAT; break;
+			case CPP_KEYWORD_double: field.built_in = CppBuiltIn::DOUBLE; break;
 			default: verify_not_reached("Expected type name.");
 		}
 		
@@ -142,21 +142,21 @@ static bool check_eof(const std::vector<CppToken>& tokens, size_t& pos, const ch
 	return true;
 }
 
-void layout_pvar_type(PvarType& type) {
+void layout_pvar_type(CppType& type) {
 	
 }
 
 // **** Evil code beyond this point!!! ****
 
-static void create_pvar_type(PvarType& type);
-static void move_assign_pvar_type(PvarType& lhs, PvarType& rhs);
-static void destroy_pvar_type(PvarType& type);
+static void create_pvar_type(CppType& type);
+static void move_assign_pvar_type(CppType& lhs, CppType& rhs);
+static void destroy_pvar_type(CppType& type);
 
-PvarType::PvarType(PvarTypeDescriptor d) : descriptor(d) {
+CppType::CppType(CppTypeDescriptor d) : descriptor(d) {
 	create_pvar_type(*this);
 }
 
-PvarType::PvarType(PvarType&& rhs) {
+CppType::CppType(CppType&& rhs) {
 	name = std::move(rhs.name);
 	offset = rhs.offset;
 	size = rhs.size;
@@ -166,11 +166,11 @@ PvarType::PvarType(PvarType&& rhs) {
 	move_assign_pvar_type(*this, rhs);
 }
 
-PvarType::~PvarType() {
+CppType::~CppType() {
 	destroy_pvar_type(*this);
 }
 
-PvarType& PvarType::operator=(PvarType&& rhs) {
+CppType& CppType::operator=(CppType&& rhs) {
 	if(this == &rhs) {
 		return *this;
 	}
@@ -188,76 +188,76 @@ PvarType& PvarType::operator=(PvarType&& rhs) {
 	return *this;
 }
 
-static void create_pvar_type(PvarType& type) {
+static void create_pvar_type(CppType& type) {
 	switch(type.descriptor) {
-		case PTD_ARRAY: {
-			new (&type.array) PvarArray;
+		case CPP_ARRAY: {
+			new (&type.array) CppArray;
 			break;
 		}
-		case PTD_BUILT_IN: {
-			new (&type.built_in) PvarBuiltIn;
+		case CPP_BUILT_IN: {
+			new (&type.built_in) CppBuiltIn;
 			break;
 		}
-		case PTD_STRUCT_OR_UNION: {
-			new (&type.struct_or_union) PvarStructOrUnion;
+		case CPP_STRUCT_OR_UNION: {
+			new (&type.struct_or_union) CppStructOrUnion;
 			break;
 		}
-		case PTD_TYPE_NAME: {
-			new (&type.type_name) PvarTypeName;
+		case CPP_TYPE_NAME: {
+			new (&type.type_name) CppTypeName;
 			break;
 		}
-		case PTD_POINTER_OR_REFERENCE: {
-			new (&type.pointer_or_reference) PvarPointerOrReference;
+		case CPP_POINTER_OR_REFERENCE: {
+			new (&type.pointer_or_reference) CppPointerOrReference;
 			break;
 		}
 	}
 }
 
-static void move_assign_pvar_type(PvarType& lhs, PvarType& rhs) {
+static void move_assign_pvar_type(CppType& lhs, CppType& rhs) {
 	switch(lhs.descriptor) {
-		case PTD_ARRAY: {
+		case CPP_ARRAY: {
 			lhs.array = std::move(rhs.array);
 			break;
 		}
-		case PTD_BUILT_IN: {
+		case CPP_BUILT_IN: {
 			lhs.built_in = std::move(rhs.built_in);
 			break;
 		}
-		case PTD_STRUCT_OR_UNION: {
+		case CPP_STRUCT_OR_UNION: {
 			lhs.struct_or_union = std::move(rhs.struct_or_union);
 			break;
 		}
-		case PTD_TYPE_NAME: {
+		case CPP_TYPE_NAME: {
 			lhs.type_name = std::move(rhs.type_name);
 			break;
 		}
-		case PTD_POINTER_OR_REFERENCE: {
+		case CPP_POINTER_OR_REFERENCE: {
 			lhs.pointer_or_reference = std::move(rhs.pointer_or_reference);
 			break;
 		}
 	}
 }
 
-static void destroy_pvar_type(PvarType& type) {
+static void destroy_pvar_type(CppType& type) {
 	switch(type.descriptor) {
-		case PTD_ARRAY: {
-			type.array.~PvarArray();
+		case CPP_ARRAY: {
+			type.array.~CppArray();
 			break;
 		}
-		case PTD_BUILT_IN: {
-			type.built_in.~PvarBuiltIn();
+		case CPP_BUILT_IN: {
+			type.built_in.~CppBuiltIn();
 			break;
 		}
-		case PTD_STRUCT_OR_UNION: {
-			type.struct_or_union.~PvarStructOrUnion();
+		case CPP_STRUCT_OR_UNION: {
+			type.struct_or_union.~CppStructOrUnion();
 			break;
 		}
-		case PTD_TYPE_NAME: {
-			type.type_name.~PvarTypeName();
+		case CPP_TYPE_NAME: {
+			type.type_name.~CppTypeName();
 			break;
 		}
-		case PTD_POINTER_OR_REFERENCE: {
-			type.pointer_or_reference.~PvarPointerOrReference();
+		case CPP_POINTER_OR_REFERENCE: {
+			type.pointer_or_reference.~CppPointerOrReference();
 			break;
 		}
 	}

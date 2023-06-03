@@ -21,8 +21,8 @@
 
 #include <map>
 
+#include <cppparser/cpp_type.h>
 #include <instancemgr/instances.h>
-#include <instancemgr/pvar.h>
 #include <assetmgr/asset_types.h>
 #include <gui/render_mesh.h>
 #include <editor/editor.h>
@@ -31,7 +31,7 @@ struct EditorClass {
 	Opt<Mesh> mesh;
 	Opt<RenderMesh> render_mesh;
 	std::vector<RenderMaterial> materials;
-	Opt<PvarType> pvar_type;
+	Opt<CppType> pvar_type;
 };
 
 struct EditorChunk {

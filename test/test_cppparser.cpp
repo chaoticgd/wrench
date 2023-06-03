@@ -19,7 +19,7 @@
 #include <catch2/catch_amalgamated.hpp>
 
 #include <core/filesystem.h>
-#include <instancemgr/pvar.h>
+#include <cppparser/cpp_type.h>
 
 #define CPP_TEST_PASSED -1
 static s32 test_lexer(const char* src, std::vector<CppTokenType>&& expected);
@@ -130,69 +130,69 @@ static void print_token(const CppToken& token) {
 	}
 }
 
-static bool test_parser(const char* src, PvarType&& expected);
-static bool compare_pvar_types(const PvarType& lhs, const PvarType& rhs);
+static bool test_parser(const char* src, CppType&& expected);
+static bool compare_pvar_types(const CppType& lhs, const CppType& rhs);
 
 TEST_CASE("c++ parser" "[instancemgr]") {
 	CHECK(test_parser(
 		"struct SomeVars { int array_of_ints[5]; };",
 		[]() {
-			PvarType type(PTD_STRUCT_OR_UNION);
+			CppType type(CPP_STRUCT_OR_UNION);
 			type.name = "SomeVars";
-			PvarType& field = type.struct_or_union.fields.emplace_back(PTD_ARRAY);
+			CppType& field = type.struct_or_union.fields.emplace_back(CPP_ARRAY);
 			field.name = "array_of_ints";
 			field.array.element_count = 5;
-			field.array.element_type = std::make_unique<PvarType>(PTD_BUILT_IN);
-			field.array.element_type->built_in = PvarBuiltIn::INT;
+			field.array.element_type = std::make_unique<CppType>(CPP_BUILT_IN);
+			field.array.element_type->built_in = CppBuiltIn::INT;
 			return type;
 		}()
 	));
 	CHECK(test_parser(
 		"union Union { float **double_pointer; };",
 		[]() {
-			PvarType type(PTD_STRUCT_OR_UNION);
+			CppType type(CPP_STRUCT_OR_UNION);
 			type.name = "Union";
 			type.struct_or_union.is_union = true;
-			PvarType& field = type.struct_or_union.fields.emplace_back(PTD_POINTER_OR_REFERENCE);
+			CppType& field = type.struct_or_union.fields.emplace_back(CPP_POINTER_OR_REFERENCE);
 			field.name = "double_pointer";
-			field.pointer_or_reference.value_type = std::make_unique<PvarType>(PTD_POINTER_OR_REFERENCE);
-			PvarType& inner = *field.pointer_or_reference.value_type.get();
-			inner.pointer_or_reference.value_type = std::make_unique<PvarType>(PTD_BUILT_IN);
-			inner.pointer_or_reference.value_type->built_in = PvarBuiltIn::FLOAT;
+			field.pointer_or_reference.value_type = std::make_unique<CppType>(CPP_POINTER_OR_REFERENCE);
+			CppType& inner = *field.pointer_or_reference.value_type.get();
+			inner.pointer_or_reference.value_type = std::make_unique<CppType>(CPP_BUILT_IN);
+			inner.pointer_or_reference.value_type->built_in = CppBuiltIn::FLOAT;
 			return type;
 		}()
 	));
 }
 
-static bool test_parser(const char* src, PvarType&& expected) {
+static bool test_parser(const char* src, CppType&& expected) {
 	std::string str(src);
 	std::vector<CppToken> tokens = eat_cpp_file(&str[0]);
-	std::vector<PvarType> types = parse_pvar_types(tokens);
+	std::vector<CppType> types = parse_cpp_types(tokens);
 	if(types.size() != 1) {
 		return false;
 	}
 	return compare_pvar_types(types[0], expected);
 }
 
-static bool compare_pvar_types(const PvarType& lhs, const PvarType& rhs) {
+static bool compare_pvar_types(const CppType& lhs, const CppType& rhs) {
 	if(lhs.name != rhs.name) { UNSCOPED_INFO("name"); return false; }
 	if(lhs.offset != rhs.offset) { UNSCOPED_INFO("offset"); return false; }
 	if(lhs.size != rhs.size) { UNSCOPED_INFO("size"); return false; }
 	if(lhs.alignment != rhs.alignment) { UNSCOPED_INFO("alignment"); return false; }
 	if(lhs.descriptor != rhs.descriptor) { UNSCOPED_INFO("descriptor"); return false; }
 	switch(lhs.descriptor) {
-		case PTD_ARRAY: {
+		case CPP_ARRAY: {
 			if(lhs.array.element_count != rhs.array.element_count) { UNSCOPED_INFO("array.element_count"); return false; }
 			REQUIRE((lhs.array.element_type.get() && rhs.array.element_type.get()));
 			bool comp_result = compare_pvar_types(*lhs.array.element_type.get(), *rhs.array.element_type.get());
 			if(!comp_result) { UNSCOPED_INFO("array.element_type"); return false; }
 			break;
 		}
-		case PTD_BUILT_IN: {
+		case CPP_BUILT_IN: {
 			if(lhs.built_in != rhs.built_in) { UNSCOPED_INFO("built_in"); return false; }
 			break;
 		}
-		case PTD_STRUCT_OR_UNION: {
+		case CPP_STRUCT_OR_UNION: {
 			if(lhs.struct_or_union.is_union != rhs.struct_or_union.is_union) { UNSCOPED_INFO("struct_or_union.is_union"); return false; }
 			if(lhs.struct_or_union.fields.size() != rhs.struct_or_union.fields.size()) { UNSCOPED_INFO("struct_or_union.fields.size()"); return false; }
 			for(s32 i = 0; i < (s32) lhs.struct_or_union.fields.size(); i++) {
@@ -201,11 +201,11 @@ static bool compare_pvar_types(const PvarType& lhs, const PvarType& rhs) {
 			}
 			break;
 		}
-		case PTD_TYPE_NAME: {
+		case CPP_TYPE_NAME: {
 			UNSCOPED_INFO("unhandled type name");
 			return false;
 		}
-		case PTD_POINTER_OR_REFERENCE: {
+		case CPP_POINTER_OR_REFERENCE: {
 			if(lhs.pointer_or_reference.is_reference != rhs.pointer_or_reference.is_reference) { UNSCOPED_INFO("pointer_or_reference.is_reference"); return false; }
 			REQUIRE((lhs.pointer_or_reference.value_type.get() && rhs.pointer_or_reference.value_type.get()));
 			bool comp_result = compare_pvar_types(*lhs.pointer_or_reference.value_type.get(), *rhs.pointer_or_reference.value_type.get());

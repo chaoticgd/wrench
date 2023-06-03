@@ -16,8 +16,8 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef INSTANCEMGR_CPP_LEXER_H
-#define INSTANCEMGR_CPP_LEXER_H
+#ifndef CPPPARSER_CPP_LEXER_H
+#define CPPPARSER_CPP_LEXER_H
 
 #include <core/util.h>
 

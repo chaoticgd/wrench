@@ -32,13 +32,11 @@ add_custom_target(
 )
 
 add_library(wrenchinstancemgr STATIC
-	cpp_lexer.cpp
 	gameplay.cpp
 	instance.cpp
 	instances.cpp
 	level_settings.cpp
-	pvar.cpp
 	wtf_glue.cpp
 	${CMAKE_BINARY_DIR}/_generated_instance_types.inl
 )
-target_link_libraries(wrenchinstancemgr wrenchcore)
+target_link_libraries(wrenchinstancemgr wrenchcore wrenchcppparser)

@@ -112,8 +112,8 @@ void Level::read(LevelAsset& asset, Game g) {
 			std::string cpp = pvar_type->file().read_text_file(pvar_type->src().path);
 			if(!cpp.empty()) {
 				std::vector<CppToken> tokens = eat_cpp_file(&cpp[0]);
-				std::vector<PvarType> types = parse_pvar_types(tokens);
-				for(PvarType& type : types) {
+				std::vector<CppType> types = parse_cpp_types(tokens);
+				for(CppType& type : types) {
 					if(type.name == pvar_type->name()) {
 						//resolve_pvar_type_names(type, types);
 						ec.pvar_type = std::move(type);
