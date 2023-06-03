@@ -81,6 +81,7 @@ void Level::read(LevelAsset& asset, Game g) {
 	}
 	
 	level_wad().get_moby_classes().for_each_logical_child_of_type<MobyClassAsset>([&](MobyClassAsset& moby) {
+		EditorClass& ec = moby_classes[moby.id()];
 		if(moby.has_editor_mesh()) {
 			MeshAsset& asset = moby.get_editor_mesh();
 			std::string xml = asset.file().read_text_file(asset.src().path);
@@ -96,11 +97,28 @@ void Level::read(LevelAsset& asset, Game g) {
 					}
 				});
 				
-				EditorClass ec;
 				ec.mesh = *mesh;
 				ec.render_mesh = upload_mesh(*mesh, true);
 				ec.materials = upload_materials(scene.materials, textures);
-				mobies.emplace(moby.id(), std::move(ec));
+			}
+		}
+		if(moby.has_pvar_type() || moby.has_pvar_type_fallback()) {
+			CppTypeAsset* pvar_type;
+			if(moby.has_pvar_type()) {
+				pvar_type = &moby.get_pvar_type();
+			} else {
+				pvar_type = &moby.get_pvar_type_fallback();
+			}
+			std::string cpp = pvar_type->file().read_text_file(pvar_type->src().path);
+			if(!cpp.empty()) {
+				std::vector<CppToken> tokens = eat_cpp_file(&cpp[0]);
+				std::vector<PvarType> types = parse_pvar_types(tokens);
+				for(PvarType& type : types) {
+					if(type.name == pvar_type->name()) {
+						//resolve_pvar_type_names(type, types);
+						ec.pvar_type = std::move(type);
+					}
+				}
 			}
 		}
 	});
@@ -133,7 +151,7 @@ void Level::read(LevelAsset& asset, Game g) {
 		et.mesh = *mesh;
 		et.render_mesh = upload_mesh(*mesh, true);
 		et.materials = upload_materials(scene.materials, textures);
-		ties.emplace(tie.id(), std::move(et));
+		tie_classes.emplace(tie.id(), std::move(et));
 	});
 	
 	level_wad().get_shrub_classes().for_each_logical_child_of_type<ShrubClassAsset>([&](ShrubClassAsset& shrub) {
@@ -172,7 +190,7 @@ void Level::read(LevelAsset& asset, Game g) {
 		es.mesh = *mesh;
 		es.render_mesh = upload_mesh(*mesh, true);
 		es.materials = upload_materials(scene.materials, textures);
-		shrubs.emplace(shrub.id(), std::move(es));
+		shrub_classes.emplace(shrub.id(), std::move(es));
 	});
 }
 

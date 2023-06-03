@@ -295,11 +295,11 @@ static void draw_mobies(Level& lvl, InstanceList<MobyInstance>& instances, GLenu
 		s32 last_class = instances[i - 1].o_class;
 		if(i == instances.size() || instances[i].o_class != last_class) {
 			end = i;
-			auto iter = lvl.mobies.find(last_class);
-			if(iter != lvl.mobies.end()) {
+			auto iter = lvl.moby_classes.find(last_class);
+			if(iter != lvl.moby_classes.end() && iter->second.render_mesh.has_value()) {
 				EditorClass& cls = iter->second;
 				glPolygonMode(GL_FRONT_AND_BACK, mesh_mode);
-				draw_mesh_instanced(cls.render_mesh, cls.materials.data(), cls.materials.size(), moby_inst_buffer, begin, end - begin);
+				draw_mesh_instanced(*cls.render_mesh, cls.materials.data(), cls.materials.size(), moby_inst_buffer, begin, end - begin);
 			} else {
 				draw_cube_instanced(cube_mode, white, moby_inst_buffer, begin, end - begin);
 			}
@@ -319,11 +319,11 @@ static void draw_ties(Level& lvl, const InstanceList<TieInstance>& instances, GL
 		s32 last_class = instances[i - 1].o_class;
 		if(i == instances.size() || instances[i].o_class != last_class) {
 			end = i;
-			auto iter = lvl.ties.find(last_class);
-			if(iter != lvl.ties.end()) {
+			auto iter = lvl.tie_classes.find(last_class);
+			if(iter != lvl.tie_classes.end() && iter->second.render_mesh.has_value()) {
 				EditorClass& cls = iter->second;
 				glPolygonMode(GL_FRONT_AND_BACK, mesh_mode);
-				draw_mesh_instanced(cls.render_mesh, cls.materials.data(), cls.materials.size(), tie_inst_buffer, begin, end - begin);
+				draw_mesh_instanced(*cls.render_mesh, cls.materials.data(), cls.materials.size(), tie_inst_buffer, begin, end - begin);
 			} else {
 				draw_cube_instanced(cube_mode, purple, tie_inst_buffer, begin, end - begin);
 			}
@@ -343,11 +343,11 @@ static void draw_shrubs(Level& lvl, const InstanceList<ShrubInstance>& instances
 		s32 last_class = instances[i - 1].o_class;
 		if(i == instances.size() || instances[i].o_class != last_class) {
 			end = i;
-			auto iter = lvl.shrubs.find(last_class);
-			if(iter != lvl.shrubs.end()) {
+			auto iter = lvl.shrub_classes.find(last_class);
+			if(iter != lvl.shrub_classes.end() && iter->second.render_mesh.has_value()) {
 				EditorClass& cls = iter->second;
 				glPolygonMode(GL_FRONT_AND_BACK, mesh_mode);
-				draw_mesh_instanced(cls.render_mesh, cls.materials.data(), cls.materials.size(), shrub_inst_buffer, begin, end - begin);
+				draw_mesh_instanced(*cls.render_mesh, cls.materials.data(), cls.materials.size(), shrub_inst_buffer, begin, end - begin);
 			} else {
 				draw_cube_instanced(cube_mode, green, shrub_inst_buffer, begin, end - begin);
 			}
@@ -358,68 +358,72 @@ static void draw_shrubs(Level& lvl, const InstanceList<ShrubInstance>& instances
 
 static void draw_selected_shrub_normals(Level& lvl) {
 	for(ShrubInstance& inst : lvl.instances().shrub_instances) {
-		if(inst.selected && lvl.shrubs.find(inst.o_class) != lvl.shrubs.end()) {
-			const EditorClass& cls = lvl.shrubs.at(inst.o_class);
-			std::vector<Vertex> vertices;
-			for(const Vertex& v : cls.mesh.vertices) {
-				Vertex v2 = v;
-				v2.pos += v2.normal * 0.5f;
-				vertices.emplace_back(v);
-				vertices.emplace_back(v2);
-				vertices.emplace_back(v2);
+		if(inst.selected && lvl.shrub_classes.find(inst.o_class) != lvl.shrub_classes.end()) {
+			const EditorClass& cls = lvl.shrub_classes.at(inst.o_class);
+			if(cls.mesh.has_value()) {
+				std::vector<Vertex> vertices;
+				for(const Vertex& v : cls.mesh->vertices) {
+					Vertex v2 = v;
+					v2.pos += v2.normal * 0.5f;
+					vertices.emplace_back(v);
+					vertices.emplace_back(v2);
+					vertices.emplace_back(v2);
+				}
+				
+				RenderMesh mesh;
+				RenderSubMesh& submesh = mesh.submeshes.emplace_back();
+				submesh.material = 0;
+				
+				glGenBuffers(1, &submesh.vertex_buffer.id);
+				glBindBuffer(GL_ARRAY_BUFFER, submesh.vertex_buffer.id);
+				glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+				submesh.vertex_count = vertices.size();
+				
+				glm::mat4 matrix = inst.transform().matrix();
+				
+				auto inst_data = InstanceData(matrix, glm::vec4(0.f, 0.f, 1.f, 1.f), glm::vec4(1.f));
+				GlBuffer inst_buffer;
+				glGenBuffers(1, &inst_buffer.id);
+				glBindBuffer(GL_ARRAY_BUFFER, inst_buffer.id);
+				glBufferData(GL_ARRAY_BUFFER, sizeof(inst_data), &inst_data, GL_STATIC_DRAW);
+				
+				draw_mesh_instanced(mesh, &white, 1, inst_buffer.id, 0, 1);
 			}
-			
-			RenderMesh mesh;
-			RenderSubMesh& submesh = mesh.submeshes.emplace_back();
-			submesh.material = 0;
-			
-			glGenBuffers(1, &submesh.vertex_buffer.id);
-			glBindBuffer(GL_ARRAY_BUFFER, submesh.vertex_buffer.id);
-			glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
-			submesh.vertex_count = vertices.size();
-			
-			glm::mat4 matrix = inst.transform().matrix();
-			
-			auto inst_data = InstanceData(matrix, glm::vec4(0.f, 0.f, 1.f, 1.f), glm::vec4(1.f));
-			GlBuffer inst_buffer;
-			glGenBuffers(1, &inst_buffer.id);
-			glBindBuffer(GL_ARRAY_BUFFER, inst_buffer.id);
-			glBufferData(GL_ARRAY_BUFFER, sizeof(inst_data), &inst_data, GL_STATIC_DRAW);
-			
-			draw_mesh_instanced(mesh, &white, 1, inst_buffer.id, 0, 1);
 		}
 	}
 }
 
 static void draw_selected_moby_normals(Level& lvl) {
 	for(MobyInstance& inst : lvl.instances().moby_instances) {
-		if(inst.selected && lvl.mobies.find(inst.o_class) != lvl.mobies.end()) {
-			const EditorClass& cls = lvl.mobies.at(inst.o_class);
-			std::vector<Vertex> vertices;
-			for(const Vertex& v : cls.mesh.vertices) {
-				Vertex v2 = v;
-				v2.pos += v2.normal * 0.5f;
-				vertices.emplace_back(v);
-				vertices.emplace_back(v2);
-				vertices.emplace_back(v2);
+		if(inst.selected && lvl.moby_classes.find(inst.o_class) != lvl.moby_classes.end()) {
+			const EditorClass& cls = lvl.moby_classes.at(inst.o_class);
+			if(cls.mesh.has_value()) {
+				std::vector<Vertex> vertices;
+				for(const Vertex& v : cls.mesh->vertices) {
+					Vertex v2 = v;
+					v2.pos += v2.normal * 0.5f;
+					vertices.emplace_back(v);
+					vertices.emplace_back(v2);
+					vertices.emplace_back(v2);
+				}
+				
+				RenderMesh mesh;
+				RenderSubMesh& submesh = mesh.submeshes.emplace_back();
+				submesh.material = 0;
+				
+				glGenBuffers(1, &submesh.vertex_buffer.id);
+				glBindBuffer(GL_ARRAY_BUFFER, submesh.vertex_buffer.id);
+				glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+				submesh.vertex_count = vertices.size();
+				
+				auto inst_data = InstanceData(inst.transform().matrix(), glm::vec4(0.f, 0.f, 1.f, 1.f), glm::vec4(1.f));
+				GlBuffer inst_buffer;
+				glGenBuffers(1, &inst_buffer.id);
+				glBindBuffer(GL_ARRAY_BUFFER, inst_buffer.id);
+				glBufferData(GL_ARRAY_BUFFER, sizeof(inst_data), &inst_data, GL_STATIC_DRAW);
+				
+				draw_mesh_instanced(mesh, &white, 1, inst_buffer.id, 0, 1);
 			}
-			
-			RenderMesh mesh;
-			RenderSubMesh& submesh = mesh.submeshes.emplace_back();
-			submesh.material = 0;
-			
-			glGenBuffers(1, &submesh.vertex_buffer.id);
-			glBindBuffer(GL_ARRAY_BUFFER, submesh.vertex_buffer.id);
-			glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
-			submesh.vertex_count = vertices.size();
-			
-			auto inst_data = InstanceData(inst.transform().matrix(), glm::vec4(0.f, 0.f, 1.f, 1.f), glm::vec4(1.f));
-			GlBuffer inst_buffer;
-			glGenBuffers(1, &inst_buffer.id);
-			glBindBuffer(GL_ARRAY_BUFFER, inst_buffer.id);
-			glBufferData(GL_ARRAY_BUFFER, sizeof(inst_data), &inst_data, GL_STATIC_DRAW);
-			
-			draw_mesh_instanced(mesh, &white, 1, inst_buffer.id, 0, 1);
 		}
 	}
 }
@@ -512,8 +516,8 @@ static void draw_moby_icons(Level& lvl, InstanceList<MobyInstance>& instances) {
 		s32 last_class = instances[i - 1].o_class;
 		if(i == instances.size() || instances[i].o_class != last_class) {
 			end = i;
-			auto iter = lvl.mobies.find(last_class);
-			if(iter == lvl.mobies.end()) {
+			auto iter = lvl.moby_classes.find(last_class);
+			if(iter == lvl.moby_classes.end() || !iter->second.render_mesh.has_value()) {
 				draw_icon_instanced(INST_MOBY, moby_inst_buffer, begin, end - begin);
 			}
 			begin = i;

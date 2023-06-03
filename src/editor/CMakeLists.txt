@@ -12,6 +12,7 @@ add_executable(wrencheditor
 	gui/editor_gui.cpp
 	gui/view_3d.cpp
 	gui/inspector.cpp
+	gui/pvar_inspector.cpp
 	gui/asset_selector.cpp
 )
 target_link_libraries(wrencheditor wrenchcore wrenchgui wrench_assetmgr wrenchinstancemgr)

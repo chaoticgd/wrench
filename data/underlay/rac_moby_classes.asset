@@ -14,7 +14,17 @@ MobyClass rac.moby_classes.328   { category: "NPCs"         name: "Edwina" }
 MobyClass rac.moby_classes.341   { category: "Gameplay"     name: "Hydrodisplacer Faucet" }
 MobyClass rac.moby_classes.408   { category: "Gameplay"     name: "Sentry-bot Alarm" }
 MobyClass rac.moby_classes.447   { category: "NPCs"         name: "Qwark (Umbris)" }
-MobyClass rac.moby_classes.500   { category: "Gameplay"     name: "Bolt Crate" }
+
+MobyClass rac.moby_classes.500 {
+	category: "Gameplay"
+	name: "Bolt Crate"
+
+	CppType pvar_type {
+		name: "update500_Crate"
+		src: "rac_types.h"
+	}
+}
+
 MobyClass rac.moby_classes.501   { category: "Gameplay"     name: "Nanotech Crate" }
 MobyClass rac.moby_classes.502   { category: "Gameplay"     name: "Metal Crate" }
 MobyClass rac.moby_classes.505   { category: "Gameplay"     name: "Oom Oom Box" }

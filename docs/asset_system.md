@@ -130,12 +130,11 @@ The `Asset` class represents an asset definition inside a .asset file. A seperat
 
 Each asset type is defined in `asset_schema.wtf` and a code generator, `asset_codegen.cpp` is used to generate a C++ file that defines a subclass of `Asset` for each asset type. A similar generator program, `asset_docgen.cpp` is used to generate the asset reference document.
 
-
 ## Version History
 
 | Format Version | Wrench Version | Description |
 | -    | -     | - |
-| 21   |       | Added Instances asset type. |
+| 21   |       | Added new instances format. Added Instances asset type. Added new CppType asset type, as well as pvar_type and pvar_type fallback attributes to the MobyClass asset. |
 | 20   |       | Added Occlusion asset type. The code child of LevelWad asset has been renamed to overlay. Removed the tfrags and collision children of the LevelWad asset (the assets from the first chunk are used instead). |
 | 19   |       | Added ElfFile asset type. |
 | 18   | v0.3  | Added editor_mesh attribute to the TieClass asset type. Material assets are now used to store tie textures. |

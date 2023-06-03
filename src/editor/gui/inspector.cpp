@@ -22,6 +22,7 @@
 #include <imgui.h>
 
 #include <editor/app.h>
+#include <editor/gui/pvar_inspector.h>
 
 static const s32 MAX_LANES = 4;
 struct InspectorFieldFuncs {
@@ -174,6 +175,8 @@ void inspector() {
 		}
 		ImGui::EndTable();
 	}
+	
+	pvar_inspector(lvl);
 }
 
 
