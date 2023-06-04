@@ -116,6 +116,7 @@ void Level::read(LevelAsset& asset, Game g) {
 				for(CppType& type : types) {
 					if(type.name == pvar_type->name()) {
 						//resolve_pvar_type_names(type, types);
+						layout_cpp_type(type, CPP_PS2_ABI);
 						ec.pvar_type = std::move(type);
 					}
 				}

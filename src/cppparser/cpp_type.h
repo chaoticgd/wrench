@@ -26,6 +26,7 @@
 enum CppTypeDescriptor {
 	CPP_ARRAY,
 	CPP_BUILT_IN,
+	CPP_ENUM,
 	CPP_STRUCT_OR_UNION,
 	CPP_TYPE_NAME,
 	CPP_POINTER_OR_REFERENCE
@@ -39,9 +40,46 @@ struct CppArray {
 };
 
 enum CppBuiltIn {
-	CHAR, UCHAR, SCHAR, SHORT, USHORT, INT, UINT, LONG, ULONG, LONGLONG, ULONGLONG,
-	S8, U8, S16, U16, S32, U32, S64, U64, S128, U128,
-	FLOAT, DOUBLE, BOOL
+	CPP_CHAR, CPP_UCHAR, CPP_SCHAR,
+	CPP_SHORT, CPP_USHORT,
+	CPP_INT, CPP_UINT,
+	CPP_LONG, CPP_ULONG,
+	CPP_LONGLONG, CPP_ULONGLONG,
+	CPP_S8, CPP_U8,
+	CPP_S16, CPP_U16,
+	CPP_S32, CPP_U32,
+	CPP_S64, CPP_U64,
+	CPP_S128, CPP_U128,
+	CPP_FLOAT, CPP_DOUBLE, CPP_BOOL,
+	CPP_BUILT_IN_COUNT
+};
+
+inline bool cpp_is_built_in_integer(CppBuiltIn x) {
+	return x >= CPP_CHAR
+		&& x <= CPP_U128;
+}
+
+inline bool cpp_is_built_in_float(CppBuiltIn x) {
+	return x == CPP_FLOAT
+		|| x == CPP_DOUBLE;
+}
+
+inline bool cpp_is_built_in_signed(CppBuiltIn x) {
+	return x == CPP_CHAR
+		|| x == CPP_SCHAR
+		|| x == CPP_SHORT
+		|| x == CPP_INT
+		|| x == CPP_LONG
+		|| x == CPP_LONGLONG
+		|| x == CPP_S8
+		|| x == CPP_S16
+		|| x == CPP_S32
+		|| x == CPP_S64
+		|| x == CPP_S128;
+	}
+
+struct CppEnum {
+	std::vector<std::pair<s32, std::string>> constants;
 };
 
 struct CppStructOrUnion {
@@ -67,10 +105,12 @@ struct CppType {
 	s32 offset = -1;
 	s32 size = -1;
 	s32 alignment = -1;
+	bool expanded = false; // Used by the inspector.
 	CppTypeDescriptor descriptor;
 	union {
 		CppArray array;
 		CppBuiltIn built_in;
+		CppEnum enumeration;
 		CppStructOrUnion struct_or_union;
 		CppTypeName type_name;
 		CppPointerOrReference pointer_or_reference;
@@ -84,7 +124,17 @@ struct CppType {
 	CppType& operator=(CppType&& rhs);
 };
 
-std::vector<CppType> parse_cpp_types(const std::vector<CppToken>& tokens);
-void layout_cpp_type(CppType& type);
+struct CppABI {
+	s32 built_in_sizes[CPP_BUILT_IN_COUNT];
+	s32 built_in_alignments[CPP_BUILT_IN_COUNT];
+	s32 enum_size;
+	s32 enum_alignment;
+	s32 pointer_size;
+	s32 pointer_alignment;
+};
+
+void layout_cpp_type(CppType& type, const CppABI& abi);
+
+extern CppABI CPP_PS2_ABI;
 
 #endif

@@ -16,13 +16,4 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef EDITOR_PVAR_INSPECTOR_H
-#define EDITOR_PVAR_INSPECTOR_H
-
-#include <editor/app.h>
-
-// 'ello I'm the county pvar inspectah. I'm 'ere to inspect all yerr pvars.
-
-void pvar_inspector(Level& lvl);
-
-#endif
+#include "cpp_value.h"

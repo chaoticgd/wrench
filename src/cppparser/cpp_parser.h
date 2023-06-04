@@ -16,13 +16,11 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef EDITOR_PVAR_INSPECTOR_H
-#define EDITOR_PVAR_INSPECTOR_H
+#ifndef CPPPARSER_CPP_PARSER_H
+#define CPPPARSER_CPP_PARSER_H
 
-#include <editor/app.h>
+#include <cppparser/cpp_type.h>
 
-// 'ello I'm the county pvar inspectah. I'm 'ere to inspect all yerr pvars.
-
-void pvar_inspector(Level& lvl);
+std::vector<CppType> parse_cpp_types(const std::vector<CppToken>& tokens);
 
 #endif

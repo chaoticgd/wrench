@@ -85,10 +85,12 @@ void inspector() {
 	}
 	Level& lvl = *a.get_level();
 	
-	static const std::vector<InspectorField> fields = {
+	static const std::vector<InspectorField> header_fields = {
 		// Components
 		{COM_NONE            , INST_NONE      , "Type     ", type_funcs()},
 		{COM_NONE            , INST_NONE      , "ID       ", id_funcs()},
+	};
+	static const std::vector<InspectorField> fields = {
 		//{COM_TRANSFORM       , INST_NONE      , "Position ", vec3_funcs(adapt_getter_setter(&Instance::position, &Instance::set_position))},
 		//{COM_TRANSFORM       , INST_NONE      , "Rotation ", vec3_funcs(adapt_getter_setter(&Instance::rotation, &Instance::set_rotation))},
 		//{COM_TRANSFORM       , INST_NONE      , "Scale    ", scalar_funcs(adapt_getter_setter(&Instance::scale, &Instance::set_scale))},
@@ -162,18 +164,26 @@ void inspector() {
 		{COM_NONE            , INST_MOBY      , "Unk 84   ", scalar_funcs(adapt_member_pointer(&MobyInstance::rac23_unknown_84))}
 	};
 	
-	if(ImGui::BeginTable("inspector", 2)) {
+	if(ImGui::BeginTable("header", 2)) {
 		ImGui::TableSetupColumn("name", ImGuiTableColumnFlags_WidthFixed);
 		ImGui::TableSetupColumn("input", ImGuiTableColumnFlags_WidthStretch);
-		
-		draw_fields(lvl, fields);
-		if(lvl.game == Game::RAC) {
-			draw_fields(lvl, rac1_fields);
-		}
-		if(lvl.game == Game::GC || lvl.game == Game::UYA) {
-			draw_fields(lvl, rac23_fields);
-		}
+		draw_fields(lvl, header_fields);
 		ImGui::EndTable();
+	}
+	
+	if(ImGui::CollapsingHeader("Fields")) {
+		if(ImGui::BeginTable("inspector", 2)) {
+			ImGui::TableSetupColumn("name", ImGuiTableColumnFlags_WidthFixed);
+			ImGui::TableSetupColumn("input", ImGuiTableColumnFlags_WidthStretch);
+			draw_fields(lvl, fields);
+			if(lvl.game == Game::RAC) {
+				draw_fields(lvl, rac1_fields);
+			}
+			if(lvl.game == Game::GC || lvl.game == Game::UYA) {
+				draw_fields(lvl, rac23_fields);
+			}
+			ImGui::EndTable();
+		}
 	}
 	
 	pvar_inspector(lvl);

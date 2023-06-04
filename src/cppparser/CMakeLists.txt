@@ -4,5 +4,6 @@ endif()
 add_library(wrenchcppparser STATIC
 	cpp_lexer.cpp
 	cpp_type.cpp
+	cpp_parser.cpp
 )
 target_link_libraries(wrenchcppparser wrenchcore)

@@ -75,6 +75,11 @@ struct CppToken {
 	CppOperator op = CPP_OP_NONE;
 	s64 i = -1;
 	f32 f = 0.f;
+	s32 line = -1;
+	
+	// Skips comments.
+	size_t prev;
+	size_t next;
 };
 
 std::vector<CppToken> eat_cpp_file(char* ptr);

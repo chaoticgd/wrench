@@ -21,7 +21,7 @@
 
 #include <map>
 
-#include <cppparser/cpp_type.h>
+#include <cppparser/cpp_parser.h>
 #include <instancemgr/instances.h>
 #include <assetmgr/asset_types.h>
 #include <gui/render_mesh.h>

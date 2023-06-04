@@ -19,7 +19,7 @@
 #include <catch2/catch_amalgamated.hpp>
 
 #include <core/filesystem.h>
-#include <cppparser/cpp_type.h>
+#include <cppparser/cpp_parser.h>
 
 #define CPP_TEST_PASSED -1
 static s32 test_lexer(const char* src, std::vector<CppTokenType>&& expected);
@@ -143,7 +143,7 @@ TEST_CASE("c++ parser" "[instancemgr]") {
 			field.name = "array_of_ints";
 			field.array.element_count = 5;
 			field.array.element_type = std::make_unique<CppType>(CPP_BUILT_IN);
-			field.array.element_type->built_in = CppBuiltIn::INT;
+			field.array.element_type->built_in = CPP_INT;
 			return type;
 		}()
 	));
@@ -158,7 +158,7 @@ TEST_CASE("c++ parser" "[instancemgr]") {
 			field.pointer_or_reference.value_type = std::make_unique<CppType>(CPP_POINTER_OR_REFERENCE);
 			CppType& inner = *field.pointer_or_reference.value_type.get();
 			inner.pointer_or_reference.value_type = std::make_unique<CppType>(CPP_BUILT_IN);
-			inner.pointer_or_reference.value_type->built_in = CppBuiltIn::FLOAT;
+			inner.pointer_or_reference.value_type->built_in = CPP_FLOAT;
 			return type;
 		}()
 	));

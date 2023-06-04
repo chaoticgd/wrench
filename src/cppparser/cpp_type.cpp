@@ -18,136 +18,6 @@
 
 #include "cpp_type.h"
 
-static void parse_struct_or_union(CppType& dest, const std::vector<CppToken>& tokens, size_t& pos);
-static CppType parse_type_name(const std::vector<CppToken>& tokens, size_t& pos);
-static bool check_eof(const std::vector<CppToken>& tokens, size_t& pos, const char* thing = nullptr);
-
-std::vector<CppType> parse_cpp_types(const std::vector<CppToken>& tokens) {
-	std::vector<CppType> types;
-	size_t pos = 0;
-	while(pos < tokens.size()) {
-		if(tokens[pos].type == CPP_KEYWORD && (tokens[pos].keyword == CPP_KEYWORD_struct || tokens[pos].keyword == CPP_KEYWORD_union)) {
-			if(pos + 1 < tokens.size() && tokens[pos + 1].type == CPP_IDENTIFIER) {
-				if(pos + 2 < tokens.size() && tokens[pos + 2].type == CPP_OPERATOR && tokens[pos + 2].op == CPP_OP_OPENING_CURLY) {
-					CppType& type = types.emplace_back(CPP_STRUCT_OR_UNION);
-					type.struct_or_union.is_union = tokens[pos].keyword == CPP_KEYWORD_union;
-					type.name = std::string(tokens[pos + 1].str_begin, tokens[pos + 1].str_end);
-					pos += 3;
-					parse_struct_or_union(type, tokens, pos);
-					continue;
-				}
-			}
-		}
-		pos++;
-	}
-	return types;
-}
-
-static void parse_struct_or_union(CppType& dest, const std::vector<CppToken>& tokens, size_t& pos) {
-	while(check_eof(tokens, pos) && !(tokens[pos].type == CPP_OPERATOR && tokens[pos].op == CPP_OP_CLOSING_CURLY)) {
-		CppType field_type = parse_type_name(tokens, pos);
-		
-		// Parse pointers.
-		while(check_eof(tokens, pos) && tokens[pos].type == CPP_OPERATOR && (tokens[pos].op == CPP_OP_STAR || tokens[pos].op == CPP_OP_AMPERSAND)) {
-			CppType type(CPP_POINTER_OR_REFERENCE);
-			type.pointer_or_reference.is_reference = tokens[pos].op == CPP_OP_AMPERSAND;
-			type.pointer_or_reference.value_type = std::make_unique<CppType>(std::move(field_type));
-			field_type = std::move(type);
-			pos++;
-		}
-		
-		check_eof(tokens, pos);
-		std::string name = std::string(tokens[pos].str_begin, tokens[pos].str_end);
-		pos++;
-		
-		// Parse array subscripts.
-		std::vector<s32> array_indices;
-		while(check_eof(tokens, pos) && tokens[pos].type == CPP_OPERATOR && tokens[pos].op == CPP_OP_OPENING_SQUARE) {
-			pos++;
-			check_eof(tokens, pos);
-			verify(tokens[pos].type == CPP_INTEGER_LITERAL, "Expected integer literal.");
-			array_indices.emplace_back(tokens[pos].i);
-			pos++;
-			check_eof(tokens, pos);
-			verify(tokens[pos].type == CPP_OPERATOR && tokens[pos].op == CPP_OP_CLOSING_SQUARE, "Expected ']'.");
-			pos++;
-		}
-		for(size_t i = array_indices.size(); i > 0; i--) {
-			CppType array_type(CPP_ARRAY);
-			array_type.array.element_count = array_indices[i - 1];
-			array_type.array.element_type = std::make_unique<CppType>(std::move(field_type));
-			field_type = std::move(array_type);
-		}
-		
-		field_type.name = name;
-		dest.struct_or_union.fields.emplace_back(std::move(field_type));
-		
-		check_eof(tokens, pos);
-		verify(tokens[pos].type == CPP_OPERATOR && tokens[pos].type == CPP_OPERATOR && tokens[pos].op == CPP_OP_SEMICOLON, "Expected ';'.");
-		pos++;
-	}
-	pos++; // '}'
-}
-
-static CppType parse_type_name(const std::vector<CppToken>& tokens, size_t& pos) {
-	if(tokens[pos].type == CPP_KEYWORD) {
-		s32 sign = 0;
-		if(tokens[pos].keyword == CPP_KEYWORD_signed) {
-			sign = 1;
-			pos++;
-			check_eof(tokens, pos, "'signed' keyword");
-		} else if(tokens[pos].keyword == CPP_KEYWORD_unsigned) {
-			sign = -1;
-			pos++;
-			check_eof(tokens, pos, "'unsigned' keyword");
-		}
-		
-		CppType field(CPP_BUILT_IN);
-		switch(tokens[pos].keyword) {
-			case CPP_KEYWORD_char: field.built_in = (sign == -1) ? CppBuiltIn::UCHAR : CppBuiltIn::SCHAR; break;
-			case CPP_KEYWORD_char8_t: field.built_in = CppBuiltIn::S8; break;
-			case CPP_KEYWORD_char16_t: field.built_in = CppBuiltIn::S16; break;
-			case CPP_KEYWORD_char32_t: field.built_in = CppBuiltIn::S32; break;
-			case CPP_KEYWORD_short: field.built_in = (sign == -1) ? CppBuiltIn::USHORT : CppBuiltIn::SHORT; break;
-			case CPP_KEYWORD_int: field.built_in = (sign == -1) ? CppBuiltIn::UINT : CppBuiltIn::INT; break;
-			case CPP_KEYWORD_long: {
-				if(pos + 1 < tokens.size() && tokens[pos + 1].type == CPP_KEYWORD && tokens[pos + 1].keyword == CPP_KEYWORD_long) {
-					field.built_in = (sign == -1) ? CppBuiltIn::ULONGLONG : CppBuiltIn::LONGLONG;
-					pos++;
-				} else {
-					field.built_in = (sign == -1) ? CppBuiltIn::ULONG : CppBuiltIn::LONG;
-				}
-				break;
-			}
-			case CPP_KEYWORD_float: field.built_in = CppBuiltIn::FLOAT; break;
-			case CPP_KEYWORD_double: field.built_in = CppBuiltIn::DOUBLE; break;
-			default: verify_not_reached("Expected type name.");
-		}
-		
-		pos++;
-		
-		return field;
-	} else if(tokens[pos].type == CPP_IDENTIFIER) {
-		verify_not_reached("Not yet implemented.");
-	}
-	verify_not_reached("Expected type name.");
-}
-
-static bool check_eof(const std::vector<CppToken>& tokens, size_t& pos, const char* thing) {
-	if(thing) {
-		verify(pos < tokens.size(), "Unexpected end of file after %s.", thing);
-	} else {
-		verify(pos < tokens.size(), "Unexpected end of file.");
-	}
-	return true;
-}
-
-void layout_pvar_type(CppType& type) {
-	
-}
-
-// **** Evil code beyond this point!!! ****
-
 static void create_pvar_type(CppType& type);
 static void move_assign_pvar_type(CppType& lhs, CppType& rhs);
 static void destroy_pvar_type(CppType& type);
@@ -198,6 +68,10 @@ static void create_pvar_type(CppType& type) {
 			new (&type.built_in) CppBuiltIn;
 			break;
 		}
+		case CPP_ENUM: {
+			new (&type.enumeration) CppEnum;
+			break;
+		}
 		case CPP_STRUCT_OR_UNION: {
 			new (&type.struct_or_union) CppStructOrUnion;
 			break;
@@ -221,6 +95,10 @@ static void move_assign_pvar_type(CppType& lhs, CppType& rhs) {
 		}
 		case CPP_BUILT_IN: {
 			lhs.built_in = std::move(rhs.built_in);
+			break;
+		}
+		case CPP_ENUM: {
+			lhs.enumeration = std::move(rhs.enumeration);
 			break;
 		}
 		case CPP_STRUCT_OR_UNION: {
@@ -248,6 +126,10 @@ static void destroy_pvar_type(CppType& type) {
 			type.built_in.~CppBuiltIn();
 			break;
 		}
+		case CPP_ENUM: {
+			type.enumeration.~CppEnum();
+			break;
+		}
 		case CPP_STRUCT_OR_UNION: {
 			type.struct_or_union.~CppStructOrUnion();
 			break;
@@ -262,3 +144,110 @@ static void destroy_pvar_type(CppType& type) {
 		}
 	}
 }
+
+// *****************************************************************************
+
+void layout_cpp_type(CppType& type, const CppABI& abi) {
+	switch(type.descriptor) {
+		case CPP_ARRAY: {
+			verify_fatal(type.array.element_type.get());
+			layout_cpp_type(*type.array.element_type, abi);
+			type.size = type.array.element_type->size * type.array.element_count;
+			type.alignment = type.array.element_type->alignment;
+			break;
+		}
+		case CPP_BUILT_IN: {
+			verify_fatal(type.built_in < CPP_BUILT_IN_COUNT);
+			type.size = abi.built_in_sizes[type.built_in];
+			type.alignment = abi.built_in_alignments[type.built_in];
+			break;
+		}
+		case CPP_ENUM: {
+			type.size = abi.enum_size;
+			type.alignment = abi.enum_alignment;
+			break;
+		}
+		case CPP_STRUCT_OR_UNION: {
+			s32 offset = 0;
+			type.alignment = 1;
+			for(CppType& field : type.struct_or_union.fields) {
+				layout_cpp_type(field, abi);
+				type.alignment = std::max(field.alignment, type.alignment);
+				field.offset = align32(offset, field.alignment);
+				if(!type.struct_or_union.is_union) {
+					offset = field.offset + field.size;
+				}
+			}
+			type.size = align32(offset, type.alignment);
+			break;
+		}
+		case CPP_TYPE_NAME: {
+			verify_not_reached_fatal("Cannot determine layout from type name.");
+			break;
+		}
+		case CPP_POINTER_OR_REFERENCE: {
+			type.size = abi.pointer_size;
+			type.alignment = abi.pointer_alignment;
+			break;
+		}
+	}
+}
+
+CppABI CPP_PS2_ABI = {
+	/* built_in_sizes = */ {
+		/* [CPP_CHAR] = */ 1,
+		/* [CPP_UCHAR] = */ 1,
+		/* [CPP_SCHAR] = */ 1,
+		/* [CPP_SHORT] = */ 2,
+		/* [CPP_USHORT] = */ 2,
+		/* [CPP_INT] = */ 4,
+		/* [CPP_UINT] = */ 4,
+		/* [CPP_LONG] = */ 8,
+		/* [CPP_ULONG] = */ 8,
+		/* [CPP_LONGLONG] = */ 16, // Some weirdness here with these games.
+		/* [CPP_ULONGLONG] = */ 16,
+		/* [CPP_S8] = */ 1,
+		/* [CPP_U8] = */ 1,
+		/* [CPP_S16] = */ 2,
+		/* [CPP_U16] = */ 2,
+		/* [CPP_S32] = */ 4,
+		/* [CPP_U32] = */ 4,
+		/* [CPP_S64] = */ 8,
+		/* [CPP_U64] = */ 8,
+		/* [CPP_S128] = */ 16,
+		/* [CPP_U128] = */ 16,
+		/* [CPP_FLOAT] = */ 4,
+		/* [CPP_DOUBLE] = */ 8,
+		/* [CPP_BOOL] = */ 1,
+	},
+	/* built_in_alignments */ {
+		/* [CPP_CHAR] = */ 1,
+		/* [CPP_UCHAR] = */ 1,
+		/* [CPP_SCHAR] = */ 1,
+		/* [CPP_SHORT] = */ 2,
+		/* [CPP_USHORT] = */ 2,
+		/* [CPP_INT] = */ 4,
+		/* [CPP_UINT] = */ 4,
+		/* [CPP_LONG] = */ 8,
+		/* [CPP_ULONG] = */ 8,
+		/* [CPP_LONGLONG] = */ 16,
+		/* [CPP_ULONGLONG] = */ 16,
+		/* [CPP_S8] = */ 1,
+		/* [CPP_U8] = */ 1,
+		/* [CPP_S16] = */ 2,
+		/* [CPP_U16] = */ 2,
+		/* [CPP_S32] = */ 4,
+		/* [CPP_U32] = */ 4,
+		/* [CPP_S64] = */ 8,
+		/* [CPP_U64] = */ 8,
+		/* [CPP_S128] = */ 16,
+		/* [CPP_U128] = */ 16,
+		/* [CPP_FLOAT] = */ 4,
+		/* [CPP_DOUBLE] = */ 8,
+		/* [CPP_BOOL] = */ 1,
+	},
+	/* enum_size = */ 4,
+	/* enum_alignment = */ 4,
+	/* pointer_size = */ 4,
+	/* pointer_alignment = */ 4,
+};

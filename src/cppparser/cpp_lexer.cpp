@@ -100,6 +100,22 @@ std::vector<CppToken> eat_cpp_file(char* ptr) {
 		verify_not_reached("Unrecognised token: %s", str.substr(0, 32).c_str());
 	}
 	
+	// Fill in prev and next indices for skipping comments.
+	size_t prev = tokens.size();
+	for(size_t i = 0; i < tokens.size(); i++) {
+		tokens[i].prev = prev;
+		if(tokens[i].type != CPP_COMMENT) {
+			prev = i;
+		}
+	}
+	size_t next = tokens.size();
+	for(size_t i = tokens.size(); i > 0; i--) {
+		tokens[i - 1].next = next;
+		if(tokens[i - 1].type != CPP_COMMENT) {
+			next = i - 1;
+		}
+	}
+	
 	return tokens;
 }
 
