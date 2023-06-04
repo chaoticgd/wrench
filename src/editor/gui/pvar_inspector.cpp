@@ -48,8 +48,9 @@ void pvar_inspector(Level& lvl) {
 		}
 	}
 	
-	ImGuiTableFlags flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable;
+	ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
 	
+	ImGuiTableFlags flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable;
 	if(ImGui::CollapsingHeader("Pvars")) {
 		ImGui::BeginChild("pvars");
 		ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4, 4));
@@ -66,6 +67,8 @@ void pvar_inspector(Level& lvl) {
 		}
 		ImGui::EndChild();
 	}
+	
+	ImGui::PopStyleColor();
 }
 
 static bool get_pvar_type_and_data(CppType*& pvar_type, std::vector<std::vector<u8>*>& pvar_data, Level& lvl) {

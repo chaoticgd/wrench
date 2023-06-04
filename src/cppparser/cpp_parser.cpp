@@ -66,7 +66,9 @@ std::vector<CppType> parse_cpp_types(const std::vector<CppToken>& tokens) {
 					CppType& type = types.emplace_back(CPP_STRUCT_OR_UNION);
 					type.struct_or_union.is_union = tokens[parser.pos].keyword == CPP_KEYWORD_union;
 					type.name = std::string(tokens[parser.pos + 1].str_begin, tokens[parser.pos + 1].str_end);
-					parser.pos += 3;
+					parser.advance();
+					parser.advance();
+					parser.advance();
 					parse_struct_or_union(type, parser);
 					continue;
 				}
