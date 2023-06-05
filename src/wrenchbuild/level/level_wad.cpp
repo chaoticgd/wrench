@@ -220,7 +220,21 @@ static void unpack_missions(CollectionAsset& dest, InputStream& file, const Miss
 		if(!header.instances.empty() || !header.classes.empty() || !ranges.sound_banks[i].empty()) {
 			std::string path = stringf("missions/%d/mission%d.asset", i, i);
 			MissionAsset& mission = dest.foreign_child<MissionAsset>(path, false, i);
-			unpack_compressed_asset(mission.instances<InstancesAsset>(), file, header.instances, config, FMT_INSTANCES_MISSION);
+			
+			// Horrible hack: There are some mission instance files that look
+			// more like a gameplay core with empty help message sections, for
+			// example level 4 (sarathos), mission 44. I'm not sure what these
+			// files are exactly.
+			file.seek(header.instances.bytes().offset);
+			std::vector<u8> compressed_instances = file.read_multiple<u8>(header.instances.bytes().size);
+			std::vector<u8> instances;
+			decompress_wad(instances, compressed_instances);
+			verify(instances.size() >= 4, "Bad mission instances file.");
+			if(*(s32*) instances.data() != 0x90) {
+				unpack_compressed_asset(mission.instances<InstancesAsset>(), file, header.instances, config, FMT_INSTANCES_MISSION);
+			} else {
+				unpack_compressed_asset(mission.instances<BinaryAsset>(), file, header.instances, config, FMT_INSTANCES_MISSION);
+			}
 			unpack_compressed_asset(mission.classes<CollectionAsset>(), file, header.classes, config, FMT_COLLECTION_MISSION_CLASSES);
 			unpack_asset(mission.sound_bank(), file, ranges.sound_banks[i], config);
 		}
