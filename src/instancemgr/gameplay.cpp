@@ -19,6 +19,7 @@
 #include "gameplay.h"
 
 #include <engine/basic_types.h>
+#include <instancemgr/pvar.h>
 
 const s32 NONE = -1;
 
@@ -293,6 +294,14 @@ void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, Occlus
 	if(occlusion_dest && src.occlusion.has_value()) {
 		*occlusion_dest = *src.occlusion;
 	}
+	
+	std::vector<CppType> pvar_types;
+	recover_pvars(dest, pvar_types, src);
+	std::vector<u8> cpp_out;
+	OutBuffer ob(cpp_out);
+	for(CppType& type : pvar_types)
+		dump_cpp_type(ob, type);
+	write_file("/tmp/pvar_types.h", cpp_out);
 }
 
 void move_instances_to_gameplay(Gameplay& dest, Instances& src, HelpMessages* help_src, OcclusionMappings* occlusion_src) {
@@ -340,4 +349,7 @@ void move_instances_to_gameplay(Gameplay& dest, Instances& src, HelpMessages* he
 			|| !occlusion_src->moby_mappings.empty())) {
 		dest.occlusion = *occlusion_src;
 	}
+	
+	std::vector<CppType> types;
+	build_pvars(dest, src, types);
 }

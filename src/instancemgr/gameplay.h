@@ -80,6 +80,7 @@ struct Gameplay {
 	Opt<OcclusionMappings> occlusion;
 	
 	Opt<std::vector<PvarTableEntry>> pvar_table;
+	Opt<std::vector<u8>> pvar_data;
 	Opt<std::vector<PvarPointerEntry>> pvar_scratchpad;
 	Opt<std::vector<PvarPointerEntry>> pvar_relatives;
 	Opt<std::vector<GlobalPvarPointer>> global_pvar_table;

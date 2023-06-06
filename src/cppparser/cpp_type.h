@@ -21,6 +21,7 @@
 
 #include <memory>
 
+#include <core/buffer.h>
 #include <cppparser/cpp_lexer.h>
 
 enum CppTypeDescriptor {
@@ -134,7 +135,10 @@ struct CppABI {
 };
 
 void layout_cpp_type(CppType& type, const CppABI& abi);
+void dump_cpp_type(OutBuffer& dest, const CppType& type);
+const char* cpp_built_in(CppBuiltIn built_in);
 
+extern CppABI NATIVE_ABI;
 extern CppABI CPP_PS2_ABI;
 
 #endif

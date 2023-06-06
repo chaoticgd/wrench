@@ -358,37 +358,19 @@ struct PvarTableBlock {
 struct PvarDataBlock {
 	static void read(Gameplay& dest, Buffer src, Game game) {
 		verify_fatal(dest.pvar_table.has_value());
-		for(MobyInstance& inst : opt_iterator(dest.moby_instances)) {
-			if(inst.temp_pvar_index() >= 0) {
-				PvarTableEntry& entry = dest.pvar_table->at(inst.temp_pvar_index());
-				inst.pvars() = src.read_multiple<u8>(entry.offset, entry.size, "pvar data").copy();
-			}
+		s32 size = 0;
+		for(PvarTableEntry& entry : *dest.pvar_table) {
+			size = std::max(entry.offset + entry.size, size);
 		}
-		for(CameraInstance& inst : opt_iterator(dest.cameras)) {
-			if(inst.temp_pvar_index() >= 0) {
-				PvarTableEntry& entry = dest.pvar_table->at(inst.temp_pvar_index());
-				inst.pvars() = src.read_multiple<u8>(entry.offset, entry.size, "pvar data").copy();
-			}
-		}
-		for(SoundInstance& inst : opt_iterator(dest.sound_instances)) {
-			if(inst.temp_pvar_index() >= 0) {
-				PvarTableEntry& entry = dest.pvar_table->at(inst.temp_pvar_index());
-				inst.pvars() = src.read_multiple<u8>(entry.offset, entry.size, "pvar data").copy();
-			}
-		}
+		dest.pvar_data = src.read_multiple<u8>(0, size, "pvar data").copy();
 	}
 	
 	static bool write(OutBuffer dest, const Gameplay& src, Game game) {
-		for(const MobyInstance& inst : opt_iterator(src.moby_instances)) {
-			dest.write_multiple(inst.pvars());
+		if(src.pvar_data.has_value()) {
+			dest.write_multiple(*src.pvar_data);
+			return true;
 		}
-		for(const CameraInstance& inst : opt_iterator(src.cameras)) {
-			dest.write_multiple(inst.pvars());
-		}
-		for(const SoundInstance& inst : opt_iterator(src.sound_instances)) {
-			dest.write_multiple(inst.pvars());
-		}
-		return true;
+		return false;
 	}
 };
 

@@ -213,6 +213,7 @@ static void generate_instance_read_write_table(WtfNode* root) {
 static void generate_instance_type_to_string_func(WtfNode* root) {
 	out("const char* instance_type_to_string(InstanceType type) {");
 	out("\tswitch(type) {");
+	out("\t\tcase INST_NONE: return \"None\";");
 	for(const WtfNode* type = wtf_first_child(root, "InstanceType"); type != nullptr; type = wtf_next_sibling(type, "InstanceType")) {
 		std::string enum_name = type->tag;
 		for(char& c : enum_name) c = toupper(c);

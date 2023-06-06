@@ -182,6 +182,10 @@ const char* instance_type_to_string(InstanceType type);
 #include "_generated_instance_types.inl"
 #undef GENERATED_INSTANCE_TYPES
 
+enum MobyModeBits1 {
+	MOBY_MB1_HAS_SUB_VARS = 0x20
+};
+
 packed_struct(OcclusionMapping,
 	s32 bit_index;
 	s32 occlusion_id;
