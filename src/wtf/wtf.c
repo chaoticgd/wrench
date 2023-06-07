@@ -28,6 +28,7 @@
 
 #include "wtf.h"
 
+#include <math.h>
 #include <ctype.h>
 #undef NDEBUG
 #include <assert.h>
@@ -407,6 +408,20 @@ static ErrorStr parse_value(WtfReader* ctx, WtfAttribute** attribute_dest) {
 
 static ErrorStr parse_number(WtfReader* ctx, int32_t* i, float* f) {
 	char* next;
+	
+	if(strncmp(ctx->input, "nan", 3) == 0) {
+		*i = 0;
+		*f = NAN;
+		ctx->input += 3;
+		return NULL;
+	}
+	
+	if(strncmp(ctx->input, "inf", 3) == 0) {
+		*i = 0;
+		*f = INFINITY;
+		ctx->input += 3;
+		return NULL;
+	}
 	
 	int32_t value_i = strtoll(ctx->input, &next, 10);
 	if(next == ctx->input) {
