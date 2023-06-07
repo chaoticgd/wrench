@@ -45,15 +45,21 @@ static void unpack_instances_asset(InstancesAsset& dest, InputStream& src, Build
 	read_gameplay(gameplay, buffer, config.game(), *get_gameplay_block_descriptions(config.game(), hint)); 
 	
 	Instances instances;
-	std::map<std::string, std::string> pvar_types;
+	std::map<s32, std::string> pvar_types;
 	move_gameplay_to_instances(instances, nullptr, nullptr, pvar_types, gameplay, config.game());
 	
 	std::string text = write_instances(instances);
 	FileReference ref = dest.file().write_text_file(stringf("%s.instances", hint), text.c_str());
 	dest.set_src(ref);
 	
-	for(auto& [path, cpp] : pvar_types) {
-		dest.bank().asset_file("sources.asset").write_text_file(fs::path(path), cpp.c_str());
+	AssetFile& pvar_types_file = dest.bank().asset_file("pvar_types.asset");
+	PlaceholderAsset& build = pvar_types_file.root().child<PlaceholderAsset>(game_to_string(config.game()).c_str());
+	CollectionAsset& moby_classes = build.child<CollectionAsset>("moby_classes");
+	for(auto& [class_id, cpp] : pvar_types) {
+		MobyClassAsset& class_asset = moby_classes.child<MobyClassAsset>(class_id);
+		class_asset.pvar_type_fallback().set_name(stringf("update%d", class_id));
+		std::string path = stringf("src/game_%s/update/moby%d.h", game_to_string(config.game()).c_str(), class_id);
+		pvar_types_file.write_text_file(fs::path(path), cpp.c_str());
 	}
 }
 
@@ -82,7 +88,7 @@ static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConf
 	Instances instances_in;
 	HelpMessages help_messages;
 	OcclusionMappings occlusion;
-	std::map<std::string, std::string> pvar_types;
+	std::map<s32, std::string> pvar_types;
 	move_gameplay_to_instances(instances_in, &help_messages, &occlusion, pvar_types, gameplay_in, config.game());
 	
 	// Write out instances file and read it back.

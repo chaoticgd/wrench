@@ -112,7 +112,7 @@ void read_gameplay(Gameplay& gameplay, Buffer src, Game game, const std::vector<
 std::vector<u8> write_gameplay(const Gameplay& gameplay_arg, Game game, const std::vector<GameplayBlockDescription>& blocks);
 const std::vector<GameplayBlockDescription>* gameplay_block_descriptions_from_game(Game game);
 std::vector<u8> write_occlusion_mappings(const Gameplay& gameplay, Game game);
-void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, OcclusionMappings* occl_dest, std::map<std::string, std::string>& pvar_types, Gameplay& src, Game game);
+void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, OcclusionMappings* occl_dest, std::map<s32, std::string>& pvar_types, Gameplay& src, Game game);
 void move_instances_to_gameplay(Gameplay& dest, Instances& src, HelpMessages* help_src, OcclusionMappings* occlusion_src);
 
 #endif

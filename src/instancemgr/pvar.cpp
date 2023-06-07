@@ -80,7 +80,7 @@ void for_each_pvar_instance(Instances& dest, Callback callback) {
 	}
 }
 
-void recover_pvars(Instances& dest, std::map<std::string, std::string>& types_dest, const Gameplay& src, Game game) {
+void recover_pvars(Instances& dest, std::map<s32, std::string>& types_dest, const Gameplay& src, Game game) {
 	if(!src.pvar_table.has_value() || !src.pvar_data.has_value()) {
 		return;
 	}
@@ -206,7 +206,7 @@ void recover_pvars(Instances& dest, std::map<std::string, std::string>& types_de
 		buffer.writelf("// wrench parser on");
 		buffer.writesf("\n");
 		dump_cpp_type(buffer, pvar_type);
-		types_dest[stringf("src/game_%s/update/moby%d.h", game_to_string(game).c_str(), id)] = std::string(cpp.begin(), cpp.end());
+		types_dest[id] = std::string(cpp.begin(), cpp.end());
 	}
 }
 

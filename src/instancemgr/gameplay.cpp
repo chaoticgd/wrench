@@ -249,7 +249,7 @@ const std::vector<GameplayBlockDescription> DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS 
 	{0x0c, {GlobalPvarBlock::read, GlobalPvarBlock::write}, "global pvar"},
 };
 
-void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, OcclusionMappings* occl_dest, std::map<std::string, std::string>& pvar_types, Gameplay& src, Game game) {
+void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, OcclusionMappings* occl_dest, std::map<s32, std::string>& pvar_types, Gameplay& src, Game game) {
 	if(src.level_settings.has_value()) {
 		dest.level_settings = std::move(*src.level_settings);
 	}
