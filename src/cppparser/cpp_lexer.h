@@ -82,7 +82,7 @@ struct CppToken {
 	size_t next;
 };
 
-std::vector<CppToken> eat_cpp_file(char* ptr);
+std::vector<CppToken> eat_cpp_file(char* input);
 const char* cpp_token_type(CppTokenType type);
 
 #endif

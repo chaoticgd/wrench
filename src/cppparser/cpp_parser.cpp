@@ -123,12 +123,12 @@ static void parse_struct_or_union(CppType& dest, CppParserState& parser) {
 			parser.advance();
 			
 			const CppToken& literal = parser.cur();
-			verify(literal.type == CPP_INTEGER_LITERAL, "Expected integer literal.");
+			verify(literal.type == CPP_INTEGER_LITERAL, "Expected integer literal on line %d.", literal.line);
 			array_indices.emplace_back(literal.i);
 			parser.advance();
 			
 			const CppToken closing_bracket_token = parser.cur();
-			verify(closing_bracket_token.type == CPP_OPERATOR && closing_bracket_token.op == CPP_OP_CLOSING_SQUARE, "Expected ']'.");
+			verify(closing_bracket_token.type == CPP_OPERATOR && closing_bracket_token.op == CPP_OP_CLOSING_SQUARE, "Expected ']' on line %d.", closing_bracket_token.line);
 			parser.advance();
 		}
 		for(size_t i = array_indices.size(); i > 0; i--) {
@@ -142,7 +142,7 @@ static void parse_struct_or_union(CppType& dest, CppParserState& parser) {
 		dest.struct_or_union.fields.emplace_back(std::move(field_type));
 		
 		const CppToken& semicolon = parser.cur();
-		verify(semicolon.type == CPP_OPERATOR && semicolon.type == CPP_OPERATOR && semicolon.op == CPP_OP_SEMICOLON, "Expected ';'.");
+		verify(semicolon.type == CPP_OPERATOR && semicolon.type == CPP_OPERATOR && semicolon.op == CPP_OP_SEMICOLON, "Expected ';' on line %d.", semicolon.line);
 		parser.advance();
 	}
 	parser.advance();
@@ -187,29 +187,29 @@ static CppType parse_type_name(CppParserState& parser) {
 		
 		CppType type(CPP_BUILT_IN);
 		if(has_keyword[CPP_KEYWORD_float]) {
-			verify(!has_keyword[CPP_KEYWORD_short], "'short' specified with 'float'.");
-			verify(!has_keyword[CPP_KEYWORD_long], "'long' specified with 'float'.");
-			verify(!has_keyword[CPP_KEYWORD_signed], "'signed' specified with 'float'.");
-			verify(!has_keyword[CPP_KEYWORD_unsigned], "'unsigned' specified with 'float'.");
+			verify(!has_keyword[CPP_KEYWORD_short], "'short' specified with 'float' on line %d.", first.line);
+			verify(!has_keyword[CPP_KEYWORD_long], "'long' specified with 'float' on line %d.", first.line);
+			verify(!has_keyword[CPP_KEYWORD_signed], "'signed' specified with 'float' on line %d.", first.line);
+			verify(!has_keyword[CPP_KEYWORD_unsigned], "'unsigned' specified with 'float' on line %d.", first.line);
 			type.built_in = CPP_FLOAT;
 		} else if(has_keyword[CPP_KEYWORD_double]) {
-			verify(!has_keyword[CPP_KEYWORD_short], "'short' specified with 'double'.");
-			verify(!has_keyword[CPP_KEYWORD_long], "'long' specified with 'double'.");
-			verify(!has_keyword[CPP_KEYWORD_signed], "'signed' specified with 'double'.");
-			verify(!has_keyword[CPP_KEYWORD_unsigned], "'unsigned' specified with 'double'.");
+			verify(!has_keyword[CPP_KEYWORD_short], "'short' specified with 'double' on line %d.", first.line);
+			verify(!has_keyword[CPP_KEYWORD_long], "'long' specified with 'double' on line %d.", first.line);
+			verify(!has_keyword[CPP_KEYWORD_signed], "'signed' specified with 'double' on line %d.", first.line);
+			verify(!has_keyword[CPP_KEYWORD_unsigned], "'unsigned' specified with 'double'. on line %d", first.line);
 			type.built_in = CPP_DOUBLE;
 		} else if(has_keyword[CPP_KEYWORD_bool]) {
-			verify(!has_keyword[CPP_KEYWORD_short], "'short' specified with 'bool'.");
-			verify(!has_keyword[CPP_KEYWORD_long], "'long' specified with 'bool'.");
-			verify(!has_keyword[CPP_KEYWORD_signed], "'signed' specified with 'bool'.");
-			verify(!has_keyword[CPP_KEYWORD_unsigned], "'unsigned' specified with 'bool'.");
+			verify(!has_keyword[CPP_KEYWORD_short], "'short' specified with 'bool' on line %d.", first.line);
+			verify(!has_keyword[CPP_KEYWORD_long], "'long' specified with 'bool' on line %d.", first.line);
+			verify(!has_keyword[CPP_KEYWORD_signed], "'signed' specified with 'bool' on line %d.", first.line);
+			verify(!has_keyword[CPP_KEYWORD_unsigned], "'unsigned' specified with 'bool' on line %d.", first.line);
 			type.built_in = CPP_BOOL;
 		} else if(has_keyword[CPP_KEYWORD_char]) {
-			verify(!has_keyword[CPP_KEYWORD_short], "'short' specified with 'char'.");
-			verify(!has_keyword[CPP_KEYWORD_long], "'long' specified with 'char'.");
+			verify(!has_keyword[CPP_KEYWORD_short], "'short' specified with 'char' on line %d.", first.line);
+			verify(!has_keyword[CPP_KEYWORD_long], "'long' specified with 'char' on line %d.", first.line);
 			type.built_in = has_keyword[CPP_KEYWORD_unsigned] ? CPP_UCHAR : CPP_CHAR;
 		} else if(has_keyword[CPP_KEYWORD_short]) {
-			verify(!has_keyword[CPP_KEYWORD_long], "'long' specified with 'short'.");
+			verify(!has_keyword[CPP_KEYWORD_long], "'long' specified with 'short' on line %d.", first.line);
 			type.built_in = has_keyword[CPP_KEYWORD_unsigned] ? CPP_USHORT : CPP_SHORT;
 		} else if(has_keyword[CPP_KEYWORD_long]) {
 			if(has_double_long) {
@@ -229,5 +229,5 @@ static CppType parse_type_name(CppParserState& parser) {
 		
 		return type;
 	}
-	verify_not_reached("Expected type name, got token of type %s.", cpp_token_type(first.type));
+	verify_not_reached("Expected type name, got token of type %s on line %d.", cpp_token_type(first.type), first.line);
 }
