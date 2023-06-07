@@ -16,21 +16,24 @@
 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include "pvar_inspector.h"
+
+#include <map>
 #include <editor/app.h>
 
 static bool get_pvar_type_and_data(const CppType*& pvar_type, std::vector<std::vector<u8>*>& pvar_data, Level& lvl);
-static void generate_rows(const CppType& type, std::vector<u8>& pvar_data, std::vector<u8>& diff_data, s32 index, s32 offset, s32 depth);
+static void generate_rows(const CppType& type, std::vector<u8>& pvar_data, std::vector<u8>& diff_data, const std::map<std::string, CppType>& types, s32 index, s32 offset, s32 depth);
 static ImGuiDataType cpp_built_in_type_to_imgui_data_type(const CppType& type);
 
 void pvar_inspector(Level& lvl) {
 	const CppType* pvar_type;
 	std::vector<std::vector<u8>*> pvar_data;
-	if(!get_pvar_type_and_data(pvar_type, pvar_data,lvl)) {
+	if(!get_pvar_type_and_data(pvar_type, pvar_data, lvl)) {
 		return;
 	}
 	
 	verify_fatal(pvar_type->size != -1);
-	if(pvar_type->size < (s32) pvar_data.size()) {
+	if(pvar_type->size > (s32) pvar_data[0]->size()) {
 		ImGui::Text("Error: Pvar data smaller than data type.");
 		if(ImGui::Button("Extend Data")) {
 			for(std::vector<u8>* pvars : pvar_data) {
@@ -55,13 +58,14 @@ void pvar_inspector(Level& lvl) {
 		ImGui::BeginChild("pvars");
 		ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4, 4));
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 8));
-		if(ImGui::BeginTable("mods", 2, flags)) {
+		if(ImGui::BeginTable("mods", 3, flags)) {
+			ImGui::TableSetupColumn("Ofs", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
 			ImGui::TableSetupColumn("Key", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize);
 			ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
 			ImGui::TableHeadersRow();
 			
 			verify_fatal(pvar_type);
-			generate_rows(*pvar_type, *pvar_data[0], diff_data, -1, 0, 0);
+			generate_rows(*pvar_type, *pvar_data[0], diff_data, lvl.level().forest().types(), -1, 0, 0);
 			
 			ImGui::EndTable();
 		}
@@ -116,7 +120,7 @@ static bool get_pvar_type_and_data(const CppType*& pvar_type, std::vector<std::v
 	return false;
 }
 
-static void generate_rows(const CppType& type, std::vector<u8>& pvar_data, std::vector<u8>& diff_data, s32 index, s32 offset, s32 depth) {
+static void generate_rows(const CppType& type, std::vector<u8>& pvar_data, std::vector<u8>& diff_data, const std::map<std::string, CppType>& types, s32 index, s32 offset, s32 depth) {
 	if(index > -1) {
 		ImGui::PushID(index);
 	} else {
@@ -124,8 +128,10 @@ static void generate_rows(const CppType& type, std::vector<u8>& pvar_data, std::
 	}
 	defer([&](){ ImGui::PopID(); });
 	
-	if(depth > 0 || type.descriptor != CPP_STRUCT_OR_UNION) {
+	if((depth > 0 || type.descriptor != CPP_STRUCT_OR_UNION) && type.descriptor != CPP_TYPE_NAME) {
 		ImGui::TableNextRow();
+		ImGui::TableNextColumn();
+		ImGui::Text("%x", offset);
 		ImGui::TableNextColumn();
 		if(index > -1) {
 			std::string subscript = stringf("[%d]", index);
@@ -145,7 +151,7 @@ static void generate_rows(const CppType& type, std::vector<u8>& pvar_data, std::
 			ImGui::Text("(array)");
 			if(type.expanded) {
 				for(s32 i = 0; i < type.array.element_count; i++) {
-					generate_rows(*type.array.element_type, pvar_data, diff_data, i, offset + i * type.array.element_type->size, depth + 1);
+					generate_rows(*type.array.element_type, pvar_data, diff_data, types, i, offset + i * type.array.element_type->size, depth + 1);
 				}
 			}
 			break;
@@ -166,17 +172,37 @@ static void generate_rows(const CppType& type, std::vector<u8>& pvar_data, std::
 			if(type.expanded || depth == 0) {
 				for(s32 i = 0; i < type.struct_or_union.fields.size(); i++) {
 					const CppType& field = type.struct_or_union.fields[i];
-					generate_rows(field, pvar_data, diff_data, -1, offset + field.offset, depth + 1);
+					generate_rows(field, pvar_data, diff_data, types, -1, offset + field.offset, depth + 1);
 				}
 			}
 			break;
 		}
 		case CPP_TYPE_NAME: {
-			ImGui::Text("(typename)");
+			auto iter = types.find(type.type_name.string);
+			if(iter != types.end()) {
+				generate_rows(iter->second, pvar_data, diff_data, types, -1, offset, depth + 1);
+			} else {
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::Text("%x", offset);
+				ImGui::TableNextColumn();
+				if(index > -1) {
+					std::string subscript = stringf("[%d]", index);
+					if(ImGui::Selectable(subscript.c_str(), type.expanded)) {
+						type.expanded = !type.expanded;
+					}
+				} else {
+					if(ImGui::Selectable(type.name.c_str(), type.expanded)) {
+						type.expanded = !type.expanded;
+					}
+				}
+				ImGui::TableNextColumn();
+				ImGui::Text("(no definition available)");
+			}
 			break;
 		}
 		case CPP_POINTER_OR_REFERENCE: {
-			ImGui::Text("(pointer or reference)");
+			ImGui::InputScalar("##input", ImGuiDataType_U32, pvar_data.data() + offset);
 			break;
 		}
 	}

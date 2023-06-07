@@ -56,8 +56,8 @@ static void unpack_instances_asset(InstancesAsset& dest, InputStream& src, Build
 	PlaceholderAsset& build = pvar_types_file.root().child<PlaceholderAsset>(game_to_string(config.game()).c_str());
 	CollectionAsset& moby_classes = build.child<CollectionAsset>("moby_classes");
 	for(auto& [class_id, cpp] : pvar_types) {
-		MobyClassAsset& class_asset = moby_classes.child<MobyClassAsset>(class_id);
-		class_asset.pvar_type_fallback().set_name(stringf("update%d", class_id));
+		PlaceholderAsset& class_asset = moby_classes.child<PlaceholderAsset>(class_id);
+		class_asset.child<CppTypeAsset>("pvar_type_fallback").set_name(stringf("update%d", class_id));
 		std::string path = stringf("src/game_%s/update/moby%d.h", game_to_string(config.game()).c_str(), class_id);
 		pvar_types_file.write_text_file(fs::path(path), cpp.c_str());
 	}

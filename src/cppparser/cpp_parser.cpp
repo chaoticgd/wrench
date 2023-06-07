@@ -192,7 +192,7 @@ static CppType parse_type_name(CppParserState& parser) {
 				if(token.keyword == CPP_KEYWORD_long && has_keyword[CPP_KEYWORD_long]) {
 					has_double_long = true;
 				}
-				has_keyword[CPP_KEYWORD_long] = true;
+				has_keyword[token.keyword] = true;
 				parser.advance();
 			} else {
 				break;

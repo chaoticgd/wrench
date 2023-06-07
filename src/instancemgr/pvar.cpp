@@ -22,20 +22,42 @@
 
 struct PvarHeaderSpec {
 	s32 pointer_offset;
-	const char* type_name;
-	const char* variable_name;
+	const char* type_name = "";
+	const char* variable_name = "";
 	s32 size = -1;
 };
 
+static PvarHeaderSpec RAC_PVAR_SUB_VARS[] = {
+	{0x00, "RacVars00", ""},
+	{0x04, "RacVars04"},
+	{0x08, "RacVars08"},
+	{0x0c, "RacVars0c"},
+	{0x10, "RacVars10", ""},
+	{0x14, "RacVars14"},
+	{0x18, "RacVars18", ""},
+	{0x1c, "RacVars1c", ""},
+};
+
 static PvarHeaderSpec GC_PVAR_SUB_VARS[] = {
-	{0x00, "TargetVars", "targetVars"},
-	{0x04, "GCVars04"},
-	{0x08, "GCVars08"},
-	{0x0c, "GCVars0c"},
-	{0x10, "ReactVars", "reactVars"},
-	{0x14, "GCVars14"},
-	{0x18, "GCVars18"},
+	{0x00, "TargetVars", "targetVars", 0x30},
+	{0x04, "GcVars04"},
+	{0x08, "GcVars08"},
+	{0x0c, "GcVars0c"},
+	{0x10, "ReactVars", "reactVars", 0xb0},
+	{0x14, "GcVars14"},
+	{0x18, "GcVars18", "", 0xf0},
 	{0x1c, "MoveVars_V2", "moveV2Vars"},
+};
+
+static PvarHeaderSpec UYA_PVAR_SUB_VARS[] = {
+	{0x00, "UyaVars00", ""},
+	{0x04, "UyaVars04"},
+	{0x08, "UyaVars08"},
+	{0x0c, "UyaVars0c"},
+	{0x10, "UyaVars10", ""},
+	{0x14, "UyaVars14"},
+	{0x18, "UyaVars18", ""},
+	{0x1c, "UyaVars1c", ""},
 };
 
 static PvarHeaderSpec DL_PVAR_SUB_VARS[] = {
@@ -90,21 +112,21 @@ void recover_pvars(Instances& dest, std::map<s32, std::string>& types_dest, cons
 	s32 sub_vars_size;
 	switch(game) {
 		case Game::RAC: {
-			sub_vars_begin = DL_PVAR_SUB_VARS;
-			sub_vars_end = DL_PVAR_SUB_VARS + ARRAY_SIZE(DL_PVAR_SUB_VARS);
-			sub_vars_size = 0x50;
+			sub_vars_begin = RAC_PVAR_SUB_VARS;
+			sub_vars_end = RAC_PVAR_SUB_VARS + ARRAY_SIZE(RAC_PVAR_SUB_VARS);
+			sub_vars_size = 0x20;
 			break;
 		}
 		case Game::GC: {
-			sub_vars_begin = DL_PVAR_SUB_VARS;
-			sub_vars_end = DL_PVAR_SUB_VARS + ARRAY_SIZE(DL_PVAR_SUB_VARS);
-			sub_vars_size = 0x50;
+			sub_vars_begin = GC_PVAR_SUB_VARS;
+			sub_vars_end = GC_PVAR_SUB_VARS + ARRAY_SIZE(GC_PVAR_SUB_VARS);
+			sub_vars_size = 0x20;
 			break;
 		}
 		case Game::UYA: {
-			sub_vars_begin = DL_PVAR_SUB_VARS;
-			sub_vars_end = DL_PVAR_SUB_VARS + ARRAY_SIZE(DL_PVAR_SUB_VARS);
-			sub_vars_size = 0x50;
+			sub_vars_begin = UYA_PVAR_SUB_VARS;
+			sub_vars_end = UYA_PVAR_SUB_VARS + ARRAY_SIZE(UYA_PVAR_SUB_VARS);
+			sub_vars_size = 0x20;
 			break;
 		}
 		case Game::DL: {
@@ -115,7 +137,6 @@ void recover_pvars(Instances& dest, std::map<s32, std::string>& types_dest, cons
 		}
 		default: verify_not_reached("Invalid game.");
 	}
-	;
 	
 	// Scatter pvar data amongst the moby, camera and sound instances.
 	for_each_pvar_instance(dest, [&](Instance& inst) {
@@ -173,7 +194,7 @@ void recover_pvars(Instances& dest, std::map<s32, std::string>& types_dest, cons
 		
 		while(offset < (s32) moby_class.pvar_data[0]->size()) {
 			bool hungry = true;
-			if(moby_class.has_sub_vars) {
+			if(moby_class.has_sub_vars && game == Game::DL) {
 				for(PvarHeaderSpec* sub_var = sub_vars_begin; sub_var < sub_vars_end; sub_var++) {
 					s32 sub_var_offset = *(s32*) &(*moby_class.pvar_data[0])[sub_var->pointer_offset];
 					if(sub_var_offset == offset) {
