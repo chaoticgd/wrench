@@ -21,6 +21,6 @@
 
 #include <cppparser/cpp_type.h>
 
-std::vector<CppType> parse_cpp_types(const std::vector<CppToken>& tokens);
+bool parse_cpp_types(std::vector<CppType>& types, const std::vector<CppToken>& tokens);
 
 #endif

@@ -415,16 +415,10 @@ AssetType ElfFile {
 }
 
 AssetType CppType {
-	desc: "A c++ type definition defined in a header file. Used for pvars."
+	desc: "A c++ type definition defined in a header file. Used for pvars. Asset banks will be scanned for a valid type, see [C++ Parser](cpp_parser.md)."
 	
 	StringAttribute name {
 		desc: "The name of the type in the C++ header file."
-		required: true
-		games: [1 2 3 4]
-	}
-	
-	FileReferenceAttribute src {
-		desc: "The path of the C++ header file containing the specified type."
 		required: true
 		games: [1 2 3 4]
 	}

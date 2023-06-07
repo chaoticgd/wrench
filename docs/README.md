@@ -4,6 +4,7 @@
 
 - [Asset System](asset_system.md)
 	- [Asset Reference](asset_reference.md)
+- [C++ Parser](cpp_parser.md)
 - [Instance System](instance_system.md)
   - [Instance Reference](instance_reference.md)
 - [Wrench Text Format](wrench_text_format.md)

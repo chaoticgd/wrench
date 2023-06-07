@@ -249,7 +249,7 @@ const std::vector<GameplayBlockDescription> DL_GAMEPLAY_MISSION_INSTANCE_BLOCKS 
 	{0x0c, {GlobalPvarBlock::read, GlobalPvarBlock::write}, "global pvar"},
 };
 
-void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, OcclusionMappings* occlusion_dest, Gameplay& src) {
+void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, OcclusionMappings* occl_dest, std::map<std::string, std::string>& pvar_types, Gameplay& src, Game game) {
 	if(src.level_settings.has_value()) {
 		dest.level_settings = std::move(*src.level_settings);
 	}
@@ -291,17 +291,11 @@ void move_gameplay_to_instances(Instances& dest, HelpMessages* help_dest, Occlus
 		help_dest->korean = std::move(opt_iterator(src.korean_help_messages));
 	}
 	
-	if(occlusion_dest && src.occlusion.has_value()) {
-		*occlusion_dest = *src.occlusion;
+	if(occl_dest && src.occlusion.has_value()) {
+		*occl_dest = *src.occlusion;
 	}
 	
-	std::vector<CppType> pvar_types;
-	recover_pvars(dest, pvar_types, src);
-	std::vector<u8> cpp_out;
-	OutBuffer ob(cpp_out);
-	for(CppType& type : pvar_types)
-		dump_cpp_type(ob, type);
-	write_file("/tmp/pvar_types.h", cpp_out);
+	recover_pvars(dest, pvar_types, src, game);
 }
 
 void move_instances_to_gameplay(Gameplay& dest, Instances& src, HelpMessages* help_src, OcclusionMappings* occlusion_src) {

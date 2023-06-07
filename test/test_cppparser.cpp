@@ -167,7 +167,8 @@ TEST_CASE("c++ parser" "[instancemgr]") {
 static bool test_parser(const char* src, CppType&& expected) {
 	std::string str(src);
 	std::vector<CppToken> tokens = eat_cpp_file(&str[0]);
-	std::vector<CppType> types = parse_cpp_types(tokens);
+	std::vector<CppType> types;
+	parse_cpp_types(types, tokens);
 	if(types.size() != 1) {
 		return false;
 	}
@@ -190,6 +191,10 @@ static bool compare_pvar_types(const CppType& lhs, const CppType& rhs) {
 		}
 		case CPP_BUILT_IN: {
 			if(lhs.built_in != rhs.built_in) { UNSCOPED_INFO("built_in"); return false; }
+			break;
+		}
+		case CPP_ENUM: {
+			if(lhs.enumeration.constants != rhs.enumeration.constants) { UNSCOPED_INFO("enum"); return false; }
 			break;
 		}
 		case CPP_STRUCT_OR_UNION: {

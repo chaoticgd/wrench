@@ -31,7 +31,7 @@ struct EditorClass {
 	Opt<Mesh> mesh;
 	Opt<RenderMesh> render_mesh;
 	std::vector<RenderMaterial> materials;
-	Opt<CppType> pvar_type;
+	const CppType* pvar_type = nullptr;
 };
 
 struct EditorChunk {

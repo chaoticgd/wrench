@@ -33,6 +33,8 @@ void Level::read(LevelAsset& asset, Game g) {
 	std::string text = _instances_asset->file().read_text_file(_instances_asset->src().path);
 	_instances = read_instances(text);
 	
+	const std::vector<CppType>& types = asset.forest().types();
+	
 	const CollectionAsset& chunk_collection = level_wad().get_chunks();
 	for(s32 i = 0; i < 3; i++) {
 		if(!chunk_collection.has_child(i)) {
@@ -109,16 +111,9 @@ void Level::read(LevelAsset& asset, Game g) {
 			} else {
 				pvar_type = &moby.get_pvar_type_fallback();
 			}
-			std::string cpp = pvar_type->file().read_text_file(pvar_type->src().path);
-			if(!cpp.empty()) {
-				std::vector<CppToken> tokens = eat_cpp_file(&cpp[0]);
-				std::vector<CppType> types = parse_cpp_types(tokens);
-				for(CppType& type : types) {
-					if(type.name == pvar_type->name()) {
-						//resolve_pvar_type_names(type, types);
-						layout_cpp_type(type, CPP_PS2_ABI);
-						ec.pvar_type = std::move(type);
-					}
+			for(const CppType& type : types) {
+				if(type.name == pvar_type->name()) {
+					ec.pvar_type = &type;
 				}
 			}
 		}

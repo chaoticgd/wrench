@@ -112,6 +112,16 @@ Same as `strongly_deleted` except it will be assumed to be set to `false` (inste
 
 In addition to the game and loaded mods, an underlay asset bank is also typically loaded while packing and unpacking. This contains metadata for assets that is not stored on the disc. For example, names of levels and object classes. In the future this could also include data type definitions for pvars.
 
+## The `src` Directory
+
+The subdirectories of the `src` directory are special. Instead of their files being referenced from `.asset` files, they are treated as an overlay or union filesystem e.g. if a lower precedence asset bank X contains `a.h` and `b.h`, and a higher precedence bank Y contains `b.h` and `c.h`, the `a.h` file from bank X will be used, and the `b.h` and `c.h` files from bank Y will be used. The following directories are treated like this:
+
+- `src/game_common`: Always loaded.
+- `src/game_rac`: Only loaded for R&C1.
+- `src/game_gc`: Only loaded for GC.
+- `src/game_uya`: Only loaded for UYA.
+- `src/game_dl`: Only loaded for Deadlocked.
+
 ## Internals
 
 The asset system is implemented as a static library compiled from code stored in `src/assetmgr`.
@@ -134,12 +144,12 @@ Each asset type is defined in `asset_schema.wtf` and a code generator, `asset_co
 
 | Format Version | Wrench Version | Description |
 | -    | -     | - |
-| 21   |       | Added new instances format. Added Instances asset type. Added new CppType asset type, as well as pvar_type and pvar_type fallback attributes to the MobyClass asset. |
+| 21   |       | Added new instances format. Added Instances asset type. Added new CppType asset type, as well as pvar_type and pvar_type_fallback attributes to the MobyClass asset. Added the C++ parsing system and the `src` overlay system. |
 | 20   |       | Added Occlusion asset type. The code child of LevelWad asset has been renamed to overlay. Removed the tfrags and collision children of the LevelWad asset (the assets from the first chunk are used instead). |
 | 19   |       | Added ElfFile asset type. |
 | 18   | v0.3  | Added editor_mesh attribute to the TieClass asset type. Material assets are now used to store tie textures. |
 | 17   |       | Added Tfrags and TfragsCore asset types. Material assets are now used to store tfrag textures. |
-| 16   |       | The billboard asset is now a child of ShrubClass assets instead of ShrubClassCore assets. The mipmap_distance attribute of ShrubClassCore assets has been renamed to mip_distance. |
+| 16   |       | The billboard asset is now a child of ShrubClass assets instead of ShrubClassCore assets. The mipmap_distance attribute of ShrubClassCore assets has been renamed to mip_distance. |d
 | 15   |       | Added underlay asset banks. Level, MobyClass, TieClass and ShrubClass asset now have name and category attributes. Replaced deleted attribute with strongly_deleted and weakly_deleted attributes. |
 | 14   |       | Moby classes stored in missions are now packed/unpacked separately for Deadlocked. |
 | 13   |       | Merged LevelDataWad and LevelCore into the Level asset type. |

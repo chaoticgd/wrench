@@ -45,16 +45,17 @@ struct CppParserState {
 static void parse_struct_or_union(CppType& dest, CppParserState& parser);
 static CppType parse_type_name(CppParserState& parser);
 
-std::vector<CppType> parse_cpp_types(const std::vector<CppToken>& tokens) {
+bool parse_cpp_types(std::vector<CppType>& types, const std::vector<CppToken>& tokens) {
 	CppParserState parser{tokens};
 	bool enabled = false;
+	bool ever_enabled_for_this_file = false;
 	
-	std::vector<CppType> types;
 	while(parser.pos < tokens.size()) {
 		if(tokens[parser.pos].type == CPP_COMMENT) {
 			std::string str(tokens[parser.pos].str_begin, tokens[parser.pos].str_end);
 			if(str.find("wrench parser on") != std::string::npos) {
 				enabled = true;
+				ever_enabled_for_this_file = true;
 			} else if(str.find("wrench parser off") != std::string::npos) {
 				enabled = false;
 			}
@@ -77,7 +78,8 @@ std::vector<CppType> parse_cpp_types(const std::vector<CppToken>& tokens) {
 		
 		parser.pos++;
 	}
-	return types;
+	
+	return ever_enabled_for_this_file;
 }
 
 static void parse_struct_or_union(CppType& dest, CppParserState& parser) {

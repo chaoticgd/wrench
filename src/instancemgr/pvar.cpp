@@ -80,12 +80,10 @@ void for_each_pvar_instance(Instances& dest, Callback callback) {
 	}
 }
 
-void recover_pvars(Instances& dest, std::vector<CppType>& types_dest, const Gameplay& src) {
+void recover_pvars(Instances& dest, std::map<std::string, std::string>& types_dest, const Gameplay& src, Game game) {
 	if(!src.pvar_table.has_value() || !src.pvar_data.has_value()) {
 		return;
 	}
-	
-	Game game = Game::DL;
 	
 	PvarHeaderSpec* sub_vars_begin;
 	PvarHeaderSpec* sub_vars_end;
@@ -159,7 +157,7 @@ void recover_pvars(Instances& dest, std::vector<CppType>& types_dest, const Game
 	}
 	
 	for(auto& [id, moby_class] : moby_classes) {
-		CppType& pvar_type = types_dest.emplace_back(CPP_STRUCT_OR_UNION);
+		CppType pvar_type(CPP_STRUCT_OR_UNION);
 		pvar_type.name = stringf("update%d", id);
 		pvar_type.size = moby_class.pvar_data[0]->size();
 		
@@ -202,6 +200,13 @@ void recover_pvars(Instances& dest, std::vector<CppType>& types_dest, const Game
 				field.built_in = CPP_INT;
 			}
 		}
+		
+		std::vector<u8> cpp;
+		OutBuffer buffer(cpp);
+		buffer.writelf("// wrench parser on");
+		buffer.writesf("\n");
+		dump_cpp_type(buffer, pvar_type);
+		types_dest[stringf("src/game_%s/update/moby%d.h", game_to_string(game).c_str(), id)] = std::string(cpp.begin(), cpp.end());
 	}
 }
 

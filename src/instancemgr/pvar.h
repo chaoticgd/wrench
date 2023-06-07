@@ -19,6 +19,9 @@
 #ifndef INSTANCEMGR_PVAR_H
 #define INSTANCEMGR_PVAR_H
 
+#include <map>
+
+#include <core/build_config.h>
 #include <cppparser/cpp_type.h>
 
 struct Gameplay;
@@ -29,7 +32,7 @@ struct Instances;
 
 // Take the pvar sections from the gameplay file, distribute their contents
 // amongst the instances, and try to recover type information.
-void recover_pvars(Instances& dest, std::vector<CppType>& types_dest, const Gameplay& src);
+void recover_pvars(Instances& dest, std::map<std::string, std::string>& types_dest, const Gameplay& src, Game game);
 
 // Bake the pvar data from the instances down into a number of data sections to
 // be stored in the gameplay file.

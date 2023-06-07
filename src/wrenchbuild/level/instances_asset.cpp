@@ -45,12 +45,16 @@ static void unpack_instances_asset(InstancesAsset& dest, InputStream& src, Build
 	read_gameplay(gameplay, buffer, config.game(), *get_gameplay_block_descriptions(config.game(), hint)); 
 	
 	Instances instances;
-	move_gameplay_to_instances(instances, nullptr, nullptr, gameplay);
+	std::map<std::string, std::string> pvar_types;
+	move_gameplay_to_instances(instances, nullptr, nullptr, pvar_types, gameplay, config.game());
 	
 	std::string text = write_instances(instances);
-	
 	FileReference ref = dest.file().write_text_file(stringf("%s.instances", hint), text.c_str());
 	dest.set_src(ref);
+	
+	for(auto& [path, cpp] : pvar_types) {
+		dest.bank().asset_file("sources.asset").write_text_file(fs::path(path), cpp.c_str());
+	}
 }
 
 Gameplay load_instances(const Asset& src, const BuildConfig& config, const char* hint) {
@@ -78,7 +82,8 @@ static bool test_instances_asset(std::vector<u8>& src, AssetType type, BuildConf
 	Instances instances_in;
 	HelpMessages help_messages;
 	OcclusionMappings occlusion;
-	move_gameplay_to_instances(instances_in, &help_messages, &occlusion, gameplay_in);
+	std::map<std::string, std::string> pvar_types;
+	move_gameplay_to_instances(instances_in, &help_messages, &occlusion, pvar_types, gameplay_in, config.game());
 	
 	// Write out instances file and read it back.
 	std::string instances_text = write_instances(instances_in);

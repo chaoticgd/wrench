@@ -32,6 +32,7 @@
 #include <wtf/wtf_writer.h>
 #include <core/stream.h>
 #include <core/memory_profiler.h>
+#include <cppparser/cpp_parser.h>
 #include <assetmgr/game_info.h>
 #include <assetmgr/asset_util.h>
 #include <assetmgr/asset_dispatch.h>
@@ -338,6 +339,9 @@ protected:
 	std::string read_text_file(const FileReference& reference) const;
 	std::vector<u8> read_binary_file(const FileReference& reference) const;
 	
+	std::string get_common_source_path() const;
+	std::string get_game_source_path() const;
+	
 	std::function<void()> _unlocker; // We can't call virtual functions from the destructor so we use a lambda.
 	
 private:
@@ -353,6 +357,7 @@ private:
 	virtual void write_text_file(const fs::path& path, const char* contents) = 0;
 	virtual bool file_exists(const fs::path& path) const = 0;
 	virtual std::vector<fs::path> enumerate_asset_files() const = 0;
+	virtual std::vector<fs::path> enumerate_source_files() const = 0;
 	virtual s32 check_lock() const;
 	virtual void lock();
 	
@@ -399,9 +404,15 @@ public:
 	}
 	
 	void unmount_last();
-
+	void load_and_parse_source_files();
+	
+	const std::vector<CppType>& types() const;
+	
 private:
+	std::map<fs::path, AssetBank*> enumerate_source_files() const;
+	
 	std::vector<std::unique_ptr<AssetBank>> _banks;
+	std::vector<CppType> _types;
 };
 
 class LooseAssetBank : public AssetBank {
@@ -416,6 +427,7 @@ private:
 	void write_text_file(const fs::path& path, const char* contents) override;
 	bool file_exists(const fs::path& path) const override;
 	std::vector<fs::path> enumerate_asset_files() const override;
+	std::vector<fs::path> enumerate_source_files() const override;
 	s32 check_lock() const override;
 	void lock() override;
 	public:
@@ -433,6 +445,7 @@ private:
 	void write_text_file(const fs::path& path, const char* contents) override;
 	bool file_exists(const fs::path& path) const override;
 	std::vector<fs::path> enumerate_asset_files() const override;
+	std::vector<fs::path> enumerate_source_files() const override;
 	s32 check_lock() const override;
 	void lock() override;
 	

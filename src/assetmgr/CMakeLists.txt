@@ -40,5 +40,5 @@ add_library(wrench_assetmgr STATIC
 	material_asset.cpp
 	${CMAKE_BINARY_DIR}/_generated_asset_types.inl
 )
-target_link_libraries(wrench_assetmgr wrenchcore zip)
+target_link_libraries(wrench_assetmgr wrenchcore wrenchcppparser zip)
 target_precompile_headers(wrench_assetmgr PUBLIC asset.h)

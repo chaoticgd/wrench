@@ -7,7 +7,6 @@ MobyClass gc.moby_classes.2716 {
 	
 	CppType pvar_type {
 		name: "M2716_SlotMachine"
-		src: "gc_types.h"
 		strongly_deleted: false
 	}
 }

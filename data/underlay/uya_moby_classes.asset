@@ -6,8 +6,7 @@ MobyClass uya.moby_classes.2871 {
 	name: "Ocean"
 	
 	CppType pvar_type {
-		name: "M2871_Ocean"
-		src: "uya_types.h"
+		name: "update2871_Ocean"
 		strongly_deleted: false
 	}
 }

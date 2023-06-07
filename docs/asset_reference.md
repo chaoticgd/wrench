@@ -391,14 +391,13 @@ No children.
 
 ### CppType
 
-A c++ type definition defined in a header file. Used for pvars.
+A c++ type definition defined in a header file. Used for pvars. Asset banks will be scanned for a valid type, see [C++ Parser](cpp_parser.md).
 
 *Attributes*
 
 | Name | Description | Type | Required | Games |
 | - | - | - | - | - |
 | name | The name of the type in the C++ header file. | String | Yes | RAC/GC/UYA/DL |
-| src | The path of the C++ header file containing the specified type. | FilePath | Yes | RAC/GC/UYA/DL |
 
 *Children*
 

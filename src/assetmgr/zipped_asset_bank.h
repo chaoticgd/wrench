@@ -35,6 +35,7 @@ private:
 	void write_text_file(const fs::path& path, const char* contents) override;
 	bool file_exists(const fs::path& path) const override;
 	std::vector<fs::path> enumerate_asset_files() const override;
+	std::vector<fs::path> enumerate_source_files() const override;
 	s32 check_lock() const override;
 	void lock() override;
 	

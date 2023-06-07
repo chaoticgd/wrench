@@ -18,12 +18,12 @@
 
 #include <editor/app.h>
 
-static bool get_pvar_type_and_data(CppType*& pvar_type, std::vector<std::vector<u8>*>& pvar_data, Level& lvl);
-static void generate_rows(CppType& type, std::vector<u8>& pvar_data, std::vector<u8>& diff_data, s32 index, s32 offset, s32 depth);
-static ImGuiDataType cpp_built_in_type_to_imgui_data_type(CppType& type);
+static bool get_pvar_type_and_data(const CppType*& pvar_type, std::vector<std::vector<u8>*>& pvar_data, Level& lvl);
+static void generate_rows(const CppType& type, std::vector<u8>& pvar_data, std::vector<u8>& diff_data, s32 index, s32 offset, s32 depth);
+static ImGuiDataType cpp_built_in_type_to_imgui_data_type(const CppType& type);
 
 void pvar_inspector(Level& lvl) {
-	CppType* pvar_type;
+	const CppType* pvar_type;
 	std::vector<std::vector<u8>*> pvar_data;
 	if(!get_pvar_type_and_data(pvar_type, pvar_data,lvl)) {
 		return;
@@ -71,7 +71,7 @@ void pvar_inspector(Level& lvl) {
 	ImGui::PopStyleColor();
 }
 
-static bool get_pvar_type_and_data(CppType*& pvar_type, std::vector<std::vector<u8>*>& pvar_data, Level& lvl) {
+static bool get_pvar_type_and_data(const CppType*& pvar_type, std::vector<std::vector<u8>*>& pvar_data, Level& lvl) {
 	s32 type = -1;
 	lvl.instances().for_each_with(COM_PVARS, [&](Instance& inst) {
 		if(inst.selected && type != -2) {
@@ -102,8 +102,8 @@ static bool get_pvar_type_and_data(CppType*& pvar_type, std::vector<std::vector<
 		}
 		if(o_class > -1) {
 			auto iter = lvl.moby_classes.find(o_class);
-			if(iter != lvl.moby_classes.end() && iter->second.pvar_type.has_value()) {
-				pvar_type = &(*iter->second.pvar_type);
+			if(iter != lvl.moby_classes.end() && iter->second.pvar_type) {
+				pvar_type = iter->second.pvar_type;
 				return true;
 			}
 		}
@@ -116,7 +116,7 @@ static bool get_pvar_type_and_data(CppType*& pvar_type, std::vector<std::vector<
 	return false;
 }
 
-static void generate_rows(CppType& type, std::vector<u8>& pvar_data, std::vector<u8>& diff_data, s32 index, s32 offset, s32 depth) {
+static void generate_rows(const CppType& type, std::vector<u8>& pvar_data, std::vector<u8>& diff_data, s32 index, s32 offset, s32 depth) {
 	if(index > -1) {
 		ImGui::PushID(index);
 	} else {
@@ -165,7 +165,7 @@ static void generate_rows(CppType& type, std::vector<u8>& pvar_data, std::vector
 			}
 			if(type.expanded || depth == 0) {
 				for(s32 i = 0; i < type.struct_or_union.fields.size(); i++) {
-					CppType& field = type.struct_or_union.fields[i];
+					const CppType& field = type.struct_or_union.fields[i];
 					generate_rows(field, pvar_data, diff_data, -1, offset + field.offset, depth + 1);
 				}
 			}
@@ -182,7 +182,7 @@ static void generate_rows(CppType& type, std::vector<u8>& pvar_data, std::vector
 	}
 }
 
-static ImGuiDataType cpp_built_in_type_to_imgui_data_type(CppType& type) {
+static ImGuiDataType cpp_built_in_type_to_imgui_data_type(const CppType& type) {
 	if(cpp_is_built_in_integer(type.built_in)) {
 		bool is_signed = cpp_is_built_in_signed(type.built_in);
 		switch(type.size) {

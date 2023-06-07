@@ -463,6 +463,8 @@ static void pack(const std::vector<fs::path>& input_paths, const std::string& as
 		}
 	}
 	
+	forest.load_and_parse_source_files();
+	
 	AssetLink link;
 	link.set(asset.c_str());
 	Asset& wad = forest.lookup_asset(link, nullptr);

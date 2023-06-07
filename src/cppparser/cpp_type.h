@@ -106,7 +106,7 @@ struct CppType {
 	s32 offset = -1;
 	s32 size = -1;
 	s32 alignment = -1;
-	bool expanded = false; // Used by the inspector.
+	mutable bool expanded = false; // Used by the inspector.
 	CppTypeDescriptor descriptor;
 	union {
 		CppArray array;
