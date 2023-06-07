@@ -42,6 +42,7 @@ struct CppArray {
 };
 
 enum CppBuiltIn {
+	CPP_VOID,
 	CPP_CHAR, CPP_UCHAR, CPP_SCHAR,
 	CPP_SHORT, CPP_USHORT,
 	CPP_INT, CPP_UINT,

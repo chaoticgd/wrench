@@ -328,6 +328,7 @@ static void indent_cpp(OutBuffer& dest, const CppDumpContext& context) {
 
 const char* cpp_built_in(CppBuiltIn built_in) {
 	switch(built_in) {
+		case CPP_VOID: return "void";
 		case CPP_CHAR: return "char";
 		case CPP_UCHAR: return "unsigned char";
 		case CPP_SCHAR: return "signed char";
@@ -361,6 +362,7 @@ enum CppDummyEnum {};
 
 CppABI NATIVE_ABI = {
 	/* built_in_sizes = */ {
+		/* [CPP_VOID] = */ 1,
 		/* [CPP_CHAR] = */ sizeof(char),
 		/* [CPP_UCHAR] = */ sizeof(unsigned char),
 		/* [CPP_SCHAR] = */ sizeof(signed char),
@@ -387,6 +389,7 @@ CppABI NATIVE_ABI = {
 		/* [CPP_BOOL] = */ sizeof(bool),
 	},
 	/* built_in_alignments */ {
+		/* [CPP_VOID] = */ 1,
 		/* [CPP_CHAR] = */ alignof(char),
 		/* [CPP_UCHAR] = */ alignof(unsigned char),
 		/* [CPP_SCHAR] = */ alignof(signed char),
@@ -420,6 +423,7 @@ CppABI NATIVE_ABI = {
 
 CppABI CPP_PS2_ABI = {
 	/* built_in_sizes = */ {
+		/* [CPP_VOID] = */ 1,
 		/* [CPP_CHAR] = */ 1,
 		/* [CPP_UCHAR] = */ 1,
 		/* [CPP_SCHAR] = */ 1,
@@ -446,6 +450,7 @@ CppABI CPP_PS2_ABI = {
 		/* [CPP_BOOL] = */ 1,
 	},
 	/* built_in_alignments */ {
+		/* [CPP_VOID] = */ 1,
 		/* [CPP_CHAR] = */ 1,
 		/* [CPP_UCHAR] = */ 1,
 		/* [CPP_SCHAR] = */ 1,

@@ -43,6 +43,7 @@ struct CppParserState {
 };
 
 static void parse_struct_or_union(CppType& dest, CppParserState& parser);
+static CppType parse_field(CppParserState& parser);
 static CppType parse_type_name(CppParserState& parser);
 
 bool parse_cpp_types(std::map<std::string, CppType>& types, const std::vector<CppToken>& tokens) {
@@ -78,6 +79,12 @@ bool parse_cpp_types(std::map<std::string, CppType>& types, const std::vector<Cp
 			}
 		}
 		
+		if(enabled && tokens[parser.pos].type == CPP_KEYWORD && tokens[parser.pos].keyword == CPP_KEYWORD_typedef) {
+			parser.advance();
+			CppType type = parse_field(parser);
+			types.emplace(type.name, std::move(type));
+		}
+		
 		parser.pos++;
 	}
 	
@@ -92,53 +99,7 @@ static void parse_struct_or_union(CppType& dest, CppParserState& parser) {
 			break;
 		}
 		
-		CppType field_type = parse_type_name(parser);
-		
-		// Parse pointers.
-		while(true) {
-			const CppToken& token = parser.cur();
-			if(token.type != CPP_OPERATOR || (token.op != CPP_OP_STAR && token.op != CPP_OP_AMPERSAND)) {
-				break;
-			}
-			
-			CppType type(CPP_POINTER_OR_REFERENCE);
-			type.pointer_or_reference.is_reference = token.op == CPP_OP_AMPERSAND;
-			type.pointer_or_reference.value_type = std::make_unique<CppType>(std::move(field_type));
-			field_type = std::move(type);
-			
-			parser.advance();
-		}
-		
-		const CppToken& name_token = parser.cur();
-		std::string name = std::string(name_token.str_begin, name_token.str_end);
-		parser.advance();
-		
-		// Parse array subscripts.
-		std::vector<s32> array_indices;
-		while(true) {
-			const CppToken& opening_bracket_token = parser.cur();
-			if(opening_bracket_token.type != CPP_OPERATOR || opening_bracket_token.op != CPP_OP_OPENING_SQUARE) {
-				break;
-			}
-			parser.advance();
-			
-			const CppToken& literal = parser.cur();
-			verify(literal.type == CPP_INTEGER_LITERAL, "Expected integer literal on line %d.", literal.line);
-			array_indices.emplace_back(literal.i);
-			parser.advance();
-			
-			const CppToken closing_bracket_token = parser.cur();
-			verify(closing_bracket_token.type == CPP_OPERATOR && closing_bracket_token.op == CPP_OP_CLOSING_SQUARE, "Expected ']' on line %d.", closing_bracket_token.line);
-			parser.advance();
-		}
-		for(size_t i = array_indices.size(); i > 0; i--) {
-			CppType array_type(CPP_ARRAY);
-			array_type.array.element_count = array_indices[i - 1];
-			array_type.array.element_type = std::make_unique<CppType>(std::move(field_type));
-			field_type = std::move(array_type);
-		}
-		
-		field_type.name = name;
+		CppType field_type = parse_field(parser);
 		dest.struct_or_union.fields.emplace_back(std::move(field_type));
 		
 		const CppToken& semicolon = parser.cur();
@@ -146,6 +107,58 @@ static void parse_struct_or_union(CppType& dest, CppParserState& parser) {
 		parser.advance();
 	}
 	parser.advance();
+}
+
+static CppType parse_field(CppParserState& parser) {
+	CppType field_type = parse_type_name(parser);
+	
+	// Parse pointers.
+	while(true) {
+		const CppToken& token = parser.cur();
+		if(token.type != CPP_OPERATOR || (token.op != CPP_OP_STAR && token.op != CPP_OP_AMPERSAND)) {
+			break;
+		}
+		
+		CppType type(CPP_POINTER_OR_REFERENCE);
+		type.pointer_or_reference.is_reference = token.op == CPP_OP_AMPERSAND;
+		type.pointer_or_reference.value_type = std::make_unique<CppType>(std::move(field_type));
+		field_type = std::move(type);
+		
+		parser.advance();
+	}
+	
+	const CppToken& name_token = parser.cur();
+	std::string name = std::string(name_token.str_begin, name_token.str_end);
+	parser.advance();
+	
+	// Parse array subscripts.
+	std::vector<s32> array_indices;
+	while(true) {
+		const CppToken& opening_bracket_token = parser.cur();
+		if(opening_bracket_token.type != CPP_OPERATOR || opening_bracket_token.op != CPP_OP_OPENING_SQUARE) {
+			break;
+		}
+		parser.advance();
+		
+		const CppToken& literal = parser.cur();
+		verify(literal.type == CPP_INTEGER_LITERAL, "Expected integer literal on line %d.", literal.line);
+		array_indices.emplace_back(literal.i);
+		parser.advance();
+		
+		const CppToken closing_bracket_token = parser.cur();
+		verify(closing_bracket_token.type == CPP_OPERATOR && closing_bracket_token.op == CPP_OP_CLOSING_SQUARE, "Expected ']' on line %d.", closing_bracket_token.line);
+		parser.advance();
+	}
+	for(size_t i = array_indices.size(); i > 0; i--) {
+		CppType array_type(CPP_ARRAY);
+		array_type.array.element_count = array_indices[i - 1];
+		array_type.array.element_type = std::make_unique<CppType>(std::move(field_type));
+		field_type = std::move(array_type);
+	}
+	
+	field_type.name = name;
+	
+	return field_type;
 }
 
 static CppType parse_type_name(CppParserState& parser) {
@@ -169,6 +182,7 @@ static CppType parse_type_name(CppParserState& parser) {
 			if(token.keyword == CPP_KEYWORD_long) good = true;
 			if(token.keyword == CPP_KEYWORD_float) good = true;
 			if(token.keyword == CPP_KEYWORD_double) good = true;
+			if(token.keyword == CPP_KEYWORD_void) good = true;
 			if(token.keyword == CPP_KEYWORD_signed) good = true;
 			if(token.keyword == CPP_KEYWORD_unsigned) good = true;
 			if(token.keyword == CPP_KEYWORD_const) good = true;
@@ -219,6 +233,8 @@ static CppType parse_type_name(CppParserState& parser) {
 			}
 		} else if(has_keyword[CPP_KEYWORD_int]) {
 			type.built_in = has_keyword[CPP_KEYWORD_unsigned] ? CPP_UINT : CPP_INT;
+		} else if(has_keyword[CPP_KEYWORD_void]) {
+			type.built_in = CPP_VOID;
 		}
 		return type;
 	} else if(first.type == CPP_IDENTIFIER) {

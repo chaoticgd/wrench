@@ -110,6 +110,10 @@ struct TargetVars { // 0x90
 	/* 0x8c */ float lastDamage;
 };
 
+struct npcstring { // 0x14
+	/* 0x00 */ char *text[5];
+};
+
 struct npcVars { // 0x40
 	/* 0x00 */ short int type;
 	/* 0x02 */ short int msg;
@@ -214,6 +218,11 @@ struct ScriptVars {
 	// unknown
 };
 
+typedef float fSpeed_mps;
+typedef float fAccel_mps;
+typedef float fSpeed_dps;
+typedef float fAccel_dps;
+
 struct MoveVars { // 0xf0
 	/* 0x00 */ float collRadius;
 	/* 0x04 */ float kneeHeight;
@@ -272,6 +281,9 @@ struct MoveVars { // 0xf0
 	/* 0xeb */ char padSec3[1];
 	/* 0xec */ float fwdOfs;
 };
+
+typedef vec4 navg_waypoint;
+typedef long unsigned int AnimCacheBitField;
 
 struct MoveVars_V2 { // 0x1b0
 	/* 0x000 */ int flags;
@@ -439,6 +451,11 @@ struct NavigationVars { // 0x50
 	/* 0x42 */ short int pathDestIndex;
 	/* 0x44 */ float jumpDistance;
 	/* 0x48 */ int pad[2];
+};
+
+struct ObjectiveLogic { // 0x8
+	/* 0x0 */ mobylink andObjective;
+	/* 0x4 */ mobylink orObjective;
 };
 
 struct ObjectiveVars { // 0x1c
